@@ -15,7 +15,7 @@ public:
 			Block*& block = openList.top();
 			openList.pop();
 			for(Block* adjacent : block->m_adjacents)
-				if(F(adjacent) && !output.contains(adjacent))
+				if(adjacent != nullptr && condition(adjacent) && !output.contains(adjacent))
 				{
 					output.insert(adjacent);
 					openList.push(adjacent);

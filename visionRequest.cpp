@@ -54,7 +54,7 @@ std::vector<Block*> VisionRequest::getVisibleBlocks(uint32_t range) const
 			closed.insert(block);
 			for(Block* adjacent : block->m_adjacents)
 			{
-				if(adjacent->canSeeThrough() && !closed.contains(adjacent) && hasLineOfSight(adjacent, block, output))
+				if(adjacent != nullptr &&  adjacent->canSeeThrough() && !closed.contains(adjacent) && hasLineOfSight(adjacent, block, output))
 				{
 					nextBlocks.push_back(adjacent);
 					output.insert(adjacent);
@@ -126,7 +126,7 @@ bool VisionRequest::hasLineOfSight(Block* from, Block* to, std::unordered_set<Bl
 	uint32_t xDiff = to->m_x - from->m_x;
 	uint32_t yDiff = to->m_y - from->m_y;
 	uint32_t zDiff = to->m_z - from->m_z;
-	float denominator = std::max(xDiff, yDiff, zDiff);
+	float denominator = static_cast<float>(std::max({xDiff, yDiff, zDiff}));
 	float xDiffNormalized = xDiff / denominator;
 	float yDiffNormalized = yDiff / denominator;
 	float zDiffNormalized = zDiff / denominator;
@@ -155,7 +155,7 @@ std::stack<Block*> VisionRequest::getLineOfSight(Block* from, Block* to, std::un
 	uint32_t xDiff = to->m_x - from->m_x;
 	uint32_t yDiff = to->m_y - from->m_y;
 	uint32_t zDiff = to->m_z - from->m_z;
-	float denominator = std::max(xDiff, yDiff, zDiff);
+	float denominator = std::max({xDiff, yDiff, zDiff});
 	float xDiffNormalized = xDiff / denominator;
 	float yDiffNormalized = yDiff / denominator;
 	float zDiffNormalized = zDiff / denominator;

@@ -76,11 +76,11 @@ public:
 	void addFluid(uint32_t quantity, FluidType* fluidType);
 	bool shapeCanEnterCurrently(Shape* shape) const;
 	bool canEnterEver(Actor* actor) const;
-	bool hasFreeStaticVolume(uint32_t) const;
-	bool hasFreeDynamicVolume(uint32_t) const;
 	std::vector<std::pair<Block*, uint32_t>> getMoveCosts(Shape* shape, MoveType* moveType);
 	bool fluidCanEnterCurrently(FluidType* fluidType) const;
 	uint32_t volumeOfFluidTypeCanEnter(FluidType* fluidType) const;
+	void enter(Actor* actor);
+	void exit(Actor* actor);
 
 	// User provided.
 	bool moveTypeCanEnter(MoveType* moveType) const;

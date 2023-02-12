@@ -1,3 +1,4 @@
+ScheduledEvent::ScheduledEvent(uint32_t s) : m_step(s) {}
 MoveEvent::MoveEvent(uint32_t s, Actor* a) : ScheduledEvent(s), m_actor(a) { m_actor->m_taskEvent = this; }
 void MoveEvent::execute()
 {
@@ -9,7 +10,7 @@ void MoveEvent::execute()
 		if(block->shapeCanEnterCurrently(m_actor->m_shape))
 		{
 			m_actor->m_routeIter++;
-			m_actor->setLocation(block);
+			block->enter(m_actor);
 		}
 		if(block == m_actor->m_destination)
 		{

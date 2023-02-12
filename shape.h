@@ -10,14 +10,20 @@
 struct Shape
 {
 	std::string name;
-	std::vector<std::array<uint32_t, 4>> m_positions;
+	std::vector<std::array<uint32_t, 4>> positions;
+	Shape(std::string n, std::vector<std::array<uint32_t, 4>>& p);
 };
 
 static std::vector<Shape> s_shapes;
 
-Shape* registerShape(std::string name, std::vector<std::array<int32_t, 4>> positions)
+Shape::Shape(std::string n, std::vector<std::array<uint32_t, 4>>& p) : name(n)
 {
-	Shape& shape = s_shapes.emplace_back(name, positions);
+	positions = p;
+}
+
+Shape* registerShape(std::string name, std::vector<std::array<uint32_t, 4>> positions)
+{
+	s_shapes.emplace_back(name, positions);
 	//TODO: rotations
-	return &shape;
+	return &s_shapes.back();
 }

@@ -10,8 +10,8 @@ class ScheduledEvent
 {
 public:
 	uint32_t m_step;
-	ScheduledEvent(uint32_t s) : m_step(s) {}
-	virtual void execute();
+	ScheduledEvent(uint32_t s);
+	virtual void execute() = 0;
 	friend class HasScheduledEvents;
 };
 

@@ -195,6 +195,8 @@ void baseArea::stepCaveInWrite()
 			}
 			block->moveContentsTo(below);
 		}
+		// We don't know if the thing we landed on was it's self anchored so add a block to caveInCheck to be checked next step.
+		m_caveInCheck.insert(*chunk.begin());
 		//TODO: disperse energy of fall by 'mining' out blocks absorbing impact
 	}
 }

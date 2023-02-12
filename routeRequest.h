@@ -3,12 +3,19 @@
 
 class Block;
 
-struct ProposedRouteNode
+struct RouteNode
 {
-	Block* m_block;
-	ProposedRouteNode* m_previous;
-	uint32_t m_totalMoveCost;
-	ProposedRouteNode(Block* b, ProposedRouteNode* p, uint32_t tmc);
+
+	Block* block;
+	RouteNode* previous;
+	RouteNode(Block* b, RouteNode* rn);
+};
+
+struct ProposedRouteStep
+{
+	RouteNode* routeNode;
+	uint32_t totalMoveCost;
+	ProposedRouteStep(RouteNode* rn, uint32_t tmc);
 };
 
 class RouteRequest

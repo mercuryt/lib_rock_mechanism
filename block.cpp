@@ -47,35 +47,38 @@ uint32_t baseBlock::taxiDistance(Block* block) const
 // TODO: optimize for 1x1 case?
 bool baseBlock::shapeCanEnterEver(Shape* shape) const
 {
-	for(auto& [m_x, m_y, m_z, v] : shape->m_positions)
+	for(auto& [m_x, m_y, m_z, v] : shape->positions)
 	{
-		baseBlock* block = offset(m_x, m_y, m_z);
-		if(!block->canEnterEver()|| !block->hasFreeStaticVolume(v))
+		Block* block = offset(m_x, m_y, m_z);
+		if(!block->canEnterEver())
 			return false;
 	}
 	return true;
 }
 bool baseBlock::shapeCanEnterCurrently(Shape* shape) const
 {
-	for(auto& [x, y, z, v] : shape->m_positions)
+	for(auto& [x, y, z, v] : shape->positions)
 	{
-		baseBlock* block = offset(x, y, z);
-		if(!block->hasFreeDynamicVolume(v))
+		Block* block = offset(x, y, z);
+		if(!block->m_totalDynamicVolume + v > MAX_BLOCK_VOLUME)
 			return false;
 	}
 	return true;
 }
 Block* baseBlock::offset(uint32_t ax, uint32_t ay, uint32_t az) const
 {
-	if(ax < 0 || ax > m_area->m_sizeX || ay < 0 || ay > m_area->m_sizeY || az < 0 || az > m_area->m_sizeZ)
+	ax += m_x;
+	ay += m_y;
+	az += m_z;
+	if(ax < 0 || ax >= m_area->m_sizeX || ay < 0 || ay >= m_area->m_sizeY || az < 0 || az >= m_area->m_sizeZ)
 		return nullptr;
-	return &m_area->m_blocks[m_x + ax][m_y + ay][m_z + az];
+	return static_cast<Block*>(&m_area->m_blocks[ax][ay][az]);
 }
 std::vector<std::pair<Block*, uint32_t>> baseBlock::getMoveCosts(Shape* shape, MoveType* moveType)
 {
 	std::vector<std::pair<Block*, uint32_t>> output;
 	for(Block* block : m_adjacents)
-		if(block->shapeCanEnterEver(shape) && block->moveTypeCanEnter(moveType))
+		if(block != nullptr && block->shapeCanEnterEver(shape) && block->moveTypeCanEnter(moveType))
 			output.emplace_back(block, block->moveCost(moveType, static_cast<Block*>(this)));
 	return output;
 }
@@ -96,29 +99,44 @@ uint32_t baseBlock::volumeOfFluidTypeCanEnter(FluidType* fluidType) const
 			output -= pair.second.first;
 	return output;
 }
-/*
+FluidGroup* baseBlock::getFluidGroup(FluidType* fluidType) const
+{
+	if(!m_fluids.contains(fluidType))
+		return nullptr;
+	return m_fluids.at(fluidType).second;
+}
+void baseBlock::moveContentsTo(Block* block)
+{
+	block->m_solid = m_solid;
+	//TODO: other stuff falls?
+}
 // Add / remove  actor occupancy.
 void baseBlock::enter(Actor* actor)
 {
-	for(auto& [x, y, z, v] : actor->m_shape->m_positions)
+	for(auto& [x, y, z, v] : actor->m_shape->positions)
 	{
 		Block* block = offset(x, y, z);
-		block->recordActorAndVolume(actor, v);
+		block->m_actors[actor] = v;
+		block->m_totalDynamicVolume += v;
 	}
+	if(actor->m_location != nullptr)
+		actor->m_location->exit(actor);
 	actor->m_location = static_cast<Block*>(this);
 }
 void baseBlock::exit(Actor* actor)
 {
-	for(auto& [x, y, z, v] : actor->m_shape->m_positions)
+	for(auto& [x, y, z, v] : actor->m_shape->positions)
 	{
 		Block* block = offset(x, y, z);
-		block->removeActorAndVolume(actor, v);
+		block->m_actors.erase(actor);
+		block->m_totalDynamicVolume -= v;
 	}
 }
+/*
 // Add / remove nongeneric non-actor occupancy for this block and also any other blocks required by it's Shape.
 void baseBlock::place(HasShape* hasShape)
 {
-	for(auto& [x, y, z, v] : hasShape->m_shape->m_positions)
+	for(auto& [x, y, z, v] : hasShape->m_shape->positions)
 	{
 		Block* block = offset(x, y, z);
 		block->recordHasShapeAndVolume(hasShape, v);
@@ -127,7 +145,7 @@ void baseBlock::place(HasShape* hasShape)
 }
 void baseBlock::unplace(HasShape* hasShape)
 {
-	for(auto& [x, y, z, v] : hasShape->m_shape->m_positions)
+	for(auto& [x, y, z, v] : hasShape->m_shape->positions)
 	{
 		Block* block = offset(x, y, z);
 		block->removeHasShapeAndVolume(hasShape, v);

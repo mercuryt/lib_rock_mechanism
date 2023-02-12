@@ -21,7 +21,7 @@
 #include "../fluidGroup.h"
 #include "../hasScheduledEvents.h"
 
-static uint32_t s_step = 0;
+static uint32_t s_step = 1;
 BS::thread_pool_light s_pool;
 
 // Put custom member data declarations here
@@ -31,7 +31,7 @@ public:
 	bool canEnterEver() const;
 	bool moveTypeCanEnter(MoveType* moveType) const;
 	bool canEnterCurrently(Actor* actor) const;
-	uint32_t getMoveCost(MoveType* moveType, Block* origin) const;
+	uint32_t moveCost(MoveType* moveType, Block* origin) const;
 
 	bool canSeeThrough() const;
 
@@ -40,8 +40,6 @@ public:
 
 	bool isSupport() const;
 	uint32_t getMass() const;
-
-	void moveContentsTo(Block* block);
 };
 
 class Actor : public baseActor
@@ -60,6 +58,7 @@ public:
 class Area : public baseArea
 {
 public:
+	Area(uint32_t x, uint32_t y, uint32_t z) : baseArea(x, y, z) {}
 	void notifyNoRouteFound(Actor* actor);
 };
 
@@ -83,7 +82,7 @@ bool Block::moveTypeCanEnter(MoveType* moveType) const
 	return true;
 }
 // Get a move cost for moving from a block onto this one for a given move type.
-uint32_t Block::getMoveCost(MoveType* moveType, Block* from) const
+uint32_t Block::moveCost(MoveType* moveType, Block* from) const
 {
 	return 10;
 }
@@ -137,25 +136,48 @@ void Actor::doFall(uint32_t distance, Block* block)
 void Actor::exposedToFluid(FluidType* fluidType)
 {
 }
+bool Actor::isVisible(Actor* observer) const
+{
+	return true;
+}
 // Tell the player that an attempted pathing operation is not possible.
 void Area::notifyNoRouteFound(Actor* actor) { }
 
+MoveType* s_twoLegs;
+MoveType* s_fourLegs;
+FluidType* s_water;
+FluidType* s_CO2;
+FluidType* s_lava;
+MaterialType* s_stone;
+Shape* s_oneByOneFull;
+Shape* s_oneByOneHalfFull;
+Shape* s_oneByOneQuarterFull;
+Shape* s_twoByTwoFull;
+
 void registerTypes()
 {
-	MoveType* twoLegs = registerMoveType("two legs");
-	MoveType* fourLegs = registerMoveType("four legs");
+	s_twoLegs = registerMoveType("two legs");
+	s_fourLegs = registerMoveType("four legs");
 
 	// name, viscosity, density
-	FluidType* water = registerFluidType("water", 100, 100);
-	FluidType* CO2 = registerFluidType("CO2", 100, 10);
-	FluidType* lava = registerFluidType("lava", 100, 200);
+	s_water = registerFluidType("water", 100, 100);
+	s_CO2 = registerFluidType("CO2", 100, 10);
+	s_lava = registerFluidType("lava", 100, 200);
 
 	// name, density
-	MaterialType* stone = registerMaterialType("stone", 100);
+	s_stone = registerMaterialType("stone", 100);
 
 	// name, offsets and volumes
-	Shape* oneByOneFull = registerShape("oneByOneFull", {{0,0,0,100}});
-	Shape* oneByOneHalfFull = registerShape("oneByOneHalfFull", {{0,0,0,50}});
-	Shape* oneByOneQuarterFull = registerShape("oneByOneQuarterFull", {{0,0,0,25}});
-	Shape* twoByTwoFull = registerShape("twoByTwoFull", {{0,0,0,100}, {1,0,0,100}, {0,1,0,100}, {1,1,0,100}});
+	s_oneByOneFull = registerShape("oneByOneFull", {{0,0,0,100}});
+	s_oneByOneHalfFull = registerShape("oneByOneHalfFull", {{0,0,0,50}});
+	s_oneByOneQuarterFull = registerShape("oneByOneQuarterFull", {{0,0,0,25}});
+	s_twoByTwoFull = registerShape("twoByTwoFull", {{0,0,0,100}, {1,0,0,100}, {0,1,0,100}, {1,1,0,100}});
+}
+
+// Test helpers.
+void SetSolidLayer(Area& area, uint32_t z, MaterialType* materialType)
+{
+	for(uint32_t x = 0; x != area.m_sizeX; ++x)
+		for(uint32_t y = 0; y != area.m_sizeY; ++y)
+			area.m_blocks[x][y][z].m_solid = materialType;
 }

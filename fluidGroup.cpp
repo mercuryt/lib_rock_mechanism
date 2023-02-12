@@ -36,7 +36,7 @@ void FluidGroup::addBlock(Block* block, bool checkMerge)
 	std::unordered_set<FluidGroup*> toMerge;
 	for(Block* adjacent : block->m_adjacents)
 	{
-		if(!adjacent->fluidCanEnterEver(m_fluidType) || m_blocks.contains(adjacent))
+		if(adjacent == nullptr || !adjacent->fluidCanEnterEver(m_fluidType) || m_blocks.contains(adjacent))
 		       continue;
 		if(adjacent->fluidCanEnterCurrently(m_fluidType))
 			m_fillQueue.emplace_back(adjacent, 0, 0);
@@ -54,14 +54,15 @@ void FluidGroup::addBlock(Block* block, bool checkMerge)
 void FluidGroup::removeBlockInternal(Block* block)
 {
 	m_blocks.erase(block);
-	std::erase(m_drainQueue, block);
-	std::erase(m_fillQueue, block);
+	auto ifBlock = [&](FutureFluidBlock& futureFluidBlock){ return futureFluidBlock.block == block; };
+	std::erase_if(m_drainQueue, ifBlock);
+	std::erase_if(m_fillQueue, ifBlock);
 }
 void FluidGroup::removeBlocksInternal(std::unordered_set<Block*>& blocks)
 {
 	std::erase_if(m_blocks, [&](Block* block){ return blocks.contains(block); });
-	std::erase_if(m_drainQueue, [&](Block* block){ return blocks.contains(block); });
-	std::erase_if(m_fillQueue, [&](Block* block){ return blocks.contains(block); });
+	std::erase_if(m_drainQueue, [&](FutureFluidBlock futureFluidBlock){ return blocks.contains(futureFluidBlock.block); });
+	std::erase_if(m_fillQueue, [&](FutureFluidBlock futureFluidBlock){ return blocks.contains(futureFluidBlock.block); });
 }
 void FluidGroup::removeBlock(Block* block)
 {
@@ -75,31 +76,28 @@ void FluidGroup::removeBlock(Block* block)
 void FluidGroup::absorb(FluidGroup* fluidGroup)
 {
 	// Insert other group drain queue at this groups drain group end so the two drain groups are contiguous.
-	// TODO: copy_if?
-	std::vector<FutureFluidBlock*> toCopy;
-	uint32_t fluidGroupDrainGroupSize = std::distance(fluidGroup->m_drainGroupBegin, fluidGroup->m_drainGroupEnd);
-	for(FutureFluidBlock& futureFluidBlock : fluidGroup->m_drainQueue)
-		if(!m_blocks.contains(futureFluidBlock.block))
-			toCopy.push_back(&futureFluidBlock);
-		// If the block already is recorded in this group and it's in the other fg's drain group then reduce drain group recorded size.
-		else if(&futureFluidBlock < &(*fluidGroup->m_drainGroupEnd))
-			--fluidGroupDrainGroupSize;
-	m_drainQueue.insert(m_drainGroupEnd, toCopy.begin(), toCopy.end());
-	// Add fluidGroup's drainGroup size ( minus redundant ) to drainGroupEnd.
-	m_drainGroupEnd += fluidGroupDrainGroupSize;
+	uint32_t drainGroupCount = std::distance(fluidGroup->m_drainGroupBegin, fluidGroup->m_drainGroupEnd);
+	std::erase_if(fluidGroup->m_drainQueue, [&](FutureFluidBlock& futureFluidBlock){ return m_blocks.contains(futureFluidBlock.block); });
+	m_drainQueue.insert(m_drainGroupEnd, fluidGroup->m_drainQueue.begin(), fluidGroup->m_drainQueue.end());
+	m_drainGroupEnd += drainGroupCount;
 
-	// And same for fill.
-	toCopy.clear();
-	std::unordered_set<FutureFluidBlock*> fillSet(m_fillQueue.begin(), m_fillQueue.end());
-	uint32_t fluidGroupFillGroupSize = std::distance(fluidGroup->m_fillGroupBegin, fluidGroup->m_fillGroupEnd);
-	for(FutureFluidBlock& futureFluidBlock : fluidGroup->m_fillQueue)
-		if(!fillSet.contains(&futureFluidBlock))
-			toCopy.push_back(&futureFluidBlock);
-		else if(&futureFluidBlock < &(*fluidGroup->m_fillGroupEnd))
-			--fluidGroupFillGroupSize;
-
-	m_fillQueue.insert(m_fillGroupEnd, toCopy.begin(), toCopy.end());
-	m_fillGroupEnd += fluidGroupFillGroupSize;
+	// And same for fill, but we might have overlaps here, discard them and add delta to excessVolume
+	std::unordered_set<Block*> fillSet;
+	for(FutureFluidBlock& futureFluidBlock : m_fillQueue)
+		fillSet.insert(futureFluidBlock.block);
+	uint32_t fillGroupCount = std::distance(fluidGroup->m_fillGroupBegin, fluidGroup->m_fillGroupEnd);
+	std::erase_if(fluidGroup->m_fillQueue, [&](FutureFluidBlock& futureFluidBlock){ 
+		if(!fillSet.contains(futureFluidBlock.block))
+			return false;
+		if(&futureFluidBlock < &(*(fluidGroup->m_fillGroupEnd)))
+		{
+			--fillGroupCount;
+			m_excessVolume += futureFluidBlock.delta;
+		}
+		return true;
+	});
+	m_fillQueue.insert(m_fillGroupEnd, fluidGroup->m_fillQueue.begin(), fluidGroup->m_fillQueue.end());
+	m_fillGroupEnd += fillGroupCount;
 
 	// Merge future empty.
 	m_futureEmpty.insert(fluidGroup->m_futureEmpty.begin(), fluidGroup->m_futureEmpty.end());
@@ -134,11 +132,13 @@ void FluidGroup::recordFill(uint32_t flowPerBlock, uint32_t flowMaximum, uint32_
 	}
 	// If the first fill block did not contain fluid of this type before this step then add all of fill group to m_futureNewlyAdded.
 	if(!m_fillGroupBegin->block->m_fluids.contains(m_fluidType))
-		m_futureNewlyAdded.insert(m_fillGroupBegin, m_fillGroupEnd);
+		for(auto iter = m_fillGroupBegin; iter != m_fillGroupEnd; ++iter)
+			m_futureNewlyAdded.insert(iter->block);
 	// If the fill group is now full then record it in m_futureFull and get the next one.
 	if(flowMaximum == flowCapacity)
 	{
-		m_futureFull.insert(m_fillGroupBegin, m_fillGroupEnd);
+		for(auto iter = m_fillGroupBegin; iter != m_fillGroupEnd; ++iter)
+			m_futureFull.insert(iter->block);
 		m_fillGroupBegin = m_fillGroupEnd;
 		m_fillGroupEnd = std::find_end(m_fillGroupBegin, m_fillGroupBegin + 1, m_fillGroupBegin, m_fillQueue.end(), isEqualFill);
 	}
@@ -157,11 +157,13 @@ void FluidGroup::recordDrain(uint32_t flowPerBlock, uint32_t flowMaximum, uint32
 	}
 	// If the first drain block did not have fill capacity before this step then add this group to newlyUnfull.
 	if(!m_drainGroupBegin->block->fluidCanEnterCurrently(m_fluidType))
-		m_futureUnfull.insert(m_drainGroupBegin, m_drainGroupEnd);
+		for(auto iter = m_drainGroupBegin; iter != m_drainGroupEnd; ++iter)
+			m_futureUnfull.insert(iter->block);
 	// If the group is now empty then record it in futureEmpty and get the next one.
 	if(flowCapacity == flowMaximum)
 	{
-		m_futureEmpty.insert(m_drainGroupBegin, m_drainGroupEnd);
+		for(auto iter = m_drainGroupBegin; iter != m_drainGroupEnd; ++iter)
+			m_futureEmpty.insert(iter->block);
 		m_drainGroupBegin = m_drainGroupEnd;
 		m_drainGroupEnd = std::find_end(m_drainGroupBegin, m_drainGroupBegin + 1, m_drainGroupBegin, m_drainQueue.end(), isEqualDrain);
 	}
@@ -232,7 +234,7 @@ void FluidGroup::readStep()
 				UINT32_MAX :
 				(m_fillGroupEnd->capacity - m_fillGroupBegin->capacity) * fillGroupCount
 		);
-		uint32_t flowMaximum = std::min(flowTillNextStep, flowCapacity, m_excessVolume);
+		uint32_t flowMaximum = std::min({flowTillNextStep, flowCapacity, m_excessVolume});
 		uint32_t flowPerBlock = flowMaximum / fillGroupCount;
 		uint32_t flow = flowPerBlock * fillGroupCount;
 		uint32_t roundingExcess = flowMaximum - flow;
@@ -252,7 +254,7 @@ void FluidGroup::readStep()
 		uint32_t flowTillNextStep = (m_drainGroupEnd == m_drainQueue.end())?
 			UINT32_MAX :
 			(m_drainGroupBegin->capacity - m_drainGroupEnd->capacity) * drainGroupCount;
-		uint32_t flowMaximum = std::min(flowCapacity, flowTillNextStep, m_excessVolume * -1);
+		uint32_t flowMaximum = std::min({flowCapacity, flowTillNextStep, m_excessVolume * -1});
 		uint32_t flowPerBlock = flowMaximum / drainGroupCount;
 		uint32_t flow = flowPerBlock * drainGroupCount;
 		uint32_t roundingExcess = flowMaximum - flow;
@@ -327,7 +329,7 @@ void FluidGroup::readStep()
 	std::unordered_set<Block*> adjacentToFutureEmpty;
 	for(Block* block : m_futureEmpty)
 		for(Block* adjacent : block->m_adjacents)
-			if(adjacent->fluidCanEnterEver(m_fluidType))
+			if(adjacent != nullptr && adjacent->fluidCanEnterEver(m_fluidType))
 				adjacentToFutureEmpty.insert(adjacent);
 	for(Block* block : adjacentToFutureEmpty)
 		// If they won't be empty then check for forming a new group as they may be detached.
@@ -349,7 +351,7 @@ void FluidGroup::readStep()
 		m_futureGroups.push_back(adjacents);
 	}
 	// Sort by size.
-	auto condition = [](std::unordered_set<Block*> a, std::unordered_set<Block*> b){a.size() > b.size();};
+	auto condition = [](std::unordered_set<Block*> a, std::unordered_set<Block*> b){ return a.size() > b.size(); };
 	std::sort(m_futureGroups.begin(), m_futureGroups.end(), condition);
 	// Find adjacent empty to remove from queue.
 	m_futureRemoveFromEmptyAdjacents.clear();
@@ -357,7 +359,7 @@ void FluidGroup::readStep()
 	{
 		for(Block* adjacent : block->m_adjacents)
 			// If adjacent to the largest group (the one that will continue to use this object).
-			if(m_futureGroups.front().contains(adjacent))
+			if(adjacent == nullptr || m_futureGroups.front().contains(adjacent))
 				continue;
 		m_futureRemoveFromEmptyAdjacents.insert(block);
 	}
@@ -367,7 +369,7 @@ void FluidGroup::readStep()
 	std::unordered_set<Block*> adjacentToNewlyAdded;
 	for(Block* block : m_futureNewlyAdded)
 		for(Block* adjacent : block->m_adjacents)
-			if(adjacent->fluidCanEnterEver(m_fluidType))
+			if(adjacent != nullptr && adjacent->fluidCanEnterEver(m_fluidType))
 				adjacentToNewlyAdded.insert(adjacent);
 	for(Block* block : adjacentToNewlyAdded)
 		if(!m_futureBlocks.contains(block))
@@ -379,7 +381,7 @@ void FluidGroup::readStep()
 	std::unordered_set<Block*> adjacents;
 	for(Block* block : m_futureUnfull)
 		for(Block* adjacent : block->m_adjacents)
-			if(adjacent->fluidCanEnterEver()) // note: not sending m_fluidType here because we want to know if any fluid can enter.
+			if(adjacent != nullptr && adjacent->fluidCanEnterEver()) // note: not sending m_fluidType here because we want to know if any fluid can enter.
 				adjacents.insert(adjacent);
 	// Record FluidGroups of adjacent blocks with another type of fluid.
 	for(Block* adjacent : adjacents)
@@ -403,6 +405,7 @@ void FluidGroup::writeStep()
 			// Mark as destroyed rather then destroying right away so as not to interfear with iteration.
 			fluidGroup->m_destroy = true;
 		}
+	// record new fluid levels
 	for(auto& iter = m_drainGroupBegin; iter != m_drainGroupEnd; ++iter)
 	{
 		iter->block->m_fluids[m_fluidType].first += iter->delta;
@@ -419,6 +422,7 @@ void FluidGroup::writeStep()
 		m_drainQueue.front().block->m_area->createFluidGroup(m_fluidType, futureGroup);
 		removeBlocksInternal(futureGroup);
 	}
+	//TODO: std::move m_futureBlocks to m_blocks.
 	// Record added blocks.
 	for(Block* block : m_futureNewlyAdded)
 		addBlockInternal(block);
