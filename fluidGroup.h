@@ -24,6 +24,8 @@ struct FutureFluidBlock
 };
 class FluidGroup
 {
+// public here is for testing, is there a better way?
+public:
 	// Blocks with contiguous fluid of the same type.
 	std::unordered_set<Block*> m_blocks;
 	// Blocks sorted by first to drain from, stored with fluid type volume and delta.
@@ -55,16 +57,17 @@ class FluidGroup
 	void removeBlocksInternal(std::unordered_set<Block*>& blocks);
 	//uint32_t futureVolumeForFluidType(Block* block) const;
 	//uint32_t futureTotalHeight(Block* block) const;
-	template<typename T>
-	void recordFill(uint32_t flowPerBlock, uint32_t flowMaximum, uint32_t flowCapacity, uint32_t flowTillNextStep, T isEqualFill);
-	template<typename T>
-	void recordDrain(uint32_t flowPerBlock, uint32_t flowMaximum, uint32_t flowCapacity, uint32_t flowTillNextStep, T isEqualDrain);
+	void fillGroupFindEnd();
+	void drainGroupFindEnd();
+	void recordFill(uint32_t flowPerBlock, uint32_t flowMaximum, uint32_t flowCapacity, uint32_t flowTillNextStep);
+	void recordDrain(uint32_t flowPerBlock, uint32_t flowMaximum, uint32_t flowCapacity, uint32_t flowTillNextStep);
 	uint32_t drainPriority(FutureFluidBlock& futureFluidBlock) const;
 	uint32_t fillPriority(FutureFluidBlock& futureFluidBlock) const;
+	void setUnstable();
 public:
 	FluidGroup(FluidType* ft, std::unordered_set<Block*> blocks);
-	uint32_t addFluid(uint32_t fluidVolume);
-	uint32_t removeFluid(uint32_t fluidVolume);
+	void addFluid(uint32_t fluidVolume);
+	void removeFluid(uint32_t fluidVolume);
 	// Not used by readStep because doesn't look at future.
 	void addBlock(Block* block, bool checkMerge = true);
 	void removeBlock(Block* block);

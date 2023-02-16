@@ -10,46 +10,49 @@ class Block;
 
 void baseArea::stepCaveInRead()
 {
-	std::vector<std::unordered_set<Block*>> chunks;
+	std::list<std::unordered_set<Block*>> chunks;
 	std::unordered_set<std::unordered_set<Block*>*> anchoredChunks;
 	std::unordered_map<Block*, std::unordered_set<Block*>*> chunksByBlock;
-	//TODO: caveInCheckMutex
 	std::deque<Block*> blockQueue;
-	blockQueue.insert(blockQueue.begin(), m_caveInCheck.begin(), m_caveInCheck.end());
+	//TODO: blockQueue.insert?
+	//blockQueue.insert(blockQueue.end(), m_caveInCheck.begin(), m_caveInCheck.end());
+	// For some reason the above line adds 64 elements to blockQueue rather then the expected 2.
+	for(Block* block : m_caveInCheck)
+		blockQueue.push_back(block);
 	std::stack<Block*> toAddToBlockQueue;
 	std::unordered_set<Block*> checklist(m_caveInCheck);
-	checklist.insert(m_caveInCheck.begin(), m_caveInCheck.end());
+	m_caveInCheck.clear();
+	m_caveInData.clear();
 	bool chunkFound;
 	bool blockIsAnchored;
 	bool prioritizeAdjacent;
-	Block* block;
 	while(!blockQueue.empty() && checklist.size() != 0)
 	{
-		block = blockQueue.front();
+		Block* block = blockQueue.front();
 		blockQueue.pop_front();
 		while(!toAddToBlockQueue.empty())
 			toAddToBlockQueue.pop();
-		// already recorded
+		// Already recorded.
 		if(chunksByBlock.contains(block))
 			continue;
 		chunkFound = blockIsAnchored = prioritizeAdjacent = false;
-		// search adjacent blocks for chunk to join
-		// we want to push_front the bottom block when no anchored chunks have been found
-		// this lets the algorithum start by trying to go straight down to establish an anchor point asap
-		// once one point is anchored the chunks will expand in a spherical shape until they touch or anchor
+		// Search adjacent blocks for chunk to join.
+		// We want to push_front the bottom block when no anchored chunks have been found.
+		// This lets the algorithum start by trying to go straight down to establish an anchor point asap.
+		// Once one point is anchored the chunks will expand in a spherical shape until they touch or anchor.
 		for(Block* adjacent : block->m_adjacents)
 		{
-			// if this block is on the edge of the area then it is anchored
+			// If this block is on the edge of the area then it is anchored.
 			if(adjacent == nullptr)
 			{
 				blockIsAnchored = true;
 				continue;
 			}
 
-			// if adjacent is not support then skip it
+			// If adjacent is not support then skip it.
 			if(!adjacent->isSupport())
 			{
-				// prioritize others if this is looking straight down
+				// Prioritize others if this is looking straight down.
 				if(adjacent == block->m_adjacents[0])
 					prioritizeAdjacent = true;
 				continue;
@@ -57,7 +60,7 @@ void baseArea::stepCaveInRead()
 
 			if(chunksByBlock.contains(adjacent))
 			{
-				// if adjacent to multiple different chunks merge them
+				// If adjacent to multiple different chunks merge them.
 				if(chunksByBlock.contains(block))
 				{
 					std::unordered_set<Block*>* oldChunk = chunksByBlock[block];
@@ -66,53 +69,52 @@ void baseArea::stepCaveInRead()
 					{
 						chunksByBlock[b] = newChunk;
 						newChunk->insert(b);
-						std::erase(chunks, *oldChunk);
 					}
-					// if old chunk was anchored then new chunk is as well
+					// If old chunk was anchored then new chunk is as well.
 					if(anchoredChunks.contains(oldChunk))
 					{
 						anchoredChunks.insert(newChunk);
-						//TODO: iterate checklist instead?
 						for(Block* b : *oldChunk)
 							checklist.erase(b);
 					}
+					std::erase(chunks, *oldChunk);
 				}
-				// record block membership in chunk
+				// Record block membership in chunk.
 				chunksByBlock[adjacent]->insert(block);
 				chunksByBlock[block] = chunksByBlock[adjacent];
 				/*
-				// if the chunk is anchored then no need to do anything else
+				// If the chunk is anchored then no need to do anything else.
 				if(anchoredChunks.includes(chuncksByBlock[adjacent]))
 					continue;
 				 */
 				chunkFound = true;
 			}
-			// if adjacent doesn't have a chunk then add it to the queue
+			// If adjacent doesn't have a chunk then add it to the queue.
 			else 
 			{
-				// put the below block (index 0) at the front of the queue until a first anchor is established
-				// if the below block is not support then prioritize all adjacent to get around the void
+				// Put the below block (index 0) at the front of the queue until a first anchor is established.
+				// If the below block is not support then prioritize all adjacent to get around the void.
 				if(anchoredChunks.empty() && (prioritizeAdjacent || adjacent == block->m_adjacents[0]))
 					blockQueue.push_front(adjacent);
 				else
 					toAddToBlockQueue.push(adjacent);
 			}
-		} // end for each adjacent
+		} // End for each adjacent.
 
-		// if no chunk found in adjacents then create a new one
+		// If no chunk found in adjacents then create a new one.
 		if(!chunkFound)
 		{
 			chunks.push_back({block});
 			chunksByBlock[block] = &chunks.back();
 		}
-		// record anchored chunks
+		// Record anchored chunks.
 		if(blockIsAnchored)
 		{
 			anchoredChunks.insert(chunksByBlock[block]);
 			for(Block* b : *chunksByBlock[block])
 				checklist.erase(b);
 		}
-		// append adjacent without chunks to end of blockQueue if block isn't anchored, if it is anchored then adjacent are as well
+		// Append adjacent without chunks to end of blockQueue if block isn't anchored, if it is anchored then adjacent are as well.
 		else if(!anchoredChunks.contains(chunksByBlock[block]))
 			while(!toAddToBlockQueue.empty())
 			{
@@ -120,8 +122,8 @@ void baseArea::stepCaveInRead()
 				toAddToBlockQueue.pop();
 			}
 
-	} // end for each blockQueue
-	// record unanchored chunks, fall distance and energy
+	} // End for each blockQueue.
+	// Record unanchored chunks, fall distance and energy.
 	std::vector<std::tuple<std::unordered_set<Block*>,uint32_t, uint32_t>> fallingChunksWithDistanceAndEnergy;
 	for(std::unordered_set<Block*>& chunk : chunks)
 	{
@@ -133,12 +135,13 @@ void baseArea::stepCaveInRead()
 			{
 				uint32_t verticalFallDistance = 0;
 				Block* below = block->m_adjacents[0];
-				while(!below->isSupport())
+				while(below != nullptr && !below->isSupport())
 				{
 					verticalFallDistance++;
 					below = below->m_adjacents[0];
 				}
-				// ignore blocks which are not on the bottom of the shape and internal voids
+				// Ignore blocks which are not on the bottom of the shape and internal voids.
+				// TODO: Allow user to do something with blocksAbsorbingImpact.
 				if(verticalFallDistance > 0 && !chunk.contains(below))
 				{
 					if(verticalFallDistance < smallestFallDistance)
@@ -156,19 +159,18 @@ void baseArea::stepCaveInRead()
 				}
 			}
 
-			// calculate energy of fall
+			// Calculate energy of fall.
 			uint32_t fallEnergy = 0;
 			for(Block* block : chunk)
 				fallEnergy += block->getMass();
 			fallEnergy *= smallestFallDistance;
 			
-			// store result to apply inside a write mutex
+			// Store result to apply inside a write mutex after sorting.
 			fallingChunksWithDistanceAndEnergy.emplace_back(chunk, smallestFallDistance, fallEnergy);
 		}
 	}
 
-	// sort by z low to high so blocks don't overwrite eachother when moved down
-	std::vector<std::tuple<std::vector<Block*>,uint32_t, uint32_t>> m_caveInData;
+	// Sort by z low to high so blocks don't overwrite eachother when moved down.
 	auto compare = [](Block* a, Block* b) { return a->m_z < b->m_z; };
 	for(auto& [chunk, fallDistance, fallEnergy] : fallingChunksWithDistanceAndEnergy)
 	{
@@ -179,15 +181,16 @@ void baseArea::stepCaveInRead()
 }
 void baseArea::stepCaveInWrite()
 {
-	// make chunks fall
+	// Make chunks fall.
 	for(auto& [chunk, fallDistance, fallEnergy] : m_caveInData)
 	{
 		uint32_t zDiff;
 		// Move blocks down.
+		Block* below;
 		for(Block* block : chunk)
 		{
 			zDiff = fallDistance;
-			Block* below = block;
+			below = block;
 			while(zDiff)
 			{
 				below = below->m_adjacents[0];
@@ -196,7 +199,7 @@ void baseArea::stepCaveInWrite()
 			block->moveContentsTo(below);
 		}
 		// We don't know if the thing we landed on was it's self anchored so add a block to caveInCheck to be checked next step.
-		m_caveInCheck.insert(*chunk.begin());
+		m_caveInCheck.insert(below);
 		//TODO: disperse energy of fall by 'mining' out blocks absorbing impact
 	}
 }

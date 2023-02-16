@@ -4,17 +4,17 @@
 
 #pragma once
 
-baseArea::baseArea(uint32_t x, uint32_t y, uint32_t z) : m_visionCacheVersion(0), m_routeCacheVersion(0), m_sizeX(x), m_sizeY(y), m_sizeZ(z)
+baseArea::baseArea(uint32_t x, uint32_t y, uint32_t z) : m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_visionCacheVersion(0), m_routeCacheVersion(0)
 {
 	// build m_blocks
 	m_blocks.resize(x);
-	for(int ix = 0; ix < x; ++ix)
+	for(uint32_t ix = 0; ix < x; ++ix)
 	{
 		m_blocks[ix].resize(y);
-		for(int iy = 0; iy < y; ++iy)
+		for(uint32_t iy = 0; iy < y; ++iy)
 		{
 			m_blocks[ix][iy].resize(z);
-			for(int iz = 0; iz < z; ++iz)
+			for(uint32_t iz = 0; iz < z; ++iz)
 				m_blocks[ix][iy][iz].setup(static_cast<Area*>(this), ix, iy, iz);
 		}
 	}
@@ -111,9 +111,11 @@ void baseArea::registerRouteRequest(Actor* actor)
 	m_routeRequestQueue.emplace_back(actor);
 }
 
-void baseArea::createFluidGroup(FluidType* fluidType, std::unordered_set<Block*> blocks)
+FluidGroup* baseArea::createFluidGroup(FluidType* fluidType, std::unordered_set<Block*> blocks)
 {
 	m_fluidGroups.emplace_back(fluidType, blocks);
+	m_unstableFluidGroups.insert(&m_fluidGroups.back());
+	return &m_fluidGroups.back();
 }
 void baseArea::expireVisionCache(){++m_visionCacheVersion;}
 void baseArea::expireRouteCache(){++m_routeCacheVersion;}

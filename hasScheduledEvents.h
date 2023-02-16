@@ -11,7 +11,9 @@ class ScheduledEvent
 public:
 	uint32_t m_step;
 	ScheduledEvent(uint32_t s);
+	virtual ~ScheduledEvent() {}
 	virtual void execute() = 0;
+protected:
 	friend class HasScheduledEvents;
 };
 

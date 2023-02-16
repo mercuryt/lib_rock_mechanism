@@ -5,10 +5,12 @@
 #pragma once
 
 #include <unordered_map>
+#include <map>
 #include <array>
 #include <stack>
 #include <memory>
 #include <vector>
+#include <string>
 
 #include "materialType.h"
 #include "moveType.h"
@@ -22,6 +24,11 @@ class HasShape;
 class Actor;
 class Area;
 class Block;
+
+struct SortByDensity
+{
+	bool operator()(const FluidType* a, const FluidType* b) const { return a->density < b->density; }
+};
 
 class baseBlock
 {
@@ -54,7 +61,7 @@ public:
 	// For loose generics: store material type and volume.
 	std::unordered_map<MaterialType*, uint32_t> m_genericSolids;
 	// For fluids: store fluidType, volume, and FluidGroup pointer.
-	std::unordered_map<FluidType*, std::pair<uint32_t, FluidGroup*>> m_fluids;
+	std::map<FluidType*, std::pair<uint32_t, FluidGroup*>, SortByDensity> m_fluids;
 	// For immobile non generics could be items or buildings.
 	std::unordered_map<HasShape*, uint32_t> m_nongenerics;
 	// Track Actors and their volume which is in this block.
@@ -73,14 +80,18 @@ public:
 	// Get block at offset coordinates.
 	Block* offset(uint32_t ax, uint32_t ay, uint32_t az) const;
 	// add fluid, handle falling / sinking, group membership, excessive quantity sent to fluid group.
-	void addFluid(uint32_t quantity, FluidType* fluidType);
+	void addFluid(uint32_t volume, FluidType* fluidType);
+	void removeFluid(uint32_t volume, FluidType* fluidType);
 	bool shapeCanEnterCurrently(Shape* shape) const;
 	bool canEnterEver(Actor* actor) const;
 	std::vector<std::pair<Block*, uint32_t>> getMoveCosts(Shape* shape, MoveType* moveType);
 	bool fluidCanEnterCurrently(FluidType* fluidType) const;
 	uint32_t volumeOfFluidTypeCanEnter(FluidType* fluidType) const;
+	// Move less dense fluids to their group's excessVolume until MAX_BLOCK_VOLUME is achieved.
+	void resolveFluidOverfull();
 	void enter(Actor* actor);
 	void exit(Actor* actor);
+	std::string toS();
 
 	// User provided.
 	bool moveTypeCanEnter(MoveType* moveType) const;

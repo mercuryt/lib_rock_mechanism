@@ -143,16 +143,16 @@ bool Actor::isVisible(Actor* observer) const
 // Tell the player that an attempted pathing operation is not possible.
 void Area::notifyNoRouteFound(Actor* actor) { }
 
-MoveType* s_twoLegs;
-MoveType* s_fourLegs;
-FluidType* s_water;
-FluidType* s_CO2;
-FluidType* s_lava;
-MaterialType* s_stone;
-Shape* s_oneByOneFull;
-Shape* s_oneByOneHalfFull;
-Shape* s_oneByOneQuarterFull;
-Shape* s_twoByTwoFull;
+static MoveType* s_twoLegs;
+static MoveType* s_fourLegs;
+static FluidType* s_water;
+static FluidType* s_CO2;
+static FluidType* s_lava;
+static MaterialType* s_stone;
+static Shape* s_oneByOneFull;
+static Shape* s_oneByOneHalfFull;
+static Shape* s_oneByOneQuarterFull;
+static Shape* s_twoByTwoFull;
 
 void registerTypes()
 {
@@ -175,9 +175,14 @@ void registerTypes()
 }
 
 // Test helpers.
-void SetSolidLayer(Area& area, uint32_t z, MaterialType* materialType)
+void setSolidLayer(Area& area, uint32_t z, MaterialType* materialType)
 {
 	for(uint32_t x = 0; x != area.m_sizeX; ++x)
 		for(uint32_t y = 0; y != area.m_sizeY; ++y)
 			area.m_blocks[x][y][z].m_solid = materialType;
+}
+void setSolidLayers(Area& area, uint32_t zbegin, uint32_t zend, MaterialType* materialType)
+{
+	for(;zbegin <= zend; ++zbegin)
+		setSolidLayer(area, zbegin, materialType);
 }

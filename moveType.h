@@ -10,7 +10,7 @@ struct MoveType
 	MoveType(std::string& n) : name(n) {}
 };
 
-std::vector<MoveType> moveTypes;
+static std::vector<MoveType> moveTypes;
 
 MoveType* registerMoveType(std::string name)
 {

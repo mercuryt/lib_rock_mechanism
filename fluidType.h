@@ -8,7 +8,7 @@ struct FluidType
 	FluidType(std::string& n, uint32_t v, uint32_t d) : name(n), viscosity(v), density(d) {}
 };
 
-std::vector<FluidType> fluidTypes;
+static std::vector<FluidType> fluidTypes;
 
 FluidType* registerFluidType(std::string name, uint32_t viscosity, uint32_t density)
 {
