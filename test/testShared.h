@@ -29,14 +29,14 @@ class Block : public baseBlock
 {
 public:
 	bool canEnterEver() const;
-	bool moveTypeCanEnter(MoveType* moveType) const;
+	bool moveTypeCanEnter(const MoveType* moveType) const;
 	bool canEnterCurrently(Actor* actor) const;
-	uint32_t moveCost(MoveType* moveType, Block* origin) const;
+	uint32_t moveCost(const MoveType* moveType, Block* origin) const;
 
 	bool canSeeThrough() const;
 
 	bool fluidCanEnterEver() const;
-	bool fluidCanEnterEver(FluidType* fluidType) const;
+	bool fluidCanEnterEver(const FluidType* fluidType) const;
 
 	bool isSupport() const;
 	uint32_t getMass() const;
@@ -52,7 +52,7 @@ public:
 	void taskComplete();
 	void doVision(std::unordered_set<Actor*> actors);
 	void doFall(uint32_t distance, Block* block);
-	void exposedToFluid(FluidType* fluidType);
+	void exposedToFluid(const FluidType* fluidType);
 };
 
 class Area : public baseArea
@@ -77,12 +77,12 @@ bool Block::canEnterEver() const
 	return m_solid == nullptr;
 }
 // Can this moveType enter ever?
-bool Block::moveTypeCanEnter(MoveType* moveType) const
+bool Block::moveTypeCanEnter(const MoveType* moveType) const
 {
 	return true;
 }
 // Get a move cost for moving from a block onto this one for a given move type.
-uint32_t Block::moveCost(MoveType* moveType, Block* from) const
+uint32_t Block::moveCost(const MoveType* moveType, Block* from) const
 {
 	return 10;
 }
@@ -94,7 +94,7 @@ bool Block::fluidCanEnterEver() const
 {
 	return m_solid == nullptr;
 }
-bool Block::fluidCanEnterEver(FluidType* fluidType) const
+bool Block::fluidCanEnterEver(const FluidType* fluidType) const
 {
 	return m_solid == nullptr;
 }
@@ -132,8 +132,8 @@ void Actor::doVision(std::unordered_set<Actor*> actors)
 void Actor::doFall(uint32_t distance, Block* block)
 {
 }
-// Take temperateru damage, get wet, get dirty, etc.
-void Actor::exposedToFluid(FluidType* fluidType)
+// Take temperature damage, get wet, get dirty, etc.
+void Actor::exposedToFluid(const FluidType* fluidType)
 {
 }
 bool Actor::isVisible(Actor* observer) const
@@ -143,16 +143,16 @@ bool Actor::isVisible(Actor* observer) const
 // Tell the player that an attempted pathing operation is not possible.
 void Area::notifyNoRouteFound(Actor* actor) { }
 
-static MoveType* s_twoLegs;
-static MoveType* s_fourLegs;
-static FluidType* s_water;
-static FluidType* s_CO2;
-static FluidType* s_lava;
-static MaterialType* s_stone;
-static Shape* s_oneByOneFull;
-static Shape* s_oneByOneHalfFull;
-static Shape* s_oneByOneQuarterFull;
-static Shape* s_twoByTwoFull;
+const static MoveType* s_twoLegs;
+const static MoveType* s_fourLegs;
+const static FluidType* s_water;
+const static FluidType* s_CO2;
+const static FluidType* s_lava;
+const static MaterialType* s_stone;
+const static Shape* s_oneByOneFull;
+const static Shape* s_oneByOneHalfFull;
+const static Shape* s_oneByOneQuarterFull;
+const static Shape* s_twoByTwoFull;
 
 void registerTypes()
 {
@@ -161,8 +161,8 @@ void registerTypes()
 
 	// name, viscosity, density
 	s_water = registerFluidType("water", 100, 100);
-	s_CO2 = registerFluidType("CO2", 100, 10);
-	s_lava = registerFluidType("lava", 100, 200);
+	s_CO2 = registerFluidType("CO2", 200, 10);
+	s_lava = registerFluidType("lava", 20, 200);
 
 	// name, density
 	s_stone = registerMaterialType("stone", 100);
@@ -175,13 +175,13 @@ void registerTypes()
 }
 
 // Test helpers.
-void setSolidLayer(Area& area, uint32_t z, MaterialType* materialType)
+void setSolidLayer(Area& area, uint32_t z, const MaterialType* materialType)
 {
 	for(uint32_t x = 0; x != area.m_sizeX; ++x)
 		for(uint32_t y = 0; y != area.m_sizeY; ++y)
 			area.m_blocks[x][y][z].m_solid = materialType;
 }
-void setSolidLayers(Area& area, uint32_t zbegin, uint32_t zend, MaterialType* materialType)
+void setSolidLayers(Area& area, uint32_t zbegin, uint32_t zend, const MaterialType* materialType)
 {
 	for(;zbegin <= zend; ++zbegin)
 		setSolidLayer(area, zbegin, materialType);

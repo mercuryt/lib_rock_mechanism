@@ -6,6 +6,7 @@ TEST_CASE("Make Area")
 	CHECK(area.m_sizeZ == 100);
 	registerTypes();
 	setSolidLayer(area, 0, s_stone);
+	CHECK(s_water->name == "water");
 	CHECK(area.m_blocks[50][50][0].m_solid == s_stone);
 	area.stepCaveInRead();
 	area.stepCaveInWrite();
