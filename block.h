@@ -39,7 +39,7 @@ public:
 	// below = 0, < = 1, ^ = 2, > = 3, v = 4, above = 5.
 	std::array<Block*, 6> m_adjacents;
 	// Store routes to other blocks by Shape*, MoveType* and destination*  
-	std::unordered_map<Shape*, std::unordered_map<MoveType*, std::unordered_map<Block*, 
+	std::unordered_map<const Shape*, std::unordered_map<const MoveType*, std::unordered_map<Block*, 
 		std::shared_ptr<std::vector<Block*>>
 	>>> m_routeCache;
 	// Store blocks in default vision.
@@ -48,10 +48,10 @@ public:
 	uint32_t m_routeCacheVersion;
 	uint32_t m_visionCacheVersion;
 	// Cache adjacent move costs. No version number: cleared only by changes to self / adjacent / diagonal. 
-	std::unordered_map<Shape*, std::unordered_map<MoveType*, std::vector<std::pair<Block*, uint32_t>>>> m_moveCostsCache;
+	std::unordered_map<const Shape*, std::unordered_map<const MoveType*, std::vector<std::pair<Block*, uint32_t>>>> m_moveCostsCache;
 
 	// If this block is solid stone, solid dirt, etc. then store it here. Otherwise nullptr.
-	MaterialType* m_solid;
+	const MaterialType* m_solid;
 	// Store a total occupied volume from actors.
 	uint32_t m_totalDynamicVolume;
 	// Store a total occupied volume from genericSolids and nongenerics.
@@ -59,9 +59,9 @@ public:
 	// Store a total occupied volume from fluids.
 	uint32_t m_totalFluidVolume;
 	// For loose generics: store material type and volume.
-	std::unordered_map<MaterialType*, uint32_t> m_genericSolids;
+	std::unordered_map<const MaterialType*, uint32_t> m_genericSolids;
 	// For fluids: store fluidType, volume, and FluidGroup pointer.
-	std::map<FluidType*, std::pair<uint32_t, FluidGroup*>, SortByDensity> m_fluids;
+	std::map<const FluidType*, std::pair<uint32_t, FluidGroup*>, SortByDensity> m_fluids;
 	// For immobile non generics could be items or buildings.
 	std::unordered_map<HasShape*, uint32_t> m_nongenerics;
 	// Track Actors and their volume which is in this block.
@@ -74,19 +74,20 @@ public:
 	uint32_t distance(Block* block) const;
 	uint32_t taxiDistance(Block* block) const;
 	// Validate the nongeneric object can enter this block and also any other blocks required by it's Shape comparing to m_totalStaticVolume.
-	bool shapeCanEnterEver(Shape* shape) const;
+	bool shapeCanEnterEver(const Shape* shape) const;
 	// Get the FluidGroup for this fluid type in this block.
-	FluidGroup* getFluidGroup(FluidType* fluidType) const;
+	FluidGroup* getFluidGroup(const FluidType* fluidType) const;
 	// Get block at offset coordinates.
 	Block* offset(uint32_t ax, uint32_t ay, uint32_t az) const;
 	// add fluid, handle falling / sinking, group membership, excessive quantity sent to fluid group.
-	void addFluid(uint32_t volume, FluidType* fluidType);
-	void removeFluid(uint32_t volume, FluidType* fluidType);
-	bool shapeCanEnterCurrently(Shape* shape) const;
+	void addFluid(uint32_t volume, const FluidType* fluidType);
+	void removeFluid(uint32_t volume, const FluidType* fluidType);
+	bool shapeCanEnterCurrently(const Shape* shape) const;
 	bool canEnterEver(Actor* actor) const;
-	std::vector<std::pair<Block*, uint32_t>> getMoveCosts(Shape* shape, MoveType* moveType);
-	bool fluidCanEnterCurrently(FluidType* fluidType) const;
-	uint32_t volumeOfFluidTypeCanEnter(FluidType* fluidType) const;
+	std::vector<std::pair<Block*, uint32_t>> getMoveCosts(const Shape* shape, const MoveType* moveType);
+	bool fluidCanEnterCurrently(const FluidType* fluidType) const;
+	uint32_t volumeOfFluidTypeCanEnter(const FluidType* fluidType) const;
+	uint32_t volumeOfFluidTypeContains(const FluidType* fluidType) const;
 	// Move less dense fluids to their group's excessVolume until MAX_BLOCK_VOLUME is achieved.
 	void resolveFluidOverfull();
 	void enter(Actor* actor);
@@ -94,15 +95,15 @@ public:
 	std::string toS();
 
 	// User provided.
-	bool moveTypeCanEnter(MoveType* moveType) const;
+	bool moveTypeCanEnter(const MoveType* moveType) const;
 	bool canEnterCurrently(Actor* actor) const;
 	bool canEnterEver() const;
-	uint32_t moveCost(MoveType* moveType, Block* origin) const;
+	uint32_t moveCost(const MoveType* moveType, Block* origin) const;
 
 	bool canSeeThrough() const;
 
 	bool fluidCanEnterEver() const;
-	bool fluidCanEnterEver(FluidType* fluidType) const;
+	bool fluidCanEnterEver(const FluidType* fluidType) const;
 
 	bool isSupport() const;
 	uint32_t getMass() const;

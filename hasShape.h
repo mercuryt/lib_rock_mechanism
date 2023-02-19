@@ -7,9 +7,9 @@ class Block;
 class HasShape
 {
 public:
-	Shape* m_shape;
+	const Shape* m_shape;
 	Block* m_location;
 	// Accessor methods allow derived classes to access without a class name qualifier?
-	Shape* getShape() { return m_shape; }
+	const Shape* getShape() { return m_shape; }
 	Block* getLocation() { return m_location; }
 };

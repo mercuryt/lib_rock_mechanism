@@ -1,17 +1,17 @@
 #pragma once
 
 #include <string>
-#include <vector>
+#include <list>
 
 struct MaterialType
 {
-	std::string name;
-	uint32_t mass;
+	const std::string name;
+	const uint32_t mass;
 
-	MaterialType(std::string& n, uint32_t m) : name(n), mass(m) {}
+	MaterialType(std::string n, uint32_t m) : name(n), mass(m) {}
 };
 
-static std::vector<MaterialType> materialTypes;
+static std::list<MaterialType> materialTypes;
 
 MaterialType* registerMaterialType(std::string name, uint32_t mass)
 {

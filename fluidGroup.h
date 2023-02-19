@@ -21,6 +21,8 @@ struct FutureFluidBlock
 	Block* block;
 	uint32_t capacity;
 	int32_t delta;
+	// No need to initalize capacity and delta here, they will be set at the begining of read step.
+	FutureFluidBlock(Block* b) : block(b) {}
 };
 class FluidGroup
 {
@@ -37,8 +39,9 @@ public:
 	// Currently at rest?
 	bool m_stable;
 	bool m_destroy;
-	FluidType* m_fluidType;
-	uint32_t m_excessVolume;
+	bool m_absorbed;
+	const FluidType* m_fluidType;
+	int32_t m_excessVolume;
 	std::unordered_set<Block*> m_futureBlocks;
 	std::unordered_set<Block*> m_futureEmpty;
 	std::unordered_set<Block*> m_futureFull;
@@ -59,13 +62,13 @@ public:
 	//uint32_t futureTotalHeight(Block* block) const;
 	void fillGroupFindEnd();
 	void drainGroupFindEnd();
-	void recordFill(uint32_t flowPerBlock, uint32_t flowMaximum, uint32_t flowCapacity, uint32_t flowTillNextStep);
-	void recordDrain(uint32_t flowPerBlock, uint32_t flowMaximum, uint32_t flowCapacity, uint32_t flowTillNextStep);
+	void recordFill(uint32_t flowPerBlock, uint32_t flowCapacity, uint32_t flowTillNextStep);
+	void recordDrain(uint32_t flowPerBlock, uint32_t flowCapacity, uint32_t flowTillNextStep);
 	uint32_t drainPriority(FutureFluidBlock& futureFluidBlock) const;
 	uint32_t fillPriority(FutureFluidBlock& futureFluidBlock) const;
 	void setUnstable();
 public:
-	FluidGroup(FluidType* ft, std::unordered_set<Block*> blocks);
+	FluidGroup(const FluidType* ft, std::unordered_set<Block*> blocks);
 	void addFluid(uint32_t fluidVolume);
 	void removeFluid(uint32_t fluidVolume);
 	// Not used by readStep because doesn't look at future.

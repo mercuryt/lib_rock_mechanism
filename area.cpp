@@ -40,21 +40,8 @@ void baseArea::readStep()
 	// calculate cave in
 	s_pool.push_task([&](){stepCaveInRead();});
 	// calculate flow
-	std::vector<FluidGroup*> m_setStable, m_toDestroy;
 	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
-	{
-		if(fluidGroup->m_stable)
-		{
-			m_setStable.push_back(fluidGroup);
-			continue;
-		}
-		if(fluidGroup->m_destroy)
-		{
-			m_toDestroy.push_back(fluidGroup);
-			continue;
-		}
 		s_pool.push_task([&](){ fluidGroup->readStep(); });
-	}
 	// calculate routes
 	for(RouteRequest& routeRequest : m_routeRequestQueue)
 		s_pool.push_task([&](){ routeRequest.readStep(); });
@@ -71,12 +58,10 @@ void baseArea::writeStep()
 		expireVisionCache();
 	}
 	// apply flow
-	std::erase_if(m_unstableFluidGroups, [&](FluidGroup* fluidGroup){ return m_setStable.contains(fluidGroup); });
-	m_setStable.clear();
-	std::erase_if(m_fluidGroups, [&](FluidGroup& fluidGroup){ return m_toDestroy.contains(&fluidGroup); });
-	m_toDestroy.clear();
 	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
 		fluidGroup->writeStep();
+	std::erase_if(m_unstableFluidGroups, [](FluidGroup* fluidGroup){ return fluidGroup->m_stable || fluidGroup->m_destroy || fluidGroup->m_absorbed; });
+	std::erase_if(m_fluidGroups, [](FluidGroup& fluidGroup){ return fluidGroup.m_destroy || fluidGroup.m_absorbed; });
 	// apply routes
 	for(RouteRequest& routeRequest : m_routeRequestQueue)
 		routeRequest.writeStep();
@@ -111,7 +96,7 @@ void baseArea::registerRouteRequest(Actor* actor)
 	m_routeRequestQueue.emplace_back(actor);
 }
 
-FluidGroup* baseArea::createFluidGroup(FluidType* fluidType, std::unordered_set<Block*> blocks)
+FluidGroup* baseArea::createFluidGroup(const FluidType* fluidType, std::unordered_set<Block*> blocks)
 {
 	m_fluidGroups.emplace_back(fluidType, blocks);
 	m_unstableFluidGroups.insert(&m_fluidGroups.back());

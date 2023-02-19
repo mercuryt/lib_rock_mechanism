@@ -26,7 +26,7 @@ public:
 	Block* m_destination;
 	std::shared_ptr<std::vector<Block*>> m_route;
 	std::vector<Block*>::const_iterator m_routeIter;
-	MoveType* m_moveType;
+	const MoveType* m_moveType;
 	ScheduledEvent* m_taskEvent;
 
 	baseActor();
@@ -42,7 +42,7 @@ public:
 	uint32_t getVisionRange() const;
 	void taskComplete();
 	void doVision(std::unordered_set<Actor*> actors);
-	void exposedToFluid(FluidType* fluidType);
+	void exposedToFluid(const FluidType* fluidType);
 
 	
 };

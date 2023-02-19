@@ -4,24 +4,26 @@
 
 #pragma once
 
+#include <list> 
 #include <vector> 
 #include <array> 
+#include <string>
 
 struct Shape
 {
-	std::string name;
+	const std::string name;
 	std::vector<std::array<uint32_t, 4>> positions;
 	Shape(std::string n, std::vector<std::array<uint32_t, 4>>& p);
 };
 
-static std::vector<Shape> s_shapes;
+static std::list<Shape> s_shapes;
 
 Shape::Shape(std::string n, std::vector<std::array<uint32_t, 4>>& p) : name(n)
 {
 	positions = p;
 }
 
-Shape* registerShape(std::string name, std::vector<std::array<uint32_t, 4>> positions)
+const Shape* registerShape(std::string name, std::vector<std::array<uint32_t, 4>> positions)
 {
 	s_shapes.emplace_back(name, positions);
 	//TODO: rotations

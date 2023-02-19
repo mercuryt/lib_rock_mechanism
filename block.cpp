@@ -42,7 +42,7 @@ uint32_t baseBlock::taxiDistance(Block* block) const
 	return abs((int)m_x - (int)block->m_x) + abs((int)m_y - (int)block->m_y) + abs((int)m_z - (int)block->m_z);
 }
 //TODO: This code puts the fluid into an adjacent group of the correct type if it can find one, it does not add the block or merge groups, leaving these tasks to fluidGroup readStep. Is this ok?
-void baseBlock::addFluid(uint32_t volume, FluidType* fluidType)
+void baseBlock::addFluid(uint32_t volume, const FluidType* fluidType)
 {
 	FluidGroup* fluidGroup = nullptr;
 	if(m_fluids.contains(fluidType))
@@ -68,14 +68,14 @@ void baseBlock::addFluid(uint32_t volume, FluidType* fluidType)
 	}
 	fluidGroup->addFluid(volume);
 }
-void baseBlock::removeFluid(uint32_t volume, FluidType* fluidType)
+void baseBlock::removeFluid(uint32_t volume, const FluidType* fluidType)
 {
 	m_fluids.at(fluidType).second->removeFluid(volume);
 }
 // Validate the nongeneric object can enter this block and also any other blocks required by it's Shape.
 // TODO: Caches other blocks by Shape*?
 // TODO: optimize for 1x1 case?
-bool baseBlock::shapeCanEnterEver(Shape* shape) const
+bool baseBlock::shapeCanEnterEver(const Shape* shape) const
 {
 	for(auto& [m_x, m_y, m_z, v] : shape->positions)
 	{
@@ -85,7 +85,7 @@ bool baseBlock::shapeCanEnterEver(Shape* shape) const
 	}
 	return true;
 }
-bool baseBlock::shapeCanEnterCurrently(Shape* shape) const
+bool baseBlock::shapeCanEnterCurrently(const Shape* shape) const
 {
 	for(auto& [x, y, z, v] : shape->positions)
 	{
@@ -104,7 +104,7 @@ Block* baseBlock::offset(uint32_t ax, uint32_t ay, uint32_t az) const
 		return nullptr;
 	return &m_area->m_blocks[ax][ay][az];
 }
-std::vector<std::pair<Block*, uint32_t>> baseBlock::getMoveCosts(Shape* shape, MoveType* moveType)
+std::vector<std::pair<Block*, uint32_t>> baseBlock::getMoveCosts(const Shape* shape, const MoveType* moveType)
 {
 	std::vector<std::pair<Block*, uint32_t>> output;
 	for(Block* block : m_adjacents)
@@ -112,7 +112,7 @@ std::vector<std::pair<Block*, uint32_t>> baseBlock::getMoveCosts(Shape* shape, M
 			output.emplace_back(block, block->moveCost(moveType, static_cast<Block*>(this)));
 	return output;
 }
-bool baseBlock::fluidCanEnterCurrently(FluidType* fluidType) const
+bool baseBlock::fluidCanEnterCurrently(const FluidType* fluidType) const
 {
 	if(m_totalFluidVolume < MAX_BLOCK_VOLUME)
 		return true;
@@ -121,7 +121,7 @@ bool baseBlock::fluidCanEnterCurrently(FluidType* fluidType) const
 			return true;
 	return false;
 }
-uint32_t baseBlock::volumeOfFluidTypeCanEnter(FluidType* fluidType) const
+uint32_t baseBlock::volumeOfFluidTypeCanEnter(const FluidType* fluidType) const
 {
 	uint32_t output = MAX_BLOCK_VOLUME;
 	for(auto& pair : m_fluids)
@@ -129,7 +129,13 @@ uint32_t baseBlock::volumeOfFluidTypeCanEnter(FluidType* fluidType) const
 			output -= pair.second.first;
 	return output;
 }
-FluidGroup* baseBlock::getFluidGroup(FluidType* fluidType) const
+uint32_t baseBlock::volumeOfFluidTypeContains(const FluidType* fluidType) const
+{
+	if(!m_fluids.contains(fluidType))
+		return 0;
+	return m_fluids.at(fluidType).first;
+}
+FluidGroup* baseBlock::getFluidGroup(const FluidType* fluidType) const
 {
 	if(!m_fluids.contains(fluidType))
 		return nullptr;
@@ -137,7 +143,7 @@ FluidGroup* baseBlock::getFluidGroup(FluidType* fluidType) const
 }
 void baseBlock::resolveFluidOverfull()
 {
-	std::vector<FluidType*> toErase;
+	std::vector<const FluidType*> toErase;
 	for(auto& [fluidType, pair] : m_fluids)
 	{
 		// Displace lower density fluids.
@@ -153,7 +159,7 @@ void baseBlock::resolveFluidOverfull()
 		if(m_totalFluidVolume == MAX_BLOCK_VOLUME)
 			break;
 	}
-	for(FluidType* fluidType : toErase)
+	for(const FluidType* fluidType : toErase)
 		m_fluids.erase(fluidType);
 }
 void baseBlock::moveContentsTo(Block* block)
@@ -187,7 +193,10 @@ void baseBlock::exit(Actor* actor)
 std::string baseBlock::toS()
 {
 	std::string materialName = m_solid == nullptr ? "empty" : m_solid->name;
-	return std::to_string(m_x) + ", " + std::to_string(m_y) + ", " + std::to_string(m_z) + ": " + materialName;
+	std::string output = std::to_string(m_x) + ", " + std::to_string(m_y) + ", " + std::to_string(m_z) + ": " + materialName + ";";
+	for(auto& [fluidType, pair] : m_fluids)
+		output += fluidType->name + ":" + std::to_string(pair.first) + ";";
+	return output;
 }
 /*
 // Add / remove nongeneric non-actor occupancy for this block and also any other blocks required by it's Shape.

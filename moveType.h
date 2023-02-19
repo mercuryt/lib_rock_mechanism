@@ -1,18 +1,18 @@
 #pragma once 
 
 #include <string>
-#include <vector>
+#include <list>
 
 struct MoveType
 {
-	std::string name;
+	const std::string name;
 
 	MoveType(std::string& n) : name(n) {}
 };
 
-static std::vector<MoveType> moveTypes;
+static std::list<MoveType> moveTypes;
 
-MoveType* registerMoveType(std::string name)
+const MoveType* registerMoveType(std::string name)
 {
 	moveTypes.emplace_back(name);
 	return &moveTypes.back();
