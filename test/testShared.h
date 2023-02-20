@@ -186,3 +186,10 @@ void setSolidLayers(Area& area, uint32_t zbegin, uint32_t zend, const MaterialTy
 	for(;zbegin <= zend; ++zbegin)
 		setSolidLayer(area, zbegin, materialType);
 }
+std::string toS(std::unordered_set<Block*>& blocks)
+{
+	std::string output = "set of " + std::to_string(blocks.size()) + " blocks";
+	for(Block* block : blocks)
+		output +='*' + block->toS();
+	return output;
+}
