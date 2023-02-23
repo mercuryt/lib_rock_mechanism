@@ -148,6 +148,7 @@ const static MoveType* s_fourLegs;
 const static FluidType* s_water;
 const static FluidType* s_CO2;
 const static FluidType* s_lava;
+const static FluidType* s_mercury;
 const static MaterialType* s_stone;
 const static Shape* s_oneByOneFull;
 const static Shape* s_oneByOneHalfFull;
@@ -163,6 +164,7 @@ void registerTypes()
 	s_water = registerFluidType("water", 100, 100);
 	s_CO2 = registerFluidType("CO2", 200, 10);
 	s_lava = registerFluidType("lava", 20, 200);
+	s_mercury = registerFluidType("mercury", 50, 200);
 
 	// name, density
 	s_stone = registerMaterialType("stone", 100);
