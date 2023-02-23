@@ -44,29 +44,43 @@ uint32_t baseBlock::taxiDistance(Block* block) const
 //TODO: This code puts the fluid into an adjacent group of the correct type if it can find one, it does not add the block or merge groups, leaving these tasks to fluidGroup readStep. Is this ok?
 void baseBlock::addFluid(uint32_t volume, const FluidType* fluidType)
 {
-	FluidGroup* fluidGroup = nullptr;
+	// If a suitable fluid group exists already then just add to it's excessVolume.
 	if(m_fluids.contains(fluidType))
-		fluidGroup = m_fluids[fluidType].second;
-	else
+	{
+		m_fluids[fluidType].second->addFluid(volume);
+		return;
+	}
+	m_fluids[fluidType].first = volume;
+	m_totalFluidVolume += volume;
+	// Remove from adjacent group's emptyAdjacents if full and density is lower or equal.
+	if(m_totalFluidVolume >= MAX_BLOCK_VOLUME)
 		for(Block* adjacent : m_adjacents)
-			if(adjacent != nullptr && adjacent->fluidCanEnterEver() && adjacent->m_fluids.contains(fluidType))
-			{
-				fluidGroup = adjacent->m_fluids[fluidType].second;
-				break;
-			}
+			for(auto& [otherFluidType, pair] : adjacent->m_fluids)
+				if(otherFluidType->density <= fluidType->density && !fluidCanEnterCurrently(otherFluidType))
+					pair.second->removeBlockAdjacent(static_cast<Block*>(this));
+	// Find fluid group.
+	FluidGroup* fluidGroup = nullptr;
+	for(Block* adjacent : m_adjacents)
+	{
+		if(adjacent == nullptr || !adjacent->fluidCanEnterEver())
+			continue;
+		if(adjacent->m_fluids.contains(fluidType))
+		{
+			fluidGroup = adjacent->m_fluids.at(fluidType).second;
+			fluidGroup->addBlock(static_cast<Block*>(this));
+			continue;
+		}
+
+	}
+	// Create fluid group.
 	if(fluidGroup == nullptr)
 	{
-		uint32_t capacity = volumeOfFluidTypeCanEnter(fluidType);
-		uint32_t flow = std::min(capacity, volume);
-		volume -= flow; // Any extra is added to the group's m_excessVolume
-		m_fluids[fluidType].first = flow;
-		m_totalFluidVolume += flow;
-		if(m_totalFluidVolume > MAX_BLOCK_VOLUME)
-			resolveFluidOverfull();
 		std::unordered_set<Block*> blocks({static_cast<Block*>(this)});
 		fluidGroup = m_area->createFluidGroup(fluidType, blocks);
 	}
-	fluidGroup->addFluid(volume);
+	// Shift less dense fluids to excessVolume.
+	if(m_totalFluidVolume > MAX_BLOCK_VOLUME)
+		resolveFluidOverfull();
 }
 void baseBlock::removeFluid(uint32_t volume, const FluidType* fluidType)
 {
@@ -144,6 +158,7 @@ FluidGroup* baseBlock::getFluidGroup(const FluidType* fluidType) const
 void baseBlock::resolveFluidOverfull()
 {
 	std::vector<const FluidType*> toErase;
+	// Fluid types are sorted by density.
 	for(auto& [fluidType, pair] : m_fluids)
 	{
 		// Displace lower density fluids.

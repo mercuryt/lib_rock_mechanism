@@ -10,6 +10,7 @@ public:
 		std::unordered_set<Block*> closedList;
 		std::stack<Block*> openList;
 		openList.push(block);
+		output.insert(block);
 		while(!openList.empty())
 		{
 			Block*& block = openList.top();

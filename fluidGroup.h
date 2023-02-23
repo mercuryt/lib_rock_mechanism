@@ -36,6 +36,8 @@ public:
 	// Blocks sorted by first to fill to, stored with fluid type capacity and delta.
 	std::vector<FutureFluidBlock> m_fillQueue;
 	std::vector<FutureFluidBlock>::iterator m_fillGroupBegin, m_fillGroupEnd;
+	// Non member adjacents.
+	std::unordered_set<Block*> m_emptyAdjacents;
 	// Currently at rest?
 	bool m_stable;
 	bool m_destroy;
@@ -45,9 +47,9 @@ public:
 	std::unordered_set<Block*> m_futureBlocks;
 	std::unordered_set<Block*> m_futureEmpty;
 	std::unordered_set<Block*> m_futureFull;
-	std::unordered_set<Block*> m_futureUnfull;
+	std::unordered_set<Block*> m_futureNewUnfullButNotEmpty;
 	std::unordered_set<Block*> m_futureNewlyAdded;
-	std::unordered_set<Block*> m_futureEmptyAdjacents;
+	std::unordered_set<Block*> m_futureNewEmptyAdjacents;
 	std::unordered_set<Block*> m_futureRemoveFromEmptyAdjacents;
 	std::unordered_set<FluidGroup*> m_futureMerge;
 	// For spitting into multiple fluidGroups.
@@ -58,6 +60,7 @@ public:
 	void addBlockInternal(Block* block);
 	void removeBlockInternal(Block* block);
 	void removeBlocksInternal(std::unordered_set<Block*>& blocks);
+	void removeBlockAdjacent(Block* block);
 	//uint32_t futureVolumeForFluidType(Block* block) const;
 	//uint32_t futureTotalHeight(Block* block) const;
 	void fillGroupFindEnd();
