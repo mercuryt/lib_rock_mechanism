@@ -46,7 +46,6 @@ void FluidGroup::addBlockInternal(Block* block)
 	else
 		std::erase_if(m_fillQueue, [&](FutureFluidBlock& futureFluidBlock){ return futureFluidBlock.block == block; });
 	block->m_fluids[m_fluidType].second = this;
-	m_emptyAdjacents.erase(block);
 }
 void FluidGroup::addBlock(Block* block, bool checkMerge)
 {
@@ -61,10 +60,7 @@ void FluidGroup::addBlock(Block* block, bool checkMerge)
 		  )
 			continue;
 		if(adjacent->fluidCanEnterCurrently(m_fluidType))
-		{
 			m_fillQueue.emplace_back(adjacent);
-			m_emptyAdjacents.insert(adjacent);
-		}
 		// Merge groups if needed.
 		if(checkMerge && adjacent->m_fluids.contains(m_fluidType))
 			toMerge.insert(adjacent->getFluidGroup(m_fluidType));
@@ -97,7 +93,6 @@ void FluidGroup::removeBlock(Block* block)
 }
 void FluidGroup::removeBlockAdjacent(Block* block)
 {
-	m_emptyAdjacents.erase(block);
 	std::erase_if(m_fillQueue, [&](FutureFluidBlock futureFluidBlock){ return futureFluidBlock.block == block; });
 }
 
@@ -148,10 +143,6 @@ void FluidGroup::absorb(FluidGroup* fluidGroup)
 	// Set fluidGroup for merged blocks.
 	for(Block* block : fluidGroup->m_blocks)
 		block->m_fluids.at(m_fluidType).second = this;
-	// Remove future blocks from other group's empty adjacents.
-	std::erase_if(fluidGroup->m_emptyAdjacents, [&](Block* block){ return m_futureBlocks.contains(block); });
-	// Merge empty adjacents.
-	m_emptyAdjacents.insert(fluidGroup->m_emptyAdjacents.begin(), fluidGroup->m_emptyAdjacents.end());
 	// Merge future empty.
 	m_futureEmpty.insert(fluidGroup->m_futureEmpty.begin(), fluidGroup->m_futureEmpty.end());
 	// Remove this group's futureEmptyAdjacents from other groups future unfull. Empty blocks don't belong in unfull.
@@ -175,10 +166,18 @@ void FluidGroup::absorb(FluidGroup* fluidGroup)
 	m_futureFull.insert(fluidGroup->m_futureFull.begin(), fluidGroup->m_futureFull.end());
 	// Merge newly added.
 	m_futureNewlyAdded.insert(fluidGroup->m_futureNewlyAdded.begin(), fluidGroup->m_futureNewlyAdded.end());
-	// Merge other groups ment to merge with fluidGroup with this group.
-	for(FluidGroup* otherFG : fluidGroup->m_futureMerge)
-		if(otherFG != this && otherFG->m_futureMerge.contains(fluidGroup))
-			absorb(otherFG);
+	// Merge other groups ment to merge with fluidGroup with this group instead.
+	for(auto& [otherFG, blocks] : fluidGroup->m_futurePotentialMerge)
+	{
+		if(otherFG == this)
+		       continue;
+		for(Block* block : blocks)
+			if(fluidGroup->m_futureBlocks.contains(block))
+			{
+				absorb(otherFG);
+				continue;
+			}
+	}
 }
 void FluidGroup::fillGroupFindEnd()
 {
@@ -278,9 +277,20 @@ void FluidGroup::readStep()
 	m_futureEmpty.clear();
 	m_futureNewEmptyAdjacents.clear();
 	m_futureGroups.clear();
-	m_futureMerge.clear();
-	m_futureNotifyUnfull.clear();
+	m_futurePotentialMerge.clear();
+	m_futureNotifyPotentialUnfullAdjacent.clear();
 	m_futureRemoveFromEmptyAdjacents.clear();
+	// Potentially insert into fill queue.
+	if(!m_potentiallyAddToFillQueueFromSyncronusCode.empty())
+	{
+		//TODO: Is it faster to maintain a persistant m_blocksInFillQueue?
+		for(FutureFluidBlock& futureFluidBlock : m_fillQueue)
+			m_potentiallyAddToFillQueueFromSyncronusCode.erase(futureFluidBlock.block);
+		for(Block* block : m_potentiallyAddToFillQueueFromSyncronusCode)
+			if(block->fluidCanEnterCurrently(m_fluidType))
+				m_fillQueue.emplace_back(block);
+		m_potentiallyAddToFillQueueFromSyncronusCode.clear();
+	}
 	// If there is no where to flow into there is nothing to do.
 	if(m_fillQueue.empty())
 	{
@@ -513,30 +523,45 @@ void FluidGroup::readStep()
 				adjacent->fluidCanEnterEver(m_fluidType) && !m_futureBlocks.contains(adjacent)
 			  )
 				m_futureNewEmptyAdjacents.insert(adjacent);
-	// -update empty adjacent
-	std::erase_if(m_emptyAdjacents, [&](Block* block){ 
-			return m_futureNewlyAdded.contains(block) || m_futureRemoveFromEmptyAdjacents.contains(block); });
-	m_emptyAdjacents.insert(m_futureNewEmptyAdjacents.begin(), m_futureNewEmptyAdjacents.end());
 	// -Find potential merge targets.
-	for(Block* block : m_emptyAdjacents)
-		// Block is adjacent to member block and contains the same fluid, potentialy merge groups.
+	// TODO: Make loops share bodies.
+	for(Block* block : m_futureNewEmptyAdjacents)
+		// Block is adjacent to a future member block and contains the same fluid, potentialy merge groups.
 		// Keep block in futureEmptyAdjacent, in case the merge doesn't happen due to the other group no longer being present in block.
-		if(block->m_fluids.contains(m_fluidType) && block->getFluidGroup(m_fluidType) != this)
-			m_futureMerge.insert(block->getFluidGroup(m_fluidType));
-	// -Find blocks adjacent to m_futureNewUnfullButNotEmpty to notify adjacent groups of different fluid type.
-	std::unordered_set<Block*> adjacents;
+		if(block->m_fluids.contains(m_fluidType))
+		{
+			FluidGroup* fluidGroup = block->getFluidGroup(m_fluidType);
+			if(fluidGroup != this)
+				m_futurePotentialMerge[fluidGroup].insert(block);
+		}
+	// Same for empty adjacents added last turn.
+	// This fixes an edge case where two groups flow into previously empty adjacent blocks in the same step.
+	for(Block* block : m_emptyAdjacentsAddedLastTurn)
+		if(block->m_fluids.contains(m_fluidType) && !m_futureRemoveFromEmptyAdjacents.contains(block))
+		{
+			FluidGroup* fluidGroup = block->getFluidGroup(m_fluidType);
+			if(fluidGroup != this)
+				m_futurePotentialMerge[fluidGroup].insert(block);
+		}
+	
+	// -Find blocks adjacent to m_futureNewUnfullButNotEmpty to notify adjacent groups of different fluid types.
+	// If fluid type could not enter futureNewUnfullButNotEmpty block then notify that it now can.
+	// TODO: What if it can't due to another fluid flowing into the block at the same time? Will overfull resolve automatically?
+	// What if the same block is inserted into a fill queue by multiple groups?
+	// TODO: Make loops share bodies.
+	// TODO: Can we merge newUnfullButNotEmpty with newEmpty? Maybe also with m_potentiallyAddToFillQueueFromSyncronusCode.
 	for(Block* block : m_futureNewUnfullButNotEmpty)
 		for(Block* adjacent : block->m_adjacents)
-			if(adjacent != nullptr && adjacent->fluidCanEnterEver()) // note: not sending m_fluidType here because we want to know if any fluid can enter.
-				adjacents.insert(adjacent);
-	// Record FluidGroups of adjacent blocks with another type of fluid.
-	for(Block* block : adjacents)
-		for(auto& [fluidType, pair] : block->m_fluids)
-			if(fluidType != m_fluidType)
-				for(Block* adjacent : block->m_adjacents)
-					// Add all adjacents which are members of this group to notify.
-					if(adjacent != nullptr && adjacent->m_fluids.contains(m_fluidType) && adjacent->m_fluids[m_fluidType].second == this)
-						m_futureNotifyUnfull[pair.second].insert(adjacent);
+			if(adjacent != nullptr && adjacent->fluidCanEnterEver())
+				for(auto& [fluidType, pair] : adjacent->m_fluids)
+					if(fluidType != m_fluidType )
+						m_futureNotifyPotentialUnfullAdjacent[pair.second].insert(block);
+	for(Block* block : m_futureNewEmptyAdjacents)
+		for(Block* adjacent : block->m_adjacents)
+			if(adjacent != nullptr && adjacent->fluidCanEnterEver())
+				for(auto& [fluidType, pair] : adjacent->m_fluids)
+					if(fluidType != m_fluidType )
+						m_futureNotifyPotentialUnfullAdjacent[pair.second].insert(block);
 	// -if there are any groups remove the largest one, it will continue to exist as this FluidGroup object.
 	if(!m_futureGroups.empty())
 		m_futureGroups.pop_back();
@@ -547,11 +572,14 @@ void FluidGroup::writeStep()
 	// Fluid groups may be marked absorbed during write iteration due to merge.
 	if(m_absorbed)
 		return;
-	// Record merge. Both groups must have recorded merge with each other at the end of their step to avoid merging with a group which is no longer where it was. First group absorbs subsequent groups.
-	for(FluidGroup* fluidGroup : m_futureMerge)
-		if(fluidGroup->m_futureMerge.contains(this))
-			//TODO: Does absorb handle the merge groups of absorbed FGs?
-			absorb(fluidGroup);
+	// Record merge. Check that at least one block still contains the group to be merged with. First group absorbs subsequent groups.
+	for(auto& [fluidGroup, blocks] : m_futurePotentialMerge)
+		for(Block* block : blocks)
+			if(block->m_fluids.contains(m_fluidType) && block->m_fluids.at(m_fluidType).second == fluidGroup)
+			{
+				absorb(fluidGroup);
+				continue;
+			}
 	// Record new fluid levels for drain group.
 	for(auto iter = m_drainQueue.begin(); iter != m_drainGroupEnd; ++iter)
 	{
@@ -599,15 +627,11 @@ void FluidGroup::writeStep()
 	// Record added empty adjacent.
 	for(Block* block : m_futureNewEmptyAdjacents)
 		m_fillQueue.emplace_back(block);
-	// Record newly unfull blocks for adjacent fluid groups of another type.
-	for(auto& [fluidGroup, blocks] : m_futureNotifyUnfull)
-		for(Block* block : blocks)
-			if(!(block->m_fluids.contains(fluidGroup->m_fluidType) && block->getFluidGroup(fluidGroup->m_fluidType) == fluidGroup) && block->fluidCanEnterCurrently(fluidGroup->m_fluidType))
-			{
-				fluidGroup->m_fillQueue.emplace_back(block);
-				fluidGroup->m_emptyAdjacents.insert(block);
-			}
+	// Record potential newly unfull blocks for adjacent fluid groups of another type.
+	for(auto& [fluidGroup, blocks] : m_futureNotifyPotentialUnfullAdjacent)
+		fluidGroup->m_potentiallyAddToFillQueueFromSyncronusCode.insert(blocks.begin(), blocks.end());
 	// Resolve overfull blocks.
 	for(Block* block : overfullBlocks)
 		block->resolveFluidOverfull();
+	m_emptyAdjacentsAddedLastTurn.swap(m_futureNewEmptyAdjacents);
 }

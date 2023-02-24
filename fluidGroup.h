@@ -36,14 +36,14 @@ public:
 	// Blocks sorted by first to fill to, stored with fluid type capacity and delta.
 	std::vector<FutureFluidBlock> m_fillQueue;
 	std::vector<FutureFluidBlock>::iterator m_fillGroupBegin, m_fillGroupEnd;
-	// Non member adjacents.
-	std::unordered_set<Block*> m_emptyAdjacents;
 	// Currently at rest?
 	bool m_stable;
 	bool m_destroy;
 	bool m_absorbed;
 	const FluidType* m_fluidType;
 	int32_t m_excessVolume;
+	std::unordered_set<Block*> m_emptyAdjacentsAddedLastTurn;
+	std::unordered_set<Block*> m_potentiallyAddToFillQueueFromSyncronusCode;
 	std::unordered_set<Block*> m_futureBlocks;
 	std::unordered_set<Block*> m_futureEmpty;
 	std::unordered_set<Block*> m_futureFull;
@@ -51,11 +51,11 @@ public:
 	std::unordered_set<Block*> m_futureNewlyAdded;
 	std::unordered_set<Block*> m_futureNewEmptyAdjacents;
 	std::unordered_set<Block*> m_futureRemoveFromEmptyAdjacents;
-	std::unordered_set<FluidGroup*> m_futureMerge;
+	std::unordered_map<FluidGroup*, std::unordered_set<Block*>> m_futurePotentialMerge;
 	// For spitting into multiple fluidGroups.
 	std::vector<std::unordered_set<Block*>> m_futureGroups;
 	// For notifing groups with different fluids of unfull status. Groups with the same fluid are merged instead.
-	std::unordered_map<FluidGroup*, std::unordered_set<Block*>> m_futureNotifyUnfull;
+	std::unordered_map<FluidGroup*, std::unordered_set<Block*>> m_futureNotifyPotentialUnfullAdjacent;
 
 	void addBlockInternal(Block* block);
 	void removeBlockInternal(Block* block);
