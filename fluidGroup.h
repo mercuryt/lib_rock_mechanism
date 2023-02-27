@@ -45,10 +45,17 @@ public:
 	std::unordered_set<Block*> m_emptyAdjacentsAddedLastTurn;
 	std::unordered_set<Block*> m_potentiallyAddToFillQueueFromSyncronusCode;
 	std::unordered_set<Block*> m_futureBlocks;
+	std::unordered_set<Block*> m_futureRemoveFromFillQueue;
+	std::unordered_set<Block*> m_futureAddToFillQueue;
+	std::unordered_set<Block*> m_futureRemoveFromDrainQueue;
+	std::unordered_set<Block*> m_futureAddToDrainQueue;
+
 	std::unordered_set<Block*> m_futureEmpty;
-	std::unordered_set<Block*> m_futureFull;
-	std::unordered_set<Block*> m_futureNewUnfullButNotEmpty;
 	std::unordered_set<Block*> m_futureNewlyAdded;
+
+	std::unordered_set<Block*> m_futureFull;
+	std::unordered_set<Block*> m_futureNewUnfull;
+
 	std::unordered_set<Block*> m_futureNewEmptyAdjacents;
 	std::unordered_set<Block*> m_futureRemoveFromEmptyAdjacents;
 	std::unordered_map<FluidGroup*, std::unordered_set<Block*>> m_futurePotentialMerge;

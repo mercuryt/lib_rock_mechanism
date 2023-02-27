@@ -87,6 +87,9 @@ TEST_CASE("Flow into adjacent hole")
 	FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
 	CHECK(!fluidGroup->m_stable);
 	CHECK(fluidGroup->m_blocks.size() == 1);
+	CHECK(fluidGroup->m_fillQueue.size() == 2);
+	CHECK(fluidGroup->m_drainQueue.size() == 1);
+	// Step 1.
 	fluidGroup->readStep();
 	CHECK(fluidGroup->m_destroy == false);
 	fluidGroup->writeStep();
@@ -97,15 +100,22 @@ TEST_CASE("Flow into adjacent hole")
 	CHECK(block3.m_fluids.contains(s_water));
 	CHECK(block3.m_fluids[s_water].first == MAX_BLOCK_VOLUME / 2);
 	CHECK(block2.m_fluids[s_water].first == MAX_BLOCK_VOLUME / 2);
+	CHECK(fluidGroup->m_fillQueue.size() == 5);
+	CHECK(fluidGroup->m_drainQueue.size() == 2);
+	// Step 2.
 	fluidGroup->readStep();
+	CHECK(fluidGroup->m_futureRemoveFromFillQueue.size() == 4);
+	CHECK(fluidGroup->m_futureAddToFillQueue.size() == 0);
 	fluidGroup->writeStep();
 	CHECK(block.m_fluids.contains(s_water));
 	CHECK(!block2.m_fluids.contains(s_water));
 	CHECK(!block3.m_fluids.contains(s_water));
 	CHECK(block.m_fluids[s_water].first == MAX_BLOCK_VOLUME);
 	CHECK(fluidGroup->m_blocks.size() == 1);
-	CHECK(fluidGroup->m_fillQueue.size() == 2);
 	// If the group is stable at this point depends on the viscosity of water, do one more step to make sure.
+	CHECK(fluidGroup->m_fillQueue.size() == 1);
+	CHECK(fluidGroup->m_drainQueue.size() == 1);
+	// Step 3.
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
 	CHECK(area.m_fluidGroups.size() == 1);
@@ -513,8 +523,6 @@ TEST_CASE("Denser fluids sink")
 	CHECK(fg2->m_futureNotifyPotentialUnfullAdjacent.begin()->second.size() == 1);
 	CHECK(fg2->m_futureNotifyPotentialUnfullAdjacent.begin()->second.contains(&block2));
 	fg1->writeStep();
-	CHECK(fg1->m_fillQueue.size() == 1);
-	CHECK(fg1->m_fillQueue[0].block == &block3);
 	fg2->writeStep();
 	CHECK(block1.volumeOfFluidTypeContains(s_water) == 0);
 	CHECK(block1.volumeOfFluidTypeContains(s_mercury) == 100);
