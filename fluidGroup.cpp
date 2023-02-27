@@ -184,30 +184,12 @@ void FluidGroup::absorb(FluidGroup* fluidGroup)
 	m_futureFull.insert(fluidGroup->m_futureFull.begin(), fluidGroup->m_futureFull.end());
 	// Merge future unfull.
 	m_futureNewUnfull.insert(fluidGroup->m_futureNewUnfull.begin(), fluidGroup->m_futureNewUnfull.end());
-	
-	/*
-	// Merge future empty.
-	m_futureEmpty.insert(fluidGroup->m_futureEmpty.begin(), fluidGroup->m_futureEmpty.end());
-	// Remove this group's futureEmptyAdjacents from other groups future unfull. Empty blocks don't belong in unfull.
-	std::erase_if(fluidGroup->m_futureNewUnfull, [&](Block* block){ return m_futureNewEmptyAdjacents.contains(block); });
-	// Merge future unfull.
-	m_futureNewUnfull.insert(fluidGroup->m_futureNewUnfull.begin(), fluidGroup->m_futureNewUnfull.end());
-	// Remove this group's future blocks from other group's future empty adajcent.
-	std::erase_if(fluidGroup->m_futureNewEmptyAdjacents, [&](Block* block){ return m_futureBlocks.contains(block); });
-	// Merge future empty adjacent.
-	m_futureNewEmptyAdjacents.insert(fluidGroup->m_futureNewEmptyAdjacents.begin(), fluidGroup->m_futureNewEmptyAdjacents.end());
-	// Remove this group's future newly adjacent from other group's future remove from adjacent.
-	std::erase_if(fluidGroup->m_futureRemoveFromEmptyAdjacents, [&](Block* block){ return m_futureNewEmptyAdjacents.contains(block); });
-	// Remove this group's adjacent from other group's future remove from adjacent.
-	for(FutureFluidBlock& futureFluidBlock : m_fillQueue)
-		fluidGroup->m_futureRemoveFromEmptyAdjacents.erase(futureFluidBlock.block);
-	// Merge future empty adjacent.
-	m_futureRemoveFromEmptyAdjacents.insert(fluidGroup->m_futureRemoveFromEmptyAdjacents.begin(), fluidGroup->m_futureRemoveFromEmptyAdjacents.end());
-	// Merge future full.
-	m_futureFull.insert(fluidGroup->m_futureFull.begin(), fluidGroup->m_futureFull.end());
-	// Merge newly added.
-	m_futureNewlyAdded.insert(fluidGroup->m_futureNewlyAdded.begin(), fluidGroup->m_futureNewlyAdded.end());
-	*/
+
+	// We need to merge future new empty adjacents for setting m_emptyAdjacentsAddedLastTurn at end of writeStep.
+	std::erase_if(fluidGroup->m_futureRemoveFromEmptyAdjacents, [&](Block* block){ return m_futureBlocks.contains(block); });
+	std::erase_if(m_futureRemoveFromEmptyAdjacents, [&](Block* block){ return fluidGroup->m_futureBlocks.contains(block); });
+	m_futureNewEmptyAdjacents.insert(fluidGroup->m_futureNewEmptyAdjacents.begin(), fluidGroup->m_futureRemoveFromEmptyAdjacents.end());
+
 	// Merge future groups.
 	m_futureGroups.insert(m_futureGroups.end(), fluidGroup->m_futureGroups.begin(), fluidGroup->m_futureGroups.end());
 	// Merge other groups ment to merge with fluidGroup with this group instead.
@@ -222,6 +204,36 @@ void FluidGroup::absorb(FluidGroup* fluidGroup)
 				continue;
 			}
 	}
+}
+// Syncronus. Only fluids with a lower density disolve.
+// TODO: Transfer ownership to adjacent fluid groups with a lower density then this one but higher then disolved group.
+void FluidGroup::disperseDisolved()
+{
+	std::vector<FluidGroup*> dispersed;
+	for(FluidGroup* fluidGroup : m_disolvedInThisGroup)
+	{
+		assert(fluidGroup->m_blocks.empty());
+		for(FutureFluidBlock& futureFluidBlock : m_fillQueue)
+		{
+			Block* block = futureFluidBlock.block;
+			if(block->fluidCanEnterEver(fluidGroup->m_fluidType) && block->fluidCanEnterCurrently(fluidGroup->m_fluidType))
+			{
+				uint32_t capacity = block->volumeOfFluidTypeCanEnter(fluidGroup->m_fluidType);
+				assert(fluidGroup->m_excessVolume > 0);
+				uint32_t flow = std::min(capacity, (uint32_t)fluidGroup->m_excessVolume);
+				block->addFluid(flow, fluidGroup->m_fluidType);
+				fluidGroup->m_excessVolume -= flow;
+				if(fluidGroup->m_excessVolume == 0)
+				{
+					dispersed.push_back(fluidGroup);
+					fluidGroup->m_destroy = true;
+					break;
+				}
+			}
+		}
+	}
+	for(FluidGroup* fluidGroup : dispersed)
+		m_disolvedInThisGroup.erase(fluidGroup);
 }
 void FluidGroup::fillGroupFindEnd()
 {
@@ -252,6 +264,7 @@ void FluidGroup::drainGroupFindEnd()
 void FluidGroup::recordFill(uint32_t flowPerBlock, uint32_t flowCapacity, uint32_t flowTillNextStep)
 {
 	assert(flowPerBlock != 0);
+	assert(m_fillGroupEnd - m_fillGroupBegin > 0);
 	// record future capacity and delta.
 	for(auto iter = m_fillGroupBegin; iter != m_fillGroupEnd; ++iter)
 	{
@@ -278,6 +291,7 @@ void FluidGroup::recordFill(uint32_t flowPerBlock, uint32_t flowCapacity, uint32
 void FluidGroup::recordDrain(uint32_t flowPerBlock, uint32_t flowCapacity, uint32_t flowTillNextStep)
 {
 	assert(flowPerBlock != 0);
+	assert(m_drainGroupEnd - m_drainGroupBegin > 0);
 	// Record future capacity and delta.
 	for(auto iter = m_drainGroupBegin; iter != m_drainGroupEnd; ++iter)
 	{
@@ -315,6 +329,10 @@ uint32_t FluidGroup::fillPriority(FutureFluidBlock& futureFluidBlock) const
 
 void FluidGroup::readStep()
 {
+	assert(!m_absorbed);
+	assert(!m_destroy);
+	assert(!m_stable);
+	assert(!m_disolved);
 	m_futureFull.clear();
 	m_futureNewlyAdded.clear();
 	m_futureNewUnfull.clear();
@@ -624,11 +642,9 @@ void FluidGroup::readStep()
 	m_futureRemoveFromFillQueue = m_futureRemoveFromEmptyAdjacents;
 	m_futureRemoveFromFillQueue.insert(m_futureFull.begin(), m_futureFull.end());
 }
-
-//TODO: seperate merge check into another method, run all of them before any write step, do it in a pool task.
-void FluidGroup::writeStep()
+void FluidGroup::mergeStep()
 {
-	// Fluid groups may be marked absorbed during write iteration due to merge.
+	// Fluid groups may be marked absorbed during merge iteration.
 	if(m_absorbed)
 		return;
 	// Record merge. Check that at least one block still contains the group to be merged with. First group absorbs subsequent groups.
@@ -639,6 +655,10 @@ void FluidGroup::writeStep()
 				absorb(fluidGroup);
 				continue;
 			}
+}
+void FluidGroup::writeStep()
+{
+	assert(!m_absorbed);
 	// Record new fluid levels for drain group.
 	for(auto iter = m_drainQueue.begin(); iter != m_drainGroupEnd; ++iter)
 	{
@@ -689,4 +709,5 @@ void FluidGroup::writeStep()
 	for(Block* block : overfullBlocks)
 		block->resolveFluidOverfull();
 	m_emptyAdjacentsAddedLastTurn.swap(m_futureNewEmptyAdjacents);
+	disperseDisolved();
 }

@@ -40,8 +40,11 @@ public:
 	bool m_stable;
 	bool m_destroy;
 	bool m_absorbed;
+	bool m_disolved;
 	const FluidType* m_fluidType;
 	int32_t m_excessVolume;
+	std::unordered_set<FluidGroup*> m_disolvedInThisGroup;
+
 	std::unordered_set<Block*> m_emptyAdjacentsAddedLastTurn;
 	std::unordered_set<Block*> m_potentiallyAddToFillQueueFromSyncronusCode;
 	std::unordered_set<Block*> m_futureBlocks;
@@ -85,8 +88,12 @@ public:
 	void addBlock(Block* block, bool checkMerge = true);
 	void removeBlock(Block* block);
 	void removeBlocks(std::vector<Block*> blocks);
+	// Merge with another group of the same time.
 	void absorb(FluidGroup* fluidGroup);
+	// Try to spawn another group of a different type which has been disolved in this one.
+	void disperseDisolved();
 	void readStep();
+	void mergeStep();
 	void writeStep();
 	friend class baseArea;
 };
