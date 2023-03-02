@@ -175,7 +175,19 @@ void baseBlock::resolveFluidOverfull()
 			break;
 	}
 	for(const FluidType* fluidType : toErase)
+	{
+		// If the last block of a fluidGroup is displaced disolve it in the lowest density liquid which is more dense then it.
+		FluidGroup* fluidGroup = m_fluids[fluidType].second;
+		if(fluidGroup->m_blocks.empty())
+			for(auto& [otherFluidType, pair] : m_fluids)
+					if(otherFluidType->density > fluidType->density)
+					{
+						pair.second->m_disolvedInThisGroup.insert(fluidGroup);
+						fluidGroup->m_disolved = true;
+						break;
+					}
 		m_fluids.erase(fluidType);
+	}
 }
 void baseBlock::moveContentsTo(Block* block)
 {

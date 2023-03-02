@@ -46,7 +46,10 @@ public:
 	std::unordered_set<FluidGroup*> m_disolvedInThisGroup;
 
 	std::unordered_set<Block*> m_emptyAdjacentsAddedLastTurn;
-	std::unordered_set<Block*> m_potentiallyAddToFillQueueFromSyncronusCode;
+	std::unordered_set<Block*> m_potentiallyAddToFillQueueFromSyncronusStep;
+	std::unordered_set<Block*> m_potentiallyNoLongerAdjacentFromSyncronusStep;
+	std::unordered_set<Block*> m_potentiallySplitFromSyncronusStep;
+
 	std::unordered_set<Block*> m_futureBlocks;
 	std::unordered_set<Block*> m_futureRemoveFromFillQueue;
 	std::unordered_set<Block*> m_futureAddToFillQueue;
@@ -67,12 +70,8 @@ public:
 	// For notifing groups with different fluids of unfull status. Groups with the same fluid are merged instead.
 	std::unordered_map<FluidGroup*, std::unordered_set<Block*>> m_futureNotifyPotentialUnfullAdjacent;
 
-	void addBlockInternal(Block* block);
-	void removeBlockInternal(Block* block);
-	void removeBlocksInternal(std::unordered_set<Block*>& blocks);
+	void split(std::unordered_set<Block*>& blocks);
 	void removeBlockAdjacent(Block* block);
-	//uint32_t futureVolumeForFluidType(Block* block) const;
-	//uint32_t futureTotalHeight(Block* block) const;
 	void fillGroupFindEnd();
 	void drainGroupFindEnd();
 	void recordFill(uint32_t flowPerBlock, uint32_t flowCapacity, uint32_t flowTillNextStep);
@@ -97,3 +96,6 @@ public:
 	void writeStep();
 	friend class baseArea;
 };
+
+bool queueIsUnique(std::vector<FutureFluidBlock>& queue);
+bool queueContains(std::vector<FutureFluidBlock>& queue, Block* block);
