@@ -13,89 +13,52 @@
 #include <unordered_set>
 
 #include "fluidType.h"
+#include "drainQueue.h"
+#include "fillQueue.h"
 
 class Block;
 
-struct FutureFluidBlock
-{
-	Block* block;
-	uint32_t capacity;
-	int32_t delta;
-	// No need to initalize capacity and delta here, they will be set at the begining of read step.
-	FutureFluidBlock(Block* b) : block(b) {}
-};
 class FluidGroup
 {
-// public here is for testing, is there a better way?
 public:
-	// Blocks with contiguous fluid of the same type.
-	std::unordered_set<Block*> m_blocks;
-	// Blocks sorted by first to drain from, stored with fluid type volume and delta.
-	std::vector<FutureFluidBlock> m_drainQueue;
-	std::vector<FutureFluidBlock>::iterator m_drainGroupBegin, m_drainGroupEnd;
-	// Blocks sorted by first to fill to, stored with fluid type capacity and delta.
-	std::vector<FutureFluidBlock> m_fillQueue;
-	std::vector<FutureFluidBlock>::iterator m_fillGroupBegin, m_fillGroupEnd;
 	// Currently at rest?
 	bool m_stable;
 	bool m_destroy;
-	bool m_absorbed;
+	bool m_merged;
 	bool m_disolved;
 	const FluidType* m_fluidType;
 	int32_t m_excessVolume;
+	FillQueue m_fillQueue;
+	DrainQueue m_drainQueue;
 	std::unordered_set<FluidGroup*> m_disolvedInThisGroup;
 
-	std::unordered_set<Block*> m_emptyAdjacentsAddedLastTurn;
-	std::unordered_set<Block*> m_potentiallyAddToFillQueueFromSyncronusStep;
-	std::unordered_set<Block*> m_potentiallyNoLongerAdjacentFromSyncronusStep;
-	std::unordered_set<Block*> m_potentiallySplitFromSyncronusStep;
-
-	std::unordered_set<Block*> m_futureBlocks;
-	std::unordered_set<Block*> m_futureRemoveFromFillQueue;
-	std::unordered_set<Block*> m_futureAddToFillQueue;
-	std::unordered_set<Block*> m_futureRemoveFromDrainQueue;
-	std::unordered_set<Block*> m_futureAddToDrainQueue;
-
-	std::unordered_set<Block*> m_futureEmpty;
-	std::unordered_set<Block*> m_futureNewlyAdded;
-
-	std::unordered_set<Block*> m_futureFull;
-	std::unordered_set<Block*> m_futureNewUnfull;
-
-	std::unordered_set<Block*> m_futureNewEmptyAdjacents;
-	std::unordered_set<Block*> m_futureRemoveFromEmptyAdjacents;
-	std::unordered_map<FluidGroup*, std::unordered_set<Block*>> m_futurePotentialMerge;
 	// For spitting into multiple fluidGroups.
 	std::vector<std::unordered_set<Block*>> m_futureGroups;
 	// For notifing groups with different fluids of unfull status. Groups with the same fluid are merged instead.
 	std::unordered_map<FluidGroup*, std::unordered_set<Block*>> m_futureNotifyPotentialUnfullAdjacent;
 
-	void split(std::unordered_set<Block*>& blocks);
-	void removeBlockAdjacent(Block* block);
-	void fillGroupFindEnd();
-	void drainGroupFindEnd();
-	void recordFill(uint32_t flowPerBlock, uint32_t flowCapacity, uint32_t flowTillNextStep);
-	void recordDrain(uint32_t flowPerBlock, uint32_t flowCapacity, uint32_t flowTillNextStep);
-	uint32_t drainPriority(FutureFluidBlock& futureFluidBlock) const;
-	uint32_t fillPriority(FutureFluidBlock& futureFluidBlock) const;
-	void setUnstable();
-public:
+	std::unordered_set<Block*> m_potentiallyNoLongerAdjacentFromSyncronusStep;
+	std::unordered_set<Block*> m_potentiallyAddToFillQueueFromSyncronusStep;
+	std::unordered_set<Block*> m_potentiallySplitFromSyncronusStep;
+
+	std::unordered_set<Block*> m_futureNewEmptyAdjacents;
+
+	std::unordered_set<Block*> m_futureAddToDrainQueue;
+	std::unordered_set<Block*> m_futureRemoveFromDrainQueue;
+	std::unordered_set<Block*> m_futureAddToFillQueue;
+	std::unordered_set<Block*> m_futureRemoveFromFillQueue;
+
 	FluidGroup(const FluidType* ft, std::unordered_set<Block*> blocks);
 	void addFluid(uint32_t fluidVolume);
 	void removeFluid(uint32_t fluidVolume);
-	// Not used by readStep because doesn't look at future.
 	void addBlock(Block* block, bool checkMerge = true);
 	void removeBlock(Block* block);
-	void removeBlocks(std::vector<Block*> blocks);
-	// Merge with another group of the same time.
-	void absorb(FluidGroup* fluidGroup);
-	// Try to spawn another group of a different type which has been disolved in this one.
-	void disperseDisolved();
+	void removeBlocks(std::unordered_set<Block*>& blocks);
+	void merge(FluidGroup* fluidGroup);
+	void split(std::unordered_set<Block*>& blocks, std::vector<FluidGroup*>& newlySplit);
 	void readStep();
-	void mergeStep();
 	void writeStep();
+	void mergeStep();
+	void splitStep(std::vector<FluidGroup*>& newlySplit);
 	friend class baseArea;
 };
-
-bool queueIsUnique(std::vector<FutureFluidBlock>& queue);
-bool queueContains(std::vector<FutureFluidBlock>& queue, Block* block);

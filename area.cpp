@@ -50,26 +50,35 @@ void baseArea::readStep()
 void baseArea::writeStep()
 { 
 	s_pool.wait_for_tasks();
-	// apply cave in
+	// Apply cave in.
 	if(!m_caveInData.empty())
 	{
 		stepCaveInWrite();
 		expireRouteCache();
 		expireVisionCache();
 	}
-	// apply flow
+	// Apply flow.
 	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
 		fluidGroup->writeStep();
-	std::erase_if(m_unstableFluidGroups, [](FluidGroup* fluidGroup){ return fluidGroup->m_stable || fluidGroup->m_destroy || fluidGroup->m_absorbed; });
-	std::erase_if(m_fluidGroups, [](FluidGroup& fluidGroup){ return fluidGroup.m_destroy || fluidGroup.m_absorbed; });
-	// apply routes
+	std::erase_if(m_unstableFluidGroups, [](FluidGroup* fluidGroup){ return fluidGroup->m_stable || fluidGroup->m_destroy; });
+	std::erase_if(m_fluidGroups, [](FluidGroup& fluidGroup){ return fluidGroup.m_destroy; });
+	// Apply fluid merge.
+	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
+		fluidGroup->mergeStep();
+	std::erase_if(m_fluidGroups, [](FluidGroup& fluidGroup){ return fluidGroup.m_merged; });
+	// Apply fluid split.
+	std::vector<FluidGroup*> newlySplit;
+	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
+		fluidGroup->splitStep(newlySplit);
+	m_unstableFluidGroups.insert(newlySplit.begin(), newlySplit.end());
+	// Apply routes.
 	for(RouteRequest& routeRequest : m_routeRequestQueue)
 		routeRequest.writeStep();
 	// Apply vision request results.
 	for(VisionRequest& visionRequest : m_visionRequestQueue)
 		visionRequest.writeStep();
 	m_visionRequestQueue.clear();
-	// do scheduled events
+	// Do scheduled events.
 	exeuteScheduledEvents(s_step);
 }
 

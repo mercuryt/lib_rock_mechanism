@@ -57,7 +57,7 @@ void baseBlock::addFluid(uint32_t volume, const FluidType* fluidType)
 		for(Block* adjacent : m_adjacents)
 			for(auto& [otherFluidType, pair] : adjacent->m_fluids)
 				if(otherFluidType->density <= fluidType->density && !fluidCanEnterCurrently(otherFluidType))
-					pair.second->removeBlockAdjacent(static_cast<Block*>(this));
+					pair.second->m_fillQueue.removeBlock(static_cast<Block*>(this));
 	// Find fluid group.
 	FluidGroup* fluidGroup = nullptr;
 	for(Block* adjacent : m_adjacents)
@@ -178,7 +178,7 @@ void baseBlock::resolveFluidOverfull()
 	{
 		// If the last block of a fluidGroup is displaced disolve it in the lowest density liquid which is more dense then it.
 		FluidGroup* fluidGroup = m_fluids[fluidType].second;
-		if(fluidGroup->m_blocks.empty())
+		if(fluidGroup->m_drainQueue.m_set.empty())
 			for(auto& [otherFluidType, pair] : m_fluids)
 					if(otherFluidType->density > fluidType->density)
 					{

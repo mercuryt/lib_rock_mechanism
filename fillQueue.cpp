@@ -1,0 +1,86 @@
+FillQueue::FillQueue(FluidGroup* fluidGroup) : FluidQueue(fluidGroup) {} 
+void FillQueue::buildFor(std::unordered_set<Block*>& members)
+{
+	for(Block* block : members)
+		for(Block* adjacent : block->m_adjacents)
+			 if(adjacent != nullptr || !adjacent->fluidCanEnterEver() ||
+				 !adjacent->fluidCanEnterEver(m_fluidGroup->m_fluidType) || !adjacent->fluidCanEnterCurrently(m_fluidGroup->m_fluidType)
+			   )
+				addBlock(adjacent);
+}
+void FillQueue::initalizeForStep()
+{
+	for(FutureFlowBlock& futureFlowBlock : m_queue)
+	{
+		futureFlowBlock.delta = 0;
+		futureFlowBlock.capacity = futureFlowBlock.block->volumeOfFluidTypeCanEnter(m_fluidGroup->m_fluidType);
+	}
+	std::ranges::sort(m_queue.begin(), m_queue.end(), [&](FutureFlowBlock& a, FutureFlowBlock& b){
+		return getPriority(a) < getPriority(b);
+	});
+	m_groupStart = m_queue.begin();
+	findGroupEnd();
+	m_futureFull.clear();
+	m_futureNoLongerEmpty.clear();
+}
+void FillQueue::recordDelta(uint32_t volume)
+{
+	assert(volume != 0);
+	assert(m_groupStart->capacity >= volume);
+	assert(m_groupStart != m_groupEnd);
+	assert(m_groupStart >= m_queue.begin() && m_groupStart <= m_queue.end());
+	assert(m_groupEnd >= m_queue.begin() && m_groupEnd <= m_queue.end());
+	// Record new member blocks for group.
+	// Check the last member of the group since it's the most recently added.
+	if((m_groupEnd - 1)->delta == 0 && !(m_groupEnd - 1)->block->m_fluids.contains(m_fluidGroup->m_fluidType))
+		for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
+			m_futureNoLongerEmpty.insert(iter->block);
+	// Record fluid level changes.
+	for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
+	{
+		iter->delta += volume;
+		assert(iter->delta <= MAX_BLOCK_VOLUME);
+		assert(iter->capacity >= volume);
+		iter->capacity -= volume;
+	}
+	// Record full blocks and get next group.
+	if(groupCapacityPerBlock() == 0)
+	{
+		for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
+			m_futureFull.insert(iter->block);
+		m_groupStart = m_groupEnd;
+		findGroupEnd();
+	} 
+	// Expand group for new higher level.
+	else if(volume == groupFlowTillNextStepPerBlock())
+		findGroupEnd();
+}
+void FillQueue::applyDelta()
+{
+	assert(m_groupStart >= m_queue.begin() && m_groupStart <= m_queue.end());
+	assert(m_groupEnd >= m_queue.begin() && m_groupEnd <= m_queue.end());
+	for(auto iter = m_queue.begin(); iter != m_groupEnd; ++iter)
+	{
+		// TODO: This seems hackey, should try gather instead, also for drain.
+		if(iter->delta == 0)
+			continue;
+		if(!iter->block->m_fluids.contains(m_fluidGroup->m_fluidType))
+			iter->block->m_fluids.emplace(m_fluidGroup->m_fluidType, std::make_pair(0, m_fluidGroup));
+		iter->block->m_fluids[m_fluidGroup->m_fluidType].first += iter->delta;
+		iter->block->m_totalFluidVolume += iter->delta;
+		if(iter->block->m_totalFluidVolume > MAX_BLOCK_VOLUME)
+			m_overfull.insert(iter->block);
+	}
+}
+uint32_t FillQueue::groupLevel() const
+{
+	assert(m_groupStart != m_groupEnd);
+	uint32_t output = m_groupStart->delta;
+	if(m_groupStart->block->m_fluids.contains(m_fluidGroup->m_fluidType))
+		output += m_groupStart->block->m_fluids.at(m_fluidGroup->m_fluidType).first;
+	return output;
+}
+uint32_t FillQueue::getPriority(FutureFlowBlock& futureFlowBlock) const
+{
+	return (futureFlowBlock.block->m_z + 1) * MAX_BLOCK_VOLUME * 2 - futureFlowBlock.capacity;
+}
