@@ -41,6 +41,13 @@ uint32_t baseBlock::taxiDistance(Block* block) const
 {
 	return abs((int)m_x - (int)block->m_x) + abs((int)m_y - (int)block->m_y) + abs((int)m_z - (int)block->m_z);
 }
+bool baseBlock::isAdjacentToAny(std::unordered_set<Block*>& blocks)
+{
+	for(Block* adjacent : m_adjacents)
+		if(blocks.contains(adjacent))
+			return true;
+	return false;
+}
 //TODO: This code puts the fluid into an adjacent group of the correct type if it can find one, it does not add the block or merge groups, leaving these tasks to fluidGroup readStep. Is this ok?
 void baseBlock::addFluid(uint32_t volume, const FluidType* fluidType)
 {
@@ -52,12 +59,6 @@ void baseBlock::addFluid(uint32_t volume, const FluidType* fluidType)
 	}
 	m_fluids[fluidType].first = volume;
 	m_totalFluidVolume += volume;
-	// Remove from adjacent group's emptyAdjacents if full and density is lower or equal.
-	if(m_totalFluidVolume >= MAX_BLOCK_VOLUME)
-		for(Block* adjacent : m_adjacents)
-			for(auto& [otherFluidType, pair] : adjacent->m_fluids)
-				if(otherFluidType->density <= fluidType->density && !fluidCanEnterCurrently(otherFluidType))
-					pair.second->m_fillQueue.removeBlock(static_cast<Block*>(this));
 	// Find fluid group.
 	FluidGroup* fluidGroup = nullptr;
 	for(Block* adjacent : m_adjacents)
@@ -135,6 +136,13 @@ bool baseBlock::fluidCanEnterCurrently(const FluidType* fluidType) const
 			return true;
 	return false;
 }
+bool baseBlock::isAdjacentToFluidGroup(const FluidGroup* fluidGroup) const
+{
+	for(Block* block : m_adjacents)
+		if(block->m_fluids.contains(fluidGroup->m_fluidType) && block->m_fluids.at(fluidGroup->m_fluidType).second == fluidGroup)
+			return true;
+	return false;
+}
 uint32_t baseBlock::volumeOfFluidTypeCanEnter(const FluidType* fluidType) const
 {
 	uint32_t output = MAX_BLOCK_VOLUME;
@@ -171,6 +179,8 @@ void baseBlock::resolveFluidOverfull()
 			m_fluids[fluidType].second->removeBlock(static_cast<Block*>(this));
 			toErase.push_back(fluidType);
 		}
+		else if(m_fluids[fluidType].first < MAX_BLOCK_VOLUME)
+			m_fluids[fluidType].second->m_fillQueue.addBlock(static_cast<Block*>(this));
 		if(m_totalFluidVolume == MAX_BLOCK_VOLUME)
 			break;
 	}
@@ -182,8 +192,16 @@ void baseBlock::resolveFluidOverfull()
 			for(auto& [otherFluidType, pair] : m_fluids)
 					if(otherFluidType->density > fluidType->density)
 					{
-						pair.second->m_disolvedInThisGroup.insert(fluidGroup);
-						fluidGroup->m_disolved = true;
+						if(pair.second->m_disolvedInThisGroup.contains(fluidType))
+						{
+							pair.second->m_disolvedInThisGroup.at(fluidType)->m_excessVolume += fluidGroup->m_excessVolume;
+							fluidGroup->m_destroy = true;
+						}
+						else
+						{
+							pair.second->m_disolvedInThisGroup[fluidType] = fluidGroup;
+							fluidGroup->m_disolved = true;
+						}
 						break;
 					}
 		m_fluids.erase(fluidType);

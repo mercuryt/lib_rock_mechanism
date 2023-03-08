@@ -22,4 +22,5 @@ public:
 	void recordDelta(uint32_t volume);
 	void applyDelta();
 	uint32_t groupLevel() const;
+	void findGroupEnd();
 };

@@ -67,7 +67,8 @@ public:
 	void registerVisionRequest(Actor* actor);
 
 	// Creat a fluid group.
-	FluidGroup* createFluidGroup(const FluidType* fluidType, std::unordered_set<Block*> blocks);
+	FluidGroup* createFluidGroup(const FluidType* fluidType, std::unordered_set<Block*>& blocks, bool checkMerge = true);
+	void removeFluidGroup(FluidGroup* fluidGroup);
 
 	// Cavein read/write
 	void stepCaveInRead();

@@ -3,8 +3,8 @@ void FillQueue::buildFor(std::unordered_set<Block*>& members)
 {
 	for(Block* block : members)
 		for(Block* adjacent : block->m_adjacents)
-			 if(adjacent != nullptr || !adjacent->fluidCanEnterEver() ||
-				 !adjacent->fluidCanEnterEver(m_fluidGroup->m_fluidType) || !adjacent->fluidCanEnterCurrently(m_fluidGroup->m_fluidType)
+			 if(adjacent != nullptr && adjacent->fluidCanEnterEver() && adjacent->fluidCanEnterEver(m_fluidGroup->m_fluidType) &&
+				adjacent->m_fluids[m_fluidGroup->m_fluidType].first != MAX_BLOCK_VOLUME
 			   )
 				addBlock(adjacent);
 }
@@ -46,8 +46,9 @@ void FillQueue::recordDelta(uint32_t volume)
 	// Record full blocks and get next group.
 	if(groupCapacityPerBlock() == 0)
 	{
-		for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
-			m_futureFull.insert(iter->block);
+		if((m_groupStart->block->volumeOfFluidTypeContains(m_fluidGroup->m_fluidType) + m_groupStart->delta) == MAX_BLOCK_VOLUME)
+			for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
+				m_futureFull.insert(iter->block);
 		m_groupStart = m_groupEnd;
 		findGroupEnd();
 	} 
@@ -64,6 +65,7 @@ void FillQueue::applyDelta()
 		// TODO: This seems hackey, should try gather instead, also for drain.
 		if(iter->delta == 0)
 			continue;
+		assert(!(iter->block->m_fluids.contains(m_fluidGroup->m_fluidType) && iter->block->m_fluids[m_fluidGroup->m_fluidType].second == nullptr));
 		if(!iter->block->m_fluids.contains(m_fluidGroup->m_fluidType))
 			iter->block->m_fluids.emplace(m_fluidGroup->m_fluidType, std::make_pair(0, m_fluidGroup));
 		iter->block->m_fluids[m_fluidGroup->m_fluidType].first += iter->delta;
@@ -76,11 +78,24 @@ uint32_t FillQueue::groupLevel() const
 {
 	assert(m_groupStart != m_groupEnd);
 	uint32_t output = m_groupStart->delta;
-	if(m_groupStart->block->m_fluids.contains(m_fluidGroup->m_fluidType))
-		output += m_groupStart->block->m_fluids.at(m_fluidGroup->m_fluidType).first;
+	output += m_groupStart->block->volumeOfFluidTypeContains(m_fluidGroup->m_fluidType);
 	return output;
 }
 uint32_t FillQueue::getPriority(FutureFlowBlock& futureFlowBlock) const
 {
+	if(futureFlowBlock.capacity == 0)
+		return UINT32_MAX;
 	return (futureFlowBlock.block->m_z + 1) * MAX_BLOCK_VOLUME * 2 - futureFlowBlock.capacity;
+}
+void FillQueue::findGroupEnd()
+{
+	if(m_groupStart == m_queue.end() || m_groupStart->capacity == 0)
+	{
+		m_groupEnd = m_groupStart;
+		return;
+	}
+	uint32_t priority = getPriority(*m_groupStart);
+	for(m_groupEnd = m_groupStart + 1; m_groupEnd != m_queue.end(); ++m_groupEnd)
+		if(getPriority(*m_groupEnd) != priority)
+			break;
 }

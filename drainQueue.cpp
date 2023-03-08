@@ -11,6 +11,7 @@ void DrainQueue::initalizeForStep()
 	{
 		assert(futureFlowBlock.block->m_fluids.contains(m_fluidGroup->m_fluidType));
 		assert(futureFlowBlock.block->m_fluids.at(m_fluidGroup->m_fluidType).first <= MAX_BLOCK_VOLUME);
+		assert(futureFlowBlock.block->m_fluids.at(m_fluidGroup->m_fluidType).first != 0);
 		assert(futureFlowBlock.block->m_totalFluidVolume <= MAX_BLOCK_VOLUME);
 		futureFlowBlock.delta = 0;
 		futureFlowBlock.capacity = futureFlowBlock.block->m_fluids[m_fluidGroup->m_fluidType].first;
@@ -32,7 +33,7 @@ void DrainQueue::recordDelta(uint32_t volume)
 	assert(m_groupStart >= m_queue.begin() && m_groupStart <= m_queue.end());
 	assert(m_groupEnd >= m_queue.begin() && m_groupEnd <= m_queue.end());
 	// Record no longer full.
-	if(!m_groupStart->block->fluidCanEnterCurrently(m_fluidGroup->m_fluidType))
+	if(m_groupStart->block->m_totalFluidVolume == MAX_BLOCK_VOLUME && !m_futureNoLongerFull.contains((m_groupEnd-1)->block))
 		for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 			m_futureNoLongerFull.insert(iter->block);
 	// Record fluid level changes.
@@ -58,6 +59,7 @@ void DrainQueue::applyDelta()
 {
 	assert(m_groupStart >= m_queue.begin() && m_groupStart <= m_queue.end());
 	assert(m_groupEnd >= m_queue.begin() && m_groupEnd <= m_queue.end());
+	std::unordered_set<Block*> drainedFromAndAdjacent;
 	for(auto iter = m_queue.begin(); iter != m_groupEnd; ++iter)
 	{
 		if(iter->delta == 0)
@@ -69,7 +71,20 @@ void DrainQueue::applyDelta()
 		iter->block->m_totalFluidVolume -= iter->delta;
 		if(iter->block->m_fluids[m_fluidGroup->m_fluidType].first == 0)
 			iter->block->m_fluids.erase(m_fluidGroup->m_fluidType);
+		// Record blocks to set fluid groups unstable.
+		drainedFromAndAdjacent.insert(iter->block);
+		for(Block* adjacent : iter->block->m_adjacents)
+			if(adjacent != nullptr && adjacent->fluidCanEnterEver() && 
+				(adjacent->getFluidGroup(m_fluidGroup->m_fluidType) != m_fluidGroup)
+			  )
+				drainedFromAndAdjacent.insert(adjacent);
 	}
+	// Set fluidGroups unstable.
+	// TODO: Would it be better to prevent fluid groups from becoming stable while in contact with another group? Either option seems bad.
+	for(Block* block : drainedFromAndAdjacent)
+		for(auto& [fluidType, pair] : block->m_fluids)
+			if(fluidType != m_fluidGroup->m_fluidType)
+				pair.second->m_stable = false;
 }
 uint32_t DrainQueue::groupLevel() const
 {
@@ -79,4 +94,16 @@ uint32_t DrainQueue::groupLevel() const
 uint32_t DrainQueue::getPriority(FutureFlowBlock& futureFlowBlock) const
 {
 	return futureFlowBlock.block->m_z * MAX_BLOCK_VOLUME * 2 + futureFlowBlock.capacity;
+}
+void DrainQueue::findGroupEnd()
+{
+	if(m_groupStart == m_queue.end())
+	{
+		m_groupEnd = m_groupStart;
+		return;
+	}
+	uint32_t priority = getPriority(*m_groupStart);
+	for(m_groupEnd = m_groupStart + 1; m_groupEnd != m_queue.end(); ++m_groupEnd)
+		if(getPriority(*m_groupEnd) != priority)
+			break;
 }

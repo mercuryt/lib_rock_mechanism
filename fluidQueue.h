@@ -28,22 +28,21 @@ public:
 	std::vector<FutureFlowBlock>::iterator m_groupStart, m_groupEnd;
 	FluidGroup* m_fluidGroup;
 
-	virtual uint32_t getPriority(FutureFlowBlock& futureFlowBlock) const = 0;
-
 	FluidQueue(FluidGroup* fluidGroup);
-	virtual void buildFor(std::unordered_set<Block*>& members) = 0;
-	virtual void initalizeForStep() = 0;
+	void buildFor(std::unordered_set<Block*>& members);
+	void initalizeForStep();
+	void setBlocks(std::unordered_set<Block*>& blocks);
 	void addBlock(Block* block);
 	void addBlocks(std::unordered_set<Block*>& blocks);
 	void removeBlock(Block* block);
 	void removeBlocks(std::unordered_set<Block*>& blocks);
 	void findGroupEnd();
-	virtual void recordDelta(uint32_t volume) = 0;
-	virtual void applyDelta() = 0;
+	void recordDelta(uint32_t volume);
+	void applyDelta();
 	void merge(FluidQueue& fluidQueue);
 	void noChange();
 	uint32_t groupSize() const;
-	virtual uint32_t groupLevel() const = 0;
+	uint32_t groupLevel() const;
 	uint32_t groupCapacityPerBlock() const;
 	uint32_t groupFlowTillNextStepPerBlock() const;
 };

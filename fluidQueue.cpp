@@ -2,6 +2,15 @@
 #include <assert.h>
 
 FluidQueue::FluidQueue(FluidGroup* fluidGroup) : m_fluidGroup(fluidGroup) {}
+void FluidQueue::setBlocks(std::unordered_set<Block*>& blocks)
+{
+	std::erase_if(m_queue, [&](FutureFlowBlock& futureFlowBlock){ return !blocks.contains(futureFlowBlock.block); });
+	for(Block* block : blocks)
+		if(!m_set.contains(block))
+			m_queue.emplace_back(block);
+	m_set.swap(blocks);
+	
+}
 void FluidQueue::addBlock(Block* block)
 {
 	if(m_set.contains(block))
@@ -53,16 +62,4 @@ uint32_t FluidQueue::groupFlowTillNextStepPerBlock() const
 	return m_groupEnd == m_queue.end() || m_groupEnd->block->m_z != m_groupStart->block->m_z ?
 		UINT32_MAX :
 		m_groupEnd->capacity - m_groupStart->capacity;
-}
-void FluidQueue::findGroupEnd()
-{
-	if(m_groupStart == m_queue.end())
-	{
-		m_groupEnd = m_groupStart;
-		return;
-	}
-	uint32_t priority = getPriority(*m_groupStart);
-	for(m_groupEnd = m_groupStart + 1; m_groupEnd != m_queue.end(); ++m_groupEnd)
-		if(getPriority(*m_groupEnd) != priority)
-			break;
 }

@@ -25,7 +25,6 @@ baseArea::baseArea(uint32_t x, uint32_t y, uint32_t z) : m_sizeX(x), m_sizeY(y),
 				m_blocks[ix][iy][iz].recordAdjacent();
 	//TODO: record diagonal?
 }
-
 void baseArea::readStep()
 { 
 	//TODO: Count tasks dispatched and finished instead of pool.wait_for_tasks so we can do multiple areas simultaniously in one pool.
@@ -46,7 +45,6 @@ void baseArea::readStep()
 	for(RouteRequest& routeRequest : m_routeRequestQueue)
 		s_pool.push_task([&](){ routeRequest.readStep(); });
 }
-
 void baseArea::writeStep()
 { 
 	s_pool.wait_for_tasks();
@@ -81,17 +79,14 @@ void baseArea::writeStep()
 	// Do scheduled events.
 	exeuteScheduledEvents(s_step);
 }
-
 void baseArea::registerActor(Actor* actor)
 {
 	m_visionBuckets.add(actor);
 }
-
 void baseArea::unregisterActor(Actor* actor)
 {
 	m_visionBuckets.remove(actor);
 }
-
 void baseArea::scheduleMove(Actor* actor)
 {
 	Block* block = *(actor->m_routeIter);
@@ -99,17 +94,20 @@ void baseArea::scheduleMove(Actor* actor)
 	MoveEvent* moveEvent = new MoveEvent(s_step + stepsToMove, actor);
 	scheduleEvent(moveEvent);
 }
-
 void baseArea::registerRouteRequest(Actor* actor)
 {
 	m_routeRequestQueue.emplace_back(actor);
 }
-
-FluidGroup* baseArea::createFluidGroup(const FluidType* fluidType, std::unordered_set<Block*> blocks)
+FluidGroup* baseArea::createFluidGroup(const FluidType* fluidType, std::unordered_set<Block*>& blocks, bool checkMerge)
 {
-	m_fluidGroups.emplace_back(fluidType, blocks);
+	m_fluidGroups.emplace_back(fluidType, blocks, static_cast<Area*>(this), checkMerge);
 	m_unstableFluidGroups.insert(&m_fluidGroups.back());
 	return &m_fluidGroups.back();
+}
+void baseArea::removeFluidGroup(FluidGroup* fluidGroup)
+{
+	m_unstableFluidGroups.erase(fluidGroup);
+	std::erase_if(m_fluidGroups, [&](FluidGroup& fg){ return &fg == fluidGroup; });
 }
 void baseArea::expireVisionCache(){++m_visionCacheVersion;}
 void baseArea::expireRouteCache(){++m_routeCacheVersion;}

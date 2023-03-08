@@ -5,6 +5,7 @@
 #pragma once
 
 #include <unordered_map>
+#include <unordered_set>
 #include <map>
 #include <array>
 #include <stack>
@@ -73,6 +74,7 @@ public:
 	void recordAdjacent();
 	uint32_t distance(Block* block) const;
 	uint32_t taxiDistance(Block* block) const;
+	bool isAdjacentToAny(std::unordered_set<Block*>& blocks);
 	// Validate the nongeneric object can enter this block and also any other blocks required by it's Shape comparing to m_totalStaticVolume.
 	bool shapeCanEnterEver(const Shape* shape) const;
 	// Get the FluidGroup for this fluid type in this block.
@@ -86,6 +88,7 @@ public:
 	bool canEnterEver(Actor* actor) const;
 	std::vector<std::pair<Block*, uint32_t>> getMoveCosts(const Shape* shape, const MoveType* moveType);
 	bool fluidCanEnterCurrently(const FluidType* fluidType) const;
+	bool isAdjacentToFluidGroup(const FluidGroup* fluidGroup) const;
 	uint32_t volumeOfFluidTypeCanEnter(const FluidType* fluidType) const;
 	uint32_t volumeOfFluidTypeContains(const FluidType* fluidType) const;
 	// Move less dense fluids to their group's excessVolume until MAX_BLOCK_VOLUME is achieved.
