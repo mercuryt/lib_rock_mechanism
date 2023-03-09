@@ -33,6 +33,8 @@ struct SortByDensity
 
 class baseBlock
 {
+	// If this block is solid stone, solid dirt, etc. then store it here. Otherwise nullptr.
+	const MaterialType* m_solid;
 public:
 	uint32_t m_x, m_y, m_z;
 	Area* m_area;
@@ -51,8 +53,6 @@ public:
 	// Cache adjacent move costs. No version number: cleared only by changes to self / adjacent / diagonal. 
 	std::unordered_map<const Shape*, std::unordered_map<const MoveType*, std::vector<std::pair<Block*, uint32_t>>>> m_moveCostsCache;
 
-	// If this block is solid stone, solid dirt, etc. then store it here. Otherwise nullptr.
-	const MaterialType* m_solid;
 	// Store a total occupied volume from actors.
 	uint32_t m_totalDynamicVolume;
 	// Store a total occupied volume from genericSolids and nongenerics.
@@ -74,13 +74,17 @@ public:
 	void recordAdjacent();
 	uint32_t distance(Block* block) const;
 	uint32_t taxiDistance(Block* block) const;
-	bool isAdjacentToAny(std::unordered_set<Block*>& blocks);
+	bool isAdjacentToAny(std::unordered_set<Block*>& blocks) const;
+	void setNotSolid();
+	void setSolid(const MaterialType* materialType);
+	bool isSolid() const;
+	const MaterialType* getSolidMaterial() const;
 	// Validate the nongeneric object can enter this block and also any other blocks required by it's Shape comparing to m_totalStaticVolume.
 	bool shapeCanEnterEver(const Shape* shape) const;
 	// Get the FluidGroup for this fluid type in this block.
 	FluidGroup* getFluidGroup(const FluidType* fluidType) const;
 	// Get block at offset coordinates.
-	Block* offset(uint32_t ax, uint32_t ay, uint32_t az) const;
+	Block* offset(int32_t ax, int32_t ay, int32_t az) const;
 	// add fluid, handle falling / sinking, group membership, excessive quantity sent to fluid group.
 	void addFluid(uint32_t volume, const FluidType* fluidType);
 	void removeFluid(uint32_t volume, const FluidType* fluidType);
@@ -95,6 +99,8 @@ public:
 	void resolveFluidOverfull();
 	void enter(Actor* actor);
 	void exit(Actor* actor);
+	void clearMoveCostsCacheForSelfAndAdjacent();
+	void clearVisionCacheForSelfAndInDefaultVisualRange();
 	std::string toS();
 
 	// User provided.

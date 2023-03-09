@@ -1,7 +1,6 @@
 #include <algorithm>
 
 VisionRequest::VisionRequest(Actor* a) : m_actor(a) {}
-
 void VisionRequest::readStep()
 {
 	uint32_t visionRange = m_actor->getVisionRange();
@@ -22,7 +21,6 @@ void VisionRequest::readStep()
 					if(actor->isVisible(m_actor))
 						m_actors.insert(actor);
 }
-
 void VisionRequest::writeStep()
 {
 	if(!m_blocks.empty())
@@ -32,8 +30,12 @@ void VisionRequest::writeStep()
 	}
 	m_actor->doVision(m_actors);
 }
-
 std::vector<Block*> VisionRequest::getVisibleBlocks(uint32_t range) const
+{
+	return getVisibleBlocks(m_actor->m_location, range);
+}
+// This method is static so it can be used to clear the caches of all blocks from which a block may be cached.
+std::vector<Block*> VisionRequest::getVisibleBlocks(Block* block, uint32_t range)
 {
 	// Add start block to current.
 	// For number in range.
@@ -41,10 +43,11 @@ std::vector<Block*> VisionRequest::getVisibleBlocks(uint32_t range) const
 	// Make next new current.
 	// Clear next.
 	// Return output.
-
+	assert(range != 0);
+	assert(block != nullptr);
 	std::unordered_set<Block*> output;
 	std::vector<Block*> currentBlocks;
-	currentBlocks.push_back(m_actor->m_location);
+	currentBlocks.push_back(block);
 	std::vector<Block*> nextBlocks;
 	std::unordered_set<Block*> closed;
 	for(;range != 0; --range)
@@ -53,13 +56,12 @@ std::vector<Block*> VisionRequest::getVisibleBlocks(uint32_t range) const
 		{
 			closed.insert(block);
 			for(Block* adjacent : block->m_adjacents)
-			{
-				if(adjacent != nullptr &&  adjacent->canSeeThrough() && !closed.contains(adjacent) && hasLineOfSight(adjacent, block, output))
+				if(adjacent != nullptr && adjacent->canSeeThrough() && !closed.contains(adjacent) && hasLineOfSight(adjacent, block, output))
 				{
+					assert(adjacent != nullptr);
 					nextBlocks.push_back(adjacent);
 					output.insert(adjacent);
 				}
-			}
 		}	
 		if(nextBlocks.empty())
 			break;
@@ -68,7 +70,6 @@ std::vector<Block*> VisionRequest::getVisibleBlocks(uint32_t range) const
 	}
 	return std::vector<Block*>(output.begin(), output.end());
 }
-
 std::unordered_set<Actor*> VisionRequest::getVisibleActors(uint32_t range, std::vector<Block*>* preseedEstablished)
 {
 	// Iterate blocks in range.
@@ -113,8 +114,7 @@ std::unordered_set<Actor*> VisionRequest::getVisibleActors(uint32_t range, std::
 	}
 	return output;
 }
-
-bool VisionRequest::hasLineOfSight(Block* from, Block* to, std::unordered_set<Block*> establishedAsHavingLineOfSight) const
+bool VisionRequest::hasLineOfSight(Block* from, Block* to, std::unordered_set<Block*> establishedAsHavingLineOfSight)
 {
 	// Convert x, y and z difference into slope by dividing each by the largest.
 	// Start at 'to' and go backwards to 'from' to allow established-as-having optimization.
@@ -123,10 +123,11 @@ bool VisionRequest::hasLineOfSight(Block* from, Block* to, std::unordered_set<Bl
 	// And if it's 1, 0.4, 0.2 then we take 5 steps on the x axis and 3 steps on the y axis for each one step on the z axis.
 	// If any step is into a not canSeeThrough block then return false.
 	// If any step is into an established block or from block then return true.
-	uint32_t xDiff = to->m_x - from->m_x;
-	uint32_t yDiff = to->m_y - from->m_y;
-	uint32_t zDiff = to->m_z - from->m_z;
-	float denominator = static_cast<float>(std::max({xDiff, yDiff, zDiff}));
+	int32_t xDiff = (int32_t)from->m_x - (int32_t)to->m_x;
+	int32_t yDiff = (int32_t)from->m_y - (int32_t)to->m_y;
+	int32_t zDiff = (int32_t)from->m_z - (int32_t)to->m_z;
+	std::array<int32_t, 3> diffs = {abs(xDiff), abs(yDiff), abs(zDiff)};
+	float denominator = *std::ranges::max_element(diffs);
 	float xDiffNormalized = xDiff / denominator;
 	float yDiffNormalized = yDiff / denominator;
 	float zDiffNormalized = zDiff / denominator;
@@ -139,6 +140,7 @@ bool VisionRequest::hasLineOfSight(Block* from, Block* to, std::unordered_set<Bl
 		yCumulative += yDiffNormalized;
 		zCumulative += zDiffNormalized;
 		Block* b = to->offset(std::floor(xCumulative), std::floor(yCumulative), std::floor(zCumulative));
+		assert(b != nullptr);
 		if(b == from)
 			return true;
 		if(!b->canSeeThrough())
@@ -147,14 +149,14 @@ bool VisionRequest::hasLineOfSight(Block* from, Block* to, std::unordered_set<Bl
 			return true;
 	}
 }
-
-std::stack<Block*> VisionRequest::getLineOfSight(Block* from, Block* to, std::unordered_set<Block*> establishedAsHavingLineOfSight) const
+std::stack<Block*> VisionRequest::getLineOfSight(Block* from, Block* to, std::unordered_set<Block*> establishedAsHavingLineOfSight)
 {
 	// Same as hasLineOfSight but returns blocks visited.
 	// TODO: reduce repetition?
-	uint32_t xDiff = to->m_x - from->m_x;
-	uint32_t yDiff = to->m_y - from->m_y;
-	uint32_t zDiff = to->m_z - from->m_z;
+	assert(1 == 2);
+	int32_t xDiff = (int32_t)to->m_x - (int32_t)from->m_x;
+	int32_t yDiff = (int32_t)to->m_y - (int32_t)from->m_y;
+	int32_t zDiff = (int32_t)to->m_z - (int32_t)from->m_z;
 	float denominator = std::max({xDiff, yDiff, zDiff});
 	float xDiffNormalized = xDiff / denominator;
 	float yDiffNormalized = yDiff / denominator;
@@ -176,7 +178,6 @@ std::stack<Block*> VisionRequest::getLineOfSight(Block* from, Block* to, std::un
 			return output;
 	}
 }
-
 void VisionRequest::recordActorsInBlock(Block* block)
 {
 	for(auto& pair : block->m_actors)

@@ -276,6 +276,7 @@ void FluidGroup::readStep()
 		// Sort by size.
 		auto condition = [](FluidGroupSplitData& a, FluidGroupSplitData& b){ return a.members.size() < b.members.size(); };
 		std::ranges::sort(m_futureGroups, condition);
+		//TODO: This breaks a test but I think it's only because the test is written wrong.
 		/*
 		auto it = std::ranges::max_element(m_futureGroups, condition);
 		std::rotate(it, it + 1, m_futureGroups.end());

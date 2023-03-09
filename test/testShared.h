@@ -4,7 +4,7 @@
  */
 
 #define MAX_BLOCK_VOLUME 100
-#define CACHEABLE_VISION_RANGE 15
+#define CACHEABLE_VISION_RANGE 5
 // 1 for testing only, otherwise should be higher.
 #define ACTOR_DO_VISION_FREQUENCY 1
 #define PATH_HURISTIC_CONSTANT 1
@@ -77,7 +77,7 @@ public:
 // Can anyone enter ever?
 bool Block::canEnterEver() const
 {
-	return m_solid == nullptr;
+	return !isSolid();
 }
 // Can this moveType enter ever?
 bool Block::moveTypeCanEnter(const MoveType* moveType) const
@@ -91,28 +91,27 @@ uint32_t Block::moveCost(const MoveType* moveType, Block* from) const
 }
 bool Block::canSeeThrough() const
 {
-	return m_solid == nullptr;
+	return !isSolid();
 }
 bool Block::fluidCanEnterEver() const
 {
-	return m_solid == nullptr;
+	return !isSolid();
 }
 bool Block::fluidCanEnterEver(const FluidType* fluidType) const
 {
-	return m_solid == nullptr;
+	return !isSolid();
 }
 bool Block::isSupport() const
 {
-	return m_solid != nullptr;
+	return isSolid();
 }
 uint32_t Block::getMass() const
 {
-	if(m_solid == nullptr)
+	if(!isSolid())
 		return 0;
 	else
-		return m_solid->mass;
+		return getSolidMaterial()->mass;
 }
-
 
 uint32_t Actor::getSpeed() const
 {
@@ -184,7 +183,7 @@ void setSolidLayer(Area& area, uint32_t z, const MaterialType* materialType)
 {
 	for(uint32_t x = 0; x != area.m_sizeX; ++x)
 		for(uint32_t y = 0; y != area.m_sizeY; ++y)
-			area.m_blocks[x][y][z].m_solid = materialType;
+			area.m_blocks[x][y][z].setSolid(materialType);
 }
 void setSolidLayers(Area& area, uint32_t zbegin, uint32_t zend, const MaterialType* materialType)
 {

@@ -8,6 +8,8 @@
 #include <unordered_set>
 #include <array>
 #include <math.h>
+#include <algorithm>
+#include <cassert>
 
 #include "materialType.h"
 #include "moveType.h"
@@ -15,10 +17,8 @@
 #include "hasShape.h"
 #include "fluidType.h"
 
-baseBlock::baseBlock() : m_routeCacheVersion(0), m_visionCacheVersion(0), m_solid(nullptr) {}
-
+baseBlock::baseBlock() : m_solid(nullptr), m_routeCacheVersion(0), m_visionCacheVersion(0) {}
 void baseBlock::setup(Area* a, uint32_t ax, uint32_t ay, uint32_t az) {m_area=a;m_x=ax;m_y=ay;m_z=az;}
-
 void baseBlock::recordAdjacent()
 {
 	static int32_t offsetsList[6][3] = {{0,0,-1}, {0,-1,0}, {-1,0,0}, {0,1,0}, {1,0,0}, {0,0,1}};
@@ -28,7 +28,6 @@ void baseBlock::recordAdjacent()
 		m_adjacents[i] = offset(offsets[0],offsets[1],offsets[2]);
 	}
 }
-
 uint32_t baseBlock::distance(Block* block) const
 {
 	uint32_t dx = abs((int)m_x - (int)block->m_x);
@@ -36,17 +35,76 @@ uint32_t baseBlock::distance(Block* block) const
 	uint32_t dz = abs((int)m_z - (int)block->m_z);
 	return pow((pow(dx, 2) + pow(dy, 2) + pow(dz, 2)), 0.5);
 }
-
 uint32_t baseBlock::taxiDistance(Block* block) const
 {
 	return abs((int)m_x - (int)block->m_x) + abs((int)m_y - (int)block->m_y) + abs((int)m_z - (int)block->m_z);
 }
-bool baseBlock::isAdjacentToAny(std::unordered_set<Block*>& blocks)
+bool baseBlock::isAdjacentToAny(std::unordered_set<Block*>& blocks) const
 {
 	for(Block* adjacent : m_adjacents)
 		if(blocks.contains(adjacent))
 			return true;
 	return false;
+}
+void baseBlock::setNotSolid()
+{
+	m_solid = nullptr;
+	for(Block* adjacent : m_adjacents)
+		if(adjacent != nullptr && adjacent->fluidCanEnterEver())
+			for(auto& [fluidType, pair] : adjacent->m_fluids)
+				pair.second->m_fillQueue.addBlock(adjacent);
+	clearMoveCostsCacheForSelfAndAdjacent();
+	clearVisionCacheForSelfAndInDefaultVisualRange();
+}
+void baseBlock::setSolid(const MaterialType* materialType)
+{
+	m_solid = materialType;
+	// Displace fluids.
+	m_totalFluidVolume = 0;
+	for(auto& [fluidType, pair] : m_fluids)
+	{
+		pair.second->removeBlock(static_cast<Block*>(this));
+		pair.second->addFluid(pair.first);
+		// If there is no where to put the fluid then piston it up.
+		// TODO: Add destroy option.
+		if(pair.second->m_drainQueue.m_set.empty() && pair.second->m_fillQueue.m_set.empty())
+		{
+			Block* above = m_adjacents[5];
+			while(above != nullptr)
+			{
+				if(above->fluidCanEnterEver() && above->fluidCanEnterEver(fluidType) &&
+					above->fluidCanEnterCurrently(fluidType)
+				  )
+				{
+					pair.second->m_fillQueue.addBlock(above);
+					break;
+				}
+				above = above->m_adjacents[5];
+			}
+			// The only way that this 'piston' code should be triggered is if something falls, which means the top layer cannot be full.
+			assert(above != nullptr);
+		}
+	}
+	m_fluids.clear();
+	// Remove from fluid fill queues.
+	for(Block* adjacent : m_adjacents)
+		if(adjacent != nullptr && adjacent->fluidCanEnterEver())
+			for(auto& [fluidType, pair] : adjacent->m_fluids)
+				pair.second->removeBlock(static_cast<Block*>(this));
+	// Possible expire path caches.
+	// If more then one adjacent block can be entered then this block being cleared may open a new shortest path.
+	if(std::ranges::count_if(m_adjacents, [&](Block* block){ return block != nullptr && block->canEnterEver(); }) > 1)
+		m_area->expireRouteCache();
+	clearMoveCostsCacheForSelfAndAdjacent();
+	clearVisionCacheForSelfAndInDefaultVisualRange();
+}
+bool baseBlock::isSolid() const
+{
+	return m_solid != nullptr;
+}
+const MaterialType* baseBlock::getSolidMaterial() const
+{
+	return m_solid;
 }
 //TODO: This code puts the fluid into an adjacent group of the correct type if it can find one, it does not add the block or merge groups, leaving these tasks to fluidGroup readStep. Is this ok?
 void baseBlock::addFluid(uint32_t volume, const FluidType* fluidType)
@@ -110,12 +168,12 @@ bool baseBlock::shapeCanEnterCurrently(const Shape* shape) const
 	}
 	return true;
 }
-Block* baseBlock::offset(uint32_t ax, uint32_t ay, uint32_t az) const
+Block* baseBlock::offset(int32_t ax, int32_t ay, int32_t az) const
 {
 	ax += m_x;
 	ay += m_y;
 	az += m_z;
-	if(ax < 0 || ax >= m_area->m_sizeX || ay < 0 || ay >= m_area->m_sizeY || az < 0 || az >= m_area->m_sizeZ)
+	if(ax < 0 || (uint32_t)ax >= m_area->m_sizeX || ay < 0 || (uint32_t)ay >= m_area->m_sizeY || az < 0 || (uint32_t)az >= m_area->m_sizeZ)
 		return nullptr;
 	return &m_area->m_blocks[ax][ay][az];
 }
@@ -235,10 +293,29 @@ void baseBlock::exit(Actor* actor)
 		block->m_totalDynamicVolume -= v;
 	}
 }
+void baseBlock::clearMoveCostsCacheForSelfAndAdjacent()
+{
+	// Clear move costs cache for adjacent and self.
+	m_moveCostsCache.clear();
+	for(Block* adjacent : m_adjacents)
+		if(adjacent != nullptr)
+			adjacent->m_moveCostsCache.clear();
+}
+void baseBlock::clearVisionCacheForSelfAndInDefaultVisualRange()
+{
+	// Expire vision caches in all blocks visible from here at cacheable vision distance.
+	for(Block* visible : VisionRequest::getVisibleBlocks(static_cast<Block*>(this), CACHEABLE_VISION_RANGE))
+	{
+		visible->m_visionCache.clear();
+		visible->m_visionCacheVersion = 0;
+	}
+}
 std::string baseBlock::toS()
 {
 	std::string materialName = m_solid == nullptr ? "empty" : m_solid->name;
-	std::string output = std::to_string(m_x) + ", " + std::to_string(m_y) + ", " + std::to_string(m_z) + ": " + materialName + ";";
+	std::string output;
+	output.reserve(materialName.size() + 16 + (m_fluids.size() * 12));
+	output = std::to_string(m_x) + ", " + std::to_string(m_y) + ", " + std::to_string(m_z) + ": " + materialName + ";";
 	for(auto& [fluidType, pair] : m_fluids)
 		output += fluidType->name + ":" + std::to_string(pair.first) + ";";
 	return output;

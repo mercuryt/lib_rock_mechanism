@@ -175,7 +175,7 @@ void baseArea::stepCaveInRead()
 	for(auto& [chunk, fallDistance, fallEnergy] : fallingChunksWithDistanceAndEnergy)
 	{
 		std::vector<Block*> blocks(chunk.begin(), chunk.end());
-		std::sort(blocks.begin(), blocks.end(), compare);
+		std::ranges::sort(blocks, compare);
 		m_caveInData.emplace_back(std::move(blocks), fallDistance, fallEnergy);
 	}
 }
