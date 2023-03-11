@@ -62,10 +62,16 @@ void FluidGroup::removeBlock(Block* block)
 {
 	m_stable = false;
 	m_drainQueue.removeBlock(block);
-	//Check for empty adjacent to remove.
 	m_potentiallyNoLongerAdjacentFromSyncronusStep.insert(block);
-	//Check for group split.
-	m_potentiallySplitFromSyncronusStep.insert(block);
+	for(Block* adjacent : block->m_adjacents)
+		if(adjacent != nullptr && adjacent->fluidCanEnterEver())
+		{
+			//Check for group split.
+			if(adjacent->m_fluids.contains(m_fluidType) && adjacent->m_fluids.at(m_fluidType).second == this)
+				m_potentiallySplitFromSyncronusStep.insert(adjacent);
+			//Check for empty adjacent to remove.
+			m_potentiallyNoLongerAdjacentFromSyncronusStep.insert(adjacent);
+		}
 }
 // To be run before applying async future data.
 void FluidGroup::merge(FluidGroup* fluidGroup)

@@ -33,14 +33,12 @@ public:
 	std::vector<RouteRequest> m_routeRequestQueue;
 	std::vector<VisionRequest> m_visionRequestQueue;
 	std::shared_mutex m_blockMutex;
-	uint32_t m_visionCacheVersion;
 	uint32_t m_routeCacheVersion;
 	Buckets<Actor, ACTOR_DO_VISION_FREQUENCY> m_visionBuckets;
 	std::vector<std::tuple<std::vector<Block*>,uint32_t,uint32_t>> m_caveInData;
 	std::unordered_set<FluidGroup*> m_setStable;
 	std::unordered_set<FluidGroup*> m_toDestroy;
 
-	void expireVisionCache();
 	void expireRouteCache();
 
 	// Create blocks and store adjacent

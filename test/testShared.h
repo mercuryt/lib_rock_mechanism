@@ -4,10 +4,10 @@
  */
 
 #define MAX_BLOCK_VOLUME 100
-#define CACHEABLE_VISION_RANGE 5
 // 1 for testing only, otherwise should be higher.
 #define ACTOR_DO_VISION_FREQUENCY 1
 #define PATH_HURISTIC_CONSTANT 1
+#define MAX_VISION_DISTANCE_MODIFIER 1.1
 
 #include "../block.h"
 #include "../actor.h"
@@ -24,16 +24,32 @@
 static uint32_t s_step = 1;
 BS::thread_pool_light s_pool;
 
+const static MoveType* s_twoLegs;
+const static MoveType* s_fourLegs;
+const static MoveType* s_flying;
+const static FluidType* s_water;
+const static FluidType* s_CO2;
+const static FluidType* s_lava;
+const static FluidType* s_mercury;
+const static MaterialType* s_stone;
+const static Shape* s_oneByOneFull;
+const static Shape* s_oneByOneHalfFull;
+const static Shape* s_oneByOneQuarterFull;
+const static Shape* s_twoByTwoFull;
+
+
 // Put custom member data declarations here
 class Block : public baseBlock
 {
 public:
-	bool canEnterEver() const;
+	bool anyoneCanEnterEver() const;
 	bool moveTypeCanEnter(const MoveType* moveType) const;
 	bool canEnterCurrently(Actor* actor) const;
 	uint32_t moveCost(const MoveType* moveType, Block* origin) const;
+	bool canStandOn() const;
 
 	bool canSeeThrough() const;
+	float visionDistanceModifier() const;
 
 	bool fluidCanEnterEver() const;
 	bool fluidCanEnterEver(const FluidType* fluidType) const;
@@ -45,6 +61,7 @@ public:
 class Actor : public baseActor
 {
 public:
+	Actor(Block* l, const Shape* s, const MoveType* mt);
 	uint32_t getSpeed() const;
 	uint32_t getVisionRange() const;
 	bool isVisible(Actor* observer) const;
@@ -53,6 +70,7 @@ public:
 	void doVision(std::unordered_set<Actor*> actors);
 	void doFall(uint32_t distance, Block* block);
 	void exposedToFluid(const FluidType* fluidType);
+	bool canSee(Actor* actor) const;
 };
 
 class Area : public baseArea
@@ -75,12 +93,19 @@ public:
 #include "../hasScheduledEvents.cpp"
 
 // Can anyone enter ever?
-bool Block::canEnterEver() const
+bool Block::anyoneCanEnterEver() const
 {
 	return !isSolid();
 }
 // Can this moveType enter ever?
 bool Block::moveTypeCanEnter(const MoveType* moveType) const
+{
+	if(moveType != s_flying && !m_adjacents[0]->canStandOn())
+		return false;
+	return true;
+}
+// Is this actor prevented from entering based on something other then move type or size?
+bool Block::canEnterCurrently(Actor* actor) const
 {
 	return true;
 }
@@ -89,9 +114,17 @@ uint32_t Block::moveCost(const MoveType* moveType, Block* from) const
 {
 	return 10;
 }
+bool Block::canStandOn() const
+{
+	return isSolid();
+}
 bool Block::canSeeThrough() const
 {
 	return !isSolid();
+}
+float Block::visionDistanceModifier() const
+{
+	return 1;
 }
 bool Block::fluidCanEnterEver() const
 {
@@ -113,6 +146,7 @@ uint32_t Block::getMass() const
 		return getSolidMaterial()->mass;
 }
 
+Actor::Actor(Block* l, const Shape* s, const MoveType* mt) : baseActor(l, s, mt) {}
 uint32_t Actor::getSpeed() const
 {
 	return 2;
@@ -120,7 +154,7 @@ uint32_t Actor::getSpeed() const
 // Get current vision range.
 uint32_t Actor::getVisionRange() const
 {
-	return CACHEABLE_VISION_RANGE;
+	return 15;
 }
 // Check next task queue or go idle.
 void Actor::taskComplete()
@@ -138,29 +172,18 @@ void Actor::doFall(uint32_t distance, Block* block)
 void Actor::exposedToFluid(const FluidType* fluidType)
 {
 }
-bool Actor::isVisible(Actor* observer) const
+bool Actor::canSee(Actor* actor) const
 {
 	return true;
 }
 // Tell the player that an attempted pathing operation is not possible.
 void Area::notifyNoRouteFound(Actor* actor) { }
 
-const static MoveType* s_twoLegs;
-const static MoveType* s_fourLegs;
-const static FluidType* s_water;
-const static FluidType* s_CO2;
-const static FluidType* s_lava;
-const static FluidType* s_mercury;
-const static MaterialType* s_stone;
-const static Shape* s_oneByOneFull;
-const static Shape* s_oneByOneHalfFull;
-const static Shape* s_oneByOneQuarterFull;
-const static Shape* s_twoByTwoFull;
-
 void registerTypes()
 {
 	s_twoLegs = registerMoveType("two legs");
 	s_fourLegs = registerMoveType("four legs");
+	s_flying = registerMoveType("flying");
 
 	// name, viscosity, density
 	s_water = registerFluidType("water", 100, 100);

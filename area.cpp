@@ -4,7 +4,7 @@
 
 #pragma once
 
-baseArea::baseArea(uint32_t x, uint32_t y, uint32_t z) : m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_visionCacheVersion(0), m_routeCacheVersion(0)
+baseArea::baseArea(uint32_t x, uint32_t y, uint32_t z) : m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_routeCacheVersion(0)
 {
 	// build m_blocks
 	m_blocks.resize(x);
@@ -53,7 +53,6 @@ void baseArea::writeStep()
 	{
 		stepCaveInWrite();
 		expireRouteCache();
-		expireVisionCache();
 	}
 	// Apply flow.
 	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
@@ -77,7 +76,7 @@ void baseArea::writeStep()
 		visionRequest.writeStep();
 	m_visionRequestQueue.clear();
 	// Do scheduled events.
-	exeuteScheduledEvents(s_step);
+	executeScheduledEvents(s_step);
 }
 void baseArea::registerActor(Actor* actor)
 {
@@ -109,6 +108,5 @@ void baseArea::removeFluidGroup(FluidGroup* fluidGroup)
 	m_unstableFluidGroups.erase(fluidGroup);
 	std::erase_if(m_fluidGroups, [&](FluidGroup& fg){ return &fg == fluidGroup; });
 }
-void baseArea::expireVisionCache(){++m_visionCacheVersion;}
 void baseArea::expireRouteCache(){++m_routeCacheVersion;}
 

@@ -1,12 +1,12 @@
 TEST_CASE("Create Fluid.")
 {
-	Area area(100,100,100);
+	Area area(10,10,10);
 	registerTypes();
 	setSolidLayers(area, 0, 1, s_stone);
-	Block& block = area.m_blocks[50][50][1];
+	Block& block = area.m_blocks[5][5][1];
 	block.setNotSolid();
 	block.addFluid(100, s_water);
-	CHECK(area.m_blocks[50][50][1].m_fluids.contains(s_water));
+	CHECK(area.m_blocks[5][5][1].m_fluids.contains(s_water));
 	FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
 	CHECK(fluidGroup->m_fillQueue.m_set.size() == 1);
 	fluidGroup->readStep();
@@ -15,18 +15,18 @@ TEST_CASE("Create Fluid.")
 	fluidGroup->mergeStep();
 	std::vector<FluidGroup*> newlySplit;
 	fluidGroup->splitStep(newlySplit);
-	CHECK(!area.m_blocks[50][50][2].m_fluids.contains(s_water));
-	CHECK(area.m_blocks[50][50][1].m_fluids.contains(s_water));
+	CHECK(!area.m_blocks[5][5][2].m_fluids.contains(s_water));
+	CHECK(area.m_blocks[5][5][1].m_fluids.contains(s_water));
 	CHECK(area.m_fluidGroups.size() == 1);
 }
 TEST_CASE("Excess volume spawns and negitive excess despawns.")
 {
-	Area area(100,100,100);
+	Area area(10,10,10);
 	registerTypes();
 	setSolidLayers(area, 0, 2, s_stone);
-	Block& block = area.m_blocks[50][50][1];
-	Block& block2 = area.m_blocks[50][50][2];
-	Block& block3 = area.m_blocks[50][50][3];
+	Block& block = area.m_blocks[5][5][1];
+	Block& block2 = area.m_blocks[5][5][2];
+	Block& block3 = area.m_blocks[5][5][3];
 	block.setNotSolid();
 	block2.setNotSolid();
 	block.addFluid(MAX_BLOCK_VOLUME * 2, s_water);
@@ -56,7 +56,7 @@ TEST_CASE("Excess volume spawns and negitive excess despawns.")
 	fluidGroup->splitStep(newlySplit);
 	fluidGroup->mergeStep();
 	CHECK(block2.m_fluids.contains(s_water));
-	CHECK(!area.m_blocks[50][50][3].m_fluids.contains(s_water));
+	CHECK(!area.m_blocks[5][5][3].m_fluids.contains(s_water));
 	block.removeFluid(MAX_BLOCK_VOLUME, s_water);
 	CHECK(!fluidGroup->m_stable);
 	// Step 3.
@@ -72,10 +72,10 @@ TEST_CASE("Excess volume spawns and negitive excess despawns.")
 }
 TEST_CASE("Remove volume can destroy FluidGroups.")
 {
-	Area area(100,100,100);
+	Area area(10,10,10);
 	registerTypes();
 	setSolidLayers(area, 0, 1, s_stone);
-	Block& block = area.m_blocks[50][50][1];
+	Block& block = area.m_blocks[5][5][1];
 	block.setNotSolid();
 	block.addFluid(100, s_water);
 	FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
@@ -99,14 +99,14 @@ TEST_CASE("Remove volume can destroy FluidGroups.")
 }
 TEST_CASE("Flow into adjacent hole")
 {
-	Area area(100,100,100);
+	Area area(10,10,10);
 	registerTypes();
 	setSolidLayers(area, 0, 2, s_stone);
-	Block& destination = area.m_blocks[50][50][1];
-	Block& block2 = area.m_blocks[50][50][2];
-	Block& origin = area.m_blocks[50][51][2];
-	Block& block4 = area.m_blocks[50][50][3];
-	Block& block5 = area.m_blocks[50][51][3];
+	Block& destination = area.m_blocks[5][5][1];
+	Block& block2 = area.m_blocks[5][5][2];
+	Block& origin = area.m_blocks[5][6][2];
+	Block& block4 = area.m_blocks[5][5][3];
+	Block& block5 = area.m_blocks[5][6][3];
 	std::vector<FluidGroup*> newlySplit;
 	destination.setNotSolid();
 	block2.setNotSolid();
@@ -167,17 +167,17 @@ TEST_CASE("Flow into adjacent hole")
 }
 TEST_CASE("Flow across flat area")
 {
-	Area area(100,100,100);
+	Area area(20,20,20);
 	registerTypes();
 	setSolidLayer(area, 0, s_stone);
-	Block& block = area.m_blocks[50][50][1];
-	Block& block2 = area.m_blocks[50][52][1];
-	Block& block3 = area.m_blocks[51][51][1];
-	Block& block4 = area.m_blocks[50][53][1];
-	Block& block5 = area.m_blocks[50][54][1];
-	Block& block6 = area.m_blocks[50][55][1];
-	Block& block7 = area.m_blocks[56][50][1];
-	Block& block8 = area.m_blocks[57][50][1];
+	Block& block = area.m_blocks[10][10][1];
+	Block& block2 = area.m_blocks[10][12][1];
+	Block& block3 = area.m_blocks[11][11][1];
+	Block& block4 = area.m_blocks[10][13][1];
+	Block& block5 = area.m_blocks[10][14][1];
+	Block& block6 = area.m_blocks[10][15][1];
+	Block& block7 = area.m_blocks[16][10][1];
+	Block& block8 = area.m_blocks[17][10][1];
 	block.addFluid(MAX_BLOCK_VOLUME, s_water);
 	FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
 	fluidGroup->readStep();
@@ -262,18 +262,18 @@ TEST_CASE("Flow across flat area")
 }
 TEST_CASE("Flow across flat area double stack")
 {
-	Area area(100,100,100);
+	Area area(20,20,20);
 	registerTypes();
 	setSolidLayer(area, 0, s_stone);
-	Block& origin1 = area.m_blocks[50][50][1];
-	Block& origin2 = area.m_blocks[50][50][2];
-	Block& block1 = area.m_blocks[50][51][1];
-	Block& block2 = area.m_blocks[51][51][1];
-	Block& block3 = area.m_blocks[50][52][1];
-	Block& block4 = area.m_blocks[50][53][1];
-	Block& block5 = area.m_blocks[50][54][1];
-	Block& block6 = area.m_blocks[55][50][1];
-	Block& block7 = area.m_blocks[56][50][1];
+	Block& origin1 = area.m_blocks[10][10][1];
+	Block& origin2 = area.m_blocks[10][10][2];
+	Block& block1 = area.m_blocks[10][11][1];
+	Block& block2 = area.m_blocks[11][11][1];
+	Block& block3 = area.m_blocks[10][12][1];
+	Block& block4 = area.m_blocks[10][13][1];
+	Block& block5 = area.m_blocks[10][14][1];
+	Block& block6 = area.m_blocks[15][10][1];
+	Block& block7 = area.m_blocks[16][10][1];
 	std::vector<FluidGroup*> newlySplit;
 	origin1.addFluid(100, s_water);
 	origin2.addFluid(100, s_water);
@@ -361,18 +361,18 @@ TEST_CASE("Flow across flat area double stack")
 }
 TEST_CASE("Flow across area and then fill hole")
 {
-	Area area(100,100,100);
+	Area area(10,10,10);
 	registerTypes();
 	setSolidLayers(area, 0, 1, s_stone);
-	Block& block = area.m_blocks[50][50][2];
-	Block& block2a = area.m_blocks[50][51][2];
-	Block& block2b = area.m_blocks[51][50][2];
-	Block& block2c = area.m_blocks[50][49][2];
-	Block& block2d = area.m_blocks[49][50][2];
-	Block& block3 = area.m_blocks[51][51][2];
-	Block& block4 = area.m_blocks[50][52][2];
-	Block& block5 = area.m_blocks[50][52][1];
-	Block& block6 = area.m_blocks[50][53][2];
+	Block& block = area.m_blocks[5][5][2];
+	Block& block2a = area.m_blocks[5][6][2];
+	Block& block2b = area.m_blocks[6][5][2];
+	Block& block2c = area.m_blocks[5][4][2];
+	Block& block2d = area.m_blocks[4][5][2];
+	Block& block3 = area.m_blocks[6][6][2];
+	Block& block4 = area.m_blocks[5][7][2];
+	Block& block5 = area.m_blocks[5][7][1];
+	Block& block6 = area.m_blocks[5][8][2];
 	std::vector<FluidGroup*> newlySplit;
 	block.addFluid(MAX_BLOCK_VOLUME, s_water);
 	block5.setNotSolid();
@@ -427,13 +427,13 @@ TEST_CASE("Flow across area and then fill hole")
 }
 TEST_CASE("FluidGroups are able to split into parts")
 {
-	Area area(100,100,100);
+	Area area(10,10,10);
 	registerTypes();
 	setSolidLayers(area, 0, 2, s_stone);
-	Block& destination1 = area.m_blocks[50][49][1];
-	Block& destination2 = area.m_blocks[50][51][1];
-	Block& origin1 = area.m_blocks[50][50][2];
-	Block& origin2 = area.m_blocks[50][50][3];
+	Block& destination1 = area.m_blocks[5][4][1];
+	Block& destination2 = area.m_blocks[5][6][1];
+	Block& origin1 = area.m_blocks[5][5][2];
+	Block& origin2 = area.m_blocks[5][5][3];
 	std::vector<FluidGroup*> newlySplit;
 	destination1.setNotSolid();
 	destination2.setNotSolid();
@@ -468,12 +468,12 @@ TEST_CASE("FluidGroups are able to split into parts")
 }
 TEST_CASE("Fluid Groups merge")
 {
-	Area area(100,100,100);
+	Area area(10,10,10);
 	registerTypes();
 	setSolidLayers(area, 0, 1, s_stone);
-	Block& origin1 = area.m_blocks[50][49][1];
-	Block& block1 = area.m_blocks[50][50][1];
-	Block& origin2 = area.m_blocks[50][51][1];
+	Block& origin1 = area.m_blocks[5][4][1];
+	Block& block1 = area.m_blocks[5][5][1];
+	Block& origin2 = area.m_blocks[5][6][1];
 	std::vector<FluidGroup*> newlySplit;
 	origin1.setNotSolid();
 	block1.setNotSolid();
@@ -520,13 +520,13 @@ TEST_CASE("Fluid Groups merge")
 }
 TEST_CASE("Fluid Groups merge four blocks")
 {
-	Area area(100,100,100);
+	Area area(10,10,10);
 	registerTypes();
 	setSolidLayers(area, 0, 1, s_stone);
-	Block& block1 = area.m_blocks[50][49][1];
-	Block& block2 = area.m_blocks[50][50][1];
-	Block& block3 = area.m_blocks[50][51][1];
-	Block& block4 = area.m_blocks[50][52][1];
+	Block& block1 = area.m_blocks[5][4][1];
+	Block& block2 = area.m_blocks[5][5][1];
+	Block& block3 = area.m_blocks[5][6][1];
+	Block& block4 = area.m_blocks[5][7][1];
 	std::vector<FluidGroup*> newlySplit;
 	block1.setNotSolid();
 	block2.setNotSolid();
@@ -565,12 +565,12 @@ TEST_CASE("Fluid Groups merge four blocks")
 }
 TEST_CASE("Denser fluids sink")
 {
-	Area area(100,100,100);
+	Area area(10,10,10);
 	registerTypes();
 	setSolidLayers(area, 0, 2, s_stone);
-	Block& block1 = area.m_blocks[50][50][1];
-	Block& block2 = area.m_blocks[50][50][2];
-	Block& block3 = area.m_blocks[50][50][3];
+	Block& block1 = area.m_blocks[5][5][1];
+	Block& block2 = area.m_blocks[5][5][2];
+	Block& block3 = area.m_blocks[5][5][3];
 	std::vector<FluidGroup*> newlySplit;
 	block1.setNotSolid();
 	block2.setNotSolid();
@@ -660,16 +660,16 @@ TEST_CASE("Denser fluids sink")
 }
 TEST_CASE("Merge 3 groups at two block distance")
 {
-	Area area(100,100,100);
+	Area area(10,10,10);
 	registerTypes();
 	setSolidLayers(area, 0, 1, s_stone);
-	Block& block1 = area.m_blocks[50][47][1];
-	Block& block2 = area.m_blocks[50][48][1];
-	Block& block3 = area.m_blocks[50][49][1];
-	Block& block4 = area.m_blocks[50][50][1];
-	Block& block5 = area.m_blocks[50][51][1];
-	Block& block6 = area.m_blocks[50][52][1];
-	Block& block7 = area.m_blocks[50][53][1];
+	Block& block1 = area.m_blocks[5][2][1];
+	Block& block2 = area.m_blocks[5][3][1];
+	Block& block3 = area.m_blocks[5][4][1];
+	Block& block4 = area.m_blocks[5][5][1];
+	Block& block5 = area.m_blocks[5][6][1];
+	Block& block6 = area.m_blocks[5][7][1];
+	Block& block7 = area.m_blocks[5][8][1];
 	std::vector<FluidGroup*> newlySplit;
 	block1.setNotSolid();
 	block2.setNotSolid();
@@ -729,16 +729,16 @@ TEST_CASE("Merge 3 groups at two block distance")
 }
 TEST_CASE("Split test 2")
 {
-	Area area(100,100,100);
+	Area area(10,10,10);
 	registerTypes();
 	setSolidLayers(area, 0, 4, s_stone);
-	Block& block1 = area.m_blocks[50][49][1];
-	Block& block2 = area.m_blocks[50][50][1];
-	Block& block3 = area.m_blocks[50][50][2];
-	Block& origin1 = area.m_blocks[50][50][3];
-	Block& origin2 = area.m_blocks[50][51][3];
-	Block& origin3 = area.m_blocks[50][52][3];
-	Block& block4 = area.m_blocks[50][52][2];
+	Block& block1 = area.m_blocks[5][4][1];
+	Block& block2 = area.m_blocks[5][5][1];
+	Block& block3 = area.m_blocks[5][5][2];
+	Block& origin1 = area.m_blocks[5][5][3];
+	Block& origin2 = area.m_blocks[5][6][3];
+	Block& origin3 = area.m_blocks[5][7][3];
+	Block& block4 = area.m_blocks[5][7][2];
 	std::vector<FluidGroup*> newlySplit;
 	origin1.setNotSolid();
 	origin2.setNotSolid();
@@ -808,16 +808,16 @@ TEST_CASE("Split test 2")
 }
 TEST_CASE("Merge with group as it splits")
 {
-	Area area(100,100,100);
+	Area area(10,10,10);
 	registerTypes();
 	setSolidLayers(area, 0, 4, s_stone);
-	Block& origin1 = area.m_blocks[50][49][1];
-	Block& block1 = area.m_blocks[50][50][1];
-	Block& block2 = area.m_blocks[50][50][2];
-	Block& origin2 = area.m_blocks[50][50][3];
-	Block& origin3 = area.m_blocks[50][51][3];
-	Block& origin4 = area.m_blocks[50][52][3];
-	Block& block3 = area.m_blocks[50][52][2];
+	Block& origin1 = area.m_blocks[5][4][1];
+	Block& block1 = area.m_blocks[5][5][1];
+	Block& block2 = area.m_blocks[5][5][2];
+	Block& origin2 = area.m_blocks[5][5][3];
+	Block& origin3 = area.m_blocks[5][6][3];
+	Block& origin4 = area.m_blocks[5][7][3];
+	Block& block3 = area.m_blocks[5][7][2];
 	std::vector<FluidGroup*> newlySplit;
 	origin1.setNotSolid();
 	origin2.setNotSolid();
@@ -882,18 +882,18 @@ TEST_CASE("Merge with group as it splits")
 }
 TEST_CASE("Merge with two groups while spliting")
 {
-	Area area(100,100,100);
+	Area area(10,10,10);
 	registerTypes();
 	setSolidLayers(area, 0, 4, s_stone);
-	Block& origin1 = area.m_blocks[50][49][1];
-	Block& block1 = area.m_blocks[50][50][1];
-	Block& block2 = area.m_blocks[50][50][2];
-	Block& origin2 = area.m_blocks[50][50][3];
-	Block& origin3 = area.m_blocks[50][51][3];
-	Block& origin4 = area.m_blocks[50][52][3];
-	Block& block3 = area.m_blocks[50][52][2];
-	Block& block4 = area.m_blocks[50][52][1];
-	Block& origin5 = area.m_blocks[50][53][1];
+	Block& origin1 = area.m_blocks[5][4][1];
+	Block& block1 = area.m_blocks[5][5][1];
+	Block& block2 = area.m_blocks[5][5][2];
+	Block& origin2 = area.m_blocks[5][5][3];
+	Block& origin3 = area.m_blocks[5][6][3];
+	Block& origin4 = area.m_blocks[5][7][3];
+	Block& block3 = area.m_blocks[5][7][2];
+	Block& block4 = area.m_blocks[5][7][1];
+	Block& origin5 = area.m_blocks[5][8][1];
 	std::vector<FluidGroup*> newlySplit;
 	origin1.setNotSolid();
 	origin2.setNotSolid();
@@ -1161,5 +1161,111 @@ TEST_CASE("Three liquids")
 }
 TEST_CASE("Set not solid")
 {
-
+	Area area(10, 10, 10);
+	registerTypes();
+	setSolidLayers(area, 0, 1, s_stone);
+	Block& origin1 = area.m_blocks[5][5][1];
+	Block& block1 = area.m_blocks[5][6][1];
+	Block& block2 = area.m_blocks[5][7][1];
+	std::vector<FluidGroup*> newlySplit;
+	origin1.setNotSolid();
+	block2.setNotSolid();
+	origin1.addFluid(100, s_water);
+	FluidGroup* fg1 = origin1.getFluidGroup(s_water);
+	CHECK(fg1 != nullptr);
+	// Step 1.
+	fg1->readStep();
+	fg1->writeStep();
+	fg1->splitStep(newlySplit);
+	fg1->mergeStep();
+	CHECK(origin1.volumeOfFluidTypeContains(s_water) == 100);
+	CHECK(fg1->m_stable);
+	// Step 2.
+	block1.setNotSolid();
+	CHECK(!fg1->m_stable);
+	fg1->readStep();
+	fg1->writeStep();
+	fg1->splitStep(newlySplit);
+	fg1->mergeStep();
+	CHECK(origin1.volumeOfFluidTypeContains(s_water) == 50);
+	CHECK(block1.volumeOfFluidTypeContains(s_water) == 50);
+	// Step .
+	fg1->readStep();
+	fg1->writeStep();
+	fg1->splitStep(newlySplit);
+	fg1->mergeStep();
+	CHECK(origin1.volumeOfFluidTypeContains(s_water) == 33);
+	CHECK(block1.volumeOfFluidTypeContains(s_water) == 33);
+	CHECK(block2.volumeOfFluidTypeContains(s_water) == 33);
+	CHECK(!fg1->m_stable);
+	CHECK(fg1->m_excessVolume == 1);
+}
+TEST_CASE("Set solid")
+{
+	Area area(10, 10, 10);
+	registerTypes();
+	setSolidLayers(area, 0, 1, s_stone);
+	Block& origin1 = area.m_blocks[5][5][1];
+	Block& block1 = area.m_blocks[5][6][1];
+	Block& block2 = area.m_blocks[5][7][1];
+	std::vector<FluidGroup*> newlySplit;
+	origin1.setNotSolid();
+	block1.setNotSolid();
+	block2.setNotSolid();
+	origin1.addFluid(100, s_water);
+	FluidGroup* fg1 = origin1.getFluidGroup(s_water);
+	// Step 1.
+	fg1->readStep();
+	fg1->writeStep();
+	fg1->splitStep(newlySplit);
+	fg1->mergeStep();
+	CHECK(origin1.volumeOfFluidTypeContains(s_water) == 50);
+	CHECK(block1.volumeOfFluidTypeContains(s_water) == 50);
+	CHECK(fg1->m_excessVolume == 0);
+	block1.setSolid(s_stone);
+}
+TEST_CASE("Set solid and split")
+{
+	Area area(10, 10, 10);
+	registerTypes();
+	setSolidLayers(area, 0, 1, s_stone);
+	Block& block1 = area.m_blocks[5][5][1];
+	Block& origin1 = area.m_blocks[5][6][1];
+	Block& block2 = area.m_blocks[5][7][1];
+	std::vector<FluidGroup*> newlySplit;
+	block1.setNotSolid();
+	origin1.setNotSolid();
+	block2.setNotSolid();
+	origin1.addFluid(100, s_water);
+	FluidGroup* fg1 = origin1.getFluidGroup(s_water);
+	// Step 1.
+	fg1->readStep();
+	fg1->writeStep();
+	fg1->splitStep(newlySplit);
+	fg1->mergeStep();
+	CHECK(block1.volumeOfFluidTypeContains(s_water) == 33);
+	CHECK(origin1.volumeOfFluidTypeContains(s_water) == 33);
+	CHECK(block2.volumeOfFluidTypeContains(s_water) == 33);
+	CHECK(fg1->m_excessVolume == 1);
+	// Step 2.
+	origin1.setSolid(s_stone);
+	CHECK(origin1.isSolid());
+	CHECK(fg1->m_potentiallySplitFromSyncronusStep.size() == 2);
+	CHECK(fg1->m_potentiallySplitFromSyncronusStep.contains(&block1));
+	CHECK(fg1->m_potentiallySplitFromSyncronusStep.contains(&block2));
+	CHECK(fg1->m_excessVolume == 34);
+	fg1->readStep();
+	fg1->writeStep();
+	CHECK(block1.volumeOfFluidTypeContains(s_water) == 50);
+	CHECK(block2.volumeOfFluidTypeContains(s_water) == 50);
+	fg1->splitStep(newlySplit);
+	CHECK(newlySplit.size() == 1);
+	CHECK(area.m_fluidGroups.size() == 2);
+	FluidGroup* fg2 = &area.m_fluidGroups.back();
+	fg1->mergeStep();
+	fg2->mergeStep();
+	CHECK(fg1->m_stable);
+	//Step 3.
+	fg2->readStep();
+	CHECK(fg2->m_stable);
 }

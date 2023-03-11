@@ -29,7 +29,7 @@ public:
 	const MoveType* m_moveType;
 	ScheduledEvent* m_taskEvent;
 
-	baseActor();
+	baseActor(Block* l, const Shape* s, const MoveType* mt);
 	// Check location for route. If found set as own route and then register moving with area.
 	// Else register route request with area.
 	void setDestination(Block* block);
@@ -42,9 +42,7 @@ public:
 	uint32_t getVisionRange() const;
 	void taskComplete();
 	void doVision(std::unordered_set<Actor*> actors);
+	bool canSee(Actor* actor) const;
 	void exposedToFluid(const FluidType* fluidType);
-
-	
 };
-
 uint32_t baseActor::s_nextId = 1;

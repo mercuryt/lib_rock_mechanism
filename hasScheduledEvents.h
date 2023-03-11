@@ -13,14 +13,12 @@ public:
 	ScheduledEvent(uint32_t s);
 	virtual ~ScheduledEvent() {}
 	virtual void execute() = 0;
-protected:
-	friend class HasScheduledEvents;
 };
 
 class HasScheduledEvents
 {
-	std::unordered_map<uint32_t, std::list<ScheduledEvent*>> m_scheduledEvents;
 public:
+	std::unordered_map<uint32_t, std::list<ScheduledEvent*>> m_scheduledEvents;
 	void scheduleEvent(ScheduledEvent* scheduledEvent)
 	{
 		m_scheduledEvents[scheduledEvent->m_step].push_back(scheduledEvent);
@@ -31,7 +29,7 @@ public:
 		m_scheduledEvents[scheduledEvent->m_step].remove(scheduledEvent);
 		delete scheduledEvent;
 	}
-	void exeuteScheduledEvents(uint32_t stepNumber)
+	void executeScheduledEvents(uint32_t stepNumber)
 	{
 		for(ScheduledEvent* scheduledEvent : m_scheduledEvents[stepNumber])
 		{

@@ -45,11 +45,8 @@ public:
 	std::unordered_map<const Shape*, std::unordered_map<const MoveType*, std::unordered_map<Block*, 
 		std::shared_ptr<std::vector<Block*>>
 	>>> m_routeCache;
-	// Store blocks in default vision.
-	std::vector<Block*> m_visionCache;
 	// Cache versions, check if matches the m_cacheVersion in area to see if cache is still valid.
 	uint32_t m_routeCacheVersion;
-	uint32_t m_visionCacheVersion;
 	// Cache adjacent move costs. No version number: cleared only by changes to self / adjacent / diagonal. 
 	std::unordered_map<const Shape*, std::unordered_map<const MoveType*, std::vector<std::pair<Block*, uint32_t>>>> m_moveCostsCache;
 
@@ -80,12 +77,12 @@ public:
 	bool isSolid() const;
 	const MaterialType* getSolidMaterial() const;
 	// Validate the nongeneric object can enter this block and also any other blocks required by it's Shape comparing to m_totalStaticVolume.
-	bool shapeCanEnterEver(const Shape* shape) const;
+	bool shapeAndMoveTypeCanEnterEver(const Shape* shape, const MoveType* moveType) const;
 	// Get the FluidGroup for this fluid type in this block.
 	FluidGroup* getFluidGroup(const FluidType* fluidType) const;
 	// Get block at offset coordinates.
 	Block* offset(int32_t ax, int32_t ay, int32_t az) const;
-	// add fluid, handle falling / sinking, group membership, excessive quantity sent to fluid group.
+	// Add fluid, handle falling / sinking, group membership, excessive quantity sent to fluid group.
 	void addFluid(uint32_t volume, const FluidType* fluidType);
 	void removeFluid(uint32_t volume, const FluidType* fluidType);
 	bool shapeCanEnterCurrently(const Shape* shape) const;
@@ -100,7 +97,6 @@ public:
 	void enter(Actor* actor);
 	void exit(Actor* actor);
 	void clearMoveCostsCacheForSelfAndAdjacent();
-	void clearVisionCacheForSelfAndInDefaultVisualRange();
 	std::string toS();
 
 	// User provided.
@@ -110,6 +106,7 @@ public:
 	uint32_t moveCost(const MoveType* moveType, Block* origin) const;
 
 	bool canSeeThrough() const;
+	float visionDistanceModifier() const;
 
 	bool fluidCanEnterEver() const;
 	bool fluidCanEnterEver(const FluidType* fluidType) const;

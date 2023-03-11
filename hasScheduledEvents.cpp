@@ -3,7 +3,7 @@ MoveEvent::MoveEvent(uint32_t s, Actor* a) : ScheduledEvent(s), m_actor(a) { m_a
 void MoveEvent::execute()
 {
 	Block* block = *(m_actor->m_routeIter);
-	if(block->canEnterEver())
+	if(block->anyoneCanEnterEver() && block->canEnterEver(m_actor))
 	{
 		if(block->shapeCanEnterCurrently(m_actor->m_shape))
 		{

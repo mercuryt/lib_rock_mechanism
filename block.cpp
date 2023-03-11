@@ -17,7 +17,7 @@
 #include "hasShape.h"
 #include "fluidType.h"
 
-baseBlock::baseBlock() : m_solid(nullptr), m_routeCacheVersion(0), m_visionCacheVersion(0) {}
+baseBlock::baseBlock() : m_solid(nullptr), m_routeCacheVersion(0) {}
 void baseBlock::setup(Area* a, uint32_t ax, uint32_t ay, uint32_t az) {m_area=a;m_x=ax;m_y=ay;m_z=az;}
 void baseBlock::recordAdjacent()
 {
@@ -52,9 +52,11 @@ void baseBlock::setNotSolid()
 	for(Block* adjacent : m_adjacents)
 		if(adjacent != nullptr && adjacent->fluidCanEnterEver())
 			for(auto& [fluidType, pair] : adjacent->m_fluids)
-				pair.second->m_fillQueue.addBlock(adjacent);
+			{
+				pair.second->m_fillQueue.addBlock(static_cast<Block*>(this));
+				pair.second->m_stable = false;
+			}
 	clearMoveCostsCacheForSelfAndAdjacent();
-	clearVisionCacheForSelfAndInDefaultVisualRange();
 }
 void baseBlock::setSolid(const MaterialType* materialType)
 {
@@ -90,13 +92,17 @@ void baseBlock::setSolid(const MaterialType* materialType)
 	for(Block* adjacent : m_adjacents)
 		if(adjacent != nullptr && adjacent->fluidCanEnterEver())
 			for(auto& [fluidType, pair] : adjacent->m_fluids)
-				pair.second->removeBlock(static_cast<Block*>(this));
+				pair.second->m_fillQueue.removeBlock(static_cast<Block*>(this));
 	// Possible expire path caches.
 	// If more then one adjacent block can be entered then this block being cleared may open a new shortest path.
-	if(std::ranges::count_if(m_adjacents, [&](Block* block){ return block != nullptr && block->canEnterEver(); }) > 1)
+	if(std::ranges::count_if(m_adjacents, [&](Block* block){ return block != nullptr && block->anyoneCanEnterEver(); }) > 1)
 		m_area->expireRouteCache();
+	//TODO: Optionally clear diagonals as well.
 	clearMoveCostsCacheForSelfAndAdjacent();
-	clearVisionCacheForSelfAndInDefaultVisualRange();
+}
+bool baseBlock::canEnterEver(Actor* actor) const
+{
+	return shapeAndMoveTypeCanEnterEver(actor->m_shape, actor->m_moveType);
 }
 bool baseBlock::isSolid() const
 {
@@ -148,12 +154,12 @@ void baseBlock::removeFluid(uint32_t volume, const FluidType* fluidType)
 // Validate the nongeneric object can enter this block and also any other blocks required by it's Shape.
 // TODO: Caches other blocks by Shape*?
 // TODO: optimize for 1x1 case?
-bool baseBlock::shapeCanEnterEver(const Shape* shape) const
+bool baseBlock::shapeAndMoveTypeCanEnterEver(const Shape* shape, const MoveType* moveType) const
 {
 	for(auto& [m_x, m_y, m_z, v] : shape->positions)
 	{
 		Block* block = offset(m_x, m_y, m_z);
-		if(!block->canEnterEver())
+		if(!block->anyoneCanEnterEver() || !block->moveTypeCanEnter(moveType))
 			return false;
 	}
 	return true;
@@ -163,7 +169,7 @@ bool baseBlock::shapeCanEnterCurrently(const Shape* shape) const
 	for(auto& [x, y, z, v] : shape->positions)
 	{
 		Block* block = offset(x, y, z);
-		if(!block->m_totalDynamicVolume + v > MAX_BLOCK_VOLUME)
+		if(block->m_totalDynamicVolume + v > MAX_BLOCK_VOLUME)
 			return false;
 	}
 	return true;
@@ -181,7 +187,7 @@ std::vector<std::pair<Block*, uint32_t>> baseBlock::getMoveCosts(const Shape* sh
 {
 	std::vector<std::pair<Block*, uint32_t>> output;
 	for(Block* block : m_adjacents)
-		if(block != nullptr && block->shapeCanEnterEver(shape) && block->moveTypeCanEnter(moveType))
+		if(block != nullptr && block->shapeAndMoveTypeCanEnterEver(shape, moveType))
 			output.emplace_back(block, block->moveCost(moveType, static_cast<Block*>(this)));
 	return output;
 }
@@ -300,15 +306,6 @@ void baseBlock::clearMoveCostsCacheForSelfAndAdjacent()
 	for(Block* adjacent : m_adjacents)
 		if(adjacent != nullptr)
 			adjacent->m_moveCostsCache.clear();
-}
-void baseBlock::clearVisionCacheForSelfAndInDefaultVisualRange()
-{
-	// Expire vision caches in all blocks visible from here at cacheable vision distance.
-	for(Block* visible : VisionRequest::getVisibleBlocks(static_cast<Block*>(this), CACHEABLE_VISION_RANGE))
-	{
-		visible->m_visionCache.clear();
-		visible->m_visionCacheVersion = 0;
-	}
 }
 std::string baseBlock::toS()
 {

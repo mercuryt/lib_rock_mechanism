@@ -4,3 +4,5 @@
 #include "testArea.h"
 #include "testCaveIn.h"
 #include "testFluid.h"
+#include "testVision.h"
+#include "testRoute.h"
