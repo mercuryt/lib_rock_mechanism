@@ -1,6 +1,5 @@
+#include "pathTemplate.h"
 //TODO: Consolidate duplicate requests: store multiple actors per request.
-RouteNode::RouteNode(Block* b, RouteNode* rn) : block(b), previous(rn) {}
-ProposedRouteStep::ProposedRouteStep(RouteNode* rn, uint32_t tmc) : routeNode(rn),  totalMoveCost(tmc) {}
 RouteRequest::RouteRequest(Actor* a) : m_actor(a) {}
 void RouteRequest::readStep()
 {
@@ -8,55 +7,23 @@ void RouteRequest::readStep()
 	Block* end = m_actor->m_destination;
 	assert(start != nullptr);
 	assert(end != nullptr);
-	std::unordered_set<Block*> closed;
-	closed.insert(start);
 	// Huristic: taxi distance to destination times constant plus total move cost.
 	auto priority = [&](ProposedRouteStep& proposedRouteStep)
 	{
 		return (proposedRouteStep.routeNode->block->taxiDistance(end) * PATH_HURISTIC_CONSTANT) + proposedRouteStep.totalMoveCost;
 	};
 	auto compare = [&](ProposedRouteStep& a, ProposedRouteStep& b) { return priority(a) > priority(b); };
-	std::list<RouteNode> routeNodes;
-	// A* algorithm.
-	std::priority_queue<ProposedRouteStep, std::vector<ProposedRouteStep>, decltype(compare)> open(compare);
-	routeNodes.emplace_back(start, nullptr);
-	open.emplace(&routeNodes.back(), 0);
-	assert(open.top().routeNode->block == start);
-	while(!open.empty())
-	{
-		ProposedRouteStep proposedRouteStep = open.top();
-		open.pop();
-		Block* block = proposedRouteStep.routeNode->block;
-		assert(block != nullptr);
-		if(block == end)
-		{
-			RouteNode* routeNode = proposedRouteStep.routeNode;
-			// Route found, convert to stack.
-			// Exclude the starting point.
-			while(routeNode->previous != nullptr)
-			{
-				m_result.push_back(routeNode->block);
-				assert(routeNode->block != nullptr);
-				routeNode = routeNode->previous;
-			}
-			std::reverse(m_result.begin(), m_result.end());
-			return;
-		}
-		std::vector<std::pair<Block*, uint32_t>> adjacentMoveCosts;
-		//TODO: Add a reserve for adjacent move costs with a configurable quantity.
-		// Access or generate adjacent move cost data.
+	auto isValid = [&](Block* block){ return block->anyoneCanEnterEver() && block->canEnterEver(m_actor); };
+	auto isDone = [&](Block* block){ return block == end; };
+	std::vector<std::pair<Block*, uint32_t>> adjacentMoveCosts;
+	auto adjacentCosts = [&](Block* block){
 		if(block->m_moveCostsCache.contains(m_actor->m_shape) && block->m_moveCostsCache[m_actor->m_shape].contains(m_actor->m_moveType))
 			adjacentMoveCosts = block->m_moveCostsCache[m_actor->m_shape][m_actor->m_moveType];
 		else
 			m_moveCostsToCache[block] = adjacentMoveCosts = block->getMoveCosts(m_actor->m_shape, m_actor->m_moveType);
-		for(auto& [adjacent, moveCost] : adjacentMoveCosts)
-			if(adjacent->anyoneCanEnterEver() && adjacent->canEnterEver(m_actor) && !closed.contains(adjacent))
-			{
-				routeNodes.emplace_back(adjacent, proposedRouteStep.routeNode);
-				open.emplace(&routeNodes.back(), moveCost + proposedRouteStep.totalMoveCost);
-				closed.insert(adjacent);
-			}
-	}
+		return adjacentMoveCosts;
+	};
+	GetPath getPath(isValid, compare, isDone, adjacentCosts, start, m_result);
 }
 void RouteRequest::writeStep()
 {

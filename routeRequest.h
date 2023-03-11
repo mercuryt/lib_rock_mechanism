@@ -2,22 +2,6 @@
 #include "shape.h"
 
 class Block;
-
-struct RouteNode
-{
-
-	Block* block;
-	RouteNode* previous;
-	RouteNode(Block* b, RouteNode* rn);
-};
-
-struct ProposedRouteStep
-{
-	RouteNode* routeNode;
-	uint32_t totalMoveCost;
-	ProposedRouteStep(RouteNode* rn, uint32_t tmc);
-};
-
 class RouteRequest
 {
 public:
@@ -29,6 +13,6 @@ public:
 	
 	// Find the route.
 	void readStep();
-	// Cache found route and move costs. Apply to waiting actors.
+	// Cache found route and move costs. Apply to actor and schedule first move step.
 	void writeStep();
 };

@@ -1,3 +1,4 @@
+#pragma once
 #include <vector>
 class Block;
 struct RouteNode
@@ -14,40 +15,45 @@ struct ProposedRouteStep
 	//ProposedRouteStep(RouteNode* rn, uint32_t tmc) : routeNode(rn), totalMoveCost(tmc) {}
 };
 template<typename IsValidType, typename CompareType, typename IsDoneType, typename AdjacentCostsType>
-void getPath(isValidType& isValid, CompareType& compare, IsDoneType& isDone, AdjacentCostsType adjacentCosts, Block* start, std::vector<Block*>& output)
+class GetPath
 {
-	std::unordered_set<Block*> closed;
-	closed.insert(start);
-	std::list<RouteNode> routeNodes;
-	std::priority_queue<ProposedRouteStep, std::vector<ProposedRouteStep>, decltype(compare)> open(compare);
-	routeNodes.emplace_back(start, nullptr);
-	open.emplace(&routeNodes.back(), 0);
-	while(!open.empty())
+public:
+	std::unordered_set<Block*> m_closed;
+	GetPath(IsValidType& isValid, CompareType& compare, IsDoneType& isDone, AdjacentCostsType adjacentCosts, Block* start, std::vector<Block*>& output)
 	{
-		ProposedRouteStep proposedRouteStep = open.top();
-		open.pop();
-		Block* block = proposedRouteStep.routeNode->block;
-		assert(block != nullptr);
-		if(isDone(block))
+		std::unordered_set<Block*> closed;
+		m_closed.insert(start);
+		std::list<RouteNode> routeNodes;
+		std::priority_queue<ProposedRouteStep, std::vector<ProposedRouteStep>, decltype(compare)> open(compare);
+		routeNodes.emplace_back(start, nullptr);
+		open.emplace(&routeNodes.back(), 0);
+		while(!open.empty())
 		{
-			RouteNode* routeNode = proposedRouteStep.routeNode;
-			// Route found, push to output.
-			// Exclude the starting point.
-			while(routeNode->previous != nullptr)
+			ProposedRouteStep proposedRouteStep = open.top();
+			open.pop();
+			Block* block = proposedRouteStep.routeNode->block;
+			assert(block != nullptr);
+			if(isDone(block))
 			{
-				output.push_back(routeNode->block);
-				assert(routeNode->block != nullptr);
-				routeNode = routeNode->previous;
+				RouteNode* routeNode = proposedRouteStep.routeNode;
+				// Route found, push to output.
+				// Exclude the starting point.
+				while(routeNode->previous != nullptr)
+				{
+					output.push_back(routeNode->block);
+					assert(routeNode->block != nullptr);
+					routeNode = routeNode->previous;
+				}
+				std::reverse(output.begin(), output.end());
+				return;
 			}
-			std::reverse(m_result.begin(), m_result.end());
-			return;
+			for(auto& [adjacent, moveCost] : adjacentCosts(block))
+				if(isValid(adjacent) && !m_closed.contains(adjacent))
+				{
+					routeNodes.emplace_back(adjacent, proposedRouteStep.routeNode);
+					open.emplace(&routeNodes.back(), moveCost + proposedRouteStep.totalMoveCost);
+					m_closed.insert(adjacent);
+				}
 		}
-		for(auto& [adjacent, moveCost] : adjacentCosts(block))
-			if(isValid(adjacent) && !closed.contains(adjacent))
-			{
-				routeNodes.emplace_back(adjacent, proposedRouteStep.routeNode);
-				open.emplace(&routeNodes.back(), moveCost + proposedRouteStep.totalMoveCost);
-				closed.insert(adjacent);
-			}
 	}
-}
+};
