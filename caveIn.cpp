@@ -14,6 +14,7 @@ void baseArea::stepCaveInRead()
 	std::unordered_set<std::unordered_set<Block*>*> anchoredChunks;
 	std::unordered_map<Block*, std::unordered_set<Block*>*> chunksByBlock;
 	std::deque<Block*> blockQueue;
+
 	//TODO: blockQueue.insert?
 	//blockQueue.insert(blockQueue.end(), m_caveInCheck.begin(), m_caveInCheck.end());
 	// For some reason the above line adds 64 elements to blockQueue rather then the expected 2.

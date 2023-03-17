@@ -1,0 +1,4 @@
+Many functions take pointers even though the pointers are not modified and they should be able to take references. They can't take references because they can't be cast to from base classes. Does this need CTRP to fix?
+
+-flto
+	Optimization flag to use for production build

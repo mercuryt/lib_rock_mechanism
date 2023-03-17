@@ -15,8 +15,8 @@ public:
 		{
 			Block*& block = openList.top();
 			openList.pop();
-			for(Block* adjacent : block->m_adjacents)
-				if(adjacent != nullptr && condition(adjacent) && !output.contains(adjacent))
+			for(Block* adjacent : block->m_adjacentsVector)
+				if(condition(adjacent) && !output.contains(adjacent))
 				{
 					output.insert(adjacent);
 					openList.push(adjacent);

@@ -1,6 +1,7 @@
 #pragma once
 
-baseActor::baseActor(Block* l, const Shape* s, const MoveType* mt) : HasShape(s), m_id(s_nextId++), m_moveType(mt)
+baseActor::baseActor(Block* l, const Shape* s, const MoveType* mt) : 
+	HasShape(s), m_id(s_nextId++), m_moveType(mt)
 {
 	setLocation(l);
 }
@@ -17,6 +18,10 @@ void baseActor::setLocation(Block* block)
 	assert(block != nullptr);
 	assert(block->anyoneCanEnterEver());
 	assert(block->canEnterCurrently(static_cast<Actor*>(this)));
-	m_location = block;
 	block->enter(static_cast<Actor*>(this));
+}
+baseActor::~baseActor()
+{
+	if(m_location != nullptr)
+		m_location->m_area->m_locationBuckets.erase(static_cast<Actor*>(this));
 }

@@ -18,6 +18,7 @@
 #include "routeRequest.h"
 #include "buckets.h"
 #include "hasScheduledEvents.h"
+#include "locationBuckets.h"
 
 
 class baseArea : public HasScheduledEvents
@@ -27,6 +28,7 @@ public:
 	uint32_t m_sizeY;
 	uint32_t m_sizeZ;
 	std::vector<std::vector<std::vector<Block>>> m_blocks;
+	LocationBuckets m_locationBuckets;
 	std::list<FluidGroup> m_fluidGroups;
 	std::unordered_set<FluidGroup*> m_unstableFluidGroups;
 	std::unordered_set<Block*> m_caveInCheck;
@@ -34,7 +36,7 @@ public:
 	std::vector<VisionRequest> m_visionRequestQueue;
 	std::shared_mutex m_blockMutex;
 	uint32_t m_routeCacheVersion;
-	Buckets<Actor, ACTOR_DO_VISION_FREQUENCY> m_visionBuckets;
+	Buckets<Actor, s_actorDoVisionFrequency> m_visionBuckets;
 	std::vector<std::tuple<std::vector<Block*>,uint32_t,uint32_t>> m_caveInData;
 	std::unordered_set<FluidGroup*> m_setStable;
 	std::unordered_set<FluidGroup*> m_toDestroy;

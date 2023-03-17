@@ -2,9 +2,9 @@ FillQueue::FillQueue(FluidGroup* fluidGroup) : FluidQueue(fluidGroup) {}
 void FillQueue::buildFor(std::unordered_set<Block*>& members)
 {
 	for(Block* block : members)
-		for(Block* adjacent : block->m_adjacents)
-			 if(adjacent != nullptr && adjacent->fluidCanEnterEver() && adjacent->fluidCanEnterEver(m_fluidGroup->m_fluidType) &&
-				adjacent->m_fluids[m_fluidGroup->m_fluidType].first != MAX_BLOCK_VOLUME
+		for(Block* adjacent : block->m_adjacentsVector)
+			 if(adjacent->fluidCanEnterEver() && adjacent->fluidCanEnterEver(m_fluidGroup->m_fluidType) &&
+				adjacent->m_fluids[m_fluidGroup->m_fluidType].first != s_maxBlockVolume
 			   )
 				addBlock(adjacent);
 }
@@ -39,14 +39,14 @@ void FillQueue::recordDelta(uint32_t volume)
 	for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 	{
 		iter->delta += volume;
-		assert(iter->delta <= MAX_BLOCK_VOLUME);
+		assert(iter->delta <= s_maxBlockVolume);
 		assert(iter->capacity >= volume);
 		iter->capacity -= volume;
 	}
 	// Record full blocks and get next group.
 	if(groupCapacityPerBlock() == 0)
 	{
-		if((m_groupStart->block->volumeOfFluidTypeContains(m_fluidGroup->m_fluidType) + m_groupStart->delta) == MAX_BLOCK_VOLUME)
+		if((m_groupStart->block->volumeOfFluidTypeContains(m_fluidGroup->m_fluidType) + m_groupStart->delta) == s_maxBlockVolume)
 			for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 				m_futureFull.insert(iter->block);
 		m_groupStart = m_groupEnd;
@@ -70,7 +70,7 @@ void FillQueue::applyDelta()
 			iter->block->m_fluids.emplace(m_fluidGroup->m_fluidType, std::make_pair(0, m_fluidGroup));
 		iter->block->m_fluids[m_fluidGroup->m_fluidType].first += iter->delta;
 		iter->block->m_totalFluidVolume += iter->delta;
-		if(iter->block->m_totalFluidVolume > MAX_BLOCK_VOLUME)
+		if(iter->block->m_totalFluidVolume > s_maxBlockVolume)
 			m_overfull.insert(iter->block);
 	}
 }
@@ -85,7 +85,7 @@ uint32_t FillQueue::getPriority(FutureFlowBlock& futureFlowBlock) const
 {
 	if(futureFlowBlock.capacity == 0)
 		return UINT32_MAX;
-	return (futureFlowBlock.block->m_z + 1) * MAX_BLOCK_VOLUME * 2 - futureFlowBlock.capacity;
+	return (futureFlowBlock.block->m_z + 1) * s_maxBlockVolume * 2 - futureFlowBlock.capacity;
 }
 void FillQueue::findGroupEnd()
 {

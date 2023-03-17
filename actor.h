@@ -44,5 +44,6 @@ public:
 	void doVision(std::unordered_set<Actor*> actors);
 	bool canSee(Actor* actor) const;
 	void exposedToFluid(const FluidType* fluidType);
+	~baseActor();
 };
 uint32_t baseActor::s_nextId = 1;

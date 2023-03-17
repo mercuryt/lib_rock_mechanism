@@ -4,26 +4,26 @@
 
 #pragma once
 
-baseArea::baseArea(uint32_t x, uint32_t y, uint32_t z) : m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_routeCacheVersion(0)
+baseArea::baseArea(uint32_t x, uint32_t y, uint32_t z) :
+	m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_locationBuckets(static_cast<Area&>(*this)), m_routeCacheVersion(0)
 {
 	// build m_blocks
-	m_blocks.resize(x);
-	for(uint32_t ix = 0; ix < x; ++ix)
+	m_blocks.resize(m_sizeX);
+	for(uint32_t x = 0; x < m_sizeX; ++x)
 	{
-		m_blocks[ix].resize(y);
-		for(uint32_t iy = 0; iy < y; ++iy)
+		m_blocks[x].resize(m_sizeY);
+		for(uint32_t y = 0; y < m_sizeY; ++y)
 		{
-			m_blocks[ix][iy].resize(z);
-			for(uint32_t iz = 0; iz < z; ++iz)
-				m_blocks[ix][iy][iz].setup(static_cast<Area*>(this), ix, iy, iz);
+			m_blocks[x][y].resize(m_sizeZ);
+			for(uint32_t z = 0; z < m_sizeZ; ++z)
+				m_blocks[x][y][z].setup(static_cast<Area*>(this), x, y, z);
 		}
 	}
 	// record adjacent m_blocks
-	for(uint32_t ix = 0; ix < x; ++ix)
-		for(uint32_t iy = 0; iy < y; ++iy)
-			for(uint32_t iz = 0; iz < z; ++iz)
-				m_blocks[ix][iy][iz].recordAdjacent();
-	//TODO: record diagonal?
+	for(uint32_t x = 0; x < m_sizeX; ++x)
+		for(uint32_t y = 0; y < m_sizeY; ++y)
+			for(uint32_t z = 0; z < m_sizeZ; ++z)
+				m_blocks[x][y][z].recordAdjacent();
 }
 void baseArea::readStep()
 { 
@@ -32,7 +32,7 @@ void baseArea::readStep()
 	m_visionRequestQueue.clear();
 	for(Actor* actor : m_visionBuckets.get(s_step))
 	{
-		m_visionRequestQueue.emplace_back(actor);
+		m_visionRequestQueue.emplace_back(*actor);
 		VisionRequest& visionRequest = m_visionRequestQueue.back();
 		s_pool.push_task([&](){visionRequest.readStep(); });
 	}

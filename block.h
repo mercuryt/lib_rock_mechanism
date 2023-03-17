@@ -41,6 +41,7 @@ public:
 	// Store adjacent in an array, with index determined by relative position.
 	// below = 0, < = 1, ^ = 2, > = 3, v = 4, above = 5.
 	std::array<Block*, 6> m_adjacents;
+	std::vector<Block*> m_adjacentsVector;
 	// Store routes to other blocks by Shape*, MoveType* and destination*  
 	std::unordered_map<const Shape*, std::unordered_map<const MoveType*, std::unordered_map<Block*, 
 		std::shared_ptr<std::vector<Block*>>
@@ -64,11 +65,15 @@ public:
 	std::unordered_map<HasShape*, uint32_t> m_nongenerics;
 	// Track Actors and their volume which is in this block.
 	std::unordered_map<Actor*, uint32_t> m_actors;
+	// Store the location bucket this block belongs to.
+	std::unordered_set<Actor*>* m_locationBucket;
 
 	// Constructor initalizes some members.
 	baseBlock();
 	void setup(Area* a, uint32_t ax, uint32_t ay, uint32_t az);
 	void recordAdjacent();
+	void getAdjacentWithEdgeAdjacent(std::vector<Block*>& output) const;
+	void getAdjacentWithEdgeAndCornerAdjacent(std::vector<Block*>& output) const;
 	uint32_t distance(Block* block) const;
 	uint32_t taxiDistance(Block* block) const;
 	bool isAdjacentToAny(std::unordered_set<Block*>& blocks) const;
@@ -92,10 +97,11 @@ public:
 	bool isAdjacentToFluidGroup(const FluidGroup* fluidGroup) const;
 	uint32_t volumeOfFluidTypeCanEnter(const FluidType* fluidType) const;
 	uint32_t volumeOfFluidTypeContains(const FluidType* fluidType) const;
-	// Move less dense fluids to their group's excessVolume until MAX_BLOCK_VOLUME is achieved.
+	// Move less dense fluids to their group's excessVolume until s_maxBlockVolume is achieved.
 	void resolveFluidOverfull();
 	void enter(Actor* actor);
 	void exit(Actor* actor);
+	// To be overriden by user code if diagonal movement allowed.
 	void clearMoveCostsCacheForSelfAndAdjacent();
 	std::string toS();
 
@@ -105,7 +111,7 @@ public:
 	bool canEnterEver() const;
 	uint32_t moveCost(const MoveType* moveType, Block* origin) const;
 
-	bool canSeeThrough() const;
+	bool canSeeThroughFrom(Block* block) const;
 	float visionDistanceModifier() const;
 
 	bool fluidCanEnterEver() const;

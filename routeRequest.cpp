@@ -1,5 +1,4 @@
 #include "pathTemplate.h"
-//TODO: Consolidate duplicate requests: store multiple actors per request.
 RouteRequest::RouteRequest(Actor* a) : m_actor(a) {}
 void RouteRequest::readStep()
 {
@@ -10,7 +9,7 @@ void RouteRequest::readStep()
 	// Huristic: taxi distance to destination times constant plus total move cost.
 	auto priority = [&](ProposedRouteStep& proposedRouteStep)
 	{
-		return (proposedRouteStep.routeNode->block->taxiDistance(end) * PATH_HURISTIC_CONSTANT) + proposedRouteStep.totalMoveCost;
+		return (proposedRouteStep.routeNode->block->taxiDistance(end) * s_pathHuristicConstant) + proposedRouteStep.totalMoveCost;
 	};
 	auto compare = [&](ProposedRouteStep& a, ProposedRouteStep& b) { return priority(a) > priority(b); };
 	auto isValid = [&](Block* block){ return block->anyoneCanEnterEver() && block->canEnterEver(m_actor); };

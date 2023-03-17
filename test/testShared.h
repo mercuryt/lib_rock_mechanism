@@ -2,15 +2,18 @@
  * Basic setup for lib_rock_mechanism. Users should fill out the 4 methods below and add custom member data to the three class declarations. 
  * Will be primarily interacted with via Area::step, Block::setSolid, Actor::setPosition, and Actor::setDestination.
  */
-
-#define MAX_BLOCK_VOLUME 100
+#include <cstdint>
+const static uint32_t s_maxBlockVolume = 100;
 // 1 for testing only, otherwise should be higher.
-#define ACTOR_DO_VISION_FREQUENCY 1
-#define PATH_HURISTIC_CONSTANT 1
-#define MAX_VISION_DISTANCE_MODIFIER 1.1
+const static uint32_t s_actorDoVisionFrequency = 1;
+const static uint32_t s_pathHuristicConstant = 1;
+const static float s_maxDistanceVisionModifier = 1.1;
+const static uint32_t s_locationBucketSize = 5;
+const static bool s_fluidPiston = true;
 
 #include "../block.h"
 #include "../actor.h"
+#include "../locationBuckets.h"
 #include "../area.h"
 #include "../moveType.h"
 #include "../fluidType.h"
@@ -20,6 +23,7 @@
 #include "../routeRequest.h"
 #include "../fluidGroup.h"
 #include "../hasScheduledEvents.h"
+//#include "../room.h"
 
 static uint32_t s_step = 1;
 BS::thread_pool_light s_pool;
@@ -48,7 +52,7 @@ public:
 	uint32_t moveCost(const MoveType* moveType, Block* origin) const;
 	bool canStandOn() const;
 
-	bool canSeeThrough() const;
+	bool canSeeThroughFrom(Block* block) const;
 	float visionDistanceModifier() const;
 
 	bool fluidCanEnterEver() const;
@@ -91,6 +95,8 @@ public:
 #include "../area.cpp"
 #include "../caveIn.cpp"
 #include "../hasScheduledEvents.cpp"
+//#include "../room.cpp"
+#include "../locationBuckets.cpp"
 
 // Can anyone enter ever?
 bool Block::anyoneCanEnterEver() const
@@ -118,7 +124,7 @@ bool Block::canStandOn() const
 {
 	return isSolid();
 }
-bool Block::canSeeThrough() const
+bool Block::canSeeThroughFrom(Block* block) const
 {
 	return !isSolid();
 }

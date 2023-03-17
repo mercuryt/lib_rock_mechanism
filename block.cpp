@@ -18,14 +18,63 @@
 #include "fluidType.h"
 
 baseBlock::baseBlock() : m_solid(nullptr), m_routeCacheVersion(0) {}
-void baseBlock::setup(Area* a, uint32_t ax, uint32_t ay, uint32_t az) {m_area=a;m_x=ax;m_y=ay;m_z=az;}
+void baseBlock::setup(Area* a, uint32_t ax, uint32_t ay, uint32_t az)
+{m_area=a;m_x=ax;m_y=ay;m_z=az;m_locationBucket = a->m_locationBuckets.getBucketFor(static_cast<Block*>(this));}
 void baseBlock::recordAdjacent()
 {
-	static int32_t offsetsList[6][3] = {{0,0,-1}, {0,-1,0}, {-1,0,0}, {0,1,0}, {1,0,0}, {0,0,1}};
+	static const int32_t offsetsList[6][3] = {{0,0,-1}, {0,-1,0}, {-1,0,0}, {0,1,0}, {1,0,0}, {0,0,1}};
 	for(uint32_t i = 0; i < 6; i++)
 	{
 		auto& offsets = offsetsList[i];
-		m_adjacents[i] = offset(offsets[0],offsets[1],offsets[2]);
+		Block* block = m_adjacents[i] = offset(offsets[0],offsets[1],offsets[2]);
+		if(block != nullptr)
+			m_adjacentsVector.push_back(block);
+	}
+}
+void baseBlock::getAdjacentWithEdgeAdjacent(std::vector<Block*>& output) const
+{
+	static const int32_t offsetsList[18][3] = {
+		{-1,0,-1}, {0,-1,-1},
+		{0,0,-1}, {0,1,-1},
+		{1,0,-1}, 
+
+		{-1,-1,0}, {-1,0,0}, {0,-1,0},
+		{1,1,0}, {0,1,0},
+		{1,-1,0}, {1,0,0}, {0,-1,0},
+
+		{-1,0,1}, {0,-1,1},
+		{0,0,1}, {0,1,1},
+		{1,0,1}, 
+	};
+	for(uint32_t i = 0; i < 26; i++)
+	{
+		auto& offsets = offsetsList[i];
+		Block* block = offset(offsets[0],offsets[1],offsets[2]);
+		if(block != nullptr)
+			output.push_back(block);
+	}
+}
+void baseBlock::getAdjacentWithEdgeAndCornerAdjacent(std::vector<Block*>& output) const
+{
+	static const int32_t offsetsList[26][3] = {
+		{-1,-1,-1}, {-1,0,-1}, {0,-1,-1},
+		{1,1,-1}, {0,0,-1}, {0,1,-1},
+		{1,-1,-1}, {1,0,-1}, {0,-1,-1}, 
+
+		{-1,-1,0}, {-1,0,0}, {0,-1,0},
+		{1,1,0}, {0,1,0},
+		{1,-1,0}, {1,0,0}, {-1,-1,0},
+
+		{-1,-1,1}, {-1,0,1}, {0,-1,1},
+		{1,1,1}, {0,0,1}, {0,1,1},
+		{1,-1,1}, {1,0,1}, {0,-1,1}
+	};
+	for(uint32_t i = 0; i < 26; i++)
+	{
+		auto& offsets = offsetsList[i];
+		Block* block = offset(offsets[0],offsets[1],offsets[2]);
+		if(block != nullptr)
+			output.push_back(block);
 	}
 }
 uint32_t baseBlock::distance(Block* block) const
@@ -41,7 +90,7 @@ uint32_t baseBlock::taxiDistance(Block* block) const
 }
 bool baseBlock::isAdjacentToAny(std::unordered_set<Block*>& blocks) const
 {
-	for(Block* adjacent : m_adjacents)
+	for(Block* adjacent : m_adjacentsVector)
 		if(blocks.contains(adjacent))
 			return true;
 	return false;
@@ -49,8 +98,8 @@ bool baseBlock::isAdjacentToAny(std::unordered_set<Block*>& blocks) const
 void baseBlock::setNotSolid()
 {
 	m_solid = nullptr;
-	for(Block* adjacent : m_adjacents)
-		if(adjacent != nullptr && adjacent->fluidCanEnterEver())
+	for(Block* adjacent : m_adjacentsVector)
+		if(adjacent->fluidCanEnterEver())
 			for(auto& [fluidType, pair] : adjacent->m_fluids)
 			{
 				pair.second->m_fillQueue.addBlock(static_cast<Block*>(this));
@@ -71,31 +120,36 @@ void baseBlock::setSolid(const MaterialType* materialType)
 		// TODO: Add destroy option.
 		if(pair.second->m_drainQueue.m_set.empty() && pair.second->m_fillQueue.m_set.empty())
 		{
-			Block* above = m_adjacents[5];
-			while(above != nullptr)
+			if constexpr (s_fluidPiston)
 			{
-				if(above->fluidCanEnterEver() && above->fluidCanEnterEver(fluidType) &&
-					above->fluidCanEnterCurrently(fluidType)
-				  )
+				Block* above = m_adjacents[5];
+				while(above != nullptr)
 				{
-					pair.second->m_fillQueue.addBlock(above);
-					break;
+					if(above->fluidCanEnterEver() && above->fluidCanEnterEver(fluidType) &&
+							above->fluidCanEnterCurrently(fluidType)
+					  )
+					{
+						pair.second->m_fillQueue.addBlock(above);
+						break;
+					}
+					above = above->m_adjacents[5];
 				}
-				above = above->m_adjacents[5];
+				// The only way that this 'piston' code should be triggered is if something falls, which means the top layer cannot be full.
+				assert(above != nullptr);
 			}
-			// The only way that this 'piston' code should be triggered is if something falls, which means the top layer cannot be full.
-			assert(above != nullptr);
+			else
+				std::erase(m_area->m_fluidGroups, pair.second);
 		}
 	}
 	m_fluids.clear();
 	// Remove from fluid fill queues.
-	for(Block* adjacent : m_adjacents)
-		if(adjacent != nullptr && adjacent->fluidCanEnterEver())
+	for(Block* adjacent : m_adjacentsVector)
+		if(adjacent->fluidCanEnterEver())
 			for(auto& [fluidType, pair] : adjacent->m_fluids)
 				pair.second->m_fillQueue.removeBlock(static_cast<Block*>(this));
 	// Possible expire path caches.
 	// If more then one adjacent block can be entered then this block being cleared may open a new shortest path.
-	if(std::ranges::count_if(m_adjacents, [&](Block* block){ return block != nullptr && block->anyoneCanEnterEver(); }) > 1)
+	if(std::ranges::count_if(m_adjacentsVector, [&](Block* block){ return block->anyoneCanEnterEver(); }) > 1)
 		m_area->expireRouteCache();
 	//TODO: Optionally clear diagonals as well.
 	clearMoveCostsCacheForSelfAndAdjacent();
@@ -125,18 +179,13 @@ void baseBlock::addFluid(uint32_t volume, const FluidType* fluidType)
 	m_totalFluidVolume += volume;
 	// Find fluid group.
 	FluidGroup* fluidGroup = nullptr;
-	for(Block* adjacent : m_adjacents)
-	{
-		if(adjacent == nullptr || !adjacent->fluidCanEnterEver())
-			continue;
-		if(adjacent->m_fluids.contains(fluidType))
+	for(Block* adjacent : m_adjacentsVector)
+		if(adjacent->fluidCanEnterEver() && adjacent->m_fluids.contains(fluidType))
 		{
 			fluidGroup = adjacent->m_fluids.at(fluidType).second;
 			fluidGroup->addBlock(static_cast<Block*>(this));
 			continue;
 		}
-
-	}
 	// Create fluid group.
 	if(fluidGroup == nullptr)
 	{
@@ -144,7 +193,7 @@ void baseBlock::addFluid(uint32_t volume, const FluidType* fluidType)
 		fluidGroup = m_area->createFluidGroup(fluidType, blocks);
 	}
 	// Shift less dense fluids to excessVolume.
-	if(m_totalFluidVolume > MAX_BLOCK_VOLUME)
+	if(m_totalFluidVolume > s_maxBlockVolume)
 		resolveFluidOverfull();
 }
 void baseBlock::removeFluid(uint32_t volume, const FluidType* fluidType)
@@ -169,7 +218,7 @@ bool baseBlock::shapeCanEnterCurrently(const Shape* shape) const
 	for(auto& [x, y, z, v] : shape->positions)
 	{
 		Block* block = offset(x, y, z);
-		if(block->m_totalDynamicVolume + v > MAX_BLOCK_VOLUME)
+		if(block->m_totalDynamicVolume + v > s_maxBlockVolume)
 			return false;
 	}
 	return true;
@@ -186,14 +235,14 @@ Block* baseBlock::offset(int32_t ax, int32_t ay, int32_t az) const
 std::vector<std::pair<Block*, uint32_t>> baseBlock::getMoveCosts(const Shape* shape, const MoveType* moveType)
 {
 	std::vector<std::pair<Block*, uint32_t>> output;
-	for(Block* block : m_adjacents)
-		if(block != nullptr && block->shapeAndMoveTypeCanEnterEver(shape, moveType))
+	for(Block* block : m_adjacentsVector)
+		if(block->shapeAndMoveTypeCanEnterEver(shape, moveType))
 			output.emplace_back(block, block->moveCost(moveType, static_cast<Block*>(this)));
 	return output;
 }
 bool baseBlock::fluidCanEnterCurrently(const FluidType* fluidType) const
 {
-	if(m_totalFluidVolume < MAX_BLOCK_VOLUME)
+	if(m_totalFluidVolume < s_maxBlockVolume)
 		return true;
 	for(auto& pair : m_fluids)
 		if(pair.first->density < fluidType->density)
@@ -202,14 +251,14 @@ bool baseBlock::fluidCanEnterCurrently(const FluidType* fluidType) const
 }
 bool baseBlock::isAdjacentToFluidGroup(const FluidGroup* fluidGroup) const
 {
-	for(Block* block : m_adjacents)
+	for(Block* block : m_adjacentsVector)
 		if(block->m_fluids.contains(fluidGroup->m_fluidType) && block->m_fluids.at(fluidGroup->m_fluidType).second == fluidGroup)
 			return true;
 	return false;
 }
 uint32_t baseBlock::volumeOfFluidTypeCanEnter(const FluidType* fluidType) const
 {
-	uint32_t output = MAX_BLOCK_VOLUME;
+	uint32_t output = s_maxBlockVolume;
 	for(auto& pair : m_fluids)
 		if(pair.first->density >= fluidType->density)
 			output -= pair.second.first;
@@ -234,7 +283,7 @@ void baseBlock::resolveFluidOverfull()
 	for(auto& [fluidType, pair] : m_fluids)
 	{
 		// Displace lower density fluids.
-		uint32_t displaced = std::min(m_fluids[fluidType].first, m_totalFluidVolume - MAX_BLOCK_VOLUME);
+		uint32_t displaced = std::min(m_fluids[fluidType].first, m_totalFluidVolume - s_maxBlockVolume);
 		m_totalFluidVolume -= displaced;
 		m_fluids[fluidType].first -= displaced;
 		m_fluids[fluidType].second->addFluid(displaced);
@@ -243,9 +292,9 @@ void baseBlock::resolveFluidOverfull()
 			m_fluids[fluidType].second->removeBlock(static_cast<Block*>(this));
 			toErase.push_back(fluidType);
 		}
-		else if(m_fluids[fluidType].first < MAX_BLOCK_VOLUME)
+		else if(m_fluids[fluidType].first < s_maxBlockVolume)
 			m_fluids[fluidType].second->m_fillQueue.addBlock(static_cast<Block*>(this));
-		if(m_totalFluidVolume == MAX_BLOCK_VOLUME)
+		if(m_totalFluidVolume == s_maxBlockVolume)
 			break;
 	}
 	for(const FluidType* fluidType : toErase)
@@ -254,20 +303,20 @@ void baseBlock::resolveFluidOverfull()
 		FluidGroup* fluidGroup = m_fluids[fluidType].second;
 		if(fluidGroup->m_drainQueue.m_set.empty())
 			for(auto& [otherFluidType, pair] : m_fluids)
-					if(otherFluidType->density > fluidType->density)
+				if(otherFluidType->density > fluidType->density)
+				{
+					if(pair.second->m_disolvedInThisGroup.contains(fluidType))
 					{
-						if(pair.second->m_disolvedInThisGroup.contains(fluidType))
-						{
-							pair.second->m_disolvedInThisGroup.at(fluidType)->m_excessVolume += fluidGroup->m_excessVolume;
-							fluidGroup->m_destroy = true;
-						}
-						else
-						{
-							pair.second->m_disolvedInThisGroup[fluidType] = fluidGroup;
-							fluidGroup->m_disolved = true;
-						}
-						break;
+						pair.second->m_disolvedInThisGroup.at(fluidType)->m_excessVolume += fluidGroup->m_excessVolume;
+						fluidGroup->m_destroy = true;
 					}
+					else
+					{
+						pair.second->m_disolvedInThisGroup[fluidType] = fluidGroup;
+						fluidGroup->m_disolved = true;
+					}
+					break;
+				}
 		m_fluids.erase(fluidType);
 	}
 }
@@ -275,21 +324,29 @@ void baseBlock::moveContentsTo(Block* block)
 {
 	block->m_solid = m_solid;
 	m_solid = nullptr;
-//TODO: other stuff falls?
+	//TODO: other stuff falls?
 }
 // Add / remove  actor occupancy.
 void baseBlock::enter(Actor* actor)
 {
-	if(actor->m_location != nullptr)
+	bool hasPreviousLocation = actor->m_location != nullptr;
+	actor->m_location = static_cast<Block*>(this);
+	actor->m_blocks.clear();
+	if(hasPreviousLocation)
+	{
 		actor->m_location->exit(actor);
+		m_area->m_locationBuckets.update(actor, actor->m_location, static_cast<Block*>(this));
+	}
+	else
+		m_area->m_locationBuckets.insert(actor);
 	for(auto& [x, y, z, v] : actor->m_shape->positions)
 	{
 		Block* block = offset(x, y, z);
 		block->m_actors[actor] = v;
 		block->m_totalDynamicVolume += v;
+		actor->m_blocks.push_back(block);
 	}
-	actor->m_location = static_cast<Block*>(this);
-	}
+}
 void baseBlock::exit(Actor* actor)
 {
 	for(auto& [x, y, z, v] : actor->m_shape->positions)
@@ -303,9 +360,8 @@ void baseBlock::clearMoveCostsCacheForSelfAndAdjacent()
 {
 	// Clear move costs cache for adjacent and self.
 	m_moveCostsCache.clear();
-	for(Block* adjacent : m_adjacents)
-		if(adjacent != nullptr)
-			adjacent->m_moveCostsCache.clear();
+	for(Block* adjacent : m_adjacentsVector)
+		adjacent->m_moveCostsCache.clear();
 }
 std::string baseBlock::toS()
 {
@@ -323,8 +379,8 @@ void baseBlock::place(HasShape* hasShape)
 {
 for(auto& [x, y, z, v] : hasShape->m_shape->positions)
 {
-	Block* block = offset(x, y, z);
-	block->recordHasShapeAndVolume(hasShape, v);
+Block* block = offset(x, y, z);
+block->recordHasShapeAndVolume(hasShape, v);
 }
 hasShape->m_location = static_cast<Block*>(this);
 }
@@ -332,9 +388,9 @@ void baseBlock::unplace(HasShape* hasShape)
 {
 for(auto& [x, y, z, v] : hasShape->m_shape->positions)
 {
-	Block* block = offset(x, y, z);
-	block->removeHasShapeAndVolume(hasShape, v);
+Block* block = offset(x, y, z);
+block->removeHasShapeAndVolume(hasShape, v);
 }
 }
  *
-*/
+ */
