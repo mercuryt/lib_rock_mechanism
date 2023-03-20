@@ -1268,3 +1268,70 @@ TEST_CASE("Set solid and split")
 	fg2->readStep();
 	CHECK(fg2->m_stable);
 }
+TEST_CASE("Cave in falls in fluid and pistons it up")
+{
+	Area area(10,10,10);
+	registerTypes();
+	setSolidLayers(area, 0, 1, s_stone);
+	Block& block1 = area.m_blocks[5][5][1];
+	Block& block2 = area.m_blocks[5][5][2];
+	block1.setNotSolid();
+	block1.addFluid(100, s_water);
+	block2.setSolid(s_stone);
+	area.m_caveInCheck.insert(&block2);
+	FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
+	area.stepCaveInRead();
+	fluidGroup->readStep();
+	fluidGroup->writeStep();
+	area.stepCaveInWrite();
+	CHECK(area.m_unstableFluidGroups.size() == 1);
+	CHECK(block1.m_totalFluidVolume == 0);
+	CHECK(block1.getSolidMaterial() == s_stone);
+	CHECK(!block2.isSolid());
+	CHECK(fluidGroup->m_excessVolume == 100);
+	CHECK(fluidGroup->m_drainQueue.m_set.size() == 0);
+	CHECK(fluidGroup->m_fillQueue.m_set.size() == 1);
+	CHECK(fluidGroup->m_fillQueue.m_set.contains(&block2));
+	CHECK(block2.fluidCanEnterEver());
+	fluidGroup->readStep();
+	area.stepCaveInRead();
+	fluidGroup->writeStep();
+	area.stepCaveInWrite();
+	CHECK(block2.m_totalFluidVolume == 100);
+	CHECK(fluidGroup->m_excessVolume == 0);
+	CHECK(fluidGroup->m_stable == false);
+	CHECK(area.m_fluidGroups.size() == 1);
+}
+TEST_CASE("Test diagonal seep")
+{
+	s_step = 1;
+	Area area(10,10,10);
+	registerTypes();
+	setSolidLayers(area, 0, 1, s_stone);
+	Block& block1 = area.m_blocks[5][5][1];
+	Block& block2 = area.m_blocks[6][6][1];
+	block1.setNotSolid();
+	block2.setNotSolid();
+	block1.addFluid(10, s_water);
+	FluidGroup* fg1 = *area.m_unstableFluidGroups.begin();
+	fg1->readStep();
+	fg1->writeStep();
+	s_step++;
+	CHECK(block2.volumeOfFluidTypeContains(s_water) == 1);
+	FluidGroup* fg2 = block2.getFluidGroup(s_water);
+	CHECK(fg1 != fg2);
+	CHECK(fg1->m_excessVolume == -1);
+	CHECK(!fg1->m_stable);
+	for(int i = 0; i < 5; ++i)
+	{
+		fg1->readStep();
+		fg2->readStep();
+		fg1->writeStep();
+		fg2->writeStep();
+		s_step++;
+	}
+	CHECK(block1.volumeOfFluidTypeContains(s_water) == 5);
+	CHECK(block2.volumeOfFluidTypeContains(s_water) == 5);
+	CHECK(fg1->m_excessVolume == 0);
+	CHECK(!fg1->m_stable);
+}

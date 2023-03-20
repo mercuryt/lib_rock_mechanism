@@ -31,19 +31,21 @@ void baseBlock::recordAdjacent()
 			m_adjacentsVector.push_back(block);
 	}
 }
-void baseBlock::getAdjacentWithEdgeAdjacent(std::vector<Block*>& output) const
+std::vector<Block*> baseBlock::getAdjacentWithEdgeAdjacent() const
 {
+	std::vector<Block*> output;
+	output.reserve(18);
 	static const int32_t offsetsList[18][3] = {
-		{-1,0,-1}, {0,-1,-1},
-		{0,0,-1}, {0,1,-1},
+		{-1,0,-1}, 
+		{0,1,-1}, {0,0,-1}, {0,-1,-1},
 		{1,0,-1}, 
 
 		{-1,-1,0}, {-1,0,0}, {0,-1,0},
 		{1,1,0}, {0,1,0},
 		{1,-1,0}, {1,0,0}, {0,-1,0},
 
-		{-1,0,1}, {0,-1,1},
-		{0,0,1}, {0,1,1},
+		{-1,0,1}, 
+		{0,1,1}, {0,0,1}, {0,-1,1},
 		{1,0,1}, 
 	};
 	for(uint32_t i = 0; i < 26; i++)
@@ -53,21 +55,24 @@ void baseBlock::getAdjacentWithEdgeAdjacent(std::vector<Block*>& output) const
 		if(block != nullptr)
 			output.push_back(block);
 	}
+	return output;
 }
-void baseBlock::getAdjacentWithEdgeAndCornerAdjacent(std::vector<Block*>& output) const
+std::vector<Block*> baseBlock::getAdjacentWithEdgeAndCornerAdjacent() const
 {
+	std::vector<Block*> output;
+	output.reserve(26);
 	static const int32_t offsetsList[26][3] = {
-		{-1,-1,-1}, {-1,0,-1}, {0,-1,-1},
-		{1,1,-1}, {0,0,-1}, {0,1,-1},
-		{1,-1,-1}, {1,0,-1}, {0,-1,-1}, 
+		{-1,1,-1}, {-1,0,-1}, {-1,-1,-1},
+		{0,1,-1}, {0,0,-1}, {0,-1,-1},
+		{1,1,-1}, {1,0,-1}, {1,-1,-1},
 
 		{-1,-1,0}, {-1,0,0}, {0,-1,0},
 		{1,1,0}, {0,1,0},
-		{1,-1,0}, {1,0,0}, {-1,-1,0},
+		{1,-1,0}, {1,0,0}, {-1,1,0},
 
-		{-1,-1,1}, {-1,0,1}, {0,-1,1},
-		{1,1,1}, {0,0,1}, {0,1,1},
-		{1,-1,1}, {1,0,1}, {0,-1,1}
+		{-1,1,1}, {-1,0,1}, {-1,-1,1},
+		{0,1,1}, {0,0,1}, {0,-1,1},
+		{1,1,1}, {1,0,1}, {1,-1,1}
 	};
 	for(uint32_t i = 0; i < 26; i++)
 	{
@@ -76,6 +81,55 @@ void baseBlock::getAdjacentWithEdgeAndCornerAdjacent(std::vector<Block*>& output
 		if(block != nullptr)
 			output.push_back(block);
 	}
+	return output;
+}
+std::vector<Block*> baseBlock::getEdgeAdjacentOnly() const
+{
+	std::vector<Block*> output;
+	output.reserve(12);
+	static const int32_t offsetsList[12][3] = {
+		{-1,0,-1}, {0,-1,-1},
+		{1,0,-1}, {0,1,-1}, 
+
+		{-1,-1,0}, {1,1,0}, 
+		{1,-1,0}, {-1,1,0},
+
+		{-1,0,1}, {0,-1,1},
+		{0,1,1}, {1,0,1}, 
+	};
+	for(uint32_t i = 0; i < 12; i++)
+	{
+		auto& offsets = offsetsList[i];
+		Block* block = offset(offsets[0],offsets[1],offsets[2]);
+		if(block != nullptr)
+			output.push_back(block);
+	}
+	return output;
+}
+std::vector<Block*> baseBlock::getEdgeAndCornerAdjacentOnly() const
+{
+	std::vector<Block*> output;
+	output.reserve(20);
+	static const int32_t offsetsList[20][3] = {
+		{-1,-1,-1}, {-1,0,-1}, {0,-1,-1},
+		{1,1,-1}, {0,1,-1},
+		{1,-1,-1}, {1,0,-1}, {0,1,-1}, 
+
+		{-1,-1,0}, {1,1,0}, 
+		{1,-1,0}, {-1,1,0},
+
+		{-1,-1,1}, {-1,0,1}, {0,-1,1},
+		{1,1,1}, {0,1,1},
+		{1,-1,1}, {1,0,1}, {0,-1,1}
+	};
+	for(uint32_t i = 0; i < 20; i++)
+	{
+		auto& offsets = offsetsList[i];
+		Block* block = offset(offsets[0],offsets[1],offsets[2]);
+		if(block != nullptr)
+			output.push_back(block);
+	}
+	return output;
 }
 uint32_t baseBlock::distance(Block* block) const
 {
@@ -109,6 +163,7 @@ void baseBlock::setNotSolid()
 }
 void baseBlock::setSolid(const MaterialType* materialType)
 {
+	assert(materialType != nullptr);
 	m_solid = materialType;
 	// Displace fluids.
 	m_totalFluidVolume = 0;
@@ -116,10 +171,10 @@ void baseBlock::setSolid(const MaterialType* materialType)
 	{
 		pair.second->removeBlock(static_cast<Block*>(this));
 		pair.second->addFluid(pair.first);
-		// If there is no where to put the fluid then piston it up.
-		// TODO: Add destroy option.
+		// If there is no where to put the fluid.
 		if(pair.second->m_drainQueue.m_set.empty() && pair.second->m_fillQueue.m_set.empty())
 		{
+			// If fluid piston is enabled then find a place above to add to potential.
 			if constexpr (s_fluidPiston)
 			{
 				Block* above = m_adjacents[5];
@@ -138,6 +193,7 @@ void baseBlock::setSolid(const MaterialType* materialType)
 				assert(above != nullptr);
 			}
 			else
+				// Otherwise destroy the group.
 				std::erase(m_area->m_fluidGroups, pair.second);
 		}
 	}
@@ -322,8 +378,12 @@ void baseBlock::resolveFluidOverfull()
 }
 void baseBlock::moveContentsTo(Block* block)
 {
-	block->m_solid = m_solid;
-	m_solid = nullptr;
+	if(isSolid())
+	{
+		const MaterialType* materialType = m_solid;
+		setNotSolid();
+		block->setSolid(materialType);
+	}
 	//TODO: other stuff falls?
 }
 // Add / remove  actor occupancy.

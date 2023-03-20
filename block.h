@@ -72,8 +72,10 @@ public:
 	baseBlock();
 	void setup(Area* a, uint32_t ax, uint32_t ay, uint32_t az);
 	void recordAdjacent();
-	void getAdjacentWithEdgeAdjacent(std::vector<Block*>& output) const;
-	void getAdjacentWithEdgeAndCornerAdjacent(std::vector<Block*>& output) const;
+	std::vector<Block*> getAdjacentWithEdgeAdjacent() const;
+	std::vector<Block*> getAdjacentWithEdgeAndCornerAdjacent() const;
+	std::vector<Block*> getEdgeAndCornerAdjacentOnly() const;
+	std::vector<Block*> getEdgeAdjacentOnly() const;
 	uint32_t distance(Block* block) const;
 	uint32_t taxiDistance(Block* block) const;
 	bool isAdjacentToAny(std::unordered_set<Block*>& blocks) const;

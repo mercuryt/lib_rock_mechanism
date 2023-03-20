@@ -14,6 +14,9 @@ class LocationBuckets
 	std::vector<std::vector<std::vector<
 		std::unordered_set<Actor*>
 		>>> m_buckets;
+	uint32_t m_maxX;
+	uint32_t m_maxY;
+	uint32_t m_maxZ;
 public:
 	LocationBuckets(Area& area);
 	void insert(Actor* actor);

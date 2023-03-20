@@ -10,6 +10,9 @@ const static uint32_t s_pathHuristicConstant = 1;
 const static float s_maxDistanceVisionModifier = 1.1;
 const static uint32_t s_locationBucketSize = 5;
 const static bool s_fluidPiston = true;
+// How many units seep through each step max = viscosity / seepDiagonalModifier.
+// Disable by setting to 0.
+const static uint32_t s_fluidsSeepDiagonalModifier = 100;
 
 #include "../block.h"
 #include "../actor.h"

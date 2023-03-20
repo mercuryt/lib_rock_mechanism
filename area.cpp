@@ -25,6 +25,10 @@ baseArea::baseArea(uint32_t x, uint32_t y, uint32_t z) :
 			for(uint32_t z = 0; z < m_sizeZ; ++z)
 				m_blocks[x][y][z].recordAdjacent();
 }
+baseArea::~baseArea()
+{
+	resetScheduledEvents();
+}
 void baseArea::readStep()
 { 
 	//TODO: Count tasks dispatched and finished instead of pool.wait_for_tasks so we can do multiple areas simultaniously in one pool.
@@ -33,27 +37,24 @@ void baseArea::readStep()
 	for(Actor* actor : m_visionBuckets.get(s_step))
 	{
 		m_visionRequestQueue.emplace_back(*actor);
-		VisionRequest& visionRequest = m_visionRequestQueue.back();
-		s_pool.push_task([&](){visionRequest.readStep(); });
+		VisionRequest* visionRequest = &m_visionRequestQueue.back();
+		s_pool.push_task([=](){ visionRequest->readStep(); });
 	}
-	// calculate cave in
-	s_pool.push_task([&](){stepCaveInRead();});
-	// calculate flow
+	// Calculate cave in.
+	s_pool.push_task([&](){ stepCaveInRead(); });
+	// Calculate flow.
 	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
-		s_pool.push_task([&](){ fluidGroup->readStep(); });
-	// calculate routes
+		s_pool.push_task([=](){ fluidGroup->readStep(); });
+	// Calculate routes.
 	for(RouteRequest& routeRequest : m_routeRequestQueue)
-		s_pool.push_task([&](){ routeRequest.readStep(); });
+	{
+		RouteRequest* routeRequestPointer = &routeRequest;
+		s_pool.push_task([=](){ routeRequestPointer->readStep(); });
+	}
 }
 void baseArea::writeStep()
 { 
 	s_pool.wait_for_tasks();
-	// Apply cave in.
-	if(!m_caveInData.empty())
-	{
-		stepCaveInWrite();
-		expireRouteCache();
-	}
 	// Apply flow.
 	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
 		fluidGroup->writeStep();
@@ -68,9 +69,17 @@ void baseArea::writeStep()
 	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
 		fluidGroup->splitStep(newlySplit);
 	m_unstableFluidGroups.insert(newlySplit.begin(), newlySplit.end());
+	// Apply cave in.
+	if(!m_caveInData.empty())
+		stepCaveInWrite();
 	// Apply routes.
 	for(RouteRequest& routeRequest : m_routeRequestQueue)
 		routeRequest.writeStep();
+	m_routeRequestQueue.clear();
+	// If there is any unstable groups expire route caches.
+	// TODO: Be more selective?
+	if(!m_unstableFluidGroups.empty())
+		m_routeCacheVersion++;
 	// Apply vision request results.
 	for(VisionRequest& visionRequest : m_visionRequestQueue)
 		visionRequest.writeStep();
@@ -109,4 +118,3 @@ void baseArea::removeFluidGroup(FluidGroup* fluidGroup)
 	std::erase_if(m_fluidGroups, [&](FluidGroup& fg){ return &fg == fluidGroup; });
 }
 void baseArea::expireRouteCache(){++m_routeCacheVersion;}
-

@@ -1,15 +1,15 @@
 #pragma once
 LocationBuckets::LocationBuckets(Area& area) : m_area(area)
 {
-	uint32_t maxX = m_area.m_sizeX / s_locationBucketSize;
-	uint32_t maxY = m_area.m_sizeY / s_locationBucketSize;
-	uint32_t maxZ = m_area.m_sizeZ / s_locationBucketSize;
-	m_buckets.resize(maxX);
-	for(uint32_t x = 0; x < maxX; ++x)
+	m_maxX = m_area.m_sizeX / s_locationBucketSize;
+	m_maxY = m_area.m_sizeY / s_locationBucketSize;
+	m_maxZ = m_area.m_sizeZ / s_locationBucketSize;
+	m_buckets.resize(m_maxX);
+	for(uint32_t x = 0; x != m_maxX; ++x)
 	{
-		m_buckets[x].resize(maxY);
-		for(uint32_t y = 0; y < maxY; ++y)
-			m_buckets[x][y].resize(maxZ);
+		m_buckets[x].resize(m_maxY);
+		for(uint32_t y = 0; y != m_maxY; ++y)
+			m_buckets[x][y].resize(m_maxZ);
 	}
 }
 std::unordered_set<Actor*>* LocationBuckets::getBucketFor(Block* block)
@@ -70,17 +70,22 @@ void LocationBuckets::processVisionRequest(VisionRequest& visionRequest) const
 	assert(from != nullptr);
 	assert((int32_t)visionRequest.m_actor.getVisionRange() * (int32_t)s_maxDistanceVisionModifier > 0);
 	int32_t range = visionRequest.m_actor.getVisionRange() * s_maxDistanceVisionModifier;
-	uint32_t endX = (std::min((int32_t)from->m_x + range + 1, (int32_t)m_area.m_sizeX) / s_locationBucketSize);
-	uint32_t beginX = std::max(0, (int32_t)from->m_x - range / (int32_t)s_locationBucketSize);
-	uint32_t endY = (std::min((int32_t)from->m_y + range + 1, (int32_t)m_area.m_sizeY) / s_locationBucketSize);
-	uint32_t beginY = std::max(0, (int32_t)from->m_y - range / (int32_t)s_locationBucketSize);
-	uint32_t endZ = (std::min((int32_t)from->m_z + range + 1, (int32_t)m_area.m_sizeZ) / s_locationBucketSize);
-	uint32_t beginZ = std::max(0, (int32_t)from->m_z - range / (int32_t)s_locationBucketSize);
+	uint32_t endX = std::min((from->m_x + range + 1) / s_locationBucketSize, m_maxX);
+	uint32_t beginX = std::max(0, (int32_t)from->m_x - range) / s_locationBucketSize;
+	uint32_t endY = std::min((from->m_y + range + 1) / s_locationBucketSize, m_maxY);
+	uint32_t beginY = std::max(0, (int32_t)from->m_y - range) / s_locationBucketSize;
+	uint32_t endZ = std::min((from->m_z + range + 1) / s_locationBucketSize, m_maxZ);
+	uint32_t beginZ = std::max(0, (int32_t)from->m_z - range) / s_locationBucketSize;
 	std::unordered_set<Block*> closed;
 	for(uint32_t x = beginX; x != endX; ++x)
 		for(uint32_t y = beginY; y != endY; ++y)
 			for(uint32_t z = beginZ; z != endZ; ++z)
-				for(Actor* actor : m_buckets[x][y][z])
+			{
+				assert(x < m_buckets.size());
+				assert(y < m_buckets[x].size());
+				assert(z < m_buckets[x][y].size());
+				const std::unordered_set<Actor*>& bucket = m_buckets[x][y][z];
+				for(Actor* actor : bucket)
 				{
 					assert(!actor->m_blocks.empty());
 					for(Block* to : actor->m_blocks)
@@ -93,5 +98,6 @@ void LocationBuckets::processVisionRequest(VisionRequest& visionRequest) const
 										visionRequest.m_actors.insert(pair.first);
 						}
 				}
+			}
 	visionRequest.m_actors.erase(&visionRequest.m_actor);
 }

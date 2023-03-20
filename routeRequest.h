@@ -8,6 +8,7 @@ public:
 	Actor* m_actor;
 	std::vector<Block*> m_result;
 	std::unordered_map<Block*, std::vector<std::pair<Block*, uint32_t>>> m_moveCostsToCache;
+	bool m_cacheHit;
 
 	RouteRequest(Actor* a);
 	

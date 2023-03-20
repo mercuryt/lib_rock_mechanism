@@ -35,6 +35,7 @@ public:
 	bool m_disolved;
 	const FluidType* m_fluidType;
 	int32_t m_excessVolume;
+	uint32_t m_viscosity;
 	FillQueue m_fillQueue;
 	DrainQueue m_drainQueue;
 	std::unordered_map<const FluidType*, FluidGroup*> m_disolvedInThisGroup;
@@ -44,6 +45,8 @@ public:
 	std::vector<FluidGroupSplitData> m_futureGroups;
 	// For notifing groups with different fluids of unfull status. Groups with the same fluid are merged instead.
 	std::unordered_map<FluidGroup*, std::unordered_set<Block*>> m_futureNotifyPotentialUnfullAdjacent;
+	
+	std::unordered_set<Block*> m_diagonalBlocks;
 
 	std::unordered_set<Block*> m_potentiallyNoLongerAdjacentFromSyncronusStep;
 	std::unordered_set<Block*> m_potentiallySplitFromSyncronusStep;
@@ -66,5 +69,7 @@ public:
 	void writeStep();
 	void mergeStep();
 	void splitStep(std::vector<FluidGroup*>& newlySplit);
+	void setUnstable();
+	void addDiagonalsFor(Block* block);
 	friend class baseArea;
 };

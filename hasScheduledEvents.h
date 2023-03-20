@@ -39,6 +39,12 @@ public:
 		}
 		m_scheduledEvents.erase(stepNumber);
 	}
+	void resetScheduledEvents()
+	{
+		for(auto pair : m_scheduledEvents)
+			for(ScheduledEvent* scheduledEvent : pair.second)
+				delete scheduledEvent;
+	}
 };
 /*
  *  Try to enter next step on route. 

@@ -45,7 +45,7 @@ void FluidQueue::merge(FluidQueue& fluidQueue)
 }
 void FluidQueue::noChange()
 {
-	m_groupStart = m_groupEnd = m_queue.end();
+	m_groupStart = m_groupEnd = m_queue.begin();
 }
 uint32_t FluidQueue::groupSize() const
 {
