@@ -102,10 +102,11 @@ void FluidGroup::setUnstable()
 }
 void FluidGroup::addDiagonalsFor(Block* block)
 {
-	for(Block* diagonal : block->getEdgeAdjacentOnly())
+	for(Block* diagonal : block->getEdgeAdjacentOnSameZLevelOnly())
 		if(diagonal->fluidCanEnterEver() and diagonal->fluidCanEnterEver(m_fluidType) and 
-				diagonal->m_z == block->m_z and not m_fillQueue.m_set.contains(diagonal) and 
-				not m_drainQueue.m_set.contains(diagonal) and not m_diagonalBlocks.contains(diagonal))
+				not m_fillQueue.m_set.contains(diagonal) and not m_drainQueue.m_set.contains(diagonal) and
+			       	not m_diagonalBlocks.contains(diagonal)
+		  )
 		{
 			// Check if there is a 'pressure reducing diagonal' created by two solid blocks.
 			int32_t diffX = block->m_x - diagonal->m_x;
@@ -163,7 +164,7 @@ void FluidGroup::readStep()
 	m_futureGroups.clear();
 	m_futureNotifyPotentialUnfullAdjacent.clear();
 	// If there is no where to flow into there is nothing to do.
-	if(m_fillQueue.m_set.empty() and m_excessVolume <= 0)
+	if(m_fillQueue.m_set.empty() and m_excessVolume <= 0 and (not s_fluidsSeepDiagonalModifier or m_diagonalBlocks.empty()))
 	{
 		m_stable = true;
 		m_fillQueue.noChange();
