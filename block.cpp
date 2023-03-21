@@ -106,6 +106,23 @@ std::vector<Block*> baseBlock::getEdgeAdjacentOnly() const
 	}
 	return output;
 }
+std::vector<Block*> baseBlock::getEdgeAdjacentOnSameZLevelOnly() const
+{
+	std::vector<Block*> output;
+	output.reserve(12);
+	static const int32_t offsetsList[12][3] = {
+		{-1,-1,0}, {1,1,0}, 
+		{1,-1,0}, {-1,1,0},
+	};
+	for(uint32_t i = 0; i < 12; i++)
+	{
+		auto& offsets = offsetsList[i];
+		Block* block = offset(offsets[0],offsets[1],offsets[2]);
+		if(block != nullptr)
+			output.push_back(block);
+	}
+	return output;
+}
 std::vector<Block*> baseBlock::getEdgeAndCornerAdjacentOnly() const
 {
 	std::vector<Block*> output;

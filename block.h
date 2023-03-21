@@ -76,6 +76,7 @@ public:
 	std::vector<Block*> getAdjacentWithEdgeAndCornerAdjacent() const;
 	std::vector<Block*> getEdgeAndCornerAdjacentOnly() const;
 	std::vector<Block*> getEdgeAdjacentOnly() const;
+	std::vector<Block*> getEdgeAdjacentOnSameZLevelOnly() const;
 	uint32_t distance(Block* block) const;
 	uint32_t taxiDistance(Block* block) const;
 	bool isAdjacentToAny(std::unordered_set<Block*>& blocks) const;
