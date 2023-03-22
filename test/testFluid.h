@@ -1307,6 +1307,7 @@ TEST_CASE("Test diagonal seep")
 	s_step = 1;
 	Area area(10,10,10);
 	registerTypes();
+	std::vector<FluidGroup*> newlySplit;
 	setSolidLayers(area, 0, 1, s_stone);
 	Block& block1 = area.m_blocks[5][5][1];
 	Block& block2 = area.m_blocks[6][6][1];
@@ -1328,10 +1329,54 @@ TEST_CASE("Test diagonal seep")
 		fg2->readStep();
 		fg1->writeStep();
 		fg2->writeStep();
+		fg1->splitStep(newlySplit);
+		fg2->splitStep(newlySplit);
+		fg1->mergeStep();
+		fg2->mergeStep();
 		s_step++;
 	}
 	CHECK(block1.volumeOfFluidTypeContains(s_water) == 5);
 	CHECK(block2.volumeOfFluidTypeContains(s_water) == 5);
 	CHECK(fg1->m_excessVolume == 0);
 	CHECK(!fg1->m_stable);
+}
+TEST_CASE("Test mist")
+{
+	s_step = 1;
+	Area area(10,10,10);
+	registerTypes();
+	std::vector<FluidGroup*> newlySplit;
+	setSolidLayers(area, 0, 2, s_stone);
+	Block& block1 = area.m_blocks[5][5][1];
+	Block& block2 = area.m_blocks[5][5][2];
+	Block& block3 = area.m_blocks[5][5][3];
+	Block& block4 = area.m_blocks[5][5][4];
+	Block& block5 = area.m_blocks[5][6][3];
+	block1.setNotSolid();
+	block2.setNotSolid();
+	block3.addFluid(100, s_water);
+	block4.addFluid(100, s_water);
+	FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
+	// Step 1.
+	fluidGroup->readStep();
+	fluidGroup->writeStep();
+	fluidGroup->splitStep(newlySplit);
+	fluidGroup->mergeStep();
+	CHECK(block5.m_mist == s_water);
+	// Several steps.
+	while(s_step < 11)
+	{
+		if(!fluidGroup->m_stable)
+		{
+			fluidGroup->readStep();
+			fluidGroup->writeStep();
+			fluidGroup->splitStep(newlySplit);
+			fluidGroup->mergeStep();
+		}
+		s_step++;
+	}
+	CHECK(area.m_scheduledEvents.at(11).size() == 8);
+	area.executeScheduledEvents(11);
+	CHECK(area.m_scheduledEvents.empty());
+	CHECK(block5.m_mist == nullptr);
 }

@@ -102,3 +102,81 @@ TEST_CASE("Test move with threading")
 	CHECK(actor.m_destination == nullptr);
 	CHECK(area.m_scheduledEvents.empty());
 }
+TEST_CASE("Test mist spreads")
+{
+	Area area(10,10,10);
+	s_step = 0;
+	registerTypes();
+	setSolidLayer(area, 0, s_stone);
+	Block& origin = area.m_blocks[5][5][1];
+	Block& block1 = area.m_blocks[5][6][1];
+	Block& block2 = area.m_blocks[6][6][1];
+	Block& block3 = area.m_blocks[5][5][2];
+	origin.m_mistSource = s_water;
+	origin.spawnMist(s_water);
+	uint32_t scheduledStep = area.m_scheduledEvents.begin()->first;
+	CHECK(scheduledStep == 10);
+	while(s_step != scheduledStep)
+	{
+		area.readStep();
+		area.writeStep();
+		s_step++;
+	}
+	CHECK(block1.m_mist == nullptr);
+	area.readStep();
+	area.writeStep();
+	CHECK(origin.m_mist == s_water);
+	CHECK(block1.m_mist == s_water);
+	CHECK(block2.m_mist == nullptr);
+	CHECK(block3.m_mist == s_water);
+	CHECK(!area.m_scheduledEvents.empty());
+	scheduledStep = area.m_scheduledEvents.begin()->first;
+	CHECK(area.m_scheduledEvents.at(scheduledStep).size() == 6);
+	while(s_step != scheduledStep +1 )
+	{
+		area.readStep();
+		area.writeStep();
+		s_step++;
+	}
+	CHECK(origin.m_mist == s_water);
+	CHECK(block1.m_mist == s_water);
+	CHECK(block2.m_mist == s_water);
+	CHECK(block3.m_mist == s_water);
+	CHECK(!area.m_scheduledEvents.empty());
+	origin.m_mistSource = nullptr;
+	scheduledStep = area.m_scheduledEvents.begin()->first;
+	CHECK(area.m_scheduledEvents.at(scheduledStep).size() == 19);
+	while(s_step != scheduledStep + 1)
+	{
+		area.readStep();
+		area.writeStep();
+		s_step++;
+	}
+	CHECK(origin.m_mist == nullptr);
+	CHECK(block1.m_mist == s_water);
+	CHECK(block2.m_mist == s_water);
+	CHECK(block3.m_mist == s_water);
+	scheduledStep = area.m_scheduledEvents.begin()->first;
+	while(s_step != scheduledStep + 1)
+	{
+		area.readStep();
+		area.writeStep();
+		s_step++;
+	}
+	CHECK(origin.m_mist == nullptr);
+	CHECK(block1.m_mist == nullptr);
+	CHECK(block2.m_mist == s_water);
+	CHECK(block3.m_mist == nullptr);
+	scheduledStep = area.m_scheduledEvents.begin()->first;
+	while(s_step != scheduledStep + 1)
+	{
+		area.readStep();
+		area.writeStep();
+		s_step++;
+	}
+	CHECK(origin.m_mist == nullptr);
+	CHECK(block1.m_mist == nullptr);
+	CHECK(block2.m_mist == nullptr);
+	CHECK(block3.m_mist == nullptr);
+	CHECK(area.m_scheduledEvents.empty());
+}

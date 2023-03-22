@@ -64,6 +64,7 @@ public:
 	void addBlock(Block* block, bool checkMerge = true);
 	void removeBlock(Block* block);
 	void removeBlocks(std::unordered_set<Block*>& blocks);
+	void addMistFor(Block* block);
 	void merge(FluidGroup* fluidGroup);
 	void readStep();
 	void writeStep();

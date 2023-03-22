@@ -17,7 +17,7 @@
 #include "hasShape.h"
 #include "fluidType.h"
 
-baseBlock::baseBlock() : m_solid(nullptr), m_routeCacheVersion(0) {}
+baseBlock::baseBlock() : m_solid(nullptr), m_routeCacheVersion(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0) {}
 void baseBlock::setup(Area* a, uint32_t ax, uint32_t ay, uint32_t az)
 {m_area=a;m_x=ax;m_y=ay;m_z=az;m_locationBucket = a->m_locationBuckets.getBucketFor(static_cast<Block*>(this));}
 void baseBlock::recordAdjacent()
@@ -148,6 +148,23 @@ std::vector<Block*> baseBlock::getEdgeAndCornerAdjacentOnly() const
 	}
 	return output;
 }
+std::vector<Block*> baseBlock::getAdjacentOnSameZLevelOnly() const
+{
+	std::vector<Block*> output;
+	output.reserve(4);
+	static const int32_t offsetsList[4][3] = {
+		{-1,0,0}, {1,0,0}, 
+		{0,-1,0}, {0,1,0}
+	};
+	for(uint32_t i = 0; i < 4; i++)
+	{
+		auto& offsets = offsetsList[i];
+		Block* block = offset(offsets[0],offsets[1],offsets[2]);
+		if(block != nullptr)
+			output.push_back(block);
+	}
+	return output;
+}
 uint32_t baseBlock::distance(Block* block) const
 {
 	uint32_t dx = abs((int)m_x - (int)block->m_x);
@@ -238,6 +255,15 @@ bool baseBlock::isSolid() const
 const MaterialType* baseBlock::getSolidMaterial() const
 {
 	return m_solid;
+}
+void baseBlock::spawnMist(const FluidType* fluidType, uint32_t maxMistSpread)
+{
+	if(m_mist != nullptr and m_mist->density > fluidType->density)
+		return;
+	m_mist = fluidType;
+	m_mistInverseDistanceFromSource = maxMistSpread != 0 ? maxMistSpread : fluidType->maxMistSpread;
+	MistDisperseEvent* event = new MistDisperseEvent(s_step + fluidType->mistDuration, m_mist, static_cast<Block*>(this));
+	m_area->scheduleEvent(event);
 }
 //TODO: This code puts the fluid into an adjacent group of the correct type if it can find one, it does not add the block or merge groups, leaving these tasks to fluidGroup readStep. Is this ok?
 void baseBlock::addFluid(uint32_t volume, const FluidType* fluidType)

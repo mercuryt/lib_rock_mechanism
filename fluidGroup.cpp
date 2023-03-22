@@ -61,6 +61,7 @@ void FluidGroup::addBlock(Block* block, bool checkMerge)
 		merge(oldGroup);
 	if constexpr (s_fluidsSeepDiagonalModifier != 0)
 		addDiagonalsFor(block);
+	addMistFor(block);
 }
 void FluidGroup::removeBlock(Block* block)
 {
@@ -113,6 +114,14 @@ void FluidGroup::addDiagonalsFor(Block* block)
 			if(block->offset(diffX, 0, 0)->isSolid() and block->offset(0, diffY, 0)->isSolid())
 				m_diagonalBlocks.insert(diagonal);
 		}
+}
+void FluidGroup::addMistFor(Block* block)
+{
+	if(m_fluidType->mistDuration != 0 and (block->m_adjacents[0] == nullptr or not block->m_adjacents[0]->isSolid()))
+		for(Block* adjacent : block->getAdjacentOnSameZLevelOnly())
+			if(adjacent->fluidCanEnterEver() and adjacent->fluidCanEnterEver(m_fluidType))
+						adjacent->spawnMist(m_fluidType);
+
 }
 // To be run before applying async future data.
 void FluidGroup::merge(FluidGroup* smaller)
@@ -420,6 +429,8 @@ void FluidGroup::writeStep()
 	for(Block* block : m_fillQueue.m_overfull)
 		if(block->m_totalFluidVolume > s_maxBlockVolume)
 			block->resolveFluidOverfull();
+	//for(Block* block : m_fillQueue.m_futureNoLongerEmpty)
+		//addMistFor(block);
 	// Do seeping through corners if enabled.
 	if constexpr (s_fluidsSeepDiagonalModifier != 0)
 		if(m_viscosity != 0 and not m_drainQueue.m_set.empty())
@@ -502,14 +513,12 @@ void FluidGroup::splitStep(std::vector<FluidGroup*>& newlySplit)
 	m_fillQueue.removeBlocks(formerFill);
 	m_futureNewEmptyAdjacents = m_futureGroups.back().futureAdjacent;
 	if constexpr (s_fluidsSeepDiagonalModifier != 0)
-	{
 		std::erase_if(m_diagonalBlocks, [&](Block* block){
 				for(Block* diagonal : block->getEdgeAdjacentOnSameZLevelOnly())
 					if(m_futureGroups.back().members.contains(diagonal))
 						return false;
 				return true;
 				});
-	}
 	// Remove largest group, it will remain as this instance.
 	m_futureGroups.pop_back();
 	for(auto& [members, newAdjacent] : m_futureGroups)

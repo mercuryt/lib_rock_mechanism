@@ -61,6 +61,10 @@ public:
 	std::unordered_map<const MaterialType*, uint32_t> m_genericSolids;
 	// For fluids: store fluidType, volume, and FluidGroup pointer.
 	std::map<const FluidType*, std::pair<uint32_t, FluidGroup*>, SortByDensity> m_fluids;
+	// For mist.
+	const FluidType* m_mist;
+	const FluidType* m_mistSource;
+	uint32_t m_mistInverseDistanceFromSource;
 	// For immobile non generics could be items or buildings.
 	std::unordered_map<HasShape*, uint32_t> m_nongenerics;
 	// Track Actors and their volume which is in this block.
@@ -77,6 +81,7 @@ public:
 	std::vector<Block*> getEdgeAndCornerAdjacentOnly() const;
 	std::vector<Block*> getEdgeAdjacentOnly() const;
 	std::vector<Block*> getEdgeAdjacentOnSameZLevelOnly() const;
+	std::vector<Block*> getAdjacentOnSameZLevelOnly() const;
 	uint32_t distance(Block* block) const;
 	uint32_t taxiDistance(Block* block) const;
 	bool isAdjacentToAny(std::unordered_set<Block*>& blocks) const;
@@ -84,6 +89,7 @@ public:
 	void setSolid(const MaterialType* materialType);
 	bool isSolid() const;
 	const MaterialType* getSolidMaterial() const;
+	void spawnMist(const FluidType* fluidType, uint32_t maxMistSpread = 0);
 	// Validate the nongeneric object can enter this block and also any other blocks required by it's Shape comparing to m_totalStaticVolume.
 	bool shapeAndMoveTypeCanEnterEver(const Shape* shape, const MoveType* moveType) const;
 	// Get the FluidGroup for this fluid type in this block.

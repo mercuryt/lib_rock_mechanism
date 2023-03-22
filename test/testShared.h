@@ -26,9 +26,10 @@ const static uint32_t s_fluidsSeepDiagonalModifier = 100;
 #include "../routeRequest.h"
 #include "../fluidGroup.h"
 #include "../hasScheduledEvents.h"
+#include "../mistDisperseEvent.h"
 //#include "../room.h"
 
-static uint32_t s_step = 1;
+static uint32_t s_step;
 BS::thread_pool_light s_pool;
 
 const static MoveType* s_twoLegs;
@@ -100,6 +101,7 @@ public:
 #include "../hasScheduledEvents.cpp"
 //#include "../room.cpp"
 #include "../locationBuckets.cpp"
+#include "../mistDisperseEvent.cpp"
 
 // Can anyone enter ever?
 bool Block::anyoneCanEnterEver() const
@@ -194,11 +196,11 @@ void registerTypes()
 	s_fourLegs = registerMoveType("four legs");
 	s_flying = registerMoveType("flying");
 
-	// name, viscosity, density
-	s_water = registerFluidType("water", 100, 100);
-	s_CO2 = registerFluidType("CO2", 200, 10);
-	s_lava = registerFluidType("lava", 20, 200);
-	s_mercury = registerFluidType("mercury", 50, 200);
+	// name, viscosity, density, mist duration, mist spread
+	s_water = registerFluidType("water", 100, 100, 10, 2);
+	s_CO2 = registerFluidType("CO2", 200, 10, 0, 0);
+	s_lava = registerFluidType("lava", 20, 200, 5, 1);
+	s_mercury = registerFluidType("mercury", 50, 200, 0, 0);
 
 	// name, density
 	s_stone = registerMaterialType("stone", 100);
