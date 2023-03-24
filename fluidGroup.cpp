@@ -271,8 +271,8 @@ void FluidGroup::readStep()
 		else
 			maxDrainForEqualibrium = maxFillForEquilibrium = UINT32_MAX;
 		// Viscosity is applied only to fill.
+		// Fill is allowed to be 0. If there is not enough volume in drain group to put at least one in each of fill group then we let all of drain group go to excess volume.
 		uint32_t perBlockFill = std::min({flowCapacityFill, flowTillNextStepFill, maxFillForEquilibrium, (uint32_t)m_viscosity});
-		assert(perBlockFill != 0);
 		uint32_t perBlockDrain = std::min({flowCapacityDrain, flowTillNextStepDrain, maxDrainForEqualibrium});
 		assert(perBlockDrain != 0);
 		uint32_t totalFill = perBlockFill * m_fillQueue.groupSize();

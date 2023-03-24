@@ -318,7 +318,7 @@ TEST_CASE("four fluids scale 5")
 	CHECK(!fgLava->m_merged);
 	CHECK(!fgMercury->m_merged);
 	s_step = 1;
-	while(s_step < 8)
+	while(s_step < 21)
 	{
 		if(!fgWater->m_stable)
 			fgWater->readStep();

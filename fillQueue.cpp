@@ -30,7 +30,6 @@ void FillQueue::initalizeForStep()
 }
 void FillQueue::recordDelta(uint32_t volume, uint32_t flowCapacity, uint32_t flowTillNextStep)
 {
-	assert(volume != 0);
 	assert(m_groupStart->capacity >= volume);
 	assert(m_groupStart != m_groupEnd);
 	validate();
