@@ -12,7 +12,7 @@ const static uint32_t s_locationBucketSize = 5;
 const static bool s_fluidPiston = true;
 // How many units seep through each step max = viscosity / seepDiagonalModifier.
 // Disable by setting to 0.
-const static uint32_t s_fluidsSeepDiagonalModifier = 100;
+const static uint32_t s_fluidsSeepDiagonalModifier = 0;
 
 #include "../block.h"
 #include "../actor.h"
@@ -190,8 +190,13 @@ bool Actor::canSee(Actor* actor) const
 // Tell the player that an attempted pathing operation is not possible.
 void Area::notifyNoRouteFound(Actor* actor) { }
 
+// typesRegistered is used to make sure registerTypes is called only once durring testing.
+bool typesRegistered = false;
 void registerTypes()
 {
+	if(typesRegistered)
+		return;
+	typesRegistered = true;
 	s_twoLegs = registerMoveType("two legs");
 	s_fourLegs = registerMoveType("four legs");
 	s_flying = registerMoveType("flying");
@@ -199,7 +204,7 @@ void registerTypes()
 	// name, viscosity, density, mist duration, mist spread
 	s_water = registerFluidType("water", 100, 100, 10, 2);
 	s_CO2 = registerFluidType("CO2", 200, 10, 0, 0);
-	s_lava = registerFluidType("lava", 20, 200, 5, 1);
+	s_lava = registerFluidType("lava", 20, 300, 5, 1);
 	s_mercury = registerFluidType("mercury", 50, 200, 0, 0);
 
 	// name, density
@@ -223,6 +228,43 @@ void setSolidLayers(Area& area, uint32_t zbegin, uint32_t zend, const MaterialTy
 {
 	for(;zbegin <= zend; ++zbegin)
 		setSolidLayer(area, zbegin, materialType);
+}
+void setSolidWalls(Area& area, uint32_t height, const MaterialType* materialType)
+{	
+	for(uint32_t z = 0; z != height + 1; ++ z)
+	{
+		for(uint32_t x = 0; x != area.m_sizeX; ++x)
+		{
+			area.m_blocks[x][0][z].setSolid(materialType);
+			area.m_blocks[x][area.m_sizeY - 1][z].setSolid(materialType);
+		}
+		for(uint32_t y = 0; y != area.m_sizeY; ++y)
+		{
+			area.m_blocks[0][y][z].setSolid(materialType);
+			area.m_blocks[area.m_sizeX - 1][y][z].setSolid(materialType);
+		}
+	}
+}
+void setFullFluidCuboid(Area& area, Block* b1, Block* b2, const FluidType* fluidType)
+{
+	assert(b1->m_totalFluidVolume == 0);
+	assert(b1->fluidCanEnterEver());
+	assert(b2->m_totalFluidVolume == 0);
+	assert(b2->fluidCanEnterEver());
+	for(Block* block : b1->selectBetweenCorners(b2))
+	{
+		assert(block->m_totalFluidVolume == 0);
+		assert(block->fluidCanEnterEver());
+		block->addFluid(100, fluidType);
+	}
+}
+void validateAllBlockFluids(Area& area)
+{
+	for(uint32_t x = 0; x < area.m_sizeX; ++x)
+		for(uint32_t y = 0; y < area.m_sizeY; ++y)
+			for(uint32_t z = 0; z < area.m_sizeZ; ++z)
+				for(auto [fluidType, pair] : area.m_blocks[x][y][z].m_fluids)
+					assert(pair.second->m_fluidType == fluidType);
 }
 std::string toS(std::unordered_set<Block*>& blocks)
 {

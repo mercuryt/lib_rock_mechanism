@@ -16,11 +16,12 @@ public:
 	std::unordered_set<Block*> m_futureNoLongerEmpty;
 	std::unordered_set<Block*> m_overfull;
 
-	FillQueue(FluidGroup* fluidGroup);
+	FillQueue(FluidGroup& fluidGroup);
 	void buildFor(std::unordered_set<Block*>& members);
 	void initalizeForStep();
-	void recordDelta(uint32_t volume);
+	void recordDelta(uint32_t volume, uint32_t flowCapacity, uint32_t flowTillNextStep);
 	void applyDelta();
 	uint32_t groupLevel() const;
 	void findGroupEnd();
+	void validate() const;
 };

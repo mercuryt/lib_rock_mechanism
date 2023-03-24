@@ -1,9 +1,9 @@
 #pragma once
 LocationBuckets::LocationBuckets(Area& area) : m_area(area)
 {
-	m_maxX = m_area.m_sizeX / s_locationBucketSize;
-	m_maxY = m_area.m_sizeY / s_locationBucketSize;
-	m_maxZ = m_area.m_sizeZ / s_locationBucketSize;
+	m_maxX = (m_area.m_sizeX - 1 / s_locationBucketSize) + 1;
+	m_maxY = (m_area.m_sizeY - 1 / s_locationBucketSize) + 1;
+	m_maxZ = (m_area.m_sizeZ - 1 / s_locationBucketSize) + 1;
 	m_buckets.resize(m_maxX);
 	for(uint32_t x = 0; x != m_maxX; ++x)
 	{
@@ -18,6 +18,9 @@ std::unordered_set<Actor*>* LocationBuckets::getBucketFor(Block* block)
 	uint32_t bucketX = block->m_x / s_locationBucketSize;
 	uint32_t bucketY = block->m_y / s_locationBucketSize;
 	uint32_t bucketZ = block->m_z / s_locationBucketSize;
+	assert(m_buckets.size() > bucketX);
+	assert(m_buckets.at(bucketX).size() > bucketY);
+	assert(m_buckets.at(bucketX).at(bucketY).size() > bucketZ);
 	return &m_buckets[bucketX][bucketY][bucketZ];
 }
 void LocationBuckets::insert(Actor* actor)

@@ -59,6 +59,7 @@ public:
 	std::unordered_set<Block*> m_futureRemoveFromFillQueue;
 
 	FluidGroup(const FluidType* ft, std::unordered_set<Block*>& blocks, Area* area, bool checkMerge = true);
+	FluidGroup(const FluidGroup&) = delete;
 	void addFluid(uint32_t fluidVolume);
 	void removeFluid(uint32_t fluidVolume);
 	void addBlock(Block* block, bool checkMerge = true);
@@ -68,9 +69,11 @@ public:
 	void merge(FluidGroup* fluidGroup);
 	void readStep();
 	void writeStep();
+	void afterWriteStep();
 	void mergeStep();
-	void splitStep(std::vector<FluidGroup*>& newlySplit);
+	void splitStep();
 	void setUnstable();
 	void addDiagonalsFor(Block* block);
+	void validate();
 	friend class baseArea;
 };

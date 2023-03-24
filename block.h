@@ -112,6 +112,7 @@ public:
 	void exit(Actor* actor);
 	// To be overriden by user code if diagonal movement allowed.
 	void clearMoveCostsCacheForSelfAndAdjacent();
+	std::vector<Block*> selectBetweenCorners(Block* otherBlock) const;
 	std::string toS();
 
 	// User provided.

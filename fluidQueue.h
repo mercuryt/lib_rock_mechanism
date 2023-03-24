@@ -26,9 +26,9 @@ public:
 	std::vector<FutureFlowBlock> m_queue;
 	std::unordered_set<Block*> m_set;
 	std::vector<FutureFlowBlock>::iterator m_groupStart, m_groupEnd;
-	FluidGroup* m_fluidGroup;
+	FluidGroup& m_fluidGroup;
 
-	FluidQueue(FluidGroup* fluidGroup);
+	FluidQueue(FluidGroup& fluidGroup);
 	void buildFor(std::unordered_set<Block*>& members);
 	void initalizeForStep();
 	void setBlocks(std::unordered_set<Block*>& blocks);

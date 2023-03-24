@@ -58,17 +58,23 @@ void baseArea::writeStep()
 	// Apply flow.
 	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
 		fluidGroup->writeStep();
+	// Resolve overfull, diagonal seep, and mist.
+	// Make vector of unstable so we can iterate it while modifing the original.
+	std::vector<FluidGroup*> unstable(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
+	for(FluidGroup* fluidGroup : unstable)
+		fluidGroup->afterWriteStep();
 	std::erase_if(m_unstableFluidGroups, [](FluidGroup* fluidGroup){ return fluidGroup->m_stable || fluidGroup->m_destroy; });
-	std::erase_if(m_fluidGroups, [](FluidGroup& fluidGroup){ return fluidGroup.m_destroy; });
+	std::erase_if(m_fluidGroups, [](FluidGroup& fluidGroup){
+	       	return fluidGroup.m_destroy; 
+	});
 	// Apply fluid merge.
 	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
 		fluidGroup->mergeStep();
 	std::erase_if(m_fluidGroups, [](FluidGroup& fluidGroup){ return fluidGroup.m_merged; });
 	// Apply fluid split.
-	std::vector<FluidGroup*> newlySplit;
-	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
-		fluidGroup->splitStep(newlySplit);
-	m_unstableFluidGroups.insert(newlySplit.begin(), newlySplit.end());
+	std::vector<FluidGroup*> unstable2(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
+	for(FluidGroup* fluidGroup : unstable2)
+		fluidGroup->splitStep();
 	// Apply cave in.
 	if(!m_caveInData.empty())
 		stepCaveInWrite();

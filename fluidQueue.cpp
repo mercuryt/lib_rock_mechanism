@@ -1,7 +1,7 @@
 #include <unordered_set>
 #include <assert.h>
 
-FluidQueue::FluidQueue(FluidGroup* fluidGroup) : m_fluidGroup(fluidGroup) {}
+FluidQueue::FluidQueue(FluidGroup& fluidGroup) : m_fluidGroup(fluidGroup) {}
 void FluidQueue::setBlocks(std::unordered_set<Block*>& blocks)
 {
 	std::erase_if(m_queue, [&](FutureFlowBlock& futureFlowBlock){ return !blocks.contains(futureFlowBlock.block); });
@@ -9,7 +9,6 @@ void FluidQueue::setBlocks(std::unordered_set<Block*>& blocks)
 		if(!m_set.contains(block))
 			m_queue.emplace_back(block);
 	m_set.swap(blocks);
-	
 }
 void FluidQueue::addBlock(Block* block)
 {
@@ -59,7 +58,8 @@ uint32_t FluidQueue::groupCapacityPerBlock() const
 uint32_t FluidQueue::groupFlowTillNextStepPerBlock() const
 {
 	assert(m_groupStart != m_groupEnd);
-	return m_groupEnd == m_queue.end() || m_groupEnd->block->m_z != m_groupStart->block->m_z ?
-		UINT32_MAX :
-		m_groupEnd->capacity - m_groupStart->capacity;
+	if(m_groupEnd == m_queue.end() || m_groupEnd->block->m_z != m_groupStart->block->m_z)
+		return UINT32_MAX;
+	assert(m_groupEnd->capacity < m_groupStart->capacity);
+	return m_groupStart->capacity - m_groupEnd->capacity;
 }

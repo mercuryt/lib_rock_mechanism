@@ -1,4 +1,4 @@
-DrainQueue::DrainQueue(FluidGroup* fluidGroup) : FluidQueue(fluidGroup) {}
+DrainQueue::DrainQueue(FluidGroup& fluidGroup) : FluidQueue(fluidGroup) {}
 void DrainQueue::buildFor(std::unordered_set<Block*>& members)
 {
 	m_set = members;
@@ -9,12 +9,12 @@ void DrainQueue::initalizeForStep()
 {
 	for(FutureFlowBlock& futureFlowBlock : m_queue)
 	{
-		assert(futureFlowBlock.block->m_fluids.contains(m_fluidGroup->m_fluidType));
-		assert(futureFlowBlock.block->m_fluids.at(m_fluidGroup->m_fluidType).first <= s_maxBlockVolume);
-		assert(futureFlowBlock.block->m_fluids.at(m_fluidGroup->m_fluidType).first != 0);
+		assert(futureFlowBlock.block->m_fluids.contains(m_fluidGroup.m_fluidType));
+		assert(futureFlowBlock.block->m_fluids.at(m_fluidGroup.m_fluidType).first <= s_maxBlockVolume);
+		assert(futureFlowBlock.block->m_fluids.at(m_fluidGroup.m_fluidType).first != 0);
 		assert(futureFlowBlock.block->m_totalFluidVolume <= s_maxBlockVolume);
 		futureFlowBlock.delta = 0;
-		futureFlowBlock.capacity = futureFlowBlock.block->m_fluids[m_fluidGroup->m_fluidType].first;
+		futureFlowBlock.capacity = futureFlowBlock.block->m_fluids.at(m_fluidGroup.m_fluidType).first;
 	}
 	std::ranges::sort(m_queue.begin(), m_queue.end(), [&](FutureFlowBlock& a, FutureFlowBlock& b){
 		return getPriority(a) > getPriority(b);
@@ -25,7 +25,7 @@ void DrainQueue::initalizeForStep()
 	m_futureNoLongerFull.clear();
 	m_futurePotentialNoLongerAdjacent.clear();
 }
-void DrainQueue::recordDelta(uint32_t volume)
+void DrainQueue::recordDelta(uint32_t volume, uint32_t flowCapacity, uint32_t flowTillNextStep)
 {
 	assert(volume != 0);
 	assert(m_groupStart != m_groupEnd);
@@ -44,7 +44,7 @@ void DrainQueue::recordDelta(uint32_t volume)
 		iter->capacity -= volume;
 	}
 	// Record empty blocks and get next group.
-	if(m_groupStart->capacity == 0)
+	if(volume == flowCapacity)
 	{
 		for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 			m_futureEmpty.insert(iter->block);
@@ -52,7 +52,7 @@ void DrainQueue::recordDelta(uint32_t volume)
 		findGroupEnd();
 	} 
 	// Expand group for new higher level.
-	else if(volume == groupFlowTillNextStepPerBlock())
+	else if(volume == flowTillNextStep)
 		findGroupEnd();
 }
 void DrainQueue::applyDelta()
@@ -64,18 +64,18 @@ void DrainQueue::applyDelta()
 	{
 		if(iter->delta == 0)
 			continue;
-		assert(iter->block->m_fluids.contains(m_fluidGroup->m_fluidType));
-		assert(iter->block->m_fluids[m_fluidGroup->m_fluidType].first >= iter->delta);
+		assert(iter->block->m_fluids.contains(m_fluidGroup.m_fluidType));
+		assert(iter->block->m_fluids.at(m_fluidGroup.m_fluidType).first >= iter->delta);
 		assert(iter->block->m_totalFluidVolume >= iter->delta);
-		iter->block->m_fluids[m_fluidGroup->m_fluidType].first -= iter->delta;
+		iter->block->m_fluids.at(m_fluidGroup.m_fluidType).first -= iter->delta;
 		iter->block->m_totalFluidVolume -= iter->delta;
-		if(iter->block->m_fluids[m_fluidGroup->m_fluidType].first == 0)
-			iter->block->m_fluids.erase(m_fluidGroup->m_fluidType);
+		if(iter->block->m_fluids.at(m_fluidGroup.m_fluidType).first == 0)
+			iter->block->m_fluids.erase(m_fluidGroup.m_fluidType);
 		// Record blocks to set fluid groups unstable.
 		drainedFromAndAdjacent.insert(iter->block);
 		for(Block* adjacent : iter->block->m_adjacentsVector)
 			if(adjacent->fluidCanEnterEver() && 
-				(adjacent->getFluidGroup(m_fluidGroup->m_fluidType) != m_fluidGroup)
+				(adjacent->getFluidGroup(m_fluidGroup.m_fluidType) != &m_fluidGroup)
 			  )
 				drainedFromAndAdjacent.insert(adjacent);
 	}
@@ -83,13 +83,13 @@ void DrainQueue::applyDelta()
 	// TODO: Would it be better to prevent fluid groups from becoming stable while in contact with another group? Either option seems bad.
 	for(Block* block : drainedFromAndAdjacent)
 		for(auto& [fluidType, pair] : block->m_fluids)
-			if(fluidType != m_fluidGroup->m_fluidType)
+			if(fluidType != m_fluidGroup.m_fluidType)
 				pair.second->m_stable = false;
 }
 uint32_t DrainQueue::groupLevel() const
 {
 	assert(m_groupStart != m_groupEnd);
-	return m_groupStart->block->m_fluids[m_fluidGroup->m_fluidType].first - m_groupStart->delta;
+	return m_groupStart->block->m_fluids.at(m_fluidGroup.m_fluidType).first - m_groupStart->delta;
 }
 uint32_t DrainQueue::getPriority(FutureFlowBlock& futureFlowBlock) const
 {
@@ -107,3 +107,4 @@ void DrainQueue::findGroupEnd()
 		if(getPriority(*m_groupEnd) != priority)
 			break;
 }
+

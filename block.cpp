@@ -271,7 +271,7 @@ void baseBlock::addFluid(uint32_t volume, const FluidType* fluidType)
 	// If a suitable fluid group exists already then just add to it's excessVolume.
 	if(m_fluids.contains(fluidType))
 	{
-		m_fluids[fluidType].second->addFluid(volume);
+		m_fluids.at(fluidType).second->addFluid(volume);
 		return;
 	}
 	m_fluids[fluidType].first = volume;
@@ -281,6 +281,7 @@ void baseBlock::addFluid(uint32_t volume, const FluidType* fluidType)
 	for(Block* adjacent : m_adjacentsVector)
 		if(adjacent->fluidCanEnterEver() && adjacent->m_fluids.contains(fluidType))
 		{
+			assert(adjacent->m_fluids.at(fluidType).second->m_fluidType == fluidType);
 			fluidGroup = adjacent->m_fluids.at(fluidType).second;
 			fluidGroup->addBlock(static_cast<Block*>(this));
 			continue;
@@ -373,6 +374,7 @@ FluidGroup* baseBlock::getFluidGroup(const FluidType* fluidType) const
 {
 	if(!m_fluids.contains(fluidType))
 		return nullptr;
+	assert(m_fluids.at(fluidType).second->m_fluidType == fluidType);
 	return m_fluids.at(fluidType).second;
 }
 void baseBlock::resolveFluidOverfull()
@@ -382,24 +384,24 @@ void baseBlock::resolveFluidOverfull()
 	for(auto& [fluidType, pair] : m_fluids)
 	{
 		// Displace lower density fluids.
-		uint32_t displaced = std::min(m_fluids[fluidType].first, m_totalFluidVolume - s_maxBlockVolume);
+		uint32_t displaced = std::min(pair.first, m_totalFluidVolume - s_maxBlockVolume);
 		m_totalFluidVolume -= displaced;
-		m_fluids[fluidType].first -= displaced;
-		m_fluids[fluidType].second->addFluid(displaced);
-		if(m_fluids[fluidType].first == 0)
+		pair.first -= displaced;
+		pair.second->addFluid(displaced);
+		if(pair.first == 0)
 		{
-			m_fluids[fluidType].second->removeBlock(static_cast<Block*>(this));
+			pair.second->removeBlock(static_cast<Block*>(this));
 			toErase.push_back(fluidType);
 		}
-		else if(m_fluids[fluidType].first < s_maxBlockVolume)
-			m_fluids[fluidType].second->m_fillQueue.addBlock(static_cast<Block*>(this));
+		else if(pair.first < s_maxBlockVolume)
+			pair.second->m_fillQueue.addBlock(static_cast<Block*>(this));
 		if(m_totalFluidVolume == s_maxBlockVolume)
 			break;
 	}
 	for(const FluidType* fluidType : toErase)
 	{
 		// If the last block of a fluidGroup is displaced disolve it in the lowest density liquid which is more dense then it.
-		FluidGroup* fluidGroup = m_fluids[fluidType].second;
+		FluidGroup* fluidGroup = m_fluids.at(fluidType).second;
 		if(fluidGroup->m_drainQueue.m_set.empty())
 			for(auto& [otherFluidType, pair] : m_fluids)
 				if(otherFluidType->density > fluidType->density)
@@ -465,6 +467,27 @@ void baseBlock::clearMoveCostsCacheForSelfAndAdjacent()
 	m_moveCostsCache.clear();
 	for(Block* adjacent : m_adjacentsVector)
 		adjacent->m_moveCostsCache.clear();
+}
+std::vector<Block*> baseBlock::selectBetweenCorners(Block* otherBlock) const
+{
+	assert(otherBlock->m_x < m_area->m_sizeX);
+	assert(otherBlock->m_y < m_area->m_sizeY);
+	assert(otherBlock->m_z < m_area->m_sizeZ);
+	std::vector<Block*> output;
+	uint32_t minX = std::min(m_x, otherBlock->m_x);
+	uint32_t maxX = std::max(m_x, otherBlock->m_x);
+	uint32_t minY = std::min(m_y, otherBlock->m_y);
+	uint32_t maxY = std::max(m_y, otherBlock->m_y);
+	uint32_t minZ = std::min(m_z, otherBlock->m_z);
+	uint32_t maxZ = std::max(m_z, otherBlock->m_z);
+	for(uint32_t x = minX; x <= maxX; ++x)
+		for(uint32_t y = minY; y <= maxY; ++y)
+			for(uint32_t z = minZ; z <= maxZ; ++z)
+			{
+				output.push_back(&m_area->m_blocks[x][y][z]);
+				assert(output.back() != nullptr);
+			}
+	return output;
 }
 std::string baseBlock::toS()
 {

@@ -12,9 +12,9 @@ TEST_CASE("Create Fluid.")
 	fluidGroup->readStep();
 	CHECK(fluidGroup->m_stable);
 	fluidGroup->writeStep();
+	fluidGroup->afterWriteStep();
 	fluidGroup->mergeStep();
-	std::vector<FluidGroup*> newlySplit;
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->splitStep();
 	CHECK(!area.m_blocks[5][5][2].m_fluids.contains(s_water));
 	CHECK(area.m_blocks[5][5][1].m_fluids.contains(s_water));
 	CHECK(area.m_fluidGroups.size() == 1);
@@ -39,8 +39,8 @@ TEST_CASE("Excess volume spawns and negitive excess despawns.")
 	fluidGroup->readStep();
 	CHECK(!fluidGroup->m_stable);
 	fluidGroup->writeStep();
-	std::vector<FluidGroup*> newlySplit;
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(area.m_fluidGroups.size() == 1);
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 2);
@@ -53,7 +53,8 @@ TEST_CASE("Excess volume spawns and negitive excess despawns.")
 	fluidGroup->readStep();
 	CHECK(fluidGroup->m_stable);
 	fluidGroup->writeStep();
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(block2.m_fluids.contains(s_water));
 	CHECK(!area.m_blocks[5][5][3].m_fluids.contains(s_water));
@@ -63,7 +64,8 @@ TEST_CASE("Excess volume spawns and negitive excess despawns.")
 	fluidGroup->readStep();
 	CHECK(fluidGroup->m_stable);
 	fluidGroup->writeStep();
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(area.m_fluidGroups.size() == 1);
 	CHECK(block.m_fluids.contains(s_water));
@@ -82,8 +84,8 @@ TEST_CASE("Remove volume can destroy FluidGroups.")
 	fluidGroup->readStep();
 	CHECK(fluidGroup->m_stable);
 	fluidGroup->writeStep();
-	std::vector<FluidGroup*> newlySplit;
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(area.m_fluidGroups.size() == 1);
 	block.removeFluid(100, s_water);
@@ -94,6 +96,7 @@ TEST_CASE("Remove volume can destroy FluidGroups.")
 	CHECK(fluidGroup->m_drainQueue.m_futureEmpty.size() == 1);
 	CHECK(fluidGroup->m_destroy == true);
 	area.writeStep();
+	fluidGroup->afterWriteStep();
 	CHECK(area.m_unstableFluidGroups.empty());
 	CHECK(area.m_fluidGroups.empty());
 }
@@ -107,7 +110,6 @@ TEST_CASE("Flow into adjacent hole")
 	Block& origin = area.m_blocks[5][6][2];
 	Block& block4 = area.m_blocks[5][5][3];
 	Block& block5 = area.m_blocks[5][6][3];
-	std::vector<FluidGroup*> newlySplit;
 	destination.setNotSolid();
 	block2.setNotSolid();
 	origin.setNotSolid();
@@ -125,7 +127,8 @@ TEST_CASE("Flow into adjacent hole")
 	CHECK(fluidGroup->m_futureRemoveFromFillQueue.empty());
 	CHECK(fluidGroup->m_futureAddToFillQueue.size() == 3);
 	fluidGroup->writeStep();
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(area.m_fluidGroups.size() == 1);
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 2);
@@ -147,7 +150,8 @@ TEST_CASE("Flow into adjacent hole")
 	fluidGroup->readStep();
 	CHECK(fluidGroup->m_futureRemoveFromFillQueue.size() == 4);
 	fluidGroup->writeStep();
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(destination.m_fluids.contains(s_water));
 	CHECK(!block2.m_fluids.contains(s_water));
@@ -160,13 +164,15 @@ TEST_CASE("Flow into adjacent hole")
 	// Step 3.
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(area.m_fluidGroups.size() == 1);
 	CHECK(fluidGroup->m_stable);
 }
 TEST_CASE("Flow across flat area")
 {
+	s_step = 0;
 	Area area(20,20,20);
 	registerTypes();
 	setSolidLayer(area, 0, s_stone);
@@ -180,10 +186,11 @@ TEST_CASE("Flow across flat area")
 	Block& block8 = area.m_blocks[17][10][1];
 	block.addFluid(s_maxBlockVolume, s_water);
 	FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
+	//Step 1.
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
-	std::vector<FluidGroup*> newlySplit;
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 5);
 	CHECK(block.volumeOfFluidTypeContains(s_water) == 20);
@@ -193,9 +200,12 @@ TEST_CASE("Flow across flat area")
 			CHECK(adjacent->volumeOfFluidTypeContains(s_water) == 20);
 	CHECK(!fluidGroup->m_stable);
 	CHECK(fluidGroup->m_excessVolume == 0);
+	s_step++;
+	//Step 2.
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(area.m_fluidGroups.size() == 1);
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 13);
@@ -204,9 +214,12 @@ TEST_CASE("Flow across flat area")
 	CHECK(block3.volumeOfFluidTypeContains(s_water) == 7);
 	CHECK(block4.volumeOfFluidTypeContains(s_water) == 0);
 	CHECK(fluidGroup->m_excessVolume == 9);
+	s_step++;
+	//Step 3.
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 25);
 	CHECK(block.volumeOfFluidTypeContains(s_water) == 3);
@@ -216,9 +229,12 @@ TEST_CASE("Flow across flat area")
 	CHECK(block5.volumeOfFluidTypeContains(s_water) == 0);
 	CHECK(!fluidGroup->m_stable);
 	CHECK(fluidGroup->m_excessVolume == 25);
+	s_step++;
+	//Step 4.
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 41);
 	CHECK(block.volumeOfFluidTypeContains(s_water) == 2);
@@ -228,9 +244,12 @@ TEST_CASE("Flow across flat area")
 	CHECK(block5.volumeOfFluidTypeContains(s_water) == 2);
 	CHECK(block6.volumeOfFluidTypeContains(s_water) == 0);
 	CHECK(fluidGroup->m_excessVolume == 18);
+	s_step++;
+	//Step 5.
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 61);
 	CHECK(block.volumeOfFluidTypeContains(s_water) == 1);
@@ -239,11 +258,14 @@ TEST_CASE("Flow across flat area")
 	CHECK(block4.volumeOfFluidTypeContains(s_water) == 1);
 	CHECK(block5.volumeOfFluidTypeContains(s_water) == 1);
 	CHECK(block6.volumeOfFluidTypeContains(s_water) == 1);
-	CHECK(block7.volumeOfFluidTypeContains(s_water) == 0);
+	CHECK(block8.volumeOfFluidTypeContains(s_water) == 0);
 	CHECK(fluidGroup->m_excessVolume == 39);
+	s_step++;
+	//Step 6.
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(area.m_fluidGroups.size() == 1);
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 85);
@@ -256,9 +278,10 @@ TEST_CASE("Flow across flat area")
 	CHECK(block7.volumeOfFluidTypeContains(s_water) == 1);
 	CHECK(block8.volumeOfFluidTypeContains(s_water) == 0);
 	CHECK(fluidGroup->m_excessVolume == 15);
+	s_step++;
+	//Step 7.
 	fluidGroup->readStep();
 	CHECK(fluidGroup->m_stable);
-	CHECK(newlySplit.empty());
 }
 TEST_CASE("Flow across flat area double stack")
 {
@@ -274,7 +297,6 @@ TEST_CASE("Flow across flat area double stack")
 	Block& block5 = area.m_blocks[10][14][1];
 	Block& block6 = area.m_blocks[15][10][1];
 	Block& block7 = area.m_blocks[16][10][1];
-	std::vector<FluidGroup*> newlySplit;
 	origin1.addFluid(100, s_water);
 	origin2.addFluid(100, s_water);
 	FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
@@ -282,7 +304,8 @@ TEST_CASE("Flow across flat area double stack")
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 2);
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(area.m_fluidGroups.size() == 1);
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 5);
@@ -294,7 +317,8 @@ TEST_CASE("Flow across flat area double stack")
 	CHECK(fluidGroup->m_excessVolume == 0);
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 13);
 	CHECK(origin1.volumeOfFluidTypeContains(s_water) == 15);
@@ -305,7 +329,8 @@ TEST_CASE("Flow across flat area double stack")
 	CHECK(fluidGroup->m_excessVolume == 5);
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 25);
 	CHECK(origin1.volumeOfFluidTypeContains(s_water) == 7);
@@ -318,7 +343,8 @@ TEST_CASE("Flow across flat area double stack")
 	CHECK(fluidGroup->m_excessVolume == 25);
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(area.m_fluidGroups.size() == 1);
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 41);
@@ -331,7 +357,8 @@ TEST_CASE("Flow across flat area double stack")
 	CHECK(fluidGroup->m_excessVolume == 36);
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 61);
 	CHECK(origin1.volumeOfFluidTypeContains(s_water) == 3);
@@ -345,7 +372,8 @@ TEST_CASE("Flow across flat area double stack")
 	CHECK(fluidGroup->m_excessVolume == 17);
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 85);
 	CHECK(origin1.volumeOfFluidTypeContains(s_water) == 2);
@@ -373,13 +401,13 @@ TEST_CASE("Flow across area and then fill hole")
 	Block& block4 = area.m_blocks[5][7][2];
 	Block& block5 = area.m_blocks[5][7][1];
 	Block& block6 = area.m_blocks[5][8][2];
-	std::vector<FluidGroup*> newlySplit;
 	block.addFluid(s_maxBlockVolume, s_water);
 	block5.setNotSolid();
 	FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(area.m_fluidGroups.size() == 1);
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 5);
@@ -393,7 +421,8 @@ TEST_CASE("Flow across area and then fill hole")
 	CHECK(fluidGroup->m_excessVolume == 0);
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 13);
 	CHECK(block.volumeOfFluidTypeContains(s_water) == 7);
@@ -408,7 +437,8 @@ TEST_CASE("Flow across area and then fill hole")
 	CHECK(fluidGroup->m_excessVolume == 9);
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(area.m_fluidGroups.size() == 1);
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 1);
@@ -421,7 +451,8 @@ TEST_CASE("Flow across area and then fill hole")
 	// If the group is stable at this point depends on the viscosity of water, do one more step to make sure.
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(fluidGroup->m_stable);
 }
@@ -434,7 +465,6 @@ TEST_CASE("FluidGroups are able to split into parts")
 	Block& destination2 = area.m_blocks[5][6][1];
 	Block& origin1 = area.m_blocks[5][5][2];
 	Block& origin2 = area.m_blocks[5][5][3];
-	std::vector<FluidGroup*> newlySplit;
 	destination1.setNotSolid();
 	destination2.setNotSolid();
 	destination1.m_adjacents[5]->setNotSolid();
@@ -448,7 +478,8 @@ TEST_CASE("FluidGroups are able to split into parts")
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 2);
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(origin2.volumeOfFluidTypeContains(s_water) == 0);
 	CHECK(origin1.volumeOfFluidTypeContains(s_water) == 66);
@@ -456,7 +487,8 @@ TEST_CASE("FluidGroups are able to split into parts")
 	CHECK(destination2.m_adjacents[5]->volumeOfFluidTypeContains(s_water) == 66);
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(origin1.volumeOfFluidTypeContains(s_water) == 0);
 	CHECK(destination1.m_adjacents[5]->volumeOfFluidTypeContains(s_water) == 0);
@@ -474,7 +506,6 @@ TEST_CASE("Fluid Groups merge")
 	Block& origin1 = area.m_blocks[5][4][1];
 	Block& block1 = area.m_blocks[5][5][1];
 	Block& origin2 = area.m_blocks[5][6][1];
-	std::vector<FluidGroup*> newlySplit;
 	origin1.setNotSolid();
 	block1.setNotSolid();
 	origin2.setNotSolid();
@@ -489,8 +520,10 @@ TEST_CASE("Fluid Groups merge")
 	fg2->readStep();
 	fg1->writeStep();
 	fg2->writeStep();
-	fg1->splitStep(newlySplit);
-	fg2->splitStep(newlySplit);
+	fg1->afterWriteStep();
+	fg2->afterWriteStep();
+	fg1->splitStep();
+	fg2->splitStep();
 	fg1->mergeStep();
 	fg2->mergeStep();
 	CHECK(fg2->m_merged);
@@ -507,11 +540,13 @@ TEST_CASE("Fluid Groups merge")
 	// Step 2.
 	fg1->readStep();
 	fg1->writeStep();
-	fg1->splitStep(newlySplit);
+	fg1->afterWriteStep();
+	fg1->splitStep();
 	fg1->mergeStep();
 	// Step 3.
 	fg1->readStep();
 	fg1->writeStep();
+	fg1->afterWriteStep();
 	CHECK(origin1.volumeOfFluidTypeContains(s_water) == 66);
 	CHECK(block1.volumeOfFluidTypeContains(s_water) == 66);
 	CHECK(origin2.volumeOfFluidTypeContains(s_water) == 66);
@@ -527,7 +562,6 @@ TEST_CASE("Fluid Groups merge four blocks")
 	Block& block2 = area.m_blocks[5][5][1];
 	Block& block3 = area.m_blocks[5][6][1];
 	Block& block4 = area.m_blocks[5][7][1];
-	std::vector<FluidGroup*> newlySplit;
 	block1.setNotSolid();
 	block2.setNotSolid();
 	block3.setNotSolid();
@@ -543,8 +577,10 @@ TEST_CASE("Fluid Groups merge four blocks")
 	fg2->readStep();
 	fg1->writeStep();
 	fg2->writeStep();
-	fg1->splitStep(newlySplit);
-	fg2->splitStep(newlySplit);
+	fg1->afterWriteStep();
+	fg2->afterWriteStep();
+	fg1->splitStep();
+	fg2->splitStep();
 	fg1->mergeStep();
 	CHECK(fg2->m_merged);
 	fg2->mergeStep();
@@ -555,8 +591,9 @@ TEST_CASE("Fluid Groups merge four blocks")
 	// Step 2.
 	fg1->readStep();
 	fg1->writeStep();
+	fg1->afterWriteStep();
 	fg1->mergeStep();
-	fg1->splitStep(newlySplit);
+	fg1->splitStep();
 	CHECK(block1.volumeOfFluidTypeContains(s_water) == 50);
 	CHECK(block2.volumeOfFluidTypeContains(s_water) == 50);
 	CHECK(block3.volumeOfFluidTypeContains(s_water) == 50);
@@ -571,92 +608,96 @@ TEST_CASE("Denser fluids sink")
 	Block& block1 = area.m_blocks[5][5][1];
 	Block& block2 = area.m_blocks[5][5][2];
 	Block& block3 = area.m_blocks[5][5][3];
-	std::vector<FluidGroup*> newlySplit;
 	block1.setNotSolid();
 	block2.setNotSolid();
 	block1.addFluid(100, s_water);
 	block2.addFluid(100, s_mercury);
 	CHECK(area.m_fluidGroups.size() == 2);
-	FluidGroup* fg1 = block1.getFluidGroup(s_water);
-	FluidGroup* fg2 = block2.getFluidGroup(s_mercury);
-	CHECK(fg1 != nullptr);
-	CHECK(fg2 != nullptr);
-	CHECK(fg1->m_fluidType == s_water);
-	CHECK(fg2->m_fluidType == s_mercury);
-	CHECK(fg1->m_fillQueue.m_set.size() == 1);
+	FluidGroup* fgWater = block1.getFluidGroup(s_water);
+	FluidGroup* fgMercury = block2.getFluidGroup(s_mercury);
+	CHECK(fgWater != nullptr);
+	CHECK(fgMercury != nullptr);
+	CHECK(fgWater->m_fluidType == s_water);
+	CHECK(fgMercury->m_fluidType == s_mercury);
+	CHECK(fgWater->m_fillQueue.m_set.size() == 1);
 	// Step 1.
-	fg1->readStep();
-	CHECK(fg1->m_fillQueue.m_set.size() == 1);
-	fg2->readStep();
-	fg1->writeStep();
-	CHECK(fg1->m_drainQueue.m_set.size() == 1);
-	fg2->writeStep();
-	fg1->splitStep(newlySplit);
-	fg2->splitStep(newlySplit);
-	CHECK(fg1->m_fillQueue.m_set.size() == 2);
-	CHECK(fg1->m_fillQueue.m_set.contains(&block1));
-	CHECK(fg1->m_fillQueue.m_set.contains(&block2));
-	fg1->mergeStep();
-	fg2->mergeStep();
+	fgWater->readStep();
+	CHECK(fgWater->m_fillQueue.m_set.size() == 1);
+	fgMercury->readStep();
+	fgWater->writeStep();
+	CHECK(fgWater->m_drainQueue.m_set.size() == 1);
+	fgMercury->writeStep();
+	fgWater->afterWriteStep();
+	fgMercury->afterWriteStep();
+	fgWater->splitStep();
+	fgMercury->splitStep();
+	CHECK(fgWater->m_fillQueue.m_set.size() == 2);
+	CHECK(fgWater->m_fillQueue.m_set.contains(&block1));
+	CHECK(fgWater->m_fillQueue.m_set.contains(&block2));
+	fgWater->mergeStep();
+	fgMercury->mergeStep();
 	CHECK(block1.volumeOfFluidTypeContains(s_water) == 50);
 	CHECK(block1.volumeOfFluidTypeContains(s_mercury) == 50);
 	CHECK(block2.volumeOfFluidTypeContains(s_water) == 0);
 	CHECK(block2.volumeOfFluidTypeContains(s_mercury) == 50);
 	CHECK(block3.volumeOfFluidTypeContains(s_water) == 0);
-	CHECK(fg1->m_excessVolume == 50);
-	CHECK(fg2->m_excessVolume == 0);
-	CHECK(!fg1->m_stable);
-	CHECK(!fg2->m_stable);
-	CHECK(fg1->m_fillQueue.m_set.size() == 2);
-	CHECK(fg1->m_fillQueue.m_set.contains(&block1));
-	CHECK(fg1->m_fillQueue.m_set.contains(&block2));
-	CHECK(fg2->m_fillQueue.m_set.size() == 3);
+	CHECK(fgWater->m_excessVolume == 50);
+	CHECK(fgMercury->m_excessVolume == 0);
+	CHECK(!fgWater->m_stable);
+	CHECK(!fgMercury->m_stable);
+	CHECK(fgWater->m_fillQueue.m_set.size() == 2);
+	CHECK(fgWater->m_fillQueue.m_set.contains(&block1));
+	CHECK(fgWater->m_fillQueue.m_set.contains(&block2));
+	CHECK(fgMercury->m_fillQueue.m_set.size() == 3);
 	// Step 2.
-	fg1->readStep();
-	fg2->readStep();
-	fg1->writeStep();
-	fg2->writeStep();
-	fg1->splitStep(newlySplit);
-	fg2->splitStep(newlySplit);
-	fg1->mergeStep();
-	fg2->mergeStep();
+	fgWater->readStep();
+	fgMercury->readStep();
+	fgWater->writeStep();
+	fgMercury->writeStep();
+	fgWater->afterWriteStep();
+	fgMercury->afterWriteStep();
+	fgWater->splitStep();
+	fgMercury->splitStep();
+	fgWater->mergeStep();
+	fgMercury->mergeStep();
 	CHECK(block1.volumeOfFluidTypeContains(s_water) == 0);
 	CHECK(block1.volumeOfFluidTypeContains(s_mercury) == 100);
 	CHECK(block2.volumeOfFluidTypeContains(s_water) == 50);
 	CHECK(block2.volumeOfFluidTypeContains(s_mercury) == 0);
 	CHECK(block3.volumeOfFluidTypeContains(s_water) == 0);
-	CHECK(fg1->m_excessVolume == 50);
-	CHECK(fg2->m_excessVolume == 0);
-	CHECK(!fg1->m_stable);
-	CHECK(!fg2->m_stable);
-	CHECK(fg1->m_fillQueue.m_set.size() == 3);
-	CHECK(fg1->m_fillQueue.m_set.contains(&block1));
-	CHECK(fg1->m_fillQueue.m_set.contains(&block2));
-	CHECK(fg1->m_fillQueue.m_set.contains(&block3));
-	CHECK(fg1->m_drainQueue.m_set.size() == 1);
-	CHECK(fg1->m_drainQueue.m_set.contains(&block2));
+	CHECK(fgWater->m_excessVolume == 50);
+	CHECK(fgMercury->m_excessVolume == 0);
+	CHECK(!fgWater->m_stable);
+	CHECK(!fgMercury->m_stable);
+	CHECK(fgWater->m_fillQueue.m_set.size() == 3);
+	CHECK(fgWater->m_fillQueue.m_set.contains(&block1));
+	CHECK(fgWater->m_fillQueue.m_set.contains(&block2));
+	CHECK(fgWater->m_fillQueue.m_set.contains(&block3));
+	CHECK(fgWater->m_drainQueue.m_set.size() == 1);
+	CHECK(fgWater->m_drainQueue.m_set.contains(&block2));
 	// Step 3.
-	fg1->readStep();
-	CHECK(fg1->m_futureGroups.size() == 0);
-	fg2->readStep();
-	fg1->writeStep();
-	fg2->writeStep();
-	fg1->splitStep(newlySplit);
-	fg2->splitStep(newlySplit);
-	fg1->mergeStep();
-	fg2->mergeStep();
-	CHECK(fg1->m_drainQueue.m_set.size() == 1);
-	CHECK(fg1->m_fillQueue.m_set.size() == 2);
+	fgWater->readStep();
+	CHECK(fgWater->m_futureGroups.size() == 0);
+	fgMercury->readStep();
+	fgWater->writeStep();
+	fgMercury->writeStep();
+	fgWater->afterWriteStep();
+	fgMercury->afterWriteStep();
+	fgWater->splitStep();
+	fgMercury->splitStep();
+	fgWater->mergeStep();
+	fgMercury->mergeStep();
+	CHECK(fgWater->m_drainQueue.m_set.size() == 1);
+	CHECK(fgWater->m_fillQueue.m_set.size() == 2);
 	CHECK(block1.volumeOfFluidTypeContains(s_water) == 0);
 	CHECK(block1.volumeOfFluidTypeContains(s_mercury) == 100);
 	CHECK(block2.volumeOfFluidTypeContains(s_water) == 100);
 	CHECK(block2.volumeOfFluidTypeContains(s_mercury) == 0);
 	CHECK(block3.volumeOfFluidTypeContains(s_water) == 0);
-	CHECK(fg1->m_stable);
-	CHECK(fg1->m_excessVolume == 0);
-	CHECK(fg2->m_excessVolume == 0);
-	CHECK(fg2->m_stable);
-	CHECK(newlySplit.empty());
+	CHECK(fgWater->m_stable);
+	CHECK(fgWater->m_excessVolume == 0);
+	CHECK(fgMercury->m_excessVolume == 0);
+	CHECK(fgMercury->m_stable);
 }
 TEST_CASE("Merge 3 groups at two block distance")
 {
@@ -670,7 +711,6 @@ TEST_CASE("Merge 3 groups at two block distance")
 	Block& block5 = area.m_blocks[5][6][1];
 	Block& block6 = area.m_blocks[5][7][1];
 	Block& block7 = area.m_blocks[5][8][1];
-	std::vector<FluidGroup*> newlySplit;
 	block1.setNotSolid();
 	block2.setNotSolid();
 	block3.setNotSolid();
@@ -698,9 +738,12 @@ TEST_CASE("Merge 3 groups at two block distance")
 	fg1->writeStep();
 	fg2->writeStep();
 	fg3->writeStep();
-	fg1->splitStep(newlySplit);
-	fg2->splitStep(newlySplit);
-	fg3->splitStep(newlySplit);
+	fg1->afterWriteStep();
+	fg2->afterWriteStep();
+	fg3->afterWriteStep();
+	fg1->splitStep();
+	fg2->splitStep();
+	fg3->splitStep();
 	fg1->mergeStep();
 	fg2->mergeStep();
 	fg3->mergeStep();
@@ -717,7 +760,7 @@ TEST_CASE("Merge 3 groups at two block distance")
 	// Step 2.
 	fg2->readStep();
 	fg2->writeStep();
-	fg2->splitStep(newlySplit);
+	fg2->splitStep();
 	fg2->mergeStep();
 	CHECK(block1.volumeOfFluidTypeContains(s_water) == 42);
 	CHECK(block2.volumeOfFluidTypeContains(s_water) == 42);
@@ -741,7 +784,6 @@ TEST_CASE("Split test 2")
 	Block& origin2 = area.m_blocks[5][6][3];
 	Block& origin3 = area.m_blocks[5][7][3];
 	Block& block4 = area.m_blocks[5][7][2];
-	std::vector<FluidGroup*> newlySplit;
 	origin1.setNotSolid();
 	origin2.setNotSolid();
 	origin3.setNotSolid();
@@ -758,7 +800,8 @@ TEST_CASE("Split test 2")
 	// Step 1.
 	fg1->readStep();
 	fg1->writeStep();
-	fg1->splitStep(newlySplit);
+	fg1->afterWriteStep();
+	fg1->splitStep();
 	fg1->mergeStep();
 	CHECK(fg1->m_excessVolume == 0);
 	CHECK(fg1->m_drainQueue.m_set.size() == 1);
@@ -782,8 +825,9 @@ TEST_CASE("Split test 2")
 	fg2->readStep();
 	fg1->writeStep();
 	fg2->writeStep();
-	fg1->splitStep(newlySplit);
-	fg2->splitStep(newlySplit);
+	fg2->afterWriteStep();
+	fg1->splitStep();
+	fg2->splitStep();
 	fg1->mergeStep();
 	fg2->mergeStep();
 	CHECK(origin1.volumeOfFluidTypeContains(s_water) == 0);
@@ -797,14 +841,16 @@ TEST_CASE("Split test 2")
 	// Step 3.
 	fg1->readStep();
 	fg1->writeStep();
-	fg1->splitStep(newlySplit);
+	fg1->afterWriteStep();
+	fg1->splitStep();
 	fg1->mergeStep();
 	CHECK(block1.volumeOfFluidTypeContains(s_water) == 15);
 	CHECK(block2.volumeOfFluidTypeContains(s_water) == 15);
 	// Step 4.
 	fg1->readStep();
 	fg1->writeStep();
-	fg1->splitStep(newlySplit);
+	fg1->afterWriteStep();
+	fg1->splitStep();
 	fg1->mergeStep();
 	CHECK(fg1->m_stable);
 	CHECK(block1.volumeOfFluidTypeContains(s_water) == 15);
@@ -822,7 +868,6 @@ TEST_CASE("Merge with group as it splits")
 	Block& origin3 = area.m_blocks[5][6][3];
 	Block& origin4 = area.m_blocks[5][7][3];
 	Block& block3 = area.m_blocks[5][7][2];
-	std::vector<FluidGroup*> newlySplit;
 	origin1.setNotSolid();
 	origin2.setNotSolid();
 	origin3.setNotSolid();
@@ -846,13 +891,13 @@ TEST_CASE("Merge with group as it splits")
 	fg1->writeStep();
 	CHECK(fg1->m_excessVolume == 0);
 	fg2->writeStep();
-	fg1->splitStep(newlySplit);
-	fg2->splitStep(newlySplit);
+	fg1->afterWriteStep();
+	fg2->afterWriteStep();
+	fg1->splitStep();
+	fg2->splitStep();
 	fg1->mergeStep();
 	fg2->mergeStep();
 	CHECK(fg1->m_drainQueue.m_set.size() == 3);
-	CHECK(newlySplit.size() == 1);
-	CHECK(newlySplit[0]->m_merged);
 	CHECK(origin1.volumeOfFluidTypeContains(s_water) == 50);
 	CHECK(origin2.volumeOfFluidTypeContains(s_water) == 0);
 	CHECK(origin3.volumeOfFluidTypeContains(s_water) == 0);
@@ -867,8 +912,10 @@ TEST_CASE("Merge with group as it splits")
 	fg1->writeStep();
 	CHECK(fg1->m_drainQueue.m_set.size() == 2);
 	fg2->writeStep();
-	fg1->splitStep(newlySplit);
-	fg2->splitStep(newlySplit);
+	fg1->afterWriteStep();
+	fg2->afterWriteStep();
+	fg1->splitStep();
+	fg2->splitStep();
 	fg1->mergeStep();
 	CHECK(fg1->m_excessVolume == 0);
 	fg2->mergeStep();
@@ -893,7 +940,6 @@ TEST_CASE("Merge with two groups while spliting")
 	Block& block3 = area.m_blocks[5][7][2];
 	Block& block4 = area.m_blocks[5][7][1];
 	Block& origin5 = area.m_blocks[5][8][1];
-	std::vector<FluidGroup*> newlySplit;
 	origin1.setNotSolid();
 	origin2.setNotSolid();
 	origin3.setNotSolid();
@@ -924,13 +970,14 @@ TEST_CASE("Merge with two groups while spliting")
 	CHECK(fg1->m_excessVolume == 0);
 	fg2->writeStep();
 	fg3->writeStep();
-	fg1->splitStep(newlySplit);
-	fg2->splitStep(newlySplit);
+	fg1->afterWriteStep();
+	fg2->afterWriteStep();
+	fg3->afterWriteStep();
+	fg1->splitStep();
+	fg2->splitStep();
 	FluidGroup* fg4 = block2.getFluidGroup(s_water);
-	CHECK(newlySplit.size() == 1);
-	CHECK(newlySplit[0] == fg4);
 	CHECK(!fg3->m_merged);
-	fg3->splitStep(newlySplit);
+	fg3->splitStep();
 	CHECK(fg1->m_drainQueue.m_set.size() == 2);
 	CHECK(fg2->m_drainQueue.m_set.size() == 1);
 	fg1->mergeStep();
@@ -959,8 +1006,10 @@ TEST_CASE("Merge with two groups while spliting")
 	fg1->writeStep();
 	CHECK(fg1->m_drainQueue.m_set.size() == 2);
 	fg3->writeStep();
-	fg1->splitStep(newlySplit);
-	fg3->splitStep(newlySplit);
+	fg1->afterWriteStep();
+	fg3->afterWriteStep();
+	fg1->splitStep();
+	fg3->splitStep();
 	fg1->mergeStep();
 	CHECK(fg1->m_excessVolume == 0);
 	fg3->mergeStep();
@@ -980,7 +1029,6 @@ TEST_CASE("Bubbles")
 	Block& origin2 = area.m_blocks[5][5][2];
 	Block& origin3 = area.m_blocks[5][5][3];
 	Block& block1 = area.m_blocks[5][5][4];
-	std::vector<FluidGroup*> newlySplit;
 	origin1.setNotSolid();
 	origin2.setNotSolid();
 	origin3.setNotSolid();
@@ -995,9 +1043,11 @@ TEST_CASE("Bubbles")
 	fg2->readStep();
 	fg1->writeStep();
 	fg2->writeStep();
+	fg1->afterWriteStep();
+	fg2->afterWriteStep();
 	CHECK(fg1->m_excessVolume == 100);
 	CHECK(fg1->m_disolved);
-	fg2->splitStep(newlySplit);
+	fg2->splitStep();
 	fg2->mergeStep();
 	CHECK(origin1.volumeOfFluidTypeContains(s_CO2) == 0);
 	CHECK(origin1.volumeOfFluidTypeContains(s_water) == 100);
@@ -1009,8 +1059,10 @@ TEST_CASE("Bubbles")
 	fg2->readStep();
 	fg1->writeStep();
 	fg2->writeStep();
-	fg1->splitStep(newlySplit);
-	fg2->splitStep(newlySplit);
+	fg1->afterWriteStep();
+	fg2->afterWriteStep();
+	fg1->splitStep();
+	fg2->splitStep();
 	fg1->mergeStep();
 	fg2->mergeStep();
 	CHECK(fg1->m_stable);
@@ -1021,19 +1073,21 @@ TEST_CASE("Bubbles")
 	CHECK(!fg1->m_stable);
 	CHECK(origin1.volumeOfFluidTypeContains(s_water) == 100);
 	CHECK(origin2.volumeOfFluidTypeContains(s_water) == 0);
-	fg2->splitStep(newlySplit);
+	fg2->splitStep();
 	fg2->mergeStep();
 	// Step 3.
 	fg1->readStep();
 	CHECK(fg2->m_stable);
 	fg1->writeStep();
-	fg1->splitStep(newlySplit);
+	fg1->afterWriteStep();
+	fg1->splitStep();
 	fg1->mergeStep();
 	CHECK(origin1.volumeOfFluidTypeContains(s_water) == 100);
 	CHECK(origin2.volumeOfFluidTypeContains(s_CO2) == 100);
 	// Step 4.
 	fg1->readStep();
 	fg1->writeStep();
+	fg1->afterWriteStep();
 	CHECK(fg1->m_stable);
 	CHECK(fg2->m_stable);
 }
@@ -1046,7 +1100,6 @@ TEST_CASE("Three liquids")
 	Block& origin2 = area.m_blocks[5][5][2];
 	Block& origin3 = area.m_blocks[5][5][3];
 	Block& block1 = area.m_blocks[5][5][4];
-	std::vector<FluidGroup*> newlySplit;
 	origin1.setNotSolid();
 	origin2.setNotSolid();
 	origin3.setNotSolid();
@@ -1063,12 +1116,15 @@ TEST_CASE("Three liquids")
 	fg3->readStep();
 	fg1->writeStep();
 	fg2->writeStep();
+	fg3->writeStep();
+	fg1->afterWriteStep();
+	fg2->afterWriteStep();
+	fg3->afterWriteStep();
 	CHECK(fg1->m_excessVolume == 100);
 	CHECK(fg1->m_disolved);
-	fg3->writeStep();
-	fg2->splitStep(newlySplit);
+	fg2->splitStep();
 	CHECK(fg1->m_excessVolume == 50);
-	fg3->splitStep(newlySplit);
+	fg3->splitStep();
 	fg2->mergeStep();
 	fg3->mergeStep();
 	CHECK(origin1.volumeOfFluidTypeContains(s_CO2) == 0);
@@ -1087,9 +1143,12 @@ TEST_CASE("Three liquids")
 	fg1->writeStep();
 	fg2->writeStep();
 	fg3->writeStep();
-	fg1->splitStep(newlySplit);
-	fg2->splitStep(newlySplit);
-	fg3->splitStep(newlySplit);
+	fg1->afterWriteStep();
+	fg2->afterWriteStep();
+	fg3->afterWriteStep();
+	fg1->splitStep();
+	fg2->splitStep();
+	fg3->splitStep();
 	fg1->mergeStep();
 	fg2->mergeStep();
 	fg3->mergeStep();
@@ -1104,40 +1163,42 @@ TEST_CASE("Three liquids")
 	CHECK(fg2->m_excessVolume == 50);
 	CHECK(fg1->m_excessVolume == 0);
 	// Step 3.
-	newlySplit.clear();
 	fg1->readStep();
 	fg2->readStep();
 	fg3->readStep();
 	fg1->writeStep();
 	fg2->writeStep();
 	fg3->writeStep();
-	fg1->splitStep(newlySplit);
-	fg2->splitStep(newlySplit);
-	fg3->splitStep(newlySplit);
-	CHECK(newlySplit.empty());
+	fg1->afterWriteStep();
+	fg2->afterWriteStep();
+	fg3->afterWriteStep();
+	fg1->splitStep();
+	fg2->splitStep();
+	fg3->splitStep();
 	fg1->mergeStep();
 	fg2->mergeStep();
 	fg3->mergeStep();
 	CHECK(origin1.volumeOfFluidTypeContains(s_mercury) == 100);
 	CHECK(origin2.volumeOfFluidTypeContains(s_water) == 50);
 	CHECK(origin2.volumeOfFluidTypeContains(s_mercury) == 0);
-	CHECK(origin2.volumeOfFluidTypeContains(s_CO2) == 0);
+	CHECK(origin2.volumeOfFluidTypeContains(s_CO2) == 50);
 	CHECK(origin3.volumeOfFluidTypeContains(s_CO2) == 50);
 	CHECK(block1.m_totalFluidVolume == 0);
-	CHECK(fg1->m_excessVolume == 50);
+	CHECK(fg1->m_excessVolume == 0);
 	CHECK(fg2->m_excessVolume == 50);
 	// Step 4.
-	newlySplit.clear();
 	fg1->readStep();
 	fg2->readStep();
 	fg3->readStep();
 	fg1->writeStep();
 	fg2->writeStep();
 	fg3->writeStep();
-	fg1->splitStep(newlySplit);
-	fg2->splitStep(newlySplit);
-	fg3->splitStep(newlySplit);
-	CHECK(newlySplit.empty());
+	fg1->afterWriteStep();
+	fg2->afterWriteStep();
+	fg3->afterWriteStep();
+	fg1->splitStep();
+	fg2->splitStep();
+	fg3->splitStep();
 	fg1->mergeStep();
 	fg2->mergeStep();
 	fg3->mergeStep();
@@ -1153,7 +1214,8 @@ TEST_CASE("Three liquids")
 	// Step 5.
 	fg1->readStep();
 	fg1->writeStep();
-	fg1->splitStep(newlySplit);
+	fg1->afterWriteStep();
+	fg1->splitStep();
 	fg1->mergeStep();
 	CHECK(fg1->m_stable);
 	CHECK(fg3->m_stable);
@@ -1166,7 +1228,6 @@ TEST_CASE("Set not solid")
 	Block& origin1 = area.m_blocks[5][5][1];
 	Block& block1 = area.m_blocks[5][6][1];
 	Block& block2 = area.m_blocks[5][7][1];
-	std::vector<FluidGroup*> newlySplit;
 	origin1.setNotSolid();
 	block2.setNotSolid();
 	origin1.addFluid(100, s_water);
@@ -1175,7 +1236,8 @@ TEST_CASE("Set not solid")
 	// Step 1.
 	fg1->readStep();
 	fg1->writeStep();
-	fg1->splitStep(newlySplit);
+	fg1->afterWriteStep();
+	fg1->splitStep();
 	fg1->mergeStep();
 	CHECK(origin1.volumeOfFluidTypeContains(s_water) == 100);
 	CHECK(fg1->m_stable);
@@ -1184,14 +1246,16 @@ TEST_CASE("Set not solid")
 	CHECK(!fg1->m_stable);
 	fg1->readStep();
 	fg1->writeStep();
-	fg1->splitStep(newlySplit);
+	fg1->afterWriteStep();
+	fg1->splitStep();
 	fg1->mergeStep();
 	CHECK(origin1.volumeOfFluidTypeContains(s_water) == 50);
 	CHECK(block1.volumeOfFluidTypeContains(s_water) == 50);
 	// Step .
 	fg1->readStep();
 	fg1->writeStep();
-	fg1->splitStep(newlySplit);
+	fg1->afterWriteStep();
+	fg1->splitStep();
 	fg1->mergeStep();
 	CHECK(origin1.volumeOfFluidTypeContains(s_water) == 33);
 	CHECK(block1.volumeOfFluidTypeContains(s_water) == 33);
@@ -1207,7 +1271,6 @@ TEST_CASE("Set solid")
 	Block& origin1 = area.m_blocks[5][5][1];
 	Block& block1 = area.m_blocks[5][6][1];
 	Block& block2 = area.m_blocks[5][7][1];
-	std::vector<FluidGroup*> newlySplit;
 	origin1.setNotSolid();
 	block1.setNotSolid();
 	block2.setNotSolid();
@@ -1216,7 +1279,8 @@ TEST_CASE("Set solid")
 	// Step 1.
 	fg1->readStep();
 	fg1->writeStep();
-	fg1->splitStep(newlySplit);
+	fg1->afterWriteStep();
+	fg1->splitStep();
 	fg1->mergeStep();
 	CHECK(origin1.volumeOfFluidTypeContains(s_water) == 50);
 	CHECK(block1.volumeOfFluidTypeContains(s_water) == 50);
@@ -1231,7 +1295,6 @@ TEST_CASE("Set solid and split")
 	Block& block1 = area.m_blocks[5][5][1];
 	Block& origin1 = area.m_blocks[5][6][1];
 	Block& block2 = area.m_blocks[5][7][1];
-	std::vector<FluidGroup*> newlySplit;
 	block1.setNotSolid();
 	origin1.setNotSolid();
 	block2.setNotSolid();
@@ -1240,7 +1303,8 @@ TEST_CASE("Set solid and split")
 	// Step 1.
 	fg1->readStep();
 	fg1->writeStep();
-	fg1->splitStep(newlySplit);
+	fg1->afterWriteStep();
+	fg1->splitStep();
 	fg1->mergeStep();
 	CHECK(block1.volumeOfFluidTypeContains(s_water) == 33);
 	CHECK(origin1.volumeOfFluidTypeContains(s_water) == 33);
@@ -1255,10 +1319,10 @@ TEST_CASE("Set solid and split")
 	CHECK(fg1->m_excessVolume == 34);
 	fg1->readStep();
 	fg1->writeStep();
+	fg1->afterWriteStep();
 	CHECK(block1.volumeOfFluidTypeContains(s_water) == 50);
 	CHECK(block2.volumeOfFluidTypeContains(s_water) == 50);
-	fg1->splitStep(newlySplit);
-	CHECK(newlySplit.size() == 1);
+	fg1->splitStep();
 	CHECK(area.m_fluidGroups.size() == 2);
 	FluidGroup* fg2 = &area.m_fluidGroups.back();
 	fg1->mergeStep();
@@ -1283,6 +1347,7 @@ TEST_CASE("Cave in falls in fluid and pistons it up")
 	area.stepCaveInRead();
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
+	fluidGroup->afterWriteStep();
 	area.stepCaveInWrite();
 	CHECK(area.m_unstableFluidGroups.size() == 1);
 	CHECK(block1.m_totalFluidVolume == 0);
@@ -1296,6 +1361,7 @@ TEST_CASE("Cave in falls in fluid and pistons it up")
 	fluidGroup->readStep();
 	area.stepCaveInRead();
 	fluidGroup->writeStep();
+	fluidGroup->afterWriteStep();
 	area.stepCaveInWrite();
 	CHECK(block2.m_totalFluidVolume == 100);
 	CHECK(fluidGroup->m_excessVolume == 0);
@@ -1304,10 +1370,11 @@ TEST_CASE("Cave in falls in fluid and pistons it up")
 }
 TEST_CASE("Test diagonal seep")
 {
+	if constexpr(s_fluidsSeepDiagonalModifier == 0)
+		return;
 	s_step = 1;
 	Area area(10,10,10);
 	registerTypes();
-	std::vector<FluidGroup*> newlySplit;
 	setSolidLayers(area, 0, 1, s_stone);
 	Block& block1 = area.m_blocks[5][5][1];
 	Block& block2 = area.m_blocks[6][6][1];
@@ -1317,6 +1384,9 @@ TEST_CASE("Test diagonal seep")
 	FluidGroup* fg1 = *area.m_unstableFluidGroups.begin();
 	fg1->readStep();
 	fg1->writeStep();
+	fg1->afterWriteStep();
+	fg1->splitStep();
+	fg1->mergeStep();
 	s_step++;
 	CHECK(block2.volumeOfFluidTypeContains(s_water) == 1);
 	FluidGroup* fg2 = block2.getFluidGroup(s_water);
@@ -1329,8 +1399,10 @@ TEST_CASE("Test diagonal seep")
 		fg2->readStep();
 		fg1->writeStep();
 		fg2->writeStep();
-		fg1->splitStep(newlySplit);
-		fg2->splitStep(newlySplit);
+		fg1->afterWriteStep();
+		fg2->afterWriteStep();
+		fg1->splitStep();
+		fg2->splitStep();
 		fg1->mergeStep();
 		fg2->mergeStep();
 		s_step++;
@@ -1345,7 +1417,6 @@ TEST_CASE("Test mist")
 	s_step = 1;
 	Area area(10,10,10);
 	registerTypes();
-	std::vector<FluidGroup*> newlySplit;
 	setSolidLayers(area, 0, 2, s_stone);
 	Block& block1 = area.m_blocks[5][5][1];
 	Block& block2 = area.m_blocks[5][5][2];
@@ -1360,7 +1431,8 @@ TEST_CASE("Test mist")
 	// Step 1.
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
-	fluidGroup->splitStep(newlySplit);
+	fluidGroup->afterWriteStep();
+	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(block5.m_mist == s_water);
 	// Several steps.
@@ -1370,7 +1442,8 @@ TEST_CASE("Test mist")
 		{
 			fluidGroup->readStep();
 			fluidGroup->writeStep();
-			fluidGroup->splitStep(newlySplit);
+			fluidGroup->afterWriteStep();
+			fluidGroup->splitStep();
 			fluidGroup->mergeStep();
 		}
 		s_step++;

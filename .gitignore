@@ -1,3 +1,7 @@
 *\.swp
 *\.swo
 *\.out
+*\.gch
+a\.out
+\.gdb_history
+*\.bak
