@@ -12,13 +12,15 @@
 
 #include "util.h"
 
+
 //TODO: reuse blocks as m_fillQueue.m_set.
 FluidGroup::FluidGroup(const FluidType* ft, std::unordered_set<Block*>& blocks, Area* area, bool checkMerge) :
 	m_stable(false), m_destroy(false), m_merged(false), m_disolved(false), m_fluidType(ft), m_excessVolume(0),
 	m_fillQueue(*this), m_drainQueue(*this), m_area(area)
 {
 	for(Block* block : blocks)
-		addBlock(block, checkMerge);
+		if(block->m_fluids.contains(m_fluidType))
+			addBlock(block, checkMerge);
 }
 void FluidGroup::addFluid(uint32_t volume)
 {
@@ -110,8 +112,8 @@ void FluidGroup::addDiagonalsFor(Block* block)
 			       	!m_diagonalBlocks.contains(diagonal))
 		{
 			// Check if there is a 'pressure reducing diagonal' created by two solid blocks.
-			int32_t diffX = block->m_x - diagonal->m_x;
-			int32_t diffY = block->m_y - diagonal->m_y;
+			int32_t diffX = diagonal->m_x - block->m_x;
+			int32_t diffY = diagonal->m_y - block->m_y;
 			if(block->offset(diffX, 0, 0)->isSolid() && block->offset(0, diffY, 0)->isSolid())
 				m_diagonalBlocks.insert(diagonal);
 		}
@@ -512,8 +514,9 @@ void FluidGroup::splitStep()
 				}
 				else
 				{
+					assert(fluidGroup->m_fluidType == fluidType);
 					block->m_fluids.emplace(fluidType, std::make_pair(flow, fluidGroup));
-					fluidGroup->addBlock(block);
+					fluidGroup->addBlock(block, false);
 					fluidGroup->m_disolved = false;
 				}
 				dispersed.push_back(fluidType);

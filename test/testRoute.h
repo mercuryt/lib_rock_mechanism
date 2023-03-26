@@ -83,12 +83,12 @@ TEST_CASE("Walk")
 	CHECK(area.m_scheduledEvents.size() == 1);
 	uint32_t scheduledStep = area.m_scheduledEvents.begin()->first;
 	s_step = scheduledStep;
-	area.executeScheduledEvents(scheduledStep);
+area.executeScheduledEvents(scheduledStep);
 	CHECK(actor.m_location == &block1);
 	CHECK(area.m_scheduledEvents.size() == 1);
 	scheduledStep = area.m_scheduledEvents.begin()->first;
 	s_step = scheduledStep;
-	area.executeScheduledEvents(scheduledStep);
+area.executeScheduledEvents(scheduledStep);
 	CHECK(actor.m_location == &destination);
 	CHECK(area.m_scheduledEvents.size() == 0);
 	CHECK(actor.m_route == nullptr);
@@ -109,12 +109,12 @@ TEST_CASE("Repath when route is blocked")
 	RouteRequest routeRequest(&actor);
 	routeRequest.readStep();
 	routeRequest.writeStep();
-	area.m_routeRequestQueue.clear();
+area.m_routeRequestQueue.clear();
 	CHECK(area.m_scheduledEvents.size() == 1);
 	// Step 1.
 	uint32_t scheduledStep = area.m_scheduledEvents.begin()->first;
 	s_step = scheduledStep;
-	area.executeScheduledEvents(scheduledStep);
+area.executeScheduledEvents(scheduledStep);
 	CHECK(actor.m_location == &block1);
 	CHECK(area.m_scheduledEvents.size() == 1);
 	block2.setSolid(s_stone);
@@ -123,7 +123,7 @@ TEST_CASE("Repath when route is blocked")
 	CHECK(area.m_scheduledEvents.size() == 1);
 	scheduledStep = area.m_scheduledEvents.begin()->first;
 	s_step = scheduledStep;
-	area.executeScheduledEvents(scheduledStep);
+area.executeScheduledEvents(scheduledStep);
 	CHECK(actor.m_location == &block1);
 	CHECK(area.m_scheduledEvents.size() == 0);
 	CHECK(area.m_routeRequestQueue.size() == 1);
@@ -131,10 +131,10 @@ TEST_CASE("Repath when route is blocked")
 	routeRequest = area.m_routeRequestQueue.back();
 	routeRequest.readStep();
 	routeRequest.writeStep();
-	area.m_routeRequestQueue.clear();
+area.m_routeRequestQueue.clear();
 	CHECK(area.m_scheduledEvents.size() == 1);
 	scheduledStep = area.m_scheduledEvents.begin()->first;
 	s_step = scheduledStep;
-	area.executeScheduledEvents(scheduledStep);
+area.executeScheduledEvents(scheduledStep);
 	CHECK(actor.m_location == &block3);
 }

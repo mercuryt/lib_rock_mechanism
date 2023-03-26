@@ -95,7 +95,7 @@ TEST_CASE("Remove volume can destroy FluidGroups.")
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 1);
 	CHECK(fluidGroup->m_drainQueue.m_futureEmpty.size() == 1);
 	CHECK(fluidGroup->m_destroy == true);
-	area.writeStep();
+area.writeStep();
 	fluidGroup->afterWriteStep();
 	CHECK(area.m_unstableFluidGroups.empty());
 	CHECK(area.m_fluidGroups.empty());
@@ -1342,13 +1342,13 @@ TEST_CASE("Cave in falls in fluid and pistons it up")
 	block1.setNotSolid();
 	block1.addFluid(100, s_water);
 	block2.setSolid(s_stone);
-	area.m_caveInCheck.insert(&block2);
+area.m_caveInCheck.insert(&block2);
 	FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
-	area.stepCaveInRead();
+area.stepCaveInRead();
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
 	fluidGroup->afterWriteStep();
-	area.stepCaveInWrite();
+area.stepCaveInWrite();
 	CHECK(area.m_unstableFluidGroups.size() == 1);
 	CHECK(block1.m_totalFluidVolume == 0);
 	CHECK(block1.getSolidMaterial() == s_stone);
@@ -1359,10 +1359,10 @@ TEST_CASE("Cave in falls in fluid and pistons it up")
 	CHECK(fluidGroup->m_fillQueue.m_set.contains(&block2));
 	CHECK(block2.fluidCanEnterEver());
 	fluidGroup->readStep();
-	area.stepCaveInRead();
+area.stepCaveInRead();
 	fluidGroup->writeStep();
 	fluidGroup->afterWriteStep();
-	area.stepCaveInWrite();
+area.stepCaveInWrite();
 	CHECK(block2.m_totalFluidVolume == 100);
 	CHECK(fluidGroup->m_excessVolume == 0);
 	CHECK(fluidGroup->m_stable == false);
@@ -1449,7 +1449,113 @@ TEST_CASE("Test mist")
 		s_step++;
 	}
 	CHECK(area.m_scheduledEvents.at(11).size() == 8);
-	area.executeScheduledEvents(11);
+area.executeScheduledEvents(11);
 	CHECK(area.m_scheduledEvents.empty());
 	CHECK(block5.m_mist == nullptr);
+}
+void fourFluidsTest(uint32_t scale, uint32_t steps)
+{
+	uint32_t maxX = scale * 2;
+	uint32_t maxY = scale * 2;
+	uint32_t maxZ = scale * 1;
+	uint32_t halfMaxX = maxX / 2;
+	uint32_t halfMaxY = maxY / 2;
+	Area area(maxX, maxY, maxZ);
+	s_step = 0;
+	registerTypes();
+	setSolidLayer(area, 0, s_stone);
+	setSolidWalls(area, maxZ - 1, s_stone);
+	std::vector<FluidGroup*> newlySplit;
+	// Water is at 0,0
+	Block* water1 = &area.m_blocks[1][1][1];
+	Block* water2 = &area.m_blocks[halfMaxX - 1][halfMaxY - 1][maxZ - 1];		
+	setFullFluidCuboid(area, water1, water2, s_water);
+	// CO2 is at 0,1
+	Block* CO2_1 = &area.m_blocks[1][halfMaxY][1];
+	Block* CO2_2 = &area.m_blocks[halfMaxX - 1][maxY - 2][maxZ - 1];
+	setFullFluidCuboid(area, CO2_1, CO2_2, s_CO2);
+	// Lava is at 1,0
+	Block* lava1 = &area.m_blocks[halfMaxX][1][1];
+	Block* lava2 = &area.m_blocks[maxX - 2][halfMaxY - 1][maxZ - 1];
+	setFullFluidCuboid(area, lava1, lava2, s_lava);
+	// Mercury is at 1,1
+	Block* mercury1 = &area.m_blocks[halfMaxX][halfMaxY][1];
+	Block* mercury2 = &area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
+	setFullFluidCuboid(area, mercury1, mercury2, s_mercury);
+	CHECK(area.m_fluidGroups.size() == 4);
+	FluidGroup* fgWater = water1->getFluidGroup(s_water);
+	FluidGroup* fgCO2 = CO2_1->getFluidGroup(s_CO2);
+	FluidGroup* fgLava = lava1->getFluidGroup(s_lava);
+	FluidGroup* fgMercury = mercury1->getFluidGroup(s_mercury);
+	CHECK(!fgWater->m_merged);
+	CHECK(!fgCO2->m_merged);
+	CHECK(!fgLava->m_merged);
+	CHECK(!fgMercury->m_merged);
+	s_step = 1;
+	while(s_step < steps)
+	{
+		if(!fgWater->m_stable)
+			fgWater->readStep();
+		if(!fgCO2->m_stable)
+			fgCO2->readStep();
+		if(!fgLava->m_stable)
+			fgLava->readStep();
+		if(!fgMercury->m_stable)
+			fgMercury->readStep();
+		if(!fgWater->m_stable)
+			fgWater->writeStep();
+		if(!fgCO2->m_stable)
+			fgCO2->writeStep();
+		if(!fgLava->m_stable)
+			fgLava->writeStep();
+		if(!fgMercury->m_stable)
+			fgMercury->writeStep();
+		if(!fgWater->m_stable)
+			fgWater->afterWriteStep();
+		if(!fgCO2->m_stable)
+			fgCO2->afterWriteStep();
+		if(!fgLava->m_stable)
+			fgLava->afterWriteStep();
+		if(!fgMercury->m_stable)
+			fgMercury->afterWriteStep();
+		if(!fgWater->m_stable && !fgWater->m_disolved && !fgWater->m_destroy)
+			fgWater->mergeStep();
+		if(!fgCO2->m_stable && !fgCO2->m_disolved && !fgCO2->m_destroy)
+			fgCO2->mergeStep();
+		if(!fgLava->m_stable && !fgLava->m_disolved && !fgLava->m_destroy)
+			fgLava->mergeStep();
+		if(!fgMercury->m_stable && !fgMercury->m_disolved && !fgMercury->m_destroy)
+			fgMercury->mergeStep();
+		if(!fgWater->m_stable && !fgWater->m_disolved && !fgWater->m_destroy)
+			fgWater->splitStep();
+		if(!fgCO2->m_stable && !fgCO2->m_disolved && !fgCO2->m_destroy)
+			fgCO2->splitStep();
+		if(!fgLava->m_stable && !fgLava->m_disolved && !fgLava->m_destroy)
+			fgLava->splitStep();
+		if(!fgMercury->m_stable && !fgMercury->m_disolved && !fgMercury->m_destroy)
+			fgMercury->splitStep();
+		s_step++;
+	}
+	CHECK(fgWater->m_stable);
+	CHECK(fgCO2->m_stable);
+	CHECK(fgLava->m_stable);
+	CHECK(fgMercury->m_stable);
+	CHECK(area.m_blocks[1][1][1].m_fluids.contains(s_lava));
+	CHECK(area.m_blocks[1][1][maxZ - 1].m_fluids.contains(s_CO2));
+}
+TEST_CASE("four fluids scale 2")
+{
+	fourFluidsTest(2, 8);
+}
+TEST_CASE("four fluids scale 3")
+{
+	fourFluidsTest(3, 11);
+}
+TEST_CASE("four fluids scale 4")
+{
+	fourFluidsTest(4, 17);
+}
+TEST_CASE("four fluids scale 5")
+{
+	fourFluidsTest(5, 22);
 }

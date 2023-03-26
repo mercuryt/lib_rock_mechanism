@@ -227,8 +227,11 @@ void baseBlock::setSolid(const MaterialType* materialType)
 				assert(above != nullptr);
 			}
 			else
+			{
 				// Otherwise destroy the group.
-				std::erase(m_area->m_fluidGroups, pair.second);
+				std::erase(m_area->m_fluidGroups, *pair.second);
+				m_area->m_unstableFluidGroups.erase(pair.second);
+			}
 		}
 	}
 	m_fluids.clear();

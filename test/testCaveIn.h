@@ -6,11 +6,11 @@ TEST_CASE("Cave In doesn't happen when block is supported.")
 	// Set a supported block to be solid, verify nothing happens.
 	Block* block = &area.m_blocks[5][5][1];
 	block->setSolid(s_stone);
-	area.m_caveInCheck.insert(block);
-	area.stepCaveInRead();
+area.m_caveInCheck.insert(block);
+area.stepCaveInRead();
 	CHECK(area.m_caveInCheck.empty());
 	CHECK(area.m_caveInData.empty());
-	area.stepCaveInWrite();
+area.stepCaveInWrite();
 	CHECK(area.m_caveInCheck.size() == 0);
 }
 TEST_CASE("Cave in does happen when block is not supported.")
@@ -21,16 +21,16 @@ TEST_CASE("Cave in does happen when block is not supported.")
 	// Set a floating block to be solid and add to caveInCheck, verify it falls.
 	Block* block = &area.m_blocks[5][5][2];
 	block->setSolid(s_stone);
-	area.m_caveInCheck.insert(block);
-	area.stepCaveInRead();
+area.m_caveInCheck.insert(block);
+area.stepCaveInRead();
 	CHECK(area.m_caveInData.size() == 1);
-	area.stepCaveInWrite();
+area.stepCaveInWrite();
 	CHECK(!area.m_blocks[5][5][2].isSolid());
 	CHECK(area.m_blocks[5][5][1].getSolidMaterial() == s_stone);
 	CHECK(area.m_caveInCheck.size() == 1);
-	area.stepCaveInRead();
+area.stepCaveInRead();
 	CHECK(area.m_caveInData.size() == 0);
-	area.stepCaveInWrite();
+area.stepCaveInWrite();
 	CHECK(area.m_caveInCheck.size() == 0);
 }
 TEST_CASE("Cave in does happen to multiple unconnected blocks which are unsuported.")
@@ -43,11 +43,11 @@ TEST_CASE("Cave in does happen to multiple unconnected blocks which are unsuport
 	block->setSolid(s_stone);
 	Block* block2 = &area.m_blocks[4][4][2];
 	block2->setSolid(s_stone);
-	area.m_caveInCheck.insert(block);
-	area.m_caveInCheck.insert(block2);
-	area.stepCaveInRead();
+area.m_caveInCheck.insert(block);
+area.m_caveInCheck.insert(block2);
+area.stepCaveInRead();
 	CHECK(area.m_caveInData.size() == 2);
-	area.stepCaveInWrite();
+area.stepCaveInWrite();
 	CHECK(!block->isSolid());
 	CHECK(!block2->isSolid());
 	CHECK(block->m_adjacents[0]->getSolidMaterial() == s_stone);
@@ -64,11 +64,11 @@ TEST_CASE("Cave in connected blocks together.")
 	block->setSolid(s_stone);
 	Block* block2 = &area.m_blocks[5][6][2];
 	block2->setSolid(s_stone);
-	area.m_caveInCheck.insert(block);
-	area.m_caveInCheck.insert(block2);
-	area.stepCaveInRead();
+area.m_caveInCheck.insert(block);
+area.m_caveInCheck.insert(block2);
+area.stepCaveInRead();
 	CHECK(area.m_caveInData.size() == 1);
-	area.stepCaveInWrite();
+area.stepCaveInWrite();
 	CHECK(!block->isSolid());
 	CHECK(!block2->isSolid());
 	CHECK(block->m_adjacents[0]->getSolidMaterial() == s_stone);
@@ -85,11 +85,11 @@ TEST_CASE("Blocks on the edge of the area are anchored.")
 	Block* block2 = &area.m_blocks[1][5][2];
 	block->setSolid(s_stone);
 	block2->setSolid(s_stone);
-	area.m_caveInCheck.insert(block);
-	area.m_caveInCheck.insert(block2);
-	area.stepCaveInRead();
+area.m_caveInCheck.insert(block);
+area.m_caveInCheck.insert(block2);
+area.stepCaveInRead();
 	CHECK(area.m_caveInData.empty());
-	area.stepCaveInWrite();
+area.stepCaveInWrite();
 	CHECK(area.m_caveInCheck.empty());
 	CHECK(block->getSolidMaterial() == s_stone);
 	CHECK(block2->getSolidMaterial() == s_stone);
@@ -108,14 +108,14 @@ TEST_CASE("Verify recorded fall distance is the shortest.")
 	block->setSolid(s_stone);
 	block2->setSolid(s_stone);
 	block3->setSolid(s_stone);
-	area.m_caveInCheck.insert(block);
-	area.m_caveInCheck.insert(block2);
-	area.m_caveInCheck.insert(block3);
-	area.stepCaveInRead();
+area.m_caveInCheck.insert(block);
+area.m_caveInCheck.insert(block2);
+area.m_caveInCheck.insert(block3);
+area.stepCaveInRead();
 	CHECK(area.m_caveInData.size() == 1);
 	CHECK(std::get<0>(*area.m_caveInData.begin()).size() == 3);
 	CHECK(std::get<1>(*area.m_caveInData.begin()) == 1);
-	area.stepCaveInWrite();
+area.stepCaveInWrite();
 	CHECK(block->getSolidMaterial() == s_stone);
 	CHECK(block->m_adjacents[0]->getSolidMaterial() == s_stone);
 	CHECK(!block2->isSolid());
@@ -133,19 +133,19 @@ TEST_CASE("Verify one group falling onto another unanchored group will keep fall
 	Block* block2 = &area.m_blocks[5][5][4];
 	block->setSolid(s_stone);
 	block2->setSolid(s_stone);
-	area.m_caveInCheck.insert(block);
-	area.m_caveInCheck.insert(block2);
-	area.stepCaveInRead();
+area.m_caveInCheck.insert(block);
+area.m_caveInCheck.insert(block2);
+area.stepCaveInRead();
 	CHECK(area.m_caveInData.size() == 2);
-	area.stepCaveInWrite();
+area.stepCaveInWrite();
 	CHECK(area.m_caveInCheck.size() == 2);
 	CHECK(!block->isSolid());
 	CHECK(!block2->isSolid());
 	CHECK(block->m_adjacents[0]->getSolidMaterial() == s_stone);
 	CHECK(block2->m_adjacents[0]->getSolidMaterial() == s_stone);
-	area.stepCaveInRead();
+area.stepCaveInRead();
 	CHECK(area.m_caveInData.size() == 1);
-	area.stepCaveInWrite();
+area.stepCaveInWrite();
 	CHECK(block->getSolidMaterial() == s_stone);
 	CHECK(block->m_adjacents[0]->getSolidMaterial() == s_stone);
 	CHECK(!block2->isSolid());

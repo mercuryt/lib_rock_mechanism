@@ -3,6 +3,8 @@
 */
 
 #pragma once
+#include "area.h"
+#include <algorithm>
 
 baseArea::baseArea(uint32_t x, uint32_t y, uint32_t z) :
 	m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_locationBuckets(static_cast<Area&>(*this)), m_routeCacheVersion(0)
@@ -63,18 +65,42 @@ void baseArea::writeStep()
 	std::vector<FluidGroup*> unstable(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
 	for(FluidGroup* fluidGroup : unstable)
 		fluidGroup->afterWriteStep();
-	std::erase_if(m_unstableFluidGroups, [](FluidGroup* fluidGroup){ return fluidGroup->m_stable || fluidGroup->m_destroy; });
-	std::erase_if(m_fluidGroups, [](FluidGroup& fluidGroup){
-	       	return fluidGroup.m_destroy; 
-	});
-	// Apply fluid merge.
+	std::erase_if(m_unstableFluidGroups, [](FluidGroup* fluidGroup){ return fluidGroup->m_stable || fluidGroup->m_disolved || fluidGroup->m_destroy; });
 	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
 		fluidGroup->mergeStep();
-	std::erase_if(m_fluidGroups, [](FluidGroup& fluidGroup){ return fluidGroup.m_merged; });
+	std::erase_if(m_unstableFluidGroups, [](FluidGroup* fluidGroup){ return fluidGroup->m_merged; });
 	// Apply fluid split.
 	std::vector<FluidGroup*> unstable2(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
 	for(FluidGroup* fluidGroup : unstable2)
 		fluidGroup->splitStep();
+	std::unordered_set<FluidGroup*> toErase;
+	for(FluidGroup& fluidGroup : m_fluidGroups)
+	{
+		if(fluidGroup.m_excessVolume <= 0 && fluidGroup.m_drainQueue.m_set.size() == 0)
+		{
+			fluidGroup.m_destroy = true;
+			assert(!fluidGroup.m_disolved);
+		}
+		if(fluidGroup.m_destroy || fluidGroup.m_merged || fluidGroup.m_disolved || fluidGroup.m_stable)
+			m_unstableFluidGroups.erase(&fluidGroup);
+		if(fluidGroup.m_destroy || fluidGroup.m_merged)
+			toErase.insert(&fluidGroup);
+	}
+	m_fluidGroups.remove_if([&](FluidGroup& fluidGroup){ return toErase.contains(&fluidGroup); });
+	for(const FluidGroup* fluidGroup : m_unstableFluidGroups)
+	{
+		bool found = false;
+		for(FluidGroup& fg : m_fluidGroups)
+			if(&fg == fluidGroup)
+			{
+				found = true;
+				continue;
+			}
+		assert(found);
+	}
+	for(FluidGroup& fluidGroup : m_fluidGroups)
+		fluidGroup.validate();
+	// Apply fluid merge.
 	// Apply cave in.
 	if(!m_caveInData.empty())
 		stepCaveInWrite();
