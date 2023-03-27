@@ -49,6 +49,7 @@ void FillQueue::recordDelta(uint32_t volume, uint32_t flowCapacity, uint32_t flo
 	// Record full blocks and get next group.
 	if(flowCapacity == volume)
 	{
+		assert((m_groupStart->block->volumeOfFluidTypeContains(m_fluidGroup.m_fluidType) + m_groupStart->delta) <= s_maxBlockVolume);
 		if((m_groupStart->block->volumeOfFluidTypeContains(m_fluidGroup.m_fluidType) + m_groupStart->delta) == s_maxBlockVolume)
 			for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 				m_futureFull.insert(iter->block);

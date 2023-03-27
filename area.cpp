@@ -59,12 +59,18 @@ void baseArea::writeStep()
 	s_pool.wait_for_tasks();
 	// Apply flow.
 	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
+	{
 		fluidGroup->writeStep();
+		validateAllFluidGroups();
+	}
 	// Resolve overfull, diagonal seep, and mist.
 	// Make vector of unstable so we can iterate it while modifing the original.
 	std::vector<FluidGroup*> unstable(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
 	for(FluidGroup* fluidGroup : unstable)
+	{
 		fluidGroup->afterWriteStep();
+		fluidGroup->validate();
+	}
 	std::erase_if(m_unstableFluidGroups, [](FluidGroup* fluidGroup){ return fluidGroup->m_stable || fluidGroup->m_disolved || fluidGroup->m_destroy; });
 	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
 		fluidGroup->mergeStep();
@@ -73,6 +79,8 @@ void baseArea::writeStep()
 	std::vector<FluidGroup*> unstable2(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
 	for(FluidGroup* fluidGroup : unstable2)
 		fluidGroup->splitStep();
+	for(FluidGroup& fluidGroup : m_fluidGroups)
+		fluidGroup.validate();
 	std::unordered_set<FluidGroup*> toErase;
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 	{
@@ -84,9 +92,16 @@ void baseArea::writeStep()
 		if(fluidGroup.m_destroy || fluidGroup.m_merged || fluidGroup.m_disolved || fluidGroup.m_stable)
 			m_unstableFluidGroups.erase(&fluidGroup);
 		if(fluidGroup.m_destroy || fluidGroup.m_merged)
+		{
 			toErase.insert(&fluidGroup);
+			assert(fluidGroup.m_drainQueue.m_set.empty());
+		}
 	}
+	for(FluidGroup& fluidGroup : m_fluidGroups)
+		fluidGroup.validate(toErase);
 	m_fluidGroups.remove_if([&](FluidGroup& fluidGroup){ return toErase.contains(&fluidGroup); });
+	for(FluidGroup& fluidGroup : m_fluidGroups)
+		fluidGroup.validate(toErase);
 	for(const FluidGroup* fluidGroup : m_unstableFluidGroups)
 	{
 		bool found = false;
@@ -98,12 +113,12 @@ void baseArea::writeStep()
 			}
 		assert(found);
 	}
-	for(FluidGroup& fluidGroup : m_fluidGroups)
-		fluidGroup.validate();
 	// Apply fluid merge.
 	// Apply cave in.
 	if(!m_caveInData.empty())
 		stepCaveInWrite();
+	for(FluidGroup& fluidGroup : m_fluidGroups)
+		fluidGroup.validate();
 	// Apply routes.
 	for(RouteRequest& routeRequest : m_routeRequestQueue)
 		routeRequest.writeStep();
@@ -118,6 +133,8 @@ void baseArea::writeStep()
 	m_visionRequestQueue.clear();
 	// Do scheduled events.
 	executeScheduledEvents(s_step);
+	for(FluidGroup& fluidGroup : m_fluidGroups)
+		fluidGroup.validate();
 }
 void baseArea::registerActor(Actor* actor)
 {
@@ -144,9 +161,9 @@ FluidGroup* baseArea::createFluidGroup(const FluidType* fluidType, std::unordere
 	m_unstableFluidGroups.insert(&m_fluidGroups.back());
 	return &m_fluidGroups.back();
 }
-void baseArea::removeFluidGroup(FluidGroup* fluidGroup)
-{
-	m_unstableFluidGroups.erase(fluidGroup);
-	std::erase_if(m_fluidGroups, [&](FluidGroup& fg){ return &fg == fluidGroup; });
-}
 void baseArea::expireRouteCache(){++m_routeCacheVersion;}
+void baseArea::validateAllFluidGroups()
+{
+	for(FluidGroup& fluidGroup : m_fluidGroups)
+		fluidGroup.validate();
+}

@@ -107,4 +107,3 @@ void DrainQueue::findGroupEnd()
 		if(getPriority(*m_groupEnd) != priority)
 			break;
 }
-

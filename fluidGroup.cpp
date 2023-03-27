@@ -38,12 +38,14 @@ void FluidGroup::addBlock(Block* block, bool checkMerge)
 	if(m_drainQueue.m_set.contains(block))
 		return;
 	setUnstable();
-	m_drainQueue.addBlock(block);
 	if(block->m_fluids.contains(m_fluidType) && block->m_fluids.at(m_fluidType).first >= s_maxBlockVolume)
 		m_fillQueue.removeBlock(block);
 	else
 		m_fillQueue.addBlock(block);
+	if(block->m_fluids.at(m_fluidType).second != nullptr && block->m_fluids.at(m_fluidType).second != this)
+		block->m_fluids.at(m_fluidType).second->removeBlock(block);
 	block->m_fluids.at(m_fluidType).second = this;
+	m_drainQueue.addBlock(block);
 	if constexpr(s_fluidsSeepDiagonalModifier != 0)
 		m_diagonalBlocks.erase(block);
 	// Add adjacent if fluid can enter.
@@ -181,6 +183,7 @@ void FluidGroup::readStep()
 	m_viscosity = m_fluidType->viscosity;
 	m_drainQueue.initalizeForStep();
 	m_fillQueue.initalizeForStep();
+	validate();
 	// If there is no where to flow into there is nothing to do.
 	if(m_diagonalBlocks.empty() && (m_fillQueue.m_set.empty() || 
 				((m_fillQueue.groupSize() == 0 || m_fillQueue.groupCapacityPerBlock() == 0) && m_excessVolume >= 0 )||
@@ -425,29 +428,38 @@ void FluidGroup::readStep()
 	//m_futureRemoveFromFillQueue = futureRemoveFromEmptyAdjacents + m_futureFull;
 	m_futureRemoveFromFillQueue = futureRemoveFromEmptyAdjacents;
 	m_futureRemoveFromFillQueue.insert(m_fillQueue.m_futureFull.begin(), m_fillQueue.m_futureFull.end());
+	validate();
 }
 void FluidGroup::writeStep()
 {
 	if(m_merged || m_disolved || m_destroy)
 		return;
+	validate();
 	m_drainQueue.applyDelta();
 	m_fillQueue.applyDelta();
-	validate();
 	// Update queues.
-#ifndef NDEBUG
+	validate();
 	for(Block* block : m_futureAddToFillQueue)
 		assert(!m_futureRemoveFromFillQueue.contains(block));
 	for(Block* block : m_futureAddToDrainQueue)
+	{
+		assert(block->m_fluids.contains(m_fluidType) && block->m_fluids.at(m_fluidType).second == this);
 		assert(!m_futureRemoveFromDrainQueue.contains(block));
-#endif
+	}
+	for(Block* block : m_futureRemoveFromFillQueue)
+		assert(!block->m_fluids.contains(m_fluidType) || block->m_fluids.at(m_fluidType).first == s_maxBlockVolume);
+	for(Block* block : m_futureRemoveFromDrainQueue)
+		assert(!block->m_fluids.contains(m_fluidType) || block->m_fluids.at(m_fluidType).second != this);
 	m_fillQueue.removeBlocks(m_futureRemoveFromFillQueue);
 	m_fillQueue.addBlocks(m_futureAddToFillQueue);
 	m_drainQueue.removeBlocks(m_futureRemoveFromDrainQueue);
 	m_drainQueue.addBlocks(m_futureAddToDrainQueue);
+	m_area->validateAllFluidGroups();
 }
 void FluidGroup::afterWriteStep()
 {
 	// Do seeping through corners if enabled.
+	validate();
 	if constexpr(s_fluidsSeepDiagonalModifier != 0)
 	{
 		if(m_viscosity != 0 && !m_drainQueue.m_set.empty() && !m_diagonalBlocks.empty())
@@ -478,11 +490,14 @@ void FluidGroup::afterWriteStep()
 		}
 	}
 	// Resolve overfull blocks.
+	validate();
 	for(Block* block : m_fillQueue.m_overfull)
 		if(block->m_totalFluidVolume > s_maxBlockVolume)
 			block->resolveFluidOverfull();
+	validate();
 	for(Block* block : m_fillQueue.m_futureNoLongerEmpty)
 		addMistFor(block);
+	validate();
 }
 void FluidGroup::splitStep()
 {
@@ -532,7 +547,10 @@ void FluidGroup::splitStep()
 	std::unordered_set<Block*> formerMembers;
 	for(Block* block : m_drainQueue.m_set)
 		if(!m_futureGroups.back().members.contains(block))
+		{
+			assert(!block->m_fluids.contains(m_fluidType) || block->m_fluids.at(m_fluidType).second != this);
 			formerMembers.insert(block);
+		}
 	m_drainQueue.removeBlocks(formerMembers);
 	std::unordered_set<Block*> formerFill;
 	for(Block* block : m_fillQueue.m_set)
@@ -554,6 +572,7 @@ void FluidGroup::splitStep()
 		FluidGroup* fluidGroup = m_area->createFluidGroup(m_fluidType, members, false);
 		fluidGroup->m_futureNewEmptyAdjacents.swap(newAdjacent);
 	}
+	validate();
 }
 // Do all split prior to doing merge.
 void FluidGroup::mergeStep()
@@ -576,10 +595,26 @@ void FluidGroup::mergeStep()
 			continue;
 		}
 	}
+	validate();
 }
 void FluidGroup::validate()
 {
 	for(Block* block : m_drainQueue.m_set)
 		for(auto [fluidType, pair] : block->m_fluids)
+		{
 			assert(pair.second->m_fluidType == fluidType);
+			assert(pair.second->m_drainQueue.m_set.contains(block));
+		}
+}
+void FluidGroup::validate(std::unordered_set<FluidGroup*> toErase)
+{
+	for(FluidGroup* fluidGroup : toErase)
+		assert(fluidGroup->m_drainQueue.m_set.empty());
+	for(Block* block : m_drainQueue.m_set)
+		for(auto [fluidType, pair] : block->m_fluids)
+		{
+			assert(pair.second->m_fluidType == fluidType);
+			assert(pair.second->m_drainQueue.m_set.contains(block));
+			assert(!toErase.contains(pair.second));
+		}
 }

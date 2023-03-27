@@ -229,7 +229,7 @@ void baseBlock::setSolid(const MaterialType* materialType)
 			else
 			{
 				// Otherwise destroy the group.
-				std::erase(m_area->m_fluidGroups, *pair.second);
+				m_area->m_fluidGroups.remove(*pair.second);
 				m_area->m_unstableFluidGroups.erase(pair.second);
 			}
 		}
@@ -274,10 +274,11 @@ void baseBlock::addFluid(uint32_t volume, const FluidType* fluidType)
 	// If a suitable fluid group exists already then just add to it's excessVolume.
 	if(m_fluids.contains(fluidType))
 	{
+		assert(m_fluids.at(fluidType).second->m_fluidType == fluidType);
 		m_fluids.at(fluidType).second->addFluid(volume);
 		return;
 	}
-	m_fluids[fluidType].first = volume;
+	m_fluids.emplace(fluidType, std::make_pair(volume, nullptr));
 	m_totalFluidVolume += volume;
 	// Find fluid group.
 	FluidGroup* fluidGroup = nullptr;
@@ -386,17 +387,15 @@ void baseBlock::resolveFluidOverfull()
 	// Fluid types are sorted by density.
 	for(auto& [fluidType, pair] : m_fluids)
 	{
+		assert(fluidType == pair.second->m_fluidType);
 		// Displace lower density fluids.
 		uint32_t displaced = std::min(pair.first, m_totalFluidVolume - s_maxBlockVolume);
 		m_totalFluidVolume -= displaced;
 		pair.first -= displaced;
 		pair.second->addFluid(displaced);
 		if(pair.first == 0)
-		{
-			pair.second->removeBlock(static_cast<Block*>(this));
 			toErase.push_back(fluidType);
-		}
-		else if(pair.first < s_maxBlockVolume)
+		if(pair.first < s_maxBlockVolume)
 			pair.second->m_fillQueue.addBlock(static_cast<Block*>(this));
 		if(m_totalFluidVolume == s_maxBlockVolume)
 			break;
@@ -405,7 +404,9 @@ void baseBlock::resolveFluidOverfull()
 	{
 		// If the last block of a fluidGroup is displaced disolve it in the lowest density liquid which is more dense then it.
 		FluidGroup* fluidGroup = m_fluids.at(fluidType).second;
+		assert(fluidGroup->m_fluidType = fluidType);
 		if(fluidGroup->m_drainQueue.m_set.empty())
+		{
 			for(auto& [otherFluidType, pair] : m_fluids)
 				if(otherFluidType->density > fluidType->density)
 				{
@@ -421,6 +422,8 @@ void baseBlock::resolveFluidOverfull()
 					}
 					break;
 				}
+		}
+		m_fluids.at(fluidType).second->removeBlock(static_cast<Block*>(this));
 		m_fluids.erase(fluidType);
 	}
 }

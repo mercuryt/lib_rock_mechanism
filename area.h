@@ -69,7 +69,6 @@ public:
 
 	// Creat a fluid group.
 	FluidGroup* createFluidGroup(const FluidType* fluidType, std::unordered_set<Block*>& blocks, bool checkMerge = true);
-	void removeFluidGroup(FluidGroup* fluidGroup);
 
 	// Cavein read/write
 	void stepCaveInRead();
@@ -78,4 +77,6 @@ public:
 
 	// User provided code, no route.
 	void notifyNoRouteFound(Actor* actor);
+
+	void validateAllFluidGroups();
 };

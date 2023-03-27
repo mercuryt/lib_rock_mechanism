@@ -75,5 +75,6 @@ public:
 	void setUnstable();
 	void addDiagonalsFor(Block* block);
 	void validate();
+	void validate(std::unordered_set<FluidGroup*> toErase);
 	friend class baseArea;
 };
