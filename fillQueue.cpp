@@ -3,10 +3,10 @@ void FillQueue::buildFor(std::unordered_set<Block*>& members)
 {
 	for(Block* block : members)
 	{
-		assert(block->m_fluids.contains(m_fluidGroup.m_fluidType));
+		assert(block->containsFluidType(m_fluidGroup.m_fluidType));
 		for(Block* adjacent : block->m_adjacentsVector)
 			 if(adjacent->fluidCanEnterEver() && adjacent->fluidCanEnterEver(m_fluidGroup.m_fluidType) &&
-				adjacent->m_fluids.at(m_fluidGroup.m_fluidType).first != s_maxBlockVolume
+				adjacent->volumeOfFluidTypeContains(m_fluidGroup.m_fluidType) != s_maxBlockVolume
 			   )
 				addBlock(adjacent);
 	}
@@ -35,7 +35,7 @@ void FillQueue::recordDelta(uint32_t volume, uint32_t flowCapacity, uint32_t flo
 	validate();
 	// Record new member blocks for group.
 	// Check the last member of the group since it's the most recently added.
-	if((m_groupEnd - 1)->delta == 0 && !(m_groupEnd - 1)->block->m_fluids.contains(m_fluidGroup.m_fluidType))
+	if((m_groupEnd - 1)->delta == 0 && !(m_groupEnd - 1)->block->containsFluidType(m_fluidGroup.m_fluidType))
 		for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 			m_futureNoLongerEmpty.insert(iter->block);
 	// Record fluid level changes.
@@ -49,10 +49,13 @@ void FillQueue::recordDelta(uint32_t volume, uint32_t flowCapacity, uint32_t flo
 	// Record full blocks and get next group.
 	if(flowCapacity == volume)
 	{
-		assert((m_groupStart->block->volumeOfFluidTypeContains(m_fluidGroup.m_fluidType) + m_groupStart->delta) <= s_maxBlockVolume);
-		if((m_groupStart->block->volumeOfFluidTypeContains(m_fluidGroup.m_fluidType) + m_groupStart->delta) == s_maxBlockVolume)
-			for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
+		// Capacity == volume is the same as futureFull when only one fluid type is present, but we need to look at each block individually because blocks with the same capacity for a type don't neccesarily have the same volume of that type.
+		for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
+		{
+			assert((iter->block->volumeOfFluidTypeContains(m_fluidGroup.m_fluidType) + iter->delta) <= s_maxBlockVolume);
+			if((iter->block->volumeOfFluidTypeContains(m_fluidGroup.m_fluidType) + iter->delta) == s_maxBlockVolume)
 				m_futureFull.insert(iter->block);
+		}
 		m_groupStart = m_groupEnd;
 		findGroupEnd();
 	} 
@@ -65,24 +68,21 @@ void FillQueue::recordDelta(uint32_t volume, uint32_t flowCapacity, uint32_t flo
 void FillQueue::applyDelta()
 {
 	validate();
+	std::vector<std::pair<Block*, uint32_t>> blocksAndDeltas;
 	for(auto iter = m_queue.begin(); iter != m_groupEnd; ++iter)
 	{
 		// TODO: This seems hackey, should try gather instead, also for drain.
 		if(iter->delta == 0)
 			continue;
-		assert(!iter->block->m_fluids.contains(m_fluidGroup.m_fluidType) || iter->block->m_fluids.at(m_fluidGroup.m_fluidType).second != nullptr);
-		if(!iter->block->m_fluids.contains(m_fluidGroup.m_fluidType))
-			iter->block->m_fluids.emplace(m_fluidGroup.m_fluidType, std::make_pair(iter->delta, &m_fluidGroup));
-		else
-		{
-			iter->block->m_fluids.at(m_fluidGroup.m_fluidType).first += iter->delta;
-			assert(iter->block->m_fluids.at(m_fluidGroup.m_fluidType).second->m_fluidType == m_fluidGroup.m_fluidType);
-		}
-		iter->block->m_totalFluidVolume += iter->delta;
-		if(iter->block->m_totalFluidVolume > s_maxBlockVolume)
-			m_overfull.insert(iter->block);
+		assert(!iter->block->containsFluidType(m_fluidGroup.m_fluidType) || iter->block->getFluidGroup(m_fluidGroup.m_fluidType)!= nullptr);
+		blocksAndDeltas.emplace_back(iter->block, iter->delta);
 	}
-	validate();
+	for(auto [block, delta] : blocksAndDeltas)
+	{
+		block->setFluidGroupAndAddVolume(m_fluidGroup, delta);
+		if(block->getTotalFluidVolume() > s_maxBlockVolume)
+			m_overfull.insert(block);
+	}
 }
 uint32_t FillQueue::groupLevel() const
 {

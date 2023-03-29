@@ -27,8 +27,8 @@ TEST_CASE("Test fluid in area")
 	area.writeStep();
 	s_step++;
 	CHECK(area.m_unstableFluidGroups.size() == 1);
-	CHECK(block1.m_totalFluidVolume == 100);
-	CHECK(block2.m_totalFluidVolume == 0);
+	CHECK(block1.getTotalFluidVolume() == 100);
+	CHECK(block2.getTotalFluidVolume() == 0);
 	area.readStep();
 	area.writeStep();
 	CHECK(fluidGroup->m_stable);
@@ -53,7 +53,7 @@ TEST_CASE("Cave in falls in fluid and pistons it up with threading")
 	CHECK(area.m_unstableFluidGroups.size() == 1);
 	CHECK(area.m_unstableFluidGroups.contains(fluidGroup));
 	CHECK(!fluidGroup->m_stable);
-	CHECK(block1.m_totalFluidVolume == 0);
+	CHECK(block1.getTotalFluidVolume() == 0);
 	CHECK(block1.getSolidMaterial() == s_stone);
 	CHECK(!block2.isSolid());
 	CHECK(fluidGroup->m_excessVolume == 100);
@@ -69,7 +69,7 @@ TEST_CASE("Cave in falls in fluid and pistons it up with threading")
 	CHECK(!fluidGroup->m_stable);
 	area.writeStep();
 	s_step++;
-	CHECK(block2.m_totalFluidVolume == 100);
+	CHECK(block2.getTotalFluidVolume() == 100);
 	CHECK(fluidGroup->m_excessVolume == 0);
 	CHECK(!fluidGroup->m_stable);
 	CHECK(area.m_fluidGroups.size() == 1);
@@ -227,8 +227,8 @@ void fourFluidsTestParallel(uint32_t scale, uint32_t steps)
 	}
 	CHECK(area.m_unstableFluidGroups.empty());
 	CHECK(area.m_fluidGroups.size() == 4);
-	CHECK(area.m_blocks[1][1][1].m_fluids.contains(s_lava));
-	CHECK(area.m_blocks[1][1][maxZ - 1].m_fluids.contains(s_CO2));
+	CHECK(area.m_blocks[1][1][1].containsFluidType(s_lava));
+	CHECK(area.m_blocks[1][1][maxZ - 1].containsFluidType(s_CO2));
 }
 TEST_CASE("four fluids scale 2 parallel")
 {

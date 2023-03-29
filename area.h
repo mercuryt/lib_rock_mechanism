@@ -69,6 +69,7 @@ public:
 
 	// Creat a fluid group.
 	FluidGroup* createFluidGroup(const FluidType* fluidType, std::unordered_set<Block*>& blocks, bool checkMerge = true);
+	FluidGroup* createFluidGroup(const FluidType* fluidType);
 
 	// Cavein read/write
 	void stepCaveInRead();

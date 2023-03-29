@@ -161,6 +161,11 @@ FluidGroup* baseArea::createFluidGroup(const FluidType* fluidType, std::unordere
 	m_unstableFluidGroups.insert(&m_fluidGroups.back());
 	return &m_fluidGroups.back();
 }
+FluidGroup* baseArea::createFluidGroup(const FluidType* fluidType)
+{
+	m_fluidGroups.emplace_back(fluidType, static_cast<Area*>(this));
+	return &m_fluidGroups.back();
+}
 void baseArea::expireRouteCache(){++m_routeCacheVersion;}
 void baseArea::validateAllFluidGroups()
 {

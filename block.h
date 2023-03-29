@@ -35,6 +35,10 @@ class baseBlock
 {
 	// If this block is solid stone, solid dirt, etc. then store it here. Otherwise nullptr.
 	const MaterialType* m_solid;
+	// For fluids: store fluidType, volume, and FluidGroup pointer.
+	std::map<const FluidType*, std::pair<uint32_t, FluidGroup*>, SortByDensity> m_fluids;
+	// Store total occupied volume for fluids.
+	uint32_t m_totalFluidVolume;
 public:
 	uint32_t m_x, m_y, m_z;
 	Area* m_area;
@@ -55,12 +59,8 @@ public:
 	uint32_t m_totalDynamicVolume;
 	// Store a total occupied volume from genericSolids and nongenerics.
 	uint32_t m_totalStaticVolume;
-	// Store a total occupied volume from fluids.
-	uint32_t m_totalFluidVolume;
 	// For loose generics: store material type and volume.
 	std::unordered_map<const MaterialType*, uint32_t> m_genericSolids;
-	// For fluids: store fluidType, volume, and FluidGroup pointer.
-	std::map<const FluidType*, std::pair<uint32_t, FluidGroup*>, SortByDensity> m_fluids;
 	// For mist.
 	const FluidType* m_mist;
 	const FluidType* m_mistSource;
@@ -106,6 +106,16 @@ public:
 	bool isAdjacentToFluidGroup(const FluidGroup* fluidGroup) const;
 	uint32_t volumeOfFluidTypeCanEnter(const FluidType* fluidType) const;
 	uint32_t volumeOfFluidTypeContains(const FluidType* fluidType) const;
+	bool containsFluidType(const FluidType* fluidType) const;
+	void setFluidGroup(FluidGroup& fluidGroup);
+	void setFluidGroupAndVolume(FluidGroup& fluidGroup, uint32_t volume);
+	void setFluidVolume(uint32_t volume, const FluidType* fluidType);
+	void addFluidVolume(uint32_t volume, const FluidType* fluidType);
+	void removeFluidVolume(uint32_t volume, const FluidType* fluidType);
+	void setFluidGroupAndAddVolume(FluidGroup& fluidGroup, uint32_t volume);
+	void setFluidGroupAndRemoveVolume(FluidGroup& fluidGroup, uint32_t volume);
+	void setAllFluidGroupsUnstableExcept(const FluidType* fluidType);
+	uint32_t getTotalFluidVolume() const;
 	// Move less dense fluids to their group's excessVolume until s_maxBlockVolume is achieved.
 	void resolveFluidOverfull();
 	void enter(Actor* actor);
@@ -131,4 +141,6 @@ public:
 	uint32_t getMass() const;
 
 	void moveContentsTo(Block* block);
+
+	void validateFluidGroups();
 };

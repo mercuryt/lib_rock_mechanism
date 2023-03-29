@@ -3,7 +3,7 @@ MistDisperseEvent::MistDisperseEvent(uint32_t s, const FluidType* ft, Block* b) 
 void MistDisperseEvent::execute()
 {
 	// Mist does not or cannont exist here anymore, clear and return.
-	if(m_block->m_mist == nullptr or m_block->isSolid() or m_block->m_totalFluidVolume == s_maxBlockVolume)
+	if(m_block->m_mist == nullptr or m_block->isSolid() or m_block->getTotalFluidVolume() == s_maxBlockVolume)
 	{
 		m_block->m_mist = nullptr;
 		m_block->m_mistInverseDistanceFromSource = 0;
@@ -41,7 +41,7 @@ bool MistDisperseEvent::continuesToExist() const
 	// if adjacent to falling fluid on same z level
 	for(Block* adjacent : m_block->getAdjacentOnSameZLevelOnly())
 		// if adjacent to falling fluid.
-		if(adjacent->m_fluids.contains(m_fluidType) and not adjacent->m_adjacents[0]->isSolid())
+		if(adjacent->containsFluidType(m_fluidType) and not adjacent->m_adjacents[0]->isSolid())
 			return true;
 	for(Block* adjacent : m_block->m_adjacentsVector)
 		// if adjacent to block with mist with lower distance to source.

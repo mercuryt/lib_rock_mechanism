@@ -6,7 +6,7 @@ TEST_CASE("Create Fluid.")
 	Block& block = area.m_blocks[5][5][1];
 	block.setNotSolid();
 	block.addFluid(100, s_water);
-	CHECK(area.m_blocks[5][5][1].m_fluids.contains(s_water));
+	CHECK(area.m_blocks[5][5][1].containsFluidType(s_water));
 	FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
 	CHECK(fluidGroup->m_fillQueue.m_set.size() == 1);
 	fluidGroup->readStep();
@@ -15,8 +15,8 @@ TEST_CASE("Create Fluid.")
 	fluidGroup->afterWriteStep();
 	fluidGroup->mergeStep();
 	fluidGroup->splitStep();
-	CHECK(!area.m_blocks[5][5][2].m_fluids.contains(s_water));
-	CHECK(area.m_blocks[5][5][1].m_fluids.contains(s_water));
+	CHECK(!area.m_blocks[5][5][2].containsFluidType(s_water));
+	CHECK(area.m_blocks[5][5][1].containsFluidType(s_water));
 	CHECK(area.m_fluidGroups.size() == 1);
 }
 TEST_CASE("Excess volume spawns and negitive excess despawns.")
@@ -46,9 +46,9 @@ TEST_CASE("Excess volume spawns and negitive excess despawns.")
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 2);
 	CHECK(fluidGroup->m_fillQueue.m_set.size() == 1);
 	CHECK(fluidGroup->m_fillQueue.m_queue[0].block == &block3);
-	CHECK(block2.m_fluids.contains(s_water));
-	CHECK(block2.m_fluids[s_water].first == s_maxBlockVolume);
-	CHECK(fluidGroup == block2.m_fluids[s_water].second);
+	CHECK(block2.containsFluidType(s_water));
+	CHECK(block2.volumeOfFluidTypeContains(s_water) == s_maxBlockVolume);
+	CHECK(fluidGroup == block2.getFluidGroup(s_water));
 	// Step 2.
 	fluidGroup->readStep();
 	CHECK(fluidGroup->m_stable);
@@ -56,8 +56,8 @@ TEST_CASE("Excess volume spawns and negitive excess despawns.")
 	fluidGroup->afterWriteStep();
 	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
-	CHECK(block2.m_fluids.contains(s_water));
-	CHECK(!area.m_blocks[5][5][3].m_fluids.contains(s_water));
+	CHECK(block2.containsFluidType(s_water));
+	CHECK(!area.m_blocks[5][5][3].containsFluidType(s_water));
 	block.removeFluid(s_maxBlockVolume, s_water);
 	CHECK(!fluidGroup->m_stable);
 	// Step 3.
@@ -68,9 +68,9 @@ TEST_CASE("Excess volume spawns and negitive excess despawns.")
 	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(area.m_fluidGroups.size() == 1);
-	CHECK(block.m_fluids.contains(s_water));
-	CHECK(block.m_fluids[s_water].first == s_maxBlockVolume);
-	CHECK(!block2.m_fluids.contains(s_water));
+	CHECK(block.containsFluidType(s_water));
+	CHECK(block.volumeOfFluidTypeContains(s_water) == s_maxBlockVolume);
+	CHECK(!block2.containsFluidType(s_water));
 }
 TEST_CASE("Remove volume can destroy FluidGroups.")
 {
@@ -132,11 +132,11 @@ TEST_CASE("Flow into adjacent hole")
 	fluidGroup->mergeStep();
 	CHECK(area.m_fluidGroups.size() == 1);
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 2);
-	CHECK(!destination.m_fluids.contains(s_water));
-	CHECK(block2.m_fluids.contains(s_water));
-	CHECK(origin.m_fluids.contains(s_water));
-	CHECK(origin.m_fluids[s_water].first == s_maxBlockVolume / 2);
-	CHECK(block2.m_fluids[s_water].first == s_maxBlockVolume / 2);
+	CHECK(!destination.containsFluidType(s_water));
+	CHECK(block2.containsFluidType(s_water));
+	CHECK(origin.containsFluidType(s_water));
+	CHECK(origin.volumeOfFluidTypeContains(s_water) == s_maxBlockVolume / 2);
+	CHECK(block2.volumeOfFluidTypeContains(s_water) == s_maxBlockVolume / 2);
 	CHECK(fluidGroup->m_fillQueue.m_set.size() == 5);
 	CHECK(fluidGroup->m_fillQueue.m_set.contains(&destination));
 	CHECK(fluidGroup->m_fillQueue.m_set.contains(&block2));
@@ -153,10 +153,10 @@ TEST_CASE("Flow into adjacent hole")
 	fluidGroup->afterWriteStep();
 	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
-	CHECK(destination.m_fluids.contains(s_water));
-	CHECK(!block2.m_fluids.contains(s_water));
-	CHECK(!origin.m_fluids.contains(s_water));
-	CHECK(destination.m_fluids[s_water].first == s_maxBlockVolume);
+	CHECK(destination.containsFluidType(s_water));
+	CHECK(!block2.containsFluidType(s_water));
+	CHECK(!origin.containsFluidType(s_water));
+	CHECK(destination.volumeOfFluidTypeContains(s_water) == s_maxBlockVolume);
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 1);
 	// If the group is stable at this point depends on the viscosity of water, do one more step to make sure.
 	CHECK(fluidGroup->m_fillQueue.m_set.size() == 1);
@@ -1159,7 +1159,7 @@ TEST_CASE("Three liquids")
 	CHECK(origin2.volumeOfFluidTypeContains(s_CO2) == 50);
 	CHECK(origin3.volumeOfFluidTypeContains(s_CO2) == 50);
 	CHECK(origin3.volumeOfFluidTypeContains(s_mercury) == 0);
-	CHECK(block1.m_totalFluidVolume == 0);
+	CHECK(block1.getTotalFluidVolume() == 0);
 	CHECK(fg2->m_excessVolume == 50);
 	CHECK(fg1->m_excessVolume == 0);
 	// Step 3.
@@ -1183,7 +1183,7 @@ TEST_CASE("Three liquids")
 	CHECK(origin2.volumeOfFluidTypeContains(s_mercury) == 0);
 	CHECK(origin2.volumeOfFluidTypeContains(s_CO2) == 50);
 	CHECK(origin3.volumeOfFluidTypeContains(s_CO2) == 50);
-	CHECK(block1.m_totalFluidVolume == 0);
+	CHECK(block1.getTotalFluidVolume() == 0);
 	CHECK(fg1->m_excessVolume == 0);
 	CHECK(fg2->m_excessVolume == 50);
 	// Step 4.
@@ -1206,7 +1206,7 @@ TEST_CASE("Three liquids")
 	CHECK(origin1.volumeOfFluidTypeContains(s_mercury) == 100);
 	CHECK(origin2.volumeOfFluidTypeContains(s_water) == 100);
 	CHECK(origin3.volumeOfFluidTypeContains(s_CO2) == 50);
-	CHECK(block1.m_totalFluidVolume == 0);
+	CHECK(block1.getTotalFluidVolume() == 0);
 	CHECK(fg1->m_excessVolume == 50);
 	CHECK(fg2->m_excessVolume == 0);
 	CHECK(fg2->m_stable);
@@ -1350,7 +1350,7 @@ area.stepCaveInRead();
 	fluidGroup->afterWriteStep();
 area.stepCaveInWrite();
 	CHECK(area.m_unstableFluidGroups.size() == 1);
-	CHECK(block1.m_totalFluidVolume == 0);
+	CHECK(block1.getTotalFluidVolume() == 0);
 	CHECK(block1.getSolidMaterial() == s_stone);
 	CHECK(!block2.isSolid());
 	CHECK(fluidGroup->m_excessVolume == 100);
@@ -1363,7 +1363,7 @@ area.stepCaveInRead();
 	fluidGroup->writeStep();
 	fluidGroup->afterWriteStep();
 area.stepCaveInWrite();
-	CHECK(block2.m_totalFluidVolume == 100);
+	CHECK(block2.getTotalFluidVolume() == 100);
 	CHECK(fluidGroup->m_excessVolume == 0);
 	CHECK(fluidGroup->m_stable == false);
 	CHECK(area.m_fluidGroups.size() == 1);
@@ -1540,8 +1540,8 @@ void fourFluidsTest(uint32_t scale, uint32_t steps)
 	CHECK(fgCO2->m_stable);
 	CHECK(fgLava->m_stable);
 	CHECK(fgMercury->m_stable);
-	CHECK(area.m_blocks[1][1][1].m_fluids.contains(s_lava));
-	CHECK(area.m_blocks[1][1][maxZ - 1].m_fluids.contains(s_CO2));
+	CHECK(area.m_blocks[1][1][1].containsFluidType(s_lava));
+	CHECK(area.m_blocks[1][1][maxZ - 1].containsFluidType(s_CO2));
 }
 TEST_CASE("four fluids scale 2")
 {

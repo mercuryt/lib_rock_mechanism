@@ -272,37 +272,32 @@ void baseBlock::spawnMist(const FluidType* fluidType, uint32_t maxMistSpread)
 void baseBlock::addFluid(uint32_t volume, const FluidType* fluidType)
 {
 	// If a suitable fluid group exists already then just add to it's excessVolume.
-	if(m_fluids.contains(fluidType))
+	if(containsFluidType(fluidType))
 	{
 		assert(m_fluids.at(fluidType).second->m_fluidType == fluidType);
-		m_fluids.at(fluidType).second->addFluid(volume);
+		getFluidGroup(fluidType)->addFluid(volume);
 		return;
 	}
-	m_fluids.emplace(fluidType, std::make_pair(volume, nullptr));
-	m_totalFluidVolume += volume;
 	// Find fluid group.
 	FluidGroup* fluidGroup = nullptr;
 	for(Block* adjacent : m_adjacentsVector)
-		if(adjacent->fluidCanEnterEver() && adjacent->m_fluids.contains(fluidType))
+		if(adjacent->fluidCanEnterEver() && adjacent->containsFluidType(fluidType))
 		{
 			assert(adjacent->m_fluids.at(fluidType).second->m_fluidType == fluidType);
-			fluidGroup = adjacent->m_fluids.at(fluidType).second;
-			fluidGroup->addBlock(static_cast<Block*>(this));
+			fluidGroup = adjacent->getFluidGroup(fluidType);
 			continue;
 		}
 	// Create fluid group.
 	if(fluidGroup == nullptr)
-	{
-		std::unordered_set<Block*> blocks({static_cast<Block*>(this)});
-		fluidGroup = m_area->createFluidGroup(fluidType, blocks);
-	}
+		fluidGroup = m_area->createFluidGroup(fluidType);
+	setFluidGroupAndVolume(*fluidGroup, volume);
 	// Shift less dense fluids to excessVolume.
 	if(m_totalFluidVolume > s_maxBlockVolume)
 		resolveFluidOverfull();
 }
 void baseBlock::removeFluid(uint32_t volume, const FluidType* fluidType)
 {
-	m_fluids.at(fluidType).second->removeFluid(volume);
+	getFluidGroup(fluidType)->removeFluid(volume);
 }
 // Validate the nongeneric object can enter this block and also any other blocks required by it's Shape.
 // TODO: Caches other blocks by Shape*?
@@ -381,6 +376,91 @@ FluidGroup* baseBlock::getFluidGroup(const FluidType* fluidType) const
 	assert(m_fluids.at(fluidType).second->m_fluidType == fluidType);
 	return m_fluids.at(fluidType).second;
 }
+bool baseBlock::containsFluidType(const FluidType* fluidType) const
+{
+	return m_fluids.contains(fluidType);
+}
+void baseBlock::setFluidVolume(uint32_t volume, const FluidType* fluidType)
+{
+	assert(containsFluidType(fluidType));
+	assert(m_totalFluidVolume >= volumeOfFluidTypeContains(fluidType));
+	assert(volume <= s_maxBlockVolume);
+	m_totalFluidVolume -= volumeOfFluidTypeContains(fluidType);
+	if(volume == 0)
+	{
+		getFluidGroup(fluidType)->removeBlock(static_cast<Block*>(this));
+		m_fluids.erase(fluidType);
+		return;
+	}
+	m_fluids.at(fluidType).first = volume;
+	m_totalFluidVolume += volume;
+}
+void baseBlock::addFluidVolume(uint32_t volume, const FluidType* fluidType)
+{
+	setFluidVolume(volume + volumeOfFluidTypeContains(fluidType), fluidType);
+}
+void baseBlock::removeFluidVolume(uint32_t volume, const FluidType* fluidType)
+{
+	assert(volume <= volumeOfFluidTypeContains(fluidType));
+	setFluidVolume(volumeOfFluidTypeContains(fluidType) - volume, fluidType);
+}
+void baseBlock::setFluidGroup(FluidGroup& fluidGroup)
+{
+	assert(m_fluids.contains(fluidGroup.m_fluidType));
+	auto& pair = m_fluids.at(fluidGroup.m_fluidType);
+	if(pair.second != nullptr && pair.second != &fluidGroup)
+		pair.second->removeBlock(static_cast<Block*>(this));
+	pair.second = &fluidGroup;
+	fluidGroup.addBlock(static_cast<Block*>(this));
+}
+void baseBlock::setFluidGroupAndVolume(FluidGroup& fluidGroup, uint32_t volume)
+{
+	assert(volume <= s_maxBlockVolume);
+	if(volume == 0) 
+	{
+		if(containsFluidType(fluidGroup.m_fluidType))
+		{
+			auto& pair = m_fluids.at(fluidGroup.m_fluidType);
+			pair.second->removeBlock(static_cast<Block*>(this));
+			m_totalFluidVolume -= pair.first;
+			m_fluids.erase(fluidGroup.m_fluidType);
+		}
+		return;
+	}
+	if(containsFluidType(fluidGroup.m_fluidType))
+	{
+		auto& pair = m_fluids.at(fluidGroup.m_fluidType);
+		if(pair.second != &fluidGroup)
+		{
+			pair.second = &fluidGroup;
+			pair.second->removeBlock(static_cast<Block*>(this));
+		}
+		m_totalFluidVolume -= pair.first;
+		pair.first = volume;
+	}
+	else
+		m_fluids.emplace(fluidGroup.m_fluidType, std::make_pair(volume, &fluidGroup));
+	fluidGroup.addBlock(static_cast<Block*>(this));
+	m_totalFluidVolume += volume;
+}
+void baseBlock::setFluidGroupAndAddVolume(FluidGroup& fluidGroup, uint32_t volume)
+{
+	setFluidGroupAndVolume(fluidGroup, volumeOfFluidTypeContains(fluidGroup.m_fluidType) + volume);
+}
+void baseBlock::setFluidGroupAndRemoveVolume(FluidGroup& fluidGroup, uint32_t volume)
+{
+	setFluidGroupAndVolume(fluidGroup, volumeOfFluidTypeContains(fluidGroup.m_fluidType) - volume);
+}
+void baseBlock::setAllFluidGroupsUnstableExcept(const FluidType* ft)
+{
+	for(auto& [fluidType, pair] : m_fluids)
+		if(ft != fluidType)
+			pair.second->m_stable = false;
+}
+uint32_t baseBlock::getTotalFluidVolume() const
+{
+	return m_totalFluidVolume;
+}
 void baseBlock::resolveFluidOverfull()
 {
 	std::vector<const FluidType*> toErase;
@@ -388,6 +468,7 @@ void baseBlock::resolveFluidOverfull()
 	for(auto& [fluidType, pair] : m_fluids)
 	{
 		assert(fluidType == pair.second->m_fluidType);
+		assert(m_totalFluidVolume > s_maxBlockVolume);
 		// Displace lower density fluids.
 		uint32_t displaced = std::min(pair.first, m_totalFluidVolume - s_maxBlockVolume);
 		m_totalFluidVolume -= displaced;
@@ -402,9 +483,11 @@ void baseBlock::resolveFluidOverfull()
 	}
 	for(const FluidType* fluidType : toErase)
 	{
-		// If the last block of a fluidGroup is displaced disolve it in the lowest density liquid which is more dense then it.
-		FluidGroup* fluidGroup = m_fluids.at(fluidType).second;
+		FluidGroup* fluidGroup = getFluidGroup(fluidType);
 		assert(fluidGroup->m_fluidType = fluidType);
+		fluidGroup->removeBlock(static_cast<Block*>(this));
+		m_fluids.erase(fluidType);
+		// If the last block of a fluidGroup is displaced disolve it in the lowest density liquid which is more dense then it.
 		if(fluidGroup->m_drainQueue.m_set.empty())
 		{
 			for(auto& [otherFluidType, pair] : m_fluids)
@@ -422,9 +505,8 @@ void baseBlock::resolveFluidOverfull()
 					}
 					break;
 				}
+			assert(fluidGroup->m_disolved || fluidGroup->m_destroy);
 		}
-		m_fluids.at(fluidType).second->removeBlock(static_cast<Block*>(this));
-		m_fluids.erase(fluidType);
 	}
 }
 void baseBlock::moveContentsTo(Block* block)
@@ -467,6 +549,7 @@ void baseBlock::exit(Actor* actor)
 		block->m_totalDynamicVolume -= v;
 	}
 }
+// Overwrite if diagonal movement is allowed.
 void baseBlock::clearMoveCostsCacheForSelfAndAdjacent()
 {
 	// Clear move costs cache for adjacent and self.
@@ -494,6 +577,14 @@ std::vector<Block*> baseBlock::selectBetweenCorners(Block* otherBlock) const
 				assert(output.back() != nullptr);
 			}
 	return output;
+}
+void baseBlock::validateFluidGroups()
+{
+	for(auto [fluidType, pair] : m_fluids)
+	{
+		assert(pair.second->m_fluidType == fluidType);
+		assert(pair.second->m_drainQueue.m_set.contains(static_cast<Block*>(this)));
+	}
 }
 std::string baseBlock::toS()
 {

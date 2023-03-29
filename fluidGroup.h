@@ -53,12 +53,11 @@ public:
 
 	std::unordered_set<Block*> m_futureNewEmptyAdjacents;
 
-	std::unordered_set<Block*> m_futureAddToDrainQueue;
-	std::unordered_set<Block*> m_futureRemoveFromDrainQueue;
 	std::unordered_set<Block*> m_futureAddToFillQueue;
 	std::unordered_set<Block*> m_futureRemoveFromFillQueue;
 
 	FluidGroup(const FluidType* ft, std::unordered_set<Block*>& blocks, Area* area, bool checkMerge = true);
+	FluidGroup(const FluidType* ft, Area* area);
 	FluidGroup(const FluidGroup&) = delete;
 	void addFluid(uint32_t fluidVolume);
 	void removeFluid(uint32_t fluidVolume);

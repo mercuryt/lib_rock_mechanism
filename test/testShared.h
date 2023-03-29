@@ -247,13 +247,13 @@ void setSolidWalls(Area& area, uint32_t height, const MaterialType* materialType
 }
 void setFullFluidCuboid(Area& area, Block* b1, Block* b2, const FluidType* fluidType)
 {
-	assert(b1->m_totalFluidVolume == 0);
+	assert(b1->getTotalFluidVolume() == 0);
 	assert(b1->fluidCanEnterEver());
-	assert(b2->m_totalFluidVolume == 0);
+	assert(b2->getTotalFluidVolume() == 0);
 	assert(b2->fluidCanEnterEver());
 	for(Block* block : b1->selectBetweenCorners(b2))
 	{
-		assert(block->m_totalFluidVolume == 0);
+		assert(block->getTotalFluidVolume() == 0);
 		assert(block->fluidCanEnterEver());
 		block->addFluid(100, fluidType);
 	}
@@ -263,8 +263,7 @@ void validateAllBlockFluids(Area& area)
 	for(uint32_t x = 0; x < area.m_sizeX; ++x)
 		for(uint32_t y = 0; y < area.m_sizeY; ++y)
 			for(uint32_t z = 0; z < area.m_sizeZ; ++z)
-				for(auto [fluidType, pair] : area.m_blocks[x][y][z].m_fluids)
-					assert(pair.second->m_fluidType == fluidType);
+				area.m_blocks[x][y][z].validateFluidGroups();
 }
 std::string toS(std::unordered_set<Block*>& blocks)
 {
