@@ -84,7 +84,7 @@ void baseArea::writeStep()
 	std::unordered_set<FluidGroup*> toErase;
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 	{
-		if(fluidGroup.m_excessVolume <= 0 && fluidGroup.m_drainQueue.m_set.size() == 0)
+		if(fluidGroup.m_excessVolume <= 0 && fluidGroup.m_drainQueue.m_set.empty())
 		{
 			fluidGroup.m_destroy = true;
 			assert(!fluidGroup.m_disolved);

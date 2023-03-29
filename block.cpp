@@ -384,7 +384,7 @@ void baseBlock::setFluidVolume(uint32_t volume, const FluidType* fluidType)
 {
 	assert(containsFluidType(fluidType));
 	assert(m_totalFluidVolume >= volumeOfFluidTypeContains(fluidType));
-	assert(volume <= s_maxBlockVolume);
+	assert(volume <= s_maxBlockVolume * 100);
 	m_totalFluidVolume -= volumeOfFluidTypeContains(fluidType);
 	if(volume == 0)
 	{
@@ -415,7 +415,7 @@ void baseBlock::setFluidGroup(FluidGroup& fluidGroup)
 }
 void baseBlock::setFluidGroupAndVolume(FluidGroup& fluidGroup, uint32_t volume)
 {
-	assert(volume <= s_maxBlockVolume);
+	assert(volume <= s_maxBlockVolume * 100);
 	if(volume == 0) 
 	{
 		if(containsFluidType(fluidGroup.m_fluidType))

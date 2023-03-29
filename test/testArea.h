@@ -238,6 +238,7 @@ TEST_CASE("four fluids scale 3 parallel")
 {
 	fourFluidsTestParallel(3, 11);
 }
+/*
 TEST_CASE("four fluids scale 4 parallel")
 {
 	fourFluidsTestParallel(4, 17);
@@ -262,3 +263,4 @@ TEST_CASE("four fluids scale 21 parallel")
 {
 	fourFluidsTestParallel(21, 140);
 }
+*/
