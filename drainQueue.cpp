@@ -67,10 +67,11 @@ void DrainQueue::applyDelta()
 		assert(iter->block->m_fluids.contains(m_fluidGroup.m_fluidType));
 		assert(iter->block->m_fluids.at(m_fluidGroup.m_fluidType).first >= iter->delta);
 		assert(iter->block->m_totalFluidVolume >= iter->delta);
-		iter->block->m_fluids.at(m_fluidGroup.m_fluidType).first -= iter->delta;
+		auto found = iter->block->m_fluids.find(m_fluidGroup.m_fluidType);
+		found->second.first -= iter->delta;
 		iter->block->m_totalFluidVolume -= iter->delta;
-		if(iter->block->m_fluids.at(m_fluidGroup.m_fluidType).first == 0)
-			iter->block->m_fluids.erase(m_fluidGroup.m_fluidType);
+		if(found->second.first == 0)
+			iter->block->m_fluids.erase(found);
 		// Record blocks to set fluid groups unstable.
 		drainedFromAndAdjacent.insert(iter->block);
 		for(Block* adjacent : iter->block->m_adjacentsVector)

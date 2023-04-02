@@ -69,12 +69,13 @@ void FillQueue::applyDelta()
 		if(iter->delta == 0)
 			continue;
 		assert(!iter->block->m_fluids.contains(m_fluidGroup.m_fluidType) || iter->block->m_fluids.at(m_fluidGroup.m_fluidType).second != nullptr);
-		if(!iter->block->m_fluids.contains(m_fluidGroup.m_fluidType))
+		auto found = iter->block->m_fluids.find(m_fluidGroup.m_fluidType);
+		if(found == iter->block->m_fluids.end())
 			iter->block->m_fluids.emplace(m_fluidGroup.m_fluidType, std::make_pair(iter->delta, &m_fluidGroup));
 		else
 		{
-			iter->block->m_fluids.at(m_fluidGroup.m_fluidType).first += iter->delta;
-			assert(iter->block->m_fluids.at(m_fluidGroup.m_fluidType).second->m_fluidType == m_fluidGroup.m_fluidType);
+			found->second.first += iter->delta;
+			assert(found->second.second->m_fluidType == m_fluidGroup.m_fluidType);
 		}
 		iter->block->m_totalFluidVolume += iter->delta;
 		/*assert(iter->block->m_fluids.at(m_fluidGroup.m_fluidType).second != &m_fluidGroup ||
