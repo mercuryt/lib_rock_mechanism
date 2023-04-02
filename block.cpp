@@ -405,6 +405,7 @@ void baseBlock::resolveFluidOverfull()
 		// If the last block of a fluidGroup is displaced disolve it in the lowest density liquid which is more dense then it.
 		FluidGroup* fluidGroup = m_fluids.at(fluidType).second;
 		assert(fluidGroup->m_fluidType = fluidType);
+		fluidGroup->removeBlock(static_cast<Block*>(this));
 		if(fluidGroup->m_drainQueue.m_set.empty())
 		{
 			for(auto& [otherFluidType, pair] : m_fluids)
@@ -422,8 +423,8 @@ void baseBlock::resolveFluidOverfull()
 					}
 					break;
 				}
+			assert(fluidGroup->m_disolved || fluidGroup->m_destroy);
 		}
-		m_fluids.at(fluidType).second->removeBlock(static_cast<Block*>(this));
 		m_fluids.erase(fluidType);
 	}
 }

@@ -266,6 +266,19 @@ void validateAllBlockFluids(Area& area)
 				for(auto [fluidType, pair] : area.m_blocks[x][y][z].m_fluids)
 					assert(pair.second->m_fluidType == fluidType);
 }
+// Get one fluid group with the specified type. Return null if there is more then one.
+FluidGroup* getFluidGroup(Area& area, const FluidType* fluidType)
+{
+	FluidGroup* output = nullptr;
+	for(FluidGroup& fluidGroup : area.m_fluidGroups)
+		if(fluidGroup.m_fluidType == fluidType)
+		{
+			if(output != nullptr)
+				return nullptr;
+			output = &fluidGroup;
+		}
+	return output;
+}
 std::string toS(std::unordered_set<Block*>& blocks)
 {
 	std::string output = "set of " + std::to_string(blocks.size()) + " blocks";

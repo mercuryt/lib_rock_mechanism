@@ -75,8 +75,10 @@ public:
 	void stepCaveInWrite();
 	void registerPotentialCaveIn(Block* block);
 
+	void validateAllFluidGroups();
+	std::string toS();
+
 	// User provided code, no route.
 	void notifyNoRouteFound(Actor* actor);
 
-	void validateAllFluidGroups();
 };

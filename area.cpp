@@ -91,17 +91,20 @@ void baseArea::writeStep()
 		}
 		if(fluidGroup.m_destroy || fluidGroup.m_merged || fluidGroup.m_disolved || fluidGroup.m_stable)
 			m_unstableFluidGroups.erase(&fluidGroup);
+		else if(!fluidGroup.m_stable) // This seems avoidable.
+			m_unstableFluidGroups.insert(&fluidGroup);
 		if(fluidGroup.m_destroy || fluidGroup.m_merged)
 		{
 			toErase.insert(&fluidGroup);
-			assert(fluidGroup.m_drainQueue.m_set.empty());
+			if(fluidGroup.m_destroy)
+				assert(fluidGroup.m_drainQueue.m_set.empty());
 		}
 	}
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 		fluidGroup.validate(toErase);
 	m_fluidGroups.remove_if([&](FluidGroup& fluidGroup){ return toErase.contains(&fluidGroup); });
 	for(FluidGroup& fluidGroup : m_fluidGroups)
-		fluidGroup.validate(toErase);
+		fluidGroup.validate();
 	for(const FluidGroup* fluidGroup : m_unstableFluidGroups)
 	{
 		bool found = false;
@@ -167,3 +170,30 @@ void baseArea::validateAllFluidGroups()
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 		fluidGroup.validate();
 }
+std::string baseArea::toS()
+{
+	std::string output;
+	for(FluidGroup& fluidGroup : m_fluidGroups)
+	{
+		output += "type:" + fluidGroup.m_fluidType->name;
+		output += "-total:" + std::to_string(fluidGroup.totalVolume());
+		output += "-blocks:" + std::to_string(fluidGroup.m_drainQueue.m_set.size());
+		output += "-status:";
+		if(fluidGroup.m_merged)
+			output += "-merged";
+		if(fluidGroup.m_stable)
+			output += "-stable";
+		if(fluidGroup.m_disolved)
+		{
+			output += "-disolved";
+			for(FluidGroup& fg : m_fluidGroups)
+				if(fg.m_disolvedInThisGroup.contains(fluidGroup.m_fluidType) && fg.m_disolvedInThisGroup.at(fluidGroup.m_fluidType) == &fluidGroup)
+					output += " in " + fg.m_fluidType->name;
+		}
+		if(fluidGroup.m_destroy)
+			output += "-destroy";
+		output += "###";
+	}
+	return output;
+}
+

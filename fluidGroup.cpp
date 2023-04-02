@@ -9,6 +9,7 @@
 
 #include <queue>
 #include <cassert>
+#include <numeric>
 
 #include "util.h"
 
@@ -232,17 +233,17 @@ void FluidGroup::readStep()
 		assert(m_fillQueue.m_groupEnd == m_fillQueue.m_queue.end() || 
 				m_fillQueue.m_groupStart->block->m_z != m_fillQueue.m_groupEnd->block->m_z ||
 				m_fillQueue.m_groupStart->capacity != m_fillQueue.m_groupEnd->capacity);
-		uint32_t drainLevel = m_drainQueue.groupLevel();
-		assert(drainLevel != 0);
-		// TODO: fill level does not take into account other fluids of greater or equal density.
-		uint32_t fillLevel = m_fillQueue.groupLevel();
-		assert(fillLevel < s_maxBlockVolume);
-		//assert(m_drainQueue.m_groupStart->block->m_z > m_fillQueue.m_groupStart->block->m_z or drainLevel >= fillLevel);
+		uint32_t drainVolume = m_drainQueue.groupLevel();
+		assert(drainVolume != 0);
+		uint32_t fillVolume = m_fillQueue.groupLevel();
+		assert(fillVolume < s_maxBlockVolume);
+		//uint32_t fillInverseCapacity = s_maxBlockVolume - m_fillQueue.m_groupStart->capacity;
+		//assert(m_drainQueue.m_groupStart->block->m_z > m_fillQueue.m_groupStart->block->m_z or drainVolume >= fillVolume);
 		uint32_t drainZ = m_drainQueue.m_groupStart->block->m_z;
 		uint32_t fillZ = m_fillQueue.m_groupStart->block->m_z;
 		// If drain is less then 2 units above fill then end loop.
-		//TODO: using fillLevel > drainLevel here rather then the above assert feels like a hack.
-		if(drainZ < fillZ || (drainZ == fillZ && (fillLevel > drainLevel || drainLevel - fillLevel < 2)))
+		//TODO: using fillVolume > drainVolume here rather then the above assert feels like a hack.
+		if(drainZ < fillZ || (drainZ == fillZ && (fillVolume > drainVolume || drainVolume - fillVolume < 2)))
 		{
 			// if no new blocks have been added this step then set stable
 			if(m_fillQueue.m_futureNoLongerEmpty.empty() && m_disolvedInThisGroup.empty())
@@ -254,6 +255,16 @@ void FluidGroup::readStep()
 			}
 			break;
 		}
+		for(auto itd = m_drainQueue.m_groupStart; itd != m_drainQueue.m_groupEnd; ++itd)
+			if(itd->delta != 0)
+				for(auto itf = m_fillQueue.m_groupStart; itf != m_fillQueue.m_groupEnd; ++itf)
+					if(itf->delta != 0)
+						assert(itf->block != itd->block);
+		for(auto itf = m_fillQueue.m_groupStart; itf != m_fillQueue.m_groupEnd; ++itf)
+			if(itf->delta != 0)
+				for(auto itd = m_drainQueue.m_groupStart; itd != m_drainQueue.m_groupEnd; ++itd)
+					if(itd->delta != 0)
+						assert(itf->block != itd->block);
 		// How much fluid is there space for total.
 		uint32_t flowCapacityFill = m_fillQueue.groupCapacityPerBlock();
 		// How much can be filled before the next low block(s).
@@ -266,12 +277,12 @@ void FluidGroup::readStep()
 		uint32_t maxDrainForEqualibrium, maxFillForEquilibrium;
 		if(m_fillQueue.m_groupStart->block->m_z == m_drainQueue.m_groupStart->block->m_z)
 		{
-			uint32_t totalLevel = (fillLevel * m_fillQueue.groupSize()) + (drainLevel * m_drainQueue.groupSize());
+			uint32_t totalLevel = (fillVolume * m_fillQueue.groupSize()) + (drainVolume * m_drainQueue.groupSize());
 			uint32_t totalCount = m_fillQueue.groupSize() + m_drainQueue.groupSize();
 			// We want to round down here so default truncation is fine.
 			uint32_t equalibriumLevel = totalLevel / totalCount;
-			maxDrainForEqualibrium = drainLevel - equalibriumLevel;
-			maxFillForEquilibrium = equalibriumLevel - fillLevel;
+			maxDrainForEqualibrium = drainVolume - equalibriumLevel;
+			maxFillForEquilibrium = equalibriumLevel - fillVolume;
 		}
 		else
 			maxDrainForEqualibrium = maxFillForEquilibrium = UINT32_MAX;
@@ -300,11 +311,13 @@ void FluidGroup::readStep()
 				perBlockFill = totalDrain / (float)m_fillQueue.groupSize();
 			totalFill = perBlockFill * m_fillQueue.groupSize();
 		}
+		assert(totalFill <= totalDrain);
 		// Viscosity is consumed by flow.
 		m_viscosity -= perBlockFill;
 		// Record changes.
 		m_drainQueue.recordDelta(perBlockDrain, flowCapacityDrain, flowTillNextStepDrain);
-		m_fillQueue.recordDelta(perBlockFill, flowCapacityFill, flowTillNextStepFill);
+		if(perBlockFill != 0)
+			m_fillQueue.recordDelta(perBlockFill, flowCapacityFill, flowTillNextStepFill);
 		m_excessVolume += totalDrain - totalFill;
 		// If we are at equilibrium then stop looping.
 		// Don't mark stable because there may be newly added adjacent to flow into next tick.
@@ -368,7 +381,7 @@ void FluidGroup::readStep()
 			possiblyNoLongerAdjacent.insert(block);
 	// Seperate into contiguous groups. Each block in potentialNewGroups might be in a seperate group.
 	std::unordered_set<Block*> closed;
-	// If there is only one potential new group there can!be a split: there needs to be another group to split from.
+	// If there is only one potential new group there can not be a split: there needs to be another group to split from.
 	std::erase_if(potentialNewGroups, [&](Block* block){ return !futureBlocks.contains(block); });
 	if(potentialNewGroups.size() > 1)
 	{
@@ -434,26 +447,54 @@ void FluidGroup::writeStep()
 {
 	if(m_merged || m_disolved || m_destroy)
 		return;
-	validate();
+	m_area->validateAllFluidGroups();
 	m_drainQueue.applyDelta();
 	m_fillQueue.applyDelta();
 	// Update queues.
 	validate();
 	for(Block* block : m_futureAddToFillQueue)
 		assert(!m_futureRemoveFromFillQueue.contains(block));
+	// Don't add to drain queue if taken by another fluid group already.
+	std::erase_if(m_futureAddToDrainQueue, [&](Block* block){ return block->m_fluids.contains(m_fluidType) && block->m_fluids.at(m_fluidType).second != this; });
 	for(Block* block : m_futureAddToDrainQueue)
-	{
-		assert(block->m_fluids.contains(m_fluidType) && block->m_fluids.at(m_fluidType).second == this);
 		assert(!m_futureRemoveFromDrainQueue.contains(block));
-	}
 	for(Block* block : m_futureRemoveFromFillQueue)
-		assert(!block->m_fluids.contains(m_fluidType) || block->m_fluids.at(m_fluidType).first == s_maxBlockVolume);
+	{
+		bool tests = !block->m_fluids.contains(m_fluidType) || block->m_fluids.at(m_fluidType).first == s_maxBlockVolume || block->m_fluids.at(m_fluidType).second != this;
+		assert(tests || !m_futureGroups.empty());
+		if(!tests && !m_futureGroups.empty())
+		{
+			bool found = false;
+			for(FluidGroupSplitData& fluidGroupSplitData : m_futureGroups)
+				if(fluidGroupSplitData.members.contains(block))
+				{
+					found = true;
+					break;
+				}
+			assert(found);
+		}
+	}
 	for(Block* block : m_futureRemoveFromDrainQueue)
-		assert(!block->m_fluids.contains(m_fluidType) || block->m_fluids.at(m_fluidType).second != this);
+	{
+		bool tests = !block->m_fluids.contains(m_fluidType) || block->m_fluids.at(m_fluidType).second != this;
+		assert(tests || !m_futureGroups.empty());
+		if(!tests && !m_futureGroups.empty())
+		{
+			bool found = false;
+			for(FluidGroupSplitData& fluidGroupSplitData : m_futureGroups)
+				if(fluidGroupSplitData.members.contains(block))
+				{
+					found = true;
+					break;
+				}
+			assert(found);
+		}
+	}
 	m_fillQueue.removeBlocks(m_futureRemoveFromFillQueue);
 	m_fillQueue.addBlocks(m_futureAddToFillQueue);
 	m_drainQueue.removeBlocks(m_futureRemoveFromDrainQueue);
 	m_drainQueue.addBlocks(m_futureAddToDrainQueue);
+	validate();
 	m_area->validateAllFluidGroups();
 }
 void FluidGroup::afterWriteStep()
@@ -514,7 +555,7 @@ void FluidGroup::splitStep()
 		for(FutureFlowBlock& futureFlowBlock : m_fillQueue.m_queue)
 		{
 			Block* block = futureFlowBlock.block;
-			if(block->fluidCanEnterEver(fluidType) && block->fluidCanEnterCurrently(fluidType))
+			if(block->fluidCanEnterEver(fluidType) && (block->m_fluids.contains(fluidType) || block->fluidCanEnterCurrently(fluidType)))
 			{
 				uint32_t capacity = block->volumeOfFluidTypeCanEnter(fluidType);
 				assert(fluidGroup->m_excessVolume > 0);
@@ -547,10 +588,7 @@ void FluidGroup::splitStep()
 	std::unordered_set<Block*> formerMembers;
 	for(Block* block : m_drainQueue.m_set)
 		if(!m_futureGroups.back().members.contains(block))
-		{
-			assert(!block->m_fluids.contains(m_fluidType) || block->m_fluids.at(m_fluidType).second != this);
 			formerMembers.insert(block);
-		}
 	m_drainQueue.removeBlocks(formerMembers);
 	std::unordered_set<Block*> formerFill;
 	for(Block* block : m_fillQueue.m_set)
@@ -597,11 +635,20 @@ void FluidGroup::mergeStep()
 	}
 	validate();
 }
+int32_t FluidGroup::totalVolume()
+{
+	int32_t output = m_excessVolume;
+	for(Block* block : m_drainQueue.m_set)
+		output += block->volumeOfFluidTypeContains(m_fluidType);
+	return output;
+}
 void FluidGroup::validate()
 {
 	for(Block* block : m_drainQueue.m_set)
 		for(auto [fluidType, pair] : block->m_fluids)
 		{
+			if(pair.second == this)
+				continue;
 			assert(pair.second->m_fluidType == fluidType);
 			assert(pair.second->m_drainQueue.m_set.contains(block));
 		}
@@ -609,7 +656,7 @@ void FluidGroup::validate()
 void FluidGroup::validate(std::unordered_set<FluidGroup*> toErase)
 {
 	for(FluidGroup* fluidGroup : toErase)
-		assert(fluidGroup->m_drainQueue.m_set.empty());
+		assert(fluidGroup->m_merged || fluidGroup->m_drainQueue.m_set.empty());
 	for(Block* block : m_drainQueue.m_set)
 		for(auto [fluidType, pair] : block->m_fluids)
 		{

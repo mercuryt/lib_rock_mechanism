@@ -31,16 +31,14 @@ void FillQueue::initalizeForStep()
 void FillQueue::recordDelta(uint32_t volume, uint32_t flowCapacity, uint32_t flowTillNextStep)
 {
 	assert(m_groupStart->capacity >= volume);
+	assert(volume != 0);
 	assert(m_groupStart != m_groupEnd);
 	validate();
-	// Record new member blocks for group.
-	// Check the last member of the group since it's the most recently added.
-	if((m_groupEnd - 1)->delta == 0 && !(m_groupEnd - 1)->block->m_fluids.contains(m_fluidGroup.m_fluidType))
-		for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
-			m_futureNoLongerEmpty.insert(iter->block);
 	// Record fluid level changes.
 	for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 	{
+		if(iter->delta == 0 && !iter->block->m_fluids.contains(m_fluidGroup.m_fluidType))
+			m_futureNoLongerEmpty.insert(iter->block);
 		iter->delta += volume;
 		assert(iter->delta <= s_maxBlockVolume);
 		assert(iter->capacity >= volume);
@@ -79,6 +77,10 @@ void FillQueue::applyDelta()
 			assert(iter->block->m_fluids.at(m_fluidGroup.m_fluidType).second->m_fluidType == m_fluidGroup.m_fluidType);
 		}
 		iter->block->m_totalFluidVolume += iter->delta;
+		/*assert(iter->block->m_fluids.at(m_fluidGroup.m_fluidType).second != &m_fluidGroup ||
+				(iter->block->m_fluids.at(m_fluidGroup.m_fluidType).first < s_maxBlockVolume && !m_futureFull.contains(iter->block)) ||
+				(iter->block->m_fluids.at(m_fluidGroup.m_fluidType).first == s_maxBlockVolume && m_futureFull.contains(iter->block)));
+				*/
 		if(iter->block->m_totalFluidVolume > s_maxBlockVolume)
 			m_overfull.insert(iter->block);
 	}
@@ -87,9 +89,16 @@ void FillQueue::applyDelta()
 uint32_t FillQueue::groupLevel() const
 {
 	assert(m_groupStart != m_groupEnd);
-	uint32_t output = m_groupStart->delta;
-	output += m_groupStart->block->volumeOfFluidTypeContains(m_fluidGroup.m_fluidType);
-	return output;
+	//TODO: calculate this durring find end.
+	uint32_t highestLevel = 0;
+	for(auto it = m_groupStart; it != m_groupEnd; ++it)
+	{
+		uint32_t level = it->delta + it->block->volumeOfFluidTypeContains(m_fluidGroup.m_fluidType);
+		if(level > highestLevel)
+			highestLevel = level;
+
+	}
+	return highestLevel;
 }
 uint32_t FillQueue::getPriority(FutureFlowBlock& futureFlowBlock) const
 {

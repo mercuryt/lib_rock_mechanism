@@ -76,5 +76,6 @@ public:
 	void addDiagonalsFor(Block* block);
 	void validate();
 	void validate(std::unordered_set<FluidGroup*> toErase);
+	int32_t totalVolume();
 	friend class baseArea;
 };

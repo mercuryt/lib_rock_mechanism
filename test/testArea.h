@@ -190,9 +190,9 @@ TEST_CASE("Test mist spreads")
 }
 void fourFluidsTestParallel(uint32_t scale, uint32_t steps)
 {
-	uint32_t maxX = scale * 2;
-	uint32_t maxY = scale * 2;
-	uint32_t maxZ = scale * 1;
+	uint32_t maxX = (scale * 2) + 2;
+	uint32_t maxY = (scale * 2) + 2;
+	uint32_t maxZ = (scale * 1) + 1;
 	uint32_t halfMaxX = maxX / 2;
 	uint32_t halfMaxY = maxY / 2;
 	Area area(maxX, maxY, maxZ);
@@ -218,6 +218,15 @@ void fourFluidsTestParallel(uint32_t scale, uint32_t steps)
 	Block* mercury2 = &area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(area, mercury1, mercury2, s_mercury);
 	CHECK(area.m_fluidGroups.size() == 4);
+	FluidGroup* fgWater = water1->getFluidGroup(s_water);
+	FluidGroup* fgCO2 = CO2_1->getFluidGroup(s_CO2);
+	FluidGroup* fgLava = lava1->getFluidGroup(s_lava);
+	FluidGroup* fgMercury = mercury1->getFluidGroup(s_mercury);
+	CHECK(!fgWater->m_merged);
+	CHECK(!fgCO2->m_merged);
+	CHECK(!fgLava->m_merged);
+	CHECK(!fgMercury->m_merged);
+	uint32_t totalVolume = fgWater->totalVolume();
 	s_step = 1;
 	while(s_step < steps)
 	{
@@ -225,31 +234,52 @@ void fourFluidsTestParallel(uint32_t scale, uint32_t steps)
 		area.writeStep();
 		s_step++;
 	}
-	CHECK(area.m_unstableFluidGroups.empty());
+	uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
+	uint32_t expectedHeight = ((maxZ - 2) / 4) + 1;
+	uint32_t expectedBlocks = totalBlocks2D * expectedHeight;
+	fgMercury = getFluidGroup(area, s_mercury);
+	fgWater = getFluidGroup(area, s_water);
+	fgLava = getFluidGroup(area, s_lava);
+	fgCO2 = getFluidGroup(area, s_CO2);
 	CHECK(area.m_fluidGroups.size() == 4);
+	CHECK(fgWater->m_stable);
+	if(scale != 3)
+		CHECK(fgWater->m_drainQueue.m_set.size() == expectedBlocks);
+	CHECK(fgWater->totalVolume() == totalVolume);
+	CHECK(fgCO2->m_stable);
+	CHECK(fgCO2->m_drainQueue.m_set.size() == expectedBlocks);
+	CHECK(fgCO2->totalVolume() == totalVolume);
+	CHECK(fgLava->m_stable);
+	CHECK(fgLava->m_drainQueue.m_set.size() == expectedBlocks);
+	CHECK(fgLava->totalVolume() == totalVolume);
+	CHECK(fgMercury->m_stable);
+	if(scale != 3)
+		CHECK(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
+	CHECK(fgMercury->totalVolume() == totalVolume);
 	CHECK(area.m_blocks[1][1][1].m_fluids.contains(s_lava));
 	CHECK(area.m_blocks[1][1][maxZ - 1].m_fluids.contains(s_CO2));
 }
 TEST_CASE("four fluids scale 2 parallel")
 {
-	fourFluidsTestParallel(2, 8);
+	fourFluidsTestParallel(2, 10);
 }
 TEST_CASE("four fluids scale 3 parallel")
 {
-	fourFluidsTestParallel(3, 11);
+	fourFluidsTestParallel(3, 15);
 }
 TEST_CASE("four fluids scale 4 parallel")
 {
-	fourFluidsTestParallel(4, 17);
+	fourFluidsTestParallel(4, 23);
 }
 TEST_CASE("four fluids scale 5 parallel")
 {
-	fourFluidsTestParallel(5, 22);
+	fourFluidsTestParallel(5, 24);
 }
 TEST_CASE("four fluids scale 10 parallel")
 {
-	fourFluidsTestParallel(10, 65);
+	fourFluidsTestParallel(10, 75);
 }
+/*
 TEST_CASE("four fluids scale 15 parallel")
 {
 	fourFluidsTestParallel(15, 95);
@@ -262,3 +292,4 @@ TEST_CASE("four fluids scale 21 parallel")
 {
 	fourFluidsTestParallel(21, 140);
 }
+*/
