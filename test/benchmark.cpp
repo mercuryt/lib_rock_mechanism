@@ -10,19 +10,19 @@ std::chrono::milliseconds timeNow()
 	return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
 }
 
-void fourFluids()
+void fourFluids(uint32_t scale, uint32_t steps)
 {
-	uint32_t scale = 1;
-	uint32_t maxX = scale * 10;
-	uint32_t maxY = scale * 10;
-	uint32_t maxZ = scale * 5;
+	uint32_t maxX = (scale * 2) + 2;
+	uint32_t maxY = (scale * 2) + 2;
+	uint32_t maxZ = (scale * 1) + 1;
 	uint32_t halfMaxX = maxX / 2;
 	uint32_t halfMaxY = maxY / 2;
-	std::cout << "four fluids" << std::endl;
 	Area area(maxX, maxY, maxZ);
+	s_step = 0;
 	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	setSolidWalls(area, maxZ - 1, s_stone);
+	std::vector<FluidGroup*> newlySplit;
 	// Water is at 0,0
 	Block* water1 = &area.m_blocks[1][1][1];
 	Block* water2 = &area.m_blocks[halfMaxX - 1][halfMaxY - 1][maxZ - 1];		
@@ -39,26 +39,32 @@ void fourFluids()
 	Block* mercury1 = &area.m_blocks[halfMaxX][halfMaxY][1];
 	Block* mercury2 = &area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(area, mercury1, mercury2, s_mercury);
-	assert(area.m_fluidGroups.size() == 4);
-	FluidGroup* fgWater = water1->getFluidGroup(s_water);
-	FluidGroup* fgCO2 = CO2_1->getFluidGroup(s_CO2);
-	FluidGroup* fgLava = lava1->getFluidGroup(s_lava);
-	FluidGroup* fgMercury = mercury1->getFluidGroup(s_mercury);
-	std::cout << "setup completed" << std::endl;
 	s_step = 1;
-	while(not fgWater->m_stable or not fgCO2->m_stable or not fgLava->m_stable or not fgMercury->m_stable)
+	std::cout << "begin test four fluids at scale " << scale << std::endl;
+	auto startTotal = timeNow();
+	uint32_t longestStepMs = 0;
+	while(s_step < steps)
 	{
-		auto start = timeNow();
+		auto startStep = timeNow();
 		area.readStep();
-		s_pool.wait_for_tasks();
 		area.writeStep();
-		auto time = timeNow() - start;
-		std::cout << std::to_string(s_step) << "step: " << std::to_string(time.count()) << "ms" << std::endl;
-		assert(area.m_fluidGroups.size() == 4);
+		auto timeStep = (timeNow() - startStep).count();
+		if(timeStep > longestStepMs)
+			longestStepMs = timeStep;
+		std::cout << std::to_string(s_step) << "step: " << std::to_string(timeStep) << "ms" << std::endl;
 		s_step++;
+		if(area.m_unstableFluidGroups.empty())
+		{
+			std::cout << "stabilized" << std::endl;
+			break;
+		}
 	}
+		auto timeTotal = (timeNow() - startTotal).count();
+		std::cout << "total:" << std::to_string(timeTotal) << "ms" << std::endl;
+		std::cout << "average:" << std::to_string(timeTotal / s_step) << "ms" << std::endl;
+		std::cout << "longest:" << std::to_string(longestStepMs) << "ms" << std::endl;
 }
 int main()
 {
-	fourFluids();
+	fourFluids(20,200);
 }
