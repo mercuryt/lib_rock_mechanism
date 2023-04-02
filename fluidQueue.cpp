@@ -19,6 +19,7 @@ void FluidQueue::addBlock(Block* block)
 }
 void FluidQueue::addBlocks(std::unordered_set<Block*>& blocks)
 {
+	//m_queue.reserve(m_queue.size() + blocks.size());
 	for(Block* block : blocks)
 		if(!m_set.contains(block))
 			m_queue.emplace_back(block);
@@ -37,7 +38,7 @@ void FluidQueue::removeBlocks(std::unordered_set<Block*>& blocks)
 void FluidQueue::merge(FluidQueue& fluidQueue)
 {
 	std::erase_if(fluidQueue.m_set, [&](Block* block){ return m_set.contains(block); });
-	m_queue.reserve(m_queue.size() + fluidQueue.m_set.size());
+	//m_queue.reserve(m_queue.size() + fluidQueue.m_set.size());
 	for(Block* block : fluidQueue.m_set)
 		m_queue.emplace_back(block);
 	m_set.insert(fluidQueue.m_set.begin(), fluidQueue.m_set.end());

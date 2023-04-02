@@ -1662,6 +1662,16 @@ TEST_CASE("trench test 4 fluids scale 4-4")
 {
 	trenchTest4Fluids(4, 4, 15);
 }
+/*
+TEST_CASE("trench test 4 fluids scale 4-8")
+{
+	trenchTest4Fluids(4, 8, 15);
+}
+*/
+TEST_CASE("trench test 4 fluids scale 8-8")
+{
+	trenchTest4Fluids(8, 8, 20);
+}
 TEST_CASE("trench test 4 fluids scale 16-4")
 {
 	trenchTest4Fluids(16, 4, 25);

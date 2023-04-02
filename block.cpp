@@ -306,9 +306,14 @@ void baseBlock::removeFluid(uint32_t volume, const FluidType* fluidType)
 }
 // Validate the nongeneric object can enter this block and also any other blocks required by it's Shape.
 // TODO: Caches other blocks by Shape*?
-// TODO: optimize for 1x1 case?
 bool baseBlock::shapeAndMoveTypeCanEnterEver(const Shape* shape, const MoveType* moveType) const
 {
+	if(shape->positions.size() == 1)
+	{
+		// This should not be needed?
+		const Block* block = static_cast<const Block*>(this);
+		return block->anyoneCanEnterEver() && block->moveTypeCanEnter(moveType);
+	}
 	for(auto& [m_x, m_y, m_z, v] : shape->positions)
 	{
 		Block* block = offset(m_x, m_y, m_z);
