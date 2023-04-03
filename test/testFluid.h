@@ -1740,7 +1740,83 @@ TEST_CASE("trench test 2 fluids merge scale 16-4")
 {
 	trenchTest2FluidsMerge(16, 4, 12);
 }
-
+void trenchTest3FluidsMerge(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
+{
+	uint32_t maxX = scaleL + 2;
+	uint32_t maxY = scaleW + 2;
+	uint32_t maxZ = scaleW + 1;
+	uint32_t quarterMaxX = maxX / 4;
+	Area area(maxX, maxY, maxZ);
+	s_step = 0;
+	registerTypes();
+	setSolidLayer(area, 0, s_stone);
+	setSolidWalls(area, maxZ - 1, s_stone);
+	// Water
+	Block* water1 = &area.m_blocks[1][1][1];
+	Block* water2 = &area.m_blocks[quarterMaxX][maxY - 2][maxZ - 1];		
+	setFullFluidCuboid(area, water1, water2, s_water);
+	// CO2
+	Block* CO2_1 = &area.m_blocks[quarterMaxX + 1][1][1];
+	Block* CO2_2 = &area.m_blocks[(quarterMaxX * 2)][maxY - 2][maxZ - 1];
+	setFullFluidCuboid(area, CO2_1, CO2_2, s_CO2);
+	// Mercury
+	Block* mercury1 = &area.m_blocks[(quarterMaxX * 2) + 1][1][1];
+	Block* mercury2 = &area.m_blocks[quarterMaxX * 3][maxY - 2][maxZ - 1];
+	setFullFluidCuboid(area, mercury1, mercury2, s_mercury);
+	// CO2
+	Block* CO2_3 = &area.m_blocks[(quarterMaxX * 3) + 1][1][1];
+	Block* CO2_4 = &area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
+	setFullFluidCuboid(area, CO2_3, CO2_4, s_CO2);
+	CHECK(area.m_fluidGroups.size() == 4);
+	FluidGroup* fgWater = water1->getFluidGroup(s_water);
+	uint32_t totalVolumeWater = fgWater->totalVolume();
+	uint32_t totalVolumeMercury = totalVolumeWater;
+	uint32_t totalVolumeCO2 = totalVolumeWater * 2;
+	s_step = 1;
+	while(s_step < steps)
+	{
+		for(FluidGroup* fluidGroup : area.m_unstableFluidGroups)
+			fluidGroup->readStep();
+		area.writeStep();
+		s_step++;
+	}
+	uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
+	uint32_t expectedHeight = std::max(1u, maxZ / 4);
+	uint32_t expectedBlocks = totalBlocks2D * expectedHeight;
+	CHECK(area.m_unstableFluidGroups.empty());
+	fgWater = getFluidGroup(area, s_water);
+	FluidGroup* fgCO2 = getFluidGroup(area, s_CO2);
+	FluidGroup* fgMercury = getFluidGroup(area, s_mercury);
+	CHECK(fgWater != nullptr);
+	CHECK(fgCO2 != nullptr);
+	CHECK(fgMercury != nullptr);
+	CHECK(fgWater->totalVolume() == totalVolumeWater);
+	CHECK(fgCO2->totalVolume() == totalVolumeCO2);
+	CHECK(fgMercury->totalVolume() == totalVolumeMercury);
+	CHECK(fgWater->m_drainQueue.m_set.size() == expectedBlocks);
+	CHECK((fgCO2->m_drainQueue.m_set.size() == expectedBlocks || fgCO2->m_drainQueue.m_set.size() == expectedBlocks * 2));
+	CHECK(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
+	CHECK(fgWater->m_stable);
+	CHECK(fgCO2->m_stable);
+	CHECK(fgMercury->m_stable);
+	CHECK(area.m_fluidGroups.size() == 3);
+}
+TEST_CASE("trench test 3 fluids merge scale 4-1")
+{
+	trenchTest3FluidsMerge(4, 1, 8);
+}
+TEST_CASE("trench test 3 fluids merge scale 4-4")
+{
+	trenchTest3FluidsMerge(4, 4, 8);
+}
+TEST_CASE("trench test 3 fluids merge scale 8-4")
+{
+	trenchTest3FluidsMerge(8, 4, 15);
+}
+TEST_CASE("trench test 3 fluids merge scale 16-4")
+{
+	trenchTest3FluidsMerge(16, 4, 24);
+}
 void fourFluidsTest(uint32_t scale, uint32_t steps)
 {
 	uint32_t maxX = (scale * 2) + 2;
@@ -1823,4 +1899,8 @@ TEST_CASE("four fluids scale 4")
 TEST_CASE("four fluids scale 5")
 {
 	fourFluidsTest(5, 28);
+}
+TEST_CASE("four fluids scale 6")
+{
+	fourFluidsTest(6, 30);
 }
