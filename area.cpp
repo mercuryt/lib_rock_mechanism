@@ -71,13 +71,14 @@ void baseArea::writeStep()
 		fluidGroup->afterWriteStep();
 		fluidGroup->validate();
 	}
-	std::erase_if(m_unstableFluidGroups, [](FluidGroup* fluidGroup){ return fluidGroup->m_stable || fluidGroup->m_disolved || fluidGroup->m_destroy; });
-	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
+	std::erase_if(m_unstableFluidGroups, [](FluidGroup* fluidGroup){ return fluidGroup->m_stable || fluidGroup->m_disolved || fluidGroup->m_destroy || fluidGroup->m_merged; });
+	std::vector<FluidGroup*> unstable2(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
+	for(FluidGroup* fluidGroup : unstable2)
 		fluidGroup->mergeStep();
 	std::erase_if(m_unstableFluidGroups, [](FluidGroup* fluidGroup){ return fluidGroup->m_merged; });
 	// Apply fluid split.
-	std::vector<FluidGroup*> unstable2(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
-	for(FluidGroup* fluidGroup : unstable2)
+	std::vector<FluidGroup*> unstable3(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
+	for(FluidGroup* fluidGroup : unstable3)
 		fluidGroup->splitStep();
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 		fluidGroup.validate();
@@ -168,11 +169,12 @@ void baseArea::expireRouteCache(){++m_routeCacheVersion;}
 void baseArea::validateAllFluidGroups()
 {
 	for(FluidGroup& fluidGroup : m_fluidGroups)
-		fluidGroup.validate();
+		if(!fluidGroup.m_merged && !fluidGroup.m_destroy)
+			fluidGroup.validate();
 }
 std::string baseArea::toS()
 {
-	std::string output;
+	std::string output = std::to_string(m_fluidGroups.size()) + " fluid groups########";
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 	{
 		output += "type:" + fluidGroup.m_fluidType->name;
