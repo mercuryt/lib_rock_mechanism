@@ -30,7 +30,6 @@ struct SortByDensity
 {
 	bool operator()(const FluidType* a, const FluidType* b) const { return a->density < b->density; }
 };
-
 class baseBlock
 {
 	// If this block is solid stone, solid dirt, etc. then store it here. Otherwise nullptr.
@@ -82,6 +81,8 @@ public:
 	std::vector<Block*> getEdgeAdjacentOnly() const;
 	std::vector<Block*> getEdgeAdjacentOnSameZLevelOnly() const;
 	std::vector<Block*> getAdjacentOnSameZLevelOnly() const;
+	std::vector<Block*> getEdgeAdjacentOnlyOnNextZLevelDown() const;
+	std::vector<Block*> getEdgeAdjacentOnlyOnNextZLevelUp() const;
 	uint32_t distance(Block* block) const;
 	uint32_t taxiDistance(Block* block) const;
 	bool isAdjacentToAny(std::unordered_set<Block*>& blocks) const;
@@ -99,7 +100,7 @@ public:
 	// Add fluid, handle falling / sinking, group membership, excessive quantity sent to fluid group.
 	void addFluid(uint32_t volume, const FluidType* fluidType);
 	void removeFluid(uint32_t volume, const FluidType* fluidType);
-	bool shapeCanEnterCurrently(const Shape* shape) const;
+	bool actorCanEnterCurrently(Actor* actor) const;
 	bool canEnterEver(Actor* actor) const;
 	std::vector<std::pair<Block*, uint32_t>> getMoveCosts(const Shape* shape, const MoveType* moveType);
 	bool fluidCanEnterCurrently(const FluidType* fluidType) const;

@@ -1465,11 +1465,11 @@ void trenchTest2Fluids(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	// Water
 	Block* water1 = &area.m_blocks[1][1][1];
 	Block* water2 = &area.m_blocks[halfMaxX - 1][maxY - 2][maxZ - 1];		
-	setFullFluidCuboid(area, water1, water2, s_water);
+	setFullFluidCuboid(water1, water2, s_water);
 	// CO2
 	Block* CO2_1 = &area.m_blocks[halfMaxX][1][1];
 	Block* CO2_2 = &area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
-	setFullFluidCuboid(area, CO2_1, CO2_2, s_CO2);
+	setFullFluidCuboid(CO2_1, CO2_2, s_CO2);
 	CHECK(area.m_fluidGroups.size() == 2);
 	FluidGroup* fgWater = water1->getFluidGroup(s_water);
 	FluidGroup* fgCO2 = CO2_1->getFluidGroup(s_CO2);
@@ -1528,15 +1528,15 @@ void trenchTest3Fluids(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	// Water
 	Block* water1 = &area.m_blocks[1][1][1];
 	Block* water2 = &area.m_blocks[thirdMaxX][maxY - 2][maxZ - 1];		
-	setFullFluidCuboid(area, water1, water2, s_water);
+	setFullFluidCuboid(water1, water2, s_water);
 	// CO2
 	Block* CO2_1 = &area.m_blocks[thirdMaxX + 1][1][1];
 	Block* CO2_2 = &area.m_blocks[(thirdMaxX * 2)][maxY - 2][maxZ - 1];
-	setFullFluidCuboid(area, CO2_1, CO2_2, s_CO2);
+	setFullFluidCuboid(CO2_1, CO2_2, s_CO2);
 	// Lava
 	Block* lava1 = &area.m_blocks[(thirdMaxX * 2) + 1][1][1];
 	Block* lava2 = &area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
-	setFullFluidCuboid(area, lava1, lava2, s_lava);
+	setFullFluidCuboid(lava1, lava2, s_lava);
 	CHECK(area.m_fluidGroups.size() == 3);
 	FluidGroup* fgWater = water1->getFluidGroup(s_water);
 	FluidGroup* fgCO2 = CO2_1->getFluidGroup(s_CO2);
@@ -1597,19 +1597,19 @@ void trenchTest4Fluids(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	// Water
 	Block* water1 = &area.m_blocks[1][1][1];
 	Block* water2 = &area.m_blocks[quarterMaxX][maxY - 2][maxZ - 1];		
-	setFullFluidCuboid(area, water1, water2, s_water);
+	setFullFluidCuboid(water1, water2, s_water);
 	// CO2
 	Block* CO2_1 = &area.m_blocks[quarterMaxX + 1][1][1];
 	Block* CO2_2 = &area.m_blocks[(quarterMaxX * 2)][maxY - 2][maxZ - 1];
-	setFullFluidCuboid(area, CO2_1, CO2_2, s_CO2);
+	setFullFluidCuboid(CO2_1, CO2_2, s_CO2);
 	// Lava
 	Block* lava1 = &area.m_blocks[(quarterMaxX * 2) + 1][1][1];
 	Block* lava2 = &area.m_blocks[quarterMaxX * 3][maxY - 2][maxZ - 1];
-	setFullFluidCuboid(area, lava1, lava2, s_lava);
+	setFullFluidCuboid(lava1, lava2, s_lava);
 	// Mercury
 	Block* mercury1 = &area.m_blocks[(quarterMaxX * 3) + 1][1][1];
 	Block* mercury2 = &area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
-	setFullFluidCuboid(area, mercury1, mercury2, s_mercury);
+	setFullFluidCuboid(mercury1, mercury2, s_mercury);
 	CHECK(area.m_fluidGroups.size() == 4);
 	FluidGroup* fgWater = water1->getFluidGroup(s_water);
 	FluidGroup* fgCO2 = CO2_1->getFluidGroup(s_CO2);
@@ -1633,15 +1633,20 @@ void trenchTest4Fluids(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	CHECK(fgWater->m_stable);
 	CHECK(fgWater->m_drainQueue.m_set.size() == expectedBlocks);
 	CHECK(fgWater->totalVolume() == totalVolume);
+	fgCO2 = getFluidGroup(area, s_water);
+	CHECK(fgWater != nullptr);
 	fgCO2 = getFluidGroup(area, s_CO2);
 	CHECK(fgCO2 != nullptr);
+	fgCO2 = getFluidGroup(area, s_mercury);
+	CHECK(fgMercury != nullptr);
+	fgCO2 = getFluidGroup(area, s_lava);
+	CHECK(fgLava != nullptr);
 	CHECK(fgCO2->m_stable);
 	CHECK(fgCO2->m_drainQueue.m_set.size() == expectedBlocks);
 	CHECK(fgCO2->totalVolume() == totalVolume);
 	CHECK(fgLava->m_stable);
 	CHECK(fgLava->m_drainQueue.m_set.size() == expectedBlocks);
 	CHECK(fgLava->totalVolume() == totalVolume);
-	CHECK(fgMercury != nullptr);
 	CHECK(fgMercury->m_stable);
 	CHECK(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
 	CHECK(fgMercury->totalVolume() == totalVolume);
@@ -1649,6 +1654,8 @@ void trenchTest4Fluids(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	CHECK(area.m_blocks[maxX - 2][1][1].m_fluids.contains(s_lava));
 	CHECK(area.m_blocks[1][1][maxZ - 1].m_fluids.contains(s_CO2));
 	CHECK(area.m_blocks[maxX - 2][1][maxZ - 1].m_fluids.contains(s_CO2));
+	CHECK(area.m_fluidGroups.size() == 4);
+	CHECK(area.m_unstableFluidGroups.empty());
 }
 TEST_CASE("trench test 4 fluids scale 4-1")
 {
@@ -1688,19 +1695,19 @@ void trenchTest2FluidsMerge(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	// Water
 	Block* water1 = &area.m_blocks[1][1][1];
 	Block* water2 = &area.m_blocks[quarterMaxX][maxY - 2][maxZ - 1];		
-	setFullFluidCuboid(area, water1, water2, s_water);
+	setFullFluidCuboid(water1, water2, s_water);
 	// CO2
 	Block* CO2_1 = &area.m_blocks[quarterMaxX + 1][1][1];
 	Block* CO2_2 = &area.m_blocks[(quarterMaxX * 2)][maxY - 2][maxZ - 1];
-	setFullFluidCuboid(area, CO2_1, CO2_2, s_CO2);
+	setFullFluidCuboid(CO2_1, CO2_2, s_CO2);
 	// Water
 	Block* water3 = &area.m_blocks[(quarterMaxX * 2) + 1][1][1];
 	Block* water4 = &area.m_blocks[quarterMaxX * 3][maxY - 2][maxZ - 1];
-	setFullFluidCuboid(area, water3, water4, s_water);
+	setFullFluidCuboid(water3, water4, s_water);
 	// CO2
 	Block* CO2_3 = &area.m_blocks[(quarterMaxX * 3) + 1][1][1];
 	Block* CO2_4 = &area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
-	setFullFluidCuboid(area, CO2_3, CO2_4, s_CO2);
+	setFullFluidCuboid(CO2_3, CO2_4, s_CO2);
 	CHECK(area.m_fluidGroups.size() == 4);
 	FluidGroup* fgWater = water1->getFluidGroup(s_water);
 	uint32_t totalVolume = fgWater->totalVolume() * 2;
@@ -1754,19 +1761,19 @@ void trenchTest3FluidsMerge(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	// Water
 	Block* water1 = &area.m_blocks[1][1][1];
 	Block* water2 = &area.m_blocks[quarterMaxX][maxY - 2][maxZ - 1];		
-	setFullFluidCuboid(area, water1, water2, s_water);
+	setFullFluidCuboid(water1, water2, s_water);
 	// CO2
 	Block* CO2_1 = &area.m_blocks[quarterMaxX + 1][1][1];
 	Block* CO2_2 = &area.m_blocks[(quarterMaxX * 2)][maxY - 2][maxZ - 1];
-	setFullFluidCuboid(area, CO2_1, CO2_2, s_CO2);
+	setFullFluidCuboid(CO2_1, CO2_2, s_CO2);
 	// Mercury
 	Block* mercury1 = &area.m_blocks[(quarterMaxX * 2) + 1][1][1];
 	Block* mercury2 = &area.m_blocks[quarterMaxX * 3][maxY - 2][maxZ - 1];
-	setFullFluidCuboid(area, mercury1, mercury2, s_mercury);
+	setFullFluidCuboid(mercury1, mercury2, s_mercury);
 	// CO2
 	Block* CO2_3 = &area.m_blocks[(quarterMaxX * 3) + 1][1][1];
 	Block* CO2_4 = &area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
-	setFullFluidCuboid(area, CO2_3, CO2_4, s_CO2);
+	setFullFluidCuboid(CO2_3, CO2_4, s_CO2);
 	CHECK(area.m_fluidGroups.size() == 4);
 	FluidGroup* fgWater = water1->getFluidGroup(s_water);
 	uint32_t totalVolumeWater = fgWater->totalVolume();
@@ -1807,7 +1814,7 @@ TEST_CASE("trench test 3 fluids merge scale 4-1")
 }
 TEST_CASE("trench test 3 fluids merge scale 4-4")
 {
-	trenchTest3FluidsMerge(4, 4, 8);
+	trenchTest3FluidsMerge(4, 4, 10);
 }
 TEST_CASE("trench test 3 fluids merge scale 8-4")
 {
@@ -1833,19 +1840,19 @@ void fourFluidsTest(uint32_t scale, uint32_t steps)
 	// Water is at 0,0
 	Block* water1 = &area.m_blocks[1][1][1];
 	Block* water2 = &area.m_blocks[halfMaxX - 1][halfMaxY - 1][maxZ - 1];		
-	setFullFluidCuboid(area, water1, water2, s_water);
+	setFullFluidCuboid(water1, water2, s_water);
 	// CO2 is at 0,1
 	Block* CO2_1 = &area.m_blocks[1][halfMaxY][1];
 	Block* CO2_2 = &area.m_blocks[halfMaxX - 1][maxY - 2][maxZ - 1];
-	setFullFluidCuboid(area, CO2_1, CO2_2, s_CO2);
+	setFullFluidCuboid(CO2_1, CO2_2, s_CO2);
 	// Lava is at 1,0
 	Block* lava1 = &area.m_blocks[halfMaxX][1][1];
 	Block* lava2 = &area.m_blocks[maxX - 2][halfMaxY - 1][maxZ - 1];
-	setFullFluidCuboid(area, lava1, lava2, s_lava);
+	setFullFluidCuboid(lava1, lava2, s_lava);
 	// Mercury is at 1,1
 	Block* mercury1 = &area.m_blocks[halfMaxX][halfMaxY][1];
 	Block* mercury2 = &area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
-	setFullFluidCuboid(area, mercury1, mercury2, s_mercury);
+	setFullFluidCuboid(mercury1, mercury2, s_mercury);
 	CHECK(area.m_fluidGroups.size() == 4);
 	FluidGroup* fgWater = water1->getFluidGroup(s_water);
 	FluidGroup* fgCO2 = CO2_1->getFluidGroup(s_CO2);

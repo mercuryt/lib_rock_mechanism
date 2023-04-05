@@ -475,8 +475,9 @@ void FluidGroup::readStep()
 }
 void FluidGroup::writeStep()
 {
-	if(m_merged || m_disolved || m_destroy)
-		return;
+	assert(!m_merged);
+	assert(!m_disolved);
+	assert(!m_destroy);
 	m_area->validateAllFluidGroups();
 	m_drainQueue.applyDelta();
 	m_fillQueue.applyDelta();
@@ -532,10 +533,11 @@ void FluidGroup::writeStep()
 }
 void FluidGroup::afterWriteStep()
 {
+	// Any fluid group could be marked as disolved or destroyed during iteration.
+	if(m_disolved || m_destroy)
+		return;
 	validate();
 	assert(!m_merged);
-	assert(!m_disolved);
-	assert(!m_destroy);
 	// Do seeping through corners if enabled.
 	if constexpr(s_fluidsSeepDiagonalModifier != 0)
 	{
@@ -685,9 +687,10 @@ int32_t FluidGroup::totalVolume()
 		output += block->volumeOfFluidTypeContains(m_fluidType);
 	return output;
 }
-void FluidGroup::validate()
+void FluidGroup::validate() const
 {
-	assert((&*m_area->m_fluidGroups.begin() <= this && &*m_area->m_fluidGroups.end() > this));
+	if(m_merged || m_destroy || m_disolved)
+		return;
 	for(Block* block : m_drainQueue.m_set)
 		for(auto [fluidType, pair] : block->m_fluids)
 		{

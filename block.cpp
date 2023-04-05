@@ -123,6 +123,40 @@ std::vector<Block*> baseBlock::getEdgeAdjacentOnSameZLevelOnly() const
 	}
 	return output;
 }
+std::vector<Block*> baseBlock::getEdgeAdjacentOnlyOnNextZLevelDown() const
+{
+	std::vector<Block*> output;
+	output.reserve(12);
+	static const int32_t offsetsList[12][3] = {
+		{-1,0,-1}, {0,-1,-1},
+		{1,0,-1}, {0,1,-1}, 
+	};
+	for(uint32_t i = 0; i < 4; i++)
+	{
+		auto& offsets = offsetsList[i];
+		Block* block = offset(offsets[0],offsets[1],offsets[2]);
+		if(block != nullptr)
+			output.push_back(block);
+	}
+	return output;
+}
+std::vector<Block*> baseBlock::getEdgeAdjacentOnlyOnNextZLevelUp() const
+{
+	std::vector<Block*> output;
+	output.reserve(12);
+	static const int32_t offsetsList[12][3] = {
+		{-1,0,1}, {0,-1,1},
+		{0,1,1}, {1,0,1}, 
+	};
+	for(uint32_t i = 0; i < 12; i++)
+	{
+		auto& offsets = offsetsList[i];
+		Block* block = offset(offsets[0],offsets[1],offsets[2]);
+		if(block != nullptr)
+			output.push_back(block);
+	}
+	return output;
+}
 std::vector<Block*> baseBlock::getEdgeAndCornerAdjacentOnly() const
 {
 	std::vector<Block*> output;
@@ -305,29 +339,40 @@ void baseBlock::removeFluid(uint32_t volume, const FluidType* fluidType)
 	m_fluids.at(fluidType).second->removeFluid(volume);
 }
 // Validate the nongeneric object can enter this block and also any other blocks required by it's Shape.
-// TODO: Caches other blocks by Shape*?
 bool baseBlock::shapeAndMoveTypeCanEnterEver(const Shape* shape, const MoveType* moveType) const
 {
 	if(shape->positions.size() == 1)
 	{
-		// This should not be needed?
 		const Block* block = static_cast<const Block*>(this);
 		return block->anyoneCanEnterEver() && block->moveTypeCanEnter(moveType);
 	}
 	for(auto& [m_x, m_y, m_z, v] : shape->positions)
 	{
-		Block* block = offset(m_x, m_y, m_z);
-		if(!block->anyoneCanEnterEver() || !block->moveTypeCanEnter(moveType))
+		const Block* block = offset(m_x, m_y, m_z);
+		if(block == nullptr || !block->anyoneCanEnterEver() || !block->moveTypeCanEnter(moveType))
 			return false;
 	}
 	return true;
 }
-bool baseBlock::shapeCanEnterCurrently(const Shape* shape) const
+bool baseBlock::actorCanEnterCurrently(Actor* actor) const
 {
+	const Shape* shape = actor->m_shape;
+	if(shape->positions.size() == 1)
+	{
+		const Block* block = static_cast<const Block*>(this);
+		uint32_t v = shape->positions[0][3];
+		return block->m_totalDynamicVolume + v <= s_maxBlockVolume;
+	}
 	for(auto& [x, y, z, v] : shape->positions)
 	{
-		Block* block = offset(x, y, z);
-		if(block->m_totalDynamicVolume + v > s_maxBlockVolume)
+		const Block* block = offset(x, y, z);
+		auto found = block->m_actors.find(actor);
+		if(found != block->m_actors.end())
+		{
+			if(block->m_totalDynamicVolume + v - found->second > s_maxBlockVolume)
+				return false;
+		}
+		else if(block->m_totalDynamicVolume + v > s_maxBlockVolume)
 			return false;
 	}
 	return true;
@@ -340,14 +385,6 @@ Block* baseBlock::offset(int32_t ax, int32_t ay, int32_t az) const
 	if(ax < 0 || (uint32_t)ax >= m_area->m_sizeX || ay < 0 || (uint32_t)ay >= m_area->m_sizeY || az < 0 || (uint32_t)az >= m_area->m_sizeZ)
 		return nullptr;
 	return &m_area->m_blocks[ax][ay][az];
-}
-std::vector<std::pair<Block*, uint32_t>> baseBlock::getMoveCosts(const Shape* shape, const MoveType* moveType)
-{
-	std::vector<std::pair<Block*, uint32_t>> output;
-	for(Block* block : m_adjacentsVector)
-		if(block->shapeAndMoveTypeCanEnterEver(shape, moveType))
-			output.emplace_back(block, block->moveCost(moveType, static_cast<Block*>(this)));
-	return output;
 }
 bool baseBlock::fluidCanEnterCurrently(const FluidType* fluidType) const
 {
@@ -367,6 +404,7 @@ bool baseBlock::isAdjacentToFluidGroup(const FluidGroup* fluidGroup) const
 }
 uint32_t baseBlock::volumeOfFluidTypeCanEnter(const FluidType* fluidType) const
 {
+	assert(fluidType != nullptr);
 	uint32_t output = s_maxBlockVolume;
 	for(auto& pair : m_fluids)
 		if(pair.first->density >= fluidType->density)
@@ -375,16 +413,20 @@ uint32_t baseBlock::volumeOfFluidTypeCanEnter(const FluidType* fluidType) const
 }
 uint32_t baseBlock::volumeOfFluidTypeContains(const FluidType* fluidType) const
 {
-	if(!m_fluids.contains(fluidType))
+	assert(fluidType != nullptr);
+	auto found = m_fluids.find(fluidType);
+	if(found == m_fluids.end())
 		return 0;
-	return m_fluids.at(fluidType).first;
+	return found->second.first;
 }
 FluidGroup* baseBlock::getFluidGroup(const FluidType* fluidType) const
 {
-	if(!m_fluids.contains(fluidType))
+	assert(fluidType != nullptr);
+	auto found = m_fluids.find(fluidType);
+	if(found == m_fluids.end())
 		return nullptr;
-	assert(m_fluids.at(fluidType).second->m_fluidType == fluidType);
-	return m_fluids.at(fluidType).second;
+	assert(found->second.second->m_fluidType == fluidType);
+	return found->second.second;
 }
 void baseBlock::resolveFluidOverfull()
 {
@@ -416,6 +458,7 @@ void baseBlock::resolveFluidOverfull()
 			for(auto& [otherFluidType, pair] : m_fluids)
 				if(otherFluidType->density > fluidType->density)
 				{
+					//TODO: find.
 					if(pair.second->m_disolvedInThisGroup.contains(fluidType))
 					{
 						pair.second->m_disolvedInThisGroup.at(fluidType)->m_excessVolume += fluidGroup->m_excessVolume;
@@ -446,12 +489,13 @@ void baseBlock::moveContentsTo(Block* block)
 // Add / remove  actor occupancy.
 void baseBlock::enter(Actor* actor)
 {
+	assert(actor->m_location != static_cast<Block*>(this));
 	bool hasPreviousLocation = actor->m_location != nullptr;
 	actor->m_location = static_cast<Block*>(this);
-	actor->m_blocks.clear();
 	if(hasPreviousLocation)
 	{
 		actor->m_location->exit(actor);
+		actor->m_blocks.clear();
 		m_area->m_locationBuckets.update(actor, actor->m_location, static_cast<Block*>(this));
 	}
 	else
@@ -459,6 +503,7 @@ void baseBlock::enter(Actor* actor)
 	for(auto& [x, y, z, v] : actor->m_shape->positions)
 	{
 		Block* block = offset(x, y, z);
+		assert(!block->m_actors.contains(actor));
 		block->m_actors[actor] = v;
 		block->m_totalDynamicVolume += v;
 		actor->m_blocks.push_back(block);
@@ -466,11 +511,12 @@ void baseBlock::enter(Actor* actor)
 }
 void baseBlock::exit(Actor* actor)
 {
-	for(auto& [x, y, z, v] : actor->m_shape->positions)
+	for(Block* block : actor->m_blocks)
 	{
-		Block* block = offset(x, y, z);
-		block->m_actors.erase(actor);
-		block->m_totalDynamicVolume -= v;
+		auto found = block->m_actors.find(actor);
+		assert(found != block->m_actors.end());
+		block->m_totalDynamicVolume -= found->second;
+		block->m_actors.erase(found);
 	}
 }
 void baseBlock::clearMoveCostsCacheForSelfAndAdjacent()

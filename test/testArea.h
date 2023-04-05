@@ -88,7 +88,7 @@ TEST_CASE("Test move with threading")
 	area.readStep();
 	area.writeStep();
 	s_step++;
-	CHECK(actor.m_route->size() == 14);
+	CHECK(actor.m_route->size() == 7);
 	uint32_t scheduledStep = area.m_scheduledEvents.begin()->first;
 	while(s_step != scheduledStep)
 	{
@@ -204,19 +204,19 @@ void fourFluidsTestParallel(uint32_t scale, uint32_t steps)
 	// Water is at 0,0
 	Block* water1 = &area.m_blocks[1][1][1];
 	Block* water2 = &area.m_blocks[halfMaxX - 1][halfMaxY - 1][maxZ - 1];		
-	setFullFluidCuboid(area, water1, water2, s_water);
+	setFullFluidCuboid(water1, water2, s_water);
 	// CO2 is at 0,1
 	Block* CO2_1 = &area.m_blocks[1][halfMaxY][1];
 	Block* CO2_2 = &area.m_blocks[halfMaxX - 1][maxY - 2][maxZ - 1];
-	setFullFluidCuboid(area, CO2_1, CO2_2, s_CO2);
+	setFullFluidCuboid(CO2_1, CO2_2, s_CO2);
 	// Lava is at 1,0
 	Block* lava1 = &area.m_blocks[halfMaxX][1][1];
 	Block* lava2 = &area.m_blocks[maxX - 2][halfMaxY - 1][maxZ - 1];
-	setFullFluidCuboid(area, lava1, lava2, s_lava);
+	setFullFluidCuboid(lava1, lava2, s_lava);
 	// Mercury is at 1,1
 	Block* mercury1 = &area.m_blocks[halfMaxX][halfMaxY][1];
 	Block* mercury2 = &area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
-	setFullFluidCuboid(area, mercury1, mercury2, s_mercury);
+	setFullFluidCuboid(mercury1, mercury2, s_mercury);
 	CHECK(area.m_fluidGroups.size() == 4);
 	FluidGroup* fgWater = water1->getFluidGroup(s_water);
 	FluidGroup* fgCO2 = CO2_1->getFluidGroup(s_CO2);
