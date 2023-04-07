@@ -7,7 +7,8 @@ class MoveEvent : public ScheduledEvent
 {
 public:
 	Actor* m_actor;
-	MoveEvent(uint32_t s, Actor* a);
+	uint32_t m_delayCount;
+	MoveEvent(uint32_t s, Actor* a, uint32_t dc = 0);
 	void execute();
 	~MoveEvent();
 };
