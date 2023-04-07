@@ -384,7 +384,7 @@ TEST_CASE("fortification")
 	routeRequest2.readStep();
 	CHECK(routeRequest2.m_result.size() == 0);
 }
-TEST_CASE("flood gate")
+TEST_CASE("flood gate blocks entry")
 {
 	Area area(5,5,5);
 	registerTypes();
@@ -539,4 +539,37 @@ TEST_CASE("multi-block actors can use ramps")
 	RouteRequest routeRequest2(&actor);
 	routeRequest2.readStep();
 	CHECK(routeRequest2.m_result.size() != 0);
+}
+TEST_CASE("detour")
+{
+	Area area(5,5,5);
+	registerTypes();
+	setSolidLayer(area, 0, s_stone);
+	Block& origin = area.m_blocks[2][3][1];
+	area.m_blocks[3][1][1].setSolid(s_stone);
+	area.m_blocks[3][2][1].setSolid(s_stone);
+	area.m_blocks[3][4][1].setSolid(s_stone);
+	Actor a1(&origin, s_oneByOneFull, s_twoLegs);
+	Actor a2(&area.m_blocks[3][3][1], s_oneByOneFull, s_twoLegs);
+	a1.setDestination(&area.m_blocks[4][3][1]);
+	RouteRequest routeRequest(&a1);
+	routeRequest.readStep();
+	routeRequest.writeStep();
+	CHECK(routeRequest.m_result.size() == 2);
+	CHECK(!area.m_blocks[3][3][1].actorCanEnterCurrently(&a1));
+	CHECK(area.m_scheduledEvents.size() == 1);
+	// Move attempt 1.
+	s_step = area.m_scheduledEvents.begin()->first;
+	area.executeScheduledEvents(s_step);
+	CHECK(a1.m_location == &origin);
+	CHECK(area.m_scheduledEvents.size() == 1);
+	// Move attempt 2.
+	s_step = area.m_scheduledEvents.begin()->first;
+	area.executeScheduledEvents(s_step);
+	CHECK(a1.m_location == &origin);
+	CHECK(area.m_scheduledEvents.size() == 0);
+	// Detour.
+	RouteRequest detour(&a1, true);
+	detour.readStep();
+	CHECK(detour.m_result.size() == 6);
 }

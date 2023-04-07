@@ -361,6 +361,8 @@ bool baseBlock::actorCanEnterCurrently(Actor* actor) const
 	{
 		const Block* block = static_cast<const Block*>(this);
 		uint32_t v = shape->positions[0][3];
+		if(block == actor->m_location)
+			v = 0;
 		return block->m_totalDynamicVolume + v <= s_maxBlockVolume;
 	}
 	for(auto& [x, y, z, v] : shape->positions)
@@ -490,6 +492,7 @@ void baseBlock::moveContentsTo(Block* block)
 void baseBlock::enter(Actor* actor)
 {
 	assert(actor->m_location != static_cast<Block*>(this));
+	actor->m_taskDelayCount = 0;
 	bool hasPreviousLocation = actor->m_location != nullptr;
 	actor->m_location = static_cast<Block*>(this);
 	if(hasPreviousLocation)
