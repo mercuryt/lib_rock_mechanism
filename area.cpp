@@ -151,9 +151,9 @@ void baseArea::scheduleMove(Actor* actor)
 	MoveEvent* moveEvent = new MoveEvent(s_step + stepsToMove, actor);
 	scheduleEvent(moveEvent);
 }
-void baseArea::registerRouteRequest(Actor* actor)
+void baseArea::registerRouteRequest(Actor* actor, bool detour)
 {
-	m_routeRequestQueue.emplace_back(actor);
+	m_routeRequestQueue.emplace_back(actor, detour);
 }
 FluidGroup* baseArea::createFluidGroup(const FluidType* fluidType, std::unordered_set<Block*>& blocks, bool checkMerge)
 {

@@ -62,7 +62,7 @@ public:
 	void unregisterActor(Actor* actor);
 	
 	// Emplace a routeRequest object on the queue.
-	void registerRouteRequest(Actor* actor);
+	void registerRouteRequest(Actor* actor, bool detour = false);
 	// Emplace a visionRequest object on the queue.
 	void registerVisionRequest(Actor* actor);
 

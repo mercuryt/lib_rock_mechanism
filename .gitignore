@@ -3,6 +3,6 @@
 *\.out
 *\.gch
 a\.out
-\.gdb_history
+*\.gdb_history
 .bak
 a.out

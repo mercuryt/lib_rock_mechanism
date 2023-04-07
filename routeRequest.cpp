@@ -1,5 +1,5 @@
 #include "pathTemplate.h"
-RouteRequest::RouteRequest(Actor* a) : m_actor(a), m_cacheHit(false) {}
+RouteRequest::RouteRequest(Actor* a, bool d) : m_actor(a), m_detour(d), m_cacheHit(false) {}
 void RouteRequest::readStep()
 {
 	Block* start = m_actor->m_location;
@@ -19,12 +19,15 @@ void RouteRequest::readStep()
 		return (proposedRouteStep.routeNode->block->taxiDistance(end) * s_pathHuristicConstant) + proposedRouteStep.totalMoveCost;
 	};
 	auto compare = [&](ProposedRouteStep& a, ProposedRouteStep& b) { return priority(a) > priority(b); };
-	auto isValid = [&](Block* block){ return block->anyoneCanEnterEver() && block->canEnterEver(m_actor); };
+	// Check if the actor can currently enter each block if this is a detour path.
+	auto isValid = detour? 
+		[&](Block* block){ return block->anyoneCanEnterEver() && block->canEnterEver(m_actor) && block->canEnterCurrently(m_actor); }:
+		[&](Block* block){ return block->anyoneCanEnterEver() && block->canEnterEver(m_actor); };
 	auto isDone = [&](Block* block){ return block == end; };
 	std::vector<std::pair<Block*, uint32_t>> adjacentMoveCosts;
 	auto adjacentCosts = [&](Block* block){
-		if(block->m_moveCostsCache.contains(m_actor->m_shape) && block->m_moveCostsCache[m_actor->m_shape].contains(m_actor->m_moveType))
-			adjacentMoveCosts = block->m_moveCostsCache[m_actor->m_shape][m_actor->m_moveType];
+		if(block->m_moveCostsCache.contains(m_actor->m_shape) && block->m_moveCostsCache.at(m_actor->m_shape).contains(m_actor->m_moveType))
+			adjacentMoveCosts = block->m_moveCostsCache.at(m_actor->m_shape).at(m_actor->m_moveType);
 		else
 			m_moveCostsToCache[block] = adjacentMoveCosts = block->getMoveCosts(m_actor->m_shape, m_actor->m_moveType);
 		return adjacentMoveCosts;
