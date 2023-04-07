@@ -27,10 +27,6 @@ baseArea::baseArea(uint32_t x, uint32_t y, uint32_t z) :
 			for(uint32_t z = 0; z < m_sizeZ; ++z)
 				m_blocks[x][y][z].recordAdjacent();
 }
-baseArea::~baseArea()
-{
-	resetScheduledEvents();
-}
 void baseArea::readStep()
 { 
 	//TODO: Count tasks dispatched and finished instead of pool.wait_for_tasks so we can do multiple areas simultaniously in one pool.

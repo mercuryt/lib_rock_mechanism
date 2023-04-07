@@ -36,7 +36,7 @@ public:
 	std::vector<VisionRequest> m_visionRequestQueue;
 	std::shared_mutex m_blockMutex;
 	uint32_t m_routeCacheVersion;
-	Buckets<Actor, s_actorDoVisionFrequency> m_visionBuckets;
+	Buckets<Actor, s_actorDoVisionInterval> m_visionBuckets;
 	std::vector<std::tuple<std::vector<Block*>,uint32_t,uint32_t>> m_caveInData;
 	std::unordered_set<FluidGroup*> m_setStable;
 	std::unordered_set<FluidGroup*> m_toDestroy;
@@ -45,7 +45,6 @@ public:
 
 	// Create blocks and store adjacent
 	baseArea(uint32_t x, uint32_t y, uint32_t z);
-	~baseArea();
 
 	void readStep();
 	void writeStep();

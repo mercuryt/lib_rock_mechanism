@@ -1,4 +1,3 @@
-ScheduledEvent::ScheduledEvent(uint32_t s) : m_step(s) {}
 MoveEvent::MoveEvent(uint32_t s, Actor* a) : ScheduledEvent(s), m_actor(a) { m_actor->m_taskEvent = this; }
 void MoveEvent::execute()
 {

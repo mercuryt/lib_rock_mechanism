@@ -10,7 +10,7 @@ class ScheduledEvent
 {
 public:
 	uint32_t m_step;
-	ScheduledEvent(uint32_t s);
+	ScheduledEvent(uint32_t s) : m_step(s) {}
 	virtual ~ScheduledEvent() {}
 	virtual void execute() = 0;
 };
@@ -25,12 +25,14 @@ public:
 	}
 	void unscheduleEvent(ScheduledEvent* scheduledEvent)
 	{
-
+		assert(m_scheduledEvents.contains(scheduledEvent->m_step));
 		m_scheduledEvents[scheduledEvent->m_step].remove(scheduledEvent);
 		delete scheduledEvent;
 	}
 	void executeScheduledEvents(uint32_t stepNumber)
 	{
+		if(!m_scheduledEvents.contains(stepNumber))
+			return;
 		for(ScheduledEvent* scheduledEvent : m_scheduledEvents[stepNumber])
 		{
 			scheduledEvent->execute();
@@ -44,16 +46,10 @@ public:
 		for(auto pair : m_scheduledEvents)
 			for(ScheduledEvent* scheduledEvent : pair.second)
 				delete scheduledEvent;
+		m_scheduledEvents.clear();
 	}
-};
-/*
- *  Try to enter next step on route. 
- */
-class MoveEvent : public ScheduledEvent
-{
-public:
-	Actor* m_actor;
-	MoveEvent(uint32_t s, Actor* a);
-	void execute();
-	~MoveEvent();
+	~HasScheduledEvents()
+	{
+		resetScheduledEvents();
+	}
 };

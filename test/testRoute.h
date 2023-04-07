@@ -166,13 +166,13 @@ TEST_CASE("Walk multi-block creature")
 	CHECK(actor.m_route == nullptr);
 	CHECK(actor.m_destination == nullptr);
 }
-TEST_CASE("two by two creature cannot path through one block gap.")
+TEST_CASE("two by two creature cannot path through one block gap")
 {
 	Area area(10,10,10);
 	registerTypes();
 	setSolidLayer(area, 0, s_stone);
-	Block& origin = area.m_blocks[2][5][1];
-	Block& destination = area.m_blocks[8][5][1];
+	Block& origin = area.m_blocks[2][2][1];
+	Block& destination = area.m_blocks[8][8][1];
 	area.m_blocks[1][5][1].setSolid(s_stone);
 	area.m_blocks[3][5][1].setSolid(s_stone);
 	area.m_blocks[5][5][1].setSolid(s_stone);
@@ -184,7 +184,7 @@ TEST_CASE("two by two creature cannot path through one block gap.")
 	routeRequest.readStep();
 	CHECK(routeRequest.m_result.empty());
 }
-TEST_CASE("non-flying can't fly path")
+TEST_CASE("walking path blocked by elevation")
 {
 	Area area(10,10,10);
 	registerTypes();
@@ -231,7 +231,7 @@ TEST_CASE("swimming path")
 }
 TEST_CASE("swimming path blocked")
 {
-	Area area(5,5,2);
+	Area area(5,5,3);
 	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	setSolidWalls(area, 1, s_stone);
@@ -252,7 +252,7 @@ TEST_CASE("swimming path blocked")
 	routeRequest.readStep();
 	CHECK(routeRequest.m_result.size() == 0);
 }
-TEST_CASE("walking path blocked by water")
+TEST_CASE("walking path blocked by water if not also swimming")
 {
 	Area area(5,5,3);
 	registerTypes();
@@ -276,18 +276,267 @@ TEST_CASE("walking path blocked by water")
 	routeRequest2.readStep();
 	CHECK(routeRequest2.m_result.size() != 0);
 }
+TEST_CASE("walking path blocked by one height cliff if not climbing")
+{
+	Area area(5,5,5);
+	registerTypes();
+	setSolidLayer(area, 0, s_stone);
+	Actor actor(&area.m_blocks[1][1][1], s_oneByOneFull, s_twoLegs);
+	area.m_blocks[4][4][1].setSolid(s_stone);
+	actor.setDestination(&area.m_blocks[4][4][2]);
+	RouteRequest routeRequest(&actor);
+	routeRequest.readStep();
+	CHECK(routeRequest.m_result.size() == 0);
+	actor.m_moveType = s_twoLegsAndClimb1;
+	RouteRequest routeRequest2(&actor);
+	routeRequest2.readStep();
+	CHECK(routeRequest2.m_result.size() != 0);
+	
+}
+TEST_CASE("walking path blocked by two height cliff if not climbing 2")
+{
+	Area area(5,5,5);
+	registerTypes();
+	setSolidLayer(area, 0, s_stone);
+	Actor actor(&area.m_blocks[1][1][1], s_oneByOneFull, s_twoLegsAndClimb1);
+	area.m_blocks[4][4][1].setSolid(s_stone);
+	area.m_blocks[4][4][2].setSolid(s_stone);
+	actor.setDestination(&area.m_blocks[4][4][3]);
+	RouteRequest routeRequest(&actor);
+	routeRequest.readStep();
+	CHECK(routeRequest.m_result.size() == 0);
+	actor.m_moveType = s_twoLegsAndClimb2;
+	RouteRequest routeRequest2(&actor);
+	routeRequest2.readStep();
+	CHECK(routeRequest2.m_result.size() != 0);
+	
+}
 TEST_CASE("stairs")
 {
 	Area area(5,5,5);
 	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	Block* origin = &area.m_blocks[1][1][1];
-	area.m_blocks[2][2][1].addConstructedFeature(s_upDownStairs, s_stone);
-	area.m_blocks[2][2][2].addConstructedFeature(s_upDownStairs, s_stone);
+	area.m_blocks[2][2][1].addConstructedFeature(s_upStairs, s_stone);
+	area.m_blocks[3][3][2].addConstructedFeature(s_upDownStairs, s_stone);
 	area.m_blocks[2][2][3].addConstructedFeature(s_upDownStairs, s_stone);
 	Actor actor(origin, s_oneByOneFull, s_twoLegs);
-	actor.setDestination(&area.m_blocks[2][2][1]);
+	actor.setDestination(&area.m_blocks[2][2][4]);
 	RouteRequest routeRequest(&actor);
 	routeRequest.readStep();
 	CHECK(routeRequest.m_result.size() != 0);
+}
+TEST_CASE("ramp")
+{
+	Area area(5,5,5);
+	registerTypes();
+	setSolidLayer(area, 0, s_stone);
+	Actor actor(&area.m_blocks[1][1][1], s_oneByOneFull, s_twoLegs);
+	area.m_blocks[4][4][1].setSolid(s_stone);
+	actor.setDestination(&area.m_blocks[4][4][2]);
+	RouteRequest routeRequest(&actor);
+	routeRequest.readStep();
+	CHECK(routeRequest.m_result.size() == 0);
+	area.m_blocks[4][3][1].addConstructedFeature(s_ramp, s_stone);
+	RouteRequest routeRequest2(&actor);
+	routeRequest2.readStep();
+	CHECK(routeRequest2.m_result.size() != 0);
+}
+TEST_CASE("door")
+{
+	Area area(5,5,5);
+	registerTypes();
+	setSolidLayer(area, 0, s_stone);
+	area.m_blocks[3][0][1].setSolid(s_stone);
+	area.m_blocks[3][1][1].setSolid(s_stone);
+	area.m_blocks[3][3][1].setSolid(s_stone);
+	area.m_blocks[3][4][1].setSolid(s_stone);
+	Actor actor(&area.m_blocks[1][1][1], s_oneByOneFull, s_twoLegs);
+	actor.setDestination(&area.m_blocks[4][3][1]);
+	RouteRequest routeRequest(&actor);
+	routeRequest.readStep();
+	CHECK(routeRequest.m_result.size() != 0);
+	area.m_blocks[3][2][1].addConstructedFeature(s_door, s_stone);
+	RouteRequest routeRequest2(&actor);
+	routeRequest2.readStep();
+	CHECK(routeRequest2.m_result.size() != 0);
+	area.m_blocks[3][2][1].getFeatureByType(s_door)->locked = true;
+	RouteRequest routeRequest3(&actor);
+	routeRequest3.readStep();
+	CHECK(routeRequest3.m_result.size() == 0);
+}
+TEST_CASE("fortification")
+{
+	Area area(5,5,5);
+	registerTypes();
+	setSolidLayer(area, 0, s_stone);
+	area.m_blocks[3][0][1].setSolid(s_stone);
+	area.m_blocks[3][1][1].setSolid(s_stone);
+	area.m_blocks[3][3][1].setSolid(s_stone);
+	area.m_blocks[3][4][1].setSolid(s_stone);
+	Actor actor(&area.m_blocks[1][1][1], s_oneByOneFull, s_twoLegs);
+	actor.setDestination(&area.m_blocks[4][3][1]);
+	RouteRequest routeRequest(&actor);
+	routeRequest.readStep();
+	CHECK(routeRequest.m_result.size() != 0);
+	area.m_blocks[3][2][1].addConstructedFeature(s_fortification, s_stone);
+	RouteRequest routeRequest2(&actor);
+	routeRequest2.readStep();
+	CHECK(routeRequest2.m_result.size() == 0);
+}
+TEST_CASE("flood gate")
+{
+	Area area(5,5,5);
+	registerTypes();
+	setSolidLayer(area, 0, s_stone);
+	area.m_blocks[3][0][1].setSolid(s_stone);
+	area.m_blocks[3][1][1].setSolid(s_stone);
+	area.m_blocks[3][3][1].setSolid(s_stone);
+	area.m_blocks[3][4][1].setSolid(s_stone);
+	Actor actor(&area.m_blocks[1][1][1], s_oneByOneFull, s_twoLegs);
+	actor.setDestination(&area.m_blocks[4][3][1]);
+	RouteRequest routeRequest(&actor);
+	routeRequest.readStep();
+	CHECK(routeRequest.m_result.size() != 0);
+	area.m_blocks[3][2][1].addConstructedFeature(s_floodGate, s_stone);
+	RouteRequest routeRequest2(&actor);
+	routeRequest2.readStep();
+	CHECK(routeRequest2.m_result.size() == 0);
+}
+TEST_CASE("can walk on floor")
+{
+	Area area(5,5,5);
+	registerTypes();
+	setSolidLayer(area, 0, s_stone);
+	area.m_blocks[1][1][1].setSolid(s_stone);
+	area.m_blocks[1][3][1].setSolid(s_stone);
+	Actor actor(&area.m_blocks[1][1][2], s_oneByOneFull, s_twoLegs);
+	actor.setDestination(&area.m_blocks[1][3][2]);
+	RouteRequest routeRequest(&actor);
+	routeRequest.readStep();
+	CHECK(routeRequest.m_result.size() == 0);
+	area.m_blocks[1][2][2].addConstructedFeature(s_floor, s_stone);
+	RouteRequest routeRequest2(&actor);
+	routeRequest2.readStep();
+	CHECK(routeRequest2.m_result.size() != 0);
+}
+TEST_CASE("floor blocks vertical travel")
+{
+	Area area(5,5,5);
+	registerTypes();
+	setSolidLayer(area, 0, s_stone);
+	area.m_blocks[3][3][1].setNotSolid();
+	area.m_blocks[3][3][2].setNotSolid();
+	area.m_blocks[3][3][3].setNotSolid();
+	area.m_blocks[3][3][1].addConstructedFeature(s_upStairs, s_stone);
+	area.m_blocks[3][3][2].addConstructedFeature(s_upDownStairs, s_stone);
+	Actor actor(&area.m_blocks[3][3][1], s_oneByOneFull, s_twoLegs);
+	actor.setDestination(&area.m_blocks[3][3][3]);
+	RouteRequest routeRequest(&actor);
+	routeRequest.readStep();
+	CHECK(routeRequest.m_result.size() != 0);
+	area.m_blocks[3][3][3].addConstructedFeature(s_floor, s_stone);
+	RouteRequest routeRequest3(&actor);
+	routeRequest3.readStep();
+	CHECK(routeRequest3.m_result.size() == 0);
+}
+TEST_CASE("can walk on floor grate")
+{
+	Area area(5,5,5);
+	registerTypes();
+	setSolidLayer(area, 0, s_stone);
+	area.m_blocks[1][1][1].setSolid(s_stone);
+	area.m_blocks[1][3][1].setSolid(s_stone);
+	Actor actor(&area.m_blocks[1][1][2], s_oneByOneFull, s_twoLegs);
+	actor.setDestination(&area.m_blocks[1][3][2]);
+	RouteRequest routeRequest(&actor);
+	routeRequest.readStep();
+	CHECK(routeRequest.m_result.size() == 0);
+	area.m_blocks[1][2][2].addConstructedFeature(s_floorGrate, s_stone);
+	RouteRequest routeRequest2(&actor);
+	routeRequest2.readStep();
+	CHECK(routeRequest2.m_result.size() != 0);
+}
+TEST_CASE("floor grate blocks vertical travel")
+{
+	Area area(5,5,5);
+	registerTypes();
+	setSolidLayer(area, 0, s_stone);
+	area.m_blocks[3][3][1].setNotSolid();
+	area.m_blocks[3][3][2].setNotSolid();
+	area.m_blocks[3][3][3].setNotSolid();
+	area.m_blocks[3][3][1].addConstructedFeature(s_upStairs, s_stone);
+	area.m_blocks[3][3][2].addConstructedFeature(s_upDownStairs, s_stone);
+	Actor actor(&area.m_blocks[3][3][1], s_oneByOneFull, s_twoLegs);
+	actor.setDestination(&area.m_blocks[3][3][3]);
+	RouteRequest routeRequest(&actor);
+	routeRequest.readStep();
+	CHECK(routeRequest.m_result.size() != 0);
+	area.m_blocks[3][3][3].addConstructedFeature(s_floorGrate, s_stone);
+	RouteRequest routeRequest3(&actor);
+	routeRequest3.readStep();
+	CHECK(routeRequest3.m_result.size() == 0);
+}
+TEST_CASE("can walk on hatch")
+{
+	Area area(5,5,5);
+	registerTypes();
+	setSolidLayer(area, 0, s_stone);
+	area.m_blocks[1][1][1].setSolid(s_stone);
+	area.m_blocks[1][3][1].setSolid(s_stone);
+	Actor actor(&area.m_blocks[1][1][2], s_oneByOneFull, s_twoLegs);
+	actor.setDestination(&area.m_blocks[1][3][2]);
+	RouteRequest routeRequest(&actor);
+	routeRequest.readStep();
+	CHECK(routeRequest.m_result.size() == 0);
+	area.m_blocks[1][2][2].addConstructedFeature(s_hatch, s_stone);
+	RouteRequest routeRequest2(&actor);
+	routeRequest2.readStep();
+	CHECK(routeRequest2.m_result.size() != 0);
+}
+TEST_CASE("locked hatch blocks vertical travel")
+{
+	Area area(5,5,5);
+	registerTypes();
+	setSolidLayer(area, 0, s_stone);
+	area.m_blocks[3][3][1].setNotSolid();
+	area.m_blocks[3][3][2].setNotSolid();
+	area.m_blocks[3][3][3].setNotSolid();
+	area.m_blocks[3][3][1].addConstructedFeature(s_upStairs, s_stone);
+	area.m_blocks[3][3][2].addConstructedFeature(s_upDownStairs, s_stone);
+	Actor actor(&area.m_blocks[3][3][1], s_oneByOneFull, s_twoLegs);
+	actor.setDestination(&area.m_blocks[3][3][3]);
+	RouteRequest routeRequest(&actor);
+	routeRequest.readStep();
+	CHECK(routeRequest.m_result.size() != 0);
+	area.m_blocks[3][3][3].addConstructedFeature(s_hatch, s_stone);
+	RouteRequest routeRequest2(&actor);
+	routeRequest2.readStep();
+	CHECK(routeRequest2.m_result.size() != 0);
+	area.m_blocks[3][3][3].getFeatureByType(s_hatch)->locked = true;
+	RouteRequest routeRequest3(&actor);
+	routeRequest3.readStep();
+	CHECK(routeRequest3.m_result.size() == 0);
+}
+TEST_CASE("multi-block actors can use ramps")
+{
+	Area area(5,5,5);
+	registerTypes();
+	setSolidLayer(area, 0, s_stone);
+	area.m_blocks[4][4][1].setSolid(s_stone);
+	area.m_blocks[4][3][1].setSolid(s_stone);
+	area.m_blocks[3][4][1].setSolid(s_stone);
+	area.m_blocks[3][3][1].setSolid(s_stone);
+	Actor actor(&area.m_blocks[1][1][1], s_twoByTwoFull, s_twoLegs);
+	actor.setDestination(&area.m_blocks[3][3][2]);
+	RouteRequest routeRequest(&actor);
+	routeRequest.readStep();
+	CHECK(routeRequest.m_result.size() == 0);
+	area.m_blocks[3][2][1].addConstructedFeature(s_ramp, s_stone);
+	area.m_blocks[4][2][1].addConstructedFeature(s_ramp, s_stone);
+	area.m_blocks[3][1][1].addConstructedFeature(s_ramp, s_stone);
+	area.m_blocks[4][1][1].addConstructedFeature(s_ramp, s_stone);
+	RouteRequest routeRequest2(&actor);
+	routeRequest2.readStep();
+	CHECK(routeRequest2.m_result.size() != 0);
 }
