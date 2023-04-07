@@ -338,7 +338,7 @@ void baseBlock::removeFluid(uint32_t volume, const FluidType* fluidType)
 {
 	m_fluids.at(fluidType).second->removeFluid(volume);
 }
-// Validate the nongeneric object can enter this block and also any other blocks required by it's Shape.
+// Validate the actor can enter this block and also any other blocks required by it's Shape.
 bool baseBlock::shapeAndMoveTypeCanEnterEver(const Shape* shape, const MoveType* moveType) const
 {
 	if(shape->positions.size() == 1)
@@ -518,13 +518,6 @@ void baseBlock::exit(Actor* actor)
 		block->m_totalDynamicVolume -= found->second;
 		block->m_actors.erase(found);
 	}
-}
-void baseBlock::clearMoveCostsCacheForSelfAndAdjacent()
-{
-	// Clear move costs cache for adjacent and self.
-	m_moveCostsCache.clear();
-	for(Block* adjacent : m_adjacentsVector)
-		adjacent->m_moveCostsCache.clear();
 }
 std::vector<Block*> baseBlock::selectBetweenCorners(Block* otherBlock) const
 {

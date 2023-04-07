@@ -11,7 +11,7 @@ void baseActor::setDestination(Block* block)
 {
 	assert(block != nullptr);
 	assert(block != m_location);
-	assert(block->anyoneCanEnterEver() && block->moveTypeCanEnter(m_moveType));
+	assert(block->anyoneCanEnterEver() && block->shapeAndMoveTypeCanEnterEver(m_shape, m_moveType));
 	m_destination = block;
 	m_location->m_area->registerRouteRequest(static_cast<Actor*>(this));
 }
@@ -19,7 +19,7 @@ void baseActor::setLocation(Block* block)
 {
 	assert(block != nullptr);
 	assert(block != m_location);
-	assert(block->anyoneCanEnterEver() && block->moveTypeCanEnter(m_moveType));
+	assert(block->anyoneCanEnterEver() && block->shapeAndMoveTypeCanEnterEver(m_shape, m_moveType));
 	assert(block->canEnterCurrently(static_cast<Actor*>(this)));
 	block->enter(static_cast<Actor*>(this));
 }
