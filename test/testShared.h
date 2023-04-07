@@ -13,6 +13,7 @@ const static bool s_fluidPiston = true;
 // How many units seep through each step max = viscosity / seepDiagonalModifier.
 // Disable by setting to 0.
 const static uint32_t s_fluidsSeepDiagonalModifier = 100;
+const static uint32_t s_moveTryAttemptsBeforeDetour = 2;
 
 #include "../block.h"
 #include "../actor.h"
@@ -85,7 +86,6 @@ public:
 	bool anyoneCanEnterEver() const;
 	bool moveTypeCanEnter(const MoveType* moveType) const;
 	bool moveTypeCanEnterFrom(const MoveType* moveType, Block* from) const;
-	bool canEnterCurrently(Actor* actor) const;
 	uint32_t moveCost(const MoveType* moveType, Block* origin) const;
 	std::vector<std::pair<Block*, uint32_t>> getMoveCosts(const Shape* shape, const MoveType* moveType);
 	bool canStandIn() const;
@@ -186,12 +186,6 @@ bool Block::moveTypeCanEnter(const MoveType* moveType) const
 			return false;
 		}
 	}
-	return true;
-}
-// Is this actor prevented from entering based on something other then move type or size?
-bool Block::canEnterCurrently(Actor* actor) const
-{
-	(void)actor;
 	return true;
 }
 // Get a move cost for moving from a block onto this one for a given move type.

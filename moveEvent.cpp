@@ -1,7 +1,7 @@
-MoveEvent::MoveEvent(uint32_t s, Actor* a, u_int32_t dc) : ScheduledEvent(s), m_actor(a), m_delayCount(dc) { m_actor->m_taskEvent = this; }
+MoveEvent::MoveEvent(uint32_t s, Actor* a) : ScheduledEvent(s), m_actor(a) { m_actor->m_taskEvent = this; }
 void MoveEvent::execute()
 {
-	Block* block = *(m_actor->m_routeIter);
+	Block* block = *m_actor->m_routeIter;
 	if(block->anyoneCanEnterEver() && block->canEnterEver(m_actor))
 	{
 		if(block->actorCanEnterCurrently(m_actor))
@@ -11,9 +11,9 @@ void MoveEvent::execute()
 		}
 		else
 		{
-			m_delayCount++;
+			m_actor->m_taskDelayCount++;
 			// Request detour with canEnterCurrently pathing if waiting too long.
-			if(m_delayCount == s_countOfDelaysBeforeDetour)
+			if(m_actor->m_taskDelayCount == s_moveTryAttemptsBeforeDetour)
 			{
 				m_actor->m_location->m_area->registerRouteRequest(m_actor, true);
 				return;

@@ -7,7 +7,8 @@ void RouteRequest::readStep()
 	assert(start != nullptr);
 	assert(end != nullptr);
 	//TODO: Would it be better to check for cache hit before fork?
-	if(start->m_routeCache.contains(m_actor->m_shape) && start->m_routeCache.at(m_actor->m_shape).contains(m_actor->m_moveType) &&
+	if(!m_detour && start->m_routeCache.contains(m_actor->m_shape) &&
+		       	start->m_routeCache.at(m_actor->m_shape).contains(m_actor->m_moveType) &&
 			start->m_routeCache.at(m_actor->m_shape).at(m_actor->m_moveType).contains(end))
 	{
 		m_cacheHit = true;
@@ -20,9 +21,6 @@ void RouteRequest::readStep()
 	};
 	auto compare = [&](ProposedRouteStep& a, ProposedRouteStep& b) { return priority(a) > priority(b); };
 	// Check if the actor can currently enter each block if this is a detour path.
-	auto isValid = detour? 
-		[&](Block* block){ return block->anyoneCanEnterEver() && block->canEnterEver(m_actor) && block->canEnterCurrently(m_actor); }:
-		[&](Block* block){ return block->anyoneCanEnterEver() && block->canEnterEver(m_actor); };
 	auto isDone = [&](Block* block){ return block == end; };
 	std::vector<std::pair<Block*, uint32_t>> adjacentMoveCosts;
 	auto adjacentCosts = [&](Block* block){
@@ -32,7 +30,18 @@ void RouteRequest::readStep()
 			m_moveCostsToCache[block] = adjacentMoveCosts = block->getMoveCosts(m_actor->m_shape, m_actor->m_moveType);
 		return adjacentMoveCosts;
 	};
-	GetPath getPath(isValid, compare, isDone, adjacentCosts, start, m_result);
+	if(m_detour)
+	{
+		auto isValid = [&](Block* block){ 
+			return block->anyoneCanEnterEver() && block->canEnterEver(m_actor) && block->actorCanEnterCurrently(m_actor);
+		};
+		GetPath getPath(isValid, compare, isDone, adjacentCosts, start, m_result);
+	}
+	else
+	{
+		auto isValid = [&](Block* block){ return block->anyoneCanEnterEver() && block->canEnterEver(m_actor); };
+		GetPath getPath(isValid, compare, isDone, adjacentCosts, start, m_result);
+	}
 }
 void RouteRequest::writeStep()
 {

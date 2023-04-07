@@ -28,6 +28,7 @@ public:
 	std::vector<Block*>::const_iterator m_routeIter;
 	const MoveType* m_moveType;
 	ScheduledEvent* m_taskEvent;
+	uint32_t m_taskDelayCount;
 
 	baseActor(Block* l, const Shape* s, const MoveType* mt);
 	// Check location for route. If found set as own route and then register moving with area.
