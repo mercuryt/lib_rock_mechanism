@@ -217,3 +217,73 @@ TEST_CASE("Vision not blocked by floor on the same z level")
 	visionRequest.readStep();
 	CHECK(visionRequest.m_actors.size() == 1);
 }
+TEST_CASE("VisionCuboid setup")
+{
+	Area area(2,2,2);
+	registerTypes();
+	setSolidLayer(area, 0, s_stone);
+	area.visionCuboidsActivate();
+	CHECK(area.m_visionCuboids.size() == 1);
+}
+TEST_CASE("VisionCuboid divide and join")
+{
+	Area area(10,10,10);
+	registerTypes();
+	setSolidLayer(area, 0, s_stone);
+	area.visionCuboidsActivate();
+	Block& block1 = area.m_blocks[1][1][1];
+	Block& block2 = area.m_blocks[5][5][2];
+	Block& block3 = area.m_blocks[5][5][5];
+	Block& block4 = area.m_blocks[1][1][7];
+	Block& block5 = area.m_blocks[9][9][1];
+	CHECK(area.m_visionCuboids.size() == 1);
+	CHECK(block1.m_visionCuboid->m_cuboid.size() == 900);
+	CHECK(block1.m_visionCuboid == block2.m_visionCuboid);
+	CHECK(block1.m_visionCuboid == block3.m_visionCuboid);
+	CHECK(block1.m_visionCuboid == block4.m_visionCuboid);
+	CHECK(block1.m_visionCuboid == block5.m_visionCuboid);
+	block3.addConstructedFeature(s_floor, s_stone);
+	VisionCuboid::clearDestroyed(area);
+	CHECK(area.m_visionCuboids.size() == 2);
+	CHECK(block1.m_visionCuboid->m_cuboid.size() == 400);
+	CHECK(block4.m_visionCuboid->m_cuboid.size() == 500);
+	CHECK(block1.m_visionCuboid == block2.m_visionCuboid);
+	CHECK(block1.m_visionCuboid != block3.m_visionCuboid);
+	CHECK(block1.m_visionCuboid != block4.m_visionCuboid);
+	CHECK(block1.m_visionCuboid == block5.m_visionCuboid);
+	block2.setSolid(s_stone);
+	VisionCuboid::clearDestroyed(area);
+	CHECK(area.m_visionCuboids.size() == 7);
+	CHECK(block2.m_visionCuboid == nullptr);
+	CHECK(block1.m_visionCuboid != block3.m_visionCuboid);
+	CHECK(block1.m_visionCuboid != block4.m_visionCuboid);
+	CHECK(block1.m_visionCuboid != block5.m_visionCuboid);
+	block3.removeFeature(s_floor);
+	VisionCuboid::clearDestroyed(area);
+	CHECK(area.m_visionCuboids.size() == 7);
+	CHECK(block3.m_visionCuboid == block4.m_visionCuboid);
+	CHECK(block4.m_visionCuboid->m_cuboid.size() == 500);
+	block2.setNotSolid();
+	VisionCuboid::clearDestroyed(area);
+	CHECK(area.m_visionCuboids.size() == 1);
+	CHECK(block2.m_visionCuboid != nullptr);
+	CHECK(block1.m_visionCuboid == block2.m_visionCuboid);
+	CHECK(block1.m_visionCuboid == block3.m_visionCuboid);
+	CHECK(block1.m_visionCuboid == block4.m_visionCuboid);
+	CHECK(block1.m_visionCuboid == block5.m_visionCuboid);
+}
+TEST_CASE("VisionCuboid can see")
+{
+	Area area(10,10,10);
+	registerTypes();
+	setSolidLayer(area, 0, s_stone);
+	area.visionCuboidsActivate();
+	Block& block1 = area.m_blocks[3][3][1];
+	Block& block2 = area.m_blocks[7][7][1];
+	Actor a1(&block1, s_oneByOneFull, s_twoLegs);
+	Actor a2(&block2, s_oneByOneFull, s_twoLegs);
+	VisionRequest visionRequest(a1);
+	visionRequest.readStep();
+	CHECK(visionRequest.m_actors.size() == 1);
+	CHECK(visionRequest.m_actors.contains(&a2));
+}

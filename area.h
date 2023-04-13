@@ -40,6 +40,8 @@ public:
 	std::vector<std::tuple<std::vector<Block*>,uint32_t,uint32_t>> m_caveInData;
 	std::unordered_set<FluidGroup*> m_setStable;
 	std::unordered_set<FluidGroup*> m_toDestroy;
+	std::list<VisionCuboid> m_visionCuboids;
+	bool m_visionCuboidsActive;
 
 	void expireRouteCache();
 
@@ -68,6 +70,9 @@ public:
 
 	// Creat a fluid group.
 	FluidGroup* createFluidGroup(const FluidType* fluidType, std::unordered_set<Block*>& blocks, bool checkMerge = true);
+
+	// Assign all visible blocks to a visionCuboid, set m_visionCubioidsActive to true.
+	void visionCuboidsActivate();
 
 	// Cavein read/write
 	void stepCaveInRead();

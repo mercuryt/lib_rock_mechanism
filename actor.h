@@ -22,6 +22,7 @@ class baseActor : public HasShape
 	static uint32_t s_nextId;
 public:
 	uint32_t m_id;
+	std::string m_name;
 	std::vector<Block*> m_blocks;
 	Block* m_destination;
 	std::shared_ptr<std::vector<Block*>> m_route;
@@ -42,7 +43,7 @@ public:
 	uint32_t getSpeed() const;
 	uint32_t getVisionRange() const;
 	void taskComplete();
-	void doVision(std::unordered_set<Actor*> actors);
+	void doVision(std::unordered_set<Actor*>& actors);
 	bool canSee(Actor* actor) const;
 	void exposedToFluid(const FluidType* fluidType);
 	~baseActor();

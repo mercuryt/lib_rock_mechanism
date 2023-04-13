@@ -19,6 +19,7 @@
 #include "fluidType.h"
 
 class RouteRequest;
+class VisionCuboid;
 class VisionRequest;
 class FluidGroup;
 class HasShape;
@@ -49,7 +50,6 @@ public:
 	uint32_t m_routeCacheVersion;
 	// Cache adjacent move costs. No version number: cleared only by changes to self / adjacent / diagonal. 
 	std::unordered_map<const Shape*, std::unordered_map<const MoveType*, std::vector<std::pair<Block*, uint32_t>>>> m_moveCostsCache;
-
 	// Store a total occupied volume from actors.
 	uint32_t m_totalDynamicVolume;
 	// Store a total occupied volume from genericSolids and nongenerics.
@@ -70,6 +70,8 @@ public:
 	std::unordered_map<Actor*, uint32_t> m_actors;
 	// Store the location bucket this block belongs to.
 	std::unordered_set<Actor*>* m_locationBucket;
+	// Store the visionCuboid this block belongs to.
+	VisionCuboid* m_visionCuboid;
 
 	// Constructor initalizes some members.
 	baseBlock();
@@ -114,7 +116,6 @@ public:
 	// To be overriden by user code if diagonal movement allowed.
 	void clearMoveCostsCacheForSelfAndAdjacent();
 	std::vector<Block*> selectBetweenCorners(Block* otherBlock) const;
-	std::string toS();
 
 	// User provided.
 	bool moveTypeCanEnter(const MoveType* moveType) const;
@@ -123,6 +124,7 @@ public:
 	uint32_t moveCost(const MoveType* moveType, Block* origin) const;
 
 	bool canSeeThroughFrom(Block* block) const;
+	bool canSeeIntoFromAlways(Block* block) const;
 	float visionDistanceModifier() const;
 
 	bool fluidCanEnterEver() const;

@@ -14,6 +14,10 @@ bool VisionRequest::hasLineOfSightUsingEstablishedAs(Block* from, Block* to)
 	// Iterate line of sight blocks backwards to make the most of the 'established as having' opitimization.
 	if(from == to)
 		return true;
+	if(from->m_area->m_visionCuboidsActive && from->m_visionCuboid == to->m_visionCuboid)
+	{
+		return true;
+	}
 	int32_t xDiff = (int32_t)from->m_x - (int32_t)to->m_x;
 	int32_t yDiff = (int32_t)from->m_y - (int32_t)to->m_y;
 	int32_t zDiff = (int32_t)from->m_z - (int32_t)to->m_z;

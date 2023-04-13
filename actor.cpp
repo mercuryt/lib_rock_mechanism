@@ -4,6 +4,7 @@ baseActor::baseActor(Block* l, const Shape* s, const MoveType* mt) :
 	HasShape(s), m_id(s_nextId++), m_moveType(mt), m_taskDelayCount(0)
 {
 	setLocation(l);
+	m_name = "actor#" + std::to_string(m_id);
 }
 // Check location for route. If found set as own route and then register moving with area.
 // Else register route request with area. Syncronus.
