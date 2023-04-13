@@ -4,8 +4,7 @@
 #include <cstdint>
 #include <algorithm>
 const static uint32_t s_maxBlockVolume = 100;
-// 1 for testing only, otherwise should be higher.
-const static uint32_t s_actorDoVisionInterval = 1;
+const static uint32_t s_actorDoVisionInterval = 10;
 const static uint32_t s_pathHuristicConstant = 1;
 const static float s_maxDistanceVisionModifier = 1.1;
 const static uint32_t s_locationBucketSize = 5;
@@ -30,7 +29,8 @@ const static uint32_t s_moveTryAttemptsBeforeDetour = 2;
 #include "../hasScheduledEvents.h"
 #include "../moveEvent.h"
 #include "../mistDisperseEvent.h"
-//#include "../room.h"
+#include "../cuboid.h"
+#include "../visionCuboid.h"
 
 static uint32_t s_step;
 BS::thread_pool_light s_pool;
@@ -89,7 +89,10 @@ public:
 	uint32_t moveCost(const MoveType* moveType, Block* origin) const;
 	std::vector<std::pair<Block*, uint32_t>> getMoveCosts(const Shape* shape, const MoveType* moveType);
 	bool canStandIn() const;
+	void clearMoveCostsCacheForSelfAndAdjacent();
 
+	bool canSeeIntoFromAlways(const Block* block) const;
+	bool canSeeThrough() const;
 	bool canSeeThroughFrom(Block* block) const;
 	float visionDistanceModifier() const;
 
@@ -99,24 +102,31 @@ public:
 	bool isSupport() const;
 	uint32_t getMass() const;
 
+	void moveContentsTo(Block* block);
+
 	void addConstructedFeature(const BlockFeatureType* blockFeatureType, const MaterialType* materialType);
 	void addHewnFeature(const BlockFeatureType* blockFeatureType, const MaterialType* materialType = nullptr);
 	bool hasFeatureType(const BlockFeatureType* blockFeatureType) const;
 	const BlockFeature* getFeatureByType(const BlockFeatureType* blockFeatureType) const;
 	BlockFeature* getFeatureByType(const BlockFeatureType* blockFeatureType);
 	std::string describeFeatures() const;
+	void removeFeature(const BlockFeatureType* blockFeatureType);
+
+	std::string toS() const;
 };
 
 class Actor : public baseActor
 {
 public:
+	std::unordered_set<Actor*> m_canSee;
+
 	Actor(Block* l, const Shape* s, const MoveType* mt);
 	uint32_t getSpeed() const;
 	uint32_t getVisionRange() const;
 	bool isVisible(Actor* observer) const;
 
 	void taskComplete();
-	void doVision(std::unordered_set<Actor*> actors);
+	void doVision(std::unordered_set<Actor*>& actors);
 	void doFall(uint32_t distance, Block* block);
 	void exposedToFluid(const FluidType* fluidType);
 	bool canSee(Actor* actor) const;
@@ -140,7 +150,8 @@ public:
 #include "../area.cpp"
 #include "../caveIn.cpp"
 #include "../moveEvent.cpp"
-//#include "../room.cpp"
+#include "../visionCuboid.cpp"
+#include "../cuboid.cpp"
 #include "../locationBuckets.cpp"
 #include "../mistDisperseEvent.cpp"
 
@@ -272,19 +283,52 @@ bool Block::canStandIn() const
 		return true;
 	return false;
 }
-void baseBlock::clearMoveCostsCacheForSelfAndAdjacent()
+// Replace getAdjacentWithEdgeAndCornerAdjacent with either getAdjacentWithEdgeAdjacent or m_adajcentsVector depending on if you allow diagonal movement via edges or corners.
+void Block::clearMoveCostsCacheForSelfAndAdjacent()
 {
 	// Clear move costs cache for adjacent and self.
 	m_moveCostsCache.clear();
 	for(Block* adjacent : getAdjacentWithEdgeAndCornerAdjacent())
 		adjacent->m_moveCostsCache.clear();
 }
-bool Block::canSeeThroughFrom(Block* block) const
+bool Block::canSeeIntoFromAlways(const Block* block) const
+{
+	if(isSolid() && !getSolidMaterial()->transparent)
+		return false;
+	if(hasFeatureType(s_door))
+		return false;
+	// looking up.
+	if(m_z > block->m_z)
+	{
+		const BlockFeature* floor = getFeatureByType(s_floor);
+		if(floor != nullptr && !floor->materialType->transparent)
+			return false;
+		if(hasFeatureType(s_hatch))
+			return false;
+	}
+	// looking down.
+	if(m_z < block->m_z)
+	{
+		const BlockFeature* floor = block->getFeatureByType(s_floor);
+		if(floor != nullptr && !floor->materialType->transparent)
+			return false;
+		if(block->hasFeatureType(s_hatch))
+			return false;
+	}
+	return true;
+}
+bool Block::canSeeThrough() const
 {
 	if(isSolid() && !getSolidMaterial()->transparent)
 		return false;
 	const BlockFeature* door = getFeatureByType(s_door);
 	if(door != nullptr && !door->materialType->transparent && door->closed)
+		return false;
+	return true;
+}
+bool Block::canSeeThroughFrom(Block* block) const
+{
+	if(!canSeeThrough())
 		return false;
 	if(m_z == block->m_z)
 		return true;
@@ -381,12 +425,24 @@ std::vector<std::pair<Block*, uint32_t>> Block::getMoveCosts(const Shape* shape,
 				output.emplace_back(m_adjacents[5], block->moveCost(moveType, static_cast<Block*>(this)));
 	return output;
 }
+void Block::moveContentsTo(Block* block)
+{
+	if(isSolid())
+	{
+		const MaterialType* materialType = getSolidMaterial();
+		setNotSolid();
+		block->setSolid(materialType);
+	}
+	//TODO: other stuff falls?
+}
 void Block::addConstructedFeature(const BlockFeatureType* blockFeatureType, const MaterialType* materialType)
 {
 	assert(!isSolid());
 	m_features.emplace_back(blockFeatureType, materialType, false);
 	clearMoveCostsCacheForSelfAndAdjacent();
 	m_area->expireRouteCache();
+	if(m_area->m_visionCuboidsActive && (blockFeatureType == s_floor || blockFeatureType == s_hatch) && !materialType->transparent)
+		VisionCuboid::BlockFloorIsSometimesOpaque(*this);
 }
 void Block::addHewnFeature(const BlockFeatureType* blockFeatureType, const MaterialType* materialType)
 {
@@ -399,6 +455,8 @@ void Block::addHewnFeature(const BlockFeatureType* blockFeatureType, const Mater
 	// clear move cost cache and expire route cache happen implicitly with call to setNotSolid.
 	if(isSolid())
 		setNotSolid();
+	if(m_area->m_visionCuboidsActive && (blockFeatureType == s_floor || blockFeatureType == s_hatch) && !materialType->transparent)
+		VisionCuboid::BlockFloorIsSometimesOpaque(*this);
 }
 bool Block::hasFeatureType(const BlockFeatureType* blockFeatureType) const
 {
@@ -418,6 +476,15 @@ BlockFeature* Block::getFeatureByType(const BlockFeatureType* blockFeatureType)
 {
 	return const_cast<BlockFeature*>(const_cast<const Block*>(this)->getFeatureByType(blockFeatureType));
 }
+void Block::removeFeature(const BlockFeatureType* blockFeatureType)
+{
+	auto found = std::find_if(m_features.begin(), m_features.end(), [&](BlockFeature& blockFeature){ return blockFeature.blockFeatureType == blockFeatureType; });
+	if(found != m_features.end())
+		m_features.erase(found);
+	if(m_area->m_visionCuboidsActive && (blockFeatureType == s_floor || blockFeatureType == s_hatch) && !found->materialType->transparent)
+		// block, opacity, floor
+		VisionCuboid::BlockFloorIsNeverOpaque(*this);
+}
 std::string Block::describeFeatures() const
 {
 	std::string output;
@@ -431,6 +498,18 @@ std::string Block::describeFeatures() const
 			output += "locked";
 	}
 	return output;
+}
+std::string Block::toS() const
+{
+	std::string materialName = isSolid() ? getSolidMaterial()->name: "empty";
+	std::string output;
+	output.reserve(materialName.size() + 16 + (m_fluids.size() * 12));
+	output = std::to_string(m_x) + ", " + std::to_string(m_y) + ", " + std::to_string(m_z) + ": " + materialName + ";";
+	for(auto& [fluidType, pair] : m_fluids)
+		output += fluidType->name + ":" + std::to_string(pair.first) + ";";
+	for(auto& pair : m_actors)
+		output += ',' + pair.first->m_name;
+	return output + describeFeatures();
 }
 Actor::Actor(Block* l, const Shape* s, const MoveType* mt) : baseActor(l, s, mt) {}
 uint32_t Actor::getSpeed() const
@@ -447,9 +526,9 @@ void Actor::taskComplete()
 {
 }
 // Do fog of war and psycological effects.
-void Actor::doVision(std::unordered_set<Actor*> actors)
+void Actor::doVision(std::unordered_set<Actor*>& actors)
 {
-	(void)actors;
+	m_canSee = actors;
 }
 // Take fall damage, etc.
 void Actor::doFall(uint32_t distance, Block* block)

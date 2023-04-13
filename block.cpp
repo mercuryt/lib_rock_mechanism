@@ -17,7 +17,7 @@
 #include "hasShape.h"
 #include "fluidType.h"
 
-baseBlock::baseBlock() : m_solid(nullptr), m_routeCacheVersion(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0) {}
+baseBlock::baseBlock() : m_solid(nullptr), m_routeCacheVersion(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr) {}
 void baseBlock::setup(Area* a, uint32_t ax, uint32_t ay, uint32_t az)
 {m_area=a;m_x=ax;m_y=ay;m_z=az;m_locationBucket = a->m_locationBuckets.getBucketFor(static_cast<Block*>(this));}
 void baseBlock::recordAdjacent()
@@ -219,6 +219,8 @@ bool baseBlock::isAdjacentToAny(std::unordered_set<Block*>& blocks) const
 }
 void baseBlock::setNotSolid()
 {
+	if(m_solid == nullptr)
+		return;
 	m_solid = nullptr;
 	for(Block* adjacent : m_adjacentsVector)
 		if(adjacent->fluidCanEnterEver())
@@ -227,10 +229,15 @@ void baseBlock::setNotSolid()
 				pair.second->m_fillQueue.addBlock(static_cast<Block*>(this));
 				pair.second->m_stable = false;
 			}
-	clearMoveCostsCacheForSelfAndAdjacent();
+	Block* block = static_cast<Block*>(this);
+	block->clearMoveCostsCacheForSelfAndAdjacent();
+	if(m_area->m_visionCuboidsActive)
+		VisionCuboid::BlockIsNeverOpaque(*block);
 }
 void baseBlock::setSolid(const MaterialType* materialType)
 {
+	if(materialType == m_solid)
+		return;
 	assert(materialType != nullptr);
 	m_solid = materialType;
 	// Displace fluids.
@@ -278,8 +285,11 @@ void baseBlock::setSolid(const MaterialType* materialType)
 	// If more then one adjacent block can be entered then this block being cleared may open a new shortest path.
 	if(std::ranges::count_if(m_adjacentsVector, [&](Block* block){ return block->anyoneCanEnterEver(); }) > 1)
 		m_area->expireRouteCache();
-	//TODO: Optionally clear diagonals as well.
-	clearMoveCostsCacheForSelfAndAdjacent();
+	Block* block = static_cast<Block*>(this);
+	block->clearMoveCostsCacheForSelfAndAdjacent();
+	if(m_area->m_visionCuboidsActive && !materialType->transparent)
+		VisionCuboid::BlockIsSometimesOpaque(*block);
+		
 }
 bool baseBlock::canEnterEver(Actor* actor) const
 {
@@ -478,16 +488,6 @@ void baseBlock::resolveFluidOverfull()
 		m_fluids.erase(fluidType);
 	}
 }
-void baseBlock::moveContentsTo(Block* block)
-{
-	if(isSolid())
-	{
-		const MaterialType* materialType = m_solid;
-		setNotSolid();
-		block->setSolid(materialType);
-	}
-	//TODO: other stuff falls?
-}
 // Add / remove  actor occupancy.
 void baseBlock::enter(Actor* actor)
 {
@@ -541,16 +541,6 @@ std::vector<Block*> baseBlock::selectBetweenCorners(Block* otherBlock) const
 				output.push_back(&m_area->m_blocks[x][y][z]);
 				assert(output.back() != nullptr);
 			}
-	return output;
-}
-std::string baseBlock::toS()
-{
-	std::string materialName = m_solid == nullptr ? "empty" : m_solid->name;
-	std::string output;
-	output.reserve(materialName.size() + 16 + (m_fluids.size() * 12));
-	output = std::to_string(m_x) + ", " + std::to_string(m_y) + ", " + std::to_string(m_z) + ": " + materialName + ";";
-	for(auto& [fluidType, pair] : m_fluids)
-		output += fluidType->name + ":" + std::to_string(pair.first) + ";";
 	return output;
 }
 /*

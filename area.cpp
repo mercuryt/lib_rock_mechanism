@@ -7,7 +7,7 @@
 #include <algorithm>
 
 baseArea::baseArea(uint32_t x, uint32_t y, uint32_t z) :
-	m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_locationBuckets(static_cast<Area&>(*this)), m_routeCacheVersion(0)
+	m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_locationBuckets(static_cast<Area&>(*this)), m_routeCacheVersion(0), m_visionCuboidsActive(false)
 {
 	// build m_blocks
 	m_blocks.resize(m_sizeX);
@@ -135,6 +135,8 @@ void baseArea::writeStep()
 	executeScheduledEvents(s_step);
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 		fluidGroup.validate();
+	if(m_visionCuboidsActive)
+		std::erase_if(m_visionCuboids, [](VisionCuboid& visionCuboid){ return visionCuboid.m_destroy; });
 }
 void baseArea::registerActor(Actor* actor)
 {
@@ -160,6 +162,11 @@ FluidGroup* baseArea::createFluidGroup(const FluidType* fluidType, std::unordere
 	m_fluidGroups.emplace_back(fluidType, blocks, static_cast<Area*>(this), checkMerge);
 	m_unstableFluidGroups.insert(&m_fluidGroups.back());
 	return &m_fluidGroups.back();
+}
+void baseArea::visionCuboidsActivate()
+{
+	m_visionCuboidsActive = true;
+	VisionCuboid::setup(static_cast<Area&>(*this));
 }
 void baseArea::expireRouteCache(){++m_routeCacheVersion;}
 void baseArea::validateAllFluidGroups()
