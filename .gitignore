@@ -6,3 +6,4 @@ a\.out
 *\.gdb_history
 .bak
 a.out
+*\.callgrind\.out\.*
