@@ -25,6 +25,7 @@ public:
 	// Some options for the line of sight function with various optomizations.
 	bool hasLineOfSightUsingEstablishedAs(const Block& from, const Block& to);
 	bool hasLineOfSightUsingVisionCuboidAndEstablishedAs(const Block& from, const Block& to);
+	static bool hasLineOfSightUsingVisionCuboid(const Block& from, const Block& to);
 	static bool hasLineOfSightBasic(const Block& from, const Block& to);
 	bool hasLineOfSight(const Block& from, const Block& to);
 };

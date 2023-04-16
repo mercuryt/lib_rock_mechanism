@@ -9,6 +9,7 @@
 #include "shape.h"
 #include "hasShape.h"
 #include "hasScheduledEvents.h"
+#include "visionRequest.h"
 
 #include <stack>
 #include <vector>
@@ -30,6 +31,7 @@ public:
 	const MoveType* m_moveType;
 	ScheduledEvent* m_taskEvent;
 	uint32_t m_taskDelayCount;
+	VisionRequest m_visionRequest;
 
 	baseActor(Block* l, const Shape* s, const MoveType* mt);
 	// Check location for route. If found set as own route and then register moving with area.
@@ -48,4 +50,4 @@ public:
 	void exposedToFluid(const FluidType* fluidType);
 	~baseActor();
 };
-uint32_t baseActor::s_nextId = 0;
+uint32_t baseActor::s_nextId = 1;
