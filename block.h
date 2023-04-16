@@ -117,13 +117,15 @@ public:
 	void clearMoveCostsCacheForSelfAndAdjacent();
 	std::vector<Block*> selectBetweenCorners(Block* otherBlock) const;
 
+	bool operator==(const Block& block) const;
+
 	// User provided.
 	bool moveTypeCanEnter(const MoveType* moveType) const;
 	bool canEnterCurrently(Actor* actor) const;
 	bool anyoneCanEnterEver() const;
 	uint32_t moveCost(const MoveType* moveType, Block* origin) const;
 
-	bool canSeeThroughFrom(Block* block) const;
+	bool canSeeThroughFrom(const Block& block) const;
 	bool canSeeIntoFromAlways(Block* block) const;
 	float visionDistanceModifier() const;
 

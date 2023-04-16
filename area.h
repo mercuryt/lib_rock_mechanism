@@ -60,15 +60,15 @@ public:
 	void unregisterActorMoving(Actor* actor);
 
 	// RegisterActor, add to visionBucket.
-	void registerActor(Actor* actor);
-	void unregisterActor(Actor* actor);
+	void registerActor(Actor& actor);
+	void unregisterActor(Actor& actor);
 	
 	// Emplace a routeRequest object on the queue.
 	void registerRouteRequest(Actor* actor, bool detour = false);
 	// Emplace a visionRequest object on the queue.
 	void registerVisionRequest(Actor* actor);
 
-	// Creat a fluid group.
+	// Create a fluid group.
 	FluidGroup* createFluidGroup(const FluidType* fluidType, std::unordered_set<Block*>& blocks, bool checkMerge = true);
 
 	// Assign all visible blocks to a visionCuboid, set m_visionCubioidsActive to true.

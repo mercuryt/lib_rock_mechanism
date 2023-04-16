@@ -1,4 +1,10 @@
 #include "pathTemplate.h"
+// Static method.
+void RouteRequest::readSteps(std::vector<RouteRequest>::iterator begin, std::vector<RouteRequest>::iterator end)
+{
+	for(; begin != end; ++begin)
+		begin->readStep();
+}
 RouteRequest::RouteRequest(Actor* a, bool d) : m_actor(a), m_detour(d), m_cacheHit(false) {}
 void RouteRequest::readStep()
 {

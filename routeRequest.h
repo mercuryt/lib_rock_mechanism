@@ -16,6 +16,8 @@ public:
 	std::unordered_map<Block*, std::vector<std::pair<Block*, uint32_t>>> m_moveCostsToCache;
 	bool m_cacheHit;
 
+	static void readSteps(std::vector<RouteRequest>::iterator begin, std::vector<RouteRequest>::iterator end);
+
 	RouteRequest(Actor* a, bool detour = false);
 	
 	// Find the route.
