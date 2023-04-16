@@ -17,7 +17,6 @@ bool Cuboid::contains(const Block& block) const
 			block.m_x <= m_highest->m_x && block.m_x >= m_lowest->m_x &&
 			block.m_y <= m_highest->m_y && block.m_y >= m_lowest->m_y &&
 			block.m_z <= m_highest->m_z && block.m_z >= m_lowest->m_z
-
 	       );
 }
 bool Cuboid::canMerge(const Cuboid& cuboid) const

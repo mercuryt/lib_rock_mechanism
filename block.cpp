@@ -19,7 +19,7 @@
 
 baseBlock::baseBlock() : m_solid(nullptr), m_routeCacheVersion(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr) {}
 void baseBlock::setup(Area* a, uint32_t ax, uint32_t ay, uint32_t az)
-{m_area=a;m_x=ax;m_y=ay;m_z=az;m_locationBucket = a->m_locationBuckets.getBucketFor(static_cast<Block*>(this));}
+{m_area=a;m_x=ax;m_y=ay;m_z=az;m_locationBucket = a->m_locationBuckets.getBucketFor(*static_cast<Block*>(this));}
 void baseBlock::recordAdjacent()
 {
 	static const int32_t offsetsList[6][3] = {{0,0,-1}, {0,-1,0}, {-1,0,0}, {0,1,0}, {1,0,0}, {0,0,1}};
@@ -499,7 +499,7 @@ void baseBlock::enter(Actor* actor)
 	{
 		actor->m_location->exit(actor);
 		actor->m_blocks.clear();
-		m_area->m_locationBuckets.update(actor, actor->m_location, static_cast<Block*>(this));
+		m_area->m_locationBuckets.update(actor, *actor->m_location, *static_cast<Block*>(this));
 	}
 	else
 		m_area->m_locationBuckets.insert(actor);
@@ -522,6 +522,8 @@ void baseBlock::exit(Actor* actor)
 		block->m_actors.erase(found);
 	}
 }
+bool baseBlock::operator==(const Block& block) const { return &block == static_cast<const Block*>(this); };
+//TODO: Replace with cuboid.
 std::vector<Block*> baseBlock::selectBetweenCorners(Block* otherBlock) const
 {
 	assert(otherBlock->m_x < m_area->m_sizeX);

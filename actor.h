@@ -44,8 +44,8 @@ public:
 	uint32_t getVisionRange() const;
 	void taskComplete();
 	void doVision(std::unordered_set<Actor*>& actors);
-	bool canSee(Actor* actor) const;
+	bool canSee(const Actor& actor) const;
 	void exposedToFluid(const FluidType* fluidType);
 	~baseActor();
 };
-uint32_t baseActor::s_nextId = 1;
+uint32_t baseActor::s_nextId = 0;

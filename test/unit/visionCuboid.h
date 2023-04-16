@@ -69,6 +69,7 @@ TEST_CASE("split below")
 	Block& high = area.m_blocks[2][2][2];
 	Block& low = area.m_blocks[0][0][0];
 	area.visionCuboidsActivate();
+	registerTypes();
 	middle.addConstructedFeature(s_floor, s_stone);
 	VisionCuboid::clearDestroyed(area);
 	CHECK(area.m_visionCuboids.size() == 2);

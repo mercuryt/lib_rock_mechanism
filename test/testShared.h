@@ -1,5 +1,5 @@
 /*
- * Example config used for testing. Attempts to replicate Dwarf Fortress mechanics, except max fluid volume is 100 rather then 7.
+ * Example config used for testing. Attempts to replicate Dwarf Fortress mechanics regarding vision, pathing, cave in, and fluids; except max fluid volume is 100 rather then 7.
  */
 #include <cstdint>
 #include <algorithm>
@@ -7,8 +7,10 @@ const static uint32_t s_maxBlockVolume = 100;
 const static uint32_t s_actorDoVisionInterval = 10;
 const static uint32_t s_pathHuristicConstant = 1;
 const static float s_maxDistanceVisionModifier = 1.1;
-const static uint32_t s_locationBucketSize = 5;
+const static uint32_t s_locationBucketSize = 25;
 const static bool s_fluidPiston = true;
+const static uint32_t s_visionThreadingBatchSize = 30;
+const static uint32_t s_routeThreadingBatchSize = 10;
 // How many units seep through each step max = viscosity / seepDiagonalModifier.
 // Disable by setting to 0.
 const static uint32_t s_fluidsSeepDiagonalModifier = 100;
@@ -93,7 +95,7 @@ public:
 
 	bool canSeeIntoFromAlways(const Block* block) const;
 	bool canSeeThrough() const;
-	bool canSeeThroughFrom(Block* block) const;
+	bool canSeeThroughFrom(const Block& block) const;
 	float visionDistanceModifier() const;
 
 	bool fluidCanEnterEver() const;
@@ -129,7 +131,7 @@ public:
 	void doVision(std::unordered_set<Actor*>& actors);
 	void doFall(uint32_t distance, Block* block);
 	void exposedToFluid(const FluidType* fluidType);
-	bool canSee(Actor* actor) const;
+	bool canSee(const Actor& actor) const;
 };
 
 class Area : public baseArea
@@ -326,14 +328,14 @@ bool Block::canSeeThrough() const
 		return false;
 	return true;
 }
-bool Block::canSeeThroughFrom(Block* block) const
+bool Block::canSeeThroughFrom(const Block& block) const
 {
 	if(!canSeeThrough())
 		return false;
-	if(m_z == block->m_z)
+	if(m_z == block.m_z)
 		return true;
 	// looking up.
-	if(m_z > block->m_z)
+	if(m_z > block.m_z)
 	{
 		const BlockFeature* floor = getFeatureByType(s_floor);
 		if(floor != nullptr && !floor->materialType->transparent)
@@ -343,12 +345,12 @@ bool Block::canSeeThroughFrom(Block* block) const
 			return false;
 	}
 	// looking down.
-	if(m_z < block->m_z)
+	if(m_z < block.m_z)
 	{
-		const BlockFeature* floor = block->getFeatureByType(s_floor);
+		const BlockFeature* floor = block.getFeatureByType(s_floor);
 		if(floor != nullptr && !floor->materialType->transparent)
 			return false;
-		const BlockFeature* hatch = block->getFeatureByType(s_hatch);
+		const BlockFeature* hatch = block.getFeatureByType(s_hatch);
 		if(hatch != nullptr && !hatch->materialType->transparent && hatch->closed)
 			return false;
 	}
@@ -528,7 +530,7 @@ void Actor::taskComplete()
 // Do fog of war and psycological effects.
 void Actor::doVision(std::unordered_set<Actor*>& actors)
 {
-	m_canSee = actors;
+	m_canSee = std::move(actors);
 }
 // Take fall damage, etc.
 void Actor::doFall(uint32_t distance, Block* block)
@@ -541,7 +543,7 @@ void Actor::exposedToFluid(const FluidType* fluidType)
 {
 	(void)fluidType;
 }
-bool Actor::canSee(Actor* actor) const
+bool Actor::canSee(const Actor& actor) const
 {
 	(void)actor;
 	return true;

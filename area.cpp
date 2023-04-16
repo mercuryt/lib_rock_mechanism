@@ -21,7 +21,7 @@ baseArea::baseArea(uint32_t x, uint32_t y, uint32_t z) :
 				m_blocks[x][y][z].setup(static_cast<Area*>(this), x, y, z);
 		}
 	}
-	// record adjacent m_blocks
+	// record adjacent blocks
 	for(uint32_t x = 0; x < m_sizeX; ++x)
 		for(uint32_t y = 0; y < m_sizeY; ++y)
 			for(uint32_t z = 0; z < m_sizeZ; ++z)
@@ -33,10 +33,13 @@ void baseArea::readStep()
 	// Process vision, generate and push_task requests for every actor in current bucket.
 	m_visionRequestQueue.clear();
 	for(Actor* actor : m_visionBuckets.get(s_step))
-	{
 		m_visionRequestQueue.emplace_back(*actor);
-		VisionRequest* visionRequest = &m_visionRequestQueue.back();
-		s_pool.push_task([=](){ visionRequest->readStep(); });
+	auto visionIter = m_visionRequestQueue.begin();
+	while(visionIter < m_visionRequestQueue.end())
+	{
+		auto end = std::min(m_visionRequestQueue.end(), visionIter + s_visionThreadingBatchSize);
+		s_pool.push_task([=](){ VisionRequest::readSteps(visionIter, end); });
+		visionIter = end;
 	}
 	// Calculate cave in.
 	s_pool.push_task([&](){ stepCaveInRead(); });
@@ -44,10 +47,12 @@ void baseArea::readStep()
 	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
 		s_pool.push_task([=](){ fluidGroup->readStep(); });
 	// Calculate routes.
-	for(RouteRequest& routeRequest : m_routeRequestQueue)
+	auto routeIter = m_routeRequestQueue.begin();
+	while(routeIter < m_routeRequestQueue.end())
 	{
-		RouteRequest* routeRequestPointer = &routeRequest;
-		s_pool.push_task([=](){ routeRequestPointer->readStep(); });
+		auto end = std::min(m_routeRequestQueue.end(), routeIter + s_routeThreadingBatchSize);
+		s_pool.push_task([=](){ RouteRequest::readSteps(routeIter, end); });
+		routeIter = end;
 	}
 }
 void baseArea::writeStep()
@@ -138,13 +143,13 @@ void baseArea::writeStep()
 	if(m_visionCuboidsActive)
 		std::erase_if(m_visionCuboids, [](VisionCuboid& visionCuboid){ return visionCuboid.m_destroy; });
 }
-void baseArea::registerActor(Actor* actor)
+void baseArea::registerActor(Actor& actor)
 {
-	m_visionBuckets.add(actor);
+	m_visionBuckets.add(&actor);
 }
-void baseArea::unregisterActor(Actor* actor)
+void baseArea::unregisterActor(Actor& actor)
 {
-	m_visionBuckets.remove(actor);
+	m_visionBuckets.remove(&actor);
 }
 void baseArea::scheduleMove(Actor* actor)
 {

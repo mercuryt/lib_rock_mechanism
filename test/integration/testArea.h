@@ -83,7 +83,7 @@ TEST_CASE("Test move with threading")
 	Block& origin = area.m_blocks[1][1][1];
 	Block& destination = area.m_blocks[8][8][1];
 	Actor actor(&origin, s_oneByOneFull, s_twoLegs);
-	area.registerActor(&actor);
+	area.registerActor(actor);
 	actor.setDestination(&destination);
 	area.readStep();
 	area.writeStep();
@@ -279,17 +279,28 @@ TEST_CASE("four fluids scale 10 parallel")
 {
 	fourFluidsTestParallel(10, 75);
 }
-/*
-TEST_CASE("four fluids scale 15 parallel")
+TEST_CASE("test vision with threading")
 {
-	fourFluidsTestParallel(15, 95);
+	Area area(10,10,10);
+	registerTypes();
+	setSolidLayer(area, 0, s_stone);
+	s_step = 1;
+	Block& block1 = area.m_blocks[3][3][1];
+	Block& block2 = area.m_blocks[7][7][1];
+	Actor a1(&block1, s_oneByOneFull, s_twoLegs);
+	area.registerActor(a1);
+	CHECK(a1.m_id == 1);
+	CHECK(area.m_visionBuckets.get(1).size() == 1);
+	CHECK(area.m_visionBuckets.get(1)[0] == &a1);
+	Actor a2(&block2, s_oneByOneFull, s_twoLegs);
+	area.registerActor(a2);
+	CHECK(area.m_visionBuckets.get(2).size() == 1);
+	CHECK(area.m_visionBuckets.get(2)[0] == &a2);
+	area.readStep();
+	area.writeStep();
+	CHECK(a1.m_canSee.contains(&a2));
+	s_step++;
+	area.readStep();
+	area.writeStep();
+	CHECK(a2.m_canSee.contains(&a1));
 }
-TEST_CASE("four fluids scale 20 parallel")
-{
-	fourFluidsTestParallel(20, 120);
-}
-TEST_CASE("four fluids scale 21 parallel")
-{
-	fourFluidsTestParallel(21, 140);
-}
-*/
