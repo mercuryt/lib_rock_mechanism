@@ -31,13 +31,12 @@ public:
 	const MoveType* m_moveType;
 	ScheduledEvent* m_taskEvent;
 	uint32_t m_taskDelayCount;
-	VisionRequest m_visionRequest;
 
 	baseActor(Block* l, const Shape* s, const MoveType* mt);
-	// Check location for route. If found set as own route and then register moving with area.
-	// Else register route request with area.
-	void setDestination(Block* block);
+	// Set and then register route request with area.
+	void setDestination(Block& block);
 	// Record volume in all blocks of shape and set m_location.
+	// Can accept nullptr.
 	void setLocation(Block* block);
 	// Remove all references in current area.
 	void exitArea();

@@ -8,13 +8,13 @@ private:
 		return x % turnsPerCycle;
 	}
 public:
-	void add(T* x)
+	void add(T& x)
 	{
-		buckets[bucketFor(x->m_id)].push_back(x);
+		buckets[bucketFor(x.m_id)].push_back(&x);
 	}
-	void remove(T* x)
+	void remove(T& x)
 	{
-		std::erase(buckets.at(bucketFor(x->m_id)), x);
+		std::erase(buckets.at(bucketFor(x.m_id)), &x);
 	}
 	std::vector<T*>& get(uint32_t step)
 	{

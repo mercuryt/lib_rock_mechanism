@@ -84,7 +84,7 @@ TEST_CASE("Test move with threading")
 	Block& destination = area.m_blocks[8][8][1];
 	Actor actor(&origin, s_oneByOneFull, s_twoLegs);
 	area.registerActor(actor);
-	actor.setDestination(&destination);
+	actor.setDestination(destination);
 	area.readStep();
 	area.writeStep();
 	s_step++;
@@ -202,26 +202,26 @@ void fourFluidsTestParallel(uint32_t scale, uint32_t steps)
 	setSolidWalls(area, maxZ - 1, s_stone);
 	std::vector<FluidGroup*> newlySplit;
 	// Water is at 0,0
-	Block* water1 = &area.m_blocks[1][1][1];
-	Block* water2 = &area.m_blocks[halfMaxX - 1][halfMaxY - 1][maxZ - 1];		
+	Block& water1 = area.m_blocks[1][1][1];
+	Block& water2 = area.m_blocks[halfMaxX - 1][halfMaxY - 1][maxZ - 1];		
 	setFullFluidCuboid(water1, water2, s_water);
 	// CO2 is at 0,1
-	Block* CO2_1 = &area.m_blocks[1][halfMaxY][1];
-	Block* CO2_2 = &area.m_blocks[halfMaxX - 1][maxY - 2][maxZ - 1];
+	Block& CO2_1 = area.m_blocks[1][halfMaxY][1];
+	Block& CO2_2 = area.m_blocks[halfMaxX - 1][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(CO2_1, CO2_2, s_CO2);
 	// Lava is at 1,0
-	Block* lava1 = &area.m_blocks[halfMaxX][1][1];
-	Block* lava2 = &area.m_blocks[maxX - 2][halfMaxY - 1][maxZ - 1];
+	Block& lava1 = area.m_blocks[halfMaxX][1][1];
+	Block& lava2 = area.m_blocks[maxX - 2][halfMaxY - 1][maxZ - 1];
 	setFullFluidCuboid(lava1, lava2, s_lava);
 	// Mercury is at 1,1
-	Block* mercury1 = &area.m_blocks[halfMaxX][halfMaxY][1];
-	Block* mercury2 = &area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
+	Block& mercury1 = area.m_blocks[halfMaxX][halfMaxY][1];
+	Block& mercury2 = area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(mercury1, mercury2, s_mercury);
 	CHECK(area.m_fluidGroups.size() == 4);
-	FluidGroup* fgWater = water1->getFluidGroup(s_water);
-	FluidGroup* fgCO2 = CO2_1->getFluidGroup(s_CO2);
-	FluidGroup* fgLava = lava1->getFluidGroup(s_lava);
-	FluidGroup* fgMercury = mercury1->getFluidGroup(s_mercury);
+	FluidGroup* fgWater = water1.getFluidGroup(s_water);
+	FluidGroup* fgCO2 = CO2_1.getFluidGroup(s_CO2);
+	FluidGroup* fgLava = lava1.getFluidGroup(s_lava);
+	FluidGroup* fgMercury = mercury1.getFluidGroup(s_mercury);
 	CHECK(!fgWater->m_merged);
 	CHECK(!fgCO2->m_merged);
 	CHECK(!fgLava->m_merged);

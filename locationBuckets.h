@@ -14,9 +14,9 @@ class LocationBuckets
 	uint32_t m_maxZ;
 public:
 	LocationBuckets(Area& area);
-	void insert(Actor* actor);
-	void erase(Actor* actor);
-	void update(Actor* actor, const Block& oldLocation, const Block& newLocation);
+	void insert(Actor& actor);
+	void erase(Actor& actor);
+	void update(Actor& actor, const Block& oldLocation, const Block& newLocation);
 	void processVisionRequest(VisionRequest& visionRequest) const;
 	std::unordered_set<Actor*>* getBucketFor(const Block& block);
 	bool hasLineOfSight(VisionRequest& visionRequest, const Block& to, const Block& from) const;

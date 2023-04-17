@@ -22,20 +22,20 @@ std::unordered_set<Actor*>* LocationBuckets::getBucketFor(const Block& block)
 	assert(m_buckets.at(bucketX).at(bucketY).size() > bucketZ);
 	return &m_buckets[bucketX][bucketY][bucketZ];
 }
-void LocationBuckets::insert(Actor* actor)
+void LocationBuckets::insert(Actor& actor)
 {
-	actor->m_location->m_locationBucket->insert(actor);
+	actor.m_location->m_locationBucket->insert(&actor);
 }
-void LocationBuckets::erase(Actor* actor)
+void LocationBuckets::erase(Actor& actor)
 {
-	actor->m_location->m_locationBucket->erase(actor);
+	actor.m_location->m_locationBucket->erase(&actor);
 }
-void LocationBuckets::update(Actor* actor, const Block& oldLocation, const Block& newLocation)
+void LocationBuckets::update(Actor& actor, const Block& oldLocation, const Block& newLocation)
 {
 	if(oldLocation.m_locationBucket == newLocation.m_locationBucket)
 		return;
-	oldLocation.m_locationBucket->erase(actor);
-	newLocation.m_locationBucket->insert(actor);
+	oldLocation.m_locationBucket->erase(&actor);
+	newLocation.m_locationBucket->insert(&actor);
 }
 void LocationBuckets::processVisionRequest(VisionRequest& visionRequest) const
 {
@@ -62,7 +62,7 @@ void LocationBuckets::processVisionRequest(VisionRequest& visionRequest) const
 					assert(!actor->m_blocks.empty());
 					if(visionRequest.m_actor.canSee(*actor))
 						for(const Block* to : actor->m_blocks)
-							if(to->taxiDistance(from) <= (uint32_t)range)
+							if(to->taxiDistance(*from) <= (uint32_t)range)
 							{
 								if(visionRequest.hasLineOfSight(*to, *from))
 									visionRequest.m_actors.insert(actor);

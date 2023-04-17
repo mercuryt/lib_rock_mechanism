@@ -34,7 +34,7 @@ public:
 				uint32_t shortestDistance = UINT32_MAX;
 				for(Block* b : blocks)
 				{
-					uint32_t distance = b->taxiDistance(block);
+					uint32_t distance = b->taxiDistance(*block);
 					if(shortestDistance > distance)
 						shortestDistance = distance;
 				}

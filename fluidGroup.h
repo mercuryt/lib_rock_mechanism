@@ -39,7 +39,7 @@ public:
 	FillQueue m_fillQueue;
 	DrainQueue m_drainQueue;
 	std::unordered_map<const FluidType*, FluidGroup*> m_disolvedInThisGroup;
-	Area* m_area;
+	Area& m_area;
 
 	// For spitting into multiple fluidGroups.
 	std::vector<FluidGroupSplitData> m_futureGroups;
@@ -58,14 +58,15 @@ public:
 	std::unordered_set<Block*> m_futureAddToFillQueue;
 	std::unordered_set<Block*> m_futureRemoveFromFillQueue;
 
-	FluidGroup(const FluidType* ft, std::unordered_set<Block*>& blocks, Area* area, bool checkMerge = true);
+	FluidGroup(const FluidType* ft, std::unordered_set<Block*>& blocks, Area& area, bool checkMerge = true);
 	FluidGroup(const FluidGroup&) = delete;
 	void addFluid(uint32_t fluidVolume);
 	void removeFluid(uint32_t fluidVolume);
-	void addBlock(Block* block, bool checkMerge = true);
-	void removeBlock(Block* block);
+	void addBlock(Block& block, bool checkMerge = true);
+	void removeBlock(Block& block);
 	void removeBlocks(std::unordered_set<Block*>& blocks);
-	void addMistFor(Block* block);
+	void addMistFor(Block& block);
+	// Takes a pointer to the other fluid group because we may switch them inorder to merge into the larger one.
 	void merge(FluidGroup* fluidGroup);
 	void readStep();
 	void writeStep();
@@ -73,7 +74,7 @@ public:
 	void mergeStep();
 	void splitStep();
 	void setUnstable();
-	void addDiagonalsFor(Block* block);
+	void addDiagonalsFor(Block& block);
 	void validate() const;
 	void validate(std::unordered_set<FluidGroup*> toErase);
 	int32_t totalVolume();

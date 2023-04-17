@@ -199,16 +199,16 @@ std::vector<Block*> baseBlock::getAdjacentOnSameZLevelOnly() const
 	}
 	return output;
 }
-uint32_t baseBlock::distance(Block* block) const
+uint32_t baseBlock::distance(Block& block) const
 {
-	uint32_t dx = abs((int)m_x - (int)block->m_x);
-	uint32_t dy = abs((int)m_y - (int)block->m_y);
-	uint32_t dz = abs((int)m_z - (int)block->m_z);
+	uint32_t dx = abs((int)m_x - (int)block.m_x);
+	uint32_t dy = abs((int)m_y - (int)block.m_y);
+	uint32_t dz = abs((int)m_z - (int)block.m_z);
 	return pow((pow(dx, 2) + pow(dy, 2) + pow(dz, 2)), 0.5);
 }
-uint32_t baseBlock::taxiDistance(Block* block) const
+uint32_t baseBlock::taxiDistance(Block& block) const
 {
-	return abs((int)m_x - (int)block->m_x) + abs((int)m_y - (int)block->m_y) + abs((int)m_z - (int)block->m_z);
+	return abs((int)m_x - (int)block.m_x) + abs((int)m_y - (int)block.m_y) + abs((int)m_z - (int)block.m_z);
 }
 bool baseBlock::isAdjacentToAny(std::unordered_set<Block*>& blocks) const
 {
@@ -244,7 +244,7 @@ void baseBlock::setSolid(const MaterialType* materialType)
 	m_totalFluidVolume = 0;
 	for(auto& [fluidType, pair] : m_fluids)
 	{
-		pair.second->removeBlock(static_cast<Block*>(this));
+		pair.second->removeBlock(static_cast<Block&>(*this));
 		pair.second->addFluid(pair.first);
 		// If there is no where to put the fluid.
 		if(pair.second->m_drainQueue.m_set.empty() && pair.second->m_fillQueue.m_set.empty())
@@ -291,9 +291,9 @@ void baseBlock::setSolid(const MaterialType* materialType)
 		VisionCuboid::BlockIsSometimesOpaque(*block);
 		
 }
-bool baseBlock::canEnterEver(Actor* actor) const
+bool baseBlock::canEnterEver(Actor& actor) const
 {
-	return shapeAndMoveTypeCanEnterEver(actor->m_shape, actor->m_moveType);
+	return shapeAndMoveTypeCanEnterEver(actor.m_shape, actor.m_moveType);
 }
 bool baseBlock::isSolid() const
 {
@@ -309,7 +309,7 @@ void baseBlock::spawnMist(const FluidType* fluidType, uint32_t maxMistSpread)
 		return;
 	m_mist = fluidType;
 	m_mistInverseDistanceFromSource = maxMistSpread != 0 ? maxMistSpread : fluidType->maxMistSpread;
-	MistDisperseEvent* event = new MistDisperseEvent(s_step + fluidType->mistDuration, m_mist, static_cast<Block*>(this));
+	MistDisperseEvent* event = new MistDisperseEvent(s_step + fluidType->mistDuration, m_mist, static_cast<Block&>(*this));
 	m_area->scheduleEvent(event);
 }
 //TODO: This code puts the fluid into an adjacent group of the correct type if it can find one, it does not add the block or merge groups, leaving these tasks to fluidGroup readStep. Is this ok?
@@ -331,7 +331,7 @@ void baseBlock::addFluid(uint32_t volume, const FluidType* fluidType)
 		{
 			assert(adjacent->m_fluids.at(fluidType).second->m_fluidType == fluidType);
 			fluidGroup = adjacent->m_fluids.at(fluidType).second;
-			fluidGroup->addBlock(static_cast<Block*>(this));
+			fluidGroup->addBlock(static_cast<Block&>(*this));
 			continue;
 		}
 	// Create fluid group.
@@ -364,21 +364,21 @@ bool baseBlock::shapeAndMoveTypeCanEnterEver(const Shape* shape, const MoveType*
 	}
 	return true;
 }
-bool baseBlock::actorCanEnterCurrently(Actor* actor) const
+bool baseBlock::actorCanEnterCurrently(Actor& actor) const
 {
-	const Shape* shape = actor->m_shape;
+	const Shape* shape = actor.m_shape;
 	if(shape->positions.size() == 1)
 	{
 		const Block* block = static_cast<const Block*>(this);
 		uint32_t v = shape->positions[0][3];
-		if(block == actor->m_location)
+		if(block == actor.m_location)
 			v = 0;
 		return block->m_totalDynamicVolume + v <= s_maxBlockVolume;
 	}
 	for(auto& [x, y, z, v] : shape->positions)
 	{
 		const Block* block = offset(x, y, z);
-		auto found = block->m_actors.find(actor);
+		auto found = block->m_actors.find(&actor);
 		if(found != block->m_actors.end())
 		{
 			if(block->m_totalDynamicVolume + v - found->second > s_maxBlockVolume)
@@ -464,7 +464,7 @@ void baseBlock::resolveFluidOverfull()
 		// If the last block of a fluidGroup is displaced disolve it in the lowest density liquid which is more dense then it.
 		FluidGroup* fluidGroup = m_fluids.at(fluidType).second;
 		assert(fluidGroup->m_fluidType = fluidType);
-		fluidGroup->removeBlock(static_cast<Block*>(this));
+		fluidGroup->removeBlock(static_cast<Block&>(*this));
 		if(fluidGroup->m_drainQueue.m_set.empty())
 		{
 			for(auto& [otherFluidType, pair] : m_fluids)
@@ -489,34 +489,34 @@ void baseBlock::resolveFluidOverfull()
 	}
 }
 // Add / remove  actor occupancy.
-void baseBlock::enter(Actor* actor)
+void baseBlock::enter(Actor& actor)
 {
-	assert(actor->m_location != static_cast<Block*>(this));
-	actor->m_taskDelayCount = 0;
-	bool hasPreviousLocation = actor->m_location != nullptr;
-	actor->m_location = static_cast<Block*>(this);
+	assert(actor.m_location != static_cast<Block*>(this));
+	actor.m_taskDelayCount = 0;
+	bool hasPreviousLocation = actor.m_location != nullptr;
+	actor.m_location = static_cast<Block*>(this);
 	if(hasPreviousLocation)
 	{
-		actor->m_location->exit(actor);
-		actor->m_blocks.clear();
-		m_area->m_locationBuckets.update(actor, *actor->m_location, *static_cast<Block*>(this));
+		actor.m_location->exit(actor);
+		actor.m_blocks.clear();
+		m_area->m_locationBuckets.update(actor, *actor.m_location, static_cast<Block&>(*this));
 	}
 	else
 		m_area->m_locationBuckets.insert(actor);
-	for(auto& [x, y, z, v] : actor->m_shape->positions)
+	for(auto& [x, y, z, v] : actor.m_shape->positions)
 	{
 		Block* block = offset(x, y, z);
-		assert(!block->m_actors.contains(actor));
-		block->m_actors[actor] = v;
+		assert(!block->m_actors.contains(&actor));
+		block->m_actors[&actor] = v;
 		block->m_totalDynamicVolume += v;
-		actor->m_blocks.push_back(block);
+		actor.m_blocks.push_back(block);
 	}
 }
-void baseBlock::exit(Actor* actor)
+void baseBlock::exit(Actor& actor)
 {
-	for(Block* block : actor->m_blocks)
+	for(Block* block : actor.m_blocks)
 	{
-		auto found = block->m_actors.find(actor);
+		auto found = block->m_actors.find(&actor);
 		assert(found != block->m_actors.end());
 		block->m_totalDynamicVolume -= found->second;
 		block->m_actors.erase(found);

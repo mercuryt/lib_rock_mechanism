@@ -27,6 +27,9 @@ class Actor;
 class Area;
 class Block;
 
+// Fluid type and volume pairs are sorted by density, low to high.
+// This is useful for resolving overfill.
+// TODO: Maybe a vector of pairs would be better performance?
 struct SortByDensity
 {
 	bool operator()(const FluidType* a, const FluidType* b) const { return a->density < b->density; }
@@ -37,6 +40,9 @@ class baseBlock
 	const MaterialType* m_solid;
 public:
 	uint32_t m_x, m_y, m_z;
+	// Store area as a pointer rather then a reference to keep block default constructable.
+	// This is required inorder to create the m_blocks structure before initalizing it.
+	// TODO: emplace_back?
 	Area* m_area;
 	// Store adjacent in an array, with index determined by relative position.
 	// below = 0, < = 1, ^ = 2, > = 3, v = 4, above = 5.
@@ -59,6 +65,8 @@ public:
 	// For loose generics: store material type and volume.
 	std::unordered_map<const MaterialType*, uint32_t> m_genericSolids;
 	// For fluids: store fluidType, volume, and FluidGroup pointer.
+	// Sorted by density, low to high.
+	// TODO: Try replacing with a flatmap.
 	std::map<const FluidType*, std::pair<uint32_t, FluidGroup*>, SortByDensity> m_fluids;
 	// For mist.
 	const FluidType* m_mist;
@@ -85,8 +93,8 @@ public:
 	std::vector<Block*> getAdjacentOnSameZLevelOnly() const;
 	std::vector<Block*> getEdgeAdjacentOnlyOnNextZLevelDown() const;
 	std::vector<Block*> getEdgeAdjacentOnlyOnNextZLevelUp() const;
-	uint32_t distance(Block* block) const;
-	uint32_t taxiDistance(Block* block) const;
+	uint32_t distance(Block& block) const;
+	uint32_t taxiDistance(Block& block) const;
 	bool isAdjacentToAny(std::unordered_set<Block*>& blocks) const;
 	void setNotSolid();
 	void setSolid(const MaterialType* materialType);
@@ -102,8 +110,8 @@ public:
 	// Add fluid, handle falling / sinking, group membership, excessive quantity sent to fluid group.
 	void addFluid(uint32_t volume, const FluidType* fluidType);
 	void removeFluid(uint32_t volume, const FluidType* fluidType);
-	bool actorCanEnterCurrently(Actor* actor) const;
-	bool canEnterEver(Actor* actor) const;
+	bool actorCanEnterCurrently(Actor& actor) const;
+	bool canEnterEver(Actor& actor) const;
 	std::vector<std::pair<Block*, uint32_t>> getMoveCosts(const Shape* shape, const MoveType* moveType);
 	bool fluidCanEnterCurrently(const FluidType* fluidType) const;
 	bool isAdjacentToFluidGroup(const FluidGroup* fluidGroup) const;
@@ -111,8 +119,8 @@ public:
 	uint32_t volumeOfFluidTypeContains(const FluidType* fluidType) const;
 	// Move less dense fluids to their group's excessVolume until s_maxBlockVolume is achieved.
 	void resolveFluidOverfull();
-	void enter(Actor* actor);
-	void exit(Actor* actor);
+	void enter(Actor& actor);
+	void exit(Actor& actor);
 	// To be overriden by user code if diagonal movement allowed.
 	void clearMoveCostsCacheForSelfAndAdjacent();
 	std::vector<Block*> selectBetweenCorners(Block* otherBlock) const;
@@ -137,3 +145,4 @@ public:
 
 	void moveContentsTo(Block* block);
 };
+static_assert(std::default_initializable<baseBlock>);

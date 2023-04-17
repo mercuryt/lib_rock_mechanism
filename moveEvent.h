@@ -11,9 +11,9 @@ class Actor;
 class MoveEvent : public ScheduledEvent
 {
 public:
-	Actor* m_actor;
+	Actor& m_actor;
 	uint32_t m_delayCount;
-	MoveEvent(uint32_t s, Actor* a);
+	MoveEvent(uint32_t s, Actor& a);
 	void execute();
 	~MoveEvent();
 };

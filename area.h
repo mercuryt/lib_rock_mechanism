@@ -52,21 +52,21 @@ public:
 	void writeStep();
 	
 	// Create a scheduled event when the actor should move.
-	void scheduleMove(Actor* actor);
+	void scheduleMove(Actor& actor);
 	
 	// Add to moving actors and call scheduleMove.
-	void registerActorMoving(Actor* actor);
+	void registerActorMoving(Actor& actor);
 	// Remove from moving actors.
-	void unregisterActorMoving(Actor* actor);
+	void unregisterActorMoving(Actor& actor);
 
 	// RegisterActor, add to visionBucket.
 	void registerActor(Actor& actor);
 	void unregisterActor(Actor& actor);
 	
 	// Emplace a routeRequest object on the queue.
-	void registerRouteRequest(Actor* actor, bool detour = false);
+	void registerRouteRequest(Actor& actor, bool detour = false);
 	// Emplace a visionRequest object on the queue.
-	void registerVisionRequest(Actor* actor);
+	void registerVisionRequest(Actor& actor);
 
 	// Create a fluid group.
 	FluidGroup* createFluidGroup(const FluidType* fluidType, std::unordered_set<Block*>& blocks, bool checkMerge = true);
@@ -77,12 +77,12 @@ public:
 	// Cavein read/write
 	void stepCaveInRead();
 	void stepCaveInWrite();
-	void registerPotentialCaveIn(Block* block);
+	void registerPotentialCaveIn(Block& block);
 
 	void validateAllFluidGroups();
 	std::string toS();
 
 	// User provided code, no route.
-	void notifyNoRouteFound(Actor* actor);
+	void notifyNoRouteFound(Actor& actor);
 
 };
