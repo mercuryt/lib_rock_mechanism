@@ -138,7 +138,7 @@ class Area : public baseArea
 {
 public:
 	Area(uint32_t x, uint32_t y, uint32_t z) : baseArea(x, y, z) {}
-	void notifyNoRouteFound(Actor* actor);
+	void notifyNoRouteFound(Actor& actor);
 };
 
 #include "../block.cpp"
@@ -549,7 +549,7 @@ bool Actor::canSee(const Actor& actor) const
 	return true;
 }
 // Tell the player that an attempted pathing operation is not possible.
-void Area::notifyNoRouteFound(Actor* actor) 
+void Area::notifyNoRouteFound(Actor& actor) 
 { 
 	(void)actor;
 }
@@ -634,17 +634,18 @@ void setSolidWalls(Area& area, uint32_t height, const MaterialType* materialType
 		}
 	}
 }
-void setFullFluidCuboid(Block* b1, Block* b2, const FluidType* fluidType)
+void setFullFluidCuboid(Block& low, Block& high, const FluidType* fluidType)
 {
-	assert(b1->m_totalFluidVolume == 0);
-	assert(b1->fluidCanEnterEver());
-	assert(b2->m_totalFluidVolume == 0);
-	assert(b2->fluidCanEnterEver());
-	for(Block* block : b1->selectBetweenCorners(b2))
+	assert(low.m_totalFluidVolume == 0);
+	assert(low.fluidCanEnterEver());
+	assert(high.m_totalFluidVolume == 0);
+	assert(high.fluidCanEnterEver());
+	Cuboid cuboid(high, low);
+	for(Block& block : cuboid)
 	{
-		assert(block->m_totalFluidVolume == 0);
-		assert(block->fluidCanEnterEver());
-		block->addFluid(100, fluidType);
+		assert(block.m_totalFluidVolume == 0);
+		assert(block.fluidCanEnterEver());
+		block.addFluid(100, fluidType);
 	}
 }
 void validateAllBlockFluids(Area& area)

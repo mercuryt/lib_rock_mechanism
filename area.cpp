@@ -31,6 +31,7 @@ void baseArea::readStep()
 { 
 	//TODO: Count tasks dispatched and finished instead of pool.wait_for_tasks so we can do multiple areas simultaniously in one pool.
 	// Process vision, generate and push_task requests for every actor in current bucket.
+	// It seems like having the vision requests permanantly embeded in the actors and iterating the vision bucket directly rather then using the visionRequestQueue should be faster but limited testing shows otherwise.
 	m_visionRequestQueue.clear();
 	for(Actor* actor : m_visionBuckets.get(s_step))
 		m_visionRequestQueue.emplace_back(*actor);
@@ -145,26 +146,26 @@ void baseArea::writeStep()
 }
 void baseArea::registerActor(Actor& actor)
 {
-	m_visionBuckets.add(&actor);
+	m_visionBuckets.add(actor);
 }
 void baseArea::unregisterActor(Actor& actor)
 {
-	m_visionBuckets.remove(&actor);
+	m_visionBuckets.remove(actor);
 }
-void baseArea::scheduleMove(Actor* actor)
+void baseArea::scheduleMove(Actor& actor)
 {
-	Block* block = *(actor->m_routeIter);
-	uint32_t stepsToMove = block->moveCost(actor->m_moveType, actor->m_location) / actor->getSpeed();
+	Block* block = *(actor.m_routeIter);
+	uint32_t stepsToMove = block->moveCost(actor.m_moveType, actor.m_location) / actor.getSpeed();
 	MoveEvent* moveEvent = new MoveEvent(s_step + stepsToMove, actor);
 	scheduleEvent(moveEvent);
 }
-void baseArea::registerRouteRequest(Actor* actor, bool detour)
+void baseArea::registerRouteRequest(Actor& actor, bool detour)
 {
 	m_routeRequestQueue.emplace_back(actor, detour);
 }
 FluidGroup* baseArea::createFluidGroup(const FluidType* fluidType, std::unordered_set<Block*>& blocks, bool checkMerge)
 {
-	m_fluidGroups.emplace_back(fluidType, blocks, static_cast<Area*>(this), checkMerge);
+	m_fluidGroups.emplace_back(fluidType, blocks, static_cast<Area&>(*this), checkMerge);
 	m_unstableFluidGroups.insert(&m_fluidGroups.back());
 	return &m_fluidGroups.back();
 }

@@ -11,6 +11,11 @@
 class Block;
 class FLuidGroup;
 
+/*
+ * This struct holds a block, it's current capacity ( how much delta can increase at most ) and it's current delta.
+ * These structs are stored in FluidQueue::m_queue, which is a vector that gets sorted at the begining of read step.
+ * Capacity and delta can represent either addition or subtraction, depending on if they belong to FillQueue or DrainQueue.
+ */
 struct FutureFlowBlock
 {
 	Block* block;
@@ -19,7 +24,11 @@ struct FutureFlowBlock
 	// No need to initalize capacity and delta here, they will be set at the begining of read step.
 	FutureFlowBlock(Block* b) : block(b) {}
 };
+static_assert(std::copy_constructible<FutureFlowBlock>);
 
+/*
+ * This is a shared base class for DrainQueue and FillQueue.
+ */
 class FluidQueue
 {
 public:

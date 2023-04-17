@@ -1463,16 +1463,16 @@ void trenchTest2Fluids(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	setSolidLayer(area, 0, s_stone);
 	setSolidWalls(area, maxZ - 1, s_stone);
 	// Water
-	Block* water1 = &area.m_blocks[1][1][1];
-	Block* water2 = &area.m_blocks[halfMaxX - 1][maxY - 2][maxZ - 1];		
+	Block& water1 = area.m_blocks[1][1][1];
+	Block& water2 = area.m_blocks[halfMaxX - 1][maxY - 2][maxZ - 1];		
 	setFullFluidCuboid(water1, water2, s_water);
 	// CO2
-	Block* CO2_1 = &area.m_blocks[halfMaxX][1][1];
-	Block* CO2_2 = &area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
+	Block& CO2_1 = area.m_blocks[halfMaxX][1][1];
+	Block& CO2_2 = area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(CO2_1, CO2_2, s_CO2);
 	CHECK(area.m_fluidGroups.size() == 2);
-	FluidGroup* fgWater = water1->getFluidGroup(s_water);
-	FluidGroup* fgCO2 = CO2_1->getFluidGroup(s_CO2);
+	FluidGroup* fgWater = water1.getFluidGroup(s_water);
+	FluidGroup* fgCO2 = CO2_1.getFluidGroup(s_CO2);
 	CHECK(!fgWater->m_merged);
 	CHECK(!fgCO2->m_merged);
 	uint32_t totalVolume = fgWater->totalVolume();
@@ -1526,21 +1526,21 @@ void trenchTest3Fluids(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	setSolidLayer(area, 0, s_stone);
 	setSolidWalls(area, maxZ - 1, s_stone);
 	// Water
-	Block* water1 = &area.m_blocks[1][1][1];
-	Block* water2 = &area.m_blocks[thirdMaxX][maxY - 2][maxZ - 1];		
+	Block& water1 = area.m_blocks[1][1][1];
+	Block& water2 = area.m_blocks[thirdMaxX][maxY - 2][maxZ - 1];		
 	setFullFluidCuboid(water1, water2, s_water);
 	// CO2
-	Block* CO2_1 = &area.m_blocks[thirdMaxX + 1][1][1];
-	Block* CO2_2 = &area.m_blocks[(thirdMaxX * 2)][maxY - 2][maxZ - 1];
+	Block& CO2_1 = area.m_blocks[thirdMaxX + 1][1][1];
+	Block& CO2_2 = area.m_blocks[(thirdMaxX * 2)][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(CO2_1, CO2_2, s_CO2);
 	// Lava
-	Block* lava1 = &area.m_blocks[(thirdMaxX * 2) + 1][1][1];
-	Block* lava2 = &area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
+	Block& lava1 = area.m_blocks[(thirdMaxX * 2) + 1][1][1];
+	Block& lava2 = area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(lava1, lava2, s_lava);
 	CHECK(area.m_fluidGroups.size() == 3);
-	FluidGroup* fgWater = water1->getFluidGroup(s_water);
-	FluidGroup* fgCO2 = CO2_1->getFluidGroup(s_CO2);
-	FluidGroup* fgLava = lava1->getFluidGroup(s_lava);
+	FluidGroup* fgWater = water1.getFluidGroup(s_water);
+	FluidGroup* fgCO2 = CO2_1.getFluidGroup(s_CO2);
+	FluidGroup* fgLava = lava1.getFluidGroup(s_lava);
 	s_step = 1;
 	uint32_t totalVolume = fgWater->totalVolume();
 	while(s_step < steps)
@@ -1595,26 +1595,26 @@ void trenchTest4Fluids(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	setSolidLayer(area, 0, s_stone);
 	setSolidWalls(area, maxZ - 1, s_stone);
 	// Water
-	Block* water1 = &area.m_blocks[1][1][1];
-	Block* water2 = &area.m_blocks[quarterMaxX][maxY - 2][maxZ - 1];		
+	Block& water1 = area.m_blocks[1][1][1];
+	Block& water2 = area.m_blocks[quarterMaxX][maxY - 2][maxZ - 1];		
 	setFullFluidCuboid(water1, water2, s_water);
 	// CO2
-	Block* CO2_1 = &area.m_blocks[quarterMaxX + 1][1][1];
-	Block* CO2_2 = &area.m_blocks[(quarterMaxX * 2)][maxY - 2][maxZ - 1];
+	Block& CO2_1 = area.m_blocks[quarterMaxX + 1][1][1];
+	Block& CO2_2 = area.m_blocks[(quarterMaxX * 2)][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(CO2_1, CO2_2, s_CO2);
 	// Lava
-	Block* lava1 = &area.m_blocks[(quarterMaxX * 2) + 1][1][1];
-	Block* lava2 = &area.m_blocks[quarterMaxX * 3][maxY - 2][maxZ - 1];
+	Block& lava1 = area.m_blocks[(quarterMaxX * 2) + 1][1][1];
+	Block& lava2 = area.m_blocks[quarterMaxX * 3][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(lava1, lava2, s_lava);
 	// Mercury
-	Block* mercury1 = &area.m_blocks[(quarterMaxX * 3) + 1][1][1];
-	Block* mercury2 = &area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
+	Block& mercury1 = area.m_blocks[(quarterMaxX * 3) + 1][1][1];
+	Block& mercury2 = area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(mercury1, mercury2, s_mercury);
 	CHECK(area.m_fluidGroups.size() == 4);
-	FluidGroup* fgWater = water1->getFluidGroup(s_water);
-	FluidGroup* fgCO2 = CO2_1->getFluidGroup(s_CO2);
-	FluidGroup* fgLava = lava1->getFluidGroup(s_lava);
-	FluidGroup* fgMercury = mercury1->getFluidGroup(s_mercury);
+	FluidGroup* fgWater = water1.getFluidGroup(s_water);
+	FluidGroup* fgCO2 = CO2_1.getFluidGroup(s_CO2);
+	FluidGroup* fgLava = lava1.getFluidGroup(s_lava);
+	FluidGroup* fgMercury = mercury1.getFluidGroup(s_mercury);
 	uint32_t totalVolume = fgWater->totalVolume();
 	s_step = 1;
 	while(s_step < steps)
@@ -1693,23 +1693,23 @@ void trenchTest2FluidsMerge(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	setSolidLayer(area, 0, s_stone);
 	setSolidWalls(area, maxZ - 1, s_stone);
 	// Water
-	Block* water1 = &area.m_blocks[1][1][1];
-	Block* water2 = &area.m_blocks[quarterMaxX][maxY - 2][maxZ - 1];		
+	Block& water1 = area.m_blocks[1][1][1];
+	Block& water2 = area.m_blocks[quarterMaxX][maxY - 2][maxZ - 1];		
 	setFullFluidCuboid(water1, water2, s_water);
 	// CO2
-	Block* CO2_1 = &area.m_blocks[quarterMaxX + 1][1][1];
-	Block* CO2_2 = &area.m_blocks[(quarterMaxX * 2)][maxY - 2][maxZ - 1];
+	Block& CO2_1 = area.m_blocks[quarterMaxX + 1][1][1];
+	Block& CO2_2 = area.m_blocks[(quarterMaxX * 2)][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(CO2_1, CO2_2, s_CO2);
 	// Water
-	Block* water3 = &area.m_blocks[(quarterMaxX * 2) + 1][1][1];
-	Block* water4 = &area.m_blocks[quarterMaxX * 3][maxY - 2][maxZ - 1];
+	Block& water3 = area.m_blocks[(quarterMaxX * 2) + 1][1][1];
+	Block& water4 = area.m_blocks[quarterMaxX * 3][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(water3, water4, s_water);
 	// CO2
-	Block* CO2_3 = &area.m_blocks[(quarterMaxX * 3) + 1][1][1];
-	Block* CO2_4 = &area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
+	Block& CO2_3 = area.m_blocks[(quarterMaxX * 3) + 1][1][1];
+	Block& CO2_4 = area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(CO2_3, CO2_4, s_CO2);
 	CHECK(area.m_fluidGroups.size() == 4);
-	FluidGroup* fgWater = water1->getFluidGroup(s_water);
+	FluidGroup* fgWater = water1.getFluidGroup(s_water);
 	uint32_t totalVolume = fgWater->totalVolume() * 2;
 	s_step = 1;
 	while(s_step < steps)
@@ -1723,8 +1723,8 @@ void trenchTest2FluidsMerge(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	uint32_t expectedHeight = std::max(1u, maxZ / 2);
 	uint32_t expectedBlocks = totalBlocks2D * expectedHeight;
 	CHECK(area.m_unstableFluidGroups.empty());
-	fgWater = water1->getFluidGroup(s_water);
-	FluidGroup* fgCO2 = water2->getFluidGroup(s_CO2);
+	fgWater = water1.getFluidGroup(s_water);
+	FluidGroup* fgCO2 = water2.getFluidGroup(s_CO2);
 	CHECK(fgWater->totalVolume() == totalVolume);
 	CHECK(fgCO2->totalVolume() == totalVolume);
 	CHECK(fgWater->m_drainQueue.m_set.size() == expectedBlocks);
@@ -1759,23 +1759,23 @@ void trenchTest3FluidsMerge(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	setSolidLayer(area, 0, s_stone);
 	setSolidWalls(area, maxZ - 1, s_stone);
 	// Water
-	Block* water1 = &area.m_blocks[1][1][1];
-	Block* water2 = &area.m_blocks[quarterMaxX][maxY - 2][maxZ - 1];		
+	Block& water1 = area.m_blocks[1][1][1];
+	Block& water2 = area.m_blocks[quarterMaxX][maxY - 2][maxZ - 1];		
 	setFullFluidCuboid(water1, water2, s_water);
 	// CO2
-	Block* CO2_1 = &area.m_blocks[quarterMaxX + 1][1][1];
-	Block* CO2_2 = &area.m_blocks[(quarterMaxX * 2)][maxY - 2][maxZ - 1];
+	Block& CO2_1 = area.m_blocks[quarterMaxX + 1][1][1];
+	Block& CO2_2 = area.m_blocks[(quarterMaxX * 2)][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(CO2_1, CO2_2, s_CO2);
 	// Mercury
-	Block* mercury1 = &area.m_blocks[(quarterMaxX * 2) + 1][1][1];
-	Block* mercury2 = &area.m_blocks[quarterMaxX * 3][maxY - 2][maxZ - 1];
+	Block& mercury1 = area.m_blocks[(quarterMaxX * 2) + 1][1][1];
+	Block& mercury2 = area.m_blocks[quarterMaxX * 3][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(mercury1, mercury2, s_mercury);
 	// CO2
-	Block* CO2_3 = &area.m_blocks[(quarterMaxX * 3) + 1][1][1];
-	Block* CO2_4 = &area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
+	Block& CO2_3 = area.m_blocks[(quarterMaxX * 3) + 1][1][1];
+	Block& CO2_4 = area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(CO2_3, CO2_4, s_CO2);
 	CHECK(area.m_fluidGroups.size() == 4);
-	FluidGroup* fgWater = water1->getFluidGroup(s_water);
+	FluidGroup* fgWater = water1.getFluidGroup(s_water);
 	uint32_t totalVolumeWater = fgWater->totalVolume();
 	uint32_t totalVolumeMercury = totalVolumeWater;
 	uint32_t totalVolumeCO2 = totalVolumeWater * 2;
@@ -1838,26 +1838,26 @@ void fourFluidsTest(uint32_t scale, uint32_t steps)
 	setSolidWalls(area, maxZ - 1, s_stone);
 	std::vector<FluidGroup*> newlySplit;
 	// Water is at 0,0
-	Block* water1 = &area.m_blocks[1][1][1];
-	Block* water2 = &area.m_blocks[halfMaxX - 1][halfMaxY - 1][maxZ - 1];		
+	Block& water1 = area.m_blocks[1][1][1];
+	Block& water2 = area.m_blocks[halfMaxX - 1][halfMaxY - 1][maxZ - 1];		
 	setFullFluidCuboid(water1, water2, s_water);
 	// CO2 is at 0,1
-	Block* CO2_1 = &area.m_blocks[1][halfMaxY][1];
-	Block* CO2_2 = &area.m_blocks[halfMaxX - 1][maxY - 2][maxZ - 1];
+	Block& CO2_1 = area.m_blocks[1][halfMaxY][1];
+	Block& CO2_2 = area.m_blocks[halfMaxX - 1][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(CO2_1, CO2_2, s_CO2);
 	// Lava is at 1,0
-	Block* lava1 = &area.m_blocks[halfMaxX][1][1];
-	Block* lava2 = &area.m_blocks[maxX - 2][halfMaxY - 1][maxZ - 1];
+	Block& lava1 = area.m_blocks[halfMaxX][1][1];
+	Block& lava2 = area.m_blocks[maxX - 2][halfMaxY - 1][maxZ - 1];
 	setFullFluidCuboid(lava1, lava2, s_lava);
 	// Mercury is at 1,1
-	Block* mercury1 = &area.m_blocks[halfMaxX][halfMaxY][1];
-	Block* mercury2 = &area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
+	Block& mercury1 = area.m_blocks[halfMaxX][halfMaxY][1];
+	Block& mercury2 = area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(mercury1, mercury2, s_mercury);
 	CHECK(area.m_fluidGroups.size() == 4);
-	FluidGroup* fgWater = water1->getFluidGroup(s_water);
-	FluidGroup* fgCO2 = CO2_1->getFluidGroup(s_CO2);
-	FluidGroup* fgLava = lava1->getFluidGroup(s_lava);
-	FluidGroup* fgMercury = mercury1->getFluidGroup(s_mercury);
+	FluidGroup* fgWater = water1.getFluidGroup(s_water);
+	FluidGroup* fgCO2 = CO2_1.getFluidGroup(s_CO2);
+	FluidGroup* fgLava = lava1.getFluidGroup(s_lava);
+	FluidGroup* fgMercury = mercury1.getFluidGroup(s_mercury);
 	CHECK(!fgWater->m_merged);
 	CHECK(!fgCO2->m_merged);
 	CHECK(!fgLava->m_merged);

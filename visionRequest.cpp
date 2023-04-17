@@ -147,7 +147,7 @@ bool VisionRequest::hasLineOfSightUsingVisionCuboid(const Block& from, const Blo
 		xCumulative += xDiffNormalized;
 		yCumulative += yDiffNormalized;
 		zCumulative += zDiffNormalized;
-		Block* block = to.offset(std::floor(xCumulative), std::floor(yCumulative), std::floor(zCumulative));
+		Block* block = to.offset(std::round(xCumulative), std::round(yCumulative), std::round(zCumulative));
 		if(!block->canSeeThroughFrom(*previous))
 			return false;
 		if(block == &from)
@@ -177,7 +177,7 @@ bool VisionRequest::hasLineOfSightBasic(const Block& from, const Block& to)
 		xCumulative += xDiffNormalized;
 		yCumulative += yDiffNormalized;
 		zCumulative += zDiffNormalized;
-		Block* block = to.offset(std::floor(xCumulative), std::floor(yCumulative), std::floor(zCumulative));
+		Block* block = to.offset(std::round(xCumulative), std::round(yCumulative), std::round(zCumulative));
 		if(!block->canSeeThroughFrom(*previous))
 			return false;
 		if(block == &from)

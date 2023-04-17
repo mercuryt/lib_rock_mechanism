@@ -10,7 +10,7 @@ class Block;
 class RouteRequest
 {
 public:
-	Actor* m_actor;
+	Actor& m_actor;
 	bool m_detour;
 	std::vector<Block*> m_result;
 	std::unordered_map<Block*, std::vector<std::pair<Block*, uint32_t>>> m_moveCostsToCache;
@@ -18,7 +18,7 @@ public:
 
 	static void readSteps(std::vector<RouteRequest>::iterator begin, std::vector<RouteRequest>::iterator end);
 
-	RouteRequest(Actor* a, bool detour = false);
+	RouteRequest(Actor& a, bool detour = false);
 	
 	// Find the route.
 	void readStep();

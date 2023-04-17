@@ -205,3 +205,7 @@ void baseArea::stepCaveInWrite()
 	}
 }
 
+void baseArea::registerPotentialCaveIn(Block& block)
+{
+	m_caveInCheck.insert(&block);
+}

@@ -24,12 +24,12 @@ void rave(uint32_t scaleX, uint32_t scaleY, uint32_t scaleZ , uint32_t steps)
 	std::list<Actor> actors;
 	for(Block& block : cuboid)
 	{
-		block.addConstructedFeature(s_floor, s_glass);
+		block.addConstructedFeature(s_floor, s_stone);
 		actors.emplace_back(&block, s_oneByOneFull, s_twoLegs);
 		area.registerActor(actors.back());
 	}
 	s_step = 1;
-	std::cout << "begin test rave at scale " << scaleX << "," << scaleY << "," << scaleZ << std::endl;
+	std::cout << "begin test stone rave at scale " << scaleX << "," << scaleY << "," << scaleZ << std::endl;
 	std::cout << actors.size() << " actors." << std::endl;
 	auto startTotal = timeNow();
 	uint32_t longestStepMs = 0;
@@ -47,6 +47,11 @@ void rave(uint32_t scaleX, uint32_t scaleY, uint32_t scaleZ , uint32_t steps)
 	std::cout << "total:" << std::to_string(timeTotal) << "ms" << std::endl;
 	std::cout << "average:" << std::to_string(timeTotal / s_step) << "ms" << std::endl;
 	std::cout << "longest:" << std::to_string(longestStepMs) << "ms" << std::endl;
+	const Actor& a1 = *area.m_blocks[0][0][1].m_actors.begin()->first;
+	// Is 152 too high?
+	assert(a1.m_canSee.size() == 152);
+	const Actor& a2 = *area.m_blocks[10][10][2].m_actors.begin()->first;
+	assert(a2.m_canSee.size() == 374);
 }
 int main()
 {
