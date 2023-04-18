@@ -263,7 +263,7 @@ void FluidGroup::readStep()
 		uint32_t fillZ = m_fillQueue.m_groupStart->block->m_z;
 		// If drain is less then 2 units above fill then end loop.
 		//TODO: using fillVolume > drainVolume here rather then the above assert feels like a hack.
-		if(drainZ < fillZ || (drainZ == fillZ && (fillVolume > drainVolume || drainVolume - fillVolume < 2)))
+		if(drainZ < fillZ || (drainZ == fillZ && (fillVolume >= drainVolume || (drainVolume == 1 &&  fillVolume == 0))))
 		{
 			// if no new blocks have been added this step then set stable
 			if(m_fillQueue.m_futureNoLongerEmpty.empty() && m_disolvedInThisGroup.empty())
