@@ -16,7 +16,7 @@
 #include "fluidGroup.h"
 #include "visionRequest.h"
 #include "routeRequest.h"
-#include "buckets.h"
+#include "idBuckets.h"
 #include "hasScheduledEvents.h"
 #include "locationBuckets.h"
 
@@ -36,7 +36,7 @@ public:
 	std::vector<VisionRequest> m_visionRequestQueue;
 	std::shared_mutex m_blockMutex;
 	uint32_t m_routeCacheVersion;
-	Buckets<Actor, s_actorDoVisionInterval> m_visionBuckets;
+	IdBuckets<Actor, s_actorDoVisionInterval> m_visionBuckets;
 	std::vector<std::tuple<std::vector<Block*>,uint32_t,uint32_t>> m_caveInData;
 	std::unordered_set<FluidGroup*> m_setStable;
 	std::unordered_set<FluidGroup*> m_toDestroy;

@@ -17,6 +17,7 @@
 #include "moveType.h"
 #include "shape.h"
 #include "fluidType.h"
+#include "fluidContents.h"
 
 class RouteRequest;
 class VisionCuboid;
@@ -60,14 +61,10 @@ public:
 	uint32_t m_totalDynamicVolume;
 	// Store a total occupied volume from genericSolids and nongenerics.
 	uint32_t m_totalStaticVolume;
-	// Store a total occupied volume from fluids.
-	uint32_t m_totalFluidVolume;
+	// Mediates all interactions with fluids.
+	FluidContents m_fluidContents;
 	// For loose generics: store material type and volume.
 	std::unordered_map<const MaterialType*, uint32_t> m_genericSolids;
-	// For fluids: store fluidType, volume, and FluidGroup pointer.
-	// Sorted by density, low to high.
-	// TODO: Try replacing with a flatmap.
-	std::map<const FluidType*, std::pair<uint32_t, FluidGroup*>, SortByDensity> m_fluids;
 	// For mist.
 	const FluidType* m_mist;
 	const FluidType* m_mistSource;

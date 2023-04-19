@@ -17,9 +17,9 @@
 #include "hasShape.h"
 #include "fluidType.h"
 
-baseBlock::baseBlock() : m_solid(nullptr), m_routeCacheVersion(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr) {}
+baseBlock::baseBlock() : m_solid(nullptr), m_routeCacheVersion(0), m_fluidContents(static_cast<Block&>(*this), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr) {}
 void baseBlock::setup(Area* a, uint32_t ax, uint32_t ay, uint32_t az)
-{m_area=a;m_x=ax;m_y=ay;m_z=az;m_locationBucket = a->m_locationBuckets.getBucketFor(*static_cast<Block*>(this));}
+{m_area=a;m_x=ax;m_y=ay;m_z=az;m_locationBucket = a->m_locationBuckets.getBucketFor(static_cast<Block&>(*this));}
 void baseBlock::recordAdjacent()
 {
 	static const int32_t offsetsList[6][3] = {{0,0,-1}, {0,-1,0}, {-1,0,0}, {0,1,0}, {1,0,0}, {0,0,1}};
@@ -241,13 +241,12 @@ void baseBlock::setSolid(const MaterialType* materialType)
 	assert(materialType != nullptr);
 	m_solid = materialType;
 	// Displace fluids.
-	m_totalFluidVolume = 0;
-	for(auto& [fluidType, pair] : m_fluids)
+	for(VolumeAndGroup volumeAndGroup : m_fluidContents)
 	{
-		pair.second->removeBlock(static_cast<Block&>(*this));
-		pair.second->addFluid(pair.first);
+		volumeAndGroup.group->removeBlock(static_cast<Block&>(*this));
+		volumeAndGroup.group->addFluid(pair.first);
 		// If there is no where to put the fluid.
-		if(pair.second->m_drainQueue.m_set.empty() && pair.second->m_fillQueue.m_set.empty())
+		if(volumeAndGroup.group->m_drainQueue.m_set.empty() && volumeAndGroup.group->m_fillQueue.m_set.empty())
 		{
 			// If fluid piston is enabled then find a place above to add to potential.
 			if constexpr (s_fluidPiston)
@@ -259,7 +258,7 @@ void baseBlock::setSolid(const MaterialType* materialType)
 							above->fluidCanEnterCurrently(fluidType)
 					  )
 					{
-						pair.second->m_fillQueue.addBlock(above);
+						volumeAndGroup.group->m_fillQueue.addBlock(above);
 						break;
 					}
 					above = above->m_adjacents[5];
@@ -275,12 +274,12 @@ void baseBlock::setSolid(const MaterialType* materialType)
 			}
 		}
 	}
-	m_fluids.clear();
+	m_fluidContents.clear();
 	// Remove from fluid fill queues.
 	for(Block* adjacent : m_adjacentsVector)
 		if(adjacent->fluidCanEnterEver())
-			for(auto& [fluidType, pair] : adjacent->m_fluids)
-				pair.second->m_fillQueue.removeBlock(static_cast<Block*>(this));
+			for(VolumeAndGroup volumeAndGroup : adjacent->m_fluidContents)
+				volumeAndGroup.group->m_fillQueue.removeBlock(static_cast<Block*>(this));
 	// Possible expire path caches.
 	// If more then one adjacent block can be entered then this block being cleared may open a new shortest path.
 	if(std::ranges::count_if(m_adjacentsVector, [&](Block* block){ return block->anyoneCanEnterEver(); }) > 1)

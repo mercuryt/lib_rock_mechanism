@@ -156,6 +156,7 @@ public:
 #include "../cuboid.cpp"
 #include "../locationBuckets.cpp"
 #include "../mistDisperseEvent.cpp"
+#include "../fluidContents.cpp"
 
 // Can anyone enter ever?
 bool Block::anyoneCanEnterEver() const
