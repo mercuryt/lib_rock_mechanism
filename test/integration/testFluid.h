@@ -1446,9 +1446,9 @@ TEST_CASE("Test mist")
 		}
 		s_step++;
 	}
-	CHECK(area.m_scheduledEvents.at(11).size() == 8);
-	area.executeScheduledEvents(11);
-	CHECK(area.m_scheduledEvents.empty());
+	CHECK(area.m_eventSchedule.m_data.at(11).size() == 8);
+	area.m_eventSchedule.execute(11);
+	CHECK(area.m_eventSchedule.m_data.empty());
 	CHECK(block5.m_mist == nullptr);
 }
 void trenchTest2Fluids(uint32_t scaleL, uint32_t scaleW, uint32_t steps)

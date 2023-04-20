@@ -89,7 +89,7 @@ TEST_CASE("Test move with threading")
 	area.writeStep();
 	s_step++;
 	CHECK(actor.m_route->size() == 7);
-	uint32_t scheduledStep = area.m_scheduledEvents.begin()->first;
+	uint32_t scheduledStep = area.m_eventSchedule.m_data.begin()->first;
 	while(s_step != scheduledStep)
 	{
 		area.readStep();
@@ -107,7 +107,7 @@ TEST_CASE("Test move with threading")
 		s_step++;
 	}
 	CHECK(actor.m_destination == nullptr);
-	CHECK(area.m_scheduledEvents.empty());
+	CHECK(area.m_eventSchedule.m_data.empty());
 }
 TEST_CASE("Test mist spreads")
 {
@@ -121,7 +121,7 @@ TEST_CASE("Test mist spreads")
 	Block& block3 = area.m_blocks[5][5][2];
 	origin.m_mistSource = s_water;
 	origin.spawnMist(s_water);
-	uint32_t scheduledStep = area.m_scheduledEvents.begin()->first;
+	uint32_t scheduledStep = area.m_eventSchedule.m_data.begin()->first;
 	CHECK(scheduledStep == 10);
 	while(s_step != scheduledStep)
 	{
@@ -137,9 +137,9 @@ TEST_CASE("Test mist spreads")
 	CHECK(block1.m_mist == s_water);
 	CHECK(block2.m_mist == nullptr);
 	CHECK(block3.m_mist == s_water);
-	CHECK(!area.m_scheduledEvents.empty());
-	scheduledStep = area.m_scheduledEvents.begin()->first;
-	CHECK(area.m_scheduledEvents.at(scheduledStep).size() == 6);
+	CHECK(!area.m_eventSchedule.m_data.empty());
+	scheduledStep = area.m_eventSchedule.m_data.begin()->first;
+	CHECK(area.m_eventSchedule.m_data.at(scheduledStep).size() == 6);
 	while(s_step != scheduledStep +1 )
 	{
 		area.readStep();
@@ -150,10 +150,10 @@ TEST_CASE("Test mist spreads")
 	CHECK(block1.m_mist == s_water);
 	CHECK(block2.m_mist == s_water);
 	CHECK(block3.m_mist == s_water);
-	CHECK(!area.m_scheduledEvents.empty());
+	CHECK(!area.m_eventSchedule.m_data.empty());
 	origin.m_mistSource = nullptr;
-	scheduledStep = area.m_scheduledEvents.begin()->first;
-	CHECK(area.m_scheduledEvents.at(scheduledStep).size() == 19);
+	scheduledStep = area.m_eventSchedule.m_data.begin()->first;
+	CHECK(area.m_eventSchedule.m_data.at(scheduledStep).size() == 19);
 	while(s_step != scheduledStep + 1)
 	{
 		area.readStep();
@@ -164,7 +164,7 @@ TEST_CASE("Test mist spreads")
 	CHECK(block1.m_mist == s_water);
 	CHECK(block2.m_mist == s_water);
 	CHECK(block3.m_mist == s_water);
-	scheduledStep = area.m_scheduledEvents.begin()->first;
+	scheduledStep = area.m_eventSchedule.m_data.begin()->first;
 	while(s_step != scheduledStep + 1)
 	{
 		area.readStep();
@@ -175,7 +175,7 @@ TEST_CASE("Test mist spreads")
 	CHECK(block1.m_mist == nullptr);
 	CHECK(block2.m_mist == s_water);
 	CHECK(block3.m_mist == nullptr);
-	scheduledStep = area.m_scheduledEvents.begin()->first;
+	scheduledStep = area.m_eventSchedule.m_data.begin()->first;
 	while(s_step != scheduledStep + 1)
 	{
 		area.readStep();
@@ -186,7 +186,7 @@ TEST_CASE("Test mist spreads")
 	CHECK(block1.m_mist == nullptr);
 	CHECK(block2.m_mist == nullptr);
 	CHECK(block3.m_mist == nullptr);
-	CHECK(area.m_scheduledEvents.empty());
+	CHECK(area.m_eventSchedule.m_data.empty());
 }
 void fourFluidsTestParallel(uint32_t scale, uint32_t steps)
 {
