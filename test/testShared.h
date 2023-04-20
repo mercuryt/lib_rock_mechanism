@@ -84,7 +84,7 @@ public:
 	bool canStandIn() const;
 	void clearMoveCostsCacheForSelfAndAdjacent();
 
-	bool canSeeIntoFromAlways(const Block* block) const;
+	bool canSeeThroughFromAlways(const Block* block) const;
 	bool canSeeThrough() const;
 	bool canSeeThroughFrom(const Block& block) const;
 	float visionDistanceModifier() const;
@@ -236,6 +236,7 @@ bool Block::moveTypeCanEnterFrom(const MoveType* moveType, Block* from) const
 		return true;
 	return false;
 }
+// If a non flying / swimming move type is here does it fall?
 bool Block::canStandIn() const
 {
 	assert(m_adjacents[0] != nullptr);
@@ -272,7 +273,8 @@ void Block::clearMoveCostsCacheForSelfAndAdjacent()
 	for(Block* adjacent : getAdjacentWithEdgeAndCornerAdjacent())
 		adjacent->m_moveCostsCache.clear();
 }
-bool Block::canSeeIntoFromAlways(const Block* block) const
+// Can this block always be seen through from this angle?
+bool Block::canSeeThroughFromAlways(const Block* block) const
 {
 	if(isSolid() && !getSolidMaterial()->transparent)
 		return false;
@@ -298,6 +300,7 @@ bool Block::canSeeIntoFromAlways(const Block* block) const
 	}
 	return true;
 }
+// Can this block currently be seen through from any angle.
 bool Block::canSeeThrough() const
 {
 	if(isSolid() && !getSolidMaterial()->transparent)
@@ -307,6 +310,7 @@ bool Block::canSeeThrough() const
 		return false;
 	return true;
 }
+// Can this block currently be seen through from this angle.
 bool Block::canSeeThroughFrom(const Block& block) const
 {
 	if(!canSeeThrough())
@@ -335,21 +339,25 @@ bool Block::canSeeThroughFrom(const Block& block) const
 	}
 	return true;
 }
+// Multiply max vision distance by for a target actor with this location. 1.5 = can be seen 50% from farther away.
 float Block::visionDistanceModifier() const
 {
 	return 1;
 }
+// Can any fluid ever enter this block without a change to m_solid or m_features.
 bool Block::fluidCanEnterEver() const
 {
 	if(isSolid())
 		return false;
 	return true;
 }
+// Block fluids entering by type.
 bool Block::fluidCanEnterEver(const FluidType* fluidType) const
 {
 	(void)fluidType;
 	return true;
 }
+// Prevents cave in.
 bool Block::isSupport() const
 {
 	return isSolid();
@@ -361,6 +369,7 @@ uint32_t Block::getMass() const
 	else
 		return getSolidMaterial()->mass;
 }
+// Return a list of pairs of adjacent blocks and most costs to enter from here.
 std::vector<std::pair<Block*, uint32_t>> Block::getMoveCosts(const Shape* shape, const MoveType* moveType)
 {
 	std::vector<std::pair<Block*, uint32_t>> output;
@@ -414,8 +423,20 @@ void Block::moveContentsTo(Block* block)
 		setNotSolid();
 		block->setSolid(materialType);
 	}
-	//TODO: other stuff falls?
+	//TODO: other stuff falls.
 }
+// Destroy everything in the block.
+void Block::destroyContents()
+{
+	bool wasSupport = isSupport();
+	m_features.clear();
+	if(wasSupport)
+		for(Block* adjacent : m_adjacentsVector)
+			if(!adjacent.m_features.empty())
+				m_area->m_potentiallyUnsupportedFeatures.insert(adjacent);
+	//TODO: Destory actors and items.
+}
+// The remaining methods are not required by the engine.
 void Block::addConstructedFeature(const BlockFeatureType* blockFeatureType, const MaterialType* materialType)
 {
 	assert(!isSolid());

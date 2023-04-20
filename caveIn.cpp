@@ -125,7 +125,7 @@ void baseArea::stepCaveInRead()
 
 	} // End for each blockQueue.
 	// Record unanchored chunks, fall distance and energy.
-	std::vector<std::tuple<std::unordered_set<Block*>,uint32_t, uint32_t>> fallingChunksWithDistanceAndEnergy;
+	std::vector<std::tuple<std::unordered_set<Block*>,uint32_t>> fallingChunksWithDistance;
 	for(std::unordered_set<Block*>& chunk : chunks)
 	{
 		if(!anchoredChunks.contains(&chunk))
@@ -159,31 +159,23 @@ void baseArea::stepCaveInRead()
 					}
 				}
 			}
-
-			// Calculate energy of fall.
-			uint32_t fallEnergy = 0;
-			for(Block* block : chunk)
-				fallEnergy += block->getMass();
-			fallEnergy *= smallestFallDistance;
-			
-			// Store result to apply inside a write mutex after sorting.
-			fallingChunksWithDistanceAndEnergy.emplace_back(chunk, smallestFallDistance, fallEnergy);
+			fallingChunksWithDistance.emplace_back(chunk, smallestFallDistance);
 		}
 	}
 
 	// Sort by z low to high so blocks don't overwrite eachother when moved down.
 	auto compare = [](Block* a, Block* b) { return a->m_z < b->m_z; };
-	for(auto& [chunk, fallDistance, fallEnergy] : fallingChunksWithDistanceAndEnergy)
+	for(auto& [chunk, fallDistance] : fallingChunksWithDistance)
 	{
 		std::vector<Block*> blocks(chunk.begin(), chunk.end());
 		std::ranges::sort(blocks, compare);
-		m_caveInData.emplace_back(std::move(blocks), fallDistance, fallEnergy);
+		m_caveInData.emplace_back(std::move(blocks), fallDistance);
 	}
 }
 void baseArea::stepCaveInWrite()
 {
 	// Make chunks fall.
-	for(auto& [chunk, fallDistance, fallEnergy] : m_caveInData)
+	for(auto& [chunk, fallDistance] : m_caveInData)
 	{
 		uint32_t zDiff;
 		// Move blocks down.
@@ -195,13 +187,14 @@ void baseArea::stepCaveInWrite()
 			while(zDiff)
 			{
 				below = below->m_adjacents[0];
+				below->destroyContents();
 				zDiff--;
 			}
 			block->moveContentsTo(below);
 		}
 		// We don't know if the thing we landed on was it's self anchored so add a block to caveInCheck to be checked next step.
 		m_caveInCheck.insert(below);
-		//TODO: disperse energy of fall by 'mining' out blocks absorbing impact
+		static_cast<Area&>(*this).afterCaveIn(chunk, fallDistance);
 	}
 }
 

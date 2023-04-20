@@ -34,7 +34,7 @@ Features:
 	The same as Glass Rave except the floors are all stone rather then glass.
 	The average time of a step is 22ms and the longest is 29ms.
 * Four Fluids:
-	An area is created with solid stone layers on the bottom and sides with non-solid dimensions of 80x80x20. Four fluid groups are created, eeach with dimensions 20x20x20. The four fluid types are water, CO2, mercury and lava. This stabilizes into four layes over the course of 80 steps.
+	An area is created with solid stone layers on the bottom and sides with non-solid dimensions of 80x80x20. Four fluid groups are created, eeach with dimensions 20x20x20. The four fluid types are water, CO2, mercury and lava. This stabilizes into four layers over the course of 80 steps.
 	The average time of a step is 203ms and the longest is 301ms.
 * All of the above were run on a AMD A9 processor ( 2 threads @ 2.6 ghz ) with 4 gb RAM. RAM usage is less then 100MB.
 

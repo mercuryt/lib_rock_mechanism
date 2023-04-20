@@ -134,7 +134,7 @@ public:
 	uint32_t moveCost(const MoveType* moveType, Block* origin) const;
 
 	bool canSeeThroughFrom(const Block& block) const;
-	bool canSeeIntoFromAlways(Block* block) const;
+	bool canSeeThroughFromAlways(Block* block) const;
 	float visionDistanceModifier() const;
 
 	bool fluidCanEnterEver() const;
@@ -144,5 +144,6 @@ public:
 	uint32_t getMass() const;
 
 	void moveContentsTo(Block* block);
+	void destroyContents();
 };
 static_assert(std::default_initializable<baseBlock>);
