@@ -42,7 +42,7 @@ public:
 	std::shared_mutex m_blockMutex;
 	uint32_t m_routeCacheVersion;
 	Buckets<Actor, s_actorDoVisionInterval> m_visionBuckets;
-	std::vector<std::tuple<std::vector<Block*>,uint32_t,uint32_t>> m_caveInData;
+	std::vector<std::pair<std::vector<Block*>,uint32_t>> m_caveInData;
 	std::unordered_set<FluidGroup*> m_setStable;
 	std::unordered_set<FluidGroup*> m_toDestroy;
 	std::list<VisionCuboid> m_visionCuboids;
@@ -90,5 +90,5 @@ public:
 
 	// User provided code, no route.
 	void notifyNoRouteFound(Actor& actor);
-
+	void afterCaveIn(std::vector<Block*>& block, uint32_t distance);
 };

@@ -33,7 +33,6 @@ void FillQueue::recordDelta(uint32_t volume, uint32_t flowCapacity, uint32_t flo
 	assert(m_groupStart->capacity >= volume);
 	assert(volume != 0);
 	assert(m_groupStart != m_groupEnd);
-	validate();
 	// Record fluid level changes.
 	for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 	{
@@ -62,7 +61,6 @@ void FillQueue::recordDelta(uint32_t volume, uint32_t flowCapacity, uint32_t flo
 }
 void FillQueue::applyDelta()
 {
-	validate();
 	for(auto iter = m_queue.begin(); iter != m_groupEnd; ++iter)
 	{
 		// TODO: This seems hackey, should try gather instead, also for drain.
@@ -70,12 +68,12 @@ void FillQueue::applyDelta()
 			continue;
 		assert(!iter->block->m_fluids.contains(m_fluidGroup.m_fluidType) || iter->block->m_fluids.at(m_fluidGroup.m_fluidType).second != nullptr);
 		auto found = iter->block->m_fluids.find(m_fluidGroup.m_fluidType);
-		if(found == iter->block->m_fluids.end())
+		if(found != iter->block->m_fluids.end())
 			iter->block->m_fluids.emplace(m_fluidGroup.m_fluidType, std::make_pair(iter->delta, &m_fluidGroup));
 		else
 		{
 			found->second.first += iter->delta;
-			assert(found->second.second->m_fluidType == m_fluidGroup.m_fluidType);
+			assert(iter->block->m_fluids.at(m_fluidGroup.m_fluidType).second->m_fluidType == m_fluidGroup.m_fluidType);
 		}
 		iter->block->m_totalFluidVolume += iter->delta;
 		/*assert(iter->block->m_fluids.at(m_fluidGroup.m_fluidType).second != &m_fluidGroup ||
@@ -85,7 +83,6 @@ void FillQueue::applyDelta()
 		if(iter->block->m_totalFluidVolume > s_maxBlockVolume)
 			m_overfull.insert(iter->block);
 	}
-	validate();
 }
 uint32_t FillQueue::groupLevel() const
 {
