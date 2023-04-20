@@ -80,17 +80,17 @@ TEST_CASE("Walk")
 	RouteRequest routeRequest(actor);
 	routeRequest.readStep();
 	routeRequest.writeStep();
-	CHECK(area.m_scheduledEvents.size() == 1);
-	uint32_t scheduledStep = area.m_scheduledEvents.begin()->first;
+	CHECK(area.m_eventSchedule.m_data.size() == 1);
+	uint32_t scheduledStep = area.m_eventSchedule.m_data.begin()->first;
 	s_step = scheduledStep;
-	area.executeScheduledEvents(scheduledStep);
+	area.m_eventSchedule.execute(scheduledStep);
 	CHECK(actor.m_location == &block1);
-	CHECK(area.m_scheduledEvents.size() == 1);
-	scheduledStep = area.m_scheduledEvents.begin()->first;
+	CHECK(area.m_eventSchedule.m_data.size() == 1);
+	scheduledStep = area.m_eventSchedule.m_data.begin()->first;
 	s_step = scheduledStep;
-	area.executeScheduledEvents(scheduledStep);
+	area.m_eventSchedule.execute(scheduledStep);
 	CHECK(actor.m_location == &destination);
-	CHECK(area.m_scheduledEvents.size() == 0);
+	CHECK(area.m_eventSchedule.m_data.size() == 0);
 	CHECK(actor.m_route == nullptr);
 	CHECK(actor.m_destination == nullptr);
 }
@@ -110,32 +110,32 @@ TEST_CASE("Repath when route is blocked")
 	routeRequest.readStep();
 	routeRequest.writeStep();
 	area.m_routeRequestQueue.clear();
-	CHECK(area.m_scheduledEvents.size() == 1);
+	CHECK(area.m_eventSchedule.m_data.size() == 1);
 	// Step 1.
-	uint32_t scheduledStep = area.m_scheduledEvents.begin()->first;
+	uint32_t scheduledStep = area.m_eventSchedule.m_data.begin()->first;
 	s_step = scheduledStep;
-	area.executeScheduledEvents(scheduledStep);
+	area.m_eventSchedule.execute(scheduledStep);
 	CHECK(actor.m_location == &block1);
-	CHECK(area.m_scheduledEvents.size() == 1);
+	CHECK(area.m_eventSchedule.m_data.size() == 1);
 	block2.setSolid(s_stone);
 	CHECK(origin.m_routeCacheVersion != area.m_routeCacheVersion);
 	// Step 2.
-	CHECK(area.m_scheduledEvents.size() == 1);
-	scheduledStep = area.m_scheduledEvents.begin()->first;
+	CHECK(area.m_eventSchedule.m_data.size() == 1);
+	scheduledStep = area.m_eventSchedule.m_data.begin()->first;
 	s_step = scheduledStep;
-	area.executeScheduledEvents(scheduledStep);
+	area.m_eventSchedule.execute(scheduledStep);
 	CHECK(actor.m_location == &block1);
-	CHECK(area.m_scheduledEvents.size() == 0);
+	CHECK(area.m_eventSchedule.m_data.size() == 0);
 	CHECK(area.m_routeRequestQueue.size() == 1);
 	// Step 3.
 	RouteRequest& routeRequest2 = area.m_routeRequestQueue.back();
 	routeRequest2.readStep();
 	routeRequest2.writeStep();
 	area.m_routeRequestQueue.clear();
-	CHECK(area.m_scheduledEvents.size() == 1);
-	scheduledStep = area.m_scheduledEvents.begin()->first;
+	CHECK(area.m_eventSchedule.m_data.size() == 1);
+	scheduledStep = area.m_eventSchedule.m_data.begin()->first;
 	s_step = scheduledStep;
-	area.executeScheduledEvents(scheduledStep);
+	area.m_eventSchedule.execute(scheduledStep);
 	CHECK(actor.m_location == &block3);
 }
 TEST_CASE("Walk multi-block creature")
@@ -152,17 +152,17 @@ TEST_CASE("Walk multi-block creature")
 	routeRequest.readStep();
 	CHECK(routeRequest.m_result.size() == 2);
 	routeRequest.writeStep();
-	CHECK(area.m_scheduledEvents.size() == 1);
-	uint32_t scheduledStep = area.m_scheduledEvents.begin()->first;
+	CHECK(area.m_eventSchedule.m_data.size() == 1);
+	uint32_t scheduledStep = area.m_eventSchedule.m_data.begin()->first;
 	s_step = scheduledStep;
-	area.executeScheduledEvents(scheduledStep);
+	area.m_eventSchedule.execute(scheduledStep);
 	CHECK(actor.m_location == &block1);
-	CHECK(area.m_scheduledEvents.size() == 1);
-	scheduledStep = area.m_scheduledEvents.begin()->first;
+	CHECK(area.m_eventSchedule.m_data.size() == 1);
+	scheduledStep = area.m_eventSchedule.m_data.begin()->first;
 	s_step = scheduledStep;
-	area.executeScheduledEvents(scheduledStep);
+	area.m_eventSchedule.execute(scheduledStep);
 	CHECK(actor.m_location == &destination);
-	CHECK(area.m_scheduledEvents.size() == 0);
+	CHECK(area.m_eventSchedule.m_data.size() == 0);
 	CHECK(actor.m_route == nullptr);
 	CHECK(actor.m_destination == nullptr);
 }
@@ -557,17 +557,17 @@ TEST_CASE("detour")
 	routeRequest.writeStep();
 	CHECK(routeRequest.m_result.size() == 2);
 	CHECK(!area.m_blocks[3][3][1].actorCanEnterCurrently(a1));
-	CHECK(area.m_scheduledEvents.size() == 1);
+	CHECK(area.m_eventSchedule.m_data.size() == 1);
 	// Move attempt 1.
-	s_step = area.m_scheduledEvents.begin()->first;
-	area.executeScheduledEvents(s_step);
+	s_step = area.m_eventSchedule.m_data.begin()->first;
+	area.m_eventSchedule.execute(s_step);
 	CHECK(a1.m_location == &origin);
-	CHECK(area.m_scheduledEvents.size() == 1);
+	CHECK(area.m_eventSchedule.m_data.size() == 1);
 	// Move attempt 2.
-	s_step = area.m_scheduledEvents.begin()->first;
-	area.executeScheduledEvents(s_step);
+	s_step = area.m_eventSchedule.m_data.begin()->first;
+	area.m_eventSchedule.execute(s_step);
 	CHECK(a1.m_location == &origin);
-	CHECK(area.m_scheduledEvents.size() == 0);
+	CHECK(area.m_eventSchedule.m_data.size() == 0);
 	// Detour.
 	RouteRequest detour(a1, true);
 	detour.readStep();
