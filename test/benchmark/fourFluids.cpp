@@ -1,4 +1,4 @@
-#include "testShared.h"
+#include "../testShared.h"
 #include <chrono>
 #include <vector>
 #include <iostream>
@@ -24,21 +24,21 @@ void fourFluids(uint32_t scale, uint32_t steps)
 	setSolidWalls(area, maxZ - 1, s_stone);
 	std::vector<FluidGroup*> newlySplit;
 	// Water is at 0,0
-	Block* water1 = &area.m_blocks[1][1][1];
-	Block* water2 = &area.m_blocks[halfMaxX - 1][halfMaxY - 1][maxZ - 1];		
-	setFullFluidCuboid(area, water1, water2, s_water);
+	Block& water1 = area.m_blocks[1][1][1];
+	Block& water2 = area.m_blocks[halfMaxX - 1][halfMaxY - 1][maxZ - 1];		
+	setFullFluidCuboid(water1, water2, s_water);
 	// CO2 is at 0,1
-	Block* CO2_1 = &area.m_blocks[1][halfMaxY][1];
-	Block* CO2_2 = &area.m_blocks[halfMaxX - 1][maxY - 2][maxZ - 1];
-	setFullFluidCuboid(area, CO2_1, CO2_2, s_CO2);
+	Block& CO2_1 = area.m_blocks[1][halfMaxY][1];
+	Block& CO2_2 = area.m_blocks[halfMaxX - 1][maxY - 2][maxZ - 1];
+	setFullFluidCuboid(CO2_1, CO2_2, s_CO2);
 	// Lava is at 1,0
-	Block* lava1 = &area.m_blocks[halfMaxX][1][1];
-	Block* lava2 = &area.m_blocks[maxX - 2][halfMaxY - 1][maxZ - 1];
-	setFullFluidCuboid(area, lava1, lava2, s_lava);
+	Block& lava1 = area.m_blocks[halfMaxX][1][1];
+	Block& lava2 = area.m_blocks[maxX - 2][halfMaxY - 1][maxZ - 1];
+	setFullFluidCuboid(lava1, lava2, s_lava);
 	// Mercury is at 1,1
-	Block* mercury1 = &area.m_blocks[halfMaxX][halfMaxY][1];
-	Block* mercury2 = &area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
-	setFullFluidCuboid(area, mercury1, mercury2, s_mercury);
+	Block& mercury1 = area.m_blocks[halfMaxX][halfMaxY][1];
+	Block& mercury2 = area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
+	setFullFluidCuboid(mercury1, mercury2, s_mercury);
 	s_step = 1;
 	std::cout << "begin test four fluids at scale " << scale << std::endl;
 	auto startTotal = timeNow();
