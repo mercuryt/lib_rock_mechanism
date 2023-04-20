@@ -138,7 +138,7 @@ void baseArea::writeStep()
 		visionRequest.writeStep();
 	m_visionRequestQueue.clear();
 	// Do scheduled events.
-	executeScheduledEvents(s_step);
+	m_eventSchedule.execute(s_step);
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 		fluidGroup.validate();
 	if(m_visionCuboidsActive)
@@ -156,8 +156,8 @@ void baseArea::scheduleMove(Actor& actor)
 {
 	Block* block = *(actor.m_routeIter);
 	uint32_t stepsToMove = block->moveCost(actor.m_moveType, actor.m_location) / actor.getSpeed();
-	MoveEvent* moveEvent = new MoveEvent(s_step + stepsToMove, actor);
-	scheduleEvent(moveEvent);
+	std::unique_ptr<ScheduledEvent> moveEvent = std::make_unique<MoveEvent>(s_step + stepsToMove, actor);
+	m_eventSchedule.schedule(std::move(moveEvent));
 }
 void baseArea::registerRouteRequest(Actor& actor, bool detour)
 {

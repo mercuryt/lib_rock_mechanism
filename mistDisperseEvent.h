@@ -1,5 +1,5 @@
 #pragma once
-#include "hasScheduledEvents.h"
+#include "eventSchedule.h"
 class Block;
 class MistDisperseEvent : public ScheduledEvent
 {

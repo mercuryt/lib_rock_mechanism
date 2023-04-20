@@ -17,11 +17,11 @@
 #include "visionRequest.h"
 #include "routeRequest.h"
 #include "buckets.h"
-#include "hasScheduledEvents.h"
+#include "eventSchedule.h"
 #include "locationBuckets.h"
 
 
-class baseArea : public HasScheduledEvents
+class baseArea
 {
 public:
 	uint32_t m_sizeX;
@@ -42,6 +42,7 @@ public:
 	std::unordered_set<FluidGroup*> m_toDestroy;
 	std::list<VisionCuboid> m_visionCuboids;
 	bool m_visionCuboidsActive;
+	EventSchedule m_eventSchedule;
 
 	void expireRouteCache();
 

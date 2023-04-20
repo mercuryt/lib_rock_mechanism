@@ -309,8 +309,8 @@ void baseBlock::spawnMist(const FluidType* fluidType, uint32_t maxMistSpread)
 		return;
 	m_mist = fluidType;
 	m_mistInverseDistanceFromSource = maxMistSpread != 0 ? maxMistSpread : fluidType->maxMistSpread;
-	MistDisperseEvent* event = new MistDisperseEvent(s_step + fluidType->mistDuration, m_mist, static_cast<Block&>(*this));
-	m_area->scheduleEvent(event);
+	auto event = std::make_unique<MistDisperseEvent>( s_step + fluidType->mistDuration, m_mist, static_cast<Block&>(*this));
+	m_area->m_eventSchedule.schedule(std::move(event));
 }
 //TODO: This code puts the fluid into an adjacent group of the correct type if it can find one, it does not add the block or merge groups, leaving these tasks to fluidGroup readStep. Is this ok?
 void baseBlock::addFluid(uint32_t volume, const FluidType* fluidType)
