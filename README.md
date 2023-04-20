@@ -9,19 +9,19 @@
 
 Features:
 * Vision:
--    Parallelized in batches of configurable size.
--    Multi-block creatures.
--    Distance bonus / penalty based on target location (glow tiles).
+    -    Parallelized in batches of configurable size.
+    -    Multi-block creatures.
+    -    Distance bonus / penalty based on target location (glow tiles).
 * Pathfinding:
-    Parallelized in batches of configurable size.
-    Multi-block creatures.
+    -    Parallelized in batches of configurable size.
+    -    Multi-block creatures.
 * Fluid flow:
-    Parallelized by groups of contiguous blocks which contain the same fluid.
-    Fluid mixing / seperation by denisity.
+    -    Parallelized by groups of contiguous blocks which contain the same fluid.
+    -    Fluid mixing / seperation by denisity.
 * Cave-in:
-    Nothing special.
+    -    Nothing special.
 * All of the above:
-    Able to run their 'readStep' methods in parallel with eachother.
+    -    Able to run their 'readStep' methods in parallel with eachother.
 
 ## Benchmarks
 
