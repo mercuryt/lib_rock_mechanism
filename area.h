@@ -13,12 +13,17 @@
 
 #include "lib/BS_thread_pool_light.hpp"
 
-#include "fluidGroup.h"
+#include "buckets.h"
+#include "locationBuckets.h"
+#include "shape.h"
 #include "visionRequest.h"
 #include "routeRequest.h"
-#include "buckets.h"
+#include "fluidGroup.h"
 #include "eventSchedule.h"
-#include "locationBuckets.h"
+#include "moveEvent.h"
+#include "mistDisperseEvent.h"
+#include "cuboid.h"
+#include "visionCuboid.h"
 
 
 class baseArea

@@ -18,21 +18,12 @@ const static uint32_t s_moveTryAttemptsBeforeDetour = 2;
 
 #include "../block.h"
 #include "../actor.h"
-#include "../locationBuckets.h"
 #include "../area.h"
+
 #include "../moveType.h"
 #include "../fluidType.h"
 #include "../materialType.h"
 #include "../blockFeatureType.h"
-#include "../shape.h"
-#include "../visionRequest.h"
-#include "../routeRequest.h"
-#include "../fluidGroup.h"
-#include "../eventSchedule.h"
-#include "../moveEvent.h"
-#include "../mistDisperseEvent.h"
-#include "../cuboid.h"
-#include "../visionCuboid.h"
 
 static uint32_t s_step;
 BS::thread_pool_light s_pool;
@@ -143,19 +134,7 @@ public:
 
 #include "../block.cpp"
 #include "../actor.cpp"
-#include "../visionRequest.cpp"
-#include "../routeRequest.cpp"
-#include "../fluidQueue.cpp"
-#include "../fillQueue.cpp"
-#include "../drainQueue.cpp"
-#include "../fluidGroup.cpp"
 #include "../area.cpp"
-#include "../caveIn.cpp"
-#include "../moveEvent.cpp"
-#include "../visionCuboid.cpp"
-#include "../cuboid.cpp"
-#include "../locationBuckets.cpp"
-#include "../mistDisperseEvent.cpp"
 
 // Can anyone enter ever?
 bool Block::anyoneCanEnterEver() const

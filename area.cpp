@@ -207,4 +207,16 @@ std::string baseArea::toS()
 	}
 	return output;
 }
-
+// Include implimentations of classes that Area depends on here so it doesn't have to be replicated by the user.
+#include "visionRequest.cpp"
+#include "routeRequest.cpp"
+#include "fluidQueue.cpp"
+#include "fillQueue.cpp"
+#include "drainQueue.cpp"
+#include "fluidGroup.cpp"
+#include "caveIn.cpp"
+#include "moveEvent.cpp"
+#include "visionCuboid.cpp"
+#include "cuboid.cpp"
+#include "locationBuckets.cpp"
+#include "mistDisperseEvent.cpp"
