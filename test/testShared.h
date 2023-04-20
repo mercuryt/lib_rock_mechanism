@@ -28,7 +28,7 @@ const static uint32_t s_moveTryAttemptsBeforeDetour = 2;
 #include "../visionRequest.h"
 #include "../routeRequest.h"
 #include "../fluidGroup.h"
-#include "../hasScheduledEvents.h"
+#include "../eventSchedule.h"
 #include "../moveEvent.h"
 #include "../mistDisperseEvent.h"
 #include "../cuboid.h"

@@ -1,13 +1,13 @@
 MoveEvent::MoveEvent(uint32_t s, Actor& a) : ScheduledEvent(s), m_actor(a) { m_actor.m_taskEvent = this; }
 void MoveEvent::execute()
 {
-	Block* block = *m_actor.m_routeIter;
-	if(block->anyoneCanEnterEver() && block->canEnterEver(m_actor))
+	Block& block = **m_actor.m_routeIter;
+	if(block.anyoneCanEnterEver() && block.canEnterEver(m_actor))
 	{
-		if(block->actorCanEnterCurrently(m_actor))
+		if(block.actorCanEnterCurrently(m_actor))
 		{
 			m_actor.m_routeIter++;
-			block->enter(m_actor);
+			block.enter(m_actor);
 		}
 		else
 		{
@@ -19,7 +19,7 @@ void MoveEvent::execute()
 				return;
 			}
 		}
-		if(block == m_actor.m_destination)
+		if(&block == m_actor.m_destination)
 		{
 			m_actor.m_route.reset();
 			m_actor.m_destination = nullptr;

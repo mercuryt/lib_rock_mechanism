@@ -21,17 +21,17 @@ void MistDisperseEvent::execute()
 				{
 					adjacent->m_mist = m_fluidType;
 					adjacent->m_mistInverseDistanceFromSource = m_block.m_mistInverseDistanceFromSource - 1;
-					MistDisperseEvent* event = new MistDisperseEvent(s_step + m_fluidType->mistDuration, m_fluidType, *adjacent);
-					m_block.m_area->scheduleEvent(event);
+					auto event = std::make_unique<MistDisperseEvent>( s_step + m_fluidType->mistDuration, m_fluidType, static_cast<Block&>(*adjacent));
+					m_block.m_area->m_eventSchedule.schedule(std::move(event));
 				}
 		// Schedule next check.
-		MistDisperseEvent* event = new MistDisperseEvent(s_step + m_fluidType->mistDuration, m_fluidType, m_block);
-		m_block.m_area->scheduleEvent(event);
+		auto event = std::make_unique<MistDisperseEvent>( s_step + m_fluidType->mistDuration, m_fluidType, static_cast<Block&>(m_block));
+		m_block.m_area->m_eventSchedule.schedule(std::move(event));
 		return;
 	}
 	// Mist does not continue to exist here.
 	m_block.m_mist = nullptr;
-	m_block.m_mistInverseDistanceFromSource = 0;
+	m_block.m_mistInverseDistanceFromSource = UINT32_MAX;
 }
 
 bool MistDisperseEvent::continuesToExist() const
