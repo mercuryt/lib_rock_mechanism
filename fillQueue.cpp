@@ -73,7 +73,7 @@ void FillQueue::applyDelta()
 		else
 		{
 			found->second.first += iter->delta;
-			assert(!iter->block->m_fluids.contains(m_fluidGroup.m_fluidType) || iter->block->m_fluids.at(m_fluidGroup.m_fluidType).second->m_fluidType == m_fluidGroup.m_fluidType);
+			assert(iter->block->m_fluids.at(m_fluidGroup.m_fluidType).second->m_fluidType == m_fluidGroup.m_fluidType);
 		}
 		iter->block->m_totalFluidVolume += iter->delta;
 		/*assert(iter->block->m_fluids.at(m_fluidGroup.m_fluidType).second != &m_fluidGroup ||

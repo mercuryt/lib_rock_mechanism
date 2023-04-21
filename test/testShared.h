@@ -96,7 +96,6 @@ public:
 	uint32_t getMass() const;
 
 	void moveContentsTo(Block* block);
-	void destroyContents();
 
 	void addConstructedFeature(const BlockFeatureType* blockFeatureType, const MaterialType* materialType);
 	void addHewnFeature(const BlockFeatureType* blockFeatureType, const MaterialType* materialType = nullptr);
@@ -129,10 +128,8 @@ public:
 class Area : public baseArea
 {
 public:
-	std::unordered_set<Block*> m_potentiallyContainsUnsupportedFeatures;
 	Area(uint32_t x, uint32_t y, uint32_t z) : baseArea(x, y, z) {}
 	void notifyNoRouteFound(Actor& actor);
-	void afterCaveIn(std::vector<Block*>& block, uint32_t distance);
 };
 
 #include "../block.cpp"
@@ -435,8 +432,8 @@ void Block::destroyContents()
 	m_features.clear();
 	if(wasSupport)
 		for(Block* adjacent : m_adjacentsVector)
-			if(!adjacent->m_features.empty())
-				m_area->m_potentiallyContainsUnsupportedFeatures.insert(adjacent);
+			if(!adjacent.m_features.empty())
+				m_area->m_potentiallyUnsupportedFeatures.insert(adjacent);
 	//TODO: Destory actors and items.
 }
 // The remaining methods are not required by the engine.
@@ -555,12 +552,6 @@ bool Actor::canSee(const Actor& actor) const
 void Area::notifyNoRouteFound(Actor& actor) 
 { 
 	(void)actor;
-}
-// Handle after effects of cave-in: generate dust, destroy isSupport, etc.
-void Area::afterCaveIn(std::vector<Block*>& blocks, uint32_t distance)
-{ 
-	(void)blocks;
-	(void)distance;
 }
 
 // typesRegistered is used to make sure registerTypes is called only once durring testing.

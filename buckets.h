@@ -1,5 +1,5 @@
 template<typename T, uint32_t turnsPerCycle>
-class IdBuckets
+class Buckets
 {
 private:
 	std::array<std::vector<T*>, turnsPerCycle> buckets;

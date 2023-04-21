@@ -13,7 +13,7 @@
 
 #include "lib/BS_thread_pool_light.hpp"
 
-#include "idBuckets.h"
+#include "buckets.h"
 #include "locationBuckets.h"
 #include "shape.h"
 #include "visionRequest.h"
@@ -41,7 +41,7 @@ public:
 	std::vector<VisionRequest> m_visionRequestQueue;
 	std::shared_mutex m_blockMutex;
 	uint32_t m_routeCacheVersion;
-	IdBuckets<Actor, s_actorDoVisionInterval> m_visionBuckets;
+	Buckets<Actor, s_actorDoVisionInterval> m_visionBuckets;
 	std::vector<std::pair<std::vector<Block*>,uint32_t>> m_caveInData;
 	std::unordered_set<FluidGroup*> m_setStable;
 	std::unordered_set<FluidGroup*> m_toDestroy;
