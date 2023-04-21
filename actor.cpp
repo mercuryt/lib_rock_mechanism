@@ -1,7 +1,7 @@
 #pragma once
 
 baseActor::baseActor(Block* l, const Shape* s, const MoveType* mt) : 
-	HasShape(s), m_id(s_nextId++), m_name("actor#" + std::to_string(m_id)), m_moveType(mt), m_taskDelayCount(0)
+	m_id(s_nextId++), m_shape(s), m_name("actor#" + std::to_string(m_id)), m_moveType(mt), m_taskDelayCount(0)
 {
 	setLocation(l);
 }

@@ -18,11 +18,13 @@
 class Block;
 class Actor;
 
-class baseActor : public HasShape
+class baseActor
 {	
 	static uint32_t s_nextId;
 public:
 	uint32_t m_id;
+	const Shape* m_shape;
+	Block* m_location;
 	std::string m_name;
 	std::vector<Block*> m_blocks;
 	Block* m_destination;
