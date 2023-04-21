@@ -32,17 +32,17 @@ public:
 	uint32_t m_sizeX;
 	uint32_t m_sizeY;
 	uint32_t m_sizeZ;
-	std::vector<std::vector<std::vector<Block>>> m_blocks;
+	std::vector<std::vector<std::vector<BLOCK>>> m_blocks;
 	LocationBuckets m_locationBuckets;
 	std::list<FluidGroup> m_fluidGroups;
 	std::unordered_set<FluidGroup*> m_unstableFluidGroups;
-	std::unordered_set<Block*> m_caveInCheck;
+	std::unordered_set<BLOCK*> m_caveInCheck;
 	std::vector<RouteRequest> m_routeRequestQueue;
 	std::vector<VisionRequest> m_visionRequestQueue;
 	std::shared_mutex m_blockMutex;
 	uint32_t m_routeCacheVersion;
-	Buckets<Actor, s_actorDoVisionInterval> m_visionBuckets;
-	std::vector<std::pair<std::vector<Block*>,uint32_t>> m_caveInData;
+	Buckets<ACTOR, s_actorDoVisionInterval> m_visionBuckets;
+	std::vector<std::tuple<std::vector<BLOCK*>,uint32_t,uint32_t>> m_caveInData;
 	std::unordered_set<FluidGroup*> m_setStable;
 	std::unordered_set<FluidGroup*> m_toDestroy;
 	std::list<VisionCuboid> m_visionCuboids;
@@ -58,24 +58,24 @@ public:
 	void writeStep();
 	
 	// Create a scheduled event when the actor should move.
-	void scheduleMove(Actor& actor);
+	void scheduleMove(ACTOR& actor);
 	
 	// Add to moving actors and call scheduleMove.
-	void registerActorMoving(Actor& actor);
+	void registerActorMoving(ACTOR& actor);
 	// Remove from moving actors.
-	void unregisterActorMoving(Actor& actor);
+	void unregisterActorMoving(ACTOR& actor);
 
 	// RegisterActor, add to visionBucket.
-	void registerActor(Actor& actor);
-	void unregisterActor(Actor& actor);
+	void registerActor(ACTOR& actor);
+	void unregisterActor(ACTOR& actor);
 	
 	// Emplace a routeRequest object on the queue.
-	void registerRouteRequest(Actor& actor, bool detour = false);
+	void registerRouteRequest(ACTOR& actor, bool detour = false);
 	// Emplace a visionRequest object on the queue.
-	void registerVisionRequest(Actor& actor);
+	void registerVisionRequest(ACTOR& actor);
 
 	// Create a fluid group.
-	FluidGroup* createFluidGroup(const FluidType* fluidType, std::unordered_set<Block*>& blocks, bool checkMerge = true);
+	FluidGroup* createFluidGroup(const FluidType* fluidType, std::unordered_set<BLOCK*>& blocks, bool checkMerge = true);
 
 	// Assign all visible blocks to a visionCuboid, set m_visionCubioidsActive to true.
 	void visionCuboidsActivate();
@@ -83,12 +83,11 @@ public:
 	// Cavein read/write
 	void stepCaveInRead();
 	void stepCaveInWrite();
-	void registerPotentialCaveIn(Block& block);
+	void registerPotentialCaveIn(BLOCK& block);
 
 	void validateAllFluidGroups();
 	std::string toS();
 
 	// User provided code, no route.
-	void notifyNoRouteFound(Actor& actor);
-	void afterCaveIn(std::vector<Block*>& block, uint32_t distance);
+	void notifyNoRouteFound(ACTOR& actor);
 };

@@ -1,12 +1,12 @@
 #pragma once
 #include "eventSchedule.h"
-class Block;
+class BLOCK;
 class MistDisperseEvent : public ScheduledEvent
 {
 public:
 	const FluidType* m_fluidType;
-	Block& m_block;
-	MistDisperseEvent(uint32_t s, const FluidType* ft, Block& b);
+	BLOCK& m_block;
+	MistDisperseEvent(uint32_t s, const FluidType* ft, BLOCK& b);
 	void execute();
 	bool continuesToExist() const;
 };

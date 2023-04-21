@@ -16,6 +16,12 @@ const static uint32_t s_routeThreadingBatchSize = 10;
 const static uint32_t s_fluidsSeepDiagonalModifier = 100;
 const static uint32_t s_moveTryAttemptsBeforeDetour = 2;
 
+// If you change the provided class names for Actor, Block, or Area then update the name here as well.
+// Macros are unpopular but the alternative would be a mess of slow compiling CRTP code.
+#define ACTOR Actor
+#define BLOCK Block
+#define AREA Area
+
 #include "../block.h"
 #include "../actor.h"
 #include "../area.h"
@@ -239,7 +245,7 @@ bool Block::moveTypeCanEnterFrom(const MoveType* moveType, Block* from) const
 // If a non flying / swimming move type is here does it fall?
 bool Block::canStandIn() const
 {
-	assert(m_adjacents[0] != nullptr);
+	assert(m_adjacents.at(0) != nullptr);
 	if(m_adjacents[0]->isSolid())
 		return true;
 	if(hasFeatureType(s_floor))

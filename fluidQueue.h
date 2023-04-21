@@ -8,7 +8,7 @@
 
 #include "fluidType.h"
 
-class Block;
+class BLOCK;
 class FLuidGroup;
 
 /*
@@ -18,11 +18,11 @@ class FLuidGroup;
  */
 struct FutureFlowBlock
 {
-	Block* block;
+	BLOCK* block;
 	uint32_t capacity;
 	uint32_t delta;
 	// No need to initalize capacity and delta here, they will be set at the begining of read step.
-	FutureFlowBlock(Block* b) : block(b) {}
+	FutureFlowBlock(BLOCK* b) : block(b) {}
 };
 static_assert(std::copy_constructible<FutureFlowBlock>);
 
@@ -33,18 +33,18 @@ class FluidQueue
 {
 public:
 	std::vector<FutureFlowBlock> m_queue;
-	std::unordered_set<Block*> m_set;
+	std::unordered_set<BLOCK*> m_set;
 	std::vector<FutureFlowBlock>::iterator m_groupStart, m_groupEnd;
 	FluidGroup& m_fluidGroup;
 
 	FluidQueue(FluidGroup& fluidGroup);
-	void buildFor(std::unordered_set<Block*>& members);
+	void buildFor(std::unordered_set<BLOCK*>& members);
 	void initalizeForStep();
-	void setBlocks(std::unordered_set<Block*>& blocks);
-	void addBlock(Block* block);
-	void addBlocks(std::unordered_set<Block*>& blocks);
-	void removeBlock(Block* block);
-	void removeBlocks(std::unordered_set<Block*>& blocks);
+	void setBlocks(std::unordered_set<BLOCK*>& blocks);
+	void addBlock(BLOCK* block);
+	void addBlocks(std::unordered_set<BLOCK*>& blocks);
+	void removeBlock(BLOCK* block);
+	void removeBlocks(std::unordered_set<BLOCK*>& blocks);
 	void findGroupEnd();
 	void recordDelta(uint32_t volume);
 	void applyDelta();

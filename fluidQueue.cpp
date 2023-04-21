@@ -2,43 +2,43 @@
 #include <assert.h>
 
 FluidQueue::FluidQueue(FluidGroup& fluidGroup) : m_fluidGroup(fluidGroup) {}
-void FluidQueue::setBlocks(std::unordered_set<Block*>& blocks)
+void FluidQueue::setBlocks(std::unordered_set<BLOCK*>& blocks)
 {
 	std::erase_if(m_queue, [&](FutureFlowBlock& futureFlowBlock){ return !blocks.contains(futureFlowBlock.block); });
-	for(Block* block : blocks)
+	for(BLOCK* block : blocks)
 		if(!m_set.contains(block))
 			m_queue.emplace_back(block);
 	m_set.swap(blocks);
 }
-void FluidQueue::addBlock(Block* block)
+void FluidQueue::addBlock(BLOCK* block)
 {
 	if(m_set.contains(block))
 		return;
 	m_set.insert(block);
 	m_queue.emplace_back(block);
 }
-void FluidQueue::addBlocks(std::unordered_set<Block*>& blocks)
+void FluidQueue::addBlocks(std::unordered_set<BLOCK*>& blocks)
 {
 	//m_queue.reserve(m_queue.size() + blocks.size());
-	for(Block* block : blocks)
+	for(BLOCK* block : blocks)
 		if(!m_set.contains(block))
 			m_queue.emplace_back(block);
 	m_set.insert(blocks.begin(), blocks.end());
 }
-void FluidQueue::removeBlock(Block* block)
+void FluidQueue::removeBlock(BLOCK* block)
 {
 	m_set.erase(block);
 	std::erase_if(m_queue, [&](FutureFlowBlock& futureFlowBlock){ return futureFlowBlock.block == block; });
 }
-void FluidQueue::removeBlocks(std::unordered_set<Block*>& blocks)
+void FluidQueue::removeBlocks(std::unordered_set<BLOCK*>& blocks)
 {
-	std::erase_if(m_set, [&](Block* block){ return blocks.contains(block); });
+	std::erase_if(m_set, [&](BLOCK* block){ return blocks.contains(block); });
 	std::erase_if(m_queue, [&](FutureFlowBlock& futureFlowBlock){ return blocks.contains(futureFlowBlock.block); });
 }
 void FluidQueue::merge(FluidQueue& fluidQueue)
 {
 	//m_queue.reserve(m_queue.size() + fluidQueue.m_set.size());
-	for(Block* block : fluidQueue.m_set)
+	for(BLOCK* block : fluidQueue.m_set)
 		addBlock(block);
 }
 void FluidQueue::noChange()

@@ -2,12 +2,12 @@
 class Cuboid
 {
 public:
-	Block* m_highest;
-	Block* m_lowest;
-	Cuboid(Block* h, Block* l);
-	Cuboid(Block& h, Block& l);
+	BLOCK* m_highest;
+	BLOCK* m_lowest;
+	Cuboid(BLOCK* h, BLOCK* l);
+	Cuboid(BLOCK& h, BLOCK& l);
 	Cuboid() : m_highest(nullptr), m_lowest(nullptr) {}
-	bool contains(const Block& block) const;
+	bool contains(const BLOCK& block) const;
 	bool canMerge(const Cuboid& cuboid) const;
 	Cuboid sum(const Cuboid& cuboid) const;
 	void merge(const Cuboid& cuboid);
@@ -24,11 +24,11 @@ public:
 		uint32_t z;
 
 		using difference_type = std::ptrdiff_t;
-		using value_type = Block;
-		using pointer = Block*;
-		using reference = Block&;
+		using value_type = BLOCK;
+		using pointer = BLOCK*;
+		using reference = BLOCK&;
 
-		iterator(Cuboid& c, const Block& block);
+		iterator(Cuboid& c, const BLOCK& block);
 		iterator();
 		iterator& operator++();
 		iterator operator++(int) const;
@@ -48,11 +48,11 @@ public:
 		uint32_t z;
 
 		using difference_type = std::ptrdiff_t;
-		using value_type = Block;
-		using pointer = const Block*;
-		using reference = const Block&;
+		using value_type = BLOCK;
+		using pointer = const BLOCK*;
+		using reference = const BLOCK&;
 
-		const_iterator(const Cuboid& c, const Block& block);
+		const_iterator(const Cuboid& c, const BLOCK& block);
 		const_iterator();
 		const_iterator& operator++();
 		const_iterator operator++(int) const;
