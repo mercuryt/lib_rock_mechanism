@@ -4,18 +4,18 @@ class util
 {
 public:
 	template <typename F>
-		static std::unordered_set<Block*> collectAdjacentsWithCondition(F&& condition, Block* block)
+		static std::unordered_set<BLOCK*> collectAdjacentsWithCondition(F&& condition, BLOCK* block)
 		{
-			std::unordered_set<Block*> output;
-			std::unordered_set<Block*> closedList;
-			std::stack<Block*> openList;
+			std::unordered_set<BLOCK*> output;
+			std::unordered_set<BLOCK*> closedList;
+			std::stack<BLOCK*> openList;
 			openList.push(block);
 			output.insert(block);
 			while(!openList.empty())
 			{
-				Block*& block = openList.top();
+				BLOCK*& block = openList.top();
 				openList.pop();
-				for(Block* adjacent : block->m_adjacentsVector)
+				for(BLOCK* adjacent : block->m_adjacentsVector)
 					if(condition(adjacent) && !output.contains(adjacent))
 					{
 						output.insert(adjacent);
@@ -26,13 +26,13 @@ public:
 		}
 	// This was suposed to replace the above function for detecting splits in fluidGroups but it was slower
 	template <typename F>
-		static std::vector<std::unordered_set<Block*>> findGroups(F&& condition, std::unordered_set<Block*>& blocks)
+		static std::vector<std::unordered_set<BLOCK*>> findGroups(F&& condition, std::unordered_set<BLOCK*>& blocks)
 		{
-			std::vector<std::unordered_set<Block*>> output;
+			std::vector<std::unordered_set<BLOCK*>> output;
 			output.reserve(blocks.size());
-			auto huristic = [&](Block* block){ 
+			auto huristic = [&](BLOCK* block){ 
 				uint32_t shortestDistance = UINT32_MAX;
-				for(Block* b : blocks)
+				for(BLOCK* b : blocks)
 				{
 					uint32_t distance = b->taxiDistance(*block);
 					if(shortestDistance > distance)
@@ -40,19 +40,19 @@ public:
 				}
 				return shortestDistance;
 			};
-			auto compare = [&](Block* a, Block* b){ return huristic(a) > huristic(b); };
-			std::priority_queue<Block*, std::vector<Block*>, decltype(compare)> open(compare);
-			std::unordered_set<Block*> closed;
+			auto compare = [&](BLOCK* a, BLOCK* b){ return huristic(a) > huristic(b); };
+			std::priority_queue<BLOCK*, std::vector<BLOCK*>, decltype(compare)> open(compare);
+			std::unordered_set<BLOCK*> closed;
 			while(!blocks.empty())
 			{
 				auto it = blocks.begin();
-				Block* first = *it;
+				BLOCK* first = *it;
 				blocks.erase(it);
 				open.push(first);
 				closed.insert(first);
 				while(!open.empty())
 				{
-					Block* candidate = open.top();
+					BLOCK* candidate = open.top();
 					open.pop();
 					auto found = blocks.find(candidate);
 					if(found != blocks.end())
@@ -62,7 +62,7 @@ public:
 						if(blocks.empty() && output.empty())
 							return output;
 					}
-					for(Block* b : candidate->m_adjacentsVector)
+					for(BLOCK* b : candidate->m_adjacentsVector)
 						if(condition(b) && !closed.contains(b))
 						{
 							open.push(b);

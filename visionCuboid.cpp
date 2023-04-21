@@ -1,12 +1,12 @@
 #pragma once
 // Static method.
-void VisionCuboid::setup(Area& area)
+void VisionCuboid::setup(AREA& area)
 {
 	for(uint32_t x = 0; x != area.m_sizeX; ++x)
 		for(uint32_t y = 0; y != area.m_sizeY; ++y)
 			for(uint32_t z = 0; z != area.m_sizeZ; ++z)
 			{
-				Block* block = &area.m_blocks[x][y][z];
+				BLOCK* block = &area.m_blocks[x][y][z];
 				assert(block != nullptr);
 				if(!block->canSeeThrough())
 					continue;
@@ -20,11 +20,11 @@ void VisionCuboid::setup(Area& area)
 	clearDestroyed(area);
 }
 // Static method.
-void VisionCuboid::clearDestroyed(Area& area){
+void VisionCuboid::clearDestroyed(AREA& area){
 	std::erase_if(area.m_visionCuboids, [](VisionCuboid& visionCuboid){ return visionCuboid.m_destroy; });
 }
 // Static method.
-void VisionCuboid::BlockIsNeverOpaque(Block& block)
+void VisionCuboid::BlockIsNeverOpaque(BLOCK& block)
 {
 	Cuboid cuboid(block, block);
 	VisionCuboid* toCombine = getTargetToCombineWith(cuboid);
@@ -34,19 +34,19 @@ void VisionCuboid::BlockIsNeverOpaque(Block& block)
 		toCombine->extend(cuboid);
 }
 // Static method.
-void VisionCuboid::BlockIsSometimesOpaque(Block& block)
+void VisionCuboid::BlockIsSometimesOpaque(BLOCK& block)
 {
 	block.m_visionCuboid->splitAt(block);
 }
 // Static method.
-void VisionCuboid::BlockFloorIsNeverOpaque(Block& block)
+void VisionCuboid::BlockFloorIsNeverOpaque(BLOCK& block)
 {
 	VisionCuboid* toCombine = getTargetToCombineWith(block.m_visionCuboid->m_cuboid);
 	if(toCombine != nullptr)
 		toCombine->extend(block.m_visionCuboid->m_cuboid);
 }
 // Static method.
-void VisionCuboid::BlockFloorIsSometimesOpaque(Block& block)
+void VisionCuboid::BlockFloorIsSometimesOpaque(BLOCK& block)
 {
 	block.m_visionCuboid->splitBelow(block);
 }
@@ -55,12 +55,12 @@ VisionCuboid* VisionCuboid::getTargetToCombineWith(const Cuboid& cuboid)
 {
 	assert(cuboid.m_highest->canSeeThrough());
 	assert(cuboid.m_lowest->canSeeThrough());
-	for(Block* block : cuboid.m_highest->m_adjacentsVector)
+	for(BLOCK* block : cuboid.m_highest->m_adjacentsVector)
 		if(!cuboid.contains(*block) && block->m_visionCuboid != nullptr && !block->m_visionCuboid->m_destroy && block->m_visionCuboid->canCombineWith(cuboid))
 			return block->m_visionCuboid;
 	//if(cuboid.m_highest == cuboid.m_lowest)
 	//return nullptr;
-	for(Block* block : cuboid.m_lowest->m_adjacentsVector)
+	for(BLOCK* block : cuboid.m_lowest->m_adjacentsVector)
 		if(!cuboid.contains(*block) && block->m_visionCuboid != nullptr && !block->m_visionCuboid->m_destroy && block->m_visionCuboid->canCombineWith(cuboid))
 			return block->m_visionCuboid;
 	return nullptr;
@@ -70,7 +70,7 @@ VisionCuboid::VisionCuboid(Cuboid& cuboid) : m_cuboid(cuboid), m_destroy(false)
 {
 	assert(cuboid.m_highest->canSeeThrough());
 	assert(cuboid.m_lowest->canSeeThrough());
-	for(Block& block : m_cuboid) { block.m_visionCuboid = this; }
+	for(BLOCK& block : m_cuboid) { block.m_visionCuboid = this; }
 }
 bool VisionCuboid::canCombineWith(const Cuboid& cuboid) const
 {
@@ -85,7 +85,7 @@ bool VisionCuboid::canCombineWith(const Cuboid& cuboid) const
 	return true;
 }
 // Used when a block is no longer always transparent.
-void VisionCuboid::splitAt(Block& split)
+void VisionCuboid::splitAt(BLOCK& split)
 {
 	assert(!m_destroy);
 	assert(m_cuboid.contains(split));
@@ -122,7 +122,7 @@ void VisionCuboid::splitAt(Block& split)
 	}
 }
 // Used when a floor is no longer always transparent.
-void VisionCuboid::splitBelow(Block& split)
+void VisionCuboid::splitBelow(BLOCK& split)
 {
 	assert(!m_destroy);
 	m_destroy = true;
@@ -162,7 +162,7 @@ void VisionCuboid::extend(Cuboid& cuboid)
 		toCombine->extend(newCuboid);
 		return;
 	}
-	for(Block& block : cuboid) { block.m_visionCuboid = this; }
+	for(BLOCK& block : cuboid) { block.m_visionCuboid = this; }
 	m_cuboid = newCuboid;
 }
 bool VisionCuboid::canSeeInto(const Cuboid& cuboid) const
@@ -195,15 +195,15 @@ bool VisionCuboid::canSeeInto(const Cuboid& cuboid) const
 		facing = 0;
 	assert(facing != 6);
 	const Cuboid face = m_cuboid.getFace(facing);
-	std::vector<const Block*> blocks;
-	for(const Block& block : face)
+	std::vector<const BLOCK*> blocks;
+	for(const BLOCK& block : face)
 		blocks.push_back(&block);
 	// Verify that the whole face can be seen through from the direction of m_cuboid.
-	for(const Block& block : face)
+	for(const BLOCK& block : face)
 	{
 		assert(face.contains(block));
 		assert(block.canSeeThrough());
-		assert(block.m_adjacents[facing] != nullptr);
+		assert(block.m_adjacents.at(facing) != nullptr);
 		if(!block.m_adjacents[facing]->canSeeIntoFromAlways(&block))
 			return false;
 	};

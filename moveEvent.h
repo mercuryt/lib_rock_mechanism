@@ -5,16 +5,16 @@
  */
 #pragma once
 #include "eventSchedule.h"
-class Actor;
+class ACTOR;
 /*
  *  Try to enter next step on route. 
  */
 class MoveEvent : public ScheduledEvent
 {
 public:
-	Actor& m_actor;
+	ACTOR& m_actor;
 	uint32_t m_delayCount;
-	MoveEvent(uint32_t s, Actor& a);
+	MoveEvent(uint32_t s, ACTOR& a);
 	void execute();
 	~MoveEvent();
 };

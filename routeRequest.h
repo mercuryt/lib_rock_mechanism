@@ -6,19 +6,19 @@
 #pragma once
 #include "shape.h"
 
-class Block;
+class BLOCK;
 class RouteRequest
 {
 public:
-	Actor& m_actor;
+	ACTOR& m_actor;
 	bool m_detour;
-	std::vector<Block*> m_result;
-	std::unordered_map<Block*, std::vector<std::pair<Block*, uint32_t>>> m_moveCostsToCache;
+	std::vector<BLOCK*> m_result;
+	std::unordered_map<BLOCK*, std::vector<std::pair<BLOCK*, uint32_t>>> m_moveCostsToCache;
 	bool m_cacheHit;
 
 	static void readSteps(std::vector<RouteRequest>::iterator begin, std::vector<RouteRequest>::iterator end);
 
-	RouteRequest(Actor& a, bool detour = false);
+	RouteRequest(ACTOR& a, bool detour = false);
 	
 	// Find the route.
 	void readStep();

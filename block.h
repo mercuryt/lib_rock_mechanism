@@ -1,6 +1,6 @@
 /*
  * A block. Contains either a single type of material in 'solid' form or arbitrary objects with volume, generic solids and liquids.
- * Should only be used as inheritance target by Block, not intended to ever be instanced.
+ * Should only be used as inheritance target by BLOCK, not intended to ever be instanced.
  */
 #pragma once
 
@@ -23,9 +23,9 @@ class VisionCuboid;
 class VisionRequest;
 class FluidGroup;
 class HasShape;
-class Actor;
-class Area;
-class Block;
+class ACTOR;
+class AREA;
+class BLOCK;
 
 // Fluid type and volume pairs are sorted by density, low to high.
 // This is useful for resolving overfill.
@@ -43,19 +43,19 @@ public:
 	// Store area as a pointer rather then a reference to keep block default constructable.
 	// This is required inorder to create the m_blocks structure before initalizing it.
 	// TODO: emplace_back?
-	Area* m_area;
+	AREA* m_area;
 	// Store adjacent in an array, with index determined by relative position.
 	// below = 0, < = 1, ^ = 2, > = 3, v = 4, above = 5.
-	std::array<Block*, 6> m_adjacents;
-	std::vector<Block*> m_adjacentsVector;
+	std::array<BLOCK*, 6> m_adjacents;
+	std::vector<BLOCK*> m_adjacentsVector;
 	// Store routes to other blocks by Shape*, MoveType* and destination*  
-	std::unordered_map<const Shape*, std::unordered_map<const MoveType*, std::unordered_map<Block*, 
-		std::shared_ptr<std::vector<Block*>>
+	std::unordered_map<const Shape*, std::unordered_map<const MoveType*, std::unordered_map<BLOCK*, 
+		std::shared_ptr<std::vector<BLOCK*>>
 	>>> m_routeCache;
 	// Cache versions, check if matches the m_cacheVersion in area to see if cache is still valid.
 	uint32_t m_routeCacheVersion;
 	// Cache adjacent move costs. No version number: cleared only by changes to self / adjacent / diagonal. 
-	std::unordered_map<const Shape*, std::unordered_map<const MoveType*, std::vector<std::pair<Block*, uint32_t>>>> m_moveCostsCache;
+	std::unordered_map<const Shape*, std::unordered_map<const MoveType*, std::vector<std::pair<BLOCK*, uint32_t>>>> m_moveCostsCache;
 	// Store a total occupied volume from actors.
 	uint32_t m_totalDynamicVolume;
 	// Store a total occupied volume from genericSolids and nongenerics.
@@ -75,27 +75,27 @@ public:
 	// For immobile non generics could be items or buildings.
 	std::unordered_map<HasShape*, uint32_t> m_nongenerics;
 	// Track Actors and their volume which is in this block.
-	std::unordered_map<Actor*, uint32_t> m_actors;
+	std::unordered_map<ACTOR*, uint32_t> m_actors;
 	// Store the location bucket this block belongs to.
-	std::unordered_set<Actor*>* m_locationBucket;
+	std::unordered_set<ACTOR*>* m_locationBucket;
 	// Store the visionCuboid this block belongs to.
 	VisionCuboid* m_visionCuboid;
 
 	// Constructor initalizes some members.
 	baseBlock();
-	void setup(Area* a, uint32_t ax, uint32_t ay, uint32_t az);
+	void setup(AREA* a, uint32_t ax, uint32_t ay, uint32_t az);
 	void recordAdjacent();
-	std::vector<Block*> getAdjacentWithEdgeAdjacent() const;
-	std::vector<Block*> getAdjacentWithEdgeAndCornerAdjacent() const;
-	std::vector<Block*> getEdgeAndCornerAdjacentOnly() const;
-	std::vector<Block*> getEdgeAdjacentOnly() const;
-	std::vector<Block*> getEdgeAdjacentOnSameZLevelOnly() const;
-	std::vector<Block*> getAdjacentOnSameZLevelOnly() const;
-	std::vector<Block*> getEdgeAdjacentOnlyOnNextZLevelDown() const;
-	std::vector<Block*> getEdgeAdjacentOnlyOnNextZLevelUp() const;
-	uint32_t distance(Block& block) const;
-	uint32_t taxiDistance(Block& block) const;
-	bool isAdjacentToAny(std::unordered_set<Block*>& blocks) const;
+	std::vector<BLOCK*> getAdjacentWithEdgeAdjacent() const;
+	std::vector<BLOCK*> getAdjacentWithEdgeAndCornerAdjacent() const;
+	std::vector<BLOCK*> getEdgeAndCornerAdjacentOnly() const;
+	std::vector<BLOCK*> getEdgeAdjacentOnly() const;
+	std::vector<BLOCK*> getEdgeAdjacentOnSameZLevelOnly() const;
+	std::vector<BLOCK*> getAdjacentOnSameZLevelOnly() const;
+	std::vector<BLOCK*> getEdgeAdjacentOnlyOnNextZLevelDown() const;
+	std::vector<BLOCK*> getEdgeAdjacentOnlyOnNextZLevelUp() const;
+	uint32_t distance(BLOCK& block) const;
+	uint32_t taxiDistance(BLOCK& block) const;
+	bool isAdjacentToAny(std::unordered_set<BLOCK*>& blocks) const;
 	void setNotSolid();
 	void setSolid(const MaterialType* materialType);
 	bool isSolid() const;
@@ -106,35 +106,35 @@ public:
 	// Get the FluidGroup for this fluid type in this block.
 	FluidGroup* getFluidGroup(const FluidType* fluidType) const;
 	// Get block at offset coordinates.
-	Block* offset(int32_t ax, int32_t ay, int32_t az) const;
+	BLOCK* offset(int32_t ax, int32_t ay, int32_t az) const;
 	// Add fluid, handle falling / sinking, group membership, excessive quantity sent to fluid group.
 	void addFluid(uint32_t volume, const FluidType* fluidType);
 	void removeFluid(uint32_t volume, const FluidType* fluidType);
-	bool actorCanEnterCurrently(Actor& actor) const;
-	bool canEnterEver(Actor& actor) const;
-	std::vector<std::pair<Block*, uint32_t>> getMoveCosts(const Shape* shape, const MoveType* moveType);
+	bool actorCanEnterCurrently(ACTOR& actor) const;
+	bool canEnterEver(ACTOR& actor) const;
+	std::vector<std::pair<BLOCK*, uint32_t>> getMoveCosts(const Shape* shape, const MoveType* moveType);
 	bool fluidCanEnterCurrently(const FluidType* fluidType) const;
 	bool isAdjacentToFluidGroup(const FluidGroup* fluidGroup) const;
 	uint32_t volumeOfFluidTypeCanEnter(const FluidType* fluidType) const;
 	uint32_t volumeOfFluidTypeContains(const FluidType* fluidType) const;
 	// Move less dense fluids to their group's excessVolume until s_maxBlockVolume is achieved.
 	void resolveFluidOverfull();
-	void enter(Actor& actor);
-	void exit(Actor& actor);
+	void enter(ACTOR& actor);
+	void exit(ACTOR& actor);
 	// To be overriden by user code if diagonal movement allowed.
 	void clearMoveCostsCacheForSelfAndAdjacent();
-	std::vector<Block*> selectBetweenCorners(Block* otherBlock) const;
+	std::vector<BLOCK*> selectBetweenCorners(BLOCK* otherBlock) const;
 
-	bool operator==(const Block& block) const;
+	bool operator==(const BLOCK& block) const;
 
 	// User provided.
 	bool moveTypeCanEnter(const MoveType* moveType) const;
-	bool canEnterCurrently(Actor* actor) const;
+	bool canEnterCurrently(ACTOR* actor) const;
 	bool anyoneCanEnterEver() const;
-	uint32_t moveCost(const MoveType* moveType, Block* origin) const;
+	uint32_t moveCost(const MoveType* moveType, BLOCK* origin) const;
 
-	bool canSeeThroughFrom(const Block& block) const;
-	bool canSeeIntoFromAlways(Block* block) const;
+	bool canSeeThroughFrom(const BLOCK& block) const;
+	bool canSeeIntoFromAlways(BLOCK* block) const;
 	float visionDistanceModifier() const;
 
 	bool fluidCanEnterEver() const;
@@ -143,6 +143,6 @@ public:
 	bool isSupport() const;
 	uint32_t getMass() const;
 
-	void moveContentsTo(Block* block);
+	void moveContentsTo(BLOCK* block);
 };
 static_assert(std::default_initializable<baseBlock>);

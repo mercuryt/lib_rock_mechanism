@@ -1,17 +1,17 @@
 #pragma once
-Cuboid::Cuboid(Block* h, Block* l) : m_highest(h), m_lowest(l)
+Cuboid::Cuboid(BLOCK* h, BLOCK* l) : m_highest(h), m_lowest(l)
 {
 	assert(m_highest->m_x >= m_lowest->m_x);
 	assert(m_highest->m_y >= m_lowest->m_y);
 	assert(m_highest->m_z >= m_lowest->m_z);
 }
-Cuboid::Cuboid(Block& h, Block& l) : m_highest(&h), m_lowest(&l)
+Cuboid::Cuboid(BLOCK& h, BLOCK& l) : m_highest(&h), m_lowest(&l)
 {
 	assert(m_highest->m_x >= m_lowest->m_x);
 	assert(m_highest->m_y >= m_lowest->m_y);
 	assert(m_highest->m_z >= m_lowest->m_z);
 }
-bool Cuboid::contains(const Block& block) const
+bool Cuboid::contains(const BLOCK& block) const
 {
 	return (
 			block.m_x <= m_highest->m_x && block.m_x >= m_lowest->m_x &&
@@ -107,7 +107,7 @@ bool Cuboid::operator==(const Cuboid& cuboid) const
 	return m_lowest == cuboid.m_lowest && m_highest == cuboid.m_highest;
 }
 
-Cuboid::iterator::iterator(Cuboid& c, const Block& block) : cuboid(&c), x(block.m_x), y(block.m_y), z(block.m_z) {}
+Cuboid::iterator::iterator(Cuboid& c, const BLOCK& block) : cuboid(&c), x(block.m_x), y(block.m_y), z(block.m_z) {}
 Cuboid::iterator::iterator() : cuboid(nullptr), x(0), y(0), z(0) {}
 Cuboid::iterator& Cuboid::iterator::operator++()
 {
@@ -130,8 +130,8 @@ Cuboid::iterator Cuboid::iterator::operator++(int) const
 }
 bool Cuboid::iterator::operator==(const Cuboid::iterator other) const { return other.x == x && other.y == y && other.z == z; }
 bool Cuboid::iterator::operator!=(const Cuboid::iterator other) const { return other.x != x || other.y != y || other.z != z; }
-Block& Cuboid::iterator::operator*() const { return cuboid->m_highest->m_area->m_blocks[x][y][z]; }
-Block* Cuboid::iterator::operator->() const { return &cuboid->m_highest->m_area->m_blocks[x][y][z]; }
+BLOCK& Cuboid::iterator::operator*() const { return cuboid->m_highest->m_area->m_blocks[x][y][z]; }
+BLOCK* Cuboid::iterator::operator->() const { return &cuboid->m_highest->m_area->m_blocks[x][y][z]; }
 Cuboid::iterator Cuboid::begin(){ return Cuboid::iterator(*this, *m_lowest); }
 Cuboid::iterator Cuboid::end()
 {
@@ -139,7 +139,7 @@ Cuboid::iterator Cuboid::end()
 	return ++iterator;
 }
 
-Cuboid::const_iterator::const_iterator(const Cuboid& c, const Block& block) : cuboid(&c), x(block.m_x), y(block.m_y), z(block.m_z) {}
+Cuboid::const_iterator::const_iterator(const Cuboid& c, const BLOCK& block) : cuboid(&c), x(block.m_x), y(block.m_y), z(block.m_z) {}
 Cuboid::const_iterator::const_iterator() : cuboid(nullptr), x(0), y(0), z(0) {}
 Cuboid::const_iterator& Cuboid::const_iterator::operator++()
 {
@@ -161,8 +161,8 @@ Cuboid::const_iterator Cuboid::const_iterator::operator++(int) const
 }
 bool Cuboid::const_iterator::operator==(const Cuboid::const_iterator other) const { return other.x == x && other.y == y && other.z == z; }
 bool Cuboid::const_iterator::operator!=(const Cuboid::const_iterator other) const { return other.x != x || other.y != y || other.z != z; }
-const Block& Cuboid::const_iterator::operator*() const { return cuboid->m_highest->m_area->m_blocks[x][y][z]; }
-const Block* Cuboid::const_iterator::operator->() const { return &cuboid->m_highest->m_area->m_blocks[x][y][z]; }
+const BLOCK& Cuboid::const_iterator::operator*() const { return cuboid->m_highest->m_area->m_blocks[x][y][z]; }
+const BLOCK* Cuboid::const_iterator::operator->() const { return &cuboid->m_highest->m_area->m_blocks[x][y][z]; }
 Cuboid::const_iterator Cuboid::begin() const { return Cuboid::const_iterator(*this, *m_lowest); }
 Cuboid::const_iterator Cuboid::end() const
 {

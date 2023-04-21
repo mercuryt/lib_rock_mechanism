@@ -1,22 +1,22 @@
 /*
  * A cuboid of space where every block has line of sight to every other block.
  * Used to skip line of sight calculations.
- * Stored in Area::m_visionCuboids. Deleted durring Area::writeStep if m_destroy is true.
+ * Stored in AREA::m_visionCuboids. Deleted durring AREA::writeStep if m_destroy is true.
  */
 #pragma once
 #include <cstdint>
 #include "cuboid.h"
-class Block;
-class Area;
+class BLOCK;
+class AREA;
 class VisionCuboid
 {
 public:
-	static void setup(Area& area);
-	static void clearDestroyed(Area& area);
-	static void BlockIsNeverOpaque(Block& block);
-	static void BlockIsSometimesOpaque(Block& block);
-	static void BlockFloorIsNeverOpaque(Block& block);
-	static void BlockFloorIsSometimesOpaque(Block& block);
+	static void setup(AREA& area);
+	static void clearDestroyed(AREA& area);
+	static void BlockIsNeverOpaque(BLOCK& block);
+	static void BlockIsSometimesOpaque(BLOCK& block);
+	static void BlockFloorIsNeverOpaque(BLOCK& block);
+	static void BlockFloorIsSometimesOpaque(BLOCK& block);
 	static VisionCuboid* getTargetToCombineWith(const Cuboid& cuboid);
 
 	Cuboid m_cuboid;
@@ -25,7 +25,7 @@ public:
 	VisionCuboid(Cuboid& cuboid);
 	bool canSeeInto(const Cuboid& cuboid) const;
 	bool canCombineWith(const Cuboid& cuboid) const;
-	void splitAt(Block& split);
-	void splitBelow(Block& split);
+	void splitAt(BLOCK& split);
+	void splitBelow(BLOCK& split);
 	void extend(Cuboid& cuboid);
 };
