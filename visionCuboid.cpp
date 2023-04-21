@@ -204,7 +204,7 @@ bool VisionCuboid::canSeeInto(const Cuboid& cuboid) const
 		assert(face.contains(block));
 		assert(block.canSeeThrough());
 		assert(block.m_adjacents[facing] != nullptr);
-		if(!block.m_adjacents[facing]->canSeeThroughFromAlways(&block))
+		if(!block.m_adjacents[facing]->canSeeIntoFromAlways(&block))
 			return false;
 	};
 	return true;
