@@ -1,12 +1,12 @@
 #pragma once
 #include <vector>
-class Block;
+class BLOCK;
 struct RouteNode
 {
 
-	Block* block;
+	BLOCK* block;
 	RouteNode* previous;
-	//RouteNode(Block* b, RouteNode* p) : block(b), previous(p) {}
+	//RouteNode(BLOCK* b, RouteNode* p) : block(b), previous(p) {}
 };
 struct ProposedRouteStep
 {
@@ -18,10 +18,10 @@ template<typename IsValidType, typename CompareType, typename IsDoneType, typena
 class GetPath
 {
 public:
-	std::unordered_set<Block*> m_closed;
-	GetPath(IsValidType& isValid, CompareType& compare, IsDoneType& isDone, AdjacentCostsType adjacentCosts, Block* start, std::vector<Block*>& output)
+	std::unordered_set<BLOCK*> m_closed;
+	GetPath(IsValidType& isValid, CompareType& compare, IsDoneType& isDone, AdjacentCostsType adjacentCosts, BLOCK* start, std::vector<BLOCK*>& output)
 	{
-		std::unordered_set<Block*> closed;
+		std::unordered_set<BLOCK*> closed;
 		m_closed.insert(start);
 		std::list<RouteNode> routeNodes;
 		std::priority_queue<ProposedRouteStep, std::vector<ProposedRouteStep>, decltype(compare)> open(compare);
@@ -31,7 +31,7 @@ public:
 		{
 			ProposedRouteStep proposedRouteStep = open.top();
 			open.pop();
-			Block* block = proposedRouteStep.routeNode->block;
+			BLOCK* block = proposedRouteStep.routeNode->block;
 			assert(block != nullptr);
 			if(isDone(block))
 			{

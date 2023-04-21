@@ -2,12 +2,12 @@
 
 #include "shape.h"
 
-class Block;
+class BLOCK;
 
 class HasShape
 {
 public:
 	const Shape* m_shape;
-	Block* m_location;
+	BLOCK* m_location;
 	HasShape(const Shape* s) : m_shape(s), m_location(nullptr) {}
 };
