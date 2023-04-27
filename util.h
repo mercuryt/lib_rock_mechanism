@@ -4,13 +4,13 @@ class util
 {
 public:
 	template <typename F>
-		static std::unordered_set<BLOCK*> collectAdjacentsWithCondition(F&& condition, BLOCK* block)
+		static std::unordered_set<BLOCK*> collectAdjacentsWithCondition(F&& condition, BLOCK& block)
 		{
 			std::unordered_set<BLOCK*> output;
 			std::unordered_set<BLOCK*> closedList;
 			std::stack<BLOCK*> openList;
-			openList.push(block);
-			output.insert(block);
+			openList.push(&block);
+			output.insert(&block);
 			while(!openList.empty())
 			{
 				BLOCK*& block = openList.top();
@@ -24,7 +24,12 @@ public:
 			}
 			return output;
 		}
-	// This was suposed to replace the above function for detecting splits in fluidGroups but it was slower
+	static std::unordered_set<BLOCK*> collectAdjacentsInRange(uint32_t range, BLOCK& block)
+	{
+		auto condition = [&](BLOCK* b){ return b->taxiDistance(block) <= range; };
+		return collectAdjacentsWithCondition(condition, block);
+	}
+	// This was suposed to replace collectAdjacentsWithCondition for detecting splits in fluidGroups but it was slower
 	template <typename F>
 		static std::vector<std::unordered_set<BLOCK*>> findGroups(F&& condition, std::unordered_set<BLOCK*>& blocks)
 		{

@@ -5,7 +5,6 @@
  */
 #pragma once
 #include "eventSchedule.h"
-class ACTOR;
 /*
  *  Try to enter next step on route. 
  */

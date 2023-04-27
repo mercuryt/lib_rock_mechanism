@@ -13,8 +13,6 @@
 #include "fluidGroup.h"
 
 #include "util.h"
-class AREA;
-
 
 //TODO: reuse blocks as m_fillQueue.m_set.
 FluidGroup::FluidGroup(const FluidType* ft, std::unordered_set<BLOCK*>& blocks, AREA& area, bool checkMerge) :
@@ -417,7 +415,7 @@ void FluidGroup::readStep()
 			if(closed.contains(block))
 				continue;
 			auto condition = [&](BLOCK* block){ return futureBlocks.contains(block); };
-			std::unordered_set<BLOCK*> adjacents = util::collectAdjacentsWithCondition(condition, block);
+			std::unordered_set<BLOCK*> adjacents = util::collectAdjacentsWithCondition(condition, *block);
 			// Add whole group to closed. There is only one iteration per group as others will be rejected by the closed guard.
 			closed.insert(adjacents.begin(), adjacents.end());
 			m_futureGroups.emplace_back(adjacents);

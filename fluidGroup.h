@@ -16,8 +16,6 @@
 #include "drainQueue.h"
 #include "fillQueue.h"
 
-class BLOCK;
-
 struct FluidGroupSplitData
 {
 	std::unordered_set<BLOCK*> members;

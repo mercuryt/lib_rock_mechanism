@@ -7,7 +7,7 @@ void MoveEvent::execute()
 		if(block.actorCanEnterCurrently(m_actor))
 		{
 			m_actor.m_routeIter++;
-			block.enter(m_actor);
+			m_actor.setLocation(&block);
 		}
 		else
 		{

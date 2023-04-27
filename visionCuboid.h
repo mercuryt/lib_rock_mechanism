@@ -6,8 +6,6 @@
 #pragma once
 #include <cstdint>
 #include "cuboid.h"
-class BLOCK;
-class AREA;
 class VisionCuboid
 {
 public:

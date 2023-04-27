@@ -15,9 +15,6 @@
 #include <vector>
 #include <unordered_set>
 
-class BLOCK;
-class ACTOR;
-
 class baseActor : public HasShape
 {	
 	static uint32_t s_nextId;
@@ -33,6 +30,7 @@ public:
 	uint32_t m_taskDelayCount;
 
 	baseActor(BLOCK* l, const Shape* s, const MoveType* mt);
+	baseActor(const Shape* s, const MoveType* mt);
 	// Set and then register route request with area.
 	void setDestination(BLOCK& block);
 	// Record volume in all blocks of shape and set m_location.
@@ -44,7 +42,7 @@ public:
 	uint32_t getSpeed() const;
 	uint32_t getVisionRange() const;
 	void taskComplete();
-	void doVision(std::unordered_set<ACTOR*>& actors);
+	void doVision(std::unordered_set<ACTOR*>&& actors);
 	bool canSee(const ACTOR& actor) const;
 	void exposedToFluid(const FluidType* fluidType);
 	~baseActor();

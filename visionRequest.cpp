@@ -30,7 +30,7 @@ void VisionRequest::readStep()
 }
 void VisionRequest::writeStep()
 {
-	m_actor.doVision(m_actors);
+	m_actor.doVision(std::move(m_actors));
 }
 bool VisionRequest::hasLineOfSight(const BLOCK& to, const BLOCK& from)
 {

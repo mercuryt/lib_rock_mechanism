@@ -4,14 +4,11 @@
 
 #pragma once
 
-#include <shared_mutex>
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
 #include <tuple>
 #include <list>
-
-#include "lib/BS_thread_pool_light.hpp"
 
 #include "buckets.h"
 #include "locationBuckets.h"
@@ -36,15 +33,14 @@ public:
 	LocationBuckets m_locationBuckets;
 	std::list<FluidGroup> m_fluidGroups;
 	std::unordered_set<FluidGroup*> m_unstableFluidGroups;
-	std::unordered_set<BLOCK*> m_caveInCheck;
-	std::vector<RouteRequest> m_routeRequestQueue;
-	std::vector<VisionRequest> m_visionRequestQueue;
-	std::shared_mutex m_blockMutex;
-	uint32_t m_routeCacheVersion;
-	Buckets<ACTOR, s_actorDoVisionInterval> m_visionBuckets;
-	std::vector<std::tuple<std::vector<BLOCK*>,uint32_t,uint32_t>> m_caveInData;
 	std::unordered_set<FluidGroup*> m_setStable;
 	std::unordered_set<FluidGroup*> m_toDestroy;
+	std::unordered_set<BLOCK*> m_caveInCheck;
+	std::vector<std::tuple<std::vector<BLOCK*>,uint32_t,uint32_t>> m_caveInData;
+	std::vector<RouteRequest> m_routeRequestQueue;
+	uint32_t m_routeCacheVersion;
+	std::vector<VisionRequest> m_visionRequestQueue;
+	Buckets<ACTOR, s_actorDoVisionInterval> m_visionBuckets;
 	std::list<VisionCuboid> m_visionCuboids;
 	bool m_visionCuboidsActive;
 	EventSchedule m_eventSchedule;
@@ -88,6 +84,8 @@ public:
 	void validateAllFluidGroups();
 	std::string toS();
 
+	// Get a z-level for rendering.
+	Cuboid getZLevel(uint32_t z) const;
 	// User provided code, no route.
 	void notifyNoRouteFound(ACTOR& actor);
 

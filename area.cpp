@@ -174,6 +174,10 @@ void baseArea::visionCuboidsActivate()
 	m_visionCuboidsActive = true;
 	VisionCuboid::setup(static_cast<AREA&>(*this));
 }
+Cuboid baseArea::getZLevel(uint32_t z) const
+{
+	return Cuboid(m_blocks[m_sizeX - 1][m_sizeY - 1][z], m_blocks[0][0][z]);
+}
 void baseArea::expireRouteCache(){++m_routeCacheVersion;}
 void baseArea::validateAllFluidGroups()
 {

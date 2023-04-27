@@ -6,8 +6,6 @@
 #include <stack>
 #include <unordered_map>
 
-class BLOCK;
-
 void baseArea::stepCaveInRead()
 {
 	std::list<std::unordered_set<BLOCK*>> chunks;
