@@ -30,7 +30,7 @@ struct SortByDensity
 {
 	bool operator()(const FluidType* a, const FluidType* b) const { return a->density < b->density; }
 };
-class BaseBlock
+class baseBlock
 {
 	// If this block is solid stone, solid dirt, etc. then store it here. Otherwise nullptr.
 	const MaterialType* m_solid;
@@ -78,7 +78,7 @@ public:
 	VisionCuboid* m_visionCuboid;
 
 	// Constructor initalizes some members.
-	BaseBlock();
+	baseBlock();
 	void setup(AREA* a, uint32_t ax, uint32_t ay, uint32_t az);
 	void recordAdjacent();
 	std::vector<BLOCK*> getAdjacentWithEdgeAdjacent() const;
@@ -141,4 +141,4 @@ public:
 
 	void moveContentsTo(BLOCK* block);
 };
-static_assert(std::default_initializable<BaseBlock>);
+static_assert(std::default_initializable<baseBlock>);

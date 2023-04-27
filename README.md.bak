@@ -40,7 +40,7 @@ Features:
 
 ## Getting Started
 
-Using this library will require implimenting three classes which must inherit from provided base classes: **BLOCK**, **AREA**, and **ACTOR** must inherit from BaseBlock,  baseArea, and baseActor. Each of these has one or more methods which must be defined. **BLOCK must be declared before AREA.** For an example of method definitions which configure the library to behave much like Dwarf Fortress see the [Test Implimentation](https://github.com/mercuryt/lib_rock_mechanism/blob/master/test/testShared.h). Copying and editing that file is probably a good start twords your implimentation.
+Using this library will require implimenting three classes which must inherit from provided base classes: **BLOCK**, **AREA**, and **ACTOR** must inherit from baseBlock,  baseArea, and baseActor. Each of these has one or more methods which must be defined. **BLOCK must be declared before AREA.** For an example of method definitions which configure the library to behave much like Dwarf Fortress see the [Test Implimentation](https://github.com/mercuryt/lib_rock_mechanism/blob/master/test/testShared.h). Copying and editing that file is probably a good start twords your implimentation.
 
 <!-- CONTRIBUTING -->
 ## Contributing

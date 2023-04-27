@@ -17,10 +17,10 @@
 #include "hasShape.h"
 #include "fluidType.h"
 
-BaseBlock::BaseBlock() : m_solid(nullptr), m_routeCacheVersion(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr) {}
-void BaseBlock::setup(AREA* a, uint32_t ax, uint32_t ay, uint32_t az)
+baseBlock::baseBlock() : m_solid(nullptr), m_routeCacheVersion(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr) {}
+void baseBlock::setup(AREA* a, uint32_t ax, uint32_t ay, uint32_t az)
 {m_area=a;m_x=ax;m_y=ay;m_z=az;m_locationBucket = a->m_locationBuckets.getBucketFor(*static_cast<BLOCK*>(this));}
-void BaseBlock::recordAdjacent()
+void baseBlock::recordAdjacent()
 {
 	static const int32_t offsetsList[6][3] = {{0,0,-1}, {0,-1,0}, {-1,0,0}, {0,1,0}, {1,0,0}, {0,0,1}};
 	for(uint32_t i = 0; i < 6; i++)
@@ -31,7 +31,7 @@ void BaseBlock::recordAdjacent()
 			m_adjacentsVector.push_back(block);
 	}
 }
-std::vector<BLOCK*> BaseBlock::getAdjacentWithEdgeAdjacent() const
+std::vector<BLOCK*> baseBlock::getAdjacentWithEdgeAdjacent() const
 {
 	std::vector<BLOCK*> output;
 	output.reserve(18);
@@ -57,7 +57,7 @@ std::vector<BLOCK*> BaseBlock::getAdjacentWithEdgeAdjacent() const
 	}
 	return output;
 }
-std::vector<BLOCK*> BaseBlock::getAdjacentWithEdgeAndCornerAdjacent() const
+std::vector<BLOCK*> baseBlock::getAdjacentWithEdgeAndCornerAdjacent() const
 {
 	std::vector<BLOCK*> output;
 	output.reserve(26);
@@ -83,7 +83,7 @@ std::vector<BLOCK*> BaseBlock::getAdjacentWithEdgeAndCornerAdjacent() const
 	}
 	return output;
 }
-std::vector<BLOCK*> BaseBlock::getEdgeAdjacentOnly() const
+std::vector<BLOCK*> baseBlock::getEdgeAdjacentOnly() const
 {
 	std::vector<BLOCK*> output;
 	output.reserve(12);
@@ -106,7 +106,7 @@ std::vector<BLOCK*> BaseBlock::getEdgeAdjacentOnly() const
 	}
 	return output;
 }
-std::vector<BLOCK*> BaseBlock::getEdgeAdjacentOnSameZLevelOnly() const
+std::vector<BLOCK*> baseBlock::getEdgeAdjacentOnSameZLevelOnly() const
 {
 	std::vector<BLOCK*> output;
 	output.reserve(12);
@@ -123,7 +123,7 @@ std::vector<BLOCK*> BaseBlock::getEdgeAdjacentOnSameZLevelOnly() const
 	}
 	return output;
 }
-std::vector<BLOCK*> BaseBlock::getEdgeAdjacentOnlyOnNextZLevelDown() const
+std::vector<BLOCK*> baseBlock::getEdgeAdjacentOnlyOnNextZLevelDown() const
 {
 	std::vector<BLOCK*> output;
 	output.reserve(12);
@@ -140,7 +140,7 @@ std::vector<BLOCK*> BaseBlock::getEdgeAdjacentOnlyOnNextZLevelDown() const
 	}
 	return output;
 }
-std::vector<BLOCK*> BaseBlock::getEdgeAdjacentOnlyOnNextZLevelUp() const
+std::vector<BLOCK*> baseBlock::getEdgeAdjacentOnlyOnNextZLevelUp() const
 {
 	std::vector<BLOCK*> output;
 	output.reserve(12);
@@ -157,7 +157,7 @@ std::vector<BLOCK*> BaseBlock::getEdgeAdjacentOnlyOnNextZLevelUp() const
 	}
 	return output;
 }
-std::vector<BLOCK*> BaseBlock::getEdgeAndCornerAdjacentOnly() const
+std::vector<BLOCK*> baseBlock::getEdgeAndCornerAdjacentOnly() const
 {
 	std::vector<BLOCK*> output;
 	output.reserve(20);
@@ -182,7 +182,7 @@ std::vector<BLOCK*> BaseBlock::getEdgeAndCornerAdjacentOnly() const
 	}
 	return output;
 }
-std::vector<BLOCK*> BaseBlock::getAdjacentOnSameZLevelOnly() const
+std::vector<BLOCK*> baseBlock::getAdjacentOnSameZLevelOnly() const
 {
 	std::vector<BLOCK*> output;
 	output.reserve(4);
@@ -199,25 +199,25 @@ std::vector<BLOCK*> BaseBlock::getAdjacentOnSameZLevelOnly() const
 	}
 	return output;
 }
-uint32_t BaseBlock::distance(BLOCK& block) const
+uint32_t baseBlock::distance(BLOCK& block) const
 {
 	uint32_t dx = abs((int)m_x - (int)block.m_x);
 	uint32_t dy = abs((int)m_y - (int)block.m_y);
 	uint32_t dz = abs((int)m_z - (int)block.m_z);
 	return pow((pow(dx, 2) + pow(dy, 2) + pow(dz, 2)), 0.5);
 }
-uint32_t BaseBlock::taxiDistance(BLOCK& block) const
+uint32_t baseBlock::taxiDistance(BLOCK& block) const
 {
 	return abs((int)m_x - (int)block.m_x) + abs((int)m_y - (int)block.m_y) + abs((int)m_z - (int)block.m_z);
 }
-bool BaseBlock::isAdjacentToAny(std::unordered_set<BLOCK*>& blocks) const
+bool baseBlock::isAdjacentToAny(std::unordered_set<BLOCK*>& blocks) const
 {
 	for(BLOCK* adjacent : m_adjacentsVector)
 		if(blocks.contains(adjacent))
 			return true;
 	return false;
 }
-void BaseBlock::setNotSolid()
+void baseBlock::setNotSolid()
 {
 	if(m_solid == nullptr)
 		return;
@@ -234,7 +234,7 @@ void BaseBlock::setNotSolid()
 	if(m_area->m_visionCuboidsActive)
 		VisionCuboid::BlockIsNeverOpaque(*block);
 }
-void BaseBlock::setSolid(const MaterialType* materialType)
+void baseBlock::setSolid(const MaterialType* materialType)
 {
 	if(materialType == m_solid)
 		return;
@@ -291,19 +291,19 @@ void BaseBlock::setSolid(const MaterialType* materialType)
 		VisionCuboid::BlockIsSometimesOpaque(*block);
 		
 }
-bool BaseBlock::canEnterEver(ACTOR& actor) const
+bool baseBlock::canEnterEver(ACTOR& actor) const
 {
 	return shapeAndMoveTypeCanEnterEver(actor.m_shape, actor.m_moveType);
 }
-bool BaseBlock::isSolid() const
+bool baseBlock::isSolid() const
 {
 	return m_solid != nullptr;
 }
-const MaterialType* BaseBlock::getSolidMaterial() const
+const MaterialType* baseBlock::getSolidMaterial() const
 {
 	return m_solid;
 }
-void BaseBlock::spawnMist(const FluidType* fluidType, uint32_t maxMistSpread)
+void baseBlock::spawnMist(const FluidType* fluidType, uint32_t maxMistSpread)
 {
 	if(m_mist != nullptr and m_mist->density > fluidType->density)
 		return;
@@ -313,7 +313,7 @@ void BaseBlock::spawnMist(const FluidType* fluidType, uint32_t maxMistSpread)
 	m_area->m_eventSchedule.schedule(std::move(event));
 }
 //TODO: This code puts the fluid into an adjacent group of the correct type if it can find one, it does not add the block or merge groups, leaving these tasks to fluidGroup readStep. Is this ok?
-void BaseBlock::addFluid(uint32_t volume, const FluidType* fluidType)
+void baseBlock::addFluid(uint32_t volume, const FluidType* fluidType)
 {
 	// If a suitable fluid group exists already then just add to it's excessVolume.
 	if(m_fluids.contains(fluidType))
@@ -344,12 +344,12 @@ void BaseBlock::addFluid(uint32_t volume, const FluidType* fluidType)
 	if(m_totalFluidVolume > s_maxBlockVolume)
 		resolveFluidOverfull();
 }
-void BaseBlock::removeFluid(uint32_t volume, const FluidType* fluidType)
+void baseBlock::removeFluid(uint32_t volume, const FluidType* fluidType)
 {
 	m_fluids.at(fluidType).second->removeFluid(volume);
 }
 // Validate the actor can enter this block and also any other blocks required by it's Shape.
-bool BaseBlock::shapeAndMoveTypeCanEnterEver(const Shape* shape, const MoveType* moveType) const
+bool baseBlock::shapeAndMoveTypeCanEnterEver(const Shape* shape, const MoveType* moveType) const
 {
 	if(shape->positions.size() == 1)
 	{
@@ -364,7 +364,7 @@ bool BaseBlock::shapeAndMoveTypeCanEnterEver(const Shape* shape, const MoveType*
 	}
 	return true;
 }
-bool BaseBlock::actorCanEnterCurrently(ACTOR& actor) const
+bool baseBlock::actorCanEnterCurrently(ACTOR& actor) const
 {
 	const Shape* shape = actor.m_shape;
 	if(shape->positions.size() == 1)
@@ -389,7 +389,7 @@ bool BaseBlock::actorCanEnterCurrently(ACTOR& actor) const
 	}
 	return true;
 }
-BLOCK* BaseBlock::offset(int32_t ax, int32_t ay, int32_t az) const
+BLOCK* baseBlock::offset(int32_t ax, int32_t ay, int32_t az) const
 {
 	ax += m_x;
 	ay += m_y;
@@ -398,7 +398,7 @@ BLOCK* BaseBlock::offset(int32_t ax, int32_t ay, int32_t az) const
 		return nullptr;
 	return &m_area->m_blocks[ax][ay][az];
 }
-bool BaseBlock::fluidCanEnterCurrently(const FluidType* fluidType) const
+bool baseBlock::fluidCanEnterCurrently(const FluidType* fluidType) const
 {
 	if(m_totalFluidVolume < s_maxBlockVolume)
 		return true;
@@ -407,14 +407,14 @@ bool BaseBlock::fluidCanEnterCurrently(const FluidType* fluidType) const
 			return true;
 	return false;
 }
-bool BaseBlock::isAdjacentToFluidGroup(const FluidGroup* fluidGroup) const
+bool baseBlock::isAdjacentToFluidGroup(const FluidGroup* fluidGroup) const
 {
 	for(BLOCK* block : m_adjacentsVector)
 		if(block->m_fluids.contains(fluidGroup->m_fluidType) && block->m_fluids.at(fluidGroup->m_fluidType).second == fluidGroup)
 			return true;
 	return false;
 }
-uint32_t BaseBlock::volumeOfFluidTypeCanEnter(const FluidType* fluidType) const
+uint32_t baseBlock::volumeOfFluidTypeCanEnter(const FluidType* fluidType) const
 {
 	assert(fluidType != nullptr);
 	uint32_t output = s_maxBlockVolume;
@@ -423,7 +423,7 @@ uint32_t BaseBlock::volumeOfFluidTypeCanEnter(const FluidType* fluidType) const
 			output -= pair.second.first;
 	return output;
 }
-uint32_t BaseBlock::volumeOfFluidTypeContains(const FluidType* fluidType) const
+uint32_t baseBlock::volumeOfFluidTypeContains(const FluidType* fluidType) const
 {
 	assert(fluidType != nullptr);
 	auto found = m_fluids.find(fluidType);
@@ -431,7 +431,7 @@ uint32_t BaseBlock::volumeOfFluidTypeContains(const FluidType* fluidType) const
 		return 0;
 	return found->second.first;
 }
-FluidGroup* BaseBlock::getFluidGroup(const FluidType* fluidType) const
+FluidGroup* baseBlock::getFluidGroup(const FluidType* fluidType) const
 {
 	assert(fluidType != nullptr);
 	auto found = m_fluids.find(fluidType);
@@ -440,7 +440,7 @@ FluidGroup* BaseBlock::getFluidGroup(const FluidType* fluidType) const
 	assert(found->second.second->m_fluidType == fluidType);
 	return found->second.second;
 }
-void BaseBlock::resolveFluidOverfull()
+void baseBlock::resolveFluidOverfull()
 {
 	std::vector<const FluidType*> toErase;
 	// Fluid types are sorted by density.
@@ -489,7 +489,7 @@ void BaseBlock::resolveFluidOverfull()
 	}
 }
 // Add / remove  actor occupancy.
-void BaseBlock::enter(ACTOR& actor)
+void baseBlock::enter(ACTOR& actor)
 {
 	assert(actor.m_location != static_cast<BLOCK*>(this));
 	actor.m_taskDelayCount = 0;
@@ -512,7 +512,7 @@ void BaseBlock::enter(ACTOR& actor)
 		actor.m_blocks.push_back(block);
 	}
 }
-void BaseBlock::exit(ACTOR& actor)
+void baseBlock::exit(ACTOR& actor)
 {
 	for(BLOCK* block : actor.m_blocks)
 	{
@@ -522,9 +522,9 @@ void BaseBlock::exit(ACTOR& actor)
 		block->m_actors.erase(found);
 	}
 }
-bool BaseBlock::operator==(const BLOCK& block) const { return &block == static_cast<const BLOCK*>(this); };
+bool baseBlock::operator==(const BLOCK& block) const { return &block == static_cast<const BLOCK*>(this); };
 //TODO: Replace with cuboid.
-std::vector<BLOCK*> BaseBlock::selectBetweenCorners(BLOCK* otherBlock) const
+std::vector<BLOCK*> baseBlock::selectBetweenCorners(BLOCK* otherBlock) const
 {
 	assert(otherBlock->m_x < m_area->m_sizeX);
 	assert(otherBlock->m_y < m_area->m_sizeY);
@@ -547,7 +547,7 @@ std::vector<BLOCK*> BaseBlock::selectBetweenCorners(BLOCK* otherBlock) const
 }
 /*
 // Add / remove nongeneric non-actor occupancy for this block and also any other blocks required by it's Shape.
-void BaseBlock::place(HasShape* hasShape)
+void baseBlock::place(HasShape* hasShape)
 {
 for(auto& [x, y, z, v] : hasShape->m_shape->positions)
 {
@@ -556,7 +556,7 @@ block->recordHasShapeAndVolume(hasShape, v);
 }
 hasShape->m_location = static_cast<BLOCK*>(this);
 }
-void BaseBlock::unplace(HasShape* hasShape)
+void baseBlock::unplace(HasShape* hasShape)
 {
 for(auto& [x, y, z, v] : hasShape->m_shape->positions)
 {
