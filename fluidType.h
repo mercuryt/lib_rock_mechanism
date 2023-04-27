@@ -3,6 +3,8 @@
 #include <string>
 #include <algorithm>
 #include <cassert>
+#include <ranges>
+#include <iterator>
 
 struct FluidType
 {

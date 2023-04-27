@@ -5,7 +5,6 @@
 
 #include "fluidQueue.h"
 
-class BLOCK;
 class FluidGroup;
 
 class FillQueue : public FluidQueue

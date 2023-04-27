@@ -1,7 +1,4 @@
 #pragma once
-class ACTOR;
-class BLOCK;
-class AREA;
 class VisionRequest;
 class LocationBuckets
 {

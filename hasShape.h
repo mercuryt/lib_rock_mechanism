@@ -2,8 +2,6 @@
 
 #include "shape.h"
 
-class BLOCK;
-
 class HasShape
 {
 public:

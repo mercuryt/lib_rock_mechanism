@@ -8,7 +8,6 @@
 
 #include "fluidType.h"
 
-class BLOCK;
 class FLuidGroup;
 
 /*

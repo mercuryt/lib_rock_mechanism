@@ -4,8 +4,6 @@
 #include <stack>
 #include <unordered_set>
 
-class BLOCK;
-class ACTOR;
 class VisionRequest
 {
 public:

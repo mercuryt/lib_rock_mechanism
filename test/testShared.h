@@ -3,6 +3,8 @@
  */
 #include <cstdint>
 #include <algorithm>
+#include "lib/BS_thread_pool_light.hpp"
+
 const static uint32_t s_maxBlockVolume = 100;
 const static uint32_t s_actorDoVisionInterval = 10;
 const static uint32_t s_pathHuristicConstant = 1;
@@ -17,10 +19,13 @@ const static uint32_t s_fluidsSeepDiagonalModifier = 100;
 const static uint32_t s_moveTryAttemptsBeforeDetour = 2;
 
 // If you change the provided class names for Actor, Block, or Area then update the name here as well.
-// Macros are unpopular but the alternative would be a mess of slow compiling CRTP code.
-#define ACTOR Actor
-#define BLOCK Block
-#define AREA Area
+// typedefs are used here rather then CRTP to reduce compliation time and error message verbosity.
+class Actor;
+class Block;
+class Area;
+typedef Actor ACTOR;
+typedef Block BLOCK;
+typedef Area AREA;
 
 #include "../block.h"
 #include "../actor.h"
@@ -66,7 +71,7 @@ const static BlockFeatureType* s_floodGate;
 const static BlockFeatureType* s_floorGrate;
 
 
-struct BlockFeature
+struct BlockFeature 
 {
 	const BlockFeatureType* blockFeatureType;
 	const MaterialType* materialType;
@@ -77,7 +82,7 @@ struct BlockFeature
 };
 
 // Put custom member data declarations here
-class Block : public baseBlock
+class Block final : public baseBlock
 {
 public:
 	std::vector<BlockFeature> m_features;
@@ -114,24 +119,26 @@ public:
 	std::string toS() const;
 };
 
-class Actor : public baseActor
+class Actor final : public baseActor
 {
 public:
 	std::unordered_set<Actor*> m_canSee;
+	void (*m_onTaskComplete)(Actor& actor);
 
 	Actor(Block* l, const Shape* s, const MoveType* mt);
+	Actor(const Shape* s, const MoveType* mt);
 	uint32_t getSpeed() const;
 	uint32_t getVisionRange() const;
 	bool isVisible(Actor* observer) const;
 
 	void taskComplete();
-	void doVision(std::unordered_set<Actor*>& actors);
+	void doVision(std::unordered_set<Actor*>&& actors);
 	void doFall(uint32_t distance, Block* block);
 	void exposedToFluid(const FluidType* fluidType);
 	bool canSee(const Actor& actor) const;
 };
 
-class Area : public baseArea
+class Area final : public baseArea
 {
 public:
 	Area(uint32_t x, uint32_t y, uint32_t z) : baseArea(x, y, z) {}
@@ -498,7 +505,8 @@ std::string Block::toS() const
 		output += ',' + pair.first->m_name;
 	return output + describeFeatures();
 }
-Actor::Actor(Block* l, const Shape* s, const MoveType* mt) : baseActor(l, s, mt) {}
+Actor::Actor(Block* l, const Shape* s, const MoveType* mt) : baseActor(l, s, mt), m_onTaskComplete(nullptr) {}
+Actor::Actor(const Shape* s, const MoveType* mt) : baseActor(s, mt), m_onTaskComplete(nullptr) {}
 uint32_t Actor::getSpeed() const
 {
 	return 2;
@@ -511,11 +519,13 @@ uint32_t Actor::getVisionRange() const
 // Check next task queue or go idle.
 void Actor::taskComplete()
 {
+	if(m_onTaskComplete != nullptr)
+		m_onTaskComplete(*this);
 }
 // Do fog of war and psycological effects.
-void Actor::doVision(std::unordered_set<Actor*>& actors)
+void Actor::doVision(std::unordered_set<Actor*>&& actors)
 {
-	m_canSee = std::move(actors);
+	m_canSee = actors;
 }
 // Take fall damage, etc.
 void Actor::doFall(uint32_t distance, Block* block)

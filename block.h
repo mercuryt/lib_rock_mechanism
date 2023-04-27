@@ -23,10 +23,6 @@ class VisionCuboid;
 class VisionRequest;
 class FluidGroup;
 class HasShape;
-class ACTOR;
-class AREA;
-class BLOCK;
-
 // Fluid type and volume pairs are sorted by density, low to high.
 // This is useful for resolving overfill.
 // TODO: Maybe a vector of pairs would be better performance?

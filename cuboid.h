@@ -4,6 +4,7 @@ class Cuboid
 public:
 	BLOCK* m_highest;
 	BLOCK* m_lowest;
+
 	Cuboid(BLOCK* h, BLOCK* l);
 	Cuboid(BLOCK& h, BLOCK& l);
 	Cuboid() : m_highest(nullptr), m_lowest(nullptr) {}

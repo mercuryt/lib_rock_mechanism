@@ -1,6 +1,5 @@
 #pragma once
 #include "eventSchedule.h"
-class BLOCK;
 class MistDisperseEvent : public ScheduledEvent
 {
 public:

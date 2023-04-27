@@ -6,7 +6,6 @@
 #pragma once
 #include "shape.h"
 
-class BLOCK;
 class RouteRequest
 {
 public:
