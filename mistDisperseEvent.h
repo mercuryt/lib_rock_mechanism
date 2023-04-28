@@ -1,5 +1,6 @@
 #pragma once
 #include "eventSchedule.h"
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
 class MistDisperseEvent : public ScheduledEvent
 {
 public:

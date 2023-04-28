@@ -415,7 +415,7 @@ void FluidGroup::readStep()
 			if(closed.contains(block))
 				continue;
 			auto condition = [&](DerivedBlock* block){ return futureBlocks.contains(block); };
-			std::unordered_set<DerivedBlock*> adjacents = util::collectAdjacentsWithCondition(condition, *block);
+			std::unordered_set<DerivedBlock*> adjacents = util<DerivedBlock, DerivedActor, DerivedArea>::collectAdjacentsWithCondition(condition, *block);
 			// Add whole group to closed. There is only one iteration per group as others will be rejected by the closed guard.
 			closed.insert(adjacents.begin(), adjacents.end());
 			m_futureGroups.emplace_back(adjacents);
@@ -591,7 +591,7 @@ void FluidGroup::splitStep()
 		assert(m_fluidType != fluidType);
 		assert(fluidGroup->m_fluidType == fluidType);
 		assert(fluidGroup->m_excessVolume > 0);
-		for(FutureFlowBlock& futureFlowBlock : m_fillQueue.m_queue)
+		for(FutureFlowBlock<DerivedBlock>& futureFlowBlock : m_fillQueue.m_queue)
 		{
 			DerivedBlock* block = futureFlowBlock.block;
 			auto found = block->m_fluids.find(fluidType);

@@ -4,6 +4,7 @@
 #include <stack>
 #include <unordered_set>
 
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
 class VisionRequest
 {
 public:
@@ -12,7 +13,7 @@ public:
 	std::vector<const DerivedBlock*> m_lineOfSight;
 	std::unordered_set<const DerivedBlock*> m_establishedAsHavingLineOfSight;
 
-	static void readSteps(std::vector<VisionRequest>::iterator begin, std::vector<VisionRequest>::iterator end);
+	static void readSteps(std::vector<VisionRequest<DerivedBlock, DerivedActor, DerivedArea>>::iterator begin, std::vector<VisionRequest<DerivedBlock, DerivedActor, DerivedArea>>::iterator end);
 	
 	VisionRequest(DerivedActor& a);
 

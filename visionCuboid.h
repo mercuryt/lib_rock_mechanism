@@ -6,6 +6,7 @@
 #pragma once
 #include <cstdint>
 #include "cuboid.h"
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
 class VisionCuboid
 {
 public:
@@ -15,15 +16,15 @@ public:
 	static void BlockIsSometimesOpaque(DerivedBlock& block);
 	static void BlockFloorIsNeverOpaque(DerivedBlock& block);
 	static void BlockFloorIsSometimesOpaque(DerivedBlock& block);
-	static VisionCuboid* getTargetToCombineWith(const Cuboid& cuboid);
+	static VisionCuboid* getTargetToCombineWith(const Cuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid);
 
-	Cuboid m_cuboid;
+	Cuboid<DerivedBlock, DerivedActor, DerivedArea> m_cuboid;
 	bool m_destroy;
 
-	VisionCuboid(Cuboid& cuboid);
-	bool canSeeInto(const Cuboid& cuboid) const;
-	bool canCombineWith(const Cuboid& cuboid) const;
+	VisionCuboid(Cuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid);
+	bool canSeeInto(const Cuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid) const;
+	bool canCombineWith(const Cuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid) const;
 	void splitAt(DerivedBlock& split);
 	void splitBelow(DerivedBlock& split);
-	void extend(Cuboid& cuboid);
+	void extend(Cuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid);
 };

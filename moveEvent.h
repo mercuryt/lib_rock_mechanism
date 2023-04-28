@@ -8,6 +8,7 @@
 /*
  *  Try to enter next step on route. 
  */
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
 class MoveEvent : public ScheduledEvent
 {
 public:

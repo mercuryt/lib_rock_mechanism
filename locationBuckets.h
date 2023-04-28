@@ -1,5 +1,5 @@
 #pragma once
-class VisionRequest;
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
 class LocationBuckets
 {
 	DerivedArea& m_area;
@@ -14,9 +14,9 @@ public:
 	void insert(DerivedActor& actor);
 	void erase(DerivedActor& actor);
 	void update(DerivedActor& actor, const DerivedBlock& oldLocation, const DerivedBlock& newLocation);
-	void processVisionRequest(VisionRequest& visionRequest) const;
+	void processVisionRequest(VisionRequest<DerivedBlock, DerivedActor, DerivedArea>& visionRequest) const;
 	std::unordered_set<DerivedActor*>* getBucketFor(const DerivedBlock& block);
-	bool hasLineOfSight(VisionRequest& visionRequest, const DerivedBlock& to, const DerivedBlock& from) const;
+	bool hasLineOfSight(VisionRequest<DerivedBlock, DerivedActor, DerivedArea>& visionRequest, const DerivedBlock& to, const DerivedBlock& from) const;
 	struct InRange
 	{
 		const LocationBuckets& locationBuckets;

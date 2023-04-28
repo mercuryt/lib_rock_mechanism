@@ -7,9 +7,9 @@
 
 class FluidGroup;
 
-class DrainQueue : public FluidQueue
+class DrainQueue : public FluidQueue<DerivedBlock>
 {
-	uint32_t getPriority(FutureFlowBlock& futureFlowBlock) const;
+	uint32_t getPriority(FutureFlowBlock<DerivedBlock>& futureFlowBlock) const;
 public:
 	std::unordered_set<DerivedBlock*> m_futureEmpty;
 	std::unordered_set<DerivedBlock*> m_futureNoLongerFull;

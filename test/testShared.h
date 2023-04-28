@@ -436,7 +436,7 @@ void Block::addConstructedFeature(const BlockFeatureType* blockFeatureType, cons
 	clearMoveCostsCacheForSelfAndAdjacent();
 	m_area->expireRouteCache();
 	if(m_area->m_visionCuboidsActive && (blockFeatureType == s_floor || blockFeatureType == s_hatch) && !materialType->transparent)
-		VisionCuboid::BlockFloorIsSometimesOpaque(*this);
+		VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::BlockFloorIsSometimesOpaque(*this);
 }
 void Block::addHewnFeature(const BlockFeatureType* blockFeatureType, const MaterialType* materialType)
 {
@@ -450,7 +450,7 @@ void Block::addHewnFeature(const BlockFeatureType* blockFeatureType, const Mater
 	if(isSolid())
 		setNotSolid();
 	if(m_area->m_visionCuboidsActive && (blockFeatureType == s_floor || blockFeatureType == s_hatch) && !materialType->transparent)
-		VisionCuboid::BlockFloorIsSometimesOpaque(*this);
+		VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::BlockFloorIsSometimesOpaque(*this);
 }
 bool Block::hasFeatureType(const BlockFeatureType* blockFeatureType) const
 {
@@ -477,7 +477,7 @@ void Block::removeFeature(const BlockFeatureType* blockFeatureType)
 		m_features.erase(found);
 	if(m_area->m_visionCuboidsActive && (blockFeatureType == s_floor || blockFeatureType == s_hatch) && !found->materialType->transparent)
 		// block, opacity, floor
-		VisionCuboid::BlockFloorIsNeverOpaque(*this);
+		VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::BlockFloorIsNeverOpaque(*this);
 }
 std::string Block::describeFeatures() const
 {
@@ -635,7 +635,7 @@ void setFullFluidCuboid(Block& low, Block& high, const FluidType* fluidType)
 	assert(low.fluidCanEnterEver());
 	assert(high.m_totalFluidVolume == 0);
 	assert(high.fluidCanEnterEver());
-	Cuboid cuboid(high, low);
+	Cuboid<DerivedBlock, DerivedActor, DerivedArea> cuboid(high, low);
 	for(Block& block : cuboid)
 	{
 		assert(block.m_totalFluidVolume == 0);

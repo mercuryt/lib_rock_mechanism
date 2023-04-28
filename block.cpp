@@ -232,7 +232,7 @@ void BaseBlock::setNotSolid()
 	DerivedBlock* block = static_cast<DerivedBlock*>(this);
 	block->clearMoveCostsCacheForSelfAndAdjacent();
 	if(m_area->m_visionCuboidsActive)
-		VisionCuboid::BlockIsNeverOpaque(*block);
+		VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::BlockIsNeverOpaque(*block);
 }
 void BaseBlock::setSolid(const MaterialType* materialType)
 {
@@ -288,7 +288,7 @@ void BaseBlock::setSolid(const MaterialType* materialType)
 	DerivedBlock* block = static_cast<DerivedBlock*>(this);
 	block->clearMoveCostsCacheForSelfAndAdjacent();
 	if(m_area->m_visionCuboidsActive && !materialType->transparent)
-		VisionCuboid::BlockIsSometimesOpaque(*block);
+		VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::BlockIsSometimesOpaque(*block);
 		
 }
 bool BaseBlock::canEnterEver(DerivedActor& actor) const
@@ -309,7 +309,7 @@ void BaseBlock::spawnMist(const FluidType* fluidType, uint32_t maxMistSpread)
 		return;
 	m_mist = fluidType;
 	m_mistInverseDistanceFromSource = maxMistSpread != 0 ? maxMistSpread : fluidType->maxMistSpread;
-	auto event = std::make_unique<MistDisperseEvent>( s_step + fluidType->mistDuration, m_mist, static_cast<DerivedBlock&>(*this));
+	auto event = std::make_unique<MistDisperseEvent<DerivedBlock, DerivedActor, DerivedArea>>( s_step + fluidType->mistDuration, m_mist, static_cast<DerivedBlock&>(*this));
 	m_area->m_eventSchedule.schedule(std::move(event));
 }
 //TODO: This code puts the fluid into an adjacent group of the correct type if it can find one, it does not add the block or merge groups, leaving these tasks to fluidGroup readStep. Is this ok?

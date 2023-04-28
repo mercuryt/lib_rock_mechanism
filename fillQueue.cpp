@@ -1,4 +1,4 @@
-FillQueue::FillQueue(FluidGroup& fluidGroup) : FluidQueue(fluidGroup) {} 
+FillQueue::FillQueue(FluidGroup& fluidGroup) : FluidQueue<DerivedBlock>(fluidGroup) {} 
 void FillQueue::buildFor(std::unordered_set<DerivedBlock*>& members)
 {
 	for(DerivedBlock* block : members)
@@ -13,12 +13,12 @@ void FillQueue::buildFor(std::unordered_set<DerivedBlock*>& members)
 }
 void FillQueue::initalizeForStep()
 {
-	for(FutureFlowBlock& futureFlowBlock : m_queue)
+	for(FutureFlowBlock<DerivedBlock>& futureFlowBlock : m_queue)
 	{
 		futureFlowBlock.delta = 0;
 		futureFlowBlock.capacity = futureFlowBlock.block->volumeOfFluidTypeCanEnter(m_fluidGroup.m_fluidType);
 	}
-	std::ranges::sort(m_queue.begin(), m_queue.end(), [&](FutureFlowBlock& a, FutureFlowBlock& b){
+	std::ranges::sort(m_queue.begin(), m_queue.end(), [&](FutureFlowBlock<DerivedBlock>& a, FutureFlowBlock<DerivedBlock>& b){
 		return getPriority(a) < getPriority(b);
 	});
 	m_groupStart = m_queue.begin();
@@ -101,7 +101,7 @@ uint32_t FillQueue::groupLevel() const
 	}
 	return highestLevel;
 }
-uint32_t FillQueue::getPriority(FutureFlowBlock& futureFlowBlock) const
+uint32_t FillQueue::getPriority(FutureFlowBlock<DerivedBlock>& futureFlowBlock) const
 {
 	if(futureFlowBlock.capacity == 0)
 		return UINT32_MAX;

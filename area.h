@@ -30,18 +30,18 @@ public:
 	uint32_t m_sizeY;
 	uint32_t m_sizeZ;
 	std::vector<std::vector<std::vector<DerivedBlock>>> m_blocks;
-	LocationBuckets m_locationBuckets;
+	LocationBuckets<DerivedBlock, DerivedActor, DerivedArea> m_locationBuckets;
 	std::list<FluidGroup> m_fluidGroups;
 	std::unordered_set<FluidGroup*> m_unstableFluidGroups;
 	std::unordered_set<FluidGroup*> m_setStable;
 	std::unordered_set<FluidGroup*> m_toDestroy;
 	std::unordered_set<DerivedBlock*> m_caveInCheck;
 	std::vector<std::tuple<std::vector<DerivedBlock*>,uint32_t,uint32_t>> m_caveInData;
-	std::vector<RouteRequest> m_routeRequestQueue;
+	std::vector<RouteRequest<DerivedBlock, DerivedActor, DerivedArea>> m_routeRequestQueue;
 	uint32_t m_routeCacheVersion;
-	std::vector<VisionRequest> m_visionRequestQueue;
+	std::vector<VisionRequest<DerivedBlock, DerivedActor, DerivedArea>> m_visionRequestQueue;
 	Buckets<DerivedActor, s_actorDoVisionInterval> m_visionBuckets;
-	std::list<VisionCuboid> m_visionCuboids;
+	std::list<VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>> m_visionCuboids;
 	bool m_visionCuboidsActive;
 	EventSchedule m_eventSchedule;
 
@@ -85,7 +85,7 @@ public:
 	std::string toS();
 
 	// Get a z-level for rendering.
-	Cuboid getZLevel(uint32_t z);
+	Cuboid<DerivedBlock, DerivedActor, DerivedArea> getZLevel(uint32_t z);
 	// User provided code, no route.
 	void notifyNoRouteFound(DerivedActor& actor);
 
