@@ -6,20 +6,20 @@
 #include <stack>
 #include <unordered_map>
 
-void baseArea::stepCaveInRead()
+void BaseArea::stepCaveInRead()
 {
-	std::list<std::unordered_set<BLOCK*>> chunks;
-	std::unordered_set<std::unordered_set<BLOCK*>*> anchoredChunks;
-	std::unordered_map<BLOCK*, std::unordered_set<BLOCK*>*> chunksByBlock;
-	std::deque<BLOCK*> blockQueue;
+	std::list<std::unordered_set<DerivedBlock*>> chunks;
+	std::unordered_set<std::unordered_set<DerivedBlock*>*> anchoredChunks;
+	std::unordered_map<DerivedBlock*, std::unordered_set<DerivedBlock*>*> chunksByBlock;
+	std::deque<DerivedBlock*> blockQueue;
 
 	//TODO: blockQueue.insert?
 	//blockQueue.insert(blockQueue.end(), m_caveInCheck.begin(), m_caveInCheck.end());
 	// For some reason the above line adds 64 elements to blockQueue rather then the expected 2.
-	for(BLOCK* block : m_caveInCheck)
+	for(DerivedBlock* block : m_caveInCheck)
 		blockQueue.push_back(block);
-	std::stack<BLOCK*> toAddToBlockQueue;
-	std::unordered_set<BLOCK*> checklist(m_caveInCheck);
+	std::stack<DerivedBlock*> toAddToBlockQueue;
+	std::unordered_set<DerivedBlock*> checklist(m_caveInCheck);
 	m_caveInCheck.clear();
 	m_caveInData.clear();
 	bool chunkFound;
@@ -27,7 +27,7 @@ void baseArea::stepCaveInRead()
 	bool prioritizeAdjacent;
 	while(!blockQueue.empty() && checklist.size() != 0)
 	{
-		BLOCK* block = blockQueue.front();
+		DerivedBlock* block = blockQueue.front();
 		blockQueue.pop_front();
 		while(!toAddToBlockQueue.empty())
 			toAddToBlockQueue.pop();
@@ -39,7 +39,7 @@ void baseArea::stepCaveInRead()
 		// We want to push_front the bottom block when no anchored chunks have been found.
 		// This lets the algorithum start by trying to go straight down to establish an anchor point asap.
 		// Once one point is anchored the chunks will expand in a spherical shape until they touch or anchor.
-		for(BLOCK* adjacent : block->m_adjacents)
+		for(DerivedBlock* adjacent : block->m_adjacents)
 		{
 			// If this block is on the edge of the area then it is anchored.
 			if(adjacent == nullptr)
@@ -62,9 +62,9 @@ void baseArea::stepCaveInRead()
 				// If adjacent to multiple different chunks merge them.
 				if(chunksByBlock.contains(block))
 				{
-					std::unordered_set<BLOCK*>* oldChunk = chunksByBlock[block];
-					std::unordered_set<BLOCK*>* newChunk = chunksByBlock[adjacent];
-					for(BLOCK* b : *oldChunk)
+					std::unordered_set<DerivedBlock*>* oldChunk = chunksByBlock[block];
+					std::unordered_set<DerivedBlock*>* newChunk = chunksByBlock[adjacent];
+					for(DerivedBlock* b : *oldChunk)
 					{
 						chunksByBlock[b] = newChunk;
 						newChunk->insert(b);
@@ -73,7 +73,7 @@ void baseArea::stepCaveInRead()
 					if(anchoredChunks.contains(oldChunk))
 					{
 						anchoredChunks.insert(newChunk);
-						for(BLOCK* b : *oldChunk)
+						for(DerivedBlock* b : *oldChunk)
 							checklist.erase(b);
 					}
 					std::erase(chunks, *oldChunk);
@@ -110,7 +110,7 @@ void baseArea::stepCaveInRead()
 		if(blockIsAnchored)
 		{
 			anchoredChunks.insert(chunksByBlock[block]);
-			for(BLOCK* b : *chunksByBlock[block])
+			for(DerivedBlock* b : *chunksByBlock[block])
 				checklist.erase(b);
 		}
 		// Append adjacent without chunks to end of blockQueue if block isn't anchored, if it is anchored then adjacent are as well.
@@ -123,17 +123,17 @@ void baseArea::stepCaveInRead()
 
 	} // End for each blockQueue.
 	// Record unanchored chunks, fall distance and energy.
-	std::vector<std::tuple<std::unordered_set<BLOCK*>,uint32_t, uint32_t>> fallingChunksWithDistanceAndEnergy;
-	for(std::unordered_set<BLOCK*>& chunk : chunks)
+	std::vector<std::tuple<std::unordered_set<DerivedBlock*>,uint32_t, uint32_t>> fallingChunksWithDistanceAndEnergy;
+	for(std::unordered_set<DerivedBlock*>& chunk : chunks)
 	{
 		if(!anchoredChunks.contains(&chunk))
 		{
-			std::unordered_set<BLOCK*> blocksAbsorbingImpact;
+			std::unordered_set<DerivedBlock*> blocksAbsorbingImpact;
 			uint32_t smallestFallDistance = UINT32_MAX;
-			for(BLOCK* block : chunk)
+			for(DerivedBlock* block : chunk)
 			{
 				uint32_t verticalFallDistance = 0;
-				BLOCK* below = block->m_adjacents[0];
+				DerivedBlock* below = block->m_adjacents[0];
 				while(below != nullptr && !below->isSupport())
 				{
 					verticalFallDistance++;
@@ -160,7 +160,7 @@ void baseArea::stepCaveInRead()
 
 			// Calculate energy of fall.
 			uint32_t fallEnergy = 0;
-			for(BLOCK* block : chunk)
+			for(DerivedBlock* block : chunk)
 				fallEnergy += block->getMass();
 			fallEnergy *= smallestFallDistance;
 			
@@ -170,23 +170,23 @@ void baseArea::stepCaveInRead()
 	}
 
 	// Sort by z low to high so blocks don't overwrite eachother when moved down.
-	auto compare = [](BLOCK* a, BLOCK* b) { return a->m_z < b->m_z; };
+	auto compare = [](DerivedBlock* a, DerivedBlock* b) { return a->m_z < b->m_z; };
 	for(auto& [chunk, fallDistance, fallEnergy] : fallingChunksWithDistanceAndEnergy)
 	{
-		std::vector<BLOCK*> blocks(chunk.begin(), chunk.end());
+		std::vector<DerivedBlock*> blocks(chunk.begin(), chunk.end());
 		std::ranges::sort(blocks, compare);
 		m_caveInData.emplace_back(std::move(blocks), fallDistance, fallEnergy);
 	}
 }
-void baseArea::stepCaveInWrite()
+void BaseArea::stepCaveInWrite()
 {
 	// Make chunks fall.
 	for(auto& [chunk, fallDistance, fallEnergy] : m_caveInData)
 	{
 		uint32_t zDiff;
 		// Move blocks down.
-		BLOCK* below;
-		for(BLOCK* block : chunk)
+		DerivedBlock* below;
+		for(DerivedBlock* block : chunk)
 		{
 			zDiff = fallDistance;
 			below = block;
@@ -203,7 +203,7 @@ void baseArea::stepCaveInWrite()
 	}
 }
 
-void baseArea::registerPotentialCaveIn(BLOCK& block)
+void BaseArea::registerPotentialCaveIn(DerivedBlock& block)
 {
 	m_caveInCheck.insert(&block);
 }

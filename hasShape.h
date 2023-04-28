@@ -6,6 +6,6 @@ class HasShape
 {
 public:
 	const Shape* m_shape;
-	BLOCK* m_location;
+	DerivedBlock* m_location;
 	HasShape(const Shape* s) : m_shape(s), m_location(nullptr) {}
 };

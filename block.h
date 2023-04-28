@@ -1,6 +1,6 @@
 /*
  * A block. Contains either a single type of material in 'solid' form or arbitrary objects with volume, generic solids and liquids.
- * Should only be used as inheritance target by BLOCK, not intended to ever be instanced.
+ * Should only be used as inheritance target by DerivedBlock, not intended to ever be instanced.
  */
 #pragma once
 
@@ -30,7 +30,7 @@ struct SortByDensity
 {
 	bool operator()(const FluidType* a, const FluidType* b) const { return a->density < b->density; }
 };
-class baseBlock
+class BaseBlock
 {
 	// If this block is solid stone, solid dirt, etc. then store it here. Otherwise nullptr.
 	const MaterialType* m_solid;
@@ -39,19 +39,19 @@ public:
 	// Store area as a pointer rather then a reference to keep block default constructable.
 	// This is required inorder to create the m_blocks structure before initalizing it.
 	// TODO: emplace_back?
-	AREA* m_area;
+	DerivedArea* m_area;
 	// Store adjacent in an array, with index determined by relative position.
 	// below = 0, < = 1, ^ = 2, > = 3, v = 4, above = 5.
-	std::array<BLOCK*, 6> m_adjacents;
-	std::vector<BLOCK*> m_adjacentsVector;
+	std::array<DerivedBlock*, 6> m_adjacents;
+	std::vector<DerivedBlock*> m_adjacentsVector;
 	// Store routes to other blocks by Shape*, MoveType* and destination*  
-	std::unordered_map<const Shape*, std::unordered_map<const MoveType*, std::unordered_map<BLOCK*, 
-		std::shared_ptr<std::vector<BLOCK*>>
+	std::unordered_map<const Shape*, std::unordered_map<const MoveType*, std::unordered_map<DerivedBlock*, 
+		std::shared_ptr<std::vector<DerivedBlock*>>
 	>>> m_routeCache;
 	// Cache versions, check if matches the m_cacheVersion in area to see if cache is still valid.
 	uint32_t m_routeCacheVersion;
 	// Cache adjacent move costs. No version number: cleared only by changes to self / adjacent / diagonal. 
-	std::unordered_map<const Shape*, std::unordered_map<const MoveType*, std::vector<std::pair<BLOCK*, uint32_t>>>> m_moveCostsCache;
+	std::unordered_map<const Shape*, std::unordered_map<const MoveType*, std::vector<std::pair<DerivedBlock*, uint32_t>>>> m_moveCostsCache;
 	// Store a total occupied volume from actors.
 	uint32_t m_totalDynamicVolume;
 	// Store a total occupied volume from genericSolids and nongenerics.
@@ -71,27 +71,27 @@ public:
 	// For immobile non generics could be items or buildings.
 	std::unordered_map<HasShape*, uint32_t> m_nongenerics;
 	// Track Actors and their volume which is in this block.
-	std::unordered_map<ACTOR*, uint32_t> m_actors;
+	std::unordered_map<DerivedActor*, uint32_t> m_actors;
 	// Store the location bucket this block belongs to.
-	std::unordered_set<ACTOR*>* m_locationBucket;
+	std::unordered_set<DerivedActor*>* m_locationBucket;
 	// Store the visionCuboid this block belongs to.
 	VisionCuboid* m_visionCuboid;
 
 	// Constructor initalizes some members.
-	baseBlock();
-	void setup(AREA* a, uint32_t ax, uint32_t ay, uint32_t az);
+	BaseBlock();
+	void setup(DerivedArea* a, uint32_t ax, uint32_t ay, uint32_t az);
 	void recordAdjacent();
-	std::vector<BLOCK*> getAdjacentWithEdgeAdjacent() const;
-	std::vector<BLOCK*> getAdjacentWithEdgeAndCornerAdjacent() const;
-	std::vector<BLOCK*> getEdgeAndCornerAdjacentOnly() const;
-	std::vector<BLOCK*> getEdgeAdjacentOnly() const;
-	std::vector<BLOCK*> getEdgeAdjacentOnSameZLevelOnly() const;
-	std::vector<BLOCK*> getAdjacentOnSameZLevelOnly() const;
-	std::vector<BLOCK*> getEdgeAdjacentOnlyOnNextZLevelDown() const;
-	std::vector<BLOCK*> getEdgeAdjacentOnlyOnNextZLevelUp() const;
-	uint32_t distance(BLOCK& block) const;
-	uint32_t taxiDistance(BLOCK& block) const;
-	bool isAdjacentToAny(std::unordered_set<BLOCK*>& blocks) const;
+	std::vector<DerivedBlock*> getAdjacentWithEdgeAdjacent() const;
+	std::vector<DerivedBlock*> getAdjacentWithEdgeAndCornerAdjacent() const;
+	std::vector<DerivedBlock*> getEdgeAndCornerAdjacentOnly() const;
+	std::vector<DerivedBlock*> getEdgeAdjacentOnly() const;
+	std::vector<DerivedBlock*> getEdgeAdjacentOnSameZLevelOnly() const;
+	std::vector<DerivedBlock*> getAdjacentOnSameZLevelOnly() const;
+	std::vector<DerivedBlock*> getEdgeAdjacentOnlyOnNextZLevelDown() const;
+	std::vector<DerivedBlock*> getEdgeAdjacentOnlyOnNextZLevelUp() const;
+	uint32_t distance(DerivedBlock& block) const;
+	uint32_t taxiDistance(DerivedBlock& block) const;
+	bool isAdjacentToAny(std::unordered_set<DerivedBlock*>& blocks) const;
 	void setNotSolid();
 	void setSolid(const MaterialType* materialType);
 	bool isSolid() const;
@@ -102,35 +102,35 @@ public:
 	// Get the FluidGroup for this fluid type in this block.
 	FluidGroup* getFluidGroup(const FluidType* fluidType) const;
 	// Get block at offset coordinates.
-	BLOCK* offset(int32_t ax, int32_t ay, int32_t az) const;
+	DerivedBlock* offset(int32_t ax, int32_t ay, int32_t az) const;
 	// Add fluid, handle falling / sinking, group membership, excessive quantity sent to fluid group.
 	void addFluid(uint32_t volume, const FluidType* fluidType);
 	void removeFluid(uint32_t volume, const FluidType* fluidType);
-	bool actorCanEnterCurrently(ACTOR& actor) const;
-	bool canEnterEver(ACTOR& actor) const;
-	std::vector<std::pair<BLOCK*, uint32_t>> getMoveCosts(const Shape* shape, const MoveType* moveType);
+	bool actorCanEnterCurrently(DerivedActor& actor) const;
+	bool canEnterEver(DerivedActor& actor) const;
+	std::vector<std::pair<DerivedBlock*, uint32_t>> getMoveCosts(const Shape* shape, const MoveType* moveType);
 	bool fluidCanEnterCurrently(const FluidType* fluidType) const;
 	bool isAdjacentToFluidGroup(const FluidGroup* fluidGroup) const;
 	uint32_t volumeOfFluidTypeCanEnter(const FluidType* fluidType) const;
 	uint32_t volumeOfFluidTypeContains(const FluidType* fluidType) const;
 	// Move less dense fluids to their group's excessVolume until s_maxBlockVolume is achieved.
 	void resolveFluidOverfull();
-	void enter(ACTOR& actor);
-	void exit(ACTOR& actor);
+	void enter(DerivedActor& actor);
+	void exit(DerivedActor& actor);
 	// To be overriden by user code if diagonal movement allowed.
 	void clearMoveCostsCacheForSelfAndAdjacent();
-	std::vector<BLOCK*> selectBetweenCorners(BLOCK* otherBlock) const;
+	std::vector<DerivedBlock*> selectBetweenCorners(DerivedBlock* otherBlock) const;
 
-	bool operator==(const BLOCK& block) const;
+	bool operator==(const DerivedBlock& block) const;
 
 	// User provided.
 	bool moveTypeCanEnter(const MoveType* moveType) const;
-	bool canEnterCurrently(ACTOR* actor) const;
+	bool canEnterCurrently(DerivedActor* actor) const;
 	bool anyoneCanEnterEver() const;
-	uint32_t moveCost(const MoveType* moveType, BLOCK* origin) const;
+	uint32_t moveCost(const MoveType* moveType, DerivedBlock* origin) const;
 
-	bool canSeeThroughFrom(const BLOCK& block) const;
-	bool canSeeIntoFromAlways(BLOCK* block) const;
+	bool canSeeThroughFrom(const DerivedBlock& block) const;
+	bool canSeeIntoFromAlways(DerivedBlock* block) const;
 	float visionDistanceModifier() const;
 
 	bool fluidCanEnterEver() const;
@@ -139,6 +139,6 @@ public:
 	bool isSupport() const;
 	uint32_t getMass() const;
 
-	void moveContentsTo(BLOCK* block);
+	void moveContentsTo(DerivedBlock* block);
 };
-static_assert(std::default_initializable<baseBlock>);
+static_assert(std::default_initializable<BaseBlock>);

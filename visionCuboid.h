@@ -1,7 +1,7 @@
 /*
  * A cuboid of space where every block has line of sight to every other block.
  * Used to skip line of sight calculations.
- * Stored in AREA::m_visionCuboids. Deleted durring AREA::writeStep if m_destroy is true.
+ * Stored in DerivedArea::m_visionCuboids. Deleted durring DerivedArea::writeStep if m_destroy is true.
  */
 #pragma once
 #include <cstdint>
@@ -9,12 +9,12 @@
 class VisionCuboid
 {
 public:
-	static void setup(AREA& area);
-	static void clearDestroyed(AREA& area);
-	static void BlockIsNeverOpaque(BLOCK& block);
-	static void BlockIsSometimesOpaque(BLOCK& block);
-	static void BlockFloorIsNeverOpaque(BLOCK& block);
-	static void BlockFloorIsSometimesOpaque(BLOCK& block);
+	static void setup(DerivedArea& area);
+	static void clearDestroyed(DerivedArea& area);
+	static void BlockIsNeverOpaque(DerivedBlock& block);
+	static void BlockIsSometimesOpaque(DerivedBlock& block);
+	static void BlockFloorIsNeverOpaque(DerivedBlock& block);
+	static void BlockFloorIsSometimesOpaque(DerivedBlock& block);
 	static VisionCuboid* getTargetToCombineWith(const Cuboid& cuboid);
 
 	Cuboid m_cuboid;
@@ -23,7 +23,7 @@ public:
 	VisionCuboid(Cuboid& cuboid);
 	bool canSeeInto(const Cuboid& cuboid) const;
 	bool canCombineWith(const Cuboid& cuboid) const;
-	void splitAt(BLOCK& split);
-	void splitBelow(BLOCK& split);
+	void splitAt(DerivedBlock& split);
+	void splitBelow(DerivedBlock& split);
 	void extend(Cuboid& cuboid);
 };

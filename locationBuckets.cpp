@@ -1,6 +1,6 @@
 #pragma once
 
-LocationBuckets::LocationBuckets(AREA& area) : m_area(area)
+LocationBuckets::LocationBuckets(DerivedArea& area) : m_area(area)
 {
 	m_maxX = ((m_area.m_sizeX - 1) / s_locationBucketSize) + 1;
 	m_maxY = ((m_area.m_sizeY - 1) / s_locationBucketSize) + 1;
@@ -13,7 +13,7 @@ LocationBuckets::LocationBuckets(AREA& area) : m_area(area)
 			m_buckets[x][y].resize(m_maxZ);
 	}
 }
-std::unordered_set<ACTOR*>* LocationBuckets::getBucketFor(const BLOCK& block)
+std::unordered_set<DerivedActor*>* LocationBuckets::getBucketFor(const DerivedBlock& block)
 {
 	uint32_t bucketX = block.m_x / s_locationBucketSize;
 	uint32_t bucketY = block.m_y / s_locationBucketSize;
@@ -23,15 +23,15 @@ std::unordered_set<ACTOR*>* LocationBuckets::getBucketFor(const BLOCK& block)
 	assert(m_buckets.at(bucketX).at(bucketY).size() > bucketZ);
 	return &m_buckets[bucketX][bucketY][bucketZ];
 }
-void LocationBuckets::insert(ACTOR& actor)
+void LocationBuckets::insert(DerivedActor& actor)
 {
 	actor.m_location->m_locationBucket->insert(&actor);
 }
-void LocationBuckets::erase(ACTOR& actor)
+void LocationBuckets::erase(DerivedActor& actor)
 {
 	actor.m_location->m_locationBucket->erase(&actor);
 }
-void LocationBuckets::update(ACTOR& actor, const BLOCK& oldLocation, const BLOCK& newLocation)
+void LocationBuckets::update(DerivedActor& actor, const DerivedBlock& oldLocation, const DerivedBlock& newLocation)
 {
 	if(oldLocation.m_locationBucket == newLocation.m_locationBucket)
 		return;
@@ -40,7 +40,7 @@ void LocationBuckets::update(ACTOR& actor, const BLOCK& oldLocation, const BLOCK
 }
 void LocationBuckets::processVisionRequest(VisionRequest& visionRequest) const
 {
-	BLOCK* from = visionRequest.m_actor.m_location;
+	DerivedBlock* from = visionRequest.m_actor.m_location;
 	assert(from != nullptr);
 	assert((int32_t)visionRequest.m_actor.getVisionRange() * (int32_t)s_maxDistanceVisionModifier > 0);
 	int32_t range = visionRequest.m_actor.getVisionRange() * s_maxDistanceVisionModifier;
@@ -57,12 +57,12 @@ void LocationBuckets::processVisionRequest(VisionRequest& visionRequest) const
 				assert(x < m_buckets.size());
 				assert(y < m_buckets.at(x).size());
 				assert(z < m_buckets.at(x).at(y).size());
-				const std::unordered_set<ACTOR*>& bucket = m_buckets[x][y][z];
-				for(ACTOR* actor : bucket)
+				const std::unordered_set<DerivedActor*>& bucket = m_buckets[x][y][z];
+				for(DerivedActor* actor : bucket)
 				{
 					assert(!actor->m_blocks.empty());
 					if(visionRequest.m_actor.canSee(*actor))
-						for(const BLOCK* to : actor->m_blocks)
+						for(const DerivedBlock* to : actor->m_blocks)
 							if(to->taxiDistance(*from) <= (uint32_t)range)
 							{
 								if(visionRequest.hasLineOfSight(*to, *from))
@@ -74,14 +74,14 @@ void LocationBuckets::processVisionRequest(VisionRequest& visionRequest) const
 	visionRequest.m_actors.erase(&visionRequest.m_actor);
 }
 
-LocationBuckets::InRange LocationBuckets::inRange(const BLOCK& origin, uint32_t range) const
+LocationBuckets::InRange LocationBuckets::inRange(const DerivedBlock& origin, uint32_t range) const
 {
 	return LocationBuckets::InRange(*this, origin, range);
 }
 
 LocationBuckets::InRange::iterator::iterator(LocationBuckets::InRange& ir) : inRange(&ir)
 {
-	const BLOCK& origin = inRange->origin;
+	const DerivedBlock& origin = inRange->origin;
 	int32_t range = inRange->range;
 	maxX = (std::min(origin.m_x + range, origin.m_area->m_sizeX)) / s_locationBucketSize;
 	maxY = (std::min(origin.m_y + range, origin.m_area->m_sizeY)) / s_locationBucketSize;
@@ -140,8 +140,8 @@ LocationBuckets::InRange::iterator LocationBuckets::InRange::iterator::operator+
 }
 bool LocationBuckets::InRange::iterator::operator==(const LocationBuckets::InRange::iterator other) const { return other.x == x && other.y == y && other.z == z; }
 bool LocationBuckets::InRange::iterator::operator!=(const LocationBuckets::InRange::iterator other) const { return other.x != x || other.y != y || other.z != z; }
-ACTOR& LocationBuckets::InRange::iterator::operator*() const { return **bucketIterator; }
-ACTOR* LocationBuckets::InRange::iterator::operator->() const { return *bucketIterator; }
+DerivedActor& LocationBuckets::InRange::iterator::operator*() const { return **bucketIterator; }
+DerivedActor* LocationBuckets::InRange::iterator::operator->() const { return *bucketIterator; }
 LocationBuckets::InRange::iterator LocationBuckets::InRange::begin(){ return LocationBuckets::InRange::iterator(*this); }
 LocationBuckets::InRange::iterator LocationBuckets::InRange::end()
 {

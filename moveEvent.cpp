@@ -1,7 +1,7 @@
-MoveEvent::MoveEvent(uint32_t s, ACTOR& a) : ScheduledEvent(s), m_actor(a) { m_actor.m_taskEvent = this; }
+MoveEvent::MoveEvent(uint32_t s, DerivedActor& a) : ScheduledEvent(s), m_actor(a) { m_actor.m_taskEvent = this; }
 void MoveEvent::execute()
 {
-	BLOCK& block = **m_actor.m_routeIter;
+	DerivedBlock& block = **m_actor.m_routeIter;
 	if(block.anyoneCanEnterEver() && block.canEnterEver(m_actor))
 	{
 		if(block.actorCanEnterCurrently(m_actor))

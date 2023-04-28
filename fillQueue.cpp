@@ -1,10 +1,10 @@
 FillQueue::FillQueue(FluidGroup& fluidGroup) : FluidQueue(fluidGroup) {} 
-void FillQueue::buildFor(std::unordered_set<BLOCK*>& members)
+void FillQueue::buildFor(std::unordered_set<DerivedBlock*>& members)
 {
-	for(BLOCK* block : members)
+	for(DerivedBlock* block : members)
 	{
 		assert(block->m_fluids.contains(m_fluidGroup.m_fluidType));
-		for(BLOCK* adjacent : block->m_adjacentsVector)
+		for(DerivedBlock* adjacent : block->m_adjacentsVector)
 			 if(adjacent->fluidCanEnterEver() && adjacent->fluidCanEnterEver(m_fluidGroup.m_fluidType) &&
 				adjacent->m_fluids.at(m_fluidGroup.m_fluidType).first != s_maxBlockVolume
 			   )

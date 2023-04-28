@@ -9,15 +9,15 @@
 class RouteRequest
 {
 public:
-	ACTOR& m_actor;
+	DerivedActor& m_actor;
 	bool m_detour;
-	std::vector<BLOCK*> m_result;
-	std::unordered_map<BLOCK*, std::vector<std::pair<BLOCK*, uint32_t>>> m_moveCostsToCache;
+	std::vector<DerivedBlock*> m_result;
+	std::unordered_map<DerivedBlock*, std::vector<std::pair<DerivedBlock*, uint32_t>>> m_moveCostsToCache;
 	bool m_cacheHit;
 
 	static void readSteps(std::vector<RouteRequest>::iterator begin, std::vector<RouteRequest>::iterator end);
 
-	RouteRequest(ACTOR& a, bool detour = false);
+	RouteRequest(DerivedActor& a, bool detour = false);
 	
 	// Find the route.
 	void readStep();
