@@ -11,12 +11,12 @@ class FillQueue : public FluidQueue
 {
 	uint32_t getPriority(FutureFlowBlock& futureFlowBlock) const;
 public:
-	std::unordered_set<BLOCK*> m_futureFull;
-	std::unordered_set<BLOCK*> m_futureNoLongerEmpty;
-	std::unordered_set<BLOCK*> m_overfull;
+	std::unordered_set<DerivedBlock*> m_futureFull;
+	std::unordered_set<DerivedBlock*> m_futureNoLongerEmpty;
+	std::unordered_set<DerivedBlock*> m_overfull;
 
 	FillQueue(FluidGroup& fluidGroup);
-	void buildFor(std::unordered_set<BLOCK*>& members);
+	void buildFor(std::unordered_set<DerivedBlock*>& members);
 	void initalizeForStep();
 	void recordDelta(uint32_t volume, uint32_t flowCapacity, uint32_t flowTillNextStep);
 	void applyDelta();

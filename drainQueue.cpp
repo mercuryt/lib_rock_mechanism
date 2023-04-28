@@ -1,8 +1,8 @@
 DrainQueue::DrainQueue(FluidGroup& fluidGroup) : FluidQueue(fluidGroup) {}
-void DrainQueue::buildFor(std::unordered_set<BLOCK*>& members)
+void DrainQueue::buildFor(std::unordered_set<DerivedBlock*>& members)
 {
 	m_set = members;
-	for(BLOCK* block : members)
+	for(DerivedBlock* block : members)
 		m_queue.emplace_back(block);
 }
 void DrainQueue::initalizeForStep()
@@ -59,7 +59,7 @@ void DrainQueue::applyDelta()
 {
 	assert(m_groupStart >= m_queue.begin() && m_groupStart <= m_queue.end());
 	assert(m_groupEnd >= m_queue.begin() && m_groupEnd <= m_queue.end());
-	std::unordered_set<BLOCK*> drainedFromAndAdjacent;
+	std::unordered_set<DerivedBlock*> drainedFromAndAdjacent;
 	for(auto iter = m_queue.begin(); iter != m_groupEnd; ++iter)
 	{
 		if(iter->delta == 0)
@@ -74,13 +74,13 @@ void DrainQueue::applyDelta()
 			iter->block->m_fluids.erase(found);
 		// Record blocks to set fluid groups unstable.
 		drainedFromAndAdjacent.insert(iter->block);
-		for(BLOCK* adjacent : iter->block->m_adjacentsVector)
+		for(DerivedBlock* adjacent : iter->block->m_adjacentsVector)
 			if(adjacent->fluidCanEnterEver())
 				drainedFromAndAdjacent.insert(adjacent);
 	}
 	// Set fluidGroups unstable.
 	// TODO: Would it be better to prevent fluid groups from becoming stable while in contact with another group? Either option seems bad.
-	for(BLOCK* block : drainedFromAndAdjacent)
+	for(DerivedBlock* block : drainedFromAndAdjacent)
 		for(auto& [fluidType, pair] : block->m_fluids)
 			if(fluidType != m_fluidGroup.m_fluidType)
 				pair.second->m_stable = false;

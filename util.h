@@ -4,18 +4,18 @@ class util
 {
 public:
 	template <typename F>
-		static std::unordered_set<BLOCK*> collectAdjacentsWithCondition(F&& condition, BLOCK& block)
+		static std::unordered_set<DerivedBlock*> collectAdjacentsWithCondition(F&& condition, DerivedBlock& block)
 		{
-			std::unordered_set<BLOCK*> output;
-			std::unordered_set<BLOCK*> closedList;
-			std::stack<BLOCK*> openList;
+			std::unordered_set<DerivedBlock*> output;
+			std::unordered_set<DerivedBlock*> closedList;
+			std::stack<DerivedBlock*> openList;
 			openList.push(&block);
 			output.insert(&block);
 			while(!openList.empty())
 			{
-				BLOCK*& block = openList.top();
+				DerivedBlock*& block = openList.top();
 				openList.pop();
-				for(BLOCK* adjacent : block->m_adjacentsVector)
+				for(DerivedBlock* adjacent : block->m_adjacentsVector)
 					if(condition(adjacent) && !output.contains(adjacent))
 					{
 						output.insert(adjacent);
@@ -24,20 +24,20 @@ public:
 			}
 			return output;
 		}
-	static std::unordered_set<BLOCK*> collectAdjacentsInRange(uint32_t range, BLOCK& block)
+	static std::unordered_set<DerivedBlock*> collectAdjacentsInRange(uint32_t range, DerivedBlock& block)
 	{
-		auto condition = [&](BLOCK* b){ return b->taxiDistance(block) <= range; };
+		auto condition = [&](DerivedBlock* b){ return b->taxiDistance(block) <= range; };
 		return collectAdjacentsWithCondition(condition, block);
 	}
 	// This was suposed to replace collectAdjacentsWithCondition for detecting splits in fluidGroups but it was slower
 	template <typename F>
-		static std::vector<std::unordered_set<BLOCK*>> findGroups(F&& condition, std::unordered_set<BLOCK*>& blocks)
+		static std::vector<std::unordered_set<DerivedBlock*>> findGroups(F&& condition, std::unordered_set<DerivedBlock*>& blocks)
 		{
-			std::vector<std::unordered_set<BLOCK*>> output;
+			std::vector<std::unordered_set<DerivedBlock*>> output;
 			output.reserve(blocks.size());
-			auto huristic = [&](BLOCK* block){ 
+			auto huristic = [&](DerivedBlock* block){ 
 				uint32_t shortestDistance = UINT32_MAX;
-				for(BLOCK* b : blocks)
+				for(DerivedBlock* b : blocks)
 				{
 					uint32_t distance = b->taxiDistance(*block);
 					if(shortestDistance > distance)
@@ -45,19 +45,19 @@ public:
 				}
 				return shortestDistance;
 			};
-			auto compare = [&](BLOCK* a, BLOCK* b){ return huristic(a) > huristic(b); };
-			std::priority_queue<BLOCK*, std::vector<BLOCK*>, decltype(compare)> open(compare);
-			std::unordered_set<BLOCK*> closed;
+			auto compare = [&](DerivedBlock* a, DerivedBlock* b){ return huristic(a) > huristic(b); };
+			std::priority_queue<DerivedBlock*, std::vector<DerivedBlock*>, decltype(compare)> open(compare);
+			std::unordered_set<DerivedBlock*> closed;
 			while(!blocks.empty())
 			{
 				auto it = blocks.begin();
-				BLOCK* first = *it;
+				DerivedBlock* first = *it;
 				blocks.erase(it);
 				open.push(first);
 				closed.insert(first);
 				while(!open.empty())
 				{
-					BLOCK* candidate = open.top();
+					DerivedBlock* candidate = open.top();
 					open.pop();
 					auto found = blocks.find(candidate);
 					if(found != blocks.end())
@@ -67,7 +67,7 @@ public:
 						if(blocks.empty() && output.empty())
 							return output;
 					}
-					for(BLOCK* b : candidate->m_adjacentsVector)
+					for(DerivedBlock* b : candidate->m_adjacentsVector)
 						if(condition(b) && !closed.contains(b))
 						{
 							open.push(b);

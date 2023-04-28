@@ -27,7 +27,7 @@ Features:
 
 * Glass Rave:
 	Benchmarking speed of vision with open sightlines.
-	An area is created with dimensions of 200x200x5. The bottom layer is filled with solid stone, all other layers are filled with glass floor. An ACTOR is placed in every block which is not solid, 1600 actors in total. 100 steps are processed.
+	An area is created with dimensions of 200x200x5. The bottom layer is filled with solid stone, all other layers are filled with glass floor. An DerivedActor is placed in every block which is not solid, 1600 actors in total. 100 steps are processed.
 	The average time for a step is 23ms and the longest step is 35ms.
 * Stone Rave:
 	Benchmarking speed of vision with closed sightlines.
@@ -40,7 +40,7 @@ Features:
 
 ## Getting Started
 
-Using this library will require implimenting three classes which must inherit from provided base classes: **BLOCK**, **AREA**, and **ACTOR** must inherit from baseBlock,  baseArea, and baseActor. Each of these has one or more methods which must be defined. **BLOCK must be declared before AREA.** For an example of method definitions which configure the library to behave much like Dwarf Fortress see the [Test Implimentation](https://github.com/mercuryt/lib_rock_mechanism/blob/master/test/testShared.h). Copying and editing that file is probably a good start twords your implimentation.
+Using this library will require implimenting three classes which must inherit from provided base classes: **DerivedBlock**, **DerivedArea**, and **DerivedActor** must inherit from BaseBlock,  BaseArea, and BaseActor. Each of these has one or more methods which must be defined. **DerivedBlock must be declared before DerivedArea.** For an example of method definitions which configure the library to behave much like Dwarf Fortress see the [Test Implimentation](https://github.com/mercuryt/lib_rock_mechanism/blob/master/test/testShared.h). Copying and editing that file is probably a good start twords your implimentation.
 
 <!-- CONTRIBUTING -->
 ## Contributing
