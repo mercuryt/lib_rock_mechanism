@@ -1,4 +1,4 @@
-DrainQueue::DrainQueue(FluidGroup& fluidGroup) : FluidQueue(fluidGroup) {}
+DrainQueue::DrainQueue(FluidGroup& fluidGroup) : FluidQueue<DerivedBlock>(fluidGroup) {}
 void DrainQueue::buildFor(std::unordered_set<DerivedBlock*>& members)
 {
 	m_set = members;
@@ -7,7 +7,7 @@ void DrainQueue::buildFor(std::unordered_set<DerivedBlock*>& members)
 }
 void DrainQueue::initalizeForStep()
 {
-	for(FutureFlowBlock& futureFlowBlock : m_queue)
+	for(FutureFlowBlock<DerivedBlock>& futureFlowBlock : m_queue)
 	{
 		assert(futureFlowBlock.block->m_fluids.contains(m_fluidGroup.m_fluidType));
 		assert(futureFlowBlock.block->m_fluids.at(m_fluidGroup.m_fluidType).first <= s_maxBlockVolume);
@@ -16,7 +16,7 @@ void DrainQueue::initalizeForStep()
 		futureFlowBlock.delta = 0;
 		futureFlowBlock.capacity = futureFlowBlock.block->m_fluids.at(m_fluidGroup.m_fluidType).first;
 	}
-	std::ranges::sort(m_queue.begin(), m_queue.end(), [&](FutureFlowBlock& a, FutureFlowBlock& b){
+	std::ranges::sort(m_queue.begin(), m_queue.end(), [&](FutureFlowBlock<DerivedBlock>& a, FutureFlowBlock<DerivedBlock>& b){
 		return getPriority(a) > getPriority(b);
 	});
 	m_groupStart = m_queue.begin();
@@ -90,7 +90,7 @@ uint32_t DrainQueue::groupLevel() const
 	assert(m_groupStart != m_groupEnd);
 	return m_groupStart->block->m_fluids.at(m_fluidGroup.m_fluidType).first - m_groupStart->delta;
 }
-uint32_t DrainQueue::getPriority(FutureFlowBlock& futureFlowBlock) const
+uint32_t DrainQueue::getPriority(FutureFlowBlock<DerivedBlock>& futureFlowBlock) const
 {
 	return futureFlowBlock.block->m_z * s_maxBlockVolume * 2 + futureFlowBlock.capacity;
 }

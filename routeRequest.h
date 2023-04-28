@@ -5,7 +5,7 @@
  */
 #pragma once
 #include "shape.h"
-
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
 class RouteRequest
 {
 public:
@@ -15,7 +15,7 @@ public:
 	std::unordered_map<DerivedBlock*, std::vector<std::pair<DerivedBlock*, uint32_t>>> m_moveCostsToCache;
 	bool m_cacheHit;
 
-	static void readSteps(std::vector<RouteRequest>::iterator begin, std::vector<RouteRequest>::iterator end);
+	static void readSteps(std::vector<RouteRequest<DerivedBlock, DerivedActor, DerivedArea>>::iterator begin, std::vector<RouteRequest<DerivedBlock, DerivedActor, DerivedArea>>::iterator end);
 
 	RouteRequest(DerivedActor& a, bool detour = false);
 	

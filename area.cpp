@@ -39,7 +39,7 @@ void BaseArea::readStep()
 	while(visionIter < m_visionRequestQueue.end())
 	{
 		auto end = std::min(m_visionRequestQueue.end(), visionIter + s_visionThreadingBatchSize);
-		s_pool.push_task([=](){ VisionRequest::readSteps(visionIter, end); });
+		s_pool.push_task([=](){ VisionRequest<DerivedBlock, DerivedActor, DerivedArea>::readSteps(visionIter, end); });
 		visionIter = end;
 	}
 	// Calculate cave in.
@@ -52,7 +52,7 @@ void BaseArea::readStep()
 	while(routeIter < m_routeRequestQueue.end())
 	{
 		auto end = std::min(m_routeRequestQueue.end(), routeIter + s_routeThreadingBatchSize);
-		s_pool.push_task([=](){ RouteRequest::readSteps(routeIter, end); });
+		s_pool.push_task([=](){ RouteRequest<DerivedBlock, DerivedActor, DerivedArea>::readSteps(routeIter, end); });
 		routeIter = end;
 	}
 }
@@ -126,7 +126,7 @@ void BaseArea::writeStep()
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 		fluidGroup.validate();
 	// Apply routes.
-	for(RouteRequest& routeRequest : m_routeRequestQueue)
+	for(RouteRequest<DerivedBlock, DerivedActor, DerivedArea>& routeRequest : m_routeRequestQueue)
 		routeRequest.writeStep();
 	m_routeRequestQueue.clear();
 	// If there is any unstable groups expire route caches.
@@ -134,7 +134,7 @@ void BaseArea::writeStep()
 	if(!m_unstableFluidGroups.empty())
 		m_routeCacheVersion++;
 	// Apply vision request results.
-	for(VisionRequest& visionRequest : m_visionRequestQueue)
+	for(VisionRequest<DerivedBlock, DerivedActor, DerivedArea>& visionRequest : m_visionRequestQueue)
 		visionRequest.writeStep();
 	m_visionRequestQueue.clear();
 	// Do scheduled events.
@@ -142,7 +142,7 @@ void BaseArea::writeStep()
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 		fluidGroup.validate();
 	if(m_visionCuboidsActive)
-		std::erase_if(m_visionCuboids, [](VisionCuboid& visionCuboid){ return visionCuboid.m_destroy; });
+		std::erase_if(m_visionCuboids, [](VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>& visionCuboid){ return visionCuboid.m_destroy; });
 }
 void BaseArea::registerActor(DerivedActor& actor)
 {
@@ -156,7 +156,7 @@ void BaseArea::scheduleMove(DerivedActor& actor)
 {
 	DerivedBlock* block = *(actor.m_routeIter);
 	uint32_t stepsToMove = block->moveCost(actor.m_moveType, actor.m_location) / actor.getSpeed();
-	std::unique_ptr<ScheduledEvent> moveEvent = std::make_unique<MoveEvent>(s_step + stepsToMove, actor);
+	std::unique_ptr<ScheduledEvent> moveEvent = std::make_unique<MoveEvent<DerivedBlock, DerivedActor, DerivedArea>>(s_step + stepsToMove, actor);
 	m_eventSchedule.schedule(std::move(moveEvent));
 }
 void BaseArea::registerRouteRequest(DerivedActor& actor, bool detour)
@@ -172,11 +172,11 @@ FluidGroup* BaseArea::createFluidGroup(const FluidType* fluidType, std::unordere
 void BaseArea::visionCuboidsActivate()
 {
 	m_visionCuboidsActive = true;
-	VisionCuboid::setup(static_cast<DerivedArea&>(*this));
+	VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::setup(static_cast<DerivedArea&>(*this));
 }
-Cuboid BaseArea::getZLevel(uint32_t z)
+Cuboid<DerivedBlock, DerivedActor, DerivedArea> BaseArea::getZLevel(uint32_t z)
 {
-	return Cuboid(m_blocks[m_sizeX - 1][m_sizeY - 1][z], m_blocks[0][0][z]);
+	return Cuboid<DerivedBlock, DerivedActor, DerivedArea>(m_blocks[m_sizeX - 1][m_sizeY - 1][z], m_blocks[0][0][z]);
 }
 void BaseArea::expireRouteCache(){++m_routeCacheVersion;}
 void BaseArea::validateAllFluidGroups()
@@ -212,15 +212,15 @@ std::string BaseArea::toS()
 	return output;
 }
 // Include implimentations of classes that DerivedArea depends on here so it doesn't have to be replicated by the user.
-#include "visionRequest.cpp"
-#include "routeRequest.cpp"
-#include "fluidQueue.cpp"
+#include "visionRequest.hpp"
+#include "routeRequest.hpp"
+#include "fluidQueue.hpp"
 #include "fillQueue.cpp"
 #include "drainQueue.cpp"
 #include "fluidGroup.cpp"
 #include "caveIn.cpp"
-#include "moveEvent.cpp"
-#include "visionCuboid.cpp"
-#include "cuboid.cpp"
-#include "locationBuckets.cpp"
-#include "mistDisperseEvent.cpp"
+#include "moveEvent.hpp"
+#include "visionCuboid.hpp"
+#include "cuboid.hpp"
+#include "locationBuckets.hpp"
+#include "mistDisperseEvent.hpp"

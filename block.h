@@ -17,10 +17,8 @@
 #include "moveType.h"
 #include "shape.h"
 #include "fluidType.h"
+#include "visionCuboid.h"
 
-class RouteRequest;
-class VisionCuboid;
-class VisionRequest;
 class FluidGroup;
 class HasShape;
 // Fluid type and volume pairs are sorted by density, low to high.
@@ -75,7 +73,7 @@ public:
 	// Store the location bucket this block belongs to.
 	std::unordered_set<DerivedActor*>* m_locationBucket;
 	// Store the visionCuboid this block belongs to.
-	VisionCuboid* m_visionCuboid;
+	VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>* m_visionCuboid;
 
 	// Constructor initalizes some members.
 	BaseBlock();

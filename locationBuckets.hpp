@@ -1,0 +1,171 @@
+#pragma once
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::LocationBuckets(DerivedArea& area) : m_area(area)
+{
+	m_maxX = ((m_area.m_sizeX - 1) / s_locationBucketSize) + 1;
+	m_maxY = ((m_area.m_sizeY - 1) / s_locationBucketSize) + 1;
+	m_maxZ = ((m_area.m_sizeZ - 1) / s_locationBucketSize) + 1;
+	m_buckets.resize(m_maxX);
+	for(uint32_t x = 0; x != m_maxX; ++x)
+	{
+		m_buckets[x].resize(m_maxY);
+		for(uint32_t y = 0; y != m_maxY; ++y)
+			m_buckets[x][y].resize(m_maxZ);
+	}
+}
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+std::unordered_set<DerivedActor*>* LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::getBucketFor(const DerivedBlock& block)
+{
+	uint32_t bucketX = block.m_x / s_locationBucketSize;
+	uint32_t bucketY = block.m_y / s_locationBucketSize;
+	uint32_t bucketZ = block.m_z / s_locationBucketSize;
+	assert(m_buckets.size() > bucketX);
+	assert(m_buckets.at(bucketX).size() > bucketY);
+	assert(m_buckets.at(bucketX).at(bucketY).size() > bucketZ);
+	return &m_buckets[bucketX][bucketY][bucketZ];
+}
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+void LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::insert(DerivedActor& actor)
+{
+	actor.m_location->m_locationBucket->insert(&actor);
+}
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+void LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::erase(DerivedActor& actor)
+{
+	actor.m_location->m_locationBucket->erase(&actor);
+}
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+void LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::update(DerivedActor& actor, const DerivedBlock& oldLocation, const DerivedBlock& newLocation)
+{
+	if(oldLocation.m_locationBucket == newLocation.m_locationBucket)
+		return;
+	oldLocation.m_locationBucket->erase(&actor);
+	newLocation.m_locationBucket->insert(&actor);
+}
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+void LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::processVisionRequest(VisionRequest<DerivedBlock, DerivedActor, DerivedArea>& visionRequest) const
+{
+	DerivedBlock* from = visionRequest.m_actor.m_location;
+	assert(from != nullptr);
+	assert((int32_t)visionRequest.m_actor.getVisionRange() * (int32_t)s_maxDistanceVisionModifier > 0);
+	int32_t range = visionRequest.m_actor.getVisionRange() * s_maxDistanceVisionModifier;
+	uint32_t endX = std::min(((from->m_x + range) / s_locationBucketSize + 1), m_maxX);
+	uint32_t beginX = std::max(0, (int32_t)from->m_x - range) / s_locationBucketSize;
+	uint32_t endY = std::min(((from->m_y + range) / s_locationBucketSize + 1), m_maxY);
+	uint32_t beginY = std::max(0, (int32_t)from->m_y - range) / s_locationBucketSize;
+	uint32_t endZ = std::min(((from->m_z + range) / s_locationBucketSize + 1), m_maxZ);
+	uint32_t beginZ = std::max(0, (int32_t)from->m_z - range) / s_locationBucketSize;
+	for(uint32_t x = beginX; x != endX; ++x)
+		for(uint32_t y = beginY; y != endY; ++y)
+			for(uint32_t z = beginZ; z != endZ; ++z)
+			{
+				assert(x < m_buckets.size());
+				assert(y < m_buckets.at(x).size());
+				assert(z < m_buckets.at(x).at(y).size());
+				const std::unordered_set<DerivedActor*>& bucket = m_buckets[x][y][z];
+				for(DerivedActor* actor : bucket)
+				{
+					assert(!actor->m_blocks.empty());
+					if(visionRequest.m_actor.canSee(*actor))
+						for(const DerivedBlock* to : actor->m_blocks)
+							if(to->taxiDistance(*from) <= (uint32_t)range)
+							{
+								if(visionRequest.hasLineOfSight(*to, *from))
+									visionRequest.m_actors.insert(actor);
+								continue;
+							}
+				}
+			}
+	visionRequest.m_actors.erase(&visionRequest.m_actor);
+}
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+
+LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::inRange(const DerivedBlock& origin, uint32_t range) const
+{
+	return LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange(*this, origin, range);
+}
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+
+LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange::iterator::iterator(LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange& ir) : inRange(&ir)
+{
+	const DerivedBlock& origin = inRange->origin;
+	int32_t range = inRange->range;
+	maxX = (std::min(origin.m_x + range, origin.m_area->m_sizeX)) / s_locationBucketSize;
+	maxY = (std::min(origin.m_y + range, origin.m_area->m_sizeY)) / s_locationBucketSize;
+	maxZ = (std::min(origin.m_z + range, origin.m_area->m_sizeZ)) / s_locationBucketSize;
+	x = minX = (std::max((int32_t)origin.m_x - range, 0)) / s_locationBucketSize;
+	y = minY = (std::max((int32_t)origin.m_y - range, 0)) / s_locationBucketSize;
+	z = minZ = (std::max((int32_t)origin.m_z - range, 0)) / s_locationBucketSize;
+	bucket = &inRange->locationBuckets.m_buckets[minX][minY][minZ];
+	bucketIterator = bucket->begin();
+	findNextActor();
+}
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange::iterator::iterator() : inRange(nullptr), x(0), y(0), z(0) {}
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+void LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange::iterator::getNextBucket()
+{
+	while(bucketIterator == bucket->end())
+	{
+		if(++z > maxZ)
+		{
+			z = minZ;
+			if(++y > maxY)
+			{
+				y = minY;
+				++x;
+			}
+		}
+		// If x > maxX then the end has been reached.
+		if(x <= maxX)
+		{
+			bucket = &inRange->locationBuckets.m_buckets[x][y][z];
+			bucketIterator = bucket->begin();
+		} else
+			return;
+	}
+}
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+void LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange::iterator::findNextActor()
+{
+	while(x <= maxX)
+		if(bucketIterator == bucket->end())
+			getNextBucket();
+		else
+			// result found, stop looping.
+			break;
+}
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+// Search through buckets for actors in range.
+LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange::iterator& LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange::iterator::operator++()
+{
+	++bucketIterator;
+	findNextActor();
+	return *this;
+}
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange::iterator LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange::iterator::operator++(int) const
+{
+	LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange::iterator output = *this;
+	++output;
+	return output;
+}
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+bool LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange::iterator::operator==(const LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange::iterator other) const { return other.x == x && other.y == y && other.z == z; }
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+bool LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange::iterator::operator!=(const LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange::iterator other) const { return other.x != x || other.y != y || other.z != z; }
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+DerivedActor& LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange::iterator::operator*() const { return **bucketIterator; }
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+DerivedActor* LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange::iterator::operator->() const { return *bucketIterator; }
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange::iterator LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange::begin(){ return LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange::iterator(*this); }
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange::iterator LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange::end()
+{
+	LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange::iterator iterator(*this);
+	iterator.x = iterator.maxX + 1;
+	iterator.y = iterator.maxY;
+	iterator.z = iterator.maxZ;
+	return iterator;
+}

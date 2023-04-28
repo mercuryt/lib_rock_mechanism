@@ -5,7 +5,7 @@ TEST_CASE("See no one when no one is present to be seen")
 	setSolidLayer(area, 0, s_stone);
 	Block& block = area.m_blocks[5][5][1];
 	Actor actor(&block, s_oneByOneFull, s_twoLegs);
-	VisionRequest visionRequest(actor);
+	VisionRequest<DerivedBlock, DerivedActor, DerivedArea> visionRequest(actor);
 	visionRequest.readStep();
 	CHECK(visionRequest.m_actors.empty());
 }
@@ -18,7 +18,7 @@ TEST_CASE("See someone nearby")
 	Block& block2 = area.m_blocks[7][7][1];
 	Actor a1(&block1, s_oneByOneFull, s_twoLegs);
 	Actor a2(&block2, s_oneByOneFull, s_twoLegs);
-	VisionRequest visionRequest(a1);
+	VisionRequest<DerivedBlock, DerivedActor, DerivedArea> visionRequest(a1);
 	visionRequest.readStep();
 	CHECK(visionRequest.m_actors.size() == 1);
 	CHECK(visionRequest.m_actors.contains(&a2));
@@ -32,7 +32,7 @@ TEST_CASE("Too far to see")
 	Block& block2 = area.m_blocks[19][19][1];
 	Actor a1(&block1, s_oneByOneFull, s_twoLegs);
 	Actor a2(&block2, s_oneByOneFull, s_twoLegs);
-	VisionRequest visionRequest(a1);
+	VisionRequest<DerivedBlock, DerivedActor, DerivedArea> visionRequest(a1);
 	visionRequest.readStep();
 	CHECK(visionRequest.m_actors.size() == 0);
 }
@@ -47,7 +47,7 @@ TEST_CASE("Vision blocked by wall")
 	block2.setSolid(s_stone);
 	Actor a1(&block1, s_oneByOneFull, s_twoLegs);
 	Actor a2(&block3, s_oneByOneFull, s_twoLegs);
-	VisionRequest visionRequest(a1);
+	VisionRequest<DerivedBlock, DerivedActor, DerivedArea> visionRequest(a1);
 	visionRequest.readStep();
 	CHECK(visionRequest.m_actors.size() == 0);
 }
@@ -62,7 +62,7 @@ TEST_CASE("Vision not blocked by wall not directly in the line of sight")
 	block2.setSolid(s_stone);
 	Actor a1(&block1, s_oneByOneFull, s_twoLegs);
 	Actor a2(&block3, s_oneByOneFull, s_twoLegs);
-	VisionRequest visionRequest(a1);
+	VisionRequest<DerivedBlock, DerivedActor, DerivedArea> visionRequest(a1);
 	visionRequest.readStep();
 	CHECK(visionRequest.m_actors.size() == 1);
 }
@@ -77,7 +77,7 @@ TEST_CASE("Vision not blocked by one by one wall for two by two shape")
 	block2.setSolid(s_stone);
 	Actor a1(&block1, s_oneByOneFull, s_twoLegs);
 	Actor a2(&block3, s_twoByTwoFull, s_twoLegs);
-	VisionRequest visionRequest(a1);
+	VisionRequest<DerivedBlock, DerivedActor, DerivedArea> visionRequest(a1);
 	visionRequest.readStep();
 	CHECK(visionRequest.m_actors.size() == 1);
 }
@@ -92,7 +92,7 @@ TEST_CASE("Vision not blocked by glass wall")
 	block2.setSolid(s_glass);
 	Actor a1(&block1, s_oneByOneFull, s_twoLegs);
 	Actor a2(&block3, s_oneByOneFull, s_twoLegs);
-	VisionRequest visionRequest(a1);
+	VisionRequest<DerivedBlock, DerivedActor, DerivedArea> visionRequest(a1);
 	visionRequest.readStep();
 	CHECK(visionRequest.m_actors.size() == 1);
 }
@@ -107,11 +107,11 @@ TEST_CASE("Vision blocked by closed door")
 	block2.addConstructedFeature(s_door, s_stone);
 	Actor a1(&block1, s_oneByOneFull, s_twoLegs);
 	Actor a2(&block3, s_oneByOneFull, s_twoLegs);
-	VisionRequest visionRequest(a1);
+	VisionRequest<DerivedBlock, DerivedActor, DerivedArea> visionRequest(a1);
 	visionRequest.readStep();
 	CHECK(visionRequest.m_actors.size() == 0);
 	block2.getFeatureByType(s_door)->closed = false;
-	VisionRequest visionRequest2(a1);
+	VisionRequest<DerivedBlock, DerivedActor, DerivedArea> visionRequest2(a1);
 	visionRequest2.readStep();
 	CHECK(visionRequest2.m_actors.size() == 1);
 }
@@ -129,14 +129,14 @@ TEST_CASE("Vision from above and below blocked by closed hatch")
 	block3.addConstructedFeature(s_hatch, s_stone);
 	Actor a1(&block1, s_oneByOneFull, s_twoLegs);
 	Actor a2(&block3, s_oneByOneFull, s_twoLegs);
-	VisionRequest visionRequest(a1);
+	VisionRequest<DerivedBlock, DerivedActor, DerivedArea> visionRequest(a1);
 	visionRequest.readStep();
 	CHECK(visionRequest.m_actors.size() == 0);
-	VisionRequest visionRequest2(a1);
+	VisionRequest<DerivedBlock, DerivedActor, DerivedArea> visionRequest2(a1);
 	visionRequest2.readStep();
 	CHECK(visionRequest2.m_actors.size() == 0);
 	block3.getFeatureByType(s_hatch)->closed = false;
-	VisionRequest visionRequest3(a1);
+	VisionRequest<DerivedBlock, DerivedActor, DerivedArea> visionRequest3(a1);
 	visionRequest3.readStep();
 	CHECK(visionRequest3.m_actors.size() == 1);
 }
@@ -151,7 +151,7 @@ TEST_CASE("Vision not blocked by closed hatch on the same z level")
 	block2.addConstructedFeature(s_hatch, s_stone);
 	Actor a1(&block1, s_oneByOneFull, s_twoLegs);
 	Actor a2(&block3, s_oneByOneFull, s_twoLegs);
-	VisionRequest visionRequest(a1);
+	VisionRequest<DerivedBlock, DerivedActor, DerivedArea> visionRequest(a1);
 	visionRequest.readStep();
 	CHECK(visionRequest.m_actors.size() == 1);
 }
@@ -169,14 +169,14 @@ TEST_CASE("Vision from above and below blocked by floor")
 	block2.addConstructedFeature(s_upStairs, s_stone);
 	Actor a1(&block1, s_oneByOneFull, s_twoLegs);
 	Actor a2(&block3, s_oneByOneFull, s_twoLegs);
-	VisionRequest visionRequest(a1);
+	VisionRequest<DerivedBlock, DerivedActor, DerivedArea> visionRequest(a1);
 	visionRequest.readStep();
 	CHECK(visionRequest.m_actors.size() == 1);
 	block3.addConstructedFeature(s_floor, s_stone);
-	VisionRequest visionRequest2(a1);
+	VisionRequest<DerivedBlock, DerivedActor, DerivedArea> visionRequest2(a1);
 	visionRequest2.readStep();
 	CHECK(visionRequest2.m_actors.size() == 0);
-	VisionRequest visionRequest3(a2);
+	VisionRequest<DerivedBlock, DerivedActor, DerivedArea> visionRequest3(a2);
 	visionRequest3.readStep();
 	CHECK(visionRequest3.m_actors.size() == 0);
 }
@@ -194,11 +194,11 @@ TEST_CASE("Vision from below not blocked by glass floor")
 	block2.addConstructedFeature(s_upStairs, s_stone);
 	Actor a1(&block1, s_oneByOneFull, s_twoLegs);
 	Actor a2(&block3, s_oneByOneFull, s_twoLegs);
-	VisionRequest visionRequest(a1);
+	VisionRequest<DerivedBlock, DerivedActor, DerivedArea> visionRequest(a1);
 	visionRequest.readStep();
 	CHECK(visionRequest.m_actors.size() == 1);
 	block3.addConstructedFeature(s_floor, s_glass);
-	VisionRequest visionRequest2(a1);
+	VisionRequest<DerivedBlock, DerivedActor, DerivedArea> visionRequest2(a1);
 	visionRequest2.readStep();
 	CHECK(visionRequest2.m_actors.size() == 1);
 }
@@ -213,11 +213,11 @@ TEST_CASE("Vision not blocked by floor on the same z level")
 	block2.addConstructedFeature(s_floor, s_stone);
 	Actor a1(&block1, s_oneByOneFull, s_twoLegs);
 	Actor a2(&block3, s_oneByOneFull, s_twoLegs);
-	VisionRequest visionRequest(a1);
+	VisionRequest<DerivedBlock, DerivedActor, DerivedArea> visionRequest(a1);
 	visionRequest.readStep();
 	CHECK(visionRequest.m_actors.size() == 1);
 }
-TEST_CASE("VisionCuboid setup")
+TEST_CASE("VisionCuboid<DerivedBlock, DerivedActor, DerivedArea> setup")
 {
 	Area area(2,2,2);
 	registerTypes();
@@ -225,7 +225,7 @@ TEST_CASE("VisionCuboid setup")
 	area.visionCuboidsActivate();
 	CHECK(area.m_visionCuboids.size() == 1);
 }
-TEST_CASE("VisionCuboid divide and join")
+TEST_CASE("VisionCuboid<DerivedBlock, DerivedActor, DerivedArea> divide and join")
 {
 	Area area(10,10,10);
 	registerTypes();
@@ -243,7 +243,7 @@ TEST_CASE("VisionCuboid divide and join")
 	CHECK(block1.m_visionCuboid == block4.m_visionCuboid);
 	CHECK(block1.m_visionCuboid == block5.m_visionCuboid);
 	block3.addConstructedFeature(s_floor, s_stone);
-	VisionCuboid::clearDestroyed(area);
+	VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::clearDestroyed(area);
 	CHECK(area.m_visionCuboids.size() == 2);
 	CHECK(block1.m_visionCuboid->m_cuboid.size() == 400);
 	CHECK(block4.m_visionCuboid->m_cuboid.size() == 500);
@@ -252,19 +252,19 @@ TEST_CASE("VisionCuboid divide and join")
 	CHECK(block1.m_visionCuboid != block4.m_visionCuboid);
 	CHECK(block1.m_visionCuboid == block5.m_visionCuboid);
 	block2.setSolid(s_stone);
-	VisionCuboid::clearDestroyed(area);
+	VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::clearDestroyed(area);
 	CHECK(area.m_visionCuboids.size() == 7);
 	CHECK(block2.m_visionCuboid == nullptr);
 	CHECK(block1.m_visionCuboid != block3.m_visionCuboid);
 	CHECK(block1.m_visionCuboid != block4.m_visionCuboid);
 	CHECK(block1.m_visionCuboid != block5.m_visionCuboid);
 	block3.removeFeature(s_floor);
-	VisionCuboid::clearDestroyed(area);
+	VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::clearDestroyed(area);
 	CHECK(area.m_visionCuboids.size() == 7);
 	CHECK(block3.m_visionCuboid == block4.m_visionCuboid);
 	CHECK(block4.m_visionCuboid->m_cuboid.size() == 500);
 	block2.setNotSolid();
-	VisionCuboid::clearDestroyed(area);
+	VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::clearDestroyed(area);
 	CHECK(area.m_visionCuboids.size() == 1);
 	CHECK(block2.m_visionCuboid != nullptr);
 	CHECK(block1.m_visionCuboid == block2.m_visionCuboid);
@@ -272,7 +272,7 @@ TEST_CASE("VisionCuboid divide and join")
 	CHECK(block1.m_visionCuboid == block4.m_visionCuboid);
 	CHECK(block1.m_visionCuboid == block5.m_visionCuboid);
 }
-TEST_CASE("VisionCuboid can see")
+TEST_CASE("VisionCuboid<DerivedBlock, DerivedActor, DerivedArea> can see")
 {
 	Area area(10,10,10);
 	registerTypes();
@@ -282,7 +282,7 @@ TEST_CASE("VisionCuboid can see")
 	Block& block2 = area.m_blocks[7][7][1];
 	Actor a1(&block1, s_oneByOneFull, s_twoLegs);
 	Actor a2(&block2, s_oneByOneFull, s_twoLegs);
-	VisionRequest visionRequest(a1);
+	VisionRequest<DerivedBlock, DerivedActor, DerivedArea> visionRequest(a1);
 	visionRequest.readStep();
 	CHECK(visionRequest.m_actors.size() == 1);
 	CHECK(visionRequest.m_actors.contains(&a2));

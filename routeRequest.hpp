@@ -1,12 +1,15 @@
 #include "pathTemplate.h"
 // Static method.
-void RouteRequest::readSteps(std::vector<RouteRequest>::iterator begin, std::vector<RouteRequest>::iterator end)
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+void RouteRequest<DerivedBlock, DerivedActor, DerivedArea>::readSteps(std::vector<RouteRequest<DerivedBlock, DerivedActor, DerivedArea>>::iterator begin, std::vector<RouteRequest<DerivedBlock, DerivedActor, DerivedArea>>::iterator end)
 {
 	for(; begin != end; ++begin)
 		begin->readStep();
 }
-RouteRequest::RouteRequest(DerivedActor& a, bool d) : m_actor(a), m_detour(d), m_cacheHit(false) {}
-void RouteRequest::readStep()
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+RouteRequest<DerivedBlock, DerivedActor, DerivedArea>::RouteRequest(DerivedActor& a, bool d) : m_actor(a), m_detour(d), m_cacheHit(false) {}
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+void RouteRequest<DerivedBlock, DerivedActor, DerivedArea>::readStep()
 {
 	DerivedBlock* start = m_actor.m_location;
 	DerivedBlock* end = m_actor.m_destination;
@@ -49,7 +52,8 @@ void RouteRequest::readStep()
 		GetPath getPath(isValid, compare, isDone, adjacentCosts, start, m_result);
 	}
 }
-void RouteRequest::writeStep()
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+void RouteRequest<DerivedBlock, DerivedActor, DerivedArea>::writeStep()
 {
 	if(m_cacheHit)
 	{
