@@ -85,7 +85,7 @@ public:
 	std::string toS();
 
 	// Get a z-level for rendering.
-	Cuboid getZLevel(uint32_t z) const;
+	Cuboid getZLevel(uint32_t z);
 	// User provided code, no route.
 	void notifyNoRouteFound(ACTOR& actor);
 
