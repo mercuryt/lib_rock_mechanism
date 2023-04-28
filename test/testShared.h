@@ -3,7 +3,7 @@
  */
 #include <cstdint>
 #include <algorithm>
-#include "lib/BS_thread_pool_light.hpp"
+#include "../lib/BS_thread_pool_light.hpp"
 
 const static uint32_t s_maxBlockVolume = 100;
 const static uint32_t s_actorDoVisionInterval = 10;

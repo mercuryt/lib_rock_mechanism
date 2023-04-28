@@ -24,10 +24,6 @@ void baseActor::setLocation(BLOCK* block)
 	assert(block->actorCanEnterCurrently(static_cast<ACTOR&>(*this)));
 	block->enter(static_cast<ACTOR&>(*this));
 }
-Cuboid getZLevel(uint32_t z) const
-{
-	return Cuboid(m_blocks[m_sizeX][m_sizeY][z], m_blocks[0][0][z]);
-}
 baseActor::~baseActor()
 {
 	if(m_location != nullptr)
