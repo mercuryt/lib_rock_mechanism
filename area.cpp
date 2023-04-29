@@ -6,7 +6,8 @@
 #include "area.h"
 #include <algorithm>
 
-BaseArea::BaseArea(uint32_t x, uint32_t y, uint32_t z) :
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+BaseArea<DerivedBlock, DerivedActor, DerivedArea>::BaseArea(uint32_t x, uint32_t y, uint32_t z) :
 	m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_locationBuckets(static_cast<DerivedArea&>(*this)), m_routeCacheVersion(0), m_visionCuboidsActive(false)
 {
 	// build m_blocks
@@ -27,7 +28,8 @@ BaseArea::BaseArea(uint32_t x, uint32_t y, uint32_t z) :
 			for(uint32_t z = 0; z < m_sizeZ; ++z)
 				m_blocks[x][y][z].recordAdjacent();
 }
-void BaseArea::readStep()
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::readStep()
 { 
 	//TODO: Count tasks dispatched and finished instead of pool.wait_for_tasks so we can do multiple areas simultaniously in one pool.
 	// Process vision, generate and push_task requests for every actor in current bucket.
@@ -56,7 +58,8 @@ void BaseArea::readStep()
 		routeIter = end;
 	}
 }
-void BaseArea::writeStep()
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::writeStep()
 { 
 	s_pool.wait_for_tasks();
 	// Apply flow.
@@ -144,48 +147,58 @@ void BaseArea::writeStep()
 	if(m_visionCuboidsActive)
 		std::erase_if(m_visionCuboids, [](VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>& visionCuboid){ return visionCuboid.m_destroy; });
 }
-void BaseArea::registerActor(DerivedActor& actor)
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::registerActor(DerivedActor& actor)
 {
 	m_visionBuckets.add(actor);
 }
-void BaseArea::unregisterActor(DerivedActor& actor)
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::unregisterActor(DerivedActor& actor)
 {
 	m_visionBuckets.remove(actor);
 }
-void BaseArea::scheduleMove(DerivedActor& actor)
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::scheduleMove(DerivedActor& actor)
 {
 	DerivedBlock* block = *(actor.m_routeIter);
 	uint32_t stepsToMove = block->moveCost(actor.m_moveType, actor.m_location) / actor.getSpeed();
 	std::unique_ptr<ScheduledEvent> moveEvent = std::make_unique<MoveEvent<DerivedBlock, DerivedActor, DerivedArea>>(s_step + stepsToMove, actor);
 	m_eventSchedule.schedule(std::move(moveEvent));
 }
-void BaseArea::registerRouteRequest(DerivedActor& actor, bool detour)
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::registerRouteRequest(DerivedActor& actor, bool detour)
 {
 	m_routeRequestQueue.emplace_back(actor, detour);
 }
-FluidGroup<DerivedBlock>* BaseArea::createFluidGroup(const FluidType* fluidType, std::unordered_set<DerivedBlock*>& blocks, bool checkMerge)
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+FluidGroup<DerivedBlock>* BaseArea<DerivedBlock, DerivedActor, DerivedArea>::createFluidGroup(const FluidType* fluidType, std::unordered_set<DerivedBlock*>& blocks, bool checkMerge)
 {
 	m_fluidGroups.emplace_back(fluidType, blocks, static_cast<DerivedArea&>(*this), checkMerge);
 	m_unstableFluidGroups.insert(&m_fluidGroups.back());
 	return &m_fluidGroups.back();
 }
-void BaseArea::visionCuboidsActivate()
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::visionCuboidsActivate()
 {
 	m_visionCuboidsActive = true;
 	VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::setup(static_cast<DerivedArea&>(*this));
 }
-Cuboid<DerivedBlock, DerivedActor, DerivedArea> BaseArea::getZLevel(uint32_t z)
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+Cuboid<DerivedBlock, DerivedActor, DerivedArea> BaseArea<DerivedBlock, DerivedActor, DerivedArea>::getZLevel(uint32_t z)
 {
 	return Cuboid<DerivedBlock, DerivedActor, DerivedArea>(m_blocks[m_sizeX - 1][m_sizeY - 1][z], m_blocks[0][0][z]);
 }
-void BaseArea::expireRouteCache(){++m_routeCacheVersion;}
-void BaseArea::validateAllFluidGroups()
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::expireRouteCache(){++m_routeCacheVersion;}
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::validateAllFluidGroups()
 {
 	for(FluidGroup<DerivedBlock>& fluidGroup : m_fluidGroups)
 		if(!fluidGroup.m_merged && !fluidGroup.m_destroy)
 			fluidGroup.validate();
 }
-std::string BaseArea::toS()
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+std::string BaseArea<DerivedBlock, DerivedActor, DerivedArea>::toS()
 {
 	std::string output = std::to_string(m_fluidGroups.size()) + " fluid groups########";
 	for(FluidGroup<DerivedBlock>& fluidGroup : m_fluidGroups)

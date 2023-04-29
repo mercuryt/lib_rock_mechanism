@@ -78,5 +78,5 @@ public:
 	void validate() const;
 	void validate(std::unordered_set<FluidGroup<DerivedBlock>*> toErase);
 	int32_t totalVolume();
-	friend class BaseArea;
+	template<typename, typename, typename> friend class BaseArea;
 };
