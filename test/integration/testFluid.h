@@ -7,7 +7,7 @@ TEST_CASE("Create Fluid.")
 	block.setNotSolid();
 	block.addFluid(100, s_water);
 	CHECK(area.m_blocks[5][5][1].m_fluids.contains(s_water));
-	FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
+	FluidGroup<DerivedBlock>* fluidGroup = *area.m_unstableFluidGroups.begin();
 	CHECK(fluidGroup->m_fillQueue.m_set.size() == 1);
 	fluidGroup->readStep();
 	CHECK(fluidGroup->m_stable);
@@ -30,7 +30,7 @@ TEST_CASE("Excess volume spawns and negitive excess despawns.")
 	block.setNotSolid();
 	block2.setNotSolid();
 	block.addFluid(s_maxBlockVolume * 2, s_water);
-	FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
+	FluidGroup<DerivedBlock>* fluidGroup = *area.m_unstableFluidGroups.begin();
 	CHECK(!fluidGroup->m_stable);
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 1);
 	CHECK(fluidGroup->m_fillQueue.m_set.size() == 1);
@@ -80,7 +80,7 @@ TEST_CASE("Remove volume can destroy FluidGroups.")
 	Block& block = area.m_blocks[5][5][1];
 	block.setNotSolid();
 	block.addFluid(100, s_water);
-	FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
+	FluidGroup<DerivedBlock>* fluidGroup = *area.m_unstableFluidGroups.begin();
 	fluidGroup->readStep();
 	CHECK(fluidGroup->m_stable);
 	fluidGroup->writeStep();
@@ -110,7 +110,7 @@ TEST_CASE("Flow into adjacent hole")
 	block2.setNotSolid();
 	origin.setNotSolid();
 	origin.addFluid(s_maxBlockVolume, s_water);
-	FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
+	FluidGroup<DerivedBlock>* fluidGroup = *area.m_unstableFluidGroups.begin();
 	CHECK(!fluidGroup->m_stable);
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 1);
 	CHECK(fluidGroup->m_fillQueue.m_set.size() == 2);
@@ -181,7 +181,7 @@ TEST_CASE("Flow across flat area")
 	Block& block7 = area.m_blocks[16][10][1];
 	Block& block8 = area.m_blocks[17][10][1];
 	block.addFluid(s_maxBlockVolume, s_water);
-	FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
+	FluidGroup<DerivedBlock>* fluidGroup = *area.m_unstableFluidGroups.begin();
 	//Step 1.
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
@@ -295,7 +295,7 @@ TEST_CASE("Flow across flat area double stack")
 	Block& block7 = area.m_blocks[16][10][1];
 	origin1.addFluid(100, s_water);
 	origin2.addFluid(100, s_water);
-	FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
+	FluidGroup<DerivedBlock>* fluidGroup = *area.m_unstableFluidGroups.begin();
 	CHECK(area.m_fluidGroups.size() == 1);
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 2);
 	fluidGroup->readStep();
@@ -399,7 +399,7 @@ TEST_CASE("Flow across area and then fill hole")
 	Block& block6 = area.m_blocks[5][8][2];
 	block.addFluid(s_maxBlockVolume, s_water);
 	block5.setNotSolid();
-	FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
+	FluidGroup<DerivedBlock>* fluidGroup = *area.m_unstableFluidGroups.begin();
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
 	fluidGroup->afterWriteStep();
@@ -470,7 +470,7 @@ TEST_CASE("FluidGroups are able to split into parts")
 	origin2.addFluid(100, s_water);
 	CHECK(origin1.getFluidGroup(s_water) == origin2.getFluidGroup(s_water));
 	CHECK(area.m_fluidGroups.size() == 1);
-	FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
+	FluidGroup<DerivedBlock>* fluidGroup = *area.m_unstableFluidGroups.begin();
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 2);
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
@@ -508,8 +508,8 @@ TEST_CASE("Fluid Groups merge")
 	origin1.addFluid(100, s_water);
 	origin2.addFluid(100, s_water);
 	CHECK(area.m_fluidGroups.size() == 2);
-	FluidGroup* fg1 = origin1.getFluidGroup(s_water);
-	FluidGroup* fg2 = origin2.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fg1 = origin1.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fg2 = origin2.getFluidGroup(s_water);
 	CHECK(fg1 != fg2);
 	// Step 1.
 	fg1->readStep();
@@ -565,8 +565,8 @@ TEST_CASE("Fluid Groups merge four blocks")
 	block1.addFluid(100, s_water);
 	block4.addFluid(100, s_water);
 	CHECK(area.m_fluidGroups.size() == 2);
-	FluidGroup* fg1 = block1.getFluidGroup(s_water);
-	FluidGroup* fg2 = block4.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fg1 = block1.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fg2 = block4.getFluidGroup(s_water);
 	CHECK(fg1 != fg2);
 	// Step 1.
 	fg1->readStep();
@@ -609,8 +609,8 @@ TEST_CASE("Denser fluids sink")
 	block1.addFluid(100, s_water);
 	block2.addFluid(100, s_mercury);
 	CHECK(area.m_fluidGroups.size() == 2);
-	FluidGroup* fgWater = block1.getFluidGroup(s_water);
-	FluidGroup* fgMercury = block2.getFluidGroup(s_mercury);
+	FluidGroup<DerivedBlock>* fgWater = block1.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fgMercury = block2.getFluidGroup(s_mercury);
 	CHECK(fgWater != nullptr);
 	CHECK(fgMercury != nullptr);
 	CHECK(fgWater->m_fluidType == s_water);
@@ -718,9 +718,9 @@ TEST_CASE("Merge 3 groups at two block distance")
 	block4.addFluid(100, s_water);
 	block7.addFluid(100, s_water);
 	CHECK(area.m_fluidGroups.size() == 3);
-	FluidGroup* fg1 = block1.getFluidGroup(s_water);
-	FluidGroup* fg2 = block4.getFluidGroup(s_water);
-	FluidGroup* fg3 = block7.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fg1 = block1.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fg2 = block4.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fg3 = block7.getFluidGroup(s_water);
 	CHECK(fg1 != nullptr);
 	CHECK(fg2 != nullptr);
 	CHECK(fg3 != nullptr);
@@ -788,7 +788,7 @@ TEST_CASE("Split test 2")
 	block3.setNotSolid();
 	block4.setNotSolid();
 	origin1.addFluid(20, s_water);
-	FluidGroup* fg1 = origin1.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fg1 = origin1.getFluidGroup(s_water);
 	origin2.addFluid(20, s_water);
 	origin3.addFluid(20, s_water);
 	CHECK(area.m_fluidGroups.size() == 1);
@@ -803,7 +803,7 @@ TEST_CASE("Split test 2")
 	CHECK(fg1->m_drainQueue.m_set.size() == 1);
 	CHECK(fg1->m_drainQueue.m_set.contains(&block4));
 	fg1 = block3.getFluidGroup(s_water);
-	FluidGroup* fg2 = block4.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fg2 = block4.getFluidGroup(s_water);
 	CHECK(fg2->m_drainQueue.m_set.size() == 1);
 	CHECK(fg1 != fg2);
 	CHECK(fg1->m_fillQueue.m_set.size() == 3);
@@ -872,9 +872,9 @@ TEST_CASE("Merge with group as it splits")
 	block2.setNotSolid();
 	block3.setNotSolid();
 	origin1.addFluid(100, s_water);
-	FluidGroup* fg1 = origin1.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fg1 = origin1.getFluidGroup(s_water);
 	origin2.addFluid(20, s_water);
-	FluidGroup* fg2 = origin2.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fg2 = origin2.getFluidGroup(s_water);
 	origin3.addFluid(20, s_water);
 	origin4.addFluid(20, s_water);
 	CHECK(area.m_fluidGroups.size() == 2);
@@ -946,13 +946,13 @@ TEST_CASE("Merge with two groups while spliting")
 	block3.setNotSolid();
 	block4.setNotSolid();
 	origin1.addFluid(100, s_water);
-	FluidGroup* fg1 = origin1.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fg1 = origin1.getFluidGroup(s_water);
 	origin2.addFluid(20, s_water);
-	FluidGroup* fg2 = origin2.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fg2 = origin2.getFluidGroup(s_water);
 	origin3.addFluid(20, s_water);
 	origin4.addFluid(20, s_water);
 	origin5.addFluid(100, s_water);
-	FluidGroup* fg3 = origin5.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fg3 = origin5.getFluidGroup(s_water);
 	CHECK(area.m_fluidGroups.size() == 3);
 	CHECK(fg1 != fg2);
 	CHECK(fg1 != fg3);
@@ -971,7 +971,7 @@ TEST_CASE("Merge with two groups while spliting")
 	fg3->afterWriteStep();
 	fg1->splitStep();
 	fg2->splitStep();
-	FluidGroup* fg4 = block2.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fg4 = block2.getFluidGroup(s_water);
 	CHECK(!fg3->m_merged);
 	fg3->splitStep();
 	CHECK(fg1->m_drainQueue.m_set.size() == 2);
@@ -1032,8 +1032,8 @@ TEST_CASE("Bubbles")
 	origin1.addFluid(100, s_CO2);
 	origin2.addFluid(100, s_water);
 	origin3.addFluid(100, s_water);
-	FluidGroup* fg1 = origin1.getFluidGroup(s_CO2);
-	FluidGroup* fg2 = origin2.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fg1 = origin1.getFluidGroup(s_CO2);
+	FluidGroup<DerivedBlock>* fg2 = origin2.getFluidGroup(s_water);
 	// Step 1.
 	fg1->readStep();
 	fg2->readStep();
@@ -1104,9 +1104,9 @@ TEST_CASE("Three liquids")
 	origin1.addFluid(100, s_CO2);
 	origin2.addFluid(100, s_water);
 	origin3.addFluid(100, s_mercury);
-	FluidGroup* fg1 = origin1.getFluidGroup(s_CO2);
-	FluidGroup* fg2 = origin2.getFluidGroup(s_water);
-	FluidGroup* fg3 = origin3.getFluidGroup(s_mercury);
+	FluidGroup<DerivedBlock>* fg1 = origin1.getFluidGroup(s_CO2);
+	FluidGroup<DerivedBlock>* fg2 = origin2.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fg3 = origin3.getFluidGroup(s_mercury);
 	// Step 1.
 	fg1->readStep();
 	fg2->readStep();
@@ -1228,7 +1228,7 @@ TEST_CASE("Set not solid")
 	origin1.setNotSolid();
 	block2.setNotSolid();
 	origin1.addFluid(100, s_water);
-	FluidGroup* fg1 = origin1.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fg1 = origin1.getFluidGroup(s_water);
 	CHECK(fg1 != nullptr);
 	// Step 1.
 	fg1->readStep();
@@ -1272,7 +1272,7 @@ TEST_CASE("Set solid")
 	block1.setNotSolid();
 	block2.setNotSolid();
 	origin1.addFluid(100, s_water);
-	FluidGroup* fg1 = origin1.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fg1 = origin1.getFluidGroup(s_water);
 	// Step 1.
 	fg1->readStep();
 	fg1->writeStep();
@@ -1296,7 +1296,7 @@ TEST_CASE("Set solid and split")
 	origin1.setNotSolid();
 	block2.setNotSolid();
 	origin1.addFluid(100, s_water);
-	FluidGroup* fg1 = origin1.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fg1 = origin1.getFluidGroup(s_water);
 	// Step 1.
 	fg1->readStep();
 	fg1->writeStep();
@@ -1321,7 +1321,7 @@ TEST_CASE("Set solid and split")
 	CHECK(block2.volumeOfFluidTypeContains(s_water) == 50);
 	fg1->splitStep();
 	CHECK(area.m_fluidGroups.size() == 2);
-	FluidGroup* fg2 = &area.m_fluidGroups.back();
+	FluidGroup<DerivedBlock>* fg2 = &area.m_fluidGroups.back();
 	fg1->mergeStep();
 	fg2->mergeStep();
 	//Step 3.
@@ -1341,7 +1341,7 @@ TEST_CASE("Cave in falls in fluid and pistons it up")
 	block1.addFluid(100, s_water);
 	block2.setSolid(s_stone);
 area.m_caveInCheck.insert(&block2);
-	FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
+	FluidGroup<DerivedBlock>* fluidGroup = *area.m_unstableFluidGroups.begin();
 area.stepCaveInRead();
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
@@ -1379,7 +1379,7 @@ TEST_CASE("Test diagonal seep")
 	block1.setNotSolid();
 	block2.setNotSolid();
 	block1.addFluid(10, s_water);
-	FluidGroup* fg1 = *area.m_unstableFluidGroups.begin();
+	FluidGroup<DerivedBlock>* fg1 = *area.m_unstableFluidGroups.begin();
 	fg1->readStep();
 	fg1->writeStep();
 	fg1->afterWriteStep();
@@ -1387,7 +1387,7 @@ TEST_CASE("Test diagonal seep")
 	fg1->mergeStep();
 	s_step++;
 	CHECK(block2.volumeOfFluidTypeContains(s_water) == 1);
-	FluidGroup* fg2 = block2.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fg2 = block2.getFluidGroup(s_water);
 	CHECK(fg1 != fg2);
 	CHECK(fg1->m_excessVolume == -1);
 	CHECK(!fg1->m_stable);
@@ -1425,7 +1425,7 @@ TEST_CASE("Test mist")
 	block2.setNotSolid();
 	block3.addFluid(100, s_water);
 	block4.addFluid(100, s_water);
-	FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
+	FluidGroup<DerivedBlock>* fluidGroup = *area.m_unstableFluidGroups.begin();
 	// Step 1.
 	fluidGroup->readStep();
 	fluidGroup->writeStep();
@@ -1471,15 +1471,15 @@ void trenchTest2Fluids(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	Block& CO2_2 = area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(CO2_1, CO2_2, s_CO2);
 	CHECK(area.m_fluidGroups.size() == 2);
-	FluidGroup* fgWater = water1.getFluidGroup(s_water);
-	FluidGroup* fgCO2 = CO2_1.getFluidGroup(s_CO2);
+	FluidGroup<DerivedBlock>* fgWater = water1.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fgCO2 = CO2_1.getFluidGroup(s_CO2);
 	CHECK(!fgWater->m_merged);
 	CHECK(!fgCO2->m_merged);
 	uint32_t totalVolume = fgWater->totalVolume();
 	s_step = 1;
 	while(s_step < steps)
 	{
-		for(FluidGroup* fluidGroup : area.m_unstableFluidGroups)
+		for(FluidGroup<DerivedBlock>* fluidGroup : area.m_unstableFluidGroups)
 			fluidGroup->readStep();
 		area.writeStep();
 		s_step++;
@@ -1538,14 +1538,14 @@ void trenchTest3Fluids(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	Block& lava2 = area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(lava1, lava2, s_lava);
 	CHECK(area.m_fluidGroups.size() == 3);
-	FluidGroup* fgWater = water1.getFluidGroup(s_water);
-	FluidGroup* fgCO2 = CO2_1.getFluidGroup(s_CO2);
-	FluidGroup* fgLava = lava1.getFluidGroup(s_lava);
+	FluidGroup<DerivedBlock>* fgWater = water1.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fgCO2 = CO2_1.getFluidGroup(s_CO2);
+	FluidGroup<DerivedBlock>* fgLava = lava1.getFluidGroup(s_lava);
 	s_step = 1;
 	uint32_t totalVolume = fgWater->totalVolume();
 	while(s_step < steps)
 	{
-		for(FluidGroup* fluidGroup : area.m_unstableFluidGroups)
+		for(FluidGroup<DerivedBlock>* fluidGroup : area.m_unstableFluidGroups)
 			fluidGroup->readStep();
 		area.writeStep();
 		s_step++;
@@ -1611,15 +1611,15 @@ void trenchTest4Fluids(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	Block& mercury2 = area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(mercury1, mercury2, s_mercury);
 	CHECK(area.m_fluidGroups.size() == 4);
-	FluidGroup* fgWater = water1.getFluidGroup(s_water);
-	FluidGroup* fgCO2 = CO2_1.getFluidGroup(s_CO2);
-	FluidGroup* fgLava = lava1.getFluidGroup(s_lava);
-	FluidGroup* fgMercury = mercury1.getFluidGroup(s_mercury);
+	FluidGroup<DerivedBlock>* fgWater = water1.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fgCO2 = CO2_1.getFluidGroup(s_CO2);
+	FluidGroup<DerivedBlock>* fgLava = lava1.getFluidGroup(s_lava);
+	FluidGroup<DerivedBlock>* fgMercury = mercury1.getFluidGroup(s_mercury);
 	uint32_t totalVolume = fgWater->totalVolume();
 	s_step = 1;
 	while(s_step < steps)
 	{
-		for(FluidGroup* fluidGroup : area.m_unstableFluidGroups)
+		for(FluidGroup<DerivedBlock>* fluidGroup : area.m_unstableFluidGroups)
 			fluidGroup->readStep();
 		area.writeStep();
 		fgMercury = getFluidGroup(area, s_mercury);
@@ -1709,12 +1709,12 @@ void trenchTest2FluidsMerge(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	Block& CO2_4 = area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(CO2_3, CO2_4, s_CO2);
 	CHECK(area.m_fluidGroups.size() == 4);
-	FluidGroup* fgWater = water1.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fgWater = water1.getFluidGroup(s_water);
 	uint32_t totalVolume = fgWater->totalVolume() * 2;
 	s_step = 1;
 	while(s_step < steps)
 	{
-		for(FluidGroup* fluidGroup : area.m_unstableFluidGroups)
+		for(FluidGroup<DerivedBlock>* fluidGroup : area.m_unstableFluidGroups)
 			fluidGroup->readStep();
 		area.writeStep();
 		s_step++;
@@ -1724,7 +1724,7 @@ void trenchTest2FluidsMerge(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	uint32_t expectedBlocks = totalBlocks2D * expectedHeight;
 	CHECK(area.m_unstableFluidGroups.empty());
 	fgWater = water1.getFluidGroup(s_water);
-	FluidGroup* fgCO2 = water2.getFluidGroup(s_CO2);
+	FluidGroup<DerivedBlock>* fgCO2 = water2.getFluidGroup(s_CO2);
 	CHECK(fgWater->totalVolume() == totalVolume);
 	CHECK(fgCO2->totalVolume() == totalVolume);
 	CHECK(fgWater->m_drainQueue.m_set.size() == expectedBlocks);
@@ -1775,14 +1775,14 @@ void trenchTest3FluidsMerge(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	Block& CO2_4 = area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(CO2_3, CO2_4, s_CO2);
 	CHECK(area.m_fluidGroups.size() == 4);
-	FluidGroup* fgWater = water1.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fgWater = water1.getFluidGroup(s_water);
 	uint32_t totalVolumeWater = fgWater->totalVolume();
 	uint32_t totalVolumeMercury = totalVolumeWater;
 	uint32_t totalVolumeCO2 = totalVolumeWater * 2;
 	s_step = 1;
 	while(s_step < steps)
 	{
-		for(FluidGroup* fluidGroup : area.m_unstableFluidGroups)
+		for(FluidGroup<DerivedBlock>* fluidGroup : area.m_unstableFluidGroups)
 			fluidGroup->readStep();
 		area.writeStep();
 		s_step++;
@@ -1792,8 +1792,8 @@ void trenchTest3FluidsMerge(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	uint32_t expectedBlocks = totalBlocks2D * expectedHeight;
 	CHECK(area.m_unstableFluidGroups.empty());
 	fgWater = getFluidGroup(area, s_water);
-	FluidGroup* fgCO2 = getFluidGroup(area, s_CO2);
-	FluidGroup* fgMercury = getFluidGroup(area, s_mercury);
+	FluidGroup<DerivedBlock>* fgCO2 = getFluidGroup(area, s_CO2);
+	FluidGroup<DerivedBlock>* fgMercury = getFluidGroup(area, s_mercury);
 	CHECK(fgWater != nullptr);
 	CHECK(fgCO2 != nullptr);
 	CHECK(fgMercury != nullptr);
@@ -1836,7 +1836,7 @@ void fourFluidsTest(uint32_t scale, uint32_t steps)
 	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	setSolidWalls(area, maxZ - 1, s_stone);
-	std::vector<FluidGroup*> newlySplit;
+	std::vector<FluidGroup<DerivedBlock>*> newlySplit;
 	// Water is at 0,0
 	Block& water1 = area.m_blocks[1][1][1];
 	Block& water2 = area.m_blocks[halfMaxX - 1][halfMaxY - 1][maxZ - 1];		
@@ -1854,10 +1854,10 @@ void fourFluidsTest(uint32_t scale, uint32_t steps)
 	Block& mercury2 = area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(mercury1, mercury2, s_mercury);
 	CHECK(area.m_fluidGroups.size() == 4);
-	FluidGroup* fgWater = water1.getFluidGroup(s_water);
-	FluidGroup* fgCO2 = CO2_1.getFluidGroup(s_CO2);
-	FluidGroup* fgLava = lava1.getFluidGroup(s_lava);
-	FluidGroup* fgMercury = mercury1.getFluidGroup(s_mercury);
+	FluidGroup<DerivedBlock>* fgWater = water1.getFluidGroup(s_water);
+	FluidGroup<DerivedBlock>* fgCO2 = CO2_1.getFluidGroup(s_CO2);
+	FluidGroup<DerivedBlock>* fgLava = lava1.getFluidGroup(s_lava);
+	FluidGroup<DerivedBlock>* fgMercury = mercury1.getFluidGroup(s_mercury);
 	CHECK(!fgWater->m_merged);
 	CHECK(!fgCO2->m_merged);
 	CHECK(!fgLava->m_merged);
@@ -1866,7 +1866,7 @@ void fourFluidsTest(uint32_t scale, uint32_t steps)
 	s_step = 1;
 	while(s_step < steps)
 	{
-		for(FluidGroup* fluidGroup : area.m_unstableFluidGroups)
+		for(FluidGroup<DerivedBlock>* fluidGroup : area.m_unstableFluidGroups)
 			fluidGroup->readStep();
 		area.writeStep();
 		s_step++;

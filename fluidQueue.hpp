@@ -1,7 +1,7 @@
 #include <unordered_set>
 #include <assert.h>
 template<class DerivedBlock>
-FluidQueue<DerivedBlock>::FluidQueue(FluidGroup& fluidGroup) : m_fluidGroup(fluidGroup) {}
+FluidQueue<DerivedBlock>::FluidQueue(FluidGroup<DerivedBlock>& fluidGroup) : m_fluidGroup(fluidGroup) {}
 
 template<class DerivedBlock>
 void FluidQueue<DerivedBlock>::setBlocks(std::unordered_set<DerivedBlock*>& blocks)
@@ -72,4 +72,9 @@ uint32_t FluidQueue<DerivedBlock>::groupFlowTillNextStepPerBlock() const
 		return UINT32_MAX;
 	assert(m_groupEnd->capacity < m_groupStart->capacity);
 	return m_groupStart->capacity - m_groupEnd->capacity;
+}
+template<class DerivedBlock>
+const FluidType* FluidQueue<DerivedBlock>::getFluidType() const
+{
+	return m_fluidGroup.m_fluidType;
 }
