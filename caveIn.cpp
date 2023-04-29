@@ -6,7 +6,8 @@
 #include <stack>
 #include <unordered_map>
 
-void BaseArea::stepCaveInRead()
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::stepCaveInRead()
 {
 	std::list<std::unordered_set<DerivedBlock*>> chunks;
 	std::unordered_set<std::unordered_set<DerivedBlock*>*> anchoredChunks;
@@ -178,7 +179,8 @@ void BaseArea::stepCaveInRead()
 		m_caveInData.emplace_back(std::move(blocks), fallDistance, fallEnergy);
 	}
 }
-void BaseArea::stepCaveInWrite()
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::stepCaveInWrite()
 {
 	// Make chunks fall.
 	for(auto& [chunk, fallDistance, fallEnergy] : m_caveInData)
@@ -202,8 +204,8 @@ void BaseArea::stepCaveInWrite()
 		//TODO: disperse energy of fall by 'mining' out blocks absorbing impact
 	}
 }
-
-void BaseArea::registerPotentialCaveIn(DerivedBlock& block)
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::registerPotentialCaveIn(DerivedBlock& block)
 {
 	m_caveInCheck.insert(&block);
 }

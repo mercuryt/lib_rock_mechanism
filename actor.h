@@ -15,6 +15,7 @@
 #include <vector>
 #include <unordered_set>
 
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
 class BaseActor : public HasShape
 {	
 	static uint32_t s_nextId;
@@ -47,4 +48,5 @@ public:
 	void exposedToFluid(const FluidType* fluidType);
 	~BaseActor();
 };
-uint32_t BaseActor::s_nextId = 1;
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+uint32_t BaseActor<DerivedBlock, DerivedActor, DerivedArea>::s_nextId = 1;

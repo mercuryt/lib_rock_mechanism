@@ -82,7 +82,7 @@ struct BlockFeature
 };
 
 // Put custom member data declarations here
-class Block final : public BaseBlock
+class Block final : public BaseBlock<DerivedBlock, DerivedActor, DerivedArea>
 {
 public:
 	std::vector<BlockFeature> m_features;
@@ -119,7 +119,7 @@ public:
 	std::string toS() const;
 };
 
-class Actor final : public BaseActor
+class Actor final : public BaseActor<DerivedBlock, DerivedActor, DerivedArea>
 {
 public:
 	std::unordered_set<Actor*> m_canSee;
@@ -138,10 +138,10 @@ public:
 	bool canSee(const Actor& actor) const;
 };
 
-class Area final : public BaseArea
+class Area final : public BaseArea<DerivedBlock, DerivedActor, DerivedArea>
 {
 public:
-	Area(uint32_t x, uint32_t y, uint32_t z) : BaseArea(x, y, z) {}
+	Area(uint32_t x, uint32_t y, uint32_t z) : BaseArea<DerivedBlock, DerivedActor, DerivedArea>(x, y, z) {}
 	void notifyNoRouteFound(Actor& actor);
 };
 
@@ -505,7 +505,7 @@ std::string Block::toS() const
 		output += ',' + pair.first->m_name;
 	return output + describeFeatures();
 }
-Actor::Actor(Block* l, const Shape* s, const MoveType* mt) : BaseActor(l, s, mt), m_onTaskComplete(nullptr) {}
+Actor::Actor(Block* l, const Shape* s, const MoveType* mt) : BaseActor<DerivedBlock, DerivedActor, DerivedArea>(l, s, mt), m_onTaskComplete(nullptr) {}
 Actor::Actor(const Shape* s, const MoveType* mt) : BaseActor(s, mt), m_onTaskComplete(nullptr) {}
 uint32_t Actor::getSpeed() const
 {

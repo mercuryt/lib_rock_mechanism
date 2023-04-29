@@ -23,6 +23,7 @@
 #include "visionCuboid.h"
 
 
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
 class BaseArea
 {
 public:

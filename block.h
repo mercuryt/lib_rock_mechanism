@@ -28,6 +28,7 @@ struct SortByDensity
 {
 	bool operator()(const FluidType* a, const FluidType* b) const { return a->density < b->density; }
 };
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
 class BaseBlock
 {
 	// If this block is solid stone, solid dirt, etc. then store it here. Otherwise nullptr.
@@ -139,4 +140,3 @@ public:
 
 	void moveContentsTo(DerivedBlock* block);
 };
-static_assert(std::default_initializable<BaseBlock>);
