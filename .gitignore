@@ -4,6 +4,5 @@
 *\.gch
 a\.out
 *\.gdb_history
-.bak
-a.out
+*\.bak
 *\.callgrind\.out\.*

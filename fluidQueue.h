@@ -7,9 +7,9 @@
 #include <unordered_set>
 
 #include "fluidType.h"
+#include "fluidGroup.h"
 
-class FluidGroup;
-
+template<class DerivedBlock> class FluidGroup;
 /*
  * This struct holds a block, it's current capacity ( how much delta can increase at most ) and it's current delta.
  * These structs are stored in FluidQueue<DerivedBlock>::m_queue, which is a vector that gets sorted at the begining of read step.
@@ -35,9 +35,9 @@ public:
 	std::vector<FutureFlowBlock<DerivedBlock>> m_queue;
 	std::unordered_set<DerivedBlock*> m_set;
 	std::vector<FutureFlowBlock<DerivedBlock>>::iterator m_groupStart, m_groupEnd;
-	FluidGroup& m_fluidGroup;
+	FluidGroup<DerivedBlock>& m_fluidGroup;
 
-	FluidQueue(FluidGroup& fluidGroup);
+	FluidQueue(FluidGroup<DerivedBlock>& fluidGroup);
 	void buildFor(std::unordered_set<DerivedBlock*>& members);
 	void initalizeForStep();
 	void setBlocks(std::unordered_set<DerivedBlock*>& blocks);
@@ -54,4 +54,5 @@ public:
 	uint32_t groupLevel() const;
 	uint32_t groupCapacityPerBlock() const;
 	uint32_t groupFlowTillNextStepPerBlock() const;
+	const FluidType* getFluidType() const;
 };

@@ -18,8 +18,8 @@
 #include "shape.h"
 #include "fluidType.h"
 #include "visionCuboid.h"
+#include "fluidGroup.h"
 
-class FluidGroup;
 class HasShape;
 // Fluid type and volume pairs are sorted by density, low to high.
 // This is useful for resolving overfill.
@@ -61,7 +61,7 @@ public:
 	// For fluids: store fluidType, volume, and FluidGroup pointer.
 	// Sorted by density, low to high.
 	// TODO: Try replacing with a flatmap.
-	std::map<const FluidType*, std::pair<uint32_t, FluidGroup*>, SortByDensity> m_fluids;
+	std::map<const FluidType*, std::pair<uint32_t, FluidGroup<DerivedBlock>*>, SortByDensity> m_fluids;
 	// For mist.
 	const FluidType* m_mist;
 	const FluidType* m_mistSource;
@@ -98,7 +98,7 @@ public:
 	// Validate the nongeneric object can enter this block and also any other blocks required by it's Shape comparing to m_totalStaticVolume.
 	bool shapeAndMoveTypeCanEnterEver(const Shape* shape, const MoveType* moveType) const;
 	// Get the FluidGroup for this fluid type in this block.
-	FluidGroup* getFluidGroup(const FluidType* fluidType) const;
+	FluidGroup<DerivedBlock>* getFluidGroup(const FluidType* fluidType) const;
 	// Get block at offset coordinates.
 	DerivedBlock* offset(int32_t ax, int32_t ay, int32_t az) const;
 	// Add fluid, handle falling / sinking, group membership, excessive quantity sent to fluid group.
@@ -108,7 +108,7 @@ public:
 	bool canEnterEver(DerivedActor& actor) const;
 	std::vector<std::pair<DerivedBlock*, uint32_t>> getMoveCosts(const Shape* shape, const MoveType* moveType);
 	bool fluidCanEnterCurrently(const FluidType* fluidType) const;
-	bool isAdjacentToFluidGroup(const FluidGroup* fluidGroup) const;
+	bool isAdjacentToFluidGroup(const FluidGroup<DerivedBlock>* fluidGroup) const;
 	uint32_t volumeOfFluidTypeCanEnter(const FluidType* fluidType) const;
 	uint32_t volumeOfFluidTypeContains(const FluidType* fluidType) const;
 	// Move less dense fluids to their group's excessVolume until s_maxBlockVolume is achieved.

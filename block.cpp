@@ -325,7 +325,7 @@ void BaseBlock::addFluid(uint32_t volume, const FluidType* fluidType)
 	m_fluids.emplace(fluidType, std::make_pair(volume, nullptr));
 	m_totalFluidVolume += volume;
 	// Find fluid group.
-	FluidGroup* fluidGroup = nullptr;
+	FluidGroup<DerivedBlock>* fluidGroup = nullptr;
 	for(DerivedBlock* adjacent : m_adjacentsVector)
 		if(adjacent->fluidCanEnterEver() && adjacent->m_fluids.contains(fluidType))
 		{
@@ -407,7 +407,7 @@ bool BaseBlock::fluidCanEnterCurrently(const FluidType* fluidType) const
 			return true;
 	return false;
 }
-bool BaseBlock::isAdjacentToFluidGroup(const FluidGroup* fluidGroup) const
+bool BaseBlock::isAdjacentToFluidGroup(const FluidGroup<DerivedBlock>* fluidGroup) const
 {
 	for(DerivedBlock* block : m_adjacentsVector)
 		if(block->m_fluids.contains(fluidGroup->m_fluidType) && block->m_fluids.at(fluidGroup->m_fluidType).second == fluidGroup)
@@ -431,7 +431,7 @@ uint32_t BaseBlock::volumeOfFluidTypeContains(const FluidType* fluidType) const
 		return 0;
 	return found->second.first;
 }
-FluidGroup* BaseBlock::getFluidGroup(const FluidType* fluidType) const
+FluidGroup<DerivedBlock>* BaseBlock::getFluidGroup(const FluidType* fluidType) const
 {
 	assert(fluidType != nullptr);
 	auto found = m_fluids.find(fluidType);
@@ -462,7 +462,7 @@ void BaseBlock::resolveFluidOverfull()
 	for(const FluidType* fluidType : toErase)
 	{
 		// If the last block of a fluidGroup is displaced disolve it in the lowest density liquid which is more dense then it.
-		FluidGroup* fluidGroup = m_fluids.at(fluidType).second;
+		FluidGroup<DerivedBlock>* fluidGroup = m_fluids.at(fluidType).second;
 		assert(fluidGroup->m_fluidType = fluidType);
 		fluidGroup->removeBlock(static_cast<DerivedBlock&>(*this));
 		if(fluidGroup->m_drainQueue.m_set.empty())

@@ -22,7 +22,7 @@ void fourFluids(uint32_t scale, uint32_t steps)
 	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	setSolidWalls(area, maxZ - 1, s_stone);
-	std::vector<FluidGroup*> newlySplit;
+	std::vector<FluidGroup<DerivedBlock>*> newlySplit;
 	// Water is at 0,0
 	Block& water1 = area.m_blocks[1][1][1];
 	Block& water2 = area.m_blocks[halfMaxX - 1][halfMaxY - 1][maxZ - 1];		
