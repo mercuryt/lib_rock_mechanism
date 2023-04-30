@@ -346,7 +346,7 @@ void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::addFluid(uint32_t volum
 	m_fluids.emplace(fluidType, std::make_pair(volume, nullptr));
 	m_totalFluidVolume += volume;
 	// Find fluid group.
-	FluidGroup<DerivedBlock>* fluidGroup = nullptr;
+	FluidGroup<DerivedBlock, DerivedArea>* fluidGroup = nullptr;
 	for(DerivedBlock* adjacent : m_adjacentsVector)
 		if(adjacent->fluidCanEnterEver() && adjacent->m_fluids.contains(fluidType))
 		{
@@ -434,7 +434,7 @@ bool BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::fluidCanEnterCurrently(
 	return false;
 }
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
-bool BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::isAdjacentToFluidGroup(const FluidGroup<DerivedBlock>* fluidGroup) const
+bool BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::isAdjacentToFluidGroup(const FluidGroup<DerivedBlock, DerivedArea>* fluidGroup) const
 {
 	for(DerivedBlock* block : m_adjacentsVector)
 		if(block->m_fluids.contains(fluidGroup->m_fluidType) && block->m_fluids.at(fluidGroup->m_fluidType).second == fluidGroup)
@@ -461,7 +461,7 @@ uint32_t BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::volumeOfFluidTypeCo
 	return found->second.first;
 }
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
-FluidGroup<DerivedBlock>* BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::getFluidGroup(const FluidType* fluidType) const
+FluidGroup<DerivedBlock, DerivedArea>* BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::getFluidGroup(const FluidType* fluidType) const
 {
 	assert(fluidType != nullptr);
 	auto found = m_fluids.find(fluidType);
@@ -493,7 +493,7 @@ void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::resolveFluidOverfull()
 	for(const FluidType* fluidType : toErase)
 	{
 		// If the last block of a fluidGroup is displaced disolve it in the lowest density liquid which is more dense then it.
-		FluidGroup<DerivedBlock>* fluidGroup = m_fluids.at(fluidType).second;
+		FluidGroup<DerivedBlock, DerivedArea>* fluidGroup = m_fluids.at(fluidType).second;
 		assert(fluidGroup->m_fluidType = fluidType);
 		fluidGroup->removeBlock(static_cast<DerivedBlock&>(*this));
 		if(fluidGroup->m_drainQueue.m_set.empty())

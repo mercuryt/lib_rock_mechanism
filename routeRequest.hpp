@@ -24,11 +24,11 @@ void RouteRequest<DerivedBlock, DerivedActor, DerivedArea>::readStep()
 		return;
 	}
 	// Huristic: taxi distance to destination times constant plus total move cost.
-	auto priority = [&](ProposedRouteStep& proposedRouteStep)
+	auto priority = [&](ProposedRouteStep<DerivedBlock>& proposedRouteStep)
 	{
 		return (proposedRouteStep.routeNode->block->taxiDistance(*end) * s_pathHuristicConstant) + proposedRouteStep.totalMoveCost;
 	};
-	auto compare = [&](ProposedRouteStep& a, ProposedRouteStep& b) { return priority(a) > priority(b); };
+	auto compare = [&](ProposedRouteStep<DerivedBlock>& a, ProposedRouteStep<DerivedBlock>& b) { return priority(a) > priority(b); };
 	// Check if the actor can currently enter each block if this is a detour path.
 	auto isDone = [&](DerivedBlock* block){ return block == end; };
 	std::vector<std::pair<DerivedBlock*, uint32_t>> adjacentMoveCosts;
@@ -44,12 +44,12 @@ void RouteRequest<DerivedBlock, DerivedActor, DerivedArea>::readStep()
 		auto isValid = [&](DerivedBlock* block){ 
 			return block->anyoneCanEnterEver() && block->canEnterEver(m_actor) && block->actorCanEnterCurrently(m_actor);
 		};
-		GetPath getPath(isValid, compare, isDone, adjacentCosts, start, m_result);
+		GetPath<DerivedBlock, decltype(isValid), decltype(compare), decltype(isDone), decltype(adjacentCosts)> getPath(isValid, compare, isDone, adjacentCosts, start, m_result);
 	}
 	else
 	{
 		auto isValid = [&](DerivedBlock* block){ return block->anyoneCanEnterEver() && block->canEnterEver(m_actor); };
-		GetPath getPath(isValid, compare, isDone, adjacentCosts, start, m_result);
+		GetPath<DerivedBlock, decltype(isValid), decltype(compare), decltype(isDone), decltype(adjacentCosts)> getPath(isValid, compare, isDone, adjacentCosts, start, m_result);
 	}
 }
 template<class DerivedBlock, class DerivedActor, class DerivedArea>

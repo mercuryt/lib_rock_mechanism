@@ -1,5 +1,5 @@
  #pragma once
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
+template<class DerivedBlock, class DerivedArea>
 class util
 {
 public:

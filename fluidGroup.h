@@ -24,7 +24,7 @@ struct FluidGroupSplitData
 	FluidGroupSplitData(std::unordered_set<DerivedBlock*>& m) : members(m) {}
 };
 
-template<class DerivedBlock>
+template<class DerivedBlock, class DerivedArea>
 class FluidGroup
 {
 public:
@@ -36,15 +36,15 @@ public:
 	const FluidType* m_fluidType;
 	int32_t m_excessVolume;
 	uint32_t m_viscosity;
-	FillQueue<DerivedBlock> m_fillQueue;
-	DrainQueue<DerivedBlock> m_drainQueue;
+	FillQueue<DerivedBlock, DerivedArea> m_fillQueue;
+	DrainQueue<DerivedBlock, DerivedArea> m_drainQueue;
 	std::unordered_map<const FluidType*, FluidGroup*> m_disolvedInThisGroup;
 	DerivedArea& m_area;
 
 	// For spitting into multiple fluidGroups.
 	std::vector<FluidGroupSplitData<DerivedBlock>> m_futureGroups;
 	// For notifing groups with different fluids of unfull status. Groups with the same fluid are merged instead.
-	std::unordered_map<FluidGroup<DerivedBlock>*, std::unordered_set<DerivedBlock*>> m_futureNotifyPotentialUnfullAdjacent;
+	std::unordered_map<FluidGroup<DerivedBlock, DerivedArea>*, std::unordered_set<DerivedBlock*>> m_futureNotifyPotentialUnfullAdjacent;
 	
 	std::unordered_set<DerivedBlock*> m_diagonalBlocks;
 
@@ -59,7 +59,7 @@ public:
 	std::unordered_set<DerivedBlock*> m_futureRemoveFromFillQueue;
 
 	FluidGroup(const FluidType* ft, std::unordered_set<DerivedBlock*>& blocks, DerivedArea& area, bool checkMerge = true);
-	FluidGroup(const FluidGroup<DerivedBlock>&) = delete;
+	FluidGroup(const FluidGroup<DerivedBlock, DerivedArea>&) = delete;
 	void addFluid(uint32_t fluidVolume);
 	void removeFluid(uint32_t fluidVolume);
 	void addBlock(DerivedBlock& block, bool checkMerge = true);
@@ -67,7 +67,7 @@ public:
 	void removeBlocks(std::unordered_set<DerivedBlock*>& blocks);
 	void addMistFor(DerivedBlock& block);
 	// Takes a pointer to the other fluid group because we may switch them inorder to merge into the larger one.
-	void merge(FluidGroup<DerivedBlock>* fluidGroup);
+	void merge(FluidGroup<DerivedBlock, DerivedArea>* fluidGroup);
 	void readStep();
 	void writeStep();
 	void afterWriteStep();
@@ -76,7 +76,7 @@ public:
 	void setUnstable();
 	void addDiagonalsFor(DerivedBlock& block);
 	void validate() const;
-	void validate(std::unordered_set<FluidGroup<DerivedBlock>*> toErase);
+	void validate(std::unordered_set<FluidGroup<DerivedBlock, DerivedArea>*> toErase);
 	int32_t totalVolume();
 	template<typename, typename, typename> friend class BaseArea;
 };

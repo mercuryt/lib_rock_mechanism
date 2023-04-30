@@ -47,7 +47,7 @@ void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::readStep()
 	// Calculate cave in.
 	s_pool.push_task([&](){ stepCaveInRead(); });
 	// Calculate flow.
-	for(FluidGroup<DerivedBlock>* fluidGroup : m_unstableFluidGroups)
+	for(FluidGroup<DerivedBlock, DerivedArea>* fluidGroup : m_unstableFluidGroups)
 		s_pool.push_task([=](){ fluidGroup->readStep(); });
 	// Calculate routes.
 	auto routeIter = m_routeRequestQueue.begin();
@@ -63,32 +63,32 @@ void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::writeStep()
 { 
 	s_pool.wait_for_tasks();
 	// Apply flow.
-	for(FluidGroup<DerivedBlock>* fluidGroup : m_unstableFluidGroups)
+	for(FluidGroup<DerivedBlock, DerivedArea>* fluidGroup : m_unstableFluidGroups)
 	{
 		fluidGroup->writeStep();
 		validateAllFluidGroups();
 	}
 	// Resolve overfull, diagonal seep, and mist.
 	// Make vector of unstable so we can iterate it while modifing the original.
-	std::vector<FluidGroup<DerivedBlock>*> unstable(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
-	for(FluidGroup<DerivedBlock>* fluidGroup : unstable)
+	std::vector<FluidGroup<DerivedBlock, DerivedArea>*> unstable(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
+	for(FluidGroup<DerivedBlock, DerivedArea>* fluidGroup : unstable)
 	{
 		fluidGroup->afterWriteStep();
 		fluidGroup->validate();
 	}
-	std::erase_if(m_unstableFluidGroups, [](FluidGroup<DerivedBlock>* fluidGroup){ return fluidGroup->m_stable || fluidGroup->m_disolved || fluidGroup->m_destroy || fluidGroup->m_merged; });
-	std::vector<FluidGroup<DerivedBlock>*> unstable2(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
-	for(FluidGroup<DerivedBlock>* fluidGroup : unstable2)
+	std::erase_if(m_unstableFluidGroups, [](FluidGroup<DerivedBlock, DerivedArea>* fluidGroup){ return fluidGroup->m_stable || fluidGroup->m_disolved || fluidGroup->m_destroy || fluidGroup->m_merged; });
+	std::vector<FluidGroup<DerivedBlock, DerivedArea>*> unstable2(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
+	for(FluidGroup<DerivedBlock, DerivedArea>* fluidGroup : unstable2)
 		fluidGroup->mergeStep();
-	std::erase_if(m_unstableFluidGroups, [](FluidGroup<DerivedBlock>* fluidGroup){ return fluidGroup->m_merged; });
+	std::erase_if(m_unstableFluidGroups, [](FluidGroup<DerivedBlock, DerivedArea>* fluidGroup){ return fluidGroup->m_merged; });
 	// Apply fluid split.
-	std::vector<FluidGroup<DerivedBlock>*> unstable3(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
-	for(FluidGroup<DerivedBlock>* fluidGroup : unstable3)
+	std::vector<FluidGroup<DerivedBlock, DerivedArea>*> unstable3(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
+	for(FluidGroup<DerivedBlock, DerivedArea>* fluidGroup : unstable3)
 		fluidGroup->splitStep();
-	for(FluidGroup<DerivedBlock>& fluidGroup : m_fluidGroups)
+	for(FluidGroup<DerivedBlock, DerivedArea>& fluidGroup : m_fluidGroups)
 		fluidGroup.validate();
-	std::unordered_set<FluidGroup<DerivedBlock>*> toErase;
-	for(FluidGroup<DerivedBlock>& fluidGroup : m_fluidGroups)
+	std::unordered_set<FluidGroup<DerivedBlock, DerivedArea>*> toErase;
+	for(FluidGroup<DerivedBlock, DerivedArea>& fluidGroup : m_fluidGroups)
 	{
 		if(fluidGroup.m_excessVolume <= 0 && fluidGroup.m_drainQueue.m_set.size() == 0)
 		{
@@ -106,15 +106,15 @@ void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::writeStep()
 				assert(fluidGroup.m_drainQueue.m_set.empty());
 		}
 	}
-	for(FluidGroup<DerivedBlock>& fluidGroup : m_fluidGroups)
+	for(FluidGroup<DerivedBlock, DerivedArea>& fluidGroup : m_fluidGroups)
 		fluidGroup.validate(toErase);
-	m_fluidGroups.remove_if([&](FluidGroup<DerivedBlock>& fluidGroup){ return toErase.contains(&fluidGroup); });
-	for(FluidGroup<DerivedBlock>& fluidGroup : m_fluidGroups)
+	m_fluidGroups.remove_if([&](FluidGroup<DerivedBlock, DerivedArea>& fluidGroup){ return toErase.contains(&fluidGroup); });
+	for(FluidGroup<DerivedBlock, DerivedArea>& fluidGroup : m_fluidGroups)
 		fluidGroup.validate();
-	for(const FluidGroup<DerivedBlock>* fluidGroup : m_unstableFluidGroups)
+	for(const FluidGroup<DerivedBlock, DerivedArea>* fluidGroup : m_unstableFluidGroups)
 	{
 		bool found = false;
-		for(FluidGroup<DerivedBlock>& fg : m_fluidGroups)
+		for(FluidGroup<DerivedBlock, DerivedArea>& fg : m_fluidGroups)
 			if(&fg == fluidGroup)
 			{
 				found = true;
@@ -126,7 +126,7 @@ void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::writeStep()
 	// Apply cave in.
 	if(!m_caveInData.empty())
 		stepCaveInWrite();
-	for(FluidGroup<DerivedBlock>& fluidGroup : m_fluidGroups)
+	for(FluidGroup<DerivedBlock, DerivedArea>& fluidGroup : m_fluidGroups)
 		fluidGroup.validate();
 	// Apply routes.
 	for(RouteRequest<DerivedBlock, DerivedActor, DerivedArea>& routeRequest : m_routeRequestQueue)
@@ -142,7 +142,7 @@ void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::writeStep()
 	m_visionRequestQueue.clear();
 	// Do scheduled events.
 	m_eventSchedule.execute(s_step);
-	for(FluidGroup<DerivedBlock>& fluidGroup : m_fluidGroups)
+	for(FluidGroup<DerivedBlock, DerivedArea>& fluidGroup : m_fluidGroups)
 		fluidGroup.validate();
 	if(m_visionCuboidsActive)
 		std::erase_if(m_visionCuboids, [](VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>& visionCuboid){ return visionCuboid.m_destroy; });
@@ -171,7 +171,7 @@ void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::registerRouteRequest(Der
 	m_routeRequestQueue.emplace_back(actor, detour);
 }
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
-FluidGroup<DerivedBlock>* BaseArea<DerivedBlock, DerivedActor, DerivedArea>::createFluidGroup(const FluidType* fluidType, std::unordered_set<DerivedBlock*>& blocks, bool checkMerge)
+FluidGroup<DerivedBlock, DerivedArea>* BaseArea<DerivedBlock, DerivedActor, DerivedArea>::createFluidGroup(const FluidType* fluidType, std::unordered_set<DerivedBlock*>& blocks, bool checkMerge)
 {
 	m_fluidGroups.emplace_back(fluidType, blocks, static_cast<DerivedArea&>(*this), checkMerge);
 	m_unstableFluidGroups.insert(&m_fluidGroups.back());
@@ -193,7 +193,7 @@ void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::expireRouteCache(){++m_r
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
 void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::validateAllFluidGroups()
 {
-	for(FluidGroup<DerivedBlock>& fluidGroup : m_fluidGroups)
+	for(FluidGroup<DerivedBlock, DerivedArea>& fluidGroup : m_fluidGroups)
 		if(!fluidGroup.m_merged && !fluidGroup.m_destroy)
 			fluidGroup.validate();
 }
@@ -201,7 +201,7 @@ template<class DerivedBlock, class DerivedActor, class DerivedArea>
 std::string BaseArea<DerivedBlock, DerivedActor, DerivedArea>::toS()
 {
 	std::string output = std::to_string(m_fluidGroups.size()) + " fluid groups########";
-	for(FluidGroup<DerivedBlock>& fluidGroup : m_fluidGroups)
+	for(FluidGroup<DerivedBlock, DerivedArea>& fluidGroup : m_fluidGroups)
 	{
 		output += "type:" + fluidGroup.m_fluidType->name;
 		output += "-total:" + std::to_string(fluidGroup.totalVolume());
@@ -214,7 +214,7 @@ std::string BaseArea<DerivedBlock, DerivedActor, DerivedArea>::toS()
 		if(fluidGroup.m_disolved)
 		{
 			output += "-disolved";
-			for(FluidGroup<DerivedBlock>& fg : m_fluidGroups)
+			for(FluidGroup<DerivedBlock, DerivedArea>& fg : m_fluidGroups)
 				if(fg.m_disolvedInThisGroup.contains(fluidGroup.m_fluidType) && fg.m_disolvedInThisGroup.at(fluidGroup.m_fluidType) == &fluidGroup)
 					output += " in " + fg.m_fluidType->name;
 		}

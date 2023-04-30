@@ -7,8 +7,8 @@
 #include "fluidGroup.h"
 
 
-template<class DerivedBlock>
-class FillQueue : public FluidQueue<DerivedBlock>
+template<class DerivedBlock, class DerivedArea>
+class FillQueue : public FluidQueue<DerivedBlock, DerivedArea>
 {
 	uint32_t getPriority(FutureFlowBlock<DerivedBlock>& futureFlowBlock) const;
 public:
@@ -16,7 +16,7 @@ public:
 	std::unordered_set<DerivedBlock*> m_futureNoLongerEmpty;
 	std::unordered_set<DerivedBlock*> m_overfull;
 
-	FillQueue(FluidGroup<DerivedBlock>& fluidGroup);
+	FillQueue(FluidGroup<DerivedBlock, DerivedArea>& fluidGroup);
 	void buildFor(std::unordered_set<DerivedBlock*>& members);
 	void initalizeForStep();
 	void recordDelta(uint32_t volume, uint32_t flowCapacity, uint32_t flowTillNextStep);
