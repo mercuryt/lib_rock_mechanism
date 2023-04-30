@@ -22,7 +22,7 @@ TEST_CASE("Test fluid in area")
 	Block& block2 = area.m_blocks[5][5][2];
 	block1.setNotSolid();
 	block2.addFluid(100, s_water);
-	FluidGroup<DerivedBlock>* fluidGroup = block2.getFluidGroup(s_water);
+	FluidGroup<Block, Area>* fluidGroup = block2.getFluidGroup(s_water);
 	area.readStep();
 	area.writeStep();
 	s_step++;
@@ -46,7 +46,7 @@ TEST_CASE("Cave in falls in fluid and pistons it up with threading")
 	block1.addFluid(100, s_water);
 	block2.setSolid(s_stone);
 	area.m_caveInCheck.insert(&block2);
-	FluidGroup<DerivedBlock>* fluidGroup = block1.getFluidGroup(s_water);
+	FluidGroup<Block, Area>* fluidGroup = block1.getFluidGroup(s_water);
 	area.readStep();
 	area.writeStep();
 	s_step++;
@@ -200,7 +200,7 @@ void fourFluidsTestParallel(uint32_t scale, uint32_t steps)
 	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	setSolidWalls(area, maxZ - 1, s_stone);
-	std::vector<FluidGroup<DerivedBlock>*> newlySplit;
+	std::vector<FluidGroup<Block, Area>*> newlySplit;
 	// Water is at 0,0
 	Block& water1 = area.m_blocks[1][1][1];
 	Block& water2 = area.m_blocks[halfMaxX - 1][halfMaxY - 1][maxZ - 1];		
@@ -218,10 +218,10 @@ void fourFluidsTestParallel(uint32_t scale, uint32_t steps)
 	Block& mercury2 = area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
 	setFullFluidCuboid(mercury1, mercury2, s_mercury);
 	CHECK(area.m_fluidGroups.size() == 4);
-	FluidGroup<DerivedBlock>* fgWater = water1.getFluidGroup(s_water);
-	FluidGroup<DerivedBlock>* fgCO2 = CO2_1.getFluidGroup(s_CO2);
-	FluidGroup<DerivedBlock>* fgLava = lava1.getFluidGroup(s_lava);
-	FluidGroup<DerivedBlock>* fgMercury = mercury1.getFluidGroup(s_mercury);
+	FluidGroup<Block, Area>* fgWater = water1.getFluidGroup(s_water);
+	FluidGroup<Block, Area>* fgCO2 = CO2_1.getFluidGroup(s_CO2);
+	FluidGroup<Block, Area>* fgLava = lava1.getFluidGroup(s_lava);
+	FluidGroup<Block, Area>* fgMercury = mercury1.getFluidGroup(s_mercury);
 	CHECK(!fgWater->m_merged);
 	CHECK(!fgCO2->m_merged);
 	CHECK(!fgLava->m_merged);

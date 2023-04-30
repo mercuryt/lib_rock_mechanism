@@ -18,15 +18,6 @@ const static uint32_t s_routeThreadingBatchSize = 10;
 const static uint32_t s_fluidsSeepDiagonalModifier = 100;
 const static uint32_t s_moveTryAttemptsBeforeDetour = 2;
 
-// If you change the provided class names for Actor, Block, or Area then update the name here as well.
-// typedefs are used here rather then CRTP to reduce compliation time and error message verbosity.
-class Actor;
-class Block;
-class Area;
-typedef Actor DerivedActor;
-typedef Block DerivedBlock;
-typedef Area DerivedArea;
-
 #include "../block.h"
 #include "../actor.h"
 #include "../area.h"
@@ -81,8 +72,12 @@ struct BlockFeature
 	BlockFeature(const BlockFeatureType* bft, const MaterialType* mt, bool h) : blockFeatureType(bft), materialType(mt), hewn(h), closed(true), locked(false) {}
 };
 
+class Actor;
+class Block;
+class Area;
+
 // Put custom member data declarations here
-class Block final : public BaseBlock<DerivedBlock, DerivedActor, DerivedArea>
+class Block final : public BaseBlock<Block, Actor, Area>
 {
 public:
 	std::vector<BlockFeature> m_features;
@@ -119,7 +114,7 @@ public:
 	std::string toS() const;
 };
 
-class Actor final : public BaseActor<DerivedBlock, DerivedActor, DerivedArea>
+class Actor final : public BaseActor<Block, Actor, Area>
 {
 public:
 	std::unordered_set<Actor*> m_canSee;
@@ -138,10 +133,10 @@ public:
 	bool canSee(const Actor& actor) const;
 };
 
-class Area final : public BaseArea<DerivedBlock, DerivedActor, DerivedArea>
+class Area final : public BaseArea<Block, Actor, Area>
 {
 public:
-	Area(uint32_t x, uint32_t y, uint32_t z) : BaseArea<DerivedBlock, DerivedActor, DerivedArea>(x, y, z) {}
+	Area(uint32_t x, uint32_t y, uint32_t z) : BaseArea<Block, Actor, Area>(x, y, z) {}
 	void notifyNoRouteFound(Actor& actor);
 };
 
@@ -436,7 +431,7 @@ void Block::addConstructedFeature(const BlockFeatureType* blockFeatureType, cons
 	clearMoveCostsCacheForSelfAndAdjacent();
 	m_area->expireRouteCache();
 	if(m_area->m_visionCuboidsActive && (blockFeatureType == s_floor || blockFeatureType == s_hatch) && !materialType->transparent)
-		VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::BlockFloorIsSometimesOpaque(*this);
+		VisionCuboid<Block, Actor, Area>::BlockFloorIsSometimesOpaque(*this);
 }
 void Block::addHewnFeature(const BlockFeatureType* blockFeatureType, const MaterialType* materialType)
 {
@@ -450,7 +445,7 @@ void Block::addHewnFeature(const BlockFeatureType* blockFeatureType, const Mater
 	if(isSolid())
 		setNotSolid();
 	if(m_area->m_visionCuboidsActive && (blockFeatureType == s_floor || blockFeatureType == s_hatch) && !materialType->transparent)
-		VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::BlockFloorIsSometimesOpaque(*this);
+		VisionCuboid<Block, Actor, Area>::BlockFloorIsSometimesOpaque(*this);
 }
 bool Block::hasFeatureType(const BlockFeatureType* blockFeatureType) const
 {
@@ -477,7 +472,7 @@ void Block::removeFeature(const BlockFeatureType* blockFeatureType)
 		m_features.erase(found);
 	if(m_area->m_visionCuboidsActive && (blockFeatureType == s_floor || blockFeatureType == s_hatch) && !found->materialType->transparent)
 		// block, opacity, floor
-		VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::BlockFloorIsNeverOpaque(*this);
+		VisionCuboid<Block, Actor, Area>::BlockFloorIsNeverOpaque(*this);
 }
 std::string Block::describeFeatures() const
 {
@@ -505,7 +500,7 @@ std::string Block::toS() const
 		output += ',' + pair.first->m_name;
 	return output + describeFeatures();
 }
-Actor::Actor(Block* l, const Shape* s, const MoveType* mt) : BaseActor<DerivedBlock, DerivedActor, DerivedArea>(l, s, mt), m_onTaskComplete(nullptr) {}
+Actor::Actor(Block* l, const Shape* s, const MoveType* mt) : BaseActor<Block, Actor, Area>(l, s, mt), m_onTaskComplete(nullptr) {}
 Actor::Actor(const Shape* s, const MoveType* mt) : BaseActor(s, mt), m_onTaskComplete(nullptr) {}
 uint32_t Actor::getSpeed() const
 {
@@ -635,7 +630,7 @@ void setFullFluidCuboid(Block& low, Block& high, const FluidType* fluidType)
 	assert(low.fluidCanEnterEver());
 	assert(high.m_totalFluidVolume == 0);
 	assert(high.fluidCanEnterEver());
-	Cuboid<DerivedBlock, DerivedActor, DerivedArea> cuboid(high, low);
+	Cuboid<Block, Actor, Area> cuboid(high, low);
 	for(Block& block : cuboid)
 	{
 		assert(block.m_totalFluidVolume == 0);
@@ -652,10 +647,10 @@ void validateAllBlockFluids(Area& area)
 					assert(pair.second->m_fluidType == fluidType);
 }
 // Get one fluid group with the specified type. Return null if there is more then one.
-FluidGroup<DerivedBlock>* getFluidGroup(Area& area, const FluidType* fluidType)
+FluidGroup<Block, Area>* getFluidGroup(Area& area, const FluidType* fluidType)
 {
-	FluidGroup<DerivedBlock>* output = nullptr;
-	for(FluidGroup<DerivedBlock>& fluidGroup : area.m_fluidGroups)
+	FluidGroup<Block, Area>* output = nullptr;
+	for(FluidGroup<Block, Area>& fluidGroup : area.m_fluidGroups)
 		if(fluidGroup.m_fluidType == fluidType)
 		{
 			if(output != nullptr)

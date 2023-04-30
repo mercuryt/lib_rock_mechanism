@@ -32,10 +32,10 @@ public:
 	uint32_t m_sizeZ;
 	std::vector<std::vector<std::vector<DerivedBlock>>> m_blocks;
 	LocationBuckets<DerivedBlock, DerivedActor, DerivedArea> m_locationBuckets;
-	std::list<FluidGroup<DerivedBlock>> m_fluidGroups;
-	std::unordered_set<FluidGroup<DerivedBlock>*> m_unstableFluidGroups;
-	std::unordered_set<FluidGroup<DerivedBlock>*> m_setStable;
-	std::unordered_set<FluidGroup<DerivedBlock>*> m_toDestroy;
+	std::list<FluidGroup<DerivedBlock, DerivedArea>> m_fluidGroups;
+	std::unordered_set<FluidGroup<DerivedBlock, DerivedArea>*> m_unstableFluidGroups;
+	std::unordered_set<FluidGroup<DerivedBlock, DerivedArea>*> m_setStable;
+	std::unordered_set<FluidGroup<DerivedBlock, DerivedArea>*> m_toDestroy;
 	std::unordered_set<DerivedBlock*> m_caveInCheck;
 	std::vector<std::tuple<std::vector<DerivedBlock*>,uint32_t,uint32_t>> m_caveInData;
 	std::vector<RouteRequest<DerivedBlock, DerivedActor, DerivedArea>> m_routeRequestQueue;
@@ -72,7 +72,7 @@ public:
 	void registerVisionRequest(DerivedActor& actor);
 
 	// Create a fluid group.
-	FluidGroup<DerivedBlock>* createFluidGroup(const FluidType* fluidType, std::unordered_set<DerivedBlock*>& blocks, bool checkMerge = true);
+	FluidGroup<DerivedBlock, DerivedArea>* createFluidGroup(const FluidType* fluidType, std::unordered_set<DerivedBlock*>& blocks, bool checkMerge = true);
 
 	// Assign all visible blocks to a visionCuboid, set m_visionCubioidsActive to true.
 	void visionCuboidsActivate();

@@ -16,7 +16,7 @@
 #include <unordered_set>
 
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
-class BaseActor : public HasShape
+class BaseActor : public HasShape<DerivedBlock>
 {	
 	static uint32_t s_nextId;
 public:

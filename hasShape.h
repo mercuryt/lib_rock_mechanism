@@ -2,6 +2,7 @@
 
 #include "shape.h"
 
+template<class DerivedBlock>
 class HasShape
 {
 public:
