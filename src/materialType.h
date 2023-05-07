@@ -14,7 +14,7 @@ struct MaterialType
 
 static std::list<MaterialType> materialTypes;
 
-const MaterialType* registerMaterialType(std::string name, uint32_t mass, bool transparent)
+inline const MaterialType* registerMaterialType(std::string name, uint32_t mass, bool transparent)
 {
 	materialTypes.emplace_back(name, mass, transparent);
 	return &materialTypes.back();

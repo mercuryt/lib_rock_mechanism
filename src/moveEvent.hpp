@@ -15,7 +15,7 @@ void MoveEvent<DerivedBlock, DerivedActor, DerivedArea>::execute()
 		{
 			m_actor.m_taskDelayCount++;
 			// Request detour with canEnterCurrently pathing if waiting too long.
-			if(m_actor.m_taskDelayCount == s_moveTryAttemptsBeforeDetour)
+			if(m_actor.m_taskDelayCount == Config::moveTryAttemptsBeforeDetour)
 			{
 				m_actor.m_location->m_area->registerRouteRequest(m_actor, true);
 				return;

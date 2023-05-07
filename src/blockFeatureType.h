@@ -12,7 +12,7 @@ struct BlockFeatureType
 
 static std::list<BlockFeatureType> blockFeatureTypes;
 
-const BlockFeatureType* registerBlockFeatureType(std::string name)
+inline const BlockFeatureType* registerBlockFeatureType(std::string name)
 {
 	blockFeatureTypes.emplace_back(name);
 	return &blockFeatureTypes.back();

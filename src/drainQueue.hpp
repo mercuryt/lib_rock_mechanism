@@ -13,7 +13,7 @@ void DrainQueue<DerivedBlock, DerivedArea>::initalizeForStep()
 	for(FutureFlowBlock<DerivedBlock>& futureFlowBlock : FluidQueue<DerivedBlock, DerivedArea>::m_queue)
 	{
 		assert((futureFlowBlock.block->m_fluids.contains(FluidQueue<DerivedBlock, DerivedArea>::m_fluidGroup.m_fluidType)));
-		assert(futureFlowBlock.block->m_totalFluidVolume <= s_maxBlockVolume);
+		assert(futureFlowBlock.block->m_totalFluidVolume <= Config::maxBlockVolume);
 		futureFlowBlock.delta = 0;
 		futureFlowBlock.capacity = futureFlowBlock.block->m_fluids.at(FluidQueue<DerivedBlock, DerivedArea>::m_fluidGroup.m_fluidType).first;
 	}
@@ -35,14 +35,14 @@ void DrainQueue<DerivedBlock, DerivedArea>::recordDelta(uint32_t volume, uint32_
 	assert((FluidQueue<DerivedBlock, DerivedArea>::m_groupStart >= FluidQueue<DerivedBlock, DerivedArea>::m_queue.begin() && FluidQueue<DerivedBlock, DerivedArea>::m_groupStart <= FluidQueue<DerivedBlock, DerivedArea>::m_queue.end()));
 	assert((FluidQueue<DerivedBlock, DerivedArea>::m_groupEnd >= FluidQueue<DerivedBlock, DerivedArea>::m_queue.begin() && FluidQueue<DerivedBlock, DerivedArea>::m_groupEnd <= FluidQueue<DerivedBlock, DerivedArea>::m_queue.end()));
 	// Record no longer full.
-	if(FluidQueue<DerivedBlock, DerivedArea>::m_groupStart->block->m_totalFluidVolume == s_maxBlockVolume && !m_futureNoLongerFull.contains((FluidQueue<DerivedBlock, DerivedArea>::m_groupEnd-1)->block))
+	if(FluidQueue<DerivedBlock, DerivedArea>::m_groupStart->block->m_totalFluidVolume == Config::maxBlockVolume && !m_futureNoLongerFull.contains((FluidQueue<DerivedBlock, DerivedArea>::m_groupEnd-1)->block))
 		for(auto iter = FluidQueue<DerivedBlock, DerivedArea>::m_groupStart; iter != FluidQueue<DerivedBlock, DerivedArea>::m_groupEnd; ++iter)
 			m_futureNoLongerFull.insert(iter->block);
 	// Record fluid level changes.
 	for(auto iter = FluidQueue<DerivedBlock, DerivedArea>::m_groupStart; iter != FluidQueue<DerivedBlock, DerivedArea>::m_groupEnd; ++iter)
 	{
 		iter->delta += volume;
-		assert(iter->delta <= s_maxBlockVolume);
+		assert(iter->delta <= Config::maxBlockVolume);
 		iter->capacity -= volume;
 	}
 	// Record empty blocks and get next group.
@@ -97,7 +97,7 @@ uint32_t DrainQueue<DerivedBlock, DerivedArea>::groupLevel() const
 template<class DerivedBlock, class DerivedArea>
 uint32_t DrainQueue<DerivedBlock, DerivedArea>::getPriority(FutureFlowBlock<DerivedBlock>& futureFlowBlock) const
 {
-	return futureFlowBlock.block->m_z * s_maxBlockVolume * 2 + futureFlowBlock.capacity;
+	return futureFlowBlock.block->m_z * Config::maxBlockVolume * 2 + futureFlowBlock.capacity;
 }
 template<class DerivedBlock, class DerivedArea>
 void DrainQueue<DerivedBlock, DerivedArea>::findGroupEnd()

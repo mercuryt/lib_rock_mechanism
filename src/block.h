@@ -112,7 +112,8 @@ public:
 	bool isAdjacentToFluidGroup(const FluidGroup<DerivedBlock, DerivedArea>* fluidGroup) const;
 	uint32_t volumeOfFluidTypeCanEnter(const FluidType* fluidType) const;
 	uint32_t volumeOfFluidTypeContains(const FluidType* fluidType) const;
-	// Move less dense fluids to their group's excessVolume until s_maxBlockVolume is achieved.
+	const FluidType* getFluidTypeWithMostVolume() const;
+	// Move less dense fluids to their group's excessVolume until Config::maxBlockVolume is achieved.
 	void resolveFluidOverfull();
 	void enter(DerivedActor& actor);
 	void exit(DerivedActor& actor);

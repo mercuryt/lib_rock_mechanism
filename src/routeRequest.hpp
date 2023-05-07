@@ -26,7 +26,7 @@ void RouteRequest<DerivedBlock, DerivedActor, DerivedArea>::readStep()
 	// Huristic: taxi distance to destination times constant plus total move cost.
 	auto priority = [&](ProposedRouteStep<DerivedBlock>& proposedRouteStep)
 	{
-		return (proposedRouteStep.routeNode->block->taxiDistance(*end) * s_pathHuristicConstant) + proposedRouteStep.totalMoveCost;
+		return (proposedRouteStep.routeNode->block->taxiDistance(*end) * Config::pathHuristicConstant) + proposedRouteStep.totalMoveCost;
 	};
 	auto compare = [&](ProposedRouteStep<DerivedBlock>& a, ProposedRouteStep<DerivedBlock>& b) { return priority(a) > priority(b); };
 	// Check if the actor can currently enter each block if this is a detour path.

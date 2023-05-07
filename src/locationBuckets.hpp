@@ -2,9 +2,9 @@
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
 LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::LocationBuckets(DerivedArea& area) : m_area(area)
 {
-	m_maxX = ((m_area.m_sizeX - 1) / s_locationBucketSize) + 1;
-	m_maxY = ((m_area.m_sizeY - 1) / s_locationBucketSize) + 1;
-	m_maxZ = ((m_area.m_sizeZ - 1) / s_locationBucketSize) + 1;
+	m_maxX = ((m_area.m_sizeX - 1) / Config::locationBucketSize) + 1;
+	m_maxY = ((m_area.m_sizeY - 1) / Config::locationBucketSize) + 1;
+	m_maxZ = ((m_area.m_sizeZ - 1) / Config::locationBucketSize) + 1;
 	m_buckets.resize(m_maxX);
 	for(uint32_t x = 0; x != m_maxX; ++x)
 	{
@@ -16,9 +16,9 @@ LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::LocationBuckets(Derive
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
 std::unordered_set<DerivedActor*>* LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::getBucketFor(const DerivedBlock& block)
 {
-	uint32_t bucketX = block.m_x / s_locationBucketSize;
-	uint32_t bucketY = block.m_y / s_locationBucketSize;
-	uint32_t bucketZ = block.m_z / s_locationBucketSize;
+	uint32_t bucketX = block.m_x / Config::locationBucketSize;
+	uint32_t bucketY = block.m_y / Config::locationBucketSize;
+	uint32_t bucketZ = block.m_z / Config::locationBucketSize;
 	assert(m_buckets.size() > bucketX);
 	assert(m_buckets.at(bucketX).size() > bucketY);
 	assert(m_buckets.at(bucketX).at(bucketY).size() > bucketZ);
@@ -47,14 +47,14 @@ void LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::processVisionRequ
 {
 	DerivedBlock* from = visionRequest.m_actor.m_location;
 	assert(from != nullptr);
-	assert((int32_t)visionRequest.m_actor.getVisionRange() * (int32_t)s_maxDistanceVisionModifier > 0);
-	int32_t range = visionRequest.m_actor.getVisionRange() * s_maxDistanceVisionModifier;
-	uint32_t endX = std::min(((from->m_x + range) / s_locationBucketSize + 1), m_maxX);
-	uint32_t beginX = std::max(0, (int32_t)from->m_x - range) / s_locationBucketSize;
-	uint32_t endY = std::min(((from->m_y + range) / s_locationBucketSize + 1), m_maxY);
-	uint32_t beginY = std::max(0, (int32_t)from->m_y - range) / s_locationBucketSize;
-	uint32_t endZ = std::min(((from->m_z + range) / s_locationBucketSize + 1), m_maxZ);
-	uint32_t beginZ = std::max(0, (int32_t)from->m_z - range) / s_locationBucketSize;
+	assert((int32_t)visionRequest.m_actor.getVisionRange() * (int32_t)Config::maxDistanceVisionModifier > 0);
+	int32_t range = visionRequest.m_actor.getVisionRange() * Config::maxDistanceVisionModifier;
+	uint32_t endX = std::min(((from->m_x + range) / Config::locationBucketSize + 1), m_maxX);
+	uint32_t beginX = std::max(0, (int32_t)from->m_x - range) / Config::locationBucketSize;
+	uint32_t endY = std::min(((from->m_y + range) / Config::locationBucketSize + 1), m_maxY);
+	uint32_t beginY = std::max(0, (int32_t)from->m_y - range) / Config::locationBucketSize;
+	uint32_t endZ = std::min(((from->m_z + range) / Config::locationBucketSize + 1), m_maxZ);
+	uint32_t beginZ = std::max(0, (int32_t)from->m_z - range) / Config::locationBucketSize;
 	for(uint32_t x = beginX; x != endX; ++x)
 		for(uint32_t y = beginY; y != endY; ++y)
 			for(uint32_t z = beginZ; z != endZ; ++z)
@@ -90,12 +90,12 @@ LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange::iterator::ite
 {
 	const DerivedBlock& origin = inRange->origin;
 	int32_t range = inRange->range;
-	maxX = (std::min(origin.m_x + range, origin.m_area->m_sizeX)) / s_locationBucketSize;
-	maxY = (std::min(origin.m_y + range, origin.m_area->m_sizeY)) / s_locationBucketSize;
-	maxZ = (std::min(origin.m_z + range, origin.m_area->m_sizeZ)) / s_locationBucketSize;
-	x = minX = (std::max((int32_t)origin.m_x - range, 0)) / s_locationBucketSize;
-	y = minY = (std::max((int32_t)origin.m_y - range, 0)) / s_locationBucketSize;
-	z = minZ = (std::max((int32_t)origin.m_z - range, 0)) / s_locationBucketSize;
+	maxX = (std::min(origin.m_x + range, origin.m_area->m_sizeX)) / Config::locationBucketSize;
+	maxY = (std::min(origin.m_y + range, origin.m_area->m_sizeY)) / Config::locationBucketSize;
+	maxZ = (std::min(origin.m_z + range, origin.m_area->m_sizeZ)) / Config::locationBucketSize;
+	x = minX = (std::max((int32_t)origin.m_x - range, 0)) / Config::locationBucketSize;
+	y = minY = (std::max((int32_t)origin.m_y - range, 0)) / Config::locationBucketSize;
+	z = minZ = (std::max((int32_t)origin.m_z - range, 0)) / Config::locationBucketSize;
 	bucket = &inRange->locationBuckets.m_buckets[minX][minY][minZ];
 	bucketIterator = bucket->begin();
 	findNextActor();

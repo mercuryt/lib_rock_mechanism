@@ -11,7 +11,7 @@ void VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::setup(DerivedArea& a
 				assert(block != nullptr);
 				if(!block->canSeeThrough())
 					continue;
-				Cuboid<DerivedBlock, DerivedActor, DerivedArea> cuboid(block, block);
+				BaseCuboid<DerivedBlock, DerivedActor, DerivedArea> cuboid(block, block);
 				VisionCuboid* toCombine = VisionCuboid::getTargetToCombineWith(cuboid);
 				if(toCombine != nullptr)
 					toCombine->extend(cuboid);
@@ -30,7 +30,7 @@ void VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::clearDestroyed(Deriv
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
 void VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::BlockIsNeverOpaque(DerivedBlock& block)
 {
-	Cuboid<DerivedBlock, DerivedActor, DerivedArea> cuboid(block, block);
+	BaseCuboid<DerivedBlock, DerivedActor, DerivedArea> cuboid(block, block);
 	VisionCuboid* toCombine = getTargetToCombineWith(cuboid);
 	if(toCombine == nullptr)
 		block.m_area->m_visionCuboids.emplace_back(cuboid);
@@ -59,7 +59,7 @@ void VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::BlockFloorIsSometime
 }
 // Static method.
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
-VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>* VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::getTargetToCombineWith(const Cuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid)
+VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>* VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::getTargetToCombineWith(const BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid)
 {
 	assert(cuboid.m_highest->canSeeThrough());
 	assert(cuboid.m_lowest->canSeeThrough());
@@ -75,14 +75,14 @@ VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>* VisionCuboid<DerivedBlock
 }
 
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
-VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::VisionCuboid(Cuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid) : m_cuboid(cuboid), m_destroy(false)
+VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::VisionCuboid(BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid) : m_cuboid(cuboid), m_destroy(false)
 {
 	assert(cuboid.m_highest->canSeeThrough());
 	assert(cuboid.m_lowest->canSeeThrough());
 	for(DerivedBlock& block : m_cuboid) { block.m_visionCuboid = this; }
 }
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
-bool VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::canCombineWith(const Cuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid) const
+bool VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::canCombineWith(const BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid) const
 {
 	assert(m_cuboid != cuboid);
 	assert(!m_destroy);
@@ -103,7 +103,7 @@ void VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::splitAt(DerivedBlock
 	//TODO: reuse
 	m_destroy = true;
 	split.m_visionCuboid = nullptr;
-	std::vector<Cuboid<DerivedBlock, DerivedActor, DerivedArea>> newCuboids;
+	std::vector<BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>> newCuboids;
 	newCuboids.reserve(6);
 	// Blocks with a lower X then splt.
 	if(split.m_x != m_cuboid.m_lowest->m_x)
@@ -123,7 +123,7 @@ void VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::splitAt(DerivedBlock
 	// Remaining blocks with a higher Z.
 	if(split.m_z != m_cuboid.m_highest->m_z)
 		newCuboids.emplace_back(&split.m_area->m_blocks[split.m_x][split.m_y][m_cuboid.m_highest->m_z], &split.m_area->m_blocks[split.m_x][split.m_y][split.m_z + 1]);
-	for(Cuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid : newCuboids)
+	for(BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid : newCuboids)
 	{
 		VisionCuboid* toCombine = VisionCuboid::getTargetToCombineWith(cuboid);
 		if(toCombine == nullptr)
@@ -139,14 +139,14 @@ void VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::splitBelow(DerivedBl
 	assert(!m_destroy);
 	m_destroy = true;
 	//TODO: reuse
-	std::vector<Cuboid<DerivedBlock, DerivedActor, DerivedArea>> newCuboids;
+	std::vector<BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>> newCuboids;
 	newCuboids.reserve(2);
 	// Blocks with a lower Z.
 	if(split.m_z != m_cuboid.m_lowest->m_z)
 		newCuboids.emplace_back(&split.m_area->m_blocks[m_cuboid.m_highest->m_x][m_cuboid.m_highest->m_y][split.m_z - 1], m_cuboid.m_lowest);
 	// Blocks with a higher Z or equal Z.
 	newCuboids.emplace_back(m_cuboid.m_highest, &split.m_area->m_blocks[m_cuboid.m_lowest->m_x][m_cuboid.m_lowest->m_y][split.m_z]);
-	for(Cuboid<DerivedBlock, DerivedActor, DerivedArea>& newCuboid : newCuboids)
+	for(BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>& newCuboid : newCuboids)
 	{
 		assert(!newCuboid.empty());
 		VisionCuboid* toCombine = VisionCuboid::getTargetToCombineWith(newCuboid);
@@ -161,13 +161,13 @@ void VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::splitBelow(DerivedBl
 }
 // Combine and recursively search for further combinations which form cuboids.
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::extend(Cuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid)
+void VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::extend(BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid)
 {
 	assert(m_cuboid != cuboid);
 	assert(!m_destroy);
 	assert(cuboid.m_highest->canSeeThrough());
 	assert(cuboid.m_lowest->canSeeThrough());
-	Cuboid<DerivedBlock, DerivedActor, DerivedArea> newCuboid = m_cuboid.sum(cuboid);
+	BaseCuboid<DerivedBlock, DerivedActor, DerivedArea> newCuboid = m_cuboid.sum(cuboid);
 	VisionCuboid* toCombine = VisionCuboid::getTargetToCombineWith(newCuboid);
 	if(toCombine != nullptr)
 	{
@@ -179,7 +179,7 @@ void VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::extend(Cuboid<Derive
 	m_cuboid = newCuboid;
 }
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
-bool VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::canSeeInto(const Cuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid) const
+bool VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::canSeeInto(const BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid) const
 {
 	assert(m_cuboid != cuboid);
 	assert(!m_destroy);
@@ -208,7 +208,7 @@ bool VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::canSeeInto(const Cub
 	else if(cuboid.m_highest->m_z < m_cuboid.m_lowest->m_z)
 		facing = 0;
 	assert(facing != 6);
-	const Cuboid<DerivedBlock, DerivedActor, DerivedArea> face = m_cuboid.getFace(facing);
+	const BaseCuboid<DerivedBlock, DerivedActor, DerivedArea> face = m_cuboid.getFace(facing);
 	std::vector<const DerivedBlock*> blocks;
 	for(const DerivedBlock& block : face)
 		blocks.push_back(&block);

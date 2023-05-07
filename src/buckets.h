@@ -1,3 +1,4 @@
+#include <cstdint>
 template<typename T, uint32_t turnsPerCycle>
 class Buckets
 {

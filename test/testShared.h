@@ -4,30 +4,32 @@
 #include <cstdint>
 #include <algorithm>
 #include "../lib/BS_thread_pool_light.hpp"
+namespace Config
+{
+	constexpr uint32_t maxBlockVolume = 100;
+	constexpr uint32_t actorDoVisionInterval = 10;
+	constexpr float pathHuristicConstant = 1;
+	constexpr float maxDistanceVisionModifier = 1.1;
+	constexpr uint32_t locationBucketSize = 25;
+	constexpr bool fluidPiston = true;
+	constexpr uint32_t visionThreadingBatchSize = 30;
+	constexpr uint32_t routeThreadingBatchSize = 10;
+	// How many units seep through each step max = viscosity / seepDiagonalModifier.
+	// Disable by setting to 0.
+	constexpr uint32_t fluidsSeepDiagonalModifier = 100;
+	constexpr uint32_t moveTryAttemptsBeforeDetour = 2;
+}
 
-const static uint32_t s_maxBlockVolume = 100;
-const static uint32_t s_actorDoVisionInterval = 10;
-const static uint32_t s_pathHuristicConstant = 1;
-const static float s_maxDistanceVisionModifier = 1.1;
-const static uint32_t s_locationBucketSize = 25;
-const static bool s_fluidPiston = true;
-const static uint32_t s_visionThreadingBatchSize = 30;
-const static uint32_t s_routeThreadingBatchSize = 10;
-// How many units seep through each step max = viscosity / seepDiagonalModifier.
-// Disable by setting to 0.
-const static uint32_t s_fluidsSeepDiagonalModifier = 100;
-const static uint32_t s_moveTryAttemptsBeforeDetour = 2;
+#include "../src/block.h"
+#include "../src/actor.h"
+#include "../src/area.h"
 
-#include "../block.h"
-#include "../actor.h"
-#include "../area.h"
+#include "../src/moveType.h"
+#include "../src/fluidType.h"
+#include "../src/materialType.h"
+#include "../src/blockFeatureType.h"
 
-#include "../moveType.h"
-#include "../fluidType.h"
-#include "../materialType.h"
-#include "../blockFeatureType.h"
-
-static uint32_t s_step;
+inline uint32_t s_step;
 BS::thread_pool_light s_pool;
 
 const static MoveType* s_twoLegs;
@@ -114,6 +116,7 @@ public:
 	std::string toS() const;
 };
 
+#include "../src/block.hpp"
 class Actor final : public BaseActor<Block, Actor, Area>
 {
 public:
@@ -132,17 +135,14 @@ public:
 	void exposedToFluid(const FluidType* fluidType);
 	bool canSee(const Actor& actor) const;
 };
-
+#include "../src/actor.hpp"
 class Area final : public BaseArea<Block, Actor, Area>
 {
 public:
 	Area(uint32_t x, uint32_t y, uint32_t z) : BaseArea<Block, Actor, Area>(x, y, z) {}
 	void notifyNoRouteFound(Actor& actor);
 };
-
-#include "../block.cpp"
-#include "../actor.cpp"
-#include "../area.cpp"
+#include "../src/area.hpp"
 
 // Can anyone enter ever?
 bool Block::anyoneCanEnterEver() const
@@ -169,7 +169,7 @@ bool Block::moveTypeCanEnter(const MoveType* moveType) const
 			return true;
 	}
 	// Not swimming and fluid level is too high.
-	if(m_totalFluidVolume > s_maxBlockVolume / 2)
+	if(m_totalFluidVolume > Config::maxBlockVolume / 2)
 		return false;
 	// Not flying and either not walking or ground is not supported.
 	if(!moveType->fly && (!moveType->walk || !canStandIn()))
@@ -398,13 +398,13 @@ std::vector<std::pair<Block*, uint32_t>> Block::getMoveCosts(const Shape* shape,
 				output.emplace_back(block, block->moveCost(moveType, static_cast<Block*>(this)));
 	}
 	// Diagonal move up if exiting fluid.
-	else if(!moveType->swim.empty() && m_totalFluidVolume > s_maxBlockVolume / 2)
+	else if(!moveType->swim.empty() && m_totalFluidVolume > Config::maxBlockVolume / 2)
 		for(auto [fluidType, volume] : moveType->swim)
 		{
 			assert(fluidType != nullptr);
 			if(volumeOfFluidTypeContains(fluidType) >= volume)
 				for(Block* block : getEdgeAdjacentOnlyOnNextZLevelUp())
-					if(block->anyoneCanEnterEver() && block->shapeAndMoveTypeCanEnterEver(shape, moveType) && block->m_totalFluidVolume < s_maxBlockVolume / 2 && block->canStandIn())
+					if(block->anyoneCanEnterEver() && block->shapeAndMoveTypeCanEnterEver(shape, moveType) && block->m_totalFluidVolume < Config::maxBlockVolume / 2 && block->canStandIn())
 						output.emplace_back(block, block->moveCost(moveType, static_cast<Block*>(this)));
 		}
 	// Vertical move up.
@@ -573,11 +573,11 @@ void registerTypes()
 	s_twoLegs = registerMoveType("two legs", true, noSwim, 0, false, false);
 	s_fourLegs = registerMoveType("four legs", true, noSwim, 0, false, false);
 	s_flying = registerMoveType("flying", false, noSwim, 0, false, true);
-	std::unordered_map<const FluidType*, uint32_t> swimInWater = {{s_water, s_maxBlockVolume / 2}};
+	std::unordered_map<const FluidType*, uint32_t> swimInWater = {{s_water, Config::maxBlockVolume / 2}};
 	s_swimmingInWater = registerMoveType("swimming in water", false, swimInWater, 0, false, false);
 	s_twoLegsAndSwimmingInWater = registerMoveType("two legs and swimming in water", true, swimInWater, 0, false, false);
 	s_fourLegsAndSwimmingInWater = registerMoveType("four legs and swimming in water", true, swimInWater, 0, false, false);
-	std::unordered_map<const FluidType*, uint32_t> swimInMercury = {{s_mercury, s_maxBlockVolume / 2}};
+	std::unordered_map<const FluidType*, uint32_t> swimInMercury = {{s_mercury, Config::maxBlockVolume / 2}};
 	s_swimmingInMercury = registerMoveType("swimming in mercury", false, swimInMercury, 0, false, false);
 	s_twoLegsAndSwimmingInMercury = registerMoveType("two legs and swimming in mercury", true, swimInMercury, 0, false, false);
 	s_twoLegsAndClimb1 = registerMoveType("two legs and climb1", true, noSwim, 1, false, false);
@@ -630,7 +630,7 @@ void setFullFluidCuboid(Block& low, Block& high, const FluidType* fluidType)
 	assert(low.fluidCanEnterEver());
 	assert(high.m_totalFluidVolume == 0);
 	assert(high.fluidCanEnterEver());
-	Cuboid<Block, Actor, Area> cuboid(high, low);
+	BaseCuboid<Block, Actor, Area> cuboid(high, low);
 	for(Block& block : cuboid)
 	{
 		assert(block.m_totalFluidVolume == 0);

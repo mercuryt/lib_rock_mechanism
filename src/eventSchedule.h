@@ -44,5 +44,5 @@ public:
 	}
 };
 
-ScheduledEvent::ScheduledEvent(uint32_t s) : m_step(s) {}
-void ScheduledEvent::cancel() { m_eventSchedule->unschedule(this); }
+inline ScheduledEvent::ScheduledEvent(uint32_t s) : m_step(s) {}
+inline void ScheduledEvent::cancel() { m_eventSchedule->unschedule(this); }

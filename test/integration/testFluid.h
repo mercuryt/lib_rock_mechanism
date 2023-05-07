@@ -29,7 +29,7 @@ TEST_CASE("Excess volume spawns and negitive excess despawns.")
 	Block& block3 = area.m_blocks[5][5][3];
 	block.setNotSolid();
 	block2.setNotSolid();
-	block.addFluid(s_maxBlockVolume * 2, s_water);
+	block.addFluid(Config::maxBlockVolume * 2, s_water);
 	FluidGroup<Block, Area>* fluidGroup = *area.m_unstableFluidGroups.begin();
 	CHECK(!fluidGroup->m_stable);
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 1);
@@ -47,7 +47,7 @@ TEST_CASE("Excess volume spawns and negitive excess despawns.")
 	CHECK(fluidGroup->m_fillQueue.m_set.size() == 1);
 	CHECK(fluidGroup->m_fillQueue.m_queue[0].block == &block3);
 	CHECK(block2.m_fluids.contains(s_water));
-	CHECK(block2.m_fluids[s_water].first == s_maxBlockVolume);
+	CHECK(block2.m_fluids[s_water].first == Config::maxBlockVolume);
 	CHECK(fluidGroup == block2.m_fluids[s_water].second);
 	// Step 2.
 	fluidGroup->readStep();
@@ -58,7 +58,7 @@ TEST_CASE("Excess volume spawns and negitive excess despawns.")
 	fluidGroup->mergeStep();
 	CHECK(block2.m_fluids.contains(s_water));
 	CHECK(!area.m_blocks[5][5][3].m_fluids.contains(s_water));
-	block.removeFluid(s_maxBlockVolume, s_water);
+	block.removeFluid(Config::maxBlockVolume, s_water);
 	CHECK(!fluidGroup->m_stable);
 	// Step 3.
 	fluidGroup->readStep();
@@ -69,7 +69,7 @@ TEST_CASE("Excess volume spawns and negitive excess despawns.")
 	fluidGroup->mergeStep();
 	CHECK(area.m_fluidGroups.size() == 1);
 	CHECK(block.m_fluids.contains(s_water));
-	CHECK(block.m_fluids[s_water].first == s_maxBlockVolume);
+	CHECK(block.m_fluids[s_water].first == Config::maxBlockVolume);
 	CHECK(!block2.m_fluids.contains(s_water));
 }
 TEST_CASE("Remove volume can destroy FluidGroups.")
@@ -109,7 +109,7 @@ TEST_CASE("Flow into adjacent hole")
 	destination.setNotSolid();
 	block2.setNotSolid();
 	origin.setNotSolid();
-	origin.addFluid(s_maxBlockVolume, s_water);
+	origin.addFluid(Config::maxBlockVolume, s_water);
 	FluidGroup<Block, Area>* fluidGroup = *area.m_unstableFluidGroups.begin();
 	CHECK(!fluidGroup->m_stable);
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 1);
@@ -131,8 +131,8 @@ TEST_CASE("Flow into adjacent hole")
 	CHECK(!destination.m_fluids.contains(s_water));
 	CHECK(block2.m_fluids.contains(s_water));
 	CHECK(origin.m_fluids.contains(s_water));
-	CHECK(origin.m_fluids[s_water].first == s_maxBlockVolume / 2);
-	CHECK(block2.m_fluids[s_water].first == s_maxBlockVolume / 2);
+	CHECK(origin.m_fluids[s_water].first == Config::maxBlockVolume / 2);
+	CHECK(block2.m_fluids[s_water].first == Config::maxBlockVolume / 2);
 	CHECK(fluidGroup->m_fillQueue.m_set.size() == 5);
 	CHECK(fluidGroup->m_fillQueue.m_set.contains(&destination));
 	CHECK(fluidGroup->m_fillQueue.m_set.contains(&block2));
@@ -152,7 +152,7 @@ TEST_CASE("Flow into adjacent hole")
 	CHECK(destination.m_fluids.contains(s_water));
 	CHECK(!block2.m_fluids.contains(s_water));
 	CHECK(!origin.m_fluids.contains(s_water));
-	CHECK(destination.m_fluids[s_water].first == s_maxBlockVolume);
+	CHECK(destination.m_fluids[s_water].first == Config::maxBlockVolume);
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 1);
 	// If the group is stable at this point depends on the viscosity of water, do one more step to make sure.
 	CHECK(fluidGroup->m_fillQueue.m_set.size() == 1);
@@ -180,7 +180,7 @@ TEST_CASE("Flow across flat area")
 	Block& block6 = area.m_blocks[10][15][1];
 	Block& block7 = area.m_blocks[16][10][1];
 	Block& block8 = area.m_blocks[17][10][1];
-	block.addFluid(s_maxBlockVolume, s_water);
+	block.addFluid(Config::maxBlockVolume, s_water);
 	FluidGroup<Block, Area>* fluidGroup = *area.m_unstableFluidGroups.begin();
 	//Step 1.
 	fluidGroup->readStep();
@@ -397,7 +397,7 @@ TEST_CASE("Flow across area and then fill hole")
 	Block& block4 = area.m_blocks[5][7][2];
 	Block& block5 = area.m_blocks[5][7][1];
 	Block& block6 = area.m_blocks[5][8][2];
-	block.addFluid(s_maxBlockVolume, s_water);
+	block.addFluid(Config::maxBlockVolume, s_water);
 	block5.setNotSolid();
 	FluidGroup<Block, Area>* fluidGroup = *area.m_unstableFluidGroups.begin();
 	fluidGroup->readStep();
@@ -1368,7 +1368,7 @@ area.stepCaveInWrite();
 }
 TEST_CASE("Test diagonal seep")
 {
-	if constexpr(s_fluidsSeepDiagonalModifier == 0)
+	if constexpr(Config::fluidsSeepDiagonalModifier == 0)
 		return;
 	s_step = 1;
 	Area area(10,10,10);

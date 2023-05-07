@@ -8,7 +8,7 @@ void FillQueue<DerivedBlock, DerivedArea>::buildFor(std::unordered_set<DerivedBl
 		assert(block->m_fluids.contains(FluidQueue<DerivedBlock, DerivedArea>::m_fluidGroup.m_fluidType));
 		for(DerivedBlock* adjacent : block->m_adjacentsVector)
 			 if(adjacent->fluidCanEnterEver() && adjacent->fluidCanEnterEver(FluidQueue<DerivedBlock, DerivedArea>::m_fluidGroup.m_fluidType) &&
-				adjacent->m_fluids.at(FluidQueue<DerivedBlock, DerivedArea>::m_fluidGroup.m_fluidType).first != s_maxBlockVolume
+				adjacent->m_fluids.at(FluidQueue<DerivedBlock, DerivedArea>::m_fluidGroup.m_fluidType).first != Config::maxBlockVolume
 			   )
 				addBlock(adjacent);
 	}
@@ -44,16 +44,16 @@ void FillQueue<DerivedBlock, DerivedArea>::recordDelta(uint32_t volume, uint32_t
 		if(iter->delta == 0 && !iter->block->m_fluids.contains(FluidQueue<DerivedBlock, DerivedArea>::m_fluidGroup.m_fluidType))
 			m_futureNoLongerEmpty.insert(iter->block);
 		iter->delta += volume;
-		assert(iter->delta <= s_maxBlockVolume);
+		assert(iter->delta <= Config::maxBlockVolume);
 		assert(iter->capacity >= volume);
 		iter->capacity -= volume;
 	}
 	// Record full blocks and get next group.
 	if(flowCapacity == volume)
 	{
-		assert((FluidQueue<DerivedBlock, DerivedArea>::m_groupStart->block->volumeOfFluidTypeContains(FluidQueue<DerivedBlock, DerivedArea>::m_fluidGroup.m_fluidType) + FluidQueue<DerivedBlock, DerivedArea>::m_groupStart->delta) <= s_maxBlockVolume);
+		assert((FluidQueue<DerivedBlock, DerivedArea>::m_groupStart->block->volumeOfFluidTypeContains(FluidQueue<DerivedBlock, DerivedArea>::m_fluidGroup.m_fluidType) + FluidQueue<DerivedBlock, DerivedArea>::m_groupStart->delta) <= Config::maxBlockVolume);
 		for(auto iter = FluidQueue<DerivedBlock, DerivedArea>::m_groupStart; iter != FluidQueue<DerivedBlock, DerivedArea>::m_groupEnd; ++iter)
-			if((iter->block->volumeOfFluidTypeContains(FluidQueue<DerivedBlock, DerivedArea>::m_fluidGroup.m_fluidType) + iter->delta) == s_maxBlockVolume)
+			if((iter->block->volumeOfFluidTypeContains(FluidQueue<DerivedBlock, DerivedArea>::m_fluidGroup.m_fluidType) + iter->delta) == Config::maxBlockVolume)
 				m_futureFull.insert(iter->block);
 		FluidQueue<DerivedBlock, DerivedArea>::m_groupStart = FluidQueue<DerivedBlock, DerivedArea>::m_groupEnd;
 		findGroupEnd();
@@ -87,10 +87,10 @@ void FillQueue<DerivedBlock, DerivedArea>::applyDelta()
 		}
 		iter->block->m_totalFluidVolume += iter->delta;
 		/*assert(iter->block->m_fluids.at(FluidQueue<DerivedBlock, DerivedArea>::m_fluidGroup.m_fluidType).second != &m_fluidGroup ||
-				(iter->block->m_fluids.at(FluidQueue<DerivedBlock, DerivedArea>::m_fluidGroup.m_fluidType).first < s_maxBlockVolume && !m_futureFull.contains(iter->block)) ||
-				(iter->block->m_fluids.at(FluidQueue<DerivedBlock, DerivedArea>::m_fluidGroup.m_fluidType).first == s_maxBlockVolume && m_futureFull.contains(iter->block)));
+				(iter->block->m_fluids.at(FluidQueue<DerivedBlock, DerivedArea>::m_fluidGroup.m_fluidType).first < Config::maxBlockVolume && !m_futureFull.contains(iter->block)) ||
+				(iter->block->m_fluids.at(FluidQueue<DerivedBlock, DerivedArea>::m_fluidGroup.m_fluidType).first == Config::maxBlockVolume && m_futureFull.contains(iter->block)));
 				*/
-		if(iter->block->m_totalFluidVolume > s_maxBlockVolume)
+		if(iter->block->m_totalFluidVolume > Config::maxBlockVolume)
 			m_overfull.insert(iter->block);
 	}
 	validate();
@@ -115,7 +115,7 @@ uint32_t FillQueue<DerivedBlock, DerivedArea>::getPriority(FutureFlowBlock<Deriv
 {
 	if(futureFlowBlock.capacity == 0)
 		return UINT32_MAX;
-	return ((futureFlowBlock.block->m_z + 1) * s_maxBlockVolume * 2) - futureFlowBlock.capacity;
+	return ((futureFlowBlock.block->m_z + 1) * Config::maxBlockVolume * 2) - futureFlowBlock.capacity;
 }
 template<class DerivedBlock, class DerivedArea>
 void FillQueue<DerivedBlock, DerivedArea>::findGroupEnd()

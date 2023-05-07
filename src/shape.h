@@ -20,12 +20,12 @@ struct Shape
 
 static std::list<Shape> s_shapes;
 
-Shape::Shape(std::string n, std::vector<std::array<uint32_t, 4>>& p, bool imt) : name(n), isMultiTile(imt)
+inline Shape::Shape(std::string n, std::vector<std::array<uint32_t, 4>>& p, bool imt) : name(n), isMultiTile(imt)
 {
 	positions = p;
 }
 
-const Shape* registerShape(std::string name, std::vector<std::array<uint32_t, 4>> positions)
+inline const Shape* registerShape(std::string name, std::vector<std::array<uint32_t, 4>> positions)
 {
 	assert(!positions.empty());
 	s_shapes.emplace_back(name, positions, positions.size() != 1);

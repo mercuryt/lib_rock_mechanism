@@ -5,7 +5,7 @@ template<class DerivedBlock, class DerivedActor, class DerivedArea>
 void MistDisperseEvent<DerivedBlock, DerivedActor, DerivedArea>::execute()
 {
 	// Mist does not or cannont exist here anymore, clear and return.
-	if(m_block.m_mist == nullptr or m_block.isSolid() or m_block.m_totalFluidVolume == s_maxBlockVolume)
+	if(m_block.m_mist == nullptr or m_block.isSolid() or m_block.m_totalFluidVolume == Config::maxBlockVolume)
 	{
 		m_block.m_mist = nullptr;
 		m_block.m_mistInverseDistanceFromSource = 0;

@@ -217,7 +217,7 @@ TEST_CASE("Vision not blocked by floor on the same z level")
 	visionRequest.readStep();
 	CHECK(visionRequest.m_actors.size() == 1);
 }
-TEST_CASE("VisionCuboid<Block, Actor, Area> setup")
+TEST_CASE("VisionCuboid setup")
 {
 	Area area(2,2,2);
 	registerTypes();
@@ -225,7 +225,7 @@ TEST_CASE("VisionCuboid<Block, Actor, Area> setup")
 	area.visionCuboidsActivate();
 	CHECK(area.m_visionCuboids.size() == 1);
 }
-TEST_CASE("VisionCuboid<Block, Actor, Area> divide and join")
+TEST_CASE("VisionCuboid divide and join")
 {
 	Area area(10,10,10);
 	registerTypes();
