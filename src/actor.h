@@ -46,7 +46,7 @@ public:
 	void doVision(std::unordered_set<DerivedActor*>&& actors);
 	bool canSee(const DerivedActor& actor) const;
 	void exposedToFluid(const FluidType* fluidType);
-	~BaseActor();
+	virtual ~BaseActor();
 };
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
 uint32_t BaseActor<DerivedBlock, DerivedActor, DerivedArea>::s_nextId = 1;

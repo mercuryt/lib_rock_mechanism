@@ -4,6 +4,7 @@
 
 #pragma once
 #include "area.h"
+#include "block.hpp"
 #include <algorithm>
 
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
@@ -40,7 +41,7 @@ void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::readStep()
 	auto visionIter = m_visionRequestQueue.begin();
 	while(visionIter < m_visionRequestQueue.end())
 	{
-		auto end = std::min(m_visionRequestQueue.end(), visionIter + s_visionThreadingBatchSize);
+		auto end = std::min(m_visionRequestQueue.end(), visionIter + Config::visionThreadingBatchSize);
 		s_pool.push_task([=](){ VisionRequest<DerivedBlock, DerivedActor, DerivedArea>::readSteps(visionIter, end); });
 		visionIter = end;
 	}
@@ -53,7 +54,7 @@ void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::readStep()
 	auto routeIter = m_routeRequestQueue.begin();
 	while(routeIter < m_routeRequestQueue.end())
 	{
-		auto end = std::min(m_routeRequestQueue.end(), routeIter + s_routeThreadingBatchSize);
+		auto end = std::min(m_routeRequestQueue.end(), routeIter + Config::routeThreadingBatchSize);
 		s_pool.push_task([=](){ RouteRequest<DerivedBlock, DerivedActor, DerivedArea>::readSteps(routeIter, end); });
 		routeIter = end;
 	}
@@ -184,9 +185,9 @@ void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::visionCuboidsActivate()
 	VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::setup(static_cast<DerivedArea&>(*this));
 }
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
-Cuboid<DerivedBlock, DerivedActor, DerivedArea> BaseArea<DerivedBlock, DerivedActor, DerivedArea>::getZLevel(uint32_t z)
+BaseCuboid<DerivedBlock, DerivedActor, DerivedArea> BaseArea<DerivedBlock, DerivedActor, DerivedArea>::getZLevel(uint32_t z)
 {
-	return Cuboid<DerivedBlock, DerivedActor, DerivedArea>(m_blocks[m_sizeX - 1][m_sizeY - 1][z], m_blocks[0][0][z]);
+	return BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>(m_blocks[m_sizeX - 1][m_sizeY - 1][z], m_blocks[0][0][z]);
 }
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
 void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::expireRouteCache(){++m_routeCacheVersion;}
@@ -231,7 +232,7 @@ std::string BaseArea<DerivedBlock, DerivedActor, DerivedArea>::toS()
 #include "fillQueue.hpp"
 #include "drainQueue.hpp"
 #include "fluidGroup.hpp"
-#include "caveIn.cpp"
+#include "caveIn.hpp"
 #include "moveEvent.hpp"
 #include "visionCuboid.hpp"
 #include "cuboid.hpp"

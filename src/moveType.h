@@ -2,6 +2,7 @@
 
 #include <string>
 #include <list>
+#include <unordered_map>
 class FluidType;
 
 struct MoveType
@@ -19,7 +20,7 @@ struct MoveType
 
 static std::list<MoveType> moveTypes;
 
-const MoveType* registerMoveType(std::string name, bool walk, std::unordered_map<const FluidType*, uint32_t> swim, u_int32_t climb, bool jumpDown, bool fly)
+inline const MoveType* registerMoveType(std::string name, bool walk, std::unordered_map<const FluidType*, uint32_t> swim, u_int32_t climb, bool jumpDown, bool fly)
 {
 	moveTypes.emplace_back(name, walk, swim, climb, jumpDown, fly);
 	return &moveTypes.back();

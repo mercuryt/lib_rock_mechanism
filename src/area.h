@@ -22,7 +22,6 @@
 #include "cuboid.h"
 #include "visionCuboid.h"
 
-
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
 class BaseArea
 {
@@ -41,7 +40,7 @@ public:
 	std::vector<RouteRequest<DerivedBlock, DerivedActor, DerivedArea>> m_routeRequestQueue;
 	uint32_t m_routeCacheVersion;
 	std::vector<VisionRequest<DerivedBlock, DerivedActor, DerivedArea>> m_visionRequestQueue;
-	Buckets<DerivedActor, s_actorDoVisionInterval> m_visionBuckets;
+	Buckets<DerivedActor, Config::actorDoVisionInterval> m_visionBuckets;
 	std::list<VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>> m_visionCuboids;
 	bool m_visionCuboidsActive;
 	EventSchedule m_eventSchedule;
@@ -86,7 +85,7 @@ public:
 	std::string toS();
 
 	// Get a z-level for rendering.
-	Cuboid<DerivedBlock, DerivedActor, DerivedArea> getZLevel(uint32_t z);
+	BaseCuboid<DerivedBlock, DerivedActor, DerivedArea> getZLevel(uint32_t z);
 	// User provided code, no route.
 	void notifyNoRouteFound(DerivedActor& actor);
 

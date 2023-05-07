@@ -16,15 +16,15 @@ public:
 	static void BlockIsSometimesOpaque(DerivedBlock& block);
 	static void BlockFloorIsNeverOpaque(DerivedBlock& block);
 	static void BlockFloorIsSometimesOpaque(DerivedBlock& block);
-	static VisionCuboid* getTargetToCombineWith(const Cuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid);
+	static VisionCuboid* getTargetToCombineWith(const BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid);
 
-	Cuboid<DerivedBlock, DerivedActor, DerivedArea> m_cuboid;
+	BaseCuboid<DerivedBlock, DerivedActor, DerivedArea> m_cuboid;
 	bool m_destroy;
 
-	VisionCuboid(Cuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid);
-	bool canSeeInto(const Cuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid) const;
-	bool canCombineWith(const Cuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid) const;
+	VisionCuboid(BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid);
+	bool canSeeInto(const BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid) const;
+	bool canCombineWith(const BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid) const;
 	void splitAt(DerivedBlock& split);
 	void splitBelow(DerivedBlock& split);
-	void extend(Cuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid);
+	void extend(BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid);
 };

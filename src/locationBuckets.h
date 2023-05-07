@@ -1,4 +1,5 @@
 #pragma once
+#include "visionRequest.h"
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
 class LocationBuckets
 {

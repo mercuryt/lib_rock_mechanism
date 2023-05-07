@@ -16,6 +16,7 @@
 #include "shape.h"
 #include "hasShape.h"
 #include "fluidType.h"
+#include "block.h"
 
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
 BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::BaseBlock() : m_solid(nullptr), m_routeCacheVersion(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr) {}
@@ -266,7 +267,7 @@ void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::setSolid(const Material
 		if(pair.second->m_drainQueue.m_set.empty() && pair.second->m_fillQueue.m_set.empty())
 		{
 			// If fluid piston is enabled then find a place above to add to potential.
-			if constexpr (s_fluidPiston)
+			if constexpr (Config::fluidPiston)
 			{
 				DerivedBlock* above = m_adjacents[5];
 				while(above != nullptr)
@@ -362,7 +363,7 @@ void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::addFluid(uint32_t volum
 		fluidGroup = m_area->createFluidGroup(fluidType, blocks);
 	}
 	// Shift less dense fluids to excessVolume.
-	if(m_totalFluidVolume > s_maxBlockVolume)
+	if(m_totalFluidVolume > Config::maxBlockVolume)
 		resolveFluidOverfull();
 }
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
@@ -397,7 +398,7 @@ bool BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::actorCanEnterCurrently(
 		uint32_t v = shape->positions[0][3];
 		if(block == actor.m_location)
 			v = 0;
-		return block->m_totalDynamicVolume + v <= s_maxBlockVolume;
+		return block->m_totalDynamicVolume + v <= Config::maxBlockVolume;
 	}
 	for(auto& [x, y, z, v] : shape->positions)
 	{
@@ -405,10 +406,10 @@ bool BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::actorCanEnterCurrently(
 		auto found = block->m_actors.find(&actor);
 		if(found != block->m_actors.end())
 		{
-			if(block->m_totalDynamicVolume + v - found->second > s_maxBlockVolume)
+			if(block->m_totalDynamicVolume + v - found->second > Config::maxBlockVolume)
 				return false;
 		}
-		else if(block->m_totalDynamicVolume + v > s_maxBlockVolume)
+		else if(block->m_totalDynamicVolume + v > Config::maxBlockVolume)
 			return false;
 	}
 	return true;
@@ -426,7 +427,7 @@ DerivedBlock* BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::offset(int32_t
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
 bool BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::fluidCanEnterCurrently(const FluidType* fluidType) const
 {
-	if(m_totalFluidVolume < s_maxBlockVolume)
+	if(m_totalFluidVolume < Config::maxBlockVolume)
 		return true;
 	for(auto& pair : m_fluids)
 		if(pair.first->density < fluidType->density)
@@ -445,7 +446,7 @@ template<class DerivedBlock, class DerivedActor, class DerivedArea>
 uint32_t BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::volumeOfFluidTypeCanEnter(const FluidType* fluidType) const
 {
 	assert(fluidType != nullptr);
-	uint32_t output = s_maxBlockVolume;
+	uint32_t output = Config::maxBlockVolume;
 	for(auto& pair : m_fluids)
 		if(pair.first->density >= fluidType->density)
 			output -= pair.second.first;
@@ -459,6 +460,17 @@ uint32_t BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::volumeOfFluidTypeCo
 	if(found == m_fluids.end())
 		return 0;
 	return found->second.first;
+}
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+const FluidType* BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::getFluidTypeWithMostVolume() const
+{
+	assert(!m_fluids.empty());
+	uint32_t volume = 0;
+	FluidType* output = nullptr;
+	for(auto [fluidType, pair] : m_fluids)
+		if(volume < pair.first)
+			output = const_cast<FluidType*>(fluidType);
+	return output;
 }
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
 FluidGroup<DerivedBlock, DerivedArea>* BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::getFluidGroup(const FluidType* fluidType) const
@@ -479,15 +491,15 @@ void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::resolveFluidOverfull()
 	{
 		assert(fluidType == pair.second->m_fluidType);
 		// Displace lower density fluids.
-		uint32_t displaced = std::min(pair.first, m_totalFluidVolume - s_maxBlockVolume);
+		uint32_t displaced = std::min(pair.first, m_totalFluidVolume - Config::maxBlockVolume);
 		m_totalFluidVolume -= displaced;
 		pair.first -= displaced;
 		pair.second->addFluid(displaced);
 		if(pair.first == 0)
 			toErase.push_back(fluidType);
-		if(pair.first < s_maxBlockVolume)
+		if(pair.first < Config::maxBlockVolume)
 			pair.second->m_fillQueue.addBlock(static_cast<DerivedBlock*>(this));
-		if(m_totalFluidVolume == s_maxBlockVolume)
+		if(m_totalFluidVolume == Config::maxBlockVolume)
 			break;
 	}
 	for(const FluidType* fluidType : toErase)

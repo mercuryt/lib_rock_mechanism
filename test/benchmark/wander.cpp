@@ -35,7 +35,7 @@ void wander(uint32_t scale, uint32_t actorsCount, uint32_t steps)
 	Area area(scale, scale, 3);
 	registerTypes();
 	setSolidLayer(area, 0, s_stone);
-	Cuboid<Block, Actor, Area> cuboid(area.m_blocks[scale - 2][scale - 2][1], area.m_blocks[1][1][1]);
+	BaseCuboid<Block, Actor, Area> cuboid(area.m_blocks[scale - 2][scale - 2][1], area.m_blocks[1][1][1]);
 	std::list<Actor> actors;
 	for(Block& block : cuboid)
 	{

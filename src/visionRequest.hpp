@@ -15,7 +15,7 @@ void VisionRequest<DerivedBlock, DerivedActor, DerivedArea>::readStep()
 	m_actor.m_location->m_area->m_locationBuckets.processVisionRequest(*this);
 	// This is a more elegant solution then passing the request to location buckets but is also slower.
 	 /*
-	uint32_t range = m_actor.getVisionRange() * s_maxDistanceVisionModifier;
+	uint32_t range = m_actor.getVisionRange() * Config::maxDistanceVisionModifier;
 	for(DerivedActor& actor : m_actor.m_location->m_area->m_locationBuckets.inRange(*m_actor.m_location, range))
 	{
 		assert(!actor.m_blocks.empty());

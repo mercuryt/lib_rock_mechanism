@@ -19,7 +19,7 @@ struct FluidType
 
 static std::list<FluidType> fluidTypes;
 
-const FluidType* registerFluidType(std::string name, uint32_t viscosity, uint32_t density, uint32_t mistDuration, uint32_t maxMistSpread)
+inline const FluidType* registerFluidType(std::string name, uint32_t viscosity, uint32_t density, uint32_t mistDuration, uint32_t maxMistSpread)
 {
 	// Density must be unique because it is used as the key in block::m_fluids.
 	assert(std::ranges::find_if(fluidTypes, [&](const FluidType& fluidType){ return fluidType.density == density; }) == fluidTypes.end());
