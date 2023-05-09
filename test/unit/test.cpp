@@ -4,3 +4,5 @@
 #include "buckets.h"
 #include "cuboid.h"
 #include "visionCuboid.h"
+#include "getNthAdjacent.h"
+#include "temperatureSource.h"

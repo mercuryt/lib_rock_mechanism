@@ -30,6 +30,8 @@ public:
 	}
 	void unschedule(const ScheduledEvent* scheduledEvent)
 	{
+		// Unscheduling an event which is scheduled for the current step could mean modifing the event schedule while it is being iterated. Don't allow.
+		assert(scheduledEvent->m_step != s_step);
 		assert(m_data.contains(scheduledEvent->m_step));
 		m_data.at(scheduledEvent->m_step).remove_if([&](auto& eventPtr){ return &*eventPtr == scheduledEvent; });
 	}

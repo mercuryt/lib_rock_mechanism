@@ -9,7 +9,7 @@
 
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
 BaseArea<DerivedBlock, DerivedActor, DerivedArea>::BaseArea(uint32_t x, uint32_t y, uint32_t z) :
-	m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_locationBuckets(static_cast<DerivedArea&>(*this)), m_routeCacheVersion(0), m_visionCuboidsActive(false)
+	m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_locationBuckets(static_cast<DerivedArea&>(*this)), m_routeCacheVersion(0), m_visionCuboidsActive(false), m_destroy(false)
 {
 	// build m_blocks
 	m_blocks.resize(m_sizeX);
@@ -35,6 +35,7 @@ void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::readStep()
 	//TODO: Count tasks dispatched and finished instead of pool.wait_for_tasks so we can do multiple areas simultaniously in one pool.
 	// Process vision, generate and push_task requests for every actor in current bucket.
 	// It seems like having the vision requests permanantly embeded in the actors and iterating the vision bucket directly rather then using the visionRequestQueue should be faster but limited testing shows otherwise.
+	m_blocksWithChangedTemperature.clear();
 	m_visionRequestQueue.clear();
 	for(DerivedActor* actor : m_visionBuckets.get(s_step))
 		m_visionRequestQueue.emplace_back(*actor);
@@ -63,6 +64,11 @@ template<class DerivedBlock, class DerivedActor, class DerivedArea>
 void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::writeStep()
 { 
 	s_pool.wait_for_tasks();
+	for(auto& [block, oldDelta] : m_blocksWithChangedTemperature)
+	{
+		uint32_t ambientTemperature = block.getAmbientTemperature();
+		block.applyTemperatureChange(ambientTemperature + oldDelta, ambientTemperature + block.m_deltaTemperature);
+	}
 	// Apply flow.
 	for(FluidGroup<DerivedBlock, DerivedArea>* fluidGroup : m_unstableFluidGroups)
 	{
@@ -224,6 +230,11 @@ std::string BaseArea<DerivedBlock, DerivedActor, DerivedArea>::toS()
 		output += "###";
 	}
 	return output;
+}
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+BaseArea<DerivedBlock, DerivedActor, DerivedArea>::~BaseArea()
+{
+	m_destroy = true;
 }
 // Include implimentations of classes that DerivedArea depends on here so it doesn't have to be replicated by the user.
 #include "visionRequest.hpp"

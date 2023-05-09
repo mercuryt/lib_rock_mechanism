@@ -19,6 +19,7 @@
 #include "fluidType.h"
 #include "visionCuboid.h"
 #include "fluidGroup.h"
+#include "fire.h"
 
 template<class DerivedBlock> class HasShape;
 // Fluid type and volume pairs are sorted by density, low to high.
@@ -75,6 +76,8 @@ public:
 	std::unordered_set<DerivedActor*>* m_locationBucket;
 	// Store the visionCuboid this block belongs to.
 	VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>* m_visionCuboid;
+	std::unique_ptr<Fire<DerivedBlock>> m_fire;
+	int32_t m_deltaTemperature;
 
 	// Constructor initalizes some members.
 	BaseBlock();
@@ -117,6 +120,9 @@ public:
 	void resolveFluidOverfull();
 	void enter(DerivedActor& actor);
 	void exit(DerivedActor& actor);
+	// Record temperature delta, possible start a fire.
+	void applyTemperatureDelta(int32_t delta);
+
 	// To be overriden by user code if diagonal movement allowed.
 	void clearMoveCostsCacheForSelfAndAdjacent();
 	std::vector<DerivedBlock*> selectBetweenCorners(DerivedBlock* otherBlock) const;
@@ -138,6 +144,9 @@ public:
 
 	bool isSupport() const;
 	uint32_t getMass() const;
+
+	void applyTemperatureChange(uint32_t oldTemperature, uint32_t newTemperature);
+	uint32_t getAmbientTemperature() const;
 
 	void moveContentsTo(DerivedBlock* block);
 };

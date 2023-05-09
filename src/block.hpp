@@ -253,9 +253,9 @@ void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::setNotSolid()
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
 void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::setSolid(const MaterialType* materialType)
 {
+	assert(materialType != nullptr);
 	if(materialType == m_solid)
 		return;
-	assert(materialType != nullptr);
 	m_solid = materialType;
 	// Displace fluids.
 	m_totalFluidVolume = 0;
@@ -566,6 +566,17 @@ void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::exit(DerivedActor& acto
 		block->m_totalDynamicVolume -= found->second;
 		block->m_actors.erase(found);
 	}
+}
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::applyTemperatureDelta(int32_t delta)
+{
+	assert((int)m_deltaTemperature + (int)delta > INT32_MIN);
+	assert((int)m_deltaTemperature + (int)delta < INT32_MAX);
+	if(!m_area->m_blocksWithChangedTemperature.contains(static_cast<DerivedBlock*>(this)))
+		m_area->m_blocksWithChangedTemperature[static_cast<DerivedBlock*>(this)] = m_deltaTemperature;
+	// Use insert so only record once if changed multiple times in a step.
+	//m_area->m_blocksWithChangedTemperature.insert({static_cast<DerivedBlock*>(this), m_deltaTemperature});
+	m_deltaTemperature += delta;
 }
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
 bool BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::operator==(const DerivedBlock& block) const { return &block == static_cast<const DerivedBlock*>(this); };

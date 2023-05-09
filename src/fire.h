@@ -1,0 +1,97 @@
+#pragma once
+#include "materialType.h"
+#include "eventSchedule.h"
+#include "temperatureSource.h"
+#include <memory>
+
+constexpr int32_t heatFractionForSmoulder = 10;
+constexpr int32_t heatFractionForBurn = 3;
+constexpr int32_t rampDownPhaseDurationFraction = 2;
+
+enum class FireStage{Smouldering, Burining, Flaming};
+
+template<class Block> class Fire;
+
+/*
+ * Progress through the stages of fire with scheduled events. Fire stores a pointer to the current event so it can be canceled if it is deleted ( extinguished ).
+ */
+template<class Block>
+class FireEvent : public ScheduledEvent
+{
+public:
+	Fire<Block>& m_fire;
+
+	FireEvent(uint32_t s, Fire<Block>& f) : ScheduledEvent(s), m_fire(f) {}
+	void execute()
+	{
+		if(!m_fire.m_hasPeaked &&m_fire.m_stage == FireStage::Smouldering)
+		{
+			m_fire.m_stage = FireStage::Burining;
+			m_fire.m_temperatureSource.setTemperature(m_fire.m_materialType->flameTemperature / heatFractionForBurn);
+			std::unique_ptr<ScheduledEvent> event = std::make_unique<FireEvent<Block>>(s_step + m_fire.m_materialType->burnStageDuration, m_fire);
+			m_fire.m_event = event.get();
+			m_fire.m_location->m_area->m_eventSchedule.schedule(std::move(event));
+		}
+		else if(!m_fire.m_hasPeaked && m_fire.m_stage == FireStage::Burining)
+		{
+			m_fire.m_stage = FireStage::Flaming;
+			m_fire.m_temperatureSource.setTemperature(m_fire.m_materialType->flameTemperature);
+			std::unique_ptr<ScheduledEvent> event = std::make_unique<FireEvent<Block>>(s_step + m_fire.m_materialType->flameStageDuration, m_fire);
+			m_fire.m_event = event.get();
+			m_fire.m_location->m_area->m_eventSchedule.schedule(std::move(event));
+			//TODO: schedule event to turn construction / solid into wreckage.
+		}
+		else if(m_fire.m_stage == FireStage::Flaming)
+		{
+			m_fire.m_hasPeaked = true;
+			m_fire.m_stage = FireStage::Burining;
+			m_fire.m_temperatureSource.setTemperature(m_fire.m_materialType->flameTemperature / heatFractionForBurn);
+			std::unique_ptr<ScheduledEvent> event = std::make_unique<FireEvent<Block>>(s_step + m_fire.m_materialType->burnStageDuration / rampDownPhaseDurationFraction, m_fire);
+			m_fire.m_event = event.get();
+			m_fire.m_location->m_area->m_eventSchedule.schedule(std::move(event));
+		}
+		else if(m_fire.m_hasPeaked && m_fire.m_stage == FireStage::Burining)
+		{
+			m_fire.m_stage = FireStage::Smouldering;
+			m_fire.m_temperatureSource.setTemperature(m_fire.m_materialType->flameTemperature / heatFractionForSmoulder);
+			std::unique_ptr<ScheduledEvent> event = std::make_unique<FireEvent<Block>>(s_step + m_fire.m_materialType->burnStageDuration / rampDownPhaseDurationFraction, m_fire);
+			m_fire.m_event = event.get();
+			m_fire.m_location->m_area->m_eventSchedule.schedule(std::move(event));
+		}
+		else if(m_fire.m_hasPeaked && m_fire.m_stage == FireStage::Smouldering)
+		{
+			// Clear the event pointer so ~Fire doesn't try to cancel the event which is currently executing.
+			m_fire.m_event = nullptr;
+			// Destroy m_fire by relasing the unique pointer in m_location.
+			// Implicitly removes the influence of m_fire.m_temperatureSource.
+			m_fire.m_location->m_fire.release();
+		}
+	}
+	~FireEvent()
+	{
+		m_fire.m_event = nullptr;
+	}
+};
+template<class Block>
+class Fire
+{
+public:
+	Block* m_location;
+	const MaterialType* m_materialType;
+	ScheduledEvent* m_event;
+	FireStage m_stage;
+	bool m_hasPeaked;
+	TemperatureSource<Block> m_temperatureSource;
+
+	Fire(Block& l, const MaterialType* mt) : m_location(&l), m_materialType(mt), m_stage(FireStage::Smouldering), m_hasPeaked(false), m_temperatureSource(m_materialType->flameTemperature / heatFractionForSmoulder, l)
+	{
+		std::unique_ptr<ScheduledEvent> event = std::make_unique<FireEvent<Block>>(s_step + m_materialType->burnStageDuration, *this);
+		m_event = event.get();
+		m_location->m_area->m_eventSchedule.schedule(std::move(event));
+	}
+	~Fire()
+	{
+		if(m_event != nullptr)
+			m_event->cancel();
+	}
+};
