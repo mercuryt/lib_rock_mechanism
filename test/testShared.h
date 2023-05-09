@@ -20,6 +20,9 @@ namespace Config
 	constexpr uint32_t moveTryAttemptsBeforeDetour = 2;
 }
 
+inline uint32_t s_step;
+BS::thread_pool_light s_pool;
+
 #include "../src/block.h"
 #include "../src/actor.h"
 #include "../src/area.h"
@@ -29,8 +32,6 @@ namespace Config
 #include "../src/materialType.h"
 #include "../src/blockFeatureType.h"
 
-inline uint32_t s_step;
-BS::thread_pool_light s_pool;
 
 const static MoveType* s_twoLegs;
 const static MoveType* s_fourLegs;
@@ -48,6 +49,7 @@ const static FluidType* s_lava;
 const static FluidType* s_mercury;
 const static MaterialType* s_stone;
 const static MaterialType* s_glass;
+const static MaterialType* s_wood;
 const static Shape* s_oneByOneFull;
 const static Shape* s_oneByOneHalfFull;
 const static Shape* s_oneByOneQuarterFull;
@@ -113,34 +115,37 @@ public:
 	std::string describeFeatures() const;
 	void removeFeature(const BlockFeatureType* blockFeatureType);
 
+	uint32_t getAmbientTemperature() const;
+	void applyTemperatureChange(uint32_t oldTemperature, uint32_t newTemperature);
+
 	std::string toS() const;
 };
 
 #include "../src/block.hpp"
 class Actor final : public BaseActor<Block, Actor, Area>
 {
-public:
-	std::unordered_set<Actor*> m_canSee;
-	void (*m_onTaskComplete)(Actor& actor);
+	public:
+		std::unordered_set<Actor*> m_canSee;
+		void (*m_onTaskComplete)(Actor& actor);
 
-	Actor(Block* l, const Shape* s, const MoveType* mt);
-	Actor(const Shape* s, const MoveType* mt);
-	uint32_t getSpeed() const;
-	uint32_t getVisionRange() const;
-	bool isVisible(Actor* observer) const;
+		Actor(Block* l, const Shape* s, const MoveType* mt);
+		Actor(const Shape* s, const MoveType* mt);
+		uint32_t getSpeed() const;
+		uint32_t getVisionRange() const;
+		bool isVisible(Actor* observer) const;
 
-	void taskComplete();
-	void doVision(std::unordered_set<Actor*>&& actors);
-	void doFall(uint32_t distance, Block* block);
-	void exposedToFluid(const FluidType* fluidType);
-	bool canSee(const Actor& actor) const;
+		void taskComplete();
+		void doVision(std::unordered_set<Actor*>&& actors);
+		void doFall(uint32_t distance, Block* block);
+		void exposedToFluid(const FluidType* fluidType);
+		bool canSee(const Actor& actor) const;
 };
 #include "../src/actor.hpp"
 class Area final : public BaseArea<Block, Actor, Area>
 {
-public:
-	Area(uint32_t x, uint32_t y, uint32_t z) : BaseArea<Block, Actor, Area>(x, y, z) {}
-	void notifyNoRouteFound(Actor& actor);
+	public:
+		Area(uint32_t x, uint32_t y, uint32_t z) : BaseArea<Block, Actor, Area>(x, y, z) {}
+		void notifyNoRouteFound(Actor& actor);
 };
 #include "../src/area.hpp"
 
@@ -488,6 +493,30 @@ std::string Block::describeFeatures() const
 	}
 	return output;
 }
+void Block::applyTemperatureChange(uint32_t oldTemperature, uint32_t newTemperature)
+{
+	(void)oldTemperature;
+	if(!m_fire)
+	{
+		if(isSolid())
+		{
+			const MaterialType* materialType = getSolidMaterial();
+			if(materialType->ignitionTemperature <= newTemperature)
+				m_fire = std::make_unique<Fire<Block>>(*this, materialType);
+		}
+		else if(!m_features.empty())
+		{
+			for(BlockFeature& blockFeature : m_features)
+				if(blockFeature.materialType->ignitionTemperature <= newTemperature)
+					m_fire = std::make_unique<Fire<Block>>(*this, blockFeature.materialType);
+		}
+	}
+}
+//TODO: Use different inside temperatures?
+uint32_t Block::getAmbientTemperature() const
+{
+	return 293; // 20C
+}
 std::string Block::toS() const
 {
 	std::string materialName = isSolid() ? getSolidMaterial()->name: "empty";
@@ -558,9 +587,10 @@ void registerTypes()
 	s_lava = registerFluidType("lava", 20, 300, 5, 1);
 	s_mercury = registerFluidType("mercury", 50, 200, 0, 0);
 
-	// name, density, transparent
-	s_stone = registerMaterialType("stone", 100, false);
-	s_glass = registerMaterialType("glass", 100, true);
+	// name, density, transparent, ignition temperature, flaming temperature, burning phase duration, flaming phase duration
+	s_stone = registerMaterialType("stone", 100, false, UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX);
+	s_glass = registerMaterialType("glass", 100, true, UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX);
+	s_wood = registerMaterialType("wood", 10, false, 533, 1172, 10000, 40000);
 
 	// name, offsets and volumes
 	s_oneByOneFull = registerShape("oneByOneFull", {{0,0,0,100}});

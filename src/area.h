@@ -36,6 +36,7 @@ public:
 	std::unordered_set<FluidGroup<DerivedBlock, DerivedArea>*> m_setStable;
 	std::unordered_set<FluidGroup<DerivedBlock, DerivedArea>*> m_toDestroy;
 	std::unordered_set<DerivedBlock*> m_caveInCheck;
+	std::unordered_map<DerivedBlock*, int32_t> m_blocksWithChangedTemperature;
 	std::vector<std::tuple<std::vector<DerivedBlock*>,uint32_t,uint32_t>> m_caveInData;
 	std::vector<RouteRequest<DerivedBlock, DerivedActor, DerivedArea>> m_routeRequestQueue;
 	uint32_t m_routeCacheVersion;
@@ -44,11 +45,14 @@ public:
 	std::list<VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>> m_visionCuboids;
 	bool m_visionCuboidsActive;
 	EventSchedule m_eventSchedule;
+	bool m_destroy;
 
 	void expireRouteCache();
 
 	// Create blocks and store adjacent
 	BaseArea(uint32_t x, uint32_t y, uint32_t z);
+	// Set m_destroy = true to simplify cleanup.
+	~BaseArea();
 
 	void readStep();
 	void writeStep();
