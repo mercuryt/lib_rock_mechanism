@@ -64,11 +64,6 @@ template<class DerivedBlock, class DerivedActor, class DerivedArea>
 void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::writeStep()
 { 
 	s_pool.wait_for_tasks();
-	for(auto& [block, oldDelta] : m_blocksWithChangedTemperature)
-	{
-		uint32_t ambientTemperature = block.getAmbientTemperature();
-		block.applyTemperatureChange(ambientTemperature + oldDelta, ambientTemperature + block.m_deltaTemperature);
-	}
 	// Apply flow.
 	for(FluidGroup<DerivedBlock, DerivedArea>* fluidGroup : m_unstableFluidGroups)
 	{
@@ -151,8 +146,15 @@ void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::writeStep()
 	m_eventSchedule.execute(s_step);
 	for(FluidGroup<DerivedBlock, DerivedArea>& fluidGroup : m_fluidGroups)
 		fluidGroup.validate();
+	// Clean up old vision cuboids.
 	if(m_visionCuboidsActive)
 		std::erase_if(m_visionCuboids, [](VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>& visionCuboid){ return visionCuboid.m_destroy; });
+	// Apply temperature changes.
+	for(auto& [block, oldDelta] : m_blocksWithChangedTemperature)
+	{
+		uint32_t ambientTemperature = block->getAmbientTemperature();
+		block->applyTemperatureChange(ambientTemperature + oldDelta, ambientTemperature + block->m_deltaTemperature);
+	}
 }
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
 void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::registerActor(DerivedActor& actor)
@@ -169,8 +171,7 @@ void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::scheduleMove(DerivedActo
 {
 	DerivedBlock* block = *(actor.m_routeIter);
 	uint32_t stepsToMove = block->moveCost(actor.m_moveType, actor.m_location) / actor.getSpeed();
-	std::unique_ptr<ScheduledEvent> moveEvent = std::make_unique<MoveEvent<DerivedBlock, DerivedActor, DerivedArea>>(s_step + stepsToMove, actor);
-	m_eventSchedule.schedule(std::move(moveEvent));
+	MoveEvent<DerivedBlock, DerivedActor>::emplace(m_eventSchedule, stepsToMove, actor);
 }
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
 void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::registerRouteRequest(DerivedActor& actor, bool detour)

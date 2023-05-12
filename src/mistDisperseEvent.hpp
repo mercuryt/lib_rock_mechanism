@@ -1,3 +1,12 @@
+#pragma once
+template<class DerivedBlock, class DerivedActor, class DerivedArea>
+ScheduledEvent* MistDisperseEvent<DerivedBlock, DerivedActor, DerivedArea>::emplace(EventSchedule& es, uint32_t delay, const FluidType* ft, DerivedBlock& b)
+{
+	std::unique_ptr<ScheduledEvent> event = std::make_unique<MistDisperseEvent<DerivedBlock, DerivedActor, DerivedArea>>(s_step + delay, ft, b);
+	ScheduledEvent* output = event.get();
+	es.schedule(std::move(event));
+	return output;
+}
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
 MistDisperseEvent<DerivedBlock, DerivedActor, DerivedArea>::MistDisperseEvent(uint32_t s, const FluidType* ft, DerivedBlock& b) :
        	ScheduledEvent(s), m_fluidType(ft), m_block(b) {}
@@ -23,12 +32,10 @@ void MistDisperseEvent<DerivedBlock, DerivedActor, DerivedArea>::execute()
 				{
 					adjacent->m_mist = m_fluidType;
 					adjacent->m_mistInverseDistanceFromSource = m_block.m_mistInverseDistanceFromSource - 1;
-					auto event = std::make_unique<MistDisperseEvent<DerivedBlock, DerivedActor, DerivedArea>>( s_step + m_fluidType->mistDuration, m_fluidType, static_cast<DerivedBlock&>(*adjacent));
-					m_block.m_area->m_eventSchedule.schedule(std::move(event));
+					emplace(m_block.m_area->m_eventSchedule, m_fluidType->mistDuration, m_fluidType, static_cast<DerivedBlock&>(*adjacent));
 				}
 		// Schedule next check.
-		auto event = std::make_unique<MistDisperseEvent<DerivedBlock, DerivedActor, DerivedArea>>( s_step + m_fluidType->mistDuration, m_fluidType, static_cast<DerivedBlock&>(m_block));
-		m_block.m_area->m_eventSchedule.schedule(std::move(event));
+		emplace(m_block.m_area->m_eventSchedule, m_fluidType->mistDuration, m_fluidType, static_cast<DerivedBlock&>(m_block));
 		return;
 	}
 	// Mist does not continue to exist here.

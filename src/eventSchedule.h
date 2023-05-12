@@ -18,6 +18,18 @@ public:
 	virtual ~ScheduledEvent() {}
 	virtual void execute() = 0;
 };
+class ScheduledEventWithPercentage : public ScheduledEvent
+{
+public:
+	uint32_t m_startStep;
+	ScheduledEventWithPercentage(uint32_t s) : ScheduledEvent(s) {}
+	uint32_t percentComplete()
+	{
+		float totalSteps = m_step - m_startStep;
+		float elapsedSteps = s_step - m_startStep;
+		return 100.f * (totalSteps / elapsedSteps);
+	}
+};
 
 class EventSchedule
 {
@@ -28,6 +40,22 @@ public:
 		scheduledEvent->m_eventSchedule = this;
 		m_data[scheduledEvent->m_step].push_back(std::move(scheduledEvent));
 	}
+	//TODO: why doesn't this work?
+	/*
+	template<class EventType, class ...Types>
+	void schedule(Types&... args)
+	{
+		schedule(std::move(std::make_unique<EventType>(args...)));
+	}
+	template<class EventType, class ...Types>
+	ScheduledEvent* emplaceSchedule(Types&... args)
+	{
+		auto event = std::make_unique<EventType>(args...);
+		ScheduledEvent* output = event.get();
+		schedule(std::move(event));
+		return output;
+	}
+	*/
 	void unschedule(const ScheduledEvent* scheduledEvent)
 	{
 		// Unscheduling an event which is scheduled for the current step could mean modifing the event schedule while it is being iterated. Don't allow.

@@ -8,12 +8,13 @@
 /*
  *  Try to enter next step on route. 
  */
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
+template<class DerivedBlock, class DerivedActor>
 class MoveEvent : public ScheduledEvent
 {
 public:
 	DerivedActor& m_actor;
 	uint32_t m_delayCount;
+	static ScheduledEvent* emplace(EventSchedule& es, uint32_t delay, DerivedActor& a);
 	MoveEvent(uint32_t s, DerivedActor& a);
 	void execute();
 	~MoveEvent();
