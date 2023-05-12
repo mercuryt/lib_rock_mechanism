@@ -29,6 +29,13 @@ public:
 		auto condition = [&](DerivedBlock* b){ return b->taxiDistance(block) <= range; };
 		return collectAdjacentsWithCondition(condition, block);
 	}
+	static std::vector<DerivedBlock*> collectAdjacentsInRangeVector(uint32_t range, DerivedBlock& block)
+	{
+		auto condition = [&](DerivedBlock* b){ return b->taxiDistance(block) <= range; };
+		auto result = collectAdjacentsWithCondition(condition, block);
+		std::vector<DerivedBlock*> output(result.begin(), result.end());
+		return output;
+	}
 	// This was suposed to replace collectAdjacentsWithCondition for detecting splits in fluidGroups but it was slower
 	template <typename F>
 		static std::vector<std::unordered_set<DerivedBlock*>> findGroups(F&& condition, std::unordered_set<DerivedBlock*>& blocks)

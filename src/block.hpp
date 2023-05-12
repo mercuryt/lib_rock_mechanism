@@ -17,6 +17,7 @@
 #include "hasShape.h"
 #include "fluidType.h"
 #include "block.h"
+#include "mistDisperseEvent.hpp"
 
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
 BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::BaseBlock() : m_solid(nullptr), m_routeCacheVersion(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr) {}
@@ -330,8 +331,7 @@ void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::spawnMist(const FluidTy
 		return;
 	m_mist = fluidType;
 	m_mistInverseDistanceFromSource = maxMistSpread != 0 ? maxMistSpread : fluidType->maxMistSpread;
-	auto event = std::make_unique<MistDisperseEvent<DerivedBlock, DerivedActor, DerivedArea>>( s_step + fluidType->mistDuration, m_mist, static_cast<DerivedBlock&>(*this));
-	m_area->m_eventSchedule.schedule(std::move(event));
+	MistDisperseEvent<DerivedBlock, DerivedActor, DerivedArea>::emplace(m_area->m_eventSchedule, fluidType->mistDuration, fluidType, static_cast<DerivedBlock&>(*this));
 }
 //TODO: This code puts the fluid into an adjacent group of the correct type if it can find one, it does not add the block or merge groups, leaving these tasks to fluidGroup readStep. Is this ok?
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
