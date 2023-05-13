@@ -78,6 +78,7 @@ public:
 	VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>* m_visionCuboid;
 	std::unique_ptr<Fire<DerivedBlock>> m_fire;
 	int32_t m_deltaTemperature;
+	bool m_exposedToSky;
 
 	// Constructor initalizes some members.
 	BaseBlock();
