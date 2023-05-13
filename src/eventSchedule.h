@@ -22,7 +22,7 @@ class ScheduledEventWithPercentage : public ScheduledEvent
 {
 public:
 	uint32_t m_startStep;
-	ScheduledEventWithPercentage(uint32_t s) : ScheduledEvent(s) {}
+	ScheduledEventWithPercentage(uint32_t s) : ScheduledEvent(s), m_startStep(s_step) {}
 	uint32_t percentComplete()
 	{
 		float totalSteps = m_step - m_startStep;

@@ -20,7 +20,7 @@
 #include "mistDisperseEvent.hpp"
 
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
-BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::BaseBlock() : m_solid(nullptr), m_routeCacheVersion(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr) {}
+BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::BaseBlock() : m_solid(nullptr), m_routeCacheVersion(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr), m_exposedToSky(true) {}
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
 void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::setup(DerivedArea* a, uint32_t ax, uint32_t ay, uint32_t az)
 {m_area=a;m_x=ax;m_y=ay;m_z=az;m_locationBucket = a->m_locationBuckets.getBucketFor(*static_cast<DerivedBlock*>(this));}
@@ -250,6 +250,17 @@ void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::setNotSolid()
 	block->clearMoveCostsCacheForSelfAndAdjacent();
 	if(m_area->m_visionCuboidsActive)
 		VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::BlockIsNeverOpaque(*block);
+	if(m_adjacents[5] == nullptr || m_adjacents[5].m_exposedToSky)
+	{
+		block.m_exposedToSky = true;
+		// Set blocks below as exposed to sky.
+		block = m_adjacents[0];
+		while(block != nullptr && block->canSeeThroughFrom(block->m_adjacents[5]) && !block.m_exposedToSky)
+		{
+			block.m_exposedToSky = true;
+			block = block.m_adjacents[0];
+		}
+	}
 }
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
 void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::setSolid(const MaterialType* materialType)
@@ -307,7 +318,14 @@ void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::setSolid(const Material
 	block->clearMoveCostsCacheForSelfAndAdjacent();
 	if(m_area->m_visionCuboidsActive && !materialType->transparent)
 		VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::BlockIsSometimesOpaque(*block);
-		
+	// Set blocks below as not exposed to sky.
+	block.m_exposedToSky = false;
+	block = m_adjacents[0];
+	while(block != nullptr && block->canSeeThroughFrom(block->m_adjacents[5]) && block.m_exposedToSky)
+	{
+		block.m_exposedToSky = false;
+		block = block.m_adjacents[0];
+	}
 }
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
 bool BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::canEnterEver(DerivedActor& actor) const
