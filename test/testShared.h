@@ -3,6 +3,7 @@
  */
 #include <cstdint>
 #include <algorithm>
+#include <iostream>
 #include "../lib/BS_thread_pool_light.hpp"
 namespace Config
 {
@@ -18,6 +19,10 @@ namespace Config
 	// Disable by setting to 0.
 	constexpr uint32_t fluidsSeepDiagonalModifier = 100;
 	constexpr uint32_t moveTryAttemptsBeforeDetour = 2;
+	constexpr uint32_t daysPerYear = 365;
+	constexpr uint32_t hoursPerDay = 24;
+	constexpr uint32_t stepsPerHour = 5000;
+	constexpr uint32_t stepsPerDay = stepsPerHour * hoursPerDay;
 }
 
 inline uint32_t s_step;
@@ -31,6 +36,7 @@ BS::thread_pool_light s_pool;
 #include "../src/fluidType.h"
 #include "../src/materialType.h"
 #include "../src/blockFeatureType.h"
+#include "../src/plant.h"
 
 
 const static MoveType* s_twoLegs;
@@ -50,6 +56,7 @@ const static FluidType* s_mercury;
 const static MaterialType* s_stone;
 const static MaterialType* s_glass;
 const static MaterialType* s_wood;
+const static MaterialType* s_dirt;
 const static Shape* s_oneByOneFull;
 const static Shape* s_oneByOneHalfFull;
 const static Shape* s_oneByOneQuarterFull;
@@ -64,6 +71,7 @@ const static BlockFeatureType* s_hatch;
 const static BlockFeatureType* s_floor;
 const static BlockFeatureType* s_floodGate;
 const static BlockFeatureType* s_floorGrate;
+const static PlantType* s_grass;
 
 
 struct BlockFeature 
@@ -76,6 +84,8 @@ struct BlockFeature
 	BlockFeature(const BlockFeatureType* bft, const MaterialType* mt, bool h) : blockFeatureType(bft), materialType(mt), hewn(h), closed(true), locked(false) {}
 };
 
+enum class TemperatureZone { Surface, Underground, LavaSea};
+
 class Actor;
 class Block;
 class Area;
@@ -85,7 +95,10 @@ class Block final : public BaseBlock<Block, Actor, Area>
 {
 public:
 	std::vector<BlockFeature> m_features;
+	std::list<Plant<Block>*> m_plants;
+	TemperatureZone m_temperatureZone;
 
+	Block();
 	bool anyoneCanEnterEver() const;
 	bool moveTypeCanEnter(const MoveType* moveType) const;
 	bool moveTypeCanEnterFrom(const MoveType* moveType, Block* from) const;
@@ -118,6 +131,9 @@ public:
 	uint32_t getAmbientTemperature() const;
 	void applyTemperatureChange(uint32_t oldTemperature, uint32_t newTemperature);
 
+	void setExposedToSky(bool exposed);
+	bool plantTypeCanGrow(const PlantType* plantType) const;
+
 	std::string toS() const;
 };
 
@@ -144,10 +160,30 @@ class Actor final : public BaseActor<Block, Actor, Area>
 class Area final : public BaseArea<Block, Actor, Area>
 {
 	public:
+		const FluidType* m_currentlyRainingFluidType;
+		uint32_t m_ambiantSurfaceTemperature;
+		std::list<Plant<Block>> m_plants;
+		ScheduledEvent* m_rainStopEvent;
+
 		Area(uint32_t x, uint32_t y, uint32_t z) : BaseArea<Block, Actor, Area>(x, y, z) {}
 		void notifyNoRouteFound(Actor& actor);
+		void rain(const FluidType* fluidType, uint32_t duration);
+		void setHour(uint32_t hour, uint32_t dayOfYear);
+		void setDayOfYear(uint32_t dayOfYear);
+		void setAmbientTemperatureFor(uint32_t hour, uint32_t dayOfYear);
+		void setAmbientTemperature(uint32_t temperature);
+};
+class RainStopEvent : public ScheduledEvent
+{
+public:
+	Area& m_area;
+	RainStopEvent(uint32_t step, Area& a) : ScheduledEvent(step), m_area(a) {}
+	~RainStopEvent() { m_area.m_rainStopEvent = nullptr; }
+	void execute() { m_area.m_currentlyRainingFluidType = nullptr; }
 };
 #include "../src/area.hpp"
+
+Block::Block() : BaseBlock<Block, Actor, Area>(), m_temperatureZone(TemperatureZone::Surface) {}
 
 // Can anyone enter ever?
 bool Block::anyoneCanEnterEver() const
@@ -512,10 +548,20 @@ void Block::applyTemperatureChange(uint32_t oldTemperature, uint32_t newTemperat
 		}
 	}
 }
+void Block::setExposedToSky(bool exposed)
+{
+	m_exposedToSky = exposed;
+	for(Plant<Block>* plant : m_plants)
+		plant->updateGrowingStatus();
+}
+bool Block::plantTypeCanGrow(const PlantType* plantType) const
+{
+	return m_exposedToSky == plantType->growsInSunLight && canStandIn() && m_adjacents[0]->getSolidMaterial() == s_dirt;
+}
 //TODO: Use different inside temperatures?
 uint32_t Block::getAmbientTemperature() const
 {
-	return 293; // 20C
+	return m_area->m_ambiantSurfaceTemperature;
 }
 std::string Block::toS() const
 {
@@ -567,10 +613,58 @@ bool Actor::canSee(const Actor& actor) const
 	(void)actor;
 	return true;
 }
+void Area::rain(const FluidType* fluidType, uint32_t duration)
+{
+	m_currentlyRainingFluidType = fluidType;
+	for(Plant<Block>& plant : m_plants)
+		if(plant.m_plantType->fluidType == fluidType && plant.m_location.m_exposedToSky)
+			plant.setHasFluidForNow();
+	uint32_t step = s_step + duration;
+	std::unique_ptr<ScheduledEvent> event = std::make_unique<RainStopEvent>(step, *this);
+	m_rainStopEvent = event.get();
+	m_eventSchedule.schedule(std::move(event));
+}
+void Area::setHour(uint32_t hour, uint32_t dayOfYear)
+{
+	setAmbientTemperatureFor(hour, dayOfYear);
+}
+void Area::setDayOfYear(uint32_t dayOfYear)
+{
+	setAmbientTemperatureFor(0, dayOfYear);
+}
+void Area::setAmbientTemperatureFor(uint32_t hour, uint32_t dayOfYear)
+{
+	static uint32_t yearlyHottestDailyAverage = 280;
+	static uint32_t yearlyColdestDailyAverage = 256;
+	static uint32_t dayOfYearOfSolstice = Config::daysPerYear / 2;
+	uint32_t daysFromSolstice = std::abs((int32_t)dayOfYear - (int32_t)dayOfYearOfSolstice);
+	uint32_t dailyAverage = yearlyColdestDailyAverage + ((yearlyHottestDailyAverage - yearlyColdestDailyAverage) * (dayOfYearOfSolstice - daysFromSolstice)) / dayOfYearOfSolstice;
+	static uint32_t maxDailySwing = 35;
+	static uint32_t hottestHourOfDay = 14;
+	uint32_t hoursFromHottestHourOfDay = std::abs((int32_t)hottestHourOfDay - (int32_t)hour);
+	setAmbientTemperature(dailyAverage + ((maxDailySwing * hoursFromHottestHourOfDay) / (Config::hoursPerDay / 2)) - (maxDailySwing / 2));
+}
+void Area::setAmbientTemperature(uint32_t temperature)
+{
+	for(Plant<Block>& plant : m_plants)
+		if(plant.m_location.m_temperatureZone == TemperatureZone::Surface)
+		{
+			uint32_t oldTemperature = m_ambiantSurfaceTemperature + plant.m_location.m_deltaTemperature;
+			uint32_t newTemperature = temperature + plant.m_location.m_deltaTemperature;
+			plant.applyTemperatureChange(oldTemperature, newTemperature);
+		}
+	m_ambiantSurfaceTemperature = temperature;
+}
 // Tell the player that an attempted pathing operation is not possible.
 void Area::notifyNoRouteFound(Actor& actor) 
 { 
-	(void)actor;
+	std::cout << "route not found for " << actor.m_name << " to destination " + actor.m_destination->toS() << "from " << actor.m_location->toS() << std::endl;
+}
+template<class Block>
+void Plant<Block>::die()
+{
+	m_location.m_plants.remove(this);
+	m_location.m_area->m_plants.remove_if([&](Plant<Block>& plant){ return &plant == this; });
 }
 
 // typesRegistered is used to make sure registerTypes is called only once durring testing.
@@ -591,6 +685,7 @@ void registerTypes()
 	s_stone = registerMaterialType("stone", 100, false, UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX);
 	s_glass = registerMaterialType("glass", 100, true, UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX);
 	s_wood = registerMaterialType("wood", 10, false, 533, 1172, 10000, 40000);
+	s_dirt = registerMaterialType("dirt", 50, false, UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX);
 
 	// name, offsets and volumes
 	s_oneByOneFull = registerShape("oneByOneFull", {{0,0,0,100}});
@@ -624,6 +719,9 @@ void registerTypes()
 	s_hatch = registerBlockFeatureType("hatch");
 	s_floorGrate = registerBlockFeatureType("floor grate");
 	s_floodGate = registerBlockFeatureType("flood gate");
+
+	// name, annual, maximum temperature, minimum temperature, steps till die from temperature, steps needs fluid frequency, steps till die without fluid, steps till growth event, grows in sunlight, steps till spawn, day of year for harvest, maximum spawn, minimum spawn, maximum spawn distance, root range max, root range min, fluidType.
+	s_grass = registerPlantType("grass", false, 283, 316, Config::stepsPerDay, Config::stepsPerDay * 4, Config::stepsPerDay * 8, Config::stepsPerDay * 100, true, Config::stepsPerDay * 50, 200, 2, 1, 5, 2, 1, s_water);
 }
 
 // Test helpers.

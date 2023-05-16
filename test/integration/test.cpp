@@ -6,3 +6,4 @@
 #include "testVision.h"
 #include "testRoute.h"
 #include "testArea.h"
+#include "testPlant.h"

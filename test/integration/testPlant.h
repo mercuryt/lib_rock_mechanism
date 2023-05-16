@@ -1,0 +1,29 @@
+TEST_CASE("plant")
+{
+	Area area(10,10,10);
+	area.setHour(12, 100);
+	registerTypes();
+	Block& location = area.m_blocks[5][5][2];
+	setSolidLayer(area, 0, s_stone);
+	setSolidLayer(area, 1, s_dirt);
+	s_step = 0;
+	area.m_plants.emplace_back(location, s_grass);
+	Plant<Block>& plant = area.m_plants.back();
+	CHECK(area.m_eventSchedule.m_data.contains(s_grass->stepsTillFullyGrown));
+	CHECK(area.m_eventSchedule.m_data.contains(s_grass->stepsNeedsFluidFrequency));
+	CHECK(plant.m_growthEvent != nullptr);
+	CHECK(plant.m_location.m_exposedToSky);
+	CHECK(plant.m_temperatureEvent == nullptr);
+	s_step = s_grass->stepsNeedsFluidFrequency;
+	area.m_eventSchedule.execute(s_step);
+	CHECK(!plant.m_hasFluid);
+	CHECK(plant.m_growthEvent == nullptr);
+	CHECK(plant.m_percentGrown == (s_step / s_grass->stepsTillFullyGrown));
+	CHECK(area.m_eventSchedule.m_data.contains(s_step + s_grass->stepsTillDieWithoutFluid));
+	area.rain(s_water, 100);
+	CHECK(plant.m_hasFluid);
+	CHECK(plant.m_growthEvent != nullptr);
+	area.setAmbientTemperature(s_grass->minimumGrowingTemperature - 1);
+	CHECK(plant.m_growthEvent == nullptr);
+	CHECK(plant.m_temperatureEvent != nullptr);
+}

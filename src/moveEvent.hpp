@@ -17,6 +17,7 @@ void MoveEvent<DerivedBlock, DerivedActor>::execute()
 	{
 		if(block.actorCanEnterCurrently(m_actor))
 		{
+			m_actor.m_taskDelayCount = 0;
 			m_actor.m_routeIter++;
 			m_actor.setLocation(&block);
 		}

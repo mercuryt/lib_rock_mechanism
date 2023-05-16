@@ -18,11 +18,11 @@ public:
 	virtual ~ScheduledEvent() {}
 	virtual void execute() = 0;
 };
-class ScheduledEventWithPercentage : public ScheduledEvent
+class ScheduledEventWithPercent: public ScheduledEvent
 {
 public:
 	uint32_t m_startStep;
-	ScheduledEventWithPercentage(uint32_t s) : ScheduledEvent(s), m_startStep(s_step) {}
+	ScheduledEventWithPercent(uint32_t s) : ScheduledEvent(s), m_startStep(s_step) {}
 	uint32_t percentComplete()
 	{
 		float totalSteps = m_step - m_startStep;

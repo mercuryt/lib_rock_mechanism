@@ -1,11 +1,14 @@
 #pragma once
 
-namespace random
+#include <random>
+#include <algorithm>
+
+namespace randomUtil
 {
 	static uint32_t seed = 23423487;
-	static std::mt19937 getRng()
+	static std::mt19937& getRng()
 	{
-		static std::mt19937 output rng(seed);
+		static std::mt19937 rng(seed);
 		return rng;
 	}
 	static int32_t getInRange(int32_t lowest, int32_t highest)
@@ -16,6 +19,6 @@ namespace random
 	}
 	static uint32_t getInRange(uint32_t lowest, uint32_t highest)
 	{
-		return getInRange(lowest, highest);
+		return getInRange((int32_t)lowest, (int32_t)highest);
 	}
 }
