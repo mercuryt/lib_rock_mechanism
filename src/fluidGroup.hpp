@@ -424,7 +424,7 @@ void FluidGroup<DerivedBlock, DerivedArea>::readStep()
 			if(closed.contains(block))
 				continue;
 			auto condition = [&](DerivedBlock* block){ return futureBlocks.contains(block); };
-			std::unordered_set<DerivedBlock*> adjacents = util<DerivedBlock, DerivedArea>::collectAdjacentsWithCondition(condition, *block);
+			std::unordered_set<DerivedBlock*> adjacents = util<DerivedBlock>::collectAdjacentsWithCondition(condition, *block);
 			// Add whole group to closed. There is only one iteration per group as others will be rejected by the closed guard.
 			closed.insert(adjacents.begin(), adjacents.end());
 			m_futureGroups.emplace_back(adjacents);

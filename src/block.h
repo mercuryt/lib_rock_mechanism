@@ -150,4 +150,6 @@ public:
 	uint32_t getAmbientTemperature() const;
 
 	void moveContentsTo(DerivedBlock* block);
+
+	void setExposedToSky(bool exposed);
 };
