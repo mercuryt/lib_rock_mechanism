@@ -72,6 +72,10 @@ public:
 			scheduledEvent->execute();
 		m_data.erase(stepNumber);
 	}
+	void clear()
+	{
+		m_data.clear();
+	}
 };
 
 inline ScheduledEvent::ScheduledEvent(uint32_t s) : m_step(s) {}

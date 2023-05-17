@@ -165,6 +165,10 @@ template<class DerivedBlock, class DerivedActor, class DerivedArea>
 void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::unregisterActor(DerivedActor& actor)
 {
 	m_visionBuckets.remove(actor);
+	if(actor.m_taskEvent != nullptr)
+		actor.m_taskEvent->cancel();
+	if(actor.m_location != nullptr)
+		actor.m_location->m_area->m_locationBuckets.erase(actor);
 }
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
 void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::scheduleMove(DerivedActor& actor)
