@@ -27,7 +27,7 @@ public:
 	{
 		float totalSteps = m_step - m_startStep;
 		float elapsedSteps = s_step - m_startStep;
-		return 100.f * (totalSteps / elapsedSteps);
+		return (elapsedSteps / totalSteps) * 100;
 	}
 };
 

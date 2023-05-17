@@ -18,7 +18,7 @@ TEST_CASE("plant")
 	area.m_eventSchedule.execute(s_step);
 	CHECK(!plant.m_hasFluid);
 	CHECK(plant.m_growthEvent == nullptr);
-	CHECK(plant.m_percentGrown == (s_step / s_grass->stepsTillFullyGrown));
+	CHECK(plant.m_percentGrown == ((float)s_step / (float)s_grass->stepsTillFullyGrown) * 100);
 	CHECK(area.m_eventSchedule.m_data.contains(s_step + s_grass->stepsTillDieWithoutFluid));
 	area.rain(s_water, 100);
 	CHECK(plant.m_hasFluid);
