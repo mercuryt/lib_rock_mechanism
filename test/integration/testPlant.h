@@ -26,4 +26,18 @@ TEST_CASE("plant")
 	area.setAmbientTemperature(s_grass->minimumGrowingTemperature - 1);
 	CHECK(plant.m_growthEvent == nullptr);
 	CHECK(plant.m_temperatureEvent != nullptr);
+	area.setAmbientTemperature(s_grass->minimumGrowingTemperature);
+	CHECK(plant.m_growthEvent != nullptr);
+	CHECK(plant.m_temperatureEvent == nullptr);
+	Block& above = *location.m_adjacents[5];
+	above.setSolid(s_stone);
+	CHECK(plant.m_growthEvent == nullptr);
+	above.setNotSolid();
+	CHECK(plant.m_growthEvent != nullptr);
+	uint32_t dayOfYear = s_grass->dayOfYearForHarvest;
+	area.setDayOfYear(dayOfYear);
+	CHECK(plant.m_readyToHarvest);
+	s_step = s_step + plant.m_plantType->stepsTillEndOfHarvest;
+	area.m_eventSchedule.execute(s_step);
+	CHECK(!plant.m_readyToHarvest);
 }

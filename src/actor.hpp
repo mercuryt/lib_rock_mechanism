@@ -28,9 +28,3 @@ void BaseActor<DerivedBlock, DerivedActor, DerivedArea>::setLocation(DerivedBloc
 	assert(block->actorCanEnterCurrently(static_cast<DerivedActor&>(*this)));
 	block->enter(static_cast<DerivedActor&>(*this));
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-BaseActor<DerivedBlock, DerivedActor, DerivedArea>::~BaseActor()
-{
-	if(HasShape<DerivedBlock>::m_location != nullptr)
-		HasShape<DerivedBlock>::m_location->m_area->m_locationBuckets.erase(static_cast<DerivedActor&>(*this));
-}

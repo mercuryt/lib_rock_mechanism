@@ -1,7 +1,6 @@
 #pragma once
 
 #include "eventSchedule.h"
-#include "randomUtil.h"
 #include "util.h"
 
 #include <memory>
@@ -18,11 +17,8 @@ public:
 	const uint32_t stepsTillDieWithoutFluid;
 	const uint32_t stepsTillFullyGrown;
 	const bool growsInSunLight;
-	const uint32_t stepsTillSpawn;
 	const uint32_t dayOfYearForHarvest;
-	const uint32_t maximumSpawn;
-	const uint32_t minimumSpawn;
-	const uint32_t maximumSpawnDistance;
+	const uint32_t stepsTillEndOfHarvest;
 	const uint32_t rootRangeMax;
 	const uint32_t rootRangeMin;
 	const FluidType* fluidType;
@@ -32,9 +28,10 @@ static std::list<PlantType> s_plantTypes;
 
 template<class Block> class Plant;
 
-const PlantType* registerPlantType(std::string n, bool a, uint32_t maxT, uint32_t minT, uint32_t stdft, uint32_t snff, uint32_t scswf, uint32_t stfg, bool gisl, uint32_t sts, uint32_t doyfh, uint32_t maxSpawn, uint32_t minSpawn, uint32_t msd, uint32_t rrMax, uint32_t rrMin, const FluidType* ft)
+template<typename... Arguments>
+const PlantType* registerPlantType(const Arguments&... arguments)
 {
-	s_plantTypes.emplace_back(n, a, maxT, minT, stdft, snff, scswf, stfg, gisl, sts, doyfh, maxSpawn, minSpawn, msd, rrMax, rrMin, ft);
+	s_plantTypes.emplace_back(arguments...);
 	return &s_plantTypes.back();
 }
 
@@ -53,13 +50,13 @@ public:
 	~PlantGrowthEvent() { m_plant.m_growthEvent = nullptr; }
 };
 template<class Block>
-class PlantSpawnEvent : public ScheduledEventWithPercent
+class PlantEndOfHarvestEvent : public ScheduledEventWithPercent
 {
 	Plant<Block>& m_plant;
 public:
-	PlantSpawnEvent(uint32_t step, Plant<Block>& p) : ScheduledEventWithPercent(step), m_plant(p) {}
-	void execute() { m_plant.doSpawn(); }
-	~PlantSpawnEvent() { m_plant.m_spawnEvent = nullptr; }
+	PlantEndOfHarvestEvent(uint32_t step, Plant<Block>& p) : ScheduledEventWithPercent(step), m_plant(p) {}
+	void execute() { m_plant.endOfHarvest(); }
+	~PlantEndOfHarvestEvent() { m_plant.m_endOfHarvestEvent = nullptr; }
 };
 template<class Block>
 class PlantFluidEvent : public ScheduledEventWithPercent
@@ -89,21 +86,34 @@ public:
 	ScheduledEventWithPercent* m_growthEvent;
 	ScheduledEventWithPercent* m_fluidEvent;
 	ScheduledEventWithPercent* m_temperatureEvent;
-	ScheduledEventWithPercent* m_spawnEvent;
+	ScheduledEventWithPercent* m_endOfHarvestEvent;
 	uint32_t m_percentGrown;
 	bool m_readyToHarvest;
 	bool m_hasFluid;
 
-	Plant(Block& l, const PlantType* pt, uint32_t pg = 0) : m_location(l), m_fluidSource(nullptr), m_plantType(pt), m_growthEvent(nullptr), m_fluidEvent(nullptr), m_temperatureEvent(nullptr), m_spawnEvent(nullptr), m_percentGrown(pg), m_readyToHarvest(false), m_hasFluid(true) 
+	Plant(Block& l, const PlantType* pt, uint32_t pg = 0) : m_location(l), m_fluidSource(nullptr), m_plantType(pt), m_growthEvent(nullptr), m_fluidEvent(nullptr), m_temperatureEvent(nullptr), m_endOfHarvestEvent(nullptr), m_percentGrown(pg), m_readyToHarvest(false), m_hasFluid(true) 
 	{
 		assert(m_location.plantTypeCanGrow(m_plantType));
+		m_location.m_plants.push_back(this);
 		createFluidEvent(m_plantType->stepsNeedsFluidFrequency);
 		updateGrowingStatus();
+	}
+	void die()
+	{
+		if(m_growthEvent != nullptr)
+			m_growthEvent->cancel();
+		if(m_fluidEvent != nullptr)
+			m_fluidEvent->cancel();
+		if(m_temperatureEvent != nullptr)
+			m_temperatureEvent->cancel();
+		if(m_endOfHarvestEvent != nullptr)
+			m_endOfHarvestEvent->cancel();
+		onDie();
 	}
 	void applyTemperatureChange(uint32_t oldTemperature, uint32_t newTemperature)
 	{
 		(void)oldTemperature;
-		if(newTemperature > m_plantType->minimumGrowingTemperature && newTemperature < m_plantType->maximumGrowingTemperature)
+		if(newTemperature >= m_plantType->minimumGrowingTemperature && newTemperature <= m_plantType->maximumGrowingTemperature)
 		{
 			if(m_temperatureEvent != nullptr)
 				m_temperatureEvent->cancel();
@@ -156,7 +166,7 @@ public:
 	void createFluidEvent(uint32_t delay)
 	{
 		std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<PlantFluidEvent<Block>>(s_step + delay, *this);
-		m_spawnEvent = event.get();
+		m_fluidEvent = event.get();
 		m_location.m_area->m_eventSchedule.schedule(std::move(event));
 	}
 	void setDayOfYear(uint32_t dayOfYear)
@@ -167,22 +177,17 @@ public:
 	void setReadyToHarvest()
 	{
 		m_readyToHarvest = true;
-		uint32_t step = s_step + m_plantType->stepsTillSpawn;
-		std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<PlantSpawnEvent<Block>>(step, *this);
-		m_spawnEvent = event.get();
+		uint32_t step = s_step + m_plantType->stepsTillEndOfHarvest;
+		std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<PlantEndOfHarvestEvent<Block>>(step, *this);
+		m_endOfHarvestEvent = event.get();
 		m_location.m_area->m_eventSchedule.schedule(std::move(event));
 	}
-	void doSpawn()
+	void endOfHarvest()
 	{
-		uint32_t numberOfSpawn = randomUtil::getInRange(m_plantType->minimumSpawn, m_plantType->maximumSpawn);
-		std::unordered_set<Block*> inRangeSet = util<Block>::collectAdjacentsInRange(m_plantType->maximumSpawnDistance, m_location);
-		std::vector<Block*> candidates;
-		for(Block*  block : inRangeSet)
-			if(block->plantTypeCanGrow(m_plantType))
-				candidates.push_back(block);
-		std::shuffle(candidates.begin(), candidates.end(), randomUtil::getRng());
-		for(uint32_t i = 0; i < candidates.size() && i < numberOfSpawn; ++i)
-			m_location.m_area->m_plants.emplace_back(*candidates[i], m_plantType);
+		m_readyToHarvest = false;
+		onEndOfHarvest();
+		if(m_plantType->annual)
+			die();
 	}
 	void updateGrowingStatus()
 	{
@@ -233,5 +238,6 @@ public:
 		return m_plantType->rootRangeMin + ((m_plantType->rootRangeMax - m_plantType->rootRangeMin) * growthPercent()) / 100;
 	}
 	// User provided code.
-	void die();
+	void onDie();
+	void onEndOfHarvest();
 };

@@ -123,6 +123,9 @@ public:
 	void exit(DerivedActor& actor);
 	// Record temperature delta, possible start a fire.
 	void applyTemperatureDelta(int32_t delta);
+	// Called from setSolid / setNotSolid as well as from user code such as construct / remove floor.
+	void setBelowExposedToSky();
+	void setBelowNotExposedToSky();
 
 	// To be overriden by user code if diagonal movement allowed.
 	void clearMoveCostsCacheForSelfAndAdjacent();

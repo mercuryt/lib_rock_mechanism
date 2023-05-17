@@ -126,6 +126,7 @@ public:
 	const BlockFeature* getFeatureByType(const BlockFeatureType* blockFeatureType) const;
 	BlockFeature* getFeatureByType(const BlockFeatureType* blockFeatureType);
 	std::string describeFeatures() const;
+	std::string describePlants() const;
 	void removeFeature(const BlockFeatureType* blockFeatureType);
 
 	uint32_t getAmbientTemperature() const;
@@ -165,7 +166,7 @@ class Area final : public BaseArea<Block, Actor, Area>
 		std::list<Plant<Block>> m_plants;
 		ScheduledEvent* m_rainStopEvent;
 
-		Area(uint32_t x, uint32_t y, uint32_t z) : BaseArea<Block, Actor, Area>(x, y, z) {}
+		Area(uint32_t x, uint32_t y, uint32_t z) : BaseArea<Block, Actor, Area>(x, y, z), m_ambiantSurfaceTemperature(0) {}
 		void notifyNoRouteFound(Actor& actor);
 		void rain(const FluidType* fluidType, uint32_t duration);
 		void setHour(uint32_t hour, uint32_t dayOfYear);
@@ -471,8 +472,12 @@ void Block::addConstructedFeature(const BlockFeatureType* blockFeatureType, cons
 	m_features.emplace_back(blockFeatureType, materialType, false);
 	clearMoveCostsCacheForSelfAndAdjacent();
 	m_area->expireRouteCache();
-	if(m_area->m_visionCuboidsActive && (blockFeatureType == s_floor || blockFeatureType == s_hatch) && !materialType->transparent)
-		VisionCuboid<Block, Actor, Area>::BlockFloorIsSometimesOpaque(*this);
+	if((blockFeatureType == s_floor || blockFeatureType == s_hatch) && !materialType->transparent)
+	{
+		if(m_area->m_visionCuboidsActive)
+			VisionCuboid<Block, Actor, Area>::BlockFloorIsSometimesOpaque(*this);
+		setBelowNotExposedToSky();
+	}
 }
 void Block::addHewnFeature(const BlockFeatureType* blockFeatureType, const MaterialType* materialType)
 {
@@ -485,8 +490,13 @@ void Block::addHewnFeature(const BlockFeatureType* blockFeatureType, const Mater
 	// clear move cost cache and expire route cache happen implicitly with call to setNotSolid.
 	if(isSolid())
 		setNotSolid();
-	if(m_area->m_visionCuboidsActive && (blockFeatureType == s_floor || blockFeatureType == s_hatch) && !materialType->transparent)
-		VisionCuboid<Block, Actor, Area>::BlockFloorIsSometimesOpaque(*this);
+	setBelowNotExposedToSky();
+	if((blockFeatureType == s_floor || blockFeatureType == s_hatch) && !materialType->transparent)
+	{
+		if(m_area->m_visionCuboidsActive)
+			VisionCuboid<Block, Actor, Area>::BlockFloorIsSometimesOpaque(*this);
+		setBelowExposedToSky();
+	}
 }
 bool Block::hasFeatureType(const BlockFeatureType* blockFeatureType) const
 {
@@ -558,6 +568,13 @@ bool Block::plantTypeCanGrow(const PlantType* plantType) const
 {
 	return m_exposedToSky == plantType->growsInSunLight && canStandIn() && m_adjacents[0]->getSolidMaterial() == s_dirt;
 }
+std::string Block::describePlants() const
+{
+	std::string output;
+	for(Plant<Block>* plant : m_plants)
+		output += plant->m_plantType->name;
+	return output;
+}
 //TODO: Use different inside temperatures?
 uint32_t Block::getAmbientTemperature() const
 {
@@ -573,7 +590,7 @@ std::string Block::toS() const
 		output += fluidType->name + ":" + std::to_string(pair.first) + ";";
 	for(auto& pair : m_actors)
 		output += ',' + pair.first->m_name;
-	return output + describeFeatures();
+	return output + describeFeatures() + describePlants();
 }
 Actor::Actor(Block* l, const Shape* s, const MoveType* mt) : BaseActor<Block, Actor, Area>(l, s, mt), m_onTaskComplete(nullptr) {}
 Actor::Actor(const Shape* s, const MoveType* mt) : BaseActor(s, mt), m_onTaskComplete(nullptr) {}
@@ -631,6 +648,8 @@ void Area::setHour(uint32_t hour, uint32_t dayOfYear)
 void Area::setDayOfYear(uint32_t dayOfYear)
 {
 	setAmbientTemperatureFor(0, dayOfYear);
+	for(Plant<Block>& plant : m_plants)
+		plant.setDayOfYear(dayOfYear);
 }
 void Area::setAmbientTemperatureFor(uint32_t hour, uint32_t dayOfYear)
 {
@@ -661,10 +680,15 @@ void Area::notifyNoRouteFound(Actor& actor)
 	std::cout << "route not found for " << actor.m_name << " to destination " + actor.m_destination->toS() << "from " << actor.m_location->toS() << std::endl;
 }
 template<class Block>
-void Plant<Block>::die()
+void Plant<Block>::onDie()
 {
 	m_location.m_plants.remove(this);
 	m_location.m_area->m_plants.remove_if([&](Plant<Block>& plant){ return &plant == this; });
+}
+template<class Block>
+void Plant<Block>::onEndOfHarvest()
+{
+	// Possibly spawn offspring here.
 }
 
 // typesRegistered is used to make sure registerTypes is called only once durring testing.
@@ -720,8 +744,8 @@ void registerTypes()
 	s_floorGrate = registerBlockFeatureType("floor grate");
 	s_floodGate = registerBlockFeatureType("flood gate");
 
-	// name, annual, maximum temperature, minimum temperature, steps till die from temperature, steps needs fluid frequency, steps till die without fluid, steps till growth event, grows in sunlight, steps till spawn, day of year for harvest, maximum spawn, minimum spawn, maximum spawn distance, root range max, root range min, fluidType.
-	s_grass = registerPlantType("grass", false, 283, 316, Config::stepsPerDay, Config::stepsPerDay * 4, Config::stepsPerDay * 8, Config::stepsPerDay * 100, true, Config::stepsPerDay * 50, 200, 2, 1, 5, 2, 1, s_water);
+	// name, annual, maximum temperature, minimum temperature, steps till die from temperature, steps needs fluid frequency, steps till die without fluid, steps till growth event, grows in sunlight, day of year for harvest, steps till end of harvest, root range max, root range min, fluidType
+	s_grass = registerPlantType("grass", false, 316, 283, Config::stepsPerDay, Config::stepsPerDay * 4, Config::stepsPerDay * 8, Config::stepsPerDay * 100, true, 200, 50, 2, 1, s_water);
 }
 
 // Test helpers.
