@@ -94,9 +94,10 @@ public:
 	bool m_readyToHarvest;
 	bool m_hasFluid;
 
-	Plant(Block& l, const PlantType* pt, uint32_t pg = 0) : m_location(l), m_plantType(pt), m_percentGrown(pg), m_readyToHarvest(false), m_hasFluid(true) 
+	Plant(Block& l, const PlantType* pt, uint32_t pg = 0) : m_location(l), m_fluidSource(nullptr), m_plantType(pt), m_growthEvent(nullptr), m_fluidEvent(nullptr), m_temperatureEvent(nullptr), m_spawnEvent(nullptr), m_percentGrown(pg), m_readyToHarvest(false), m_hasFluid(true) 
 	{
 		assert(m_location.plantTypeCanGrow(m_plantType));
+		createFluidEvent(m_plantType->stepsNeedsFluidFrequency);
 		updateGrowingStatus();
 	}
 	void applyTemperatureChange(uint32_t oldTemperature, uint32_t newTemperature)
@@ -117,6 +118,7 @@ public:
 				m_location.m_area->m_eventSchedule.schedule(std::move(event));
 			}
 		}
+		updateGrowingStatus();
 
 	}
 	void setHasFluidForNow()
@@ -127,6 +129,8 @@ public:
 			m_fluidEvent->cancel();
 			m_fluidEvent = nullptr;
 		}
+		createFluidEvent(m_plantType->stepsNeedsFluidFrequency);
+		updateGrowingStatus();
 	}
 	void setMaybeNeedsFluid()
 	{
@@ -146,11 +150,14 @@ public:
 			m_hasFluid = false;
 			stepsTillNextFluidEvent = m_plantType->stepsTillDieWithoutFluid;
 		}
-		uint32_t step = s_step + m_plantType->stepsTillDieWithoutFluid;
-		std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<PlantFluidEvent<Block>>(step, *this);
+		createFluidEvent(stepsTillNextFluidEvent);
+		updateGrowingStatus();
+	}
+	void createFluidEvent(uint32_t delay)
+	{
+		std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<PlantFluidEvent<Block>>(s_step + delay, *this);
 		m_spawnEvent = event.get();
 		m_location.m_area->m_eventSchedule.schedule(std::move(event));
-		updateGrowingStatus();
 	}
 	void setDayOfYear(uint32_t dayOfYear)
 	{
@@ -183,7 +190,9 @@ public:
 		{
 			if(m_growthEvent == nullptr)
 			{
-				uint32_t step = s_step + ((m_plantType->stepsTillFullyGrown * m_percentGrown) / 100u);
+				uint32_t step = s_step + (m_percentGrown == 0 ?
+						m_plantType->stepsTillFullyGrown :
+						((m_plantType->stepsTillFullyGrown * m_percentGrown) / 100u));
 				std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<PlantGrowthEvent<Block>>(step, *this);
 				m_growthEvent = event.get();
 				m_location.m_area->m_eventSchedule.schedule(std::move(event));
@@ -201,11 +210,11 @@ public:
 	}
 	bool hasFluidSource()
 	{
-		if(m_fluidSource != nullptr && m_fluidSource.m_fluids.contains(m_plantType->fluidType))
+		if(m_fluidSource != nullptr && m_fluidSource->m_fluids.contains(m_plantType->fluidType))
 			return true;
 		m_fluidSource = nullptr;
 		for(Block* block : util<Block>::collectAdjacentsInRange(getRootRange(), m_location))
-			if(block.m_fluids.contains(m_plantType->fluidType))
+			if(block->m_fluids.contains(m_plantType->fluidType))
 			{
 				m_fluidSource = block;
 				return true;
