@@ -139,7 +139,7 @@ public:
 };
 
 #include "../src/block.hpp"
-class Actor final : public BaseActor<Block, Actor, Area>
+class Actor final : public BaseActor<Actor, Block>
 {
 	public:
 		std::unordered_set<Actor*> m_canSee;
@@ -157,7 +157,6 @@ class Actor final : public BaseActor<Block, Actor, Area>
 		void exposedToFluid(const FluidType* fluidType);
 		bool canSee(const Actor& actor) const;
 };
-#include "../src/actor.hpp"
 class Area final : public BaseArea<Block, Actor, Area>
 {
 	public:
@@ -592,8 +591,8 @@ std::string Block::toS() const
 		output += ',' + pair.first->m_name;
 	return output + describeFeatures() + describePlants();
 }
-Actor::Actor(Block* l, const Shape* s, const MoveType* mt) : BaseActor<Block, Actor, Area>(l, s, mt), m_onTaskComplete(nullptr) {}
-Actor::Actor(const Shape* s, const MoveType* mt) : BaseActor(s, mt), m_onTaskComplete(nullptr) {}
+Actor::Actor(Block* l, const Shape* s, const MoveType* mt) : BaseActor<Actor, Block>(l, s, mt), m_onTaskComplete(nullptr) {}
+Actor::Actor(const Shape* s, const MoveType* mt) : BaseActor<Actor, Block>(s, mt), m_onTaskComplete(nullptr) {}
 uint32_t Actor::getSpeed() const
 {
 	return 2;

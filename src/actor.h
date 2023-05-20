@@ -15,7 +15,7 @@
 #include <vector>
 #include <unordered_set>
 
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
+template<class DerivedActor, class DerivedBlock>
 class BaseActor : public HasShape<DerivedBlock>
 {	
 	static uint32_t s_nextId;
@@ -30,15 +30,30 @@ public:
 	ScheduledEvent* m_taskEvent;
 	uint32_t m_taskDelayCount;
 
-	BaseActor(DerivedBlock* l, const Shape* s, const MoveType* mt);
-	BaseActor(const Shape* s, const MoveType* mt);
-	// Set and then register route request with area.
-	void setDestination(DerivedBlock& block);
-	// Record volume in all blocks of shape and set m_location.
-	// Can accept nullptr.
-	void setLocation(DerivedBlock* block);
-	// Remove all references in current area.
-	void exitArea();
+	BaseActor(DerivedBlock* l, const Shape* s, const MoveType* mt) : 
+		HasShape<DerivedBlock>(s), m_id(s_nextId++), m_name("actor#" + std::to_string(m_id)), m_moveType(mt), m_taskDelayCount(0)
+	{
+		setLocation(l);
+	}
+	BaseActor(const Shape* s, const MoveType* mt) : 
+		HasShape<DerivedBlock>(s), m_id(s_nextId++), m_name("actor#" + std::to_string(m_id)), m_moveType(mt), m_taskDelayCount(0) { }
+	// Check location for route. If found set as own route and then register moving with area.
+	// Else register route request with area. Syncronus.
+	void setDestination(DerivedBlock& block)
+	{
+		assert(&block != HasShape<DerivedBlock>::m_location);
+		assert(block.anyoneCanEnterEver() && block.shapeAndMoveTypeCanEnterEver(HasShape<DerivedBlock>::m_shape, m_moveType));
+		m_destination = &block;
+		HasShape<DerivedBlock>::m_location->m_area->registerRouteRequest(static_cast<DerivedActor&>(*this));
+	}
+	// nullptr is a valid value for block.
+	void setLocation(DerivedBlock* block)
+	{
+		assert(block != HasShape<DerivedBlock>::m_location);
+		assert(block->anyoneCanEnterEver() && block->shapeAndMoveTypeCanEnterEver(HasShape<DerivedBlock>::m_shape, m_moveType));
+		assert(block->actorCanEnterCurrently(static_cast<DerivedActor&>(*this)));
+		block->enter(static_cast<DerivedActor&>(*this));
+	}
 	// User provided code.
 	uint32_t getSpeed() const;
 	uint32_t getVisionRange() const;
@@ -47,5 +62,5 @@ public:
 	bool canSee(const DerivedActor& actor) const;
 	void exposedToFluid(const FluidType* fluidType);
 };
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-uint32_t BaseActor<DerivedBlock, DerivedActor, DerivedArea>::s_nextId = 1;
+template<class DerivedActor, class DerivedBlock>
+uint32_t BaseActor<DerivedActor, DerivedBlock>::s_nextId = 1;

@@ -1,4 +1,4 @@
-#include "../../src/nthAdjacentOffsets.hpp"
+#include "../../src/nthAdjacentOffsets.h"
 TEST_CASE("getNthAdjacentOffsets")
 {
 	auto result = getNthAdjacentOffsets(1);
