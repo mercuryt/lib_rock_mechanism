@@ -79,13 +79,11 @@ void LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::processVisionRequ
 	visionRequest.m_actors.erase(&visionRequest.m_actor);
 }
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
-
 LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::inRange(const DerivedBlock& origin, uint32_t range) const
 {
 	return LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange(*this, origin, range);
 }
 template<class DerivedBlock, class DerivedActor, class DerivedArea>
-
 LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange::iterator::iterator(LocationBuckets<DerivedBlock, DerivedActor, DerivedArea>::InRange& ir) : inRange(&ir)
 {
 	const DerivedBlock& origin = inRange->origin;

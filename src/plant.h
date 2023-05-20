@@ -207,9 +207,8 @@ public:
 		{
 			if(m_growthEvent != nullptr)
 			{
-				m_percentGrown += m_growthEvent->percentComplete();
+				m_percentGrown = growthPercent();
 				m_growthEvent->cancel();
-				m_growthEvent = nullptr;
 			}
 		}
 	}
@@ -230,7 +229,12 @@ public:
 	{
 		uint32_t output = m_percentGrown;
 		if(m_growthEvent != nullptr)
-			output += m_growthEvent->percentComplete();
+		{
+			if(m_percentGrown != 0)
+				output += (m_growthEvent->percentComplete() * (100u - m_percentGrown)) / 100u;
+			else
+				output = m_growthEvent->percentComplete();
+		}
 		return output;
 	}
 	uint32_t getRootRange() const

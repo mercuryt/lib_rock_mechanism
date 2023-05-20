@@ -3,7 +3,7 @@
  * Increases and lowers nearby temperature.
  */
 
-#include "nthAdjacentOffsets.hpp"
+#include "nthAdjacentOffsets.h"
 
 #include <unordered_set>
 #include <vector>
