@@ -13,8 +13,6 @@ struct FluidType
 	const uint32_t density;
 	const uint32_t mistDuration;
 	const uint32_t maxMistSpread;
-	FluidType(std::string n, uint32_t v, uint32_t d, uint32_t md, uint32_t mms) :
-	       	name(n), viscosity(v), density(d), mistDuration(md), maxMistSpread(mms) {}
 };
 
 static std::list<FluidType> fluidTypes;

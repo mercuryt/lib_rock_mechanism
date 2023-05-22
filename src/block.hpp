@@ -15,17 +15,15 @@
 #include "moveType.h"
 #include "shape.h"
 #include "hasShape.h"
-#include "fluidType.h"
 #include "block.h"
-#include "mistDisperseEvent.hpp"
 
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::BaseBlock() : m_solid(nullptr), m_routeCacheVersion(0), m_totalDynamicVolume(0), m_totalStaticVolume(0), m_totalFluidVolume(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr), m_deltaTemperature(0), m_exposedToSky(true) {}
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::setup(DerivedArea* a, uint32_t ax, uint32_t ay, uint32_t az)
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::BaseBlock() : m_solid(nullptr), m_routeCacheVersion(0), m_totalDynamicVolume(0), m_totalStaticVolume(0), m_totalFluidVolume(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr), m_deltaTemperature(0), m_exposedToSky(true) {}
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+void BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::setup(Area* a, uint32_t ax, uint32_t ay, uint32_t az)
 {m_area=a;m_x=ax;m_y=ay;m_z=az;m_locationBucket = a->m_locationBuckets.getBucketFor(*static_cast<DerivedBlock*>(this));}
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::recordAdjacent()
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+void BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::recordAdjacent()
 {
 	static const int32_t offsetsList[6][3] = {{0,0,-1}, {0,-1,0}, {-1,0,0}, {0,1,0}, {1,0,0}, {0,0,1}};
 	for(uint32_t i = 0; i < 6; i++)
@@ -36,8 +34,8 @@ void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::recordAdjacent()
 			m_adjacentsVector.push_back(block);
 	}
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-std::vector<DerivedBlock*> BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::getAdjacentWithEdgeAdjacent() const
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+std::vector<DerivedBlock*> BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::getAdjacentWithEdgeAdjacent() const
 {
 	std::vector<DerivedBlock*> output;
 	output.reserve(18);
@@ -63,8 +61,8 @@ std::vector<DerivedBlock*> BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::g
 	}
 	return output;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-std::vector<DerivedBlock*> BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::getAdjacentWithEdgeAndCornerAdjacent() const
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+std::vector<DerivedBlock*> BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::getAdjacentWithEdgeAndCornerAdjacent() const
 {
 	std::vector<DerivedBlock*> output;
 	output.reserve(26);
@@ -90,8 +88,8 @@ std::vector<DerivedBlock*> BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::g
 	}
 	return output;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-std::vector<DerivedBlock*> BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::getEdgeAdjacentOnly() const
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+std::vector<DerivedBlock*> BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::getEdgeAdjacentOnly() const
 {
 	std::vector<DerivedBlock*> output;
 	output.reserve(12);
@@ -114,8 +112,8 @@ std::vector<DerivedBlock*> BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::g
 	}
 	return output;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-std::vector<DerivedBlock*> BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::getEdgeAdjacentOnSameZLevelOnly() const
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+std::vector<DerivedBlock*> BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::getEdgeAdjacentOnSameZLevelOnly() const
 {
 	std::vector<DerivedBlock*> output;
 	output.reserve(12);
@@ -132,8 +130,8 @@ std::vector<DerivedBlock*> BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::g
 	}
 	return output;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-std::vector<DerivedBlock*> BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::getEdgeAdjacentOnlyOnNextZLevelDown() const
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+std::vector<DerivedBlock*> BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::getEdgeAdjacentOnlyOnNextZLevelDown() const
 {
 	std::vector<DerivedBlock*> output;
 	output.reserve(12);
@@ -150,8 +148,8 @@ std::vector<DerivedBlock*> BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::g
 	}
 	return output;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-std::vector<DerivedBlock*> BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::getEdgeAdjacentOnlyOnNextZLevelUp() const
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+std::vector<DerivedBlock*> BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::getEdgeAdjacentOnlyOnNextZLevelUp() const
 {
 	std::vector<DerivedBlock*> output;
 	output.reserve(12);
@@ -168,8 +166,8 @@ std::vector<DerivedBlock*> BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::g
 	}
 	return output;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-std::vector<DerivedBlock*> BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::getEdgeAndCornerAdjacentOnly() const
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+std::vector<DerivedBlock*> BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::getEdgeAndCornerAdjacentOnly() const
 {
 	std::vector<DerivedBlock*> output;
 	output.reserve(20);
@@ -194,8 +192,8 @@ std::vector<DerivedBlock*> BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::g
 	}
 	return output;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-std::vector<DerivedBlock*> BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::getAdjacentOnSameZLevelOnly() const
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+std::vector<DerivedBlock*> BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::getAdjacentOnSameZLevelOnly() const
 {
 	std::vector<DerivedBlock*> output;
 	output.reserve(4);
@@ -212,29 +210,29 @@ std::vector<DerivedBlock*> BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::g
 	}
 	return output;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-uint32_t BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::distance(DerivedBlock& block) const
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+uint32_t BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::distance(DerivedBlock& block) const
 {
 	uint32_t dx = abs((int)m_x - (int)block.m_x);
 	uint32_t dy = abs((int)m_y - (int)block.m_y);
 	uint32_t dz = abs((int)m_z - (int)block.m_z);
 	return pow((pow(dx, 2) + pow(dy, 2) + pow(dz, 2)), 0.5);
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-uint32_t BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::taxiDistance(DerivedBlock& block) const
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+uint32_t BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::taxiDistance(DerivedBlock& block) const
 {
 	return abs((int)m_x - (int)block.m_x) + abs((int)m_y - (int)block.m_y) + abs((int)m_z - (int)block.m_z);
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-bool BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::isAdjacentToAny(std::unordered_set<DerivedBlock*>& blocks) const
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+bool BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::isAdjacentToAny(std::unordered_set<DerivedBlock*>& blocks) const
 {
 	for(DerivedBlock* adjacent : m_adjacentsVector)
 		if(blocks.contains(adjacent))
 			return true;
 	return false;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::setNotSolid()
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+void BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::setNotSolid()
 {
 	if(m_solid == nullptr)
 		return;
@@ -249,15 +247,15 @@ void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::setNotSolid()
 	DerivedBlock* block = static_cast<DerivedBlock*>(this);
 	block->clearMoveCostsCacheForSelfAndAdjacent();
 	if(m_area->m_visionCuboidsActive)
-		VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::BlockIsNeverOpaque(*block);
+		VisionCuboid<DerivedBlock, Actor, Area>::BlockIsNeverOpaque(*block);
 	if(m_adjacents[5] == nullptr || m_adjacents[5]->m_exposedToSky)
 	{
 		block->setExposedToSky(true);
 		block->setBelowExposedToSky();
 	}
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::setBelowExposedToSky()
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+void BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::setBelowExposedToSky()
 {
 	// Set blocks below as exposed to sky.
 	DerivedBlock* block = m_adjacents[0];
@@ -267,8 +265,8 @@ void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::setBelowExposedToSky()
 		block = block->m_adjacents[0];
 	}
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::setSolid(const MaterialType* materialType)
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+void BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::setSolid(const MaterialType* materialType)
 {
 	assert(materialType != nullptr);
 	if(materialType == m_solid)
@@ -322,13 +320,13 @@ void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::setSolid(const Material
 	DerivedBlock* block = static_cast<DerivedBlock*>(this);
 	block->clearMoveCostsCacheForSelfAndAdjacent();
 	if(m_area->m_visionCuboidsActive && !materialType->transparent)
-		VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::BlockIsSometimesOpaque(*block);
+		VisionCuboid<DerivedBlock, Actor, Area>::BlockIsSometimesOpaque(*block);
 	// Set blocks below as not exposed to sky.
 	block->setExposedToSky(false);
 	block->setBelowNotExposedToSky();
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::setBelowNotExposedToSky()
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+void BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::setBelowNotExposedToSky()
 {
 	DerivedBlock* block = m_adjacents[0];
 	while(block != nullptr && block->m_exposedToSky)
@@ -337,33 +335,33 @@ void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::setBelowNotExposedToSky
 		block = block->m_adjacents[0];
 	}
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-bool BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::canEnterEver(DerivedActor& actor) const
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+bool BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::canEnterEver(Actor& actor) const
 {
 	return shapeAndMoveTypeCanEnterEver(actor.m_shape, actor.m_moveType);
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-bool BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::isSolid() const
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+bool BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::isSolid() const
 {
 	return m_solid != nullptr;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-const MaterialType* BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::getSolidMaterial() const
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+const MaterialType* BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::getSolidMaterial() const
 {
 	return m_solid;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::spawnMist(const FluidType* fluidType, uint32_t maxMistSpread)
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+void BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::spawnMist(const FluidType* fluidType, uint32_t maxMistSpread)
 {
 	if(m_mist != nullptr and m_mist->density > fluidType->density)
 		return;
 	m_mist = fluidType;
 	m_mistInverseDistanceFromSource = maxMistSpread != 0 ? maxMistSpread : fluidType->maxMistSpread;
-	MistDisperseEvent<DerivedBlock, DerivedActor, DerivedArea>::emplace(m_area->m_eventSchedule, fluidType->mistDuration, fluidType, static_cast<DerivedBlock&>(*this));
+	MistDisperseEvent<DerivedBlock, FluidType>::emplace(m_area->m_eventSchedule, fluidType->mistDuration, fluidType, static_cast<DerivedBlock&>(*this));
 }
 //TODO: This code puts the fluid into an adjacent group of the correct type if it can find one, it does not add the block or merge groups, leaving these tasks to fluidGroup readStep. Is this ok?
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::addFluid(uint32_t volume, const FluidType* fluidType)
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+void BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::addFluid(uint32_t volume, const FluidType* fluidType)
 {
 	// If a suitable fluid group exists already then just add to it's excessVolume.
 	if(m_fluids.contains(fluidType))
@@ -375,7 +373,7 @@ void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::addFluid(uint32_t volum
 	m_fluids.emplace(fluidType, std::make_pair(volume, nullptr));
 	m_totalFluidVolume += volume;
 	// Find fluid group.
-	FluidGroup<DerivedBlock, DerivedArea>* fluidGroup = nullptr;
+	FluidGroup<DerivedBlock, Area, FluidType>* fluidGroup = nullptr;
 	for(DerivedBlock* adjacent : m_adjacentsVector)
 		if(adjacent->fluidCanEnterEver() && adjacent->m_fluids.contains(fluidType))
 		{
@@ -394,14 +392,14 @@ void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::addFluid(uint32_t volum
 	if(m_totalFluidVolume > Config::maxBlockVolume)
 		resolveFluidOverfull();
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::removeFluid(uint32_t volume, const FluidType* fluidType)
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+void BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::removeFluid(uint32_t volume, const FluidType* fluidType)
 {
 	m_fluids.at(fluidType).second->removeFluid(volume);
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
 // Validate the actor can enter this block and also any other blocks required by it's Shape.
-bool BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::shapeAndMoveTypeCanEnterEver(const Shape* shape, const MoveType* moveType) const
+bool BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::shapeAndMoveTypeCanEnterEver(const Shape* shape, const MoveType* moveType) const
 {
 	if(shape->positions.size() == 1)
 	{
@@ -416,8 +414,8 @@ bool BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::shapeAndMoveTypeCanEnte
 	}
 	return true;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-bool BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::actorCanEnterCurrently(DerivedActor& actor) const
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+bool BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::actorCanEnterCurrently(Actor& actor) const
 {
 	const Shape* shape = actor.m_shape;
 	if(shape->positions.size() == 1)
@@ -442,8 +440,8 @@ bool BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::actorCanEnterCurrently(
 	}
 	return true;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-DerivedBlock* BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::offset(int32_t ax, int32_t ay, int32_t az) const
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+DerivedBlock* BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::offset(int32_t ax, int32_t ay, int32_t az) const
 {
 	ax += m_x;
 	ay += m_y;
@@ -452,8 +450,8 @@ DerivedBlock* BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::offset(int32_t
 		return nullptr;
 	return &m_area->m_blocks[ax][ay][az];
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-bool BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::fluidCanEnterCurrently(const FluidType* fluidType) const
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+bool BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::fluidCanEnterCurrently(const FluidType* fluidType) const
 {
 	if(m_totalFluidVolume < Config::maxBlockVolume)
 		return true;
@@ -462,16 +460,16 @@ bool BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::fluidCanEnterCurrently(
 			return true;
 	return false;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-bool BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::isAdjacentToFluidGroup(const FluidGroup<DerivedBlock, DerivedArea>* fluidGroup) const
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+bool BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::isAdjacentToFluidGroup(const FluidGroup<DerivedBlock, Area, FluidType>* fluidGroup) const
 {
 	for(DerivedBlock* block : m_adjacentsVector)
 		if(block->m_fluids.contains(fluidGroup->m_fluidType) && block->m_fluids.at(fluidGroup->m_fluidType).second == fluidGroup)
 			return true;
 	return false;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-uint32_t BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::volumeOfFluidTypeCanEnter(const FluidType* fluidType) const
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+uint32_t BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::volumeOfFluidTypeCanEnter(const FluidType* fluidType) const
 {
 	assert(fluidType != nullptr);
 	uint32_t output = Config::maxBlockVolume;
@@ -480,8 +478,8 @@ uint32_t BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::volumeOfFluidTypeCa
 			output -= pair.second.first;
 	return output;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-uint32_t BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::volumeOfFluidTypeContains(const FluidType* fluidType) const
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+uint32_t BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::volumeOfFluidTypeContains(const FluidType* fluidType) const
 {
 	assert(fluidType != nullptr);
 	auto found = m_fluids.find(fluidType);
@@ -489,8 +487,8 @@ uint32_t BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::volumeOfFluidTypeCo
 		return 0;
 	return found->second.first;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-const FluidType* BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::getFluidTypeWithMostVolume() const
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+const FluidType* BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::getFluidTypeWithMostVolume() const
 {
 	assert(!m_fluids.empty());
 	uint32_t volume = 0;
@@ -500,8 +498,8 @@ const FluidType* BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::getFluidTyp
 			output = const_cast<FluidType*>(fluidType);
 	return output;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-FluidGroup<DerivedBlock, DerivedArea>* BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::getFluidGroup(const FluidType* fluidType) const
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+FluidGroup<DerivedBlock, Area, FluidType>* BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::getFluidGroup(const FluidType* fluidType) const
 {
 	assert(fluidType != nullptr);
 	auto found = m_fluids.find(fluidType);
@@ -510,8 +508,8 @@ FluidGroup<DerivedBlock, DerivedArea>* BaseBlock<DerivedBlock, DerivedActor, Der
 	assert(found->second.second->m_fluidType == fluidType);
 	return found->second.second;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::resolveFluidOverfull()
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+void BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::resolveFluidOverfull()
 {
 	std::vector<const FluidType*> toErase;
 	// Fluid types are sorted by density.
@@ -533,7 +531,7 @@ void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::resolveFluidOverfull()
 	for(const FluidType* fluidType : toErase)
 	{
 		// If the last block of a fluidGroup is displaced disolve it in the lowest density liquid which is more dense then it.
-		FluidGroup<DerivedBlock, DerivedArea>* fluidGroup = m_fluids.at(fluidType).second;
+		FluidGroup<DerivedBlock, Area, FluidType>* fluidGroup = m_fluids.at(fluidType).second;
 		assert(fluidGroup->m_fluidType = fluidType);
 		fluidGroup->removeBlock(static_cast<DerivedBlock&>(*this));
 		if(fluidGroup->m_drainQueue.m_set.empty())
@@ -560,8 +558,8 @@ void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::resolveFluidOverfull()
 	}
 }
 // Add / remove  actor occupancy.
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::enter(DerivedActor& actor)
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+void BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::enter(Actor& actor)
 {
 	assert(actor.m_location != static_cast<DerivedBlock*>(this));
 	actor.m_taskDelayCount = 0;
@@ -584,8 +582,8 @@ void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::enter(DerivedActor& act
 		actor.m_blocks.push_back(block);
 	}
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::exit(DerivedActor& actor)
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+void BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::exit(Actor& actor)
 {
 	for(DerivedBlock* block : actor.m_blocks)
 	{
@@ -595,8 +593,8 @@ void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::exit(DerivedActor& acto
 		block->m_actors.erase(found);
 	}
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::applyTemperatureDelta(int32_t delta)
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+void BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::applyTemperatureDelta(int32_t delta)
 {
 	assert((int)m_deltaTemperature + (int)delta > INT32_MIN);
 	assert((int)m_deltaTemperature + (int)delta < INT32_MAX);
@@ -606,11 +604,11 @@ void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::applyTemperatureDelta(i
 	//m_area->m_blocksWithChangedTemperature.insert({static_cast<DerivedBlock*>(this), m_deltaTemperature});
 	m_deltaTemperature += delta;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-bool BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::operator==(const DerivedBlock& block) const { return &block == static_cast<const DerivedBlock*>(this); };
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+bool BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::operator==(const DerivedBlock& block) const { return &block == static_cast<const DerivedBlock*>(this); };
 //TODO: Replace with cuboid.
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-std::vector<DerivedBlock*> BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::selectBetweenCorners(DerivedBlock* otherBlock) const
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
+std::vector<DerivedBlock*> BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::selectBetweenCorners(DerivedBlock* otherBlock) const
 {
 	assert(otherBlock->m_x < m_area->m_sizeX);
 	assert(otherBlock->m_y < m_area->m_sizeY);
@@ -633,7 +631,7 @@ std::vector<DerivedBlock*> BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::s
 }
 /*
 // Add / remove nongeneric non-actor occupancy for this block and also any other blocks required by it's Shape.
-void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::place(HasShape* hasShape)
+void BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::place(HasShape* hasShape)
 {
 for(auto& [x, y, z, v] : hasShape->m_shape->positions)
 {
@@ -642,7 +640,7 @@ block->recordHasShapeAndVolume(hasShape, v);
 }
 hasShape->m_location = static_cast<DerivedBlock*>(this);
 }
-void BaseBlock<DerivedBlock, DerivedActor, DerivedArea>::unplace(HasShape* hasShape)
+void BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType>::unplace(HasShape* hasShape)
 {
 for(auto& [x, y, z, v] : hasShape->m_shape->positions)
 {

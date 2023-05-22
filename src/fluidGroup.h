@@ -12,19 +12,18 @@
 #include <vector>
 #include <unordered_set>
 
-#include "fluidType.h"
 #include "drainQueue.h"
 #include "fillQueue.h"
 
-template<class DerivedBlock>
+template<class Block>
 struct FluidGroupSplitData
 {
-	std::unordered_set<DerivedBlock*> members;
-	std::unordered_set<DerivedBlock*> futureAdjacent;
-	FluidGroupSplitData(std::unordered_set<DerivedBlock*>& m) : members(m) {}
+	std::unordered_set<Block*> members;
+	std::unordered_set<Block*> futureAdjacent;
+	FluidGroupSplitData(std::unordered_set<Block*>& m) : members(m) {}
 };
 
-template<class DerivedBlock, class DerivedArea>
+template<class Block, class Area, class FluidType>
 class FluidGroup
 {
 public:
@@ -36,47 +35,47 @@ public:
 	const FluidType* m_fluidType;
 	int32_t m_excessVolume;
 	uint32_t m_viscosity;
-	FillQueue<DerivedBlock, DerivedArea> m_fillQueue;
-	DrainQueue<DerivedBlock, DerivedArea> m_drainQueue;
+	FillQueue<Block, Area, FluidType> m_fillQueue;
+	DrainQueue<Block, Area, FluidType> m_drainQueue;
 	std::unordered_map<const FluidType*, FluidGroup*> m_disolvedInThisGroup;
-	DerivedArea& m_area;
+	Area& m_area;
 
 	// For spitting into multiple fluidGroups.
-	std::vector<FluidGroupSplitData<DerivedBlock>> m_futureGroups;
+	std::vector<FluidGroupSplitData<Block>> m_futureGroups;
 	// For notifing groups with different fluids of unfull status. Groups with the same fluid are merged instead.
-	std::unordered_map<FluidGroup<DerivedBlock, DerivedArea>*, std::unordered_set<DerivedBlock*>> m_futureNotifyPotentialUnfullAdjacent;
+	std::unordered_map<FluidGroup<Block, Area, FluidType>*, std::unordered_set<Block*>> m_futureNotifyPotentialUnfullAdjacent;
 	
-	std::unordered_set<DerivedBlock*> m_diagonalBlocks;
+	std::unordered_set<Block*> m_diagonalBlocks;
 
-	std::unordered_set<DerivedBlock*> m_potentiallyNoLongerAdjacentFromSyncronusStep;
-	std::unordered_set<DerivedBlock*> m_potentiallySplitFromSyncronusStep;
+	std::unordered_set<Block*> m_potentiallyNoLongerAdjacentFromSyncronusStep;
+	std::unordered_set<Block*> m_potentiallySplitFromSyncronusStep;
 
-	std::unordered_set<DerivedBlock*> m_futureNewEmptyAdjacents;
+	std::unordered_set<Block*> m_futureNewEmptyAdjacents;
 
-	std::unordered_set<DerivedBlock*> m_futureAddToDrainQueue;
-	std::unordered_set<DerivedBlock*> m_futureRemoveFromDrainQueue;
-	std::unordered_set<DerivedBlock*> m_futureAddToFillQueue;
-	std::unordered_set<DerivedBlock*> m_futureRemoveFromFillQueue;
+	std::unordered_set<Block*> m_futureAddToDrainQueue;
+	std::unordered_set<Block*> m_futureRemoveFromDrainQueue;
+	std::unordered_set<Block*> m_futureAddToFillQueue;
+	std::unordered_set<Block*> m_futureRemoveFromFillQueue;
 
-	FluidGroup(const FluidType* ft, std::unordered_set<DerivedBlock*>& blocks, DerivedArea& area, bool checkMerge = true);
-	FluidGroup(const FluidGroup<DerivedBlock, DerivedArea>&) = delete;
+	FluidGroup(const FluidType* ft, std::unordered_set<Block*>& blocks, Area& area, bool checkMerge = true);
+	FluidGroup(const FluidGroup<Block, Area, FluidType>&) = delete;
 	void addFluid(uint32_t fluidVolume);
 	void removeFluid(uint32_t fluidVolume);
-	void addBlock(DerivedBlock& block, bool checkMerge = true);
-	void removeBlock(DerivedBlock& block);
-	void removeBlocks(std::unordered_set<DerivedBlock*>& blocks);
-	void addMistFor(DerivedBlock& block);
+	void addBlock(Block& block, bool checkMerge = true);
+	void removeBlock(Block& block);
+	void removeBlocks(std::unordered_set<Block*>& blocks);
+	void addMistFor(Block& block);
 	// Takes a pointer to the other fluid group because we may switch them inorder to merge into the larger one.
-	void merge(FluidGroup<DerivedBlock, DerivedArea>* fluidGroup);
+	void merge(FluidGroup<Block, Area, FluidType>* fluidGroup);
 	void readStep();
 	void writeStep();
 	void afterWriteStep();
 	void mergeStep();
 	void splitStep();
 	void setUnstable();
-	void addDiagonalsFor(DerivedBlock& block);
+	void addDiagonalsFor(Block& block);
 	void validate() const;
-	void validate(std::unordered_set<FluidGroup<DerivedBlock, DerivedArea>*> toErase);
+	void validate(std::unordered_set<FluidGroup<Block, Area, FluidType>*> toErase);
 	int32_t totalVolume();
-	template<typename, typename, typename> friend class BaseArea;
+	template<typename, typename, typename, typename> friend class BaseArea;
 };

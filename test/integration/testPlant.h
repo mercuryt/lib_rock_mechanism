@@ -8,7 +8,7 @@ TEST_CASE("plant")
 	setSolidLayer(area, 1, s_dirt);
 	s_step = 0;
 	area.m_plants.emplace_back(location, s_grass);
-	Plant<Block>& plant = area.m_plants.back();
+	Plant& plant = area.m_plants.back();
 	CHECK(area.m_eventSchedule.m_data.contains(s_grass->stepsTillFullyGrown));
 	CHECK(area.m_eventSchedule.m_data.contains(s_grass->stepsNeedsFluidFrequency));
 	CHECK(plant.m_growthEvent != nullptr);

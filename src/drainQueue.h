@@ -6,17 +6,17 @@
 #include "fluidGroup.h"
 #include "fluidQueue.h"
 
-template<class DerivedBlock, class DerivedArea>
-class DrainQueue : public FluidQueue<DerivedBlock, DerivedArea>
+template<class Block, class Area, class FluidType>
+class DrainQueue : public FluidQueue<Block, Area, FluidType>
 {
-	uint32_t getPriority(FutureFlowBlock<DerivedBlock>& futureFlowBlock) const;
+	uint32_t getPriority(FutureFlowBlock<Block>& futureFlowBlock) const;
 public:
-	std::unordered_set<DerivedBlock*> m_futureEmpty;
-	std::unordered_set<DerivedBlock*> m_futureNoLongerFull;
-	std::unordered_set<DerivedBlock*> m_futurePotentialNoLongerAdjacent;
+	std::unordered_set<Block*> m_futureEmpty;
+	std::unordered_set<Block*> m_futureNoLongerFull;
+	std::unordered_set<Block*> m_futurePotentialNoLongerAdjacent;
 
-	DrainQueue(FluidGroup<DerivedBlock, DerivedArea>& fluidGroup);
-	void buildFor(std::unordered_set<DerivedBlock*>& members);
+	DrainQueue(FluidGroup<Block, Area, FluidType>& fluidGroup);
+	void buildFor(std::unordered_set<Block*>& members);
 	void initalizeForStep();
 	void recordDelta(uint32_t volume, uint32_t flowCapacity, uint32_t flowTillNextStep);
 	void applyDelta();

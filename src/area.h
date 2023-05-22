@@ -22,27 +22,27 @@
 #include "cuboid.h"
 #include "visionCuboid.h"
 
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
+template<class Block, class Actor, class DerivedArea, class FluidType>
 class BaseArea
 {
 public:
 	uint32_t m_sizeX;
 	uint32_t m_sizeY;
 	uint32_t m_sizeZ;
-	std::vector<std::vector<std::vector<DerivedBlock>>> m_blocks;
-	LocationBuckets<DerivedBlock, DerivedActor, DerivedArea> m_locationBuckets;
-	std::list<FluidGroup<DerivedBlock, DerivedArea>> m_fluidGroups;
-	std::unordered_set<FluidGroup<DerivedBlock, DerivedArea>*> m_unstableFluidGroups;
-	std::unordered_set<FluidGroup<DerivedBlock, DerivedArea>*> m_setStable;
-	std::unordered_set<FluidGroup<DerivedBlock, DerivedArea>*> m_toDestroy;
-	std::unordered_set<DerivedBlock*> m_caveInCheck;
-	std::unordered_map<DerivedBlock*, int32_t> m_blocksWithChangedTemperature;
-	std::vector<std::tuple<std::vector<DerivedBlock*>,uint32_t,uint32_t>> m_caveInData;
-	std::vector<RouteRequest<DerivedBlock, DerivedActor, DerivedArea>> m_routeRequestQueue;
+	std::vector<std::vector<std::vector<Block>>> m_blocks;
+	LocationBuckets<Block, Actor, DerivedArea> m_locationBuckets;
+	std::list<FluidGroup<Block, DerivedArea, FluidType>> m_fluidGroups;
+	std::unordered_set<FluidGroup<Block, DerivedArea, FluidType>*> m_unstableFluidGroups;
+	std::unordered_set<FluidGroup<Block, DerivedArea, FluidType>*> m_setStable;
+	std::unordered_set<FluidGroup<Block, DerivedArea, FluidType>*> m_toDestroy;
+	std::unordered_set<Block*> m_caveInCheck;
+	std::unordered_map<Block*, int32_t> m_blocksWithChangedTemperature;
+	std::vector<std::tuple<std::vector<Block*>,uint32_t,uint32_t>> m_caveInData;
+	std::vector<RouteRequest<Block, Actor, DerivedArea>> m_routeRequestQueue;
 	uint32_t m_routeCacheVersion;
-	std::vector<VisionRequest<DerivedBlock, DerivedActor, DerivedArea>> m_visionRequestQueue;
-	Buckets<DerivedActor, Config::actorDoVisionInterval> m_visionBuckets;
-	std::list<VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>> m_visionCuboids;
+	std::vector<VisionRequest<Block, Actor, DerivedArea>> m_visionRequestQueue;
+	Buckets<Actor, Config::actorDoVisionInterval> m_visionBuckets;
+	std::list<VisionCuboid<Block, Actor, DerivedArea>> m_visionCuboids;
 	bool m_visionCuboidsActive;
 	EventSchedule m_eventSchedule;
 	bool m_destroy;
@@ -58,24 +58,24 @@ public:
 	void writeStep();
 	
 	// Create a scheduled event when the actor should move.
-	void scheduleMove(DerivedActor& actor);
+	void scheduleMove(Actor& actor);
 	
 	// Add to moving actors and call scheduleMove.
-	void registerActorMoving(DerivedActor& actor);
+	void registerActorMoving(Actor& actor);
 	// Remove from moving actors.
-	void unregisterActorMoving(DerivedActor& actor);
+	void unregisterActorMoving(Actor& actor);
 
 	// RegisterActor, add to visionBucket.
-	void registerActor(DerivedActor& actor);
-	void unregisterActor(DerivedActor& actor);
+	void registerActor(Actor& actor);
+	void unregisterActor(Actor& actor);
 	
 	// Emplace a routeRequest object on the queue.
-	void registerRouteRequest(DerivedActor& actor, bool detour = false);
+	void registerRouteRequest(Actor& actor, bool detour = false);
 	// Emplace a visionRequest object on the queue.
-	void registerVisionRequest(DerivedActor& actor);
+	void registerVisionRequest(Actor& actor);
 
 	// Create a fluid group.
-	FluidGroup<DerivedBlock, DerivedArea>* createFluidGroup(const FluidType* fluidType, std::unordered_set<DerivedBlock*>& blocks, bool checkMerge = true);
+	FluidGroup<Block, DerivedArea, FluidType>* createFluidGroup(const FluidType* fluidType, std::unordered_set<Block*>& blocks, bool checkMerge = true);
 
 	// Assign all visible blocks to a visionCuboid, set m_visionCubioidsActive to true.
 	void visionCuboidsActivate();
@@ -83,14 +83,14 @@ public:
 	// Cavein read/write
 	void stepCaveInRead();
 	void stepCaveInWrite();
-	void registerPotentialCaveIn(DerivedBlock& block);
+	void registerPotentialCaveIn(Block& block);
 
 	void validateAllFluidGroups();
 	std::string toS();
 
 	// Get a z-level for rendering.
-	BaseCuboid<DerivedBlock, DerivedActor, DerivedArea> getZLevel(uint32_t z);
+	BaseCuboid<Block, Actor, DerivedArea> getZLevel(uint32_t z);
 	// User provided code, no route.
-	void notifyNoRouteFound(DerivedActor& actor);
+	void notifyNoRouteFound(Actor& actor);
 
 };

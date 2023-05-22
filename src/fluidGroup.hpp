@@ -15,29 +15,29 @@
 #include "util.h"
 
 //TODO: reuse blocks as m_fillQueue.m_set.
-template<class DerivedBlock, class DerivedArea>
-FluidGroup<DerivedBlock, DerivedArea>::FluidGroup(const FluidType* ft, std::unordered_set<DerivedBlock*>& blocks, DerivedArea& area, bool checkMerge) :
+template<class Block, class Area, class FluidType>
+FluidGroup<Block, Area, FluidType>::FluidGroup(const FluidType* ft, std::unordered_set<Block*>& blocks, Area& area, bool checkMerge) :
 	m_stable(false), m_destroy(false), m_merged(false), m_disolved(false), m_fluidType(ft), m_excessVolume(0),
 	m_fillQueue(*this), m_drainQueue(*this), m_area(area)
 {
-	for(DerivedBlock* block : blocks)
+	for(Block* block : blocks)
 		if(block->m_fluids.contains(m_fluidType))
 			addBlock(*block, checkMerge);
 }
-template<class DerivedBlock, class DerivedArea>
-void FluidGroup<DerivedBlock, DerivedArea>::addFluid(uint32_t volume)
+template<class Block, class Area, class FluidType>
+void FluidGroup<Block, Area, FluidType>::addFluid(uint32_t volume)
 {
 	m_excessVolume += volume;
 	setUnstable();
 }
-template<class DerivedBlock, class DerivedArea>
-void FluidGroup<DerivedBlock, DerivedArea>::removeFluid(uint32_t volume)
+template<class Block, class Area, class FluidType>
+void FluidGroup<Block, Area, FluidType>::removeFluid(uint32_t volume)
 {
 	m_excessVolume -= volume;
 	setUnstable();
 }
-template<class DerivedBlock, class DerivedArea>
-void FluidGroup<DerivedBlock, DerivedArea>::addBlock(DerivedBlock& block, bool checkMerge)
+template<class Block, class Area, class FluidType>
+void FluidGroup<Block, Area, FluidType>::addBlock(Block& block, bool checkMerge)
 {
 	assert(block.m_fluids.contains(m_fluidType));
 	if(m_drainQueue.m_set.contains(&block))
@@ -57,7 +57,7 @@ void FluidGroup<DerivedBlock, DerivedArea>::addBlock(DerivedBlock& block, bool c
 		m_diagonalBlocks.erase(&block);
 	// Add adjacent if fluid can enter.
 	std::unordered_set<FluidGroup*> toMerge;
-	for(DerivedBlock* adjacent : block.m_adjacentsVector)
+	for(Block* adjacent : block.m_adjacentsVector)
 	{
 		if(!adjacent->fluidCanEnterEver() || !adjacent->fluidCanEnterEver(m_fluidType))
 			continue;
@@ -80,13 +80,13 @@ void FluidGroup<DerivedBlock, DerivedArea>::addBlock(DerivedBlock& block, bool c
 		addDiagonalsFor(block);
 	addMistFor(block);
 }
-template<class DerivedBlock, class DerivedArea>
-void FluidGroup<DerivedBlock, DerivedArea>::removeBlock(DerivedBlock& block)
+template<class Block, class Area, class FluidType>
+void FluidGroup<Block, Area, FluidType>::removeBlock(Block& block)
 {
 	setUnstable();
 	m_drainQueue.removeBlock(&block);
 	m_potentiallyNoLongerAdjacentFromSyncronusStep.insert(&block);
-	for(DerivedBlock* adjacent : block.m_adjacentsVector)
+	for(Block* adjacent : block.m_adjacentsVector)
 		if(adjacent->fluidCanEnterEver())
 		{
 			//Check for group split.
@@ -98,13 +98,13 @@ void FluidGroup<DerivedBlock, DerivedArea>::removeBlock(DerivedBlock& block)
 		}
 	if constexpr (Config::fluidsSeepDiagonalModifier != 0)
 	{
-		for(DerivedBlock* diagonal : block.getEdgeAndCornerAdjacentOnly())
+		for(Block* diagonal : block.getEdgeAndCornerAdjacentOnly())
 			if(diagonal->fluidCanEnterEver() && diagonal->fluidCanEnterEver(m_fluidType) &&
 					m_diagonalBlocks.contains(diagonal))
 			{
 				//TODO: m_potentiallyNoLongerDiagonalFromSyncronusCode
 				bool found = false;
-				for(DerivedBlock* doubleDiagonal : diagonal->getEdgeAndCornerAdjacentOnly())
+				for(Block* doubleDiagonal : diagonal->getEdgeAndCornerAdjacentOnly())
 					if(m_drainQueue.m_set.contains(doubleDiagonal))
 					{
 						found = true;
@@ -115,16 +115,16 @@ void FluidGroup<DerivedBlock, DerivedArea>::removeBlock(DerivedBlock& block)
 			}
 	}
 }
-template<class DerivedBlock, class DerivedArea>
-void FluidGroup<DerivedBlock, DerivedArea>::setUnstable()
+template<class Block, class Area, class FluidType>
+void FluidGroup<Block, Area, FluidType>::setUnstable()
 {
 	m_stable = false;
 	m_area.m_unstableFluidGroups.insert(this);
 }
-template<class DerivedBlock, class DerivedArea>
-void FluidGroup<DerivedBlock, DerivedArea>::addDiagonalsFor(DerivedBlock& block)
+template<class Block, class Area, class FluidType>
+void FluidGroup<Block, Area, FluidType>::addDiagonalsFor(Block& block)
 {
-	for(DerivedBlock* diagonal : block.getEdgeAdjacentOnSameZLevelOnly())
+	for(Block* diagonal : block.getEdgeAdjacentOnSameZLevelOnly())
 		if(diagonal->fluidCanEnterEver() && diagonal->fluidCanEnterEver(m_fluidType) && 
 				!m_fillQueue.m_set.contains(diagonal) && !m_drainQueue.m_set.contains(diagonal) &&
 			       	!m_diagonalBlocks.contains(diagonal))
@@ -136,16 +136,16 @@ void FluidGroup<DerivedBlock, DerivedArea>::addDiagonalsFor(DerivedBlock& block)
 				m_diagonalBlocks.insert(diagonal);
 		}
 }
-template<class DerivedBlock, class DerivedArea>
-void FluidGroup<DerivedBlock, DerivedArea>::addMistFor(DerivedBlock& block)
+template<class Block, class Area, class FluidType>
+void FluidGroup<Block, Area, FluidType>::addMistFor(Block& block)
 {
 	if(m_fluidType->mistDuration != 0 && (block.m_adjacents[0] == nullptr || !block.m_adjacents[0]->isSolid()))
-		for(DerivedBlock* adjacent : block.getAdjacentOnSameZLevelOnly())
+		for(Block* adjacent : block.getAdjacentOnSameZLevelOnly())
 			if(adjacent->fluidCanEnterEver() && adjacent->fluidCanEnterEver(m_fluidType))
 						adjacent->spawnMist(m_fluidType);
 }
-template<class DerivedBlock, class DerivedArea>
-void FluidGroup<DerivedBlock, DerivedArea>::merge(FluidGroup* smaller)
+template<class Block, class Area, class FluidType>
+void FluidGroup<Block, Area, FluidType>::merge(FluidGroup* smaller)
 {
 	assert(smaller != this);
 	assert(smaller->m_fluidType == m_fluidType);
@@ -168,7 +168,7 @@ void FluidGroup<DerivedBlock, DerivedArea>::merge(FluidGroup* smaller)
 	larger->m_drainQueue.merge(smaller->m_drainQueue);
 	larger->m_fillQueue.merge(smaller->m_fillQueue);
 	// Set fluidGroup for merged blocks.
-	for(DerivedBlock* block : smaller->m_drainQueue.m_set)
+	for(Block* block : smaller->m_drainQueue.m_set)
 	{
 		block->m_fluids.at(m_fluidType).second = larger;
 		assert(larger->m_drainQueue.m_set.contains(block));
@@ -176,16 +176,16 @@ void FluidGroup<DerivedBlock, DerivedArea>::merge(FluidGroup* smaller)
 	// Merge diagonal seep if enabled.
 	if constexpr (Config::fluidsSeepDiagonalModifier != 0)
 	{
-		std::erase_if(smaller->m_diagonalBlocks, [&](DerivedBlock* block){
+		std::erase_if(smaller->m_diagonalBlocks, [&](Block* block){
 			return !larger->m_drainQueue.m_set.contains(block) && !larger->m_fillQueue.m_set.contains(block);
 		});
-		std::erase_if(larger->m_diagonalBlocks, [&](DerivedBlock* block){
+		std::erase_if(larger->m_diagonalBlocks, [&](Block* block){
 			return smaller->m_drainQueue.m_set.contains(block) || smaller->m_fillQueue.m_set.contains(block);
 		});
 		larger->m_diagonalBlocks.insert(smaller->m_diagonalBlocks.begin(), smaller->m_diagonalBlocks.end());
 	}
 	// Merge other fluid groups ment to merge with smaller with larger instead.
-	for(DerivedBlock* block: smaller->m_futureNewEmptyAdjacents)
+	for(Block* block: smaller->m_futureNewEmptyAdjacents)
 	{
 		auto found = block->m_fluids.find(m_fluidType);
 		if(found == block->m_fluids.end())
@@ -198,8 +198,8 @@ void FluidGroup<DerivedBlock, DerivedArea>::merge(FluidGroup* smaller)
 		}
 	}
 }
-template<class DerivedBlock, class DerivedArea>
-void FluidGroup<DerivedBlock, DerivedArea>::readStep()
+template<class Block, class Area, class FluidType>
+void FluidGroup<Block, Area, FluidType>::readStep()
 {
 	assert(!m_merged);
 	assert(!m_destroy);
@@ -352,18 +352,18 @@ void FluidGroup<DerivedBlock, DerivedArea>::readStep()
 			break;
 	}
 	// Flow loops completed, analyze results.
-	std::unordered_set<DerivedBlock*> futureBlocks;
+	std::unordered_set<Block*> futureBlocks;
 	//futureBlocks.reserve(m_drainQueue.m_set.size() + m_fillQueue.m_futureNoLongerEmpty.size());
 	futureBlocks.insert(m_drainQueue.m_set.begin(), m_drainQueue.m_set.end());
-	std::erase_if(futureBlocks, [&](DerivedBlock* block){ return m_drainQueue.m_futureEmpty.contains(block); });
+	std::erase_if(futureBlocks, [&](Block* block){ return m_drainQueue.m_futureEmpty.contains(block); });
 	futureBlocks.insert(m_fillQueue.m_futureNoLongerEmpty.begin(), m_fillQueue.m_futureNoLongerEmpty.end());
 	if(futureBlocks.empty())
 		m_destroy = true;
 	// We can't return here because we need to convert descriptive future into proscriptive future :(
 	// -Find future blocks for futureEmptyAdjacent.
-	for(DerivedBlock* block : m_fillQueue.m_futureNoLongerEmpty)
+	for(Block* block : m_fillQueue.m_futureNoLongerEmpty)
 	{
-		for(DerivedBlock* adjacent : block->m_adjacentsVector)
+		for(Block* adjacent : block->m_adjacentsVector)
 			if(adjacent->fluidCanEnterEver() && adjacent->fluidCanEnterEver(m_fluidType) &&
 					!m_drainQueue.m_set.contains(adjacent) && !m_fillQueue.m_set.contains(adjacent) 
 			  )
@@ -378,34 +378,34 @@ void FluidGroup<DerivedBlock, DerivedArea>::readStep()
 	// -Find any potental newly created groups.
 	// Collect blocks adjacent to newly empty which are !empty.
 	// Also collect possiblyNoLongerAdjacent.
-	std::unordered_set<DerivedBlock*> potentialNewGroups;
+	std::unordered_set<Block*> potentialNewGroups;
 	potentialNewGroups.swap(m_potentiallySplitFromSyncronusStep);
-	std::unordered_set<DerivedBlock*> possiblyNoLongerAdjacent;
+	std::unordered_set<Block*> possiblyNoLongerAdjacent;
 	possiblyNoLongerAdjacent.swap(m_potentiallyNoLongerAdjacentFromSyncronusStep);
 	// Collect all adjacent to futureEmpty which fluid can enter ever.
-	std::unordered_set<DerivedBlock*> adjacentToFutureEmpty;
+	std::unordered_set<Block*> adjacentToFutureEmpty;
 	//adjacentToFutureEmpty.reserve(m_drainQueue.m_futureEmpty.size() * 6);
 	//TODO: Avoid this declaration if diagonal seep is disabled.
-	std::unordered_set<DerivedBlock*> possiblyNoLongerDiagonal;
+	std::unordered_set<Block*> possiblyNoLongerDiagonal;
 	//possiblyNoLongerDiagonal.reserve(m_drainQueue.m_futureEmpty.size() * 4);
-	for(DerivedBlock* block : m_drainQueue.m_futureEmpty)
+	for(Block* block : m_drainQueue.m_futureEmpty)
 	{
-		for(DerivedBlock* adjacent : block->m_adjacentsVector)
+		for(Block* adjacent : block->m_adjacentsVector)
 			if(adjacent->fluidCanEnterEver() && adjacent->fluidCanEnterEver(m_fluidType))
 				adjacentToFutureEmpty.insert(adjacent);
 		if constexpr (Config::fluidsSeepDiagonalModifier != 0)
 		{
-			for(DerivedBlock* adjacent : block->getEdgeAndCornerAdjacentOnly())
+			for(Block* adjacent : block->getEdgeAndCornerAdjacentOnly())
 				if(adjacent->fluidCanEnterEver() && adjacent->fluidCanEnterEver(m_fluidType))
 					possiblyNoLongerDiagonal.insert(adjacent);
 		}
 	}
 	if constexpr (Config::fluidsSeepDiagonalModifier != 0)
-		for(DerivedBlock* block : possiblyNoLongerDiagonal)
-			for(DerivedBlock* doubleDiagonal : block->getEdgeAdjacentOnSameZLevelOnly())
+		for(Block* block : possiblyNoLongerDiagonal)
+			for(Block* doubleDiagonal : block->getEdgeAdjacentOnSameZLevelOnly())
 				if(futureBlocks.contains(doubleDiagonal))
 					m_diagonalBlocks.erase(block);
-	for(DerivedBlock* block : adjacentToFutureEmpty)
+	for(Block* block : adjacentToFutureEmpty)
 		// If block won't be empty then check for forming a new group as it may be detached.
 		if(futureBlocks.contains(block))
 			potentialNewGroups.insert(block);
@@ -414,17 +414,17 @@ void FluidGroup<DerivedBlock, DerivedArea>::readStep()
 			possiblyNoLongerAdjacent.insert(block);
 	// Seperate into contiguous groups. Each block in potentialNewGroups might be in a seperate group.
 	// If there is only one potential new group there can not be a split: there needs to be another group to split from.
-	std::erase_if(potentialNewGroups, [&](DerivedBlock* block){ return !futureBlocks.contains(block); });
+	std::erase_if(potentialNewGroups, [&](Block* block){ return !futureBlocks.contains(block); });
 	if(potentialNewGroups.size() > 1)
 	{
-		std::unordered_set<DerivedBlock*> closed;
+		std::unordered_set<Block*> closed;
 		//closed.reserve(futureBlocks.size());
-		for(DerivedBlock* block : potentialNewGroups)
+		for(Block* block : potentialNewGroups)
 		{
 			if(closed.contains(block))
 				continue;
-			auto condition = [&](DerivedBlock* block){ return futureBlocks.contains(block); };
-			std::unordered_set<DerivedBlock*> adjacents = util<DerivedBlock>::collectAdjacentsWithCondition(condition, *block);
+			auto condition = [&](Block* block){ return futureBlocks.contains(block); };
+			std::unordered_set<Block*> adjacents = util<Block>::collectAdjacentsWithCondition(condition, *block);
 			// Add whole group to closed. There is only one iteration per group as others will be rejected by the closed guard.
 			closed.insert(adjacents.begin(), adjacents.end());
 			m_futureGroups.emplace_back(adjacents);
@@ -433,27 +433,27 @@ void FluidGroup<DerivedBlock, DerivedArea>::readStep()
 	if(!m_futureGroups.empty())
 	{
 		// Find the largest.
-		auto condition = [](FluidGroupSplitData<DerivedBlock>& a, FluidGroupSplitData<DerivedBlock>& b){ return a.members.size() < b.members.size(); };
+		auto condition = [](FluidGroupSplitData<Block>& a, FluidGroupSplitData<Block>& b){ return a.members.size() < b.members.size(); };
 		auto it = std::ranges::max_element(m_futureGroups, condition);
 		// Put it at the end because it needs to be in a known place and it will be removed later.
 		std::rotate(it, it + 1, m_futureGroups.end());
 		// Record each group's future new adjacent.
-		for(DerivedBlock* block : m_futureNewEmptyAdjacents)
-			for(DerivedBlock* adjacent : block->m_adjacentsVector)
+		for(Block* block : m_futureNewEmptyAdjacents)
+			for(Block* adjacent : block->m_adjacentsVector)
 				if(adjacent->fluidCanEnterEver() && adjacent->fluidCanEnterEver(m_fluidType))
 				{
-					for(FluidGroupSplitData<DerivedBlock>& fluidGroupSplitData : m_futureGroups)
+					for(FluidGroupSplitData<Block>& fluidGroupSplitData : m_futureGroups)
 						if(fluidGroupSplitData.members.contains(adjacent))
 							fluidGroupSplitData.futureAdjacent.insert(block);
 				}
 	}
 	// -Find no longer adjacent empty to remove from fill queue and newEmptyAdjacent.
-	std::unordered_set<DerivedBlock*> futureRemoveFromEmptyAdjacents;
+	std::unordered_set<Block*> futureRemoveFromEmptyAdjacents;
 	//futureRemoveFromEmptyAdjacents.reserve(possiblyNoLongerAdjacent.size());
-	for(DerivedBlock* block : possiblyNoLongerAdjacent)
+	for(Block* block : possiblyNoLongerAdjacent)
 	{
 		bool stillAdjacent = false;
-		for(DerivedBlock* adjacent : block->m_adjacentsVector)
+		for(Block* adjacent : block->m_adjacentsVector)
 		{
 			if(adjacent->fluidCanEnterEver() && adjacent->fluidCanEnterEver(m_fluidType) && 
 					futureBlocks.contains(adjacent))
@@ -471,7 +471,7 @@ void FluidGroup<DerivedBlock, DerivedArea>::readStep()
 	//m_futureAddToFillQueue = (m_futureNoLongerFull - futureRemoveFromEmptyAdjacents) + m_futureNewEmptyAdjacents;
 	//m_futureAddToFillQueue.reserve(m_futureNewEmptyAdjacents.size() + m_drainQueue.m_futureNoLongerFull.size());
 	m_futureAddToFillQueue = m_futureNewEmptyAdjacents;
-	for(DerivedBlock* block : m_drainQueue.m_futureNoLongerFull)
+	for(Block* block : m_drainQueue.m_futureNoLongerFull)
 		if(!futureRemoveFromEmptyAdjacents.contains(block))
 			m_futureAddToFillQueue.insert(block);
 	//m_futureRemoveFromFillQueue = futureRemoveFromEmptyAdjacents + m_futureFull;
@@ -480,8 +480,8 @@ void FluidGroup<DerivedBlock, DerivedArea>::readStep()
 	m_futureRemoveFromFillQueue.insert(m_fillQueue.m_futureFull.begin(), m_fillQueue.m_futureFull.end());
 	validate();
 }
-template<class DerivedBlock, class DerivedArea>
-void FluidGroup<DerivedBlock, DerivedArea>::writeStep()
+template<class Block, class Area, class FluidType>
+void FluidGroup<Block, Area, FluidType>::writeStep()
 {
 	assert(!m_merged);
 	assert(!m_disolved);
@@ -491,23 +491,23 @@ void FluidGroup<DerivedBlock, DerivedArea>::writeStep()
 	m_fillQueue.applyDelta();
 	// Update queues.
 	validate();
-	for(DerivedBlock* block : m_futureAddToFillQueue)
+	for(Block* block : m_futureAddToFillQueue)
 		assert(!m_futureRemoveFromFillQueue.contains(block));
 	// Don't add to drain queue if taken by another fluid group already.
-	std::erase_if(m_futureAddToDrainQueue, [&](DerivedBlock* block){ 
+	std::erase_if(m_futureAddToDrainQueue, [&](Block* block){ 
 			auto found = block->m_fluids.find(m_fluidType);
 			return found != block->m_fluids.end() && found->second.second != this; 
 			});
-	for(DerivedBlock* block : m_futureAddToDrainQueue)
+	for(Block* block : m_futureAddToDrainQueue)
 		assert(!m_futureRemoveFromDrainQueue.contains(block));
-	for(DerivedBlock* block : m_futureRemoveFromFillQueue)
+	for(Block* block : m_futureRemoveFromFillQueue)
 	{
 		bool tests = !block->m_fluids.contains(m_fluidType) || block->m_fluids.at(m_fluidType).first == Config::maxBlockVolume || block->m_fluids.at(m_fluidType).second != this;
 		assert(tests || !m_futureGroups.empty());
 		if(!tests && !m_futureGroups.empty())
 		{
 			bool found = false;
-			for(FluidGroupSplitData<DerivedBlock>& fluidGroupSplitData : m_futureGroups)
+			for(FluidGroupSplitData<Block>& fluidGroupSplitData : m_futureGroups)
 				if(fluidGroupSplitData.members.contains(block))
 				{
 					found = true;
@@ -516,14 +516,14 @@ void FluidGroup<DerivedBlock, DerivedArea>::writeStep()
 			assert(found);
 		}
 	}
-	for(DerivedBlock* block : m_futureRemoveFromDrainQueue)
+	for(Block* block : m_futureRemoveFromDrainQueue)
 	{
 		bool tests = !block->m_fluids.contains(m_fluidType) || block->m_fluids.at(m_fluidType).second != this;
 		assert(tests || !m_futureGroups.empty());
 		if(!tests && !m_futureGroups.empty())
 		{
 			bool found = false;
-			for(FluidGroupSplitData<DerivedBlock>& fluidGroupSplitData : m_futureGroups)
+			for(FluidGroupSplitData<Block>& fluidGroupSplitData : m_futureGroups)
 				if(fluidGroupSplitData.members.contains(block))
 				{
 					found = true;
@@ -539,8 +539,8 @@ void FluidGroup<DerivedBlock, DerivedArea>::writeStep()
 	validate();
 	m_area.validateAllFluidGroups();
 }
-template<class DerivedBlock, class DerivedArea>
-void FluidGroup<DerivedBlock, DerivedArea>::afterWriteStep()
+template<class Block, class Area, class FluidType>
+void FluidGroup<Block, Area, FluidType>::afterWriteStep()
 {
 	// Any fluid group could be marked as disolved or destroyed during iteration.
 	if(m_disolved || m_destroy)
@@ -552,12 +552,12 @@ void FluidGroup<DerivedBlock, DerivedArea>::afterWriteStep()
 	{
 		if(m_viscosity != 0 && !m_drainQueue.m_set.empty() && !m_diagonalBlocks.empty())
 		{
-			for(DerivedBlock* diagonal : m_diagonalBlocks)
+			for(Block* diagonal : m_diagonalBlocks)
 			{
 				if(diagonal->fluidCanEnterCurrently(m_fluidType))
 				{
 					uint32_t diagonalPriority = (diagonal->m_z * Config::maxBlockVolume * 2) + diagonal->volumeOfFluidTypeContains(m_fluidType);
-					DerivedBlock* topBlock = m_drainQueue.m_queue[0].block;
+					Block* topBlock = m_drainQueue.m_queue[0].block;
 					uint32_t topPriority = (topBlock->m_z * Config::maxBlockVolume * 2) + topBlock->volumeOfFluidTypeContains(m_fluidType)  + m_excessVolume;
 					if(topPriority > diagonalPriority)
 					{
@@ -579,16 +579,16 @@ void FluidGroup<DerivedBlock, DerivedArea>::afterWriteStep()
 	}
 	// Resolve overfull blocks.
 	validate();
-	for(DerivedBlock* block : m_fillQueue.m_overfull)
+	for(Block* block : m_fillQueue.m_overfull)
 		if(block->m_totalFluidVolume > Config::maxBlockVolume)
 			block->resolveFluidOverfull();
 	validate();
-	for(DerivedBlock* block : m_fillQueue.m_futureNoLongerEmpty)
+	for(Block* block : m_fillQueue.m_futureNoLongerEmpty)
 		addMistFor(*block);
 	validate();
 }
-template<class DerivedBlock, class DerivedArea>
-void FluidGroup<DerivedBlock, DerivedArea>::splitStep()
+template<class Block, class Area, class FluidType>
+void FluidGroup<Block, Area, FluidType>::splitStep()
 {
 	assert(!m_merged);
 	assert(!m_disolved);
@@ -603,9 +603,9 @@ void FluidGroup<DerivedBlock, DerivedArea>::splitStep()
 		assert(m_fluidType != fluidType);
 		assert(fluidGroup->m_fluidType == fluidType);
 		assert(fluidGroup->m_excessVolume > 0);
-		for(FutureFlowBlock<DerivedBlock>& futureFlowBlock : m_fillQueue.m_queue)
+		for(FutureFlowBlock<Block>& futureFlowBlock : m_fillQueue.m_queue)
 		{
-			DerivedBlock* block = futureFlowBlock.block;
+			Block* block = futureFlowBlock.block;
 			auto found = block->m_fluids.find(fluidType);
 			if(block->fluidCanEnterEver(fluidType) && (found != block->m_fluids.end() || block->fluidCanEnterCurrently(fluidType)))
 			{
@@ -636,20 +636,20 @@ void FluidGroup<DerivedBlock, DerivedArea>::splitStep()
 	// Split off future groups of this fluidType.
 	if(m_futureGroups.empty() || m_futureGroups.size() == 1)
 		return;
-	std::unordered_set<DerivedBlock*> formerMembers;
-	for(DerivedBlock* block : m_drainQueue.m_set)
+	std::unordered_set<Block*> formerMembers;
+	for(Block* block : m_drainQueue.m_set)
 		if(!m_futureGroups.back().members.contains(block))
 			formerMembers.insert(block);
 	m_drainQueue.removeBlocks(formerMembers);
-	std::unordered_set<DerivedBlock*> formerFill;
-	for(DerivedBlock* block : m_fillQueue.m_set)
+	std::unordered_set<Block*> formerFill;
+	for(Block* block : m_fillQueue.m_set)
 		if(!m_drainQueue.m_set.contains(block) && !block->isAdjacentToAny(m_drainQueue.m_set))
 			formerFill.insert(block);
 	m_fillQueue.removeBlocks(formerFill);
 	m_futureNewEmptyAdjacents = m_futureGroups.back().futureAdjacent;
 	if constexpr (Config::fluidsSeepDiagonalModifier != 0)
-		std::erase_if(m_diagonalBlocks, [&](DerivedBlock* block){
-				for(DerivedBlock* diagonal : block->getEdgeAdjacentOnSameZLevelOnly())
+		std::erase_if(m_diagonalBlocks, [&](Block* block){
+				for(Block* diagonal : block->getEdgeAdjacentOnSameZLevelOnly())
 					if(m_futureGroups.back().members.contains(diagonal))
 						return false;
 				return true;
@@ -658,20 +658,20 @@ void FluidGroup<DerivedBlock, DerivedArea>::splitStep()
 	m_futureGroups.pop_back();
 	for(auto& [members, newAdjacent] : m_futureGroups)
 	{
-		FluidGroup<DerivedBlock, DerivedArea>* fluidGroup = m_area.createFluidGroup(m_fluidType, members, false);
+		FluidGroup<Block, Area, FluidType>* fluidGroup = m_area.createFluidGroup(m_fluidType, members, false);
 		fluidGroup->m_futureNewEmptyAdjacents.swap(newAdjacent);
 	}
 	validate();
 }
 // Do all split prior to doing merge.
-template<class DerivedBlock, class DerivedArea>
-void FluidGroup<DerivedBlock, DerivedArea>::mergeStep()
+template<class Block, class Area, class FluidType>
+void FluidGroup<Block, Area, FluidType>::mergeStep()
 {
 	assert(!m_disolved);
 	assert(!m_destroy);
 	validate();
 	// Record merge. First group consumes subsequent groups.
-	for(DerivedBlock* block : m_futureNewEmptyAdjacents)
+	for(Block* block : m_futureNewEmptyAdjacents)
 	{
 		// Fluid groups may be marked merged during merge iteration.
 		if(m_merged)
@@ -679,7 +679,7 @@ void FluidGroup<DerivedBlock, DerivedArea>::mergeStep()
 		auto found = block->m_fluids.find(m_fluidType);
 		if(found == block->m_fluids.end())
 			continue;
-		FluidGroup<DerivedBlock, DerivedArea>* fluidGroup = found->second.second;
+		FluidGroup<Block, Area, FluidType>* fluidGroup = found->second.second;
 		fluidGroup->validate();
 		assert(!fluidGroup->m_merged);
 		assert(fluidGroup->m_fluidType == m_fluidType);
@@ -691,20 +691,20 @@ void FluidGroup<DerivedBlock, DerivedArea>::mergeStep()
 	}
 	validate();
 }
-template<class DerivedBlock, class DerivedArea>
-int32_t FluidGroup<DerivedBlock, DerivedArea>::totalVolume()
+template<class Block, class Area, class FluidType>
+int32_t FluidGroup<Block, Area, FluidType>::totalVolume()
 {
 	int32_t output = m_excessVolume;
-	for(DerivedBlock* block : m_drainQueue.m_set)
+	for(Block* block : m_drainQueue.m_set)
 		output += block->volumeOfFluidTypeContains(m_fluidType);
 	return output;
 }
-template<class DerivedBlock, class DerivedArea>
-void FluidGroup<DerivedBlock, DerivedArea>::validate() const
+template<class Block, class Area, class FluidType>
+void FluidGroup<Block, Area, FluidType>::validate() const
 {
 	if(m_merged || m_destroy || m_disolved)
 		return;
-	for(DerivedBlock* block : m_drainQueue.m_set)
+	for(Block* block : m_drainQueue.m_set)
 		for(auto [fluidType, pair] : block->m_fluids)
 		{
 			if(pair.second == this)
@@ -713,12 +713,12 @@ void FluidGroup<DerivedBlock, DerivedArea>::validate() const
 			assert(pair.second->m_drainQueue.m_set.contains(block));
 		}
 }
-template<class DerivedBlock, class DerivedArea>
-void FluidGroup<DerivedBlock, DerivedArea>::validate(std::unordered_set<FluidGroup*> toErase)
+template<class Block, class Area, class FluidType>
+void FluidGroup<Block, Area, FluidType>::validate(std::unordered_set<FluidGroup*> toErase)
 {
 	for(FluidGroup* fluidGroup : toErase)
 		assert(fluidGroup->m_merged || fluidGroup->m_drainQueue.m_set.empty());
-	for(DerivedBlock* block : m_drainQueue.m_set)
+	for(Block* block : m_drainQueue.m_set)
 		for(auto [fluidType, pair] : block->m_fluids)
 		{
 			assert(pair.second->m_fluidType == fluidType);
