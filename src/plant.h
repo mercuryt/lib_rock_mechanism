@@ -5,7 +5,8 @@
 
 #include <memory>
 
-class PlantType
+template<class DerivedPlantType, class FluidType>
+class BasePlantType
 {
 public:
 	const std::string name;
@@ -24,23 +25,12 @@ public:
 	const FluidType* fluidType;
 };
 
-static std::list<PlantType> s_plantTypes;
-
-template<class Block> class Plant;
-
-template<typename... Arguments>
-const PlantType* registerPlantType(const Arguments&... arguments)
-{
-	s_plantTypes.emplace_back(arguments...);
-	return &s_plantTypes.back();
-}
-
-template<class Block>
+template<class Plant>
 class PlantGrowthEvent : public ScheduledEventWithPercent
 {
-	Plant<Block>& m_plant;
+	Plant& m_plant;
 public:
-	PlantGrowthEvent(uint32_t step, Plant<Block>& p) : ScheduledEventWithPercent(step), m_plant(p) {}
+	PlantGrowthEvent(uint32_t step, Plant& p) : ScheduledEventWithPercent(step), m_plant(p) {}
 	void execute()
 	{
 		m_plant.m_percentGrown = 100;
@@ -49,35 +39,35 @@ public:
 	}
 	~PlantGrowthEvent() { m_plant.m_growthEvent = nullptr; }
 };
-template<class Block>
+template<class Plant>
 class PlantEndOfHarvestEvent : public ScheduledEventWithPercent
 {
-	Plant<Block>& m_plant;
+	Plant& m_plant;
 public:
-	PlantEndOfHarvestEvent(uint32_t step, Plant<Block>& p) : ScheduledEventWithPercent(step), m_plant(p) {}
+	PlantEndOfHarvestEvent(uint32_t step, Plant& p) : ScheduledEventWithPercent(step), m_plant(p) {}
 	void execute() { m_plant.endOfHarvest(); }
 	~PlantEndOfHarvestEvent() { m_plant.m_endOfHarvestEvent = nullptr; }
 };
-template<class Block>
+template<class Plant>
 class PlantFluidEvent : public ScheduledEventWithPercent
 {
-	Plant<Block>& m_plant;
+	Plant& m_plant;
 public:
-	PlantFluidEvent(uint32_t step, Plant<Block>& p) : ScheduledEventWithPercent(step), m_plant(p) {}
+	PlantFluidEvent(uint32_t step, Plant& p) : ScheduledEventWithPercent(step), m_plant(p) {}
 	void execute() { m_plant.setMaybeNeedsFluid(); }
 	~PlantFluidEvent() { m_plant.m_fluidEvent = nullptr; }
 };
-template<class Block>
+template<class Plant>
 class PlantTemperatureEvent : public ScheduledEventWithPercent
 {
-	Plant<Block>& m_plant;
+	Plant& m_plant;
 public:
-	PlantTemperatureEvent(uint32_t step, Plant<Block>& p) : ScheduledEventWithPercent(step), m_plant(p) {}
+	PlantTemperatureEvent(uint32_t step, Plant& p) : ScheduledEventWithPercent(step), m_plant(p) {}
 	void execute() { m_plant.die(); }
 	~PlantTemperatureEvent() { m_plant.m_temperatureEvent = nullptr; }
 };
-template<class Block>
-class Plant
+template<class DerivedPlant, class PlantType, class Block>
+class BasePlant
 {
 public:
 	Block& m_location;
@@ -91,13 +81,14 @@ public:
 	bool m_readyToHarvest;
 	bool m_hasFluid;
 
-	Plant(Block& l, const PlantType* pt, uint32_t pg = 0) : m_location(l), m_fluidSource(nullptr), m_plantType(pt), m_growthEvent(nullptr), m_fluidEvent(nullptr), m_temperatureEvent(nullptr), m_endOfHarvestEvent(nullptr), m_percentGrown(pg), m_readyToHarvest(false), m_hasFluid(true) 
+	BasePlant(Block& l, const PlantType* pt, uint32_t pg = 0) : m_location(l), m_fluidSource(nullptr), m_plantType(pt), m_growthEvent(nullptr), m_fluidEvent(nullptr), m_temperatureEvent(nullptr), m_endOfHarvestEvent(nullptr), m_percentGrown(pg), m_readyToHarvest(false), m_hasFluid(true) 
 	{
 		assert(m_location.plantTypeCanGrow(m_plantType));
-		m_location.m_plants.push_back(this);
+		m_location.m_plants.push_back(&derived());
 		createFluidEvent(m_plantType->stepsNeedsFluidFrequency);
 		updateGrowingStatus();
 	}
+	DerivedPlant& derived(){ return static_cast<DerivedPlant&>(*this); }
 	void die()
 	{
 		if(m_growthEvent != nullptr)
@@ -108,7 +99,7 @@ public:
 			m_temperatureEvent->cancel();
 		if(m_endOfHarvestEvent != nullptr)
 			m_endOfHarvestEvent->cancel();
-		onDie();
+		derived().onDie();
 	}
 	void applyTemperatureChange(uint32_t oldTemperature, uint32_t newTemperature)
 	{
@@ -123,7 +114,7 @@ public:
 			if(m_temperatureEvent == nullptr)
 			{
 				uint32_t step = s_step + m_plantType->stepsTillDieFromTemperature;
-				std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<PlantTemperatureEvent<Block>>(step, *this);
+				std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<PlantTemperatureEvent<DerivedPlant>>(step, derived());
 				m_temperatureEvent = event.get();
 				m_location.m_area->m_eventSchedule.schedule(std::move(event));
 			}
@@ -165,7 +156,7 @@ public:
 	}
 	void createFluidEvent(uint32_t delay)
 	{
-		std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<PlantFluidEvent<Block>>(s_step + delay, *this);
+		std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<PlantFluidEvent<DerivedPlant>>(s_step + delay, derived());
 		m_fluidEvent = event.get();
 		m_location.m_area->m_eventSchedule.schedule(std::move(event));
 	}
@@ -178,14 +169,14 @@ public:
 	{
 		m_readyToHarvest = true;
 		uint32_t step = s_step + m_plantType->stepsTillEndOfHarvest;
-		std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<PlantEndOfHarvestEvent<Block>>(step, *this);
+		std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<PlantEndOfHarvestEvent<DerivedPlant>>(step, derived());
 		m_endOfHarvestEvent = event.get();
 		m_location.m_area->m_eventSchedule.schedule(std::move(event));
 	}
 	void endOfHarvest()
 	{
 		m_readyToHarvest = false;
-		onEndOfHarvest();
+		derived().onEndOfHarvest();
 		if(m_plantType->annual)
 			die();
 	}
@@ -198,7 +189,7 @@ public:
 				uint32_t step = s_step + (m_percentGrown == 0 ?
 						m_plantType->stepsTillFullyGrown :
 						((m_plantType->stepsTillFullyGrown * m_percentGrown) / 100u));
-				std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<PlantGrowthEvent<Block>>(step, *this);
+				std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<PlantGrowthEvent<DerivedPlant>>(step, derived());
 				m_growthEvent = event.get();
 				m_location.m_area->m_eventSchedule.schedule(std::move(event));
 			}

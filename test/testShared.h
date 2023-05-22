@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <algorithm>
 #include <iostream>
+#include <list>
 #include "../lib/BS_thread_pool_light.hpp"
 namespace Config
 {
@@ -38,7 +39,19 @@ BS::thread_pool_light s_pool;
 #include "../src/blockFeatureType.h"
 #include "../src/plant.h"
 
+class MoveType : public BaseMoveType<FluidType> 
+{
+public:
+	MoveType(std::string n, bool w, std::unordered_map<const FluidType*, uint32_t> s, uint32_t c, bool jd, bool f) : BaseMoveType<FluidType>(n, w, s, c, jd, f) {}
+};
+static std::list<MoveType> moveTypes;
 
+template<typename ...Arguments>
+inline const MoveType* registerMoveType(Arguments ...args)
+{
+	moveTypes.emplace_back(args...);
+	return &moveTypes.back();
+}
 const static MoveType* s_twoLegs;
 const static MoveType* s_fourLegs;
 const static MoveType* s_flying;
@@ -49,18 +62,22 @@ const static MoveType* s_swimmingInMercury;
 const static MoveType* s_twoLegsAndSwimmingInMercury;
 const static MoveType* s_twoLegsAndClimb1;
 const static MoveType* s_twoLegsAndClimb2;
+	
 const static FluidType* s_water;
 const static FluidType* s_CO2;
 const static FluidType* s_lava;
 const static FluidType* s_mercury;
+
 const static MaterialType* s_stone;
 const static MaterialType* s_glass;
 const static MaterialType* s_wood;
 const static MaterialType* s_dirt;
+
 const static Shape* s_oneByOneFull;
 const static Shape* s_oneByOneHalfFull;
 const static Shape* s_oneByOneQuarterFull;
 const static Shape* s_twoByTwoFull;
+
 const static BlockFeatureType* s_upStairs;
 const static BlockFeatureType* s_downStairs;
 const static BlockFeatureType* s_upDownStairs;
@@ -71,8 +88,40 @@ const static BlockFeatureType* s_hatch;
 const static BlockFeatureType* s_floor;
 const static BlockFeatureType* s_floodGate;
 const static BlockFeatureType* s_floorGrate;
-const static PlantType* s_grass;
 
+class PlantType : public BasePlantType<PlantType, FluidType>
+{
+public:
+	std::wstring drawString;
+	PlantType(
+			// Base type members.
+			const std::string n,
+			const bool a,
+			const uint32_t maxgt,
+			const uint32_t mingt,
+			const uint32_t stdft,
+			const uint32_t snff,
+			const uint32_t stdwf,
+			const uint32_t stfg,
+			const bool gisl,
+			const uint32_t doyfg,
+			const uint32_t steof,
+			const uint32_t rrmax,
+			const uint32_t rrmin,
+			const FluidType* ft, 
+			// Derived type members.
+			const std::wstring ds
+	) : BasePlantType<PlantType, FluidType>(n, a, maxgt, mingt, stdft, snff, stdwf, stfg, gisl, doyfg, steof, rrmax, rrmin, ft),
+		drawString(ds) {}
+};
+static std::list<PlantType> s_plantTypes;
+template<typename... Arguments>
+const PlantType* registerPlantType(const Arguments&... arguments)
+{
+	s_plantTypes.emplace_back(arguments...);
+	return &s_plantTypes.back();
+}
+const static PlantType* s_grass;
 
 struct BlockFeature 
 {
@@ -89,13 +138,14 @@ enum class TemperatureZone { Surface, Underground, LavaSea};
 class Actor;
 class Block;
 class Area;
+class Plant;
 
 // Put custom member data declarations here
-class Block final : public BaseBlock<Block, Actor, Area>
+class Block final : public BaseBlock<Block, Actor, Area, FluidType, MoveType>
 {
 public:
 	std::vector<BlockFeature> m_features;
-	std::list<Plant<Block>*> m_plants;
+	std::list<Plant*> m_plants;
 	TemperatureZone m_temperatureZone;
 
 	Block();
@@ -137,43 +187,50 @@ public:
 
 	std::string toS() const;
 };
-
 #include "../src/block.hpp"
-class Actor final : public BaseActor<Actor, Block>
+class Actor final : public BaseActor<Actor, Block, MoveType, FluidType>
 {
-	public:
-		std::unordered_set<Actor*> m_canSee;
-		void (*m_onTaskComplete)(Actor& actor);
+public:
+	std::unordered_set<Actor*> m_canSee;
+	void (*m_onTaskComplete)(Actor& actor);
 
-		Actor(Block* l, const Shape* s, const MoveType* mt);
-		Actor(const Shape* s, const MoveType* mt);
-		uint32_t getSpeed() const;
-		uint32_t getVisionRange() const;
-		bool isVisible(Actor* observer) const;
+	Actor(Block* l, const Shape* s, const MoveType* mt);
+	Actor(const Shape* s, const MoveType* mt);
+	uint32_t getSpeed() const;
+	uint32_t getVisionRange() const;
+	bool isVisible(Actor* observer) const;
 
-		void taskComplete();
-		void doVision(std::unordered_set<Actor*>&& actors);
-		void doFall(uint32_t distance, Block* block);
-		void exposedToFluid(const FluidType* fluidType);
-		bool canSee(const Actor& actor) const;
+	void taskComplete();
+	void doVision(std::unordered_set<Actor*>&& actors);
+	void doFall(uint32_t distance, Block* block);
+	void exposedToFluid(const FluidType* fluidType);
+	bool canSee(const Actor& actor) const;
 };
-class Area final : public BaseArea<Block, Actor, Area>
+class Area final : public BaseArea<Block, Actor, Area, FluidType>
 {
-	public:
-		const FluidType* m_currentlyRainingFluidType;
-		uint32_t m_ambiantSurfaceTemperature;
-		std::list<Plant<Block>> m_plants;
-		ScheduledEvent* m_rainStopEvent;
+public:
+	const FluidType* m_currentlyRainingFluidType;
+	uint32_t m_ambiantSurfaceTemperature;
+	std::list<Plant> m_plants;
+	ScheduledEvent* m_rainStopEvent;
 
-		Area(uint32_t x, uint32_t y, uint32_t z) : BaseArea<Block, Actor, Area>(x, y, z), m_ambiantSurfaceTemperature(0) {}
-		void notifyNoRouteFound(Actor& actor);
-		void rain(const FluidType* fluidType, uint32_t duration);
-		void setHour(uint32_t hour, uint32_t dayOfYear);
-		void setDayOfYear(uint32_t dayOfYear);
-		void setAmbientTemperatureFor(uint32_t hour, uint32_t dayOfYear);
-		void setAmbientTemperature(uint32_t temperature);
+	Area(uint32_t x, uint32_t y, uint32_t z) : BaseArea<Block, Actor, Area, FluidType>(x, y, z), m_ambiantSurfaceTemperature(0) {}
+	void notifyNoRouteFound(Actor& actor);
+	void rain(const FluidType* fluidType, uint32_t duration);
+	void setHour(uint32_t hour, uint32_t dayOfYear);
+	void setDayOfYear(uint32_t dayOfYear);
+	void setAmbientTemperatureFor(uint32_t hour, uint32_t dayOfYear);
+	void setAmbientTemperature(uint32_t temperature);
 };
-class RainStopEvent : public ScheduledEvent
+#include "../src/area.hpp"
+class Plant final : public BasePlant<Plant, PlantType, Block>
+{
+public:
+	Plant(Block& l, const PlantType* pt, uint32_t pg = 0) : BasePlant<Plant, PlantType, Block>(l, pt, pg) {}
+	void onDie();
+	void onEndOfHarvest();
+};
+class RainStopEvent final : public ScheduledEvent
 {
 public:
 	Area& m_area;
@@ -181,9 +238,8 @@ public:
 	~RainStopEvent() { m_area.m_rainStopEvent = nullptr; }
 	void execute() { m_area.m_currentlyRainingFluidType = nullptr; }
 };
-#include "../src/area.hpp"
 
-Block::Block() : BaseBlock<Block, Actor, Area>(), m_temperatureZone(TemperatureZone::Surface) {}
+Block::Block() : BaseBlock<Block, Actor, Area, FluidType, MoveType>(), m_temperatureZone(TemperatureZone::Surface) {}
 
 // Can anyone enter ever?
 bool Block::anyoneCanEnterEver() const
@@ -560,7 +616,7 @@ void Block::applyTemperatureChange(uint32_t oldTemperature, uint32_t newTemperat
 void Block::setExposedToSky(bool exposed)
 {
 	m_exposedToSky = exposed;
-	for(Plant<Block>* plant : m_plants)
+	for(Plant* plant : m_plants)
 		plant->updateGrowingStatus();
 }
 bool Block::plantTypeCanGrow(const PlantType* plantType) const
@@ -570,7 +626,7 @@ bool Block::plantTypeCanGrow(const PlantType* plantType) const
 std::string Block::describePlants() const
 {
 	std::string output;
-	for(Plant<Block>* plant : m_plants)
+	for(Plant* plant : m_plants)
 		output += plant->m_plantType->name;
 	return output;
 }
@@ -591,8 +647,8 @@ std::string Block::toS() const
 		output += ',' + pair.first->m_name;
 	return output + describeFeatures() + describePlants();
 }
-Actor::Actor(Block* l, const Shape* s, const MoveType* mt) : BaseActor<Actor, Block>(l, s, mt), m_onTaskComplete(nullptr) {}
-Actor::Actor(const Shape* s, const MoveType* mt) : BaseActor<Actor, Block>(s, mt), m_onTaskComplete(nullptr) {}
+Actor::Actor(Block* l, const Shape* s, const MoveType* mt) : BaseActor<Actor, Block, MoveType, FluidType>(l, s, mt), m_onTaskComplete(nullptr) {}
+Actor::Actor(const Shape* s, const MoveType* mt) : BaseActor<Actor, Block, MoveType, FluidType>(s, mt), m_onTaskComplete(nullptr) {}
 uint32_t Actor::getSpeed() const
 {
 	return 2;
@@ -632,7 +688,7 @@ bool Actor::canSee(const Actor& actor) const
 void Area::rain(const FluidType* fluidType, uint32_t duration)
 {
 	m_currentlyRainingFluidType = fluidType;
-	for(Plant<Block>& plant : m_plants)
+	for(Plant& plant : m_plants)
 		if(plant.m_plantType->fluidType == fluidType && plant.m_location.m_exposedToSky)
 			plant.setHasFluidForNow();
 	uint32_t step = s_step + duration;
@@ -647,7 +703,7 @@ void Area::setHour(uint32_t hour, uint32_t dayOfYear)
 void Area::setDayOfYear(uint32_t dayOfYear)
 {
 	setAmbientTemperatureFor(0, dayOfYear);
-	for(Plant<Block>& plant : m_plants)
+	for(Plant& plant : m_plants)
 		plant.setDayOfYear(dayOfYear);
 }
 void Area::setAmbientTemperatureFor(uint32_t hour, uint32_t dayOfYear)
@@ -664,7 +720,7 @@ void Area::setAmbientTemperatureFor(uint32_t hour, uint32_t dayOfYear)
 }
 void Area::setAmbientTemperature(uint32_t temperature)
 {
-	for(Plant<Block>& plant : m_plants)
+	for(Plant& plant : m_plants)
 		if(plant.m_location.m_temperatureZone == TemperatureZone::Surface)
 		{
 			uint32_t oldTemperature = m_ambiantSurfaceTemperature + plant.m_location.m_deltaTemperature;
@@ -678,14 +734,12 @@ void Area::notifyNoRouteFound(Actor& actor)
 { 
 	std::cout << "route not found for " << actor.m_name << " to destination " + actor.m_destination->toS() << "from " << actor.m_location->toS() << std::endl;
 }
-template<class Block>
-void Plant<Block>::onDie()
+void Plant::onDie()
 {
 	m_location.m_plants.remove(this);
-	m_location.m_area->m_plants.remove_if([&](Plant<Block>& plant){ return &plant == this; });
+	m_location.m_area->m_plants.remove_if([&](Plant& plant){ return &plant == this; });
 }
-template<class Block>
-void Plant<Block>::onEndOfHarvest()
+void Plant::onEndOfHarvest()
 {
 	// Possibly spawn offspring here.
 }
@@ -744,7 +798,7 @@ void registerTypes()
 	s_floodGate = registerBlockFeatureType("flood gate");
 
 	// name, annual, maximum temperature, minimum temperature, steps till die from temperature, steps needs fluid frequency, steps till die without fluid, steps till growth event, grows in sunlight, day of year for harvest, steps till end of harvest, root range max, root range min, fluidType
-	s_grass = registerPlantType("grass", false, 316, 283, Config::stepsPerDay, Config::stepsPerDay * 4, Config::stepsPerDay * 8, Config::stepsPerDay * 100, true, 200, 50, 2, 1, s_water);
+	s_grass = registerPlantType("grass", false, 316, 283, Config::stepsPerDay, Config::stepsPerDay * 4, Config::stepsPerDay * 8, Config::stepsPerDay * 100, true, 200, 50, 2, 1, s_water, L"\"");
 }
 
 // Test helpers.
@@ -798,10 +852,10 @@ void validateAllBlockFluids(Area& area)
 					assert(pair.second->m_fluidType == fluidType);
 }
 // Get one fluid group with the specified type. Return null if there is more then one.
-FluidGroup<Block, Area>* getFluidGroup(Area& area, const FluidType* fluidType)
+FluidGroup<Block, Area, FluidType>* getFluidGroup(Area& area, const FluidType* fluidType)
 {
-	FluidGroup<Block, Area>* output = nullptr;
-	for(FluidGroup<Block, Area>& fluidGroup : area.m_fluidGroups)
+	FluidGroup<Block, Area, FluidType>* output = nullptr;
+	for(FluidGroup<Block, Area, FluidType>& fluidGroup : area.m_fluidGroups)
 		if(fluidGroup.m_fluidType == fluidType)
 		{
 			if(output != nullptr)

@@ -16,20 +16,20 @@
 #include "materialType.h"
 #include "moveType.h"
 #include "shape.h"
-#include "fluidType.h"
 #include "visionCuboid.h"
 #include "fluidGroup.h"
 #include "fire.h"
 
-template<class DerivedBlock> class HasShape;
+template<class Block> class HasShape;
 // Fluid type and volume pairs are sorted by density, low to high.
 // This is useful for resolving overfill.
 // TODO: Maybe a vector of pairs would be better performance?
+template<class FluidType>
 struct SortByDensity
 {
 	bool operator()(const FluidType* a, const FluidType* b) const { return a->density < b->density; }
 };
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
+template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType>
 class BaseBlock
 {
 	// If this block is solid stone, solid dirt, etc. then store it here. Otherwise nullptr.
@@ -39,7 +39,7 @@ public:
 	// Store area as a pointer rather then a reference to keep block default constructable.
 	// This is required inorder to create the m_blocks structure before initalizing it.
 	// TODO: emplace_back?
-	DerivedArea* m_area;
+	Area* m_area;
 	// Store adjacent in an array, with index determined by relative position.
 	// below = 0, < = 1, ^ = 2, > = 3, v = 4, above = 5.
 	std::array<DerivedBlock*, 6> m_adjacents;
@@ -63,7 +63,7 @@ public:
 	// For fluids: store fluidType, volume, and FluidGroup pointer.
 	// Sorted by density, low to high.
 	// TODO: Try replacing with a flatmap.
-	std::map<const FluidType*, std::pair<uint32_t, FluidGroup<DerivedBlock, DerivedArea>*>, SortByDensity> m_fluids;
+	std::map<const FluidType*, std::pair<uint32_t, FluidGroup<DerivedBlock, Area, FluidType>*>, SortByDensity<FluidType>> m_fluids;
 	// For mist.
 	const FluidType* m_mist;
 	const FluidType* m_mistSource;
@@ -71,18 +71,18 @@ public:
 	// For immobile non generics could be items or buildings.
 	std::unordered_map<HasShape<DerivedBlock>*, uint32_t> m_nongenerics;
 	// Track Actors and their volume which is in this block.
-	std::unordered_map<DerivedActor*, uint32_t> m_actors;
+	std::unordered_map<Actor*, uint32_t> m_actors;
 	// Store the location bucket this block belongs to.
-	std::unordered_set<DerivedActor*>* m_locationBucket;
+	std::unordered_set<Actor*>* m_locationBucket;
 	// Store the visionCuboid this block belongs to.
-	VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>* m_visionCuboid;
+	VisionCuboid<DerivedBlock, Actor, Area>* m_visionCuboid;
 	std::unique_ptr<Fire<DerivedBlock>> m_fire;
 	int32_t m_deltaTemperature;
 	bool m_exposedToSky;
 
 	// Constructor initalizes some members.
 	BaseBlock();
-	void setup(DerivedArea* a, uint32_t ax, uint32_t ay, uint32_t az);
+	void setup(Area* a, uint32_t ax, uint32_t ay, uint32_t az);
 	void recordAdjacent();
 	std::vector<DerivedBlock*> getAdjacentWithEdgeAdjacent() const;
 	std::vector<DerivedBlock*> getAdjacentWithEdgeAndCornerAdjacent() const;
@@ -103,24 +103,24 @@ public:
 	// Validate the nongeneric object can enter this block and also any other blocks required by it's Shape comparing to m_totalStaticVolume.
 	bool shapeAndMoveTypeCanEnterEver(const Shape* shape, const MoveType* moveType) const;
 	// Get the FluidGroup for this fluid type in this block.
-	FluidGroup<DerivedBlock, DerivedArea>* getFluidGroup(const FluidType* fluidType) const;
+	FluidGroup<DerivedBlock, Area, FluidType>* getFluidGroup(const FluidType* fluidType) const;
 	// Get block at offset coordinates.
 	DerivedBlock* offset(int32_t ax, int32_t ay, int32_t az) const;
 	// Add fluid, handle falling / sinking, group membership, excessive quantity sent to fluid group.
 	void addFluid(uint32_t volume, const FluidType* fluidType);
 	void removeFluid(uint32_t volume, const FluidType* fluidType);
-	bool actorCanEnterCurrently(DerivedActor& actor) const;
-	bool canEnterEver(DerivedActor& actor) const;
+	bool actorCanEnterCurrently(Actor& actor) const;
+	bool canEnterEver(Actor& actor) const;
 	std::vector<std::pair<DerivedBlock*, uint32_t>> getMoveCosts(const Shape* shape, const MoveType* moveType);
 	bool fluidCanEnterCurrently(const FluidType* fluidType) const;
-	bool isAdjacentToFluidGroup(const FluidGroup<DerivedBlock, DerivedArea>* fluidGroup) const;
+	bool isAdjacentToFluidGroup(const FluidGroup<DerivedBlock, Area, FluidType>* fluidGroup) const;
 	uint32_t volumeOfFluidTypeCanEnter(const FluidType* fluidType) const;
 	uint32_t volumeOfFluidTypeContains(const FluidType* fluidType) const;
 	const FluidType* getFluidTypeWithMostVolume() const;
 	// Move less dense fluids to their group's excessVolume until Config::maxBlockVolume is achieved.
 	void resolveFluidOverfull();
-	void enter(DerivedActor& actor);
-	void exit(DerivedActor& actor);
+	void enter(Actor& actor);
+	void exit(Actor& actor);
 	// Record temperature delta, possible start a fire.
 	void applyTemperatureDelta(int32_t delta);
 	// Called from setSolid / setNotSolid as well as from user code such as construct / remove floor.
@@ -135,7 +135,7 @@ public:
 
 	// User provided.
 	bool moveTypeCanEnter(const MoveType* moveType) const;
-	bool canEnterCurrently(DerivedActor* actor) const;
+	bool canEnterCurrently(Actor* actor) const;
 	bool anyoneCanEnterEver() const;
 	uint32_t moveCost(const MoveType* moveType, DerivedBlock* origin) const;
 

@@ -1,12 +1,12 @@
 #pragma once
 #include "util.h"
-template<class Block, class Actor>
+template<class Block, class Actor, class Plant>
 class GrazeRequest
 {
 	Actor& m_actor;
 	Block* m_result;
 	uint32_t m_maxRange;
-	DrinkRequest(Actor& a, const FluidType* ft,  uint32_t mr) : m_actor(a), m_fluidType(ft), m_maxRange(mr) {}
+	GrazeRequest(Actor& a,  uint32_t mr) : m_actor(a), m_maxRange(mr) {}
 
 	void readStep()
 	{
@@ -16,7 +16,7 @@ class GrazeRequest
 		}
 		auto destinationCondition = [&](Block* block)
 		{
-			for(Plant<Block>* plant : block->m_plants)
+			for(Plant* plant : block->m_plants)
 				if(m_actor.canEat(plant))
 					return true;
 			return false;

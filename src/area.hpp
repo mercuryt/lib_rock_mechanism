@@ -7,8 +7,8 @@
 #include "block.hpp"
 #include <algorithm>
 
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-BaseArea<DerivedBlock, DerivedActor, DerivedArea>::BaseArea(uint32_t x, uint32_t y, uint32_t z) :
+template<class Block, class Actor, class DerivedArea, class FluidType>
+BaseArea<Block, Actor, DerivedArea, FluidType>::BaseArea(uint32_t x, uint32_t y, uint32_t z) :
 	m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_locationBuckets(static_cast<DerivedArea&>(*this)), m_routeCacheVersion(0), m_visionCuboidsActive(false), m_destroy(false)
 {
 	// build m_blocks
@@ -29,68 +29,68 @@ BaseArea<DerivedBlock, DerivedActor, DerivedArea>::BaseArea(uint32_t x, uint32_t
 			for(uint32_t z = 0; z < m_sizeZ; ++z)
 				m_blocks[x][y][z].recordAdjacent();
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::readStep()
+template<class Block, class Actor, class DerivedArea, class FluidType>
+void BaseArea<Block, Actor, DerivedArea, FluidType>::readStep()
 { 
 	//TODO: Count tasks dispatched and finished instead of pool.wait_for_tasks so we can do multiple areas simultaniously in one pool.
 	// Process vision, generate and push_task requests for every actor in current bucket.
 	// It seems like having the vision requests permanantly embeded in the actors and iterating the vision bucket directly rather then using the visionRequestQueue should be faster but limited testing shows otherwise.
 	m_blocksWithChangedTemperature.clear();
 	m_visionRequestQueue.clear();
-	for(DerivedActor* actor : m_visionBuckets.get(s_step))
+	for(Actor* actor : m_visionBuckets.get(s_step))
 		m_visionRequestQueue.emplace_back(*actor);
 	auto visionIter = m_visionRequestQueue.begin();
 	while(visionIter < m_visionRequestQueue.end())
 	{
 		auto end = std::min(m_visionRequestQueue.end(), visionIter + Config::visionThreadingBatchSize);
-		s_pool.push_task([=](){ VisionRequest<DerivedBlock, DerivedActor, DerivedArea>::readSteps(visionIter, end); });
+		s_pool.push_task([=](){ VisionRequest<Block, Actor, DerivedArea>::readSteps(visionIter, end); });
 		visionIter = end;
 	}
 	// Calculate cave in.
 	s_pool.push_task([&](){ stepCaveInRead(); });
 	// Calculate flow.
-	for(FluidGroup<DerivedBlock, DerivedArea>* fluidGroup : m_unstableFluidGroups)
+	for(FluidGroup<Block, DerivedArea, FluidType>* fluidGroup : m_unstableFluidGroups)
 		s_pool.push_task([=](){ fluidGroup->readStep(); });
 	// Calculate routes.
 	auto routeIter = m_routeRequestQueue.begin();
 	while(routeIter < m_routeRequestQueue.end())
 	{
 		auto end = std::min(m_routeRequestQueue.end(), routeIter + Config::routeThreadingBatchSize);
-		s_pool.push_task([=](){ RouteRequest<DerivedBlock, DerivedActor, DerivedArea>::readSteps(routeIter, end); });
+		s_pool.push_task([=](){ RouteRequest<Block, Actor, DerivedArea>::readSteps(routeIter, end); });
 		routeIter = end;
 	}
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::writeStep()
+template<class Block, class Actor, class DerivedArea, class FluidType>
+void BaseArea<Block, Actor, DerivedArea, FluidType>::writeStep()
 { 
 	s_pool.wait_for_tasks();
 	// Apply flow.
-	for(FluidGroup<DerivedBlock, DerivedArea>* fluidGroup : m_unstableFluidGroups)
+	for(FluidGroup<Block, DerivedArea, FluidType>* fluidGroup : m_unstableFluidGroups)
 	{
 		fluidGroup->writeStep();
 		validateAllFluidGroups();
 	}
 	// Resolve overfull, diagonal seep, and mist.
 	// Make vector of unstable so we can iterate it while modifing the original.
-	std::vector<FluidGroup<DerivedBlock, DerivedArea>*> unstable(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
-	for(FluidGroup<DerivedBlock, DerivedArea>* fluidGroup : unstable)
+	std::vector<FluidGroup<Block, DerivedArea, FluidType>*> unstable(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
+	for(FluidGroup<Block, DerivedArea, FluidType>* fluidGroup : unstable)
 	{
 		fluidGroup->afterWriteStep();
 		fluidGroup->validate();
 	}
-	std::erase_if(m_unstableFluidGroups, [](FluidGroup<DerivedBlock, DerivedArea>* fluidGroup){ return fluidGroup->m_stable || fluidGroup->m_disolved || fluidGroup->m_destroy || fluidGroup->m_merged; });
-	std::vector<FluidGroup<DerivedBlock, DerivedArea>*> unstable2(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
-	for(FluidGroup<DerivedBlock, DerivedArea>* fluidGroup : unstable2)
+	std::erase_if(m_unstableFluidGroups, [](FluidGroup<Block, DerivedArea, FluidType>* fluidGroup){ return fluidGroup->m_stable || fluidGroup->m_disolved || fluidGroup->m_destroy || fluidGroup->m_merged; });
+	std::vector<FluidGroup<Block, DerivedArea, FluidType>*> unstable2(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
+	for(FluidGroup<Block, DerivedArea, FluidType>* fluidGroup : unstable2)
 		fluidGroup->mergeStep();
-	std::erase_if(m_unstableFluidGroups, [](FluidGroup<DerivedBlock, DerivedArea>* fluidGroup){ return fluidGroup->m_merged; });
+	std::erase_if(m_unstableFluidGroups, [](FluidGroup<Block, DerivedArea, FluidType>* fluidGroup){ return fluidGroup->m_merged; });
 	// Apply fluid split.
-	std::vector<FluidGroup<DerivedBlock, DerivedArea>*> unstable3(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
-	for(FluidGroup<DerivedBlock, DerivedArea>* fluidGroup : unstable3)
+	std::vector<FluidGroup<Block, DerivedArea, FluidType>*> unstable3(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
+	for(FluidGroup<Block, DerivedArea, FluidType>* fluidGroup : unstable3)
 		fluidGroup->splitStep();
-	for(FluidGroup<DerivedBlock, DerivedArea>& fluidGroup : m_fluidGroups)
+	for(FluidGroup<Block, DerivedArea, FluidType>& fluidGroup : m_fluidGroups)
 		fluidGroup.validate();
-	std::unordered_set<FluidGroup<DerivedBlock, DerivedArea>*> toErase;
-	for(FluidGroup<DerivedBlock, DerivedArea>& fluidGroup : m_fluidGroups)
+	std::unordered_set<FluidGroup<Block, DerivedArea, FluidType>*> toErase;
+	for(FluidGroup<Block, DerivedArea, FluidType>& fluidGroup : m_fluidGroups)
 	{
 		if(fluidGroup.m_excessVolume <= 0 && fluidGroup.m_drainQueue.m_set.size() == 0)
 		{
@@ -108,15 +108,15 @@ void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::writeStep()
 				assert(fluidGroup.m_drainQueue.m_set.empty());
 		}
 	}
-	for(FluidGroup<DerivedBlock, DerivedArea>& fluidGroup : m_fluidGroups)
+	for(FluidGroup<Block, DerivedArea, FluidType>& fluidGroup : m_fluidGroups)
 		fluidGroup.validate(toErase);
-	m_fluidGroups.remove_if([&](FluidGroup<DerivedBlock, DerivedArea>& fluidGroup){ return toErase.contains(&fluidGroup); });
-	for(FluidGroup<DerivedBlock, DerivedArea>& fluidGroup : m_fluidGroups)
+	m_fluidGroups.remove_if([&](FluidGroup<Block, DerivedArea, FluidType>& fluidGroup){ return toErase.contains(&fluidGroup); });
+	for(FluidGroup<Block, DerivedArea, FluidType>& fluidGroup : m_fluidGroups)
 		fluidGroup.validate();
-	for(const FluidGroup<DerivedBlock, DerivedArea>* fluidGroup : m_unstableFluidGroups)
+	for(const FluidGroup<Block, DerivedArea, FluidType>* fluidGroup : m_unstableFluidGroups)
 	{
 		bool found = false;
-		for(FluidGroup<DerivedBlock, DerivedArea>& fg : m_fluidGroups)
+		for(FluidGroup<Block, DerivedArea, FluidType>& fg : m_fluidGroups)
 			if(&fg == fluidGroup)
 			{
 				found = true;
@@ -128,10 +128,10 @@ void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::writeStep()
 	// Apply cave in.
 	if(!m_caveInData.empty())
 		stepCaveInWrite();
-	for(FluidGroup<DerivedBlock, DerivedArea>& fluidGroup : m_fluidGroups)
+	for(FluidGroup<Block, DerivedArea, FluidType>& fluidGroup : m_fluidGroups)
 		fluidGroup.validate();
 	// Apply routes.
-	for(RouteRequest<DerivedBlock, DerivedActor, DerivedArea>& routeRequest : m_routeRequestQueue)
+	for(RouteRequest<Block, Actor, DerivedArea>& routeRequest : m_routeRequestQueue)
 		routeRequest.writeStep();
 	m_routeRequestQueue.clear();
 	// If there is any unstable groups expire route caches.
@@ -139,16 +139,16 @@ void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::writeStep()
 	if(!m_unstableFluidGroups.empty())
 		m_routeCacheVersion++;
 	// Apply vision request results.
-	for(VisionRequest<DerivedBlock, DerivedActor, DerivedArea>& visionRequest : m_visionRequestQueue)
+	for(VisionRequest<Block, Actor, DerivedArea>& visionRequest : m_visionRequestQueue)
 		visionRequest.writeStep();
 	m_visionRequestQueue.clear();
 	// Do scheduled events.
 	m_eventSchedule.execute(s_step);
-	for(FluidGroup<DerivedBlock, DerivedArea>& fluidGroup : m_fluidGroups)
+	for(FluidGroup<Block, DerivedArea, FluidType>& fluidGroup : m_fluidGroups)
 		fluidGroup.validate();
 	// Clean up old vision cuboids.
 	if(m_visionCuboidsActive)
-		std::erase_if(m_visionCuboids, [](VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>& visionCuboid){ return visionCuboid.m_destroy; });
+		std::erase_if(m_visionCuboids, [](VisionCuboid<Block, Actor, DerivedArea>& visionCuboid){ return visionCuboid.m_destroy; });
 	// Apply temperature changes.
 	for(auto& [block, oldDelta] : m_blocksWithChangedTemperature)
 	{
@@ -156,13 +156,13 @@ void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::writeStep()
 		block->applyTemperatureChange(ambientTemperature + oldDelta, ambientTemperature + block->m_deltaTemperature);
 	}
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::registerActor(DerivedActor& actor)
+template<class Block, class Actor, class DerivedArea, class FluidType>
+void BaseArea<Block, Actor, DerivedArea, FluidType>::registerActor(Actor& actor)
 {
 	m_visionBuckets.add(actor);
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::unregisterActor(DerivedActor& actor)
+template<class Block, class Actor, class DerivedArea, class FluidType>
+void BaseArea<Block, Actor, DerivedArea, FluidType>::unregisterActor(Actor& actor)
 {
 	m_visionBuckets.remove(actor);
 	if(actor.m_taskEvent != nullptr)
@@ -170,50 +170,50 @@ void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::unregisterActor(DerivedA
 	if(actor.m_location != nullptr)
 		actor.m_location->m_area->m_locationBuckets.erase(actor);
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::scheduleMove(DerivedActor& actor)
+template<class Block, class Actor, class DerivedArea, class FluidType>
+void BaseArea<Block, Actor, DerivedArea, FluidType>::scheduleMove(Actor& actor)
 {
-	DerivedBlock* block = *(actor.m_routeIter);
+	Block* block = *(actor.m_routeIter);
 	uint32_t stepsToMove = block->moveCost(actor.m_moveType, actor.m_location) / actor.getSpeed();
-	MoveEvent<DerivedBlock, DerivedActor>::emplace(m_eventSchedule, stepsToMove, actor);
+	MoveEvent<Block, Actor>::emplace(m_eventSchedule, stepsToMove, actor);
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::registerRouteRequest(DerivedActor& actor, bool detour)
+template<class Block, class Actor, class DerivedArea, class FluidType>
+void BaseArea<Block, Actor, DerivedArea, FluidType>::registerRouteRequest(Actor& actor, bool detour)
 {
 	m_routeRequestQueue.emplace_back(actor, detour);
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-FluidGroup<DerivedBlock, DerivedArea>* BaseArea<DerivedBlock, DerivedActor, DerivedArea>::createFluidGroup(const FluidType* fluidType, std::unordered_set<DerivedBlock*>& blocks, bool checkMerge)
+template<class Block, class Actor, class DerivedArea, class FluidType>
+FluidGroup<Block, DerivedArea, FluidType>* BaseArea<Block, Actor, DerivedArea, FluidType>::createFluidGroup(const FluidType* fluidType, std::unordered_set<Block*>& blocks, bool checkMerge)
 {
 	m_fluidGroups.emplace_back(fluidType, blocks, static_cast<DerivedArea&>(*this), checkMerge);
 	m_unstableFluidGroups.insert(&m_fluidGroups.back());
 	return &m_fluidGroups.back();
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::visionCuboidsActivate()
+template<class Block, class Actor, class DerivedArea, class FluidType>
+void BaseArea<Block, Actor, DerivedArea, FluidType>::visionCuboidsActivate()
 {
 	m_visionCuboidsActive = true;
-	VisionCuboid<DerivedBlock, DerivedActor, DerivedArea>::setup(static_cast<DerivedArea&>(*this));
+	VisionCuboid<Block, Actor, DerivedArea>::setup(static_cast<DerivedArea&>(*this));
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-BaseCuboid<DerivedBlock, DerivedActor, DerivedArea> BaseArea<DerivedBlock, DerivedActor, DerivedArea>::getZLevel(uint32_t z)
+template<class Block, class Actor, class DerivedArea, class FluidType>
+BaseCuboid<Block, Actor, DerivedArea> BaseArea<Block, Actor, DerivedArea, FluidType>::getZLevel(uint32_t z)
 {
-	return BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>(m_blocks[m_sizeX - 1][m_sizeY - 1][z], m_blocks[0][0][z]);
+	return BaseCuboid<Block, Actor, DerivedArea>(m_blocks[m_sizeX - 1][m_sizeY - 1][z], m_blocks[0][0][z]);
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::expireRouteCache(){++m_routeCacheVersion;}
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void BaseArea<DerivedBlock, DerivedActor, DerivedArea>::validateAllFluidGroups()
+template<class Block, class Actor, class DerivedArea, class FluidType>
+void BaseArea<Block, Actor, DerivedArea, FluidType>::expireRouteCache(){++m_routeCacheVersion;}
+template<class Block, class Actor, class DerivedArea, class FluidType>
+void BaseArea<Block, Actor, DerivedArea, FluidType>::validateAllFluidGroups()
 {
-	for(FluidGroup<DerivedBlock, DerivedArea>& fluidGroup : m_fluidGroups)
+	for(FluidGroup<Block, DerivedArea, FluidType>& fluidGroup : m_fluidGroups)
 		if(!fluidGroup.m_merged && !fluidGroup.m_destroy)
 			fluidGroup.validate();
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-std::string BaseArea<DerivedBlock, DerivedActor, DerivedArea>::toS()
+template<class Block, class Actor, class DerivedArea, class FluidType>
+std::string BaseArea<Block, Actor, DerivedArea, FluidType>::toS()
 {
 	std::string output = std::to_string(m_fluidGroups.size()) + " fluid groups########";
-	for(FluidGroup<DerivedBlock, DerivedArea>& fluidGroup : m_fluidGroups)
+	for(FluidGroup<Block, DerivedArea, FluidType>& fluidGroup : m_fluidGroups)
 	{
 		output += "type:" + fluidGroup.m_fluidType->name;
 		output += "-total:" + std::to_string(fluidGroup.totalVolume());
@@ -226,7 +226,7 @@ std::string BaseArea<DerivedBlock, DerivedActor, DerivedArea>::toS()
 		if(fluidGroup.m_disolved)
 		{
 			output += "-disolved";
-			for(FluidGroup<DerivedBlock, DerivedArea>& fg : m_fluidGroups)
+			for(FluidGroup<Block, DerivedArea, FluidType>& fg : m_fluidGroups)
 				if(fg.m_disolvedInThisGroup.contains(fluidGroup.m_fluidType) && fg.m_disolvedInThisGroup.at(fluidGroup.m_fluidType) == &fluidGroup)
 					output += " in " + fg.m_fluidType->name;
 		}
@@ -236,12 +236,12 @@ std::string BaseArea<DerivedBlock, DerivedActor, DerivedArea>::toS()
 	}
 	return output;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-BaseArea<DerivedBlock, DerivedActor, DerivedArea>::~BaseArea()
+template<class Block, class Actor, class DerivedArea, class FluidType>
+BaseArea<Block, Actor, DerivedArea, FluidType>::~BaseArea()
 {
 	m_destroy = true;
 }
-// Include implimentations of classes that DerivedArea depends on here so it doesn't have to be replicated by the user.
+// Include implimentations of classes that Area depends on here so it doesn't have to be replicated by the user.
 #include "visionRequest.hpp"
 #include "routeRequest.hpp"
 #include "fluidQueue.hpp"
@@ -253,4 +253,3 @@ BaseArea<DerivedBlock, DerivedActor, DerivedArea>::~BaseArea()
 #include "visionCuboid.hpp"
 #include "cuboid.hpp"
 #include "locationBuckets.hpp"
-#include "mistDisperseEvent.hpp"

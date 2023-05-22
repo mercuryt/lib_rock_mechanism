@@ -1,7 +1,6 @@
 #pragma once
 #include "util.h"
-#include "fluidType.h"
-template<class Block, class Actor>
+template<class Block, class Actor, class FluidType>
 class DrinkRequest
 {
 	Actor& m_actor;
