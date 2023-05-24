@@ -19,7 +19,7 @@ void MoveEvent<DerivedBlock, DerivedActor>::execute()
 		{
 			m_actor.m_taskDelayCount = 0;
 			m_actor.m_routeIter++;
-			m_actor.setLocation(&block);
+			m_actor.setLocation(block);
 		}
 		else
 		{

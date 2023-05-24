@@ -30,29 +30,28 @@ public:
 	ScheduledEvent* m_taskEvent;
 	uint32_t m_taskDelayCount;
 
-	BaseActor(Block* l, const Shape* s, const MoveType* mt) : 
-		HasShape<Block>(s), m_id(s_nextId++), m_name("actor#" + std::to_string(m_id)), m_moveType(mt), m_taskDelayCount(0)
+	BaseActor(Block& l, const Shape& s, const MoveType& mt) : 
+		HasShape<Block>(&s), m_id(s_nextId++), m_name("actor#" + std::to_string(m_id)), m_moveType(&mt), m_taskDelayCount(0)
 	{
 		setLocation(l);
 	}
-	BaseActor(const Shape* s, const MoveType* mt) : 
-		HasShape<Block>(s), m_id(s_nextId++), m_name("actor#" + std::to_string(m_id)), m_moveType(mt), m_taskDelayCount(0) { }
+	BaseActor(const Shape& s, const MoveType& mt) : 
+		HasShape<Block>(&s), m_id(s_nextId++), m_name("actor#" + std::to_string(m_id)), m_moveType(&mt), m_taskDelayCount(0) { }
 	// Check location for route. If found set as own route and then register moving with area.
 	// Else register route request with area. Syncronus.
 	void setDestination(Block& block)
 	{
 		assert(&block != HasShape<Block>::m_location);
-		assert(block.anyoneCanEnterEver() && block.shapeAndMoveTypeCanEnterEver(HasShape<Block>::m_shape, m_moveType));
+		assert(block.anyoneCanEnterEver() && block.shapeAndMoveTypeCanEnterEver(*HasShape<Block>::m_shape, *m_moveType));
 		m_destination = &block;
 		HasShape<Block>::m_location->m_area->registerRouteRequest(static_cast<DerivedActor&>(*this));
 	}
-	// nullptr is a valid value for block.
-	void setLocation(Block* block)
+	void setLocation(Block& block)
 	{
-		assert(block != HasShape<Block>::m_location);
-		assert(block->anyoneCanEnterEver() && block->shapeAndMoveTypeCanEnterEver(HasShape<Block>::m_shape, m_moveType));
-		assert(block->actorCanEnterCurrently(static_cast<DerivedActor&>(*this)));
-		block->enter(static_cast<DerivedActor&>(*this));
+		assert(block != *HasShape<Block>::m_location);
+		assert(block.anyoneCanEnterEver() && block.shapeAndMoveTypeCanEnterEver(*HasShape<Block>::m_shape, *m_moveType));
+		assert(block.actorCanEnterCurrently(static_cast<DerivedActor&>(*this)));
+		block.enter(static_cast<DerivedActor&>(*this));
 	}
 	// User provided code.
 	uint32_t getSpeed() const;
@@ -60,7 +59,7 @@ public:
 	void taskComplete();
 	void doVision(std::unordered_set<DerivedActor*>&& actors);
 	bool canSee(const DerivedActor& actor) const;
-	void exposedToFluid(const FluidType* fluidType);
+	void exposedToFluid(const FluidType& fluidType);
 };
 template<class DerivedActor, class Block, class MoveType, class FluidType>
 uint32_t BaseActor<DerivedActor, Block, MoveType, FluidType>::s_nextId = 1;

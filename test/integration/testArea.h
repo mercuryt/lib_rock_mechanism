@@ -5,9 +5,8 @@ TEST_CASE("Make Area")
 	CHECK(area.m_sizeX == 10);
 	CHECK(area.m_sizeY == 10);
 	CHECK(area.m_sizeZ == 10);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
-	CHECK(s_water->name == "water");
+	CHECK(s_water.name == "water");
 	CHECK(area.m_blocks[5][5][0].getSolidMaterial() == s_stone);
 	area.readStep();
 	area.writeStep();
@@ -16,7 +15,6 @@ TEST_CASE("Test fluid in area")
 {
 	Area area(10,10,10);
 	s_step = 0;
-	registerTypes();
 	setSolidLayers(area, 0, 1, s_stone);
 	Block& block1 = area.m_blocks[5][5][1];
 	Block& block2 = area.m_blocks[5][5][2];
@@ -38,7 +36,6 @@ TEST_CASE("Cave in falls in fluid and pistons it up with threading")
 {
 	Area area(10,10,10);
 	s_step = 0;
-	registerTypes();
 	setSolidLayers(area, 0, 1, s_stone);
 	Block& block1 = area.m_blocks[5][5][1];
 	Block& block2 = area.m_blocks[5][5][2];
@@ -78,11 +75,10 @@ TEST_CASE("Test move with threading")
 {
 	Area area(10,10,10);
 	s_step = 0;
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	Block& origin = area.m_blocks[1][1][1];
 	Block& destination = area.m_blocks[8][8][1];
-	Actor actor(&origin, s_oneByOneFull, s_twoLegs);
+	Actor actor(origin, s_oneByOneFull, s_twoLegs);
 	area.registerActor(actor);
 	actor.setDestination(destination);
 	area.readStep();
@@ -113,13 +109,12 @@ TEST_CASE("Test mist spreads")
 {
 	Area area(10,10,10);
 	s_step = 0;
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	Block& origin = area.m_blocks[5][5][1];
 	Block& block1 = area.m_blocks[5][6][1];
 	Block& block2 = area.m_blocks[6][6][1];
 	Block& block3 = area.m_blocks[5][5][2];
-	origin.m_mistSource = s_water;
+	origin.m_mistSource = &s_water;
 	origin.spawnMist(s_water);
 	uint32_t scheduledStep = area.m_eventSchedule.m_data.begin()->first;
 	CHECK(scheduledStep == 10);
@@ -197,7 +192,6 @@ void fourFluidsTestParallel(uint32_t scale, uint32_t steps)
 	uint32_t halfMaxY = maxY / 2;
 	Area area(maxX, maxY, maxZ);
 	s_step = 0;
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	setSolidWalls(area, maxZ - 1, s_stone);
 	std::vector<FluidGroup<Block, Area, FluidType>*> newlySplit;
@@ -256,8 +250,8 @@ void fourFluidsTestParallel(uint32_t scale, uint32_t steps)
 	if(scale != 3)
 		CHECK(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
 	CHECK(fgMercury->totalVolume() == totalVolume);
-	CHECK(area.m_blocks[1][1][1].m_fluids.contains(s_lava));
-	CHECK(area.m_blocks[1][1][maxZ - 1].m_fluids.contains(s_CO2));
+	CHECK(area.m_blocks[1][1][1].m_fluids.contains(&s_lava));
+	CHECK(area.m_blocks[1][1][maxZ - 1].m_fluids.contains(&s_CO2));
 }
 TEST_CASE("four fluids scale 2 parallel")
 {
@@ -282,15 +276,14 @@ TEST_CASE("four fluids scale 10 parallel")
 TEST_CASE("test vision with threading")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	Block& block1 = area.m_blocks[3][3][1];
 	Block& block2 = area.m_blocks[7][7][1];
-	Actor a1(&block1, s_oneByOneFull, s_twoLegs);
+	Actor a1(block1, s_oneByOneFull, s_twoLegs);
 	area.registerActor(a1);
 	CHECK(area.m_visionBuckets.get(a1.m_id).size() == 1);
 	CHECK(area.m_visionBuckets.get(a1.m_id)[0] == &a1);
-	Actor a2(&block2, s_oneByOneFull, s_twoLegs);
+	Actor a2(block2, s_oneByOneFull, s_twoLegs);
 	area.registerActor(a2);
 	CHECK(area.m_visionBuckets.get(a2.m_id).size() == 1);
 	CHECK(area.m_visionBuckets.get(a2.m_id)[0] == &a2);

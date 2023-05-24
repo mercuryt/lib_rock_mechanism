@@ -1,11 +1,10 @@
 TEST_CASE("Route through open space")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	Block& origin = area.m_blocks[3][3][1];
 	Block& destination = area.m_blocks[7][7][1];
-	Actor actor(&origin, s_oneByOneFull, s_twoLegs);
+	Actor actor(origin, s_oneByOneFull, s_twoLegs);
 	actor.setDestination(destination);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
@@ -18,7 +17,6 @@ TEST_CASE("Route through open space")
 TEST_CASE("Route around walls")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	Block& origin = area.m_blocks[3][3][1];
 	Block& block1 = area.m_blocks[5][3][1];
@@ -32,7 +30,7 @@ TEST_CASE("Route around walls")
 	block3.setSolid(s_stone);
 	block4.setSolid(s_stone);
 	block5.setSolid(s_stone);
-	Actor actor(&origin, s_oneByOneFull, s_twoLegs);
+	Actor actor(origin, s_oneByOneFull, s_twoLegs);
 	actor.setDestination(destination);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
@@ -45,7 +43,6 @@ TEST_CASE("Route around walls")
 TEST_CASE("No route found")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	Block& origin = area.m_blocks[0][0][1];
 	Block& block1 = area.m_blocks[2][0][1];
@@ -59,7 +56,7 @@ TEST_CASE("No route found")
 	block3.setSolid(s_stone);
 	block4.setSolid(s_stone);
 	block5.setSolid(s_stone);
-	Actor actor(&origin, s_oneByOneFull, s_twoLegs);
+	Actor actor(origin, s_oneByOneFull, s_twoLegs);
 	actor.setDestination(destination);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
@@ -70,12 +67,11 @@ TEST_CASE("No route found")
 TEST_CASE("Walk")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	Block& origin = area.m_blocks[3][3][1];
 	Block& block1 = area.m_blocks[4][4][1];
 	Block& destination = area.m_blocks[5][5][1];
-	Actor actor(&origin, s_oneByOneFull, s_twoLegs);
+	Actor actor(origin, s_oneByOneFull, s_twoLegs);
 	actor.setDestination(destination);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
@@ -97,14 +93,13 @@ TEST_CASE("Walk")
 TEST_CASE("Repath when route is blocked")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	Block& origin = area.m_blocks[3][3][1];
 	Block& block1 = area.m_blocks[3][4][1];
 	Block& block2 = area.m_blocks[3][5][1];
 	Block& block3 = area.m_blocks[4][5][1];
 	Block& destination = area.m_blocks[3][6][1];
-	Actor actor(&origin, s_oneByOneFull, s_twoLegs);
+	Actor actor(origin, s_oneByOneFull, s_twoLegs);
 	actor.setDestination(destination);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
@@ -141,12 +136,11 @@ TEST_CASE("Repath when route is blocked")
 TEST_CASE("Walk multi-block creature")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	Block& origin = area.m_blocks[3][3][1];
 	Block& block1 = area.m_blocks[4][4][1];
 	Block& destination = area.m_blocks[5][5][1];
-	Actor actor(&origin, s_twoByTwoFull, s_twoLegs);
+	Actor actor(origin, s_twoByTwoFull, s_twoLegs);
 	actor.setDestination(destination);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
@@ -169,7 +163,6 @@ TEST_CASE("Walk multi-block creature")
 TEST_CASE("two by two creature cannot path through one block gap")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	Block& origin = area.m_blocks[2][2][1];
 	Block& destination = area.m_blocks[8][8][1];
@@ -178,7 +171,7 @@ TEST_CASE("two by two creature cannot path through one block gap")
 	area.m_blocks[5][5][1].setSolid(s_stone);
 	area.m_blocks[7][5][1].setSolid(s_stone);
 	area.m_blocks[9][5][1].setSolid(s_stone);
-	Actor actor(&origin, s_twoByTwoFull, s_twoLegs);
+	Actor actor(origin, s_twoByTwoFull, s_twoLegs);
 	actor.setDestination(destination);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
@@ -187,14 +180,13 @@ TEST_CASE("two by two creature cannot path through one block gap")
 TEST_CASE("walking path blocked by elevation")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	setSolidWalls(area, 9, s_stone);
 	Block& origin = area.m_blocks[1][1][1];
 	Block& destination = area.m_blocks[8][8][8];		
 	Block& ledge = area.m_blocks[8][8][7];
 	ledge.setSolid(s_stone);
-	Actor actor(&origin, s_oneByOneFull, s_fourLegs);
+	Actor actor(origin, s_oneByOneFull, s_fourLegs);
 	actor.setDestination(destination);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
@@ -203,12 +195,11 @@ TEST_CASE("walking path blocked by elevation")
 TEST_CASE("flying path")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	setSolidWalls(area, 9, s_stone);
 	Block& origin = area.m_blocks[1][1][1];
 	Block& destination = area.m_blocks[8][8][8];		
-	Actor actor(&origin, s_oneByOneFull, s_flying);
+	Actor actor(origin, s_oneByOneFull, s_flying);
 	actor.setDestination(destination);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
@@ -217,13 +208,12 @@ TEST_CASE("flying path")
 TEST_CASE("swimming path")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	setSolidWalls(area, 9, s_stone);
 	Block& water1 = area.m_blocks[1][1][1];
 	Block& water2 = area.m_blocks[8][8][8];		
 	setFullFluidCuboid(water1, water2, s_water);
-	Actor actor(&water1, s_oneByOneFull, s_swimmingInWater);
+	Actor actor(water1, s_oneByOneFull, s_swimmingInWater);
 	actor.setDestination(water2);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
@@ -232,7 +222,6 @@ TEST_CASE("swimming path")
 TEST_CASE("swimming path blocked")
 {
 	Area area(5,5,3);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	setSolidWalls(area, 1, s_stone);
 	Block& origin = area.m_blocks[2][1][1];
@@ -246,7 +235,7 @@ TEST_CASE("swimming path blocked")
 	Block& water3 = area.m_blocks[1][3][1];
 	Block& water4 = area.m_blocks[3][3][1];
 	setFullFluidCuboid(water3, water4, s_water);
-	Actor actor(&origin, s_oneByOneFull, s_swimmingInWater);
+	Actor actor(origin, s_oneByOneFull, s_swimmingInWater);
 	actor.setDestination(destination);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
@@ -255,7 +244,6 @@ TEST_CASE("swimming path blocked")
 TEST_CASE("walking path blocked by water if not also swimming")
 {
 	Area area(5,5,3);
-	registerTypes();
 	setSolidLayers(area, 0, 1, s_stone);
 	setSolidWalls(area, 2, s_stone);
 	Block& origin = area.m_blocks[2][1][2];
@@ -266,12 +254,12 @@ TEST_CASE("walking path blocked by water if not also swimming")
 	Block& water1 = area.m_blocks[1][2][1];
 	Block& water2 = area.m_blocks[3][2][1];
 	setFullFluidCuboid(water1, water2, s_water);
-	Actor actor(&origin, s_oneByOneFull, s_twoLegs);
+	Actor actor(origin, s_oneByOneFull, s_twoLegs);
 	actor.setDestination(destination);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
 	CHECK(routeRequest.m_result.size() == 0);
-	actor.m_moveType = s_twoLegsAndSwimmingInWater;
+	actor.m_moveType = &s_twoLegsAndSwimmingInWater;
 	RouteRequest<Block, Actor, Area> routeRequest2(actor);
 	routeRequest2.readStep();
 	CHECK(routeRequest2.m_result.size() != 0);
@@ -279,15 +267,14 @@ TEST_CASE("walking path blocked by water if not also swimming")
 TEST_CASE("walking path blocked by one height cliff if not climbing")
 {
 	Area area(5,5,5);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
-	Actor actor(&area.m_blocks[1][1][1], s_oneByOneFull, s_twoLegs);
+	Actor actor(area.m_blocks[1][1][1], s_oneByOneFull, s_twoLegs);
 	area.m_blocks[4][4][1].setSolid(s_stone);
 	actor.setDestination(area.m_blocks[4][4][2]);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
 	CHECK(routeRequest.m_result.size() == 0);
-	actor.m_moveType = s_twoLegsAndClimb1;
+	actor.m_moveType = &s_twoLegsAndClimb1;
 	RouteRequest<Block, Actor, Area> routeRequest2(actor);
 	routeRequest2.readStep();
 	CHECK(routeRequest2.m_result.size() != 0);
@@ -296,16 +283,15 @@ TEST_CASE("walking path blocked by one height cliff if not climbing")
 TEST_CASE("walking path blocked by two height cliff if not climbing 2")
 {
 	Area area(5,5,5);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
-	Actor actor(&area.m_blocks[1][1][1], s_oneByOneFull, s_twoLegsAndClimb1);
+	Actor actor(area.m_blocks[1][1][1], s_oneByOneFull, s_twoLegsAndClimb1);
 	area.m_blocks[4][4][1].setSolid(s_stone);
 	area.m_blocks[4][4][2].setSolid(s_stone);
 	actor.setDestination(area.m_blocks[4][4][3]);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
 	CHECK(routeRequest.m_result.size() == 0);
-	actor.m_moveType = s_twoLegsAndClimb2;
+	actor.m_moveType = &s_twoLegsAndClimb2;
 	RouteRequest<Block, Actor, Area> routeRequest2(actor);
 	routeRequest2.readStep();
 	CHECK(routeRequest2.m_result.size() != 0);
@@ -314,13 +300,12 @@ TEST_CASE("walking path blocked by two height cliff if not climbing 2")
 TEST_CASE("stairs")
 {
 	Area area(5,5,5);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	Block& origin = area.m_blocks[1][1][1];
 	area.m_blocks[2][2][1].addConstructedFeature(s_upStairs, s_stone);
 	area.m_blocks[3][3][2].addConstructedFeature(s_upDownStairs, s_stone);
 	area.m_blocks[2][2][3].addConstructedFeature(s_upDownStairs, s_stone);
-	Actor actor(&origin, s_oneByOneFull, s_twoLegs);
+	Actor actor(origin, s_oneByOneFull, s_twoLegs);
 	actor.setDestination(area.m_blocks[2][2][4]);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
@@ -329,9 +314,8 @@ TEST_CASE("stairs")
 TEST_CASE("ramp")
 {
 	Area area(5,5,5);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
-	Actor actor(&area.m_blocks[1][1][1], s_oneByOneFull, s_twoLegs);
+	Actor actor(area.m_blocks[1][1][1], s_oneByOneFull, s_twoLegs);
 	area.m_blocks[4][4][1].setSolid(s_stone);
 	actor.setDestination(area.m_blocks[4][4][2]);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
@@ -345,13 +329,12 @@ TEST_CASE("ramp")
 TEST_CASE("door")
 {
 	Area area(5,5,5);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	area.m_blocks[3][0][1].setSolid(s_stone);
 	area.m_blocks[3][1][1].setSolid(s_stone);
 	area.m_blocks[3][3][1].setSolid(s_stone);
 	area.m_blocks[3][4][1].setSolid(s_stone);
-	Actor actor(&area.m_blocks[1][1][1], s_oneByOneFull, s_twoLegs);
+	Actor actor(area.m_blocks[1][1][1], s_oneByOneFull, s_twoLegs);
 	actor.setDestination(area.m_blocks[4][3][1]);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
@@ -368,13 +351,12 @@ TEST_CASE("door")
 TEST_CASE("fortification")
 {
 	Area area(5,5,5);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	area.m_blocks[3][0][1].setSolid(s_stone);
 	area.m_blocks[3][1][1].setSolid(s_stone);
 	area.m_blocks[3][3][1].setSolid(s_stone);
 	area.m_blocks[3][4][1].setSolid(s_stone);
-	Actor actor(&area.m_blocks[1][1][1], s_oneByOneFull, s_twoLegs);
+	Actor actor(area.m_blocks[1][1][1], s_oneByOneFull, s_twoLegs);
 	actor.setDestination(area.m_blocks[4][3][1]);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
@@ -387,13 +369,12 @@ TEST_CASE("fortification")
 TEST_CASE("flood gate blocks entry")
 {
 	Area area(5,5,5);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	area.m_blocks[3][0][1].setSolid(s_stone);
 	area.m_blocks[3][1][1].setSolid(s_stone);
 	area.m_blocks[3][3][1].setSolid(s_stone);
 	area.m_blocks[3][4][1].setSolid(s_stone);
-	Actor actor(&area.m_blocks[1][1][1], s_oneByOneFull, s_twoLegs);
+	Actor actor(area.m_blocks[1][1][1], s_oneByOneFull, s_twoLegs);
 	actor.setDestination(area.m_blocks[4][3][1]);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
@@ -406,11 +387,10 @@ TEST_CASE("flood gate blocks entry")
 TEST_CASE("can walk on floor")
 {
 	Area area(5,5,5);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	area.m_blocks[1][1][1].setSolid(s_stone);
 	area.m_blocks[1][3][1].setSolid(s_stone);
-	Actor actor(&area.m_blocks[1][1][2], s_oneByOneFull, s_twoLegs);
+	Actor actor(area.m_blocks[1][1][2], s_oneByOneFull, s_twoLegs);
 	actor.setDestination(area.m_blocks[1][3][2]);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
@@ -423,14 +403,13 @@ TEST_CASE("can walk on floor")
 TEST_CASE("floor blocks vertical travel")
 {
 	Area area(5,5,5);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	area.m_blocks[3][3][1].setNotSolid();
 	area.m_blocks[3][3][2].setNotSolid();
 	area.m_blocks[3][3][3].setNotSolid();
 	area.m_blocks[3][3][1].addConstructedFeature(s_upStairs, s_stone);
 	area.m_blocks[3][3][2].addConstructedFeature(s_upDownStairs, s_stone);
-	Actor actor(&area.m_blocks[3][3][1], s_oneByOneFull, s_twoLegs);
+	Actor actor(area.m_blocks[3][3][1], s_oneByOneFull, s_twoLegs);
 	actor.setDestination(area.m_blocks[3][3][3]);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
@@ -443,11 +422,10 @@ TEST_CASE("floor blocks vertical travel")
 TEST_CASE("can walk on floor grate")
 {
 	Area area(5,5,5);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	area.m_blocks[1][1][1].setSolid(s_stone);
 	area.m_blocks[1][3][1].setSolid(s_stone);
-	Actor actor(&area.m_blocks[1][1][2], s_oneByOneFull, s_twoLegs);
+	Actor actor(area.m_blocks[1][1][2], s_oneByOneFull, s_twoLegs);
 	actor.setDestination(area.m_blocks[1][3][2]);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
@@ -460,14 +438,13 @@ TEST_CASE("can walk on floor grate")
 TEST_CASE("floor grate blocks vertical travel")
 {
 	Area area(5,5,5);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	area.m_blocks[3][3][1].setNotSolid();
 	area.m_blocks[3][3][2].setNotSolid();
 	area.m_blocks[3][3][3].setNotSolid();
 	area.m_blocks[3][3][1].addConstructedFeature(s_upStairs, s_stone);
 	area.m_blocks[3][3][2].addConstructedFeature(s_upDownStairs, s_stone);
-	Actor actor(&area.m_blocks[3][3][1], s_oneByOneFull, s_twoLegs);
+	Actor actor(area.m_blocks[3][3][1], s_oneByOneFull, s_twoLegs);
 	actor.setDestination(area.m_blocks[3][3][3]);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
@@ -480,11 +457,10 @@ TEST_CASE("floor grate blocks vertical travel")
 TEST_CASE("can walk on hatch")
 {
 	Area area(5,5,5);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	area.m_blocks[1][1][1].setSolid(s_stone);
 	area.m_blocks[1][3][1].setSolid(s_stone);
-	Actor actor(&area.m_blocks[1][1][2], s_oneByOneFull, s_twoLegs);
+	Actor actor(area.m_blocks[1][1][2], s_oneByOneFull, s_twoLegs);
 	actor.setDestination(area.m_blocks[1][3][2]);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
@@ -497,14 +473,13 @@ TEST_CASE("can walk on hatch")
 TEST_CASE("locked hatch blocks vertical travel")
 {
 	Area area(5,5,5);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	area.m_blocks[3][3][1].setNotSolid();
 	area.m_blocks[3][3][2].setNotSolid();
 	area.m_blocks[3][3][3].setNotSolid();
 	area.m_blocks[3][3][1].addConstructedFeature(s_upStairs, s_stone);
 	area.m_blocks[3][3][2].addConstructedFeature(s_upDownStairs, s_stone);
-	Actor actor(&area.m_blocks[3][3][1], s_oneByOneFull, s_twoLegs);
+	Actor actor(area.m_blocks[3][3][1], s_oneByOneFull, s_twoLegs);
 	actor.setDestination(area.m_blocks[3][3][3]);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
@@ -521,13 +496,12 @@ TEST_CASE("locked hatch blocks vertical travel")
 TEST_CASE("multi-block actors can use ramps")
 {
 	Area area(5,5,5);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	area.m_blocks[4][4][1].setSolid(s_stone);
 	area.m_blocks[4][3][1].setSolid(s_stone);
 	area.m_blocks[3][4][1].setSolid(s_stone);
 	area.m_blocks[3][3][1].setSolid(s_stone);
-	Actor actor(&area.m_blocks[1][1][1], s_twoByTwoFull, s_twoLegs);
+	Actor actor(area.m_blocks[1][1][1], s_twoByTwoFull, s_twoLegs);
 	actor.setDestination(area.m_blocks[3][3][2]);
 	RouteRequest<Block, Actor, Area> routeRequest(actor);
 	routeRequest.readStep();
@@ -543,14 +517,13 @@ TEST_CASE("multi-block actors can use ramps")
 TEST_CASE("detour")
 {
 	Area area(5,5,5);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	Block& origin = area.m_blocks[2][3][1];
 	area.m_blocks[3][1][1].setSolid(s_stone);
 	area.m_blocks[3][2][1].setSolid(s_stone);
 	area.m_blocks[3][4][1].setSolid(s_stone);
-	Actor a1(&origin, s_oneByOneFull, s_twoLegs);
-	Actor a2(&area.m_blocks[3][3][1], s_oneByOneFull, s_twoLegs);
+	Actor a1(origin, s_oneByOneFull, s_twoLegs);
+	Actor a2(area.m_blocks[3][3][1], s_oneByOneFull, s_twoLegs);
 	a1.setDestination(area.m_blocks[4][3][1]);
 	RouteRequest<Block, Actor, Area> routeRequest(a1);
 	routeRequest.readStep();

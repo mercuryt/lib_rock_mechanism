@@ -4,10 +4,10 @@ template<class Block, class Actor, class FluidType>
 class DrinkRequest
 {
 	Actor& m_actor;
-	const FluidType* m_fluidType;
+	const FluidType& m_fluidType;
 	Block* m_result;
 	uint32_t m_maxRange;
-	DrinkRequest(Actor& a, const FluidType* ft,  uint32_t mr) : m_actor(a), m_fluidType(ft), m_maxRange(mr) {}
+	DrinkRequest(Actor& a, const FluidType& ft,  uint32_t mr) : m_actor(a), m_fluidType(ft), m_maxRange(mr) {}
 
 	void readStep()
 	{
@@ -17,7 +17,7 @@ class DrinkRequest
 		}
 		auto destinationCondition = [&](Block* block)
 		{
-			return block.m_fluids.contains(m_fluidType);
+			return block.m_fluids.contains(&m_fluidType);
 		}
 		m_result = util::findWithPathCondition(pathCondition, destinationCondition, *m_actor.m_location)
 	}

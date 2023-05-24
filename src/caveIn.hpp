@@ -197,7 +197,7 @@ void BaseArea<Block, Actor, DerivedArea, FluidType>::stepCaveInWrite()
 				below = below->m_adjacents[0];
 				zDiff--;
 			}
-			block->moveContentsTo(below);
+			block->moveContentsTo(*below);
 		}
 		// We don't know if the thing we landed on was it's self anchored so add a block to caveInCheck to be checked next step.
 		m_caveInCheck.insert(below);

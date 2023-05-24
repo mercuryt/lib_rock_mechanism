@@ -1,15 +1,15 @@
 #pragma once
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
+template<class Block>
 class BaseCuboid
 {
 public:
-	DerivedBlock* m_highest;
-	DerivedBlock* m_lowest;
+	Block* m_highest;
+	Block* m_lowest;
 
-	BaseCuboid(DerivedBlock* h, DerivedBlock* l);
-	BaseCuboid(DerivedBlock& h, DerivedBlock& l);
+	BaseCuboid(Block* h, Block* l);
+	BaseCuboid(Block& h, Block& l);
 	BaseCuboid() : m_highest(nullptr), m_lowest(nullptr) {}
-	bool contains(const DerivedBlock& block) const;
+	bool contains(const Block& block) const;
 	bool canMerge(const BaseCuboid& cuboid) const;
 	BaseCuboid sum(const BaseCuboid& cuboid) const;
 	void merge(const BaseCuboid& cuboid);
@@ -26,11 +26,11 @@ public:
 		uint32_t z;
 
 		using difference_type = std::ptrdiff_t;
-		using value_type = DerivedBlock;
-		using pointer = DerivedBlock*;
-		using reference = DerivedBlock&;
+		using value_type = Block;
+		using pointer = Block*;
+		using reference = Block&;
 
-		iterator(BaseCuboid& c, const DerivedBlock& block);
+		iterator(BaseCuboid& c, const Block& block);
 		iterator();
 		iterator& operator++();
 		iterator operator++(int) const;
@@ -50,11 +50,11 @@ public:
 		uint32_t z;
 
 		using difference_type = std::ptrdiff_t;
-		using value_type = DerivedBlock;
-		using pointer = const DerivedBlock*;
-		using reference = const DerivedBlock&;
+		using value_type = Block;
+		using pointer = const Block*;
+		using reference = const Block&;
 
-		const_iterator(const BaseCuboid& c, const DerivedBlock& block);
+		const_iterator(const BaseCuboid& c, const Block& block);
 		const_iterator();
 		const_iterator& operator++();
 		const_iterator operator++(int) const;

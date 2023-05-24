@@ -13,22 +13,8 @@
 struct Shape
 {
 	const std::string name;
-	std::vector<std::array<uint32_t, 4>> positions;
-	bool isMultiTile;
-	Shape(std::string n, std::vector<std::array<uint32_t, 4>>& p, bool imt);
+	const std::vector<std::array<uint32_t, 4>> positions;
+	const bool isMultiTile;
+	Shape(const std::string n, const std::vector<std::array<uint32_t, 4>>& p) : name(n), positions(p), isMultiTile(positions.size() != 1) {}
+	bool operator==(const Shape& x) const { return &x == this; }
 };
-
-static std::list<Shape> s_shapes;
-
-inline Shape::Shape(std::string n, std::vector<std::array<uint32_t, 4>>& p, bool imt) : name(n), isMultiTile(imt)
-{
-	positions = p;
-}
-
-inline const Shape* registerShape(std::string name, std::vector<std::array<uint32_t, 4>> positions)
-{
-	assert(!positions.empty());
-	s_shapes.emplace_back(name, positions, positions.size() != 1);
-	//TODO: rotations
-	return &s_shapes.back();
-}

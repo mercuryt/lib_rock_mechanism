@@ -5,7 +5,7 @@
 
 #include <memory>
 
-template<class DerivedPlantType, class FluidType>
+template<class FluidType>
 class BasePlantType
 {
 public:
@@ -22,7 +22,7 @@ public:
 	const uint32_t stepsTillEndOfHarvest;
 	const uint32_t rootRangeMax;
 	const uint32_t rootRangeMin;
-	const FluidType* fluidType;
+	const FluidType& fluidType;
 };
 
 template<class Plant>
@@ -34,7 +34,7 @@ public:
 	void execute()
 	{
 		m_plant.m_percentGrown = 100;
-		if(m_plant.m_plantType->annual)
+		if(m_plant.m_plantType.annual)
 			m_plant.setReadyToHarvest();
 	}
 	~PlantGrowthEvent() { m_plant.m_growthEvent = nullptr; }
@@ -72,7 +72,7 @@ class BasePlant
 public:
 	Block& m_location;
 	Block* m_fluidSource;
-	const PlantType* m_plantType;
+	const PlantType& m_plantType;
 	ScheduledEventWithPercent* m_growthEvent;
 	ScheduledEventWithPercent* m_fluidEvent;
 	ScheduledEventWithPercent* m_temperatureEvent;
@@ -81,11 +81,11 @@ public:
 	bool m_readyToHarvest;
 	bool m_hasFluid;
 
-	BasePlant(Block& l, const PlantType* pt, uint32_t pg = 0) : m_location(l), m_fluidSource(nullptr), m_plantType(pt), m_growthEvent(nullptr), m_fluidEvent(nullptr), m_temperatureEvent(nullptr), m_endOfHarvestEvent(nullptr), m_percentGrown(pg), m_readyToHarvest(false), m_hasFluid(true) 
+	BasePlant(Block& l, const PlantType& pt, uint32_t pg = 0) : m_location(l), m_fluidSource(nullptr), m_plantType(pt), m_growthEvent(nullptr), m_fluidEvent(nullptr), m_temperatureEvent(nullptr), m_endOfHarvestEvent(nullptr), m_percentGrown(pg), m_readyToHarvest(false), m_hasFluid(true) 
 	{
 		assert(m_location.plantTypeCanGrow(m_plantType));
 		m_location.m_plants.push_back(&derived());
-		createFluidEvent(m_plantType->stepsNeedsFluidFrequency);
+		createFluidEvent(m_plantType.stepsNeedsFluidFrequency);
 		updateGrowingStatus();
 	}
 	DerivedPlant& derived(){ return static_cast<DerivedPlant&>(*this); }
@@ -104,7 +104,7 @@ public:
 	void applyTemperatureChange(uint32_t oldTemperature, uint32_t newTemperature)
 	{
 		(void)oldTemperature;
-		if(newTemperature >= m_plantType->minimumGrowingTemperature && newTemperature <= m_plantType->maximumGrowingTemperature)
+		if(newTemperature >= m_plantType.minimumGrowingTemperature && newTemperature <= m_plantType.maximumGrowingTemperature)
 		{
 			if(m_temperatureEvent != nullptr)
 				m_temperatureEvent->cancel();
@@ -113,7 +113,7 @@ public:
 		{
 			if(m_temperatureEvent == nullptr)
 			{
-				uint32_t step = s_step + m_plantType->stepsTillDieFromTemperature;
+				uint32_t step = s_step + m_plantType.stepsTillDieFromTemperature;
 				std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<PlantTemperatureEvent<DerivedPlant>>(step, derived());
 				m_temperatureEvent = event.get();
 				m_location.m_area->m_eventSchedule.schedule(std::move(event));
@@ -130,7 +130,7 @@ public:
 			m_fluidEvent->cancel();
 			m_fluidEvent = nullptr;
 		}
-		createFluidEvent(m_plantType->stepsNeedsFluidFrequency);
+		createFluidEvent(m_plantType.stepsNeedsFluidFrequency);
 		updateGrowingStatus();
 	}
 	void setMaybeNeedsFluid()
@@ -139,7 +139,7 @@ public:
 		if(hasFluidSource())
 		{
 			m_hasFluid = true;
-			stepsTillNextFluidEvent = m_plantType->stepsNeedsFluidFrequency;
+			stepsTillNextFluidEvent = m_plantType.stepsNeedsFluidFrequency;
 		}
 		else if(!m_hasFluid)
 		{
@@ -149,7 +149,7 @@ public:
 		else // Needs fluid, stop growing and set death timer.
 		{
 			m_hasFluid = false;
-			stepsTillNextFluidEvent = m_plantType->stepsTillDieWithoutFluid;
+			stepsTillNextFluidEvent = m_plantType.stepsTillDieWithoutFluid;
 		}
 		createFluidEvent(stepsTillNextFluidEvent);
 		updateGrowingStatus();
@@ -162,13 +162,13 @@ public:
 	}
 	void setDayOfYear(uint32_t dayOfYear)
 	{
-		if(!m_plantType->annual && dayOfYear == m_plantType->dayOfYearForHarvest)
+		if(!m_plantType.annual && dayOfYear == m_plantType.dayOfYearForHarvest)
 			setReadyToHarvest();
 	}
 	void setReadyToHarvest()
 	{
 		m_readyToHarvest = true;
-		uint32_t step = s_step + m_plantType->stepsTillEndOfHarvest;
+		uint32_t step = s_step + m_plantType.stepsTillEndOfHarvest;
 		std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<PlantEndOfHarvestEvent<DerivedPlant>>(step, derived());
 		m_endOfHarvestEvent = event.get();
 		m_location.m_area->m_eventSchedule.schedule(std::move(event));
@@ -177,18 +177,18 @@ public:
 	{
 		m_readyToHarvest = false;
 		derived().onEndOfHarvest();
-		if(m_plantType->annual)
+		if(m_plantType.annual)
 			die();
 	}
 	void updateGrowingStatus()
 	{
-		if(m_hasFluid && m_location.m_exposedToSky == m_plantType->growsInSunLight && m_temperatureEvent == nullptr)
+		if(m_hasFluid && m_location.m_exposedToSky == m_plantType.growsInSunLight && m_temperatureEvent == nullptr)
 		{
 			if(m_growthEvent == nullptr)
 			{
 				uint32_t step = s_step + (m_percentGrown == 0 ?
-						m_plantType->stepsTillFullyGrown :
-						((m_plantType->stepsTillFullyGrown * m_percentGrown) / 100u));
+						m_plantType.stepsTillFullyGrown :
+						((m_plantType.stepsTillFullyGrown * m_percentGrown) / 100u));
 				std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<PlantGrowthEvent<DerivedPlant>>(step, derived());
 				m_growthEvent = event.get();
 				m_location.m_area->m_eventSchedule.schedule(std::move(event));
@@ -205,11 +205,11 @@ public:
 	}
 	bool hasFluidSource()
 	{
-		if(m_fluidSource != nullptr && m_fluidSource->m_fluids.contains(m_plantType->fluidType))
+		if(m_fluidSource != nullptr && m_fluidSource->m_fluids.contains(&m_plantType.fluidType))
 			return true;
 		m_fluidSource = nullptr;
 		for(Block* block : util<Block>::collectAdjacentsInRange(getRootRange(), m_location))
-			if(block->m_fluids.contains(m_plantType->fluidType))
+			if(block->m_fluids.contains(&m_plantType.fluidType))
 			{
 				m_fluidSource = block;
 				return true;
@@ -230,7 +230,7 @@ public:
 	}
 	uint32_t getRootRange() const
 	{
-		return m_plantType->rootRangeMin + ((m_plantType->rootRangeMax - m_plantType->rootRangeMin) * growthPercent()) / 100;
+		return m_plantType.rootRangeMin + ((m_plantType.rootRangeMax - m_plantType.rootRangeMin) * growthPercent()) / 100;
 	}
 	// User provided code.
 	void onDie();

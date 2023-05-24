@@ -42,7 +42,7 @@ public:
 	uint32_t m_routeCacheVersion;
 	std::vector<VisionRequest<Block, Actor, DerivedArea>> m_visionRequestQueue;
 	Buckets<Actor, Config::actorDoVisionInterval> m_visionBuckets;
-	std::list<VisionCuboid<Block, Actor, DerivedArea>> m_visionCuboids;
+	std::list<VisionCuboid<Block, DerivedArea>> m_visionCuboids;
 	bool m_visionCuboidsActive;
 	EventSchedule m_eventSchedule;
 	bool m_destroy;
@@ -75,7 +75,7 @@ public:
 	void registerVisionRequest(Actor& actor);
 
 	// Create a fluid group.
-	FluidGroup<Block, DerivedArea, FluidType>* createFluidGroup(const FluidType* fluidType, std::unordered_set<Block*>& blocks, bool checkMerge = true);
+	FluidGroup<Block, DerivedArea, FluidType>* createFluidGroup(const FluidType& fluidType, std::unordered_set<Block*>& blocks, bool checkMerge = true);
 
 	// Assign all visible blocks to a visionCuboid, set m_visionCubioidsActive to true.
 	void visionCuboidsActivate();
@@ -89,7 +89,7 @@ public:
 	std::string toS();
 
 	// Get a z-level for rendering.
-	BaseCuboid<Block, Actor, DerivedArea> getZLevel(uint32_t z);
+	BaseCuboid<Block> getZLevel(uint32_t z);
 	// User provided code, no route.
 	void notifyNoRouteFound(Actor& actor);
 
