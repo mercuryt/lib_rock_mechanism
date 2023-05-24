@@ -12,10 +12,10 @@ void DrainQueue<Block, Area, FluidType>::initalizeForStep()
 {
 	for(FutureFlowBlock<Block>& futureFlowBlock : FluidQueue<Block, Area, FluidType>::m_queue)
 	{
-		assert((futureFlowBlock.block->m_fluids.contains(FluidQueue<Block, Area, FluidType>::m_fluidGroup.m_fluidType)));
+		assert((futureFlowBlock.block->m_fluids.contains(&FluidQueue<Block, Area, FluidType>::m_fluidGroup.m_fluidType)));
 		assert(futureFlowBlock.block->m_totalFluidVolume <= Config::maxBlockVolume);
 		futureFlowBlock.delta = 0;
-		futureFlowBlock.capacity = futureFlowBlock.block->m_fluids.at(FluidQueue<Block, Area, FluidType>::m_fluidGroup.m_fluidType).first;
+		futureFlowBlock.capacity = futureFlowBlock.block->m_fluids.at(&FluidQueue<Block, Area, FluidType>::m_fluidGroup.m_fluidType).first;
 	}
 	std::ranges::sort(FluidQueue<Block, Area, FluidType>::m_queue.begin(), FluidQueue<Block, Area, FluidType>::m_queue.end(), [&](FutureFlowBlock<Block>& a, FutureFlowBlock<Block>& b){
 		return getPriority(a) > getPriority(b);
@@ -67,10 +67,10 @@ void DrainQueue<Block, Area, FluidType>::applyDelta()
 	{
 		if(iter->delta == 0)
 			continue;
-		assert((iter->block->m_fluids.contains(FluidQueue<Block, Area, FluidType>::m_fluidGroup.m_fluidType)));
-		assert((iter->block->m_fluids.at(FluidQueue<Block, Area, FluidType>::m_fluidGroup.m_fluidType).first >= iter->delta));
+		assert((iter->block->m_fluids.contains(&FluidQueue<Block, Area, FluidType>::m_fluidGroup.m_fluidType)));
+		assert((iter->block->m_fluids.at(&FluidQueue<Block, Area, FluidType>::m_fluidGroup.m_fluidType).first >= iter->delta));
 		assert(iter->block->m_totalFluidVolume >= iter->delta);
-		auto found = iter->block->m_fluids.find(FluidQueue<Block, Area, FluidType>::m_fluidGroup.m_fluidType);
+		auto found = iter->block->m_fluids.find(&FluidQueue<Block, Area, FluidType>::m_fluidGroup.m_fluidType);
 		found->second.first -= iter->delta;
 		iter->block->m_totalFluidVolume -= iter->delta;
 		if(found->second.first == 0)
@@ -92,7 +92,7 @@ template<class Block, class Area, class FluidType>
 uint32_t DrainQueue<Block, Area, FluidType>::groupLevel() const
 {
 	assert((FluidQueue<Block, Area, FluidType>::m_groupStart != FluidQueue<Block, Area, FluidType>::m_groupEnd));
-	return FluidQueue<Block, Area, FluidType>::m_groupStart->block->m_fluids.at(FluidQueue<Block, Area, FluidType>::m_fluidGroup.m_fluidType).first - FluidQueue<Block, Area, FluidType>::m_groupStart->delta;
+	return FluidQueue<Block, Area, FluidType>::m_groupStart->block->m_fluids.at(&FluidQueue<Block, Area, FluidType>::m_fluidGroup.m_fluidType).first - FluidQueue<Block, Area, FluidType>::m_groupStart->delta;
 }
 template<class Block, class Area, class FluidType>
 uint32_t DrainQueue<Block, Area, FluidType>::getPriority(FutureFlowBlock<Block>& futureFlowBlock) const

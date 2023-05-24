@@ -32,7 +32,7 @@ public:
 	bool m_destroy;
 	bool m_merged;
 	bool m_disolved;
-	const FluidType* m_fluidType;
+	const FluidType& m_fluidType;
 	int32_t m_excessVolume;
 	uint32_t m_viscosity;
 	FillQueue<Block, Area, FluidType> m_fillQueue;
@@ -57,7 +57,7 @@ public:
 	std::unordered_set<Block*> m_futureAddToFillQueue;
 	std::unordered_set<Block*> m_futureRemoveFromFillQueue;
 
-	FluidGroup(const FluidType* ft, std::unordered_set<Block*>& blocks, Area& area, bool checkMerge = true);
+	FluidGroup(const FluidType& ft, std::unordered_set<Block*>& blocks, Area& area, bool checkMerge = true);
 	FluidGroup(const FluidGroup<Block, Area, FluidType>&) = delete;
 	void addFluid(uint32_t fluidVolume);
 	void removeFluid(uint32_t fluidVolume);

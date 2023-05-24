@@ -41,7 +41,7 @@ void FillQueue<Block, Area, FluidType>::recordDelta(uint32_t volume, uint32_t fl
 	// Record fluid level changes.
 	for(auto iter = FluidQueue<Block, Area, FluidType>::m_groupStart; iter != FluidQueue<Block, Area, FluidType>::m_groupEnd; ++iter)
 	{
-		if(iter->delta == 0 && !iter->block->m_fluids.contains(FluidQueue<Block, Area, FluidType>::m_fluidGroup.m_fluidType))
+		if(iter->delta == 0 && !iter->block->m_fluids.contains(&FluidQueue<Block, Area, FluidType>::m_fluidGroup.m_fluidType))
 			m_futureNoLongerEmpty.insert(iter->block);
 		iter->delta += volume;
 		assert(iter->delta <= Config::maxBlockVolume);
@@ -73,12 +73,12 @@ void FillQueue<Block, Area, FluidType>::applyDelta()
 		// TODO: This seems hackey, should try gather instead, also for drain.
 		if(iter->delta == 0)
 			continue;
-		assert(!iter->block->m_fluids.contains(FluidQueue<Block, Area, FluidType>::m_fluidGroup.m_fluidType) || iter->block->m_fluids.at(FluidQueue<Block, Area, FluidType>::m_fluidGroup.m_fluidType).second != nullptr);
-		auto found = iter->block->m_fluids.find(FluidQueue<Block, Area, FluidType>::m_fluidGroup.m_fluidType);
+		assert(!iter->block->m_fluids.contains(&FluidQueue<Block, Area, FluidType>::m_fluidGroup.m_fluidType) || iter->block->m_fluids.at(&FluidQueue<Block, Area, FluidType>::m_fluidGroup.m_fluidType).second != nullptr);
+		auto found = iter->block->m_fluids.find(&FluidQueue<Block, Area, FluidType>::m_fluidGroup.m_fluidType);
 		if(found == iter->block->m_fluids.end())
 		{
 			FluidGroup<Block, Area, FluidType>& fluidGroup = FluidQueue<Block, Area, FluidType>::m_fluidGroup;
-			iter->block->m_fluids.emplace(fluidGroup.m_fluidType, std::make_pair(iter->delta, &fluidGroup));
+			iter->block->m_fluids.emplace(&fluidGroup.m_fluidType, std::make_pair(iter->delta, &fluidGroup));
 		}
 		else
 		{

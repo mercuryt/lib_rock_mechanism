@@ -1,12 +1,11 @@
 TEST_CASE("Create Fluid.")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayers(area, 0, 1, s_stone);
 	Block& block = area.m_blocks[5][5][1];
 	block.setNotSolid();
 	block.addFluid(100, s_water);
-	CHECK(area.m_blocks[5][5][1].m_fluids.contains(s_water));
+	CHECK(area.m_blocks[5][5][1].m_fluids.contains(&s_water));
 	FluidGroup<Block, Area, FluidType>* fluidGroup = *area.m_unstableFluidGroups.begin();
 	CHECK(fluidGroup->m_fillQueue.m_set.size() == 1);
 	fluidGroup->readStep();
@@ -15,14 +14,13 @@ TEST_CASE("Create Fluid.")
 	fluidGroup->afterWriteStep();
 	fluidGroup->mergeStep();
 	fluidGroup->splitStep();
-	CHECK(!area.m_blocks[5][5][2].m_fluids.contains(s_water));
-	CHECK(area.m_blocks[5][5][1].m_fluids.contains(s_water));
+	CHECK(!area.m_blocks[5][5][2].m_fluids.contains(&s_water));
+	CHECK(area.m_blocks[5][5][1].m_fluids.contains(&s_water));
 	CHECK(area.m_fluidGroups.size() == 1);
 }
 TEST_CASE("Excess volume spawns and negitive excess despawns.")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayers(area, 0, 2, s_stone);
 	Block& block = area.m_blocks[5][5][1];
 	Block& block2 = area.m_blocks[5][5][2];
@@ -46,9 +44,9 @@ TEST_CASE("Excess volume spawns and negitive excess despawns.")
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 2);
 	CHECK(fluidGroup->m_fillQueue.m_set.size() == 1);
 	CHECK(fluidGroup->m_fillQueue.m_queue[0].block == &block3);
-	CHECK(block2.m_fluids.contains(s_water));
-	CHECK(block2.m_fluids[s_water].first == Config::maxBlockVolume);
-	CHECK(fluidGroup == block2.m_fluids[s_water].second);
+	CHECK(block2.m_fluids.contains(&s_water));
+	CHECK(block2.m_fluids[&s_water].first == Config::maxBlockVolume);
+	CHECK(fluidGroup == block2.m_fluids[&s_water].second);
 	// Step 2.
 	fluidGroup->readStep();
 	CHECK(fluidGroup->m_stable);
@@ -56,8 +54,8 @@ TEST_CASE("Excess volume spawns and negitive excess despawns.")
 	fluidGroup->afterWriteStep();
 	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
-	CHECK(block2.m_fluids.contains(s_water));
-	CHECK(!area.m_blocks[5][5][3].m_fluids.contains(s_water));
+	CHECK(block2.m_fluids.contains(&s_water));
+	CHECK(!area.m_blocks[5][5][3].m_fluids.contains(&s_water));
 	block.removeFluid(Config::maxBlockVolume, s_water);
 	CHECK(!fluidGroup->m_stable);
 	// Step 3.
@@ -68,14 +66,13 @@ TEST_CASE("Excess volume spawns and negitive excess despawns.")
 	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
 	CHECK(area.m_fluidGroups.size() == 1);
-	CHECK(block.m_fluids.contains(s_water));
-	CHECK(block.m_fluids[s_water].first == Config::maxBlockVolume);
-	CHECK(!block2.m_fluids.contains(s_water));
+	CHECK(block.m_fluids.contains(&s_water));
+	CHECK(block.m_fluids[&s_water].first == Config::maxBlockVolume);
+	CHECK(!block2.m_fluids.contains(&s_water));
 }
 TEST_CASE("Remove volume can destroy FluidGroups.")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayers(area, 0, 1, s_stone);
 	Block& block = area.m_blocks[5][5][1];
 	block.setNotSolid();
@@ -99,7 +96,6 @@ TEST_CASE("Remove volume can destroy FluidGroups.")
 TEST_CASE("Flow into adjacent hole")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayers(area, 0, 2, s_stone);
 	Block& destination = area.m_blocks[5][5][1];
 	Block& block2 = area.m_blocks[5][5][2];
@@ -128,11 +124,11 @@ TEST_CASE("Flow into adjacent hole")
 	fluidGroup->mergeStep();
 	CHECK(area.m_fluidGroups.size() == 1);
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 2);
-	CHECK(!destination.m_fluids.contains(s_water));
-	CHECK(block2.m_fluids.contains(s_water));
-	CHECK(origin.m_fluids.contains(s_water));
-	CHECK(origin.m_fluids[s_water].first == Config::maxBlockVolume / 2);
-	CHECK(block2.m_fluids[s_water].first == Config::maxBlockVolume / 2);
+	CHECK(!destination.m_fluids.contains(&s_water));
+	CHECK(block2.m_fluids.contains(&s_water));
+	CHECK(origin.m_fluids.contains(&s_water));
+	CHECK(origin.m_fluids[&s_water].first == Config::maxBlockVolume / 2);
+	CHECK(block2.m_fluids[&s_water].first == Config::maxBlockVolume / 2);
 	CHECK(fluidGroup->m_fillQueue.m_set.size() == 5);
 	CHECK(fluidGroup->m_fillQueue.m_set.contains(&destination));
 	CHECK(fluidGroup->m_fillQueue.m_set.contains(&block2));
@@ -149,10 +145,10 @@ TEST_CASE("Flow into adjacent hole")
 	fluidGroup->afterWriteStep();
 	fluidGroup->splitStep();
 	fluidGroup->mergeStep();
-	CHECK(destination.m_fluids.contains(s_water));
-	CHECK(!block2.m_fluids.contains(s_water));
-	CHECK(!origin.m_fluids.contains(s_water));
-	CHECK(destination.m_fluids[s_water].first == Config::maxBlockVolume);
+	CHECK(destination.m_fluids.contains(&s_water));
+	CHECK(!block2.m_fluids.contains(&s_water));
+	CHECK(!origin.m_fluids.contains(&s_water));
+	CHECK(destination.m_fluids[&s_water].first == Config::maxBlockVolume);
 	CHECK(fluidGroup->m_drainQueue.m_set.size() == 1);
 	// If the group is stable at this point depends on the viscosity of water, do one more step to make sure.
 	CHECK(fluidGroup->m_fillQueue.m_set.size() == 1);
@@ -170,7 +166,6 @@ TEST_CASE("Flow across flat area")
 {
 	s_step = 0;
 	Area area(20,20,20);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	Block& block = area.m_blocks[10][10][1];
 	Block& block2 = area.m_blocks[10][12][1];
@@ -282,7 +277,6 @@ TEST_CASE("Flow across flat area")
 TEST_CASE("Flow across flat area double stack")
 {
 	Area area(20,20,20);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	Block& origin1 = area.m_blocks[10][10][1];
 	Block& origin2 = area.m_blocks[10][10][2];
@@ -386,7 +380,6 @@ TEST_CASE("Flow across flat area double stack")
 TEST_CASE("Flow across area and then fill hole")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayers(area, 0, 1, s_stone);
 	Block& block = area.m_blocks[5][5][2];
 	Block& block2a = area.m_blocks[5][6][2];
@@ -455,7 +448,6 @@ TEST_CASE("Flow across area and then fill hole")
 TEST_CASE("FluidGroups are able to split into parts")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayers(area, 0, 2, s_stone);
 	Block& destination1 = area.m_blocks[5][4][1];
 	Block& destination2 = area.m_blocks[5][6][1];
@@ -497,7 +489,6 @@ TEST_CASE("FluidGroups are able to split into parts")
 TEST_CASE("Fluid Groups merge")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayers(area, 0, 1, s_stone);
 	Block& origin1 = area.m_blocks[5][4][1];
 	Block& block1 = area.m_blocks[5][5][1];
@@ -552,7 +543,6 @@ TEST_CASE("Fluid Groups merge")
 TEST_CASE("Fluid Groups merge four blocks")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayers(area, 0, 1, s_stone);
 	Block& block1 = area.m_blocks[5][4][1];
 	Block& block2 = area.m_blocks[5][5][1];
@@ -599,7 +589,6 @@ TEST_CASE("Fluid Groups merge four blocks")
 TEST_CASE("Denser fluids sink")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayers(area, 0, 2, s_stone);
 	Block& block1 = area.m_blocks[5][5][1];
 	Block& block2 = area.m_blocks[5][5][2];
@@ -698,7 +687,6 @@ TEST_CASE("Denser fluids sink")
 TEST_CASE("Merge 3 groups at two block distance")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayers(area, 0, 1, s_stone);
 	Block& block1 = area.m_blocks[5][2][1];
 	Block& block2 = area.m_blocks[5][3][1];
@@ -771,7 +759,6 @@ TEST_CASE("Merge 3 groups at two block distance")
 TEST_CASE("Split test 2")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayers(area, 0, 4, s_stone);
 	Block& block1 = area.m_blocks[5][4][1];
 	Block& block2 = area.m_blocks[5][5][1];
@@ -855,7 +842,6 @@ TEST_CASE("Split test 2")
 TEST_CASE("Merge with group as it splits")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayers(area, 0, 4, s_stone);
 	Block& origin1 = area.m_blocks[5][4][1];
 	Block& block1 = area.m_blocks[5][5][1];
@@ -925,7 +911,6 @@ TEST_CASE("Merge with group as it splits")
 TEST_CASE("Merge with two groups while spliting")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayers(area, 0, 4, s_stone);
 	Block& origin1 = area.m_blocks[5][4][1];
 	Block& block1 = area.m_blocks[5][5][1];
@@ -1019,7 +1004,6 @@ TEST_CASE("Merge with two groups while spliting")
 TEST_CASE("Bubbles")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayers(area, 0, 4, s_stone);
 	Block& origin1 = area.m_blocks[5][5][1];
 	Block& origin2 = area.m_blocks[5][5][2];
@@ -1091,7 +1075,6 @@ TEST_CASE("Bubbles")
 TEST_CASE("Three liquids")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayers(area, 0, 4, s_stone);
 	Block& origin1 = area.m_blocks[5][5][1];
 	Block& origin2 = area.m_blocks[5][5][2];
@@ -1220,7 +1203,6 @@ TEST_CASE("Three liquids")
 TEST_CASE("Set not solid")
 {
 	Area area(10, 10, 10);
-	registerTypes();
 	setSolidLayers(area, 0, 1, s_stone);
 	Block& origin1 = area.m_blocks[5][5][1];
 	Block& block1 = area.m_blocks[5][6][1];
@@ -1263,7 +1245,6 @@ TEST_CASE("Set not solid")
 TEST_CASE("Set solid")
 {
 	Area area(10, 10, 10);
-	registerTypes();
 	setSolidLayers(area, 0, 1, s_stone);
 	Block& origin1 = area.m_blocks[5][5][1];
 	Block& block1 = area.m_blocks[5][6][1];
@@ -1287,7 +1268,6 @@ TEST_CASE("Set solid")
 TEST_CASE("Set solid and split")
 {
 	Area area(10, 10, 10);
-	registerTypes();
 	setSolidLayers(area, 0, 1, s_stone);
 	Block& block1 = area.m_blocks[5][5][1];
 	Block& origin1 = area.m_blocks[5][6][1];
@@ -1333,7 +1313,6 @@ TEST_CASE("Set solid and split")
 TEST_CASE("Cave in falls in fluid and pistons it up")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayers(area, 0, 1, s_stone);
 	Block& block1 = area.m_blocks[5][5][1];
 	Block& block2 = area.m_blocks[5][5][2];
@@ -1372,7 +1351,6 @@ TEST_CASE("Test diagonal seep")
 		return;
 	s_step = 1;
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayers(area, 0, 1, s_stone);
 	Block& block1 = area.m_blocks[5][5][1];
 	Block& block2 = area.m_blocks[6][6][1];
@@ -1414,7 +1392,6 @@ TEST_CASE("Test mist")
 {
 	s_step = 1;
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayers(area, 0, 2, s_stone);
 	Block& block1 = area.m_blocks[5][5][1];
 	Block& block2 = area.m_blocks[5][5][2];
@@ -1459,7 +1436,6 @@ void trenchTest2Fluids(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	uint32_t halfMaxX = maxX / 2;
 	Area area(maxX, maxY, maxZ);
 	s_step = 0;
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	setSolidWalls(area, maxZ - 1, s_stone);
 	// Water
@@ -1493,10 +1469,10 @@ void trenchTest2Fluids(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	CHECK(fgCO2->m_stable);
 	CHECK(fgCO2->m_drainQueue.m_set.size() == expectedBlocks);
 	CHECK(fgCO2->totalVolume() == totalVolume);
-	CHECK(area.m_blocks[1][1][1].m_fluids.contains(s_water));
-	CHECK(area.m_blocks[maxX - 2][1][1].m_fluids.contains(s_water));
-	CHECK(area.m_blocks[1][1][maxZ - 1].m_fluids.contains(s_CO2));
-	CHECK(area.m_blocks[maxX - 2][1][maxZ - 1].m_fluids.contains(s_CO2));
+	CHECK(area.m_blocks[1][1][1].m_fluids.contains(&s_water));
+	CHECK(area.m_blocks[maxX - 2][1][1].m_fluids.contains(&s_water));
+	CHECK(area.m_blocks[1][1][maxZ - 1].m_fluids.contains(&s_CO2));
+	CHECK(area.m_blocks[maxX - 2][1][maxZ - 1].m_fluids.contains(&s_CO2));
 }
 TEST_CASE("trench test 2 fluids scale 2-1")
 {
@@ -1522,7 +1498,6 @@ void trenchTest3Fluids(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	uint32_t thirdMaxX = maxX / 3;
 	Area area(maxX, maxY, maxZ);
 	s_step = 0;
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	setSolidWalls(area, maxZ - 1, s_stone);
 	// Water
@@ -1562,10 +1537,10 @@ void trenchTest3Fluids(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	CHECK(fgLava->m_stable);
 	CHECK(fgLava->m_drainQueue.m_set.size() == expectedBlocks);
 	CHECK(fgLava->totalVolume() == totalVolume);
-	CHECK(area.m_blocks[1][1][1].m_fluids.contains(s_lava));
-	CHECK(area.m_blocks[maxX - 2][1][1].m_fluids.contains(s_lava));
-	CHECK(area.m_blocks[1][1][maxZ - 1].m_fluids.contains(s_CO2));
-	CHECK(area.m_blocks[maxX - 2][1][maxZ - 1].m_fluids.contains(s_CO2));
+	CHECK(area.m_blocks[1][1][1].m_fluids.contains(&s_lava));
+	CHECK(area.m_blocks[maxX - 2][1][1].m_fluids.contains(&s_lava));
+	CHECK(area.m_blocks[1][1][maxZ - 1].m_fluids.contains(&s_CO2));
+	CHECK(area.m_blocks[maxX - 2][1][maxZ - 1].m_fluids.contains(&s_CO2));
 }
 TEST_CASE("trench test 3 fluids scale 3-1")
 {
@@ -1591,7 +1566,6 @@ void trenchTest4Fluids(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	uint32_t quarterMaxX = maxX / 4;
 	Area area(maxX, maxY, maxZ);
 	s_step = 0;
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	setSolidWalls(area, maxZ - 1, s_stone);
 	// Water
@@ -1650,10 +1624,10 @@ void trenchTest4Fluids(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	CHECK(fgMercury->m_stable);
 	CHECK(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
 	CHECK(fgMercury->totalVolume() == totalVolume);
-	CHECK(area.m_blocks[1][1][1].m_fluids.contains(s_lava));
-	CHECK(area.m_blocks[maxX - 2][1][1].m_fluids.contains(s_lava));
-	CHECK(area.m_blocks[1][1][maxZ - 1].m_fluids.contains(s_CO2));
-	CHECK(area.m_blocks[maxX - 2][1][maxZ - 1].m_fluids.contains(s_CO2));
+	CHECK(area.m_blocks[1][1][1].m_fluids.contains(&s_lava));
+	CHECK(area.m_blocks[maxX - 2][1][1].m_fluids.contains(&s_lava));
+	CHECK(area.m_blocks[1][1][maxZ - 1].m_fluids.contains(&s_CO2));
+	CHECK(area.m_blocks[maxX - 2][1][maxZ - 1].m_fluids.contains(&s_CO2));
 	CHECK(area.m_fluidGroups.size() == 4);
 	CHECK(area.m_unstableFluidGroups.empty());
 }
@@ -1689,7 +1663,6 @@ void trenchTest2FluidsMerge(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	uint32_t quarterMaxX = maxX / 4;
 	Area area(maxX, maxY, maxZ);
 	s_step = 0;
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	setSolidWalls(area, maxZ - 1, s_stone);
 	// Water
@@ -1755,7 +1728,6 @@ void trenchTest3FluidsMerge(uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	uint32_t quarterMaxX = maxX / 4;
 	Area area(maxX, maxY, maxZ);
 	s_step = 0;
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	setSolidWalls(area, maxZ - 1, s_stone);
 	// Water
@@ -1833,7 +1805,6 @@ void fourFluidsTest(uint32_t scale, uint32_t steps)
 	uint32_t halfMaxY = maxY / 2;
 	Area area(maxX, maxY, maxZ);
 	s_step = 0;
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	setSolidWalls(area, maxZ - 1, s_stone);
 	std::vector<FluidGroup<Block, Area, FluidType>*> newlySplit;
@@ -1895,8 +1866,8 @@ void fourFluidsTest(uint32_t scale, uint32_t steps)
 	CHECK(fgMercury->m_stable);
 	CHECK(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
 	CHECK(fgMercury->totalVolume() == totalVolume);
-	CHECK(area.m_blocks[1][1][1].m_fluids.contains(s_lava));
-	CHECK(area.m_blocks[1][1][maxZ - 1].m_fluids.contains(s_CO2));
+	CHECK(area.m_blocks[1][1][1].m_fluids.contains(&s_lava));
+	CHECK(area.m_blocks[1][1][maxZ - 1].m_fluids.contains(&s_CO2));
 }
 TEST_CASE("four fluids scale 2")
 {

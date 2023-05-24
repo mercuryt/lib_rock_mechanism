@@ -1,7 +1,6 @@
 TEST_CASE("Cave In doesn't happen when block is supported.")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	// Set a supported block to be solid, verify nothing happens.
 	Block* block = &area.m_blocks[5][5][1];
@@ -16,7 +15,6 @@ TEST_CASE("Cave In doesn't happen when block is supported.")
 TEST_CASE("Cave in does happen when block is not supported.")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	// Set a floating block to be solid and add to caveInCheck, verify it falls.
 	Block* block = &area.m_blocks[5][5][2];
@@ -36,7 +34,6 @@ TEST_CASE("Cave in does happen when block is not supported.")
 TEST_CASE("Cave in does happen to multiple unconnected blocks which are unsuported.")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	// Verify multiple seperate blocks fall.
 	Block* block = &area.m_blocks[5][5][2];
@@ -57,7 +54,6 @@ TEST_CASE("Cave in does happen to multiple unconnected blocks which are unsuport
 TEST_CASE("Cave in connected blocks together.")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	// Verify contiguous groups fall together.
 	Block* block = &area.m_blocks[5][5][2];
@@ -78,7 +74,6 @@ TEST_CASE("Cave in connected blocks together.")
 TEST_CASE("Blocks on the edge of the area are anchored.")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	// Verify blocks on edges of area don't fall.
 	Block* block = &area.m_blocks[0][5][2];
@@ -100,7 +95,6 @@ TEST_CASE("Blocks on the edge of the area are anchored.")
 TEST_CASE("Verify recorded fall distance is the shortest.")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	Block* block = &area.m_blocks[5][5][2];
 	Block* block2 = &area.m_blocks[5][5][3];
@@ -127,7 +121,6 @@ TEST_CASE("Verify recorded fall distance is the shortest.")
 TEST_CASE("Verify one group falling onto another unanchored group will keep falling in the next step.")
 {
 	Area area(10,10,10);
-	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	Block* block = &area.m_blocks[5][5][2];
 	Block* block2 = &area.m_blocks[5][5][4];

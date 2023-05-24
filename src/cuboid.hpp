@@ -1,21 +1,21 @@
 #pragma once
 #include <cassert>
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::BaseCuboid(DerivedBlock* h, DerivedBlock* l) : m_highest(h), m_lowest(l)
+template<class Block>
+BaseCuboid<Block>::BaseCuboid(Block* h, Block* l) : m_highest(h), m_lowest(l)
 {
 	assert(m_highest->m_x >= m_lowest->m_x);
 	assert(m_highest->m_y >= m_lowest->m_y);
 	assert(m_highest->m_z >= m_lowest->m_z);
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::BaseCuboid(DerivedBlock& h, DerivedBlock& l) : m_highest(&h), m_lowest(&l)
+template<class Block>
+BaseCuboid<Block>::BaseCuboid(Block& h, Block& l) : m_highest(&h), m_lowest(&l)
 {
 	assert(m_highest->m_x >= m_lowest->m_x);
 	assert(m_highest->m_y >= m_lowest->m_y);
 	assert(m_highest->m_z >= m_lowest->m_z);
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-bool BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::contains(const DerivedBlock& block) const
+template<class Block>
+bool BaseCuboid<Block>::contains(const Block& block) const
 {
 	return (
 			block.m_x <= m_highest->m_x && block.m_x >= m_lowest->m_x &&
@@ -23,8 +23,8 @@ bool BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::contains(const Derived
 			block.m_z <= m_highest->m_z && block.m_z >= m_lowest->m_z
 	       );
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-bool BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::canMerge(const BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid) const
+template<class Block>
+bool BaseCuboid<Block>::canMerge(const BaseCuboid<Block>& cuboid) const
 {
 	uint32_t count = 0;
 	if(cuboid.m_highest->m_x == m_highest->m_x && cuboid.m_lowest->m_x == m_lowest->m_x)
@@ -36,11 +36,11 @@ bool BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::canMerge(const BaseCub
 	assert(count != 3);
 	return count == 2;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-BaseCuboid<DerivedBlock, DerivedActor, DerivedArea> BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::sum(const BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid) const
+template<class Block>
+BaseCuboid<Block> BaseCuboid<Block>::sum(const BaseCuboid<Block>& cuboid) const
 {
 	assert(canMerge(cuboid));
-	BaseCuboid<DerivedBlock, DerivedActor, DerivedArea> output;
+	BaseCuboid<Block> output;
 	uint32_t maxX = std::max(m_highest->m_x, cuboid.m_highest->m_x);
 	uint32_t maxY = std::max(m_highest->m_y, cuboid.m_highest->m_y);
 	uint32_t maxZ = std::max(m_highest->m_z, cuboid.m_highest->m_z);
@@ -51,39 +51,39 @@ BaseCuboid<DerivedBlock, DerivedActor, DerivedArea> BaseCuboid<DerivedBlock, Der
 	output.m_lowest = &m_highest->m_area->m_blocks[minX][minY][minZ];
 	return output;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::merge(const BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid)
+template<class Block>
+void BaseCuboid<Block>::merge(const BaseCuboid<Block>& cuboid)
 {
-	BaseCuboid<DerivedBlock, DerivedActor, DerivedArea> sum = cuboid.sum(*this);
+	BaseCuboid<Block> sum = cuboid.sum(*this);
 	m_highest = sum.m_highest;
 	m_lowest = sum.m_lowest;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-BaseCuboid<DerivedBlock, DerivedActor, DerivedArea> BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::getFace(uint32_t facing) const
+template<class Block>
+BaseCuboid<Block> BaseCuboid<Block>::getFace(uint32_t facing) const
 {
 	assert(facing < 6);
 	// test area has x higher then this.
 	if(facing == 4)
-		return BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>(m_highest, &m_highest->m_area->m_blocks[m_highest->m_x][m_lowest->m_y][m_lowest->m_z]);
+		return BaseCuboid<Block>(m_highest, &m_highest->m_area->m_blocks[m_highest->m_x][m_lowest->m_y][m_lowest->m_z]);
 	// test area has x lower then this.
 	else if(facing == 2)
-		return BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>(&m_highest->m_area->m_blocks[m_lowest->m_x][m_highest->m_y][m_highest->m_z], m_lowest);
+		return BaseCuboid<Block>(&m_highest->m_area->m_blocks[m_lowest->m_x][m_highest->m_y][m_highest->m_z], m_lowest);
 	// test area has y higher then this.
 	else if(facing == 3)
-		return BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>(m_highest, &m_highest->m_area->m_blocks[m_lowest->m_x][m_highest->m_y][m_lowest->m_z]);
+		return BaseCuboid<Block>(m_highest, &m_highest->m_area->m_blocks[m_lowest->m_x][m_highest->m_y][m_lowest->m_z]);
 	// test area has y lower then this.
 	else if(facing == 1)
-		return BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>(&m_highest->m_area->m_blocks[m_highest->m_x][m_lowest->m_y][m_highest->m_z], m_lowest);
+		return BaseCuboid<Block>(&m_highest->m_area->m_blocks[m_highest->m_x][m_lowest->m_y][m_highest->m_z], m_lowest);
 			// test area has z higher then this.
 	else if(facing == 5)
-		return BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>(m_highest, &m_highest->m_area->m_blocks[m_lowest->m_x][m_lowest->m_y][m_highest->m_z]);
+		return BaseCuboid<Block>(m_highest, &m_highest->m_area->m_blocks[m_lowest->m_x][m_lowest->m_y][m_highest->m_z]);
 	// test area has z lower then this.
 	else if(facing == 0)
-		return BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>(&m_highest->m_area->m_blocks[m_highest->m_x][m_highest->m_y][m_lowest->m_z], m_lowest);
-	return BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>(nullptr, nullptr);
+		return BaseCuboid<Block>(&m_highest->m_area->m_blocks[m_highest->m_x][m_highest->m_y][m_lowest->m_z], m_lowest);
+	return BaseCuboid<Block>(nullptr, nullptr);
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-bool BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::overlapsWith(const BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid) const
+template<class Block>
+bool BaseCuboid<Block>::overlapsWith(const BaseCuboid<Block>& cuboid) const
 {
 	return
 			(
@@ -107,22 +107,22 @@ bool BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::overlapsWith(const Bas
 			 cuboid.m_lowest->m_z >= m_lowest->m_z && cuboid.m_lowest->m_z <= m_highest->m_z
 			);
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-size_t BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::size() const
+template<class Block>
+size_t BaseCuboid<Block>::size() const
 {
 	return ((m_highest->m_x + 1) - m_lowest->m_x) * ((m_highest->m_y + 1) - m_lowest->m_y) * ((m_highest->m_z + 1) - m_lowest->m_z);
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-bool BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::operator==(const BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>& cuboid) const
+template<class Block>
+bool BaseCuboid<Block>::operator==(const BaseCuboid<Block>& cuboid) const
 {
 	return m_lowest == cuboid.m_lowest && m_highest == cuboid.m_highest;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::iterator::iterator(BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>& c, const DerivedBlock& block) : cuboid(&c), x(block.m_x), y(block.m_y), z(block.m_z) {}
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::iterator::iterator() : cuboid(nullptr), x(0), y(0), z(0) {}
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::iterator& BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::iterator::operator++()
+template<class Block>
+BaseCuboid<Block>::iterator::iterator(BaseCuboid<Block>& c, const Block& block) : cuboid(&c), x(block.m_x), y(block.m_y), z(block.m_z) {}
+template<class Block>
+BaseCuboid<Block>::iterator::iterator() : cuboid(nullptr), x(0), y(0), z(0) {}
+template<class Block>
+BaseCuboid<Block>::iterator& BaseCuboid<Block>::iterator::operator++()
 {
 	if(++z > cuboid->m_highest->m_z)
 	{
@@ -135,35 +135,35 @@ BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::iterator& BaseCuboid<Derive
 	}
 	return *this;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::iterator BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::iterator::operator++(int) const
+template<class Block>
+BaseCuboid<Block>::iterator BaseCuboid<Block>::iterator::operator++(int) const
 {
-	BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::iterator output = *this;
+	BaseCuboid<Block>::iterator output = *this;
 	++output;
 	return output;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-bool BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::iterator::operator==(const BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::iterator other) const { return other.x == x && other.y == y && other.z == z; }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-bool BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::iterator::operator!=(const BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::iterator other) const { return other.x != x || other.y != y || other.z != z; }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-DerivedBlock& BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::iterator::operator*() const { return cuboid->m_highest->m_area->m_blocks[x][y][z]; }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-DerivedBlock* BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::iterator::operator->() const { return &cuboid->m_highest->m_area->m_blocks[x][y][z]; }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::iterator BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::begin(){ return BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::iterator(*this, *m_lowest); }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::iterator BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::end()
+template<class Block>
+bool BaseCuboid<Block>::iterator::operator==(const BaseCuboid<Block>::iterator other) const { return other.x == x && other.y == y && other.z == z; }
+template<class Block>
+bool BaseCuboid<Block>::iterator::operator!=(const BaseCuboid<Block>::iterator other) const { return other.x != x || other.y != y || other.z != z; }
+template<class Block>
+Block& BaseCuboid<Block>::iterator::operator*() const { return cuboid->m_highest->m_area->m_blocks[x][y][z]; }
+template<class Block>
+Block* BaseCuboid<Block>::iterator::operator->() const { return &cuboid->m_highest->m_area->m_blocks[x][y][z]; }
+template<class Block>
+BaseCuboid<Block>::iterator BaseCuboid<Block>::begin(){ return BaseCuboid<Block>::iterator(*this, *m_lowest); }
+template<class Block>
+BaseCuboid<Block>::iterator BaseCuboid<Block>::end()
 {
-	BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::iterator iterator(*this, *m_highest);
+	BaseCuboid<Block>::iterator iterator(*this, *m_highest);
 	return ++iterator;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::const_iterator::const_iterator(const BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>& c, const DerivedBlock& block) : cuboid(&c), x(block.m_x), y(block.m_y), z(block.m_z) {}
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::const_iterator::const_iterator() : cuboid(nullptr), x(0), y(0), z(0) {}
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::const_iterator& BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::const_iterator::operator++()
+template<class Block>
+BaseCuboid<Block>::const_iterator::const_iterator(const BaseCuboid<Block>& c, const Block& block) : cuboid(&c), x(block.m_x), y(block.m_y), z(block.m_z) {}
+template<class Block>
+BaseCuboid<Block>::const_iterator::const_iterator() : cuboid(nullptr), x(0), y(0), z(0) {}
+template<class Block>
+BaseCuboid<Block>::const_iterator& BaseCuboid<Block>::const_iterator::operator++()
 {
 	if(++z > cuboid->m_highest->m_z)
 	{
@@ -176,25 +176,25 @@ BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::const_iterator& BaseCuboid<
 	}
 	return *this;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::const_iterator BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::const_iterator::operator++(int) const
+template<class Block>
+BaseCuboid<Block>::const_iterator BaseCuboid<Block>::const_iterator::operator++(int) const
 {
-	BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::const_iterator output = *this;
+	BaseCuboid<Block>::const_iterator output = *this;
 	return ++output;
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-bool BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::const_iterator::operator==(const BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::const_iterator other) const { return other.x == x && other.y == y && other.z == z; }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-bool BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::const_iterator::operator!=(const BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::const_iterator other) const { return other.x != x || other.y != y || other.z != z; }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-const DerivedBlock& BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::const_iterator::operator*() const { return cuboid->m_highest->m_area->m_blocks[x][y][z]; }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-const DerivedBlock* BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::const_iterator::operator->() const { return &cuboid->m_highest->m_area->m_blocks[x][y][z]; }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::const_iterator BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::begin() const { return BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::const_iterator(*this, *m_lowest); }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::const_iterator BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::end() const
+template<class Block>
+bool BaseCuboid<Block>::const_iterator::operator==(const BaseCuboid<Block>::const_iterator other) const { return other.x == x && other.y == y && other.z == z; }
+template<class Block>
+bool BaseCuboid<Block>::const_iterator::operator!=(const BaseCuboid<Block>::const_iterator other) const { return other.x != x || other.y != y || other.z != z; }
+template<class Block>
+const Block& BaseCuboid<Block>::const_iterator::operator*() const { return cuboid->m_highest->m_area->m_blocks[x][y][z]; }
+template<class Block>
+const Block* BaseCuboid<Block>::const_iterator::operator->() const { return &cuboid->m_highest->m_area->m_blocks[x][y][z]; }
+template<class Block>
+BaseCuboid<Block>::const_iterator BaseCuboid<Block>::begin() const { return BaseCuboid<Block>::const_iterator(*this, *m_lowest); }
+template<class Block>
+BaseCuboid<Block>::const_iterator BaseCuboid<Block>::end() const
 {
-	BaseCuboid<DerivedBlock, DerivedActor, DerivedArea>::const_iterator iterator(*this, *m_highest);
+	BaseCuboid<Block>::const_iterator iterator(*this, *m_highest);
 	return ++iterator;
 }

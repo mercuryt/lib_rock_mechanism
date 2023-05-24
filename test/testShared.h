@@ -24,6 +24,7 @@ namespace Config
 	constexpr uint32_t hoursPerDay = 24;
 	constexpr uint32_t stepsPerHour = 5000;
 	constexpr uint32_t stepsPerDay = stepsPerHour * hoursPerDay;
+	constexpr uint32_t stepsPerYear = stepsPerDay * daysPerYear;
 }
 
 inline uint32_t s_step;
@@ -34,62 +35,114 @@ BS::thread_pool_light s_pool;
 #include "../src/area.h"
 
 #include "../src/moveType.h"
-#include "../src/fluidType.h"
 #include "../src/materialType.h"
-#include "../src/blockFeatureType.h"
+#include "../src/fluidType.h"
 #include "../src/plant.h"
+//#include "../src/animal.h"
+	
+class FluidType : public BaseFluidType
+{
+public:
+	FluidType(std::string name, uint32_t viscosity, uint32_t density, uint32_t mistDuration, uint32_t maxMistSpread) : BaseFluidType(name, viscosity, density, mistDuration, maxMistSpread) {}
+	bool operator==(const FluidType& x) const { return this == &x; }
+	bool operator==(const FluidType* x) const { return this == x; }
+};
+const static FluidType s_water("water", 100, 100, 10, 2);
+const static FluidType s_CO2("CO2", 200, 10, 0, 0);
+const static FluidType s_lava("lava", 20, 300, 5, 1);
+const static FluidType s_mercury("mercury", 50, 200, 0, 0);
 
 class MoveType : public BaseMoveType<FluidType> 
 {
 public:
-	MoveType(std::string n, bool w, std::unordered_map<const FluidType*, uint32_t> s, uint32_t c, bool jd, bool f) : BaseMoveType<FluidType>(n, w, s, c, jd, f) {}
+	MoveType(std::string name, bool walk, std::unordered_map<const FluidType*, uint32_t> swim, uint32_t climb, bool jumpDown, bool fly) : BaseMoveType<FluidType>(name, walk, swim, climb, jumpDown, fly) {}
+	bool operator==(const MoveType& x) const { return this == &x; }
 };
-static std::list<MoveType> moveTypes;
+const static std::unordered_map<const FluidType*, uint32_t> noSwim;
+const static MoveType s_twoLegs("two legs", true, noSwim, 0, false, false);
+const static MoveType s_fourLegs("four legs", true, noSwim, 0, false, false);
+const static MoveType s_flying("flying", false, noSwim, 0, false, true);
+static std::unordered_map<const FluidType*, uint32_t> swimInWater = {{&s_water, Config::maxBlockVolume / 2}};
+const static MoveType s_swimmingInWater("swimming in water", false, swimInWater, 0, false, false);
+const static MoveType s_twoLegsAndSwimmingInWater("two legs and swimming in water", true, swimInWater, 0, false, false);
+const static MoveType s_fourLegsAndSwimmingInWater("four legs and swimming in water", true, swimInWater, 0, false, false);
+static std::unordered_map<const FluidType*, uint32_t> swimInMercury = {{&s_mercury, Config::maxBlockVolume / 2}};
+const static MoveType s_swimmingInMercury("swimming in mercury", false, swimInMercury, 0, false, false);
+const static MoveType s_twoLegsAndSwimmingInMercury("two legs and swimming in mercury", true, swimInMercury, 0, false, false);
+const static MoveType s_twoLegsAndClimb1("two legs and climb1", true, noSwim, 1, false, false);
+const static MoveType s_twoLegsAndClimb2("two legs and climb2", true, noSwim, 2, false, false);
 
-template<typename ...Arguments>
-inline const MoveType* registerMoveType(Arguments ...args)
+class MaterialType : public BaseMaterialType
 {
-	moveTypes.emplace_back(args...);
-	return &moveTypes.back();
-}
-const static MoveType* s_twoLegs;
-const static MoveType* s_fourLegs;
-const static MoveType* s_flying;
-const static MoveType* s_swimmingInWater;
-const static MoveType* s_twoLegsAndSwimmingInWater;
-const static MoveType* s_fourLegsAndSwimmingInWater;
-const static MoveType* s_swimmingInMercury;
-const static MoveType* s_twoLegsAndSwimmingInMercury;
-const static MoveType* s_twoLegsAndClimb1;
-const static MoveType* s_twoLegsAndClimb2;
-	
-const static FluidType* s_water;
-const static FluidType* s_CO2;
-const static FluidType* s_lava;
-const static FluidType* s_mercury;
+public:
+	MaterialType(std::string name, uint32_t mass, bool transparent, uint32_t ignitionTemperature, uint32_t flameTemperature, uint32_t burnStageDuration, uint32_t flameStageDuration) : BaseMaterialType(name, mass, transparent, ignitionTemperature, flameTemperature, burnStageDuration, flameStageDuration) {}
+	bool operator==(const MaterialType& x) const { return this == &x; }
+};
+// name, swim, climb, jumpDown, fly
+const static MaterialType s_stone("stone", 100, false, UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX);
+const static MaterialType s_glass("glass", 100, true, UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX);
+const static MaterialType s_wood("wood", 10, false, 533, 1172, 10000, 40000);
+const static MaterialType s_dirt("dirt", 50, false, UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX);
+// name, offsets and volumes
+const static Shape s_oneByOneFull("oneByOneFull", {{0,0,0,100}});
+const static Shape s_oneByOneHalfFull("oneByOneHalfFull", {{0,0,0,50}});
+const static Shape s_oneByOneQuarterFull("oneByOneQuarterFull", {{0,0,0,25}});
+const static Shape s_twoByTwoFull("twoByTwoFull", {{0,0,0,100}, {1,0,0,100}, {0,1,0,100}, {1,1,0,100}});
+/*
+class AnimalType : public BaseAnimalType
+{
+public:
+	AnimalType(
+			const std::string name;
+			const uint32_t minimumTemperature;
+			const uint32_t maximumTemperature;
+			const uint32_t stepsTillDieTemperature;
+			const FluidType& fluidType;
+			const uint32_t stepsNeedsFluidFrequency;
+			const uint32_t stepsTillDieWithoutFluid;
+			const bool carnivore;
+			const bool herbavore;
+			const uint32_t stepsNeedsFoodFrequency;
+			const uint32_t stepsTillDieWithoutFood;
+			const uint32_t stepsTillFullyGrown;
+			const uint32_t visionRange;
+			const uint32_t moveSpeed;
+			const uint32_t mass;
+		  ) : BaseAnimalType(name, minimumTemperature, maximumTemperature, stepsTillDieTemperature, fluidType, stepsNeedsFluidFrequency, stepsTillDieWithoutFluid, carnivore, herbavore, stepsNeedsFoodFrequency, stepsTillDieWithoutFood, stepsTillFullyGrown, visionRange, moveSpeed, mass) {}
+};
+const static AnimalType s_rabbit("rabbit", 261, 316, 5 * Config::stepsPerDay, s_water, 1 * Config::stepsPerDay, 3 * Config::stepsPerDay, false, true, 2 * Config::stepsPerDay, 10 * Config::stepsPerDay, 150 * stepsPerDay, 10, 3, 2);
+const static AnimalType s_fox("fox", 261, 316, 5 * Config::stepsPerDay, s_water, 1 * Config::stepsPerDay, 3 * Config::stepsPerDay, true, true, 2 * Config::stepsPerDay, 10 * Config::stepsPerDay, stepsPerYear, 15, 4, 5);
+const static AnimalType s_bear("bear", 220, 310, 10 * Config::stepsPerDay, s_water, 1 * Config::stepsPerDay, 10 * Config::stepsPerDay, true, true, 4 * Config::stepsPerDay, 10 * Config::stepsPerYear, 10, 4, 200);
+const static AnimalType s_deer("deer", 261, 310, 5 * Config::stepsPerDay, s_water, 1 * Config::stepsPerDay, 3 * Config::stepsPerDay, false, true, 2 * Config::stepsPerDay, 3 * Config::stepsPerYear, 10, 3, 80);
+*/
+struct BlockFeatureType
+{
+	const std::string name;
+	bool operator==(const BlockFeatureType& x) const { return this == &x; }
+};
+struct BlockFeature 
+{
+	// Use pointers here rather then references so BlockFeature is copy constructable and can be stored in a mutable vector.
+	const BlockFeatureType* blockFeatureType;
+	const MaterialType* materialType;
+	bool hewn;
+	bool closed;
+	bool locked;
+	BlockFeature(const BlockFeatureType& bft, const MaterialType& mt, bool h) : blockFeatureType(&bft), materialType(&mt), hewn(h), closed(true), locked(false) {}
+};
+// name
+const static BlockFeatureType s_floor("floor");
+const static BlockFeatureType s_upStairs("up stairs");
+const static BlockFeatureType s_downStairs("down stairs");
+const static BlockFeatureType s_upDownStairs("up/down stairs");
+const static BlockFeatureType s_ramp("ramp");
+const static BlockFeatureType s_fortification("fortification");
+const static BlockFeatureType s_door("door");
+const static BlockFeatureType s_hatch("hatch");
+const static BlockFeatureType s_floorGrate("floor grate");
+const static BlockFeatureType s_floodGate("flood gate");
 
-const static MaterialType* s_stone;
-const static MaterialType* s_glass;
-const static MaterialType* s_wood;
-const static MaterialType* s_dirt;
-
-const static Shape* s_oneByOneFull;
-const static Shape* s_oneByOneHalfFull;
-const static Shape* s_oneByOneQuarterFull;
-const static Shape* s_twoByTwoFull;
-
-const static BlockFeatureType* s_upStairs;
-const static BlockFeatureType* s_downStairs;
-const static BlockFeatureType* s_upDownStairs;
-const static BlockFeatureType* s_ramp;
-const static BlockFeatureType* s_fortification;
-const static BlockFeatureType* s_door;
-const static BlockFeatureType* s_hatch;
-const static BlockFeatureType* s_floor;
-const static BlockFeatureType* s_floodGate;
-const static BlockFeatureType* s_floorGrate;
-
-class PlantType : public BasePlantType<PlantType, FluidType>
+class PlantType : public BasePlantType<FluidType>
 {
 public:
 	std::wstring drawString;
@@ -108,30 +161,15 @@ public:
 			const uint32_t steof,
 			const uint32_t rrmax,
 			const uint32_t rrmin,
-			const FluidType* ft, 
+			const FluidType& ft, 
 			// Derived type members.
 			const std::wstring ds
-	) : BasePlantType<PlantType, FluidType>(n, a, maxgt, mingt, stdft, snff, stdwf, stfg, gisl, doyfg, steof, rrmax, rrmin, ft),
+	) : BasePlantType<FluidType>(n, a, maxgt, mingt, stdft, snff, stdwf, stfg, gisl, doyfg, steof, rrmax, rrmin, ft),
 		drawString(ds) {}
+	bool operator==(const PlantType& x) const { return this == &x; }
 };
-static std::list<PlantType> s_plantTypes;
-template<typename... Arguments>
-const PlantType* registerPlantType(const Arguments&... arguments)
-{
-	s_plantTypes.emplace_back(arguments...);
-	return &s_plantTypes.back();
-}
-const static PlantType* s_grass;
-
-struct BlockFeature 
-{
-	const BlockFeatureType* blockFeatureType;
-	const MaterialType* materialType;
-	bool hewn;
-	bool closed;
-	bool locked;
-	BlockFeature(const BlockFeatureType* bft, const MaterialType* mt, bool h) : blockFeatureType(bft), materialType(mt), hewn(h), closed(true), locked(false) {}
-};
+// name, annual, maximum temperature, minimum temperature, steps till die from temperature, steps needs fluid frequency, steps till die without fluid, steps till growth event, grows in sunlight, day of year for harvest, steps till end of harvest, root range max, root range min, fluidType
+const static PlantType s_grass("grass", false, 316, 283, Config::stepsPerDay, Config::stepsPerDay * 4, Config::stepsPerDay * 8, Config::stepsPerDay * 100, true, 200, 50, 2, 1, s_water, L"\"");
 
 enum class TemperatureZone { Surface, Underground, LavaSea};
 
@@ -141,7 +179,7 @@ class Area;
 class Plant;
 
 // Put custom member data declarations here
-class Block final : public BaseBlock<Block, Actor, Area, FluidType, MoveType>
+class Block final : public BaseBlock<Block, Actor, Area, FluidType, MoveType, MaterialType>
 {
 public:
 	std::vector<BlockFeature> m_features;
@@ -150,40 +188,40 @@ public:
 
 	Block();
 	bool anyoneCanEnterEver() const;
-	bool moveTypeCanEnter(const MoveType* moveType) const;
-	bool moveTypeCanEnterFrom(const MoveType* moveType, Block* from) const;
-	uint32_t moveCost(const MoveType* moveType, Block* origin) const;
-	std::vector<std::pair<Block*, uint32_t>> getMoveCosts(const Shape* shape, const MoveType* moveType);
+	bool moveTypeCanEnter(const MoveType& moveType) const;
+	bool moveTypeCanEnterFrom(const MoveType& moveType, Block& from) const;
+	uint32_t moveCost(const MoveType& moveType, Block& origin) const;
+	std::vector<std::pair<Block*, uint32_t>> getMoveCosts(const Shape& shape, const MoveType& moveType);
 	bool canStandIn() const;
 	void clearMoveCostsCacheForSelfAndAdjacent();
 
-	bool canSeeIntoFromAlways(const Block* block) const;
+	bool canSeeIntoFromAlways(const Block& block) const;
 	bool canSeeThrough() const;
 	bool canSeeThroughFrom(const Block& block) const;
 	float visionDistanceModifier() const;
 
 	bool fluidCanEnterEver() const;
-	bool fluidCanEnterEver(const FluidType* fluidType) const;
+	bool fluidCanEnterEver(const FluidType& fluidType) const;
 
 	bool isSupport() const;
 	uint32_t getMass() const;
 
-	void moveContentsTo(Block* block);
+	void moveContentsTo(Block& block);
 
-	void addConstructedFeature(const BlockFeatureType* blockFeatureType, const MaterialType* materialType);
-	void addHewnFeature(const BlockFeatureType* blockFeatureType, const MaterialType* materialType = nullptr);
-	bool hasFeatureType(const BlockFeatureType* blockFeatureType) const;
-	const BlockFeature* getFeatureByType(const BlockFeatureType* blockFeatureType) const;
-	BlockFeature* getFeatureByType(const BlockFeatureType* blockFeatureType);
+	void addConstructedFeature(const BlockFeatureType& blockFeatureType, const MaterialType& materialType);
+	void addHewnFeature(const BlockFeatureType& blockFeatureType, const MaterialType* materialType = nullptr);
+	bool hasFeatureType(const BlockFeatureType& blockFeatureType) const;
+	BlockFeature* getFeatureByType(const BlockFeatureType& blockFeatureType);
+	const BlockFeature* getFeatureByType(const BlockFeatureType& blockFeatureType) const;
 	std::string describeFeatures() const;
 	std::string describePlants() const;
-	void removeFeature(const BlockFeatureType* blockFeatureType);
+	void removeFeature(const BlockFeatureType& blockFeatureType);
 
 	uint32_t getAmbientTemperature() const;
 	void applyTemperatureChange(uint32_t oldTemperature, uint32_t newTemperature);
 
 	void setExposedToSky(bool exposed);
-	bool plantTypeCanGrow(const PlantType* plantType) const;
+	bool plantTypeCanGrow(const PlantType& plantType) const;
 
 	std::string toS() const;
 };
@@ -194,16 +232,16 @@ public:
 	std::unordered_set<Actor*> m_canSee;
 	void (*m_onTaskComplete)(Actor& actor);
 
-	Actor(Block* l, const Shape* s, const MoveType* mt);
-	Actor(const Shape* s, const MoveType* mt);
+	Actor(Block& l, const Shape& s, const MoveType& mt);
+	Actor(const Shape& s, const MoveType& mt);
 	uint32_t getSpeed() const;
 	uint32_t getVisionRange() const;
-	bool isVisible(Actor* observer) const;
+	bool isVisible(Actor& observer) const;
 
 	void taskComplete();
 	void doVision(std::unordered_set<Actor*>&& actors);
-	void doFall(uint32_t distance, Block* block);
-	void exposedToFluid(const FluidType* fluidType);
+	void doFall(uint32_t distance, Block& block);
+	void exposedToFluid(const FluidType& fluidType);
 	bool canSee(const Actor& actor) const;
 };
 class Area final : public BaseArea<Block, Actor, Area, FluidType>
@@ -214,9 +252,9 @@ public:
 	std::list<Plant> m_plants;
 	ScheduledEvent* m_rainStopEvent;
 
-	Area(uint32_t x, uint32_t y, uint32_t z) : BaseArea<Block, Actor, Area, FluidType>(x, y, z), m_ambiantSurfaceTemperature(0) {}
+	Area(uint32_t x, uint32_t y, uint32_t z) : BaseArea<Block, Actor, Area, FluidType>(x, y, z), m_currentlyRainingFluidType(nullptr), m_ambiantSurfaceTemperature(0) {}
 	void notifyNoRouteFound(Actor& actor);
-	void rain(const FluidType* fluidType, uint32_t duration);
+	void rain(const FluidType& fluidType, uint32_t duration);
 	void setHour(uint32_t hour, uint32_t dayOfYear);
 	void setDayOfYear(uint32_t dayOfYear);
 	void setAmbientTemperatureFor(uint32_t hour, uint32_t dayOfYear);
@@ -226,7 +264,7 @@ public:
 class Plant final : public BasePlant<Plant, PlantType, Block>
 {
 public:
-	Plant(Block& l, const PlantType* pt, uint32_t pg = 0) : BasePlant<Plant, PlantType, Block>(l, pt, pg) {}
+	Plant(Block& l, const PlantType& pt, uint32_t pg = 0) : BasePlant<Plant, PlantType, Block>(l, pt, pg) {}
 	void onDie();
 	void onEndOfHarvest();
 };
@@ -239,39 +277,40 @@ public:
 	void execute() { m_area.m_currentlyRainingFluidType = nullptr; }
 };
 
-Block::Block() : BaseBlock<Block, Actor, Area, FluidType, MoveType>(), m_temperatureZone(TemperatureZone::Surface) {}
+Block::Block() : BaseBlock<Block, Actor, Area, FluidType, MoveType, MaterialType>(), m_temperatureZone(TemperatureZone::Surface) {}
 
 // Can anyone enter ever?
+// TODO: animals can't open doors.
 bool Block::anyoneCanEnterEver() const
 {
 	if(isSolid())
 		return false;
 	for(const BlockFeature& blockFeature : m_features)
 	{
-		if(blockFeature.blockFeatureType == s_fortification || blockFeature.blockFeatureType == s_floodGate ||
-				(blockFeature.blockFeatureType == s_door && blockFeature.locked)
+		if(blockFeature.blockFeatureType == &s_fortification || blockFeature.blockFeatureType == &s_floodGate ||
+				(blockFeature.blockFeatureType == &s_door && blockFeature.locked)
 		  )
 			return false;
 	}
 	return true;
 }
 // Can this moveType enter ever?
-bool Block::moveTypeCanEnter(const MoveType* moveType) const
+bool Block::moveTypeCanEnter(const MoveType& moveType) const
 {
 	// Swiming.
-	for(auto [fluidType, pair] : m_fluids)
+	for(auto& [fluidType, pair] : m_fluids)
 	{
-		auto found = moveType->swim.find(fluidType);
-		if(found != moveType->swim.end() && found->second <= pair.first)
+		auto found = moveType.swim.find(fluidType);
+		if(found != moveType.swim.end() && found->second <= pair.first)
 			return true;
 	}
 	// Not swimming and fluid level is too high.
 	if(m_totalFluidVolume > Config::maxBlockVolume / 2)
 		return false;
 	// Not flying and either not walking or ground is not supported.
-	if(!moveType->fly && (!moveType->walk || !canStandIn()))
+	if(!moveType.fly && (!moveType.walk || !canStandIn()))
 	{
-		if(moveType->climb < 2)
+		if(moveType.climb < 2)
 			return false;
 		else
 		{
@@ -286,56 +325,56 @@ bool Block::moveTypeCanEnter(const MoveType* moveType) const
 	return true;
 }
 // Get a move cost for moving from a block onto this one for a given move type.
-uint32_t Block::moveCost(const MoveType* moveType, Block* from) const
+uint32_t Block::moveCost(const MoveType& moveType, Block& from) const
 {
-	if(moveType->fly)
+	if(moveType.fly)
 		return 10;
-	for(auto [fluidType, volume] : moveType->swim)
-		if(volumeOfFluidTypeContains(fluidType) >= volume)
+	for(auto& [fluidType, volume] : moveType.swim)
+		if(volumeOfFluidTypeContains(*fluidType) >= volume)
 			return 10;
 	// Double cost to go up if not fly, swim, or ramp (if climb).
-	if(m_z > from->m_z && !hasFeatureType(s_ramp))
+	if(m_z > from.m_z && !hasFeatureType(s_ramp))
 		return 20;
 	return 10;
 }
 // Checks if a move type can enter from a block. This check is seperate from checking if the shape and move type can enter at all.
-bool Block::moveTypeCanEnterFrom(const MoveType* moveType, Block* from) const
+bool Block::moveTypeCanEnterFrom(const MoveType& moveType, Block& from) const
 {
-	for(auto [fluidType, volume] : moveType->swim)
+	for(auto& [fluidType, volume] : moveType.swim)
 	{
 		// Can travel within and enter liquid from any angle.
-		if(volumeOfFluidTypeContains(fluidType) >= volume)
+		if(volumeOfFluidTypeContains(*fluidType) >= volume)
 			return true;
 		// Can leave liquid at any angle.
-		if(from->volumeOfFluidTypeContains(fluidType) >= volume)
+		if(from.volumeOfFluidTypeContains(*fluidType) >= volume)
 			return true;
 	}
 	// Can always enter on same z level.
-	if(m_z == from->m_z)
+	if(m_z == from.m_z)
 		return true;
 	// Cannot go up if:
-	if(m_z > from->m_z)
+	if(m_z > from.m_z)
 		for(const BlockFeature& blockFeature : m_features)
-			if(blockFeature.blockFeatureType == s_floor || blockFeature.blockFeatureType == s_floorGrate ||
-					(blockFeature.blockFeatureType == s_hatch && blockFeature.locked)
+			if(blockFeature.blockFeatureType == &s_floor || blockFeature.blockFeatureType == &s_floorGrate ||
+					(blockFeature.blockFeatureType == &s_hatch && blockFeature.locked)
 			  )
 				return false;
 	// Cannot go down if:
-	if(m_z < from->m_z)
-		for(const BlockFeature& blockFeature : from->m_features)
-			if(blockFeature.blockFeatureType == s_floor || blockFeature.blockFeatureType == s_floorGrate ||
-					(blockFeature.blockFeatureType == s_hatch && blockFeature.locked)
+	if(m_z < from.m_z)
+		for(const BlockFeature& blockFeature : from.m_features)
+			if(blockFeature.blockFeatureType == &s_floor || blockFeature.blockFeatureType == &s_floorGrate ||
+					(blockFeature.blockFeatureType == &s_hatch && blockFeature.locked)
 			  )
 				return false;
 	// Can enter from any angle if flying or climbing.
-	if(moveType->fly || moveType->climb > 0)
+	if(moveType.fly || moveType.climb > 0)
 		return true;
 	// Can go up if from contains a ramp or up stairs.
-	if(m_z > from->m_z && (from->hasFeatureType(s_ramp) || from->hasFeatureType(s_upStairs) || from->hasFeatureType(s_upDownStairs)))
+	if(m_z > from.m_z && (from.hasFeatureType(s_ramp) || from.hasFeatureType(s_upStairs) || from.hasFeatureType(s_upDownStairs)))
 		return true;
 	// Can go down if this contains a ramp or from contains down stairs and this contains up stairs.
-	if(m_z < from->m_z && (hasFeatureType(s_ramp) || (
-					(from->hasFeatureType(s_downStairs) || from->hasFeatureType(s_upDownStairs)) &&
+	if(m_z < from.m_z && (hasFeatureType(s_ramp) || (
+					(from.hasFeatureType(s_downStairs) || from.hasFeatureType(s_upDownStairs)) &&
 					(hasFeatureType(s_upStairs) || hasFeatureType(s_upDownStairs))
 					)))
 		return true;
@@ -377,14 +416,14 @@ void Block::clearMoveCostsCacheForSelfAndAdjacent()
 	for(Block* adjacent : getAdjacentWithEdgeAndCornerAdjacent())
 		adjacent->m_moveCostsCache.clear();
 }
-bool Block::canSeeIntoFromAlways(const Block* block) const
+bool Block::canSeeIntoFromAlways(const Block& block) const
 {
-	if(isSolid() && !getSolidMaterial()->transparent)
+	if(isSolid() && !getSolidMaterial().transparent)
 		return false;
 	if(hasFeatureType(s_door))
 		return false;
 	// looking up.
-	if(m_z > block->m_z)
+	if(m_z > block.m_z)
 	{
 		const BlockFeature* floor = getFeatureByType(s_floor);
 		if(floor != nullptr && !floor->materialType->transparent)
@@ -393,19 +432,20 @@ bool Block::canSeeIntoFromAlways(const Block* block) const
 			return false;
 	}
 	// looking down.
-	if(m_z < block->m_z)
+	if(m_z < block.m_z)
 	{
-		const BlockFeature* floor = block->getFeatureByType(s_floor);
+		const BlockFeature* floor = block.getFeatureByType(s_floor);
 		if(floor != nullptr && !floor->materialType->transparent)
 			return false;
-		if(block->hasFeatureType(s_hatch))
+		const BlockFeature* hatch = block.getFeatureByType(s_hatch);
+		if(hatch != nullptr && !hatch->materialType->transparent)
 			return false;
 	}
 	return true;
 }
 bool Block::canSeeThrough() const
 {
-	if(isSolid() && !getSolidMaterial()->transparent)
+	if(isSolid() && !getSolidMaterial().transparent)
 		return false;
 	const BlockFeature* door = getFeatureByType(s_door);
 	if(door != nullptr && !door->materialType->transparent && door->closed)
@@ -450,98 +490,98 @@ bool Block::fluidCanEnterEver() const
 		return false;
 	return true;
 }
-bool Block::fluidCanEnterEver(const FluidType* fluidType) const
+bool Block::fluidCanEnterEver(const FluidType& fluidType) const
 {
 	(void)fluidType;
 	return true;
 }
 bool Block::isSupport() const
 {
-	return isSolid();
+	return isSolid(); 
 }
 uint32_t Block::getMass() const
 {
 	if(!isSolid())
 		return 0;
 	else
-		return getSolidMaterial()->mass;
+		return getSolidMaterial().mass;
 }
-std::vector<std::pair<Block*, uint32_t>> Block::getMoveCosts(const Shape* shape, const MoveType* moveType)
+std::vector<std::pair<Block*, uint32_t>> Block::getMoveCosts(const Shape& shape, const MoveType& moveType)
 {
 	std::vector<std::pair<Block*, uint32_t>> output;
 	// Directly adjacent.
 	for(Block* block : getAdjacentWithEdgeAndCornerAdjacent())
-		if(block->anyoneCanEnterEver() && block->shapeAndMoveTypeCanEnterEver(shape, moveType) && block->moveTypeCanEnterFrom(moveType, this))
-			output.emplace_back(block, block->moveCost(moveType, static_cast<Block*>(this)));
+		if(block->anyoneCanEnterEver() && block->shapeAndMoveTypeCanEnterEver(shape, moveType) && block->moveTypeCanEnterFrom(moveType, *this))
+			output.emplace_back(block, block->moveCost(moveType, *this));
 	// Diagonal move down.
-	if(moveType->climb > 0 || moveType->jumpDown)
+	if(moveType.climb > 0 || moveType.jumpDown)
 	{
 		for(Block* block : getEdgeAdjacentOnlyOnNextZLevelDown())
 			if(block->anyoneCanEnterEver() && block->shapeAndMoveTypeCanEnterEver(shape, moveType))
-				output.emplace_back(block, block->moveCost(moveType, static_cast<Block*>(this)));
+				output.emplace_back(block, block->moveCost(moveType, *this));
 	}
 	// Diagonal move down if entering fluid.
-	else if(!moveType->swim.empty() && m_adjacents[0]->isSolid())
+	else if(!moveType.swim.empty() && m_adjacents[0]->isSolid())
 		for(Block* block : getEdgeAdjacentOnlyOnNextZLevelDown())
 			if(block->anyoneCanEnterEver() && block->shapeAndMoveTypeCanEnterEver(shape, moveType))
-				for(auto [fluidType, volume] : moveType->swim)
-					if(block->volumeOfFluidTypeContains(fluidType) >= volume)
-						output.emplace_back(block, block->moveCost(moveType, static_cast<Block*>(this)));
+				for(auto& [fluidType, volume] : moveType.swim)
+					if(block->volumeOfFluidTypeContains(*fluidType) >= volume)
+						output.emplace_back(block, block->moveCost(moveType, *this));
 	// Diagonal move up.
-	if(moveType->climb > 0)
+	if(moveType.climb > 0)
 	{
 		for(Block* block : getEdgeAdjacentOnlyOnNextZLevelUp())
 			if(block->anyoneCanEnterEver() && block->shapeAndMoveTypeCanEnterEver(shape, moveType))
-				output.emplace_back(block, block->moveCost(moveType, static_cast<Block*>(this)));
+				output.emplace_back(block, block->moveCost(moveType, *this));
 	}
 	// Diagonal move up if exiting fluid.
-	else if(!moveType->swim.empty() && m_totalFluidVolume > Config::maxBlockVolume / 2)
-		for(auto [fluidType, volume] : moveType->swim)
+	else if(!moveType.swim.empty() && m_totalFluidVolume > Config::maxBlockVolume / 2)
+		for(auto& [fluidType, volume] : moveType.swim)
 		{
 			assert(fluidType != nullptr);
-			if(volumeOfFluidTypeContains(fluidType) >= volume)
+			if(volumeOfFluidTypeContains(*fluidType) >= volume)
 				for(Block* block : getEdgeAdjacentOnlyOnNextZLevelUp())
 					if(block->anyoneCanEnterEver() && block->shapeAndMoveTypeCanEnterEver(shape, moveType) && block->m_totalFluidVolume < Config::maxBlockVolume / 2 && block->canStandIn())
-						output.emplace_back(block, block->moveCost(moveType, static_cast<Block*>(this)));
+						output.emplace_back(block, block->moveCost(moveType, *this));
 		}
 	// Vertical move up.
-	if(moveType->climb > 1)
+	if(moveType.climb > 1)
 		for(Block* block : m_adjacents[5]->getAdjacentOnSameZLevelOnly())
 			if(block->isSolid() && m_adjacents[5]->anyoneCanEnterEver() && m_adjacents[5]->shapeAndMoveTypeCanEnterEver(shape, moveType))
-				output.emplace_back(m_adjacents[5], block->moveCost(moveType, static_cast<Block*>(this)));
+				output.emplace_back(m_adjacents[5], block->moveCost(moveType, *this));
 	return output;
 }
-void Block::moveContentsTo(Block* block)
+void Block::moveContentsTo(Block& block)
 {
 	if(isSolid())
 	{
-		const MaterialType* materialType = getSolidMaterial();
+		const MaterialType& materialType = getSolidMaterial();
 		setNotSolid();
-		block->setSolid(materialType);
+		block.setSolid(materialType);
 	}
 	//TODO: other stuff falls?
 }
-void Block::addConstructedFeature(const BlockFeatureType* blockFeatureType, const MaterialType* materialType)
+void Block::addConstructedFeature(const BlockFeatureType& blockFeatureType, const MaterialType& materialType)
 {
 	assert(!isSolid());
 	m_features.emplace_back(blockFeatureType, materialType, false);
 	clearMoveCostsCacheForSelfAndAdjacent();
 	m_area->expireRouteCache();
-	if((blockFeatureType == s_floor || blockFeatureType == s_hatch) && !materialType->transparent)
+	if((blockFeatureType == s_floor || blockFeatureType == s_hatch) && !materialType.transparent)
 	{
 		if(m_area->m_visionCuboidsActive)
-			VisionCuboid<Block, Actor, Area>::BlockFloorIsSometimesOpaque(*this);
+			VisionCuboid<Block, Area>::BlockFloorIsSometimesOpaque(*this);
 		setBelowNotExposedToSky();
 	}
 }
-void Block::addHewnFeature(const BlockFeatureType* blockFeatureType, const MaterialType* materialType)
+void Block::addHewnFeature(const BlockFeatureType& blockFeatureType, const MaterialType* materialType)
 {
 	if(materialType == nullptr)
 	{
 		assert(!isSolid());
-		materialType = getSolidMaterial();
+		materialType = &getSolidMaterial();
 	}
-	m_features.emplace_back(blockFeatureType, materialType, true);
+	m_features.emplace_back(blockFeatureType, *materialType, true);
 	// clear move cost cache and expire route cache happen implicitly with call to setNotSolid.
 	if(isSolid())
 		setNotSolid();
@@ -549,36 +589,38 @@ void Block::addHewnFeature(const BlockFeatureType* blockFeatureType, const Mater
 	if((blockFeatureType == s_floor || blockFeatureType == s_hatch) && !materialType->transparent)
 	{
 		if(m_area->m_visionCuboidsActive)
-			VisionCuboid<Block, Actor, Area>::BlockFloorIsSometimesOpaque(*this);
+			VisionCuboid<Block, Area>::BlockFloorIsSometimesOpaque(*this);
 		setBelowExposedToSky();
 	}
 }
-bool Block::hasFeatureType(const BlockFeatureType* blockFeatureType) const
+bool Block::hasFeatureType(const BlockFeatureType& blockFeatureType) const
 {
 	for(const BlockFeature& blockFeature : m_features)
-		if(blockFeature.blockFeatureType == blockFeatureType)
+		if(blockFeature.blockFeatureType == &blockFeatureType)
 			return true;
 	return false;
 }
-const BlockFeature* Block::getFeatureByType(const BlockFeatureType* blockFeatureType) const
+// Can return nullptr.
+BlockFeature* Block::getFeatureByType(const BlockFeatureType& blockFeatureType)
 {
-	auto output = std::find_if(m_features.begin(), m_features.end(), [&](const BlockFeature& blockFeature){ return blockFeature.blockFeatureType == blockFeatureType; });
+	auto output = std::find_if(m_features.begin(), m_features.end(), [&](const BlockFeature& blockFeature){ return blockFeature.blockFeatureType == &blockFeatureType; });
 	if(output == m_features.end())
 		return nullptr;
 	return &*output;
 }
-BlockFeature* Block::getFeatureByType(const BlockFeatureType* blockFeatureType)
+const BlockFeature* Block::getFeatureByType(const BlockFeatureType& blockFeatureType) const
 {
-	return const_cast<BlockFeature*>(const_cast<const Block*>(this)->getFeatureByType(blockFeatureType));
+	return const_cast<const BlockFeature*>(const_cast<Block*>(this)->getFeatureByType(blockFeatureType));
 }
-void Block::removeFeature(const BlockFeatureType* blockFeatureType)
+void Block::removeFeature(const BlockFeatureType& blockFeatureType)
 {
-	auto found = std::find_if(m_features.begin(), m_features.end(), [&](BlockFeature& blockFeature){ return blockFeature.blockFeatureType == blockFeatureType; });
-	if(found != m_features.end())
-		m_features.erase(found);
-	if(m_area->m_visionCuboidsActive && (blockFeatureType == s_floor || blockFeatureType == s_hatch) && !found->materialType->transparent)
-		// block, opacity, floor
-		VisionCuboid<Block, Actor, Area>::BlockFloorIsNeverOpaque(*this);
+	BlockFeature* feature = getFeatureByType(blockFeatureType);
+	if(feature == nullptr)
+		return;
+	bool transparentFloorOrHatch = m_area->m_visionCuboidsActive && (blockFeatureType == s_floor || blockFeatureType == s_hatch) && !feature->materialType->transparent;
+	std::erase_if(m_features, [&](BlockFeature& blockFeature){ return blockFeature.blockFeatureType == &blockFeatureType; });
+	if(transparentFloorOrHatch)
+		VisionCuboid<Block, Area>::BlockFloorIsNeverOpaque(*this);
 }
 std::string Block::describeFeatures() const
 {
@@ -601,15 +643,15 @@ void Block::applyTemperatureChange(uint32_t oldTemperature, uint32_t newTemperat
 	{
 		if(isSolid())
 		{
-			const MaterialType* materialType = getSolidMaterial();
-			if(materialType->ignitionTemperature <= newTemperature)
-				m_fire = std::make_unique<Fire<Block>>(*this, materialType);
+			const MaterialType& materialType = getSolidMaterial();
+			if(materialType.ignitionTemperature <= newTemperature)
+				m_fire = std::make_unique<Fire<Block, MaterialType>>(*this, materialType);
 		}
 		else if(!m_features.empty())
 		{
 			for(BlockFeature& blockFeature : m_features)
 				if(blockFeature.materialType->ignitionTemperature <= newTemperature)
-					m_fire = std::make_unique<Fire<Block>>(*this, blockFeature.materialType);
+					m_fire = std::make_unique<Fire<Block, MaterialType>>(*this, *blockFeature.materialType);
 		}
 	}
 }
@@ -619,15 +661,15 @@ void Block::setExposedToSky(bool exposed)
 	for(Plant* plant : m_plants)
 		plant->updateGrowingStatus();
 }
-bool Block::plantTypeCanGrow(const PlantType* plantType) const
+bool Block::plantTypeCanGrow(const PlantType& plantType) const
 {
-	return m_exposedToSky == plantType->growsInSunLight && canStandIn() && m_adjacents[0]->getSolidMaterial() == s_dirt;
+	return m_exposedToSky == plantType.growsInSunLight && canStandIn() && m_adjacents[0]->getSolidMaterial() == s_dirt;
 }
 std::string Block::describePlants() const
 {
 	std::string output;
 	for(Plant* plant : m_plants)
-		output += plant->m_plantType->name;
+		output += plant->m_plantType.name;
 	return output;
 }
 //TODO: Use different inside temperatures?
@@ -637,7 +679,7 @@ uint32_t Block::getAmbientTemperature() const
 }
 std::string Block::toS() const
 {
-	std::string materialName = isSolid() ? getSolidMaterial()->name: "empty";
+	std::string materialName = isSolid() ? getSolidMaterial().name: "empty";
 	std::string output;
 	output.reserve(materialName.size() + 16 + (m_fluids.size() * 12));
 	output = std::to_string(m_x) + ", " + std::to_string(m_y) + ", " + std::to_string(m_z) + ": " + materialName + ";";
@@ -647,8 +689,8 @@ std::string Block::toS() const
 		output += ',' + pair.first->m_name;
 	return output + describeFeatures() + describePlants();
 }
-Actor::Actor(Block* l, const Shape* s, const MoveType* mt) : BaseActor<Actor, Block, MoveType, FluidType>(l, s, mt), m_onTaskComplete(nullptr) {}
-Actor::Actor(const Shape* s, const MoveType* mt) : BaseActor<Actor, Block, MoveType, FluidType>(s, mt), m_onTaskComplete(nullptr) {}
+Actor::Actor(Block& l, const Shape& s, const MoveType& mt) : BaseActor<Actor, Block, MoveType, FluidType>(l, s, mt), m_onTaskComplete(nullptr) {}
+Actor::Actor(const Shape& s, const MoveType& mt) : BaseActor<Actor, Block, MoveType, FluidType>(s, mt), m_onTaskComplete(nullptr) {}
 uint32_t Actor::getSpeed() const
 {
 	return 2;
@@ -670,13 +712,13 @@ void Actor::doVision(std::unordered_set<Actor*>&& actors)
 	m_canSee = actors;
 }
 // Take fall damage, etc.
-void Actor::doFall(uint32_t distance, Block* block)
+void Actor::doFall(uint32_t distance, Block& block)
 {
 	(void)distance;
 	(void)block;
 }
 // Take temperature damage, get wet, get dirty, etc.
-void Actor::exposedToFluid(const FluidType* fluidType)
+void Actor::exposedToFluid(const FluidType& fluidType)
 {
 	(void)fluidType;
 }
@@ -685,11 +727,11 @@ bool Actor::canSee(const Actor& actor) const
 	(void)actor;
 	return true;
 }
-void Area::rain(const FluidType* fluidType, uint32_t duration)
+void Area::rain(const FluidType& fluidType, uint32_t duration)
 {
-	m_currentlyRainingFluidType = fluidType;
+	m_currentlyRainingFluidType = &fluidType;
 	for(Plant& plant : m_plants)
-		if(plant.m_plantType->fluidType == fluidType && plant.m_location.m_exposedToSky)
+		if(plant.m_plantType.fluidType == fluidType && plant.m_location.m_exposedToSky)
 			plant.setHasFluidForNow();
 	uint32_t step = s_step + duration;
 	std::unique_ptr<ScheduledEvent> event = std::make_unique<RainStopEvent>(step, *this);
@@ -744,76 +786,19 @@ void Plant::onEndOfHarvest()
 	// Possibly spawn offspring here.
 }
 
-// typesRegistered is used to make sure registerTypes is called only once durring testing.
-bool typesRegistered = false;
-void registerTypes()
-{
-	if(typesRegistered)
-		return;
-	typesRegistered = true;
-
-	// name, viscosity, density, mist duration, mist spread
-	s_water = registerFluidType("water", 100, 100, 10, 2);
-	s_CO2 = registerFluidType("CO2", 200, 10, 0, 0);
-	s_lava = registerFluidType("lava", 20, 300, 5, 1);
-	s_mercury = registerFluidType("mercury", 50, 200, 0, 0);
-
-	// name, density, transparent, ignition temperature, flaming temperature, burning phase duration, flaming phase duration
-	s_stone = registerMaterialType("stone", 100, false, UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX);
-	s_glass = registerMaterialType("glass", 100, true, UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX);
-	s_wood = registerMaterialType("wood", 10, false, 533, 1172, 10000, 40000);
-	s_dirt = registerMaterialType("dirt", 50, false, UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX);
-
-	// name, offsets and volumes
-	s_oneByOneFull = registerShape("oneByOneFull", {{0,0,0,100}});
-	s_oneByOneHalfFull = registerShape("oneByOneHalfFull", {{0,0,0,50}});
-	s_oneByOneQuarterFull = registerShape("oneByOneQuarterFull", {{0,0,0,25}});
-	s_twoByTwoFull = registerShape("twoByTwoFull", {{0,0,0,100}, {1,0,0,100}, {0,1,0,100}, {1,1,0,100}});
-
-	// name, swim, climb, jumpDown, fly
-	std::unordered_map<const FluidType*, uint32_t> noSwim;
-	s_twoLegs = registerMoveType("two legs", true, noSwim, 0, false, false);
-	s_fourLegs = registerMoveType("four legs", true, noSwim, 0, false, false);
-	s_flying = registerMoveType("flying", false, noSwim, 0, false, true);
-	std::unordered_map<const FluidType*, uint32_t> swimInWater = {{s_water, Config::maxBlockVolume / 2}};
-	s_swimmingInWater = registerMoveType("swimming in water", false, swimInWater, 0, false, false);
-	s_twoLegsAndSwimmingInWater = registerMoveType("two legs and swimming in water", true, swimInWater, 0, false, false);
-	s_fourLegsAndSwimmingInWater = registerMoveType("four legs and swimming in water", true, swimInWater, 0, false, false);
-	std::unordered_map<const FluidType*, uint32_t> swimInMercury = {{s_mercury, Config::maxBlockVolume / 2}};
-	s_swimmingInMercury = registerMoveType("swimming in mercury", false, swimInMercury, 0, false, false);
-	s_twoLegsAndSwimmingInMercury = registerMoveType("two legs and swimming in mercury", true, swimInMercury, 0, false, false);
-	s_twoLegsAndClimb1 = registerMoveType("two legs and climb1", true, noSwim, 1, false, false);
-	s_twoLegsAndClimb2 = registerMoveType("two legs and climb2", true, noSwim, 2, false, false);
-
-	// name
-	s_floor = registerBlockFeatureType("floor");
-	s_upStairs = registerBlockFeatureType("up stairs");
-	s_downStairs = registerBlockFeatureType("down stairs");
-	s_upDownStairs = registerBlockFeatureType("up/down stairs");
-	s_ramp = registerBlockFeatureType("ramp");
-	s_fortification = registerBlockFeatureType("fortification");
-	s_door = registerBlockFeatureType("door");
-	s_hatch = registerBlockFeatureType("hatch");
-	s_floorGrate = registerBlockFeatureType("floor grate");
-	s_floodGate = registerBlockFeatureType("flood gate");
-
-	// name, annual, maximum temperature, minimum temperature, steps till die from temperature, steps needs fluid frequency, steps till die without fluid, steps till growth event, grows in sunlight, day of year for harvest, steps till end of harvest, root range max, root range min, fluidType
-	s_grass = registerPlantType("grass", false, 316, 283, Config::stepsPerDay, Config::stepsPerDay * 4, Config::stepsPerDay * 8, Config::stepsPerDay * 100, true, 200, 50, 2, 1, s_water, L"\"");
-}
-
 // Test helpers.
-void setSolidLayer(Area& area, uint32_t z, const MaterialType* materialType)
+void setSolidLayer(Area& area, uint32_t z, const MaterialType& materialType)
 {
 	for(uint32_t x = 0; x != area.m_sizeX; ++x)
 		for(uint32_t y = 0; y != area.m_sizeY; ++y)
 			area.m_blocks[x][y][z].setSolid(materialType);
 }
-void setSolidLayers(Area& area, uint32_t zbegin, uint32_t zend, const MaterialType* materialType)
+void setSolidLayers(Area& area, uint32_t zbegin, uint32_t zend, const MaterialType& materialType)
 {
 	for(;zbegin <= zend; ++zbegin)
 		setSolidLayer(area, zbegin, materialType);
 }
-void setSolidWalls(Area& area, uint32_t height, const MaterialType* materialType)
+void setSolidWalls(Area& area, uint32_t height, const MaterialType& materialType)
 {	
 	for(uint32_t z = 0; z != height + 1; ++ z)
 	{
@@ -829,13 +814,13 @@ void setSolidWalls(Area& area, uint32_t height, const MaterialType* materialType
 		}
 	}
 }
-void setFullFluidCuboid(Block& low, Block& high, const FluidType* fluidType)
+void setFullFluidCuboid(Block& low, Block& high, const FluidType& fluidType)
 {
 	assert(low.m_totalFluidVolume == 0);
 	assert(low.fluidCanEnterEver());
 	assert(high.m_totalFluidVolume == 0);
 	assert(high.fluidCanEnterEver());
-	BaseCuboid<Block, Actor, Area> cuboid(high, low);
+	BaseCuboid<Block> cuboid(high, low);
 	for(Block& block : cuboid)
 	{
 		assert(block.m_totalFluidVolume == 0);
@@ -848,11 +833,11 @@ void validateAllBlockFluids(Area& area)
 	for(uint32_t x = 0; x < area.m_sizeX; ++x)
 		for(uint32_t y = 0; y < area.m_sizeY; ++y)
 			for(uint32_t z = 0; z < area.m_sizeZ; ++z)
-				for(auto [fluidType, pair] : area.m_blocks[x][y][z].m_fluids)
-					assert(pair.second->m_fluidType == fluidType);
+				for(auto& [fluidType, pair] : area.m_blocks[x][y][z].m_fluids)
+					assert(pair.second->m_fluidType == *fluidType);
 }
 // Get one fluid group with the specified type. Return null if there is more then one.
-FluidGroup<Block, Area, FluidType>* getFluidGroup(Area& area, const FluidType* fluidType)
+FluidGroup<Block, Area, FluidType>* getFluidGroup(Area& area, const FluidType& fluidType)
 {
 	FluidGroup<Block, Area, FluidType>* output = nullptr;
 	for(FluidGroup<Block, Area, FluidType>& fluidGroup : area.m_fluidGroups)

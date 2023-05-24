@@ -36,7 +36,7 @@ void RouteRequest<DerivedBlock, DerivedActor, DerivedArea>::readStep()
 		if(block->m_moveCostsCache.contains(m_actor.m_shape) && block->m_moveCostsCache.at(m_actor.m_shape).contains(m_actor.m_moveType))
 			adjacentMoveCosts = block->m_moveCostsCache.at(m_actor.m_shape).at(m_actor.m_moveType);
 		else
-			m_moveCostsToCache[block] = adjacentMoveCosts = block->getMoveCosts(m_actor.m_shape, m_actor.m_moveType);
+			m_moveCostsToCache[block] = adjacentMoveCosts = block->getMoveCosts(*m_actor.m_shape, *m_actor.m_moveType);
 		return adjacentMoveCosts;
 	};
 	if(m_detour)
