@@ -38,7 +38,7 @@ BS::thread_pool_light s_pool;
 #include "../src/materialType.h"
 #include "../src/fluidType.h"
 #include "../src/plant.h"
-//#include "../src/animal.h"
+#include "../src/animal.h"
 	
 class FluidType : public BaseFluidType
 {
@@ -88,33 +88,38 @@ const static Shape s_oneByOneFull("oneByOneFull", {{0,0,0,100}});
 const static Shape s_oneByOneHalfFull("oneByOneHalfFull", {{0,0,0,50}});
 const static Shape s_oneByOneQuarterFull("oneByOneQuarterFull", {{0,0,0,25}});
 const static Shape s_twoByTwoFull("twoByTwoFull", {{0,0,0,100}, {1,0,0,100}, {0,1,0,100}, {1,1,0,100}});
-/*
-class AnimalType : public BaseAnimalType
+
+class AnimalType : public BaseAnimalType<FluidType>
 {
 public:
 	AnimalType(
-			const std::string name;
-			const uint32_t minimumTemperature;
-			const uint32_t maximumTemperature;
-			const uint32_t stepsTillDieTemperature;
-			const FluidType& fluidType;
-			const uint32_t stepsNeedsFluidFrequency;
-			const uint32_t stepsTillDieWithoutFluid;
-			const bool carnivore;
-			const bool herbavore;
-			const uint32_t stepsNeedsFoodFrequency;
-			const uint32_t stepsTillDieWithoutFood;
-			const uint32_t stepsTillFullyGrown;
-			const uint32_t visionRange;
-			const uint32_t moveSpeed;
-			const uint32_t mass;
-		  ) : BaseAnimalType(name, minimumTemperature, maximumTemperature, stepsTillDieTemperature, fluidType, stepsNeedsFluidFrequency, stepsTillDieWithoutFluid, carnivore, herbavore, stepsNeedsFoodFrequency, stepsTillDieWithoutFood, stepsTillFullyGrown, visionRange, moveSpeed, mass) {}
+			const std::string name,
+			const uint32_t minimumTemperature,
+			const uint32_t maximumTemperature,
+			const uint32_t stepsTillDieTemperature,
+			const FluidType& fluidType,
+			const uint32_t stepsNeedsFluidFrequency,
+			const uint32_t stepsTillDieWithoutFluid,
+			const bool carnivore,
+			const bool herbavore,
+			const uint32_t stepsNeedsFoodFrequency,
+			const uint32_t stepsTillDieWithoutFood,
+			const uint32_t stepsTillFullyGrown,
+			const uint32_t visionRange,
+			const uint32_t moveSpeed,
+			const uint32_t mass
+		  ) : BaseAnimalType<FluidType>(name, minimumTemperature, maximumTemperature, stepsTillDieTemperature, fluidType, stepsNeedsFluidFrequency, stepsTillDieWithoutFluid, carnivore, herbavore, stepsNeedsFoodFrequency, stepsTillDieWithoutFood, stepsTillFullyGrown, visionRange, moveSpeed, mass) {}
+	bool canEat(const Plant& plant) const;
+	bool canEat(const Actor& actor) const;
+	bool willHunt(const Actor& actor) const;
+	void onDeath();
 };
-const static AnimalType s_rabbit("rabbit", 261, 316, 5 * Config::stepsPerDay, s_water, 1 * Config::stepsPerDay, 3 * Config::stepsPerDay, false, true, 2 * Config::stepsPerDay, 10 * Config::stepsPerDay, 150 * stepsPerDay, 10, 3, 2);
-const static AnimalType s_fox("fox", 261, 316, 5 * Config::stepsPerDay, s_water, 1 * Config::stepsPerDay, 3 * Config::stepsPerDay, true, true, 2 * Config::stepsPerDay, 10 * Config::stepsPerDay, stepsPerYear, 15, 4, 5);
-const static AnimalType s_bear("bear", 220, 310, 10 * Config::stepsPerDay, s_water, 1 * Config::stepsPerDay, 10 * Config::stepsPerDay, true, true, 4 * Config::stepsPerDay, 10 * Config::stepsPerYear, 10, 4, 200);
-const static AnimalType s_deer("deer", 261, 310, 5 * Config::stepsPerDay, s_water, 1 * Config::stepsPerDay, 3 * Config::stepsPerDay, false, true, 2 * Config::stepsPerDay, 3 * Config::stepsPerYear, 10, 3, 80);
-*/
+// name, min temp, max temp, steps till die from temp, fluid type, needs fluid frequency, steps til die of thirst, eats meat, eats plants, hunger frequencey, steps till starve, steps of growth till adult size, vision distance, move speed, mass
+const static AnimalType s_rabbit("rabbit", 261, 316, 5 * Config::stepsPerDay, s_water, 1 * Config::stepsPerDay, 3 * Config::stepsPerDay, false, true, 2 * Config::stepsPerDay, 10 * Config::stepsPerDay, 150 * Config::stepsPerDay, 10, 3, 2);
+const static AnimalType s_fox("fox", 261, 316, 5 * Config::stepsPerDay, s_water, 1 * Config::stepsPerDay, 3 * Config::stepsPerDay, true, true, 2 * Config::stepsPerDay, 10 * Config::stepsPerDay, Config::stepsPerYear, 15, 4, 5);
+const static AnimalType s_bear("bear", 220, 310, 10 * Config::stepsPerDay, s_water, 1 * Config::stepsPerDay, 10 * Config::stepsPerDay, true, true, 4 * Config::stepsPerDay, 15 * Config::stepsPerDay , 10 * Config::stepsPerYear, 10, 4, 200);
+const static AnimalType s_deer("deer", 261, 310, 5 * Config::stepsPerDay, s_water, 1 * Config::stepsPerDay, 3 * Config::stepsPerDay, false, true, 2 * Config::stepsPerDay, 10 * Config::stepsPerDay, 3 * Config::stepsPerYear, 10, 3, 80);
+
 struct BlockFeatureType
 {
 	const std::string name;
@@ -785,7 +790,37 @@ void Plant::onEndOfHarvest()
 {
 	// Possibly spawn offspring here.
 }
+bool Animal::canEat(const Plant& plant) const
+{
+	// TODO: small animals can't eat tree trunks
+	return plant.m_plantType.fluidType == m_animalType.fluidType && m_animalType.herbavore;
+} 
+bool Animal::canEat(const Actor& actor) const
+{
+	if(!actor.m_alive && s_step - actor.m_diedAt >= Const::stepTillDecay && !m_animalType.scavenger)
+		return false;
+	return actor.m_plantType.fluidType == m_animalType.fluidType && m_animalType.carnivore;
+}
+uint32_t Animal::combatScore() const
+{
+	uint32_t output = m_mass;
+	if(m_animalType.carnivore)
+		output *= Const::carnivoreCombatScoreAdjustment;
+	return output;
+}
+bool Animal::willHunt(const Actor& actor) const
+{
+	assert(m_hungerEvent != nullptr);
+	if(!canEat(actor))
+		return false;
+	// When hunger is 0 score is also 0, when hunger is 100 combat score is multiplyed by 1.58.
+	uint32_t score = combatScore() * pow((m_hungerEvent.percentComplete(), 1.1) / 100.f);
+	return actor.combatScore() < score;
+}
+void Animal::onDeath() const
+{
 
+}
 // Test helpers.
 void setSolidLayer(Area& area, uint32_t z, const MaterialType& materialType)
 {
