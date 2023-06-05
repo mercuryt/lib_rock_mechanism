@@ -21,4 +21,9 @@ namespace randomUtil
 	{
 		return getInRange((int32_t)lowest, (int32_t)highest);
 	}
+	static bool percentChance(uint32_t percent)
+	{
+		std::uniform_int_distribution<std::mt19937::result_type> dist(0, 100);
+		return dist(getRng()) <= percent;
+	}
 }

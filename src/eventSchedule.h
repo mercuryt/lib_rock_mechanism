@@ -17,6 +17,7 @@ public:
 	void cancel();
 	virtual ~ScheduledEvent() {}
 	virtual void execute() = 0;
+	uint32_t remaningSteps() const { return m_step - s_step; }
 };
 class ScheduledEventWithPercent: public ScheduledEvent
 {

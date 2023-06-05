@@ -18,7 +18,8 @@ struct BaseAnimalType
 	const uint32_t stepsTillFullyGrown;
 	const uint32_t visionRange;
 	const uint32_t moveSpeed;
-	const uint32_t mass;
+	const uint32_t birthMass;
+	const uint32_t adultMass;
 	bool operator==(const BaseAnimalType& x){ return &x == this; }
 };
 template<class Animal>
@@ -34,13 +35,13 @@ public:
 	~AnimalGrowthEvent() { m_animal.m_growthEvent = nullptr; }
 };
 template<class Animal>
-class AnimalFoodEvent : public ScheduledEventWithPercent
+class AnimalHungerEvent : public ScheduledEventWithPercent
 {
 	Animal& m_animal;
 public:
-	AnimalFoodEvent(uint32_t step, Animal a) : ScheduledEventWithPercent(step), m_animal(a) {}
+	AnimalHungerEvent(uint32_t step, Animal a) : ScheduledEventWithPercent(step), m_animal(a) {}
 	void execute() { m_animal.setNeedsFood(); }
-	~AnimalFoodEvent() { m_animal.m_foodEvent = nullptr; }
+	~AnimalHungerEvent() { m_animal.m_foodEvent = nullptr; }
 };
 template<class Animal>
 class AnimalThirstEvent : public ScheduledEventWithPercent
@@ -48,7 +49,7 @@ class AnimalThirstEvent : public ScheduledEventWithPercent
 	Animal& m_animal;
 public:
 	AnimalThirstEvent(uint32_t step, Animal a) : ScheduledEventWithPercent(step), m_animal(a) {}
-	void execute() { m_animal.setMaybeNeedsFluid(); }
+	void execute() { m_animal.setNeedsFluid(); }
 	~AnimalThirstEvent() { m_animal.m_fluidEvent = nullptr; }
 };
 template<class Animal>
@@ -86,36 +87,35 @@ public:
 	ScheduledEventWithPercent* m_temperatureEvent;
 	ScheduledEventWithPercent* m_growthEvent;
 	bool m_hasFluid;
-	bool m_hasFood;
 	uint32_t m_percentGrown;
-	bool m_alive;
+	uint32_t m_massFoodRequested;
 	
-	BaseAnimal(std::string n, const AnimalType& at, Block& l) : Actor(l, at->shape, at->moveType), m_animalType(at), m_thirstEvent(nullptr), m_hungerEvent(nullptr), m_temperatureEvent(nullptr), m_growthEvent(nullptr), m_hasFluid(true), m_hasFood(true), m_alive(true)
+	BaseAnimal(std::string n, const AnimalType& at, Block& l, uint32_t pg) : Actor(l, at->shape, at->moveType, at->moveSpeed, 0), m_animalType(at), m_thirstEvent(nullptr), m_hungerEvent(nullptr), m_temperatureEvent(nullptr), m_growthEvent(nullptr), m_hasFluid(true), m_percentGrown(pg)
 	{
 		makeThirstEvent();
 		makeHungerEvent();
-		applyTemperature(m_location.getAmbientTemperature() + m_location.m_deltaTemperature);
+		applyTemperature(getLocation().getAmbientTemperature() + getLocation().m_deltaTemperature);
 		setMassForGrowthPercent();
 	}
-	DerivedAnimal derived(){ return static_cast<DerivedAnimal>(*this); }
+	DerivedAnimal& derived(){ return static_cast<DerivedAnimal>(*this); }
 	void makeThirstEvent(uint32_t delay)
 	{
 		std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<AnimalThirstEvent>(delay, derived());
 		m_thirstEvent = event.get();
-		m_location->m_area->m_eventSchedule.schedule(event);
+		getLocation()->m_area->m_eventSchedule.schedule(event);
 	}
 	void makeHungerEvent(uint32_t delay)
 	{
 		std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<AnimalHungerEvent>(delay, derived());
 		m_hungerEvent = event.get();
-		m_location->m_area->m_eventSchedule.schedule(event);
+		getLocation()->m_area->m_eventSchedule.schedule(event);
 	}
 	void applyTemperature(uint32_t temperature)
 	{
 		if(temperature >= m_animalType.minimumTemperature && temperature <= m_animalType.maximumTemperature)
 		{
 			if(m_temperatureEvent != nullptr)
-				m_temperatureEvent.cancel();
+				m_temperatureEvent->cancel();
 		}
 		else
 		{
@@ -123,7 +123,7 @@ public:
 			{
 				std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<AnimalTemperatureEvent>(m_animalType.stepsTillDieTemperature, derived());
 				m_temperatureEvent = event.get();
-				m_location->m_area->m_eventSchedule.schedule(event);
+				getLocation()->m_area->m_eventSchedule.schedule(event);
 			}
 		}
 	}
@@ -140,15 +140,23 @@ public:
 		else
 		{
 			makeThirstEvent(m_animalType.stepsTillDieWithoutFluid);
-			m_growthEvent.cancel();
-			m_location->m_area->registerDrinkRequest(derived());
+			m_growthEvent->cancel();
+			getLocation()->m_area->registerDrinkRequest(derived());
 		}
 	}
-	void eat()
+	void eat(uint32_t mass)
 	{
+		assert(mass <= m_massFoodRequested);
+		m_massFoodRequested -= mass;
 		m_hungerEvent->cancel();
-		m_hasFood = true;
-		makeHungerEvent(m_animalType.stepsNeedsFoodFrequency);
+		if(m_massFoodRequested == 0)
+			updateGrowingStatus();
+		else
+		{
+			uint32_t delay = util::scaleByInverseFraction(m_animalType.stepsTillDieWithoutFood, m_massFoodRequested, massFoodForBodyMass());
+			makeHungerEvent(delay);
+			createFoodRequest();
+		}
 	}
 	void setNeedsFood()
 	{
@@ -157,24 +165,33 @@ public:
 		else
 		{
 			makeHungerEvent(m_animalType.stepsTillDieWithoutFood);
-			m_growthEvent.cancel();
+			m_growthEvent->cancel();
+			m_massFoodRequested = massFoodForBodyMass();
 			createFoodRequest();
 		}
+	}
+	uint32_t massFoodForBodyMass() const
+	{
+	return getMass() / Config::unitsOfBodyMassPerUnitOfFoodRequestedMass;
 	}
 	void createFoodRequest()
 	{
 		if(m_animalType.carnivore && m_animalType.herbavore)
-			m_location->m_area->registerOmnivoreRequest(derived());
+			getLocation()->m_area->registerOmnivoreRequest(derived());
 		else if(m_animalType.carnivore)
-			m_location->m_area->registerHuntRequest(derived());
+			getLocation()->m_area->registerHuntRequest(derived());
 		else if(m_animalType.herbavore)
-			m_location->m_area->registerGrazeRequest(derived());
+			getLocation()->m_area->registerGrazeRequest(derived());
 		else
 			assert(false);
 	}
+	uint32_t getMassFoodRequested() const
+	{
+		assert(m_percentHunger != 0 && m_hungerEvent != nullptr);
+	}
 	void updateGrowingStatus()
 	{
-		if(m_percentGrown != 100 && m_hasFood && m_hasFluid && m_temperatureEvent == nullptr)
+		if(m_percentGrown != 100 && m_massFoodRequested == 0 && m_hasFluid && m_temperatureEvent == nullptr)
 		{
 			if(m_growthEvent == nullptr)
 			{
@@ -183,34 +200,34 @@ public:
 						((m_animalType.stepsTillFullyGrown * m_percentGrown) / 100u));
 				std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<AnimalGrowthEvent>(step, derived());
 				m_growthEvent = event.get();
-				m_location->m_area->m_eventSchedule.schedule(event);
+				getLocation()->m_area->m_eventSchedule.schedule(event);
 			}
 		}
 		else if(m_growthEvent != nullptr)
 		{
 			m_percentGrown = growthPercent();
-			m_growthEvent.cancel();
+			m_growthEvent->cancel();
 		}
 	}
 	void onNothingToDrink()
 	{
 		makeLeaveAreaRequest();
 	}
-	void onNothingToEath()
+	void onNothingToEat()
 	{
 		makeLeaveAreaRequest();
 	}
 	void makeLeaveAreaRequest()
 	{
-		m_location->m_area->registerLeaveAreaRequest(derived());
+		getLocation()->m_area->registerLeaveAreaRequest(derived());
 	}
 	void setMassForGrowthPercent()
 	{
-		m_mass = (m_animalType.mass * growthPercent()) / 100u;
+		m_mass = m_animalType.birthMass + ((m_animalType.adultMass - m_animalType.birthMass) * growthPercent()) / 100u;
 	}
 	void die()
 	{
-		m_location->m_area->unregisterActor(*this);
+		getLocation()->m_area->unregisterActor(*this);
 		m_alive = false;
 		onDeath();
 	}
