@@ -78,6 +78,7 @@ public:
 	std::unique_ptr<Fire<DerivedBlock, MaterialType>> m_fire;
 	int32_t m_deltaTemperature;
 	bool m_exposedToSky;
+	Reservable m_reservable;
 
 	// Constructor initalizes some members.
 	BaseBlock();

@@ -3,8 +3,6 @@
 #include "eventSchedule.h"
 #include "util.h"
 
-#include <memory>
-
 template<class FluidType>
 class BasePlantType
 {
@@ -38,7 +36,7 @@ public:
 		if(m_plant.m_plantType.annual)
 			m_plant.setReadyToHarvest();
 	}
-	~PlantGrowthEvent() { m_plant.m_growthEvent = nullptr; }
+	~PlantGrowthEvent() { m_plant.m_growthEvent.clearPointer(); }
 };
 template<class Plant>
 class PlantFoliageGrowthEvent : public ScheduledEventWithPercent
@@ -47,7 +45,7 @@ class PlantFoliageGrowthEvent : public ScheduledEventWithPercent
 public:
 	PlantFoliageGrowthEvent(uint32_t step, Plant& p) : ScheduledEventWithPercent(step), m_plant(p) {}
 	void execute(){ m_plant.foliageGrowth(); }
-	~PlantFoliageGrowthEvent(){ m_plant.m_foliageGrowthEvent = nullptr; }
+	~PlantFoliageGrowthEvent(){ m_plant.m_foliageGrowthEvent.clearPointer(); }
 }
 template<class Plant>
 class PlantEndOfHarvestEvent : public ScheduledEventWithPercent
@@ -56,7 +54,7 @@ class PlantEndOfHarvestEvent : public ScheduledEventWithPercent
 public:
 	PlantEndOfHarvestEvent(uint32_t step, Plant& p) : ScheduledEventWithPercent(step), m_plant(p) {}
 	void execute() { m_plant.endOfHarvest(); }
-	~PlantEndOfHarvestEvent() { m_plant.m_endOfHarvestEvent = nullptr; }
+	~PlantEndOfHarvestEvent() { m_plant.m_endOfHarvestEvent.clearPointer(); }
 };
 template<class Plant>
 class PlantFluidEvent : public ScheduledEventWithPercent
@@ -65,7 +63,7 @@ class PlantFluidEvent : public ScheduledEventWithPercent
 public:
 	PlantFluidEvent(uint32_t step, Plant& p) : ScheduledEventWithPercent(step), m_plant(p) {}
 	void execute() { m_plant.setMaybeNeedsFluid(); }
-	~PlantFluidEvent() { m_plant.m_fluidEvent = nullptr; }
+	~PlantFluidEvent() { m_plant.m_fluidEvent.clearPointer(); }
 };
 template<class Plant>
 class PlantTemperatureEvent : public ScheduledEventWithPercent
@@ -74,7 +72,7 @@ class PlantTemperatureEvent : public ScheduledEventWithPercent
 public:
 	PlantTemperatureEvent(uint32_t step, Plant& p) : ScheduledEventWithPercent(step), m_plant(p) {}
 	void execute() { m_plant.die(); }
-	~PlantTemperatureEvent() { m_plant.m_temperatureEvent = nullptr; }
+	~PlantTemperatureEvent() { m_plant.m_temperatureEvent.clearPointer(); }
 };
 template<class DerivedPlant, class PlantType, class Block>
 class BasePlant
@@ -83,36 +81,33 @@ public:
 	Block& m_location;
 	Block* m_fluidSource;
 	const PlantType& m_plantType;
-	ScheduledEventWithPercent* m_growthEvent;
-	ScheduledEventWithPercent* m_fluidEvent;
-	ScheduledEventWithPercent* m_temperatureEvent;
-	ScheduledEventWithPercent* m_endOfHarvestEvent;
-	ScheduledEventWithPercent* m_foliageGrowthEvent;
+	HasScheduledEvent<PlantGrowthEvent> m_growthEvent;
+	HasScheduledEvent<PlantFluidEvent> m_fluidEvent;
+	HasScheduledEvent<PlantTemperatureEvent> m_temperatureEvent;
+	HasScheduledEvent<PlantEndOfHarvestEvent> m_endOfHarvestEvent;
+	HasScheduledEvent<PlantFoliageGrowthEvent> m_foliageGrowthEvent;
 	uint32_t m_percentGrown;
 	bool m_readyToHarvest;
 	bool m_hasFluid;
 	uint32_t m_percentFoliage;
+	//TODO: Set max reservations to 1 to start, maybe increase later with size?
+	Reserveable m_reservable;
 
-	BasePlant(Block& l, const PlantType& pt, uint32_t pg = 0) : m_location(l), m_fluidSource(nullptr), m_plantType(pt), m_growthEvent(nullptr), m_fluidEvent(nullptr), m_temperatureEvent(nullptr), m_endOfHarvestEvent(nullptr), m_foliageGrowthEvent(nullptr), m_percentGrown(pg), m_readyToHarvest(false), m_hasFluid(true), m_percentFoliage(100)
+	BasePlant(Block& l, const PlantType& pt, uint32_t pg = 0) : m_location(l), m_fluidSource(nullptr), m_plantType(pt), m_percentGrown(pg), m_readyToHarvest(false), m_hasFluid(true), m_percentFoliage(100), m_reservable(1)
 	{
 		assert(m_location.plantTypeCanGrow(m_plantType));
 		m_location.m_plants.push_back(&derived());
-		createFluidEvent(m_plantType.stepsNeedsFluidFrequency);
+		m_fluidEvent.schedule(s_step + m_plantType.stepsNeedsFluidFrequency, derived());
 		updateGrowingStatus();
 	}
 	DerivedPlant& derived(){ return static_cast<DerivedPlant&>(*this); }
 	void die()
 	{
-		if(m_growthEvent != nullptr)
-			m_growthEvent->cancel();
-		if(m_fluidEvent != nullptr)
-			m_fluidEvent->cancel();
-		if(m_temperatureEvent != nullptr)
-			m_temperatureEvent->cancel();
-		if(m_endOfHarvestEvent != nullptr)
-			m_endOfHarvestEvent->cancel();
-		if(m_foliageGrowthEvent != nullptr)
-			m_foliageGrowthEvent->cancel();
+		m_growthEvent.maybeUnschedule();
+		m_fluidEvent.maybeUnschedule();
+		m_temperatureEvent.maybeUnschedule();
+		m_endOfHarvestEvent.maybeUnschedule();
+		m_foliageGrowthEvent.maybeUnschedule();
 		derived().onDie();
 	}
 	void applyTemperatureChange(uint32_t oldTemperature, uint32_t newTemperature)
@@ -120,31 +115,20 @@ public:
 		(void)oldTemperature;
 		if(newTemperature >= m_plantType.minimumGrowingTemperature && newTemperature <= m_plantType.maximumGrowingTemperature)
 		{
-			if(m_temperatureEvent != nullptr)
-				m_temperatureEvent->cancel();
+			if(!m_temperatureEvent.empty())
+				m_temperatureEvent->unschedule();
 		}
 		else
-		{
-			if(m_temperatureEvent == nullptr)
-			{
-				uint32_t step = s_step + m_plantType.stepsTillDieFromTemperature;
-				std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<PlantTemperatureEvent<DerivedPlant>>(step, derived());
-				m_temperatureEvent = event.get();
-				m_location.m_area->m_eventSchedule.schedule(std::move(event));
-			}
-		}
+			if(m_temperatureEvent.empty())
+				m_temperatureEvent.schedule(s_step + m_plantType.stepsTillDieFromTemperature, derived());
 		updateGrowingStatus();
-
 	}
 	void setHasFluidForNow()
 	{
 		m_hasFluid = true;
-		if(m_fluidEvent != nullptr)
-		{
-			m_fluidEvent->cancel();
-			m_fluidEvent = nullptr;
-		}
-		createFluidEvent(m_plantType.stepsNeedsFluidFrequency);
+		if(!m_fluidEvent.empty())
+			m_fluidEvent->unschedule();
+		m_fluidEvent.schedule(s_step + m_plantType.stepsNeedsFluidFrequency, derived());
 		updateGrowingStatus();
 	}
 	void setMaybeNeedsFluid()
@@ -165,14 +149,8 @@ public:
 			m_hasFluid = false;
 			stepsTillNextFluidEvent = m_plantType.stepsTillDieWithoutFluid;
 		}
-		createFluidEvent(stepsTillNextFluidEvent);
+		m_fluidEvent.schedule(s_step + stepsTillNextFluidEvent, derived());
 		updateGrowingStatus();
-	}
-	void createFluidEvent(uint32_t delay)
-	{
-		std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<PlantFluidEvent<DerivedPlant>>(s_step + delay, derived());
-		m_fluidEvent = event.get();
-		m_location.m_area->m_eventSchedule.schedule(std::move(event));
 	}
 	bool hasFluidSource() const
 	{
@@ -195,10 +173,7 @@ public:
 	void setReadyToHarvest()
 	{
 		m_readyToHarvest = true;
-		uint32_t step = s_step + m_plantType.stepsTillEndOfHarvest;
-		std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<PlantEndOfHarvestEvent<DerivedPlant>>(step, derived());
-		m_endOfHarvestEvent = event.get();
-		m_location.m_area->m_eventSchedule.schedule(std::move(event));
+		m_endOfHarvestEvent.schedule(s_step + m_plantType.stepsTillEndOfHarvest, derived());
 	}
 	void endOfHarvest()
 	{
@@ -209,31 +184,29 @@ public:
 	}
 	void updateGrowingStatus()
 	{
-		if(m_hasFluid && m_location.m_exposedToSky == m_plantType.growsInSunLight && m_temperatureEvent == nullptr && getPercentFoliage() >= Config::minimumPercentFoliageForGrow);
+		if(m_hasFluid && m_location.m_exposedToSky == m_plantType.growsInSunLight && m_temperatureEvent.empty() && getPercentFoliage() >= Config::minimumPercentFoliageForGrow);
 		{
-			if(m_growthEvent == nullptr)
+			if(m_growthEvent.empty())
 			{
 				uint32_t step = s_step + (m_percentGrown == 0 ?
 						m_plantType.stepsTillFullyGrown :
 						((m_plantType.stepsTillFullyGrown * m_percentGrown) / 100u));
-				std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<PlantGrowthEvent<DerivedPlant>>(step, derived());
-				m_growthEvent = event.get();
-				m_location.m_area->m_eventSchedule.schedule(std::move(event));
+				m_growthEvent.schedule(step, derived());
 			}
 		}
 		else
 		{
-			if(m_growthEvent != nullptr)
+			if(!m_growthEvent.empty())
 			{
-				m_percentGrown = growthPercent();
-				m_growthEvent->cancel();
+				m_percentGrown = getGrowthPercent();
+				m_growthEvent.unschedule();
 			}
 		}
 	}
 	uint32_t getGrowthPercent() const
 	{
 		uint32_t output = m_percentGrown;
-		if(m_growthEvent != nullptr)
+		if(!m_growthEvent.empty())
 		{
 			if(m_percentGrown != 0)
 				output += (m_growthEvent->percentComplete() * (100u - m_percentGrown)) / 100u;
@@ -249,12 +222,12 @@ public:
 	uint32_t getPercentFoliage() const
 	{
 		uint32_t output = m_percentFoliage;
-		if(m_foliageGrowthEvent != nullptr)
+		if(!m_foliageGrowthEvent.empty())
 		{
 			if(m_percentFoliage != 0)
-				output += (m_growthEvent->percentComplete() * (100u - m_percentFoliage)) / 100u;
+				output += (m_growthEvent.percentComplete() * (100u - m_percentFoliage)) / 100u;
 			else
-				output = m_growthEvent->percentComplete();
+				output = m_growthEvent.percentComplete();
 		}
 		return output;
 	}
@@ -262,7 +235,7 @@ public:
 	{
 		uint32_t maxFoliageForType = util::scaleByPercent(m_plantType.adultMass, Config::percentOfPlantMassWhichIsFoliage);
 		uint32_t maxForGrowth = util::scaleByPercent(maxFoliageForType, growthPercent());
-		return util::scaleByPercent(maxForGrowth, getPercentFoliage();
+		return util::scaleByPercent(maxForGrowth, getPercentFoliage());
 	}
 	void removeFoliageMass(uint32_t mass)
 	{
@@ -272,17 +245,14 @@ public:
 		m_percentFoliage = getPercentFoliage();
 		assert(m_percentFoliage >= percentRemoved);
 		m_percentFoliage -= percentRemoved;
-		if(m_foliageGrowthEvent != nullptr)
-			m_foliageGrowthEvent->cancel();
+		m_foliageGrowthEvent->maybeUnschedule();
 		makeFoliageGrowthEvent();
 		updateGrowingStatus();
 	}
 	void makeFoliageGrowthEvent()
 	{
 		uint32_t step = s_step + util::scaleByInversePercent(m_plantType.stepsTillFoliageGrowsFromZero, m_percentFoliage);
-		std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<PlantFoliageGrowthEvent>(step, *this);
-		m_foliageGrowthEvent = event.get();
-		m_location->m_area->m_eventSchedule.schedule(event);
+		m_foliageGrowthEvent.schedule(step, *this);
 	}
 	void foliageGrowth()
 	{

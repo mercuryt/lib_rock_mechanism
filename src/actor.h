@@ -12,6 +12,7 @@
 #include "visionRequest.h"
 #include "queuedAction.h"
 #include "objective.h"
+#include "publishedEvents.h"
 
 #include <stack>
 #include <vector>
@@ -42,6 +43,7 @@ public:
 	std::deque<std::unique_ptr<QueuedAction>> m_actionQueue;
 	std::priority_queue<std::unique_ptr<Objective>, std::vector<std::unique_ptr<Objective>, decltype(ObjectiveSort)> m_objectiveQueue;
 	Faction* m_faction;
+	EventPublisher m_eventPublisher;
 
 	BaseActor(Block& l, const Shape& s, const MoveType& mt, uint32_t ms, uint32_t m, Faction* f) : 
 		HasShape<Block>(&s), m_id(s_nextId++), m_name("actor#" + std::to_string(m_id)), m_moveType(&mt), m_moveSpeed(ms), m_taskDelayCount(0), m_mass(m), m_alive(true), m_actionEvent(nullptr), m_objectiveQueue(ObjectiveSort), m_faction(f)

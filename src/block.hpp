@@ -17,7 +17,7 @@
 #include "block.h"
 
 template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType, class MaterialType>
-BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType, MaterialType>::BaseBlock() : m_solid(nullptr), m_routeCacheVersion(0), m_totalDynamicVolume(0), m_totalStaticVolume(0), m_totalFluidVolume(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr), m_deltaTemperature(0), m_exposedToSky(true) {}
+BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType, MaterialType>::BaseBlock() : m_solid(nullptr), m_routeCacheVersion(0), m_totalDynamicVolume(0), m_totalStaticVolume(0), m_totalFluidVolume(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr), m_deltaTemperature(0), m_exposedToSky(true), m_reservable(1) {}
 template<class DerivedBlock, class Actor, class Area, class FluidType, class MoveType, class MaterialType>
 void BaseBlock<DerivedBlock, Actor, Area, FluidType, MoveType, MaterialType>::setup(Area* a, uint32_t ax, uint32_t ay, uint32_t az)
 {m_area=a;m_x=ax;m_y=ay;m_z=az;m_locationBucket = a->m_locationBuckets.getBucketFor(const_derived());}

@@ -1,18 +1,18 @@
 #include "pathTemplate.h"
 // Static method.
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void RouteRequest<DerivedBlock, DerivedActor, DerivedArea>::readSteps(std::vector<RouteRequest<DerivedBlock, DerivedActor, DerivedArea>>::iterator begin, std::vector<RouteRequest<DerivedBlock, DerivedActor, DerivedArea>>::iterator end)
+template<class Block>
+void RouteRequest<Block>::readSteps(std::vector<RouteRequest<Block>>::iterator begin, std::vector<RouteRequest<Block>>::iterator end)
 {
 	for(; begin != end; ++begin)
 		begin->readStep();
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-RouteRequest<DerivedBlock, DerivedActor, DerivedArea>::RouteRequest(DerivedActor& a, bool d) : m_actor(a), m_detour(d), m_cacheHit(false) {}
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void RouteRequest<DerivedBlock, DerivedActor, DerivedArea>::readStep()
+template<class Block>
+RouteRequest<Block>::RouteRequest(Actor& a, bool d) : m_actor(a), m_detour(d), m_cacheHit(false) {}
+template<class Block>
+void RouteRequest<Block>::readStep()
 {
-	DerivedBlock* start = m_actor.m_location;
-	DerivedBlock* end = m_actor.m_destination;
+	Block* start = m_actor.m_location;
+	Block* end = m_actor.m_destination;
 	assert(start != nullptr);
 	assert(end != nullptr);
 	//TODO: Would it be better to check for cache hit before fork?
@@ -24,15 +24,15 @@ void RouteRequest<DerivedBlock, DerivedActor, DerivedArea>::readStep()
 		return;
 	}
 	// Huristic: taxi distance to destination times constant plus total move cost.
-	auto priority = [&](ProposedRouteStep<DerivedBlock>& proposedRouteStep)
+	auto priority = [&](ProposedRouteStep<Block>& proposedRouteStep)
 	{
 		return (proposedRouteStep.routeNode->block->taxiDistance(*end) * Config::pathHuristicConstant) + proposedRouteStep.totalMoveCost;
 	};
-	auto compare = [&](ProposedRouteStep<DerivedBlock>& a, ProposedRouteStep<DerivedBlock>& b) { return priority(a) > priority(b); };
+	auto compare = [&](ProposedRouteStep<Block>& a, ProposedRouteStep<Block>& b) { return priority(a) > priority(b); };
 	// Check if the actor can currently enter each block if this is a detour path.
-	auto isDone = [&](DerivedBlock* block){ return block == end; };
-	std::vector<std::pair<DerivedBlock*, uint32_t>> adjacentMoveCosts;
-	auto adjacentCosts = [&](DerivedBlock* block){
+	auto isDone = [&](Block* block){ return block == end; };
+	std::vector<std::pair<Block*, uint32_t>> adjacentMoveCosts;
+	auto adjacentCosts = [&](Block* block){
 		if(block->m_moveCostsCache.contains(m_actor.m_shape) && block->m_moveCostsCache.at(m_actor.m_shape).contains(m_actor.m_moveType))
 			adjacentMoveCosts = block->m_moveCostsCache.at(m_actor.m_shape).at(m_actor.m_moveType);
 		else
@@ -41,19 +41,19 @@ void RouteRequest<DerivedBlock, DerivedActor, DerivedArea>::readStep()
 	};
 	if(m_detour)
 	{
-		auto isValid = [&](DerivedBlock* block){ 
+		auto isValid = [&](Block* block){ 
 			return block->anyoneCanEnterEver() && block->canEnterEver(m_actor) && block->actorCanEnterCurrently(m_actor);
 		};
-		GetPath<DerivedBlock, decltype(isValid), decltype(compare), decltype(isDone), decltype(adjacentCosts)> getPath(isValid, compare, isDone, adjacentCosts, start, m_result);
+		GetPath<Block, decltype(isValid), decltype(compare), decltype(isDone), decltype(adjacentCosts)> getPath(isValid, compare, isDone, adjacentCosts, start, m_result);
 	}
 	else
 	{
-		auto isValid = [&](DerivedBlock* block){ return block->anyoneCanEnterEver() && block->canEnterEver(m_actor); };
-		GetPath<DerivedBlock, decltype(isValid), decltype(compare), decltype(isDone), decltype(adjacentCosts)> getPath(isValid, compare, isDone, adjacentCosts, start, m_result);
+		auto isValid = [&](Block* block){ return block->anyoneCanEnterEver() && block->canEnterEver(m_actor); };
+		GetPath<Block, decltype(isValid), decltype(compare), decltype(isDone), decltype(adjacentCosts)> getPath(isValid, compare, isDone, adjacentCosts, start, m_result);
 	}
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void RouteRequest<DerivedBlock, DerivedActor, DerivedArea>::writeStep()
+template<class Block>
+void RouteRequest<Block>::writeStep()
 {
 	if(m_cacheHit)
 	{
@@ -78,9 +78,9 @@ void RouteRequest<DerivedBlock, DerivedActor, DerivedArea>::writeStep()
 		}
 		// Cache route in origin block.
 		if(!m_actor.m_location->m_routeCache[m_actor.m_shape][m_actor.m_moveType].contains(m_actor.m_destination))
-			m_actor.m_location->m_routeCache[m_actor.m_shape][m_actor.m_moveType][m_actor.m_destination] = std::make_shared<std::vector<DerivedBlock*>>(m_result);
+			m_actor.m_location->m_routeCache[m_actor.m_shape][m_actor.m_moveType][m_actor.m_destination] = std::make_shared<std::vector<Block*>>(m_result);
 		// Store route in actor.
-		m_actor.m_route = std::make_shared<std::vector<DerivedBlock*>>(m_result);
+		m_actor.m_route = std::make_shared<std::vector<Block*>>(m_result);
 	}
 	m_actor.m_routeIter = m_actor.m_route->begin();
 	// Schedule a first move action with area.
