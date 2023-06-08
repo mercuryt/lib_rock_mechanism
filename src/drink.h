@@ -1,86 +1,72 @@
 #pragma once
 #include "util.h"
-#include "queuedAction.h"
+#include "objective.h"
 #include "eventSchedule.h"
 
 template<class Animal>
 class DrinkEvent : public ScheduledEvent
 {
-	Animal& m_animal;
-	DrinkEvent(Animal& a) : ScheduledEvent(s_step + Const::stepsToDrink), m_animal(a) {}
-	void execute()
-	{
-		m_animal.drink();
-		m_animal.finishedCurrentTask();
-	}
-	void cancel()
-	{
-		m_animal.m_location->m_area->registerDrinkRequest(m_animal);
-		ScheduledEvent::cancel();
-	}
-};
-template<class Animal>
-class DrinkQueuedAction : public QueuedAction
-{
 public:
 	Animal& m_animal;
-	DrinkQueuedAction(Animal& a) : m_animal(a) {}
+	DrinkObjective& m_drinkObjective;
+	DrinkEvent(uint32_t step, DrinkObjective& drob) : ScheduledEvent(step), m_drinkObjective(drob) {}
 	void execute()
 	{
-		// If next to fluid of correct type then schedule drink event.
-		for(Block* block : m_animal.m_location->m_adjacentsVector)
-			if(block.m_fluids.contains(&m_fluidType))
-			{
-				m_animal.m_location->m_area.m_eventSchedule.schedule(std::make_unique<DrinkEvent>(m_animal));
-				return;
-			}
-		// Otherwise register drink request.
-		m_animal.m_location->m_area->registerDrinkRequest(m_animal);
+		m_drinkObjective.m_animal.drink();
+		m_animal.finishedCurrentObjective();
 	}
 };
 template<class Block, class Animal, class FluidType>
-class DrinkRequest
+class DrinkThreadedTask : ThreadedTask
 {
+public:
 	Animal& m_animal;
-	const FluidType& m_fluidType;
+	DrinkObjective& m_drinkObjective;
 	Block* m_result;
-	uint32_t m_maxRange;
-	DrinkRequest(Animal& a, const FluidType& ft,  uint32_t mr) : m_animal(a), m_fluidType(ft), m_maxRange(mr) {}
+	DrinkThreadedTask(DrinkObjective& drob) : m_fluidType(ft), m_drinkObjective(drob) {}
 
 	void readStep()
 	{
 		auto pathCondition = [&](Block* block)
 		{
-			return m_animal.m_location->taxiDistance(*block) < m_maxRange && block>anyoneCanEnterEver() && block->canEnterEver(m_animal);
+			return block->anyoneCanEnterEver() && block->canEnterEver(m_drinkObjective.m_animal);
 		}
 		auto destinationCondition = [&](Block* block)
 		{
-			for(Block* adjacent : block.m_adjacentsVector)
-				if(block.m_fluids.contains(&m_fluidType))
-					return true;
-			return false;
+			m_drinkObjective.canDrinkAt(*block);
 		}
-		m_result = util::findWithPathCondition(pathCondition, destinationCondition, *m_animal.m_location)
+		m_result = util::findWithPathCondition(pathCondition, destinationCondition, *m_drinkObjective.m_animal.m_location)
 	}
 	void writeStep()
 	{
+		m_drinkObjective.m_threadedTask = nullptr;
 		if(m_result == nullptr)
-			m_animal.onNothingToDrink();
+			m_drinkObjective.m_animal.onNothingToDrink();
 		else
-		{
-			m_animal.setDestination(m_result);
-			m_animal.m_queuedActions.emplace_back(std::make_unique<DrinkQueuedAction>(m_animal));
-		}
+			m_drinkObjective.m_animal.setDestination(m_result);
 			
 	}
 };
-template<class Animal>
+template<class Block, class Animal>
 class DrinkObjective : public Objective
 {
+public:
 	Animal& m_animal;
-	DrinkObjective(Animal& a) : Objective(Config::drinkPriority), m_animal(a) {}
+	ThreadedTask<DrinkThreadedTask> m_threadedTask;
+	HasScheduledEvent<DrinkEvent> m_drinkEvent;
+	DrinkObjective(Animal& a) : Objective(Config::drinkPriority), m_animal(a) { }
 	void execute()
 	{
-		m_animal.m_location->m_area->registerDrinkRequest(m_animal);
+		if(!canDrinkAt(m_animal.m_location))
+			m_threadedTask.create(*this);
+		else
+			m_drinkEvent.schedule(::s_step + Const::stepsToDrink, *this);
 	}
-}
+	bool canDrinkAt(Block& block)
+	{
+		for(Block* adjacent : block.m_adjacentsVector)
+			if(adjacent->m_fluids.contains(m_animal.m_animalType.fluidType))
+				return true;
+		return false;
+	}
+};

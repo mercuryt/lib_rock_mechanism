@@ -4,7 +4,7 @@
 #include "eventSchedule.h"
 
 template<class Animal, Plant>
-class GrazeEvent : public ScheduledEvent
+class GrazeEvent : public ScheduledEventWithPercent
 {
 	Animal& m_animal;
 	GrazeEvent(Animal& a) : ScheduledEvent(s_step + Const::stepsToGraze), m_animal(a) {}

@@ -1,5 +1,6 @@
 /*
  * Something which can be scheduled to happen on a future step.
+ * Classes derived from ScheduledEvent are expected to provide a destructor which calls HasScheduledEvent::clearPointer.
  */
 
 #pragma once
@@ -13,18 +14,18 @@ class ScheduledEvent
 public:
 	uint32_t m_step;
 	EventSchedule* m_eventSchedule;
-	ScheduledEvent(uint32_t s);
+	ScheduledEvent(uint32_t d);
 	void cancel();
 	virtual ~ScheduledEvent() {}
 	virtual void execute() = 0;
-	uint32_t remaningSteps() const { return m_step - s_step; }
+	uint32_t remaningSteps() const { return m_step - ::s_step; }
 };
-class ScheduledEventWithPercent: public ScheduledEvent
+class ScheduledEventWithPercent : public ScheduledEvent
 {
 public:
 	uint32_t m_startStep;
-	ScheduledEventWithPercent(uint32_t s) : ScheduledEvent(s), m_startStep(s_step) {}
-	uint32_t percentComplete()
+	ScheduledEventWithPercent(uint32_t d) : ScheduledEvent(d), m_startStep(::s_step) {}
+	uint32_t percentComplete() const
 	{
 		float totalSteps = m_step - m_startStep;
 		float elapsedSteps = s_step - m_startStep;
@@ -79,5 +80,85 @@ public:
 	}
 };
 
-inline ScheduledEvent::ScheduledEvent(uint32_t s) : m_step(s) {}
+inline ScheduledEvent::ScheduledEvent(uint32_t d) : m_step(d + ::s_step) {}
 inline void ScheduledEvent::cancel() { m_eventSchedule->unschedule(this); }
+
+template<class EventType>
+class HasScheduledEvent
+{
+	ScheduledEventWithPercent* m_event;
+	EventSchedule* m_eventSchedule;
+public:
+	HasScheduledEvent(EventSchedule& es) : m_event(nullptr), m_eventSchedule(&es) {}
+	template<typename ...Args>
+	void schedule(Args ...args)
+	{
+		assert(m_event == nullptr);
+		std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<EventType>(args...);
+		m_event = event.get();
+		m_eventSchedule->schedule(event);
+	}
+	void unschedule()
+	{
+		assert(m_event != nullptr);
+		m_event->cancel();
+		m_event = nullptr;
+	}
+	void maybeUnschedule()
+	{
+		if(m_event != nullptr)
+			unschedule();
+	}
+	uint32_t percentComplete() const
+	{
+		assert(m_event != nullptr);
+		return m_event->percentComplete();
+	}
+	void setEventSchedule(EventSchedule& eventSchedule)
+	{
+		assert(m_event == nullptr);
+		m_eventSchedule = eventSchedule;
+	}
+	void exists()
+	{
+		return m_event != nullptr;
+	}
+	void clearPointer()
+	{
+		m_event = nullptr;
+	}
+	~HasScheduledEvent()
+	{
+		if(m_event != nullptr)
+			m_event.cancel();
+	}
+};
+template<class EventType>
+class HasScheduledEventPausable : HasScheduledEvent<EventType>
+{
+	uint32_t m_percent;
+	HasScheduledEventPausable(EventSchedule& es) : HasScheduledEvent<EventType>(es), m_percent(0)
+public:
+	uint32_t percentComplete() const
+	{
+		uint32_t output = m_percent;
+		if(!HasScheduledEvent<EventType>::m_event.empty())
+		{
+			if(m_percent != 0)
+				output += (m_event->percentComplete() * (100u - m_percent)) / 100u;
+			else
+				output = m_event->percentComplete();
+		}
+		return output;
+	}
+	void pause()
+	{
+		m_percent = percentComplete();
+		unschedule();
+	}
+	void reset()
+	{
+		assert(m_event == nullptr);
+		m_percent = 0;
+	}
+};
