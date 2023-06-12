@@ -109,7 +109,10 @@ public:
 		else
 		{
 			if(m_temperatureEvent.empty())
+			{
 				m_temperatureEvent.schedule(::s_step + m_animalType.stepsTillDieTemperature, derived());
+				updateGrowingStatus();
+			}
 		}
 	}
 	void drink()
@@ -126,7 +129,7 @@ public:
 		{
 			m_thirstEvent.schedule(::s_step + m_animalType.stepsTillDieWithoutFluid, derived());
 			m_growthEvent.unschedule();
-			getLocation()->m_area->registerDrinkRequest(derived());
+			m_hasObjectives.addNeed(std::make_unique<DrinkObjective>(*this));
 		}
 	}
 	void eat(uint32_t mass)
@@ -140,7 +143,7 @@ public:
 		{
 			uint32_t delay = util::scaleByInverseFraction(m_animalType.stepsTillDieWithoutFood, m_massFoodRequested, massFoodForBodyMass());
 			makeHungerEvent(delay);
-			createFoodRequest();
+			m_hasObjectives.addNeed(std::make_unique<EatObjective>(*this));
 		}
 	}
 	void setNeedsFood()
@@ -157,22 +160,12 @@ public:
 	}
 	uint32_t massFoodForBodyMass() const
 	{
-	return getMass() / Config::unitsOfBodyMassPerUnitOfFoodRequestedMass;
-	}
-	void createFoodRequest()
-	{
-		if(m_animalType.carnivore && m_animalType.herbavore)
-			getLocation()->m_area->registerOmnivoreRequest(derived());
-		else if(m_animalType.carnivore)
-			getLocation()->m_area->registerHuntRequest(derived());
-		else if(m_animalType.herbavore)
-			getLocation()->m_area->registerGrazeRequest(derived());
-		else
-			assert(false);
+		return getMass() / Config::unitsOfBodyMassPerUnitOfFoodRequestedMass;
 	}
 	uint32_t getMassFoodRequested() const
 	{
 		assert(m_percentHunger != 0 && !m_hungerEvent.empty());
+		return util::scaleByPercent(massFoodForBodyMass(), 100u - m_hungerEvent->percentComplete());
 	}
 	void updateGrowingStatus()
 	{

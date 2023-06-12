@@ -23,42 +23,13 @@ void RouteRequest<Block>::readStep()
 		m_cacheHit = true;
 		return;
 	}
-	// Huristic: taxi distance to destination times constant plus total move cost.
-	auto priority = [&](ProposedRouteStep<Block>& proposedRouteStep)
-	{
-		return (proposedRouteStep.routeNode->block->taxiDistance(*end) * Config::pathHuristicConstant) + proposedRouteStep.totalMoveCost;
-	};
-	auto compare = [&](ProposedRouteStep<Block>& a, ProposedRouteStep<Block>& b) { return priority(a) > priority(b); };
-	// Check if the actor can currently enter each block if this is a detour path.
-	auto isDone = [&](Block* block){ return block == end; };
-	std::vector<std::pair<Block*, uint32_t>> adjacentMoveCosts;
-	auto adjacentCosts = [&](Block* block){
-		if(block->m_moveCostsCache.contains(m_actor.m_shape) && block->m_moveCostsCache.at(m_actor.m_shape).contains(m_actor.m_moveType))
-			adjacentMoveCosts = block->m_moveCostsCache.at(m_actor.m_shape).at(m_actor.m_moveType);
-		else
-			m_moveCostsToCache[block] = adjacentMoveCosts = block->getMoveCosts(*m_actor.m_shape, *m_actor.m_moveType);
-		return adjacentMoveCosts;
-	};
-	if(m_detour)
-	{
-		auto isValid = [&](Block* block){ 
-			return block->anyoneCanEnterEver() && block->canEnterEver(m_actor) && block->actorCanEnterCurrently(m_actor);
-		};
-		GetPath<Block, decltype(isValid), decltype(compare), decltype(isDone), decltype(adjacentCosts)> getPath(isValid, compare, isDone, adjacentCosts, start, m_result);
-	}
-	else
-	{
-		auto isValid = [&](Block* block){ return block->anyoneCanEnterEver() && block->canEnterEver(m_actor); };
-		GetPath<Block, decltype(isValid), decltype(compare), decltype(isDone), decltype(adjacentCosts)> getPath(isValid, compare, isDone, adjacentCosts, start, m_result);
-	}
+	m_result = path::getForActor(m_actor, end, m_detour);
 }
 template<class Block>
 void RouteRequest<Block>::writeStep()
 {
 	if(m_cacheHit)
-	{
 		m_actor.m_route = m_actor.m_location->m_routeCache.at(m_actor.m_shape).at(m_actor.m_moveType).at(m_actor.m_destination);
-	}
 	else
 	{
 		// Cache move costs.
@@ -67,7 +38,7 @@ void RouteRequest<Block>::writeStep()
 		// Notify if no path is found.
 		if(m_result.empty())
 		{
-			m_actor.m_location->m_area->notifyNoRouteFound(m_actor);
+			m_actor.m_location->m_area->m_publisher.publish(PublishedEventType::NoRouteFound);
 			return;
 		}
 		// Clear invalid cached routes.

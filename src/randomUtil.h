@@ -14,7 +14,7 @@ namespace randomUtil
 	static int32_t getInRange(int32_t lowest, int32_t highest)
 	{
 		assert(lowest < highest);
-		std::uniform_int_distribution<std::mt19937::result_type> dist(lowest, highest);
+		static std::uniform_int_distribution<std::mt19937::result_type> dist(lowest, highest);
 		return dist(getRng());
 	}
 	static uint32_t getInRange(uint32_t lowest, uint32_t highest)
@@ -23,7 +23,12 @@ namespace randomUtil
 	}
 	static bool percentChance(uint32_t percent)
 	{
-		std::uniform_int_distribution<std::mt19937::result_type> dist(0, 100);
+		static std::uniform_int_distribution<std::mt19937::result_type> dist(0, 100);
 		return dist(getRng()) <= percent;
+	}
+	static bool chance(double chance)
+	{
+		static std::uniform_real_distribution<double> dist(0.0, 1.0);
+		return dist(getRng()) <= chance;
 	}
 }
