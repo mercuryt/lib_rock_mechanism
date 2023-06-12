@@ -40,10 +40,6 @@ public:
 
 	void readStep()
 	{
-		auto pathCondition = [&](Block* block)
-		{
-			return block->anyoneCanEnterEver() && block->canEnterEver(m_eatObjective.m_animal);
-		}
 		auto destinationCondition = [&](Block* block)
 		{
 			m_eatObjective.canEatAt(*block);

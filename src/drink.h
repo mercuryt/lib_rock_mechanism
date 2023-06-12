@@ -2,6 +2,7 @@
 #include "util.h"
 #include "objective.h"
 #include "eventSchedule.h"
+#include "path.h"
 
 template<class Animal>
 class DrinkEvent : public ScheduledEvent
@@ -12,6 +13,7 @@ public:
 	DrinkEvent(uint32_t step, DrinkObjective& drob) : ScheduledEvent(step), m_drinkObjective(drob) {}
 	void execute()
 	{
+		// Should canDrinkAt be checked again?
 		m_drinkObjective.m_animal.drink();
 		m_animal.finishedCurrentObjective();
 	}
@@ -20,30 +22,22 @@ template<class Block, class Animal, class FluidType>
 class DrinkThreadedTask : ThreadedTask
 {
 public:
-	Animal& m_animal;
 	DrinkObjective& m_drinkObjective;
-	Block* m_result;
+	std::vector<Block*> m_result;
 	DrinkThreadedTask(DrinkObjective& drob) : m_fluidType(ft), m_drinkObjective(drob) {}
 
 	void readStep()
 	{
-		auto pathCondition = [&](Block* block)
-		{
-			return block->anyoneCanEnterEver() && block->canEnterEver(m_drinkObjective.m_animal);
-		}
-		auto destinationCondition = [&](Block* block)
-		{
-			m_drinkObjective.canDrinkAt(*block);
-		}
-		m_result = util::findWithPathCondition(pathCondition, destinationCondition, *m_drinkObjective.m_animal.m_location)
+		auto destinationCondition = [&](Block* block) { m_drinkObjective.canDrinkAt(*block); }
+		m_result = path::getForActorToPredicate(m_drinkObjective.m_animal, destinationCondition);
 	}
 	void writeStep()
 	{
 		m_drinkObjective.m_threadedTask = nullptr;
 		if(m_result == nullptr)
-			m_drinkObjective.m_animal.onNothingToDrink();
+			m_drinkObjective.m_animal.m_publisher.publish(PublishedEventType::NothingToDrink);
 		else
-			m_drinkObjective.m_animal.setDestination(m_result);
+			m_drinkObjective.m_animal.setPath(m_result);
 			
 	}
 };
