@@ -47,6 +47,10 @@ public:
 		canReserve.m_reservables.remove(this);
 	}
 	void setMaxReservations(uint32_t mr) { m_maxReservations = mr; }
+	uint32_t getUnreservedCount() const
+	{
+		return m_maxReservations - m_reservedCount;
+	}
 };
 CanReserve::~CanReserve()
 {

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+#include <pair>
 #include <unordered_set>
 #include <unordered_map>
 
@@ -50,7 +52,7 @@ public:
 	ProjectFindItemsThreadedTask(Project& p, Actor& a) : m_project(p), m_actor(a) { }
 	void readStep()
 	{
-		auto condition = [&](Block* block) { return m_project.canGatherItemsAt(block); };
+		auto condition = [&](Block* block) { return m_project.canGatherItemAt(m_actor, block); };
 		m_route = path::getForActorToPredicate(m_actor, condition);
 	}
 	void writeStep()
@@ -59,17 +61,18 @@ public:
 			m_actor.m_hasObjectives.cannotFulfillObjective();
 		else
 		{
-			for(Item& item : m_route.back()->m_items)
-				if(m_project.m_requiredItems.contains(item.itemType) && !item.m_reservable.isFullyReserved())
-				{
-					uint32_t quantity = m_project.m_workers[&m_actor].reserveQuantity = m_actor.m_canPickup.canPickupQuantityOf(item);
-					m_project.m_projectWorkers.at(&m_actor).item = &item;
-					item.reservable.reserveFor(m_actor.m_canReserve, quantity);
-					m_project.m_requiredItems[item.m_itemType].reserved += quantity;
-					m_actor.setPath(m_route);
-					return;
-				}
-			m_project.m_workers[&actor].m_findItemsTask.create(*this, actor);
+			Item* item = m_project.gatherableItemAt(m_actor, *m_route.back());
+			if(item == nullptr)
+			{
+				m_project.m_workers[&actor].m_findItemsTask.create(*this, actor);
+				return;
+			}
+			uint32_t quantity = std::min({m_actor.m_canPickup.canPickupQuantityOf(item), projectItemCounts.required - projectItemCounts.reserved, item->m_reservable.getUnreservedCount()});
+			m_project.m_projectWorkers.at(&m_actor).item = &item;
+			m_project.m_projectWorkers.at(&m_actor).reserveQuantity = quantity;
+			item.reservable.reserveFor(m_actor.m_canReserve, quantity);
+			m_project.m_requiredItems[item.m_itemType].reserved += quantity;
+			m_actor.setPath(m_route);
 		}
 	}
 }
@@ -96,22 +99,17 @@ class Project
 	HasScheduledEventPausable<ProjectFinishEvent> m_finishEvent;
 	bool m_gatherComplete;
 	Block& m_location;
-	CanReserve m_canReserveItems;
-	std::unordered_map<const ItemType*, ProjectItemCounts> m_requiredItems;
+	CanReserve m_canReserve;
+	std::vector<std::pair<ItemQuery, ProjectItemCounts>> m_requiredItems;
 	std::unordered_set<Item*> m_toConsume;
 	size_t maxWorkers;
 	Project(Block& l, size_t mw) : m_gatherComplete(false), m_location(l), maxWorker(mw)
        	{ 
-		for(auto& [itemType, quantity] : m_consumedItems)
-		{
-			assert(!m_requiredItems.contains(itemType));
-			m_requiredItems[itemType](quantity);
-		}
-		for(auto& [itemType, quantity] : m_unconsumedItems)
-		{
-			assert(!m_requiredItems.contains(itemType));
-			m_requiredItems[itemType](quantity);
-		}
+		for(auto& [itemQuery, quantity] : getConsumed())
+			m_requiredItems.push_back(itemQuery, quantity);
+		for(auto& [itemQuery, quantity] : getUnconsumed())
+			m_requiredItems.push_back(itemQuery, quantity);
+		m_location.m_reservable.reserveFor(m_canReserve);
 	}
 	bool reservationsComplete() const
 	{
@@ -148,6 +146,7 @@ public:
 			if(actor.m_canPickup.empty())
 			{
 				actor.m_canPickup.pickUp(item, m_workers[&actor].itemQuantity);
+				m_workers[&actor].item = actor.m_canPickup.m_carrying;
 				m_workers[&actor].m_goToLocationTasks(*this, actor, true);
 				return;
 			}
@@ -158,12 +157,18 @@ public:
 				actor.m_canPickup.putDown();
 				item.m_reservable.unreserve(actor.m_canReserve);
 				item.m_reservable.reserve(m_canReserve);
-				++m_requiredItems.at(&item.itemType).delivered;
-				if(getConsumedItems().contains(item.itemType))
-					m_toConsume.insert(&item);
+				m_requiredItems.at(&item.itemType).delivered += item.quantity;
+				//TODO: Fix this regenerating consumed items.
+				for(auto& pair : getConsumedItems())
+					if(pair.first(item))
+					{
+						m_toConsume.insert(&item); 
+						break;
+					}
 				if(deliveriesComplete())
 				{
 					assert(m_making.empty());
+					// More efficint they calling addToMaking for each worker.
 					m_making.swap(m_waiting);
 					scheduleEvent();
 				}
@@ -224,6 +229,8 @@ public:
 	{
 		for(Item* item : m_toConsume)
 			item->destroy();
+		for(auto& [itemType, materialType, quantity] : getByproducts())
+			m_location.m_hasItems.add(itemType, materialType, quantity);
 		dismissWorkers();
 		onComplete();
 	}
@@ -243,12 +250,33 @@ public:
 		uint32_t delay = util::scaleByPercent(getDelay(), 100u - m_digEvent.percentComplete());
 		m_finishEvent.schedule(::s_step + delay, *this);
 	}
+	bool canGatherItemAt(Actor& actor, Block& block) const
+	{
+		return gatherableItemAt(actor, block) != nullptr;
+	}
+	Item* gatherableItemAt(Actor& actor, Block& block) const
+	{
+		for(const Item* item : block.m_hasItems.get())
+			if(!item->reservable.isFullyReserved())
+				for(auto& [itemQuery, projectItemCounts] : m_requiredItems)
+					if(projectItemCounts.required > projectItemCounts.reserved)
+					{
+						if(!item->m_reservable.isFullyReserved() && itemQuery(*item) && actor.m_hasItems.canPickupAny(*item))
+							return item;
+						if(item->itemType.internalVolume != 0)
+							for(Item* i: item.m_containsItemsOrFluids.getItems())
+								if(!i->m_reservable.isFullyReserved() && itemQuery(*item) && actor.m_hasItems.canPickupAny(*item))
+									return i;
+					}
+		return nullptr;
+	}
 	virtual ~Project
 	{
 		dismissWorkers();
 	}
-	virtual uint32_t getDelay() const;
-	virtual void onComplete();
-	virtual std::unordered_map<const ItemType*, uint8_t> getConsumed();
-	virtual std::unordered_map<const ItemType*, uint8_t> getUnconsumed();
+	virtual uint32_t getDelay() const = 0;
+	virtual void onComplete() = 0;
+	virtual std::vector<std::pair<ItemQuery, uint32_t> getConsumed() const = 0;
+	virtual std::vector<std::pair<ItemQuery, uint32_t> getUnconsumed() const = 0;
+	virtual std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const = 0;
 };

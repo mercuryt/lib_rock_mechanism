@@ -4,6 +4,7 @@
 #include "threadedTask.h"
 #include "eventSchedule.h"
 #include "util.h"
+#include "blockFeature.h"
 #include <unordered_map>
 #include <vector>
 
@@ -81,10 +82,22 @@ class DigDesignations
 	struct DigProject : Project<Actor>
 	{
 		const BlockFeatureType* blockFeatureType;
-		std::unordered_map<const ItemType*, uint8_t> getConsumed() const { return {}; }
-		std::unordered_map<const ItemType*, uint8_t> getUnconsumed() const { return {{ItemType.get("Pick"), 1}}; }
+		std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const { return {}; }
+		std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const { return {{{ItemType.get("Pick")}, 1}}; }
+		std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t quantity>> getByproducts() const
+		{
+			std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> output;
+			for(SpoilData& spoilData : m_location.getSolidMaterial().spoilData)
+			{
+				if(!randomUtil::chance(spoilData.chance))
+					continue;
+				uint32_t quantity = randomUtil::getInRange(spoilData.min, spoilData.max);
+				m_location.m_hasItems.add(spoilData.itemType, spoilData.materialType, quantity);
+			}
+			return output;
+		}
 	public:
-		// BlockFeatureType can be null, meaning the block is fully excavated.
+		// BlockFeatureType can be null, meaning the block is to be fully excavated.
 		DigDesignation(Block& b, const BlockFeatureType* bft) : project(b, Config::maxNumberOfWorkersForDigProject), blockFeatureType(bft) { }
 		void onComplete()
 		{
@@ -92,17 +105,7 @@ class DigDesignations
 			if(blockFeatureType == nullptr)
 				m_location.setNotSolid();
 			else
-				m_location.addHewnBlockFeature(blockFeatureType);
-			//Generate spoil.
-			for(SpoilData& spoilData : materialType.spoilData)
-			{
-				if(!randomUtil::chance(spoilData.chance))
-					continue;
-				uint32_t quantity = randomUtil::getInRange(spoilData.min, spoilData.max);
-				Item& item = Item.create(*m_location.m_area, spoilData.itemType, spoilData.materialType, quantity);
-				m_location.m_hasItems.add(item);
-			}
-
+				m_location.m_hasBlockFeatures.hue(blockFeatureType);
 		}
 		// What would the total delay time be if we started from scratch now with current workers?
 		uint32_t getDelay() const

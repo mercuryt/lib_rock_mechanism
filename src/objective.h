@@ -1,16 +1,18 @@
 #pragma once
 
+#include <memory>
+
 template<class Actor>
 struct ObjectiveType
 {
 	std::string name;
-	virtual bool canBeAssigned(Actor& actor) = 0;
-	virtual void makeFor(Actor& actor) = 0;
+	virtual bool canBeAssigned(Actor& actor) const = 0;
+	virtual std::unique_ptr<Objective> makeFor(Actor& actor) = 0;
 };
 template<class Actor>
 class ObjectiveTypePrioritySet
 {
-	std::set<const ObjectiveType<Actor>*, uint8_t> m_map;
+	std::unordered_map<const ObjectiveType<Actor>*, uint8_t> m_map;
 	std::vector<const ObjectiveType<Actor>*> m_vector;
 public:
 	void setPriority(const ObjectiveType<Actor>& objectiveType, uint8_t priority)
@@ -46,12 +48,13 @@ public:
 		actor.m_eventPublisher.publish(PublishedEventType::NoObjectivesAvailible);
 	}
 }
-class ObjectiveSort
+struct ObjectiveSort
 {
 	bool operator()(Objective& a, Objective& b){ return a.priority < b.priority; }
 };
 class Objective
 {
+public:
 	uint32_t m_priority;
 	void execute();
 	Objective(uint32_t p) : m_priority(p) {}

@@ -132,4 +132,38 @@ namespace path
 		}
 		return output; // Empty container means no result found.
 	}
+	template<class Block, class Actor, typename Predicate>
+	Block* getForActorToPredicateReturnEndOnly(Actor& actor, Predicate&& predicate)
+	{
+		std::unordered_set<Block*> closedList;
+		closedList.insert(actor.m_location);
+		std::list<RouteNode*> openList;
+		std::list<RouteNode<Block>> routeNodes;
+		routeNodes.emplace_back(actor.m_location, nullptr);
+		open.emplace(&routeNodes.back());
+		while(!openList.empty())
+		{
+			for(RouteNode<Block>* routeNode : openList)
+			{
+				if(predicate(routeNode->block))
+					return routeNode->block;
+				}
+				for(Block* adjacent : routeNode->block->m_adjacentsVector)
+				{
+					if(!adjacent->anyoneCanEnterEver())
+						continue;
+					if(!closedList.contains(adjacent))
+					{
+						closedList.insert(adjacent);
+						if(adjacent->canEnterEver(actor) && adjacent->canEnterFrom(actor, routeNode->block))
+						{
+							routeNodes.emplace_back(adjacent, routeNode);
+							openList.push_back(&routeNodes.back());
+						}
+					}
+				}
+			}
+		}
+		return nullptr;
+	}
 }
