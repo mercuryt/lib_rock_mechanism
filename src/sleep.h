@@ -66,7 +66,7 @@ class SleepObjective : Obective
 	}
 	bool canSleepAt(Block& block)
 	{
-			return block->anyoneCanEnterEver() && block->actorCanEnterEver(actor) && !block->m_reservable.isFullyReserved() && block->m_temperature.isSafeFor(actor) && actor.m_player.m_sleepDesignations.contains(block);
+			return !block->m_reservable.isFullyReserved() && block->m_temperature.isSafeFor(m_needsSleep.actor);
 	}
 }
 template<class Actor, class Block>
@@ -75,6 +75,7 @@ class NeedsSleep
 	Actor& m_actor;
 	Block& m_location;
 	HasScheduledEvent<SleepEvent> m_sleepEvent;
+	uint32_t m_percentSleepCompleted;
 	bool m_needsSleep;
 	bool m_isAwake;
 	NeedsSleep(Actor& a) : m_actor(a), m_needsSleep(false), m_isAwake(true)

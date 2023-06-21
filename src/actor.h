@@ -120,3 +120,94 @@ public:
 };
 template<class DerivedActor, class Block, class MoveType, class FluidType>
 uint32_t BaseActor<DerivedActor, Block, MoveType, FluidType>::s_nextId = 1;
+// To be used by block.
+template<class Block, class Actor>
+class HasActors
+{
+	Block& m_block;
+	uint32_t m_volume;
+	std::vector<Actor*> m_actors;
+	std::unordered_map<const Shape*, std::unordered_map<const MoveType*, std::vector<std::pair<Block*, uint32_t>>>> m_moveCostsCache;
+public:
+	HasActors(Area& a) : m_area(a), m_volume(0) { }
+	void enter(Actor& actor)
+	{
+		assert(actor.m_location != &m_block);
+		assert(canAdd(actor));
+		assert(std::ranges::find(m_actors, &actor) == m_actors.end());
+		if(actor.m_locaton != nullptr)
+			actor.m_locaton->m_hasActors.exit(actor);
+		actor.m_location = &m_block;
+		//TODO: rotation.
+		for(auto& [m_x, m_y, m_z, v] : item.itemType.shape.positions)
+		{
+			Block* block = m_block.offset(m_x, m_y, m_z);
+			assert(block != nullptr);
+			assert(!block->isSolid());
+			assert(std::ranges::find(block->m_actors, &actor) == m_actors.end());
+			block->m_hasActors.volume += v;
+			block->m_hasActors.m_actors.push_back(&item);
+		}
+	}
+	void exit(Actor& actor)
+	{
+		assert(actor.m_location == m_block);
+		assert(canEnter(actor));
+		assert(std::ranges::find(m_actors, &actor) != m_actors.end());
+		//TODO: rotation.
+		for(auto& [m_x, m_y, m_z, v] : item.itemType.shape.positions)
+		{
+			Block* block = m_block.offset(m_x, m_y, m_z);
+			assert(block != nullptr);
+			assert(!block->isSolid());
+			assert(std::ranges::find(block->m_actors, &actor) != m_actors.end());
+			block->m_hasActors.volume -= v;
+			std::erase(block->m_hasActors.m_actors, &actor);
+		}
+		actor.m_locaton = nullptr;
+	}
+	bool canEnterEver(Actor& actor) const
+	{
+		if(m_block.isSolid())
+			return false;
+		//TODO: rotation.
+		for(auto& [m_x, m_y, m_z, v] : actor.shape.positions)
+		{
+			Block* block = m_block.offset(m_x, m_y, m_z);
+			if(block == nullptr)
+				return false;
+			if(block->isSolid())
+				return false;
+			if(!Config::moveTypeCanEnter(&block, actor.m_moveType))
+				return false;
+		}
+		return true;
+	}
+	bool canEnterCurrently(Actor& actor) const
+	{
+		assert(canAddEver(actor));
+		//TODO: rotation.
+		for(auto& [m_x, m_y, m_z, v] : actor.shape.positions)
+		{
+			Block* block = m_block.offset(m_x, m_y, m_z);
+			if(block->m_hasActors.m_volume + v > Config::maxBlockVolume)
+				return false;
+		}
+		return true;
+	}
+	std::vector<Block*, uint32_t> getMoveCosts(const Shape& shape, const MoveType& moveType) const
+	{
+		std::vector<Block*, uint32_t> output;
+		for(Block* block : m_block.m_adjacentsVector)
+			if(Config::moveTypeCanEnterEverFromTo(moveType, m_block, block))
+				output.emplace_back(block, Config::getMoveCostFromTo(moveType, m_block, block));
+		return output;
+	}
+	void clearCache()
+	{
+		m_moveCostsCache.clear();
+		for(Block* block : getAdjacentWithEdgeAndCornerAdjacent())
+			block->m_hasActors.m_moveCostsCache.clear();
+		m_block->m_area.invalidateAllCachedRoutes();
+	}
+};

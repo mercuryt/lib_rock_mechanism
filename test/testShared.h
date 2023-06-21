@@ -514,7 +514,6 @@ uint32_t Block::getMass() const
 std::vector<std::pair<Block*, uint32_t>> Block::getMoveCosts(const Shape& shape, const MoveType& moveType)
 {
 	std::vector<std::pair<Block*, uint32_t>> output;
-	// Directly adjacent.
 	for(Block* block : getAdjacentWithEdgeAndCornerAdjacent())
 		if(block->anyoneCanEnterEver() && block->shapeAndMoveTypeCanEnterEver(shape, moveType) && block->moveTypeCanEnterFrom(moveType, *this))
 			output.emplace_back(block, block->moveCost(moveType, *this));

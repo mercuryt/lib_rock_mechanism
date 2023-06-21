@@ -5,8 +5,6 @@ class ThreadedTaskEngine;
 // Base class. Child classes are expected to provide a destructor which calls setNull on HasThreadedTask.
 class ThreadedTask
 {
-	ThreadedTaskEngine& m_engine;
-	ThreadedTask(ThreadedTaskEngine& e) : m_engine(e) {}
 	virtual void readStep() = 0;
 	virtual void writeStep() = 0;
 	void cancel();
