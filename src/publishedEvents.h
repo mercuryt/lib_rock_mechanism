@@ -54,7 +54,7 @@ public:
 	template<typename ...Args>
 	void subscribe(Args ...args)
 	{
-		assert(m_event == nulptr);
+		assert(m_event == nullptr);
 		std::unique_ptr<EventSubscription> event = std::make_unique<EventType>(args...);
 		m_event = event.get();
 		m_eventPublisher->subscribe(std::move(event));
@@ -71,7 +71,7 @@ public:
 	}
 	void setEventPublisher(EventPublisher& eventPublisher)
 	{
-		assert(m_event == nulptr; );
+		assert(m_event == nullptr; );
 		m_eventPublisher = &eventPublisher;
 	}
 };

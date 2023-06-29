@@ -1,6 +1,10 @@
 #pragma once
 
+#include "simulation.h"
+
 #include <unordered_set>
+#include <memory>
+
 class ThreadedTaskEngine;
 // Base class. Child classes are expected to provide a destructor which calls setNull on HasThreadedTask.
 class ThreadedTask
@@ -17,7 +21,7 @@ class ThreadedTaskEngine
 	void readStep()
 	{
 		for(auto& task : m_tasks)
-			::s_pool.push_task([&](){ task.readStep(); });
+			simulation::pool.push_task([&](){ task.readStep(); });
 	}
 	void writeStep()
 	{
@@ -36,9 +40,7 @@ class ThreadedTaskEngine
 		std::erase_if(m_tasks, [&](auto& t) { return &t.get() == &task; }
 	}
 };
-void ThreadedTask::cancel{ m_engine.remove(*this); }
-// There is only a single threaded task engine.
-static ThreadedTaskEngine s_threadedTaskEngine;
+void ThreadedTask::cancel{ simulation::threadedTaskEngine.remove(*this); }
 template<class TaskType>
 class HasThreadedTask
 {
@@ -51,7 +53,7 @@ public:
 		assert(m_threadedTask == nullptr);
 		std::unique_ptr<ThreadedTask> task = std::make_unique<TaskType>(args...);
 		m_threadedTask = task.get();
-		::s_threadedTaskEngine.insert(std::move(task));
+		simulation::threadedTaskEngine.insert(std::move(task));
 	}
 	void cancel()
 	{

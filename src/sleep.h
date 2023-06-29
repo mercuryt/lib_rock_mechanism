@@ -3,15 +3,21 @@
 #include "threadedTask.h"
 #include "objective.h"
 
-template<class NeedsSleep>
 class SleepEvent : ScheduledEventWithPercent
 {
 	NeedsSleep& m_needsSleep;
 	SleepEvent(uint32_t step, NeedsSleep& ns) : ScheduledEventWithPercent(step), m_needsSleep(ns) { }
-	void execute(){ m_needsSleep.callback(); }
+	void execute(){ m_needsSleep.wakeUp(); }
 	~SleepEvent(){ m_needsSleep.m_sleepEvent.clearPointer(); }
-}
-template<class SleepObjective, class Block>
+};
+class TiredEvent : ScheduledEventWithPercent
+{
+	NeedsSleep& m_needsSleep;
+	TiredEvent(uint32_t step, NeedsSleep& ns) : ScheduledEventWithPercent(step), m_needsSleep(ns) { }
+	void execute(){ m_needsSleep.tired(); }
+	~SleepEvent(){ m_needsSleep.m_tiredEvent.clearPointer(); }
+};
+// Find a place to sleep.
 class SleepThreadedTask : ThreadedTask
 {
 	SleepObjective& m_sleepObjective;
@@ -20,31 +26,36 @@ class SleepThreadedTask : ThreadedTask
 	void readStep()
 	{
 		auto& actor = m_sleepObjective.m_needsSleep.m_actor;
+		assert(m_sleepObjective.m_needsSleep.m_location == nullptr);
+		Block* outdoorCandidate = nullptr;
+		Block* indoorCandidate = nullptr;
 		auto condition = [&](Block* block)
 		{
-			return m_sleepObjective.canSleepAt(*block);
-		}
+			uint32_t desire = m_sleepObjective.desireToSleepAt(*block);
+			if(desire == 3)
+				return true;
+			else if(indoorCandidate == nullptr && desire == 2)
+				indoorCandidate = block;	
+			else if(outdoorCandidate == nullptr && desire == 1)
+				outdoorCandidate = block;	
+			return false;
+		};
 		m_result = path::getForActorToPredicate(actor, condition);
+		if(m_result.empty())
+			if(indoorCandidate != nullptr)
+				m_result = path::getForActorTo(indoorCandidate);
+			else if(outdoorCandidate != nullptr)
+				m_result = path::getForActorTo(outdoorCandidate);
 	}
 	void writeStep()
 	{
 		auto& actor = m_sleepObjective.m_needsSleep.m_actor;
-		if(m_result.empty())
-			actor.m_player.m_eventPublisher.publish(PublishedEventType::CannotFindPlaceToSleep);
+		if(m_result.empty*()
+			m_actor.m_hasObjectives.cannotCompleteNeed(m_sleepObjective);
 		else
-		{
-			// Try again if now no good.
-			if(!m_sleepObjective.canSleepAt(m_result.back()))
-				m_sleepObjective.m_threadedTask.create(m_sleepObjective);
-			else
-			{
-				actor.setPath(m_result);
-				m_sleepObjective.m_needsSleep.m_location = m_result.back();
-			}
-		}
+			m_actor.setPath(m_result);
 	}
-}
-template<class NeedsSleep, class Block>
+};
 class SleepObjective : Obective
 {
 	NeedsSleep& m_needsSleep;
@@ -52,57 +63,80 @@ class SleepObjective : Obective
 	SleepObjective(NeedsSleep& ns) : Objective(Config::sleepObjectivePriority), m_needsSleep(ns) { }
 	void execute()
 	{
-		if(m_needsSleep.m_location == nullptr)
+		if(m_needsSleep.m_actor.m_location == m_needsSleep.m_location)
 		{
+			assert(m_needsSleep.m_location != nullptr);
+			m_needsSleep.sleep();
+		}
+		else if(m_needsSleep.m_location == nullptr)
 			m_threadedTask.create(*this);
-		}
 		else
-		{
-			if(canSleepAt(m_needsSleep.m_actor.m_location))
-				m_needsSleep.sleep();
-			else
-				m_needsSleep.m_actor.setDestination(*m_location);
-		}
+			m_needsSleep.m_actor.setDestination(*m_location);
 	}
-	bool canSleepAt(Block& block)
+	uint32_t desireToSleepAt(Block& block)
 	{
-			return !block->m_reservable.isFullyReserved() && block->m_temperature.isSafeFor(m_needsSleep.actor);
+			if(block->m_reservable.isFullyReserved() || !block->m_temperature.isSafeFor(m_needsSleep.actor))
+				return 0;
+			if(block->m_outdoors)
+				return 1;
+			if(block->m_indoors)
+				return 2;
+			if(block->m_area->m_hasSleepingSpots.contains(block))
+				return 3;
 	}
-}
-template<class Actor, class Block>
+	~SleepObjective() { m_needsSleep.m_objective = nullptr; }
+};
 class NeedsSleep
 {
 	Actor& m_actor;
 	Block& m_location;
-	HasScheduledEvent<SleepEvent> m_sleepEvent;
-	uint32_t m_percentSleepCompleted;
+	HasScheduledEventPausable<SleepEvent> m_sleepEvent;
+	HasScheduledEvent<TiredEvent> m_tiredEvent;
+	SleepObjective* m_objective;
 	bool m_needsSleep;
 	bool m_isAwake;
 	NeedsSleep(Actor& a) : m_actor(a), m_needsSleep(false), m_isAwake(true)
 	{
-		m_sleepEvent.schedule(::s_step + m_actor.m_animalType.stepsNeedsSleepFrequency, *this);
+		m_tiredEvent.schedule(::s_step + m_actor.getStepsNeedsSleepFrequency(), *this);
 	}
-	void callback()
+	void tired()
 	{
-		if(m_isAwake == false)
-		{
-			m_isAwake = true;
-			m_needsSleep = false;
-			m_sleepEvent.schedule(::s_step + m_actor.m_animalType.stepsNeedsSleepFrequency, *this);
-		}
-		else if(m_needsSleep)
+		assert(m_isAwake);
+		if(m_needsSleep)
 			sleep();
 		else
 		{
 			m_needsSleep = true;
-			m_sleepEvent.schedule(::s_step + m_actor.m_animalType.stepsTillSleepOveride, *this);
-			m_actor.m_hasObjectives.addNeed(std::make_unique<SleepObjective>(*this));
+			m_tiredEvent.schedule(::s_step + m_actor.getStepsTillSleepOveride(), *this);
+			makeSleepObjective();
 		}
 	}
 	void sleep()
 	{
+		assert(m_isAwake);
 		m_isAwake = false;
-		m_sleepEvent.unschedule();
-		m_sleepEvent.schedule(::s_step + m_actor.m_animal.stepsSleepDuration, *this);
+		m_tiredEvent.unschedule();
+		m_sleepEvent.schedule(::s_step + m_actor.getStepsSleepDuration(), *this);
 	}
-}
+	void wakeUp()
+	{
+		assert(!m_isAwake);
+		m_isAwake = true;
+		m_tiredEvent.schedule(::s_step + m_actor.getStepsNeedsSleepFrequency(), *this);
+	}
+	void makeSleepObjective()
+	{
+		assert(m_isAwake);
+		assert(m_objective == nullptr);
+		std::unique_ptr<Objective> objective = std::make_unique<SleepObjective>(*this);
+		m_objective = objective.get();
+		m_actor.m_hasObjectives.addNeed(objective);
+	}
+	void wakeUpEarly()
+	{
+		assert(!m_isAwake);
+		assert(m_needsSleep == true);
+		m_isAwake = true;
+		m_sleepEvent.pause();
+	}
+};

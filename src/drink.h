@@ -51,7 +51,7 @@ public:
 	{
 		auto destinationCondition = [&](Block* block)
 		{
-			return m_drinkObjective.canDrinkItemAt(*block) || m_drinkObjective.canDrinkAt(*block);
+			return m_drinkObjective.canDrinkItemAt(*block) || m_drinkObjective.canDrinkItemAt(*block);
 		}
 		m_result = path::getForActorToPredicate(m_drinkObjective.m_animal, destinationCondition);
 	}

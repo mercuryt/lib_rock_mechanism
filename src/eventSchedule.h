@@ -161,4 +161,11 @@ public:
 		assert(m_event == nullptr);
 		m_percent = 0;
 	}
+	template<typename ...Args>
+	void schedule(uint32_t step, Args ...args)
+	{
+		uint32_t delay = step - ::step;
+		step -= util::scaleByPercent(delay, m_percent);
+		HasScheduledEvent::schedule(step, args...);
+	}
 };

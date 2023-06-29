@@ -6,8 +6,7 @@
 #include <stack>
 #include <unordered_map>
 
-template<class Block, class Actor, class DerivedArea, class FluidType>
-void BaseArea<Block, Actor, DerivedArea, FluidType>::stepCaveInRead()
+void Area::stepCaveInRead()
 {
 	std::list<std::unordered_set<Block*>> chunks;
 	std::unordered_set<std::unordered_set<Block*>*> anchoredChunks;
@@ -179,8 +178,7 @@ void BaseArea<Block, Actor, DerivedArea, FluidType>::stepCaveInRead()
 		m_caveInData.emplace_back(std::move(blocks), fallDistance, fallEnergy);
 	}
 }
-template<class Block, class Actor, class DerivedArea, class FluidType>
-void BaseArea<Block, Actor, DerivedArea, FluidType>::stepCaveInWrite()
+void Area::stepCaveInWrite()
 {
 	// Make chunks fall.
 	for(auto& [chunk, fallDistance, fallEnergy] : m_caveInData)
@@ -204,8 +202,7 @@ void BaseArea<Block, Actor, DerivedArea, FluidType>::stepCaveInWrite()
 		//TODO: disperse energy of fall by 'mining' out blocks absorbing impact
 	}
 }
-template<class Block, class Actor, class DerivedArea, class FluidType>
-void BaseArea<Block, Actor, DerivedArea, FluidType>::registerPotentialCaveIn(Block& block)
+void Area::registerPotentialCaveIn(Block& block)
 {
 	m_caveInCheck.insert(&block);
 }

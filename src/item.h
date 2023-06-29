@@ -9,10 +9,9 @@
 #include <unordered_multimap>
 
 
-template<class WoundType>
 struct AttackType
 {
-	std::string name;
+	std::string m_name;
 	uint32_t area;
 	uint32_t baseForce;
 	const WoundType& woundType;
@@ -34,7 +33,7 @@ struct WearableType
 };
 struct ItemType
 {
-	const std::string name;
+	const std::string m_name;
 	const bool installable;
 	const Shape& shape;
 	const bool generic;
@@ -58,13 +57,13 @@ public:
 		assert(canAdd(item));
 		m_volume += item.getVolume();
 		m_mass += item.getMass();
-		assert(m_volume <= m_item.itemType.internalVolume);
+		assert(m_volume <= m_item.m_itemType.internalVolume);
 		bool combined = false;
-		if(item.itemType.generic)
+		if(item.m_itemType.generic)
 			for(auto& pair : m_itemsAndVolumes)
 				if(pair.first()->genericsCanCombine(item))
 				{
-					pair.first.quantity += item.quantity;
+					pair.first.m_quantity += item.m_quantity;
 					item.destroy();
 					combined = true;
 				}
@@ -94,103 +93,112 @@ public:
 		m_mass -= item.getMass();
 		m_itemsAndVolumes.remove(&item);
 	}
-	void remove(Item& item, uint32_t quantity)
+	void remove(Item& item, uint32_t m_quantity)
 	{
-		assert(item.itemType.generic);
-		assert(item.quantity >= quantity);
-		item.quantity -= quantity;
-		if(item.quantity == 0)
+		assert(item.m_itemType.generic);
+		assert(item.m_quantity >= m_quantity);
+		item.m_quantity -= m_quantity;
+		if(item.m_quantity == 0)
 			m_itemsAndVolumes.remove(&item);
 	}
 	bool canAdd(Item& item) const
 	{
 		assert(&item != m_item);
-		return m_fluidType == nullptr && m_volume + m_item.getVolume() <= m_item.itemType.internalVolume;
+		return m_fluidType == nullptr && m_volume + m_item.getVolume() <= m_item.m_itemType.internalVolume;
 	}
 	bool canAdd(FluidType& fluidType) const
 	{
-		return (m_fluidType == nullptr || m_fluidType == fluidType) && m_item.itemType.canHoldFluids && m_itemsAndVolumes.empty() && m_volume <= m_item.itemType.internalVolume;
+		return (m_fluidType == nullptr || m_fluidType == fluidType) && m_item.m_itemType.canHoldFluids && m_itemsAndVolumes.empty() && m_volume <= m_item.m_itemType.internalVolume;
 	}
 };
-template<class ItemType, class MaterialType>
-struct Item
+class Item : public HasShape
 {
-	const uint32_t id;
-	const ItemType& itemType;
-	const MaterialType& materialType;
-	uint32_t quantity; // Only used by generic item types.
-	Reservable reservable;
-	std::string name;
-	uint32_t quality;
-	uint32_t percentWear;
-	bool installed;
+public:
+	const uint32_t m_id;
+	const ItemType& m_itemType;
+	const MaterialType& m_materialType;
+	uint32_t m_quantity; // Always set to 1 for nongeneric types.
+	Reservable m_reservable;
+	std::string m_name;
+	uint32_t m_quality;
+	uint32_t m_percentWear;
+	bool m_installed;
 
-	uint32_t getVolume() const { return quantity * itemType.volume; }
-	uint32_t getMass() const 
+	void setVolume() const { m_mass = m_quantity * m_itemType.volume; }
+	void setMass() const 
 	{ 
-		uint32_t output = quantity * itemType.mass;
-		if(itemType.internalVolume)
+		m_mass = m_quantity * m_itemType.mass;
+		if(m_itemType.internalVolume)
 			for(Item* item : m_containsItemsOrFluids.getItems())
-				output += item.getMass();
-		return output;
+				m_mass += item.getMass();
        	}
+	// Generic.
 	Item(uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t q):
-		id(i), itemType(it), materialType(mt), quantity(q), reservable(q)
+		m_id(i), m_itemType(it), m_materialType(mt), m_quantity(q), m_reservable(q), m_installed(false)
 	{
-		assert(itemType.generic);
-		mass = itemType.volume * materialType.mass * quantity;
+		assert(m_itemType.generic);
+		mass = m_itemType.volume * m_materialType.mass * m_quantity;
+		volume = m_itemType.volume * m_quantity;
 	}
-	Item(uint32_t i, const ItemType& it, const MaterialType& mt, std::string n, uint32_t qual, uint32_t pw):
-		id(i), itemType(it), materialType(mt), quantity(1), name(n), quality(qual), reservable(1), percentWear(pw)
+	// NonGeneric.
+	Item(uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t qual, uint32_t pw):
+		m_id(i), m_itemType(it), m_materialType(mt), m_quantity(1), m_quality(qual), m_reservable(1), m_percentWear(pw), m_installed(false)
 	{
-		assert(!itemType.generic);
-		mass = itemType.volume * materialType.mass * quantity;
+		assert(!m_itemType.generic);
+		mass = m_itemType.volume * m_materialType.mass;
+		volume = m_itemType.volume;
+	// Named.
+	Item(uint32_t i, const ItemType& it, const MaterialType& mt, std::string n, uint32_t qual, uint32_t pw):
+		m_id(i), m_itemType(it), m_materialType(mt), m_quantity(1), m_name(n), m_quality(qual), m_reservable(1), m_percentWear(pw), m_installed(false)
+	{
+		assert(!m_itemType.generic);
+		mass = m_itemType.volume * m_materialType.mass;
+		volume = m_itemType.volume;
 	}
 	static uint32_t s_nextId;
-	struct Hash{ std::size_t operator()(const Item& item) const { return item.id; }};
+	struct Hash{ std::size_t operator()(const Item& item) const { return item.m_id; }};
 	static std::unordered_set<Item, Hash> s_globalItems;
 	// Generic items, created in local item set. 
-	static Item& create(Area& area, const ItemType& itemType, const MaterialType& materialType, uint32_t quantity)
+	static Item& create(Area& area, const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quantity)
 	{
-		assert(itemType.generic);
-		area.m_items.emplace(++s_nextId, itemType, materialType, quantity);
+		assert(m_itemType.generic);
+		area.m_items.emplace(++s_nextId, m_itemType, m_materialType, m_quantity);
 	}
-	static Item& create(Area& area, const uint32_t id,  const ItemType& itemType, const MaterialType& materialType, uint32_t quantity)
+	static Item& create(Area& area, const uint32_t m_id,  const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quantity)
 	{
-		assert(itemType.generic);
-		if(!s_nextId > id) s_nextId = id + 1;
-		area.m_items.emplace(id, itemType, materialType, quantity);
+		assert(m_itemType.generic);
+		if(!s_nextId > m_id) s_nextId = m_id + 1;
+		area.m_items.emplace(m_id, m_itemType, m_materialType, m_quantity);
 	}
 	// Unnamed items, created in local item set.
-	static Item& create(Area& area, const ItemType& itemType, const MaterialType& materialType, uint32_t quality, uint32_t percentWear)
+	static Item& create(Area& area, const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quality, uint32_t m_percentWear)
 	{
-		assert(!itemType.generic);
-		area.m_items.emplace(++s_nextId, itemType, materialType, 1, "", quality, percentWear);
+		assert(!m_itemType.generic);
+		area.m_items.emplace(++s_nextId, m_itemType, m_materialType, 1, "", m_quality, m_percentWear);
 	}
-	static Item& create(Area& area, const uint32_t id, const ItemType& itemType, const MaterialType& materialType, uint32_t quality, uint32_t percentWear)
+	static Item& create(Area& area, const uint32_t m_id, const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quality, uint32_t m_percentWear)
 	{
-		assert(!itemType.generic);
-		if(!s_nextId > id) s_nextId = id + 1;
-		area.m_items.emplace(id, itemType, materialType, 1, "", quality, percentWear);
+		assert(!m_itemType.generic);
+		if(!s_nextId > m_id) s_nextId = m_id + 1;
+		area.m_items.emplace(m_id, m_itemType, m_materialType, 1, "", m_quality, m_percentWear);
 	}
 	// Named items, created in global item set.
-	static Item& create(const ItemType& itemType, const MaterialType& materialType, std::string name, uint32_t quality, uint32_t percentWear)
+	static Item& create(const ItemType& m_itemType, const MaterialType& m_materialType, std::string m_name, uint32_t m_quality, uint32_t m_percentWear)
 	{
-		assert(!itemType.generic);
-		assert(!name.empty());
-		s_globalItems.emplace(++s_nextId, itemType, materialType, 1, name, quality, percentWear);
+		assert(!m_itemType.generic);
+		assert(!m_name.empty());
+		s_globalItems.emplace(++s_nextId, m_itemType, m_materialType, 1, m_name, m_quality, m_percentWear);
 	}
-	static Item& create(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, std::string name, uint32_t quality, uint32_t percentWear)
+	static Item& create(const uint32_t m_id, const ItemType& m_itemType, const MaterialType& m_materialType, std::string m_name, uint32_t m_quality, uint32_t m_percentWear)
 	{
-		assert(!itemType.generic);
-		assert(!name.empty());
-		if(!s_nextId > id) s_nextId = id + 1;
-		s_globalItems.emplace(id, itemType, materialType, 1, name, quality, percentWear);
+		assert(!m_itemType.generic);
+		assert(!m_name.empty());
+		if(!s_nextId > m_id) s_nextId = m_id + 1;
+		s_globalItems.emplace(m_id, m_itemType, m_materialType, 1, m_name, m_quality, m_percentWear);
 	}
-	//TODO: moveTo
+	//TODO: Items leave area.
 };
 Item::s_nextId = 0;
-template<class Item, class ItemType, class MaterialType, class MaterialTypeCategory>
 class ItemQuery
 {
 	Item* m_item;
@@ -199,112 +207,104 @@ class ItemQuery
 	const MaterialType* m_materialType;
 	// To be used when inserting workpiece to project unconsumed items.
 	ItemQuery(Item& item) : m_item(&item), m_itemType(nullptr), m_materialTypeCategory(nullptr), m_materialType(nullptr) { }
-	ItemQuery(const ItemType& itemType) : m_item(nullptr), m_itemType(&itemType), MaterialTypeCategory(nullptr), m_materialType(nullptr) { }
-	ItemQuery(const ItemType& itemType, const MaterialTypeCategory& mtc) : m_item(nullptr), m_itemType(&itemType), m_materialTypeCategory(mtc), m_materialType(nullptr) { }
-	ItemQuery(const ItemType& itemType, const MaterialType& mt) : m_item(nullptr), m_itemType(&itemType), m_materialTypeCategory(nullptr), m_materialType(mt) { }
+	ItemQuery(const ItemType& m_itemType) : m_item(nullptr), m_itemType(&m_itemType), MaterialTypeCategory(nullptr), m_materialType(nullptr) { }
+	ItemQuery(const ItemType& m_itemType, const MaterialTypeCategory& mtc) : m_item(nullptr), m_itemType(&m_itemType), m_materialTypeCategory(mtc), m_materialType(nullptr) { }
+	ItemQuery(const ItemType& m_itemType, const MaterialType& mt) : m_item(nullptr), m_itemType(&m_itemType), m_materialTypeCategory(nullptr), m_materialType(mt) { }
 	bool operator()(Item& item) const
 	{
 		if(const m_item != nullptr)
 			return item == m_item;
-		if(m_itemType != item.itemType)
+		if(m_itemType != item.m_itemType)
 			return false;
 		if(m_materialTypeCategory != nullptr)
-			return m_materialTypeCategory == item.materialType.materialTypeCategory;
+			return m_materialTypeCategory == item.m_materialType.materialTypeCategory;
 		if(m_materialType != nullptr)
-			return m_materialType == item.materialType;
+			return m_materialType == item.m_materialType;
 		return true;
 	}
 	void specalize(Item& item)
 	{
-		assert(m_itemType != nullptr && m_item == nullptr && item.itemType == m_itemType);
+		assert(m_itemType != nullptr && m_item == nullptr && item.m_itemType == m_itemType);
 		m_item = item;
 		m_itemType = nullptr;
 	}
-	void specalize(MaterialType& materialType)
+	void specalize(MaterialType& m_materialType)
 	{
-		assert(m_materialTypeCategory == nullptr || materialType.materialTypeCategory == m_materialTypeCategory);
+		assert(m_materialTypeCategory == nullptr || m_materialType.materialTypeCategory == m_materialTypeCategory);
 		assert(m_materialType == nullptr);
-		m_materialType = materialType;
+		m_materialType = m_materialType;
 		m_materialTypeCategory = nullptr;
 	}
 };
 // To be used by actor and vehicle.
-template<class Item, class ItemType>
-class HasItems
+class HasItemsAndActors
 {
 	std::vector<Item*> m_items;
+	std::vector<Actor*> m_actors;
 	uint32_t m_mass;
 	HasItems(): m_mass(0) { }
 	// Non generic types have Shape.
 	void add(Item& item)
 	{
-		assert(!item.itemType.generic);
+		assert(!item.m_itemType.generic);
 		assert(std::ranges::find(m_items, &item) == m_items.end());
-		m_mass += item.itemType.volume * item.materialType.mass;
+		m_mass += item.m_itemType.volume * item.m_materialType.mass;
 		m_items.push_back(&item);
 	}
 	void remove(Item& item)
 	{
-		assert(!item.itemType.generic);
+		assert(!item.m_itemType.generic);
 		assert(std::ranges::find(m_items, &item) != m_items.end());
-		m_mass -= item.itemType.volume * item.materialType.mass;
+		m_mass -= item.m_itemType.volume * item.m_materialType.mass;
 		std::erase(m_items, &item);
 	}
-	void add(const ItemType& itemType, const MaterialType& materialType uint32_t quantity)
+	void add(const ItemType& m_itemType, const MaterialType& m_materialType uint32_t m_quantity)
 	{
-		assert(itemType.generic);
-		m_mass += item.itemType.volume * item.materialType.mass * quantity;
-		auto found = std::find(m_items, [&](Item* item) { return item.itemType == itemType && item.materialType == materialType; });
+		assert(m_itemType.generic);
+		m_mass += item.m_itemType.volume * item.m_materialType.mass * m_quantity;
+		auto found = std::find(m_items, [&](Item* item) { return item.m_itemType == m_itemType && item.m_materialType == m_materialType; });
 		// Add to stack.
 		if(found != m_items.end())
 		{
-			found->quantity += quantity;
-			found->reservable.setMaxReservations(found->quantity);
+			found->m_quantity += m_quantity;
+			found->m_reservable.setMaxReservations(found->m_quantity);
 		}
 		// Create.
 		else
 		{
-			Item& item = Item::create(itemType, materialType, quantity);
+			Item& item = Item::create(m_itemType, m_materialType, m_quantity);
 			m_items.push_back(&item);
 		}
 	}
-	void remove(const ItemType& itemType, const MaterialType& materialType uint32_t quantity)
+	void remove(const ItemType& m_itemType, const MaterialType& m_materialType uint32_t m_quantity)
 	{
-		assert(itemType.generic);
+		assert(m_itemType.generic);
 		assert(std::ranges::find(m_items, &item) != m_items.end());
-		m_mass -= item.itemType.volume * item.materialType.mass * quantity;
-		auto found = std::find(m_items, [&](Item* item) { return item.itemType == itemType && item.materialType == materialType; });
+		m_mass -= item.m_itemType.volume * item.m_materialType.mass * m_quantity;
+		auto found = std::find(m_items, [&](Item* item) { return item.m_itemType == m_itemType && item.m_materialType == m_materialType; });
 		assert(found != m_items.end());
-		assert(found->quantity >= quantity);
+		assert(found->m_quantity >= m_quantity);
 		// Remove all.
-		if(found->quantity == quantity)
+		if(found->m_quantity == m_quantity)
 			m_items.erase(found);
 		// Remove some.
 		else
 		{
-			found->quantity -= quantity;
-			found->reservable.setMaxReservations(found->quantity);
+			found->m_quantity -= m_quantity;
+			found->m_reservable.setMaxReservations(found->m_quantity);
 		}
 	}
-	void tranferTo(BlockHasItems& other, Item& item)
+	template<class Other>
+	void tranferTo(Other& other, Item& item)
 	{
 		other.add(item);
 		remove(item);
 	}
-	void transferTo(BlockHasItems& other, const ItemType& itemType, const MaterialType& materialType, uint32_t quantity)
+	template<class Other>
+	void transferTo(Other& other, const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quantity)
 	{
-		other.add(itemType, materialType, quantity);
-		remove(itemType, materialType, quantity
-	}
-	void tranferTo(HasItems& other, Item& item)
-	{
-		other.add(item);
-		remove(item);
-	}
-	void transferTo(HasItems& other, const ItemType& itemType, const MaterialType& materialType, uint32_t quantity)
-	{
-		other.add(itemType, materialType, quantity);
-		remove(itemType, materialType, quantity);
+		other.add(m_itemType, m_materialType, m_quantity);
+		remove(m_itemType, m_materialType, m_quantity
 	}
 	Item* get(ItemType& itemType) const
 	{
@@ -313,8 +313,26 @@ class HasItems
 			return nullptr;
 		return &*found;
 	}
+	void add(Actor& actor)
+	{
+		assert(std::ranges::find(m_actors, &actor) == m_actors.end());
+		m_mass += actor.getMass();
+		m_actors.push_back(&actor);
+	}
+	void remove(Actor& actor)
+	{
+		assert(std::ranges::find(m_actors, &actor) != m_actors.end());
+		m_mass -= actor.getMass();
+		m_actors.push_back(&actor);
+	}
+	template<class Other>
+	void transferTo(Other& other, Actor& actor)
+	{
+		assert(std::ranges::find(m_actors, &actor) != m_actors.end());
+		remove(&actor);
+		other.add(actor);
+	}
 };
-template<class Block, class Item, class ItemType>
 class BlockHasItems
 {
 	Block& m_block;
@@ -324,10 +342,10 @@ class BlockHasItems
 	// Non generic types have Shape.
 	void add(Item& item)
 	{
-		assert(!item.itemType.generic);
+		assert(!item.m_itemType.generic);
 		assert(std::ranges::find(m_items, &item) == m_items.end());
 		//TODO: rotation.
-		for(auto& [m_x, m_y, m_z, v] : item.itemType.shape.positions)
+		for(auto& [m_x, m_y, m_z, v] : item.m_itemType.shape.positions)
 		{
 			bool impassible = block->impassible();
 			Block* block = offset(m_x, m_y, m_z);
@@ -343,10 +361,10 @@ class BlockHasItems
 	}
 	void remove(Item& item)
 	{
-		assert(!item.itemType.generic);
+		assert(!item.m_itemType.generic);
 		assert(std::ranges::find(m_items, &item) != m_items.end());
 		//TODO: rotation.
-		for(auto& [m_x, m_y, m_z, v] : item.itemType.shape.positions)
+		for(auto& [m_x, m_y, m_z, v] : item.m_itemType.shape.positions)
 		{
 			Block* block = offset(m_x, m_y, m_z);
 			assert(block != nullptr);
@@ -363,14 +381,14 @@ class BlockHasItems
 	void add(const ItemType& itemType, const MaterialType& materialType uint32_t quantity)
 	{
 		assert(itemType.generic);
-		auto found = std::find(m_items, [&](Item* item) { return item.itemType == itemType && item.materialType == materialType; });
+		auto found = std::find(m_items, [&](Item* item) { return item.m_itemType == itemType && item.m_materialType == materialType; });
 		bool impassible = block->impassible();
 		m_volume += itemType.volume * quantity;
 		// Add to.
 		if(found != m_items.end())
 		{
-			found->quantity += quantity;
-			found->reservable.setMaxReservations(found->quantity);
+			found->m_quantity += quantity;
+			found->m_reservable.setMaxReservations(found->m_quantity);
 		}
 		// Create.
 		else
@@ -386,19 +404,19 @@ class BlockHasItems
 	{
 		assert(itemType.generic);
 		assert(std::ranges::find(m_items, &item) != m_items.end());
-		auto found = std::find(m_items, [&](Item* item) { return item.itemType == itemType && item.materialType == materialType; });
+		auto found = std::find(m_items, [&](Item* item) { return item.m_itemType == itemType && item.m_materialType == materialType; });
 		assert(found != m_items.end());
-		assert(found->quantity >= quantity);
+		assert(found->m_quantity >= quantity);
 		bool impassible = impassible();
 		m_volume -= itemType.volume * quantity;
 		// Remove all.
-		if(found->quantity == quantity)
+		if(found->m_quantity == quantity)
 			m_items.erase(found);
 		else
 		{
 			// Remove some.
-			found->quantity -= quantity;
-			found->reservable.setMaxReservations(found->quantity);
+			found->m_quantity -= quantity;
+			found->m_reservable.setMaxReservations(found->m_quantity);
 		}
 		// Invalidate move cache when no-longer impassably full.
 		if(impassible && !impassible())
@@ -423,21 +441,51 @@ class BlockHasItems
 		return &*found;
 	}
 };
-template<class Item, class Actor>
+class BlockHasItemsAndActors
+{
+	Block& m_block;
+public:
+	void add(Item& item) { m_block.m_hasItems.add(item); }
+	void remove(Item& item) { m_block.m_hasItems.remove(item); }
+	void add(Actor& actor) { m_block.m_hasActors.add(actor); }
+	void remove(Actor& actor) { m_block.m_hasActors.remove(actor); }
+	template<class Other, class ToTransfer>
+	void transferTo(Other& other, ToTransfer& toTransfer)
+	{
+		other.add(toTransfer);
+		remove(toTransfer);
+	}
+};
 class CanPickup
 {
 	Actor& m_actor;
-	HasItems m_hasItems;
+	HasItemsAndActors m_hasItemsAndActors;
+	HasShape* m_carrying;
 	void pickUp(Item& item, uint8_t quantity)
 	{
-		assert(quantity <= item.quantity);
-		m_actor.m_location->m_hasItems.tranferTo(m_hasItems, item, quantity)
+		assert(quantity <= item.m_quantity);
+		assert(m_carrying = nullptr);
+		m_actor.m_location->m_hasItemsAndActors.tranferTo(m_hasItemsAndActors, item, quantity)
 		item.m_reservable.unreserve(m_actor.canReserve);
+		m_actor.setCarryMass();
+		m_carrying = item;
+	}
+	void pickUp(Actor& actor)
+	{
+		assert(!actor.isConcious() || actor.isInjured());
+		assert(m_carrying = nullptr);
+		m_hasItemsAndActors.add(actor);
+		actor.m_reservable.unreserve(m_actor.canReserve);
+		m_carrying = actor;
 		m_actor.setCarryMass();
 	}
 	void putDown()
 	{
-		m_hasItems.transferTo(m_actor.m_location->m_hasItems, *m_carrying, m_carrying->quantity);
+		assert(m_carrying != nullptr);
+		if(m_carrying.isItem())
+			m_hasItemsAndActors.transferTo(m_actor.m_location->m_hasItems, *m_carrying);
+		else
+			m_hasItemsAndActors.transferTo(m_actor.m_location->m_hasActors, *m_carrying);
 		m_carrying = nullptr;
 		m_actor.setCarryMass();
 	}
