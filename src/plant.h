@@ -3,7 +3,6 @@
 #include "eventSchedule.h"
 #include "util.h"
 
-template<class FluidType>
 class BasePlantType
 {
 public:
@@ -22,9 +21,10 @@ public:
 	const uint32_t rootRangeMin;
 	const uint32_t adultMass;
 	const FluidType& fluidType;
+	const ItemType* fruitType; // May be nullptr.
+	const uint32_t fruitQuantityWhenFullyGrown;
 };
 
-template<class Plant>
 class PlantGrowthEvent : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
@@ -34,11 +34,10 @@ public:
 	{
 		m_plant.m_percentGrown = 100;
 		if(m_plant.m_plantType.annual)
-			m_plant.setReadyToHarvest();
+			m_plant.setQuantityToHarvest();
 	}
 	~PlantGrowthEvent() { m_plant.m_growthEvent.clearPointer(); }
 };
-template<class Plant>
 class PlantFoliageGrowthEvent : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
@@ -47,7 +46,6 @@ public:
 	void execute(){ m_plant.foliageGrowth(); }
 	~PlantFoliageGrowthEvent(){ m_plant.m_foliageGrowthEvent.clearPointer(); }
 }
-template<class Plant>
 class PlantEndOfHarvestEvent : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
@@ -56,7 +54,6 @@ public:
 	void execute() { m_plant.endOfHarvest(); }
 	~PlantEndOfHarvestEvent() { m_plant.m_endOfHarvestEvent.clearPointer(); }
 };
-template<class Plant>
 class PlantFluidEvent : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
@@ -65,7 +62,6 @@ public:
 	void execute() { m_plant.setMaybeNeedsFluid(); }
 	~PlantFluidEvent() { m_plant.m_fluidEvent.clearPointer(); }
 };
-template<class Plant>
 class PlantTemperatureEvent : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
@@ -74,7 +70,6 @@ public:
 	void execute() { m_plant.die(); }
 	~PlantTemperatureEvent() { m_plant.m_temperatureEvent.clearPointer(); }
 };
-template<class DerivedPlant, class PlantType, class Block>
 class BasePlant
 {
 public:
@@ -87,13 +82,13 @@ public:
 	HasScheduledEvent<PlantEndOfHarvestEvent> m_endOfHarvestEvent;
 	HasScheduledEvent<PlantFoliageGrowthEvent> m_foliageGrowthEvent;
 	uint32_t m_percentGrown;
-	bool m_readyToHarvest;
+	uint32_t m_quantityToHarvest;
 	bool m_hasFluid;
 	uint32_t m_percentFoliage;
 	//TODO: Set max reservations to 1 to start, maybe increase later with size?
 	Reserveable m_reservable;
 
-	BasePlant(Block& l, const PlantType& pt, uint32_t pg = 0) : m_location(l), m_fluidSource(nullptr), m_plantType(pt), m_percentGrown(pg), m_readyToHarvest(false), m_hasFluid(true), m_percentFoliage(100), m_reservable(1)
+	BasePlant(Block& l, const PlantType& pt, uint32_t pg = 0) : m_location(l), m_fluidSource(nullptr), m_plantType(pt), m_percentGrown(pg), m_quantityToHarvest(0), m_hasFluid(true), m_percentFoliage(100), m_reservable(1)
 	{
 		assert(m_location.plantTypeCanGrow(m_plantType));
 		m_location.m_plants.push_back(&derived());
@@ -130,6 +125,7 @@ public:
 			m_fluidEvent->unschedule();
 		m_fluidEvent.schedule(s_step + m_plantType.stepsNeedsFluidFrequency, derived());
 		updateGrowingStatus();
+		m_location.m_isPartOfFarmField.removeAllGiveFluidDesignations();
 	}
 	void setMaybeNeedsFluid()
 	{
@@ -148,6 +144,7 @@ public:
 		{
 			m_hasFluid = false;
 			stepsTillNextFluidEvent = m_plantType.stepsTillDieWithoutFluid;
+			m_location.m_isPartOfFarmField.designateForGiveFluidIfPartOfFarmField;
 		}
 		m_fluidEvent.schedule(s_step + stepsTillNextFluidEvent, derived());
 		updateGrowingStatus();
@@ -168,19 +165,28 @@ public:
 	void setDayOfYear(uint32_t dayOfYear)
 	{
 		if(!m_plantType.annual && dayOfYear == m_plantType.dayOfYearForHarvest)
-			setReadyToHarvest();
+			setQuantityToHarvest();
 	}
-	void setReadyToHarvest()
+	void setQuantityToHarvest()
 	{
-		m_readyToHarvest = true;
 		m_endOfHarvestEvent.schedule(s_step + m_plantType.stepsTillEndOfHarvest, derived());
+		m_quantityToHarvest = util::scaleByPercent(m_plantType.fruitQuantityWhenFullyGrown, getGrowthPercent());
+		m_location.m_isPartOfFarmField.designateForHarvestIfPartOfField(m_plantType);
+	}
+	void harvest(uint32_t quantity)
+	{
+		assert(quantity >= m_quantityToHarvest);
+		m_quantityToHarvest -= quantity;
+		if(m_quantityToHarvest == 0)
+			endOfHarvest();
 	}
 	void endOfHarvest()
 	{
-		m_readyToHarvest = false;
-		derived().onEndOfHarvest();
+		m_location.m_isPartOfFarmField.removeAllHarvestDesignations();
 		if(m_plantType.annual)
 			die();
+		else
+			m_quantityToHarvest = 0;
 	}
 	void updateGrowingStatus()
 	{
@@ -259,7 +265,26 @@ public:
 		m_percentFoliage = 100;
 		updateGrowingStatus();
 	}
-	// User provided code.
-	void onDie();
-	void onEndOfHarvest();
+};
+// To be used by block.
+class HasPlant
+{
+	Block& m_block;
+	Plant* m_plant;
+public:
+	HasPlant(Block& b) : m_block(b) { }
+	void addPlant(const PlantType& plantType, uint32_t growthPercent = 0)
+	{
+		assert(m_plant == nullptr);
+		m_plant = m_block.m_location->m_area->m_hasPlants.emplace(plantType, growthPercent);
+	}
+	void clearPointer()
+	{
+		assert(m_plant != nullptr);
+		m_plant = nullptr;
+	}
+	Plant& get()
+	{
+		return *m_plant;
+	}
 };

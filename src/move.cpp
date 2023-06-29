@@ -1,0 +1,43 @@
+#include "move.h"
+void CanMove::updateIndividualSpeed()
+{
+	m_speedIndividual = m_actor.m_attributes.getMoveSpeed() * m_actor.m_hasItems.moveSpeedPenalty();
+	setActualSpeed();
+}
+void CanMove::updateActualSpeed()
+{
+	m_speedActual = m_actor.m_canLead.isLeading() ? m_actor.m_canLead.getMoveSpeed() : m_speedIndividual;
+}
+void CanMove::setPath(std::vector<Block*>& path)
+{
+	m_path = path;
+	m_destination = path.back();
+	m_pathIter = path.begin();
+	scheduleMove();
+}
+void CanMove::callback()
+{
+	Block& block = **m_pathIter;
+	if(block.m_hasActors.actorCanEnterCurrently(m_actor))
+	{
+		m_retries = 0;
+		m_actor.setLocation(block);
+		if(++m_pathIter != m_path.end())
+			scheduleMove();
+	}
+	else
+	{
+		++ m_retries;
+		scheduleMove();
+	}
+}
+void CanMove::scheduleMove()
+{
+	uint32_t stepsToMove = block->m_hasActors.moveCost(*actor.m_moveType, *actor.m_location) / m_speedActual;
+	m_event.schedule(stepsToMove, *this);
+}
+void CanMove::setDestination(Block* destination, bool detour = false)
+{
+	m_destination = destination;
+	m_threadedTask.create(*this, detour);
+}
