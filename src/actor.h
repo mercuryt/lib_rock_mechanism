@@ -11,10 +11,12 @@
 #include "eat.h"
 #include "drink.h"
 #include "sleep.h"
-#include "canGrow.h"
+#include "grow.h"
 #include "move.h"
 #include "item.h"
 #include "reservable.h"
+#include "eqipment.h"
+#include "fight.h"
 
 #include <string>
 #include <vector>
@@ -30,10 +32,12 @@ public:
 	SkillSet m_skilSet;
 	CanMove m_canMove;
 	CanGrow m_canGrow;
+	CanFight m_canFight;
+	CanPickup m_canPickup;
 	MustEat m_mustEat;
 	MustDrink m_mustDrink;
 	MustSleep m_mustSleep;
-	HasItems m_hasItems;
+	EquipmentSet m_equipmentSet;
 	HasObjectives m_hasObjectives;
 	const MoveType* m_moveType;
 	//TODO: CanSee.
@@ -49,6 +53,7 @@ public:
 	void setLocation(Block& block);
 	bool isEnemy(Actor& actor);
 	bool isAlly(Actor& actor);
+	void die();
 	static Actor create(Faction& faction, const AnimalSpecies& species, std::vector<AttributeModifiers>& modifiers, uint32_t percentGrown);
 };
 // To be used to find actors fitting criteria.

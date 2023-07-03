@@ -1,27 +1,22 @@
 #include <unordered_set>
 #include <assert.h>
-template<class Block, class Area, class FluidType>
-FluidQueue<Block, Area, FluidType>::FluidQueue(FluidGroup<Block, Area, FluidType>& fluidGroup) : m_fluidGroup(fluidGroup) {}
-
-template<class Block, class Area, class FluidType>
-void FluidQueue<Block, Area, FluidType>::setBlocks(std::unordered_set<Block*>& blocks)
+FluidQueue::FluidQueue(FluidGroup& fluidGroup) : m_fluidGroup(fluidGroup) {}
+void FluidQueue::setBlocks(std::unordered_set<Block*>& blocks)
 {
-	std::erase_if(m_queue, [&](FutureFlowBlock<Block>& futureFlowBlock){ return !blocks.contains(futureFlowBlock.block); });
+	std::erase_if(m_queue, [&](FutureFlowBlock& futureFlowBlock){ return !blocks.contains(futureFlowBlock.block); });
 	for(Block* block : blocks)
 		if(!m_set.contains(block))
 			m_queue.emplace_back(block);
 	m_set.swap(blocks);
 }
-template<class Block, class Area, class FluidType>
-void FluidQueue<Block, Area, FluidType>::addBlock(Block* block)
+void FluidQueue::addBlock(Block* block)
 {
 	if(m_set.contains(block))
 		return;
 	m_set.insert(block);
 	m_queue.emplace_back(block);
 }
-template<class Block, class Area, class FluidType>
-void FluidQueue<Block, Area, FluidType>::addBlocks(std::unordered_set<Block*>& blocks)
+void FluidQueue::addBlocks(std::unordered_set<Block*>& blocks)
 {
 	//m_queue.reserve(m_queue.size() + blocks.size());
 	for(Block* block : blocks)
@@ -29,43 +24,36 @@ void FluidQueue<Block, Area, FluidType>::addBlocks(std::unordered_set<Block*>& b
 			m_queue.emplace_back(block);
 	m_set.insert(blocks.begin(), blocks.end());
 }
-template<class Block, class Area, class FluidType>
-void FluidQueue<Block, Area, FluidType>::removeBlock(Block* block)
+void FluidQueue::removeBlock(Block* block)
 {
 	m_set.erase(block);
-	std::erase_if(m_queue, [&](FutureFlowBlock<Block>& futureFlowBlock){ return futureFlowBlock.block == block; });
+	std::erase_if(m_queue, [&](FutureFlowBlock& futureFlowBlock){ return futureFlowBlock.block == block; });
 }
-template<class Block, class Area, class FluidType>
-void FluidQueue<Block, Area, FluidType>::removeBlocks(std::unordered_set<Block*>& blocks)
+void FluidQueue::removeBlocks(std::unordered_set<Block*>& blocks)
 {
 	std::erase_if(m_set, [&](Block* block){ return blocks.contains(block); });
-	std::erase_if(m_queue, [&](FutureFlowBlock<Block>& futureFlowBlock){ return blocks.contains(futureFlowBlock.block); });
+	std::erase_if(m_queue, [&](FutureFlowBlock& futureFlowBlock){ return blocks.contains(futureFlowBlock.block); });
 }
-template<class Block, class Area, class FluidType>
-void FluidQueue<Block, Area, FluidType>::merge(FluidQueue<Block, Area, FluidType>& fluidQueue)
+void FluidQueue::merge(FluidQueue& fluidQueue)
 {
 	//m_queue.reserve(m_queue.size() + fluidQueue.m_set.size());
 	for(Block* block : fluidQueue.m_set)
 		addBlock(block);
 }
-template<class Block, class Area, class FluidType>
-void FluidQueue<Block, Area, FluidType>::noChange()
+void FluidQueue::noChange()
 {
 	m_groupStart = m_groupEnd = m_queue.begin();
 }
-template<class Block, class Area, class FluidType>
-uint32_t FluidQueue<Block, Area, FluidType>::groupSize() const
+uint32_t FluidQueue::groupSize() const
 {
 	return m_groupEnd - m_groupStart;
 }
-template<class Block, class Area, class FluidType>
-uint32_t FluidQueue<Block, Area, FluidType>::groupCapacityPerBlock() const
+uint32_t FluidQueue::groupCapacityPerBlock() const
 {
 	assert(m_groupStart != m_groupEnd);
 	return m_groupStart->capacity;
 }
-template<class Block, class Area, class FluidType>
-uint32_t FluidQueue<Block, Area, FluidType>::groupFlowTillNextStepPerBlock() const
+uint32_t FluidQueue::groupFlowTillNextStepPerBlock() const
 {
 	assert(m_groupStart != m_groupEnd);
 	if(m_groupEnd == m_queue.end() || m_groupEnd->block->m_z != m_groupStart->block->m_z)

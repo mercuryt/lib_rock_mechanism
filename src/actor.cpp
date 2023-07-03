@@ -16,10 +16,15 @@ void Actor::setLocation(Block& block)
 		assert(block != *HasShape<Block>::m_location);
 		assert(block.anyoneCanEnterEver() && block.shapeAndMoveTypeCanEnterEver(getShape(), *m_moveType));
 		assert(block.actorCanEnterCurrently(derived()));
-		block.enter(derived());
+		block.m_hasActors.enter(derived());
 	}
 bool Actor::isEnemy(Actor& actor) { return m_faction.m_enemies.contains(actor.m_faction); }
 bool Actor::isAlly(Actor& actor) { return m_faction.m_allies.contains(actor.m_faction); }
+void Actor::die()
+{
+	m_canFight.noLongerTargetable();
+	m_locaton->m_area.unregisterActor(*this);
+}
 static Actor create(Faction& faction, const AnimalSpecies& species, std::vector<AttributeModifiers>& modifiers, uint32_t percentGrown)
 Actor::s_nextId = 1;
 

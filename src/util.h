@@ -1,20 +1,19 @@
  #pragma once
-template<class DerivedBlock>
 class util
 {
 public:
 	template <typename F>
-	static std::unordered_set<DerivedBlock*> collectAdjacentsWithCondition(F&& condition, DerivedBlock& block)
+	static std::unordered_set<Block*> collectAdjacentsWithCondition(F&& condition, Block& block)
 	{
-		std::unordered_set<DerivedBlock*> output;
-		std::stack<DerivedBlock*> openList;
+		std::unordered_set<Block*> output;
+		std::stack<Block*> openList;
 		openList.push(&block);
 		output.insert(&block);
 		while(!openList.empty())
 		{
-			DerivedBlock* block = openList.top();
+			Block* block = openList.top();
 			openList.pop();
-			for(DerivedBlock* adjacent : block->m_adjacentsVector)
+			for(Block* adjacent : block->m_adjacentsVector)
 				if(condition(adjacent) && !output.contains(adjacent))
 				{
 					output.insert(adjacent);
@@ -23,30 +22,30 @@ public:
 		}
 		return output;
 	}
-	static std::unordered_set<DerivedBlock*> collectAdjacentsInRange(uint32_t range, DerivedBlock& block)
+	static std::unordered_set<Block*> collectAdjacentsInRange(uint32_t range, Block& block)
 	{
-		auto condition = [&](DerivedBlock* b){ return b->taxiDistance(block) <= range; };
+		auto condition = [&](Block* b){ return b->taxiDistance(block) <= range; };
 		return collectAdjacentsWithCondition(condition, block);
 	}
-	static std::vector<DerivedBlock*> collectAdjacentsInRangeVector(uint32_t range, DerivedBlock& block)
+	static std::vector<Block*> collectAdjacentsInRangeVector(uint32_t range, Block& block)
 	{
-		auto condition = [&](DerivedBlock* b){ return b->taxiDistance(block) <= range; };
+		auto condition = [&](Block* b){ return b->taxiDistance(block) <= range; };
 		auto result = collectAdjacentsWithCondition(condition, block);
-		std::vector<DerivedBlock*> output(result.begin(), result.end());
+		std::vector<Block*> output(result.begin(), result.end());
 		return output;
 	}
 	template<typename PathT, typename DestinationT>
-	static DerivedBlock* findWithPathCondition(PathT&& pathCondition, DestinationT&& destinationCondition, DerivedBlock& block)
+	static Block* findWithPathCondition(PathT&& pathCondition, DestinationT&& destinationCondition, Block& block)
 	{
-		std::unordered_set<DerivedBlock*> closedList;
-		std::stack<DerivedBlock*> openList;
+		std::unordered_set<Block*> closedList;
+		std::stack<Block*> openList;
 		openList.push(block);
 		while(!openList.empty())
 		{
-			DerivedBlock* block = openList.top();
+			Block* block = openList.top();
 			openList.pop();
 			closedList.push(block);
-			for(DerivedBlock* adjacent : block->m_adjacentsVector)
+			for(Block* adjacent : block->m_adjacentsVector)
 			{
 				if(destinationCondition(adjacent))
 					return adjacent;
@@ -61,13 +60,13 @@ public:
 	}
 	// This was suposed to replace collectAdjacentsWithCondition for detecting splits in fluidGroups but it was slower
 	template <typename F>
-	static std::vector<std::unordered_set<DerivedBlock*>> findGroups(F&& condition, std::unordered_set<DerivedBlock*>& blocks)
+	static std::vector<std::unordered_set<Block*>> findGroups(F&& condition, std::unordered_set<Block*>& blocks)
 	{
-		std::vector<std::unordered_set<DerivedBlock*>> output;
+		std::vector<std::unordered_set<Block*>> output;
 		output.reserve(blocks.size());
-		auto huristic = [&](DerivedBlock* block){ 
+		auto huristic = [&](Block* block){ 
 			uint32_t shortestDistance = UINT32_MAX;
-			for(DerivedBlock* b : blocks)
+			for(Block* b : blocks)
 			{
 				uint32_t distance = b->taxiDistance(*block);
 				if(shortestDistance > distance)
@@ -75,19 +74,19 @@ public:
 			}
 			return shortestDistance;
 		};
-		auto compare = [&](DerivedBlock* a, DerivedBlock* b){ return huristic(a) > huristic(b); };
-		std::priority_queue<DerivedBlock*, std::vector<DerivedBlock*>, decltype(compare)> open(compare);
-		std::unordered_set<DerivedBlock*> closed;
+		auto compare = [&](Block* a, Block* b){ return huristic(a) > huristic(b); };
+		std::priority_queue<Block*, std::vector<Block*>, decltype(compare)> open(compare);
+		std::unordered_set<Block*> closed;
 		while(!blocks.empty())
 		{
 			auto it = blocks.begin();
-			DerivedBlock* first = *it;
+			Block* first = *it;
 			blocks.erase(it);
 			open.push(first);
 			closed.insert(first);
 			while(!open.empty())
 			{
-				DerivedBlock* candidate = open.top();
+				Block* candidate = open.top();
 				open.pop();
 				auto found = blocks.find(candidate);
 				if(found != blocks.end())
@@ -97,7 +96,7 @@ public:
 					if(blocks.empty() && output.empty())
 						return output;
 				}
-				for(DerivedBlock* b : candidate->m_adjacentsVector)
+				for(Block* b : candidate->m_adjacentsVector)
 					if(condition(b) && !closed.contains(b))
 					{
 						open.push(b);

@@ -4,11 +4,10 @@
 #include <unordered_set>
 
 #include "fluidQueue.h"
-#include "fluidGroup.h"
 
+class FluidGroup;
 
-template<class Block, class Area, class FluidType>
-class FillQueue : public FluidQueue<Block, Area, FluidType>
+class FillQueue : public FluidQueue
 {
 	uint32_t getPriority(FutureFlowBlock<Block>& futureFlowBlock) const;
 public:
@@ -16,7 +15,7 @@ public:
 	std::unordered_set<Block*> m_futureNoLongerEmpty;
 	std::unordered_set<Block*> m_overfull;
 
-	FillQueue(FluidGroup<Block, Area, FluidType>& fluidGroup);
+	FillQueue(FluidGroup& fluidGroup);
 	void buildFor(std::unordered_set<Block*>& members);
 	void initalizeForStep();
 	void recordDelta(uint32_t volume, uint32_t flowCapacity, uint32_t flowTillNextStep);

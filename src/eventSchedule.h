@@ -83,7 +83,6 @@ public:
 inline ScheduledEvent::ScheduledEvent(uint32_t d) : m_step(d + ::s_step) {}
 inline void ScheduledEvent::cancel() { m_eventSchedule->unschedule(this); }
 
-template<class EventType>
 class HasScheduledEvent
 {
 	ScheduledEventWithPercent* m_event;
@@ -133,7 +132,6 @@ public:
 			m_event.cancel();
 	}
 };
-template<class EventType>
 class HasScheduledEventPausable : HasScheduledEvent<EventType>
 {
 	uint32_t m_percent;
