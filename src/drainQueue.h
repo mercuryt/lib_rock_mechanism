@@ -3,19 +3,19 @@
 #include <vector>
 #include <unordered_set>
 
-#include "fluidGroup.h"
 #include "fluidQueue.h"
 
-template<class Block, class Area, class FluidType>
-class DrainQueue : public FluidQueue<Block, Area, FluidType>
+class FluidGroup;
+
+class DrainQueue : public FluidQueue
 {
-	uint32_t getPriority(FutureFlowBlock<Block>& futureFlowBlock) const;
+	uint32_t getPriority(FutureFlowBlock& futureFlowBlock) const;
 public:
 	std::unordered_set<Block*> m_futureEmpty;
 	std::unordered_set<Block*> m_futureNoLongerFull;
 	std::unordered_set<Block*> m_futurePotentialNoLongerAdjacent;
 
-	DrainQueue(FluidGroup<Block, Area, FluidType>& fluidGroup);
+	DrainQueue(FluidGroup& fluidGroup);
 	void buildFor(std::unordered_set<Block*>& members);
 	void initalizeForStep();
 	void recordDelta(uint32_t volume, uint32_t flowCapacity, uint32_t flowTillNextStep);

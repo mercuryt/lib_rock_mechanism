@@ -6,7 +6,7 @@
 #pragma once
 //TODO: Use vector instead of unordered set.
 #include <unordered_set>
-
+class Reserveable;
 class CanReserve final
 {
 	friend class Reserveable;
@@ -52,7 +52,7 @@ public:
 		return m_maxReservations - m_reservedCount;
 	}
 };
-CanReserve::~CanReserve()
+inline CanReserve::~CanReserve()
 {
 	for(Reserveable* reservable : m_reservables)
 		reservable.m_reservations.remove(this);

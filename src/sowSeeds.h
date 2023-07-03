@@ -14,8 +14,8 @@ class SowSeedsEvent : ScheduledEventWithPercent
 	void execute()
 	{
 		Block& location = *m_sowSeedsObjective.m_actor.m_location;
-		const PlantType& plantType = location.m_area->m_hasFarmFields.getPlantTypeFor(location);
-		location.m_containsPlants.add(plantType);
+		const PlantSpecies& plantSpecies = location.m_area->m_hasFarmFields.getPlantSpeciesFor(location);
+		location.m_containsPlants.add(plantSpecies);
 		m_sowSeedsObjective.m_actor.m_hasObjectives.objectiveComplete(m_sowSeedsObjective);
 		location.m_area->m_hasFarmFields.removeAllSowSeedsDesignations(location);
 	}

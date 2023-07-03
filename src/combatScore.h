@@ -1,6 +1,5 @@
 #pragma once
 
-template<class Actor>
 uint32_t getCombatScore(const Actor& actor)
 {
 	uint32_t output = actor.m_individualCombatScore;
@@ -46,7 +45,6 @@ uint32_t getCombatScore(const Actor& actor)
 	}
 	return output;
 }
-template<class Actor, class Equipment>
 void generateCombatScoreAndAttackTable(Actor& actor)
 {
 	actor.combatScore = 0;

@@ -1,7 +1,11 @@
 #include "move.h"
 void CanMove::updateIndividualSpeed()
 {
-	m_speedIndividual = m_actor.m_attributes.getMoveSpeed() * m_actor.m_hasItems.moveSpeedPenalty();
+	m_speedIndividual = m_actor.m_attributes.getMoveSpeed();
+	uint32_t carryMass = m_actor.m_hasItems.getMass() + m_actor.m_canPickup.getMass();
+	uint32_t unencomberedCarryMass = m_actor.m_attributes.getUnencomberedCarryMass();
+	if(carryMass > unencomberedCarryMass)
+		m_speedIndividual = util::scaleByFraction(m_speedIndividual, unencomberedCarryMass, carryMass);
 	setActualSpeed();
 }
 void CanMove::updateActualSpeed()

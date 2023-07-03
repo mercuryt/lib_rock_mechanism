@@ -15,7 +15,6 @@
 #include "drainQueue.h"
 #include "fillQueue.h"
 
-template<class Block>
 struct FluidGroupSplitData
 {
 	std::unordered_set<Block*> members;
@@ -23,7 +22,6 @@ struct FluidGroupSplitData
 	FluidGroupSplitData(std::unordered_set<Block*>& m) : members(m) {}
 };
 
-template<class Block, class Area, class FluidType>
 class FluidGroup
 {
 public:
@@ -77,5 +75,5 @@ public:
 	void validate() const;
 	void validate(std::unordered_set<FluidGroup<Block, Area, FluidType>*> toErase);
 	int32_t totalVolume();
-	template<typename, typename, typename, typename> friend class BaseArea;
+	friend class BaseArea;
 };

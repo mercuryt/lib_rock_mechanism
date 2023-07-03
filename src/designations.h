@@ -4,7 +4,7 @@
 #pragma once
 #include <unordered_set>
 
-enum class BlockDesignation { Dig, Construct, SowSeeds, GivePlantFluid, Harvest, StockPileHaulFrom, StockPileHaulTo, Sleep };
+enum class BlockDesignation { Dig, Construct, SowSeeds, GivePlantFluid, Harvest, StockPileHaulFrom, StockPileHaulTo, Sleep, Rescue };
 class HasDesignations
 {
 	std::unordered_map<const Player*, std::unordered_set<BlockDesignation>> m_designations;

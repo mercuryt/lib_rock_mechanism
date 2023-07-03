@@ -1,98 +1,92 @@
 #pragma once
 #include "plant.h"
+#include "player.h"
+#include "block.h"
+
 #include <list>
 #include <unordered_set>
+
 struct FarmField
 {
 	std::unordered_set<Block*> blocks;
-	const PlantType* plantType;
+	const PlantSpecies* plantSpecies;
+	bool timeToSow;
+	FarmField(std::unordered_set<Block*> b) : blocks(b), plantSpecies(nullptr) { }
 };
+class IsPartOfFarmField
+{
+	Block& m_block;
+	std::unordered_map<Player*, FarmField*> m_farmFields;
+	IsPartOfFarmField(Block& b) : m_block(b) { }
+public:
+	void insert(Player& player, FarmField& farmField);
+	void remove(Player& player);
+	void designateForHarvestIfPartOfFarmField(Plant& plant)
+	{
+		for(auto& [player, farmField] : m_farmFields)
+			if(farmField.plantSpecies == plant.plantSpecies)
+				block.m_area->m_hasFarmFields.at(player).addHarvestDesignation(plant);
+	}
+	void designateForGiveFluidIfPartOfFarmField(Plant& plant)
+	{
+		for(auto& [player, farmField] : m_farmFields)
+			if(farmField.plantSpecies == plant.plantSpecies)
+				block.m_area->m_hasFarmFields.at(player).addGivePlantFluidDesignation(plant);
+	}
+	void removeAllHarvestDesignations()
+	{
+		Plant& plant = m_block.m_hasPlant.get();	
+		for(auto& [player, farmField] : m_farmFields)
+			if(plant.plantSpecies == farmField.plantSpecies)
+				m_block.m_area->m_hasFarmFields.at(player).removeHarvestDesignation(plant);
+	}
+	void removeAllGiveFluidDesignations()
+	{
+		Plant& plant = m_block.m_hasPlant.get();	
+		for(auto& [player, farmField] : m_farmFields)
+			if(plant.plantSpecies == farmField.plantSpecies)
+				m_block.m_area->m_hasFarmFields.at(player).removeGiveFluidDesignation(plant);
+	}
+	void removeAllSowSeedsDesignations()
+	{
+		for(auto& [player, farmField] : m_farmFields)
+			m_block.m_area->m_hasFarmFields.at(player).removeSowSeedsDesignation(m_block);
+	}
+};
+// To be used by HasFarmFields, which is used by Area.
 class HasFarmFieldsForPlayer
 {
 	Player& m_player;
 	std::list<FarmField> m_farmFields;
-	std::list<Plant*> m_plantsNeedingFluid;
+	std::unordered_set<Plant*> m_plantsNeedingFluid;
+	std::unordered_set<Plant*> m_plantsToHarvest;
 	std::unordered_set<Block*> m_blocksNeedingSeedsSewn;
 	bool m_plantsNeedingFluidIsSorted;
 public:
-	bool hasGivePlantsFluidDesignations() const
-	{
-		return !m_plantsNeedingFluid.empyt();
-	}
-	Plant* getHighPriorityPlantForGivingFluidIfAny()
-	{
-		if(!m_plantsNeedingFluidIsSorted)
-		{
-			std::ranges::sort_by(m_plantsNeedingFluid, [](Plant* a, Plant* b){ return a->m_needsFluid.getDeathStep() < b->m_needsFluid.getDeathStep(); });
-			m_plantsNeedingFluidIsSorted = true;
-		}
-		Plant* output = m_plantsNeedingFluid.first();
-		if(output.m_needsFluid.getDeathStep() - ::s_step > Config::stepsTillDiePlantPriorityOveride)
-			return nullptr;
-		return *m_plantsNeedingFluid.first();
-	}
-	bool hasSowSeedDesignations() const
-	{
-		return !m_blocksNeedingSeedsSewn.empty();
-	}
-	const PlantType& getPlantTypeFor(Block& block) const
-	{
-		for(FarmField& farmField : m_farmFields)
-			if(farmField.blocks.contains(&block))
-				return farmField.plantType;
-		assert(false);
-	}
-	void addGivePlantFluidDesignation(Plant& plant)
-	{
-		assert(!m_plantsNeedingFluid.contains(plant));
-		m_plantsNeedingFluidIsSorted = false;
-		m_plantsNeedingFluid.push_back(&plant);
-	}
-	void removeGivePlantFluidDesignation(Plant& plant)
-	{
-		assert(m_plantsNeedingFluid.contains(plant));
-		m_plantsNeedingFluid.remove(plant);
-		m_plant.m_location->m_hasDesignations.remove(m_player, BlockDesignation::GiveFluid);
-	}
-	void addSowSeedsDesignation(Block* block)
-	{
-		assert(!m_blocksNeedingSeedsSewn.contains(&block));
-		m_blocksNeedingSeedsSewn.insert(&block);
-		block.m_hasDesignations.insert(m_player, BlockDesignation::SowSeeds);
-	}
-	void removeSowSeedsDesignation(Block* block)
-	{
-		assert(m_blocksNeedingSeedsSewn.contains(&block));
-		m_blocksNeedingSeedsSewn.remove(&block);
-		block.m_hasDesignations.remove(m_player, BlockDesignation::SowSeeds);
-	}
-	void setDayOfYear(uint32_t dayOfYear)
-	{
-		//TODO: Add sow designation when blocking item or plant is removed.
-		for(FarmField& farmField : m_farmFields)
-			if(farmField.plantType != nullptr && farmField.plantType.dayOfYearForSow == dayOfYear)
-				for(Block* block : farmField.blocks)
-					if(block->m_hasPlants.canGrowHere(farmField.plantType))
-						addSowSeedsDesignation(block);
-	}
+	bool hasGivePlantsFluidDesignations() const;
+	Plant* getHighPriorityPlantForGivingFluidIfAny();
+	bool hasSowSeedDesignations() const;
+	const PlantSpecies& getPlantTypeFor(Block& block) const;
+	void addGivePlantFluidDesignation(Plant& plant);
+	void removeGivePlantFluidDesignation(Plant& plant);
+	void addSowSeedDesignation(Block& block);
+	void removeSowSeedDesignation(Block& block);
+	void addHarvestDesignation(Plant& plant);
+	void removeHarvestDesignation(Plant& plant);
+	void setDayOfYear(uint32_t dayOfYear);
+	void create(std::unordered_set<Block*>& blocks);
+	void extend(FarmField& farmField, std:unordered_set<Block*>& blocks);
+	void setSpecies(FarmField& farmField, const PlantSpecies& plantSpecies);
+	void designateBlocks(FarmField& farmField, std::unordered_set<Block*>& blocks);
+	void clearSpecies(FarmField& farmField);
+	void shrink(FarmField& farmField, std::unordered_set<Block*>& blocks);
 };
+// To be used by Area.
 class HasFarmFields
 {
 	std::unordered_map<Player*, HasFarmFieldsForPlayer> m_data;
 public:
-	void at(Player& player)
-	{
-		assert(m_data.contains(player));
-		return m_data.at(player);
-	}
-	void registerPlayer(Player& player)
-	{
-		assert(!m_data.contains(player));
-		m_data[&player](player);
-	}
-	void unregisterPlayer(Player& player)
-	{
-		assert(m_data.contains(player));
-		m_data.erase(&player);
-	}
+	void at(Player& player);
+	void registerPlayer(Player& player);
+	void unregisterPlayer(Player& player);
 };

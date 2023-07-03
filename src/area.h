@@ -33,7 +33,8 @@ public:
 	std::vector<std::tuple<std::vector<Block*>,uint32_t,uint32_t>> m_caveInData;
 	std::unordered_map<Block*, int32_t> m_blocksWithChangedTemperature;
 
-
+	HasTemperatureSources m_temperatureSources;
+	HasFires m_fires;
 	HasFarmFields m_hasFarmFields;
 	HasHaulTools m_hasHaulTools;
 	HasDigDesignations m_hasDiggingDesignations;

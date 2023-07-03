@@ -57,11 +57,14 @@ public:
 	int32_t m_deltaTemperature;
 	bool m_exposedToSky;
 	Reservable m_reservable;
+	HasPlant m_hasPlant;
+	HasBlockFeatures m_hasBlockFeatures;
 	HasActors m_hasActors;
 	HasItems m_hasItems;
 	BlockHasItemsAndActors m_hasItemsAndActors;
 	HasDesignations m_hasDesignations;
 	IsPartOfStockPile m_isPartOfStockPile;
+	IsPartOfFarmField m_isPartOfFarmField;
 
 	// Constructor initalizes some members.
 	Block();
