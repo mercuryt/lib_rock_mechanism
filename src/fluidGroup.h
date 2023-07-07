@@ -14,6 +14,9 @@
 
 #include "drainQueue.h"
 #include "fillQueue.h"
+#include "fluidType.h"
+
+class Area;
 
 struct FluidGroupSplitData
 {
@@ -33,15 +36,15 @@ public:
 	const FluidType& m_fluidType;
 	int32_t m_excessVolume;
 	uint32_t m_viscosity;
-	FillQueue<Block, Area, FluidType> m_fillQueue;
-	DrainQueue<Block, Area, FluidType> m_drainQueue;
+	FillQueue m_fillQueue;
+	DrainQueue m_drainQueue;
 	std::unordered_map<const FluidType*, FluidGroup*> m_disolvedInThisGroup;
 	Area& m_area;
 
 	// For spitting into multiple fluidGroups.
-	std::vector<FluidGroupSplitData<Block>> m_futureGroups;
+	std::vector<FluidGroupSplitData> m_futureGroups;
 	// For notifing groups with different fluids of unfull status. Groups with the same fluid are merged instead.
-	std::unordered_map<FluidGroup<Block, Area, FluidType>*, std::unordered_set<Block*>> m_futureNotifyPotentialUnfullAdjacent;
+	std::unordered_map<FluidGroup*, std::unordered_set<Block*>> m_futureNotifyPotentialUnfullAdjacent;
 	
 	std::unordered_set<Block*> m_diagonalBlocks;
 
@@ -56,7 +59,7 @@ public:
 	std::unordered_set<Block*> m_futureRemoveFromFillQueue;
 
 	FluidGroup(const FluidType& ft, std::unordered_set<Block*>& blocks, Area& area, bool checkMerge = true);
-	FluidGroup(const FluidGroup<Block, Area, FluidType>&) = delete;
+	FluidGroup(const FluidGroup&) = delete;
 	void addFluid(uint32_t fluidVolume);
 	void removeFluid(uint32_t fluidVolume);
 	void addBlock(Block& block, bool checkMerge = true);
@@ -64,7 +67,7 @@ public:
 	void removeBlocks(std::unordered_set<Block*>& blocks);
 	void addMistFor(Block& block);
 	// Takes a pointer to the other fluid group because we may switch them inorder to merge into the larger one.
-	void merge(FluidGroup<Block, Area, FluidType>* fluidGroup);
+	void merge(FluidGroup* fluidGroup);
 	void readStep();
 	void writeStep();
 	void afterWriteStep();
@@ -73,7 +76,7 @@ public:
 	void setUnstable();
 	void addDiagonalsFor(Block& block);
 	void validate() const;
-	void validate(std::unordered_set<FluidGroup<Block, Area, FluidType>*> toErase);
+	void validate(std::unordered_set<FluidGroup*> toErase);
 	int32_t totalVolume();
-	friend class BaseArea;
+	friend class Area;
 };

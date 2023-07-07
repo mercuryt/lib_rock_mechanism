@@ -34,7 +34,7 @@ void Area::readStep(BS::thread_pool_light pool);
 	// Process vision, emplace requests for every actor in current bucket.
 	// It seems like having the vision requests permanantly embeded in the actors and iterating the vision bucket directly rather then using the visionRequestQueue should be faster but limited testing shows otherwise.
 	m_visionRequestQueue.clear();
-	for(Actor* actor : m_visionBuckets.get(s_step))
+	for(Actor* actor : m_visionBuckets.get(simulation::step))
 		m_visionRequestQueue.emplace_back(*actor);
 	auto visionIter = m_visionRequestQueue.begin();
 	while(visionIter < m_visionRequestQueue.end())
@@ -155,9 +155,9 @@ void Area::visionCuboidsActivate()
 	m_visionCuboidsActive = true;
 	VisionCuboid::setup(*this);
 }
-BaseCuboid<Block> Area::getZLevel(uint32_t z)
+Cuboid Area::getZLevel(uint32_t z)
 {
-	return BaseCuboid<Block>(m_blocks[m_sizeX - 1][m_sizeY - 1][z], m_blocks[0][0][z]);
+	return Cuboid(m_blocks[m_sizeX - 1][m_sizeY - 1][z], m_blocks[0][0][z]);
 }
 void Area::expireRouteCache(){++m_routeCacheVersion;}
 void Area::validateAllFluidGroups()

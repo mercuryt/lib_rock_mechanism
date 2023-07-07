@@ -1,0 +1,23 @@
+{
+  "name": "dirt",
+  "density": 50,
+  "hardness": 30,
+  "transparent": false,
+  "burnData": null,
+  "spoilData": 
+    [
+      {
+        "materialType": "dirt",
+        "itemType": "dirt",
+	"chance": 100,
+	"quantityMin": 50,
+	"quantityMax": 70
+      },{
+        "materialType": "gravel",
+        "itemType": "gravel",
+	"chance": 100,
+	"quantityMin": 10,
+	"quantityMax": 20
+      }
+    ]
+}

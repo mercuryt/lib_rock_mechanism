@@ -9,7 +9,7 @@ class FluidGroup;
 
 class FillQueue : public FluidQueue
 {
-	uint32_t getPriority(FutureFlowBlock<Block>& futureFlowBlock) const;
+	uint32_t getPriority(FutureFlowBlock& futureFlowBlock) const;
 public:
 	std::unordered_set<Block*> m_futureFull;
 	std::unordered_set<Block*> m_futureNoLongerEmpty;

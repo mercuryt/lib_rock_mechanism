@@ -1,0 +1,19 @@
+{
+  "name": "black bear",
+  "temp": [241, 306],
+  "daysTillDieFromTemp": 1,
+  "fluidType": "water",
+  "daysNeedsFluidFrequency": 1,
+  "daysTillDieWithoutFluid": 3,
+  "eatsMeat": true,
+  "eatsPlants": true,
+  "daysHungerFreqency": 2,
+  "daysTillStarve": 20,
+  "yearsTillFullyGrown": 10,
+  "visionDistance": 10,
+  "mass": 200,
+  "strength": [80, 90],
+  "agility": [60, 65],
+  "dextarity": [40, 45],
+  "grips": 0
+}

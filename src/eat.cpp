@@ -1,4 +1,4 @@
-EatEvent::EatEvent(step, EatObjective& eo) : ScheduledEvent(step), m_eatObjective(eo) {}
+EatEvent::EatEvent(delay, EatObjective& eo) : ScheduledEvent(delay), m_eatObjective(eo) {}
 void EatEvent::execute()
 {
 	auto& actor = m_eatObjective.m_actor;
@@ -17,6 +17,7 @@ void EatEvent::execute()
 		actor.finishedCurrentObjective();
 	}
 }
+HungerEvent::
 EatThreadedTask::EatThreadedTask(EatObjective& eo) : m_fluidType(ft), m_eatObjective(eo), m_blockResult(nullptr), m_huntResult(nullptr) {}
 
 void EatThreadedTask::readStep()
@@ -90,7 +91,7 @@ void EatObjective::execute()
 			{
 				// Is at eating location.
 				if(m_actor.m_location == eatingLocation)
-					m_eatEvent.schedule(::s_step + Config::stepsToEat, m_foodItem);
+					m_eatEvent.schedule(Config::stepsToEat, m_foodItem);
 				else
 					m_actor.setDestination(eatingLocation);
 			}
@@ -113,9 +114,9 @@ void EatObjective::execute()
 			if(m_actor.m_location == m_foodLocation)
 			{
 				if(m_foodItem != nullptr)
-					m_eatEvent.schedule(::s_step + Config::stepsToEat, m_foodItem);
+					m_eatEvent.schedule(Config::stepsToEat, m_foodItem);
 				else
-					m_eatEvent.schedule(::s_step + Config::stepsToEat);
+					m_eatEvent.schedule(Config::stepsToEat);
 			}
 			else
 				m_actor.setDestination(m_foodLocation);
@@ -172,7 +173,7 @@ void MustEat::setNeedsFood()
 }
 uint32_t MustEat::massFoodForBodyMass() const
 {
-	return m_actor.getMass() / Config::unitsOfBodyMassPerUnitOfFoodRequestedMass;
+	return m_actor.getMass() / Config::unitsOfFoodRequestedPerUnitOfBodyMass;
 }
 const uint32_t& MustEat::getMassFoodRequested() const { return m_massFoodRequested; }
 const uint32_t& MustEat::getPercentStarved() const
@@ -187,15 +188,15 @@ uint32_t MustEat::getDesireToEatSomethingAt(Block* block) const
 	for(Item* item : block->m_hasItems.get())
 		if(item.m_isPreparedMeal)
 			return UINT32_MAX;
-	if(m_actor.grazesFruit())
+	if(m_actor.m_mustEat.grazesFruit())
 		for(Plant* plant : block->m_hasPlants.get())
 			if(plant->m_percentFruit != 0)
 				return 1;
-	if(m_actor.scavengesCarcasses())
+	if(m_actor.m_mustEat.scavengesCarcasses())
 		for(Actor* actor : block->m_containsActors.get())
 			if(!actor->m_isAlive && actor.getFluidType() == m_actor.getFluidType())
 				return 2;
-	if(m_actor.grazesLeaves())
+	if(m_actor.m_mustEat.grazesLeaves())
 		for(Plant* plant : block->m_hasPlants.get())
 			if(plant->m_percentFoliage != 0)
 				return 3;

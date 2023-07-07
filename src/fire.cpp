@@ -3,7 +3,7 @@ void FireEvent::execute()
 	if(!m_fire.m_hasPeaked &&m_fire.m_stage == FireStage::Smouldering)
 	{
 		m_fire.m_stage = FireStage::Burining;
-		m_fire.m_temperatureSource.setTemperature(m_fire.m_materialType.flameTemperature / heatFractionForBurn);
+		m_fire.m_temperatureSource.setTemperature(m_fire.m_materialType.flameTemperature / Config::heatFractionForBurn);
 		m_fire.m_event.schedule(m_fire.m_materialType.burnStageDuration, m_fire);
 	}
 	else if(!m_fire.m_hasPeaked && m_fire.m_stage == FireStage::Burining)
@@ -17,15 +17,15 @@ void FireEvent::execute()
 	{
 		m_fire.m_hasPeaked = true;
 		m_fire.m_stage = FireStage::Burining;
-		m_fire.m_temperatureSource.setTemperature(m_fire.m_materialType.flameTemperature / heatFractionForBurn);
-		uint32_t delay = m_fire.m_materialType.burnStageDuration / rampDownPhaseDurationFraction;
+		m_fire.m_temperatureSource.setTemperature(m_fire.m_materialType.flameTemperature / Config::heatFractionForBurn);
+		uint32_t delay = m_fire.m_materialType.burnStageDuration / Config::fireRampDownPhaseDurationFraction;
 		m_fire.m_event.schedule(delay, m_fire);
 	}
 	else if(m_fire.m_hasPeaked && m_fire.m_stage == FireStage::Burining)
 	{
 		m_fire.m_stage = FireStage::Smouldering;
-		m_fire.m_temperatureSource.setTemperature(m_fire.m_materialType.flameTemperature / heatFractionForSmoulder);
-		uint32_t delay = m_fire.m_materialType.burnStageDuration / rampDownPhaseDurationFraction;
+		m_fire.m_temperatureSource.setTemperature(m_fire.m_materialType.flameTemperature / Config::heatFractionForSmoulder);
+		uint32_t delay = m_fire.m_materialType.burnStageDuration / Config::fireRampDownPhaseDurationFraction;
 		m_fire.m_event.schedule(delay, m_fire);
 	}
 	else if(m_fire.m_hasPeaked && m_fire.m_stage == FireStage::Smouldering)
@@ -41,7 +41,7 @@ void FireEvent::execute()
 {
 	m_fire.m_event.clearPointer();
 }
-Fire::Fire(Block& l, const MaterialType& mt) : m_location(&l), m_materialType(mt), m_stage(FireStage::Smouldering), m_hasPeaked(false), m_temperatureSource(m_materialType.flameTemperature / heatFractionForSmoulder, l)
+Fire::Fire(Block& l, const MaterialType& mt) : m_location(&l), m_materialType(mt), m_stage(FireStage::Smouldering), m_hasPeaked(false), m_temperatureSource(m_materialType.flameTemperature / Config::heatFractionForSmoulder, l)
 {
 	m_event.schedule(m_materialType.burnStageDuration, *this);
 }

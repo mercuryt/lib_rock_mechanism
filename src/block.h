@@ -18,6 +18,14 @@
 #include "visionCuboid.h"
 #include "fluidGroup.h"
 #include "fire.h"
+#include "plant.h"
+#include "blockFeature.h"
+#include "item.h"
+#include "designations.h"
+#include "stockpile.h"
+#include "farmFields.h"
+
+class Area;
 
 // Fluid type and volume pairs are sorted by density, low to high.
 // This is useful for resolving overfill.
@@ -43,7 +51,7 @@ public:
 	// Sorted by density, low to high.
 	// TODO: Try replacing with a flatmap.
 	// TODO: HasFluids.
-	std::map<const FluidType*, std::pair<uint32_t, FluidGroup*>, SortByDensity<FluidType>> m_fluids;
+	std::map<const FluidType*, std::pair<uint32_t, FluidGroup*>, SortByDensity> m_fluids;
 	uint32_t m_totalFluidVolume;
 	// For mist.
 	const FluidType* m_mist;
@@ -98,7 +106,7 @@ public:
 	void addFluid(uint32_t volume, const FluidType& fluidType);
 	void removeFluid(uint32_t volume, const FluidType& fluidType);
 	bool fluidCanEnterCurrently(const FluidType& fluidType) const;
-	bool isAdjacentToFluidGroup(const FluidGroup<Block, Area, FluidType>* fluidGroup) const;
+	bool isAdjacentToFluidGroup(const FluidGroup* fluidGroup) const;
 	uint32_t volumeOfFluidTypeCanEnter(const FluidType& fluidType) const;
 	uint32_t volumeOfFluidTypeContains(const FluidType& fluidType) const;
 	const FluidType& getFluidTypeWithMostVolume() const;

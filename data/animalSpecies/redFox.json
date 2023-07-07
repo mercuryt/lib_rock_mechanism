@@ -1,0 +1,19 @@
+{
+  "name": "red fox",
+  "temp": [261, 316],
+  "daysTillDieFromTemp": 1,
+  "fluidType": "water",
+  "daysNeedsFluidFrequency": 1,
+  "daysTillDieWithoutFluid": 3,
+  "eatsMeat": true,
+  "eatsPlants": true,
+  "daysHungerFreqency": 2,
+  "daysTillStarve": 10,
+  "yearsTillFullyGrown": 1,
+  "visionDistance": 15,
+  "mass": 20,
+  "strength": [6, 7],
+  "agility": [60, 65],
+  "dextarity": [50, 55],
+  "grips": 0
+}

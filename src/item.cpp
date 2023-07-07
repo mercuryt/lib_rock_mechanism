@@ -58,6 +58,7 @@ bool ItemContainsItemsOrFluids::canAdd(FluidType& fluidType) const
 {
 	return (m_fluidType == nullptr || m_fluidType == fluidType) && m_item.m_itemType.canHoldFluids && m_itemsAndVolumes.empty() && m_volume <= m_item.m_itemType.internalVolume;
 }
+Item::s_nextId = 1;
 void Item::setVolume() const { m_mass = m_quantity * m_itemType.volume; }
 void Item::setMass() const 
 { 

@@ -1,0 +1,7 @@
+{
+  "name": "lava",
+  "viscosity": 20,
+  "density": 300,
+  "mistDuration": 5,
+  "maxMistSpread": 1
+}

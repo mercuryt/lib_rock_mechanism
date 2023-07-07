@@ -1,25 +1,10 @@
 #pragma once
 
 #include <memory>
+#include <queue>
 
-struct ObjectiveType
-{
-	virtual bool canBeAssigned(Actor& actor) const = 0;
-	virtual std::unique_ptr<Objective> makeFor(Actor& actor) = 0;
-};
-class ObjectiveTypePrioritySet
-{
-	std::unordered_map<const ObjectiveType<Actor>*, uint8_t> m_map;
-	std::vector<const ObjectiveType<Actor>*> m_vector;
-public:
-	void setPriority(const ObjectiveType<Actor>& objectiveType, uint8_t priority);
-	void remove(const ObjectiveType<Actor>& objectiveType);
-	void setObjectiveFor(Actor& actor);
-};
-struct ObjectiveSort
-{
-	bool operator()(Objective& a, Objective& b);
-};
+class Actor;
+
 class Objective
 {
 public:
@@ -27,12 +12,30 @@ public:
 	virtual void execute();
 	Objective(uint32_t p);
 };
+struct ObjectiveSort
+{
+	bool operator()(Objective& a, Objective& b);
+};
+struct ObjectiveType
+{
+	virtual bool canBeAssigned(Actor& actor) const = 0;
+	virtual std::unique_ptr<Objective> makeFor(Actor& actor) = 0;
+};
+class ObjectiveTypePrioritySet
+{
+	std::unordered_map<const ObjectiveType*, uint8_t> m_map;
+	std::vector<const ObjectiveType*> m_vector;
+public:
+	void setPriority(const ObjectiveType& objectiveType, uint8_t priority);
+	void remove(const ObjectiveType& objectiveType);
+	void setObjectiveFor(Actor& actor);
+};
 class HasObjectives
 {
 	Actor& m_actor;
 	// Two objective queues, objectives are choosen from which ever has the higher priority.
 	// Biological needs like eat, drink, go to safe temperature, and sleep go here, possibly overiding the current objective in either queue.
-	std::priority_queue<std::unique_ptr<Objective>, std::vector<std::unique_ptr<Objective>, decltype(ObjectiveSort)> m_needsQueue;
+	std::priority_queue<std::unique_ptr<Objective>, std::vector<std::unique_ptr<Objective>>, ObjectiveSort> m_needsQueue;
 	// Voluntary tasks like harvest, dig, build, craft, guard, station, and kill go here. Station and kill both have higher priority then baseline needs.
 	// findNewTask only adds one task at a time so there usually is only once objective in the queue. More then one task objective can be added by the user manually.
 	std::deque<std::unique_ptr<Objective>> m_tasksQueue;

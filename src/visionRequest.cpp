@@ -1,16 +1,13 @@
 #include <algorithm>
 #include <cmath>
 // Static method.
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void VisionRequest<DerivedBlock, DerivedActor, DerivedArea>::readSteps(std::vector<VisionRequest<DerivedBlock, DerivedActor, DerivedArea>>::iterator begin, std::vector<VisionRequest<DerivedBlock, DerivedActor, DerivedArea>>::iterator end)
+void VisionRequest::readSteps(std::vector<VisionRequest>::iterator begin, std::vector<VisionRequest>::iterator end)
 {
 	for(; begin != end; ++begin)
 		begin->readStep();
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-VisionRequest<DerivedBlock, DerivedActor, DerivedArea>::VisionRequest(DerivedActor& a) : m_actor(a) {}
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void VisionRequest<DerivedBlock, DerivedActor, DerivedArea>::readStep()
+VisionRequest::VisionRequest(DerivedActor& a) : m_actor(a) {}
+void VisionRequest::readStep()
 {
 	m_actor.m_location->m_area->m_locationBuckets.processVisionRequest(*this);
 	// This is a more elegant solution then passing the request to location buckets but is also slower.
@@ -31,21 +28,18 @@ void VisionRequest<DerivedBlock, DerivedActor, DerivedArea>::readStep()
 	m_actors.erase(&m_actor);
 	*/
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-void VisionRequest<DerivedBlock, DerivedActor, DerivedArea>::writeStep()
+void VisionRequest::writeStep()
 {
 	m_actor.doVision(std::move(m_actors));
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-bool VisionRequest<DerivedBlock, DerivedActor, DerivedArea>::hasLineOfSight(const DerivedBlock& to, const DerivedBlock& from)
+bool VisionRequest::hasLineOfSight(const DerivedBlock& to, const DerivedBlock& from)
 {
 	if(to.m_area->m_visionCuboidsActive)
 		return hasLineOfSightUsingVisionCuboidAndEstablishedAs(to, from);
 	else
 		return hasLineOfSightUsingEstablishedAs(to, from);
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-bool VisionRequest<DerivedBlock, DerivedActor, DerivedArea>::hasLineOfSightUsingVisionCuboidAndEstablishedAs(const DerivedBlock& from, const DerivedBlock& to)
+bool VisionRequest::hasLineOfSightUsingVisionCuboidAndEstablishedAs(const DerivedBlock& from, const DerivedBlock& to)
 {
 	// Iterate line of sight blocks backwards to make the most of the 'established as having' opitimization.
 	assert(from.m_area->m_visionCuboidsActive);
@@ -89,8 +83,7 @@ bool VisionRequest<DerivedBlock, DerivedActor, DerivedArea>::hasLineOfSightUsing
 		previous = block;
 	}
 }
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-bool VisionRequest<DerivedBlock, DerivedActor, DerivedArea>::hasLineOfSightUsingEstablishedAs(const DerivedBlock& from, const DerivedBlock& to)
+bool VisionRequest::hasLineOfSightUsingEstablishedAs(const DerivedBlock& from, const DerivedBlock& to)
 {
 	// Iterate line of sight blocks backwards to make the most of the 'established as having' opitimization.
 	if(from == to)
@@ -127,8 +120,7 @@ bool VisionRequest<DerivedBlock, DerivedActor, DerivedArea>::hasLineOfSightUsing
 	}
 }
 // Static method.
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-bool VisionRequest<DerivedBlock, DerivedActor, DerivedArea>::hasLineOfSightUsingVisionCuboid(const DerivedBlock& from, const DerivedBlock& to)
+bool VisionRequest::hasLineOfSightUsingVisionCuboid(const DerivedBlock& from, const DerivedBlock& to)
 {
 	assert(from.m_area->m_visionCuboidsActive);
 	if(from.m_visionCuboid == to.m_visionCuboid)
@@ -164,8 +156,7 @@ bool VisionRequest<DerivedBlock, DerivedActor, DerivedArea>::hasLineOfSightUsing
 	}
 }
 // Static method.
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
-bool VisionRequest<DerivedBlock, DerivedActor, DerivedArea>::hasLineOfSightBasic(const DerivedBlock& from, const DerivedBlock& to)
+bool VisionRequest::hasLineOfSightBasic(const DerivedBlock& from, const DerivedBlock& to)
 {
 	//TODO: Can we reduce repetition here?
 	assert(from != to);

@@ -20,7 +20,7 @@ void rave(uint32_t scaleX, uint32_t scaleY, uint32_t scaleZ , uint32_t steps)
 	registerTypes();
 	setSolidLayer(area, 0, s_stone);
 	area.visionCuboidsActivate();
-	BaseCuboid<Block, Actor, Area> cuboid(area.m_blocks[scaleX - 1][scaleY - 1][scaleZ - 1], area.m_blocks[0][0][1]);
+	Cuboid cuboid(area.m_blocks[scaleX - 1][scaleY - 1][scaleZ - 1], area.m_blocks[0][0][1]);
 	std::list<Actor> actors;
 	for(Block& block : cuboid)
 	{

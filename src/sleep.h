@@ -1,11 +1,16 @@
 #pragma once
+
 #include "eventSchedule.h"
 #include "threadedTask.h"
 #include "objective.h"
 #include "actor.h"
 #include "block.h"
+
+#include <vector>
+
 class SleepEvent;
 class TiredEvent;
+class SleepObjective;
 class NeedsSleep final 
 {
 	Actor& m_actor;
@@ -23,7 +28,7 @@ public:
 	void makeSleepObjective();
 	void wakeUpEarly();
 };
-class SleepEvent final : ScheduledEventWithPercent
+class SleepEvent final : public ScheduledEventWithPercent
 {
 	NeedsSleep& m_needsSleep;
 public:
@@ -31,16 +36,16 @@ public:
 	void execute();
 	~SleepEvent();
 };
-class TiredEvent final : ScheduledEventWithPercent
+class TiredEvent final : public ScheduledEventWithPercent
 {
 	NeedsSleep& m_needsSleep;
 public:
 	TiredEvent(uint32_t step, NeedsSleep& ns);
 	void execute();
-	~SleepEvent();
+	~TiredEvent();
 };
 // Find a place to sleep.
-class SleepThreadedTask final : ThreadedTask
+class SleepThreadedTask final : public ThreadedTask
 {
 	SleepObjective& m_sleepObjective;
 	std::vector<Block*> m_result;
@@ -49,10 +54,10 @@ public:
 	void readStep();
 	void writeStep();
 };
-class SleepObjective final : Obective
+class SleepObjective final : public Objective
 {
 	NeedsSleep& m_needsSleep;
-	HasThreadedTask<SleepThreadedTask<SleepObjective, Block>> m_threadedTask;
+	HasThreadedTask<SleepThreadedTask> m_threadedTask;
 public:
 	SleepObjective(NeedsSleep& ns);
 	void execute();

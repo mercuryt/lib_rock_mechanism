@@ -1,0 +1,19 @@
+{
+  "name": "dwarf rabbit",
+  "temp": [261, 316],
+  "daysTillDieFromTemp": 1,
+  "fluidType": "water",
+  "daysNeedsFluidFrequency": 1,
+  "daysTillDieWithoutFluid": 3,
+  "eatsMeat": false,
+  "eatsPlants": true,
+  "daysHungerFreqency": 2,
+  "daysTillStarve": 10,
+  "yearsTillFullyGrown": 0.5,
+  "visionDistance": 10,
+  "mass": 2,
+  "strength": [3, 4],
+  "agility": [50, 55],
+  "dextarity": [50, 55],
+  "grips": 0
+}

@@ -7,6 +7,7 @@
 #include <unordered_set>
 
 class FluidGroup;
+class Block;
 /*
  * This struct holds a block, it's current capacity ( how much delta can increase at most ) and it's current delta.
  * These structs are stored in FluidQueue::m_queue, which is a vector that gets sorted at the begining of read step.
@@ -29,7 +30,7 @@ class FluidQueue
 public:
 	std::vector<FutureFlowBlock> m_queue;
 	std::unordered_set<Block*> m_set;
-	std::vector<FutureFlowBlock::iterator m_groupStart, m_groupEnd;
+	std::vector<FutureFlowBlock>::iterator m_groupStart, m_groupEnd;
 	FluidGroup& m_fluidGroup;
 
 	FluidQueue(FluidGroup& fluidGroup);

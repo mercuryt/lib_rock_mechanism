@@ -22,7 +22,7 @@ void GivePlantsFluidThreadedTask::readStep()
 	if(m_objective.m_actor.m_hasItems.hasContainerWithFluidType(m_objective.m_plant->m_plantType.m_fluidType))
 	{
 		if(m_objective.m_actor.m_location == m_objective.m_plant->m_location)
-			m_objective.m_givePlantsFluidEvent.schedule(::s_step + Config::givePlantsFluidEventDelaySteps, m_objective);
+			m_objective.m_givePlantsFluidEvent.schedule(Config::givePlantsFluidDelaySteps, m_objective);
 		else
 			m_result = path::getForActor(m_objective.m_actor, *m_plant.m_location);
 	}
@@ -93,7 +93,7 @@ void GivePlantsFluidObjective::execute()
 		if(m_actor.m_hasItems.hasContainerWithFluidType(m_plant.getFluidType()))
 		{
 			if(m_actor.m_location == m_plant->m_location)
-				m_event.schedule(::step + Config::givePlantsFluidDelaySteps, *this);
+				m_event.schedule(Config::givePlantsFluidDelaySteps, *this);
 			else
 				m_actor.setDestination(*m_plant.location);
 		}

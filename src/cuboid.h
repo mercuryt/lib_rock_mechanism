@@ -1,26 +1,28 @@
 #pragma once
-template<class Block>
-class BaseCuboid
+
+class Block;
+
+class Cuboid
 {
 public:
 	Block* m_highest;
 	Block* m_lowest;
 
-	BaseCuboid(Block* h, Block* l);
-	BaseCuboid(Block& h, Block& l);
-	BaseCuboid() : m_highest(nullptr), m_lowest(nullptr) {}
+	Cuboid(Block* h, Block* l);
+	Cuboid(Block& h, Block& l);
+	Cuboid() : m_highest(nullptr), m_lowest(nullptr) {}
 	bool contains(const Block& block) const;
-	bool canMerge(const BaseCuboid& cuboid) const;
-	BaseCuboid sum(const BaseCuboid& cuboid) const;
-	void merge(const BaseCuboid& cuboid);
-	BaseCuboid getFace(uint32_t faceing) const;
-	bool overlapsWith(const BaseCuboid& cuboid) const;
+	bool canMerge(const Cuboid& cuboid) const;
+	Cuboid sum(const Cuboid& cuboid) const;
+	void merge(const Cuboid& cuboid);
+	Cuboid getFace(uint32_t faceing) const;
+	bool overlapsWith(const Cuboid& cuboid) const;
 	size_t size() const;
 	bool empty() const { return size() == 0; }
-	bool operator==(const BaseCuboid& cuboid) const;
+	bool operator==(const Cuboid& cuboid) const;
 	struct iterator
 	{
-		BaseCuboid* cuboid;
+		Cuboid* cuboid;
 		uint32_t x;
 		uint32_t y;
 		uint32_t z;
@@ -30,7 +32,7 @@ public:
 		using pointer = Block*;
 		using reference = Block&;
 
-		iterator(BaseCuboid& c, const Block& block);
+		iterator(Cuboid& c, const Block& block);
 		iterator();
 		iterator& operator++();
 		iterator operator++(int) const;
@@ -44,7 +46,7 @@ public:
 	static_assert(std::forward_iterator<iterator>);
 	struct const_iterator
 	{
-		const BaseCuboid* cuboid;
+		const Cuboid* cuboid;
 		uint32_t x;
 		uint32_t y;
 		uint32_t z;
@@ -54,7 +56,7 @@ public:
 		using pointer = const Block*;
 		using reference = const Block&;
 
-		const_iterator(const BaseCuboid& c, const Block& block);
+		const_iterator(const Cuboid& c, const Block& block);
 		const_iterator();
 		const_iterator& operator++();
 		const_iterator operator++(int) const;

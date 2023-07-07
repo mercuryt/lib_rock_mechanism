@@ -1,0 +1,19 @@
+{
+  "name": "red deer",
+  "temp": [261, 316],
+  "daysTillDieFromTemp": 1,
+  "fluidType": "water",
+  "daysNeedsFluidFrequency": 1,
+  "daysTillDieWithoutFluid": 4,
+  "eatsMeat": false,
+  "eatsPlants": true,
+  "daysHungerFreqency": 3,
+  "daysTillStarve": 10,
+  "yearsTillFullyGrown": 3,
+  "visionDistance": 10,
+  "mass": 80,
+  "strength": [20, 25],
+  "agility": [60, 65],
+  "dextarity": [50, 55],
+  "grips": 0
+}

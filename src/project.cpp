@@ -1,9 +1,8 @@
 #include "project.h"
-ProjectFinishEvent::ProjectFinishEvent(uint32_t step, Project& p) : ScheduledEventWithPercent(step), m_project(p) {}
+ProjectFinishEvent::ProjectFinishEvent(uint32_t delay, Project& p) : ScheduledEventWithPercent(delay), m_project(p) {}
 void ProjectFinishEvent::execute() { m_project.complete(); }
 ~ProjectFinishEvent::ProjectFinishEvent() { m_project.m_finishEvent.clearPointer(); }
 
-ProjectGoToAdjacentLocationThreadedTask::ProjectGoToAdjacentLocationThreadedTask(Project& p, Actor& a, bool r) : m_project(p), m_actor(a), m_reserve(r) { }
 void ProjectGoToAdjacentLocationThreadedTask::readStep()
 {
 	auto condition = [&](Block* block)
@@ -211,7 +210,7 @@ void Project::scheduleEvent()
 {
 	m_finishEvent.maybeCancel();
 	uint32_t delay = util::scaleByPercent(getDelay(), 100u - m_digEvent.percentComplete());
-	m_finishEvent.schedule(::s_step + delay, *this);
+	m_finishEvent.schedule(delay, *this);
 }
 bool Project::canGatherItemAt(Actor& actor, Block& block) const
 {

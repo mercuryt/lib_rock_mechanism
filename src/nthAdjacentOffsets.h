@@ -26,10 +26,10 @@ struct XYZHash
 		return xyz.x * 10000 + xyz.y * 100 + xyz.z;
 	}
 };
-static std::unordered_set<XYZ, XYZHash> closedList;
-static std::vector<std::vector<XYZ>> cache;
+inline std::unordered_set<XYZ, XYZHash> closedList;
+inline std::vector<std::vector<XYZ>> cache;
 
-static std::array<XYZ, 6> offsets = { XYZ(0,0,-1), XYZ(0,0,1), XYZ(0,-1,0), XYZ(0,1,0), XYZ(-1,0,0), XYZ(1,0,0) };
+inline constexpr std::array<XYZ, 6> offsets = { XYZ(0,0,-1), XYZ(0,0,1), XYZ(0,-1,0), XYZ(0,1,0), XYZ(-1,0,0), XYZ(1,0,0) };
 
 inline std::vector<XYZ> getNthAdjacentOffsets(uint32_t n)
 {

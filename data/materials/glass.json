@@ -1,0 +1,8 @@
+{
+  "name": "glass",
+  "density": 100,
+  "hardness": 100,
+  "transparent": true,
+  "burnData": null,
+  "spoilData": null
+}

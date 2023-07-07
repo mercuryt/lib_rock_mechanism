@@ -1,3 +1,4 @@
+#include "../../src/temperatureSource.h"
 TEST_CASE("temperatureSource")
 {
 	Area area(10,10,10);

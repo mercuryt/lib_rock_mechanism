@@ -17,13 +17,17 @@
 #include "reservable.h"
 #include "eqipment.h"
 #include "fight.h"
+#include "animalSpecies.h"
+#include "attributes.h"
+#include "skill.h"
+#include "haul.h"
 
 #include <string>
 #include <vector>
 
 class Actor : public HasShape
 {	
-	static uint32_t s_nextId;
+	inline static uint32_t s_nextId = 1;
 public:
 	uint32_t m_id;
 	std::string m_name;
@@ -42,9 +46,6 @@ public:
 	const MoveType* m_moveType;
 	//TODO: CanSee.
 	uint32_t m_visionRange;
-	//TODO: CanFight.
-	uint32_t m_maxAttackRange;
-	uint32_t m_combatScore;
 	bool m_alive;
 	Faction* m_faction;
 
@@ -57,8 +58,9 @@ public:
 	static Actor create(Faction& faction, const AnimalSpecies& species, std::vector<AttributeModifiers>& modifiers, uint32_t percentGrown);
 };
 // To be used to find actors fitting criteria.
-struct ActorQuery
+class ActorQuery
 {
+public:
 	Actor* actor;
 	uint32_t carryWeight;
 	bool checkIfSentient;
@@ -78,8 +80,12 @@ public:
 	HasActors(Area& a) : m_area(a), m_volume(0) { }
 	void enter(Actor& actor);
 	void exit(Actor& actor);
+	bool anyoneCanEnterEver() const;
 	bool canEnterEverFrom(Actor& actor, Block& block) const;
+	bool shapeAndMoveTypeCanEnterEverFrom(const Shape& shape, const moveType& moveType, Block& block) const;
+	bool moveTypeCanEnter(const MoveType& moveType) const;
 	bool canEnterCurrentlyFrom(Actor& actor, Block& block) const;
 	std::vector<Block*, uint32_t> getMoveCosts(const Shape& shape, const MoveType& moveType) const;
+	uint32_t moveCostFrom(const MoveType& moveType, Block& from) const;
 	void clearCache();
 };
