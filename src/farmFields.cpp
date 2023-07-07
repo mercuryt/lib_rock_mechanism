@@ -52,7 +52,7 @@ Plant* HasFarmFieldsForPlayer::getHighPriorityPlantForGivingFluidIfAny()
 		m_plantsNeedingFluidIsSorted = true;
 	}
 	Plant* output = m_plantsNeedingFluid.first();
-	if(output.m_needsFluid.getDeathStep() - ::s_step > Config::stepsTillDiePlantPriorityOveride)
+	if(output.m_needsFluid.getDeathStep() - simulation::step > Config::stepsTillDiePlantPriorityOveride)
 		return nullptr;
 	return *m_plantsNeedingFluid.first();
 }

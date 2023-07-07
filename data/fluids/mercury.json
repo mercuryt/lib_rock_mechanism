@@ -1,0 +1,7 @@
+{
+  "name": "mercury",
+  "viscosity": 50,
+  "density": 200,
+  "mistDuration": 0,
+  "maxMistSpread": 0
+}

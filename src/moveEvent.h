@@ -5,17 +5,17 @@
  */
 #pragma once
 #include "eventSchedule.h"
+class Actor;
 /*
  *  Try to enter next step on route. 
  */
-template<class DerivedBlock, class DerivedActor>
 class MoveEvent : public ScheduledEvent
 {
 public:
-	DerivedActor& m_actor;
+	Actor& m_actor;
 	uint32_t m_delayCount;
-	static ScheduledEvent* emplace(EventSchedule& es, uint32_t delay, DerivedActor& a);
-	MoveEvent(uint32_t s, DerivedActor& a);
+	static ScheduledEvent* emplace(EventSchedule& es, uint32_t delay, Actor& a);
+	MoveEvent(uint32_t s, Actor& a);
 	void execute();
 	~MoveEvent();
 };

@@ -3,7 +3,7 @@ Plant::Plant(Block& l, const PlantSpecies& pt, uint32_t pg = 0) : m_location(l),
 {
 	assert(m_location.plantTypeCanGrow(m_plantType));
 	m_location.m_plants.push_back(this);
-	m_fluidEvent.schedule(s_step + m_plantType.stepsNeedsFluidFrequency, *this);
+	m_fluidEvent.schedule(m_plantType.stepsNeedsFluidFrequency, *this);
 	updateGrowingStatus();
 }
 void Plant::die()
@@ -25,7 +25,7 @@ void Plant::applyTemperatureChange(uint32_t oldTemperature, uint32_t newTemperat
 	}
 	else
 		if(m_temperatureEvent.empty())
-			m_temperatureEvent.schedule(s_step + m_plantType.stepsTillDieFromTemperature, *this);
+			m_temperatureEvent.schedule(m_plantType.stepsTillDieFromTemperature, *this);
 	updateGrowingStatus();
 }
 void Plant::setHasFluidForNow()
@@ -33,7 +33,7 @@ void Plant::setHasFluidForNow()
 	m_hasFluid = true;
 	if(!m_fluidEvent.empty())
 		m_fluidEvent->unschedule();
-	m_fluidEvent.schedule(s_step + m_plantType.stepsNeedsFluidFrequency, *this);
+	m_fluidEvent.schedule(m_plantType.stepsNeedsFluidFrequency, *this);
 	updateGrowingStatus();
 	m_location.m_isPartOfFarmField.removeAllGiveFluidDesignations();
 }
@@ -56,7 +56,7 @@ void Plant::setMaybeNeedsFluid()
 		stepsTillNextFluidEvent = m_plantType.stepsTillDieWithoutFluid;
 		m_location.m_isPartOfFarmField.designateForGiveFluidIfPartOfFarmField;
 	}
-	m_fluidEvent.schedule(s_step + stepsTillNextFluidEvent, *this);
+	m_fluidEvent.schedule(stepsTillNextFluidEvent, *this);
 	updateGrowingStatus();
 }
 bool Plant::hasFluidSource() const
@@ -79,7 +79,7 @@ void Plant::setDayOfYear(uint32_t dayOfYear)
 }
 void Plant::setQuantityToHarvest()
 {
-	m_endOfHarvestEvent.schedule(s_step + m_plantType.stepsTillEndOfHarvest, *this);
+	m_endOfHarvestEvent.schedule(m_plantType.stepsTillEndOfHarvest, *this);
 	m_quantityToHarvest = util::scaleByPercent(m_plantType.fruitQuantityWhenFullyGrown, getGrowthPercent());
 	m_location.m_isPartOfFarmField.designateForHarvestIfPartOfField(m_plantType);
 }
@@ -104,10 +104,10 @@ void Plant::updateGrowingStatus()
 	{
 		if(m_growthEvent.empty())
 		{
-			uint32_t step = s_step + (m_percentGrown == 0 ?
+			uint32_t delay = (m_percentGrown == 0 ?
 					m_plantType.stepsTillFullyGrown :
 					((m_plantType.stepsTillFullyGrown * m_percentGrown) / 100u));
-			m_growthEvent.schedule(step, *this);
+			m_growthEvent.schedule(delay, *this);
 		}
 	}
 	else
@@ -167,8 +167,8 @@ void Plant::removeFoliageMass(uint32_t mass)
 }
 void Plant::makeFoliageGrowthEvent()
 {
-	uint32_t step = s_step + util::scaleByInversePercent(m_plantType.stepsTillFoliageGrowsFromZero, m_percentFoliage);
-	m_foliageGrowthEvent.schedule(step, *this);
+	uint32_t delay = util::scaleByInversePercent(m_plantType.stepsTillFoliageGrowsFromZero, m_percentFoliage);
+	m_foliageGrowthEvent.schedule(delay, *this);
 }
 void Plant::foliageGrowth()
 {

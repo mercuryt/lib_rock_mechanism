@@ -1,4 +1,5 @@
 #include "move.h"
+#inclued "path.h"
 void CanMove::updateIndividualSpeed()
 {
 	m_speedIndividual = m_actor.m_attributes.getMoveSpeed();
@@ -44,4 +45,15 @@ void CanMove::setDestination(Block* destination, bool detour = false)
 {
 	m_destination = destination;
 	m_threadedTask.create(*this, detour);
+}
+void CanMove::readStep()
+{
+	m_result = path::getForActor(m_canMove.m_actor, end, m_detour);
+}
+void CanMove::writeStep()
+{
+	if(m_result.empty())
+		m_canMove.m_actor.m_hasObjectives.cannotCompleteTask();
+	else
+		m_canMove.setPath(m_result);
 }

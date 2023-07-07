@@ -6,9 +6,9 @@
 #include "block.h"
 #include "actor.h"
 
-#include <memeory>
+#include <memory>
 #include <vector>
-#include <pair>
+#include <utility>
 #include <tuple>
 #include <unordered_set>
 #include <unordered_map>

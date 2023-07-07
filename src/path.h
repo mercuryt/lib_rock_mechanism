@@ -4,26 +4,24 @@
 
 namespace path
 {
-	template<class Block>
 	struct RouteNode
 	{
 		Block& block;
-		RouteNode<Block>& previous;
+		RouteNode* previous;
 	};
-	template<class Block>
 	struct ProposedRouteStep
 	{
-		RouteNode<Block>& routeNode;
+		RouteNode& routeNode;
 		uint32_t totalMoveCost;
 	};
-	template<class Block, typename IsValidType, typename CompareType, typename IsDoneType, typename AdjacentCostsType>
+	template<typename IsValidType, typename CompareType, typename IsDoneType, typename AdjacentCostsType>
 	std::vector<Block*> get(IsValidType&& isValid, CompareType&& compare, IsDoneType&& isDone, AdjacentCostsType&& adjacentCosts, Block* start)
 	{
 		std::unordered_set<Block*> m_closed;
 		std::unordered_set<Block*> closed;
 		m_closed.insert(start);
-		std::list<RouteNode<Block>> routeNodes;
-		std::priority_queue<ProposedRouteStep<Block>, std::vector<ProposedRouteStep<Block>>, decltype(compare)> open(compare);
+		std::list<RouteNode> routeNodes;
+		std::priority_queue<ProposedRouteStep, std::vector<ProposedRouteStep>, decltype(compare)> open(compare);
 		routeNodes.emplace_back(start, nullptr);
 		open.emplace(&routeNodes.back(), 0);
 		std::vector<Block*> output;
@@ -35,13 +33,12 @@ namespace path
 			assert(block != nullptr);
 			if(isDone(block))
 			{
-				RouteNode<Block>* routeNode = proposedRouteStep.routeNode;
+				RouteNode* routeNode = proposedRouteStep.routeNode;
 				// Route found, push to output.
 				// Exclude the starting point.
 				while(routeNode->previous != nullptr)
 				{
-					assert(routeNode->block != nullptr);
-					output.push_back(routeNode->block);
+					output.push_back(&routeNode->block);
 					routeNode = routeNode->previous;
 				}
 				std::reverse(output.begin(), output.end());
@@ -57,51 +54,50 @@ namespace path
 		}
 		return output; // Empty container means no result found.
 	}
-	template<class Block, class Actor>
-	std::vector<Block*> getForActor(Actor& actor, Block& destination, bool detour = false;)
+	std::vector<Block*> getForActor(Actor& actor, Block& destination, bool detour = false)
 	{
 		// Huristic: taxi distance to destination times constant plus total move cost.
-		auto priority = [&](ProposedRouteStep<Block>& proposedRouteStep)
+		auto priority = [&](ProposedRouteStep& proposedRouteStep)
 		{
-			return (proposedRouteStep.routeNode->block->taxiDistance(*end) * Config::pathHuristicConstant) + proposedRouteStep.totalMoveCost;
+			return (proposedRouteStep.routeNode.block.taxiDistance(destination) * Config::pathHuristicConstant) + proposedRouteStep.totalMoveCost;
 		};
-		auto compare = [&](ProposedRouteStep<Block>& a, ProposedRouteStep<Block>& b) { return priority(a) > priority(b); };
+		auto compare = [&](ProposedRouteStep& a, ProposedRouteStep& b) { return priority(a) > priority(b); };
 		// Check if the actor can currently enter each block if this is a detour path.
-		auto isDone = [&](Block* block){ return block == end; };
+		auto isDone = [&](Block* block){ return block == &destination; };
 		std::vector<std::pair<Block*, uint32_t>> adjacentMoveCosts;
 		auto adjacentCosts = [&](Block* block){
-			if(block->m_moveCostsCache.contains(m_actor.m_shape) && block->m_moveCostsCache.at(m_actor.m_shape).contains(m_actor.m_moveType))
-				adjacentMoveCosts = block->m_moveCostsCache.at(m_actor.m_shape).at(m_actor.m_moveType);
+			if(block.m_moveCostsCache.contains(m_actor.m_shape) && block.m_moveCostsCache.at(m_actor.m_shape).contains(m_actor.m_moveType))
+				adjacentMoveCosts = block.m_moveCostsCache.at(m_actor.m_shape).at(m_actor.m_moveType);
 			else
-				m_moveCostsToCache[block] = adjacentMoveCosts = block->getMoveCosts(*m_actor.m_shape, *m_actor.m_moveType);
+				m_moveCostsToCache[block] = adjacentMoveCosts = block.getMoveCosts(*m_actor.m_shape, *m_actor.m_moveType);
 			return adjacentMoveCosts;
 		};
 		if(m_detour)
 		{
 			auto isValid = [&](Block* block){ 
-				return block->anyoneCanEnterEver() && block->canEnterEver(m_actor) && block->actorCanEnterCurrently(m_actor);
+				return block.anyoneCanEnterEver() && block.canEnterEver(m_actor) && block.actorCanEnterCurrently(m_actor);
 			};
-			return get<Block, decltype(isValid), decltype(compare), decltype(isDone), decltype(adjacentCosts)> getPath(isValid, compare, isDone, adjacentCosts, start, m_result);
+			return get<decltype(isValid), decltype(compare), decltype(isDone), decltype(adjacentCosts)> getPath(isValid, compare, isDone, adjacentCosts, start, m_result);
 		}
 		else
 		{
-			auto isValid = [&](Block* block){ return block->anyoneCanEnterEver() && block->canEnterEver(m_actor); };
-			return get<Block, decltype(isValid), decltype(compare), decltype(isDone), decltype(adjacentCosts)> getPath(isValid, compare, isDone, adjacentCosts, start, m_result);
+			auto isValid = [&](Block* block){ return block.anyoneCanEnterEver() && block.canEnterEver(m_actor); };
+			return get<decltype(isValid), decltype(compare), decltype(isDone), decltype(adjacentCosts)> getPath(isValid, compare, isDone, adjacentCosts, start, m_result);
 		}
 	}
-	template<class Block, class Actor, typename Predicate>
+	template<typename Predicate>
 	std::vector<Block*> getForActorToPredicate(Actor& actor, Predicate&& predicate)
 	{
 		std::unordered_set<Block*> closedList;
 		closedList.insert(actor.m_location);
 		std::list<RouteNode*> openList;
-		std::list<RouteNode<Block>> routeNodes;
+		std::list<RouteNode> routeNodes;
 		routeNodes.emplace_back(actor.m_location, nullptr);
 		open.emplace(&routeNodes.back());
 		std::vector<Block*> output;
 		while(!openList.empty())
 		{
-			for(RouteNode<Block>* routeNode : openList)
+			for(RouteNode* routeNode : openList)
 			{
 				if(predicate(routeNode->block))
 				{
@@ -114,7 +110,7 @@ namespace path
 					std::reverse(output.begin(), output.end());
 					return output;
 				}
-				for(Block* adjacent : routeNode->block->m_adjacentsVector)
+				for(Block* adjacent : routeNode->block.m_adjacentsVector)
 				{
 					if(!adjacent->anyoneCanEnterEver())
 						continue;
@@ -132,23 +128,23 @@ namespace path
 		}
 		return output; // Empty container means no result found.
 	}
-	template<class Block, class Actor, typename Predicate>
+	template<typename Predicate>
 	Block* getForActorToPredicateReturnEndOnly(Actor& actor, Predicate&& predicate)
 	{
 		std::unordered_set<Block*> closedList;
 		closedList.insert(actor.m_location);
 		std::list<RouteNode*> openList;
-		std::list<RouteNode<Block>> routeNodes;
+		std::list<RouteNode> routeNodes;
 		routeNodes.emplace_back(actor.m_location, nullptr);
 		open.emplace(&routeNodes.back());
 		while(!openList.empty())
 		{
-			for(RouteNode<Block>* routeNode : openList)
+			for(RouteNode* routeNode : openList)
 			{
 				if(predicate(routeNode->block))
 					return routeNode->block;
 				}
-				for(Block* adjacent : routeNode->block->m_adjacentsVector)
+				for(Block* adjacent : routeNode->block.m_adjacentsVector)
 				{
 					if(!adjacent->anyoneCanEnterEver())
 						continue;

@@ -1,18 +1,15 @@
-
-template<class DerivedBlock, class DerivedActor>
-ScheduledEvent* MoveEvent<DerivedBlock, DerivedActor>::emplace(EventSchedule& es, uint32_t delay, DerivedActor& a)
+#include "moveEvent.h"
+ScheduledEvent* MoveEvent::emplace(EventSchedule& es, uint32_t delay, Actor& a)
 {
-	std::unique_ptr<ScheduledEvent> event = std::make_unique<MoveEvent<DerivedBlock, DerivedActor>>(s_step + delay, a);
+	std::unique_ptr<ScheduledEvent> event = std::make_unique<MoveEvent>(delay, a);
 	ScheduledEvent* output = event.get();
 	es.schedule(std::move(event));
 	return output;
 }
-template<class DerivedBlock, class DerivedActor>
-MoveEvent<DerivedBlock, DerivedActor>::MoveEvent(uint32_t s, DerivedActor& a) : ScheduledEvent(s), m_actor(a) { m_actor.m_taskEvent = this; }
-template<class DerivedBlock, class DerivedActor>
-void MoveEvent<DerivedBlock, DerivedActor>::execute()
+MoveEvent::MoveEvent(uint32_t s, Actor& a) : ScheduledEvent(s), m_actor(a) { m_actor.m_taskEvent = this; }
+void MoveEvent::execute()
 {
-	DerivedBlock& block = **m_actor.m_routeIter;
+	Block& block = **m_actor.m_routeIter;
 	if(block.anyoneCanEnterEver() && block.canEnterEver(m_actor))
 	{
 		if(block.actorCanEnterCurrently(m_actor))
@@ -43,8 +40,7 @@ void MoveEvent<DerivedBlock, DerivedActor>::execute()
 	else // Route is no longer valid, generate new routeRequest with area
 		m_actor.m_location->m_area->registerRouteRequest(m_actor);
 }
-template<class DerivedBlock, class DerivedActor>
-MoveEvent<DerivedBlock, DerivedActor>::~MoveEvent()
+MoveEvent::~MoveEvent()
 {
 	m_actor.m_taskEvent = nullptr;
 }

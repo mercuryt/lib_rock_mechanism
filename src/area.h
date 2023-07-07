@@ -10,6 +10,7 @@
 #include <tuple>
 #include <list>
 
+#include "block.h"
 #include "buckets.h"
 #include "locationBuckets.h"
 #include "shape.h"
@@ -59,9 +60,9 @@ public:
 	
 
 	// Create blocks and store adjacent
-	BaseArea(uint32_t x, uint32_t y, uint32_t z);
+	Area(uint32_t x, uint32_t y, uint32_t z);
 	// Set m_destroy = true to simplify cleanup.
-	~BaseArea();
+	~Area();
 
 	void readStep(BS::thread_pool_light pool);
 	void writeStep();
@@ -87,5 +88,5 @@ public:
 	void validateAllFluidGroups();
 	std::string toS();
 
-	BaseCuboid<Block> getZLevel(uint32_t z);
+	Cuboid getZLevel(uint32_t z);
 };

@@ -5,19 +5,18 @@
  */
 #pragma once
 #include "shape.h"
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
 class RouteRequest
 {
 public:
-	DerivedActor& m_actor;
+	Actor& m_actor;
 	bool m_detour;
-	std::vector<DerivedBlock*> m_result;
-	std::unordered_map<DerivedBlock*, std::vector<std::pair<DerivedBlock*, uint32_t>>> m_moveCostsToCache;
+	std::vector<Block*> m_result;
+	std::unordered_map<Block*, std::vector<std::pair<Block*, uint32_t>>> m_moveCostsToCache;
 	bool m_cacheHit;
 
-	static void readSteps(std::vector<RouteRequest<DerivedBlock, DerivedActor, DerivedArea>>::iterator begin, std::vector<RouteRequest<DerivedBlock, DerivedActor, DerivedArea>>::iterator end);
+	static void readSteps(std::vector<RouteRequest>::iterator begin, std::vector<RouteRequest>::iterator end);
 
-	RouteRequest(DerivedActor& a, bool detour = false);
+	RouteRequest(Actor& a, bool detour = false);
 	
 	// Find the route.
 	void readStep();

@@ -1,0 +1,30 @@
+{
+  "name": "marble",
+  "density": 100,
+  "hardness": 100,
+  "transparent": false,
+  "burnData": null,
+  "spoilData": [
+    {
+      "materialType": "gravel",
+      "itemType": "gravel",
+      "chance": 100,
+      "quantityMin": 20,
+      "quantityMax": 30
+    },
+    {
+      "materialType": "sand",
+      "itemType": "sand",
+      "chance": 100,
+      "quantityMin": 20,
+      "quantityMax": 30
+    },
+    {
+      "materialType": "marble",
+      "itemType": "rock",
+      "chance": 100,
+      "quantityMin": 20,
+      "quantityMax": 30
+    }
+  ]
+}

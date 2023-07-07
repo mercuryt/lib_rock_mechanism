@@ -14,13 +14,12 @@ struct Attribute
 	void setPercentGrown(uint32_t percentGrown)
 	{
 		value = util::scaleByPercent(
-				util::scaleByPercentInRange(percentGrown, speciesNewbornValue, speciesAdultValue),
+				util::scaleByPercentRange(percentGrown, speciesNewbornValue, speciesAdultValue),
 				baseModifierPercent) + bonusOrPenalty;
 	}
 };
 class Attributes
 {
-	AnimalSpecies& species;
 	Attribute strength;
 	Attribute dextarity;
 	Attribute agility;
@@ -33,7 +32,7 @@ class Attributes
 		moveSpeed = agility.value * Config::unitsOfMoveSpeedPerUnitOfAgility;
 	}
 public:
-	Attributes(Species& species, std::vector<AttributeModifiers*>& modifiers, std::array<uint32_t, 3> modifierPercents, std::array<int32_t, 3> bonusOrPenalties, uint32_t percentGrown)
+	Attributes(AnimalSpecies& species, std::array<uint32_t, 3> modifierPercents, std::array<int32_t, 3> bonusOrPenalties, uint32_t percentGrown)
 	{
 		strength(species.strength[0], species.strength[1], modifierPercents[1], bonusOrPenalties[1], percentGrown);
 		dextarity(species.dextarity[0], species.dextarity[1], modifierPercents[1], bonusOrPenalties[1], percentGrown);

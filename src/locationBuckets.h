@@ -1,27 +1,30 @@
 #pragma once
 #include "visionRequest.h"
-template<class DerivedBlock, class DerivedActor, class DerivedArea>
+class Area;
+class Block;
+class Actor;
+
 class LocationBuckets
 {
-	DerivedArea& m_area;
+	Area& m_area;
 	std::vector<std::vector<std::vector<
-		std::unordered_set<DerivedActor*>
+		std::unordered_set<Actor*>
 		>>> m_buckets;
 	uint32_t m_maxX;
 	uint32_t m_maxY;
 	uint32_t m_maxZ;
 public:
-	LocationBuckets(DerivedArea& area);
-	void insert(DerivedActor& actor);
-	void erase(DerivedActor& actor);
-	void update(DerivedActor& actor, const DerivedBlock& oldLocation, const DerivedBlock& newLocation);
-	void processVisionRequest(VisionRequest<DerivedBlock, DerivedActor, DerivedArea>& visionRequest) const;
-	std::unordered_set<DerivedActor*>* getBucketFor(const DerivedBlock& block);
-	bool hasLineOfSight(VisionRequest<DerivedBlock, DerivedActor, DerivedArea>& visionRequest, const DerivedBlock& to, const DerivedBlock& from) const;
+	LocationBuckets(Area& area);
+	void insert(Actor& actor);
+	void erase(Actor& actor);
+	void update(Actor& actor, const Block& oldLocation, const Block& newLocation);
+	void processVisionRequest(VisionRequest& visionRequest) const;
+	std::unordered_set<Actor*>* getBucketFor(const Block& block);
+	bool hasLineOfSight(VisionRequest& visionRequest, const Block& to, const Block& from) const;
 	struct InRange
 	{
 		const LocationBuckets& locationBuckets;
-		const DerivedBlock& origin;
+		const Block& origin;
 		uint32_t range;
 		struct iterator
 		{
@@ -35,16 +38,16 @@ public:
 			uint32_t minX;
 			uint32_t minY;
 			uint32_t minZ;
-			const std::unordered_set<DerivedActor*>* bucket;
-			std::unordered_set<DerivedActor*>::const_iterator bucketIterator;
+			const std::unordered_set<Actor*>* bucket;
+			std::unordered_set<Actor*>::const_iterator bucketIterator;
 
 			iterator(InRange& ir);
 			iterator();
 
 			using difference_type = std::ptrdiff_t;
-			using value_type = DerivedActor;
-			using pointer = DerivedActor*;
-			using reference = DerivedActor&;
+			using value_type = Actor;
+			using pointer = Actor*;
+			using reference = Actor&;
 
 			void getNextBucket();
 			void findNextActor();
@@ -59,5 +62,5 @@ public:
 		iterator end();
 		static_assert(std::forward_iterator<iterator>);
 	};
-	InRange inRange(const DerivedBlock& origin, uint32_t range) const;
+	InRange inRange(const Block& origin, uint32_t range) const;
 };

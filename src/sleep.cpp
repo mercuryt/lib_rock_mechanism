@@ -69,7 +69,7 @@ uint32_t SleepObjective::desireToSleepAt(Block& block)
 // Needs Sleep.
 NeedsSleep::NeedsSleep(Actor& a) : m_actor(a), m_needsSleep(false), m_isAwake(true)
 {
-	m_tiredEvent.schedule(::s_step + m_actor.getStepsNeedsSleepFrequency(), *this);
+	m_tiredEvent.schedule(m_actor.getStepsNeedsSleepFrequency(), *this);
 }
 void NeedsSleep::tired()
 {
@@ -79,7 +79,7 @@ void NeedsSleep::tired()
 	else
 	{
 		m_needsSleep = true;
-		m_tiredEvent.schedule(::s_step + m_actor.getStepsTillSleepOveride(), *this);
+		m_tiredEvent.schedule(m_actor.getStepsTillSleepOveride(), *this);
 		makeSleepObjective();
 	}
 }
@@ -88,13 +88,13 @@ void NeedsSleep::sleep()
 	assert(m_isAwake);
 	m_isAwake = false;
 	m_tiredEvent.unschedule();
-	m_sleepEvent.schedule(::s_step + m_actor.getStepsSleepDuration(), *this);
+	m_sleepEvent.schedule(m_actor.getStepsSleepDuration(), *this);
 }
 void NeedsSleep::wakeUp()
 {
 	assert(!m_isAwake);
 	m_isAwake = true;
-	m_tiredEvent.schedule(::s_step + m_actor.getStepsNeedsSleepFrequency(), *this);
+	m_tiredEvent.schedule(m_actor.getStepsNeedsSleepFrequency(), *this);
 }
 void NeedsSleep::makeSleepObjective()
 {

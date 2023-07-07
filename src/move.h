@@ -2,7 +2,9 @@
 #include "eventSchedule.h"
 #include "threadedTask.h"
 #include "block.h"
+
 #include <vector>
+
 class MoveEvent;
 class PathThreadedTask;
 class CanMove
@@ -24,11 +26,13 @@ public:
 	void callback();
 	void scheduleMove();
 	void setDestination(Block* destination, bool detour = false);
+	friend class MoveEvent;
+	friend class PathThreadedTask;
 };
 class MoveEvent : ScheduledEvent
 {
 	CanMove& m_canMove;
-	MoveEvent(uint32_t delay, CanMove& cm) : ScheduledEvent(delay), m_canMove(cm);
+	MoveEvent(uint32_t delay, CanMove& cm) : ScheduledEvent(delay), m_canMove(cm) { }
 	void execute() { m_canMove.callback(); }
 	~MoveEvent() { m_canMove.m_event.clearPointer(); }
 };
@@ -38,15 +42,6 @@ class PathThreadedTask : ThreadedTask
 	bool m_detour;
 	PathThreadedTask(CanMove& cm, bool d) : m_canMove(cm), m_detour(d) { }
 	std::vector<Block*> m_result;
-	void readStep()
-	{
-		m_result = path::getForActor(m_canMove.m_actor, end, m_detour);
-	}
-	void writeStep()
-	{
-		if(m_result.empty())
-			m_canMove.m_actor.m_hasObjectives.cannotCompleteTask();
-		else
-			m_canMove.setPath(m_result);
-	}
+	void readStep();
+	void writeStep();
 };

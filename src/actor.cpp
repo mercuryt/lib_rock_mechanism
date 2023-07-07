@@ -90,11 +90,26 @@ void HasActors::exit(Actor& actor)
 	actor.m_locaton = nullptr;
 	actor.m_blocks.clear();
 }
-bool HasActors::canEnterEverFrom(Actor& actor, Block& block) const
+bool HasActors::anyoneCanEnterEver() const
 {
 	if(m_block.isSolid())
 		return false;
-	const uint8_t facing = m_block.facingToSetWhenEnteringFrom(block);
+	for(const BlockFeature& blockFeature : m_features)
+	{
+		if(blockFeature.blockFeatureType == &BlockFeatureType::fortification || blockFeature.blockFeatureType == &BlockFeatureType::floodGate ||
+				(blockFeature.blockFeatureType == &BlockFeatureType::door && blockFeature.locked)
+		  )
+			return false;
+	}
+	return true;
+}
+bool HasActors::canEnterEverFrom(Actor& actor, Block& block) const
+{
+	return shapeAndMoveTypeCanEnterEverFrom(actor.m_shape, actor.m_moveType, block);
+}
+bool HasActors::shapeAndMoveTypeCanEnterEverFrom(const Shape& shape, const MoveType& moveType, Block& from) const
+{
+	const uint8_t facing = m_block.facingToSetWhenEnteringFrom(from);
 	for(auto& [m_x, m_y, m_z, v] : actor.shape.positionsWithFacing(facing))
 	{
 		Block* block = m_block.offset(m_x, m_y, m_z);
@@ -102,21 +117,77 @@ bool HasActors::canEnterEverFrom(Actor& actor, Block& block) const
 			return false;
 		if(block->isSolid())
 			return false;
-		if(!Config::moveTypeCanEnter(&block, actor.m_moveType))
+		if(!block->moveTypeCanEnter(moveType))
 			return false;
 	}
 	return true;
+}
+bool HasActors::moveTypeCanEnter(const MoveType& moveType) const
+{
+	// Swiming.
+	for(auto& [fluidType, pair] : m_block.m_fluids)
+	{
+		auto found = moveType.swim.find(fluidType);
+		if(found != moveType.swim.end() && found->second <= pair.first)
+			return true;
+	}
+	// Not swimming and fluid level is too high.
+	if(m_block.m_totalFluidVolume > Config::maxBlockVolume / 2)
+		return false;
+	// Not flying and either not walking or ground is not supported.
+	if(!moveType.fly && (!moveType.walk || !canStandIn()))
+	{
+		if(moveType.climb < 2)
+			return false;
+		else
+		{
+			// Only climb2 moveTypes can enter.
+			for(Block* block : m_block.getAdjacentOnSameZLevelOnly())
+				//TODO: check for climable features?
+				if(block->isSupport())
+					return true;
+			return false;
+		}
+	}
+	return true;
+}
+bool HasActors::canStandIn() const
+{
+	assert(m_block.m_adjacents.at(0) != nullptr);
+	if(m_block.m_adjacents[0]->isSolid())
+		return true;
+	if(m_block.m_hasBlockFeatures.contains(BlockFeatureType::floor))
+		return true;
+	if(m_block.m_hasBlockFeatures.contains(BlockFeatureType::upStairs))
+		return true;
+	if(m_block.m_hasBlockFeatures.contains(BlockFeatureType::downStairs))
+		return true;
+	if(m_block.m_hasBlockFeatures.contains(BlockFeatureType::upDownStairs))
+		return true;
+	if(m_block.m_hasBlockFeatures.contains(BlockFeatureType::ramp))
+		return true;
+	if(m_block.m_hasBlockFeatures.contains(BlockFeatureType::floorGrate))
+		return true;
+	if(m_block.m_hasBlockFeatures.contains(BlockFeatureType::hatch))
+		return true;
+	if(m_adjacents[0]->m_block.m_hasBlockFeatures.contains(BlockFeatureType::upStairs))
+		return true;
+	if(m_adjacents[0]->m_block.m_hasBlockFeatures.contains(BlockFeatureType::upDownStairs))
+		return true;
+	// Neccessary for multi tile actors to use ramps.
+	if(m_adjacents[0]->m_block.m_hasBlockFeatures.contains(BlockFeatureType::ramp))
+		return true;
+	return false;
 }
 bool HasActors::canEnterCurrentlyFrom(Actor& actor, Block& block) const
 {
 	assert(canEnterEverFrom(actor));
 	if(shape.positions.size() == 1)
 	{
-		const DerivedBlock& block = const_derived();
 		uint32_t v = shape.positions[0][3];
-		if(&block == actor.m_location)
+		if(m_block == actor.m_location)
 			v = 0;
-		return block.m_totalDynamicVolume + v <= Config::maxBlockVolume;
+		return m_block.m_totalDynamicVolume + v <= Config::maxBlockVolume;
 	}
 	const uint8_t facing = m_block.facingToSetWhenEnteringFrom(block);
 	for(auto& [m_x, m_y, m_z, v] : actor.shape.positionsWithFacing(facing))
@@ -137,9 +208,22 @@ std::vector<Block*, uint32_t> HasActors::getMoveCosts(const Shape& shape, const 
 {
 	std::vector<Block*, uint32_t> output;
 	for(Block* block : m_block.m_adjacentsVector)
-		if(Config::moveTypeCanEnterEverFromTo(moveType, m_block, block))
-			output.emplace_back(block, Config::getMoveCostFromTo(moveType, m_block, block));
+		if(block->m_hasActors.shapeAndMoveTypeCanEnterEverFrom(shape, moveType, m_block))
+			output.emplace_back(block, block->moveCostFrom(moveType, m_block);
 	return output;
+}
+// Get a move cost for moving from a block onto this one for a given move type.
+uint32_t HasActors::moveCostFrom(const MoveType& moveType, Block& from) const
+{
+	if(moveType.fly)
+		return 10;
+	for(auto& [fluidType, volume] : moveType.swim)
+		if(m_block.volumeOfFluidTypeContains(*fluidType) >= volume)
+			return 10;
+	// Double cost to go up if not fly, swim, or ramp (if climb).
+	if(m_block.m_z > from.m_z && !from.m_hasBlockFeatures.contains(BlockFeatureType::ramp))
+		return 20;
+	return 10;
 }
 void HasActors::clearCache()
 {

@@ -1,14 +1,14 @@
 #pragma once
 
-#include "attack.h"
+#include "fight.h"
 #include "hit.h"
 #include "materialType.h"
 #include "body.h"
+#include "item.h"
 
 #include <vector>
-#include <list>
 #include <queue>
-#include <unordered_multimap>
+#include <unordered_set>
 
 class EquipmentSortByLayer
 {
@@ -17,7 +17,7 @@ class EquipmentSortByLayer
 class EquipmentSet
 {
 	std::unordered_set<Item*> m_equipments;
-	std::priority_queue<Item*, std::vector<Item*, EquipmentSortByLayer> m_wearable;
+	std::priority_queue<Item*, std::vector<Item*>, EquipmentSortByLayer> m_wearable;
 	uint32_t m_mass;
 	EquipmentSet();
 	void addEquipment(Item& equipment);

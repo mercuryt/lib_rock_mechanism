@@ -3,13 +3,17 @@
 #include "objective.h"
 #include "eventSchedule.h"
 #include "threadedTask.h"
-#include "actor.h"
+#include "item.h"
+
+class Actor;
+class EatObjective;
+class HungerEvent;
 
 class MustEat
 {
 	Actor& m_actor;
 	uint32_t m_massFoodRequested;
-	ScheduledEventWithPercent<HungerEvent> m_hungerEvent;
+	HasScheduledEvent<HungerEvent> m_hungerEvent;
 	const uint32_t& m_stepsNeedsFoodFrequency;
 	const uint32_t& m_stepsTillDieWithoutFood;
 public:
@@ -25,7 +29,14 @@ class EatEvent : public ScheduledEvent
 {
 	EatObjective& m_eatObjective;
 public:
-	EatEvent(step, EatObjective& eo);
+	EatEvent(uint32_t delay, EatObjective& eo);
+	void execute();
+};
+class HungerEvent : public ScheduledEvent
+{
+	EatObjective& m_eatObjective;
+public:
+	HungerEvent(uint32_t delay, EatObjective& eo);
 	void execute();
 };
 class EatThreadedTask : ThreadedTask
@@ -42,7 +53,7 @@ class EatObjective : public Objective
 {
 public:
 	Actor& m_actor;
-	ThreadedTask<EatThreadedTask> m_threadedTask;
+	HasThreadedTask<EatThreadedTask> m_threadedTask;
 	HasScheduledEvent<EatEvent> m_eatEvent;
 	Block* m_foodLocation;
 	Item* m_foodItem;

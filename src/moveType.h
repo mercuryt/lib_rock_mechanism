@@ -1,12 +1,12 @@
 #pragma once 
 
+#include "fluidType.h"
+
 #include <string>
 #include <list>
 #include <unordered_map>
 
-
-template<class FluidType>
-struct BaseMoveType
+struct MoveType
 {
 	const std::string name;
 	bool walk;

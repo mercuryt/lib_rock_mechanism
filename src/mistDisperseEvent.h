@@ -1,6 +1,5 @@
 #pragma once
 #include "eventSchedule.h"
-template<class Block, class FluidType>
 class MistDisperseEvent : public ScheduledEvent
 {
 public:
@@ -9,7 +8,7 @@ public:
 
 	static ScheduledEvent* emplace(EventSchedule& es, uint32_t delay, const FluidType& ft, Block& b)
 	{
-		std::unique_ptr<ScheduledEvent> event = std::make_unique<MistDisperseEvent<Block, FluidType>>(s_step + delay, ft, b);
+		std::unique_ptr<ScheduledEvent> event = std::make_unique<MistDisperseEvent>(delay, ft, b);
 		ScheduledEvent* output = event.get();
 		es.schedule(std::move(event));
 		return output;

@@ -1,3 +1,5 @@
+#include "drink.h"
+#include "path.h"
 // Drink Event.
 DrinkEvent::DrinkEvent(uint32_t step, DrinkObjective& drob) : ScheduledEvent(step), m_drinkObjective(drob), m_item(nullptr) {}
 DrinkEvent::DrinkEvent(uint32_t step, DrinkObjective& drob, Item& i) : ScheduledEvent(step), m_drinkObjective(drob), m_item(i) {}
@@ -53,14 +55,14 @@ void DrinkObjective::execute()
 	if(item != nullptr)
 	{
 		item.m_reservable.reserveFor(m_actor.m_canReserve, 1);
-		m_drinkEvent.schedule(::s_step + Config::stepsToDrink, *this, item);
+		m_drinkEvent.schedule(Config::stepsToDrink, *this, item);
 	}
 	else
 	{
 		if(!canDrinkAt(*m_actor.m_location))
 			m_threadedTask.create(*this);
 		else
-			m_drinkEvent.schedule(::s_step + Config::stepsToDrink, *this);
+			m_drinkEvent.schedule(Config::stepsToDrink, *this);
 	}
 }
 bool DrinkObjective::canDrinkAt(Block& block) const

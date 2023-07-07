@@ -1,12 +1,14 @@
 #pragma once
 
-#include "block.h"
 #include "materialType.h"
+
+class Block;
 
 struct BlockFeatureType
 {
 	const std::string name;
 	const bool canBeHewn;
+	bool operator==(const BlockFeatureType& x) const { return this == &x; }
 };
 struct BlockFeature
 {
@@ -15,7 +17,7 @@ struct BlockFeature
 	bool hewn;
 	bool closed;
 	bool locked;
-	BlockFeature(const BlockFeatureType& bft, const MaterialType& mt, bool h) : blockFeatureType(&bft), materialType(&mt), hewn(h), closed(true), locked(false) {}
+	BlockFeature(const BlockFeatureType& bft, const MaterialType& mt, bool h) : blockFeatureType(bft), materialType(mt), hewn(h), closed(true), locked(false) {}
 };
 class HasBlockFeatures
 {

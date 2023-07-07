@@ -1,0 +1,7 @@
+{
+  "name": "CO2",
+  "viscosity": 200,
+  "density": 10,
+  "mistDuration": 0,
+  "maxMistSpread": 0
+}

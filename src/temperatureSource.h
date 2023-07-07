@@ -15,7 +15,7 @@ class TemperatureSource
 	uint32_t getTemperatureDeltaForRange(uint32_t range);
 	void apply();
 public:
-	TemperatureSource(int32_t t, Block& b) : m_block(b), m_temperature(t);
+	TemperatureSource(int32_t t, Block& b) : m_block(b), m_temperature(t) { }
 	void setTemperature(int32_t t);
 	void unapply();
 };

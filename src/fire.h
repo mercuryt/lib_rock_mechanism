@@ -1,11 +1,14 @@
 #pragma once
 #include "eventSchedule.h"
 #include "temperatureSource.h"
+#include "materialType.h"
 #include <memory>
 
+/*
 constexpr int32_t heatFractionForSmoulder = 10;
 constexpr int32_t heatFractionForBurn = 3;
 constexpr int32_t rampDownPhaseDurationFraction = 2;
+*/
 
 enum class FireStage{Smouldering, Burining, Flaming};
 

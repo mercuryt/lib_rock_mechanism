@@ -20,8 +20,6 @@ void CanFight::attack(Actor& target)
 	}
 	//TODO: Skill growth.
 }
-bool CanFight::isOnCoolDown() const { return !m_coolDown.empty(); }
-bool CanFight::inRange(Actor& target) { return m_actor.m_location->distance(*target.m_location) <= m_maxRange; }
 void CanFight::updateCoolDownDuration()
 {
 	m_coolDownDuration = Config::attackCoolDownDurationBase - (m_actor.m_attributes.dextarity * Config::stepsAttackCoolDownReductionPerPointOfDextarity) * m_actor.m_hasItems.getAttackCoolDownDurationModifier;
@@ -49,15 +47,15 @@ void CanFight::update()
 //TODO: Grasps cannot be used for both armed and unarmed attacks at the same time?
 uint32_t CanFight::getCombatScoreForAttack(Attack& attack) const
 {
-	uint32_t equipmentTypeCombatScore = equipment->m_equipmentType.combatScore;
-	uint32_t equipmentSkill = actor.m_skills.get(equipment->m_equipmentType.combatSkill);
-	uint32_t equipmentQuality = equipment->m_quality;
-	uint32_t equipmentWear = equipment->m_wear;
+	uint32_t itemTypeCombatScore = attack.item->m_itemType.combatScore;
+	uint32_t itemSkill = actor.m_skills.get(item->m_itemType.combatSkill);
+	uint32_t itemQuality = attack.item->m_quality;
+	uint32_t itemWear = attack.item->m_wear;
 	return  (
-			(equipmentTypeCombatScore * Config::equipmentTypeCombatScoreModifier) + 
-			(equipmentSkill * Config::equipmentSkillModifier) + 
-			(equipmentQuality * Config::equipmentQualityModifier) + 
-			(equipmentWear * Config::equipmentWearModifier) + 
+			(itemTypeCombatScore * Config::itemTypeCombatModifier) + 
+			(itemSkill * Config::itemSkillCombatModifier) + 
+			(itemQuality * Config::itemQualityCombatModifier) + 
+			(itemWear * Config::itemWearCombatModifier) + 
 		);
 }
 Attack& CanFight::getAttackForCombatScoreDifference(uint32_t scoreDifference)
@@ -109,4 +107,25 @@ void CanFight::targetNoLongerTargetable()
 	assert(m_target != nullptr);
 	m_target = nullptr;
 	m_actor.m_hasObjectives.taskComplete();
+}
+bool CanFight::isOnCoolDown() const { return !m_coolDown.empty(); }
+bool CanFight::inRange(Actor& target) { return m_actor.m_location->distance(*target.m_location) <= m_maxRange; }
+
+AttackCoolDown::execute() { m_canFight.coolDownCompleted(); }
+AttackCoolDown::~AttackCoolDown() { m_canFight.m_coolDown.clearPointer(); }
+
+void GetIntoAttackPositionThreadedTask::readStep()
+{
+	auto destinatonCondition = [&](Block* block)
+	{
+		return block->taxiDistance(m_target.m_location) <= m_range && block.hasLineOfSightTo(m_target.m_location);
+	}
+	m_route = path::getForActorToPredicate(m_actor, destinatonCondition);
+}
+void GetIntoAttackPositionThreadedTask::writeStep()
+{
+	if(m_route == nullptr)
+		m_actor.m_hasObjectives.cannotCompleteTask();
+	else
+		m_actor.setPath(m_route);
 }
