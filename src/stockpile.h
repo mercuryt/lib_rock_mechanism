@@ -3,7 +3,6 @@
 #include "threadedTask.h"
 #include "project.h"
 #include "item.h"
-#include "block.h"
 #include "actor.h"
 
 #include <memory>
@@ -14,6 +13,9 @@
 #include <unordered_map>
 #include <list>
 
+class Block;
+class StockPileObjective;
+class StockPileProject;
 // Searches for an Item and destination to make a hauling project for m_objective.m_actor.
 class StockPileThreadedTask : ThreadedTask
 {
@@ -21,7 +23,7 @@ class StockPileThreadedTask : ThreadedTask
 	Item* m_item;
 	Block* m_destination;
 public:
-	StockPileThreadedTask(StockPileObjective& spo) : m_objective(spo), m_block(nullptr), m_item(nullptr) { }
+	StockPileThreadedTask(StockPileObjective& spo) : m_objective(spo), m_item(nullptr), m_destination(nullptr) { }
 	void readStep();
 	void writeStep();
 };
@@ -29,7 +31,7 @@ class StockPileObjectiveType : ObjectiveType
 {
 public:
 	bool canBeAssigned(Actor& actor);
-	std::unique_ptr<ObjectiveType> makeFor(Actor& actor);
+	std::unique_ptr<Objective> makeFor(Actor& actor);
 };
 class StockPileObjective : Objective
 {
@@ -47,9 +49,10 @@ class StockPileProject : Project
 public:
 	uint32_t getDelay() const;
 	void onComplete();
-	std::vector<std::pair<ItemQuery, uint32_t> getConsumed();
-	std::vector<std::pair<ItemQuery, uint32_t> getUnconsumed();
+	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
+	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
+	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
 };
 class StockPile
 {
@@ -64,13 +67,13 @@ public:
 	void incrementOpenBlocks();
 	void decrementOpenBlocks();
 };
-class BlockIsPartOfStockPile
+class IsPartOfStockPile
 {
 	Block& m_block;
 	StockPile* m_stockPile;
 	bool m_isAvalable;
 public:
-	BlockIsPartOfStockPile(Block& b) : m_block(b), m_stockPile(nullptr), m_isAvalable(true) { }
+	IsPartOfStockPile(Block& b) : m_block(b), m_stockPile(nullptr), m_isAvalable(true) { }
 	void setStockPile(StockPile& stockPile);
 	void clearStockPile();
 	bool hasStockPile() const;
@@ -88,7 +91,6 @@ class HasStockPiles
 	std::unordered_map<StockPile*, std::unordered_set<Item*>> m_itemsWithDestinationsByStockPile;
 	std::unordered_map<Item*, StockPileProject> m_projectsByItem;
 public:
-	HasStockPiles() : m_anyHaulingAvalible(false) { }
 	void addStockPile(std::vector<ItemQuery>&& queries);
 	void removeStockPile(StockPile& stockPile);
 	bool isValidStockPileDestinationFor(Block& block, Item& item) const;

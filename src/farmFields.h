@@ -1,10 +1,11 @@
 #pragma once
 #include "plant.h"
 #include "player.h"
-#include "block.h"
 
 #include <list>
 #include <unordered_set>
+
+class Block;
 
 struct FarmField
 {
@@ -17,41 +18,15 @@ class IsPartOfFarmField
 {
 	Block& m_block;
 	std::unordered_map<Player*, FarmField*> m_farmFields;
-	IsPartOfFarmField(Block& b) : m_block(b) { }
 public:
+	IsPartOfFarmField(Block& b) : m_block(b) { }
 	void insert(Player& player, FarmField& farmField);
 	void remove(Player& player);
-	void designateForHarvestIfPartOfFarmField(Plant& plant)
-	{
-		for(auto& [player, farmField] : m_farmFields)
-			if(farmField.plantSpecies == plant.plantSpecies)
-				block.m_area->m_hasFarmFields.at(player).addHarvestDesignation(plant);
-	}
-	void designateForGiveFluidIfPartOfFarmField(Plant& plant)
-	{
-		for(auto& [player, farmField] : m_farmFields)
-			if(farmField.plantSpecies == plant.plantSpecies)
-				block.m_area->m_hasFarmFields.at(player).addGivePlantFluidDesignation(plant);
-	}
-	void removeAllHarvestDesignations()
-	{
-		Plant& plant = m_block.m_hasPlant.get();	
-		for(auto& [player, farmField] : m_farmFields)
-			if(plant.plantSpecies == farmField.plantSpecies)
-				m_block.m_area->m_hasFarmFields.at(player).removeHarvestDesignation(plant);
-	}
-	void removeAllGiveFluidDesignations()
-	{
-		Plant& plant = m_block.m_hasPlant.get();	
-		for(auto& [player, farmField] : m_farmFields)
-			if(plant.plantSpecies == farmField.plantSpecies)
-				m_block.m_area->m_hasFarmFields.at(player).removeGiveFluidDesignation(plant);
-	}
-	void removeAllSowSeedsDesignations()
-	{
-		for(auto& [player, farmField] : m_farmFields)
-			m_block.m_area->m_hasFarmFields.at(player).removeSowSeedsDesignation(m_block);
-	}
+	void designateForHarvestIfPartOfFarmField(Plant& plant);
+	void designateForGiveFluidIfPartOfFarmField(Plant& plant);
+	void removeAllHarvestDesignations();
+	void removeAllGiveFluidDesignations();
+	void removeAllSowSeedsDesignations();
 };
 // To be used by HasFarmFields, which is used by Area.
 class HasFarmFieldsForPlayer
@@ -63,6 +38,7 @@ class HasFarmFieldsForPlayer
 	std::unordered_set<Block*> m_blocksNeedingSeedsSewn;
 	bool m_plantsNeedingFluidIsSorted;
 public:
+	HasFarmFieldsForPlayer(Player& p) : m_player(p) { }
 	bool hasGivePlantsFluidDesignations() const;
 	Plant* getHighPriorityPlantForGivingFluidIfAny();
 	bool hasSowSeedDesignations() const;
@@ -75,7 +51,7 @@ public:
 	void removeHarvestDesignation(Plant& plant);
 	void setDayOfYear(uint32_t dayOfYear);
 	void create(std::unordered_set<Block*>& blocks);
-	void extend(FarmField& farmField, std:unordered_set<Block*>& blocks);
+	void extend(FarmField& farmField, std::unordered_set<Block*>& blocks);
 	void setSpecies(FarmField& farmField, const PlantSpecies& plantSpecies);
 	void designateBlocks(FarmField& farmField, std::unordered_set<Block*>& blocks);
 	void clearSpecies(FarmField& farmField);

@@ -18,10 +18,13 @@
 #include "routeRequest.h"
 #include "fluidGroup.h"
 #include "eventSchedule.h"
-#include "moveEvent.h"
 #include "mistDisperseEvent.h"
 #include "cuboid.h"
 #include "visionCuboid.h"
+#include "dig.h"
+#include "construct.h"
+#include "craft.h"
+#include "../lib/BS_thread_pool_light.hpp"
 
 class Area
 {
@@ -43,26 +46,21 @@ public:
 	HasStockPiles m_hasStockPilingDesignations;
 	HasCraftingLocationsAndJobs m_hasCraftingDesignations;
 	//TODO: HasActors
-	LocationBuckets<Actor> m_actorLocationBuckets;
+	LocationBuckets m_actorLocationBuckets;
 	//TODO: HasFluidGroups.
 	std::list<FluidGroup> m_fluidGroups;
-	std::unordered_set<FluidGroup> m_unstableFluidGroups;
-	std::unordered_set<FluidGroup> m_setStable;
-	std::unordered_set<FluidGroup> m_toDestroy;
+	std::unordered_set<FluidGroup*> m_unstableFluidGroups;
+	std::unordered_set<FluidGroup*> m_setStable;
+	std::unordered_set<FluidGroup*> m_toDestroy;
 	//TODO: HasVision.
-	std::vector<VisionRequest<Block, Actor, DerivedArea>> m_visionRequestQueue;
+	std::vector<VisionRequest> m_visionRequestQueue;
 	Buckets<Actor, Config::actorDoVisionInterval> m_visionBuckets;
-	std::list<VisionCuboid<Block, DerivedArea>> m_visionCuboids;
+	std::list<VisionCuboid> m_visionCuboids;
 	bool m_visionCuboidsActive;
 
-	bool m_destroy; // TODO: neccessary?
-	
-	
 
 	// Create blocks and store adjacent
 	Area(uint32_t x, uint32_t y, uint32_t z);
-	// Set m_destroy = true to simplify cleanup.
-	~Area();
 
 	void readStep(BS::thread_pool_light pool);
 	void writeStep();

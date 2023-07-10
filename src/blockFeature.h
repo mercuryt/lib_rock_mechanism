@@ -9,6 +9,15 @@ struct BlockFeatureType
 	const std::string name;
 	const bool canBeHewn;
 	bool operator==(const BlockFeatureType& x) const { return this == &x; }
+	const static BlockFeatureType floor;
+	const static BlockFeatureType door;
+	const static BlockFeatureType hatch;
+	const static BlockFeatureType stairs;
+	const static BlockFeatureType floodGate;
+	const static BlockFeatureType floorGrate;
+	const static BlockFeatureType ramp;
+	const static BlockFeatureType fortification;
+	static void load();
 };
 struct BlockFeature
 {
@@ -28,7 +37,9 @@ public:
 	bool contains(const BlockFeatureType& blockFeatureType) const;
 	// Can return nullptr.
 	BlockFeature* at(const BlockFeatureType& blockFeatueType);
+	const BlockFeature* at(const BlockFeatureType& blockFeatueType) const;
 	void remove(const BlockFeatureType& blockFeatueType);
 	void construct(const BlockFeatureType& blockFeatueType, const MaterialType& materialType);
 	void hue(const BlockFeatureType& blockFeatueType);
+	bool blocksEntrance() const;
 };

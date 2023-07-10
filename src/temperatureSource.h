@@ -4,6 +4,7 @@
  */
 
 #include "nthAdjacentOffsets.h"
+#include "eventSchedule.h"
 
 #include <unordered_set>
 #include <vector>

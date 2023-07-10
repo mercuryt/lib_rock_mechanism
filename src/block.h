@@ -20,12 +20,13 @@
 #include "fire.h"
 #include "plant.h"
 #include "blockFeature.h"
-#include "item.h"
 #include "designations.h"
 #include "stockpile.h"
 #include "farmFields.h"
 
 class Area;
+class Item;
+class Actor;
 
 // Fluid type and volume pairs are sorted by density, low to high.
 // This is useful for resolving overfill.
@@ -68,7 +69,7 @@ public:
 	HasPlant m_hasPlant;
 	HasBlockFeatures m_hasBlockFeatures;
 	HasActors m_hasActors;
-	HasItems m_hasItems;
+	BlockHasItems m_hasItems;
 	BlockHasItemsAndActors m_hasItemsAndActors;
 	HasDesignations m_hasDesignations;
 	IsPartOfStockPile m_isPartOfStockPile;
@@ -76,7 +77,7 @@ public:
 
 	// Constructor initalizes some members.
 	Block();
-	void setup(Area* a, uint32_t ax, uint32_t ay, uint32_t az);
+	void setup(Area& a, uint32_t ax, uint32_t ay, uint32_t az);
 	void recordAdjacent();
 	std::vector<Block*> getAdjacentWithEdgeAdjacent() const;
 	std::vector<Block*> getAdjacentWithEdgeAndCornerAdjacent() const;
@@ -95,6 +96,11 @@ public:
 	const MaterialType& getSolidMaterial() const;
 	// Get block at offset coordinates. Can return nullptr.
 	Block* offset(int32_t ax, int32_t ay, int32_t az) const;
+	bool canSeeThrough() const;
+	bool canSeeThroughFrom(const Block& block) const;
+	uint8_t facingToSetWhenEnteringFrom(Block& block) const;
+	bool isSupport() const;
+	uint32_t getAmbientTemperature() const;
 
 	void spawnMist(const FluidType& fluidType, uint32_t maxMistSpread = 0);
 	// Validate the nongeneric object can enter this block and also any other blocks required by it's Shape comparing to m_totalStaticVolume.
@@ -110,13 +116,16 @@ public:
 	uint32_t volumeOfFluidTypeCanEnter(const FluidType& fluidType) const;
 	uint32_t volumeOfFluidTypeContains(const FluidType& fluidType) const;
 	const FluidType& getFluidTypeWithMostVolume() const;
+	bool fluidCanEnterEver() const;
 	// Move less dense fluids to their group's excessVolume until Config::maxBlockVolume is achieved.
 	void resolveFluidOverfull();
 
 	// Record temperature delta, possible start a fire.
 	void applyTemperatureDelta(int32_t delta);
+	void applyTemperatureChange(uint32_t oldTemperature, uint32_t newTemperature);
 
 	// Called from setSolid / setNotSolid as well as from user code such as construct / remove floor.
+	void setExposedToSky(bool exposed);
 	void setBelowExposedToSky();
 	void setBelowNotExposedToSky();
 

@@ -11,6 +11,7 @@ class CanReserve final
 {
 	friend class Reservable;
 	std::unordered_set<Reservable*> m_reservables;
+public:
 	~CanReserve();
 };
 class Reservable final

@@ -2,6 +2,12 @@
 
 #include "../lib/json.hpp"
 #include "materialType.h"
+#include "fluidType.h"
+#include "body.h"
+#include "plant.h"
+#include "animalSpecies.h"
+#include "item.h"
+#include "moveType.h"
 
 #include <fstream>
 #include <filesystem>
@@ -9,34 +15,23 @@
 using Json = nlohmann::json;
 namespace definitions
 {
-	void load()
-	{
-		loadShapes();
-		loadFluidTypes();
-		loadMoveTypes();
-		loadBodyParts();
-		loadItemTypes();
-		loadMaterialTypes();
-		loadPlantSpecies();
-		loadAnimalSpecies();
-	}
 	void loadShapes()
 	{
-			std::ifstream f("data/shapes.json");
-			Json data = Json::parse(f);
-			for(const Json& shapeData : data)
-			{
-				BodyPartType::data.emplace_back(
+		std::ifstream f("data/shapes.json");
+		Json data = Json::parse(f);
+		for(const Json& shapeData : data)
+		{
+			BodyPartType::data.emplace_back(
 					shapeData["name"],
 					shapeData["positions"]
-				);
-			}
+					);
+		}
 	}
 	void loadFluidTypes()
 	{
 		for(const auto& file : std::filesystem::directory_iterator("data/fluids"))
 		{
-			std::ifstream f(file.path);
+			std::ifstream f(file.path());
 			Json data = Json::parse(f);
 			FluidType::data.emplace_back(
 				data["name"],
@@ -48,43 +43,41 @@ namespace definitions
 	}
 	void loadMoveTypes()
 	{
-			std::ifstream f("data/moveTypes.json");
-			Json data = Json::parse(f);
-			for(const Json& moveTypeData : data)
-			{
-				MoveType::data.emplace_back(
-					moveTypeData["name"],
-					moveTypeData["walk"],	
-					moveTypeData["climb"],	
-					moveTypeData["jumpDown"],	
-					moveTypeData["fly"],	
-				);
-				for(const std::pair& swimData : moveTypeData["swim"])
-					MoveType::data.back().swim[FluidType::byName(pair.first)] = pair.second;
-			}
+		std::ifstream f("data/moveTypes.json");
+		Json data = Json::parse(f);
+		for(const Json& moveTypeData : data)
+		{
+			MoveType::data.emplace_back(
+				moveTypeData["name"],
+				moveTypeData["walk"],	
+				moveTypeData["climb"],	
+				moveTypeData["jumpDown"],	
+				moveTypeData["fly"]
+			);
+			for(auto& pair : moveTypeData["swim"].items())
+				MoveType::data.back().swim[&FluidType::byName(pair.key())] = pair.value();
+		}
 	}
 	void loadBodyParts()
 	{
 		for(const auto& file : std::filesystem::directory_iterator("data/bodyParts"))
 		{
-			std::ifstream f(file.path);
+			std::ifstream f(file.path());
 			Json data = Json::parse(f);
-			BodyPartType::data.emplace_back(
+			BodyPartType& bodyPartType = BodyPartType::data.emplace_back(
 				data["name"],
-				data["displayName"],
 				data["volume"],
 				data["doesLocamotion"],
 				data["doesManipulation"]
 			);
 			for(const Json& attackTypeData : data["attackTypes"])
 			{
-				AttackType::data.emplace_back(
+				bodyPartType.attackTypes.emplace_back(
 					attackTypeData["name"],
 					attackTypeData["area"],
 					attackTypeData["baseForce"],
-					WoundType::byName(attackTypeData["woundType"]),
+					WoundType::byName(attackTypeData["woundType"])
 				);
-				BodyPartType::data.back().attackTypes.push_back(&AttackType::data.back());
 			}
 		}
 	}
@@ -92,9 +85,9 @@ namespace definitions
 	{
 		for(const auto& file : std::filesystem::directory_iterator("data/materials"))
 		{
-			std::ifstream f(file.path);
+			std::ifstream f(file.path());
 			Json data = Json::parse(f);
-			ItemType::data.emplace_back(
+			auto& itemType = ItemType::data.emplace_back(
 				data["name"],
 				data["installable"],
 				Shape::byName(data["shape"]),
@@ -104,38 +97,41 @@ namespace definitions
 			);
 			for(Json attackTypeData : data["attackTypes"])
 			{
-				AttackType::data.emplace_back(
+				itemType.attackTypes.emplace_back(
 					attackTypeData["name"],
 					attackTypeData["area"],
 					attackTypeData["baseForce"],
-					WoundType.byName(attackTypeData["WoundType"])
+					WoundType::byName(attackTypeData["woundType"])
 				);
-				ItemType::data.back().attackTypes.push_back(&AttackType::data.back());
 			}
 			if(data["wearableType"])
 			{
 				Json& wearableTypeData = data["wearableType"];
-				WearableType::data.emplace_back(
+				auto& wearableType = WearableType::data.emplace_back(
 					wearableTypeData["percentCoverage"],
 					wearableTypeData["defenseScore"],
 					wearableTypeData["rigid"],
 					wearableTypeData["impactSpreadArea"],
-					wearableTypeData["forceAbsorbedPiercedModifier"],
-
+					wearableTypeData["forceAbsorbedPiercedModifier"]
 				);
-				for(std::wstring bodyPartName : data["bodyPartsCovered"])
-					WearableType::data.back().bodyPartsCovered.push_back(&BodyPartType::byName(bodyPartName));
+				for(const auto& bodyPartName : data["bodyPartsCovered"])
+					wearableType.bodyPartsCovered.push_back(&BodyPartType::byName(bodyPartName));
+				itemType.wearableType = &wearableType;
 			}
 		}
 	}
 	void loadMaterialTypes()
 	{
+		std::ifstream f("data/materialTypeCategories.json");
+		for(const Json& data : Json::parse(f))
+			MaterialTypeCategory::data.emplace_back(data["name"]);
 		for(const auto& file : std::filesystem::directory_iterator("data/materials"))
 		{
-			std::ifstream f(file.path);
+			std::ifstream f(file.path());
 			Json data = Json::parse(f);
-			MaterialType::data.emplace_back(
+			auto& materialType = MaterialType::data.emplace_back(
 				data["name"],
+				MaterialTypeCategory::byName(data["category"]),
 				data["density"],
 				data["hardness"],
 				data["transparent"],
@@ -145,9 +141,9 @@ namespace definitions
 				data["flameStageDuration"]
 			);
 			for(Json& spoilData : data["spoilData"])
-				MaterialType::data.back().spoilData.emplace_back(
-					MaterialType.byName(spoilData["materialType"]),
-					ItemType.byName(spoilData["itemType"]),
+				materialType.spoilData.emplace_back(
+					MaterialType::byName(spoilData["materialType"]),
+					ItemType::byName(spoilData["itemType"]),
 					spoilData["chance"],
 					spoilData["min"],
 					spoilData["max"]
@@ -158,9 +154,9 @@ namespace definitions
 	{
 		for(const auto& file : std::filesystem::directory_iterator("data/materials"))
 		{
-			std::ifstream f(file.path);
+			std::ifstream f(file.path());
 			Json data = Json::parse(f);
-			PlantSpecies::data.emplace_back(
+			auto& plantSpecies = PlantSpecies::data.emplace_back(
 				data["name"],
 				data["annual"],
 				data["maximumGrowingTemperature"],
@@ -175,25 +171,27 @@ namespace definitions
 				data["adultMass"],
 				FluidType::byName(data["fluidType"])
 			);
-			if(data.contains["harvestData"])
+			if(data.contains("harvestData"))
 			{
-				HarvestData::data.emplace_back(
+				auto& harvestData = HarvestData::data.emplace_back(
 					data["harvestData"]["dayOfYearToStart"],
 					data["harvestData"]["daysDuration"],
 					data["harvestData"]["quantity"],
 					ItemType::byName(data["harvestData"]["itemType"])
 				);
-				PlantSpecies::data.back().harvestData = HarvestData::data.back();
+				plantSpecies.harvestData = &harvestData;
 			}
+			else
+				plantSpecies.harvestData = nullptr;
 		}
 	}
 	void loadAnimalSpecies()
 	{
 		for(const auto& file : std::filesystem::directory_iterator("data/materials"))
 		{
-			std::ifstream f(file.path);
+			std::ifstream f(file.path());
 			Json data = Json::parse(f);
-			AnimalSpecies::data.emplace_back(
+			auto& animalSpecies = AnimalSpecies::data.emplace_back(
 				data["name"],
 				data["sentient"],
 				data["strength"],
@@ -202,13 +200,25 @@ namespace definitions
 				data["mass"],
 				data["volume"],
 				data["deathAge"],
-				data["adultSizeAge"],
+				data["adultAge"],
 				MoveType::byName(data["moveType"]),
-				Shape::byName(data["shape"]),
 				FluidType::byName(data["fluidType"])
 			);
-			for(const std::wstring& bodyPartName : data["bodyParts"])
-				AnimalSpecies::data.back().bodyParts.push_back(&BodyPart::byName(bodyPartName));
+			for(const auto& shapeName : data["shapes"])
+				animalSpecies.shapes.push_back(&Shape::byName(shapeName));
+			for(const auto& bodyPartName : data["bodyParts"])
+				animalSpecies.bodyPartTypes.push_back(&BodyPartType::byName(bodyPartName));
 		}
 	}
-};
+	void load()
+	{
+		loadShapes();
+		loadFluidTypes();
+		loadMoveTypes();
+		loadBodyParts();
+		loadItemTypes();
+		loadMaterialTypes();
+		loadPlantSpecies();
+		loadAnimalSpecies();
+	}
+}

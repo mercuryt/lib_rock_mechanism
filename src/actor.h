@@ -6,7 +6,6 @@
 
 #include "moveType.h"
 #include "hasShape.h"
-#include "visionRequest.h"
 #include "objective.h"
 #include "eat.h"
 #include "drink.h"
@@ -21,46 +20,46 @@
 #include "attributes.h"
 #include "skill.h"
 #include "haul.h"
+#include "faction.h"
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 class Actor : public HasShape
 {	
 	inline static uint32_t s_nextId = 1;
 public:
 	uint32_t m_id;
-	std::string m_name;
+	std::wstring m_name;
 	const AnimalSpecies& m_species;
+	bool m_alive;
+	Faction* m_faction;
 	Attributes m_attributes;
 	SkillSet m_skilSet;
-	CanMove m_canMove;
-	CanGrow m_canGrow;
-	CanFight m_canFight;
-	CanPickup m_canPickup;
 	MustEat m_mustEat;
 	MustDrink m_mustDrink;
 	MustSleep m_mustSleep;
+	CanMove m_canMove;
+	CanFight m_canFight;
+	CanPickup m_canPickup;
+	CanGrow m_canGrow;
 	EquipmentSet m_equipmentSet;
 	HasObjectives m_hasObjectives;
-	const MoveType* m_moveType;
 	//TODO: CanSee.
 	uint32_t m_visionRange;
-	bool m_alive;
-	Faction* m_faction;
 
-	Actor(Block& l, const Shape& s, const MoveType& mt, uint32_t ms, uint32_t m, Faction* f);
-	Actor(const Shape& s, const MoveType& mt, uint32_t ms, uint32_t m, Faction* f);
+	Actor(uint32_t id, const std::wstring name, const AnimalSpecies& species, uint32_t percentGrown, Faction& faction, Attributes attributes);
 	void setLocation(Block& block);
-	bool isEnemy(Actor& actor);
-	bool isAlly(Actor& actor);
+	bool isEnemy(Actor& actor) const;
+	bool isAlly(Actor& actor) const;
+	bool isSentient() const;
 	void die();
-	static Actor create(Faction& faction, const AnimalSpecies& species, std::vector<AttributeModifiers>& modifiers, uint32_t percentGrown);
+	static std::vector<Actor> data;
 };
 // To be used to find actors fitting criteria.
-class ActorQuery
+struct ActorQuery
 {
-public:
 	Actor* actor;
 	uint32_t carryWeight;
 	bool checkIfSentient;
@@ -74,18 +73,25 @@ class HasActors
 {
 	Block& m_block;
 	uint32_t m_volume;
-	std::vector<Actor*> m_actors;
+	std::vector<std::pair<Actor*, int32_t>> m_actors;
 	std::unordered_map<const Shape*, std::unordered_map<const MoveType*, std::vector<std::pair<Block*, uint32_t>>>> m_moveCostsCache;
 public:
-	HasActors(Area& a) : m_area(a), m_volume(0) { }
+	HasActors(Block& b) : m_block(b), m_volume(0) { }
 	void enter(Actor& actor);
 	void exit(Actor& actor);
+	void clearCache();
 	bool anyoneCanEnterEver() const;
 	bool canEnterEverFrom(Actor& actor, Block& block) const;
-	bool shapeAndMoveTypeCanEnterEverFrom(const Shape& shape, const moveType& moveType, Block& block) const;
+	bool canEnterEverWithFacing(Actor& actor, uint8_t facing) const;
+	bool shapeAndMoveTypeCanEnterEverFrom(const Shape& shape, const MoveType& moveType, Block& block) const;
+	bool shapeAndMoveTypeCanEnterEverWithFacing(const Shape& shape, const MoveType& moveType, const uint8_t facing) const;
 	bool moveTypeCanEnter(const MoveType& moveType) const;
 	bool canEnterCurrentlyFrom(Actor& actor, Block& block) const;
-	std::vector<Block*, uint32_t> getMoveCosts(const Shape& shape, const MoveType& moveType) const;
+	bool canEnterCurrentlyWithFacing(Actor& actor, uint8_t facing) const;
+	std::vector<std::pair<Block*, uint32_t>> getMoveCosts(const Shape& shape, const MoveType& moveType) const;
 	uint32_t moveCostFrom(const MoveType& moveType, Block& from) const;
-	void clearCache();
+	bool canStandIn() const;
+	bool contains(Actor& actor) const;
+	uint32_t volumeOf(Actor& actor) const;
 };
+// To be composed with species to make standardized variants.

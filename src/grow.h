@@ -9,6 +9,7 @@ class CanGrow
 	HasScheduledEvent<AnimalGrowthEvent> m_event;
 	HasScheduledEvent<AnimalGrowthUpdateEvent> m_updateEvent;
 	uint32_t m_percentGrown;
+	uint32_t m_birthStep;
 public:
 	CanGrow(Actor& a, uint32_t pg);
 	void updateGrowingStatus();

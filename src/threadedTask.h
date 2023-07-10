@@ -3,7 +3,6 @@
 #include <unordered_set>
 #include <memory>
 
-class ThreadedTaskEngine;
 // Base class. Child classes are expected to provide a destructor which calls setNull on HasThreadedTask.
 class ThreadedTask
 {
@@ -14,15 +13,14 @@ public:
 	virtual ~ThreadedTask() {}
 };
 // Hold and runs threaded tasks.
-class ThreadedTaskEngine
+namespace threadedTaskEngine
 {
 	std::unordered_set<std::unique_ptr<ThreadedTask>> m_tasks;
-public:
 	void readStep();
 	void writeStep();
 	void insert(std::unique_ptr<ThreadedTask>&& task);
 	void remove(ThreadedTask& task);
-};
+}
 template<class TaskType>
 class HasThreadedTask
 {

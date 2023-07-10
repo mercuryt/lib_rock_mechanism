@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
 
 struct MaterialType;
 struct ItemType;
@@ -9,6 +10,15 @@ struct ItemType;
 struct MaterialTypeCategory
 {
 	const std::string name;
+	// Infastructure.
+	bool operator==(const MaterialTypeCategory& materialTypeCategory){ return this == &materialTypeCategory; }
+	static std::vector<MaterialTypeCategory> data;
+	static const MaterialTypeCategory& byName(const std::string name)
+	{
+		auto found = std::ranges::find(data, name, &MaterialTypeCategory::name);
+		assert(found != data.end());
+		return *found;
+	}
 };
 
 struct SpoilData
@@ -37,7 +47,7 @@ struct MaterialType
 	const uint32_t burnStageDuration; // How many steps to go from smouldering to burning and from burning to flaming.
 	const uint32_t flameStageDuration; // How many steps to spend flaming.
 	// How does this material dig?
-	const std::vector<SpoilData> spoilData;
+	std::vector<SpoilData> spoilData;
 	// Infastructure.
 	bool operator==(const MaterialType& materialType){ return this == &materialType; }
 	static std::vector<MaterialType> data;

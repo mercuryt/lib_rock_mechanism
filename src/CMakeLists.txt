@@ -1,0 +1,3 @@
+add_library (Source actor.cpp area.cpp block.cpp blockFeature.cpp body.cpp caveIn.cpp construct.cpp craft.cpp cuboid.cpp dig.cpp drainQueue.cpp drink.cpp eat.cpp eqipment.cpp eventSchedule.cpp farmFields.cpp fight.cpp fillQueue.cpp fire.cpp fluidGroup.cpp fluidQueue.cpp getIntoAttackPosition.cpp givePlantsFluid.cpp grow.cpp harvest.cpp hasShape.cpp haul.cpp item.cpp leadAndFollow.cpp locationBuckets.cpp mistDisperseEvent.cpp move.cpp moveEvent.cpp objective.cpp plant.cpp project.cpp routeRequest.cpp simulation.cpp sleep.cpp sowSeeds.cpp stockpile.cpp temperatureSource.cpp threadedTask.cpp util.cpp visionCuboid.cpp visionRequest.cpp)
+target_compile_features(Source PUBLIC cxx_std_20)
+target_include_directories (Source PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

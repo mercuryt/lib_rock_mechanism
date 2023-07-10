@@ -1,9 +1,9 @@
 // Sleep Event.
-SleepEvent::SleepEvent(uint32_t step, NeedsSleep& ns) : ScheduledEventWithPercent(step), m_needsSleep(ns) { }
+SleepEvent::SleepEvent(uint32_t step, MustSleep& ns) : ScheduledEventWithPercent(step), m_needsSleep(ns) { }
 void SleepEvent::execute(){ m_needsSleep.wakeUp(); }
 ~SleepEvent::SleepEvent(){ m_needsSleep.m_sleepEvent.clearPointer(); }
 // Tired Event.
-TiredEvent::TiredEvent(uint32_t step, NeedsSleep& ns) : ScheduledEventWithPercent(step), m_needsSleep(ns) { }
+TiredEvent::TiredEvent(uint32_t step, MustSleep& ns) : ScheduledEventWithPercent(step), m_needsSleep(ns) { }
 void TiredEvent::execute(){ m_needsSleep.tired(); }
 ~TiredEvent::TiredEvent(){ m_needsSleep.m_tiredEvent.clearPointer(); }
 // Threaded Task.
@@ -41,7 +41,7 @@ void SleepThreadedTask::writeStep()
 		m_actor.setPath(m_result);
 }
 // Sleep Objective.
-SleepObjective::SleepObjective(NeedsSleep& ns) : Objective(Config::sleepObjectivePriority), m_needsSleep(ns) { }
+SleepObjective::SleepObjective(MustSleep& ns) : Objective(Config::sleepObjectivePriority), m_needsSleep(ns) { }
 void SleepObjective::execute()
 {
 	if(m_needsSleep.m_actor.m_location == m_needsSleep.m_location)
@@ -67,11 +67,11 @@ uint32_t SleepObjective::desireToSleepAt(Block& block)
 }
 ~SleepObjective::SleepObjective() { m_needsSleep.m_objective = nullptr; }
 // Needs Sleep.
-NeedsSleep::NeedsSleep(Actor& a) : m_actor(a), m_needsSleep(false), m_isAwake(true)
+MustSleep::MustSleep(Actor& a) : m_actor(a), m_needsSleep(false), m_isAwake(true)
 {
-	m_tiredEvent.schedule(m_actor.getStepsNeedsSleepFrequency(), *this);
+	m_tiredEvent.schedule(m_actor.getStepsMustSleepFrequency(), *this);
 }
-void NeedsSleep::tired()
+void MustSleep::tired()
 {
 	assert(m_isAwake);
 	if(m_needsSleep)
@@ -83,20 +83,20 @@ void NeedsSleep::tired()
 		makeSleepObjective();
 	}
 }
-void NeedsSleep::sleep()
+void MustSleep::sleep()
 {
 	assert(m_isAwake);
 	m_isAwake = false;
 	m_tiredEvent.unschedule();
 	m_sleepEvent.schedule(m_actor.getStepsSleepDuration(), *this);
 }
-void NeedsSleep::wakeUp()
+void MustSleep::wakeUp()
 {
 	assert(!m_isAwake);
 	m_isAwake = true;
-	m_tiredEvent.schedule(m_actor.getStepsNeedsSleepFrequency(), *this);
+	m_tiredEvent.schedule(m_actor.getStepsMustSleepFrequency(), *this);
 }
-void NeedsSleep::makeSleepObjective()
+void MustSleep::makeSleepObjective()
 {
 	assert(m_isAwake);
 	assert(m_objective == nullptr);
@@ -104,7 +104,7 @@ void NeedsSleep::makeSleepObjective()
 	m_objective = objective.get();
 	m_actor.m_hasObjectives.addNeed(objective);
 }
-void NeedsSleep::wakeUpEarly()
+void MustSleep::wakeUpEarly()
 {
 	assert(!m_isAwake);
 	assert(m_needsSleep == true);

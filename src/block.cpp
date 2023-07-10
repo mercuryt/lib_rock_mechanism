@@ -2,7 +2,12 @@
  * A block. Contains either a single type of material in 'solid' form or arbitrary objects with volume, generic solids and liquids.
  * Total volume is 100.
  */
-#pragma once
+
+#include "moveType.h"
+#include "shape.h"
+#include "hasShape.h"
+#include "block.h"
+#include "area.h"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -11,14 +16,9 @@
 #include <algorithm>
 #include <cassert>
 
-#include "moveType.h"
-#include "shape.h"
-#include "hasShape.h"
-#include "block.h"
-
-Block::Block() : m_solid(nullptr), m_routeCacheVersion(0), m_totalDynamicVolume(0), m_totalStaticVolume(0), m_totalFluidVolume(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr), m_deltaTemperature(0), m_exposedToSky(true), m_reservable(1) {}
-void Block::setup(Area* a, uint32_t ax, uint32_t ay, uint32_t az)
-{m_area=a;m_x=ax;m_y=ay;m_z=az;m_locationBucket = a->m_locationBuckets.getBucketFor(*this);}
+Block::Block() : m_solid(nullptr), m_totalFluidVolume(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr), m_deltaTemperature(0), m_exposedToSky(true), m_reservable(1), m_hasPlant(*this), m_hasBlockFeatures(*this), m_hasActors(*this), m_hasItems(*this), m_hasItemsAndActors(*this), m_isPartOfStockPile(*this), m_isPartOfFarmField(*this) {}
+void Block::setup(Area& a, uint32_t ax, uint32_t ay, uint32_t az)
+{m_area=&a;m_x=ax;m_y=ay;m_z=az;m_locationBucket = a.m_actorLocationBuckets.getBucketFor(*this);}
 void Block::recordAdjacent()
 {
 	static const int32_t offsetsList[6][3] = {{0,0,-1}, {0,-1,0}, {-1,0,0}, {0,1,0}, {1,0,0}, {0,0,1}};
@@ -228,7 +228,7 @@ void Block::setNotSolid()
 				pair.second->m_fillQueue.addBlock(this);
 				pair.second->m_stable = false;
 			}
-	clearMoveCostsCacheForSelfAndAdjacent();
+	m_hasActors.clearCache();
 	if(m_area->m_visionCuboidsActive)
 		VisionCuboid::BlockIsNeverOpaque(*this);
 	if(m_adjacents[5] == nullptr || m_adjacents[5]->m_exposedToSky)
@@ -237,6 +237,11 @@ void Block::setNotSolid()
 		setBelowExposedToSky();
 	}
 }
+void Block::setExposedToSky(bool exposed)
+{
+	m_exposedToSky = exposed;
+	m_hasPlant.updateGrowingStatus();
+}
 void Block::setBelowExposedToSky()
 {
 	// Set blocks below as exposed to sky.
@@ -244,6 +249,15 @@ void Block::setBelowExposedToSky()
 	while(block != nullptr && block->canSeeThroughFrom(*block->m_adjacents[5]) && !block->m_exposedToSky)
 	{
 		block->setExposedToSky(true);
+		block = block->m_adjacents[0];
+	}
+}
+void Block::setBelowNotExposedToSky()
+{
+	Block* block = m_adjacents[0];
+	while(block != nullptr && block->m_exposedToSky)
+	{
+		block->setExposedToSky(false);
 		block = block->m_adjacents[0];
 	}
 }
@@ -267,9 +281,7 @@ void Block::setSolid(const MaterialType& materialType)
 				Block* above = m_adjacents[5];
 				while(above != nullptr)
 				{
-					if(above->fluidCanEnterEver() && above->fluidCanEnterEver(*fluidType) &&
-							above->fluidCanEnterCurrently(*fluidType)
-					  )
+					if(above->fluidCanEnterEver() && above->fluidCanEnterCurrently(*fluidType))
 					{
 						pair.second->m_fillQueue.addBlock(above);
 						break;
@@ -295,23 +307,12 @@ void Block::setSolid(const MaterialType& materialType)
 				pair.second->m_fillQueue.removeBlock(this);
 	// Possible expire path caches.
 	// If more then one adjacent block can be entered then this block being cleared may open a new shortest path.
-	if(std::ranges::count_if(m_adjacentsVector, [&](Block* block){ return block->anyoneCanEnterEver(); }) > 1)
-		m_area->expireRouteCache();
-	clearMoveCostsCacheForSelfAndAdjacent();
+	m_hasActors.clearCache();
 	if(m_area->m_visionCuboidsActive && !materialType.transparent)
-		VisionCuboid<Block, Area>::BlockIsSometimesOpaque(*this);
+		VisionCuboid::BlockIsSometimesOpaque(*this);
 	// Set blocks below as not exposed to sky.
 	setExposedToSky(false);
 	setBelowNotExposedToSky();
-}
-void Block::setBelowNotExposedToSky()
-{
-	Block* block = m_adjacents[0];
-	while(block != nullptr && block->m_exposedToSky)
-	{
-		block->setExposedToSky(false);
-		block = block->m_adjacents[0];
-	}
 }
 bool Block::isSolid() const
 {
@@ -330,13 +331,50 @@ Block* Block::offset(int32_t ax, int32_t ay, int32_t az) const
 		return nullptr;
 	return &m_area->m_blocks[ax][ay][az];
 }
+bool Block::canSeeThrough() const
+{
+	if(isSolid() && !getSolidMaterial().transparent)
+		return false;
+	const BlockFeature* door = m_hasBlockFeatures.at(BlockFeatureType::door);
+	if(door != nullptr && !door->materialType.transparent && door->closed)
+		return false;
+	return true;
+}
+bool Block::canSeeThroughFrom(const Block& block) const
+{
+	if(!canSeeThrough())
+		return false;
+	if(m_z == block.m_z)
+		return true;
+	// looking up.
+	if(m_z > block.m_z)
+	{
+		const BlockFeature* floor = m_hasBlockFeatures.at(BlockFeatureType::floor);
+		if(floor != nullptr && !floor->materialType.transparent)
+			return false;
+		const BlockFeature* hatch = m_hasBlockFeatures.at(BlockFeatureType::hatch);
+		if(hatch != nullptr && !hatch->materialType.transparent && hatch->closed)
+			return false;
+	}
+	// looking down.
+	if(m_z < block.m_z)
+	{
+		const BlockFeature* floor = block.m_hasBlockFeatures.at(BlockFeatureType::floor);
+		if(floor != nullptr && !floor->materialType.transparent)
+			return false;
+		const BlockFeature* hatch = block.m_hasBlockFeatures.at(BlockFeatureType::hatch);
+		if(hatch != nullptr && !hatch->materialType.transparent && hatch->closed)
+			return false;
+	}
+	return true;
+}
 void Block::spawnMist(const FluidType& fluidType, uint32_t maxMistSpread)
 {
 	if(m_mist != nullptr and m_mist->density > fluidType.density)
 		return;
 	m_mist = &fluidType;
 	m_mistInverseDistanceFromSource = maxMistSpread != 0 ? maxMistSpread : fluidType.maxMistSpread;
-	MistDisperseEvent::emplace(m_area->m_eventSchedule, fluidType.mistDuration, fluidType, *this);
+	MistDisperseEvent::emplace(fluidType.mistDuration, fluidType, *this);
 }
 //TODO: This code puts the fluid into an adjacent group of the correct type if it can find one, it does not add the block or merge groups, leaving these tasks to fluidGroup readStep. Is this ok?
 void Block::addFluid(uint32_t volume, const FluidType& fluidType)
@@ -344,7 +382,7 @@ void Block::addFluid(uint32_t volume, const FluidType& fluidType)
 	// If a suitable fluid group exists already then just add to it's excessVolume.
 	if(m_fluids.contains(&fluidType))
 	{
-		assert(m_fluids.at(&fluidType).second->m_fluidType == &fluidType);
+		assert(m_fluids.at(&fluidType).second->m_fluidType == fluidType);
 		m_fluids.at(&fluidType).second->addFluid(volume);
 		return;
 	}
@@ -355,7 +393,7 @@ void Block::addFluid(uint32_t volume, const FluidType& fluidType)
 	for(Block* adjacent : m_adjacentsVector)
 		if(adjacent->fluidCanEnterEver() && adjacent->m_fluids.contains(&fluidType))
 		{
-			assert(adjacent->m_fluids.at(&fluidType).second->m_fluidType == &fluidType);
+			assert(adjacent->m_fluids.at(&fluidType).second->m_fluidType == fluidType);
 			fluidGroup = adjacent->m_fluids.at(&fluidType).second;
 			fluidGroup->addBlock(*this);
 			continue;
@@ -383,10 +421,14 @@ bool Block::fluidCanEnterCurrently(const FluidType& fluidType) const
 			return true;
 	return false;
 }
+bool Block::fluidCanEnterEver() const
+{
+	return !isSolid();
+}
 bool Block::isAdjacentToFluidGroup(const FluidGroup* fluidGroup) const
 {
 	for(Block* block : m_adjacentsVector)
-		if(block->m_fluids.contains(fluidGroup->m_fluidType) && block->m_fluids.at(fluidGroup->m_fluidType).second == fluidGroup)
+		if(block->m_fluids.contains(&fluidGroup->m_fluidType) && block->m_fluids.at(&fluidGroup->m_fluidType).second == fluidGroup)
 			return true;
 	return false;
 }
@@ -430,7 +472,7 @@ void Block::resolveFluidOverfull()
 	// Fluid types are sorted by density.
 	for(auto& [fluidType, pair] : m_fluids)
 	{
-		assert(fluidType == pair.second->m_fluidType);
+		assert(fluidType == &pair.second->m_fluidType);
 		// Displace lower density fluids.
 		uint32_t displaced = std::min(pair.first, m_totalFluidVolume - Config::maxBlockVolume);
 		m_totalFluidVolume -= displaced;
@@ -481,6 +523,30 @@ void Block::applyTemperatureDelta(int32_t delta)
 	// Use insert so only record once if changed multiple times in a step.
 	//m_area->m_blocksWithChangedTemperature.insert({this, m_deltaTemperature});
 	m_deltaTemperature += delta;
+}
+void Block::applyTemperatureChange(uint32_t oldTemperature, uint32_t newTemperature)
+{
+	(void)oldTemperature;
+	if(!m_fire)
+	{
+		if(isSolid())
+		{
+			const MaterialType& materialType = getSolidMaterial();
+			if(materialType.ignitionTemperature <= newTemperature)
+				m_fire = std::make_unique<Fire>(*this, materialType);
+		}
+		else if(!m_features.empty())
+		{
+			for(BlockFeature& blockFeature : m_features)
+				if(blockFeature.materialType.ignitionTemperature <= newTemperature)
+					m_fire = std::make_unique<Fire>(*this, blockFeature.materialType);
+		}
+	}
+}
+//TODO: ambiant underground temperature and deep underground temperature.
+uint32_t Block::getAmbientTemperature() const
+{
+	return m_area->m_ambiantSurfaceTemperature;
 }
 bool Block::operator==(const Block& block) const { return &block == this; };
 //TODO: Replace with cuboid.

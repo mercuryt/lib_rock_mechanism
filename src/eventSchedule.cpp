@@ -1,6 +1,6 @@
 #include "eventSchedule.h"
 ScheduledEvent::ScheduledEvent(uint32_t d) : m_step(d + simulation::step){}
-void ScheduledEvent::cancel() { simulation::eventSchedule->unschedule(*this); }
+void ScheduledEvent::cancel() { eventSchedule::unschedule(*this); }
 uint32_t ScheduledEvent::remaningSteps() const { return m_step - simulation::step; }
 
 ScheduledEventWithPercent::ScheduledEventWithPercent(uint32_t d) : ScheduledEvent(d), m_startStep(simulation::step) {}
@@ -54,13 +54,13 @@ void EventSchedule::clear()
 }
 
 HasScheduledEvent::HasScheduledEvent() : m_event(nullptr) {}
-	template<typename ...Args>
+template<typename ...Args>
 void HasScheduledEvent::schedule(Args ...args)
 {
 	assert(m_event == nullptr);
 	std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<EventType>(args...);
 	m_event = event.get();
-	simulation::eventSchedule.schedule(event);
+	eventSchedule::schedule(event);
 }
 void HasScheduledEvent::unschedule()
 {
@@ -91,8 +91,7 @@ void HasScheduledEvent::clearPointer()
 	if(m_event != nullptr)
 		m_event->cancel();
 }
-
-HasScheduledEventPausable::HasScheduledEventPausable(EventSchedule& es) : HasScheduledEvent<EventType>(es), m_percent(0) { }
+HasScheduledEventPausable::HasScheduledEventPausable() : HasScheduledEvent<EventType>(), m_percent(0) { }
 uint32_t HasScheduledEventPausable::percentComplete() const
 {
 	uint32_t output = m_percent;

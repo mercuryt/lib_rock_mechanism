@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/unit.dir/test.cpp.o -o unit  ../../src/libSource.a 

@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 #include <cassert>
+#include <vector>
+#include <algorithm>
 
 struct FluidType
 {
@@ -10,7 +12,7 @@ struct FluidType
 	const uint32_t mistDuration;
 	const uint32_t maxMistSpread;
 	// Infastructure.
-	bool operator==(const FluidType& fluidType){ return this == &fluidType; }
+	bool operator==(const FluidType& fluidType) const { return this == &fluidType; }
 	static std::vector<FluidType> data;
 	static const FluidType& byName(std::string name)
 	{
