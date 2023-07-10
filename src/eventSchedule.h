@@ -9,7 +9,6 @@
 #include <unordered_map>
 #include <memory>
 
-class EventSchedule;
 class ScheduledEvent
 {
 public:
@@ -27,10 +26,9 @@ public:
 	ScheduledEventWithPercent(uint32_t d);
 	uint32_t percentComplete() const;
 };
-class EventSchedule
+namespace eventSchedule
 {
-public:
-	std::unordered_map<uint32_t, std::list<std::unique_ptr<ScheduledEvent>>> m_data;
+	std::unordered_map<uint32_t, std::list<std::unique_ptr<ScheduledEvent>>> data;
 	void schedule(std::unique_ptr<ScheduledEvent> scheduledEvent);
 	void unschedule(const ScheduledEvent& scheduledEvent);
 	void execute(uint32_t stepNumber);
@@ -55,8 +53,8 @@ template<class EventType>
 class HasScheduledEventPausable : public HasScheduledEvent<EventType>
 {
 	uint32_t m_percent;
-	HasScheduledEventPausable(EventSchedule& es) : HasScheduledEvent<EventType>(es), m_percent(0) { }
 public:
+	HasScheduledEventPausable() : m_percent(0) { }
 	uint32_t percentComplete() const;
 	void pause();
 	void reset();

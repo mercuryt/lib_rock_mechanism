@@ -1,23 +1,23 @@
 #include "threadedTask.h"
 void ThreadedTask::cancel() { simulation::threadedTaskEngine.remove(*this); }
 
-void ThreadedTaskEngine::readStep()
+void threadedTaskEngine::readStep()
 {
 	for(auto& task : m_tasks)
 		simulation::pool.push_task([&](){ task->readStep(); });
 }
-void ThreadedTaskEngine::writeStep()
+void threadedTaskEngine::writeStep()
 {
 	//TODO: Assert task queue is empty.
 	for(auto& task : m_tasks)
 		task->writeStep();
 	m_tasks.clear();
 }
-void ThreadedTaskEngine::insert(std::unique_ptr<ThreadedTask>&& task)
+void threadedTaskEngine::insert(std::unique_ptr<ThreadedTask>&& task)
 {
 	m_tasks.insert(task);
 }
-void ThreadedTaskEngine::remove(ThreadedTask& task)
+void threadedTaskEngine::remove(ThreadedTask& task)
 {
 	assert(std::ranges::find(m_tasks, [&](auto& t) { return &t.get() == &task; }) != m_tasks.end());
 	std::erase_if(m_tasks, [&](auto& t) { return &t.get() == &task; });

@@ -144,7 +144,7 @@ bool EatObjective::canEatAt(Block& block)
 				return true;
 	return false;
 }
-MustEat::MustEat(Actor& a, const uint32_t& snff, const uint32_t& stdwf) : m_actor(a), m_massFoodRequested(0), m_stepsNeedsFoodFrequency(snff), m_stepsTillDieWithoutFood(stdwf) { }
+MustEat::MustEat(Actor& a) : m_actor(a), m_massFoodRequested(0) { }
 void MustEat::eat(uint32_t mass)
 {
 	assert(mass <= m_massFoodRequested);

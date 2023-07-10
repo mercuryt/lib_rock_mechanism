@@ -32,11 +32,11 @@ struct PlantSpecies
 	const uint32_t stepsTillDieWithoutFluid;
 	const uint32_t stepsTillFullyGrown;
 	const bool growsInSunLight;
-	const HarvestData* harvestData;
 	const uint32_t rootRangeMax;
 	const uint32_t rootRangeMin;
 	const uint32_t adultMass;
 	const FluidType& fluidType;
+	const HarvestData* harvestData;
 	// Infastructure.
 	bool operator==(const PlantSpecies& plantSpecies){ return this == &plantSpecies; }
 	static std::vector<PlantSpecies> data;
@@ -52,7 +52,7 @@ class Plant
 public:
 	Block& m_location;
 	Block* m_fluidSource;
-	const PlantSpecies& m_plantType;
+	const PlantSpecies& m_plantSpecies;
 	HasScheduledEvent<PlantGrowthEvent> m_growthEvent;
 	HasScheduledEvent<PlantFluidEvent> m_fluidEvent;
 	HasScheduledEvent<PlantTemperatureEvent> m_temperatureEvent;
@@ -65,7 +65,7 @@ public:
 	//TODO: Set max reservations to 1 to start, maybe increase later with size?
 	Reservable m_reservable;
 
-	Plant(Block& l, const PlantSpecies& pt, uint32_t pg = 0) : m_location(l), m_fluidSource(nullptr), m_plantType(pt), m_percentGrown(pg), m_quantityToHarvest(0), m_hasFluid(true), m_percentFoliage(100), m_reservable(1) { }
+	Plant(Block& l, const PlantSpecies& pt, uint32_t pg = 0) : m_location(l), m_fluidSource(nullptr), m_plantSpecies(pt), m_percentGrown(pg), m_quantityToHarvest(0), m_hasFluid(true), m_percentFoliage(100), m_reservable(1) { }
 	void die();
 	void applyTemperatureChange(uint32_t oldTemperature, uint32_t newTemperature);
 	void setHasFluidForNow();
@@ -93,7 +93,7 @@ public:
 	void execute()
 	{
 		m_plant.m_percentGrown = 100;
-		if(m_plant.m_plantType.annual)
+		if(m_plant.m_plantSpecies.annual)
 			m_plant.setQuantityToHarvest();
 	}
 	~PlantGrowthEvent() { m_plant.m_growthEvent.clearPointer(); }
@@ -137,7 +137,8 @@ class HasPlant
 	Plant* m_plant;
 public:
 	HasPlant(Block& b);
-	void addPlant(const PlantSpecies& plantType, uint32_t growthPercent = 0);
+	void addPlant(const PlantSpecies& plantSpecies, uint32_t growthPercent = 0);
+	void updateGrowingStatus();
 	void clearPointer();
 	Plant& get();
 };

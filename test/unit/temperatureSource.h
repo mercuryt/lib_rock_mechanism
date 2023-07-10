@@ -2,15 +2,16 @@
 TEST_CASE("temperatureSource")
 {
 	Area area(10,10,10);
-	registerTypes();
 	Block& origin = area.m_blocks[5][5][5];
 	Block& b1 = area.m_blocks[5][5][6];
 	Block& b2 = area.m_blocks[5][7][5];
 	Block& toBurn = area.m_blocks[6][5][5];
 	Block& toNotBurn = area.m_blocks[4][5][5];
-	toBurn.setSolid(s_wood);
-	toNotBurn.setSolid(s_stone);
-	TemperatureSource<Block> temperatureSource(1000, origin);
+	auto& wood = MaterialType::byName("wood");
+	auto& marble = MaterialType::byName("marble");
+	toBurn.setSolid(wood);
+	toNotBurn.setSolid(marble);
+	TemperatureSource temperatureSource(1000, origin);
 	CHECK(origin.m_deltaTemperature == 1000);
 	CHECK(b1.m_deltaTemperature == 1000);
 	CHECK(b2.m_deltaTemperature == 250);
@@ -23,5 +24,5 @@ TEST_CASE("temperatureSource")
 	CHECK(toBurn.m_deltaTemperature > 1000);
 	CHECK(!toNotBurn.m_fire);
 	CHECK(toNotBurn.m_deltaTemperature > 1000);
-	CHECK(!area.m_eventSchedule.m_data.empty());
+	CHECK(!eventSchedule::data.empty());
 }

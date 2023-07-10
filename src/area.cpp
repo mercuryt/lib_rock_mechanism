@@ -2,12 +2,12 @@
 * A game map.
 */
 
-#pragma once
 #include "area.h"
+#include "simulation.h"
 #include <algorithm>
 
 Area::Area(uint32_t x, uint32_t y, uint32_t z) :
-	m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_locationBuckets(*this), m_routeCacheVersion(0), m_visionCuboidsActive(false), m_destroy(false)
+	m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_actorLocationBuckets(*this), m_visionCuboidsActive(false)
 {
 	// build m_blocks
 	m_blocks.resize(m_sizeX);
@@ -27,7 +27,7 @@ Area::Area(uint32_t x, uint32_t y, uint32_t z) :
 			for(uint32_t z = 0; z < m_sizeZ; ++z)
 				m_blocks[x][y][z].recordAdjacent();
 }
-void Area::readStep(BS::thread_pool_light pool);
+void Area::readStep(BS::thread_pool_light pool)
 { 
 	//TODO: Count tasks dispatched and finished instead of pool.wait_for_tasks so we can do multiple areas simultaniously in one pool.
 	m_blocksWithChangedTemperature.clear();
@@ -40,7 +40,7 @@ void Area::readStep(BS::thread_pool_light pool);
 	while(visionIter < m_visionRequestQueue.end())
 	{
 		auto end = std::min(m_visionRequestQueue.end(), visionIter + Config::visionThreadingBatchSize);
-		pool.push_task([=](){ VisionRequest<Block, Actor, DerivedArea>::readSteps(visionIter, end); });
+		pool.push_task([=](){ VisionRequest::readSteps(visionIter, end); });
 		visionIter = end;
 	}
 	// Calculate cave in.
@@ -59,24 +59,24 @@ void Area::writeStep()
 	}
 	// Resolve overfull, diagonal seep, and mist.
 	// Make vector of unstable so we can iterate it while modifing the original.
-	std::vector<FluidGroup unstable(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
+	std::vector<FluidGroup*> unstable(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
 	for(FluidGroup* fluidGroup : unstable)
 	{
 		fluidGroup->afterWriteStep();
 		fluidGroup->validate();
 	}
-	std::erase_if(m_unstableFluidGroups, [](FluidGroupm_merged; });
-	std::vector<FluidGroup unstable2(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
+	std::erase_if(m_unstableFluidGroups, [](FluidGroup* fluidGroup){ return fluidGroup->m_merged; });
+	std::vector<FluidGroup*> unstable2(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
 	for(FluidGroup* fluidGroup : unstable2)
 		fluidGroup->mergeStep();
-	std::erase_if(m_unstableFluidGroups, [](FluidGroupm_merged; });
+	std::erase_if(m_unstableFluidGroups, [](FluidGroup* fluidGroup){ return fluidGroup->m_merged; });
 	// Apply fluid split.
-	std::vector<FluidGroup unstable3(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
+	std::vector<FluidGroup*> unstable3(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
 	for(FluidGroup* fluidGroup : unstable3)
 		fluidGroup->splitStep();
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 		fluidGroup.validate();
-	std::unordered_set<FluidGroup toErase;
+	std::unordered_set<FluidGroup*> toErase;
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 	{
 		if(fluidGroup.m_excessVolume <= 0 && fluidGroup.m_drainQueue.m_set.size() == 0)
@@ -118,13 +118,11 @@ void Area::writeStep()
 		fluidGroup.validate();
 	// If there is any unstable groups expire route caches.
 	// TODO: Be more selective?
-	if(!m_unstableFluidGroups.empty())
-		m_routeCacheVersion++;
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 		fluidGroup.validate();
 	// Clean up old vision cuboids.
 	if(m_visionCuboidsActive)
-		std::erase_if(m_visionCuboids, [](VisionCuboid<Block, DerivedArea>& visionCuboid){ return visionCuboid.m_destroy; });
+		std::erase_if(m_visionCuboids, [](VisionCuboid& visionCuboid){ return visionCuboid.m_destroy; });
 	// Apply temperature changes.
 	for(auto& [block, oldDelta] : m_blocksWithChangedTemperature)
 	{
@@ -139,12 +137,10 @@ void Area::registerActor(Actor& actor)
 void Area::unregisterActor(Actor& actor)
 {
 	m_visionBuckets.remove(actor);
-	if(actor.m_taskEvent != nullptr)
-		actor.m_taskEvent->cancel();
 	if(actor.m_location != nullptr)
-		actor.m_location->m_area->m_locationBuckets.erase(actor);
+		actor.m_location->m_area->m_actorLocationBuckets.erase(actor);
 }
-FluidGroup* Area::createFluidGroup(const FluidType& fluidType, std::unordered_set<Block*>& blocks, bool checkMerge = true);
+FluidGroup* Area::createFluidGroup(const FluidType& fluidType, std::unordered_set<Block*>& blocks, bool checkMerge)
 {
 	m_fluidGroups.emplace_back(fluidType, blocks, *this, checkMerge);
 	m_unstableFluidGroups.insert(&m_fluidGroups.back());
@@ -159,7 +155,6 @@ Cuboid Area::getZLevel(uint32_t z)
 {
 	return Cuboid(m_blocks[m_sizeX - 1][m_sizeY - 1][z], m_blocks[0][0][z]);
 }
-void Area::expireRouteCache(){++m_routeCacheVersion;}
 void Area::validateAllFluidGroups()
 {
 	for(FluidGroup& fluidGroup : m_fluidGroups)
@@ -183,7 +178,7 @@ std::string Area::toS()
 		{
 			output += "-disolved";
 			for(FluidGroup& fg : m_fluidGroups)
-				if(fg.m_disolvedInThisGroup.contains(fluidGroup.m_fluidType) && fg.m_disolvedInThisGroup.at(fluidGroup.m_fluidType) == &fluidGroup)
+				if(fg.m_disolvedInThisGroup.contains(&fluidGroup.m_fluidType) && fg.m_disolvedInThisGroup.at(&fluidGroup.m_fluidType) == &fluidGroup)
 					output += " in " + fg.m_fluidType.name;
 		}
 		if(fluidGroup.m_destroy)
@@ -191,8 +186,4 @@ std::string Area::toS()
 		output += "###";
 	}
 	return output;
-}
-Area::~Area()
-{
-	m_destroy = true;
 }

@@ -1,7 +1,7 @@
 #include "givePlantsFluid.h"
 void GivePlantsFluidEvent::execute()
 {
-	assert(m_objective.m_actor.m_hasFluids.hasFluidType(m_objective.m_plant->plantType.fluidType));
+	assert(m_objective.m_actor.m_hasFluids.hasFluidType(m_objective.m_plant->plantSpecies.fluidType));
 	uint32_t quantity = std::min(m_objective.m_plant.getFluidDrinkVolume(), m_objective.m_actor.m_hasItems.getFluidVolume());
 	m_objective.m_plant.m_needsFluid.drink(quantity);
 	m_objective.m_actor.m_hasItems.removeFluidVolume(quantity);
@@ -19,7 +19,7 @@ void GivePlantsFluidThreadedTask::readStep()
 		m_result = path::getForActorToPredicate(m_objective.m_actor, condition);
 		return;
 	}
-	if(m_objective.m_actor.m_hasItems.hasContainerWithFluidType(m_objective.m_plant->m_plantType.m_fluidType))
+	if(m_objective.m_actor.m_hasItems.hasContainerWithFluidType(m_objective.m_plant->m_plantSpecies.m_fluidType))
 	{
 		if(m_objective.m_actor.m_location == m_objective.m_plant->m_location)
 			m_objective.m_givePlantsFluidEvent.schedule(Config::givePlantsFluidDelaySteps, m_objective);
@@ -40,7 +40,7 @@ void GivePlantsFluidThreadedTask::readStep()
 		{
 			auto condition [&](Block* block)
 			{
-				return block.m_hasItems.hasEmptyContainerCarryableBy(m_objective.m_actor) || block.m_hasItems.hasEmptyContainerCarryableByWithFluidType(m_objective.m_actor, m_objective.m_plant.m_plantType.fluidType);
+				return block.m_hasItems.hasEmptyContainerCarryableBy(m_objective.m_actor) || block.m_hasItems.hasEmptyContainerCarryableByWithFluidType(m_objective.m_actor, m_objective.m_plant.m_plantSpecies.fluidType);
 			};
 			m_result = path::getForActorToPredicate(m_objective.m_actor, condition);
 		}

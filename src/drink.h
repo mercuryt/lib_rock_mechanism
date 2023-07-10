@@ -3,10 +3,10 @@
 #include "util.h"
 #include "objective.h"
 #include "eventSchedule.h"
-#include "block.h"
-#include "item.h"
 #include "threadedTask.h"
 
+class Item;
+class Block;
 class Actor;
 class DrinkThreadedTask;
 class DrinkEvent;

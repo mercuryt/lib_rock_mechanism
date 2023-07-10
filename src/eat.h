@@ -3,8 +3,8 @@
 #include "objective.h"
 #include "eventSchedule.h"
 #include "threadedTask.h"
-#include "item.h"
 
+class Item;
 class Actor;
 class EatObjective;
 class HungerEvent;
@@ -14,10 +14,8 @@ class MustEat
 	Actor& m_actor;
 	uint32_t m_massFoodRequested;
 	HasScheduledEvent<HungerEvent> m_hungerEvent;
-	const uint32_t& m_stepsNeedsFoodFrequency;
-	const uint32_t& m_stepsTillDieWithoutFood;
 public:
-	MustEat(Actor& a, const uint32_t& snff, const uint32_t& stdwf);
+	MustEat(Actor& a);
 	void eat(uint32_t mass);
 	void setNeedsFood();
 	uint32_t massFoodForBodyMass() const;

@@ -126,3 +126,12 @@ int util::scaleByInverseFraction(int base, uint32_t numerator, uint32_t denomina
 {
 	return scaleByFraction(base, denominator - numerator, denominator);
 }
+
+std::string util::wideStringToString(const std::wstring& wstr)
+{
+    using convert_typeX = std::codecvt_utf8<wchar_t>;
+    std::wstring_convert<convert_typeX, wchar_t> converterX;
+
+    return converterX.to_bytes(wstr);
+}
+

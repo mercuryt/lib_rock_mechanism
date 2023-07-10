@@ -1,8 +1,14 @@
 #pragma once
+
 #include "animalSpecies.h"
 #include "util.h"
+#include "config.h"
+
 #include <vector>
 #include <array>
+
+enum class AttributeType { Strength, Dextarity, Agility, Mass };
+
 struct Attribute
 {
 	uint32_t value;
@@ -32,12 +38,11 @@ class Attributes
 		moveSpeed = agility.value * Config::unitsOfMoveSpeedPerUnitOfAgility;
 	}
 public:
-	Attributes(AnimalSpecies& species, std::array<uint32_t, 3> modifierPercents, std::array<int32_t, 3> bonusOrPenalties, uint32_t percentGrown)
-	{
-		strength(species.strength[0], species.strength[1], modifierPercents[1], bonusOrPenalties[1], percentGrown);
-		dextarity(species.dextarity[0], species.dextarity[1], modifierPercents[1], bonusOrPenalties[1], percentGrown);
-		agility(species.agility[0], species.agility[1], modifierPercents[2], bonusOrPenalties[2], percentGrown);
-	}
+	Attributes(AnimalSpecies& species, std::array<uint32_t, 4> modifierPercents, std::array<int32_t, 4> bonusOrPenalties, uint32_t percentGrown) :
+		strength(species.strength[0], species.strength[1], modifierPercents[1], bonusOrPenalties[1], percentGrown),
+		dextarity(species.dextarity[0], species.dextarity[1], modifierPercents[1], bonusOrPenalties[1], percentGrown),
+		agility(species.agility[0], species.agility[1], modifierPercents[2], bonusOrPenalties[2], percentGrown),
+		mass(species.mass[0], species.mass[1], modifierPercents[3], bonusOrPenalties[3], percentGrown) { }
 	void updatePercentGrown(uint32_t percentGrown)
 	{
 		strength.setPercentGrown(percentGrown);
@@ -46,13 +51,13 @@ public:
 		mass.setPercentGrown(percentGrown);
 		generate();
 	}
-	uint32_t getStrength(){ return strength; }
+	uint32_t getStrength(){ return strength.value; }
 	void addStrengthBonusOrPenalty(int32_t x) { strength.bonusOrPenalty =+ x; generate(); }
-	uint32_t getDextarity(){ return dextarity; }
+	uint32_t getDextarity(){ return dextarity.value; }
 	void addDextarityBonusOrPenalty(uint32_t x) { dextarity.bonusOrPenalty =+ x; generate(); }
-	uint32_t getAgility(){ return agility; }
-	void addAgilityBonusOrPenalty(uint32_t x) { agility.BonusOrPenalty =+ x; generate(); }
-	uint32_t getMass(){ return mass; }
+	uint32_t getAgility(){ return agility.value; }
+	void addAgilityBonusOrPenalty(uint32_t x) { agility.bonusOrPenalty =+ x; generate(); }
+	uint32_t getMass(){ return mass.value; }
 	void addMassBonusOrPenalty(uint32_t x) { mass.bonusOrPenalty =+ x; generate(); }
 	uint32_t getUnencomberedCarryMass(){ return unencomberedCarryMass; }
 	uint32_t getMoveSpeed(){ return moveSpeed; }

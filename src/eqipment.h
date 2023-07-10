@@ -19,7 +19,8 @@ class EquipmentSet
 	std::unordered_set<Item*> m_equipments;
 	std::priority_queue<Item*, std::vector<Item*>, EquipmentSortByLayer> m_wearable;
 	uint32_t m_mass;
-	EquipmentSet();
+public:
+	EquipmentSet() : m_mass(0) { }
 	void addEquipment(Item& equipment);
 	void removeEquipment(Item& equipment);
 	void modifyImpact(Hit& hit, const MaterialType& materialType, const BodyPartType& bodyPartType);

@@ -77,7 +77,7 @@ class Project
 	std::vector<std::pair<ItemQuery, ProjectItemCounts>> m_requiredItems;
 	std::vector<std::pair<ActorQuery, ProjectItemCounts>> m_requiredActors;
 	std::unordered_set<Item*> m_toConsume;
-	size_t maxWorkers;
+	size_t m_maxWorkers;
 	bool reservationsComplete() const;
 	bool deliveriesComplete() const;
 protected:
@@ -86,7 +86,7 @@ protected:
 	std::unordered_set<Actor*> m_making;
 	std::list<HaulSubproject<Item>> m_haulItemSubprojects;
 	std::list<HaulSubproject<Actor>> m_haulActorSubprojects;
-	Project(Block& l, size_t mw) : m_gatherComplete(false), m_location(l), maxWorker(mw);
+	Project(Block& l, size_t mw) : m_gatherComplete(false), m_location(l), m_maxWorkers(mw) { }
 public:
 	void addWorker(Actor& actor);
 	// To be called by Objective::execute.
@@ -107,9 +107,9 @@ public:
 	bool tryToBeginItemHaulSubproject(Subproject& subproject, Actor& actor);
 	virtual uint32_t getDelay() const = 0;
 	virtual void onComplete() = 0;
-	virtual std::vector<std::pair<ItemQuery, uint32_t> getConsumed() const = 0;
-	virtual std::vector<std::pair<ItemQuery, uint32_t> getUnconsumed() const = 0;
+	virtual std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const = 0;
+	virtual std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const = 0;
 	virtual std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const = 0;
-	virtual std::vector<std::pair<ActorQuery, uint32_t> getActors() const = 0;
-	virtual ~Project;
+	virtual std::vector<std::pair<ActorQuery, uint32_t>> getActors() const = 0;
+	virtual ~Project();
 };

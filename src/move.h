@@ -1,15 +1,17 @@
 #pragma once
 #include "eventSchedule.h"
 #include "threadedTask.h"
-#include "block.h"
 
 #include <vector>
 
 class MoveEvent;
 class PathThreadedTask;
+class Block;
+class Actor;
 class CanMove
 {
 	Actor& m_actor;
+	const MoveType* m_moveType;
 	uint32_t m_speedIndividual;
 	uint32_t m_speedActual;
 	Block* m_destination;
@@ -26,6 +28,7 @@ public:
 	void callback();
 	void scheduleMove();
 	void setDestination(Block* destination, bool detour = false);
+	const MoveType& getMoveType() const;
 	friend class MoveEvent;
 	friend class PathThreadedTask;
 };

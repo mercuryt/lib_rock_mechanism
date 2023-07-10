@@ -1,10 +1,12 @@
 #pragma once 
 
-#include "actor.h"
+#include "block.h"
 
 #include <vector>
 #include <stack>
 #include <unordered_set>
+
+class Actor;
 
 class VisionRequest
 {

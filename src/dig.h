@@ -9,45 +9,51 @@
 #include <unordered_map>
 #include <vector>
 
+class DigObjective;
+
 // Find a place to dig.
-class DigThreadedTask : ThreadedTask
+class DigThreadedTask final : public ThreadedTask
 {
 	DigObjective& m_digObjective;
 	std::vector<Block*> m_result;
+public:
 	DigThreadedTask(DigObjective& ho) : m_digObjective(ho) {}
 	void readStep();
 	void writeStep();
 };
-class DigObjective : Objective
+class DigObjective final : public Objective
 {
 	Actor& m_actor;
 	HasThreadedTask<DigThreadedTask> m_digThrededTask;
 	Project* m_project;
-	DigObjective(Actor& a) : m_actor(a), m_project(nullptr) { }
+public:
+	DigObjective(Actor& a) : Objective(Config::digObjectivePriority), m_actor(a), m_project(nullptr) { }
 	void execute();
 	bool canDigAt(Block& block) const;
 };
-class DigObjectiveType : ObjectiveType
+class DigObjectiveType : public ObjectiveType
 {
+public:
 	bool canBeAssigned(Actor& actor);
 	std::unique_ptr<Objective> makeFor(Actor& actor);
 };
-class DigProject : Project
+class DigProject final : public Project
 {
 	const BlockFeatureType* blockFeatureType;
-	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed();
+	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
-	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t quantity>> getByproducts() const;
-	static uint32_t getWorkerDigScore(Actor& actor) const;
+	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
+	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
+	static uint32_t getWorkerDigScore(Actor& actor);
 public:
 	// BlockFeatureType can be null, meaning the block is to be fully excavated.
-	DigProject(Block& b, const BlockFeatureType* bft) : project(b, Config::maxNumberOfWorkersForDigProject), blockFeatureType(bft) { }
+	DigProject(Block& b, const BlockFeatureType* bft) : Project(b, Config::maxNumberOfWorkersForDigProject), blockFeatureType(bft) { }
 	void onComplete();
 	// What would the total delay time be if we started from scratch now with current workers?
 	uint32_t getDelay() const;
 };
 // Part of HasDigDesignations.
-class HasDigDesignationsForPlayer
+class HasDigDesignationsForPlayer final
 {
 	Player& m_player;
 	std::unordered_map<Block*, DigProject> m_data;
@@ -60,7 +66,7 @@ public:
 	bool empty() const;
 };
 // To be used by Area.
-class HasDigDesignations
+class HasDigDesignations final
 {
 	std::unordered_map<Player*, HasDigDesignationsForPlayer> m_data;
 public:

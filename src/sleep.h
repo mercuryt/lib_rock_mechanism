@@ -3,15 +3,16 @@
 #include "eventSchedule.h"
 #include "threadedTask.h"
 #include "objective.h"
-#include "actor.h"
-#include "block.h"
 
 #include <vector>
 
+class Actor;
+class Block;
+class Item;
 class SleepEvent;
 class TiredEvent;
 class SleepObjective;
-class NeedsSleep final 
+class MustSleep final 
 {
 	Actor& m_actor;
 	Block& m_location;
@@ -21,7 +22,7 @@ class NeedsSleep final
 	bool m_needsSleep;
 	bool m_isAwake;
 public:
-	NeedsSleep(Actor& a);
+	MustSleep(Actor& a);
 	void tired();
 	void sleep();
 	void wakeUp();
@@ -30,17 +31,17 @@ public:
 };
 class SleepEvent final : public ScheduledEventWithPercent
 {
-	NeedsSleep& m_needsSleep;
+	MustSleep& m_needsSleep;
 public:
-	SleepEvent(uint32_t step, NeedsSleep& ns);
+	SleepEvent(uint32_t step, MustSleep& ns);
 	void execute();
 	~SleepEvent();
 };
 class TiredEvent final : public ScheduledEventWithPercent
 {
-	NeedsSleep& m_needsSleep;
+	MustSleep& m_needsSleep;
 public:
-	TiredEvent(uint32_t step, NeedsSleep& ns);
+	TiredEvent(uint32_t step, MustSleep& ns);
 	void execute();
 	~TiredEvent();
 };
@@ -56,10 +57,10 @@ public:
 };
 class SleepObjective final : public Objective
 {
-	NeedsSleep& m_needsSleep;
+	MustSleep& m_needsSleep;
 	HasThreadedTask<SleepThreadedTask> m_threadedTask;
 public:
-	SleepObjective(NeedsSleep& ns);
+	SleepObjective(MustSleep& ns);
 	void execute();
 	uint32_t desireToSleepAt(Block& block);
 	~SleepObjective();

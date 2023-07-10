@@ -4,7 +4,6 @@ bool EquipmentSortByLayer::operator()(Item*& a, Item*& b)
 	assert(b->m_itemType.wearableType != nullptr);
 	return a->m_itemType.wearableType.layer > b->m_itemType.wearableType.layer;
 }
-EquipmentSet::EquipmentSet() : m_mass(0) {}
 
 void EquipmentSet::addEquipment(Item& equipment)
 {

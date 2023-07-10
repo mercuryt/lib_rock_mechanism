@@ -5,6 +5,7 @@
 #include "attackType.h"
 #include "fight.h"
 #include "hit.h"
+#include "util.h"
 
 #include <vector>
 #include <utility>
@@ -15,7 +16,7 @@ struct BodyPartType
 	const uint32_t area;
 	const bool doesLocamotion;
 	const bool doesManipulation;
-	const std::vector<AttackType> attackTypes;
+	std::vector<AttackType> attackTypes;
 	// Infastructure.
 	bool operator==(const BodyPartType& bodyPartType){ return this == &bodyPartType; }
 	static std::vector<BodyPartType> data;

@@ -3,6 +3,9 @@
 #include "materialType.h"
 #include "hasShape.h"
 #include "reservable.h"
+#include "util.h"
+#include "item.h"
+#include "attackType.h"
 
 #include <string>
 #include <vector>
@@ -24,7 +27,7 @@ struct WearableType
 	const uint32_t impactSpreadArea;
 	const uint32_t forceAbsorbedPiercedModifier;
 	const uint32_t forceAbsorbedUnpiercedModifier;
-	const std::unordered_set<BodyPartType*> bodyPartsCovered;
+	std::vector<const BodyPartType*> bodyPartsCovered;
 	// Infastructure.
 	bool operator==(const WearableType& wearableType){ return this == &wearableType; }
 	static std::vector<WearableType> data;
@@ -43,7 +46,7 @@ struct ItemType
 	const bool generic;
 	const uint32_t internalVolume;
 	const bool canHoldFluids;
-	const WeaponType* weaponType;
+	std::vector<AttackType> attackTypes;
        	const WearableType* wearableType;
 	// Infastructure.
 	bool operator==(const ItemType& itemType){ return this == &itemType; }
@@ -124,7 +127,7 @@ public:
 	void specalize(Item& item);
 	void specalize(MaterialType& m_materialType);
 };
-// To be used by actor and vehicle.
+// To be used by actor
 class HasItemsAndActors
 {
 	std::vector<Item*> m_items;
@@ -151,6 +154,7 @@ class BlockHasItems
 	Block& m_block;
 	std::vector<Item*> m_items;
 	uint32_t m_volume;
+public:
 	BlockHasItems(Block& b);
 	// Non generic types have Shape.
 	void add(Item& item);
