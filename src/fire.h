@@ -1,6 +1,6 @@
 #pragma once
 #include "eventSchedule.h"
-#include "temperatureSource.h"
+#include "temperature.h"
 #include "materialType.h"
 #include <memory>
 

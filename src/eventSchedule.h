@@ -44,9 +44,11 @@ public:
 	void schedule(Args ...args);
 	void unschedule();
 	void maybeUnschedule();
-	uint32_t percentComplete() const;
-	bool exists();
 	void clearPointer();
+	void cancel();
+	uint32_t percentComplete() const;
+	bool exists() const;
+	uint32_t remaningSteps() const;
 	~HasScheduledEvent();
 };
 template<class EventType>

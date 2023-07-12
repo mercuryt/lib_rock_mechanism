@@ -23,6 +23,7 @@
 #include "designations.h"
 #include "stockpile.h"
 #include "farmFields.h"
+#include "temperature.h"
 
 class Area;
 class Item;
@@ -63,8 +64,8 @@ public:
 	// Store the visionCuboid this block belongs to.
 	VisionCuboid* m_visionCuboid;
 	std::unique_ptr<Fire> m_fire;
-	int32_t m_deltaTemperature;
 	bool m_exposedToSky;
+	bool m_underground;
 	Reservable m_reservable;
 	HasPlant m_hasPlant;
 	HasBlockFeatures m_hasBlockFeatures;
@@ -74,6 +75,7 @@ public:
 	HasDesignations m_hasDesignations;
 	IsPartOfStockPile m_isPartOfStockPile;
 	IsPartOfFarmField m_isPartOfFarmField;
+	BlockHasTemperature m_blockHasTemperature;
 
 	// Constructor initalizes some members.
 	Block();
@@ -94,13 +96,14 @@ public:
 	void setSolid(const MaterialType& materialType);
 	bool isSolid() const;
 	const MaterialType& getSolidMaterial() const;
+	void moveContentsTo(Block& block);
+	uint32_t getMass() const;
 	// Get block at offset coordinates. Can return nullptr.
 	Block* offset(int32_t ax, int32_t ay, int32_t az) const;
 	bool canSeeThrough() const;
 	bool canSeeThroughFrom(const Block& block) const;
 	uint8_t facingToSetWhenEnteringFrom(Block& block) const;
 	bool isSupport() const;
-	uint32_t getAmbientTemperature() const;
 
 	void spawnMist(const FluidType& fluidType, uint32_t maxMistSpread = 0);
 	// Validate the nongeneric object can enter this block and also any other blocks required by it's Shape comparing to m_totalStaticVolume.
@@ -119,10 +122,6 @@ public:
 	bool fluidCanEnterEver() const;
 	// Move less dense fluids to their group's excessVolume until Config::maxBlockVolume is achieved.
 	void resolveFluidOverfull();
-
-	// Record temperature delta, possible start a fire.
-	void applyTemperatureDelta(int32_t delta);
-	void applyTemperatureChange(uint32_t oldTemperature, uint32_t newTemperature);
 
 	// Called from setSolid / setNotSolid as well as from user code such as construct / remove floor.
 	void setExposedToSky(bool exposed);

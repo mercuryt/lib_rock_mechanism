@@ -65,7 +65,7 @@ public:
 	//TODO: Set max reservations to 1 to start, maybe increase later with size?
 	Reservable m_reservable;
 
-	Plant(Block& l, const PlantSpecies& pt, uint32_t pg = 0) : m_location(l), m_fluidSource(nullptr), m_plantSpecies(pt), m_percentGrown(pg), m_quantityToHarvest(0), m_hasFluid(true), m_percentFoliage(100), m_reservable(1) { }
+	Plant(Block& l, const PlantSpecies& ps, uint32_t pg = 0) : m_location(l), m_fluidSource(nullptr), m_plantSpecies(ps), m_percentGrown(pg), m_quantityToHarvest(0), m_hasFluid(true), m_percentFoliage(100), m_reservable(1) { }
 	void die();
 	void applyTemperatureChange(uint32_t oldTemperature, uint32_t newTemperature);
 	void setHasFluidForNow();
@@ -130,15 +130,25 @@ public:
 	void execute() { m_plant.die(); }
 	~PlantTemperatureEvent() { m_plant.m_temperatureEvent.clearPointer(); }
 };
-// To be used by block.
+// To be used by Block.
 class HasPlant
 {
 	Block& m_block;
 	Plant* m_plant;
 public:
-	HasPlant(Block& b);
+	HasPlant(Block& b) : m_block(b) { }
 	void addPlant(const PlantSpecies& plantSpecies, uint32_t growthPercent = 0);
 	void updateGrowingStatus();
 	void clearPointer();
+	void setTemperature(uint32_t temperature);
 	Plant& get();
+};
+// To be used by Area.
+class HasPlants
+{
+	std::list<Plant> m_plants;
+	std::list<Plant*> m_plantsOnSurface;
+public:
+	void emplace(Block* location, const PlantSpecies& species, uint32_t percentGrowth);
+	void erase(Plant& plant);
 };

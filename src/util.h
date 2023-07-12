@@ -4,6 +4,11 @@
 #include <stack>
 #include <vector>
 #include <queue>
+#include <cstdint>
+#include <string>
+#include <cassert>
+
+class Block;
 
 namespace util
 {

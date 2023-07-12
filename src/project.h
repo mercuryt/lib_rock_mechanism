@@ -2,7 +2,6 @@
 
 #include "reservable.h"
 #include "actor.h"
-#include "block.h"
 #include "eventSchedule.h"
 #include "threadedTask.h"
 #include "subproject.h"
@@ -14,6 +13,7 @@
 #include <unordered_set>
 #include <unordered_map>
 class Project;
+class Block;
 
 class ProjectFinishEvent : public ScheduledEventWithPercent
 {
@@ -109,7 +109,7 @@ public:
 	virtual void onComplete() = 0;
 	virtual std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const = 0;
 	virtual std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const = 0;
-	virtual std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const = 0;
+	virtual std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>>& getByproducts() const = 0;
 	virtual std::vector<std::pair<ActorQuery, uint32_t>> getActors() const = 0;
 	virtual ~Project();
 };

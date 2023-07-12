@@ -4,7 +4,6 @@
  */
 #pragma once
 
-#include "moveType.h"
 #include "hasShape.h"
 #include "objective.h"
 #include "eat.h"
@@ -16,15 +15,18 @@
 #include "reservable.h"
 #include "eqipment.h"
 #include "fight.h"
-#include "animalSpecies.h"
 #include "attributes.h"
 #include "skill.h"
 #include "haul.h"
-#include "faction.h"
+#include "reservable.h"
 
 #include <string>
 #include <vector>
 #include <unordered_map>
+
+class MoveType;
+class AnimalSpecies;
+struct Faction;
 
 class Actor : public HasShape
 {	
@@ -34,9 +36,10 @@ public:
 	std::wstring m_name;
 	const AnimalSpecies& m_species;
 	bool m_alive;
+	bool m_awake;
 	Faction* m_faction;
 	Attributes m_attributes;
-	SkillSet m_skilSet;
+	SkillSet m_skillSet;
 	MustEat m_mustEat;
 	MustDrink m_mustDrink;
 	MustSleep m_mustSleep;
@@ -46,6 +49,7 @@ public:
 	CanGrow m_canGrow;
 	EquipmentSet m_equipmentSet;
 	HasObjectives m_hasObjectives;
+	CanReserve m_canReserve;
 	//TODO: CanSee.
 	uint32_t m_visionRange;
 
@@ -55,6 +59,7 @@ public:
 	bool isAlly(Actor& actor) const;
 	bool isSentient() const;
 	void die();
+	void passout(uint32_t duration);
 	static std::vector<Actor> data;
 };
 // To be used to find actors fitting criteria.
@@ -88,7 +93,7 @@ public:
 	bool moveTypeCanEnter(const MoveType& moveType) const;
 	bool canEnterCurrentlyFrom(Actor& actor, Block& block) const;
 	bool canEnterCurrentlyWithFacing(Actor& actor, uint8_t facing) const;
-	std::vector<std::pair<Block*, uint32_t>> getMoveCosts(const Shape& shape, const MoveType& moveType) const;
+	const std::vector<std::pair<Block*, uint32_t>>& getMoveCosts(const Shape& shape, const MoveType& moveType);
 	uint32_t moveCostFrom(const MoveType& moveType, Block& from) const;
 	bool canStandIn() const;
 	bool contains(Actor& actor) const;

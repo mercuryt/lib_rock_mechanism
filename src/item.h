@@ -6,6 +6,7 @@
 #include "util.h"
 #include "item.h"
 #include "attackType.h"
+#include "fluidType.h"
 
 #include <string>
 #include <vector>

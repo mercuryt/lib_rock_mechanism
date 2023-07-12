@@ -6,6 +6,10 @@ struct SkillType
 	std::string name;
 	float xpPerLevelModifier;
 	uint32_t level1Xp;
+	static SkillType construct;
+	static SkillType dig;
+	static SkillType horticulture;
+	static SkillType combat;
 };
 class Skill
 {

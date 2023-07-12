@@ -176,11 +176,10 @@ void Plant::foliageGrowth()
 	updateGrowingStatus();
 }
 // HasPlant.
-HasPlant::HasPlant(Block& b) : m_block(b) { }
 void HasPlant::addPlant(const PlantSpecies& plantSpecies, uint32_t growthPercent = 0)
 {
 	assert(m_plant == nullptr);
-	m_plant = &m_block.m_location->m_area->m_hasPlants.emplace(plantSpecies, growthPercent);
+	m_block.m_location->m_area->m_hasPlants.emplace(plantSpecies, growthPercent);
 }
 void HasPlant::updateGrowingStatus()
 {
@@ -195,4 +194,17 @@ void HasPlant::clearPointer()
 Plant& HasPlant::get()
 {
 	return *m_plant;
+}
+void HasPlant::setTemperature(uint32_t temperature)
+{
+	if(m_plant != nullptr)
+		m_plant->setTemperature(temperature);
+}
+void HasPlants::emplace(Block* location, const PlantSpecies& species, uint32_t percentGrowth)
+{
+	m_plants.emplace_back(location, species, percentGrowth);
+}
+void HasPlants::erase(Plant& plant)
+{
+	std::erase_if(m_plants, [&](Plant& p) { return &p == &plant; });
 }

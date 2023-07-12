@@ -73,18 +73,29 @@ void HasScheduledEvent::maybeUnschedule()
 	if(m_event != nullptr)
 		unschedule();
 }
+void HasScheduledEvent::cancel()
+{
+	assert(m_event != nullptr);
+	m_event->cancel();
+}
+void HasScheduledEvent::clearPointer()
+{
+	assert(m_event != nullptr);
+	m_event = nullptr;
+}
 uint32_t HasScheduledEvent::percentComplete() const
 {
 	assert(m_event != nullptr);
 	return m_event->percentComplete();
 }
-bool HasScheduledEvent::exists()
+bool HasScheduledEvent::exists() const
 {
 	return m_event != nullptr;
 }
-void HasScheduledEvent::clearPointer()
+uint32_t HasScheduledEvent::remainingSteps() const
 {
-	m_event = nullptr;
+	assert(m_event != nullptr);
+	return m_event->m_step - simulation::step;
 }
 ~HasScheduledEvent::HasScheduledEvent()
 {

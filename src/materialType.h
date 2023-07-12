@@ -3,9 +3,11 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <cassert>
 
 struct MaterialType;
 struct ItemType;
+class ItemQuery;
 
 struct MaterialTypeCategory
 {
@@ -34,6 +36,13 @@ struct BurnData
 {
 };
 
+struct MaterialConstructionData
+{
+	std::vector<std::pair<ItemQuery, uint32_t>> consumed;
+	std::vector<std::pair<ItemQuery, uint32_t>> unconsumed;
+	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> byproducts;
+};
+
 struct MaterialType
 {
 	const std::string name;
@@ -48,6 +57,8 @@ struct MaterialType
 	const uint32_t flameStageDuration; // How many steps to spend flaming.
 	// How does this material dig?
 	std::vector<SpoilData> spoilData;
+	BurnData* burnData;
+	MaterialConstructionData* constructionData;
 	// Infastructure.
 	bool operator==(const MaterialType& materialType){ return this == &materialType; }
 	static std::vector<MaterialType> data;

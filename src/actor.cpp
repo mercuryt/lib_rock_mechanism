@@ -5,7 +5,7 @@
 #include <algorithm>
 
 Actor::Actor(uint32_t id, const std::wstring name, const AnimalSpecies& species, uint32_t percentGrown, Faction& faction, Attributes attributes) :
-	HasShape(species.shapeForPercentGrown(percentGrown)), m_id(id), m_name(name), m_species(species),  m_alive(true), m_faction(&faction), m_attributes(attributes), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_canMove(*this), m_canFight(*this), m_canPickup(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this) { }
+	HasShape(species.shapeForPercentGrown(percentGrown)), m_id(id), m_name(name), m_species(species), m_alive(true), m_awake(true), m_faction(&faction), m_attributes(attributes), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_canMove(*this), m_canFight(*this), m_canPickup(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this) { }
 void Actor::setLocation(Block& block)
 {
 	assert(&block != HasShape::m_location);
@@ -29,7 +29,11 @@ void Actor::die()
 	m_canFight.onDie();
 	m_location->m_area->unregisterActor(*this);
 }
-
+void Actor::passout(uint32_t duration)
+{
+	//TODO
+	(void)duration;
+}
 // ActorQuery, to be used to search for actors.
 bool ActorQuery::operator()(Actor& other) const
 {
@@ -200,9 +204,11 @@ bool HasActors::canEnterCurrentlyWithFacing(Actor& actor, uint8_t facing) const
 	}
 	return true;
 }
-std::vector<std::pair<Block*, uint32_t>> HasActors::getMoveCosts(const Shape& shape, const MoveType& moveType) const
+const std::vector<std::pair<Block*, uint32_t>>& HasActors::getMoveCosts(const Shape& shape, const MoveType& moveType)
 {
-	std::vector<std::pair<Block*, uint32_t>> output;
+	if(m_moveCostsCache.contains(&shape) && m_moveCostsCache.at(&shape).contains(&moveType))
+		return m_moveCostsCache.at(&shape).at(&moveType);
+	auto& output = m_moveCostsCache[&shape][&moveType];
 	for(Block* block : m_block.m_adjacentsVector)
 		if(block->m_hasActors.shapeAndMoveTypeCanEnterEverFrom(shape, moveType, m_block))
 			output.emplace_back(block, block->m_hasActors.moveCostFrom(moveType, m_block));

@@ -2,23 +2,26 @@
 uint32_t CraftStepProject::getDelay() const
 {
 	uint32_t totalScore = 0;
-	for(Actor* actor : m_workers)
-		totalScore += getWorkerCraftScore(*actor);
+	for(auto& pair : m_workers)
+		totalScore += getWorkerCraftScore(*pair.first);
 	return m_craftStepType.stepsDuration / totalScore;
 }
-uint32_t CraftStepProject::getWorkerCraftScore(Actor& actor) const
+uint32_t CraftStepProject::getWorkerCraftScore(const Actor& actor) const
 {
 	uint32_t output = 0;
 	for(auto& [skillType, percentWeight] : m_craftStepType.skillsAndPercentWeights)
-		output += util::scaleByPercent(actor.m_skilSet.get(skillType), percentWeight);
+		output += util::scaleByPercent(actor.m_skillSet.get(*skillType), percentWeight);
 	return output;
 }
 void CraftStepProject::onComplete()
 {
 	assert(m_workers.size() == 1);
-	m_craftJob.hasCraftingLocationsAndJob.stepComplete(m_craftJob, *m_workers.begin());
+	Actor* actor;
+	for(auto& pair : m_workers)
+		actor = pair.first;
+	m_craftJob.hasCraftingLocationsAndJobs.stepComplete(m_craftJob, *actor);
 }
-std::vector<std::pair<ItemQuery, uint8_t>> CraftStepProject::getConsumed() const
+std::vector<std::pair<ItemQuery, uint32_t>> CraftStepProject::getConsumed() const
 { 
 	// Make a copy so we can edit itemQueries.
 	auto output = m_craftStepType.consumedItems;
@@ -31,14 +34,14 @@ std::vector<std::pair<ItemQuery, uint8_t>> CraftStepProject::getConsumed() const
 		}
 	return output;
 }
-std::vector<std::pair<ItemQuery, uint8_t>> CraftStepProject::getUnconsumed() const 
+std::vector<std::pair<ItemQuery, uint32_t>> CraftStepProject::getUnconsumed() const 
 { 
 	auto output = m_craftStepType.unconsumedItems; 
 	if(craftJob.workPiece != nullptr)
 		output.emplace({craftJob.workPiece}, 1);
 	return output; 
 }
-std::vector<std::tuple<const ItemType*, const MaterialType*, uint8_t>> CraftStepProject::getByproducts() const {
+std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> CraftStepProject::getByproducts() const {
 	auto output =  m_craftStepType.byproductItems; 
 	for(auto& tuple : output)
 		if(tuple.at(1) == nullptr)
@@ -62,15 +65,15 @@ void CraftThreadedTask::writeStep()
 }
 bool CraftObjectiveType::canBeAssigned(Actor& actor)
 {
-	auto& hasCraftingLocationsAndJobs = actor.m_location->m_area->m_hasCraftingLocationsAndJobs;
+	auto& hasCraftingLocationsAndJobss = actor.m_location->m_area->m_hasCraftingLocationsAndJobs;
 	// No jobs needing this skill.
-	if(!hasCraftingLocationsAndJobs.m_unassignedProjectsBySkill.contains(&m_skillType))
+	if(!hasCraftingLocationsAndJobss.m_unassignedProjectsBySkill.contains(&m_skillType))
 		return false;
-	for(CraftJob* craftJob : hasCraftingLocationsAndJobs.m_unassignedProjectsBySkill.at(&m_skillType))
+	for(CraftJob* craftJob : hasCraftingLocationsAndJobss.m_unassignedProjectsBySkill.at(&m_skillType))
 	{
 		auto category = craftJob->stepIterator->craftStepTypeCategory;
 		// No location to do the craftStepTypeCategory work at.
-		if(!hasCraftingLocationsAndJob.m_locationsByCategory.contains(category))
+		if(!hasCraftingLocationsAndJobs.m_locationsByCategory.contains(category))
 			return false;
 	}
 	return false;
@@ -183,7 +186,7 @@ CraftJob* HasCraftingLocationsAndJobs::getJobForAtLocation(Actor& actor, const S
 		return nullptr;
 	for(CraftStepTypeCategory* category : m_stepTypeCategoriesByLocation.at(&block))
 		for(CraftJob& craftJob : m_unassignedProjectsByStepTypeCategory.at(category))
-			if(craftJob.stepIterator->skillType == skillType && actor.m_skilSet.get(skillType) >= craftJob.minimumSkillLevel)
+			if(craftJob.stepIterator->skillType == skillType && actor.m_skillSet.get(skillType) >= craftJob.minimumSkillLevel)
 				return &craftJob;
 	return nullptr;
 }

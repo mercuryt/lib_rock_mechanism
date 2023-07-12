@@ -1,10 +1,13 @@
-#pragma once
+#include "area.h"
+#include "block.h"
+
 #include <vector>
 #include <tuple>
 #include <unordered_set>
 #include <deque>
 #include <stack>
 #include <unordered_map>
+#include <list>
 
 void Area::stepCaveInRead()
 {

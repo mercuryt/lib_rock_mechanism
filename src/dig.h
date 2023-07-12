@@ -43,7 +43,7 @@ class DigProject final : public Project
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
 	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
-	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
+	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>>& getByproducts() const;
 	static uint32_t getWorkerDigScore(Actor& actor);
 public:
 	// BlockFeatureType can be null, meaning the block is to be fully excavated.

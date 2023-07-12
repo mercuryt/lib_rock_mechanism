@@ -1,11 +1,15 @@
 #include "construct.h"
+#include "item.h"
+#include "block.h"
+#include "path.h"
+#include "area.h"
 void ConstructThreadedTask::readStep()
 {
-	auto destinationCondition = [&](Block* block)
+	auto destinationCondition = [&](Block& block)
 	{
-		return m_constructObjective.canConstructAt(*block);
-	}
-	m_result = path::getForActorToPredicate(m_constructObjective.m_actor, destinationCondition)
+		return m_constructObjective.canConstructAt(block);
+	};
+	m_result = path::getForActorToPredicate(m_constructObjective.m_actor, destinationCondition);
 }
 void ConstructThreadedTask::writeStep()
 {
@@ -14,59 +18,70 @@ void ConstructThreadedTask::writeStep()
 	else
 	{
 		// Destination block has been reserved since result was found, get a new one.
-		if(m_result.back()->reservable.isFullyReserved())
+		if(m_result.back()->m_reservable.isFullyReserved())
 		{
-			m_constructObjective.m_constructThrededTask.create(m_constructObjective);
+			m_constructObjective.m_constructThreadedTask.create(m_constructObjective);
 			return;
 		}
-		m_constructObjective.m_actor.setPath(m_result);
-		m_result.back()->reservable.reserveFor(m_constructObjective.m_actor.m_canReserve);
+		m_constructObjective.m_actor.m_canMove.setPath(m_result);
+		m_result.back()->m_reservable.reserveFor(m_constructObjective.m_actor.m_canReserve, 1);
 	}
 }
 void ConstructObjective::execute()
 {
 	if(canConstructAt(*m_actor.m_location))
 	{
-		for(Block* adjacent : m_actor.m_location->getAdjacentWithEdgeAdjacent())
-			if(!adjacent.m_reservable.isFullyReserved() && m_actor.m_location->m_area->m_constructDesignations.contains(*adjacent))
-				m_actor.m_location->m_area->m_constructDesignations.at(*adjacent).addWorker(m_actor);
+		Block* block = selectAdjacentProject(*m_actor.m_location);
+		assert(block != nullptr);
+		m_actor.m_location->m_area->m_hasConstructionDesignations.at(*m_actor.m_faction, *block).addWorker(m_actor);
 	}
 	else
 		m_constructThreadedTask.create(*this);
 }
 bool ConstructObjective::canConstructAt(Block& block) const
 {
-	if(block->m_reservable.isFullyReserved())
+	if(block.m_reservable.isFullyReserved())
 		return false;
 	for(Block* adjacent : block.getAdjacentWithEdgeAndCornerAdjacent())
-		if(adjacent->m_hasDesignations.contains(m_actor.getPlayer(), BlockDesignation::Construct))
+		if(adjacent->m_hasDesignations.contains(*m_actor.m_faction, BlockDesignation::Construct))
 			return true;
 	return false;
 }
+Block* ConstructObjective::selectAdjacentProject(Block& block) const
+{
+	for(Block* adjacent : block.getAdjacentWithEdgeAndCornerAdjacent())
+		if(adjacent->m_hasDesignations.contains(*m_actor.m_faction, BlockDesignation::Construct))
+			return adjacent;
+	return nullptr;
+}
 bool ConstructObjectiveType::canBeAssigned(Actor& actor)
 {
-	return !actor.m_location->m_area->m_constructDesignations.areThereAnyForPlayer(actor.getPlayer());
+	return !actor.m_location->m_area->m_hasConstructionDesignations.areThereAnyForFaction(*actor.m_faction);
 }
 std::unique_ptr<Objective> ConstructObjectiveType::makeFor(Actor& actor)
 {
-	return std::make_pointer<ConstructObjective>(actor);
+	return std::make_unique<ConstructObjective>(actor);
 }
 std::vector<std::pair<ItemQuery, uint32_t>> ConstructProject::getConsumed() const
 {
-	return materialType.constructionType.consumed;
+	assert(materialType.constructionData != nullptr);
+	return materialType.constructionData->consumed;
 }
 std::vector<std::pair<ItemQuery, uint32_t>> ConstructProject::getUnconsumed() const
 {
-	return materialType.constructionType.unconsumed;
+	assert(materialType.constructionData != nullptr);
+	return materialType.constructionData->unconsumed;
 }
-std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t quantity>> ConstructProject::getByproducts() const
+std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>>& ConstructProject::getByproducts() const
 {
-	return materialType.constructionType.byproducts;
+	assert(materialType.constructionData != nullptr);
+	return materialType.constructionData->byproducts;
 }
 uint32_t ConstructProject::getWorkerConstructScore(Actor& actor) const
 {
-	return (actor.m_strength * Config::constructStrengthModifier) + (actor.m_skillSet.get(SkillType::Construct) * Config::constructSkillModifier);
+	return (actor.m_attributes.getStrength() * Config::constructStrengthModifier) + (actor.m_skillSet.get(SkillType::construct) * Config::constructSkillModifier);
 }
+/*
 void ConstructDesignation::onComplete()
 {
 	assert(!m_location.isSolid());
@@ -83,54 +98,54 @@ uint32_t ConstructDesignation::getDelay() const
 		totalScore += getWorkerConstructScore(*actor);
 	return Config::constructScoreCost / totalScore;
 }
+*/
 // If blockFeatureType is null then construct a wall rather then a feature.
-void HasConstructDesignationsForPlayer::designate(Block& block, const BlockFeatureType* blockFeatureType)
+void HasConstructionDesignationsForFaction::designate(Block& block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType)
 {
-	assert(!contains(&block));
-	m_data.emplace(&block, block, blockFeatureType);
-	block.m_hasDesignations.insert(m_player, BlockDesignation::Construct);
+	assert(!contains(block));
+	m_data.try_emplace(&block, block, blockFeatureType, materialType);
+	block.m_hasDesignations.insert(m_faction, BlockDesignation::Construct);
 }
-void HasConstructDesignationsForPlayer::remove(Block& block)
+void HasConstructionDesignationsForFaction::remove(Block& block)
 {
-	assert(contains(&block));
-	m_data.remove(&block); 
-	block.m_hasDesignations.remove(m_player, BlockDesignation::Construct);
+	assert(contains(block));
+	m_data.erase(&block); 
+	block.m_hasDesignations.remove(m_faction, BlockDesignation::Construct);
 }
-void HasConstructDesignationsForPlayer::removeIfExists(Block& block)
+void HasConstructionDesignationsForFaction::removeIfExists(Block& block)
 {
 	if(m_data.contains(&block))
 		remove(block);
-	bool contains(Block& block) const { return m_data.contains(&block); }
-	const BlockFeatureType* at(Block& block) const { return m_data.at(&block).blockFeatureType; }
-	bool empty() const { return m_data.empty(); }
 }
+bool HasConstructionDesignationsForFaction::contains(Block& block) const { return m_data.contains(&block); }
+const BlockFeatureType* HasConstructionDesignationsForFaction::at(Block& block) const { return m_data.at(&block).blockFeatureType; }
+bool HasConstructionDesignationsForFaction::empty() const { return m_data.empty(); }
 // To be used by Area.
-void HasConstructDesignations::addPlayer(Player& player)
+void HasConstructionDesignations::addFaction(Faction& faction)
 {
-	assert(!m_data.contains(&player));
-	m_data[&player](player);
+	assert(!m_data.contains(&faction));
+	m_data.emplace(&faction, faction);
 }
-void HasConstructDesignations::removePlayer(Player& player)
+void HasConstructionDesignations::removeFaction(Faction& faction)
 {
-	assert(m_data.contains(player));
-	m_data.remove(&player);
+	assert(m_data.contains(&faction));
+	m_data.erase(&faction);
 }
-// If blockFeatureType is null then dig out fully rather then digging out a feature.
-void HasConstructDesignations::designate(Player& player, Block& block, const BlockFeatureType* blockFeatureType)
+void HasConstructionDesignations::designate(Faction& faction, Block& block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType)
 {
-	m_data.at(player).designate(block, blockFeatureType);
+	m_data.at(&faction).designate(block, blockFeatureType, materialType);
 }
-void HasConstructDesignations::remove(Player& player, Block& block)
+void HasConstructionDesignations::remove(Faction& faction, Block& block)
 {
-	assert(m_data.contains(player));
-	m_data.at(player).remove(block);
+	assert(m_data.contains(&faction));
+	m_data.at(&faction).remove(block);
 }
-void HasConstructDesignations::clearAll(Block& block)
+void HasConstructionDesignations::clearAll(Block& block)
 {
 	for(auto& pair : m_data)
 		pair.second.removeIfExists(block);
 }
-void HasConstructDesignations::areThereAnyForPlayer(Player& player) const
+bool HasConstructionDesignations::areThereAnyForFaction(Faction& faction) const
 {
-	return !m_data.at(player).empty();
+	return !m_data.at(&faction).empty();
 }
