@@ -13,10 +13,10 @@
 struct BodyPartType
 {
 	const std::string name;
-	const uint32_t area;
+	const uint32_t volume;
 	const bool doesLocamotion;
 	const bool doesManipulation;
-	std::vector<AttackType> attackTypes;
+	std::vector<std::pair<const MaterialType*, AttackType>> attackTypes;
 	// Infastructure.
 	bool operator==(const BodyPartType& bodyPartType){ return this == &bodyPartType; }
 	static std::vector<BodyPartType> data;
@@ -33,25 +33,29 @@ struct BodyType
 };
 class BodyPart;
 class WoundHealEvent;
-class Wound
+class BleedEvent;
+class WoundsCloseEvent;
+struct Wound
 {
-	const WoundType& m_woundType;
-	BodyPart& m_bodyPart;
-	uint32_t m_percentHealed;
-	HasScheduledEvent<WoundHealEvent>* m_healEvent;
-	uint32_t m_size;
-public:
-	Wound(const WoundType& wt, BodyPart& bp, uint32_t s, uint32_t ph = 0) : m_woundType(wt), m_bodyPart(bp), m_percentHealed(ph), m_size(s) { }
-	const uint32_t& getPercentHealed() const;
-	~Wound();
+	const WoundType& woundType;
+	BodyPart& bodyPart;
+	uint32_t bleedVolumeRate;
+	Hit hit;
+	uint32_t percentHealed;
+	uint32_t maxPercentTemporaryImpairment;
+	uint32_t maxPercentPermanantImpairment;
+	HasScheduledEvent<WoundHealEvent> healEvent;
+	Wound(const WoundType& wt, BodyPart& bp, Hit h, uint32_t bvr, uint32_t ph = 0) : woundType(wt), bodyPart(bp), hit(h), bleedVolumeRate(bvr), percentHealed(ph) { }
+	bool operator==(const Wound& other) const { return &other == this; }
+	uint32_t getPercentHealed() const;
+	uint32_t impairPercent() const;
 };
-class BodyPart
+struct BodyPart
 {
-public:
 	const BodyPartType& bodyPartType;
 	const MaterialType& materialType;
-	std::list<Wound> m_wounds;
-	BodyPart(const BodyPartType& bpt, const MaterialType& mt);
+	std::list<Wound> wounds;
+	BodyPart(const BodyPartType& bpt, const MaterialType& mt) : bodyPartType(bpt), materialType(mt) {}
 };
 class Body
 {
@@ -62,24 +66,26 @@ class Body
 	uint32_t m_impairManipulationPercent;
 	uint32_t m_volumeOfBlood;
 	uint32_t m_bleedVolumeRate;
-	ScheduledEventWithPercent* m_bleedEvent;
+	HasScheduledEvent<BleedEvent> m_bleedEvent;
+	HasScheduledEvent<WoundsCloseEvent> m_woundsCloseEvent;
 public:
 	Body(Actor& a, const BodyType& bt);
 	BodyPart& pickABodyPartByVolume();
 	// Armor has already been applied, calculate hit depth.
 	void getHitDepth(Hit& hit, const BodyPart& bodyPart, const MaterialType& materialType);
-	Wound& addWound(const WoundType& woundType, const BodyPart& bodyPart, const Hit& hit);
+	Wound& addWound(const WoundType& woundType, BodyPart& bodyPart, const Hit& hit);
 	void healWound(Wound& wound);
 	void doctorWound(Wound& wound, uint32_t healSpeedPercentageChange);
 	void woundsClose();
 	void bleed();
+	// TODO: periodicly update impairment as wounds heal.
 	void recalculateBleedAndImpairment();
-	bool piercesSkin(Hit hit);
-	bool piercesFat(Hit hit);
-	bool piercesMuscle(Hit hit);
-	bool piercesBone(Hit hit);
+	bool piercesSkin(Hit hit, const BodyPart& bodyPart) const;
+	bool piercesFat(Hit hit, const BodyPart& bodyPart) const;
+	bool piercesMuscle(Hit hit, const BodyPart& bodyPart) const;
+	bool piercesBone(Hit hit, const BodyPart& bodyPart) const;
 	uint32_t healthyBloodVolume() const;
-	std::vector<Attack> getAttacks();
+	std::vector<Attack> getAttacks() const;
 };
 class WoundHealEvent : public ScheduledEventWithPercent
 {

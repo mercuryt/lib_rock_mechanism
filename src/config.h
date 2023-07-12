@@ -1,3 +1,4 @@
+#pragma once
 namespace Config
 {
 	 constexpr uint32_t addToStockPileDelaySteps = 10;
@@ -17,6 +18,7 @@ namespace Config
 	 constexpr float bodyHardnessModifier = 1;
 	 constexpr float pierceBoneModifier = 1;
 	 constexpr float pierceMuscelModifier = 1;
+	 constexpr float pierceFatModifier = 1;
 	 constexpr float pierceSkinModifier = 1;
 	 constexpr float ratioWoundsCloseDelayToBleedVolume = 1;
 	 constexpr uint32_t bleedEventFrequency = 100;

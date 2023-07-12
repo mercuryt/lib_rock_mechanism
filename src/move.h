@@ -8,6 +8,7 @@ class MoveEvent;
 class PathThreadedTask;
 class Block;
 class Actor;
+class MoveType;
 class CanMove
 {
 	Actor& m_actor;

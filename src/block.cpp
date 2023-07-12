@@ -16,7 +16,7 @@
 #include <algorithm>
 #include <cassert>
 
-Block::Block() : m_solid(nullptr), m_totalFluidVolume(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr), m_deltaTemperature(0), m_exposedToSky(true), m_reservable(1), m_hasPlant(*this), m_hasBlockFeatures(*this), m_hasActors(*this), m_hasItems(*this), m_hasItemsAndActors(*this), m_isPartOfStockPile(*this), m_isPartOfFarmField(*this) {}
+Block::Block() : m_solid(nullptr), m_totalFluidVolume(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr), m_exposedToSky(true), m_reservable(1), m_hasPlant(*this), m_hasBlockFeatures(*this), m_hasActors(*this), m_hasItems(*this), m_hasItemsAndActors(*this), m_isPartOfStockPile(*this), m_isPartOfFarmField(*this), m_blockHasTemperature(*this) {}
 void Block::setup(Area& a, uint32_t ax, uint32_t ay, uint32_t az)
 {m_area=&a;m_x=ax;m_y=ay;m_z=az;m_locationBucket = a.m_actorLocationBuckets.getBucketFor(*this);}
 void Block::recordAdjacent()
@@ -314,6 +314,11 @@ void Block::setSolid(const MaterialType& materialType)
 	setExposedToSky(false);
 	setBelowNotExposedToSky();
 }
+uint32_t Block::getMass() const
+{
+	assert(isSolid());
+	return m_solid->density * Config::maxBlockVolume;
+}
 bool Block::isSolid() const
 {
 	return m_solid != nullptr;
@@ -321,6 +326,16 @@ bool Block::isSolid() const
 const MaterialType& Block::getSolidMaterial() const
 {
 	return *m_solid;
+}
+void Block::moveContentsTo(Block& block)
+{
+	if(isSolid())
+	{
+		const MaterialType& materialType = getSolidMaterial();
+		setNotSolid();
+		block.setSolid(materialType);
+	}
+	//TODO: other stuff falls?
 }
 Block* Block::offset(int32_t ax, int32_t ay, int32_t az) const
 {
@@ -336,7 +351,7 @@ bool Block::canSeeThrough() const
 	if(isSolid() && !getSolidMaterial().transparent)
 		return false;
 	const BlockFeature* door = m_hasBlockFeatures.at(BlockFeatureType::door);
-	if(door != nullptr && !door->materialType.transparent && door->closed)
+	if(door != nullptr && !door->materialType->transparent && door->closed)
 		return false;
 	return true;
 }
@@ -344,26 +359,27 @@ bool Block::canSeeThroughFrom(const Block& block) const
 {
 	if(!canSeeThrough())
 		return false;
+	// On the same level.
 	if(m_z == block.m_z)
 		return true;
 	// looking up.
 	if(m_z > block.m_z)
 	{
 		const BlockFeature* floor = m_hasBlockFeatures.at(BlockFeatureType::floor);
-		if(floor != nullptr && !floor->materialType.transparent)
+		if(floor != nullptr && !floor->materialType->transparent)
 			return false;
 		const BlockFeature* hatch = m_hasBlockFeatures.at(BlockFeatureType::hatch);
-		if(hatch != nullptr && !hatch->materialType.transparent && hatch->closed)
+		if(hatch != nullptr && !hatch->materialType->transparent && hatch->closed)
 			return false;
 	}
 	// looking down.
 	if(m_z < block.m_z)
 	{
 		const BlockFeature* floor = block.m_hasBlockFeatures.at(BlockFeatureType::floor);
-		if(floor != nullptr && !floor->materialType.transparent)
+		if(floor != nullptr && !floor->materialType->transparent)
 			return false;
 		const BlockFeature* hatch = block.m_hasBlockFeatures.at(BlockFeatureType::hatch);
-		if(hatch != nullptr && !hatch->materialType.transparent && hatch->closed)
+		if(hatch != nullptr && !hatch->materialType->transparent && hatch->closed)
 			return false;
 	}
 	return true;
@@ -513,40 +529,6 @@ void Block::resolveFluidOverfull()
 		}
 		m_fluids.erase(fluidType);
 	}
-}
-void Block::applyTemperatureDelta(int32_t delta)
-{
-	assert((int)m_deltaTemperature + (int)delta > INT32_MIN);
-	assert((int)m_deltaTemperature + (int)delta < INT32_MAX);
-	if(!m_area->m_blocksWithChangedTemperature.contains(this))
-		m_area->m_blocksWithChangedTemperature[this] = m_deltaTemperature;
-	// Use insert so only record once if changed multiple times in a step.
-	//m_area->m_blocksWithChangedTemperature.insert({this, m_deltaTemperature});
-	m_deltaTemperature += delta;
-}
-void Block::applyTemperatureChange(uint32_t oldTemperature, uint32_t newTemperature)
-{
-	(void)oldTemperature;
-	if(!m_fire)
-	{
-		if(isSolid())
-		{
-			const MaterialType& materialType = getSolidMaterial();
-			if(materialType.ignitionTemperature <= newTemperature)
-				m_fire = std::make_unique<Fire>(*this, materialType);
-		}
-		else if(!m_features.empty())
-		{
-			for(BlockFeature& blockFeature : m_features)
-				if(blockFeature.materialType.ignitionTemperature <= newTemperature)
-					m_fire = std::make_unique<Fire>(*this, blockFeature.materialType);
-		}
-	}
-}
-//TODO: ambiant underground temperature and deep underground temperature.
-uint32_t Block::getAmbientTemperature() const
-{
-	return m_area->m_ambiantSurfaceTemperature;
 }
 bool Block::operator==(const Block& block) const { return &block == this; };
 //TODO: Replace with cuboid.

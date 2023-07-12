@@ -32,11 +32,6 @@ class Attributes
 	Attribute mass;
 	uint32_t unencomberedCarryMass;
 	uint32_t moveSpeed;
-	void generate()
-	{
-		unencomberedCarryMass = strength.value * Config::unitsOfCarryMassPerUnitOfStrength;
-		moveSpeed = agility.value * Config::unitsOfMoveSpeedPerUnitOfAgility;
-	}
 public:
 	Attributes(AnimalSpecies& species, std::array<uint32_t, 4> modifierPercents, std::array<int32_t, 4> bonusOrPenalties, uint32_t percentGrown) :
 		strength(species.strength[0], species.strength[1], modifierPercents[1], bonusOrPenalties[1], percentGrown),
@@ -50,6 +45,11 @@ public:
 		agility.setPercentGrown(percentGrown);
 		mass.setPercentGrown(percentGrown);
 		generate();
+	}
+	void generate()
+	{
+		unencomberedCarryMass = strength.value * Config::unitsOfCarryMassPerUnitOfStrength;
+		moveSpeed = agility.value * Config::unitsOfMoveSpeedPerUnitOfAgility;
 	}
 	uint32_t getStrength(){ return strength.value; }
 	void addStrengthBonusOrPenalty(int32_t x) { strength.bonusOrPenalty =+ x; generate(); }

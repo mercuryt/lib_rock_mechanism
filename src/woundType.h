@@ -6,10 +6,10 @@ struct BodyPartType;
 struct WoundType
 {
 	const std::string name;
-	virtual uint32_t getStepsTillHealed(Hit& hit, BodyPartType& bodyPartType) = 0;
-	virtual uint32_t getBleedVolumeRate(Hit& hit, BodyPartType& bodyPartType) = 0;
-	virtual uint32_t getPercentTemporaryImpairment(Hit& hit, BodyPartType& bodyPartType) = 0;
-	virtual uint32_t getPercentPermanentImpairment(Hit& hit, BodyPartType& bodyPartType) = 0;
+	virtual uint32_t getStepsTillHealed(const Hit& hit, const BodyPartType& bodyPartType) const = 0;
+	virtual uint32_t getBleedVolumeRate(const Hit& hit, const BodyPartType& bodyPartType) const = 0;
+	virtual uint32_t getPercentTemporaryImpairment(const Hit& hit, const BodyPartType& bodyPartType) const = 0;
+	virtual uint32_t getPercentPermanentImpairment(const Hit& hit, const BodyPartType& bodyPartType) const = 0;
 	// Infastructure.
 	bool operator==(const WoundType& woundType){ return this == &woundType; }
 	static std::vector<WoundType> data;

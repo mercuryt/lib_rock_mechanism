@@ -1,3 +1,6 @@
+/*
+ * Represents a human player.
+ */
 #pragma once
 
 #include "faction.h"

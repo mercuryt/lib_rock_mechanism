@@ -1,5 +1,6 @@
 #pragma once
 
+#include <unordered_map>
 #include <memory>
 #include <queue>
 
@@ -54,4 +55,5 @@ public:
 	void cancel(Objective& objective);
 	void objectiveComplete();
 	void taskComplete();
+	void cannotFulfillObjective();
 };

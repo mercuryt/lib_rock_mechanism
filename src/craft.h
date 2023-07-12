@@ -1,16 +1,19 @@
 #pragma once
 
+#include "item.h"
+#include "util.h"
+#include "project.h"
+
 #include <vector>
 #include <utility>
 #include <string>
 #include <unordered_map>
 #include <memory>
-#include "item.h"
-#include "util.h"
 
 struct CraftJob;
 class HasCraftingLocationsAndJobs;
 class CraftObjective;
+struct skillType;
 
 struct CraftStepTypeCategory final
 {
@@ -32,11 +35,11 @@ class CraftStepProject final : Project
 	const CraftStepType& m_craftStepType;
 	CraftJob& m_craftJob;
 	uint32_t getDelay() const;
-	uint32_t getWorkerCraftScore(Actor& actor) const;
+	uint32_t getWorkerCraftScore(const Actor& actor) const;
 	void onComplete();
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
-	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
+	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>>& getByproducts() const;
 	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
 public:
 	CraftStepProject(Block& location, const CraftStepType& cst, CraftJob& cj) : Project(location, 1), m_craftStepType(cst), m_craftJob(cj) { }

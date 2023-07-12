@@ -6,3 +6,8 @@ a\.out
 *\.gdb_history
 *\.bak
 *\.callgrind\.out\.*
+*\.o
+CMakeCache.txt
+*\.cmake
+Makefile
+build/*

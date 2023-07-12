@@ -7,7 +7,7 @@
 #include <algorithm>
 
 Area::Area(uint32_t x, uint32_t y, uint32_t z) :
-	m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_actorLocationBuckets(*this), m_visionCuboidsActive(false)
+	m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_actorLocationBuckets(*this), m_visionCuboidsActive(false), m_areaHasTemperature(*this)
 {
 	// build m_blocks
 	m_blocks.resize(m_sizeX);
@@ -30,7 +30,6 @@ Area::Area(uint32_t x, uint32_t y, uint32_t z) :
 void Area::readStep(BS::thread_pool_light pool)
 { 
 	//TODO: Count tasks dispatched and finished instead of pool.wait_for_tasks so we can do multiple areas simultaniously in one pool.
-	m_blocksWithChangedTemperature.clear();
 	// Process vision, emplace requests for every actor in current bucket.
 	// It seems like having the vision requests permanantly embeded in the actors and iterating the vision bucket directly rather then using the visionRequestQueue should be faster but limited testing shows otherwise.
 	m_visionRequestQueue.clear();
@@ -123,12 +122,6 @@ void Area::writeStep()
 	// Clean up old vision cuboids.
 	if(m_visionCuboidsActive)
 		std::erase_if(m_visionCuboids, [](VisionCuboid& visionCuboid){ return visionCuboid.m_destroy; });
-	// Apply temperature changes.
-	for(auto& [block, oldDelta] : m_blocksWithChangedTemperature)
-	{
-		uint32_t ambientTemperature = block->getAmbientTemperature();
-		block->applyTemperatureChange(ambientTemperature + oldDelta, ambientTemperature + block->m_deltaTemperature);
-	}
 }
 void Area::registerActor(Actor& actor)
 {

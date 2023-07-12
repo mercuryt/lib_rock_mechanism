@@ -13,7 +13,6 @@
 #include "block.h"
 #include "buckets.h"
 #include "locationBuckets.h"
-#include "shape.h"
 #include "visionRequest.h"
 #include "routeRequest.h"
 #include "fluidGroup.h"
@@ -35,16 +34,16 @@ public:
 	std::vector<std::vector<std::vector<Block>>> m_blocks;
 	std::unordered_set<Block*> m_caveInCheck;
 	std::vector<std::tuple<std::vector<Block*>,uint32_t,uint32_t>> m_caveInData;
-	std::unordered_map<Block*, int32_t> m_blocksWithChangedTemperature;
 
-	HasTemperatureSources m_temperatureSources;
+	AreaHasTemperature m_areaHasTemperature;
+	HasPlants m_hasPlants;
 	HasFires m_fires;
 	HasFarmFields m_hasFarmFields;
 	HasHaulTools m_hasHaulTools;
 	HasDigDesignations m_hasDiggingDesignations;
 	HasConstructionDesignations m_hasConstructionDesignations;
 	HasStockPiles m_hasStockPilingDesignations;
-	HasCraftingLocationsAndJobs m_hasCraftingDesignations;
+	HasCraftingLocationsAndJobs m_hasCraftingLocationsAndJobs;
 	//TODO: HasActors
 	LocationBuckets m_actorLocationBuckets;
 	//TODO: HasFluidGroups.

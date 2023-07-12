@@ -4,6 +4,7 @@
 #include "project.h"
 #include "item.h"
 #include "actor.h"
+#include "project.h"
 
 #include <memory>
 #include <vector>
@@ -51,7 +52,7 @@ public:
 	void onComplete();
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
-	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
+	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>>& getByproducts() const;
 	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
 };
 class StockPile

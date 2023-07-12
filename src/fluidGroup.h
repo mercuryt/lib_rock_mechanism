@@ -78,5 +78,6 @@ public:
 	void validate() const;
 	void validate(std::unordered_set<FluidGroup*> toErase);
 	int32_t totalVolume();
+	bool operator==(const FluidGroup& fluidGroup) const { return &fluidGroup == this; }
 	friend class Area;
 };

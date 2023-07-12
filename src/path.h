@@ -2,6 +2,8 @@
 #include <vector>
 #include <unordered_set>
 
+#include "block.h"
+
 namespace path
 {
 	struct RouteNode
@@ -11,15 +13,15 @@ namespace path
 	};
 	struct ProposedRouteStep
 	{
-		RouteNode& routeNode;
+		// Use pointer rather then reference so we can store in vector.
+		RouteNode* routeNode;
 		uint32_t totalMoveCost;
 	};
 	template<typename IsValidType, typename CompareType, typename IsDoneType, typename AdjacentCostsType>
-	std::vector<Block*> get(IsValidType&& isValid, CompareType&& compare, IsDoneType&& isDone, AdjacentCostsType&& adjacentCosts, Block* start)
+	std::vector<Block*> get(IsValidType& isValid, CompareType& compare, IsDoneType& isDone, AdjacentCostsType& adjacentCosts, Block& start)
 	{
-		std::unordered_set<Block*> m_closed;
 		std::unordered_set<Block*> closed;
-		m_closed.insert(start);
+		closed.insert(&start);
 		std::list<RouteNode> routeNodes;
 		std::priority_queue<ProposedRouteStep, std::vector<ProposedRouteStep>, decltype(compare)> open(compare);
 		routeNodes.emplace_back(start, nullptr);
@@ -29,9 +31,9 @@ namespace path
 		{
 			ProposedRouteStep proposedRouteStep = open.top();
 			open.pop();
-			Block* block = proposedRouteStep.routeNode.block;
+			Block* block = &proposedRouteStep.routeNode->block;
 			assert(block != nullptr);
-			if(isDone(block))
+			if(isDone(*block))
 			{
 				RouteNode* routeNode = proposedRouteStep.routeNode;
 				// Route found, push to output.
@@ -44,12 +46,12 @@ namespace path
 				std::reverse(output.begin(), output.end());
 				return output;
 			}
-			for(auto& [adjacent, moveCost] : adjacentCosts(block))
-				if(isValid(adjacent) && !m_closed.contains(adjacent))
+			for(auto& [adjacent, moveCost] : adjacentCosts(*block))
+				if(isValid(*adjacent, *block) && !closed.contains(adjacent))
 				{
-					routeNodes.emplace_back(adjacent, proposedRouteStep.routeNode);
+					routeNodes.emplace_back(*adjacent, proposedRouteStep.routeNode);
 					open.emplace(&routeNodes.back(), moveCost + proposedRouteStep.totalMoveCost);
-					m_closed.insert(adjacent);
+					closed.insert(adjacent);
 				}
 		}
 		return output; // Empty container means no result found.
@@ -59,32 +61,22 @@ namespace path
 		// Huristic: taxi distance to destination times constant plus total move cost.
 		auto priority = [&](ProposedRouteStep& proposedRouteStep)
 		{
-			return (proposedRouteStep.routeNode.block.taxiDistance(destination) * Config::pathHuristicConstant) + proposedRouteStep.totalMoveCost;
+			return (proposedRouteStep.routeNode->block.taxiDistance(destination) * Config::pathHuristicConstant) + proposedRouteStep.totalMoveCost;
 		};
 		auto compare = [&](ProposedRouteStep& a, ProposedRouteStep& b) { return priority(a) > priority(b); };
 		// Check if the actor can currently enter each block if this is a detour path.
-		auto isDone = [&](Block* block){ return block == &destination; };
-		std::vector<std::pair<Block*, uint32_t>> adjacentMoveCosts;
-		auto adjacentCosts = [&](Block* block){
-			if(block.m_moveCostsCache.contains(m_actor.m_shape) && block.m_moveCostsCache.at(m_actor.m_shape).contains(m_actor.m_moveType))
-				adjacentMoveCosts = block.m_moveCostsCache.at(m_actor.m_shape).at(m_actor.m_moveType);
-			else
-				m_moveCostsToCache[block] = adjacentMoveCosts = block.getMoveCosts(*m_actor.m_shape, *m_actor.m_moveType);
-			return adjacentMoveCosts;
-		};
-		if(m_detour)
-		{
-			auto isValid = [&](Block* block){ 
-				return block.anyoneCanEnterEver() && block.canEnterEver(m_actor) && block.actorCanEnterCurrently(m_actor);
+		auto isDone = [&](Block& block){ return &block == &destination; };
+		auto adjacentCosts = [&](Block& block){ return block.m_hasActors.getMoveCosts(*actor.m_shape, actor.m_canMove.getMoveType()); };
+		std::function<bool(Block&, Block&)> isValid;
+		if(detour)
+			isValid = [&](Block& block, Block& previous){ 
+				return block.m_hasActors.anyoneCanEnterEver() && block.m_hasActors.canEnterEverFrom(actor, previous) && block.m_hasActors.canEnterCurrentlyFrom(actor, previous);
 			};
-			return get<decltype(isValid), decltype(compare), decltype(isDone), decltype(adjacentCosts)> getPath(isValid, compare, isDone, adjacentCosts, start, m_result);
-		}
 		else
-		{
-			auto isValid = [&](Block* block){ return block.anyoneCanEnterEver() && block.canEnterEver(m_actor); };
-			return get<decltype(isValid), decltype(compare), decltype(isDone), decltype(adjacentCosts)> getPath(isValid, compare, isDone, adjacentCosts, start, m_result);
-		}
+			isValid = [&](Block& block, Block& previous){ return block.m_hasActors.anyoneCanEnterEver() && block.m_hasActors.canEnterEverFrom(actor, previous); };
+		return get<decltype(isValid), decltype(compare), decltype(isDone), decltype(adjacentCosts)>(isValid, compare, isDone, adjacentCosts, *actor.m_location);
 	}
+	// Depth first search.
 	template<typename Predicate>
 	std::vector<Block*> getForActorToPredicate(Actor& actor, Predicate&& predicate)
 	{
@@ -92,8 +84,8 @@ namespace path
 		closedList.insert(actor.m_location);
 		std::list<RouteNode*> openList;
 		std::list<RouteNode> routeNodes;
-		routeNodes.emplace_back(actor.m_location, nullptr);
-		open.emplace(&routeNodes.back());
+		routeNodes.emplace_back(*actor.m_location, nullptr);
+		openList.push_back(&routeNodes.back());
 		std::vector<Block*> output;
 		while(!openList.empty())
 		{
@@ -104,7 +96,7 @@ namespace path
 					// Result found.
 					while(routeNode->previous != nullptr)
 					{
-						output.push_back(routeNode->block);
+						output.push_back(&routeNode->block);
 						routeNode = routeNode->previous;
 					}
 					std::reverse(output.begin(), output.end());
@@ -112,14 +104,14 @@ namespace path
 				}
 				for(Block* adjacent : routeNode->block.m_adjacentsVector)
 				{
-					if(!adjacent->anyoneCanEnterEver())
+					if(!adjacent->m_hasActors.anyoneCanEnterEver())
 						continue;
 					if(!closedList.contains(adjacent))
 					{
 						closedList.insert(adjacent);
-						if(adjacent->canEnterEver(actor) && adjacent->canEnterFrom(actor, routeNode->block))
+						if(adjacent->m_hasActors.canEnterEverFrom(actor, routeNode->block))
 						{
-							routeNodes.emplace_back(adjacent, routeNode);
+							routeNodes.emplace_back(*adjacent, routeNode);
 							openList.push_back(&routeNodes.back());
 						}
 					}
@@ -136,22 +128,21 @@ namespace path
 		std::list<RouteNode*> openList;
 		std::list<RouteNode> routeNodes;
 		routeNodes.emplace_back(actor.m_location, nullptr);
-		open.emplace(&routeNodes.back());
+		openList.push_back(&routeNodes.back());
 		while(!openList.empty())
 		{
 			for(RouteNode* routeNode : openList)
 			{
 				if(predicate(routeNode->block))
-					return routeNode->block;
-				}
+					return &routeNode->block;
 				for(Block* adjacent : routeNode->block.m_adjacentsVector)
 				{
-					if(!adjacent->anyoneCanEnterEver())
+					if(!adjacent->m_hasActors.anyoneCanEnterEver())
 						continue;
 					if(!closedList.contains(adjacent))
 					{
 						closedList.insert(adjacent);
-						if(adjacent->canEnterEver(actor) && adjacent->canEnterFrom(actor, routeNode->block))
+						if(adjacent->m_hasActors.canEnterEverFrom(actor, routeNode->block))
 						{
 							routeNodes.emplace_back(adjacent, routeNode);
 							openList.push_back(&routeNodes.back());
