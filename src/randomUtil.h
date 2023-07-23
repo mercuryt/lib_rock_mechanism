@@ -17,16 +17,16 @@ namespace randomUtil
 		static std::uniform_int_distribution<std::mt19937::result_type> dist(lowest, highest);
 		return dist(getRng());
 	}
-	static uint32_t getInRange(uint32_t lowest, uint32_t highest)
+	[[maybe_unused]] static uint32_t getInRange(uint32_t lowest, uint32_t highest)
 	{
 		return getInRange((int32_t)lowest, (int32_t)highest);
 	}
-	static bool percentChance(uint32_t percent)
+	[[maybe_unused]] static bool percentChance(uint32_t percent)
 	{
 		static std::uniform_int_distribution<std::mt19937::result_type> dist(0, 100);
 		return dist(getRng()) <= percent;
 	}
-	static bool chance(double chance)
+	[[maybe_unused]] static bool chance(double chance)
 	{
 		static std::uniform_real_distribution<double> dist(0.0, 1.0);
 		return dist(getRng()) <= chance;

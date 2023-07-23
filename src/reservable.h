@@ -6,6 +6,7 @@
 #pragma once
 //TODO: Use vector instead of unordered set.
 #include <unordered_set>
+#include <cassert>
 class Reservable;
 class CanReserve final
 {

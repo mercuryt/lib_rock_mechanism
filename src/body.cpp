@@ -2,20 +2,26 @@
 #include "actor.h"
 #include "config.h"
 #include "randomUtil.h"
+#include "util.h"
 uint32_t Wound::getPercentHealed() const
 {
 	uint32_t output = percentHealed;
 	if(healEvent.exists())
-		output += util::scaleByInversePercent(percentHealed, healEvent.percentComplete());
+	{
+		if(output != 0)
+			output += (healEvent.percentComplete() * (100u - output)) / 100u;
+		else
+			output = healEvent.percentComplete();
+	}
 	return output;
 }
 uint32_t Wound::impairPercent() const
 {
 	return util::scaleByInversePercent(maxPercentTemporaryImpairment, getPercentHealed()) + maxPercentPermanantImpairment;
 }
-Body::Body(Actor& a, const BodyType& bodyType) :  m_actor(a), m_totalVolume(0), m_impairMovePercent(0), m_impairManipulationPercent(0)
+Body::Body(Actor& a) :  m_actor(a), m_totalVolume(0), m_impairMovePercent(0), m_impairManipulationPercent(0)
 {
-	for(auto& [bodyPartType, materialType] : bodyType.bodyParts)
+	for(auto& [bodyPartType, materialType] : m_actor.m_species.bodyType.bodyParts)
 	{
 		m_bodyParts.emplace_back(*bodyPartType, *materialType);
 		m_totalVolume += bodyPartType->volume;
@@ -35,21 +41,21 @@ BodyPart& Body::pickABodyPartByVolume()
 	assert(false);
 }
 // Armor has already been applied, calculate hit depth.
-void Body::getHitDepth(Hit& hit, const BodyPart& bodyPart, const MaterialType& materialType)
+void Body::getHitDepth(Hit& hit, const BodyPart& bodyPart)
 {
 	assert(hit.depth == 0);
 	if(piercesSkin(hit, bodyPart))
 	{
 		++hit.depth;
-		hit.force -= materialType.hardness * hit.area * Config::skinPierceForceCost;
+		hit.force -= bodyPart.materialType.hardness * hit.area * Config::skinPierceForceCost;
 		if(piercesFat(hit, bodyPart))
 		{
 			++hit.depth;
-			hit.force -= materialType.hardness * hit.area * Config::fatPierceForceCost;
+			hit.force -= bodyPart.materialType.hardness * hit.area * Config::fatPierceForceCost;
 			if(piercesMuscle(hit, bodyPart))
 			{
 				++hit.depth;
-				hit.force -= materialType.hardness * hit.area * Config::musclePierceForceCost;
+				hit.force -= bodyPart.materialType.hardness * hit.area * Config::musclePierceForceCost;
 				if(piercesBone(hit, bodyPart))
 					++hit.depth;
 			}
@@ -77,9 +83,9 @@ void Body::doctorWound(Wound& wound, uint32_t healSpeedPercentageChange)
 		wound.bleedVolumeRate = 0;
 		recalculateBleedAndImpairment();
 	}
-	uint32_t remaningSteps = wound.healEvent.remaningSteps();
+	uint32_t remaningSteps = wound.healEvent.remainingSteps();
 	remaningSteps = util::scaleByPercent(remaningSteps, healSpeedPercentageChange);
-	wound.healEvent.cancel();
+	wound.healEvent.unschedule();
 	wound.healEvent.schedule(remaningSteps, wound);
 }
 void Body::woundsClose()
@@ -94,7 +100,7 @@ void Body::bleed()
 	m_volumeOfBlood -= m_bleedVolumeRate;
 	float ratio = m_bleedVolumeRate / healthyBloodVolume();
 	if(ratio <= Config::bleedToDeathRatio)
-		m_actor.die();
+		m_actor.die(CauseOfDeath::bloodLoss);
 	else if (ratio < Config::bleedToUnconciousessRatio)
 		m_actor.passout(Config::bleedPassOutDuration);
 }
@@ -119,14 +125,14 @@ void Body::recalculateBleedAndImpairment()
 	if(bleedVolumeRate > 0 && !m_bleedEvent.exists())
 		m_bleedEvent.schedule(Config::bleedEventFrequency, *this);
 	else if(bleedVolumeRate == 0 && m_woundsCloseEvent.exists())
-		m_woundsCloseEvent.cancel();
+		m_woundsCloseEvent.unschedule();
 	if(bleedVolumeRate > 0 && !m_woundsCloseEvent.exists())
 	{
 		uint32_t delay = bleedVolumeRate * Config::ratioWoundsCloseDelayToBleedVolume;
 		m_woundsCloseEvent.schedule(delay, *this);
 	}
 	else if(bleedVolumeRate == 0 && m_woundsCloseEvent.exists())
-		m_woundsCloseEvent.cancel();
+		m_woundsCloseEvent.unschedule();
 	m_actor.m_attributes.generate();
 }
 bool Body::piercesSkin(Hit hit, const BodyPart& bodyPart) const
@@ -162,6 +168,10 @@ std::vector<Attack> Body::getAttacks() const
 	std::vector<Attack> output;
 	for(const BodyPart& bodyPart : m_bodyParts)
 		for(auto& [materialType, attackType] : bodyPart.bodyPartType.attackTypes)
-			output.emplace_back(attackType, *materialType, nullptr);
+			output.emplace_back(&attackType, materialType, nullptr);
 	return output;
+}
+uint32_t Body::getVolume() const
+{
+	return util::scaleByPercent(m_totalVolume, m_actor.m_canGrow.growthPercent());
 }

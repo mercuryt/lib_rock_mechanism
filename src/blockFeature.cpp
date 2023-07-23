@@ -23,19 +23,19 @@ void HasBlockFeatures::remove(const BlockFeatureType& blockFeatureType)
 {
 	assert(!m_block.isSolid());
 	std::erase_if(m_features, [&](BlockFeature& bf) { return bf.blockFeatureType == &blockFeatureType; });
-	m_block.m_hasActors.clearCache();
+	m_block.m_hasShapes.clearCache();
 }
 void HasBlockFeatures::construct(const BlockFeatureType& blockFeatureType, const MaterialType& materialType)
 {
 	assert(!m_block.isSolid());
 	m_features.emplace_back(blockFeatureType, materialType, false);
-	m_block.m_hasActors.clearCache();
+	m_block.m_hasShapes.clearCache();
 }
 void HasBlockFeatures::hew(const BlockFeatureType& blockFeatureType)
 {
 	assert(m_block.isSolid());
 	m_features.emplace_back(blockFeatureType, m_block.getSolidMaterial(), true);
-	m_block.m_hasActors.clearCache();
+	m_block.m_hasShapes.clearCache();
 }
 bool HasBlockFeatures::blocksEntrance() const
 {
@@ -47,4 +47,18 @@ bool HasBlockFeatures::blocksEntrance() const
 			return false;
 	}
 	return true;
+}
+bool HasBlockFeatures::canStandIn() const
+{
+	for(const BlockFeature& blockFeature : m_features)
+		if(blockFeature.blockFeatureType->canStandIn)
+			return true;
+	return false;
+}
+bool HasBlockFeatures::canStandAbove() const
+{
+	for(const BlockFeature& blockFeature : m_features)
+		if(blockFeature.blockFeatureType->canStandAbove)
+			return true;
+	return false;
 }

@@ -6,6 +6,12 @@
 
 #include <unordered_set>
 #include <vector>
+#include <map>
+
+class Block;
+class Area;
+class FluidGroup;
+class Actor;
 
 // Increases and lowers nearby temperature.
 class TemperatureSource final
@@ -50,4 +56,13 @@ public:
 	void addDelta(const uint32_t& delta) { setDelta(m_delta + delta); }
 	void subtractDelta(const uint32_t& delta) { setDelta(m_delta - delta); }
 	uint32_t getTemperature() const { return m_delta + getAmbientTemperature(); }
+};
+class ActorNeedsSafeTemperature
+{
+	Actor& m_actor;
+public:
+	ActorNeedsSafeTemperature(Actor& a) : m_actor(a) { }
+	void setTemperature(uint32_t temperature);
+	void callback();
+	bool isSafe() const;
 };

@@ -1,5 +1,7 @@
 #pragma once
 #include "eventSchedule.h"
+struct FluidType;
+class Block;
 class MistDisperseEvent : public ScheduledEvent
 {
 public:

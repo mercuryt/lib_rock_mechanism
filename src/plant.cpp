@@ -1,5 +1,6 @@
 #include "plant.h"
-Plant::Plant(Block& l, const PlantSpecies& pt, uint32_t pg = 0) : m_location(l), m_fluidSource(nullptr), m_plantSpecies(pt), m_percentGrown(pg), m_quantityToHarvest(0), m_hasFluid(true), m_percentFoliage(100), m_reservable(1)
+#include "util.h"
+Plant::Plant(Block& l, const PlantSpecies& pt, uint32_t pg = 0) : m_location(l), m_fluidSource(nullptr), m_plantSpecies(pt), m_percentGrown(pg), m_quantityToHarvest(0), m_percentFoliage(100), m_reservable(1), m_volumeDrinkRequested(0)
 {
 	assert(m_location.plantTypeCanGrow(m_plantSpecies));
 	m_location.m_plants.push_back(this);
@@ -30,7 +31,7 @@ void Plant::applyTemperatureChange(uint32_t oldTemperature, uint32_t newTemperat
 }
 void Plant::setHasFluidForNow()
 {
-	m_hasFluid = true;
+	m_volumeDrinkRequested(0);
 	if(!m_fluidEvent.empty())
 		m_fluidEvent->unschedule();
 	m_fluidEvent.schedule(m_plantSpecies.stepsNeedsFluidFrequency, *this);
@@ -42,22 +43,30 @@ void Plant::setMaybeNeedsFluid()
 	uint32_t stepsTillNextFluidEvent;
 	if(hasFluidSource())
 	{
-		m_hasFluid = true;
+		m_volumeDrinkRequested(0);
 		stepsTillNextFluidEvent = m_plantSpecies.stepsNeedsFluidFrequency;
 	}
-	else if(!m_hasFluid)
+	else if(m_volumeDrinkRequested != 0)
 	{
 		die();
 		return;
 	}
 	else // Needs fluid, stop growing and set death timer.
 	{
-		m_hasFluid = false;
+		m_volumeDrinkRequested = util::scaleByPercent(m_plantSpecies.adultFluidDrinkVolume, getGrowthPercent());
 		stepsTillNextFluidEvent = m_plantSpecies.stepsTillDieWithoutFluid;
 		m_location.m_isPartOfFarmField.designateForGiveFluidIfPartOfFarmField;
 	}
 	m_fluidEvent.schedule(stepsTillNextFluidEvent, *this);
 	updateGrowingStatus();
+}
+void Plant::addFluid(uint32_t volume, const FluidType& fluidType)
+{
+	assert(fluidType == m_plantSpecies.fluidType);
+	assert(volume <= m_volumeDrinkRequested);
+	m_volumeDrinkRequested -= volume;
+	if(m_volumeDrinkRequested == 0)
+		setHasFluidForNow();
 }
 bool Plant::hasFluidSource() const
 {
@@ -100,7 +109,7 @@ void Plant::endOfHarvest()
 }
 void Plant::updateGrowingStatus()
 {
-	if(m_hasFluid && m_location.m_exposedToSky == m_plantSpecies.growsInSunLight && m_temperatureEvent.empty() && getPercentFoliage() >= Config::minimumPercentFoliageForGrow);
+	if(m_volumeDrinkRequested == 0 && m_location.m_exposedToSky == m_plantSpecies.growsInSunLight && m_temperatureEvent.empty() && getPercentFoliage() >= Config::minimumPercentFoliageForGrow);
 	{
 		if(m_growthEvent.empty())
 		{
@@ -152,6 +161,10 @@ uint32_t Plant::getFoliageMass() const
 	uint32_t maxFoliageForType = util::scaleByPercent(m_plantSpecies.adultMass, Config::percentOfPlantMassWhichIsFoliage);
 	uint32_t maxForGrowth = util::scaleByPercent(maxFoliageForType, growthPercent());
 	return util::scaleByPercent(maxForGrowth, getPercentFoliage());
+}
+uint32_t Plant::getFluidDrinkVolume() const
+{
+	return util::scaleByPercent(m_plantSpecies.adultFluidDrinkVolume, Config::percentOfPlantMassWhichIsFoliage);
 }
 void Plant::removeFoliageMass(uint32_t mass)
 {

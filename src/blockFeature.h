@@ -8,6 +8,10 @@ struct BlockFeatureType
 {
 	const std::string name;
 	const bool canBeHewn;
+	const bool blocksEntrance;
+	const bool lockable;
+	const bool canStandIn;
+	const bool canStandAbove;
 	bool operator==(const BlockFeatureType& x) const { return this == &x; }
 	static BlockFeatureType floor;
 	static BlockFeatureType door;
@@ -19,14 +23,15 @@ struct BlockFeatureType
 	static BlockFeatureType fortification;
 	static void load();
 };
-BlockFeatureType BlockFeatureType::floor = {"floor", false};
-BlockFeatureType BlockFeatureType::door = {"door", false};
-BlockFeatureType BlockFeatureType::hatch = {"hatch", false};
-BlockFeatureType BlockFeatureType::stairs = {"stairs", false};
-BlockFeatureType BlockFeatureType::floodGate = {"floodGate", false};
-BlockFeatureType BlockFeatureType::floorGrate = {"floorGrate", false};
-BlockFeatureType BlockFeatureType::ramp = {"ramp", false};
-BlockFeatureType BlockFeatureType::fortification = {"fortification", false};
+// Name, hewn, blocks entrance, lockable, stand in, stand above
+BlockFeatureType BlockFeatureType::floor = {"floor", false, false, false, true, false};
+BlockFeatureType BlockFeatureType::door = {"door", false, false, true, false, false};
+BlockFeatureType BlockFeatureType::hatch = {"hatch", false, false, true, true, false};
+BlockFeatureType BlockFeatureType::stairs = {"stairs", true,  false, false, true, true};
+BlockFeatureType BlockFeatureType::floodGate = {"floodGate", true, true, false, false, true};
+BlockFeatureType BlockFeatureType::floorGrate = {"floorGrate", false, false, false, true, false};
+BlockFeatureType BlockFeatureType::ramp = {"ramp", true, false, false, true, true};
+BlockFeatureType BlockFeatureType::fortification = {"fortification", true, true, false, false, true};
 
 struct BlockFeature
 {
@@ -55,4 +60,6 @@ public:
 	void hew(const BlockFeatureType& blockFeatueType);
 	void setTemperature(uint32_t temperature);
 	bool blocksEntrance() const;
+	bool canStandAbove() const;
+	bool canStandIn() const;
 };

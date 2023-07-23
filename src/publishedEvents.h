@@ -52,7 +52,7 @@ class SubscribesToEvent
 	}
 public:
 	template<typename ...Args>
-	void subscribe(Args ...args)
+	void subscribe(Args& ...args)
 	{
 		assert(m_event == nullptr);
 		std::unique_ptr<EventSubscription> event = std::make_unique<EventType>(args...);

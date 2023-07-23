@@ -7,6 +7,6 @@
 struct Faction
 {
 	std::string m_name;
-	std::unordered_set<Faction*> m_allies;
-	std::unordered_set<Faction*> m_enemies;
+	std::unordered_set<Faction*> allies;
+	std::unordered_set<Faction*> enemies;
 };

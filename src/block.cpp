@@ -16,9 +16,9 @@
 #include <algorithm>
 #include <cassert>
 
-Block::Block() : m_solid(nullptr), m_totalFluidVolume(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr), m_exposedToSky(true), m_reservable(1), m_hasPlant(*this), m_hasBlockFeatures(*this), m_hasActors(*this), m_hasItems(*this), m_hasItemsAndActors(*this), m_isPartOfStockPile(*this), m_isPartOfFarmField(*this), m_blockHasTemperature(*this) {}
+Block::Block() : m_solid(nullptr), m_totalFluidVolume(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr), m_exposedToSky(true), m_underground(false), m_hasShapes(*this), m_reservable(1), m_hasPlant(*this), m_hasBlockFeatures(*this), m_hasActors(*this), m_hasItems(*this), m_isPartOfStockPile(*this), m_isPartOfFarmField(*this), m_blockHasTemperature(*this) {}
 void Block::setup(Area& a, uint32_t ax, uint32_t ay, uint32_t az)
-{m_area=&a;m_x=ax;m_y=ay;m_z=az;m_locationBucket = a.m_actorLocationBuckets.getBucketFor(*this);}
+{m_area=&a;m_x=ax;m_y=ay;m_z=az;m_locationBucket = &m_area->m_actorLocationBuckets.getBucketFor(*this);}
 void Block::recordAdjacent()
 {
 	static const int32_t offsetsList[6][3] = {{0,0,-1}, {0,-1,0}, {-1,0,0}, {0,1,0}, {1,0,0}, {0,0,1}};
@@ -228,7 +228,7 @@ void Block::setNotSolid()
 				pair.second->m_fillQueue.addBlock(this);
 				pair.second->m_stable = false;
 			}
-	m_hasActors.clearCache();
+	m_hasShapes.clearCache();
 	if(m_area->m_visionCuboidsActive)
 		VisionCuboid::BlockIsNeverOpaque(*this);
 	if(m_adjacents[5] == nullptr || m_adjacents[5]->m_exposedToSky)
@@ -307,7 +307,7 @@ void Block::setSolid(const MaterialType& materialType)
 				pair.second->m_fillQueue.removeBlock(this);
 	// Possible expire path caches.
 	// If more then one adjacent block can be entered then this block being cleared may open a new shortest path.
-	m_hasActors.clearCache();
+	m_hasShapes.clearCache();
 	if(m_area->m_visionCuboidsActive && !materialType.transparent)
 		VisionCuboid::BlockIsSometimesOpaque(*this);
 	// Set blocks below as not exposed to sky.
@@ -383,6 +383,16 @@ bool Block::canSeeThroughFrom(const Block& block) const
 			return false;
 	}
 	return true;
+}
+uint8_t Block::facingToSetWhenEnteringFrom(const Block& block) const
+{
+	if(block.m_x > m_x)
+		return 3;
+	if(block.m_x < m_x)
+		return 1;
+	if(block.m_y < m_y)
+		return 2;
+	return 0;
 }
 void Block::spawnMist(const FluidType& fluidType, uint32_t maxMistSpread)
 {
@@ -551,5 +561,16 @@ std::vector<Block*> Block::selectBetweenCorners(Block* otherBlock) const
 				output.push_back(&m_area->m_blocks[x][y][z]);
 				assert(output.back() != nullptr);
 			}
+	return output;
+}
+std::unordered_set<Block*> Block::collectAdjacentsInRange(uint32_t range)
+{
+	auto condition = [&](Block& b){ return b.taxiDistance(*this) <= range; };
+	return collectAdjacentsWithCondition(condition);
+}
+std::vector<Block*> Block::collectAdjacentsInRangeVector(uint32_t range)
+{
+	auto result = collectAdjacentsInRange(range);
+	std::vector<Block*> output(result.begin(), result.end());
 	return output;
 }

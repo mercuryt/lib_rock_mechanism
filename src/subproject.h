@@ -1,5 +1,7 @@
 #pragma once
+#include <unordered_set>
 class Project;
+class Actor;
 class Subproject
 {
 	Project& m_project;

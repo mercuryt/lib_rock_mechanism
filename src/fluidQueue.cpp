@@ -1,3 +1,5 @@
+#include "fluidQueue.h"
+#include "block.h"
 #include <unordered_set>
 #include <assert.h>
 FluidQueue::FluidQueue(FluidGroup& fluidGroup) : m_fluidGroup(fluidGroup) {}

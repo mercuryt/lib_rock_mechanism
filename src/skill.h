@@ -1,7 +1,7 @@
 #pragma once
 #include <unordered_map>
 
-struct SkillType
+struct SkillType final
 {
 	std::string name;
 	float xpPerLevelModifier;
@@ -10,8 +10,17 @@ struct SkillType
 	static SkillType dig;
 	static SkillType horticulture;
 	static SkillType combat;
+	// Infastructure.
+	bool operator==(const SkillType& skillType){ return this == &skillType; }
+	static std::vector<SkillType> data;
+	static const SkillType& byName(const std::string name)
+	{
+		auto found = std::ranges::find(data, name, &SkillType::name);
+		assert(found != data.end());
+		return *found;
+	}
 };
-class Skill
+class Skill final
 {
 public:
 	const SkillType& m_skillType;
@@ -40,7 +49,7 @@ public:
 			m_xp += xp;
 	}
 };
-class SkillSet
+class SkillSet final
 {
 public:
 	std::unordered_map<const SkillType*, Skill> m_skills;

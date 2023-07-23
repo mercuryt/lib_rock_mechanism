@@ -1,6 +1,7 @@
 #pragma once
 
 #include <queue>
+#include <cstdint>
 
 class Block;
 
@@ -16,12 +17,13 @@ public:
 	void follow(CanLead& canLead);
 	void unfollow();
 	bool isFollowing() const { return m_canLead != nullptr; }
+	friend class CanLead;
 };
 class CanLead
 {
 	HasShape& m_hasShape;
 	CanFollow* m_canFollow;
-	std::queue<Block*> m_locationQueue;
+	std::deque<Block*> m_locationQueue;
 public:
 	CanLead(HasShape& a) : m_hasShape(a), m_canFollow(nullptr) { }
 	// Call from Block::enter.
@@ -29,6 +31,8 @@ public:
 	// Use in canEnterCurrently to prevent leader from moving too far ahead.
 	bool isFollowerKeepingUp() const;
 	bool isLeading() const;
+	bool isLeading(HasShape& hasShape) const;
 	HasShape& getFollower() const;
 	uint32_t getMoveSpeed() const;
+	friend class CanFollow;
 };

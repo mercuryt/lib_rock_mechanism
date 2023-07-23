@@ -1,4 +1,7 @@
-#pragma once
+#include "cuboid.h"
+#include "block.h"
+#include "area.h"
+
 #include <cassert>
 Cuboid::Cuboid(Block* h, Block* l) : m_highest(h), m_lowest(l)
 {

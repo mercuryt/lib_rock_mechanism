@@ -5,7 +5,6 @@
 #include "attackType.h"
 #include "fight.h"
 #include "hit.h"
-#include "util.h"
 
 #include <vector>
 #include <utility>
@@ -39,8 +38,8 @@ struct Wound
 {
 	const WoundType& woundType;
 	BodyPart& bodyPart;
-	uint32_t bleedVolumeRate;
 	Hit hit;
+	uint32_t bleedVolumeRate;
 	uint32_t percentHealed;
 	uint32_t maxPercentTemporaryImpairment;
 	uint32_t maxPercentPermanantImpairment;
@@ -69,10 +68,10 @@ class Body
 	HasScheduledEvent<BleedEvent> m_bleedEvent;
 	HasScheduledEvent<WoundsCloseEvent> m_woundsCloseEvent;
 public:
-	Body(Actor& a, const BodyType& bt);
+	Body(Actor& a);
 	BodyPart& pickABodyPartByVolume();
 	// Armor has already been applied, calculate hit depth.
-	void getHitDepth(Hit& hit, const BodyPart& bodyPart, const MaterialType& materialType);
+	void getHitDepth(Hit& hit, const BodyPart& bodyPart);
 	Wound& addWound(const WoundType& woundType, BodyPart& bodyPart, const Hit& hit);
 	void healWound(Wound& wound);
 	void doctorWound(Wound& wound, uint32_t healSpeedPercentageChange);
@@ -86,6 +85,7 @@ public:
 	bool piercesBone(Hit hit, const BodyPart& bodyPart) const;
 	uint32_t healthyBloodVolume() const;
 	std::vector<Attack> getAttacks() const;
+	uint32_t getVolume() const;
 };
 class WoundHealEvent : public ScheduledEventWithPercent
 {

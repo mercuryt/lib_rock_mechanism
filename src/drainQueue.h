@@ -1,11 +1,13 @@
 #pragma once
 
-#include <vector>
-#include <unordered_set>
-
 #include "fluidQueue.h"
 
+#include <unordered_set>
+#include <cstdint>
+
 class FluidGroup;
+class FutureFlowBlock;
+class Block;
 
 class DrainQueue : public FluidQueue
 {

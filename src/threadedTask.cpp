@@ -23,8 +23,8 @@ void threadedTaskEngine::remove(ThreadedTask& task)
 	std::erase_if(m_tasks, [&](auto& t) { return &t.get() == &task; });
 }
 
-	template<typename ...Args>
-void HasThreadedTask<TaskType>::create(Args ...args)
+template<typename ...Args>
+void HasThreadedTask<TaskType>::create(Args& ...args)
 {
 	assert(m_threadedTask == nullptr);
 	std::unique_ptr<ThreadedTask> task = std::make_unique<TaskType>(args...);
@@ -36,6 +36,7 @@ void HasThreadedTask<TaskType>::cancel()
 	assert(m_threadedTask != nullptr);
 	m_threadedTask->cancel();
 }
+const bool HasThreadedTask::exists() { return m_threadedTask != nullptr; }
 ~HasThreadedTask<TaskType>::HasThreadedTask()
 {
 	if(m_threadedTask != nullptr)

@@ -11,7 +11,7 @@ static std::unordered_set<Block*> util::collectAdjacentsWithCondition(F&& condit
 		Block* block = openList.top();
 		openList.pop();
 		for(Block* adjacent : block->m_adjacentsVector)
-			if(condition(adjacent) && !output.contains(adjacent))
+			if(condition(*adjacent) && !output.contains(adjacent))
 			{
 				output.insert(adjacent);
 				openList.push(adjacent);
@@ -21,17 +21,17 @@ static std::unordered_set<Block*> util::collectAdjacentsWithCondition(F&& condit
 }
 static std::unordered_set<Block*> util::collectAdjacentsInRange(uint32_t range, Block& block)
 {
-	auto condition = [&](Block* b){ return b->taxiDistance(block) <= range; };
+	auto condition = [&](Block& b){ return b.taxiDistance(block) <= range; };
 	return collectAdjacentsWithCondition(condition, block);
 }
 static std::vector<Block*> util::collectAdjacentsInRangeVector(uint32_t range, Block& block)
 {
-	auto condition = [&](Block* b){ return b->taxiDistance(block) <= range; };
+	auto condition = [&](Block& b){ return b.taxiDistance(block) <= range; };
 	auto result = collectAdjacentsWithCondition(condition, block);
 	std::vector<Block*> output(result.begin(), result.end());
 	return output;
 }
-	template<typename PathT, typename DestinationT>
+template<typename PathT, typename DestinationT>
 static Block* util::findWithPathCondition(PathT&& pathCondition, DestinationT&& destinationCondition, Block& block)
 {
 	std::unordered_set<Block*> closedList;
@@ -44,9 +44,9 @@ static Block* util::findWithPathCondition(PathT&& pathCondition, DestinationT&& 
 		closedList.push(block);
 		for(Block* adjacent : block->m_adjacentsVector)
 		{
-			if(destinationCondition(adjacent))
+			if(destinationCondition(*adjacent))
 				return adjacent;
-			if(pathCondition(adjacent) && !closedList.contains(adjacent))
+			if(pathCondition(*adjacent) && !closedList.contains(adjacent))
 			{
 				closedList.insert(adjacent);
 				openList.push(adjacent);
@@ -56,22 +56,22 @@ static Block* util::findWithPathCondition(PathT&& pathCondition, DestinationT&& 
 	return nullptr;
 }
 // This was suposed to replace collectAdjacentsWithCondition for detecting splits in fluidGroups but it was slower
-	template <typename F>
+template <typename F>
 static std::vector<std::unordered_set<Block*>> util::findGroups(F&& condition, std::unordered_set<Block*>& blocks)
 {
 	std::vector<std::unordered_set<Block*>> output;
 	output.reserve(blocks.size());
-	auto huristic = [&](Block* block){ 
+	auto huristic = [&](Block& block){ 
 		uint32_t shortestDistance = UINT32_MAX;
 		for(Block* b : blocks)
 		{
-			uint32_t distance = b->taxiDistance(*block);
+			uint32_t distance = b->taxiDistance(block);
 			if(shortestDistance > distance)
 				shortestDistance = distance;
 		}
 		return shortestDistance;
 	};
-	auto compare = [&](Block* a, Block* b){ return huristic(a) > huristic(b); };
+	auto compare = [&](Block& a, Block& b){ return huristic(a) > huristic(b); };
 	std::priority_queue<Block*, std::vector<Block*>, decltype(compare)> open(compare);
 	std::unordered_set<Block*> closed;
 	while(!blocks.empty())
@@ -94,7 +94,7 @@ static std::vector<std::unordered_set<Block*>> util::findGroups(F&& condition, s
 					return output;
 			}
 			for(Block* b : candidate->m_adjacentsVector)
-				if(condition(b) && !closed.contains(b))
+				if(condition(*b) && !closed.contains(b))
 				{
 					open.push(b);
 					closed.insert(b);
@@ -134,4 +134,3 @@ std::string util::wideStringToString(const std::wstring& wstr)
 
     return converterX.to_bytes(wstr);
 }
-

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <unordered_map>
+#include <map>
 #include <memory>
 #include <queue>
 
@@ -10,17 +11,15 @@ class Objective
 {
 public:
 	uint32_t m_priority;
-	virtual void execute();
+	virtual void execute() = 0;
 	Objective(uint32_t p);
-};
-struct ObjectiveSort
-{
-	bool operator()(Objective& a, Objective& b);
+	Objective(const Objective&) = delete;
+	Objective(Objective&&) = delete;
 };
 struct ObjectiveType
 {
 	virtual bool canBeAssigned(Actor& actor) const = 0;
-	virtual std::unique_ptr<Objective> makeFor(Actor& actor) = 0;
+	virtual std::unique_ptr<Objective> makeFor(Actor& actor) const = 0;
 };
 class ObjectiveTypePrioritySet
 {
@@ -31,13 +30,13 @@ public:
 	void remove(const ObjectiveType& objectiveType);
 	void setObjectiveFor(Actor& actor);
 };
-class HasObjectives
+class HasObjectives final
 {
 	Actor& m_actor;
 	// Two objective queues, objectives are choosen from which ever has the higher priority.
 	// Biological needs like eat, drink, go to safe temperature, and sleep go here, possibly overiding the current objective in either queue.
-	std::priority_queue<std::unique_ptr<Objective>, std::vector<std::unique_ptr<Objective>>, ObjectiveSort> m_needsQueue;
-	// Voluntary tasks like harvest, dig, build, craft, guard, station, and kill go here. Station and kill both have higher priority then baseline needs.
+	std::map<uint32_t, std::unique_ptr<Objective>> m_needsQueue;
+	// Voluntary tasks like harvest, dig, build, craft, guard, station, and kill go here. Station and kill both have higher priority then baseline needs but lower then needs like flee.
 	// findNewTask only adds one task at a time so there usually is only once objective in the queue. More then one task objective can be added by the user manually.
 	std::deque<std::unique_ptr<Objective>> m_tasksQueue;
 	Objective* m_currentObjective;
@@ -49,11 +48,12 @@ public:
 	ObjectiveTypePrioritySet m_prioritySet;
 
 	HasObjectives(Actor& a);
-	void addNeed(std::unique_ptr<Objective>& objective);
-	void addTaskToEnd(std::unique_ptr<Objective>& objective);
-	void addTaskToStart(std::unique_ptr<Objective>& objective);
+	void addNeed(std::unique_ptr<Objective>&& objective);
+	void addTaskToEnd(std::unique_ptr<Objective>&& objective);
+	void addTaskToStart(std::unique_ptr<Objective>&& objective);
 	void cancel(Objective& objective);
-	void objectiveComplete();
+	void objectiveComplete(Objective& objective);
 	void taskComplete();
-	void cannotFulfillObjective();
+	void cannotFulfillObjective(Objective& objective);
+	void cannotCompleteTask();
 };

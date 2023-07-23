@@ -13,7 +13,7 @@ struct MaterialTypeCategory
 {
 	const std::string name;
 	// Infastructure.
-	bool operator==(const MaterialTypeCategory& materialTypeCategory){ return this == &materialTypeCategory; }
+	bool operator==(const MaterialTypeCategory& materialTypeCategory) const { return this == &materialTypeCategory; }
 	static std::vector<MaterialTypeCategory> data;
 	static const MaterialTypeCategory& byName(const std::string name)
 	{
@@ -60,7 +60,7 @@ struct MaterialType
 	BurnData* burnData;
 	MaterialConstructionData* constructionData;
 	// Infastructure.
-	bool operator==(const MaterialType& materialType){ return this == &materialType; }
+	bool operator==(const MaterialType& materialType) const { return this == &materialType; }
 	static std::vector<MaterialType> data;
 	static const MaterialType& byName(const std::string name)
 	{

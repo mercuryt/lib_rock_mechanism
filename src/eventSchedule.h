@@ -17,7 +17,9 @@ public:
 	void cancel();
 	virtual ~ScheduledEvent() {}
 	virtual void execute() = 0;
-	uint32_t remaningSteps();
+	uint32_t remaningSteps() const;
+	ScheduledEvent(const ScheduledEvent&) = delete;
+	ScheduledEvent(ScheduledEvent&&) = delete;
 };
 class ScheduledEventWithPercent : public ScheduledEvent
 {
@@ -30,6 +32,7 @@ namespace eventSchedule
 {
 	std::unordered_map<uint32_t, std::list<std::unique_ptr<ScheduledEvent>>> data;
 	void schedule(std::unique_ptr<ScheduledEvent> scheduledEvent);
+	void schedule(std::unique_ptr<ScheduledEventWithPercent> scheduledEvent);
 	void unschedule(const ScheduledEvent& scheduledEvent);
 	void execute(uint32_t stepNumber);
 	void clear();
@@ -41,14 +44,13 @@ class HasScheduledEvent
 public:
 	HasScheduledEvent() : m_event(nullptr) {}
 	template<typename ...Args>
-	void schedule(Args ...args);
+	void schedule(Args& ...args);
 	void unschedule();
 	void maybeUnschedule();
 	void clearPointer();
-	void cancel();
 	uint32_t percentComplete() const;
 	bool exists() const;
-	uint32_t remaningSteps() const;
+	uint32_t remainingSteps() const;
 	~HasScheduledEvent();
 };
 template<class EventType>
@@ -61,5 +63,5 @@ public:
 	void pause();
 	void reset();
 	template<typename ...Args>
-	void schedule(uint32_t delay, Args ...args);
+	void schedule(uint32_t delay, Args& ...args);
 };

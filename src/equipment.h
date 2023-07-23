@@ -9,15 +9,16 @@
 #include <vector>
 #include <queue>
 #include <unordered_set>
+#include <set>
 
-class EquipmentSortByLayer
+struct EquipmentSortByLayer
 {
-	bool operator()(Item*& a, Item*& b);
+	bool operator()(Item* const& a, Item* const& b) const;
 };
 class EquipmentSet
 {
 	std::unordered_set<Item*> m_equipments;
-	std::priority_queue<Item*, std::vector<Item*>, EquipmentSortByLayer> m_wearable;
+	std::set<Item*, EquipmentSortByLayer> m_wearable;
 	uint32_t m_mass;
 public:
 	EquipmentSet() : m_mass(0) { }
@@ -25,4 +26,7 @@ public:
 	void removeEquipment(Item& equipment);
 	void modifyImpact(Hit& hit, const MaterialType& materialType, const BodyPartType& bodyPartType);
 	std::vector<Attack> getAttacks();
+	float getAttackCoolDownDurationModifier() const;
+	bool contains(Item& item) const { return m_equipments.contains(&item); }
+	const uint32_t& getMass() const;
 };

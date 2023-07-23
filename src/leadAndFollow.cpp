@@ -1,20 +1,21 @@
 #include "leadAndFollow.h"
+#include "block.h"
 void CanLead::onMove()
 {
 	if(m_canFollow == nullptr)
 		return;
-	m_locationQueue.push_front(m_hasShape.m_locaton);
+	m_locationQueue.push_back(m_hasShape.m_location);
 	Block& block = *m_locationQueue.back();
-	if(block.hasShapeCanEnterCurrently(m_canFollow->m_hasShape))
+	if(block.m_hasShapes.canEnterCurrentlyFrom(m_canFollow->m_hasShape, *m_canFollow->m_hasShape.m_location))
 	{
-		block.enter(m_canFollow->m_hasShape);
-		m_locationQueue.pop_back();
+		m_canFollow->m_hasShape.setLocation(block);
+		m_locationQueue.pop_front();
 	}
 
 }
-bool CanLead::isFollowerKeepingUp() const { return m_hasShape.isAdjacentTo(canFollow->m_hasShape); }
+bool CanLead::isFollowerKeepingUp() const { return m_hasShape.isAdjacentTo(m_canFollow->m_hasShape); }
 bool CanLead::isLeading() const { return m_canFollow != nullptr; }
-HasShape& CanLead::getFollower() const { return m_canFollow.m_hasShape; }
+HasShape& CanLead::getFollower() const { return m_canFollow->m_hasShape; }
 uint32_t CanLead::getMoveSpeed() const
 {
 	assert(!m_hasShape.m_canFollow.isFollowing());
@@ -23,20 +24,21 @@ uint32_t CanLead::getMoveSpeed() const
 	uint32_t deadMass = 0;
 	uint32_t carryMass = 0;
 	uint32_t lowestMoveSpeed = 0;
-	HasShape* hasShape = m_hasShape;
+	HasShape* hasShape = &m_hasShape;
 	while(true)
 	{
-		if(hasShape.isItem())
+		if(hasShape->isItem())
 		{
 			uint32_t mass = static_cast<Item&>(*hasShape).getMass();
-			if(hasShape.m_moveType.rolling)
+			static const MoveType& rolling = MoveType::byName("rolling");
+			if(hasShape->getMoveType() == rolling)
 				rollingMass += mass;
 			else
 				deadMass += mass;
 		}
 		else
 		{
-			assert(hasShape.isActor());
+			assert(hasShape->isActor());
 			Actor& actor = static_cast<Actor&>(*hasShape);
 			if(actor.canMove())
 			{
@@ -46,9 +48,9 @@ uint32_t CanLead::getMoveSpeed() const
 			else
 				deadMass += actor.getMass();
 		}
-		if(!hasShape.m_canLead.isLeading())
+		if(!hasShape->m_canLead.isLeading())
 			break;
-		hasShape = hasShape.m_canLead.getFollower();
+		hasShape = &hasShape->m_canLead.getFollower();
 	}
 	uint32_t totalMass = deadMass + (rollingMass * Config::rollingMassModifier);
 	if(totalMass <= carryMass)
@@ -58,18 +60,22 @@ uint32_t CanLead::getMoveSpeed() const
 		return 0;
 	return lowestMoveSpeed / ratio;
 }
-inline void CanFollow::follow(CanLead& canLead)
+void CanFollow::follow(CanLead& canLead)
 {
 	assert(m_canLead == nullptr);
 	assert(m_canLead->m_canFollow == nullptr);
 	assert(m_hasShape.isAdjacentTo(m_canLead->m_hasShape));
 	m_canLead = &canLead;
-	m_canLead.m_canFollow = this;
+	m_canLead->m_canFollow = this;
+	if(m_hasShape.isItem())
+		m_hasShape.setStatic(false);
 }
-inline void CanFollow::unfollow()
+void CanFollow::unfollow()
 {
 	assert(m_canLead != nullptr);
 	m_canLead->m_canFollow = nullptr;
-	m_canLead->m_locationQueue.empty();
+	m_canLead->m_locationQueue.clear();
 	m_canLead = nullptr;
+	if(m_hasShape.isItem())
+		m_hasShape.setStatic(true);
 }

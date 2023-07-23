@@ -1,4 +1,5 @@
-#pragma once
+#include "locationBuckets.h"
+#include "area.h"
 LocationBuckets::LocationBuckets(Area& area) : m_area(area)
 {
 	m_maxX = ((m_area.m_sizeX - 1) / Config::locationBucketSize) + 1;
@@ -12,7 +13,7 @@ LocationBuckets::LocationBuckets(Area& area) : m_area(area)
 			m_buckets[x][y].resize(m_maxZ);
 	}
 }
-std::unordered_set<Actor*>* LocationBuckets::getBucketFor(const Block& block)
+std::unordered_set<Actor*>& LocationBuckets::getBucketFor(const Block& block)
 {
 	uint32_t bucketX = block.m_x / Config::locationBucketSize;
 	uint32_t bucketY = block.m_y / Config::locationBucketSize;
@@ -20,7 +21,7 @@ std::unordered_set<Actor*>* LocationBuckets::getBucketFor(const Block& block)
 	assert(m_buckets.size() > bucketX);
 	assert(m_buckets.at(bucketX).size() > bucketY);
 	assert(m_buckets.at(bucketX).at(bucketY).size() > bucketZ);
-	return &m_buckets[bucketX][bucketY][bucketZ];
+	return m_buckets[bucketX][bucketY][bucketZ];
 }
 void LocationBuckets::insert(Actor& actor)
 {
@@ -41,8 +42,8 @@ void LocationBuckets::processVisionRequest(VisionRequest& visionRequest) const
 {
 	Block* from = visionRequest.m_actor.m_location;
 	assert(from != nullptr);
-	assert((int32_t)visionRequest.m_actor.getVisionRange() * (int32_t)Config::maxDistanceVisionModifier > 0);
-	int32_t range = visionRequest.m_actor.getVisionRange() * Config::maxDistanceVisionModifier;
+	assert((int32_t)visionRequest.m_actor.m_visionRange * (int32_t)Config::maxDistanceVisionModifier > 0);
+	int32_t range = visionRequest.m_actor.m_visionRange * Config::maxDistanceVisionModifier;
 	uint32_t endX = std::min(((from->m_x + range) / Config::locationBucketSize + 1), m_maxX);
 	uint32_t beginX = std::max(0, (int32_t)from->m_x - range) / Config::locationBucketSize;
 	uint32_t endY = std::min(((from->m_y + range) / Config::locationBucketSize + 1), m_maxY);
@@ -60,14 +61,13 @@ void LocationBuckets::processVisionRequest(VisionRequest& visionRequest) const
 				for(Actor* actor : bucket)
 				{
 					assert(!actor->m_blocks.empty());
-					if(visionRequest.m_actor.canSee(*actor))
-						for(const Block* to : actor->m_blocks)
-							if(to->taxiDistance(*from) <= (uint32_t)range)
-							{
-								if(visionRequest.hasLineOfSight(*to, *from))
-									visionRequest.m_actors.insert(actor);
-								continue;
-							}
+					for(const Block* to : actor->m_blocks)
+						if(to->taxiDistance(*from) <= (uint32_t)range)
+						{
+							if(visionRequest.hasLineOfSight(*to, *from))
+								visionRequest.m_actors.insert(actor);
+							continue;
+						}
 				}
 			}
 	visionRequest.m_actors.erase(&visionRequest.m_actor);

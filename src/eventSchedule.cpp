@@ -1,4 +1,8 @@
 #include "eventSchedule.h"
+#include "simulation.h"
+#include "util.h"
+#include "area.h"
+#include <cassert>
 ScheduledEvent::ScheduledEvent(uint32_t d) : m_step(d + simulation::step){}
 void ScheduledEvent::cancel() { eventSchedule::unschedule(*this); }
 uint32_t ScheduledEvent::remaningSteps() const { return m_step - simulation::step; }
@@ -11,9 +15,13 @@ uint32_t ScheduledEventWithPercent::percentComplete() const
 	return (elapsedSteps / totalSteps) * 100;
 }
 
-void EventSchedule::schedule(std::unique_ptr<ScheduledEvent> scheduledEvent)
+void eventSchedule::schedule(std::unique_ptr<ScheduledEvent> scheduledEvent)
 {
-	m_data[scheduledEvent->m_step].push_back(std::move(scheduledEvent));
+	data[scheduledEvent->m_step].push_back(std::move(scheduledEvent));
+}
+void eventSchedule::schedule(std::unique_ptr<ScheduledEventWithPercent> scheduledEvent)
+{
+	data[scheduledEvent->m_step].push_back(std::move(scheduledEvent));
 }
 //TODO: why doesn't this work?
 /*
@@ -31,103 +39,105 @@ void EventSchedule::schedule(std::unique_ptr<ScheduledEvent> scheduledEvent)
    return output;
    }
    */
-void EventSchedule::unschedule(const ScheduledEvent& scheduledEvent)
+void eventSchedule::unschedule(const ScheduledEvent& scheduledEvent)
 {
 	// Unscheduling an event which is scheduled for the current step could mean modifing the event schedule while it is being iterated. Don't allow.
 	assert(scheduledEvent.m_step != simulation::step);
-	assert(m_data.contains(scheduledEvent.m_step));
+	assert(data.contains(scheduledEvent.m_step));
 	// TODO: optimize.
-	m_data.at(scheduledEvent.m_step).remove_if([&](auto& eventPtr){ return &*eventPtr == &scheduledEvent; });
+	data.at(scheduledEvent.m_step).remove_if([&](auto& eventPtr){ return &*eventPtr == &scheduledEvent; });
 }
-void EventSchedule::execute(uint32_t stepNumber)
+void eventSchedule::execute(uint32_t stepNumber)
 {
-	auto found = m_data.find(stepNumber);
-	if(found == m_data.end())
+	auto found = data.find(stepNumber);
+	if(found == data.end())
 		return;
 	for(std::unique_ptr<ScheduledEvent>& scheduledEvent : found->second)
 		scheduledEvent->execute();
-	m_data.erase(stepNumber);
+	data.erase(stepNumber);
 }
-void EventSchedule::clear()
-{
-	m_data.clear();
-}
+void eventSchedule::clear() { data.clear(); }
 
-HasScheduledEvent::HasScheduledEvent() : m_event(nullptr) {}
+template<class EventType>
 template<typename ...Args>
-void HasScheduledEvent::schedule(Args ...args)
+void HasScheduledEvent<EventType>::schedule(Args& ...args)
 {
 	assert(m_event == nullptr);
 	std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<EventType>(args...);
 	m_event = event.get();
-	eventSchedule::schedule(event);
+	eventSchedule::schedule(std::move(event));
 }
-void HasScheduledEvent::unschedule()
+template<class EventType>
+void HasScheduledEvent<EventType>::unschedule()
 {
 	assert(m_event != nullptr);
 	m_event->cancel();
 	m_event = nullptr;
 }
-void HasScheduledEvent::maybeUnschedule()
+template<class EventType>
+void HasScheduledEvent<EventType>::maybeUnschedule()
 {
 	if(m_event != nullptr)
 		unschedule();
 }
-void HasScheduledEvent::cancel()
-{
-	assert(m_event != nullptr);
-	m_event->cancel();
-}
-void HasScheduledEvent::clearPointer()
+template<class EventType>
+void HasScheduledEvent<EventType>::clearPointer()
 {
 	assert(m_event != nullptr);
 	m_event = nullptr;
 }
-uint32_t HasScheduledEvent::percentComplete() const
+template<class EventType>
+uint32_t HasScheduledEvent<EventType>::percentComplete() const
 {
 	assert(m_event != nullptr);
 	return m_event->percentComplete();
 }
-bool HasScheduledEvent::exists() const
+template<class EventType>
+bool HasScheduledEvent<EventType>::exists() const
 {
 	return m_event != nullptr;
 }
-uint32_t HasScheduledEvent::remainingSteps() const
+template<class EventType>
+uint32_t HasScheduledEvent<EventType>::remainingSteps() const
 {
 	assert(m_event != nullptr);
 	return m_event->m_step - simulation::step;
 }
-~HasScheduledEvent::HasScheduledEvent()
+template<class EventType>
+HasScheduledEvent<EventType>::~HasScheduledEvent()
 {
 	if(m_event != nullptr)
 		m_event->cancel();
 }
-HasScheduledEventPausable::HasScheduledEventPausable() : HasScheduledEvent<EventType>(), m_percent(0) { }
-uint32_t HasScheduledEventPausable::percentComplete() const
+template<class EventType>
+uint32_t HasScheduledEventPausable<EventType>::percentComplete() const
 {
 	uint32_t output = m_percent;
 	auto& event = HasScheduledEvent<EventType>::m_event;
 	if(!event.empty())
 	{
 		if(m_percent != 0)
-			output += (m_event.percentComplete() * (100u - m_percent)) / 100u;
+			output += (event.percentComplete() * (100u - m_percent)) / 100u;
 		else
-			output = m_event.percentComplete();
+			output = event.percentComplete();
 	}
 	return output;
 }
-void HasScheduledEventPausable::pause()
+template<class EventType>
+void HasScheduledEventPausable<EventType>::pause()
 {
 	m_percent = percentComplete();
-	unschedule();
+	HasScheduledEvent<EventType>::unschedule();
 }
-void HasScheduledEventPausable::reset()
+template<class EventType>
+void HasScheduledEventPausable<EventType>::reset()
 {
-	assert(m_event == nullptr);
+	assert(HasScheduledEvent<EventType>::m_event == nullptr);
 	m_percent = 0;
 }
-	template<typename ...Args>
-void HasScheduledEventPausable::schedule(uint32_t delay, Args ...args)
+template<class EventType>
+template<typename ...Args>
+void HasScheduledEventPausable<EventType>::schedule(uint32_t delay, Args& ...args)
 {
 	delay -= util::scaleByPercent(delay, m_percent);
 	HasScheduledEvent<EventType>::schedule(delay, args...);

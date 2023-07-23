@@ -1,4 +1,6 @@
 #pragma once
+#include <cmath>
+#include <cstdint>
 namespace Config
 {
 	 constexpr uint32_t addToStockPileDelaySteps = 10;
@@ -54,14 +56,17 @@ namespace Config
 	 constexpr uint32_t statsGrowthUpdateFrequency = 1000;
 	 constexpr float heatFractionForSmoulder = 0.1;
 	 constexpr float heatFractionForBurn = 0.4;
-	 constexpr float fireRampDownDurationFraction = 0.2;
+	 constexpr float fireRampDownPhaseDurationFraction = 0.2;
 	 constexpr uint32_t stepsToDrink = 40;
 	 constexpr uint32_t stepsToEat = 100;
 	 constexpr uint32_t drinkPriority = 200;
 	 constexpr uint32_t eatPriority = 100;
+	 constexpr uint32_t maxDistanceToLookForEatingLocation = 100;
 	 constexpr uint32_t harvestEventDuration = 50;
-	 constexpr float unitsOfFoodRequestedMassPerUnitOfBodyMass = 0.1;
+	 constexpr uint32_t harvestPriority = 150;
+	 constexpr float foodRequestedMassPerUnitOfBodyMass = 0.1;
 	 constexpr uint32_t maxBlocksToLookForBetterFood = 20;
+	 constexpr uint32_t percentHungerAcceptableDesireModifier = 20;
 	 constexpr uint32_t constructScoreCost = 100;
 	 constexpr float constructStrengthModifier = 0.1;
 	 constexpr float constructSkillModifier = 0.1;
@@ -74,4 +79,15 @@ namespace Config
 	 constexpr bool fluidPiston = false;
 	 constexpr uint32_t visionThreadingBatchSize = 30;
 	 constexpr uint32_t givePlantsFluidDelaySteps = 5;
+	 constexpr uint32_t maxSkillLevel = 100;
+	 constexpr uint32_t killPriority = 1000;
+	 constexpr float unitsOfAttackForcePerUnitOfStrength = 1;
+	 constexpr uint32_t attackCoolDownDurationBase = 20;
+	 constexpr float itemTypeCombatModifier = 1;
+	 constexpr float itemSkillCombatModifier = 1;
+	 constexpr float itemQualityCombatModifier = 1;
+	 constexpr float itemWearCombatModifier = 1;
+	 constexpr uint32_t givePlantsFluidPriority = 100;
+
+	 uint32_t convertBodyPartVolumeToArea(uint32_t volume){ return sqrt(volume); }
 }

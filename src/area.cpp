@@ -7,7 +7,7 @@
 #include <algorithm>
 
 Area::Area(uint32_t x, uint32_t y, uint32_t z) :
-	m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_actorLocationBuckets(*this), m_visionCuboidsActive(false), m_areaHasTemperature(*this)
+	m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_areaHasTemperature(*this), m_actorLocationBuckets(*this), m_visionCuboidsActive(false)
 {
 	// build m_blocks
 	m_blocks.resize(m_sizeX);

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "util.h"
 #include "objective.h"
 #include "eventSchedule.h"
 #include "threadedTask.h"
@@ -12,11 +11,13 @@ class DrinkThreadedTask;
 class DrinkEvent;
 class ThirstEvent;
 class DrinkObjective;
+class FluidType;
 
 class MustDrink
 {
 	Actor& m_actor;
 	uint32_t m_volumeDrinkRequested;
+	const FluidType* m_fluidType;
 	DrinkObjective* m_objective;
 	HasScheduledEventPausable<ThirstEvent> m_thirstEvent;
 	uint32_t volumeFluidForBodyMass() const;
@@ -27,6 +28,8 @@ public:
 	void setNeedsFluid();
 	const uint32_t& getVolumeFluidRequested() const;
 	const uint32_t& getPercentDeadFromThirst() const;
+	const FluidType& getFluidType() const { return *m_fluidType; }
+	bool needsFluid() const { return getVolumeFluidRequested() != 0; }
 	friend class ThirstEvent;
 };
 class DrinkObjective : public Objective
@@ -39,8 +42,10 @@ public:
 	void execute();
 	bool canDrinkAt(Block& block) const;
 	Block* getAdjacentBlockToDrinkAt(Block& block) const;
-	bool canDrinkItemAt(Block* block) const;
-	Item* getItemToDrinkFromAt(Block* block) const;
+	bool canDrinkItemAt(Block& block) const;
+	Item* getItemToDrinkFromAt(Block& block) const;
+	friend class DrinkEvent;
+	friend class DrinkThreadedTask;
 };
 class DrinkEvent : public ScheduledEvent
 {
@@ -56,8 +61,7 @@ class DrinkThreadedTask : ThreadedTask
 public:
 	DrinkObjective& m_drinkObjective;
 	std::vector<Block*> m_result;
-	DrinkThreadedTask(DrinkObjective& drob);
-
+	DrinkThreadedTask(DrinkObjective& drob) : m_drinkObjective(drob) {}
 	void readStep();
 	void writeStep();
 };

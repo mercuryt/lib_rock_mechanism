@@ -24,6 +24,7 @@
 #include "stockpile.h"
 #include "farmFields.h"
 #include "temperature.h"
+#include "hasShape.h"
 
 class Area;
 class Item;
@@ -66,12 +67,12 @@ public:
 	std::unique_ptr<Fire> m_fire;
 	bool m_exposedToSky;
 	bool m_underground;
+	BlockHasShapes m_hasShapes;
 	Reservable m_reservable;
 	HasPlant m_hasPlant;
 	HasBlockFeatures m_hasBlockFeatures;
 	HasActors m_hasActors;
 	BlockHasItems m_hasItems;
-	BlockHasItemsAndActors m_hasItemsAndActors;
 	HasDesignations m_hasDesignations;
 	IsPartOfStockPile m_isPartOfStockPile;
 	IsPartOfFarmField m_isPartOfFarmField;
@@ -102,8 +103,9 @@ public:
 	Block* offset(int32_t ax, int32_t ay, int32_t az) const;
 	bool canSeeThrough() const;
 	bool canSeeThroughFrom(const Block& block) const;
-	uint8_t facingToSetWhenEnteringFrom(Block& block) const;
+	uint8_t facingToSetWhenEnteringFrom(const Block& block) const;
 	bool isSupport() const;
+	bool hasLineOfSightTo(Block* block) const;
 
 	void spawnMist(const FluidType& fluidType, uint32_t maxMistSpread = 0);
 	// Validate the nongeneric object can enter this block and also any other blocks required by it's Shape comparing to m_totalStaticVolume.
@@ -120,6 +122,7 @@ public:
 	uint32_t volumeOfFluidTypeContains(const FluidType& fluidType) const;
 	const FluidType& getFluidTypeWithMostVolume() const;
 	bool fluidCanEnterEver() const;
+	bool fluidTypeCanEnterCurrently(const FluidType& fluidType) const { return volumeOfFluidTypeCanEnter(fluidType) != 0; }
 	// Move less dense fluids to their group's excessVolume until Config::maxBlockVolume is achieved.
 	void resolveFluidOverfull();
 
@@ -131,4 +134,26 @@ public:
 	std::vector<Block*> selectBetweenCorners(Block* otherBlock) const;
 
 	bool operator==(const Block& block) const;
+	template <typename F>
+	std::unordered_set<Block*> collectAdjacentsWithCondition(F&& condition)
+	{
+		std::unordered_set<Block*> output;
+		std::stack<Block*> openList;
+		openList.push(this);
+		output.insert(this);
+		while(!openList.empty())
+		{
+			Block* block = openList.top();
+			openList.pop();
+			for(Block* adjacent : block->m_adjacentsVector)
+				if(condition(*adjacent) && !output.contains(adjacent))
+				{
+					output.insert(adjacent);
+					openList.push(adjacent);
+				}
+		}
+		return output;
+	}
+	std::unordered_set<Block*> collectAdjacentsInRange(uint32_t range);
+	std::vector<Block*> collectAdjacentsInRangeVector(uint32_t range);
 };

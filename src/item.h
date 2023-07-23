@@ -3,10 +3,9 @@
 #include "materialType.h"
 #include "hasShape.h"
 #include "reservable.h"
-#include "util.h"
-#include "item.h"
 #include "attackType.h"
 #include "fluidType.h"
+#include "move.h"
 
 #include <string>
 #include <vector>
@@ -18,6 +17,7 @@ struct WeaponType;
 struct Item;
 class Area;
 class Actor;
+struct CraftJob;
 
 struct WearableType
 {
@@ -29,6 +29,7 @@ struct WearableType
 	const uint32_t forceAbsorbedPiercedModifier;
 	const uint32_t forceAbsorbedUnpiercedModifier;
 	std::vector<const BodyPartType*> bodyPartsCovered;
+	uint32_t layer;
 	// Infastructure.
 	bool operator==(const WearableType& wearableType){ return this == &wearableType; }
 	static std::vector<WearableType> data;
@@ -44,13 +45,16 @@ struct ItemType
 	const std::string name;
 	const bool installable;
 	const Shape& shape;
+	const uint32_t volume;
 	const bool generic;
 	const uint32_t internalVolume;
 	const bool canHoldFluids;
-	std::vector<AttackType> attackTypes;
        	const WearableType* wearableType;
+	const WeaponType* weaponType;
+	const uint32_t combatScore;
+	const MoveType& moveType;
 	// Infastructure.
-	bool operator==(const ItemType& itemType){ return this == &itemType; }
+	bool operator==(const ItemType& itemType) const { return this == &itemType; }
 	static std::vector<ItemType> data;
 	static const ItemType& byName(std::string name)
 	{
@@ -64,17 +68,25 @@ class ItemHasCargo
 	Item& m_item;
 	uint32_t m_volume;
 	uint32_t m_mass;
-	std::unordered_map<HasShape*, uint32_t> m_volumes;
+	std::vector<HasShape*> m_shapes;
+	std::vector<Item*> m_items;
 	const FluidType* m_fluidType;
+	uint32_t m_fluidVolume;
 public:
-	ItemHasCargo(Item* i);
+	ItemHasCargo(Item& i) : m_item(i) { }
 	void add(HasShape& hasShape);
 	void add(const FluidType& fluidType, uint32_t volume);
 	void remove(const FluidType& fluidType, uint32_t volume);
 	void remove(HasShape& hasShape);
-	void remove(Item& item, uint32_t m_quantity);
+	void remove(Item& item, uint32_t quantity);
+	std::vector<HasShape*>& getContents() { return m_shapes; }
+	std::vector<Item*>& getItems() { return m_items; }
 	bool canAdd(HasShape& hasShape) const;
 	bool canAdd(FluidType& fluidType) const;
+	const uint32_t& getFluidVolume() const { return m_fluidVolume; }
+	const FluidType& getFluidType() const { return *m_fluidType; }
+	bool containsAnyFluid() const { return m_fluidType != nullptr; }
+	bool contains(HasShape& hasShape) const { return std::ranges::find(m_shapes, &hasShape) != m_shapes.end(); }
 };
 class Item : public HasShape
 {
@@ -83,78 +95,69 @@ public:
 	const uint32_t m_id;
 	const ItemType& m_itemType;
 	const MaterialType& m_materialType;
+	uint32_t m_mass;
+	uint32_t m_volume;
 	uint32_t m_quantity; // Always set to 1 for nongeneric types.
 	Reservable m_reservable;
 	std::string m_name;
 	uint32_t m_quality;
 	uint32_t m_percentWear;
 	bool m_installed;
+	CraftJob* m_craftJobForWorkPiece; // Used only for work in progress items.
 	ItemHasCargo m_hasCargo; //TODO: Change to unique_ptr to save some RAM?
 
-	void setVolume() const;
-	void setMass() const;
 	// Generic.
-	Item(uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t q);
+	Item(uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t q, CraftJob* cj);
 	// NonGeneric.
-	Item(uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t qual, uint32_t pw);
+	Item(uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t qual, uint32_t pw, CraftJob* cj);
 	// Named.
-	Item(uint32_t i, const ItemType& it, const MaterialType& mt, std::string n, uint32_t qual, uint32_t pw);
-	struct Hash { std::size_t operator()(Item& item); };
-	static std::unordered_set<Item, Hash> s_globalItems;
+	Item(uint32_t i, const ItemType& it, const MaterialType& mt, std::string n, uint32_t qual, uint32_t pw, CraftJob* cj);
+	void setVolume();
+	void setMass();
+	void destroy();
+	void setLocation(Block& block);
+	void exit();
+	void pierced(uint32_t area);
+	bool isItem() const { return true; }
+	bool isActor() const { return false; }
+	bool edible() const;
+	bool isPreparedMeal() const;
+	uint32_t singleUnitMass() const { return m_itemType.volume * m_materialType.density; }
+	uint32_t getMass() const { return m_quantity * singleUnitMass(); }
+	uint32_t getVolume() const { return m_quantity * m_itemType.volume; }
+	const MoveType& getMoveType() const { return m_itemType.moveType; }
+	static std::list<Item> s_globalItems;
 	// Generic items, created in local item set. 
-	static Item& create(Area& area, const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quantity);
-	static Item& create(Area& area, const uint32_t m_id,  const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quantity);
+	static Item& create(Area& area, const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quantity, CraftJob* cj = nullptr);
+	static Item& create(Area& area, const uint32_t m_id,  const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quantity, CraftJob* cj = nullptr);
 	// Unnamed items, created in local item set.
-	static Item& create(Area& area, const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quality, uint32_t m_percentWear);
-	static Item& create(Area& area, const uint32_t m_id, const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quality, uint32_t m_percentWear);
+	static Item& create(Area& area, const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quality, uint32_t m_percentWear, CraftJob* cj = nullptr);
+	static Item& create(Area& area, const uint32_t m_id, const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quality, uint32_t m_percentWear, CraftJob* cj = nullptr);
 	// Named items, created in global item set.
-	static Item& create(const ItemType& m_itemType, const MaterialType& m_materialType, std::string m_name, uint32_t m_quality, uint32_t m_percentWear);
-	static Item& create(const uint32_t m_id, const ItemType& m_itemType, const MaterialType& m_materialType, std::string m_name, uint32_t m_quality, uint32_t m_percentWear);
+	static Item& create(const ItemType& m_itemType, const MaterialType& m_materialType, std::string m_name, uint32_t m_quality, uint32_t m_percentWear, CraftJob* cj = nullptr);
+	static Item& create(const uint32_t m_id, const ItemType& m_itemType, const MaterialType& m_materialType, std::string m_name, uint32_t m_quality, uint32_t m_percentWear, CraftJob* cj = nullptr);
 	//TODO: Items leave area.
 };
-class ItemQuery
+struct ItemQuery
 {
+public:
 	Item* m_item;
 	const ItemType* m_itemType;
 	const MaterialTypeCategory* m_materialTypeCategory;
 	const MaterialType* m_materialType;
-public:
 	// To be used when inserting workpiece to project unconsumed items.
 	ItemQuery(Item& item);
 	ItemQuery(const ItemType& m_itemType);
 	ItemQuery(const ItemType& m_itemType, const MaterialTypeCategory& mtc);
 	ItemQuery(const ItemType& m_itemType, const MaterialType& mt);
-	bool operator()(Item& item) const;
+	bool operator()(const Item& item) const;
 	void specalize(Item& item);
-	void specalize(MaterialType& m_materialType);
-};
-// To be used by actor
-class HasItemsAndActors
-{
-	std::vector<Item*> m_items;
-	std::vector<Actor*> m_actors;
-	uint32_t m_mass;
-public:
-	// Non generic types have Shape.
-	void add(Item& item);
-	void remove(Item& item);
-	void add(const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quantity);
-	void remove(const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quantity);
-	template<class Other>
-	void tranferTo(Other& other, Item& item);
-	template<class Other>
-	void transferTo(Other& other, const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quantity);
-	Item* get(ItemType& itemType) const;
-	void add(Actor& actor);
-	void remove(Actor& actor);
-	template<class Other>
-	void transferTo(Other& other, Actor& actor);
+	void specalize(const MaterialType& materialType);
 };
 class BlockHasItems
 {
 	Block& m_block;
 	std::vector<Item*> m_items;
-	uint32_t m_volume;
 public:
 	BlockHasItems(Block& b);
 	// Non generic types have Shape.
@@ -162,22 +165,9 @@ public:
 	void remove(Item& item);
 	void add(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity);
 	void remove(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity);
-	template<class HasItems>
-	void tranferTo(HasItems& other, Item& item);
-	template<class HasItems>
-	void transferTo(HasItems& other, const ItemType& itemType, const MaterialType& materialType, uint32_t quantity);
-	bool impassible() const;
-	Item* get(ItemType& itemType) const;
-};
-class BlockHasItemsAndActors
-{
-	Block& m_block;
-public:
-	BlockHasItemsAndActors(Block& b) : m_block(b) { }
-	void add(Item& item);
-	void remove(Item& item);
-	void add(Actor& actor);
-	void remove(Actor& actor);
-	template<class Other, class ToTransfer>
-	void transferTo(Other& other, ToTransfer& toTransfer);
+	//Item* get(ItemType& itemType) const;
+	std::vector<Item*>& getAll() const;
+	bool hasInstalledItemType(const ItemType& itemType) const;
+	bool hasEmptyContainerWhichCanHoldFluidsCarryableBy(Actor& actor) const;
+	bool hasContainerContainingFluidTypeCarryableBy(Actor& actor, const FluidType& fluidType) const;
 };

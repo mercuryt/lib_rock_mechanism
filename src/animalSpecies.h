@@ -2,6 +2,7 @@
 #include "shape.h"
 #include "moveType.h"
 #include "util.h"
+#include "body.h"
 #include <string>
 struct AnimalSpecies
 {
@@ -15,15 +16,20 @@ struct AnimalSpecies
 	std::array<uint32_t, 3> volume;
 	std::array<uint32_t, 2> deathAge;
 	std::array<uint32_t, 2> adultAge;
+	uint32_t stepsTillDieWithoutFood;
+	uint32_t stepsTillFullyGrown;
 	const MoveType& moveType;
 	const FluidType& fluidType;
 	std::vector<const Shape*> shapes;
-	std::vector<const BodyPartType*> bodyPartTypes;
+	BodyType& bodyType;
 	const Shape& shapeForPercentGrown(uint32_t percentGrown) const
 	{
 		size_t index = util::scaleByPercentRange(0, shapes.size() - 1, percentGrown);
 		return *shapes.at(index);
 	}
+	const bool eatsMeat;
+	const bool eatsLeaves;
+	const bool eatsFruit;
 	// Infastructure.
 	bool operator==(const AnimalSpecies& animalSpecies){ return this == &animalSpecies; }
 	static std::vector<AnimalSpecies> data;

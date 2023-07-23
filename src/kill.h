@@ -9,31 +9,21 @@
 
 #pragma once
 
+#include "config.h"
 #include "objective.h"
 #include "eventSchedule.h"
 #include "threadedTask.h"
 #include "actor.h"
-#include "getIntoAttackPosition.h"
+#include "fight.h"
+
+class Actor;
 
 class KillObjective final : public Objective
 {
 public:
 	Actor& m_killer;
 	Actor& m_target;
-	HasThreadedTask<GetIntoRangeAndLineOfSightThreadedTask> m_getIntoRangeAndLineOfSightThreadedTask;
+	HasThreadedTask<GetIntoAttackPositionThreadedTask> m_getIntoRangeAndLineOfSightThreadedTask;
 	KillObjective(Actor& k, Actor& t) : Objective(Config::killPriority), m_killer(k), m_target(t) { }
-	void execute()
-	{
-		if(!m_target.m_alive)
-			//TODO: Do we need to cancel the threaded task here?
-			m_killer.objectiveComplete();
-		m_killer.m_canFight.setTarget(m_target);
-		// If not in range create GetIntoRangeThreadedTask.
-		if(m_getIntoRangeAndLineOfSightThreadedTask.empty() && m_killer.m_location->taxiDistance(m_target.location) > m_killer.m_maxRange)
-			m_getIntoRangeAndLineOfSightThreadedTask.create(m_killer, m_target.m_location, m_killer.m_maxAttackRange);
-		else
-			// If in range and attack not on cooldown then attack.
-			if(!m_killer.m_attackCooldown)
-				attack(m_killer, m_target);
-	}
+	void execute();
 };

@@ -3,6 +3,7 @@
 #include "block.h"
 #include "path.h"
 #include "area.h"
+#include "util.h"
 void ConstructThreadedTask::readStep()
 {
 	auto destinationCondition = [&](Block& block)
@@ -14,7 +15,7 @@ void ConstructThreadedTask::readStep()
 void ConstructThreadedTask::writeStep()
 {
 	if(m_result.empty())
-		m_constructObjective.m_actor.m_hasObjectives.cannotFulfillObjective();
+		m_constructObjective.m_actor.m_hasObjectives.cannotFulfillObjective(m_constructObjective);
 	else
 	{
 		// Destination block has been reserved since result was found, get a new one.
@@ -72,7 +73,7 @@ std::vector<std::pair<ItemQuery, uint32_t>> ConstructProject::getUnconsumed() co
 	assert(materialType.constructionData != nullptr);
 	return materialType.constructionData->unconsumed;
 }
-std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>>& ConstructProject::getByproducts() const
+std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> ConstructProject::getByproducts() const
 {
 	assert(materialType.constructionData != nullptr);
 	return materialType.constructionData->byproducts;

@@ -1,8 +1,8 @@
 #pragma once
-#include "actor.h"
 #include "eventSchedule.h"
 class AnimalGrowthEvent;
 class AnimalGrowthUpdateEvent;
+class Actor;
 class CanGrow
 {
 	Actor& m_actor;
@@ -16,6 +16,8 @@ public:
 	uint32_t growthPercent() const;
 	void update();
 	void complete();
+	void stop();
+	void maybeStart();
 	friend class AnimalGrowthEvent;
 	friend class AnimalGrowthUpdateEvent;
 };

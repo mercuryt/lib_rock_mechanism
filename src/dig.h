@@ -3,13 +3,15 @@
 #include "objective.h"
 #include "threadedTask.h"
 #include "eventSchedule.h"
-#include "util.h"
-#include "blockFeature.h"
+#include "project.h"
+#include "config.h"
 
 #include <unordered_map>
 #include <vector>
 
+class Faction;
 class DigObjective;
+class BlockFeatureType;
 
 // Find a place to dig.
 class DigThreadedTask final : public ThreadedTask
@@ -30,6 +32,7 @@ public:
 	DigObjective(Actor& a) : Objective(Config::digObjectivePriority), m_actor(a), m_project(nullptr) { }
 	void execute();
 	bool canDigAt(Block& block) const;
+	friend class DigThreadedTask;
 };
 class DigObjectiveType : public ObjectiveType
 {
@@ -43,7 +46,7 @@ class DigProject final : public Project
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
 	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
-	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>>& getByproducts() const;
+	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
 	static uint32_t getWorkerDigScore(Actor& actor);
 public:
 	// BlockFeatureType can be null, meaning the block is to be fully excavated.
@@ -51,30 +54,34 @@ public:
 	void onComplete();
 	// What would the total delay time be if we started from scratch now with current workers?
 	uint32_t getDelay() const;
+	friend class HasDigDesignationsForFaction;
 };
 // Part of HasDigDesignations.
-class HasDigDesignationsForPlayer final
+class HasDigDesignationsForFaction final
 {
-	Player& m_player;
+	Faction& m_faction;
 	std::unordered_map<Block*, DigProject> m_data;
 public:
-	HasDigDesignationsForPlayer(Player& p) : m_player(p) { }
+	HasDigDesignationsForFaction(Faction& p) : m_faction(p) { }
 	void designate(Block& block, const BlockFeatureType* blockFeatureType);
 	void remove(Block& block);
 	void removeIfExists(Block& block);
 	const BlockFeatureType* at(Block& block) const;
 	bool empty() const;
+	friend class HasDigDesignations;
 };
 // To be used by Area.
 class HasDigDesignations final
 {
-	std::unordered_map<Player*, HasDigDesignationsForPlayer> m_data;
+	std::unordered_map<Faction*, HasDigDesignationsForFaction> m_data;
 public:
-	void addPlayer(Player& player);
-	void removePlayer(Player& player);
+	void addFaction(Faction& faction);
+	void removeFaction(Faction& faction);
 	// If blockFeatureType is null then dig out fully rather then digging out a feature.
-	void designate(Player& player, Block& block, const BlockFeatureType* blockFeatureType);
-	void remove(Player& player, Block& block);
+	void designate(Faction& faction, Block& block, const BlockFeatureType* blockFeatureType);
+	void remove(Faction& faction, Block& block);
 	void clearAll(Block& block);
-	void areThereAnyForPlayer(Player& player) const;
+	bool areThereAnyForFaction(Faction& faction) const;
+	bool contains(Faction& faction, Block& block) const { return m_data.at(&faction).m_data.contains(&block); }
+	DigProject& at(Faction& faction, Block& block) { return m_data.at(&faction).m_data.at(&block); }
 };

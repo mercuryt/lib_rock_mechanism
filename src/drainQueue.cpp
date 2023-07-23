@@ -1,3 +1,8 @@
+#include "drainQueue.h"
+#include "block.h"
+#include "fluidGroup.h"
+#include "config.h"
+#include <algorithm>
 DrainQueue::DrainQueue(FluidGroup& fluidGroup) : FluidQueue(fluidGroup) {}
 void DrainQueue::buildFor(std::unordered_set<Block*>& members)
 {
@@ -80,7 +85,7 @@ void DrainQueue::applyDelta()
 	// TODO: Would it be better to prevent fluid groups from becoming stable while in contact with another group? Either option seems bad.
 	for(Block* block : drainedFromAndAdjacent)
 		for(auto& [fluidType, pair] : block->m_fluids)
-			if(fluidType != FluidQueue::m_fluidGroup.m_fluidType)
+			if(fluidType != &FluidQueue::m_fluidGroup.m_fluidType)
 				pair.second->m_stable = false;
 }
 uint32_t DrainQueue::groupLevel() const

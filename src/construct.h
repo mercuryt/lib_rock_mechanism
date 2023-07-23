@@ -1,6 +1,5 @@
 #pragma once
 
-#include "util.h"
 #include "config.h"
 #include "objective.h"
 #include "threadedTask.h"
@@ -48,7 +47,7 @@ class ConstructProject final : public Project
 	const MaterialType& materialType;
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
-	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>>& getByproducts() const;
+	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
 	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
 	uint32_t getWorkerConstructScore(Actor& actor) const;
 public:

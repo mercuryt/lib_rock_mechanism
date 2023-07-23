@@ -17,6 +17,7 @@
 #include "fluidType.h"
 
 class Area;
+class Block;
 
 struct FluidGroupSplitData
 {

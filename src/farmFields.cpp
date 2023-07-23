@@ -1,208 +1,221 @@
 #include "farmFields.h"
-void IsPartOfFarmField::insert(Player& player, FarmField& farmField)
+#include "block.h"
+#include "area.h"
+#include "simulation.h"
+#include <algorithm>
+void IsPartOfFarmField::insert(Faction& faction, FarmField& farmField)
 {
-	assert(!m_farmFields.contains(&player));
-	m_farmFields[&player] = &farmField;
+	assert(!m_farmFields.contains(&faction));
+	m_farmFields[&faction] = &farmField;
 }
-void IsPartOfFarmField::remove(Player& player)
+void IsPartOfFarmField::remove(Faction& faction)
 {
-	assert(m_farmFields.contains(&player));
-	m_farmFields.remove(&player);
+	assert(m_farmFields.contains(&faction));
+	m_farmFields.erase(&faction);
 }
 void IsPartOfFarmField::designateForHarvestIfPartOfFarmField(Plant& plant)
 {
-	for(auto& [player, farmField] : m_farmFields)
-		if(farmField.plantSpecies == plant.plantSpecies)
-			block.m_area->m_hasFarmFields.at(player).addHarvestDesignation(plant);
+	for(auto& [faction, farmField] : m_farmFields)
+		if(farmField->plantSpecies == &plant.m_plantSpecies)
+			plant.m_location.m_area->m_hasFarmFields.at(*faction).addHarvestDesignation(plant);
 }
 void IsPartOfFarmField::designateForGiveFluidIfPartOfFarmField(Plant& plant)
 {
-	for(auto& [player, farmField] : m_farmFields)
-		if(farmField.plantSpecies == plant.plantSpecies)
-			block.m_area->m_hasFarmFields.at(player).addGivePlantFluidDesignation(plant);
+	for(auto& [faction, farmField] : m_farmFields)
+		if(farmField->plantSpecies == &plant.m_plantSpecies)
+			plant.m_location.m_area->m_hasFarmFields.at(*faction).addGivePlantFluidDesignation(plant);
 }
 void IsPartOfFarmField::removeAllHarvestDesignations()
 {
 	Plant& plant = m_block.m_hasPlant.get();	
-	for(auto& [player, farmField] : m_farmFields)
-		if(plant.plantSpecies == farmField.plantSpecies)
-			m_block.m_area->m_hasFarmFields.at(player).removeHarvestDesignation(plant);
+	for(auto& [faction, farmField] : m_farmFields)
+		if(farmField->plantSpecies == &plant.m_plantSpecies)
+			m_block.m_area->m_hasFarmFields.at(*faction).removeHarvestDesignation(plant);
 }
 void IsPartOfFarmField::removeAllGiveFluidDesignations()
 {
 	Plant& plant = m_block.m_hasPlant.get();	
-	for(auto& [player, farmField] : m_farmFields)
-		if(plant.plantSpecies == farmField.plantSpecies)
-			m_block.m_area->m_hasFarmFields.at(player).removeGiveFluidDesignation(plant);
+	for(auto& [faction, farmField] : m_farmFields)
+		if(farmField->plantSpecies == &plant.m_plantSpecies)
+			m_block.m_area->m_hasFarmFields.at(*faction).removeGivePlantFluidDesignation(plant);
 }
 void IsPartOfFarmField::removeAllSowSeedsDesignations()
 {
-	for(auto& [player, farmField] : m_farmFields)
-		m_block.m_area->m_hasFarmFields.at(player).removeSowSeedsDesignation(m_block);
+	for(auto& [faction, farmField] : m_farmFields)
+		m_block.m_area->m_hasFarmFields.at(*faction).removeSowSeedsDesignation(m_block);
 }
-bool HasFarmFieldsForPlayer::hasGivePlantsFluidDesignations() const
+bool HasFarmFieldsForFaction::hasGivePlantsFluidDesignations() const
 {
 	return !m_plantsNeedingFluid.empty();
 }
-Plant* HasFarmFieldsForPlayer::getHighPriorityPlantForGivingFluidIfAny()
+Plant* HasFarmFieldsForFaction::getHighestPriorityPlantForGiveFluid()
 {
 	if(!m_plantsNeedingFluidIsSorted)
 	{
-		std::ranges::sort_by(m_plantsNeedingFluid, [](Plant* a, Plant* b){ return a->m_needsFluid.getDeathStep() < b->m_needsFluid.getDeathStep(); });
+		std::ranges::sort(m_plantsNeedingFluid, [](Plant* a, Plant* b){ return a->getStepAtWhichPlantWillDieFromLackOfFluid() < b->getStepAtWhichPlantWillDieFromLackOfFluid(); });
 		m_plantsNeedingFluidIsSorted = true;
 	}
-	Plant* output = m_plantsNeedingFluid.first();
-	if(output.m_needsFluid.getDeathStep() - simulation::step > Config::stepsTillDiePlantPriorityOveride)
+	Plant* output = m_plantsNeedingFluid.front();
+	if(output->getStepAtWhichPlantWillDieFromLackOfFluid() - simulation::step > Config::stepsTillDiePlantPriorityOveride)
 		return nullptr;
-	return *m_plantsNeedingFluid.first();
+	return output;
 }
-bool HasFarmFieldsForPlayer::hasSowSeedDesignations() const
+bool HasFarmFieldsForFaction::hasSowSeedsDesignations() const
 {
-	return !m_blocksNeedingSeedSewn.empty();
+	return !m_blocksNeedingSeedsSewn.empty();
 }
-const HasFarmFieldsForPlayer::PlantSpecies& getPlantTypeFor(Block& block) const
+const PlantSpecies& HasFarmFieldsForFaction::getPlantTypeFor(Block& block) const
 {
-	for(FarmField& farmField : m_farmFields)
+	for(const FarmField& farmField : m_farmFields)
 		if(farmField.blocks.contains(&block))
-			return farmField.plantSpecies;
+			return *farmField.plantSpecies;
 	assert(false);
 }
-void HasFarmFieldsForPlayer::addGivePlantFluidDesignation(Plant& plant)
+void HasFarmFieldsForFaction::addGivePlantFluidDesignation(Plant& plant)
 {
-	assert(!m_plantsNeedingFluid.contains(plant));
+	assert(std::ranges::find(m_plantsNeedingFluid, &plant) != m_plantsNeedingFluid.end());
 	m_plantsNeedingFluidIsSorted = false;
 	m_plantsNeedingFluid.push_back(&plant);
 }
-void HasFarmFieldsForPlayer::removeGivePlantFluidDesignation(Plant& plant)
+void HasFarmFieldsForFaction::removeGivePlantFluidDesignation(Plant& plant)
 {
-	assert(m_plantsNeedingFluid.contains(plant));
-	m_plantsNeedingFluid.remove(plant);
-	m_plant.m_location->m_hasDesignations.remove(m_player, BlockDesignation::GiveFluid);
+	assert(std::ranges::find(m_plantsNeedingFluid, &plant) == m_plantsNeedingFluid.end());
+	std::erase(m_plantsNeedingFluid, &plant);
+	plant.m_location.m_hasDesignations.remove(m_faction, BlockDesignation::GivePlantFluid);
 }
-void HasFarmFieldsForPlayer::addSowSeedDesignation(Block& block)
+void HasFarmFieldsForFaction::addSowSeedsDesignation(Block& block)
 {
-	assert(!m_blocksNeedingSeedSewn.contains(&block));
-	m_blocksNeedingSeedSewn.insert(&block);
-	block.m_hasDesignations.insert(m_player, BlockDesignation::SowSeed);
+	assert(!m_blocksNeedingSeedsSewn.contains(&block));
+	m_blocksNeedingSeedsSewn.insert(&block);
+	block.m_hasDesignations.insert(m_faction, BlockDesignation::SowSeeds);
 }
-void HasFarmFieldsForPlayer::removeSowSeedDesignation(Block& block)
+void HasFarmFieldsForFaction::removeSowSeedsDesignation(Block& block)
 {
-	assert(m_blocksNeedingSeedSewn.contains(&block));
-	m_blocksNeedingSeedSewn.remove(&block);
-	block.m_hasDesignations.remove(m_player, BlockDesignation::SowSeed);
+	assert(m_blocksNeedingSeedsSewn.contains(&block));
+	m_blocksNeedingSeedsSewn.erase(&block);
+	block.m_hasDesignations.remove(m_faction, BlockDesignation::SowSeeds);
 }
-void HasFarmFieldsForPlayer::addHarvestDesignation(Plant& plant)
+void HasFarmFieldsForFaction::addHarvestDesignation(Plant& plant)
 {
 	assert(!m_plantsToHarvest.contains(&plant));
 	m_plantsToHarvest.insert(&plant);
-	plant.m_location.m_hasDesignations.insert(m_player, BlockDesignation::Harvest);
+	plant.m_location.m_hasDesignations.insert(m_faction, BlockDesignation::Harvest);
 }
-void HasFarmFieldsForPlayer::removeHarvestDesignation(Plant& plant)
+void HasFarmFieldsForFaction::removeHarvestDesignation(Plant& plant)
 {
 	assert(m_plantsToHarvest.contains(&plant));
-	m_plantsToHarvest.remove(&plant);
-	plant.m_location.m_hasDesignations.remove(m_player, BlockDesignation::Harvest);
+	m_plantsToHarvest.erase(&plant);
+	plant.m_location.m_hasDesignations.remove(m_faction, BlockDesignation::Harvest);
 }
-void HasFarmFieldsForPlayer::setDayOfYear(uint32_t dayOfYear)
+void HasFarmFieldsForFaction::setDayOfYear(uint32_t dayOfYear)
 {
 	//TODO: Add sow designation when blocking item or plant is removed.
 	for(FarmField& farmField : m_farmFields)
 		if(farmField.plantSpecies != nullptr)
 		{
-			if(farmField.plantSpecies.dayOfYearForSowStart == dayOfYear)
+			if(farmField.plantSpecies->dayOfYearForSowStart == dayOfYear)
 			{
 				for(Block* block : farmField.blocks)
-					if(block->m_hasPlants.canGrowHere(farmField.plantSpecies))
-						addSowSeedDesignation(*block);
+					if(block->m_hasPlant.canGrowHere(*farmField.plantSpecies))
+						addSowSeedsDesignation(*block);
 				farmField.timeToSow = true;
 			}
-			if(farmField.plantSpecies.dayOfYearForSowEnd == dayOfYear)
+			if(farmField.plantSpecies->dayOfYearForSowEnd == dayOfYear)
 			{
 				assert(farmField.timeToSow);
 				farmField.timeToSow = false;
 				for(Block* block : farmField.blocks)
-					if(m_blocksNeedingSeedSewn.contains(block))
-						removeSowSeedDesignation(*block);
+					if(m_blocksNeedingSeedsSewn.contains(block))
+						removeSowSeedsDesignation(*block);
 			}
 		}
 }
-FarmField& HasFarmFieldsForPlayer::create(std::unordered_set<Block*>& blocks)
+void HasFarmFieldsForFaction::create(std::unordered_set<Block*>& blocks)
 {
 	m_farmFields.emplace_back(blocks);
 	for(Block* block : blocks)
-		block->m_isPartOfFarmField.insert(m_player, m_farmFields.back());
-	return &m_farmFields.back();
+		block->m_isPartOfFarmField.insert(m_faction, m_farmFields.back());
 }
-void HasFarmFieldsForPlayer::extend(FarmField& farmField, std:unordered_set<Block*>& blocks)
+void HasFarmFieldsForFaction::extend(FarmField& farmField, std::unordered_set<Block*>& blocks)
 {
 	farmField.blocks.insert(blocks.begin(), blocks.end());
 	if(farmField.plantSpecies != nullptr)
 		designateBlocks(farmField, blocks);
 	for(Block* block : blocks)
-		block->m_isPartOfFarmField.insert(m_player, farmField);
+		block->m_isPartOfFarmField.insert(m_faction, farmField);
 }
-void HasFarmFieldsForPlayer::setSpecies(FarmField& farmField, const PlantSpecies& plantSpecies)
+void HasFarmFieldsForFaction::setSpecies(FarmField& farmField, const PlantSpecies& plantSpecies)
 {
 	assert(farmField.plantSpecies == nullptr);
-	farmField.plantSpecies = plantSpecies;
+	farmField.plantSpecies = &plantSpecies;
 	designateBlocks(farmField, farmField.blocks);
 }
-void HasFarmFieldsForPlayer::designateBlocks(FarmField& farmField, std::unordered_set<Block*>& blocks)
+void HasFarmFieldsForFaction::designateBlocks(FarmField& farmField, std::unordered_set<Block*>& blocks)
 {
 	// Designate for sow if the season is right.
 	if(farmField.timeToSow)
 		for(Block* block : blocks)
-			addSowSeedDesignation(*block);
+			addSowSeedsDesignation(*block);
 	for(Block* block : blocks)
 	{
 		// Designate plants already existing for fluid if the species is right and they need fluid.
-		if(!block.m_hasPlant.empty())
+		if(block->m_hasPlant.exists())
 		{
 			Plant& plant = block->m_hasPlant.get();
-			if(plant.plantSpecies == farmField.plantSpecies && !plant.m_hasFluid)
+			if(&plant.m_plantSpecies == farmField.plantSpecies && plant.getVolumeFluidRequested())
 				addGivePlantFluidDesignation(plant);
 		}
 	}
 }
-void HasFarmFieldsForPlayer::clearSpecies(FarmField& farmField)
+void HasFarmFieldsForFaction::clearSpecies(FarmField& farmField)
 {
 	assert(farmField.plantSpecies != nullptr);
 	farmField.plantSpecies = nullptr;
-	undesignateBlocks();
+	undesignateBlocks(farmField.blocks);
 }
-void HasFarmFieldsForPlayer::shrink(FarmField& farmField, std::unordered_set<Block*>& blocks)
+void HasFarmFieldsForFaction::shrink(FarmField& farmField, std::unordered_set<Block*>& blocks)
 {
 	undesignateBlocks(blocks);
 	std::erase_if(farmField.blocks, [&](Block* block){ return blocks.contains(block); });
 	if(farmField.blocks.empty())
-		m_farmFields.remove(farmField);
+		m_farmFields.remove_if([&](FarmField& other){ return &other == &farmField; });
 	for(Block* block : blocks)
-		block->m_isPartOfFarmField.remove(m_player);
+		block->m_isPartOfFarmField.remove(m_faction);
 }
-void HasFarmFieldsForPlayer::remove(FarmField& farmField)
+void HasFarmFieldsForFaction::remove(FarmField& farmField)
 {
 	shrink(farmField, farmField.blocks);
 }
-void HasFarmFieldsForPlayer::undesignateBlocks(std::unordered_set<Block*>& blocks)
+void HasFarmFieldsForFaction::undesignateBlocks(std::unordered_set<Block*>& blocks)
 {
 	for(Block* block : blocks)
 	{
-		block->m_hasDesignations.removeIfExists(BlockDesignation::GiveFluid);
-		block->m_hasDesignations.removeIfExists(BlockDesignation::SowSeed);
-		block->m_hasDesignations.removeIfExists(BlockDesignation::Harvest);
+		block->m_hasDesignations.removeIfExists(m_faction, BlockDesignation::GivePlantFluid);
+		block->m_hasDesignations.removeIfExists(m_faction, BlockDesignation::SowSeeds);
+		block->m_hasDesignations.removeIfExists(m_faction, BlockDesignation::Harvest);
 	}
 }
-void HasFarmFields::at(Player& player)
+HasFarmFieldsForFaction& HasFarmFields::at(Faction& faction)
 {
-	return m_data.at(player);
+	return m_data.at(&faction);
 }
-void HasFarmFields::registerPlayer(Player& player)
+void HasFarmFields::registerFaction(Faction& faction)
 {
-	assert(!m_data.contains(player));
-	m_data[&player](player);
+	assert(!m_data.contains(&faction));
+	m_data.emplace(&faction, faction);
 }
-void HasFarmFields::unregisterPlayer(Player& player)
+void HasFarmFields::unregisterFaction(Faction& faction)
 {
-	assert(m_data.contains(player));
-	m_data.erase(&player);
+	assert(m_data.contains(&faction));
+	m_data.erase(&faction);
+}
+Plant* HasFarmFields::getHighestPriorityPlantForGiveFluid(Faction& faction)
+{
+	assert(m_data.contains(&faction));
+	return m_data.at(&faction).getHighestPriorityPlantForGiveFluid();
+}
+bool HasFarmFields::hasGivePlantsFluidDesignations(Faction& faction) const
+{
+	assert(m_data.contains(&faction));
+	return m_data.at(&faction).hasGivePlantsFluidDesignations();
 }

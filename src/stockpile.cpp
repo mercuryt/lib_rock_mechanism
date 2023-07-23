@@ -45,7 +45,7 @@ uint32_t StockPileProject::getDelay() const { return Config::addToStockPileDelay
 void StockPileProject::onComplete()
 {
 	assert(m_workers.size() == 1);
-	m_workers.begin()->m_hasItems.transferTo(m_location.m_blockHasItems, m_item);
+	m_workers.begin()->m_canPickup.putDown(m_destination);
 }
 std::vector<std::pair<ItemQuery, uint32_t> StockPileProject::getConsumed() const { return {}; }
 std::vector<std::pair<ItemQuery, uint32_t> StockPileProject::getUnconsumed() const { return {m_item, 1}; }

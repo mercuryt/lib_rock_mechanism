@@ -66,19 +66,20 @@ namespace path
 		auto compare = [&](ProposedRouteStep& a, ProposedRouteStep& b) { return priority(a) > priority(b); };
 		// Check if the actor can currently enter each block if this is a detour path.
 		auto isDone = [&](Block& block){ return &block == &destination; };
-		auto adjacentCosts = [&](Block& block){ return block.m_hasActors.getMoveCosts(*actor.m_shape, actor.m_canMove.getMoveType()); };
+		auto adjacentCosts = [&](Block& block){ return block.m_hasShapes.getMoveCosts(*actor.m_shape, actor.m_canMove.getMoveType()); };
 		std::function<bool(Block&, Block&)> isValid;
 		if(detour)
 			isValid = [&](Block& block, Block& previous){ 
-				return block.m_hasActors.anyoneCanEnterEver() && block.m_hasActors.canEnterEverFrom(actor, previous) && block.m_hasActors.canEnterCurrentlyFrom(actor, previous);
+				return block.m_hasShapes.anythingCanEnterEver() && block.m_hasShapes.canEnterEverFrom(actor, previous) && block.m_hasShapes.canEnterCurrentlyFrom(actor, previous);
 			};
 		else
-			isValid = [&](Block& block, Block& previous){ return block.m_hasActors.anyoneCanEnterEver() && block.m_hasActors.canEnterEverFrom(actor, previous); };
+			isValid = [&](Block& block, Block& previous){ return block.m_hasShapes.anythingCanEnterEver() && block.m_hasShapes.canEnterEverFrom(actor, previous); };
 		return get<decltype(isValid), decltype(compare), decltype(isDone), decltype(adjacentCosts)>(isValid, compare, isDone, adjacentCosts, *actor.m_location);
 	}
 	// Depth first search.
+	// TODO: remove default argument on maxRange.
 	template<typename Predicate>
-	std::vector<Block*> getForActorToPredicate(Actor& actor, Predicate&& predicate)
+	std::vector<Block*> getForActorToPredicate(Actor& actor, Predicate&& predicate, const uint32_t& maxRange = UINT32_MAX)
 	{
 		std::unordered_set<Block*> closedList;
 		closedList.insert(actor.m_location);
@@ -91,6 +92,8 @@ namespace path
 		{
 			for(RouteNode* routeNode : openList)
 			{
+				if(maxRange > actor.m_location->taxiDistance(routeNode->block))
+					continue;
 				if(predicate(routeNode->block))
 				{
 					// Result found.
@@ -104,12 +107,12 @@ namespace path
 				}
 				for(Block* adjacent : routeNode->block.m_adjacentsVector)
 				{
-					if(!adjacent->m_hasActors.anyoneCanEnterEver())
+					if(!adjacent->m_hasShapes.anythingCanEnterEver())
 						continue;
 					if(!closedList.contains(adjacent))
 					{
 						closedList.insert(adjacent);
-						if(adjacent->m_hasActors.canEnterEverFrom(actor, routeNode->block))
+						if(adjacent->m_hasShapes.canEnterEverFrom(actor, routeNode->block))
 						{
 							routeNodes.emplace_back(*adjacent, routeNode);
 							openList.push_back(&routeNodes.back());
@@ -121,30 +124,32 @@ namespace path
 		return output; // Empty container means no result found.
 	}
 	template<typename Predicate>
-	Block* getForActorToPredicateReturnEndOnly(Actor& actor, Predicate&& predicate)
+	Block* getForActorToPredicateReturnEndOnly(Actor& actor, Predicate&& predicate, const uint32_t& maxRange = UINT32_MAX)
 	{
 		std::unordered_set<Block*> closedList;
 		closedList.insert(actor.m_location);
 		std::list<RouteNode*> openList;
 		std::list<RouteNode> routeNodes;
-		routeNodes.emplace_back(actor.m_location, nullptr);
+		routeNodes.emplace_back(*actor.m_location, nullptr);
 		openList.push_back(&routeNodes.back());
 		while(!openList.empty())
 		{
 			for(RouteNode* routeNode : openList)
 			{
+				if(maxRange > actor.m_location->taxiDistance(routeNode->block))
+					continue;
 				if(predicate(routeNode->block))
 					return &routeNode->block;
 				for(Block* adjacent : routeNode->block.m_adjacentsVector)
 				{
-					if(!adjacent->m_hasActors.anyoneCanEnterEver())
+					if(!adjacent->m_hasShapes.anythingCanEnterEver())
 						continue;
 					if(!closedList.contains(adjacent))
 					{
 						closedList.insert(adjacent);
-						if(adjacent->m_hasActors.canEnterEverFrom(actor, routeNode->block))
+						if(adjacent->m_hasShapes.canEnterEverFrom(actor, routeNode->block))
 						{
-							routeNodes.emplace_back(adjacent, routeNode);
+							routeNodes.emplace_back(*adjacent, routeNode);
 							openList.push_back(&routeNodes.back());
 						}
 					}

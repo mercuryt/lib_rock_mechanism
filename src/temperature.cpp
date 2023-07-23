@@ -1,4 +1,5 @@
 #include "temperature.h"
+#include "block.h"
 enum class TemperatureZone { Surface, Underground, LavaSea};
 uint32_t TemperatureSource::getTemperatureDeltaForRange(uint32_t range)
 {

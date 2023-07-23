@@ -107,9 +107,11 @@ public:
 	bool tryToBeginItemHaulSubproject(Subproject& subproject, Actor& actor);
 	virtual uint32_t getDelay() const = 0;
 	virtual void onComplete() = 0;
+	// Use copies rather then references for return types to allow specalization of Queries as well as byproduct material type.
 	virtual std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const = 0;
 	virtual std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const = 0;
-	virtual std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>>& getByproducts() const = 0;
+	virtual std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const = 0;
 	virtual std::vector<std::pair<ActorQuery, uint32_t>> getActors() const = 0;
+	Block& getLocation() const { return m_location; }
 	virtual ~Project();
 };

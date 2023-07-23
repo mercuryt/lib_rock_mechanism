@@ -18,8 +18,9 @@ class GetIntoAttackPositionThreadedTask;
 
 struct Attack final
 {
-	const AttackType& attackType;
-	const MaterialType& materialType;
+	// Use pointers rather then references to allow move.
+	const AttackType* attackType;
+	const MaterialType* materialType;
 	Item* item; // Can be nullptr for natural weapons.
 };
 class CanFight final
@@ -32,21 +33,27 @@ class CanFight final
 	HasThreadedTask<GetIntoAttackPositionThreadedTask> m_getIntoAttackPositionThreadedTask;
 	std::vector<std::pair<uint32_t, Attack>> m_attackTable;
 	Actor* m_target;
-	std::unordered_set<Actor*> m_targetBy;
+	std::unordered_set<Actor*> m_targetedBy;
 public:
 	CanFight(Actor& a) : m_actor(a), m_maxRange(0), m_coolDownDuration(0) { }
 	void attack(Actor& target);
 	void coolDownCompleted();
-	void updateMaxRange();
-	void updateCoolDownDuration();
-	void updateAttackTable();
+	void update();
 	void setTarget(Actor& actor);
 	void recordTargetedBy(Actor& actor);
 	void removeTargetedBy(Actor& actor);
-	void onMoveFrom(Block* previous);
+	void onMoveFrom(Block& previous);
 	void onDie();
+	void noLongerTargetable();
+	void targetNoLongerTargetable();
+	void onTargetMoved();
+	void freeHit(Actor& actor);
 	bool isOnCoolDown() const;
 	bool inRange(Actor& target) const;
+	const uint32_t& getMaxRange() const { return m_maxRange; }
+	uint32_t getCombatScore() const;
+	uint32_t getCombatScoreForAttack(const Attack& attack) const;
+	const Attack& getAttackForCombatScoreDifference(uint32_t scoreDifference) const;
 	friend class AttackCoolDown;
 	friend class GetIntoAttackPositionThreadedTask;
 };

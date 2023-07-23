@@ -1,12 +1,15 @@
+#include "fillQueue.h"
+#include "block.h"
+#include "fluidGroup.h"
 FillQueue::FillQueue(FluidGroup& fluidGroup) : FluidQueue(fluidGroup) {} 
 void FillQueue::buildFor(std::unordered_set<Block*>& members)
 {
 	for(Block* block : members)
 	{
-		assert(block->m_fluids.contains(FluidQueue::m_fluidGroup.m_fluidType));
+		assert(block->m_fluids.contains(&FluidQueue::m_fluidGroup.m_fluidType));
 		for(Block* adjacent : block->m_adjacentsVector)
-			 if(adjacent->fluidCanEnterEver() && adjacent->fluidCanEnterEver(FluidQueue::m_fluidGroup.m_fluidType) &&
-				adjacent->m_fluids.at(FluidQueue::m_fluidGroup.m_fluidType).first != Config::maxBlockVolume
+			 if(adjacent->fluidCanEnterEver() && adjacent->fluidTypeCanEnterCurrently(FluidQueue::m_fluidGroup.m_fluidType) &&
+				adjacent->m_fluids.at(&FluidQueue::m_fluidGroup.m_fluidType).first != Config::maxBlockVolume
 			   )
 				addBlock(adjacent);
 	}

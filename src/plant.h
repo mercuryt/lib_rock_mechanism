@@ -1,8 +1,9 @@
 #pragma once
 
 #include "eventSchedule.h"
-#include "util.h"
 #include "reservable.h"
+
+#include <algorithm>
 
 class Block;
 class PlantGrowthEvent;
@@ -10,6 +11,8 @@ class PlantFluidEvent;
 class PlantFoliageGrowthEvent;
 class PlantEndOfHarvestEvent;
 class PlantTemperatureEvent;
+struct ItemType;
+struct FluidType;
 
 struct HarvestData
 {
@@ -35,6 +38,8 @@ struct PlantSpecies
 	const uint32_t rootRangeMax;
 	const uint32_t rootRangeMin;
 	const uint32_t adultMass;
+	const uint32_t dayOfYearForSowStart;
+	const uint32_t dayOfYearForSowEnd;
 	const FluidType& fluidType;
 	const HarvestData* harvestData;
 	// Infastructure.
@@ -60,29 +65,36 @@ public:
 	HasScheduledEvent<PlantFoliageGrowthEvent> m_foliageGrowthEvent;
 	uint32_t m_percentGrown;
 	uint32_t m_quantityToHarvest;
-	bool m_hasFluid;
 	uint32_t m_percentFoliage;
 	//TODO: Set max reservations to 1 to start, maybe increase later with size?
 	Reservable m_reservable;
+	uint32_t m_volumeDrinkRequested;
 
-	Plant(Block& l, const PlantSpecies& ps, uint32_t pg = 0) : m_location(l), m_fluidSource(nullptr), m_plantSpecies(ps), m_percentGrown(pg), m_quantityToHarvest(0), m_hasFluid(true), m_percentFoliage(100), m_reservable(1) { }
+	Plant(Block& l, const PlantSpecies& ps, uint32_t pg = 0);
 	void die();
 	void applyTemperatureChange(uint32_t oldTemperature, uint32_t newTemperature);
 	void setHasFluidForNow();
 	void setMaybeNeedsFluid();
-	bool hasFluidSource() const;
+	void addFluid(uint32_t volume, const FluidType& fluidType);
 	void setDayOfYear(uint32_t dayOfYear);
 	void setQuantityToHarvest();
 	void harvest(uint32_t quantity);
 	void endOfHarvest();
 	void updateGrowingStatus();
+	void removeFoliageMass(uint32_t mass);
+	uint32_t getFruitMass() const;
+	void removeFruitMass(uint32_t mass);
+	void makeFoliageGrowthEvent();
+	void foliageGrowth();
+	bool hasFluidSource() const;
 	uint32_t getGrowthPercent() const;
 	uint32_t getRootRange() const;
 	uint32_t getPercentFoliage() const;
 	uint32_t getFoliageMass() const;
-	void removeFoliageMass(uint32_t mass);
-	void makeFoliageGrowthEvent();
-	void foliageGrowth();
+	uint32_t getStepAtWhichPlantWillDieFromLackOfFluid() const;
+	uint32_t getFluidDrinkVolume() const;
+	bool readyToHarvest() const { return m_quantityToHarvest != 0; }
+	const uint32_t& getVolumeFluidRequested();
 };
 
 class PlantGrowthEvent : public ScheduledEventWithPercent
@@ -142,6 +154,8 @@ public:
 	void clearPointer();
 	void setTemperature(uint32_t temperature);
 	Plant& get();
+	bool canGrowHere(const PlantSpecies& plantSpecies) const;
+	bool exists() const { return m_plant != nullptr; }
 };
 // To be used by Area.
 class HasPlants

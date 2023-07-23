@@ -5,6 +5,8 @@
 
 #include <vector>
 #include <unordered_set>
+#include <cstdint>
+#include <cassert>
 
 class FluidGroup;
 class Block;

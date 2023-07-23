@@ -4,12 +4,6 @@
 
 #pragma once
 
-#include <vector>
-#include <unordered_map>
-#include <unordered_set>
-#include <tuple>
-#include <list>
-
 #include "block.h"
 #include "buckets.h"
 #include "locationBuckets.h"
@@ -24,6 +18,12 @@
 #include "construct.h"
 #include "craft.h"
 #include "../lib/BS_thread_pool_light.hpp"
+
+#include <vector>
+#include <unordered_map>
+#include <unordered_set>
+#include <tuple>
+#include <list>
 
 class Area
 {
@@ -44,6 +44,8 @@ public:
 	HasConstructionDesignations m_hasConstructionDesignations;
 	HasStockPiles m_hasStockPilingDesignations;
 	HasCraftingLocationsAndJobs m_hasCraftingLocationsAndJobs;
+	//TODO: HasItems
+	std::list<Item> m_items;
 	//TODO: HasActors
 	LocationBuckets m_actorLocationBuckets;
 	//TODO: HasFluidGroups.

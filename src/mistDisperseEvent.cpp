@@ -1,4 +1,6 @@
 #include "mistDisperseEvent.h"
+#include "config.h"
+#include "block.h"
 #include <memory>
 void MistDisperseEvent::execute()
 {
@@ -45,8 +47,4 @@ bool MistDisperseEvent::continuesToExist() const
 		if(adjacent->m_mist == m_fluidType and adjacent->m_mistInverseDistanceFromSource > m_block.m_mistInverseDistanceFromSource)
 			return true;
 	return false;
-}
-void MistDisperseEvent::emplace(uint32_t delay, const FluidType& fluidType, Block& block)
-{
-	eventSchedule::scedule(std::make_unique<MistDisperseEvent>(delay, fluidType, block));
 }

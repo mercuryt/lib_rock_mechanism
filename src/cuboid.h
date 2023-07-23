@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cstdint>
+#include <cstddef>
+#include <iterator>
+
 class Block;
 
 class Cuboid

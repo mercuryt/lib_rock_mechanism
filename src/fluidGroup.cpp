@@ -7,12 +7,15 @@
  * The flow for the step is computed in readStep and applied in writeStep so that readStep can run concurrently with other read only tasks.
  */
 
+#include "fluidGroup.h"
+#include "util.h"
+#include "config.h"
+#include "block.h"
+#include "area.h"
+
 #include <queue>
 #include <cassert>
 #include <numeric>
-#include "fluidGroup.h"
-
-#include "util.h"
 
 //TODO: reuse blocks as m_fillQueue.m_set.
 FluidGroup::FluidGroup(const FluidType& ft, std::unordered_set<Block*>& blocks, Area& area, bool checkMerge) :
@@ -55,7 +58,7 @@ void FluidGroup::addBlock(Block& block, bool checkMerge)
 	std::unordered_set<FluidGroup*> toMerge;
 	for(Block* adjacent : block.m_adjacentsVector)
 	{
-		if(!adjacent->fluidCanEnterEver() || !adjacent->fluidCanEnterEver(m_fluidType))
+		if(!adjacent->fluidCanEnterEver())
 			continue;
 		auto found = adjacent->m_fluids.find(&m_fluidType);
 		if(found != adjacent->m_fluids.end())
@@ -94,8 +97,7 @@ void FluidGroup::removeBlock(Block& block)
 	if constexpr (Config::fluidsSeepDiagonalModifier != 0)
 	{
 		for(Block* diagonal : block.getEdgeAndCornerAdjacentOnly())
-			if(diagonal->fluidCanEnterEver() && diagonal->fluidCanEnterEver(m_fluidType) &&
-					m_diagonalBlocks.contains(diagonal))
+			if(diagonal->fluidCanEnterEver() && m_diagonalBlocks.contains(diagonal))
 			{
 				//TODO: m_potentiallyNoLongerDiagonalFromSyncronusCode
 				bool found = false;
@@ -118,9 +120,8 @@ void FluidGroup::setUnstable()
 void FluidGroup::addDiagonalsFor(Block& block)
 {
 	for(Block* diagonal : block.getEdgeAdjacentOnSameZLevelOnly())
-		if(diagonal->fluidCanEnterEver() && diagonal->fluidCanEnterEver(m_fluidType) && 
-				!m_fillQueue.m_set.contains(diagonal) && !m_drainQueue.m_set.contains(diagonal) &&
-			       	!m_diagonalBlocks.contains(diagonal))
+		if(diagonal->fluidCanEnterEver() && !m_fillQueue.m_set.contains(diagonal) && 
+				!m_drainQueue.m_set.contains(diagonal) && !m_diagonalBlocks.contains(diagonal))
 		{
 			// Check if there is a 'pressure reducing diagonal' created by two solid blocks.
 			int32_t diffX = diagonal->m_x - block.m_x;
@@ -133,8 +134,8 @@ void FluidGroup::addMistFor(Block& block)
 {
 	if(m_fluidType.mistDuration != 0 && (block.m_adjacents[0] == nullptr || !block.m_adjacents[0]->isSolid()))
 		for(Block* adjacent : block.getAdjacentOnSameZLevelOnly())
-			if(adjacent->fluidCanEnterEver() && adjacent->fluidCanEnterEver(m_fluidType))
-						adjacent->spawnMist(m_fluidType);
+			if(adjacent->fluidCanEnterEver())
+				adjacent->spawnMist(m_fluidType);
 }
 void FluidGroup::merge(FluidGroup* smaller)
 {
@@ -354,8 +355,7 @@ void FluidGroup::readStep()
 	for(Block* block : m_fillQueue.m_futureNoLongerEmpty)
 	{
 		for(Block* adjacent : block->m_adjacentsVector)
-			if(adjacent->fluidCanEnterEver() && adjacent->fluidCanEnterEver(m_fluidType) &&
-					!m_drainQueue.m_set.contains(adjacent) && !m_fillQueue.m_set.contains(adjacent) 
+			if(adjacent->fluidCanEnterEver() && !m_drainQueue.m_set.contains(adjacent) && !m_fillQueue.m_set.contains(adjacent) 
 			  )
 			{
 				auto found = adjacent->m_fluids.find(&m_fluidType);
@@ -381,12 +381,12 @@ void FluidGroup::readStep()
 	for(Block* block : m_drainQueue.m_futureEmpty)
 	{
 		for(Block* adjacent : block->m_adjacentsVector)
-			if(adjacent->fluidCanEnterEver() && adjacent->fluidCanEnterEver(m_fluidType))
+			if(adjacent->fluidCanEnterEver())
 				adjacentToFutureEmpty.insert(adjacent);
 		if constexpr (Config::fluidsSeepDiagonalModifier != 0)
 		{
 			for(Block* adjacent : block->getEdgeAndCornerAdjacentOnly())
-				if(adjacent->fluidCanEnterEver() && adjacent->fluidCanEnterEver(m_fluidType))
+				if(adjacent->fluidCanEnterEver())
 					possiblyNoLongerDiagonal.insert(adjacent);
 		}
 	}
@@ -413,8 +413,8 @@ void FluidGroup::readStep()
 		{
 			if(closed.contains(block))
 				continue;
-			auto condition = [&](Block* block){ return futureBlocks.contains(block); };
-			std::unordered_set<Block*> adjacents = util::collectAdjacentsWithCondition(condition, *block);
+			auto condition = [&](Block& block){ return futureBlocks.contains(&block); };
+			std::unordered_set<Block*> adjacents = block->collectAdjacentsWithCondition(condition);
 			// Add whole group to closed. There is only one iteration per group as others will be rejected by the closed guard.
 			closed.insert(adjacents.begin(), adjacents.end());
 			m_futureGroups.emplace_back(adjacents);
@@ -430,7 +430,7 @@ void FluidGroup::readStep()
 		// Record each group's future new adjacent.
 		for(Block* block : m_futureNewEmptyAdjacents)
 			for(Block* adjacent : block->m_adjacentsVector)
-				if(adjacent->fluidCanEnterEver() && adjacent->fluidCanEnterEver(m_fluidType))
+				if(adjacent->fluidCanEnterEver())
 				{
 					for(FluidGroupSplitData& fluidGroupSplitData : m_futureGroups)
 						if(fluidGroupSplitData.members.contains(adjacent))
@@ -445,8 +445,7 @@ void FluidGroup::readStep()
 		bool stillAdjacent = false;
 		for(Block* adjacent : block->m_adjacentsVector)
 		{
-			if(adjacent->fluidCanEnterEver() && adjacent->fluidCanEnterEver(m_fluidType) && 
-					futureBlocks.contains(adjacent))
+			if(adjacent->fluidCanEnterEver() && futureBlocks.contains(adjacent))
 			{
 				stillAdjacent = true;
 				break;
@@ -587,14 +586,14 @@ void FluidGroup::splitStep()
 	for(auto& [fluidType, fluidGroup] : m_disolvedInThisGroup)
 	{
 		assert(fluidGroup->m_drainQueue.m_set.empty());
-		assert(m_fluidType != fluidType);
-		assert(fluidGroup->m_fluidType == fluidType);
+		assert(&m_fluidType != fluidType);
+		assert(&fluidGroup->m_fluidType == fluidType);
 		assert(fluidGroup->m_excessVolume > 0);
 		for(FutureFlowBlock& futureFlowBlock : m_fillQueue.m_queue)
 		{
 			Block* block = futureFlowBlock.block;
 			auto found = block->m_fluids.find(fluidType);
-			if(block->fluidCanEnterEver(*fluidType) && (found != block->m_fluids.end() || block->fluidCanEnterCurrently(*fluidType)))
+			if(found != block->m_fluids.end() || block->fluidCanEnterCurrently(*fluidType))
 			{
 				uint32_t capacity = block->volumeOfFluidTypeCanEnter(*fluidType);
 				uint32_t flow = std::min(capacity, (uint32_t)fluidGroup->m_excessVolume);
@@ -693,7 +692,7 @@ void FluidGroup::validate() const
 		{
 			if(pair.second == this)
 				continue;
-			assert(pair.second->m_fluidType == fluidType);
+			assert(&pair.second->m_fluidType == fluidType);
 			assert(pair.second->m_drainQueue.m_set.contains(block));
 		}
 }
@@ -704,7 +703,7 @@ void FluidGroup::validate(std::unordered_set<FluidGroup*> toErase)
 	for(Block* block : m_drainQueue.m_set)
 		for(auto [fluidType, pair] : block->m_fluids)
 		{
-			assert(pair.second->m_fluidType == fluidType);
+			assert(&pair.second->m_fluidType == fluidType);
 			assert(pair.second->m_drainQueue.m_set.contains(block));
 			assert(!toErase.contains(pair.second));
 		}
