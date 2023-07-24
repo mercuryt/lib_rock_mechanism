@@ -48,7 +48,8 @@ void ActorCanMove::setDestination(Block& destination, bool detour, bool adjacent
 }
 void ActorCanMove::setDestinationAdjacentToSet(std::unordered_set<Block*>& blocks, bool detour)
 {
-	m_toSetThreadedTask.create(*this, blocks, detour, true);
+	static bool adjacent = true;
+	m_toSetThreadedTask.create(*this, blocks, detour, adjacent);
 }
 void ActorCanMove::setDestinationAdjacentTo(HasShape& hasShape) { setDestinationAdjacentToSet(hasShape.m_blocks); }
 void PathThreadedTask::readStep()

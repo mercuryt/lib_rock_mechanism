@@ -32,8 +32,10 @@ struct PlantSpecies
 	const uint32_t minimumGrowingTemperature;
 	const uint32_t stepsTillDieFromTemperature;
 	const uint32_t stepsNeedsFluidFrequency;
+	const uint32_t volumeFluidConsumed;
 	const uint32_t stepsTillDieWithoutFluid;
 	const uint32_t stepsTillFullyGrown;
+	const uint32_t stepsTillFoliageGrowsFromZero;
 	const bool growsInSunLight;
 	const uint32_t rootRangeMax;
 	const uint32_t rootRangeMin;
@@ -86,7 +88,7 @@ public:
 	void removeFruitMass(uint32_t mass);
 	void makeFoliageGrowthEvent();
 	void foliageGrowth();
-	bool hasFluidSource() const;
+	bool hasFluidSource();
 	uint32_t getGrowthPercent() const;
 	uint32_t getRootRange() const;
 	uint32_t getPercentFoliage() const;
@@ -122,7 +124,7 @@ class PlantEndOfHarvestEvent : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
 public:
-	PlantEndOfHarvestEvent(uint32_t step, Plant& p) : ScheduledEventWithPercent(step), m_plant(p) {}
+	PlantEndOfHarvestEvent(uint32_t delay, Plant& p) : ScheduledEventWithPercent(delay), m_plant(p) {}
 	void execute() { m_plant.endOfHarvest(); }
 	~PlantEndOfHarvestEvent() { m_plant.m_endOfHarvestEvent.clearPointer(); }
 };
@@ -163,6 +165,6 @@ class HasPlants
 	std::list<Plant> m_plants;
 	std::list<Plant*> m_plantsOnSurface;
 public:
-	void emplace(Block* location, const PlantSpecies& species, uint32_t percentGrowth);
+	void emplace(Block& location, const PlantSpecies& species, uint32_t percentGrowth);
 	void erase(Plant& plant);
 };

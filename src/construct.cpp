@@ -39,6 +39,11 @@ void ConstructObjective::execute()
 	else
 		m_constructThreadedTask.create(*this);
 }
+void ConstructObjective::cancel()
+{
+	if(m_project != nullptr)
+		m_project->removeWorker(m_actor);
+}
 bool ConstructObjective::canConstructAt(Block& block) const
 {
 	if(block.m_reservable.isFullyReserved())
@@ -55,11 +60,11 @@ Block* ConstructObjective::selectAdjacentProject(Block& block) const
 			return adjacent;
 	return nullptr;
 }
-bool ConstructObjectiveType::canBeAssigned(Actor& actor)
+bool ConstructObjectiveType::canBeAssigned(Actor& actor) const
 {
 	return !actor.m_location->m_area->m_hasConstructionDesignations.areThereAnyForFaction(*actor.m_faction);
 }
-std::unique_ptr<Objective> ConstructObjectiveType::makeFor(Actor& actor)
+std::unique_ptr<Objective> ConstructObjectiveType::makeFor(Actor& actor) const
 {
 	return std::make_unique<ConstructObjective>(actor);
 }

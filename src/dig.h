@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <vector>
 
-class Faction;
+struct Faction;
 class DigObjective;
 class BlockFeatureType;
 
@@ -31,14 +31,15 @@ class DigObjective final : public Objective
 public:
 	DigObjective(Actor& a) : Objective(Config::digObjectivePriority), m_actor(a), m_project(nullptr) { }
 	void execute();
+	void cancel();
 	bool canDigAt(Block& block) const;
 	friend class DigThreadedTask;
 };
 class DigObjectiveType : public ObjectiveType
 {
 public:
-	bool canBeAssigned(Actor& actor);
-	std::unique_ptr<Objective> makeFor(Actor& actor);
+	bool canBeAssigned(Actor& actor) const;
+	std::unique_ptr<Objective> makeFor(Actor& actor) const;
 };
 class DigProject final : public Project
 {

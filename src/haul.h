@@ -37,6 +37,8 @@ public:
 	void commandWorker(Actor& actor);
 	bool tryToSetHaulStrategy(Actor& actor, std::unordered_set<Actor*>& waiting);
 	void addWorker(Actor& actor);
+	void removeWorker(Actor& actor);
+	void cancel();
 };
 // Used by Actor for individual haul strategy only. Other strategies use lead/follow.
 class CanPickup
@@ -50,6 +52,7 @@ public:
 	void pickUp(Item& item, uint32_t quantity);
 	void pickUp(Actor& actor, uint32_t quantity);
 	void putDown(Block& location);
+	void putDownIfAny(Block& location);
 	void removeFluidVolume(uint32_t volume);
 	void add(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity);
 	void remove(Item& item);
@@ -66,9 +69,9 @@ class HasHaulTools
 {
 public:
 	bool hasToolToHaul(HasShape& hasShape) const;
-	Actor& getActorToYokeForHaulTool(Item& haulTool) const;
-	Actor& getPannierBearerToHaul(HasShape& hasShape) const;
-	Item& getPanniersForActor(Actor& actor) const;
+	Actor* getActorToYokeForHaulTool(Item& haulTool) const;
+	Actor* getPannierBearerToHaul(HasShape& hasShape) const;
+	Item* getPanniersForActor(Actor& actor) const;
 	void registerHaulTool(Item& item);
 	void registerYokeableActor(Actor& actor);
 	void unregisterHaulTool(Item& item);

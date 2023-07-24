@@ -79,3 +79,8 @@ void CanFollow::unfollow()
 	if(m_hasShape.isItem())
 		m_hasShape.setStatic(true);
 }
+void CanFollow::unfollowIfFollowing()
+{
+	if(m_canLead != nullptr)
+		unfollow();
+}

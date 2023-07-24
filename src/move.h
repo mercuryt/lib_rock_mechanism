@@ -39,6 +39,7 @@ public:
 	const MoveType& getMoveType() const;
 	friend class MoveEvent;
 	friend class PathThreadedTask;
+	friend class PathToSetThreadedTask;
 };
 class MoveEvent : ScheduledEvent
 {
@@ -52,8 +53,8 @@ class PathThreadedTask : ThreadedTask
 	Actor& m_actor;
 	bool m_detour;
 	bool m_adjacent;
-	PathThreadedTask(Actor& a, bool d = false, bool ad = false) : m_actor(a), m_detour(d), m_adjacent(ad) { }
 	std::vector<Block*> m_result;
+	PathThreadedTask(Actor& a, bool d = false, bool ad = false) : m_actor(a), m_detour(d), m_adjacent(ad) { }
 	void readStep();
 	void writeStep();
 };
@@ -63,18 +64,9 @@ class PathToSetThreadedTask : ThreadedTask
 	std::unordered_set<Block*> m_blocks;
 	bool m_detour;
 	bool m_adjacent;
-	PathToSetThreadedTask(Actor& a, std::unordered_set<Block*> b, bool d = false, bool ad = false) : m_actor(a), m_blocks(b), m_detour(d), m_adjacent(ad) { }
 	std::vector<Block*> m_result;
+
+	PathToSetThreadedTask(Actor& a, std::unordered_set<Block*> b, bool d = false, bool ad = false) : m_actor(a), m_blocks(b), m_detour(d), m_adjacent(ad) { }
 	void readStep();
 	void writeStep();
-};
-class ItemCanMove
-{
-	Item& m_item;
-	const MoveType* m_moveType;
-public:
-	ItemCanMove(Item& i) : m_item(i) { }
-	void setLocation(Block& block);
-	bool canEnterEverWithFacing(Item& item, uint8_t facing) const;
-	bool canEnterCurrentlyWithFacing(Item& item, uint8_t facing) const;
 };

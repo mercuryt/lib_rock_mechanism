@@ -16,6 +16,7 @@ public:
 	CanFollow(HasShape& a) : m_hasShape(a), m_canLead(nullptr) { }
 	void follow(CanLead& canLead);
 	void unfollow();
+	void unfollowIfFollowing();
 	bool isFollowing() const { return m_canLead != nullptr; }
 	friend class CanLead;
 };

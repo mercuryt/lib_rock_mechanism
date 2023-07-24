@@ -28,6 +28,11 @@ void CanPickup::putDown(Block& location)
 	m_carrying = nullptr;
 	m_actor.m_canMove.updateIndividualSpeed();
 }
+void CanPickup::putDownIfAny(Block& location)
+{
+	if(m_carrying != nullptr)
+		putDown(location);
+}
 void CanPickup::add(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity)
 {
 	if(m_carrying == nullptr)

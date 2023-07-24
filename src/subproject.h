@@ -9,5 +9,6 @@ public:
 	std::unordered_set<Actor*> m_workers;
 	Subproject(Project& p) : m_project(p) { }
 	virtual void commandWorker(Actor& actor) = 0;
+	virtual void removeWorker(Actor& actor) = 0;
 	virtual void onComplete() = 0;
 };

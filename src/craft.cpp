@@ -69,7 +69,7 @@ void CraftThreadedTask::writeStep()
 		else
 			m_craftObjective.m_actor.m_location->m_area->m_hasCraftingLocationsAndJobs.makeAndAssignStepProject(*m_craftJob, *m_location, m_craftObjective.m_actor);
 }
-bool CraftObjectiveType::canBeAssigned(Actor& actor)
+bool CraftObjectiveType::canBeAssigned(Actor& actor) const
 {
 	auto& hasCraftingLocationsAndJobs = actor.m_location->m_area->m_hasCraftingLocationsAndJobs;
 	// No jobs needing this skill.
@@ -84,11 +84,15 @@ bool CraftObjectiveType::canBeAssigned(Actor& actor)
 	}
 	return false;
 }
-std::unique_ptr<Objective> CraftObjectiveType::makeFor(Actor& actor)
+std::unique_ptr<Objective> CraftObjectiveType::makeFor(Actor& actor) const
 {
 	return std::make_unique<CraftObjective>(actor, m_skillType);
 }
 void CraftObjective::execute(){ m_threadedTask.create(*this, m_skillType); }
+void CraftObjective::cancel()
+{
+
+}
 void HasCraftingLocationsAndJobs::addLocation(std::vector<const CraftStepType*>& craftStepTypes, Block& block)
 {
 	for(auto* craftStepType : craftStepTypes)

@@ -47,6 +47,11 @@ void DigObjective::execute()
 	else
 		m_digThrededTask.create(*this);
 }
+void DigObjective::cancel()
+{
+	if(m_project != nullptr)
+		m_project->removeWorker(m_actor);
+}
 bool DigObjective::canDigAt(Block& block) const
 {
 	if(block.m_reservable.isFullyReserved())
@@ -56,11 +61,11 @@ bool DigObjective::canDigAt(Block& block) const
 			return true;
 	return false;
 }
-bool DigObjectiveType::canBeAssigned(Actor& actor)
+bool DigObjectiveType::canBeAssigned(Actor& actor) const
 {
 	return actor.m_location->m_area->m_hasDiggingDesignations.areThereAnyForFaction(*actor.m_faction);
 }
-std::unique_ptr<Objective> DigObjectiveType::makeFor(Actor& actor)
+std::unique_ptr<Objective> DigObjectiveType::makeFor(Actor& actor) const
 {
 	return std::make_unique<DigObjective>(actor);
 }

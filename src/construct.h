@@ -11,7 +11,7 @@
 
 class ConstructObjective;
 class Block;
-class Faction;
+struct Faction;
 class BlockFeatureType;
 
 class ConstructThreadedTask final : public ThreadedTask
@@ -31,6 +31,7 @@ class ConstructObjective final : public Objective
 public:
 	ConstructObjective(Actor& a) : Objective(Config::constructObjectivePriority), m_actor(a), m_project(nullptr) { }
 	void execute();
+	void cancel();
 	bool canConstructAt(Block& block) const;
 	Block* selectAdjacentProject(Block& block) const;
 	friend class ConstructThreadedTask;
@@ -38,8 +39,8 @@ public:
 class ConstructObjectiveType final : public ObjectiveType
 {
 public:
-	bool canBeAssigned(Actor& actor);
-	std::unique_ptr<Objective> makeFor(Actor& actor);
+	bool canBeAssigned(Actor& actor) const;
+	std::unique_ptr<Objective> makeFor(Actor& actor) const;
 };
 class ConstructProject final : public Project
 {

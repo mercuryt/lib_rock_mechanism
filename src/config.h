@@ -88,6 +88,14 @@ namespace Config
 	 constexpr float itemQualityCombatModifier = 1;
 	 constexpr float itemWearCombatModifier = 1;
 	 constexpr uint32_t givePlantsFluidPriority = 100;
+	 constexpr uint32_t hoursPerDay = 24;
+	 constexpr uint32_t minutesPerHour = 60;
+	 constexpr uint32_t secondsPerMinute = 60;
+	 constexpr uint32_t stepsPerSecond = 20;
+	 constexpr uint32_t stepsPerMinute = stepsPerSecond * secondsPerMinute;
+	 constexpr uint32_t stepsPerHour = stepsPerMinute * minutesPerHour;
+	 constexpr uint32_t stepsPerDay = stepsPerHour * hoursPerDay;
+
 
 	 uint32_t convertBodyPartVolumeToArea(uint32_t volume){ return sqrt(volume); }
 }
