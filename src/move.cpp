@@ -32,7 +32,7 @@ void ActorCanMove::callback()
 	}
 	else
 	{
-		++ m_retries;
+		++m_retries;
 		scheduleMove();
 	}
 }

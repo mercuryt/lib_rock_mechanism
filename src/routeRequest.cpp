@@ -1,4 +1,5 @@
-#include "pathTemplate.h"
+#include "routeRequest.h"
+#include "path.h"
 // Static method.
 template<class Block>
 void RouteRequest<Block>::readSteps(std::vector<RouteRequest<Block>>::iterator begin, std::vector<RouteRequest<Block>>::iterator end)

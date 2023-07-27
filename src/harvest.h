@@ -37,6 +37,7 @@ public:
 	HasScheduledEvent<HarvestEvent> m_harvestEvent;
 	HasThreadedTask<HarvestThreadedTask> m_threadedTask;
 	void execute();
+	void cancel() {}
 	bool canHarvestAt(Block& block) const;
 	friend class HarvestEvent;
 	friend class HarvestThreadedTask;

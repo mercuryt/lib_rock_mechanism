@@ -1,3 +1,6 @@
+#include "visionCuboid.h"
+#include "area.h"
+#include "block.h"
 #pragma once
 // Static method.
 void VisionCuboid::setup(Area& area)

@@ -26,4 +26,5 @@ public:
 	HasThreadedTask<GetIntoAttackPositionThreadedTask> m_getIntoRangeAndLineOfSightThreadedTask;
 	KillObjective(Actor& k, Actor& t) : Objective(Config::killPriority), m_killer(k), m_target(t) { }
 	void execute();
+	void cancel(){}
 };

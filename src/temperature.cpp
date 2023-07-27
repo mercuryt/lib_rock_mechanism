@@ -1,5 +1,7 @@
 #include "temperature.h"
 #include "block.h"
+#include "area.h"
+#include "nthAdjacentOffsets.h"
 enum class TemperatureZone { Surface, Underground, LavaSea};
 uint32_t TemperatureSource::getTemperatureDeltaForRange(uint32_t range)
 {
@@ -28,30 +30,30 @@ void TemperatureSource::unapply()
 		++range;
 	}
 }
-void TemperatureSource::setTemperature(int32_t t)
+void TemperatureSource::setTemperature(const int32_t& t)
 {
 	unapply();
 	m_temperature = t;
 	apply();
 }
-void AreaHasTemperature::addTemperatureSource(Block& block, uint32_t temperature)
+void AreaHasTemperature::addTemperatureSource(Block& block, const uint32_t& temperature)
 {
 	auto pair = m_sources.emplace(&block, block, temperature);
 	assert(pair.second);
-	pair.first->apply()
+	pair.first->second.apply();
 }
-void AreaHasTemperature::removeTemperatureSource(Block& block)
+void AreaHasTemperature::removeTemperatureSource(TemperatureSource& temperatureSource)
 {
-	assert(m_sources.contains(&block));
+	assert(m_sources.contains(&temperatureSource.m_block));
 	//TODO: Optimize.
-	m_sources.at(&block).unapply();
-	m_sources.remove(&block);
+	m_sources.at(&temperatureSource.m_block).unapply();
+	m_sources.erase(&temperatureSource.m_block);
 }
 TemperatureSource& AreaHasTemperature::getTemperatureSourceAt(Block& block)
 {
 	return m_sources.at(&block);
 }
-void AreaHasTemperature::setAmbientSurfaceTemperature(uint32_t temperature)
+void AreaHasTemperature::setAmbientSurfaceTemperature(const uint32_t& temperature)
 {
 	m_area.m_hasPlants.setAmbientSurfaceTemperature(temperature);
 	m_area.m_hasActors.setAmbientSurfaceTemperature(temperature);
@@ -61,17 +63,18 @@ void AreaHasTemperature::setAmbientSurfaceTemperature(uint32_t temperature)
 				block->melt();
 		else
 			break;
-	for(auto& [meltingPoint, blocks] : m_aboveGroundFluidGroupsByMeltingPoint)
+	for(auto& [meltingPoint, fluidGroups] : m_aboveGroundFluidGroupsByMeltingPoint)
 		if(meltingPoint > temperature)
-			for(Block* block : blocks)
-				block->freeze();
+			for(FluidGroup* fluidGroup : fluidGroups)
+				for(FutureFlowBlock& futureFlowBlock : fluidGroup->m_drainQueue.m_queue)
+					futureFlowBlock.block->freeze();
 		else
 			break;
 	m_ambiantSurfaceTemperature = temperature;
 }
 void AreaHasTemperature::addMeltableSolidBlockAboveGround(Block& block)
 {
-	assert(!block.underground);
+	assert(!block.m_underground);
 	assert(block.isSolid());
 	m_aboveGroundBlocksByMeltingPoint.at(block.getSolidMaterial().meltingPoint).insert(&block);
 }
@@ -83,7 +86,7 @@ void AreaHasTemperature::removeMeltableSolidBlockAboveGround(Block& block)
 }
 void BlockHasTemperature::setDelta(const uint32_t& delta)
 {
-	uint32_t newTemperature = getAmbiantTemperature() + delta;
+	uint32_t newTemperature = getAmbientTemperature() + delta;
 	if(m_block.isSolid())
 	{
 		if(m_block.getSolidMaterial().ignitionTemperature <= newTemperature && m_block.m_fire == nullptr)
@@ -101,7 +104,7 @@ void BlockHasTemperature::setDelta(const uint32_t& delta)
 	}
 	m_delta = delta;
 }
-const uint32_t& BlockHasTemperature::getAmbiantTemperature() const 
+const uint32_t& BlockHasTemperature::getAmbientTemperature() const 
 {
 	if(m_block.m_underground)
 	{

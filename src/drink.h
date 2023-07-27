@@ -40,6 +40,7 @@ class DrinkObjective : public Objective
 public:
 	DrinkObjective(Actor& a);
 	void execute();
+	void cancel() {}
 	bool canDrinkAt(Block& block) const;
 	Block* getAdjacentBlockToDrinkAt(Block& block) const;
 	bool canDrinkItemAt(Block& block) const;

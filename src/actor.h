@@ -43,6 +43,7 @@ public:
 	CauseOfDeath m_causeOfDeath;
 	bool m_awake;
 	Body m_body;
+	Project* m_project;//We don't actually need to store this data, it's just used for asserts.
 	Faction* m_faction;
 	Attributes m_attributes;
 	SkillSet m_skillSet;
@@ -74,6 +75,7 @@ public:
 	bool canMove() const;
 	void die(CauseOfDeath causeOfDeath);
 	void passout(uint32_t duration);
+	void doVision();
 	uint32_t getMass() const;
 	uint32_t getVolume() const;
 	void removeMassFromCorpse(uint32_t mass);
@@ -86,17 +88,19 @@ struct ActorQuery
 	uint32_t carryWeight;
 	bool checkIfSentient;
 	bool sentient;
+	ActorQuery(Actor* a) : actor(a) { }
+	ActorQuery(uint32_t cw, bool cis, bool s) : carryWeight(cw), checkIfSentient(cis), sentient(s) { }
 	bool operator()(Actor& actor) const;
 	static ActorQuery makeFor(Actor& a);
 	static ActorQuery makeForCarryWeight(uint32_t cw);
 };
 // To be used by block.
-class HasActors
+class BlockHasActors
 {
 	Block& m_block;
 	std::vector<Actor*> m_actors;
 public:
-	HasActors(Block& b) : m_block(b) { }
+	BlockHasActors(Block& b) : m_block(b) { }
 	void enter(Actor& actor);
 	void exit(Actor& actor);
 	bool canStandIn() const;

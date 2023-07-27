@@ -59,11 +59,11 @@ void GivePlantsFluidThreadedTask::writeStep()
 			m_objective.m_actor.m_canMove.setPath(m_result);
 	}
 }
-bool GivePlantsFluidObjectiveType::canBeAssigned(Actor& actor)
+bool GivePlantsFluidObjectiveType::canBeAssigned(Actor& actor) const
 {
 	return actor.m_location->m_area->m_hasFarmFields.hasGivePlantsFluidDesignations(*actor.m_faction);
 }
-std::unique_ptr<Objective> GivePlantsFluidObjectiveType::makeFor(Actor& actor)
+std::unique_ptr<Objective> GivePlantsFluidObjectiveType::makeFor(Actor& actor) const
 {
 	return std::make_unique<GivePlantsFluidObjective>(actor);
 }

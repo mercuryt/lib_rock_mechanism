@@ -1,11 +1,15 @@
+#include "sleep.h"
+#include "area.h"
+#include "path.h"
+#include <cassert>
 // Sleep Event.
 SleepEvent::SleepEvent(uint32_t step, MustSleep& ns) : ScheduledEventWithPercent(step), m_needsSleep(ns) { }
 void SleepEvent::execute(){ m_needsSleep.wakeUp(); }
-~SleepEvent::SleepEvent(){ m_needsSleep.m_sleepEvent.clearPointer(); }
+SleepEvent::~SleepEvent(){ m_needsSleep.m_sleepEvent.clearPointer(); }
 // Tired Event.
 TiredEvent::TiredEvent(uint32_t step, MustSleep& ns) : ScheduledEventWithPercent(step), m_needsSleep(ns) { }
 void TiredEvent::execute(){ m_needsSleep.tired(); }
-~TiredEvent::TiredEvent(){ m_needsSleep.m_tiredEvent.clearPointer(); }
+TiredEvent::~TiredEvent(){ m_needsSleep.m_tiredEvent.clearPointer(); }
 // Threaded Task.
 SleepThreadedTask::SleepThreadedTask(SleepObjective& so) : m_sleepObjective(so) { }
 void SleepThreadedTask::readStep()
@@ -27,18 +31,20 @@ void SleepThreadedTask::readStep()
 	};
 	m_result = path::getForActorToPredicate(actor, condition);
 	if(m_result.empty())
+	{
 		if(indoorCandidate != nullptr)
 			m_result = path::getForActorTo(indoorCandidate);
 		else if(outdoorCandidate != nullptr)
 			m_result = path::getForActorTo(outdoorCandidate);
+	}
 }
 void SleepThreadedTask::writeStep()
 {
 	auto& actor = m_sleepObjective.m_needsSleep.m_actor;
 	if(m_result.empty())
-		m_actor.m_hasObjectives.cannotCompleteNeed(m_sleepObjective);
+		actor.m_hasObjectives.cannotCompleteNeed(m_sleepObjective);
 	else
-		m_actor.setPath(m_result);
+		actor.m_canMove.setPath(m_result);
 }
 // Sleep Objective.
 SleepObjective::SleepObjective(MustSleep& ns) : Objective(Config::sleepObjectivePriority), m_needsSleep(ns) { }
@@ -52,24 +58,24 @@ void SleepObjective::execute()
 	else if(m_needsSleep.m_location == nullptr)
 		m_threadedTask.create(*this);
 	else
-		m_needsSleep.m_actor.setDestination(*m_location);
+		m_needsSleep.m_actor.m_canMove.setDestination(*m_needsSleep.m_location);
 }
 uint32_t SleepObjective::desireToSleepAt(Block& block)
 {
-	if(block->m_reservable.isFullyReserved() || !block->m_temperature.isSafeFor(m_needsSleep.actor))
+	if(block.m_reservable.isFullyReserved() || !block.m_blockHasTemperature.isSafeFor(m_needsSleep.actor))
 		return 0;
-	if(block->m_outdoors)
+	if(block.m_outdoors)
 		return 1;
-	if(block->m_indoors)
+	if(block.m_indoors)
 		return 2;
-	if(block->m_area->m_hasSleepingSpots.contains(block))
+	if(block.m_area->m_hasSleepingSpots.containsUnassigned(block))
 		return 3;
 }
-~SleepObjective::SleepObjective() { m_needsSleep.m_objective = nullptr; }
+SleepObjective::~SleepObjective() { m_needsSleep.m_objective = nullptr; }
 // Needs Sleep.
-MustSleep::MustSleep(Actor& a) : m_actor(a), m_needsSleep(false), m_isAwake(true)
+MustSleep::MustSleep(Actor& a) : m_actor(a), m_location(nullptr), m_needsSleep(false), m_isAwake(true)
 {
-	m_tiredEvent.schedule(m_actor.getStepsMustSleepFrequency(), *this);
+	m_tiredEvent.schedule(m_actor.m_species.stepsSleepFrequency, *this);
 }
 void MustSleep::tired()
 {
@@ -79,7 +85,7 @@ void MustSleep::tired()
 	else
 	{
 		m_needsSleep = true;
-		m_tiredEvent.schedule(m_actor.getStepsTillSleepOveride(), *this);
+		m_tiredEvent.schedule(m_actor.m_species.stepsTillSleepOveride, *this);
 		makeSleepObjective();
 	}
 }
@@ -88,21 +94,21 @@ void MustSleep::sleep()
 	assert(m_isAwake);
 	m_isAwake = false;
 	m_tiredEvent.unschedule();
-	m_sleepEvent.schedule(m_actor.getStepsSleepDuration(), *this);
+	m_sleepEvent.schedule(m_actor.m_species.stepsSleepDuration, *this);
 }
 void MustSleep::wakeUp()
 {
 	assert(!m_isAwake);
 	m_isAwake = true;
-	m_tiredEvent.schedule(m_actor.getStepsMustSleepFrequency(), *this);
+	m_tiredEvent.schedule(m_actor.m_species.stepsSleepFrequency, *this);
 }
 void MustSleep::makeSleepObjective()
 {
 	assert(m_isAwake);
 	assert(m_objective == nullptr);
 	std::unique_ptr<Objective> objective = std::make_unique<SleepObjective>(*this);
-	m_objective = objective.get();
-	m_actor.m_hasObjectives.addNeed(objective);
+	m_objective = static_cast<SleepObjective*>(objective.get());
+	m_actor.m_hasObjectives.addNeed(std::move(objective));
 }
 void MustSleep::wakeUpEarly()
 {

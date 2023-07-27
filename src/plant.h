@@ -74,7 +74,7 @@ public:
 
 	Plant(Block& l, const PlantSpecies& ps, uint32_t pg = 0);
 	void die();
-	void applyTemperatureChange(uint32_t oldTemperature, uint32_t newTemperature);
+	void setTemperature(uint32_t temperature);
 	void setHasFluidForNow();
 	void setMaybeNeedsFluid();
 	void addFluid(uint32_t volume, const FluidType& fluidType);

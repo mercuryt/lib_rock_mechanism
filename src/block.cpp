@@ -216,6 +216,13 @@ bool Block::isAdjacentToAny(std::unordered_set<Block*>& blocks) const
 			return true;
 	return false;
 }
+bool Block::isAdjacentTo(Block& block) const
+{
+	for(Block* adjacent : m_adjacentsVector)
+		if(&block == adjacent)
+			return true;
+	return false;
+}
 void Block::setNotSolid()
 {
 	if(m_solid == nullptr)

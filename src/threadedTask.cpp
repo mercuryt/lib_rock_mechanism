@@ -1,5 +1,9 @@
 #include "threadedTask.h"
-void ThreadedTask::cancel() { simulation::threadedTaskEngine.remove(*this); }
+#include "simulation.h"
+#include <algorithm>
+#include <memory>
+#include <cassert>
+void ThreadedTask::cancel() { threadedTaskEngine::remove(*this); }
 
 void threadedTaskEngine::readStep()
 {
@@ -19,25 +23,29 @@ void threadedTaskEngine::insert(std::unique_ptr<ThreadedTask>&& task)
 }
 void threadedTaskEngine::remove(ThreadedTask& task)
 {
-	assert(std::ranges::find(m_tasks, [&](auto& t) { return &t.get() == &task; }) != m_tasks.end());
+	assert(std::ranges::find_if(m_tasks, [&](auto& t) { return t.get() == &task; }) != m_tasks.end());
 	std::erase_if(m_tasks, [&](auto& t) { return &t.get() == &task; });
 }
 
+template<class TaskType>
 template<typename ...Args>
 void HasThreadedTask<TaskType>::create(Args& ...args)
 {
 	assert(m_threadedTask == nullptr);
 	std::unique_ptr<ThreadedTask> task = std::make_unique<TaskType>(args...);
 	m_threadedTask = task.get();
-	simulation::threadedTaskEngine.insert(std::move(task));
+	threadedTaskEngine::insert(std::move(task));
 }
+template<class TaskType>
 void HasThreadedTask<TaskType>::cancel()
 {
 	assert(m_threadedTask != nullptr);
 	m_threadedTask->cancel();
 }
-const bool HasThreadedTask::exists() { return m_threadedTask != nullptr; }
-~HasThreadedTask<TaskType>::HasThreadedTask()
+template<class TaskType>
+ bool HasThreadedTask<TaskType>::exists() const { return m_threadedTask != nullptr; }
+template<class TaskType>
+HasThreadedTask<TaskType>::~HasThreadedTask()
 {
 	if(m_threadedTask != nullptr)
 		m_threadedTask->cancel();

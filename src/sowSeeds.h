@@ -8,68 +8,37 @@
 #include <memory>
 #include <vector>
 
-class SowSeedsEvent : ScheduledEventWithPercent
+class SowSeedsObjective;
+
+class SowSeedsEvent final : public ScheduledEventWithPercent
 {
-	SowSeedsObjective m_sowSeedsObjective;
-	void execute()
-	{
-		Block& location = *m_sowSeedsObjective.m_actor.m_location;
-		const PlantSpecies& plantSpecies = location.m_area->m_hasFarmFields.getPlantSpeciesFor(location);
-		location.m_containsPlants.add(plantSpecies);
-		m_sowSeedsObjective.m_actor.m_hasObjectives.objectiveComplete(m_sowSeedsObjective);
-		location.m_area->m_hasFarmFields.removeAllSowSeedsDesignations(location);
-	}
-	~SowSeedsObjective(){ m_sowSeedsObjective.m_event.clearPointer(); }
+	SowSeedsObjective& m_objective;
+	SowSeedsEvent(uint32_t delay, SowSeedsObjective& o) : ScheduledEventWithPercent(delay), m_objective(o) { }
+	void execute();
+	~SowSeedsEvent();
 };
-class SowSeedsThreadedTask : ThreadedTask
+class SowSeedsThreadedTask final : public ThreadedTask
 {
 	SowSeedsObjective& m_objective;
 	std::vector<Block*> m_result;
 	SowSeedsThreadedTask(SowSeedsObjective& sso): m_objective(sso) { }
-	void readStep()
-	{
-		auto condition = [&](Block* block)
-		{
-			return block->m_hasDesignations.contains(m_objective.m_actor.getPlayer(), BlockDesignation::SowSeeds);
-		};
-		m_result = path::getForActorToPredicate(m_objective.m_actor, condition);
-	}
-	void writeStep()
-	{
-		if(m_result.empty())
-			m_objective.m_actor.m_hasObjectives.cannotCompleteObjective(m_objective);
-		else
-			if(m_result.back()->m_reservable.isFullyReserved())
-				m_objective.m_threadedTask.create(m_objective);
-			else
-			{
-				m_result.back().m_reservable.reserveFor(m_objective.m_actor.m_canReserve);
-				m_actor.setPath(m_result);
-			}
-	}
+	void readStep();
+	void writeStep();
 };
-class SowSeedsObjectiveType : ObjectiveType
+class SowSeedsObjectiveType final : public ObjectiveType
 {
-	bool canBeAssigned(Actor& actor)
-	{
-		return actor.m_location->m_area->m_hasFarmFields.hasSowSeedDesignations();
-	}
-	std::unique_ptr<Objective> makeFor(Actor& actor)
-	{
-		return std::make_unique<SowSeedsObjective>(actor);
-	}
+	bool canBeAssigned(Actor& actor) const;
+	std::unique_ptr<Objective> makeFor(Actor& actor) const;
 };
-class SowSeedsObjective : Objective
+class SowSeedsObjective final : public Objective
 {
 	Actor& m_actor;
 	HasScheduledEvent<SowSeedsEvent> m_event;
 	HasThreadedTask<SowSeedsThreadedTask> m_threadedTask;
+public:
 	SowSeedsObjective(Actor& a) : Objective(Config::sowSeedsPriority), m_actor(a) { }
-	void execute()
-	{
-		if(canSowSeedsAt(*m_actor.m_location))
-			m_event.schedule(Config::SowSeedsStepsDuration, *this);
-		else
-			m_threadedTask.create(*this);
-	}
+	void execute();
+	void cancel() {}
+	friend class SowSeedsEvent;
+	friend class SowSeedsThreadedTask;
 };

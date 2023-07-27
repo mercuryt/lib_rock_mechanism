@@ -63,7 +63,7 @@ ActorQuery ActorQuery::makeFor(Actor& a) { return ActorQuery(&a, 0, false, false
 ActorQuery ActorQuery::makeForCarryWeight(uint32_t cw) { return ActorQuery(nullptr, cw, false, false); }
 
 // To be used by block.
-void HasActors::enter(Actor& actor)
+void BlockHasActors::enter(Actor& actor)
 {
 	assert(!contains(actor));
 	if(actor.m_location != nullptr)
@@ -77,13 +77,13 @@ void HasActors::enter(Actor& actor)
 	m_actors.push_back(&actor);
 	m_block.m_hasShapes.enter(actor);
 }
-void HasActors::exit(Actor& actor)
+void BlockHasActors::exit(Actor& actor)
 {
 	assert(contains(actor));
 	std::erase(m_actors, &actor);
 	m_block.m_hasShapes.exit(actor);
 }
-bool HasActors::contains(Actor& actor) const
+bool BlockHasActors::contains(Actor& actor) const
 {
 	return std::ranges::find(m_actors, &actor) != m_actors.end();
 }

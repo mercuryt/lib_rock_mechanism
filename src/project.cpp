@@ -1,77 +1,50 @@
 #include "project.h"
+#include "path.h"
+#include "block.h"
+#include <algorithm>
 ProjectFinishEvent::ProjectFinishEvent(uint32_t delay, Project& p) : ScheduledEventWithPercent(delay), m_project(p) {}
 void ProjectFinishEvent::execute() { m_project.complete(); }
-~ProjectFinishEvent::ProjectFinishEvent() { m_project.m_finishEvent.clearPointer(); }
+ProjectFinishEvent::~ProjectFinishEvent() { m_project.m_finishEvent.clearPointer(); }
 
-void ProjectGoToAdjacentLocationThreadedTask::readStep()
+void ProjectTryToHaulEvent::execute() { m_project.m_tryToHaulThreadedTask.create(m_project); }
+ProjectTryToHaulEvent::~ProjectTryToHaulEvent() { m_project.m_finishEvent.clearPointer(); }
+
+void ProjectTryToMakeHaulSubprojectThreadedTask::readStep()
 {
-	auto condition = [&](Block* block)
+	for(Actor* actor : m_project.m_waiting)
 	{
-		return block.isAdjacentTo(m_project.m_location) && (!m_reserve || !block.m_reservable.isFullyReserved());
-	}
-	m_route = path::getForActorToPredicate(m_actor, condition);
-}
-void ProjectGoToAdjacentLocationThreadedTask::writeStep()
-{
-	if(m_route == nullptr)
-		m_actor.m_hasObjectives.cannotFulfillObjective();
-	else
-	{
-		if(m_reserve)
-			m_route.back().m_reservable.reserveFor(m_actor.m_canReserve);
-		m_actor.setPath(m_route);
-	}
-}
-ProjectFindItemsThreadedTask::ProjectFindItemsThreadedTask(Project& p, Actor& a) : m_project(p), m_actor(a) { }
-void ProjectFindItemsThreadedTask::readStep()
-{
-	auto condition = [&](Block* block) { return m_project.canGatherItemAt(m_actor, block); };
-	m_route = path::getForActorToPredicate(m_actor, condition);
-}
-void ProjectFindItemsThreadedTask::writeStep()
-{
-	if(m_route.empty())
-		m_actor.m_hasObjectives.cannotFulfillObjective();
-	else
-	{
-		Item* item = m_project.gatherableItemAt(m_actor, *m_route.back());
-		if(item == nullptr)
+		auto condition = [&](Block& block)
 		{
-			m_project.m_workers[&actor].m_findItemTask.create(*this, actor);
+			for(Item* item : block.m_hasItems.getAll())
+				for(auto& [itemQuery, projectItemCounts] : m_project.m_requiredItems)
+					if(projectItemCounts.required >= projectItemCounts.reserved)
+					{
+						m_haulProjectParamaters = HaulSubproject::tryToSetHaulStrategy(m_project, *item, actor);
+						if(m_haulProjectParamaters.strategy != HaulStrategy::None)
+							return true;
+					}
+			return false;
+		};
+		path::getForActorToPredicateReturnEndOnly(actor, condition);
+		// Only make at most one per step.
+		if(m_haulProjectParamaters.strategy != HaulStrategy::None)
 			return;
-		}
-		uint32_t quantity = std::min({m_actor.m_canPickup.canPickupQuantityOf(item), projectItemCounts.required - projectItemCounts.reserved, item->m_reservable.getUnreservedCount()});
-		m_project.m_projectWorkers.at(&m_actor).item = &item;
-		m_project.m_projectWorkers.at(&m_actor).reserveQuantity = quantity;
-		item.reservable.reserveFor(m_actor.m_canReserve, quantity);
-		m_project.m_requiredItems[item.m_itemType].reserved += quantity;
-		m_actor.setPath(m_route);
 	}
 }
-ProjectFindActorsThreadedTask::ProjectFindActorsThreadedTask(Project& p, Actor& a) : m_project(p), m_actor(a) { }
-void ProjectFindActorsThreadedTask::readStep()
+void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep()
 {
-	auto condition = [&](Block* block) { return m_project.canGatherActorAt(m_actor, block); };
-	m_route = path::getForActorToPredicate(m_actor, condition);
-}
-void ProjectFindActorsThreadedTask::writeStep()
-{
-	if(m_route.empty())
-		m_actor.m_hasObjectives.cannotFulfillObjective();
-	else
+	if(m_haulProjectParamaters.strategy == HaulStrategy::None)
+		// Nothing haulable found, wait awhile before we try again.
+		m_project.m_tryToHaulEvent.schedule(Config::stepsFrequencyToLookForHaulSubprojects, m_project);
+	else if(!m_haulProjectParamaters.validate())
 	{
-		Actor* actor = m_project.gatherableActorAt(m_actor, *m_route.back());
-		if(actor == nullptr || actor.m_reservable.isFullyReserved())
-		{
-			// Try again.
-			m_project.m_workers[&actor].m_findActorsTask.create(*this, actor);
-			return;
-		}
-		m_project.m_projectWorkers.at(&m_actor).actor = &actor;
-		actor.reservable.reserveFor(m_actor.m_canReserve);
-		++m_project.m_requiredActors[actor.m_actorType].reserved;
-		m_actor.setPath(m_route);
+		// Something that was avalible during read step is now reserved. Try again, unless we were going to anyway.
+		if(!m_project.m_tryToHaulThreadedTask.exists())
+			m_project.m_tryToHaulThreadedTask.create(m_project);
 	}
+	else
+		// All guards passed, create subproject and dispatch workers.
+		m_project.m_haulSubprojects.emplace_back(m_project, m_haulProjectParamaters);
 }
 void Subproject::onComplete(){ m_project.subprojectComplete(*this); }
 // Derived classes are expected to provide getDelay, getConsumedItems, getUnconsumedItems, getByproducts, and onComplete.
@@ -95,22 +68,23 @@ bool Project::deliveriesComplete() const
 			return false;
 	return true;
 }
-Project::Project(Block& l, size_t mw) : m_gatherComplete(false), m_location(l), maxWorker(mw)
+void Project::recordRequiredActorsAndItemsAndReserveLocation()
 { 
 	for(auto& [itemQuery, quantity] : getConsumed())
-		m_requiredItems.push_back(itemQuery, quantity);
+		m_requiredItems.emplace_back(itemQuery, quantity);
 	for(auto& [itemQuery, quantity] : getUnconsumed())
-		m_requiredItems.push_back(itemQuery, quantity);
+		m_requiredItems.emplace_back(itemQuery, quantity);
 	for(auto& [actorQuery, quantity] : getActors())
-		m_requiredActors.push_back(actorQuery, quantity);
-	m_location.m_reservable.reserveFor(m_canReserve);
+		m_requiredActors.emplace_back(actorQuery, quantity);
+	m_location.m_reservable.reserveFor(m_canReserve, 1);
 }
 void Project::addWorker(Actor& actor)
 {
 	assert(actor.m_project == nullptr);
 	assert(!m_workers.contains(&actor));
 	actor.m_project = this;
-	m_workers.insert(&actor);
+	// Initalize a ProjectWorker for this worker.
+	m_workers[&actor];
 	commandWorker(actor);
 }
 // To be called by Objective::execute.
@@ -118,22 +92,22 @@ void Project::commandWorker(Actor& actor)
 {
 	if(m_workers[&actor].haulSubproject != nullptr)
 		// The worker has been dispatched to fetch an item.
-		m_workers[&actor].haulSubproject.commandWorker(actor);
+		m_workers[&actor].haulSubproject->commandWorker(actor);
 	else
 	{
 		// The worker has not been dispatched to fetch an actor or an item.
 		if(deliveriesComplete())
 		{
 			// All items and actors have been delivered, the worker starts making.
-			if(actor.m_location.isAdjacentTo(m_location))
+			if(actor.m_location->isAdjacentTo(m_location))
 				addToMaking(actor);
 			else
-				m_workers[&actor].m_goToLocationTasks(*this, actor, true);
+				m_workers[&actor].goToTask.create(*this, actor, actor.m_hasObjectives.getCurrent(), true);
 		}
 		else if(reservationsComplete())
 		{
 			// All items and actors have been reserved with other workers dispatched to fetch them, the worker waits for them.
-			if(actor.m_location.isAdjacentTo(m_location))
+			if(actor.m_location->isAdjacentTo(m_location))
 				m_waiting.insert(&actor);
 			else
 				m_workers[&actor].m_goToLocationTasks(*this, actor, true);
@@ -141,37 +115,31 @@ void Project::commandWorker(Actor& actor)
 		}
 		else
 		{
-			// Reservations are not complete, look for a subproject with no workers.
-			for(auto& subproject : m_haulItemSubprojects)
-				if(subproject.m_workers.size() == 0 && tryToBeginItemHaulSubproject(subproject, actor))
-					return;
-			// No subproject found to begin, go to project location and wait.
-			if(actor.m_location.isAdjacentTo(m_location))
-				m_waiting.insert(&actor);
-			else
-				m_workers[&actor].m_goToLocationTasks(*this, actor, true);
+			// Reservations are not complete, try to create a haul subproject unless one exists.
+			if(!m_tryToHaulThreadedTask.exists())
+				m_tryToHaulThreadedTask.create(*this);
 		}
 	}
 }
-// To be called by Objective::interupt.
+// To be called by Objective::cancel.
 void Project::removeWorker(Actor& actor)
 {
 	assert(actor.m_project == this);
 	assert(m_workers.contains(&actor));
 	actor.m_project = nullptr;
-	if(m_projectWorkers[&actor].item != nullptr)
+	if(m_workers[&actor].item != nullptr)
 	{
-		auto& item = *m_projectWorkers[&actor].item;
+		auto& item = *m_workers[&actor].item;
 		--m_requiredItems[item.m_itemType].reserved;
-		if(actor.m_canPickup.m_carrying != nullptr)
+		if(actor.m_canPickup.exists())
 		{
-			assert(actor.m_canPickup.m_carrying == &item);
-			actor.m_canPickup.putDown();
+			assert(actor.m_canPickup.isCarrying(item));
+			actor.m_canPickup.putDown(*actor.m_location);
 		}
 	}
 	if(m_making.contains(&actor))
 		removeFromMaking(actor);
-	m_projectWorkers.remove(&actor);
+	m_workers.remove(&actor);
 }
 void Project::addToMaking(Actor& actor)
 {
@@ -209,58 +177,16 @@ void Project::dismissWorkers()
 void Project::scheduleEvent()
 {
 	m_finishEvent.maybeCancel();
-	uint32_t delay = util::scaleByPercent(getDelay(), 100u - m_digEvent.percentComplete());
+	uint32_t delay = util::scaleByPercent(getDelay(), 100u - m_finishEvent.percentComplete());
 	m_finishEvent.schedule(delay, *this);
-}
-bool Project::canGatherItemAt(Actor& actor, Block& block) const
-{
-	return gatherableItemAt(actor, block) != nullptr;
-}
-Item* Project::gatherableItemAt(Actor& actor, Block& block) const
-{
-	for(const Item* item : block.m_hasItems.get())
-		if(!item->reservable.isFullyReserved())
-			for(auto& [itemQuery, projectItemCounts] : m_requiredItems)
-				if(projectItemCounts.required > projectItemCounts.reserved)
-				{
-					if(itemQuery(*item) && actor.m_hasItems.canPickupAny(*item))
-						return item;
-					if(item->itemType.internalVolume != 0)
-						for(Item* i: item.m_containsItemsOrFluids.getItems())
-							if(!i->m_reservable.isFullyReserved() && itemQuery(*i) && actor.m_hasItems.canPickupAny(*i))
-								return i;
-				}
-	return nullptr;
-}
-bool Project::canGatherActorAt(Actor& actor, Block& block) const
-{
-	return gatherableActorAt(actor, block) != nullptr;
-}
-Actor* Project::gatherableActorAt(Actor& actor, Block& block) const
-{
-	for(const Actor* actor : block.m_hasActors.get())
-		if(!actor->m_reservable.isFullyReserved())
-			for(auto& [actorQuery, projectActorCounts] : m_requiredActors)
-				if(projectActorCounts.required > projectActorCounts.reserved)
-					// TODO: Check animal handeling skill.
-					if(actorQuery(*actor))
-						return actor;
-	return nullptr;
 }
 void Project::subprojectComplete(Subproject& subproject)
 {
 	for(Actor* actor : subproject.m_workers)
 		commandWorker(*actor);
-	m_subprojects.remove(subproject);
+	m_haulSubprojects.remove(subproject);
 }
-bool Project::tryToBeginItemHaulSubproject(Subproject& subproject, Actor& actor)
-{
-	if(actor.m_canPickup.canPickupAny(subproject.m_item))
-	{
-		subproject.set
-	}
-}
-virtual ~Project::Project
+Project::~Project()
 {
 	dismissWorkers();
 }

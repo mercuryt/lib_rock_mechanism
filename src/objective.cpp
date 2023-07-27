@@ -95,11 +95,13 @@ void HasObjectives::addTaskToStart(std::unique_ptr<Objective>&& objective)
 }
 void HasObjectives::cancel(Objective& objective)
 {
+	objective.cancel();
 	auto found = std::find_if(m_needsQueue.begin(), m_needsQueue.end(), [&](auto& o){ return &objective == o.second.get(); });
 	if(found != m_needsQueue.end())
 		m_needsQueue.erase(found);
 	else
-		std::erase_if(m_tasksQueue, [&](auto& o){ return &objective == &o; });
+		std::erase_if(m_tasksQueue, [&](auto& o){ return &objective == o.get(); });
+	m_actor.m_canReserve.clearAll();
 	if(m_currentObjective == &objective)
 		getNext();
 }
@@ -110,4 +112,9 @@ void HasObjectives::objectiveComplete(Objective& objective)
 void HasObjectives::taskComplete()
 {
 	m_currentObjective->execute();
+}
+Objective& HasObjectives::getCurrent() 
+{
+	assert(m_currentObjective != nullptr);
+       	return *m_currentObjective; 
 }

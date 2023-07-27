@@ -93,6 +93,7 @@ public:
 	uint32_t distance(Block& block) const;
 	uint32_t taxiDistance(Block& block) const;
 	bool isAdjacentToAny(std::unordered_set<Block*>& blocks) const;
+	bool isAdjacentTo(Block& block) const;
 	void setNotSolid();
 	void setSolid(const MaterialType& materialType);
 	bool isSolid() const;

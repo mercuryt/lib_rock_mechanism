@@ -42,8 +42,10 @@ public:
 	HasHaulTools m_hasHaulTools;
 	HasDigDesignations m_hasDiggingDesignations;
 	HasConstructionDesignations m_hasConstructionDesignations;
-	HasStockPiles m_hasStockPilingDesignations;
+	HasStockPiles m_hasStockPiles;
 	HasCraftingLocationsAndJobs m_hasCraftingLocationsAndJobs;
+	HasActors m_hasActors;
+	HasSleepingSpots m_hasSleepingSpots;
 	//TODO: HasItems
 	std::list<Item> m_items;
 	//TODO: HasActors

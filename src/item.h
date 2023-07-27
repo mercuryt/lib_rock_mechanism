@@ -14,7 +14,7 @@
 
 struct BodyPartType;
 struct WeaponType;
-struct Item;
+class Item;
 class Area;
 class Actor;
 struct CraftJob;
@@ -105,6 +105,7 @@ public:
 	bool m_installed;
 	CraftJob* m_craftJobForWorkPiece; // Used only for work in progress items.
 	ItemHasCargo m_hasCargo; //TODO: Change to unique_ptr to save some RAM?
+	//TODO: ItemHasOwners
 
 	// Generic.
 	Item(uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t q, CraftJob* cj);
@@ -138,7 +139,7 @@ public:
 	static Item& create(const uint32_t m_id, const ItemType& m_itemType, const MaterialType& m_materialType, std::string m_name, uint32_t m_quality, uint32_t m_percentWear, CraftJob* cj = nullptr);
 	//TODO: Items leave area.
 };
-struct ItemQuery
+class ItemQuery
 {
 public:
 	Item* m_item;
@@ -170,4 +171,5 @@ public:
 	bool hasInstalledItemType(const ItemType& itemType) const;
 	bool hasEmptyContainerWhichCanHoldFluidsCarryableBy(Actor& actor) const;
 	bool hasContainerContainingFluidTypeCarryableBy(Actor& actor, const FluidType& fluidType) const;
+	bool empty() const { return m_items.empty(); }
 };

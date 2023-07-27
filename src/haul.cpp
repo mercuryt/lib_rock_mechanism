@@ -3,12 +3,32 @@
 #include "actor.h"
 #include "item.h"
 #include <unordered_set>
+void CanPickup::pickUp(HasShape& hasShape, uint32_t quantity)
+{
+	if(hasShape.isItem())
+		pickUp(static_cast<Item&>(hasShape), quantity);
+	else
+	{
+		assert(hasShape.isActor());
+		pickUp(static_cast<Actor&>(hasShape), quantity);
+	}
+}
 void CanPickup::pickUp(Item& item, uint32_t quantity)
 {
 	assert(quantity <= item.m_quantity);
+	assert(quantity == 1 || item.m_itemType.generic);
 	item.m_reservable.clearReservationFor(m_actor.m_canReserve);
-	item.exit();
-	m_carrying = &item;
+	if(quantity == item.m_quantity)
+	{
+		m_carrying = &item;
+		item.exit();
+	}
+	else
+	{
+		item.m_quantity -= quantity;
+		Item& newItem = Item::create(*m_actor.m_location->m_area, item.m_itemType, item.m_materialType, quantity);
+		m_carrying = &newItem;
+	}
 	m_actor.m_canMove.updateIndividualSpeed();
 }
 void CanPickup::pickUp(Actor& actor, uint32_t quantity = 1)
@@ -17,7 +37,7 @@ void CanPickup::pickUp(Actor& actor, uint32_t quantity = 1)
 	assert(!actor.isAwake() || actor.isInjured());
 	assert(m_carrying = nullptr);
 	actor.m_reservable.clearReservationFor(m_actor.m_canReserve);
-	actor.m_location->m_hasActors.exit(actor);
+	actor.exit();
 	m_carrying = &actor;
 	m_actor.m_canMove.updateIndividualSpeed();
 }
@@ -50,6 +70,7 @@ void CanPickup::remove(Item& item)
 	assert(m_carrying == &item);
 	m_carrying = nullptr;
 }
+uint32_t CanPickup::canPickupQuantityOf(Item& item) const { return canPickupQuantityOf(item.m_itemType, item.m_materialType); }
 uint32_t CanPickup::canPickupQuantityOf(const ItemType& itemType, const MaterialType& materialType) const
 {
 	uint32_t max = m_actor.m_attributes.getUnencomberedCarryMass();
@@ -84,4 +105,9 @@ uint32_t CanPickup::getMass() const
 		return zero;
 	}
 	return m_carrying->getMass();
+}
+HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters) : Subproject(p), m_toHaul(*paramaters.toHaul), m_quantity(paramaters.quantity), m_destination(*paramaters.destination), m_strategy(paramaters.strategy), m_haulTool(paramaters.haulTool), m_leader(nullptr), m_itemIsMoving(false), m_beastOfBurden(paramaters.beastOfBurden), m_teamMemberInPlaceForHaulCount(0)
+{
+	for(Actor* actor : m_workers)
+		commandWorker(*actor);
 }

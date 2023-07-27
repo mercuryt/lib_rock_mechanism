@@ -19,11 +19,12 @@ class TemperatureSource final
 	Block& m_block;
 	int32_t m_temperature;
 	uint32_t getTemperatureDeltaForRange(uint32_t range);
-	void apply();
 public:
 	TemperatureSource(const int32_t& t, Block& b) : m_block(b), m_temperature(t) { }
-	void setTemperature(int32_t& t);
+	void setTemperature(const int32_t& t);
+	void apply();
 	void unapply();
+	friend class AreaHasTemperature;
 };
 class AreaHasTemperature final
 {

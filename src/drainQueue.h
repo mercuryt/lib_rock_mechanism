@@ -6,7 +6,7 @@
 #include <cstdint>
 
 class FluidGroup;
-class FutureFlowBlock;
+struct FutureFlowBlock;
 class Block;
 
 class DrainQueue : public FluidQueue

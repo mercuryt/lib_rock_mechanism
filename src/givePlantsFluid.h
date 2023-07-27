@@ -30,8 +30,8 @@ class GivePlantsFluidThreadedTask : public ThreadedTask
 };
 class GivePlantsFluidObjectiveType : public ObjectiveType
 {
-	bool canBeAssigned(Actor& actor);
-	std::unique_ptr<Objective> makeFor(Actor& actor);
+	bool canBeAssigned(Actor& actor) const;
+	std::unique_ptr<Objective> makeFor(Actor& actor) const;
 };
 class GivePlantsFluidObjective : public Objective
 {
@@ -42,6 +42,7 @@ class GivePlantsFluidObjective : public Objective
 public:
 	GivePlantsFluidObjective(Actor& a ) : Objective(Config::givePlantsFluidPriority), m_actor(a), m_plant(nullptr) { }
 	void execute();
+	void cancel() {}
 	bool canFillAt(Block& block) const;
 	Block* getAdjacentBlockToFillAt(Block& block) const;
 	bool canFillItemAt(Block& block) const;

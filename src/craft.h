@@ -100,9 +100,10 @@ class CraftObjective final : public Objective
 {
 	Actor& m_actor;
 	const SkillType& m_skillType;
+	CraftJob* m_craftJob;
 	HasThreadedTask<CraftThreadedTask> m_threadedTask;
 public:
-	CraftObjective(Actor& a, const SkillType& st) : Objective(Config::craftObjectivePriority), m_actor(a), m_skillType(st) { }
+	CraftObjective(Actor& a, const SkillType& st) : Objective(Config::craftObjectivePriority), m_actor(a), m_skillType(st), m_craftJob(nullptr) { }
 	void execute();
 	void cancel();
 	friend class CraftThreadedTask;
@@ -122,6 +123,7 @@ public:
 	bool hasLocationsFor(const CraftJobType& craftJobType) const;
 	void addJob(CraftJobType& craftJobType, const MaterialType* materialType, uint32_t minimumSkillLevel = 0);
 	void stepComplete(CraftJob& craftJob, Actor& actor);
+	void stepInterupted(CraftJob& craftJob);
 	void indexUnassigned(CraftJob& craftJob);
 	void unindexAssigned(CraftJob& craftJob);
 	void jobComplete(CraftJob& craftJob);

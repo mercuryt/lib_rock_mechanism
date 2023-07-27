@@ -18,6 +18,9 @@ struct AnimalSpecies
 	std::array<uint32_t, 2> adultAge;
 	uint32_t stepsTillDieWithoutFood;
 	uint32_t stepsTillFullyGrown;
+	uint32_t stepsSleepFrequency;
+	uint32_t stepsTillSleepOveride;
+	uint32_t stepsSleepDuration;
 	const MoveType& moveType;
 	const FluidType& fluidType;
 	std::vector<const Shape*> shapes;

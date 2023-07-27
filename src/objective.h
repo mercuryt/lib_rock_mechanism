@@ -57,5 +57,6 @@ public:
 	void taskComplete();
 	void cannotFulfillObjective(Objective& objective);
 	void cannotCompleteTask();
+	Objective& getCurrent();
 	friend class ObjectiveTypePrioritySet;
 };

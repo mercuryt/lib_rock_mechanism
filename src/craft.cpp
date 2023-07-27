@@ -67,7 +67,10 @@ void CraftThreadedTask::writeStep()
 		if(m_location->m_reservable.isFullyReserved())
 			m_craftObjective.m_threadedTask.create(m_craftObjective);
 		else
+		{
 			m_craftObjective.m_actor.m_location->m_area->m_hasCraftingLocationsAndJobs.makeAndAssignStepProject(*m_craftJob, *m_location, m_craftObjective.m_actor);
+			m_craftObjective.m_craftJob = m_craftJob;
+		}
 }
 bool CraftObjectiveType::canBeAssigned(Actor& actor) const
 {
@@ -88,10 +91,11 @@ std::unique_ptr<Objective> CraftObjectiveType::makeFor(Actor& actor) const
 {
 	return std::make_unique<CraftObjective>(actor, m_skillType);
 }
-void CraftObjective::execute(){ m_threadedTask.create(*this, m_skillType); }
+void CraftObjective::execute(){ m_threadedTask.create(*this); }
 void CraftObjective::cancel()
 {
-
+	if(m_craftJob != nullptr)
+		m_actor.m_location->m_area->m_hasCraftingLocationsAndJobs.stepInterupted(*m_craftJob);
 }
 void HasCraftingLocationsAndJobs::addLocation(std::vector<const CraftStepType*>& craftStepTypes, Block& block)
 {
@@ -144,6 +148,12 @@ void HasCraftingLocationsAndJobs::stepComplete(CraftJob& craftJob, Actor& actor)
 		}
 		indexUnassigned(craftJob);
 	}
+}
+void HasCraftingLocationsAndJobs::stepInterupted(CraftJob& craftJob)
+{
+	craftJob.craftStepProject->cancel();
+	craftJob.craftStepProject = nullptr;
+	indexUnassigned(craftJob);
 }
 void HasCraftingLocationsAndJobs::indexUnassigned(CraftJob& craftJob)
 {

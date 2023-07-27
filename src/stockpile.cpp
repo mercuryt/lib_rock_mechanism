@@ -1,15 +1,18 @@
 #include "stockpile.h"
+#include "block.h"
+#include "area.h"
+#include "path.h"
 // Searches for an Item and destination to make a hauling project for m_objective.m_actor.
 void StockPileThreadedTask::readStep()
 {
-	auto itemCondition = [&](Block* block)
+	auto itemCondition = [&](Block& block)
 	{
-		return m_objective.m_actor.m_location->m_area->m_hasStockPiles.getHaulableItemForAt(m_objective.m_actor, *block) != nullptr;
+		return m_objective.m_actor.m_location->m_area->m_hasStockPiles.getHaulableItemForAt(m_objective.m_actor, block) != nullptr;
 	};
 	Block* location = path::getForActorToPredicateReturnEndOnly(m_objective.m_actor, itemCondition);
 	if(location == nullptr)
 		return;
-	m_item = m_objective.m_actor.m_location->m_area->m_hasStockPiles.getHaulableItemForAt(m_objective.m_actor, *m_location);
+	m_item = m_objective.m_actor.m_location->m_area->m_hasStockPiles.getHaulableItemForAt(m_objective.m_actor, *location);
 	assert(m_item != nullptr);
 	auto destinationCondition = [&](Block* block)
 	{
@@ -23,32 +26,32 @@ void StockPileThreadedTask::writeStep()
 	if(m_item == nullptr)
 		m_objective.m_actor.m_hasObjectives.cannotFulfillObjective(m_objective);
 	else
-		m_objective.m_actor.m_location->m_area->m_hasStockPiles.makeProject(m_item, m_destination, m_objective.m_actor);
+		m_objective.m_actor.m_location->m_area->m_hasStockPiles.makeProject(*m_item, *m_destination, m_objective.m_actor);
 }
-bool StockPileObjectiveType::canBeAssigned(Actor& actor)
+bool StockPileObjectiveType::canBeAssigned(Actor& actor) const
 {
 	return actor.m_location->m_area->m_hasStockPiles.isAnyHaulingAvalableFor(actor);
 }
-std::unique_ptr<ObjectiveType> StockPileObjectiveType::makeFor(Actor& actor)
+std::unique_ptr<Objective> StockPileObjectiveType::makeFor(Actor& actor) const
 {
 	return std::make_unique<StockPileObjective>(actor);
 }
 void StockPileObjective::execute() 
 { 
 	// If there is no project to work on dispatch a threaded task to either find one or call cannotFulfillObjective.
-	if(m_project == nullptr);
-	m_threadedTask.create(*this); 
+	if(m_project == nullptr)
+		m_threadedTask.create(*this); 
 	else
-		m_project.commandWorker(m_actor);
+		m_project->commandWorker(m_actor);
 }
 uint32_t StockPileProject::getDelay() const { return Config::addToStockPileDelaySteps; }
 void StockPileProject::onComplete()
 {
 	assert(m_workers.size() == 1);
-	m_workers.begin()->m_canPickup.putDown(m_destination);
+	m_workers.begin()->first->m_canPickup.putDown(m_location);
 }
-std::vector<std::pair<ItemQuery, uint32_t> StockPileProject::getConsumed() const { return {}; }
-std::vector<std::pair<ItemQuery, uint32_t> StockPileProject::getUnconsumed() const { return {m_item, 1}; }
+std::vector<std::pair<ItemQuery, uint32_t>> StockPileProject::getConsumed() const { return {}; }
+std::vector<std::pair<ItemQuery, uint32_t>> StockPileProject::getUnconsumed() const { return {{m_item, 1}}; }
 std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> StockPileProject::getByproducts() const {return {}; }
 bool StockPile::accepts(Item& item)
 {
@@ -74,24 +77,24 @@ void StockPile::removeBlock(Block* block)
 	block->m_isPartOfStockPile.clearStockPile();
 	if(block->m_isPartOfStockPile.getIsAvalable())
 		decrementOpenBlocks();
-	m_blocks.remove(block);
+	m_blocks.erase(block);
 }
 void StockPile::incrementOpenBlocks()
 {
 	++m_openBlocks;
 	if(m_openBlocks == 1)
-		m_hasStockPiles.setAvalable(*this);
+		m_area.m_hasStockPiles.setAvalable(*this);
 }
 void StockPile::decrementOpenBlocks()
 {
 	--m_openBlocks;
 	if(m_openBlocks == 0)
-		m_hasStockPiles.setUnavalable(*this);
+		m_area.m_hasStockPiles.setUnavalable(*this);
 }
 void BlockIsPartOfStockPile::setStockPile(StockPile& stockPile)
 {
 	assert(m_stockPile == nullptr);
-	m_stockPile = stockPile;
+	m_stockPile = &stockPile;
 }
 void BlockIsPartOfStockPile::clearStockPile()
 {
@@ -104,7 +107,7 @@ bool BlockIsPartOfStockPile::hasStockPile() const
 }
 StockPile& BlockIsPartOfStockPile::getStockPile()
 {
-	return m_stockPile;
+	return *m_stockPile;
 }
 void BlockIsPartOfStockPile::setAvalable()
 {
@@ -125,13 +128,13 @@ void HasStockPiles::addStockPile(std::vector<ItemQuery>&& queries)
 {
 	StockPile& stockPile = m_stockPiles.emplace_back(std::move(queries));
 	for(ItemQuery& itemQuery : stockPile.m_queries)
-		m_stockPilesByItemType[itemQuery.itemType].insert(&stockPile);
+		m_availableStockPilesByItemType[itemQuery.m_itemType].insert(&stockPile);
 }
 void HasStockPiles::removeStockPile(StockPile& stockPile)
 {
 	assert(stockPile.m_blocks.empty());
-	for(ItemQuery& itemQuery : stockPiles.m_queries)
-		m_stockPilesByItemType[itemQuery.itemType].remove(&stockPile);
+	for(ItemQuery& itemQuery : stockPile.m_queries)
+		m_availableStockPilesByItemType[itemQuery.m_itemType].erase(&stockPile);
 	m_stockPiles.remove(stockPile);
 }
 bool HasStockPiles::isValidStockPileDestinationFor(Block& block, Item& item) const
@@ -164,45 +167,45 @@ void HasStockPiles::removeItem(Item& item)
 		assert(m_stockPilesByItemWithDestination.contains(&item));
 		m_itemsWithDestinationsByStockPile[m_stockPilesByItemWithDestination.at(&item)].remove(item);
 		m_stockPilesByItemWithDestination.remove(&item);
-		m_projectsByItem.remove(&item);
+		m_projectsByItem.erase(&item);
 	}
 }
 void HasStockPiles::setAvalable(StockPile& stockPile)
 {
-	assert(!m_itemsWithDestinationsByStockPile.contains(stockPile);
-			for(ItemQuery& itemQuery : stockPile.m_queries)
-			{
-			assert(itemQuery.itemType != nullptr);
-			m_avalableStockPilesByItemType[itemQuery.itemType].insert(&stockPile);
-			if(m_itemsWithoutDestinationsByItemType.contains(itemQuery.itemType))
+	assert(!m_itemsWithDestinationsByStockPile.contains(&stockPile));
+	for(ItemQuery& itemQuery : stockPile.m_queries)
+	{
+		assert(itemQuery.m_itemType != nullptr);
+		m_availableStockPilesByItemType[itemQuery.m_itemType].insert(&stockPile);
+		if(m_itemsWithoutDestinationsByItemType.contains(itemQuery.m_itemType))
 			for(Item* item : m_itemsWithoutDestinationsByItemType.at(itemQuery.itemType))
-			if(stockPile.accepts(*item))
-			{
-			m_stockPilesByItemWithDestination[&item] = stockPile;
-			m_itemsWithDestinationsByStockPile[&stockPile].insert(item);
-			//TODO: remove item from items without destinations by item type.
-			}
-			}
-			}
-			void HasStockPiles::setUnavalable(StockPile& stockPile)
-			{
-
-			for(ItemQuery& itemQuery : stockPile.m_queries)
-			m_avalableStockPilesByItemType.remove(&stockPile);
-			for(Item& item : m_itemsWithDestinationsByStockPile.at(stockPile))
-			{
-				m_stockPilesByItemWithDestination.remove(&item);
-				StockPile* newStockPile = getStockPileFor(item);
-				if(newStockPile == nullptr)
+				if(stockPile.accepts(*item))
 				{
-					m_itemsWithoutDestinationsByItemType.insert(&item);
-					m_projectsByItem.remove(&item);
+					m_stockPilesByItemWithDestination[&item] = stockPile;
+					m_itemsWithDestinationsByStockPile[&stockPile].insert(item);
+					//TODO: remove item from items without destinations by item type.
 				}
-				else
-					m_itemsWithDestinationsByStockPile[newStockPile].insert(&item);
-			}
-			m_itemsWithDestinationsByStockPile.remove(&stockPile);
-			}
+	}
+}
+void HasStockPiles::setUnavalable(StockPile& stockPile)
+{
+
+	for(ItemQuery& itemQuery : stockPile.m_queries)
+		m_availableStockPilesByItemType.at(itemQuery.m_itemType).erase(&stockPile);
+	for(Item* item : m_itemsWithDestinationsByStockPile.at(&stockPile))
+	{
+		m_stockPilesByItemWithDestination.remove(item);
+		StockPile* newStockPile = getStockPileFor(*item);
+		if(newStockPile == nullptr)
+		{
+			m_itemsWithoutDestinationsByItemType.insert(&item);
+			m_projectsByItem.remove(&item);
+		}
+		else
+			m_itemsWithDestinationsByStockPile[newStockPile].insert(&item);
+	}
+	m_itemsWithDestinationsByStockPile.remove(&stockPile);
+}
 void HasStockPiles::makeProject(Item& item, Block& destination, Actor& actor)
 {
 	assert(!m_projectsByItem.contains(item));

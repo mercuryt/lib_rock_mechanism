@@ -1,5 +1,7 @@
 #pragma once
 
+#include "block.h"
+
 #include <unordered_set>
 #include <vector>
 #include <cassert>
@@ -8,13 +10,14 @@ struct XYZ {
 	int32_t x; 
 	int32_t y; 
 	int32_t z;
+	XYZ(int32_t ax, int32_t ay, int32_t az) : x(ax), y(ay), z(az) { }
 	bool operator==(const XYZ& xyz) const
 	{
 		return xyz.x == x && xyz.y == y && xyz.z == z;
 	}
-	XYZ operator+(const XYZ& xyz) const
+	XYZ operator+(const XYZ& other) const
 	{
-		return XYZ(x + xyz.x, y + xyz.y, z + xyz.z);
+		return XYZ(x + other.x, y + other.y, z + other.z);
 	}
 };
 struct XYZHash
@@ -29,8 +32,8 @@ struct XYZHash
 };
 inline std::unordered_set<XYZ, XYZHash> closedList;
 inline std::vector<std::vector<XYZ>> cache;
-
-inline constexpr std::array<XYZ, 6> offsets = { XYZ(0,0,-1), XYZ(0,0,1), XYZ(0,-1,0), XYZ(0,1,0), XYZ(-1,0,0), XYZ(1,0,0) };
+//TODO: make constexpr?
+inline static std::array<XYZ, 6> offsets = { XYZ(0,0,-1), XYZ(0,0,1), XYZ(0,-1,0), XYZ(0,1,0), XYZ(-1,0,0), XYZ(1,0,0) };
 
 inline std::vector<XYZ> getNthAdjacentOffsets(uint32_t n)
 {
@@ -58,7 +61,6 @@ inline std::vector<XYZ> getNthAdjacentOffsets(uint32_t n)
 	return cache.at(n);
 }
 
-	template<class Block>
 std::vector<Block*> getNthAdjacentBlocks(Block& center, uint32_t i)
 {
 	std::vector<Block*> output;

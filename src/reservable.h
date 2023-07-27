@@ -6,13 +6,16 @@
 #pragma once
 //TODO: Use vector instead of unordered set.
 #include <unordered_set>
+#include <unordered_map>
 #include <cassert>
+#include <cstdint>
 class Reservable;
 class CanReserve final
 {
 	friend class Reservable;
 	std::unordered_set<Reservable*> m_reservables;
 public:
+	void clearAll();
 	~CanReserve();
 };
 class Reservable final
@@ -21,6 +24,11 @@ class Reservable final
 	std::unordered_map<CanReserve*, uint32_t> m_canReserves;
 	uint32_t m_maxReservations;
 	uint32_t m_reservedCount;
+	void eraseReservationFor(CanReserve& canReserve)
+	{
+		m_reservedCount -= m_canReserves[&canReserve];
+		m_canReserves.erase(&canReserve);
+	}
 public:
 	Reservable(uint32_t mr) : m_maxReservations(mr) {}
 	~Reservable()
@@ -43,8 +51,7 @@ public:
        	{
 		assert(m_canReserves.contains(&canReserve));
 		assert(m_canReserves[&canReserve] >= m_reservedCount);
-		m_reservedCount -= m_canReserves[&canReserve];
-		m_canReserves.erase(&canReserve);
+		eraseReservationFor(canReserve);
 		assert(canReserve.m_reservables.contains(this));
 		canReserve.m_reservables.erase(this);
 	}
@@ -54,8 +61,10 @@ public:
 		return m_maxReservations - m_reservedCount;
 	}
 };
-inline CanReserve::~CanReserve()
+inline CanReserve::~CanReserve() { clearAll(); }
+inline void CanReserve::clearAll()
 {
 	for(Reservable* reservable : m_reservables)
-		reservable->m_canReserves.erase(this);
+		reservable->eraseReservationFor(*this);
+	m_reservables.clear();
 }

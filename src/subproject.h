@@ -4,6 +4,7 @@ class Project;
 class Actor;
 class Subproject
 {
+protected:
 	Project& m_project;
 public:
 	std::unordered_set<Actor*> m_workers;

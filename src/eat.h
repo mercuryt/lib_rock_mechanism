@@ -75,5 +75,6 @@ public:
 	bool m_noEatingLocationFound;
 	EatObjective(Actor& a);
 	void execute();
+	void cancel() {}
 	bool canEatAt(Block& block);
 };

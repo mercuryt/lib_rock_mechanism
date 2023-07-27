@@ -95,7 +95,8 @@ namespace Config
 	 constexpr uint32_t stepsPerMinute = stepsPerSecond * secondsPerMinute;
 	 constexpr uint32_t stepsPerHour = stepsPerMinute * minutesPerHour;
 	 constexpr uint32_t stepsPerDay = stepsPerHour * hoursPerDay;
-
-
+	 constexpr uint32_t sleepObjectivePriority = 50;
+	 constexpr uint32_t minimumHaulSpeed = 3;
+	 constexpr uint32_t stepsFrequencyToLookForHaulSubprojects = 20;
 	 uint32_t convertBodyPartVolumeToArea(uint32_t volume){ return sqrt(volume); }
 }

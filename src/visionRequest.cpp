@@ -1,23 +1,27 @@
+#include "visionRequest.h"
+#include "area.h"
+#include "actor.h"
 #include <algorithm>
 #include <cmath>
+
 // Static method.
 void VisionRequest::readSteps(std::vector<VisionRequest>::iterator begin, std::vector<VisionRequest>::iterator end)
 {
 	for(; begin != end; ++begin)
 		begin->readStep();
 }
-VisionRequest::VisionRequest(DerivedActor& a) : m_actor(a) {}
+VisionRequest::VisionRequest(Actor& a) : m_actor(a) {}
 void VisionRequest::readStep()
 {
-	m_actor.m_location->m_area->m_locationBuckets.processVisionRequest(*this);
+	m_actor.m_location->m_area->m_actorLocationBuckets.processVisionRequest(*this);
 	// This is a more elegant solution then passing the request to location buckets but is also slower.
 	 /*
 	uint32_t range = m_actor.getVisionRange() * Config::maxDistanceVisionModifier;
-	for(DerivedActor& actor : m_actor.m_location->m_area->m_locationBuckets.inRange(*m_actor.m_location, range))
+	for(Actor& actor : m_actor.m_location->m_area->m_locationBuckets.inRange(*m_actor.m_location, range))
 	{
 		assert(!actor.m_blocks.empty());
 		if(m_actor.canSee(actor))
-			for(const DerivedBlock* to : actor.m_blocks)
+			for(const Block* to : actor.m_blocks)
 				if(to->taxiDistance(m_actor.m_location) <= range)
 					if(hasLineOfSight(*to, *m_actor.m_location))
 					{
@@ -32,14 +36,14 @@ void VisionRequest::writeStep()
 {
 	m_actor.doVision(std::move(m_actors));
 }
-bool VisionRequest::hasLineOfSight(const DerivedBlock& to, const DerivedBlock& from)
+bool VisionRequest::hasLineOfSight(const Block& to, const Block& from)
 {
 	if(to.m_area->m_visionCuboidsActive)
 		return hasLineOfSightUsingVisionCuboidAndEstablishedAs(to, from);
 	else
 		return hasLineOfSightUsingEstablishedAs(to, from);
 }
-bool VisionRequest::hasLineOfSightUsingVisionCuboidAndEstablishedAs(const DerivedBlock& from, const DerivedBlock& to)
+bool VisionRequest::hasLineOfSightUsingVisionCuboidAndEstablishedAs(const Block& from, const Block& to)
 {
 	// Iterate line of sight blocks backwards to make the most of the 'established as having' opitimization.
 	assert(from.m_area->m_visionCuboidsActive);
@@ -64,13 +68,13 @@ bool VisionRequest::hasLineOfSightUsingVisionCuboidAndEstablishedAs(const Derive
 	float yCumulative = 0;
 	float zCumulative = 0;
 	m_lineOfSight.clear();
-	const DerivedBlock* previous = &to;
+	const Block* previous = &to;
 	while(true)
 	{
 		xCumulative += xDiffNormalized;
 		yCumulative += yDiffNormalized;
 		zCumulative += zDiffNormalized;
-		DerivedBlock* block = to.offset(std::round(xCumulative), std::round(yCumulative), std::round(zCumulative));
+		Block* block = to.offset(std::round(xCumulative), std::round(yCumulative), std::round(zCumulative));
 		if(!block->canSeeThroughFrom(*previous))
 			return false;
 		m_lineOfSight.push_back(block);
@@ -83,7 +87,7 @@ bool VisionRequest::hasLineOfSightUsingVisionCuboidAndEstablishedAs(const Derive
 		previous = block;
 	}
 }
-bool VisionRequest::hasLineOfSightUsingEstablishedAs(const DerivedBlock& from, const DerivedBlock& to)
+bool VisionRequest::hasLineOfSightUsingEstablishedAs(const Block& from, const Block& to)
 {
 	// Iterate line of sight blocks backwards to make the most of the 'established as having' opitimization.
 	if(from == to)
@@ -100,13 +104,13 @@ bool VisionRequest::hasLineOfSightUsingEstablishedAs(const DerivedBlock& from, c
 	float yCumulative = 0;
 	float zCumulative = 0;
 	m_lineOfSight.clear();
-	const DerivedBlock* previous = &to;
+	const Block* previous = &to;
 	while(true)
 	{
 		xCumulative += xDiffNormalized;
 		yCumulative += yDiffNormalized;
 		zCumulative += zDiffNormalized;
-		DerivedBlock* block = to.offset(std::round(xCumulative), std::round(yCumulative), std::round(zCumulative));
+		Block* block = to.offset(std::round(xCumulative), std::round(yCumulative), std::round(zCumulative));
 		if(!block->canSeeThroughFrom(*previous))
 			return false;
 		m_lineOfSight.push_back(block);
@@ -120,7 +124,7 @@ bool VisionRequest::hasLineOfSightUsingEstablishedAs(const DerivedBlock& from, c
 	}
 }
 // Static method.
-bool VisionRequest::hasLineOfSightUsingVisionCuboid(const DerivedBlock& from, const DerivedBlock& to)
+bool VisionRequest::hasLineOfSightUsingVisionCuboid(const Block& from, const Block& to)
 {
 	assert(from.m_area->m_visionCuboidsActive);
 	if(from.m_visionCuboid == to.m_visionCuboid)
@@ -141,13 +145,13 @@ bool VisionRequest::hasLineOfSightUsingVisionCuboid(const DerivedBlock& from, co
 	float xCumulative = 0;
 	float yCumulative = 0;
 	float zCumulative = 0;
-	const DerivedBlock* previous = &to;
+	const Block* previous = &to;
 	while(true)
 	{
 		xCumulative += xDiffNormalized;
 		yCumulative += yDiffNormalized;
 		zCumulative += zDiffNormalized;
-		DerivedBlock* block = to.offset(std::round(xCumulative), std::round(yCumulative), std::round(zCumulative));
+		Block* block = to.offset(std::round(xCumulative), std::round(yCumulative), std::round(zCumulative));
 		if(!block->canSeeThroughFrom(*previous))
 			return false;
 		if(block == &from)
@@ -156,7 +160,7 @@ bool VisionRequest::hasLineOfSightUsingVisionCuboid(const DerivedBlock& from, co
 	}
 }
 // Static method.
-bool VisionRequest::hasLineOfSightBasic(const DerivedBlock& from, const DerivedBlock& to)
+bool VisionRequest::hasLineOfSightBasic(const Block& from, const Block& to)
 {
 	//TODO: Can we reduce repetition here?
 	assert(from != to);
@@ -171,13 +175,13 @@ bool VisionRequest::hasLineOfSightBasic(const DerivedBlock& from, const DerivedB
 	float xCumulative = 0;
 	float yCumulative = 0;
 	float zCumulative = 0;
-	const DerivedBlock* previous = &to;
+	const Block* previous = &to;
 	while(true)
 	{
 		xCumulative += xDiffNormalized;
 		yCumulative += yDiffNormalized;
 		zCumulative += zDiffNormalized;
-		DerivedBlock* block = to.offset(std::round(xCumulative), std::round(yCumulative), std::round(zCumulative));
+		Block* block = to.offset(std::round(xCumulative), std::round(yCumulative), std::round(zCumulative));
 		if(!block->canSeeThroughFrom(*previous))
 			return false;
 		if(block == &from)

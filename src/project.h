@@ -23,40 +23,26 @@ public:
 	void execute();
 	~ProjectFinishEvent();
 };
-class ProjectGoToAdjacentLocationThreadedTask : public ThreadedTask
+class ProjectTryToHaulEvent : public ScheduledEventWithPercent
 {
 	Project& m_project;
-	Actor& m_actor;
-	bool m_reserve; // Set reserve to true for going to a position to start making, set to false for going to drop off materials.
-	std::vector<Block*> m_route;
 public:
-	ProjectGoToAdjacentLocationThreadedTask(Project& p, Actor& a, bool r) : m_project(p), m_actor(a), m_reserve(r) { }
-	void readStep();
-	void writeStep();
+	ProjectTryToHaulEvent(uint32_t delay, Project& p) : ScheduledEventWithPercent(delay), m_project(p) { }
+	void execute();
+	~ProjectTryToHaulEvent();
 };
-class ProjectFindItemsThreadedTask : public ThreadedTask
+class ProjectTryToMakeHaulSubprojectThreadedTask : public ThreadedTask
 {
 	Project& m_project;
-	Actor& m_actor;
-	std::vector<Block*> m_route;
+	HaulSubprojectParamaters m_haulProjectParamaters;
+	bool m_result;
 public:
-	ProjectFindItemsThreadedTask(Project& p, Actor& a): m_project(p), m_actor(a) { }
-	void readStep();
-	void writeStep();
-};
-class ProjectFindActorsThreadedTask : public ThreadedTask
-{
-	Project& m_project;
-	Actor& m_actor;
-	std::vector<Block*> m_route;
-public:
-	ProjectFindActorsThreadedTask(Project& p, Actor& a);
+	ProjectTryToMakeHaulSubprojectThreadedTask(Project& p) : m_project(p) { }
 	void readStep();
 	void writeStep();
 };
 struct ProjectWorker
 {
-	HasThreadedTask<ProjectGoToAdjacentLocationThreadedTask> goToTask;
 	Subproject* haulSubproject;
 	ProjectWorker() : haulSubproject(nullptr) { }
 };
@@ -71,6 +57,8 @@ struct ProjectItemCounts
 class Project
 {
 	HasScheduledEventPausable<ProjectFinishEvent> m_finishEvent;
+	HasScheduledEvent<ProjectTryToHaulEvent> m_tryToHaulEvent;
+	HasThreadedTask<ProjectTryToMakeHaulSubprojectThreadedTask> m_tryToHaulThreadedTask;
 	bool m_gatherComplete;
 	Block& m_location;
 	CanReserve m_canReserve;
@@ -84,10 +72,10 @@ protected:
 	std::unordered_map<Actor*, ProjectWorker> m_workers;
 	std::unordered_set<Actor*> m_waiting;
 	std::unordered_set<Actor*> m_making;
-	std::list<HaulSubproject<Item>> m_haulItemSubprojects;
-	std::list<HaulSubproject<Actor>> m_haulActorSubprojects;
+	std::list<HaulSubproject> m_haulSubprojects;
 	Project(Block& l, size_t mw) : m_gatherComplete(false), m_location(l), m_maxWorkers(mw) { }
 public:
+	void recordRequiredActorsAndItemsAndReserveLocation();
 	void addWorker(Actor& actor);
 	// To be called by Objective::execute.
 	void commandWorker(Actor& actor);
@@ -99,8 +87,11 @@ public:
 	void cancel();
 	void dismissWorkers();
 	void scheduleEvent();
+	void createHaulSubproject(HaulSubprojectParamaters haulSubprojectParamaters);
+	// TODO: minimum speed decreses with failed attempts to generate haul subprojects.
+	bool getMinimumHaulSpeed() const { return Config::minimumHaulSpeed; }
 	bool canGatherItemAt(Actor& actor, Block& block) const;
-	Item* gatherableItemAt(Actor& actor, Block& block) const;
+	std::pair<Item*, ProjectItemCounts*> gatherableItemAtWithProjectItemCounts(Actor& actor, Block& block) const;
 	bool canGatherActorAt(Actor& actor, Block& block) const;
 	Actor* gatherableActorAt(Actor& actor, Block& block) const;
 	void subprojectComplete(Subproject& subproject);
@@ -114,4 +105,11 @@ public:
 	virtual std::vector<std::pair<ActorQuery, uint32_t>> getActors() const = 0;
 	Block& getLocation() const { return m_location; }
 	virtual ~Project();
+	friend class ProjectFinishEvent;
+	friend class ProjectTryToHaulEvent;
+	friend class ProjectGoToAdjacentLocationThreadedTask;
+	friend class ProjectFindItemsThreadedTask;
+	friend class ProjectFindActorsThreadedTask;
+	friend class ProjectTryToMakeHaulSubprojectThreadedTask;
+	friend class HaulSubproject;
 };

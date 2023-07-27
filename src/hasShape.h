@@ -35,6 +35,7 @@ public:
 	virtual uint32_t getMass() const = 0;
 	virtual uint32_t getVolume() const = 0;
 	virtual void setLocation(Block& block) = 0;
+	virtual void exit() = 0;
 	virtual const MoveType& getMoveType() const = 0;
 	friend class BlockHasShapes;
 };

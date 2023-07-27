@@ -5,8 +5,7 @@
 #include "area.h"
 Plant::Plant(Block& l, const PlantSpecies& pt, uint32_t pg) : m_location(l), m_fluidSource(nullptr), m_plantSpecies(pt), m_percentGrown(pg), m_quantityToHarvest(0), m_percentFoliage(100), m_reservable(1), m_volumeDrinkRequested(0)
 {
-	assert(m_location.plantTypeCanGrow(m_plantSpecies));
-	m_location.m_plants.push_back(this);
+	assert(m_location.m_hasPlant.canGrowHere(m_plantSpecies));
 	m_fluidEvent.schedule(m_plantSpecies.stepsNeedsFluidFrequency, *this);
 	updateGrowingStatus();
 }
@@ -19,10 +18,9 @@ void Plant::die()
 	m_foliageGrowthEvent.maybeUnschedule();
 	//TODO: Create rot away event.
 }
-void Plant::applyTemperatureChange(uint32_t oldTemperature, uint32_t newTemperature)
+void Plant::setTemperature(uint32_t temperature)
 {
-	(void)oldTemperature;
-	if(newTemperature >= m_plantSpecies.minimumGrowingTemperature && newTemperature <= m_plantSpecies.maximumGrowingTemperature)
+	if(temperature >= m_plantSpecies.minimumGrowingTemperature && temperature <= m_plantSpecies.maximumGrowingTemperature)
 	{
 		if(m_temperatureEvent.exists())
 			m_temperatureEvent.unschedule();
@@ -58,7 +56,7 @@ void Plant::setMaybeNeedsFluid()
 	{
 		m_volumeDrinkRequested = util::scaleByPercent(m_plantSpecies.volumeFluidConsumed, getGrowthPercent());
 		stepsTillNextFluidEvent = m_plantSpecies.stepsTillDieWithoutFluid;
-		m_location.m_isPartOfFarmField.designateForGiveFluidIfPartOfFarmField;
+		m_location.m_isPartOfFarmField.designateForGiveFluidIfPartOfFarmField(*this);
 	}
 	m_fluidEvent.schedule(stepsTillNextFluidEvent, *this);
 	updateGrowingStatus();
@@ -91,9 +89,10 @@ void Plant::setDayOfYear(uint32_t dayOfYear)
 }
 void Plant::setQuantityToHarvest()
 {
-	m_endOfHarvestEvent.schedule(m_plantSpecies.harvestData->daysDuration * Config::stepsPerDay, *this);
+	uint32_t delay = m_plantSpecies.harvestData->daysDuration * Config::stepsPerDay;
+	m_endOfHarvestEvent.schedule(delay, *this);
 	m_quantityToHarvest = util::scaleByPercent(m_plantSpecies.harvestData->itemQuantity, getGrowthPercent());
-	m_location.m_isPartOfFarmField.designateForHarvestIfPartOfField(m_plantSpecies);
+	m_location.m_isPartOfFarmField.designateForHarvestIfPartOfFarmField(*this);
 }
 void Plant::harvest(uint32_t quantity)
 {
