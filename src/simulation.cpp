@@ -4,7 +4,7 @@
 void simulation::doStep()
 {
 	for(Area& area : areas)
-		area.readStep(pool);
+		area.readStep();
 	threadedTaskEngine::readStep();
 	pool.wait_for_tasks();
 	for(Area& area : areas)

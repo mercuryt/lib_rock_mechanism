@@ -37,6 +37,7 @@ public:
 	virtual void setLocation(Block& block) = 0;
 	virtual void exit() = 0;
 	virtual const MoveType& getMoveType() const = 0;
+	virtual uint32_t singleUnitMass() const = 0;
 	friend class BlockHasShapes;
 };
 class BlockHasShapes

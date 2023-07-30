@@ -19,7 +19,7 @@ struct HaulSubprojectParamaters
 	uint32_t quantity;
 	Block* destination;
 	HaulStrategy strategy;
-	Block* toHaulLocation;
+	Block* toHaulLocation; // TODO: unnessesary?
 	std::vector<Actor*> workers;
 	Item* haulTool;
 	Actor* beastOfBurden;
@@ -34,7 +34,6 @@ class HaulSubproject : public Subproject
 	Block& m_destination;
 	HaulStrategy m_strategy;
 	Block* m_toHaulLocation;
-	std::unordered_set<Actor*> m_workers;
 	std::unordered_set<Actor*> m_nonsentients;
 	Item* m_haulTool;
 	std::unordered_map<Actor*, Block*> m_liftPoints; // Used by Team strategy.
@@ -49,7 +48,14 @@ public:
 	void addWorker(Actor& actor);
 	void removeWorker(Actor& actor);
 	void cancel();
+	HasShape& getToHaul() { return m_toHaul; }
 	static HaulSubprojectParamaters tryToSetHaulStrategy(Project& project, HasShape& hasShape, Actor& worker);
+	static std::vector<Actor*> actorsNeededToHaulAtMinimumSpeed(Project& proect, Actor& leader, HasShape& toHaul, std::unordered_set<Actor*> waiting);
+	static uint32_t getSpeedWithHaulToolAndCargo(Actor& leader, Item& haulTool, HasShape& toHaul);
+	static uint32_t getSpeedWithHaulToolAndYokedAndCargo(Actor& leader, Actor& yoked, Item& haulTool, HasShape& toHaul);
+	static std::vector<Actor*> actorsNeededToHaulAtMinimumSpeedWithTool(Project& project, Actor& leader, HasShape& toHaul, Item& haulTool, std::unordered_set<Actor*> waiting);
+	static uint32_t getSpeedWithPannierBearerAndPanniers(Actor& leader, Actor& yoked, Item& haulTool, HasShape& toHaul);
+	bool operator==(const HaulSubproject& other) const { return &other == this; }
 };
 // Used by Actor for individual haul strategy only. Other strategies use lead/follow.
 class CanPickup
@@ -68,8 +74,12 @@ public:
 	void removeFluidVolume(uint32_t volume);
 	void add(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity);
 	void remove(Item& item);
+	uint32_t canPickupQuantityOf(HasShape& hasShape) const;
 	uint32_t canPickupQuantityOf(Item& item) const;
+	uint32_t canPickupQuantityOf(Actor& actor) const;
 	uint32_t canPickupQuantityOf(const ItemType& itemType, const MaterialType& materialType) const;
+	uint32_t canPickupQuantityWithSingeUnitMass(uint32_t unitMass) const;
+	bool canPickupAny(HasShape& hasShape) const { return canPickupQuantityOf(hasShape) != 0; }
 	bool isCarrying(const HasShape& hasShape) const { return (void*)&hasShape == (void*)&m_carrying; }
 	bool isCarryingFluidType(const FluidType& fluidType) const;
 	const uint32_t& getFluidVolume() const;
@@ -77,6 +87,7 @@ public:
 	bool isCarryingEmptyContainerWhichCanHoldFluid() const;
 	uint32_t getMass() const;
 	bool exists() const { return m_carrying != nullptr; }
+	uint32_t speedIfCarryingAny(HasShape& hasShape) const;
 };
 // For Area.
 class HasHaulTools

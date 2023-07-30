@@ -21,6 +21,8 @@
 #include "reservable.h"
 #include "body.h"
 #include "temperature.h"
+#include "buckets.h"
+#include "locationBuckets.h"
 
 #include <string>
 #include <vector>
@@ -75,7 +77,7 @@ public:
 	bool canMove() const;
 	void die(CauseOfDeath causeOfDeath);
 	void passout(uint32_t duration);
-	void doVision();
+	void doVision(std::unordered_set<Actor*> actors);
 	uint32_t getMass() const;
 	uint32_t getVolume() const;
 	void removeMassFromCorpse(uint32_t mass);
@@ -94,7 +96,6 @@ struct ActorQuery
 	static ActorQuery makeFor(Actor& a);
 	static ActorQuery makeForCarryWeight(uint32_t cw);
 };
-// To be used by block.
 class BlockHasActors
 {
 	Block& m_block;
@@ -103,8 +104,28 @@ public:
 	BlockHasActors(Block& b) : m_block(b) { }
 	void enter(Actor& actor);
 	void exit(Actor& actor);
+	void setTemperature(uint32_t temperature);
 	bool canStandIn() const;
 	bool contains(Actor& actor) const;
 	uint32_t volumeOf(Actor& actor) const;
 	std::vector<Actor*>& getAll() { return m_actors; }
+};
+class AreaHasActors
+{
+	std::unordered_set<Actor*> m_actors;
+	std::unordered_set<Actor*> m_onSurface;
+	std::vector<VisionRequest> m_visionRequestQueue;
+public:
+	LocationBuckets m_locationBuckets;
+	Buckets<Actor, Config::actorDoVisionInterval> m_visionBuckets;
+	AreaHasActors(Area& a) : m_locationBuckets(a) { }
+	// Add to m_actors, m_locationBuckets, m_visionBuckets and possibly m_onSurface.
+	// Run after initial location has been assigned.
+	void add(Actor& actor);
+	void remove(Actor& actor);
+	// Update temperatures for all actors on surface.
+	void onChangeAmbiantSurfaceTemperature();
+	// Generate vision request queue and dispatch tasks.
+	void processVisionReadStep();
+	void processVisionWriteStep();
 };

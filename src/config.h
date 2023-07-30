@@ -98,5 +98,10 @@ namespace Config
 	 constexpr uint32_t sleepObjectivePriority = 50;
 	 constexpr uint32_t minimumHaulSpeed = 3;
 	 constexpr uint32_t stepsFrequencyToLookForHaulSubprojects = 20;
+	 constexpr uint32_t stepsToWaitWhenCannotExitArea = 200;
+	 constexpr uint32_t maxZLevelForDeepAmbiantTemperature = 100;
+	 constexpr uint32_t deepAmbiantTemperature = 295;
+	 constexpr uint32_t undergroundAmbiantTemperature = 284;
+	 constexpr uint32_t stockPilePriority = 100;
 	 uint32_t convertBodyPartVolumeToArea(uint32_t volume){ return sqrt(volume); }
 }

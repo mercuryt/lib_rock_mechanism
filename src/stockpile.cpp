@@ -14,11 +14,11 @@ void StockPileThreadedTask::readStep()
 		return;
 	m_item = m_objective.m_actor.m_location->m_area->m_hasStockPiles.getHaulableItemForAt(m_objective.m_actor, *location);
 	assert(m_item != nullptr);
-	auto destinationCondition = [&](Block* block)
+	auto destinationCondition = [&](Block& block)
 	{
-		return block->m_isPartOfStockPile.m_isAvalable && block->m_isPartOfStockPile.accepts(m_item);
+		return block.m_isPartOfStockPile.m_isAvalable && block.m_isPartOfStockPile.getStockPile().accepts(*m_item);
 	};
-	m_destination = path::getForActorFromToPredicateReturnEndOnly(m_objective.m_actor, location, destinationCondition);
+	m_destination = path::getForActorFromLocationToPredicateReturnEndOnly(m_objective.m_actor, *location, destinationCondition);
 	assert(m_destination != nullptr);
 }
 void StockPileThreadedTask::writeStep()
@@ -126,7 +126,7 @@ void BlockIsPartOfStockPile::setUnavalable()
 bool BlockIsPartOfStockPile::getIsAvalable() const { return !m_block.m_reservable.isFullyReserved() && m_block.m_hasItems.empty(); }
 void HasStockPiles::addStockPile(std::vector<ItemQuery>&& queries)
 {
-	StockPile& stockPile = m_stockPiles.emplace_back(std::move(queries));
+	StockPile& stockPile = m_stockPiles.emplace_back(queries, m_area);
 	for(ItemQuery& itemQuery : stockPile.m_queries)
 		m_availableStockPilesByItemType[itemQuery.m_itemType].insert(&stockPile);
 }
@@ -145,28 +145,27 @@ bool HasStockPiles::isValidStockPileDestinationFor(Block& block, Item& item) con
 		return false;
 	if(!block.m_isPartOfStockPile.hasStockPile())
 		return false;
-	return accepts(block.m_isPartOfStockPile.getStockPile, item);
+	return block.m_isPartOfStockPile.getStockPile().accepts(item);
 }
 void HasStockPiles::addItem(Item& item)
 {
 	StockPile* stockPile = getStockPileFor(item);
 	if(stockPile == nullptr)
-		m_itemsWithoutDestinations.insert(&item);
+		m_itemsWithoutDestinationsByItemType.at(&item.m_itemType).insert(&item);
 	else
 	{
 		m_itemsWithDestinationsByStockPile[stockPile].insert(&item);
-		m_stockPilesByItemWithDestination[&item] = stockPile;
 	}
 }
 void HasStockPiles::removeItem(Item& item)
 {
-	if(m_itemsWithoutDestinations.contains(&item))
-		m_itemsWithoutDestinations.remove(&item);
+	if(m_itemsWithoutDestinationsByItemType.at(&item.m_itemType).contains(&item))
+		m_itemsWithoutDestinationsByItemType.at(&item.m_itemType).erase(&item);
 	else
 	{
-		assert(m_stockPilesByItemWithDestination.contains(&item));
-		m_itemsWithDestinationsByStockPile[m_stockPilesByItemWithDestination.at(&item)].remove(item);
-		m_stockPilesByItemWithDestination.remove(&item);
+		assert(m_itemsWithDestinations.contains(&item));
+		m_itemsWithDestinations.erase(&item);
+		assert(m_projectsByItem.contains(&item));
 		m_projectsByItem.erase(&item);
 	}
 }
@@ -178,10 +177,9 @@ void HasStockPiles::setAvalable(StockPile& stockPile)
 		assert(itemQuery.m_itemType != nullptr);
 		m_availableStockPilesByItemType[itemQuery.m_itemType].insert(&stockPile);
 		if(m_itemsWithoutDestinationsByItemType.contains(itemQuery.m_itemType))
-			for(Item* item : m_itemsWithoutDestinationsByItemType.at(itemQuery.itemType))
+			for(Item* item : m_itemsWithoutDestinationsByItemType.at(itemQuery.m_itemType))
 				if(stockPile.accepts(*item))
 				{
-					m_stockPilesByItemWithDestination[&item] = stockPile;
 					m_itemsWithDestinationsByStockPile[&stockPile].insert(item);
 					//TODO: remove item from items without destinations by item type.
 				}
@@ -194,35 +192,35 @@ void HasStockPiles::setUnavalable(StockPile& stockPile)
 		m_availableStockPilesByItemType.at(itemQuery.m_itemType).erase(&stockPile);
 	for(Item* item : m_itemsWithDestinationsByStockPile.at(&stockPile))
 	{
-		m_stockPilesByItemWithDestination.remove(item);
+		m_projectsByItem.erase(item);
 		StockPile* newStockPile = getStockPileFor(*item);
 		if(newStockPile == nullptr)
 		{
-			m_itemsWithoutDestinationsByItemType.insert(&item);
-			m_projectsByItem.remove(&item);
+			m_itemsWithoutDestinationsByItemType.at(&item->m_itemType).insert(item);
+			m_projectsByItem.erase(item);
 		}
 		else
-			m_itemsWithDestinationsByStockPile[newStockPile].insert(&item);
+			m_itemsWithDestinationsByStockPile[newStockPile].insert(item);
 	}
-	m_itemsWithDestinationsByStockPile.remove(&stockPile);
+	m_itemsWithDestinationsByStockPile.erase(&stockPile);
 }
 void HasStockPiles::makeProject(Item& item, Block& destination, Actor& actor)
 {
-	assert(!m_projectsByItem.contains(item));
-	assert(!destination.m_isPartOfStockPile.empty());
+	assert(!m_projectsByItem.contains(&item));
+	assert(!destination.m_isPartOfStockPile.hasStockPile());
 	assert(destination.m_isPartOfStockPile.getIsAvalable());
-	m_projectsByItem[item] = std::make_unique<StockPileProject>(destination, item);
-	m_projectsByItem[item]->addWorker(actor);	
+	m_projectsByItem.try_emplace(&item, destination, item);
+	m_projectsByItem.at(&item).addWorker(actor);	
 }
 void HasStockPiles::cancelProject(StockPileProject& project)
 {
-	m_projectsByItem.remove(project.item);
+	m_projectsByItem.erase(&project.m_item);
 }
 bool HasStockPiles::isAnyHaulingAvalableFor(Actor& actor) const
 {
 	for(auto& pair : m_itemsWithDestinationsByStockPile)
 		for(Item* item : pair.second)
-			if(actor.m_hasItems.canPickupAny(item))
+			if(actor.m_canPickup.canPickupAny(*item))
 				return true;
 	return false;
 }
@@ -230,17 +228,17 @@ Item* HasStockPiles::getHaulableItemForAt(Actor& actor, Block& block)
 {
 	if(block.m_reservable.isFullyReserved())
 		return nullptr;
-	for(Item& item : block.m_hasItems.get())
-		if(!item.m_reservable.isFullyReserved() && actor.m_hasItems.canPickupAny(item) && m_itemsWithDestinations.contains(block))
-			return &item;
+	for(Item* item : block.m_hasItems.getAll())
+		if(!item->m_reservable.isFullyReserved() && actor.m_canPickup.canPickupAny(*item) && m_itemsWithDestinations.contains(item))
+			return item;
 	return nullptr;
 }
 StockPile* HasStockPiles::getStockPileFor(Item& item) const
 {
-	if(!m_stockPilesByItemType.contains(item.itemType))
+	if(!m_availableStockPilesByItemType.contains(&item.m_itemType))
 		return nullptr;
-	for(StockPile* stockPile : m_avalableStockPilesByItemType.at(item.itemType))
-		if(accepts(*stockPile, item))
+	for(StockPile* stockPile : m_availableStockPilesByItemType.at(&item.m_itemType))
+		if(stockPile->accepts(item))
 			return stockPile;
 	return nullptr;
 }

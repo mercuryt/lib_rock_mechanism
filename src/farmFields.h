@@ -39,9 +39,6 @@ class HasFarmFieldsForFaction
 	bool m_plantsNeedingFluidIsSorted;
 public:
 	HasFarmFieldsForFaction(Faction& p) : m_faction(p) { }
-	bool hasGivePlantsFluidDesignations() const;
-	bool hasSowSeedsDesignations() const;
-	const PlantSpecies& getPlantTypeFor(Block& block) const;
 	void addGivePlantFluidDesignation(Plant& plant);
 	void removeGivePlantFluidDesignation(Plant& plant);
 	void addSowSeedsDesignation(Block& block);
@@ -59,6 +56,9 @@ public:
 	void undesignateBlocks(std::unordered_set<Block*>& blocks);
 	Plant* getHighestPriorityPlantForGiveFluid();
 	bool hasHarvestDesignations() const;
+	bool hasGivePlantsFluidDesignations() const;
+	bool hasSowSeedsDesignations() const;
+	const PlantSpecies& getPlantSpeciesFor(Block& block) const;
 };
 // To be used by Area.
 class HasFarmFields
@@ -69,6 +69,9 @@ public:
 	void registerFaction(Faction& faction);
 	void unregisterFaction(Faction& faction);
 	Plant* getHighestPriorityPlantForGiveFluid(Faction& faction);
+	void removeAllSowSeedsDesignations(Block& block);
 	bool hasGivePlantsFluidDesignations(Faction& faction) const;
 	bool hasHarvestDesignations(Faction& faction) const;
+	bool hasSowSeedsDesignations(Faction& faction) const;
+	const PlantSpecies& getPlantSpeciesFor(Faction& faction, Block& location) const;
 };

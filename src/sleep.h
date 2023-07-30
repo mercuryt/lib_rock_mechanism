@@ -3,6 +3,7 @@
 #include "eventSchedule.h"
 #include "threadedTask.h"
 #include "objective.h"
+#include "config.h"
 
 #include <vector>
 
@@ -62,10 +63,10 @@ public:
 };
 class SleepObjective final : public Objective
 {
-	MustSleep& m_needsSleep;
+	Actor& m_actor;
 	HasThreadedTask<SleepThreadedTask> m_threadedTask;
 public:
-	SleepObjective(MustSleep& ns);
+	SleepObjective(Actor& a) : Objective(Config::sleepObjectivePriority), m_actor(a) { }
 	void execute();
 	void cancel() {}
 	uint32_t desireToSleepAt(Block& block);

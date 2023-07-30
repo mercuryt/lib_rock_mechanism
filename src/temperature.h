@@ -12,6 +12,7 @@ class Block;
 class Area;
 class FluidGroup;
 class Actor;
+struct FluidType;
 
 // Increases and lowers nearby temperature.
 class TemperatureSource final
@@ -56,14 +57,16 @@ public:
 	BlockHasTemperature(Block& b) : m_block(b) { }
 	void addDelta(const uint32_t& delta) { setDelta(m_delta + delta); }
 	void subtractDelta(const uint32_t& delta) { setDelta(m_delta - delta); }
-	uint32_t getTemperature() const { return m_delta + getAmbientTemperature(); }
+	void freeze(const FluidType& fluidType);
+	void melt();
+	uint32_t get() const { return m_delta + getAmbientTemperature(); }
 };
 class ActorNeedsSafeTemperature
 {
 	Actor& m_actor;
 public:
 	ActorNeedsSafeTemperature(Actor& a) : m_actor(a) { }
-	void setTemperature(uint32_t temperature);
-	void callback();
-	bool isSafe() const;
+	void onChange();
+	bool isSafe(uint32_t temperature) const;
+	bool isSafeAtCurrentLocation() const;
 };

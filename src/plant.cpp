@@ -223,3 +223,8 @@ void HasPlants::erase(Plant& plant)
 {
 	std::erase_if(m_plants, [&](Plant& p) { return &p == &plant; });
 }
+void HasPlants::onChangeAmbiantSurfaceTemperature()
+{
+	for(Plant* plant : m_plantsOnSurface)
+		plant->setTemperature(plant->m_location.m_blockHasTemperature.get());
+}

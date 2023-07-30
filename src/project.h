@@ -7,6 +7,7 @@
 #include "subproject.h"
 #include "haul.h"
 #include "item.h"
+#include "actor.h"
 
 #include <vector>
 #include <utility>
@@ -43,7 +44,7 @@ public:
 };
 struct ProjectWorker
 {
-	Subproject* haulSubproject;
+	HaulSubproject* haulSubproject;
 	ProjectWorker() : haulSubproject(nullptr) { }
 };
 struct ProjectItemCounts
@@ -60,7 +61,6 @@ class Project
 	HasScheduledEvent<ProjectTryToHaulEvent> m_tryToHaulEvent;
 	HasThreadedTask<ProjectTryToMakeHaulSubprojectThreadedTask> m_tryToHaulThreadedTask;
 	bool m_gatherComplete;
-	Block& m_location;
 	CanReserve m_canReserve;
 	std::vector<std::pair<ItemQuery, ProjectItemCounts>> m_requiredItems;
 	std::vector<std::pair<ActorQuery, ProjectItemCounts>> m_requiredActors;
@@ -69,11 +69,12 @@ class Project
 	bool reservationsComplete() const;
 	bool deliveriesComplete() const;
 protected:
+	Block& m_location;
 	std::unordered_map<Actor*, ProjectWorker> m_workers;
 	std::unordered_set<Actor*> m_waiting;
 	std::unordered_set<Actor*> m_making;
 	std::list<HaulSubproject> m_haulSubprojects;
-	Project(Block& l, size_t mw) : m_gatherComplete(false), m_location(l), m_maxWorkers(mw) { }
+	Project(Block& l, size_t mw) : m_gatherComplete(false), m_maxWorkers(mw),  m_location(l) { }
 public:
 	void recordRequiredActorsAndItemsAndReserveLocation();
 	void addWorker(Actor& actor);
@@ -94,7 +95,7 @@ public:
 	std::pair<Item*, ProjectItemCounts*> gatherableItemAtWithProjectItemCounts(Actor& actor, Block& block) const;
 	bool canGatherActorAt(Actor& actor, Block& block) const;
 	Actor* gatherableActorAt(Actor& actor, Block& block) const;
-	void subprojectComplete(Subproject& subproject);
+	void haulSubprojectComplete(HaulSubproject& haulSubproject);
 	bool tryToBeginItemHaulSubproject(Subproject& subproject, Actor& actor);
 	virtual uint32_t getDelay() const = 0;
 	virtual void onComplete() = 0;

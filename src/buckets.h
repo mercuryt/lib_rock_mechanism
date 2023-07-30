@@ -1,5 +1,7 @@
 #pragma once
 #include <cstdint>
+#include <array>
+#include <vector>
 template<typename T, uint32_t turnsPerCycle>
 class Buckets
 {

@@ -13,7 +13,7 @@ LocationBuckets::LocationBuckets(Area& area) : m_area(area)
 			m_buckets[x][y].resize(m_maxZ);
 	}
 }
-std::unordered_set<Actor*>& LocationBuckets::getBucketFor(const Block& block)
+std::unordered_set<Actor*>* LocationBuckets::getBucketFor(const Block& block)
 {
 	uint32_t bucketX = block.m_x / Config::locationBucketSize;
 	uint32_t bucketY = block.m_y / Config::locationBucketSize;
@@ -21,7 +21,7 @@ std::unordered_set<Actor*>& LocationBuckets::getBucketFor(const Block& block)
 	assert(m_buckets.size() > bucketX);
 	assert(m_buckets.at(bucketX).size() > bucketY);
 	assert(m_buckets.at(bucketX).at(bucketY).size() > bucketZ);
-	return m_buckets[bucketX][bucketY][bucketZ];
+	return &m_buckets[bucketX][bucketY][bucketZ];
 }
 void LocationBuckets::insert(Actor& actor)
 {

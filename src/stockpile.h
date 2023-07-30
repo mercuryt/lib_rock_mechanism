@@ -40,21 +40,22 @@ public:
 	Actor& m_actor;
 	HasThreadedTask<StockPileThreadedTask> m_threadedTask;
 	StockPileProject* m_project;
-	StockPileObjective(uint32_t priority, Actor& a) : Objective(priority), m_actor(a) { }
+	StockPileObjective(Actor& a) : Objective(Config::stockPilePriority), m_actor(a) { }
 	void execute();
 	void cancel() { }
 };
 class StockPileProject final : public Project
 {
 	Item& m_item;
-	StockPileProject(Block& block, Item& item) : Project(block, 1), m_item(item) { }
 public:
+	StockPileProject(Block& block, Item& item) : Project(block, 1), m_item(item) { }
 	uint32_t getDelay() const;
 	void onComplete();
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
 	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
+	friend class HasStockPiles;
 };
 class StockPile
 {
@@ -70,6 +71,7 @@ public:
 	void incrementOpenBlocks();
 	void decrementOpenBlocks();
 	friend class HasStockPiles;
+	bool operator==(const StockPile& other) const { return &other == this; }
 };
 class BlockIsPartOfStockPile
 {
@@ -80,21 +82,24 @@ public:
 	BlockIsPartOfStockPile(Block& b) : m_block(b), m_stockPile(nullptr), m_isAvalable(true) { }
 	void setStockPile(StockPile& stockPile);
 	void clearStockPile();
-	bool hasStockPile() const;
 	StockPile& getStockPile();
 	void setAvalable();
 	void setUnavalable();
+	bool hasStockPile() const;
 	bool getIsAvalable() const;
+	friend class StockPileThreadedTask;
 };
 class HasStockPiles
 {
+	Area& m_area;
 	std::list<StockPile> m_stockPiles;
 	std::unordered_map<const ItemType*, std::unordered_set<StockPile*>> m_availableStockPilesByItemType;
-	std::unordered_set<const ItemType*, Item*> m_itemsWithoutDestinationsByItemType;
+	std::unordered_map<const ItemType*, std::unordered_set<Item*>> m_itemsWithoutDestinationsByItemType;
 	std::unordered_set<Item*> m_itemsWithDestinations;
 	std::unordered_map<StockPile*, std::unordered_set<Item*>> m_itemsWithDestinationsByStockPile;
 	std::unordered_map<Item*, StockPileProject> m_projectsByItem;
 public:
+	HasStockPiles(Area& a) : m_area(a) { }
 	void addStockPile(std::vector<ItemQuery>&& queries);
 	void removeStockPile(StockPile& stockPile);
 	bool isValidStockPileDestinationFor(Block& block, Item& item) const;
@@ -107,4 +112,5 @@ public:
 	bool isAnyHaulingAvalableFor(Actor& actor) const;
 	Item* getHaulableItemForAt(Actor& actor, Block& block);
 	StockPile* getStockPileFor(Item& item) const;
+	friend class StockPileThreadedTask;
 };

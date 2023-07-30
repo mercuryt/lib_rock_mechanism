@@ -16,9 +16,16 @@
 #include <algorithm>
 #include <cassert>
 
-Block::Block() : m_solid(nullptr), m_totalFluidVolume(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr), m_exposedToSky(true), m_underground(false), m_hasShapes(*this), m_reservable(1), m_hasPlant(*this), m_hasBlockFeatures(*this), m_hasActors(*this), m_hasItems(*this), m_isPartOfStockPile(*this), m_isPartOfFarmField(*this), m_blockHasTemperature(*this) {}
+Block::Block() : m_solid(nullptr), m_totalFluidVolume(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr), m_exposedToSky(true), m_underground(false), m_outdoors(true), m_hasShapes(*this), m_reservable(1), m_hasPlant(*this), m_hasBlockFeatures(*this), m_hasActors(*this), m_hasItems(*this), m_isPartOfStockPile(*this), m_isPartOfFarmField(*this), m_blockHasTemperature(*this) {}
 void Block::setup(Area& a, uint32_t ax, uint32_t ay, uint32_t az)
-{m_area=&a;m_x=ax;m_y=ay;m_z=az;m_locationBucket = &m_area->m_actorLocationBuckets.getBucketFor(*this);}
+{
+	m_area=&a;
+	m_x=ax;
+	m_y=ay;
+	m_z=az;
+	m_locationBucket = m_area->m_hasActors.m_locationBuckets.getBucketFor(*this);
+	m_isEdge = (m_x == 0 || m_x == (m_area->m_sizeX - 1) ||  m_y == 0 || m_y == (m_area->m_sizeY - 1) || m_z == 0 || m_z == (m_area->m_sizeZ - 1) );
+}
 void Block::recordAdjacent()
 {
 	static const int32_t offsetsList[6][3] = {{0,0,-1}, {0,-1,0}, {-1,0,0}, {0,1,0}, {1,0,0}, {0,0,1}};
@@ -333,6 +340,33 @@ bool Block::isSolid() const
 const MaterialType& Block::getSolidMaterial() const
 {
 	return *m_solid;
+}
+bool Block::canSeeIntoFromAlways(const Block& block) const
+{
+	if(isSolid() && !getSolidMaterial().transparent)
+		return false;
+	if(m_hasBlockFeatures.contains(BlockFeatureType::door))
+		return false;
+	// looking up.
+	if(m_z > block.m_z)
+	{
+		const BlockFeature* floor = m_hasBlockFeatures.at(BlockFeatureType::floor);
+		if(floor != nullptr && !floor->materialType->transparent)
+			return false;
+		if(m_hasBlockFeatures.contains(BlockFeatureType::hatch))
+			return false;
+	}
+	// looking down.
+	if(m_z < block.m_z)
+	{
+		const BlockFeature* floor = block.m_hasBlockFeatures.at(BlockFeatureType::floor);
+		if(floor != nullptr && !floor->materialType->transparent)
+			return false;
+		const BlockFeature* hatch = block.m_hasBlockFeatures.at(BlockFeatureType::hatch);
+		if(hatch != nullptr && !hatch->materialType->transparent)
+			return false;
+	}
+	return true;
 }
 void Block::moveContentsTo(Block& block)
 {

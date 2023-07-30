@@ -58,7 +58,7 @@ public:
 	void remove(const BlockFeatureType& blockFeatueType);
 	void construct(const BlockFeatureType& blockFeatueType, const MaterialType& materialType);
 	void hew(const BlockFeatureType& blockFeatueType);
-	void setTemperature(uint32_t temperature);
+	void setTemperature(uint32_t temperature); //TODO
 	bool blocksEntrance() const;
 	bool canStandAbove() const;
 	bool canStandIn() const;

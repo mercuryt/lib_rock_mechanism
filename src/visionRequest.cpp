@@ -13,7 +13,7 @@ void VisionRequest::readSteps(std::vector<VisionRequest>::iterator begin, std::v
 VisionRequest::VisionRequest(Actor& a) : m_actor(a) {}
 void VisionRequest::readStep()
 {
-	m_actor.m_location->m_area->m_actorLocationBuckets.processVisionRequest(*this);
+	m_actor.m_location->m_area->m_hasActors.m_locationBuckets.processVisionRequest(*this);
 	// This is a more elegant solution then passing the request to location buckets but is also slower.
 	 /*
 	uint32_t range = m_actor.getVisionRange() * Config::maxDistanceVisionModifier;

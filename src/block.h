@@ -17,13 +17,13 @@
 #include "shape.h"
 #include "visionCuboid.h"
 #include "fluidGroup.h"
-#include "fire.h"
 #include "plant.h"
 #include "blockFeature.h"
 #include "designations.h"
 #include "stockpile.h"
 #include "farmFields.h"
 #include "temperature.h"
+#include "fire.h"
 #include "hasShape.h"
 
 class Area;
@@ -67,14 +67,16 @@ public:
 	std::unique_ptr<Fire> m_fire;
 	bool m_exposedToSky;
 	bool m_underground;
+	bool m_isEdge;
+	bool m_outdoors;
 	BlockHasShapes m_hasShapes;
 	Reservable m_reservable;
 	HasPlant m_hasPlant;
 	HasBlockFeatures m_hasBlockFeatures;
-	HasActors m_hasActors;
+	BlockHasActors m_hasActors;
 	BlockHasItems m_hasItems;
 	HasDesignations m_hasDesignations;
-	IsPartOfStockPile m_isPartOfStockPile;
+	BlockIsPartOfStockPile m_isPartOfStockPile;
 	IsPartOfFarmField m_isPartOfFarmField;
 	BlockHasTemperature m_blockHasTemperature;
 
@@ -98,6 +100,7 @@ public:
 	void setSolid(const MaterialType& materialType);
 	bool isSolid() const;
 	const MaterialType& getSolidMaterial() const;
+	bool canSeeIntoFromAlways(const Block& block) const;
 	void moveContentsTo(Block& block);
 	uint32_t getMass() const;
 	// Get block at offset coordinates. Can return nullptr.

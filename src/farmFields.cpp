@@ -64,7 +64,7 @@ bool HasFarmFieldsForFaction::hasSowSeedsDesignations() const
 {
 	return !m_blocksNeedingSeedsSewn.empty();
 }
-const PlantSpecies& HasFarmFieldsForFaction::getPlantTypeFor(Block& block) const
+const PlantSpecies& HasFarmFieldsForFaction::getPlantSpeciesFor(Block& block) const
 {
 	for(const FarmField& farmField : m_farmFields)
 		if(farmField.blocks.contains(&block))
@@ -214,8 +214,21 @@ Plant* HasFarmFields::getHighestPriorityPlantForGiveFluid(Faction& faction)
 	assert(m_data.contains(&faction));
 	return m_data.at(&faction).getHighestPriorityPlantForGiveFluid();
 }
+void HasFarmFields::removeAllSowSeedsDesignations(Block& block)
+{
+	for(auto& pair : m_data)
+		pair.second.removeSowSeedsDesignation(block);
+}
 bool HasFarmFields::hasGivePlantsFluidDesignations(Faction& faction) const
 {
 	assert(m_data.contains(&faction));
 	return m_data.at(&faction).hasGivePlantsFluidDesignations();
+}
+bool HasFarmFields::hasSowSeedsDesignations(Faction& faction) const
+{
+	return m_data.at(&faction).hasSowSeedsDesignations();
+}
+const PlantSpecies& HasFarmFields::getPlantSpeciesFor(Faction& faction, Block& location) const
+{
+	return m_data.at(&faction).getPlantSpeciesFor(location);
 }

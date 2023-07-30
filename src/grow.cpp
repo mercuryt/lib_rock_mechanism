@@ -8,7 +8,7 @@ CanGrow::CanGrow(Actor& a, uint32_t pg) : m_actor(a), m_percentGrown(pg)
 }
 void CanGrow::updateGrowingStatus()
 {
-	if(m_percentGrown != 100 && !m_actor.m_mustEat.needsFood() && !m_actor.m_mustDrink.needsFluid() && m_actor.m_needsSafeTemperature.isSafe())
+	if(m_percentGrown != 100 && !m_actor.m_mustEat.needsFood() && !m_actor.m_mustDrink.needsFluid() && m_actor.m_needsSafeTemperature.isSafeAtCurrentLocation())
 	{
 		if(!m_event.exists())
 		{

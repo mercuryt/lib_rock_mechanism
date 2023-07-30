@@ -167,4 +167,5 @@ class HasPlants
 public:
 	void emplace(Block& location, const PlantSpecies& species, uint32_t percentGrowth);
 	void erase(Plant& plant);
+	void onChangeAmbiantSurfaceTemperature();
 };

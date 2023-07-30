@@ -124,19 +124,19 @@ namespace path
 		return output; // Empty container means no result found.
 	}
 	template<typename Predicate>
-	Block* getForActorToPredicateReturnEndOnly(Actor& actor, Predicate&& predicate, const uint32_t& maxRange = UINT32_MAX)
+	Block* getForActorFromLocationToPredicateReturnEndOnly(Actor& actor, Block& location, Predicate&& predicate, const uint32_t& maxRange = UINT32_MAX)
 	{
 		std::unordered_set<Block*> closedList;
-		closedList.insert(actor.m_location);
+		closedList.insert(&location);
 		std::list<RouteNode*> openList;
 		std::list<RouteNode> routeNodes;
-		routeNodes.emplace_back(*actor.m_location, nullptr);
+		routeNodes.emplace_back(location, nullptr);
 		openList.push_back(&routeNodes.back());
 		while(!openList.empty())
 		{
 			for(RouteNode* routeNode : openList)
 			{
-				if(maxRange > actor.m_location->taxiDistance(routeNode->block))
+				if(maxRange > location.taxiDistance(routeNode->block))
 					continue;
 				if(predicate(routeNode->block))
 					return &routeNode->block;
@@ -157,5 +157,10 @@ namespace path
 			}
 		}
 		return nullptr;
+	}
+	template<typename Predicate>
+	Block* getForActorToPredicateReturnEndOnly(Actor& actor, Predicate&& predicate, const uint32_t& maxRange = UINT32_MAX)
+	{
+		return getForActorFromLocationToPredicateReturnEndOnly(actor, *actor.m_location, predicate, maxRange);
 	}
 }

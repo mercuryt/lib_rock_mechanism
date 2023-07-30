@@ -17,7 +17,7 @@ BlockFeature* HasBlockFeatures::at(const BlockFeatureType& blockFeatureType)
 }
 const BlockFeature* HasBlockFeatures::at(const BlockFeatureType& blockFeatureType) const
 {
-	return const_cast<const HasBlockFeatures&>(*this).at(blockFeatureType);
+	return const_cast<HasBlockFeatures&>(*this).at(blockFeatureType);
 }
 void HasBlockFeatures::remove(const BlockFeatureType& blockFeatureType)
 {

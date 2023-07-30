@@ -19,12 +19,12 @@ void threadedTaskEngine::writeStep()
 }
 void threadedTaskEngine::insert(std::unique_ptr<ThreadedTask>&& task)
 {
-	m_tasks.insert(task);
+	m_tasks.insert(std::move(task));
 }
 void threadedTaskEngine::remove(ThreadedTask& task)
 {
 	assert(std::ranges::find_if(m_tasks, [&](auto& t) { return t.get() == &task; }) != m_tasks.end());
-	std::erase_if(m_tasks, [&](auto& t) { return &t.get() == &task; });
+	std::erase_if(m_tasks, [&](auto& t) { return t.get() == &task; });
 }
 
 template<class TaskType>

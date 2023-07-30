@@ -36,4 +36,6 @@ public:
 	HasShape& getFollower() const;
 	uint32_t getMoveSpeed() const;
 	friend class CanFollow;
+	static uint32_t getMoveSpeedForGroupWithAddedMass(std::vector<HasShape*>& actorsAndItems, uint32_t addedRollingMass = 0, uint32_t addedDeadMass = 0);
+	static uint32_t getMoveSpeedForGroup(std::vector<HasShape*>& actorsAndItems) { return getMoveSpeedForGroupWithAddedMass(actorsAndItems); }
 };

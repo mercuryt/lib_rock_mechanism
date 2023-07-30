@@ -16,16 +16,14 @@ void CanLead::onMove()
 bool CanLead::isFollowerKeepingUp() const { return m_hasShape.isAdjacentTo(m_canFollow->m_hasShape); }
 bool CanLead::isLeading() const { return m_canFollow != nullptr; }
 HasShape& CanLead::getFollower() const { return m_canFollow->m_hasShape; }
-uint32_t CanLead::getMoveSpeed() const
+// Class method.
+uint32_t CanLead::getMoveSpeedForGroupWithAddedMass(std::vector<HasShape*>& actorsAndItems, uint32_t addedRollingMass, uint32_t addedDeadMass)
 {
-	assert(!m_hasShape.m_canFollow.isFollowing());
-	assert(m_hasShape.m_canLead.isLeading());
-	uint32_t rollingMass = 0;
-	uint32_t deadMass = 0;
+	uint32_t rollingMass = addedRollingMass;
+	uint32_t deadMass = addedDeadMass;
 	uint32_t carryMass = 0;
 	uint32_t lowestMoveSpeed = 0;
-	HasShape* hasShape = &m_hasShape;
-	while(true)
+	for(HasShape* hasShape : actorsAndItems)
 	{
 		if(hasShape->isItem())
 		{
@@ -59,6 +57,21 @@ uint32_t CanLead::getMoveSpeed() const
 	if(ratio > Config::massCarryMinimumMovementRatio)
 		return 0;
 	return lowestMoveSpeed / ratio;
+}
+uint32_t CanLead::getMoveSpeed() const
+{
+	assert(!m_hasShape.m_canFollow.isFollowing());
+	assert(m_hasShape.m_canLead.isLeading());
+	HasShape* hasShape = &m_hasShape;
+	std::vector<HasShape*> actorsAndItems;
+	while(true)
+	{
+		actorsAndItems.push_back(hasShape);
+		if(!hasShape->m_canLead.isLeading())
+			break;
+		hasShape = &hasShape->m_canLead.getFollower();
+	}
+	return getMoveSpeedForGroupWithAddedMass(actorsAndItems, 0);
 }
 void CanFollow::follow(CanLead& canLead)
 {

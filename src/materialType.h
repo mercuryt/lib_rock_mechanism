@@ -8,6 +8,7 @@
 struct MaterialType;
 struct ItemType;
 class ItemQuery;
+struct FluidType;
 
 struct MaterialTypeCategory
 {
@@ -55,6 +56,9 @@ struct MaterialType
 	const uint32_t flameTemperature; // Temperature given off by flames from this material.
 	const uint32_t burnStageDuration; // How many steps to go from smouldering to burning and from burning to flaming.
 	const uint32_t flameStageDuration; // How many steps to spend flaming.
+	// What temperatures cause phase changes?
+	const uint32_t meltingPoint;
+	const FluidType* meltsInto;
 	// How does this material dig?
 	std::vector<SpoilData> spoilData;
 	BurnData* burnData;

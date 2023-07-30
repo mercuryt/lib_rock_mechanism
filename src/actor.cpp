@@ -1,6 +1,7 @@
 #include "actor.h"
 #include "block.h"
 #include "area.h"
+#include "simulation.h"
 
 #include <algorithm>
 
@@ -33,7 +34,7 @@ void Actor::die(CauseOfDeath causeOfDeath)
 {
 	m_causeOfDeath = causeOfDeath;
 	m_canFight.onDie();
-	m_location->m_area->unregisterActor(*this);
+	m_location->m_area->m_hasActors.remove(*this);
 }
 void Actor::passout(uint32_t duration)
 {
@@ -59,8 +60,8 @@ bool ActorQuery::operator()(Actor& other) const
 		return false;
 	return true;
 }
-ActorQuery ActorQuery::makeFor(Actor& a) { return ActorQuery(&a, 0, false, false); }
-ActorQuery ActorQuery::makeForCarryWeight(uint32_t cw) { return ActorQuery(nullptr, cw, false, false); }
+ActorQuery ActorQuery::makeFor(Actor& a) { return ActorQuery(&a); }
+ActorQuery ActorQuery::makeForCarryWeight(uint32_t cw) { return ActorQuery(cw, false, false); }
 
 // To be used by block.
 void BlockHasActors::enter(Actor& actor)
@@ -70,10 +71,10 @@ void BlockHasActors::enter(Actor& actor)
 	{
 		actor.m_location->m_hasActors.exit(actor);
 		actor.m_facing = m_block.facingToSetWhenEnteringFrom(*actor.m_location);
-		m_block.m_area->m_actorLocationBuckets.update(actor, *actor.m_location, m_block);
+		m_block.m_area->m_hasActors.m_locationBuckets.update(actor, *actor.m_location, m_block);
 	}
 	else
-		m_block.m_area->m_actorLocationBuckets.insert(actor);
+		m_block.m_area->m_hasActors.m_locationBuckets.insert(actor);
 	m_actors.push_back(&actor);
 	m_block.m_hasShapes.enter(actor);
 }
@@ -83,7 +84,53 @@ void BlockHasActors::exit(Actor& actor)
 	std::erase(m_actors, &actor);
 	m_block.m_hasShapes.exit(actor);
 }
+void BlockHasActors::setTemperature(uint32_t temperature)
+{
+	(void)temperature;
+	for(Actor* actor : m_actors)
+		actor->m_needsSafeTemperature.onChange();
+}
 bool BlockHasActors::contains(Actor& actor) const
 {
 	return std::ranges::find(m_actors, &actor) != m_actors.end();
+}
+void AreaHasActors::add(Actor& actor)
+{
+	assert(actor.m_location != nullptr);
+	m_actors.insert(&actor);
+	m_locationBuckets.insert(actor);
+	m_visionBuckets.add(actor);
+	if(!actor.m_location->m_underground)
+		m_onSurface.insert(&actor);
+}
+void AreaHasActors::remove(Actor& actor)
+{
+	m_actors.erase(&actor);
+	m_locationBuckets.erase(actor);
+	m_visionBuckets.remove(actor);
+	m_onSurface.erase(&actor);
+}
+void AreaHasActors::onChangeAmbiantSurfaceTemperature()
+{
+	for(Actor* actor : m_onSurface)
+		if(!actor->m_location->m_underground)
+			actor->m_needsSafeTemperature.onChange();
+}
+void AreaHasActors::processVisionReadStep()
+{
+	m_visionRequestQueue.clear();
+	for(Actor* actor : m_visionBuckets.get(simulation::step))
+		m_visionRequestQueue.emplace_back(*actor);
+	auto visionIter = m_visionRequestQueue.begin();
+	while(visionIter < m_visionRequestQueue.end())
+	{
+		auto end = std::min(m_visionRequestQueue.end(), visionIter + Config::visionThreadingBatchSize);
+		simulation::pool.push_task([=](){ VisionRequest::readSteps(visionIter, end); });
+		visionIter = end;
+	}
+}
+void AreaHasActors::processVisionWriteStep()
+{
+	for(VisionRequest& visionRequest : m_visionRequestQueue)
+		visionRequest.writeStep();
 }

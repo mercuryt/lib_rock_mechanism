@@ -4,6 +4,8 @@
 #include <vector>
 #include <algorithm>
 
+struct MaterialType;
+
 struct FluidType
 {
 	const std::string name;
@@ -11,6 +13,7 @@ struct FluidType
 	const uint32_t density;
 	const uint32_t mistDuration;
 	const uint32_t maxMistSpread;
+	const MaterialType* freezesInto;
 	// Infastructure.
 	bool operator==(const FluidType& fluidType) const { return this == &fluidType; }
 	static std::vector<FluidType> data;

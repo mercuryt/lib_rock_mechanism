@@ -1,12 +1,17 @@
 #include "move.h"
 #include "path.h"
-void ActorCanMove::updateIndividualSpeed()
+uint32_t ActorCanMove::getIndividualMoveSpeedWithAddedMass(uint32_t mass) const
 {
-	m_speedIndividual = m_actor.m_attributes.getMoveSpeed();
-	uint32_t carryMass = m_actor.m_canPickup.getMass() + m_actor.m_canPickup.getMass();
+	uint32_t output = m_actor.m_attributes.getMoveSpeed();
+	uint32_t carryMass = m_actor.m_equipmentSet.getMass() + m_actor.m_canPickup.getMass() + mass;
 	uint32_t unencomberedCarryMass = m_actor.m_attributes.getUnencomberedCarryMass();
 	if(carryMass > unencomberedCarryMass)
-		m_speedIndividual = util::scaleByFraction(m_speedIndividual, unencomberedCarryMass, carryMass);
+		output = util::scaleByFraction(m_speedIndividual, unencomberedCarryMass, carryMass);
+	return output;
+}
+void ActorCanMove::updateIndividualSpeed()
+{
+	m_speedIndividual = getIndividualMoveSpeedWithAddedMass(0);
 	updateActualSpeed();
 }
 void ActorCanMove::updateActualSpeed()
@@ -52,6 +57,10 @@ void ActorCanMove::setDestinationAdjacentToSet(std::unordered_set<Block*>& block
 	m_toSetThreadedTask.create(*this, blocks, detour, adjacent);
 }
 void ActorCanMove::setDestinationAdjacentTo(HasShape& hasShape) { setDestinationAdjacentToSet(hasShape.m_blocks); }
+void ActorCanMove::tryToExitArea()
+{
+	m_exitAreaThreadedTask.create(*this);
+}
 void PathThreadedTask::readStep()
 {
 	m_result = path::getForActor(m_actor, *m_actor.m_canMove.m_destination);
@@ -82,4 +91,19 @@ void PathToSetThreadedTask::writeStep()
 			m_result.pop_back();
 		m_actor.m_canMove.setPath(m_result);
 	}
+}
+void ExitAreaThreadedTask::readStep()
+{
+	auto condition = [&](Block& block)
+	{
+		return block.m_isEdge;
+	};
+	m_result = path::getForActorToPredicate(m_actor, condition);
+}
+void ExitAreaThreadedTask::writeStep()
+{
+	if(m_result.empty())
+		m_actor.m_hasObjectives.wait(Config::stepsToWaitWhenCannotExitArea);
+	else
+		m_actor.m_canMove.setPath(m_result);
 }

@@ -1,7 +1,7 @@
 #pragma once
 #include "../lib/BS_thread_pool_light.hpp"
-
-class Area;
+#include "area.h"
+#include <list>
 
 namespace simulation
 {

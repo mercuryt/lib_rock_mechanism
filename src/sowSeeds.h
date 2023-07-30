@@ -35,6 +35,7 @@ class SowSeedsObjective final : public Objective
 	Actor& m_actor;
 	HasScheduledEvent<SowSeedsEvent> m_event;
 	HasThreadedTask<SowSeedsThreadedTask> m_threadedTask;
+	bool canSowSeedsAt(Block& block);
 public:
 	SowSeedsObjective(Actor& a) : Objective(Config::sowSeedsPriority), m_actor(a) { }
 	void execute();

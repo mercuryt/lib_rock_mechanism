@@ -21,6 +21,11 @@ void Item::exit()
 	assert(m_location != nullptr);
 	m_location->m_hasItems.remove(*this);
 }
+void Item::setTemperature(uint32_t temperature)
+{
+	//TODO
+	(void)temperature;
+}
 // Generic.
 Item::Item(uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t q, CraftJob* cj):
 	HasShape(it.shape, true), m_id(i), m_itemType(it), m_materialType(mt), m_quantity(q), m_reservable(q), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this)
@@ -220,6 +225,22 @@ void BlockHasItems::remove(const ItemType& itemType, const MaterialType& materia
 		(*found)->m_reservable.setMaxReservations((*found)->m_quantity);
 		m_block.m_hasShapes.removeQuantity(**found, quantity);
 	}
+}
+void BlockHasItems::setTemperature(uint32_t temperature)
+{
+	for(Item* item : m_items)
+		item->setTemperature(temperature);
+}
+uint32_t BlockHasItems::getCount(const ItemType& itemType, const MaterialType& materialType) const
+{
+	auto found = std::ranges::find_if(m_items, [&](Item* item)
+	{
+		return item->m_itemType == itemType && item->m_materialType == materialType;
+	});
+	if(found == m_items.end())
+		return 0;
+	else
+		return (*found)->m_quantity;
 }
 // TODO: buggy
 bool BlockHasItems::hasInstalledItemType(const ItemType& itemType) const

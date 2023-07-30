@@ -19,13 +19,13 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::readStep()
 				for(auto& [itemQuery, projectItemCounts] : m_project.m_requiredItems)
 					if(projectItemCounts.required >= projectItemCounts.reserved)
 					{
-						m_haulProjectParamaters = HaulSubproject::tryToSetHaulStrategy(m_project, *item, actor);
+						m_haulProjectParamaters = HaulSubproject::tryToSetHaulStrategy(m_project, *item, *actor);
 						if(m_haulProjectParamaters.strategy != HaulStrategy::None)
 							return true;
 					}
 			return false;
 		};
-		path::getForActorToPredicateReturnEndOnly(actor, condition);
+		path::getForActorToPredicateReturnEndOnly(*actor, condition);
 		// Only make at most one per step.
 		if(m_haulProjectParamaters.strategy != HaulStrategy::None)
 			return;
@@ -46,7 +46,6 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep()
 		// All guards passed, create subproject and dispatch workers.
 		m_project.m_haulSubprojects.emplace_back(m_project, m_haulProjectParamaters);
 }
-void Subproject::onComplete(){ m_project.subprojectComplete(*this); }
 // Derived classes are expected to provide getDelay, getConsumedItems, getUnconsumedItems, getByproducts, and onComplete.
 bool Project::reservationsComplete() const
 {
@@ -102,7 +101,7 @@ void Project::commandWorker(Actor& actor)
 			if(actor.m_location->isAdjacentTo(m_location))
 				addToMaking(actor);
 			else
-				m_workers[&actor].goToTask.create(*this, actor, actor.m_hasObjectives.getCurrent(), true);
+				actor.m_canMove.setDestinationAdjacentTo(m_location);
 		}
 		else if(reservationsComplete())
 		{
@@ -110,7 +109,7 @@ void Project::commandWorker(Actor& actor)
 			if(actor.m_location->isAdjacentTo(m_location))
 				m_waiting.insert(&actor);
 			else
-				m_workers[&actor].m_goToLocationTasks(*this, actor, true);
+				actor.m_canMove.setDestinationAdjacentTo(m_location);
 			//TODO: Schedule end of waiting and cancelation of task.
 		}
 		else
@@ -127,19 +126,11 @@ void Project::removeWorker(Actor& actor)
 	assert(actor.m_project == this);
 	assert(m_workers.contains(&actor));
 	actor.m_project = nullptr;
-	if(m_workers[&actor].item != nullptr)
-	{
-		auto& item = *m_workers[&actor].item;
-		--m_requiredItems[item.m_itemType].reserved;
-		if(actor.m_canPickup.exists())
-		{
-			assert(actor.m_canPickup.isCarrying(item));
-			actor.m_canPickup.putDown(*actor.m_location);
-		}
-	}
+	if(m_workers[&actor].haulSubproject != nullptr)
+		m_workers[&actor].haulSubproject->cancel();
 	if(m_making.contains(&actor))
 		removeFromMaking(actor);
-	m_workers.remove(&actor);
+	m_workers.erase(&actor);
 }
 void Project::addToMaking(Actor& actor)
 {
@@ -152,7 +143,7 @@ void Project::removeFromMaking(Actor& actor)
 {
 	assert(m_workers.contains(&actor));
 	assert(m_making.contains(&actor));
-	m_making.remove(&actor);
+	m_making.erase(&actor);
 	scheduleEvent();
 }
 void Project::complete()
@@ -160,31 +151,31 @@ void Project::complete()
 	for(Item* item : m_toConsume)
 		item->destroy();
 	for(auto& [itemType, materialType, quantity] : getByproducts())
-		m_location.m_hasItems.add(itemType, materialType, quantity);
+		m_location.m_hasItems.add(*itemType, *materialType, quantity);
 	dismissWorkers();
 	onComplete();
 }
 void Project::cancel()
 {
-	m_finishEvent.maybeCancel();
+	m_finishEvent.maybeUnschedule();
 	dismissWorkers();
 }
 void Project::dismissWorkers()
 {
-	for(Actor* actor : m_workers)
-		actor->taskComplete();
+	for(auto& pair : m_workers)
+		pair.first->m_hasObjectives.taskComplete();
 }
 void Project::scheduleEvent()
 {
-	m_finishEvent.maybeCancel();
+	m_finishEvent.maybeUnschedule();
 	uint32_t delay = util::scaleByPercent(getDelay(), 100u - m_finishEvent.percentComplete());
 	m_finishEvent.schedule(delay, *this);
 }
-void Project::subprojectComplete(Subproject& subproject)
+void Project::haulSubprojectComplete(HaulSubproject& haulSubproject)
 {
-	for(Actor* actor : subproject.m_workers)
+	for(Actor* actor : haulSubproject.m_workers)
 		commandWorker(*actor);
-	m_haulSubprojects.remove(subproject);
+	m_haulSubprojects.remove(haulSubproject);
 }
 Project::~Project()
 {

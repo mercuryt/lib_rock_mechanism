@@ -118,3 +118,17 @@ Objective& HasObjectives::getCurrent()
 	assert(m_currentObjective != nullptr);
        	return *m_currentObjective; 
 }
+void HasObjectives::cannotFulfillNeed(Objective& objective)
+{
+	(void)objective;
+	// There is no way to survive in this area. Try to go to another one.
+	m_actor.m_canMove.tryToExitArea();
+}
+void HasObjectives::cannotFulfillObjective(Objective& objective)
+{
+	cancel(objective);
+	//TODO: generate cancelation message?
+}
+void HasObjectives::wait(uint32_t delay) { m_waitEvent.schedule(delay, m_actor); }
+void WaitEvent::execute() { m_actor.m_hasObjectives.taskComplete(); }
+WaitEvent::~WaitEvent() { m_actor.m_hasObjectives.m_waitEvent.clearPointer(); }

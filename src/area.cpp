@@ -7,7 +7,7 @@
 #include <algorithm>
 
 Area::Area(uint32_t x, uint32_t y, uint32_t z) :
-	m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_areaHasTemperature(*this), m_actorLocationBuckets(*this), m_visionCuboidsActive(false)
+	m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_areaHasTemperature(*this), m_hasActors(*this), m_hasStockPiles(*this), m_visionCuboidsActive(false)
 {
 	// build m_blocks
 	m_blocks.resize(m_sizeX);
@@ -27,26 +27,17 @@ Area::Area(uint32_t x, uint32_t y, uint32_t z) :
 			for(uint32_t z = 0; z < m_sizeZ; ++z)
 				m_blocks[x][y][z].recordAdjacent();
 }
-void Area::readStep(BS::thread_pool_light pool)
+void Area::readStep()
 { 
 	//TODO: Count tasks dispatched and finished instead of pool.wait_for_tasks so we can do multiple areas simultaniously in one pool.
 	// Process vision, emplace requests for every actor in current bucket.
 	// It seems like having the vision requests permanantly embeded in the actors and iterating the vision bucket directly rather then using the visionRequestQueue should be faster but limited testing shows otherwise.
-	m_visionRequestQueue.clear();
-	for(Actor* actor : m_visionBuckets.get(simulation::step))
-		m_visionRequestQueue.emplace_back(*actor);
-	auto visionIter = m_visionRequestQueue.begin();
-	while(visionIter < m_visionRequestQueue.end())
-	{
-		auto end = std::min(m_visionRequestQueue.end(), visionIter + Config::visionThreadingBatchSize);
-		pool.push_task([=](){ VisionRequest::readSteps(visionIter, end); });
-		visionIter = end;
-	}
+	m_hasActors.processVisionReadStep();
 	// Calculate cave in.
-	pool.push_task([&](){ stepCaveInRead(); });
+	simulation::pool.push_task([&](){ stepCaveInRead(); });
 	// Calculate flow.
 	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
-		pool.push_task([=](){ fluidGroup->readStep(); });
+		simulation::pool.push_task([=](){ fluidGroup->readStep(); });
 }
 void Area::writeStep()
 { 
@@ -122,16 +113,8 @@ void Area::writeStep()
 	// Clean up old vision cuboids.
 	if(m_visionCuboidsActive)
 		std::erase_if(m_visionCuboids, [](VisionCuboid& visionCuboid){ return visionCuboid.m_destroy; });
-}
-void Area::registerActor(Actor& actor)
-{
-	m_visionBuckets.add(actor);
-}
-void Area::unregisterActor(Actor& actor)
-{
-	m_visionBuckets.remove(actor);
-	if(actor.m_location != nullptr)
-		actor.m_location->m_area->m_actorLocationBuckets.erase(actor);
+	// Apply vision.
+	m_hasActors.processVisionWriteStep();
 }
 FluidGroup* Area::createFluidGroup(const FluidType& fluidType, std::unordered_set<Block*>& blocks, bool checkMerge)
 {

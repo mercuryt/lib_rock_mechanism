@@ -119,6 +119,7 @@ public:
 	void setLocation(Block& block);
 	void exit();
 	void pierced(uint32_t area);
+	void setTemperature(uint32_t temperature);
 	bool isItem() const { return true; }
 	bool isActor() const { return false; }
 	bool edible() const;
@@ -166,7 +167,9 @@ public:
 	void remove(Item& item);
 	void add(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity);
 	void remove(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity);
+	void setTemperature(uint32_t temperature);
 	//Item* get(ItemType& itemType) const;
+	uint32_t getCount(const ItemType& itemType, const MaterialType& materialType) const;
 	std::vector<Item*>& getAll() const;
 	bool hasInstalledItemType(const ItemType& itemType) const;
 	bool hasEmptyContainerWhichCanHoldFluidsCarryableBy(Actor& actor) const;

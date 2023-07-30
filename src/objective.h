@@ -1,5 +1,7 @@
 #pragma once
 
+#include "eventSchedule.h"
+
 #include <map>
 #include <memory>
 #include <queue>
@@ -7,6 +9,7 @@
 #include <vector>
 
 class Actor;
+class WaitEvent;
 
 class Objective
 {
@@ -41,6 +44,7 @@ class HasObjectives final
 	// findNewTask only adds one task at a time so there usually is only once objective in the queue. More then one task objective can be added by the user manually.
 	std::deque<std::unique_ptr<Objective>> m_tasksQueue;
 	Objective* m_currentObjective;
+	HasScheduledEvent<WaitEvent> m_waitEvent;
 
 	void getNext();
 	void maybeUsurpsPriority(Objective& objective);
@@ -57,6 +61,18 @@ public:
 	void taskComplete();
 	void cannotFulfillObjective(Objective& objective);
 	void cannotCompleteTask();
+	void cannotFulfillNeed(Objective& objective);
+	void wait(uint32_t delay);
 	Objective& getCurrent();
 	friend class ObjectiveTypePrioritySet;
+	friend class WaitEvent;
+};
+
+class WaitEvent final : public ScheduledEventWithPercent
+{
+	Actor& m_actor;
+public:
+	WaitEvent(uint32_t delay, Actor& a) : ScheduledEventWithPercent(delay), m_actor(a) { }
+	void execute();
+	~WaitEvent();
 };
