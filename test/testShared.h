@@ -1,4 +1,4 @@
-/*
+
  * Example config used for testing. Attempts to replicate Dwarf Fortress mechanics regarding vision, pathing, cave in, and fluids; except max fluid volume is 100 rather then 7.
  */
 #include <cstdint>

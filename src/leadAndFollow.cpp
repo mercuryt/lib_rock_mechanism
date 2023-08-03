@@ -15,6 +15,7 @@ void CanLead::onMove()
 }
 bool CanLead::isFollowerKeepingUp() const { return m_hasShape.isAdjacentTo(m_canFollow->m_hasShape); }
 bool CanLead::isLeading() const { return m_canFollow != nullptr; }
+bool CanLead::isLeading(HasShape& hasShape) const  { return m_canFollow != nullptr && &hasShape.m_canFollow == m_canFollow; }
 HasShape& CanLead::getFollower() const { return m_canFollow->m_hasShape; }
 // Class method.
 uint32_t CanLead::getMoveSpeedForGroupWithAddedMass(std::vector<HasShape*>& actorsAndItems, uint32_t addedRollingMass, uint32_t addedDeadMass)
@@ -38,7 +39,7 @@ uint32_t CanLead::getMoveSpeedForGroupWithAddedMass(std::vector<HasShape*>& acto
 		{
 			assert(hasShape->isActor());
 			Actor& actor = static_cast<Actor&>(*hasShape);
-			if(actor.canMove())
+			if(actor.m_canMove.canMove())
 			{
 				carryMass += actor.m_attributes.getUnencomberedCarryMass();
 				lowestMoveSpeed = std::min(lowestMoveSpeed, actor.m_attributes.getMoveSpeed());

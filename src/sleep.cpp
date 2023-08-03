@@ -61,7 +61,7 @@ void SleepObjective::execute()
 }
 uint32_t SleepObjective::desireToSleepAt(Block& block)
 {
-	if(block.m_reservable.isFullyReserved() || !m_actor.m_needsSafeTemperature.isSafe(block.m_blockHasTemperature.get()))
+	if(block.m_reservable.isFullyReserved(*m_actor.m_faction) || !m_actor.m_needsSafeTemperature.isSafe(block.m_blockHasTemperature.get()))
 		return 0;
 	if(block.m_area->m_hasSleepingSpots.containsUnassigned(block))
 		return 3;

@@ -4,6 +4,7 @@ project (LibRockMechanism)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_BUILD_PARALLEL_LEVEL_LEVEL 2)
 
 if (MSVC)
     # warning level 4

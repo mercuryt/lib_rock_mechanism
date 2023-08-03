@@ -17,16 +17,18 @@ struct EquipmentSortByLayer
 };
 class EquipmentSet
 {
+	Actor& m_actor;
 	std::unordered_set<Item*> m_equipments;
 	std::set<Item*, EquipmentSortByLayer> m_wearable;
+	std::unordered_set<const BodyPartType*> m_bodyPartTypesWithRigidArmor;
 	uint32_t m_mass;
 public:
-	EquipmentSet() : m_mass(0) { }
+	EquipmentSet(Actor& a) : m_actor(a), m_mass(0) { }
 	void addEquipment(Item& equipment);
 	void removeEquipment(Item& equipment);
 	void modifyImpact(Hit& hit, const MaterialType& materialType, const BodyPartType& bodyPartType);
 	std::vector<Attack> getAttacks();
-	float getAttackCoolDownDurationModifier() const;
 	bool contains(Item& item) const { return m_equipments.contains(&item); }
 	const uint32_t& getMass() const;
+	bool canEquipCurrently(Item& item) const;
 };

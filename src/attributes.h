@@ -34,14 +34,19 @@ public:
 		mass(species.mass[0], species.mass[1], modifierPercents[3], bonusOrPenalties[3], percentGrown) { }
 	void updatePercentGrown(uint32_t percentGrown);
 	void generate();
+	void removeMass(uint32_t m)
+	{
+		assert(mass.value >= m);
+		mass.value -= m;
+	}
 	uint32_t getStrength() const { return strength.value; }
-	void addStrengthBonusOrPenalty(int32_t x) { strength.bonusOrPenalty =+ x; generate(); }
+	void addStrengthBonusOrPenalty(int32_t x) { strength.bonusOrPenalty += x; generate(); }
 	uint32_t getDextarity() const { return dextarity.value; }
-	void addDextarityBonusOrPenalty(uint32_t x) { dextarity.bonusOrPenalty =+ x; generate(); }
+	void addDextarityBonusOrPenalty(uint32_t x) { dextarity.bonusOrPenalty += x; generate(); }
 	uint32_t getAgility() const { return agility.value; }
-	void addAgilityBonusOrPenalty(uint32_t x) { agility.bonusOrPenalty =+ x; generate(); }
+	void addAgilityBonusOrPenalty(uint32_t x) { agility.bonusOrPenalty += x; generate(); }
 	uint32_t getMass() const { return mass.value; }
-	void addMassBonusOrPenalty(uint32_t x) { mass.bonusOrPenalty =+ x; generate(); }
+	void addMassBonusOrPenalty(uint32_t x) { mass.bonusOrPenalty += x; generate(); }
 	uint32_t getUnencomberedCarryMass() const { return unencomberedCarryMass; }
 	uint32_t getMoveSpeed() const { return moveSpeed; }
 };

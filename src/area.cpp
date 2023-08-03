@@ -6,8 +6,8 @@
 #include "simulation.h"
 #include <algorithm>
 
-Area::Area(uint32_t x, uint32_t y, uint32_t z) :
-	m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_areaHasTemperature(*this), m_hasActors(*this), m_hasStockPiles(*this), m_visionCuboidsActive(false)
+Area::Area(uint32_t x, uint32_t y, uint32_t z, uint32_t ambiantSurfaceTemperature) :
+	m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_areaHasTemperature(*this, ambiantSurfaceTemperature), m_hasActors(*this), m_hasStockPiles(*this), m_visionCuboidsActive(false)
 {
 	// build m_blocks
 	m_blocks.resize(m_sizeX);

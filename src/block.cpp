@@ -435,6 +435,14 @@ uint8_t Block::facingToSetWhenEnteringFrom(const Block& block) const
 		return 2;
 	return 0;
 }
+bool Block::isSupport() const
+{
+	return isSolid() || m_hasBlockFeatures.isSupport();
+}
+bool Block::hasLineOfSightTo(Block& block) const
+{
+	return VisionRequest::hasLineOfSightBasic(*this, block);
+}
 void Block::spawnMist(const FluidType& fluidType, uint32_t maxMistSpread)
 {
 	if(m_mist != nullptr and m_mist->density > fluidType.density)

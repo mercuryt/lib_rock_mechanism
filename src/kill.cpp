@@ -1,5 +1,6 @@
 #include "kill.h"
 #include "block.h"
+#include "visionRequest.h"
 void KillObjective::execute()
 {
 	if(!m_target.m_alive)
@@ -7,10 +8,14 @@ void KillObjective::execute()
 		m_killer.m_hasObjectives.objectiveComplete(*this);
 	m_killer.m_canFight.setTarget(m_target);
 	// If not in range create GetIntoRangeThreadedTask.
-	if(!m_getIntoRangeAndLineOfSightThreadedTask.exists() && m_killer.m_location->taxiDistance(*m_target.m_location) > m_killer.m_canFight.getMaxRange())
-		m_getIntoRangeAndLineOfSightThreadedTask.create(m_killer, m_target.m_location, m_killer.m_canFight.getMaxRange());
+	if(!m_getIntoRangeAndLineOfSightThreadedTask.exists() && 
+			(m_killer.m_location->taxiDistance(*m_target.m_location) > m_killer.m_canFight.getMaxRange() ||
+			 // TODO: hasLineOfSightIncludingActors
+			 VisionRequest::hasLineOfSightBasic(*m_killer.m_location, *m_target.m_location))
+	)
+		m_getIntoRangeAndLineOfSightThreadedTask.create(m_killer, m_target, m_killer.m_canFight.getMaxRange());
 	else
-		// If in range and attack not on cooldown then attack.
+		// If in range and has line of sight and attack not on cooldown then attack.
 		if(!m_killer.m_canFight.isOnCoolDown())
 			m_killer.m_canFight.attack(m_target);
 }

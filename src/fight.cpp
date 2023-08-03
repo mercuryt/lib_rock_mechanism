@@ -10,9 +10,9 @@
 void CanFight::attack(Actor& target)
 {
 	assert(!m_coolDown.exists());
-	m_coolDown.schedule(m_coolDownDuration, *this);
-	uint32_t attackerCombatScore = getCombatScore();
-	uint32_t targetCombatScore = target.m_canFight.getCombatScore();
+	m_coolDown.schedule(*this);
+	uint32_t attackerCombatScore = m_combatScore;
+	uint32_t targetCombatScore = target.m_canFight.m_combatScore;
 	if(attackerCombatScore > targetCombatScore)
 	{
 		const Attack& attack = getAttackForCombatScoreDifference(attackerCombatScore - targetCombatScore);
@@ -25,6 +25,13 @@ void CanFight::attack(Actor& target)
 		target.m_body.addWound(attack.attackType->woundType, bodyPart, hit);
 	}
 	//TODO: Skill growth.
+}
+void CanFight::coolDownCompleted()
+{
+	if(m_target == nullptr)
+		return;
+	if(m_actor.m_location->taxiDistance(*m_target->m_location) <= m_maxRange && m_actor.m_location->hasLineOfSightTo(*m_target->m_location))
+		attack(*m_target);
 }
 void CanFight::update()
 {
@@ -46,7 +53,9 @@ void CanFight::update()
 		m_maxRange = std::min(m_maxRange, pair.second.attackType->range);
 	}
 	// Update cool down duration.
-	m_coolDownDuration = Config::attackCoolDownDurationBase - (m_actor.m_attributes.getDextarity() * Config::stepsAttackCoolDownReductionPerPointOfDextarity) * m_actor.m_equipmentSet.getAttackCoolDownDurationModifier();
+	uint32_t coolDownDurationDextarityBonus = m_actor.m_attributes.getDextarity() ;
+	float coolDownDurationEquipmentMassModifier = m_actor.m_attributes.getUnencomberedCarryMass() / m_actor.m_equipmentSet.getMass();
+	m_coolDownDuration = (Config::attackCoolDownDurationBase - coolDownDurationDextarityBonus) * coolDownDurationEquipmentMassModifier;
 }
 //TODO: Grasps cannot be used for both armed and unarmed attacks at the same time?
 uint32_t CanFight::getCombatScoreForAttack(const Attack& attack) const
@@ -57,8 +66,8 @@ uint32_t CanFight::getCombatScoreForAttack(const Attack& attack) const
 		static const SkillType& unarmedSkillType = SkillType::byName("unarmed");
 		return m_actor.m_skillSet.get(unarmedSkillType);
 	}
-	uint32_t itemTypeCombatScore = attack.item->m_itemType.combatScore;
-	uint32_t itemSkill = m_actor.m_skillSet.get(*attack.item->m_itemType.weaponType->combatSkill);
+	uint32_t itemTypeCombatScore = attack.item->m_itemType.combatScoreBonus;
+	uint32_t itemSkill = m_actor.m_skillSet.get(*attack.item->m_itemType.combatSkill);
 	uint32_t itemQuality = attack.item->m_quality;
 	uint32_t percentItemWear = attack.item->m_percentWear;
 	return  (
@@ -112,6 +121,10 @@ void CanFight::noLongerTargetable()
 	}
 	m_targetedBy.clear();
 }
+void CanFight::onDie()
+{
+	noLongerTargetable();
+}
 void CanFight::targetNoLongerTargetable()
 {
 	assert(m_target != nullptr);
@@ -138,7 +151,7 @@ void GetIntoAttackPositionThreadedTask::readStep()
 {
 	auto destinatonCondition = [&](Block& block)
 	{
-		return block.taxiDistance(*m_target.m_location) <= m_range && block.hasLineOfSightTo(m_target.m_location);
+		return block.taxiDistance(*m_target.m_location) <= m_range && block.hasLineOfSightTo(*m_target.m_location);
 	};
 	m_route = path::getForActorToPredicate(m_actor, destinatonCondition);
 }

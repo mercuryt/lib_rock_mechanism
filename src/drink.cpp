@@ -1,14 +1,30 @@
 #include "drink.h"
 #include "path.h"
 #include "util.h"
+// Must Drink.
+void MustDrink::drink(uint32_t volume)
+{
+	assert(m_volumeDrinkRequested >= volume);
+	m_volumeDrinkRequested -= volume;
+	m_thirstEvent.unschedule();
+	uint32_t stepsToNextThirsEvent;
+	if(m_volumeDrinkRequested == 0)
+	{
+		m_actor.m_hasObjectives.objectiveComplete(*m_objective);
+		stepsToNextThirsEvent = m_actor.m_species.stepsFluidDrinkFreqency;
+	}
+	else
+		stepsToNextThirsEvent = util::scaleByFraction(m_actor.m_species.stepsTillDieWithoutFluid, m_volumeDrinkRequested, m_actor.m_species.stepsTillDieWithoutFluid);
+	m_thirstEvent.schedule(stepsToNextThirsEvent, m_actor);
+}
 // Drink Event.
-DrinkEvent::DrinkEvent(uint32_t step, DrinkObjective& drob) : ScheduledEvent(step), m_drinkObjective(drob), m_item(nullptr) {}
-DrinkEvent::DrinkEvent(uint32_t step, DrinkObjective& drob, Item& i) : ScheduledEvent(step), m_drinkObjective(drob), m_item(&i) {}
+DrinkEvent::DrinkEvent(uint32_t step, DrinkObjective& drob) : ScheduledEventWithPercent(step), m_drinkObjective(drob), m_item(nullptr) {}
+DrinkEvent::DrinkEvent(uint32_t step, DrinkObjective& drob, Item& i) : ScheduledEventWithPercent(step), m_drinkObjective(drob), m_item(&i) {}
 void DrinkEvent::execute()
 {
 	//TODO: What if not enough volume is avalible?
 	auto& actor = m_drinkObjective.m_actor;
-	uint32_t volume = actor.m_mustDrink.getVolumeFluidRequested();
+	uint32_t volume = actor.m_mustDrink.m_volumeDrinkRequested;
 	if(m_item != nullptr)
 	{
 		if(m_item->m_hasCargo.getFluidType() != actor.m_mustDrink.getFluidType())
@@ -31,6 +47,10 @@ void DrinkEvent::execute()
 	}
 	actor.m_mustDrink.drink(volume);
 	actor.m_hasObjectives.objectiveComplete(m_drinkObjective);
+}
+void ThirstEvent::execute()
+{
+	m_actor.m_mustDrink.setNeedsFluid();
 }
 // Drink Threaded Task.
 void DrinkThreadedTask::readStep()

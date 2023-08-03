@@ -2,6 +2,7 @@
 
 #include "eventSchedule.h"
 #include "reservable.h"
+#include "eventSchedule.hpp"
 
 #include <algorithm>
 
@@ -22,7 +23,7 @@ struct HarvestData
 	const ItemType& fruitItemType;
 	// Infastructure.
 	bool operator==(const HarvestData& harvestData){ return this == &harvestData; }
-	static std::vector<HarvestData> data;
+	inline static std::vector<HarvestData> data;
 };
 struct PlantSpecies
 {
@@ -46,7 +47,7 @@ struct PlantSpecies
 	const HarvestData* harvestData;
 	// Infastructure.
 	bool operator==(const PlantSpecies& plantSpecies){ return this == &plantSpecies; }
-	static std::vector<PlantSpecies> data;
+	inline static std::vector<PlantSpecies> data;
 	static const PlantSpecies& byName(std::string name)
 	{
 		auto found = std::ranges::find(data, name, &PlantSpecies::name);
@@ -70,7 +71,7 @@ public:
 	uint32_t m_percentFoliage;
 	//TODO: Set max reservations to 1 to start, maybe increase later with size?
 	Reservable m_reservable;
-	uint32_t m_volumeDrinkRequested;
+	uint32_t m_volumeFluidRequested;
 
 	Plant(Block& l, const PlantSpecies& ps, uint32_t pg = 0);
 	void die();
@@ -85,7 +86,7 @@ public:
 	void updateGrowingStatus();
 	void removeFoliageMass(uint32_t mass);
 	uint32_t getFruitMass() const;
-	void removeFruitMass(uint32_t mass);
+	void removeFruitQuantity(uint32_t quantity);
 	void makeFoliageGrowthEvent();
 	void foliageGrowth();
 	bool hasFluidSource();

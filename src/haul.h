@@ -1,6 +1,5 @@
 #pragma once
 
-#include "subproject.h"
 #include "hasShape.h"
 
 class Item;
@@ -10,10 +9,12 @@ class HasShape;
 struct FluidType;
 struct ItemType;
 struct MaterialType;
+class Project;
+struct Faction;
 
 enum class HaulStrategy { None, Individual, Team, Cart, TeamCart, Panniers, AnimalCart, StrongSentient };
 
-struct HaulSubprojectParamaters
+struct HaulSubprojectParamaters final
 {
 	HasShape* toHaul;
 	uint32_t quantity;
@@ -27,8 +28,10 @@ struct HaulSubprojectParamaters
 	bool validate() const;
 };
 // ToHaul is either an Item or an Actor.
-class HaulSubproject : public Subproject
+class HaulSubproject final
 {
+	Project& m_project;
+	std::unordered_set<Actor*> m_workers;
 	HasShape& m_toHaul;
 	uint32_t m_quantity;
 	Block& m_destination;
@@ -56,9 +59,10 @@ public:
 	static std::vector<Actor*> actorsNeededToHaulAtMinimumSpeedWithTool(Project& project, Actor& leader, HasShape& toHaul, Item& haulTool, std::unordered_set<Actor*> waiting);
 	static uint32_t getSpeedWithPannierBearerAndPanniers(Actor& leader, Actor& yoked, Item& haulTool, HasShape& toHaul);
 	bool operator==(const HaulSubproject& other) const { return &other == this; }
+	friend class Project;
 };
 // Used by Actor for individual haul strategy only. Other strategies use lead/follow.
-class CanPickup
+class CanPickup final
 {
 	Actor& m_actor;
 	HasShape* m_carrying;
@@ -90,14 +94,17 @@ public:
 	uint32_t speedIfCarryingAny(HasShape& hasShape) const;
 };
 // For Area.
-class HasHaulTools
+class HasHaulTools final
 {
+	//TODO: optimize with m_unreservedHaulToos and m_unreservedYolkableActors.
+	std::unordered_set<Item*> m_haulTools;
+	std::unordered_set<Actor*> m_yolkableActors;
 public:
-	bool hasToolToHaul(HasShape& hasShape) const;
-	Item* getToolToHaul(HasShape& hasShape) const;
-	Actor* getActorToYokeForHaulTool(Item& haulTool) const;
-	Actor* getPannierBearerToHaul(HasShape& hasShape) const;
-	Item* getPanniersForActor(Actor& actor) const;
+	bool hasToolToHaul(Faction& faction, HasShape& hasShape) const;
+	Item* getToolToHaul(Faction& faction, HasShape& hasShape) const;
+	Actor* getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(Faction& faction, Item& haulTool, uint32_t cargoMass, uint32_t minimumHaulSpeed) const;
+	Actor* getPannierBearerToHaulCargoWithMassWithMinimumSpeed(Faction& faction, HasShape& hasShape, uint32_t minimumHaulSpeed) const;
+	Item* getPanniersForActorToHaul(Faction& faction, Actor& actor, HasShape& toHaul) const;
 	void registerHaulTool(Item& item);
 	void registerYokeableActor(Actor& actor);
 	void unregisterHaulTool(Item& item);

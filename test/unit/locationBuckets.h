@@ -1,3 +1,5 @@
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include "../../lib/doctest.h"
 TEST_CAST("locationBuckets")
 {
 	assert(s_locationBucketSize >= 6);

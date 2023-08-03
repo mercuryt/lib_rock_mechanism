@@ -26,27 +26,3 @@ void threadedTaskEngine::remove(ThreadedTask& task)
 	assert(std::ranges::find_if(m_tasks, [&](auto& t) { return t.get() == &task; }) != m_tasks.end());
 	std::erase_if(m_tasks, [&](auto& t) { return t.get() == &task; });
 }
-
-template<class TaskType>
-template<typename ...Args>
-void HasThreadedTask<TaskType>::create(Args& ...args)
-{
-	assert(m_threadedTask == nullptr);
-	std::unique_ptr<ThreadedTask> task = std::make_unique<TaskType>(args...);
-	m_threadedTask = task.get();
-	threadedTaskEngine::insert(std::move(task));
-}
-template<class TaskType>
-void HasThreadedTask<TaskType>::cancel()
-{
-	assert(m_threadedTask != nullptr);
-	m_threadedTask->cancel();
-}
-template<class TaskType>
- bool HasThreadedTask<TaskType>::exists() const { return m_threadedTask != nullptr; }
-template<class TaskType>
-HasThreadedTask<TaskType>::~HasThreadedTask()
-{
-	if(m_threadedTask != nullptr)
-		m_threadedTask->cancel();
-}

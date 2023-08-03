@@ -33,8 +33,7 @@ struct XYZHash
 };
 inline std::unordered_set<XYZ, XYZHash> closedList;
 inline std::vector<std::vector<XYZ>> cache;
-//TODO: make constexpr?
-inline static std::array<XYZ, 6> offsets = { XYZ(0,0,-1), XYZ(0,0,1), XYZ(0,-1,0), XYZ(0,1,0), XYZ(-1,0,0), XYZ(1,0,0) };
+inline std::array<XYZ, 6> offsets = { XYZ(0,0,-1), XYZ(0,0,1), XYZ(0,-1,0), XYZ(0,1,0), XYZ(-1,0,0), XYZ(1,0,0) };
 
 std::vector<XYZ> getNthAdjacentOffsets(uint32_t n);
 std::vector<Block*> getNthAdjacentBlocks(Block& center, uint32_t i);

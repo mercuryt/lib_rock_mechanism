@@ -69,6 +69,6 @@ public:
 	const std::vector<std::pair<Block*, uint32_t>>& getMoveCosts(const Shape& shape, const MoveType& moveType);
 	uint32_t moveCostFrom(const MoveType& moveType, Block& from) const;
 	bool canStandIn() const;
-	std::unordered_map<HasShape*, uint32_t>& getShapes();
+	std::unordered_map<HasShape*, uint32_t>& getShapes() { return m_shapes; }
 	friend class HasShape;
 };

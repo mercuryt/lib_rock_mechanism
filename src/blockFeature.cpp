@@ -1,5 +1,15 @@
 #include "blockFeature.h"
 #include "block.h"
+#include "area.h"
+// Name, hewn, blocks entrance, lockable, stand in, stand above
+BlockFeatureType BlockFeatureType::floor = {"floor", false, false, false, true, false, false};
+BlockFeatureType BlockFeatureType::door = {"door", false, false, true, false, false, false};
+BlockFeatureType BlockFeatureType::hatch = {"hatch", false, false, true, true, false, false};
+BlockFeatureType BlockFeatureType::stairs = {"stairs", true,  false, false, true, true, false};
+BlockFeatureType BlockFeatureType::floodGate = {"floodGate", true, true, false, false, true, false};
+BlockFeatureType BlockFeatureType::floorGrate = {"floorGrate", false, false, false, true, false, false};
+BlockFeatureType BlockFeatureType::ramp = {"ramp", true, false, false, true, true, false};
+BlockFeatureType BlockFeatureType::fortification = {"fortification", true, true, false, false, true, true};
 bool HasBlockFeatures::contains(const BlockFeatureType& blockFeatureType) const
 {
 	for(const BlockFeature& blockFeature : m_features)
@@ -37,6 +47,13 @@ void HasBlockFeatures::hew(const BlockFeatureType& blockFeatureType)
 	m_features.emplace_back(blockFeatureType, m_block.getSolidMaterial(), true);
 	m_block.m_hasShapes.clearCache();
 }
+void HasBlockFeatures::setTemperature(uint32_t temperature)
+{
+	for(BlockFeature& feature : m_features)
+		if(temperature > feature.materialType->ignitionTemperature)
+			m_block.m_area->m_fires.ignite(m_block, *feature.materialType);
+}
+// Blocks entrance from all angles, does not include floor and hatch which only block from below.
 bool HasBlockFeatures::blocksEntrance() const
 {
 	for(const BlockFeature& blockFeature : m_features)
@@ -59,6 +76,13 @@ bool HasBlockFeatures::canStandAbove() const
 {
 	for(const BlockFeature& blockFeature : m_features)
 		if(blockFeature.blockFeatureType->canStandAbove)
+			return true;
+	return false;
+}
+bool HasBlockFeatures::isSupport() const
+{
+	for(const BlockFeature& blockFeature : m_features)
+		if(blockFeature.blockFeatureType->isSupportAgainstCaveIn)
 			return true;
 	return false;
 }

@@ -1,5 +1,13 @@
 {
   "name": "black bear",
+  "sentient": false,
+  "strength": [80, 90],
+  "dextarity": [40, 45],
+  "agility": [60, 65],
+  "mass": [200, 210],
+  "volume": [400, 500],
+  "deathAge": [10, 30],
+  "adultAge": [5, 6],
   "temp": [241, 306],
   "daysTillDieFromTemp": 1,
   "fluidType": "water",
@@ -9,11 +17,6 @@
   "eatsPlants": true,
   "daysHungerFreqency": 2,
   "daysTillStarve": 20,
-  "yearsTillFullyGrown": 10,
   "visionDistance": 10,
-  "mass": 200,
-  "strength": [80, 90],
-  "agility": [60, 65],
-  "dextarity": [40, 45],
   "grips": 0
 }

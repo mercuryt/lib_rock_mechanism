@@ -70,7 +70,7 @@ void EatEvent::eatPreparedMeal(Item& item)
 }
 void EatEvent::eatGenericItem(Item& item)
 {
-	assert(item.edible());
+	assert(item.m_itemType.edibleForDrinkersOf == m_eatObjective.m_actor.m_mustDrink.getFluidType());
 	auto& eater = m_eatObjective.m_actor;
 	uint32_t quantityDesired = eater.m_mustEat.getMassFoodRequested() / item.singleUnitMass();
 	uint32_t quantityEaten = std::min(quantityDesired, item.m_quantity);
@@ -109,11 +109,18 @@ void EatEvent::eatFruitFromPlant(Plant& plant)
 {
 	auto& eater = m_eatObjective.m_actor;
 	uint32_t massEaten = std::min(eater.m_mustEat.getMassFoodRequested(), plant.getFruitMass());
-	assert(massEaten != 0);
-	eater.m_mustEat.eat(massEaten);
-	plant.removeFruitMass(massEaten);
+	static const MaterialType& fruitType = MaterialType::byName("fruit");
+	uint32_t unitMass = plant.m_plantSpecies.harvestData->fruitItemType.volume * fruitType.density;
+	uint32_t quantityEaten = massEaten / unitMass;
+	assert(quantityEaten != 0);
+	eater.m_mustEat.eat(quantityEaten * unitMass);
+	plant.removeFruitQuantity(quantityEaten);
 	if(eater.m_mustEat.getMassFoodRequested() == 0)
 		eater.m_hasObjectives.objectiveComplete(m_eatObjective);
+}
+void HungerEvent::execute()
+{
+	m_actor.m_mustEat.setNeedsFood();
 }
 void EatThreadedTask::readStep()
 {
@@ -165,7 +172,7 @@ void EatThreadedTask::readStep()
 		assert(m_eatObjective.m_eatingLocation == nullptr);
 		auto eatingLocationCondition = [&](Block& block)
 		{
-			if(block.m_reservable.isFullyReserved())
+			if(block.m_reservable.isFullyReserved(*m_eatObjective.m_actor.m_faction))
 				return false;
 			static const ItemType& chair = ItemType::byName("chair");
 			if(!block.m_hasItems.hasInstalledItemType(chair))
@@ -220,12 +227,7 @@ void EatObjective::execute()
 	{	
 		// Uncivilized eating.
 		if(m_actor.m_location == m_foodLocation)
-		{
-			if(m_foodItem != nullptr)
-				m_eatEvent.schedule(Config::stepsToEat, m_foodItem);
-			else
-				m_eatEvent.schedule(Config::stepsToEat);
-		}
+			m_eatEvent.schedule(Config::stepsToEat, *this);
 		else
 			m_actor.m_canMove.setDestination(*m_foodLocation);
 	}
@@ -244,7 +246,7 @@ void EatObjective::execute()
 				{
 					// Is at eating location.
 					if(m_actor.m_location == m_eatingLocation)
-						m_eatEvent.schedule(Config::stepsToEat, m_foodItem);
+						m_eatEvent.schedule(Config::stepsToEat, *this);
 					else
 						m_actor.m_canMove.setDestination(*m_eatingLocation);
 				}
@@ -266,7 +268,7 @@ void EatObjective::execute()
 		}
 	}
 }
-bool EatObjective::canEatAt(Block& block)
+bool EatObjective::canEatAt(Block& block) const
 {
 	for(Item* item : block.m_hasItems.getAll())
 	{
@@ -290,6 +292,28 @@ bool EatObjective::canEatAt(Block& block)
 	}
 	return false;
 }
+bool MustEat::canEat(Actor& actor) const
+{
+	if(actor.m_alive)
+		return false;
+	if(!m_actor.m_species.eatsMeat)
+		return false;
+	if(m_actor.m_species.fluidType != actor.m_species.fluidType)
+		return false;
+	return true;
+}
+bool MustEat::canEat(Plant& plant) const
+{
+	if(m_actor.m_species.eatsLeaves && plant.getPercentFoliage() != 0)
+		return true;
+	if(m_actor.m_species.eatsFruit && plant.m_quantityToHarvest != 0)
+		return true;
+	return false;
+}
+bool MustEat::canEat(Item& item) const
+{
+	return item.m_itemType.edibleForDrinkersOf == m_actor.m_mustDrink.getFluidType();
+}
 void MustEat::eat(uint32_t mass)
 {
 	assert(mass <= m_massFoodRequested);
@@ -300,8 +324,8 @@ void MustEat::eat(uint32_t mass)
 	else
 	{
 		uint32_t delay = util::scaleByInverseFraction(m_actor.m_species.stepsTillDieWithoutFood, m_massFoodRequested, massFoodForBodyMass());
-		m_actor.m_mustEat.m_hungerEvent.schedule(delay);
 		m_actor.m_hasObjectives.addNeed(std::make_unique<EatObjective>(m_actor));
+		m_actor.m_mustEat.m_hungerEvent.schedule(delay, m_actor);
 	}
 }
 void MustEat::setNeedsFood()
@@ -310,7 +334,7 @@ void MustEat::setNeedsFood()
 		m_actor.die(CauseOfDeath::hunger);
 	else
 	{
-		m_hungerEvent.schedule(m_actor.m_species.stepsTillDieWithoutFood);
+		m_hungerEvent.schedule(m_actor.m_species.stepsTillDieWithoutFood, m_actor);
 		m_actor.m_canGrow.stop();
 		m_massFoodRequested = massFoodForBodyMass();
 		m_actor.m_hasObjectives.addNeed(std::make_unique<EatObjective>(m_actor));

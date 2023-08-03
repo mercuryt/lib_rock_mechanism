@@ -5,6 +5,8 @@
 #include "attackType.h"
 #include "fight.h"
 #include "hit.h"
+#include "eventSchedule.h"
+#include "eventSchedule.hpp"
 
 #include <vector>
 #include <utility>
@@ -15,10 +17,10 @@ struct BodyPartType
 	const uint32_t volume;
 	const bool doesLocamotion;
 	const bool doesManipulation;
-	std::vector<std::pair<const MaterialType*, AttackType>> attackTypes;
+	std::vector<std::pair<const AttackType, const MaterialType*>> attackTypesAndMaterials;
 	// Infastructure.
 	bool operator==(const BodyPartType& bodyPartType){ return this == &bodyPartType; }
-	static std::vector<BodyPartType> data;
+	inline static std::vector<BodyPartType> data;
 	static const BodyPartType& byName(const std::string name)
 	{
 		auto found = std::ranges::find(data, name, &BodyPartType::name);
@@ -26,11 +28,36 @@ struct BodyPartType
 		return *found;
 	}
 };
+struct BodyTypeCategory
+{
+	const std::string name;
+	// Infastructure.
+	bool operator==(const BodyTypeCategory& bodyType){ return this == &bodyType; }
+	inline static std::vector<BodyTypeCategory> data;
+	static const BodyTypeCategory& byName(const std::string name)
+	{
+		auto found = std::ranges::find(data, name, &BodyTypeCategory::name);
+		assert(found != data.end());
+		return *found;
+	}
+};
 struct BodyType
 {
-	std::vector<std::pair<const BodyPartType*, const MaterialType*>> bodyParts;
+	const std::string name;
+	const BodyTypeCategory& category;
+	uint32_t scale;
+	std::vector<const BodyPartType*> bodyPartTypes;
+	// Infastructure.
+	bool operator==(const BodyType& bodyType){ return this == &bodyType; }
+	inline static std::vector<BodyType> data;
+	static const BodyType& byName(const std::string name)
+	{
+		auto found = std::ranges::find(data, name, &BodyType::name);
+		assert(found != data.end());
+		return *found;
+	}
 };
-class BodyPart;
+struct BodyPart;
 class WoundHealEvent;
 class BleedEvent;
 class WoundsCloseEvent;
@@ -60,6 +87,7 @@ class Body
 {
 	Actor& m_actor;
 	std::list<BodyPart> m_bodyParts;
+	const MaterialType* m_materialType;
 	uint32_t m_totalVolume;
 	uint32_t m_impairMovePercent;
 	uint32_t m_impairManipulationPercent;
@@ -86,23 +114,27 @@ public:
 	uint32_t healthyBloodVolume() const;
 	std::vector<Attack> getAttacks() const;
 	uint32_t getVolume() const;
+	bool isInjured() const;
 };
 class WoundHealEvent : public ScheduledEventWithPercent
 {
 	Wound& m_wound;
 	Body& m_body;
+public:
 	WoundHealEvent(uint32_t delay, Wound& w, Body& b) : ScheduledEventWithPercent(delay), m_wound(w), m_body(b) {}
 	void execute() { m_body.healWound(m_wound); }
 };
 class BleedEvent : public ScheduledEventWithPercent
 {
 	Body& m_body;
+public:
 	BleedEvent(uint32_t delay, Body& b) : ScheduledEventWithPercent(delay), m_body(b) {}
 	void execute() { m_body.bleed(); }
 };
 class WoundsCloseEvent : public ScheduledEventWithPercent
 {
 	Body& m_body;
+public:
 	WoundsCloseEvent(uint32_t delay, Body& b) : ScheduledEventWithPercent(delay), m_body(b) {}
 	void execute() { m_body.woundsClose(); }
 };

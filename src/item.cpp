@@ -26,6 +26,18 @@ void Item::setTemperature(uint32_t temperature)
 	//TODO
 	(void)temperature;
 }
+
+void Item::destroy()
+{
+	if(m_location != nullptr)
+		exit();
+	m_dataLocation->erase(m_iterator);
+}
+bool Item::isPreparedMeal() const
+{
+	static const ItemType& preparedMealType = ItemType::byName("prepared meal");
+	return &m_itemType == &preparedMealType;
+}
 // Generic.
 Item::Item(uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t q, CraftJob* cj):
 	HasShape(it.shape, true), m_id(i), m_itemType(it), m_materialType(mt), m_quantity(q), m_reservable(q), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this)
@@ -55,39 +67,51 @@ Item::Item(uint32_t i, const ItemType& it, const MaterialType& mt, std::string n
 Item& Item::create(Area& area, const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quantity, CraftJob* cj)
 {
 	assert(m_itemType.generic);
-	return area.m_items.emplace_back(++s_nextId, m_itemType, m_materialType, m_quantity, cj);
+	std::list<Item>::iterator iterator = area.m_items.emplace(area.m_items.end(), ++s_nextId, m_itemType, m_materialType, m_quantity, cj);
+	iterator->m_iterator = iterator;
+	return *iterator;
 }
 Item& Item::create(Area& area, const uint32_t m_id,  const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quantity, CraftJob* cj)
 {
 	assert(m_itemType.generic);
 	if(s_nextId <= m_id) s_nextId = m_id + 1;
-	return area.m_items.emplace_back(m_id, m_itemType, m_materialType, m_quantity, cj);
+	std::list<Item>::iterator iterator = area.m_items.emplace(area.m_items.end(), m_id, m_itemType, m_materialType, m_quantity, cj);
+	iterator->m_iterator = iterator;
+	return *iterator;
 }
 // Unnamed items, created in local item set.
 Item& Item::create(Area& area, const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quality, uint32_t m_percentWear, CraftJob* cj)
 {
 	assert(!m_itemType.generic);
-	return area.m_items.emplace_back(++s_nextId, m_itemType, m_materialType, "", m_quality, m_percentWear, cj);
+	std::list<Item>::iterator iterator = area.m_items.emplace(area.m_items.end(), ++s_nextId, m_itemType, m_materialType, "", m_quality, m_percentWear, cj);
+	iterator->m_iterator = iterator;
+	return *iterator;
 }
 Item& Item::create(Area& area, const uint32_t m_id, const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quality, uint32_t m_percentWear, CraftJob* cj)
 {
 	assert(!m_itemType.generic);
 	if(s_nextId <= m_id) s_nextId = m_id + 1;
-	return area.m_items.emplace_back(m_id, m_itemType, m_materialType, "", m_quality, m_percentWear, cj);
+	std::list<Item>::iterator iterator = area.m_items.emplace(area.m_items.end(), m_id, m_itemType, m_materialType, "", m_quality, m_percentWear, cj);
+	iterator->m_iterator = iterator;
+	return *iterator;
 }
 //Named items, created in global item set.
 Item& Item::create(const ItemType& m_itemType, const MaterialType& m_materialType, std::string m_name, uint32_t m_quality, uint32_t m_percentWear, CraftJob* cj)
 {
 	assert(!m_itemType.generic);
 	assert(!m_name.empty());
-	return s_globalItems.emplace_back(++s_nextId, m_itemType, m_materialType, m_name, m_quality, m_percentWear, cj);
+	std::list<Item>::iterator iterator = s_globalItems.emplace(s_globalItems.end(), ++s_nextId, m_itemType, m_materialType, m_name, m_quality, m_percentWear, cj);
+	iterator->m_iterator = iterator;
+	return *iterator;
 }
 Item& Item::create(const uint32_t m_id, const ItemType& m_itemType, const MaterialType& m_materialType, std::string m_name, uint32_t m_quality, uint32_t m_percentWear, CraftJob* cj)
 {
 	assert(!m_itemType.generic);
 	assert(!m_name.empty());
 	if(s_nextId <= m_id) s_nextId = m_id + 1;
-	return s_globalItems.emplace_back(m_id, m_itemType, m_materialType, m_name, m_quality, m_percentWear, cj);
+	std::list<Item>::iterator iterator = s_globalItems.emplace(s_globalItems.end(), m_id, m_itemType, m_materialType, m_name, m_quality, m_percentWear, cj);
+	iterator->m_iterator = iterator;
+	return *iterator;
 }
 void ItemHasCargo::add(HasShape& hasShape)
 {

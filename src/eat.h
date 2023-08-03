@@ -3,6 +3,7 @@
 #include "objective.h"
 #include "eventSchedule.h"
 #include "threadedTask.h"
+#include "eventSchedule.hpp"
 
 class Item;
 class Actor;
@@ -31,11 +32,11 @@ public:
 	bool canEat(Plant& plant) const;
 	bool canEat(Item& item) const;
 };
-class EatEvent : public ScheduledEvent
+class EatEvent : public ScheduledEventWithPercent
 {
 	EatObjective& m_eatObjective;
 public:
-	EatEvent(uint32_t delay, EatObjective& eo) : ScheduledEvent(delay), m_eatObjective(eo) {}
+	EatEvent(uint32_t delay, EatObjective& eo) : ScheduledEventWithPercent(delay), m_eatObjective(eo) { }
 	void execute();
 	void eatPreparedMeal(Item& item);
 	void eatGenericItem(Item& item);
@@ -46,14 +47,14 @@ public:
 	uint32_t getDesireToEatSomethingAt(Block& block) const;
 	u_int32_t getMinimumAcceptableDesire() const;
 };
-class HungerEvent : public ScheduledEvent
+class HungerEvent : public ScheduledEventWithPercent
 {
-	EatObjective& m_eatObjective;
+	Actor& m_actor;
 public:
-	HungerEvent(uint32_t delay, EatObjective& eo);
+	HungerEvent(uint32_t delay, Actor& a) : ScheduledEventWithPercent(delay), m_actor(a) { }
 	void execute();
 };
-class EatThreadedTask : ThreadedTask
+class EatThreadedTask : public ThreadedTask
 {
 	EatObjective& m_eatObjective;
 	std::vector<Block*> m_pathResult;
@@ -65,7 +66,6 @@ public:
 };
 class EatObjective : public Objective
 {
-public:
 	Actor& m_actor;
 	HasThreadedTask<EatThreadedTask> m_threadedTask;
 	HasScheduledEvent<EatEvent> m_eatEvent;
@@ -73,8 +73,11 @@ public:
 	Item* m_foodItem;
 	Block* m_eatingLocation;
 	bool m_noEatingLocationFound;
+public:
 	EatObjective(Actor& a);
 	void execute();
 	void cancel() {}
-	bool canEatAt(Block& block);
+	bool canEatAt(Block& block) const;
+	friend class EatEvent;
+	friend class EatThreadedTask;
 };

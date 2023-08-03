@@ -17,19 +17,24 @@ struct AnimalSpecies
 	const std::array<uint32_t, 2> deathAge;
 	const std::array<uint32_t, 2> adultAge;
 	const uint32_t stepsTillDieWithoutFood;
+	const uint32_t stepsEatFrequency;
+	const uint32_t stepsTillDieWithoutFluid;
+	const uint32_t stepsFluidDrinkFreqency;
 	const uint32_t stepsTillFullyGrown;
+	const uint32_t stepsTillDieInUnsafeTemperature;
 	const uint32_t stepsSleepFrequency;
 	const uint32_t stepsTillSleepOveride;
 	const uint32_t stepsSleepDuration;
 	const uint32_t minimumSafeTemperature;
 	const uint32_t maximumSafeTemperature;
-	const MoveType& moveType;
-	const FluidType& fluidType;
-	const std::vector<const Shape*> shapes;
-	const BodyType& bodyType;
 	const bool eatsMeat;
 	const bool eatsLeaves;
 	const bool eatsFruit;
+	const MaterialType& materialType;
+	const MoveType& moveType;
+	const FluidType& fluidType;
+	const BodyType& bodyType;
+	std::vector<const Shape*> shapes;
 	const Shape& shapeForPercentGrown(uint32_t percentGrown) const
 	{
 		size_t index = util::scaleByPercentRange(0, shapes.size() - 1, percentGrown);
@@ -37,7 +42,7 @@ struct AnimalSpecies
 	}
 	// Infastructure.
 	bool operator==(const AnimalSpecies& animalSpecies){ return this == &animalSpecies; }
-	static std::vector<AnimalSpecies> data;
+	inline static std::vector<AnimalSpecies> data;
 	static const AnimalSpecies& byName(std::string name)
 	{
 		auto found = std::ranges::find(data, name, &AnimalSpecies::name);

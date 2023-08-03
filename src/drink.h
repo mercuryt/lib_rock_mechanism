@@ -3,6 +3,9 @@
 #include "objective.h"
 #include "eventSchedule.h"
 #include "threadedTask.h"
+#include "eventSchedule.hpp"
+
+#include <vector>
 
 class Item;
 class Block;
@@ -13,26 +16,27 @@ class ThirstEvent;
 class DrinkObjective;
 class FluidType;
 
-class MustDrink
+class MustDrink final
 {
 	Actor& m_actor;
 	uint32_t m_volumeDrinkRequested;
-	const FluidType* m_fluidType;
-	DrinkObjective* m_objective;
+	const FluidType* m_fluidType; // Pointer because it may change, i.e. through vampirism.
+	DrinkObjective* m_objective; // Store to avoid recreating. TODO: Use a bool instead?
 	HasScheduledEventPausable<ThirstEvent> m_thirstEvent;
 	uint32_t volumeFluidForBodyMass() const;
 
 public:
-	MustDrink(Actor& a);
+	MustDrink(Actor& a) : m_actor(a), m_volumeDrinkRequested(0), m_objective(nullptr) { }
 	void drink(uint32_t volume);
 	void setNeedsFluid();
 	const uint32_t& getVolumeFluidRequested() const;
 	const uint32_t& getPercentDeadFromThirst() const;
 	const FluidType& getFluidType() const { return *m_fluidType; }
-	bool needsFluid() const { return getVolumeFluidRequested() != 0; }
+	bool needsFluid() const { return m_volumeDrinkRequested != 0; }
 	friend class ThirstEvent;
+	friend class DrinkEvent;
 };
-class DrinkObjective : public Objective
+class DrinkObjective final : public Objective
 {
 	Actor& m_actor;
 	HasThreadedTask<DrinkThreadedTask> m_threadedTask;
@@ -48,7 +52,7 @@ public:
 	friend class DrinkEvent;
 	friend class DrinkThreadedTask;
 };
-class DrinkEvent : public ScheduledEvent
+class DrinkEvent final : public ScheduledEventWithPercent
 {
 	DrinkObjective& m_drinkObjective;
 	Item* m_item;
@@ -57,11 +61,18 @@ public:
 	DrinkEvent(uint32_t step, DrinkObjective& drob, Item& i);
 	void execute();
 };
-class DrinkThreadedTask : ThreadedTask
+class ThirstEvent final : public ScheduledEventWithPercent
 {
+	Actor& m_actor;
 public:
+	ThirstEvent(uint32_t delay, Actor& a) : ScheduledEventWithPercent(delay), m_actor(a) { }
+	void execute();
+};
+class DrinkThreadedTask final : public ThreadedTask
+{
 	DrinkObjective& m_drinkObjective;
 	std::vector<Block*> m_result;
+public:
 	DrinkThreadedTask(DrinkObjective& drob) : m_drinkObjective(drob) {}
 	void readStep();
 	void writeStep();

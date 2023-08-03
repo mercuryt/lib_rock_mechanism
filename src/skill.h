@@ -1,18 +1,18 @@
 #pragma once
 #include <unordered_map>
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <cassert>
 
 struct SkillType final
 {
 	std::string name;
 	float xpPerLevelModifier;
 	uint32_t level1Xp;
-	static SkillType construct;
-	static SkillType dig;
-	static SkillType horticulture;
-	static SkillType combat;
 	// Infastructure.
 	bool operator==(const SkillType& skillType){ return this == &skillType; }
-	static std::vector<SkillType> data;
+	inline static std::vector<SkillType> data;
 	static const SkillType& byName(const std::string name)
 	{
 		auto found = std::ranges::find(data, name, &SkillType::name);

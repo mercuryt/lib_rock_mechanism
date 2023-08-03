@@ -162,7 +162,7 @@ void HasFarmFieldsForFaction::designateBlocks(FarmField& farmField, std::unorder
 		if(block->m_hasPlant.exists())
 		{
 			Plant& plant = block->m_hasPlant.get();
-			if(&plant.m_plantSpecies == farmField.plantSpecies && plant.getVolumeFluidRequested())
+			if(&plant.m_plantSpecies == farmField.plantSpecies && plant.m_volumeFluidRequested)
 				addGivePlantFluidDesignation(plant);
 		}
 	}

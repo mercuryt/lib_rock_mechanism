@@ -11,12 +11,13 @@ bool HaulSubprojectParamaters::validate() const
 	assert(destination != nullptr);
 	assert(strategy != HaulStrategy::None);
 	assert(toHaulLocation != nullptr);
+	Faction& faction = *(*workers.begin())->m_faction;
 	for(Actor* worker : workers)
-		if(worker->m_reservable.isFullyReserved())
+		if(worker->m_reservable.isFullyReserved(faction))
 			return false;
-	if(haulTool != nullptr && haulTool->m_reservable.isFullyReserved())
+	if(haulTool != nullptr && haulTool->m_reservable.isFullyReserved(faction))
 		return false;
-	if(beastOfBurden != nullptr && beastOfBurden->m_reservable.isFullyReserved())
+	if(beastOfBurden != nullptr && beastOfBurden->m_reservable.isFullyReserved(faction))
 		return false;
 	return true;
 }
@@ -51,7 +52,7 @@ void CanPickup::pickUp(Item& item, uint32_t quantity)
 void CanPickup::pickUp(Actor& actor, uint32_t quantity = 1)
 {
 	assert(quantity == 1);
-	assert(!actor.isAwake() || actor.isInjured());
+	assert(!actor.isAwake() || actor.m_body.isInjured());
 	assert(m_carrying = nullptr);
 	actor.m_reservable.clearReservationFor(m_actor.m_canReserve);
 	actor.exit();
@@ -146,7 +147,7 @@ uint32_t CanPickup::speedIfCarryingAny(HasShape& hasShape) const
 	assert(m_carrying == nullptr);
 	return m_actor.m_canMove.getIndividualMoveSpeedWithAddedMass(hasShape.singleUnitMass());
 }
-HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters) : Subproject(p), m_toHaul(*paramaters.toHaul), m_quantity(paramaters.quantity), m_destination(*paramaters.destination), m_strategy(paramaters.strategy), m_haulTool(paramaters.haulTool), m_leader(nullptr), m_itemIsMoving(false), m_beastOfBurden(paramaters.beastOfBurden), m_teamMemberInPlaceForHaulCount(0)
+HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters) : m_project(p), m_toHaul(*paramaters.toHaul), m_quantity(paramaters.quantity), m_destination(*paramaters.destination), m_strategy(paramaters.strategy), m_haulTool(paramaters.haulTool), m_leader(nullptr), m_itemIsMoving(false), m_beastOfBurden(paramaters.beastOfBurden), m_teamMemberInPlaceForHaulCount(0)
 {
 	for(Actor* actor : m_workers)
 		commandWorker(*actor);
@@ -230,7 +231,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 					// No lift point exists for this actor, find one.
 					for(Block* block : m_toHaul.getAdjacentBlocks())
 						// TODO: support multi block actors.
-						if(block->m_hasShapes.canEnterEverWithFacing(actor, 0) && !block->m_reservable.isFullyReserved())
+						if(block->m_hasShapes.canEnterEverWithFacing(actor, 0) && !block->m_reservable.isFullyReserved(*actor.m_faction))
 						{
 							m_liftPoints[&actor] = block;
 							block->m_reservable.reserveFor(actor.m_canReserve, 1);
@@ -475,7 +476,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(Project& project, 
 			return output;
 		}
 	}
-	Item* haulTool = toHaul.m_location->m_area->m_hasHaulTools.getToolToHaul(toHaul);
+	Item* haulTool = toHaul.m_location->m_area->m_hasHaulTools.getToolToHaul(*worker.m_faction, toHaul);
 	// Cart
 	if(haulTool != nullptr)
 	{
@@ -489,7 +490,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(Project& project, 
 			return output;
 		}
 		// Animal Cart
-		Actor* yoked = toHaul.m_location->m_area->m_hasHaulTools.getActorToYokeForHaulTool(*haulTool);
+		Actor* yoked = toHaul.m_location->m_area->m_hasHaulTools.getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(*worker.m_faction, *haulTool, toHaul.getMass(), project.getMinimumHaulSpeed());
 		if(yoked != nullptr && getSpeedWithHaulToolAndYokedAndCargo(worker, *yoked, *haulTool, toHaul) >= project.getMinimumHaulSpeed())
 		{
 			output.strategy = HaulStrategy::AnimalCart;
@@ -508,10 +509,10 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(Project& project, 
 		}
 	}
 	// Panniers
-	Actor* pannierBearer = toHaul.m_location->m_area->m_hasHaulTools.getPannierBearerToHaul(toHaul);
+	Actor* pannierBearer = toHaul.m_location->m_area->m_hasHaulTools.getPannierBearerToHaulCargoWithMassWithMinimumSpeed(*worker.m_faction, toHaul, project.getMinimumHaulSpeed());
 	if(pannierBearer != nullptr)
 	{
-		Item* panniers = toHaul.m_location->m_area->m_hasHaulTools.getPanniersForActor(*pannierBearer);
+		Item* panniers = toHaul.m_location->m_area->m_hasHaulTools.getPanniersForActorToHaul(*worker.m_faction, *pannierBearer, toHaul);
 		if(panniers != nullptr && getSpeedWithPannierBearerAndPanniers(worker, *pannierBearer, *panniers, toHaul) >= project.getMinimumHaulSpeed())
 		{
 			output.strategy = HaulStrategy::Panniers;
@@ -584,6 +585,11 @@ std::vector<Actor*> HaulSubproject::actorsNeededToHaulAtMinimumSpeedWithTool(Pro
 	output.clear();
 	return output;
 }
+void HaulSubproject::onComplete()
+{
+	for(Actor* worker : m_workers)
+		m_project.commandWorker(*worker);
+}
 // Class method.
 uint32_t HaulSubproject::getSpeedWithPannierBearerAndPanniers(Actor& leader, Actor& yoked, Item& haulTool, HasShape& toHaul)
 {
@@ -592,4 +598,65 @@ uint32_t HaulSubproject::getSpeedWithPannierBearerAndPanniers(Actor& leader, Act
 	actorsAndItems.push_back(&yoked);
 	// actorsAndItems, rollingMass, deadMass
 	return CanLead::getMoveSpeedForGroupWithAddedMass(actorsAndItems, 0, toHaul.singleUnitMass() + haulTool.getMass());
+}
+//TODO: optimize?
+bool HasHaulTools::hasToolToHaul(Faction& faction, HasShape& hasShape) const
+{
+	return getToolToHaul(faction, hasShape) != nullptr;
+}
+Item* HasHaulTools::getToolToHaul(Faction& faction, HasShape& hasShape) const
+{
+	for(Item* item : m_haulTools)
+		if(!item->m_reservable.isFullyReserved(faction) && item->m_itemType.internalVolume >= hasShape.getVolume())
+			return item;
+	return nullptr;
+	
+}
+Actor* HasHaulTools::getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(Faction& faction, Item& haulTool, uint32_t cargoMass, uint32_t minimumHaulSpeed) const
+{
+	static const MoveType& rollingType = MoveType::byName("rolling");
+	assert(haulTool.m_itemType.moveType == rollingType);
+	for(Actor* actor : m_yolkableActors)
+	{
+		std::vector<HasShape*> shapes = { actor, &haulTool };
+		if(!actor->m_reservable.isFullyReserved(faction) && minimumHaulSpeed <= actor->m_canLead.getMoveSpeedForGroupWithAddedMass(shapes, cargoMass))
+			return actor;
+	}
+	return nullptr;
+}
+Actor* HasHaulTools::getPannierBearerToHaulCargoWithMassWithMinimumSpeed(Faction& faction, HasShape& hasShape, uint32_t minimumHaulSpeed) const
+{
+	//TODO: Account for pannier mass?
+	for(Actor* actor : m_yolkableActors)
+		if(!actor->m_reservable.isFullyReserved(faction) && minimumHaulSpeed <= actor->m_canPickup.speedIfCarryingAny(hasShape))
+			return actor;
+	return nullptr;
+}
+Item* HasHaulTools::getPanniersForActorToHaul(Faction& faction, Actor& actor, HasShape& toHaul) const
+{
+	for(Item* item : m_haulTools)
+		if(!item->m_reservable.isFullyReserved(faction) && item->m_itemType.internalVolume >= toHaul.getVolume() && actor.m_equipmentSet.canEquipCurrently(*item))
+			return item;
+	return nullptr;
+}
+void HasHaulTools::registerHaulTool(Item& item)
+{
+	assert(!m_haulTools.contains(&item));
+	assert(item.m_itemType.internalVolume != 0);
+	m_haulTools.insert(&item);
+}
+void HasHaulTools::registerYokeableActor(Actor& actor)
+{
+	assert(!m_yolkableActors.contains(&actor));
+	m_yolkableActors.insert(&actor);
+}
+void HasHaulTools::unregisterHaulTool(Item& item)
+{
+	assert(m_haulTools.contains(&item));
+	m_haulTools.erase(&item);
+}
+void HasHaulTools::unregisterYokeableActor(Actor& actor)
+{
+	assert(m_yolkableActors.contains(&actor));
+	m_yolkableActors.erase(&actor);
 }

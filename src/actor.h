@@ -67,20 +67,22 @@ public:
 	Actor(uint32_t id, const std::wstring name, const AnimalSpecies& species, uint32_t percentGrown, Faction& faction, Attributes attributes);
 	void setLocation(Block& block);
 	void exit();
+	void removeMassFromCorpse(uint32_t mass);
+	void die(CauseOfDeath causeOfDeath);
+	void passout(uint32_t duration);
+	void doVision(const std::unordered_set<Actor*>& actors);
 	bool isItem() const { return false; }
 	bool isActor() const { return true; }
 	bool isEnemy(Actor& actor) const;
 	bool isAlly(Actor& actor) const;
-	bool isSentient() const;
+	//TODO: Zombies are not sentient.
+	bool isSentient() const { return m_species.sentient; }
 	bool isAwake() const { return m_awake; }
 	bool isInjured() const;
 	bool canMove() const;
-	void die(CauseOfDeath causeOfDeath);
-	void passout(uint32_t duration);
-	void doVision(std::unordered_set<Actor*> actors);
 	uint32_t getMass() const;
 	uint32_t getVolume() const;
-	void removeMassFromCorpse(uint32_t mass);
+	// Infastructure.
 	static std::vector<Actor> data;
 };
 // To be used to find actors fitting criteria.

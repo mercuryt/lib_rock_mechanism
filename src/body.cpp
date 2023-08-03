@@ -3,6 +3,7 @@
 #include "config.h"
 #include "randomUtil.h"
 #include "util.h"
+#include "simulation.h"
 uint32_t Wound::getPercentHealed() const
 {
 	uint32_t output = percentHealed;
@@ -21,9 +22,9 @@ uint32_t Wound::impairPercent() const
 }
 Body::Body(Actor& a) :  m_actor(a), m_totalVolume(0), m_impairMovePercent(0), m_impairManipulationPercent(0)
 {
-	for(auto& [bodyPartType, materialType] : m_actor.m_species.bodyType.bodyParts)
+	for(const BodyPartType* bodyPartType : m_actor.m_species.bodyType.bodyPartTypes)
 	{
-		m_bodyParts.emplace_back(*bodyPartType, *materialType);
+		m_bodyParts.emplace_back(*bodyPartType, m_actor.m_species.materialType);
 		m_totalVolume += bodyPartType->volume;
 	}
 	m_volumeOfBlood = healthyBloodVolume();
@@ -66,7 +67,8 @@ Wound& Body::addWound(const WoundType& woundType, BodyPart& bodyPart, const Hit&
 {
 	uint32_t bleedVolumeRate = woundType.getBleedVolumeRate(hit, bodyPart.bodyPartType);
 	Wound& wound = bodyPart.wounds.emplace_back(woundType, bodyPart, hit, bleedVolumeRate);
-	wound.healEvent.schedule(wound, *this);
+	uint32_t delayTilHeal = wound.woundType.getStepsTillHealed(hit, bodyPart.bodyPartType);
+	wound.healEvent.schedule(delayTilHeal, wound, *this);
 	recalculateBleedAndImpairment();
 	return wound;
 }
@@ -83,10 +85,10 @@ void Body::doctorWound(Wound& wound, uint32_t healSpeedPercentageChange)
 		wound.bleedVolumeRate = 0;
 		recalculateBleedAndImpairment();
 	}
-	uint32_t remaningSteps = wound.healEvent.remainingSteps();
+	uint32_t remaningSteps = wound.healEvent.getStep() - simulation::step;
 	remaningSteps = util::scaleByPercent(remaningSteps, healSpeedPercentageChange);
 	wound.healEvent.unschedule();
-	wound.healEvent.schedule(remaningSteps, wound);
+	wound.healEvent.schedule(remaningSteps, wound, *this);
 }
 void Body::woundsClose()
 {
@@ -167,11 +169,18 @@ std::vector<Attack> Body::getAttacks() const
 {
 	std::vector<Attack> output;
 	for(const BodyPart& bodyPart : m_bodyParts)
-		for(auto& [materialType, attackType] : bodyPart.bodyPartType.attackTypes)
+		for(auto& [attackType, materialType] : bodyPart.bodyPartType.attackTypesAndMaterials)
 			output.emplace_back(&attackType, materialType, nullptr);
 	return output;
 }
 uint32_t Body::getVolume() const
 {
 	return util::scaleByPercent(m_totalVolume, m_actor.m_canGrow.growthPercent());
+}
+bool Body::isInjured() const
+{
+	for(const BodyPart& bodyPart : m_bodyParts)
+		if(!bodyPart.wounds.empty())
+			return true;
+	return false;
 }

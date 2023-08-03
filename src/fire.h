@@ -1,6 +1,7 @@
 #pragma once
 #include "eventSchedule.h"
 #include "temperature.h"
+#include "eventSchedule.hpp"
 
 enum class FireStage{Smouldering, Burining, Flaming};
 
@@ -10,12 +11,12 @@ struct MaterialType;
 /*
  * Progress through the stages of fire with scheduled events.
  */
-class FireEvent : public ScheduledEvent
+class FireEvent : public ScheduledEventWithPercent
 {
 public:
 	Fire& m_fire;
 
-	FireEvent(uint32_t s, Fire& f) : ScheduledEvent(s), m_fire(f) {}
+	FireEvent(uint32_t s, Fire& f) : ScheduledEventWithPercent(s), m_fire(f) {}
 	void execute();
 	~FireEvent();
 };

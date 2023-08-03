@@ -44,7 +44,7 @@ class CraftStepProject final : public Project
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
 	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
 public:
-	CraftStepProject(Block& location, const CraftStepType& cst, CraftJob& cj) : Project(location, 1), m_craftStepType(cst), m_craftJob(cj) { }
+	CraftStepProject(Faction& faction, Block& location, const CraftStepType& cst, CraftJob& cj) : Project(faction, location, 1), m_craftStepType(cst), m_craftJob(cj) { }
 	uint32_t getWorkerCraftScore(const Actor& actor) const;
 };
 // Data about making a specific product type.

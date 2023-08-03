@@ -1,15 +1,17 @@
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include "../../lib/doctest.h"
 #include "../../src/cuboid.h"
 #include "../../src/area.h"
 TEST_CASE("create")
 {
-	Area area(2,2,2);
+	Area area(2,2,2,0);
 	Cuboid cuboid(&area.m_blocks[1][1][1], &area.m_blocks[0][0][0]);
 	CHECK(cuboid.size() == 8);
 	cuboid.contains(area.m_blocks[1][1][0]);
 }
 TEST_CASE("merge")
 {
-	Area area(2,2,2);
+	Area area(2,2,2,0);
 	Cuboid c1(&area.m_blocks[0][1][1], &area.m_blocks[0][0][0]);
 	CHECK(c1.size() == 4);
 	Cuboid c2(&area.m_blocks[1][1][1], &area.m_blocks[1][0][0]);
@@ -22,7 +24,7 @@ TEST_CASE("merge")
 }
 TEST_CASE("get face")
 {
-	Area area(2,2,2);
+	Area area(2,2,2,0);
 	Cuboid c1(&area.m_blocks[1][1][1], &area.m_blocks[0][0][0]);
 	Cuboid face = c1.getFace(4);
 	CHECK(face.size() == 4);

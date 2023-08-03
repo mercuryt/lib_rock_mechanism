@@ -1,6 +1,7 @@
 #pragma once
 #include "eventSchedule.h"
 #include "threadedTask.h"
+#include "eventSchedule.hpp"
 
 #include <vector>
 
@@ -36,19 +37,21 @@ public:
 	void callback();
 	void scheduleMove();
 	void setDestination(Block& destination, bool detour = false, bool adjacent = false);
-	void setDestinationAdjacentTo(Block& destination);
+	void setDestinationAdjacentTo(Block& destination, bool detour = false);
 	void setDestinationAdjacentTo(HasShape& hasShape);
 	void setDestinationAdjacentToSet(std::unordered_set<Block*>& blocks, bool detour = false);
 	void tryToExitArea();
-	const MoveType& getMoveType() const;
+	const MoveType& getMoveType() const { return *m_moveType; }
+	bool canMove() const;
 	friend class MoveEvent;
 	friend class PathThreadedTask;
 	friend class PathToSetThreadedTask;
 };
-class MoveEvent final : public ScheduledEvent
+class MoveEvent final : public ScheduledEventWithPercent
 {
 	ActorCanMove& m_canMove;
-	MoveEvent(uint32_t delay, ActorCanMove& cm) : ScheduledEvent(delay), m_canMove(cm) { }
+public:
+	MoveEvent(uint32_t delay, ActorCanMove& cm) : ScheduledEventWithPercent(delay), m_canMove(cm) { }
 	void execute() { m_canMove.callback(); }
 	~MoveEvent() { m_canMove.m_event.clearPointer(); }
 };
@@ -58,6 +61,7 @@ class PathThreadedTask final : public ThreadedTask
 	bool m_detour;
 	bool m_adjacent;
 	std::vector<Block*> m_result;
+public:
 	PathThreadedTask(Actor& a, bool d = false, bool ad = false) : m_actor(a), m_detour(d), m_adjacent(ad) { }
 	void readStep();
 	void writeStep();
@@ -69,6 +73,7 @@ class PathToSetThreadedTask final : public ThreadedTask
 	bool m_detour;
 	bool m_adjacent;
 	std::vector<Block*> m_result;
+public:
 	PathToSetThreadedTask(Actor& a, std::unordered_set<Block*> b, bool d = false, bool ad = false) : m_actor(a), m_blocks(b), m_detour(d), m_adjacent(ad) { }
 	void readStep();
 	void writeStep();
@@ -78,6 +83,7 @@ class ExitAreaThreadedTask final : public ThreadedTask
 	Actor& m_actor;
 	bool m_detour;
 	std::vector<Block*> m_result;
+public:
 	ExitAreaThreadedTask(Actor& a, bool d) : m_actor(a), m_detour(d) { }
 	void readStep();
 	void writeStep();

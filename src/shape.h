@@ -41,7 +41,7 @@ struct Shape
 	}
 	// Infastructure.
 	bool operator==(const Shape& x) const { return &x == this; }
-	static std::vector<Shape> data;
+	inline static std::vector<Shape> data;
 	static const Shape& byName(const std::string name)
 	{
 		auto found = std::ranges::find(data, name, &Shape::name);

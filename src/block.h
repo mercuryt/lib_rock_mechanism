@@ -109,7 +109,7 @@ public:
 	bool canSeeThroughFrom(const Block& block) const;
 	uint8_t facingToSetWhenEnteringFrom(const Block& block) const;
 	bool isSupport() const;
-	bool hasLineOfSightTo(Block* block) const;
+	bool hasLineOfSightTo(Block& block) const;
 
 	void spawnMist(const FluidType& fluidType, uint32_t maxMistSpread = 0);
 	// Validate the nongeneric object can enter this block and also any other blocks required by it's Shape comparing to m_totalStaticVolume.

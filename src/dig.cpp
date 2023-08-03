@@ -19,7 +19,7 @@ void DigThreadedTask::writeStep()
 	else
 	{
 		// Destination block has been reserved since result was found, get a new one.
-		if(m_result.back()->m_reservable.isFullyReserved())
+		if(m_result.back()->m_reservable.isFullyReserved(*m_digObjective.m_actor.m_faction))
 		{
 			m_digObjective.m_digThrededTask.create(m_digObjective);
 			return;
@@ -38,7 +38,7 @@ void DigObjective::execute()
 	if(canDigAt(*m_actor.m_location))
 	{
 		for(Block* adjacent : m_actor.m_location->getAdjacentWithEdgeAdjacent())
-			if(!adjacent->m_reservable.isFullyReserved() && m_actor.m_location->m_area->m_hasDiggingDesignations.contains(*m_actor.m_faction, *adjacent))
+			if(!adjacent->m_reservable.isFullyReserved(*m_actor.m_faction) && m_actor.m_location->m_area->m_hasDiggingDesignations.contains(*m_actor.m_faction, *adjacent))
 			{
 				m_project = &m_actor.m_location->m_area->m_hasDiggingDesignations.at(*m_actor.m_faction, *adjacent);
 				m_project->addWorker(m_actor);
@@ -54,7 +54,7 @@ void DigObjective::cancel()
 }
 bool DigObjective::canDigAt(Block& block) const
 {
-	if(block.m_reservable.isFullyReserved())
+	if(block.m_reservable.isFullyReserved(*m_actor.m_faction))
 		return false;
 	for(Block* adjacent : block.getAdjacentWithEdgeAndCornerAdjacent())
 		if(adjacent->m_hasDesignations.contains(*m_actor.m_faction, BlockDesignation::Dig))
@@ -75,6 +75,7 @@ std::vector<std::pair<ItemQuery, uint32_t>> DigProject::getUnconsumed() const
 	static const ItemType& pick = ItemType::byName("pick");
 	return {{pick, 1}}; 
 }
+std::vector<std::pair<ActorQuery, uint32_t>> DigProject::getActors() const { return {}; }
 std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> DigProject::getByproducts() const
 {
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> output;
@@ -90,7 +91,8 @@ std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> DigProje
 // Static.
 uint32_t DigProject::getWorkerDigScore(Actor& actor)
 {
-	return (actor.m_attributes.getStrength() * Config::digStrengthModifier) + (actor.m_skillSet.get(SkillType::dig) * Config::digSkillModifier);
+	static const SkillType& digType = SkillType::byName("dig");
+	return (actor.m_attributes.getStrength() * Config::digStrengthModifier) + (actor.m_skillSet.get(digType) * Config::digSkillModifier);
 }
 void DigProject::onComplete()
 {
@@ -114,7 +116,7 @@ void HasDigDesignationsForFaction::designate(Block& block, const BlockFeatureTyp
 {
 	assert(!m_data.contains(&block));
 	block.m_hasDesignations.insert(m_faction, BlockDesignation::Dig);
-	m_data.try_emplace(&block, block, blockFeatureType);
+	m_data.try_emplace(&block, m_faction, block, blockFeatureType);
 }
 void HasDigDesignationsForFaction::remove(Block& block)
 {

@@ -8,6 +8,8 @@
 #include "animalSpecies.h"
 #include "item.h"
 #include "moveType.h"
+#include "attackType.h"
+#include "skill.h"
 
 #include <fstream>
 #include <filesystem>
@@ -22,9 +24,9 @@ namespace definitions
 		for(const Json& shapeData : data)
 		{
 			BodyPartType::data.emplace_back(
-					shapeData["name"],
-					shapeData["positions"]
-					);
+				shapeData["name"],
+				shapeData["positions"]
+			);
 		}
 	}
 	void loadFluidTypes()
@@ -58,68 +60,6 @@ namespace definitions
 				MoveType::data.back().swim[&FluidType::byName(pair.key())] = pair.value();
 		}
 	}
-	void loadBodyParts()
-	{
-		for(const auto& file : std::filesystem::directory_iterator("data/bodyParts"))
-		{
-			std::ifstream f(file.path());
-			Json data = Json::parse(f);
-			BodyPartType& bodyPartType = BodyPartType::data.emplace_back(
-				data["name"],
-				data["volume"],
-				data["doesLocamotion"],
-				data["doesManipulation"]
-			);
-			for(const Json& attackTypeData : data["attackTypes"])
-			{
-				bodyPartType.attackTypes.emplace_back(
-					attackTypeData["name"],
-					attackTypeData["area"],
-					attackTypeData["baseForce"],
-					WoundType::byName(attackTypeData["woundType"])
-				);
-			}
-		}
-	}
-	void loadItemTypes()
-	{
-		for(const auto& file : std::filesystem::directory_iterator("data/materials"))
-		{
-			std::ifstream f(file.path());
-			Json data = Json::parse(f);
-			auto& itemType = ItemType::data.emplace_back(
-				data["name"],
-				data["installable"],
-				Shape::byName(data["shape"]),
-				data["generic"],
-				data["internalVolume"],
-				data["canHoldFluids"]
-			);
-			for(Json attackTypeData : data["attackTypes"])
-			{
-				itemType.attackTypes.emplace_back(
-					attackTypeData["name"],
-					attackTypeData["area"],
-					attackTypeData["baseForce"],
-					WoundType::byName(attackTypeData["woundType"])
-				);
-			}
-			if(data["wearableType"])
-			{
-				Json& wearableTypeData = data["wearableType"];
-				auto& wearableType = WearableType::data.emplace_back(
-					wearableTypeData["percentCoverage"],
-					wearableTypeData["defenseScore"],
-					wearableTypeData["rigid"],
-					wearableTypeData["impactSpreadArea"],
-					wearableTypeData["forceAbsorbedPiercedModifier"]
-				);
-				for(const auto& bodyPartName : data["bodyPartsCovered"])
-					wearableType.bodyPartsCovered.push_back(&BodyPartType::byName(bodyPartName));
-				itemType.wearableType = &wearableType;
-			}
-		}
-	}
 	void loadMaterialTypes()
 	{
 		std::ifstream f("data/materialTypeCategories.json");
@@ -150,9 +90,77 @@ namespace definitions
 				);
 		}
 	}
+	void loadSkillTypes()
+	{
+		for(const auto& file : std::filesystem::directory_iterator("data/items"))
+		{
+			std::ifstream f(file.path());
+			Json data = Json::parse(f);
+			SkillType::data.emplace_back(
+				data["name"],
+				data["xpPerLevelModifier"],
+				data["level1Xp"]
+			);
+		}
+	}
+	const AttackType loadAttackType(const Json& data)
+	{
+		return AttackType(
+			data["name"],
+			data["area"],
+			data["baseForce"],
+			data["range"],
+			data["skillBonusOrPenalty"],
+			WoundType::byName(data["woundType"]),
+			SkillType::byName(data["skillType"])
+		);
+	}
+	void loadItemTypes()
+	{
+		for(const auto& file : std::filesystem::directory_iterator("data/items"))
+		{
+			std::ifstream f(file.path());
+			Json data = Json::parse(f);
+			auto& itemType = ItemType::data.emplace_back(
+				data["name"],
+				data["installable"],
+				Shape::byName(data["shape"]),
+				data["volume"],
+				data["generic"],
+				data["internalVolume"],
+				data["canHoldFluids"],
+				data["combatScoreBonus"],
+				FluidType::byName(data["edibleForDrinkersOf"]),
+				MoveType::byName(data["moveType"])
+			);
+			if(data["combatSkill"])
+				itemType.combatSkill = &SkillType::byName(data["combatSkill"]);
+			if(data["wearableType"])
+			{
+				Json& wearableTypeData = data["wearableType"];
+				auto& wearableType = WearableType::data.emplace_back(
+					wearableTypeData["name"],
+					wearableTypeData["percentCoverage"],
+					wearableTypeData["defenseScore"],
+					wearableTypeData["rigid"],
+					wearableTypeData["impactSpreadArea"],
+					wearableTypeData["forceAbsorbedPiercedModifier"],
+					wearableTypeData["forceAbsorbedUnpiercedModifier"],
+					wearableTypeData["layer"],
+					BodyTypeCategory::byName(wearableTypeData["bodyTypeCategory"]),
+					wearableTypeData["bodyTypeScale"]
+				);
+				for(const auto& bodyPartName : data["bodyPartsCovered"])
+					wearableType.bodyPartsCovered.push_back(&BodyPartType::byName(bodyPartName));
+				itemType.wearableType = &wearableType;
+			}
+			for(Json attackTypeData : data["attackTypes"])
+				itemType.attackTypes.push_back(loadAttackType(attackTypeData));
+		}
+	}
 	void loadPlantSpecies()
 	{
-		for(const auto& file : std::filesystem::directory_iterator("data/materials"))
+		for(const auto& file : std::filesystem::directory_iterator("data/plants"))
 		{
 			std::ifstream f(file.path());
 			Json data = Json::parse(f);
@@ -163,12 +171,16 @@ namespace definitions
 				data["minimumGrowingTemperature"],
 				data["stepsTillDieFromTemperature"],
 				data["stepsNeedsFluidFrequency"],
+				data["volumeFluidConsumed"],
 				data["stepsTillDieWithoutFluid"],
 				data["stepsTillFullyGrown"],
+			 	data["stepsTillFoliageGrowsFromZero"],
 				data["growsInSunLight"],
 				data["rootRangeMax"],
 				data["rootRangeMin"],
 				data["adultMass"],
+				data["dayOfYearForSowStart"],
+				data["dayOfYearForSowEnd"],
 				FluidType::byName(data["fluidType"])
 			);
 			if(data.contains("harvestData"))
@@ -185,13 +197,55 @@ namespace definitions
 				plantSpecies.harvestData = nullptr;
 		}
 	}
-	void loadAnimalSpecies()
+	void loadBodyPartTypes()
 	{
-		for(const auto& file : std::filesystem::directory_iterator("data/materials"))
+		for(const auto& file : std::filesystem::directory_iterator("data/bodyParts"))
 		{
 			std::ifstream f(file.path());
 			Json data = Json::parse(f);
-			auto& animalSpecies = AnimalSpecies::data.emplace_back(
+			BodyPartType& bodyPartType = BodyPartType::data.emplace_back(
+				data["name"],
+				data["volume"],
+				data["doesLocamotion"],
+				data["doesManipulation"]
+			);
+			for(const Json& pair : data["attackTypesAndMaterials"])
+				bodyPartType.attackTypesAndMaterials.emplace_back(loadAttackType(pair.at(0)), &MaterialType::byName(pair.at(1)));
+		}
+	}
+	void loadBodyTypeCategories()
+	{
+		for(const auto& file : std::filesystem::directory_iterator("data/bodyCategories"))
+		{
+			std::ifstream f(file.path());
+			Json data = Json::parse(f);
+			BodyTypeCategory::data.emplace_back(
+				data["name"]
+			);
+		}
+	}
+	void loadBodyTypes()
+	{
+		for(const auto& file : std::filesystem::directory_iterator("data/bodies"))
+		{
+			std::ifstream f(file.path());
+			Json data = Json::parse(f);
+			BodyType& bodyType = BodyType::data.emplace_back(
+				data["name"],
+				BodyTypeCategory::byName(data["category"]),
+				data["scale"]
+			);
+			for(const Json& bodyPartTypeName : data["bodyPartTypes"])
+				bodyType.bodyPartTypes.push_back(&BodyPartType::byName(bodyPartTypeName));
+		}
+	}
+	void loadAnimalSpecies()
+	{
+		for(const auto& file : std::filesystem::directory_iterator("data/animals"))
+		{
+			std::ifstream f(file.path());
+			Json data = Json::parse(f);
+			AnimalSpecies& animalSpecies = AnimalSpecies::data.emplace_back(
 				data["name"],
 				data["sentient"],
 				data["strength"],
@@ -201,24 +255,41 @@ namespace definitions
 				data["volume"],
 				data["deathAge"],
 				data["adultAge"],
+				data["stepsTillDieWithoutFood"],
+				data["stepsEatFrequency"],
+				data["stepsTillDieWithoutFluid"],
+				data["stepsFluidDrinkFreqency"],
+				data["stepsTillFullyGrown"],
+				data["stepsTillDieInUnsafeTemperature"],
+				data["stepsSleepFrequency"],
+				data["stepsTillSleepOveride"],
+				data["stepsSleepDuration"],
+				data["minimumSafeTemperature"],
+				data["maximumSafeTemperature"],
+				data["eatsMeat"],
+				data["eatsLeaves"],
+				data["eatsFruit"],
+				MaterialType::byName(data["materialType"]),
 				MoveType::byName(data["moveType"]),
-				FluidType::byName(data["fluidType"])
+				FluidType::byName(data["fluidType"]),
+				BodyType::byName(data["bodyType"])
 			);
 			for(const auto& shapeName : data["shapes"])
 				animalSpecies.shapes.push_back(&Shape::byName(shapeName));
-			for(const auto& bodyPartName : data["bodyParts"])
-				animalSpecies.bodyPartTypes.push_back(&BodyPartType::byName(bodyPartName));
 		}
 	}
 	void load()
 	{
 		loadShapes();
 		loadFluidTypes();
-		loadMoveTypes();
-		loadBodyParts();
-		loadItemTypes();
 		loadMaterialTypes();
+		loadMoveTypes();
+		loadSkillTypes();
+		loadItemTypes();
 		loadPlantSpecies();
+		loadBodyPartTypes();
+		loadBodyTypeCategories();
+		loadBodyTypes();
 		loadAnimalSpecies();
 	}
 }

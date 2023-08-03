@@ -16,8 +16,8 @@ struct FluidType
 	const MaterialType* freezesInto;
 	// Infastructure.
 	bool operator==(const FluidType& fluidType) const { return this == &fluidType; }
-	static std::vector<FluidType> data;
-	static const FluidType& byName(std::string name)
+	inline static std::vector<FluidType> data;
+	static const FluidType& byName(const std::string name)
 	{
 		auto found = std::ranges::find(data, name, &FluidType::name);
 		assert(found != data.end());

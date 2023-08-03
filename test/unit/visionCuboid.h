@@ -1,13 +1,16 @@
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include "../../lib/doctest.h"
 #include "../../src/visionCuboid.h"
+#include "../../src/area.h"
 TEST_CASE("create")
 {
-	Area area(2,2,2);
+	Area area(2,2,2,0);
 	Cuboid cuboid(area.m_blocks[1][1][1], area.m_blocks[0][0][0]);
 	VisionCuboid visionCuboid(cuboid);
 }
 TEST_CASE("can see into")
 {
-	Area area(2,2,2);
+	Area area(2,2,2,0);
 	Cuboid c1(area.m_blocks[0][1][1], area.m_blocks[0][0][0]);
 	VisionCuboid vc1(c1);
 	Cuboid c2(area.m_blocks[1][1][1], area.m_blocks[1][0][0]);
@@ -19,7 +22,7 @@ TEST_CASE("can see into")
 }
 TEST_CASE("can combine with")
 {
-	Area area(2,2,2);
+	Area area(2,2,2,0);
 	Cuboid c1(area.m_blocks[0][1][1], area.m_blocks[0][0][0]);
 	VisionCuboid vc1(c1);
 	Cuboid c2(area.m_blocks[1][1][1], area.m_blocks[1][0][0]);
@@ -34,7 +37,7 @@ TEST_CASE("can combine with")
 }
 TEST_CASE("setup area")
 {
-	Area area(2,2,2);
+	Area area(2,2,2,0);
 	VisionCuboid::setup(area);
 	CHECK(area.m_visionCuboids.size() == 1);
 	VisionCuboid& visionCuboid = *area.m_blocks[0][0][0].m_visionCuboid;
@@ -44,7 +47,7 @@ TEST_CASE("setup area")
 }
 TEST_CASE("split at")
 {
-	Area area(2,2,1);
+	Area area(2,2,1,0);
 	Block& b1 = area.m_blocks[0][0][0];
 	Block& b2 = area.m_blocks[1][0][0];
 	Block& b3 = area.m_blocks[0][1][0];
@@ -65,7 +68,7 @@ TEST_CASE("split at")
 }
 TEST_CASE("split below")
 {
-	Area area(3,3,3);
+	Area area(3,3,3,0);
 	Block& middle = area.m_blocks[1][1][1];
 	Block& high = area.m_blocks[2][2][2];
 	Block& low = area.m_blocks[0][0][0];

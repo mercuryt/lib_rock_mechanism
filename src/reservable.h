@@ -9,13 +9,17 @@
 #include <unordered_map>
 #include <cassert>
 #include <cstdint>
+class Faction;
 class Reservable;
 class CanReserve final
 {
-	friend class Reservable;
+	Faction* m_faction;
 	std::unordered_set<Reservable*> m_reservables;
+	friend class Reservable;
 public:
+	CanReserve(Faction& f) : m_faction(&f) { }
 	void clearAll();
+	void setFaction(Faction& faction);
 	~CanReserve();
 };
 class Reservable final
@@ -23,10 +27,10 @@ class Reservable final
 	friend class CanReserve;
 	std::unordered_map<CanReserve*, uint32_t> m_canReserves;
 	uint32_t m_maxReservations;
-	uint32_t m_reservedCount;
+	std::unordered_map<Faction*, uint32_t> m_reservedCounts;
 	void eraseReservationFor(CanReserve& canReserve)
 	{
-		m_reservedCount -= m_canReserves[&canReserve];
+		m_reservedCounts.at(canReserve.m_faction) -= m_canReserves.at(&canReserve);
 		m_canReserves.erase(&canReserve);
 	}
 public:
@@ -36,29 +40,29 @@ public:
 		for(auto& pair : m_canReserves)
 			pair.first->m_reservables.erase(this);
 	}
-	bool isFullyReserved() const { return m_reservedCount == m_maxReservations; }
+	bool isFullyReserved(Faction& faction) const { return m_reservedCounts.at(&faction) == m_maxReservations; }
 	std::unordered_map<CanReserve*, uint32_t>& getReservedBy() { return m_canReserves; }
 	void reserveFor(CanReserve& canReserve, uint32_t quantity) 
 	{
-		assert(m_reservedCount + quantity <= m_maxReservations);
+		assert(m_reservedCounts.at(canReserve.m_faction) + quantity <= m_maxReservations);
 		assert(!m_canReserves.contains(&canReserve));
 		m_canReserves[&canReserve] = quantity;
-		m_reservedCount += quantity;
+		m_reservedCounts.at(canReserve.m_faction) += quantity;
 		assert(!canReserve.m_reservables.contains(this));
 		canReserve.m_reservables.insert(this);
 	}
 	void clearReservationFor(CanReserve& canReserve)
        	{
 		assert(m_canReserves.contains(&canReserve));
-		assert(m_canReserves[&canReserve] >= m_reservedCount);
+		assert(m_canReserves[&canReserve] >= m_reservedCounts.at(canReserve.m_faction));
 		eraseReservationFor(canReserve);
 		assert(canReserve.m_reservables.contains(this));
 		canReserve.m_reservables.erase(this);
 	}
 	void setMaxReservations(uint32_t mr) { m_maxReservations = mr; }
-	uint32_t getUnreservedCount() const
+	uint32_t getUnreservedCount(Faction& faction) const
 	{
-		return m_maxReservations - m_reservedCount;
+		return m_maxReservations - m_reservedCounts.at(&faction);
 	}
 };
 inline CanReserve::~CanReserve() { clearAll(); }

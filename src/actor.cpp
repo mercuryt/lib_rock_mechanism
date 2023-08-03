@@ -6,7 +6,7 @@
 #include <algorithm>
 
 Actor::Actor(uint32_t id, const std::wstring name, const AnimalSpecies& species, uint32_t percentGrown, Faction& faction, Attributes attributes) :
-	HasShape(species.shapeForPercentGrown(percentGrown), false), m_id(id), m_name(name), m_species(species), m_alive(true), m_awake(true), m_body(*this) , m_faction(&faction), m_attributes(attributes), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canMove(*this), m_canFight(*this), m_canPickup(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_reservable(1) { }
+	HasShape(species.shapeForPercentGrown(percentGrown), false), m_id(id), m_name(name), m_species(species), m_alive(true), m_awake(true), m_body(*this), m_project(nullptr), m_faction(&faction), m_attributes(attributes), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canMove(*this), m_canFight(*this), m_canPickup(*this), m_canGrow(*this, percentGrown), m_equipmentSet(*this), m_hasObjectives(*this), m_canReserve(faction), m_reservable(1) { }
 void Actor::setLocation(Block& block)
 {
 	assert(&block != HasShape::m_location);
@@ -28,6 +28,13 @@ void Actor::exit()
 	assert(m_location != nullptr);
 	m_location->m_hasActors.exit(*this);
 }
+
+void Actor::removeMassFromCorpse(uint32_t mass)
+{
+	assert(!m_alive);
+	assert(mass <= m_attributes.getMass());
+	m_attributes.removeMass(mass);
+}
 bool Actor::isEnemy(Actor& actor) const { return m_faction->enemies.contains(actor.m_faction); }
 bool Actor::isAlly(Actor& actor) const { return m_faction->allies.contains(actor.m_faction); }
 void Actor::die(CauseOfDeath causeOfDeath)
@@ -40,6 +47,12 @@ void Actor::passout(uint32_t duration)
 {
 	//TODO
 	(void)duration;
+}
+void Actor::doVision(const std::unordered_set<Actor*>& actors)
+{
+	(void)actors;
+	//TODO: psycology.
+	//TODO: fog of war?
 }
 uint32_t Actor::getMass() const
 {

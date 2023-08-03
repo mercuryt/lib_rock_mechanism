@@ -40,6 +40,7 @@ std::vector<std::pair<ItemQuery, uint32_t>> CraftStepProject::getUnconsumed() co
 		output.emplace_back(*m_craftJob.workPiece, 1);
 	return output; 
 }
+std::vector<std::pair<ActorQuery, uint32_t>> CraftStepProject::getActors() const { return {}; }
 std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> CraftStepProject::getByproducts() const {
 	auto output =  m_craftStepType.byproductItems; 
 	for(auto& tuple : output)
@@ -64,7 +65,7 @@ void CraftThreadedTask::writeStep()
 		m_craftObjective.m_actor.m_hasObjectives.cannotFulfillObjective(m_craftObjective);
 	else
 		// Selected work place has been reserved, try again.
-		if(m_location->m_reservable.isFullyReserved())
+		if(m_location->m_reservable.isFullyReserved(*m_craftObjective.m_actor.m_faction))
 			m_craftObjective.m_threadedTask.create(m_craftObjective);
 		else
 		{
@@ -191,14 +192,14 @@ void HasCraftingLocationsAndJobs::jobComplete(CraftJob& craftJob)
 }
 void HasCraftingLocationsAndJobs::makeAndAssignStepProject(CraftJob& craftJob, Block& location, Actor& worker)
 {
-	craftJob.craftStepProject = std::make_unique<CraftStepProject>(location, **craftJob.stepIterator, craftJob);
+	craftJob.craftStepProject = std::make_unique<CraftStepProject>(*worker.m_faction, location, **craftJob.stepIterator, craftJob);
 	craftJob.craftStepProject->addWorker(worker);
 	unindexAssigned(craftJob);
 }
 // May return nullptr;
 CraftJob* HasCraftingLocationsAndJobs::getJobForAtLocation(Actor& actor, const SkillType& skillType, Block& block)
 {
-	assert(!block.m_reservable.isFullyReserved());
+	assert(!block.m_reservable.isFullyReserved(*actor.m_faction));
 	if(!m_stepTypeCategoriesByLocation.contains(&block))
 		return nullptr;
 	for(const CraftStepTypeCategory* category : m_stepTypeCategoriesByLocation.at(&block))
@@ -211,7 +212,7 @@ std::pair<CraftJob*, Block*> HasCraftingLocationsAndJobs::getJobAndLocationFor(A
 {
 	auto condition = [&](Block& block)
 	{
-		return !block.m_reservable.isFullyReserved() && getJobForAtLocation(actor, skillType, block) != nullptr;
+		return !block.m_reservable.isFullyReserved(*actor.m_faction) && getJobForAtLocation(actor, skillType, block) != nullptr;
 	};
 	Block* location = path::getForActorToPredicateReturnEndOnly(actor, condition);
 	if(location == nullptr)

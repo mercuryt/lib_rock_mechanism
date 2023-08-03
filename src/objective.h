@@ -1,6 +1,7 @@
 #pragma once
 
 #include "eventSchedule.h"
+#include "eventSchedule.hpp"
 
 #include <map>
 #include <memory>

@@ -113,6 +113,11 @@ void HasObjectives::taskComplete()
 {
 	m_currentObjective->execute();
 }
+void HasObjectives::cannotCompleteTask()
+{
+	//TODO: generate cancelaton message?
+	m_currentObjective->execute();
+}
 Objective& HasObjectives::getCurrent() 
 {
 	assert(m_currentObjective != nullptr);

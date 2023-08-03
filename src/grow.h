@@ -1,5 +1,6 @@
 #pragma once
 #include "eventSchedule.h"
+#include "eventSchedule.hpp"
 class AnimalGrowthEvent;
 class AnimalGrowthUpdateEvent;
 class Actor;

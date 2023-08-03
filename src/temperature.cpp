@@ -1,6 +1,7 @@
 #include "temperature.h"
 #include "block.h"
 #include "area.h"
+#include "path.h"
 #include "nthAdjacentOffsets.h"
 enum class TemperatureZone { Surface, Underground, LavaSea};
 uint32_t TemperatureSource::getTemperatureDeltaForRange(uint32_t range)
@@ -137,9 +138,36 @@ const uint32_t& BlockHasTemperature::getAmbientTemperature() const
 	}
 	return m_block.m_area->m_areaHasTemperature.getAmbientSurfaceTemperature();
 }
+void GetToSafeTemperatureThreadedTask::readStep()
+{
+	auto condition = [&](Block& block)
+	{
+		return m_objective.m_actor.m_needsSafeTemperature.isSafe(block.m_blockHasTemperature.get());
+	};
+	m_result = path::getForActorToPredicate(m_objective.m_actor, condition);
+}
+void GetToSafeTemperatureThreadedTask::writeStep()
+{
+	if(m_result.empty())
+		m_objective.m_actor.m_hasObjectives.cannotFulfillNeed(m_objective);
+}
+void GetToSafeTemperatureObjective::execute()
+{
+	if(m_actor.m_needsSafeTemperature.isSafeAtCurrentLocation())
+		m_actor.m_hasObjectives.objectiveComplete(*this);
+	else
+		m_getToSafeTemperatureThreadedTask.create(*this);
+}
+GetToSafeTemperatureObjective::~GetToSafeTemperatureObjective() { m_actor.m_needsSafeTemperature.m_objectiveExists = false; }
 void ActorNeedsSafeTemperature::onChange()
 {
 	m_actor.m_canGrow.updateGrowingStatus();
+	if(!m_objectiveExists && !isSafeAtCurrentLocation())
+	{
+		m_objectiveExists = true;
+		std::unique_ptr<Objective> objective = std::make_unique<GetToSafeTemperatureObjective>(m_actor);
+		m_actor.m_hasObjectives.addNeed(std::move(objective));
+	}
 }
 bool ActorNeedsSafeTemperature::isSafe(uint32_t temperature) const
 {

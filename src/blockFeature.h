@@ -12,6 +12,7 @@ struct BlockFeatureType
 	const bool lockable;
 	const bool canStandIn;
 	const bool canStandAbove;
+	const bool isSupportAgainstCaveIn;
 	bool operator==(const BlockFeatureType& x) const { return this == &x; }
 	static BlockFeatureType floor;
 	static BlockFeatureType door;
@@ -23,15 +24,6 @@ struct BlockFeatureType
 	static BlockFeatureType fortification;
 	static void load();
 };
-// Name, hewn, blocks entrance, lockable, stand in, stand above
-BlockFeatureType BlockFeatureType::floor = {"floor", false, false, false, true, false};
-BlockFeatureType BlockFeatureType::door = {"door", false, false, true, false, false};
-BlockFeatureType BlockFeatureType::hatch = {"hatch", false, false, true, true, false};
-BlockFeatureType BlockFeatureType::stairs = {"stairs", true,  false, false, true, true};
-BlockFeatureType BlockFeatureType::floodGate = {"floodGate", true, true, false, false, true};
-BlockFeatureType BlockFeatureType::floorGrate = {"floorGrate", false, false, false, true, false};
-BlockFeatureType BlockFeatureType::ramp = {"ramp", true, false, false, true, true};
-BlockFeatureType BlockFeatureType::fortification = {"fortification", true, true, false, false, true};
 
 struct BlockFeature
 {
@@ -58,8 +50,9 @@ public:
 	void remove(const BlockFeatureType& blockFeatueType);
 	void construct(const BlockFeatureType& blockFeatueType, const MaterialType& materialType);
 	void hew(const BlockFeatureType& blockFeatueType);
-	void setTemperature(uint32_t temperature); //TODO
+	void setTemperature(uint32_t temperature);
 	bool blocksEntrance() const;
 	bool canStandAbove() const;
 	bool canStandIn() const;
+	bool isSupport() const;
 };

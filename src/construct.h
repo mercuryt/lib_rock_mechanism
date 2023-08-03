@@ -19,7 +19,7 @@ class ConstructThreadedTask final : public ThreadedTask
 	ConstructObjective& m_constructObjective;
 	std::vector<Block*> m_result;
 public:
-	ConstructThreadedTask(ConstructObjective& ho) : m_constructObjective(ho) {}
+	ConstructThreadedTask(ConstructObjective& co) : m_constructObjective(co) { }
 	void readStep();
 	void writeStep();
 };
@@ -44,8 +44,8 @@ public:
 };
 class ConstructProject final : public Project
 {
-	const BlockFeatureType* blockFeatureType;
-	const MaterialType& materialType;
+	const BlockFeatureType* m_blockFeatureType;
+	const MaterialType& m_materialType;
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
@@ -53,7 +53,7 @@ class ConstructProject final : public Project
 	uint32_t getWorkerConstructScore(Actor& actor) const;
 public:
 	// BlockFeatureType can be null, meaning the block is to be filled with a constructed wall.
-	ConstructProject(Block& b, const BlockFeatureType* bft, const MaterialType& mt) : Project(b, Config::maxNumberOfWorkersForConstructionProject), blockFeatureType(bft), materialType(mt) { }
+	ConstructProject(Faction& faction, Block& b, const BlockFeatureType* bft, const MaterialType& mt) : Project(faction, b, Config::maxNumberOfWorkersForConstructionProject), m_blockFeatureType(bft), m_materialType(mt) { }
 	void onComplete();
 	// What would the total delay time be if we started from scratch now with current workers?
 	uint32_t getDelay() const;
@@ -86,5 +86,5 @@ public:
 	void remove(Faction& faction, Block& block);
 	void clearAll(Block& block);
 	bool areThereAnyForFaction(Faction& faction) const;
-	ConstructProject& at(Faction& faction, Block& block) const;
+	ConstructProject& getProject(Faction& faction, Block& block);
 };

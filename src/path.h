@@ -56,7 +56,7 @@ namespace path
 		}
 		return output; // Empty container means no result found.
 	}
-	std::vector<Block*> getForActor(Actor& actor, Block& destination, bool detour = false)
+	inline std::vector<Block*> getForActor(Actor& actor, Block& destination, bool detour = false)
 	{
 		// Huristic: taxi distance to destination times constant plus total move cost.
 		auto priority = [&](ProposedRouteStep& proposedRouteStep)

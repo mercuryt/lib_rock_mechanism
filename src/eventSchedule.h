@@ -8,6 +8,7 @@
 #include <list>
 #include <unordered_map>
 #include <memory>
+#include <cassert>
 
 class ScheduledEvent
 {
@@ -30,38 +31,10 @@ public:
 };
 namespace eventSchedule
 {
-	std::unordered_map<uint32_t, std::list<std::unique_ptr<ScheduledEvent>>> data;
+	inline std::unordered_map<uint32_t, std::list<std::unique_ptr<ScheduledEvent>>> data;
 	void schedule(std::unique_ptr<ScheduledEvent> scheduledEvent);
 	void schedule(std::unique_ptr<ScheduledEventWithPercent> scheduledEvent);
 	void unschedule(const ScheduledEvent& scheduledEvent);
 	void execute(uint32_t stepNumber);
 	void clear();
-};
-template<class EventType>
-class HasScheduledEvent
-{
-	ScheduledEventWithPercent* m_event;
-public:
-	HasScheduledEvent() : m_event(nullptr) {}
-	template<typename ...Args>
-	void schedule(Args& ...args);
-	void unschedule();
-	void maybeUnschedule();
-	void clearPointer();
-	uint32_t percentComplete() const;
-	bool exists() const;
-	uint32_t remainingSteps() const;
-	~HasScheduledEvent();
-};
-template<class EventType>
-class HasScheduledEventPausable : public HasScheduledEvent<EventType>
-{
-	uint32_t m_percent;
-public:
-	HasScheduledEventPausable() : m_percent(0) { }
-	uint32_t percentComplete() const;
-	void pause();
-	void reset();
-	template<typename ...Args>
-	void schedule(uint32_t delay, Args& ...args);
 };

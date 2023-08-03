@@ -3,7 +3,7 @@
 #include "plant.h"
 #include "block.h"
 #include "area.h"
-Plant::Plant(Block& l, const PlantSpecies& pt, uint32_t pg) : m_location(l), m_fluidSource(nullptr), m_plantSpecies(pt), m_percentGrown(pg), m_quantityToHarvest(0), m_percentFoliage(100), m_reservable(1), m_volumeDrinkRequested(0)
+Plant::Plant(Block& l, const PlantSpecies& pt, uint32_t pg) : m_location(l), m_fluidSource(nullptr), m_plantSpecies(pt), m_percentGrown(pg), m_quantityToHarvest(0), m_percentFoliage(100), m_reservable(1), m_volumeFluidRequested(0)
 {
 	assert(m_location.m_hasPlant.canGrowHere(m_plantSpecies));
 	m_fluidEvent.schedule(m_plantSpecies.stepsNeedsFluidFrequency, *this);
@@ -32,7 +32,7 @@ void Plant::setTemperature(uint32_t temperature)
 }
 void Plant::setHasFluidForNow()
 {
-	m_volumeDrinkRequested = 0;
+	m_volumeFluidRequested = 0;
 	if(m_fluidEvent.exists())
 		m_fluidEvent.unschedule();
 	m_fluidEvent.schedule(m_plantSpecies.stepsNeedsFluidFrequency, *this);
@@ -44,17 +44,17 @@ void Plant::setMaybeNeedsFluid()
 	uint32_t stepsTillNextFluidEvent;
 	if(hasFluidSource())
 	{
-		m_volumeDrinkRequested = 0;
+		m_volumeFluidRequested = 0;
 		stepsTillNextFluidEvent = m_plantSpecies.stepsNeedsFluidFrequency;
 	}
-	else if(m_volumeDrinkRequested != 0)
+	else if(m_volumeFluidRequested != 0)
 	{
 		die();
 		return;
 	}
 	else // Needs fluid, stop growing and set death timer.
 	{
-		m_volumeDrinkRequested = util::scaleByPercent(m_plantSpecies.volumeFluidConsumed, getGrowthPercent());
+		m_volumeFluidRequested = util::scaleByPercent(m_plantSpecies.volumeFluidConsumed, getGrowthPercent());
 		stepsTillNextFluidEvent = m_plantSpecies.stepsTillDieWithoutFluid;
 		m_location.m_isPartOfFarmField.designateForGiveFluidIfPartOfFarmField(*this);
 	}
@@ -64,9 +64,9 @@ void Plant::setMaybeNeedsFluid()
 void Plant::addFluid(uint32_t volume, const FluidType& fluidType)
 {
 	assert(fluidType == m_plantSpecies.fluidType);
-	assert(volume <= m_volumeDrinkRequested);
-	m_volumeDrinkRequested -= volume;
-	if(m_volumeDrinkRequested == 0)
+	assert(volume <= m_volumeFluidRequested);
+	m_volumeFluidRequested -= volume;
+	if(m_volumeFluidRequested == 0)
 		setHasFluidForNow();
 }
 bool Plant::hasFluidSource()
@@ -111,7 +111,7 @@ void Plant::endOfHarvest()
 }
 void Plant::updateGrowingStatus()
 {
-	if(m_volumeDrinkRequested == 0 && m_location.m_exposedToSky == m_plantSpecies.growsInSunLight && !m_temperatureEvent.exists() && getPercentFoliage() >= Config::minimumPercentFoliageForGrow)
+	if(m_volumeFluidRequested == 0 && m_location.m_exposedToSky == m_plantSpecies.growsInSunLight && !m_temperatureEvent.exists() && getPercentFoliage() >= Config::minimumPercentFoliageForGrow)
 	{
 		if(!m_growthEvent.exists())
 		{
@@ -180,6 +180,16 @@ void Plant::removeFoliageMass(uint32_t mass)
 	makeFoliageGrowthEvent();
 	updateGrowingStatus();
 }
+void Plant::removeFruitQuantity(uint32_t quantity)
+{
+	assert(quantity <= m_quantityToHarvest);
+	m_quantityToHarvest -= quantity;
+}
+uint32_t Plant::getFruitMass() const
+{
+	static const MaterialType& fruitType = MaterialType::byName("fruit");
+	return m_plantSpecies.harvestData->fruitItemType.volume * fruitType.density * m_quantityToHarvest;
+}
 void Plant::makeFoliageGrowthEvent()
 {
 	uint32_t delay = util::scaleByInversePercent(m_plantSpecies.stepsTillFoliageGrowsFromZero, m_percentFoliage);
@@ -189,6 +199,11 @@ void Plant::foliageGrowth()
 {
 	m_percentFoliage = 100;
 	updateGrowingStatus();
+}
+uint32_t Plant::getStepAtWhichPlantWillDieFromLackOfFluid() const
+{
+	assert(m_volumeFluidRequested != 0);
+	return m_fluidEvent.getStep();
 }
 // HasPlant.
 void HasPlant::addPlant(const PlantSpecies& plantSpecies, uint32_t growthPercent)
@@ -214,6 +229,18 @@ void HasPlant::setTemperature(uint32_t temperature)
 {
 	if(m_plant != nullptr)
 		m_plant->setTemperature(temperature);
+}
+bool HasPlant::canGrowHere(const PlantSpecies& plantSpecies) const
+{
+	uint32_t temperature = m_block.m_blockHasTemperature.get();
+	if(plantSpecies.maximumGrowingTemperature < temperature || plantSpecies.minimumGrowingTemperature > temperature)
+		return false;
+	if(plantSpecies.growsInSunLight != m_block.m_outdoors)
+		return false;
+	static const MaterialType& dirtType = MaterialType::byName("dirt");
+	if(m_block.m_adjacents[0] == nullptr || !m_block.m_adjacents[0]->isSolid() || m_block.m_adjacents[0]->getSolidMaterial() != dirtType)
+		return false;
+	return true;
 }
 void HasPlants::emplace(Block& location, const PlantSpecies& species, uint32_t percentGrowth)
 {

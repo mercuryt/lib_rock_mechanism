@@ -13,7 +13,7 @@
 #include <unordered_map>
 
 struct BodyPartType;
-struct WeaponType;
+struct BodyTypeCategory;
 class Item;
 class Area;
 class Actor;
@@ -28,11 +28,13 @@ struct WearableType
 	const uint32_t impactSpreadArea;
 	const uint32_t forceAbsorbedPiercedModifier;
 	const uint32_t forceAbsorbedUnpiercedModifier;
+	const uint32_t layer;
+	const BodyTypeCategory& bodyTypeCategory;
+	const uint32_t bodyTypeScale;
 	std::vector<const BodyPartType*> bodyPartsCovered;
-	uint32_t layer;
 	// Infastructure.
-	bool operator==(const WearableType& wearableType){ return this == &wearableType; }
-	static std::vector<WearableType> data;
+	bool operator==(const WearableType& wearableType) const { return this == &wearableType; }
+	inline static std::vector<WearableType> data;
 	static const WearableType& byName(std::string name)
 	{
 		auto found = std::ranges::find(data, name, &WearableType::name);
@@ -49,13 +51,15 @@ struct ItemType
 	const bool generic;
 	const uint32_t internalVolume;
 	const bool canHoldFluids;
-       	const WearableType* wearableType;
-	const WeaponType* weaponType;
-	const uint32_t combatScore;
+	const uint32_t combatScoreBonus;
+	const FluidType& edibleForDrinkersOf;
 	const MoveType& moveType;
+       	const WearableType* wearableType;
+	const SkillType* combatSkill;
+	std::vector<AttackType> attackTypes;
 	// Infastructure.
 	bool operator==(const ItemType& itemType) const { return this == &itemType; }
-	static std::vector<ItemType> data;
+	inline static std::vector<ItemType> data;
 	static const ItemType& byName(std::string name)
 	{
 		auto found = std::ranges::find(data, name, &ItemType::name);
@@ -106,6 +110,8 @@ public:
 	CraftJob* m_craftJobForWorkPiece; // Used only for work in progress items.
 	ItemHasCargo m_hasCargo; //TODO: Change to unique_ptr to save some RAM?
 	//TODO: ItemHasOwners
+	std::list<Item>::iterator m_iterator;
+	std::list<Item>* m_dataLocation;
 
 	// Generic.
 	Item(uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t q, CraftJob* cj);
@@ -122,13 +128,12 @@ public:
 	void setTemperature(uint32_t temperature);
 	bool isItem() const { return true; }
 	bool isActor() const { return false; }
-	bool edible() const;
 	bool isPreparedMeal() const;
 	uint32_t singleUnitMass() const { return m_itemType.volume * m_materialType.density; }
 	uint32_t getMass() const { return m_quantity * singleUnitMass(); }
 	uint32_t getVolume() const { return m_quantity * m_itemType.volume; }
 	const MoveType& getMoveType() const { return m_itemType.moveType; }
-	static std::list<Item> s_globalItems;
+	inline static std::list<Item> s_globalItems;
 	// Generic items, created in local item set. 
 	static Item& create(Area& area, const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quantity, CraftJob* cj = nullptr);
 	static Item& create(Area& area, const uint32_t m_id,  const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quantity, CraftJob* cj = nullptr);
@@ -170,7 +175,7 @@ public:
 	void setTemperature(uint32_t temperature);
 	//Item* get(ItemType& itemType) const;
 	uint32_t getCount(const ItemType& itemType, const MaterialType& materialType) const;
-	std::vector<Item*>& getAll() const;
+	std::vector<Item*>& getAll() { return m_items; }
 	bool hasInstalledItemType(const ItemType& itemType) const;
 	bool hasEmptyContainerWhichCanHoldFluidsCarryableBy(Actor& actor) const;
 	bool hasContainerContainingFluidTypeCarryableBy(Actor& actor, const FluidType& fluidType) const;

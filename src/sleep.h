@@ -4,6 +4,7 @@
 #include "threadedTask.h"
 #include "objective.h"
 #include "config.h"
+#include "eventSchedule.hpp"
 
 #include <vector>
 

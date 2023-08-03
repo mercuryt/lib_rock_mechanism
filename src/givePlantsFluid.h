@@ -4,6 +4,7 @@
 #include "threadedTask.h"
 #include "objective.h"
 #include "config.h"
+#include "eventSchedule.hpp"
 
 #include <memory>
 #include <vector>
@@ -12,28 +13,31 @@ class Plant;
 class Block;
 class Item;
 class GivePlantsFluidObjective;
-class GivePlantsFluidEvent : public ScheduledEventWithPercent
+class GivePlantsFluidEvent final : public ScheduledEventWithPercent
 {
 	GivePlantsFluidObjective& m_objective;
+public:
 	GivePlantsFluidEvent(uint32_t step, GivePlantsFluidObjective& gpfo) : ScheduledEventWithPercent(step), m_objective(gpfo) { }
 	void execute();
 	~GivePlantsFluidEvent();
 };
 // Path to an empty water proof container or somewhere to fill an empty container or a container with the correct type of fluid or a plant which needs fluid.
-class GivePlantsFluidThreadedTask : public ThreadedTask
+class GivePlantsFluidThreadedTask final : public ThreadedTask
 {
 	GivePlantsFluidObjective& m_objective;
 	std::vector<Block*> m_result;
+public:
 	GivePlantsFluidThreadedTask(GivePlantsFluidObjective& gpfo) : m_objective(gpfo) { }
 	void readStep();
 	void writeStep();
 };
-class GivePlantsFluidObjectiveType : public ObjectiveType
+class GivePlantsFluidObjectiveType final : public ObjectiveType
 {
+public:
 	bool canBeAssigned(Actor& actor) const;
 	std::unique_ptr<Objective> makeFor(Actor& actor) const;
 };
-class GivePlantsFluidObjective : public Objective
+class GivePlantsFluidObjective final : public Objective
 {
 	Actor& m_actor;
 	Plant* m_plant;

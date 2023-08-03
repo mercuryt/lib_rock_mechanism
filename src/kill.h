@@ -20,10 +20,10 @@ class Actor;
 
 class KillObjective final : public Objective
 {
-public:
 	Actor& m_killer;
 	Actor& m_target;
 	HasThreadedTask<GetIntoAttackPositionThreadedTask> m_getIntoRangeAndLineOfSightThreadedTask;
+public:
 	KillObjective(Actor& k, Actor& t) : Objective(Config::killPriority), m_killer(k), m_target(t) { }
 	void execute();
 	void cancel(){}

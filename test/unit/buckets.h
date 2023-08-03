@@ -1,7 +1,10 @@
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include "../../lib/doctest.h"
 #include "../../src/buckets.h"
 struct Mock
 {
 	uint32_t m_id;
+	Mock(uint32_t id) : m_id(id) { }
 };
 bool contains(std::vector<Mock*>& v, Mock& m)
 {

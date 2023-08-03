@@ -30,7 +30,7 @@ void SowSeedsThreadedTask::writeStep()
 	if(m_result.empty())
 		m_objective.m_actor.m_hasObjectives.cannotFulfillObjective(m_objective);
 	else
-		if(m_result.back()->m_reservable.isFullyReserved())
+		if(m_result.back()->m_reservable.isFullyReserved(*m_objective.m_actor.m_faction))
 			m_objective.m_threadedTask.create(m_objective);
 		else
 		{

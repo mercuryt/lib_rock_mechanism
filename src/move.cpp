@@ -49,17 +49,27 @@ void ActorCanMove::scheduleMove()
 void ActorCanMove::setDestination(Block& destination, bool detour, bool adjacent)
 {
 	m_destination = &destination;
-	m_threadedTask.create(*this, detour, adjacent);
+	m_threadedTask.create(m_actor, detour, adjacent);
+}
+void ActorCanMove::setDestinationAdjacentTo(Block& destination, bool detour)
+{
+	setDestination(destination, detour, true);
 }
 void ActorCanMove::setDestinationAdjacentToSet(std::unordered_set<Block*>& blocks, bool detour)
 {
 	static bool adjacent = true;
-	m_toSetThreadedTask.create(*this, blocks, detour, adjacent);
+	m_toSetThreadedTask.create(m_actor, blocks, detour, adjacent);
 }
 void ActorCanMove::setDestinationAdjacentTo(HasShape& hasShape) { setDestinationAdjacentToSet(hasShape.m_blocks); }
 void ActorCanMove::tryToExitArea()
 {
-	m_exitAreaThreadedTask.create(*this);
+	m_exitAreaThreadedTask.create(m_actor, false);
+}
+bool ActorCanMove::canMove() const
+{
+	if(!m_actor.m_alive || !m_actor.isActor() || m_speedIndividual == 0)
+		return false;
+	return true;
 }
 void PathThreadedTask::readStep()
 {

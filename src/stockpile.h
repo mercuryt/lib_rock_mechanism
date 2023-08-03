@@ -48,7 +48,7 @@ class StockPileProject final : public Project
 {
 	Item& m_item;
 public:
-	StockPileProject(Block& block, Item& item) : Project(block, 1), m_item(item) { }
+	StockPileProject(Faction& faction, Block& block, Item& item) : Project(faction, block, 1), m_item(item) { }
 	uint32_t getDelay() const;
 	void onComplete();
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
@@ -63,8 +63,9 @@ class StockPile
 	std::unordered_set<Block*> m_blocks;
 	uint32_t m_openBlocks;
 	Area& m_area;
+	Faction& m_faction;
 public:
-	StockPile(std::vector<ItemQuery>& q, Area& a) : m_queries(q), m_openBlocks(0), m_area(a) { }
+	StockPile(std::vector<ItemQuery>& q, Area& a, Faction& f) : m_queries(q), m_openBlocks(0), m_area(a), m_faction(f) { }
 	bool accepts(Item& item);
 	void addBlock(Block* block);
 	void removeBlock(Block* block);
@@ -86,7 +87,7 @@ public:
 	void setAvalable();
 	void setUnavalable();
 	bool hasStockPile() const;
-	bool getIsAvalable() const;
+	bool getIsAvalable(Faction& faction) const;
 	friend class StockPileThreadedTask;
 };
 class HasStockPiles
@@ -100,9 +101,9 @@ class HasStockPiles
 	std::unordered_map<Item*, StockPileProject> m_projectsByItem;
 public:
 	HasStockPiles(Area& a) : m_area(a) { }
-	void addStockPile(std::vector<ItemQuery>&& queries);
+	void addStockPile(std::vector<ItemQuery>&& queries, Faction& faction);
 	void removeStockPile(StockPile& stockPile);
-	bool isValidStockPileDestinationFor(Block& block, Item& item) const;
+	bool isValidStockPileDestinationFor(Block& block, Item& item, Faction& faction) const;
 	void addItem(Item& item);
 	void removeItem(Item& item);
 	void setAvalable(StockPile& stockPile);

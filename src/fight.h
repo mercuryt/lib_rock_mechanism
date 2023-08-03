@@ -6,6 +6,7 @@
 #include "attackType.h"
 #include "materialType.h"
 #include "threadedTask.h"
+#include "eventSchedule.hpp"
 
 #include <string>
 #include <unordered_set>
@@ -51,21 +52,20 @@ public:
 	bool isOnCoolDown() const;
 	bool inRange(Actor& target) const;
 	const uint32_t& getMaxRange() const { return m_maxRange; }
-	uint32_t getCombatScore() const;
 	uint32_t getCombatScoreForAttack(const Attack& attack) const;
 	const Attack& getAttackForCombatScoreDifference(uint32_t scoreDifference) const;
 	friend class AttackCoolDown;
 	friend class GetIntoAttackPositionThreadedTask;
 };
-class AttackCoolDown final : ScheduledEvent
+class AttackCoolDown final : public ScheduledEventWithPercent
 {
 	CanFight& m_canFight;
 public:
-	AttackCoolDown(CanFight& cf) : ScheduledEvent(cf.m_coolDownDuration), m_canFight(cf) { }
+	AttackCoolDown(CanFight& cf) : ScheduledEventWithPercent(cf.m_coolDownDuration), m_canFight(cf) { }
 	void execute();
 	~AttackCoolDown();
 };
-class GetIntoAttackPositionThreadedTask : ThreadedTask
+class GetIntoAttackPositionThreadedTask final : public ThreadedTask
 {
 	Actor& m_actor;
 	Actor& m_target;

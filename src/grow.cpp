@@ -40,3 +40,20 @@ void CanGrow::update()
 	if(percent != 100)
 		m_updateEvent.schedule(Config::statsGrowthUpdateFrequency, *this);
 }
+void CanGrow::complete()
+{
+	m_percentGrown = 100;
+	m_updateEvent.maybeUnschedule();
+	m_event.maybeUnschedule();
+}
+void CanGrow::stop()
+{
+	m_event.unschedule();
+	m_updateEvent.unschedule();
+}
+void CanGrow::maybeStart()
+{
+	assert(m_percentGrown != 100);
+	if(m_event.exists())
+		updateGrowingStatus();
+}

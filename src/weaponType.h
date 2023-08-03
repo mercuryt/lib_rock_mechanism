@@ -1,8 +1,11 @@
 #pragma once
+#include "attackType.h"
+#include <vector>
 // To be used by BodyPartType and ItemType.
 struct SkillType;
 struct WeaponType
 {
-	std::vector<AttackType> attackTypes;
 	const SkillType* combatSkill;
+	uint32_t skillBonus;
+	std::vector<AttackType> attackTypes;
 };

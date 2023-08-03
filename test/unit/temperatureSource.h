@@ -1,7 +1,14 @@
-#include "../../src/temperatureSource.h"
-TEST_CASE("temperatureSource")
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include "../../lib/doctest.h"
+#include "../../src/temperature.h"
+#include "../../src/area.h"
+#include "../../src/materialType.h"
+#include "../../src/simulation.h"
+#include "../../src/block.h"
+TEST_CASE("temperature")
 {
-	Area area(10,10,10);
+	Area area(10,10,10, 0);
+	simulation::init();
 	Block& origin = area.m_blocks[5][5][5];
 	Block& b1 = area.m_blocks[5][5][6];
 	Block& b2 = area.m_blocks[5][7][5];
@@ -12,17 +19,14 @@ TEST_CASE("temperatureSource")
 	toBurn.setSolid(wood);
 	toNotBurn.setSolid(marble);
 	TemperatureSource temperatureSource(1000, origin);
-	CHECK(origin.m_deltaTemperature == 1000);
-	CHECK(b1.m_deltaTemperature == 1000);
-	CHECK(b2.m_deltaTemperature == 250);
-	CHECK(toBurn.m_deltaTemperature == 1000);
-	CHECK(toNotBurn.m_deltaTemperature == 1000);
-	CHECK(area.m_blocksWithChangedTemperature.contains(&toBurn));
-	CHECK(area.m_blocksWithChangedTemperature.contains(&toNotBurn));
-	toBurn.applyTemperatureChange(area.m_blocksWithChangedTemperature.at(&toBurn), toBurn.m_deltaTemperature);
+	CHECK(origin.m_blockHasTemperature.get() == 1000);
+	CHECK(b1.m_blockHasTemperature.get() == 1000);
+	CHECK(b2.m_blockHasTemperature.get() == 250);
+	CHECK(toBurn.m_blockHasTemperature.get() == 1000);
+	CHECK(toNotBurn.m_blockHasTemperature.get() == 1000);
 	CHECK(toBurn.m_fire);
-	CHECK(toBurn.m_deltaTemperature > 1000);
+	CHECK(toBurn.m_blockHasTemperature.get() > 1000);
 	CHECK(!toNotBurn.m_fire);
-	CHECK(toNotBurn.m_deltaTemperature > 1000);
+	CHECK(toNotBurn.m_blockHasTemperature.get() > 1000);
 	CHECK(!eventSchedule::data.empty());
 }

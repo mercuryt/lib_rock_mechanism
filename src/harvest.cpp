@@ -46,11 +46,11 @@ void HarvestThreadedTask::writeStep()
 	else
 		m_harvestObjective.m_actor.m_canMove.setPath(m_result);
 }
-bool HarvestObjectiveType::canBeAssigned(Actor& actor)
+bool HarvestObjectiveType::canBeAssigned(Actor& actor) const
 {
 	return actor.m_location->m_area->m_hasFarmFields.hasHarvestDesignations(*actor.m_faction);
 }
-std::unique_ptr<Objective> HarvestObjectiveType::makeFor(Actor& actor)
+std::unique_ptr<Objective> HarvestObjectiveType::makeFor(Actor& actor) const
 {
 	return std::make_unique<HarvestObjective>(actor);
 }

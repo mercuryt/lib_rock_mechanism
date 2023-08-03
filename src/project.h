@@ -4,10 +4,10 @@
 #include "actor.h"
 #include "eventSchedule.h"
 #include "threadedTask.h"
-#include "subproject.h"
 #include "haul.h"
 #include "item.h"
 #include "actor.h"
+#include "eventSchedule.hpp"
 
 #include <vector>
 #include <utility>
@@ -74,7 +74,7 @@ protected:
 	std::unordered_set<Actor*> m_waiting;
 	std::unordered_set<Actor*> m_making;
 	std::list<HaulSubproject> m_haulSubprojects;
-	Project(Block& l, size_t mw) : m_gatherComplete(false), m_maxWorkers(mw),  m_location(l) { }
+	Project(Faction& f, Block& l, size_t mw) : m_gatherComplete(false), m_canReserve(f), m_maxWorkers(mw),  m_location(l) { }
 public:
 	void recordRequiredActorsAndItemsAndReserveLocation();
 	void addWorker(Actor& actor);
@@ -96,7 +96,6 @@ public:
 	bool canGatherActorAt(Actor& actor, Block& block) const;
 	Actor* gatherableActorAt(Actor& actor, Block& block) const;
 	void haulSubprojectComplete(HaulSubproject& haulSubproject);
-	bool tryToBeginItemHaulSubproject(Subproject& subproject, Actor& actor);
 	virtual uint32_t getDelay() const = 0;
 	virtual void onComplete() = 0;
 	// Use copies rather then references for return types to allow specalization of Queries as well as byproduct material type.
