@@ -1,0 +1,9 @@
+{
+	"name": "chunk",
+	"shape": "oneByOneSixteenth",
+	"generic": true,
+	"internalVolume" : 0,
+	"canHoldFluids": false,
+	"combatScoreBonus": 0,
+	"moveType": "none"
+}

@@ -28,7 +28,7 @@ std::vector<std::pair<ItemQuery, uint32_t>> CraftStepProject::getConsumed() cons
 	for(auto& pair : output)
 		if(pair.first.m_materialType == nullptr)
 		{
-			assert(pair.first.m_item == nullptr && (pair.first.m_materialTypeCategory == nullptr || pair.first.m_materialTypeCategory == &m_craftJob.materialType->materialTypeCategory));
+			assert(pair.first.m_item == nullptr && (pair.first.m_materialTypeCategory == nullptr || pair.first.m_materialTypeCategory == m_craftJob.materialType->materialTypeCategory));
 			pair.first.specalize(*m_craftJob.materialType);
 		}
 	return output;

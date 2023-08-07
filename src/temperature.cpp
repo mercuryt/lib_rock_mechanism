@@ -86,13 +86,15 @@ void AreaHasTemperature::removeMeltableSolidBlockAboveGround(Block& block)
 	assert(block.isSolid());
 	m_aboveGroundBlocksByMeltingPoint.at(block.getSolidMaterial().meltingPoint).erase(&block);
 }
+// TODO: Optimize by storing all blocks with changed temperature and appying all changes at once.
 void BlockHasTemperature::setDelta(const uint32_t& delta)
 {
 	uint32_t newTemperature = getAmbientTemperature() + delta;
 	m_delta = delta;
 	if(m_block.isSolid())
 	{
-		if(m_block.getSolidMaterial().ignitionTemperature <= newTemperature && m_block.m_fire == nullptr)
+		auto& material = m_block.getSolidMaterial();
+		if(material.burnData != nullptr && material.burnData->ignitionTemperature <= newTemperature && m_block.m_fire == nullptr)
 			m_block.m_fire = std::make_unique<Fire>(m_block, m_block.getSolidMaterial());
 		else if(m_block.getSolidMaterial().meltingPoint <= newTemperature)
 			m_block.m_blockHasTemperature.melt();

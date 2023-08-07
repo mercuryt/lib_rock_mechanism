@@ -11,7 +11,7 @@
 #include <vector>
 #include <utility>
 
-struct BodyPartType
+struct BodyPartType final
 {
 	const std::string name;
 	const uint32_t volume;
@@ -19,7 +19,7 @@ struct BodyPartType
 	const bool doesManipulation;
 	std::vector<std::pair<const AttackType, const MaterialType*>> attackTypesAndMaterials;
 	// Infastructure.
-	bool operator==(const BodyPartType& bodyPartType){ return this == &bodyPartType; }
+	bool operator==(const BodyPartType& bodyPartType) const { return this == &bodyPartType; }
 	inline static std::vector<BodyPartType> data;
 	static const BodyPartType& byName(const std::string name)
 	{
@@ -28,23 +28,9 @@ struct BodyPartType
 		return *found;
 	}
 };
-struct BodyTypeCategory
+struct BodyType final
 {
 	const std::string name;
-	// Infastructure.
-	bool operator==(const BodyTypeCategory& bodyType){ return this == &bodyType; }
-	inline static std::vector<BodyTypeCategory> data;
-	static const BodyTypeCategory& byName(const std::string name)
-	{
-		auto found = std::ranges::find(data, name, &BodyTypeCategory::name);
-		assert(found != data.end());
-		return *found;
-	}
-};
-struct BodyType
-{
-	const std::string name;
-	const BodyTypeCategory& category;
 	uint32_t scale;
 	std::vector<const BodyPartType*> bodyPartTypes;
 	// Infastructure.
@@ -56,12 +42,16 @@ struct BodyType
 		assert(found != data.end());
 		return *found;
 	}
+	bool hasBodyPart(const BodyPartType& bodyPartType) const
+	{
+		return std::ranges::find(bodyPartTypes, &bodyPartType) != bodyPartTypes.end();
+	}
 };
 struct BodyPart;
 class WoundHealEvent;
 class BleedEvent;
 class WoundsCloseEvent;
-struct Wound
+struct Wound final
 {
 	const WoundType& woundType;
 	BodyPart& bodyPart;
@@ -76,14 +66,14 @@ struct Wound
 	uint32_t getPercentHealed() const;
 	uint32_t impairPercent() const;
 };
-struct BodyPart
+struct BodyPart final
 {
 	const BodyPartType& bodyPartType;
 	const MaterialType& materialType;
 	std::list<Wound> wounds;
 	BodyPart(const BodyPartType& bpt, const MaterialType& mt) : bodyPartType(bpt), materialType(mt) {}
 };
-class Body
+class Body final
 {
 	Actor& m_actor;
 	std::list<BodyPart> m_bodyParts;
@@ -107,6 +97,7 @@ public:
 	void bleed();
 	// TODO: periodicly update impairment as wounds heal.
 	void recalculateBleedAndImpairment();
+	Wound& getWoundWhichIsBleedingTheMost();
 	bool piercesSkin(Hit hit, const BodyPart& bodyPart) const;
 	bool piercesFat(Hit hit, const BodyPart& bodyPart) const;
 	bool piercesMuscle(Hit hit, const BodyPart& bodyPart) const;
@@ -115,6 +106,7 @@ public:
 	std::vector<Attack> getAttacks() const;
 	uint32_t getVolume() const;
 	bool isInjured() const;
+	uint32_t getStepsTillBleedToDeath() const;
 };
 class WoundHealEvent : public ScheduledEventWithPercent
 {

@@ -9,9 +9,9 @@
 
 bool EquipmentSortByLayer::operator()(Item* const& a, Item* const& b) const
 {
-	assert(a->m_itemType.wearableType != nullptr);
-	assert(b->m_itemType.wearableType != nullptr);
-	return a->m_itemType.wearableType->layer > b->m_itemType.wearableType->layer;
+	assert(a->m_itemType.wearableData != nullptr);
+	assert(b->m_itemType.wearableData != nullptr);
+	return a->m_itemType.wearableData->layer > b->m_itemType.wearableData->layer;
 }
 
 void EquipmentSet::addEquipment(Item& equipment)
@@ -19,11 +19,11 @@ void EquipmentSet::addEquipment(Item& equipment)
 	assert(std::ranges::find(m_equipments, &equipment) == m_equipments.end());
 	m_mass += equipment.m_mass;
 	m_equipments.insert(&equipment);
-	if(equipment.m_itemType.wearableType != nullptr)
+	if(equipment.m_itemType.wearableData != nullptr)
 	{
 		m_wearable.insert(&equipment);
-		if(equipment.m_itemType.wearableType->rigid)
-			for(const BodyPartType* bodyPartType : equipment.m_itemType.wearableType->bodyPartsCovered)
+		if(equipment.m_itemType.wearableData->rigid)
+			for(const BodyPartType* bodyPartType : equipment.m_itemType.wearableData->bodyPartsCovered)
 			{
 				assert(!m_bodyPartTypesWithRigidArmor.contains(bodyPartType));
 				m_bodyPartTypesWithRigidArmor.insert(bodyPartType);
@@ -36,7 +36,7 @@ void EquipmentSet::removeEquipment(Item& equipment)
 	assert(m_mass >= equipment.m_mass);
 	m_mass -= equipment.m_mass;
 	m_equipments.erase(&equipment);
-	if(equipment.m_itemType.wearableType != nullptr)
+	if(equipment.m_itemType.wearableData != nullptr)
 		m_wearable.erase(&equipment);
 }
 void EquipmentSet::modifyImpact(Hit& hit, const MaterialType& hitMaterialType, const BodyPartType& bodyPartType)
@@ -44,20 +44,21 @@ void EquipmentSet::modifyImpact(Hit& hit, const MaterialType& hitMaterialType, c
 	// Wearable priority queue is sorted by layers so we start at the outside and pierce inwards.
 	for(Item* equipment : m_wearable)
 	{
-		auto& wearableType = *equipment->m_itemType.wearableType;
-		if(std::ranges::find(wearableType.bodyPartsCovered, &bodyPartType) != wearableType.bodyPartsCovered.end() && randomUtil::percentChance(wearableType.percentCoverage))
+		auto& wearableData = *equipment->m_itemType.wearableData;
+		if(std::ranges::find(wearableData.bodyPartsCovered, &bodyPartType) != wearableData.bodyPartsCovered.end() && randomUtil::percentChance(wearableData.percentCoverage))
 		{
 			uint32_t pierceScore = (hit.force / hit.area) * hitMaterialType.hardness * Config::pierceModifier;
-			uint32_t defenseScore = wearableType.defenseScore * equipment->m_materialType.hardness;
-			if(pierceScore > defenseScore)
+			uint32_t defenseScore = wearableData.defenseScore * equipment->m_materialType.hardness;
+			if(pierceScore < defenseScore)
 			{
-				hit.area = wearableType.rigid ? Config::convertBodyPartVolumeToArea(bodyPartType.volume) : equipment->m_itemType.wearableType->impactSpreadArea;
-				hit.force -= wearableType.forceAbsorbedUnpiercedModifier * equipment->m_materialType.hardness * Config::forceAbsorbedUnpiercedModifier;
+				if(wearableData.rigid)
+					hit.area = Config::convertBodyPartVolumeToArea(bodyPartType.volume);
+				hit.force -= wearableData.forceAbsorbedUnpiercedModifier * equipment->m_materialType.hardness * Config::forceAbsorbedUnpiercedModifier;
 			}
 			else
 			{
 				//TODO: Add wear to equipment.
-				hit.force -= wearableType.forceAbsorbedPiercedModifier * equipment->m_materialType.hardness * Config::forceAbsorbedPiercedModifier;
+				hit.force -= wearableData.forceAbsorbedPiercedModifier * equipment->m_materialType.hardness * Config::forceAbsorbedPiercedModifier;
 			}
 
 		}
@@ -68,8 +69,9 @@ std::vector<Attack> EquipmentSet::getAttacks()
 {
 	std::vector<Attack> output;
 	for(Item* equipment : m_equipments)
-		for(const AttackType& attackType : equipment->m_itemType.attackTypes)
-			output.emplace_back(&attackType, &equipment->m_materialType, equipment);
+		if(equipment->m_itemType.weaponData != nullptr)
+			for(const AttackType& attackType : equipment->m_itemType.weaponData->attackTypes)
+				output.emplace_back(&attackType, &equipment->m_materialType, equipment);
 	return output;
 }
 const uint32_t& EquipmentSet::getMass() const
@@ -79,14 +81,15 @@ const uint32_t& EquipmentSet::getMass() const
 bool EquipmentSet::canEquipCurrently(Item& item) const
 {
 	assert(!m_equipments.contains(&item));
-	if(item.m_itemType.wearableType != nullptr)
+	if(item.m_itemType.wearableData != nullptr)
 	{
-		if(&item.m_itemType.wearableType->bodyTypeCategory != &m_actor.m_species.bodyType.category)
+		for(const BodyPartType* bodyPartType : item.m_itemType.wearableData->bodyPartsCovered)
+			if(!m_actor.m_species.bodyType.hasBodyPart(*bodyPartType))
+				return false;
+		if(&item.m_itemType.wearableData->bodyTypeScale != &m_actor.m_species.bodyType.scale)
 			return false;
-		if(&item.m_itemType.wearableType->bodyTypeScale != &m_actor.m_species.bodyType.scale)
-			return false;
-		if(item.m_itemType.wearableType->rigid)
-			for(const BodyPartType* bodyPartType : item.m_itemType.wearableType->bodyPartsCovered)
+		if(item.m_itemType.wearableData->rigid)
+			for(const BodyPartType* bodyPartType : item.m_itemType.wearableData->bodyPartsCovered)
 				if(m_bodyPartTypesWithRigidArmor.contains(bodyPartType))
 					return false;
 	}

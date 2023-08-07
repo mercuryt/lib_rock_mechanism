@@ -1,0 +1,95 @@
+[
+	{
+		"name": "sword",
+		"xpPerLevelModifier": 3.0,
+		"level1Xp": 100
+	},{
+		"name": "dagger",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
+		"name": "spear",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
+		"name": "halberd",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
+		"name": "war hammer",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
+		"name": "mace",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
+		"name": "crossbow",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
+		"name": "bow",
+		"xpPerLevelModifier": 4.0,
+		"level1Xp": 200
+	},{
+		"name": "sheild",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
+		"name": "dig",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
+		"name": "masonry",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
+		"name": "carpentry",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
+		"name": "horticulture",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
+		"name": "metalworking",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
+		"name": "stone carving",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
+		"name": "wood working",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
+		"name": "bone carving",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
+		"name": "cooking",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
+		"name": "climbing",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
+		"name": "swimming",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
+		"name": "teaching",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
+		"name": "social",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
+		"name": "animal handling",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	}
+]

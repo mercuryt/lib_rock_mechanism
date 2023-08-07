@@ -1,0 +1,6 @@
+[
+	{
+		"name": "biped",
+		"bodyPartTypes": ["head", "torso", "left leg", "right leg", "left arm", "right arm"]
+	}
+]

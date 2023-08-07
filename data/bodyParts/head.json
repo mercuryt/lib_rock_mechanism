@@ -1,0 +1,7 @@
+{
+	"name": "head",
+	"volume": 3,
+	"doesLocamotion": false,
+	"doesManipulation": false,
+	"piercedBoneIsFatalPercent": 90
+}

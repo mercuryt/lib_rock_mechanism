@@ -70,7 +70,7 @@ void EatEvent::eatPreparedMeal(Item& item)
 }
 void EatEvent::eatGenericItem(Item& item)
 {
-	assert(item.m_itemType.edibleForDrinkersOf == m_eatObjective.m_actor.m_mustDrink.getFluidType());
+	assert(item.m_itemType.edibleForDrinkersOf == &m_eatObjective.m_actor.m_mustDrink.getFluidType());
 	auto& eater = m_eatObjective.m_actor;
 	uint32_t quantityDesired = eater.m_mustEat.getMassFoodRequested() / item.singleUnitMass();
 	uint32_t quantityEaten = std::min(quantityDesired, item.m_quantity);
@@ -312,7 +312,7 @@ bool MustEat::canEat(Plant& plant) const
 }
 bool MustEat::canEat(Item& item) const
 {
-	return item.m_itemType.edibleForDrinkersOf == m_actor.m_mustDrink.getFluidType();
+	return item.m_itemType.edibleForDrinkersOf == &m_actor.m_mustDrink.getFluidType();
 }
 void MustEat::eat(uint32_t mass)
 {

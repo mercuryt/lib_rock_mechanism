@@ -65,9 +65,10 @@ void Body::getHitDepth(Hit& hit, const BodyPart& bodyPart)
 }
 Wound& Body::addWound(const WoundType& woundType, BodyPart& bodyPart, const Hit& hit)
 {
-	uint32_t bleedVolumeRate = woundType.getBleedVolumeRate(hit, bodyPart.bodyPartType);
+	uint32_t scale = m_actor.m_species.bodyType.scale;
+	uint32_t bleedVolumeRate = WoundCalculations::getBleedVolumeRate(woundType, hit, bodyPart.bodyPartType, scale);
 	Wound& wound = bodyPart.wounds.emplace_back(woundType, bodyPart, hit, bleedVolumeRate);
-	uint32_t delayTilHeal = wound.woundType.getStepsTillHealed(hit, bodyPart.bodyPartType);
+	uint32_t delayTilHeal = WoundCalculations::getStepsTillHealed(woundType, hit, bodyPart.bodyPartType, scale);
 	wound.healEvent.schedule(delayTilHeal, wound, *this);
 	recalculateBleedAndImpairment();
 	return wound;
@@ -136,6 +137,24 @@ void Body::recalculateBleedAndImpairment()
 	else if(bleedVolumeRate == 0 && m_woundsCloseEvent.exists())
 		m_woundsCloseEvent.unschedule();
 	m_actor.m_attributes.generate();
+}
+Wound& Body::getWoundWhichIsBleedingTheMost()
+{
+	Wound* output = nullptr;
+	uint32_t outputBleedRate = 0;
+	for(BodyPart& bodyPart : m_bodyParts)
+		for(Wound& wound : bodyPart.wounds)
+			if(wound.bleedVolumeRate >= outputBleedRate)
+			{
+				outputBleedRate = wound.bleedVolumeRate;
+				output = &wound;
+			}
+	assert(output != nullptr);
+	return *output;
+}
+uint32_t Body::getStepsTillBleedToDeath() const
+{
+	return (m_volumeOfBlood / m_bleedVolumeRate) / Config::bleedEventFrequency;
 }
 bool Body::piercesSkin(Hit hit, const BodyPart& bodyPart) const
 {

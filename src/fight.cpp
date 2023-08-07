@@ -66,8 +66,9 @@ uint32_t CanFight::getCombatScoreForAttack(const Attack& attack) const
 		static const SkillType& unarmedSkillType = SkillType::byName("unarmed");
 		return m_actor.m_skillSet.get(unarmedSkillType);
 	}
-	uint32_t itemTypeCombatScore = attack.item->m_itemType.combatScoreBonus;
-	uint32_t itemSkill = m_actor.m_skillSet.get(*attack.item->m_itemType.combatSkill);
+	assert(attack.item->m_itemType.weaponData != nullptr);
+	uint32_t itemTypeCombatScore = attack.item->m_itemType.weaponData->combatScoreBonus;
+	uint32_t itemSkill = m_actor.m_skillSet.get(*attack.item->m_itemType.weaponData->combatSkill);
 	uint32_t itemQuality = attack.item->m_quality;
 	uint32_t percentItemWear = attack.item->m_percentWear;
 	return  (

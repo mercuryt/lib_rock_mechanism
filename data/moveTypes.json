@@ -79,5 +79,19 @@
     "climb": 2,
     "jumpDown": false,
     "fly": false
+  },{
+    "name": "roll",
+    "walk": true,
+    "swim": null,
+    "climb": 0,
+    "jumpDown": false,
+    "fly": false
+  },{
+    "name": "none",
+    "walk": true,
+    "swim": null,
+    "climb": 0,
+    "jumpDown": false,
+    "fly": false
   }
 ]

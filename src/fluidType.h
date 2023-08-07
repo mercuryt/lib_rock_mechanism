@@ -23,4 +23,10 @@ struct FluidType
 		assert(found != data.end());
 		return *found;
 	}
+	static FluidType& byNameNonConst(const std::string name)
+	{
+		auto found = std::ranges::find(data, name, &FluidType::name);
+		assert(found != data.end());
+		return *found;
+	}
 };

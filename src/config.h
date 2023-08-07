@@ -104,5 +104,20 @@ namespace Config
 	inline constexpr uint32_t undergroundAmbiantTemperature = 284;
 	inline constexpr uint32_t stockPilePriority = 100;
 	inline constexpr uint32_t getToSafeTemperaturePriority = 10000;
+	inline constexpr uint32_t unitsOfWoundAreaPerUnitItemScaleFactor = 100;
+	inline constexpr uint32_t scaleOfHumanBody = 100;
+	inline constexpr uint32_t pierceStepsTillHealedModifier = 10;
+	inline constexpr uint32_t cutStepsTillHealedModifier = 20;
+	inline constexpr uint32_t bludgeonStepsTillHealedModifier = 30;
+	inline constexpr uint32_t pierceBleedVoumeRateModifier = 10;
+	inline constexpr uint32_t cutBleedVoumeRateModifier = 20;
+	inline constexpr uint32_t bludgeonBleedVoumeRateModifier = 1;
+	inline constexpr uint32_t piercePercentTemporaryImparmentModifier = 10;
+	inline constexpr uint32_t cutPercentTemporaryImparmentModifier = 20;
+	inline constexpr uint32_t bludgeonPercentTemporaryImparmentModifier = 1;
+	inline constexpr uint32_t piercePercentPermanantImparmentModifier = 10;
+	inline constexpr uint32_t cutPercentPermanantImparmentModifier = 20;
+	inline constexpr uint32_t bludgeonPercentPermanantImparmentModifier = 1;
+	inline constexpr uint32_t percentPermanantImparmentMinimum = 10;
 	inline uint32_t convertBodyPartVolumeToArea(uint32_t volume){ return sqrt(volume); }
 }

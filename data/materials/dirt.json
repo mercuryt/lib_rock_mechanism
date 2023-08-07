@@ -3,21 +3,21 @@
   "density": 50,
   "hardness": 30,
   "transparent": false,
-  "burnData": null,
+  "meltsInto": "lava",
   "spoilData": 
-    [
-      {
+  [
+	  {
         "materialType": "dirt",
         "itemType": "dirt",
 	"chance": 100,
-	"quantityMin": 50,
-	"quantityMax": 70
+	"min": 50,
+	"max": 70
       },{
-        "materialType": "gravel",
+        "materialType": "marble",
         "itemType": "gravel",
 	"chance": 100,
-	"quantityMin": 10,
-	"quantityMax": 20
+	"min": 10,
+	"max": 20
       }
     ]
 }

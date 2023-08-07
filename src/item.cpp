@@ -183,7 +183,7 @@ bool ItemQuery::operator()(const Item& item) const
 	if(m_itemType != &item.m_itemType)
 		return false;
 	if(m_materialTypeCategory != nullptr)
-		return m_materialTypeCategory == &item.m_materialType.materialTypeCategory;
+		return m_materialTypeCategory == item.m_materialType.materialTypeCategory;
 	if(m_materialType != nullptr)
 		return m_materialType == &item.m_materialType;
 	return true;
@@ -196,7 +196,7 @@ void ItemQuery::specalize(Item& item)
 }
 void ItemQuery::specalize(const MaterialType& materialType)
 {
-	assert(m_materialTypeCategory == nullptr || &materialType.materialTypeCategory == m_materialTypeCategory);
+	assert(m_materialTypeCategory == nullptr || materialType.materialTypeCategory == m_materialTypeCategory);
 	m_materialType = &materialType;
 	m_materialTypeCategory = nullptr;
 }

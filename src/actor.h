@@ -92,7 +92,7 @@ struct ActorQuery
 	uint32_t carryWeight;
 	bool checkIfSentient;
 	bool sentient;
-	ActorQuery(Actor* a) : actor(a) { }
+	ActorQuery(Actor& a) : actor(&a) { }
 	ActorQuery(uint32_t cw, bool cis, bool s) : carryWeight(cw), checkIfSentient(cis), sentient(s) { }
 	bool operator()(Actor& actor) const;
 	static ActorQuery makeFor(Actor& a);

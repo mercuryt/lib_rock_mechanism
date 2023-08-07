@@ -50,7 +50,7 @@ void HasBlockFeatures::hew(const BlockFeatureType& blockFeatureType)
 void HasBlockFeatures::setTemperature(uint32_t temperature)
 {
 	for(BlockFeature& feature : m_features)
-		if(temperature > feature.materialType->ignitionTemperature)
+		if(feature.materialType->burnData != nullptr && temperature > feature.materialType->burnData->ignitionTemperature)
 			m_block.m_area->m_fires.ignite(m_block, *feature.materialType);
 }
 // Blocks entrance from all angles, does not include floor and hatch which only block from below.

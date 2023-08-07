@@ -3,27 +3,21 @@
   "density": 30,
   "hardness": 30,
   "transparent": false,
-  "burnData": 
-    {
-      "ignitionTemperature": 533,
-      "flameTemperature": 1172,
-      "burnStageDuration": 10000,
-      "flameStageDuration": 40000
-    },
+  "burnData":
+  {
+	  "ignitionTemperature": 533,
+	  "flameTemperature": 1172,
+	  "burnStageDuration": 10000,
+	  "flameStageDuration": 40000
+  },
   "spoilData": 
     [
       {
         "materialType": "poplar wood",
-        "itemType": "log",
-	"chance": 100,
-	"quantityMin": 1,
-	"quantityMax": 1
-      },{
-        "materialType": "poplar wood",
         "itemType": "sticks",
 	"chance": 100,
-	"quantityMin": 10,
-	"quantityMax": 12
+	"min": 10,
+	"max": 12
       }
     ]
 }

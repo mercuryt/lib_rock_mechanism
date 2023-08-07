@@ -14,12 +14,12 @@
 struct Shape
 {
 	const std::string name;
-	const std::vector<std::array<const uint32_t, 4>> positions;
+	std::vector<std::array<uint32_t, 4>> positions;
 	const bool isMultiTile;
-	Shape(const std::string n, const std::vector<std::array<const uint32_t, 4>>& p) : name(n), positions(p), isMultiTile(positions.size() != 1) {}
-	std::vector<std::array<const uint32_t, 4>> positionsWithFacing(uint8_t facing) const
+	Shape(const std::string n, std::vector<std::array<uint32_t, 4>> p) : name(n), positions(p), isMultiTile(positions.size() != 1) {}
+	std::vector<std::array<uint32_t, 4>> positionsWithFacing(uint8_t facing) const
 	{
-		std::vector<std::array<const uint32_t, 4>> output;
+		std::vector<std::array<uint32_t, 4>> output;
 		switch(facing)
 		{
 			case 0: // Facing up.

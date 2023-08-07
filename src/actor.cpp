@@ -73,7 +73,7 @@ bool ActorQuery::operator()(Actor& other) const
 		return false;
 	return true;
 }
-ActorQuery ActorQuery::makeFor(Actor& a) { return ActorQuery(&a); }
+ActorQuery ActorQuery::makeFor(Actor& a) { return ActorQuery(a); }
 ActorQuery ActorQuery::makeForCarryWeight(uint32_t cw) { return ActorQuery(cw, false, false); }
 
 // To be used by block.

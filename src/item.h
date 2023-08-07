@@ -19,28 +19,26 @@ class Area;
 class Actor;
 struct CraftJob;
 
-struct WearableType
+struct WearableData
 {
-	const std::string name;
 	const uint32_t percentCoverage;
 	const uint32_t defenseScore;
 	const bool rigid;
-	const uint32_t impactSpreadArea;
-	const uint32_t forceAbsorbedPiercedModifier;
-	const uint32_t forceAbsorbedUnpiercedModifier;
 	const uint32_t layer;
-	const BodyTypeCategory& bodyTypeCategory;
 	const uint32_t bodyTypeScale;
+	const uint32_t forceAbsorbedUnpiercedModifier;
+	const uint32_t forceAbsorbedPiercedModifier;
 	std::vector<const BodyPartType*> bodyPartsCovered;
 	// Infastructure.
-	bool operator==(const WearableType& wearableType) const { return this == &wearableType; }
-	inline static std::vector<WearableType> data;
-	static const WearableType& byName(std::string name)
-	{
-		auto found = std::ranges::find(data, name, &WearableType::name);
-		assert(found != data.end());
-		return *found;
-	}
+	inline static std::list<WearableData> data;
+};
+struct WeaponData
+{
+	const SkillType* combatSkill;
+	const uint32_t combatScoreBonus;
+	std::vector<AttackType> attackTypes;
+	// Infastructure.
+	inline static std::list<WeaponData> data;
 };
 struct ItemType
 {
@@ -51,12 +49,10 @@ struct ItemType
 	const bool generic;
 	const uint32_t internalVolume;
 	const bool canHoldFluids;
-	const uint32_t combatScoreBonus;
-	const FluidType& edibleForDrinkersOf;
+	const FluidType* edibleForDrinkersOf;
 	const MoveType& moveType;
-       	const WearableType* wearableType;
-	const SkillType* combatSkill;
-	std::vector<AttackType> attackTypes;
+       	const WearableData* wearableData;
+       	const WeaponData* weaponData;
 	// Infastructure.
 	bool operator==(const ItemType& itemType) const { return this == &itemType; }
 	inline static std::vector<ItemType> data;

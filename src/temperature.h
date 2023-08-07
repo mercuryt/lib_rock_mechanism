@@ -17,7 +17,7 @@ class Actor;
 struct FluidType;
 class GetToSafeTemperatureObjective;
 
-// Increases and lowers nearby temperature.
+// Raises and lowers nearby temperature.
 class TemperatureSource final
 {
 	Block& m_block;
