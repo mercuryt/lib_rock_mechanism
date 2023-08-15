@@ -5,8 +5,8 @@
 
 #include <algorithm>
 
-Actor::Actor(uint32_t id, const std::wstring name, const AnimalSpecies& species, uint32_t percentGrown, Faction& faction, Attributes attributes) :
-	HasShape(species.shapeForPercentGrown(percentGrown), false), m_id(id), m_name(name), m_species(species), m_alive(true), m_awake(true), m_body(*this), m_project(nullptr), m_faction(&faction), m_attributes(attributes), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canMove(*this), m_canFight(*this), m_canPickup(*this), m_canGrow(*this, percentGrown), m_equipmentSet(*this), m_hasObjectives(*this), m_canReserve(faction), m_reservable(1) { }
+Actor::Actor(uint32_t id, const std::wstring name, const AnimalSpecies& species, uint32_t percentGrown, Faction* faction, Attributes attributes) :
+	HasShape(species.shapeForPercentGrown(percentGrown), false), m_id(id), m_name(name), m_species(species), m_alive(true), m_awake(true), m_body(*this), m_project(nullptr), m_faction(faction), m_attributes(attributes), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canMove(*this), m_canFight(*this), m_canPickup(*this), m_canGrow(*this, percentGrown), m_equipmentSet(*this), m_hasObjectives(*this), m_canReserve(*faction), m_reservable(1) { }
 void Actor::setLocation(Block& block)
 {
 	assert(&block != HasShape::m_location);
@@ -87,9 +87,13 @@ void BlockHasActors::enter(Actor& actor)
 		m_block.m_area->m_hasActors.m_locationBuckets.update(actor, *actor.m_location, m_block);
 	}
 	else
-		m_block.m_area->m_hasActors.m_locationBuckets.insert(actor);
+		m_block.m_area->m_hasActors.m_locationBuckets.insert(actor, m_block);
 	m_actors.push_back(&actor);
 	m_block.m_hasShapes.enter(actor);
+	if(m_block.m_underground)
+		m_block.m_area->m_hasActors.setUnderground(actor);
+	else
+		m_block.m_area->m_hasActors.setNotUnderground(actor);
 }
 void BlockHasActors::exit(Actor& actor)
 {
@@ -111,7 +115,7 @@ void AreaHasActors::add(Actor& actor)
 {
 	assert(actor.m_location != nullptr);
 	m_actors.insert(&actor);
-	m_locationBuckets.insert(actor);
+	m_locationBuckets.insert(actor, *actor.m_location);
 	m_visionBuckets.add(actor);
 	if(!actor.m_location->m_underground)
 		m_onSurface.insert(&actor);
@@ -122,12 +126,6 @@ void AreaHasActors::remove(Actor& actor)
 	m_locationBuckets.erase(actor);
 	m_visionBuckets.remove(actor);
 	m_onSurface.erase(&actor);
-}
-void AreaHasActors::onChangeAmbiantSurfaceTemperature()
-{
-	for(Actor* actor : m_onSurface)
-		if(!actor->m_location->m_underground)
-			actor->m_needsSafeTemperature.onChange();
 }
 void AreaHasActors::processVisionReadStep()
 {
@@ -146,4 +144,19 @@ void AreaHasActors::processVisionWriteStep()
 {
 	for(VisionRequest& visionRequest : m_visionRequestQueue)
 		visionRequest.writeStep();
+}
+void AreaHasActors::onChangeAmbiantSurfaceTemperature()
+{
+	for(Actor* actor : m_onSurface)
+		actor->m_needsSafeTemperature.onChange();
+}
+void AreaHasActors::setUnderground(Actor& actor)
+{
+	m_onSurface.erase(&actor);
+	actor.m_needsSafeTemperature.onChange();
+}
+void AreaHasActors::setNotUnderground(Actor& actor)
+{
+	m_onSurface.insert(&actor);
+	actor.m_needsSafeTemperature.onChange();
 }

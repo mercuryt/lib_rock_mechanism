@@ -19,7 +19,7 @@ class Area;
 class Actor;
 struct CraftJob;
 
-struct WearableData
+struct WearableData final
 {
 	const uint32_t percentCoverage;
 	const uint32_t defenseScore;
@@ -32,7 +32,7 @@ struct WearableData
 	// Infastructure.
 	inline static std::list<WearableData> data;
 };
-struct WeaponData
+struct WeaponData final
 {
 	const SkillType* combatSkill;
 	const uint32_t combatScoreBonus;
@@ -40,7 +40,7 @@ struct WeaponData
 	// Infastructure.
 	inline static std::list<WeaponData> data;
 };
-struct ItemType
+struct ItemType final
 {
 	const std::string name;
 	const bool installable;
@@ -49,6 +49,7 @@ struct ItemType
 	const bool generic;
 	const uint32_t internalVolume;
 	const bool canHoldFluids;
+	const uint32_t value;
 	const FluidType* edibleForDrinkersOf;
 	const MoveType& moveType;
        	const WearableData* wearableData;
@@ -63,7 +64,7 @@ struct ItemType
 		return *found;
 	}
 };
-class ItemHasCargo
+class ItemHasCargo final
 {
 	Item& m_item;
 	uint32_t m_volume;
@@ -88,7 +89,7 @@ public:
 	bool containsAnyFluid() const { return m_fluidType != nullptr; }
 	bool contains(HasShape& hasShape) const { return std::ranges::find(m_shapes, &hasShape) != m_shapes.end(); }
 };
-class Item : public HasShape
+class Item final : public HasShape
 {
 	inline static uint32_t s_nextId = 1;
 public:
@@ -129,6 +130,7 @@ public:
 	uint32_t getMass() const { return m_quantity * singleUnitMass(); }
 	uint32_t getVolume() const { return m_quantity * m_itemType.volume; }
 	const MoveType& getMoveType() const { return m_itemType.moveType; }
+	bool operator==(const Item& item) const { return this == &item; }
 	inline static std::list<Item> s_globalItems;
 	// Generic items, created in local item set. 
 	static Item& create(Area& area, const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quantity, CraftJob* cj = nullptr);
@@ -141,7 +143,7 @@ public:
 	static Item& create(const uint32_t m_id, const ItemType& m_itemType, const MaterialType& m_materialType, std::string m_name, uint32_t m_quality, uint32_t m_percentWear, CraftJob* cj = nullptr);
 	//TODO: Items leave area.
 };
-class ItemQuery
+class ItemQuery final
 {
 public:
 	Item* m_item;
@@ -157,7 +159,7 @@ public:
 	void specalize(Item& item);
 	void specalize(const MaterialType& materialType);
 };
-class BlockHasItems
+class BlockHasItems final
 {
 	Block& m_block;
 	std::vector<Item*> m_items;
@@ -176,4 +178,15 @@ public:
 	bool hasEmptyContainerWhichCanHoldFluidsCarryableBy(Actor& actor) const;
 	bool hasContainerContainingFluidTypeCarryableBy(Actor& actor, const FluidType& fluidType) const;
 	bool empty() const { return m_items.empty(); }
+};
+class AreaHasItems final
+{
+	std::list<Item> m_items;
+	std::unordered_set<Item*> m_onSurface;
+public:
+	void setItemIsOnSurface(Item& item);
+	void setItemIsNotOnSurface(Item& item);
+	void onChangeAmbiantSurfaceTemperature();
+	void remove(Item& item);
+	friend class Item;
 };

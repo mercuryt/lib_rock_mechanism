@@ -17,9 +17,9 @@ class GivePlantsFluidEvent final : public ScheduledEventWithPercent
 {
 	GivePlantsFluidObjective& m_objective;
 public:
-	GivePlantsFluidEvent(uint32_t step, GivePlantsFluidObjective& gpfo) : ScheduledEventWithPercent(step), m_objective(gpfo) { }
+	GivePlantsFluidEvent(Step step, GivePlantsFluidObjective& gpfo) : ScheduledEventWithPercent(step), m_objective(gpfo) { }
 	void execute();
-	~GivePlantsFluidEvent();
+	void clearReferences();
 };
 // Path to an empty water proof container or somewhere to fill an empty container or a container with the correct type of fluid or a plant which needs fluid.
 class GivePlantsFluidThreadedTask final : public ThreadedTask

@@ -1,0 +1,23 @@
+{
+  "name": "flesh",
+  "density": 50,
+  "hardness": 20,
+  "transparent": false,
+  "burnData":
+  {
+	  "ignitionTemperature": 1144,
+	  "flameTemperature": 300,
+	  "burnStageDuration": 5000,
+	  "flameStageDuration": 10000
+  },
+  "spoilData": 
+    [
+      {
+        "materialType": "flesh",
+        "itemType": "chunk",
+	"chance": 100,
+	"min": 10,
+	"max": 12
+      }
+    ]
+}

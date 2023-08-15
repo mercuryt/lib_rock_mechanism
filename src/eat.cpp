@@ -39,6 +39,7 @@ void EatEvent::execute()
 	}
 
 }
+void EatEvent::clearReferences() { m_eatObjective.m_eatEvent.clearPointer(); }
 Block* EatEvent::getBlockWithMostDesiredFoodInReach() const
 {
 	Block* output = nullptr;
@@ -122,6 +123,7 @@ void HungerEvent::execute()
 {
 	m_actor.m_mustEat.setNeedsFood();
 }
+void HungerEvent::clearReferences() { m_actor.m_mustEat.m_hungerEvent.clearPointer(); }
 void EatThreadedTask::readStep()
 {
 	if(m_eatObjective.m_foodLocation == nullptr)
@@ -323,7 +325,7 @@ void MustEat::eat(uint32_t mass)
 		m_actor.m_canGrow.maybeStart();
 	else
 	{
-		uint32_t delay = util::scaleByInverseFraction(m_actor.m_species.stepsTillDieWithoutFood, m_massFoodRequested, massFoodForBodyMass());
+		Step delay = util::scaleByInverseFraction(m_actor.m_species.stepsTillDieWithoutFood, m_massFoodRequested, massFoodForBodyMass());
 		m_actor.m_hasObjectives.addNeed(std::make_unique<EatObjective>(m_actor));
 		m_actor.m_mustEat.m_hungerEvent.schedule(delay, m_actor);
 	}

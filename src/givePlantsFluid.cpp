@@ -9,7 +9,7 @@ void GivePlantsFluidEvent::execute()
 	m_objective.m_actor.m_canPickup.removeFluidVolume(quantity);
 	m_objective.m_actor.m_hasObjectives.objectiveComplete(m_objective);
 }
-GivePlantsFluidEvent::~GivePlantsFluidEvent() { m_objective.m_event.clearPointer(); }
+void GivePlantsFluidEvent::clearReferences() { m_objective.m_event.clearPointer(); }
 void GivePlantsFluidThreadedTask::readStep()
 {
 	if(m_objective.m_plant == nullptr)

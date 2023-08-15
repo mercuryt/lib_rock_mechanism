@@ -8,7 +8,7 @@ void SowSeedsEvent::execute()
 	m_objective.m_actor.m_hasObjectives.objectiveComplete(m_objective);
 	location.m_area->m_hasFarmFields.removeAllSowSeedsDesignations(location);
 }
-SowSeedsEvent::~SowSeedsEvent(){ m_objective.m_event.clearPointer(); }
+void SowSeedsEvent::clearReferences(){ m_objective.m_event.clearPointer(); }
 bool SowSeedsObjectiveType::canBeAssigned(Actor& actor) const
 {
 	return actor.m_location->m_area->m_hasFarmFields.hasSowSeedsDesignations(*actor.m_faction);

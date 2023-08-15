@@ -1,4 +1,4 @@
-
+/*
  * Example config used for testing. Attempts to replicate Dwarf Fortress mechanics regarding vision, pathing, cave in, and fluids; except max fluid volume is 100 rather then 7.
  */
 #include <cstdint>
@@ -871,7 +871,7 @@ void validateAllBlockFluids(Area& area)
 					assert(pair.second->m_fluidType == *fluidType);
 }
 // Get one fluid group with the specified type. Return null if there is more then one.
-FluidGroup<Block, Area, FluidType>* getFluidGroup(Area& area, const FluidType& fluidType)
+FluidGroup* getFluidGroup(Area& area, const FluidType& fluidType)
 {
 	FluidGroup<Block, Area, FluidType>* output = nullptr;
 	for(FluidGroup<Block, Area, FluidType>& fluidGroup : area.m_fluidGroups)

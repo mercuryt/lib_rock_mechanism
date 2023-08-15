@@ -98,7 +98,7 @@ void ConstructProject::onComplete()
 		m_location.m_hasBlockFeatures.construct(*m_blockFeatureType, m_materialType);
 }
 // What would the total delay time be if we started from scratch now with current workers?
-uint32_t ConstructProject::getDelay() const
+Step ConstructProject::getDelay() const
 {
 	uint32_t totalScore = 0;
 	for(auto& pair : m_workers)

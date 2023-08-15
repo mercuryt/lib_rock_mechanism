@@ -86,7 +86,7 @@ bool EquipmentSet::canEquipCurrently(Item& item) const
 		for(const BodyPartType* bodyPartType : item.m_itemType.wearableData->bodyPartsCovered)
 			if(!m_actor.m_species.bodyType.hasBodyPart(*bodyPartType))
 				return false;
-		if(&item.m_itemType.wearableData->bodyTypeScale != &m_actor.m_species.bodyType.scale)
+		if(&item.m_itemType.wearableData->bodyTypeScale != &m_actor.m_species.bodyScale)
 			return false;
 		if(item.m_itemType.wearableData->rigid)
 			for(const BodyPartType* bodyPartType : item.m_itemType.wearableData->bodyPartsCovered)

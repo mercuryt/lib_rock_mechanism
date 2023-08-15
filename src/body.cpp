@@ -65,10 +65,10 @@ void Body::getHitDepth(Hit& hit, const BodyPart& bodyPart)
 }
 Wound& Body::addWound(const WoundType& woundType, BodyPart& bodyPart, const Hit& hit)
 {
-	uint32_t scale = m_actor.m_species.bodyType.scale;
+	uint32_t scale = m_actor.m_species.bodyScale;
 	uint32_t bleedVolumeRate = WoundCalculations::getBleedVolumeRate(woundType, hit, bodyPart.bodyPartType, scale);
 	Wound& wound = bodyPart.wounds.emplace_back(woundType, bodyPart, hit, bleedVolumeRate);
-	uint32_t delayTilHeal = WoundCalculations::getStepsTillHealed(woundType, hit, bodyPart.bodyPartType, scale);
+	Step delayTilHeal = WoundCalculations::getStepsTillHealed(woundType, hit, bodyPart.bodyPartType, scale);
 	wound.healEvent.schedule(delayTilHeal, wound, *this);
 	recalculateBleedAndImpairment();
 	return wound;
@@ -86,7 +86,7 @@ void Body::doctorWound(Wound& wound, uint32_t healSpeedPercentageChange)
 		wound.bleedVolumeRate = 0;
 		recalculateBleedAndImpairment();
 	}
-	uint32_t remaningSteps = wound.healEvent.getStep() - simulation::step;
+	Step remaningSteps = wound.healEvent.getStep() - simulation::step;
 	remaningSteps = util::scaleByPercent(remaningSteps, healSpeedPercentageChange);
 	wound.healEvent.unschedule();
 	wound.healEvent.schedule(remaningSteps, wound, *this);

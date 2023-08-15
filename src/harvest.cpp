@@ -30,7 +30,7 @@ Plant* HarvestEvent::getPlant()
 			return &adjacent->m_hasPlant.get();
 	return nullptr;
 }
-HarvestEvent::~HarvestEvent() { m_harvestObjective.m_harvestEvent.clearPointer(); }
+void HarvestEvent::clearReferences() { m_harvestObjective.m_harvestEvent.clearPointer(); } 
 void HarvestThreadedTask::readStep()
 {
 	auto destinationCondition = [&](Block& block)

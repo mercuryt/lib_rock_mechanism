@@ -1,52 +1,54 @@
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "../../lib/doctest.h"
 #include "../../src/visionCuboid.h"
 #include "../../src/area.h"
-TEST_CASE("create")
+#include "../../src/simulation.h"
+TEST_CASE("vision cuboid basic")
 {
+	simulation::init();
 	Area area(2,2,2,0);
-	Cuboid cuboid(area.m_blocks[1][1][1], area.m_blocks[0][0][0]);
-	VisionCuboid visionCuboid(cuboid);
-}
-TEST_CASE("can see into")
-{
-	Area area(2,2,2,0);
-	Cuboid c1(area.m_blocks[0][1][1], area.m_blocks[0][0][0]);
-	VisionCuboid vc1(c1);
-	Cuboid c2(area.m_blocks[1][1][1], area.m_blocks[1][0][0]);
-	VisionCuboid vc2(c2);
-	CHECK(vc1.m_cuboid.size() == 4);
-	CHECK(vc2.m_cuboid.size() == 4);
-	CHECK(vc2.canSeeInto(vc1.m_cuboid));
-	CHECK(vc1.canSeeInto(vc2.m_cuboid));
-}
-TEST_CASE("can combine with")
-{
-	Area area(2,2,2,0);
-	Cuboid c1(area.m_blocks[0][1][1], area.m_blocks[0][0][0]);
-	VisionCuboid vc1(c1);
-	Cuboid c2(area.m_blocks[1][1][1], area.m_blocks[1][0][0]);
-	VisionCuboid vc2(c2);
-	CHECK(vc1.m_cuboid.size() == 4);
-	CHECK(vc2.m_cuboid.size() == 4);
-	CHECK(vc1.canCombineWith(vc2.m_cuboid));
-	Cuboid c3(area.m_blocks[1][1][0], area.m_blocks[1][0][0]);
-	VisionCuboid vc3(c3);
-	CHECK(!vc3.canCombineWith(vc1.m_cuboid));
-	CHECK(!vc1.canCombineWith(vc3.m_cuboid));
-}
-TEST_CASE("setup area")
-{
-	Area area(2,2,2,0);
-	VisionCuboid::setup(area);
-	CHECK(area.m_visionCuboids.size() == 1);
-	VisionCuboid& visionCuboid = *area.m_blocks[0][0][0].m_visionCuboid;
-	CHECK(visionCuboid.m_cuboid.size() == 8);
-	for(Block& block : visionCuboid.m_cuboid)
-		CHECK(block.m_visionCuboid == &visionCuboid);
+	SUBCASE("create")
+	{
+		Cuboid cuboid(area.m_blocks[1][1][1], area.m_blocks[0][0][0]);
+		VisionCuboid visionCuboid(cuboid);
+	}
+	SUBCASE("can see into")
+	{
+		Cuboid c1(area.m_blocks[0][1][1], area.m_blocks[0][0][0]);
+		VisionCuboid vc1(c1);
+		Cuboid c2(area.m_blocks[1][1][1], area.m_blocks[1][0][0]);
+		VisionCuboid vc2(c2);
+		CHECK(vc1.m_cuboid.size() == 4);
+		CHECK(vc2.m_cuboid.size() == 4);
+		CHECK(vc2.canSeeInto(vc1.m_cuboid));
+		CHECK(vc1.canSeeInto(vc2.m_cuboid));
+	}
+	SUBCASE("can combine with")
+	{
+		Cuboid c1(area.m_blocks[0][1][1], area.m_blocks[0][0][0]);
+		VisionCuboid vc1(c1);
+		Cuboid c2(area.m_blocks[1][1][1], area.m_blocks[1][0][0]);
+		VisionCuboid vc2(c2);
+		CHECK(vc1.m_cuboid.size() == 4);
+		CHECK(vc2.m_cuboid.size() == 4);
+		CHECK(vc1.canCombineWith(vc2.m_cuboid));
+		Cuboid c3(area.m_blocks[1][1][0], area.m_blocks[1][0][0]);
+		VisionCuboid vc3(c3);
+		CHECK(!vc3.canCombineWith(vc1.m_cuboid));
+		CHECK(!vc1.canCombineWith(vc3.m_cuboid));
+	}
+	SUBCASE("setup area")
+	{
+		VisionCuboid::setup(area);
+		CHECK(area.m_visionCuboids.size() == 1);
+		VisionCuboid& visionCuboid = *area.m_blocks[0][0][0].m_visionCuboid;
+		CHECK(visionCuboid.m_cuboid.size() == 8);
+		for(Block& block : visionCuboid.m_cuboid)
+			CHECK(block.m_visionCuboid == &visionCuboid);
+	}
 }
 TEST_CASE("split at")
 {
+	simulation::init();
 	Area area(2,2,1,0);
 	Block& b1 = area.m_blocks[0][0][0];
 	Block& b2 = area.m_blocks[1][0][0];
@@ -68,6 +70,7 @@ TEST_CASE("split at")
 }
 TEST_CASE("split below")
 {
+	simulation::init();
 	Area area(3,3,3,0);
 	Block& middle = area.m_blocks[1][1][1];
 	Block& high = area.m_blocks[2][2][2];

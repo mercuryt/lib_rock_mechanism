@@ -44,7 +44,7 @@ void StockPileObjective::execute()
 	else
 		m_project->commandWorker(m_actor);
 }
-uint32_t StockPileProject::getDelay() const { return Config::addToStockPileDelaySteps; }
+Step StockPileProject::getDelay() const { return Config::addToStockPileDelaySteps; }
 void StockPileProject::onComplete()
 {
 	assert(m_workers.size() == 1);

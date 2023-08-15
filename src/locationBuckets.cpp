@@ -23,9 +23,9 @@ std::unordered_set<Actor*>* LocationBuckets::getBucketFor(const Block& block)
 	assert(m_buckets.at(bucketX).at(bucketY).size() > bucketZ);
 	return &m_buckets[bucketX][bucketY][bucketZ];
 }
-void LocationBuckets::insert(Actor& actor)
+void LocationBuckets::insert(Actor& actor, Block& block)
 {
-	actor.m_location->m_locationBucket->insert(&actor);
+	block.m_locationBucket->insert(&actor);
 }
 void LocationBuckets::erase(Actor& actor)
 {

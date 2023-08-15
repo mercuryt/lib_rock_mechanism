@@ -7,7 +7,7 @@
 #include <algorithm>
 
 Area::Area(uint32_t x, uint32_t y, uint32_t z, uint32_t ambiantSurfaceTemperature) :
-	m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_areaHasTemperature(*this, ambiantSurfaceTemperature), m_hasActors(*this), m_hasStockPiles(*this), m_visionCuboidsActive(false)
+	m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_areaHasTemperature(*this, ambiantSurfaceTemperature), m_hasActors(*this), m_hasStockPiles(*this), m_hasRain(*this), m_visionCuboidsActive(false)
 {
 	// build m_blocks
 	m_blocks.resize(m_sizeX);
@@ -55,7 +55,7 @@ void Area::writeStep()
 		fluidGroup->afterWriteStep();
 		fluidGroup->validate();
 	}
-	std::erase_if(m_unstableFluidGroups, [](FluidGroup* fluidGroup){ return fluidGroup->m_merged; });
+	std::erase_if(m_unstableFluidGroups, [](FluidGroup* fluidGroup){ return fluidGroup->m_merged || fluidGroup->m_disolved; });
 	std::vector<FluidGroup*> unstable2(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
 	for(FluidGroup* fluidGroup : unstable2)
 		fluidGroup->mergeStep();
@@ -115,17 +115,32 @@ void Area::writeStep()
 		std::erase_if(m_visionCuboids, [](VisionCuboid& visionCuboid){ return visionCuboid.m_destroy; });
 	// Apply vision.
 	m_hasActors.processVisionWriteStep();
+	// Apply temperature deltas.
+	m_areaHasTemperature.applyDeltas();
+	// Apply rain.
+	m_hasRain.writeStep();
 }
 FluidGroup* Area::createFluidGroup(const FluidType& fluidType, std::unordered_set<Block*>& blocks, bool checkMerge)
 {
 	m_fluidGroups.emplace_back(fluidType, blocks, *this, checkMerge);
 	m_unstableFluidGroups.insert(&m_fluidGroups.back());
+	//TODO:  If new group is outside register it with areaHasTemperature.
 	return &m_fluidGroups.back();
 }
 void Area::visionCuboidsActivate()
 {
 	m_visionCuboidsActive = true;
 	VisionCuboid::setup(*this);
+}
+void Area::setHour(uint32_t hour, uint32_t dayOfYear)
+{
+	m_areaHasTemperature.setAmbientTemperatureFor(hour, dayOfYear);
+}
+void Area::setDayOfYear(uint32_t dayOfYear)
+{
+	m_areaHasTemperature.setAmbientTemperatureFor(0, dayOfYear);
+	for(Plant& plant : m_hasPlants.getAll())
+		plant.setDayOfYear(dayOfYear);
 }
 Cuboid Area::getZLevel(uint32_t z)
 {

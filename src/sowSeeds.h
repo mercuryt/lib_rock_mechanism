@@ -15,9 +15,9 @@ class SowSeedsEvent final : public ScheduledEventWithPercent
 {
 	SowSeedsObjective& m_objective;
 public:
-	SowSeedsEvent(uint32_t delay, SowSeedsObjective& o) : ScheduledEventWithPercent(delay), m_objective(o) { }
+	SowSeedsEvent(Step delay, SowSeedsObjective& o) : ScheduledEventWithPercent(delay), m_objective(o) { }
 	void execute();
-	~SowSeedsEvent();
+	void clearReferences();
 };
 class SowSeedsThreadedTask final : public ThreadedTask
 {

@@ -2,12 +2,11 @@
 #include "path.h"
 #include "block.h"
 #include <algorithm>
-ProjectFinishEvent::ProjectFinishEvent(uint32_t delay, Project& p) : ScheduledEventWithPercent(delay), m_project(p) {}
 void ProjectFinishEvent::execute() { m_project.complete(); }
-ProjectFinishEvent::~ProjectFinishEvent() { m_project.m_finishEvent.clearPointer(); }
+void ProjectFinishEvent::clearReferences() { m_project.m_finishEvent.clearPointer(); }
 
 void ProjectTryToHaulEvent::execute() { m_project.m_tryToHaulThreadedTask.create(m_project); }
-ProjectTryToHaulEvent::~ProjectTryToHaulEvent() { m_project.m_finishEvent.clearPointer(); }
+void ProjectTryToHaulEvent::clearReferences() { m_project.m_finishEvent.clearPointer(); }
 
 void ProjectTryToMakeHaulSubprojectThreadedTask::readStep()
 {

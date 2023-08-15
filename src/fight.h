@@ -28,7 +28,7 @@ class CanFight final
 {
 	Actor& m_actor;
 	uint32_t m_maxRange;
-	uint32_t m_coolDownDuration;
+	Step m_coolDownDuration;
 	uint32_t m_combatScore;
 	HasScheduledEvent<AttackCoolDown> m_coolDown;
 	HasThreadedTask<GetIntoAttackPositionThreadedTask> m_getIntoAttackPositionThreadedTask;
@@ -62,8 +62,8 @@ class AttackCoolDown final : public ScheduledEventWithPercent
 	CanFight& m_canFight;
 public:
 	AttackCoolDown(CanFight& cf) : ScheduledEventWithPercent(cf.m_coolDownDuration), m_canFight(cf) { }
-	void execute();
-	~AttackCoolDown();
+	void execute() { m_canFight.coolDownCompleted(); }
+	void clearReferences() { m_canFight.m_coolDown.clearPointer(); }
 };
 class GetIntoAttackPositionThreadedTask final : public ThreadedTask
 {

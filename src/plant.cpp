@@ -3,6 +3,9 @@
 #include "plant.h"
 #include "block.h"
 #include "area.h"
+
+#include <algorithm>
+
 Plant::Plant(Block& l, const PlantSpecies& pt, uint32_t pg) : m_location(l), m_fluidSource(nullptr), m_plantSpecies(pt), m_percentGrown(pg), m_quantityToHarvest(0), m_percentFoliage(100), m_reservable(1), m_volumeFluidRequested(0)
 {
 	assert(m_location.m_hasPlant.canGrowHere(m_plantSpecies));
@@ -54,10 +57,11 @@ void Plant::setMaybeNeedsFluid()
 	}
 	else // Needs fluid, stop growing and set death timer.
 	{
-		m_volumeFluidRequested = util::scaleByPercent(m_plantSpecies.volumeFluidConsumed, getGrowthPercent());
+		m_volumeFluidRequested = std::max(1, util::scaleByPercent(m_plantSpecies.volumeFluidConsumed, getGrowthPercent()));
 		stepsTillNextFluidEvent = m_plantSpecies.stepsTillDieWithoutFluid;
 		m_location.m_isPartOfFarmField.designateForGiveFluidIfPartOfFarmField(*this);
 	}
+	m_fluidEvent.maybeUnschedule();
 	m_fluidEvent.schedule(stepsTillNextFluidEvent, *this);
 	updateGrowingStatus();
 }
@@ -89,7 +93,7 @@ void Plant::setDayOfYear(uint32_t dayOfYear)
 }
 void Plant::setQuantityToHarvest()
 {
-	uint32_t delay = m_plantSpecies.harvestData->daysDuration * Config::stepsPerDay;
+	Step delay = m_plantSpecies.harvestData->stepsDuration;
 	m_endOfHarvestEvent.schedule(delay, *this);
 	m_quantityToHarvest = util::scaleByPercent(m_plantSpecies.harvestData->itemQuantity, getGrowthPercent());
 	m_location.m_isPartOfFarmField.designateForHarvestIfPartOfFarmField(*this);
@@ -111,13 +115,15 @@ void Plant::endOfHarvest()
 }
 void Plant::updateGrowingStatus()
 {
+	if(m_percentGrown == 100)
+		return;
 	if(m_volumeFluidRequested == 0 && m_location.m_exposedToSky == m_plantSpecies.growsInSunLight && !m_temperatureEvent.exists() && getPercentFoliage() >= Config::minimumPercentFoliageForGrow)
 	{
 		if(!m_growthEvent.exists())
 		{
-			uint32_t delay = (m_percentGrown == 0 ?
+			Step delay = (m_percentGrown == 0 ?
 					m_plantSpecies.stepsTillFullyGrown :
-					((m_plantSpecies.stepsTillFullyGrown * m_percentGrown) / 100u));
+					util::scaleByPercent(m_plantSpecies.stepsTillFullyGrown, m_percentGrown));
 			m_growthEvent.schedule(delay, *this);
 		}
 	}
@@ -192,7 +198,7 @@ uint32_t Plant::getFruitMass() const
 }
 void Plant::makeFoliageGrowthEvent()
 {
-	uint32_t delay = util::scaleByInversePercent(m_plantSpecies.stepsTillFoliageGrowsFromZero, m_percentFoliage);
+	Step delay = util::scaleByInversePercent(m_plantSpecies.stepsTillFoliageGrowsFromZero, m_percentFoliage);
 	m_foliageGrowthEvent.schedule(delay, *this);
 }
 void Plant::foliageGrowth()
@@ -209,7 +215,7 @@ uint32_t Plant::getStepAtWhichPlantWillDieFromLackOfFluid() const
 void HasPlant::addPlant(const PlantSpecies& plantSpecies, uint32_t growthPercent)
 {
 	assert(m_plant == nullptr);
-	m_block.m_area->m_hasPlants.emplace(m_block, plantSpecies, growthPercent);
+	m_plant = &m_block.m_area->m_hasPlants.emplace(m_block, plantSpecies, growthPercent);
 }
 void HasPlant::updateGrowingStatus()
 {
@@ -242,9 +248,15 @@ bool HasPlant::canGrowHere(const PlantSpecies& plantSpecies) const
 		return false;
 	return true;
 }
-void HasPlants::emplace(Block& location, const PlantSpecies& species, uint32_t percentGrowth)
+Plant& HasPlants::emplace(Block& location, const PlantSpecies& species, uint32_t percentGrowth)
 {
-	m_plants.emplace_back(location, species, percentGrowth);
+	assert(location.m_hasPlant.canGrowHere(species));
+	assert(!location.m_hasPlant.exists());
+	Plant& plant = m_plants.emplace_back(location, species, percentGrowth);
+	// TODO: plants above ground but under roof?
+	if(!location.m_underground)
+		m_plantsOnSurface.insert(&plant);
+	return plant;
 }
 void HasPlants::erase(Plant& plant)
 {

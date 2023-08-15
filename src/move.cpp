@@ -1,5 +1,6 @@
 #include "move.h"
 #include "path.h"
+ActorCanMove::ActorCanMove(Actor& a) : m_actor(a), m_moveType(&m_actor.m_species.moveType), m_retries(0) { }
 uint32_t ActorCanMove::getIndividualMoveSpeedWithAddedMass(uint32_t mass) const
 {
 	uint32_t output = m_actor.m_attributes.getMoveSpeed();

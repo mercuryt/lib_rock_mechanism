@@ -13,12 +13,12 @@ class HarvestEvent final : public ScheduledEventWithPercent
 {
 	HarvestObjective& m_harvestObjective;
 public:
-	HarvestEvent(uint32_t step, HarvestObjective& ho) : ScheduledEventWithPercent(step), m_harvestObjective(ho) {}
+	HarvestEvent(Step delay, HarvestObjective& ho) : ScheduledEventWithPercent(delay), m_harvestObjective(ho) {}
 	void execute();
+	void clearReferences();
 	Plant* getPlant();
-	~HarvestEvent();
 };
-class HarvestThreadedTask : public ThreadedTask
+class HarvestThreadedTask final : public ThreadedTask
 {
 	HarvestObjective& m_harvestObjective;
 	std::vector<Block*> m_result;
@@ -27,13 +27,13 @@ public:
 	void readStep();
 	void writeStep();
 };
-class HarvestObjectiveType : public ObjectiveType
+class HarvestObjectiveType final : public ObjectiveType
 {
 public:
 	bool canBeAssigned(Actor& actor) const;
 	std::unique_ptr<Objective> makeFor(Actor& actor) const;
 };
-class HarvestObjective : public Objective
+class HarvestObjective final : public Objective
 {
 	Actor& m_actor;
 public:

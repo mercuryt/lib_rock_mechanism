@@ -24,6 +24,7 @@ public:
 	std::unordered_set<Block*> m_blocks;
 	CanLead m_canLead;
 	CanFollow m_canFollow;
+	bool m_isUnderground;
 	bool isAdjacentTo(HasShape& other) const;
 	bool isAdjacentTo(Block& block) const;
 	void setStatic(bool isTrue);

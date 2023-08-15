@@ -1,6 +1,5 @@
 #include "area.h"
 #include "block.h"
-
 #include <vector>
 #include <tuple>
 #include <unordered_set>

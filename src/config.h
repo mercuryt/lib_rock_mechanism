@@ -1,9 +1,11 @@
 #pragma once
+
+#include "types.h"
 #include <cmath>
 #include <cstdint>
 namespace Config
 {
-	inline constexpr uint32_t addToStockPileDelaySteps = 10;
+	inline constexpr Step addToStockPileDelaySteps = 10;
 	inline constexpr uint32_t maxBlockVolume = 100;
 	inline constexpr uint32_t maxNumberOfWorkersForDigProject = 3;
 	inline constexpr uint32_t maxNumberOfWorkersForConstructionProject = 4;
@@ -14,8 +16,8 @@ namespace Config
 	inline constexpr float itemTypeCombatScoreModifier = 1;
 	inline constexpr float flankingModifier = 1;
 	inline constexpr float adjacentAllyCombatScoreBonusModifier = 1;
-	inline constexpr uint32_t yokeDelaySteps = 10;
-	inline constexpr uint32_t loadDelaySteps = 10;
+	inline constexpr Step yokeDelaySteps = 10;
+	inline constexpr Step loadDelaySteps = 10;
 	inline constexpr float ratioOfTotalBodyVolumeWhichIsBlood = 0.05;
 	inline constexpr float bodyHardnessModifier = 1;
 	inline constexpr float pierceBoneModifier = 1;
@@ -24,13 +26,13 @@ namespace Config
 	inline constexpr float pierceSkinModifier = 1;
 	inline constexpr float ratioWoundsCloseDelayToBleedVolume = 1;
 	inline constexpr uint32_t bleedEventFrequency = 100;
-	inline constexpr uint32_t bleedPassOutDuration = 1000;
+	inline constexpr Step bleedPassOutDuration = 1000;
 	inline constexpr float bleedToUnconciousessRatio = 0.1;
 	inline constexpr float bleedToDeathRatio = 0.4;
 	inline constexpr float musclePierceForceCost = 1;
 	inline constexpr float fatPierceForceCost = 1;
 	inline constexpr float skinPierceForceCost = 1;
-	inline constexpr uint32_t stepsTillDiePlantPriorityOveride = 1000;
+	inline constexpr Step stepsTillDiePlantPriorityOveride = 1000;
 	inline constexpr float maxDistanceVisionModifier = 1.1;
 	inline constexpr uint32_t percentOfPlantMassWhichIsFoliage = 30;
 	inline constexpr uint32_t minimumPercentFoliageForGrow = 90;
@@ -42,9 +44,9 @@ namespace Config
 	inline constexpr float rollingMassModifier = 0.3;
 	inline constexpr uint32_t actorDoVisionInterval = 10;
 	inline constexpr uint32_t moveTryAttempsBeforeDetour = 2;
-	inline constexpr uint32_t sowSeedsStepsDuration = 20;
+	inline constexpr Step sowSeedsStepsDuration = 20;
 	inline constexpr uint32_t sowSeedsPriority = 10;
-	inline constexpr uint32_t fluidsSeepDiagonalModifier = 1;
+	inline constexpr uint32_t fluidsSeepDiagonalModifier = 100;
 	inline constexpr float stepsAttackCoolDownReductionPerPointOfDextarity = 0.1;
 	inline constexpr float unitsOfMoveSpeedPerUnitOfAgility = 0.1;
 	inline constexpr float unitsOfCarryMassPerUnitOfStrength = 10;
@@ -57,12 +59,12 @@ namespace Config
 	inline constexpr float heatFractionForSmoulder = 0.1;
 	inline constexpr float heatFractionForBurn = 0.4;
 	inline constexpr float fireRampDownPhaseDurationFraction = 0.2;
-	inline constexpr uint32_t stepsToDrink = 40;
-	inline constexpr uint32_t stepsToEat = 100;
+	inline constexpr Step stepsToDrink = 40;
+	inline constexpr Step stepsToEat = 100;
 	inline constexpr uint32_t drinkPriority = 200;
 	inline constexpr uint32_t eatPriority = 100;
 	inline constexpr uint32_t maxDistanceToLookForEatingLocation = 100;
-	inline constexpr uint32_t harvestEventDuration = 50;
+	inline constexpr Step harvestEventDuration = 50;
 	inline constexpr uint32_t harvestPriority = 150;
 	inline constexpr float foodRequestedMassPerUnitOfBodyMass = 0.1;
 	inline constexpr uint32_t maxBlocksToLookForBetterFood = 20;
@@ -78,11 +80,11 @@ namespace Config
 	inline constexpr float pierceModifier = 1;
 	inline constexpr bool fluidPiston = false;
 	inline constexpr uint32_t visionThreadingBatchSize = 30;
-	inline constexpr uint32_t givePlantsFluidDelaySteps = 5;
+	inline constexpr Step givePlantsFluidDelaySteps = 5;
 	inline constexpr uint32_t maxSkillLevel = 100;
 	inline constexpr uint32_t killPriority = 1000;
 	inline constexpr float unitsOfAttackForcePerUnitOfStrength = 1;
-	inline constexpr uint32_t attackCoolDownDurationBase = 20;
+	inline constexpr Step attackCoolDownDurationBase = 20;
 	inline constexpr float itemTypeCombatModifier = 1;
 	inline constexpr float itemSkillCombatModifier = 1;
 	inline constexpr float itemQualityCombatModifier = 1;
@@ -91,14 +93,14 @@ namespace Config
 	inline constexpr uint32_t hoursPerDay = 24;
 	inline constexpr uint32_t minutesPerHour = 60;
 	inline constexpr uint32_t secondsPerMinute = 60;
-	inline constexpr uint32_t stepsPerSecond = 20;
-	inline constexpr uint32_t stepsPerMinute = stepsPerSecond * secondsPerMinute;
-	inline constexpr uint32_t stepsPerHour = stepsPerMinute * minutesPerHour;
-	inline constexpr uint32_t stepsPerDay = stepsPerHour * hoursPerDay;
+	inline constexpr Step stepsPerSecond = 20;
+	inline constexpr Step stepsPerMinute = stepsPerSecond * secondsPerMinute;
+	inline constexpr Step stepsPerHour = stepsPerMinute * minutesPerHour;
+	inline constexpr Step stepsPerDay = stepsPerHour * hoursPerDay;
 	inline constexpr uint32_t sleepObjectivePriority = 50;
 	inline constexpr uint32_t minimumHaulSpeed = 3;
-	inline constexpr uint32_t stepsFrequencyToLookForHaulSubprojects = 20;
-	inline constexpr uint32_t stepsToWaitWhenCannotExitArea = 200;
+	inline constexpr Step stepsFrequencyToLookForHaulSubprojects = 20;
+	inline constexpr Step stepsToWaitWhenCannotExitArea = 200;
 	inline constexpr uint32_t maxZLevelForDeepAmbiantTemperature = 100;
 	inline constexpr uint32_t deepAmbiantTemperature = 295;
 	inline constexpr uint32_t undergroundAmbiantTemperature = 284;
@@ -106,9 +108,9 @@ namespace Config
 	inline constexpr uint32_t getToSafeTemperaturePriority = 10000;
 	inline constexpr uint32_t unitsOfWoundAreaPerUnitItemScaleFactor = 100;
 	inline constexpr uint32_t scaleOfHumanBody = 100;
-	inline constexpr uint32_t pierceStepsTillHealedModifier = 10;
-	inline constexpr uint32_t cutStepsTillHealedModifier = 20;
-	inline constexpr uint32_t bludgeonStepsTillHealedModifier = 30;
+	inline constexpr Step pierceStepsTillHealedModifier = 10;
+	inline constexpr Step cutStepsTillHealedModifier = 20;
+	inline constexpr Step bludgeonStepsTillHealedModifier = 30;
 	inline constexpr uint32_t pierceBleedVoumeRateModifier = 10;
 	inline constexpr uint32_t cutBleedVoumeRateModifier = 20;
 	inline constexpr uint32_t bludgeonBleedVoumeRateModifier = 1;
@@ -119,5 +121,9 @@ namespace Config
 	inline constexpr uint32_t cutPercentPermanantImparmentModifier = 20;
 	inline constexpr uint32_t bludgeonPercentPermanantImparmentModifier = 1;
 	inline constexpr uint32_t percentPermanantImparmentMinimum = 10;
+	inline constexpr float heatDisipatesAtDistanceExponent = 3.5;
+	inline constexpr uint32_t heatRadianceMinimum = 3;
+	inline constexpr uint32_t daysPerYear = 365;
+	inline constexpr uint32_t rainFrequencyModifier = 1000;
 	inline uint32_t convertBodyPartVolumeToArea(uint32_t volume){ return sqrt(volume); }
 }

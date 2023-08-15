@@ -14,7 +14,7 @@ class LocationBuckets
 	uint32_t m_maxZ;
 public:
 	LocationBuckets(Area& area);
-	void insert(Actor& actor);
+	void insert(Actor& actor, Block& block);
 	void erase(Actor& actor);
 	void update(Actor& actor, const Block& oldLocation, const Block& newLocation);
 	void processVisionRequest(VisionRequest& visionRequest) const;

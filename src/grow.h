@@ -4,7 +4,7 @@
 class AnimalGrowthEvent;
 class AnimalGrowthUpdateEvent;
 class Actor;
-class CanGrow
+class CanGrow final
 {
 	Actor& m_actor;
 	HasScheduledEvent<AnimalGrowthEvent> m_event;
@@ -22,25 +22,19 @@ public:
 	friend class AnimalGrowthEvent;
 	friend class AnimalGrowthUpdateEvent;
 };
-class AnimalGrowthEvent : public ScheduledEventWithPercent
+class AnimalGrowthEvent final : public ScheduledEventWithPercent
 {
 	CanGrow& m_canGrow;
 public:
 	AnimalGrowthEvent(uint32_t delay, CanGrow& cg) : ScheduledEventWithPercent(delay), m_canGrow(cg) { }
-	void execute()
-	{
-		m_canGrow.complete();
-	}
-	~AnimalGrowthEvent(){ m_canGrow.m_event.clearPointer(); }
+	void execute() { m_canGrow.complete(); }
+	void clearReferences(){ m_canGrow.m_event.clearPointer(); }
 };
-class AnimalGrowthUpdateEvent : public ScheduledEventWithPercent
+class AnimalGrowthUpdateEvent final : public ScheduledEventWithPercent
 {
 	CanGrow& m_canGrow;
 public:
 	AnimalGrowthUpdateEvent(uint32_t delay, CanGrow& cg) : ScheduledEventWithPercent(delay), m_canGrow(cg) { }
-	void execute()
-	{
-		m_canGrow.update();
-	}
-	~AnimalGrowthUpdateEvent(){ m_canGrow.m_updateEvent.clearPointer(); }
+	void execute() { m_canGrow.update(); }
+	void clearReferences(){ m_canGrow.m_updateEvent.clearPointer(); }
 };

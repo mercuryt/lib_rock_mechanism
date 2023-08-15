@@ -12,7 +12,7 @@ class HungerEvent;
 class Block;
 class Plant;
 
-class MustEat
+class MustEat final
 {
 	Actor& m_actor;
 	uint32_t m_massFoodRequested;
@@ -31,13 +31,15 @@ public:
 	bool canEat(Actor& actor) const;
 	bool canEat(Plant& plant) const;
 	bool canEat(Item& item) const;
+	friend class HungerEvent;
 };
-class EatEvent : public ScheduledEventWithPercent
+class EatEvent final: public ScheduledEventWithPercent
 {
 	EatObjective& m_eatObjective;
 public:
-	EatEvent(uint32_t delay, EatObjective& eo) : ScheduledEventWithPercent(delay), m_eatObjective(eo) { }
+	EatEvent(Step delay, EatObjective& eo) : ScheduledEventWithPercent(delay), m_eatObjective(eo) { }
 	void execute();
+	void clearReferences();
 	void eatPreparedMeal(Item& item);
 	void eatGenericItem(Item& item);
 	void eatActor(Actor& actor);
@@ -47,14 +49,15 @@ public:
 	uint32_t getDesireToEatSomethingAt(Block& block) const;
 	u_int32_t getMinimumAcceptableDesire() const;
 };
-class HungerEvent : public ScheduledEventWithPercent
+class HungerEvent final : public ScheduledEventWithPercent
 {
 	Actor& m_actor;
 public:
-	HungerEvent(uint32_t delay, Actor& a) : ScheduledEventWithPercent(delay), m_actor(a) { }
+	HungerEvent(Step delay, Actor& a) : ScheduledEventWithPercent(delay), m_actor(a) { }
 	void execute();
+	void clearReferences();
 };
-class EatThreadedTask : public ThreadedTask
+class EatThreadedTask final : public ThreadedTask
 {
 	EatObjective& m_eatObjective;
 	std::vector<Block*> m_pathResult;
@@ -64,7 +67,7 @@ public:
 	void readStep();
 	void writeStep();
 };
-class EatObjective : public Objective
+class EatObjective final : public Objective
 {
 	Actor& m_actor;
 	HasThreadedTask<EatThreadedTask> m_threadedTask;

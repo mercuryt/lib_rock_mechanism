@@ -2,7 +2,7 @@
 #include "body.h"
 #include "hit.h"
 #include "config.h"
-uint32_t WoundCalculations::getStepsTillHealed(WoundType woundType, const Hit& hit, const BodyPartType& bodyPartType, uint32_t scale)
+Step WoundCalculations::getStepsTillHealed(WoundType woundType, const Hit& hit, const BodyPartType& bodyPartType, uint32_t scale)
 {
 	uint32_t hitVolume = hit.depth * hit.area;
 	uint32_t bodyPartVolume = bodyPartType.volume * scale;

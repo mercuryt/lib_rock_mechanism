@@ -19,14 +19,14 @@
 class Area;
 class Block;
 
-struct FluidGroupSplitData
+struct FluidGroupSplitData final
 {
 	std::unordered_set<Block*> members;
 	std::unordered_set<Block*> futureAdjacent;
 	FluidGroupSplitData(std::unordered_set<Block*>& m) : members(m) {}
 };
 
-class FluidGroup
+class FluidGroup final
 {
 public:
 	// Currently at rest?

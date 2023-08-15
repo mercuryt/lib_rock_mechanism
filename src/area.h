@@ -17,6 +17,7 @@
 #include "dig.h"
 #include "construct.h"
 #include "craft.h"
+#include "rain.h"
 #include "../lib/BS_thread_pool_light.hpp"
 
 #include <vector>
@@ -25,7 +26,7 @@
 #include <tuple>
 #include <list>
 
-class Area
+class Area final
 {
 public:
 	uint32_t m_sizeX;
@@ -47,14 +48,16 @@ public:
 	HasCraftingLocationsAndJobs m_hasCraftingLocationsAndJobs;
 	HasSleepingSpots m_hasSleepingSpots;
 	//TODO: HasItems
-	std::list<Item> m_items;
+	AreaHasItems m_hasItems;
 	//TODO: HasFluidGroups.
 	std::list<FluidGroup> m_fluidGroups;
 	std::unordered_set<FluidGroup*> m_unstableFluidGroups;
 	std::unordered_set<FluidGroup*> m_setStable;
 	std::unordered_set<FluidGroup*> m_toDestroy;
+	AreaHasRain m_hasRain;
 	std::list<VisionCuboid> m_visionCuboids;
 	bool m_visionCuboidsActive;
+	
 
 
 	// Create blocks and store adjacent
@@ -62,7 +65,6 @@ public:
 
 	void readStep();
 	void writeStep();
-	
 	
 	// Create a fluid group.
 	FluidGroup* createFluidGroup(const FluidType& fluidType, std::unordered_set<Block*>& blocks, bool checkMerge = true);
@@ -74,6 +76,9 @@ public:
 	void stepCaveInRead();
 	void stepCaveInWrite();
 	void registerPotentialCaveIn(Block& block);
+	// Update time.
+	void setHour(uint32_t hour, uint32_t dayOfYear);
+	void setDayOfYear(uint32_t dayOfYear);
 
 	void validateAllFluidGroups();
 	std::string toS();

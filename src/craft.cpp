@@ -2,7 +2,7 @@
 #include "area.h"
 #include "path.h"
 #include "util.h"
-uint32_t CraftStepProject::getDelay() const
+Step CraftStepProject::getDelay() const
 {
 	uint32_t totalScore = 0;
 	for(auto& pair : m_workers)

@@ -1,4 +1,3 @@
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "../../lib/doctest.h"
 #include "../../src/definitions.h"
 TEST_CASE("load")

@@ -23,10 +23,10 @@ class TemperatureSource final
 	Block& m_block;
 	int32_t m_temperature;
 	uint32_t getTemperatureDeltaForRange(uint32_t range);
-public:
-	TemperatureSource(const int32_t& t, Block& b) : m_block(b), m_temperature(t) { }
-	void setTemperature(const int32_t& t);
 	void apply();
+public:
+	TemperatureSource(const int32_t& t, Block& b) : m_block(b), m_temperature(t) { apply(); }
+	void setTemperature(const int32_t& t);
 	void unapply();
 	friend class AreaHasTemperature;
 };
@@ -39,13 +39,18 @@ class AreaHasTemperature final
 	std::map<uint32_t, std::unordered_set<Block*>> m_aboveGroundBlocksByMeltingPoint;
 	// To possibly freeze.
 	std::map<uint32_t, std::unordered_set<FluidGroup*>> m_aboveGroundFluidGroupsByMeltingPoint;
+	// Collect deltas to apply sum.
+	std::unordered_map<Block*, int32_t> m_blockDeltaDeltas;
 
 public:
 	AreaHasTemperature(Area& a, uint32_t ast) : m_area(a), m_ambiantSurfaceTemperature(ast) { }
 	void setAmbientSurfaceTemperature(const uint32_t& temperature);
+	void setAmbientTemperatureFor(uint32_t hour, uint32_t dayOfYear);
 	void addTemperatureSource(Block& block, const uint32_t& temperature);
 	void removeTemperatureSource(TemperatureSource& temperatureSource);
 	TemperatureSource& getTemperatureSourceAt(Block& block);
+	void addDelta(Block& block, int32_t delta);
+	void applyDeltas();
 	void addMeltableSolidBlockAboveGround(Block& block);
 	void removeMeltableSolidBlockAboveGround(Block& block);
 	void addFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup);
@@ -55,15 +60,15 @@ public:
 class BlockHasTemperature final
 {
 	Block& m_block;
+	// Store to display to user and for pathing to safe temperature.
 	uint32_t m_delta;
-	void setDelta(const uint32_t& delta);
-	const uint32_t& getAmbientTemperature() const;
 public:
-	BlockHasTemperature(Block& b) : m_block(b) { }
-	void addDelta(const uint32_t& delta) { setDelta(m_delta + delta); }
-	void subtractDelta(const uint32_t& delta) { setDelta(m_delta - delta); }
+	BlockHasTemperature(Block& b) : m_block(b), m_delta(0) { }
 	void freeze(const FluidType& fluidType);
 	void melt();
+	void apply(uint32_t temperature, const int32_t& delta);
+	void updateDelta(int32_t delta);
+	const uint32_t& getAmbientTemperature() const;
 	uint32_t get() const { return m_delta + getAmbientTemperature(); }
 };
 class GetToSafeTemperatureThreadedTask final : public ThreadedTask

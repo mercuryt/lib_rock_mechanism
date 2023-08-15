@@ -40,6 +40,12 @@ void HasBlockFeatures::construct(const BlockFeatureType& blockFeatureType, const
 	assert(!m_block.isSolid());
 	m_features.emplace_back(blockFeatureType, materialType, false);
 	m_block.m_hasShapes.clearCache();
+	if((blockFeatureType == BlockFeatureType::floor || blockFeatureType == BlockFeatureType::hatch) && !materialType.transparent)
+	{
+		if(m_block.m_area->m_visionCuboidsActive)
+			VisionCuboid::BlockFloorIsSometimesOpaque(m_block);
+		m_block.setBelowNotExposedToSky();
+	}
 }
 void HasBlockFeatures::hew(const BlockFeatureType& blockFeatureType)
 {
@@ -61,9 +67,9 @@ bool HasBlockFeatures::blocksEntrance() const
 		if(blockFeature.blockFeatureType == &BlockFeatureType::fortification || blockFeature.blockFeatureType == &BlockFeatureType::floodGate ||
 				(blockFeature.blockFeatureType == &BlockFeatureType::door && blockFeature.locked)
 		  )
-			return false;
+			return true;
 	}
-	return true;
+	return false;
 }
 bool HasBlockFeatures::canStandIn() const
 {

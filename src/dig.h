@@ -54,7 +54,7 @@ public:
 	DigProject(Faction& faction, Block& block, const BlockFeatureType* bft) : Project(faction, block, Config::maxNumberOfWorkersForDigProject), blockFeatureType(bft) { }
 	void onComplete();
 	// What would the total delay time be if we started from scratch now with current workers?
-	uint32_t getDelay() const;
+	Step getDelay() const;
 	friend class HasDigDesignationsForFaction;
 };
 // Part of HasDigDesignations.

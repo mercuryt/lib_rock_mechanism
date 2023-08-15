@@ -29,14 +29,14 @@ struct CraftStepType final
 	const std::vector<std::pair<ItemType, uint32_t>> consumedItemsOfSameTypeAsProduct;
 	const std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> byproductItems;
 	const SkillType& skillType;
-	const uint32_t stepsDuration;
+	const Step stepsDuration;
 };
 // A specific step of a specific CraftJob.
 class CraftStepProject final : public Project
 {
 	const CraftStepType& m_craftStepType;
 	CraftJob& m_craftJob;
-	uint32_t getDelay() const;
+	Step getDelay() const;
 	void onComplete();
 	// Use copies rather then references for return types to allow specalization of Queries as well as byproduct material type.
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;

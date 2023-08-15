@@ -445,7 +445,7 @@ bool Block::hasLineOfSightTo(Block& block) const
 }
 void Block::spawnMist(const FluidType& fluidType, uint32_t maxMistSpread)
 {
-	if(m_mist != nullptr and m_mist->density > fluidType.density)
+	if(m_mist != nullptr && (m_mist == &fluidType || m_mist->density > fluidType.density))
 		return;
 	m_mist = &fluidType;
 	m_mistInverseDistanceFromSource = maxMistSpread != 0 ? maxMistSpread : fluidType.maxMistSpread;

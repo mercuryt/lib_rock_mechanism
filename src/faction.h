@@ -6,7 +6,8 @@
 #include <unordered_set>
 struct Faction
 {
-	std::string m_name;
+	std::wstring m_name;
 	std::unordered_set<Faction*> allies;
 	std::unordered_set<Faction*> enemies;
+	Faction(std::wstring n) : m_name(n) { }
 };

@@ -34,7 +34,7 @@ struct Faction;
 
 enum class CauseOfDeath { hunger, bloodLoss };
 
-class Actor : public HasShape
+class Actor final : public HasShape
 {	
 	inline static uint32_t s_nextId = 1;
 public:
@@ -64,7 +64,7 @@ public:
 	//TODO: CanSee.
 	uint32_t m_visionRange;
 
-	Actor(uint32_t id, const std::wstring name, const AnimalSpecies& species, uint32_t percentGrown, Faction& faction, Attributes attributes);
+	Actor(uint32_t id, const std::wstring name, const AnimalSpecies& species, uint32_t percentGrown, Faction* faction, Attributes attributes);
 	void setLocation(Block& block);
 	void exit();
 	void removeMassFromCorpse(uint32_t mass);
@@ -82,8 +82,27 @@ public:
 	bool canMove() const;
 	uint32_t getMass() const;
 	uint32_t getVolume() const;
+	const MoveType& getMoveType() const { return m_canMove.getMoveType(); }
+	uint32_t singleUnitMass() const { return getMass(); }
 	// Infastructure.
-	static std::vector<Actor> data;
+	inline static std::list<Actor> data;
+	static Actor& create(const AnimalSpecies& species, Block& block, uint32_t percentGrown = 100)
+	{
+		Attributes attributes(species, percentGrown);
+		std::wstring name(species.name.begin(), species.name.end());
+		name += std::to_wstring(s_nextId);
+		Actor& output = data.emplace_back(
+			s_nextId,
+			name,
+			species,
+			percentGrown,
+			nullptr,
+			attributes
+		);	
+		s_nextId++;
+		output.setLocation(block);
+		return output;
+	}
 };
 // To be used to find actors fitting criteria.
 struct ActorQuery
@@ -111,6 +130,7 @@ public:
 	bool contains(Actor& actor) const;
 	uint32_t volumeOf(Actor& actor) const;
 	std::vector<Actor*>& getAll() { return m_actors; }
+	const std::vector<Actor*>& getAllConst() const { return m_actors; }
 };
 class AreaHasActors
 {
@@ -130,4 +150,6 @@ public:
 	// Generate vision request queue and dispatch tasks.
 	void processVisionReadStep();
 	void processVisionWriteStep();
+	void setUnderground(Actor& actor);
+	void setNotUnderground(Actor& actor);
 };

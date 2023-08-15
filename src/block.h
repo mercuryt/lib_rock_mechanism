@@ -33,11 +33,11 @@ class Actor;
 // Fluid type and volume pairs are sorted by density, low to high.
 // This is useful for resolving overfill.
 // TODO: Maybe a vector of pairs would be better performance?
-struct SortByDensity
+struct SortByDensity final
 {
 	bool operator()(const FluidType* a, const FluidType* b) const { return a->density < b->density; }
 };
-class Block
+class Block final
 {
 	// If this block is solid stone, solid dirt, etc. then store it here. Otherwise nullptr.
 	const MaterialType* m_solid;

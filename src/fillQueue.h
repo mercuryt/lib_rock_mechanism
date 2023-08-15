@@ -7,7 +7,7 @@
 
 class FluidGroup;
 
-class FillQueue : public FluidQueue
+class FillQueue final : public FluidQueue
 {
 	uint32_t getPriority(FutureFlowBlock& futureFlowBlock) const;
 public:

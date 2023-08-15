@@ -3,5 +3,6 @@
   "density": 100,
   "hardness": 100,
   "transparent": true,
+  "meltingPoint": 1612,
   "meltsInto": "moltenGlass"
 }

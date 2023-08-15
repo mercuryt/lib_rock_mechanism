@@ -29,7 +29,7 @@ class ActorCanMove final
 	HasThreadedTask<PathToSetThreadedTask> m_toSetThreadedTask;
 	HasThreadedTask<ExitAreaThreadedTask> m_exitAreaThreadedTask;
 public:
-	ActorCanMove(Actor& a) : m_actor(a), m_retries(0) { }
+	ActorCanMove(Actor& a);
 	uint32_t getIndividualMoveSpeedWithAddedMass(uint32_t mass) const;
 	void updateIndividualSpeed();
 	void updateActualSpeed();
@@ -51,9 +51,9 @@ class MoveEvent final : public ScheduledEventWithPercent
 {
 	ActorCanMove& m_canMove;
 public:
-	MoveEvent(uint32_t delay, ActorCanMove& cm) : ScheduledEventWithPercent(delay), m_canMove(cm) { }
+	MoveEvent(Step delay, ActorCanMove& cm) : ScheduledEventWithPercent(delay), m_canMove(cm) { }
 	void execute() { m_canMove.callback(); }
-	~MoveEvent() { m_canMove.m_event.clearPointer(); }
+	void clearReferences() { m_canMove.m_event.clearPointer(); }
 };
 class PathThreadedTask final : public ThreadedTask
 {

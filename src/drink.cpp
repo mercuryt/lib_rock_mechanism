@@ -48,10 +48,9 @@ void DrinkEvent::execute()
 	actor.m_mustDrink.drink(volume);
 	actor.m_hasObjectives.objectiveComplete(m_drinkObjective);
 }
-void ThirstEvent::execute()
-{
-	m_actor.m_mustDrink.setNeedsFluid();
-}
+void DrinkEvent::clearReferences() { m_drinkObjective.m_drinkEvent.clearPointer(); }
+void ThirstEvent::execute() { m_actor.m_mustDrink.setNeedsFluid(); }
+void ThirstEvent::clearReferences() { m_actor.m_mustDrink.m_thirstEvent.clearPointer(); }
 // Drink Threaded Task.
 void DrinkThreadedTask::readStep()
 {

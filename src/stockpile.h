@@ -49,7 +49,7 @@ class StockPileProject final : public Project
 	Item& m_item;
 public:
 	StockPileProject(Faction& faction, Block& block, Item& item) : Project(faction, block, 1), m_item(item) { }
-	uint32_t getDelay() const;
+	Step getDelay() const;
 	void onComplete();
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;

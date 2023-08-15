@@ -15,17 +15,17 @@ class PlantTemperatureEvent;
 struct ItemType;
 struct FluidType;
 
-struct HarvestData
+struct HarvestData final
 {
 	const uint32_t dayOfYearToStart;
-	const uint32_t daysDuration;
+	const Step stepsDuration;
 	const uint32_t itemQuantity;
 	const ItemType& fruitItemType;
 	// Infastructure.
 	bool operator==(const HarvestData& harvestData){ return this == &harvestData; }
 	inline static std::vector<HarvestData> data;
 };
-struct PlantSpecies
+struct PlantSpecies final
 {
 	const std::string name;
 	const bool annual;
@@ -34,9 +34,9 @@ struct PlantSpecies
 	const uint32_t stepsTillDieFromTemperature;
 	const uint32_t stepsNeedsFluidFrequency;
 	const uint32_t volumeFluidConsumed;
-	const uint32_t stepsTillDieWithoutFluid;
-	const uint32_t stepsTillFullyGrown;
-	const uint32_t stepsTillFoliageGrowsFromZero;
+	const Step stepsTillDieWithoutFluid;
+	const Step stepsTillFullyGrown;
+	const Step stepsTillFoliageGrowsFromZero;
 	const bool growsInSunLight;
 	const uint32_t rootRangeMax;
 	const uint32_t rootRangeMin;
@@ -55,7 +55,7 @@ struct PlantSpecies
 		return *found;
 	}
 };
-class Plant
+class Plant final
 {
 public:
 	Block& m_location;
@@ -100,58 +100,58 @@ public:
 	const uint32_t& getVolumeFluidRequested();
 };
 
-class PlantGrowthEvent : public ScheduledEventWithPercent
+class PlantGrowthEvent final : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
 public:
-	PlantGrowthEvent(uint32_t step, Plant& p) : ScheduledEventWithPercent(step), m_plant(p) {}
+	PlantGrowthEvent(Step step, Plant& p) : ScheduledEventWithPercent(step), m_plant(p) {}
 	void execute()
 	{
 		m_plant.m_percentGrown = 100;
 		if(m_plant.m_plantSpecies.annual)
 			m_plant.setQuantityToHarvest();
 	}
-	~PlantGrowthEvent() { m_plant.m_growthEvent.clearPointer(); }
+	void clearReferences() { m_plant.m_growthEvent.clearPointer(); }
 };
-class PlantFoliageGrowthEvent : public ScheduledEventWithPercent
+class PlantFoliageGrowthEvent final : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
 public:
-	PlantFoliageGrowthEvent(uint32_t step, Plant& p) : ScheduledEventWithPercent(step), m_plant(p) {}
+	PlantFoliageGrowthEvent(Step step, Plant& p) : ScheduledEventWithPercent(step), m_plant(p) {}
 	void execute(){ m_plant.foliageGrowth(); }
-	~PlantFoliageGrowthEvent(){ m_plant.m_foliageGrowthEvent.clearPointer(); }
+	void clearReferences(){ m_plant.m_foliageGrowthEvent.clearPointer(); }
 };
-class PlantEndOfHarvestEvent : public ScheduledEventWithPercent
+class PlantEndOfHarvestEvent final : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
 public:
-	PlantEndOfHarvestEvent(uint32_t delay, Plant& p) : ScheduledEventWithPercent(delay), m_plant(p) {}
+	PlantEndOfHarvestEvent(Step delay, Plant& p) : ScheduledEventWithPercent(delay), m_plant(p) {}
 	void execute() { m_plant.endOfHarvest(); }
-	~PlantEndOfHarvestEvent() { m_plant.m_endOfHarvestEvent.clearPointer(); }
+	void clearReferences() { m_plant.m_endOfHarvestEvent.clearPointer(); }
 };
-class PlantFluidEvent : public ScheduledEventWithPercent
+class PlantFluidEvent final : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
 public:
-	PlantFluidEvent(uint32_t step, Plant& p) : ScheduledEventWithPercent(step), m_plant(p) {}
+	PlantFluidEvent(Step step, Plant& p) : ScheduledEventWithPercent(step), m_plant(p) {}
 	void execute() { m_plant.setMaybeNeedsFluid(); }
-	~PlantFluidEvent() { m_plant.m_fluidEvent.clearPointer(); }
+	void clearReferences() { m_plant.m_fluidEvent.clearPointer(); }
 };
-class PlantTemperatureEvent : public ScheduledEventWithPercent
+class PlantTemperatureEvent final : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
 public:
-	PlantTemperatureEvent(uint32_t step, Plant& p) : ScheduledEventWithPercent(step), m_plant(p) {}
+	PlantTemperatureEvent(Step step, Plant& p) : ScheduledEventWithPercent(step), m_plant(p) {}
 	void execute() { m_plant.die(); }
-	~PlantTemperatureEvent() { m_plant.m_temperatureEvent.clearPointer(); }
+	void clearReferences() { m_plant.m_temperatureEvent.clearPointer(); }
 };
 // To be used by Block.
-class HasPlant
+class HasPlant final 
 {
 	Block& m_block;
 	Plant* m_plant;
 public:
-	HasPlant(Block& b) : m_block(b) { }
+	HasPlant(Block& b) : m_block(b), m_plant(nullptr) { }
 	void addPlant(const PlantSpecies& plantSpecies, uint32_t growthPercent = 0);
 	void updateGrowingStatus();
 	void clearPointer();
@@ -161,12 +161,14 @@ public:
 	bool exists() const { return m_plant != nullptr; }
 };
 // To be used by Area.
-class HasPlants
+class HasPlants final
 {
 	std::list<Plant> m_plants;
-	std::list<Plant*> m_plantsOnSurface;
+	std::unordered_set<Plant*> m_plantsOnSurface;
 public:
-	void emplace(Block& location, const PlantSpecies& species, uint32_t percentGrowth);
+	Plant& emplace(Block& location, const PlantSpecies& species, uint32_t percentGrowth);
 	void erase(Plant& plant);
 	void onChangeAmbiantSurfaceTemperature();
+	std::unordered_set<Plant*>& getPlantsOnSurface() { return m_plantsOnSurface; }
+	std::list<Plant>& getAll() { return m_plants; }
 };

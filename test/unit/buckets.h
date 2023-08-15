@@ -1,4 +1,3 @@
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "../../lib/doctest.h"
 #include "../../src/buckets.h"
 struct Mock

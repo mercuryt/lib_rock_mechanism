@@ -30,7 +30,11 @@ class Reservable final
 	std::unordered_map<Faction*, uint32_t> m_reservedCounts;
 	void eraseReservationFor(CanReserve& canReserve)
 	{
-		m_reservedCounts.at(canReserve.m_faction) -= m_canReserves.at(&canReserve);
+		assert(m_reservedCounts.at(canReserve.m_faction) >= m_canReserves.at(&canReserve));
+		if(m_reservedCounts.at(canReserve.m_faction) == m_canReserves.at(&canReserve))
+			m_reservedCounts.erase(canReserve.m_faction);
+		else
+			m_reservedCounts.at(canReserve.m_faction) -= m_canReserves.at(&canReserve);
 		m_canReserves.erase(&canReserve);
 	}
 public:
@@ -40,21 +44,21 @@ public:
 		for(auto& pair : m_canReserves)
 			pair.first->m_reservables.erase(this);
 	}
-	bool isFullyReserved(Faction& faction) const { return m_reservedCounts.at(&faction) == m_maxReservations; }
+	bool isFullyReserved(Faction& faction) const { return m_reservedCounts.contains(&faction) && m_reservedCounts.at(&faction) == m_maxReservations; }
 	std::unordered_map<CanReserve*, uint32_t>& getReservedBy() { return m_canReserves; }
 	void reserveFor(CanReserve& canReserve, uint32_t quantity) 
 	{
-		assert(m_reservedCounts.at(canReserve.m_faction) + quantity <= m_maxReservations);
+		assert(!m_reservedCounts.contains(canReserve.m_faction) || m_reservedCounts.at(canReserve.m_faction) + quantity <= m_maxReservations);
 		assert(!m_canReserves.contains(&canReserve));
 		m_canReserves[&canReserve] = quantity;
-		m_reservedCounts.at(canReserve.m_faction) += quantity;
+		m_reservedCounts[canReserve.m_faction] += quantity;
 		assert(!canReserve.m_reservables.contains(this));
 		canReserve.m_reservables.insert(this);
 	}
 	void clearReservationFor(CanReserve& canReserve)
        	{
 		assert(m_canReserves.contains(&canReserve));
-		assert(m_canReserves[&canReserve] >= m_reservedCounts.at(canReserve.m_faction));
+		assert(m_canReserves.at(&canReserve) >= m_reservedCounts.at(canReserve.m_faction));
 		eraseReservationFor(canReserve);
 		assert(canReserve.m_reservables.contains(this));
 		canReserve.m_reservables.erase(this);

@@ -11,16 +11,16 @@ struct MaterialType;
 /*
  * Progress through the stages of fire with scheduled events.
  */
-class FireEvent : public ScheduledEventWithPercent
+class FireEvent final : public ScheduledEventWithPercent
 {
 public:
 	Fire& m_fire;
 
 	FireEvent(uint32_t s, Fire& f) : ScheduledEventWithPercent(s), m_fire(f) {}
 	void execute();
-	~FireEvent();
+	void clearReferences();
 };
-class Fire
+class Fire final
 {
 public:
 	Block& m_location;
@@ -34,7 +34,7 @@ public:
 	bool operator==(const Fire& fire) const { return &fire == this; }
 };
 // To be used by Area.
-class HasFires
+class HasFires final
 {
 	std::unordered_map<Block*, std::list<Fire>> m_fires;
 public:

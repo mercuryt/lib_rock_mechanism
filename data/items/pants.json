@@ -4,6 +4,7 @@
 	"generic": false,
 	"internalVolume" : 0,
 	"canHoldFluids": false,
+	"value": 100,
 	"moveType": "none",
 	"wearableType":
 	{

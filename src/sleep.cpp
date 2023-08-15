@@ -3,13 +3,13 @@
 #include "path.h"
 #include <cassert>
 // Sleep Event.
-SleepEvent::SleepEvent(uint32_t step, MustSleep& ns) : ScheduledEventWithPercent(step), m_needsSleep(ns) { }
+SleepEvent::SleepEvent(Step step, MustSleep& ns) : ScheduledEventWithPercent(step), m_needsSleep(ns) { }
 void SleepEvent::execute(){ m_needsSleep.wakeUp(); }
-SleepEvent::~SleepEvent(){ m_needsSleep.m_sleepEvent.clearPointer(); }
+void SleepEvent::clearReferences(){ m_needsSleep.m_sleepEvent.clearPointer(); }
 // Tired Event.
-TiredEvent::TiredEvent(uint32_t step, MustSleep& ns) : ScheduledEventWithPercent(step), m_needsSleep(ns) { }
+TiredEvent::TiredEvent(Step step, MustSleep& ns) : ScheduledEventWithPercent(step), m_needsSleep(ns) { }
 void TiredEvent::execute(){ m_needsSleep.tired(); }
-TiredEvent::~TiredEvent(){ m_needsSleep.m_tiredEvent.clearPointer(); }
+void TiredEvent::clearReferences(){ m_needsSleep.m_tiredEvent.clearPointer(); }
 // Threaded Task.
 SleepThreadedTask::SleepThreadedTask(SleepObjective& so) : m_sleepObjective(so) { }
 void SleepThreadedTask::readStep()

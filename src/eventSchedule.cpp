@@ -3,16 +3,16 @@
 #include "util.h"
 #include "area.h"
 #include <cassert>
-ScheduledEvent::ScheduledEvent(uint32_t d) : m_step(d + simulation::step){}
+ScheduledEvent::ScheduledEvent(Step delay) : m_step(delay + simulation::step), m_cancel(false) {}
 void ScheduledEvent::cancel() { eventSchedule::unschedule(*this); }
-uint32_t ScheduledEvent::remaningSteps() const { return m_step - simulation::step; }
+Step ScheduledEvent::remaningSteps() const { return m_step - simulation::step; }
 
 ScheduledEventWithPercent::ScheduledEventWithPercent(uint32_t d) : ScheduledEvent(d), m_startStep(simulation::step) {}
 uint32_t ScheduledEventWithPercent::percentComplete() const
 {
-	float totalSteps = m_step - m_startStep;
-	float elapsedSteps = simulation::step - m_startStep;
-	return (elapsedSteps / totalSteps) * 100;
+	Step totalSteps = m_step - m_startStep;
+	Step elapsedSteps = simulation::step - m_startStep;
+	return ((float)elapsedSteps / (float)totalSteps) * 100u;
 }
 
 void eventSchedule::schedule(std::unique_ptr<ScheduledEvent> scheduledEvent)
@@ -39,21 +39,24 @@ void eventSchedule::schedule(std::unique_ptr<ScheduledEventWithPercent> schedule
    return output;
    }
    */
-void eventSchedule::unschedule(const ScheduledEvent& scheduledEvent)
+void eventSchedule::unschedule(ScheduledEvent& scheduledEvent)
 {
-	// Unscheduling an event which is scheduled for the current step could mean modifing the event schedule while it is being iterated. Don't allow.
-	assert(scheduledEvent.m_step != simulation::step);
 	assert(data.contains(scheduledEvent.m_step));
-	// TODO: optimize.
-	data.at(scheduledEvent.m_step).remove_if([&](auto& eventPtr){ return &*eventPtr == &scheduledEvent; });
+	scheduledEvent.m_cancel = true;
+	scheduledEvent.clearReferences();
 }
-void eventSchedule::execute(uint32_t stepNumber)
+void eventSchedule::execute(Step stepNumber)
 {
 	auto found = data.find(stepNumber);
 	if(found == data.end())
 		return;
 	for(std::unique_ptr<ScheduledEvent>& scheduledEvent : found->second)
-		scheduledEvent->execute();
+		if(!scheduledEvent->m_cancel)
+		{
+			scheduledEvent->execute();
+			scheduledEvent->clearReferences();
+		}
 	data.erase(stepNumber);
 }
+// Only safe to use if also flushing everything else.
 void eventSchedule::clear() { data.clear(); }

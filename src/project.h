@@ -16,23 +16,23 @@
 class Project;
 class Block;
 
-class ProjectFinishEvent : public ScheduledEventWithPercent
+class ProjectFinishEvent final : public ScheduledEventWithPercent
 {
 	Project& m_project;
 public:
-	ProjectFinishEvent(uint32_t delay, Project& p);
+	ProjectFinishEvent(Step delay, Project& p) : ScheduledEventWithPercent(delay), m_project(p) {}
 	void execute();
-	~ProjectFinishEvent();
+	void clearReferences();
 };
-class ProjectTryToHaulEvent : public ScheduledEventWithPercent
+class ProjectTryToHaulEvent final : public ScheduledEventWithPercent
 {
 	Project& m_project;
 public:
-	ProjectTryToHaulEvent(uint32_t delay, Project& p) : ScheduledEventWithPercent(delay), m_project(p) { }
+	ProjectTryToHaulEvent(Step delay, Project& p) : ScheduledEventWithPercent(delay), m_project(p) { }
 	void execute();
-	~ProjectTryToHaulEvent();
+	void clearReferences();
 };
-class ProjectTryToMakeHaulSubprojectThreadedTask : public ThreadedTask
+class ProjectTryToMakeHaulSubprojectThreadedTask final : public ThreadedTask
 {
 	Project& m_project;
 	HaulSubprojectParamaters m_haulProjectParamaters;
@@ -42,12 +42,12 @@ public:
 	void readStep();
 	void writeStep();
 };
-struct ProjectWorker
+struct ProjectWorker final
 {
 	HaulSubproject* haulSubproject;
 	ProjectWorker() : haulSubproject(nullptr) { }
 };
-struct ProjectItemCounts
+struct ProjectItemCounts final
 {
 	uint8_t required;
 	uint8_t reserved;
@@ -97,7 +97,7 @@ public:
 	Actor* gatherableActorAt(Actor& actor, Block& block) const;
 	void haulSubprojectComplete(HaulSubproject& haulSubproject);
 	Block& getLocation() const { return m_location; }
-	virtual uint32_t getDelay() const = 0;
+	virtual Step getDelay() const = 0;
 	virtual void onComplete() = 0;
 	// Use copies rather then references for return types to allow specalization of Queries as well as byproduct material type.
 	virtual std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const = 0;

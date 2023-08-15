@@ -40,17 +40,17 @@ class SleepEvent final : public ScheduledEventWithPercent
 {
 	MustSleep& m_needsSleep;
 public:
-	SleepEvent(uint32_t step, MustSleep& ns);
+	SleepEvent(Step step, MustSleep& ns);
 	void execute();
-	~SleepEvent();
+	void clearReferences();
 };
 class TiredEvent final : public ScheduledEventWithPercent
 {
 	MustSleep& m_needsSleep;
 public:
-	TiredEvent(uint32_t step, MustSleep& ns);
+	TiredEvent(Step step, MustSleep& ns);
 	void execute();
-	~TiredEvent();
+	void clearReferences();
 };
 // Find a place to sleep.
 class SleepThreadedTask final : public ThreadedTask

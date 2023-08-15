@@ -9,7 +9,7 @@ class FluidGroup;
 struct FutureFlowBlock;
 class Block;
 
-class DrainQueue : public FluidQueue
+class DrainQueue final : public FluidQueue
 {
 	uint32_t getPriority(FutureFlowBlock& futureFlowBlock) const;
 public:

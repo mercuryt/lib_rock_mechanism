@@ -4,7 +4,15 @@
 		"positions": [[0,0,0,1]]
 	},
 	{
+		"name": "oneByOneThirtySecond",
+		"positions": [[0,0,0,3]]
+	},
+	{
 		"name": "oneByOneSixteenth",
+		"positions": [[0,0,0,6]]
+	},
+	{
+		"name": "oneByOneEighth",
 		"positions": [[0,0,0,12]]
 	},
 	{
@@ -20,7 +28,11 @@
 		"positions": [[0,0,0,100]]
 	},
 	{
+		"name": "oneByTwoFull",
+		"positions": [[0,0,0,100], [-1,0,0,100]]
+	},
+	{
 		"name": "twoByTwoFull",
-		"positions": [[0,0,0,100], [0,1,0,100], [1,0,0,100], [1,1,0,100]]
+		"positions": [[0,0,0,100], [0,1,0,100], [-1,0,0,100], [-1,1,0,100]]
 	}
 ]

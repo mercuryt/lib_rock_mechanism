@@ -145,9 +145,6 @@ void CanFight::freeHit(Actor& actor)
 bool CanFight::isOnCoolDown() const { return m_coolDown.exists(); }
 bool CanFight::inRange(Actor& target) const { return m_actor.m_location->distance(*target.m_location) <= m_maxRange; }
 
-void AttackCoolDown::execute() { m_canFight.coolDownCompleted(); }
-AttackCoolDown::~AttackCoolDown() { m_canFight.m_coolDown.clearPointer(); }
-
 void GetIntoAttackPositionThreadedTask::readStep()
 {
 	auto destinatonCondition = [&](Block& block)

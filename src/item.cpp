@@ -67,7 +67,7 @@ Item::Item(uint32_t i, const ItemType& it, const MaterialType& mt, std::string n
 Item& Item::create(Area& area, const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quantity, CraftJob* cj)
 {
 	assert(m_itemType.generic);
-	std::list<Item>::iterator iterator = area.m_items.emplace(area.m_items.end(), ++s_nextId, m_itemType, m_materialType, m_quantity, cj);
+	std::list<Item>::iterator iterator = area.m_hasItems.m_items.emplace(area.m_hasItems.m_items.end(), ++s_nextId, m_itemType, m_materialType, m_quantity, cj);
 	iterator->m_iterator = iterator;
 	return *iterator;
 }
@@ -75,7 +75,7 @@ Item& Item::create(Area& area, const uint32_t m_id,  const ItemType& m_itemType,
 {
 	assert(m_itemType.generic);
 	if(s_nextId <= m_id) s_nextId = m_id + 1;
-	std::list<Item>::iterator iterator = area.m_items.emplace(area.m_items.end(), m_id, m_itemType, m_materialType, m_quantity, cj);
+	std::list<Item>::iterator iterator = area.m_hasItems.m_items.emplace(area.m_hasItems.m_items.end(), m_id, m_itemType, m_materialType, m_quantity, cj);
 	iterator->m_iterator = iterator;
 	return *iterator;
 }
@@ -83,7 +83,7 @@ Item& Item::create(Area& area, const uint32_t m_id,  const ItemType& m_itemType,
 Item& Item::create(Area& area, const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quality, uint32_t m_percentWear, CraftJob* cj)
 {
 	assert(!m_itemType.generic);
-	std::list<Item>::iterator iterator = area.m_items.emplace(area.m_items.end(), ++s_nextId, m_itemType, m_materialType, "", m_quality, m_percentWear, cj);
+	std::list<Item>::iterator iterator = area.m_hasItems.m_items.emplace(area.m_hasItems.m_items.end(), ++s_nextId, m_itemType, m_materialType, "", m_quality, m_percentWear, cj);
 	iterator->m_iterator = iterator;
 	return *iterator;
 }
@@ -91,7 +91,7 @@ Item& Item::create(Area& area, const uint32_t m_id, const ItemType& m_itemType, 
 {
 	assert(!m_itemType.generic);
 	if(s_nextId <= m_id) s_nextId = m_id + 1;
-	std::list<Item>::iterator iterator = area.m_items.emplace(area.m_items.end(), m_id, m_itemType, m_materialType, "", m_quality, m_percentWear, cj);
+	std::list<Item>::iterator iterator = area.m_hasItems.m_items.emplace(area.m_hasItems.m_items.end(), m_id, m_itemType, m_materialType, "", m_quality, m_percentWear, cj);
 	iterator->m_iterator = iterator;
 	return *iterator;
 }
@@ -207,6 +207,11 @@ void BlockHasItems::add(Item& item)
 	assert(std::ranges::find(m_items, &item) == m_items.end());
 	m_items.push_back(&item);
 	m_block.m_hasShapes.enter(item);
+	//TODO: optimize by storing underground status in item or shape to prevent repeted set insertions / removals.
+	if(m_block.m_underground)
+		m_block.m_area->m_hasItems.setItemIsNotOnSurface(item);
+	else
+		m_block.m_area->m_hasItems.setItemIsOnSurface(item);
 }
 void BlockHasItems::remove(Item& item)
 {
@@ -271,4 +276,25 @@ bool BlockHasItems::hasInstalledItemType(const ItemType& itemType) const
 {
 	auto found = std::ranges::find_if(m_items, [&](Item* item) { return item->m_itemType == itemType; });
 	return found != m_items.end() && (*found)->m_installed;
+}
+void AreaHasItems::setItemIsOnSurface(Item& item)
+{
+	//assert(!m_onSurface.contains(&item));
+	m_onSurface.insert(&item);
+}
+void AreaHasItems::setItemIsNotOnSurface(Item& item)
+{
+	//assert(m_onSurface.contains(&item));
+	m_onSurface.erase(&item);
+}
+void AreaHasItems::onChangeAmbiantSurfaceTemperature()
+{
+	//TODO: Optimize by not repetedly fetching ambiant.
+	for(Item* item : m_onSurface)
+		item->setTemperature(item->m_location->m_blockHasTemperature.get());
+}
+void AreaHasItems::remove(Item& item)
+{
+	std::erase(m_items, item);
+	m_onSurface.erase(&item);
 }

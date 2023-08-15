@@ -60,6 +60,7 @@ public:
 	DrinkEvent(uint32_t step, DrinkObjective& drob);
 	DrinkEvent(uint32_t step, DrinkObjective& drob, Item& i);
 	void execute();
+	void clearReferences();
 };
 class ThirstEvent final : public ScheduledEventWithPercent
 {
@@ -67,6 +68,7 @@ class ThirstEvent final : public ScheduledEventWithPercent
 public:
 	ThirstEvent(uint32_t delay, Actor& a) : ScheduledEventWithPercent(delay), m_actor(a) { }
 	void execute();
+	void clearReferences();
 };
 class DrinkThreadedTask final : public ThreadedTask
 {

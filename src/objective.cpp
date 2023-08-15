@@ -74,31 +74,30 @@ void HasObjectives::setCurrentObjective(Objective& objective)
 	objective.execute();
 }
 HasObjectives::HasObjectives(Actor& a) : m_actor(a), m_currentObjective(nullptr) { }
-void HasObjectives::addNeed(std::unique_ptr<Objective>&& objective)
+void HasObjectives::addNeed(std::unique_ptr<Objective> objective)
 {
-	Objective& o = *objective.get();
-	m_needsQueue.emplace_back(objective->m_priority, std::move(objective));
-	maybeUsurpsPriority(o);
+	Objective* o = objective.get();
+	m_needsQueue.insert(std::make_pair(o, std::move(objective)));
+	maybeUsurpsPriority(*o);
 }
-void HasObjectives::addTaskToEnd(std::unique_ptr<Objective>&& objective)
+void HasObjectives::addTaskToEnd(std::unique_ptr<Objective> objective)
 {
-	Objective& o = *objective.get();
+	Objective* o = objective.get();
 	m_tasksQueue.push_back(std::move(objective));
 	if(m_currentObjective == nullptr)
-		setCurrentObjective(o);
+		setCurrentObjective(*o);
 }
-void HasObjectives::addTaskToStart(std::unique_ptr<Objective>&& objective)
+void HasObjectives::addTaskToStart(std::unique_ptr<Objective> objective)
 {
-	Objective& o = *objective.get();
+	Objective* o = objective.get();
 	m_tasksQueue.push_front(std::move(objective));
-	maybeUsurpsPriority(o);
+	maybeUsurpsPriority(*o);
 }
 void HasObjectives::cancel(Objective& objective)
 {
 	objective.cancel();
-	auto found = std::find_if(m_needsQueue.begin(), m_needsQueue.end(), [&](auto& o){ return &objective == o.second.get(); });
-	if(found != m_needsQueue.end())
-		m_needsQueue.erase(found);
+	if(m_needsQueue.contains(&objective))
+		m_needsQueue.erase(&objective);
 	else
 		std::erase_if(m_tasksQueue, [&](auto& o){ return &objective == o.get(); });
 	m_actor.m_canReserve.clearAll();
@@ -136,4 +135,4 @@ void HasObjectives::cannotFulfillObjective(Objective& objective)
 }
 void HasObjectives::wait(uint32_t delay) { m_waitEvent.schedule(delay, m_actor); }
 void WaitEvent::execute() { m_actor.m_hasObjectives.taskComplete(); }
-WaitEvent::~WaitEvent() { m_actor.m_hasObjectives.m_waitEvent.clearPointer(); }
+void WaitEvent::clearReferences() { m_actor.m_hasObjectives.m_waitEvent.clearPointer(); }

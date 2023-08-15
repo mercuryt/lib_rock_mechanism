@@ -1,6 +1,6 @@
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "../../lib/doctest.h"
 #include "../../src/nthAdjacentOffsets.h"
+#include <algorithm>
 TEST_CASE("getNthAdjacentOffsets")
 {
 	auto result = getNthAdjacentOffsets(1);

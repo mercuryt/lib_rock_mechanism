@@ -31,7 +31,6 @@ struct BodyPartType final
 struct BodyType final
 {
 	const std::string name;
-	uint32_t scale;
 	std::vector<const BodyPartType*> bodyPartTypes;
 	// Infastructure.
 	bool operator==(const BodyType& bodyType){ return this == &bodyType; }
@@ -107,26 +106,31 @@ public:
 	uint32_t getVolume() const;
 	bool isInjured() const;
 	uint32_t getStepsTillBleedToDeath() const;
+	friend class BleedEvent;
+	friend class WoundsCloseEvent;
 };
 class WoundHealEvent : public ScheduledEventWithPercent
 {
 	Wound& m_wound;
 	Body& m_body;
 public:
-	WoundHealEvent(uint32_t delay, Wound& w, Body& b) : ScheduledEventWithPercent(delay), m_wound(w), m_body(b) {}
+	WoundHealEvent(Step delay, Wound& w, Body& b) : ScheduledEventWithPercent(delay), m_wound(w), m_body(b) {}
 	void execute() { m_body.healWound(m_wound); }
+	void clearReferences() { m_wound.healEvent.clearPointer(); }
 };
 class BleedEvent : public ScheduledEventWithPercent
 {
 	Body& m_body;
 public:
-	BleedEvent(uint32_t delay, Body& b) : ScheduledEventWithPercent(delay), m_body(b) {}
+	BleedEvent(Step delay, Body& b) : ScheduledEventWithPercent(delay), m_body(b) {}
 	void execute() { m_body.bleed(); }
+	void clearReferences() { m_body.m_bleedEvent.clearPointer(); }
 };
 class WoundsCloseEvent : public ScheduledEventWithPercent
 {
 	Body& m_body;
 public:
-	WoundsCloseEvent(uint32_t delay, Body& b) : ScheduledEventWithPercent(delay), m_body(b) {}
+	WoundsCloseEvent(Step delay, Body& b) : ScheduledEventWithPercent(delay), m_body(b) {}
 	void execute() { m_body.woundsClose(); }
+	void clearReferences() { m_body.m_woundsCloseEvent.clearPointer(); }
 };

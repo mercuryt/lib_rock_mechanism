@@ -21,6 +21,7 @@ public:
 	Objective(uint32_t p);
 	Objective(const Objective&) = delete;
 	Objective(Objective&&) = delete;
+	bool operator==(const Objective& other) { return &other == this; }
 };
 struct ObjectiveType
 {
@@ -35,15 +36,22 @@ public:
 	void remove(const ObjectiveType& objectiveType);
 	void setObjectiveFor(Actor& actor);
 };
+struct ObjectiveSortByPriority
+{
+	bool operator()(Objective* const& a, Objective* const& b) const
+	{
+		return a->m_priority > b->m_priority;
+	}
+};
 class HasObjectives final
 {
 	Actor& m_actor;
 	// Two objective queues, objectives are choosen from which ever has the higher priority.
-	// Biological needs like eat, drink, go to safe temperature, and sleep go here, possibly overiding the current objective in either queue.
-	std::vector<std::pair<uint32_t, std::unique_ptr<Objective>>> m_needsQueue;
-	// Voluntary tasks like harvest, dig, build, craft, guard, station, and kill go here. Station and kill both have higher priority then baseline needs but lower then needs like flee.
+	// Biological needs like eat, drink, go to safe temperature, and sleep go into needs queue, possibly overiding the current objective in either queue.
+	std::map<Objective*, std::unique_ptr<Objective>, ObjectiveSortByPriority> m_needsQueue;
+	// Voluntary tasks like harvest, dig, build, craft, guard, station, and kill go into task queue. Station and kill both have higher priority then baseline needs like eat but lower then needs like flee.
 	// findNewTask only adds one task at a time so there usually is only once objective in the queue. More then one task objective can be added by the user manually.
-	std::deque<std::unique_ptr<Objective>> m_tasksQueue;
+	std::list<std::unique_ptr<Objective>> m_tasksQueue;
 	Objective* m_currentObjective;
 	HasScheduledEvent<WaitEvent> m_waitEvent;
 
@@ -54,9 +62,9 @@ public:
 	ObjectiveTypePrioritySet m_prioritySet;
 
 	HasObjectives(Actor& a);
-	void addNeed(std::unique_ptr<Objective>&& objective);
-	void addTaskToEnd(std::unique_ptr<Objective>&& objective);
-	void addTaskToStart(std::unique_ptr<Objective>&& objective);
+	void addNeed(std::unique_ptr<Objective> objective);
+	void addTaskToEnd(std::unique_ptr<Objective> objective);
+	void addTaskToStart(std::unique_ptr<Objective> objective);
 	void cancel(Objective& objective);
 	void objectiveComplete(Objective& objective);
 	void taskComplete();
@@ -75,5 +83,5 @@ class WaitEvent final : public ScheduledEventWithPercent
 public:
 	WaitEvent(uint32_t delay, Actor& a) : ScheduledEventWithPercent(delay), m_actor(a) { }
 	void execute();
-	~WaitEvent();
+	void clearReferences();
 };
