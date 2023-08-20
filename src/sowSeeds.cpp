@@ -38,6 +38,7 @@ void SowSeedsThreadedTask::writeStep()
 			m_objective.m_actor.m_canMove.setPath(m_result);
 		}
 }
+void SowSeedsThreadedTask::clearReferences() { m_objective.m_threadedTask.clearPointer(); }
 bool SowSeedsObjective::canSowSeedsAt(Block& block)
 {
 	return block.m_hasDesignations.contains(*m_actor.m_faction, BlockDesignation::SowSeeds);

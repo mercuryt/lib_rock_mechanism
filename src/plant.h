@@ -104,7 +104,7 @@ class PlantGrowthEvent final : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
 public:
-	PlantGrowthEvent(Step step, Plant& p) : ScheduledEventWithPercent(step), m_plant(p) {}
+	PlantGrowthEvent(const Step delay, Plant& p) : ScheduledEventWithPercent(delay), m_plant(p) {}
 	void execute()
 	{
 		m_plant.m_percentGrown = 100;
@@ -117,7 +117,7 @@ class PlantFoliageGrowthEvent final : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
 public:
-	PlantFoliageGrowthEvent(Step step, Plant& p) : ScheduledEventWithPercent(step), m_plant(p) {}
+	PlantFoliageGrowthEvent(const Step delay, Plant& p) : ScheduledEventWithPercent(delay), m_plant(p) {}
 	void execute(){ m_plant.foliageGrowth(); }
 	void clearReferences(){ m_plant.m_foliageGrowthEvent.clearPointer(); }
 };
@@ -125,7 +125,7 @@ class PlantEndOfHarvestEvent final : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
 public:
-	PlantEndOfHarvestEvent(Step delay, Plant& p) : ScheduledEventWithPercent(delay), m_plant(p) {}
+	PlantEndOfHarvestEvent(const Step delay, Plant& p) : ScheduledEventWithPercent(delay), m_plant(p) {}
 	void execute() { m_plant.endOfHarvest(); }
 	void clearReferences() { m_plant.m_endOfHarvestEvent.clearPointer(); }
 };
@@ -133,7 +133,7 @@ class PlantFluidEvent final : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
 public:
-	PlantFluidEvent(Step step, Plant& p) : ScheduledEventWithPercent(step), m_plant(p) {}
+	PlantFluidEvent(const Step delay, Plant& p) : ScheduledEventWithPercent(delay), m_plant(p) {}
 	void execute() { m_plant.setMaybeNeedsFluid(); }
 	void clearReferences() { m_plant.m_fluidEvent.clearPointer(); }
 };
@@ -141,7 +141,7 @@ class PlantTemperatureEvent final : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
 public:
-	PlantTemperatureEvent(Step step, Plant& p) : ScheduledEventWithPercent(step), m_plant(p) {}
+	PlantTemperatureEvent(const Step delay, Plant& p) : ScheduledEventWithPercent(delay), m_plant(p) {}
 	void execute() { m_plant.die(); }
 	void clearReferences() { m_plant.m_temperatureEvent.clearPointer(); }
 };
@@ -156,7 +156,8 @@ public:
 	void updateGrowingStatus();
 	void clearPointer();
 	void setTemperature(uint32_t temperature);
-	Plant& get();
+	Plant& get() { assert(m_plant != nullptr); return *m_plant; }
+	const Plant& get() const { assert(m_plant != nullptr); return *m_plant; }
 	bool canGrowHere(const PlantSpecies& plantSpecies) const;
 	bool exists() const { return m_plant != nullptr; }
 };

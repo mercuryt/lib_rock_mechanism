@@ -82,6 +82,7 @@ public:
 	void remove(Item& item, uint32_t quantity);
 	std::vector<HasShape*>& getContents() { return m_shapes; }
 	std::vector<Item*>& getItems() { return m_items; }
+	const std::vector<Item*>& getItems() const { return m_items; }
 	bool canAdd(HasShape& hasShape) const;
 	bool canAdd(FluidType& fluidType) const;
 	const uint32_t& getFluidVolume() const { return m_fluidVolume; }
@@ -174,6 +175,7 @@ public:
 	//Item* get(ItemType& itemType) const;
 	uint32_t getCount(const ItemType& itemType, const MaterialType& materialType) const;
 	std::vector<Item*>& getAll() { return m_items; }
+	const std::vector<Item*>& getAll() const { return m_items; }
 	bool hasInstalledItemType(const ItemType& itemType) const;
 	bool hasEmptyContainerWhichCanHoldFluidsCarryableBy(Actor& actor) const;
 	bool hasContainerContainingFluidTypeCarryableBy(Actor& actor, const FluidType& fluidType) const;

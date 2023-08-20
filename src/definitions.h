@@ -32,7 +32,7 @@ namespace definitions
 		{
 			Shape::data.emplace_back(
 				shapeData["name"].get<std::string>(),
-				shapeData["positions"].get<std::vector<std::array<uint32_t, 4>>>()
+				shapeData["positions"].get<std::vector<std::array<int32_t, 4>>>()
 			);
 		}
 	}
@@ -312,7 +312,7 @@ namespace definitions
 				data["eatsMeat"].get<bool>(),
 				data["eatsLeaves"].get<bool>(),
 				data["eatsFruit"].get<bool>(),
-				data["visionDistance"].get<uint32_t>(),
+				data["visionRange"].get<uint32_t>(),
 				data["bodyScale"].get<uint32_t>(),
 				MaterialType::byName(data["materialType"].get<std::string>()),
 				MoveType::byName(data["moveType"].get<std::string>()),

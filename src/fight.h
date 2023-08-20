@@ -50,10 +50,10 @@ public:
 	void onTargetMoved();
 	void freeHit(Actor& actor);
 	bool isOnCoolDown() const;
-	bool inRange(Actor& target) const;
+	bool inRange(const Actor& target) const;
 	const uint32_t& getMaxRange() const { return m_maxRange; }
 	uint32_t getCombatScoreForAttack(const Attack& attack) const;
-	const Attack& getAttackForCombatScoreDifference(uint32_t scoreDifference) const;
+	const Attack& getAttackForCombatScoreDifference(const uint32_t scoreDifference) const;
 	friend class AttackCoolDown;
 	friend class GetIntoAttackPositionThreadedTask;
 };
@@ -75,4 +75,5 @@ public:
 	GetIntoAttackPositionThreadedTask(Actor& a, Actor& t, uint32_t r) : m_actor(a), m_target(t), m_range(r) {}
 	void readStep();
 	void writeStep();
+	void clearReferences();
 };

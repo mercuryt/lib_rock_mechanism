@@ -5,6 +5,7 @@
 #include "objective.h"
 #include "config.h"
 #include "eventSchedule.hpp"
+#include "pathToBlockBaseThreadedTask.h"
 
 #include <vector>
 
@@ -40,7 +41,7 @@ class SleepEvent final : public ScheduledEventWithPercent
 {
 	MustSleep& m_needsSleep;
 public:
-	SleepEvent(Step step, MustSleep& ns);
+	SleepEvent(const Step delay, MustSleep& ns);
 	void execute();
 	void clearReferences();
 };
@@ -48,19 +49,19 @@ class TiredEvent final : public ScheduledEventWithPercent
 {
 	MustSleep& m_needsSleep;
 public:
-	TiredEvent(Step step, MustSleep& ns);
+	TiredEvent(const Step delay, MustSleep& ns);
 	void execute();
 	void clearReferences();
 };
 // Find a place to sleep.
-class SleepThreadedTask final : public ThreadedTask
+class SleepThreadedTask final : public PathToBlockBaseThreadedTask
 {
 	SleepObjective& m_sleepObjective;
-	std::vector<Block*> m_result;
 public:
 	SleepThreadedTask(SleepObjective& so);
 	void readStep();
 	void writeStep();
+	void clearReferences();
 };
 class SleepObjective final : public Objective
 {
@@ -78,5 +79,5 @@ class HasSleepingSpots final
 {
 	std::unordered_set<Block*> m_unassigned;
 public:
-	bool containsUnassigned(Block& block) const { return m_unassigned.contains(&block); }
+	bool containsUnassigned(const Block& block) const { return m_unassigned.contains(const_cast<Block*>(&block)); }
 };

@@ -46,6 +46,7 @@ void HarvestThreadedTask::writeStep()
 	else
 		m_harvestObjective.m_actor.m_canMove.setPath(m_result);
 }
+void HarvestThreadedTask::clearReferences() { m_harvestObjective.m_threadedTask.clearPointer(); }
 bool HarvestObjectiveType::canBeAssigned(Actor& actor) const
 {
 	return actor.m_location->m_area->m_hasFarmFields.hasHarvestDesignations(*actor.m_faction);

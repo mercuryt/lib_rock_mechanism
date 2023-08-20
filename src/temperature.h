@@ -79,6 +79,7 @@ public:
 	GetToSafeTemperatureThreadedTask(GetToSafeTemperatureObjective& o) : m_objective(o) { }
 	void readStep();
 	void writeStep();
+	void clearReferences();
 };
 class GetToSafeTemperatureObjective final : public Objective
 {

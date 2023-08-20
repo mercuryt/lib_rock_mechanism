@@ -1,9 +1,11 @@
 #include "simulation.h"
 #include "area.h"
 #include "threadedTask.h"
-void simulation::init(uint32_t s)
+void simulation::init(Step s)
 { 
+	threadedTaskEngine::clear();
 	Actor::data.clear();
+	Actor::s_nextId = 1;
 	Item::s_globalItems.clear();
 	areas.clear();
 	eventSchedule::clear();

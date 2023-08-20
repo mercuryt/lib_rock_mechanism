@@ -13,13 +13,13 @@ class Faction;
 class Reservable;
 class CanReserve final
 {
-	Faction* m_faction;
+	const Faction* m_faction;
 	std::unordered_set<Reservable*> m_reservables;
 	friend class Reservable;
 public:
-	CanReserve(Faction& f) : m_faction(&f) { }
+	CanReserve(const Faction& f) : m_faction(&f) { }
 	void clearAll();
-	void setFaction(Faction& faction);
+	void setFaction(const Faction& faction);
 	~CanReserve();
 };
 class Reservable final
@@ -27,7 +27,7 @@ class Reservable final
 	friend class CanReserve;
 	std::unordered_map<CanReserve*, uint32_t> m_canReserves;
 	uint32_t m_maxReservations;
-	std::unordered_map<Faction*, uint32_t> m_reservedCounts;
+	std::unordered_map<const Faction*, uint32_t> m_reservedCounts;
 	void eraseReservationFor(CanReserve& canReserve)
 	{
 		assert(m_reservedCounts.at(canReserve.m_faction) >= m_canReserves.at(&canReserve));
@@ -44,9 +44,9 @@ public:
 		for(auto& pair : m_canReserves)
 			pair.first->m_reservables.erase(this);
 	}
-	bool isFullyReserved(Faction& faction) const { return m_reservedCounts.contains(&faction) && m_reservedCounts.at(&faction) == m_maxReservations; }
+	bool isFullyReserved(const Faction& faction) const { return m_reservedCounts.contains(&faction) && m_reservedCounts.at(&faction) == m_maxReservations; }
 	std::unordered_map<CanReserve*, uint32_t>& getReservedBy() { return m_canReserves; }
-	void reserveFor(CanReserve& canReserve, uint32_t quantity) 
+	void reserveFor(CanReserve& canReserve, const uint32_t quantity) 
 	{
 		assert(!m_reservedCounts.contains(canReserve.m_faction) || m_reservedCounts.at(canReserve.m_faction) + quantity <= m_maxReservations);
 		assert(!m_canReserves.contains(&canReserve));
@@ -63,8 +63,8 @@ public:
 		assert(canReserve.m_reservables.contains(this));
 		canReserve.m_reservables.erase(this);
 	}
-	void setMaxReservations(uint32_t mr) { m_maxReservations = mr; }
-	uint32_t getUnreservedCount(Faction& faction) const
+	void setMaxReservations(const uint32_t mr) { m_maxReservations = mr; }
+	uint32_t getUnreservedCount(const Faction& faction) const
 	{
 		return m_maxReservations - m_reservedCounts.at(&faction);
 	}

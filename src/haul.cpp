@@ -88,21 +88,21 @@ void CanPickup::remove(Item& item)
 	assert(m_carrying == &item);
 	m_carrying = nullptr;
 }
-uint32_t CanPickup::canPickupQuantityOf(HasShape& hasShape) const
+uint32_t CanPickup::canPickupQuantityOf(const HasShape& hasShape) const
 {
 	if(hasShape.isItem())
-		return canPickupQuantityOf(static_cast<Item&>(hasShape));
+		return canPickupQuantityOf(static_cast<const Item&>(hasShape));
 	else
 	{
 		assert(hasShape.isActor());
-		return canPickupQuantityOf(static_cast<Actor&>(hasShape));
+		return canPickupQuantityOf(static_cast<const Actor&>(hasShape));
 	}
 }
-uint32_t CanPickup::canPickupQuantityOf(Actor& actor) const
+uint32_t CanPickup::canPickupQuantityOf(const Actor& actor) const
 { 
 	return canPickupQuantityWithSingeUnitMass(actor.getMass());
 }
-uint32_t CanPickup::canPickupQuantityOf(Item& item) const { return canPickupQuantityOf(item.m_itemType, item.m_materialType); }
+uint32_t CanPickup::canPickupQuantityOf(const Item& item) const { return canPickupQuantityOf(item.m_itemType, item.m_materialType); }
 uint32_t CanPickup::canPickupQuantityOf(const ItemType& itemType, const MaterialType& materialType) const
 {
 	return canPickupQuantityWithSingeUnitMass(itemType.volume * materialType.density);
@@ -142,7 +142,7 @@ uint32_t CanPickup::getMass() const
 	}
 	return m_carrying->getMass();
 }
-uint32_t CanPickup::speedIfCarryingAny(HasShape& hasShape) const
+uint32_t CanPickup::speedIfCarryingAny(const HasShape& hasShape) const
 {
 	assert(m_carrying == nullptr);
 	return m_actor.m_canMove.getIndividualMoveSpeedWithAddedMass(hasShape.singleUnitMass());
@@ -454,7 +454,7 @@ void HaulSubproject::cancel()
 		actor->m_canFollow.unfollowIfFollowing();
 	}
 }
-HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(Project& project, HasShape& toHaul, Actor& worker)
+HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& project, HasShape& toHaul, Actor& worker)
 {
 	HaulSubprojectParamaters output;
 	// Individual
@@ -526,9 +526,9 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(Project& project, 
 	return output;
 }
 // Class method.
-std::vector<Actor*> HaulSubproject::actorsNeededToHaulAtMinimumSpeed(Project& project, Actor& leader, HasShape& toHaul, std::unordered_set<Actor*> waiting)
+std::vector<Actor*> HaulSubproject::actorsNeededToHaulAtMinimumSpeed(const Project& project, const Actor& leader, const HasShape& toHaul, const std::unordered_set<Actor*>& waiting)
 {
-	std::vector<HasShape*> actorsAndItems;
+	std::vector<const HasShape*> actorsAndItems;
 	std::vector<Actor*> output;
 	actorsAndItems.push_back(&leader);
 	actorsAndItems.push_back(&toHaul);
@@ -546,18 +546,18 @@ std::vector<Actor*> HaulSubproject::actorsNeededToHaulAtMinimumSpeed(Project& pr
 	return output;
 }
 // Class method.
-uint32_t HaulSubproject::getSpeedWithHaulToolAndCargo(Actor& leader, Item& haulTool, HasShape& toHaul)
+uint32_t HaulSubproject::getSpeedWithHaulToolAndCargo(const Actor& leader, const Item& haulTool, const HasShape& toHaul)
 {
-	std::vector<HasShape*> actorsAndItems;
+	std::vector<const HasShape*> actorsAndItems;
 	actorsAndItems.push_back(&leader);
 	actorsAndItems.push_back(&haulTool);
 	// actorsAndItems, rollingMass, deadMass
 	return CanLead::getMoveSpeedForGroupWithAddedMass(actorsAndItems, toHaul.getMass(), 0);
 }
 // Class method.
-uint32_t HaulSubproject::getSpeedWithHaulToolAndYokedAndCargo(Actor& leader, Actor& yoked, Item& haulTool, HasShape& toHaul)
+uint32_t HaulSubproject::getSpeedWithHaulToolAndYokedAndCargo(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul)
 {
-	std::vector<HasShape*> actorsAndItems;
+	std::vector<const HasShape*> actorsAndItems;
 	actorsAndItems.push_back(&leader);
 	actorsAndItems.push_back(&yoked);
 	actorsAndItems.push_back(&haulTool);
@@ -565,10 +565,10 @@ uint32_t HaulSubproject::getSpeedWithHaulToolAndYokedAndCargo(Actor& leader, Act
 	return CanLead::getMoveSpeedForGroupWithAddedMass(actorsAndItems, toHaul.singleUnitMass(), 0);
 }
 // Class method.
-std::vector<Actor*> HaulSubproject::actorsNeededToHaulAtMinimumSpeedWithTool(Project& project, Actor& leader, HasShape& toHaul, Item& haulTool, std::unordered_set<Actor*> waiting)
+std::vector<Actor*> HaulSubproject::actorsNeededToHaulAtMinimumSpeedWithTool(const Project& project, const Actor& leader, const HasShape& toHaul, const Item& haulTool, const std::unordered_set<Actor*>& waiting)
 {
 	assert(haulTool.m_itemType.internalVolume >= toHaul.getVolume());
-	std::vector<HasShape*> actorsAndItems;
+	std::vector<const HasShape*> actorsAndItems;
 	std::vector<Actor*> output;
 	actorsAndItems.push_back(&leader);
 	actorsAndItems.push_back(&haulTool);
@@ -591,20 +591,20 @@ void HaulSubproject::onComplete()
 		m_project.commandWorker(*worker);
 }
 // Class method.
-uint32_t HaulSubproject::getSpeedWithPannierBearerAndPanniers(Actor& leader, Actor& yoked, Item& haulTool, HasShape& toHaul)
+uint32_t HaulSubproject::getSpeedWithPannierBearerAndPanniers(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul)
 {
-	std::vector<HasShape*> actorsAndItems;
+	std::vector<const HasShape*> actorsAndItems;
 	actorsAndItems.push_back(&leader);
 	actorsAndItems.push_back(&yoked);
 	// actorsAndItems, rollingMass, deadMass
 	return CanLead::getMoveSpeedForGroupWithAddedMass(actorsAndItems, 0, toHaul.singleUnitMass() + haulTool.getMass());
 }
 //TODO: optimize?
-bool HasHaulTools::hasToolToHaul(Faction& faction, HasShape& hasShape) const
+bool HasHaulTools::hasToolToHaul(const Faction& faction, const HasShape& hasShape) const
 {
 	return getToolToHaul(faction, hasShape) != nullptr;
 }
-Item* HasHaulTools::getToolToHaul(Faction& faction, HasShape& hasShape) const
+Item* HasHaulTools::getToolToHaul(const Faction& faction, const HasShape& hasShape) const
 {
 	for(Item* item : m_haulTools)
 		if(!item->m_reservable.isFullyReserved(faction) && item->m_itemType.internalVolume >= hasShape.getVolume())
@@ -612,19 +612,19 @@ Item* HasHaulTools::getToolToHaul(Faction& faction, HasShape& hasShape) const
 	return nullptr;
 	
 }
-Actor* HasHaulTools::getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(Faction& faction, Item& haulTool, uint32_t cargoMass, uint32_t minimumHaulSpeed) const
+Actor* HasHaulTools::getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(const Faction& faction, const Item& haulTool, uint32_t cargoMass, uint32_t minimumHaulSpeed) const
 {
 	static const MoveType& rollingType = MoveType::byName("rolling");
 	assert(haulTool.m_itemType.moveType == rollingType);
 	for(Actor* actor : m_yolkableActors)
 	{
-		std::vector<HasShape*> shapes = { actor, &haulTool };
+		std::vector<const HasShape*> shapes = { actor, &haulTool };
 		if(!actor->m_reservable.isFullyReserved(faction) && minimumHaulSpeed <= actor->m_canLead.getMoveSpeedForGroupWithAddedMass(shapes, cargoMass))
 			return actor;
 	}
 	return nullptr;
 }
-Actor* HasHaulTools::getPannierBearerToHaulCargoWithMassWithMinimumSpeed(Faction& faction, HasShape& hasShape, uint32_t minimumHaulSpeed) const
+Actor* HasHaulTools::getPannierBearerToHaulCargoWithMassWithMinimumSpeed(const Faction& faction, const HasShape& hasShape, uint32_t minimumHaulSpeed) const
 {
 	//TODO: Account for pannier mass?
 	for(Actor* actor : m_yolkableActors)
@@ -632,7 +632,7 @@ Actor* HasHaulTools::getPannierBearerToHaulCargoWithMassWithMinimumSpeed(Faction
 			return actor;
 	return nullptr;
 }
-Item* HasHaulTools::getPanniersForActorToHaul(Faction& faction, Actor& actor, HasShape& toHaul) const
+Item* HasHaulTools::getPanniersForActorToHaul(const Faction& faction, const Actor& actor, const HasShape& toHaul) const
 {
 	for(Item* item : m_haulTools)
 		if(!item->m_reservable.isFullyReserved(faction) && item->m_itemType.internalVolume >= toHaul.getVolume() && actor.m_equipmentSet.canEquipCurrently(*item))

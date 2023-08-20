@@ -5,6 +5,7 @@
 #include "objective.h"
 #include "config.h"
 #include "eventSchedule.hpp"
+#include "pathToBlockBaseThreadedTask.h"
 
 #include <memory>
 #include <vector>
@@ -22,14 +23,14 @@ public:
 	void clearReferences();
 };
 // Path to an empty water proof container or somewhere to fill an empty container or a container with the correct type of fluid or a plant which needs fluid.
-class GivePlantsFluidThreadedTask final : public ThreadedTask
+class GivePlantsFluidThreadedTask final : public PathToBlockBaseThreadedTask
 {
 	GivePlantsFluidObjective& m_objective;
-	std::vector<Block*> m_result;
 public:
 	GivePlantsFluidThreadedTask(GivePlantsFluidObjective& gpfo) : m_objective(gpfo) { }
 	void readStep();
 	void writeStep();
+	void clearReferences();
 };
 class GivePlantsFluidObjectiveType final : public ObjectiveType
 {

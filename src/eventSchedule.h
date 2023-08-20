@@ -15,9 +15,9 @@
 class ScheduledEvent
 {
 public:
-	Step m_step;
+	const Step m_step;
 	bool m_cancel;
-	ScheduledEvent(Step delay);
+	ScheduledEvent(const Step delay);
 	void cancel();
 	virtual void execute() = 0;
 	virtual void clearReferences() = 0;
@@ -29,7 +29,7 @@ class ScheduledEventWithPercent : public ScheduledEvent
 {
 public:
 	Step m_startStep;
-	ScheduledEventWithPercent(uint32_t d);
+	ScheduledEventWithPercent(const Step delay);
 	uint32_t percentComplete() const;
 };
 namespace eventSchedule
@@ -38,6 +38,8 @@ namespace eventSchedule
 	void schedule(std::unique_ptr<ScheduledEvent> scheduledEvent);
 	void schedule(std::unique_ptr<ScheduledEventWithPercent> scheduledEvent);
 	void unschedule(ScheduledEvent& scheduledEvent);
-	void execute(Step stepNumber);
+	void execute(const Step stepNumber);
 	void clear();
+	// For testing.
+	[[maybe_unused]]uint32_t count();
 };

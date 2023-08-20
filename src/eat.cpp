@@ -141,13 +141,13 @@ void EatThreadedTask::readStep()
 				candidates[eatDesire - 1u] = &block;
 			return false;
 		};
-		m_pathResult = path::getForActorToPredicate(m_eatObjective.m_actor, destinationCondition, Config::maxBlocksToLookForBetterFood);
-		if(m_pathResult.empty())
+		m_route = path::getForActorToPredicate(m_eatObjective.m_actor, destinationCondition, Config::maxBlocksToLookForBetterFood);
+		if(m_route.empty())
 		{
 			for(size_t i = maxRankedEatDesire; i != 0; --i)
 				if(candidates[i - 1] != nullptr)
 				{
-					m_pathResult = path::getForActor(m_eatObjective.m_actor, *candidates[i - 1]);
+					pathTo(m_eatObjective.m_actor, *candidates[i - 1]);
 					return;
 				}
 			// Nothing to scavenge or graze, maybe hunt.
@@ -201,7 +201,7 @@ void EatThreadedTask::readStep()
 }
 void EatThreadedTask::writeStep()
 {
-	if(m_pathResult.empty())
+	if(m_route.empty())
 	{
 		if(m_huntResult == nullptr)
 			m_eatObjective.m_actor.m_hasObjectives.cannotFulfillObjective(m_eatObjective);
@@ -213,11 +213,12 @@ void EatThreadedTask::writeStep()
 	}
 	else
 	{
-		m_eatObjective.m_actor.m_canMove.setPath(m_pathResult);
+		m_eatObjective.m_actor.m_canMove.setPath(m_route);
 		//TODO: reserve food if sentient.
 	}
-
+	cacheMoveCosts(m_eatObjective.m_actor);
 }
+void EatThreadedTask::clearReferences() { m_eatObjective.m_threadedTask.clearPointer(); }
 EatObjective::EatObjective(Actor& a) :
 	Objective(Config::eatPriority), m_actor(a), m_foodLocation(nullptr), m_foodItem(nullptr), m_eatingLocation(m_actor.m_mustEat.m_eatingLocation), m_noEatingLocationFound(false) { }
 void EatObjective::execute()
@@ -270,9 +271,9 @@ void EatObjective::execute()
 		}
 	}
 }
-bool EatObjective::canEatAt(Block& block) const
+bool EatObjective::canEatAt(const Block& block) const
 {
-	for(Item* item : block.m_hasItems.getAll())
+	for(const Item* item : block.m_hasItems.getAll())
 	{
 		if(m_actor.m_mustEat.canEat(*item))
 			return true;
@@ -282,19 +283,23 @@ bool EatObjective::canEatAt(Block& block) const
 					return true;
 	}
 	if(m_actor.m_species.eatsMeat)
-		for(Actor* actor : block.m_hasActors.getAll())
+		for(const Actor* actor : block.m_hasActors.getAll())
 			if(!actor->m_alive && m_actor.m_species.fluidType == actor->m_species.fluidType)
 				return true;
 	if(block.m_hasPlant.exists())
 	{
-		Plant& plant = block.m_hasPlant.get();
+		const Plant& plant = block.m_hasPlant.get();
 		if(m_actor.m_species.eatsFruit && plant.m_plantSpecies.fluidType == m_actor.m_species.fluidType)
 			if(m_actor.m_mustEat.canEat(block.m_hasPlant.get()))
 				return true;
 	}
 	return false;
 }
-bool MustEat::canEat(Actor& actor) const
+MustEat::MustEat(Actor& a) : m_actor(a), m_massFoodRequested(0), m_eatingLocation(nullptr)
+{
+	m_hungerEvent.schedule(m_actor.m_species.stepsEatFrequency, m_actor);
+}
+bool MustEat::canEat(const Actor& actor) const
 {
 	if(actor.m_alive)
 		return false;
@@ -304,7 +309,7 @@ bool MustEat::canEat(Actor& actor) const
 		return false;
 	return true;
 }
-bool MustEat::canEat(Plant& plant) const
+bool MustEat::canEat(const Plant& plant) const
 {
 	if(m_actor.m_species.eatsLeaves && plant.getPercentFoliage() != 0)
 		return true;
@@ -312,7 +317,7 @@ bool MustEat::canEat(Plant& plant) const
 		return true;
 	return false;
 }
-bool MustEat::canEat(Item& item) const
+bool MustEat::canEat(const Item& item) const
 {
 	return item.m_itemType.edibleForDrinkersOf == &m_actor.m_mustDrink.getFluidType();
 }

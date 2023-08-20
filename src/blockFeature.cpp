@@ -92,3 +92,21 @@ bool HasBlockFeatures::isSupport() const
 			return true;
 	return false;
 }
+bool HasBlockFeatures::canEnterFromBelow() const
+{
+	for(const BlockFeature& blockFeature : m_features)
+		if(blockFeature.blockFeatureType == &BlockFeatureType::floor || blockFeature.blockFeatureType == &BlockFeatureType::floorGrate ||
+				(blockFeature.blockFeatureType == &BlockFeatureType::hatch && blockFeature.locked)
+		  )
+			return false;
+	return true;
+}
+bool HasBlockFeatures::canEnterFromAbove(const Block& from) const
+{
+	for(const BlockFeature& blockFeature : from.m_hasBlockFeatures.m_features)
+		if(blockFeature.blockFeatureType == &BlockFeatureType::floor || blockFeature.blockFeatureType == &BlockFeatureType::floorGrate ||
+				(blockFeature.blockFeatureType == &BlockFeatureType::hatch && blockFeature.locked)
+		  )
+			return false;
+	return true;
+}

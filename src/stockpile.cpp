@@ -28,6 +28,7 @@ void StockPileThreadedTask::writeStep()
 	else
 		m_objective.m_actor.m_location->m_area->m_hasStockPiles.makeProject(*m_item, *m_destination, m_objective.m_actor);
 }
+void StockPileThreadedTask::clearReferences() { m_objective.m_threadedTask.clearPointer(); }
 bool StockPileObjectiveType::canBeAssigned(Actor& actor) const
 {
 	return actor.m_location->m_area->m_hasStockPiles.isAnyHaulingAvalableFor(actor);
@@ -54,9 +55,9 @@ std::vector<std::pair<ItemQuery, uint32_t>> StockPileProject::getConsumed() cons
 std::vector<std::pair<ItemQuery, uint32_t>> StockPileProject::getUnconsumed() const { return {{m_item, 1}}; }
 std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> StockPileProject::getByproducts() const {return {}; }
 std::vector<std::pair<ActorQuery, uint32_t>> StockPileProject::getActors() const { return {}; }
-bool StockPile::accepts(Item& item)
+bool StockPile::accepts(const Item& item) const 
 {
-	for(ItemQuery& itemQuery : m_queries)
+	for(const ItemQuery& itemQuery : m_queries)
 		if(itemQuery(item))
 			return true;
 	return false;
@@ -106,10 +107,8 @@ bool BlockIsPartOfStockPile::hasStockPile() const
 {
 	return m_stockPile != nullptr;
 }
-StockPile& BlockIsPartOfStockPile::getStockPile()
-{
-	return *m_stockPile;
-}
+StockPile& BlockIsPartOfStockPile::getStockPile() { return *m_stockPile; }
+const StockPile& BlockIsPartOfStockPile::getStockPile() const { return *m_stockPile; }
 void BlockIsPartOfStockPile::setAvalable()
 {
 	assert(!m_isAvalable);
@@ -124,8 +123,8 @@ void BlockIsPartOfStockPile::setUnavalable()
 	m_isAvalable = false;
 	m_stockPile->decrementOpenBlocks();
 }
-bool BlockIsPartOfStockPile::getIsAvalable(Faction& faction) const { return !m_block.m_reservable.isFullyReserved(faction) && m_block.m_hasItems.empty(); }
-void HasStockPiles::addStockPile(std::vector<ItemQuery>&& queries, Faction& faction)
+bool BlockIsPartOfStockPile::getIsAvalable(const Faction& faction) const { return !m_block.m_reservable.isFullyReserved(faction) && m_block.m_hasItems.empty(); }
+void HasStockPiles::addStockPile(std::vector<ItemQuery>&& queries, const Faction& faction)
 {
 	StockPile& stockPile = m_stockPiles.emplace_back(queries, m_area, faction);
 	for(ItemQuery& itemQuery : stockPile.m_queries)
@@ -138,7 +137,7 @@ void HasStockPiles::removeStockPile(StockPile& stockPile)
 		m_availableStockPilesByItemType[itemQuery.m_itemType].erase(&stockPile);
 	m_stockPiles.remove(stockPile);
 }
-bool HasStockPiles::isValidStockPileDestinationFor(Block& block, Item& item, Faction& faction) const
+bool HasStockPiles::isValidStockPileDestinationFor(const Block& block, const Item& item, const Faction& faction) const
 {
 	if(block.m_reservable.isFullyReserved(faction))
 		return false;
@@ -217,7 +216,7 @@ void HasStockPiles::cancelProject(StockPileProject& project)
 {
 	m_projectsByItem.erase(&project.m_item);
 }
-bool HasStockPiles::isAnyHaulingAvalableFor(Actor& actor) const
+bool HasStockPiles::isAnyHaulingAvalableFor(const Actor& actor) const
 {
 	for(auto& pair : m_itemsWithDestinationsByStockPile)
 		for(Item* item : pair.second)
@@ -225,7 +224,7 @@ bool HasStockPiles::isAnyHaulingAvalableFor(Actor& actor) const
 				return true;
 	return false;
 }
-Item* HasStockPiles::getHaulableItemForAt(Actor& actor, Block& block)
+Item* HasStockPiles::getHaulableItemForAt(const Actor& actor, Block& block)
 {
 	if(block.m_reservable.isFullyReserved(*actor.m_faction))
 		return nullptr;
@@ -234,7 +233,7 @@ Item* HasStockPiles::getHaulableItemForAt(Actor& actor, Block& block)
 			return item;
 	return nullptr;
 }
-StockPile* HasStockPiles::getStockPileFor(Item& item) const
+StockPile* HasStockPiles::getStockPileFor(const Item& item) const
 {
 	if(!m_availableStockPilesByItemType.contains(&item.m_itemType))
 		return nullptr;

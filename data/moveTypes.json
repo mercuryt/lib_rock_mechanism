@@ -28,7 +28,7 @@
     },
     "climb": 0,
     "jumpDown": false,
-    "fly": true
+    "fly": false
   },{
     "name": "two legs and swim in water",
     "walk": true,
@@ -37,7 +37,7 @@
     },
     "climb": 0,
     "jumpDown": false,
-    "fly": true
+    "fly": false
   },{
     "name": "four legs and swim in water",
     "walk": true,
@@ -46,7 +46,7 @@
     },
     "climb": 0,
     "jumpDown": false,
-    "fly": true
+    "fly": false
   },{
     "name": "swim in mercury",
     "walk": false,
@@ -55,7 +55,7 @@
     },
     "climb": 0,
     "jumpDown": false,
-    "fly": true
+    "fly": false
   },{
     "name": "two legs and swim in mercury",
     "walk": true,
@@ -64,7 +64,7 @@
     },
     "climb": 0,
     "jumpDown": false,
-    "fly": true
+    "fly": false
   },{
     "name": "two legs and climb 1",
     "walk": true,

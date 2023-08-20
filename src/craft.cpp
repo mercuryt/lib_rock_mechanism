@@ -73,6 +73,7 @@ void CraftThreadedTask::writeStep()
 			m_craftObjective.m_craftJob = m_craftJob;
 		}
 }
+void CraftThreadedTask::clearReferences(){ m_craftObjective.m_threadedTask.clearPointer(); }
 bool CraftObjectiveType::canBeAssigned(Actor& actor) const
 {
 	auto& hasCraftingLocationsAndJobs = actor.m_location->m_area->m_hasCraftingLocationsAndJobs;
@@ -124,7 +125,7 @@ bool HasCraftingLocationsAndJobs::hasLocationsFor(const CraftJobType& craftJobTy
 	return true;
 }
 // Material type may be null.
-void HasCraftingLocationsAndJobs::addJob(CraftJobType& craftJobType, const MaterialType* materialType, uint32_t minimumSkillLevel)
+void HasCraftingLocationsAndJobs::addJob(const CraftJobType& craftJobType, const MaterialType* materialType, uint32_t minimumSkillLevel)
 {
 	CraftJob& craftJob = m_jobs.emplace_back(craftJobType, *this, materialType, minimumSkillLevel);
 	indexUnassigned(craftJob);
@@ -197,20 +198,20 @@ void HasCraftingLocationsAndJobs::makeAndAssignStepProject(CraftJob& craftJob, B
 	unindexAssigned(craftJob);
 }
 // May return nullptr;
-CraftJob* HasCraftingLocationsAndJobs::getJobForAtLocation(Actor& actor, const SkillType& skillType, Block& block)
+CraftJob* HasCraftingLocationsAndJobs::getJobForAtLocation(const Actor& actor, const SkillType& skillType, const Block& block)
 {
 	assert(!block.m_reservable.isFullyReserved(*actor.m_faction));
-	if(!m_stepTypeCategoriesByLocation.contains(&block))
+	if(!m_stepTypeCategoriesByLocation.contains(const_cast<Block*>(&block)))
 		return nullptr;
-	for(const CraftStepTypeCategory* category : m_stepTypeCategoriesByLocation.at(&block))
+	for(const CraftStepTypeCategory* category : m_stepTypeCategoriesByLocation.at(const_cast<Block*>(&block)))
 		for(CraftJob* craftJob : m_unassignedProjectsByStepTypeCategory.at(category))
 			if(&(*craftJob->stepIterator)->skillType == &skillType && actor.m_skillSet.get(skillType) >= craftJob->minimumSkillLevel)
 				return craftJob;
 	return nullptr;
 }
-std::pair<CraftJob*, Block*> HasCraftingLocationsAndJobs::getJobAndLocationFor(Actor& actor, const SkillType& skillType)
+std::pair<CraftJob*, Block*> HasCraftingLocationsAndJobs::getJobAndLocationFor(const Actor& actor, const SkillType& skillType)
 {
-	auto condition = [&](Block& block)
+	auto condition = [&](const Block& block)
 	{
 		return !block.m_reservable.isFullyReserved(*actor.m_faction) && getJobForAtLocation(actor, skillType, block) != nullptr;
 	};

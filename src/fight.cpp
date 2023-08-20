@@ -143,7 +143,7 @@ void CanFight::freeHit(Actor& actor)
 	attack(actor);
 }
 bool CanFight::isOnCoolDown() const { return m_coolDown.exists(); }
-bool CanFight::inRange(Actor& target) const { return m_actor.m_location->distance(*target.m_location) <= m_maxRange; }
+bool CanFight::inRange(const Actor& target) const { return m_actor.m_location->distance(*target.m_location) <= m_maxRange; }
 
 void GetIntoAttackPositionThreadedTask::readStep()
 {
@@ -160,3 +160,4 @@ void GetIntoAttackPositionThreadedTask::writeStep()
 	else
 		m_actor.m_canMove.setPath(m_route);
 }
+void GetIntoAttackPositionThreadedTask::clearReferences() { m_actor.m_canFight.m_getIntoAttackPositionThreadedTask.clearPointer(); }

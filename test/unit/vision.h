@@ -5,6 +5,7 @@
 #include "../../src/areaBuilderUtil.h"
 #include "../../src/animalSpecies.h"
 #include "../../src/simulation.h"
+#include "../../src/visionRequest.h"
 TEST_CASE("vision")
 {
 	simulation::init();
@@ -17,12 +18,11 @@ TEST_CASE("vision")
 	auto& floor = BlockFeatureType::floor;
 	auto& dwarf = AnimalSpecies::byName("dwarf");
 	auto& troll = AnimalSpecies::byName("troll");
-
 	SUBCASE("See no one when no one is present to be seen")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		Block& block = area.m_blocks[5][5][1];
-		Actor actor = Actor::create(dwarf, block);
+		Actor& actor = Actor::create(dwarf, block);
 		VisionRequest visionRequest(actor);
 		visionRequest.readStep();
 		CHECK(visionRequest.m_actors.empty());
@@ -32,23 +32,12 @@ TEST_CASE("vision")
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		Block& block1 = area.m_blocks[3][3][1];
 		Block& block2 = area.m_blocks[7][7][1];
-		Actor a1 = Actor::create(dwarf, block1);
-		Actor a2 = Actor::create(dwarf, block2);
+		Actor& a1 = Actor::create(dwarf, block1);
+		Actor& a2 = Actor::create(dwarf, block2);
 		VisionRequest visionRequest(a1);
 		visionRequest.readStep();
 		CHECK(visionRequest.m_actors.size() == 1);
 		CHECK(visionRequest.m_actors.contains(&a2));
-	}
-	SUBCASE("Too far to see")
-	{
-		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		Block& block1 = area.m_blocks[0][0][1];
-		Block& block2 = area.m_blocks[19][19][1];
-		Actor a1 = Actor::create(dwarf, block1);
-		Actor a2 = Actor::create(dwarf, block2);
-		VisionRequest visionRequest(a1);
-		visionRequest.readStep();
-		CHECK(visionRequest.m_actors.size() == 0);
 	}
 	SUBCASE("Vision blocked by wall")
 	{
@@ -57,8 +46,8 @@ TEST_CASE("vision")
 		Block& block2 = area.m_blocks[5][5][1];
 		Block& block3 = area.m_blocks[5][7][1];
 		block2.setSolid(marble);
-		Actor a1 = Actor::create(dwarf, block1);
-		Actor a2 = Actor::create(dwarf, block3);
+		Actor& a1 = Actor::create(dwarf, block1);
+		Actor::create(dwarf, block3);
 		VisionRequest visionRequest(a1);
 		visionRequest.readStep();
 		CHECK(visionRequest.m_actors.size() == 0);
@@ -70,8 +59,8 @@ TEST_CASE("vision")
 		Block& block2 = area.m_blocks[5][5][1];
 		Block& block3 = area.m_blocks[6][6][1];
 		block2.setSolid(marble);
-		Actor a1 = Actor::create(dwarf, block1);
-		Actor a2 = Actor::create(dwarf, block3);
+		Actor& a1 = Actor::create(dwarf, block1);
+		Actor::create(dwarf, block3);
 		VisionRequest visionRequest(a1);
 		visionRequest.readStep();
 		CHECK(visionRequest.m_actors.size() == 1);
@@ -83,8 +72,8 @@ TEST_CASE("vision")
 		Block& block2 = area.m_blocks[5][5][1];
 		Block& block3 = area.m_blocks[5][7][1];
 		block2.setSolid(marble);
-		Actor a1 = Actor::create(dwarf, block1);
-		Actor a2 = Actor::create(troll, block3);
+		Actor& a1 = Actor::create(dwarf, block1);
+		Actor::create(troll, block3);
 		VisionRequest visionRequest(a1);
 		visionRequest.readStep();
 		CHECK(visionRequest.m_actors.size() == 1);
@@ -96,8 +85,8 @@ TEST_CASE("vision")
 		Block& block2 = area.m_blocks[5][5][1];
 		Block& block3 = area.m_blocks[5][7][1];
 		block2.setSolid(glass);
-		Actor a1 = Actor::create(dwarf, block1);
-		Actor a2 = Actor::create(dwarf, block3);
+		Actor& a1 = Actor::create(dwarf, block1);
+		Actor::create(dwarf, block3);
 		VisionRequest visionRequest(a1);
 		visionRequest.readStep();
 		CHECK(visionRequest.m_actors.size() == 1);
@@ -109,8 +98,8 @@ TEST_CASE("vision")
 		Block& block2 = area.m_blocks[5][5][1];
 		Block& block3 = area.m_blocks[5][7][1];
 		block2.m_hasBlockFeatures.construct(door, marble);
-		Actor a1 = Actor::create(dwarf, block1);
-		Actor a2 = Actor::create(dwarf, block3);
+		Actor& a1 = Actor::create(dwarf, block1);
+		Actor::create(dwarf, block3);
 		VisionRequest visionRequest(a1);
 		visionRequest.readStep();
 		CHECK(visionRequest.m_actors.size() == 0);
@@ -129,8 +118,8 @@ TEST_CASE("vision")
 		block2.setNotSolid();
 		block3.setNotSolid();
 		block3.m_hasBlockFeatures.construct(hatch, marble);
-		Actor a1 = Actor::create(dwarf, block1);
-		Actor a2 = Actor::create(dwarf, block3);
+		Actor& a1 = Actor::create(dwarf, block1);
+		Actor::create(dwarf, block3);
 		VisionRequest visionRequest(a1);
 		visionRequest.readStep();
 		CHECK(visionRequest.m_actors.size() == 0);
@@ -149,8 +138,8 @@ TEST_CASE("vision")
 		Block& block2 = area.m_blocks[5][5][1];
 		Block& block3 = area.m_blocks[5][7][1];
 		block2.m_hasBlockFeatures.construct(hatch, marble);
-		Actor a1 = Actor::create(dwarf, block1);
-		Actor a2 = Actor::create(dwarf, block3);
+		Actor& a1 = Actor::create(dwarf, block1);
+		Actor::create(dwarf, block3);
 		VisionRequest visionRequest(a1);
 		visionRequest.readStep();
 		CHECK(visionRequest.m_actors.size() == 1);
@@ -165,8 +154,8 @@ TEST_CASE("vision")
 		block2.setNotSolid();
 		block3.setNotSolid();
 		block2.m_hasBlockFeatures.construct(stairs, marble);
-		Actor a1 = Actor::create(dwarf, block1);
-		Actor a2 = Actor::create(dwarf, block3);
+		Actor& a1 = Actor::create(dwarf, block1);
+		Actor& a2 = Actor::create(dwarf, block3);
 		VisionRequest visionRequest(a1);
 		visionRequest.readStep();
 		CHECK(visionRequest.m_actors.size() == 1);
@@ -188,8 +177,8 @@ TEST_CASE("vision")
 		block2.setNotSolid();
 		block3.setNotSolid();
 		block2.m_hasBlockFeatures.construct(stairs, marble);
-		Actor a1 = Actor::create(dwarf, block1);
-		Actor a2 = Actor::create(dwarf, block3);
+		Actor& a1 = Actor::create(dwarf, block1);
+		Actor::create(dwarf, block3);
 		VisionRequest visionRequest(a1);
 		visionRequest.readStep();
 		CHECK(visionRequest.m_actors.size() == 1);
@@ -205,8 +194,8 @@ TEST_CASE("vision")
 		Block& block2 = area.m_blocks[5][5][1];
 		Block& block3 = area.m_blocks[5][7][1];
 		block2.m_hasBlockFeatures.construct(floor, marble);
-		Actor a1 = Actor::create(dwarf, block1);
-		Actor a2 = Actor::create(dwarf, block3);
+		Actor& a1 = Actor::create(dwarf, block1);
+		Actor::create(dwarf, block3);
 		VisionRequest visionRequest(a1);
 		visionRequest.readStep();
 		CHECK(visionRequest.m_actors.size() == 1);
@@ -268,11 +257,25 @@ TEST_CASE("vision")
 		area.visionCuboidsActivate();
 		Block& block1 = area.m_blocks[3][3][1];
 		Block& block2 = area.m_blocks[7][7][1];
-		Actor a1 = Actor::create(dwarf, block1);
-		Actor a2 = Actor::create(dwarf, block2);
+		Actor& a1 = Actor::create(dwarf, block1);
+		Actor& a2 = Actor::create(dwarf, block2);
 		VisionRequest visionRequest(a1);
 		visionRequest.readStep();
 		CHECK(visionRequest.m_actors.size() == 1);
 		CHECK(visionRequest.m_actors.contains(&a2));
 	}
+}
+TEST_CASE("Too far to see")
+{
+	auto& marble = MaterialType::byName("marble");
+	auto& dwarf = AnimalSpecies::byName("dwarf");
+	Area area(20,20,20,0);
+	areaBuilderUtil::setSolidLayer(area, 0, marble);
+	Block& block1 = area.m_blocks[0][0][1];
+	Block& block2 = area.m_blocks[19][19][1];
+	Actor& a1 = Actor::create(dwarf, block1);
+	Actor::create(dwarf, block2);
+	VisionRequest visionRequest(a1);
+	visionRequest.readStep();
+	CHECK(visionRequest.m_actors.size() == 0);
 }

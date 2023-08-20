@@ -43,7 +43,7 @@ namespace Config
 	inline constexpr float massCarryMinimumMovementRatio = 0.5;
 	inline constexpr float rollingMassModifier = 0.3;
 	inline constexpr uint32_t actorDoVisionInterval = 10;
-	inline constexpr uint32_t moveTryAttempsBeforeDetour = 2;
+	inline constexpr uint32_t moveTryAttemptsBeforeDetour = 2;
 	inline constexpr Step sowSeedsStepsDuration = 20;
 	inline constexpr uint32_t sowSeedsPriority = 10;
 	inline constexpr uint32_t fluidsSeepDiagonalModifier = 100;
@@ -125,5 +125,13 @@ namespace Config
 	inline constexpr uint32_t heatRadianceMinimum = 3;
 	inline constexpr uint32_t daysPerYear = 365;
 	inline constexpr uint32_t rainFrequencyModifier = 1000;
+	inline constexpr uint32_t restIntervalSteps = 5 * stepsPerSecond;
+	inline constexpr uint32_t staminaPointsPerRestPeriod = 10;
+	inline constexpr uint32_t maxStaminaPointsBase = 100;
+	inline constexpr uint32_t volumeFluidForBodyMass = 100;
+	inline constexpr uint32_t baseMoveCost = 50;
+	inline constexpr uint32_t goUpMoveCost = 100;
+	inline constexpr uint32_t wanderDistanceModifier = 8;
+	
 	inline uint32_t convertBodyPartVolumeToArea(uint32_t volume){ return sqrt(volume); }
 }

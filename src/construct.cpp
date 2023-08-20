@@ -28,6 +28,7 @@ void ConstructThreadedTask::writeStep()
 		m_result.back()->m_reservable.reserveFor(m_constructObjective.m_actor.m_canReserve, 1);
 	}
 }
+void ConstructThreadedTask::clearReferences() { m_constructObjective.m_constructThreadedTask.clearPointer(); }
 void ConstructObjective::execute()
 {
 	if(canConstructAt(*m_actor.m_location))
@@ -123,25 +124,25 @@ void HasConstructionDesignationsForFaction::removeIfExists(Block& block)
 	if(m_data.contains(&block))
 		remove(block);
 }
-bool HasConstructionDesignationsForFaction::contains(Block& block) const { return m_data.contains(&block); }
-const BlockFeatureType* HasConstructionDesignationsForFaction::at(Block& block) const { return m_data.at(&block).m_blockFeatureType; }
+bool HasConstructionDesignationsForFaction::contains(const Block& block) const { return m_data.contains(const_cast<Block*>(&block)); }
+const BlockFeatureType* HasConstructionDesignationsForFaction::at(const Block& block) const { return m_data.at(const_cast<Block*>(&block)).m_blockFeatureType; }
 bool HasConstructionDesignationsForFaction::empty() const { return m_data.empty(); }
 // To be used by Area.
-void HasConstructionDesignations::addFaction(Faction& faction)
+void HasConstructionDesignations::addFaction(const Faction& faction)
 {
 	assert(!m_data.contains(&faction));
 	m_data.emplace(&faction, faction);
 }
-void HasConstructionDesignations::removeFaction(Faction& faction)
+void HasConstructionDesignations::removeFaction(const Faction& faction)
 {
 	assert(m_data.contains(&faction));
 	m_data.erase(&faction);
 }
-void HasConstructionDesignations::designate(Faction& faction, Block& block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType)
+void HasConstructionDesignations::designate(const Faction& faction, Block& block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType)
 {
 	m_data.at(&faction).designate(block, blockFeatureType, materialType);
 }
-void HasConstructionDesignations::remove(Faction& faction, Block& block)
+void HasConstructionDesignations::remove(const Faction& faction, Block& block)
 {
 	assert(m_data.contains(&faction));
 	m_data.at(&faction).remove(block);
@@ -151,11 +152,11 @@ void HasConstructionDesignations::clearAll(Block& block)
 	for(auto& pair : m_data)
 		pair.second.removeIfExists(block);
 }
-bool HasConstructionDesignations::areThereAnyForFaction(Faction& faction) const
+bool HasConstructionDesignations::areThereAnyForFaction(const Faction& faction) const
 {
 	return !m_data.at(&faction).empty();
 }
-ConstructProject& HasConstructionDesignations::getProject(Faction& faction, Block& block)
+ConstructProject& HasConstructionDesignations::getProject(const Faction& faction, Block& block)
 {
 	return m_data.at(&faction).m_data.at(&block);
 }

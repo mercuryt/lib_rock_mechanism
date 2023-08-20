@@ -18,7 +18,7 @@ void GivePlantsFluidThreadedTask::readStep()
 		{
 			return block.m_hasDesignations.contains(*m_objective.m_actor.m_faction, BlockDesignation::GivePlantFluid);
 		};
-		m_result = path::getForActorToPredicate(m_objective.m_actor, condition);
+		m_route = path::getForActorToPredicate(m_objective.m_actor, condition);
 		return;
 	}
 	if(m_objective.m_actor.m_canPickup.isCarryingFluidType(m_objective.m_plant->m_plantSpecies.fluidType))
@@ -26,7 +26,7 @@ void GivePlantsFluidThreadedTask::readStep()
 		if(m_objective.m_actor.m_location == &m_objective.m_plant->m_location)
 			m_objective.m_event.schedule(Config::givePlantsFluidDelaySteps, m_objective);
 		else
-			m_result = path::getForActor(m_objective.m_actor, m_objective.m_plant->m_location);
+			pathTo(m_objective.m_actor, m_objective.m_plant->m_location);
 	}
 	else
 	{
@@ -36,7 +36,7 @@ void GivePlantsFluidThreadedTask::readStep()
 			{
 				return m_objective.canFillAt(block);
 			};
-			m_result = path::getForActorToPredicate(m_objective.m_actor, condition);
+			m_route = path::getForActorToPredicate(m_objective.m_actor, condition);
 		}
 		else
 		{
@@ -44,21 +44,23 @@ void GivePlantsFluidThreadedTask::readStep()
 			{
 				return block.m_hasItems.hasEmptyContainerWhichCanHoldFluidsCarryableBy(m_objective.m_actor) || block.m_hasItems.hasContainerContainingFluidTypeCarryableBy(m_objective.m_actor, m_objective.m_plant->m_plantSpecies.fluidType);
 			};
-			m_result = path::getForActorToPredicate(m_objective.m_actor, condition);
+			m_route = path::getForActorToPredicate(m_objective.m_actor, condition);
 		}
 	}
 }
 void GivePlantsFluidThreadedTask::writeStep()
 {
-	if(m_result.empty() && !m_objective.m_event.exists())
+	if(m_route.empty() && !m_objective.m_event.exists())
 		m_objective.m_actor.m_hasObjectives.cannotFulfillObjective(m_objective);
 	else
 	{
 		assert(!m_objective.m_event.exists());
-		if(!m_result.empty())
-			m_objective.m_actor.m_canMove.setPath(m_result);
+		if(!m_route.empty())
+			m_objective.m_actor.m_canMove.setPath(m_route);
 	}
+	cacheMoveCosts(m_objective.m_actor);
 }
+void GivePlantsFluidThreadedTask::clearReferences() { m_objective.m_threadedTask.clearPointer(); }
 bool GivePlantsFluidObjectiveType::canBeAssigned(Actor& actor) const
 {
 	return actor.m_location->m_area->m_hasFarmFields.hasGivePlantsFluidDesignations(*actor.m_faction);

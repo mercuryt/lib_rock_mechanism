@@ -1,6 +1,9 @@
 //ObjectiveTypePrioritySet
 #include "objective.h"
 #include "actor.h"
+#include "stamina.h"
+#include "wander.h"
+#include "randomUtil.h"
 void ObjectiveTypePrioritySet::setPriority(const ObjectiveType& objectiveType, uint8_t priority)
 {
 	auto found = std::ranges::find_if(m_data, [&](auto& pair) { return pair.first == &objectiveType; });
@@ -26,8 +29,11 @@ void ObjectiveTypePrioritySet::setObjectiveFor(Actor& actor)
 			actor.m_hasObjectives.addTaskToStart(pair.first->makeFor(actor));
 			return;
 		}
-	// There should always be some objective avalible, even if it's wandering around or resting.
-	assert(false);
+	// No assignable tasks, do an idle task.
+	if(!actor.m_stamina.isFull() || randomUtil::percentChance(10))
+		actor.m_hasObjectives.addTaskToStart(std::make_unique<RestObjective>(actor));
+	else
+		actor.m_hasObjectives.addTaskToStart(std::make_unique<WanderObjective>(actor));
 }
 // Objective.
 Objective::Objective(uint32_t p) : m_priority(p) {}
@@ -106,16 +112,21 @@ void HasObjectives::cancel(Objective& objective)
 }
 void HasObjectives::objectiveComplete(Objective& objective)
 {
+	// Response to complete is the same as response to cancel.
 	cancel(objective);
 }
 void HasObjectives::taskComplete()
 {
-	m_currentObjective->execute();
+	if(m_currentObjective == nullptr)
+		m_prioritySet.setObjectiveFor(m_actor);
+	else
+		m_currentObjective->execute();
 }
 void HasObjectives::cannotCompleteTask()
 {
 	//TODO: generate cancelaton message?
-	m_currentObjective->execute();
+	// Response to cannot complete is the same as response to complete.
+	taskComplete();
 }
 Objective& HasObjectives::getCurrent() 
 {
@@ -133,6 +144,6 @@ void HasObjectives::cannotFulfillObjective(Objective& objective)
 	cancel(objective);
 	//TODO: generate cancelation message?
 }
-void HasObjectives::wait(uint32_t delay) { m_waitEvent.schedule(delay, m_actor); }
+void HasObjectives::wait(const Step delay) { m_waitEvent.schedule(delay, m_actor); }
 void WaitEvent::execute() { m_actor.m_hasObjectives.taskComplete(); }
 void WaitEvent::clearReferences() { m_actor.m_hasObjectives.m_waitEvent.clearPointer(); }

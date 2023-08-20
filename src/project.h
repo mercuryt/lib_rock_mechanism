@@ -20,7 +20,7 @@ class ProjectFinishEvent final : public ScheduledEventWithPercent
 {
 	Project& m_project;
 public:
-	ProjectFinishEvent(Step delay, Project& p) : ScheduledEventWithPercent(delay), m_project(p) {}
+	ProjectFinishEvent(const Step delay, Project& p) : ScheduledEventWithPercent(delay), m_project(p) {}
 	void execute();
 	void clearReferences();
 };
@@ -28,7 +28,7 @@ class ProjectTryToHaulEvent final : public ScheduledEventWithPercent
 {
 	Project& m_project;
 public:
-	ProjectTryToHaulEvent(Step delay, Project& p) : ScheduledEventWithPercent(delay), m_project(p) { }
+	ProjectTryToHaulEvent(const Step delay, Project& p) : ScheduledEventWithPercent(delay), m_project(p) { }
 	void execute();
 	void clearReferences();
 };
@@ -41,6 +41,7 @@ public:
 	ProjectTryToMakeHaulSubprojectThreadedTask(Project& p) : m_project(p) { }
 	void readStep();
 	void writeStep();
+	void clearReferences();
 };
 struct ProjectWorker final
 {
@@ -49,10 +50,10 @@ struct ProjectWorker final
 };
 struct ProjectItemCounts final
 {
-	uint8_t required;
+	const uint8_t required;
 	uint8_t reserved;
 	uint8_t delivered;
-	ProjectItemCounts(uint8_t r) : required(r), reserved(0), delivered(0) { }
+	ProjectItemCounts(const uint8_t r) : required(r), reserved(0), delivered(0) { }
 };
 // Derived classes are expected to provide getDelay, getConsumedItems, getUnconsumedItems, getByproducts, and onComplete.
 class Project
@@ -74,7 +75,7 @@ protected:
 	std::unordered_set<Actor*> m_waiting;
 	std::unordered_set<Actor*> m_making;
 	std::list<HaulSubproject> m_haulSubprojects;
-	Project(Faction& f, Block& l, size_t mw) : m_gatherComplete(false), m_canReserve(f), m_maxWorkers(mw),  m_location(l) { }
+	Project(const Faction& f, Block& l, size_t mw) : m_gatherComplete(false), m_canReserve(f), m_maxWorkers(mw),  m_location(l) { }
 public:
 	void recordRequiredActorsAndItemsAndReserveLocation();
 	void addWorker(Actor& actor);
@@ -88,13 +89,13 @@ public:
 	void cancel();
 	void dismissWorkers();
 	void scheduleEvent();
-	void createHaulSubproject(HaulSubprojectParamaters haulSubprojectParamaters);
+	void createHaulSubproject(const HaulSubprojectParamaters haulSubprojectParamaters);
 	// TODO: minimum speed decreses with failed attempts to generate haul subprojects.
 	bool getMinimumHaulSpeed() const { return Config::minimumHaulSpeed; }
-	bool canGatherItemAt(Actor& actor, Block& block) const;
-	std::pair<Item*, ProjectItemCounts*> gatherableItemAtWithProjectItemCounts(Actor& actor, Block& block) const;
-	bool canGatherActorAt(Actor& actor, Block& block) const;
-	Actor* gatherableActorAt(Actor& actor, Block& block) const;
+	bool canGatherItemAt(const Actor& actor, const Block& block) const;
+	std::pair<Item*, ProjectItemCounts*> gatherableItemAtWithProjectItemCounts(const Actor& actor, const Block& block) const;
+	bool canGatherActorAt(const Actor& actor, const Block& block) const;
+	Actor* gatherableActorAt(const Actor& actor, const Block& block) const;
 	void haulSubprojectComplete(HaulSubproject& haulSubproject);
 	Block& getLocation() const { return m_location; }
 	virtual Step getDelay() const = 0;

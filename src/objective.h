@@ -71,7 +71,7 @@ public:
 	void cannotFulfillObjective(Objective& objective);
 	void cannotCompleteTask();
 	void cannotFulfillNeed(Objective& objective);
-	void wait(uint32_t delay);
+	void wait(const Step delay);
 	Objective& getCurrent();
 	friend class ObjectiveTypePrioritySet;
 	friend class WaitEvent;
@@ -81,7 +81,7 @@ class WaitEvent final : public ScheduledEventWithPercent
 {
 	Actor& m_actor;
 public:
-	WaitEvent(uint32_t delay, Actor& a) : ScheduledEventWithPercent(delay), m_actor(a) { }
+	WaitEvent(const Step delay, Actor& a) : ScheduledEventWithPercent(delay), m_actor(a) { }
 	void execute();
 	void clearReferences();
 };

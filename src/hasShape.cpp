@@ -117,11 +117,8 @@ void BlockHasShapes::enter(HasShape& hasShape)
 void BlockHasShapes::exit(HasShape& hasShape)
 {
 	assert(hasShape.m_location == &m_block);
-	for(auto& [x, y, z, v] : hasShape.m_shape->positionsWithFacing(hasShape.m_facing))
-	{
-		Block* block = m_block.offset(x, y, z);
+	for(Block* block : hasShape.m_blocks)
 		block->m_hasShapes.remove(hasShape);
-	}
 	hasShape.m_blocks.clear();
 	hasShape.m_location = nullptr;
 }
@@ -143,6 +140,11 @@ void BlockHasShapes::removeQuantity(HasShape& hasShape, uint32_t quantity)
 	item.m_quantity -= quantity;
 	enter(hasShape);
 }
+void BlockHasShapes::tryToCacheMoveCosts(const Shape& shape, const MoveType& moveType, std::vector<std::pair<Block*, uint32_t>>& moveCosts)
+{
+	if(!m_moveCostsCache.contains(&shape) || !m_moveCostsCache.at(&shape).contains(&moveType))
+		m_moveCostsCache[&shape][&moveType] = std::move(moveCosts);
+}
 void BlockHasShapes::clearCache()
 {
 	m_moveCostsCache.clear();
@@ -156,21 +158,28 @@ bool BlockHasShapes::anythingCanEnterEver() const
 	// TODO: cache this.
 	return !m_block.m_hasBlockFeatures.blocksEntrance();
 }
-bool BlockHasShapes::canEnterEverFrom(HasShape& hasShape, Block& block) const
+bool BlockHasShapes::canEnterEverFrom(const HasShape& hasShape, const Block& block) const
 {
 	return shapeAndMoveTypeCanEnterEverFrom(*hasShape.m_shape, hasShape.getMoveType(), block);
 }
-bool BlockHasShapes::canEnterEverWithFacing(HasShape& hasShape, const uint8_t facing) const
+bool BlockHasShapes::canEnterEverWithFacing(const HasShape& hasShape, const uint8_t facing) const
 {
 	return shapeAndMoveTypeCanEnterEverWithFacing(*hasShape.m_shape, hasShape.getMoveType(), facing);
 }
-bool BlockHasShapes::shapeAndMoveTypeCanEnterEverFrom(const Shape& shape, const MoveType& moveType, Block& from) const
+bool BlockHasShapes::shapeAndMoveTypeCanEnterEverFrom(const Shape& shape, const MoveType& moveType, const Block& from) const
 {
+	assert(from.m_hasShapes.anythingCanEnterEver());
+	if(!anythingCanEnterEver())
+		return false;
+	if(!moveTypeCanEnterFrom(moveType, from))
+		return false;
 	const uint8_t facing = m_block.facingToSetWhenEnteringFrom(from);
 	return shapeAndMoveTypeCanEnterEverWithFacing(shape, moveType, facing);
 }
 bool BlockHasShapes::shapeAndMoveTypeCanEnterEverWithFacing(const Shape& shape, const MoveType& moveType, const uint8_t facing) const
 {
+	if(!anythingCanEnterEver())
+		return false;
 	for(auto& [x, y, z, v] : shape.positionsWithFacing(facing))
 	{
 		Block* block = m_block.offset(x, y, z);
@@ -180,6 +189,40 @@ bool BlockHasShapes::shapeAndMoveTypeCanEnterEverWithFacing(const Shape& shape, 
 			return false;
 	}
 	return true;
+}
+bool BlockHasShapes::moveTypeCanEnterFrom(const MoveType& moveType, const Block& from) const
+{
+	for(auto& [fluidType, volume] : moveType.swim)
+	{
+		// Can travel within and enter liquid from any angle.
+		if(m_block.volumeOfFluidTypeContains(*fluidType) >= volume)
+			return true;
+		// Can leave liquid at any angle.
+		if(from.volumeOfFluidTypeContains(*fluidType) >= volume)
+			return true;
+	}
+	// Can always enter on same z level.
+	if(m_block.m_z == from.m_z)
+		return true;
+	// Cannot go up if:
+	if(m_block.m_z > from.m_z && !m_block.m_hasBlockFeatures.canEnterFromBelow())
+		return false;
+	// Cannot go down if:
+	if(m_block.m_z < from.m_z && !m_block.m_hasBlockFeatures.canEnterFromAbove(from))
+		return false;
+	// Can enter from any angle if flying or climbing.
+	if(moveType.fly || moveType.climb > 0)
+		return true;
+	// Can go up if from contains a ramp or stairs.
+	if(m_block.m_z > from.m_z && (from.m_hasBlockFeatures.contains(BlockFeatureType::ramp) || from.m_hasBlockFeatures.contains(BlockFeatureType::stairs))) 
+		return true;
+	// Can go down if this contains a ramp or from contains down stairs and this contains up stairs.
+	if(m_block.m_z < from.m_z && (m_block.m_hasBlockFeatures.contains(BlockFeatureType::ramp) || (
+					from.m_hasBlockFeatures.contains(BlockFeatureType::stairs) &&
+					m_block.m_hasBlockFeatures.contains(BlockFeatureType::stairs)
+					)))
+		return true;
+	return false;
 }
 bool BlockHasShapes::moveTypeCanEnter(const MoveType& moveType) const
 {
@@ -193,45 +236,54 @@ bool BlockHasShapes::moveTypeCanEnter(const MoveType& moveType) const
 	// Not swimming and fluid level is too high.
 	if(m_block.m_totalFluidVolume > Config::maxBlockVolume / 2)
 		return false;
-	// Not flying and either not walking or ground is not supported.
-	if(!moveType.fly && (!moveType.walk || !canStandIn()))
+	// Fly can always enter if fluid level isn't preventing it.
+	if(moveType.fly)
+		return true;
+	// Walk can enter only if can stand in or if also has climb2 and there is a isSupport() block adjacent.
+	if(moveType.walk)
 	{
-		if(moveType.climb < 2)
-			return false;
+		if(canStandIn())
+			return true;
 		else
-		{
-			// Only climb2 moveTypes can enter.
-			for(Block* block : m_block.getAdjacentOnSameZLevelOnly())
-				//TODO: check for climable features?
-				if(block->isSupport())
-					return true;
-			return false;
-		}
+
+			if(moveType.climb < 2)
+				return false;
+			else
+			{
+				// Only climb2 moveTypes can enter.
+				for(Block* block : m_block.getAdjacentOnSameZLevelOnly())
+					//TODO: check for climable features?
+					if(block->isSupport())
+						return true;
+				return false;
+			}
 	}
-	return true;
+	return false;
 }
 const std::vector<std::pair<Block*, uint32_t>>& BlockHasShapes::getMoveCosts(const Shape& shape, const MoveType& moveType)
 {
 	if(m_moveCostsCache.contains(&shape) && m_moveCostsCache.at(&shape).contains(&moveType))
 		return m_moveCostsCache.at(&shape).at(&moveType);
 	auto& output = m_moveCostsCache[&shape][&moveType];
-	for(Block* block : m_block.m_adjacentsVector)
+	for(Block* block : m_block.getAdjacentWithEdgeAndCornerAdjacent())
 		if(block->m_hasShapes.shapeAndMoveTypeCanEnterEverFrom(shape, moveType, m_block))
 			output.emplace_back(block, block->m_hasShapes.moveCostFrom(moveType, m_block));
 	return output;
 }
 // Get a move cost for moving from a block onto this one for a given move type.
-uint32_t BlockHasShapes::moveCostFrom(const MoveType& moveType, Block& from) const
+uint32_t BlockHasShapes::moveCostFrom(const MoveType& moveType, const Block& from) const
 {
+	assert(!m_block.isSolid());
+	assert(!from.isSolid());
 	if(moveType.fly)
-		return 10;
+		return Config::baseMoveCost;
 	for(auto& [fluidType, volume] : moveType.swim)
 		if(m_block.volumeOfFluidTypeContains(*fluidType) >= volume)
-			return 10;
+			return Config::baseMoveCost;
 	// Double cost to go up if not fly, swim, or ramp (if climb).
 	if(m_block.m_z > from.m_z && !from.m_hasBlockFeatures.contains(BlockFeatureType::ramp))
-		return 20;
-	return 10;
+		return Config::goUpMoveCost;
+	return Config::baseMoveCost;
 }
 bool BlockHasShapes::canEnterCurrentlyFrom(const HasShape& hasShape, const Block& block) const
 {
@@ -243,7 +295,7 @@ bool BlockHasShapes::canEnterCurrentlyWithFacing(const HasShape& hasShape, const
 	for(auto& [x, y, z, v] : hasShape.m_shape->positionsWithFacing(facing))
 	{
 		Block* block = m_block.offset(x, y, z);
-		if(block->m_hasShapes.m_totalVolume + v - getVolume(hasShape) > Config::maxBlockVolume)
+		if(block->m_hasShapes.m_totalVolume + v - block->m_hasShapes.getVolume(hasShape) > Config::maxBlockVolume)
 			return false;
 	}
 	return true;
@@ -258,6 +310,6 @@ uint32_t BlockHasShapes::getVolume(const HasShape& hasShape) const
 bool BlockHasShapes::canStandIn() const
 {
 	return (m_block.m_adjacents[0] != nullptr && (m_block.m_adjacents[0]->isSolid() || 
-		m_block.m_adjacents[0]->m_hasBlockFeatures.canStandAbove())) || 
+				m_block.m_adjacents[0]->m_hasBlockFeatures.canStandAbove())) || 
 		m_block.m_hasBlockFeatures.canStandIn();
 }

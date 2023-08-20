@@ -29,7 +29,7 @@ struct AnimalSpecies
 	const bool eatsMeat;
 	const bool eatsLeaves;
 	const bool eatsFruit;
-	const uint32_t visionDistance;
+	const uint32_t visionRange;
 	uint32_t bodyScale;
 	const MaterialType& materialType;
 	const MoveType& moveType;

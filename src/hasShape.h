@@ -59,17 +59,20 @@ public:
 	void exit(HasShape& hasShape);
 	void addQuantity(HasShape& hasShape, uint32_t quantity);
 	void removeQuantity(HasShape& hasShape, uint32_t quantity);
+	void tryToCacheMoveCosts(const Shape& shape, const MoveType& moveType, std::vector<std::pair<Block*, uint32_t>>& moveCosts);
 	bool anythingCanEnterEver() const;
-	bool canEnterEverFrom(HasShape& shape, Block& block) const;
-	bool canEnterEverWithFacing(HasShape& hasShape, uint8_t facing) const;
-	bool shapeAndMoveTypeCanEnterEverFrom(const Shape& shape, const MoveType& moveType, Block& block) const;
+	bool canEnterEverFrom(const HasShape& shape, const Block& block) const;
+	bool canEnterEverWithFacing(const HasShape& hasShape, const uint8_t facing) const;
+	bool shapeAndMoveTypeCanEnterEverFrom(const Shape& shape, const MoveType& moveType, const Block& block) const;
 	bool shapeAndMoveTypeCanEnterEverWithFacing(const Shape& shape, const MoveType& moveType, const uint8_t facing) const;
 	bool moveTypeCanEnter(const MoveType& moveType) const;
+	bool moveTypeCanEnterFrom(const MoveType& moveType, const Block& from) const;
 	bool canEnterCurrentlyFrom(const HasShape& hasShape, const Block& block) const;
 	bool canEnterCurrentlyWithFacing(const HasShape& hasShape, const uint8_t& facing) const;
 	const std::vector<std::pair<Block*, uint32_t>>& getMoveCosts(const Shape& shape, const MoveType& moveType);
-	uint32_t moveCostFrom(const MoveType& moveType, Block& from) const;
+	uint32_t moveCostFrom(const MoveType& moveType, const Block& from) const;
 	bool canStandIn() const;
+	bool contains(HasShape& hasShape) const { return m_shapes.contains(&hasShape); }
 	std::unordered_map<HasShape*, uint32_t>& getShapes() { return m_shapes; }
 	friend class HasShape;
 };

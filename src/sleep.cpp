@@ -29,23 +29,25 @@ void SleepThreadedTask::readStep()
 			outdoorCandidate = &block;	
 		return false;
 	};
-	m_result = path::getForActorToPredicate(actor, condition);
-	if(m_result.empty())
+	m_route = path::getForActorToPredicate(actor, condition);
+	if(m_route.empty())
 	{
 		if(indoorCandidate != nullptr)
-			m_result = path::getForActor(actor, *indoorCandidate);
+			pathTo(actor, *indoorCandidate);
 		else if(outdoorCandidate != nullptr)
-			m_result = path::getForActor(actor, *outdoorCandidate);
+			pathTo(actor, *outdoorCandidate);
 	}
 }
 void SleepThreadedTask::writeStep()
 {
 	auto& actor = m_sleepObjective.m_actor;
-	if(m_result.empty())
+	if(m_route.empty())
 		actor.m_hasObjectives.cannotFulfillNeed(m_sleepObjective);
 	else
-		actor.m_canMove.setPath(m_result);
+		actor.m_canMove.setPath(m_route);
+	cacheMoveCosts(actor);
 }
+void SleepThreadedTask::clearReferences() { m_sleepObjective.m_threadedTask.clearPointer(); }
 // Sleep Objective.
 void SleepObjective::execute()
 {

@@ -9,6 +9,7 @@
 #include <string>
 #include <unordered_map>
 #include <memory>
+#include <functional>
 
 struct CraftJob;
 class HasCraftingLocationsAndJobs;
@@ -44,7 +45,7 @@ class CraftStepProject final : public Project
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
 	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
 public:
-	CraftStepProject(Faction& faction, Block& location, const CraftStepType& cst, CraftJob& cj) : Project(faction, location, 1), m_craftStepType(cst), m_craftJob(cj) { }
+	CraftStepProject(const Faction& faction, Block& location, const CraftStepType& cst, CraftJob& cj) : Project(faction, location, 1), m_craftStepType(cst), m_craftJob(cj) { }
 	uint32_t getWorkerCraftScore(const Actor& actor) const;
 };
 // Data about making a specific product type.
@@ -87,6 +88,7 @@ public:
 	CraftThreadedTask(CraftObjective& co) : m_craftObjective(co), m_craftJob(nullptr), m_location(nullptr) { }
 	void readStep();
 	void writeStep();
+	void clearReferences();
 };
 class CraftObjectiveType final : public ObjectiveType
 {
@@ -121,7 +123,7 @@ public:
 	void removeLocation(std::vector<const CraftStepType*>& craftStepTypes, Block& block);
 	// To be used by the UI.
 	bool hasLocationsFor(const CraftJobType& craftJobType) const;
-	void addJob(CraftJobType& craftJobType, const MaterialType* materialType, uint32_t minimumSkillLevel = 0);
+	void addJob(const CraftJobType& craftJobType, const MaterialType* materialType, uint32_t minimumSkillLevel = 0);
 	void stepComplete(CraftJob& craftJob, Actor& actor);
 	void stepInterupted(CraftJob& craftJob);
 	void indexUnassigned(CraftJob& craftJob);
@@ -129,7 +131,7 @@ public:
 	void jobComplete(CraftJob& craftJob);
 	void makeAndAssignStepProject(CraftJob& craftJob, Block& location, Actor& worker);
 	// May return nullptr;
-	CraftJob* getJobForAtLocation(Actor& actor, const SkillType& skillType, Block& block);
-	std::pair<CraftJob*, Block*> getJobAndLocationFor(Actor& actor, const SkillType& skillType);
+	CraftJob* getJobForAtLocation(const Actor& actor, const SkillType& skillType, const Block& block);
+	std::pair<CraftJob*, Block*> getJobAndLocationFor(const Actor& actor, const SkillType& skillType);
 	friend class CraftObjectiveType;
 };

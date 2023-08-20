@@ -45,6 +45,7 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep()
 		// All guards passed, create subproject and dispatch workers.
 		m_project.m_haulSubprojects.emplace_back(m_project, m_haulProjectParamaters);
 }
+void ProjectTryToMakeHaulSubprojectThreadedTask::clearReferences() { m_project.m_tryToHaulThreadedTask.clearPointer(); }
 // Derived classes are expected to provide getDelay, getConsumedItems, getUnconsumedItems, getByproducts, and onComplete.
 bool Project::reservationsComplete() const
 {

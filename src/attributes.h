@@ -31,12 +31,12 @@ public:
 		strength(species.strength[0], species.strength[1], modifierPercents[1], bonusOrPenalties[1], percentGrown),
 		dextarity(species.dextarity[0], species.dextarity[1], modifierPercents[1], bonusOrPenalties[1], percentGrown),
 		agility(species.agility[0], species.agility[1], modifierPercents[2], bonusOrPenalties[2], percentGrown),
-		mass(species.mass[0], species.mass[1], modifierPercents[3], bonusOrPenalties[3], percentGrown) { }
+		mass(species.mass[0], species.mass[1], modifierPercents[3], bonusOrPenalties[3], percentGrown) { generate(); }
 	Attributes(const AnimalSpecies& species, uint32_t percentGrown) :
-		strength(species.strength[0], species.strength[1], 0, 0, percentGrown),
-		dextarity(species.dextarity[0], species.dextarity[1], 0, 0, percentGrown),
-		agility(species.agility[0], species.agility[1], 0, 0, percentGrown),
-		mass(species.mass[0], species.mass[1], 0, 0, percentGrown) { }
+		strength(species.strength[0], species.strength[1], 100, 0, percentGrown),
+		dextarity(species.dextarity[0], species.dextarity[1], 100, 0, percentGrown),
+		agility(species.agility[0], species.agility[1], 100, 0, percentGrown),
+		mass(species.mass[0], species.mass[1], 100, 0, percentGrown) { generate(); }
 	void updatePercentGrown(uint32_t percentGrown);
 	void generate();
 	void removeMass(uint32_t m)

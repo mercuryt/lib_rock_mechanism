@@ -5,9 +5,9 @@
 
 namespace simulation
 {
-	inline uint32_t step;
+	inline Step step;
 	inline std::list<Area> areas;
 	inline BS::thread_pool_light pool;
-	void init(uint32_t s = 0);
+	void init(Step s = 1);
 	void doStep();
 }

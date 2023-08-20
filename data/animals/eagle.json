@@ -1,10 +1,10 @@
 {
-  "name": "red deer",
+  "name": "eagle",
   "sentient": false,
-  "strength": [20, 25, 5],
+  "strength": [6, 7, 1],
   "agility": [60, 65, 1],
   "dextarity": [50, 55, 1],
-  "mass": [80, 90, 10],
+  "mass": [15, 20, 2],
   "deathAgeDays": [1000, 1200],
   "daysTillFullyGrown": 200,
   "daysTillDieWithoutFood": 10,
@@ -18,14 +18,14 @@
   "hoursTillSleepOveride": 10,
   "hoursSleepDuration": 8,
   "nocturnal": false,
-  "eatsMeat": false,
+  "eatsMeat": true,
   "eatsLeaves": true,
   "eatsFruit": true,
   "visionRange": 10,
-  "bodyScale": 8,
+  "bodyScale": 3,
   "materialType": "flesh",
-  "moveType": "four legs and swim in water",
+  "moveType": "fly",
   "fluidType": "water",
-  "bodyType": "quadraped",
-  "shapes": ["oneByOneSixteenth", "oneByOneQuarter", "oneByOneHalf"]
+  "bodyType": "bird",
+  "shapes": ["oneByOneSixteenth", "oneByOneEighth"]
 }

@@ -2,6 +2,10 @@
 #include "path.h"
 #include "util.h"
 // Must Drink.
+MustDrink::MustDrink(Actor& a) : m_actor(a), m_volumeDrinkRequested(0), m_objective(nullptr)
+{ 
+	m_thirstEvent.schedule(m_actor.m_species.stepsFluidDrinkFreqency, m_actor);
+}
 void MustDrink::drink(uint32_t volume)
 {
 	assert(m_volumeDrinkRequested >= volume);
@@ -17,9 +21,16 @@ void MustDrink::drink(uint32_t volume)
 		stepsToNextThirsEvent = util::scaleByFraction(m_actor.m_species.stepsTillDieWithoutFluid, m_volumeDrinkRequested, m_actor.m_species.stepsTillDieWithoutFluid);
 	m_thirstEvent.schedule(stepsToNextThirsEvent, m_actor);
 }
+void MustDrink::setNeedsFluid()
+{
+	if(m_volumeDrinkRequested == 0)
+		m_volumeDrinkRequested = m_actor.getMass() * Config::volumeFluidForBodyMass;
+	else
+		m_actor.die(CauseOfDeath::thirst);
+}
 // Drink Event.
-DrinkEvent::DrinkEvent(uint32_t step, DrinkObjective& drob) : ScheduledEventWithPercent(step), m_drinkObjective(drob), m_item(nullptr) {}
-DrinkEvent::DrinkEvent(uint32_t step, DrinkObjective& drob, Item& i) : ScheduledEventWithPercent(step), m_drinkObjective(drob), m_item(&i) {}
+DrinkEvent::DrinkEvent(const Step delay, DrinkObjective& drob) : ScheduledEventWithPercent(delay), m_drinkObjective(drob), m_item(nullptr) {}
+DrinkEvent::DrinkEvent(const Step delay, DrinkObjective& drob, Item& i) : ScheduledEventWithPercent(delay), m_drinkObjective(drob), m_item(&i) {}
 void DrinkEvent::execute()
 {
 	//TODO: What if not enough volume is avalible?
@@ -67,6 +78,7 @@ void DrinkThreadedTask::writeStep()
 	else
 		m_drinkObjective.m_actor.m_canMove.setPath(m_result);
 }
+void DrinkThreadedTask::clearReferences() { m_drinkObjective.m_threadedTask.clearPointer(); }
 // Drink Objective.
 DrinkObjective::DrinkObjective(Actor& a) : Objective(Config::drinkPriority), m_actor(a) { }
 void DrinkObjective::execute()
@@ -85,20 +97,20 @@ void DrinkObjective::execute()
 			m_drinkEvent.schedule(Config::stepsToDrink, *this);
 	}
 }
-bool DrinkObjective::canDrinkAt(Block& block) const
+bool DrinkObjective::canDrinkAt(const Block& block) const
 {
 	return getAdjacentBlockToDrinkAt(block) != nullptr;
 }
-Block* DrinkObjective::getAdjacentBlockToDrinkAt(Block& block) const
+Block* DrinkObjective::getAdjacentBlockToDrinkAt(const Block& block) const
 {
 	for(Block* adjacent : block.m_adjacentsVector)
 		if(adjacent->m_fluids.contains(&m_actor.m_mustDrink.getFluidType()))
 			return adjacent;
 	return nullptr;
 }
-bool DrinkObjective::canDrinkItemAt(Block& block) const
+bool DrinkObjective::canDrinkItemAt(const Block& block) const
 {
-	return getItemToDrinkFromAt(block) != nullptr;
+	return getItemToDrinkFromAt(const_cast<Block&>(block)) != nullptr;
 }
 Item* DrinkObjective::getItemToDrinkFromAt(Block& block) const
 {

@@ -28,6 +28,7 @@ void DigThreadedTask::writeStep()
 		m_result.back()->m_reservable.reserveFor(m_digObjective.m_actor.m_canReserve, 1);
 	}
 }
+void DigThreadedTask::clearReferences() { m_digObjective.m_digThrededTask.clearPointer(); }
 void DigObjective::execute()
 {
 	if(m_project != nullptr)
@@ -129,25 +130,25 @@ void HasDigDesignationsForFaction::removeIfExists(Block& block)
 	if(m_data.contains(&block))
 		remove(block);
 }
-const BlockFeatureType* HasDigDesignationsForFaction::at(Block& block) const { return m_data.at(&block).blockFeatureType; }
+const BlockFeatureType* HasDigDesignationsForFaction::at(const Block& block) const { return m_data.at(const_cast<Block*>(&block)).blockFeatureType; }
 bool HasDigDesignationsForFaction::empty() const { return m_data.empty(); }
 // To be used by Area.
-void HasDigDesignations::addFaction(Faction& faction)
+void HasDigDesignations::addFaction(const Faction& faction)
 {
 	assert(!m_data.contains(&faction));
 	m_data.emplace(&faction, faction);
 }
-void HasDigDesignations::removeFaction(Faction& faction)
+void HasDigDesignations::removeFaction(const Faction& faction)
 {
 	assert(m_data.contains(&faction));
 	m_data.erase(&faction);
 }
 // If blockFeatureType is null then dig out fully rather then digging out a feature.
-void HasDigDesignations::designate(Faction& faction, Block& block, const BlockFeatureType* blockFeatureType)
+void HasDigDesignations::designate(const Faction& faction, Block& block, const BlockFeatureType* blockFeatureType)
 {
 	m_data.at(&faction).designate(block, blockFeatureType);
 }
-void HasDigDesignations::remove(Faction& faction, Block& block)
+void HasDigDesignations::remove(const Faction& faction, Block& block)
 {
 	assert(m_data.contains(&faction));
 	m_data.at(&faction).remove(block);
@@ -157,7 +158,7 @@ void HasDigDesignations::clearAll(Block& block)
 	for(auto& pair : m_data)
 		pair.second.removeIfExists(block);
 }
-bool HasDigDesignations::areThereAnyForFaction(Faction& faction) const
+bool HasDigDesignations::areThereAnyForFaction(const Faction& faction) const
 {
 	return !m_data.at(&faction).empty();
 }

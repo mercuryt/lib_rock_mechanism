@@ -18,17 +18,17 @@ bool CanLead::isLeading() const { return m_canFollow != nullptr; }
 bool CanLead::isLeading(HasShape& hasShape) const  { return m_canFollow != nullptr && &hasShape.m_canFollow == m_canFollow; }
 HasShape& CanLead::getFollower() const { return m_canFollow->m_hasShape; }
 // Class method.
-uint32_t CanLead::getMoveSpeedForGroupWithAddedMass(std::vector<HasShape*>& actorsAndItems, uint32_t addedRollingMass, uint32_t addedDeadMass)
+uint32_t CanLead::getMoveSpeedForGroupWithAddedMass(std::vector<const HasShape*>& actorsAndItems, uint32_t addedRollingMass, uint32_t addedDeadMass)
 {
 	uint32_t rollingMass = addedRollingMass;
 	uint32_t deadMass = addedDeadMass;
 	uint32_t carryMass = 0;
 	uint32_t lowestMoveSpeed = 0;
-	for(HasShape* hasShape : actorsAndItems)
+	for(const HasShape* hasShape : actorsAndItems)
 	{
 		if(hasShape->isItem())
 		{
-			uint32_t mass = static_cast<Item&>(*hasShape).getMass();
+			uint32_t mass = static_cast<const Item&>(*hasShape).getMass();
 			static const MoveType& rolling = MoveType::byName("rolling");
 			if(hasShape->getMoveType() == rolling)
 				rollingMass += mass;
@@ -38,7 +38,7 @@ uint32_t CanLead::getMoveSpeedForGroupWithAddedMass(std::vector<HasShape*>& acto
 		else
 		{
 			assert(hasShape->isActor());
-			Actor& actor = static_cast<Actor&>(*hasShape);
+			const Actor& actor = static_cast<const Actor&>(*hasShape);
 			if(actor.m_canMove.canMove())
 			{
 				carryMass += actor.m_attributes.getUnencomberedCarryMass();
@@ -64,7 +64,7 @@ uint32_t CanLead::getMoveSpeed() const
 	assert(!m_hasShape.m_canFollow.isFollowing());
 	assert(m_hasShape.m_canLead.isLeading());
 	HasShape* hasShape = &m_hasShape;
-	std::vector<HasShape*> actorsAndItems;
+	std::vector<const HasShape*> actorsAndItems;
 	while(true)
 	{
 		actorsAndItems.push_back(hasShape);

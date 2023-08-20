@@ -3,6 +3,7 @@
 #include "../../src/animalSpecies.h"
 #include "../../src/actor.h"
 #include "../../src/area.h"
+#include "../../src/areaBuilderUtil.h"
 #include "../../src/simulation.h"
 
 #include <memory>
@@ -18,9 +19,11 @@ struct TestObjective final : public Objective
 TEST_CASE("objective")
 {
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
+	static const MaterialType& marble = MaterialType::byName("marble");
 	simulation::init();
 	Area area(10,10,10,280);
-	Actor& actor = Actor::create(dwarf, area.m_blocks[5][5][5]);
+	areaBuilderUtil::setSolidLayer(area, 0, marble);
+	Actor& actor = Actor::create(dwarf, area.m_blocks[5][5][1]);
 	bool x = false;
 	std::unique_ptr<Objective> objective = std::make_unique<TestObjective>(1, x);
 	Objective* ptr = objective.get();

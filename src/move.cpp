@@ -1,6 +1,9 @@
 #include "move.h"
 #include "path.h"
-ActorCanMove::ActorCanMove(Actor& a) : m_actor(a), m_moveType(&m_actor.m_species.moveType), m_retries(0) { }
+ActorCanMove::ActorCanMove(Actor& a) : m_actor(a), m_moveType(&m_actor.m_species.moveType), m_retries(0)
+{
+	updateIndividualSpeed();
+}
 uint32_t ActorCanMove::getIndividualMoveSpeedWithAddedMass(uint32_t mass) const
 {
 	uint32_t output = m_actor.m_attributes.getMoveSpeed();
@@ -29,23 +32,45 @@ void ActorCanMove::setPath(std::vector<Block*>& path)
 void ActorCanMove::callback()
 {
 	Block& block = **m_pathIter;
+	// Path has become permanantly blocked since being generated, repath.
+	if(!block.m_hasShapes.anythingCanEnterEver() || !block.m_hasShapes.canEnterEverFrom(m_actor, *m_actor.m_location))
+	{
+		setDestination(*m_destination);
+		return;
+	}
+	// Path is temporarily blocked, wait a bit and then detour if still blocked.
 	if(block.m_hasShapes.canEnterCurrentlyFrom(m_actor, *m_actor.m_location))
 	{
 		m_retries = 0;
 		m_actor.setLocation(block);
-		if(++m_pathIter != m_path.end())
+		if(&block == m_actor.m_canMove.m_destination)
+		{
+			m_destination = nullptr;
+			m_path.clear();
+			m_actor.m_hasObjectives.taskComplete();
+		}
+		else
+		{
+			++m_pathIter;
 			scheduleMove();
+		}
 	}
 	else
 	{
-		++m_retries;
-		scheduleMove();
+		if(m_retries == Config::moveTryAttemptsBeforeDetour)
+			setDestination(*m_destination, true);
+		else
+		{
+			++m_retries;
+			scheduleMove();
+		}
 	}
 }
 void ActorCanMove::scheduleMove()
 {
-	uint32_t stepsToMove = m_actor.m_location->m_hasShapes.moveCostFrom(m_actor.getMoveType(), *m_actor.m_location) / m_speedActual;
-	m_event.schedule(stepsToMove, *this);
+	assert(m_actor.m_location != m_actor.m_canMove.m_destination);
+	Step delay = m_actor.m_location->m_hasShapes.moveCostFrom(*m_moveType, *m_actor.m_location) / m_speedActual;
+	m_event.schedule(delay, *this);
 }
 void ActorCanMove::setDestination(Block& destination, bool detour, bool adjacent)
 {
@@ -62,9 +87,12 @@ void ActorCanMove::setDestinationAdjacentToSet(std::unordered_set<Block*>& block
 	m_toSetThreadedTask.create(m_actor, blocks, detour, adjacent);
 }
 void ActorCanMove::setDestinationAdjacentTo(HasShape& hasShape) { setDestinationAdjacentToSet(hasShape.m_blocks); }
-void ActorCanMove::tryToExitArea()
+void ActorCanMove::tryToExitArea() { m_exitAreaThreadedTask.create(m_actor, false); }
+void ActorCanMove::setMoveType(const MoveType& moveType)
 {
-	m_exitAreaThreadedTask.create(m_actor, false);
+	assert(m_moveType != &moveType);
+	m_moveType = &moveType;
+	//TODO: repath if destination.
 }
 bool ActorCanMove::canMove() const
 {
@@ -74,47 +102,48 @@ bool ActorCanMove::canMove() const
 }
 void PathThreadedTask::readStep()
 {
-	m_result = path::getForActor(m_actor, *m_actor.m_canMove.m_destination);
+	pathTo(m_actor, *m_actor.m_canMove.m_destination, m_detour);
 }
 void PathThreadedTask::writeStep()
 {
-	if(m_result.empty())
+	if(m_route.empty())
 		m_actor.m_hasObjectives.cannotCompleteTask();
 	else
 	{
 		if(m_adjacent)
-			m_result.pop_back();
-		m_actor.m_canMove.setPath(m_result);
+			m_route.pop_back();
+		m_actor.m_canMove.setPath(m_route);
 	}
+	cacheMoveCosts(m_actor);
 }
+void PathThreadedTask::clearReferences() { m_actor.m_canMove.m_threadedTask.clearPointer(); }
 void PathToSetThreadedTask::readStep()
 {
 	auto condition = [&](Block& block){ return m_blocks.contains(&block); };
-	m_result = path::getForActorToPredicate(m_actor, condition);
+	m_route = path::getForActorToPredicate(m_actor, condition);
 }
 void PathToSetThreadedTask::writeStep()
 {
-	if(m_result.empty())
+	if(m_route.empty())
 		m_actor.m_hasObjectives.cannotCompleteTask();
 	else
 	{
 		if(m_adjacent)
-			m_result.pop_back();
-		m_actor.m_canMove.setPath(m_result);
+			m_route.pop_back();
+		m_actor.m_canMove.setPath(m_route);
 	}
 }
+void PathToSetThreadedTask::clearReferences() { m_actor.m_canMove.m_toSetThreadedTask.clearPointer(); }
 void ExitAreaThreadedTask::readStep()
 {
-	auto condition = [&](Block& block)
-	{
-		return block.m_isEdge;
-	};
-	m_result = path::getForActorToPredicate(m_actor, condition);
+	auto condition = [&](Block& block) { return block.m_isEdge; };
+	m_route = path::getForActorToPredicate(m_actor, condition);
 }
 void ExitAreaThreadedTask::writeStep()
 {
-	if(m_result.empty())
+	if(m_route.empty())
 		m_actor.m_hasObjectives.wait(Config::stepsToWaitWhenCannotExitArea);
 	else
-		m_actor.m_canMove.setPath(m_result);
+		m_actor.m_canMove.setPath(m_route);
 }
+void ExitAreaThreadedTask::clearReferences() { m_actor.m_canMove.m_exitAreaThreadedTask.clearPointer(); }

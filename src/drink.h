@@ -26,8 +26,8 @@ class MustDrink final
 	uint32_t volumeFluidForBodyMass() const;
 
 public:
-	MustDrink(Actor& a) : m_actor(a), m_volumeDrinkRequested(0), m_objective(nullptr) { }
-	void drink(uint32_t volume);
+	MustDrink(Actor& a);
+	void drink(const uint32_t volume);
 	void setNeedsFluid();
 	const uint32_t& getVolumeFluidRequested() const;
 	const uint32_t& getPercentDeadFromThirst() const;
@@ -45,9 +45,9 @@ public:
 	DrinkObjective(Actor& a);
 	void execute();
 	void cancel() {}
-	bool canDrinkAt(Block& block) const;
-	Block* getAdjacentBlockToDrinkAt(Block& block) const;
-	bool canDrinkItemAt(Block& block) const;
+	bool canDrinkAt(const Block& block) const;
+	Block* getAdjacentBlockToDrinkAt(const Block& block) const;
+	bool canDrinkItemAt(const Block& block) const;
 	Item* getItemToDrinkFromAt(Block& block) const;
 	friend class DrinkEvent;
 	friend class DrinkThreadedTask;
@@ -57,8 +57,8 @@ class DrinkEvent final : public ScheduledEventWithPercent
 	DrinkObjective& m_drinkObjective;
 	Item* m_item;
 public:
-	DrinkEvent(uint32_t step, DrinkObjective& drob);
-	DrinkEvent(uint32_t step, DrinkObjective& drob, Item& i);
+	DrinkEvent(const Step delay, DrinkObjective& drob);
+	DrinkEvent(const Step delay, DrinkObjective& drob, Item& i);
 	void execute();
 	void clearReferences();
 };
@@ -66,7 +66,7 @@ class ThirstEvent final : public ScheduledEventWithPercent
 {
 	Actor& m_actor;
 public:
-	ThirstEvent(uint32_t delay, Actor& a) : ScheduledEventWithPercent(delay), m_actor(a) { }
+	ThirstEvent(const Step delay, Actor& a) : ScheduledEventWithPercent(delay), m_actor(a) { }
 	void execute();
 	void clearReferences();
 };
@@ -78,4 +78,5 @@ public:
 	DrinkThreadedTask(DrinkObjective& drob) : m_drinkObjective(drob) {}
 	void readStep();
 	void writeStep();
+	void clearReferences();
 };

@@ -2,6 +2,7 @@
 #include "eventSchedule.h"
 #include "threadedTask.h"
 #include "eventSchedule.hpp"
+#include "pathToBlockBaseThreadedTask.h"
 
 #include <vector>
 
@@ -30,7 +31,6 @@ class ActorCanMove final
 	HasThreadedTask<ExitAreaThreadedTask> m_exitAreaThreadedTask;
 public:
 	ActorCanMove(Actor& a);
-	uint32_t getIndividualMoveSpeedWithAddedMass(uint32_t mass) const;
 	void updateIndividualSpeed();
 	void updateActualSpeed();
 	void setPath(std::vector<Block*>& path);
@@ -41,11 +41,20 @@ public:
 	void setDestinationAdjacentTo(HasShape& hasShape);
 	void setDestinationAdjacentToSet(std::unordered_set<Block*>& blocks, bool detour = false);
 	void tryToExitArea();
+	void setMoveType(const MoveType& moveType);
 	const MoveType& getMoveType() const { return *m_moveType; }
+	uint32_t getIndividualMoveSpeedWithAddedMass(uint32_t mass) const;
+	uint32_t getMoveSpeed() const { return m_speedActual; }
 	bool canMove() const;
+	// For testing.
+	PathThreadedTask& getPathThreadedTask() { return m_threadedTask.get(); }
+	[[maybe_unused]]std::vector<Block*>& getPath() { return m_path; }
+	[[maybe_unused]]Block* getDestination() { return m_destination; }
+	[[maybe_unused]]bool hasEvent() { return m_event.exists(); }
 	friend class MoveEvent;
 	friend class PathThreadedTask;
 	friend class PathToSetThreadedTask;
+	friend class ExitAreaThreadedTask;
 };
 class MoveEvent final : public ScheduledEventWithPercent
 {
@@ -55,16 +64,18 @@ public:
 	void execute() { m_canMove.callback(); }
 	void clearReferences() { m_canMove.m_event.clearPointer(); }
 };
-class PathThreadedTask final : public ThreadedTask
+class PathThreadedTask final : public PathToBlockBaseThreadedTask
 {
 	Actor& m_actor;
 	bool m_detour;
 	bool m_adjacent;
-	std::vector<Block*> m_result;
 public:
 	PathThreadedTask(Actor& a, bool d = false, bool ad = false) : m_actor(a), m_detour(d), m_adjacent(ad) { }
 	void readStep();
 	void writeStep();
+	void clearReferences();
+	// Testing.
+	[[maybe_unused]]bool isDetour() const { return m_detour; }
 };
 class PathToSetThreadedTask final : public ThreadedTask
 {
@@ -72,7 +83,8 @@ class PathToSetThreadedTask final : public ThreadedTask
 	std::unordered_set<Block*> m_blocks;
 	bool m_detour;
 	bool m_adjacent;
-	std::vector<Block*> m_result;
+	std::vector<Block*> m_route;
+	void clearReferences();
 public:
 	PathToSetThreadedTask(Actor& a, std::unordered_set<Block*> b, bool d = false, bool ad = false) : m_actor(a), m_blocks(b), m_detour(d), m_adjacent(ad) { }
 	void readStep();
@@ -82,7 +94,8 @@ class ExitAreaThreadedTask final : public ThreadedTask
 {
 	Actor& m_actor;
 	bool m_detour;
-	std::vector<Block*> m_result;
+	std::vector<Block*> m_route;
+	void clearReferences();
 public:
 	ExitAreaThreadedTask(Actor& a, bool d) : m_actor(a), m_detour(d) { }
 	void readStep();

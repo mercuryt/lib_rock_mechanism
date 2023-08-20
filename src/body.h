@@ -114,7 +114,7 @@ class WoundHealEvent : public ScheduledEventWithPercent
 	Wound& m_wound;
 	Body& m_body;
 public:
-	WoundHealEvent(Step delay, Wound& w, Body& b) : ScheduledEventWithPercent(delay), m_wound(w), m_body(b) {}
+	WoundHealEvent(const Step delay, Wound& w, Body& b) : ScheduledEventWithPercent(delay), m_wound(w), m_body(b) {}
 	void execute() { m_body.healWound(m_wound); }
 	void clearReferences() { m_wound.healEvent.clearPointer(); }
 };
@@ -122,7 +122,7 @@ class BleedEvent : public ScheduledEventWithPercent
 {
 	Body& m_body;
 public:
-	BleedEvent(Step delay, Body& b) : ScheduledEventWithPercent(delay), m_body(b) {}
+	BleedEvent(const Step delay, Body& b) : ScheduledEventWithPercent(delay), m_body(b) {}
 	void execute() { m_body.bleed(); }
 	void clearReferences() { m_body.m_bleedEvent.clearPointer(); }
 };
@@ -130,7 +130,7 @@ class WoundsCloseEvent : public ScheduledEventWithPercent
 {
 	Body& m_body;
 public:
-	WoundsCloseEvent(Step delay, Body& b) : ScheduledEventWithPercent(delay), m_body(b) {}
+	WoundsCloseEvent(const Step delay, Body& b) : ScheduledEventWithPercent(delay), m_body(b) {}
 	void execute() { m_body.woundsClose(); }
 	void clearReferences() { m_body.m_woundsCloseEvent.clearPointer(); }
 };

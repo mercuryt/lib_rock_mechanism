@@ -21,7 +21,7 @@
   "eatsMeat": true,
   "eatsLeaves": true,
   "eatsFruit": true,
-  "visionDistance": 10,
+  "visionRange": 10,
   "bodyScale": 10,
   "materialType": "flesh",
   "moveType": "two legs and swim in water",

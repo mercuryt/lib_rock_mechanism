@@ -227,10 +227,6 @@ void HasPlant::clearPointer()
 	assert(m_plant != nullptr);
 	m_plant = nullptr;
 }
-Plant& HasPlant::get()
-{
-	return *m_plant;
-}
 void HasPlant::setTemperature(uint32_t temperature)
 {
 	if(m_plant != nullptr)

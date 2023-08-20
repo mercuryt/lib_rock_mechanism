@@ -26,6 +26,7 @@ public:
 	HarvestThreadedTask(HarvestObjective& ho) : m_harvestObjective(ho) {}
 	void readStep();
 	void writeStep();
+	void clearReferences();
 };
 class HarvestObjectiveType final : public ObjectiveType
 {

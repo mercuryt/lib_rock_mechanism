@@ -22,6 +22,7 @@ public:
 	ConstructThreadedTask(ConstructObjective& co) : m_constructObjective(co) { }
 	void readStep();
 	void writeStep();
+	void clearReferences();
 };
 class ConstructObjective final : public Objective
 {
@@ -53,7 +54,7 @@ class ConstructProject final : public Project
 	uint32_t getWorkerConstructScore(Actor& actor) const;
 public:
 	// BlockFeatureType can be null, meaning the block is to be filled with a constructed wall.
-	ConstructProject(Faction& faction, Block& b, const BlockFeatureType* bft, const MaterialType& mt) : Project(faction, b, Config::maxNumberOfWorkersForConstructionProject), m_blockFeatureType(bft), m_materialType(mt) { }
+	ConstructProject(const Faction& faction, Block& b, const BlockFeatureType* bft, const MaterialType& mt) : Project(faction, b, Config::maxNumberOfWorkersForConstructionProject), m_blockFeatureType(bft), m_materialType(mt) { }
 	void onComplete();
 	// What would the total delay time be if we started from scratch now with current workers?
 	Step getDelay() const;
@@ -61,30 +62,30 @@ public:
 };
 class HasConstructionDesignationsForFaction final
 {
-	Faction& m_faction;
+	const Faction& m_faction;
 	std::unordered_map<Block*, ConstructProject> m_data;
 public:
-	HasConstructionDesignationsForFaction(Faction& p) : m_faction(p) { }
+	HasConstructionDesignationsForFaction(const Faction& p) : m_faction(p) { }
 	// If blockFeatureType is null then construct a wall rather then a feature.
 	void designate(Block& block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType);
 	void remove(Block& block);
 	void removeIfExists(Block& block);
-	bool contains(Block& block) const;
-	const BlockFeatureType* at(Block& block) const;
+	bool contains(const Block& block) const;
+	const BlockFeatureType* at(const Block& block) const;
 	bool empty() const;
 	friend class HasConstructionDesignations;
 };
 // To be used by Area.
 class HasConstructionDesignations final
 {
-	std::unordered_map<Faction*, HasConstructionDesignationsForFaction> m_data;
+	std::unordered_map<const Faction*, HasConstructionDesignationsForFaction> m_data;
 public:
-	void addFaction(Faction& faction);
-	void removeFaction(Faction& faction);
+	void addFaction(const Faction& faction);
+	void removeFaction(const Faction& faction);
 	// If blockFeatureType is null then dig out fully rather then digging out a feature.
-	void designate(Faction& faction, Block& block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType);
-	void remove(Faction& faction, Block& block);
+	void designate(const Faction& faction, Block& block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType);
+	void remove(const Faction& faction, Block& block);
 	void clearAll(Block& block);
-	bool areThereAnyForFaction(Faction& faction) const;
-	ConstructProject& getProject(Faction& faction, Block& block);
+	bool areThereAnyForFaction(const Faction& faction) const;
+	ConstructProject& getProject(const Faction& faction, Block& block);
 };

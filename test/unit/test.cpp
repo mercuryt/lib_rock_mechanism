@@ -13,7 +13,8 @@
 #include "plant.h"
 #include "actor.h"
 #include "objective.h"
-//#include "vision.h"
+#include "vision.h"
+#include "route.h"
 
 int main(int argc, char** argv) {
     doctest::Context context;

@@ -1,15 +1,17 @@
 #pragma once
-#include <vector>
-#include <unordered_set>
 
 #include "block.h"
+#include "actor.h"
+
+#include <vector>
+#include <unordered_set>
 
 namespace path
 {
 	struct RouteNode
 	{
 		Block& block;
-		RouteNode* previous;
+		const RouteNode* previous;
 	};
 	struct ProposedRouteStep
 	{
@@ -20,7 +22,7 @@ namespace path
 	template<typename IsValidType, typename CompareType, typename IsDoneType, typename AdjacentCostsType>
 	std::vector<Block*> get(IsValidType& isValid, CompareType& compare, IsDoneType& isDone, AdjacentCostsType& adjacentCosts, Block& start)
 	{
-		std::unordered_set<Block*> closed;
+		std::unordered_set<const Block*> closed;
 		closed.insert(&start);
 		std::list<RouteNode> routeNodes;
 		std::priority_queue<ProposedRouteStep, std::vector<ProposedRouteStep>, decltype(compare)> open(compare);
@@ -35,7 +37,7 @@ namespace path
 			assert(block != nullptr);
 			if(isDone(*block))
 			{
-				RouteNode* routeNode = proposedRouteStep.routeNode;
+				const RouteNode* routeNode = proposedRouteStep.routeNode;
 				// Route found, push to output.
 				// Exclude the starting point.
 				while(routeNode->previous != nullptr)
@@ -56,30 +58,41 @@ namespace path
 		}
 		return output; // Empty container means no result found.
 	}
-	inline std::vector<Block*> getForActor(Actor& actor, Block& destination, bool detour = false)
+	inline std::pair<std::vector<Block*>, std::unordered_map<Block*, std::vector<std::pair<Block*, uint32_t>>>> getForActor(const Actor& actor, const Block& destination, bool detour = false)
 	{
 		// Huristic: taxi distance to destination times constant plus total move cost.
-		auto priority = [&](ProposedRouteStep& proposedRouteStep)
+		auto priority = [&](const ProposedRouteStep& proposedRouteStep)
 		{
 			return (proposedRouteStep.routeNode->block.taxiDistance(destination) * Config::pathHuristicConstant) + proposedRouteStep.totalMoveCost;
 		};
-		auto compare = [&](ProposedRouteStep& a, ProposedRouteStep& b) { return priority(a) > priority(b); };
+		auto compare = [&](const ProposedRouteStep& a, const ProposedRouteStep& b) { return priority(a) > priority(b); };
 		// Check if the actor can currently enter each block if this is a detour path.
-		auto isDone = [&](Block& block){ return &block == &destination; };
-		auto adjacentCosts = [&](Block& block){ return block.m_hasShapes.getMoveCosts(*actor.m_shape, actor.m_canMove.getMoveType()); };
-		std::function<bool(Block&, Block&)> isValid;
+		auto isDone = [&](const Block& block){ return &block == &destination; };
+	       	std::unordered_map<Block*, std::vector<std::pair<Block*, uint32_t>>> moveCostsToCache;
+		auto adjacentCosts = [&](Block& block)
+		{
+		       	return moveCostsToCache[&block] = block.m_hasShapes.getMoveCosts(*actor.m_shape, actor.m_canMove.getMoveType());
+		};
+		std::function<bool(const Block&, const Block&)> isValid;
 		if(detour)
-			isValid = [&](Block& block, Block& previous){ 
+			isValid = [&](const Block& block, const Block& previous)
+			{ 
 				return block.m_hasShapes.anythingCanEnterEver() && block.m_hasShapes.canEnterEverFrom(actor, previous) && block.m_hasShapes.canEnterCurrentlyFrom(actor, previous);
 			};
 		else
-			isValid = [&](Block& block, Block& previous){ return block.m_hasShapes.anythingCanEnterEver() && block.m_hasShapes.canEnterEverFrom(actor, previous); };
-		return get<decltype(isValid), decltype(compare), decltype(isDone), decltype(adjacentCosts)>(isValid, compare, isDone, adjacentCosts, *actor.m_location);
+			isValid = [&](const Block& block, const Block& previous)
+			{ 
+				return block.m_hasShapes.anythingCanEnterEver() && block.m_hasShapes.canEnterEverFrom(actor, previous); 
+			};
+		return std::make_pair(
+				get<decltype(isValid), decltype(compare), decltype(isDone), decltype(adjacentCosts)>(isValid, compare, isDone, adjacentCosts, *actor.m_location),
+				std::move(moveCostsToCache)
+			);
 	}
 	// Depth first search.
 	// TODO: remove default argument on maxRange.
 	template<typename Predicate>
-	std::vector<Block*> getForActorToPredicate(Actor& actor, Predicate&& predicate, const uint32_t& maxRange = UINT32_MAX)
+	std::vector<Block*> getForActorToPredicate(const Actor& actor, Predicate&& predicate, const uint32_t& maxRange = UINT32_MAX)
 	{
 		std::unordered_set<Block*> closedList;
 		closedList.insert(actor.m_location);
@@ -90,7 +103,7 @@ namespace path
 		std::vector<Block*> output;
 		while(!openList.empty())
 		{
-			for(RouteNode* routeNode : openList)
+			for(const RouteNode* routeNode : openList)
 			{
 				if(maxRange > actor.m_location->taxiDistance(routeNode->block))
 					continue;
@@ -105,6 +118,7 @@ namespace path
 					std::reverse(output.begin(), output.end());
 					return output;
 				}
+				//TODO: Optimization: maintain an m_adjacentsWhichAnythingCanEnterEver vector.
 				for(Block* adjacent : routeNode->block.m_adjacentsVector)
 				{
 					if(!adjacent->m_hasShapes.anythingCanEnterEver())
@@ -124,9 +138,9 @@ namespace path
 		return output; // Empty container means no result found.
 	}
 	template<typename Predicate>
-	Block* getForActorFromLocationToPredicateReturnEndOnly(Actor& actor, Block& location, Predicate&& predicate, const uint32_t& maxRange = UINT32_MAX)
+	Block* getForActorFromLocationToPredicateReturnEndOnly(const Actor& actor, Block& location, Predicate&& predicate, const uint32_t& maxRange = UINT32_MAX)
 	{
-		std::unordered_set<Block*> closedList;
+		std::unordered_set<const Block*> closedList;
 		closedList.insert(&location);
 		std::list<RouteNode*> openList;
 		std::list<RouteNode> routeNodes;
@@ -159,7 +173,7 @@ namespace path
 		return nullptr;
 	}
 	template<typename Predicate>
-	Block* getForActorToPredicateReturnEndOnly(Actor& actor, Predicate&& predicate, const uint32_t& maxRange = UINT32_MAX)
+	Block* getForActorToPredicateReturnEndOnly(const Actor& actor, Predicate&& predicate, const uint32_t& maxRange = UINT32_MAX)
 	{
 		return getForActorFromLocationToPredicateReturnEndOnly(actor, *actor.m_location, predicate, maxRange);
 	}

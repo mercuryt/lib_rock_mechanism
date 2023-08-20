@@ -27,6 +27,7 @@ public:
 	StockPileThreadedTask(StockPileObjective& spo) : m_objective(spo), m_item(nullptr), m_destination(nullptr) { }
 	void readStep();
 	void writeStep();
+	void clearReferences();
 };
 class StockPileObjectiveType final : public ObjectiveType
 {
@@ -48,7 +49,7 @@ class StockPileProject final : public Project
 {
 	Item& m_item;
 public:
-	StockPileProject(Faction& faction, Block& block, Item& item) : Project(faction, block, 1), m_item(item) { }
+	StockPileProject(const Faction& faction, Block& block, Item& item) : Project(faction, block, 1), m_item(item) { }
 	Step getDelay() const;
 	void onComplete();
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
@@ -63,10 +64,10 @@ class StockPile
 	std::unordered_set<Block*> m_blocks;
 	uint32_t m_openBlocks;
 	Area& m_area;
-	Faction& m_faction;
+	const Faction& m_faction;
 public:
-	StockPile(std::vector<ItemQuery>& q, Area& a, Faction& f) : m_queries(q), m_openBlocks(0), m_area(a), m_faction(f) { }
-	bool accepts(Item& item);
+	StockPile(std::vector<ItemQuery>& q, Area& a, const Faction& f) : m_queries(q), m_openBlocks(0), m_area(a), m_faction(f) { }
+	bool accepts(const Item& item) const;
 	void addBlock(Block* block);
 	void removeBlock(Block* block);
 	void incrementOpenBlocks();
@@ -84,10 +85,11 @@ public:
 	void setStockPile(StockPile& stockPile);
 	void clearStockPile();
 	StockPile& getStockPile();
+	const StockPile& getStockPile() const;
 	void setAvalable();
 	void setUnavalable();
 	bool hasStockPile() const;
-	bool getIsAvalable(Faction& faction) const;
+	bool getIsAvalable(const Faction& faction) const;
 	friend class StockPileThreadedTask;
 };
 class HasStockPiles
@@ -101,17 +103,17 @@ class HasStockPiles
 	std::unordered_map<Item*, StockPileProject> m_projectsByItem;
 public:
 	HasStockPiles(Area& a) : m_area(a) { }
-	void addStockPile(std::vector<ItemQuery>&& queries, Faction& faction);
+	void addStockPile(std::vector<ItemQuery>&& queries, const Faction& faction);
 	void removeStockPile(StockPile& stockPile);
-	bool isValidStockPileDestinationFor(Block& block, Item& item, Faction& faction) const;
+	bool isValidStockPileDestinationFor(const Block& block, const Item& item, const Faction& faction) const;
 	void addItem(Item& item);
 	void removeItem(Item& item);
 	void setAvalable(StockPile& stockPile);
 	void setUnavalable(StockPile& stockPile);
 	void makeProject(Item& item, Block& destination, Actor& actor);
 	void cancelProject(StockPileProject& project);
-	bool isAnyHaulingAvalableFor(Actor& actor) const;
-	Item* getHaulableItemForAt(Actor& actor, Block& block);
-	StockPile* getStockPileFor(Item& item) const;
+	bool isAnyHaulingAvalableFor(const Actor& actor) const;
+	Item* getHaulableItemForAt(const Actor& actor, Block& block);
+	StockPile* getStockPileFor(const Item& item) const;
 	friend class StockPileThreadedTask;
 };

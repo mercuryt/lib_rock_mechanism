@@ -182,6 +182,7 @@ void GetToSafeTemperatureThreadedTask::writeStep()
 	if(m_result.empty())
 		m_objective.m_actor.m_hasObjectives.cannotFulfillNeed(m_objective);
 }
+void GetToSafeTemperatureThreadedTask::clearReferences(){ m_objective.m_getToSafeTemperatureThreadedTask.clearPointer(); }
 void GetToSafeTemperatureObjective::execute()
 {
 	if(m_actor.m_needsSafeTemperature.isSafeAtCurrentLocation())

@@ -27,6 +27,7 @@ public:
 	SowSeedsThreadedTask(SowSeedsObjective& sso): m_objective(sso) { }
 	void readStep();
 	void writeStep();
+	void clearReferences();
 };
 class SowSeedsObjectiveType final : public ObjectiveType
 {

@@ -93,7 +93,7 @@ public:
 	std::vector<Block*> getEdgeAdjacentOnlyOnNextZLevelDown() const;
 	std::vector<Block*> getEdgeAdjacentOnlyOnNextZLevelUp() const;
 	uint32_t distance(Block& block) const;
-	uint32_t taxiDistance(Block& block) const;
+	uint32_t taxiDistance(const Block& block) const;
 	bool isAdjacentToAny(std::unordered_set<Block*>& blocks) const;
 	bool isAdjacentTo(Block& block) const;
 	void setNotSolid();

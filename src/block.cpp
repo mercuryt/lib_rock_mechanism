@@ -212,7 +212,7 @@ uint32_t Block::distance(Block& block) const
 	uint32_t dz = abs((int)m_z - (int)block.m_z);
 	return pow((pow(dx, 2) + pow(dy, 2) + pow(dz, 2)), 0.5);
 }
-uint32_t Block::taxiDistance(Block& block) const
+uint32_t Block::taxiDistance(const Block& block) const
 {
 	return abs((int)m_x - (int)block.m_x) + abs((int)m_y - (int)block.m_y) + abs((int)m_z - (int)block.m_z);
 }

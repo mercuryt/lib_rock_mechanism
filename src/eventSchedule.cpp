@@ -3,11 +3,14 @@
 #include "util.h"
 #include "area.h"
 #include <cassert>
-ScheduledEvent::ScheduledEvent(Step delay) : m_step(delay + simulation::step), m_cancel(false) {}
+ScheduledEvent::ScheduledEvent(const Step delay) : m_step(delay + simulation::step), m_cancel(false) 
+{
+	assert(delay > 0);
+}
 void ScheduledEvent::cancel() { eventSchedule::unschedule(*this); }
 Step ScheduledEvent::remaningSteps() const { return m_step - simulation::step; }
 
-ScheduledEventWithPercent::ScheduledEventWithPercent(uint32_t d) : ScheduledEvent(d), m_startStep(simulation::step) {}
+ScheduledEventWithPercent::ScheduledEventWithPercent(const Step delay) : ScheduledEvent(delay), m_startStep(simulation::step) {}
 uint32_t ScheduledEventWithPercent::percentComplete() const
 {
 	Step totalSteps = m_step - m_startStep;
@@ -53,10 +56,18 @@ void eventSchedule::execute(Step stepNumber)
 	for(std::unique_ptr<ScheduledEvent>& scheduledEvent : found->second)
 		if(!scheduledEvent->m_cancel)
 		{
-			scheduledEvent->execute();
+			// Clear references first so events can reschedule themselves in the same slots.
 			scheduledEvent->clearReferences();
+			scheduledEvent->execute();
 		}
 	data.erase(stepNumber);
 }
 // Only safe to use if also flushing everything else.
 void eventSchedule::clear() { data.clear(); }
+uint32_t eventSchedule::count()
+{
+	uint32_t output = 0;
+	for(auto& pair : data)
+		output += pair.second.size();
+	return output;
+}

@@ -52,12 +52,12 @@ public:
 	void removeWorker(Actor& actor);
 	void cancel();
 	HasShape& getToHaul() { return m_toHaul; }
-	static HaulSubprojectParamaters tryToSetHaulStrategy(Project& project, HasShape& hasShape, Actor& worker);
-	static std::vector<Actor*> actorsNeededToHaulAtMinimumSpeed(Project& proect, Actor& leader, HasShape& toHaul, std::unordered_set<Actor*> waiting);
-	static uint32_t getSpeedWithHaulToolAndCargo(Actor& leader, Item& haulTool, HasShape& toHaul);
-	static uint32_t getSpeedWithHaulToolAndYokedAndCargo(Actor& leader, Actor& yoked, Item& haulTool, HasShape& toHaul);
-	static std::vector<Actor*> actorsNeededToHaulAtMinimumSpeedWithTool(Project& project, Actor& leader, HasShape& toHaul, Item& haulTool, std::unordered_set<Actor*> waiting);
-	static uint32_t getSpeedWithPannierBearerAndPanniers(Actor& leader, Actor& yoked, Item& haulTool, HasShape& toHaul);
+	static HaulSubprojectParamaters tryToSetHaulStrategy(const Project& project, HasShape& hasShape, Actor& worker);
+	static std::vector<Actor*> actorsNeededToHaulAtMinimumSpeed(const Project& proect, const Actor& leader, const HasShape& toHaul, const std::unordered_set<Actor*>& waiting);
+	static uint32_t getSpeedWithHaulToolAndCargo(const Actor& leader, const Item& haulTool, const HasShape& toHaul);
+	static uint32_t getSpeedWithHaulToolAndYokedAndCargo(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul);
+	static std::vector<Actor*> actorsNeededToHaulAtMinimumSpeedWithTool(const Project& project, const Actor& leader, const HasShape& toHaul, const Item& haulTool, const std::unordered_set<Actor*>& waiting);
+	static uint32_t getSpeedWithPannierBearerAndPanniers(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul);
 	bool operator==(const HaulSubproject& other) const { return &other == this; }
 	friend class Project;
 };
@@ -69,7 +69,7 @@ class CanPickup final
 	uint32_t m_fluidVolume;
 	const FluidType* m_fluidType;
 public:
-	CanPickup(Actor& a) : m_actor(a), m_fluidType(nullptr) { }
+	CanPickup(Actor& a) : m_actor(a), m_carrying(nullptr),  m_fluidType(nullptr) { }
 	void pickUp(HasShape& hasShape, uint32_t quantity);
 	void pickUp(Item& item, uint32_t quantity);
 	void pickUp(Actor& actor, uint32_t quantity);
@@ -78,12 +78,12 @@ public:
 	void removeFluidVolume(uint32_t volume);
 	void add(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity);
 	void remove(Item& item);
-	uint32_t canPickupQuantityOf(HasShape& hasShape) const;
-	uint32_t canPickupQuantityOf(Item& item) const;
-	uint32_t canPickupQuantityOf(Actor& actor) const;
+	uint32_t canPickupQuantityOf(const HasShape& hasShape) const;
+	uint32_t canPickupQuantityOf(const Item& item) const;
+	uint32_t canPickupQuantityOf(const Actor& actor) const;
 	uint32_t canPickupQuantityOf(const ItemType& itemType, const MaterialType& materialType) const;
 	uint32_t canPickupQuantityWithSingeUnitMass(uint32_t unitMass) const;
-	bool canPickupAny(HasShape& hasShape) const { return canPickupQuantityOf(hasShape) != 0; }
+	bool canPickupAny(const HasShape& hasShape) const { return canPickupQuantityOf(hasShape) != 0; }
 	bool isCarrying(const HasShape& hasShape) const { return (void*)&hasShape == (void*)&m_carrying; }
 	bool isCarryingFluidType(const FluidType& fluidType) const;
 	const uint32_t& getFluidVolume() const;
@@ -91,7 +91,7 @@ public:
 	bool isCarryingEmptyContainerWhichCanHoldFluid() const;
 	uint32_t getMass() const;
 	bool exists() const { return m_carrying != nullptr; }
-	uint32_t speedIfCarryingAny(HasShape& hasShape) const;
+	uint32_t speedIfCarryingAny(const HasShape& hasShape) const;
 };
 // For Area.
 class HasHaulTools final
@@ -100,11 +100,11 @@ class HasHaulTools final
 	std::unordered_set<Item*> m_haulTools;
 	std::unordered_set<Actor*> m_yolkableActors;
 public:
-	bool hasToolToHaul(Faction& faction, HasShape& hasShape) const;
-	Item* getToolToHaul(Faction& faction, HasShape& hasShape) const;
-	Actor* getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(Faction& faction, Item& haulTool, uint32_t cargoMass, uint32_t minimumHaulSpeed) const;
-	Actor* getPannierBearerToHaulCargoWithMassWithMinimumSpeed(Faction& faction, HasShape& hasShape, uint32_t minimumHaulSpeed) const;
-	Item* getPanniersForActorToHaul(Faction& faction, Actor& actor, HasShape& toHaul) const;
+	bool hasToolToHaul(const Faction& faction, const HasShape& hasShape) const;
+	Item* getToolToHaul(const Faction& faction, const HasShape& hasShape) const;
+	Actor* getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(const Faction& faction, const Item& haulTool, const uint32_t cargoMass, const uint32_t minimumHaulSpeed) const;
+	Actor* getPannierBearerToHaulCargoWithMassWithMinimumSpeed(const Faction& faction, const HasShape& hasShape, const uint32_t minimumHaulSpeed) const;
+	Item* getPanniersForActorToHaul(const Faction& faction, const Actor& actor, const HasShape& toHaul) const;
 	void registerHaulTool(Item& item);
 	void registerYokeableActor(Actor& actor);
 	void unregisterHaulTool(Item& item);

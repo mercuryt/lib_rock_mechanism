@@ -23,6 +23,7 @@
 #include "temperature.h"
 #include "buckets.h"
 #include "locationBuckets.h"
+#include "stamina.h"
 
 #include <string>
 #include <vector>
@@ -32,11 +33,10 @@ struct MoveType;
 struct AnimalSpecies;
 struct Faction;
 
-enum class CauseOfDeath { hunger, bloodLoss };
+enum class CauseOfDeath { thirst, hunger, bloodLoss };
 
 class Actor final : public HasShape
 {	
-	inline static uint32_t s_nextId = 1;
 public:
 	uint32_t m_id;
 	std::wstring m_name;
@@ -49,18 +49,19 @@ public:
 	Faction* m_faction;
 	Attributes m_attributes;
 	SkillSet m_skillSet;
+	EquipmentSet m_equipmentSet;
 	MustEat m_mustEat;
 	MustDrink m_mustDrink;
 	MustSleep m_mustSleep;
 	ActorNeedsSafeTemperature m_needsSafeTemperature;
+	CanPickup m_canPickup;
 	ActorCanMove m_canMove;
 	CanFight m_canFight;
-	CanPickup m_canPickup;
 	CanGrow m_canGrow;
-	EquipmentSet m_equipmentSet;
 	HasObjectives m_hasObjectives;
 	CanReserve m_canReserve;
 	Reservable m_reservable;
+	ActorHasStamina m_stamina;
 	//TODO: CanSee.
 	uint32_t m_visionRange;
 
@@ -84,7 +85,10 @@ public:
 	uint32_t getVolume() const;
 	const MoveType& getMoveType() const { return m_canMove.getMoveType(); }
 	uint32_t singleUnitMass() const { return getMass(); }
+	Actor(const Actor& actor) = delete;
+	Actor(Actor&& actor) = delete;
 	// Infastructure.
+	inline static uint32_t s_nextId;
 	inline static std::list<Actor> data;
 	static Actor& create(const AnimalSpecies& species, Block& block, uint32_t percentGrown = 100)
 	{
@@ -130,6 +134,7 @@ public:
 	bool contains(Actor& actor) const;
 	uint32_t volumeOf(Actor& actor) const;
 	std::vector<Actor*>& getAll() { return m_actors; }
+	const std::vector<Actor*>& getAll() const { return m_actors; }
 	const std::vector<Actor*>& getAllConst() const { return m_actors; }
 };
 class AreaHasActors

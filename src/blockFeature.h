@@ -55,4 +55,6 @@ public:
 	bool canStandAbove() const;
 	bool canStandIn() const;
 	bool isSupport() const;
+	bool canEnterFromBelow() const;
+	bool canEnterFromAbove(const Block& from) const;
 };
