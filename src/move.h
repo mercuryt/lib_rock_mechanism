@@ -1,6 +1,5 @@
 #pragma once
-#include "eventSchedule.h"
-#include "threadedTask.h"
+#include "threadedTask.hpp"
 #include "eventSchedule.hpp"
 #include "pathToBlockBaseThreadedTask.h"
 
@@ -12,7 +11,7 @@ class PathToSetThreadedTask;
 class ExitAreaThreadedTask;
 class Block;
 class Actor;
-class MoveType;
+struct MoveType;
 class Item;
 class HasShape;
 class ActorCanMove final
@@ -60,7 +59,7 @@ class MoveEvent final : public ScheduledEventWithPercent
 {
 	ActorCanMove& m_canMove;
 public:
-	MoveEvent(Step delay, ActorCanMove& cm) : ScheduledEventWithPercent(delay), m_canMove(cm) { }
+	MoveEvent(Step delay, ActorCanMove& cm);
 	void execute() { m_canMove.callback(); }
 	void clearReferences() { m_canMove.m_event.clearPointer(); }
 };
@@ -70,7 +69,7 @@ class PathThreadedTask final : public PathToBlockBaseThreadedTask
 	bool m_detour;
 	bool m_adjacent;
 public:
-	PathThreadedTask(Actor& a, bool d = false, bool ad = false) : m_actor(a), m_detour(d), m_adjacent(ad) { }
+	PathThreadedTask(Actor& a, bool d = false, bool ad = false);
 	void readStep();
 	void writeStep();
 	void clearReferences();
@@ -86,7 +85,7 @@ class PathToSetThreadedTask final : public ThreadedTask
 	std::vector<Block*> m_route;
 	void clearReferences();
 public:
-	PathToSetThreadedTask(Actor& a, std::unordered_set<Block*> b, bool d = false, bool ad = false) : m_actor(a), m_blocks(b), m_detour(d), m_adjacent(ad) { }
+	PathToSetThreadedTask(Actor& a, std::unordered_set<Block*> b, bool d = false, bool ad = false);
 	void readStep();
 	void writeStep();
 };
@@ -97,7 +96,7 @@ class ExitAreaThreadedTask final : public ThreadedTask
 	std::vector<Block*> m_route;
 	void clearReferences();
 public:
-	ExitAreaThreadedTask(Actor& a, bool d) : m_actor(a), m_detour(d) { }
+	ExitAreaThreadedTask(Actor& a, bool d);
 	void readStep();
 	void writeStep();
 };

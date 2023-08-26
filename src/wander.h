@@ -1,22 +1,11 @@
 #pragma once
 
 #include "objective.h"
-#include "threadedTask.h"
+#include "threadedTask.hpp"
 
 class Actor;
 class Block;
-class WanderObjective;
-
-class WanderThreadedTask final : public ThreadedTask
-{
-	WanderObjective& m_objective;
-	std::vector<Block*> m_route;
-public:
-	WanderThreadedTask(WanderObjective& o) : m_objective(o) { }
-	void readStep();
-	void writeStep();
-	void clearReferences();
-};
+class WanderThreadedTask;
 
 class WanderObjective final : public Objective
 {
@@ -27,5 +16,16 @@ public:
 	WanderObjective(Actor& a);
 	void execute();
 	void cancel() { }
+	std::string name() { return "wander"; }
 	friend class WanderThreadedTask;
+};
+class WanderThreadedTask final : public ThreadedTask
+{
+	WanderObjective& m_objective;
+	std::vector<Block*> m_route;
+public:
+	WanderThreadedTask(WanderObjective& o);
+	void readStep();
+	void writeStep();
+	void clearReferences();
 };

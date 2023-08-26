@@ -49,7 +49,7 @@ void HarvestThreadedTask::writeStep()
 void HarvestThreadedTask::clearReferences() { m_harvestObjective.m_threadedTask.clearPointer(); }
 bool HarvestObjectiveType::canBeAssigned(Actor& actor) const
 {
-	return actor.m_location->m_area->m_hasFarmFields.hasHarvestDesignations(*actor.m_faction);
+	return actor.m_location->m_area->m_hasFarmFields.hasHarvestDesignations(*actor.getFaction());
 }
 std::unique_ptr<Objective> HarvestObjectiveType::makeFor(Actor& actor) const
 {

@@ -10,7 +10,7 @@ class AreaHasRain final
 	uint32_t m_intensityPercent;
 	HasScheduledEvent<StopRainEvent> m_stopEvent;
 public:
-	AreaHasRain(Area& a) : m_area(a), m_currentlyRainingFluidType(nullptr), m_intensityPercent(0) { }
+	AreaHasRain(Area& a);
 	void start(const FluidType& fluidType, uint32_t intensityPercent, uint32_t stepsDuration);
 	void stop();
 	void writeStep();
@@ -20,7 +20,7 @@ class StopRainEvent final : public ScheduledEventWithPercent
 {
 	AreaHasRain& m_areaHasRain;
 public:
-	StopRainEvent(uint32_t delay, AreaHasRain& ahr) : ScheduledEventWithPercent(delay), m_areaHasRain(ahr) { }
+	StopRainEvent(uint32_t delay, AreaHasRain& ahr);
 	void execute() { m_areaHasRain.stop(); }
 	void clearReferences() { m_areaHasRain.m_stopEvent.clearPointer(); }
 };

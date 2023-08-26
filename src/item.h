@@ -92,7 +92,6 @@ public:
 };
 class Item final : public HasShape
 {
-	inline static uint32_t s_nextId = 1;
 public:
 	const uint32_t m_id;
 	const ItemType& m_itemType;
@@ -132,16 +131,6 @@ public:
 	uint32_t getVolume() const { return m_quantity * m_itemType.volume; }
 	const MoveType& getMoveType() const { return m_itemType.moveType; }
 	bool operator==(const Item& item) const { return this == &item; }
-	inline static std::list<Item> s_globalItems;
-	// Generic items, created in local item set. 
-	static Item& create(Area& area, const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quantity, CraftJob* cj = nullptr);
-	static Item& create(Area& area, const uint32_t m_id,  const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quantity, CraftJob* cj = nullptr);
-	// Unnamed items, created in local item set.
-	static Item& create(Area& area, const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quality, uint32_t m_percentWear, CraftJob* cj = nullptr);
-	static Item& create(Area& area, const uint32_t m_id, const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quality, uint32_t m_percentWear, CraftJob* cj = nullptr);
-	// Named items, created in global item set.
-	static Item& create(const ItemType& m_itemType, const MaterialType& m_materialType, std::string m_name, uint32_t m_quality, uint32_t m_percentWear, CraftJob* cj = nullptr);
-	static Item& create(const uint32_t m_id, const ItemType& m_itemType, const MaterialType& m_materialType, std::string m_name, uint32_t m_quality, uint32_t m_percentWear, CraftJob* cj = nullptr);
 	//TODO: Items leave area.
 };
 class ItemQuery final
@@ -183,7 +172,6 @@ public:
 };
 class AreaHasItems final
 {
-	std::list<Item> m_items;
 	std::unordered_set<Item*> m_onSurface;
 public:
 	void setItemIsOnSurface(Item& item);

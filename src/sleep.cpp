@@ -3,15 +3,15 @@
 #include "path.h"
 #include <cassert>
 // Sleep Event.
-SleepEvent::SleepEvent(Step step, MustSleep& ns) : ScheduledEventWithPercent(step), m_needsSleep(ns) { }
+SleepEvent::SleepEvent(Step step, MustSleep& ns) : ScheduledEventWithPercent(ns.m_actor.getSimulation(), step), m_needsSleep(ns) { }
 void SleepEvent::execute(){ m_needsSleep.wakeUp(); }
 void SleepEvent::clearReferences(){ m_needsSleep.m_sleepEvent.clearPointer(); }
 // Tired Event.
-TiredEvent::TiredEvent(Step step, MustSleep& ns) : ScheduledEventWithPercent(step), m_needsSleep(ns) { }
+TiredEvent::TiredEvent(Step step, MustSleep& ns) : ScheduledEventWithPercent(ns.m_actor.getSimulation(), step), m_needsSleep(ns) { }
 void TiredEvent::execute(){ m_needsSleep.tired(); }
 void TiredEvent::clearReferences(){ m_needsSleep.m_tiredEvent.clearPointer(); }
 // Threaded Task.
-SleepThreadedTask::SleepThreadedTask(SleepObjective& so) : m_sleepObjective(so) { }
+SleepThreadedTask::SleepThreadedTask(SleepObjective& so) : PathToBlockBaseThreadedTask(so.m_actor.getThreadedTaskEngine()), m_sleepObjective(so) { }
 void SleepThreadedTask::readStep()
 {
 	auto& actor = m_sleepObjective.m_actor;
@@ -49,6 +49,7 @@ void SleepThreadedTask::writeStep()
 }
 void SleepThreadedTask::clearReferences() { m_sleepObjective.m_threadedTask.clearPointer(); }
 // Sleep Objective.
+SleepObjective::SleepObjective(Actor& a) : Objective(Config::sleepObjectivePriority), m_actor(a), m_threadedTask(a.getThreadedTaskEngine()) { }
 void SleepObjective::execute()
 {
 	if(m_actor.m_location == m_actor.m_mustSleep.m_location)
@@ -63,7 +64,7 @@ void SleepObjective::execute()
 }
 uint32_t SleepObjective::desireToSleepAt(Block& block)
 {
-	if(block.m_reservable.isFullyReserved(*m_actor.m_faction) || !m_actor.m_needsSafeTemperature.isSafe(block.m_blockHasTemperature.get()))
+	if(block.m_reservable.isFullyReserved(*m_actor.getFaction()) || !m_actor.m_needsSafeTemperature.isSafe(block.m_blockHasTemperature.get()))
 		return 0;
 	if(block.m_area->m_hasSleepingSpots.containsUnassigned(block))
 		return 3;
@@ -74,7 +75,7 @@ uint32_t SleepObjective::desireToSleepAt(Block& block)
 }
 SleepObjective::~SleepObjective() { m_actor.m_mustSleep.m_objective = nullptr; }
 // Needs Sleep.
-MustSleep::MustSleep(Actor& a) : m_actor(a), m_location(nullptr), m_isAwake(true)
+MustSleep::MustSleep(Actor& a) : m_actor(a), m_location(nullptr), m_sleepEvent(a.getEventSchedule()), m_tiredEvent(a.getEventSchedule()), m_isAwake(true)
 {
 	m_tiredEvent.schedule(m_actor.m_species.stepsSleepFrequency, *this);
 }

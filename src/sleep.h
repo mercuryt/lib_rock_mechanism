@@ -1,11 +1,10 @@
 #pragma once
 
-#include "eventSchedule.h"
-#include "threadedTask.h"
 #include "objective.h"
 #include "config.h"
-#include "eventSchedule.hpp"
 #include "pathToBlockBaseThreadedTask.h"
+#include "threadedTask.hpp"
+#include "eventSchedule.hpp"
 
 #include <vector>
 
@@ -68,9 +67,10 @@ class SleepObjective final : public Objective
 	Actor& m_actor;
 	HasThreadedTask<SleepThreadedTask> m_threadedTask;
 public:
-	SleepObjective(Actor& a) : Objective(Config::sleepObjectivePriority), m_actor(a) { }
+	SleepObjective(Actor& a);
 	void execute();
 	void cancel() {}
+	std::string name() { return "sleep"; }
 	uint32_t desireToSleepAt(Block& block);
 	~SleepObjective();
 	friend class SleepThreadedTask;

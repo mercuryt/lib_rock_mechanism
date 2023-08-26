@@ -7,8 +7,8 @@
 #include "../../src/definitions.h"
 TEST_CASE("temperature")
 {
-	simulation::init();
-	Area area(10,10,10,0);
+	Simulation simulation;
+	Area& area = simulation.createArea(10,10,10);
 	SUBCASE("solid blocks burn")
 	{
 		Block& origin = area.m_blocks[5][5][5];
@@ -21,22 +21,23 @@ TEST_CASE("temperature")
 		auto& marble = MaterialType::byName("marble");
 		toBurn.setSolid(wood);
 		toNotBurn.setSolid(marble);
+		uint32_t temperatureBeforeHeatSource = origin.m_blockHasTemperature.get();
 		area.m_areaHasTemperature.addTemperatureSource(origin, 1000);
 		area.m_areaHasTemperature.applyDeltas();
-		CHECK(origin.m_blockHasTemperature.get() == 1000);
-		CHECK(b1.m_blockHasTemperature.get() == 1000);
-		CHECK(b2.m_blockHasTemperature.get() == 88);
-		CHECK(b3.m_blockHasTemperature.get() == 0);
-		CHECK(toBurn.m_blockHasTemperature.get() == 1000);
-		CHECK(toNotBurn.m_blockHasTemperature.get() == 1000);
+		CHECK(origin.m_blockHasTemperature.get() == temperatureBeforeHeatSource + 1000);
+		CHECK(b1.m_blockHasTemperature.get() == temperatureBeforeHeatSource + 1000);
+		CHECK(b2.m_blockHasTemperature.get() == 367);
+		CHECK(b3.m_blockHasTemperature.get() == temperatureBeforeHeatSource);
+		CHECK(toBurn.m_blockHasTemperature.get() == temperatureBeforeHeatSource + 1000);
+		CHECK(toNotBurn.m_blockHasTemperature.get() == temperatureBeforeHeatSource + 1000);
 		CHECK(toBurn.m_fire);
 		// Fire exists but the new deltas it has created have not been applied
-		CHECK(toBurn.m_blockHasTemperature.get() == 1000);
+		CHECK(toBurn.m_blockHasTemperature.get() == temperatureBeforeHeatSource + 1000);
 		CHECK(!toNotBurn.m_fire);
-		CHECK(toNotBurn.m_blockHasTemperature.get() == 1000);
-		CHECK(!eventSchedule::data.empty());
+		CHECK(toNotBurn.m_blockHasTemperature.get() == temperatureBeforeHeatSource + 1000);
+		CHECK(!simulation.m_eventSchedule.m_data.empty());
 		area.m_areaHasTemperature.applyDeltas();
-		CHECK(toBurn.m_blockHasTemperature.get() > 1000);
-		CHECK(toNotBurn.m_blockHasTemperature.get() > 1000);
+		CHECK(toBurn.m_blockHasTemperature.get() > temperatureBeforeHeatSource + 1000);
+		CHECK(toNotBurn.m_blockHasTemperature.get() > temperatureBeforeHeatSource + 1000);
 	}
 }

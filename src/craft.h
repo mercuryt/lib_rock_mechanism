@@ -13,7 +13,7 @@
 
 struct CraftJob;
 class HasCraftingLocationsAndJobs;
-class CraftObjective;
+class CraftThreadedTask;
 struct skillType;
 // Drill, saw, forge, etc.
 struct CraftStepTypeCategory final
@@ -79,17 +79,6 @@ struct CraftJob final
 	u_int32_t getQuality() const;
 	bool operator==(const CraftJob& other){ return &other == this; }
 };
-class CraftThreadedTask final : public ThreadedTask
-{
-	CraftObjective& m_craftObjective;
-	CraftJob* m_craftJob;
-	Block* m_location;
-public:
-	CraftThreadedTask(CraftObjective& co) : m_craftObjective(co), m_craftJob(nullptr), m_location(nullptr) { }
-	void readStep();
-	void writeStep();
-	void clearReferences();
-};
 class CraftObjectiveType final : public ObjectiveType
 {
 	const SkillType& m_skillType; // Multiple skills are represented by CraftObjective and CraftObjectiveType, such as Leatherworking, Woodworking, Metalworking, etc.
@@ -105,10 +94,22 @@ class CraftObjective final : public Objective
 	CraftJob* m_craftJob;
 	HasThreadedTask<CraftThreadedTask> m_threadedTask;
 public:
-	CraftObjective(Actor& a, const SkillType& st) : Objective(Config::craftObjectivePriority), m_actor(a), m_skillType(st), m_craftJob(nullptr) { }
+	CraftObjective(Actor& a, const SkillType& st);
 	void execute();
 	void cancel();
+	std::string name() { return "craft"; }
 	friend class CraftThreadedTask;
+};
+class CraftThreadedTask final : public ThreadedTask
+{
+	CraftObjective& m_craftObjective;
+	CraftJob* m_craftJob;
+	Block* m_location;
+public:
+	CraftThreadedTask(CraftObjective& co) : ThreadedTask(co.m_actor.getThreadedTaskEngine()), m_craftObjective(co), m_craftJob(nullptr), m_location(nullptr) { }
+	void readStep();
+	void writeStep();
+	void clearReferences();
 };
 // To be used by Area.
 class HasCraftingLocationsAndJobs final

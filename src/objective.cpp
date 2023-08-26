@@ -3,7 +3,6 @@
 #include "actor.h"
 #include "stamina.h"
 #include "wander.h"
-#include "randomUtil.h"
 void ObjectiveTypePrioritySet::setPriority(const ObjectiveType& objectiveType, uint8_t priority)
 {
 	auto found = std::ranges::find_if(m_data, [&](auto& pair) { return pair.first == &objectiveType; });
@@ -30,7 +29,7 @@ void ObjectiveTypePrioritySet::setObjectiveFor(Actor& actor)
 			return;
 		}
 	// No assignable tasks, do an idle task.
-	if(!actor.m_stamina.isFull() || randomUtil::percentChance(10))
+	if(!actor.m_stamina.isFull())
 		actor.m_hasObjectives.addTaskToStart(std::make_unique<RestObjective>(actor));
 	else
 		actor.m_hasObjectives.addTaskToStart(std::make_unique<WanderObjective>(actor));
@@ -79,7 +78,7 @@ void HasObjectives::setCurrentObjective(Objective& objective)
 	m_currentObjective = &objective;
 	objective.execute();
 }
-HasObjectives::HasObjectives(Actor& a) : m_actor(a), m_currentObjective(nullptr) { }
+HasObjectives::HasObjectives(Actor& a) : m_actor(a), m_currentObjective(nullptr), m_waitEvent(a.getEventSchedule()) { }
 void HasObjectives::addNeed(std::unique_ptr<Objective> objective)
 {
 	Objective* o = objective.get();
@@ -145,5 +144,6 @@ void HasObjectives::cannotFulfillObjective(Objective& objective)
 	//TODO: generate cancelation message?
 }
 void HasObjectives::wait(const Step delay) { m_waitEvent.schedule(delay, m_actor); }
+WaitEvent::WaitEvent(const Step delay, Actor& a) : ScheduledEventWithPercent(a.getSimulation(), delay), m_actor(a) { }
 void WaitEvent::execute() { m_actor.m_hasObjectives.taskComplete(); }
 void WaitEvent::clearReferences() { m_actor.m_hasObjectives.m_waitEvent.clearPointer(); }

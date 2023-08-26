@@ -1,8 +1,7 @@
 #pragma once
 
 #include "objective.h"
-#include "eventSchedule.h"
-#include "threadedTask.h"
+#include "threadedTask.hpp"
 #include "eventSchedule.hpp"
 
 #include <vector>
@@ -14,7 +13,7 @@ class DrinkThreadedTask;
 class DrinkEvent;
 class ThirstEvent;
 class DrinkObjective;
-class FluidType;
+struct FluidType;
 
 class MustDrink final
 {
@@ -45,6 +44,7 @@ public:
 	DrinkObjective(Actor& a);
 	void execute();
 	void cancel() {}
+	std::string name() { return "drink"; }
 	bool canDrinkAt(const Block& block) const;
 	Block* getAdjacentBlockToDrinkAt(const Block& block) const;
 	bool canDrinkItemAt(const Block& block) const;
@@ -66,7 +66,7 @@ class ThirstEvent final : public ScheduledEventWithPercent
 {
 	Actor& m_actor;
 public:
-	ThirstEvent(const Step delay, Actor& a) : ScheduledEventWithPercent(delay), m_actor(a) { }
+	ThirstEvent(const Step delay, Actor& a);
 	void execute();
 	void clearReferences();
 };
@@ -75,7 +75,7 @@ class DrinkThreadedTask final : public ThreadedTask
 	DrinkObjective& m_drinkObjective;
 	std::vector<Block*> m_result;
 public:
-	DrinkThreadedTask(DrinkObjective& drob) : m_drinkObjective(drob) {}
+	DrinkThreadedTask(DrinkObjective& drob);
 	void readStep();
 	void writeStep();
 	void clearReferences();

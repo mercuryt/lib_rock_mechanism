@@ -6,15 +6,16 @@ class HasScheduledEvent
 {
 protected:
 	ScheduledEventWithPercent* m_event;
+	EventSchedule& m_schedule;
 public:
-	HasScheduledEvent() : m_event(nullptr) {}
+	HasScheduledEvent(EventSchedule& s) : m_event(nullptr), m_schedule(s) {}
 	template<typename ...Args>
 	void schedule(Args&& ...args)
 	{
 		assert(m_event == nullptr);
 		std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<EventType>(args...);
 		m_event = event.get();
-		eventSchedule::schedule(std::move(event));
+		m_schedule.schedule(std::move(event));
 	}
 	void unschedule()
 	{
@@ -43,6 +44,7 @@ public:
 		assert(m_event != nullptr);
 		return m_event->m_step;
 	}
+	Step remainingSteps(){ return m_event->remaningSteps(); }
 	~HasScheduledEvent() { maybeUnschedule(); }
 };
 template<class EventType>
@@ -50,7 +52,7 @@ class HasScheduledEventPausable : public HasScheduledEvent<EventType>
 {
 	uint32_t m_percent;
 public:
-	HasScheduledEventPausable() : m_percent(0) { }
+	HasScheduledEventPausable(EventSchedule& es) : HasScheduledEvent<EventType>(es), m_percent(0) { }
 	uint32_t percentComplete() const
 	{
 		uint32_t output = m_percent;

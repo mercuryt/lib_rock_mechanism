@@ -1,10 +1,9 @@
 #pragma once
 
-#include "eventSchedule.h"
-#include "threadedTask.h"
 #include "objective.h"
 #include "config.h"
 #include "eventSchedule.hpp"
+#include "threadedTask.hpp"
 #include "pathToBlockBaseThreadedTask.h"
 
 #include <memory>
@@ -18,7 +17,7 @@ class GivePlantsFluidEvent final : public ScheduledEventWithPercent
 {
 	GivePlantsFluidObjective& m_objective;
 public:
-	GivePlantsFluidEvent(Step step, GivePlantsFluidObjective& gpfo) : ScheduledEventWithPercent(step), m_objective(gpfo) { }
+	GivePlantsFluidEvent(Step step, GivePlantsFluidObjective& gpfo);
 	void execute();
 	void clearReferences();
 };
@@ -27,7 +26,7 @@ class GivePlantsFluidThreadedTask final : public PathToBlockBaseThreadedTask
 {
 	GivePlantsFluidObjective& m_objective;
 public:
-	GivePlantsFluidThreadedTask(GivePlantsFluidObjective& gpfo) : m_objective(gpfo) { }
+	GivePlantsFluidThreadedTask(GivePlantsFluidObjective& gpfo);
 	void readStep();
 	void writeStep();
 	void clearReferences();
@@ -45,9 +44,10 @@ class GivePlantsFluidObjective final : public Objective
 	HasScheduledEvent<GivePlantsFluidEvent> m_event;
 	HasThreadedTask<GivePlantsFluidThreadedTask> m_threadedTask;
 public:
-	GivePlantsFluidObjective(Actor& a ) : Objective(Config::givePlantsFluidPriority), m_actor(a), m_plant(nullptr) { }
+	GivePlantsFluidObjective(Actor& a );
 	void execute();
 	void cancel() {}
+	std::string name() { return "give plants fluid"; }
 	bool canFillAt(Block& block) const;
 	Block* getAdjacentBlockToFillAt(Block& block) const;
 	bool canFillItemAt(Block& block) const;

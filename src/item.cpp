@@ -62,57 +62,6 @@ Item::Item(uint32_t i, const ItemType& it, const MaterialType& mt, std::string n
 	m_mass = m_itemType.volume * m_materialType.density;
 	m_volume = m_itemType.volume;
 }
-// All Item::create methods are static.
-// Generic items, created in local item set. 
-Item& Item::create(Area& area, const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quantity, CraftJob* cj)
-{
-	assert(m_itemType.generic);
-	std::list<Item>::iterator iterator = area.m_hasItems.m_items.emplace(area.m_hasItems.m_items.end(), ++s_nextId, m_itemType, m_materialType, m_quantity, cj);
-	iterator->m_iterator = iterator;
-	return *iterator;
-}
-Item& Item::create(Area& area, const uint32_t m_id,  const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quantity, CraftJob* cj)
-{
-	assert(m_itemType.generic);
-	if(s_nextId <= m_id) s_nextId = m_id + 1;
-	std::list<Item>::iterator iterator = area.m_hasItems.m_items.emplace(area.m_hasItems.m_items.end(), m_id, m_itemType, m_materialType, m_quantity, cj);
-	iterator->m_iterator = iterator;
-	return *iterator;
-}
-// Unnamed items, created in local item set.
-Item& Item::create(Area& area, const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quality, uint32_t m_percentWear, CraftJob* cj)
-{
-	assert(!m_itemType.generic);
-	std::list<Item>::iterator iterator = area.m_hasItems.m_items.emplace(area.m_hasItems.m_items.end(), ++s_nextId, m_itemType, m_materialType, "", m_quality, m_percentWear, cj);
-	iterator->m_iterator = iterator;
-	return *iterator;
-}
-Item& Item::create(Area& area, const uint32_t m_id, const ItemType& m_itemType, const MaterialType& m_materialType, uint32_t m_quality, uint32_t m_percentWear, CraftJob* cj)
-{
-	assert(!m_itemType.generic);
-	if(s_nextId <= m_id) s_nextId = m_id + 1;
-	std::list<Item>::iterator iterator = area.m_hasItems.m_items.emplace(area.m_hasItems.m_items.end(), m_id, m_itemType, m_materialType, "", m_quality, m_percentWear, cj);
-	iterator->m_iterator = iterator;
-	return *iterator;
-}
-//Named items, created in global item set.
-Item& Item::create(const ItemType& m_itemType, const MaterialType& m_materialType, std::string m_name, uint32_t m_quality, uint32_t m_percentWear, CraftJob* cj)
-{
-	assert(!m_itemType.generic);
-	assert(!m_name.empty());
-	std::list<Item>::iterator iterator = s_globalItems.emplace(s_globalItems.end(), ++s_nextId, m_itemType, m_materialType, m_name, m_quality, m_percentWear, cj);
-	iterator->m_iterator = iterator;
-	return *iterator;
-}
-Item& Item::create(const uint32_t m_id, const ItemType& m_itemType, const MaterialType& m_materialType, std::string m_name, uint32_t m_quality, uint32_t m_percentWear, CraftJob* cj)
-{
-	assert(!m_itemType.generic);
-	assert(!m_name.empty());
-	if(s_nextId <= m_id) s_nextId = m_id + 1;
-	std::list<Item>::iterator iterator = s_globalItems.emplace(s_globalItems.end(), m_id, m_itemType, m_materialType, m_name, m_quality, m_percentWear, cj);
-	iterator->m_iterator = iterator;
-	return *iterator;
-}
 void ItemHasCargo::add(HasShape& hasShape)
 {
 	assert(m_volume + hasShape.getVolume() <= m_item.m_itemType.internalVolume);
@@ -233,7 +182,7 @@ void BlockHasItems::add(const ItemType& itemType, const MaterialType& materialTy
 	// Create.
 	else
 	{
-		Item& item = Item::create(*m_block.m_area, itemType, materialType, quantity);
+		Item& item = m_block.m_area->m_simulation.createItem(itemType, materialType, quantity);
 		m_items.push_back(&item);
 		m_block.m_hasShapes.enter(item);
 	}
@@ -295,6 +244,5 @@ void AreaHasItems::onChangeAmbiantSurfaceTemperature()
 }
 void AreaHasItems::remove(Item& item)
 {
-	std::erase(m_items, item);
 	m_onSurface.erase(&item);
 }

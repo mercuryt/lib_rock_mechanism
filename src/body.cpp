@@ -4,6 +4,7 @@
 #include "randomUtil.h"
 #include "util.h"
 #include "simulation.h"
+Wound::Wound(Actor& a, const WoundType& wt, BodyPart& bp, Hit h, uint32_t bvr, uint32_t ph) : woundType(wt), bodyPart(bp), hit(h), bleedVolumeRate(bvr), percentHealed(ph), healEvent(a.getEventSchedule()) { }
 uint32_t Wound::getPercentHealed() const
 {
 	uint32_t output = percentHealed;
@@ -20,7 +21,7 @@ uint32_t Wound::impairPercent() const
 {
 	return util::scaleByInversePercent(maxPercentTemporaryImpairment, getPercentHealed()) + maxPercentPermanantImpairment;
 }
-Body::Body(Actor& a) :  m_actor(a), m_totalVolume(0), m_impairMovePercent(0), m_impairManipulationPercent(0)
+Body::Body(Actor& a) :  m_actor(a), m_totalVolume(0), m_impairMovePercent(0), m_impairManipulationPercent(0), m_bleedEvent(a.getEventSchedule()), m_woundsCloseEvent(a.getEventSchedule())
 {
 	for(const BodyPartType* bodyPartType : m_actor.m_species.bodyType.bodyPartTypes)
 	{
@@ -67,7 +68,7 @@ Wound& Body::addWound(const WoundType& woundType, BodyPart& bodyPart, const Hit&
 {
 	uint32_t scale = m_actor.m_species.bodyScale;
 	uint32_t bleedVolumeRate = WoundCalculations::getBleedVolumeRate(woundType, hit, bodyPart.bodyPartType, scale);
-	Wound& wound = bodyPart.wounds.emplace_back(woundType, bodyPart, hit, bleedVolumeRate);
+	Wound& wound = bodyPart.wounds.emplace_back(m_actor, woundType, bodyPart, hit, bleedVolumeRate);
 	Step delayTilHeal = WoundCalculations::getStepsTillHealed(woundType, hit, bodyPart.bodyPartType, scale);
 	wound.healEvent.schedule(delayTilHeal, wound, *this);
 	recalculateBleedAndImpairment();
@@ -86,7 +87,7 @@ void Body::doctorWound(Wound& wound, uint32_t healSpeedPercentageChange)
 		wound.bleedVolumeRate = 0;
 		recalculateBleedAndImpairment();
 	}
-	Step remaningSteps = wound.healEvent.getStep() - simulation::step;
+	Step remaningSteps = wound.healEvent.remainingSteps();
 	remaningSteps = util::scaleByPercent(remaningSteps, healSpeedPercentageChange);
 	wound.healEvent.unschedule();
 	wound.healEvent.schedule(remaningSteps, wound, *this);
@@ -203,3 +204,6 @@ bool Body::isInjured() const
 			return true;
 	return false;
 }
+WoundHealEvent::WoundHealEvent(const Step delay, Wound& w, Body& b) : ScheduledEventWithPercent(b.m_actor.getSimulation(), delay), m_wound(w), m_body(b) {}
+BleedEvent::BleedEvent(const Step delay, Body& b) : ScheduledEventWithPercent(b.m_actor.getSimulation(), delay), m_body(b) {}
+WoundsCloseEvent::WoundsCloseEvent(const Step delay, Body& b) : ScheduledEventWithPercent(b.m_actor.getSimulation(), delay), m_body(b) {}

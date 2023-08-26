@@ -1,10 +1,11 @@
 #pragma once
 
 #include "nthAdjacentOffsets.h"
-#include "eventSchedule.h"
+#include "eventSchedule.hpp"
 #include "config.h"
-#include "threadedTask.h"
+#include "threadedTask.hpp"
 #include "objective.h"
+#include "datetime.h"
 
 #include <unordered_set>
 #include <vector>
@@ -15,7 +16,7 @@ class Area;
 class FluidGroup;
 class Actor;
 struct FluidType;
-class GetToSafeTemperatureObjective;
+class GetToSafeTemperatureThreadedTask;
 
 // Raises and lowers nearby temperature.
 class TemperatureSource final
@@ -43,9 +44,9 @@ class AreaHasTemperature final
 	std::unordered_map<Block*, int32_t> m_blockDeltaDeltas;
 
 public:
-	AreaHasTemperature(Area& a, uint32_t ast) : m_area(a), m_ambiantSurfaceTemperature(ast) { }
+	AreaHasTemperature(Area& a) : m_area(a) { }
 	void setAmbientSurfaceTemperature(const uint32_t& temperature);
-	void setAmbientTemperatureFor(uint32_t hour, uint32_t dayOfYear);
+	void setAmbientSurfaceTemperatureFor(DateTime now);
 	void addTemperatureSource(Block& block, const uint32_t& temperature);
 	void removeTemperatureSource(TemperatureSource& temperatureSource);
 	TemperatureSource& getTemperatureSourceAt(Block& block);
@@ -56,6 +57,7 @@ public:
 	void addFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup);
 	void removeFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup);
 	const uint32_t& getAmbientSurfaceTemperature() const { return m_ambiantSurfaceTemperature; }
+	uint32_t getDailyAverageAmbientSurfaceTemperature(DateTime dateTime) const;
 };
 class BlockHasTemperature final
 {
@@ -69,28 +71,30 @@ public:
 	void apply(uint32_t temperature, const int32_t& delta);
 	void updateDelta(int32_t delta);
 	const uint32_t& getAmbientTemperature() const;
+	uint32_t getDailyAverageAmbientTemperature() const;
 	uint32_t get() const { return m_delta + getAmbientTemperature(); }
-};
-class GetToSafeTemperatureThreadedTask final : public ThreadedTask
-{
-	GetToSafeTemperatureObjective& m_objective;
-	std::vector<Block*> m_result;
-public:
-	GetToSafeTemperatureThreadedTask(GetToSafeTemperatureObjective& o) : m_objective(o) { }
-	void readStep();
-	void writeStep();
-	void clearReferences();
 };
 class GetToSafeTemperatureObjective final : public Objective
 {
 	Actor& m_actor;
 	HasThreadedTask<GetToSafeTemperatureThreadedTask> m_getToSafeTemperatureThreadedTask;
 public:
-	GetToSafeTemperatureObjective(Actor& a) : Objective(Config::getToSafeTemperaturePriority), m_actor(a) { }
+	GetToSafeTemperatureObjective(Actor& a);
 	void execute();
 	void cancel() { }
+	std::string name() { return "get to safe temperature"; }
 	~GetToSafeTemperatureObjective();
 	friend class GetToSafeTemperatureThreadedTask;
+};
+class GetToSafeTemperatureThreadedTask final : public ThreadedTask
+{
+	GetToSafeTemperatureObjective& m_objective;
+	std::vector<Block*> m_result;
+public:
+	GetToSafeTemperatureThreadedTask(GetToSafeTemperatureObjective& o);
+	void readStep();
+	void writeStep();
+	void clearReferences();
 };
 class ActorNeedsSafeTemperature
 {

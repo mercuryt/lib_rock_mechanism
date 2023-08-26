@@ -208,8 +208,8 @@ void HasStockPiles::makeProject(Item& item, Block& destination, Actor& actor)
 {
 	assert(!m_projectsByItem.contains(&item));
 	assert(!destination.m_isPartOfStockPile.hasStockPile());
-	assert(destination.m_isPartOfStockPile.getIsAvalable(*actor.m_faction));
-	m_projectsByItem.try_emplace(&item, *actor.m_faction, destination, item);
+	assert(destination.m_isPartOfStockPile.getIsAvalable(*actor.getFaction()));
+	m_projectsByItem.try_emplace(&item, *actor.getFaction(), destination, item);
 	m_projectsByItem.at(&item).addWorker(actor);	
 }
 void HasStockPiles::cancelProject(StockPileProject& project)
@@ -226,10 +226,10 @@ bool HasStockPiles::isAnyHaulingAvalableFor(const Actor& actor) const
 }
 Item* HasStockPiles::getHaulableItemForAt(const Actor& actor, Block& block)
 {
-	if(block.m_reservable.isFullyReserved(*actor.m_faction))
+	if(block.m_reservable.isFullyReserved(*actor.getFaction()))
 		return nullptr;
 	for(Item* item : block.m_hasItems.getAll())
-		if(!item->m_reservable.isFullyReserved(*actor.m_faction) && actor.m_canPickup.canPickupAny(*item) && m_itemsWithDestinations.contains(item))
+		if(!item->m_reservable.isFullyReserved(*actor.getFaction()) && actor.m_canPickup.canPickupAny(*item) && m_itemsWithDestinations.contains(item))
 			return item;
 	return nullptr;
 }

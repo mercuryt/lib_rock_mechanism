@@ -65,7 +65,7 @@ void CraftThreadedTask::writeStep()
 		m_craftObjective.m_actor.m_hasObjectives.cannotFulfillObjective(m_craftObjective);
 	else
 		// Selected work place has been reserved, try again.
-		if(m_location->m_reservable.isFullyReserved(*m_craftObjective.m_actor.m_faction))
+		if(m_location->m_reservable.isFullyReserved(*m_craftObjective.m_actor.getFaction()))
 			m_craftObjective.m_threadedTask.create(m_craftObjective);
 		else
 		{
@@ -74,6 +74,7 @@ void CraftThreadedTask::writeStep()
 		}
 }
 void CraftThreadedTask::clearReferences(){ m_craftObjective.m_threadedTask.clearPointer(); }
+CraftObjective::CraftObjective(Actor& a, const SkillType& st) : Objective(Config::craftObjectivePriority), m_actor(a), m_skillType(st), m_craftJob(nullptr), m_threadedTask(a.getThreadedTaskEngine()) { }
 bool CraftObjectiveType::canBeAssigned(Actor& actor) const
 {
 	auto& hasCraftingLocationsAndJobs = actor.m_location->m_area->m_hasCraftingLocationsAndJobs;
@@ -142,8 +143,8 @@ void HasCraftingLocationsAndJobs::stepComplete(CraftJob& craftJob, Actor& actor)
 	{
 		if(craftJob.workPiece == nullptr)
 		{
-			// Area, ItemType, MaterialType, quality, wear, craftJob.
-			Item& item = Item::create(*location->m_area, craftJob.craftJobType.productType, *craftJob.materialType, 0, &craftJob);
+			// ItemType, MaterialType, quality, wear, craftJob.
+			Item& item = location->m_area->m_simulation.createItem(craftJob.craftJobType.productType, *craftJob.materialType, "", 0, 0, &craftJob);
 			//TODO: Should the item be reserved?
 			location->m_hasItems.add(item);
 			craftJob.workPiece = &item;
@@ -193,14 +194,14 @@ void HasCraftingLocationsAndJobs::jobComplete(CraftJob& craftJob)
 }
 void HasCraftingLocationsAndJobs::makeAndAssignStepProject(CraftJob& craftJob, Block& location, Actor& worker)
 {
-	craftJob.craftStepProject = std::make_unique<CraftStepProject>(*worker.m_faction, location, **craftJob.stepIterator, craftJob);
+	craftJob.craftStepProject = std::make_unique<CraftStepProject>(*worker.getFaction(), location, **craftJob.stepIterator, craftJob);
 	craftJob.craftStepProject->addWorker(worker);
 	unindexAssigned(craftJob);
 }
 // May return nullptr;
 CraftJob* HasCraftingLocationsAndJobs::getJobForAtLocation(const Actor& actor, const SkillType& skillType, const Block& block)
 {
-	assert(!block.m_reservable.isFullyReserved(*actor.m_faction));
+	assert(!block.m_reservable.isFullyReserved(*actor.getFaction()));
 	if(!m_stepTypeCategoriesByLocation.contains(const_cast<Block*>(&block)))
 		return nullptr;
 	for(const CraftStepTypeCategory* category : m_stepTypeCategoriesByLocation.at(const_cast<Block*>(&block)))
@@ -213,7 +214,7 @@ std::pair<CraftJob*, Block*> HasCraftingLocationsAndJobs::getJobAndLocationFor(c
 {
 	auto condition = [&](const Block& block)
 	{
-		return !block.m_reservable.isFullyReserved(*actor.m_faction) && getJobForAtLocation(actor, skillType, block) != nullptr;
+		return !block.m_reservable.isFullyReserved(*actor.getFaction()) && getJobForAtLocation(actor, skillType, block) != nullptr;
 	};
 	Block* location = path::getForActorToPredicateReturnEndOnly(actor, condition);
 	if(location == nullptr)

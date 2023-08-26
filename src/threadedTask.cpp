@@ -5,37 +5,31 @@
 #include <cassert>
 void ThreadedTask::cancel() 
 { 
-	threadedTaskEngine::remove(*this); 
+	m_engine.remove(*this); 
 }
 
-void threadedTaskEngine::readStep()
+void ThreadedTaskEngine::readStep()
 {
-	for(auto& task : tasks)
-		simulation::pool.push_task([&](){ task->readStep(); });
+	for(auto& task : m_tasks)
+		m_simulation.m_pool.push_task([&](){ task->readStep(); });
 }
-void threadedTaskEngine::writeStep()
+void ThreadedTaskEngine::writeStep()
 {
 	//TODO: Assert task queue is empty.
-	for(auto& task : tasks)
+	for(auto& task : m_tasks)
 	{
 		task->clearReferences();
 		task->writeStep();
 	}
-	tasks.clear();
+	m_tasks.clear();
 }
-void threadedTaskEngine::insert(std::unique_ptr<ThreadedTask>&& task)
+void ThreadedTaskEngine::insert(std::unique_ptr<ThreadedTask>&& task)
 {
-	tasks.insert(std::move(task));
+	m_tasks.insert(std::move(task));
 }
-void threadedTaskEngine::remove(ThreadedTask& task)
+void ThreadedTaskEngine::remove(ThreadedTask& task)
 {
-	assert(std::ranges::find_if(tasks, [&](auto& t) { return t.get() == &task; }) != tasks.end());
+	assert(std::ranges::find_if(m_tasks, [&](auto& t) { return t.get() == &task; }) != m_tasks.end());
 	task.clearReferences();
-	std::erase_if(tasks, [&](auto& t) { return t.get() == &task; });
-}
-void threadedTaskEngine::clear()
-{ 
-	for(auto& task : tasks)
-		task->clearReferences();
-	tasks.clear(); 
+	std::erase_if(m_tasks, [&](auto& t) { return t.get() == &task; });
 }

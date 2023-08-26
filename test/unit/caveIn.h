@@ -2,10 +2,11 @@
 #include "../../src/area.h"
 #include "../../src/areaBuilderUtil.h"
 #include "../../src/definitions.h"
+#include "../../src/simulation.h"
 TEST_CASE("Cave In")
 {
-	simulation::init();
-	Area area(10,10,10,0);
+	Simulation simulation;
+	Area& area = simulation.createArea(10,10,10);
 	static const MaterialType& marble = MaterialType::byName("marble");
 	SUBCASE("Cave In doesn't happen when block is supported.")
 	{

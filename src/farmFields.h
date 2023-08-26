@@ -1,11 +1,13 @@
 #pragma once
 #include "plant.h"
 #include "faction.h"
+#include "cuboid.h"
 
 #include <list>
 #include <unordered_set>
 
 class Block;
+class Area;
 
 struct FarmField
 {
@@ -17,28 +19,31 @@ struct FarmField
 class IsPartOfFarmField
 {
 	Block& m_block;
-	std::unordered_map<Faction*, FarmField*> m_farmFields;
+	std::unordered_map<const Faction*, FarmField*> m_farmFields;
 public:
 	IsPartOfFarmField(Block& b) : m_block(b) { }
-	void insert(Faction& faction, FarmField& farmField);
-	void remove(Faction& faction);
+	void insert(const Faction& faction, FarmField& farmField);
+	void remove(const Faction& faction);
 	void designateForHarvestIfPartOfFarmField(Plant& plant);
 	void designateForGiveFluidIfPartOfFarmField(Plant& plant);
 	void removeAllHarvestDesignations();
 	void removeAllGiveFluidDesignations();
 	void removeAllSowSeedsDesignations();
+	// For testing.
+	[[maybe_unused]]bool contains(const Faction& faction) { return m_farmFields.contains(&faction); }
 };
 // To be used by HasFarmFields, which is used by Area.
 class HasFarmFieldsForFaction
 {
-	Faction& m_faction;
+	Area& m_area;
+	const Faction& m_faction;
 	std::list<FarmField> m_farmFields;
 	std::vector<Plant*> m_plantsNeedingFluid;
 	std::unordered_set<Plant*> m_plantsToHarvest;
 	std::unordered_set<Block*> m_blocksNeedingSeedsSewn;
 	bool m_plantsNeedingFluidIsSorted;
 public:
-	HasFarmFieldsForFaction(Faction& p) : m_faction(p) { }
+	HasFarmFieldsForFaction(Area& a, const Faction& f) : m_area(a), m_faction(f) { }
 	void addGivePlantFluidDesignation(Plant& plant);
 	void removeGivePlantFluidDesignation(Plant& plant);
 	void addSowSeedsDesignation(Block& block);
@@ -46,11 +51,12 @@ public:
 	void addHarvestDesignation(Plant& plant);
 	void removeHarvestDesignation(Plant& plant);
 	void setDayOfYear(uint32_t dayOfYear);
-	void create(std::unordered_set<Block*>& blocks);
+	FarmField& create(std::unordered_set<Block*>& blocks);
+	FarmField& create(Cuboid cuboid);
 	void extend(FarmField& farmField, std::unordered_set<Block*>& blocks);
 	void setSpecies(FarmField& farmField, const PlantSpecies& plantSpecies);
-	void designateBlocks(FarmField& farmField, std::unordered_set<Block*>& blocks);
 	void clearSpecies(FarmField& farmField);
+	void designateBlocks(FarmField& farmField, std::unordered_set<Block*>& blocks);
 	void shrink(FarmField& farmField, std::unordered_set<Block*>& blocks);
 	void remove(FarmField& farmField);
 	void undesignateBlocks(std::unordered_set<Block*>& blocks);
@@ -58,20 +64,23 @@ public:
 	bool hasHarvestDesignations() const;
 	bool hasGivePlantsFluidDesignations() const;
 	bool hasSowSeedsDesignations() const;
-	const PlantSpecies& getPlantSpeciesFor(Block& block) const;
+	const PlantSpecies& getPlantSpeciesFor(const Block& block) const;
 };
 // To be used by Area.
 class HasFarmFields
 {
-	std::unordered_map<Faction*, HasFarmFieldsForFaction> m_data;
+	Area& m_area;
+	std::unordered_map<const Faction*, HasFarmFieldsForFaction> m_data;
 public:
-	HasFarmFieldsForFaction& at(Faction& faction);
-	void registerFaction(Faction& faction);
-	void unregisterFaction(Faction& faction);
-	Plant* getHighestPriorityPlantForGiveFluid(Faction& faction);
+	HasFarmFields(Area& a) : m_area(a) { } 
+	HasFarmFieldsForFaction& at(const Faction& faction);
+	void registerFaction(const Faction& faction);
+	void unregisterFaction(const Faction& faction);
+	Plant* getHighestPriorityPlantForGiveFluid(const Faction& faction);
 	void removeAllSowSeedsDesignations(Block& block);
-	bool hasGivePlantsFluidDesignations(Faction& faction) const;
-	bool hasHarvestDesignations(Faction& faction) const;
-	bool hasSowSeedsDesignations(Faction& faction) const;
-	const PlantSpecies& getPlantSpeciesFor(Faction& faction, Block& location) const;
+	void setDayOfYear(uint32_t dayOfYear);
+	bool hasGivePlantsFluidDesignations(const Faction& faction) const;
+	bool hasHarvestDesignations(const Faction& faction) const;
+	bool hasSowSeedsDesignations(const Faction& faction) const;
+	const PlantSpecies& getPlantSpeciesFor(const Faction& faction, const Block& location) const;
 };

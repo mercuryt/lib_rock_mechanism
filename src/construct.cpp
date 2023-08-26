@@ -19,7 +19,7 @@ void ConstructThreadedTask::writeStep()
 	else
 	{
 		// Destination block has been reserved since result was found, get a new one.
-		if(m_result.back()->m_reservable.isFullyReserved(*m_constructObjective.m_actor.m_faction))
+		if(m_result.back()->m_reservable.isFullyReserved(*m_constructObjective.m_actor.getFaction()))
 		{
 			m_constructObjective.m_constructThreadedTask.create(m_constructObjective);
 			return;
@@ -35,7 +35,7 @@ void ConstructObjective::execute()
 	{
 		Block* block = selectAdjacentProject(*m_actor.m_location);
 		assert(block != nullptr);
-		m_actor.m_location->m_area->m_hasConstructionDesignations.getProject(*m_actor.m_faction, *block).addWorker(m_actor);
+		m_actor.m_location->m_area->m_hasConstructionDesignations.getProject(*m_actor.getFaction(), *block).addWorker(m_actor);
 	}
 	else
 		m_constructThreadedTask.create(*this);
@@ -47,23 +47,23 @@ void ConstructObjective::cancel()
 }
 bool ConstructObjective::canConstructAt(Block& block) const
 {
-	if(block.m_reservable.isFullyReserved(*m_actor.m_faction))
+	if(block.m_reservable.isFullyReserved(*m_actor.getFaction()))
 		return false;
 	for(Block* adjacent : block.getAdjacentWithEdgeAndCornerAdjacent())
-		if(adjacent->m_hasDesignations.contains(*m_actor.m_faction, BlockDesignation::Construct))
+		if(adjacent->m_hasDesignations.contains(*m_actor.getFaction(), BlockDesignation::Construct))
 			return true;
 	return false;
 }
 Block* ConstructObjective::selectAdjacentProject(Block& block) const
 {
 	for(Block* adjacent : block.getAdjacentWithEdgeAndCornerAdjacent())
-		if(adjacent->m_hasDesignations.contains(*m_actor.m_faction, BlockDesignation::Construct))
+		if(adjacent->m_hasDesignations.contains(*m_actor.getFaction(), BlockDesignation::Construct))
 			return adjacent;
 	return nullptr;
 }
 bool ConstructObjectiveType::canBeAssigned(Actor& actor) const
 {
-	return !actor.m_location->m_area->m_hasConstructionDesignations.areThereAnyForFaction(*actor.m_faction);
+	return !actor.m_location->m_area->m_hasConstructionDesignations.areThereAnyForFaction(*actor.getFaction());
 }
 std::unique_ptr<Objective> ConstructObjectiveType::makeFor(Actor& actor) const
 {

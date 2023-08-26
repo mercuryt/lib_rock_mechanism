@@ -19,7 +19,7 @@ class CanReserve final
 public:
 	CanReserve(const Faction& f) : m_faction(&f) { }
 	void clearAll();
-	void setFaction(const Faction& faction);
+	void setFaction(const Faction* faction);
 	~CanReserve();
 };
 class Reservable final
@@ -64,6 +64,16 @@ public:
 		canReserve.m_reservables.erase(this);
 	}
 	void setMaxReservations(const uint32_t mr) { m_maxReservations = mr; }
+	void updateFactionFor(CanReserve& canReserve, const Faction* oldFaction, const Faction* newFaction)
+	{
+		assert(m_canReserves.contains(&canReserve));
+		if(oldFaction != nullptr)
+			m_reservedCounts[oldFaction] -= m_canReserves[&canReserve];
+		if(newFaction != nullptr)
+			m_reservedCounts[newFaction] += m_canReserves[&canReserve];
+		else
+			m_canReserves.erase(&canReserve);
+	}
 	uint32_t getUnreservedCount(const Faction& faction) const
 	{
 		return m_maxReservations - m_reservedCounts.at(&faction);
@@ -75,4 +85,10 @@ inline void CanReserve::clearAll()
 	for(Reservable* reservable : m_reservables)
 		reservable->eraseReservationFor(*this);
 	m_reservables.clear();
+}
+inline void CanReserve::setFaction(const Faction* faction)
+{
+	for(Reservable* reservable : m_reservables)
+		reservable->updateFactionFor(*this, m_faction, faction);
+	m_faction = faction;
 }

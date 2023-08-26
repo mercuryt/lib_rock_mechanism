@@ -15,6 +15,13 @@ Cuboid::Cuboid(Block& h, Block& l) : m_highest(&h), m_lowest(&l)
 	assert(m_highest->m_y >= m_lowest->m_y);
 	assert(m_highest->m_z >= m_lowest->m_z);
 }
+std::unordered_set<Block*> Cuboid::toSet()
+{
+	std::unordered_set<Block*> output;
+	for(Block& block : *this)
+		output.insert(&block);
+	return output;
+}
 bool Cuboid::contains(const Block& block) const
 {
 	return (

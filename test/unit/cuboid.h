@@ -4,8 +4,8 @@
 #include "../../src/simulation.h"
 TEST_CASE("cuboid")
 {
-	Area area(2,2,2,0);
-	simulation::init();
+	Simulation simulation;
+	Area& area = simulation.createArea(2,2,2);
 	SUBCASE("create")
 	{
 		Cuboid cuboid(&area.m_blocks[1][1][1], &area.m_blocks[0][0][0]);

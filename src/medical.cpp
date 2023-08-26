@@ -29,7 +29,7 @@ void MedicalProject::onComplete()
 	uint32_t healRateModifier = 1;//TODO: Apply doctor skill and room cleanliness.
 	m_patient.m_body.doctorWound(m_wound, healRateModifier);
 }
-uint32_t MedicalProject::getDelay() const { return m_medicalProjectType.baseStepsDuration; }
+Step MedicalProject::getDelay() const { return m_medicalProjectType.baseStepsDuration; }
 uint32_t MedicalProject::getItemScaleFactor() const { return m_wound.hit.area * Config::unitsOfWoundAreaPerUnitItemScaleFactor; }
 void AreaHasMedicalPatientsForFaction::addPatient(Actor& patient)
 {
@@ -78,7 +78,7 @@ void AreaHasMedicalPatientsForFaction::createProject(Actor& patient, Block& loca
 {
 	assert(m_waitingPatients.contains(&patient));
 	assert(m_waitingDoctors.contains(&doctor));
-	assert(!location.m_reservable.isFullyReserved(*doctor.m_faction));
+	assert(!location.m_reservable.isFullyReserved(*doctor.getFaction()));
 	m_medicalProjects.try_emplace(&patient, patient, location, doctor, wound, medicalProjectType);
 	m_waitingPatients.erase(&patient);
 	m_waitingDoctors.erase(&doctor);
@@ -99,8 +99,8 @@ void AreaHasMedicalPatientsForFaction::triage()
 		// TODO: get location nearest to patient?
 		auto* location = *m_medicalLocations.begin();
 		Wound& wound = patient.m_body.getWoundWhichIsBleedingTheMost();
-		std::vector<const MedicalProjectType*> projectTypes;
-		createProject(patient, location, doctor, wound, medicalProjectTypes);
+		std::vector<const MedicalProjectType*> medicalProjectTypes;
+		createProject(patient, *location, doctor, wound, medicalProjectTypes);
 	}
 }
 bool AreaHasMedicalPatientsForFaction::hasPatients() const { return !m_waitingPatients.empty(); }

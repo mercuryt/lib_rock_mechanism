@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <iterator>
+#include <unordered_set>
 
 class Block;
 
@@ -15,6 +16,7 @@ public:
 	Cuboid(Block* h, Block* l);
 	Cuboid(Block& h, Block& l);
 	Cuboid() : m_highest(nullptr), m_lowest(nullptr) {}
+	std::unordered_set<Block*> toSet();
 	bool contains(const Block& block) const;
 	bool canMerge(const Cuboid& cuboid) const;
 	Cuboid sum(const Cuboid& cuboid) const;

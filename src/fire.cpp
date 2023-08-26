@@ -1,6 +1,7 @@
 #include "fire.h"
 #include "block.h"
 #include "area.h"
+FireEvent::FireEvent(uint32_t delay, Fire& f) : ScheduledEventWithPercent(f.m_location.m_area->m_simulation, delay), m_fire(f) {}
 void FireEvent::execute()
 {
 	if(!m_fire.m_hasPeaked &&m_fire.m_stage == FireStage::Smouldering)
@@ -45,7 +46,7 @@ void FireEvent::execute()
 	}
 }
 void FireEvent::clearReferences() { m_fire.m_event.clearPointer(); }
-Fire::Fire(Block& l, const MaterialType& mt) : m_location(l), m_materialType(mt), m_stage(FireStage::Smouldering), m_hasPeaked(false), m_temperatureSource(m_materialType.burnData->flameTemperature * Config::heatFractionForSmoulder, l)
+Fire::Fire(Block& l, const MaterialType& mt) : m_location(l), m_materialType(mt), m_event(l.m_area->m_simulation.m_eventSchedule), m_stage(FireStage::Smouldering), m_hasPeaked(false), m_temperatureSource(m_materialType.burnData->flameTemperature * Config::heatFractionForSmoulder, l)
 {
 	m_event.schedule(m_materialType.burnData->burnStageDuration, *this);
 }

@@ -1,5 +1,6 @@
 #include "locationBuckets.h"
 #include "area.h"
+#include <algorithm>
 LocationBuckets::LocationBuckets(Area& area) : m_area(area)
 {
 	m_maxX = ((m_area.m_sizeX - 1) / Config::locationBucketSize) + 1;
@@ -57,8 +58,7 @@ void LocationBuckets::processVisionRequest(VisionRequest& visionRequest) const
 				assert(x < m_buckets.size());
 				assert(y < m_buckets.at(x).size());
 				assert(z < m_buckets.at(x).at(y).size());
-				const std::unordered_set<Actor*>& bucket = m_buckets[x][y][z];
-				for(Actor* actor : bucket)
+				for(Actor* actor : m_buckets[x][y][z])
 				{
 					assert(!actor->m_blocks.empty());
 					for(const Block* to : actor->m_blocks)
@@ -71,6 +71,43 @@ void LocationBuckets::processVisionRequest(VisionRequest& visionRequest) const
 				}
 			}
 	visionRequest.m_actors.erase(&visionRequest.m_actor);
+}
+void LocationBuckets::getByConditionSortedByTaxiDistanceFrom(const Block& origin, std::function<bool(const Actor&)> condition, std::function<bool(const Actor&)> yield)
+{
+	uint32_t beginX, endX, beginY, endY, beginZ, endZ;
+	beginX = endX = origin.m_x / Config::locationBucketSize;
+	beginY = endY = origin.m_y / Config::locationBucketSize;
+	beginZ = endZ = origin.m_z / Config::locationBucketSize;
+	std::unordered_set<std::unordered_set<Actor*>*> closedList;
+	while(true)
+	{
+		if(beginX != 0) beginX--;
+		if(endX != m_maxX) endX++;
+		if(beginY != 0) beginY--;
+		if(endY != m_maxY) endY++;
+		if(beginZ != 0) beginZ--;
+		if(endZ != m_maxZ) endZ++;
+		std::unordered_set<Actor*> candidates;
+		for(uint32_t x = beginX; x != endX; ++x)
+			for(uint32_t y = beginY; y != endY; ++y)
+				for(uint32_t z = beginZ; z != endZ; ++z)
+				{
+					if(closedList.contains(&m_buckets[x][y][z]))
+						continue;
+					closedList.insert(&m_buckets[x][y][z]);
+					for(Actor* actor : m_buckets[x][y][z])
+						if(condition(*actor))
+							candidates.insert(actor);
+				}
+		std::vector<Actor*> candidateVector(candidates.begin(), candidates.end());
+		std::ranges::sort(candidateVector, [&](const Actor* a, const Actor* b){ return a->m_location->taxiDistance(origin) < b->m_location->taxiDistance(origin); });
+		for(const Actor* const actor : candidateVector)
+			// Yield actors until yield returns true.
+			if(yield(*actor))
+				return;
+		if(beginX == 0 && beginY == 0 && beginZ == 0 && endX == m_maxX && endY == m_maxY && endZ == m_maxZ)
+			return;
+	}
 }
 LocationBuckets::InRange LocationBuckets::inRange(const Block& origin, uint32_t range) const
 {
@@ -93,7 +130,7 @@ LocationBuckets::InRange::iterator::iterator(LocationBuckets::InRange& ir) : inR
 LocationBuckets::InRange::iterator::iterator() : inRange(nullptr), x(0), y(0), z(0) {}
 void LocationBuckets::InRange::iterator::getNextBucket()
 {
-	while(bucketIterator == bucket->end())
+	while(bucketIterator != bucket->end())
 	{
 		if(++z > maxZ)
 		{

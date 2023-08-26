@@ -10,8 +10,8 @@ TEST_CASE("fluids smaller")
 	static const FluidType& water = FluidType::byName("water");
 	static const FluidType& CO2 = FluidType::byName("CO2");
 	static const FluidType& mercury = FluidType::byName("mercury");
-	simulation::init();
-	Area area(10,10,10, 280);
+	Simulation simulation;
+	Area& area = simulation.createArea(10,10,10);
 	SUBCASE("Create Fluid.")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
@@ -1129,7 +1129,7 @@ TEST_CASE("fluids smaller")
 	{
 		if constexpr(Config::fluidsSeepDiagonalModifier == 0)
 			return;
-		simulation::step = 1;
+		simulation.m_step = 1;
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
 		Block& block1 = area.m_blocks[5][5][1];
 		Block& block2 = area.m_blocks[6][6][1];
@@ -1143,7 +1143,7 @@ TEST_CASE("fluids smaller")
 		fg1->afterWriteStep();
 		fg1->splitStep();
 		fg1->mergeStep();
-		simulation::step++;
+		simulation.m_step++;
 		CHECK(block2.volumeOfFluidTypeContains(water) == 1);
 		FluidGroup* fg2 = block2.getFluidGroup(water);
 		CHECK(fg1 != fg2);
@@ -1161,7 +1161,7 @@ TEST_CASE("fluids smaller")
 			fg2->splitStep();
 			fg1->mergeStep();
 			fg2->mergeStep();
-			simulation::step++;
+			simulation.m_step++;
 		}
 		CHECK(block1.volumeOfFluidTypeContains(water) == 5);
 		CHECK(block2.volumeOfFluidTypeContains(water) == 5);
@@ -1170,7 +1170,7 @@ TEST_CASE("fluids smaller")
 	}
 	SUBCASE("Test mist")
 	{
-		simulation::step = 1;
+		simulation.m_step = 1;
 		areaBuilderUtil::setSolidLayers(area, 0, 2, marble);
 		Block& block1 = area.m_blocks[5][5][1];
 		Block& block2 = area.m_blocks[5][5][2];
@@ -1190,7 +1190,7 @@ TEST_CASE("fluids smaller")
 		fluidGroup->mergeStep();
 		CHECK(block5.m_mist == &water);
 		// Several steps.
-		while(simulation::step < 11)
+		while(simulation.m_step < 11)
 		{
 			if(!fluidGroup->m_stable)
 			{
@@ -1200,9 +1200,9 @@ TEST_CASE("fluids smaller")
 				fluidGroup->splitStep();
 				fluidGroup->mergeStep();
 			}
-			simulation::step++;
+			simulation.m_step++;
 		}
-		eventSchedule::execute(11);
+		simulation.m_eventSchedule.execute(11);
 		CHECK(block5.m_mist == nullptr);
 	}
 }
@@ -1210,8 +1210,8 @@ TEST_CASE("area larger")
 {
 	static const MaterialType& marble = MaterialType::byName("marble");
 	static const FluidType& water = FluidType::byName("water");
-	simulation::init();
-	Area area(20,20,20, 180);
+	Simulation simulation;
+	Area& area = simulation.createArea(20,20,20);
 	SUBCASE("Flow across flat area double stack")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
@@ -1341,7 +1341,7 @@ TEST_CASE("area larger")
 				CHECK(adjacent->volumeOfFluidTypeContains(water) == 20);
 		CHECK(!fluidGroup->m_stable);
 		CHECK(fluidGroup->m_excessVolume == 0);
-		simulation::step++;
+		simulation.m_step++;
 		//Step 2.
 		fluidGroup->readStep();
 		fluidGroup->writeStep();
@@ -1355,7 +1355,7 @@ TEST_CASE("area larger")
 		CHECK(block3.volumeOfFluidTypeContains(water) == 7);
 		CHECK(block4.volumeOfFluidTypeContains(water) == 0);
 		CHECK(fluidGroup->m_excessVolume == 9);
-		simulation::step++;
+		simulation.m_step++;
 		//Step 3.
 		fluidGroup->readStep();
 		fluidGroup->writeStep();
@@ -1370,7 +1370,7 @@ TEST_CASE("area larger")
 		CHECK(block5.volumeOfFluidTypeContains(water) == 0);
 		CHECK(!fluidGroup->m_stable);
 		CHECK(fluidGroup->m_excessVolume == 25);
-		simulation::step++;
+		simulation.m_step++;
 		//Step 4.
 		fluidGroup->readStep();
 		fluidGroup->writeStep();
@@ -1385,7 +1385,7 @@ TEST_CASE("area larger")
 		CHECK(block5.volumeOfFluidTypeContains(water) == 2);
 		CHECK(block6.volumeOfFluidTypeContains(water) == 0);
 		CHECK(fluidGroup->m_excessVolume == 18);
-		simulation::step++;
+		simulation.m_step++;
 		//Step 5.
 		fluidGroup->readStep();
 		fluidGroup->writeStep();
@@ -1401,7 +1401,7 @@ TEST_CASE("area larger")
 		CHECK(block6.volumeOfFluidTypeContains(water) == 1);
 		CHECK(block8.volumeOfFluidTypeContains(water) == 0);
 		CHECK(fluidGroup->m_excessVolume == 39);
-		simulation::step++;
+		simulation.m_step++;
 		//Step 6.
 		fluidGroup->readStep();
 		fluidGroup->writeStep();
@@ -1419,7 +1419,7 @@ TEST_CASE("area larger")
 		CHECK(block7.volumeOfFluidTypeContains(water) == 1);
 		CHECK(block8.volumeOfFluidTypeContains(water) == 0);
 		CHECK(fluidGroup->m_excessVolume == 15);
-		simulation::step++;
+		simulation.m_step++;
 		//Step 7.
 		fluidGroup->readStep();
 		CHECK(fluidGroup->m_stable);
@@ -1432,15 +1432,15 @@ TEST_CASE("fluids multi scale")
 	static const FluidType& CO2 = FluidType::byName("CO2");
 	static const FluidType& mercury = FluidType::byName("mercury");
 	static const FluidType& lava = FluidType::byName("lava");
-	simulation::init();
+	Simulation simulation;
 	auto trenchTest2Fluids = [&](uint32_t scaleL, uint32_t scaleW, uint32_t steps)
 	{
 		uint32_t maxX = scaleL + 2;
 		uint32_t maxY = scaleW + 2;
 		uint32_t maxZ = scaleW + 1;
 		uint32_t halfMaxX = maxX / 2;
-		Area area(maxX, maxY, maxZ, 280);
-		simulation::step = 0;
+		Area& area = simulation.createArea(maxX, maxY, maxZ);
+		simulation.m_step = 0;
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 		// Water
@@ -1457,13 +1457,13 @@ TEST_CASE("fluids multi scale")
 		CHECK(!fgWater->m_merged);
 		CHECK(!fgCO2->m_merged);
 		uint32_t totalVolume = fgWater->totalVolume();
-		simulation::step = 1;
-		while(simulation::step < steps)
+		simulation.m_step = 1;
+		while(simulation.m_step < steps)
 		{
 			for(FluidGroup* fluidGroup : area.m_unstableFluidGroups)
 				fluidGroup->readStep();
 			area.writeStep();
-			simulation::step++;
+			simulation.m_step++;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
 		uint32_t expectedHeight = 1 + (maxZ - 1) / 2;
@@ -1501,8 +1501,8 @@ TEST_CASE("fluids multi scale")
 		uint32_t maxY = scaleW + 2;
 		uint32_t maxZ = scaleW + 1;
 		uint32_t thirdMaxX = maxX / 3;
-		Area area(maxX, maxY, maxZ, 280);
-		simulation::step = 0;
+		Area& area = simulation.createArea(maxX, maxY, maxZ);
+		simulation.m_step = 0;
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 		// Water
@@ -1521,14 +1521,14 @@ TEST_CASE("fluids multi scale")
 		FluidGroup* fgWater = water1.getFluidGroup(water);
 		FluidGroup* fgCO2 = CO2_1.getFluidGroup(CO2);
 		FluidGroup* fgLava = lava1.getFluidGroup(lava);
-		simulation::step = 1;
+		simulation.m_step = 1;
 		uint32_t totalVolume = fgWater->totalVolume();
-		while(simulation::step < steps)
+		while(simulation.m_step < steps)
 		{
 			for(FluidGroup* fluidGroup : area.m_unstableFluidGroups)
 				fluidGroup->readStep();
 			area.writeStep();
-			simulation::step++;
+			simulation.m_step++;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
 		uint32_t expectedHeight = std::max(1u, maxZ / 3);
@@ -1569,8 +1569,8 @@ TEST_CASE("fluids multi scale")
 		uint32_t maxY = scaleW + 2;
 		uint32_t maxZ = scaleW + 1;
 		uint32_t quarterMaxX = maxX / 4;
-		Area area(maxX, maxY, maxZ, 280);
-		simulation::step = 0;
+		Area& area = simulation.createArea(maxX, maxY, maxZ);
+		simulation.m_step = 0;
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 		// Water
@@ -1595,8 +1595,8 @@ TEST_CASE("fluids multi scale")
 		FluidGroup* fgLava = lava1.getFluidGroup(lava);
 		FluidGroup* fgMercury = mercury1.getFluidGroup(mercury);
 		uint32_t totalVolume = fgWater->totalVolume();
-		simulation::step = 1;
-		while(simulation::step < steps)
+		simulation.m_step = 1;
+		while(simulation.m_step < steps)
 		{
 			for(FluidGroup* fluidGroup : area.m_unstableFluidGroups)
 				fluidGroup->readStep();
@@ -1604,7 +1604,7 @@ TEST_CASE("fluids multi scale")
 			fgMercury = areaBuilderUtil::getFluidGroup(area, mercury);
 			if(fgMercury != nullptr)
 				CHECK(fgMercury->totalVolume() == totalVolume);
-			simulation::step++;
+			simulation.m_step++;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
 		uint32_t expectedHeight = std::max(1u, maxZ / 4);
@@ -1666,8 +1666,8 @@ TEST_CASE("fluids multi scale")
 		uint32_t maxY = scaleW + 2;
 		uint32_t maxZ = scaleW + 1;
 		uint32_t quarterMaxX = maxX / 4;
-		Area area(maxX, maxY, maxZ, 280);
-		simulation::step = 0;
+		Area& area = simulation.createArea(maxX, maxY, maxZ);
+		simulation.m_step = 0;
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 		// Water
@@ -1689,13 +1689,13 @@ TEST_CASE("fluids multi scale")
 		CHECK(area.m_fluidGroups.size() == 4);
 		FluidGroup* fgWater = water1.getFluidGroup(water);
 		uint32_t totalVolume = fgWater->totalVolume() * 2;
-		simulation::step = 1;
-		while(simulation::step < steps)
+		simulation.m_step = 1;
+		while(simulation.m_step < steps)
 		{
 			for(FluidGroup* fluidGroup : area.m_unstableFluidGroups)
 				fluidGroup->readStep();
 			area.writeStep();
-			simulation::step++;
+			simulation.m_step++;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
 		uint32_t expectedHeight = std::max(1u, maxZ / 2);
@@ -1731,8 +1731,8 @@ TEST_CASE("fluids multi scale")
 		uint32_t maxY = scaleW + 2;
 		uint32_t maxZ = scaleW + 1;
 		uint32_t quarterMaxX = maxX / 4;
-		Area area(maxX, maxY, maxZ, 280);
-		simulation::step = 0;
+		Area& area = simulation.createArea(maxX, maxY, maxZ);
+		simulation.m_step = 0;
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 		// Water
@@ -1756,13 +1756,13 @@ TEST_CASE("fluids multi scale")
 		uint32_t totalVolumeWater = fgWater->totalVolume();
 		uint32_t totalVolumeMercury = totalVolumeWater;
 		uint32_t totalVolumeCO2 = totalVolumeWater * 2;
-		simulation::step = 1;
-		while(simulation::step < steps)
+		simulation.m_step = 1;
+		while(simulation.m_step < steps)
 		{
 			for(FluidGroup* fluidGroup : area.m_unstableFluidGroups)
 				fluidGroup->readStep();
 			area.writeStep();
-			simulation::step++;
+			simulation.m_step++;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
 		uint32_t expectedHeight = std::max(1u, maxZ / 4);
@@ -1808,8 +1808,8 @@ TEST_CASE("fluids multi scale")
 		uint32_t maxZ = (scale * 1) + 1;
 		uint32_t halfMaxX = maxX / 2;
 		uint32_t halfMaxY = maxY / 2;
-		Area area(maxX, maxY, maxZ, 280);
-		simulation::step = 0;
+		Area& area = simulation.createArea(maxX, maxY, maxZ);
+		simulation.m_step = 0;
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 		std::vector<FluidGroup*> newlySplit;
@@ -1839,13 +1839,13 @@ TEST_CASE("fluids multi scale")
 		CHECK(!fgLava->m_merged);
 		CHECK(!fgMercury->m_merged);
 		uint32_t totalVolume = fgWater->totalVolume();
-		simulation::step = 1;
-		while(simulation::step < steps)
+		simulation.m_step = 1;
+		while(simulation.m_step < steps)
 		{
 			for(FluidGroup* fluidGroup : area.m_unstableFluidGroups)
 				fluidGroup->readStep();
 			area.writeStep();
-			simulation::step++;
+			simulation.m_step++;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
 		uint32_t expectedHeight = ((maxZ - 2) / 4) + 1;

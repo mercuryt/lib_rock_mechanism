@@ -12,15 +12,19 @@
 #include <memory>
 #include <cassert>
 
+class Simulation;
+
 class ScheduledEvent
 {
 public:
+	Simulation& m_simulation;
 	const Step m_step;
 	bool m_cancel;
-	ScheduledEvent(const Step delay);
+	ScheduledEvent(Simulation& simulation, const Step delay);
 	void cancel();
 	virtual void execute() = 0;
 	virtual void clearReferences() = 0;
+	virtual void onCancel() { }
 	Step remaningSteps() const;
 	ScheduledEvent(const ScheduledEvent&) = delete;
 	ScheduledEvent(ScheduledEvent&&) = delete;
@@ -29,17 +33,19 @@ class ScheduledEventWithPercent : public ScheduledEvent
 {
 public:
 	Step m_startStep;
-	ScheduledEventWithPercent(const Step delay);
+	ScheduledEventWithPercent(Simulation& simulation, const Step delay);
 	uint32_t percentComplete() const;
 };
-namespace eventSchedule
+class EventSchedule
 {
-	inline std::unordered_map<Step, std::list<std::unique_ptr<ScheduledEvent>>> data;
+	Simulation& m_simulation;
+public:
+	EventSchedule(Simulation& s) : m_simulation(s) { }
+	std::unordered_map<Step, std::list<std::unique_ptr<ScheduledEvent>>> m_data;
 	void schedule(std::unique_ptr<ScheduledEvent> scheduledEvent);
 	void schedule(std::unique_ptr<ScheduledEventWithPercent> scheduledEvent);
 	void unschedule(ScheduledEvent& scheduledEvent);
 	void execute(const Step stepNumber);
-	void clear();
 	// For testing.
 	[[maybe_unused]]uint32_t count();
 };

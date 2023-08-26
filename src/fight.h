@@ -36,7 +36,7 @@ class CanFight final
 	Actor* m_target;
 	std::unordered_set<Actor*> m_targetedBy;
 public:
-	CanFight(Actor& a) : m_actor(a), m_maxRange(0), m_coolDownDuration(0) { }
+	CanFight(Actor& a);
 	void attack(Actor& target);
 	void coolDownCompleted();
 	void update();
@@ -61,7 +61,7 @@ class AttackCoolDown final : public ScheduledEventWithPercent
 {
 	CanFight& m_canFight;
 public:
-	AttackCoolDown(CanFight& cf) : ScheduledEventWithPercent(cf.m_coolDownDuration), m_canFight(cf) { }
+	AttackCoolDown(CanFight& cf);
 	void execute() { m_canFight.coolDownCompleted(); }
 	void clearReferences() { m_canFight.m_coolDown.clearPointer(); }
 };
@@ -72,7 +72,7 @@ class GetIntoAttackPositionThreadedTask final : public ThreadedTask
 	uint32_t m_range;
 	std::vector<Block*> m_route;
 public:
-	GetIntoAttackPositionThreadedTask(Actor& a, Actor& t, uint32_t r) : m_actor(a), m_target(t), m_range(r) {}
+	GetIntoAttackPositionThreadedTask(Actor& a, Actor& t, uint32_t r);
 	void readStep();
 	void writeStep();
 	void clearReferences();

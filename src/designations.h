@@ -4,6 +4,8 @@
 #pragma once
 
 #include <unordered_set>
+#include <unordered_map>
+#include <cassert>
 
 class Faction;
 
@@ -21,7 +23,10 @@ public:
 	void remove(const Faction& f, const BlockDesignation& bd)
 	{
 		assert(m_designations[&f].contains(bd));
-	      	m_designations[&f].erase(bd);
+		if(m_designations[&f].size() == 1)
+			m_designations.erase(&f);
+		else
+	      		m_designations[&f].erase(bd);
 	}
 	void removeIfExists(const Faction& f, const BlockDesignation& bd) { m_designations[&f].erase(bd); }
 };

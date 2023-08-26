@@ -1,8 +1,8 @@
 #pragma once
 
 #include "objective.h"
-#include "threadedTask.h"
-#include "eventSchedule.h"
+#include "threadedTask.hpp"
+#include "eventSchedule.hpp"
 #include "project.h"
 #include "config.h"
 
@@ -10,31 +10,32 @@
 #include <vector>
 
 struct Faction;
-class DigObjective;
-class BlockFeatureType;
+class DigThreadedTask;
+struct BlockFeatureType;
 
-// Find a place to dig.
-class DigThreadedTask final : public ThreadedTask
-{
-	DigObjective& m_digObjective;
-	std::vector<Block*> m_result;
-public:
-	DigThreadedTask(DigObjective& ho) : m_digObjective(ho) {}
-	void readStep();
-	void writeStep();
-	void clearReferences();
-};
 class DigObjective final : public Objective
 {
 	Actor& m_actor;
 	HasThreadedTask<DigThreadedTask> m_digThrededTask;
 	Project* m_project;
 public:
-	DigObjective(Actor& a) : Objective(Config::digObjectivePriority), m_actor(a), m_project(nullptr) { }
+	DigObjective(Actor& a);
 	void execute();
 	void cancel();
+	std::string name() { return "dig"; }
 	bool canDigAt(Block& block) const;
 	friend class DigThreadedTask;
+};
+// Find a place to dig.
+class DigThreadedTask final : public ThreadedTask
+{
+	DigObjective& m_digObjective;
+	std::vector<Block*> m_result;
+public:
+	DigThreadedTask(DigObjective& digObjective);
+	void readStep();
+	void writeStep();
+	void clearReferences();
 };
 class DigObjectiveType : public ObjectiveType
 {

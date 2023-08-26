@@ -2,7 +2,7 @@
 #include "path.h"
 #include "util.h"
 // Must Drink.
-MustDrink::MustDrink(Actor& a) : m_actor(a), m_volumeDrinkRequested(0), m_objective(nullptr)
+MustDrink::MustDrink(Actor& a) : m_actor(a), m_volumeDrinkRequested(0), m_objective(nullptr), m_thirstEvent(a.getEventSchedule())
 { 
 	m_thirstEvent.schedule(m_actor.m_species.stepsFluidDrinkFreqency, m_actor);
 }
@@ -29,8 +29,8 @@ void MustDrink::setNeedsFluid()
 		m_actor.die(CauseOfDeath::thirst);
 }
 // Drink Event.
-DrinkEvent::DrinkEvent(const Step delay, DrinkObjective& drob) : ScheduledEventWithPercent(delay), m_drinkObjective(drob), m_item(nullptr) {}
-DrinkEvent::DrinkEvent(const Step delay, DrinkObjective& drob, Item& i) : ScheduledEventWithPercent(delay), m_drinkObjective(drob), m_item(&i) {}
+DrinkEvent::DrinkEvent(const Step delay, DrinkObjective& drob) : ScheduledEventWithPercent(drob.m_actor.getSimulation(), delay), m_drinkObjective(drob), m_item(nullptr) {}
+DrinkEvent::DrinkEvent(const Step delay, DrinkObjective& drob, Item& i) : ScheduledEventWithPercent(drob.m_actor.getSimulation(), delay), m_drinkObjective(drob), m_item(&i) {}
 void DrinkEvent::execute()
 {
 	//TODO: What if not enough volume is avalible?
@@ -60,9 +60,11 @@ void DrinkEvent::execute()
 	actor.m_hasObjectives.objectiveComplete(m_drinkObjective);
 }
 void DrinkEvent::clearReferences() { m_drinkObjective.m_drinkEvent.clearPointer(); }
+ThirstEvent::ThirstEvent(const Step delay, Actor& a) : ScheduledEventWithPercent(a.getSimulation(), delay), m_actor(a) { }
 void ThirstEvent::execute() { m_actor.m_mustDrink.setNeedsFluid(); }
 void ThirstEvent::clearReferences() { m_actor.m_mustDrink.m_thirstEvent.clearPointer(); }
 // Drink Threaded Task.
+DrinkThreadedTask::DrinkThreadedTask(DrinkObjective& drob) : ThreadedTask(drob.m_actor.getThreadedTaskEngine()), m_drinkObjective(drob) {}
 void DrinkThreadedTask::readStep()
 {
 	auto destinationCondition = [&](Block& block)
@@ -80,7 +82,7 @@ void DrinkThreadedTask::writeStep()
 }
 void DrinkThreadedTask::clearReferences() { m_drinkObjective.m_threadedTask.clearPointer(); }
 // Drink Objective.
-DrinkObjective::DrinkObjective(Actor& a) : Objective(Config::drinkPriority), m_actor(a) { }
+DrinkObjective::DrinkObjective(Actor& a) : Objective(Config::drinkPriority), m_actor(a), m_threadedTask(a.getThreadedTaskEngine()), m_drinkEvent(a.getEventSchedule()) { }
 void DrinkObjective::execute()
 {
 	Item* item = getItemToDrinkFromAt(*m_actor.m_location);

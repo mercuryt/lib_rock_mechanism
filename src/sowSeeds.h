@@ -9,26 +9,8 @@
 #include <memory>
 #include <vector>
 
-class SowSeedsObjective;
-
-class SowSeedsEvent final : public ScheduledEventWithPercent
-{
-	SowSeedsObjective& m_objective;
-public:
-	SowSeedsEvent(Step delay, SowSeedsObjective& o) : ScheduledEventWithPercent(delay), m_objective(o) { }
-	void execute();
-	void clearReferences();
-};
-class SowSeedsThreadedTask final : public ThreadedTask
-{
-	SowSeedsObjective& m_objective;
-	std::vector<Block*> m_result;
-public:
-	SowSeedsThreadedTask(SowSeedsObjective& sso): m_objective(sso) { }
-	void readStep();
-	void writeStep();
-	void clearReferences();
-};
+class SowSeedsEvent;
+class SowSeedsThreadedTask;
 class SowSeedsObjectiveType final : public ObjectiveType
 {
 public:
@@ -42,9 +24,29 @@ class SowSeedsObjective final : public Objective
 	HasThreadedTask<SowSeedsThreadedTask> m_threadedTask;
 	bool canSowSeedsAt(Block& block);
 public:
-	SowSeedsObjective(Actor& a) : Objective(Config::sowSeedsPriority), m_actor(a) { }
+	SowSeedsObjective(Actor& a) : Objective(Config::sowSeedsPriority), m_actor(a), m_event(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()) { }
 	void execute();
 	void cancel() {}
+	std::string name() { return "sow seeds"; }
 	friend class SowSeedsEvent;
 	friend class SowSeedsThreadedTask;
+};
+class SowSeedsEvent final : public ScheduledEventWithPercent
+{
+	SowSeedsObjective& m_objective;
+public:
+	SowSeedsEvent(Step delay, SowSeedsObjective& o) : ScheduledEventWithPercent(o.m_actor.getSimulation(), delay), m_objective(o) { }
+	void execute();
+	void clearReferences();
+	void onCancel();
+};
+class SowSeedsThreadedTask final : public ThreadedTask
+{
+	SowSeedsObjective& m_objective;
+	std::vector<Block*> m_result;
+public:
+	SowSeedsThreadedTask(SowSeedsObjective& sso): ThreadedTask(sso.m_actor.getThreadedTaskEngine()), m_objective(sso) { }
+	void readStep();
+	void writeStep();
+	void clearReferences();
 };

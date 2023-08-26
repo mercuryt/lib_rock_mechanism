@@ -1,6 +1,8 @@
 #include "stamina.h"
 #include "actor.h"
 
+RestObjective::RestObjective(Actor& a) : Objective(0), m_actor(a), m_restEvent(a.getEventSchedule()) { }
+RestEvent::RestEvent(RestObjective& ro) : ScheduledEventWithPercent(ro.m_actor.getSimulation(), Config::restIntervalSteps), m_objective(ro) { }
 void RestEvent::execute()
 {
 	m_objective.m_actor.m_stamina.recover();
@@ -16,6 +18,10 @@ void ActorHasStamina::spend(uint32_t stamina)
 {
 	assert(m_stamina >= stamina);
 	m_stamina -= stamina;
+}
+void ActorHasStamina::setFull()
+{
+	m_stamina = getMax();
 }
 uint32_t ActorHasStamina::getMax() const { return Config::staminaPointsPerRestPeriod;}
 bool ActorHasStamina::hasAtLeast(uint32_t stamina) const { return m_stamina >= stamina; }

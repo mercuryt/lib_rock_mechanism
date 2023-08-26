@@ -60,7 +60,7 @@ struct Wound final
 	uint32_t maxPercentTemporaryImpairment;
 	uint32_t maxPercentPermanantImpairment;
 	HasScheduledEvent<WoundHealEvent> healEvent;
-	Wound(const WoundType& wt, BodyPart& bp, Hit h, uint32_t bvr, uint32_t ph = 0) : woundType(wt), bodyPart(bp), hit(h), bleedVolumeRate(bvr), percentHealed(ph) { }
+	Wound(Actor& a, const WoundType& wt, BodyPart& bp, Hit h, uint32_t bvr, uint32_t ph = 0);
 	bool operator==(const Wound& other) const { return &other == this; }
 	uint32_t getPercentHealed() const;
 	uint32_t impairPercent() const;
@@ -106,6 +106,7 @@ public:
 	uint32_t getVolume() const;
 	bool isInjured() const;
 	uint32_t getStepsTillBleedToDeath() const;
+	friend class WoundHealEvent;
 	friend class BleedEvent;
 	friend class WoundsCloseEvent;
 };
@@ -114,7 +115,7 @@ class WoundHealEvent : public ScheduledEventWithPercent
 	Wound& m_wound;
 	Body& m_body;
 public:
-	WoundHealEvent(const Step delay, Wound& w, Body& b) : ScheduledEventWithPercent(delay), m_wound(w), m_body(b) {}
+	WoundHealEvent(const Step delay, Wound& w, Body& b);
 	void execute() { m_body.healWound(m_wound); }
 	void clearReferences() { m_wound.healEvent.clearPointer(); }
 };
@@ -122,7 +123,7 @@ class BleedEvent : public ScheduledEventWithPercent
 {
 	Body& m_body;
 public:
-	BleedEvent(const Step delay, Body& b) : ScheduledEventWithPercent(delay), m_body(b) {}
+	BleedEvent(const Step delay, Body& b);
 	void execute() { m_body.bleed(); }
 	void clearReferences() { m_body.m_bleedEvent.clearPointer(); }
 };
@@ -130,7 +131,7 @@ class WoundsCloseEvent : public ScheduledEventWithPercent
 {
 	Body& m_body;
 public:
-	WoundsCloseEvent(const Step delay, Body& b) : ScheduledEventWithPercent(delay), m_body(b) {}
+	WoundsCloseEvent(const Step delay, Body& b);
 	void execute() { m_body.woundsClose(); }
 	void clearReferences() { m_body.m_woundsCloseEvent.clearPointer(); }
 };

@@ -6,9 +6,9 @@
 
 #include <algorithm>
 
-Plant::Plant(Block& l, const PlantSpecies& pt, uint32_t pg) : m_location(l), m_fluidSource(nullptr), m_plantSpecies(pt), m_percentGrown(pg), m_quantityToHarvest(0), m_percentFoliage(100), m_reservable(1), m_volumeFluidRequested(0)
+Plant::Plant(Block& l, const PlantSpecies& pt, uint32_t pg) : m_location(l), m_fluidSource(nullptr), m_plantSpecies(pt), m_growthEvent(l.m_area->m_simulation.m_eventSchedule), m_fluidEvent(l.m_area->m_simulation.m_eventSchedule), m_temperatureEvent(l.m_area->m_simulation.m_eventSchedule), m_endOfHarvestEvent(l.m_area->m_simulation.m_eventSchedule), m_foliageGrowthEvent(l.m_area->m_simulation.m_eventSchedule), m_percentGrown(pg), m_quantityToHarvest(0), m_percentFoliage(100), m_reservable(1), m_volumeFluidRequested(0)
 {
-	assert(m_location.m_hasPlant.canGrowHere(m_plantSpecies));
+	assert(m_location.m_hasPlant.canGrowHereAtSomePointToday(m_plantSpecies));
 	m_fluidEvent.schedule(m_plantSpecies.stepsNeedsFluidFrequency, *this);
 	updateGrowingStatus();
 }
@@ -211,6 +211,12 @@ uint32_t Plant::getStepAtWhichPlantWillDieFromLackOfFluid() const
 	assert(m_volumeFluidRequested != 0);
 	return m_fluidEvent.getStep();
 }
+// Events.
+PlantGrowthEvent::PlantGrowthEvent(const Step delay, Plant& p) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay), m_plant(p) {}
+PlantFoliageGrowthEvent::PlantFoliageGrowthEvent(const Step delay, Plant& p) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay), m_plant(p) {}
+PlantEndOfHarvestEvent::PlantEndOfHarvestEvent(const Step delay, Plant& p) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay), m_plant(p) {}
+PlantFluidEvent::PlantFluidEvent(const Step delay, Plant& p) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay), m_plant(p) {}
+PlantTemperatureEvent::PlantTemperatureEvent(const Step delay, Plant& p) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay), m_plant(p) {}
 // HasPlant.
 void HasPlant::addPlant(const PlantSpecies& plantSpecies, uint32_t growthPercent)
 {
@@ -232,7 +238,7 @@ void HasPlant::setTemperature(uint32_t temperature)
 	if(m_plant != nullptr)
 		m_plant->setTemperature(temperature);
 }
-bool HasPlant::canGrowHere(const PlantSpecies& plantSpecies) const
+bool HasPlant::canGrowHereCurrently(const PlantSpecies& plantSpecies) const
 {
 	uint32_t temperature = m_block.m_blockHasTemperature.get();
 	if(plantSpecies.maximumGrowingTemperature < temperature || plantSpecies.minimumGrowingTemperature > temperature)
@@ -244,9 +250,21 @@ bool HasPlant::canGrowHere(const PlantSpecies& plantSpecies) const
 		return false;
 	return true;
 }
+bool HasPlant::canGrowHereAtSomePointToday(const PlantSpecies& plantSpecies) const
+{
+	uint32_t temperature = m_block.m_blockHasTemperature.getDailyAverageAmbientTemperature();
+	if(plantSpecies.maximumGrowingTemperature < temperature || plantSpecies.minimumGrowingTemperature > temperature)
+		return false;
+	if(plantSpecies.growsInSunLight != m_block.m_outdoors)
+		return false;
+	static const MaterialType& dirtType = MaterialType::byName("dirt");
+	if(m_block.m_adjacents[0] == nullptr || !m_block.m_adjacents[0]->isSolid() || m_block.m_adjacents[0]->getSolidMaterial() != dirtType)
+		return false;
+	return true;
+}
 Plant& HasPlants::emplace(Block& location, const PlantSpecies& species, uint32_t percentGrowth)
 {
-	assert(location.m_hasPlant.canGrowHere(species));
+	assert(location.m_hasPlant.canGrowHereAtSomePointToday(species));
 	assert(!location.m_hasPlant.exists());
 	Plant& plant = m_plants.emplace_back(location, species, percentGrowth);
 	// TODO: plants above ground but under roof?

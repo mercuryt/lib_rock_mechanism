@@ -16,7 +16,7 @@ class FireEvent final : public ScheduledEventWithPercent
 public:
 	Fire& m_fire;
 
-	FireEvent(uint32_t s, Fire& f) : ScheduledEventWithPercent(s), m_fire(f) {}
+	FireEvent(uint32_t delay, Fire& f);
 	void execute();
 	void clearReferences();
 };

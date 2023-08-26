@@ -5,12 +5,7 @@
 #pragma once
 
 #include "block.h"
-#include "buckets.h"
-#include "locationBuckets.h"
-#include "visionRequest.h"
-#include "routeRequest.h"
 #include "fluidGroup.h"
-#include "eventSchedule.h"
 #include "mistDisperseEvent.h"
 #include "cuboid.h"
 #include "visionCuboid.h"
@@ -18,7 +13,8 @@
 #include "construct.h"
 #include "craft.h"
 #include "rain.h"
-#include "../lib/BS_thread_pool_light.hpp"
+#include "datetime.h"
+#include "simulation.h"	
 
 #include <vector>
 #include <unordered_map>
@@ -29,6 +25,7 @@
 class Area final
 {
 public:
+	Simulation& m_simulation;
 	uint32_t m_sizeX;
 	uint32_t m_sizeY;
 	uint32_t m_sizeZ;
@@ -57,11 +54,9 @@ public:
 	AreaHasRain m_hasRain;
 	std::list<VisionCuboid> m_visionCuboids;
 	bool m_visionCuboidsActive;
-	
-
 
 	// Create blocks and store adjacent
-	Area(uint32_t x, uint32_t y, uint32_t z, uint32_t ambiantSurfaceTemperature);
+	Area(Simulation& s, uint32_t x, uint32_t y, uint32_t z);
 
 	void readStep();
 	void writeStep();
@@ -77,8 +72,7 @@ public:
 	void stepCaveInWrite();
 	void registerPotentialCaveIn(Block& block);
 	// Update time.
-	void setHour(uint32_t hour, uint32_t dayOfYear);
-	void setDayOfYear(uint32_t dayOfYear);
+	void setDateTime(DateTime now);
 
 	void validateAllFluidGroups();
 	std::string toS();

@@ -19,6 +19,7 @@ namespace path
 		RouteNode* routeNode;
 		uint32_t totalMoveCost;
 	};
+	// Depth first search.
 	template<typename IsValidType, typename CompareType, typename IsDoneType, typename AdjacentCostsType>
 	std::vector<Block*> get(IsValidType& isValid, CompareType& compare, IsDoneType& isDone, AdjacentCostsType& adjacentCosts, Block& start)
 	{
@@ -58,6 +59,7 @@ namespace path
 		}
 		return output; // Empty container means no result found.
 	}
+	// Depth first search for a given actor's movement.
 	inline std::pair<std::vector<Block*>, std::unordered_map<Block*, std::vector<std::pair<Block*, uint32_t>>>> getForActor(const Actor& actor, const Block& destination, bool detour = false)
 	{
 		// Huristic: taxi distance to destination times constant plus total move cost.
@@ -89,7 +91,7 @@ namespace path
 				std::move(moveCostsToCache)
 			);
 	}
-	// Depth first search.
+	// Breadth first search.
 	// TODO: remove default argument on maxRange.
 	template<typename Predicate>
 	std::vector<Block*> getForActorToPredicate(const Actor& actor, Predicate&& predicate, const uint32_t& maxRange = UINT32_MAX)
@@ -103,10 +105,9 @@ namespace path
 		std::vector<Block*> output;
 		while(!openList.empty())
 		{
-			for(const RouteNode* routeNode : openList)
+			const RouteNode* routeNode = openList.front();
+			if(maxRange >= actor.m_location->taxiDistance(routeNode->block))
 			{
-				if(maxRange > actor.m_location->taxiDistance(routeNode->block))
-					continue;
 				if(predicate(routeNode->block))
 				{
 					// Result found.
@@ -134,6 +135,7 @@ namespace path
 					}
 				}
 			}
+			openList.pop_front();
 		}
 		return output; // Empty container means no result found.
 	}
@@ -148,10 +150,9 @@ namespace path
 		openList.push_back(&routeNodes.back());
 		while(!openList.empty())
 		{
-			for(RouteNode* routeNode : openList)
+			const RouteNode* routeNode = openList.front();
+			if(maxRange >= location.taxiDistance(routeNode->block))
 			{
-				if(maxRange > location.taxiDistance(routeNode->block))
-					continue;
 				if(predicate(routeNode->block))
 					return &routeNode->block;
 				for(Block* adjacent : routeNode->block.m_adjacentsVector)
@@ -169,12 +170,13 @@ namespace path
 					}
 				}
 			}
+			openList.pop_front();
 		}
 		return nullptr;
 	}
 	template<typename Predicate>
-	Block* getForActorToPredicateReturnEndOnly(const Actor& actor, Predicate&& predicate, const uint32_t& maxRange = UINT32_MAX)
-	{
-		return getForActorFromLocationToPredicateReturnEndOnly(actor, *actor.m_location, predicate, maxRange);
-	}
+		Block* getForActorToPredicateReturnEndOnly(const Actor& actor, Predicate&& predicate, const uint32_t& maxRange = UINT32_MAX)
+		{
+			return getForActorFromLocationToPredicateReturnEndOnly(actor, *actor.m_location, predicate, maxRange);
+		}
 }

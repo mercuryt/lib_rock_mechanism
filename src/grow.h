@@ -26,7 +26,7 @@ class AnimalGrowthEvent final : public ScheduledEventWithPercent
 {
 	CanGrow& m_canGrow;
 public:
-	AnimalGrowthEvent(uint32_t delay, CanGrow& cg) : ScheduledEventWithPercent(delay), m_canGrow(cg) { }
+	AnimalGrowthEvent(uint32_t delay, CanGrow& cg);
 	void execute() { m_canGrow.complete(); }
 	void clearReferences(){ m_canGrow.m_event.clearPointer(); }
 };
@@ -34,7 +34,7 @@ class AnimalGrowthUpdateEvent final : public ScheduledEventWithPercent
 {
 	CanGrow& m_canGrow;
 public:
-	AnimalGrowthUpdateEvent(uint32_t delay, CanGrow& cg) : ScheduledEventWithPercent(delay), m_canGrow(cg) { }
+	AnimalGrowthUpdateEvent(uint32_t delay, CanGrow& cg);
 	void execute() { m_canGrow.update(); }
 	void clearReferences(){ m_canGrow.m_updateEvent.clearPointer(); }
 };

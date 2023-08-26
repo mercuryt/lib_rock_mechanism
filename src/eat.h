@@ -1,8 +1,7 @@
 #pragma once
 
 #include "objective.h"
-#include "eventSchedule.h"
-#include "threadedTask.h"
+#include "threadedTask.hpp"
 #include "eventSchedule.hpp"
 #include "pathToBlockBaseThreadedTask.h"
 
@@ -38,7 +37,7 @@ class EatEvent final : public ScheduledEventWithPercent
 {
 	EatObjective& m_eatObjective;
 public:
-	EatEvent(const Step delay, EatObjective& eo) : ScheduledEventWithPercent(delay), m_eatObjective(eo) { }
+	EatEvent(const Step delay, EatObjective& eo);
 	void execute();
 	void clearReferences();
 	void eatPreparedMeal(Item& item);
@@ -54,7 +53,7 @@ class HungerEvent final : public ScheduledEventWithPercent
 {
 	Actor& m_actor;
 public:
-	HungerEvent(const Step delay, Actor& a) : ScheduledEventWithPercent(delay), m_actor(a) { }
+	HungerEvent(const Step delay, Actor& a);
 	void execute();
 	void clearReferences();
 };
@@ -63,7 +62,7 @@ class EatThreadedTask final : public PathToBlockBaseThreadedTask
 	EatObjective& m_eatObjective;
 	Actor* m_huntResult;
 public:
-	EatThreadedTask(EatObjective& eo) : m_eatObjective(eo), m_huntResult(nullptr) {}
+	EatThreadedTask(EatObjective& eo);
 	void readStep();
 	void writeStep();
 	void clearReferences();
@@ -81,6 +80,7 @@ public:
 	EatObjective(Actor& a);
 	void execute();
 	void cancel() {}
+	std::string name() { return "eat"; }
 	bool canEatAt(const Block& block) const;
 	friend class EatEvent;
 	friend class EatThreadedTask;

@@ -7,6 +7,7 @@
 #include <utility>
 #include <algorithm>
 // CanFight.
+CanFight::CanFight(Actor& a) : m_actor(a), m_maxRange(0), m_coolDownDuration(0), m_coolDown(m_actor.getEventSchedule()), m_getIntoAttackPositionThreadedTask(m_actor.getThreadedTaskEngine()) { }
 void CanFight::attack(Actor& target)
 {
 	assert(!m_coolDown.exists());
@@ -109,7 +110,7 @@ void CanFight::onMoveFrom(Block& previous)
 	// Give all directly adjacent enemies a free hit against this actor.
 	for(Block* block : previous.m_adjacentsVector)
 		for(Actor* actor : block->m_hasActors.getAll())
-			if(actor->m_faction->enemies.contains(m_actor.m_faction))
+			if(actor->getFaction()->enemies.contains(const_cast<Faction*>(m_actor.getFaction())))
 				actor->m_canFight.freeHit(m_actor);
 }
 void CanFight::noLongerTargetable()
@@ -145,6 +146,9 @@ void CanFight::freeHit(Actor& actor)
 bool CanFight::isOnCoolDown() const { return m_coolDown.exists(); }
 bool CanFight::inRange(const Actor& target) const { return m_actor.m_location->distance(*target.m_location) <= m_maxRange; }
 
+AttackCoolDown::AttackCoolDown(CanFight& cf) : ScheduledEventWithPercent(cf.m_actor.getSimulation(), cf.m_coolDownDuration), m_canFight(cf) { }
+
+GetIntoAttackPositionThreadedTask::GetIntoAttackPositionThreadedTask(Actor& a, Actor& t, uint32_t r) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_target(t), m_range(r) {}
 void GetIntoAttackPositionThreadedTask::readStep()
 {
 	auto destinatonCondition = [&](Block& block)

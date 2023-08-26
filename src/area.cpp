@@ -6,8 +6,8 @@
 #include "simulation.h"
 #include <algorithm>
 
-Area::Area(uint32_t x, uint32_t y, uint32_t z, uint32_t ambiantSurfaceTemperature) :
-	m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_areaHasTemperature(*this, ambiantSurfaceTemperature), m_hasActors(*this), m_hasStockPiles(*this), m_hasRain(*this), m_visionCuboidsActive(false)
+Area::Area(Simulation& s, uint32_t x, uint32_t y, uint32_t z) :
+	m_simulation(s), m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_areaHasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasRain(*this), m_visionCuboidsActive(false)
 {
 	// build m_blocks
 	m_blocks.resize(m_sizeX);
@@ -26,6 +26,7 @@ Area::Area(uint32_t x, uint32_t y, uint32_t z, uint32_t ambiantSurfaceTemperatur
 		for(uint32_t y = 0; y < m_sizeY; ++y)
 			for(uint32_t z = 0; z < m_sizeZ; ++z)
 				m_blocks[x][y][z].recordAdjacent();
+	setDateTime(m_simulation.m_now);
 }
 void Area::readStep()
 { 
@@ -34,10 +35,10 @@ void Area::readStep()
 	// It seems like having the vision requests permanantly embeded in the actors and iterating the vision bucket directly rather then using the visionRequestQueue should be faster but limited testing shows otherwise.
 	m_hasActors.processVisionReadStep();
 	// Calculate cave in.
-	simulation::pool.push_task([&](){ stepCaveInRead(); });
+	m_simulation.m_pool.push_task([&](){ stepCaveInRead(); });
 	// Calculate flow.
 	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
-		simulation::pool.push_task([=](){ fluidGroup->readStep(); });
+		m_simulation.m_pool.push_task([=](){ fluidGroup->readStep(); });
 }
 void Area::writeStep()
 { 
@@ -132,15 +133,16 @@ void Area::visionCuboidsActivate()
 	m_visionCuboidsActive = true;
 	VisionCuboid::setup(*this);
 }
-void Area::setHour(uint32_t hour, uint32_t dayOfYear)
+void Area::setDateTime(DateTime now)
 {
-	m_areaHasTemperature.setAmbientTemperatureFor(hour, dayOfYear);
-}
-void Area::setDayOfYear(uint32_t dayOfYear)
-{
-	m_areaHasTemperature.setAmbientTemperatureFor(0, dayOfYear);
-	for(Plant& plant : m_hasPlants.getAll())
-		plant.setDayOfYear(dayOfYear);
+	//TODO: daylight.
+	m_areaHasTemperature.setAmbientSurfaceTemperatureFor(now);
+	if(now.hour == 1)
+	{
+		for(Plant& plant : m_hasPlants.getAll())
+			plant.setDayOfYear(now.day);
+		m_hasFarmFields.setDayOfYear(now.day);
+	}
 }
 Cuboid Area::getZLevel(uint32_t z)
 {

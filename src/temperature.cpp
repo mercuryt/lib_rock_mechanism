@@ -4,6 +4,7 @@
 #include "path.h"
 #include "nthAdjacentOffsets.h"
 #include "config.h"
+#include "simulation.h"
 #include <cmath>
 enum class TemperatureZone { Surface, Underground, LavaSea };
 uint32_t TemperatureSource::getTemperatureDeltaForRange(uint32_t range)
@@ -64,10 +65,10 @@ void AreaHasTemperature::addDelta(Block& block, int32_t delta)
 // TODO: optimize by splitting block deltas into different structures for different temperature zones, to avoid having to rerun getAmbientTemperature?
 void AreaHasTemperature::applyDeltas()
 {
-	std::unordered_map<Block*, int32_t> oldDeltas;
-	oldDeltas.swap(m_blockDeltaDeltas);
-	for(auto& [block, delta] : oldDeltas)
-		block->m_blockHasTemperature.updateDelta(delta);
+	std::unordered_map<Block*, int32_t> oldDeltaDeltas;
+	oldDeltaDeltas.swap(m_blockDeltaDeltas);
+	for(auto& [block, deltaDelta] : oldDeltaDeltas)
+		block->m_blockHasTemperature.updateDelta(deltaDelta);
 }
 void AreaHasTemperature::setAmbientSurfaceTemperature(const uint32_t& temperature)
 {
@@ -89,19 +90,15 @@ void AreaHasTemperature::setAmbientSurfaceTemperature(const uint32_t& temperatur
 		else
 			break;
 }
-void AreaHasTemperature::setAmbientTemperatureFor(uint32_t hour, uint32_t dayOfYear)
+void AreaHasTemperature::setAmbientSurfaceTemperatureFor(DateTime now)
 {
-	// TODO: generate constants from latitude and altitude.
-	static uint32_t yearlyHottestDailyAverage = 300;
-	static uint32_t yearlyColdestDailyAverage = 280;
-	static uint32_t dayOfYearOfSolstice = Config::daysPerYear / 2;
-	uint32_t daysFromSolstice = std::abs((int32_t)dayOfYear - (int32_t)dayOfYearOfSolstice);
-	uint32_t dailyAverage = yearlyColdestDailyAverage + ((yearlyHottestDailyAverage - yearlyColdestDailyAverage) * (dayOfYearOfSolstice - daysFromSolstice)) / dayOfYearOfSolstice;
+	// TODO: Latitude and altitude.
+	uint32_t dailyAverage = getDailyAverageAmbientSurfaceTemperature(now);
 	static uint32_t maxDailySwing = 35;
 	static uint32_t hottestHourOfDay = 14;
-	uint32_t hoursFromHottestHourOfDay = std::abs((int32_t)hottestHourOfDay - (int32_t)hour);
+	uint32_t hoursFromHottestHourOfDay = std::abs((int32_t)hottestHourOfDay - (int32_t)now.hour);
 	uint32_t halfDay =  Config::hoursPerDay / 2;
-	setAmbientSurfaceTemperature(dailyAverage + ((maxDailySwing * (halfDay - hoursFromHottestHourOfDay)) / halfDay) - (maxDailySwing / 2));
+	setAmbientSurfaceTemperature(dailyAverage + ((maxDailySwing * (std::min(0u, halfDay - hoursFromHottestHourOfDay))) / halfDay) - (maxDailySwing / 2));
 }
 void AreaHasTemperature::addMeltableSolidBlockAboveGround(Block& block)
 {
@@ -115,9 +112,18 @@ void AreaHasTemperature::removeMeltableSolidBlockAboveGround(Block& block)
 	assert(block.isSolid());
 	m_aboveGroundBlocksByMeltingPoint.at(block.getSolidMaterial().meltingPoint).erase(&block);
 }
-void BlockHasTemperature::updateDelta(int32_t delta)
+uint32_t AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature(DateTime dateTime) const
 {
-	m_delta += delta;
+	// TODO: Latitude and altitude.
+	static uint32_t yearlyHottestDailyAverage = 300;
+	static uint32_t yearlyColdestDailyAverage = 280;
+	static uint32_t dayOfYearOfSolstice = Config::daysPerYear / 2;
+	uint32_t daysFromSolstice = std::abs((int32_t)dateTime.day - (int32_t)dayOfYearOfSolstice);
+	return yearlyColdestDailyAverage + ((yearlyHottestDailyAverage - yearlyColdestDailyAverage) * (dayOfYearOfSolstice - daysFromSolstice)) / dayOfYearOfSolstice;
+}
+void BlockHasTemperature::updateDelta(int32_t deltaDelta)
+{
+	m_delta += deltaDelta;
 	uint32_t temperature = m_delta + getAmbientTemperature();
 	if(m_block.isSolid())
 	{
@@ -169,6 +175,18 @@ const uint32_t& BlockHasTemperature::getAmbientTemperature() const
 	}
 	return m_block.m_area->m_areaHasTemperature.getAmbientSurfaceTemperature();
 }
+uint32_t BlockHasTemperature::getDailyAverageAmbientTemperature() const 
+{
+	if(m_block.m_underground)
+	{
+		if(m_block.m_z <= Config::maxZLevelForDeepAmbiantTemperature)
+			return Config::deepAmbiantTemperature;
+		else
+			return Config::undergroundAmbiantTemperature;
+	}
+	return m_block.m_area->m_areaHasTemperature.getDailyAverageAmbientSurfaceTemperature(m_block.m_area->m_simulation.m_now);
+}
+GetToSafeTemperatureThreadedTask::GetToSafeTemperatureThreadedTask(GetToSafeTemperatureObjective& o) : ThreadedTask(o.m_actor.getThreadedTaskEngine()), m_objective(o) { }
 void GetToSafeTemperatureThreadedTask::readStep()
 {
 	auto condition = [&](Block& block)
@@ -183,6 +201,7 @@ void GetToSafeTemperatureThreadedTask::writeStep()
 		m_objective.m_actor.m_hasObjectives.cannotFulfillNeed(m_objective);
 }
 void GetToSafeTemperatureThreadedTask::clearReferences(){ m_objective.m_getToSafeTemperatureThreadedTask.clearPointer(); }
+GetToSafeTemperatureObjective::GetToSafeTemperatureObjective(Actor& a) : Objective(Config::getToSafeTemperaturePriority), m_actor(a), m_getToSafeTemperatureThreadedTask(a.getThreadedTaskEngine()) { }
 void GetToSafeTemperatureObjective::execute()
 {
 	if(m_actor.m_needsSafeTemperature.isSafeAtCurrentLocation())

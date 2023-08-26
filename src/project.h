@@ -13,36 +13,11 @@
 #include <utility>
 #include <unordered_set>
 #include <unordered_map>
-class Project;
+class ProjectFinishEvent;
+class ProjectTryToHaulEvent;
+class ProjectTryToMakeHaulSubprojectThreadedTask;
 class Block;
 
-class ProjectFinishEvent final : public ScheduledEventWithPercent
-{
-	Project& m_project;
-public:
-	ProjectFinishEvent(const Step delay, Project& p) : ScheduledEventWithPercent(delay), m_project(p) {}
-	void execute();
-	void clearReferences();
-};
-class ProjectTryToHaulEvent final : public ScheduledEventWithPercent
-{
-	Project& m_project;
-public:
-	ProjectTryToHaulEvent(const Step delay, Project& p) : ScheduledEventWithPercent(delay), m_project(p) { }
-	void execute();
-	void clearReferences();
-};
-class ProjectTryToMakeHaulSubprojectThreadedTask final : public ThreadedTask
-{
-	Project& m_project;
-	HaulSubprojectParamaters m_haulProjectParamaters;
-	bool m_result;
-public:
-	ProjectTryToMakeHaulSubprojectThreadedTask(Project& p) : m_project(p) { }
-	void readStep();
-	void writeStep();
-	void clearReferences();
-};
 struct ProjectWorker final
 {
 	HaulSubproject* haulSubproject;
@@ -75,7 +50,7 @@ protected:
 	std::unordered_set<Actor*> m_waiting;
 	std::unordered_set<Actor*> m_making;
 	std::list<HaulSubproject> m_haulSubprojects;
-	Project(const Faction& f, Block& l, size_t mw) : m_gatherComplete(false), m_canReserve(f), m_maxWorkers(mw),  m_location(l) { }
+	Project(const Faction& f, Block& l, size_t mw);
 public:
 	void recordRequiredActorsAndItemsAndReserveLocation();
 	void addWorker(Actor& actor);
@@ -113,4 +88,31 @@ public:
 	friend class ProjectFindActorsThreadedTask;
 	friend class ProjectTryToMakeHaulSubprojectThreadedTask;
 	friend class HaulSubproject;
+};
+class ProjectFinishEvent final : public ScheduledEventWithPercent
+{
+	Project& m_project;
+public:
+	ProjectFinishEvent(const Step delay, Project& p);
+	void execute();
+	void clearReferences();
+};
+class ProjectTryToHaulEvent final : public ScheduledEventWithPercent
+{
+	Project& m_project;
+public:
+	ProjectTryToHaulEvent(const Step delay, Project& p);
+	void execute();
+	void clearReferences();
+};
+class ProjectTryToMakeHaulSubprojectThreadedTask final : public ThreadedTask
+{
+	Project& m_project;
+	HaulSubprojectParamaters m_haulProjectParamaters;
+	bool m_result;
+public:
+	ProjectTryToMakeHaulSubprojectThreadedTask(Project& p);
+	void readStep();
+	void writeStep();
+	void clearReferences();
 };

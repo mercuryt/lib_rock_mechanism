@@ -1,6 +1,7 @@
 #pragma once
 #include "visionRequest.h"
 #include <cstdint>
+#include <functional>
 class Area;
 class Block;
 class LocationBuckets
@@ -20,6 +21,7 @@ public:
 	void processVisionRequest(VisionRequest& visionRequest) const;
 	std::unordered_set<Actor*>* getBucketFor(const Block& block);
 	bool hasLineOfSight(VisionRequest& visionRequest, const Block& to, const Block& from) const;
+	void getByConditionSortedByTaxiDistanceFrom(const Block& block, std::function<bool(const Actor&)> predicate, std::function<bool(const Actor&)> yeild);
 	struct InRange
 	{
 		const LocationBuckets& locationBuckets;

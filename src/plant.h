@@ -1,6 +1,5 @@
 #pragma once
 
-#include "eventSchedule.h"
 #include "reservable.h"
 #include "eventSchedule.hpp"
 
@@ -17,7 +16,7 @@ struct FluidType;
 
 struct HarvestData final
 {
-	const uint32_t dayOfYearToStart;
+	const uint16_t dayOfYearToStart;
 	const Step stepsDuration;
 	const uint32_t itemQuantity;
 	const ItemType& fruitItemType;
@@ -41,8 +40,8 @@ struct PlantSpecies final
 	const uint32_t rootRangeMax;
 	const uint32_t rootRangeMin;
 	const uint32_t adultMass;
-	const uint32_t dayOfYearForSowStart;
-	const uint32_t dayOfYearForSowEnd;
+	const uint16_t dayOfYearForSowStart;
+	const uint16_t dayOfYearForSowEnd;
 	const FluidType& fluidType;
 	const HarvestData* harvestData;
 	// Infastructure.
@@ -104,7 +103,7 @@ class PlantGrowthEvent final : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
 public:
-	PlantGrowthEvent(const Step delay, Plant& p) : ScheduledEventWithPercent(delay), m_plant(p) {}
+	PlantGrowthEvent(const Step delay, Plant& p);
 	void execute()
 	{
 		m_plant.m_percentGrown = 100;
@@ -117,7 +116,7 @@ class PlantFoliageGrowthEvent final : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
 public:
-	PlantFoliageGrowthEvent(const Step delay, Plant& p) : ScheduledEventWithPercent(delay), m_plant(p) {}
+	PlantFoliageGrowthEvent(const Step delay, Plant& p);
 	void execute(){ m_plant.foliageGrowth(); }
 	void clearReferences(){ m_plant.m_foliageGrowthEvent.clearPointer(); }
 };
@@ -125,7 +124,7 @@ class PlantEndOfHarvestEvent final : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
 public:
-	PlantEndOfHarvestEvent(const Step delay, Plant& p) : ScheduledEventWithPercent(delay), m_plant(p) {}
+	PlantEndOfHarvestEvent(const Step delay, Plant& p);
 	void execute() { m_plant.endOfHarvest(); }
 	void clearReferences() { m_plant.m_endOfHarvestEvent.clearPointer(); }
 };
@@ -133,7 +132,7 @@ class PlantFluidEvent final : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
 public:
-	PlantFluidEvent(const Step delay, Plant& p) : ScheduledEventWithPercent(delay), m_plant(p) {}
+	PlantFluidEvent(const Step delay, Plant& p);
 	void execute() { m_plant.setMaybeNeedsFluid(); }
 	void clearReferences() { m_plant.m_fluidEvent.clearPointer(); }
 };
@@ -141,7 +140,7 @@ class PlantTemperatureEvent final : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
 public:
-	PlantTemperatureEvent(const Step delay, Plant& p) : ScheduledEventWithPercent(delay), m_plant(p) {}
+	PlantTemperatureEvent(const Step delay, Plant& p);
 	void execute() { m_plant.die(); }
 	void clearReferences() { m_plant.m_temperatureEvent.clearPointer(); }
 };
@@ -158,7 +157,8 @@ public:
 	void setTemperature(uint32_t temperature);
 	Plant& get() { assert(m_plant != nullptr); return *m_plant; }
 	const Plant& get() const { assert(m_plant != nullptr); return *m_plant; }
-	bool canGrowHere(const PlantSpecies& plantSpecies) const;
+	bool canGrowHereCurrently(const PlantSpecies& plantSpecies) const;
+	bool canGrowHereAtSomePointToday(const PlantSpecies& plantSpecies) const;
 	bool exists() const { return m_plant != nullptr; }
 };
 // To be used by Area.

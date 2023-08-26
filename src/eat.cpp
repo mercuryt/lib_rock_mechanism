@@ -7,6 +7,8 @@
 #include "path.h"
 #include "util.h"
 
+EatEvent::EatEvent(const Step delay, EatObjective& eo) : ScheduledEventWithPercent(eo.m_actor.getSimulation(), delay), m_eatObjective(eo) { }
+
 void EatEvent::execute()
 {
 	Block* blockContainingFood = getBlockWithMostDesiredFoodInReach();
@@ -119,11 +121,13 @@ void EatEvent::eatFruitFromPlant(Plant& plant)
 	if(eater.m_mustEat.getMassFoodRequested() == 0)
 		eater.m_hasObjectives.objectiveComplete(m_eatObjective);
 }
+HungerEvent::HungerEvent(const Step delay, Actor& a) : ScheduledEventWithPercent(a.getSimulation(), delay), m_actor(a) { }
 void HungerEvent::execute()
 {
 	m_actor.m_mustEat.setNeedsFood();
 }
 void HungerEvent::clearReferences() { m_actor.m_mustEat.m_hungerEvent.clearPointer(); }
+EatThreadedTask::EatThreadedTask(EatObjective& eo) : PathToBlockBaseThreadedTask(eo.m_actor.getThreadedTaskEngine()), m_eatObjective(eo), m_huntResult(nullptr) {}
 void EatThreadedTask::readStep()
 {
 	if(m_eatObjective.m_foodLocation == nullptr)
@@ -174,7 +178,7 @@ void EatThreadedTask::readStep()
 		assert(m_eatObjective.m_eatingLocation == nullptr);
 		auto eatingLocationCondition = [&](Block& block)
 		{
-			if(block.m_reservable.isFullyReserved(*m_eatObjective.m_actor.m_faction))
+			if(block.m_reservable.isFullyReserved(*m_eatObjective.m_actor.getFaction()))
 				return false;
 			static const ItemType& chair = ItemType::byName("chair");
 			if(!block.m_hasItems.hasInstalledItemType(chair))
@@ -220,7 +224,7 @@ void EatThreadedTask::writeStep()
 }
 void EatThreadedTask::clearReferences() { m_eatObjective.m_threadedTask.clearPointer(); }
 EatObjective::EatObjective(Actor& a) :
-	Objective(Config::eatPriority), m_actor(a), m_foodLocation(nullptr), m_foodItem(nullptr), m_eatingLocation(m_actor.m_mustEat.m_eatingLocation), m_noEatingLocationFound(false) { }
+	Objective(Config::eatPriority), m_actor(a), m_threadedTask(a.getThreadedTaskEngine()), m_eatEvent(a.getEventSchedule()), m_foodLocation(nullptr), m_foodItem(nullptr), m_eatingLocation(m_actor.m_mustEat.m_eatingLocation), m_noEatingLocationFound(false) { }
 void EatObjective::execute()
 {
 	if(m_foodLocation == nullptr)
@@ -295,7 +299,7 @@ bool EatObjective::canEatAt(const Block& block) const
 	}
 	return false;
 }
-MustEat::MustEat(Actor& a) : m_actor(a), m_massFoodRequested(0), m_eatingLocation(nullptr)
+MustEat::MustEat(Actor& a) : m_actor(a), m_massFoodRequested(0), m_hungerEvent(a.getEventSchedule()), m_eatingLocation(nullptr)
 {
 	m_hungerEvent.schedule(m_actor.m_species.stepsEatFrequency, m_actor);
 }

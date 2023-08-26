@@ -123,7 +123,7 @@ namespace Config
 	inline constexpr uint32_t percentPermanantImparmentMinimum = 10;
 	inline constexpr float heatDisipatesAtDistanceExponent = 3.5;
 	inline constexpr uint32_t heatRadianceMinimum = 3;
-	inline constexpr uint32_t daysPerYear = 365;
+	inline constexpr uint16_t daysPerYear = 365;
 	inline constexpr uint32_t rainFrequencyModifier = 1000;
 	inline constexpr uint32_t restIntervalSteps = 5 * stepsPerSecond;
 	inline constexpr uint32_t staminaPointsPerRestPeriod = 10;

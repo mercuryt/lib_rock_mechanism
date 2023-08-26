@@ -13,6 +13,7 @@ void VisionRequest::readSteps(std::vector<VisionRequest>::iterator begin, std::v
 VisionRequest::VisionRequest(Actor& a) : m_actor(a) {}
 void VisionRequest::readStep()
 {
+	assert(!m_actor.m_blocks.empty());
 	m_actor.m_location->m_area->m_hasActors.m_locationBuckets.processVisionRequest(*this);
 	// This is a more elegant solution then passing the request to location buckets but is also slower.
 	 /*
@@ -34,7 +35,7 @@ void VisionRequest::readStep()
 }
 void VisionRequest::writeStep()
 {
-	m_actor.doVision(std::move(m_actors));
+	m_actor.doVision(m_actors);
 }
 bool VisionRequest::hasLineOfSight(const Block& to, const Block& from)
 {

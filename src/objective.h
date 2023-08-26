@@ -18,6 +18,7 @@ public:
 	uint32_t m_priority;
 	virtual void execute() = 0;
 	virtual void cancel() = 0;
+	virtual std::string name() = 0;
 	Objective(uint32_t p);
 	Objective(const Objective&) = delete;
 	Objective(Objective&&) = delete;
@@ -55,13 +56,13 @@ class HasObjectives final
 	Objective* m_currentObjective;
 	HasScheduledEvent<WaitEvent> m_waitEvent;
 
-	void getNext();
 	void maybeUsurpsPriority(Objective& objective);
 	void setCurrentObjective(Objective& objective);
 public:
 	ObjectiveTypePrioritySet m_prioritySet;
 
 	HasObjectives(Actor& a);
+	void getNext();
 	void addNeed(std::unique_ptr<Objective> objective);
 	void addTaskToEnd(std::unique_ptr<Objective> objective);
 	void addTaskToStart(std::unique_ptr<Objective> objective);
@@ -73,6 +74,7 @@ public:
 	void cannotFulfillNeed(Objective& objective);
 	void wait(const Step delay);
 	Objective& getCurrent();
+	bool hasCurrent() { return m_currentObjective != nullptr; }
 	friend class ObjectiveTypePrioritySet;
 	friend class WaitEvent;
 };
@@ -81,7 +83,7 @@ class WaitEvent final : public ScheduledEventWithPercent
 {
 	Actor& m_actor;
 public:
-	WaitEvent(const Step delay, Actor& a) : ScheduledEventWithPercent(delay), m_actor(a) { }
+	WaitEvent(const Step delay, Actor& a);
 	void execute();
 	void clearReferences();
 };

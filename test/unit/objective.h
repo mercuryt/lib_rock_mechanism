@@ -14,16 +14,17 @@ struct TestObjective final : public Objective
 	TestObjective(uint32_t priority, bool& ax) : Objective(priority), x(ax) { }
 	void execute() { x = !x; }
 	void cancel() { }
+	std::string name() { return "test"; }
 };
 
 TEST_CASE("objective")
 {
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	static const MaterialType& marble = MaterialType::byName("marble");
-	simulation::init();
-	Area area(10,10,10,280);
+	Simulation simulation;
+	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
-	Actor& actor = Actor::create(dwarf, area.m_blocks[5][5][1]);
+	Actor& actor = simulation.createActor(dwarf, area.m_blocks[5][5][1]);
 	bool x = false;
 	std::unique_ptr<Objective> objective = std::make_unique<TestObjective>(1, x);
 	Objective* ptr = objective.get();

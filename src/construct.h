@@ -9,33 +9,34 @@
 #include <unordered_map>
 #include <vector>
 
-class ConstructObjective;
+class ConstructThreadedTask;
 class Block;
 struct Faction;
-class BlockFeatureType;
-
-class ConstructThreadedTask final : public ThreadedTask
-{
-	ConstructObjective& m_constructObjective;
-	std::vector<Block*> m_result;
-public:
-	ConstructThreadedTask(ConstructObjective& co) : m_constructObjective(co) { }
-	void readStep();
-	void writeStep();
-	void clearReferences();
-};
+struct BlockFeatureType;
 class ConstructObjective final : public Objective
 {
 	Actor& m_actor;
 	HasThreadedTask<ConstructThreadedTask> m_constructThreadedTask;
 	Project* m_project;
 public:
-	ConstructObjective(Actor& a) : Objective(Config::constructObjectivePriority), m_actor(a), m_project(nullptr) { }
+	ConstructObjective(Actor& a) : Objective(Config::constructObjectivePriority), m_actor(a), m_constructThreadedTask(a.getThreadedTaskEngine()), m_project(nullptr) { }
 	void execute();
 	void cancel();
+	std::string name() { return "construct"; }
 	bool canConstructAt(Block& block) const;
 	Block* selectAdjacentProject(Block& block) const;
 	friend class ConstructThreadedTask;
+};
+
+class ConstructThreadedTask final : public ThreadedTask
+{
+	ConstructObjective& m_constructObjective;
+	std::vector<Block*> m_result;
+public:
+	ConstructThreadedTask(ConstructObjective& co) : ThreadedTask(co.m_actor.getThreadedTaskEngine()), m_constructObjective(co) { }
+	void readStep();
+	void writeStep();
+	void clearReferences();
 };
 class ConstructObjectiveType final : public ObjectiveType
 {

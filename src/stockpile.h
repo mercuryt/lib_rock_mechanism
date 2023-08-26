@@ -15,20 +15,8 @@
 #include <list>
 
 class Block;
-class StockPileObjective;
+class StockPileThreadedTask;
 class StockPileProject;
-// Searches for an Item and destination to make a hauling project for m_objective.m_actor.
-class StockPileThreadedTask final : public ThreadedTask
-{
-	StockPileObjective& m_objective;
-	Item* m_item;
-	Block* m_destination;
-public:
-	StockPileThreadedTask(StockPileObjective& spo) : m_objective(spo), m_item(nullptr), m_destination(nullptr) { }
-	void readStep();
-	void writeStep();
-	void clearReferences();
-};
 class StockPileObjectiveType final : public ObjectiveType
 {
 public:
@@ -41,9 +29,22 @@ public:
 	Actor& m_actor;
 	HasThreadedTask<StockPileThreadedTask> m_threadedTask;
 	StockPileProject* m_project;
-	StockPileObjective(Actor& a) : Objective(Config::stockPilePriority), m_actor(a) { }
+	StockPileObjective(Actor& a) : Objective(Config::stockPilePriority), m_actor(a), m_threadedTask(m_actor.getThreadedTaskEngine()) { }
 	void execute();
 	void cancel() { }
+	std::string name() { return "stock pile"; }
+};
+// Searches for an Item and destination to make a hauling project for m_objective.m_actor.
+class StockPileThreadedTask final : public ThreadedTask
+{
+	StockPileObjective& m_objective;
+	Item* m_item;
+	Block* m_destination;
+public:
+	StockPileThreadedTask(StockPileObjective& spo) : ThreadedTask(spo.m_actor.getThreadedTaskEngine()), m_objective(spo), m_item(nullptr), m_destination(nullptr) { }
+	void readStep();
+	void writeStep();
+	void clearReferences();
 };
 class StockPileProject final : public Project
 {

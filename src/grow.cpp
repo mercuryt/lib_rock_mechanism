@@ -1,7 +1,7 @@
 #include "grow.h"
 #include "actor.h"
 #include "config.h"
-CanGrow::CanGrow(Actor& a, uint32_t pg) : m_actor(a), m_percentGrown(pg)
+CanGrow::CanGrow(Actor& a, uint32_t pg) : m_actor(a), m_event(a.getEventSchedule()), m_updateEvent(a.getEventSchedule()), m_percentGrown(pg)
 { 
 	// Note: CanGrow must be initalized after MustEat, MustDrink, and SafeTemperature.
 	updateGrowingStatus();
@@ -57,3 +57,5 @@ void CanGrow::maybeStart()
 	if(m_event.exists())
 		updateGrowingStatus();
 }
+AnimalGrowthEvent::AnimalGrowthEvent(uint32_t delay, CanGrow& cg) : ScheduledEventWithPercent(cg.m_actor.getSimulation(), delay), m_canGrow(cg) { }
+AnimalGrowthUpdateEvent::AnimalGrowthUpdateEvent(uint32_t delay, CanGrow& cg) : ScheduledEventWithPercent(cg.m_actor.getSimulation(), delay), m_canGrow(cg) { }

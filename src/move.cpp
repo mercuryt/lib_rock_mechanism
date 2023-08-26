@@ -1,6 +1,6 @@
 #include "move.h"
 #include "path.h"
-ActorCanMove::ActorCanMove(Actor& a) : m_actor(a), m_moveType(&m_actor.m_species.moveType), m_retries(0)
+ActorCanMove::ActorCanMove(Actor& a) : m_actor(a), m_moveType(&m_actor.m_species.moveType), m_retries(0), m_event(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()), m_toSetThreadedTask(a.getThreadedTaskEngine()), m_exitAreaThreadedTask(a.getThreadedTaskEngine())
 {
 	updateIndividualSpeed();
 }
@@ -38,12 +38,11 @@ void ActorCanMove::callback()
 		setDestination(*m_destination);
 		return;
 	}
-	// Path is temporarily blocked, wait a bit and then detour if still blocked.
 	if(block.m_hasShapes.canEnterCurrentlyFrom(m_actor, *m_actor.m_location))
 	{
 		m_retries = 0;
 		m_actor.setLocation(block);
-		if(&block == m_actor.m_canMove.m_destination)
+		if(&block == m_destination)
 		{
 			m_destination = nullptr;
 			m_path.clear();
@@ -57,6 +56,7 @@ void ActorCanMove::callback()
 	}
 	else
 	{
+		// Path is temporarily blocked, wait a bit and then detour if still blocked.
 		if(m_retries == Config::moveTryAttemptsBeforeDetour)
 			setDestination(*m_destination, true);
 		else
@@ -100,6 +100,8 @@ bool ActorCanMove::canMove() const
 		return false;
 	return true;
 }
+MoveEvent::MoveEvent(Step delay, ActorCanMove& cm) : ScheduledEventWithPercent(cm.m_actor.getSimulation(), delay), m_canMove(cm) { }
+PathThreadedTask::PathThreadedTask(Actor& a, bool d, bool ad) : PathToBlockBaseThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_detour(d), m_adjacent(ad) { }
 void PathThreadedTask::readStep()
 {
 	pathTo(m_actor, *m_actor.m_canMove.m_destination, m_detour);
@@ -117,6 +119,7 @@ void PathThreadedTask::writeStep()
 	cacheMoveCosts(m_actor);
 }
 void PathThreadedTask::clearReferences() { m_actor.m_canMove.m_threadedTask.clearPointer(); }
+PathToSetThreadedTask::PathToSetThreadedTask(Actor& a, std::unordered_set<Block*> b, bool d, bool ad) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_blocks(b), m_detour(d), m_adjacent(ad) { }
 void PathToSetThreadedTask::readStep()
 {
 	auto condition = [&](Block& block){ return m_blocks.contains(&block); };
@@ -134,6 +137,7 @@ void PathToSetThreadedTask::writeStep()
 	}
 }
 void PathToSetThreadedTask::clearReferences() { m_actor.m_canMove.m_toSetThreadedTask.clearPointer(); }
+ExitAreaThreadedTask::ExitAreaThreadedTask(Actor& a, bool d) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_detour(d) { }
 void ExitAreaThreadedTask::readStep()
 {
 	auto condition = [&](Block& block) { return block.m_isEdge; };

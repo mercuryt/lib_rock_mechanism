@@ -3,55 +3,43 @@
 #include "util.h"
 #include "area.h"
 #include <cassert>
-ScheduledEvent::ScheduledEvent(const Step delay) : m_step(delay + simulation::step), m_cancel(false) 
+ScheduledEvent::ScheduledEvent(Simulation& simulation, const Step delay) : m_simulation(simulation), m_step(delay + simulation.m_step), m_cancel(false) 
 {
-	assert(delay > 0);
+	assert(delay != 0);
 }
-void ScheduledEvent::cancel() { eventSchedule::unschedule(*this); }
-Step ScheduledEvent::remaningSteps() const { return m_step - simulation::step; }
+void ScheduledEvent::cancel() 
+{
+	onCancel();
+       	m_simulation.m_eventSchedule.unschedule(*this); 
+}
+Step ScheduledEvent::remaningSteps() const { return m_step - m_simulation.m_step; }
 
-ScheduledEventWithPercent::ScheduledEventWithPercent(const Step delay) : ScheduledEvent(delay), m_startStep(simulation::step) {}
+ScheduledEventWithPercent::ScheduledEventWithPercent(Simulation& simulation, const Step delay) : ScheduledEvent(simulation, delay), m_startStep(simulation.m_step) {}
 uint32_t ScheduledEventWithPercent::percentComplete() const
 {
 	Step totalSteps = m_step - m_startStep;
-	Step elapsedSteps = simulation::step - m_startStep;
+	Step elapsedSteps = m_simulation.m_step - m_startStep;
 	return ((float)elapsedSteps / (float)totalSteps) * 100u;
 }
 
-void eventSchedule::schedule(std::unique_ptr<ScheduledEvent> scheduledEvent)
+void EventSchedule::schedule(std::unique_ptr<ScheduledEvent> scheduledEvent)
 {
-	data[scheduledEvent->m_step].push_back(std::move(scheduledEvent));
+	m_data[scheduledEvent->m_step].push_back(std::move(scheduledEvent));
 }
-void eventSchedule::schedule(std::unique_ptr<ScheduledEventWithPercent> scheduledEvent)
+void EventSchedule::schedule(std::unique_ptr<ScheduledEventWithPercent> scheduledEvent)
 {
-	data[scheduledEvent->m_step].push_back(std::move(scheduledEvent));
+	m_data[scheduledEvent->m_step].push_back(std::move(scheduledEvent));
 }
-//TODO: why doesn't this work?
-/*
-   template<class EventType, class ...Types>
-   void schedule(Types&... args)
-   {
-   schedule(std::move(std::make_unique<EventType>(args...)));
-   }
-   template<class EventType, class ...Types>
-   ScheduledEvent* emplaceSchedule(Types&... args)
-   {
-   auto event = std::make_unique<EventType>(args...);
-   ScheduledEvent* output = event.get();
-   schedule(std::move(event));
-   return output;
-   }
-   */
-void eventSchedule::unschedule(ScheduledEvent& scheduledEvent)
+void EventSchedule::unschedule(ScheduledEvent& scheduledEvent)
 {
-	assert(data.contains(scheduledEvent.m_step));
+	assert(m_data.contains(scheduledEvent.m_step));
 	scheduledEvent.m_cancel = true;
 	scheduledEvent.clearReferences();
 }
-void eventSchedule::execute(Step stepNumber)
+void EventSchedule::execute(Step stepNumber)
 {
-	auto found = data.find(stepNumber);
-	if(found == data.end())
+	auto found = m_data.find(stepNumber);
+	if(found == m_data.end())
 		return;
 	for(std::unique_ptr<ScheduledEvent>& scheduledEvent : found->second)
 		if(!scheduledEvent->m_cancel)
@@ -60,14 +48,14 @@ void eventSchedule::execute(Step stepNumber)
 			scheduledEvent->clearReferences();
 			scheduledEvent->execute();
 		}
-	data.erase(stepNumber);
+	m_data.erase(stepNumber);
 }
-// Only safe to use if also flushing everything else.
-void eventSchedule::clear() { data.clear(); }
-uint32_t eventSchedule::count()
+uint32_t EventSchedule::count()
 {
 	uint32_t output = 0;
-	for(auto& pair : data)
-		output += pair.second.size();
+	for(auto& pair : m_data)
+		for(auto& event : pair.second)
+			if(!event->m_cancel)
+				output++;
 	return output;
 }

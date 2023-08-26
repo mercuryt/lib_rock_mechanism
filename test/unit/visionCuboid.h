@@ -4,8 +4,8 @@
 #include "../../src/simulation.h"
 TEST_CASE("vision cuboid basic")
 {
-	simulation::init();
-	Area area(2,2,2,0);
+	Simulation simulation;
+	Area& area = simulation.createArea(2,2,2);
 	SUBCASE("create")
 	{
 		Cuboid cuboid(area.m_blocks[1][1][1], area.m_blocks[0][0][0]);
@@ -48,8 +48,8 @@ TEST_CASE("vision cuboid basic")
 }
 TEST_CASE("split at")
 {
-	simulation::init();
-	Area area(2,2,1,0);
+	Simulation simulation;
+	Area& area = simulation.createArea(2,2,1);
 	Block& b1 = area.m_blocks[0][0][0];
 	Block& b2 = area.m_blocks[1][0][0];
 	Block& b3 = area.m_blocks[0][1][0];
@@ -70,8 +70,8 @@ TEST_CASE("split at")
 }
 TEST_CASE("split below")
 {
-	simulation::init();
-	Area area(3,3,3,0);
+	Simulation simulation;
+	Area& area = simulation.createArea(3,3,3);
 	Block& middle = area.m_blocks[1][1][1];
 	Block& high = area.m_blocks[2][2][2];
 	Block& low = area.m_blocks[0][0][0];

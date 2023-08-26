@@ -5,8 +5,8 @@
 
 #include <algorithm>
 
-Actor::Actor(uint32_t id, const std::wstring name, const AnimalSpecies& species, uint32_t percentGrown, Faction* faction, Attributes attributes) :
-	HasShape(species.shapeForPercentGrown(percentGrown), false), m_id(id), m_name(name), m_species(species), m_alive(true), m_awake(true), m_body(*this), m_project(nullptr), m_faction(faction), m_attributes(attributes), m_equipmentSet(*this), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canPickup(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_canReserve(*faction), m_reservable(1), m_stamina(*this), m_visionRange(species.visionRange) { }
+Actor::Actor(Simulation& simulation, uint32_t id, const std::wstring name, const AnimalSpecies& species, uint32_t percentGrown, Faction* faction, Attributes attributes) :
+	HasShape(species.shapeForPercentGrown(percentGrown), false), m_simulation(simulation), m_faction(faction), m_id(id), m_name(name), m_species(species), m_alive(true), m_awake(true), m_body(*this), m_project(nullptr), m_attributes(attributes), m_equipmentSet(*this), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canPickup(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_canReserve(*faction), m_reservable(1), m_stamina(*this), m_visionRange(species.visionRange) { }
 void Actor::setLocation(Block& block)
 {
 	assert(&block != HasShape::m_location);
@@ -35,8 +35,8 @@ void Actor::removeMassFromCorpse(uint32_t mass)
 	assert(mass <= m_attributes.getMass());
 	m_attributes.removeMass(mass);
 }
-bool Actor::isEnemy(Actor& actor) const { return m_faction->enemies.contains(actor.m_faction); }
-bool Actor::isAlly(Actor& actor) const { return m_faction->allies.contains(actor.m_faction); }
+bool Actor::isEnemy(Actor& actor) const { return m_faction->enemies.contains(const_cast<Faction*>(actor.m_faction)); }
+bool Actor::isAlly(Actor& actor) const { return m_faction->allies.contains(const_cast<Faction*>(actor.m_faction)); }
 void Actor::die(CauseOfDeath causeOfDeath)
 {
 	m_causeOfDeath = causeOfDeath;
@@ -48,9 +48,9 @@ void Actor::passout(uint32_t duration)
 	//TODO
 	(void)duration;
 }
-void Actor::doVision(const std::unordered_set<Actor*>& actors)
+void Actor::doVision(std::unordered_set<Actor*>& actors)
 {
-	(void)actors;
+	m_canSee.swap(actors);
 	//TODO: psycology.
 	//TODO: fog of war?
 }
@@ -62,6 +62,8 @@ uint32_t Actor::getVolume() const
 {
 	return m_body.getVolume();
 }
+EventSchedule& Actor::getEventSchedule() { return getSimulation().m_eventSchedule; }
+ThreadedTaskEngine& Actor::getThreadedTaskEngine() { return getSimulation().m_threadedTaskEngine; }
 // ActorQuery, to be used to search for actors.
 bool ActorQuery::operator()(Actor& other) const
 {
@@ -130,13 +132,13 @@ void AreaHasActors::remove(Actor& actor)
 void AreaHasActors::processVisionReadStep()
 {
 	m_visionRequestQueue.clear();
-	for(Actor* actor : m_visionBuckets.get(simulation::step))
+	for(Actor* actor : m_visionBuckets.get(m_area.m_simulation.m_step))
 		m_visionRequestQueue.emplace_back(*actor);
 	auto visionIter = m_visionRequestQueue.begin();
 	while(visionIter < m_visionRequestQueue.end())
 	{
 		auto end = std::min(m_visionRequestQueue.end(), visionIter + Config::visionThreadingBatchSize);
-		simulation::pool.push_task([=](){ VisionRequest::readSteps(visionIter, end); });
+		m_area.m_simulation.m_pool.push_task([=](){ VisionRequest::readSteps(visionIter, end); });
 		visionIter = end;
 	}
 }

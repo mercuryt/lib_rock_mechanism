@@ -6,20 +6,20 @@
 #include "../../src/simulation.h"
 TEST_CASE("route 10,10,10")
 {
-	simulation::init();
+	Simulation simulation;
 	static const MaterialType& marble = MaterialType::byName("marble");
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	static const AnimalSpecies& troll = AnimalSpecies::byName("troll");
 	static const AnimalSpecies& eagle = AnimalSpecies::byName("eagle");
 	static const AnimalSpecies& carp = AnimalSpecies::byName("carp");
 	static const FluidType& water = FluidType::byName("water");
-	Area area(10,10,10,280);
+	Area& area = simulation.createArea(10,10,10);
 	SUBCASE("Route through open space")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		Block& origin = area.m_blocks[3][3][1];
 		Block& destination = area.m_blocks[7][7][1];
-		Actor& actor = Actor::create(dwarf, origin);
+		Actor& actor = simulation.createActor(dwarf, origin);
 		actor.m_canMove.setDestination(destination);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -45,7 +45,7 @@ TEST_CASE("route 10,10,10")
 		block3.setSolid(marble);
 		block4.setSolid(marble);
 		block5.setSolid(marble);
-		Actor& actor = Actor::create(dwarf, origin);
+		Actor& actor = simulation.createActor(dwarf, origin);
 		actor.m_canMove.setDestination(destination);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -70,7 +70,7 @@ TEST_CASE("route 10,10,10")
 		block3.setSolid(marble);
 		block4.setSolid(marble);
 		block5.setSolid(marble);
-		Actor& actor = Actor::create(dwarf, origin);
+		Actor& actor = simulation.createActor(dwarf, origin);
 		actor.m_canMove.setDestination(destination);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -84,29 +84,28 @@ TEST_CASE("route 10,10,10")
 		Block& origin = area.m_blocks[3][3][1];
 		Block& block1 = area.m_blocks[4][4][1];
 		Block& destination = area.m_blocks[5][5][1];
-		Actor& actor = Actor::create(dwarf, origin);
+		Actor& actor = simulation.createActor(dwarf, origin);
 		actor.m_canMove.setDestination(destination);
-		CHECK(eventSchedule::count() == 3);
+		CHECK(!actor.m_canMove.hasEvent());
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
 		pathThreadedTask.writeStep();
-		CHECK(eventSchedule::count() == 4);
-		uint32_t scheduledStep = eventSchedule::data.begin()->first;
+		CHECK(actor.m_canMove.hasEvent());
+		uint32_t scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
 		CHECK(scheduledStep == 8);
-		simulation::step = scheduledStep;
+		simulation.m_step = scheduledStep;
 		// step 1
-		eventSchedule::execute(scheduledStep);
+		simulation.m_eventSchedule.execute(scheduledStep);
 		CHECK(actor.m_location == &block1);
-		CHECK(eventSchedule::count() == 4);
-		scheduledStep = eventSchedule::data.begin()->first;
+		CHECK(actor.m_canMove.hasEvent());
+		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
 		CHECK(scheduledStep == 15);
-		simulation::step = scheduledStep;
+		simulation.m_step = scheduledStep;
 		CHECK(actor.m_canMove.hasEvent());
 		// step 2
-		eventSchedule::execute(scheduledStep);
+		simulation.m_eventSchedule.execute(scheduledStep);
 		CHECK(actor.m_location == &destination);
 		CHECK(!actor.m_canMove.hasEvent());
-		CHECK(eventSchedule::count() == 3);
 		CHECK(actor.m_canMove.getPath().empty());
 		CHECK(actor.m_canMove.getDestination() == nullptr);
 	}
@@ -118,41 +117,41 @@ TEST_CASE("route 10,10,10")
 		Block& block2 = area.m_blocks[3][5][1];
 		Block& block3 = area.m_blocks[4][5][1];
 		Block& destination = area.m_blocks[3][6][1];
-		Actor& actor = Actor::create(dwarf, origin);
+		Actor& actor = simulation.createActor(dwarf, origin);
 		actor.m_canMove.setDestination(destination);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
 		pathThreadedTask.writeStep();
 		pathThreadedTask.clearReferences();
-		threadedTaskEngine::remove(pathThreadedTask);
-		CHECK(eventSchedule::count() == 4);
-		CHECK(threadedTaskEngine::tasks.empty());
+		simulation.m_threadedTaskEngine.remove(pathThreadedTask);
+		CHECK(actor.m_canMove.hasEvent());
+		CHECK(simulation.m_threadedTaskEngine.m_tasks.empty());
 		// Step 1.
-		uint32_t scheduledStep = eventSchedule::data.begin()->first;
-		simulation::step = scheduledStep;
-		eventSchedule::execute(scheduledStep);
+		uint32_t scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
+		simulation.m_step = scheduledStep;
+		simulation.m_eventSchedule.execute(scheduledStep);
 		CHECK(actor.m_location == &block1);
-		CHECK(eventSchedule::count() == 4);
-		CHECK(threadedTaskEngine::tasks.empty());
+		CHECK(actor.m_canMove.hasEvent());
+		CHECK(simulation.m_threadedTaskEngine.m_tasks.empty());
 		block2.setSolid(marble);
 		// Step 2.
-		CHECK(eventSchedule::count() == 4);
-		scheduledStep = eventSchedule::data.begin()->first;
-		simulation::step = scheduledStep;
-		eventSchedule::execute(scheduledStep);
+		CHECK(actor.m_canMove.hasEvent());
+		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
+		simulation.m_step = scheduledStep;
+		simulation.m_eventSchedule.execute(scheduledStep);
 		CHECK(actor.m_location == &block1);
-		CHECK(eventSchedule::count() == 3);
-		CHECK(threadedTaskEngine::tasks.size() == 1);
+		CHECK(!actor.m_canMove.hasEvent());
+		CHECK(simulation.m_threadedTaskEngine.m_tasks.size() == 1);
 		// Step 3.
 		PathThreadedTask& pathThreadedTask2 = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask2.readStep();
 		pathThreadedTask2.writeStep();
-		threadedTaskEngine::remove(pathThreadedTask2);
-		CHECK(eventSchedule::count() == 4);
-		CHECK(threadedTaskEngine::tasks.empty());
-		scheduledStep = eventSchedule::data.begin()->first;
-		simulation::step = scheduledStep;
-		eventSchedule::execute(scheduledStep);
+		simulation.m_threadedTaskEngine.remove(pathThreadedTask2);
+		CHECK(actor.m_canMove.hasEvent());
+		CHECK(simulation.m_threadedTaskEngine.m_tasks.empty());
+		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
+		simulation.m_step = scheduledStep;
+		simulation.m_eventSchedule.execute(scheduledStep);
 		CHECK(actor.m_location == &block3);
 	}
 	SUBCASE("Walk multi-block creature")
@@ -162,7 +161,7 @@ TEST_CASE("route 10,10,10")
 		Block& block1 = area.m_blocks[4][4][1];
 		Block& block2 = area.m_blocks[2][3][1];
 		Block& destination = area.m_blocks[5][5][1];
-		Actor& actor = Actor::create(troll, origin);
+		Actor& actor = simulation.createActor(troll, origin);
 		actor.m_canMove.setDestination(destination);
 		CHECK(block2.m_hasShapes.contains(actor));
 		CHECK(!block1.m_hasShapes.contains(actor));
@@ -170,23 +169,22 @@ TEST_CASE("route 10,10,10")
 		pathThreadedTask.readStep();
 		CHECK(pathThreadedTask.getPath().size() == 2);
 		pathThreadedTask.writeStep();
-		CHECK(eventSchedule::count() == 4);
+		CHECK(actor.m_canMove.hasEvent());
 		// Step 1
-		uint32_t scheduledStep = eventSchedule::data.begin()->first;
-		simulation::step = scheduledStep;
-		eventSchedule::execute(scheduledStep);
+		uint32_t scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
+		simulation.m_step = scheduledStep;
+		simulation.m_eventSchedule.execute(scheduledStep);
 		CHECK(actor.m_location == &block1);
-		CHECK(eventSchedule::count() == 4);
+		CHECK(actor.m_canMove.hasEvent());
 		CHECK(!block2.m_hasShapes.contains(actor));
 		CHECK(block1.m_hasShapes.contains(actor));
 		CHECK(!origin.m_hasShapes.contains(actor));
 		// Step 2
-		scheduledStep = eventSchedule::data.begin()->first;
-		simulation::step = scheduledStep;
-		eventSchedule::execute(scheduledStep);
+		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
+		simulation.m_step = scheduledStep;
+		simulation.m_eventSchedule.execute(scheduledStep);
 		CHECK(actor.m_location == &destination);
-		CHECK(eventSchedule::count() == 4);
-		CHECK(actor.m_canMove.getPath().empty());
+		CHECK(!actor.m_canMove.hasEvent());
 		CHECK(actor.m_canMove.getDestination() == nullptr);
 		CHECK(!block2.m_hasShapes.contains(actor));
 		CHECK(!block1.m_hasShapes.contains(actor));
@@ -201,7 +199,7 @@ TEST_CASE("route 10,10,10")
 		area.m_blocks[5][5][1].setSolid(marble);
 		area.m_blocks[7][5][1].setSolid(marble);
 		area.m_blocks[9][5][1].setSolid(marble);
-		Actor& actor = Actor::create(troll, origin);
+		Actor& actor = simulation.createActor(troll, origin);
 		actor.m_canMove.setDestination(destination);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -215,7 +213,7 @@ TEST_CASE("route 10,10,10")
 		Block& destination = area.m_blocks[8][8][8];		
 		Block& ledge = area.m_blocks[8][8][7];
 		ledge.setSolid(marble);
-		Actor& actor = Actor::create(dwarf, origin);
+		Actor& actor = simulation.createActor(dwarf, origin);
 		actor.m_canMove.setDestination(destination);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -227,7 +225,7 @@ TEST_CASE("route 10,10,10")
 		areaBuilderUtil::setSolidWalls(area, 9, marble);
 		Block& origin = area.m_blocks[1][1][1];
 		Block& destination = area.m_blocks[8][8][8];		
-		Actor& actor = Actor::create(eagle, origin);
+		Actor& actor = simulation.createActor(eagle, origin);
 		actor.m_canMove.setDestination(destination);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -240,7 +238,7 @@ TEST_CASE("route 10,10,10")
 		Block& water1 = area.m_blocks[1][1][1];
 		Block& water2 = area.m_blocks[8][8][8];		
 		areaBuilderUtil::setFullFluidCuboid(water1, water2, water);
-		Actor& actor = Actor::create(carp, water1);
+		Actor& actor = simulation.createActor(carp, water1);
 		actor.m_canMove.setDestination(water2);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -249,8 +247,8 @@ TEST_CASE("route 10,10,10")
 }
 TEST_CASE("route 5,5,3")
 {
-	simulation::init();
-	Area area(5,5,3, 280);
+	Simulation simulation;
+	Area& area = simulation.createArea(5,5,3);
 	static const MaterialType& marble = MaterialType::byName("marble");
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	static const AnimalSpecies& carp = AnimalSpecies::byName("carp");
@@ -272,7 +270,7 @@ TEST_CASE("route 5,5,3")
 		Block& water3 = area.m_blocks[1][3][1];
 		Block& water4 = area.m_blocks[3][3][1];
 		areaBuilderUtil::setFullFluidCuboid(water3, water4, water);
-		Actor& actor = Actor::create(carp, origin);
+		Actor& actor = simulation.createActor(carp, origin);
 		actor.m_canMove.setDestination(destination);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -290,7 +288,7 @@ TEST_CASE("route 5,5,3")
 		Block& water1 = area.m_blocks[1][2][1];
 		Block& water2 = area.m_blocks[3][2][1];
 		areaBuilderUtil::setFullFluidCuboid(water1, water2, water);
-		Actor& actor = Actor::create(dwarf, origin);
+		Actor& actor = simulation.createActor(dwarf, origin);
 		actor.m_canMove.setMoveType(twoLegs);
 		actor.m_canMove.setDestination(destination);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
@@ -303,8 +301,8 @@ TEST_CASE("route 5,5,3")
 }
 TEST_CASE("route 5,5,5")
 {
-	simulation::init();
-	Area area(5,5,5, 280);
+	Simulation simulation;
+	Area& area = simulation.createArea(5,5,5);
 	static const MaterialType& marble = MaterialType::byName("marble");
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	static const MoveType& twoLegsAndClimb1 = MoveType::byName("two legs and climb 1");
@@ -316,7 +314,7 @@ TEST_CASE("route 5,5,5")
 	SUBCASE("walking path blocked by one height cliff if not climbing")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		Actor& actor = Actor::create(dwarf, area.m_blocks[1][1][1]);
+		Actor& actor = simulation.createActor(dwarf, area.m_blocks[1][1][1]);
 		area.m_blocks[4][4][1].setSolid(marble);
 		actor.m_canMove.setDestination(area.m_blocks[4][4][2]);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
@@ -330,7 +328,7 @@ TEST_CASE("route 5,5,5")
 	SUBCASE("walking path blocked by two height cliff if not climbing 2")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		Actor& actor = Actor::create(dwarf, area.m_blocks[1][1][1]);
+		Actor& actor = simulation.createActor(dwarf, area.m_blocks[1][1][1]);
 		actor.m_canMove.setMoveType(twoLegsAndClimb1);
 		area.m_blocks[4][4][1].setSolid(marble);
 		area.m_blocks[4][4][2].setSolid(marble);
@@ -350,7 +348,7 @@ TEST_CASE("route 5,5,5")
 		area.m_blocks[2][2][1].m_hasBlockFeatures.construct(stairs, marble);
 		area.m_blocks[3][3][2].m_hasBlockFeatures.construct(stairs, marble);
 		area.m_blocks[2][2][3].m_hasBlockFeatures.construct(stairs, marble);
-		Actor& actor = Actor::create(dwarf, origin);
+		Actor& actor = simulation.createActor(dwarf, origin);
 		actor.m_canMove.setDestination(area.m_blocks[2][2][4]);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -359,7 +357,7 @@ TEST_CASE("route 5,5,5")
 	SUBCASE("ramp")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		Actor& actor = Actor::create(dwarf, area.m_blocks[1][1][1]);
+		Actor& actor = simulation.createActor(dwarf, area.m_blocks[1][1][1]);
 		area.m_blocks[4][4][1].setSolid(marble);
 		actor.m_canMove.setDestination(area.m_blocks[4][4][2]);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
@@ -376,7 +374,7 @@ TEST_CASE("route 5,5,5")
 		area.m_blocks[3][1][1].setSolid(marble);
 		area.m_blocks[3][3][1].setSolid(marble);
 		area.m_blocks[3][4][1].setSolid(marble);
-		Actor& actor = Actor::create(dwarf, area.m_blocks[1][1][1]);
+		Actor& actor = simulation.createActor(dwarf, area.m_blocks[1][1][1]);
 		actor.m_canMove.setDestination(area.m_blocks[4][3][1]);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -396,7 +394,7 @@ TEST_CASE("route 5,5,5")
 		area.m_blocks[3][1][1].setSolid(marble);
 		area.m_blocks[3][3][1].setSolid(marble);
 		area.m_blocks[3][4][1].setSolid(marble);
-		Actor& actor = Actor::create(dwarf, area.m_blocks[1][1][1]);
+		Actor& actor = simulation.createActor(dwarf, area.m_blocks[1][1][1]);
 		actor.m_canMove.setDestination(area.m_blocks[4][3][1]);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -413,7 +411,7 @@ TEST_CASE("route 5,5,5")
 		area.m_blocks[3][1][1].setSolid(marble);
 		area.m_blocks[3][3][1].setSolid(marble);
 		area.m_blocks[3][4][1].setSolid(marble);
-		Actor& actor = Actor::create(dwarf, area.m_blocks[1][1][1]);
+		Actor& actor = simulation.createActor(dwarf, area.m_blocks[1][1][1]);
 		actor.m_canMove.setDestination(area.m_blocks[4][3][1]);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -428,7 +426,7 @@ TEST_CASE("route 5,5,5")
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		area.m_blocks[1][1][1].setSolid(marble);
 		area.m_blocks[1][3][1].setSolid(marble);
-		Actor& actor = Actor::create(dwarf, area.m_blocks[1][1][2]);
+		Actor& actor = simulation.createActor(dwarf, area.m_blocks[1][1][2]);
 		actor.m_canMove.setDestination(area.m_blocks[1][3][2]);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -445,7 +443,7 @@ TEST_CASE("route 5,5,5")
 		area.m_blocks[3][3][3].setNotSolid();
 		area.m_blocks[3][3][1].m_hasBlockFeatures.construct(BlockFeatureType::stairs, marble);
 		area.m_blocks[3][3][2].m_hasBlockFeatures.construct(BlockFeatureType::stairs, marble);
-		Actor& actor = Actor::create(dwarf, area.m_blocks[3][3][1]);
+		Actor& actor = simulation.createActor(dwarf, area.m_blocks[3][3][1]);
 		actor.m_canMove.setDestination(area.m_blocks[3][3][3]);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -460,7 +458,7 @@ TEST_CASE("route 5,5,5")
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		area.m_blocks[1][1][1].setSolid(marble);
 		area.m_blocks[1][3][1].setSolid(marble);
-		Actor& actor = Actor::create(dwarf, area.m_blocks[1][1][2]);
+		Actor& actor = simulation.createActor(dwarf, area.m_blocks[1][1][2]);
 		actor.m_canMove.setDestination(area.m_blocks[1][3][2]);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -477,7 +475,7 @@ TEST_CASE("route 5,5,5")
 		area.m_blocks[3][3][3].setNotSolid();
 		area.m_blocks[3][3][1].m_hasBlockFeatures.construct(BlockFeatureType::stairs, marble);
 		area.m_blocks[3][3][2].m_hasBlockFeatures.construct(BlockFeatureType::stairs, marble);
-		Actor& actor = Actor::create(dwarf, area.m_blocks[3][3][1]);
+		Actor& actor = simulation.createActor(dwarf, area.m_blocks[3][3][1]);
 		actor.m_canMove.setDestination(area.m_blocks[3][3][3]);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -492,7 +490,7 @@ TEST_CASE("route 5,5,5")
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		area.m_blocks[1][1][1].setSolid(marble);
 		area.m_blocks[1][3][1].setSolid(marble);
-		Actor& actor = Actor::create(dwarf, area.m_blocks[1][1][2]);
+		Actor& actor = simulation.createActor(dwarf, area.m_blocks[1][1][2]);
 		actor.m_canMove.setDestination(area.m_blocks[1][3][2]);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -509,7 +507,7 @@ TEST_CASE("route 5,5,5")
 		area.m_blocks[3][3][3].setNotSolid();
 		area.m_blocks[3][3][1].m_hasBlockFeatures.construct(BlockFeatureType::stairs, marble);
 		area.m_blocks[3][3][2].m_hasBlockFeatures.construct(BlockFeatureType::stairs, marble);
-		Actor& actor = Actor::create(dwarf, area.m_blocks[3][3][1]);
+		Actor& actor = simulation.createActor(dwarf, area.m_blocks[3][3][1]);
 		actor.m_canMove.setDestination(area.m_blocks[3][3][3]);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -530,7 +528,7 @@ TEST_CASE("route 5,5,5")
 		area.m_blocks[4][3][1].setSolid(marble);
 		area.m_blocks[3][4][1].setSolid(marble);
 		area.m_blocks[3][3][1].setSolid(marble);
-		Actor& actor = Actor::create(dwarf, area.m_blocks[1][1][1]);
+		Actor& actor = simulation.createActor(dwarf, area.m_blocks[1][1][1]);
 		actor.m_canMove.setDestination(area.m_blocks[3][3][2]);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -550,31 +548,31 @@ TEST_CASE("route 5,5,5")
 		area.m_blocks[3][1][1].setSolid(marble);
 		area.m_blocks[3][2][1].setSolid(marble);
 		area.m_blocks[3][4][1].setSolid(marble);
-		Actor& a1 = Actor::create(dwarf, origin);
-		Actor::create(dwarf, area.m_blocks[3][3][1]);
+		Actor& a1 = simulation.createActor(dwarf, origin);
+		simulation.createActor(dwarf, area.m_blocks[3][3][1]);
 		a1.m_canMove.setDestination(area.m_blocks[4][3][1]);
 		PathThreadedTask& pathThreadedTask = a1.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
 		pathThreadedTask.writeStep();
 		CHECK(pathThreadedTask.getPath().size() == 2);
-		threadedTaskEngine::remove(pathThreadedTask);
+		simulation.m_threadedTaskEngine.remove(pathThreadedTask);
 		CHECK(area.m_blocks[3][3][1].m_hasShapes.canEnterEverFrom(a1, *a1.m_location));
 		CHECK(!area.m_blocks[3][3][1].m_hasShapes.canEnterCurrentlyFrom(a1, *a1.m_location));
-		CHECK(eventSchedule::count() == 7);
+		CHECK(a1.m_canMove.hasEvent());
 		// Move attempt 1.
-		simulation::step = eventSchedule::data.begin()->first;
-		eventSchedule::execute(simulation::step);
+		simulation.m_step = simulation.m_eventSchedule.m_data.begin()->first;
+		simulation.m_eventSchedule.execute(simulation.m_step);
 		CHECK(a1.m_location == &origin);
-		CHECK(eventSchedule::count() == 7);
+		CHECK(a1.m_canMove.hasEvent());
 		// Move attempt 2.
-		simulation::step = eventSchedule::data.begin()->first;
-		eventSchedule::execute(simulation::step);
+		simulation.m_step = simulation.m_eventSchedule.m_data.begin()->first;
+		simulation.m_eventSchedule.execute(simulation.m_step);
 		// Move attempt 3.
-		simulation::step = eventSchedule::data.begin()->first;
-		eventSchedule::execute(simulation::step);
+		simulation.m_step = simulation.m_eventSchedule.m_data.begin()->first;
+		simulation.m_eventSchedule.execute(simulation.m_step);
 		CHECK(a1.m_location == &origin);
-		CHECK(threadedTaskEngine::count() == 1);
-		CHECK(eventSchedule::count() == 6);
+		CHECK(simulation.m_threadedTaskEngine.count() == 1);
+		CHECK(!a1.m_canMove.hasEvent());
 		// Detour.
 		PathThreadedTask& detour = a1.m_canMove.getPathThreadedTask();
 		CHECK(detour.isDetour());

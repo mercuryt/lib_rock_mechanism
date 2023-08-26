@@ -12,16 +12,17 @@ class RestObjective final : public Objective
 	Actor& m_actor;
 	HasScheduledEvent<RestEvent> m_restEvent;
 public:
-	RestObjective(Actor& a) : Objective(0), m_actor(a) { }
+	RestObjective(Actor& a);
 	void execute() { m_restEvent.schedule(*this); }
 	void cancel() { }
+	std::string name() { return "rest"; }
 	friend class RestEvent;
 };
 class RestEvent final : public ScheduledEventWithPercent
 {
 	RestObjective& m_objective;
 public:
-	RestEvent(RestObjective& ro) : ScheduledEventWithPercent(Config::restIntervalSteps), m_objective(ro) { }
+	RestEvent(RestObjective& ro);
 	void execute();
 	void clearReferences() { m_objective.m_restEvent.clearPointer(); }
 };
@@ -35,6 +36,7 @@ public:
 	ActorHasStamina(Actor& a) : m_actor(a), m_stamina(getMax()) { }
 	void recover();
 	void spend(uint32_t stamina);
+	void setFull();
 	bool hasAtLeast(uint32_t stamina) const;
 	bool isFull() const;
 	uint32_t getMax() const;
