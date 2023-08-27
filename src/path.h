@@ -96,8 +96,9 @@ namespace path
 	template<typename Predicate>
 	std::vector<Block*> getForActorToPredicate(const Actor& actor, Predicate&& predicate, const uint32_t& maxRange = UINT32_MAX)
 	{
-		std::unordered_set<Block*> closedList;
-		closedList.insert(actor.m_location);
+		std::unordered_set<Block*> locationClosedList;
+		std::unordered_set<Block*> adjacentClosedList;
+		locationClosedList.insert(actor.m_location);
 		std::list<RouteNode*> openList;
 		std::list<RouteNode> routeNodes;
 		routeNodes.emplace_back(*actor.m_location, nullptr);
@@ -124,9 +125,9 @@ namespace path
 				{
 					if(!adjacent->m_hasShapes.anythingCanEnterEver())
 						continue;
-					if(!closedList.contains(adjacent))
+					if(!locationClosedList.contains(adjacent))
 					{
-						closedList.insert(adjacent);
+						locationClosedList.insert(adjacent);
 						if(adjacent->m_hasShapes.canEnterEverFrom(actor, routeNode->block))
 						{
 							routeNodes.emplace_back(*adjacent, routeNode);

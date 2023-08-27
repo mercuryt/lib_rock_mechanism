@@ -71,6 +71,15 @@ void CanPickup::putDownIfAny(Block& location)
 	if(m_carrying != nullptr)
 		putDown(location);
 }
+
+void CanPickup::removeFluidVolume(uint32_t volume)
+{
+	assert(m_fluidType != nullptr);
+	assert(m_fluidVolume >= volume);
+	m_fluidVolume -= volume;
+	if(m_fluidVolume == 0)
+		m_fluidType = nullptr;
+}
 void CanPickup::add(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity)
 {
 	if(m_carrying == nullptr)
@@ -610,7 +619,17 @@ Item* HasHaulTools::getToolToHaul(const Faction& faction, const HasShape& hasSha
 		if(!item->m_reservable.isFullyReserved(faction) && item->m_itemType.internalVolume >= hasShape.getVolume())
 			return item;
 	return nullptr;
-	
+}
+bool HasHaulTools::hasToolToHaulFluid(const Faction& faction) const
+{
+	return getToolToHaulFluid(faction) != nullptr;
+}
+Item* HasHaulTools::getToolToHaulFluid(const Faction& faction) const
+{
+	for(Item* item : m_haulTools)
+		if(!item->m_reservable.isFullyReserved(faction) && item->m_itemType.canHoldFluids)
+			return item;
+	return nullptr;
 }
 Actor* HasHaulTools::getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(const Faction& faction, const Item& haulTool, uint32_t cargoMass, uint32_t minimumHaulSpeed) const
 {

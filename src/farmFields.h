@@ -26,9 +26,11 @@ public:
 	void remove(const Faction& faction);
 	void designateForHarvestIfPartOfFarmField(Plant& plant);
 	void designateForGiveFluidIfPartOfFarmField(Plant& plant);
+	void maybeDesignateForSowingIfPartOfFarmField();
 	void removeAllHarvestDesignations();
 	void removeAllGiveFluidDesignations();
 	void removeAllSowSeedsDesignations();
+	bool isSowingSeasonFor(const PlantSpecies& species) const;
 	// For testing.
 	[[maybe_unused]]bool contains(const Faction& faction) { return m_farmFields.contains(&faction); }
 };

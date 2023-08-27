@@ -19,6 +19,8 @@ void Plant::die()
 	m_temperatureEvent.maybeUnschedule();
 	m_endOfHarvestEvent.maybeUnschedule();
 	m_foliageGrowthEvent.maybeUnschedule();
+	m_location.m_area->m_hasPlants.erase(*this);
+	m_location.m_isPartOfFarmField.maybeDesignateForSowingIfPartOfFarmField();
 	//TODO: Create rot away event.
 }
 void Plant::setTemperature(uint32_t temperature)
@@ -88,7 +90,7 @@ bool Plant::hasFluidSource()
 }
 void Plant::setDayOfYear(uint32_t dayOfYear)
 {
-	if(!m_plantSpecies.annual && dayOfYear == m_plantSpecies.harvestData->dayOfYearToStart)
+	if(m_plantSpecies.harvestData != nullptr && dayOfYear == m_plantSpecies.harvestData->dayOfYearToStart)
 		setQuantityToHarvest();
 }
 void Plant::setQuantityToHarvest()
@@ -238,6 +240,11 @@ void HasPlant::setTemperature(uint32_t temperature)
 	if(m_plant != nullptr)
 		m_plant->setTemperature(temperature);
 }
+void HasPlant::erase()
+{
+	assert(m_plant != nullptr);
+	m_plant = nullptr;
+}
 bool HasPlant::canGrowHereCurrently(const PlantSpecies& plantSpecies) const
 {
 	uint32_t temperature = m_block.m_blockHasTemperature.get();
@@ -274,6 +281,7 @@ Plant& HasPlants::emplace(Block& location, const PlantSpecies& species, uint32_t
 }
 void HasPlants::erase(Plant& plant)
 {
+	plant.m_location.m_hasPlant.erase();
 	std::erase_if(m_plants, [&](Plant& p) { return &p == &plant; });
 }
 void HasPlants::onChangeAmbiantSurfaceTemperature()

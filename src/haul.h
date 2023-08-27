@@ -100,6 +100,8 @@ class HasHaulTools final
 	std::unordered_set<Item*> m_haulTools;
 	std::unordered_set<Actor*> m_yolkableActors;
 public:
+	bool hasToolToHaulFluid(const Faction& faction) const;
+	Item* getToolToHaulFluid(const Faction& faction) const;
 	bool hasToolToHaul(const Faction& faction, const HasShape& hasShape) const;
 	Item* getToolToHaul(const Faction& faction, const HasShape& hasShape) const;
 	Actor* getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(const Faction& faction, const Item& haulTool, const uint32_t cargoMass, const uint32_t minimumHaulSpeed) const;

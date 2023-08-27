@@ -166,8 +166,8 @@ public:
 	std::vector<Item*>& getAll() { return m_items; }
 	const std::vector<Item*>& getAll() const { return m_items; }
 	bool hasInstalledItemType(const ItemType& itemType) const;
-	bool hasEmptyContainerWhichCanHoldFluidsCarryableBy(Actor& actor) const;
-	bool hasContainerContainingFluidTypeCarryableBy(Actor& actor, const FluidType& fluidType) const;
+	bool hasEmptyContainerWhichCanHoldFluidsCarryableBy(const Actor& actor) const;
+	bool hasContainerContainingFluidTypeCarryableBy(const Actor& actor, const FluidType& fluidType) const;
 	bool empty() const { return m_items.empty(); }
 };
 class AreaHasItems final

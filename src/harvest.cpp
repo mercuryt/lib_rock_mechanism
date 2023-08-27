@@ -9,7 +9,7 @@ void HarvestEvent::execute()
 		actor.m_hasObjectives.taskComplete();
 		return;
 	}
-	static const MaterialType& plantMatter = MaterialType::byName("plantMatter");
+	static const MaterialType& plantMatter = MaterialType::byName("plant matter");
 	const ItemType& fruitItemType = plant->m_plantSpecies.harvestData->fruitItemType;
 	uint32_t maxHarvestItemsCanCarry = actor.m_canPickup.canPickupQuantityOf(fruitItemType, plantMatter);
 	uint32_t numberItemsHarvested = std::min(maxHarvestItemsCanCarry, plant->m_quantityToHarvest);
@@ -44,7 +44,17 @@ void HarvestThreadedTask::writeStep()
 	if(m_result.empty())
 		m_harvestObjective.m_actor.m_hasObjectives.cannotFulfillObjective(m_harvestObjective);
 	else
-		m_harvestObjective.m_actor.m_canMove.setPath(m_result);
+	{
+		if(m_result.back()->m_reservable.isFullyReserved(*m_harvestObjective.m_actor.getFaction()))
+			m_harvestObjective.m_threadedTask.create(m_harvestObjective);
+		else
+		{
+			m_harvestObjective.m_actor.m_canMove.setPath(m_result);
+			m_result.back()->m_reservable.reserveFor(m_harvestObjective.m_actor.m_canReserve, 1);
+			Plant& plant = m_result.back()->m_hasPlant.get();
+			m_result.back()->m_area->m_hasFarmFields.at(*m_harvestObjective.m_actor.getFaction()).removeHarvestDesignation(plant);
+		}
+	}
 }
 void HarvestThreadedTask::clearReferences() { m_harvestObjective.m_threadedTask.clearPointer(); }
 bool HarvestObjectiveType::canBeAssigned(Actor& actor) const
@@ -65,10 +75,5 @@ void HarvestObjective::execute()
 }
 bool HarvestObjective::canHarvestAt(Block& block) const
 {
-	if(block.m_hasPlant.exists() && block.m_hasPlant.get().readyToHarvest())
-		return true;
-	for(Block* adjacent : block.m_adjacentsVector)
-		if(adjacent->m_hasPlant.exists() && adjacent->m_hasPlant.get().readyToHarvest())
-			return true;
-	return false;
+	return block.m_hasPlant.exists() && block.m_hasPlant.get().readyToHarvest();
 }

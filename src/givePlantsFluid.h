@@ -20,6 +20,7 @@ public:
 	GivePlantsFluidEvent(Step step, GivePlantsFluidObjective& gpfo);
 	void execute();
 	void clearReferences();
+	void onCancel();
 };
 // Path to an empty water proof container or somewhere to fill an empty container or a container with the correct type of fluid or a plant which needs fluid.
 class GivePlantsFluidThreadedTask final : public PathToBlockBaseThreadedTask

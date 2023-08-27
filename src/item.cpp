@@ -226,6 +226,21 @@ bool BlockHasItems::hasInstalledItemType(const ItemType& itemType) const
 	auto found = std::ranges::find_if(m_items, [&](Item* item) { return item->m_itemType == itemType; });
 	return found != m_items.end() && (*found)->m_installed;
 }
+bool BlockHasItems::hasEmptyContainerWhichCanHoldFluidsCarryableBy(const Actor& actor) const
+{
+	for(const Item* item : m_items)
+		//TODO: account for container weight when full, needs to have fluid type passed in.
+		if(item->m_itemType.internalVolume != 0 && item->m_itemType.canHoldFluids && actor.m_canPickup.canPickupAny(*item))
+			return true;
+	return false;
+}
+bool BlockHasItems::hasContainerContainingFluidTypeCarryableBy(const Actor& actor, const FluidType& fluidType) const
+{
+	for(const Item* item : m_items)
+		if(item->m_itemType.internalVolume != 0 && item->m_itemType.canHoldFluids && actor.m_canPickup.canPickupAny(*item) && item->m_hasCargo.getFluidType() == fluidType)
+			return true;
+	return false;
+}
 void AreaHasItems::setItemIsOnSurface(Item& item)
 {
 	//assert(!m_onSurface.contains(&item));

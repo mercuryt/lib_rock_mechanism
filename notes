@@ -1,4 +1,3 @@
-Many functions take pointers even though the pointers are not modified and they should be able to take references. They can't take references because they can't be cast to from base classes. Does this need CTRP to fix?
-
--flto
-	Optimization flag to use for production build
+To run tests:
+	Set up testing by running 'cmake ..' in /build.
+	Run tests with 'reset && make -j2 && mv test/unit/unit .. && cd .. && gdb --args ./unit'

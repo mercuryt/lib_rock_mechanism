@@ -155,6 +155,7 @@ public:
 	void updateGrowingStatus();
 	void clearPointer();
 	void setTemperature(uint32_t temperature);
+	void erase();
 	Plant& get() { assert(m_plant != nullptr); return *m_plant; }
 	const Plant& get() const { assert(m_plant != nullptr); return *m_plant; }
 	bool canGrowHereCurrently(const PlantSpecies& plantSpecies) const;

@@ -100,3 +100,11 @@ Simulation::~Simulation()
 	m_threadedTaskEngine.m_tasks.clear();
 	m_pool.wait_for_tasks();
 }
+void Simulation::setDateTime(DateTime now)
+{
+	m_now = now;
+	m_hourlyEvent.unschedule();
+	m_hourlyEvent.schedule(*this);
+	for(Area& area : m_areas)
+		area.setDateTime(now);
+}

@@ -32,16 +32,18 @@ public:
 	//TODO: latitude, longitude, altitude.
 	inline Area& createArea(uint32_t x, uint32_t y, uint32_t z) { return m_areas.emplace_back(*this, x, y, z); }
 	Actor& createActor(const AnimalSpecies& species, Block& block, uint32_t percentGrown = 100);
-	// non generic, unnamed, no id.
+	// Non generic, unnamed, no id.
 	Item& createItem(const ItemType& itemType, const MaterialType& materialType, uint32_t quality, uint32_t percentWear, CraftJob* cj = nullptr);
-	// named, no id.
+	// Named, no id.
 	Item& createItem(const ItemType& itemType, const MaterialType& materialType, std::string name, uint32_t quality, uint32_t percentWear, CraftJob* cj = nullptr);
-	// generic, no id.
+	// Generic, no id.
 	Item& createItem(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity, CraftJob* cj = nullptr);
 	Item& createItem(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, uint32_t quantity, CraftJob* cj = nullptr);
-	// named, has id.
+	// Named, has id.
 	Item& createItem(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, std::string name, uint32_t quality, uint32_t percentWear, CraftJob* cj = nullptr);
 	~Simulation();
+	// For testing.
+	[[maybe_unused]]void setDateTime(DateTime now);
 };
 
 class HourlyEvent final : public ScheduledEventWithPercent

@@ -11,6 +11,11 @@ void GivePlantsFluidEvent::execute()
 	m_objective.m_actor.m_hasObjectives.objectiveComplete(m_objective);
 }
 void GivePlantsFluidEvent::clearReferences() { m_objective.m_event.clearPointer(); }
+void GivePlantsFluidEvent::onCancel()
+{
+	Block& location = *m_objective.m_actor.m_location;
+	location.m_area->m_hasFarmFields.at(*m_objective.m_actor.getFaction()).addGivePlantFluidDesignation(*m_objective.m_plant);
+}
 GivePlantsFluidThreadedTask::GivePlantsFluidThreadedTask(GivePlantsFluidObjective& gpfo) : PathToBlockBaseThreadedTask(gpfo.m_actor.getThreadedTaskEngine()), m_objective(gpfo) { }
 void GivePlantsFluidThreadedTask::readStep()
 {
@@ -100,7 +105,10 @@ void GivePlantsFluidObjective::execute()
 		if(m_actor.m_canPickup.isCarryingFluidType(m_plant->m_plantSpecies.fluidType))
 		{
 			if(m_actor.m_location == &m_plant->m_location)
+			{
+				m_actor.m_location->m_area->m_hasFarmFields.at(*m_actor.getFaction()).removeGivePlantFluidDesignation(*m_plant);
 				m_event.schedule(Config::givePlantsFluidDelaySteps, *this);
+			}
 			else
 				m_actor.m_canMove.setDestination(m_plant->m_location);
 		}
