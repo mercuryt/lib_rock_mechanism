@@ -93,11 +93,11 @@ namespace path
 	}
 	// Breadth first search.
 	// TODO: remove default argument on maxRange.
+	// TODO: variant for multi block actors which checks each occupied block instead of just m_location.
 	template<typename Predicate>
 	std::vector<Block*> getForActorToPredicate(const Actor& actor, Predicate&& predicate, const uint32_t& maxRange = UINT32_MAX)
 	{
 		std::unordered_set<Block*> locationClosedList;
-		std::unordered_set<Block*> adjacentClosedList;
 		locationClosedList.insert(actor.m_location);
 		std::list<RouteNode*> openList;
 		std::list<RouteNode> routeNodes;

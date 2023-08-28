@@ -124,21 +124,28 @@ uint32_t CanPickup::canPickupQuantityWithSingeUnitMass(uint32_t unitMass) const
 }
 bool CanPickup::isCarryingFluidType(const FluidType& fluidType) const 
 {
+	if(m_carrying == nullptr)
+		return false;
 	Item& item = static_cast<Item&>(*m_carrying);
        	return item.m_hasCargo.getFluidType() == fluidType; 
 }
 const uint32_t& CanPickup::getFluidVolume() const 
 { 
+	assert(m_carrying != nullptr);
 	Item& item = static_cast<Item&>(*m_carrying);
 	return item.m_hasCargo.getFluidVolume(); 
 }
 const FluidType& CanPickup::getFluidType() const 
 { 
+	assert(m_carrying != nullptr);
 	Item& item = static_cast<Item&>(*m_carrying);
+	assert(item.m_hasCargo.containsAnyFluid());
 	return item.m_hasCargo.getFluidType(); 
 }
 bool CanPickup::isCarryingEmptyContainerWhichCanHoldFluid() const 
 { 
+	if(m_carrying == nullptr)
+		return false;
 	Item& item = static_cast<Item&>(*m_carrying);
 	return item.m_hasCargo.containsAnyFluid() && item.m_itemType.canHoldFluids; 
 }

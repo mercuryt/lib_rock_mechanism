@@ -112,6 +112,7 @@ TEST_CASE("farm fields")
 	}
 	SUBCASE("give plants fluid")
 	{
+		static const FluidType& water = FluidType::byName("water");
 		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
 		block.m_hasPlant.addPlant(wheatGrass);
 		Plant& plant = block.m_hasPlant.get();
@@ -126,13 +127,36 @@ TEST_CASE("farm fields")
 		actor.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 10);
 		REQUIRE(objectiveType.canBeAssigned(actor));
 		actor.m_hasObjectives.getNext();
-		Item& bucket = simulation.createItem(ItemType::byName("bucket"), MaterialType::byName("wood"), 50u, 0u, nullptr);
-		Block& bucketLocation = area.m_blocks[5][5][2];
+		Item& bucket = simulation.createItem(ItemType::byName("bucket"), MaterialType::byName("poplar wood"), 50u, 0u, nullptr);
+		Block& bucketLocation = area.m_blocks[7][7][2];
 		bucket.setLocation(bucketLocation);
 		Block& pondLocation = area.m_blocks[3][4][2];
 		pondLocation.setNotSolid();
-		pondLocation.addFluid(100, FluidType::byName("water"));
+		pondLocation.addFluid(100, water);
+		REQUIRE(actor.m_canPickup.canPickupAny(bucket));
 		simulation.doStep();
-		assert(actor.m_canMove.getDestination() != nullptr);
+		REQUIRE(actor.m_canMove.getDestination() == &bucketLocation);
+		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "give plants fluid");
+		while(actor.m_location != &bucketLocation)
+			simulation.doStep();
+		REQUIRE(simulation.m_threadedTaskEngine.m_tasks.size() == 1);
+		REQUIRE(actor.m_canPickup.isCarryingEmptyContainerWhichCanHoldFluid());
+		simulation.doStep();
+		REQUIRE(simulation.m_threadedTaskEngine.m_tasks.size() == 0);
+		REQUIRE(actor.m_canMove.getDestination() != nullptr);
+		REQUIRE(actor.m_canMove.getDestination()->isAdjacentTo(pondLocation));
+		while(!actor.m_location->isAdjacentTo(pondLocation))
+			simulation.doStep();
+		REQUIRE(bucket.m_hasCargo.containsAnyFluid());
+		REQUIRE(bucket.m_hasCargo.getFluidType() == water);
+		REQUIRE(actor.m_canMove.getDestination() == &block);
+		while(actor.m_location != &block)
+			simulation.doStep();
+		Step eventFinishedAt = simulation.m_step + Config::givePlantsFluidDelaySteps;
+		while(simulation.m_step <= eventFinishedAt)
+			simulation.doStep();
+		REQUIRE(plant.m_volumeFluidRequested == 0);
+		REQUIRE(plant.m_growthEvent.exists());
+		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "give plants fluid");
 	}
 }

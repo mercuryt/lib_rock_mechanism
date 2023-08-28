@@ -184,7 +184,7 @@ bool BlockHasShapes::shapeAndMoveTypeCanEnterEverWithFacing(const Shape& shape, 
 	{
 		Block* block = m_block.offset(x, y, z);
 		if(block == nullptr || block->isSolid() || 
-				block->m_hasShapes.m_staticVolume + v > Config::maxBlockVolume || 
+				block->m_hasShapes.m_staticVolume + v > Config::maxBlockVolumeHardLimit || 
 				!block->m_hasShapes.moveTypeCanEnter(moveType))
 			return false;
 	}
@@ -295,7 +295,7 @@ bool BlockHasShapes::canEnterCurrentlyWithFacing(const HasShape& hasShape, const
 	for(auto& [x, y, z, v] : hasShape.m_shape->positionsWithFacing(facing))
 	{
 		Block* block = m_block.offset(x, y, z);
-		if(block->m_hasShapes.m_totalVolume + v - block->m_hasShapes.getVolume(hasShape) > Config::maxBlockVolume)
+		if(block->m_hasShapes.m_totalVolume + v - block->m_hasShapes.getVolume(hasShape) > Config::maxBlockVolumeHardLimit)
 			return false;
 	}
 	return true;
@@ -306,6 +306,10 @@ uint32_t BlockHasShapes::getVolume(const HasShape& hasShape) const
 	if(found == m_shapes.end())
 		return 0u;
 	return found->second;
+}
+uint32_t BlockHasShapes::getTotalVolume() const 
+{
+	return m_totalVolume;
 }
 bool BlockHasShapes::canStandIn() const
 {

@@ -1,0 +1,9 @@
+{
+	"name": "bucket",
+	"shape": "oneByOneEighth",
+	"generic": false,
+	"internalVolume" : 10,
+	"canHoldFluids": true,
+	"value": 20,
+	"moveType": "none"
+}

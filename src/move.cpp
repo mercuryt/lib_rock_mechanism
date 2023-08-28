@@ -1,6 +1,6 @@
 #include "move.h"
 #include "path.h"
-ActorCanMove::ActorCanMove(Actor& a) : m_actor(a), m_moveType(&m_actor.m_species.moveType), m_retries(0), m_event(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()), m_toSetThreadedTask(a.getThreadedTaskEngine()), m_exitAreaThreadedTask(a.getThreadedTaskEngine())
+ActorCanMove::ActorCanMove(Actor& a) : m_actor(a), m_moveType(&m_actor.m_species.moveType), m_destination(nullptr), m_retries(0), m_event(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()), m_toSetThreadedTask(a.getThreadedTaskEngine()), m_exitAreaThreadedTask(a.getThreadedTaskEngine())
 {
 	updateIndividualSpeed();
 }
@@ -69,7 +69,15 @@ void ActorCanMove::callback()
 void ActorCanMove::scheduleMove()
 {
 	assert(m_actor.m_location != m_actor.m_canMove.m_destination);
-	Step delay = m_actor.m_location->m_hasShapes.moveCostFrom(*m_moveType, *m_actor.m_location) / m_speedActual;
+	Block& moveTo = **m_pathIter;
+	auto speed = m_speedActual;
+	auto volumeAtLocationBlock = m_actor.m_shape->positions[0][3];
+	if(volumeAtLocationBlock + moveTo.m_hasShapes.getTotalVolume() > Config::maxBlockVolume)
+	{
+		auto excessVolume = (volumeAtLocationBlock + moveTo.m_hasShapes.getTotalVolume()) - Config::maxBlockVolume;
+		speed = util::scaleByInversePercent(speed, excessVolume);
+	}
+	Step delay = moveTo.m_hasShapes.moveCostFrom(*m_moveType, *m_actor.m_location) / speed;
 	m_event.schedule(delay, *this);
 }
 void ActorCanMove::setDestination(Block& destination, bool detour, bool adjacent)

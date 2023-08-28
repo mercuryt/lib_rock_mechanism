@@ -1,7 +1,6 @@
 #pragma once
 
 #include "objective.h"
-#include "config.h"
 #include "eventSchedule.hpp"
 #include "threadedTask.hpp"
 #include "pathToBlockBaseThreadedTask.h"
@@ -9,6 +8,7 @@
 #include <memory>
 #include <vector>
 
+struct FluidType;
 class Plant;
 class Block;
 class Item;
@@ -26,6 +26,7 @@ public:
 class GivePlantsFluidThreadedTask final : public PathToBlockBaseThreadedTask
 {
 	GivePlantsFluidObjective& m_objective;
+	Item* m_haulTool;
 public:
 	GivePlantsFluidThreadedTask(GivePlantsFluidObjective& gpfo);
 	void readStep();
@@ -50,9 +51,11 @@ public:
 	void cancel() {}
 	std::string name() { return "give plants fluid"; }
 	bool canFillAt(Block& block) const;
-	Block* getAdjacentBlockToFillAt(Block& block) const;
-	bool canFillItemAt(Block& block) const;
-	Item* getItemToFillFromAt(Block& block) const;
+	Block* getAdjacentBlockToFillAt(Block& block);
+	bool canFillFromItemAt(Block& block) const;
+	Item* getItemToFillFromAt(Block& block);
+	bool canGetFluidHaulingItemAt(Block& block) const;
+	Item* getFluidHaulingItemAt(Block& block);
 	friend class GivePlantsFluidEvent;
 	friend class GivePlantsFluidThreadedTask;
 };

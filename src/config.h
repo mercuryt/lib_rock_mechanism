@@ -7,6 +7,7 @@ namespace Config
 {
 	inline constexpr Step addToStockPileDelaySteps = 10;
 	inline constexpr uint32_t maxBlockVolume = 100;
+	inline constexpr uint32_t maxBlockVolumeHardLimit = 150;
 	inline constexpr uint32_t maxNumberOfWorkersForDigProject = 3;
 	inline constexpr uint32_t maxNumberOfWorkersForConstructionProject = 4;
 	inline constexpr float unarmedCombatSkillModifier = 1.2;

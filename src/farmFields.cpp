@@ -94,6 +94,7 @@ void HasFarmFieldsForFaction::addGivePlantFluidDesignation(Plant& plant)
 	assert(std::ranges::find(m_plantsNeedingFluid, &plant) == m_plantsNeedingFluid.end());
 	m_plantsNeedingFluidIsSorted = false;
 	m_plantsNeedingFluid.push_back(&plant);
+	plant.m_location.m_hasDesignations.insert(m_faction, BlockDesignation::GivePlantFluid);
 }
 void HasFarmFieldsForFaction::removeGivePlantFluidDesignation(Plant& plant)
 {
@@ -249,7 +250,8 @@ Plant* HasFarmFields::getHighestPriorityPlantForGiveFluid(const Faction& faction
 void HasFarmFields::removeAllSowSeedsDesignations(Block& block)
 {
 	for(auto& pair : m_data)
-		pair.second.removeSowSeedsDesignation(block);
+		if(block.m_hasDesignations.contains(*pair.first, BlockDesignation::SowSeeds))
+			pair.second.removeSowSeedsDesignation(block);
 }
 void HasFarmFields::setDayOfYear(uint32_t dayOfYear)
 {

@@ -11,6 +11,7 @@ Plant::Plant(Block& l, const PlantSpecies& pt, uint32_t pg) : m_location(l), m_f
 	assert(m_location.m_hasPlant.canGrowHereAtSomePointToday(m_plantSpecies));
 	m_fluidEvent.schedule(m_plantSpecies.stepsNeedsFluidFrequency, *this);
 	updateGrowingStatus();
+	m_location.m_area->m_hasFarmFields.removeAllSowSeedsDesignations(m_location);
 }
 void Plant::die()
 {
