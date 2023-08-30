@@ -1,8 +1,9 @@
 #include "drink.h"
 #include "path.h"
 #include "util.h"
+#include <algorithm>
 // Must Drink.
-MustDrink::MustDrink(Actor& a) : m_actor(a), m_volumeDrinkRequested(0), m_objective(nullptr), m_thirstEvent(a.getEventSchedule())
+MustDrink::MustDrink(Actor& a) : m_actor(a), m_volumeDrinkRequested(0), m_fluidType(&m_actor.m_species.fluidType), m_objective(nullptr), m_thirstEvent(a.getEventSchedule())
 { 
 	m_thirstEvent.schedule(m_actor.m_species.stepsFluidDrinkFreqency, m_actor);
 }
@@ -11,23 +12,30 @@ void MustDrink::drink(uint32_t volume)
 	assert(m_volumeDrinkRequested >= volume);
 	m_volumeDrinkRequested -= volume;
 	m_thirstEvent.unschedule();
-	uint32_t stepsToNextThirsEvent;
+	uint32_t stepsToNextThirstEvent;
 	if(m_volumeDrinkRequested == 0)
 	{
 		m_actor.m_hasObjectives.objectiveComplete(*m_objective);
-		stepsToNextThirsEvent = m_actor.m_species.stepsFluidDrinkFreqency;
+		stepsToNextThirstEvent = m_actor.m_species.stepsFluidDrinkFreqency;
 	}
 	else
-		stepsToNextThirsEvent = util::scaleByFraction(m_actor.m_species.stepsTillDieWithoutFluid, m_volumeDrinkRequested, m_actor.m_species.stepsTillDieWithoutFluid);
-	m_thirstEvent.schedule(stepsToNextThirsEvent, m_actor);
+		stepsToNextThirstEvent = util::scaleByFraction(m_actor.m_species.stepsTillDieWithoutFluid, m_volumeDrinkRequested, m_actor.m_species.stepsTillDieWithoutFluid);
+	m_thirstEvent.schedule(stepsToNextThirstEvent, m_actor);
 }
 void MustDrink::setNeedsFluid()
 {
 	if(m_volumeDrinkRequested == 0)
-		m_volumeDrinkRequested = m_actor.getMass() * Config::volumeFluidForBodyMass;
+	{
+		m_volumeDrinkRequested = drinkVolumeFor(m_actor);
+		m_thirstEvent.schedule(m_actor.m_species.stepsFluidDrinkFreqency, m_actor);
+		std::unique_ptr<Objective> objective = std::make_unique<DrinkObjective>(m_actor);
+		m_objective = static_cast<DrinkObjective*>(objective.get());
+		m_actor.m_hasObjectives.addNeed(std::move(objective));
+	}
 	else
 		m_actor.die(CauseOfDeath::thirst);
 }
+uint32_t MustDrink::drinkVolumeFor(Actor& actor) { return std::max(1u, actor.getMass() / Config::unitsBodyMassPerUnitFluidConsumed); }
 // Drink Event.
 DrinkEvent::DrinkEvent(const Step delay, DrinkObjective& drob) : ScheduledEventWithPercent(drob.m_actor.getSimulation(), delay), m_drinkObjective(drob), m_item(nullptr) {}
 DrinkEvent::DrinkEvent(const Step delay, DrinkObjective& drob, Item& i) : ScheduledEventWithPercent(drob.m_actor.getSimulation(), delay), m_drinkObjective(drob), m_item(&i) {}
@@ -105,7 +113,7 @@ bool DrinkObjective::canDrinkAt(const Block& block) const
 }
 Block* DrinkObjective::getAdjacentBlockToDrinkAt(const Block& block) const
 {
-	for(Block* adjacent : block.m_adjacentsVector)
+	for(Block* adjacent : block.getEdgeAdjacentOnlyOnNextZLevelDown())
 		if(adjacent->m_fluids.contains(&m_actor.m_mustDrink.getFluidType()))
 			return adjacent;
 	return nullptr;

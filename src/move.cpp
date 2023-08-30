@@ -72,9 +72,10 @@ void ActorCanMove::scheduleMove()
 	Block& moveTo = **m_pathIter;
 	auto speed = m_speedActual;
 	auto volumeAtLocationBlock = m_actor.m_shape->positions[0][3];
+	assert(!m_actor.m_blocks.contains(&moveTo));
 	if(volumeAtLocationBlock + moveTo.m_hasShapes.getTotalVolume() > Config::maxBlockVolume)
 	{
-		auto excessVolume = (volumeAtLocationBlock + moveTo.m_hasShapes.getTotalVolume()) - Config::maxBlockVolume;
+		auto excessVolume = (volumeAtLocationBlock + moveTo.m_hasShapes.getStaticVolume()) - Config::maxBlockVolume;
 		speed = util::scaleByInversePercent(speed, excessVolume);
 	}
 	Step delay = moveTo.m_hasShapes.moveCostFrom(*m_moveType, *m_actor.m_location) / speed;

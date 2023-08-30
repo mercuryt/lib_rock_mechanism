@@ -295,6 +295,7 @@ bool BlockHasShapes::canEnterCurrentlyWithFacing(const HasShape& hasShape, const
 	for(auto& [x, y, z, v] : hasShape.m_shape->positionsWithFacing(facing))
 	{
 		Block* block = m_block.offset(x, y, z);
+		assert(block != nullptr);
 		if(block->m_hasShapes.m_totalVolume + v - block->m_hasShapes.getVolume(hasShape) > Config::maxBlockVolumeHardLimit)
 			return false;
 	}

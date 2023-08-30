@@ -1,10 +1,9 @@
 #pragma once
-#include "eventSchedule.h"
-#include "threadedTask.h"
 #include "objective.h"
-#include "path.h"
 #include "plant.h"
 #include "eventSchedule.hpp"
+#include "threadedTask.hpp"
+#include "config.h"
 
 #include <memory>
 #include <vector>
@@ -24,7 +23,7 @@ class SowSeedsObjective final : public Objective
 	HasThreadedTask<SowSeedsThreadedTask> m_threadedTask;
 	bool canSowSeedsAt(Block& block);
 public:
-	SowSeedsObjective(Actor& a) : Objective(Config::sowSeedsPriority), m_actor(a), m_event(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()) { }
+	SowSeedsObjective(Actor& a);
 	void execute();
 	void cancel() {}
 	std::string name() { return "sow seeds"; }
@@ -35,7 +34,7 @@ class SowSeedsEvent final : public ScheduledEventWithPercent
 {
 	SowSeedsObjective& m_objective;
 public:
-	SowSeedsEvent(Step delay, SowSeedsObjective& o) : ScheduledEventWithPercent(o.m_actor.getSimulation(), delay), m_objective(o) { }
+	SowSeedsEvent(Step delay, SowSeedsObjective& o);
 	void execute();
 	void clearReferences();
 	void onCancel();
@@ -45,7 +44,7 @@ class SowSeedsThreadedTask final : public ThreadedTask
 	SowSeedsObjective& m_objective;
 	std::vector<Block*> m_result;
 public:
-	SowSeedsThreadedTask(SowSeedsObjective& sso): ThreadedTask(sso.m_actor.getThreadedTaskEngine()), m_objective(sso) { }
+	SowSeedsThreadedTask(SowSeedsObjective& sso);
 	void readStep();
 	void writeStep();
 	void clearReferences();

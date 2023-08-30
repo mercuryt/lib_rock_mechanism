@@ -74,10 +74,11 @@ class ItemHasCargo final
 	const FluidType* m_fluidType;
 	uint32_t m_fluidVolume;
 public:
-	ItemHasCargo(Item& i) : m_item(i) { }
+	ItemHasCargo(Item& i) : m_item(i), m_volume(0), m_mass(0), m_fluidType(nullptr), m_fluidVolume(0) { }
 	void add(HasShape& hasShape);
 	void add(const FluidType& fluidType, uint32_t volume);
 	void remove(const FluidType& fluidType, uint32_t volume);
+	void removeFluidVolume(uint32_t volume);
 	void remove(HasShape& hasShape);
 	void remove(Item& item, uint32_t quantity);
 	std::vector<HasShape*>& getContents() { return m_shapes; }
@@ -89,6 +90,7 @@ public:
 	const FluidType& getFluidType() const { return *m_fluidType; }
 	bool containsAnyFluid() const { return m_fluidType != nullptr; }
 	bool contains(HasShape& hasShape) const { return std::ranges::find(m_shapes, &hasShape) != m_shapes.end(); }
+	bool empty() const { return m_fluidType == nullptr && m_shapes.empty(); }
 };
 class Item final : public HasShape
 {

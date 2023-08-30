@@ -1,5 +1,8 @@
 #include "sowSeeds.h"
+#include "path.h"
 #include "area.h"
+#include "actor.h"
+SowSeedsEvent::SowSeedsEvent(Step delay, SowSeedsObjective& o) : ScheduledEventWithPercent(o.m_actor.getSimulation(), delay), m_objective(o) { }
 void SowSeedsEvent::execute()
 {
 	Block& location = *m_objective.m_actor.m_location;
@@ -21,6 +24,7 @@ std::unique_ptr<Objective> SowSeedsObjectiveType::makeFor(Actor& actor) const
 {
 	return std::make_unique<SowSeedsObjective>(actor);
 }
+SowSeedsThreadedTask::SowSeedsThreadedTask(SowSeedsObjective& sso): ThreadedTask(sso.m_actor.getThreadedTaskEngine()), m_objective(sso) { }
 void SowSeedsThreadedTask::readStep()
 {
 	auto condition = [&](Block& block)
@@ -43,6 +47,7 @@ void SowSeedsThreadedTask::writeStep()
 		}
 }
 void SowSeedsThreadedTask::clearReferences() { m_objective.m_threadedTask.clearPointer(); }
+SowSeedsObjective::SowSeedsObjective(Actor& a) : Objective(Config::sowSeedsPriority), m_actor(a), m_event(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()) { }
 bool SowSeedsObjective::canSowSeedsAt(Block& block)
 {
 	return block.m_hasDesignations.contains(*m_actor.getFaction(), BlockDesignation::SowSeeds);

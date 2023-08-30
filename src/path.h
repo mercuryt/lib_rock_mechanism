@@ -121,7 +121,7 @@ namespace path
 					return output;
 				}
 				//TODO: Optimization: maintain an m_adjacentsWhichAnythingCanEnterEver vector.
-				for(Block* adjacent : routeNode->block.m_adjacentsVector)
+				for(Block* adjacent : routeNode->block.getAdjacentWithEdgeAndCornerAdjacent())
 				{
 					if(!adjacent->m_hasShapes.anythingCanEnterEver())
 						continue;

@@ -17,6 +17,7 @@
 #include "route.h"
 #include "area.h"
 #include "farmFields.h"
+#include "basicNeeds.h"
 
 int main(int argc, char** argv) {
     doctest::Context context;

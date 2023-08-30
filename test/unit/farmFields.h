@@ -130,7 +130,7 @@ TEST_CASE("farm fields")
 		Item& bucket = simulation.createItem(ItemType::byName("bucket"), MaterialType::byName("poplar wood"), 50u, 0u, nullptr);
 		Block& bucketLocation = area.m_blocks[7][7][2];
 		bucket.setLocation(bucketLocation);
-		Block& pondLocation = area.m_blocks[3][4][2];
+		Block& pondLocation = area.m_blocks[3][7][1];
 		pondLocation.setNotSolid();
 		pondLocation.addFluid(100, water);
 		REQUIRE(actor.m_canPickup.canPickupAny(bucket));
@@ -144,16 +144,20 @@ TEST_CASE("farm fields")
 		simulation.doStep();
 		REQUIRE(simulation.m_threadedTaskEngine.m_tasks.size() == 0);
 		REQUIRE(actor.m_canMove.getDestination() != nullptr);
-		REQUIRE(actor.m_canMove.getDestination()->isAdjacentTo(pondLocation));
-		while(!actor.m_location->isAdjacentTo(pondLocation))
+		REQUIRE(actor.m_canMove.getDestination()->isAdjacentToIncludingCornersAndEdges(pondLocation));
+		while(!actor.m_location->isAdjacentToIncludingCornersAndEdges(pondLocation))
 			simulation.doStep();
 		REQUIRE(bucket.m_hasCargo.containsAnyFluid());
 		REQUIRE(bucket.m_hasCargo.getFluidType() == water);
+		REQUIRE(simulation.m_threadedTaskEngine.m_tasks.size() == 1);
+		REQUIRE(actor.m_canMove.getDestination() == nullptr);
+		simulation.doStep();
+		REQUIRE(simulation.m_threadedTaskEngine.m_tasks.size() == 0);
 		REQUIRE(actor.m_canMove.getDestination() == &block);
 		while(actor.m_location != &block)
 			simulation.doStep();
 		Step eventFinishedAt = simulation.m_step + Config::givePlantsFluidDelaySteps;
-		while(simulation.m_step <= eventFinishedAt)
+		while(simulation.m_step < eventFinishedAt)
 			simulation.doStep();
 		REQUIRE(plant.m_volumeFluidRequested == 0);
 		REQUIRE(plant.m_growthEvent.exists());

@@ -91,11 +91,13 @@ public:
 	std::vector<Block*> getEdgeAdjacentOnSameZLevelOnly() const;
 	std::vector<Block*> getAdjacentOnSameZLevelOnly() const;
 	std::vector<Block*> getEdgeAdjacentOnlyOnNextZLevelDown() const;
+	std::vector<Block*> getEdgeAndCornerAdjacentOnlyOnNextZLevelDown() const;
 	std::vector<Block*> getEdgeAdjacentOnlyOnNextZLevelUp() const;
 	uint32_t distance(Block& block) const;
 	uint32_t taxiDistance(const Block& block) const;
 	bool isAdjacentToAny(std::unordered_set<Block*>& blocks) const;
 	bool isAdjacentTo(Block& block) const;
+	bool isAdjacentToIncludingCornersAndEdges(Block& block) const;
 	void setNotSolid();
 	void setSolid(const MaterialType& materialType);
 	bool isSolid() const;

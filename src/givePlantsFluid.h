@@ -43,6 +43,7 @@ class GivePlantsFluidObjective final : public Objective
 {
 	Actor& m_actor;
 	Plant* m_plant;
+	Item* m_haulTool;
 	HasScheduledEvent<GivePlantsFluidEvent> m_event;
 	HasThreadedTask<GivePlantsFluidThreadedTask> m_threadedTask;
 public:

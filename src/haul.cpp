@@ -74,11 +74,12 @@ void CanPickup::putDownIfAny(Block& location)
 
 void CanPickup::removeFluidVolume(uint32_t volume)
 {
-	assert(m_fluidType != nullptr);
-	assert(m_fluidVolume >= volume);
-	m_fluidVolume -= volume;
-	if(m_fluidVolume == 0)
-		m_fluidType = nullptr;
+	assert(m_carrying != nullptr);
+	assert(m_carrying->isItem());
+	Item& item = getItem();
+	assert(item.m_hasCargo.containsAnyFluid());
+	assert(item.m_hasCargo.getFluidVolume() >= volume);
+	item.m_hasCargo.removeFluidVolume(volume);
 }
 void CanPickup::add(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity)
 {
@@ -96,6 +97,16 @@ void CanPickup::remove(Item& item)
 {
 	assert(m_carrying == &item);
 	m_carrying = nullptr;
+}
+Item& CanPickup::getItem()
+{
+	assert(m_carrying != nullptr);
+	return static_cast<Item&>(*m_carrying);
+}
+Actor& CanPickup::getActor()
+{
+	assert(m_carrying != nullptr);
+	return static_cast<Actor&>(*m_carrying);
 }
 uint32_t CanPickup::canPickupQuantityOf(const HasShape& hasShape) const
 {
@@ -127,6 +138,8 @@ bool CanPickup::isCarryingFluidType(const FluidType& fluidType) const
 	if(m_carrying == nullptr)
 		return false;
 	Item& item = static_cast<Item&>(*m_carrying);
+	if(!item.m_hasCargo.containsAnyFluid())
+		return false;
        	return item.m_hasCargo.getFluidType() == fluidType; 
 }
 const uint32_t& CanPickup::getFluidVolume() const 
@@ -146,8 +159,9 @@ bool CanPickup::isCarryingEmptyContainerWhichCanHoldFluid() const
 { 
 	if(m_carrying == nullptr)
 		return false;
+	assert(m_carrying->isItem());
 	Item& item = static_cast<Item&>(*m_carrying);
-	return item.m_hasCargo.containsAnyFluid() && item.m_itemType.canHoldFluids; 
+	return item.m_itemType.canHoldFluids && item.m_hasCargo.empty(); 
 }
 uint32_t CanPickup::getMass() const
 {

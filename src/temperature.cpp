@@ -226,5 +226,7 @@ bool ActorNeedsSafeTemperature::isSafe(uint32_t temperature) const
 }
 bool ActorNeedsSafeTemperature::isSafeAtCurrentLocation() const
 {
+	if(m_actor.m_location == nullptr)
+		return true;
 	return isSafe(m_actor.m_location->m_blockHasTemperature.get());
 }

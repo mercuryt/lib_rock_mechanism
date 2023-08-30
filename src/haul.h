@@ -66,10 +66,8 @@ class CanPickup final
 {
 	Actor& m_actor;
 	HasShape* m_carrying;
-	uint32_t m_fluidVolume;
-	const FluidType* m_fluidType;
 public:
-	CanPickup(Actor& a) : m_actor(a), m_carrying(nullptr),  m_fluidType(nullptr) { }
+	CanPickup(Actor& a) : m_actor(a), m_carrying(nullptr) { }
 	void pickUp(HasShape& hasShape, uint32_t quantity);
 	void pickUp(Item& item, uint32_t quantity);
 	void pickUp(Actor& actor, uint32_t quantity);
@@ -78,6 +76,8 @@ public:
 	void removeFluidVolume(uint32_t volume);
 	void add(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity);
 	void remove(Item& item);
+	Item& getItem();
+	Actor& getActor();
 	uint32_t canPickupQuantityOf(const HasShape& hasShape) const;
 	uint32_t canPickupQuantityOf(const Item& item) const;
 	uint32_t canPickupQuantityOf(const Actor& actor) const;

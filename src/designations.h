@@ -9,7 +9,7 @@
 
 class Faction;
 
-enum class BlockDesignation { Dig, Construct, SowSeeds, GivePlantFluid, Harvest, StockPileHaulFrom, StockPileHaulTo, Sleep, Rescue };
+enum class BlockDesignation { Dig, Construct, SowSeeds, GivePlantFluid, Harvest, StockPileHaulFrom, StockPileHaulTo, Sleep, Rescue, FluidSource };
 class HasDesignations
 {
 	std::unordered_map<const Faction*, std::unordered_set<BlockDesignation>> m_designations;

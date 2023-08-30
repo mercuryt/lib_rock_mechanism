@@ -79,7 +79,7 @@ class EatObjective final : public Objective
 public:
 	EatObjective(Actor& a);
 	void execute();
-	void cancel() {}
+	void cancel();
 	std::string name() { return "eat"; }
 	bool canEatAt(const Block& block) const;
 	friend class EatEvent;

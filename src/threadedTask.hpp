@@ -22,6 +22,7 @@ public:
 	}
 	void clearPointer() { m_threadedTask = nullptr; }
 	bool exists() const { return m_threadedTask != nullptr; }
+	void maybeCancel() { if(exists()) cancel(); }
 	TaskType& get() { assert(m_threadedTask != nullptr); return *m_threadedTask; }
 	~HasThreadedTask()
 	{

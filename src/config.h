@@ -129,7 +129,7 @@ namespace Config
 	inline constexpr uint32_t restIntervalSteps = 5 * stepsPerSecond;
 	inline constexpr uint32_t staminaPointsPerRestPeriod = 10;
 	inline constexpr uint32_t maxStaminaPointsBase = 100;
-	inline constexpr uint32_t volumeFluidForBodyMass = 100;
+	inline constexpr uint32_t unitsBodyMassPerUnitFluidConsumed = 100;
 	inline constexpr uint32_t baseMoveCost = 50;
 	inline constexpr uint32_t goUpMoveCost = 100;
 	inline constexpr uint32_t wanderDistanceModifier = 8;

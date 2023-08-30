@@ -1,5 +1,7 @@
 #include "harvest.h"
 #include "area.h"
+#include "path.h"
+HarvestEvent::HarvestEvent(Step delay, HarvestObjective& ho) : ScheduledEventWithPercent(ho.m_actor.getSimulation(), delay), m_harvestObjective(ho) {}
 void HarvestEvent::execute()
 {
 	Plant* plant = getPlant();
@@ -31,6 +33,7 @@ Plant* HarvestEvent::getPlant()
 	return nullptr;
 }
 void HarvestEvent::clearReferences() { m_harvestObjective.m_harvestEvent.clearPointer(); } 
+HarvestThreadedTask::HarvestThreadedTask(HarvestObjective& ho) : ThreadedTask(ho.m_actor.getThreadedTaskEngine()), m_harvestObjective(ho) {}
 void HarvestThreadedTask::readStep()
 {
 	auto destinationCondition = [&](Block& block)
@@ -65,6 +68,7 @@ std::unique_ptr<Objective> HarvestObjectiveType::makeFor(Actor& actor) const
 {
 	return std::make_unique<HarvestObjective>(actor);
 }
+HarvestObjective::HarvestObjective(Actor& a) : Objective(Config::harvestPriority), m_actor(a), m_harvestEvent(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()) {}
 void HarvestObjective::execute()
 {
 	if(canHarvestAt(*m_actor.m_location))

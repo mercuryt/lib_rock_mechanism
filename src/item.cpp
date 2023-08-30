@@ -96,6 +96,7 @@ void ItemHasCargo::remove(const FluidType& fluidType, uint32_t volume)
 	if(m_fluidVolume == 0)
 		m_fluidType = nullptr;
 }
+void ItemHasCargo::removeFluidVolume(uint32_t volume) { remove(*m_fluidType, volume); }
 void ItemHasCargo::remove(HasShape& hasShape)
 {
 	assert(m_volume >= hasShape.getVolume());

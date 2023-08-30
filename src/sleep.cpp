@@ -75,7 +75,7 @@ uint32_t SleepObjective::desireToSleepAt(Block& block)
 }
 SleepObjective::~SleepObjective() { m_actor.m_mustSleep.m_objective = nullptr; }
 // Needs Sleep.
-MustSleep::MustSleep(Actor& a) : m_actor(a), m_location(nullptr), m_sleepEvent(a.getEventSchedule()), m_tiredEvent(a.getEventSchedule()), m_isAwake(true)
+MustSleep::MustSleep(Actor& a) : m_actor(a), m_location(nullptr), m_sleepEvent(a.getEventSchedule()), m_tiredEvent(a.getEventSchedule()), m_objective(nullptr), m_needsSleep(false), m_isAwake(true)
 {
 	m_tiredEvent.schedule(m_actor.m_species.stepsSleepFrequency, *this);
 }

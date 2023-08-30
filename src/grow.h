@@ -19,6 +19,7 @@ public:
 	void complete();
 	void stop();
 	void maybeStart();
+	bool isGrowing() const { return m_event.exists(); }
 	friend class AnimalGrowthEvent;
 	friend class AnimalGrowthUpdateEvent;
 };

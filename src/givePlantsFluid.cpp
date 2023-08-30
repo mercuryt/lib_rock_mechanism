@@ -6,7 +6,7 @@ GivePlantsFluidEvent::GivePlantsFluidEvent(Step delay, GivePlantsFluidObjective&
 void GivePlantsFluidEvent::execute()
 {
 	assert(m_objective.m_actor.m_canPickup.isCarryingFluidType(m_objective.m_plant->m_plantSpecies.fluidType));
-	uint32_t quantity = std::min(m_objective.m_plant->getFluidDrinkVolume(), m_objective.m_actor.m_canPickup.getFluidVolume());
+	uint32_t quantity = std::min(m_objective.m_plant->getVolumeFluidRequested(), m_objective.m_actor.m_canPickup.getFluidVolume());
 	m_objective.m_plant->addFluid(quantity, m_objective.m_actor.m_canPickup.getFluidType());
 	m_objective.m_actor.m_canPickup.removeFluidVolume(quantity);
 	m_objective.m_actor.m_hasObjectives.objectiveComplete(m_objective);
@@ -33,25 +33,24 @@ void GivePlantsFluidThreadedTask::readStep()
 			return;
 		}
 		assert(plantLocation->m_hasPlant.exists());
-		//TODO: save plant in threaded task for now and only write to objective durring writeStep.
 		m_objective.m_plant = &plantLocation->m_hasPlant.get();
 	}
 	if(m_objective.m_actor.m_canPickup.isCarryingFluidType(m_objective.m_plant->m_plantSpecies.fluidType))
 	{
-		if(m_objective.m_actor.m_location == &m_objective.m_plant->m_location)
-			m_objective.m_event.schedule(Config::givePlantsFluidDelaySteps, m_objective);
-		else
-			pathTo(m_objective.m_actor, m_objective.m_plant->m_location);
+		assert(m_objective.m_actor.m_location != &m_objective.m_plant->m_location);
+		pathTo(m_objective.m_actor, m_objective.m_plant->m_location);
 	}
 	else
 	{
 		if(m_objective.m_actor.m_canPickup.isCarryingEmptyContainerWhichCanHoldFluid())
 		{
+			// Fetch fluid.
 			auto condition = [&](Block& block) { return m_objective.canFillAt(block); };
 			m_route = path::getForActorToPredicate(m_objective.m_actor, condition);
 		}
 		else
 		{
+			// Fetch fluid hauling item.
 			auto condition = [&](Block& block) { return m_objective.canGetFluidHaulingItemAt(block); };
 			m_route = path::getForActorToPredicate(m_objective.m_actor, condition);
 			m_haulTool = m_objective.getFluidHaulingItemAt(*m_route.back());
@@ -68,9 +67,13 @@ void GivePlantsFluidThreadedTask::writeStep()
 		if(!m_route.empty())
 			m_objective.m_actor.m_canMove.setPath(m_route);
 	}
-	if(m_haulTool)
-		m_haulTool->m_reservable.reserveFor(m_objective.m_actor.m_canReserve, 1);
 	cacheMoveCosts(m_objective.m_actor);
+	if(m_haulTool != nullptr)
+	{
+		assert(m_objective.m_haulTool == nullptr);
+		m_objective.m_haulTool = m_haulTool;
+		m_haulTool->m_reservable.reserveFor(m_objective.m_actor.m_canReserve, 1);
+	}
 }
 void GivePlantsFluidThreadedTask::clearReferences() { m_objective.m_threadedTask.clearPointer(); }
 bool GivePlantsFluidObjectiveType::canBeAssigned(Actor& actor) const
@@ -81,7 +84,7 @@ std::unique_ptr<Objective> GivePlantsFluidObjectiveType::makeFor(Actor& actor) c
 {
 	return std::make_unique<GivePlantsFluidObjective>(actor);
 }
-GivePlantsFluidObjective::GivePlantsFluidObjective(Actor& a ) : Objective(Config::givePlantsFluidPriority), m_actor(a), m_plant(nullptr), m_event(m_actor.getEventSchedule()), m_threadedTask(m_actor.getThreadedTaskEngine()) { }
+GivePlantsFluidObjective::GivePlantsFluidObjective(Actor& a ) : Objective(Config::givePlantsFluidPriority), m_actor(a), m_plant(nullptr), m_haulTool(nullptr), m_event(m_actor.getEventSchedule()), m_threadedTask(m_actor.getThreadedTaskEngine()) { }
 // Either get plant from Area::m_hasFarmFields or get the the nearest candidate.
 // This method and GivePlantsFluidThreadedTask are complimentary state machines, with this one handling syncronus tasks.
 // TODO: multi block actors.
@@ -114,18 +117,36 @@ void GivePlantsFluidObjective::execute()
 	{
 		if(m_actor.m_canPickup.isCarryingFluidType(m_plant->m_plantSpecies.fluidType))
 		{
+			// Has container with fluid.
 			if(m_actor.m_location == &m_plant->m_location)
 			{
+				// Begin giving fluid.
 				m_actor.m_location->m_area->m_hasFarmFields.at(*m_actor.getFaction()).removeGivePlantFluidDesignation(*m_plant);
 				m_event.schedule(Config::givePlantsFluidDelaySteps, *this);
 			}
 			else
+				// Go to plant.
 				m_actor.m_canMove.setDestination(m_plant->m_location);
 		}
 		else
 		{
-			if(!m_actor.m_canPickup.isCarryingEmptyContainerWhichCanHoldFluid() && canGetFluidHaulingItemAt(*m_actor.m_location))
+			if(m_actor.m_canPickup.isCarryingEmptyContainerWhichCanHoldFluid())
 			{
+				// Has empty container.
+				if(canFillAt(*m_actor.m_location))
+				{
+					// Fill container.
+					Item& haulTool = m_actor.m_canPickup.getItem();
+					const FluidType& fluidType = m_plant->m_plantSpecies.fluidType;
+					Block* fillFrom = getAdjacentBlockToFillAt(*m_actor.m_location);
+					uint32_t volume = std::min(haulTool.m_itemType.internalVolume, fillFrom->volumeOfFluidTypeContains(fluidType));
+					haulTool.m_hasCargo.add(fluidType, volume);
+					fillFrom->removeFluid(volume, fluidType);
+				}
+			}
+			else if(canGetFluidHaulingItemAt(*m_actor.m_location))
+			{
+				// Get Container.
 				Item* item = getFluidHaulingItemAt(*m_actor.m_location);
 				m_actor.m_canPickup.pickUp(*item, 1);
 			}
@@ -141,7 +162,7 @@ bool GivePlantsFluidObjective::canFillAt(Block& block) const
 Block* GivePlantsFluidObjective::getAdjacentBlockToFillAt(Block& block)
 {
 	assert(m_plant != nullptr);
-	for(Block* adjacent : block.m_adjacentsVector)
+	for(Block* adjacent : block.getEdgeAndCornerAdjacentOnlyOnNextZLevelDown())
 		if(adjacent->m_fluids.contains(&m_plant->m_plantSpecies.fluidType))
 			return adjacent;
 	return nullptr;

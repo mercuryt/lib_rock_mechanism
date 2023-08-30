@@ -146,6 +146,24 @@ std::vector<Block*> Block::getEdgeAdjacentOnlyOnNextZLevelDown() const
 	}
 	return output;
 }
+std::vector<Block*> Block::getEdgeAndCornerAdjacentOnlyOnNextZLevelDown() const
+{
+	std::vector<Block*> output;
+	output.reserve(12);
+	static const int32_t offsetsList[12][3] = {
+		{-1,-1,-1}, {-1,0,-1}, {-1, 1, -1},
+		{0,-1,-1}, {0,1,-1},
+		{1,-1,-1}, {1,0,-1}, {1,1,-1}
+	};
+	for(uint32_t i = 0; i < 4; i++)
+	{
+		auto& offsets = offsetsList[i];
+		Block* block = offset(offsets[0],offsets[1],offsets[2]);
+		if(block != nullptr)
+			output.push_back(block);
+	}
+	return output;
+}
 std::vector<Block*> Block::getEdgeAdjacentOnlyOnNextZLevelUp() const
 {
 	std::vector<Block*> output;
@@ -226,6 +244,13 @@ bool Block::isAdjacentToAny(std::unordered_set<Block*>& blocks) const
 bool Block::isAdjacentTo(Block& block) const
 {
 	for(Block* adjacent : m_adjacentsVector)
+		if(&block == adjacent)
+			return true;
+	return false;
+}
+bool Block::isAdjacentToIncludingCornersAndEdges(Block& block) const
+{
+	for(Block* adjacent : getAdjacentWithEdgeAndCornerAdjacent())
 		if(&block == adjacent)
 			return true;
 	return false;

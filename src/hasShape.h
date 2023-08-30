@@ -74,6 +74,7 @@ public:
 	bool canStandIn() const;
 	uint32_t getTotalVolume() const;
 	bool contains(HasShape& hasShape) const { return m_shapes.contains(&hasShape); }
+	const uint32_t& getStaticVolume() const { return m_staticVolume; }
 	std::unordered_map<HasShape*, uint32_t>& getShapes() { return m_shapes; }
 	friend class HasShape;
 };

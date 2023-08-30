@@ -96,7 +96,7 @@ public:
 	uint32_t getStepAtWhichPlantWillDieFromLackOfFluid() const;
 	uint32_t getFluidDrinkVolume() const;
 	bool readyToHarvest() const { return m_quantityToHarvest != 0; }
-	const uint32_t& getVolumeFluidRequested();
+	const uint32_t& getVolumeFluidRequested() { return m_volumeFluidRequested; }
 };
 
 class PlantGrowthEvent final : public ScheduledEventWithPercent

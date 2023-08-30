@@ -1,10 +1,9 @@
 #pragma once
 #include "objective.h"
-#include "threadedTask.h"
+#include "threadedTask.hpp"
 #include "project.h"
 #include "item.h"
 #include "actor.h"
-#include "project.h"
 
 #include <memory>
 #include <vector>

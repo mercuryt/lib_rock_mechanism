@@ -70,6 +70,7 @@ void Plant::setMaybeNeedsFluid()
 }
 void Plant::addFluid(uint32_t volume, const FluidType& fluidType)
 {
+	assert(volume != 0);
 	assert(fluidType == m_plantSpecies.fluidType);
 	assert(volume <= m_volumeFluidRequested);
 	m_volumeFluidRequested -= volume;

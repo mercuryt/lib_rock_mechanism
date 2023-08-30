@@ -141,7 +141,7 @@ void EatThreadedTask::readStep()
 				return true;
 			if(eatDesire < m_eatObjective.m_actor.m_mustEat.getMinimumAcceptableDesire())
 				return false;
-			if(candidates[eatDesire - 1u] == nullptr)
+			if(eatDesire != 0 && candidates[eatDesire - 1u] == nullptr)
 				candidates[eatDesire - 1u] = &block;
 			return false;
 		};
@@ -274,6 +274,11 @@ void EatObjective::execute()
 
 		}
 	}
+}
+void EatObjective::cancel()
+{
+	m_threadedTask.maybeCancel();
+	m_eatEvent.maybeUnschedule();
 }
 bool EatObjective::canEatAt(const Block& block) const
 {
