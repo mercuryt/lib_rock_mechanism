@@ -156,8 +156,8 @@ namespace definitions
 				shape,
 				volume,
 				data["generic"].get<bool>(),
-				data["internalVolume"].get<uint32_t>(),
-				data["canHoldFluids"].get<bool>(),
+				data.contains("internalVolume") ? data["internalVolume"].get<uint32_t>() : 0 ,
+				data.contains("canHoldFluids") ? data["canHoldFluids"].get<bool>() : false,
 				data["value"].get<uint32_t>(),
 				data.contains("edibleForDrinkersOf") ? &FluidType::byName(data["edibleForDrinkersOf"].get<std::string>()) : nullptr,
 				MoveType::byName(data["moveType"].get<std::string>())

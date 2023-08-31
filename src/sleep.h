@@ -35,6 +35,8 @@ public:
 	friend class TiredEvent;
 	friend class SleepThreadedTask;
 	friend class SleepObjective;
+	// For testing.
+	[[maybe_unused]]bool hasTiredEvent() const { return m_tiredEvent.exists(); }
 };
 class SleepEvent final : public ScheduledEventWithPercent
 {

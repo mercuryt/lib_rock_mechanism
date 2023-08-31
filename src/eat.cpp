@@ -359,7 +359,7 @@ void MustEat::setNeedsFood()
 bool MustEat::needsFood() const { return m_massFoodRequested != 0; }
 uint32_t MustEat::massFoodForBodyMass() const
 {
-	return m_actor.getMass() / Config::foodRequestedMassPerUnitOfBodyMass;
+	return std::max(1u, m_actor.getMass() / Config::unitsBodyMassPerUnitFoodConsumed);
 }
 const uint32_t& MustEat::getMassFoodRequested() const { return m_massFoodRequested; }
 uint32_t MustEat::getPercentStarved() const

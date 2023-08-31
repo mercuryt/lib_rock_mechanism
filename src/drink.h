@@ -28,13 +28,14 @@ public:
 	MustDrink(Actor& a);
 	void drink(const uint32_t volume);
 	void setNeedsFluid();
-	const uint32_t& getVolumeFluidRequested() const;
+	const uint32_t& getVolumeFluidRequested() const { return m_volumeDrinkRequested; }
 	const uint32_t& getPercentDeadFromThirst() const;
 	const FluidType& getFluidType() const { return *m_fluidType; }
 	bool needsFluid() const { return m_volumeDrinkRequested != 0; }
 	static uint32_t drinkVolumeFor(Actor& actor);
 	friend class ThirstEvent;
 	friend class DrinkEvent;
+	friend class DrinkObjective;
 };
 class DrinkObjective final : public Objective
 {
@@ -44,7 +45,7 @@ class DrinkObjective final : public Objective
 public:
 	DrinkObjective(Actor& a);
 	void execute();
-	void cancel() {}
+	void cancel();
 	std::string name() { return "drink"; }
 	bool canDrinkAt(const Block& block) const;
 	Block* getAdjacentBlockToDrinkAt(const Block& block) const;

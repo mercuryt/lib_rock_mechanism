@@ -1,0 +1,8 @@
+{
+	"name": "prepared meal",
+	"shape": "oneByOneThirtySecond",
+	"generic": false,
+	"value": 5,
+	"moveType": "none",
+	"edibleForDrinkersOf" : "water"
+}

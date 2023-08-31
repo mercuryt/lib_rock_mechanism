@@ -67,7 +67,7 @@ namespace Config
 	inline constexpr uint32_t maxDistanceToLookForEatingLocation = 100;
 	inline constexpr Step harvestEventDuration = 50;
 	inline constexpr uint32_t harvestPriority = 150;
-	inline constexpr float foodRequestedMassPerUnitOfBodyMass = 0.1;
+	inline constexpr uint32_t unitsBodyMassPerUnitFoodConsumed = 100;
 	inline constexpr uint32_t maxBlocksToLookForBetterFood = 20;
 	inline constexpr uint32_t percentHungerAcceptableDesireModifier = 20;
 	inline constexpr uint32_t constructScoreCost = 100;

@@ -2,8 +2,6 @@
 	"name": "crossbow",
 	"shape": "oneByOneSixteenth",
 	"generic": false,
-	"internalVolume" : 0,
-	"canHoldFluids": false,
 	"value": 100,
 	"moveType": "none",
 	"weaponData":

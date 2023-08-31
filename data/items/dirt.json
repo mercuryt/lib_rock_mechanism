@@ -2,9 +2,6 @@
 	"name": "dirt",
 	"shape": "oneByOneHundredth",
 	"generic": true,
-	"internalVolume" : 0,
-	"canHoldFluids": false,
-	"combatScoreBonus": 0,
 	"value": 1,
 	"moveType": "none"
 }

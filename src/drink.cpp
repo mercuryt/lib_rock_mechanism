@@ -17,6 +17,7 @@ void MustDrink::drink(uint32_t volume)
 	{
 		m_actor.m_hasObjectives.objectiveComplete(*m_objective);
 		stepsToNextThirstEvent = m_actor.m_species.stepsFluidDrinkFreqency;
+		m_actor.m_canGrow.maybeStart();
 	}
 	else
 		stepsToNextThirstEvent = util::scaleByFraction(m_actor.m_species.stepsTillDieWithoutFluid, m_volumeDrinkRequested, m_actor.m_species.stepsTillDieWithoutFluid);
@@ -65,7 +66,6 @@ void DrinkEvent::execute()
 		drinkBlock->removeFluid(volume, actor.m_mustDrink.getFluidType());
 	}
 	actor.m_mustDrink.drink(volume);
-	actor.m_hasObjectives.objectiveComplete(m_drinkObjective);
 }
 void DrinkEvent::clearReferences() { m_drinkObjective.m_drinkEvent.clearPointer(); }
 ThirstEvent::ThirstEvent(const Step delay, Actor& a) : ScheduledEventWithPercent(a.getSimulation(), delay), m_actor(a) { }
@@ -106,6 +106,12 @@ void DrinkObjective::execute()
 		else
 			m_drinkEvent.schedule(Config::stepsToDrink, *this);
 	}
+}
+void DrinkObjective::cancel() 
+{ 
+	m_actor.m_mustDrink.m_objective = nullptr; 
+	m_threadedTask.maybeCancel();
+	m_drinkEvent.maybeUnschedule();
 }
 bool DrinkObjective::canDrinkAt(const Block& block) const
 {
