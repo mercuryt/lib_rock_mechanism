@@ -26,6 +26,6 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 tags
-unit
+/unit
 test/benchmark/*
 test/inconsistantErrors/*
