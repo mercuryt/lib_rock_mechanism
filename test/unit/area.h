@@ -240,7 +240,7 @@ TEST_CASE("vision-threading")
 	area.writeStep();
 	REQUIRE(a2.m_canSee.contains(&a1));
 }
-void fourFluidsTestParallel(uint32_t scale, uint32_t steps)
+inline void fourFluidsTestParallel(uint32_t scale, uint32_t steps)
 {
 	uint32_t maxX = (scale * 2) + 2;
 	uint32_t maxY = (scale * 2) + 2;

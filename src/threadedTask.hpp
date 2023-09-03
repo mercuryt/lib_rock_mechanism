@@ -1,7 +1,7 @@
 #pragma once
 #include "threadedTask.h"
 template<class TaskType>
-class HasThreadedTask
+class HasThreadedTask final
 {
 	ThreadedTaskEngine& m_engine;
 	TaskType* m_threadedTask;
@@ -24,10 +24,7 @@ public:
 	bool exists() const { return m_threadedTask != nullptr; }
 	void maybeCancel() { if(exists()) cancel(); }
 	TaskType& get() { assert(m_threadedTask != nullptr); return *m_threadedTask; }
-	~HasThreadedTask()
-	{
-		if(m_threadedTask != nullptr)
-			m_threadedTask->cancel();
-	}
+	// Threaded tasks must be canceled before the holder is destroyed.
+	~HasThreadedTask() { maybeCancel(); }
 };
 

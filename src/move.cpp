@@ -1,6 +1,6 @@
 #include "move.h"
 #include "path.h"
-ActorCanMove::ActorCanMove(Actor& a) : m_actor(a), m_moveType(&m_actor.m_species.moveType), m_destination(nullptr), m_retries(0), m_event(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()), m_toSetThreadedTask(a.getThreadedTaskEngine()), m_exitAreaThreadedTask(a.getThreadedTaskEngine())
+ActorCanMove::ActorCanMove(Actor& a) : m_actor(a), m_moveType(&m_actor.m_species.moveType), m_destination(nullptr), m_pathIter(m_path.end()),  m_retries(0), m_event(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()), m_toSetThreadedTask(a.getThreadedTaskEngine()), m_exitAreaThreadedTask(a.getThreadedTaskEngine())
 {
 	updateIndividualSpeed();
 }
@@ -29,8 +29,15 @@ void ActorCanMove::setPath(std::vector<Block*>& path)
 	m_pathIter = path.begin();
 	scheduleMove();
 }
+void ActorCanMove::clearPath()
+{
+	m_path.clear();
+	m_pathIter = m_path.end();
+}
 void ActorCanMove::callback()
 {
+	assert(m_pathIter >= m_path.begin());
+	assert(m_pathIter != m_path.end());
 	Block& block = **m_pathIter;
 	// Path has become permanantly blocked since being generated, repath.
 	if(!block.m_hasShapes.anythingCanEnterEver() || !block.m_hasShapes.canEnterEverFrom(m_actor, *m_actor.m_location))
@@ -69,6 +76,8 @@ void ActorCanMove::callback()
 void ActorCanMove::scheduleMove()
 {
 	assert(m_actor.m_location != m_actor.m_canMove.m_destination);
+	assert(m_pathIter >= m_path.begin());
+	assert(m_pathIter != m_path.end());
 	Block& moveTo = **m_pathIter;
 	auto speed = m_speedActual;
 	auto volumeAtLocationBlock = m_actor.m_shape->positions[0][3];
@@ -83,6 +92,7 @@ void ActorCanMove::scheduleMove()
 }
 void ActorCanMove::setDestination(Block& destination, bool detour, bool adjacent)
 {
+	clearPath();
 	m_destination = &destination;
 	m_threadedTask.create(m_actor, detour, adjacent);
 }
@@ -92,6 +102,7 @@ void ActorCanMove::setDestinationAdjacentTo(Block& destination, bool detour)
 }
 void ActorCanMove::setDestinationAdjacentToSet(std::unordered_set<Block*>& blocks, bool detour)
 {
+	clearPath();
 	static bool adjacent = true;
 	m_toSetThreadedTask.create(m_actor, blocks, detour, adjacent);
 }

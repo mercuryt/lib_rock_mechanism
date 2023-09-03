@@ -23,6 +23,7 @@ public:
 	Objective(const Objective&) = delete;
 	Objective(Objective&&) = delete;
 	bool operator==(const Objective& other) { return &other == this; }
+	virtual ~Objective() = default;
 };
 struct ObjectiveType
 {

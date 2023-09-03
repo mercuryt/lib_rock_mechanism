@@ -104,7 +104,10 @@ void HasObjectives::cancel(Objective& objective)
 	if(m_needsQueue.contains(&objective))
 		m_needsQueue.erase(&objective);
 	else
+	{
+		assert(m_tasksQueue.end() != std::ranges::find_if(m_tasksQueue, [&](auto& o){ return &objective == o.get(); }));
 		std::erase_if(m_tasksQueue, [&](auto& o){ return &objective == o.get(); });
+	}
 	m_actor.m_canReserve.clearAll();
 	if(m_currentObjective == &objective)
 		getNext();

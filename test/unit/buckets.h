@@ -5,7 +5,7 @@ struct Mock
 	uint32_t m_id;
 	Mock(uint32_t id) : m_id(id) { }
 };
-bool contains(std::vector<Mock*>& v, Mock& m)
+inline bool contains(std::vector<Mock*>& v, Mock& m)
 {
 	return std::find(v.begin(), v.end(), &m) != v.end();
 }

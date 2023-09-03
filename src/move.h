@@ -33,6 +33,7 @@ public:
 	void updateIndividualSpeed();
 	void updateActualSpeed();
 	void setPath(std::vector<Block*>& path);
+	void clearPath();
 	void callback();
 	void scheduleMove();
 	void setDestination(Block& destination, bool detour = false, bool adjacent = false);
@@ -41,15 +42,15 @@ public:
 	void setDestinationAdjacentToSet(std::unordered_set<Block*>& blocks, bool detour = false);
 	void tryToExitArea();
 	void setMoveType(const MoveType& moveType);
-	const MoveType& getMoveType() const { return *m_moveType; }
-	uint32_t getIndividualMoveSpeedWithAddedMass(uint32_t mass) const;
-	uint32_t getMoveSpeed() const { return m_speedActual; }
-	bool canMove() const;
+	[[nodiscard]]const MoveType& getMoveType() const { return *m_moveType; }
+	[[nodiscard]]uint32_t getIndividualMoveSpeedWithAddedMass(uint32_t mass) const;
+	[[nodiscard]]uint32_t getMoveSpeed() const { return m_speedActual; }
+	[[nodiscard]]bool canMove() const;
 	// For testing.
-	PathThreadedTask& getPathThreadedTask() { return m_threadedTask.get(); }
-	[[maybe_unused]]std::vector<Block*>& getPath() { return m_path; }
-	[[maybe_unused]]Block* getDestination() { return m_destination; }
-	[[maybe_unused]]bool hasEvent() { return m_event.exists(); }
+	[[maybe_unused, nodiscard]]PathThreadedTask& getPathThreadedTask() { return m_threadedTask.get(); }
+	[[maybe_unused, nodiscard]]std::vector<Block*>& getPath() { return m_path; }
+	[[maybe_unused, nodiscard]]Block* getDestination() { return m_destination; }
+	[[maybe_unused, nodiscard]]bool hasEvent() { return m_event.exists(); }
 	friend class MoveEvent;
 	friend class PathThreadedTask;
 	friend class PathToSetThreadedTask;

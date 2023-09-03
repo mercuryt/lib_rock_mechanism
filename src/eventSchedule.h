@@ -28,6 +28,7 @@ public:
 	Step remaningSteps() const;
 	ScheduledEvent(const ScheduledEvent&) = delete;
 	ScheduledEvent(ScheduledEvent&&) = delete;
+	virtual ~ScheduledEvent() = default;
 };
 class ScheduledEventWithPercent : public ScheduledEvent
 {

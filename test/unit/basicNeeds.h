@@ -76,6 +76,7 @@ TEST_CASE("basicNeedsSentient")
 		simulation.m_step += dwarf.stepsEatFrequency;
 		simulation.doStep();
 		actor.m_mustDrink.drink(actor.m_mustDrink.getVolumeFluidRequested());
+		REQUIRE(simulation.m_threadedTaskEngine.count() == 1);
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "eat");
 		REQUIRE(actor.m_mustEat.needsFood());
 		simulation.doStep();

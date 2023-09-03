@@ -12,8 +12,8 @@ protected:
 	void pathTo(const Actor& actor, const Block& block, bool detour = false);
 	void cacheMoveCosts(const Actor& actor);
 	PathToBlockBaseThreadedTask(ThreadedTaskEngine& tte) : ThreadedTask(tte) { }
-	// For testing.
 public:
+	// For testing.
 	[[maybe_unused]]std::unordered_map<Block*, std::vector<std::pair<Block*, uint32_t>>>& getMoveCostsToCache() { return m_moveCostsToCache; }
 	[[maybe_unused]]std::vector<Block*>& getPath() { return m_route; }
 };

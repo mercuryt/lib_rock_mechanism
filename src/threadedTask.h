@@ -31,4 +31,5 @@ public:
 	ThreadedTask(ThreadedTaskEngine& tte) : m_engine(tte) { }
 	ThreadedTask(const ThreadedTask&) = delete;
 	ThreadedTask(ThreadedTask&&) = delete;
+	virtual ~ThreadedTask() = default;
 };

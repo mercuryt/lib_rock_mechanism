@@ -110,8 +110,6 @@ void DrinkObjective::execute()
 void DrinkObjective::cancel() 
 { 
 	m_actor.m_mustDrink.m_objective = nullptr; 
-	m_threadedTask.maybeCancel();
-	m_drinkEvent.maybeUnschedule();
 }
 bool DrinkObjective::canDrinkAt(const Block& block) const
 {

@@ -8,6 +8,7 @@
 #include "temperatureSource.h"
 #include "caveIn.h"
 #include "eventSchedule.h"
+#include "threadedTask.h"
 #include "reserve.h"
 #include "fluid.h"
 #include "plant.h"

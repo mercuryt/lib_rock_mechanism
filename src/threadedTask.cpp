@@ -5,9 +5,9 @@
 #include <cassert>
 void ThreadedTask::cancel() 
 { 
+	clearReferences();
 	m_engine.remove(*this); 
 }
-
 void ThreadedTaskEngine::readStep()
 {
 	for(auto& task : m_tasks)
@@ -30,6 +30,5 @@ void ThreadedTaskEngine::insert(std::unique_ptr<ThreadedTask>&& task)
 void ThreadedTaskEngine::remove(ThreadedTask& task)
 {
 	assert(std::ranges::find_if(m_tasks, [&](auto& t) { return t.get() == &task; }) != m_tasks.end());
-	task.clearReferences();
 	std::erase_if(m_tasks, [&](auto& t) { return t.get() == &task; });
 }
