@@ -20,8 +20,9 @@ void Plant::die()
 	m_temperatureEvent.maybeUnschedule();
 	m_endOfHarvestEvent.maybeUnschedule();
 	m_foliageGrowthEvent.maybeUnschedule();
+	Block& location = m_location;
 	m_location.m_area->m_hasPlants.erase(*this);
-	m_location.m_isPartOfFarmField.maybeDesignateForSowingIfPartOfFarmField();
+	location.m_isPartOfFarmField.maybeDesignateForSowingIfPartOfFarmField();
 	//TODO: Create rot away event.
 }
 void Plant::setTemperature(uint32_t temperature)
@@ -162,9 +163,9 @@ uint32_t Plant::getPercentFoliage() const
 	if(m_foliageGrowthEvent.exists())
 	{
 		if(m_percentFoliage != 0)
-			output += (m_growthEvent.percentComplete() * (100u - m_percentFoliage)) / 100u;
+			output += (m_foliageGrowthEvent.percentComplete() * (100u - m_percentFoliage)) / 100u;
 		else
-			output = m_growthEvent.percentComplete();
+			output = m_foliageGrowthEvent.percentComplete();
 	}
 	return output;
 }
@@ -182,7 +183,7 @@ void Plant::removeFoliageMass(uint32_t mass)
 {
 	uint32_t maxFoliageForType = util::scaleByPercent(m_plantSpecies.adultMass, Config::percentOfPlantMassWhichIsFoliage);
 	uint32_t maxForGrowth = util::scaleByPercent(maxFoliageForType, getGrowthPercent());
-	uint32_t percentRemoved = ((maxForGrowth - mass) / maxForGrowth) * 100u;
+	uint32_t percentRemoved = std::max(1u, ((maxForGrowth - mass) / maxForGrowth) * 100u);
 	m_percentFoliage = getPercentFoliage();
 	assert(m_percentFoliage >= percentRemoved);
 	m_percentFoliage -= percentRemoved;
@@ -202,6 +203,7 @@ uint32_t Plant::getFruitMass() const
 }
 void Plant::makeFoliageGrowthEvent()
 {
+	assert(m_percentFoliage != 100);
 	Step delay = util::scaleByInversePercent(m_plantSpecies.stepsTillFoliageGrowsFromZero, m_percentFoliage);
 	m_foliageGrowthEvent.schedule(delay, *this);
 }

@@ -3,7 +3,7 @@
 #include "objective.h"
 #include "eventSchedule.hpp"
 #include "threadedTask.hpp"
-#include "pathToBlockBaseThreadedTask.h"
+#include "findsPath.h"
 
 #include <memory>
 #include <vector>
@@ -23,10 +23,11 @@ public:
 	void onCancel();
 };
 // Path to an empty water proof container or somewhere to fill an empty container or a container with the correct type of fluid or a plant which needs fluid.
-class GivePlantsFluidThreadedTask final : public PathToBlockBaseThreadedTask
+class GivePlantsFluidThreadedTask final : public ThreadedTask
 {
 	GivePlantsFluidObjective& m_objective;
 	Item* m_haulTool;
+	FindsPath m_findsPath;
 public:
 	GivePlantsFluidThreadedTask(GivePlantsFluidObjective& gpfo);
 	void readStep();
@@ -51,11 +52,11 @@ public:
 	void execute();
 	void cancel() {}
 	std::string name() { return "give plants fluid"; }
-	bool canFillAt(Block& block) const;
+	bool canFillAt(const Block& block) const;
 	Block* getAdjacentBlockToFillAt(Block& block);
-	bool canFillFromItemAt(Block& block) const;
+	bool canFillFromItemAt(const Block& block) const;
 	Item* getItemToFillFromAt(Block& block);
-	bool canGetFluidHaulingItemAt(Block& block) const;
+	bool canGetFluidHaulingItemAt(const Block& block) const;
 	Item* getFluidHaulingItemAt(Block& block);
 	friend class GivePlantsFluidEvent;
 	friend class GivePlantsFluidThreadedTask;

@@ -38,6 +38,25 @@ namespace areaBuilderUtil
 			}
 		}
 	}
+	inline void makeBuilding(Area& area, Cuboid cuboid, const MaterialType& materialType)
+	{
+		for(uint32_t z = 0; z != cuboid.m_highest->m_z + 2; ++ z)
+		{
+			for(uint32_t x = 0; x != cuboid.m_highest->m_x + 1; ++x)
+			{
+				area.m_blocks[x][0][z].setSolid(materialType);
+				area.m_blocks[x][area.m_sizeY - 1][z].setSolid(materialType);
+			}
+			for(uint32_t y = 0; y != cuboid.m_highest->m_y + 1; ++y)
+			{
+				area.m_blocks[0][y][z].setSolid(materialType);
+				area.m_blocks[area.m_sizeX - 1][y][z].setSolid(materialType);
+			}
+		}
+		for(uint32_t x = 0; x != cuboid.m_highest->m_x + 1; ++x)
+			for(uint32_t y = 0; y != cuboid.m_highest->m_y + 1; ++y)
+				area.m_blocks[x][y][cuboid.m_highest->m_z + 1].m_hasBlockFeatures.construct(BlockFeatureType::floor, materialType);
+	}
 	inline void setFullFluidCuboid(Block& low, Block& high, const FluidType& fluidType)
 	{
 		assert(low.m_totalFluidVolume == 0);

@@ -17,12 +17,12 @@ void GivePlantsFluidEvent::onCancel()
 	Block& location = *m_objective.m_actor.m_location;
 	location.m_area->m_hasFarmFields.at(*m_objective.m_actor.getFaction()).addGivePlantFluidDesignation(*m_objective.m_plant);
 }
-GivePlantsFluidThreadedTask::GivePlantsFluidThreadedTask(GivePlantsFluidObjective& gpfo) : PathToBlockBaseThreadedTask(gpfo.m_actor.getThreadedTaskEngine()), m_objective(gpfo), m_haulTool(nullptr) { }
+GivePlantsFluidThreadedTask::GivePlantsFluidThreadedTask(GivePlantsFluidObjective& gpfo) : ThreadedTask(gpfo.m_actor.getThreadedTaskEngine()), m_objective(gpfo), m_haulTool(nullptr) { }
 void GivePlantsFluidThreadedTask::readStep()
 {
 	if(m_objective.m_plant == nullptr)
 	{
-		auto condition = [&](Block& block)
+		std::function<bool(const Block&)> condition = [&](const Block& block)
 		{
 			return block.m_hasDesignations.contains(*m_objective.m_actor.getFaction(), BlockDesignation::GivePlantFluid);
 		};
@@ -38,36 +38,36 @@ void GivePlantsFluidThreadedTask::readStep()
 	if(m_objective.m_actor.m_canPickup.isCarryingFluidType(m_objective.m_plant->m_plantSpecies.fluidType))
 	{
 		assert(m_objective.m_actor.m_location != &m_objective.m_plant->m_location);
-		pathTo(m_objective.m_actor, m_objective.m_plant->m_location);
+		m_findsPath.pathToBlock(m_objective.m_actor, m_objective.m_plant->m_location);
 	}
 	else
 	{
 		if(m_objective.m_actor.m_canPickup.isCarryingEmptyContainerWhichCanHoldFluid())
 		{
 			// Fetch fluid.
-			auto condition = [&](Block& block) { return m_objective.canFillAt(block); };
-			m_route = path::getForActorToPredicate(m_objective.m_actor, condition);
+			std::function<bool(const Block&)> condition = [&](const Block& block) { return m_objective.canFillAt(block); };
+			m_findsPath.pathToPredicate(m_objective.m_actor, condition);
 		}
 		else
 		{
 			// Fetch fluid hauling item.
-			auto condition = [&](Block& block) { return m_objective.canGetFluidHaulingItemAt(block); };
-			m_route = path::getForActorToPredicate(m_objective.m_actor, condition);
-			m_haulTool = m_objective.getFluidHaulingItemAt(*m_route.back());
+			std::function<bool(const Block&)> condition = [&](const Block& block) { return m_objective.canGetFluidHaulingItemAt(block); };
+			m_findsPath.pathToPredicate(m_objective.m_actor, condition);
+			m_haulTool = m_objective.getFluidHaulingItemAt(*m_findsPath.getPath().back());
 		}
 	}
 }
 void GivePlantsFluidThreadedTask::writeStep()
 {
-	if(m_route.empty() && !m_objective.m_event.exists())
+	if(!m_findsPath.found() && !m_objective.m_event.exists())
 		m_objective.m_actor.m_hasObjectives.cannotFulfillObjective(m_objective);
 	else
 	{
 		assert(!m_objective.m_event.exists());
-		if(!m_route.empty())
-			m_objective.m_actor.m_canMove.setPath(m_route);
+		if(m_findsPath.found())
+			m_objective.m_actor.m_canMove.setPath(m_findsPath.getPath());
 	}
-	cacheMoveCosts(m_objective.m_actor);
+	m_findsPath.cacheMoveCosts(m_objective.m_actor);
 	if(m_haulTool != nullptr)
 	{
 		assert(m_objective.m_haulTool == nullptr);
@@ -155,9 +155,9 @@ void GivePlantsFluidObjective::execute()
 		}
 	}
 }
-bool GivePlantsFluidObjective::canFillAt(Block& block) const
+bool GivePlantsFluidObjective::canFillAt(const Block& block) const
 {
-	return const_cast<GivePlantsFluidObjective*>(this)->getAdjacentBlockToFillAt(block) != nullptr || canFillFromItemAt(block);
+	return const_cast<GivePlantsFluidObjective*>(this)->getAdjacentBlockToFillAt(const_cast<Block&>(block)) != nullptr || canFillFromItemAt(block);
 }
 Block* GivePlantsFluidObjective::getAdjacentBlockToFillAt(Block& block)
 {
@@ -167,9 +167,9 @@ Block* GivePlantsFluidObjective::getAdjacentBlockToFillAt(Block& block)
 			return adjacent;
 	return nullptr;
 }
-bool GivePlantsFluidObjective::canFillFromItemAt(Block& block) const
+bool GivePlantsFluidObjective::canFillFromItemAt(const Block& block) const
 {
-	return const_cast<GivePlantsFluidObjective*>(this)->getItemToFillFromAt(block) != nullptr;
+	return const_cast<GivePlantsFluidObjective*>(this)->getItemToFillFromAt(const_cast<Block&>(block)) != nullptr;
 }
 Item* GivePlantsFluidObjective::getItemToFillFromAt(Block& block)
 {
@@ -179,9 +179,9 @@ Item* GivePlantsFluidObjective::getItemToFillFromAt(Block& block)
 			return item;
 	return nullptr;
 }
-bool GivePlantsFluidObjective::canGetFluidHaulingItemAt(Block& block) const
+bool GivePlantsFluidObjective::canGetFluidHaulingItemAt(const Block& block) const
 {
-	return const_cast<GivePlantsFluidObjective*>(this)->getFluidHaulingItemAt(block) != nullptr;
+	return const_cast<GivePlantsFluidObjective*>(this)->getFluidHaulingItemAt(const_cast<Block&>(block)) != nullptr;
 }
 Item* GivePlantsFluidObjective::getFluidHaulingItemAt(Block& block)
 {

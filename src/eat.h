@@ -3,7 +3,7 @@
 #include "objective.h"
 #include "threadedTask.hpp"
 #include "eventSchedule.hpp"
-#include "pathToBlockBaseThreadedTask.h"
+#include "findsPath.h"
 
 class Item;
 class Actor;
@@ -26,7 +26,7 @@ public:
 	uint32_t massFoodForBodyMass() const;
 	const uint32_t& getMassFoodRequested() const;
 	uint32_t getPercentStarved() const;
-	uint32_t getDesireToEatSomethingAt(Block& block) const;
+	uint32_t getDesireToEatSomethingAt(const Block& block) const;
 	uint32_t getMinimumAcceptableDesire() const;
 	bool canEat(const Actor& actor) const;
 	bool canEat(const Plant& plant) const;
@@ -57,10 +57,11 @@ public:
 	void execute();
 	void clearReferences();
 };
-class EatThreadedTask final : public PathToBlockBaseThreadedTask
+class EatThreadedTask final : public ThreadedTask
 {
 	EatObjective& m_eatObjective;
 	Actor* m_huntResult;
+	FindsPath m_findsPath;
 public:
 	EatThreadedTask(EatObjective& eo);
 	void readStep();
@@ -84,4 +85,7 @@ public:
 	bool canEatAt(const Block& block) const;
 	friend class EatEvent;
 	friend class EatThreadedTask;
+	// For testing.
+	[[maybe_unused, nodiscard]]bool hasEvent() const {return m_eatEvent.exists(); }
+	[[maybe_unused, nodiscard]]bool hasThreadedTask() const {return m_threadedTask.exists(); }
 };

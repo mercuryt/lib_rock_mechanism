@@ -48,6 +48,9 @@ public:
 	std::unordered_map<CanReserve*, uint32_t>& getReservedBy() { return m_canReserves; }
 	void reserveFor(CanReserve& canReserve, const uint32_t quantity) 
 	{
+		// No reservations are made for actors with no faction because there is no one to reserve it from.
+		if(canReserve.m_faction == nullptr)
+			return;
 		assert(!m_reservedCounts.contains(canReserve.m_faction) || m_reservedCounts.at(canReserve.m_faction) + quantity <= m_maxReservations);
 		assert(!m_canReserves.contains(&canReserve));
 		m_canReserves[&canReserve] = quantity;
@@ -57,6 +60,8 @@ public:
 	}
 	void clearReservationFor(CanReserve& canReserve)
        	{
+		if(canReserve.m_faction == nullptr)
+			return;
 		assert(m_canReserves.contains(&canReserve));
 		assert(m_canReserves.at(&canReserve) >= m_reservedCounts.at(canReserve.m_faction));
 		eraseReservationFor(canReserve);
@@ -72,6 +77,7 @@ public:
 		if(newFaction != nullptr)
 			m_reservedCounts[newFaction] += m_canReserves[&canReserve];
 		else
+			// Erase all reservations if faction is set to null.
 			m_canReserves.erase(&canReserve);
 	}
 	uint32_t getUnreservedCount(const Faction& faction) const

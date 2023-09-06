@@ -44,6 +44,7 @@ public:
 	~Simulation();
 	// For testing.
 	[[maybe_unused]]void setDateTime(DateTime now);
+	[[maybe_unused]]void fastForward(Step step);
 };
 
 class HourlyEvent final : public ScheduledEventWithPercent

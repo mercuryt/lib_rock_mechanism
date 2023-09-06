@@ -202,11 +202,11 @@ void HasFarmFieldsForFaction::clearSpecies(FarmField& farmField)
 void HasFarmFieldsForFaction::shrink(FarmField& farmField, std::unordered_set<Block*>& blocks)
 {
 	undesignateBlocks(blocks);
+	for(Block* block : blocks)
+		block->m_isPartOfFarmField.remove(m_faction);
 	std::erase_if(farmField.blocks, [&](Block* block){ return blocks.contains(block); });
 	if(farmField.blocks.empty())
 		m_farmFields.remove_if([&](FarmField& other){ return &other == &farmField; });
-	for(Block* block : blocks)
-		block->m_isPartOfFarmField.remove(m_faction);
 }
 void HasFarmFieldsForFaction::remove(FarmField& farmField)
 {

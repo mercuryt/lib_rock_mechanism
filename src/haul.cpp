@@ -52,7 +52,7 @@ void CanPickup::pickUp(Item& item, uint32_t quantity)
 void CanPickup::pickUp(Actor& actor, uint32_t quantity = 1)
 {
 	assert(quantity == 1);
-	assert(!actor.isAwake() || actor.m_body.isInjured());
+	assert(!actor.m_mustSleep.isAwake() || actor.m_body.isInjured());
 	assert(m_carrying = nullptr);
 	actor.m_reservable.clearReservationFor(m_actor.m_canReserve);
 	actor.exit();

@@ -1,8 +1,8 @@
 {
-	"name": "wheat seeds",
-	"shape": "oneByOneHundredth",
+	"name": "apple",
+	"shape": "oneByOneThirtySecond",
 	"generic": true,
-	"value": 5,
+	"value": 50,
 	"moveType": "none",
 	"edibleForDrinkersOf" : "water"
 }

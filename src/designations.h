@@ -14,7 +14,12 @@ class HasDesignations
 {
 	std::unordered_map<const Faction*, std::unordered_set<BlockDesignation>> m_designations;
 public:
-	bool contains(const Faction& f, const BlockDesignation& bd){ return m_designations[&f].contains(bd); }
+	bool contains(const Faction& f, const BlockDesignation& bd) const 
+	{ 
+		if(!m_designations.contains(&f))
+			return false;
+		return m_designations.at(&f).contains(bd); 
+	}
 	void insert(const Faction& f, const BlockDesignation& bd)
 	{
 		assert(!m_designations[&f].contains(bd));

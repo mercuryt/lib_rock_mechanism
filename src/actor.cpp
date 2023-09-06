@@ -6,7 +6,7 @@
 #include <algorithm>
 
 Actor::Actor(Simulation& simulation, uint32_t id, const std::wstring name, const AnimalSpecies& species, uint32_t percentGrown, Faction* faction, Attributes attributes) :
-	HasShape(species.shapeForPercentGrown(percentGrown), false), m_simulation(simulation), m_faction(faction), m_id(id), m_name(name), m_species(species), m_alive(true), m_awake(true), m_body(*this), m_project(nullptr), m_attributes(attributes), m_equipmentSet(*this), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canPickup(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_canReserve(*faction), m_reservable(1), m_stamina(*this), m_visionRange(species.visionRange) { }
+	HasShape(species.shapeForPercentGrown(percentGrown), false), m_simulation(simulation), m_faction(faction), m_id(id), m_name(name), m_species(species), m_alive(true), m_body(*this), m_project(nullptr), m_attributes(attributes), m_equipmentSet(*this), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canPickup(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_canReserve(*faction), m_reservable(1), m_stamina(*this), m_visionRange(species.visionRange) { }
 void Actor::setLocation(Block& block)
 {
 	assert(&block != HasShape::m_location);

@@ -15,13 +15,13 @@ void ThreadedTaskEngine::readStep()
 }
 void ThreadedTaskEngine::writeStep()
 {
-	//TODO: Assert task queue is empty.
-	for(auto& task : m_tasks)
+	std::unordered_set<std::unique_ptr<ThreadedTask>> currentTasks;
+	m_tasks.swap(currentTasks);
+	for(auto& task : currentTasks)
 	{
 		task->clearReferences();
 		task->writeStep();
 	}
-	m_tasks.clear();
 }
 void ThreadedTaskEngine::insert(std::unique_ptr<ThreadedTask>&& task)
 {

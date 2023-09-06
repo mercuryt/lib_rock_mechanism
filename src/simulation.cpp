@@ -72,6 +72,7 @@ Item& Simulation::createItem(const uint32_t id, const ItemType& itemType, const 
 	if(m_nextItemId <= id) m_nextItemId = id + 1;
 	std::list<Item>::iterator iterator = m_items.emplace(m_items.end(), id, itemType, materialType, name, quality, percentWear, cj);
 	iterator->m_iterator = iterator;
+	iterator->m_dataLocation = &m_items;
 	return *iterator;
 }
 // Generic
@@ -107,4 +108,21 @@ void Simulation::setDateTime(DateTime now)
 	m_hourlyEvent.schedule(*this);
 	for(Area& area : m_areas)
 		area.setDateTime(now);
+}
+void Simulation::fastForward(Step steps)
+{
+	Step step = steps + m_step;
+	while(m_step <= step)
+		doStep();
+	return;
+	m_step += steps;
+	while(!m_eventSchedule.m_data.empty())
+	{
+		auto& pair = *m_eventSchedule.m_data.begin();
+		if(pair.first < m_step)
+			m_eventSchedule.m_data.erase(pair.first);
+		else
+			break;
+	}
+	doStep();
 }

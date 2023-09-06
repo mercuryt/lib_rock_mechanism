@@ -2,6 +2,7 @@
 #include "eventSchedule.h"
 #include "temperature.h"
 #include "eventSchedule.hpp"
+#include <unordered_map>
 
 enum class FireStage{Smouldering, Burining, Flaming};
 

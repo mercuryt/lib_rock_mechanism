@@ -108,7 +108,7 @@ TEST_CASE("farm fields")
 		Item& item = **block.m_hasItems.getAll().begin();
 		REQUIRE(item.m_materialType == MaterialType::byName("plant matter"));
 		REQUIRE(item.m_quantity == wheatGrass.harvestData->itemQuantity);
-		REQUIRE(item.m_itemType == ItemType::byName("wheat seeds"));
+		REQUIRE(item.m_itemType == ItemType::byName("wheat seed"));
 	}
 	SUBCASE("give plants fluid")
 	{

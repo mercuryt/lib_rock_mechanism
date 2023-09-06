@@ -2,7 +2,7 @@
 
 #include "objective.h"
 #include "config.h"
-#include "pathToBlockBaseThreadedTask.h"
+#include "findsPath.h"
 #include "threadedTask.hpp"
 #include "eventSchedule.hpp"
 
@@ -31,6 +31,8 @@ public:
 	void wakeUp();
 	void makeSleepObjective();
 	void wakeUpEarly();
+	void setLocation(Block& block);
+	bool isAwake() const { return m_isAwake; }
 	friend class SleepEvent;
 	friend class TiredEvent;
 	friend class SleepThreadedTask;
@@ -55,9 +57,11 @@ public:
 	void clearReferences();
 };
 // Find a place to sleep.
-class SleepThreadedTask final : public PathToBlockBaseThreadedTask
+class SleepThreadedTask final : public ThreadedTask
 {
 	SleepObjective& m_sleepObjective;
+	FindsPath m_findsPath;
+	bool m_sleepAtCurrentLocation;
 public:
 	SleepThreadedTask(SleepObjective& so);
 	void readStep();
@@ -73,7 +77,7 @@ public:
 	void execute();
 	void cancel() {}
 	std::string name() { return "sleep"; }
-	uint32_t desireToSleepAt(Block& block);
+	uint32_t desireToSleepAt(const Block& block);
 	~SleepObjective();
 	friend class SleepThreadedTask;
 };

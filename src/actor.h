@@ -44,7 +44,6 @@ public:
 	const AnimalSpecies& m_species;
 	bool m_alive;
 	CauseOfDeath m_causeOfDeath;
-	bool m_awake;
 	Body m_body;
 	Project* m_project;//We don't actually need to store this data, it's just used for asserts.
 	Attributes m_attributes;
@@ -80,7 +79,6 @@ public:
 	bool isAlly(Actor& actor) const;
 	//TODO: Zombies are not sentient.
 	bool isSentient() const { return m_species.sentient; }
-	bool isAwake() const { return m_awake; }
 	bool isInjured() const;
 	bool canMove() const;
 	uint32_t getMass() const;

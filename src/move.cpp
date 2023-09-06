@@ -24,9 +24,10 @@ void ActorCanMove::updateActualSpeed()
 }
 void ActorCanMove::setPath(std::vector<Block*>& path)
 {
-	m_path = path;
-	m_destination = path.back();
-	m_pathIter = path.begin();
+	assert(!path.empty());
+	m_path = std::move(path);
+	m_destination = m_path.back();
+	m_pathIter = m_path.begin();
 	scheduleMove();
 }
 void ActorCanMove::clearPath()
@@ -58,6 +59,7 @@ void ActorCanMove::callback()
 		else
 		{
 			++m_pathIter;
+			assert(m_pathIter != m_path.end());
 			scheduleMove();
 		}
 	}
@@ -121,22 +123,25 @@ bool ActorCanMove::canMove() const
 	return true;
 }
 MoveEvent::MoveEvent(Step delay, ActorCanMove& cm) : ScheduledEventWithPercent(cm.m_actor.getSimulation(), delay), m_canMove(cm) { }
-PathThreadedTask::PathThreadedTask(Actor& a, bool d, bool ad) : PathToBlockBaseThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_detour(d), m_adjacent(ad) { }
+PathThreadedTask::PathThreadedTask(Actor& a, bool d, bool ad) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_detour(d), m_adjacent(ad) { }
 void PathThreadedTask::readStep()
 {
-	pathTo(m_actor, *m_actor.m_canMove.m_destination, m_detour);
+	m_findsPath.pathToBlock(m_actor, *m_actor.m_canMove.m_destination, m_detour);
 }
 void PathThreadedTask::writeStep()
 {
-	if(m_route.empty())
+	if(!m_findsPath.found())
 		m_actor.m_hasObjectives.cannotCompleteTask();
 	else
 	{
 		if(m_adjacent)
-			m_route.pop_back();
-		m_actor.m_canMove.setPath(m_route);
+		{
+			m_findsPath.getPath().pop_back();
+			assert(!m_findsPath.getPath().empty());
+		}
+		m_actor.m_canMove.setPath(m_findsPath.getPath());
 	}
-	cacheMoveCosts(m_actor);
+	m_findsPath.cacheMoveCosts(m_actor);
 }
 void PathThreadedTask::clearReferences() { m_actor.m_canMove.m_threadedTask.clearPointer(); }
 PathToSetThreadedTask::PathToSetThreadedTask(Actor& a, std::unordered_set<Block*> b, bool d, bool ad) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_blocks(b), m_detour(d), m_adjacent(ad) { }

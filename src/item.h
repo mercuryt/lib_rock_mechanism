@@ -107,7 +107,7 @@ public:
 	uint32_t m_percentWear;
 	bool m_installed;
 	CraftJob* m_craftJobForWorkPiece; // Used only for work in progress items.
-	ItemHasCargo m_hasCargo; //TODO: Change to unique_ptr to save some RAM?
+	ItemHasCargo m_hasCargo; //TODO: Change to reference to save some RAM?
 	//TODO: ItemHasOwners
 	std::list<Item>::iterator m_iterator;
 	std::list<Item>* m_dataLocation;

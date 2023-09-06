@@ -1,7 +1,7 @@
 #pragma once
 #include "threadedTask.hpp"
 #include "eventSchedule.hpp"
-#include "pathToBlockBaseThreadedTask.h"
+#include "findsPath.h"
 
 #include <vector>
 
@@ -64,11 +64,12 @@ public:
 	void execute() { m_canMove.callback(); }
 	void clearReferences() { m_canMove.m_event.clearPointer(); }
 };
-class PathThreadedTask final : public PathToBlockBaseThreadedTask
+class PathThreadedTask final : public ThreadedTask
 {
 	Actor& m_actor;
 	bool m_detour;
 	bool m_adjacent;
+	FindsPath m_findsPath;
 public:
 	PathThreadedTask(Actor& a, bool d = false, bool ad = false);
 	void readStep();
@@ -76,6 +77,7 @@ public:
 	void clearReferences();
 	// Testing.
 	[[maybe_unused]]bool isDetour() const { return m_detour; }
+	[[maybe_unused]]FindsPath& getFindsPath() { return m_findsPath; }
 };
 class PathToSetThreadedTask final : public ThreadedTask
 {

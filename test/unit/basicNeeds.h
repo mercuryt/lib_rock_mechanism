@@ -6,7 +6,6 @@
 #include "../../src/plant.h"
 TEST_CASE("basicNeedsSentient")
 {
-	static const PlantSpecies& wheatGrass = PlantSpecies::byName("wheat grass");
 	static const MaterialType& dirt = MaterialType::byName("dirt");
 	static const Faction faction(L"Tower of Power");
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
@@ -14,18 +13,15 @@ TEST_CASE("basicNeedsSentient")
 	Simulation simulation;
 	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
-	area.m_hasFarmFields.registerFaction(faction);
 	Actor& actor = simulation.createActor(dwarf, area.m_blocks[1][1][2], 50);
 	actor.setFaction(&faction);
 	REQUIRE(actor.m_canGrow.isGrowing());
-	area.m_blocks[5][5][2].m_hasPlant.addPlant(wheatGrass, 100);
 	SUBCASE("drink from pond")
 	{
 		Block& pondLocation = area.m_blocks[3][3][1];
 		pondLocation.setNotSolid();
 		pondLocation.addFluid(100, water);
-		simulation.m_step += dwarf.stepsFluidDrinkFreqency;
-		simulation.doStep();
+		simulation.fastForward(dwarf.stepsFluidDrinkFreqency);
 		REQUIRE(!actor.m_canGrow.isGrowing());
 		REQUIRE(actor.m_mustDrink.needsFluid());
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "drink");
@@ -49,8 +45,7 @@ TEST_CASE("basicNeedsSentient")
 		Block& bucketLocation = area.m_blocks[7][7][2];
 		bucket.setLocation(bucketLocation);
 		bucket.m_hasCargo.add(water, 10);
-		simulation.m_step += dwarf.stepsFluidDrinkFreqency;
-		simulation.doStep();
+		simulation.fastForward(dwarf.stepsFluidDrinkFreqency);
 		REQUIRE(!actor.m_canGrow.isGrowing());
 		REQUIRE(actor.m_mustDrink.needsFluid());
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "drink");
@@ -68,14 +63,20 @@ TEST_CASE("basicNeedsSentient")
 		uint32_t drinkVolume = MustDrink::drinkVolumeFor(actor);
 		REQUIRE(bucket.m_hasCargo.getFluidVolume() == 10 - drinkVolume);
 	}
+	SUBCASE("drink tea")
+	{
+		//TODO
+	}
 	SUBCASE("eat prepared meal")
 	{
 		Item& meal = simulation.createItem(ItemType::byName("prepared meal"), MaterialType::byName("fruit"), 50u, 0u, nullptr);
 		Block& mealLocation = area.m_blocks[5][5][2];
 		meal.setLocation(mealLocation);
-		simulation.m_step += dwarf.stepsEatFrequency;
-		simulation.doStep();
-		actor.m_mustDrink.drink(actor.m_mustDrink.getVolumeFluidRequested());
+		REQUIRE(actor.m_mustEat.getDesireToEatSomethingAt(mealLocation) == UINT32_MAX);
+		simulation.fastForward(dwarf.stepsEatFrequency);
+		// Discard drink objective if exists.
+		if(actor.m_mustDrink.getVolumeFluidRequested() != 0)
+			actor.m_mustDrink.drink(actor.m_mustDrink.getVolumeFluidRequested());
 		REQUIRE(simulation.m_threadedTaskEngine.count() == 1);
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "eat");
 		REQUIRE(actor.m_mustEat.needsFood());
@@ -86,39 +87,61 @@ TEST_CASE("basicNeedsSentient")
 		while(actor.m_location != destination)
 			simulation.doStep();
 		Step eatStep = simulation.m_step + Config::stepsToEat;
+		REQUIRE(static_cast<EatObjective&>(actor.m_hasObjectives.getCurrent()).hasEvent());
 		while(simulation.m_step <= eatStep)
 			simulation.doStep();
 		REQUIRE(!actor.m_mustEat.needsFood());
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "eat");
 		REQUIRE(mealLocation.m_hasItems.empty());
 	}
+	SUBCASE("eat fruit")
+	{
+		Item& fruit = simulation.createItem(ItemType::byName("apple"), MaterialType::byName("fruit"), 50u);
+		Block& fruitLocation = area.m_blocks[6][5][2];
+		fruit.setLocation(fruitLocation);
+		REQUIRE(actor.m_mustEat.getDesireToEatSomethingAt(fruitLocation) == 1);
+		simulation.fastForward(dwarf.stepsEatFrequency);
+		// Discard drink objective if exists.
+		if(actor.m_mustDrink.getVolumeFluidRequested() != 0)
+			actor.m_mustDrink.drink(actor.m_mustDrink.getVolumeFluidRequested());
+		REQUIRE(simulation.m_threadedTaskEngine.count() == 1);
+		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "eat");
+		REQUIRE(actor.m_mustEat.needsFood());
+		simulation.doStep();
+		REQUIRE(actor.m_canMove.getDestination() == &fruitLocation);
+		while(actor.m_location != &fruitLocation)
+			simulation.doStep();
+		REQUIRE(actor.m_location == fruit.m_location);
+		Step eatStep = simulation.m_step + Config::stepsToEat;
+		REQUIRE(static_cast<EatObjective&>(actor.m_hasObjectives.getCurrent()).hasEvent());
+		while(simulation.m_step <= eatStep)
+			simulation.doStep();
+		REQUIRE(!actor.m_mustEat.needsFood());
+		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "eat");
+		REQUIRE(!fruitLocation.m_hasItems.empty());
+		REQUIRE(fruit.m_quantity < 50u);
+	}
 }
 TEST_CASE("basicNeedsNonsentient")
 {
 	static const PlantSpecies& wheatGrass = PlantSpecies::byName("wheat grass");
 	static const MaterialType& dirt = MaterialType::byName("dirt");
-	static const Faction faction(L"Tower of Power");
 	static const AnimalSpecies& redDeer = AnimalSpecies::byName("red deer");
-	static const FluidType& water = FluidType::byName("water");
 	Simulation simulation;
 	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
-	area.m_hasFarmFields.registerFaction(faction);
 	Actor& actor = simulation.createActor(redDeer, area.m_blocks[1][1][2], 50);
-	actor.setFaction(&faction);
 	REQUIRE(actor.m_canGrow.isGrowing());
 	Block& grassLocation = area.m_blocks[5][5][2];
 	grassLocation.m_hasPlant.addPlant(wheatGrass, 100);
 	Plant& grass = grassLocation.m_hasPlant.get();
-	Block& pondLocation = area.m_blocks[3][3][1];
-	pondLocation.setNotSolid();
-	pondLocation.addFluid(100, water);
 	SUBCASE("eat leaves")
 	{
-		// Generate objectives, discard drink.
-		simulation.m_step += redDeer.stepsEatFrequency;
-		simulation.doStep();
-		actor.m_mustDrink.drink(actor.m_mustDrink.getVolumeFluidRequested());
+		// Generate objectives.
+		simulation.fastForward(redDeer.stepsEatFrequency);
+		// Discard drink objective if exists.
+		if(actor.m_mustDrink.getVolumeFluidRequested() != 0)
+			actor.m_mustDrink.drink(actor.m_mustDrink.getVolumeFluidRequested());
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "eat");
 		REQUIRE(actor.m_mustEat.needsFood());
 		REQUIRE(grass.getPercentFoliage() == 100);
@@ -138,28 +161,89 @@ TEST_CASE("basicNeedsNonsentient")
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "eat");
 		REQUIRE(grass.getPercentFoliage() != 100);
 	}
-	SUBCASE("sleep outside")
+	SUBCASE("sleep outside at current location")
 	{
-		simulation.m_step += redDeer.stepsSleepFrequency;
 		// Generate objectives, discard eat and drink if they exist.
-		simulation.doStep();
+		simulation.fastForward(redDeer.stepsSleepFrequency);
 		actor.m_stamina.spend(1);
 		REQUIRE(!actor.m_stamina.isFull());
-		actor.m_mustDrink.drink(actor.m_mustDrink.getVolumeFluidRequested());
-		actor.m_mustEat.eat(actor.m_mustEat.getMassFoodRequested());
+		if(actor.m_mustDrink.getVolumeFluidRequested() != 0)
+			actor.m_mustDrink.drink(actor.m_mustDrink.getVolumeFluidRequested());
+		if(actor.m_mustEat.getMassFoodRequested() != 0)
+			actor.m_mustEat.eat(actor.m_mustEat.getMassFoodRequested());
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "sleep");
-		REQUIRE(actor.m_awake);
+		REQUIRE(actor.m_mustSleep.isAwake());
 		// Look for sleeping spot.
 		simulation.doStep();
 		// No spot found better then current one.
 		REQUIRE(actor.m_canMove.getDestination() == nullptr);
-		REQUIRE(!actor.m_awake);
+		REQUIRE(!actor.m_mustSleep.isAwake());
 		// Wait for wake up.
 		Step wakeStep = simulation.m_step + redDeer.stepsSleepDuration;
 		while(simulation.m_step != wakeStep)
 			simulation.doStep();
-		REQUIRE(actor.m_awake);
+		REQUIRE(actor.m_mustSleep.isAwake());
 		REQUIRE(actor.m_mustSleep.hasTiredEvent());
 		REQUIRE(actor.m_stamina.isFull());
+	}
+	SUBCASE("sleep at designated spot")
+	{
+		Block& spot = area.m_blocks[5][5][2];
+		// Generate objectives, discard eat and drink if they exist.
+		simulation.fastForward(redDeer.stepsSleepFrequency);
+		if(actor.m_mustDrink.getVolumeFluidRequested() != 0)
+			actor.m_mustDrink.drink(actor.m_mustDrink.getVolumeFluidRequested());
+		if(actor.m_mustEat.getMassFoodRequested() != 0)
+			actor.m_mustEat.eat(actor.m_mustEat.getMassFoodRequested());
+		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "sleep");
+		// Path to spot.
+		REQUIRE(actor.m_canMove.getDestination() == &spot);
+		while(actor.m_location != &spot)
+			simulation.doStep();
+		// Wait for wake up.
+		Step wakeStep = simulation.m_step + redDeer.stepsSleepDuration;
+		while(simulation.m_step != wakeStep)
+			simulation.doStep();
+		REQUIRE(actor.m_mustSleep.isAwake());
+		REQUIRE(actor.m_mustSleep.hasTiredEvent());
+	}
+	SUBCASE("try to find a spot inside")
+	{
+		//TODO
+	}
+	SUBCASE("die to dehydration")
+	{
+		// Generate objectives, discard eat if it exists.
+		simulation.fastForward(redDeer.stepsFluidDrinkFreqency);
+		if(actor.m_mustEat.getMassFoodRequested() != 0)
+			actor.m_mustEat.eat(actor.m_mustEat.getMassFoodRequested());
+		REQUIRE(actor.m_alive);
+		simulation.m_step += redDeer.stepsTillDieWithoutFluid;
+		simulation.doStep();
+		REQUIRE(!actor.m_alive);
+		REQUIRE(actor.m_causeOfDeath == CauseOfDeath::thirst);
+	}
+	SUBCASE("scavenge corpse")
+	{
+		const AnimalSpecies& blackBear = AnimalSpecies::byName("black bear");
+		Actor& bear = simulation.createActor(blackBear, area.m_blocks[5][1][2]);
+		Actor& deer = actor;
+		uint32_t deerMass = deer.getMass();
+		deer.die(CauseOfDeath::thirst);
+		REQUIRE(!deer.m_alive);
+		simulation.fastForward(blackBear.stepsEatFrequency);
+		// Bear is hungry.
+		REQUIRE(bear.m_mustEat.getMassFoodRequested() != 0);
+		// Bear goes to deer corpse.
+		REQUIRE(bear.m_canMove.getDestination() == deer.m_location);
+		while(bear.m_location != deer.m_location)
+			simulation.doStep();
+		// Bear eats.
+		Step eatStep = simulation.m_step + Config::stepsToEat;
+		while(simulation.m_step <= eatStep)
+			simulation.doStep();
+		REQUIRE(!actor.m_mustEat.needsFood());
+		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "eat");
+		REQUIRE(deer.getMass() != deerMass);
 	}
 }

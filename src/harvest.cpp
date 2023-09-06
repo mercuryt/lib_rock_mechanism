@@ -48,14 +48,15 @@ void HarvestThreadedTask::writeStep()
 		m_harvestObjective.m_actor.m_hasObjectives.cannotFulfillObjective(m_harvestObjective);
 	else
 	{
-		if(m_result.back()->m_reservable.isFullyReserved(*m_harvestObjective.m_actor.getFaction()))
+		Block& endOfPath = *m_result.back();
+		if(endOfPath.m_reservable.isFullyReserved(*m_harvestObjective.m_actor.getFaction()))
 			m_harvestObjective.m_threadedTask.create(m_harvestObjective);
 		else
 		{
+			endOfPath.m_reservable.reserveFor(m_harvestObjective.m_actor.m_canReserve, 1);
+			Plant& plant = endOfPath.m_hasPlant.get();
+			endOfPath.m_area->m_hasFarmFields.at(*m_harvestObjective.m_actor.getFaction()).removeHarvestDesignation(plant);
 			m_harvestObjective.m_actor.m_canMove.setPath(m_result);
-			m_result.back()->m_reservable.reserveFor(m_harvestObjective.m_actor.m_canReserve, 1);
-			Plant& plant = m_result.back()->m_hasPlant.get();
-			m_result.back()->m_area->m_hasFarmFields.at(*m_harvestObjective.m_actor.getFaction()).removeHarvestDesignation(plant);
 		}
 	}
 }

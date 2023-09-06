@@ -10,6 +10,8 @@ MustDrink::MustDrink(Actor& a) : m_actor(a), m_volumeDrinkRequested(0), m_fluidT
 void MustDrink::drink(uint32_t volume)
 {
 	assert(m_volumeDrinkRequested >= volume);
+	assert(m_volumeDrinkRequested != 0);
+	assert(volume != 0);
 	m_volumeDrinkRequested -= volume;
 	m_thirstEvent.unschedule();
 	uint32_t stepsToNextThirstEvent;

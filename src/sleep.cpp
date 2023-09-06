@@ -11,41 +11,68 @@ TiredEvent::TiredEvent(Step step, MustSleep& ns) : ScheduledEventWithPercent(ns.
 void TiredEvent::execute(){ m_needsSleep.tired(); }
 void TiredEvent::clearReferences(){ m_needsSleep.m_tiredEvent.clearPointer(); }
 // Threaded Task.
-SleepThreadedTask::SleepThreadedTask(SleepObjective& so) : PathToBlockBaseThreadedTask(so.m_actor.getThreadedTaskEngine()), m_sleepObjective(so) { }
+SleepThreadedTask::SleepThreadedTask(SleepObjective& so) : ThreadedTask(so.m_actor.getThreadedTaskEngine()), m_sleepObjective(so), m_sleepAtCurrentLocation(false) { }
 void SleepThreadedTask::readStep()
 {
 	auto& actor = m_sleepObjective.m_actor;
 	assert(m_sleepObjective.m_actor.m_mustSleep.m_location == nullptr);
-	Block* outdoorCandidate = nullptr;
-	Block* indoorCandidate = nullptr;
-	auto condition = [&](Block& block)
+	const Block* maxDesireCandidate = nullptr;
+	const Block* outdoorCandidate = nullptr;
+	const Block* indoorCandidate = nullptr;
+	std::function<bool(const Block&)> condition = [&](const Block& block)
 	{
 		uint32_t desire = m_sleepObjective.desireToSleepAt(block);
 		if(desire == 3)
+		{
+			maxDesireCandidate = &block;
 			return true;
+		}
 		else if(indoorCandidate == nullptr && desire == 2)
 			indoorCandidate = &block;	
 		else if(outdoorCandidate == nullptr && desire == 1)
 			outdoorCandidate = &block;	
 		return false;
 	};
-	m_route = path::getForActorToPredicate(actor, condition);
-	if(m_route.empty())
+	m_findsPath.pathToPredicate(actor, condition);
+	if(m_findsPath.getPath().empty())
 	{
-		if(indoorCandidate != nullptr)
-			pathTo(actor, *indoorCandidate);
+		// If the current location is the max desired then set sleep at current to true.
+		if(maxDesireCandidate == actor.m_location)
+		{
+			assert(maxDesireCandidate != nullptr);
+			m_sleepAtCurrentLocation = true;
+		}
+		// No max desire target found, try to at least get indoors
+		else if(indoorCandidate != nullptr)
+		{
+			if(indoorCandidate == actor.m_location)
+				m_sleepAtCurrentLocation = true;
+			else
+				m_findsPath.pathToBlock(actor, *indoorCandidate);
+		}
 		else if(outdoorCandidate != nullptr)
-			pathTo(actor, *outdoorCandidate);
+		{
+			// sleep outdoors.
+			if(outdoorCandidate == actor.m_location)
+				m_sleepAtCurrentLocation = true;
+			else
+				m_findsPath.pathToBlock(actor, *outdoorCandidate);
+		}
 	}
 }
 void SleepThreadedTask::writeStep()
 {
 	auto& actor = m_sleepObjective.m_actor;
-	if(m_route.empty())
-		actor.m_hasObjectives.cannotFulfillNeed(m_sleepObjective);
+	m_findsPath.cacheMoveCosts(actor);
+	if(m_findsPath.getPath().empty())
+	{
+		if(m_sleepAtCurrentLocation)
+			actor.m_mustSleep.sleep();
+		else
+			actor.m_hasObjectives.cannotFulfillNeed(m_sleepObjective);
+	}
 	else
-		actor.m_canMove.setPath(m_route);
-	cacheMoveCosts(actor);
+		actor.m_canMove.setPath(m_findsPath.getPath());
 }
 void SleepThreadedTask::clearReferences() { m_sleepObjective.m_threadedTask.clearPointer(); }
 // Sleep Objective.
@@ -62,7 +89,7 @@ void SleepObjective::execute()
 	else
 		m_actor.m_canMove.setDestination(*m_actor.m_mustSleep.m_location);
 }
-uint32_t SleepObjective::desireToSleepAt(Block& block)
+uint32_t SleepObjective::desireToSleepAt(const Block& block)
 {
 	if(block.m_reservable.isFullyReserved(*m_actor.getFaction()) || !m_actor.m_needsSafeTemperature.isSafe(block.m_blockHasTemperature.get()))
 		return 0;
@@ -95,7 +122,7 @@ void MustSleep::sleep()
 {
 	assert(m_isAwake);
 	m_isAwake = false;
-	m_tiredEvent.unschedule();
+	m_tiredEvent.maybeUnschedule();
 	m_sleepEvent.schedule(m_actor.m_species.stepsSleepDuration, *this);
 }
 void MustSleep::wakeUp()
@@ -103,6 +130,7 @@ void MustSleep::wakeUp()
 	assert(!m_isAwake);
 	m_isAwake = true;
 	m_tiredEvent.schedule(m_actor.m_species.stepsSleepFrequency, *this);
+	m_actor.m_stamina.setFull();
 }
 void MustSleep::makeSleepObjective()
 {
@@ -118,4 +146,9 @@ void MustSleep::wakeUpEarly()
 	assert(m_needsSleep == true);
 	m_isAwake = true;
 	m_sleepEvent.pause();
+	//TODO: partial stamina recovery.
+}
+void MustSleep::setLocation(Block& block)
+{
+	m_location = &block;
 }

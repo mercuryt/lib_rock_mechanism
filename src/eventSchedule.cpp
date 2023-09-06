@@ -38,6 +38,7 @@ void EventSchedule::unschedule(ScheduledEvent& scheduledEvent)
 }
 void EventSchedule::execute(Step stepNumber)
 {
+	assert(m_data.begin()->first >= stepNumber);
 	auto found = m_data.find(stepNumber);
 	if(found == m_data.end())
 		return;

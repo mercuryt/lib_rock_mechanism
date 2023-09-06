@@ -8,7 +8,7 @@
 #include "types.h"
 
 #include <list>
-#include <unordered_map>
+#include <map>
 #include <memory>
 #include <cassert>
 
@@ -40,9 +40,10 @@ public:
 class EventSchedule
 {
 	Simulation& m_simulation;
+	Step m_lowestStepWithEventsScheduled;
 public:
-	EventSchedule(Simulation& s) : m_simulation(s) { }
-	std::unordered_map<Step, std::list<std::unique_ptr<ScheduledEvent>>> m_data;
+	EventSchedule(Simulation& s) : m_simulation(s), m_lowestStepWithEventsScheduled(0) { }
+	std::map<Step, std::list<std::unique_ptr<ScheduledEvent>>> m_data;
 	void schedule(std::unique_ptr<ScheduledEvent> scheduledEvent);
 	void schedule(std::unique_ptr<ScheduledEventWithPercent> scheduledEvent);
 	void unschedule(ScheduledEvent& scheduledEvent);

@@ -16,6 +16,7 @@ struct BlockFeatureType
 	bool operator==(const BlockFeatureType& x) const { return this == &x; }
 	static BlockFeatureType floor;
 	static BlockFeatureType door;
+	static BlockFeatureType flap;
 	static BlockFeatureType hatch;
 	static BlockFeatureType stairs;
 	static BlockFeatureType floodGate;

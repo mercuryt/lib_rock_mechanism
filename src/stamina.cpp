@@ -23,6 +23,6 @@ void ActorHasStamina::setFull()
 {
 	m_stamina = getMax();
 }
-uint32_t ActorHasStamina::getMax() const { return Config::staminaPointsPerRestPeriod;}
+uint32_t ActorHasStamina::getMax() const { return Config::maxStaminaPointsBase;}
 bool ActorHasStamina::hasAtLeast(uint32_t stamina) const { return m_stamina >= stamina; }
 bool ActorHasStamina::isFull() const { return m_stamina == getMax(); }

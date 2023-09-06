@@ -19,11 +19,18 @@ void EatEvent::execute()
 		return;
 	}
 	for(Item* item : blockContainingFood->m_hasItems.getAll())
+	{
 		if(item->isPreparedMeal())
 		{
 			eatPreparedMeal(*item);
 			return;
 		}
+		if(item->m_itemType.edibleForDrinkersOf == &actor.m_species.fluidType)
+		{
+			eatGenericItem(*item);
+			return;
+		}
+	}
 	if(actor.m_species.eatsMeat)
 		for(Actor* actor : blockContainingFood->m_hasActors.getAll())
 			if(!actor->m_alive && m_eatObjective.m_actor.m_mustEat.canEat(*actor))
@@ -64,7 +71,7 @@ void EatEvent::eatPreparedMeal(Item& item)
 	assert(m_eatObjective.m_actor.m_mustEat.canEat(item));
 	assert(item.isPreparedMeal());
 	auto& eater = m_eatObjective.m_actor;
-	uint32_t massEaten = item.m_mass;
+	uint32_t massEaten = std::min(eater.m_mustEat.getMassFoodRequested(), item.m_mass);
 	assert(massEaten != 0);
 	eater.m_mustEat.eat(massEaten);
 	item.destroy();
@@ -75,9 +82,9 @@ void EatEvent::eatGenericItem(Item& item)
 {
 	assert(item.m_itemType.edibleForDrinkersOf == &m_eatObjective.m_actor.m_mustDrink.getFluidType());
 	auto& eater = m_eatObjective.m_actor;
-	uint32_t quantityDesired = eater.m_mustEat.getMassFoodRequested() / item.singleUnitMass();
+	uint32_t quantityDesired = std::max(1u, eater.m_mustEat.getMassFoodRequested() / item.singleUnitMass());
 	uint32_t quantityEaten = std::min(quantityDesired, item.m_quantity);
-	uint32_t massEaten = quantityEaten * item.singleUnitMass();
+	uint32_t massEaten = std::min(eater.m_mustEat.getMassFoodRequested(), quantityEaten * item.singleUnitMass());
 	assert(massEaten != 0);
 	eater.m_mustEat.eat(massEaten);
 	item.m_quantity -= quantityEaten;
@@ -127,14 +134,14 @@ void HungerEvent::execute()
 	m_actor.m_mustEat.setNeedsFood();
 }
 void HungerEvent::clearReferences() { m_actor.m_mustEat.m_hungerEvent.clearPointer(); }
-EatThreadedTask::EatThreadedTask(EatObjective& eo) : PathToBlockBaseThreadedTask(eo.m_actor.getThreadedTaskEngine()), m_eatObjective(eo), m_huntResult(nullptr) {}
+EatThreadedTask::EatThreadedTask(EatObjective& eo) : ThreadedTask(eo.m_actor.getThreadedTaskEngine()), m_eatObjective(eo), m_huntResult(nullptr) {}
 void EatThreadedTask::readStep()
 {
 	if(m_eatObjective.m_foodLocation == nullptr)
 	{
 		constexpr uint32_t maxRankedEatDesire = 3;
-		std::array<Block*, maxRankedEatDesire> candidates = {};
-		auto destinationCondition = [&](Block& block)
+		std::array<const Block*, maxRankedEatDesire> candidates = {};
+		std::function<bool(const Block&)> destinationCondition = [&](const Block& block)
 		{
 			uint32_t eatDesire = m_eatObjective.m_actor.m_mustEat.getDesireToEatSomethingAt(block);
 			if(eatDesire == UINT32_MAX)
@@ -145,13 +152,17 @@ void EatThreadedTask::readStep()
 				candidates[eatDesire - 1u] = &block;
 			return false;
 		};
-		m_route = path::getForActorToPredicate(m_eatObjective.m_actor, destinationCondition, Config::maxBlocksToLookForBetterFood);
-		if(m_route.empty())
+		m_findsPath.pathToPredicate(m_eatObjective.m_actor, destinationCondition, Config::maxBlocksToLookForBetterFood);
+		if(m_findsPath.found())
+			m_eatObjective.m_foodLocation = m_findsPath.getPath().back();
+		if(!m_findsPath.found())
 		{
 			for(size_t i = maxRankedEatDesire; i != 0; --i)
 				if(candidates[i - 1] != nullptr)
 				{
-					pathTo(m_eatObjective.m_actor, *candidates[i - 1]);
+					m_findsPath.pathToBlock(m_eatObjective.m_actor, *candidates[i - 1]);
+					if(m_findsPath.found())
+						m_eatObjective.m_foodLocation = m_findsPath.getPath().back();
 					return;
 				}
 			// Nothing to scavenge or graze, maybe hunt.
@@ -205,7 +216,8 @@ void EatThreadedTask::readStep()
 }
 void EatThreadedTask::writeStep()
 {
-	if(m_route.empty())
+	m_findsPath.cacheMoveCosts(m_eatObjective.m_actor);
+	if(!m_findsPath.found())
 	{
 		if(m_huntResult == nullptr)
 			m_eatObjective.m_actor.m_hasObjectives.cannotFulfillObjective(m_eatObjective);
@@ -217,10 +229,9 @@ void EatThreadedTask::writeStep()
 	}
 	else
 	{
-		m_eatObjective.m_actor.m_canMove.setPath(m_route);
+		m_eatObjective.m_actor.m_canMove.setPath(m_findsPath.getPath());
 		//TODO: reserve food if sentient.
 	}
-	cacheMoveCosts(m_eatObjective.m_actor);
 }
 void EatThreadedTask::clearReferences() { m_eatObjective.m_threadedTask.clearPointer(); }
 EatObjective::EatObjective(Actor& a) :
@@ -368,14 +379,18 @@ uint32_t MustEat::getPercentStarved() const
 		return 0;
 	return m_hungerEvent.percentComplete();
 }
-uint32_t MustEat::getDesireToEatSomethingAt(Block& block) const
+uint32_t MustEat::getDesireToEatSomethingAt(const Block& block) const
 {
 	for(Item* item : block.m_hasItems.getAll())
+	{
 		if(item->isPreparedMeal())
 			return UINT32_MAX;
+		if(item->m_itemType.edibleForDrinkersOf == &m_actor.m_species.fluidType)
+			return 1;
+	}
 	if(m_actor.m_species.eatsFruit && block.m_hasPlant.exists())
 	{
-		Plant& plant = block.m_hasPlant.get();
+		const Plant& plant = block.m_hasPlant.get();
 		if(plant.getFruitMass() != 0)
 			return 1;
 	}
