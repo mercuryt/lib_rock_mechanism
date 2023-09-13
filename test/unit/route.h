@@ -4,7 +4,7 @@
 #include "../../src/actor.h"
 #include "../../src/materialType.h"
 #include "../../src/simulation.h"
-TEST_CASE("route 10,10,10")
+TEST_CASE("route_10_10_10")
 {
 	Simulation simulation;
 	static const MaterialType& marble = MaterialType::byName("marble");
@@ -122,8 +122,8 @@ TEST_CASE("route 10,10,10")
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
 		pathThreadedTask.writeStep();
-		pathThreadedTask.clearReferences();
-		simulation.m_threadedTaskEngine.remove(pathThreadedTask);
+		//pathThreadedTask.clearReferences();
+		//simulation.m_threadedTaskEngine.remove(pathThreadedTask);
 		REQUIRE(actor.m_canMove.hasEvent());
 		REQUIRE(simulation.m_threadedTaskEngine.m_tasks.empty());
 		// Step 1.
@@ -146,8 +146,8 @@ TEST_CASE("route 10,10,10")
 		PathThreadedTask& pathThreadedTask2 = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask2.readStep();
 		pathThreadedTask2.writeStep();
-		pathThreadedTask2.clearReferences();
-		simulation.m_threadedTaskEngine.remove(pathThreadedTask2);
+		//pathThreadedTask2.clearReferences();
+		//simulation.m_threadedTaskEngine.remove(pathThreadedTask2);
 		REQUIRE(actor.m_canMove.hasEvent());
 		REQUIRE(simulation.m_threadedTaskEngine.m_tasks.empty());
 		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
@@ -246,7 +246,7 @@ TEST_CASE("route 10,10,10")
 		REQUIRE(pathThreadedTask.getFindsPath().getPath().size() == 7);
 	}
 }
-TEST_CASE("route 5,5,3")
+TEST_CASE("route_5_5_3")
 {
 	Simulation simulation;
 	Area& area = simulation.createArea(5,5,3);
@@ -300,7 +300,7 @@ TEST_CASE("route 5,5,3")
 		REQUIRE(!pathThreadedTask.getFindsPath().getPath().empty());
 	}
 }
-TEST_CASE("route 5,5,5")
+TEST_CASE("route_5_5_5")
 {
 	Simulation simulation;
 	Area& area = simulation.createArea(5,5,5);
@@ -557,8 +557,8 @@ TEST_CASE("route 5,5,5")
 		REQUIRE(pathThreadedTask.getFindsPath().getPath().size() == 2);
 		pathThreadedTask.writeStep();
 		REQUIRE(a1.m_canMove.getPath().size() == 2);
-		pathThreadedTask.clearReferences();
-		simulation.m_threadedTaskEngine.remove(pathThreadedTask);
+		//pathThreadedTask.clearReferences();
+		//simulation.m_threadedTaskEngine.remove(pathThreadedTask);
 		REQUIRE(area.m_blocks[3][3][1].m_hasShapes.canEnterEverFrom(a1, *a1.m_location));
 		REQUIRE(!area.m_blocks[3][3][1].m_hasShapes.canEnterCurrentlyFrom(a1, *a1.m_location));
 		REQUIRE(a1.m_canMove.hasEvent());

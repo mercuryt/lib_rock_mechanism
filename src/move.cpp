@@ -25,10 +25,10 @@ void ActorCanMove::updateActualSpeed()
 void ActorCanMove::setPath(std::vector<Block*>& path)
 {
 	assert(!path.empty());
-	clearAllEventsAndTasks();
 	m_path = std::move(path);
 	m_destination = m_path.back();
 	m_pathIter = m_path.begin();
+	clearAllEventsAndTasks();
 	scheduleMove();
 }
 void ActorCanMove::clearPath()
@@ -138,6 +138,7 @@ void PathThreadedTask::readStep()
 }
 void PathThreadedTask::writeStep()
 {
+	m_findsPath.cacheMoveCosts(m_actor);
 	if(!m_findsPath.found())
 		m_actor.m_hasObjectives.cannotCompleteTask();
 	else
@@ -149,7 +150,6 @@ void PathThreadedTask::writeStep()
 		}
 		m_actor.m_canMove.setPath(m_findsPath.getPath());
 	}
-	m_findsPath.cacheMoveCosts(m_actor);
 }
 void PathThreadedTask::clearReferences() { m_actor.m_canMove.m_threadedTask.clearPointer(); }
 PathToSetThreadedTask::PathToSetThreadedTask(Actor& a, std::unordered_set<Block*> b, bool d, bool ad) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_blocks(b), m_detour(d), m_adjacent(ad) { }
