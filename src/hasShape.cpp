@@ -43,6 +43,13 @@ bool HasShape::isAdjacentTo(Block& location) const
 	}
 	return false;
 }
+bool HasShape::predicateForAnyOccupiedBlock(std::function<bool(const Block&)> predicate)
+{
+	for(Block* block : m_blocks)
+		if(predicate(*block))
+			return true;
+	return false;
+}
 std::unordered_set<Block*> HasShape::getOccupiedAndAdjacent()
 {
 	std::unordered_set<Block*> output(m_blocks);

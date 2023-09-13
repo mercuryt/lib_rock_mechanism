@@ -78,6 +78,11 @@ void HarvestObjective::execute()
 	else
 		m_threadedTask.create(*this);
 }
+void HarvestObjective::cancel()
+{
+	m_threadedTask.maybeCancel();
+	m_harvestEvent.maybeUnschedule();
+}
 bool HarvestObjective::canHarvestAt(Block& block) const
 {
 	return block.m_hasPlant.exists() && block.m_hasPlant.get().readyToHarvest();

@@ -11,7 +11,7 @@
 #include "../../src/threadedTask.h"
 #include "../../src/harvest.h"
 #include "../../src/givePlantsFluid.h"
-TEST_CASE("farm fields")
+TEST_CASE("farmFields")
 {
 	static const PlantSpecies& wheatGrass = PlantSpecies::byName("wheat grass");
 	static const MaterialType& dirt = MaterialType::byName("dirt");
@@ -118,15 +118,6 @@ TEST_CASE("farm fields")
 		Plant& plant = block.m_hasPlant.get();
 		REQUIRE(!area.m_hasFarmFields.hasGivePlantsFluidDesignations(faction));
 		REQUIRE(plant.m_growthEvent.exists());
-		simulation.m_step = simulation.m_step + wheatGrass.stepsNeedsFluidFrequency;
-		simulation.doStep();
-		REQUIRE(plant.m_volumeFluidRequested != 0);
-		REQUIRE(!plant.m_growthEvent.exists());
-		REQUIRE(area.m_hasFarmFields.hasGivePlantsFluidDesignations(faction));
-		const GivePlantsFluidObjectiveType objectiveType;
-		actor.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 10);
-		REQUIRE(objectiveType.canBeAssigned(actor));
-		actor.m_hasObjectives.getNext();
 		Item& bucket = simulation.createItem(ItemType::byName("bucket"), MaterialType::byName("poplar wood"), 50u, 0u, nullptr);
 		Block& bucketLocation = area.m_blocks[7][7][2];
 		bucket.setLocation(bucketLocation);
@@ -134,9 +125,27 @@ TEST_CASE("farm fields")
 		pondLocation.setNotSolid();
 		pondLocation.addFluid(100, water);
 		REQUIRE(actor.m_canPickup.canPickupAny(bucket));
+		simulation.fastForward(wheatGrass.stepsNeedsFluidFrequency);
+		REQUIRE(block.m_hasPlant.exists());
+		REQUIRE(plant.m_volumeFluidRequested != 0);
+		REQUIRE(!plant.m_growthEvent.exists());
+		REQUIRE(area.m_hasFarmFields.hasGivePlantsFluidDesignations(faction));
+		const GivePlantsFluidObjectiveType objectiveType;
+		REQUIRE(objectiveType.canBeAssigned(actor));
+		actor.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 10);
+		simulation.doStep();
+		// Wake up if asleep.
+		if(!actor.m_mustSleep.isAwake())
+			actor.m_mustSleep.wakeUp();
+		// Discard drink objective if exists.
+		if(actor.m_mustDrink.getVolumeFluidRequested() != 0)
+			actor.m_mustDrink.drink(actor.m_mustDrink.getVolumeFluidRequested());
+		// Discard eat objective if exists.
+		if(actor.m_mustEat.getMassFoodRequested() != 0)
+			actor.m_mustEat.eat(actor.m_mustEat.getMassFoodRequested());
+		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "give plants fluid");
 		simulation.doStep();
 		REQUIRE(actor.m_canMove.getDestination() == &bucketLocation);
-		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "give plants fluid");
 		while(actor.m_location != &bucketLocation)
 			simulation.doStep();
 		REQUIRE(simulation.m_threadedTaskEngine.m_tasks.size() == 1);
@@ -156,9 +165,7 @@ TEST_CASE("farm fields")
 		REQUIRE(actor.m_canMove.getDestination() == &block);
 		while(actor.m_location != &block)
 			simulation.doStep();
-		Step eventFinishedAt = simulation.m_step + Config::givePlantsFluidDelaySteps;
-		while(simulation.m_step < eventFinishedAt)
-			simulation.doStep();
+		simulation.fastForward(Config::givePlantsFluidDelaySteps);
 		REQUIRE(plant.m_volumeFluidRequested == 0);
 		REQUIRE(plant.m_growthEvent.exists());
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "give plants fluid");

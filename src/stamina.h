@@ -14,8 +14,10 @@ class RestObjective final : public Objective
 public:
 	RestObjective(Actor& a);
 	void execute() { m_restEvent.schedule(*this); }
-	void cancel() { }
-	std::string name() { return "rest"; }
+	void cancel() { m_restEvent.maybeUnschedule(); }
+	void delay() { cancel(); }
+	std::string name() const { return "rest"; }
+	ObjectiveId getObjectiveId() const { return ObjectiveId::Rest; }
 	friend class RestEvent;
 };
 class RestEvent final : public ScheduledEventWithPercent

@@ -3,6 +3,7 @@
 #include "objective.h"
 #include "threadedTask.hpp"
 #include "eventSchedule.hpp"
+#include "findsPath.h"
 
 #include <vector>
 
@@ -28,6 +29,7 @@ public:
 	MustDrink(Actor& a);
 	void drink(const uint32_t volume);
 	void setNeedsFluid();
+	void onDeath();
 	const uint32_t& getVolumeFluidRequested() const { return m_volumeDrinkRequested; }
 	const uint32_t& getPercentDeadFromThirst() const;
 	const FluidType& getFluidType() const { return *m_fluidType; }
@@ -36,21 +38,27 @@ public:
 	friend class ThirstEvent;
 	friend class DrinkEvent;
 	friend class DrinkObjective;
+	// For testing.
+	[[maybe_unused]] bool thirstEventExists() const { return m_thirstEvent.exists(); }
+	[[maybe_unused]] bool objectiveExists() const { return m_objective != nullptr; }
 };
 class DrinkObjective final : public Objective
 {
 	Actor& m_actor;
 	HasThreadedTask<DrinkThreadedTask> m_threadedTask;
 	HasScheduledEvent<DrinkEvent> m_drinkEvent;
+	bool m_noDrinkFound;
 public:
 	DrinkObjective(Actor& a);
 	void execute();
 	void cancel();
-	std::string name() { return "drink"; }
+	void delay();
+	std::string name() const { return "drink"; }
 	bool canDrinkAt(const Block& block) const;
 	Block* getAdjacentBlockToDrinkAt(const Block& block) const;
 	bool canDrinkItemAt(const Block& block) const;
 	Item* getItemToDrinkFromAt(Block& block) const;
+	ObjectiveId getObjectiveId() const { return ObjectiveId::Drink; }
 	friend class DrinkEvent;
 	friend class DrinkThreadedTask;
 };
@@ -75,7 +83,8 @@ public:
 class DrinkThreadedTask final : public ThreadedTask
 {
 	DrinkObjective& m_drinkObjective;
-	std::vector<Block*> m_result;
+	FindsPath m_findsPath;
+	bool m_noDrinkFound;
 public:
 	DrinkThreadedTask(DrinkObjective& drob);
 	void readStep();

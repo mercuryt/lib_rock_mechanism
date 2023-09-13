@@ -4,6 +4,7 @@
 #include "path.h"
 #include "area.h"
 #include "util.h"
+ConstructThreadedTask::ConstructThreadedTask(ConstructObjective& co) : ThreadedTask(co.m_actor.getThreadedTaskEngine()), m_constructObjective(co) { }
 void ConstructThreadedTask::readStep()
 {
 	auto destinationCondition = [&](Block& block)
@@ -44,6 +45,7 @@ void ConstructObjective::cancel()
 {
 	if(m_project != nullptr)
 		m_project->removeWorker(m_actor);
+	m_constructThreadedTask.maybeCancel();
 }
 bool ConstructObjective::canConstructAt(Block& block) const
 {

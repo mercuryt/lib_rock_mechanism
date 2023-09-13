@@ -63,3 +63,8 @@ void SowSeedsObjective::execute()
 	else
 		m_threadedTask.create(*this);
 }
+void SowSeedsObjective::cancel()
+{
+	m_threadedTask.maybeCancel();
+	m_event.maybeUnschedule();
+}

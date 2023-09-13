@@ -12,7 +12,13 @@
 struct Faction;
 class DigThreadedTask;
 struct BlockFeatureType;
-
+class DigObjectiveType : public ObjectiveType
+{
+public:
+	bool canBeAssigned(Actor& actor) const;
+	std::unique_ptr<Objective> makeFor(Actor& actor) const;
+	ObjectiveId getObjectiveId() const { return ObjectiveId::Dig; }
+};
 class DigObjective final : public Objective
 {
 	Actor& m_actor;
@@ -22,7 +28,9 @@ public:
 	DigObjective(Actor& a);
 	void execute();
 	void cancel();
-	std::string name() { return "dig"; }
+	void delay() { cancel(); }
+	ObjectiveId getObjectiveId() const { return ObjectiveId::Dig; }
+	std::string name() const { return "dig"; }
 	bool canDigAt(Block& block) const;
 	friend class DigThreadedTask;
 };
@@ -36,12 +44,6 @@ public:
 	void readStep();
 	void writeStep();
 	void clearReferences();
-};
-class DigObjectiveType : public ObjectiveType
-{
-public:
-	bool canBeAssigned(Actor& actor) const;
-	std::unique_ptr<Objective> makeFor(Actor& actor) const;
 };
 class DigProject final : public Project
 {

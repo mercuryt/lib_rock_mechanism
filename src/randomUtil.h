@@ -24,7 +24,7 @@ namespace randomUtil
 	}
 	[[maybe_unused]] inline bool percentChance(uint32_t percent)
 	{
-		static std::uniform_int_distribution<std::mt19937::result_type> dist(0, 100);
+		static std::uniform_int_distribution<std::mt19937::result_type> dist(1, 100);
 		return dist(getRng()) <= percent;
 	}
 	[[maybe_unused]] inline bool chance(double chance)

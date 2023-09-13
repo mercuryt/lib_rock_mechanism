@@ -1,4 +1,5 @@
 #include "fight.h"
+
 #include "util.h"
 #include "path.h"
 #include "actor.h"
@@ -123,7 +124,11 @@ void CanFight::noLongerTargetable()
 	}
 	m_targetedBy.clear();
 }
-void CanFight::onDie()
+void CanFight::onDeath()
+{
+	noLongerTargetable();
+}
+void CanFight::onLeaveArea()
 {
 	noLongerTargetable();
 }

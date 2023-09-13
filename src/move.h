@@ -8,7 +8,6 @@
 class MoveEvent;
 class PathThreadedTask;
 class PathToSetThreadedTask;
-class ExitAreaThreadedTask;
 class Block;
 class Actor;
 struct MoveType;
@@ -27,7 +26,6 @@ class ActorCanMove final
 	HasScheduledEvent<MoveEvent> m_event;
 	HasThreadedTask<PathThreadedTask> m_threadedTask;
 	HasThreadedTask<PathToSetThreadedTask> m_toSetThreadedTask;
-	HasThreadedTask<ExitAreaThreadedTask> m_exitAreaThreadedTask;
 public:
 	ActorCanMove(Actor& a);
 	void updateIndividualSpeed();
@@ -40,8 +38,10 @@ public:
 	void setDestinationAdjacentTo(Block& destination, bool detour = false);
 	void setDestinationAdjacentTo(HasShape& hasShape);
 	void setDestinationAdjacentToSet(std::unordered_set<Block*>& blocks, bool detour = false);
-	void tryToExitArea();
 	void setMoveType(const MoveType& moveType);
+	void clearAllEventsAndTasks();
+	void onDeath();
+	void onLeaveArea();
 	[[nodiscard]]const MoveType& getMoveType() const { return *m_moveType; }
 	[[nodiscard]]uint32_t getIndividualMoveSpeedWithAddedMass(uint32_t mass) const;
 	[[nodiscard]]uint32_t getMoveSpeed() const { return m_speedActual; }
@@ -54,7 +54,6 @@ public:
 	friend class MoveEvent;
 	friend class PathThreadedTask;
 	friend class PathToSetThreadedTask;
-	friend class ExitAreaThreadedTask;
 };
 class MoveEvent final : public ScheduledEventWithPercent
 {
@@ -89,17 +88,6 @@ class PathToSetThreadedTask final : public ThreadedTask
 	void clearReferences();
 public:
 	PathToSetThreadedTask(Actor& a, std::unordered_set<Block*> b, bool d = false, bool ad = false);
-	void readStep();
-	void writeStep();
-};
-class ExitAreaThreadedTask final : public ThreadedTask
-{
-	Actor& m_actor;
-	bool m_detour;
-	std::vector<Block*> m_route;
-	void clearReferences();
-public:
-	ExitAreaThreadedTask(Actor& a, bool d);
 	void readStep();
 	void writeStep();
 };

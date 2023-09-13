@@ -45,6 +45,12 @@ void StockPileObjective::execute()
 	else
 		m_project->commandWorker(m_actor);
 }
+void StockPileObjective::cancel()
+{
+	if(m_project != nullptr)
+		m_project->removeWorker(m_actor);
+	m_threadedTask.maybeCancel();
+}
 Step StockPileProject::getDelay() const { return Config::addToStockPileDelaySteps; }
 void StockPileProject::onComplete()
 {

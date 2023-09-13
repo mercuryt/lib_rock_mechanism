@@ -20,6 +20,8 @@ void Plant::die()
 	m_temperatureEvent.maybeUnschedule();
 	m_endOfHarvestEvent.maybeUnschedule();
 	m_foliageGrowthEvent.maybeUnschedule();
+	m_location.m_isPartOfFarmField.removeAllHarvestDesignations();
+	m_location.m_isPartOfFarmField.removeAllGiveFluidDesignations();
 	Block& location = m_location;
 	m_location.m_area->m_hasPlants.erase(*this);
 	location.m_isPartOfFarmField.maybeDesignateForSowingIfPartOfFarmField();
@@ -285,8 +287,13 @@ Plant& HasPlants::emplace(Block& location, const PlantSpecies& species, uint32_t
 }
 void HasPlants::erase(Plant& plant)
 {
+	assert(plant.m_location.m_hasPlant.get() == plant);
 	plant.m_location.m_hasPlant.erase();
-	std::erase_if(m_plants, [&](Plant& p) { return &p == &plant; });
+	//TODO: store iterator in plant.
+	auto found = std::ranges::find(m_plants, plant);
+	assert(found != m_plants.end());
+	m_plants.erase(found);
+	m_plantsOnSurface.erase(&plant);
 }
 void HasPlants::onChangeAmbiantSurfaceTemperature()
 {

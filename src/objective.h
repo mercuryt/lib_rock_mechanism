@@ -8,54 +8,88 @@
 #include <queue>
 #include <utility>
 #include <vector>
+#include <unordered_map>
 
 class Actor;
 class WaitEvent;
+class Objective;
+class SupressedNeedEvent;
 
+enum class ObjectiveId { Construct, Craft, Dig, Drink, Eat, GetToSafeTemperature, GivePlantsFluid, Harvest, Kill, Rest, Sleep, SowSeeds, StockPile, Wait, Wander };
+struct ObjectiveType
+{
+	virtual bool canBeAssigned(Actor& actor) const = 0;
+	virtual std::unique_ptr<Objective> makeFor(Actor& actor) const = 0;
+	virtual ObjectiveId getObjectiveId() const = 0;
+	ObjectiveType() = default;
+	ObjectiveType(const ObjectiveType&) = delete;
+	ObjectiveType(ObjectiveType&&) = delete;
+	bool operator==(const ObjectiveType& other) const { return &other == this; }
+};
 class Objective
 {
 public:
 	uint32_t m_priority;
 	virtual void execute() = 0;
 	virtual void cancel() = 0;
-	virtual std::string name() = 0;
+	virtual void delay() = 0;
+	virtual std::string name() const = 0;
+	virtual ObjectiveId getObjectiveId() const = 0;
 	Objective(uint32_t p);
 	Objective(const Objective&) = delete;
 	Objective(Objective&&) = delete;
-	bool operator==(const Objective& other) { return &other == this; }
+	bool operator==(const Objective& other) const { return &other == this; }
 	virtual ~Objective() = default;
 };
-struct ObjectiveType
+struct ObjectivePriority
 {
-	virtual bool canBeAssigned(Actor& actor) const = 0;
-	virtual std::unique_ptr<Objective> makeFor(Actor& actor) const = 0;
+	const ObjectiveType* objectiveType;
+	uint8_t priority;
+	Step doNotAssignAginUntil;
 };
-class ObjectiveTypePrioritySet
+class ObjectiveTypePrioritySet final
 {
-	std::vector<std::pair<const ObjectiveType*, uint8_t>> m_data;
+	Actor& m_actor;
+	std::vector<ObjectivePriority> m_data;
 public:
+	ObjectiveTypePrioritySet(Actor& a) : m_actor(a) { }
 	void setPriority(const ObjectiveType& objectiveType, uint8_t priority);
 	void remove(const ObjectiveType& objectiveType);
 	void setObjectiveFor(Actor& actor);
+	void setDelay(ObjectiveId objectiveId);
 };
-struct ObjectiveSortByPriority
+class SupressedNeed final
 {
-	bool operator()(Objective* const& a, Objective* const& b) const
-	{
-		return a->m_priority > b->m_priority;
-	}
+	Actor& m_actor;
+	std::unique_ptr<Objective> m_objective;
+	HasScheduledEvent<SupressedNeedEvent> m_event;
+public:
+	SupressedNeed(std::unique_ptr<Objective> o, Actor& a);
+	void callback();
+	friend class SupressedNeedEvent;
+	bool operator==(const SupressedNeed& supressedNeed){ return &supressedNeed == this; }
+};
+class SupressedNeedEvent final : public ScheduledEventWithPercent
+{
+	SupressedNeed& m_supressedNeed;
+public:
+	SupressedNeedEvent(SupressedNeed& sn);
+	void execute();
+	void clearReferences();
 };
 class HasObjectives final
 {
 	Actor& m_actor;
 	// Two objective queues, objectives are choosen from which ever has the higher priority.
 	// Biological needs like eat, drink, go to safe temperature, and sleep go into needs queue, possibly overiding the current objective in either queue.
-	std::map<Objective*, std::unique_ptr<Objective>, ObjectiveSortByPriority> m_needsQueue;
+	std::list<std::unique_ptr<Objective>> m_needsQueue;
+	// Prevent duplicate Objectives in needs queue.
+	std::unordered_set<ObjectiveId> m_idsOfObjectivesInNeedsQueue;
 	// Voluntary tasks like harvest, dig, build, craft, guard, station, and kill go into task queue. Station and kill both have higher priority then baseline needs like eat but lower then needs like flee.
 	// findNewTask only adds one task at a time so there usually is only once objective in the queue. More then one task objective can be added by the user manually.
 	std::list<std::unique_ptr<Objective>> m_tasksQueue;
 	Objective* m_currentObjective;
-	HasScheduledEvent<WaitEvent> m_waitEvent;
+	std::unordered_map<ObjectiveId, SupressedNeed> m_supressedNeeds;
 
 	void maybeUsurpsPriority(Objective& objective);
 	void setCurrentObjective(Objective& objective);
@@ -73,18 +107,9 @@ public:
 	void cannotFulfillObjective(Objective& objective);
 	void cannotCompleteTask();
 	void cannotFulfillNeed(Objective& objective);
-	void wait(const Step delay);
 	Objective& getCurrent();
 	bool hasCurrent() { return m_currentObjective != nullptr; }
+	bool hasSupressedNeed(const ObjectiveId objectiveId) const { return m_supressedNeeds.contains(objectiveId); }
 	friend class ObjectiveTypePrioritySet;
-	friend class WaitEvent;
-};
-
-class WaitEvent final : public ScheduledEventWithPercent
-{
-	Actor& m_actor;
-public:
-	WaitEvent(const Step delay, Actor& a);
-	void execute();
-	void clearReferences();
+	friend class SupressedNeed;
 };

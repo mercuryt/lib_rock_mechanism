@@ -54,6 +54,7 @@ void DigObjective::cancel()
 {
 	if(m_project != nullptr)
 		m_project->removeWorker(m_actor);
+	m_digThrededTask.maybeCancel();
 }
 bool DigObjective::canDigAt(Block& block) const
 {

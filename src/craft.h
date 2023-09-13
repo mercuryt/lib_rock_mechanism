@@ -83,9 +83,10 @@ class CraftObjectiveType final : public ObjectiveType
 {
 	const SkillType& m_skillType; // Multiple skills are represented by CraftObjective and CraftObjectiveType, such as Leatherworking, Woodworking, Metalworking, etc.
 public:
-	CraftObjectiveType(const SkillType& skillType) : m_skillType(skillType) { }
+	CraftObjectiveType(const SkillType& skillType) : ObjectiveType(), m_skillType(skillType) { }
 	bool canBeAssigned(Actor& actor) const;
 	std::unique_ptr<Objective> makeFor(Actor& actor) const;
+	ObjectiveId getObjectiveId() const { return ObjectiveId::Craft; }
 };
 class CraftObjective final : public Objective
 {
@@ -97,7 +98,9 @@ public:
 	CraftObjective(Actor& a, const SkillType& st);
 	void execute();
 	void cancel();
-	std::string name() { return "craft"; }
+	void delay() { cancel(); }
+	ObjectiveId getObjectiveId() const { return ObjectiveId::Craft; }
+	std::string name() const { return "craft"; }
 	friend class CraftThreadedTask;
 };
 class CraftThreadedTask final : public ThreadedTask

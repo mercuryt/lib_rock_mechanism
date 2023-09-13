@@ -32,7 +32,7 @@ struct MoveType;
 struct AnimalSpecies;
 struct Faction;
 
-enum class CauseOfDeath { thirst, hunger, bloodLoss };
+enum class CauseOfDeath { thirst, hunger, bloodLoss, wound, temperature };
 
 class Actor final : public HasShape
 {	
@@ -71,6 +71,8 @@ public:
 	void die(CauseOfDeath causeOfDeath);
 	void passout(uint32_t duration);
 	void doVision(std::unordered_set<Actor*>& actors);
+	void leaveArea();
+	void wait(Step duration);
 	// May be null.
 	void setFaction(const Faction* faction) { m_faction = faction; m_canReserve.setFaction(faction); }
 	bool isItem() const { return false; }

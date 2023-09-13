@@ -39,6 +39,7 @@ class GivePlantsFluidObjectiveType final : public ObjectiveType
 public:
 	bool canBeAssigned(Actor& actor) const;
 	std::unique_ptr<Objective> makeFor(Actor& actor) const;
+	ObjectiveId getObjectiveId() const { return ObjectiveId::GivePlantsFluid; }
 };
 class GivePlantsFluidObjective final : public Objective
 {
@@ -50,14 +51,16 @@ class GivePlantsFluidObjective final : public Objective
 public:
 	GivePlantsFluidObjective(Actor& a );
 	void execute();
-	void cancel() {}
-	std::string name() { return "give plants fluid"; }
+	void cancel();
+	void delay() { cancel(); }
+	std::string name() const { return "give plants fluid"; }
 	bool canFillAt(const Block& block) const;
 	Block* getAdjacentBlockToFillAt(Block& block);
 	bool canFillFromItemAt(const Block& block) const;
 	Item* getItemToFillFromAt(Block& block);
 	bool canGetFluidHaulingItemAt(const Block& block) const;
 	Item* getFluidHaulingItemAt(Block& block);
+	ObjectiveId getObjectiveId() const { return ObjectiveId::GivePlantsFluid; }
 	friend class GivePlantsFluidEvent;
 	friend class GivePlantsFluidThreadedTask;
 };

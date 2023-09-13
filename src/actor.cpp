@@ -2,6 +2,7 @@
 #include "block.h"
 #include "area.h"
 #include "simulation.h"
+#include "wait.h"
 
 #include <algorithm>
 
@@ -40,7 +41,12 @@ bool Actor::isAlly(Actor& actor) const { return m_faction->allies.contains(const
 void Actor::die(CauseOfDeath causeOfDeath)
 {
 	m_causeOfDeath = causeOfDeath;
-	m_canFight.onDie();
+	m_alive = false;
+	m_canFight.onDeath();
+	m_canMove.onDeath();
+	m_mustDrink.onDeath();
+	m_mustEat.onDeath();
+	m_mustSleep.onDeath();
 	m_location->m_area->m_hasActors.remove(*this);
 }
 void Actor::passout(uint32_t duration)
@@ -53,6 +59,17 @@ void Actor::doVision(std::unordered_set<Actor*>& actors)
 	m_canSee.swap(actors);
 	//TODO: psycology.
 	//TODO: fog of war?
+}
+void Actor::leaveArea()
+{
+	m_canFight.onLeaveArea();
+	m_canMove.onLeaveArea();
+	exit();
+	m_location->m_area->m_hasActors.remove(*this);
+}
+void Actor::wait(Step duration)
+{
+	m_hasObjectives.addTaskToStart(std::make_unique<WaitObjective>(*this, duration));
 }
 uint32_t Actor::getMass() const
 {

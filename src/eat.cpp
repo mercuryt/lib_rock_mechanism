@@ -15,7 +15,7 @@ void EatEvent::execute()
 	auto& actor = m_eatObjective.m_actor;
 	if(blockContainingFood == nullptr)
 	{
-		actor.m_hasObjectives.cannotFulfillObjective(m_eatObjective);
+		actor.m_hasObjectives.cannotCompleteTask();
 		return;
 	}
 	for(Item* item : blockContainingFood->m_hasItems.getAll())
@@ -75,8 +75,6 @@ void EatEvent::eatPreparedMeal(Item& item)
 	assert(massEaten != 0);
 	eater.m_mustEat.eat(massEaten);
 	item.destroy();
-	if(!eater.m_mustEat.needsFood())
-		eater.m_hasObjectives.objectiveComplete(m_eatObjective);
 }
 void EatEvent::eatGenericItem(Item& item)
 {
@@ -90,8 +88,6 @@ void EatEvent::eatGenericItem(Item& item)
 	item.m_quantity -= quantityEaten;
 	if(item.m_quantity == 0)
 		item.destroy();
-	if(eater.m_mustEat.getMassFoodRequested() == 0)
-		eater.m_hasObjectives.objectiveComplete(m_eatObjective);
 }
 void EatEvent::eatActor(Actor& actor)
 {
@@ -102,8 +98,6 @@ void EatEvent::eatActor(Actor& actor)
 	assert(massEaten != 0);
 	eater.m_mustEat.eat(massEaten);
 	actor.removeMassFromCorpse(massEaten);
-	if(eater.m_mustEat.getMassFoodRequested() == 0)
-		eater.m_hasObjectives.objectiveComplete(m_eatObjective);
 }
 void EatEvent::eatPlantLeaves(Plant& plant)
 {
@@ -112,8 +106,6 @@ void EatEvent::eatPlantLeaves(Plant& plant)
 	assert(massEaten != 0);
 	eater.m_mustEat.eat(massEaten);
 	plant.removeFoliageMass(massEaten);
-	if(eater.m_mustEat.getMassFoodRequested() == 0)
-		eater.m_hasObjectives.objectiveComplete(m_eatObjective);
 }
 void EatEvent::eatFruitFromPlant(Plant& plant)
 {
@@ -125,8 +117,6 @@ void EatEvent::eatFruitFromPlant(Plant& plant)
 	assert(quantityEaten != 0);
 	eater.m_mustEat.eat(quantityEaten * unitMass);
 	plant.removeFruitQuantity(quantityEaten);
-	if(eater.m_mustEat.getMassFoodRequested() == 0)
-		eater.m_hasObjectives.objectiveComplete(m_eatObjective);
 }
 HungerEvent::HungerEvent(const Step delay, Actor& a) : ScheduledEventWithPercent(a.getSimulation(), delay), m_actor(a) { }
 void HungerEvent::execute()
@@ -134,83 +124,58 @@ void HungerEvent::execute()
 	m_actor.m_mustEat.setNeedsFood();
 }
 void HungerEvent::clearReferences() { m_actor.m_mustEat.m_hungerEvent.clearPointer(); }
-EatThreadedTask::EatThreadedTask(EatObjective& eo) : ThreadedTask(eo.m_actor.getThreadedTaskEngine()), m_eatObjective(eo), m_huntResult(nullptr) {}
+EatThreadedTask::EatThreadedTask(EatObjective& eo) : ThreadedTask(eo.m_actor.getThreadedTaskEngine()), m_eatObjective(eo), m_huntResult(nullptr), m_noFoodFound(false) {}
 void EatThreadedTask::readStep()
 {
-	if(m_eatObjective.m_foodLocation == nullptr)
+	assert(m_eatObjective.m_foodLocation == nullptr);
+	constexpr uint32_t maxRankedEatDesire = 3;
+	std::array<const Block*, maxRankedEatDesire> candidates = {};
+	std::function<bool(const Block&)> destinationCondition = [&](const Block& block)
 	{
-		constexpr uint32_t maxRankedEatDesire = 3;
-		std::array<const Block*, maxRankedEatDesire> candidates = {};
-		std::function<bool(const Block&)> destinationCondition = [&](const Block& block)
-		{
-			uint32_t eatDesire = m_eatObjective.m_actor.m_mustEat.getDesireToEatSomethingAt(block);
-			if(eatDesire == UINT32_MAX)
-				return true;
-			if(eatDesire < m_eatObjective.m_actor.m_mustEat.getMinimumAcceptableDesire())
-				return false;
-			if(eatDesire != 0 && candidates[eatDesire - 1u] == nullptr)
-				candidates[eatDesire - 1u] = &block;
+		uint32_t eatDesire = m_eatObjective.m_actor.m_mustEat.getDesireToEatSomethingAt(block);
+		if(eatDesire == UINT32_MAX)
+			return true;
+		if(eatDesire < m_eatObjective.m_actor.m_mustEat.getMinimumAcceptableDesire())
 			return false;
-		};
-		m_findsPath.pathToPredicate(m_eatObjective.m_actor, destinationCondition, Config::maxBlocksToLookForBetterFood);
-		if(m_findsPath.found())
-			m_eatObjective.m_foodLocation = m_findsPath.getPath().back();
-		if(!m_findsPath.found())
-		{
-			for(size_t i = maxRankedEatDesire; i != 0; --i)
-				if(candidates[i - 1] != nullptr)
-				{
-					m_findsPath.pathToBlock(m_eatObjective.m_actor, *candidates[i - 1]);
-					if(m_findsPath.found())
-						m_eatObjective.m_foodLocation = m_findsPath.getPath().back();
-					return;
-				}
-			// Nothing to scavenge or graze, maybe hunt.
-			if(m_eatObjective.m_actor.m_species.eatsMeat)
+		if(eatDesire != 0 && candidates[eatDesire - 1u] == nullptr)
+			candidates[eatDesire - 1u] = &block;
+		return false;
+	};
+	m_findsPath.pathToPredicate(m_eatObjective.m_actor, destinationCondition, Config::maxBlocksToLookForBetterFood);
+	if(m_findsPath.found())
+		m_eatObjective.m_foodLocation = m_findsPath.getPath().back();
+	if(!m_findsPath.found())
+	{
+		for(size_t i = maxRankedEatDesire; i != 0; --i)
+			if(candidates[i - 1] != nullptr)
 			{
-				m_huntResult = nullptr;
-				auto huntCondition = [&](Block& block)
-				{
-					for(Actor* actor : block.m_hasActors.getAll())
-						if(m_eatObjective.m_actor.m_mustEat.canEat(*actor))
-						{
-							m_huntResult = actor;
-							return true;
-						}
-					return false;
-				};
-				// discard the location result, we are already collecting the actor result.
-				path::getForActorToPredicateReturnEndOnly(m_eatObjective.m_actor, huntCondition);
+				m_findsPath.pathToBlock(m_eatObjective.m_actor, *candidates[i - 1]);
+				if(m_findsPath.found())
+					m_eatObjective.m_foodLocation = m_findsPath.getPath().back();
+				return;
 			}
+		// Nothing to scavenge or graze, maybe hunt.
+		if(m_eatObjective.m_actor.m_species.eatsMeat)
+		{
+			m_huntResult = nullptr;
+			auto huntCondition = [&](Block& block)
+			{
+				for(Actor* actor : block.m_hasActors.getAll())
+					if(m_eatObjective.m_actor.m_mustEat.canEat(*actor))
+					{
+						m_huntResult = actor;
+						return true;
+					}
+				return false;
+			};
+			// discard the location result, we are already collecting the actor result.
+			path::getForActorToPredicateReturnEndOnly(m_eatObjective.m_actor, huntCondition);
 		}
-	} 
-	else
-	{
-		assert(m_eatObjective.m_eatingLocation == nullptr);
-		auto eatingLocationCondition = [&](Block& block)
+		if(m_huntResult == nullptr)
 		{
-			if(block.m_reservable.isFullyReserved(*m_eatObjective.m_actor.getFaction()))
-				return false;
-			static const ItemType& chair = ItemType::byName("chair");
-			if(!block.m_hasItems.hasInstalledItemType(chair))
-				return false;
-			for(Block* adjacent : block.m_adjacentsVector)
-			{
-				if(adjacent->isSolid())
-					continue;
-				static const ItemType& table = ItemType::byName("table");
-				if(adjacent->m_hasItems.hasInstalledItemType(table))
-					return true;
-			}
-			return false;
-		};
-		std::vector<Block*> path = path::getForActorToPredicate(m_eatObjective.m_actor, eatingLocationCondition, Config::maxDistanceToLookForEatingLocation);
-		if(path.empty())
-			m_eatObjective.m_noEatingLocationFound = true;
-		else
-		{
-			m_eatObjective.m_actor.m_canMove.setPath(path);
-			m_eatObjective.m_eatingLocation = path.back();
+			// Nothing to eat in this area, try to exit.
+			m_findsPath.pathToAreaEdge(m_eatObjective.m_actor);
+			m_noFoodFound = true;
 		}
 	}
 }
@@ -220,73 +185,61 @@ void EatThreadedTask::writeStep()
 	if(!m_findsPath.found())
 	{
 		if(m_huntResult == nullptr)
-			m_eatObjective.m_actor.m_hasObjectives.cannotFulfillObjective(m_eatObjective);
+		{
+			// Unable to find food or a path to exit the area.
+			m_eatObjective.m_actor.m_hasObjectives.cannotFulfillNeed(m_eatObjective);
+		}
 		else
 		{
+			// The hunt is on.
 			std::unique_ptr<Objective> killObjective = std::make_unique<KillObjective>(m_eatObjective.m_actor, *m_huntResult);
 			m_eatObjective.m_actor.m_hasObjectives.addNeed(std::move(killObjective));
 		}
 	}
 	else
-	{
 		m_eatObjective.m_actor.m_canMove.setPath(m_findsPath.getPath());
-		//TODO: reserve food if sentient.
-	}
+	if(m_noFoodFound)
+		m_eatObjective.m_noFoodFound = true;
 }
 void EatThreadedTask::clearReferences() { m_eatObjective.m_threadedTask.clearPointer(); }
 EatObjective::EatObjective(Actor& a) :
-	Objective(Config::eatPriority), m_actor(a), m_threadedTask(a.getThreadedTaskEngine()), m_eatEvent(a.getEventSchedule()), m_foodLocation(nullptr), m_foodItem(nullptr), m_eatingLocation(m_actor.m_mustEat.m_eatingLocation), m_noEatingLocationFound(false) { }
+	Objective(Config::eatPriority), m_actor(a), m_threadedTask(a.getThreadedTaskEngine()), m_eatEvent(a.getEventSchedule()), m_foodLocation(nullptr), m_foodItem(nullptr), m_noFoodFound(false) { }
 void EatObjective::execute()
 {
-	if(m_foodLocation == nullptr)
-		// Set foodLocation and foodItem.
+	if(m_noFoodFound)
+	{
+		// We have determined that there is no food here and have attempted to path to the edge of the area so we can leave.
+		if(m_actor.predicateForAnyOccupiedBlock([](const Block& block){ return block.m_isEdge; }))
+			// We are at the edge and can leave.
+			m_actor.leaveArea();
+		else
+			// No food and no escape.
+			m_actor.m_hasObjectives.cannotFulfillNeed(*this);
+	}
+	else if(m_foodLocation == nullptr)
+		// Set foodLocation.
 		m_threadedTask.create(*this);
-	else if(!m_actor.isSentient() || !m_noEatingLocationFound)
+	else
 	{	
-		// Uncivilized eating.
 		if(m_actor.m_location == m_foodLocation)
-			m_eatEvent.schedule(Config::stepsToEat, *this);
+			if(canEatAt(*m_foodLocation))
+				// Start eating.
+				m_eatEvent.schedule(Config::stepsToEat, *this);
+			else
+				// We are at the previously selected location but there is no  longer any food here, try again.
+				m_threadedTask.create(*this);
+
 		else
 			m_actor.m_canMove.setDestination(*m_foodLocation);
 	}
-	else
-	{
-		// Civilized eating.
-		if(m_actor.isSentient())
-		{
-			// Has meal
-			if(m_actor.m_canPickup.isCarrying(*m_foodItem))
-			{
-				if(m_eatingLocation == nullptr)
-					// Set eating location.
-					m_threadedTask.create(*this);
-				else
-				{
-					// Is at eating location.
-					if(m_actor.m_location == m_eatingLocation)
-						m_eatEvent.schedule(Config::stepsToEat, *this);
-					else
-						m_actor.m_canMove.setDestination(*m_eatingLocation);
-				}
-			}
-			else
-			{
-				// Is at pickup location.
-				if(m_actor.m_location == m_foodLocation)
-				{
-					uint32_t massToPickUp = std::min({m_actor.m_mustEat.getMassFoodRequested(), m_foodItem->m_mass, m_actor.m_canPickup.canPickupQuantityOf(m_foodItem->m_itemType, m_foodItem->m_materialType)});
-					uint32_t quantityToPickUp = massToPickUp / m_foodItem->singleUnitMass();
-					m_actor.m_canPickup.pickUp(*m_foodItem, quantityToPickUp);
-					execute();
-				}
-				else
-					m_actor.m_canMove.setDestination(*m_foodLocation);
-			}
-
-		}
-	}
 }
 void EatObjective::cancel()
+{
+	m_threadedTask.maybeCancel();
+	m_eatEvent.maybeUnschedule();
+	m_actor.m_mustEat.m_eatObjective = nullptr;
+}
+void EatObjective::delay()
 {
 	m_threadedTask.maybeCancel();
 	m_eatEvent.maybeUnschedule();
@@ -315,7 +268,7 @@ bool EatObjective::canEatAt(const Block& block) const
 	}
 	return false;
 }
-MustEat::MustEat(Actor& a) : m_actor(a), m_massFoodRequested(0), m_hungerEvent(a.getEventSchedule()), m_eatingLocation(nullptr)
+MustEat::MustEat(Actor& a) : m_actor(a), m_massFoodRequested(0), m_hungerEvent(a.getEventSchedule()), m_eatObjective(nullptr), m_eatingLocation(nullptr)
 {
 	m_hungerEvent.schedule(m_actor.m_species.stepsEatFrequency, m_actor);
 }
@@ -344,28 +297,38 @@ bool MustEat::canEat(const Item& item) const
 void MustEat::eat(uint32_t mass)
 {
 	assert(mass <= m_massFoodRequested);
+	assert(mass != 0);
 	m_massFoodRequested -= mass;
 	m_hungerEvent.unschedule();
+	Step stepsToNextHungerEvent;
 	if(m_massFoodRequested == 0)
-		m_actor.m_canGrow.maybeStart();
-	else
 	{
-		Step delay = util::scaleByInverseFraction(m_actor.m_species.stepsTillDieWithoutFood, m_massFoodRequested, massFoodForBodyMass());
-		m_actor.m_hasObjectives.addNeed(std::make_unique<EatObjective>(m_actor));
-		m_actor.m_mustEat.m_hungerEvent.schedule(delay, m_actor);
+		m_actor.m_canGrow.maybeStart();
+		stepsToNextHungerEvent = m_actor.m_species.stepsEatFrequency;
+		m_actor.m_hasObjectives.objectiveComplete(*m_eatObjective);
+		m_eatObjective = nullptr;
 	}
+	else
+		stepsToNextHungerEvent = util::scaleByInverseFraction(m_actor.m_species.stepsTillDieWithoutFood, m_massFoodRequested, massFoodForBodyMass());
+	m_actor.m_mustEat.m_hungerEvent.schedule(stepsToNextHungerEvent, m_actor);
 }
 void MustEat::setNeedsFood()
 {
-	if(m_hungerEvent.exists())
+	if(needsFood())
 		m_actor.die(CauseOfDeath::hunger);
 	else
 	{
 		m_hungerEvent.schedule(m_actor.m_species.stepsTillDieWithoutFood, m_actor);
 		m_actor.m_canGrow.stop();
 		m_massFoodRequested = massFoodForBodyMass();
-		m_actor.m_hasObjectives.addNeed(std::make_unique<EatObjective>(m_actor));
+		std::unique_ptr<Objective> objective = std::make_unique<EatObjective>(m_actor);
+		m_eatObjective = static_cast<EatObjective*>(objective.get());
+		m_actor.m_hasObjectives.addNeed(std::move(objective));
 	}
+}
+void MustEat::onDeath()
+{
+	m_hungerEvent.maybeUnschedule();
 }
 bool MustEat::needsFood() const { return m_massFoodRequested != 0; }
 uint32_t MustEat::massFoodForBodyMass() const
@@ -386,18 +349,18 @@ uint32_t MustEat::getDesireToEatSomethingAt(const Block& block) const
 		if(item->isPreparedMeal())
 			return UINT32_MAX;
 		if(item->m_itemType.edibleForDrinkersOf == &m_actor.m_species.fluidType)
-			return 1;
+			return 2;
 	}
 	if(m_actor.m_species.eatsFruit && block.m_hasPlant.exists())
 	{
 		const Plant& plant = block.m_hasPlant.get();
 		if(plant.getFruitMass() != 0)
-			return 1;
+			return 2;
 	}
 	if(m_actor.m_species.eatsMeat)
 		for(Actor* actor : block.m_hasActors.getAll())
-			if(!actor->m_alive && actor->m_species.fluidType == m_actor.m_species.fluidType)
-				return 2;
+			if(&m_actor != actor && !actor->m_alive && actor->m_species.fluidType == m_actor.m_species.fluidType)
+				return 1;
 	if(m_actor.m_species.eatsLeaves && block.m_hasPlant.exists())
 		if(block.m_hasPlant.get().m_percentFoliage != 0)
 			return 3;

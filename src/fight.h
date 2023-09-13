@@ -44,7 +44,8 @@ public:
 	void recordTargetedBy(Actor& actor);
 	void removeTargetedBy(Actor& actor);
 	void onMoveFrom(Block& previous);
-	void onDie();
+	void onDeath();
+	void onLeaveArea();
 	void noLongerTargetable();
 	void targetNoLongerTargetable();
 	void onTargetMoved();

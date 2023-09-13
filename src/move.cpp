@@ -1,6 +1,6 @@
 #include "move.h"
 #include "path.h"
-ActorCanMove::ActorCanMove(Actor& a) : m_actor(a), m_moveType(&m_actor.m_species.moveType), m_destination(nullptr), m_pathIter(m_path.end()),  m_retries(0), m_event(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()), m_toSetThreadedTask(a.getThreadedTaskEngine()), m_exitAreaThreadedTask(a.getThreadedTaskEngine())
+ActorCanMove::ActorCanMove(Actor& a) : m_actor(a), m_moveType(&m_actor.m_species.moveType), m_destination(nullptr), m_pathIter(m_path.end()),  m_retries(0), m_event(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()), m_toSetThreadedTask(a.getThreadedTaskEngine())
 {
 	updateIndividualSpeed();
 }
@@ -25,6 +25,7 @@ void ActorCanMove::updateActualSpeed()
 void ActorCanMove::setPath(std::vector<Block*>& path)
 {
 	assert(!path.empty());
+	clearAllEventsAndTasks();
 	m_path = std::move(path);
 	m_destination = m_path.back();
 	m_pathIter = m_path.begin();
@@ -83,7 +84,7 @@ void ActorCanMove::scheduleMove()
 	Block& moveTo = **m_pathIter;
 	auto speed = m_speedActual;
 	auto volumeAtLocationBlock = m_actor.m_shape->positions[0][3];
-	assert(!m_actor.m_blocks.contains(&moveTo));
+	assert(moveTo != *m_actor.m_location);
 	if(volumeAtLocationBlock + moveTo.m_hasShapes.getTotalVolume() > Config::maxBlockVolume)
 	{
 		auto excessVolume = (volumeAtLocationBlock + moveTo.m_hasShapes.getStaticVolume()) - Config::maxBlockVolume;
@@ -109,13 +110,20 @@ void ActorCanMove::setDestinationAdjacentToSet(std::unordered_set<Block*>& block
 	m_toSetThreadedTask.create(m_actor, blocks, detour, adjacent);
 }
 void ActorCanMove::setDestinationAdjacentTo(HasShape& hasShape) { setDestinationAdjacentToSet(hasShape.m_blocks); }
-void ActorCanMove::tryToExitArea() { m_exitAreaThreadedTask.create(m_actor, false); }
 void ActorCanMove::setMoveType(const MoveType& moveType)
 {
 	assert(m_moveType != &moveType);
 	m_moveType = &moveType;
 	//TODO: repath if destination.
 }
+void ActorCanMove::clearAllEventsAndTasks()
+{
+	m_event.maybeUnschedule();
+	m_threadedTask.maybeCancel();
+	m_toSetThreadedTask.maybeCancel();
+}
+void ActorCanMove::onLeaveArea() { clearAllEventsAndTasks(); }
+void ActorCanMove::onDeath() { clearAllEventsAndTasks(); }
 bool ActorCanMove::canMove() const
 {
 	if(!m_actor.m_alive || !m_actor.isActor() || m_speedIndividual == 0)
@@ -162,17 +170,3 @@ void PathToSetThreadedTask::writeStep()
 	}
 }
 void PathToSetThreadedTask::clearReferences() { m_actor.m_canMove.m_toSetThreadedTask.clearPointer(); }
-ExitAreaThreadedTask::ExitAreaThreadedTask(Actor& a, bool d) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_detour(d) { }
-void ExitAreaThreadedTask::readStep()
-{
-	auto condition = [&](Block& block) { return block.m_isEdge; };
-	m_route = path::getForActorToPredicate(m_actor, condition);
-}
-void ExitAreaThreadedTask::writeStep()
-{
-	if(m_route.empty())
-		m_actor.m_hasObjectives.wait(Config::stepsToWaitWhenCannotExitArea);
-	else
-		m_actor.m_canMove.setPath(m_route);
-}
-void ExitAreaThreadedTask::clearReferences() { m_actor.m_canMove.m_exitAreaThreadedTask.clearPointer(); }

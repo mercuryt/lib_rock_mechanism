@@ -23,12 +23,11 @@ TEST_CASE("plant")
 	CHECK(plant.m_location.m_exposedToSky);
 	CHECK(!plant.m_temperatureEvent.exists());
 	CHECK(area.m_hasPlants.getPlantsOnSurface().contains(&plant));
-	simulation.m_step = wheatGrass.stepsNeedsFluidFrequency;
-	simulation.m_eventSchedule.execute(simulation.m_step);
+	simulation.fastForward(wheatGrass.stepsNeedsFluidFrequency);
 	CHECK(plant.m_volumeFluidRequested != 0);
 	CHECK(!plant.m_growthEvent.exists());
 	CHECK(plant.m_percentGrown == 50 + ((float)simulation.m_step / (float)wheatGrass.stepsTillFullyGrown) * 100);
-	CHECK(simulation.m_eventSchedule.m_data.contains(simulation.m_step + wheatGrass.stepsTillDieWithoutFluid));
+	CHECK(simulation.m_eventSchedule.m_data.contains(simulation.m_step + wheatGrass.stepsTillDieWithoutFluid - 1));
 	area.m_hasRain.start(water, 1, 100);
 	CHECK(plant.m_volumeFluidRequested == 0);
 	CHECK(plant.m_growthEvent.exists());
@@ -47,7 +46,6 @@ TEST_CASE("plant")
 	simulation.m_now = {1, dayOfYear, 1200};
 	area.setDateTime(simulation.m_now);
 	CHECK(plant.m_quantityToHarvest != 0);
-	simulation.m_step = simulation.m_step + plant.m_plantSpecies.harvestData->stepsDuration;
-	simulation.m_eventSchedule.execute(simulation.m_step);
+	simulation.fastForward(plant.m_plantSpecies.harvestData->stepsDuration);
 	CHECK(plant.m_quantityToHarvest == 0);
 }

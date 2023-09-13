@@ -64,6 +64,7 @@ bool HasFarmFieldsForFaction::hasGivePlantsFluidDesignations() const
 }
 Plant* HasFarmFieldsForFaction::getHighestPriorityPlantForGiveFluid()
 {
+	assert(!m_plantsNeedingFluid.empty());
 	if(!m_plantsNeedingFluidIsSorted)
 	{
 		std::ranges::sort(m_plantsNeedingFluid, [](Plant* a, Plant* b){ return a->getStepAtWhichPlantWillDieFromLackOfFluid() < b->getStepAtWhichPlantWillDieFromLackOfFluid(); });

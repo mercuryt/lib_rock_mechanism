@@ -17,11 +17,13 @@ class MustEat final
 	Actor& m_actor;
 	uint32_t m_massFoodRequested;
 	HasScheduledEvent<HungerEvent> m_hungerEvent;
+	EatObjective* m_eatObjective;
 public:
 	MustEat(Actor& a);
 	Block* m_eatingLocation;
 	void eat(uint32_t mass);
 	void setNeedsFood();
+	void onDeath();
 	bool needsFood() const;
 	uint32_t massFoodForBodyMass() const;
 	const uint32_t& getMassFoodRequested() const;
@@ -32,6 +34,10 @@ public:
 	bool canEat(const Plant& plant) const;
 	bool canEat(const Item& item) const;
 	friend class HungerEvent;
+	friend class EatObjective;
+	// For testing.
+	[[maybe_unused]]bool hasObjecive() const { return m_eatObjective != nullptr; }
+	[[maybe_unused]]Step getHungerEventStep() const { return m_hungerEvent.getStep(); }
 };
 class EatEvent final : public ScheduledEventWithPercent
 {
@@ -62,6 +68,7 @@ class EatThreadedTask final : public ThreadedTask
 	EatObjective& m_eatObjective;
 	Actor* m_huntResult;
 	FindsPath m_findsPath;
+	bool m_noFoodFound;
 public:
 	EatThreadedTask(EatObjective& eo);
 	void readStep();
@@ -75,17 +82,18 @@ class EatObjective final : public Objective
 	HasScheduledEvent<EatEvent> m_eatEvent;
 	Block* m_foodLocation;
 	Item* m_foodItem;
-	Block* m_eatingLocation;
-	bool m_noEatingLocationFound;
+	bool m_noFoodFound;
 public:
 	EatObjective(Actor& a);
 	void execute();
 	void cancel();
-	std::string name() { return "eat"; }
+	void delay();
+	std::string name() const { return "eat"; }
 	bool canEatAt(const Block& block) const;
+	ObjectiveId getObjectiveId() const { return ObjectiveId::Eat; }
 	friend class EatEvent;
 	friend class EatThreadedTask;
 	// For testing.
-	[[maybe_unused, nodiscard]]bool hasEvent() const {return m_eatEvent.exists(); }
-	[[maybe_unused, nodiscard]]bool hasThreadedTask() const {return m_threadedTask.exists(); }
+	[[maybe_unused, nodiscard]]bool hasEvent() const { return m_eatEvent.exists(); }
+	[[maybe_unused, nodiscard]]bool hasThreadedTask() const { return m_threadedTask.exists(); }
 };

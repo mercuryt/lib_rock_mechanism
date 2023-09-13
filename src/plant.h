@@ -97,6 +97,7 @@ public:
 	uint32_t getFluidDrinkVolume() const;
 	bool readyToHarvest() const { return m_quantityToHarvest != 0; }
 	const uint32_t& getVolumeFluidRequested() { return m_volumeFluidRequested; }
+	bool operator==(const Plant& p) const { return &p == this; }
 };
 
 class PlantGrowthEvent final : public ScheduledEventWithPercent

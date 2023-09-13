@@ -9,13 +9,15 @@ Simulation::Simulation(DateTime n, Step s) :  m_step(s), m_now(n), m_eventSchedu
 }
 void Simulation::doStep()
 {
+	m_threadedTaskEngine.readStep();
 	for(Area& area : m_areas)
 		area.readStep();
-	m_threadedTaskEngine.readStep();
 	m_pool.wait_for_tasks();
+	// Do threaded tasks write step first so other tasks created on this turn will not run write without having run read.
+	m_threadedTaskEngine.writeStep();
 	for(Area& area : m_areas)
 		area.writeStep();
-	m_threadedTaskEngine.writeStep();
+	// TODO: Why does putting this line before area write steps cause a segfault in FillQueue::validate?
 	m_eventSchedule.execute(m_step);
 	++m_step;
 }
@@ -111,18 +113,17 @@ void Simulation::setDateTime(DateTime now)
 }
 void Simulation::fastForward(Step steps)
 {
-	Step step = steps + m_step;
-	while(m_step <= step)
-		doStep();
-	return;
-	m_step += steps;
+	Step targetStep = m_step + steps;
 	while(!m_eventSchedule.m_data.empty())
 	{
 		auto& pair = *m_eventSchedule.m_data.begin();
-		if(pair.first < m_step)
-			m_eventSchedule.m_data.erase(pair.first);
+		if(pair.first <= targetStep)
+		{
+			m_step = pair.first;
+			doStep();
+		}
 		else
 			break;
 	}
-	doStep();
+	m_step = targetStep + 1;
 }

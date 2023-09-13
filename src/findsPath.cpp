@@ -16,6 +16,10 @@ void FindsPath::pathToPredicate(const Actor& actor, std::function<bool(const Blo
 	(void)detour;
 	m_route = path::getForActorToPredicate(actor, predicate);
 }
+void FindsPath::pathToAreaEdge(const Actor& actor, bool detour)
+{
+	m_route = path::getForActorToExitArea(actor, detour);
+}
 void FindsPath::cacheMoveCosts(const Actor& actor)
 {
 	for(auto& pair : m_moveCostsToCache)

@@ -13,6 +13,14 @@ class ConstructThreadedTask;
 class Block;
 struct Faction;
 struct BlockFeatureType;
+class ConstructObjective;
+class ConstructObjectiveType final : public ObjectiveType
+{
+public:
+	bool canBeAssigned(Actor& actor) const;
+	std::unique_ptr<Objective> makeFor(Actor& actor) const;
+	ObjectiveId getObjectiveId() const { return ObjectiveId::Construct; }
+};
 class ConstructObjective final : public Objective
 {
 	Actor& m_actor;
@@ -22,27 +30,22 @@ public:
 	ConstructObjective(Actor& a) : Objective(Config::constructObjectivePriority), m_actor(a), m_constructThreadedTask(a.getThreadedTaskEngine()), m_project(nullptr) { }
 	void execute();
 	void cancel();
-	std::string name() { return "construct"; }
+	void delay() { cancel(); }
+	std::string name() const { return "construct"; }
 	bool canConstructAt(Block& block) const;
 	Block* selectAdjacentProject(Block& block) const;
+	ObjectiveId getObjectiveId() const { return ObjectiveId::Construct; }
 	friend class ConstructThreadedTask;
 };
-
 class ConstructThreadedTask final : public ThreadedTask
 {
 	ConstructObjective& m_constructObjective;
 	std::vector<Block*> m_result;
 public:
-	ConstructThreadedTask(ConstructObjective& co) : ThreadedTask(co.m_actor.getThreadedTaskEngine()), m_constructObjective(co) { }
+	ConstructThreadedTask(ConstructObjective& co);
 	void readStep();
 	void writeStep();
 	void clearReferences();
-};
-class ConstructObjectiveType final : public ObjectiveType
-{
-public:
-	bool canBeAssigned(Actor& actor) const;
-	std::unique_ptr<Objective> makeFor(Actor& actor) const;
 };
 class ConstructProject final : public Project
 {

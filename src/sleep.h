@@ -32,7 +32,10 @@ public:
 	void makeSleepObjective();
 	void wakeUpEarly();
 	void setLocation(Block& block);
+	void onDeath();
+	void notTired();
 	bool isAwake() const { return m_isAwake; }
+	bool getNeedsSleep() const { return m_needsSleep; }
 	friend class SleepEvent;
 	friend class TiredEvent;
 	friend class SleepThreadedTask;
@@ -62,6 +65,7 @@ class SleepThreadedTask final : public ThreadedTask
 	SleepObjective& m_sleepObjective;
 	FindsPath m_findsPath;
 	bool m_sleepAtCurrentLocation;
+	bool m_noWhereToSleepFound;
 public:
 	SleepThreadedTask(SleepObjective& so);
 	void readStep();
@@ -72,14 +76,18 @@ class SleepObjective final : public Objective
 {
 	Actor& m_actor;
 	HasThreadedTask<SleepThreadedTask> m_threadedTask;
+	bool m_noWhereToSleepFound;
 public:
 	SleepObjective(Actor& a);
 	void execute();
-	void cancel() {}
-	std::string name() { return "sleep"; }
+	void cancel() { m_threadedTask.maybeCancel(); }
+	void delay() { cancel(); }
+	std::string name() const { return "sleep"; }
 	uint32_t desireToSleepAt(const Block& block);
 	~SleepObjective();
+	ObjectiveId getObjectiveId() const { return ObjectiveId::Sleep; }
 	friend class SleepThreadedTask;
+	friend class MustSleep;
 };
 class HasSleepingSpots final
 {

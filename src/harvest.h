@@ -16,6 +16,7 @@ class HarvestObjectiveType final : public ObjectiveType
 public:
 	bool canBeAssigned(Actor& actor) const;
 	std::unique_ptr<Objective> makeFor(Actor& actor) const;
+	ObjectiveId getObjectiveId() const { return ObjectiveId::Harvest; }
 };
 class HarvestObjective final : public Objective
 {
@@ -25,8 +26,10 @@ public:
 	HasScheduledEvent<HarvestEvent> m_harvestEvent;
 	HasThreadedTask<HarvestThreadedTask> m_threadedTask;
 	void execute();
-	void cancel() {}
-	std::string name() { return "harvest"; }
+	void cancel();
+	void delay() { cancel(); }
+	std::string name() const { return "harvest"; }
+	ObjectiveId getObjectiveId() const { return ObjectiveId::Harvest; }
 	bool canHarvestAt(Block& block) const;
 	friend class HarvestEvent;
 	friend class HarvestThreadedTask;

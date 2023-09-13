@@ -99,6 +99,7 @@ void CraftObjective::cancel()
 {
 	if(m_craftJob != nullptr)
 		m_actor.m_location->m_area->m_hasCraftingLocationsAndJobs.stepInterupted(*m_craftJob);
+	m_threadedTask.maybeCancel();
 }
 void HasCraftingLocationsAndJobs::addLocation(std::vector<const CraftStepType*>& craftStepTypes, Block& block)
 {

@@ -2,6 +2,7 @@
 #include "block.h"
 std::vector<XYZ> getNthAdjacentOffsets(uint32_t n)
 {
+	assert(n != 0);
 	while(cache.size() < n + 1)
 	{
 		if(cache.empty())

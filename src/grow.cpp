@@ -48,12 +48,11 @@ void CanGrow::complete()
 }
 void CanGrow::stop()
 {
-	m_event.unschedule();
-	m_updateEvent.unschedule();
+	m_event.maybeUnschedule();
+	m_updateEvent.maybeUnschedule();
 }
 void CanGrow::maybeStart()
 {
-	assert(m_percentGrown != 100);
 	if(m_event.exists())
 		updateGrowingStatus();
 }

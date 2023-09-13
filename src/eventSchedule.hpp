@@ -33,18 +33,18 @@ public:
 		assert(m_event != nullptr);
 		m_event = nullptr;
 	}
-	uint32_t percentComplete() const
+	[[nodiscard]]uint32_t percentComplete() const
 	{
 		assert(m_event != nullptr);
 		return m_event->percentComplete();
 	}
-	bool exists() const { return m_event != nullptr; }
-	const Step& getStep() const
+	[[nodiscard]]bool exists() const { return m_event != nullptr; }
+	[[nodiscard]]const Step& getStep() const
 	{
 		assert(m_event != nullptr);
 		return m_event->m_step;
 	}
-	Step remainingSteps(){ return m_event->remaningSteps(); }
+	[[nodiscard]]Step remainingSteps() const { return m_event->remaningSteps(); }
 	~HasScheduledEvent() { maybeUnschedule(); }
 };
 template<class EventType>
@@ -53,19 +53,6 @@ class HasScheduledEventPausable : public HasScheduledEvent<EventType>
 	uint32_t m_percent;
 public:
 	HasScheduledEventPausable(EventSchedule& es) : HasScheduledEvent<EventType>(es), m_percent(0) { }
-	uint32_t percentComplete() const
-	{
-		uint32_t output = m_percent;
-		auto* event = HasScheduledEvent<EventType>::m_event;
-		if(event != nullptr)
-		{
-			if(m_percent != 0)
-				output += (event->percentComplete() * (100u - m_percent)) / 100u;
-			else
-				output = event->percentComplete();
-		}
-		return output;
-	}
 	void pause()
 	{
 		m_percent = percentComplete();
@@ -81,5 +68,18 @@ public:
 	{
 		delay -= util::scaleByPercent(delay, m_percent);
 		HasScheduledEvent<EventType>::schedule(delay, args...);
+	}
+	[[nodiscard]]uint32_t percentComplete() const
+	{
+		uint32_t output = m_percent;
+		auto* event = HasScheduledEvent<EventType>::m_event;
+		if(event != nullptr)
+		{
+			if(m_percent != 0)
+				output += (event->percentComplete() * (100u - m_percent)) / 100u;
+			else
+				output = event->percentComplete();
+		}
+		return output;
 	}
 };

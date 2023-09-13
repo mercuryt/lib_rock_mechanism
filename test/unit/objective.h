@@ -8,13 +8,26 @@
 
 #include <memory>
 
-struct TestObjective final : public Objective
+struct TestTaskObjective final : public Objective
 {
 	bool& x;
-	TestObjective(uint32_t priority, bool& ax) : Objective(priority), x(ax) { }
+	TestTaskObjective(uint32_t priority, bool& ax) : Objective(priority), x(ax) { }
 	void execute() { x = !x; }
 	void cancel() { }
-	std::string name() { return "test"; }
+	void delay() { }
+	std::string name() const { return "test task"; }
+	ObjectiveId getObjectiveId() const { return ObjectiveId::Construct; }
+};
+
+struct TestNeedObjective final : public Objective
+{
+	bool& x;
+	TestNeedObjective(uint32_t priority, bool& ax) : Objective(priority), x(ax) { }
+	void execute() { x = !x; }
+	void cancel() { }
+	void delay() { }
+	std::string name() const { return "test need"; }
+	ObjectiveId getObjectiveId() const { return ObjectiveId::Dig; }
 };
 
 TEST_CASE("objective")
@@ -26,12 +39,12 @@ TEST_CASE("objective")
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	Actor& actor = simulation.createActor(dwarf, area.m_blocks[5][5][1]);
 	bool x = false;
-	std::unique_ptr<Objective> objective = std::make_unique<TestObjective>(1, x);
+	std::unique_ptr<Objective> objective = std::make_unique<TestTaskObjective>(1, x);
 	Objective* ptr = objective.get();
 	actor.m_hasObjectives.addTaskToEnd(std::move(objective));
 	CHECK(&actor.m_hasObjectives.getCurrent() == ptr);
 	CHECK(x);
-	std::unique_ptr<Objective> objective2 = std::make_unique<TestObjective>(2, x);
+	std::unique_ptr<Objective> objective2 = std::make_unique<TestNeedObjective>(2, x);
 	Objective* ptr2 = objective2.get();
 	actor.m_hasObjectives.addNeed(std::move(objective2));
 	CHECK(&actor.m_hasObjectives.getCurrent() == ptr2);
@@ -39,13 +52,13 @@ TEST_CASE("objective")
 	actor.m_hasObjectives.objectiveComplete(*ptr2);
 	CHECK(&actor.m_hasObjectives.getCurrent() == ptr);
 	CHECK(x);
-	std::unique_ptr<Objective> objective3 = std::make_unique<TestObjective>(2, x);
+	std::unique_ptr<Objective> objective3 = std::make_unique<TestTaskObjective>(2, x);
 	Objective* ptr3 = objective3.get();
 	actor.m_hasObjectives.addTaskToEnd(std::move(objective3));
 	actor.m_hasObjectives.objectiveComplete(*ptr);
 	CHECK(&actor.m_hasObjectives.getCurrent() == ptr3);
 	CHECK(!x);
-	std::unique_ptr<Objective> objective4 = std::make_unique<TestObjective>(1, x);
+	std::unique_ptr<Objective> objective4 = std::make_unique<TestNeedObjective>(1, x);
 	Objective* ptr4 = objective4.get();
 	actor.m_hasObjectives.addNeed(std::move(objective4));
 	CHECK(&actor.m_hasObjectives.getCurrent() == ptr3);

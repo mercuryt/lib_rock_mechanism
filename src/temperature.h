@@ -6,6 +6,7 @@
 #include "threadedTask.hpp"
 #include "objective.h"
 #include "datetime.h"
+#include "findsPath.h"
 
 #include <unordered_set>
 #include <unordered_map>
@@ -79,32 +80,46 @@ class GetToSafeTemperatureObjective final : public Objective
 {
 	Actor& m_actor;
 	HasThreadedTask<GetToSafeTemperatureThreadedTask> m_getToSafeTemperatureThreadedTask;
+	bool m_noWhereWithSafeTemperatureFound;
 public:
 	GetToSafeTemperatureObjective(Actor& a);
 	void execute();
-	void cancel() { }
-	std::string name() { return "get to safe temperature"; }
+	void cancel() { m_getToSafeTemperatureThreadedTask.maybeCancel(); }
+	void delay() { cancel(); }
+	ObjectiveId getObjectiveId() const { return ObjectiveId::GetToSafeTemperature; }
+	std::string name() const { return "get to safe temperature"; }
 	~GetToSafeTemperatureObjective();
 	friend class GetToSafeTemperatureThreadedTask;
 };
 class GetToSafeTemperatureThreadedTask final : public ThreadedTask
 {
 	GetToSafeTemperatureObjective& m_objective;
-	std::vector<Block*> m_result;
+	FindsPath m_findsPath;
+	bool m_noWhereWithSafeTemperatureFound;
 public:
 	GetToSafeTemperatureThreadedTask(GetToSafeTemperatureObjective& o);
 	void readStep();
 	void writeStep();
 	void clearReferences();
 };
+class UnsafeTemperatureEvent final : public ScheduledEventWithPercent
+{
+	Actor& m_actor;
+public:
+	UnsafeTemperatureEvent(Actor& a);
+	void execute();
+	void clearReferences();
+};
 class ActorNeedsSafeTemperature
 {
 	Actor& m_actor;
+	HasScheduledEvent<UnsafeTemperatureEvent> m_event;
 	bool m_objectiveExists;
 public:
-	ActorNeedsSafeTemperature(Actor& a) : m_actor(a), m_objectiveExists(false) { }
+	ActorNeedsSafeTemperature(Actor& a);
 	void onChange();
 	bool isSafe(uint32_t temperature) const;
 	bool isSafeAtCurrentLocation() const;
 	friend class GetToSafeTemperatureObjective;
+	friend class UnsafeTemperatureEvent;
 };

@@ -18,7 +18,8 @@ uint32_t TemperatureSource::getTemperatureDeltaForRange(uint32_t range)
 }
 void TemperatureSource::apply()
 {
-	int range = 0;
+	m_block.m_area->m_areaHasTemperature.addDelta(m_block, m_temperature);
+	int range = 1;
 	while(int delta = getTemperatureDeltaForRange(range))
 	{
 		for(Block* block : getNthAdjacentBlocks(m_block, range))
@@ -28,7 +29,8 @@ void TemperatureSource::apply()
 }
 void TemperatureSource::unapply()
 {
-	int range = 0;
+	m_block.m_area->m_areaHasTemperature.addDelta(m_block, m_temperature * -1);
+	int range = 1;
 	while(int delta = getTemperatureDeltaForRange(range))
 	{
 		for(Block* block : getNthAdjacentBlocks(m_block, range))
@@ -186,39 +188,67 @@ uint32_t BlockHasTemperature::getDailyAverageAmbientTemperature() const
 	}
 	return m_block.m_area->m_areaHasTemperature.getDailyAverageAmbientSurfaceTemperature(m_block.m_area->m_simulation.m_now);
 }
-GetToSafeTemperatureThreadedTask::GetToSafeTemperatureThreadedTask(GetToSafeTemperatureObjective& o) : ThreadedTask(o.m_actor.getThreadedTaskEngine()), m_objective(o) { }
+GetToSafeTemperatureThreadedTask::GetToSafeTemperatureThreadedTask(GetToSafeTemperatureObjective& o) : ThreadedTask(o.m_actor.getThreadedTaskEngine()), m_objective(o), m_noWhereWithSafeTemperatureFound(false) { }
 void GetToSafeTemperatureThreadedTask::readStep()
 {
-	auto condition = [&](Block& block)
+	std::function<bool(const Block&)> condition = [&](const Block& block)
 	{
 		return m_objective.m_actor.m_needsSafeTemperature.isSafe(block.m_blockHasTemperature.get());
 	};
-	m_result = path::getForActorToPredicate(m_objective.m_actor, condition);
+	m_findsPath.pathToPredicate(m_objective.m_actor, condition);
+	if(!m_findsPath.found())
+	{
+		m_noWhereWithSafeTemperatureFound = true;
+		m_findsPath.pathToAreaEdge(m_objective.m_actor);
+	}
 }
 void GetToSafeTemperatureThreadedTask::writeStep()
 {
-	if(m_result.empty())
+	if(!m_findsPath.found())
 		m_objective.m_actor.m_hasObjectives.cannotFulfillNeed(m_objective);
+	if(m_noWhereWithSafeTemperatureFound)
+		m_objective.m_noWhereWithSafeTemperatureFound = true;
 }
 void GetToSafeTemperatureThreadedTask::clearReferences(){ m_objective.m_getToSafeTemperatureThreadedTask.clearPointer(); }
-GetToSafeTemperatureObjective::GetToSafeTemperatureObjective(Actor& a) : Objective(Config::getToSafeTemperaturePriority), m_actor(a), m_getToSafeTemperatureThreadedTask(a.getThreadedTaskEngine()) { }
+GetToSafeTemperatureObjective::GetToSafeTemperatureObjective(Actor& a) : Objective(Config::getToSafeTemperaturePriority), m_actor(a), m_getToSafeTemperatureThreadedTask(a.getThreadedTaskEngine()), m_noWhereWithSafeTemperatureFound(false) { }
 void GetToSafeTemperatureObjective::execute()
 {
+	if(m_noWhereWithSafeTemperatureFound)
+	{
+		if(m_actor.predicateForAnyOccupiedBlock([](const Block& block){ return block.m_isEdge; }))
+			// We are at the edge and can leave.
+			m_actor.leaveArea();
+		else
+			// No safe temperature and no escape.
+			m_actor.m_hasObjectives.cannotFulfillNeed(*this);
+		return;
+	}
 	if(m_actor.m_needsSafeTemperature.isSafeAtCurrentLocation())
 		m_actor.m_hasObjectives.objectiveComplete(*this);
 	else
 		m_getToSafeTemperatureThreadedTask.create(*this);
 }
 GetToSafeTemperatureObjective::~GetToSafeTemperatureObjective() { m_actor.m_needsSafeTemperature.m_objectiveExists = false; }
+UnsafeTemperatureEvent::UnsafeTemperatureEvent(Actor& a) : ScheduledEventWithPercent(a.getSimulation(), a.m_species.stepsTillDieInUnsafeTemperature), m_actor(a) { }
+void UnsafeTemperatureEvent::execute() { m_actor.die(CauseOfDeath::temperature); }
+void UnsafeTemperatureEvent::clearReferences() { m_actor.m_needsSafeTemperature.m_event.clearPointer(); }
+ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(Actor& a) : m_actor(a), m_event(a.getEventSchedule()), m_objectiveExists(false) { }
 void ActorNeedsSafeTemperature::onChange()
 {
 	m_actor.m_canGrow.updateGrowingStatus();
-	if(!m_objectiveExists && !isSafeAtCurrentLocation())
+	if(!isSafeAtCurrentLocation())
 	{
-		m_objectiveExists = true;
-		std::unique_ptr<Objective> objective = std::make_unique<GetToSafeTemperatureObjective>(m_actor);
-		m_actor.m_hasObjectives.addNeed(std::move(objective));
+		if(!m_objectiveExists)
+		{
+			m_objectiveExists = true;
+			std::unique_ptr<Objective> objective = std::make_unique<GetToSafeTemperatureObjective>(m_actor);
+			m_actor.m_hasObjectives.addNeed(std::move(objective));
+		}
+		if(!m_event.exists())
+			m_event.schedule(m_actor);
 	}
+	else if(m_event.exists())
+		m_event.unschedule();
 }
 bool ActorNeedsSafeTemperature::isSafe(uint32_t temperature) const
 {

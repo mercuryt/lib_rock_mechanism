@@ -180,4 +180,9 @@ namespace path
 		{
 			return getForActorFromLocationToPredicateReturnEndOnly(actor, *actor.m_location, predicate, maxRange);
 		}
+	inline std::vector<Block*> getForActorToExitArea(const Actor& actor, const uint32_t& maxRange = UINT32_MAX)
+	{
+		auto condition = [&](Block& block) { return block.m_isEdge; };
+		return path::getForActorToPredicate(actor, condition, maxRange);
+	}
 }

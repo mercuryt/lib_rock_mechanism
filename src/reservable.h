@@ -58,6 +58,13 @@ public:
 		assert(!canReserve.m_reservables.contains(this));
 		canReserve.m_reservables.insert(this);
 	}
+	void maybeReservedFor(CanReserve& canReserve, const uint32_t quantity)
+	{
+		if(canReserve.m_faction == nullptr)
+			return;
+		if(!m_canReserves.contains(&canReserve))
+			reserveFor(canReserve, quantity);
+	}
 	void clearReservationFor(CanReserve& canReserve)
        	{
 		if(canReserve.m_faction == nullptr)

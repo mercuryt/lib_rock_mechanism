@@ -98,10 +98,11 @@ void GivePlantsFluidObjective::execute()
 		else
 			if(m_actor.m_location->m_hasDesignations.contains(*m_actor.getFaction(), BlockDesignation::GivePlantFluid))
 			{
+				assert(m_actor.m_location->m_hasPlant.exists());
 				Plant& plant = m_actor.m_location->m_hasPlant.get();
-				if(m_actor.m_canPickup.isCarryingFluidType(m_plant->m_plantSpecies.fluidType))
+				if(m_actor.m_canPickup.isCarryingFluidType(plant.m_plantSpecies.fluidType))
 				{
-					// Standing in same block as a plant which needs fluid.
+					// Standing in same block as a plant which needs fluid of type which is currently being carried.
 					m_plant = &plant;
 					execute();
 				}
@@ -154,6 +155,11 @@ void GivePlantsFluidObjective::execute()
 			m_threadedTask.create(*this);
 		}
 	}
+}
+void GivePlantsFluidObjective::cancel()
+{
+	m_event.maybeUnschedule();
+	m_threadedTask.maybeCancel();
 }
 bool GivePlantsFluidObjective::canFillAt(const Block& block) const
 {

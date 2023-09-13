@@ -2,6 +2,7 @@
 
 #include "objective.h"
 #include "threadedTask.hpp"
+#include "findsPath.h"
 
 class Actor;
 class Block;
@@ -15,14 +16,16 @@ class WanderObjective final : public Objective
 public:
 	WanderObjective(Actor& a);
 	void execute();
-	void cancel() { }
-	std::string name() { return "wander"; }
+	void cancel() { m_threadedTask.maybeCancel(); }
+	void delay() { cancel(); }
+	std::string name() const { return "wander"; }
+	ObjectiveId getObjectiveId() const { return ObjectiveId::Wander; }
 	friend class WanderThreadedTask;
 };
 class WanderThreadedTask final : public ThreadedTask
 {
 	WanderObjective& m_objective;
-	std::vector<Block*> m_route;
+	FindsPath m_findsPath;
 public:
 	WanderThreadedTask(WanderObjective& o);
 	void readStep();

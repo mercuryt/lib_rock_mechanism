@@ -133,6 +133,7 @@ namespace Config
 	inline constexpr uint32_t baseMoveCost = 50;
 	inline constexpr uint32_t goUpMoveCost = 100;
 	inline constexpr uint32_t wanderDistanceModifier = 8;
+	inline constexpr Step stepsToDelayBeforeTryingAgainToCompleteAnObjective = 2000;
 	
 	inline uint32_t convertBodyPartVolumeToArea(uint32_t volume){ return sqrt(volume); }
 }

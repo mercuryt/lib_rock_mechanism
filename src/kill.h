@@ -26,6 +26,8 @@ class KillObjective final : public Objective
 public:
 	KillObjective(Actor& k, Actor& t) : Objective(Config::killPriority), m_killer(k), m_target(t), m_getIntoRangeAndLineOfSightThreadedTask(k.getThreadedTaskEngine()) { }
 	void execute();
-	void cancel(){}
-	std::string name() { return "kill"; }
+	void cancel() { m_getIntoRangeAndLineOfSightThreadedTask.maybeCancel(); }
+	void delay() { cancel(); }
+	std::string name() const { return "kill"; }
+	ObjectiveId getObjectiveId() const { return ObjectiveId::Kill; }
 };

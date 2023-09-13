@@ -27,6 +27,7 @@ public:
 	bool m_isUnderground;
 	bool isAdjacentTo(HasShape& other) const;
 	bool isAdjacentTo(Block& block) const;
+	bool predicateForAnyOccupiedBlock(std::function<bool(const Block&)> predicate);
 	void setStatic(bool isTrue);
 	std::unordered_set<Block*> getOccupiedAndAdjacent();
 	std::unordered_set<Block*> getAdjacentBlocks();

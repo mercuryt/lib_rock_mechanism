@@ -12,6 +12,7 @@ class FindsPath
 public:
 	void pathToBlock(const Actor& actor, const Block& block, bool detour = false);
 	void pathToPredicate(const Actor& actor, std::function<bool(const Block&)> predicate, bool detour = false);
+	void pathToAreaEdge(const Actor& actor, bool detour = false);
 	void cacheMoveCosts(const Actor& actor);
 	std::vector<Block*>& getPath() { return m_route; }
 	bool found() const { return !m_route.empty(); }
