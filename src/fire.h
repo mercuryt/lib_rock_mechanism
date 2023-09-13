@@ -3,6 +3,8 @@
 #include "temperature.h"
 #include "eventSchedule.hpp"
 #include <unordered_map>
+#include <list>
+#include <algorithm>
 
 enum class FireStage{Smouldering, Burining, Flaming};
 
@@ -32,13 +34,19 @@ public:
 	TemperatureSource m_temperatureSource;
 
 	Fire(Block& l, const MaterialType& mt);
-	bool operator==(const Fire& fire) const { return &fire == this; }
+	[[nodiscard]] bool operator==(const Fire& fire) const { return &fire == this; }
 };
 // To be used by Area.
 class HasFires final
 {
-	std::unordered_map<Block*, std::list<Fire>> m_fires;
+	std::unordered_map<Block*, std::unordered_map<const MaterialType*, Fire>> m_fires;
 public:
 	void ignite(Block& block, const MaterialType& materialType);
 	void extinguish(Fire& fire);
+	// For testing.
+	[[maybe_unused, nodiscard]] bool containsFireAt(Fire& fire, Block& block) const
+	{ 
+		assert(m_fires.contains(&block));
+		return m_fires.at(&block).contains(&fire.m_materialType);
+	}
 };

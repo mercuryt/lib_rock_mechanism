@@ -64,7 +64,7 @@ public:
 	std::unordered_set<Actor*>* m_locationBucket;
 	// Store the visionCuboid this block belongs to.
 	VisionCuboid* m_visionCuboid;
-	std::unique_ptr<Fire> m_fire;
+	std::unordered_map<const MaterialType* , Fire>* m_fires;
 	bool m_exposedToSky;
 	bool m_underground;
 	bool m_isEdge;

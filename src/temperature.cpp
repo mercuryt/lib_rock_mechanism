@@ -130,8 +130,8 @@ void BlockHasTemperature::updateDelta(int32_t deltaDelta)
 	if(m_block.isSolid())
 	{
 		auto& material = m_block.getSolidMaterial();
-		if(material.burnData != nullptr && material.burnData->ignitionTemperature <= temperature && m_block.m_fire == nullptr)
-			m_block.m_fire = std::make_unique<Fire>(m_block, m_block.getSolidMaterial());
+		if(material.burnData != nullptr && material.burnData->ignitionTemperature <= temperature && (m_block.m_fires == nullptr || !m_block.m_fires->contains(&material)))
+			m_block.m_area->m_fires.ignite(m_block, material);
 		else if(material.meltingPoint != 0 && material.meltingPoint <= temperature)
 			m_block.m_blockHasTemperature.melt();
 	}

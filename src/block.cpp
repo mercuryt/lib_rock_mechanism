@@ -16,7 +16,7 @@
 #include <algorithm>
 #include <cassert>
 
-Block::Block() : m_solid(nullptr), m_totalFluidVolume(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr), m_exposedToSky(true), m_underground(false), m_outdoors(true), m_hasShapes(*this), m_reservable(1), m_hasPlant(*this), m_hasBlockFeatures(*this), m_hasActors(*this), m_hasItems(*this), m_isPartOfStockPile(*this), m_isPartOfFarmField(*this), m_blockHasTemperature(*this) {}
+Block::Block() : m_solid(nullptr), m_totalFluidVolume(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr), m_fires(nullptr), m_exposedToSky(true), m_underground(false), m_outdoors(true), m_hasShapes(*this), m_reservable(1), m_hasPlant(*this), m_hasBlockFeatures(*this), m_hasActors(*this), m_hasItems(*this), m_isPartOfStockPile(*this), m_isPartOfFarmField(*this), m_blockHasTemperature(*this) {}
 void Block::setup(Area& a, uint32_t ax, uint32_t ay, uint32_t az)
 {
 	m_area=&a;

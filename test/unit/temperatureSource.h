@@ -24,20 +24,45 @@ TEST_CASE("temperature")
 		uint32_t temperatureBeforeHeatSource = origin.m_blockHasTemperature.get();
 		area.m_areaHasTemperature.addTemperatureSource(origin, 1000);
 		area.m_areaHasTemperature.applyDeltas();
-		CHECK(origin.m_blockHasTemperature.get() == temperatureBeforeHeatSource + 1000);
-		CHECK(b1.m_blockHasTemperature.get() == temperatureBeforeHeatSource + 1000);
-		CHECK(b2.m_blockHasTemperature.get() == 367);
-		CHECK(b3.m_blockHasTemperature.get() == temperatureBeforeHeatSource);
-		CHECK(toBurn.m_blockHasTemperature.get() == temperatureBeforeHeatSource + 1000);
-		CHECK(toNotBurn.m_blockHasTemperature.get() == temperatureBeforeHeatSource + 1000);
-		CHECK(toBurn.m_fire);
+		REQUIRE(origin.m_blockHasTemperature.get() == temperatureBeforeHeatSource + 1000);
+		REQUIRE(b1.m_blockHasTemperature.get() == temperatureBeforeHeatSource + 1000);
+		REQUIRE(b2.m_blockHasTemperature.get() == 367);
+		REQUIRE(b3.m_blockHasTemperature.get() == temperatureBeforeHeatSource);
+		REQUIRE(toBurn.m_blockHasTemperature.get() == temperatureBeforeHeatSource + 1000);
+		REQUIRE(toNotBurn.m_blockHasTemperature.get() == temperatureBeforeHeatSource + 1000);
+		REQUIRE(toBurn.m_fires != nullptr);
 		// Fire exists but the new deltas it has created have not been applied
-		CHECK(toBurn.m_blockHasTemperature.get() == temperatureBeforeHeatSource + 1000);
-		CHECK(!toNotBurn.m_fire);
-		CHECK(toNotBurn.m_blockHasTemperature.get() == temperatureBeforeHeatSource + 1000);
-		CHECK(!simulation.m_eventSchedule.m_data.empty());
+		REQUIRE(toBurn.m_blockHasTemperature.get() == temperatureBeforeHeatSource + 1000);
+		REQUIRE(toNotBurn.m_fires == nullptr);
+		REQUIRE(toNotBurn.m_blockHasTemperature.get() == temperatureBeforeHeatSource + 1000);
+		REQUIRE(!simulation.m_eventSchedule.m_data.empty());
 		area.m_areaHasTemperature.applyDeltas();
-		CHECK(toBurn.m_blockHasTemperature.get() > temperatureBeforeHeatSource + 1000);
-		CHECK(toNotBurn.m_blockHasTemperature.get() > temperatureBeforeHeatSource + 1000);
+		REQUIRE(toBurn.m_blockHasTemperature.get() > temperatureBeforeHeatSource + 1000);
+		REQUIRE(toNotBurn.m_blockHasTemperature.get() > temperatureBeforeHeatSource + 1000);
+	}
+	SUBCASE("burnt to ash")
+	{
+		Block& origin = area.m_blocks[5][5][5];
+		Block& toBurn = area.m_blocks[6][5][5];
+		auto& wood = MaterialType::byName("poplar wood");
+		toBurn.setSolid(wood);
+		area.m_areaHasTemperature.addTemperatureSource(origin, 1000);
+		simulation.doStep();
+		REQUIRE(toBurn.m_fires != nullptr);
+		Fire& fire = toBurn.m_fires->at(&wood);
+		REQUIRE(area.m_fires.containsFireAt(fire, toBurn));
+		REQUIRE(fire.m_stage == FireStage::Smouldering);
+		simulation.fastForward(wood.burnData->burnStageDuration - 1);
+		REQUIRE(fire.m_stage == FireStage::Burining);
+		simulation.fastForward(wood.burnData->burnStageDuration);
+		REQUIRE(fire.m_stage == FireStage::Flaming);
+		simulation.fastForward(wood.burnData->flameStageDuration);
+		REQUIRE(fire.m_stage == FireStage::Burining);
+		REQUIRE(fire.m_hasPeaked == true);
+		simulation.fastForward(wood.burnData->burnStageDuration * Config::fireRampDownPhaseDurationFraction);
+		REQUIRE(fire.m_stage == FireStage::Smouldering);
+		simulation.fastForward(wood.burnData->burnStageDuration * Config::fireRampDownPhaseDurationFraction);
+		REQUIRE(toBurn.m_fires == nullptr);
+		REQUIRE(!toBurn.isSolid());
 	}
 }

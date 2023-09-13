@@ -17,7 +17,6 @@ void FireEvent::execute()
 		int32_t temperature = m_fire.m_materialType.burnData->flameTemperature;
 		m_fire.m_temperatureSource.setTemperature(temperature);
 		m_fire.m_event.schedule(m_fire.m_materialType.burnData->flameStageDuration, m_fire);
-		//TODO: schedule event to turn construction / solid into wreckage.
 	}
 	else if(m_fire.m_stage == FireStage::Flaming)
 	{
@@ -27,6 +26,11 @@ void FireEvent::execute()
 		m_fire.m_temperatureSource.setTemperature(temperature);
 		uint32_t delay = m_fire.m_materialType.burnData->burnStageDuration * Config::fireRampDownPhaseDurationFraction;
 		m_fire.m_event.schedule(delay, m_fire);
+		if(m_fire.m_location.isSolid() && m_fire.m_location.getSolidMaterial() == m_fire.m_materialType)
+		{
+			m_fire.m_location.setNotSolid();
+			//TODO: create debris / wreckage?
+		}
 	}
 	else if(m_fire.m_hasPeaked && m_fire.m_stage == FireStage::Burining)
 	{
@@ -39,7 +43,7 @@ void FireEvent::execute()
 	else if(m_fire.m_hasPeaked && m_fire.m_stage == FireStage::Smouldering)
 	{
 		// Clear the event pointer so ~Fire doesn't try to cancel the event which is currently executing.
-		m_fire.m_event.clearPointer();
+		//m_fire.m_event.clearPointer();
 		// Destroy m_fire by relasing the unique pointer in m_location.
 		// Implicitly removes the influence of m_fire.m_temperatureSource.
 		m_fire.m_location.m_area->m_fires.extinguish(m_fire);
@@ -53,12 +57,17 @@ Fire::Fire(Block& l, const MaterialType& mt) : m_location(l), m_materialType(mt)
 void HasFires::ignite(Block& block, const MaterialType& materialType)
 {
 	if(m_fires.contains(&block))
-		assert(std::ranges::find(m_fires.at(&block), materialType, [](Fire& fire){ return fire.m_materialType; }) == m_fires.at(&block).end());
-	m_fires[&block].emplace_back(block, materialType);
+		assert(!m_fires.at(&block).contains(&materialType));
+	m_fires[&block].try_emplace(&materialType, block, materialType);
+	if(block.m_fires == nullptr)
+		block.m_fires = &m_fires.at(&block);
 }
 void HasFires::extinguish(Fire& fire)
 {
 	assert(m_fires.contains(&fire.m_location));
+	Block& block = fire.m_location;
 	fire.m_temperatureSource.unapply();
-	m_fires.at(&fire.m_location).remove(fire);
+	m_fires.at(&block).erase(&fire.m_materialType);
+	if(m_fires.at(&block).empty())
+		block.m_fires = nullptr;
 }
