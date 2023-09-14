@@ -71,6 +71,13 @@ void Actor::wait(Step duration)
 {
 	m_hasObjectives.addTaskToStart(std::make_unique<WaitObjective>(*this, duration));
 }
+void Actor::takeHit(Hit& hit, BodyPart& bodyPart)
+{
+	m_equipmentSet.modifyImpact(hit, bodyPart.bodyPartType);
+	m_body.getHitDepth(hit, bodyPart);
+	if(hit.depth != 0)
+		m_body.addWound(bodyPart, hit);
+}
 uint32_t Actor::getMass() const
 {
 	return m_attributes.getMass() + m_equipmentSet.getMass() + m_canPickup.getMass();

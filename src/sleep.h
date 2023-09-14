@@ -28,6 +28,8 @@ public:
 	MustSleep(Actor& a);
 	void tired();
 	void sleep();
+	void passout(Step duration);
+	void sleep(Step duration, bool force = false);
 	void wakeUp();
 	void makeSleepObjective();
 	void wakeUpEarly();
@@ -46,8 +48,9 @@ public:
 class SleepEvent final : public ScheduledEventWithPercent
 {
 	MustSleep& m_needsSleep;
+	bool m_force;
 public:
-	SleepEvent(const Step delay, MustSleep& ns);
+	SleepEvent(const Step delay, MustSleep& ns, bool force);
 	void execute();
 	void clearReferences();
 };

@@ -11,6 +11,7 @@
 #include <vector>
 #include <utility>
 
+// For example: 'left arm', 'head', etc.
 struct BodyPartType final
 {
 	const std::string name;
@@ -28,6 +29,7 @@ struct BodyPartType final
 		return *found;
 	}
 };
+// For example biped, quadraped, bird, etc.
 struct BodyType final
 {
 	const std::string name;
@@ -52,7 +54,7 @@ class BleedEvent;
 class WoundsCloseEvent;
 struct Wound final
 {
-	const WoundType& woundType;
+	const WoundType woundType;
 	BodyPart& bodyPart;
 	Hit hit;
 	uint32_t bleedVolumeRate;
@@ -60,7 +62,7 @@ struct Wound final
 	uint32_t maxPercentTemporaryImpairment;
 	uint32_t maxPercentPermanantImpairment;
 	HasScheduledEvent<WoundHealEvent> healEvent;
-	Wound(Actor& a, const WoundType& wt, BodyPart& bp, Hit h, uint32_t bvr, uint32_t ph = 0);
+	Wound(Actor& a, const WoundType wt, BodyPart& bp, Hit h, uint32_t bvr, uint32_t ph = 0);
 	bool operator==(const Wound& other) const { return &other == this; }
 	uint32_t getPercentHealed() const;
 	uint32_t impairPercent() const;
@@ -72,6 +74,10 @@ struct BodyPart final
 	std::list<Wound> wounds;
 	BodyPart(const BodyPartType& bpt, const MaterialType& mt) : bodyPartType(bpt), materialType(mt) {}
 };
+/*
+ * Body handles reciving wounds, bleeding, healing, temporary and permanant disability.
+ * Bleeding happens at a rate of 1 unit of volume per bleed event, with the interval determined by the sum of Wound::bleedVolumeRate.
+ */
 class Body final
 {
 	Actor& m_actor;
@@ -89,7 +95,7 @@ public:
 	BodyPart& pickABodyPartByVolume();
 	// Armor has already been applied, calculate hit depth.
 	void getHitDepth(Hit& hit, const BodyPart& bodyPart);
-	Wound& addWound(const WoundType& woundType, BodyPart& bodyPart, const Hit& hit);
+	Wound& addWound(BodyPart& bodyPart, Hit& hit);
 	void healWound(Wound& wound);
 	void doctorWound(Wound& wound, uint32_t healSpeedPercentageChange);
 	void woundsClose();
@@ -106,6 +112,7 @@ public:
 	uint32_t getVolume() const;
 	bool isInjured() const;
 	uint32_t getStepsTillBleedToDeath() const;
+	uint32_t getStepsTillWoundsClose() const { return m_woundsCloseEvent.remainingSteps(); }
 	friend class WoundHealEvent;
 	friend class BleedEvent;
 	friend class WoundsCloseEvent;

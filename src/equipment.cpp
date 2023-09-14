@@ -39,7 +39,7 @@ void EquipmentSet::removeEquipment(Item& equipment)
 	if(equipment.m_itemType.wearableData != nullptr)
 		m_wearable.erase(&equipment);
 }
-void EquipmentSet::modifyImpact(Hit& hit, const MaterialType& hitMaterialType, const BodyPartType& bodyPartType)
+void EquipmentSet::modifyImpact(Hit& hit, const BodyPartType& bodyPartType)
 {
 	// Wearable priority queue is sorted by layers so we start at the outside and pierce inwards.
 	for(Item* equipment : m_wearable)
@@ -47,7 +47,7 @@ void EquipmentSet::modifyImpact(Hit& hit, const MaterialType& hitMaterialType, c
 		auto& wearableData = *equipment->m_itemType.wearableData;
 		if(std::ranges::find(wearableData.bodyPartsCovered, &bodyPartType) != wearableData.bodyPartsCovered.end() && randomUtil::percentChance(wearableData.percentCoverage))
 		{
-			uint32_t pierceScore = (hit.force / hit.area) * hitMaterialType.hardness * Config::pierceModifier;
+			uint32_t pierceScore = (hit.force / hit.area) * hit.materialType.hardness * Config::pierceModifier;
 			uint32_t defenseScore = wearableData.defenseScore * equipment->m_materialType.hardness;
 			if(pierceScore < defenseScore)
 			{

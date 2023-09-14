@@ -73,6 +73,7 @@ public:
 	void doVision(std::unordered_set<Actor*>& actors);
 	void leaveArea();
 	void wait(Step duration);
+	void takeHit(Hit& hit, BodyPart& bodyPart);
 	// May be null.
 	void setFaction(const Faction* faction) { m_faction = faction; m_canReserve.setFaction(faction); }
 	bool isItem() const { return false; }

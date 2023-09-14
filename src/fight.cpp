@@ -20,11 +20,8 @@ void CanFight::attack(Actor& target)
 		const Attack& attack = getAttackForCombatScoreDifference(attackerCombatScore - targetCombatScore);
 		uint32_t attackForce = attack.attackType->baseForce + (m_actor.m_attributes.getStrength() * Config::unitsOfAttackForcePerUnitOfStrength);
 		BodyPart& bodyPart = target.m_body.pickABodyPartByVolume();
-		Hit hit(attack.attackType->area, attackForce, *attack.materialType);
-		// hit is an in-out paramater.
-		target.m_body.getHitDepth(hit, bodyPart);
-		target.m_equipmentSet.modifyImpact(hit, *attack.materialType, bodyPart.bodyPartType);
-		target.m_body.addWound(attack.attackType->woundType, bodyPart, hit);
+		Hit hit(attack.attackType->area, attackForce, *attack.materialType, attack.attackType->woundType);
+		target.takeHit(hit, bodyPart);
 	}
 	//TODO: Skill growth.
 }

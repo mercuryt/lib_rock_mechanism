@@ -3,7 +3,7 @@
 #include "path.h"
 #include <cassert>
 // Sleep Event.
-SleepEvent::SleepEvent(Step step, MustSleep& ns) : ScheduledEventWithPercent(ns.m_actor.getSimulation(), step), m_needsSleep(ns) { }
+SleepEvent::SleepEvent(Step step, MustSleep& ns, bool f) : ScheduledEventWithPercent(ns.m_actor.getSimulation(), step), m_needsSleep(ns), m_force(f) { }
 void SleepEvent::execute(){ m_needsSleep.wakeUp(); }
 void SleepEvent::clearReferences(){ m_needsSleep.m_sleepEvent.clearPointer(); }
 // Tired Event.
@@ -146,13 +146,17 @@ void MustSleep::tired()
 		makeSleepObjective();
 	}
 }
-void MustSleep::sleep()
+// Voulentary sleep.
+void MustSleep::sleep() { sleep(m_actor.m_species.stepsSleepDuration); }
+// Involuntary sleep.
+void MustSleep::passout(Step duration) { sleep(duration, true); }
+void MustSleep::sleep(Step duration, bool force)
 {
 	assert(m_isAwake);
 	m_actor.m_canMove.clearAllEventsAndTasks();
 	m_isAwake = false;
 	m_tiredEvent.maybeUnschedule();
-	m_sleepEvent.schedule(m_actor.m_species.stepsSleepDuration, *this);
+	m_sleepEvent.schedule(duration, *this, force);
 	if(m_objective != nullptr)
 		m_objective->m_threadedTask.maybeCancel();
 }

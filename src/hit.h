@@ -5,6 +5,7 @@
  */
 
 #include "materialType.h"
+#include "woundType.h"
 
 struct Hit
 {
@@ -12,5 +13,6 @@ struct Hit
 	uint32_t force;
 	uint32_t depth;
 	const MaterialType& materialType;
-	Hit(uint32_t a, uint32_t f, const MaterialType& mt) : area(a), force(f), materialType(mt) {}
+	const WoundType woundType;
+	Hit(uint32_t a, uint32_t f, const MaterialType& mt, const WoundType wt) : area(a), force(f), depth(0), materialType(mt), woundType(wt) {}
 };

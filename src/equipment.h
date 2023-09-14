@@ -26,7 +26,7 @@ public:
 	EquipmentSet(Actor& a) : m_actor(a), m_mass(0) { }
 	void addEquipment(Item& equipment);
 	void removeEquipment(Item& equipment);
-	void modifyImpact(Hit& hit, const MaterialType& materialType, const BodyPartType& bodyPartType);
+	void modifyImpact(Hit& hit, const BodyPartType& bodyPartType);
 	std::vector<Attack> getAttacks();
 	bool contains(Item& item) const { return m_equipments.contains(&item); }
 	const uint32_t& getMass() const;
