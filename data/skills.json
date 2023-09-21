@@ -1,5 +1,9 @@
 [
 	{
+		"name": "unarmed",
+		"xpPerLevelModifier": 3.0,
+		"level1Xp": 100
+	},{
 		"name": "sword",
 		"xpPerLevelModifier": 3.0,
 		"level1Xp": 100

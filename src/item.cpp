@@ -21,7 +21,7 @@ void Item::exit()
 	assert(m_location != nullptr);
 	m_location->m_hasItems.remove(*this);
 }
-void Item::setTemperature(uint32_t temperature)
+void Item::setTemperature(Temperature temperature)
 {
 	//TODO
 	(void)temperature;
@@ -47,7 +47,7 @@ Item::Item(uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t q, C
 	m_mass = m_volume * m_materialType.density;
 }
 // NonGeneric.
-Item::Item(uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t qual, uint32_t pw, CraftJob* cj):
+Item::Item(uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t qual, Percent pw, CraftJob* cj):
 	HasShape(it.shape, true), m_id(i), m_itemType(it), m_materialType(mt), m_quantity(1), m_reservable(1), m_quality(qual), m_percentWear(pw), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this)
 {
 	assert(!m_itemType.generic);
@@ -55,7 +55,7 @@ Item::Item(uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t qual
 	m_volume = m_itemType.volume;
 }
 // Named.
-Item::Item(uint32_t i, const ItemType& it, const MaterialType& mt, std::string n, uint32_t qual, uint32_t pw, CraftJob* cj):
+Item::Item(uint32_t i, const ItemType& it, const MaterialType& mt, std::string n, uint32_t qual, Percent pw, CraftJob* cj):
 	HasShape(it.shape, true), m_id(i), m_itemType(it), m_materialType(mt), m_quantity(1), m_reservable(1), m_name(n), m_quality(qual), m_percentWear(pw), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this)
 {
 	assert(!m_itemType.generic);
@@ -73,7 +73,7 @@ void ItemHasCargo::add(HasShape& hasShape)
 	if(hasShape.isItem())
 		m_items.push_back(static_cast<Item*>(&hasShape));
 }
-void ItemHasCargo::add(const FluidType& fluidType, uint32_t volume)
+void ItemHasCargo::add(const FluidType& fluidType, Volume volume)
 {
 	assert(m_fluidVolume + volume <= m_item.m_itemType.internalVolume);
 	if(m_fluidType == nullptr)
@@ -88,7 +88,7 @@ void ItemHasCargo::add(const FluidType& fluidType, uint32_t volume)
 	}
 	m_mass += volume *= fluidType.density;
 }
-void ItemHasCargo::remove(const FluidType& fluidType, uint32_t volume)
+void ItemHasCargo::remove(const FluidType& fluidType, Volume volume)
 {
 	assert(m_fluidType == &fluidType);
 	assert(m_fluidVolume >= volume);
@@ -96,7 +96,7 @@ void ItemHasCargo::remove(const FluidType& fluidType, uint32_t volume)
 	if(m_fluidVolume == 0)
 		m_fluidType = nullptr;
 }
-void ItemHasCargo::removeFluidVolume(uint32_t volume) { remove(*m_fluidType, volume); }
+void ItemHasCargo::removeFluidVolume(Volume volume) { remove(*m_fluidType, volume); }
 void ItemHasCargo::remove(HasShape& hasShape)
 {
 	assert(m_volume >= hasShape.getVolume());
@@ -205,7 +205,7 @@ void BlockHasItems::remove(const ItemType& itemType, const MaterialType& materia
 		m_block.m_hasShapes.removeQuantity(**found, quantity);
 	}
 }
-void BlockHasItems::setTemperature(uint32_t temperature)
+void BlockHasItems::setTemperature(Temperature temperature)
 {
 	for(Item* item : m_items)
 		item->setTemperature(temperature);

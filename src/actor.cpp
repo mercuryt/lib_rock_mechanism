@@ -6,8 +6,8 @@
 
 #include <algorithm>
 
-Actor::Actor(Simulation& simulation, uint32_t id, const std::wstring name, const AnimalSpecies& species, uint32_t percentGrown, Faction* faction, Attributes attributes) :
-	HasShape(species.shapeForPercentGrown(percentGrown), false), m_simulation(simulation), m_faction(faction), m_id(id), m_name(name), m_species(species), m_alive(true), m_body(*this), m_project(nullptr), m_attributes(attributes), m_equipmentSet(*this), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canPickup(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_canReserve(*faction), m_reservable(1), m_stamina(*this), m_visionRange(species.visionRange) { }
+Actor::Actor(Simulation& simulation, uint32_t id, const std::wstring& name, const AnimalSpecies& species, Percent percentGrown, Faction* faction, Attributes attributes) :
+	HasShape(species.shapeForPercentGrown(percentGrown), false), m_simulation(simulation), m_faction(faction), m_id(id), m_name(name), m_species(species), m_alive(true), m_body(*this), m_project(nullptr), m_attributes(attributes), m_equipmentSet(*this), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canPickup(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_canReserve(faction), m_reservable(1), m_stamina(*this), m_visionRange(species.visionRange) { }
 void Actor::setLocation(Block& block)
 {
 	assert(&block != HasShape::m_location);
@@ -30,7 +30,7 @@ void Actor::exit()
 	m_location->m_hasActors.exit(*this);
 }
 
-void Actor::removeMassFromCorpse(uint32_t mass)
+void Actor::removeMassFromCorpse(Mass mass)
 {
 	assert(!m_alive);
 	assert(mass <= m_attributes.getMass());
@@ -49,7 +49,7 @@ void Actor::die(CauseOfDeath causeOfDeath)
 	m_mustSleep.onDeath();
 	m_location->m_area->m_hasActors.remove(*this);
 }
-void Actor::passout(uint32_t duration)
+void Actor::passout(Step duration)
 {
 	//TODO
 	(void)duration;
@@ -78,11 +78,11 @@ void Actor::takeHit(Hit& hit, BodyPart& bodyPart)
 	if(hit.depth != 0)
 		m_body.addWound(bodyPart, hit);
 }
-uint32_t Actor::getMass() const
+Mass Actor::getMass() const
 {
 	return m_attributes.getMass() + m_equipmentSet.getMass() + m_canPickup.getMass();
 }
-uint32_t Actor::getVolume() const
+Volume Actor::getVolume() const
 {
 	return m_body.getVolume();
 }
@@ -100,7 +100,7 @@ bool ActorQuery::operator()(Actor& other) const
 	return true;
 }
 ActorQuery ActorQuery::makeFor(Actor& a) { return ActorQuery(a); }
-ActorQuery ActorQuery::makeForCarryWeight(uint32_t cw) { return ActorQuery(cw, false, false); }
+ActorQuery ActorQuery::makeForCarryWeight(Mass cw) { return ActorQuery(cw, false, false); }
 
 // To be used by block.
 void BlockHasActors::enter(Actor& actor)
@@ -127,7 +127,7 @@ void BlockHasActors::exit(Actor& actor)
 	std::erase(m_actors, &actor);
 	m_block.m_hasShapes.exit(actor);
 }
-void BlockHasActors::setTemperature(uint32_t temperature)
+void BlockHasActors::setTemperature(Temperature temperature)
 {
 	(void)temperature;
 	for(Actor* actor : m_actors)

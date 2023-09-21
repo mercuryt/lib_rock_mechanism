@@ -53,7 +53,7 @@ class StockPileProject final : public Project
 {
 	Item& m_item;
 public:
-	StockPileProject(const Faction& faction, Block& block, Item& item) : Project(faction, block, 1), m_item(item) { }
+	StockPileProject(const Faction* faction, Block& block, Item& item) : Project(faction, block, 1), m_item(item) { }
 	Step getDelay() const;
 	void onComplete();
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
@@ -114,7 +114,7 @@ public:
 	void removeItem(Item& item);
 	void setAvalable(StockPile& stockPile);
 	void setUnavalable(StockPile& stockPile);
-	void makeProject(Item& item, Block& destination, Actor& actor);
+	void makeProject(Item& item, Block& destination, StockPileObjective& objective);
 	void cancelProject(StockPileProject& project);
 	bool isAnyHaulingAvalableFor(const Actor& actor) const;
 	Item* getHaulableItemForAt(const Actor& actor, Block& block);

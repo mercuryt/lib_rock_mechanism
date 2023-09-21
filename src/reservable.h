@@ -17,7 +17,7 @@ class CanReserve final
 	std::unordered_set<Reservable*> m_reservables;
 	friend class Reservable;
 public:
-	CanReserve(const Faction& f) : m_faction(&f) { }
+	CanReserve(const Faction* f) : m_faction(f) { }
 	void clearAll();
 	void setFaction(const Faction* faction);
 	~CanReserve();
@@ -74,6 +74,11 @@ public:
 		eraseReservationFor(canReserve);
 		assert(canReserve.m_reservables.contains(this));
 		canReserve.m_reservables.erase(this);
+	}
+	void maybeClearReservationFor(CanReserve& canReserve)
+	{
+		if(canReserve.m_reservables.contains(this))
+			clearReservationFor(canReserve);
 	}
 	void setMaxReservations(const uint32_t mr) { m_maxReservations = mr; }
 	void updateFactionFor(CanReserve& canReserve, const Faction* oldFaction, const Faction* newFaction)

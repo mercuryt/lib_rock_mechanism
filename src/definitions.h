@@ -49,8 +49,8 @@ namespace definitions
 				data["name"].get<std::string>(),
 				data["viscosity"].get<std::uint32_t>(),
 				data["density"].get<std::uint32_t>(),
-				data["mistDuration"].get<std::uint32_t>(),
-				data["maxMistSpread"].get<std::uint32_t>()
+				data.contains("mistDuration") ? data["mistDuration"].get<Step>() : 0,
+				data.contains("mistDuration") ? data["maxMistSpread"].get<std::uint32_t>() : 0
 			);
 		}
 	}
@@ -91,8 +91,8 @@ namespace definitions
 			);
 			if(data.contains("burnData"))
 				materialType.burnData = &BurnData::data.emplace_back(
-						data["burnData"]["ignitionTemperature"].get<uint32_t>(),
-						data["burnData"]["flameTemperature"].get<uint32_t>(),
+						data["burnData"]["ignitionTemperature"].get<Temperature>(),
+						data["burnData"]["flameTemperature"].get<Temperature>(),
 						data["burnData"]["burnStageDuration"].get<Step>(),
 						data["burnData"]["flameStageDuration"].get<Step>()
 				);
@@ -135,7 +135,7 @@ namespace definitions
 		return AttackType(
 			data["name"].get<std::string>(),
 			data["area"].get<uint32_t>(),
-			data["baseForce"].get<uint32_t>(),
+			data["baseForce"].get<Force>(),
 			data["range"].get<uint32_t>(),
 			data["skillBonus"].get<uint32_t>(),
 			WoundCalculations::byName(data["woundType"].get<std::string>())
@@ -156,7 +156,7 @@ namespace definitions
 				shape,
 				volume,
 				data["generic"].get<bool>(),
-				data.contains("internalVolume") ? data["internalVolume"].get<uint32_t>() : 0 ,
+				data.contains("internalVolume") ? data["internalVolume"].get<Volume>() : 0 ,
 				data.contains("canHoldFluids") ? data["canHoldFluids"].get<bool>() : false,
 				data["value"].get<uint32_t>(),
 				data.contains("edibleForDrinkersOf") ? &FluidType::byName(data["edibleForDrinkersOf"].get<std::string>()) : nullptr,
@@ -179,7 +179,7 @@ namespace definitions
 			{
 				Json& wearable = data["wearableData"];
 				auto& wearableData = WearableData::data.emplace_back(
-					wearable["percentCoverage"].get<uint32_t>(),
+					wearable["percentCoverage"].get<Percent>(),
 					wearable["defenseScore"].get<uint32_t>(),
 					wearable["rigid"].get<bool>(),
 					wearable["layer"].get<uint32_t>(),
@@ -205,7 +205,7 @@ namespace definitions
 				materialType.spoilData.emplace_back(
 					MaterialType::byName(spoilData["materialType"].get<std::string>()),
 					ItemType::byName(spoilData["itemType"].get<std::string>()),
-					spoilData["chance"].get<uint32_t>(),
+					spoilData["chance"].get<double>(),
 					spoilData["min"].get<uint32_t>(),
 					spoilData["max"].get<uint32_t>()
 				);
@@ -221,18 +221,18 @@ namespace definitions
 			auto& plantSpecies = PlantSpecies::data.emplace_back(
 				data["name"].get<std::string>(),
 				data["annual"].get<bool>(),
-				data["maximumGrowingTemperature"].get<uint32_t>(),
-				data["minimumGrowingTemperature"].get<uint32_t>(),
+				data["maximumGrowingTemperature"].get<Temperature>(),
+				data["minimumGrowingTemperature"].get<Temperature>(),
 				data["daysTillDieFromTemperature"].get<uint16_t>() * Config::stepsPerDay,
 				data["daysNeedsFluidFrequency"].get<uint16_t>() * Config::stepsPerDay,
-				data["volumeFluidConsumed"].get<uint32_t>(),
+				data["volumeFluidConsumed"].get<Volume>(),
 				data["daysTillDieWithoutFluid"].get<uint16_t>() * Config::stepsPerDay,
 				data["daysTillFullyGrown"].get<uint16_t>() * Config::stepsPerDay,
 				data["daysTillFoliageGrowsFromZero"].get<uint16_t>() * Config::stepsPerDay,
 				data["growsInSunlight"].get<bool>(),
 				data["rootRangeMax"].get<uint32_t>(),
 				data["rootRangeMin"].get<uint32_t>(),
-				data["adultMass"].get<uint32_t>(),
+				data["adultMass"].get<Mass>(),
 				data["dayOfYearForSowStart"].get<uint16_t>(),
 				data["dayOfYearForSowEnd"].get<uint16_t>(),
 				FluidType::byName(data["fluidType"].get<std::string>())
@@ -260,9 +260,10 @@ namespace definitions
 			Json data = tryParse(file.path());
 			BodyPartType& bodyPartType = BodyPartType::data.emplace_back(
 				data["name"].get<std::string>(),
-				data["volume"].get<uint32_t>(),
+				data["volume"].get<Volume>(),
 				data["doesLocamotion"].get<bool>(),
-				data["doesManipulation"].get<bool>()
+				data["doesManipulation"].get<bool>(),
+				data.contains("vital")? data["vital"].get<bool>() : false
 			);
 			for(const Json& pair : data["attackTypesAndMaterials"])
 				bodyPartType.attackTypesAndMaterials.emplace_back(loadAttackType(pair.at(0)), &MaterialType::byName(pair.at(1)));
@@ -295,7 +296,7 @@ namespace definitions
 				data["strength"].get<std::array<uint32_t, 3>>(),
 				data["dextarity"].get<std::array<uint32_t, 3>>(),
 				data["agility"].get<std::array<uint32_t, 3>>(),
-				data["mass"].get<std::array<uint32_t, 3>>(),
+				data["mass"].get<std::array<Mass, 3>>(),
 				deathAge,
 				data["daysTillFullyGrown"].get<uint16_t>() * Config::stepsPerDay,
 				data["daysTillDieWithoutFood"].get<uint16_t>() * Config::stepsPerDay,
@@ -303,8 +304,8 @@ namespace definitions
 				data["daysTillDieWithoutFluid"].get<uint16_t>() * Config::stepsPerDay,
 				data["daysFluidDrinkFrequency"].get<uint16_t>() * Config::stepsPerDay,
 				data["daysTillDieInUnsafeTemperature"].get<uint16_t>() * Config::stepsPerDay,
-				data["minimumSafeTemperature"].get<uint32_t>(),
-				data["maximumSafeTemperature"].get<uint32_t>(),
+				data["minimumSafeTemperature"].get<Temperature>(),
+				data["maximumSafeTemperature"].get<Temperature>(),
 				data["daysSleepFrequency"].get<uint16_t>() * Config::stepsPerDay,
 				data["hoursTillSleepOveride"].get<uint8_t>() * Config::stepsPerHour,
 				data["hoursSleepDuration"].get<uint8_t>() * Config::stepsPerHour,

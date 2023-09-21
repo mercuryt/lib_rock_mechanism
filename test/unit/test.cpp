@@ -20,6 +20,7 @@
 #include "farmFields.h"
 #include "basicNeeds.h"
 #include "wound.h"
+#include "haul.h"
 
 int main(int argc, char** argv) {
     doctest::Context context;
@@ -30,7 +31,10 @@ int main(int argc, char** argv) {
     // overrides
     context.setOption("no-breaks", false);             // don't break in the debugger when assertions fail
 
+    // Config must be loaded before definitions.
+    Config::load();
     definitions::load();
+
     int res = context.run(); // run
 
     if(context.shouldExit()) // important - query flags (and --exit) rely on the user doing this

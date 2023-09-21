@@ -26,7 +26,7 @@ void StockPileThreadedTask::writeStep()
 	if(m_item == nullptr)
 		m_objective.m_actor.m_hasObjectives.cannotFulfillObjective(m_objective);
 	else
-		m_objective.m_actor.m_location->m_area->m_hasStockPiles.makeProject(*m_item, *m_destination, m_objective.m_actor);
+		m_objective.m_actor.m_location->m_area->m_hasStockPiles.makeProject(*m_item, *m_destination, m_objective);
 }
 void StockPileThreadedTask::clearReferences() { m_objective.m_threadedTask.clearPointer(); }
 bool StockPileObjectiveType::canBeAssigned(Actor& actor) const
@@ -193,7 +193,6 @@ void HasStockPiles::setAvalable(StockPile& stockPile)
 }
 void HasStockPiles::setUnavalable(StockPile& stockPile)
 {
-
 	for(ItemQuery& itemQuery : stockPile.m_queries)
 		m_availableStockPilesByItemType.at(itemQuery.m_itemType).erase(&stockPile);
 	for(Item* item : m_itemsWithDestinationsByStockPile.at(&stockPile))
@@ -210,13 +209,13 @@ void HasStockPiles::setUnavalable(StockPile& stockPile)
 	}
 	m_itemsWithDestinationsByStockPile.erase(&stockPile);
 }
-void HasStockPiles::makeProject(Item& item, Block& destination, Actor& actor)
+void HasStockPiles::makeProject(Item& item, Block& destination, StockPileObjective& objective)
 {
 	assert(!m_projectsByItem.contains(&item));
 	assert(!destination.m_isPartOfStockPile.hasStockPile());
-	assert(destination.m_isPartOfStockPile.getIsAvalable(*actor.getFaction()));
-	m_projectsByItem.try_emplace(&item, *actor.getFaction(), destination, item);
-	m_projectsByItem.at(&item).addWorker(actor);	
+	assert(destination.m_isPartOfStockPile.getIsAvalable(*objective.m_actor.getFaction()));
+	m_projectsByItem.try_emplace(&item, objective.m_actor.getFaction(), destination, item);
+	m_projectsByItem.at(&item).addWorker(objective.m_actor, objective);	
 }
 void HasStockPiles::cancelProject(StockPileProject& project)
 {

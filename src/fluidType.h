@@ -1,4 +1,7 @@
 #pragma once
+
+#include "types.h"
+
 #include <string>
 #include <cassert>
 #include <vector>
@@ -12,7 +15,7 @@ struct FluidType
 	const std::string name;
 	const uint32_t viscosity;
 	const uint32_t density;
-	const uint32_t mistDuration;
+	const Step mistDuration;
 	const uint32_t maxMistSpread;
 	const MaterialType* freezesInto;
 	// Infastructure.

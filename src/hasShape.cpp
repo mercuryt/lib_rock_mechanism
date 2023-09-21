@@ -25,7 +25,7 @@ bool HasShape::isAdjacentTo(HasShape& other) const
 	{
 		if(other.m_blocks.contains(block))
 			return true;
-		for(Block* adjacent : block->m_adjacentsVector)
+		for(Block* adjacent : block->getAdjacentWithEdgeAndCornerAdjacent())
 			if(other.m_blocks.contains(adjacent))
 				return true;
 	}
@@ -37,7 +37,7 @@ bool HasShape::isAdjacentTo(Block& location) const
 	{
 		if(block == &location)
 			return true;
-		for(Block* adjacent : block->m_adjacentsVector)
+		for(Block* adjacent : block->getAdjacentWithEdgeAndCornerAdjacent())
 			if(adjacent == &location)
 				return true;
 	}

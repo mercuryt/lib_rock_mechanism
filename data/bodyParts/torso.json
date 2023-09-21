@@ -3,5 +3,6 @@
 	"volume": 15,
 	"doesLocamotion": false,
 	"doesManipulation": false,
-	"piercedBoneIsFatalPercent": 20
+	"piercedBoneIsFatalPercent": 20,
+	"vital": true
 }

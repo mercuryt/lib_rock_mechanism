@@ -12,7 +12,7 @@ struct AnimalSpecies
 	const std::array<uint32_t, 3> strength;
 	const std::array<uint32_t, 3> dextarity;
 	const std::array<uint32_t, 3> agility;
-	const std::array<uint32_t, 3> mass;
+	const std::array<Mass, 3> mass;
 	const std::array<uint32_t, 2> deathAgeSteps;
 	const Step stepsTillFullyGrown;
 	const Step stepsTillDieWithoutFood;
@@ -20,8 +20,8 @@ struct AnimalSpecies
 	const Step stepsTillDieWithoutFluid;
 	const Step stepsFluidDrinkFreqency;
 	const Step stepsTillDieInUnsafeTemperature;
-	const uint32_t minimumSafeTemperature;
-	const uint32_t maximumSafeTemperature;
+	const Temperature minimumSafeTemperature;
+	const Temperature maximumSafeTemperature;
 	const Step stepsSleepFrequency;
 	const Step stepsTillSleepOveride;
 	const Step stepsSleepDuration;
@@ -36,7 +36,7 @@ struct AnimalSpecies
 	const FluidType& fluidType;
 	const BodyType& bodyType;
 	std::vector<const Shape*> shapes;
-	const Shape& shapeForPercentGrown(uint32_t percentGrown) const
+	const Shape& shapeForPercentGrown(Percent percentGrown) const
 	{
 		size_t index = util::scaleByPercentRange(0, shapes.size() - 1, percentGrown);
 		return *shapes.at(index);

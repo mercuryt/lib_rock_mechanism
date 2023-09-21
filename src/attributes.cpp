@@ -1,12 +1,12 @@
 #include "attributes.h"
 #include "util.h"
-void Attribute::setPercentGrown(uint32_t percentGrown)
+void Attribute::setPercentGrown(Percent percentGrown)
 {
 	value = util::scaleByPercent(
 			util::scaleByPercentRange(percentGrown, speciesNewbornValue, speciesAdultValue),
 			baseModifierPercent) + bonusOrPenalty;
 }
-void Attributes::updatePercentGrown(uint32_t percentGrown)
+void Attributes::updatePercentGrown(Percent percentGrown)
 {
 	strength.setPercentGrown(percentGrown);
 	dextarity.setPercentGrown(percentGrown);

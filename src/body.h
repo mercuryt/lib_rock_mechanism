@@ -15,9 +15,10 @@
 struct BodyPartType final
 {
 	const std::string name;
-	const uint32_t volume;
+	const Volume volume;
 	const bool doesLocamotion;
 	const bool doesManipulation;
+	const bool vital;
 	std::vector<std::pair<const AttackType, const MaterialType*>> attackTypesAndMaterials;
 	// Infastructure.
 	bool operator==(const BodyPartType& bodyPartType) const { return this == &bodyPartType; }
@@ -58,21 +59,22 @@ struct Wound final
 	BodyPart& bodyPart;
 	Hit hit;
 	uint32_t bleedVolumeRate;
-	uint32_t percentHealed;
-	uint32_t maxPercentTemporaryImpairment;
-	uint32_t maxPercentPermanantImpairment;
+	Percent percentHealed;
+	Percent maxPercentTemporaryImpairment;
+	Percent maxPercentPermanantImpairment;
 	HasScheduledEvent<WoundHealEvent> healEvent;
-	Wound(Actor& a, const WoundType wt, BodyPart& bp, Hit h, uint32_t bvr, uint32_t ph = 0);
+	Wound(Actor& a, const WoundType wt, BodyPart& bp, Hit h, uint32_t bvr, Percent ph = 0);
 	bool operator==(const Wound& other) const { return &other == this; }
-	uint32_t getPercentHealed() const;
-	uint32_t impairPercent() const;
+	Percent getPercentHealed() const;
+	Percent impairPercent() const;
 };
 struct BodyPart final
 {
 	const BodyPartType& bodyPartType;
 	const MaterialType& materialType;
 	std::list<Wound> wounds;
-	BodyPart(const BodyPartType& bpt, const MaterialType& mt) : bodyPartType(bpt), materialType(mt) {}
+	bool severed;
+	BodyPart(const BodyPartType& bpt, const MaterialType& mt) : bodyPartType(bpt), materialType(mt), severed(false) {}
 };
 /*
  * Body handles reciving wounds, bleeding, healing, temporary and permanant disability.
@@ -84,35 +86,44 @@ class Body final
 	std::list<BodyPart> m_bodyParts;
 	const MaterialType* m_materialType;
 	uint32_t m_totalVolume;
-	uint32_t m_impairMovePercent;
-	uint32_t m_impairManipulationPercent;
-	uint32_t m_volumeOfBlood;
-	uint32_t m_bleedVolumeRate;
+	Percent m_impairMovePercent;
+	Percent m_impairManipulationPercent;
+	Volume m_volumeOfBlood;
+	bool m_isBleeding;
 	HasScheduledEvent<BleedEvent> m_bleedEvent;
 	HasScheduledEvent<WoundsCloseEvent> m_woundsCloseEvent;
 public:
 	Body(Actor& a);
 	BodyPart& pickABodyPartByVolume();
+	BodyPart& pickABodyPartByType(const BodyPartType& bodyPartType);
 	// Armor has already been applied, calculate hit depth.
 	void getHitDepth(Hit& hit, const BodyPart& bodyPart);
 	Wound& addWound(BodyPart& bodyPart, Hit& hit);
 	void healWound(Wound& wound);
-	void doctorWound(Wound& wound, uint32_t healSpeedPercentageChange);
+	void doctorWound(Wound& wound, Percent healSpeedPercentageChange);
 	void woundsClose();
 	void bleed();
+	void sever(BodyPart& bodyPart, Wound& wound);
 	// TODO: periodicly update impairment as wounds heal.
 	void recalculateBleedAndImpairment();
 	Wound& getWoundWhichIsBleedingTheMost();
-	bool piercesSkin(Hit hit, const BodyPart& bodyPart) const;
-	bool piercesFat(Hit hit, const BodyPart& bodyPart) const;
-	bool piercesMuscle(Hit hit, const BodyPart& bodyPart) const;
-	bool piercesBone(Hit hit, const BodyPart& bodyPart) const;
-	uint32_t healthyBloodVolume() const;
-	std::vector<Attack> getAttacks() const;
-	uint32_t getVolume() const;
-	bool isInjured() const;
-	uint32_t getStepsTillBleedToDeath() const;
-	uint32_t getStepsTillWoundsClose() const { return m_woundsCloseEvent.remainingSteps(); }
+	[[nodiscard]] bool piercesSkin(Hit hit, const BodyPart& bodyPart) const;
+	[[nodiscard]] bool piercesFat(Hit hit, const BodyPart& bodyPart) const;
+	[[nodiscard]] bool piercesMuscle(Hit hit, const BodyPart& bodyPart) const;
+	[[nodiscard]] bool piercesBone(Hit hit, const BodyPart& bodyPart) const;
+	[[nodiscard]] Volume healthyBloodVolume() const;
+	[[nodiscard]] std::vector<Attack> getAttacks() const;
+	[[nodiscard]] Volume getVolume() const;
+	[[nodiscard]] bool isInjured() const;
+	[[nodiscard]] Step getStepsTillBleedToDeath() const;
+	[[nodiscard]] bool hasBodyPart(const BodyPartType& bodyPartType) const;
+	[[nodiscard]] Step getStepsTillWoundsClose() const { return m_woundsCloseEvent.remainingSteps(); }
+	[[nodiscard]] Percent getImpairMovePercent() { return m_impairMovePercent; }
+	[[nodiscard]] Percent getImpairManipulationPercent() { return m_impairManipulationPercent; }
+	// For testing.
+	[[maybe_unused, nodiscard]] bool hasBleedEvent() const { return m_bleedEvent.exists(); }
+	[[maybe_unused, nodiscard]] bool hasBodyPart() const;
+	[[maybe_unused, nodiscard]] uint32_t getImpairPercentFor(const BodyPartType& bodyPartType) const;
 	friend class WoundHealEvent;
 	friend class BleedEvent;
 	friend class WoundsCloseEvent;

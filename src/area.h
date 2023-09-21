@@ -15,6 +15,7 @@
 #include "rain.h"
 #include "datetime.h"
 #include "simulation.h"	
+#include "targetedHaul.h"	
 
 #include <vector>
 #include <unordered_map>
@@ -43,6 +44,7 @@ public:
 	HasConstructionDesignations m_hasConstructionDesignations;
 	HasStockPiles m_hasStockPiles;
 	HasCraftingLocationsAndJobs m_hasCraftingLocationsAndJobs;
+	AreaHasTargetedHauling m_targetedHauling;
 	HasSleepingSpots m_hasSleepingSpots;
 	//TODO: HasItems
 	AreaHasItems m_hasItems;

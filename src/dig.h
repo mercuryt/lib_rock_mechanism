@@ -55,7 +55,7 @@ class DigProject final : public Project
 	static uint32_t getWorkerDigScore(Actor& actor);
 public:
 	// BlockFeatureType can be null, meaning the block is to be fully excavated.
-	DigProject(const Faction& faction, Block& block, const BlockFeatureType* bft) : Project(faction, block, Config::maxNumberOfWorkersForDigProject), blockFeatureType(bft) { }
+	DigProject(const Faction* faction, Block& block, const BlockFeatureType* bft) : Project(faction, block, Config::maxNumberOfWorkersForDigProject), blockFeatureType(bft) { }
 	void onComplete();
 	// What would the total delay time be if we started from scratch now with current workers?
 	Step getDelay() const;

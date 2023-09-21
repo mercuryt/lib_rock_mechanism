@@ -1,16 +1,18 @@
 #include "move.h"
 #include "path.h"
+#include "util.h"
 ActorCanMove::ActorCanMove(Actor& a) : m_actor(a), m_moveType(&m_actor.m_species.moveType), m_destination(nullptr), m_pathIter(m_path.end()),  m_retries(0), m_event(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()), m_toSetThreadedTask(a.getThreadedTaskEngine())
 {
 	updateIndividualSpeed();
 }
-uint32_t ActorCanMove::getIndividualMoveSpeedWithAddedMass(uint32_t mass) const
+uint32_t ActorCanMove::getIndividualMoveSpeedWithAddedMass(Mass mass) const
 {
-	uint32_t output = m_actor.m_attributes.getMoveSpeed();
-	uint32_t carryMass = m_actor.m_equipmentSet.getMass() + m_actor.m_canPickup.getMass() + mass;
-	uint32_t unencomberedCarryMass = m_actor.m_attributes.getUnencomberedCarryMass();
+	Mass output = m_actor.m_attributes.getMoveSpeed();
+	Mass carryMass = m_actor.m_equipmentSet.getMass() + m_actor.m_canPickup.getMass() + mass;
+	Mass unencomberedCarryMass = m_actor.m_attributes.getUnencomberedCarryMass();
 	if(carryMass > unencomberedCarryMass)
 		output = util::scaleByFraction(m_speedIndividual, unencomberedCarryMass, carryMass);
+	output = util::scaleByInversePercent(output, m_actor.m_body.getImpairMovePercent());
 	return output;
 }
 void ActorCanMove::updateIndividualSpeed()

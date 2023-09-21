@@ -126,11 +126,10 @@ void HasObjectives::addTaskToStart(std::unique_ptr<Objective> objective)
 }
 // Called when an objective is canceled by the player, canceled by the actor, or completed sucessfully.
 // TODO: seperate functions for tasks and needs?
-void HasObjectives::cancel(Objective& objective)
+void HasObjectives::destroy(Objective& objective)
 {
 	ObjectiveId objectiveId = objective.getObjectiveId();
 	bool isCurrent = m_currentObjective == &objective;
-	objective.cancel();
 	if(m_idsOfObjectivesInNeedsQueue.contains(objectiveId))
 	{
 		// Remove canceled objective from needs queue.
@@ -148,11 +147,16 @@ void HasObjectives::cancel(Objective& objective)
 	if(isCurrent)
 		getNext();
 }
+void HasObjectives::cancel(Objective& objective)
+{
+	objective.cancel();
+	destroy(objective);
+}
 void HasObjectives::objectiveComplete(Objective& objective)
 {
 	assert(m_actor.m_mustSleep.isAwake());
 	// Response to complete is the same as response to cancel.
-	cancel(objective);
+	destroy(objective);
 }
 void HasObjectives::taskComplete()
 {

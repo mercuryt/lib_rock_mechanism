@@ -44,7 +44,7 @@ void DigObjective::execute()
 			if(!adjacent->m_reservable.isFullyReserved(*m_actor.getFaction()) && m_actor.m_location->m_area->m_hasDiggingDesignations.contains(*m_actor.getFaction(), *adjacent))
 			{
 				m_project = &m_actor.m_location->m_area->m_hasDiggingDesignations.at(*m_actor.getFaction(), *adjacent);
-				m_project->addWorker(m_actor);
+				m_project->addWorker(m_actor, *this);
 			}
 	}
 	else
@@ -121,7 +121,7 @@ void HasDigDesignationsForFaction::designate(Block& block, const BlockFeatureTyp
 {
 	assert(!m_data.contains(&block));
 	block.m_hasDesignations.insert(m_faction, BlockDesignation::Dig);
-	m_data.try_emplace(&block, m_faction, block, blockFeatureType);
+	m_data.try_emplace(&block, &m_faction, block, blockFeatureType);
 }
 void HasDigDesignationsForFaction::remove(Block& block)
 {

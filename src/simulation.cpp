@@ -38,11 +38,11 @@ void Simulation::incrementHour()
 	}
 	m_hourlyEvent.schedule(*this);
 }
-Actor& Simulation::createActor(const AnimalSpecies& species, Block& block, uint32_t percentGrown)
+Actor& Simulation::createActor(const AnimalSpecies& species, Block& block, Percent percentGrown)
 {
 	Attributes attributes(species, percentGrown);
 	std::wstring name(species.name.begin(), species.name.end());
-	name += std::to_wstring(m_nextActorId);
+	//name.append(std::to_wstring(m_nextActorId));
 	Actor& output = m_actors.emplace_back(
 		*this,
 		m_nextActorId,
@@ -58,18 +58,18 @@ Actor& Simulation::createActor(const AnimalSpecies& species, Block& block, uint3
 }
 // Nongeneric
 // No name or id.
-Item& Simulation::createItem(const ItemType& itemType, const MaterialType& materialType, uint32_t quality, uint32_t percentWear, CraftJob* cj)
+Item& Simulation::createItem(const ItemType& itemType, const MaterialType& materialType, uint32_t quality, Percent percentWear, CraftJob* cj)
 {
 	return createItem(itemType, materialType, "", quality, percentWear, cj);
 }
 // Name but no id.
-Item& Simulation::createItem(const ItemType& itemType, const MaterialType& materialType, std::string name, uint32_t quality, uint32_t percentWear, CraftJob* cj)
+Item& Simulation::createItem(const ItemType& itemType, const MaterialType& materialType, std::string name, uint32_t quality, Percent percentWear, CraftJob* cj)
 {
 	const uint32_t id = ++ m_nextItemId;
 	return createItem(id, itemType, materialType, name, quality, percentWear, cj);
 }
 // Name and id.
-Item& Simulation::createItem(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, std::string name, uint32_t quality, uint32_t percentWear, CraftJob* cj)
+Item& Simulation::createItem(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, std::string name, uint32_t quality, Percent percentWear, CraftJob* cj)
 {
 	if(m_nextItemId <= id) m_nextItemId = id + 1;
 	std::list<Item>::iterator iterator = m_items.emplace(m_items.end(), id, itemType, materialType, name, quality, percentWear, cj);

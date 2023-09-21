@@ -1,5 +1,7 @@
 #pragma once
 
+#include "types.h"
+
 #include <unordered_set>
 #include <stack>
 #include <vector>
@@ -12,19 +14,19 @@
 
 namespace util
 {
-	inline int scaleByPercent(uint64_t base, uint32_t percent)
+	inline int scaleByPercent(uint64_t base, Percent percent)
 	{
 		return (base * (uint64_t)percent) / 100u;
 	}
-	inline int scaleByPercent(uint32_t base, uint32_t percent)
+	inline int scaleByPercent(uint32_t base, Percent percent)
 	{
 		return (base * percent) / 100u;
 	}
-	inline int scaleByPercent(int base, uint32_t percent)
+	inline int scaleByPercent(int base, Percent percent)
 	{
 		return (base * percent) / 100u;
 	}
-	inline int scaleByInversePercent(int base, uint32_t percent)
+	inline int scaleByInversePercent(int base, Percent percent)
 	{
 		return scaleByPercent(base, 100 - percent);
 	}
@@ -32,7 +34,7 @@ namespace util
 	{
 		return min + (((max - min) * numerator) / denominator);
 	}
-	inline int scaleByPercentRange(int min, int max, uint32_t percent)
+	inline int scaleByPercentRange(int min, int max, Percent percent)
 	{
 		return scaleByFractionRange(min, max, percent, 100u);
 	}

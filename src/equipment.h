@@ -28,7 +28,8 @@ public:
 	void removeEquipment(Item& equipment);
 	void modifyImpact(Hit& hit, const BodyPartType& bodyPartType);
 	std::vector<Attack> getAttacks();
-	bool contains(Item& item) const { return m_equipments.contains(&item); }
-	const uint32_t& getMass() const;
-	bool canEquipCurrently(Item& item) const;
+	[[nodiscard]]bool contains(Item& item) const { return m_equipments.contains(&item); }
+	[[nodiscard]]const uint32_t& getMass() const;
+	[[nodiscard]]bool canEquipCurrently(Item& item) const;
+	[[nodiscard]]bool empty() const { return m_equipments.empty(); }
 };

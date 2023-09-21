@@ -15,19 +15,19 @@ class Plant;
 class MustEat final
 {
 	Actor& m_actor;
-	uint32_t m_massFoodRequested;
+	Mass m_massFoodRequested;
 	HasScheduledEvent<HungerEvent> m_hungerEvent;
 	EatObjective* m_eatObjective;
 public:
 	MustEat(Actor& a);
 	Block* m_eatingLocation;
-	void eat(uint32_t mass);
+	void eat(Mass mass);
 	void setNeedsFood();
 	void onDeath();
 	bool needsFood() const;
-	uint32_t massFoodForBodyMass() const;
-	const uint32_t& getMassFoodRequested() const;
-	uint32_t getPercentStarved() const;
+	Mass massFoodForBodyMass() const;
+	const Mass& getMassFoodRequested() const;
+	Percent getPercentStarved() const;
 	uint32_t getDesireToEatSomethingAt(const Block& block) const;
 	uint32_t getMinimumAcceptableDesire() const;
 	bool canEat(const Actor& actor) const;

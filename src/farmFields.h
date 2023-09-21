@@ -14,7 +14,7 @@ struct FarmField
 	std::unordered_set<Block*> blocks;
 	const PlantSpecies* plantSpecies;
 	bool timeToSow;
-	FarmField(std::unordered_set<Block*> b) : blocks(b), plantSpecies(nullptr) { }
+	FarmField(std::unordered_set<Block*> b) : blocks(b), plantSpecies(nullptr), timeToSow(false) { }
 };
 class IsPartOfFarmField
 {

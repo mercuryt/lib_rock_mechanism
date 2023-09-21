@@ -36,7 +36,7 @@ void ConstructObjective::execute()
 	{
 		Block* block = selectAdjacentProject(*m_actor.m_location);
 		assert(block != nullptr);
-		m_actor.m_location->m_area->m_hasConstructionDesignations.getProject(*m_actor.getFaction(), *block).addWorker(m_actor);
+		m_actor.m_location->m_area->m_hasConstructionDesignations.getProject(*m_actor.getFaction(), *block).addWorker(m_actor, *this);
 	}
 	else
 		m_constructThreadedTask.create(*this);
@@ -112,7 +112,7 @@ Step ConstructProject::getDelay() const
 void HasConstructionDesignationsForFaction::designate(Block& block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType)
 {
 	assert(!contains(block));
-	m_data.try_emplace(&block, m_faction, block, blockFeatureType, materialType);
+	m_data.try_emplace(&block, &m_faction, block, blockFeatureType, materialType);
 	block.m_hasDesignations.insert(m_faction, BlockDesignation::Construct);
 }
 void HasConstructionDesignationsForFaction::remove(Block& block)

@@ -17,17 +17,18 @@ TEST_CASE("actor")
 	Block& block2 = area.m_blocks[7][8][1];
 	Block& block3 = area.m_blocks[6][8][1];
 	// Single tile.
-	CHECK(simulation.m_eventSchedule.count() == 1);
+	REQUIRE(simulation.m_eventSchedule.count() == 1);
 	Actor& dwarf1 = simulation.createActor(dwarf, origin1);
-	CHECK(dwarf1.m_name == L"dwarf1");
-	CHECK(dwarf1.m_canMove.getMoveSpeed() == 7);
-	CHECK(simulation.m_eventSchedule.count() == 4);
-	CHECK(dwarf1.m_location == &origin1);
-	CHECK(dwarf1.m_location->m_hasShapes.contains(dwarf1));
+	REQUIRE(dwarf1.m_name == L"dwarf");
+	REQUIRE(dwarf1.m_canMove.getMoveSpeed() == 7);
+	REQUIRE(simulation.m_eventSchedule.count() == 4);
+	REQUIRE(dwarf1.m_location == &origin1);
+	REQUIRE(dwarf1.m_location->m_hasShapes.contains(dwarf1));
+	REQUIRE(dwarf1.m_canFight.getCombatScore() != 0);
 	// Multi tile.
 	Actor& troll1 = simulation.createActor(troll, origin2);
-	CHECK(origin2.m_hasShapes.contains(troll1));
-	CHECK(block1.m_hasShapes.contains(troll1));
-	CHECK(block2.m_hasShapes.contains(troll1));
-	CHECK(block3.m_hasShapes.contains(troll1));
+	REQUIRE(origin2.m_hasShapes.contains(troll1));
+	REQUIRE(block1.m_hasShapes.contains(troll1));
+	REQUIRE(block2.m_hasShapes.contains(troll1));
+	REQUIRE(block3.m_hasShapes.contains(troll1));
 }

@@ -21,7 +21,7 @@ struct CraftJob;
 
 struct WearableData final
 {
-	const uint32_t percentCoverage;
+	const Percent percentCoverage;
 	const uint32_t defenseScore;
 	const bool rigid;
 	const uint32_t layer;
@@ -45,9 +45,9 @@ struct ItemType final
 	const std::string name;
 	const bool installable;
 	const Shape& shape;
-	const uint32_t volume;
+	const Volume volume;
 	const bool generic;
-	const uint32_t internalVolume;
+	const Volume internalVolume;
 	const bool canHoldFluids;
 	const uint32_t value;
 	const FluidType* edibleForDrinkersOf;
@@ -67,18 +67,18 @@ struct ItemType final
 class ItemHasCargo final
 {
 	Item& m_item;
-	uint32_t m_volume;
-	uint32_t m_mass;
+	Volume m_volume;
+	Mass m_mass;
 	std::vector<HasShape*> m_shapes;
 	std::vector<Item*> m_items;
 	const FluidType* m_fluidType;
-	uint32_t m_fluidVolume;
+	Volume m_fluidVolume;
 public:
 	ItemHasCargo(Item& i) : m_item(i), m_volume(0), m_mass(0), m_fluidType(nullptr), m_fluidVolume(0) { }
 	void add(HasShape& hasShape);
-	void add(const FluidType& fluidType, uint32_t volume);
-	void remove(const FluidType& fluidType, uint32_t volume);
-	void removeFluidVolume(uint32_t volume);
+	void add(const FluidType& fluidType, Volume volume);
+	void remove(const FluidType& fluidType, Volume volume);
+	void removeFluidVolume(Volume volume);
 	void remove(HasShape& hasShape);
 	void remove(Item& item, uint32_t quantity);
 	std::vector<HasShape*>& getContents() { return m_shapes; }
@@ -86,7 +86,7 @@ public:
 	const std::vector<Item*>& getItems() const { return m_items; }
 	bool canAdd(HasShape& hasShape) const;
 	bool canAdd(FluidType& fluidType) const;
-	const uint32_t& getFluidVolume() const { return m_fluidVolume; }
+	const Volume& getFluidVolume() const { return m_fluidVolume; }
 	const FluidType& getFluidType() const { return *m_fluidType; }
 	bool containsAnyFluid() const { return m_fluidType != nullptr; }
 	bool contains(HasShape& hasShape) const { return std::ranges::find(m_shapes, &hasShape) != m_shapes.end(); }
@@ -98,13 +98,13 @@ public:
 	const uint32_t m_id;
 	const ItemType& m_itemType;
 	const MaterialType& m_materialType;
-	uint32_t m_mass;
-	uint32_t m_volume;
+	Mass m_mass;
+	Volume m_volume;
 	uint32_t m_quantity; // Always set to 1 for nongeneric types.
 	Reservable m_reservable;
 	std::string m_name;
 	uint32_t m_quality;
-	uint32_t m_percentWear;
+	Percent m_percentWear;
 	bool m_installed;
 	CraftJob* m_craftJobForWorkPiece; // Used only for work in progress items.
 	ItemHasCargo m_hasCargo; //TODO: Change to reference to save some RAM?
@@ -115,22 +115,22 @@ public:
 	// Generic.
 	Item(uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t q, CraftJob* cj);
 	// NonGeneric.
-	Item(uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t qual, uint32_t pw, CraftJob* cj);
+	Item(uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t qual, Percent pw, CraftJob* cj);
 	// Named.
-	Item(uint32_t i, const ItemType& it, const MaterialType& mt, std::string n, uint32_t qual, uint32_t pw, CraftJob* cj);
+	Item(uint32_t i, const ItemType& it, const MaterialType& mt, std::string n, uint32_t qual, Percent pw, CraftJob* cj);
 	void setVolume();
 	void setMass();
 	void destroy();
 	void setLocation(Block& block);
 	void exit();
 	void pierced(uint32_t area);
-	void setTemperature(uint32_t temperature);
+	void setTemperature(Temperature temperature);
 	bool isItem() const { return true; }
 	bool isActor() const { return false; }
 	bool isPreparedMeal() const;
-	uint32_t singleUnitMass() const { return m_itemType.volume * m_materialType.density; }
-	uint32_t getMass() const { return m_quantity * singleUnitMass(); }
-	uint32_t getVolume() const { return m_quantity * m_itemType.volume; }
+	Mass singleUnitMass() const { return m_itemType.volume * m_materialType.density; }
+	Mass getMass() const { return m_quantity * singleUnitMass(); }
+	Volume getVolume() const { return m_quantity * m_itemType.volume; }
 	const MoveType& getMoveType() const { return m_itemType.moveType; }
 	bool operator==(const Item& item) const { return this == &item; }
 	//TODO: Items leave area.
@@ -162,7 +162,7 @@ public:
 	void remove(Item& item);
 	void add(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity);
 	void remove(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity);
-	void setTemperature(uint32_t temperature);
+	void setTemperature(Temperature temperature);
 	//Item* get(ItemType& itemType) const;
 	uint32_t getCount(const ItemType& itemType, const MaterialType& materialType) const;
 	std::vector<Item*>& getAll() { return m_items; }

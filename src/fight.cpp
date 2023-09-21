@@ -8,7 +8,10 @@
 #include <utility>
 #include <algorithm>
 // CanFight.
-CanFight::CanFight(Actor& a) : m_actor(a), m_maxRange(0), m_coolDownDuration(0), m_coolDown(m_actor.getEventSchedule()), m_getIntoAttackPositionThreadedTask(m_actor.getThreadedTaskEngine()) { }
+CanFight::CanFight(Actor& a) : m_actor(a), m_maxRange(0), m_coolDownDuration(0), m_coolDown(m_actor.getEventSchedule()), m_getIntoAttackPositionThreadedTask(m_actor.getThreadedTaskEngine()) 
+{ 
+	update();
+}
 void CanFight::attack(Actor& target)
 {
 	assert(!m_coolDown.exists());
@@ -18,7 +21,7 @@ void CanFight::attack(Actor& target)
 	if(attackerCombatScore > targetCombatScore)
 	{
 		const Attack& attack = getAttackForCombatScoreDifference(attackerCombatScore - targetCombatScore);
-		uint32_t attackForce = attack.attackType->baseForce + (m_actor.m_attributes.getStrength() * Config::unitsOfAttackForcePerUnitOfStrength);
+		Force attackForce = attack.attackType->baseForce + (m_actor.m_attributes.getStrength() * Config::unitsOfAttackForcePerUnitOfStrength);
 		BodyPart& bodyPart = target.m_body.pickABodyPartByVolume();
 		Hit hit(attack.attackType->area, attackForce, *attack.materialType, attack.attackType->woundType);
 		target.takeHit(hit, bodyPart);
@@ -51,10 +54,14 @@ void CanFight::update()
 		m_combatScore += pair.first;
 		m_maxRange = std::min(m_maxRange, pair.second.attackType->range);
 	}
+	// Reduce combat score if manipulation is impaired.
+	m_combatScore = util::scaleByInversePercent(m_combatScore, m_actor.m_body.getImpairManipulationPercent());
 	// Update cool down duration.
-	uint32_t coolDownDurationDextarityBonus = m_actor.m_attributes.getDextarity() ;
-	float coolDownDurationEquipmentMassModifier = m_actor.m_attributes.getUnencomberedCarryMass() / m_actor.m_equipmentSet.getMass();
-	m_coolDownDuration = (Config::attackCoolDownDurationBase - coolDownDurationDextarityBonus) * coolDownDurationEquipmentMassModifier;
+	// TODO: Manipulation impairment should apply to these as well?
+	uint32_t coolDownDurationDextarityBonus = m_actor.m_attributes.getDextarity();
+	float coolDownDurationEquipmentMassModifier = m_actor.m_equipmentSet.empty() ? 1u : 
+		std::max(1u, m_actor.m_attributes.getUnencomberedCarryMass() / m_actor.m_equipmentSet.getMass());
+	m_coolDownDuration = std::max(Step(1), Config::attackCoolDownDurationBase - coolDownDurationDextarityBonus) * coolDownDurationEquipmentMassModifier;
 }
 //TODO: Grasps cannot be used for both armed and unarmed attacks at the same time?
 uint32_t CanFight::getCombatScoreForAttack(const Attack& attack) const
@@ -63,13 +70,14 @@ uint32_t CanFight::getCombatScoreForAttack(const Attack& attack) const
 	{
 		// unarmed attack
 		static const SkillType& unarmedSkillType = SkillType::byName("unarmed");
-		return m_actor.m_skillSet.get(unarmedSkillType);
+		uint32_t unarmedSkill = m_actor.m_skillSet.get(unarmedSkillType);
+		return Config::unarmedCombatScoreBase + unarmedSkill;
 	}
 	assert(attack.item->m_itemType.weaponData != nullptr);
 	uint32_t itemTypeCombatScore = attack.item->m_itemType.weaponData->combatScoreBonus;
 	uint32_t itemSkill = m_actor.m_skillSet.get(*attack.item->m_itemType.weaponData->combatSkill);
 	uint32_t itemQuality = attack.item->m_quality;
-	uint32_t percentItemWear = attack.item->m_percentWear;
+	Percent percentItemWear = attack.item->m_percentWear;
 	return  (
 			(itemTypeCombatScore * Config::itemTypeCombatModifier) + 
 			(itemSkill * Config::itemSkillCombatModifier) + 

@@ -15,16 +15,16 @@ class WaitEvent;
 class Objective;
 class SupressedNeedEvent;
 
-enum class ObjectiveId { Construct, Craft, Dig, Drink, Eat, GetToSafeTemperature, GivePlantsFluid, Harvest, Kill, Rest, Sleep, SowSeeds, StockPile, Wait, Wander };
+enum class ObjectiveId { Construct, Craft, Dig, Drink, Eat, GetToSafeTemperature, GivePlantsFluid, Harvest, Haul, Kill, Rest, Sleep, SowSeeds, StockPile, Wait, Wander };
 struct ObjectiveType
 {
-	virtual bool canBeAssigned(Actor& actor) const = 0;
-	virtual std::unique_ptr<Objective> makeFor(Actor& actor) const = 0;
-	virtual ObjectiveId getObjectiveId() const = 0;
+	[[nodiscard]] virtual bool canBeAssigned(Actor& actor) const = 0;
+	[[nodiscard]] virtual std::unique_ptr<Objective> makeFor(Actor& actor) const = 0;
+	[[nodiscard]] virtual ObjectiveId getObjectiveId() const = 0;
 	ObjectiveType() = default;
 	ObjectiveType(const ObjectiveType&) = delete;
 	ObjectiveType(ObjectiveType&&) = delete;
-	bool operator==(const ObjectiveType& other) const { return &other == this; }
+	[[nodiscard]] bool operator==(const ObjectiveType& other) const { return &other == this; }
 };
 class Objective
 {
@@ -33,8 +33,8 @@ public:
 	virtual void execute() = 0;
 	virtual void cancel() = 0;
 	virtual void delay() = 0;
-	virtual std::string name() const = 0;
-	virtual ObjectiveId getObjectiveId() const = 0;
+	[[nodiscard]] virtual std::string name() const = 0;
+	[[nodiscard]] virtual ObjectiveId getObjectiveId() const = 0;
 	Objective(uint32_t p);
 	Objective(const Objective&) = delete;
 	Objective(Objective&&) = delete;
@@ -101,6 +101,7 @@ public:
 	void addNeed(std::unique_ptr<Objective> objective);
 	void addTaskToEnd(std::unique_ptr<Objective> objective);
 	void addTaskToStart(std::unique_ptr<Objective> objective);
+	void destroy(Objective& objective);
 	void cancel(Objective& objective);
 	void objectiveComplete(Objective& objective);
 	void taskComplete();

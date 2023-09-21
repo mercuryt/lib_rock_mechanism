@@ -54,7 +54,7 @@ void HasBlockFeatures::hew(const BlockFeatureType& blockFeatureType)
 	m_features.emplace_back(blockFeatureType, m_block.getSolidMaterial(), true);
 	m_block.m_hasShapes.clearCache();
 }
-void HasBlockFeatures::setTemperature(uint32_t temperature)
+void HasBlockFeatures::setTemperature(Temperature temperature)
 {
 	for(BlockFeature& feature : m_features)
 		if(feature.materialType->burnData != nullptr && temperature > feature.materialType->burnData->ignitionTemperature)

@@ -2,5 +2,19 @@
 	"name": "left arm",
 	"volume": 8,
 	"doesLocamotion": false,
-	"doesManipulation": true
+	"doesManipulation": true,
+	"attackTypesAndMaterials":
+	[
+		[
+			{
+				"name": "punch",
+				"area": 5,
+				"baseForce": 1,
+				"range": 1,
+				"skillBonus": 1,
+				"woundType": "Bludgeon"
+			},
+			"flesh"
+		]
+	]
 }

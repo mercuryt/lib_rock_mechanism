@@ -28,7 +28,7 @@ uint32_t CanLead::getMoveSpeedForGroupWithAddedMass(std::vector<const HasShape*>
 	{
 		if(hasShape->isItem())
 		{
-			uint32_t mass = static_cast<const Item&>(*hasShape).getMass();
+			Mass mass = static_cast<const Item&>(*hasShape).getMass();
 			static const MoveType& rolling = MoveType::byName("rolling");
 			if(hasShape->getMoveType() == rolling)
 				rollingMass += mass;

@@ -55,6 +55,7 @@ public:
 	const uint32_t& getMaxRange() const { return m_maxRange; }
 	uint32_t getCombatScoreForAttack(const Attack& attack) const;
 	const Attack& getAttackForCombatScoreDifference(const uint32_t scoreDifference) const;
+	[[nodiscard, maybe_unused]] uint32_t getCombatScore() const { return m_combatScore; }
 	friend class AttackCoolDown;
 	friend class GetIntoAttackPositionThreadedTask;
 };

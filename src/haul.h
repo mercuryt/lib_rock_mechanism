@@ -10,6 +10,7 @@ struct FluidType;
 struct ItemType;
 struct MaterialType;
 class Project;
+struct ProjectItemCounts;
 struct Faction;
 
 enum class HaulStrategy { None, Individual, Team, Cart, TeamCart, Panniers, AnimalCart, StrongSentient };
@@ -18,14 +19,13 @@ struct HaulSubprojectParamaters final
 {
 	HasShape* toHaul;
 	uint32_t quantity;
-	Block* destination;
 	HaulStrategy strategy;
-	Block* toHaulLocation; // TODO: unnessesary?
 	std::vector<Actor*> workers;
 	Item* haulTool;
 	Actor* beastOfBurden;
-	HaulSubprojectParamaters() : toHaul(nullptr), quantity(0), destination(nullptr), strategy(HaulStrategy::None), toHaulLocation(nullptr), haulTool(nullptr), beastOfBurden(nullptr) { }
-	bool validate() const;
+	ProjectItemCounts* projectItemCounts;
+	HaulSubprojectParamaters() : toHaul(nullptr), quantity(0), strategy(HaulStrategy::None), haulTool(nullptr), beastOfBurden(nullptr), projectItemCounts(nullptr) { }
+	[[nodiscard, maybe_unused]] bool validate() const;
 };
 // ToHaul is either an Item or an Actor.
 class HaulSubproject final
@@ -34,7 +34,6 @@ class HaulSubproject final
 	std::unordered_set<Actor*> m_workers;
 	HasShape& m_toHaul;
 	uint32_t m_quantity;
-	Block& m_destination;
 	HaulStrategy m_strategy;
 	Block* m_toHaulLocation;
 	std::unordered_set<Actor*> m_nonsentients;
@@ -44,6 +43,7 @@ class HaulSubproject final
 	bool m_itemIsMoving;
 	Actor* m_beastOfBurden;
 	uint32_t m_teamMemberInPlaceForHaulCount;
+	ProjectItemCounts& m_projectItemCounts;
 	void onComplete();
 public:
 	HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters);
@@ -52,13 +52,15 @@ public:
 	void removeWorker(Actor& actor);
 	void cancel();
 	HasShape& getToHaul() { return m_toHaul; }
-	static HaulSubprojectParamaters tryToSetHaulStrategy(const Project& project, HasShape& hasShape, Actor& worker);
+	static HaulSubprojectParamaters tryToSetHaulStrategy(const Project& project, HasShape& hasShape, Actor& worker, ProjectItemCounts& projectItemCounts);
 	static std::vector<Actor*> actorsNeededToHaulAtMinimumSpeed(const Project& proect, const Actor& leader, const HasShape& toHaul, const std::unordered_set<Actor*>& waiting);
-	static uint32_t getSpeedWithHaulToolAndCargo(const Actor& leader, const Item& haulTool, const HasShape& toHaul);
-	static uint32_t getSpeedWithHaulToolAndYokedAndCargo(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul);
-	static std::vector<Actor*> actorsNeededToHaulAtMinimumSpeedWithTool(const Project& project, const Actor& leader, const HasShape& toHaul, const Item& haulTool, const std::unordered_set<Actor*>& waiting);
-	static uint32_t getSpeedWithPannierBearerAndPanniers(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul);
-	bool operator==(const HaulSubproject& other) const { return &other == this; }
+	[[nodiscard]] static uint32_t getSpeedWithHaulToolAndCargo(const Actor& leader, const Item& haulTool, const HasShape& toHaul);
+	[[nodiscard]] static uint32_t getSpeedWithHaulToolAndYokedAndCargo(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul);
+	[[nodiscard]] static std::vector<Actor*> actorsNeededToHaulAtMinimumSpeedWithTool(const Project& project, const Actor& leader, const HasShape& toHaul, const Item& haulTool, const std::unordered_set<Actor*>& waiting);
+	[[nodiscard]] static uint32_t getSpeedWithPannierBearerAndPanniers(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul);
+	// For testing.
+	[[nodiscard]] HaulStrategy getHaulStrategy() const { return m_strategy; }
+	[[nodiscard]] bool operator==(const HaulSubproject& other) const { return &other == this; }
 	friend class Project;
 };
 // Used by Actor for individual haul strategy only. Other strategies use lead/follow.
@@ -78,20 +80,20 @@ public:
 	void remove(Item& item);
 	Item& getItem();
 	Actor& getActor();
-	uint32_t canPickupQuantityOf(const HasShape& hasShape) const;
-	uint32_t canPickupQuantityOf(const Item& item) const;
-	uint32_t canPickupQuantityOf(const Actor& actor) const;
-	uint32_t canPickupQuantityOf(const ItemType& itemType, const MaterialType& materialType) const;
-	uint32_t canPickupQuantityWithSingeUnitMass(uint32_t unitMass) const;
-	bool canPickupAny(const HasShape& hasShape) const { return canPickupQuantityOf(hasShape) != 0; }
-	bool isCarrying(const HasShape& hasShape) const { return (void*)&hasShape == (void*)&m_carrying; }
-	bool isCarryingFluidType(const FluidType& fluidType) const;
-	const uint32_t& getFluidVolume() const;
-	const FluidType& getFluidType() const;
-	bool isCarryingEmptyContainerWhichCanHoldFluid() const;
-	uint32_t getMass() const;
-	bool exists() const { return m_carrying != nullptr; }
-	uint32_t speedIfCarryingAny(const HasShape& hasShape) const;
+	[[nodiscard]] uint32_t canPickupQuantityOf(const HasShape& hasShape) const;
+	[[nodiscard]] uint32_t canPickupQuantityOf(const Item& item) const;
+	[[nodiscard]] uint32_t canPickupQuantityOf(const Actor& actor) const;
+	[[nodiscard]] uint32_t canPickupQuantityOf(const ItemType& itemType, const MaterialType& materialType) const;
+	[[nodiscard]] uint32_t canPickupQuantityWithSingeUnitMass(uint32_t unitMass) const;
+	[[nodiscard]] bool canPickupAny(const HasShape& hasShape) const { return canPickupQuantityOf(hasShape) != 0; }
+	[[nodiscard]] bool isCarrying(const HasShape& hasShape) const { return &hasShape == m_carrying; }
+	[[nodiscard]] bool isCarryingFluidType(const FluidType& fluidType) const;
+	[[nodiscard]] const uint32_t& getFluidVolume() const;
+	[[nodiscard]] const FluidType& getFluidType() const;
+	[[nodiscard]] bool isCarryingEmptyContainerWhichCanHoldFluid() const;
+	[[nodiscard]] uint32_t getMass() const;
+	[[nodiscard]] bool exists() const { return m_carrying != nullptr; }
+	[[nodiscard]] uint32_t speedIfCarryingAny(const HasShape& hasShape) const;
 };
 // For Area.
 class HasHaulTools final
@@ -100,13 +102,13 @@ class HasHaulTools final
 	std::unordered_set<Item*> m_haulTools;
 	std::unordered_set<Actor*> m_yolkableActors;
 public:
-	bool hasToolToHaulFluid(const Faction& faction) const;
-	Item* getToolToHaulFluid(const Faction& faction) const;
-	bool hasToolToHaul(const Faction& faction, const HasShape& hasShape) const;
-	Item* getToolToHaul(const Faction& faction, const HasShape& hasShape) const;
-	Actor* getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(const Faction& faction, const Item& haulTool, const uint32_t cargoMass, const uint32_t minimumHaulSpeed) const;
-	Actor* getPannierBearerToHaulCargoWithMassWithMinimumSpeed(const Faction& faction, const HasShape& hasShape, const uint32_t minimumHaulSpeed) const;
-	Item* getPanniersForActorToHaul(const Faction& faction, const Actor& actor, const HasShape& toHaul) const;
+	[[nodiscard]] bool hasToolToHaulFluid(const Faction& faction) const;
+	[[nodiscard]] Item* getToolToHaulFluid(const Faction& faction) const;
+	[[nodiscard]] bool hasToolToHaul(const Faction& faction, const HasShape& hasShape) const;
+	[[nodiscard]] Item* getToolToHaul(const Faction& faction, const HasShape& hasShape) const;
+	[[nodiscard]] Actor* getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(const Faction& faction, const Item& haulTool, const uint32_t cargoMass, const uint32_t minimumHaulSpeed) const;
+	[[nodiscard]] Actor* getPannierBearerToHaulCargoWithMassWithMinimumSpeed(const Faction& faction, const HasShape& hasShape, const uint32_t minimumHaulSpeed) const;
+	[[nodiscard]] Item* getPanniersForActorToHaul(const Faction& faction, const Actor& actor, const HasShape& toHaul) const;
 	void registerHaulTool(Item& item);
 	void registerYokeableActor(Actor& actor);
 	void unregisterHaulTool(Item& item);

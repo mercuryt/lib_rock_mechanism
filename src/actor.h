@@ -32,7 +32,7 @@ struct MoveType;
 struct AnimalSpecies;
 struct Faction;
 
-enum class CauseOfDeath { thirst, hunger, bloodLoss, wound, temperature };
+enum class CauseOfDeath { none, thirst, hunger, bloodLoss, wound, temperature };
 
 class Actor final : public HasShape
 {	
@@ -64,12 +64,12 @@ public:
 	std::unordered_set<Actor*> m_canSee;
 	uint32_t m_visionRange;
 
-	Actor(Simulation& simulation, uint32_t id, const std::wstring name, const AnimalSpecies& species, uint32_t percentGrown, Faction* faction, Attributes attributes);
+	Actor(Simulation& simulation, uint32_t id, const std::wstring& name, const AnimalSpecies& species, Percent percentGrown, Faction* faction, Attributes attributes);
 	void setLocation(Block& block);
 	void exit();
-	void removeMassFromCorpse(uint32_t mass);
+	void removeMassFromCorpse(Mass mass);
 	void die(CauseOfDeath causeOfDeath);
-	void passout(uint32_t duration);
+	void passout(Step duration);
 	void doVision(std::unordered_set<Actor*>& actors);
 	void leaveArea();
 	void wait(Step duration);
@@ -84,10 +84,10 @@ public:
 	bool isSentient() const { return m_species.sentient; }
 	bool isInjured() const;
 	bool canMove() const;
-	uint32_t getMass() const;
-	uint32_t getVolume() const;
+	Mass getMass() const;
+	Volume getVolume() const;
 	const MoveType& getMoveType() const { return m_canMove.getMoveType(); }
-	uint32_t singleUnitMass() const { return getMass(); }
+	Mass singleUnitMass() const { return getMass(); }
 	const Faction* getFaction() const { return m_faction; }
 	Simulation& getSimulation() {return m_simulation; }
 	EventSchedule& getEventSchedule();
@@ -99,14 +99,14 @@ public:
 struct ActorQuery
 {
 	Actor* actor;
-	uint32_t carryWeight;
+	Mass carryWeight;
 	bool checkIfSentient;
 	bool sentient;
 	ActorQuery(Actor& a) : actor(&a) { }
-	ActorQuery(uint32_t cw, bool cis, bool s) : carryWeight(cw), checkIfSentient(cis), sentient(s) { }
+	ActorQuery(Mass cw, bool cis, bool s) : carryWeight(cw), checkIfSentient(cis), sentient(s) { }
 	bool operator()(Actor& actor) const;
 	static ActorQuery makeFor(Actor& a);
-	static ActorQuery makeForCarryWeight(uint32_t cw);
+	static ActorQuery makeForCarryWeight(Mass cw);
 };
 class BlockHasActors
 {
@@ -116,10 +116,10 @@ public:
 	BlockHasActors(Block& b) : m_block(b) { }
 	void enter(Actor& actor);
 	void exit(Actor& actor);
-	void setTemperature(uint32_t temperature);
+	void setTemperature(Temperature temperature);
 	bool canStandIn() const;
 	bool contains(Actor& actor) const;
-	uint32_t volumeOf(Actor& actor) const;
+	Volume volumeOf(Actor& actor) const;
 	std::vector<Actor*>& getAll() { return m_actors; }
 	const std::vector<Actor*>& getAll() const { return m_actors; }
 	const std::vector<Actor*>& getAllConst() const { return m_actors; }

@@ -1,0 +1,17 @@
+{
+  "name": "bronze",
+  "density": 80,
+  "hardness": 100,
+  "transparent": false,
+  "meltingPoint": 1186,
+  "meltsInto": "moltenBronze",
+  "spoilData": [
+    {
+      "materialType": "bronze",
+      "itemType": "chunk",
+      "chance": 100,
+      "min": 4,
+      "max": 5
+    }
+  ]
+}

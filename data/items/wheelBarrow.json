@@ -1,0 +1,9 @@
+{
+	"name": "wheel barrow",
+	"shape": "oneByOneHalf",
+	"generic": false,
+	"internalVolume" : 100,
+	"canHoldFluids": false,
+	"value": 200,
+	"moveType": "roll"
+}

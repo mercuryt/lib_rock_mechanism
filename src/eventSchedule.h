@@ -25,7 +25,8 @@ public:
 	virtual void execute() = 0;
 	virtual void clearReferences() = 0;
 	virtual void onCancel() { }
-	Step remaningSteps() const;
+	[[nodiscard]] Step remaningSteps() const;
+
 	ScheduledEvent(const ScheduledEvent&) = delete;
 	ScheduledEvent(ScheduledEvent&&) = delete;
 	virtual ~ScheduledEvent() = default;
@@ -35,7 +36,8 @@ class ScheduledEventWithPercent : public ScheduledEvent
 public:
 	Step m_startStep;
 	ScheduledEventWithPercent(Simulation& simulation, const Step delay);
-	uint32_t percentComplete() const;
+	[[nodiscard]] Percent percentComplete() const;
+	[[nodiscard]] Step duration() const;
 };
 class EventSchedule
 {
@@ -49,5 +51,5 @@ public:
 	void unschedule(ScheduledEvent& scheduledEvent);
 	void execute(const Step stepNumber);
 	// For testing.
-	[[maybe_unused]]uint32_t count();
+	[[maybe_unused, nodiscard]]uint32_t count();
 };

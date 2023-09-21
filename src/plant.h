@@ -28,18 +28,18 @@ struct PlantSpecies final
 {
 	const std::string name;
 	const bool annual;
-	const uint32_t maximumGrowingTemperature;
-	const uint32_t minimumGrowingTemperature;
-	const uint32_t stepsTillDieFromTemperature;
-	const uint32_t stepsNeedsFluidFrequency;
-	const uint32_t volumeFluidConsumed;
+	const Temperature maximumGrowingTemperature;
+	const Temperature minimumGrowingTemperature;
+	const Temperature stepsTillDieFromTemperature;
+	const Step stepsNeedsFluidFrequency;
+	const Volume volumeFluidConsumed;
 	const Step stepsTillDieWithoutFluid;
 	const Step stepsTillFullyGrown;
 	const Step stepsTillFoliageGrowsFromZero;
 	const bool growsInSunLight;
 	const uint32_t rootRangeMax;
 	const uint32_t rootRangeMin;
-	const uint32_t adultMass;
+	const Mass adultMass;
 	const uint16_t dayOfYearForSowStart;
 	const uint16_t dayOfYearForSowEnd;
 	const FluidType& fluidType;
@@ -65,38 +65,38 @@ public:
 	HasScheduledEvent<PlantTemperatureEvent> m_temperatureEvent;
 	HasScheduledEvent<PlantEndOfHarvestEvent> m_endOfHarvestEvent;
 	HasScheduledEvent<PlantFoliageGrowthEvent> m_foliageGrowthEvent;
-	uint32_t m_percentGrown;
+	Percent m_percentGrown;
 	uint32_t m_quantityToHarvest;
-	uint32_t m_percentFoliage;
+	Percent m_percentFoliage;
 	//TODO: Set max reservations to 1 to start, maybe increase later with size?
 	Reservable m_reservable;
-	uint32_t m_volumeFluidRequested;
+	Volume m_volumeFluidRequested;
 
-	Plant(Block& l, const PlantSpecies& ps, uint32_t pg = 0);
+	Plant(Block& l, const PlantSpecies& ps, Percent pg = 0);
 	void die();
-	void setTemperature(uint32_t temperature);
+	void setTemperature(Temperature temperature);
 	void setHasFluidForNow();
 	void setMaybeNeedsFluid();
-	void addFluid(uint32_t volume, const FluidType& fluidType);
+	void addFluid(Volume volume, const FluidType& fluidType);
 	void setDayOfYear(uint32_t dayOfYear);
 	void setQuantityToHarvest();
 	void harvest(uint32_t quantity);
 	void endOfHarvest();
 	void updateGrowingStatus();
-	void removeFoliageMass(uint32_t mass);
-	uint32_t getFruitMass() const;
+	void removeFoliageMass(Mass mass);
+	Mass getFruitMass() const;
 	void removeFruitQuantity(uint32_t quantity);
 	void makeFoliageGrowthEvent();
 	void foliageGrowth();
 	bool hasFluidSource();
-	uint32_t getGrowthPercent() const;
+	Percent getGrowthPercent() const;
 	uint32_t getRootRange() const;
-	uint32_t getPercentFoliage() const;
+	Percent getPercentFoliage() const;
 	uint32_t getFoliageMass() const;
-	uint32_t getStepAtWhichPlantWillDieFromLackOfFluid() const;
-	uint32_t getFluidDrinkVolume() const;
+	Step getStepAtWhichPlantWillDieFromLackOfFluid() const;
+	Volume getFluidDrinkVolume() const;
 	bool readyToHarvest() const { return m_quantityToHarvest != 0; }
-	const uint32_t& getVolumeFluidRequested() { return m_volumeFluidRequested; }
+	const Volume& getVolumeFluidRequested() { return m_volumeFluidRequested; }
 	bool operator==(const Plant& p) const { return &p == this; }
 };
 
@@ -152,10 +152,10 @@ class HasPlant final
 	Plant* m_plant;
 public:
 	HasPlant(Block& b) : m_block(b), m_plant(nullptr) { }
-	void addPlant(const PlantSpecies& plantSpecies, uint32_t growthPercent = 0);
+	void addPlant(const PlantSpecies& plantSpecies, Percent growthPercent = 0);
 	void updateGrowingStatus();
 	void clearPointer();
-	void setTemperature(uint32_t temperature);
+	void setTemperature(Temperature temperature);
 	void erase();
 	Plant& get() { assert(m_plant != nullptr); return *m_plant; }
 	const Plant& get() const { assert(m_plant != nullptr); return *m_plant; }
@@ -169,7 +169,7 @@ class HasPlants final
 	std::list<Plant> m_plants;
 	std::unordered_set<Plant*> m_plantsOnSurface;
 public:
-	Plant& emplace(Block& location, const PlantSpecies& species, uint32_t percentGrowth);
+	Plant& emplace(Block& location, const PlantSpecies& species, Percent percentGrowth);
 	void erase(Plant& plant);
 	void onChangeAmbiantSurfaceTemperature();
 	std::unordered_set<Plant*>& getPlantsOnSurface() { return m_plantsOnSurface; }

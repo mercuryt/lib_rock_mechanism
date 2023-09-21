@@ -63,6 +63,7 @@ std::vector<Block*> Block::getAdjacentWithEdgeAdjacent() const
 	}
 	return output;
 }
+// TODO: cache.
 std::vector<Block*> Block::getAdjacentWithEdgeAndCornerAdjacent() const
 {
 	std::vector<Block*> output;

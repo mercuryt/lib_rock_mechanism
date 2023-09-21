@@ -58,7 +58,7 @@ class ConstructProject final : public Project
 	uint32_t getWorkerConstructScore(Actor& actor) const;
 public:
 	// BlockFeatureType can be null, meaning the block is to be filled with a constructed wall.
-	ConstructProject(const Faction& faction, Block& b, const BlockFeatureType* bft, const MaterialType& mt) : Project(faction, b, Config::maxNumberOfWorkersForConstructionProject), m_blockFeatureType(bft), m_materialType(mt) { }
+	ConstructProject(const Faction* faction, Block& b, const BlockFeatureType* bft, const MaterialType& mt) : Project(faction, b, Config::maxNumberOfWorkersForConstructionProject), m_blockFeatureType(bft), m_materialType(mt) { }
 	void onComplete();
 	// What would the total delay time be if we started from scratch now with current workers?
 	Step getDelay() const;

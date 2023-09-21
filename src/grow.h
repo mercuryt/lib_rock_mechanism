@@ -9,12 +9,12 @@ class CanGrow final
 	Actor& m_actor;
 	HasScheduledEvent<AnimalGrowthEvent> m_event;
 	HasScheduledEvent<AnimalGrowthUpdateEvent> m_updateEvent;
-	uint32_t m_percentGrown;
+	Percent m_percentGrown;
 	uint32_t m_birthStep;
 public:
-	CanGrow(Actor& a, uint32_t pg);
+	CanGrow(Actor& a, Percent pg);
 	void updateGrowingStatus();
-	uint32_t growthPercent() const;
+	Percent growthPercent() const;
 	void update();
 	void complete();
 	void stop();
@@ -27,7 +27,7 @@ class AnimalGrowthEvent final : public ScheduledEventWithPercent
 {
 	CanGrow& m_canGrow;
 public:
-	AnimalGrowthEvent(uint32_t delay, CanGrow& cg);
+	AnimalGrowthEvent(Step delay, CanGrow& cg);
 	void execute() { m_canGrow.complete(); }
 	void clearReferences(){ m_canGrow.m_event.clearPointer(); }
 };
@@ -35,7 +35,7 @@ class AnimalGrowthUpdateEvent final : public ScheduledEventWithPercent
 {
 	CanGrow& m_canGrow;
 public:
-	AnimalGrowthUpdateEvent(uint32_t delay, CanGrow& cg);
+	AnimalGrowthUpdateEvent(Step delay, CanGrow& cg);
 	void execute() { m_canGrow.update(); }
 	void clearReferences(){ m_canGrow.m_updateEvent.clearPointer(); }
 };

@@ -43,7 +43,7 @@ public:
 	void onDeath();
 	void onLeaveArea();
 	[[nodiscard]]const MoveType& getMoveType() const { return *m_moveType; }
-	[[nodiscard]]uint32_t getIndividualMoveSpeedWithAddedMass(uint32_t mass) const;
+	[[nodiscard]]uint32_t getIndividualMoveSpeedWithAddedMass(Mass mass) const;
 	[[nodiscard]]uint32_t getMoveSpeed() const { return m_speedActual; }
 	[[nodiscard]]bool canMove() const;
 	// For testing.

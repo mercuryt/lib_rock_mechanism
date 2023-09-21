@@ -2,5 +2,19 @@
 	"name": "right front leg",
 	"volume": 10,
 	"doesLocamotion": true,
-	"doesManipulation": false
+	"doesManipulation": false,
+	"attackTypesAndMaterials":
+	[
+		[
+			{
+				"name": "kick",
+				"area": 5,
+				"baseForce": 2,
+				"range": 1,
+				"skillBonus": 1,
+				"woundType": "Bludgeon"
+			},
+			"flesh"
+		]
+	]
 }

@@ -13,10 +13,10 @@ struct Attribute
 	uint32_t value;
 	const uint32_t& speciesNewbornValue;
 	const uint32_t& speciesAdultValue;
-	uint32_t baseModifierPercent;
+	Percent baseModifierPercent;
 	int32_t bonusOrPenalty;
-	Attribute(const uint32_t& snv, const uint32_t& sav, uint32_t bmp, int32_t bop, uint32_t percentGrown) : speciesNewbornValue(snv), speciesAdultValue(sav), baseModifierPercent(bmp), bonusOrPenalty(bop) { setPercentGrown(percentGrown); }
-	void setPercentGrown(uint32_t percentGrown);
+	Attribute(const uint32_t& snv, const uint32_t& sav, uint32_t bmp, int32_t bop, Percent percentGrown) : speciesNewbornValue(snv), speciesAdultValue(sav), baseModifierPercent(bmp), bonusOrPenalty(bop) { setPercentGrown(percentGrown); }
+	void setPercentGrown(Percent percentGrown);
 };
 class Attributes
 {
@@ -24,22 +24,22 @@ class Attributes
 	Attribute dextarity;
 	Attribute agility;
 	Attribute mass;
-	uint32_t unencomberedCarryMass;
+	Mass unencomberedCarryMass;
 	uint32_t moveSpeed;
 public:
-	Attributes(const AnimalSpecies& species, std::array<uint32_t, 4> modifierPercents, std::array<int32_t, 4> bonusOrPenalties, uint32_t percentGrown) :
+	Attributes(const AnimalSpecies& species, std::array<uint32_t, 4> modifierPercents, std::array<int32_t, 4> bonusOrPenalties, Percent percentGrown) :
 		strength(species.strength[0], species.strength[1], modifierPercents[1], bonusOrPenalties[1], percentGrown),
 		dextarity(species.dextarity[0], species.dextarity[1], modifierPercents[1], bonusOrPenalties[1], percentGrown),
 		agility(species.agility[0], species.agility[1], modifierPercents[2], bonusOrPenalties[2], percentGrown),
 		mass(species.mass[0], species.mass[1], modifierPercents[3], bonusOrPenalties[3], percentGrown) { generate(); }
-	Attributes(const AnimalSpecies& species, uint32_t percentGrown) :
+	Attributes(const AnimalSpecies& species, Percent percentGrown) :
 		strength(species.strength[0], species.strength[1], 100, 0, percentGrown),
 		dextarity(species.dextarity[0], species.dextarity[1], 100, 0, percentGrown),
 		agility(species.agility[0], species.agility[1], 100, 0, percentGrown),
 		mass(species.mass[0], species.mass[1], 100, 0, percentGrown) { generate(); }
-	void updatePercentGrown(uint32_t percentGrown);
+	void updatePercentGrown(Percent percentGrown);
 	void generate();
-	void removeMass(uint32_t m)
+	void removeMass(Mass m)
 	{
 		assert(mass.value >= m);
 		mass.value -= m;
@@ -50,7 +50,7 @@ public:
 	void addDextarityBonusOrPenalty(uint32_t x) { dextarity.bonusOrPenalty += x; generate(); }
 	uint32_t getAgility() const { return agility.value; }
 	void addAgilityBonusOrPenalty(uint32_t x) { agility.bonusOrPenalty += x; generate(); }
-	uint32_t getMass() const { return mass.value; }
+	Mass getMass() const { return mass.value; }
 	void addMassBonusOrPenalty(uint32_t x) { mass.bonusOrPenalty += x; generate(); }
 	uint32_t getUnencomberedCarryMass() const { return unencomberedCarryMass; }
 	uint32_t getMoveSpeed() const { return moveSpeed; }

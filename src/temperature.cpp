@@ -7,11 +7,11 @@
 #include "simulation.h"
 #include <cmath>
 enum class TemperatureZone { Surface, Underground, LavaSea };
-uint32_t TemperatureSource::getTemperatureDeltaForRange(uint32_t range)
+Temperature TemperatureSource::getTemperatureDeltaForRange(Temperature range)
 {
 	if(range == 0)
 		return m_temperature;
-	uint32_t output = m_temperature / std::pow(range, Config::heatDisipatesAtDistanceExponent);
+	Temperature output = m_temperature / std::pow(range, Config::heatDisipatesAtDistanceExponent);
 	if(output <= Config::heatRadianceMinimum)
 		return 0;
 	return output; // subtract radiance mininum from output to smooth transition at edge of affected zone?
@@ -44,7 +44,7 @@ void TemperatureSource::setTemperature(const int32_t& t)
 	m_temperature = t;
 	apply();
 }
-void AreaHasTemperature::addTemperatureSource(Block& block, const uint32_t& temperature)
+void AreaHasTemperature::addTemperatureSource(Block& block, const Temperature& temperature)
 {
 	auto pair = m_sources.try_emplace(&block, temperature, block);
 	assert(pair.second);
@@ -72,7 +72,7 @@ void AreaHasTemperature::applyDeltas()
 	for(auto& [block, deltaDelta] : oldDeltaDeltas)
 		block->m_blockHasTemperature.updateDelta(deltaDelta);
 }
-void AreaHasTemperature::setAmbientSurfaceTemperature(const uint32_t& temperature)
+void AreaHasTemperature::setAmbientSurfaceTemperature(const Temperature& temperature)
 {
 	m_ambiantSurfaceTemperature = temperature;
 	m_area.m_hasPlants.onChangeAmbiantSurfaceTemperature();
@@ -95,11 +95,11 @@ void AreaHasTemperature::setAmbientSurfaceTemperature(const uint32_t& temperatur
 void AreaHasTemperature::setAmbientSurfaceTemperatureFor(DateTime now)
 {
 	// TODO: Latitude and altitude.
-	uint32_t dailyAverage = getDailyAverageAmbientSurfaceTemperature(now);
-	static uint32_t maxDailySwing = 35;
+	Temperature dailyAverage = getDailyAverageAmbientSurfaceTemperature(now);
+	static Temperature maxDailySwing = 35;
 	static uint32_t hottestHourOfDay = 14;
 	uint32_t hoursFromHottestHourOfDay = std::abs((int32_t)hottestHourOfDay - (int32_t)now.hour);
-	uint32_t halfDay =  Config::hoursPerDay / 2;
+	uint32_t halfDay = Config::hoursPerDay / 2;
 	setAmbientSurfaceTemperature(dailyAverage + ((maxDailySwing * (std::min(0u, halfDay - hoursFromHottestHourOfDay))) / halfDay) - (maxDailySwing / 2));
 }
 void AreaHasTemperature::addMeltableSolidBlockAboveGround(Block& block)
@@ -114,11 +114,11 @@ void AreaHasTemperature::removeMeltableSolidBlockAboveGround(Block& block)
 	assert(block.isSolid());
 	m_aboveGroundBlocksByMeltingPoint.at(block.getSolidMaterial().meltingPoint).erase(&block);
 }
-uint32_t AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature(DateTime dateTime) const
+Temperature AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature(DateTime dateTime) const
 {
 	// TODO: Latitude and altitude.
-	static uint32_t yearlyHottestDailyAverage = 300;
-	static uint32_t yearlyColdestDailyAverage = 280;
+	static Temperature yearlyHottestDailyAverage = 300;
+	static Temperature yearlyColdestDailyAverage = 280;
 	static uint32_t dayOfYearOfSolstice = Config::daysPerYear / 2;
 	uint32_t daysFromSolstice = std::abs((int32_t)dateTime.day - (int32_t)dayOfYearOfSolstice);
 	return yearlyColdestDailyAverage + ((yearlyHottestDailyAverage - yearlyColdestDailyAverage) * (dayOfYearOfSolstice - daysFromSolstice)) / dayOfYearOfSolstice;
@@ -126,7 +126,7 @@ uint32_t AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature(DateTime d
 void BlockHasTemperature::updateDelta(int32_t deltaDelta)
 {
 	m_delta += deltaDelta;
-	uint32_t temperature = m_delta + getAmbientTemperature();
+	Temperature temperature = m_delta + getAmbientTemperature();
 	if(m_block.isSolid())
 	{
 		auto& material = m_block.getSolidMaterial();
@@ -166,7 +166,7 @@ void BlockHasTemperature::melt()
 	assert(m_block.getSolidMaterial().meltsInto != nullptr);
 	m_block.addFluid(Config::maxBlockVolume, *m_block.getSolidMaterial().meltsInto);
 }
-const uint32_t& BlockHasTemperature::getAmbientTemperature() const 
+const Temperature& BlockHasTemperature::getAmbientTemperature() const 
 {
 	if(m_block.m_underground)
 	{
@@ -177,7 +177,7 @@ const uint32_t& BlockHasTemperature::getAmbientTemperature() const
 	}
 	return m_block.m_area->m_areaHasTemperature.getAmbientSurfaceTemperature();
 }
-uint32_t BlockHasTemperature::getDailyAverageAmbientTemperature() const 
+Temperature BlockHasTemperature::getDailyAverageAmbientTemperature() const 
 {
 	if(m_block.m_underground)
 	{
@@ -250,7 +250,7 @@ void ActorNeedsSafeTemperature::onChange()
 	else if(m_event.exists())
 		m_event.unschedule();
 }
-bool ActorNeedsSafeTemperature::isSafe(uint32_t temperature) const
+bool ActorNeedsSafeTemperature::isSafe(Temperature temperature) const
 {
 	return temperature >= m_actor.m_species.minimumSafeTemperature && temperature <= m_actor.m_species.maximumSafeTemperature;
 }

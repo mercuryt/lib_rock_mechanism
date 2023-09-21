@@ -4,7 +4,7 @@
 #include "config.h"
 #include "randomUtil.h"
 AreaHasRain::AreaHasRain(Area& a) : m_area(a), m_currentlyRainingFluidType(nullptr), m_intensityPercent(0), m_stopEvent(a.m_simulation.m_eventSchedule) { }
-void AreaHasRain::start(const FluidType& fluidType, uint32_t intensityPercent, uint32_t stepsDuration)
+void AreaHasRain::start(const FluidType& fluidType, Percent intensityPercent, Step stepsDuration)
 {
 	m_currentlyRainingFluidType = &fluidType;
 	m_intensityPercent = intensityPercent;
@@ -25,4 +25,4 @@ void AreaHasRain::writeStep()
 			if(randomUtil::chance((float)m_intensityPercent / (float)Config::rainFrequencyModifier))
 				block.addFluid(1, *m_currentlyRainingFluidType);
 }
-StopRainEvent::StopRainEvent(uint32_t delay, AreaHasRain& ahr) : ScheduledEventWithPercent(ahr.m_area.m_simulation, delay), m_areaHasRain(ahr) { }
+StopRainEvent::StopRainEvent(Step delay, AreaHasRain& ahr) : ScheduledEventWithPercent(ahr.m_area.m_simulation, delay), m_areaHasRain(ahr) { }

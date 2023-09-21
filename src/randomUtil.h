@@ -1,5 +1,7 @@
 #pragma once
 
+#include "types.h"
+
 #include <random>
 #include <algorithm>
 #include <cassert>
@@ -22,7 +24,7 @@ namespace randomUtil
 	{
 		return getInRange((int32_t)lowest, (int32_t)highest);
 	}
-	[[maybe_unused]] inline bool percentChance(uint32_t percent)
+	[[maybe_unused]] inline bool percentChance(Percent percent)
 	{
 		static std::uniform_int_distribution<std::mt19937::result_type> dist(1, 100);
 		return dist(getRng()) <= percent;

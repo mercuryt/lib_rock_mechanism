@@ -15,13 +15,14 @@ void ScheduledEvent::cancel()
 Step ScheduledEvent::remaningSteps() const { return m_step - m_simulation.m_step; }
 
 ScheduledEventWithPercent::ScheduledEventWithPercent(Simulation& simulation, const Step delay) : ScheduledEvent(simulation, delay), m_startStep(simulation.m_step) {}
-uint32_t ScheduledEventWithPercent::percentComplete() const
+Percent ScheduledEventWithPercent::percentComplete() const
 {
 	Step totalSteps = m_step - m_startStep;
 	Step elapsedSteps = m_simulation.m_step - m_startStep;
 	return ((float)elapsedSteps / (float)totalSteps) * 100u;
 }
 
+Step ScheduledEventWithPercent::duration() const { return m_step - m_startStep ; }
 void EventSchedule::schedule(std::unique_ptr<ScheduledEvent> scheduledEvent)
 {
 	m_data[scheduledEvent->m_step].push_back(std::move(scheduledEvent));

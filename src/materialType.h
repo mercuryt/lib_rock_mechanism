@@ -1,5 +1,7 @@
 #pragma once
 
+#include "types.h"
+
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -35,10 +37,10 @@ struct SpoilData
 
 struct BurnData
 {
-	const uint32_t ignitionTemperature; // Temperature at which this material catches fire.
-	const uint32_t flameTemperature; // Temperature given off by flames from this material. The temperature given off by burn stage is a fraction of flame stage based on a config setting.
-	const uint32_t burnStageDuration; // How many steps to go from smouldering to burning and from burning to flaming.
-	const uint32_t flameStageDuration; // How many steps to spend flaming.
+	const Temperature ignitionTemperature; // Temperature at which this material catches fire.
+	const Temperature flameTemperature; // Temperature given off by flames from this material. The temperature given off by burn stage is a fraction of flame stage based on a config setting.
+	const Step burnStageDuration; // How many steps to go from smouldering to burning and from burning to flaming.
+	const Step flameStageDuration; // How many steps to spend flaming.
 	// Infastructure.
 	inline static std::vector<BurnData> data;
 };
@@ -58,7 +60,7 @@ struct MaterialType
 	const uint32_t hardness;
 	const bool transparent;
 	// What temperatures cause phase changes?
-	const uint32_t meltingPoint;
+	const Temperature meltingPoint;
 	const FluidType* meltsInto;
 	// How does this material dig?
 	std::vector<SpoilData> spoilData;

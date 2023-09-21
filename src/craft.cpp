@@ -69,7 +69,7 @@ void CraftThreadedTask::writeStep()
 			m_craftObjective.m_threadedTask.create(m_craftObjective);
 		else
 		{
-			m_craftObjective.m_actor.m_location->m_area->m_hasCraftingLocationsAndJobs.makeAndAssignStepProject(*m_craftJob, *m_location, m_craftObjective.m_actor);
+			m_craftObjective.m_actor.m_location->m_area->m_hasCraftingLocationsAndJobs.makeAndAssignStepProject(*m_craftJob, *m_location, m_craftObjective);
 			m_craftObjective.m_craftJob = m_craftJob;
 		}
 }
@@ -193,10 +193,10 @@ void HasCraftingLocationsAndJobs::jobComplete(CraftJob& craftJob)
 	}
 	m_jobs.remove(craftJob);
 }
-void HasCraftingLocationsAndJobs::makeAndAssignStepProject(CraftJob& craftJob, Block& location, Actor& worker)
+void HasCraftingLocationsAndJobs::makeAndAssignStepProject(CraftJob& craftJob, Block& location, CraftObjective& objective)
 {
-	craftJob.craftStepProject = std::make_unique<CraftStepProject>(*worker.getFaction(), location, **craftJob.stepIterator, craftJob);
-	craftJob.craftStepProject->addWorker(worker);
+	craftJob.craftStepProject = std::make_unique<CraftStepProject>(objective.m_actor.getFaction(), location, **craftJob.stepIterator, craftJob);
+	craftJob.craftStepProject->addWorker(objective.m_actor, objective);
 	unindexAssigned(craftJob);
 }
 // May return nullptr;

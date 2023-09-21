@@ -71,7 +71,7 @@ void EatEvent::eatPreparedMeal(Item& item)
 	assert(m_eatObjective.m_actor.m_mustEat.canEat(item));
 	assert(item.isPreparedMeal());
 	auto& eater = m_eatObjective.m_actor;
-	uint32_t massEaten = std::min(eater.m_mustEat.getMassFoodRequested(), item.m_mass);
+	Mass massEaten = std::min(eater.m_mustEat.getMassFoodRequested(), item.m_mass);
 	assert(massEaten != 0);
 	eater.m_mustEat.eat(massEaten);
 	item.destroy();
@@ -82,7 +82,7 @@ void EatEvent::eatGenericItem(Item& item)
 	auto& eater = m_eatObjective.m_actor;
 	uint32_t quantityDesired = std::max(1u, eater.m_mustEat.getMassFoodRequested() / item.singleUnitMass());
 	uint32_t quantityEaten = std::min(quantityDesired, item.m_quantity);
-	uint32_t massEaten = std::min(eater.m_mustEat.getMassFoodRequested(), quantityEaten * item.singleUnitMass());
+	Mass massEaten = std::min(eater.m_mustEat.getMassFoodRequested(), quantityEaten * item.singleUnitMass());
 	assert(massEaten != 0);
 	eater.m_mustEat.eat(massEaten);
 	item.m_quantity -= quantityEaten;
@@ -94,7 +94,7 @@ void EatEvent::eatActor(Actor& actor)
 	assert(!actor.m_alive);
 	assert(actor.getMass() != 0);
 	auto& eater = m_eatObjective.m_actor;
-	uint32_t massEaten = std::min(actor.getMass(), eater.m_mustEat.getMassFoodRequested());
+	Mass massEaten = std::min(actor.getMass(), eater.m_mustEat.getMassFoodRequested());
 	assert(massEaten != 0);
 	eater.m_mustEat.eat(massEaten);
 	actor.removeMassFromCorpse(massEaten);
@@ -102,7 +102,7 @@ void EatEvent::eatActor(Actor& actor)
 void EatEvent::eatPlantLeaves(Plant& plant)
 {
 	auto& eater = m_eatObjective.m_actor;
-	uint32_t massEaten = std::min(eater.m_mustEat.getMassFoodRequested(), plant.getFoliageMass());
+	Mass massEaten = std::min(eater.m_mustEat.getMassFoodRequested(), plant.getFoliageMass());
 	assert(massEaten != 0);
 	eater.m_mustEat.eat(massEaten);
 	plant.removeFoliageMass(massEaten);
@@ -110,7 +110,7 @@ void EatEvent::eatPlantLeaves(Plant& plant)
 void EatEvent::eatFruitFromPlant(Plant& plant)
 {
 	auto& eater = m_eatObjective.m_actor;
-	uint32_t massEaten = std::min(eater.m_mustEat.getMassFoodRequested(), plant.getFruitMass());
+	Mass massEaten = std::min(eater.m_mustEat.getMassFoodRequested(), plant.getFruitMass());
 	static const MaterialType& fruitType = MaterialType::byName("fruit");
 	uint32_t unitMass = plant.m_plantSpecies.harvestData->fruitItemType.volume * fruitType.density;
 	uint32_t quantityEaten = massEaten / unitMass;
@@ -294,7 +294,7 @@ bool MustEat::canEat(const Item& item) const
 {
 	return item.m_itemType.edibleForDrinkersOf == &m_actor.m_mustDrink.getFluidType();
 }
-void MustEat::eat(uint32_t mass)
+void MustEat::eat(Mass mass)
 {
 	assert(mass <= m_massFoodRequested);
 	assert(mass != 0);

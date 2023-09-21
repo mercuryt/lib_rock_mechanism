@@ -2,6 +2,7 @@
 #include "body.h"
 #include "hit.h"
 #include "config.h"
+#include <algorithm>
 Step WoundCalculations::getStepsTillHealed(const Hit& hit, const BodyPartType& bodyPartType, uint32_t scale)
 {
 	assert(hit.depth !=0 );
@@ -23,6 +24,8 @@ Step WoundCalculations::getStepsTillHealed(const Hit& hit, const BodyPartType& b
 }
 uint32_t WoundCalculations::getBleedVolumeRate(const Hit& hit, const BodyPartType& bodyPartType, uint32_t scale)
 {
+	if(hit.depth == 0)
+		return 0;
 	uint32_t hitVolume = hit.depth * hit.area * Config::hitScaleModifier;
 	uint32_t bodyPartVolume = bodyPartType.volume * scale;
 	float ratio = (float)hitVolume / (float)bodyPartVolume;
@@ -30,11 +33,11 @@ uint32_t WoundCalculations::getBleedVolumeRate(const Hit& hit, const BodyPartTyp
 	switch (woundType)
 	{
 		case WoundType::Pierce:
-			return ratio * Config::pierceBleedVoumeRateModifier;
+			return std::max(1u, (uint32_t)(ratio * Config::pierceBleedVoumeRateModifier));
 		case WoundType::Cut:
-			return ratio * Config::cutBleedVoumeRateModifier;
+			return std::max(1u, (uint32_t)(ratio * Config::cutBleedVoumeRateModifier));
 		case WoundType::Bludgeon:
-			return ratio * Config::bludgeonBleedVoumeRateModifier;
+			return std::max(1u, (uint32_t)(ratio * Config::bludgeonBleedVoumeRateModifier));
 		default:
 			assert(false);
 	}
