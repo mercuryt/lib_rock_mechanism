@@ -113,11 +113,11 @@ public:
 	std::list<Item>* m_dataLocation;
 
 	// Generic.
-	Item(uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t q, CraftJob* cj);
+	Item(Simulation& s, uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t q, CraftJob* cj);
 	// NonGeneric.
-	Item(uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t qual, Percent pw, CraftJob* cj);
+	Item(Simulation& s,uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t qual, Percent pw, CraftJob* cj);
 	// Named.
-	Item(uint32_t i, const ItemType& it, const MaterialType& mt, std::string n, uint32_t qual, Percent pw, CraftJob* cj);
+	Item(Simulation& s,uint32_t i, const ItemType& it, const MaterialType& mt, std::string n, uint32_t qual, Percent pw, CraftJob* cj);
 	void setVolume();
 	void setMass();
 	void destroy();

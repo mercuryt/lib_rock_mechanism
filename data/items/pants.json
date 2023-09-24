@@ -1,6 +1,7 @@
 {
 	"name": "pants",
 	"shape": "oneByOneHundredth",
+	"volume": 1000,
 	"generic": false,
 	"value": 100,
 	"moveType": "none",

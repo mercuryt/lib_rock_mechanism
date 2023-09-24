@@ -32,6 +32,7 @@ void ActorCanMove::setPath(std::vector<Block*>& path)
 	m_pathIter = m_path.begin();
 	clearAllEventsAndTasks();
 	scheduleMove();
+	m_actor.m_canLead.onPathSet();
 }
 void ActorCanMove::clearPath()
 {
@@ -40,6 +41,8 @@ void ActorCanMove::clearPath()
 }
 void ActorCanMove::callback()
 {
+	assert(!m_path.empty());
+	assert(m_destination != nullptr);
 	assert(m_pathIter >= m_path.begin());
 	assert(m_pathIter != m_path.end());
 	Block& block = **m_pathIter;
@@ -49,6 +52,13 @@ void ActorCanMove::callback()
 		setDestination(*m_destination);
 		return;
 	}
+	// Follower is not adjacent, presumably due to being blocked, wait for them.
+	if(m_actor.m_canLead.isLeading() && !m_actor.isAdjacentTo(m_actor.m_canLead.getFollower()))
+	{
+		scheduleMove();
+		return;
+	}
+	// Path is not blocked.
 	if(block.m_hasShapes.canEnterCurrentlyFrom(m_actor, *m_actor.m_location))
 	{
 		m_retries = 0;
@@ -97,6 +107,7 @@ void ActorCanMove::scheduleMove()
 }
 void ActorCanMove::setDestination(Block& destination, bool detour, bool adjacent)
 {
+	assert(destination.m_hasShapes.anythingCanEnterEver());
 	clearPath();
 	m_destination = &destination;
 	m_threadedTask.create(m_actor, detour, adjacent);

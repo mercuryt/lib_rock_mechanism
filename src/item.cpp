@@ -15,6 +15,7 @@ void Item::setLocation(Block& block)
 	if(m_location != nullptr)
 		exit();
 	block.m_hasItems.add(*this);
+	m_canLead.onMove();
 }
 void Item::exit()
 {
@@ -39,24 +40,24 @@ bool Item::isPreparedMeal() const
 	return &m_itemType == &preparedMealType;
 }
 // Generic.
-Item::Item(uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t q, CraftJob* cj):
-	HasShape(it.shape, true), m_id(i), m_itemType(it), m_materialType(mt), m_quantity(q), m_reservable(q), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this)
+Item::Item(Simulation& s,uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t q, CraftJob* cj):
+	HasShape(s, it.shape, true), m_id(i), m_itemType(it), m_materialType(mt), m_quantity(q), m_reservable(q), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this)
 {
 	assert(m_itemType.generic);
 	m_volume = m_itemType.volume * m_quantity;
 	m_mass = m_volume * m_materialType.density;
 }
 // NonGeneric.
-Item::Item(uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t qual, Percent pw, CraftJob* cj):
-	HasShape(it.shape, true), m_id(i), m_itemType(it), m_materialType(mt), m_quantity(1), m_reservable(1), m_quality(qual), m_percentWear(pw), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this)
+Item::Item(Simulation& s,uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t qual, Percent pw, CraftJob* cj):
+	HasShape(s, it.shape, true), m_id(i), m_itemType(it), m_materialType(mt), m_quantity(1), m_reservable(1), m_quality(qual), m_percentWear(pw), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this)
 {
 	assert(!m_itemType.generic);
 	m_mass = m_itemType.volume * m_materialType.density;
 	m_volume = m_itemType.volume;
 }
 // Named.
-Item::Item(uint32_t i, const ItemType& it, const MaterialType& mt, std::string n, uint32_t qual, Percent pw, CraftJob* cj):
-	HasShape(it.shape, true), m_id(i), m_itemType(it), m_materialType(mt), m_quantity(1), m_reservable(1), m_name(n), m_quality(qual), m_percentWear(pw), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this)
+Item::Item(Simulation& s,uint32_t i, const ItemType& it, const MaterialType& mt, std::string n, uint32_t qual, Percent pw, CraftJob* cj):
+	HasShape(s, it.shape, true), m_id(i), m_itemType(it), m_materialType(mt), m_quantity(1), m_reservable(1), m_name(n), m_quality(qual), m_percentWear(pw), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this)
 {
 	assert(!m_itemType.generic);
 	m_mass = m_itemType.volume * m_materialType.density;

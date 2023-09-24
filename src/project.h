@@ -69,7 +69,7 @@ public:
 	void scheduleEvent();
 	void createHaulSubproject(const HaulSubprojectParamaters haulSubprojectParamaters);
 	// TODO: minimum speed decreses with failed attempts to generate haul subprojects.
-	[[nodiscard]] bool getMinimumHaulSpeed() const { return Config::minimumHaulSpeed; }
+	[[nodiscard]] uint32_t getMinimumHaulSpeed() const { return Config::minimumHaulSpeed; }
 	[[nodiscard]] bool canGatherItemAt(const Actor& actor, const Block& block) const;
 	[[nodiscard]] std::pair<Item*, ProjectItemCounts*> gatherableItemAtWithProjectItemCounts(const Actor& actor, const Block& block) const;
 	[[nodiscard]] bool canGatherActorAt(const Actor& actor, const Block& block) const;

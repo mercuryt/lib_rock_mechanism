@@ -54,10 +54,13 @@ public:
 	HasShape& getToHaul() { return m_toHaul; }
 	static HaulSubprojectParamaters tryToSetHaulStrategy(const Project& project, HasShape& hasShape, Actor& worker, ProjectItemCounts& projectItemCounts);
 	static std::vector<Actor*> actorsNeededToHaulAtMinimumSpeed(const Project& proect, const Actor& leader, const HasShape& toHaul, const std::unordered_set<Actor*>& waiting);
-	[[nodiscard]] static uint32_t getSpeedWithHaulToolAndCargo(const Actor& leader, const Item& haulTool, const HasShape& toHaul);
-	[[nodiscard]] static uint32_t getSpeedWithHaulToolAndYokedAndCargo(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul);
+	[[nodiscard]] static uint32_t maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(const Actor& leader, const Item& haulTool, const HasShape& toHaul, uint32_t minimumSpeed);
+	[[nodiscard]] static uint32_t getSpeedWithHaulToolAndCargo(const Actor& leader, const Item& haulTool, const HasShape& toHaul, uint32_t quantity);
+	[[nodiscard]] static uint32_t maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(const Actor& leader, Actor& yoked, const Item& haulTool, const HasShape& toHaul, uint32_t minimumSpeed);
+	[[nodiscard]] static uint32_t maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniersAndAnimal(const Actor& leader, const Actor& pannierBearer, const Item& panniers, const HasShape& toHaul, uint32_t minimumSpeed);
+	[[nodiscard]] static uint32_t getSpeedWithHaulToolAndAnimal(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul, uint32_t quantity);
 	[[nodiscard]] static std::vector<Actor*> actorsNeededToHaulAtMinimumSpeedWithTool(const Project& project, const Actor& leader, const HasShape& toHaul, const Item& haulTool, const std::unordered_set<Actor*>& waiting);
-	[[nodiscard]] static uint32_t getSpeedWithPannierBearerAndPanniers(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul);
+	[[nodiscard]] static uint32_t getSpeedWithPannierBearerAndPanniers(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul, uint32_t quantity);
 	// For testing.
 	[[nodiscard]] HaulStrategy getHaulStrategy() const { return m_strategy; }
 	[[nodiscard]] bool operator==(const HaulSubproject& other) const { return &other == this; }
@@ -93,7 +96,8 @@ public:
 	[[nodiscard]] bool isCarryingEmptyContainerWhichCanHoldFluid() const;
 	[[nodiscard]] uint32_t getMass() const;
 	[[nodiscard]] bool exists() const { return m_carrying != nullptr; }
-	[[nodiscard]] uint32_t speedIfCarryingAny(const HasShape& hasShape) const;
+	[[nodiscard]] uint32_t speedIfCarryingQuantity(const HasShape& hasShape, uint32_t quantity) const;
+	[[nodiscard]] uint32_t maximumNumberWhichCanBeCarriedWithMinimumSpeed(const HasShape& hasShape, uint32_t minimumSpeed) const;
 };
 // For Area.
 class HasHaulTools final

@@ -1,6 +1,7 @@
 {
 	"name": "prepared meal",
 	"shape": "oneByOneThirtySecond",
+	"volume": 1000,
 	"generic": false,
 	"value": 5,
 	"moveType": "none",

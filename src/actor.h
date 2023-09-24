@@ -36,7 +36,6 @@ enum class CauseOfDeath { none, thirst, hunger, bloodLoss, wound, temperature };
 
 class Actor final : public HasShape
 {	
-	Simulation& m_simulation;
 	const Faction* m_faction;
 public:
 	const uint32_t m_id;
@@ -89,7 +88,6 @@ public:
 	const MoveType& getMoveType() const { return m_canMove.getMoveType(); }
 	Mass singleUnitMass() const { return getMass(); }
 	const Faction* getFaction() const { return m_faction; }
-	Simulation& getSimulation() {return m_simulation; }
 	EventSchedule& getEventSchedule();
 	ThreadedTaskEngine& getThreadedTaskEngine();
 	Actor(const Actor& actor) = delete;

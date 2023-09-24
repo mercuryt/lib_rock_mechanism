@@ -38,8 +38,9 @@ void ObjectiveTypePrioritySet::setObjectiveFor(Actor& actor)
 void ObjectiveTypePrioritySet::setDelay(ObjectiveId objectiveId)
 {
 	auto found = std::ranges::find_if(m_data, [&](ObjectivePriority& objectivePriority){ return objectivePriority.objectiveType->getObjectiveId() == objectiveId; });
-	assert(found != m_data.end());
-	found->doNotAssignAginUntil = m_actor.getSimulation().m_step + Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective;
+	// If found is not in data it was assigned by some other means (such as player interaction) so we don't need a delay.
+	if(found != m_data.end())
+		found->doNotAssignAginUntil = m_actor.getSimulation().m_step + Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective;
 }
 // SupressedNeed
 SupressedNeed::SupressedNeed(std::unique_ptr<Objective> o, Actor& a) : m_actor(a), m_objective(std::move(o)), m_event(a.getSimulation().m_eventSchedule) { }

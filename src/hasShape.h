@@ -14,8 +14,9 @@ class BlockHasShapes;
 
 class HasShape
 {
+	Simulation& m_simulation;
 protected:
-	HasShape(const Shape& s, bool st, uint8_t f = 0) : m_static(st), m_shape(&s), m_location(nullptr), m_facing(f), m_canLead(*this), m_canFollow(*this) {}
+	HasShape(Simulation& simulation, const Shape& shape, bool st, uint8_t f = 0) : m_simulation(simulation), m_static(st), m_shape(&shape), m_location(nullptr), m_facing(f), m_canLead(*this), m_canFollow(*this) {}
 	bool m_static;
 public:
 	const Shape* m_shape;
@@ -32,6 +33,8 @@ public:
 	std::unordered_set<Block*> getOccupiedAndAdjacent();
 	std::unordered_set<Block*> getAdjacentBlocks();
 	std::unordered_set<HasShape*> getAdjacentHasShapes();
+	Simulation& getSimulation() { return m_simulation; }
+	EventSchedule& getEventSchedule();
 	virtual bool isItem() const = 0;
 	virtual bool isActor() const = 0;
 	virtual uint32_t getMass() const = 0;

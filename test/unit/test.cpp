@@ -20,6 +20,7 @@
 #include "farmFields.h"
 #include "basicNeeds.h"
 #include "wound.h"
+#include "leadAndFollow.h"
 #include "haul.h"
 
 int main(int argc, char** argv) {

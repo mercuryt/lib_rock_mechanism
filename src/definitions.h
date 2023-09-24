@@ -48,7 +48,7 @@ namespace definitions
 			FluidType::data.emplace_back(
 				data["name"].get<std::string>(),
 				data["viscosity"].get<std::uint32_t>(),
-				data["density"].get<std::uint32_t>(),
+				data["density"].get<Density>(),
 				data.contains("mistDuration") ? data["mistDuration"].get<Step>() : 0,
 				data.contains("mistDuration") ? data["maxMistSpread"].get<std::uint32_t>() : 0
 			);
@@ -84,7 +84,7 @@ namespace definitions
 				data.contains("category") ? 
 					&MaterialTypeCategory::byName(data["category"].get<std::string>()) :
 					nullptr,
-				data["density"].get<uint32_t>(),
+				data["density"].get<Density>(),
 				data["hardness"].get<uint32_t>(),
 				data["transparent"].get<bool>(),
 				data.contains("meltingPoint") ? data["meltingPoint"].get<uint32_t>() : 0
@@ -148,13 +148,11 @@ namespace definitions
 			if(file.path().extension() != ".json")
 				continue;
 			Json data = tryParse(file.path());
-			const Shape& shape = Shape::byName(data["shape"].get<std::string>());
-			uint32_t volume = std::accumulate(shape.positions.begin(), shape.positions.end(), 0, [](uint32_t total, auto& position) { return total + position[3]; });
 			auto& itemType = ItemType::data.emplace_back(
 				data["name"].get<std::string>(),
 				data.contains("installable") && data["installable"].get<bool>() == true,
-				shape,
-				volume,
+				Shape::byName(data["shape"].get<std::string>()),
+				data["volume"].get<Volume>(),
 				data["generic"].get<bool>(),
 				data.contains("internalVolume") ? data["internalVolume"].get<Volume>() : 0 ,
 				data.contains("canHoldFluids") ? data["canHoldFluids"].get<bool>() : false,

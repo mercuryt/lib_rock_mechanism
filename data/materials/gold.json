@@ -1,10 +1,10 @@
 {
   "name": "gold",
   "density": 193,
-  "hardness": 100,
+  "hardness": 10,
   "transparent": false,
   "meltingPoint": 1186,
-  "meltsInto": "moltenBronze",
+  "meltsInto": "moltenGold",
   "spoilData": [
     {
       "materialType": "bronze",

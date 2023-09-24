@@ -56,7 +56,7 @@ struct MaterialType
 {
 	const std::string name;
 	const MaterialTypeCategory* materialTypeCategory;
-	const uint32_t density;
+	const Density density;
 	const uint32_t hardness;
 	const bool transparent;
 	// What temperatures cause phase changes?

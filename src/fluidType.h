@@ -14,7 +14,7 @@ struct FluidType
 {
 	const std::string name;
 	const uint32_t viscosity;
-	const uint32_t density;
+	const Density density;
 	const Step mistDuration;
 	const uint32_t maxMistSpread;
 	const MaterialType* freezesInto;

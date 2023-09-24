@@ -1,6 +1,7 @@
 {
 	"name": "long sword",
 	"shape": "oneByOneSixteenth",
+	"volume": 20000,
 	"generic": false,
 	"value": 200,
 	"moveType": "none",

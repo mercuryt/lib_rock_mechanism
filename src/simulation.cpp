@@ -72,7 +72,7 @@ Item& Simulation::createItem(const ItemType& itemType, const MaterialType& mater
 Item& Simulation::createItem(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, std::string name, uint32_t quality, Percent percentWear, CraftJob* cj)
 {
 	if(m_nextItemId <= id) m_nextItemId = id + 1;
-	std::list<Item>::iterator iterator = m_items.emplace(m_items.end(), id, itemType, materialType, name, quality, percentWear, cj);
+	std::list<Item>::iterator iterator = m_items.emplace(m_items.end(), *this, id, itemType, materialType, name, quality, percentWear, cj);
 	iterator->m_iterator = iterator;
 	iterator->m_dataLocation = &m_items;
 	return *iterator;
@@ -89,7 +89,7 @@ Item& Simulation::createItem(const ItemType& itemType, const MaterialType& mater
 Item& Simulation::createItem(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, uint32_t quantity, CraftJob* cj)
 {
 	if(m_nextItemId <= id) m_nextItemId = id + 1;
-	std::list<Item>::iterator iterator = m_items.emplace(m_items.end(), id, itemType, materialType, quantity, cj);
+	std::list<Item>::iterator iterator = m_items.emplace(m_items.end(), *this, id, itemType, materialType, quantity, cj);
 	iterator->m_iterator = iterator;
 	return *iterator;
 }

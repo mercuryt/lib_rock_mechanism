@@ -1,0 +1,6 @@
+{
+  "name": "moltenBismuth",
+  "viscosity": 10,
+  "density": 95,
+  "freezesInto": "bismuth"
+}

@@ -1,6 +1,7 @@
 {
 	"name": "crossbow",
 	"shape": "oneByOneSixteenth",
+	"volume": 20000,
 	"generic": false,
 	"value": 100,
 	"moveType": "none",

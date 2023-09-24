@@ -1,22 +1,42 @@
 #include "leadAndFollow.h"
 #include "block.h"
+void CanLead::onPathSet()
+{
+	if(!isLeading())
+		return;
+	assert(!m_hasShape.m_canFollow.isFollowing());
+	if(m_locationQueue.empty())
+	{
+		// Make list of locations of leader and all followers.
+		// Followers will follow this path before they get to where the leader started.
+		// TODO: Fill gaps created by multi-tile shapes.
+		m_locationQueue.push_back(m_hasShape.m_location);
+		HasShape* hasShape = &m_hasShape;
+		while(hasShape->m_canLead.isLeading())
+		{
+			hasShape = &hasShape->m_canLead.m_canFollow->m_hasShape;
+			m_locationQueue.push_back(hasShape->m_location);
+		}
+	}
+	assert(m_locationQueue.size() > 1);
+}
 void CanLead::onMove()
 {
-	if(m_canFollow == nullptr)
+	if(!isLeading())
 		return;
-	m_locationQueue.push_back(m_hasShape.m_location);
-	Block& block = *m_locationQueue.back();
-	if(block.m_hasShapes.canEnterCurrentlyFrom(m_canFollow->m_hasShape, *m_canFollow->m_hasShape.m_location))
-	{
-		m_canFollow->m_hasShape.setLocation(block);
-		m_locationQueue.pop_front();
-	}
-
+	// Add to front of location queue if this is the line leader.
+	if(!m_hasShape.m_canFollow.isFollowing())
+		m_locationQueue.push_front(m_hasShape.m_location);
+	auto locationQueue = getLocationQueue();
+	assert(locationQueue.size() > 1);
+	HasShape* nextInLine = &m_canFollow->m_hasShape;
+	nextInLine->m_canFollow.tryToMove();
 }
 bool CanLead::isFollowerKeepingUp() const { return m_hasShape.isAdjacentTo(m_canFollow->m_hasShape); }
 bool CanLead::isLeading() const { return m_canFollow != nullptr; }
 bool CanLead::isLeading(HasShape& hasShape) const  { return m_canFollow != nullptr && &hasShape.m_canFollow == m_canFollow; }
-HasShape& CanLead::getFollower() const { return m_canFollow->m_hasShape; }
+HasShape& CanLead::getFollower() { return m_canFollow->m_hasShape; }
+const HasShape& CanLead::getFollower() const { return m_canFollow->m_hasShape; }
 // Class method.
 uint32_t CanLead::getMoveSpeedForGroupWithAddedMass(std::vector<const HasShape*>& actorsAndItems, uint32_t addedRollingMass, uint32_t addedDeadMass)
 {
@@ -42,7 +62,8 @@ uint32_t CanLead::getMoveSpeedForGroupWithAddedMass(std::vector<const HasShape*>
 			if(actor.m_canMove.canMove())
 			{
 				carryMass += actor.m_attributes.getUnencomberedCarryMass();
-				lowestMoveSpeed = std::min(lowestMoveSpeed, actor.m_attributes.getMoveSpeed());
+				uint32_t moveSpeed = actor.m_attributes.getMoveSpeed();
+				lowestMoveSpeed = lowestMoveSpeed == 0 ? moveSpeed : std::min(lowestMoveSpeed, moveSpeed);
 			}
 			else
 				deadMass += actor.getMass();
@@ -51,6 +72,7 @@ uint32_t CanLead::getMoveSpeedForGroupWithAddedMass(std::vector<const HasShape*>
 			break;
 		hasShape = &hasShape->m_canLead.getFollower();
 	}
+	assert(lowestMoveSpeed != 0);
 	uint32_t totalMass = deadMass + (rollingMass * Config::rollingMassModifier);
 	if(totalMass <= carryMass)
 		return lowestMoveSpeed;
@@ -74,13 +96,18 @@ uint32_t CanLead::getMoveSpeed() const
 	}
 	return getMoveSpeedForGroupWithAddedMass(actorsAndItems, 0);
 }
+std::deque<Block*>& CanLead::getLocationQueue()
+{
+	return m_hasShape.m_canFollow.getLineLeader().m_canLead.m_locationQueue;
+}
+CanFollow::CanFollow(HasShape& a) : m_hasShape(a), m_canLead(nullptr), m_event(a.getEventSchedule()) { }
 void CanFollow::follow(CanLead& canLead)
 {
 	assert(m_canLead == nullptr);
-	assert(m_canLead->m_canFollow == nullptr);
-	assert(m_hasShape.isAdjacentTo(m_canLead->m_hasShape));
+	assert(canLead.m_canFollow == nullptr);
+	assert(m_hasShape.isAdjacentTo(canLead.m_hasShape));
+	canLead.m_canFollow = this;
 	m_canLead = &canLead;
-	m_canLead->m_canFollow = this;
 	if(m_hasShape.isItem())
 		m_hasShape.setStatic(false);
 }
@@ -98,3 +125,48 @@ void CanFollow::unfollowIfFollowing()
 	if(m_canLead != nullptr)
 		unfollow();
 }
+void CanFollow::disband(bool taskComplete)
+{
+	HasShape* leader = &getLineLeader();
+	leader->m_canLead.m_locationQueue.clear();
+	while(leader->m_canLead.isLeading())
+	{
+		if(taskComplete && leader->isActor())
+			static_cast<Actor*>(leader)->m_hasObjectives.taskComplete();
+		leader = &leader->m_canLead.m_canFollow->m_hasShape;
+		leader->m_canFollow.unfollow();
+	}
+}
+void CanFollow::tryToMove()
+{
+	assert(isFollowing());
+	auto locationQueue = m_hasShape.m_canLead.getLocationQueue();
+	// Find the position in the location queue where the next shape in the line currently is.
+	auto found = std::ranges::find(locationQueue, m_hasShape.m_location);
+	assert(found != locationQueue.begin());
+	// Find the next position after that one and try to move follower into it.
+	Block& block = **(--found);
+	if(!block.m_hasShapes.anythingCanEnterEver() || !block.m_hasShapes.canEnterEverFrom(m_hasShape, *m_hasShape.m_location))
+		// Shape can no longer enter this location, following path is imposible, disband.
+		disband(true);
+	else if(block.m_hasShapes.canEnterCurrentlyFrom(m_hasShape, *m_hasShape.m_location))
+	{
+		// setLocation calls CanLead::onMove which calls this method on it's follower, so this call is recursive down the line.
+		m_hasShape.setLocation(block);
+		// Remove from the end of the location queue if this is the last shape in line.
+		if(!m_hasShape.m_canLead.isLeading())
+			locationQueue.pop_back();
+	}
+	else
+		m_event.schedule(m_hasShape);
+}
+HasShape& CanFollow::getLineLeader()
+{
+	if(!isFollowing())
+		return m_hasShape;
+	else
+		return m_canLead->m_hasShape.m_canFollow.getLineLeader();
+}
+CanFollowEvent::CanFollowEvent(HasShape& hasShape) : ScheduledEventWithPercent(hasShape.getSimulation(), Config::stepsToDelayBeforeTryingAgainToFollowLeader), m_hasShape(hasShape) { }
+void CanFollowEvent::execute() { m_hasShape.m_canFollow.tryToMove(); }
+void CanFollowEvent::clearReferences() { m_hasShape.m_canFollow.m_event.clearPointer(); }

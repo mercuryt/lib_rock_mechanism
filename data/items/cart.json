@@ -1,8 +1,9 @@
 {
-	"name": "wheel barrow",
+	"name": "cart",
 	"shape": "oneByOneHalf",
+	"volume": 10000,
 	"generic": false,
-	"internalVolume" : 100,
+	"internalVolume" : 9000,
 	"canHoldFluids": false,
 	"value": 200,
 	"moveType": "roll"

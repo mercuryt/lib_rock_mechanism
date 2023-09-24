@@ -1,5 +1,6 @@
 #include "hasShape.h"
 #include "block.h"
+#include "simulation.h"
 #include <cassert>
 void HasShape::setStatic(bool isTrue)
 {
@@ -85,6 +86,7 @@ std::unordered_set<HasShape*> HasShape::getAdjacentHasShapes()
 	output.erase(this);
 	return output;
 }
+EventSchedule& HasShape::getEventSchedule() { return getSimulation().m_eventSchedule; }
 void BlockHasShapes::record(HasShape& hasShape, uint32_t volume)
 {
 	assert(!m_shapes.contains(&hasShape));

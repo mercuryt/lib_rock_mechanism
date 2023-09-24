@@ -171,10 +171,19 @@ uint32_t CanPickup::getMass() const
 	}
 	return m_carrying->getMass();
 }
-uint32_t CanPickup::speedIfCarryingAny(const HasShape& hasShape) const
+uint32_t CanPickup::speedIfCarryingQuantity(const HasShape& hasShape, uint32_t quantity) const
 {
 	assert(m_carrying == nullptr);
-	return m_actor.m_canMove.getIndividualMoveSpeedWithAddedMass(hasShape.singleUnitMass());
+	return m_actor.m_canMove.getIndividualMoveSpeedWithAddedMass(quantity * hasShape.singleUnitMass());
+}
+uint32_t CanPickup::maximumNumberWhichCanBeCarriedWithMinimumSpeed(const HasShape& hasShape, uint32_t minimumSpeed) const
+{
+	assert(minimumSpeed != 0);
+	//TODO: replace iteration with calculation?
+	uint32_t quantity = 0;
+	while(speedIfCarryingQuantity(hasShape, quantity + 1) >= minimumSpeed)
+		quantity++;
+	return quantity;
 }
 HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters) : m_project(p), m_workers(paramaters.workers.begin(), paramaters.workers.end()), m_toHaul(*paramaters.toHaul), m_quantity(paramaters.quantity), m_strategy(paramaters.strategy), m_haulTool(paramaters.haulTool), m_leader(nullptr), m_itemIsMoving(false), m_beastOfBurden(paramaters.beastOfBurden), m_teamMemberInPlaceForHaulCount(0), m_projectItemCounts(*paramaters.projectItemCounts)
 {
@@ -492,25 +501,29 @@ void HaulSubproject::cancel()
 }
 HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& project, HasShape& toHaul, Actor& worker, ProjectItemCounts& projectItemCounts)
 {
+	// TODO: make exception for slow haul if very close.
 	HaulSubprojectParamaters output;
 	output.toHaul = &toHaul;
 	output.projectItemCounts = &projectItemCounts;
+	uint32_t maxQuantityRequested = (uint32_t)projectItemCounts.required - projectItemCounts.reserved;
 	// Individual
-	if(worker.m_canPickup.speedIfCarryingAny(toHaul) >= project.getMinimumHaulSpeed())
+	// TODO:: Prioritize cart if a large number of items are requested.
+	uint32_t maxQuantityCanCarry = worker.m_canPickup.maximumNumberWhichCanBeCarriedWithMinimumSpeed(toHaul, project.getMinimumHaulSpeed());
+	if(maxQuantityCanCarry != 0)
 	{
 		output.strategy = HaulStrategy::Individual;
-		output.quantity = worker.m_canPickup.canPickupQuantityOf(toHaul);
+		output.quantity = std::min(maxQuantityRequested, maxQuantityCanCarry);
 		output.workers.push_back(&worker);
 		return output;
 	}
 	// Team
-	if(project.m_waiting.size() != 1)
+	if(!project.m_waiting.empty())
 	{
-		assert(!project.m_waiting.empty());
 		output.workers = actorsNeededToHaulAtMinimumSpeed(project, worker, toHaul, project.m_waiting);
 		if(!output.workers.empty())
 		{
 			output.strategy = HaulStrategy::Team;
+			output.quantity = 1;
 			return output;
 		}
 	}
@@ -519,23 +532,29 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 	if(haulTool != nullptr)
 	{
 		// Cart
-		// TODO: make exception for slow haul if very close.
-		if(getSpeedWithHaulToolAndCargo(worker, *haulTool, toHaul) >= project.getMinimumHaulSpeed())
+		maxQuantityCanCarry = maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(worker, *haulTool, toHaul, project.getMinimumHaulSpeed());
+		if(maxQuantityCanCarry != 0)
 		{
 			output.strategy = HaulStrategy::Cart;
 			output.haulTool = haulTool;
+			output.quantity = std::min(maxQuantityRequested, maxQuantityCanCarry);
 			output.workers.push_back(&worker);
 			return output;
 		}
 		// Animal Cart
 		Actor* yoked = toHaul.m_location->m_area->m_hasHaulTools.getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(*worker.getFaction(), *haulTool, toHaul.getMass(), project.getMinimumHaulSpeed());
-		if(yoked != nullptr && getSpeedWithHaulToolAndYokedAndCargo(worker, *yoked, *haulTool, toHaul) >= project.getMinimumHaulSpeed())
+		if(yoked != nullptr)
 		{
-			output.strategy = HaulStrategy::AnimalCart;
-			output.haulTool = haulTool;
-			output.beastOfBurden = yoked;
-			output.workers.push_back(&worker);
-			return output;
+			maxQuantityCanCarry = maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(worker, *yoked, *haulTool, toHaul, project.getMinimumHaulSpeed());
+			if(maxQuantityCanCarry != 0)
+			{
+				output.strategy = HaulStrategy::AnimalCart;
+				output.haulTool = haulTool;
+				output.beastOfBurden = yoked;
+				output.quantity = std::min(maxQuantityRequested, maxQuantityCanCarry);
+				output.workers.push_back(&worker);
+				return output;
+			}
 		}
 		// Team Cart
 		output.workers = actorsNeededToHaulAtMinimumSpeedWithTool(project, worker, toHaul, *haulTool, project.m_waiting);
@@ -543,6 +562,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 		{
 			output.strategy = HaulStrategy::TeamCart;
 			output.haulTool = haulTool;
+			output.quantity = 1;
 			return output;
 		}
 	}
@@ -551,13 +571,18 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 	if(pannierBearer != nullptr)
 	{
 		Item* panniers = toHaul.m_location->m_area->m_hasHaulTools.getPanniersForActorToHaul(*worker.getFaction(), *pannierBearer, toHaul);
-		if(panniers != nullptr && getSpeedWithPannierBearerAndPanniers(worker, *pannierBearer, *panniers, toHaul) >= project.getMinimumHaulSpeed())
+		if(panniers != nullptr)
 		{
-			output.strategy = HaulStrategy::Panniers;
-			output.beastOfBurden = pannierBearer;
-			output.haulTool = panniers;
-			output.workers.push_back(&worker);
-			return output;
+			maxQuantityCanCarry = maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniersAndAnimal(worker, *pannierBearer, *haulTool, toHaul, project.getMinimumHaulSpeed());
+			if(maxQuantityCanCarry != 0)
+			{
+				output.strategy = HaulStrategy::Panniers;
+				output.beastOfBurden = pannierBearer;
+				output.haulTool = panniers;
+				output.quantity = maxQuantityCanCarry;
+				output.workers.push_back(&worker);
+				return output;
+			}
 		}
 	}
 	assert(output.strategy == HaulStrategy::None);
@@ -583,24 +608,42 @@ std::vector<Actor*> HaulSubproject::actorsNeededToHaulAtMinimumSpeed(const Proje
 	output.clear();
 	return output;
 }
-// Class method.
-uint32_t HaulSubproject::getSpeedWithHaulToolAndCargo(const Actor& leader, const Item& haulTool, const HasShape& toHaul)
+//Class method.
+uint32_t HaulSubproject::getSpeedWithHaulToolAndCargo(const Actor& leader, const Item& haulTool, const HasShape& toHaul, uint32_t quantity)
 {
 	std::vector<const HasShape*> actorsAndItems;
 	actorsAndItems.push_back(&leader);
 	actorsAndItems.push_back(&haulTool);
 	// actorsAndItems, rollingMass, deadMass
-	return CanLead::getMoveSpeedForGroupWithAddedMass(actorsAndItems, toHaul.getMass(), 0);
+	return CanLead::getMoveSpeedForGroupWithAddedMass(actorsAndItems, toHaul.singleUnitMass() * quantity, 0);
 }
 // Class method.
-uint32_t HaulSubproject::getSpeedWithHaulToolAndYokedAndCargo(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul)
+uint32_t HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(const Actor& leader, const Item& haulTool, const HasShape& toHaul, uint32_t minimumSpeed)
+{
+	assert(minimumSpeed != 0);
+	uint32_t quantity = 0;
+	while(getSpeedWithHaulToolAndCargo(leader, haulTool, toHaul, quantity + 1) <= minimumSpeed)
+		quantity++;
+	return quantity;
+}
+// Class method.
+uint32_t HaulSubproject::getSpeedWithHaulToolAndAnimal(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul, uint32_t quantity)
 {
 	std::vector<const HasShape*> actorsAndItems;
 	actorsAndItems.push_back(&leader);
 	actorsAndItems.push_back(&yoked);
 	actorsAndItems.push_back(&haulTool);
 	// actorsAndItems, rollingMass, deadMass
-	return CanLead::getMoveSpeedForGroupWithAddedMass(actorsAndItems, toHaul.singleUnitMass(), 0);
+	return CanLead::getMoveSpeedForGroupWithAddedMass(actorsAndItems, toHaul.singleUnitMass() * quantity, 0);
+}
+// Class method.
+uint32_t HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(const Actor& leader, Actor& yoked, const Item& haulTool, const HasShape& toHaul, uint32_t minimumSpeed)
+{
+	assert(minimumSpeed != 0);
+	uint32_t quantity = 0;
+	while(getSpeedWithHaulToolAndAnimal(leader, yoked, haulTool, toHaul, quantity + 1) <= minimumSpeed)
+		quantity++;
+	return quantity;
 }
 // Class method.
 std::vector<Actor*> HaulSubproject::actorsNeededToHaulAtMinimumSpeedWithTool(const Project& project, const Actor& leader, const HasShape& toHaul, const Item& haulTool, const std::unordered_set<Actor*>& waiting)
@@ -637,13 +680,22 @@ void HaulSubproject::onComplete()
 	}
 }
 // Class method.
-uint32_t HaulSubproject::getSpeedWithPannierBearerAndPanniers(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul)
+uint32_t HaulSubproject::getSpeedWithPannierBearerAndPanniers(const Actor& leader, const Actor& pannierBearer, const Item& panniers, const HasShape& toHaul, uint32_t quantity)
 {
 	std::vector<const HasShape*> actorsAndItems;
 	actorsAndItems.push_back(&leader);
-	actorsAndItems.push_back(&yoked);
+	actorsAndItems.push_back(&pannierBearer);
 	// actorsAndItems, rollingMass, deadMass
-	return CanLead::getMoveSpeedForGroupWithAddedMass(actorsAndItems, 0, toHaul.singleUnitMass() + haulTool.getMass());
+	return CanLead::getMoveSpeedForGroupWithAddedMass(actorsAndItems, 0, (toHaul.singleUnitMass() * quantity) + panniers.getMass());
+}
+// Class method.
+uint32_t HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniersAndAnimal(const Actor& leader, const Actor& pannierBearer, const Item& panniers, const HasShape& toHaul, uint32_t minimumSpeed)
+{
+	assert(minimumSpeed != 0);
+	uint32_t quantity = 0;
+	while(getSpeedWithPannierBearerAndPanniers(leader, pannierBearer, panniers, toHaul, quantity + 1) >= minimumSpeed)
+		quantity++;
+	return quantity;
 }
 //TODO: optimize?
 bool HasHaulTools::hasToolToHaul(const Faction& faction, const HasShape& hasShape) const
@@ -684,7 +736,7 @@ Actor* HasHaulTools::getPannierBearerToHaulCargoWithMassWithMinimumSpeed(const F
 {
 	//TODO: Account for pannier mass?
 	for(Actor* actor : m_yolkableActors)
-		if(!actor->m_reservable.isFullyReserved(faction) && minimumHaulSpeed <= actor->m_canPickup.speedIfCarryingAny(hasShape))
+		if(!actor->m_reservable.isFullyReserved(faction) && minimumHaulSpeed <= actor->m_canPickup.speedIfCarryingQuantity(hasShape, 1u))
 			return actor;
 	return nullptr;
 }

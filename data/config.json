@@ -42,7 +42,7 @@
 	"sowSeedsPriority": 10,
 	"stepsAttackCoolDownReductionPerPointOfDextarity": 0.1,
 	"unitsOfMoveSpeedPerUnitOfAgility": 0.1,
-	"unitsOfCarryMassPerUnitOfStrength": 10,
+	"unitsOfCarryMassPerUnitOfStrength": 1000,
 	"objectivePrioritySleep": 20,
 	"digScoreCost": 100,
 	"digStrengthModifier": 1,
@@ -126,5 +126,7 @@
 	"hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea": 0.2,
 	"ratioOfHitAreaToBodyPartVolumeForSever": 0.5,
 	"unarmedCombatScoreBase": 1,
-	"targetedHaulPriority": 500
+	"targetedHaulPriority": 500,
+	"stationPriority": 1500,
+	"stepsToDelayBeforeTryingAgainToFollowLeader": 40
 }

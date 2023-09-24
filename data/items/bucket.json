@@ -1,6 +1,7 @@
 {
 	"name": "bucket",
 	"shape": "oneByOneEighth",
+	"volume": 2000,
 	"generic": false,
 	"internalVolume" : 10,
 	"canHoldFluids": true,

@@ -1,6 +1,7 @@
 {
 	"name": "chunk",
 	"shape": "oneByOneSixteenth",
+	"volume": 2500,
 	"generic": true,
 	"value": 10,
 	"moveType": "none"

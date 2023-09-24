@@ -142,6 +142,8 @@ namespace Config
 	inline uint32_t ratioOfHitAreaToBodyPartVolumeForSever;
 	inline uint32_t unarmedCombatScoreBase;
 	inline uint32_t targetedHaulPriority;
+	inline uint32_t stationPriority;
+	inline Step stepsToDelayBeforeTryingAgainToFollowLeader;
 	
 	inline uint32_t convertBodyPartVolumeToArea(uint32_t volume){ return sqrt(volume); }
 	inline void load()
@@ -279,5 +281,7 @@ namespace Config
 		ratioOfHitAreaToBodyPartVolumeForSever = data["ratioOfHitAreaToBodyPartVolumeForSever"].get<float>();
 		unarmedCombatScoreBase = data["unarmedCombatScoreBase"].get<uint32_t>();
 		targetedHaulPriority = data["targetedHaulPriority"].get<uint32_t>();
+		stationPriority = data["stationPriority"].get<uint32_t>();
+		stepsToDelayBeforeTryingAgainToFollowLeader = data["stepsToDelayBeforeTryingAgainToFollowLeader"].get<uint32_t>();
 	}
 }
