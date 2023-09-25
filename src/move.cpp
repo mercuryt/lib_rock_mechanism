@@ -110,6 +110,7 @@ void ActorCanMove::setDestination(Block& destination, bool detour, bool adjacent
 	assert(destination.m_hasShapes.anythingCanEnterEver());
 	clearPath();
 	m_destination = &destination;
+	clearAllEventsAndTasks();
 	m_threadedTask.create(m_actor, detour, adjacent);
 }
 void ActorCanMove::setDestinationAdjacentTo(Block& destination, bool detour)

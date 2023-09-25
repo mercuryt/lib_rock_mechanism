@@ -13,8 +13,10 @@ TEST_CASE("haul")
 	static const MaterialType& gold = MaterialType::byName("gold");
 	static const MaterialType& poplarWood = MaterialType::byName("poplar wood");
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
+	static const AnimalSpecies& donkey = AnimalSpecies::byName("jackstock donkey");
 	static const ItemType& chunk = ItemType::byName("chunk");
 	static const ItemType& cart = ItemType::byName("cart");
+	static const ItemType& panniers = ItemType::byName("panniers");
 	Simulation simulation;
 	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
@@ -64,20 +66,12 @@ TEST_CASE("haul")
 		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1);
 		REQUIRE(projectWorker.haulSubproject != nullptr);
 		REQUIRE(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::Individual);
-		REQUIRE(dwarf1.m_canMove.getPath().size() != 0);
-		REQUIRE(dwarf1.m_canMove.getDestination() != nullptr);
-		Block& destinationIntermediate = *dwarf1.m_canMove.getDestination();
-		REQUIRE(destinationIntermediate.isAdjacentToIncludingCornersAndEdges(chunkLocation));
-		while(dwarf1.m_location != &destinationIntermediate)
-			simulation.doStep();
+		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, chunkLocation);
 		REQUIRE(dwarf1.m_canPickup.exists());
 		REQUIRE(dwarf1.m_canPickup.getItem() == chunk1);
 		simulation.doStep();
 		REQUIRE(dwarf1.m_canMove.getDestination() != nullptr);
-		Block& destinationIntermediate2 = *dwarf1.m_canMove.getDestination();
-		REQUIRE(destinationIntermediate2.isAdjacentToIncludingCornersAndEdges(destination));
-		while(dwarf1.m_location != &destinationIntermediate2)
-			simulation.doStep();
+		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, destination);
 		simulation.fastForward(Config::addToStockPileDelaySteps);
 		REQUIRE(chunk1.m_location == &destination);
 		REQUIRE(!dwarf1.m_canPickup.exists());
@@ -101,35 +95,92 @@ TEST_CASE("haul")
 		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1);
 		REQUIRE(projectWorker.haulSubproject != nullptr);
 		REQUIRE(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::Cart);
-		REQUIRE(dwarf1.m_canMove.getPath().size() != 0);
-		REQUIRE(dwarf1.m_canMove.getDestination() != nullptr);
-		Block& destinationIntermediate = *dwarf1.m_canMove.getDestination();
-		REQUIRE(destinationIntermediate.isAdjacentToIncludingCornersAndEdges(cartLocation));
-		while(dwarf1.m_location != &destinationIntermediate)
-			simulation.doStep();
-		Block& destinationIntermediate2 = *dwarf1.m_canMove.getDestination();
-		REQUIRE(destinationIntermediate2.isAdjacentToIncludingCornersAndEdges(chunkLocation));
-		while(dwarf1.m_location != &destinationIntermediate2)
-			simulation.doStep();
-		REQUIRE(dwarf1.m_canPickup.exists());
-		REQUIRE(dwarf1.m_canPickup.getItem() == chunk1);
+		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, cartLocation);
+		// Another step to path.
 		simulation.doStep();
-		REQUIRE(dwarf1.m_canMove.getDestination() != nullptr);
-		Block& destinationIntermediate3 = *dwarf1.m_canMove.getDestination();
-		REQUIRE(destinationIntermediate3.isAdjacentToIncludingCornersAndEdges(destination));
-		while(dwarf1.m_location != &destinationIntermediate3)
-			simulation.doStep();
+		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, chunkLocation);
+		REQUIRE(cart.m_hasCargo.getContents().size() == 1);
+		REQUIRE(**(cart.m_hasCargo.getItems().begin()) == chunk1);
+		simulation.doStep();
+		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, destination);
 		simulation.fastForward(Config::addToStockPileDelaySteps);
 		REQUIRE(chunk1.m_location == &destination);
-		REQUIRE(!dwarf1.m_canPickup.exists());
+		REQUIRE(cart.m_hasCargo.empty());
+		REQUIRE(!cart.m_reservable.isFullyReserved(faction));
+	}
+	SUBCASE("team haul strategy")
+	{
+		Block& destination = area.m_blocks[5][5][2];
+		Block& chunkLocation = area.m_blocks[1][5][2];
+		Item& chunk1 = simulation.createItem(chunk, gold, 1u);
+		chunk1.setLocation(chunkLocation);
+		REQUIRE(!dwarf1.m_canPickup.canPickupAny(chunk1));
+		Actor& dwarf2 = simulation.createActor(dwarf, area.m_blocks[1][2][2]);
+		dwarf2.setFaction(&faction);
+		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1, &dwarf2}), chunk1, destination);
+		// One step to run the create subproject threaded task.
+		simulation.doStep();
+		// Another step to find the paths.
+		simulation.doStep();
+		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1);
+		REQUIRE(projectWorker.haulSubproject != nullptr);
+		REQUIRE(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::Team);
+		REQUIRE(dwarf1.m_canMove.getPath().size() != 0);
+		REQUIRE(dwarf1.m_canMove.getDestination() != nullptr);
+		Block& destinationIntermediate1 = *dwarf1.m_canMove.getDestination();
+		REQUIRE(destinationIntermediate1.isAdjacentToIncludingCornersAndEdges(chunkLocation));
+		Block& destinationIntermediate2 = *dwarf2.m_canMove.getDestination();
+		REQUIRE(destinationIntermediate2.isAdjacentToIncludingCornersAndEdges(chunkLocation));
+		while(dwarf1.m_location != &destinationIntermediate1 || dwarf2.m_location != &destinationIntermediate2)
+			simulation.doStep();
+		// Another step to path.
+		simulation.doStep();
+		REQUIRE(dwarf2.m_canMove.getDestination() == nullptr);
+		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, destination);
+		simulation.fastForward(Config::addToStockPileDelaySteps);
+		REQUIRE(chunk1.m_location == &destination);
+		REQUIRE(!dwarf2.m_canFollow.isFollowing());
+		REQUIRE(!dwarf1.m_canLead.isLeading());
 	}
 	SUBCASE("panniers haul strategy")
 	{
+		Block& destination = area.m_blocks[5][5][2];
+		Block& chunkLocation = area.m_blocks[1][5][2];
+		Item& chunk1 = simulation.createItem(chunk, gold, 1u);
+		chunk1.setLocation(chunkLocation);
+		REQUIRE(!dwarf1.m_canPickup.canPickupAny(chunk1));
+		Block& donkeyLocation = area.m_blocks[1][2][2];
+		Actor& donkey1 = simulation.createActor(donkey, donkeyLocation);
+		donkey1.setFaction(&faction);
+		Block& panniersLocation = area.m_blocks[1][5][2];
+		Item& panniers1 = simulation.createItem(panniers, poplarWood, 3u, 0u);
+		panniers1.setLocation(panniersLocation);
+		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1, &donkey1}), chunk1, destination);
+		// One step to run the create subproject threaded task.
+		simulation.doStep();
+		// Another step to find the paths.
+		simulation.doStep();
+		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1);
+		REQUIRE(projectWorker.haulSubproject != nullptr);
+		REQUIRE(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::Panniers);
+		REQUIRE(dwarf1.m_canMove.getPath().size() != 0);
+		REQUIRE(dwarf1.m_canMove.getDestination() != nullptr);
+		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, panniersLocation);
+		simulation.doStep();
+		REQUIRE(dwarf1.m_canPickup.isCarrying(panniers1));
+		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, donkeyLocation);
+		simulation.doStep();
+		REQUIRE(!dwarf1.m_canPickup.exists());
+		REQUIRE(donkey1.m_equipmentSet.contains(panniers1));
+		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, chunkLocation);
+		simulation.doStep();
+		REQUIRE(panniers1.m_hasCargo.contains(chunk1));
+		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, destination);
+		simulation.fastForward(Config::addToStockPileDelaySteps);
+		REQUIRE(chunk1.m_location == &destination);
+		REQUIRE(!donkey1.m_reservable.isFullyReserved(faction));
 	}
 	SUBCASE("animal cart haul strategy")
-	{
-	}
-	SUBCASE("team haul strategy")
 	{
 	}
 	SUBCASE("team hand cart haul strategy")

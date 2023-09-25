@@ -127,3 +127,17 @@ void Simulation::fastForward(Step steps)
 	}
 	m_step = targetStep + 1;
 }
+void Simulation::fastForwardUntillActorIsAdjacentToDestination(Actor& actor, Block& destination)
+{
+	Block* adjacentDestination = actor.m_canMove.getDestination();
+	assert(adjacentDestination != nullptr);
+	assert(adjacentDestination->isAdjacentToIncludingCornersAndEdges(destination));
+	while(!m_eventSchedule.m_data.empty())
+	{
+		auto& pair = *m_eventSchedule.m_data.begin();
+		m_step = pair.first;
+		doStep();
+		if(actor.m_location == adjacentDestination)
+			break;
+	}
+}

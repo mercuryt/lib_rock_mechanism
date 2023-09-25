@@ -35,7 +35,7 @@
 	"objectivePrioiorityKill": 1000,
 	"pathHuristicConstant": 1,
 	"impassibleItemVolume": 60,
-	"massCarryMinimumMovementRatio": 0.5,
+	"massCarryMaximimMovementRatio": 2.0,
 	"rollingMassModifier": 0.3,
 	"moveTryAttemptsBeforeDetour": 2,
 	"sowSeedsStepsDuration": 20,

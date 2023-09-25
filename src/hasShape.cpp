@@ -60,10 +60,11 @@ std::unordered_set<Block*> HasShape::getOccupiedAndAdjacent()
 }
 std::unordered_set<Block*> HasShape::getAdjacentBlocks()
 {
-	std::unordered_set<Block*> output(m_blocks);
+	std::unordered_set<Block*> output;
 	for(Block* block : m_blocks)
 		output.insert(block->m_adjacentsVector.begin(), block->m_adjacentsVector.end());
-	output.erase(m_blocks.begin(), m_blocks.end());
+	for(Block* block : m_blocks)
+		output.erase(block);
 	return output;
 }
 std::unordered_set<HasShape*> HasShape::getAdjacentHasShapes()

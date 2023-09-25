@@ -4,7 +4,7 @@
   "strength": [150, 155, 25],
   "agility": [30, 35, 1],
   "dextarity": [30, 35, 1],
-  "mass": [300, 400, 20],
+  "mass": [300000, 400000, 20000],
   "deathAgeDays": [25550, 36500],
   "daysTillFullyGrown": 9131,
   "daysTillDieWithoutFood": 20,

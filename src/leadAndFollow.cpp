@@ -49,8 +49,8 @@ uint32_t CanLead::getMoveSpeedForGroupWithAddedMass(std::vector<const HasShape*>
 		if(hasShape->isItem())
 		{
 			Mass mass = static_cast<const Item&>(*hasShape).getMass();
-			static const MoveType& rolling = MoveType::byName("rolling");
-			if(hasShape->getMoveType() == rolling)
+			static const MoveType& roll = MoveType::byName("roll");
+			if(hasShape->getMoveType() == roll)
 				rollingMass += mass;
 			else
 				deadMass += mass;
@@ -68,16 +68,13 @@ uint32_t CanLead::getMoveSpeedForGroupWithAddedMass(std::vector<const HasShape*>
 			else
 				deadMass += actor.getMass();
 		}
-		if(!hasShape->m_canLead.isLeading())
-			break;
-		hasShape = &hasShape->m_canLead.getFollower();
 	}
 	assert(lowestMoveSpeed != 0);
 	uint32_t totalMass = deadMass + (rollingMass * Config::rollingMassModifier);
 	if(totalMass <= carryMass)
 		return lowestMoveSpeed;
 	float ratio = totalMass / carryMass;
-	if(ratio > Config::massCarryMinimumMovementRatio)
+	if(ratio > Config::massCarryMaximimMovementRatio)
 		return 0;
 	return lowestMoveSpeed / ratio;
 }

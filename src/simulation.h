@@ -43,8 +43,9 @@ public:
 	Item& createItem(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, std::string name, uint32_t quality, Percent percentWear, CraftJob* cj = nullptr);
 	~Simulation();
 	// For testing.
-	[[maybe_unused]]void setDateTime(DateTime now);
-	[[maybe_unused]]void fastForward(Step step);
+	[[maybe_unused]] void setDateTime(DateTime now);
+	[[maybe_unused]] void fastForward(Step step);
+	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToDestination(Actor& actor, Block& destination);
 };
 
 class HourlyEvent final : public ScheduledEventWithPercent

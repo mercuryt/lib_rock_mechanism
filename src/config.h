@@ -44,7 +44,7 @@ namespace Config
 	inline uint32_t objectivePrioiorityKill;
 	inline float pathHuristicConstant;
 	inline Volume impassibleItemVolume;
-	inline float massCarryMinimumMovementRatio;
+	inline float massCarryMaximimMovementRatio;
 	inline float rollingMassModifier;
 	inline constexpr Step actorDoVisionInterval = 10;
 	inline uint32_t moveTryAttemptsBeforeDetour;
@@ -186,7 +186,7 @@ namespace Config
 		objectivePrioiorityKill = data["objectivePrioiorityKill"].get<uint32_t>();
 		pathHuristicConstant = data["pathHuristicConstant"].get<float>();
 		impassibleItemVolume = data["impassibleItemVolume"].get<Volume>();
-		massCarryMinimumMovementRatio = data["massCarryMinimumMovementRatio"].get<float>();
+		massCarryMaximimMovementRatio = data["massCarryMaximimMovementRatio"].get<float>();
 		rollingMassModifier = data["rollingMassModifier"].get<float>();
 		moveTryAttemptsBeforeDetour = data["moveTryAttemptsBeforeDetour"].get<uint32_t>();
 		sowSeedsStepsDuration = data["sowSeedsStepsDuration"].get<Step>();

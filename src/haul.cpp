@@ -193,6 +193,10 @@ HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters)
 		m_project.m_workers.at(actor).haulSubproject = this;
 		commandWorker(*actor);
 	}
+	if(m_haulTool != nullptr)
+		m_haulTool->m_reservable.reserveFor(m_project.m_canReserve, 1);
+	if(m_beastOfBurden != nullptr)
+		m_beastOfBurden->m_reservable.reserveFor(m_project.m_canReserve, 1);
 }
 void HaulSubproject::commandWorker(Actor& actor)
 {
@@ -230,7 +234,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 			if(m_itemIsMoving)
 			{
 				assert(&actor == m_leader);
-				if(actor.m_location == &m_project.m_location)
+				if(actor.m_location->isAdjacentTo(m_project.m_location))
 				{
 					// At destination.
 					m_toHaul.m_canFollow.unfollow();
@@ -281,6 +285,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 							m_liftPoints[&actor] = block;
 							block->m_reservable.reserveFor(actor.m_canReserve, 1);
 							actor.m_canMove.setDestination(*block);
+							return;
 						}
 					assert(false); // team strategy should not be choosen if there is not enough space to reserve for lifting.
 				}
@@ -299,7 +304,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 						// TODO: set rotation?
 						m_toHaul.setLocation(m_project.m_location);
 						m_haulTool->m_canFollow.unfollow();
-						m_haulTool->m_reservable.clearReservationFor(actor.m_canReserve);
+						m_haulTool->m_reservable.clearReservationFor(m_project.m_canReserve);
 						onComplete();
 					}
 					else
@@ -347,7 +352,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 						// TODO: set rotation?
 						m_toHaul.setLocation(m_project.m_location);
 						m_beastOfBurden->m_canFollow.unfollow();
-						m_beastOfBurden->m_reservable.clearReservationFor(actor.m_canReserve);
+						m_beastOfBurden->m_reservable.clearReservationFor(m_project.m_canReserve);
 						onComplete();
 					}
 					else
@@ -517,15 +522,13 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 		return output;
 	}
 	// Team
-	if(!project.m_waiting.empty())
+	output.workers = actorsNeededToHaulAtMinimumSpeed(project, worker, toHaul);
+	if(!output.workers.empty())
 	{
-		output.workers = actorsNeededToHaulAtMinimumSpeed(project, worker, toHaul, project.m_waiting);
-		if(!output.workers.empty())
-		{
-			output.strategy = HaulStrategy::Team;
-			output.quantity = 1;
-			return output;
-		}
+		assert(output.workers.size() == 2); // TODO: teams larger then two.
+		output.strategy = HaulStrategy::Team;
+		output.quantity = 1;
+		return output;
 	}
 	Item* haulTool = toHaul.m_location->m_area->m_hasHaulTools.getToolToHaul(*worker.getFaction(), toHaul);
 	// Cart
@@ -589,22 +592,28 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 	return output;
 }
 // Class method.
-std::vector<Actor*> HaulSubproject::actorsNeededToHaulAtMinimumSpeed(const Project& project, const Actor& leader, const HasShape& toHaul, const std::unordered_set<Actor*>& waiting)
+std::vector<Actor*> HaulSubproject::actorsNeededToHaulAtMinimumSpeed(const Project& project, Actor& leader, const HasShape& toHaul)
 {
 	std::vector<const HasShape*> actorsAndItems;
 	std::vector<Actor*> output;
+	output.push_back(&leader);
 	actorsAndItems.push_back(&leader);
 	actorsAndItems.push_back(&toHaul);
-	// For each actor waiting add to actors and items and see if the item can be moved fast enough.
-	for(Actor* actor : waiting)
+	// For each actor without a sub project add to actors and items and see if the item can be moved fast enough.
+	for(auto& [actor, projectWorker] : project.m_workers)
 	{
+		if(actor == &leader || projectWorker.haulSubproject != nullptr)
+			continue;
+		assert(std::ranges::find(output, actor) == output.end());
 		output.push_back(actor);
+		if(output.size() > 2) //TODO: More then two requires multiple followers for one leader.
+			break;
 		actorsAndItems.push_back(actor);
 		uint32_t speed = CanLead::getMoveSpeedForGroup(actorsAndItems);
-		if(speed  >= project.getMinimumHaulSpeed())
+		if(speed >= project.getMinimumHaulSpeed())
 			return output;
 	}
-	// All the actors waiting put together are not enough to move at minimum acceptable speed.
+	// Cannot form a team to move at acceptable speed.
 	output.clear();
 	return output;
 }

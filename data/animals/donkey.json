@@ -1,12 +1,12 @@
 {
-  "name": "dwarf rabbit",
+  "name": "jackstock donkey",
   "sentient": false,
-  "strength": [3, 4, 1],
+  "strength": [30, 35, 5],
   "agility": [50, 55, 1],
-  "dextarity": [50, 55, 1],
-  "mass": [2000, 3000, 1000],
-  "deathAgeDays": [1000, 1200],
-  "daysTillFullyGrown": 200,
+  "dextarity": [40, 45, 1],
+  "mass": [80000, 90000, 10000],
+  "deathAgeDays": [10000, 14600],
+  "daysTillFullyGrown": 1726,
   "daysTillDieWithoutFood": 10,
   "daysEatFrequency": 3,
   "daysTillDieWithoutFluid": 4,
@@ -22,10 +22,10 @@
   "eatsLeaves": true,
   "eatsFruit": true,
   "visionRange": 10,
-  "bodyScale": 3,
+  "bodyScale": 15,
   "materialType": "flesh",
   "moveType": "four legs and swim in water",
   "fluidType": "water",
   "bodyType": "quadraped",
-  "shapes": ["oneByOneThirtySecond", "oneByOneSixteenth"]
+  "shapes": ["oneByOneEighth", "oneByOneFull", "oneByTwoFull"]
 }
