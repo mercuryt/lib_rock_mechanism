@@ -270,11 +270,18 @@ bool BlockHasShapes::moveTypeCanEnter(const MoveType& moveType) const
 	}
 	return false;
 }
-const std::vector<std::pair<Block*, uint32_t>>& BlockHasShapes::getMoveCosts(const Shape& shape, const MoveType& moveType)
+bool BlockHasShapes::hasCachedMoveCosts(const Shape& shape, const MoveType& moveType) const
 {
-	if(m_moveCostsCache.contains(&shape) && m_moveCostsCache.at(&shape).contains(&moveType))
-		return m_moveCostsCache.at(&shape).at(&moveType);
-	auto& output = m_moveCostsCache[&shape][&moveType];
+	return m_moveCostsCache.contains(&shape) && m_moveCostsCache.at(&shape).contains(&moveType);
+}
+const std::vector<std::pair<Block*, uint32_t>>& BlockHasShapes::getCachedMoveCosts(const Shape& shape, const MoveType& moveType) const
+{
+	assert(hasCachedMoveCosts(shape, moveType));
+	return m_moveCostsCache.at(&shape).at(&moveType);
+}
+const std::vector<std::pair<Block*, uint32_t>> BlockHasShapes::makeMoveCosts(const Shape& shape, const MoveType& moveType) const
+{
+	std::vector<std::pair<Block*, u_int32_t>> output;
 	for(Block* block : m_block.getAdjacentWithEdgeAndCornerAdjacent())
 		if(block->m_hasShapes.shapeAndMoveTypeCanEnterEverFrom(shape, moveType, m_block))
 			output.emplace_back(block, block->m_hasShapes.moveCostFrom(moveType, m_block));

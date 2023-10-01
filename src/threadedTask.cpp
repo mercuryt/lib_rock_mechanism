@@ -10,14 +10,15 @@ void ThreadedTask::cancel()
 }
 void ThreadedTaskEngine::readStep()
 {
-	for(auto& task : m_tasks)
+	m_tasksForThisStep = std::move(m_tasksForNextStep);
+	m_tasksForNextStep.clear();
+	// TODO: Batching, adaptive batching.
+	for(auto& task : m_tasksForThisStep)
 		m_simulation.m_pool.push_task([&](){ task->readStep(); });
 }
 void ThreadedTaskEngine::writeStep()
 {
-	std::unordered_set<std::unique_ptr<ThreadedTask>> currentTasks;
-	m_tasks.swap(currentTasks);
-	for(auto& task : currentTasks)
+	for(auto& task : m_tasksForThisStep)
 	{
 		task->clearReferences();
 		task->writeStep();
@@ -25,10 +26,10 @@ void ThreadedTaskEngine::writeStep()
 }
 void ThreadedTaskEngine::insert(std::unique_ptr<ThreadedTask>&& task)
 {
-	m_tasks.insert(std::move(task));
+	m_tasksForNextStep.insert(std::move(task));
 }
 void ThreadedTaskEngine::remove(ThreadedTask& task)
 {
-	assert(std::ranges::find_if(m_tasks, [&](auto& t) { return t.get() == &task; }) != m_tasks.end());
-	std::erase_if(m_tasks, [&](auto& t) { return t.get() == &task; });
+	assert(std::ranges::find_if(m_tasksForNextStep, [&](auto& t) { return t.get() == &task; }) != m_tasksForNextStep.end());
+	std::erase_if(m_tasksForNextStep, [&](auto& t) { return t.get() == &task; });
 }

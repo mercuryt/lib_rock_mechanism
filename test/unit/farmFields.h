@@ -44,18 +44,18 @@ TEST_CASE("farmFields")
 		const SowSeedsObjectiveType objectiveType;
 		REQUIRE(objectiveType.canBeAssigned(actor));
 		actor.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 10);
-		REQUIRE(simulation.m_threadedTaskEngine.m_tasks.empty());
+		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.empty());
 		actor.m_hasObjectives.getNext();
 		REQUIRE(actor.m_hasObjectives.hasCurrent());
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "sow seeds");
-		REQUIRE(simulation.m_threadedTaskEngine.m_tasks.size() == 1);
+		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.size() == 1);
 		simulation.doStep();
 		REQUIRE(block.m_reservable.isFullyReserved(faction));
 		REQUIRE(!actor.m_canMove.getPath().empty());
 		while(actor.m_canMove.getDestination() != nullptr)
 			simulation.doStep();
 		REQUIRE(actor.m_canMove.getPath().empty());
-		REQUIRE(simulation.m_threadedTaskEngine.m_tasks.empty());
+		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.empty());
 		REQUIRE(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
 		REQUIRE(!block.m_hasDesignations.contains(faction, BlockDesignation::SowSeeds));
 		const Step eventStep = simulation.m_step + Config::sowSeedsStepsDuration;
@@ -88,14 +88,14 @@ TEST_CASE("farmFields")
 		actor.m_hasObjectives.getNext();
 		REQUIRE(actor.m_hasObjectives.hasCurrent());
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "harvest");
-		REQUIRE(simulation.m_threadedTaskEngine.m_tasks.size() == 1);
+		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.size() == 1);
 		simulation.doStep();
 		REQUIRE(block.m_reservable.isFullyReserved(faction));
 		REQUIRE(!actor.m_canMove.getPath().empty());
 		while(actor.m_canMove.getDestination() != nullptr)
 			simulation.doStep();
 		REQUIRE(actor.m_canMove.getPath().empty());
-		REQUIRE(simulation.m_threadedTaskEngine.m_tasks.empty());
+		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.empty());
 		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
 		REQUIRE(!block.m_hasDesignations.contains(faction, BlockDesignation::Harvest));
 		const Step eventStep = simulation.m_step + Config::harvestEventDuration;
@@ -148,20 +148,20 @@ TEST_CASE("farmFields")
 		REQUIRE(actor.m_canMove.getDestination() == &bucketLocation);
 		while(actor.m_location != &bucketLocation)
 			simulation.doStep();
-		REQUIRE(simulation.m_threadedTaskEngine.m_tasks.size() == 1);
+		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.size() == 1);
 		REQUIRE(actor.m_canPickup.isCarryingEmptyContainerWhichCanHoldFluid());
 		simulation.doStep();
-		REQUIRE(simulation.m_threadedTaskEngine.m_tasks.size() == 0);
+		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.size() == 0);
 		REQUIRE(actor.m_canMove.getDestination() != nullptr);
 		REQUIRE(actor.m_canMove.getDestination()->isAdjacentToIncludingCornersAndEdges(pondLocation));
 		while(!actor.m_location->isAdjacentToIncludingCornersAndEdges(pondLocation))
 			simulation.doStep();
 		REQUIRE(bucket.m_hasCargo.containsAnyFluid());
 		REQUIRE(bucket.m_hasCargo.getFluidType() == water);
-		REQUIRE(simulation.m_threadedTaskEngine.m_tasks.size() == 1);
+		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.size() == 1);
 		REQUIRE(actor.m_canMove.getDestination() == nullptr);
 		simulation.doStep();
-		REQUIRE(simulation.m_threadedTaskEngine.m_tasks.size() == 0);
+		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.size() == 0);
 		REQUIRE(actor.m_canMove.getDestination() == &block);
 		while(actor.m_location != &block)
 			simulation.doStep();

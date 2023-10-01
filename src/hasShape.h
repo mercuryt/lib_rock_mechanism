@@ -73,7 +73,12 @@ public:
 	bool moveTypeCanEnterFrom(const MoveType& moveType, const Block& from) const;
 	bool canEnterCurrentlyFrom(const HasShape& hasShape, const Block& block) const;
 	bool canEnterCurrentlyWithFacing(const HasShape& hasShape, const uint8_t& facing) const;
-	const std::vector<std::pair<Block*, uint32_t>>& getMoveCosts(const Shape& shape, const MoveType& moveType);
+	// Durring pathing the algorithm will first check if cached move costs exist, if so it will use them.
+	// If not it will make a new set of costs and store them within it's self.
+	// During the next write phase the newly made costs will be added to the cache via ::tryToCacheMoveCosts.
+	bool hasCachedMoveCosts(const Shape& shape, const MoveType& moveType) const;
+	const std::vector<std::pair<Block*, uint32_t>>& getCachedMoveCosts(const Shape& shape, const MoveType& moveType) const;
+	const std::vector<std::pair<Block*, uint32_t>> makeMoveCosts(const Shape& shape, const MoveType& moveType) const;
 	uint32_t moveCostFrom(const MoveType& moveType, const Block& from) const;
 	bool canStandIn() const;
 	uint32_t getTotalVolume() const;

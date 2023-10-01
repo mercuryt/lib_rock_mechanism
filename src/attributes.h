@@ -36,7 +36,8 @@ public:
 		strength(species.strength[0], species.strength[1], 100, 0, percentGrown),
 		dextarity(species.dextarity[0], species.dextarity[1], 100, 0, percentGrown),
 		agility(species.agility[0], species.agility[1], 100, 0, percentGrown),
-		mass(species.mass[0], species.mass[1], 100, 0, percentGrown) { generate(); }
+		mass(species.mass[0], species.mass[1], 100, 0, percentGrown)
+	{ generate(); }
 	void updatePercentGrown(Percent percentGrown);
 	void generate();
 	void removeMass(Mass m)

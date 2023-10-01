@@ -37,7 +37,7 @@ TEST_CASE("basicNeedsSentient")
 		REQUIRE(!actor.m_mustDrink.needsFluid());
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "drink");
 		uint32_t drinkVolume = MustDrink::drinkVolumeFor(actor);
-		REQUIRE(pondLocation.volumeOfFluidTypeContains(water) == 100 - drinkVolume);
+		REQUIRE(pondLocation.volumeOfFluidTypeContains(water) == Config::maxBlockVolume - drinkVolume);
 	}
 	SUBCASE("drink from bucket")
 	{
@@ -234,13 +234,12 @@ TEST_CASE("basicNeedsNonsentient")
 	}
 	SUBCASE("leave location with unsafe temperature")
 	{
-		auto initalTemperature = actor.m_location->m_blockHasTemperature.get();
 		REQUIRE(actor.m_canGrow.isGrowing());
 		Block& temperatureSourceLocation = area.m_blocks[1][1][3];
-		area.m_areaHasTemperature.addTemperatureSource(temperatureSourceLocation, 100);
+		area.m_areaHasTemperature.addTemperatureSource(temperatureSourceLocation, 200);
 		simulation.doStep();
 		REQUIRE(!actor.m_needsSafeTemperature.isSafeAtCurrentLocation());
-		REQUIRE(actor.m_location->m_blockHasTemperature.get() > initalTemperature);
+		REQUIRE(actor.m_location->m_blockHasTemperature.get() > actor.m_species.maximumSafeTemperature);
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "get to safe temperature");
 		REQUIRE(!actor.m_canGrow.isGrowing());
 	}

@@ -38,10 +38,18 @@ void Area::readStep()
 	m_simulation.m_pool.push_task([&](){ stepCaveInRead(); });
 	// Calculate flow.
 	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
+	{
+		assert(!fluidGroup->m_destroy);
 		m_simulation.m_pool.push_task([=](){ fluidGroup->readStep(); });
+	}
 }
 void Area::writeStep()
 { 
+	// Remove destroyed.
+	for(FluidGroup& fluidGroup : m_fluidGroups)
+		if(fluidGroup.m_destroy)
+			m_unstableFluidGroups.erase(&fluidGroup);
+	std::erase_if(m_fluidGroups, [](FluidGroup& fluidGroup){ return fluidGroup.m_destroy; });
 	// Apply flow.
 	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
 	{

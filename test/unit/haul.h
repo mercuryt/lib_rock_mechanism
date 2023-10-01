@@ -151,18 +151,19 @@ TEST_CASE("haul")
 		REQUIRE(!dwarf1.m_canPickup.canPickupAny(chunk1));
 		Block& donkeyLocation = area.m_blocks[1][2][2];
 		Actor& donkey1 = simulation.createActor(donkey, donkeyLocation);
-		donkey1.setFaction(&faction);
-		Block& panniersLocation = area.m_blocks[1][5][2];
+		area.m_hasHaulTools.registerYokeableActor(donkey1);
+		Block& panniersLocation = area.m_blocks[5][1][2];
 		Item& panniers1 = simulation.createItem(panniers, poplarWood, 3u, 0u);
 		panniers1.setLocation(panniersLocation);
-		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1, &donkey1}), chunk1, destination);
+		area.m_hasHaulTools.registerHaulTool(panniers1);
+		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1}), chunk1, destination);
 		// One step to run the create subproject threaded task.
-		simulation.doStep();
-		// Another step to find the paths.
 		simulation.doStep();
 		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1);
 		REQUIRE(projectWorker.haulSubproject != nullptr);
 		REQUIRE(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::Panniers);
+		// Another step to find the paths.
+		simulation.doStep();
 		REQUIRE(dwarf1.m_canMove.getPath().size() != 0);
 		REQUIRE(dwarf1.m_canMove.getDestination() != nullptr);
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, panniersLocation);

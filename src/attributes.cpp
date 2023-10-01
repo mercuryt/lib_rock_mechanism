@@ -2,9 +2,8 @@
 #include "util.h"
 void Attribute::setPercentGrown(Percent percentGrown)
 {
-	value = util::scaleByPercent(
-			util::scaleByPercentRange(percentGrown, speciesNewbornValue, speciesAdultValue),
-			baseModifierPercent) + bonusOrPenalty;
+	Percent growthPercent = util::scaleByPercentRange(speciesNewbornValue, speciesAdultValue, percentGrown);
+	value = util::scaleByPercent(baseModifierPercent, growthPercent) + bonusOrPenalty;
 }
 void Attributes::updatePercentGrown(Percent percentGrown)
 {

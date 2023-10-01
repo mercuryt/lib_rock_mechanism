@@ -356,7 +356,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 						onComplete();
 					}
 					else
-						actor.m_canMove.setDestination(m_project.m_location);
+						actor.m_canMove.setDestinationAdjacentTo(m_project.m_location);
 				}
 				else
 				{
@@ -382,7 +382,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 					if(actor.isAdjacentTo(*m_beastOfBurden))
 					{
 						// Actor can put on panniers.
-						m_haulTool->exit();
+						actor.m_canPickup.remove(*m_haulTool);
 						m_beastOfBurden->m_equipmentSet.addEquipment(*m_haulTool);
 						m_beastOfBurden->m_canFollow.follow(actor.m_canLead);
 						actor.m_canMove.setDestinationAdjacentTo(m_toHaul);
@@ -394,7 +394,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 				{
 					// Bring panniers to beast.
 					// TODO: move to adjacent to panniers.
-					if(actor.m_location == m_haulTool->m_location)
+					if(actor.isAdjacentTo(*m_haulTool->m_location))
 					{
 						actor.m_canPickup.pickUp(*m_haulTool, 1u);
 						actor.m_canMove.setDestinationAdjacentTo(*m_beastOfBurden);
@@ -576,13 +576,13 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 		Item* panniers = toHaul.m_location->m_area->m_hasHaulTools.getPanniersForActorToHaul(*worker.getFaction(), *pannierBearer, toHaul);
 		if(panniers != nullptr)
 		{
-			maxQuantityCanCarry = maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniersAndAnimal(worker, *pannierBearer, *haulTool, toHaul, project.getMinimumHaulSpeed());
+			maxQuantityCanCarry = maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniersAndAnimal(worker, *pannierBearer, *panniers, toHaul, project.getMinimumHaulSpeed());
 			if(maxQuantityCanCarry != 0)
 			{
 				output.strategy = HaulStrategy::Panniers;
 				output.beastOfBurden = pannierBearer;
 				output.haulTool = panniers;
-				output.quantity = maxQuantityCanCarry;
+				output.quantity = std::min(maxQuantityRequested, maxQuantityCanCarry);
 				output.workers.push_back(&worker);
 				return output;
 			}
@@ -602,7 +602,7 @@ std::vector<Actor*> HaulSubproject::actorsNeededToHaulAtMinimumSpeed(const Proje
 	// For each actor without a sub project add to actors and items and see if the item can be moved fast enough.
 	for(auto& [actor, projectWorker] : project.m_workers)
 	{
-		if(actor == &leader || projectWorker.haulSubproject != nullptr)
+		if(actor == &leader || projectWorker.haulSubproject != nullptr || !actor->isSentient())
 			continue;
 		assert(std::ranges::find(output, actor) == output.end());
 		output.push_back(actor);
@@ -631,7 +631,7 @@ uint32_t HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(con
 {
 	assert(minimumSpeed != 0);
 	uint32_t quantity = 0;
-	while(getSpeedWithHaulToolAndCargo(leader, haulTool, toHaul, quantity + 1) <= minimumSpeed)
+	while(getSpeedWithHaulToolAndCargo(leader, haulTool, toHaul, quantity + 1) >= minimumSpeed)
 		quantity++;
 	return quantity;
 }
@@ -650,7 +650,7 @@ uint32_t HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndA
 {
 	assert(minimumSpeed != 0);
 	uint32_t quantity = 0;
-	while(getSpeedWithHaulToolAndAnimal(leader, yoked, haulTool, toHaul, quantity + 1) <= minimumSpeed)
+	while(getSpeedWithHaulToolAndAnimal(leader, yoked, haulTool, toHaul, quantity + 1) >= minimumSpeed)
 		quantity++;
 	return quantity;
 }
@@ -713,8 +713,10 @@ bool HasHaulTools::hasToolToHaul(const Faction& faction, const HasShape& hasShap
 }
 Item* HasHaulTools::getToolToHaul(const Faction& faction, const HasShape& hasShape) const
 {
+	// Items like panniers also have internal volume but aren't relevent for this method.
+	static const MoveType& none = MoveType::byName("none");
 	for(Item* item : m_haulTools)
-		if(!item->m_reservable.isFullyReserved(faction) && item->m_itemType.internalVolume >= hasShape.getVolume())
+		if(item->m_itemType.moveType != none && !item->m_reservable.isFullyReserved(faction) && item->m_itemType.internalVolume >= hasShape.getVolume())
 			return item;
 	return nullptr;
 }
@@ -731,7 +733,7 @@ Item* HasHaulTools::getToolToHaulFluid(const Faction& faction) const
 }
 Actor* HasHaulTools::getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(const Faction& faction, const Item& haulTool, uint32_t cargoMass, uint32_t minimumHaulSpeed) const
 {
-	static const MoveType& rollingType = MoveType::byName("rolling");
+	static const MoveType& rollingType = MoveType::byName("roll");
 	assert(haulTool.m_itemType.moveType == rollingType);
 	for(Actor* actor : m_yolkableActors)
 	{

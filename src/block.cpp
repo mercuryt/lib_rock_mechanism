@@ -511,6 +511,7 @@ void Block::addFluid(uint32_t volume, const FluidType& fluidType)
 }
 void Block::removeFluid(uint32_t volume, const FluidType& fluidType)
 {
+	assert(volume <= volumeOfFluidTypeContains(fluidType));
 	m_fluids.at(&fluidType).second->removeFluid(volume);
 }
 bool Block::fluidCanEnterCurrently(const FluidType& fluidType) const

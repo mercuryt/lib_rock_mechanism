@@ -9,6 +9,7 @@ set(CMAKE_BUILD_TYPE Debug)
 add_compile_options(-fsanitize=address)
 add_link_options(-fsanitize=address)
 
+
 if (MSVC)
     # warning level 4
     add_compile_options(/W4)

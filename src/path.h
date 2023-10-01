@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <unordered_set>
+#include <functional>
 
 namespace path
 {
@@ -20,8 +21,7 @@ namespace path
 		uint32_t totalMoveCost;
 	};
 	// Depth first search.
-	template<typename IsValidType, typename CompareType, typename IsDoneType, typename AdjacentCostsType>
-	std::vector<Block*> get(IsValidType& isValid, CompareType& compare, IsDoneType& isDone, AdjacentCostsType& adjacentCosts, Block& start)
+	inline std::vector<Block*> get(std::function<bool(const Block&, const Block&)>& isValid, std::function<bool(const ProposedRouteStep&, const ProposedRouteStep&)>& compare, std::function<bool(const Block&)>& isDone, std::function<std::vector<std::pair<Block*, uint32_t>>(Block&)>& adjacentCosts, Block& start)
 	{
 		std::unordered_set<const Block*> closed;
 		closed.insert(&start);
@@ -49,7 +49,7 @@ namespace path
 				std::reverse(output.begin(), output.end());
 				return output;
 			}
-			for(auto& [adjacent, moveCost] : adjacentCosts(*block))
+			for(auto [adjacent, moveCost] : adjacentCosts(*block))
 				if(isValid(*adjacent, *block) && !closed.contains(adjacent))
 				{
 					routeNodes.emplace_back(*adjacent, proposedRouteStep.routeNode);
@@ -63,33 +63,38 @@ namespace path
 	inline std::pair<std::vector<Block*>, std::unordered_map<Block*, std::vector<std::pair<Block*, uint32_t>>>> getForActor(const Actor& actor, const Block& destination, bool detour = false)
 	{
 		// Huristic: taxi distance to destination times constant plus total move cost.
-		auto priority = [&](const ProposedRouteStep& proposedRouteStep)
+		std::function<uint32_t(const ProposedRouteStep&)> priority = [&](const ProposedRouteStep& proposedRouteStep)
 		{
 			return (proposedRouteStep.routeNode->block.taxiDistance(destination) * Config::pathHuristicConstant) + proposedRouteStep.totalMoveCost;
 		};
-		auto compare = [&](const ProposedRouteStep& a, const ProposedRouteStep& b) { return priority(a) > priority(b); };
-		// Check if the actor can currently enter each block if this is a detour path.
-		auto isDone = [&](const Block& block){ return &block == &destination; };
+		std::function<bool(const ProposedRouteStep& a, const ProposedRouteStep& b)> compare = [&](const ProposedRouteStep& a, const ProposedRouteStep& b) { return priority(a) > priority(b); };
+		std::function<bool(const Block&)> isDone = [&](const Block& block){ return &block == &destination; };
 	       	std::unordered_map<Block*, std::vector<std::pair<Block*, uint32_t>>> moveCostsToCache;
-		auto adjacentCosts = [&](Block& block)
+		auto shape = *actor.m_shape;
+		auto moveType = actor.m_canMove.getMoveType();
+		std::function<std::vector<std::pair<Block*, uint32_t>>(Block&)> adjacentCosts = [&](Block& block)
 		{
-		       	return moveCostsToCache[&block] = block.m_hasShapes.getMoveCosts(*actor.m_shape, actor.m_canMove.getMoveType());
+			assert(!moveCostsToCache.contains(&block));
+			if(block.m_hasShapes.hasCachedMoveCosts(shape, moveType))
+				return block.m_hasShapes.getCachedMoveCosts(shape, moveType);
+			else
+				return moveCostsToCache[&block] = block.m_hasShapes.makeMoveCosts(shape, moveType);
 		};
 		std::function<bool(const Block&, const Block&)> isValid;
 		if(detour)
+			// Check if the actor can currently enter each block if this is a detour path.
 			isValid = [&](const Block& block, const Block& previous)
 			{ 
 				return block.m_hasShapes.anythingCanEnterEver() && block.m_hasShapes.canEnterEverFrom(actor, previous) && block.m_hasShapes.canEnterCurrentlyFrom(actor, previous);
 			};
 		else
+			// Check if the actor can ever enter each block if this is not a detour path.
 			isValid = [&](const Block& block, const Block& previous)
 			{ 
 				return block.m_hasShapes.anythingCanEnterEver() && block.m_hasShapes.canEnterEverFrom(actor, previous); 
 			};
-		return std::make_pair(
-				get<decltype(isValid), decltype(compare), decltype(isDone), decltype(adjacentCosts)>(isValid, compare, isDone, adjacentCosts, *actor.m_location),
-				std::move(moveCostsToCache)
-			);
+		std::vector<Block*> route = get(isValid, compare, isDone, adjacentCosts, *actor.m_location);
+		return std::make_pair(std::move(route), moveCostsToCache);
 	}
 	// Breadth first search.
 	// TODO: remove default argument on maxRange.

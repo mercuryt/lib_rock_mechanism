@@ -12,7 +12,7 @@
   "growsInSunlight": true,
   "rootRangeMin": 1,
   "rootRangeMax": 2,
-  "adultMass": 5,
+  "adultMass": 5000,
   "dayOfYearForSowStart": 50,
   "dayOfYearForSowEnd": 150,
   "fluidType": "water",

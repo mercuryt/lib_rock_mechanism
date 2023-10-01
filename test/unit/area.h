@@ -100,7 +100,7 @@ TEST_CASE("Area")
 		simulation.m_threadedTaskEngine.writeStep();
 		simulation.m_step++;
 		REQUIRE(actor.m_canMove.getPath().size() == 7);
-		REQUIRE(simulation.m_threadedTaskEngine.m_tasks.empty());
+		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.empty());
 		REQUIRE(actor.m_canMove.hasEvent());
 		uint32_t scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
 		REQUIRE(scheduledStep == 8);

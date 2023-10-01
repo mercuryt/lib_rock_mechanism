@@ -1,9 +1,9 @@
 {
 	"name": "panniers",
 	"shape": "oneByOneHalf",
-	"volume": 10000,
+	"volume": 100,
 	"generic": false,
-	"internalVolume" : 3000,
+	"internalVolume" : 1200,
 	"canHoldFluids": false,
 	"value": 100,
 	"moveType": "none",

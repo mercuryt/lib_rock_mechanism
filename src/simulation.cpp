@@ -13,11 +13,11 @@ void Simulation::doStep()
 	for(Area& area : m_areas)
 		area.readStep();
 	m_pool.wait_for_tasks();
-	// Do threaded tasks write step first so other tasks created on this turn will not run write without having run read.
-	m_threadedTaskEngine.writeStep();
 	for(Area& area : m_areas)
 		area.writeStep();
-	// TODO: Why does putting this line before area write steps cause a segfault in FillQueue::validate?
+	// Do threaded tasks write step before events so other tasks created on this turn will not run write without having run read.
+	m_threadedTaskEngine.writeStep();
+	// Do scheduled events last to avoid unexpected state changes in thereaded task data between read and write.
 	m_eventSchedule.execute(m_step);
 	++m_step;
 }
@@ -100,7 +100,7 @@ Simulation::~Simulation()
 	m_areas.clear();
 	m_hourlyEvent.maybeUnschedule();
 	m_eventSchedule.m_data.clear();
-	m_threadedTaskEngine.m_tasks.clear();
+	m_threadedTaskEngine.clear();
 	m_pool.wait_for_tasks();
 }
 void Simulation::setDateTime(DateTime now)

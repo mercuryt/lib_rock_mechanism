@@ -1,10 +1,10 @@
+// Send specific actors to haul a specific item to a specific place.
 #pragma once
 #include "project.h"
 #include "objective.h"
 
 class Item;
 class Actor;
-
 class TargetedHaulProject final : public Project
 {
 	Item& m_item;

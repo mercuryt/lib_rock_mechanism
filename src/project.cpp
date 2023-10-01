@@ -21,7 +21,7 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::readStep()
 		{
 			for(Item* item : block.m_hasItems.getAll())
 				for(auto& [itemQuery, projectItemCounts] : m_project.m_requiredItems)
-					if(projectItemCounts.required >= projectItemCounts.reserved)
+					if(itemQuery(*item) && projectItemCounts.required > projectItemCounts.reserved)
 					{
 						m_haulProjectParamaters = HaulSubproject::tryToSetHaulStrategy(m_project, *item, *pointerToActor, projectItemCounts);
 						if(m_haulProjectParamaters.strategy != HaulStrategy::None)
@@ -90,6 +90,7 @@ void Project::addWorker(Actor& actor, Objective& objective)
 {
 	assert(actor.m_project == nullptr);
 	assert(!m_workers.contains(&actor));
+	assert(actor.isSentient());
 	if(!m_loadedRequirements)
 	{
 		recordRequiredActorsAndItemsAndReserveLocation();

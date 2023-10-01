@@ -125,14 +125,14 @@ TEST_CASE("route_10_10_10")
 		//pathThreadedTask.clearReferences();
 		//simulation.m_threadedTaskEngine.remove(pathThreadedTask);
 		REQUIRE(actor.m_canMove.hasEvent());
-		REQUIRE(simulation.m_threadedTaskEngine.m_tasks.empty());
+		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.empty());
 		// Step 1.
 		uint32_t scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
 		simulation.m_step = scheduledStep;
 		simulation.m_eventSchedule.execute(scheduledStep);
 		REQUIRE(actor.m_location == &block1);
 		REQUIRE(actor.m_canMove.hasEvent());
-		REQUIRE(simulation.m_threadedTaskEngine.m_tasks.empty());
+		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.empty());
 		block2.setSolid(marble);
 		// Step 2.
 		REQUIRE(actor.m_canMove.hasEvent());
@@ -141,7 +141,7 @@ TEST_CASE("route_10_10_10")
 		simulation.m_eventSchedule.execute(scheduledStep);
 		REQUIRE(actor.m_location == &block1);
 		REQUIRE(!actor.m_canMove.hasEvent());
-		REQUIRE(simulation.m_threadedTaskEngine.m_tasks.size() == 1);
+		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.size() == 1);
 		// Step 3.
 		PathThreadedTask& pathThreadedTask2 = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask2.readStep();
@@ -149,7 +149,7 @@ TEST_CASE("route_10_10_10")
 		//pathThreadedTask2.clearReferences();
 		//simulation.m_threadedTaskEngine.remove(pathThreadedTask2);
 		REQUIRE(actor.m_canMove.hasEvent());
-		REQUIRE(simulation.m_threadedTaskEngine.m_tasks.empty());
+		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.empty());
 		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
 		simulation.m_step = scheduledStep;
 		simulation.m_eventSchedule.execute(scheduledStep);

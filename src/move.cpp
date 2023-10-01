@@ -7,7 +7,7 @@ ActorCanMove::ActorCanMove(Actor& a) : m_actor(a), m_moveType(&m_actor.m_species
 }
 uint32_t ActorCanMove::getIndividualMoveSpeedWithAddedMass(Mass mass) const
 {
-	Mass output = m_actor.m_attributes.getMoveSpeed();
+	uint32_t output = m_actor.m_attributes.getMoveSpeed();
 	Mass carryMass = m_actor.m_equipmentSet.getMass() + m_actor.m_canPickup.getMass() + mass;
 	Mass unencomberedCarryMass = m_actor.m_attributes.getUnencomberedCarryMass();
 	if(carryMass > unencomberedCarryMass)
@@ -115,6 +115,7 @@ void ActorCanMove::setDestination(Block& destination, bool detour, bool adjacent
 }
 void ActorCanMove::setDestinationAdjacentTo(Block& destination, bool detour)
 {
+	assert(!m_actor.isAdjacentTo(destination));
 	setDestination(destination, detour, true);
 }
 void ActorCanMove::setDestinationAdjacentToSet(std::unordered_set<Block*>& blocks, bool detour)

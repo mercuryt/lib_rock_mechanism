@@ -12,13 +12,15 @@ class ThreadedTaskEngine
 	Simulation& m_simulation;
 public:
 	ThreadedTaskEngine(Simulation& s) : m_simulation(s) { }
-	std::unordered_set<std::unique_ptr<ThreadedTask>> m_tasks;
+	std::unordered_set<std::unique_ptr<ThreadedTask>> m_tasksForThisStep;
+	std::unordered_set<std::unique_ptr<ThreadedTask>> m_tasksForNextStep;
 	void readStep();
 	void writeStep();
 	void insert(std::unique_ptr<ThreadedTask>&& task);
 	void remove(ThreadedTask& task);
+	void clear() { m_tasksForNextStep.clear(); }
 	// For testing.
-	[[maybe_unused, nodiscard]]inline uint32_t count() { return m_tasks.size(); }
+	[[maybe_unused, nodiscard]]inline uint32_t count() { return m_tasksForNextStep.size(); }
 };
 class ThreadedTask
 {

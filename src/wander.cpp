@@ -32,7 +32,7 @@ void WanderThreadedTask::writeStep()
 	m_findsPath.cacheMoveCosts(m_objective.m_actor);
 }
 void WanderThreadedTask::clearReferences() { m_objective.m_threadedTask.clearPointer(); }
-WanderObjective::WanderObjective(Actor& a) : Objective(0), m_actor(a), m_threadedTask(a.getThreadedTaskEngine()), m_routeFound(false) { }
+WanderObjective::WanderObjective(Actor& a) : Objective(0u), m_actor(a), m_threadedTask(a.getThreadedTaskEngine()), m_routeFound(false) { }
 void WanderObjective::execute() 
 { 
 	if(m_routeFound)
