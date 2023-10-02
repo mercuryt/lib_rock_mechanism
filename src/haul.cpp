@@ -304,7 +304,6 @@ void HaulSubproject::commandWorker(Actor& actor)
 						// TODO: set rotation?
 						m_toHaul.setLocation(m_project.m_location);
 						m_haulTool->m_canFollow.unfollow();
-						m_haulTool->m_reservable.clearReservationFor(m_project.m_canReserve);
 						onComplete();
 					}
 					else
@@ -352,7 +351,6 @@ void HaulSubproject::commandWorker(Actor& actor)
 						// TODO: set rotation?
 						m_toHaul.setLocation(m_project.m_location);
 						m_beastOfBurden->m_canFollow.unfollow();
-						m_beastOfBurden->m_reservable.clearReservationFor(m_project.m_canReserve);
 						onComplete();
 					}
 					else
@@ -406,6 +404,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 			}
 			break;
 		case HaulStrategy::AnimalCart:
+			//TODO: what if already attached to a different cart?
 			assert(m_beastOfBurden != nullptr);
 			assert(m_haulTool != nullptr);
 			if(m_beastOfBurden->m_canLead.isLeading(*m_haulTool))
@@ -414,7 +413,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 				if(m_haulTool->m_hasCargo.contains(m_toHaul))
 				{
 					// Cart has cargo.
-					if(actor.m_location->isAdjacentTo(m_project.m_location))
+					if(actor.m_location->isAdjacentToIncludingCornersAndEdges(m_project.m_location))
 					{
 						// Actor is at destination.
 						//TODO: unloading delay.
@@ -423,7 +422,6 @@ void HaulSubproject::commandWorker(Actor& actor)
 						// TODO: set rotation?
 						m_toHaul.setLocation(m_project.m_location);
 						m_beastOfBurden->m_canFollow.unfollow();
-						m_beastOfBurden->m_reservable.clearReservationFor(actor.m_canReserve);
 						onComplete();
 					}
 					else
@@ -432,7 +430,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 				else
 				{
 					// Cart doesn't have cargo.
-					if(actor.m_location == m_toHaul.m_location)
+					if(actor.isAdjacentTo(m_toHaul))
 					{
 						// Actor is at pickup location.
 						// TODO: loading delay.
@@ -452,9 +450,11 @@ void HaulSubproject::commandWorker(Actor& actor)
 					// Actor has beast.
 					if(actor.isAdjacentTo(*m_haulTool))
 					{
-						// Actor can harness beast.
-						m_haulTool->m_canFollow.follow(m_beastOfBurden->m_canLead);
-						m_beastOfBurden->m_canFollow.follow(actor.m_canLead);
+						// Actor can harness beast to item.
+						// Don't check if item is adjacent to beast, allow it to teleport.
+						// TODO: Make not teleport.
+						m_haulTool->m_canFollow.follow(m_beastOfBurden->m_canLead, false);
+						// Skip adjacent check, potentially teleport.
 						actor.m_canMove.setDestinationAdjacentTo(m_toHaul);
 					}
 					else
@@ -573,6 +573,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 	Actor* pannierBearer = toHaul.m_location->m_area->m_hasHaulTools.getPannierBearerToHaulCargoWithMassWithMinimumSpeed(*worker.getFaction(), toHaul, project.getMinimumHaulSpeed());
 	if(pannierBearer != nullptr)
 	{
+		//TODO: If pannierBearer already has panniers equiped then use those, otherwise find ones to use. Same for animalCart.
 		Item* panniers = toHaul.m_location->m_area->m_hasHaulTools.getPanniersForActorToHaul(*worker.getFaction(), *pannierBearer, toHaul);
 		if(panniers != nullptr)
 		{
@@ -590,6 +591,23 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 	}
 	assert(output.strategy == HaulStrategy::None);
 	return output;
+}
+void HaulSubproject::onComplete()
+{
+	if(m_haulTool != nullptr)
+		m_haulTool->m_reservable.clearReservationFor(m_project.m_canReserve);
+	if(m_beastOfBurden != nullptr)
+		m_beastOfBurden->m_reservable.clearReservationFor(m_project.m_canReserve);
+	m_projectItemCounts.delivered += m_quantity;
+	assert(m_projectItemCounts.delivered <= m_projectItemCounts.required);
+	std::vector<Actor*> workers(m_workers.begin(), m_workers.end());
+	Project& project = m_project;
+	m_project.m_haulSubprojects.remove(*this);
+	for(Actor* worker : workers)
+	{
+		project.m_workers.at(worker).haulSubproject = nullptr;
+		project.commandWorker(*worker);
+	}
 }
 // Class method.
 std::vector<Actor*> HaulSubproject::actorsNeededToHaulAtMinimumSpeed(const Project& project, Actor& leader, const HasShape& toHaul)
@@ -674,19 +692,6 @@ std::vector<Actor*> HaulSubproject::actorsNeededToHaulAtMinimumSpeedWithTool(con
 	// All the actors waiting put together are not enough to move at minimum acceptable speed.
 	output.clear();
 	return output;
-}
-void HaulSubproject::onComplete()
-{
-	std::vector<Actor*> workers(m_workers.begin(), m_workers.end());
-	m_projectItemCounts.delivered += m_quantity;
-	assert(m_projectItemCounts.delivered <= m_projectItemCounts.required);
-	Project& project = m_project;
-	m_project.m_haulSubprojects.remove(*this);
-	for(Actor* worker : workers)
-	{
-		project.m_workers.at(worker).haulSubproject = nullptr;
-		project.commandWorker(*worker);
-	}
 }
 // Class method.
 uint32_t HaulSubproject::getSpeedWithPannierBearerAndPanniers(const Actor& leader, const Actor& pannierBearer, const Item& panniers, const HasShape& toHaul, uint32_t quantity)

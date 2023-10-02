@@ -36,7 +36,7 @@ public:
 	void scheduleMove();
 	void setDestination(Block& destination, bool detour = false, bool adjacent = false);
 	void setDestinationAdjacentTo(Block& destination, bool detour = false);
-	void setDestinationAdjacentTo(HasShape& hasShape);
+	void setDestinationAdjacentTo(HasShape& hasShape, bool detour = false);
 	void setDestinationAdjacentToSet(std::unordered_set<Block*>& blocks, bool detour = false);
 	void setMoveType(const MoveType& moveType);
 	void clearAllEventsAndTasks();

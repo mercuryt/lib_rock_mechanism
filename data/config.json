@@ -36,7 +36,7 @@
 	"pathHuristicConstant": 1,
 	"impassibleItemVolume": 60,
 	"massCarryMaximimMovementRatio": 2.0,
-	"rollingMassModifier": 0.1,
+	"rollingMassModifier": 0.5,
 	"moveTryAttemptsBeforeDetour": 2,
 	"sowSeedsStepsDuration": 20,
 	"sowSeedsPriority": 10,

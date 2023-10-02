@@ -32,7 +32,6 @@ void ActorCanMove::setPath(std::vector<Block*>& path)
 	m_pathIter = m_path.begin();
 	clearAllEventsAndTasks();
 	scheduleMove();
-	m_actor.m_canLead.onPathSet();
 }
 void ActorCanMove::clearPath()
 {
@@ -124,7 +123,13 @@ void ActorCanMove::setDestinationAdjacentToSet(std::unordered_set<Block*>& block
 	static bool adjacent = true;
 	m_toSetThreadedTask.create(m_actor, blocks, detour, adjacent);
 }
-void ActorCanMove::setDestinationAdjacentTo(HasShape& hasShape) { setDestinationAdjacentToSet(hasShape.m_blocks); }
+void ActorCanMove::setDestinationAdjacentTo(HasShape& hasShape, bool detour) 
+{
+	if(hasShape.m_blocks.size() == 1)
+		setDestinationAdjacentTo(*hasShape.m_location, detour);
+	else
+		setDestinationAdjacentToSet(hasShape.m_blocks, detour);
+}
 void ActorCanMove::setMoveType(const MoveType& moveType)
 {
 	assert(m_moveType != &moveType);

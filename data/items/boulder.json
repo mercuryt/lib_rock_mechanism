@@ -1,0 +1,8 @@
+{
+	"name": "boulder",
+	"shape": "oneByOneHalf",
+	"volume": 8000,
+	"generic": true,
+	"value": 0,
+	"moveType": "none"
+}

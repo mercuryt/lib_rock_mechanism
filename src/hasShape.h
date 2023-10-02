@@ -11,6 +11,8 @@
 class Block;
 struct MoveType;
 class BlockHasShapes;
+class Actor;
+class Item;
 
 class HasShape
 {

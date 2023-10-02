@@ -1,34 +1,13 @@
 #include "leadAndFollow.h"
 #include "block.h"
-void CanLead::onPathSet()
-{
-	if(!isLeading())
-		return;
-	assert(!m_hasShape.m_canFollow.isFollowing());
-	if(m_locationQueue.empty())
-	{
-		// Make list of locations of leader and all followers.
-		// Followers will follow this path before they get to where the leader started.
-		// TODO: Fill gaps created by multi-tile shapes.
-		m_locationQueue.push_back(m_hasShape.m_location);
-		HasShape* hasShape = &m_hasShape;
-		while(hasShape->m_canLead.isLeading())
-		{
-			hasShape = &hasShape->m_canLead.m_canFollow->m_hasShape;
-			m_locationQueue.push_back(hasShape->m_location);
-		}
-	}
-	assert(m_locationQueue.size() > 1);
-}
 void CanLead::onMove()
 {
 	if(!isLeading())
 		return;
-	// Add to front of location queue if this is the line leader.
+	assert(getLocationQueue().size() > 1);
+	// When leader moves add its new location to the front of the location queue.
 	if(!m_hasShape.m_canFollow.isFollowing())
 		m_locationQueue.push_front(m_hasShape.m_location);
-	auto locationQueue = getLocationQueue();
-	assert(locationQueue.size() > 1);
 	HasShape* nextInLine = &m_canFollow->m_hasShape;
 	nextInLine->m_canFollow.tryToMove();
 }
@@ -98,15 +77,23 @@ std::deque<Block*>& CanLead::getLocationQueue()
 	return m_hasShape.m_canFollow.getLineLeader().m_canLead.m_locationQueue;
 }
 CanFollow::CanFollow(HasShape& a) : m_hasShape(a), m_canLead(nullptr), m_event(a.getEventSchedule()) { }
-void CanFollow::follow(CanLead& canLead)
+void CanFollow::follow(CanLead& canLead, bool doAdjacentCheck)
 {
 	assert(m_canLead == nullptr);
 	assert(canLead.m_canFollow == nullptr);
-	assert(m_hasShape.isAdjacentTo(canLead.m_hasShape));
+	if(doAdjacentCheck)
+		assert(m_hasShape.isAdjacentTo(canLead.m_hasShape));
 	canLead.m_canFollow = this;
 	m_canLead = &canLead;
 	if(m_hasShape.isItem())
 		m_hasShape.setStatic(false);
+	std::deque<Block*>& locationQueue = canLead.getLocationQueue();
+	if(locationQueue.empty())
+	{
+		assert(!canLead.m_hasShape.m_canFollow.isFollowing());
+		locationQueue.push_back(canLead.m_hasShape.m_location);
+	}
+	locationQueue.push_back(m_hasShape.m_location);
 }
 void CanFollow::unfollow()
 {
@@ -137,10 +124,12 @@ void CanFollow::disband(bool taskComplete)
 void CanFollow::tryToMove()
 {
 	assert(isFollowing());
-	auto locationQueue = m_hasShape.m_canLead.getLocationQueue();
+	std::deque<Block*>& locationQueue = m_hasShape.m_canLead.getLocationQueue();
 	// Find the position in the location queue where the next shape in the line currently is.
 	auto found = std::ranges::find(locationQueue, m_hasShape.m_location);
-	assert(found != locationQueue.begin());
+	// If this position is in the front of location queue do nothing, wait for leader to cross over.
+	if(found == locationQueue.begin())
+		return;
 	// Find the next position after that one and try to move follower into it.
 	Block& block = **(--found);
 	if(!block.m_hasShapes.anythingCanEnterEver() || !block.m_hasShapes.canEnterEverFrom(m_hasShape, *m_hasShape.m_location))

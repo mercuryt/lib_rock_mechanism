@@ -19,7 +19,7 @@ class CanFollow final
 	HasScheduledEvent<CanFollowEvent> m_event;
 public:
 	CanFollow(HasShape& a);
-	void follow(CanLead& canLead);
+	void follow(CanLead& canLead, bool doAdjacentCheck = true);
 	void unfollow();
 	void unfollowIfFollowing();
 	void disband(bool taskComplete);
@@ -36,8 +36,6 @@ class CanLead final
 	std::deque<Block*> m_locationQueue;
 public:
 	CanLead(HasShape& a) : m_hasShape(a), m_canFollow(nullptr) { }
-	// Call from CanMove::setPath.
-	void onPathSet();
 	// Call from BlockHasShapes::enter.
 	void onMove();
 	// Use in canEnterCurrently to prevent leader from moving too far ahead.

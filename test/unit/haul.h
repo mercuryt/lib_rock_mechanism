@@ -15,6 +15,7 @@ TEST_CASE("haul")
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	static const AnimalSpecies& donkey = AnimalSpecies::byName("jackstock donkey");
 	static const ItemType& chunk = ItemType::byName("chunk");
+	static const ItemType& boulder = ItemType::byName("boulder");
 	static const ItemType& cart = ItemType::byName("cart");
 	static const ItemType& panniers = ItemType::byName("panniers");
 	Simulation simulation;
@@ -183,6 +184,42 @@ TEST_CASE("haul")
 	}
 	SUBCASE("animal cart haul strategy")
 	{
+		Block& destination = area.m_blocks[5][5][2];
+		Block& boulderLocation = area.m_blocks[1][5][2];
+		Item& boulder1 = simulation.createItem(boulder, marble, 1u);
+		boulder1.setLocation(boulderLocation);
+		Block& donkeyLocation = area.m_blocks[4][3][2];
+		Actor& donkey1 = simulation.createActor(donkey, donkeyLocation);
+		area.m_hasHaulTools.registerYokeableActor(donkey1);
+		Block& cartLocation = area.m_blocks[5][1][2];
+		Item& cart1 = simulation.createItem(cart, poplarWood, 3u, 0u);
+		cart1.setLocation(cartLocation);
+		area.m_hasHaulTools.registerHaulTool(cart1);
+		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1}), boulder1, destination);
+		// One step to run the create subproject threaded task.
+		simulation.doStep();
+		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1);
+		REQUIRE(projectWorker.haulSubproject != nullptr);
+		REQUIRE(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::AnimalCart);
+		// Another step to find the paths.
+		simulation.doStep();
+		REQUIRE(donkey1.isAdjacentTo(*dwarf1.m_canMove.getDestination()));
+		simulation.fastForwardUntillActorIsAdjacentToHasShape(dwarf1, donkey1);
+		simulation.doStep();
+		REQUIRE(dwarf1.m_canLead.isLeading(donkey1));
+		REQUIRE(dwarf1.m_canMove.getPath().size() != 0);
+		REQUIRE(dwarf1.m_canMove.getDestination() != nullptr);
+		simulation.doStep();
+		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, cartLocation);
+		REQUIRE(donkey1.m_canLead.isLeading(cart1));
+		simulation.doStep();
+		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, boulderLocation);
+		REQUIRE(cart1.m_hasCargo.contains(boulder1));
+		simulation.doStep();
+		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, destination);
+		simulation.fastForward(Config::addToStockPileDelaySteps);
+		REQUIRE(boulder1.m_location == &destination);
+		REQUIRE(!donkey1.m_reservable.isFullyReserved(faction));
 	}
 	SUBCASE("team hand cart haul strategy")
 	{
