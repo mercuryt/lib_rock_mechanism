@@ -1,13 +1,13 @@
 {
-  "name": "gold",
-  "density": 193,
-  "hardness": 10,
+  "name": "lead",
+  "density": 114,
+  "hardness": 1,
   "transparent": false,
-  "meltingPoint": 1186,
-  "meltsInto": "moltenGold",
+  "meltingPoint": 600,
+  "meltsInto": "moltenLead",
   "spoilData": [
     {
-      "materialType": "gold",
+      "materialType": "lead",
       "itemType": "chunk",
       "chance": 100,
       "min": 4,

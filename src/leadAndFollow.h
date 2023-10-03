@@ -22,7 +22,7 @@ public:
 	void follow(CanLead& canLead, bool doAdjacentCheck = true);
 	void unfollow();
 	void unfollowIfFollowing();
-	void disband(bool taskComplete);
+	void disband();
 	void tryToMove();
 	HasShape& getLineLeader();
 	bool isFollowing() const { return m_canLead != nullptr; }

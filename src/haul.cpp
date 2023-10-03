@@ -475,7 +475,62 @@ void HaulSubproject::commandWorker(Actor& actor)
 			}
 			break;
 		case HaulStrategy::TeamCart:
-			//TODO
+			assert(m_haulTool != nullptr);
+			// TODO: teams of more then 2, requires muliple followers.
+			assert(m_workers.size() == 2);
+			if(m_leader == nullptr)
+				m_leader = &actor;
+			if(actor.m_canLead.isLeading(*m_haulTool))
+			{
+				assert(&actor == m_leader);
+				if(m_haulTool->m_hasCargo.contains(m_toHaul))
+				{
+					if(actor.isAdjacentTo(m_project.m_location))
+					{
+						m_haulTool->m_hasCargo.remove(m_toHaul);
+						// TODO: set rotation?
+						m_toHaul.setLocation(m_project.m_location);
+						m_leader->m_canFollow.disband();
+						onComplete();
+					}
+					else
+						actor.m_canMove.setDestinationAdjacentTo(m_project.m_location);
+				}
+				else
+				{
+					if(actor.isAdjacentTo(m_toHaul))
+					{
+						//TODO: set delay for loading.
+						m_toHaul.exit();
+						m_haulTool->m_hasCargo.add(m_toHaul);
+						actor.m_canMove.setDestinationAdjacentTo(m_project.m_location);
+					}
+					else
+						actor.m_canMove.setDestinationAdjacentTo(m_toHaul);
+				}
+			}
+			else
+			{
+				uint32_t countOfActorsAdjacentToHaulTool = 0;
+				Actor* other = nullptr;
+				for(Actor* worker : m_workers)
+				{
+					if(worker != &actor)
+						other = worker;
+					if(worker->isAdjacentTo(*m_haulTool))
+						countOfActorsAdjacentToHaulTool++;
+				}
+				if(countOfActorsAdjacentToHaulTool == m_workers.size())
+				{
+					// All workers in position.
+					m_haulTool->m_canFollow.follow(m_leader->m_canLead);
+					other->m_canFollow.follow(m_haulTool->m_canLead);
+					m_leader->m_canMove.setDestinationAdjacentTo(m_toHaul);
+				} 
+				else if(!actor.isAdjacentTo(*m_haulTool))
+					actor.m_canMove.setDestinationAdjacentTo(*m_haulTool);
+
+			}
 			break;
 		case HaulStrategy::StrongSentient:
 			//TODO
@@ -560,9 +615,10 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 			}
 		}
 		// Team Cart
-		output.workers = actorsNeededToHaulAtMinimumSpeedWithTool(project, worker, toHaul, *haulTool, project.m_waiting);
+		output.workers = actorsNeededToHaulAtMinimumSpeedWithTool(project, worker, toHaul, *haulTool);
 		if(!output.workers.empty())
 		{
+			assert(output.workers.size() > 1);
 			output.strategy = HaulStrategy::TeamCart;
 			output.haulTool = haulTool;
 			output.quantity = 1;
@@ -673,23 +729,28 @@ uint32_t HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndA
 	return quantity;
 }
 // Class method.
-std::vector<Actor*> HaulSubproject::actorsNeededToHaulAtMinimumSpeedWithTool(const Project& project, const Actor& leader, const HasShape& toHaul, const Item& haulTool, const std::unordered_set<Actor*>& waiting)
+std::vector<Actor*> HaulSubproject::actorsNeededToHaulAtMinimumSpeedWithTool(const Project& project, Actor& leader, const HasShape& toHaul, const Item& haulTool)
 {
-	assert(haulTool.m_itemType.internalVolume >= toHaul.getVolume());
 	std::vector<const HasShape*> actorsAndItems;
 	std::vector<Actor*> output;
+	output.push_back(&leader);
 	actorsAndItems.push_back(&leader);
 	actorsAndItems.push_back(&haulTool);
-	// For each actor waiting add to actors and items and see if the item can be moved fast enough.
-	for(Actor* actor : waiting)
+	// For each actor without a sub project add to actors and items and see if the item can be moved fast enough.
+	for(auto& [actor, projectWorker] : project.m_workers)
 	{
+		if(actor == &leader || projectWorker.haulSubproject != nullptr || !actor->isSentient())
+			continue;
+		assert(std::ranges::find(output, actor) == output.end());
 		output.push_back(actor);
+		if(output.size() > 2) //TODO: More then two requires multiple followers for one leader.
+			break;
 		actorsAndItems.push_back(actor);
-		uint32_t speed = CanLead::getMoveSpeedForGroupWithAddedMass(actorsAndItems, toHaul.singleUnitMass(), 0);
-		if(speed  >= project.getMinimumHaulSpeed())
+		uint32_t speed = CanLead::getMoveSpeedForGroupWithAddedMass(actorsAndItems, toHaul.singleUnitMass());
+		if(speed >= project.getMinimumHaulSpeed())
 			return output;
 	}
-	// All the actors waiting put together are not enough to move at minimum acceptable speed.
+	// Cannot form a team to move at acceptable speed.
 	output.clear();
 	return output;
 }

@@ -11,6 +11,7 @@ TEST_CASE("haul")
 	static const MaterialType& dirt = MaterialType::byName("dirt");
 	static const MaterialType& marble = MaterialType::byName("marble");
 	static const MaterialType& gold = MaterialType::byName("gold");
+	static const MaterialType& lead = MaterialType::byName("lead");
 	static const MaterialType& poplarWood = MaterialType::byName("poplar wood");
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	static const AnimalSpecies& donkey = AnimalSpecies::byName("jackstock donkey");
@@ -81,7 +82,7 @@ TEST_CASE("haul")
 	{
 		Block& destination = area.m_blocks[5][5][2];
 		Block& chunkLocation = area.m_blocks[1][5][2];
-		Item& chunk1 = simulation.createItem(chunk, gold, 1u);
+		Item& chunk1 = simulation.createItem(chunk, lead, 1u);
 		chunk1.setLocation(chunkLocation);
 		REQUIRE(!dwarf1.m_canPickup.canPickupAny(chunk1));
 		Item& cart = simulation.createItem(ItemType::byName("cart"), MaterialType::byName("poplar wood"), 50u, 0u, nullptr);
@@ -113,7 +114,7 @@ TEST_CASE("haul")
 	{
 		Block& destination = area.m_blocks[5][5][2];
 		Block& chunkLocation = area.m_blocks[1][5][2];
-		Item& chunk1 = simulation.createItem(chunk, gold, 1u);
+		Item& chunk1 = simulation.createItem(chunk, lead, 1u);
 		chunk1.setLocation(chunkLocation);
 		REQUIRE(!dwarf1.m_canPickup.canPickupAny(chunk1));
 		Actor& dwarf2 = simulation.createActor(dwarf, area.m_blocks[1][2][2]);
@@ -223,5 +224,43 @@ TEST_CASE("haul")
 	}
 	SUBCASE("team hand cart haul strategy")
 	{
+		Block& destination = area.m_blocks[5][5][2];
+		Block& cargoLocation = area.m_blocks[1][5][2];
+		Item& cargo1 = simulation.createItem(boulder, marble, 1u);
+		cargo1.setLocation(cargoLocation);
+		Block& origin2 = area.m_blocks[4][3][2];
+		Actor& dwarf2 = simulation.createActor(dwarf, origin2);
+		Block& cartLocation = area.m_blocks[5][1][2];
+		Item& cart1 = simulation.createItem(cart, poplarWood, 3u, 0u);
+		cart1.setLocation(cartLocation);
+		area.m_hasHaulTools.registerHaulTool(cart1);
+		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1, &dwarf2}), cargo1, destination);
+		// One step to run the create subproject threaded task.
+		simulation.doStep();
+		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1);
+		REQUIRE(projectWorker.haulSubproject != nullptr);
+		REQUIRE(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::TeamCart);
+		ProjectWorker& projectWorker2 = project.getProjectWorkerFor(dwarf2);
+		REQUIRE(projectWorker2.haulSubproject != nullptr);
+		REQUIRE(projectWorker2.haulSubproject->getHaulStrategy() == HaulStrategy::TeamCart);
+		// Another step to find the paths.
+		simulation.doStep();
+		REQUIRE(cart1.isAdjacentTo(*dwarf1.m_canMove.getDestination()));
+		REQUIRE(cart1.isAdjacentTo(*dwarf2.m_canMove.getDestination()));
+		simulation.fastForwardUntillActorIsAdjacentToHasShape(dwarf1, cart1);
+		simulation.fastForwardUntillActorIsAdjacentToHasShape(dwarf2, cart1);
+		simulation.doStep();
+		REQUIRE(dwarf1.m_canLead.isLeading(cart1));
+		REQUIRE(dwarf1.m_canMove.getPath().size() != 0);
+		REQUIRE(dwarf1.m_canMove.getDestination() != nullptr);
+		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, cargoLocation);
+		REQUIRE(cart1.m_hasCargo.contains(cargo1));
+		simulation.doStep();
+		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, destination);
+		simulation.fastForward(Config::addToStockPileDelaySteps);
+		REQUIRE(cargo1.m_location == &destination);
+		REQUIRE(!cart1.m_reservable.isFullyReserved(faction));
+		REQUIRE(!dwarf1.m_canLead.isLeading());
+		REQUIRE(!dwarf2.m_canFollow.isFollowing());
 	}
 }

@@ -109,15 +109,14 @@ void CanFollow::unfollowIfFollowing()
 	if(m_canLead != nullptr)
 		unfollow();
 }
-void CanFollow::disband(bool taskComplete)
+void CanFollow::disband()
 {
 	HasShape* leader = &getLineLeader();
 	leader->m_canLead.m_locationQueue.clear();
 	while(leader->m_canLead.isLeading())
 	{
-		if(taskComplete && leader->isActor())
-			static_cast<Actor*>(leader)->m_hasObjectives.taskComplete();
 		leader = &leader->m_canLead.m_canFollow->m_hasShape;
+		assert(leader->m_canLead.m_locationQueue.empty());
 		leader->m_canFollow.unfollow();
 	}
 }
@@ -134,7 +133,7 @@ void CanFollow::tryToMove()
 	Block& block = **(--found);
 	if(!block.m_hasShapes.anythingCanEnterEver() || !block.m_hasShapes.canEnterEverFrom(m_hasShape, *m_hasShape.m_location))
 		// Shape can no longer enter this location, following path is imposible, disband.
-		disband(true);
+		disband();
 	else if(block.m_hasShapes.canEnterCurrentlyFrom(m_hasShape, *m_hasShape.m_location))
 	{
 		// setLocation calls CanLead::onMove which calls this method on it's follower, so this call is recursive down the line.

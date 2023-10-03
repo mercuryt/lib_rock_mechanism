@@ -53,13 +53,13 @@ public:
 	void cancel();
 	HasShape& getToHaul() { return m_toHaul; }
 	static HaulSubprojectParamaters tryToSetHaulStrategy(const Project& project, HasShape& hasShape, Actor& worker, ProjectItemCounts& projectItemCounts);
-	static std::vector<Actor*> actorsNeededToHaulAtMinimumSpeed(const Project& proect, Actor& leader, const HasShape& toHaul);
+	static std::vector<Actor*> actorsNeededToHaulAtMinimumSpeed(const Project& project, Actor& leader, const HasShape& toHaul);
 	[[nodiscard]] static uint32_t maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(const Actor& leader, const Item& haulTool, const HasShape& toHaul, uint32_t minimumSpeed);
 	[[nodiscard]] static uint32_t getSpeedWithHaulToolAndCargo(const Actor& leader, const Item& haulTool, const HasShape& toHaul, uint32_t quantity);
 	[[nodiscard]] static uint32_t maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(const Actor& leader, Actor& yoked, const Item& haulTool, const HasShape& toHaul, uint32_t minimumSpeed);
 	[[nodiscard]] static uint32_t maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniersAndAnimal(const Actor& leader, const Actor& pannierBearer, const Item& panniers, const HasShape& toHaul, uint32_t minimumSpeed);
 	[[nodiscard]] static uint32_t getSpeedWithHaulToolAndAnimal(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul, uint32_t quantity);
-	[[nodiscard]] static std::vector<Actor*> actorsNeededToHaulAtMinimumSpeedWithTool(const Project& project, const Actor& leader, const HasShape& toHaul, const Item& haulTool, const std::unordered_set<Actor*>& waiting);
+	[[nodiscard]] static std::vector<Actor*> actorsNeededToHaulAtMinimumSpeedWithTool(const Project& project, Actor& leader, const HasShape& toHaul, const Item& haulTool);
 	[[nodiscard]] static uint32_t getSpeedWithPannierBearerAndPanniers(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul, uint32_t quantity);
 	// For testing.
 	[[nodiscard]] HaulStrategy getHaulStrategy() const { return m_strategy; }
