@@ -5,6 +5,7 @@
 #include "threadedTask.h"
 #include "eventSchedule.h"
 #include "project.h"
+#include "findsPath.h"
 
 #include <unordered_map>
 #include <vector>
@@ -14,6 +15,7 @@ class Block;
 struct Faction;
 struct BlockFeatureType;
 class ConstructObjective;
+class ConstructProject;
 class ConstructObjectiveType final : public ObjectiveType
 {
 public:
@@ -32,15 +34,17 @@ public:
 	void cancel();
 	void delay() { cancel(); }
 	std::string name() const { return "construct"; }
-	bool canConstructAt(Block& block) const;
-	Block* selectAdjacentProject(Block& block) const;
+	ConstructProject* getProjectWhichActorCanJoinAdjacentTo(const Block& location, Facing facing);
+	ConstructProject* getProjectWhichActorCanJoinAt(Block& block);
+	bool joinableProjectExistsAt(const Block& block) const;
+	bool canJoinProjectAdjacentToLocationAndFacing(const Block& block, Facing facing) const;
 	ObjectiveId getObjectiveId() const { return ObjectiveId::Construct; }
 	friend class ConstructThreadedTask;
 };
 class ConstructThreadedTask final : public ThreadedTask
 {
 	ConstructObjective& m_constructObjective;
-	std::vector<Block*> m_result;
+	FindsPath m_findsPath;
 public:
 	ConstructThreadedTask(ConstructObjective& co);
 	void readStep();

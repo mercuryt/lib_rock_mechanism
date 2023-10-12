@@ -1,5 +1,4 @@
 #include "project.h"
-#include "path.h"
 #include "block.h"
 #include "area.h"
 #include <algorithm>
@@ -29,7 +28,8 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::readStep()
 					}
 			return false;
 		};
-		m_findsPath.pathToPredicate(*actor, condition);
+		FindsPath findsPath(*actor);
+		findsPath.pathToUnreservedAdjacentToPredicate(condition, *actor->getFaction());
 		// Only make at most one per step.
 		if(m_haulProjectParamaters.strategy != HaulStrategy::None)
 			return;
@@ -190,6 +190,11 @@ void Project::haulSubprojectComplete(HaulSubproject& haulSubproject)
 	for(Actor* actor : haulSubproject.m_workers)
 		commandWorker(*actor);
 	m_haulSubprojects.remove(haulSubproject);
+}
+bool Project::canAddWorker(const Actor& actor) const
+{
+	assert(!m_workers.contains(&const_cast<Actor&>(actor)));
+	return m_maxWorkers > m_workers.size();
 }
 Project::~Project()
 {

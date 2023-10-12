@@ -11,20 +11,21 @@ struct ItemType;
 struct MaterialType;
 class Project;
 struct ProjectItemCounts;
-struct Faction;
+class Faction;
 
 enum class HaulStrategy { None, Individual, Team, Cart, TeamCart, Panniers, AnimalCart, StrongSentient };
 
 struct HaulSubprojectParamaters final
 {
 	HasShape* toHaul;
+	FluidType* fluidType;
 	uint32_t quantity;
 	HaulStrategy strategy;
 	std::vector<Actor*> workers;
 	Item* haulTool;
 	Actor* beastOfBurden;
 	ProjectItemCounts* projectItemCounts;
-	HaulSubprojectParamaters() : toHaul(nullptr), quantity(0), strategy(HaulStrategy::None), haulTool(nullptr), beastOfBurden(nullptr), projectItemCounts(nullptr) { }
+	HaulSubprojectParamaters() : toHaul(nullptr), fluidType(nullptr), quantity(0), strategy(HaulStrategy::None), haulTool(nullptr), beastOfBurden(nullptr), projectItemCounts(nullptr) { }
 	[[nodiscard, maybe_unused]] bool validate() const;
 };
 // ToHaul is either an Item or an Actor.

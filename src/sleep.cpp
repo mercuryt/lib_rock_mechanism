@@ -1,6 +1,5 @@
 #include "sleep.h"
 #include "area.h"
-#include "path.h"
 #include <cassert>
 // Sleep Event.
 SleepEvent::SleepEvent(Step step, MustSleep& ns, bool f) : ScheduledEventWithPercent(ns.m_actor.getSimulation(), step), m_needsSleep(ns), m_force(f) { }
@@ -11,7 +10,7 @@ TiredEvent::TiredEvent(Step step, MustSleep& ns) : ScheduledEventWithPercent(ns.
 void TiredEvent::execute(){ m_needsSleep.tired(); }
 void TiredEvent::clearReferences(){ m_needsSleep.m_tiredEvent.clearPointer(); }
 // Threaded Task.
-SleepThreadedTask::SleepThreadedTask(SleepObjective& so) : ThreadedTask(so.m_actor.getThreadedTaskEngine()), m_sleepObjective(so), m_sleepAtCurrentLocation(false), m_noWhereToSleepFound(false) { }
+SleepThreadedTask::SleepThreadedTask(SleepObjective& so) : ThreadedTask(so.m_actor.getThreadedTaskEngine()), m_sleepObjective(so), m_findsPath(so.m_actor), m_sleepAtCurrentLocation(false), m_noWhereToSleepFound(false) { }
 void SleepThreadedTask::readStep()
 {
 	auto& actor = m_sleepObjective.m_actor;
@@ -33,8 +32,8 @@ void SleepThreadedTask::readStep()
 			outdoorCandidate = &block;	
 		return false;
 	};
-	m_findsPath.pathToPredicate(actor, condition);
-	if(m_findsPath.getPath().empty())
+	m_findsPath.pathToUnreservedAdjacentToPredicate(condition, *actor.getFaction());
+	if(!m_findsPath.found())
 	{
 		// If the current location is the max desired then set sleep at current to true.
 		if(maxDesireCandidate == actor.m_location)
@@ -43,12 +42,13 @@ void SleepThreadedTask::readStep()
 			m_sleepAtCurrentLocation = true;
 		}
 		// No max desire target found, try to at least get to a safe temperature
+		// TODO: paths which have already been previously calculated are being caluclated again here.
 		else if(indoorCandidate != nullptr)
 		{
 			if(indoorCandidate == actor.m_location)
 				m_sleepAtCurrentLocation = true;
 			else
-				m_findsPath.pathToBlock(actor, *indoorCandidate);
+				m_findsPath.pathToBlock(*indoorCandidate);
 		}
 		else if(outdoorCandidate != nullptr)
 		{
@@ -56,20 +56,20 @@ void SleepThreadedTask::readStep()
 			if(outdoorCandidate == actor.m_location)
 				m_sleepAtCurrentLocation = true;
 			else
-				m_findsPath.pathToBlock(actor, *outdoorCandidate);
+				m_findsPath.pathToBlock(*outdoorCandidate);
 		}
 		else
 		{
 			// No candidates, try to leave area
 			m_noWhereToSleepFound = true;
-			m_findsPath.pathToAreaEdge(actor);
+			m_findsPath.pathToAreaEdge();
 		}
 	}
 }
 void SleepThreadedTask::writeStep()
 {
 	auto& actor = m_sleepObjective.m_actor;
-	m_findsPath.cacheMoveCosts(actor);
+	m_findsPath.cacheMoveCosts();
 	if(!m_findsPath.found())
 	{
 		if(m_sleepAtCurrentLocation)
@@ -78,7 +78,16 @@ void SleepThreadedTask::writeStep()
 			actor.m_hasObjectives.cannotFulfillNeed(m_sleepObjective);
 	}
 	else
-		actor.m_canMove.setPath(m_findsPath.getPath());
+	{
+		if(m_findsPath.areAllBlocksAtDestinationReservable(actor.getFaction()))
+		{
+			actor.m_canMove.setPath(m_findsPath.getPath());
+			m_findsPath.reserveBlocksAtDestination(actor.m_canReserve);
+		}
+		else
+			// Selected sleeping spot reserved by someone else, look again.
+			m_sleepObjective.m_threadedTask.create(m_sleepObjective);
+	}
 	if(m_noWhereToSleepFound)
 		m_sleepObjective.m_noWhereToSleepFound = true;
 }
@@ -87,30 +96,46 @@ void SleepThreadedTask::clearReferences() { m_sleepObjective.m_threadedTask.clea
 SleepObjective::SleepObjective(Actor& a) : Objective(Config::sleepObjectivePriority), m_actor(a), m_threadedTask(a.getThreadedTaskEngine()), m_noWhereToSleepFound(false) { }
 void SleepObjective::execute()
 {
-	if(m_noWhereToSleepFound)
-	{
-		if(m_actor.predicateForAnyOccupiedBlock([](const Block& block){ return block.m_isEdge; }))
-			// We are at the edge and can leave.
-			m_actor.leaveArea();
-		else
-			// No sleep and no escape.
-			m_actor.m_hasObjectives.cannotFulfillNeed(*this);
-		return;
-	}
 	assert(m_actor.m_mustSleep.m_isAwake);
-	if(m_actor.m_location == m_actor.m_mustSleep.m_location)
+	if(m_actor.m_mustSleep.m_location == nullptr)
 	{
-		assert(m_actor.m_mustSleep.m_location != nullptr);
-		m_actor.m_mustSleep.sleep();
+		if(m_noWhereToSleepFound)
+		{
+			if(m_actor.predicateForAnyOccupiedBlock([](const Block& block){ return block.m_isEdge; }))
+				// We are at the edge and can leave.
+				m_actor.leaveArea();
+			else
+				// No sleep and no escape.
+				m_actor.m_hasObjectives.cannotFulfillNeed(*this);
+			return;
+		}
+		else
+			m_threadedTask.create(*this);
 	}
-	else if(m_actor.m_mustSleep.m_location == nullptr)
-		m_threadedTask.create(*this);
 	else
-		m_actor.m_canMove.setDestination(*m_actor.m_mustSleep.m_location);
+	{
+		std::function<void(Block&)> callback = [&](Block& block) 
+		{
+			if(desireToSleepAt(block) == 0)
+			{
+				// Can not sleep here any more, look for another spot.
+				m_actor.m_mustSleep.m_location = nullptr;
+				execute();
+			}
+			else
+			{
+				// Sleep.
+				m_actor.setLocation(block);
+				m_actor.m_mustSleep.sleep(); 
+			}
+		};
+		// Location, callback, detour, adjacent.
+		m_actor.m_canMove.goToBlockAndThen(*m_actor.m_mustSleep.m_location, callback, false, false);
+	}
 }
 uint32_t SleepObjective::desireToSleepAt(const Block& block)
 {
-	if(block.m_reservable.isFullyReserved(*m_actor.getFaction()) || !m_actor.m_needsSafeTemperature.isSafe(block.m_blockHasTemperature.get()))
+	if(block.m_reservable.isFullyReserved(m_actor.getFaction()) || !m_actor.m_needsSafeTemperature.isSafe(block.m_blockHasTemperature.get()))
 		return 0;
 	if(block.m_area->m_hasSleepingSpots.containsUnassigned(block))
 		return 3;
@@ -167,6 +192,7 @@ void MustSleep::wakeUp()
 	m_needsSleep = false;
 	m_tiredEvent.schedule(m_actor.m_species.stepsSleepFrequency, *this);
 	m_actor.m_stamina.setFull();
+	// Objective complete releases all reservations.
 	if(m_objective != nullptr)
 		m_actor.m_hasObjectives.objectiveComplete(*m_objective);
 }

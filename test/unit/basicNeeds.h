@@ -52,7 +52,7 @@ TEST_CASE("basicNeedsSentient")
 		simulation.doStep();
 		Block* destination = actor.m_canMove.getDestination();
 		REQUIRE(destination != nullptr);
-		REQUIRE(destination == &bucketLocation);
+		REQUIRE(destination->isAdjacentToIncludingCornersAndEdges(bucketLocation));
 		while(actor.m_location != destination)
 			simulation.doStep();
 		Step drinkStep = simulation.m_step + Config::stepsToDrink;

@@ -10,3 +10,4 @@ using Mass = uint32_t; // grams.
 using Density = uint32_t; // grams per 10 cubic centimeters.
 using Force = uint32_t;
 using Percent = uint32_t;
+using Facing = uint8_t;

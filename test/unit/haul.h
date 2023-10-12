@@ -108,7 +108,7 @@ TEST_CASE("haul")
 		simulation.fastForward(Config::addToStockPileDelaySteps);
 		REQUIRE(chunk1.m_location == &destination);
 		REQUIRE(cart.m_hasCargo.empty());
-		REQUIRE(!cart.m_reservable.isFullyReserved(faction));
+		REQUIRE(!cart.m_reservable.isFullyReserved(&faction));
 	}
 	SUBCASE("team haul strategy")
 	{
@@ -181,7 +181,7 @@ TEST_CASE("haul")
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, destination);
 		simulation.fastForward(Config::addToStockPileDelaySteps);
 		REQUIRE(chunk1.m_location == &destination);
-		REQUIRE(!donkey1.m_reservable.isFullyReserved(faction));
+		REQUIRE(!donkey1.m_reservable.isFullyReserved(&faction));
 	}
 	SUBCASE("animal cart haul strategy")
 	{
@@ -220,7 +220,7 @@ TEST_CASE("haul")
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, destination);
 		simulation.fastForward(Config::addToStockPileDelaySteps);
 		REQUIRE(boulder1.m_location == &destination);
-		REQUIRE(!donkey1.m_reservable.isFullyReserved(faction));
+		REQUIRE(!donkey1.m_reservable.isFullyReserved(&faction));
 	}
 	SUBCASE("team hand cart haul strategy")
 	{
@@ -259,7 +259,7 @@ TEST_CASE("haul")
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, destination);
 		simulation.fastForward(Config::addToStockPileDelaySteps);
 		REQUIRE(cargo1.m_location == &destination);
-		REQUIRE(!cart1.m_reservable.isFullyReserved(faction));
+		REQUIRE(!cart1.m_reservable.isFullyReserved(&faction));
 		REQUIRE(!dwarf1.m_canLead.isLeading());
 		REQUIRE(!dwarf2.m_canFollow.isFollowing());
 	}

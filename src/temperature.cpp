@@ -1,7 +1,6 @@
 #include "temperature.h"
 #include "block.h"
 #include "area.h"
-#include "path.h"
 #include "nthAdjacentOffsets.h"
 #include "config.h"
 #include "simulation.h"
@@ -188,18 +187,21 @@ Temperature BlockHasTemperature::getDailyAverageAmbientTemperature() const
 	}
 	return m_block.m_area->m_areaHasTemperature.getDailyAverageAmbientSurfaceTemperature(m_block.m_area->m_simulation.m_now);
 }
-GetToSafeTemperatureThreadedTask::GetToSafeTemperatureThreadedTask(GetToSafeTemperatureObjective& o) : ThreadedTask(o.m_actor.getThreadedTaskEngine()), m_objective(o), m_noWhereWithSafeTemperatureFound(false) { }
+GetToSafeTemperatureThreadedTask::GetToSafeTemperatureThreadedTask(GetToSafeTemperatureObjective& o) : ThreadedTask(o.m_actor.getThreadedTaskEngine()), m_objective(o), m_findsPath(o.m_actor) ,m_noWhereWithSafeTemperatureFound(false) { }
 void GetToSafeTemperatureThreadedTask::readStep()
 {
-	std::function<bool(const Block&)> condition = [&](const Block& block)
+	std::function<bool(const Block&, Facing facing)> condition = [&](const Block& location, Facing facing)
 	{
-		return m_objective.m_actor.m_needsSafeTemperature.isSafe(block.m_blockHasTemperature.get());
+		for(Block* adjacent : m_objective.m_actor.getBlocksWhichWouldBeOccupiedAtLocationAndFacing(const_cast<Block&>(location), facing))
+			if(m_objective.m_actor.m_needsSafeTemperature.isSafe(adjacent->m_blockHasTemperature.get()))
+				return true;
+		return false;
 	};
-	m_findsPath.pathToPredicate(m_objective.m_actor, condition);
+	m_findsPath.pathToPredicate(condition);
 	if(!m_findsPath.found())
 	{
 		m_noWhereWithSafeTemperatureFound = true;
-		m_findsPath.pathToAreaEdge(m_objective.m_actor);
+		m_findsPath.pathToAreaEdge();
 	}
 }
 void GetToSafeTemperatureThreadedTask::writeStep()
@@ -208,6 +210,7 @@ void GetToSafeTemperatureThreadedTask::writeStep()
 		m_objective.m_actor.m_hasObjectives.cannotFulfillNeed(m_objective);
 	if(m_noWhereWithSafeTemperatureFound)
 		m_objective.m_noWhereWithSafeTemperatureFound = true;
+	m_objective.m_actor.m_canMove.setPath(m_findsPath.getPath());
 }
 void GetToSafeTemperatureThreadedTask::clearReferences(){ m_objective.m_getToSafeTemperatureThreadedTask.clearPointer(); }
 GetToSafeTemperatureObjective::GetToSafeTemperatureObjective(Actor& a) : Objective(Config::getToSafeTemperaturePriority), m_actor(a), m_getToSafeTemperatureThreadedTask(a.getThreadedTaskEngine()), m_noWhereWithSafeTemperatureFound(false) { }

@@ -1,45 +1,52 @@
 #include "construct.h"
 #include "item.h"
 #include "block.h"
-#include "path.h"
 #include "area.h"
 #include "util.h"
-ConstructThreadedTask::ConstructThreadedTask(ConstructObjective& co) : ThreadedTask(co.m_actor.getThreadedTaskEngine()), m_constructObjective(co) { }
+ConstructThreadedTask::ConstructThreadedTask(ConstructObjective& co) : ThreadedTask(co.m_actor.getThreadedTaskEngine()), m_constructObjective(co), m_findsPath(co.m_actor) { }
 void ConstructThreadedTask::readStep()
 {
-	auto destinationCondition = [&](Block& block)
+	std::function<bool(const Block&)> constructCondition = [&](const Block& block)
 	{
-		return m_constructObjective.canConstructAt(block);
+		return m_constructObjective.joinableProjectExistsAt(block);
 	};
-	m_result = path::getForActorToPredicate(m_constructObjective.m_actor, destinationCondition);
+	m_findsPath.pathToUnreservedAdjacentToPredicate(constructCondition, *m_constructObjective.m_actor.getFaction());
 }
 void ConstructThreadedTask::writeStep()
 {
-	if(m_result.empty())
+	if(!m_findsPath.found())
 		m_constructObjective.m_actor.m_hasObjectives.cannotFulfillObjective(m_constructObjective);
 	else
 	{
-		// Destination block has been reserved since result was found, get a new one.
-		if(m_result.back()->m_reservable.isFullyReserved(*m_constructObjective.m_actor.getFaction()))
+		// One or more destination blocks has been reserved since result was found, get a new one.
+		if(!m_constructObjective.m_actor.allBlocksAtLocationAndFacingAreReservable(*m_findsPath.getPath().back(), m_findsPath.getFacingAtDestination()))
 		{
 			m_constructObjective.m_constructThreadedTask.create(m_constructObjective);
 			return;
 		}
-		m_constructObjective.m_actor.m_canMove.setPath(m_result);
-		m_result.back()->m_reservable.reserveFor(m_constructObjective.m_actor.m_canReserve, 1);
+		ConstructProject* project = m_constructObjective.getProjectWhichActorCanJoinAdjacentTo(*m_findsPath.getPath().back(), m_findsPath.getFacingAtDestination());
+		if(project == nullptr)
+		{
+			// No longer any project to join at destination, try again.
+			m_constructObjective.m_constructThreadedTask.create(m_constructObjective);
+			return;
+		}
+		m_constructObjective.m_actor.m_canMove.setPath(m_findsPath.getPath());
+		m_findsPath.reserveBlocksAtDestination(m_constructObjective.m_actor.m_canReserve);
 	}
 }
 void ConstructThreadedTask::clearReferences() { m_constructObjective.m_constructThreadedTask.clearPointer(); }
 void ConstructObjective::execute()
 {
-	if(canConstructAt(*m_actor.m_location))
-	{
-		Block* block = selectAdjacentProject(*m_actor.m_location);
-		assert(block != nullptr);
-		m_actor.m_location->m_area->m_hasConstructionDesignations.getProject(*m_actor.getFaction(), *block).addWorker(m_actor, *this);
-	}
-	else
+	std::function<bool(const Block&)> predicate = [&](const Block& block) { return joinableProjectExistsAt(block); };
+	Block* block = m_actor.getBlockWhichIsAdjacentWithPredicate(predicate);
+	if(block == nullptr)
 		m_constructThreadedTask.create(*this);
+	else
+	{
+		m_project = getProjectWhichActorCanJoinAt(*block);
+		m_project->addWorker(m_actor, *this);
+	}
 }
 void ConstructObjective::cancel()
 {
@@ -47,30 +54,39 @@ void ConstructObjective::cancel()
 		m_project->removeWorker(m_actor);
 	m_constructThreadedTask.maybeCancel();
 }
-bool ConstructObjective::canConstructAt(Block& block) const
+ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAdjacentTo(const Block& location, Facing facing)
 {
-	if(block.m_reservable.isFullyReserved(*m_actor.getFaction()))
-		return false;
-	for(Block* adjacent : block.getAdjacentWithEdgeAndCornerAdjacent())
-		if(adjacent->m_hasDesignations.contains(*m_actor.getFaction(), BlockDesignation::Construct))
-			return true;
-	return false;
-}
-Block* ConstructObjective::selectAdjacentProject(Block& block) const
-{
-	for(Block* adjacent : block.getAdjacentWithEdgeAndCornerAdjacent())
-		if(adjacent->m_hasDesignations.contains(*m_actor.getFaction(), BlockDesignation::Construct))
-			return adjacent;
+	for(Block* adjacent : m_actor.getAdjacentAtLocationWithFacing(location, facing))
+	{
+		ConstructProject* project = getProjectWhichActorCanJoinAt(*adjacent);
+		if(project != nullptr)
+			return project;
+	}
 	return nullptr;
+}
+ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAt(Block& block)
+{
+	if(block.m_hasDesignations.contains(*m_actor.getFaction(), BlockDesignation::Construct))
+	{
+		ConstructProject& project = block.m_area->m_hasConstructionDesignations.getProject(*m_actor.getFaction(), block);
+		if(project.canAddWorker(m_actor))
+			return &project;
+	}
+	return nullptr;
+}
+bool ConstructObjective::joinableProjectExistsAt(const Block& block) const
+{
+	return const_cast<ConstructObjective*>(this)->getProjectWhichActorCanJoinAt(const_cast<Block&>(block)) != nullptr;
+}
+bool ConstructObjective::canJoinProjectAdjacentToLocationAndFacing(const Block& location, Facing facing) const
+{
+	return const_cast<ConstructObjective*>(this)->getProjectWhichActorCanJoinAdjacentTo(location, facing) != nullptr;
 }
 bool ConstructObjectiveType::canBeAssigned(Actor& actor) const
 {
 	return !actor.m_location->m_area->m_hasConstructionDesignations.areThereAnyForFaction(*actor.getFaction());
 }
-std::unique_ptr<Objective> ConstructObjectiveType::makeFor(Actor& actor) const
-{
-	return std::make_unique<ConstructObjective>(actor);
-}
+std::unique_ptr<Objective> ConstructObjectiveType::makeFor(Actor& actor) const { return std::make_unique<ConstructObjective>(actor); }
 std::vector<std::pair<ItemQuery, uint32_t>> ConstructProject::getConsumed() const
 {
 	assert(m_materialType.constructionData != nullptr);
@@ -154,11 +170,5 @@ void HasConstructionDesignations::clearAll(Block& block)
 	for(auto& pair : m_data)
 		pair.second.removeIfExists(block);
 }
-bool HasConstructionDesignations::areThereAnyForFaction(const Faction& faction) const
-{
-	return !m_data.at(&faction).empty();
-}
-ConstructProject& HasConstructionDesignations::getProject(const Faction& faction, Block& block)
-{
-	return m_data.at(&faction).m_data.at(&block);
-}
+bool HasConstructionDesignations::areThereAnyForFaction(const Faction& faction) const { return !m_data.at(&faction).empty(); }
+ConstructProject& HasConstructionDesignations::getProject(const Faction& faction, Block& block) { return m_data.at(&faction).m_data.at(&block); }

@@ -87,6 +87,26 @@ Volume Actor::getVolume() const
 {
 	return m_body.getVolume();
 }
+bool Actor::allBlocksAtLocationAndFacingAreReservable(const Block& location, Facing facing) const
+{
+	if(m_faction == nullptr)
+		return true;
+	return HasShape::allBlocksAtLocationAndFacingAreReservable(location, facing, *m_faction);
+}
+void Actor::reserveAllBlocksAtLocationAndFacing(const Block& location, Facing facing)
+{
+	if(m_faction == nullptr)
+		return;
+	for(Block* occupied : getBlocksWhichWouldBeOccupiedAtLocationAndFacing(const_cast<Block&>(location), facing))
+		occupied->m_reservable.reserveFor(m_canReserve, 1u);
+}
+void Actor::unreserveAllBlocksAtLocationAndFacing(const Block& location, Facing facing)
+{
+	if(m_faction == nullptr)
+		return;
+	for(Block* occupied : getBlocksWhichWouldBeOccupiedAtLocationAndFacing(const_cast<Block&>(location), facing))
+		occupied->m_reservable.clearReservationFor(m_canReserve);
+}
 EventSchedule& Actor::getEventSchedule() { return getSimulation().m_eventSchedule; }
 ThreadedTaskEngine& Actor::getThreadedTaskEngine() { return getSimulation().m_threadedTaskEngine; }
 // ActorQuery, to be used to search for actors.

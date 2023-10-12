@@ -12,11 +12,11 @@ bool HaulSubprojectParamaters::validate() const
 	assert(projectItemCounts != nullptr);
 	const Faction& faction = *(*workers.begin())->getFaction();
 	for(Actor* worker : workers)
-		if(worker->m_reservable.isFullyReserved(faction))
+		if(worker->m_reservable.isFullyReserved(&faction))
 			return false;
-	if(haulTool != nullptr && haulTool->m_reservable.isFullyReserved(faction))
+	if(haulTool != nullptr && haulTool->m_reservable.isFullyReserved(&faction))
 		return false;
-	if(beastOfBurden != nullptr && beastOfBurden->m_reservable.isFullyReserved(faction))
+	if(beastOfBurden != nullptr && beastOfBurden->m_reservable.isFullyReserved(&faction))
 		return false;
 	return true;
 }
@@ -280,7 +280,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 					// No lift point exists for this actor, find one.
 					for(Block* block : m_toHaul.getAdjacentBlocks())
 						// TODO: support multi block actors.
-						if(block->m_hasShapes.canEnterEverWithFacing(actor, 0) && !block->m_reservable.isFullyReserved(*actor.getFaction()))
+						if(block->m_hasShapes.canEnterEverWithFacing(actor, 0) && !block->m_reservable.isFullyReserved(actor.getFaction()))
 						{
 							m_liftPoints[&actor] = block;
 							block->m_reservable.reserveFor(actor.m_canReserve, 1);
@@ -782,7 +782,7 @@ Item* HasHaulTools::getToolToHaul(const Faction& faction, const HasShape& hasSha
 	// Items like panniers also have internal volume but aren't relevent for this method.
 	static const MoveType& none = MoveType::byName("none");
 	for(Item* item : m_haulTools)
-		if(item->m_itemType.moveType != none && !item->m_reservable.isFullyReserved(faction) && item->m_itemType.internalVolume >= hasShape.getVolume())
+		if(item->m_itemType.moveType != none && !item->m_reservable.isFullyReserved(&faction) && item->m_itemType.internalVolume >= hasShape.getVolume())
 			return item;
 	return nullptr;
 }
@@ -793,7 +793,7 @@ bool HasHaulTools::hasToolToHaulFluid(const Faction& faction) const
 Item* HasHaulTools::getToolToHaulFluid(const Faction& faction) const
 {
 	for(Item* item : m_haulTools)
-		if(!item->m_reservable.isFullyReserved(faction) && item->m_itemType.canHoldFluids)
+		if(!item->m_reservable.isFullyReserved(&faction) && item->m_itemType.canHoldFluids)
 			return item;
 	return nullptr;
 }
@@ -804,7 +804,7 @@ Actor* HasHaulTools::getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpee
 	for(Actor* actor : m_yolkableActors)
 	{
 		std::vector<const HasShape*> shapes = { actor, &haulTool };
-		if(!actor->m_reservable.isFullyReserved(faction) && minimumHaulSpeed <= actor->m_canLead.getMoveSpeedForGroupWithAddedMass(shapes, cargoMass))
+		if(!actor->m_reservable.isFullyReserved(&faction) && minimumHaulSpeed <= actor->m_canLead.getMoveSpeedForGroupWithAddedMass(shapes, cargoMass))
 			return actor;
 	}
 	return nullptr;
@@ -813,14 +813,14 @@ Actor* HasHaulTools::getPannierBearerToHaulCargoWithMassWithMinimumSpeed(const F
 {
 	//TODO: Account for pannier mass?
 	for(Actor* actor : m_yolkableActors)
-		if(!actor->m_reservable.isFullyReserved(faction) && minimumHaulSpeed <= actor->m_canPickup.speedIfCarryingQuantity(hasShape, 1u))
+		if(!actor->m_reservable.isFullyReserved(&faction) && minimumHaulSpeed <= actor->m_canPickup.speedIfCarryingQuantity(hasShape, 1u))
 			return actor;
 	return nullptr;
 }
 Item* HasHaulTools::getPanniersForActorToHaul(const Faction& faction, const Actor& actor, const HasShape& toHaul) const
 {
 	for(Item* item : m_haulTools)
-		if(!item->m_reservable.isFullyReserved(faction) && item->m_itemType.internalVolume >= toHaul.getVolume() && actor.m_equipmentSet.canEquipCurrently(*item))
+		if(!item->m_reservable.isFullyReserved(&faction) && item->m_itemType.internalVolume >= toHaul.getVolume() && actor.m_equipmentSet.canEquipCurrently(*item))
 			return item;
 	return nullptr;
 }

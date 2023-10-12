@@ -1,5 +1,4 @@
 #include "sowSeeds.h"
-#include "path.h"
 #include "area.h"
 #include "actor.h"
 SowSeedsEvent::SowSeedsEvent(Step delay, SowSeedsObjective& o) : ScheduledEventWithPercent(o.m_actor.getSimulation(), delay), m_objective(o) { }
@@ -20,51 +19,21 @@ bool SowSeedsObjectiveType::canBeAssigned(Actor& actor) const
 {
 	return actor.m_location->m_area->m_hasFarmFields.hasSowSeedsDesignations(*actor.getFaction());
 }
-std::unique_ptr<Objective> SowSeedsObjectiveType::makeFor(Actor& actor) const
-{
-	return std::make_unique<SowSeedsObjective>(actor);
-}
-SowSeedsThreadedTask::SowSeedsThreadedTask(SowSeedsObjective& sso): ThreadedTask(sso.m_actor.getThreadedTaskEngine()), m_objective(sso) { }
-void SowSeedsThreadedTask::readStep()
-{
-	auto condition = [&](Block& block)
-	{
-		return block.m_hasDesignations.contains(*m_objective.m_actor.getFaction(), BlockDesignation::SowSeeds);
-	};
-	m_result = path::getForActorToPredicate(m_objective.m_actor, condition);
-}
-void SowSeedsThreadedTask::writeStep()
-{
-	if(m_result.empty())
-		m_objective.m_actor.m_hasObjectives.cannotFulfillObjective(m_objective);
-	else
-		if(m_result.back()->m_reservable.isFullyReserved(*m_objective.m_actor.getFaction()))
-			m_objective.m_threadedTask.create(m_objective);
-		else
-		{
-			m_result.back()->m_reservable.reserveFor(m_objective.m_actor.m_canReserve, 1);
-			m_objective.m_actor.m_canMove.setPath(m_result);
-		}
-}
-void SowSeedsThreadedTask::clearReferences() { m_objective.m_threadedTask.clearPointer(); }
-SowSeedsObjective::SowSeedsObjective(Actor& a) : Objective(Config::sowSeedsPriority), m_actor(a), m_event(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()) { }
-bool SowSeedsObjective::canSowSeedsAt(Block& block)
-{
-	return block.m_hasDesignations.contains(*m_actor.getFaction(), BlockDesignation::SowSeeds);
-}
+std::unique_ptr<Objective> SowSeedsObjectiveType::makeFor(Actor& actor) const { return std::make_unique<SowSeedsObjective>(actor); }
+SowSeedsObjective::SowSeedsObjective(Actor& a) : Objective(Config::sowSeedsPriority), m_actor(a), m_event(a.getEventSchedule()) { }
 void SowSeedsObjective::execute()
 {
-	if(canSowSeedsAt(*m_actor.m_location))
+	const Faction* faction = m_actor.getFaction();
+	std::function<bool(const Block&)> predicate = [&](const Block& block)
+	{ 
+		return block.m_hasDesignations.contains(*faction, BlockDesignation::SowSeeds) && !block.m_reservable.isFullyReserved(faction);
+	};
+	std::function<void(Block&)> callback = [&](Block& block)
 	{
-		// Begin sowing.
-		m_actor.m_location->m_area->m_hasFarmFields.at(*m_actor.getFaction()).removeSowSeedsDesignation(*m_actor.m_location);
+		block.m_area->m_hasFarmFields.at(*m_actor.getFaction()).removeSowSeedsDesignation(block);
 		m_event.schedule(Config::sowSeedsStepsDuration, *this);
-	}
-	else
-		m_threadedTask.create(*this);
+	};
+	// predicate, detour, adjacent, unreserved.
+	m_actor.m_canMove.goToPredicateBlockAndThen(predicate, callback, false, true, true);
 }
-void SowSeedsObjective::cancel()
-{
-	m_threadedTask.maybeCancel();
-	m_event.maybeUnschedule();
-}
+void SowSeedsObjective::cancel() { m_event.maybeUnschedule(); }

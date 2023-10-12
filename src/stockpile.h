@@ -4,6 +4,7 @@
 #include "project.h"
 #include "item.h"
 #include "actor.h"
+#include "findsPath.h"
 
 #include <memory>
 #include <vector>
@@ -43,8 +44,9 @@ class StockPileThreadedTask final : public ThreadedTask
 	StockPileObjective& m_objective;
 	Item* m_item;
 	Block* m_destination;
+	FindsPath m_findsPath;
 public:
-	StockPileThreadedTask(StockPileObjective& spo) : ThreadedTask(spo.m_actor.getThreadedTaskEngine()), m_objective(spo), m_item(nullptr), m_destination(nullptr) { }
+	StockPileThreadedTask(StockPileObjective& spo) : ThreadedTask(spo.m_actor.getThreadedTaskEngine()), m_objective(spo), m_item(nullptr), m_destination(nullptr), m_findsPath(spo.m_actor) { }
 	void readStep();
 	void writeStep();
 	void clearReferences();

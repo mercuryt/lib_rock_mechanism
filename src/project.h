@@ -68,13 +68,10 @@ public:
 	void dismissWorkers();
 	void scheduleEvent();
 	void createHaulSubproject(const HaulSubprojectParamaters haulSubprojectParamaters);
+	void haulSubprojectComplete(HaulSubproject& haulSubproject);
 	// TODO: minimum speed decreses with failed attempts to generate haul subprojects.
 	[[nodiscard]] uint32_t getMinimumHaulSpeed() const { return Config::minimumHaulSpeed; }
-	[[nodiscard]] bool canGatherItemAt(const Actor& actor, const Block& block) const;
-	[[nodiscard]] std::pair<Item*, ProjectItemCounts*> gatherableItemAtWithProjectItemCounts(const Actor& actor, const Block& block) const;
-	[[nodiscard]] bool canGatherActorAt(const Actor& actor, const Block& block) const;
-	[[nodiscard]] Actor* gatherableActorAt(const Actor& actor, const Block& block) const;
-	void haulSubprojectComplete(HaulSubproject& haulSubproject);
+	[[nodiscard]] bool canAddWorker(const Actor& actor) const;
 	[[nodiscard]] Block& getLocation() const { return m_location; }
 	[[nodiscard]] virtual Step getDelay() const = 0;
 	virtual void onComplete() = 0;
@@ -115,7 +112,6 @@ class ProjectTryToMakeHaulSubprojectThreadedTask final : public ThreadedTask
 {
 	Project& m_project;
 	HaulSubprojectParamaters m_haulProjectParamaters;
-	FindsPath m_findsPath;
 public:
 	ProjectTryToMakeHaulSubprojectThreadedTask(Project& p);
 	void readStep();

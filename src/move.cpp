@@ -1,7 +1,8 @@
 #include "move.h"
-#include "path.h"
+#include "actor.h"
+#include "block.h"
 #include "util.h"
-ActorCanMove::ActorCanMove(Actor& a) : m_actor(a), m_moveType(&m_actor.m_species.moveType), m_destination(nullptr), m_pathIter(m_path.end()),  m_retries(0), m_event(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()), m_toSetThreadedTask(a.getThreadedTaskEngine())
+ActorCanMove::ActorCanMove(Actor& a) : m_actor(a), m_moveType(&m_actor.m_species.moveType), m_destination(nullptr), m_pathIter(m_path.end()),  m_retries(0), m_event(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()) 
 {
 	updateIndividualSpeed();
 }
@@ -104,31 +105,53 @@ void ActorCanMove::scheduleMove()
 	Step delay = moveTo.m_hasShapes.moveCostFrom(*m_moveType, *m_actor.m_location) / speed;
 	m_event.schedule(delay, *this);
 }
-void ActorCanMove::setDestination(Block& destination, bool detour, bool adjacent)
+void ActorCanMove::setDestination(Block& destination, bool detour, bool adjacent, bool unreserved, bool reserve)
 {
 	assert(destination.m_hasShapes.anythingCanEnterEver());
 	clearPath();
 	m_destination = &destination;
 	clearAllEventsAndTasks();
-	m_threadedTask.create(m_actor, detour, adjacent);
+	std::function<bool(const Block&)> predicate = [&](const Block& block){ return block == destination; };
+	// Actor, predicate, destinationHuristic, detour, adjacent, unreserved.
+	m_threadedTask.create(m_actor, predicate, &destination, detour, adjacent, unreserved, reserve);
 }
-void ActorCanMove::setDestinationAdjacentTo(Block& destination, bool detour)
+void ActorCanMove::setDestinationAdjacentTo(Block& destination, bool detour, bool unreserved, bool reserve)
 {
 	assert(!m_actor.isAdjacentTo(destination));
-	setDestination(destination, detour, true);
+	setDestination(destination, detour, true, unreserved, reserve);
 }
-void ActorCanMove::setDestinationAdjacentToSet(std::unordered_set<Block*>& blocks, bool detour)
+void ActorCanMove::setDestinationAdjacentTo(HasShape& hasShape, bool detour, bool unreserved, bool reserve) 
 {
-	clearPath();
-	static bool adjacent = true;
-	m_toSetThreadedTask.create(m_actor, blocks, detour, adjacent);
+	std::function<bool(const Block&)> predicate = [&](const Block& block){ return hasShape.m_blocks.contains(const_cast<Block*>(&block)); };
+	// Actor, predicate, destinationHuristic, detour, adjacent, unreserved.
+	m_threadedTask.create(m_actor, predicate, hasShape.m_location, detour, true, unreserved, reserve);
 }
-void ActorCanMove::setDestinationAdjacentTo(HasShape& hasShape, bool detour) 
+void ActorCanMove::goToPredicateBlockAndThen(std::function<bool(const Block&)>& predicate, std::function<void(Block&)> callback, bool detour, bool adjacent, bool unreserved, bool reserve)
 {
-	if(hasShape.m_blocks.size() == 1)
-		setDestinationAdjacentTo(*hasShape.m_location, detour);
+	Block* block = adjacent ?
+		m_actor.getBlockWhichIsAdjacentWithPredicate(predicate) :
+		m_actor.getBlockWhichIsOccupiedWithPredicate(predicate);
+	if(block != nullptr)
+		callback(*block);
 	else
-		setDestinationAdjacentToSet(hasShape.m_blocks, detour);
+	{
+		const Block* huristicDestination = nullptr;
+		m_threadedTask.create(m_actor, predicate, huristicDestination, detour, adjacent, unreserved, reserve);
+	}
+}
+void ActorCanMove::goToBlockAndThen(const Block& block, std::function<void(Block&)> callback, bool detour, bool adjacent, bool unreserved, bool reserve)
+{
+	std::function<bool(const Block&)> predicate = [&](const Block& other){ return block == other; };
+	Block* target = adjacent ?
+		m_actor.getBlockWhichIsAdjacentWithPredicate(predicate) :
+		m_actor.getBlockWhichIsOccupiedWithPredicate(predicate);
+	if(target != nullptr)
+		callback(*target);
+	else
+	{
+		const Block* huristicDestination = &block;
+		m_threadedTask.create(m_actor, predicate, huristicDestination, detour, adjacent, unreserved, reserve);
+	}
 }
 void ActorCanMove::setMoveType(const MoveType& moveType)
 {
@@ -140,7 +163,6 @@ void ActorCanMove::clearAllEventsAndTasks()
 {
 	m_event.maybeUnschedule();
 	m_threadedTask.maybeCancel();
-	m_toSetThreadedTask.maybeCancel();
 }
 void ActorCanMove::onLeaveArea() { clearAllEventsAndTasks(); }
 void ActorCanMove::onDeath() { clearAllEventsAndTasks(); }
@@ -151,42 +173,46 @@ bool ActorCanMove::canMove() const
 	return true;
 }
 MoveEvent::MoveEvent(Step delay, ActorCanMove& cm) : ScheduledEventWithPercent(cm.m_actor.getSimulation(), delay), m_canMove(cm) { }
-PathThreadedTask::PathThreadedTask(Actor& a, bool d, bool ad) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_detour(d), m_adjacent(ad) { }
+PathThreadedTask::PathThreadedTask(Actor& a, std::function<bool(const Block&)>& p, const Block* hd, bool d, bool ad, bool ur, bool res) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_predicate(p), m_huristicDestination(hd), m_detour(d), m_adjacent(ad), m_unreserved(ur), m_reserve(res), m_findsPath(a) { }
 void PathThreadedTask::readStep()
 {
-	m_findsPath.pathToBlock(m_actor, *m_actor.m_canMove.m_destination, m_detour);
+	m_findsPath.m_detour = m_detour;
+	m_findsPath.m_huristicDestination = m_huristicDestination;
+	if(m_unreserved)
+	{
+		if(m_adjacent)
+			m_findsPath.pathToUnreservedAdjacentToPredicate(m_predicate, *m_actor.getFaction());
+		else
+			m_findsPath.pathToUnreservedPredicate(m_predicate, *m_actor.getFaction());
+	}
+	else
+		if(m_adjacent)
+			m_findsPath.pathToAdjacentToPredicate(m_predicate);
+		else
+			m_findsPath.pathToOccupiedPredicate(m_predicate);
 }
 void PathThreadedTask::writeStep()
 {
-	m_findsPath.cacheMoveCosts(m_actor);
+	m_findsPath.cacheMoveCosts();
 	if(!m_findsPath.found())
 		m_actor.m_hasObjectives.cannotCompleteTask();
 	else
 	{
-		if(m_adjacent)
+		if(m_unreserved && (!m_actor.allBlocksAtLocationAndFacingAreReservable(*m_findsPath.getPath().back(), m_findsPath.getFacingAtDestination()) || m_findsPath.m_target->m_reservable.isFullyReserved(m_actor.getFaction())))
 		{
-			m_findsPath.getPath().pop_back();
-			assert(!m_findsPath.getPath().empty());
+			// Destination is now reserved, try again.
+			// Actor, predicate, destinationHuristic, detour, adjacent, unreserved.
+			m_actor.m_canMove.m_threadedTask.create(m_actor, m_predicate, m_huristicDestination, m_detour, m_adjacent, m_unreserved, m_reserve);
+			return;
+		}
+		if(m_reserve)
+		{
+			assert(m_unreserved);
+			m_actor.m_canReserve.clearAll(); // Somewhat skeptical about this.
+			m_findsPath.reserveBlocksAtDestination(m_actor.m_canReserve);
+			m_findsPath.m_target->m_reservable.reserveFor(m_actor.m_canReserve, 1u);
 		}
 		m_actor.m_canMove.setPath(m_findsPath.getPath());
 	}
 }
 void PathThreadedTask::clearReferences() { m_actor.m_canMove.m_threadedTask.clearPointer(); }
-PathToSetThreadedTask::PathToSetThreadedTask(Actor& a, std::unordered_set<Block*> b, bool d, bool ad) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_blocks(b), m_detour(d), m_adjacent(ad) { }
-void PathToSetThreadedTask::readStep()
-{
-	auto condition = [&](Block& block){ return m_blocks.contains(&block); };
-	m_route = path::getForActorToPredicate(m_actor, condition);
-}
-void PathToSetThreadedTask::writeStep()
-{
-	if(m_route.empty())
-		m_actor.m_hasObjectives.cannotCompleteTask();
-	else
-	{
-		if(m_adjacent)
-			m_route.pop_back();
-		m_actor.m_canMove.setPath(m_route);
-	}
-}
-void PathToSetThreadedTask::clearReferences() { m_actor.m_canMove.m_toSetThreadedTask.clearPointer(); }

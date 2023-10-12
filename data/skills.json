@@ -8,6 +8,10 @@
 		"xpPerLevelModifier": 3.0,
 		"level1Xp": 100
 	},{
+		"name": "pick",
+		"xpPerLevelModifier": 3.0,
+		"level1Xp": 300
+	},{
 		"name": "dagger",
 		"xpPerLevelModifier": 2.0,
 		"level1Xp": 100

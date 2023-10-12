@@ -19,36 +19,41 @@ void HasShape::setStatic(bool isTrue)
 		}
 	m_static = isTrue;
 }
-bool HasShape::isAdjacentTo(HasShape& other) const
+bool HasShape::isAdjacentTo(const HasShape& other) const
 {
-	assert(this != &other);
-	for(Block* block : m_blocks)
-	{
-		if(other.m_blocks.contains(block))
-			return true;
-		for(Block* adjacent : block->getAdjacentWithEdgeAndCornerAdjacent())
-			if(other.m_blocks.contains(adjacent))
-				return true;
-	}
-	return false;
+	const HasShape* smaller = this;
+	const HasShape* larger = &other;
+	if(smaller->m_blocks.size () > larger->m_blocks.size())
+		std::swap(smaller, larger);
+	std::function<bool(const Block&)> predicate = [&](const Block& block) { return larger->m_blocks.contains(const_cast<Block*>(&block)); };
+	return smaller->predicateForAnyAdjacentBlock(predicate);
+}
+bool HasShape::isAdjacentToAt(const Block& location, Facing facing, const HasShape& hasShape) const
+{
+	std::function<bool(const Block&)> predicate = [&](const Block& block) { return hasShape.m_blocks.contains(const_cast<Block*>(&block)); };
+	return const_cast<HasShape*>(this)->getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(location, facing, predicate) != nullptr;
 }
 bool HasShape::isAdjacentTo(Block& location) const
 {
-	for(Block* block : m_blocks)
-	{
-		if(block == &location)
-			return true;
-		for(Block* adjacent : block->getAdjacentWithEdgeAndCornerAdjacent())
-			if(adjacent == &location)
-				return true;
-	}
-	return false;
+	std::function<bool(const Block&)> predicate = [&](const Block& block) { return block == location; };
+	return predicateForAnyAdjacentBlock(predicate);
 }
-bool HasShape::predicateForAnyOccupiedBlock(std::function<bool(const Block&)> predicate)
+bool HasShape::predicateForAnyOccupiedBlock(std::function<bool(const Block&)> predicate) const
 {
 	for(Block* block : m_blocks)
 		if(predicate(*block))
 			return true;
+	return false;
+}
+bool HasShape::predicateForAnyAdjacentBlock(std::function<bool(const Block&)> predicate) const
+{
+	//TODO: cache this.
+	for(auto [x, y, z] : m_shape->adjacentPositionsWithFacing(m_facing))
+	{
+		Block* block = m_location->offset(x, y, z);
+		if(block != nullptr && predicate(*block))
+			return true;
+	}
 	return false;
 }
 std::unordered_set<Block*> HasShape::getOccupiedAndAdjacent()
@@ -62,9 +67,9 @@ std::unordered_set<Block*> HasShape::getAdjacentBlocks()
 {
 	std::unordered_set<Block*> output;
 	for(Block* block : m_blocks)
-		output.insert(block->m_adjacentsVector.begin(), block->m_adjacentsVector.end());
-	for(Block* block : m_blocks)
-		output.erase(block);
+		for(Block* adjacent : block->getAdjacentWithEdgeAndCornerAdjacent())
+			if(!m_blocks.contains(adjacent))
+				output.insert(adjacent);
 	return output;
 }
 std::unordered_set<HasShape*> HasShape::getAdjacentHasShapes()
@@ -86,6 +91,81 @@ std::unordered_set<HasShape*> HasShape::getAdjacentHasShapes()
 	}
 	output.erase(this);
 	return output;
+}
+std::vector<Block*> HasShape::getBlocksWhichWouldBeOccupiedAtLocationAndFacing(Block& location, Facing facing)
+{
+	std::vector<Block*> output;
+	output.reserve(m_shape->positions.size());
+	for(auto& [x, y, z, v] : m_shape->positionsWithFacing(facing))
+	{
+		Block* block = location.offset(x, y, z);
+		if(block != nullptr)
+			output.push_back(block);
+	}
+	return output;
+}
+std::vector<Block*> HasShape::getAdjacentAtLocationWithFacing(const Block& location, Facing facing)
+{
+	std::vector<Block*> output;
+	output.reserve(m_shape->positions.size());
+	for(auto [x, y, z] : m_shape->adjacentPositionsWithFacing(facing))
+	{
+		Block* block = location.offset(x, y, z);
+		if(block != nullptr)
+			output.push_back(block);
+	}
+	return output;
+}
+Block* HasShape::getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(const Block& location, Facing facing, std::function<bool(const Block&)>& predicate)
+{
+	for(auto [x, y, z] : m_shape->adjacentPositionsWithFacing(facing))
+	{
+		Block* block = location.offset(x, y, z);
+		if(block != nullptr && predicate(*block))
+			return block;
+	}
+	return nullptr;
+}
+Block* HasShape::getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(const Block& location, Facing facing, std::function<bool(const Block&)>& predicate)
+{
+	for(auto& [x, y, z, v] : m_shape->positionsWithFacing(facing))
+	{
+		Block* block = location.offset(x, y, z);
+		if(block != nullptr && predicate(*block))
+			return block;
+	}
+	return nullptr;
+}
+Block* HasShape::getBlockWhichIsAdjacentWithPredicate(std::function<bool(const Block&)>& predicate)
+{
+	return getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(*m_location, m_facing, predicate);
+}
+Block* HasShape::getBlockWhichIsOccupiedWithPredicate(std::function<bool(const Block&)>& predicate)
+{
+	return getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(*m_location, m_facing, predicate);
+}
+Item* HasShape::getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(const Block& location, Facing facing, std::function<bool(const Item&)>& predicate)
+{
+	for(auto [x, y, z] : m_shape->adjacentPositionsWithFacing(facing))
+	{
+		Block* block = location.offset(x, y, z);
+		if(block != nullptr)
+			for(Item* item : block->m_hasItems.getAll())
+				if(predicate(*item))
+					return item;
+	}
+	return nullptr;
+}
+Item* HasShape::getItemWhichIsAdjacentWithPredicate(std::function<bool(const Item&)>& predicate)
+{
+	return getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(*m_location, m_facing, predicate);
+}
+bool HasShape::allBlocksAtLocationAndFacingAreReservable(const Block& location, Facing facing, const Faction& faction) const
+{
+	for(Block* occupied : const_cast<HasShape&>(*this).getBlocksWhichWouldBeOccupiedAtLocationAndFacing(const_cast<Block&>(location), facing))
+		if(occupied->m_reservable.isFullyReserved(&faction))
+			return false;
+	return true;
 }
 EventSchedule& HasShape::getEventSchedule() { return getSimulation().m_eventSchedule; }
 void BlockHasShapes::record(HasShape& hasShape, uint32_t volume)

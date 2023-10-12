@@ -1,23 +1,22 @@
 #include "wander.h"
 #include "actor.h"
 #include "block.h"
-#include "path.h"
 #include "randomUtil.h"
 #include "config.h"
-WanderThreadedTask::WanderThreadedTask(WanderObjective& o) : ThreadedTask(o.m_actor.getThreadedTaskEngine()), m_objective(o) { }
+WanderThreadedTask::WanderThreadedTask(WanderObjective& o) : ThreadedTask(o.m_actor.getThreadedTaskEngine()), m_objective(o), m_findsPath(o.m_actor) { }
 void WanderThreadedTask::readStep()
 {
 	const Block* lastBlock = nullptr;
-	auto condition = [&](const Block& block)
+	std::function<bool(const Block&, Facing)> condition = [&](const Block& block, [[maybe_unused]]Facing facing)
 	{
 		lastBlock = &block;
 		return randomUtil::percentChance(block.taxiDistance(*m_objective.m_actor.m_location) * Config::wanderDistanceModifier);
 	};
-	m_findsPath.pathToPredicate(m_objective.m_actor, condition);
+	m_findsPath.pathToPredicate(condition);
 	if(!m_findsPath.found() && lastBlock != nullptr)
 	{
 		assert(m_objective.m_actor.m_location != lastBlock);
-		m_findsPath.pathToBlock(m_objective.m_actor, *lastBlock);
+		m_findsPath.pathToBlock(*lastBlock);
 	}
 }
 void WanderThreadedTask::writeStep() 
@@ -29,7 +28,7 @@ void WanderThreadedTask::writeStep()
 	}
 	else
 		m_objective.m_actor.wait(Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective);
-	m_findsPath.cacheMoveCosts(m_objective.m_actor);
+	m_findsPath.cacheMoveCosts();
 }
 void WanderThreadedTask::clearReferences() { m_objective.m_threadedTask.clearPointer(); }
 WanderObjective::WanderObjective(Actor& a) : Objective(0u), m_actor(a), m_threadedTask(a.getThreadedTaskEngine()), m_routeFound(false) { }

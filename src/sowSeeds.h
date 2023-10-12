@@ -4,12 +4,12 @@
 #include "eventSchedule.hpp"
 #include "threadedTask.hpp"
 #include "config.h"
+#include "findsPath.h"
 
 #include <memory>
 #include <vector>
 
 class SowSeedsEvent;
-class SowSeedsThreadedTask;
 class SowSeedsObjectiveType final : public ObjectiveType
 {
 public:
@@ -21,8 +21,8 @@ class SowSeedsObjective final : public Objective
 {
 	Actor& m_actor;
 	HasScheduledEvent<SowSeedsEvent> m_event;
-	HasThreadedTask<SowSeedsThreadedTask> m_threadedTask;
-	bool canSowSeedsAt(Block& block);
+	bool canSowSeedsAt(Block& location, Facing facing);
+	Block* getBlockToSowAt(Block& location, Facing facing);
 public:
 	SowSeedsObjective(Actor& a);
 	void execute();
@@ -41,14 +41,4 @@ public:
 	void execute();
 	void clearReferences();
 	void onCancel();
-};
-class SowSeedsThreadedTask final : public ThreadedTask
-{
-	SowSeedsObjective& m_objective;
-	std::vector<Block*> m_result;
-public:
-	SowSeedsThreadedTask(SowSeedsObjective& sso);
-	void readStep();
-	void writeStep();
-	void clearReferences();
 };

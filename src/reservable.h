@@ -20,6 +20,7 @@ public:
 	CanReserve(const Faction* f) : m_faction(f) { }
 	void clearAll();
 	void setFaction(const Faction* faction);
+	[[nodiscard]] bool hasFaction() { return m_faction != nullptr; }
 	~CanReserve();
 };
 class Reservable final
@@ -44,7 +45,12 @@ public:
 		for(auto& pair : m_canReserves)
 			pair.first->m_reservables.erase(this);
 	}
-	bool isFullyReserved(const Faction& faction) const { return m_reservedCounts.contains(&faction) && m_reservedCounts.at(&faction) == m_maxReservations; }
+	bool isFullyReserved(const Faction* faction) const 
+	{ 
+		if(faction == nullptr)
+			return false;
+		return m_reservedCounts.contains(faction) && m_reservedCounts.at(faction) == m_maxReservations; 
+	}
 	std::unordered_map<CanReserve*, uint32_t>& getReservedBy() { return m_canReserves; }
 	void reserveFor(CanReserve& canReserve, const uint32_t quantity) 
 	{

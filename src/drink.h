@@ -10,7 +10,6 @@
 class Item;
 class Block;
 class Actor;
-class DrinkThreadedTask;
 class DrinkEvent;
 class ThirstEvent;
 class DrinkObjective;
@@ -45,7 +44,6 @@ public:
 class DrinkObjective final : public Objective
 {
 	Actor& m_actor;
-	HasThreadedTask<DrinkThreadedTask> m_threadedTask;
 	HasScheduledEvent<DrinkEvent> m_drinkEvent;
 	bool m_noDrinkFound;
 public:
@@ -54,13 +52,12 @@ public:
 	void cancel();
 	void delay();
 	std::string name() const { return "drink"; }
-	bool canDrinkAt(const Block& block) const;
-	Block* getAdjacentBlockToDrinkAt(const Block& block) const;
+	Block* getAdjacentBlockToDrinkAt(const Block& block, Facing facing) const;
 	bool canDrinkItemAt(const Block& block) const;
 	Item* getItemToDrinkFromAt(Block& block) const;
 	ObjectiveId getObjectiveId() const { return ObjectiveId::Drink; }
+	bool containsSomethingDrinkable(const Block& block) const;
 	friend class DrinkEvent;
-	friend class DrinkThreadedTask;
 };
 class DrinkEvent final : public ScheduledEventWithPercent
 {
@@ -78,16 +75,5 @@ class ThirstEvent final : public ScheduledEventWithPercent
 public:
 	ThirstEvent(const Step delay, Actor& a);
 	void execute();
-	void clearReferences();
-};
-class DrinkThreadedTask final : public ThreadedTask
-{
-	DrinkObjective& m_drinkObjective;
-	FindsPath m_findsPath;
-	bool m_noDrinkFound;
-public:
-	DrinkThreadedTask(DrinkObjective& drob);
-	void readStep();
-	void writeStep();
 	void clearReferences();
 };

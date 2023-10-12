@@ -1,9 +1,9 @@
 #include "fight.h"
 
 #include "util.h"
-#include "path.h"
 #include "actor.h"
 #include "weaponType.h"
+#include "block.h"
 
 #include <utility>
 #include <algorithm>
@@ -158,20 +158,25 @@ bool CanFight::inRange(const Actor& target) const { return m_actor.m_location->d
 
 AttackCoolDown::AttackCoolDown(CanFight& cf) : ScheduledEventWithPercent(cf.m_actor.getSimulation(), cf.m_coolDownDuration), m_canFight(cf) { }
 
-GetIntoAttackPositionThreadedTask::GetIntoAttackPositionThreadedTask(Actor& a, Actor& t, uint32_t r) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_target(t), m_range(r) {}
+GetIntoAttackPositionThreadedTask::GetIntoAttackPositionThreadedTask(Actor& a, Actor& t, uint32_t r) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_target(t), m_range(r), m_findsPath(a) {}
 void GetIntoAttackPositionThreadedTask::readStep()
 {
-	auto destinatonCondition = [&](Block& block)
+	std::function<bool(const Block&, Facing)> destinatonCondition = [&](const Block& location, Facing facing)
 	{
-		return block.taxiDistance(*m_target.m_location) <= m_range && block.hasLineOfSightTo(*m_target.m_location);
+		std::function<bool(const Block&)> occupiedCondition = [&](const Block& block)
+		{
+			return block.taxiDistance(*m_target.m_location) <= m_range && block.hasLineOfSightTo(*m_target.m_location);
+		};
+		return m_actor.getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(location, facing, occupiedCondition) != nullptr;
 	};
-	m_route = path::getForActorToPredicate(m_actor, destinatonCondition);
+	//TODO: Range attack units should use a different path priority condition to avoid getting too close.
+	m_findsPath.pathToPredicateWithHuristicDestination(destinatonCondition, *m_target.m_location);
 }
 void GetIntoAttackPositionThreadedTask::writeStep()
 {
-	if(m_route.empty())
+	if(!m_findsPath.found())
 		m_actor.m_hasObjectives.cannotCompleteTask();
 	else
-		m_actor.m_canMove.setPath(m_route);
+		m_actor.m_canMove.setPath(m_findsPath.getPath());
 }
 void GetIntoAttackPositionThreadedTask::clearReferences() { m_actor.m_canFight.m_getIntoAttackPositionThreadedTask.clearPointer(); }

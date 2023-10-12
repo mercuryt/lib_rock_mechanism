@@ -7,10 +7,9 @@
 
 class MoveEvent;
 class PathThreadedTask;
-class PathToSetThreadedTask;
 class Block;
 class Actor;
-struct MoveType;
+class MoveType;
 class Item;
 class HasShape;
 class ActorCanMove final
@@ -25,35 +24,36 @@ class ActorCanMove final
 	uint8_t m_retries;
 	HasScheduledEvent<MoveEvent> m_event;
 	HasThreadedTask<PathThreadedTask> m_threadedTask;
-	HasThreadedTask<PathToSetThreadedTask> m_toSetThreadedTask;
 public:
 	ActorCanMove(Actor& a);
 	void updateIndividualSpeed();
 	void updateActualSpeed();
+	void setMoveType(const MoveType& moveType);
 	void setPath(std::vector<Block*>& path);
 	void clearPath();
 	void callback();
 	void scheduleMove();
-	void setDestination(Block& destination, bool detour = false, bool adjacent = false);
-	void setDestinationAdjacentTo(Block& destination, bool detour = false);
-	void setDestinationAdjacentTo(HasShape& hasShape, bool detour = false);
-	void setDestinationAdjacentToSet(std::unordered_set<Block*>& blocks, bool detour = false);
-	void setMoveType(const MoveType& moveType);
+	void setDestination(Block& destination, bool detour = false, bool adjacent = false, bool unreserved = true, bool reserve = false);
+	void setDestinationAdjacentTo(Block& destination, bool detour = false, bool unreserved = true, bool reserve = true);
+	void setDestinationAdjacentTo(HasShape& hasShape, bool detour = false, bool unreserved = true, bool reserve = true);
+	void setDestinationToUnreservedAdjacentToPredicate(std::function<bool(const Block&)>& predicate, const Faction& faction, bool detour = false);
+	void goToPredicateBlockAndThen(std::function<bool(const Block&)>& predicate, std::function<void(Block&)> callback, bool detour = false, bool adjacent = true, bool unreserved = true, bool reserve = true);
+	void goToBlockAndThen(const Block& block, std::function<void(Block&)> callback, bool detour = false, bool adjacent = true, bool unreserved = true, bool reserve = true);
 	void clearAllEventsAndTasks();
 	void onDeath();
 	void onLeaveArea();
-	[[nodiscard]]const MoveType& getMoveType() const { return *m_moveType; }
-	[[nodiscard]]uint32_t getIndividualMoveSpeedWithAddedMass(Mass mass) const;
-	[[nodiscard]]uint32_t getMoveSpeed() const { return m_speedActual; }
-	[[nodiscard]]bool canMove() const;
+	void maybeCancelThreadedTask() { m_threadedTask.maybeCancel(); }
+	[[nodiscard]] const MoveType& getMoveType() const { return *m_moveType; }
+	[[nodiscard]] uint32_t getIndividualMoveSpeedWithAddedMass(Mass mass) const;
+	[[nodiscard]] uint32_t getMoveSpeed() const { return m_speedActual; }
+	[[nodiscard]] bool canMove() const;
 	// For testing.
-	[[maybe_unused, nodiscard]]PathThreadedTask& getPathThreadedTask() { return m_threadedTask.get(); }
-	[[maybe_unused, nodiscard]]std::vector<Block*>& getPath() { return m_path; }
-	[[maybe_unused, nodiscard]]Block* getDestination() { return m_destination; }
-	[[maybe_unused, nodiscard]]bool hasEvent() { return m_event.exists(); }
+	[[maybe_unused, nodiscard]] PathThreadedTask& getPathThreadedTask() { return m_threadedTask.get(); }
+	[[maybe_unused, nodiscard]] std::vector<Block*>& getPath() { return m_path; }
+	[[maybe_unused, nodiscard]] Block* getDestination() { return m_destination; }
+	[[maybe_unused, nodiscard]] bool hasEvent() { return m_event.exists(); }
 	friend class MoveEvent;
 	friend class PathThreadedTask;
-	friend class PathToSetThreadedTask;
 };
 class MoveEvent final : public ScheduledEventWithPercent
 {
@@ -66,28 +66,19 @@ public:
 class PathThreadedTask final : public ThreadedTask
 {
 	Actor& m_actor;
+	std::function<bool(const Block&)> m_predicate;
+	const Block* m_huristicDestination;
 	bool m_detour;
 	bool m_adjacent;
+	bool m_unreserved;
+	bool m_reserve;
 	FindsPath m_findsPath;
 public:
-	PathThreadedTask(Actor& a, bool d = false, bool ad = false);
+	PathThreadedTask(Actor& a, std::function<bool(const Block&)>& predicate, const Block* huristicDestination = nullptr, bool detour = false, bool adjacent = false, bool unreserved = true, bool reserve = true);
 	void readStep();
 	void writeStep();
 	void clearReferences();
 	// Testing.
 	[[maybe_unused]]bool isDetour() const { return m_detour; }
 	[[maybe_unused]]FindsPath& getFindsPath() { return m_findsPath; }
-};
-class PathToSetThreadedTask final : public ThreadedTask
-{
-	Actor& m_actor;
-	std::unordered_set<Block*> m_blocks;
-	bool m_detour;
-	bool m_adjacent;
-	std::vector<Block*> m_route;
-	void clearReferences();
-public:
-	PathToSetThreadedTask(Actor& a, std::unordered_set<Block*> b, bool d = false, bool ad = false);
-	void readStep();
-	void writeStep();
 };

@@ -12,6 +12,8 @@ void ObjectiveTypePrioritySet::setPriority(const ObjectiveType& objectiveType, u
 	else
 		found->priority = priority;
 	std::ranges::sort(m_data, std::ranges::greater{}, &ObjectivePriority::priority);
+	if(m_actor.m_hasObjectives.m_currentObjective == nullptr)
+		m_actor.m_hasObjectives.getNext();
 }
 void ObjectiveTypePrioritySet::remove(const ObjectiveType& objectiveType)
 {
@@ -56,6 +58,7 @@ void SupressedNeedEvent::clearReferences() { m_supressedNeed.m_event.clearPointe
 // Objective.
 Objective::Objective(uint32_t p) : m_priority(p) {}
 // HasObjectives.
+HasObjectives::HasObjectives(Actor& a) : m_actor(a), m_currentObjective(nullptr), m_prioritySet(a) { }
 void HasObjectives::getNext()
 {
 	m_currentObjective = nullptr;
@@ -97,7 +100,6 @@ void HasObjectives::setCurrentObjective(Objective& objective)
 	m_currentObjective = &objective;
 	objective.execute();
 }
-HasObjectives::HasObjectives(Actor& a) : m_actor(a), m_currentObjective(nullptr), m_prioritySet(a) { }
 void HasObjectives::addNeed(std::unique_ptr<Objective> objective)
 {
 	ObjectiveId objectiveId = objective->getObjectiveId();
@@ -192,6 +194,7 @@ void HasObjectives::cannotFulfillNeed(Objective& objective)
 	m_idsOfObjectivesInNeedsQueue.erase(objectiveId);
 	m_needsQueue.erase(found);
 	m_actor.m_canReserve.clearAll();
+	m_actor.m_canMove.maybeCancelThreadedTask();
 	if(isCurrent)
 		getNext();
 }

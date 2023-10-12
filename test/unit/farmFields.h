@@ -40,17 +40,16 @@ TEST_CASE("farmFields")
 		simulation.setDateTime({1, wheatGrass.dayOfYearForSowStart, 1200 });
 		REQUIRE(area.m_hasFarmFields.hasSowSeedsDesignations(faction));
 		REQUIRE(block.m_hasDesignations.contains(faction, BlockDesignation::SowSeeds));
-		REQUIRE(!block.m_reservable.isFullyReserved(faction));
+		REQUIRE(!block.m_reservable.isFullyReserved(&faction));
 		const SowSeedsObjectiveType objectiveType;
 		REQUIRE(objectiveType.canBeAssigned(actor));
 		actor.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 10);
-		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.empty());
-		actor.m_hasObjectives.getNext();
+		//actor.m_hasObjectives.getNext();
 		REQUIRE(actor.m_hasObjectives.hasCurrent());
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "sow seeds");
 		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.size() == 1);
 		simulation.doStep();
-		REQUIRE(block.m_reservable.isFullyReserved(faction));
+		REQUIRE(block.m_reservable.isFullyReserved(&faction));
 		REQUIRE(!actor.m_canMove.getPath().empty());
 		while(actor.m_canMove.getDestination() != nullptr)
 			simulation.doStep();
@@ -85,12 +84,12 @@ TEST_CASE("farmFields")
 		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
 		const HarvestObjectiveType objectiveType;
 		actor.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 10);
-		actor.m_hasObjectives.getNext();
+		//actor.m_hasObjectives.getNext();
 		REQUIRE(actor.m_hasObjectives.hasCurrent());
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "harvest");
 		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.size() == 1);
 		simulation.doStep();
-		REQUIRE(block.m_reservable.isFullyReserved(faction));
+		REQUIRE(block.m_reservable.isFullyReserved(&faction));
 		REQUIRE(!actor.m_canMove.getPath().empty());
 		while(actor.m_canMove.getDestination() != nullptr)
 			simulation.doStep();
