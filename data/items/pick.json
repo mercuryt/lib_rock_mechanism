@@ -1,0 +1,24 @@
+{
+	"name": "pick",
+	"shape": "oneByOneSixteenth",
+	"volume": 3000,
+	"generic": false,
+	"value": 200,
+	"moveType": "none",
+	"weaponData":
+	{
+		"combatSkill": "pick",
+		"combatScoreBonus": 1,
+		"attackTypes":
+		[
+			{
+				"name": "swing",
+				"area": 5,
+				"baseForce": 8,
+				"range": 1,
+				"skillBonus": 1,
+				"woundType": "Pierce"
+			}
+		]
+	}
+}
