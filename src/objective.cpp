@@ -153,27 +153,31 @@ void HasObjectives::destroy(Objective& objective)
 void HasObjectives::cancel(Objective& objective)
 {
 	objective.cancel();
+	m_actor.m_canMove.maybeCancelThreadedTask();
 	destroy(objective);
 }
 void HasObjectives::objectiveComplete(Objective& objective)
 {
 	assert(m_actor.m_mustSleep.isAwake());
-	// Response to complete is the same as response to cancel.
+	m_actor.m_canMove.maybeCancelThreadedTask();
 	destroy(objective);
 }
 void HasObjectives::taskComplete()
 {
 	assert(m_actor.m_mustSleep.isAwake());
 	if(m_currentObjective == nullptr)
-		m_prioritySet.setObjectiveFor(m_actor);
+		getNext();
 	else
 		m_currentObjective->execute();
 }
 void HasObjectives::cannotCompleteTask()
 {
 	//TODO: generate cancelaton message?
-	// Response to cannot complete is the same as response to complete.
-	taskComplete();
+	//TODO: mandate existance of objective?
+	if(m_currentObjective == nullptr)
+		getNext();
+	else
+		m_currentObjective->execute();
 }
 Objective& HasObjectives::getCurrent() 
 {
@@ -204,4 +208,10 @@ void HasObjectives::cannotFulfillObjective(Objective& objective)
 	m_prioritySet.setDelay(objective.getObjectiveId());
 	cancel(objective);
 	//TODO: generate cancelation message?
+}
+void HasObjectives::detour()
+{
+	//TODO: This conditional is required because objectives are not mandated to always exist.
+	if(m_currentObjective != nullptr)
+		m_currentObjective->detour();
 }

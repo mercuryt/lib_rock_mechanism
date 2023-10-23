@@ -24,20 +24,25 @@ TEST_CASE("dig")
 	{
 		Block& holeLocation = area.m_blocks[8][4][3];
 		area.m_hasDiggingDesignations.designate(faction, holeLocation, nullptr);
+		DigProject& project = area.m_hasDiggingDesignations.at(faction, holeLocation);
 		REQUIRE(holeLocation.m_hasDesignations.contains(faction, BlockDesignation::Dig));
 		REQUIRE(area.m_hasDiggingDesignations.contains(faction, holeLocation));
 		DigObjectiveType digObjectiveType;
 		REQUIRE(digObjectiveType.canBeAssigned(dwarf1));
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
-		simulation.doStep();
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "dig");
+		// One step to select haul type.
+		simulation.doStep();
+		// Another step to path to the pick.
+		simulation.doStep();
+		// And another for some reason??
+		simulation.doStep();
+		REQUIRE(!dwarf1.m_canMove.getPath().empty());
 		REQUIRE(pick.isAdjacentTo(*dwarf1.m_canMove.getDestination()));
-		simulation.fastForwardUntillActorIsAdjacentToHasShape(dwarf1, pick);
+		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, *pick.m_location);
 		REQUIRE(dwarf1.m_canPickup.isCarrying(pick));
 		simulation.doStep();
-		REQUIRE(dwarf1.m_canMove.getDestination()->isAdjacentTo(holeLocation));
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, holeLocation);
-		DigProject& project = area.m_hasDiggingDesignations.at(faction, holeLocation);
 		Step stepsDelay = project.getDelay();
 		simulation.fastForward(stepsDelay);
 		REQUIRE(!holeLocation.isSolid());

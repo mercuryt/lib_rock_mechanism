@@ -8,7 +8,7 @@
 
 namespace randomUtil
 {
-	constexpr inline uint32_t seed = 23423487;
+	constexpr inline uint32_t seed = 23421487;
 	inline std::mt19937& getRng()
 	{
 		static std::mt19937 rng(seed);
@@ -17,7 +17,7 @@ namespace randomUtil
 	inline int32_t getInRange(int lowest, int highest)
 	{
 		assert(lowest < highest);
-		static std::uniform_int_distribution<std::mt19937::result_type> dist(lowest, highest);
+		static std::uniform_int_distribution<uint32_t> dist(lowest, highest);
 		return dist(getRng());
 	}
 	[[maybe_unused]] inline uint32_t getInRange(uint32_t lowest, uint32_t highest)
@@ -26,7 +26,7 @@ namespace randomUtil
 	}
 	[[maybe_unused]] inline bool percentChance(Percent percent)
 	{
-		static std::uniform_int_distribution<std::mt19937::result_type> dist(1, 100);
+		static std::uniform_int_distribution<Percent> dist(1, 100);
 		return dist(getRng()) <= percent;
 	}
 	[[maybe_unused]] inline bool chance(double chance)

@@ -3,7 +3,7 @@
 #include "area.h"
 #include "randomUtil.h"
 #include "util.h"
-DigThreadedTask::DigThreadedTask(DigObjective& digObjective) : ThreadedTask(digObjective.m_actor.m_location->m_area->m_simulation.m_threadedTaskEngine), m_digObjective(digObjective), m_findsPath(digObjective.m_actor) { }
+DigThreadedTask::DigThreadedTask(DigObjective& digObjective) : ThreadedTask(digObjective.m_actor.m_location->m_area->m_simulation.m_threadedTaskEngine), m_digObjective(digObjective), m_findsPath(digObjective.m_actor, digObjective.m_detour) { }
 void DigThreadedTask::readStep()
 {
 	std::function<bool(const Block&)> predicate = [&](const Block& block)
@@ -19,31 +19,23 @@ void DigThreadedTask::writeStep()
 		m_digObjective.m_actor.m_hasObjectives.cannotFulfillObjective(m_digObjective);
 	else
 	{
-		Block* destination = m_findsPath.getPath().back();
-		Facing facing = m_findsPath.getFacingAtDestination();
-		if(!m_digObjective.m_actor.allBlocksAtLocationAndFacingAreReservable(*destination, facing))
+		if(!m_findsPath.areAllBlocksAtDestinationReservable(m_digObjective.m_actor.getFaction()))
 		{
 			// Proposed location while digging has been reserved already, try to find another.
 			m_digObjective.m_digThrededTask.create(m_digObjective);
 			return;
 		}
-		// Find an adjacent project to contribute to.
-		for(Block* block : m_digObjective.m_actor.getAdjacentAtLocationWithFacing(*destination, facing))
+		Block& target = *m_findsPath.getBlockWhichPassedPredicate();
+		DigProject& project = target.m_area->m_hasDiggingDesignations.at(*m_digObjective.m_actor.getFaction(), target);
+		if(project.canAddWorker(m_digObjective.m_actor))
 		{
-			assert(m_digObjective.m_actor.getFaction() != nullptr);
-			if(block->m_hasDesignations.contains(*m_digObjective.m_actor.getFaction(), BlockDesignation::Dig))
-			{
-				DigProject& project = block->m_area->m_hasDiggingDesignations.at(*m_digObjective.m_actor.getFaction(), *block);
-				if(project.canAddWorker(m_digObjective.m_actor))
-				{
-					// Join project and reserve standing room.
-					m_digObjective.m_project = &project;
-					project.addWorker(m_digObjective.m_actor, m_digObjective);
-					m_digObjective.m_actor.reserveAllBlocksAtLocationAndFacing(*destination, facing);
-				}
-			}
+			// Join project and reserve standing room.
+			m_digObjective.m_project = &project;
+			project.addWorker(m_digObjective.m_actor, m_digObjective);
+			m_findsPath.reserveBlocksAtDestination(m_digObjective.m_actor.m_canReserve);
 		}
-		if(m_digObjective.m_project == nullptr)
+		else
+			// Project can no longer accept this worker, try again.
 			m_digObjective.m_digThrededTask.create(m_digObjective);
 	}
 }
@@ -64,6 +56,12 @@ void DigObjective::cancel()
 	if(m_project != nullptr)
 		m_project->removeWorker(m_actor);
 	m_digThrededTask.maybeCancel();
+}
+void DigObjective::reset() 
+{ 
+	cancel(); 
+	m_project = nullptr; 
+	m_actor.m_canReserve.clearAll();
 }
 DigProject* DigObjective::getJoinableProjectAt(const Block& block)
 {
@@ -112,12 +110,11 @@ uint32_t DigProject::getWorkerDigScore(Actor& actor)
 void DigProject::onComplete()
 {
 	if(blockFeatureType == nullptr)
-		getLocation().setNotSolid();
+		m_location.setNotSolid();
 	else
-		getLocation().m_hasBlockFeatures.hew(*blockFeatureType);
+		m_location.m_hasBlockFeatures.hew(*blockFeatureType);
 	// Remove designations for other factions as well as owning faction.
-	getLocation().m_area->m_hasDiggingDesignations.clearAll(getLocation());
-
+	m_location.m_area->m_hasDiggingDesignations.clearAll(m_location);
 }
 // What would the total delay time be if we started from scratch now with current workers?
 Step DigProject::getDelay() const

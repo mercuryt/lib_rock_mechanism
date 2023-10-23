@@ -5,6 +5,7 @@
 
 #include "shape.h"
 #include "leadAndFollow.h"
+#include "onDestroy.h"
 
 #include <unordered_set>
 
@@ -14,6 +15,7 @@ class BlockHasShapes;
 class Actor;
 class Item;
 class Faction;
+class CanReserve;
 
 class HasShape
 {
@@ -29,19 +31,21 @@ public:
 	//TODO: Adjacent blocks cache.
 	CanLead m_canLead;
 	CanFollow m_canFollow;
+	OnDestroy m_onDestroy;
 	bool m_isUnderground;
 
 	void setStatic(bool isTrue);
+	void reserveOccupied(CanReserve& canReserve);
 	bool isAdjacentTo(const HasShape& other) const;
 	bool isAdjacentTo(Block& block) const;
 	bool predicateForAnyOccupiedBlock(std::function<bool(const Block&)> predicate) const;
 	bool predicateForAnyAdjacentBlock(std::function<bool(const Block&)> predicate) const;
-	std::unordered_set<Block*> getOccupiedAndAdjacent();
 	std::unordered_set<Block*> getAdjacentBlocks();
 	std::unordered_set<HasShape*> getAdjacentHasShapes();
 	std::vector<Block*> getAdjacentAtLocationWithFacing(const Block& block, uint8_t facing);
 	std::vector<Block*> getBlocksWhichWouldBeOccupiedAtLocationAndFacing(Block& location, Facing facing);
 	bool allBlocksAtLocationAndFacingAreReservable(const Block& location, Facing facing, const Faction& faction) const;
+	bool allOccupiedBlocksAreReservable(const Faction& faction) const;
 	bool isAdjacentToAt(const Block& location, Facing facing, const HasShape& hasShape) const;
 	Block* getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(const Block& location, Facing facing, std::function<bool(const Block&)>& predicate);
 	Block* getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(const Block& location, Facing facing, std::function<bool(const Block&)>& predicate);

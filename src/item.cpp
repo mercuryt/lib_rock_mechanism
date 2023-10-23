@@ -20,6 +20,8 @@ void Item::setLocation(Block& block)
 void Item::exit()
 {
 	assert(m_location != nullptr);
+	if(m_location->m_outdoors)
+		m_location->m_area->m_hasItems.setItemIsNotOnSurface(*this);
 	m_location->m_hasItems.remove(*this);
 }
 void Item::setTemperature(Temperature temperature)
@@ -65,6 +67,7 @@ Item::Item(Simulation& s,uint32_t i, const ItemType& it, const MaterialType& mt,
 }
 void ItemHasCargo::add(HasShape& hasShape)
 {
+	//TODO: This method does not call hasShape.exit(), which is not consistant with the behaviour of CanPickup::pickup.
 	assert(m_volume + hasShape.getVolume() <= m_item.m_itemType.internalVolume);
 	assert(!contains(hasShape));
 	assert(m_fluidVolume == 0 && m_fluidType == nullptr);
@@ -187,6 +190,8 @@ void BlockHasItems::add(const ItemType& itemType, const MaterialType& materialTy
 		Item& item = m_block.m_area->m_simulation.createItem(itemType, materialType, quantity);
 		m_items.push_back(&item);
 		m_block.m_hasShapes.enter(item);
+		if(m_block.m_outdoors)
+			m_block.m_area->m_hasItems.setItemIsOnSurface(item);
 	}
 }
 void BlockHasItems::remove(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity)
@@ -197,7 +202,12 @@ void BlockHasItems::remove(const ItemType& itemType, const MaterialType& materia
 	assert((*found)->m_quantity >= quantity);
 	// Remove all.
 	if((*found)->m_quantity == quantity)
+	{
 		remove(**found);
+		// TODO: don't remove if it's about to be readded, requires knowing destination / origin.
+		if(m_block.m_outdoors)
+			m_block.m_area->m_hasItems.setItemIsNotOnSurface(**found);
+	}
 	else
 	{
 		// Remove some.
@@ -257,7 +267,11 @@ void AreaHasItems::onChangeAmbiantSurfaceTemperature()
 {
 	//TODO: Optimize by not repetedly fetching ambiant.
 	for(Item* item : m_onSurface)
+	{
+		assert(item->m_location != nullptr);
+		assert(item->m_location->m_outdoors);
 		item->setTemperature(item->m_location->m_blockHasTemperature.get());
+	}
 }
 void AreaHasItems::remove(Item& item)
 {

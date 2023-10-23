@@ -29,7 +29,8 @@ public:
        	}
 	void execute() { m_project.commandWorker(m_actor); }
 	void cancel() { m_project.removeWorker(m_actor); }
-	void delay() { m_project.removeWorker(m_actor); }
+	void delay() { }
+	void reset() { m_actor.m_canReserve.clearAll(); }
 	ObjectiveId getObjectiveId() const { return ObjectiveId::Haul; }
 	std::string name() const { return "haul"; }
 };

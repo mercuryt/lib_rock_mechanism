@@ -61,22 +61,24 @@ TEST_CASE("haul")
 		Item& chunk1 = simulation.createItem(chunk, marble, 1u);
 		chunk1.setLocation(chunkLocation);
 		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1}), chunk1, destination);
-		// One step to run the create subproject threaded task.
-		simulation.doStep();
-		// Another step to find the path.
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "haul");
+		REQUIRE(simulation.m_threadedTaskEngine.count() == 1);
+		// One step to run the create subproject threaded task and set the strategy.
 		simulation.doStep();
 		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1);
 		REQUIRE(projectWorker.haulSubproject != nullptr);
 		REQUIRE(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::Individual);
+		// Another step to find the path.
+		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, chunkLocation);
 		REQUIRE(dwarf1.m_canPickup.exists());
 		REQUIRE(dwarf1.m_canPickup.getItem() == chunk1);
 		simulation.doStep();
-		REQUIRE(dwarf1.m_canMove.getDestination() != nullptr);
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, destination);
 		simulation.fastForward(Config::addToStockPileDelaySteps);
 		REQUIRE(chunk1.m_location == &destination);
 		REQUIRE(!dwarf1.m_canPickup.exists());
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "haul");
 	}
 	SUBCASE("hand cart haul strategy")
 	{
@@ -109,6 +111,7 @@ TEST_CASE("haul")
 		REQUIRE(chunk1.m_location == &destination);
 		REQUIRE(cart.m_hasCargo.empty());
 		REQUIRE(!cart.m_reservable.isFullyReserved(&faction));
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "haul");
 	}
 	SUBCASE("team haul strategy")
 	{
@@ -143,6 +146,7 @@ TEST_CASE("haul")
 		REQUIRE(chunk1.m_location == &destination);
 		REQUIRE(!dwarf2.m_canFollow.isFollowing());
 		REQUIRE(!dwarf1.m_canLead.isLeading());
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "haul");
 	}
 	SUBCASE("panniers haul strategy")
 	{
@@ -182,6 +186,7 @@ TEST_CASE("haul")
 		simulation.fastForward(Config::addToStockPileDelaySteps);
 		REQUIRE(chunk1.m_location == &destination);
 		REQUIRE(!donkey1.m_reservable.isFullyReserved(&faction));
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "haul");
 	}
 	SUBCASE("animal cart haul strategy")
 	{
@@ -221,6 +226,7 @@ TEST_CASE("haul")
 		simulation.fastForward(Config::addToStockPileDelaySteps);
 		REQUIRE(boulder1.m_location == &destination);
 		REQUIRE(!donkey1.m_reservable.isFullyReserved(&faction));
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "haul");
 	}
 	SUBCASE("team hand cart haul strategy")
 	{
@@ -248,13 +254,17 @@ TEST_CASE("haul")
 		REQUIRE(cart1.isAdjacentTo(*dwarf1.m_canMove.getDestination()));
 		REQUIRE(cart1.isAdjacentTo(*dwarf2.m_canMove.getDestination()));
 		simulation.fastForwardUntillActorIsAdjacentToHasShape(dwarf1, cart1);
-		simulation.fastForwardUntillActorIsAdjacentToHasShape(dwarf2, cart1);
-		simulation.doStep();
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "haul");
+		if(!dwarf2.isAdjacentTo(cart1))
+			simulation.fastForwardUntillActorIsAdjacentToHasShape(dwarf2, cart1);
 		REQUIRE(dwarf1.m_canLead.isLeading(cart1));
-		REQUIRE(dwarf1.m_canMove.getPath().size() != 0);
-		REQUIRE(dwarf1.m_canMove.getDestination() != nullptr);
+		REQUIRE(cart1.m_canLead.isLeading(dwarf2));
+		REQUIRE(dwarf2.m_canFollow.isFollowing());
+		// Path a detour around dwarf2.
+		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, cargoLocation);
 		REQUIRE(cart1.m_hasCargo.contains(cargo1));
+		// Path a detour around dwarf2 again.
 		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, destination);
 		simulation.fastForward(Config::addToStockPileDelaySteps);
@@ -262,5 +272,6 @@ TEST_CASE("haul")
 		REQUIRE(!cart1.m_reservable.isFullyReserved(&faction));
 		REQUIRE(!dwarf1.m_canLead.isLeading());
 		REQUIRE(!dwarf2.m_canFollow.isFollowing());
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "haul");
 	}
 }

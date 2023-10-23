@@ -16,6 +16,7 @@ public:
 	void execute() { m_restEvent.schedule(*this); }
 	void cancel() { m_restEvent.maybeUnschedule(); }
 	void delay() { cancel(); }
+	void reset();
 	std::string name() const { return "rest"; }
 	ObjectiveId getObjectiveId() const { return ObjectiveId::Rest; }
 	friend class RestEvent;

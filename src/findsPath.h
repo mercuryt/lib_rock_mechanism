@@ -11,20 +11,18 @@ class MoveType;
 struct ProposedRouteStep;
 class Faction;
 class CanReserve;
+//TODO: Preseed closed list with currently unenterable tiles which are occupied by followers.
 class FindsPath
 {
 	const HasShape& m_hasShape;
 	std::vector<Block*> m_route;
 	std::unordered_map<Block*, std::vector<std::pair<Block*, uint32_t>>> m_moveCostsToCache;
-	const Shape& m_shape;
-	const MoveType& m_moveType;
-public:
-	bool m_detour;
-	uint32_t m_maxRange;
-	bool m_adjacent;
 	Block* m_target;
+	bool m_detour;
+public:
 	const Block* m_huristicDestination;
-	FindsPath(const HasShape& hs);
+	uint32_t m_maxRange;
+	FindsPath(const HasShape& hs, bool detour);
 	void depthFirstSearch(std::function<bool(const Block&, const Block&)>& isValid, std::function<bool(const ProposedRouteStep&, const ProposedRouteStep&)>& compare, std::function<bool(const Block&)>& isDone, std::function<std::vector<std::pair<Block*, uint32_t>>(Block&)>& adjacentCosts, Block& start);
 	void pathToBlock(const Block& destination);
 	void pathAdjacentToBlock(const Block& destination);
@@ -38,6 +36,8 @@ public:
 	void pathToAreaEdge();
 	void cacheMoveCosts();
 	void reserveBlocksAtDestination(CanReserve& canReserve);
+	//TODO: make return reference and assert found().
+	[[nodiscard]] Block* getBlockWhichPassedPredicate() { return m_target; }
 	[[nodiscard]] std::vector<std::pair<Block*, uint32_t>> getMoveCosts(const Block& block);
 	[[nodiscard]] Facing getFacingAtDestination() const;
 	[[nodiscard]] std::vector<Block*> getAdjacentBlocksAtEndOfPath();

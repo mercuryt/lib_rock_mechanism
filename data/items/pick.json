@@ -1,7 +1,7 @@
 {
 	"name": "pick",
 	"shape": "oneByOneSixteenth",
-	"volume": 3000,
+	"volume": 300,
 	"generic": false,
 	"value": 200,
 	"moveType": "none",

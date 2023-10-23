@@ -51,15 +51,13 @@ TEST_CASE("farmFields")
 		simulation.doStep();
 		REQUIRE(block.m_reservable.isFullyReserved(&faction));
 		REQUIRE(!actor.m_canMove.getPath().empty());
-		while(actor.m_canMove.getDestination() != nullptr)
-			simulation.doStep();
+		Block* destination = actor.m_canMove.getDestination();
+		simulation.fastForwardUntillActorIsAtDestination(actor, *destination);
 		REQUIRE(actor.m_canMove.getPath().empty());
 		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.empty());
 		REQUIRE(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
 		REQUIRE(!block.m_hasDesignations.contains(faction, BlockDesignation::SowSeeds));
-		const Step eventStep = simulation.m_step + Config::sowSeedsStepsDuration;
-		while(simulation.m_step <= eventStep)
-			simulation.doStep();
+		simulation.fastForward(Config::sowSeedsStepsDuration);
 		REQUIRE(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
 		REQUIRE(!area.m_hasPlants.getAll().empty());
 		REQUIRE(!objectiveType.canBeAssigned(actor));
@@ -91,20 +89,18 @@ TEST_CASE("farmFields")
 		simulation.doStep();
 		REQUIRE(block.m_reservable.isFullyReserved(&faction));
 		REQUIRE(!actor.m_canMove.getPath().empty());
-		while(actor.m_canMove.getDestination() != nullptr)
-			simulation.doStep();
+		Block* destination = actor.m_canMove.getDestination();
+		simulation.fastForwardUntillActorIsAtDestination(actor, *destination);
 		REQUIRE(actor.m_canMove.getPath().empty());
 		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.empty());
 		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
 		REQUIRE(!block.m_hasDesignations.contains(faction, BlockDesignation::Harvest));
-		const Step eventStep = simulation.m_step + Config::harvestEventDuration;
-		while(simulation.m_step <= eventStep)
-			simulation.doStep();
+		simulation.fastForward(Config::harvestEventDuration);
 		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
 		REQUIRE(!objectiveType.canBeAssigned(actor));
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "harvest");
 		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
-		Item& item = **block.m_hasItems.getAll().begin();
+		Item& item = **actor.m_location->m_hasItems.getAll().begin();
 		REQUIRE(item.m_materialType == MaterialType::byName("plant matter"));
 		REQUIRE(item.m_quantity == wheatGrass.harvestData->itemQuantity);
 		REQUIRE(item.m_itemType == ItemType::byName("wheat seed"));
@@ -120,11 +116,11 @@ TEST_CASE("farmFields")
 		Item& bucket = simulation.createItem(ItemType::byName("bucket"), MaterialType::byName("poplar wood"), 50u, 0u, nullptr);
 		Block& bucketLocation = area.m_blocks[7][7][2];
 		bucket.setLocation(bucketLocation);
-		Block& pondLocation = area.m_blocks[3][7][1];
+		Block& pondLocation = area.m_blocks[3][9][1];
 		pondLocation.setNotSolid();
 		pondLocation.addFluid(100, water);
 		REQUIRE(actor.m_canPickup.canPickupAny(bucket));
-		simulation.fastForward(wheatGrass.stepsNeedsFluidFrequency);
+		plant.setMaybeNeedsFluid();
 		REQUIRE(block.m_hasPlant.exists());
 		REQUIRE(plant.m_volumeFluidRequested != 0);
 		REQUIRE(!plant.m_growthEvent.exists());
@@ -144,26 +140,26 @@ TEST_CASE("farmFields")
 			actor.m_mustEat.eat(actor.m_mustEat.getMassFoodRequested());
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "give plants fluid");
 		simulation.doStep();
-		REQUIRE(actor.m_canMove.getDestination() == &bucketLocation);
-		while(actor.m_location != &bucketLocation)
-			simulation.doStep();
+		REQUIRE(bucket.isAdjacentTo(*actor.m_canMove.getDestination()));
+		simulation.fastForwardUntillActorIsAdjacentToDestination(actor, bucketLocation);
 		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.size() == 1);
 		REQUIRE(actor.m_canPickup.isCarryingEmptyContainerWhichCanHoldFluid());
+		REQUIRE(actor.m_canMove.getDestination() == nullptr);
 		simulation.doStep();
 		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.size() == 0);
 		REQUIRE(actor.m_canMove.getDestination() != nullptr);
 		REQUIRE(actor.m_canMove.getDestination()->isAdjacentToIncludingCornersAndEdges(pondLocation));
-		while(!actor.m_location->isAdjacentToIncludingCornersAndEdges(pondLocation))
-			simulation.doStep();
+		simulation.fastForwardUntillActorIsAdjacentToDestination(actor, pondLocation);
 		REQUIRE(bucket.m_hasCargo.containsAnyFluid());
 		REQUIRE(bucket.m_hasCargo.getFluidType() == water);
 		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.size() == 1);
 		REQUIRE(actor.m_canMove.getDestination() == nullptr);
+		REQUIRE(actor.m_canMove.getPath().empty());
 		simulation.doStep();
 		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.size() == 0);
-		REQUIRE(actor.m_canMove.getDestination() == &block);
-		while(actor.m_location != &block)
-			simulation.doStep();
+		REQUIRE(!actor.m_canMove.getPath().empty());
+		Block* destination = actor.m_canMove.getDestination();
+		simulation.fastForwardUntillActorIsAtDestination(actor, *destination);
 		simulation.fastForward(Config::givePlantsFluidDelaySteps);
 		REQUIRE(plant.m_volumeFluidRequested == 0);
 		REQUIRE(plant.m_growthEvent.exists());

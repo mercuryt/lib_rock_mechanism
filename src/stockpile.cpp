@@ -22,12 +22,12 @@ void StockPileThreadedTask::readStep()
 		m_findsPath.pathToUnreservedAdjacentToPredicate(blocksContainesItemCondition, *m_objective.m_actor.getFaction());
 		if(m_findsPath.found())
 		{
-			m_item = getItem(*m_findsPath.m_target);
+			m_item = getItem(*m_findsPath.getBlockWhichPassedPredicate());
 			// Item and path to it found, now check for path to destinaiton.
-			FindsPath findAnotherPath(m_objective.m_actor);
+			FindsPath findAnotherPath(m_objective.m_actor, false);
 			findAnotherPath.pathToUnreservedAdjacentToPredicate(destinationCondition, *m_objective.m_actor.getFaction());
 			if(findAnotherPath.found())
-				m_destination = findAnotherPath.m_target;
+				m_destination = findAnotherPath.getBlockWhichPassedPredicate();
 		}
 	}
 	else
@@ -66,8 +66,14 @@ void StockPileObjective::execute()
 void StockPileObjective::cancel()
 {
 	if(m_project != nullptr)
-		m_project->removeWorker(m_actor);
+		m_project->cancel();
 	m_threadedTask.maybeCancel();
+}
+void StockPileObjective::reset()
+{
+	cancel();
+	m_project = nullptr;
+	m_actor.m_canReserve.clearAll();
 }
 Step StockPileProject::getDelay() const { return Config::addToStockPileDelaySteps; }
 void StockPileProject::onComplete()

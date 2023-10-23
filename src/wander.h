@@ -18,6 +18,7 @@ public:
 	void execute();
 	void cancel() { m_threadedTask.maybeCancel(); }
 	void delay() { cancel(); }
+	void reset();
 	std::string name() const { return "wander"; }
 	ObjectiveId getObjectiveId() const { return ObjectiveId::Wander; }
 	friend class WanderThreadedTask;

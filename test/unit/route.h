@@ -296,8 +296,10 @@ TEST_CASE("route_5_5_3")
 		pathThreadedTask.readStep();
 		REQUIRE(pathThreadedTask.getFindsPath().getPath().empty());
 		actor.m_canMove.setMoveType(twoLegsAndSwimInWater);
-		pathThreadedTask.readStep();
-		REQUIRE(!pathThreadedTask.getFindsPath().getPath().empty());
+		actor.m_canMove.setDestination(destination);
+		PathThreadedTask& pathThreadedTask2 = actor.m_canMove.getPathThreadedTask();
+		pathThreadedTask2.readStep();
+		REQUIRE(!pathThreadedTask2.getFindsPath().getPath().empty());
 	}
 }
 TEST_CASE("route_5_5_5")
@@ -322,8 +324,10 @@ TEST_CASE("route_5_5_5")
 		pathThreadedTask.readStep();
 		REQUIRE(pathThreadedTask.getFindsPath().getPath().empty());
 		actor.m_canMove.setMoveType(twoLegsAndClimb1);
-		pathThreadedTask.readStep();
-		REQUIRE(!pathThreadedTask.getFindsPath().getPath().empty());
+		actor.m_canMove.setDestination(area.m_blocks[4][4][2]);
+		PathThreadedTask& pathThreadedTask2 = actor.m_canMove.getPathThreadedTask();
+		pathThreadedTask2.readStep();
+		REQUIRE(!pathThreadedTask2.getFindsPath().getPath().empty());
 
 	}
 	SUBCASE("walking path blocked by two height cliff if not climbing 2")
@@ -338,8 +342,10 @@ TEST_CASE("route_5_5_5")
 		pathThreadedTask.readStep();
 		REQUIRE(pathThreadedTask.getFindsPath().getPath().empty());
 		actor.m_canMove.setMoveType(twoLegsAndClimb2);
-		pathThreadedTask.readStep();
-		REQUIRE(!pathThreadedTask.getFindsPath().getPath().empty());
+		actor.m_canMove.setDestination(area.m_blocks[4][4][3]);
+		PathThreadedTask& pathThreadedTask2 = actor.m_canMove.getPathThreadedTask();
+		pathThreadedTask2.readStep();
+		REQUIRE(!pathThreadedTask2.getFindsPath().getPath().empty());
 
 	}
 	SUBCASE("stairs")
@@ -365,8 +371,10 @@ TEST_CASE("route_5_5_5")
 		pathThreadedTask.readStep();
 		REQUIRE(pathThreadedTask.getFindsPath().getPath().empty());
 		area.m_blocks[4][3][1].m_hasBlockFeatures.construct(ramp, marble);
-		pathThreadedTask.readStep();
-		REQUIRE(!pathThreadedTask.getFindsPath().getPath().empty());
+		actor.m_canMove.setDestination(area.m_blocks[4][4][2]);
+		PathThreadedTask& pathThreadedTask2 = actor.m_canMove.getPathThreadedTask();
+		pathThreadedTask2.readStep();
+		REQUIRE(!pathThreadedTask2.getFindsPath().getPath().empty());
 	}
 	SUBCASE("door")
 	{
@@ -381,12 +389,15 @@ TEST_CASE("route_5_5_5")
 		pathThreadedTask.readStep();
 		REQUIRE(!pathThreadedTask.getFindsPath().getPath().empty());
 		area.m_blocks[3][2][1].m_hasBlockFeatures.construct(door, marble);
-		pathThreadedTask.readStep();
-		REQUIRE(!pathThreadedTask.getFindsPath().getPath().empty());
+		actor.m_canMove.setDestination(area.m_blocks[4][3][1]);
+		PathThreadedTask& pathThreadedTask2 = actor.m_canMove.getPathThreadedTask();
+		pathThreadedTask2.readStep();
+		REQUIRE(!pathThreadedTask2.getFindsPath().getPath().empty());
 		area.m_blocks[3][2][1].m_hasBlockFeatures.at(door)->locked = true;
-		pathThreadedTask.getFindsPath().getPath().clear();
-		pathThreadedTask.readStep();
-		REQUIRE(pathThreadedTask.getFindsPath().getPath().empty());
+		actor.m_canMove.setDestination(area.m_blocks[4][3][1]);
+		PathThreadedTask& pathThreadedTask3 = actor.m_canMove.getPathThreadedTask();
+		pathThreadedTask3.readStep();
+		REQUIRE(pathThreadedTask3.getFindsPath().getPath().empty());
 	}
 	SUBCASE("fortification")
 	{
@@ -401,9 +412,10 @@ TEST_CASE("route_5_5_5")
 		pathThreadedTask.readStep();
 		REQUIRE(!pathThreadedTask.getFindsPath().getPath().empty());
 		area.m_blocks[3][2][1].m_hasBlockFeatures.construct(fortification, marble);
-		pathThreadedTask.getFindsPath().getPath().clear();
-		pathThreadedTask.readStep();
-		REQUIRE(pathThreadedTask.getFindsPath().getPath().empty());
+		actor.m_canMove.setDestination(area.m_blocks[4][3][1]);
+		PathThreadedTask& pathThreadedTask2 = actor.m_canMove.getPathThreadedTask();
+		pathThreadedTask2.readStep();
+		REQUIRE(pathThreadedTask2.getFindsPath().getPath().empty());
 	}
 	SUBCASE("flood gate blocks entry")
 	{
@@ -418,9 +430,10 @@ TEST_CASE("route_5_5_5")
 		pathThreadedTask.readStep();
 		REQUIRE(!pathThreadedTask.getFindsPath().getPath().empty());
 		area.m_blocks[3][2][1].m_hasBlockFeatures.construct(BlockFeatureType::floodGate, marble);
-		pathThreadedTask.getFindsPath().getPath().clear();
-		pathThreadedTask.readStep();
-		REQUIRE(pathThreadedTask.getFindsPath().getPath().empty());
+		actor.m_canMove.setDestination(area.m_blocks[4][3][1]);
+		PathThreadedTask& pathThreadedTask2 = actor.m_canMove.getPathThreadedTask();
+		pathThreadedTask2.readStep();
+		REQUIRE(pathThreadedTask2.getFindsPath().getPath().empty());
 	}
 	SUBCASE("can walk on floor")
 	{
@@ -433,8 +446,10 @@ TEST_CASE("route_5_5_5")
 		pathThreadedTask.readStep();
 		REQUIRE(pathThreadedTask.getFindsPath().getPath().empty());
 		area.m_blocks[1][2][2].m_hasBlockFeatures.construct(BlockFeatureType::floor, marble);
-		pathThreadedTask.readStep();
-		REQUIRE(!pathThreadedTask.getFindsPath().getPath().empty());
+		actor.m_canMove.setDestination(area.m_blocks[1][3][2]);
+		PathThreadedTask& pathThreadedTask2 = actor.m_canMove.getPathThreadedTask();
+		pathThreadedTask2.readStep();
+		REQUIRE(!pathThreadedTask2.getFindsPath().getPath().empty());
 	}
 	SUBCASE("floor blocks vertical travel")
 	{
@@ -450,9 +465,10 @@ TEST_CASE("route_5_5_5")
 		pathThreadedTask.readStep();
 		REQUIRE(!pathThreadedTask.getFindsPath().getPath().empty());
 		area.m_blocks[3][3][3].m_hasBlockFeatures.construct(BlockFeatureType::floor, marble);
-		pathThreadedTask.getFindsPath().getPath().clear();
-		pathThreadedTask.readStep();
-		REQUIRE(pathThreadedTask.getFindsPath().getPath().empty());
+		actor.m_canMove.setDestination(area.m_blocks[3][3][3]);
+		PathThreadedTask& pathThreadedTask2 = actor.m_canMove.getPathThreadedTask();
+		pathThreadedTask2.readStep();
+		REQUIRE(pathThreadedTask2.getFindsPath().getPath().empty());
 	}
 	SUBCASE("can walk on floor grate")
 	{
@@ -465,8 +481,10 @@ TEST_CASE("route_5_5_5")
 		pathThreadedTask.readStep();
 		REQUIRE(pathThreadedTask.getFindsPath().getPath().empty());
 		area.m_blocks[1][2][2].m_hasBlockFeatures.construct(BlockFeatureType::floorGrate, marble);
-		pathThreadedTask.readStep();
-		REQUIRE(!pathThreadedTask.getFindsPath().getPath().empty());
+		actor.m_canMove.setDestination(area.m_blocks[1][3][2]);
+		PathThreadedTask& pathThreadedTask2 = actor.m_canMove.getPathThreadedTask();
+		pathThreadedTask2.readStep();
+		REQUIRE(!pathThreadedTask2.getFindsPath().getPath().empty());
 	}
 	SUBCASE("floor grate blocks vertical travel")
 	{
@@ -482,9 +500,10 @@ TEST_CASE("route_5_5_5")
 		pathThreadedTask.readStep();
 		REQUIRE(!pathThreadedTask.getFindsPath().getPath().empty());
 		area.m_blocks[3][3][3].m_hasBlockFeatures.construct(BlockFeatureType::floorGrate, marble);
-		pathThreadedTask.getFindsPath().getPath().clear();
-		pathThreadedTask.readStep();
-		REQUIRE(pathThreadedTask.getFindsPath().getPath().empty());
+		actor.m_canMove.setDestination(area.m_blocks[3][3][3]);
+		PathThreadedTask& pathThreadedTask2 = actor.m_canMove.getPathThreadedTask();
+		pathThreadedTask2.readStep();
+		REQUIRE(pathThreadedTask2.getFindsPath().getPath().empty());
 	}
 	SUBCASE("can walk on hatch")
 	{
@@ -497,8 +516,10 @@ TEST_CASE("route_5_5_5")
 		pathThreadedTask.readStep();
 		REQUIRE(pathThreadedTask.getFindsPath().getPath().empty());
 		area.m_blocks[1][2][2].m_hasBlockFeatures.construct(BlockFeatureType::hatch, marble);
-		pathThreadedTask.readStep();
-		REQUIRE(!pathThreadedTask.getFindsPath().getPath().empty());
+		actor.m_canMove.setDestination(area.m_blocks[1][3][2]);
+		PathThreadedTask& pathThreadedTask2 = actor.m_canMove.getPathThreadedTask();
+		pathThreadedTask2.readStep();
+		REQUIRE(!pathThreadedTask2.getFindsPath().getPath().empty());
 	}
 	SUBCASE("locked hatch blocks vertical travel")
 	{
@@ -514,13 +535,15 @@ TEST_CASE("route_5_5_5")
 		pathThreadedTask.readStep();
 		REQUIRE(!pathThreadedTask.getFindsPath().getPath().empty());
 		area.m_blocks[3][3][3].m_hasBlockFeatures.construct(BlockFeatureType::hatch, marble);
-		pathThreadedTask.getFindsPath().getPath().clear();
-		pathThreadedTask.readStep();
-		REQUIRE(!pathThreadedTask.getFindsPath().getPath().empty());
+		actor.m_canMove.setDestination(area.m_blocks[3][3][3]);
+		PathThreadedTask& pathThreadedTask2 = actor.m_canMove.getPathThreadedTask();
+		pathThreadedTask2.readStep();
+		REQUIRE(!pathThreadedTask2.getFindsPath().getPath().empty());
 		area.m_blocks[3][3][3].m_hasBlockFeatures.at(BlockFeatureType::hatch)->locked = true;
-		pathThreadedTask.getFindsPath().getPath().clear();
-		pathThreadedTask.readStep();
-		REQUIRE(pathThreadedTask.getFindsPath().getPath().empty());
+		actor.m_canMove.setDestination(area.m_blocks[3][3][3]);
+		PathThreadedTask& pathThreadedTask3 = actor.m_canMove.getPathThreadedTask();
+		pathThreadedTask3.readStep();
+		REQUIRE(pathThreadedTask3.getFindsPath().getPath().empty());
 	}
 	SUBCASE("multi-block actors can use ramps")
 	{
@@ -538,9 +561,10 @@ TEST_CASE("route_5_5_5")
 		area.m_blocks[4][2][1].m_hasBlockFeatures.construct(BlockFeatureType::ramp, marble);
 		area.m_blocks[3][1][1].m_hasBlockFeatures.construct(BlockFeatureType::ramp, marble);
 		area.m_blocks[4][1][1].m_hasBlockFeatures.construct(BlockFeatureType::ramp, marble);
-		pathThreadedTask.getFindsPath().getPath().clear();
-		pathThreadedTask.readStep();
-		REQUIRE(!pathThreadedTask.getFindsPath().getPath().empty());
+		actor.m_canMove.setDestination(area.m_blocks[3][3][2]);
+		PathThreadedTask& pathThreadedTask2 = actor.m_canMove.getPathThreadedTask();
+		pathThreadedTask2.readStep();
+		REQUIRE(!pathThreadedTask2.getFindsPath().getPath().empty());
 	}
 	SUBCASE("detour")
 	{

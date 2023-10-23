@@ -30,6 +30,7 @@ void LocationBuckets::insert(Actor& actor, Block& block)
 }
 void LocationBuckets::erase(Actor& actor)
 {
+	assert(actor.m_location != nullptr);
 	actor.m_location->m_locationBucket->erase(&actor);
 }
 void LocationBuckets::update(Actor& actor, const Block& oldLocation, const Block& newLocation)

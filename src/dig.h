@@ -11,7 +11,7 @@
 #include <unordered_map>
 #include <vector>
 
-struct Faction;
+class Faction;
 class DigThreadedTask;
 struct BlockFeatureType;
 class DigProject;
@@ -32,6 +32,7 @@ public:
 	void execute();
 	void cancel();
 	void delay() { cancel(); }
+	void reset();
 	ObjectiveId getObjectiveId() const { return ObjectiveId::Dig; }
 	std::string name() const { return "dig"; }
 	DigProject* getJoinableProjectAt(const Block& block);

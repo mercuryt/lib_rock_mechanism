@@ -14,8 +14,9 @@ public:
 	// Priority of waiting is 0.
 	WaitObjective(Actor& a, Step duration);
 	void execute();
-	void delay() { }
-	void cancel() { }
+	void delay() { reset(); }
+	void cancel() { reset(); }
+	void reset();
 	std::string name() const { return "wait"; }
 	ObjectiveId getObjectiveId() const { return ObjectiveId::Wait; }
 	friend class WaitScheduledEvent;

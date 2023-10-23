@@ -84,6 +84,7 @@ public:
 	[[nodiscard]] bool operator==(const Project& other) const { return &other == this; }
 	// For testing.
 	[[nodiscard]] ProjectWorker& getProjectWorkerFor(Actor& actor) { return m_workers.at(&actor); }
+	[[nodiscard, maybe_unused]] std::unordered_map<Actor*, ProjectWorker> getWorkers() { return m_workers; }
 	friend class ProjectFinishEvent;
 	friend class ProjectTryToHaulEvent;
 	friend class ProjectGoToAdjacentLocationThreadedTask;
@@ -117,4 +118,5 @@ public:
 	void readStep();
 	void writeStep();
 	void clearReferences();
+	bool blockContainsDesiredItem(const Block& block, Actor& hauler);
 };

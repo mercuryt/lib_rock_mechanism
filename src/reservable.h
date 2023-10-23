@@ -52,7 +52,7 @@ public:
 		return m_reservedCounts.contains(faction) && m_reservedCounts.at(faction) == m_maxReservations; 
 	}
 	std::unordered_map<CanReserve*, uint32_t>& getReservedBy() { return m_canReserves; }
-	void reserveFor(CanReserve& canReserve, const uint32_t quantity) 
+	void reserveFor(CanReserve& canReserve, const uint32_t quantity = 1u) 
 	{
 		// No reservations are made for actors with no faction because there is no one to reserve it from.
 		if(canReserve.m_faction == nullptr)
@@ -64,7 +64,7 @@ public:
 		assert(!canReserve.m_reservables.contains(this));
 		canReserve.m_reservables.insert(this);
 	}
-	void maybeReserveFor(CanReserve& canReserve, const uint32_t quantity)
+	void maybeReserveFor(CanReserve& canReserve, const uint32_t quantity = 1u)
 	{
 		if(canReserve.m_faction == nullptr)
 			return;

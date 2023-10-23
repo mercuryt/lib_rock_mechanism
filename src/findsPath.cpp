@@ -31,7 +31,7 @@ struct ClosedList
 	}
 };
 */
-FindsPath::FindsPath(const HasShape& hs) : m_hasShape(hs), m_shape(*hs.m_shape), m_moveType(hs.getMoveType()), m_target(nullptr), m_huristicDestination(nullptr) { }
+FindsPath::FindsPath(const HasShape& hs, bool detour) : m_hasShape(hs), m_target(nullptr), m_detour(detour), m_huristicDestination(nullptr), m_maxRange(UINT32_MAX) { }
 /*
 // Depth first search.
 void FindsPath::depthFirstSearch(std::function<bool(const Block&, const Block&)>& isValid, std::function<bool(const ProposedRouteStep&, const ProposedRouteStep&)>& compare, std::function<bool(const Block&)>& isDone, std::function<std::vector<std::pair<Block*, uint32_t>>(Block&)>& adjacentCosts, Block& start)
@@ -117,6 +117,8 @@ void FindsPath::pathToPredicate(std::function<bool(const Block&, Facing facing)>
 					continue;
 				closedList.insert(block);
 				Facing facing = block->facingToSetWhenEnteringFrom(routeNode->block);
+				if(m_detour && !block->m_hasShapes.canEnterCurrentlyWithFacing(m_hasShape, facing))
+					continue;
 				if(predicate(*block, facing))
 				{
 					// Destination found.
@@ -129,12 +131,9 @@ void FindsPath::pathToPredicate(std::function<bool(const Block&, Facing facing)>
 					std::reverse(m_route.begin(), m_route.end());
 					return;
 				}
-				else if(!m_detour || block->m_hasShapes.canEnterCurrentlyWithFacing(m_hasShape, facing))
-				{
-					// Block is not destination, and either this isn't a detour request or block can be entered currently, add it to openList.
-					routeNodes.emplace_back(*block, routeNode);
-					openList.push_back(&routeNodes.back());
-				}
+				// Block is not destination, and either this isn't a detour request or block can be entered currently, add it to openList.
+				routeNodes.emplace_back(*block, routeNode);
+				openList.push_back(&routeNodes.back());
 			}
 		}
 	}
@@ -238,6 +237,8 @@ void FindsPath::pathToPredicateWithHuristicDestination(std::function<bool(const 
 					continue;
 				closedList.insert(adjacent);
 				Facing facing = adjacent->facingToSetWhenEnteringFrom(block);
+				if(m_detour && !adjacent->m_hasShapes.canEnterCurrentlyWithFacing(m_hasShape, facing))
+					continue;
 				if(predicate(*adjacent, facing))
 				{
 					// Destination found.
@@ -250,12 +251,9 @@ void FindsPath::pathToPredicateWithHuristicDestination(std::function<bool(const 
 					std::reverse(m_route.begin(), m_route.end());
 					return;
 				}
-				else if(!m_detour || adjacent->m_hasShapes.canEnterCurrentlyWithFacing(m_hasShape, facing))
-				{
-					// Adjacent is not destination, and either this isn't a detour request or block can be entered currently, add it to openList.
-					routeNodes.emplace_back(*adjacent, routeNode);
-					openList.emplace(&routeNodes.back(), moveCost + totalMoveCost);
-				}
+				// Adjacent is not destination, and either this isn't a detour request or block can be entered currently, add it to openList.
+				routeNodes.emplace_back(*adjacent, routeNode);
+				openList.emplace(&routeNodes.back(), moveCost + totalMoveCost);
 			}
 		}
 	}
@@ -273,18 +271,18 @@ void FindsPath::pathToAreaEdge()
 }
 std::vector<std::pair<Block*, uint32_t>> FindsPath::getMoveCosts(const Block& block)
 {
-	if(block.m_hasShapes.hasCachedMoveCosts(m_shape, m_moveType))
-		return block.m_hasShapes.getCachedMoveCosts(m_shape, m_moveType);
+	if(block.m_hasShapes.hasCachedMoveCosts(*m_hasShape.m_shape, m_hasShape.getMoveType()))
+		return block.m_hasShapes.getCachedMoveCosts(*m_hasShape.m_shape, m_hasShape.getMoveType());
 	// TODO: Only check if cache contains when re-entering, otherwise assert that it does not.
 	else if(m_moveCostsToCache.contains(const_cast<Block*>(&block)))
 		return m_moveCostsToCache[const_cast<Block*>(&block)];
 	else
-		return m_moveCostsToCache[const_cast<Block*>(&block)] = block.m_hasShapes.makeMoveCosts(m_shape, m_moveType);
+		return m_moveCostsToCache[const_cast<Block*>(&block)] = block.m_hasShapes.makeMoveCosts(*m_hasShape.m_shape, m_hasShape.getMoveType());
 }
 void FindsPath::cacheMoveCosts()
 {
 	for(auto& pair : m_moveCostsToCache)
-		pair.first->m_hasShapes.tryToCacheMoveCosts(m_shape, m_moveType, pair.second);
+		pair.first->m_hasShapes.tryToCacheMoveCosts(*m_hasShape.m_shape, m_hasShape.getMoveType(), pair.second);
 }
 std::vector<Block*> FindsPath::getOccupiedBlocksAtEndOfPath()
 {
@@ -303,10 +301,7 @@ bool FindsPath::areAllBlocksAtDestinationReservable(const Faction* faction) cons
 {
 	if(faction ==  nullptr)
 		return true;
-	for(Block* occupied : const_cast<FindsPath*>(this)->getOccupiedBlocksAtEndOfPath())
-		if(occupied->m_reservable.isFullyReserved(faction))
-			return false;
-	return true;
+	return m_hasShape.allBlocksAtLocationAndFacingAreReservable(*m_route.back(), getFacingAtDestination(), *faction);
 }
 void FindsPath::reserveBlocksAtDestination(CanReserve& canReserve)
 {

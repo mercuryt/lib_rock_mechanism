@@ -3,7 +3,7 @@
 #include "block.h"
 #include "area.h"
 #include "util.h"
-ConstructThreadedTask::ConstructThreadedTask(ConstructObjective& co) : ThreadedTask(co.m_actor.getThreadedTaskEngine()), m_constructObjective(co), m_findsPath(co.m_actor) { }
+ConstructThreadedTask::ConstructThreadedTask(ConstructObjective& co) : ThreadedTask(co.m_actor.getThreadedTaskEngine()), m_constructObjective(co), m_findsPath(co.m_actor, co.m_detour) { }
 void ConstructThreadedTask::readStep()
 {
 	std::function<bool(const Block&)> constructCondition = [&](const Block& block)
@@ -53,6 +53,12 @@ void ConstructObjective::cancel()
 	if(m_project != nullptr)
 		m_project->removeWorker(m_actor);
 	m_constructThreadedTask.maybeCancel();
+}
+void ConstructObjective::reset() 
+{ 
+	cancel(); 
+	m_project = nullptr; 
+	m_actor.m_canReserve.clearAll();
 }
 ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAdjacentTo(const Block& location, Facing facing)
 {

@@ -4,36 +4,131 @@
 SowSeedsEvent::SowSeedsEvent(Step delay, SowSeedsObjective& o) : ScheduledEventWithPercent(o.m_actor.getSimulation(), delay), m_objective(o) { }
 void SowSeedsEvent::execute()
 {
-	Block& location = *m_objective.m_actor.m_location;
-	const PlantSpecies& plantSpecies = location.m_area->m_hasFarmFields.getPlantSpeciesFor(*m_objective.m_actor.getFaction(), location);
-	location.m_hasPlant.addPlant(plantSpecies);
+	Block& block = *m_objective.m_block;
+	const Faction& faction = *m_objective.m_actor.getFaction();
+	if(!block.m_isPartOfFarmField.contains(faction))
+	{
+		// Block is no longer part of a field. It may have been undesignated or it may no longer be a suitable place to grow the selected plant.
+		m_objective.reset();
+		m_objective.execute();
+	}
+	const PlantSpecies& plantSpecies = block.m_area->m_hasFarmFields.getPlantSpeciesFor(faction, block);
+	block.m_hasPlant.addPlant(plantSpecies);
 	m_objective.m_actor.m_hasObjectives.objectiveComplete(m_objective);
-}
-void SowSeedsEvent::onCancel()
-{
-	Block& location = *m_objective.m_actor.m_location;
-	location.m_area->m_hasFarmFields.at(*m_objective.m_actor.getFaction()).addSowSeedsDesignation(location);
 }
 void SowSeedsEvent::clearReferences(){ m_objective.m_event.clearPointer(); }
 bool SowSeedsObjectiveType::canBeAssigned(Actor& actor) const
 {
 	return actor.m_location->m_area->m_hasFarmFields.hasSowSeedsDesignations(*actor.getFaction());
 }
-std::unique_ptr<Objective> SowSeedsObjectiveType::makeFor(Actor& actor) const { return std::make_unique<SowSeedsObjective>(actor); }
-SowSeedsObjective::SowSeedsObjective(Actor& a) : Objective(Config::sowSeedsPriority), m_actor(a), m_event(a.getEventSchedule()) { }
-void SowSeedsObjective::execute()
+std::unique_ptr<Objective> SowSeedsObjectiveType::makeFor(Actor& actor) const
+{
+	return std::make_unique<SowSeedsObjective>(actor);
+}
+SowSeedsThreadedTask::SowSeedsThreadedTask(SowSeedsObjective& sso): ThreadedTask(sso.m_actor.getThreadedTaskEngine()), m_objective(sso), m_findsPath(sso.m_actor, sso.m_detour) { }
+void SowSeedsThreadedTask::readStep()
+{
+	const Faction* faction = m_objective.m_actor.getFaction();
+	std::function<bool(const Block&)> predicate = [&](const Block& block) { return m_objective.canSowAt(block); };
+	m_findsPath.pathToUnreservedAdjacentToPredicate(predicate, *faction);
+}
+void SowSeedsThreadedTask::writeStep()
+{
+	assert(m_objective.m_block == nullptr);
+	if(!m_findsPath.found())
+		// Cannot find any accessable field to sow.
+		m_objective.m_actor.m_hasObjectives.cannotFulfillObjective(m_objective);
+	else
+	{
+		if(!m_findsPath.areAllBlocksAtDestinationReservable(m_objective.m_actor.getFaction()))
+			// Cannot reserve location, try again.
+			m_objective.m_threadedTask.create(m_objective);
+		else
+		{
+			Block* block = m_findsPath.getBlockWhichPassedPredicate();
+			if(!m_objective.canSowAt(*block))
+				// Selected destination is no longer adjacent to a block where we can sow, try again.
+				m_objective.m_threadedTask.create(m_objective);
+			else
+			{
+				// Found a field to sow.
+				m_objective.select(*block);
+				m_findsPath.reserveBlocksAtDestination(m_objective.m_actor.m_canReserve);
+				m_objective.m_actor.m_canMove.setPath(m_findsPath.getPath());
+			}
+		}
+	}
+}
+void SowSeedsThreadedTask::clearReferences() { m_objective.m_threadedTask.clearPointer(); }
+SowSeedsObjective::SowSeedsObjective(Actor& a) : Objective(Config::sowSeedsPriority), m_actor(a), m_event(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()), m_block(nullptr) { }
+Block* SowSeedsObjective::getBlockToSowAt(Block& location, Facing facing)
 {
 	const Faction* faction = m_actor.getFaction();
 	std::function<bool(const Block&)> predicate = [&](const Block& block)
-	{ 
+	{
 		return block.m_hasDesignations.contains(*faction, BlockDesignation::SowSeeds) && !block.m_reservable.isFullyReserved(faction);
 	};
-	std::function<void(Block&)> callback = [&](Block& block)
-	{
-		block.m_area->m_hasFarmFields.at(*m_actor.getFaction()).removeSowSeedsDesignation(block);
-		m_event.schedule(Config::sowSeedsStepsDuration, *this);
-	};
-	// predicate, detour, adjacent, unreserved.
-	m_actor.m_canMove.goToPredicateBlockAndThen(predicate, callback, false, true, true);
+	return m_actor.getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(location, facing, predicate);
 }
-void SowSeedsObjective::cancel() { m_event.maybeUnschedule(); }
+void SowSeedsObjective::execute()
+{
+	if(m_block != nullptr)
+	{
+		if(m_actor.isAdjacentTo(*m_block))
+			begin();
+		else
+		{
+			// Previously found path no longer valid, redo from start.
+			reset();
+			execute();
+		}
+	}
+	else
+	{
+		if(m_actor.allOccupiedBlocksAreReservable(*m_actor.getFaction()))
+		{
+			Block* block = getBlockToSowAt(*m_actor.m_location, m_actor.m_facing);
+			if(block != nullptr)
+			{
+				select(*block);
+				m_actor.reserveOccupied(m_actor.m_canReserve);
+				begin();
+				return;
+			}
+		}
+		// Try to find m_block and path.
+		m_threadedTask.create(*this);
+	}
+}
+void SowSeedsObjective::cancel()
+{
+	m_threadedTask.maybeCancel();
+	m_event.maybeUnschedule();
+	if(m_block != nullptr && m_actor.getFaction() != nullptr)
+		m_block->m_area->m_hasFarmFields.at(*m_actor.getFaction()).addSowSeedsDesignation(*m_block);
+}
+void SowSeedsObjective::select(Block& block)
+{
+	assert(!block.m_hasPlant.exists());
+	assert(block.m_isPartOfFarmField.contains(*m_actor.getFaction()));
+	assert(m_block == nullptr);
+	m_block = &block;
+	block.m_area->m_hasFarmFields.at(*m_actor.getFaction()).removeSowSeedsDesignation(block);
+	block.m_reservable.reserveFor(m_actor.m_canReserve, 1u);
+}
+void SowSeedsObjective::begin()
+{
+	assert(m_block != nullptr);
+	assert(m_actor.isAdjacentTo(*m_block));
+	m_event.schedule(Config::sowSeedsStepsDuration, *this);
+}
+void SowSeedsObjective::reset()
+{
+	m_actor.m_canReserve.clearAll();
+	m_block = nullptr;
+}
+bool SowSeedsObjective::canSowAt(const Block& block) const
+{
+	const Faction* faction = m_actor.getFaction();
+	return block.m_hasDesignations.contains(*faction, BlockDesignation::SowSeeds) && !block.m_reservable.isFullyReserved(faction);
+}

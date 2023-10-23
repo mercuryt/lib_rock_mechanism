@@ -85,6 +85,7 @@ public:
 	void execute();
 	void cancel() { m_threadedTask.maybeCancel(); }
 	void delay() { cancel(); }
+	void reset();
 	std::string name() const { return "sleep"; }
 	uint32_t desireToSleepAt(const Block& block);
 	~SleepObjective();

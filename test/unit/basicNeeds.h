@@ -29,14 +29,12 @@ TEST_CASE("basicNeedsSentient")
 		Block* destination = actor.m_canMove.getDestination();
 		REQUIRE(destination != nullptr);
 		REQUIRE(destination->isAdjacentToIncludingCornersAndEdges(pondLocation));
-		while(actor.m_location != destination)
-			simulation.doStep();
-		Step drinkStep = simulation.m_step + Config::stepsToDrink;
-		while(simulation.m_step <= drinkStep)
-			simulation.doStep();
+		simulation.fastForwardUntillActorIsAdjacentToDestination(actor, pondLocation);
+		simulation.fastForward(Config::stepsToDrink);
 		REQUIRE(!actor.m_mustDrink.needsFluid());
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "drink");
 		uint32_t drinkVolume = MustDrink::drinkVolumeFor(actor);
+		simulation.doStep(); // Give a step for the fluid removal to take effect.
 		REQUIRE(pondLocation.volumeOfFluidTypeContains(water) == Config::maxBlockVolume - drinkVolume);
 	}
 	SUBCASE("drink from bucket")
@@ -53,11 +51,8 @@ TEST_CASE("basicNeedsSentient")
 		Block* destination = actor.m_canMove.getDestination();
 		REQUIRE(destination != nullptr);
 		REQUIRE(destination->isAdjacentToIncludingCornersAndEdges(bucketLocation));
-		while(actor.m_location != destination)
-			simulation.doStep();
-		Step drinkStep = simulation.m_step + Config::stepsToDrink;
-		while(simulation.m_step <= drinkStep)
-			simulation.doStep();
+		simulation.fastForwardUntillActorIsAdjacentToHasShape(actor, bucket);
+		simulation.fastForward(Config::stepsToDrink);
 		REQUIRE(!actor.m_mustDrink.needsFluid());
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "drink");
 		uint32_t drinkVolume = MustDrink::drinkVolumeFor(actor);
@@ -84,9 +79,8 @@ TEST_CASE("basicNeedsSentient")
 		simulation.doStep();
 		Block* destination = actor.m_canMove.getDestination();
 		REQUIRE(destination != nullptr);
-		REQUIRE(destination == &mealLocation);
-		while(actor.m_location != destination)
-			simulation.doStep();
+		REQUIRE(destination->isAdjacentToIncludingCornersAndEdges(mealLocation));
+		simulation.fastForwardUntillActorIsAdjacentToHasShape(actor, meal);
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "eat");
 		REQUIRE(static_cast<EatObjective&>(actor.m_hasObjectives.getCurrent()).hasEvent());
 		simulation.fastForward(Config::stepsToEat);
@@ -108,14 +102,12 @@ TEST_CASE("basicNeedsSentient")
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "eat");
 		REQUIRE(actor.m_mustEat.needsFood());
 		simulation.doStep();
-		REQUIRE(actor.m_canMove.getDestination() == &fruitLocation);
-		while(actor.m_location != &fruitLocation)
-			simulation.doStep();
-		REQUIRE(actor.m_location == fruit.m_location);
-		Step eatStep = simulation.m_step + Config::stepsToEat;
+		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "eat");
+		REQUIRE(fruit.isAdjacentTo(*actor.m_canMove.getDestination()));
+		simulation.fastForwardUntillActorIsAdjacentToHasShape(actor, fruit);
+		REQUIRE(actor.isAdjacentTo(fruit));
 		REQUIRE(static_cast<EatObjective&>(actor.m_hasObjectives.getCurrent()).hasEvent());
-		while(simulation.m_step <= eatStep)
-			simulation.doStep();
+		simulation.fastForward(Config::stepsToEat);
 		REQUIRE(!actor.m_mustEat.needsFood());
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "eat");
 		REQUIRE(!fruitLocation.m_hasItems.empty());
@@ -137,30 +129,6 @@ TEST_CASE("basicNeedsNonsentient")
 	Block& pondLocation = area.m_blocks[3][3][1];
 	pondLocation.setNotSolid();
 	pondLocation.addFluid(100, water);
-	SUBCASE("eat leaves")
-	{
-		Block& grassLocation = area.m_blocks[5][5][2];
-		grassLocation.m_hasPlant.addPlant(wheatGrass, 100);
-		Plant& grass = grassLocation.m_hasPlant.get();
-		// Generate objectives.
-		simulation.fastForward(redDeer.stepsEatFrequency);
-		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "eat");
-		REQUIRE(actor.m_mustEat.needsFood());
-		REQUIRE(grass.getPercentFoliage() == 100);
-		// Find grass.
-		simulation.doStep();
-		Block* destination = actor.m_canMove.getDestination();
-		REQUIRE(destination != nullptr);
-		REQUIRE(destination == &grassLocation);
-		// Go to grass.
-		while(actor.m_location != destination)
-			simulation.doStep();
-		// Eat grass.
-		simulation.fastForward(Config::stepsToEat);
-		REQUIRE(!actor.m_mustEat.needsFood());
-		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "eat");
-		REQUIRE(grass.getPercentFoliage() != 100);
-	}
 	SUBCASE("sleep outside at current location")
 	{
 		// Generate objectives, discard eat if it exists.
@@ -185,6 +153,29 @@ TEST_CASE("basicNeedsNonsentient")
 		REQUIRE(actor.m_mustSleep.hasTiredEvent());
 		REQUIRE(actor.m_stamina.isFull());
 	}
+	SUBCASE("eat leaves")
+	{
+		Block& grassLocation = area.m_blocks[5][5][2];
+		grassLocation.m_hasPlant.addPlant(wheatGrass, 100);
+		Plant& grass = grassLocation.m_hasPlant.get();
+		// Generate objectives.
+		simulation.fastForward(redDeer.stepsEatFrequency);
+		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "eat");
+		REQUIRE(actor.m_mustEat.needsFood());
+		REQUIRE(grass.getPercentFoliage() == 100);
+		// Find grass.
+		simulation.doStep();
+		Block* destination = actor.m_canMove.getDestination();
+		REQUIRE(destination != nullptr);
+		REQUIRE(destination->isAdjacentToIncludingCornersAndEdges(grassLocation));
+		// Go to grass.
+		simulation.fastForwardUntillActorIsAdjacentToDestination(actor, grassLocation);
+		// Eat grass.
+		simulation.fastForward(Config::stepsToEat);
+		REQUIRE(!actor.m_mustEat.needsFood());
+		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "eat");
+		REQUIRE(grass.getPercentFoliage() != 100);
+	}
 	SUBCASE("sleep at assigned spot")
 	{
 		Block& spot = area.m_blocks[5][5][2];
@@ -199,8 +190,7 @@ TEST_CASE("basicNeedsNonsentient")
 		// Path to spot.
 		simulation.doStep();
 		REQUIRE(actor.m_canMove.getDestination() == &spot);
-		while(actor.m_location != &spot)
-			simulation.doStep();
+		simulation.fastForwardUntillActorIsAtDestination(actor, spot);
 		// Wait for wake up.
 		simulation.fastForward(redDeer.stepsSleepDuration);
 		REQUIRE(actor.m_mustSleep.isAwake());
@@ -223,9 +213,8 @@ TEST_CASE("basicNeedsNonsentient")
 		REQUIRE(bear.m_mustEat.getMassFoodRequested() != 0);
 		// Bear goes to deer corpse.
 		simulation.doStep();
-		REQUIRE(bear.m_canMove.getDestination() == deer.m_location);
-		while(bear.m_location != deer.m_location)
-			simulation.doStep();
+		REQUIRE(deer.isAdjacentTo(*bear.m_canMove.getDestination()));
+		simulation.fastForwardUntillActorIsAdjacentToHasShape(bear, deer);
 		// Bear eats.
 		simulation.fastForward(Config::stepsToEat);
 		REQUIRE(!bear.m_mustEat.needsFood());
@@ -274,7 +263,7 @@ TEST_CASE("death")
 		// Generate objectives, discard drink if it exists.
 		REQUIRE(actor.m_mustEat.getHungerEventStep() == redDeer.stepsEatFrequency + 1);
 		simulation.fastForward(redDeer.stepsEatFrequency);
-		REQUIRE(actor.m_mustEat.getHungerEventStep() == redDeer.stepsEatFrequency+ redDeer.stepsTillDieWithoutFood + 1);
+		REQUIRE(actor.m_mustEat.getHungerEventStep() == redDeer.stepsEatFrequency + redDeer.stepsTillDieWithoutFood + 1);
 		simulation.fastForward(redDeer.stepsTillDieWithoutFood - 2);
 		REQUIRE(actor.m_alive);
 		simulation.doStep();

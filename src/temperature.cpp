@@ -187,7 +187,8 @@ Temperature BlockHasTemperature::getDailyAverageAmbientTemperature() const
 	}
 	return m_block.m_area->m_areaHasTemperature.getDailyAverageAmbientSurfaceTemperature(m_block.m_area->m_simulation.m_now);
 }
-GetToSafeTemperatureThreadedTask::GetToSafeTemperatureThreadedTask(GetToSafeTemperatureObjective& o) : ThreadedTask(o.m_actor.getThreadedTaskEngine()), m_objective(o), m_findsPath(o.m_actor) ,m_noWhereWithSafeTemperatureFound(false) { }
+//TODO: Detour locked to true for emergency moves.
+GetToSafeTemperatureThreadedTask::GetToSafeTemperatureThreadedTask(GetToSafeTemperatureObjective& o) : ThreadedTask(o.m_actor.getThreadedTaskEngine()), m_objective(o), m_findsPath(o.m_actor, true) ,m_noWhereWithSafeTemperatureFound(false) { }
 void GetToSafeTemperatureThreadedTask::readStep()
 {
 	std::function<bool(const Block&, Facing facing)> condition = [&](const Block& location, Facing facing)
@@ -207,7 +208,10 @@ void GetToSafeTemperatureThreadedTask::readStep()
 void GetToSafeTemperatureThreadedTask::writeStep()
 {
 	if(!m_findsPath.found())
+	{
 		m_objective.m_actor.m_hasObjectives.cannotFulfillNeed(m_objective);
+		return;
+	}
 	if(m_noWhereWithSafeTemperatureFound)
 		m_objective.m_noWhereWithSafeTemperatureFound = true;
 	m_objective.m_actor.m_canMove.setPath(m_findsPath.getPath());
@@ -230,6 +234,12 @@ void GetToSafeTemperatureObjective::execute()
 		m_actor.m_hasObjectives.objectiveComplete(*this);
 	else
 		m_getToSafeTemperatureThreadedTask.create(*this);
+}
+void GetToSafeTemperatureObjective::reset() 
+{ 
+	cancel(); 
+	m_noWhereWithSafeTemperatureFound = false; 
+	m_actor.m_canReserve.clearAll();
 }
 GetToSafeTemperatureObjective::~GetToSafeTemperatureObjective() { m_actor.m_needsSafeTemperature.m_objectiveExists = false; }
 UnsafeTemperatureEvent::UnsafeTemperatureEvent(Actor& a) : ScheduledEventWithPercent(a.getSimulation(), a.m_species.stepsTillDieInUnsafeTemperature), m_actor(a) { }

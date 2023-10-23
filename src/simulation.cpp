@@ -127,9 +127,24 @@ void Simulation::fastForward(Step steps)
 	}
 	m_step = targetStep + 1;
 }
+void Simulation::fastForwardUntillActorIsAtDestination(Actor& actor, Block& destination)
+{
+	assert(*actor.m_canMove.getDestination() == destination);
+	while(!m_eventSchedule.m_data.empty())
+	{
+		auto& pair = *m_eventSchedule.m_data.begin();
+		m_step = pair.first;
+		doStep();
+		if(*actor.m_location == destination)
+		{
+			break;
+		}
+	}
+}
 void Simulation::fastForwardUntillActorIsAdjacentToDestination(Actor& actor, Block& destination)
 {
-	Block* adjacentDestination = actor.m_canMove.getDestination();
+	assert(!actor.m_canMove.getPath().empty());
+	Block* adjacentDestination = actor.m_canMove.getPath().back();
 	assert(adjacentDestination != nullptr);
 	if(actor.m_blocks.size() == 1)
 		assert(adjacentDestination->isAdjacentToIncludingCornersAndEdges(destination));
@@ -138,11 +153,8 @@ void Simulation::fastForwardUntillActorIsAdjacentToDestination(Actor& actor, Blo
 		auto& pair = *m_eventSchedule.m_data.begin();
 		m_step = pair.first;
 		doStep();
-		if(actor.m_location == adjacentDestination)
-		{
-			assert(actor.isAdjacentTo(destination));
+		if(actor.isAdjacentTo(destination))
 			break;
-		}
 	}
 }
 void Simulation::fastForwardUntillActorIsAdjacentToHasShape(Actor& actor, HasShape& other)

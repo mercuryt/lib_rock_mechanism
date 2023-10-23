@@ -30,6 +30,7 @@ public:
 	[[nodiscard]] Percent getPercentStarved() const;
 	[[nodiscard]] uint32_t getDesireToEatSomethingAt(const Block& block) const;
 	[[nodiscard]] uint32_t getMinimumAcceptableDesire() const;
+	[[nodiscard]] Block* getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireability();
 	[[nodiscard]] bool canEat(const Actor& actor) const;
 	[[nodiscard]] bool canEat(const Plant& plant) const;
 	[[nodiscard]] bool canEat(const Item& item) const;
@@ -87,6 +88,7 @@ public:
 	void execute();
 	void cancel();
 	void delay();
+	void reset();
 	void noFoodFound();
 	[[nodiscard]] std::string name() const { return "eat"; }
 	[[nodiscard]] bool canEatAt(const Block& block) const;

@@ -24,7 +24,10 @@ void MustDrink::drink(uint32_t volume)
 		m_actor.m_canGrow.maybeStart();
 	}
 	else
+	{
+		m_actor.m_hasObjectives.taskComplete();
 		stepsToNextThirstEvent = util::scaleByFraction(m_actor.m_species.stepsTillDieWithoutFluid, m_volumeDrinkRequested, m_actor.m_species.stepsTillDieWithoutFluid);
+	}
 	m_thirstEvent.schedule(stepsToNextThirstEvent, m_actor);
 }
 void MustDrink::setNeedsFluid()
@@ -44,7 +47,6 @@ void MustDrink::onDeath()
 {
 	m_thirstEvent.maybeUnschedule();
 }
-// Static method.
 uint32_t MustDrink::drinkVolumeFor(Actor& actor) { return std::max(1u, actor.getMass() / Config::unitsBodyMassPerUnitFluidConsumed); }
 // Drink Event.
 DrinkEvent::DrinkEvent(const Step delay, DrinkObjective& drob) : ScheduledEventWithPercent(drob.m_actor.getSimulation(), delay), m_drinkObjective(drob), m_item(nullptr) {}
@@ -57,7 +59,7 @@ void DrinkEvent::execute()
 	if(drinkBlock == nullptr)
 	{
 		// There isn't anything to drink here anymore, try again.
-		m_drinkObjective.execute();
+		m_drinkObjective.m_threadedTask.create(m_drinkObjective);
 		return;
 	}
 	Item* item = m_drinkObjective.getItemToDrinkFromAt(*drinkBlock);
@@ -72,15 +74,49 @@ void DrinkEvent::execute()
 		volume = std::min(volume, drinkBlock->volumeOfFluidTypeContains(actor.m_mustDrink.getFluidType()));
 		drinkBlock->removeFluid(volume, actor.m_mustDrink.getFluidType());
 	}
-	assert(volume !=  0);
 	actor.m_mustDrink.drink(volume);
 }
 void DrinkEvent::clearReferences() { m_drinkObjective.m_drinkEvent.clearPointer(); }
 ThirstEvent::ThirstEvent(const Step delay, Actor& a) : ScheduledEventWithPercent(a.getSimulation(), delay), m_actor(a) { }
 void ThirstEvent::execute() { m_actor.m_mustDrink.setNeedsFluid(); }
 void ThirstEvent::clearReferences() { m_actor.m_mustDrink.m_thirstEvent.clearPointer(); }
+// Drink Threaded Task.
+DrinkThreadedTask::DrinkThreadedTask(DrinkObjective& drob) : ThreadedTask(drob.m_actor.getThreadedTaskEngine()), m_drinkObjective(drob), m_findsPath(drob.m_actor, drob.m_detour), m_noDrinkFound(false) {}
+void DrinkThreadedTask::readStep()
+{
+	std::function<bool(const Block&)> predicate = [&](const Block& block)
+	{
+		return m_drinkObjective.containsSomethingDrinkable(block);
+	};
+	m_findsPath.pathToUnreservedAdjacentToPredicate(predicate, *m_drinkObjective.m_actor.getFaction());
+	if(!m_findsPath.found())
+	{
+		// Nothing to drink here, try to leave.
+		m_findsPath.pathToAreaEdge();
+		m_noDrinkFound = true;
+	}
+}
+void DrinkThreadedTask::writeStep()
+{
+	if(!m_findsPath.found())
+	{
+		m_drinkObjective.m_actor.m_hasObjectives.cannotFulfillNeed(m_drinkObjective);
+	}
+	else
+	{
+		if(!m_findsPath.areAllBlocksAtDestinationReservable(m_drinkObjective.m_actor.getFaction()))
+		{
+			m_drinkObjective.m_threadedTask.create(m_drinkObjective);
+			return;
+		}
+		m_drinkObjective.m_actor.m_canMove.setPath(m_findsPath.getPath());
+	}
+	if(m_noDrinkFound)
+		m_drinkObjective.m_noDrinkFound = true;
+}
+void DrinkThreadedTask::clearReferences() { m_drinkObjective.m_threadedTask.clearPointer(); }
 // Drink Objective.
-DrinkObjective::DrinkObjective(Actor& a) : Objective(Config::drinkPriority), m_actor(a), m_drinkEvent(a.getEventSchedule()), m_noDrinkFound(false) { }
+DrinkObjective::DrinkObjective(Actor& a) : Objective(Config::drinkPriority), m_actor(a), m_threadedTask(a.getThreadedTaskEngine()), m_drinkEvent(a.getEventSchedule()), m_noDrinkFound(false) { }
 void DrinkObjective::execute()
 {
 	if(m_noDrinkFound)
@@ -94,18 +130,31 @@ void DrinkObjective::execute()
 			m_actor.m_hasObjectives.cannotFulfillNeed(*this);
 		return;
 	}
-	std::function<bool(const Block&)> predicate = [&](const Block& block){ return containsSomethingDrinkable(block); };
-	std::function<void(Block&)> callback = [&]([[maybe_unused]] Block& block) { m_drinkEvent.schedule(Config::stepsToDrink, *this); };
-	m_actor.m_canMove.goToPredicateBlockAndThen(predicate, callback);
+	if(!canDrinkAt(*m_actor.m_location, m_actor.m_facing))
+		m_threadedTask.create(*this);
+	else
+		m_drinkEvent.schedule(Config::stepsToDrink, *this);
 }
 void DrinkObjective::cancel() 
 { 
+	m_threadedTask.maybeCancel();
 	m_drinkEvent.maybeUnschedule();
 	m_actor.m_mustDrink.m_objective = nullptr; 
 }
 void DrinkObjective::delay() 
 { 
+	m_threadedTask.maybeCancel();
 	m_drinkEvent.maybeUnschedule();
+}
+void DrinkObjective::reset()
+{
+	delay();
+	m_noDrinkFound = false;
+	m_actor.m_canReserve.clearAll();
+}
+bool DrinkObjective::canDrinkAt(const Block& block, Facing facing) const
+{
+	return getAdjacentBlockToDrinkAt(block, facing) != nullptr;
 }
 Block* DrinkObjective::getAdjacentBlockToDrinkAt(const Block& location, Facing facing) const
 {

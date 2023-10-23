@@ -33,16 +33,16 @@ public:
 	void clearPath();
 	void callback();
 	void scheduleMove();
-	void setDestination(Block& destination, bool detour = false, bool adjacent = false, bool unreserved = true, bool reserve = false);
+	void setDestination(Block& destination, bool detour = false, bool adjacent = false, bool unreserved = true, bool reserve = true);
 	void setDestinationAdjacentTo(Block& destination, bool detour = false, bool unreserved = true, bool reserve = true);
 	void setDestinationAdjacentTo(HasShape& hasShape, bool detour = false, bool unreserved = true, bool reserve = true);
-	void setDestinationToUnreservedAdjacentToPredicate(std::function<bool(const Block&)>& predicate, const Faction& faction, bool detour = false);
-	void goToPredicateBlockAndThen(std::function<bool(const Block&)>& predicate, std::function<void(Block&)> callback, bool detour = false, bool adjacent = true, bool unreserved = true, bool reserve = true);
-	void goToBlockAndThen(const Block& block, std::function<void(Block&)> callback, bool detour = false, bool adjacent = true, bool unreserved = true, bool reserve = true);
+	void setDestinationToUnreservedAdjacentToPredicate(std::function<bool(const Block&)>& predicate, bool detour = false, bool reserve = true);
+	void setDestinationToUnreservedAdjacentToPredicateAndThen(std::function<bool(const Block&)>& predicate, std::function<void(Block&)> continuation, bool detour = false, bool reserve = true);
 	void clearAllEventsAndTasks();
 	void onDeath();
 	void onLeaveArea();
 	void maybeCancelThreadedTask() { m_threadedTask.maybeCancel(); }
+	bool ensureIsAdjacent(Block& block);
 	[[nodiscard]] const MoveType& getMoveType() const { return *m_moveType; }
 	[[nodiscard]] uint32_t getIndividualMoveSpeedWithAddedMass(Mass mass) const;
 	[[nodiscard]] uint32_t getMoveSpeed() const { return m_speedActual; }
@@ -70,11 +70,11 @@ class PathThreadedTask final : public ThreadedTask
 	const Block* m_huristicDestination;
 	bool m_detour;
 	bool m_adjacent;
-	bool m_unreserved;
-	bool m_reserve;
+	bool m_unreservedDestination;
+	bool m_reserveDestination;
 	FindsPath m_findsPath;
 public:
-	PathThreadedTask(Actor& a, std::function<bool(const Block&)>& predicate, const Block* huristicDestination = nullptr, bool detour = false, bool adjacent = false, bool unreserved = true, bool reserve = true);
+	PathThreadedTask(Actor& a, std::function<bool(const Block&)>& predicate, const Block* huristicDestination = nullptr, bool detour = false, bool adjacent = false, bool m_unreservedDestination = true, bool m_reserveDestination = true);
 	void readStep();
 	void writeStep();
 	void clearReferences();

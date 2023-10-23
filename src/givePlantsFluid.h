@@ -4,6 +4,7 @@
 #include "eventSchedule.hpp"
 #include "threadedTask.hpp"
 #include "findsPath.h"
+#include "onDestroy.h"
 
 #include <memory>
 #include <vector>
@@ -45,13 +46,19 @@ class GivePlantsFluidObjective final : public Objective
 {
 	Actor& m_actor;
 	Block* m_plantLocation;
+	Item* m_fluidHaulingItem;
+	HasOnDestroySubscription m_fluidHaulingItemOnDestroy;
 	HasScheduledEvent<GivePlantsFluidEvent> m_event;
 	HasThreadedTask<GivePlantsFluidThreadedTask> m_threadedTask;
 public:
 	GivePlantsFluidObjective(Actor& a );
 	void execute();
 	void cancel();
+	void fillContainer(Block& fillLocation);
 	void delay() { cancel(); }
+	void select(Block& block);
+	void select(Item& item);
+	void reset();
 	std::string name() const { return "give plants fluid"; }
 	bool canFillAt(const Block& block) const;
 	Item* getItemToFillFromAt(Block& block);

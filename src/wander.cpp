@@ -3,7 +3,7 @@
 #include "block.h"
 #include "randomUtil.h"
 #include "config.h"
-WanderThreadedTask::WanderThreadedTask(WanderObjective& o) : ThreadedTask(o.m_actor.getThreadedTaskEngine()), m_objective(o), m_findsPath(o.m_actor) { }
+WanderThreadedTask::WanderThreadedTask(WanderObjective& o) : ThreadedTask(o.m_actor.getThreadedTaskEngine()), m_objective(o), m_findsPath(o.m_actor, false) { }
 void WanderThreadedTask::readStep()
 {
 	const Block* lastBlock = nullptr;
@@ -41,4 +41,11 @@ void WanderObjective::execute()
 		m_threadedTask.create(*this); 
 		m_routeFound = true;
 	}
+}
+
+void WanderObjective::reset() 
+{ 
+	cancel(); 
+	m_routeFound = false; 
+	m_actor.m_canReserve.clearAll();
 }

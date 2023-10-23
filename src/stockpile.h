@@ -35,6 +35,7 @@ public:
 	void execute();
 	void cancel();
 	void delay() { cancel(); }
+	void reset();
 	std::string name() const { return "stock pile"; }
 	ObjectiveId getObjectiveId() const { return ObjectiveId::StockPile; }
 };
@@ -46,7 +47,7 @@ class StockPileThreadedTask final : public ThreadedTask
 	Block* m_destination;
 	FindsPath m_findsPath;
 public:
-	StockPileThreadedTask(StockPileObjective& spo) : ThreadedTask(spo.m_actor.getThreadedTaskEngine()), m_objective(spo), m_item(nullptr), m_destination(nullptr), m_findsPath(spo.m_actor) { }
+	StockPileThreadedTask(StockPileObjective& spo) : ThreadedTask(spo.m_actor.getThreadedTaskEngine()), m_objective(spo), m_item(nullptr), m_destination(nullptr), m_findsPath(spo.m_actor, spo.m_detour) { }
 	void readStep();
 	void writeStep();
 	void clearReferences();

@@ -45,6 +45,7 @@ public:
 	// For testing.
 	[[maybe_unused]] void setDateTime(DateTime now);
 	[[maybe_unused]] void fastForward(Step step);
+	[[maybe_unused]] void fastForwardUntillActorIsAtDestination(Actor& actor, Block& destination);
 	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToDestination(Actor& actor, Block& destination);
 	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToHasShape(Actor& actor, HasShape& other);
 };

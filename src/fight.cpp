@@ -4,6 +4,7 @@
 #include "actor.h"
 #include "weaponType.h"
 #include "block.h"
+#include "config.h"
 
 #include <utility>
 #include <algorithm>
@@ -158,9 +159,10 @@ bool CanFight::inRange(const Actor& target) const { return m_actor.m_location->d
 
 AttackCoolDown::AttackCoolDown(CanFight& cf) : ScheduledEventWithPercent(cf.m_actor.getSimulation(), cf.m_coolDownDuration), m_canFight(cf) { }
 
-GetIntoAttackPositionThreadedTask::GetIntoAttackPositionThreadedTask(Actor& a, Actor& t, uint32_t r) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_target(t), m_range(r), m_findsPath(a) {}
+GetIntoAttackPositionThreadedTask::GetIntoAttackPositionThreadedTask(Actor& a, Actor& t, uint32_t r) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_target(t), m_range(r), m_findsPath(a, true) {}
 void GetIntoAttackPositionThreadedTask::readStep()
 {
+	// TODO: Apply max range.
 	std::function<bool(const Block&, Facing)> destinatonCondition = [&](const Block& location, Facing facing)
 	{
 		std::function<bool(const Block&)> occupiedCondition = [&](const Block& block)

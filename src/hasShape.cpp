@@ -19,6 +19,11 @@ void HasShape::setStatic(bool isTrue)
 		}
 	m_static = isTrue;
 }
+void HasShape::reserveOccupied(CanReserve& canReserve)
+{
+	for(Block* block : m_blocks)
+		block->m_reservable.reserveFor(canReserve);
+}
 bool HasShape::isAdjacentTo(const HasShape& other) const
 {
 	const HasShape* smaller = this;
@@ -27,6 +32,10 @@ bool HasShape::isAdjacentTo(const HasShape& other) const
 		std::swap(smaller, larger);
 	std::function<bool(const Block&)> predicate = [&](const Block& block) { return larger->m_blocks.contains(const_cast<Block*>(&block)); };
 	return smaller->predicateForAnyAdjacentBlock(predicate);
+}
+bool HasShape::allOccupiedBlocksAreReservable(const Faction& faction) const
+{
+	return allBlocksAtLocationAndFacingAreReservable(*m_location, m_facing, faction);
 }
 bool HasShape::isAdjacentToAt(const Block& location, Facing facing, const HasShape& hasShape) const
 {
@@ -55,13 +64,6 @@ bool HasShape::predicateForAnyAdjacentBlock(std::function<bool(const Block&)> pr
 			return true;
 	}
 	return false;
-}
-std::unordered_set<Block*> HasShape::getOccupiedAndAdjacent()
-{
-	std::unordered_set<Block*> output(m_blocks);
-	for(Block* block : m_blocks)
-		output.insert(block->m_adjacentsVector.begin(), block->m_adjacentsVector.end());
-	return output;
 }
 std::unordered_set<Block*> HasShape::getAdjacentBlocks()
 {

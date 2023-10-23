@@ -12,7 +12,7 @@
 
 class ConstructThreadedTask;
 class Block;
-struct Faction;
+class Faction;
 struct BlockFeatureType;
 class ConstructObjective;
 class ConstructProject;
@@ -33,6 +33,7 @@ public:
 	void execute();
 	void cancel();
 	void delay() { cancel(); }
+	void reset();
 	std::string name() const { return "construct"; }
 	ConstructProject* getProjectWhichActorCanJoinAdjacentTo(const Block& location, Facing facing);
 	ConstructProject* getProjectWhichActorCanJoinAt(Block& block);

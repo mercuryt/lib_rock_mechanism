@@ -15,6 +15,8 @@ struct TestTaskObjective final : public Objective
 	void execute() { x = !x; }
 	void cancel() { }
 	void delay() { }
+	void reset() { }
+	void detour() { }
 	std::string name() const { return "test task"; }
 	ObjectiveId getObjectiveId() const { return ObjectiveId::Construct; }
 };
@@ -26,6 +28,8 @@ struct TestNeedObjective final : public Objective
 	void execute() { x = !x; }
 	void cancel() { }
 	void delay() { }
+	void reset() { }
+	void detour() { }
 	std::string name() const { return "test need"; }
 	ObjectiveId getObjectiveId() const { return ObjectiveId::Dig; }
 };

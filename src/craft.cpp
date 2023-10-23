@@ -100,6 +100,12 @@ void CraftObjective::cancel()
 		m_actor.m_location->m_area->m_hasCraftingLocationsAndJobs.stepInterupted(*m_craftJob);
 	m_threadedTask.maybeCancel();
 }
+void CraftObjective::reset() 
+{ 
+	cancel(); 
+	m_craftJob = nullptr;
+	m_actor.m_canReserve.clearAll();
+}
 void HasCraftingLocationsAndJobs::addLocation(std::vector<const CraftStepType*>& craftStepTypes, Block& block)
 {
 	for(auto* craftStepType : craftStepTypes)
@@ -216,12 +222,13 @@ std::pair<CraftJob*, Block*> HasCraftingLocationsAndJobs::getJobAndLocationFor(c
 	{
 		return !block.m_reservable.isFullyReserved(actor.getFaction()) && getJobForAtLocation(actor, skillType, block) != nullptr;
 	};
-	FindsPath findsPath(actor);
+	FindsPath findsPath(actor, false);
 	findsPath.pathToUnreservedAdjacentToPredicate(predicate, *actor.getFaction());
 	if(!findsPath.found())
 		return std::make_pair(nullptr, nullptr);
 	else
 	{
-		return std::make_pair(getJobForAtLocation(actor, skillType, *findsPath.m_target), findsPath.m_target);
+		auto& block = *findsPath.getBlockWhichPassedPredicate();
+		return std::make_pair(getJobForAtLocation(actor, skillType, block), &block);
 	}
 }
