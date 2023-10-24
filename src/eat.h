@@ -24,15 +24,16 @@ public:
 	void eat(Mass mass);
 	void setNeedsFood();
 	void onDeath();
-	bool needsFood() const;
-	Mass massFoodForBodyMass() const;
-	const Mass& getMassFoodRequested() const;
-	Percent getPercentStarved() const;
-	uint32_t getDesireToEatSomethingAt(const Block& block) const;
-	uint32_t getMinimumAcceptableDesire() const;
-	bool canEat(const Actor& actor) const;
-	bool canEat(const Plant& plant) const;
-	bool canEat(const Item& item) const;
+	[[nodiscard]] bool needsFood() const;
+	[[nodiscard]] Mass massFoodForBodyMass() const;
+	[[nodiscard]] const Mass& getMassFoodRequested() const;
+	[[nodiscard]] Percent getPercentStarved() const;
+	[[nodiscard]] uint32_t getDesireToEatSomethingAt(const Block& block) const;
+	[[nodiscard]] uint32_t getMinimumAcceptableDesire() const;
+	[[nodiscard]] Block* getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireability();
+	[[nodiscard]] bool canEat(const Actor& actor) const;
+	[[nodiscard]] bool canEat(const Plant& plant) const;
+	[[nodiscard]] bool canEat(const Item& item) const;
 	friend class HungerEvent;
 	friend class EatObjective;
 	// For testing.
@@ -51,9 +52,9 @@ public:
 	void eatActor(Actor& actor);
 	void eatPlantLeaves(Plant& plant);
 	void eatFruitFromPlant(Plant& plant);
-	Block* getBlockWithMostDesiredFoodInReach() const;
-	uint32_t getDesireToEatSomethingAt(const Block& block) const;
-	u_int32_t getMinimumAcceptableDesire() const;
+	[[nodiscard]] Block* getBlockWithMostDesiredFoodInReach() const;
+	[[nodiscard]] uint32_t getDesireToEatSomethingAt(const Block& block) const;
+	[[nodiscard]] uint32_t getMinimumAcceptableDesire() const;
 };
 class HungerEvent final : public ScheduledEventWithPercent
 {
@@ -80,17 +81,18 @@ class EatObjective final : public Objective
 	Actor& m_actor;
 	HasThreadedTask<EatThreadedTask> m_threadedTask;
 	HasScheduledEvent<EatEvent> m_eatEvent;
-	Block* m_foodLocation;
-	Item* m_foodItem;
+	Block* m_destination;
 	bool m_noFoodFound;
 public:
 	EatObjective(Actor& a);
 	void execute();
 	void cancel();
 	void delay();
-	std::string name() const { return "eat"; }
-	bool canEatAt(const Block& block) const;
-	ObjectiveId getObjectiveId() const { return ObjectiveId::Eat; }
+	void reset();
+	void noFoodFound();
+	[[nodiscard]] std::string name() const { return "eat"; }
+	[[nodiscard]] bool canEatAt(const Block& block) const;
+	[[nodiscard]] ObjectiveId getObjectiveId() const { return ObjectiveId::Eat; }
 	friend class EatEvent;
 	friend class EatThreadedTask;
 	// For testing.

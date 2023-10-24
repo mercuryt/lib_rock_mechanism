@@ -12,6 +12,7 @@ public:
 	void execute();
 	void cancel() { }
 	void delay() { }
+	void reset();
 	ObjectiveId getObjectiveId() const { return ObjectiveId::Station; }
 	std::string name() const { return "station"; }
 };

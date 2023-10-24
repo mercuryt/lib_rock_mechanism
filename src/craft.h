@@ -99,6 +99,7 @@ public:
 	void execute();
 	void cancel();
 	void delay() { cancel(); }
+	void reset();
 	ObjectiveId getObjectiveId() const { return ObjectiveId::Craft; }
 	std::string name() const { return "craft"; }
 	friend class CraftThreadedTask;

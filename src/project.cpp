@@ -1,14 +1,16 @@
 #include "project.h"
-#include "path.h"
 #include "block.h"
 #include "area.h"
 #include <algorithm>
+ProjectFinishEvent::ProjectFinishEvent(const Step delay, Project& p) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay), m_project(p) {}
 void ProjectFinishEvent::execute() { m_project.complete(); }
 void ProjectFinishEvent::clearReferences() { m_project.m_finishEvent.clearPointer(); }
 
+ProjectTryToHaulEvent::ProjectTryToHaulEvent(const Step delay, Project& p) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay), m_project(p) { }
 void ProjectTryToHaulEvent::execute() { m_project.m_tryToHaulThreadedTask.create(m_project); }
 void ProjectTryToHaulEvent::clearReferences() { m_project.m_finishEvent.clearPointer(); }
 
+ProjectTryToMakeHaulSubprojectThreadedTask::ProjectTryToMakeHaulSubprojectThreadedTask(Project& p) : ThreadedTask(p.m_location.m_area->m_simulation.m_threadedTaskEngine), m_project(p) { }
 void ProjectTryToMakeHaulSubprojectThreadedTask::readStep()
 {
 	for(auto& [actor, projectWorker] : m_project.m_workers)
@@ -17,19 +19,9 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::readStep()
 			continue;
 		// Make copy becasue we can't capture from outside the enclosing scope.
 		Actor* pointerToActor = actor;
-		std::function<bool(const Block&)> condition = [&, pointerToActor](const Block& block)
-		{
-			for(Item* item : block.m_hasItems.getAll())
-				for(auto& [itemQuery, projectItemCounts] : m_project.m_requiredItems)
-					if(itemQuery(*item) && projectItemCounts.required > projectItemCounts.reserved)
-					{
-						m_haulProjectParamaters = HaulSubproject::tryToSetHaulStrategy(m_project, *item, *pointerToActor, projectItemCounts);
-						if(m_haulProjectParamaters.strategy != HaulStrategy::None)
-							return true;
-					}
-			return false;
-		};
-		m_findsPath.pathToPredicate(*actor, condition);
+		std::function<bool(const Block&)> condition = [&, pointerToActor](const Block& block) { return blockContainsDesiredItem(block, *pointerToActor); };
+		FindsPath findsPath(*actor, false);
+		findsPath.pathToUnreservedAdjacentToPredicate(condition, *actor->getFaction());
 		// Only make at most one per step.
 		if(m_haulProjectParamaters.strategy != HaulStrategy::None)
 			return;
@@ -54,6 +46,19 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep()
 	}
 }
 void ProjectTryToMakeHaulSubprojectThreadedTask::clearReferences() { m_project.m_tryToHaulThreadedTask.clearPointer(); }
+bool ProjectTryToMakeHaulSubprojectThreadedTask::blockContainsDesiredItem(const Block& block, Actor& actor)
+{
+	for(Item* item : block.m_hasItems.getAll())
+		for(auto& [itemQuery, projectItemCounts] : m_project.m_requiredItems)
+			if(projectItemCounts.required > projectItemCounts.reserved && itemQuery(*item))
+			{
+				m_haulProjectParamaters = HaulSubproject::tryToSetHaulStrategy(m_project, *item, actor, projectItemCounts);
+				if(m_haulProjectParamaters.strategy != HaulStrategy::None)
+					return true;
+			}
+	return false;
+};
+
 // Derived classes are expected to provide getDelay, getConsumedItems, getUnconsumedItems, getByproducts, and onComplete.
 Project::Project(const Faction* f, Block& l, size_t mw) : m_finishEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_gatherComplete(false), m_canReserve(f), m_maxWorkers(mw), m_loadedRequirements(false) , m_location(l) { }
 bool Project::reservationsComplete() const
@@ -113,18 +118,18 @@ void Project::commandWorker(Actor& actor)
 		if(deliveriesComplete())
 		{
 			// All items and actors have been delivered, the worker starts making.
-			if(actor.m_location->isAdjacentTo(m_location))
+			if(actor.isAdjacentTo(m_location))
 				addToMaking(actor);
 			else
-				actor.m_canMove.setDestinationAdjacentTo(m_location);
+				actor.m_canMove.setDestinationAdjacentTo(m_location, m_workers.at(&actor).objective.m_detour);
 		}
 		else if(reservationsComplete())
 		{
 			// All items and actors have been reserved with other workers dispatched to fetch them, the worker waits for them.
-			if(actor.m_location->isAdjacentTo(m_location))
+			if(actor.isAdjacentTo(m_location))
 				m_waiting.insert(&actor);
 			else
-				actor.m_canMove.setDestinationAdjacentTo(m_location);
+				actor.m_canMove.setDestinationAdjacentTo(m_location, m_workers.at(&actor).objective.m_detour);
 			//TODO: Schedule end of waiting and cancelation of task.
 		}
 		else
@@ -167,10 +172,11 @@ void Project::complete()
 		item->destroy();
 	for(auto& [itemType, materialType, quantity] : getByproducts())
 		m_location.m_hasItems.add(*itemType, *materialType, quantity);
-	for(auto& [actor, projectWorker] : m_workers)
-		actor->m_hasObjectives.objectiveComplete(projectWorker.objective);
+	auto workers = std::move(m_workers);
 	m_workers.clear();
 	onComplete();
+	for(auto& [actor, projectWorker] : workers)
+		actor->m_hasObjectives.objectiveComplete(projectWorker.objective);
 }
 void Project::cancel()
 {
@@ -191,10 +197,12 @@ void Project::haulSubprojectComplete(HaulSubproject& haulSubproject)
 		commandWorker(*actor);
 	m_haulSubprojects.remove(haulSubproject);
 }
+bool Project::canAddWorker(const Actor& actor) const
+{
+	assert(!m_workers.contains(&const_cast<Actor&>(actor)));
+	return m_maxWorkers > m_workers.size();
+}
 Project::~Project()
 {
 	assert(m_workers.empty());
 }
-ProjectFinishEvent::ProjectFinishEvent(const Step delay, Project& p) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay), m_project(p) {}
-ProjectTryToHaulEvent::ProjectTryToHaulEvent(const Step delay, Project& p) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay), m_project(p) { }
-ProjectTryToMakeHaulSubprojectThreadedTask::ProjectTryToMakeHaulSubprojectThreadedTask(Project& p) : ThreadedTask(p.m_location.m_area->m_simulation.m_threadedTaskEngine), m_project(p) { }

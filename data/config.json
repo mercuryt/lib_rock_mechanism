@@ -128,5 +128,6 @@
 	"unarmedCombatScoreBase": 1,
 	"targetedHaulPriority": 500,
 	"stationPriority": 1500,
-	"stepsToDelayBeforeTryingAgainToFollowLeader": 40
+	"stepsToDelayBeforeTryingAgainToFollowLeader": 40,
+	"getIntoAttackPositionMaxRange": 40
 }

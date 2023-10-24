@@ -28,6 +28,7 @@ public:
 	void execute();
 	void cancel() { m_getIntoRangeAndLineOfSightThreadedTask.maybeCancel(); }
 	void delay() { cancel(); }
+	void reset();
 	std::string name() const { return "kill"; }
 	ObjectiveId getObjectiveId() const { return ObjectiveId::Kill; }
 };

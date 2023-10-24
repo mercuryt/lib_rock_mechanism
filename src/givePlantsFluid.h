@@ -4,6 +4,7 @@
 #include "eventSchedule.hpp"
 #include "threadedTask.hpp"
 #include "findsPath.h"
+#include "onDestroy.h"
 
 #include <memory>
 #include <vector>
@@ -26,7 +27,7 @@ public:
 class GivePlantsFluidThreadedTask final : public ThreadedTask
 {
 	GivePlantsFluidObjective& m_objective;
-	Item* m_haulTool;
+	Block* m_plantLocation;
 	FindsPath m_findsPath;
 public:
 	GivePlantsFluidThreadedTask(GivePlantsFluidObjective& gpfo);
@@ -44,22 +45,25 @@ public:
 class GivePlantsFluidObjective final : public Objective
 {
 	Actor& m_actor;
-	Plant* m_plant;
-	Item* m_haulTool;
+	Block* m_plantLocation;
+	Item* m_fluidHaulingItem;
+	HasOnDestroySubscription m_fluidHaulingItemOnDestroy;
 	HasScheduledEvent<GivePlantsFluidEvent> m_event;
 	HasThreadedTask<GivePlantsFluidThreadedTask> m_threadedTask;
 public:
 	GivePlantsFluidObjective(Actor& a );
 	void execute();
 	void cancel();
+	void fillContainer(Block& fillLocation);
 	void delay() { cancel(); }
+	void select(Block& block);
+	void select(Item& item);
+	void reset();
 	std::string name() const { return "give plants fluid"; }
 	bool canFillAt(const Block& block) const;
-	Block* getAdjacentBlockToFillAt(Block& block);
-	bool canFillFromItemAt(const Block& block) const;
 	Item* getItemToFillFromAt(Block& block);
-	bool canGetFluidHaulingItemAt(const Block& block) const;
-	Item* getFluidHaulingItemAt(Block& block);
+	bool canGetFluidHaulingItemAt(const Block& location) const;
+	Item* getFluidHaulingItemAt(Block& location);
 	ObjectiveId getObjectiveId() const { return ObjectiveId::GivePlantsFluid; }
 	friend class GivePlantsFluidEvent;
 	friend class GivePlantsFluidThreadedTask;

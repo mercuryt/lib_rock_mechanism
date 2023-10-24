@@ -1,7 +1,7 @@
 #include "body.h"
 #include "actor.h"
 #include "config.h"
-#include "randomUtil.h"
+#include "random.h"
 #include "util.h"
 #include "simulation.h"
 Wound::Wound(Actor& a, const WoundType wt, BodyPart& bp, Hit h, uint32_t bvr, Percent ph) : woundType(wt), bodyPart(bp), hit(h), bleedVolumeRate(bvr), percentHealed(ph), healEvent(a.getEventSchedule()) 
@@ -36,7 +36,8 @@ Body::Body(Actor& a) :  m_actor(a), m_totalVolume(0), m_impairMovePercent(0), m_
 }
 BodyPart& Body::pickABodyPartByVolume()
 {
-	uint32_t roll = randomUtil::getInRange(0u, m_totalVolume);
+	Random& random = m_actor.getSimulation().m_random;
+	uint32_t roll = random.getInRange(0u, m_totalVolume);
 	for(BodyPart& bodyPart : m_bodyParts)
 	{
 		if(bodyPart.bodyPartType.volume >= roll)

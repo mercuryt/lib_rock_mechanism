@@ -11,20 +11,21 @@ struct ItemType;
 struct MaterialType;
 class Project;
 struct ProjectItemCounts;
-struct Faction;
+class Faction;
 
 enum class HaulStrategy { None, Individual, Team, Cart, TeamCart, Panniers, AnimalCart, StrongSentient };
 
 struct HaulSubprojectParamaters final
 {
 	HasShape* toHaul;
+	FluidType* fluidType;
 	uint32_t quantity;
 	HaulStrategy strategy;
 	std::vector<Actor*> workers;
 	Item* haulTool;
 	Actor* beastOfBurden;
 	ProjectItemCounts* projectItemCounts;
-	HaulSubprojectParamaters() : toHaul(nullptr), quantity(0), strategy(HaulStrategy::None), haulTool(nullptr), beastOfBurden(nullptr), projectItemCounts(nullptr) { }
+	HaulSubprojectParamaters() : toHaul(nullptr), fluidType(nullptr), quantity(0), strategy(HaulStrategy::None), haulTool(nullptr), beastOfBurden(nullptr), projectItemCounts(nullptr) { }
 	[[nodiscard, maybe_unused]] bool validate() const;
 };
 // ToHaul is either an Item or an Actor.
@@ -35,14 +36,12 @@ class HaulSubproject final
 	HasShape& m_toHaul;
 	uint32_t m_quantity;
 	HaulStrategy m_strategy;
-	Block* m_toHaulLocation;
 	std::unordered_set<Actor*> m_nonsentients;
 	Item* m_haulTool;
 	std::unordered_map<Actor*, Block*> m_liftPoints; // Used by Team strategy.
 	Actor* m_leader;
 	bool m_itemIsMoving;
 	Actor* m_beastOfBurden;
-	uint32_t m_teamMemberInPlaceForHaulCount;
 	ProjectItemCounts& m_projectItemCounts;
 	void onComplete();
 public:
@@ -52,6 +51,7 @@ public:
 	void removeWorker(Actor& actor);
 	void cancel();
 	HasShape& getToHaul() { return m_toHaul; }
+	[[nodiscard]] bool allWorkersAreAdjacentTo(HasShape& hasShape);
 	static HaulSubprojectParamaters tryToSetHaulStrategy(const Project& project, HasShape& hasShape, Actor& worker, ProjectItemCounts& projectItemCounts);
 	static std::vector<Actor*> actorsNeededToHaulAtMinimumSpeed(const Project& project, Actor& leader, const HasShape& toHaul);
 	[[nodiscard]] static uint32_t maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(const Actor& leader, const Item& haulTool, const HasShape& toHaul, uint32_t minimumSpeed);
@@ -73,9 +73,9 @@ class CanPickup final
 	HasShape* m_carrying;
 public:
 	CanPickup(Actor& a) : m_actor(a), m_carrying(nullptr) { }
-	void pickUp(HasShape& hasShape, uint32_t quantity);
-	void pickUp(Item& item, uint32_t quantity);
-	void pickUp(Actor& actor, uint32_t quantity);
+	void pickUp(HasShape& hasShape, uint32_t quantity = 1u);
+	void pickUp(Item& item, uint32_t quantity = 1u);
+	void pickUp(Actor& actor, uint32_t quantity = 1u);
 	void putDown(Block& location);
 	void putDownIfAny(Block& location);
 	void removeFluidVolume(uint32_t volume);

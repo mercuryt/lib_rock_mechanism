@@ -7,7 +7,11 @@
 #include <algorithm>
 
 Actor::Actor(Simulation& simulation, uint32_t id, const std::wstring& name, const AnimalSpecies& species, Percent percentGrown, Faction* faction, Attributes attributes) :
-	HasShape(simulation, species.shapeForPercentGrown(percentGrown), false), m_faction(faction), m_id(id), m_name(name), m_species(species), m_alive(true), m_body(*this), m_project(nullptr), m_attributes(attributes), m_equipmentSet(*this), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canPickup(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_canReserve(faction), m_reservable(1), m_stamina(*this), m_visionRange(species.visionRange) { }
+	HasShape(simulation, species.shapeForPercentGrown(percentGrown), false), m_faction(faction), m_id(id), m_name(name), m_species(species), m_alive(true), m_body(*this), m_project(nullptr), m_attributes(attributes), m_equipmentSet(*this), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canPickup(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_canReserve(faction), m_reservable(1), m_stamina(*this), m_visionRange(species.visionRange) 
+{
+	// TODO: Having this line here requires making the existance of objectives mandatory at all times. Good idea?
+	//m_hasObjectives.getNext();
+}
 void Actor::setLocation(Block& block)
 {
 	assert(&block != HasShape::m_location);
@@ -48,7 +52,8 @@ void Actor::die(CauseOfDeath causeOfDeath)
 	m_mustDrink.onDeath();
 	m_mustEat.onDeath();
 	m_mustSleep.onDeath();
-	m_location->m_area->m_hasActors.remove(*this);
+	if(m_location != nullptr)
+		m_location->m_area->m_hasActors.remove(*this);
 }
 void Actor::passout(Step duration)
 {
@@ -65,8 +70,10 @@ void Actor::leaveArea()
 {
 	m_canFight.onLeaveArea();
 	m_canMove.onLeaveArea();
+	Area& area = *m_location->m_area;
+	// Run remove before exit becuse we need to use location to know which bucket to remove from.
+	area.m_hasActors.remove(*this);
 	exit();
-	m_location->m_area->m_hasActors.remove(*this);
 }
 void Actor::wait(Step duration)
 {
@@ -86,6 +93,26 @@ Mass Actor::getMass() const
 Volume Actor::getVolume() const
 {
 	return m_body.getVolume();
+}
+bool Actor::allBlocksAtLocationAndFacingAreReservable(const Block& location, Facing facing) const
+{
+	if(m_faction == nullptr)
+		return true;
+	return HasShape::allBlocksAtLocationAndFacingAreReservable(location, facing, *m_faction);
+}
+void Actor::reserveAllBlocksAtLocationAndFacing(const Block& location, Facing facing)
+{
+	if(m_faction == nullptr)
+		return;
+	for(Block* occupied : getBlocksWhichWouldBeOccupiedAtLocationAndFacing(const_cast<Block&>(location), facing))
+		occupied->m_reservable.reserveFor(m_canReserve, 1u);
+}
+void Actor::unreserveAllBlocksAtLocationAndFacing(const Block& location, Facing facing)
+{
+	if(m_faction == nullptr)
+		return;
+	for(Block* occupied : getBlocksWhichWouldBeOccupiedAtLocationAndFacing(const_cast<Block&>(location), facing))
+		occupied->m_reservable.clearReservationFor(m_canReserve);
 }
 EventSchedule& Actor::getEventSchedule() { return getSimulation().m_eventSchedule; }
 ThreadedTaskEngine& Actor::getThreadedTaskEngine() { return getSimulation().m_threadedTaskEngine; }

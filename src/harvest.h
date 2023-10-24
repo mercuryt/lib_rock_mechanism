@@ -4,6 +4,8 @@
 #include "config.h"
 #include "eventSchedule.hpp"
 #include "threadedTask.hpp"
+#include "findsPath.h"
+#include "types.h"
 
 class HarvestThreadedTask;
 class HarvestEvent;
@@ -21,6 +23,7 @@ public:
 class HarvestObjective final : public Objective
 {
 	Actor& m_actor;
+	Block* m_block;
 public:
 	HarvestObjective(Actor& a);
 	HasScheduledEvent<HarvestEvent> m_harvestEvent;
@@ -28,9 +31,13 @@ public:
 	void execute();
 	void cancel();
 	void delay() { cancel(); }
+	void select(Block& block);
+	void begin();
+	void reset();
 	std::string name() const { return "harvest"; }
 	ObjectiveId getObjectiveId() const { return ObjectiveId::Harvest; }
-	bool canHarvestAt(Block& block) const;
+	Block* getBlockContainingPlantToHarvestAtLocationAndFacing(const Block& location, Facing facing);
+	bool blockContainsHarvestablePlant(const Block& block) const;
 	friend class HarvestEvent;
 	friend class HarvestThreadedTask;
 };
@@ -46,7 +53,7 @@ public:
 class HarvestThreadedTask final : public ThreadedTask
 {
 	HarvestObjective& m_harvestObjective;
-	std::vector<Block*> m_result;
+	FindsPath m_findsPath;
 public:
 	HarvestThreadedTask(HarvestObjective& ho);
 	void readStep();

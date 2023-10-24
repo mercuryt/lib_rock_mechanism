@@ -144,6 +144,7 @@ namespace Config
 	inline uint32_t targetedHaulPriority;
 	inline uint32_t stationPriority;
 	inline Step stepsToDelayBeforeTryingAgainToFollowLeader;
+	inline uint32_t getIntoAttackPositionMaxRange;
 	
 	inline uint32_t convertBodyPartVolumeToArea(uint32_t volume){ return sqrt(volume); }
 	inline void load()
@@ -283,5 +284,6 @@ namespace Config
 		targetedHaulPriority = data["targetedHaulPriority"].get<uint32_t>();
 		stationPriority = data["stationPriority"].get<uint32_t>();
 		stepsToDelayBeforeTryingAgainToFollowLeader = data["stepsToDelayBeforeTryingAgainToFollowLeader"].get<uint32_t>();
+		getIntoAttackPositionMaxRange = data["getIntoAttackPositionMaxRange"].get<uint32_t>();
 	}
 }

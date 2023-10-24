@@ -86,6 +86,7 @@ public:
 	void execute();
 	void cancel() { m_getToSafeTemperatureThreadedTask.maybeCancel(); }
 	void delay() { cancel(); }
+	void reset();
 	ObjectiveId getObjectiveId() const { return ObjectiveId::GetToSafeTemperature; }
 	std::string name() const { return "get to safe temperature"; }
 	~GetToSafeTemperatureObjective();

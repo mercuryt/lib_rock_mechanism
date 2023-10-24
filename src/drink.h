@@ -3,6 +3,7 @@
 #include "objective.h"
 #include "threadedTask.hpp"
 #include "eventSchedule.hpp"
+#include "types.h"
 #include "findsPath.h"
 
 #include <vector>
@@ -53,11 +54,13 @@ public:
 	void execute();
 	void cancel();
 	void delay();
+	void reset();
 	std::string name() const { return "drink"; }
-	bool canDrinkAt(const Block& block) const;
-	Block* getAdjacentBlockToDrinkAt(const Block& block) const;
+	bool canDrinkAt(const Block& block, Facing facing) const;
+	Block* getAdjacentBlockToDrinkAt(const Block& block, Facing facing) const;
 	bool canDrinkItemAt(const Block& block) const;
 	Item* getItemToDrinkFromAt(Block& block) const;
+	bool containsSomethingDrinkable(const Block& block) const;
 	ObjectiveId getObjectiveId() const { return ObjectiveId::Drink; }
 	friend class DrinkEvent;
 	friend class DrinkThreadedTask;

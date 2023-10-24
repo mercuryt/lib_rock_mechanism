@@ -19,3 +19,8 @@ void KillObjective::execute()
 		if(!m_killer.m_canFight.isOnCoolDown())
 			m_killer.m_canFight.attack(m_target);
 }
+void KillObjective::reset() 
+{ 
+	cancel(); 
+	m_killer.m_canReserve.clearAll(); 
+}

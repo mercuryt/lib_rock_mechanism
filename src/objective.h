@@ -30,9 +30,12 @@ class Objective
 {
 public:
 	uint32_t m_priority;
+	bool m_detour = false;
 	virtual void execute() = 0;
 	virtual void cancel() = 0;
 	virtual void delay() = 0;
+	virtual void reset() = 0;
+	void detour() { m_detour = true; execute(); }
 	[[nodiscard]] virtual std::string name() const = 0;
 	[[nodiscard]] virtual ObjectiveId getObjectiveId() const = 0;
 	Objective(uint32_t p);
@@ -108,6 +111,8 @@ public:
 	void cannotFulfillObjective(Objective& objective);
 	void cannotCompleteTask();
 	void cannotFulfillNeed(Objective& objective);
+	void detour();
+	void restart() { m_currentObjective->reset(); m_currentObjective->execute(); }
 	Objective& getCurrent();
 	bool hasCurrent() { return m_currentObjective != nullptr; }
 	bool hasSupressedNeed(const ObjectiveId objectiveId) const { return m_supressedNeeds.contains(objectiveId); }

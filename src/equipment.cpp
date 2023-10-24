@@ -1,11 +1,12 @@
 #include "equipment.h"
 #include "config.h"
-#include "randomUtil.h"
+#include "random.h"
 #include "hit.h"
 #include "materialType.h"
 #include "item.h"
 #include "weaponType.h"
 #include "actor.h"
+#include "simulation.h"
 
 bool EquipmentSortByLayer::operator()(Item* const& a, Item* const& b) const
 {
@@ -45,7 +46,8 @@ void EquipmentSet::modifyImpact(Hit& hit, const BodyPartType& bodyPartType)
 	for(Item* equipment : m_wearable)
 	{
 		auto& wearableData = *equipment->m_itemType.wearableData;
-		if(std::ranges::find(wearableData.bodyPartsCovered, &bodyPartType) != wearableData.bodyPartsCovered.end() && randomUtil::percentChance(wearableData.percentCoverage))
+		Random& random = m_actor.getSimulation().m_random;
+		if(std::ranges::find(wearableData.bodyPartsCovered, &bodyPartType) != wearableData.bodyPartsCovered.end() && random.percentChance(wearableData.percentCoverage))
 		{
 			uint32_t pierceScore = (hit.force / hit.area) * hit.materialType.hardness * Config::pierceModifier;
 			uint32_t defenseScore = wearableData.defenseScore * equipment->m_materialType.hardness;

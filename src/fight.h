@@ -7,6 +7,7 @@
 #include "materialType.h"
 #include "threadedTask.h"
 #include "eventSchedule.hpp"
+#include "findsPath.h"
 
 #include <string>
 #include <unordered_set>
@@ -72,7 +73,7 @@ class GetIntoAttackPositionThreadedTask final : public ThreadedTask
 	Actor& m_actor;
 	Actor& m_target;
 	uint32_t m_range;
-	std::vector<Block*> m_route;
+	FindsPath m_findsPath;
 public:
 	GetIntoAttackPositionThreadedTask(Actor& a, Actor& t, uint32_t r);
 	void readStep();

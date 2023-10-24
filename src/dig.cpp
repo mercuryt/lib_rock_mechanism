@@ -1,52 +1,53 @@
 #include "dig.h"
 #include "block.h"
 #include "area.h"
-#include "path.h"
-#include "randomUtil.h"
+#include "random.h"
 #include "util.h"
-DigThreadedTask::DigThreadedTask(DigObjective& digObjective) : ThreadedTask(digObjective.m_actor.m_location->m_area->m_simulation.m_threadedTaskEngine), m_digObjective(digObjective) {}
+DigThreadedTask::DigThreadedTask(DigObjective& digObjective) : ThreadedTask(digObjective.m_actor.m_location->m_area->m_simulation.m_threadedTaskEngine), m_digObjective(digObjective), m_findsPath(digObjective.m_actor, digObjective.m_detour) { }
 void DigThreadedTask::readStep()
 {
-	auto destinationCondition = [&](Block& block)
+	std::function<bool(const Block&)> predicate = [&](const Block& block)
 	{
-		return m_digObjective.canDigAt(block);
+		return m_digObjective.getJoinableProjectAt(block) != nullptr;
 	};
-	m_result = path::getForActorToPredicate(m_digObjective.m_actor, destinationCondition);
+	//TODO: We don't need the whole path here, just the destination and facing.
+	m_findsPath.pathToUnreservedAdjacentToPredicate(predicate, *m_digObjective.m_actor.getFaction());
 }
 void DigThreadedTask::writeStep()
 {
-	if(m_result.empty())
+	if(!m_findsPath.found())
 		m_digObjective.m_actor.m_hasObjectives.cannotFulfillObjective(m_digObjective);
 	else
 	{
-		// Destination block has been reserved since result was found, get a new one.
-		if(m_result.back()->m_reservable.isFullyReserved(*m_digObjective.m_actor.getFaction()))
+		if(!m_findsPath.areAllBlocksAtDestinationReservable(m_digObjective.m_actor.getFaction()))
 		{
+			// Proposed location while digging has been reserved already, try to find another.
 			m_digObjective.m_digThrededTask.create(m_digObjective);
 			return;
 		}
-		m_digObjective.m_actor.m_canMove.setPath(m_result);
-		m_result.back()->m_reservable.reserveFor(m_digObjective.m_actor.m_canReserve, 1);
+		Block& target = *m_findsPath.getBlockWhichPassedPredicate();
+		DigProject& project = target.m_area->m_hasDiggingDesignations.at(*m_digObjective.m_actor.getFaction(), target);
+		if(project.canAddWorker(m_digObjective.m_actor))
+		{
+			// Join project and reserve standing room.
+			m_digObjective.m_project = &project;
+			project.addWorker(m_digObjective.m_actor, m_digObjective);
+			m_findsPath.reserveBlocksAtDestination(m_digObjective.m_actor.m_canReserve);
+		}
+		else
+			// Project can no longer accept this worker, try again.
+			m_digObjective.m_digThrededTask.create(m_digObjective);
 	}
 }
 void DigThreadedTask::clearReferences() { m_digObjective.m_digThrededTask.clearPointer(); }
-DigObjective::DigObjective(Actor& a) : Objective(Config::digObjectivePriority), m_actor(a), m_digThrededTask(m_actor.m_location->m_area->m_simulation.m_threadedTaskEngine) , m_project(nullptr) { }
+DigObjective::DigObjective(Actor& a) : Objective(Config::digObjectivePriority), m_actor(a), m_digThrededTask(m_actor.m_location->m_area->m_simulation.m_threadedTaskEngine) , m_project(nullptr) 
+{ 
+	assert(m_actor.getFaction() != nullptr);
+}
 void DigObjective::execute()
 {
 	if(m_project != nullptr)
-	{
 		m_project->commandWorker(m_actor);
-		return;
-	}
-	if(canDigAt(*m_actor.m_location))
-	{
-		for(Block* adjacent : m_actor.m_location->getAdjacentWithEdgeAdjacent())
-			if(!adjacent->m_reservable.isFullyReserved(*m_actor.getFaction()) && m_actor.m_location->m_area->m_hasDiggingDesignations.contains(*m_actor.getFaction(), *adjacent))
-			{
-				m_project = &m_actor.m_location->m_area->m_hasDiggingDesignations.at(*m_actor.getFaction(), *adjacent);
-				m_project->addWorker(m_actor, *this);
-			}
-	}
 	else
 		m_digThrededTask.create(*this);
 }
@@ -56,17 +57,24 @@ void DigObjective::cancel()
 		m_project->removeWorker(m_actor);
 	m_digThrededTask.maybeCancel();
 }
-bool DigObjective::canDigAt(Block& block) const
+void DigObjective::reset() 
+{ 
+	cancel(); 
+	m_project = nullptr; 
+	m_actor.m_canReserve.clearAll();
+}
+DigProject* DigObjective::getJoinableProjectAt(const Block& block)
 {
-	if(block.m_reservable.isFullyReserved(*m_actor.getFaction()))
-		return false;
-	for(Block* adjacent : block.getAdjacentWithEdgeAndCornerAdjacent())
-		if(adjacent->m_hasDesignations.contains(*m_actor.getFaction(), BlockDesignation::Dig))
-			return true;
-	return false;
+	if(!block.m_hasDesignations.contains(*m_actor.getFaction(), BlockDesignation::Dig))
+		return nullptr;
+	DigProject& output = block.m_area->m_hasDiggingDesignations.at(*m_actor.getFaction(), block);
+	if(!output.canAddWorker(m_actor))
+		return nullptr;
+	return &output;
 }
 bool DigObjectiveType::canBeAssigned(Actor& actor) const
 {
+	//TODO: check for any picks?
 	return actor.m_location->m_area->m_hasDiggingDesignations.areThereAnyForFaction(*actor.getFaction());
 }
 std::unique_ptr<Objective> DigObjectiveType::makeFor(Actor& actor) const
@@ -84,11 +92,12 @@ std::vector<std::pair<ActorQuery, uint32_t>> DigProject::getActors() const { ret
 std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> DigProject::getByproducts() const
 {
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> output;
+	Random& random = m_location.m_area->m_simulation.m_random;
 	for(const SpoilData& spoilData : getLocation().getSolidMaterial().spoilData)
 	{
-		if(!randomUtil::chance(spoilData.chance))
+		if(!random.percentChance(spoilData.chance))
 			continue;
-		uint32_t quantity = randomUtil::getInRange(spoilData.min, spoilData.max);
+		uint32_t quantity = random.getInRange(spoilData.min, spoilData.max);
 		getLocation().m_hasItems.add(spoilData.itemType, spoilData.materialType, quantity);
 	}
 	return output;
@@ -102,12 +111,11 @@ uint32_t DigProject::getWorkerDigScore(Actor& actor)
 void DigProject::onComplete()
 {
 	if(blockFeatureType == nullptr)
-		getLocation().setNotSolid();
+		m_location.setNotSolid();
 	else
-		getLocation().m_hasBlockFeatures.hew(*blockFeatureType);
+		m_location.m_hasBlockFeatures.hew(*blockFeatureType);
 	// Remove designations for other factions as well as owning faction.
-	getLocation().m_area->m_hasDiggingDesignations.clearAll(getLocation());
-
+	m_location.m_area->m_hasDiggingDesignations.clearAll(m_location);
 }
 // What would the total delay time be if we started from scratch now with current workers?
 Step DigProject::getDelay() const
@@ -165,4 +173,10 @@ void HasDigDesignations::clearAll(Block& block)
 bool HasDigDesignations::areThereAnyForFaction(const Faction& faction) const
 {
 	return !m_data.at(&faction).empty();
+}
+DigProject& HasDigDesignations::at(const Faction& faction, const Block& block) 
+{ 
+	assert(m_data.contains(&faction));
+	assert(m_data.at(&faction).m_data.contains(const_cast<Block*>(&block))); 
+	return m_data.at(&faction).m_data.at(const_cast<Block*>(&block)); 
 }

@@ -1,6 +1,7 @@
 #include "simulation.h"
 #include "area.h"
 #include "threadedTask.h"
+#include <functional>
 Simulation::Simulation(DateTime n, Step s) :  m_step(s), m_now(n), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this)
 { 
 	m_nextActorId = 1;
@@ -127,32 +128,49 @@ void Simulation::fastForward(Step steps)
 	}
 	m_step = targetStep + 1;
 }
+void Simulation::fastForwardUntillActorIsAtDestination(Actor& actor, Block& destination)
+{
+	assert(*actor.m_canMove.getDestination() == destination);
+	std::function<bool()> predicate = [&](){ return actor.m_location == &destination; };
+	fastForwardUntillPredicate(predicate);
+}
 void Simulation::fastForwardUntillActorIsAdjacentToDestination(Actor& actor, Block& destination)
 {
-	Block* adjacentDestination = actor.m_canMove.getDestination();
+	assert(!actor.m_canMove.getPath().empty());
+	Block* adjacentDestination = actor.m_canMove.getPath().back();
 	assert(adjacentDestination != nullptr);
 	if(actor.m_blocks.size() == 1)
 		assert(adjacentDestination->isAdjacentToIncludingCornersAndEdges(destination));
-	while(!m_eventSchedule.m_data.empty())
-	{
-		auto& pair = *m_eventSchedule.m_data.begin();
-		m_step = pair.first;
-		doStep();
-		if(actor.m_location == adjacentDestination)
-		{
-			assert(actor.isAdjacentTo(destination));
-			break;
-		}
-	}
+	std::function<bool()> predicate = [&](){ return actor.isAdjacentTo(destination); };
+	fastForwardUntillPredicate(predicate);
 }
 void Simulation::fastForwardUntillActorIsAdjacentToHasShape(Actor& actor, HasShape& other)
 {
+	std::function<bool()> predicate = [&](){ return actor.isAdjacentTo(other); };
+	fastForwardUntillPredicate(predicate);
+}
+void Simulation::fastForwardUntillActorHasNoDestination(Actor& actor)
+{
+	std::function<bool()> predicate = [&](){ return actor.m_canMove.getDestination() == nullptr; };
+	fastForwardUntillPredicate(predicate);
+}
+void Simulation::fastForwardUntillPredicate(std::function<bool()> predicate, Step maxSteps)
+{
+	assert(!predicate());
+	Step lastStep = m_step + maxSteps;
 	while(!m_eventSchedule.m_data.empty())
 	{
-		auto& pair = *m_eventSchedule.m_data.begin();
-		m_step = pair.first;
+		if(m_threadedTaskEngine.count() != 0)
+			++m_step;
+		else
+		{
+			auto& pair = *m_eventSchedule.m_data.begin();
+			m_step = pair.first;
+		}
+		if(m_step > lastStep)
+			assert(false);
 		doStep();
-		if(actor.isAdjacentTo(other))
+		if(predicate())
 			break;
 	}
 }

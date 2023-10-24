@@ -1,25 +1,43 @@
 #include "stockpile.h"
 #include "block.h"
 #include "area.h"
-#include "path.h"
+#include <functional>
 // Searches for an Item and destination to make a hauling project for m_objective.m_actor.
 void StockPileThreadedTask::readStep()
 {
-	auto itemCondition = [&](Block& block)
+	if(m_item == nullptr)
 	{
-		return m_objective.m_actor.m_location->m_area->m_hasStockPiles.getHaulableItemForAt(m_objective.m_actor, block) != nullptr;
-	};
-	Block* location = path::getForActorToPredicateReturnEndOnly(m_objective.m_actor, itemCondition);
-	if(location == nullptr)
-		return;
-	m_item = m_objective.m_actor.m_location->m_area->m_hasStockPiles.getHaulableItemForAt(m_objective.m_actor, *location);
-	assert(m_item != nullptr);
-	auto destinationCondition = [&](Block& block)
+		std::function<Item*(const Block&)> getItem = [&](const Block& block)
+		{
+			return m_objective.m_actor.m_location->m_area->m_hasStockPiles.getHaulableItemForAt(m_objective.m_actor, const_cast<Block&>(block));
+		};
+		std::function<bool(const Block&)> blocksContainesItemCondition = [&](const Block& block)
+		{
+			return getItem(block) != nullptr;
+		};
+		std::function<bool(const Block&)> destinationCondition = [&](const Block& block)
+		{
+			return !block.m_reservable.isFullyReserved(m_objective.m_actor.getFaction()) && block.m_isPartOfStockPile.m_isAvalable && block.m_isPartOfStockPile.getStockPile().accepts(*m_item);
+		};
+		m_findsPath.pathToUnreservedAdjacentToPredicate(blocksContainesItemCondition, *m_objective.m_actor.getFaction());
+		if(m_findsPath.found())
+		{
+			m_item = getItem(*m_findsPath.getBlockWhichPassedPredicate());
+			// Item and path to it found, now check for path to destinaiton.
+			FindsPath findAnotherPath(m_objective.m_actor, false);
+			findAnotherPath.pathToUnreservedAdjacentToPredicate(destinationCondition, *m_objective.m_actor.getFaction());
+			if(findAnotherPath.found())
+				m_destination = findAnotherPath.getBlockWhichPassedPredicate();
+		}
+	}
+	else
 	{
-		return block.m_isPartOfStockPile.m_isAvalable && block.m_isPartOfStockPile.getStockPile().accepts(*m_item);
-	};
-	m_destination = path::getForActorFromLocationToPredicateReturnEndOnly(m_objective.m_actor, *location, destinationCondition);
-	assert(m_destination != nullptr);
+		assert(m_destination != nullptr);
+		if(m_objective.m_actor.m_canPickup.isCarrying(*m_item))
+			m_findsPath.pathAdjacentToBlock(*m_destination);
+		else
+			m_findsPath.pathToUnreservedAdjacentToHasShape(*m_item, *m_objective.m_actor.getFaction());
+	}
 }
 void StockPileThreadedTask::writeStep()
 {
@@ -48,8 +66,14 @@ void StockPileObjective::execute()
 void StockPileObjective::cancel()
 {
 	if(m_project != nullptr)
-		m_project->removeWorker(m_actor);
+		m_project->cancel();
 	m_threadedTask.maybeCancel();
+}
+void StockPileObjective::reset()
+{
+	cancel();
+	m_project = nullptr;
+	m_actor.m_canReserve.clearAll();
 }
 Step StockPileProject::getDelay() const { return Config::addToStockPileDelaySteps; }
 void StockPileProject::onComplete()
@@ -129,7 +153,7 @@ void BlockIsPartOfStockPile::setUnavalable()
 	m_isAvalable = false;
 	m_stockPile->decrementOpenBlocks();
 }
-bool BlockIsPartOfStockPile::getIsAvalable(const Faction& faction) const { return !m_block.m_reservable.isFullyReserved(faction) && m_block.m_hasItems.empty(); }
+bool BlockIsPartOfStockPile::getIsAvalable(const Faction& faction) const { return !m_block.m_reservable.isFullyReserved(&faction) && m_block.m_hasItems.empty(); }
 void HasStockPiles::addStockPile(std::vector<ItemQuery>&& queries, const Faction& faction)
 {
 	StockPile& stockPile = m_stockPiles.emplace_back(queries, m_area, faction);
@@ -145,7 +169,7 @@ void HasStockPiles::removeStockPile(StockPile& stockPile)
 }
 bool HasStockPiles::isValidStockPileDestinationFor(const Block& block, const Item& item, const Faction& faction) const
 {
-	if(block.m_reservable.isFullyReserved(faction))
+	if(block.m_reservable.isFullyReserved(&faction))
 		return false;
 	if(!block.m_hasItems.empty())
 		return false;
@@ -231,10 +255,10 @@ bool HasStockPiles::isAnyHaulingAvalableFor(const Actor& actor) const
 }
 Item* HasStockPiles::getHaulableItemForAt(const Actor& actor, Block& block)
 {
-	if(block.m_reservable.isFullyReserved(*actor.getFaction()))
+	if(block.m_reservable.isFullyReserved(actor.getFaction()))
 		return nullptr;
 	for(Item* item : block.m_hasItems.getAll())
-		if(!item->m_reservable.isFullyReserved(*actor.getFaction()) && actor.m_canPickup.canPickupAny(*item) && m_itemsWithDestinations.contains(item))
+		if(!item->m_reservable.isFullyReserved(actor.getFaction()) && actor.m_canPickup.canPickupAny(*item) && m_itemsWithDestinations.contains(item))
 			return item;
 	return nullptr;
 }

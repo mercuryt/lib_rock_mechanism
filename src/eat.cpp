@@ -4,7 +4,6 @@
 #include "plant.h"
 #include "area.h"
 #include "kill.h"
-#include "path.h"
 #include "util.h"
 
 EatEvent::EatEvent(const Step delay, EatObjective& eo) : ScheduledEventWithPercent(eo.m_actor.getSimulation(), delay), m_eatObjective(eo) { }
@@ -51,19 +50,23 @@ void EatEvent::execute()
 void EatEvent::clearReferences() { m_eatObjective.m_eatEvent.clearPointer(); }
 Block* EatEvent::getBlockWithMostDesiredFoodInReach() const
 {
-	Block* output = nullptr;
+	Block* found = nullptr;
 	uint32_t highestDesirability = 0;
-	for(Block* block : m_eatObjective.m_actor.getOccupiedAndAdjacent())
+	std::function<bool(const Block&)> predicate = [&](const Block& block)
 	{
-		uint32_t blockDesirability = m_eatObjective.m_actor.m_mustEat.getDesireToEatSomethingAt(*block);
+		uint32_t blockDesirability = m_eatObjective.m_actor.m_mustEat.getDesireToEatSomethingAt(block);
 		if(blockDesirability == UINT32_MAX)
-			return block;
+			return true;
 		if(blockDesirability >= m_eatObjective.m_actor.m_mustEat.getMinimumAcceptableDesire() && blockDesirability > highestDesirability)
 		{
-			output = block;
+			found = const_cast<Block*>(&block);
 			highestDesirability = blockDesirability;
 		}
-	}
+		return false;
+	};
+	Block* output = m_eatObjective.m_actor.getBlockWhichIsAdjacentWithPredicate(predicate);
+	if(output == nullptr)
+	       output = found;	
 	return output;
 }
 void EatEvent::eatPreparedMeal(Item& item)
@@ -124,41 +127,42 @@ void HungerEvent::execute()
 	m_actor.m_mustEat.setNeedsFood();
 }
 void HungerEvent::clearReferences() { m_actor.m_mustEat.m_hungerEvent.clearPointer(); }
-EatThreadedTask::EatThreadedTask(EatObjective& eo) : ThreadedTask(eo.m_actor.getThreadedTaskEngine()), m_eatObjective(eo), m_huntResult(nullptr), m_noFoodFound(false) {}
+EatThreadedTask::EatThreadedTask(EatObjective& eo) : ThreadedTask(eo.m_actor.getThreadedTaskEngine()), m_eatObjective(eo), m_huntResult(nullptr), m_findsPath(eo.m_actor, eo.m_detour), m_noFoodFound(false) {}
 void EatThreadedTask::readStep()
 {
-	assert(m_eatObjective.m_foodLocation == nullptr);
+	assert(m_eatObjective.m_destination == nullptr);
 	constexpr uint32_t maxRankedEatDesire = 3;
 	std::array<const Block*, maxRankedEatDesire> candidates = {};
-	std::function<bool(const Block&)> destinationCondition = [&](const Block& block)
+	std::function<bool(const Block&)> predicate = [&](const Block& block)
 	{
-		uint32_t eatDesire = m_eatObjective.m_actor.m_mustEat.getDesireToEatSomethingAt(block);
-		if(eatDesire == UINT32_MAX)
-			return true;
-		if(eatDesire < m_eatObjective.m_actor.m_mustEat.getMinimumAcceptableDesire())
-			return false;
-		if(eatDesire != 0 && candidates[eatDesire - 1u] == nullptr)
-			candidates[eatDesire - 1u] = &block;
+			uint32_t eatDesire = m_eatObjective.m_actor.m_mustEat.getDesireToEatSomethingAt(block);
+			if(eatDesire == UINT32_MAX)
+				return true;
+			if(eatDesire < m_eatObjective.m_actor.m_mustEat.getMinimumAcceptableDesire())
+				return false;
+			if(eatDesire != 0 && candidates[eatDesire - 1u] == nullptr)
+				candidates[eatDesire - 1u] = &block;
 		return false;
 	};
-	m_findsPath.pathToPredicate(m_eatObjective.m_actor, destinationCondition, Config::maxBlocksToLookForBetterFood);
+	//TODO: maxRange.
+	m_findsPath.pathToUnreservedAdjacentToPredicate(predicate, *m_eatObjective.m_actor.getFaction());
 	if(m_findsPath.found())
-		m_eatObjective.m_foodLocation = m_findsPath.getPath().back();
-	if(!m_findsPath.found())
+		m_eatObjective.m_destination = m_findsPath.getPath().back();
+	else
 	{
 		for(size_t i = maxRankedEatDesire; i != 0; --i)
 			if(candidates[i - 1] != nullptr)
 			{
-				m_findsPath.pathToBlock(m_eatObjective.m_actor, *candidates[i - 1]);
+				m_findsPath.pathAdjacentToBlock(*candidates[i - 1]);
 				if(m_findsPath.found())
-					m_eatObjective.m_foodLocation = m_findsPath.getPath().back();
+					m_eatObjective.m_destination = m_findsPath.getPath().back();
 				return;
 			}
 		// Nothing to scavenge or graze, maybe hunt.
 		if(m_eatObjective.m_actor.m_species.eatsMeat)
 		{
 			m_huntResult = nullptr;
-			auto huntCondition = [&](Block& block)
+			std::function<bool(const Block&)> predicate = [&](const Block& block)
 			{
 				for(Actor* actor : block.m_hasActors.getAll())
 					if(m_eatObjective.m_actor.m_mustEat.canEat(*actor))
@@ -169,19 +173,21 @@ void EatThreadedTask::readStep()
 				return false;
 			};
 			// discard the location result, we are already collecting the actor result.
-			path::getForActorToPredicateReturnEndOnly(m_eatObjective.m_actor, huntCondition);
+			m_findsPath.pathToUnreservedAdjacentToPredicate(predicate, *m_eatObjective.m_actor.getFaction());
 		}
 		if(m_huntResult == nullptr)
 		{
 			// Nothing to eat in this area, try to exit.
-			m_findsPath.pathToAreaEdge(m_eatObjective.m_actor);
+			m_findsPath.pathToAreaEdge();
 			m_noFoodFound = true;
 		}
 	}
 }
 void EatThreadedTask::writeStep()
 {
-	m_findsPath.cacheMoveCosts(m_eatObjective.m_actor);
+	m_findsPath.cacheMoveCosts();
+	if(m_noFoodFound)
+		m_eatObjective.noFoodFound();
 	if(!m_findsPath.found())
 	{
 		if(m_huntResult == nullptr)
@@ -197,13 +203,14 @@ void EatThreadedTask::writeStep()
 		}
 	}
 	else
+	{
+		m_eatObjective.m_destination = m_findsPath.getPath().back();
 		m_eatObjective.m_actor.m_canMove.setPath(m_findsPath.getPath());
-	if(m_noFoodFound)
-		m_eatObjective.m_noFoodFound = true;
+	}
 }
 void EatThreadedTask::clearReferences() { m_eatObjective.m_threadedTask.clearPointer(); }
 EatObjective::EatObjective(Actor& a) :
-	Objective(Config::eatPriority), m_actor(a), m_threadedTask(a.getThreadedTaskEngine()), m_eatEvent(a.getEventSchedule()), m_foodLocation(nullptr), m_foodItem(nullptr), m_noFoodFound(false) { }
+	Objective(Config::eatPriority), m_actor(a), m_threadedTask(a.getThreadedTaskEngine()), m_eatEvent(a.getEventSchedule()), m_destination(nullptr), m_noFoodFound(false) { }
 void EatObjective::execute()
 {
 	if(m_noFoodFound)
@@ -215,22 +222,39 @@ void EatObjective::execute()
 		else
 			// No food and no escape.
 			m_actor.m_hasObjectives.cannotFulfillNeed(*this);
+		return;
 	}
-	else if(m_foodLocation == nullptr)
-		// Set foodLocation.
-		m_threadedTask.create(*this);
+	// TODO: getAdjacentDoesn't need no run quite so often, only at start and end of path, not when stopped/detoured in the middle.
+	Block* adjacent = m_actor.m_mustEat.getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireability();
+	if(m_destination == nullptr)
+	{
+		if(adjacent == nullptr)
+			// Find destination.
+			m_threadedTask.create(*this);
+		else
+		{
+			m_destination = m_actor.m_location;
+			// Start eating.
+			m_eatEvent.schedule(Config::stepsToEat, *this);
+		}
+	}
 	else
 	{	
-		if(m_actor.m_location == m_foodLocation)
-			if(canEatAt(*m_foodLocation))
+		if(m_actor.m_location == m_destination)
+		{
+			if(adjacent == nullptr)
+			{
+				// We are at the previously selected location but there is no  longer any food here, try again.
+				m_destination = nullptr;
+				m_actor.m_canReserve.clearAll();
+				m_threadedTask.create(*this);
+			}
+			else
 				// Start eating.
 				m_eatEvent.schedule(Config::stepsToEat, *this);
-			else
-				// We are at the previously selected location but there is no  longer any food here, try again.
-				m_threadedTask.create(*this);
-
+		}
 		else
-			m_actor.m_canMove.setDestination(*m_foodLocation);
+			m_actor.m_canMove.setDestination(*m_destination, m_detour);
 	}
 }
 void EatObjective::cancel()
@@ -243,6 +267,17 @@ void EatObjective::delay()
 {
 	m_threadedTask.maybeCancel();
 	m_eatEvent.maybeUnschedule();
+}
+void EatObjective::reset()
+{
+	delay();
+	m_destination = nullptr;
+	m_noFoodFound = false;
+	m_actor.m_canReserve.clearAll();
+}
+void EatObjective::noFoodFound()
+{
+	m_noFoodFound = true;
 }
 bool EatObjective::canEatAt(const Block& block) const
 {
@@ -309,7 +344,10 @@ void MustEat::eat(Mass mass)
 		m_eatObjective = nullptr;
 	}
 	else
+	{
+		m_actor.m_hasObjectives.taskComplete();
 		stepsToNextHungerEvent = util::scaleByInverseFraction(m_actor.m_species.stepsTillDieWithoutFood, m_massFoodRequested, massFoodForBodyMass());
+	}
 	m_actor.m_mustEat.m_hungerEvent.schedule(stepsToNextHungerEvent, m_actor);
 }
 void MustEat::setNeedsFood()
@@ -370,4 +408,27 @@ uint32_t MustEat::getMinimumAcceptableDesire() const
 {
 	assert(m_hungerEvent.exists());
 	return m_hungerEvent.percentComplete() * (3 - Config::percentHungerAcceptableDesireModifier);
+}
+Block* MustEat::getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireability()
+{
+	constexpr uint32_t maxRankedEatDesire = 3;
+	std::array<Block*, maxRankedEatDesire> candidates = {};
+	std::function<bool(const Block&)> predicate = [&](const Block& block)
+	{
+		uint32_t eatDesire = getDesireToEatSomethingAt(block);
+		if(eatDesire == UINT32_MAX)
+			return true;
+		if(eatDesire < getMinimumAcceptableDesire())
+			return false;
+		if(eatDesire != 0 && candidates[eatDesire - 1u] == nullptr)
+			candidates[eatDesire - 1u] = const_cast<Block*>(&block);
+		return false;
+	};
+	Block* output = m_actor.getBlockWhichIsAdjacentWithPredicate(predicate);
+	if(output != nullptr)
+		return output;
+	for(size_t i = maxRankedEatDesire; i != 0; --i)
+		if(candidates[i - 1] != nullptr)
+			return candidates[i - 1];
+	return nullptr;
 }

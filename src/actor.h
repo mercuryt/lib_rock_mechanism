@@ -27,10 +27,11 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <functional>
 
 struct MoveType;
 struct AnimalSpecies;
-struct Faction;
+class Faction;
 
 enum class CauseOfDeath { none, thirst, hunger, bloodLoss, wound, temperature };
 
@@ -88,6 +89,10 @@ public:
 	const MoveType& getMoveType() const { return m_canMove.getMoveType(); }
 	Mass singleUnitMass() const { return getMass(); }
 	const Faction* getFaction() const { return m_faction; }
+	bool allBlocksAtLocationAndFacingAreReservable(const Block& location, Facing facing) const;
+	void reserveAllBlocksAtLocationAndFacing(const Block& location, Facing facing);
+	void unreserveAllBlocksAtLocationAndFacing(const Block& location, Facing facing);
+	// May return nullptr.
 	EventSchedule& getEventSchedule();
 	ThreadedTaskEngine& getThreadedTaskEngine();
 	Actor(const Actor& actor) = delete;

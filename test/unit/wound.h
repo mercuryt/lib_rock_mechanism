@@ -20,7 +20,7 @@ TEST_CASE("wound")
 	SUBCASE("bleed to death")
 	{
 		// Area, force, material type, wound type
-		Hit hit(1,30, MaterialType::byName("poplar wood"), WoundType::Pierce);
+		Hit hit(1,35, MaterialType::byName("poplar wood"), WoundType::Pierce);
 		BodyPart& bodyPart = actor.m_body.pickABodyPartByVolume();
 		actor.takeHit(hit, bodyPart);
 		REQUIRE(hit.depth == 3);

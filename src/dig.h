@@ -1,17 +1,20 @@
 #pragma once
 
+#include "types.h"
 #include "objective.h"
 #include "threadedTask.hpp"
 #include "eventSchedule.hpp"
 #include "project.h"
 #include "config.h"
+#include "findsPath.h"
 
 #include <unordered_map>
 #include <vector>
 
-struct Faction;
+class Faction;
 class DigThreadedTask;
 struct BlockFeatureType;
+class DigProject;
 class DigObjectiveType : public ObjectiveType
 {
 public:
@@ -29,16 +32,18 @@ public:
 	void execute();
 	void cancel();
 	void delay() { cancel(); }
+	void reset();
 	ObjectiveId getObjectiveId() const { return ObjectiveId::Dig; }
 	std::string name() const { return "dig"; }
-	bool canDigAt(Block& block) const;
+	DigProject* getJoinableProjectAt(const Block& block);
 	friend class DigThreadedTask;
 };
 // Find a place to dig.
 class DigThreadedTask final : public ThreadedTask
 {
 	DigObjective& m_digObjective;
-	std::vector<Block*> m_result;
+	// Result is the block which will be the actors location while doing the digging.
+	FindsPath m_findsPath;
 public:
 	DigThreadedTask(DigObjective& digObjective);
 	void readStep();
@@ -88,5 +93,5 @@ public:
 	void clearAll(Block& block);
 	bool areThereAnyForFaction(const Faction& faction) const;
 	bool contains(const Faction& faction, const Block& block) const { return m_data.at(&faction).m_data.contains(const_cast<Block*>(&block)); }
-	DigProject& at(const Faction& faction, const Block& block) { return m_data.at(&faction).m_data.at(const_cast<Block*>(&block)); }
+	DigProject& at(const Faction& faction, const Block& block);
 };

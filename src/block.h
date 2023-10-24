@@ -25,6 +25,7 @@
 #include "temperature.h"
 #include "fire.h"
 #include "hasShape.h"
+#include "types.h"
 
 class Area;
 class Item;
@@ -109,7 +110,7 @@ public:
 	Block* offset(int32_t ax, int32_t ay, int32_t az) const;
 	bool canSeeThrough() const;
 	bool canSeeThroughFrom(const Block& block) const;
-	uint8_t facingToSetWhenEnteringFrom(const Block& block) const;
+	Facing facingToSetWhenEnteringFrom(const Block& block) const;
 	bool isSupport() const;
 	bool hasLineOfSightTo(Block& block) const;
 

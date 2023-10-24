@@ -1,7 +1,8 @@
 #include "move.h"
-#include "path.h"
+#include "actor.h"
+#include "block.h"
 #include "util.h"
-ActorCanMove::ActorCanMove(Actor& a) : m_actor(a), m_moveType(&m_actor.m_species.moveType), m_destination(nullptr), m_pathIter(m_path.end()),  m_retries(0), m_event(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()), m_toSetThreadedTask(a.getThreadedTaskEngine())
+ActorCanMove::ActorCanMove(Actor& a) : m_actor(a), m_moveType(&m_actor.m_species.moveType), m_destination(nullptr), m_pathIter(m_path.end()),  m_retries(0), m_event(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()) 
 {
 	updateIndividualSpeed();
 }
@@ -37,6 +38,8 @@ void ActorCanMove::clearPath()
 {
 	m_path.clear();
 	m_pathIter = m_path.end();
+	m_destination = nullptr;
+	clearAllEventsAndTasks();
 }
 void ActorCanMove::callback()
 {
@@ -45,21 +48,25 @@ void ActorCanMove::callback()
 	assert(m_pathIter >= m_path.begin());
 	assert(m_pathIter != m_path.end());
 	Block& block = **m_pathIter;
+	// Follower is not adjacent, presumably due to being blocked, wait for them.
+	if(m_actor.m_canLead.isLeading())
+	{
+		HasShape& follower = m_actor.m_canLead.getFollower();
+		if(!m_actor.isAdjacentTo(follower) && m_actor.m_location != follower.m_location)
+		{
+			scheduleMove();
+			return;
+		}
+	}
 	// Path has become permanantly blocked since being generated, repath.
 	if(!block.m_hasShapes.anythingCanEnterEver() || !block.m_hasShapes.canEnterEverFrom(m_actor, *m_actor.m_location))
 	{
-		setDestination(*m_destination);
+		setDestination(*m_destination, false);
 		return;
 	}
-	// Follower is not adjacent, presumably due to being blocked, wait for them.
-	if(m_actor.m_canLead.isLeading() && !m_actor.isAdjacentTo(m_actor.m_canLead.getFollower()))
-	{
-		scheduleMove();
-		return;
-	}
-	// Path is not blocked.
 	if(block.m_hasShapes.canEnterCurrentlyFrom(m_actor, *m_actor.m_location))
 	{
+		// Path is not permanantly or temporarily blocked.
 		m_retries = 0;
 		m_actor.setLocation(block);
 		if(&block == m_destination)
@@ -79,7 +86,12 @@ void ActorCanMove::callback()
 	{
 		// Path is temporarily blocked, wait a bit and then detour if still blocked.
 		if(m_retries == Config::moveTryAttemptsBeforeDetour)
-			setDestination(*m_destination, true);
+		{
+			if(m_actor.m_hasObjectives.hasCurrent())
+				m_actor.m_hasObjectives.detour();
+			else
+				setDestination(*m_destination, true);
+		}
 		else
 		{
 			++m_retries;
@@ -104,31 +116,37 @@ void ActorCanMove::scheduleMove()
 	Step delay = moveTo.m_hasShapes.moveCostFrom(*m_moveType, *m_actor.m_location) / speed;
 	m_event.schedule(delay, *this);
 }
-void ActorCanMove::setDestination(Block& destination, bool detour, bool adjacent)
+void ActorCanMove::setDestination(Block& destination, bool detour, bool adjacent, bool unreserved, bool reserve)
 {
-	assert(destination.m_hasShapes.anythingCanEnterEver());
 	clearPath();
-	m_destination = &destination;
+	// If adjacent path then destination isn't known until it's completed.
+	if(!adjacent)
+	{
+		m_destination = &destination;
+		assert(destination.m_hasShapes.anythingCanEnterEver());
+	}
 	clearAllEventsAndTasks();
-	m_threadedTask.create(m_actor, detour, adjacent);
+	if(unreserved && !adjacent)
+		assert(!destination.m_reservable.isFullyReserved(m_actor.getFaction()));
+	std::function<bool(const Block&)> predicate = [&](const Block& block){ return block == destination; };
+	// Actor, predicate, destinationHuristic, detour, adjacent, unreserved.
+	m_threadedTask.create(m_actor, predicate, &destination, detour, adjacent, unreserved, reserve);
 }
-void ActorCanMove::setDestinationAdjacentTo(Block& destination, bool detour)
+void ActorCanMove::setDestinationAdjacentTo(Block& destination, bool detour, bool unreserved, bool reserve)
 {
 	assert(!m_actor.isAdjacentTo(destination));
-	setDestination(destination, detour, true);
+	setDestination(destination, detour, true, unreserved, reserve);
 }
-void ActorCanMove::setDestinationAdjacentToSet(std::unordered_set<Block*>& blocks, bool detour)
+void ActorCanMove::setDestinationAdjacentTo(HasShape& hasShape, bool detour, bool unreserved, bool reserve) 
 {
-	clearPath();
-	static bool adjacent = true;
-	m_toSetThreadedTask.create(m_actor, blocks, detour, adjacent);
+	std::function<bool(const Block&)> predicate = [&](const Block& block){ return hasShape.m_blocks.contains(const_cast<Block*>(&block)); };
+	// Actor, predicate, destinationHuristic, detour, adjacent, unreserved.
+	m_threadedTask.create(m_actor, predicate, hasShape.m_location, detour, true, unreserved, reserve);
 }
-void ActorCanMove::setDestinationAdjacentTo(HasShape& hasShape, bool detour) 
+void ActorCanMove::setDestinationToUnreservedAdjacentToPredicate(std::function<bool(const Block&)>& predicate, bool detour, bool reserve)
 {
-	if(hasShape.m_blocks.size() == 1)
-		setDestinationAdjacentTo(*hasShape.m_location, detour);
-	else
-		setDestinationAdjacentToSet(hasShape.m_blocks, detour);
+	// Actor, predicate, huristic Destinaiton, detour, unreserved, reserve.
+	m_threadedTask.create(m_actor, predicate, nullptr, detour, true, reserve); 
 }
 void ActorCanMove::setMoveType(const MoveType& moveType)
 {
@@ -140,7 +158,6 @@ void ActorCanMove::clearAllEventsAndTasks()
 {
 	m_event.maybeUnschedule();
 	m_threadedTask.maybeCancel();
-	m_toSetThreadedTask.maybeCancel();
 }
 void ActorCanMove::onLeaveArea() { clearAllEventsAndTasks(); }
 void ActorCanMove::onDeath() { clearAllEventsAndTasks(); }
@@ -150,43 +167,69 @@ bool ActorCanMove::canMove() const
 		return false;
 	return true;
 }
+bool ActorCanMove::ensureIsAdjacent(Block& block)
+{
+	assert(block.m_area == m_actor.m_location->m_area);
+	// Currently adjacent.
+	if(m_actor.isAdjacentTo(block))
+		return true;
+	// Path to adjacent location.
+	setDestinationAdjacentTo(block);
+	return false;
+}
+
 MoveEvent::MoveEvent(Step delay, ActorCanMove& cm) : ScheduledEventWithPercent(cm.m_actor.getSimulation(), delay), m_canMove(cm) { }
-PathThreadedTask::PathThreadedTask(Actor& a, bool d, bool ad) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_detour(d), m_adjacent(ad) { }
+
+// Path Threaded Task.
+PathThreadedTask::PathThreadedTask(Actor& a, std::function<bool(const Block&)>& p, const Block* hd, bool d, bool ad, bool ur, bool r) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_predicate(p), m_huristicDestination(hd), m_detour(d), m_adjacent(ad), m_unreservedDestination(ur), m_reserveDestination(r), m_findsPath(a, d) 
+{ 
+	if(m_reserveDestination)
+		assert(m_unreservedDestination);
+}
 void PathThreadedTask::readStep()
 {
-	m_findsPath.pathToBlock(m_actor, *m_actor.m_canMove.m_destination, m_detour);
+	m_findsPath.m_huristicDestination = m_huristicDestination;
+	if(m_unreservedDestination)
+	{
+		if(m_adjacent)
+			m_findsPath.pathToUnreservedAdjacentToPredicate(m_predicate, *m_actor.getFaction());
+		else
+			m_findsPath.pathToUnreservedPredicate(m_predicate, *m_actor.getFaction());
+	}
+	else
+		if(m_adjacent)
+			m_findsPath.pathToAdjacentToPredicate(m_predicate);
+		else
+			m_findsPath.pathToOccupiedPredicate(m_predicate);
 }
 void PathThreadedTask::writeStep()
 {
-	m_findsPath.cacheMoveCosts(m_actor);
+	m_findsPath.cacheMoveCosts();
 	if(!m_findsPath.found())
-		m_actor.m_hasObjectives.cannotCompleteTask();
+	{
+		// TODO:
+		// Should this be restart, or even cannotCompleteTask?
+		// cannotFulfill will cause a delay to be appiled before this objective can be added to the list again.
+		// restart or cannotCompleteTask might cause an infinite loop.
+		// To prevent this we would have to know if we may reroute or not.
+		// cannotFulfillObjective is the most pessamistic choice.
+		// This is probably best solved by callback.
+		//TODO: This conditional only exists because objectives are not mandated to always exist for all actors.
+		if(m_actor.m_hasObjectives.hasCurrent())
+			m_actor.m_hasObjectives.cannotFulfillObjective(m_actor.m_hasObjectives.getCurrent());
+	}
 	else
 	{
-		if(m_adjacent)
+		if(m_unreservedDestination && !m_findsPath.areAllBlocksAtDestinationReservable(m_actor.getFaction()))
 		{
-			m_findsPath.getPath().pop_back();
-			assert(!m_findsPath.getPath().empty());
+			// Destination is now reserved, try again.
+			// Actor, predicate, destinationHuristic, detour, adjacent, unreserved, reserve
+			m_actor.m_canMove.m_threadedTask.create(m_actor, m_predicate, m_huristicDestination, m_detour, m_adjacent, m_unreservedDestination, m_reserveDestination);
+			return;
 		}
+		if(m_reserveDestination)
+			m_findsPath.reserveBlocksAtDestination(m_actor.m_canReserve);
 		m_actor.m_canMove.setPath(m_findsPath.getPath());
 	}
 }
 void PathThreadedTask::clearReferences() { m_actor.m_canMove.m_threadedTask.clearPointer(); }
-PathToSetThreadedTask::PathToSetThreadedTask(Actor& a, std::unordered_set<Block*> b, bool d, bool ad) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_blocks(b), m_detour(d), m_adjacent(ad) { }
-void PathToSetThreadedTask::readStep()
-{
-	auto condition = [&](Block& block){ return m_blocks.contains(&block); };
-	m_route = path::getForActorToPredicate(m_actor, condition);
-}
-void PathToSetThreadedTask::writeStep()
-{
-	if(m_route.empty())
-		m_actor.m_hasObjectives.cannotCompleteTask();
-	else
-	{
-		if(m_adjacent)
-			m_route.pop_back();
-		m_actor.m_canMove.setPath(m_route);
-	}
-}
-void PathToSetThreadedTask::clearReferences() { m_actor.m_canMove.m_toSetThreadedTask.clearPointer(); }
