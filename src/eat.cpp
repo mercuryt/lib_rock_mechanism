@@ -144,6 +144,7 @@ void EatThreadedTask::readStep()
 				candidates[eatDesire - 1u] = &block;
 		return false;
 	};
+	//TODO: maxRange.
 	m_findsPath.pathToUnreservedAdjacentToPredicate(predicate, *m_eatObjective.m_actor.getFaction());
 	if(m_findsPath.found())
 		m_eatObjective.m_destination = m_findsPath.getPath().back();

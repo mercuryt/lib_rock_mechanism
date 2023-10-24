@@ -115,7 +115,7 @@ TEST_CASE("haul")
 	}
 	SUBCASE("team haul strategy")
 	{
-		Block& destination = area.m_blocks[5][5][2];
+		Block& destination = area.m_blocks[8][8][2];
 		Block& chunkLocation = area.m_blocks[1][5][2];
 		Item& chunk1 = simulation.createItem(chunk, lead, 1u);
 		chunk1.setLocation(chunkLocation);
@@ -130,27 +130,29 @@ TEST_CASE("haul")
 		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1);
 		REQUIRE(projectWorker.haulSubproject != nullptr);
 		REQUIRE(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::Team);
-		REQUIRE(dwarf1.m_canMove.getPath().size() != 0);
-		REQUIRE(dwarf1.m_canMove.getDestination() != nullptr);
-		Block& destinationIntermediate1 = *dwarf1.m_canMove.getDestination();
-		REQUIRE(destinationIntermediate1.isAdjacentToIncludingCornersAndEdges(chunkLocation));
-		Block& destinationIntermediate2 = *dwarf2.m_canMove.getDestination();
-		REQUIRE(destinationIntermediate2.isAdjacentToIncludingCornersAndEdges(chunkLocation));
-		while(dwarf1.m_location != &destinationIntermediate1 || dwarf2.m_location != &destinationIntermediate2)
-			simulation.doStep();
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "haul");
+		REQUIRE(dwarf2.m_hasObjectives.getCurrent().name() == "haul");
+		// Get into starting positions.
+		simulation.fastForwardUntillActorHasNoDestination(dwarf2);
+		if(!dwarf1.isAdjacentTo(chunk1))
+			simulation.fastForwardUntillActorIsAdjacentToHasShape(dwarf1, chunk1);
+		if(dwarf1.m_canMove.getDestination() != nullptr)
+			simulation.fastForwardUntillActorHasNoDestination(dwarf1);
+		REQUIRE(dwarf2.m_canFollow.isFollowing());
+		REQUIRE(dwarf1.m_canLead.isLeading());
 		// Another step to path.
 		simulation.doStep();
-		REQUIRE(dwarf2.m_canMove.getDestination() == nullptr);
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, destination);
 		simulation.fastForward(Config::addToStockPileDelaySteps);
 		REQUIRE(chunk1.m_location == &destination);
 		REQUIRE(!dwarf2.m_canFollow.isFollowing());
 		REQUIRE(!dwarf1.m_canLead.isLeading());
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "haul");
+		REQUIRE(dwarf2.m_hasObjectives.getCurrent().name() != "haul");
 	}
 	SUBCASE("panniers haul strategy")
 	{
-		Block& destination = area.m_blocks[5][5][2];
+		Block& destination = area.m_blocks[8][8][2];
 		Block& chunkLocation = area.m_blocks[1][5][2];
 		Item& chunk1 = simulation.createItem(chunk, gold, 1u);
 		chunk1.setLocation(chunkLocation);
@@ -176,10 +178,12 @@ TEST_CASE("haul")
 		simulation.doStep();
 		REQUIRE(dwarf1.m_canPickup.isCarrying(panniers1));
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, donkeyLocation);
+		// Find path.
 		simulation.doStep();
 		REQUIRE(!dwarf1.m_canPickup.exists());
 		REQUIRE(donkey1.m_equipmentSet.contains(panniers1));
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, chunkLocation);
+		// Find path.
 		simulation.doStep();
 		REQUIRE(panniers1.m_hasCargo.contains(chunk1));
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, destination);
@@ -236,6 +240,7 @@ TEST_CASE("haul")
 		cargo1.setLocation(cargoLocation);
 		Block& origin2 = area.m_blocks[4][3][2];
 		Actor& dwarf2 = simulation.createActor(dwarf, origin2);
+		dwarf2.setFaction(&faction);
 		Block& cartLocation = area.m_blocks[5][1][2];
 		Item& cart1 = simulation.createItem(cart, poplarWood, 3u, 0u);
 		cart1.setLocation(cartLocation);
@@ -251,16 +256,22 @@ TEST_CASE("haul")
 		REQUIRE(projectWorker2.haulSubproject->getHaulStrategy() == HaulStrategy::TeamCart);
 		// Another step to find the paths.
 		simulation.doStep();
-		REQUIRE(cart1.isAdjacentTo(*dwarf1.m_canMove.getDestination()));
-		REQUIRE(cart1.isAdjacentTo(*dwarf2.m_canMove.getDestination()));
-		simulation.fastForwardUntillActorIsAdjacentToHasShape(dwarf1, cart1);
-		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "haul");
-		if(!dwarf2.isAdjacentTo(cart1))
-			simulation.fastForwardUntillActorIsAdjacentToHasShape(dwarf2, cart1);
+		// Get into starting positions.
+		if(dwarf1.m_canMove.getPath().empty() || dwarf2.m_canMove.getPath().empty())
+			// The two dwarves pathed to the same place, one needs to repath.
+			simulation.doStep();
+		Block& destination1 = *dwarf1.m_canMove.getDestination();
+		Block& destination2 = *dwarf2.m_canMove.getDestination();
+		REQUIRE(cart1.isAdjacentTo(destination1));
+		REQUIRE(cart1.isAdjacentTo(destination2));
+		REQUIRE(destination1 != destination2);
+		simulation.fastForwardUntillActorIsAtDestination(dwarf1, destination1);
+		if(dwarf2.m_location != &destination2)
+			simulation.fastForwardUntillActorIsAtDestination(dwarf2, destination2);
 		REQUIRE(dwarf1.m_canLead.isLeading(cart1));
 		REQUIRE(cart1.m_canLead.isLeading(dwarf2));
 		REQUIRE(dwarf2.m_canFollow.isFollowing());
-		// Path a detour around dwarf2.
+		// Find path
 		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, cargoLocation);
 		REQUIRE(cart1.m_hasCargo.contains(cargo1));

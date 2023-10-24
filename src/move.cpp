@@ -38,6 +38,8 @@ void ActorCanMove::clearPath()
 {
 	m_path.clear();
 	m_pathIter = m_path.end();
+	m_destination = nullptr;
+	clearAllEventsAndTasks();
 }
 void ActorCanMove::callback()
 {

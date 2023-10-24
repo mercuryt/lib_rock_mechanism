@@ -163,13 +163,18 @@ TEST_CASE("basicNeedsNonsentient")
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "eat");
 		REQUIRE(actor.m_mustEat.needsFood());
 		REQUIRE(grass.getPercentFoliage() == 100);
-		// Find grass.
-		simulation.doStep();
-		Block* destination = actor.m_canMove.getDestination();
-		REQUIRE(destination != nullptr);
-		REQUIRE(destination->isAdjacentToIncludingCornersAndEdges(grassLocation));
-		// Go to grass.
-		simulation.fastForwardUntillActorIsAdjacentToDestination(actor, grassLocation);
+		// The deer is wandering randomly while we fast forward until it is hungry, it might or might not already be next to the grass.
+		if(!actor.isAdjacentTo(grassLocation))
+		{
+			// Find grass.
+			simulation.doStep();
+			REQUIRE(actor.m_hasObjectives.getCurrent().name() == "eat");
+			Block* destination = actor.m_canMove.getDestination();
+			REQUIRE(destination != nullptr);
+			REQUIRE(destination->isAdjacentToIncludingCornersAndEdges(grassLocation));
+			// Go to grass.
+			simulation.fastForwardUntillActorIsAdjacentToDestination(actor, grassLocation);
+		}
 		// Eat grass.
 		simulation.fastForward(Config::stepsToEat);
 		REQUIRE(!actor.m_mustEat.needsFood());
@@ -213,7 +218,6 @@ TEST_CASE("basicNeedsNonsentient")
 		REQUIRE(bear.m_mustEat.getMassFoodRequested() != 0);
 		// Bear goes to deer corpse.
 		simulation.doStep();
-		REQUIRE(deer.isAdjacentTo(*bear.m_canMove.getDestination()));
 		simulation.fastForwardUntillActorIsAdjacentToHasShape(bear, deer);
 		// Bear eats.
 		simulation.fastForward(Config::stepsToEat);

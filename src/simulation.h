@@ -8,6 +8,7 @@
 #include "threadedTask.h"
 #include "actor.h"
 #include "item.h"
+#include "random.h"
 #include <list>
 
 class HourlyEvent;
@@ -26,6 +27,7 @@ public:
 	EventSchedule m_eventSchedule;
 	HasScheduledEvent<HourlyEvent> m_hourlyEvent;
 	ThreadedTaskEngine m_threadedTaskEngine;
+	Random m_random;
 	Simulation(DateTime n = {12, 150, 1200}, Step s = 1);
 	void doStep();
 	void incrementHour();
@@ -48,6 +50,8 @@ public:
 	[[maybe_unused]] void fastForwardUntillActorIsAtDestination(Actor& actor, Block& destination);
 	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToDestination(Actor& actor, Block& destination);
 	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToHasShape(Actor& actor, HasShape& other);
+	[[maybe_unused]] void fastForwardUntillActorHasNoDestination(Actor& actor);
+	[[maybe_unused]] void fastForwardUntillPredicate(std::function<bool()> predicate, Step maxSteps = Step(10000));
 };
 
 class HourlyEvent final : public ScheduledEventWithPercent

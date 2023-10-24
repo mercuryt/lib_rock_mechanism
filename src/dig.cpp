@@ -1,7 +1,7 @@
 #include "dig.h"
 #include "block.h"
 #include "area.h"
-#include "randomUtil.h"
+#include "random.h"
 #include "util.h"
 DigThreadedTask::DigThreadedTask(DigObjective& digObjective) : ThreadedTask(digObjective.m_actor.m_location->m_area->m_simulation.m_threadedTaskEngine), m_digObjective(digObjective), m_findsPath(digObjective.m_actor, digObjective.m_detour) { }
 void DigThreadedTask::readStep()
@@ -92,11 +92,12 @@ std::vector<std::pair<ActorQuery, uint32_t>> DigProject::getActors() const { ret
 std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> DigProject::getByproducts() const
 {
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> output;
+	Random& random = m_location.m_area->m_simulation.m_random;
 	for(const SpoilData& spoilData : getLocation().getSolidMaterial().spoilData)
 	{
-		if(!randomUtil::chance(spoilData.chance))
+		if(!random.percentChance(spoilData.chance))
 			continue;
-		uint32_t quantity = randomUtil::getInRange(spoilData.min, spoilData.max);
+		uint32_t quantity = random.getInRange(spoilData.min, spoilData.max);
 		getLocation().m_hasItems.add(spoilData.itemType, spoilData.materialType, quantity);
 	}
 	return output;

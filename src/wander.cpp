@@ -1,8 +1,9 @@
 #include "wander.h"
 #include "actor.h"
 #include "block.h"
-#include "randomUtil.h"
+#include "random.h"
 #include "config.h"
+#include "simulation.h"
 WanderThreadedTask::WanderThreadedTask(WanderObjective& o) : ThreadedTask(o.m_actor.getThreadedTaskEngine()), m_objective(o), m_findsPath(o.m_actor, false) { }
 void WanderThreadedTask::readStep()
 {
@@ -10,7 +11,8 @@ void WanderThreadedTask::readStep()
 	std::function<bool(const Block&, Facing)> condition = [&](const Block& block, [[maybe_unused]]Facing facing)
 	{
 		lastBlock = &block;
-		return randomUtil::percentChance(block.taxiDistance(*m_objective.m_actor.m_location) * Config::wanderDistanceModifier);
+		Random& random = m_objective.m_actor.getSimulation().m_random;
+		return random.percentChance(block.taxiDistance(*m_objective.m_actor.m_location) * Config::wanderDistanceModifier);
 	};
 	m_findsPath.pathToPredicate(condition);
 	if(!m_findsPath.found() && lastBlock != nullptr)
