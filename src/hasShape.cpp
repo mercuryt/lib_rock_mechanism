@@ -214,13 +214,14 @@ void BlockHasShapes::exit(HasShape& hasShape)
 	hasShape.m_blocks.clear();
 	hasShape.m_location = nullptr;
 }
+//TODO: Move this to item.
 void BlockHasShapes::addQuantity(HasShape& hasShape, uint32_t quantity)
 {
 	assert(hasShape.isItem());
 	Item& item = static_cast<Item&>(hasShape);
 	assert(item.m_itemType.generic);
 	exit(hasShape);
-	item.m_quantity += quantity;
+	item.addQuantity(quantity);
 	enter(hasShape);
 }
 void BlockHasShapes::removeQuantity(HasShape& hasShape, uint32_t quantity)
@@ -229,7 +230,7 @@ void BlockHasShapes::removeQuantity(HasShape& hasShape, uint32_t quantity)
 	Item& item = static_cast<Item&>(hasShape);
 	assert(item.m_itemType.generic);
 	exit(hasShape);
-	item.m_quantity -= quantity;
+	item.removeQuantity(quantity);
 	enter(hasShape);
 }
 void BlockHasShapes::tryToCacheMoveCosts(const Shape& shape, const MoveType& moveType, std::vector<std::pair<Block*, uint32_t>>& moveCosts)
@@ -308,11 +309,10 @@ bool BlockHasShapes::moveTypeCanEnterFrom(const MoveType& moveType, const Block&
 	// Can go up if from contains a ramp or stairs.
 	if(m_block.m_z > from.m_z && (from.m_hasBlockFeatures.contains(BlockFeatureType::ramp) || from.m_hasBlockFeatures.contains(BlockFeatureType::stairs))) 
 		return true;
-	// Can go down if this contains a ramp or from contains down stairs and this contains up stairs.
-	if(m_block.m_z < from.m_z && (m_block.m_hasBlockFeatures.contains(BlockFeatureType::ramp) || (
-					from.m_hasBlockFeatures.contains(BlockFeatureType::stairs) &&
+	// Can go down if this contains a ramp or stairs.
+	if(m_block.m_z < from.m_z && (m_block.m_hasBlockFeatures.contains(BlockFeatureType::ramp) || 
 					m_block.m_hasBlockFeatures.contains(BlockFeatureType::stairs)
-					)))
+					))
 		return true;
 	return false;
 }

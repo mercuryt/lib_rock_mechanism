@@ -23,6 +23,7 @@
 #include "leadAndFollow.h"
 #include "haul.h"
 #include "dig.h"
+#include "construct.h"
 
 int main(int argc, char** argv) {
     doctest::Context context;

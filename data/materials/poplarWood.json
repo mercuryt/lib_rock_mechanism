@@ -1,8 +1,10 @@
 {
   "name": "poplar wood",
+  "category": "wood",
   "density": 30,
   "hardness": 30,
   "transparent": false,
+  "constructionData": "wood",
   "burnData":
   {
 	  "ignitionTemperature": 533,

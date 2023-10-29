@@ -84,12 +84,12 @@ void EatEvent::eatGenericItem(Item& item)
 	assert(item.m_itemType.edibleForDrinkersOf == &m_eatObjective.m_actor.m_mustDrink.getFluidType());
 	auto& eater = m_eatObjective.m_actor;
 	uint32_t quantityDesired = std::max(1u, eater.m_mustEat.getMassFoodRequested() / item.singleUnitMass());
-	uint32_t quantityEaten = std::min(quantityDesired, item.m_quantity);
+	uint32_t quantityEaten = std::min(quantityDesired, item.getQuantity());
 	Mass massEaten = std::min(eater.m_mustEat.getMassFoodRequested(), quantityEaten * item.singleUnitMass());
 	assert(massEaten != 0);
 	eater.m_mustEat.eat(massEaten);
-	item.m_quantity -= quantityEaten;
-	if(item.m_quantity == 0)
+	item.removeQuantity(quantityEaten);
+	if(item.getQuantity() == 0)
 		item.destroy();
 }
 void EatEvent::eatActor(Actor& actor)

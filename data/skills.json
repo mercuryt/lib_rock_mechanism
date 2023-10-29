@@ -40,7 +40,7 @@
 		"xpPerLevelModifier": 4.0,
 		"level1Xp": 200
 	},{
-		"name": "sheild",
+		"name": "shield",
 		"xpPerLevelModifier": 2.0,
 		"level1Xp": 100
 	},{
@@ -60,7 +60,7 @@
 		"xpPerLevelModifier": 2.0,
 		"level1Xp": 100
 	},{
-		"name": "metalworking",
+		"name": "metal working",
 		"xpPerLevelModifier": 2.0,
 		"level1Xp": 100
 	},{

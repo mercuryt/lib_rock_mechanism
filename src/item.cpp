@@ -29,7 +29,19 @@ void Item::setTemperature(Temperature temperature)
 	//TODO
 	(void)temperature;
 }
-
+void Item::addQuantity(uint32_t delta)
+{
+	m_quantity += delta;
+	m_reservable.setMaxReservations(m_quantity);
+}
+void Item::removeQuantity(uint32_t delta)
+{
+	if(m_quantity == delta)
+		destroy();
+	assert(delta < m_quantity);
+	m_quantity -= delta;
+	m_reservable.setMaxReservations(m_quantity);
+}
 void Item::destroy()
 {
 	if(m_location != nullptr)
@@ -42,24 +54,24 @@ bool Item::isPreparedMeal() const
 	return &m_itemType == &preparedMealType;
 }
 // Generic.
-Item::Item(Simulation& s,uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t q, CraftJob* cj):
-	HasShape(s, it.shape, true), m_id(i), m_itemType(it), m_materialType(mt), m_quantity(q), m_reservable(q), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this)
+Item::Item(Simulation& s, uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t q, CraftJob* cj):
+	HasShape(s, it.shape, true, 0, q), m_quantity(q), m_id(i), m_itemType(it), m_materialType(mt), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this)
 {
 	assert(m_itemType.generic);
 	m_volume = m_itemType.volume * m_quantity;
 	m_mass = m_volume * m_materialType.density;
 }
 // NonGeneric.
-Item::Item(Simulation& s,uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t qual, Percent pw, CraftJob* cj):
-	HasShape(s, it.shape, true), m_id(i), m_itemType(it), m_materialType(mt), m_quantity(1), m_reservable(1), m_quality(qual), m_percentWear(pw), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this)
+Item::Item(Simulation& s, uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t qual, Percent pw, CraftJob* cj):
+	HasShape(s, it.shape, true), m_quantity(1u), m_id(i), m_itemType(it), m_materialType(mt), m_quality(qual), m_percentWear(pw), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this)
 {
 	assert(!m_itemType.generic);
 	m_mass = m_itemType.volume * m_materialType.density;
 	m_volume = m_itemType.volume;
 }
 // Named.
-Item::Item(Simulation& s,uint32_t i, const ItemType& it, const MaterialType& mt, std::string n, uint32_t qual, Percent pw, CraftJob* cj):
-	HasShape(s, it.shape, true), m_id(i), m_itemType(it), m_materialType(mt), m_quantity(1), m_reservable(1), m_name(n), m_quality(qual), m_percentWear(pw), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this)
+Item::Item(Simulation& s, uint32_t i, const ItemType& it, const MaterialType& mt, std::string n, uint32_t qual, Percent pw, CraftJob* cj):
+	HasShape(s, it.shape, true), m_quantity(1u), m_id(i), m_itemType(it), m_materialType(mt), m_name(n), m_quality(qual), m_percentWear(pw), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this)
 {
 	assert(!m_itemType.generic);
 	m_mass = m_itemType.volume * m_materialType.density;
@@ -92,6 +104,22 @@ void ItemHasCargo::add(const FluidType& fluidType, Volume volume)
 	}
 	m_mass += volume *= fluidType.density;
 }
+Item& ItemHasCargo::add(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity)
+{
+	assert(itemType.generic);
+	for(Item* item : m_items)
+		if(item->m_itemType == itemType && item->m_materialType == materialType)
+		{
+			// Add to existing stack.
+			item->addQuantity(quantity);
+			m_mass += itemType.volume * materialType.density  * quantity;
+			return *item;
+		}
+	// Create new stack.
+	Item& newItem = m_item.getSimulation().createItem(itemType, materialType, quantity);
+	add(newItem);
+	return newItem;
+}
 void ItemHasCargo::remove(const FluidType& fluidType, Volume volume)
 {
 	assert(m_fluidType == &fluidType);
@@ -113,18 +141,68 @@ void ItemHasCargo::remove(HasShape& hasShape)
 void ItemHasCargo::remove(Item& item, uint32_t quantity)
 {
 	assert(contains(item));
-	if(item.m_quantity == quantity)
+	if(item.getQuantity() == quantity)
 		remove(item);
 	else
 	{
-		assert(item.m_quantity >= quantity);
-		item.m_quantity -= quantity;
+		assert(item.getQuantity() >= quantity);
+		item.removeQuantity(quantity);
 		m_volume -= item.m_itemType.volume * quantity;
 		m_mass -= item.singleUnitMass() * quantity;
 	}
 }
+void ItemHasCargo::remove(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity)
+{
+	assert(containsGeneric(itemType, materialType, quantity));
+	for(Item* item : m_items)
+		if(item->m_itemType == itemType && item->m_materialType == materialType)
+		{
+			assert(item->getQuantity() >= quantity);
+			if(item->getQuantity() == quantity)
+				remove(*item);
+			else
+			{
+				item->removeQuantity(quantity);
+				m_mass -= itemType.volume * materialType.density * quantity;
+			}
+		}
+}
+void ItemHasCargo::load(HasShape& hasShape, uint32_t quantity)
+{
+	if(hasShape.isGeneric())
+	{
+		Item& item = static_cast<Item&>(hasShape);
+		assert(quantity <= item.getQuantity());
+		if(item.getQuantity() > quantity)
+		{
+			item.removeQuantity(quantity);
+			add(item.m_itemType, item.m_materialType, quantity);
+			return;
+		}
+	}
+	hasShape.exit();
+	add(hasShape);
+}
+void ItemHasCargo::unloadTo(HasShape& hasShape, Block& location)
+{
+	remove(hasShape);
+	hasShape.setLocation(location);
+}
+Item& ItemHasCargo::unloadGenericTo(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity, Block& location)
+{
+	remove(itemType, materialType, quantity);
+	return location.m_hasItems.add(itemType, materialType, quantity);
+}
 bool ItemHasCargo::canAdd(HasShape& hasShape) const { return m_volume + hasShape.getVolume() <= m_item.m_itemType.internalVolume; }
 bool ItemHasCargo::canAdd(FluidType& fluidType) const { return m_fluidType == nullptr || m_fluidType == &fluidType; }
+bool ItemHasCargo::containsGeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity) const
+{
+	assert(itemType.generic);
+	for(Item* item : m_items)
+		if(item->m_itemType == itemType && item->m_materialType == materialType)
+			return item->getQuantity() >= quantity;
+	return false;
+}
 
 ItemQuery::ItemQuery(Item& item) : m_item(&item), m_itemType(nullptr), m_materialTypeCategory(nullptr), m_materialType(nullptr) { }
 ItemQuery::ItemQuery(const ItemType& m_itemType) : m_item(nullptr), m_itemType(&m_itemType), m_materialTypeCategory(nullptr), m_materialType(nullptr) { }
@@ -173,16 +251,15 @@ void BlockHasItems::remove(Item& item)
 	std::erase(m_items, &item);
 	m_block.m_hasShapes.exit(item);
 }
-void BlockHasItems::add(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity)
+Item& BlockHasItems::add(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity)
 {
 	assert(itemType.generic);
 	auto found = std::ranges::find_if(m_items, [&](Item* item) { return item->m_itemType == itemType && item->m_materialType == materialType; });
 	// Add to.
 	if(found != m_items.end())
 	{
-		(*found)->m_quantity += quantity;
-		(*found)->m_reservable.setMaxReservations((*found)->m_quantity);
 		m_block.m_hasShapes.addQuantity(**found, quantity);
+		return **found;
 	}
 	// Create.
 	else
@@ -192,6 +269,7 @@ void BlockHasItems::add(const ItemType& itemType, const MaterialType& materialTy
 		m_block.m_hasShapes.enter(item);
 		if(m_block.m_outdoors)
 			m_block.m_area->m_hasItems.setItemIsOnSurface(item);
+		return item;
 	}
 }
 void BlockHasItems::remove(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity)
@@ -199,9 +277,9 @@ void BlockHasItems::remove(const ItemType& itemType, const MaterialType& materia
 	assert(itemType.generic);
 	auto found = std::ranges::find_if(m_items, [&](Item* item) { return item->m_itemType == itemType && item->m_materialType == materialType; });
 	assert(found != m_items.end());
-	assert((*found)->m_quantity >= quantity);
+	assert((*found)->getQuantity() >= quantity);
 	// Remove all.
-	if((*found)->m_quantity == quantity)
+	if((*found)->getQuantity() == quantity)
 	{
 		remove(**found);
 		// TODO: don't remove if it's about to be readded, requires knowing destination / origin.
@@ -211,8 +289,8 @@ void BlockHasItems::remove(const ItemType& itemType, const MaterialType& materia
 	else
 	{
 		// Remove some.
-		(*found)->m_quantity -= quantity;
-		(*found)->m_reservable.setMaxReservations((*found)->m_quantity);
+		(*found)->removeQuantity(quantity);
+		(*found)->m_reservable.setMaxReservations((*found)->getQuantity());
 		m_block.m_hasShapes.removeQuantity(**found, quantity);
 	}
 }
@@ -230,7 +308,7 @@ uint32_t BlockHasItems::getCount(const ItemType& itemType, const MaterialType& m
 	if(found == m_items.end())
 		return 0;
 	else
-		return (*found)->m_quantity;
+		return (*found)->getQuantity();
 }
 // TODO: buggy
 bool BlockHasItems::hasInstalledItemType(const ItemType& itemType) const

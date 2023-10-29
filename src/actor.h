@@ -12,7 +12,6 @@
 #include "grow.h"
 #include "move.h"
 //#include "item.h"
-#include "reservable.h"
 #include "equipment.h"
 #include "fight.h"
 #include "attributes.h"
@@ -59,7 +58,6 @@ public:
 	CanGrow m_canGrow;
 	HasObjectives m_hasObjectives;
 	CanReserve m_canReserve;
-	Reservable m_reservable;
 	ActorHasStamina m_stamina;
 	std::unordered_set<Actor*> m_canSee;
 	uint32_t m_visionRange;
@@ -78,6 +76,7 @@ public:
 	void setFaction(const Faction* faction) { m_faction = faction; m_canReserve.setFaction(faction); }
 	bool isItem() const { return false; }
 	bool isActor() const { return true; }
+	bool isGeneric() const { return false; }
 	bool isEnemy(Actor& actor) const;
 	bool isAlly(Actor& actor) const;
 	//TODO: Zombies are not sentient.
@@ -149,4 +148,6 @@ public:
 	void setUnderground(Actor& actor);
 	void setNotUnderground(Actor& actor);
 	~AreaHasActors() { m_visionRequestQueue.clear(); }
+	std::unordered_set<Actor*>& getAll() { return m_actors; }
+	const std::unordered_set<Actor*>& getAllConst() const { return m_actors; }
 };

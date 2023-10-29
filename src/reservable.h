@@ -58,11 +58,11 @@ public:
 		if(canReserve.m_faction == nullptr)
 			return;
 		assert(!m_reservedCounts.contains(canReserve.m_faction) || m_reservedCounts.at(canReserve.m_faction) + quantity <= m_maxReservations);
-		assert(!m_canReserves.contains(&canReserve));
-		m_canReserves[&canReserve] = quantity;
+		m_canReserves[&canReserve] += quantity;
+		assert(m_canReserves[&canReserve] <= m_maxReservations);
 		m_reservedCounts[canReserve.m_faction] += quantity;
-		assert(!canReserve.m_reservables.contains(this));
-		canReserve.m_reservables.insert(this);
+		if(!canReserve.m_reservables.contains(this))
+			canReserve.m_reservables.insert(this);
 	}
 	void maybeReserveFor(CanReserve& canReserve, const uint32_t quantity = 1u)
 	{
@@ -71,15 +71,18 @@ public:
 		if(!m_canReserves.contains(&canReserve))
 			reserveFor(canReserve, quantity);
 	}
-	void clearReservationFor(CanReserve& canReserve)
+	void clearReservationFor(CanReserve& canReserve, const uint32_t quantity = 1u)
        	{
 		if(canReserve.m_faction == nullptr)
 			return;
 		assert(m_canReserves.contains(&canReserve));
 		assert(m_canReserves.at(&canReserve) >= m_reservedCounts.at(canReserve.m_faction));
-		eraseReservationFor(canReserve);
 		assert(canReserve.m_reservables.contains(this));
 		canReserve.m_reservables.erase(this);
+		if(m_canReserves.at(&canReserve) == quantity)
+			eraseReservationFor(canReserve);
+		else
+			m_canReserves.at(&canReserve) -= quantity;
 	}
 	void maybeClearReservationFor(CanReserve& canReserve)
 	{

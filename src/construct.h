@@ -34,6 +34,7 @@ public:
 	void cancel();
 	void delay() { cancel(); }
 	void reset();
+	void joinProject(ConstructProject& project);
 	std::string name() const { return "construct"; }
 	ConstructProject* getProjectWhichActorCanJoinAdjacentTo(const Block& location, Facing facing);
 	ConstructProject* getProjectWhichActorCanJoinAt(Block& block);
@@ -96,5 +97,6 @@ public:
 	void remove(const Faction& faction, Block& block);
 	void clearAll(Block& block);
 	bool areThereAnyForFaction(const Faction& faction) const;
+	bool contains(const Faction& faction, const Block& block) const;
 	ConstructProject& getProject(const Faction& faction, Block& block);
 };

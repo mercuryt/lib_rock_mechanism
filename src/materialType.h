@@ -11,6 +11,7 @@ struct MaterialType;
 struct ItemType;
 class ItemQuery;
 struct FluidType;
+struct SkillType;
 
 struct MaterialTypeCategory
 {
@@ -47,9 +48,16 @@ struct BurnData
 
 struct MaterialConstructionData
 {
+	std::string name;
+	const SkillType& skill;
 	std::vector<std::pair<ItemQuery, uint32_t>> consumed;
 	std::vector<std::pair<ItemQuery, uint32_t>> unconsumed;
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> byproducts;
+	// Infastructure.
+	bool operator==(const MaterialConstructionData& materialConstructionData) const { return this == &materialConstructionData; }
+	inline static std::vector<MaterialConstructionData> data;
+	inline static std::vector<MaterialConstructionData> specializedData;
+	static MaterialConstructionData& byNameSpecialized(const std::string name, const MaterialType& materialType);
 };
 
 struct MaterialType

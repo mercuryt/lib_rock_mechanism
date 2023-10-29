@@ -55,7 +55,7 @@ namespace Config
 	inline float unitsOfMoveSpeedPerUnitOfAgility;
 	inline float unitsOfCarryMassPerUnitOfStrength;
 	inline uint32_t objectivePrioritySleep;
-	inline uint32_t digScoreCost;
+	inline Step digMaxSteps;
 	inline float digStrengthModifier;
 	inline float digSkillModifier;
 	inline uint32_t digObjectivePriority;
@@ -196,7 +196,7 @@ namespace Config
 		unitsOfMoveSpeedPerUnitOfAgility = data["unitsOfMoveSpeedPerUnitOfAgility"].get<float>();
 		unitsOfCarryMassPerUnitOfStrength = data["unitsOfCarryMassPerUnitOfStrength"].get<float>();
 		objectivePrioritySleep = data["objectivePrioritySleep"].get<uint32_t>();
-		digScoreCost = data["digScoreCost"].get<uint32_t>();
+		digMaxSteps = data["digMaxMinutes"].get<uint32_t>() * stepsPerMinute;
 		digStrengthModifier = data["digStrengthModifier"].get<float>();
 		digSkillModifier = data["digSkillModifier"].get<float>();
 		digObjectivePriority = data["digObjectivePriority"].get<uint32_t>();

@@ -102,7 +102,7 @@ TEST_CASE("farmFields")
 		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
 		Item& item = **actor.m_location->m_hasItems.getAll().begin();
 		REQUIRE(item.m_materialType == MaterialType::byName("plant matter"));
-		REQUIRE(item.m_quantity == wheatGrass.harvestData->itemQuantity);
+		REQUIRE(item.getQuantity() == wheatGrass.harvestData->itemQuantity);
 		REQUIRE(item.m_itemType == ItemType::byName("wheat seed"));
 	}
 	SUBCASE("give plants fluid")

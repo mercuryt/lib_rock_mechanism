@@ -1,10 +1,9 @@
 {
 	"name": "long sword",
 	"shape": "oneByOneSixteenth",
-	"volume": 20000,
+	"volume": 200,
 	"generic": false,
 	"value": 200,
-	"moveType": "none",
 	"weaponData":
 	{
 		"combatSkill": "sword",

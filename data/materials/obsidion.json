@@ -5,6 +5,7 @@
   "transparent": false,
   "meltingPoint": 1173,
   "meltsInto": "lava",
+  "contsructionData": "stone",
   "spoilData": [
     {
       "materialType": "obsidion",

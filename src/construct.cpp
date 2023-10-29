@@ -24,28 +24,43 @@ void ConstructThreadedTask::writeStep()
 			m_constructObjective.m_constructThreadedTask.create(m_constructObjective);
 			return;
 		}
-		ConstructProject* project = m_constructObjective.getProjectWhichActorCanJoinAdjacentTo(*m_findsPath.getPath().back(), m_findsPath.getFacingAtDestination());
-		if(project == nullptr)
+		Block& projectLocation = *m_findsPath.getBlockWhichPassedPredicate();
+		auto& hasConstructionDesignations = projectLocation.m_area->m_hasConstructionDesignations;
+		const Faction& faction = *m_constructObjective.m_actor.getFaction();
+		if(!hasConstructionDesignations.contains(faction, projectLocation))
 		{
-			// No longer any project to join at destination, try again.
+			// Project no longer exists.
 			m_constructObjective.m_constructThreadedTask.create(m_constructObjective);
 			return;
 		}
-		m_constructObjective.m_actor.m_canMove.setPath(m_findsPath.getPath());
-		m_findsPath.reserveBlocksAtDestination(m_constructObjective.m_actor.m_canReserve);
+		m_constructObjective.joinProject(hasConstructionDesignations.getProject(*m_constructObjective.m_actor.getFaction(), projectLocation));
 	}
 }
 void ConstructThreadedTask::clearReferences() { m_constructObjective.m_constructThreadedTask.clearPointer(); }
 void ConstructObjective::execute()
 {
-	std::function<bool(const Block&)> predicate = [&](const Block& block) { return joinableProjectExistsAt(block); };
-	Block* block = m_actor.getBlockWhichIsAdjacentWithPredicate(predicate);
-	if(block == nullptr)
-		m_constructThreadedTask.create(*this);
+	if(m_project != nullptr)
+		m_project->commandWorker(m_actor);
 	else
 	{
-		m_project = getProjectWhichActorCanJoinAt(*block);
-		m_project->addWorker(m_actor, *this);
+		ConstructProject* project = nullptr;
+		std::function<bool(const Block&)> predicate = [&](const Block& block) 
+		{ 
+			if(joinableProjectExistsAt(block))
+			{
+				project = &block.m_area->m_hasConstructionDesignations.getProject(*m_actor.getFaction(), const_cast<Block&>(block));
+				return true;
+			}
+			return false;
+		};
+		Block* adjacent = m_actor.getBlockWhichIsAdjacentWithPredicate(predicate);
+		if(project != nullptr)
+		{
+			assert(adjacent != nullptr);
+			joinProject(*project);
+			return;
+		}
+		m_constructThreadedTask.create(*this);
 	}
 }
 void ConstructObjective::cancel()
@@ -59,6 +74,12 @@ void ConstructObjective::reset()
 	cancel(); 
 	m_project = nullptr; 
 	m_actor.m_canReserve.clearAll();
+}
+void ConstructObjective::joinProject(ConstructProject& project)
+{
+	assert(m_project == nullptr);
+	m_project = &project;
+	project.addWorker(m_actor, *this);
 }
 ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAdjacentTo(const Block& location, Facing facing)
 {
@@ -90,7 +111,7 @@ bool ConstructObjective::canJoinProjectAdjacentToLocationAndFacing(const Block& 
 }
 bool ConstructObjectiveType::canBeAssigned(Actor& actor) const
 {
-	return !actor.m_location->m_area->m_hasConstructionDesignations.areThereAnyForFaction(*actor.getFaction());
+	return actor.m_location->m_area->m_hasConstructionDesignations.areThereAnyForFaction(*actor.getFaction());
 }
 std::unique_ptr<Objective> ConstructObjectiveType::makeFor(Actor& actor) const { return std::make_unique<ConstructObjective>(actor); }
 std::vector<std::pair<ItemQuery, uint32_t>> ConstructProject::getConsumed() const
@@ -111,8 +132,8 @@ std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> Construc
 }
 uint32_t ConstructProject::getWorkerConstructScore(Actor& actor) const
 {
-	static const SkillType& constructType = SkillType::byName("construct");
-	return (actor.m_attributes.getStrength() * Config::constructStrengthModifier) + (actor.m_skillSet.get(constructType) * Config::constructSkillModifier);
+	const SkillType& constructSkill = m_materialType.constructionData->skill;
+	return (actor.m_attributes.getStrength() * Config::constructStrengthModifier) + (actor.m_skillSet.get(constructSkill) * Config::constructSkillModifier);
 }
 void ConstructProject::onComplete()
 {
@@ -121,6 +142,7 @@ void ConstructProject::onComplete()
 		m_location.setSolid(m_materialType);
 	else
 		m_location.m_hasBlockFeatures.construct(*m_blockFeatureType, m_materialType);
+	m_location.m_area->m_hasConstructionDesignations.clearAll(m_location);
 }
 // What would the total delay time be if we started from scratch now with current workers?
 Step ConstructProject::getDelay() const
@@ -164,6 +186,8 @@ void HasConstructionDesignations::removeFaction(const Faction& faction)
 }
 void HasConstructionDesignations::designate(const Faction& faction, Block& block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType)
 {
+	if(!m_data.contains(&faction))
+		addFaction(faction);
 	m_data.at(&faction).designate(block, blockFeatureType, materialType);
 }
 void HasConstructionDesignations::remove(const Faction& faction, Block& block)
@@ -177,4 +201,10 @@ void HasConstructionDesignations::clearAll(Block& block)
 		pair.second.removeIfExists(block);
 }
 bool HasConstructionDesignations::areThereAnyForFaction(const Faction& faction) const { return !m_data.at(&faction).empty(); }
+bool HasConstructionDesignations::contains(const Faction& faction, const Block& block) const
+{
+	if(!m_data.contains(&faction))
+		return false;
+	return m_data.at(&faction).contains(block);
+}
 ConstructProject& HasConstructionDesignations::getProject(const Faction& faction, Block& block) { return m_data.at(&faction).m_data.at(&block); }

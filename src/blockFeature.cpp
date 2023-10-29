@@ -52,6 +52,7 @@ void HasBlockFeatures::hew(const BlockFeatureType& blockFeatureType)
 {
 	assert(m_block.isSolid());
 	m_features.emplace_back(blockFeatureType, m_block.getSolidMaterial(), true);
+	m_block.setNotSolid();
 	m_block.m_hasShapes.clearCache();
 }
 void HasBlockFeatures::setTemperature(Temperature temperature)

@@ -111,7 +111,7 @@ TEST_CASE("basicNeedsSentient")
 		REQUIRE(!actor.m_mustEat.needsFood());
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "eat");
 		REQUIRE(!fruitLocation.m_hasItems.empty());
-		REQUIRE(fruit.m_quantity < 50u);
+		REQUIRE(fruit.getQuantity() < 50u);
 	}
 }
 TEST_CASE("basicNeedsNonsentient")

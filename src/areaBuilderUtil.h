@@ -22,6 +22,12 @@ namespace areaBuilderUtil
 		for(;zbegin <= zend; ++zbegin)
 			setSolidLayer(area, zbegin, materialType);
 	}
+	inline void setSolidWall(Block& start, Block& end, const MaterialType& materialType)
+	{
+		Cuboid cuboid(end, start);
+		for(Block& block : cuboid)
+			block.setSolid(materialType);
+	}
 	inline void setSolidWalls(Area& area, uint32_t height, const MaterialType& materialType)
 	{	
 		for(uint32_t z = 0; z != height + 1; ++ z)

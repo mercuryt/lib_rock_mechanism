@@ -80,4 +80,6 @@ public:
 	std::string toS();
 
 	Cuboid getZLevel(uint32_t z);
+	// For testing.
+	[[maybe_unused]] void logActorsAndItems() const;
 };

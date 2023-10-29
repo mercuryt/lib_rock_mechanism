@@ -1,0 +1,23 @@
+{
+	"name": "bucking bar",
+	"shape": "oneByOneSixteenth",
+	"volume": 400,
+	"generic": false,
+	"value": 60,
+	"weaponData":
+	{
+		"combatSkill": "mace",
+		"combatScoreBonus": 10,
+		"attackTypes":
+		[
+			{
+				"name": "bash",
+				"area": 25,
+				"baseForce": 5,
+				"range": 1,
+				"skillBonus": 1,
+				"woundType": "Bludgeon"
+			}
+		]
+	}
+}

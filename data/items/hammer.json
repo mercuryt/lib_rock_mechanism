@@ -1,0 +1,23 @@
+{
+	"name": "hammer",
+	"shape": "oneByOneThirtySecond",
+	"volume": 100,
+	"generic": false,
+	"value": 40,
+	"weaponData":
+	{
+		"combatSkill": "mace",
+		"combatScoreBonus": 1,
+		"attackTypes":
+		[
+			{
+				"name": "bash",
+				"area": 25,
+				"baseForce": 1,
+				"range": 1,
+				"skillBonus": 1,
+				"woundType": "Bludgeon"
+			}
+		]
+	}
+}

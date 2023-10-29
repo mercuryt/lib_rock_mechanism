@@ -6,6 +6,7 @@
 #include "shape.h"
 #include "leadAndFollow.h"
 #include "onDestroy.h"
+#include "reservable.h"
 
 #include <unordered_set>
 
@@ -21,7 +22,7 @@ class HasShape
 {
 	Simulation& m_simulation;
 protected:
-	HasShape(Simulation& simulation, const Shape& shape, bool st, uint8_t f = 0) : m_simulation(simulation), m_static(st), m_shape(&shape), m_location(nullptr), m_facing(f), m_canLead(*this), m_canFollow(*this) {}
+	HasShape(Simulation& simulation, const Shape& shape, bool st, uint8_t f = 0u, uint32_t mr = 1u) : m_simulation(simulation), m_static(st), m_shape(&shape), m_location(nullptr), m_facing(f), m_canLead(*this), m_canFollow(*this), m_reservable(mr), m_isUnderground(false)  {}
 	bool m_static;
 public:
 	const Shape* m_shape;
@@ -32,6 +33,7 @@ public:
 	CanLead m_canLead;
 	CanFollow m_canFollow;
 	OnDestroy m_onDestroy;
+	Reservable m_reservable;
 	bool m_isUnderground;
 
 	void setStatic(bool isTrue);
@@ -57,6 +59,7 @@ public:
 	EventSchedule& getEventSchedule();
 	virtual bool isItem() const = 0;
 	virtual bool isActor() const = 0;
+	virtual bool isGeneric() const = 0;
 	virtual uint32_t getMass() const = 0;
 	virtual uint32_t getVolume() const = 0;
 	virtual void setLocation(Block& block) = 0;
@@ -107,4 +110,6 @@ public:
 	const uint32_t& getStaticVolume() const { return m_staticVolume; }
 	std::unordered_map<HasShape*, uint32_t>& getShapes() { return m_shapes; }
 	friend class HasShape;
+	// For testing.
+	[[maybe_unused, nodiscard]] bool moveCostCacheIsEmpty() const { return m_moveCostsCache.empty(); }
 };

@@ -5,6 +5,7 @@
   "transparent": false,
   "meltingPoint": 600,
   "meltsInto": "moltenLead",
+  "constructionData": "metal",
   "spoilData": [
     {
       "materialType": "lead",

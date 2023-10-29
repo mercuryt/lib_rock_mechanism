@@ -8,7 +8,7 @@ void ProjectFinishEvent::clearReferences() { m_project.m_finishEvent.clearPointe
 
 ProjectTryToHaulEvent::ProjectTryToHaulEvent(const Step delay, Project& p) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay), m_project(p) { }
 void ProjectTryToHaulEvent::execute() { m_project.m_tryToHaulThreadedTask.create(m_project); }
-void ProjectTryToHaulEvent::clearReferences() { m_project.m_finishEvent.clearPointer(); }
+void ProjectTryToHaulEvent::clearReferences() { m_project.m_tryToHaulEvent.clearPointer(); }
 
 ProjectTryToMakeHaulSubprojectThreadedTask::ProjectTryToMakeHaulSubprojectThreadedTask(Project& p) : ThreadedTask(p.m_location.m_area->m_simulation.m_threadedTaskEngine), m_project(p) { }
 void ProjectTryToMakeHaulSubprojectThreadedTask::readStep()
@@ -50,7 +50,7 @@ bool ProjectTryToMakeHaulSubprojectThreadedTask::blockContainsDesiredItem(const 
 {
 	for(Item* item : block.m_hasItems.getAll())
 		for(auto& [itemQuery, projectItemCounts] : m_project.m_requiredItems)
-			if(projectItemCounts.required > projectItemCounts.reserved && itemQuery(*item))
+			if(projectItemCounts.required > projectItemCounts.reserved && !item->m_reservable.isFullyReserved(actor.getFaction()) && itemQuery(*item))
 			{
 				m_haulProjectParamaters = HaulSubproject::tryToSetHaulStrategy(m_project, *item, actor, projectItemCounts);
 				if(m_haulProjectParamaters.strategy != HaulStrategy::None)
@@ -109,6 +109,7 @@ void Project::addWorker(Actor& actor, Objective& objective)
 // To be called by Objective::execute.
 void Project::commandWorker(Actor& actor)
 {
+	assert(m_workers.contains(&actor));
 	if(m_workers.at(&actor).haulSubproject != nullptr)
 		// The worker has been dispatched to fetch an item.
 		m_workers.at(&actor).haulSubproject->commandWorker(actor);
@@ -176,7 +177,10 @@ void Project::complete()
 	m_workers.clear();
 	onComplete();
 	for(auto& [actor, projectWorker] : workers)
+	{
+		actor->m_project = nullptr;
 		actor->m_hasObjectives.objectiveComplete(projectWorker.objective);
+	}
 }
 void Project::cancel()
 {
@@ -193,9 +197,10 @@ void Project::scheduleEvent()
 }
 void Project::haulSubprojectComplete(HaulSubproject& haulSubproject)
 {
-	for(Actor* actor : haulSubproject.m_workers)
-		commandWorker(*actor);
+	auto workers = std::move(haulSubproject.m_workers);
 	m_haulSubprojects.remove(haulSubproject);
+	for(Actor* actor : workers)
+		commandWorker(*actor);
 }
 bool Project::canAddWorker(const Actor& actor) const
 {

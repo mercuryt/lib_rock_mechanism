@@ -156,12 +156,14 @@ void HasObjectives::cancel(Objective& objective)
 	objective.cancel();
 	m_actor.m_canMove.maybeCancelThreadedTask();
 	destroy(objective);
+	m_actor.m_project = nullptr;
 }
 void HasObjectives::objectiveComplete(Objective& objective)
 {
 	assert(m_actor.m_mustSleep.isAwake());
 	m_actor.m_canMove.maybeCancelThreadedTask();
 	destroy(objective);
+	m_actor.m_project = nullptr;
 }
 void HasObjectives::taskComplete()
 {

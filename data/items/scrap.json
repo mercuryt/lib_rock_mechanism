@@ -1,0 +1,7 @@
+{
+	"name": "scrap",
+	"shape": "oneByOneThirtySecond",
+	"volume": 1000,
+	"generic": true,
+	"value": 1
+}

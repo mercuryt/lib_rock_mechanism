@@ -43,6 +43,8 @@ class HaulSubproject final
 	bool m_itemIsMoving;
 	Actor* m_beastOfBurden;
 	ProjectItemCounts& m_projectItemCounts;
+	const ItemType* m_genericItemType;
+	const MaterialType* m_genericMaterialType;
 	void onComplete();
 public:
 	HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters);
@@ -76,7 +78,8 @@ public:
 	void pickUp(HasShape& hasShape, uint32_t quantity = 1u);
 	void pickUp(Item& item, uint32_t quantity = 1u);
 	void pickUp(Actor& actor, uint32_t quantity = 1u);
-	void putDown(Block& location);
+	// Returns a reference to has shape, which may be newly created or pre-existing due to generic items.
+	HasShape& putDown(Block& location, uint32_t quantity = 0u);
 	void putDownIfAny(Block& location);
 	void removeFluidVolume(uint32_t volume);
 	void add(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity);
@@ -90,6 +93,7 @@ public:
 	[[nodiscard]] uint32_t canPickupQuantityWithSingeUnitMass(uint32_t unitMass) const;
 	[[nodiscard]] bool canPickupAny(const HasShape& hasShape) const { return canPickupQuantityOf(hasShape) != 0; }
 	[[nodiscard]] bool isCarrying(const HasShape& hasShape) const { return &hasShape == m_carrying; }
+	[[nodiscard]] bool isCarryingGeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity) const;
 	[[nodiscard]] bool isCarryingFluidType(const FluidType& fluidType) const;
 	[[nodiscard]] const uint32_t& getFluidVolume() const;
 	[[nodiscard]] const FluidType& getFluidType() const;

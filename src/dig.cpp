@@ -30,8 +30,7 @@ void DigThreadedTask::writeStep()
 		if(project.canAddWorker(m_digObjective.m_actor))
 		{
 			// Join project and reserve standing room.
-			m_digObjective.m_project = &project;
-			project.addWorker(m_digObjective.m_actor, m_digObjective);
+			m_digObjective.joinProject(project);
 			m_findsPath.reserveBlocksAtDestination(m_digObjective.m_actor.m_canReserve);
 		}
 		else
@@ -49,7 +48,26 @@ void DigObjective::execute()
 	if(m_project != nullptr)
 		m_project->commandWorker(m_actor);
 	else
+	{
+		DigProject* project = nullptr;
+		std::function<bool(const Block&)> predicate = [&](const Block& block) 
+		{ 
+			if(!getJoinableProjectAt(block))
+				return false;
+			project = &block.m_area->m_hasDiggingDesignations.at(*m_actor.getFaction(), block);
+			if(project->canAddWorker(m_actor))
+				return true;
+			return false;
+		};
+		Block* adjacent = m_actor.getBlockWhichIsAdjacentWithPredicate(predicate);
+		if(project != nullptr)
+		{
+			assert(adjacent != nullptr);
+			joinProject(*project);
+			return;
+		}
 		m_digThrededTask.create(*this);
+	}
 }
 void DigObjective::cancel()
 {
@@ -62,6 +80,12 @@ void DigObjective::reset()
 	cancel(); 
 	m_project = nullptr; 
 	m_actor.m_canReserve.clearAll();
+}
+void DigObjective::joinProject(DigProject& project)
+{
+	assert(m_project == nullptr);
+	m_project = &project;
+	project.addWorker(m_actor, *this);
 }
 DigProject* DigObjective::getJoinableProjectAt(const Block& block)
 {
@@ -120,10 +144,10 @@ void DigProject::onComplete()
 // What would the total delay time be if we started from scratch now with current workers?
 Step DigProject::getDelay() const
 {
-	uint32_t totalScore = 0;
+	uint32_t totalScore = 0u;
 	for(auto& pair : m_workers)
 		totalScore += getWorkerDigScore(*pair.first);
-	return Config::digScoreCost / totalScore;
+	return std::max(Step(1u), Config::digMaxSteps / totalScore);
 }
 void HasDigDesignationsForFaction::designate(Block& block, const BlockFeatureType* blockFeatureType)
 {
@@ -172,6 +196,8 @@ void HasDigDesignations::clearAll(Block& block)
 }
 bool HasDigDesignations::areThereAnyForFaction(const Faction& faction) const
 {
+	if(!m_data.contains(&faction))
+		return false;
 	return !m_data.at(&faction).empty();
 }
 DigProject& HasDigDesignations::at(const Faction& faction, const Block& block) 

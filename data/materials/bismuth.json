@@ -5,6 +5,7 @@
   "transparent": false,
   "meltingPoint": 545,
   "meltsInto": "moltenBismuth",
+  "constructionData": "metal",
   "spoilData": [
     {
       "materialType": "bismuth",

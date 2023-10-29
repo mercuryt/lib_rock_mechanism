@@ -122,8 +122,6 @@ TEST_CASE("route_10_10_10")
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
 		pathThreadedTask.writeStep();
-		//pathThreadedTask.clearReferences();
-		//simulation.m_threadedTaskEngine.remove(pathThreadedTask);
 		REQUIRE(actor.m_canMove.hasEvent());
 		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.empty());
 		// Step 1.
@@ -146,8 +144,6 @@ TEST_CASE("route_10_10_10")
 		PathThreadedTask& pathThreadedTask2 = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask2.readStep();
 		pathThreadedTask2.writeStep();
-		//pathThreadedTask2.clearReferences();
-		//simulation.m_threadedTaskEngine.remove(pathThreadedTask2);
 		REQUIRE(actor.m_canMove.hasEvent());
 		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.empty());
 		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
@@ -155,40 +151,25 @@ TEST_CASE("route_10_10_10")
 		simulation.m_eventSchedule.execute(scheduledStep);
 		REQUIRE(actor.m_location == &block3);
 	}
-	SUBCASE("Walk multi-block creature")
+	SUBCASE("Unpathable route becomes pathable when blockage is removed.")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		Block& origin = area.m_blocks[3][3][1];
-		Block& block1 = area.m_blocks[4][4][1];
-		Block& block2 = area.m_blocks[2][3][1];
-		Block& destination = area.m_blocks[5][5][1];
-		Actor& actor = simulation.createActor(troll, origin);
+		Block& wallStart = area.m_blocks[0][4][1];
+		Block& wallEnd = area.m_blocks[9][4][2];
+		Block& destination = area.m_blocks[3][6][1];
+		Block& inFrontOfWallStart = area.m_blocks[0][3][1];
+		areaBuilderUtil::setSolidWall(wallStart, wallEnd, marble);
+		Actor& actor = simulation.createActor(dwarf, origin);
 		actor.m_canMove.setDestination(destination);
-		REQUIRE(block2.m_hasShapes.contains(actor));
-		REQUIRE(!block1.m_hasShapes.contains(actor));
-		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
-		pathThreadedTask.readStep();
-		REQUIRE(pathThreadedTask.getFindsPath().getPath().size() == 2);
-		pathThreadedTask.writeStep();
-		REQUIRE(actor.m_canMove.hasEvent());
-		// Step 1
-		uint32_t scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
-		simulation.m_step = scheduledStep;
-		simulation.m_eventSchedule.execute(scheduledStep);
-		REQUIRE(actor.m_location == &block1);
-		REQUIRE(actor.m_canMove.hasEvent());
-		REQUIRE(!block2.m_hasShapes.contains(actor));
-		REQUIRE(block1.m_hasShapes.contains(actor));
-		REQUIRE(!origin.m_hasShapes.contains(actor));
-		// Step 2
-		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
-		simulation.m_step = scheduledStep;
-		simulation.m_eventSchedule.execute(scheduledStep);
-		REQUIRE(actor.m_location == &destination);
-		REQUIRE(!actor.m_canMove.hasEvent());
-		REQUIRE(actor.m_canMove.getDestination() == nullptr);
-		REQUIRE(!block2.m_hasShapes.contains(actor));
-		REQUIRE(!block1.m_hasShapes.contains(actor));
+		simulation.doStep();
+		REQUIRE(actor.m_canMove.getPath().empty());
+		wallStart.setNotSolid();
+		REQUIRE(wallStart.m_hasShapes.moveCostCacheIsEmpty());
+		REQUIRE(inFrontOfWallStart.m_hasShapes.moveCostCacheIsEmpty());
+		actor.m_canMove.setDestination(destination);
+		simulation.doStep();
+		REQUIRE(!actor.m_canMove.getPath().empty());
 	}
 	SUBCASE("two by two creature cannot path through one block gap")
 	{

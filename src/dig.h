@@ -33,6 +33,7 @@ public:
 	void cancel();
 	void delay() { cancel(); }
 	void reset();
+	void joinProject(DigProject& project);
 	ObjectiveId getObjectiveId() const { return ObjectiveId::Dig; }
 	std::string name() const { return "dig"; }
 	DigProject* getJoinableProjectAt(const Block& block);

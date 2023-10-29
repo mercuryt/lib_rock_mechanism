@@ -50,8 +50,12 @@ namespace util
 	{
 		using convert_typeX = std::codecvt_utf8<wchar_t>;
 		std::wstring_convert<convert_typeX, wchar_t> converterX;
-
 		return converterX.to_bytes(wstr);
+	}
+	inline std::wstring stringToWideString(const std::string& str)
+	{
+		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+		return converter.from_bytes(str);
 	}
 	[[maybe_unused]]inline int fractionToPercent(int numerator, int denominator)
 	{

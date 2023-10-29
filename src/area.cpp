@@ -5,6 +5,7 @@
 #include "area.h"
 #include "simulation.h"
 #include <algorithm>
+#include <iostream>
 
 Area::Area(Simulation& s, uint32_t x, uint32_t y, uint32_t z) :
 	m_simulation(s), m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_areaHasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasRain(*this), m_visionCuboidsActive(false)
@@ -187,4 +188,18 @@ std::string Area::toS()
 		output += "###";
 	}
 	return output;
+}
+void Area::logActorsAndItems() const
+{
+	for(Actor* actor : m_hasActors.getAllConst())
+	{
+		std::wcout << actor->m_name;
+		std::cout << " the " + actor->m_species.name;
+		std::cout << ":" << actor->m_location->m_x << "," << actor->m_location->m_y << "," << actor->m_location->m_z << std::endl;
+	}
+	for(Item* item : m_hasItems.getOnSurfaceConst())
+	{
+		std::cout << item->m_itemType.name << "_" << std::to_string(item->getQuantity());
+		std::cout << ":" << item->m_location->m_x << "," << item->m_location->m_y << "," << item->m_location->m_z << std::endl;
+	}
 }
