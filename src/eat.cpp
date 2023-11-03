@@ -148,6 +148,8 @@ void EatThreadedTask::readStep()
 	m_findsPath.pathToUnreservedAdjacentToPredicate(predicate, *m_eatObjective.m_actor.getFaction());
 	if(m_findsPath.found())
 		m_eatObjective.m_destination = m_findsPath.getPath().back();
+	else if (m_findsPath.m_useCurrentLocation)
+		m_eatObjective.m_destination = m_eatObjective.m_actor.m_location;
 	else
 	{
 		for(size_t i = maxRankedEatDesire; i != 0; --i)
@@ -190,7 +192,9 @@ void EatThreadedTask::writeStep()
 		m_eatObjective.noFoodFound();
 	if(!m_findsPath.found())
 	{
-		if(m_huntResult == nullptr)
+		if(m_findsPath.m_useCurrentLocation)
+			m_eatObjective.execute();
+		else if(m_huntResult == nullptr)
 		{
 			// Unable to find food or a path to exit the area.
 			m_eatObjective.m_actor.m_hasObjectives.cannotFulfillNeed(m_eatObjective);

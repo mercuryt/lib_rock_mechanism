@@ -15,14 +15,14 @@ void DigThreadedTask::readStep()
 }
 void DigThreadedTask::writeStep()
 {
-	if(!m_findsPath.found())
+	if(!m_findsPath.found() && !m_findsPath.m_useCurrentLocation)
 		m_digObjective.m_actor.m_hasObjectives.cannotFulfillObjective(m_digObjective);
 	else
 	{
 		if(!m_findsPath.areAllBlocksAtDestinationReservable(m_digObjective.m_actor.getFaction()))
 		{
 			// Proposed location while digging has been reserved already, try to find another.
-			m_digObjective.m_digThrededTask.create(m_digObjective);
+			m_digObjective.m_digThreadedTask.create(m_digObjective);
 			return;
 		}
 		Block& target = *m_findsPath.getBlockWhichPassedPredicate();
@@ -35,11 +35,11 @@ void DigThreadedTask::writeStep()
 		}
 		else
 			// Project can no longer accept this worker, try again.
-			m_digObjective.m_digThrededTask.create(m_digObjective);
+			m_digObjective.m_digThreadedTask.create(m_digObjective);
 	}
 }
-void DigThreadedTask::clearReferences() { m_digObjective.m_digThrededTask.clearPointer(); }
-DigObjective::DigObjective(Actor& a) : Objective(Config::digObjectivePriority), m_actor(a), m_digThrededTask(m_actor.m_location->m_area->m_simulation.m_threadedTaskEngine) , m_project(nullptr) 
+void DigThreadedTask::clearReferences() { m_digObjective.m_digThreadedTask.clearPointer(); }
+DigObjective::DigObjective(Actor& a) : Objective(Config::digObjectivePriority), m_actor(a), m_digThreadedTask(m_actor.m_location->m_area->m_simulation.m_threadedTaskEngine) , m_project(nullptr) 
 { 
 	assert(m_actor.getFaction() != nullptr);
 }
@@ -66,14 +66,14 @@ void DigObjective::execute()
 			joinProject(*project);
 			return;
 		}
-		m_digThrededTask.create(*this);
+		m_digThreadedTask.create(*this);
 	}
 }
 void DigObjective::cancel()
 {
 	if(m_project != nullptr)
 		m_project->removeWorker(m_actor);
-	m_digThrededTask.maybeCancel();
+	m_digThreadedTask.maybeCancel();
 }
 void DigObjective::reset() 
 { 
@@ -85,7 +85,7 @@ void DigObjective::joinProject(DigProject& project)
 {
 	assert(m_project == nullptr);
 	m_project = &project;
-	project.addWorker(m_actor, *this);
+	project.addWorkerCandidate(m_actor, *this);
 }
 DigProject* DigObjective::getJoinableProjectAt(const Block& block)
 {
@@ -122,7 +122,7 @@ std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> DigProje
 		if(!random.percentChance(spoilData.chance))
 			continue;
 		uint32_t quantity = random.getInRange(spoilData.min, spoilData.max);
-		getLocation().m_hasItems.add(spoilData.itemType, spoilData.materialType, quantity);
+		output.emplace_back(&spoilData.itemType, &spoilData.materialType, quantity);
 	}
 	return output;
 }
@@ -134,15 +134,23 @@ uint32_t DigProject::getWorkerDigScore(Actor& actor)
 }
 void DigProject::onComplete()
 {
-	if(blockFeatureType == nullptr)
+	if(m_blockFeatureType == nullptr)
 		m_location.setNotSolid();
 	else
-		m_location.m_hasBlockFeatures.hew(*blockFeatureType);
+		m_location.m_hasBlockFeatures.hew(*m_blockFeatureType);
 	// Remove designations for other factions as well as owning faction.
 	m_location.m_area->m_hasDiggingDesignations.clearAll(m_location);
 }
+void DigProject::onDelay()
+{
+	m_location.m_hasDesignations.removeIfExists(m_faction, BlockDesignation::Dig);
+}
+void DigProject::offDelay()
+{
+	m_location.m_hasDesignations.insert(m_faction, BlockDesignation::Dig);
+}
 // What would the total delay time be if we started from scratch now with current workers?
-Step DigProject::getDelay() const
+Step DigProject::getDuration() const
 {
 	uint32_t totalScore = 0u;
 	for(auto& pair : m_workers)
@@ -166,7 +174,7 @@ void HasDigDesignationsForFaction::removeIfExists(Block& block)
 	if(m_data.contains(&block))
 		remove(block);
 }
-const BlockFeatureType* HasDigDesignationsForFaction::at(const Block& block) const { return m_data.at(const_cast<Block*>(&block)).blockFeatureType; }
+const BlockFeatureType* HasDigDesignationsForFaction::at(const Block& block) const { return m_data.at(const_cast<Block*>(&block)).m_blockFeatureType; }
 bool HasDigDesignationsForFaction::empty() const { return m_data.empty(); }
 // To be used by Area.
 void HasDigDesignations::addFaction(const Faction& faction)

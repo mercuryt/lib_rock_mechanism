@@ -43,7 +43,7 @@ Actor& Simulation::createActor(const AnimalSpecies& species, Block& block, Perce
 {
 	Attributes attributes(species, percentGrown);
 	std::wstring name(species.name.begin(), species.name.end());
-	//name.append(std::to_wstring(m_nextActorId));
+	name.append(std::to_wstring(m_nextActorId));
 	Actor& output = m_actors.emplace_back(
 		*this,
 		m_nextActorId,
@@ -160,15 +160,12 @@ void Simulation::fastForwardUntillPredicate(std::function<bool()> predicate, Ste
 	Step lastStep = m_step + maxSteps;
 	while(!m_eventSchedule.m_data.empty())
 	{
-		if(m_threadedTaskEngine.count() != 0)
-			++m_step;
-		else
+		if(m_threadedTaskEngine.count() == 0)
 		{
 			auto& pair = *m_eventSchedule.m_data.begin();
 			m_step = pair.first;
 		}
-		if(m_step > lastStep)
-			assert(false);
+		assert(m_step <= lastStep);
 		doStep();
 		if(predicate())
 			break;

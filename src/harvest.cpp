@@ -33,7 +33,16 @@ void HarvestThreadedTask::writeStep()
 {
 	assert(m_harvestObjective.m_block == nullptr);
 	if(!m_findsPath.found())
-		m_harvestObjective.m_actor.m_hasObjectives.cannotFulfillObjective(m_harvestObjective);
+	{
+		if(m_findsPath.m_useCurrentLocation)
+		{
+			m_harvestObjective.select(*m_findsPath.getBlockWhichPassedPredicate());
+			m_findsPath.reserveBlocksAtDestination(m_harvestObjective.m_actor.m_canReserve);
+			m_harvestObjective.execute();
+		}
+		else
+			m_harvestObjective.m_actor.m_hasObjectives.cannotFulfillObjective(m_harvestObjective);
+	}
 	else
 	{
 		if(!m_findsPath.areAllBlocksAtDestinationReservable(m_harvestObjective.m_actor.getFaction()))

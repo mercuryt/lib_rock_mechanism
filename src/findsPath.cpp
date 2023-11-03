@@ -31,7 +31,7 @@ struct ClosedList
 	}
 };
 */
-FindsPath::FindsPath(const HasShape& hs, bool detour) : m_hasShape(hs), m_target(nullptr), m_detour(detour), m_huristicDestination(nullptr), m_maxRange(UINT32_MAX) { }
+FindsPath::FindsPath(const HasShape& hs, bool detour) : m_hasShape(hs), m_target(nullptr), m_detour(detour), m_useCurrentLocation(false), m_huristicDestination(nullptr), m_maxRange(UINT32_MAX) { }
 /*
 // Depth first search.
 void FindsPath::depthFirstSearch(std::function<bool(const Block&, const Block&)>& isValid, std::function<bool(const ProposedRouteStep&, const ProposedRouteStep&)>& compare, std::function<bool(const Block&)>& isDone, std::function<std::vector<std::pair<Block*, uint32_t>>(Block&)>& adjacentCosts, Block& start)
@@ -95,7 +95,6 @@ void FindsPath::pathAdjacentToBlock(const Block& target)
 void FindsPath::pathToPredicate(std::function<bool(const Block&, Facing facing)>& predicate)
 {
 	assert(m_route.empty());
-	assert(!predicate(*m_hasShape.m_location, m_hasShape.m_facing));
 	std::unordered_set<Block*> closedList;
 	closedList.insert(m_hasShape.m_location);
 	std::list<RouteNode*> openList;
@@ -129,6 +128,8 @@ void FindsPath::pathToPredicate(std::function<bool(const Block&, Facing facing)>
 						routeNode = routeNode->previous;
 					}
 					std::reverse(m_route.begin(), m_route.end());
+					if(m_route.empty())
+						m_useCurrentLocation = true;
 					return;
 				}
 				// Block is not destination, and either this isn't a detour request or block can be entered currently, add it to openList.
@@ -207,7 +208,6 @@ void FindsPath::pathToUnreservedAdjacentToHasShape(const HasShape& hasShape, con
 void FindsPath::pathToPredicateWithHuristicDestination(std::function<bool(const Block&, Facing facing)>& predicate, const Block& huristicDestination)
 {
 	assert(m_route.empty());
-	assert(!predicate(*m_hasShape.m_location, m_hasShape.m_facing));
 	std::unordered_set<const Block*> closedList;
 	closedList.insert(m_hasShape.m_location);
 	// Huristic: taxi distance to destination times constant plus total move cost.
@@ -249,6 +249,8 @@ void FindsPath::pathToPredicateWithHuristicDestination(std::function<bool(const 
 						routeNode = routeNode->previous;
 					}
 					std::reverse(m_route.begin(), m_route.end());
+					if(m_route.empty())
+						m_useCurrentLocation = true;
 					return;
 				}
 				// Adjacent is not destination, and either this isn't a detour request or block can be entered currently, add it to openList.
@@ -301,6 +303,11 @@ bool FindsPath::areAllBlocksAtDestinationReservable(const Faction* faction) cons
 {
 	if(faction ==  nullptr)
 		return true;
+	if(m_route.empty())
+	{
+		assert(m_useCurrentLocation);
+		return m_hasShape.allBlocksAtLocationAndFacingAreReservable(*m_hasShape.m_location, m_hasShape.m_facing, *faction);
+	}
 	return m_hasShape.allBlocksAtLocationAndFacingAreReservable(*m_route.back(), getFacingAtDestination(), *faction);
 }
 void FindsPath::reserveBlocksAtDestination(CanReserve& canReserve)
@@ -309,4 +316,9 @@ void FindsPath::reserveBlocksAtDestination(CanReserve& canReserve)
 		return;
 	for(Block* occupied : getOccupiedBlocksAtEndOfPath())
 		occupied->m_reservable.reserveFor(canReserve, 1u);
+}
+void FindsPath::reset()
+{
+	m_target = nullptr;
+	m_route.clear();
 }

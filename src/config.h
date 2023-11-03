@@ -139,18 +139,26 @@ namespace Config
 	inline Step stepsToDelayBeforeTryingAgainToCompleteAnObjective;
 	inline uint32_t hitScaleModifier;
 	inline uint32_t hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea;
-	inline uint32_t ratioOfHitAreaToBodyPartVolumeForSever;
+	inline float ratioOfHitAreaToBodyPartVolumeForSever;
 	inline uint32_t unarmedCombatScoreBase;
 	inline uint32_t targetedHaulPriority;
 	inline uint32_t stationPriority;
 	inline Step stepsToDelayBeforeTryingAgainToFollowLeader;
 	inline uint32_t getIntoAttackPositionMaxRange;
+	inline Step stepsToDelayBeforeTryingAgainToReserveItemsAndActorsForAProject;
 	
 	inline uint32_t convertBodyPartVolumeToArea(uint32_t volume){ return sqrt(volume); }
 	inline void load()
 	{
 		std::ifstream f("data/config.json");
 		Json data = Json::parse(f);
+		hoursPerDay = data["hoursPerDay"].get<uint32_t>();
+		minutesPerHour = data["minutesPerHour"].get<uint32_t>();
+		secondsPerMinute = data["secondsPerMinute"].get<uint32_t>();
+		stepsPerSecond = data["stepsPerSecond"].get<Step>();
+		stepsPerMinute = stepsPerSecond * secondsPerMinute;
+		stepsPerHour = stepsPerMinute * minutesPerHour;
+		stepsPerDay = stepsPerHour * hoursPerDay;
 		addToStockPileDelaySteps = data["addToStockPileDelaySteps"].get<Step>();
 		maxBlockVolume = data["maxBlockVolume"].get<Volume>();
 		maxBlockVolumeHardLimit = data["maxBlockVolumeHardLimit"].get<Volume>();
@@ -179,7 +187,7 @@ namespace Config
 		musclePierceForceCost = data["musclePierceForceCost"].get<float>();
 		fatPierceForceCost = data["fatPierceForceCost"].get<float>();
 		skinPierceForceCost = data["skinPierceForceCost"].get<float>();
-		stepsTillDiePlantPriorityOveride = data["stepsTillDiePlantPriorityOveride"].get<Step>();
+		stepsTillDiePlantPriorityOveride = data["hoursTillDiePlantPriorityOveride"].get<uint32_t>() * stepsPerHour;
 		maxDistanceVisionModifier = data["maxDistanceVisionModifier"].get<float>();
 		percentOfPlantMassWhichIsFoliage = data["percentOfPlantMassWhichIsFoliage"].get<Percent>();
 		minimumPercentFoliageForGrow = data["minimumPercentFoliageForGrow"].get<Percent>();
@@ -192,7 +200,7 @@ namespace Config
 		moveTryAttemptsBeforeDetour = data["moveTryAttemptsBeforeDetour"].get<uint32_t>();
 		sowSeedsStepsDuration = data["sowSeedsStepsDuration"].get<Step>();
 		sowSeedsPriority = data["sowSeedsPriority"].get<uint32_t>();
-		stepsAttackCoolDownReductionPerPointOfDextarity = data["stepsAttackCoolDownReductionPerPointOfDextarity"].get<float>();
+		stepsAttackCoolDownReductionPerPointOfDextarity = data["secondsAttackCoolDownReductionPerPointOfDextarity"].get<float>() * stepsPerSecond;
 		unitsOfMoveSpeedPerUnitOfAgility = data["unitsOfMoveSpeedPerUnitOfAgility"].get<float>();
 		unitsOfCarryMassPerUnitOfStrength = data["unitsOfCarryMassPerUnitOfStrength"].get<float>();
 		objectivePrioritySleep = data["objectivePrioritySleep"].get<uint32_t>();
@@ -204,8 +212,8 @@ namespace Config
 		heatFractionForSmoulder = data["heatFractionForSmoulder"].get<float>();
 		heatFractionForBurn = data["heatFractionForBurn"].get<float>();
 		fireRampDownPhaseDurationFraction = data["fireRampDownPhaseDurationFraction"].get<float>();
-		stepsToDrink = data["stepsToDrink"].get<Step>();
-		stepsToEat = data["stepsToEat"].get<Step>();
+		stepsToDrink = data["secondsToDrink"].get<uint32_t>() * stepsPerSecond;
+		stepsToEat = data["secondsToEat"].get<Step>() * stepsPerSecond;
 		drinkPriority = data["drinkPriority"].get<uint32_t>();
 		eatPriority = data["eatPriority"].get<uint32_t>();
 		maxDistanceToLookForEatingLocation = data["maxDistanceToLookForEatingLocation"].get<uint32_t>();
@@ -234,13 +242,6 @@ namespace Config
 		itemQualityCombatModifier = data["itemQualityCombatModifier"].get<float>();
 		itemWearCombatModifier = data["itemWearCombatModifier"].get<float>();
 		givePlantsFluidPriority = data["givePlantsFluidPriority"].get<uint32_t>();
-		hoursPerDay = data["hoursPerDay"].get<uint32_t>();
-		minutesPerHour = data["minutesPerHour"].get<uint32_t>();
-		secondsPerMinute = data["secondsPerMinute"].get<uint32_t>();
-		stepsPerSecond = data["stepsPerSecond"].get<Step>();
-		stepsPerMinute = stepsPerSecond * secondsPerMinute;
-		stepsPerHour = stepsPerMinute * minutesPerHour;
-		stepsPerDay = stepsPerHour * hoursPerDay;
 		sleepObjectivePriority = data["sleepObjectivePriority"].get<uint32_t>();
 		minimumHaulSpeed = data["minimumHaulSpeed"].get<uint32_t>();
 		stepsFrequencyToLookForHaulSubprojects = data["stepsFrequencyToLookForHaulSubprojects"].get<Step>();
@@ -285,5 +286,6 @@ namespace Config
 		stationPriority = data["stationPriority"].get<uint32_t>();
 		stepsToDelayBeforeTryingAgainToFollowLeader = data["stepsToDelayBeforeTryingAgainToFollowLeader"].get<uint32_t>();
 		getIntoAttackPositionMaxRange = data["getIntoAttackPositionMaxRange"].get<uint32_t>();
+		stepsToDelayBeforeTryingAgainToReserveItemsAndActorsForAProject = data["minutesToDelayBeforeTryingAgaintoReserveItemsAndActorsForAProject"].get<uint32_t>() * stepsPerMinute;
 	}
 }

@@ -40,11 +40,6 @@ class Reservable final
 	}
 public:
 	Reservable(uint32_t mr) : m_maxReservations(mr) {}
-	~Reservable()
-	{
-		for(auto& pair : m_canReserves)
-			pair.first->m_reservables.erase(this);
-	}
 	bool isFullyReserved(const Faction* faction) const 
 	{ 
 		if(faction == nullptr)
@@ -76,7 +71,6 @@ public:
 		if(canReserve.m_faction == nullptr)
 			return;
 		assert(m_canReserves.contains(&canReserve));
-		assert(m_canReserves.at(&canReserve) >= m_reservedCounts.at(canReserve.m_faction));
 		assert(canReserve.m_reservables.contains(this));
 		canReserve.m_reservables.erase(this);
 		if(m_canReserves.at(&canReserve) == quantity)
@@ -84,10 +78,10 @@ public:
 		else
 			m_canReserves.at(&canReserve) -= quantity;
 	}
-	void maybeClearReservationFor(CanReserve& canReserve)
+	void maybeClearReservationFor(CanReserve& canReserve, const uint32_t quantity = 1u)
 	{
 		if(canReserve.m_reservables.contains(this))
-			clearReservationFor(canReserve);
+			clearReservationFor(canReserve, quantity);
 	}
 	void setMaxReservations(const uint32_t mr) { m_maxReservations = mr; }
 	void updateFactionFor(CanReserve& canReserve, const Faction* oldFaction, const Faction* newFaction)
@@ -103,6 +97,8 @@ public:
 	}
 	uint32_t getUnreservedCount(const Faction& faction) const
 	{
+		if(!m_reservedCounts.contains(&faction))
+			return m_maxReservations;
 		return m_maxReservations - m_reservedCounts.at(&faction);
 	}
 };

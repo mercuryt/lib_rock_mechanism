@@ -4,7 +4,17 @@
 #include "area.h"
 #include <unordered_set>
 #include <algorithm>
-// Check that the haul strategy choosen during read step is still valid in write step.
+void HaulSubprojectParamaters::reset()
+{
+	toHaul = nullptr;
+	fluidType = nullptr;
+	quantity = 0;
+	strategy = HaulStrategy::None;
+	haulTool = nullptr;
+	beastOfBurden = nullptr;
+	projectItemCounts = nullptr;	
+}
+// Check that the haul strategy selected in read step is still valid in write step.
 bool HaulSubprojectParamaters::validate() const
 {
 	assert(toHaul != nullptr);
@@ -218,23 +228,20 @@ uint32_t CanPickup::maximumNumberWhichCanBeCarriedWithMinimumSpeed(const HasShap
 HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters) : m_project(p), m_workers(paramaters.workers.begin(), paramaters.workers.end()), m_toHaul(*paramaters.toHaul), m_quantity(paramaters.quantity), m_strategy(paramaters.strategy), m_haulTool(paramaters.haulTool), m_leader(nullptr), m_itemIsMoving(false), m_beastOfBurden(paramaters.beastOfBurden), m_projectItemCounts(*paramaters.projectItemCounts), m_genericItemType(nullptr), m_genericMaterialType(nullptr)
 {
 	assert(!m_workers.empty());
-	for(Actor* actor : m_workers)
-	{
-		m_project.m_workers.at(actor).haulSubproject = this;
-		commandWorker(*actor);
-	}
 	if(m_haulTool != nullptr)
 		m_haulTool->m_reservable.reserveFor(m_project.m_canReserve, 1u);
 	if(m_beastOfBurden != nullptr)
 		m_beastOfBurden->m_reservable.reserveFor(m_project.m_canReserve, 1u);
-	m_toHaul.m_reservable.reserveFor(m_project.m_canReserve, m_quantity);
-	m_projectItemCounts.reserved += m_quantity;
 	if(m_toHaul.isGeneric())
 	{
 		m_genericItemType = &static_cast<Item&>(m_toHaul).m_itemType;
 		m_genericMaterialType = &static_cast<Item&>(m_toHaul).m_materialType;
 	}
-
+	for(Actor* actor : m_workers)
+	{
+		m_project.m_workers.at(actor).haulSubproject = this;
+		commandWorker(*actor);
+	}
 }
 void HaulSubproject::commandWorker(Actor& actor)
 {
@@ -268,7 +275,8 @@ void HaulSubproject::commandWorker(Actor& actor)
 				{
 					actor.m_canPickup.pickUp(m_toHaul, m_quantity);
 					actor.m_canReserve.clearAll();
-					m_toHaul.m_reservable.clearReservationFor(m_project.m_canReserve, m_quantity);
+					// If the actor pathed to toHaul then it will be resereved but if the actor just happens to be next to it then it won't.
+					m_toHaul.m_reservable.maybeClearReservationFor(m_project.m_canReserve, m_quantity);
 					// From here on out we cannot use m_toHaul unless we test for generic.
 					commandWorker(actor);
 				}
@@ -382,7 +390,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 					{
 						// Can load here.
 						//TODO: set delay for loading.
-						m_toHaul.m_reservable.clearReservationFor(m_project.m_canReserve, m_quantity);
+						m_toHaul.m_reservable.maybeClearReservationFor(m_project.m_canReserve, m_quantity);
 						m_haulTool->m_hasCargo.load(m_toHaul, m_quantity);
 						actor.m_canReserve.clearAll();
 						actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
@@ -445,7 +453,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 					{
 						// Actor is at pickup location.
 						// TODO: loading delay.
-						m_toHaul.m_reservable.clearReservationFor(m_project.m_canReserve, m_quantity);
+						m_toHaul.m_reservable.maybeClearReservationFor(m_project.m_canReserve, m_quantity);
 						m_haulTool->m_hasCargo.load(m_toHaul, m_quantity);
 						actor.m_canReserve.clearAll();
 						actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
@@ -666,13 +674,14 @@ bool HaulSubproject::allWorkersAreAdjacentTo(HasShape& hasShape)
 {
 	return std::all_of(m_workers.begin(), m_workers.end(), [&](Actor* worker) { return worker->isAdjacentTo(hasShape); });
 }
-HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& project, HasShape& toHaul, Actor& worker, ProjectItemCounts& projectItemCounts)
+HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& project, HasShape& toHaul, Actor& worker)
 {
 	// TODO: make exception for slow haul if very close.
 	HaulSubprojectParamaters output;
 	output.toHaul = &toHaul;
-	output.projectItemCounts = &projectItemCounts;
-	uint32_t maxQuantityRequested = (uint32_t)projectItemCounts.required - projectItemCounts.reserved;
+	output.projectItemCounts = project.m_toPickup.at(&toHaul).first;
+	uint32_t maxQuantityRequested = project.m_toPickup.at(&toHaul).second;
+	assert(maxQuantityRequested != 0);
 	// Individual
 	// TODO:: Prioritize cart if a large number of items are requested.
 	uint32_t maxQuantityCanCarry = worker.m_canPickup.maximumNumberWhichCanBeCarriedWithMinimumSpeed(toHaul, project.getMinimumHaulSpeed());

@@ -11,7 +11,7 @@ TargetedHaulProject& AreaHasTargetedHauling::begin(std::vector<Actor*> actors, I
 	TargetedHaulProject& project = m_projects.emplace_back(actors.front()->getFaction(), destination, item);
 	for(Actor* actor : actors)
 	{
-		std::unique_ptr<Objective> objective = std::make_unique<TargetedHaulObjective>(item, *actor, project);
+		std::unique_ptr<Objective> objective = std::make_unique<TargetedHaulObjective>(*actor, project);
 		actor->m_hasObjectives.addTaskToStart(std::move(objective));
 	}
 	return m_projects.back();

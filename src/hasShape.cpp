@@ -49,6 +49,7 @@ bool HasShape::isAdjacentTo(Block& location) const
 }
 bool HasShape::predicateForAnyOccupiedBlock(std::function<bool(const Block&)> predicate) const
 {
+	assert(!m_blocks.empty());
 	for(Block* block : m_blocks)
 		if(predicate(*block))
 			return true;
@@ -56,6 +57,7 @@ bool HasShape::predicateForAnyOccupiedBlock(std::function<bool(const Block&)> pr
 }
 bool HasShape::predicateForAnyAdjacentBlock(std::function<bool(const Block&)> predicate) const
 {
+	assert(m_location != nullptr);
 	//TODO: cache this.
 	for(auto [x, y, z] : m_shape->adjacentPositionsWithFacing(m_facing))
 	{

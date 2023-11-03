@@ -28,15 +28,17 @@ class MedicalProject final : public Project
 	Actor& m_doctor;
 	Wound& m_wound;
 	MedicalProjectType& m_medicalProjectType;
-public:
-	MedicalProject(Actor& p, Block& location, Actor& doctor, Wound& wound, MedicalProjectType& medicalProjectType) : Project(*doctor.getFaction(), location, 0), m_patient(p), m_doctor(doctor), m_wound(wound), m_medicalProjectType(medicalProjectType) { }
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
 	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
 	void onComplete();
-	Step getDelay() const;
+	void onDelay();
+	void offDelay();
+	Step getDuration() const;
 	uint32_t getItemScaleFactor() const;
+public:
+	MedicalProject(Actor& p, Block& location, Actor& doctor, Wound& wound, MedicalProjectType& medicalProjectType) : Project(doctor.getFaction(), location, 0), m_patient(p), m_doctor(doctor), m_wound(wound), m_medicalProjectType(medicalProjectType) { }
 	friend class AreaHasMedicalPatientsForFaction;
 };
 struct SortPatientsByPriority

@@ -14,26 +14,27 @@ void ConstructThreadedTask::readStep()
 }
 void ConstructThreadedTask::writeStep()
 {
-	if(!m_findsPath.found())
+	if(!m_findsPath.found() && !m_findsPath.m_useCurrentLocation)
 		m_constructObjective.m_actor.m_hasObjectives.cannotFulfillObjective(m_constructObjective);
 	else
 	{
-		// One or more destination blocks has been reserved since result was found, get a new one.
-		if(!m_constructObjective.m_actor.allBlocksAtLocationAndFacingAreReservable(*m_findsPath.getPath().back(), m_findsPath.getFacingAtDestination()))
+		if(!m_findsPath.areAllBlocksAtDestinationReservable(m_constructObjective.m_actor.getFaction()))
 		{
+			// Proposed location while constructging has been reserved already, try to find another.
 			m_constructObjective.m_constructThreadedTask.create(m_constructObjective);
 			return;
 		}
-		Block& projectLocation = *m_findsPath.getBlockWhichPassedPredicate();
-		auto& hasConstructionDesignations = projectLocation.m_area->m_hasConstructionDesignations;
-		const Faction& faction = *m_constructObjective.m_actor.getFaction();
-		if(!hasConstructionDesignations.contains(faction, projectLocation))
+		Block& target = *m_findsPath.getBlockWhichPassedPredicate();
+		ConstructProject& project = target.m_area->m_hasConstructionDesignations.getProject(*m_constructObjective.m_actor.getFaction(), target);
+		if(project.canAddWorker(m_constructObjective.m_actor))
 		{
-			// Project no longer exists.
-			m_constructObjective.m_constructThreadedTask.create(m_constructObjective);
-			return;
+			// Join project and reserve standing room.
+			m_constructObjective.joinProject(project);
+			m_findsPath.reserveBlocksAtDestination(m_constructObjective.m_actor.m_canReserve);
 		}
-		m_constructObjective.joinProject(hasConstructionDesignations.getProject(*m_constructObjective.m_actor.getFaction(), projectLocation));
+		else
+			// Project can no longer accept this worker, try again.
+			m_constructObjective.m_constructThreadedTask.create(m_constructObjective);
 	}
 }
 void ConstructThreadedTask::clearReferences() { m_constructObjective.m_constructThreadedTask.clearPointer(); }
@@ -49,7 +50,7 @@ void ConstructObjective::execute()
 			if(joinableProjectExistsAt(block))
 			{
 				project = &block.m_area->m_hasConstructionDesignations.getProject(*m_actor.getFaction(), const_cast<Block&>(block));
-				return true;
+				return project->canAddWorker(m_actor);
 			}
 			return false;
 		};
@@ -79,7 +80,7 @@ void ConstructObjective::joinProject(ConstructProject& project)
 {
 	assert(m_project == nullptr);
 	m_project = &project;
-	project.addWorker(m_actor, *this);
+	project.addWorkerCandidate(m_actor, *this);
 }
 ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAdjacentTo(const Block& location, Facing facing)
 {
@@ -144,8 +145,16 @@ void ConstructProject::onComplete()
 		m_location.m_hasBlockFeatures.construct(*m_blockFeatureType, m_materialType);
 	m_location.m_area->m_hasConstructionDesignations.clearAll(m_location);
 }
+void ConstructProject::onDelay()
+{
+	m_location.m_hasDesignations.removeIfExists(m_faction, BlockDesignation::Construct);
+}
+void ConstructProject::offDelay()
+{
+	m_location.m_hasDesignations.insert(m_faction, BlockDesignation::Construct);
+}
 // What would the total delay time be if we started from scratch now with current workers?
-Step ConstructProject::getDelay() const
+Step ConstructProject::getDuration() const
 {
 	uint32_t totalScore = 0;
 	for(auto& pair : m_workers)

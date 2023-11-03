@@ -19,7 +19,7 @@ TEST_CASE("actor")
 	// Single tile.
 	REQUIRE(simulation.m_eventSchedule.count() == 1);
 	Actor& dwarf1 = simulation.createActor(dwarf, origin1);
-	REQUIRE(dwarf1.m_name == L"dwarf");
+	REQUIRE(dwarf1.m_name == L"dwarf1");
 	REQUIRE(dwarf1.m_canMove.getMoveSpeed() == 7);
 	REQUIRE(simulation.m_eventSchedule.count() == 4);
 	REQUIRE(dwarf1.m_location == &origin1);

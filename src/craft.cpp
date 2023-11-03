@@ -1,7 +1,7 @@
 #include "craft.h"
 #include "area.h"
 #include "util.h"
-Step CraftStepProject::getDelay() const
+Step CraftStepProject::getDuration() const
 {
 	uint32_t totalScore = 0;
 	for(auto& pair : m_workers)
@@ -201,7 +201,7 @@ void HasCraftingLocationsAndJobs::jobComplete(CraftJob& craftJob)
 void HasCraftingLocationsAndJobs::makeAndAssignStepProject(CraftJob& craftJob, Block& location, CraftObjective& objective)
 {
 	craftJob.craftStepProject = std::make_unique<CraftStepProject>(objective.m_actor.getFaction(), location, **craftJob.stepIterator, craftJob);
-	craftJob.craftStepProject->addWorker(objective.m_actor, objective);
+	craftJob.craftStepProject->addWorkerCandidate(objective.m_actor, objective);
 	unindexAssigned(craftJob);
 }
 // May return nullptr;

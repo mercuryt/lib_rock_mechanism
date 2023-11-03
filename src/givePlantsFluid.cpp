@@ -63,26 +63,36 @@ void GivePlantsFluidThreadedTask::writeStep()
 	}
 	else if(m_objective.m_fluidHaulingItem == nullptr)
 	{
-		if(m_findsPath.found())
+		if(!m_findsPath.found() && !m_findsPath.m_useCurrentLocation)
 		{
-			if(!m_findsPath.areAllBlocksAtDestinationReservable(faction))
-			{
-				m_objective.m_threadedTask.create(m_objective);
-				return;
-			}
-			Item* item = m_objective.getFluidHaulingItemAt(*m_findsPath.getBlockWhichPassedPredicate());
-			if(item == nullptr || item->m_reservable.isFullyReserved(faction))
-			{
-				m_objective.m_threadedTask.create(m_objective);
-				return;
-			}
-			m_findsPath.reserveBlocksAtDestination(m_objective.m_actor.m_canReserve);
-			m_objective.m_actor.m_canMove.setPath(m_findsPath.getPath());
-			m_objective.select(*item);
-		}
-		else
 			// No container avaliable.
 			m_objective.m_actor.m_hasObjectives.cannotFulfillObjective(m_objective);
+			return;
+		}
+		if(!m_findsPath.areAllBlocksAtDestinationReservable(faction))
+		{
+			// Selected location reserved already, try again.
+			m_objective.m_threadedTask.create(m_objective);
+			return;
+		}
+		Item* item = m_objective.getFluidHaulingItemAt(*m_findsPath.getBlockWhichPassedPredicate());
+		if(item == nullptr || item->m_reservable.isFullyReserved(faction))
+		{
+			// Selected Item moved, destroyed or reserved, try again.
+			m_objective.m_threadedTask.create(m_objective);
+			return;
+		}
+		m_objective.select(*item);
+		if(m_findsPath.found())
+		{
+			m_findsPath.reserveBlocksAtDestination(m_objective.m_actor.m_canReserve);
+			m_objective.m_actor.m_canMove.setPath(m_findsPath.getPath());
+		}
+		else
+		{
+			m_objective.m_actor.reserveOccupied(m_objective.m_actor.m_canReserve);
+			m_objective.execute();
+		}
 	}
 }
 void GivePlantsFluidThreadedTask::clearReferences() { m_objective.m_threadedTask.clearPointer(); }

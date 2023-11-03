@@ -25,7 +25,7 @@ public:
 class DigObjective final : public Objective
 {
 	Actor& m_actor;
-	HasThreadedTask<DigThreadedTask> m_digThrededTask;
+	HasThreadedTask<DigThreadedTask> m_digThreadedTask;
 	Project* m_project;
 public:
 	DigObjective(Actor& a);
@@ -53,18 +53,20 @@ public:
 };
 class DigProject final : public Project
 {
-	const BlockFeatureType* blockFeatureType;
+	void onDelay();
+	void offDelay();
+	void onComplete();
+	const BlockFeatureType* m_blockFeatureType;
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
 	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
 	static uint32_t getWorkerDigScore(Actor& actor);
+	// What would the total delay time be if we started from scratch now with current workers?
 public:
 	// BlockFeatureType can be null, meaning the block is to be fully excavated.
-	DigProject(const Faction* faction, Block& block, const BlockFeatureType* bft) : Project(faction, block, Config::maxNumberOfWorkersForDigProject), blockFeatureType(bft) { }
-	void onComplete();
-	// What would the total delay time be if we started from scratch now with current workers?
-	Step getDelay() const;
+	DigProject(const Faction* faction, Block& block, const BlockFeatureType* bft) : Project(faction, block, Config::maxNumberOfWorkersForDigProject), m_blockFeatureType(bft) { }
+	Step getDuration() const;
 	friend class HasDigDesignationsForFaction;
 };
 // Part of HasDigDesignations.

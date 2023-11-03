@@ -25,9 +25,11 @@ struct HaulSubprojectParamaters final
 	Item* haulTool;
 	Actor* beastOfBurden;
 	ProjectItemCounts* projectItemCounts;
-	HaulSubprojectParamaters() : toHaul(nullptr), fluidType(nullptr), quantity(0), strategy(HaulStrategy::None), haulTool(nullptr), beastOfBurden(nullptr), projectItemCounts(nullptr) { }
+	HaulSubprojectParamaters() { reset(); }
+	void reset();
 	[[nodiscard, maybe_unused]] bool validate() const;
 };
+// Dispatch one or more actors from a project to haul an item or actor to the project location.
 // ToHaul is either an Item or an Actor.
 class HaulSubproject final
 {
@@ -54,7 +56,7 @@ public:
 	void cancel();
 	HasShape& getToHaul() { return m_toHaul; }
 	[[nodiscard]] bool allWorkersAreAdjacentTo(HasShape& hasShape);
-	static HaulSubprojectParamaters tryToSetHaulStrategy(const Project& project, HasShape& hasShape, Actor& worker, ProjectItemCounts& projectItemCounts);
+	static HaulSubprojectParamaters tryToSetHaulStrategy(const Project& project, HasShape& hasShape, Actor& worker);
 	static std::vector<Actor*> actorsNeededToHaulAtMinimumSpeed(const Project& project, Actor& leader, const HasShape& toHaul);
 	[[nodiscard]] static uint32_t maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(const Actor& leader, const Item& haulTool, const HasShape& toHaul, uint32_t minimumSpeed);
 	[[nodiscard]] static uint32_t getSpeedWithHaulToolAndCargo(const Actor& leader, const Item& haulTool, const HasShape& toHaul, uint32_t quantity);

@@ -125,7 +125,10 @@ void ActorCanMove::setDestination(Block& destination, bool detour, bool adjacent
 	{
 		m_destination = &destination;
 		assert(destination.m_hasShapes.anythingCanEnterEver());
+		assert(m_actor.m_location != m_destination);
 	}
+	else
+		assert(!m_actor.isAdjacentTo(destination));
 	clearAllEventsAndTasks();
 	if(unreserved && !adjacent)
 		assert(!destination.m_reservable.isFullyReserved(m_actor.getFaction()));
@@ -135,11 +138,11 @@ void ActorCanMove::setDestination(Block& destination, bool detour, bool adjacent
 }
 void ActorCanMove::setDestinationAdjacentTo(Block& destination, bool detour, bool unreserved, bool reserve)
 {
-	assert(!m_actor.isAdjacentTo(destination));
 	setDestination(destination, detour, true, unreserved, reserve);
 }
 void ActorCanMove::setDestinationAdjacentTo(HasShape& hasShape, bool detour, bool unreserved, bool reserve) 
 {
+	assert(!m_actor.isAdjacentTo(hasShape));
 	std::function<bool(const Block&)> predicate = [&](const Block& block){ return hasShape.m_blocks.contains(const_cast<Block*>(&block)); };
 	// Actor, predicate, destinationHuristic, detour, adjacent, unreserved.
 	m_threadedTask.create(m_actor, predicate, hasShape.m_location, detour, true, unreserved, reserve);
@@ -178,7 +181,17 @@ bool ActorCanMove::ensureIsAdjacent(Block& block)
 	setDestinationAdjacentTo(block);
 	return false;
 }
-
+Block* ActorCanMove::ensureIsAdjacentToPredicateAndUnreserved(std::function<bool(const Block&)> predicate)
+{
+	Block* alredyAdjacent = m_actor.getBlockWhichIsAdjacentWithPredicate(predicate);
+	if(alredyAdjacent != nullptr)
+		return alredyAdjacent;
+	else
+	{
+		setDestinationToUnreservedAdjacentToPredicate(predicate);
+		return nullptr;
+	}
+}
 MoveEvent::MoveEvent(Step delay, ActorCanMove& cm) : ScheduledEventWithPercent(cm.m_actor.getSimulation(), delay), m_canMove(cm) { }
 
 // Path Threaded Task.
@@ -208,6 +221,12 @@ void PathThreadedTask::writeStep()
 	m_findsPath.cacheMoveCosts();
 	if(!m_findsPath.found())
 	{
+		if(m_findsPath.m_useCurrentLocation && (!m_unreservedDestination || m_actor.allOccupiedBlocksAreReservable(*m_actor.getFaction())))
+		{
+			// The actor's current location is already acceptable.
+			m_actor.m_hasObjectives.taskComplete();
+			return;
+		}
 		// TODO:
 		// Should this be restart, or even cannotCompleteTask?
 		// cannotFulfill will cause a delay to be appiled before this objective can be added to the list again.

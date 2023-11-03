@@ -27,7 +27,7 @@
 	"musclePierceForceCost": 10.0,
 	"fatPierceForceCost": 10.0,
 	"skinPierceForceCost": 10.0,
-	"stepsTillDiePlantPriorityOveride": 1000,
+	"hoursTillDiePlantPriorityOveride": 6,
 	"maxDistanceVisionModifier": 1.1,
 	"percentOfPlantMassWhichIsFoliage": 30,
 	"minimumPercentFoliageForGrow": 90,
@@ -40,7 +40,7 @@
 	"moveTryAttemptsBeforeDetour": 2,
 	"sowSeedsStepsDuration": 20,
 	"sowSeedsPriority": 10,
-	"stepsAttackCoolDownReductionPerPointOfDextarity": 0.1,
+	"secondsAttackCoolDownReductionPerPointOfDextarity": 0.005,
 	"unitsOfMoveSpeedPerUnitOfAgility": 0.2,
 	"unitsOfCarryMassPerUnitOfStrength": 500,
 	"objectivePrioritySleep": 20,
@@ -52,8 +52,8 @@
 	"heatFractionForSmoulder": 0.1,
 	"heatFractionForBurn": 0.4,
 	"fireRampDownPhaseDurationFraction": 0.2,
-	"stepsToDrink": 40,
-	"stepsToEat": 100,
+	"secondsToDrink": 5,
+	"secondsToEat": 200,
 	"drinkPriority": 200,
 	"eatPriority": 100,
 	"maxDistanceToLookForEatingLocation": 100,
@@ -129,5 +129,6 @@
 	"targetedHaulPriority": 500,
 	"stationPriority": 1500,
 	"stepsToDelayBeforeTryingAgainToFollowLeader": 40,
-	"getIntoAttackPositionMaxRange": 40
+	"getIntoAttackPositionMaxRange": 40,
+	"minutesToDelayBeforeTryingAgaintoReserveItemsAndActorsForAProject": 30
 }

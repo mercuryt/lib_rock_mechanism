@@ -89,7 +89,7 @@ void DrinkThreadedTask::readStep()
 		return m_drinkObjective.containsSomethingDrinkable(block);
 	};
 	m_findsPath.pathToUnreservedAdjacentToPredicate(predicate, *m_drinkObjective.m_actor.getFaction());
-	if(!m_findsPath.found())
+	if(!m_findsPath.found() && !m_findsPath.m_useCurrentLocation)
 	{
 		// Nothing to drink here, try to leave.
 		m_findsPath.pathToAreaEdge();
@@ -100,7 +100,10 @@ void DrinkThreadedTask::writeStep()
 {
 	if(!m_findsPath.found())
 	{
-		m_drinkObjective.m_actor.m_hasObjectives.cannotFulfillNeed(m_drinkObjective);
+		if(m_findsPath.m_useCurrentLocation)
+			m_drinkObjective.m_actor.m_hasObjectives.taskComplete();
+		else
+			m_drinkObjective.m_actor.m_hasObjectives.cannotFulfillNeed(m_drinkObjective);
 	}
 	else
 	{
@@ -111,6 +114,7 @@ void DrinkThreadedTask::writeStep()
 		}
 		m_drinkObjective.m_actor.m_canMove.setPath(m_findsPath.getPath());
 	}
+	// Need task becomes exit area.
 	if(m_noDrinkFound)
 		m_drinkObjective.m_noDrinkFound = true;
 }

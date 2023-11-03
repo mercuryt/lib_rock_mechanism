@@ -55,14 +55,16 @@ public:
 class StockPileProject final : public Project
 {
 	Item& m_item;
-public:
-	StockPileProject(const Faction* faction, Block& block, Item& item) : Project(faction, block, 1), m_item(item) { }
-	Step getDelay() const;
+	Step getDuration() const;
 	void onComplete();
+	void onDelay() { cancel(); }
+	void offDelay() { assert(false); }
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
 	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
+public:
+	StockPileProject(const Faction* faction, Block& block, Item& item) : Project(faction, block, 1), m_item(item) { }
 	friend class HasStockPiles;
 };
 class StockPile

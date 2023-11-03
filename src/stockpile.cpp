@@ -75,7 +75,7 @@ void StockPileObjective::reset()
 	m_project = nullptr;
 	m_actor.m_canReserve.clearAll();
 }
-Step StockPileProject::getDelay() const { return Config::addToStockPileDelaySteps; }
+Step StockPileProject::getDuration() const { return Config::addToStockPileDelaySteps; }
 void StockPileProject::onComplete()
 {
 	assert(m_workers.size() == 1);
@@ -239,7 +239,7 @@ void HasStockPiles::makeProject(Item& item, Block& destination, StockPileObjecti
 	assert(!destination.m_isPartOfStockPile.hasStockPile());
 	assert(destination.m_isPartOfStockPile.getIsAvalable(*objective.m_actor.getFaction()));
 	m_projectsByItem.try_emplace(&item, objective.m_actor.getFaction(), destination, item);
-	m_projectsByItem.at(&item).addWorker(objective.m_actor, objective);	
+	m_projectsByItem.at(&item).addWorkerCandidate(objective.m_actor, objective);	
 }
 void HasStockPiles::cancelProject(StockPileProject& project)
 {

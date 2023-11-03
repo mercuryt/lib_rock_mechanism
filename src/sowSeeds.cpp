@@ -36,8 +36,16 @@ void SowSeedsThreadedTask::writeStep()
 {
 	assert(m_objective.m_block == nullptr);
 	if(!m_findsPath.found())
-		// Cannot find any accessable field to sow.
-		m_objective.m_actor.m_hasObjectives.cannotFulfillObjective(m_objective);
+	{
+		if(m_findsPath.m_useCurrentLocation)
+		{
+			m_objective.select(*m_findsPath.getBlockWhichPassedPredicate());
+			m_objective.execute();
+		}
+		else
+			// Cannot find any accessable field to sow.
+			m_objective.m_actor.m_hasObjectives.cannotFulfillObjective(m_objective);
+	}
 	else
 	{
 		if(!m_findsPath.areAllBlocksAtDestinationReservable(m_objective.m_actor.getFaction()))

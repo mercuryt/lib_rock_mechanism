@@ -20,6 +20,7 @@ class FindsPath
 	Block* m_target;
 	bool m_detour;
 public:
+	bool m_useCurrentLocation;
 	const Block* m_huristicDestination;
 	uint32_t m_maxRange;
 	FindsPath(const HasShape& hs, bool detour);
@@ -36,6 +37,7 @@ public:
 	void pathToAreaEdge();
 	void cacheMoveCosts();
 	void reserveBlocksAtDestination(CanReserve& canReserve);
+	void reset();
 	//TODO: make return reference and assert found().
 	[[nodiscard]] Block* getBlockWhichPassedPredicate() { return m_target; }
 	[[nodiscard]] std::vector<std::pair<Block*, uint32_t>> getMoveCosts(const Block& block);

@@ -64,6 +64,8 @@ TEST_CASE("haul")
 		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1}), chunk1, destination);
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "haul");
 		REQUIRE(simulation.m_threadedTaskEngine.count() == 1);
+		// One step to activate the project and make reservations.
+		simulation.doStep();
 		// One step to run the create subproject threaded task and set the strategy.
 		simulation.doStep();
 		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1);
@@ -93,7 +95,9 @@ TEST_CASE("haul")
 		cart.setLocation(cartLocation);
 		area.m_hasHaulTools.registerHaulTool(cart);
 		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1}), chunk1, destination);
-		// One step to run the create subproject threaded task.
+		// One step to activate the project and make reservations.
+		simulation.doStep();
+		// Another step to select the haul strategy and create the subproject.
 		simulation.doStep();
 		// Another step to find the path.
 		simulation.doStep();
@@ -126,7 +130,9 @@ TEST_CASE("haul")
 		dwarf2.setFaction(&faction);
 		area.m_hasActors.add(dwarf2);
 		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1, &dwarf2}), chunk1, destination);
-		// One step to run the create subproject threaded task.
+		// One step to activate the project and make reservations.
+		simulation.doStep();
+		// Another step to select the haul strategy and create the subproject.
 		simulation.doStep();
 		// Another step to find the paths.
 		simulation.doStep();
@@ -169,7 +175,9 @@ TEST_CASE("haul")
 		panniers1.setLocation(panniersLocation);
 		area.m_hasHaulTools.registerHaulTool(panniers1);
 		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1}), chunk1, destination);
-		// One step to run the create subproject threaded task.
+		// One step to activate the project and make reservations.
+		simulation.doStep();
+		// Another step to select the haul strategy and create the subproject.
 		simulation.doStep();
 		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1);
 		REQUIRE(projectWorker.haulSubproject != nullptr);
@@ -211,7 +219,9 @@ TEST_CASE("haul")
 		cart1.setLocation(cartLocation);
 		area.m_hasHaulTools.registerHaulTool(cart1);
 		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1}), boulder1, destination);
-		// One step to run the create subproject threaded task.
+		// One step to activate the project and make reservations.
+		simulation.doStep();
+		// Another step to select the haul strategy and create the subproject.
 		simulation.doStep();
 		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1);
 		REQUIRE(projectWorker.haulSubproject != nullptr);
@@ -252,7 +262,9 @@ TEST_CASE("haul")
 		cart1.setLocation(cartLocation);
 		area.m_hasHaulTools.registerHaulTool(cart1);
 		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1, &dwarf2}), cargo1, destination);
-		// One step to run the create subproject threaded task.
+		// One step to activate the project and make reservations.
+		simulation.doStep();
+		// Another step to select the haul strategy and create the subproject.
 		simulation.doStep();
 		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1);
 		REQUIRE(projectWorker.haulSubproject != nullptr);

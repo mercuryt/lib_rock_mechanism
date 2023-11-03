@@ -29,7 +29,7 @@ void MedicalProject::onComplete()
 	uint32_t healRateModifier = 1;//TODO: Apply doctor skill and room cleanliness.
 	m_patient.m_body.doctorWound(m_wound, healRateModifier);
 }
-Step MedicalProject::getDelay() const { return m_medicalProjectType.baseStepsDuration; }
+Step MedicalProject::getDuration() const { return m_medicalProjectType.baseStepsDuration; }
 uint32_t MedicalProject::getItemScaleFactor() const { return m_wound.hit.area * Config::unitsOfWoundAreaPerUnitItemScaleFactor; }
 void AreaHasMedicalPatientsForFaction::addPatient(Actor& patient)
 {
@@ -78,7 +78,7 @@ void AreaHasMedicalPatientsForFaction::createProject(Actor& patient, Block& loca
 {
 	assert(m_waitingPatients.contains(&patient));
 	assert(m_waitingDoctors.contains(&doctor));
-	assert(!location.m_reservable.isFullyReserved(*doctor.getFaction()));
+	assert(!location.m_reservable.isFullyReserved(doctor.getFaction()));
 	m_medicalProjects.try_emplace(&patient, patient, location, doctor, wound, medicalProjectType);
 	m_waitingPatients.erase(&patient);
 	m_waitingDoctors.erase(&doctor);

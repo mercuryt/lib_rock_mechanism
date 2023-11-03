@@ -62,17 +62,20 @@ class ConstructProject final : public Project
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
 	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
 	uint32_t getWorkerConstructScore(Actor& actor) const;
+	Step getDuration() const;
+	void onComplete();
+	void onDelay();
+	void offDelay();
 public:
 	// BlockFeatureType can be null, meaning the block is to be filled with a constructed wall.
 	ConstructProject(const Faction* faction, Block& b, const BlockFeatureType* bft, const MaterialType& mt) : Project(faction, b, Config::maxNumberOfWorkersForConstructionProject), m_blockFeatureType(bft), m_materialType(mt) { }
-	void onComplete();
 	// What would the total delay time be if we started from scratch now with current workers?
-	Step getDelay() const;
 	friend class HasConstructionDesignationsForFaction;
 };
 class HasConstructionDesignationsForFaction final
 {
 	const Faction& m_faction;
+	//TODO: More then one construct project targeting a given block should be able to exist simultaniously.
 	std::unordered_map<Block*, ConstructProject> m_data;
 public:
 	HasConstructionDesignationsForFaction(const Faction& p) : m_faction(p) { }

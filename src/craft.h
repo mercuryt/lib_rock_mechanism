@@ -37,8 +37,10 @@ class CraftStepProject final : public Project
 {
 	const CraftStepType& m_craftStepType;
 	CraftJob& m_craftJob;
-	Step getDelay() const;
+	Step getDuration() const;
 	void onComplete();
+	void onDelay() { cancel(); }
+	void offDelay() { assert(false); }
 	// Use copies rather then references for return types to allow specalization of Queries as well as byproduct material type.
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
