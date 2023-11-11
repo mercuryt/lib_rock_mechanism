@@ -1,5 +1,6 @@
 #include "haul.h"
 #include "actor.h"
+#include "hasShape.h"
 #include "item.h"
 #include "area.h"
 #include <unordered_set>
@@ -263,8 +264,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 				{
 					// Unload
 					HasShape& cargo = actor.m_canPickup.putDown(*actor.m_location, m_quantity);
-					cargo.m_reservable.reserveFor(m_project.m_canReserve, m_quantity);
-					onComplete();
+					complete(cargo);
 				}
 				else
 					actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
@@ -273,10 +273,9 @@ void HaulSubproject::commandWorker(Actor& actor)
 			{
 				if(actor.isAdjacentTo(m_toHaul))
 				{
-					actor.m_canPickup.pickUp(m_toHaul, m_quantity);
 					actor.m_canReserve.clearAll();
-					// If the actor pathed to toHaul then it will be resereved but if the actor just happens to be next to it then it won't.
-					m_toHaul.m_reservable.maybeClearReservationFor(m_project.m_canReserve, m_quantity);
+					m_toHaul.m_reservable.clearReservationFor(m_project.m_canReserve, m_quantity);
+					actor.m_canPickup.pickUp(m_toHaul, m_quantity);
 					// From here on out we cannot use m_toHaul unless we test for generic.
 					commandWorker(actor);
 				}
@@ -300,7 +299,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 						if(actor != m_leader)
 							actor->m_canFollow.unfollow();
 					m_toHaul.setLocation(*actor.m_location);
-					onComplete();
+					complete(m_toHaul);
 				}
 				else
 					actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
@@ -327,6 +326,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 							m_leader->m_canReserve.clearAll();
 							m_leader->m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
 							m_itemIsMoving = true;
+							m_toHaul.m_reservable.clearReservationFor(m_project.m_canReserve, m_quantity);
 						}
 					}
 					else
@@ -368,16 +368,18 @@ void HaulSubproject::commandWorker(Actor& actor)
 					if(actor.isAdjacentTo(m_project.m_location))
 					{
 						// At drop off point.
-						if(m_genericItemType == nullptr)
-							m_haulTool->m_hasCargo.unloadTo(m_toHaul, m_project.m_location);
-						else
-						{
-							Item& item = m_haulTool->m_hasCargo.unloadGenericTo(*m_genericItemType, *m_genericMaterialType, m_quantity, *actor.m_location);
-							item.m_reservable.reserveFor(m_project.m_canReserve, m_quantity);
-						}
-						// TODO: set rotation?
 						m_haulTool->m_canFollow.unfollow();
-						onComplete();
+						HasShape* delivered = nullptr;
+						if(m_genericItemType == nullptr)
+						{
+							m_haulTool->m_hasCargo.unloadTo(m_toHaul, m_project.m_location);
+							delivered = &m_toHaul;
+						}
+						else
+							delivered = &m_haulTool->m_hasCargo.unloadGenericTo(*m_genericItemType, *m_genericMaterialType, m_quantity, *actor.m_location);
+						// TODO: set rotation?
+						assert(delivered != nullptr);
+						complete(*delivered);
 					}
 					else
 						// Go to drop off point.
@@ -431,17 +433,20 @@ void HaulSubproject::commandWorker(Actor& actor)
 					if(actor.isAdjacentTo(m_project.m_location))
 					{
 						// Actor is at destination.
+						HasShape* delivered = nullptr;
 						//TODO: unloading delay.
 						if(m_genericItemType == nullptr)
+						{
 							m_haulTool->m_hasCargo.unloadTo(m_toHaul, *actor.m_location);
+							delivered = &m_toHaul;
+						}
 						else
 						{
-							Item& item = m_haulTool->m_hasCargo.unloadGenericTo(*m_genericItemType, *m_genericMaterialType, m_quantity, *actor.m_location);
-							item.m_reservable.reserveFor(m_project.m_canReserve, m_quantity);
+							delivered = &m_haulTool->m_hasCargo.unloadGenericTo(*m_genericItemType, *m_genericMaterialType, m_quantity, *actor.m_location);
 						}
 						// TODO: set rotation?
 						m_beastOfBurden->m_canFollow.unfollow();
-						onComplete();
+						complete(*delivered);
 					}
 					else
 						actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
@@ -514,16 +519,17 @@ void HaulSubproject::commandWorker(Actor& actor)
 						// Actor is at destination.
 						//TODO: unloading delay.
 						//TODO: unfollow cart?
+						HasShape* delivered = nullptr;
 						if(m_genericItemType == nullptr)
-							m_haulTool->m_hasCargo.unloadTo(m_toHaul, *actor.m_location);
-						else
 						{
-							Item& item = m_haulTool->m_hasCargo.unloadGenericTo(*m_genericItemType, *m_genericMaterialType, m_quantity, *actor.m_location);
-							item.m_reservable.reserveFor(m_project.m_canReserve, m_quantity);
+							m_haulTool->m_hasCargo.unloadTo(m_toHaul, *actor.m_location);
+							delivered = &m_toHaul;
 						}
+						else
+							delivered = &m_haulTool->m_hasCargo.unloadGenericTo(*m_genericItemType, *m_genericMaterialType, m_quantity, *actor.m_location);
 						// TODO: set rotation?
 						m_beastOfBurden->m_canFollow.unfollow();
-						onComplete();
+						complete(*delivered);
 					}
 					else
 						actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
@@ -535,6 +541,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 					{
 						// Actor is at pickup location.
 						// TODO: loading delay.
+						m_toHaul.m_reservable.maybeClearReservationFor(m_project.m_canReserve);
 						m_haulTool->m_hasCargo.load(m_toHaul, m_quantity);
 						actor.m_canReserve.clearAll();
 						actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
@@ -594,16 +601,17 @@ void HaulSubproject::commandWorker(Actor& actor)
 				{
 					if(actor.isAdjacentTo(m_project.m_location))
 					{
+						HasShape* delivered = nullptr;
 						if(m_genericItemType == nullptr)
-							m_haulTool->m_hasCargo.unloadTo(m_toHaul, *actor.m_location);
-						else
 						{
-							Item& item = m_haulTool->m_hasCargo.unloadGenericTo(*m_genericItemType, *m_genericMaterialType, m_quantity, *actor.m_location);
-							item.m_reservable.reserveFor(m_project.m_canReserve, m_quantity);
+							m_haulTool->m_hasCargo.unloadTo(m_toHaul, *actor.m_location);
+							delivered = &m_toHaul;
 						}
+						else
+							delivered = &m_haulTool->m_hasCargo.unloadGenericTo(*m_genericItemType, *m_genericMaterialType, m_quantity, *actor.m_location);
 						// TODO: set rotation?
 						m_leader->m_canFollow.disband();
-						onComplete();
+						complete(*delivered);
 					}
 					else
 						actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
@@ -613,6 +621,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 					if(actor.isAdjacentTo(m_toHaul))
 					{
 						//TODO: set delay for loading.
+						m_toHaul.m_reservable.maybeClearReservationFor(m_project.m_canReserve);
 						m_haulTool->m_hasCargo.load(m_toHaul, m_quantity);
 						actor.m_canReserve.clearAll();
 						actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
@@ -764,7 +773,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 	assert(output.strategy == HaulStrategy::None);
 	return output;
 }
-void HaulSubproject::onComplete()
+void HaulSubproject::complete(HasShape& delivered)
 {
 	if(m_haulTool != nullptr)
 		m_haulTool->m_reservable.clearReservationFor(m_project.m_canReserve);
@@ -772,13 +781,22 @@ void HaulSubproject::onComplete()
 		m_beastOfBurden->m_reservable.clearReservationFor(m_project.m_canReserve);
 	m_projectItemCounts.delivered += m_quantity;
 	assert(m_projectItemCounts.delivered <= m_projectItemCounts.required);
+	if(delivered.isItem())
+	{
+		if(m_projectItemCounts.consumed)
+			m_project.m_toConsume.insert(static_cast<Item*>(&delivered));
+		if(static_cast<Item&>(delivered).isWorkPiece())
+			delivered.setLocation(m_project.m_location);
+	}
+	for(Actor* worker : m_workers)
+		worker->m_canReserve.clearAll();
+	delivered.m_reservable.reserveFor(m_project.m_canReserve, m_quantity);
 	std::vector<Actor*> workers(m_workers.begin(), m_workers.end());
 	Project& project = m_project;
 	m_project.m_haulSubprojects.remove(*this);
 	for(Actor* worker : workers)
 	{
 		project.m_workers.at(worker).haulSubproject = nullptr;
-		worker->m_canReserve.clearAll();
 		project.commandWorker(*worker);
 	}
 }

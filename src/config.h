@@ -73,7 +73,6 @@ namespace Config
 	inline Mass unitsBodyMassPerUnitFoodConsumed;
 	inline uint32_t maxBlocksToLookForBetterFood;
 	inline Percent percentHungerAcceptableDesireModifier;
-	inline uint32_t constructScoreCost;
 	inline float constructStrengthModifier;
 	inline float constructSkillModifier;
 	inline uint32_t constructObjectivePriority;
@@ -222,7 +221,6 @@ namespace Config
 		unitsBodyMassPerUnitFoodConsumed = data["unitsBodyMassPerUnitFoodConsumed"].get<Mass>();
 		maxBlocksToLookForBetterFood = data["maxBlocksToLookForBetterFood"].get<uint32_t>();
 		percentHungerAcceptableDesireModifier = data["percentHungerAcceptableDesireModifier"].get<Percent>();
-		constructScoreCost = data["constructScoreCost"].get<uint32_t>();
 		constructStrengthModifier = data["constructStrengthModifier"].get<float>();
 		constructSkillModifier = data["constructSkillModifier"].get<float>();
 		constructObjectivePriority = data["constructObjectivePriority"].get<uint32_t>();
@@ -244,7 +242,7 @@ namespace Config
 		givePlantsFluidPriority = data["givePlantsFluidPriority"].get<uint32_t>();
 		sleepObjectivePriority = data["sleepObjectivePriority"].get<uint32_t>();
 		minimumHaulSpeed = data["minimumHaulSpeed"].get<uint32_t>();
-		stepsFrequencyToLookForHaulSubprojects = data["stepsFrequencyToLookForHaulSubprojects"].get<Step>();
+		stepsFrequencyToLookForHaulSubprojects = data["secondsFrequencyToLookForHaulSubprojects"].get<float>() * stepsPerSecond;
 		maxZLevelForDeepAmbiantTemperature = data["maxZLevelForDeepAmbiantTemperature"].get<uint32_t>();
 		deepAmbiantTemperature = data["deepAmbiantTemperature"].get<uint32_t>();
 		undergroundAmbiantTemperature = data["undergroundAmbiantTemperature"].get<uint32_t>();
@@ -277,14 +275,14 @@ namespace Config
 		baseMoveCost = data["baseMoveCost"].get<uint32_t>();
 		goUpMoveCost = data["goUpMoveCost"].get<uint32_t>();
 		wanderDistanceModifier = data["wanderDistanceModifier"].get<uint32_t>();
-		stepsToDelayBeforeTryingAgainToCompleteAnObjective = data["stepsToDelayBeforeTryingAgainToCompleteAnObjective"].get<Step>();
+		stepsToDelayBeforeTryingAgainToCompleteAnObjective = data["secondsToDelayBeforeTryingAgainToCompleteAnObjective"].get<uint32_t>() * stepsPerSecond;
 		hitScaleModifier = data["hitScaleModifier"].get<uint32_t>();
 		hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea = data["hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea"].get<float>();
 		ratioOfHitAreaToBodyPartVolumeForSever = data["ratioOfHitAreaToBodyPartVolumeForSever"].get<float>();
 		unarmedCombatScoreBase = data["unarmedCombatScoreBase"].get<uint32_t>();
 		targetedHaulPriority = data["targetedHaulPriority"].get<uint32_t>();
 		stationPriority = data["stationPriority"].get<uint32_t>();
-		stepsToDelayBeforeTryingAgainToFollowLeader = data["stepsToDelayBeforeTryingAgainToFollowLeader"].get<uint32_t>();
+		stepsToDelayBeforeTryingAgainToFollowLeader = data["secondsToDelayBeforeTryingAgainToFollowLeader"].get<uint32_t>() * stepsPerSecond;
 		getIntoAttackPositionMaxRange = data["getIntoAttackPositionMaxRange"].get<uint32_t>();
 		stepsToDelayBeforeTryingAgainToReserveItemsAndActorsForAProject = data["minutesToDelayBeforeTryingAgaintoReserveItemsAndActorsForAProject"].get<uint32_t>() * stepsPerMinute;
 	}

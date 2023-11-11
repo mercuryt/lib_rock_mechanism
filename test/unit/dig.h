@@ -68,13 +68,13 @@ TEST_CASE("dig")
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "dig");
 		std::function<bool()> predicate = [&]() { return !stairsLocation1.isSolid(); };
-		simulation.fastForwardUntillPredicate(predicate, Step(51 * 1000));
+		simulation.fastForwardUntillPredicate(predicate, 45);
 		REQUIRE(stairsLocation1.m_hasBlockFeatures.contains(BlockFeatureType::stairs));
 		REQUIRE(stairsLocation1.m_hasShapes.canEnterEverFrom(dwarf1, aboveStairs));
 		std::function<bool()> predicate2 = [&]() { return !stairsLocation2.isSolid(); };
-		simulation.fastForwardUntillPredicate(predicate2, Step(51 * 1000));
+		simulation.fastForwardUntillPredicate(predicate2, 45);
 		std::function<bool()> predicate3 = [&]() { return !tunnelEnd.isSolid(); };
-		simulation.fastForwardUntillPredicate(predicate3, Step(101 * 1000));
+		simulation.fastForwardUntillPredicate(predicate3, 100);
 	}
 	SUBCASE("two workers")
 	{
@@ -87,6 +87,6 @@ TEST_CASE("dig")
 		dwarf2.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
 		REQUIRE(dwarf2.m_hasObjectives.getCurrent().name() == "dig");
 		std::function<bool()> predicate = [&]() { return !holeLocation.isSolid(); };
-		simulation.fastForwardUntillPredicate(predicate, Step(26 * 1000));
+		simulation.fastForwardUntillPredicate(predicate, Step(22));
 	}
 }

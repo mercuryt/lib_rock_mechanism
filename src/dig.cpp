@@ -139,7 +139,10 @@ void DigProject::onComplete()
 	else
 		m_location.m_hasBlockFeatures.hew(*m_blockFeatureType);
 	// Remove designations for other factions as well as owning faction.
+	auto workers = std::move(m_workers);
 	m_location.m_area->m_hasDiggingDesignations.clearAll(m_location);
+	for(auto& [actor, projectWorker] : workers)
+		actor->m_hasObjectives.objectiveComplete(projectWorker.objective);
 }
 void DigProject::onDelay()
 {

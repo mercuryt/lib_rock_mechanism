@@ -13,6 +13,7 @@ TEST_CASE("haul")
 	static const MaterialType& gold = MaterialType::byName("gold");
 	static const MaterialType& lead = MaterialType::byName("lead");
 	static const MaterialType& poplarWood = MaterialType::byName("poplar wood");
+	static const MaterialType& peridotite = MaterialType::byName("peridotite");
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	static const AnimalSpecies& donkey = AnimalSpecies::byName("jackstock donkey");
 	static const ItemType& chunk = ItemType::byName("chunk");
@@ -97,15 +98,19 @@ TEST_CASE("haul")
 		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1}), chunk1, destination);
 		// One step to activate the project and make reservations.
 		simulation.doStep();
+		REQUIRE(project.reservationsComplete());
+		REQUIRE(project.getWorkers().contains(&dwarf1));
+		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1);
+		REQUIRE(HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(dwarf1, cart, chunk1, project.getMinimumHaulSpeed()) > 0);
 		// Another step to select the haul strategy and create the subproject.
 		simulation.doStep();
-		// Another step to find the path.
-		simulation.doStep();
-		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1);
 		REQUIRE(projectWorker.haulSubproject != nullptr);
 		REQUIRE(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::Cart);
+		// Another step to find the path.
+		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, cartLocation);
-		// Another step to path.
+		REQUIRE(dwarf1.m_canLead.isLeading(cart));
+		// Another step to path from cart to chunk.
 		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, chunkLocation);
 		REQUIRE(cart.m_hasCargo.getContents().size() == 1);
@@ -208,7 +213,7 @@ TEST_CASE("haul")
 	{
 		Block& destination = area.m_blocks[5][5][2];
 		Block& boulderLocation = area.m_blocks[1][5][2];
-		Item& boulder1 = simulation.createItem(boulder, marble, 1u);
+		Item& boulder1 = simulation.createItem(boulder, peridotite, 1u);
 		boulder1.setLocation(boulderLocation);
 		Block& donkeyLocation = area.m_blocks[4][3][2];
 		Actor& donkey1 = simulation.createActor(donkey, donkeyLocation);
@@ -243,7 +248,7 @@ TEST_CASE("haul")
 		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, destination);
 		simulation.fastForward(Config::addToStockPileDelaySteps);
-		REQUIRE(destination.m_hasItems.getCount(boulder, marble) == 1);
+		REQUIRE(destination.m_hasItems.getCount(boulder, peridotite) == 1);
 		REQUIRE(!donkey1.m_reservable.isFullyReserved(&faction));
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "haul");
 	}
@@ -251,7 +256,7 @@ TEST_CASE("haul")
 	{
 		Block& destination = area.m_blocks[5][5][2];
 		Block& cargoLocation = area.m_blocks[1][5][2];
-		Item& cargo1 = simulation.createItem(boulder, marble, 1u);
+		Item& cargo1 = simulation.createItem(boulder, peridotite, 1u);
 		cargo1.setLocation(cargoLocation);
 		Block& origin2 = area.m_blocks[4][3][2];
 		Actor& dwarf2 = simulation.createActor(dwarf, origin2);
@@ -297,7 +302,7 @@ TEST_CASE("haul")
 		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, destination);
 		simulation.fastForward(Config::addToStockPileDelaySteps);
-		REQUIRE(destination.m_hasItems.getCount(boulder, marble) == 1);
+		REQUIRE(destination.m_hasItems.getCount(boulder, peridotite) == 1);
 		REQUIRE(!cart1.m_reservable.isFullyReserved(&faction));
 		REQUIRE(!dwarf1.m_canLead.isLeading());
 		REQUIRE(!dwarf2.m_canFollow.isFollowing());

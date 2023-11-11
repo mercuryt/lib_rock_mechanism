@@ -1,0 +1,13 @@
+{
+	"name": "organic waste",
+	"density": 20,
+	"hardness": 5,
+	"transparent": false,
+	"burnData":
+	{
+		"ignitionTemperature": 1144,
+		"flameTemperature": 300,
+		"burnStageDuration": 5000,
+		"flameStageDuration": 10000
+	}
+}

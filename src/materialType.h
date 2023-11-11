@@ -50,6 +50,7 @@ struct MaterialConstructionData
 {
 	std::string name;
 	const SkillType& skill;
+	Step duration;
 	std::vector<std::pair<ItemQuery, uint32_t>> consumed;
 	std::vector<std::pair<ItemQuery, uint32_t>> unconsumed;
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> byproducts;

@@ -1,5 +1,6 @@
 #include "simulation.h"
 #include "area.h"
+#include "config.h"
 #include "threadedTask.h"
 #include <functional>
 Simulation::Simulation(DateTime n, Step s) :  m_step(s), m_now(n), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this)
@@ -92,7 +93,12 @@ Item& Simulation::createItem(const uint32_t id, const ItemType& itemType, const 
 	if(m_nextItemId <= id) m_nextItemId = id + 1;
 	std::list<Item>::iterator iterator = m_items.emplace(m_items.end(), *this, id, itemType, materialType, quantity, cj);
 	iterator->m_iterator = iterator;
+	iterator->m_dataLocation = &m_items;
 	return *iterator;
+}
+void Simulation::destroyItem(Item& item)
+{
+	item.m_dataLocation->erase(item.m_iterator);
 }
 Simulation::~Simulation()
 {
@@ -131,6 +137,10 @@ void Simulation::fastForward(Step steps)
 void Simulation::fastForwardUntillActorIsAtDestination(Actor& actor, Block& destination)
 {
 	assert(*actor.m_canMove.getDestination() == destination);
+	fastForwardUntillActorIsAt(actor, destination);
+}
+void Simulation::fastForwardUntillActorIsAt(Actor& actor, Block& destination)
+{
 	std::function<bool()> predicate = [&](){ return actor.m_location == &destination; };
 	fastForwardUntillPredicate(predicate);
 }
@@ -154,10 +164,10 @@ void Simulation::fastForwardUntillActorHasNoDestination(Actor& actor)
 	std::function<bool()> predicate = [&](){ return actor.m_canMove.getDestination() == nullptr; };
 	fastForwardUntillPredicate(predicate);
 }
-void Simulation::fastForwardUntillPredicate(std::function<bool()> predicate, Step maxSteps)
+void Simulation::fastForwardUntillPredicate(std::function<bool()> predicate, uint32_t minutes)
 {
 	assert(!predicate());
-	Step lastStep = m_step + maxSteps;
+	Step lastStep = m_step + (minutes * Config::stepsPerMinute);
 	while(!m_eventSchedule.m_data.empty())
 	{
 		if(m_threadedTaskEngine.count() == 0)

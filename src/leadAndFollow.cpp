@@ -52,7 +52,7 @@ uint32_t CanLead::getMoveSpeedForGroupWithAddedMass(std::vector<const HasShape*>
 	uint32_t totalMass = deadMass + (rollingMass * Config::rollingMassModifier);
 	if(totalMass <= carryMass)
 		return lowestMoveSpeed;
-	float ratio = totalMass / carryMass;
+	float ratio = (float)totalMass / carryMass;
 	if(ratio > Config::massCarryMaximimMovementRatio)
 		return 0;
 	return lowestMoveSpeed / ratio;
@@ -143,6 +143,7 @@ void CanFollow::tryToMove()
 			locationQueue.pop_back();
 	}
 	else
+		//Cannot follow currently, schedule a retry.
 		m_event.schedule(m_hasShape);
 }
 HasShape& CanFollow::getLineLeader()

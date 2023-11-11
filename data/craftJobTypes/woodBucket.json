@@ -1,0 +1,76 @@
+{
+	"name": "wood bucket",
+	"productType": "bucket",
+	"productQuantity": 1,
+	"materialTypeCategory": "wood",
+	"steps":
+	[
+		{
+			"name": "saw",
+			"category": "saw",
+			"skillType": "wood working",
+			"minutesDuration": 10,
+			"consumed":
+			[
+				{
+					"itemType": "board",
+					"quantity": 1
+				}
+			],
+			"unconsumed":
+			[
+				{
+					"itemType": "saw",
+					"quantity": 1
+				}
+			],
+			"byproducts":
+			[
+				{
+					"itemType": "organic waste",
+					"materialType": "organic waste",
+					"quantity": 2
+				}
+			]
+		},
+		{
+			"name": "chisel",
+			"category": "carve",
+			"skillType": "wood working",
+			"minutesDuration": 20,
+			"unconsumed":
+			[
+				{
+					"itemType": "chisel",
+					"quantity": 1
+				},
+				{
+					"itemType": "mallet",
+					"quantity": 1
+				}
+			],
+			"byproducts":
+			[
+				{
+					"itemType": "organic waste",
+					"materialType": "organic waste",
+					"quantity": 1
+				}
+			]
+		},
+		{
+			"name": "assemble",
+			"category": "assemble",
+			"skillType": "assembling",
+			"minutesDuration": 10,
+			"consumed":
+			[
+				{
+					"itemType": "rope",
+					"materialType": "plant matter",
+					"quantity": 1
+				}
+			]
+		}
+	]
+}

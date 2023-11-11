@@ -14,7 +14,6 @@ uint32_t ActorCanMove::getIndividualMoveSpeedWithAddedMass(Mass mass) const
 	if(carryMass > unencomberedCarryMass)
 		output = util::scaleByFraction(output, unencomberedCarryMass, carryMass);
 	output = util::scaleByInversePercent(output, m_actor.m_body.getImpairMovePercent());
-	assert(output != 0);
 	return output;
 }
 void ActorCanMove::updateIndividualSpeed()

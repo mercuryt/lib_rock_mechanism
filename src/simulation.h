@@ -43,15 +43,17 @@ public:
 	Item& createItem(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, uint32_t quantity, CraftJob* cj = nullptr);
 	// Named, has id.
 	Item& createItem(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, std::string name, uint32_t quality, Percent percentWear, CraftJob* cj = nullptr);
+	void destroyItem(Item& item);
 	~Simulation();
 	// For testing.
 	[[maybe_unused]] void setDateTime(DateTime now);
 	[[maybe_unused]] void fastForward(Step step);
 	[[maybe_unused]] void fastForwardUntillActorIsAtDestination(Actor& actor, Block& destination);
+	[[maybe_unused]] void fastForwardUntillActorIsAt(Actor& actor, Block& destination);
 	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToDestination(Actor& actor, Block& destination);
 	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToHasShape(Actor& actor, HasShape& other);
 	[[maybe_unused]] void fastForwardUntillActorHasNoDestination(Actor& actor);
-	[[maybe_unused]] void fastForwardUntillPredicate(std::function<bool()> predicate, Step maxSteps = Step(10000));
+	[[maybe_unused]] void fastForwardUntillPredicate(std::function<bool()> predicate, uint32_t minutes = 10);
 };
 
 class HourlyEvent final : public ScheduledEventWithPercent

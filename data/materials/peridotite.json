@@ -1,28 +1,28 @@
 {
-  "name": "obsidion",
-  "density": 25,
-  "hardness": 100,
+  "name": "peridotite",
+  "density": 34,
+  "hardness": 7,
   "transparent": false,
-  "meltingPoint": 1173,
+  "meltingPoint": 1773,
   "meltsInto": "lava",
-  "contsructionData": "stone",
+  "constructionData": "stone",
   "spoilData": [
     {
-      "materialType": "obsidion",
+      "materialType": "peridotite",
       "itemType": "gravel",
       "chance": 100,
       "min": 10,
       "max": 20
     },
     {
-      "materialType": "obsidion",
+      "materialType": "peridotite",
       "itemType": "sand",
       "chance": 100,
       "min": 10,
       "max": 15
     },
     {
-      "materialType": "obsidion",
+      "materialType": "peridotite",
       "itemType": "chunk",
       "chance": 100,
       "min": 2,

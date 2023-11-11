@@ -1,6 +1,7 @@
 [
 	{
 		"name": "wood",
+		"minutesDuration": 1000,
 		"consumed":
 		[
 			{
@@ -33,6 +34,7 @@
 	},{
 
 		"name": "stone",
+		"minutesDuration": 2000,
 		"consumed":
 		[
 			{
@@ -63,6 +65,7 @@
 		"skill": "masonry"
 	},{
 		"name": "metal",
+		"minutesDuration": 1300,
 		"consumed":
 		[
 			{

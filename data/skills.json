@@ -60,6 +60,10 @@
 		"xpPerLevelModifier": 2.0,
 		"level1Xp": 100
 	},{
+		"name": "cleaning",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
 		"name": "metal working",
 		"xpPerLevelModifier": 2.0,
 		"level1Xp": 100
@@ -73,6 +77,10 @@
 		"level1Xp": 100
 	},{
 		"name": "bone carving",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
+		"name": "assembling",
 		"xpPerLevelModifier": 2.0,
 		"level1Xp": 100
 	},{

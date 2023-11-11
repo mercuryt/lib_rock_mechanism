@@ -2,6 +2,7 @@
 #include "block.h"
 #include "simulation.h"
 #include <cassert>
+#include <iostream>
 void HasShape::setStatic(bool isTrue)
 {
 	assert(m_static != isTrue);
@@ -172,6 +173,15 @@ bool HasShape::allBlocksAtLocationAndFacingAreReservable(const Block& location, 
 	return true;
 }
 EventSchedule& HasShape::getEventSchedule() { return getSimulation().m_eventSchedule; }
+void HasShape::log() const
+{
+	if(m_location == nullptr)
+	{
+		std::cout << "*";
+		return;
+	}
+	std::cout << "[" << m_location->m_x << "," << m_location->m_y << "," << m_location->m_z << "]";
+}
 void BlockHasShapes::record(HasShape& hasShape, uint32_t volume)
 {
 	assert(!m_shapes.contains(&hasShape));

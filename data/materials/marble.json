@@ -1,7 +1,7 @@
 {
   "name": "marble",
   "density": 27,
-  "hardness": 20,
+  "hardness": 30,
   "transparent": false,
   "meltingPoint": 1612,
   "meltsInto": "lava",

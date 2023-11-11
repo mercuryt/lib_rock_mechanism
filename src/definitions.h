@@ -11,6 +11,7 @@
 #include "attackType.h"
 #include "skill.h"
 #include "config.h"
+#include "craft.h"
 
 #include <fstream>
 #include <filesystem>
@@ -148,7 +149,8 @@ namespace definitions
 			MaterialConstructionData& constructionData = MaterialConstructionData::data.emplace_back
 			(
 				 data["name"].get<std::string>(),
-				 SkillType::byName(data["skill"])
+				 SkillType::byName(data["skill"]),
+				 data["minutesDuration"].get<uint32_t>() * Config::stepsPerMinute
 			 );
 			for(const Json& item : data["consumed"])
 			{
@@ -186,6 +188,69 @@ namespace definitions
 			}
 		}
 
+	}
+	inline void loadCraftJobs()
+	{
+		for(const Json& data : tryParse(path/"craftStepTypeCategory.json"))
+			CraftStepTypeCategory::data.emplace_back(data["name"]);
+		for(const auto& file : std::filesystem::directory_iterator(path/"craftJobTypes"))
+		{
+			if(file.path().extension() != ".json")
+				continue;
+			Json data = tryParse(file.path());
+			auto& craftJobType = CraftJobType::data.emplace_back(
+				data["name"].get<std::string>(),
+				ItemType::byName(data["productType"].get<std::string>()),
+				data["productQuantity"].get<uint32_t>(),
+				data.contains("materialTypeCategory") ? &MaterialTypeCategory::byName(data["materialTypeCategory"].get<std::string>()) : nullptr
+			);
+			for(const Json& stepData : data["steps"])
+			{
+				auto& stepType = craftJobType.stepTypes.emplace_back(
+					stepData["name"].get<std::string>(),
+					CraftStepTypeCategory::byName(stepData["category"].get<std::string>()),
+					SkillType::byName(stepData["skillType"].get<std::string>()),
+					stepData["minutesDuration"].get<uint32_t>() * Config::stepsPerMinute
+				);
+				if(stepData.contains("consumed"))
+					for(const Json& item : stepData["consumed"])
+					{
+						const ItemType& itemType = ItemType::byName(item["itemType"].get<std::string>());
+						uint32_t quantity = item["quantity"].get<uint32_t>();
+						ItemQuery query(itemType);
+						if(item.contains("materialType"))
+							query.m_materialType = &MaterialType::byName(item["materialType"].get<std::string>());
+						if(item.contains("materialTypeCategory"))
+							query.m_materialTypeCategory = &MaterialTypeCategory::byName(item["materialTypeCategory"].get<std::string>());
+						stepType.consumed.emplace_back(query, quantity);
+					}
+				if(stepData.contains("unconsumed"))
+					for(const Json& item : stepData["unconsumed"])
+					{
+						const ItemType& itemType = ItemType::byName(item["itemType"].get<std::string>());
+						uint32_t quantity = item["quantity"].get<uint32_t>();
+						ItemQuery query(itemType);
+						if(item.contains("materialType"))
+							query.m_materialType = &MaterialType::byName(item["materialType"].get<std::string>());
+						if(item.contains("materialTypeCategory"))
+						{
+							assert(query.m_materialType == nullptr);
+							query.m_materialTypeCategory = &MaterialTypeCategory::byName(item["materialTypeCategory"].get<std::string>());
+						}
+						stepType.unconsumed.emplace_back(query, quantity);
+					}
+				if(stepData.contains("byproducts"))
+					for(const Json& item : stepData["byproducts"])
+					{
+						const ItemType& itemType = ItemType::byName(item["itemType"].get<std::string>());
+						uint32_t quantity = item["quantity"].get<uint32_t>();
+						const MaterialType* materialType = item.contains("materialType") ?
+							&MaterialType::byName(item["materialType"]) :
+							nullptr;
+						stepType.byproducts.emplace_back(&itemType, materialType, quantity);
+					}
+			}
+		}
 	}
 	inline void loadItemTypes()
 	{
@@ -384,6 +449,7 @@ namespace definitions
 		loadSkillTypes();
 		loadItemTypes();
 		loadMaterialTypeConstuctionData();
+		loadCraftJobs();
 		loadPlantSpecies();
 		loadBodyPartTypes();
 		loadBodyTypes();

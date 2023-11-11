@@ -136,12 +136,15 @@ public:
 	[[nodiscard]] bool isGeneric() const { return m_itemType.generic; }
 	[[nodiscard]] bool isActor() const { return false; }
 	[[nodiscard]] bool isPreparedMeal() const;
+	[[nodiscard]] bool isWorkPiece() const { return m_craftJobForWorkPiece != nullptr; }
 	Mass singleUnitMass() const { return m_itemType.volume * m_materialType.density; }
 	Mass getMass() const { return m_quantity * singleUnitMass(); }
 	Volume getVolume() const { return m_quantity * m_itemType.volume; }
 	const MoveType& getMoveType() const { return m_itemType.moveType; }
 	bool operator==(const Item& item) const { return this == &item; }
 	//TODO: Items leave area.
+	// For debugging.
+	void log() const;
 };
 class ItemQuery final
 {
@@ -171,14 +174,15 @@ public:
 	Item& add(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity);
 	void remove(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity);
 	void setTemperature(Temperature temperature);
+	void disperseAll();
 	//Item* get(ItemType& itemType) const;
-	uint32_t getCount(const ItemType& itemType, const MaterialType& materialType) const;
-	std::vector<Item*>& getAll() { return m_items; }
+	[[nodiscard]] uint32_t getCount(const ItemType& itemType, const MaterialType& materialType) const;
+	[[nodiscard]] std::vector<Item*>& getAll() { return m_items; }
 	const std::vector<Item*>& getAll() const { return m_items; }
-	bool hasInstalledItemType(const ItemType& itemType) const;
-	bool hasEmptyContainerWhichCanHoldFluidsCarryableBy(const Actor& actor) const;
-	bool hasContainerContainingFluidTypeCarryableBy(const Actor& actor, const FluidType& fluidType) const;
-	bool empty() const { return m_items.empty(); }
+	[[nodiscard]] bool hasInstalledItemType(const ItemType& itemType) const;
+	[[nodiscard]] bool hasEmptyContainerWhichCanHoldFluidsCarryableBy(const Actor& actor) const;
+	[[nodiscard]] bool hasContainerContainingFluidTypeCarryableBy(const Actor& actor, const FluidType& fluidType) const;
+	[[nodiscard]] bool empty() const { return m_items.empty(); }
 };
 class AreaHasItems final
 {

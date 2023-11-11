@@ -303,6 +303,7 @@ void Block::setBelowNotExposedToSky()
 }
 void Block::setSolid(const MaterialType& materialType)
 {
+	assert(m_hasItems.empty());
 	if(&materialType == m_solid)
 		return;
 	m_solid = &materialType;

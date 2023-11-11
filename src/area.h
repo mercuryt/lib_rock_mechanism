@@ -82,4 +82,5 @@ public:
 	Cuboid getZLevel(uint32_t z);
 	// For testing.
 	[[maybe_unused]] void logActorsAndItems() const;
+	uint32_t getTotalCountOfItemTypeOnSurface(const ItemType& itemType) const;
 };

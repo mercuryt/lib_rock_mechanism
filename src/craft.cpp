@@ -8,22 +8,23 @@ Step CraftStepProject::getDuration() const
 		totalScore += getWorkerCraftScore(*pair.first);
 	return m_craftStepType.stepsDuration / totalScore;
 }
+// Static method.
 uint32_t CraftStepProject::getWorkerCraftScore(const Actor& actor) const
 {
-	return actor.m_skillSet.get(m_craftStepType.skillType);
+	return 1 + actor.m_skillSet.get(m_craftStepType.skillType);
 }
 void CraftStepProject::onComplete()
 {
-	assert(m_workers.size() == 1);
-	Actor* actor;
-	for(auto& pair : m_workers)
-		actor = pair.first;
+	auto& [actor, projectWorker] = *m_workers.begin();
+	Objective& objective = projectWorker.objective;
+	Actor* actorPtr = actor;
 	m_craftJob.hasCraftingLocationsAndJobs.stepComplete(m_craftJob, *actor);
+	actorPtr->m_hasObjectives.objectiveComplete(objective);
 }
 std::vector<std::pair<ItemQuery, uint32_t>> CraftStepProject::getConsumed() const
 { 
 	// Make a copy so we can edit itemQueries.
-	auto output = m_craftStepType.consumedItems;
+	auto output = m_craftStepType.consumed;
 	for(auto& pair : output)
 		if(pair.first.m_materialType == nullptr)
 		{
@@ -34,14 +35,13 @@ std::vector<std::pair<ItemQuery, uint32_t>> CraftStepProject::getConsumed() cons
 }
 std::vector<std::pair<ItemQuery, uint32_t>> CraftStepProject::getUnconsumed() const 
 { 
-	auto output = m_craftStepType.unconsumedItems; 
+	auto output = m_craftStepType.unconsumed; 
 	if(m_craftJob.workPiece != nullptr)
 		output.emplace_back(*m_craftJob.workPiece, 1);
 	return output; 
 }
-std::vector<std::pair<ActorQuery, uint32_t>> CraftStepProject::getActors() const { return {}; }
 std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> CraftStepProject::getByproducts() const {
-	auto output =  m_craftStepType.byproductItems; 
+	auto output =  m_craftStepType.byproducts; 
 	for(auto& tuple : output)
 		if(std::get<1>(tuple) == nullptr)
 			std::get<1>(tuple) = m_craftJob.materialType;
@@ -49,11 +49,16 @@ std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> CraftSte
 }
 uint32_t CraftJob::getQuality() const
 {
-	float pointsPerStep = totalSkillPoints / craftJobType.stepTypes.size();
+	float pointsPerStep = (float)totalSkillPoints / craftJobType.stepTypes.size();
 	return (pointsPerStep / Config::maxSkillLevel) * 100;
+}
+uint32_t CraftJob::getStep() const
+{
+	return 1 + (stepIterator - craftJobType.stepTypes.begin());
 }
 void CraftThreadedTask::readStep()
 {
+	assert(m_craftObjective.m_craftJob == nullptr);
 	auto pair = m_craftObjective.m_actor.m_location->m_area->m_hasCraftingLocationsAndJobs.getJobAndLocationFor(m_craftObjective.m_actor, m_craftObjective.m_skillType);
 	m_craftJob = pair.first;
 	m_location = pair.second;
@@ -63,7 +68,7 @@ void CraftThreadedTask::writeStep()
 	if(m_craftJob  == nullptr)
 		m_craftObjective.m_actor.m_hasObjectives.cannotFulfillObjective(m_craftObjective);
 	else
-		// Selected work place has been reserved, try again.
+		// Selected work loctaion has been reserved, try again.
 		if(m_location->m_reservable.isFullyReserved(m_craftObjective.m_actor.getFaction()))
 			m_craftObjective.m_threadedTask.create(m_craftObjective);
 		else
@@ -77,15 +82,17 @@ CraftObjective::CraftObjective(Actor& a, const SkillType& st) : Objective(Config
 bool CraftObjectiveType::canBeAssigned(Actor& actor) const
 {
 	auto& hasCraftingLocationsAndJobs = actor.m_location->m_area->m_hasCraftingLocationsAndJobs;
-	// No jobs needing this skill.
 	if(!hasCraftingLocationsAndJobs.m_unassignedProjectsBySkill.contains(&m_skillType))
+	{
+		// No jobs needing this skill.
 		return false;
+	}
+	// Check if there are any locations designated for this step category.
 	for(CraftJob* craftJob : hasCraftingLocationsAndJobs.m_unassignedProjectsBySkill.at(&m_skillType))
 	{
-		auto category = (*craftJob->stepIterator)->craftStepTypeCategory;
-		// No location to do the craftStepTypeCategory work at.
-		if(!hasCraftingLocationsAndJobs.m_locationsByCategory.contains(&category))
-			return false;
+		const CraftStepTypeCategory& category = craftJob->stepIterator->craftStepTypeCategory;
+		if(hasCraftingLocationsAndJobs.m_locationsByCategory.contains(&category))
+			return true;
 	}
 	return false;
 }
@@ -93,7 +100,13 @@ std::unique_ptr<Objective> CraftObjectiveType::makeFor(Actor& actor) const
 {
 	return std::make_unique<CraftObjective>(actor, m_skillType);
 }
-void CraftObjective::execute(){ m_threadedTask.create(*this); }
+void CraftObjective::execute()
+{ 
+	if(m_craftJob == nullptr)
+		m_threadedTask.create(*this); 
+	else
+		m_craftJob->craftStepProject->commandWorker(m_actor);
+}
 void CraftObjective::cancel()
 {
 	if(m_craftJob != nullptr)
@@ -106,34 +119,37 @@ void CraftObjective::reset()
 	m_craftJob = nullptr;
 	m_actor.m_canReserve.clearAll();
 }
-void HasCraftingLocationsAndJobs::addLocation(std::vector<const CraftStepType*>& craftStepTypes, Block& block)
+void HasCraftingLocationsAndJobs::addLocation(const CraftStepTypeCategory& category, Block& block)
 {
-	for(auto* craftStepType : craftStepTypes)
-		m_locationsByCategory[&craftStepType->craftStepTypeCategory].insert(&block);
+	m_locationsByCategory[&category].insert(&block);
+	m_stepTypeCategoriesByLocation[&block].insert(&category);
 }
-void HasCraftingLocationsAndJobs::removeLocation(std::vector<const CraftStepType*>& craftStepTypes, Block& block)
+void HasCraftingLocationsAndJobs::removeLocation(const CraftStepTypeCategory& category, Block& block)
 {
-	for(const CraftStepType* craftStepType : craftStepTypes)
-	{
-		auto category = &craftStepType->craftStepTypeCategory;
-		assert(m_locationsByCategory.contains(category));
-		if(m_locationsByCategory.at(category).size() == 1)
-			m_locationsByCategory.erase(category);
-		else
-			m_locationsByCategory.at(category).erase(&block);
-	}
+	assert(m_locationsByCategory.contains(&category));
+	assert(m_stepTypeCategoriesByLocation.contains(&block));
+	if(m_locationsByCategory.at(&category).size() == 1)
+		m_locationsByCategory.erase(&category);
+	else
+		m_locationsByCategory.at(&category).erase(&block);
+	if(m_stepTypeCategoriesByLocation.at(&block).size() == 0)
+		m_stepTypeCategoriesByLocation.erase(&block);
+	else
+		m_stepTypeCategoriesByLocation.at(&block).erase(&category);
 }
 // To be used by the UI.
 bool HasCraftingLocationsAndJobs::hasLocationsFor(const CraftJobType& craftJobType) const
 {
-	for(auto* craftStepType : craftJobType.stepTypes)
-		if(!m_locationsByCategory.contains(&craftStepType->craftStepTypeCategory))
+	for(auto& craftStepType : craftJobType.stepTypes)
+		if(!m_locationsByCategory.contains(&craftStepType.craftStepTypeCategory))
 			return false;
 	return true;
 }
 // Material type may be null.
 void HasCraftingLocationsAndJobs::addJob(const CraftJobType& craftJobType, const MaterialType* materialType, uint32_t minimumSkillLevel)
 {
+	if(craftJobType.materialtypeCategory != nullptr)
+		assert(materialType->materialTypeCategory == craftJobType.materialtypeCategory);
 	CraftJob& craftJob = m_jobs.emplace_back(craftJobType, *this, materialType, minimumSkillLevel);
 	indexUnassigned(craftJob);
 }
@@ -166,13 +182,13 @@ void HasCraftingLocationsAndJobs::stepInterupted(CraftJob& craftJob)
 }
 void HasCraftingLocationsAndJobs::indexUnassigned(CraftJob& craftJob)
 {
-	const CraftStepType& craftStepType = **craftJob.stepIterator;
+	const CraftStepType& craftStepType = *craftJob.stepIterator;
 	m_unassignedProjectsByStepTypeCategory[&craftStepType.craftStepTypeCategory].insert(&craftJob);
 	m_unassignedProjectsBySkill[&craftStepType.skillType].insert(&craftJob);
 }
 void HasCraftingLocationsAndJobs::unindexAssigned(CraftJob& craftJob)
 {
-	const CraftStepType& craftStepType = **craftJob.stepIterator;
+	const CraftStepType& craftStepType = *craftJob.stepIterator;
 	if(m_unassignedProjectsByStepTypeCategory[&craftStepType.craftStepTypeCategory].size() == 1)
 		m_unassignedProjectsByStepTypeCategory.erase(&craftStepType.craftStepTypeCategory);
 	else
@@ -200,7 +216,7 @@ void HasCraftingLocationsAndJobs::jobComplete(CraftJob& craftJob)
 }
 void HasCraftingLocationsAndJobs::makeAndAssignStepProject(CraftJob& craftJob, Block& location, CraftObjective& objective)
 {
-	craftJob.craftStepProject = std::make_unique<CraftStepProject>(objective.m_actor.getFaction(), location, **craftJob.stepIterator, craftJob);
+	craftJob.craftStepProject = std::make_unique<CraftStepProject>(objective.m_actor.getFaction(), location, *craftJob.stepIterator, craftJob);
 	craftJob.craftStepProject->addWorkerCandidate(objective.m_actor, objective);
 	unindexAssigned(craftJob);
 }
@@ -211,9 +227,10 @@ CraftJob* HasCraftingLocationsAndJobs::getJobForAtLocation(const Actor& actor, c
 	if(!m_stepTypeCategoriesByLocation.contains(const_cast<Block*>(&block)))
 		return nullptr;
 	for(const CraftStepTypeCategory* category : m_stepTypeCategoriesByLocation.at(const_cast<Block*>(&block)))
-		for(CraftJob* craftJob : m_unassignedProjectsByStepTypeCategory.at(category))
-			if(&(*craftJob->stepIterator)->skillType == &skillType && actor.m_skillSet.get(skillType) >= craftJob->minimumSkillLevel)
-				return craftJob;
+		if(m_unassignedProjectsByStepTypeCategory.contains(category))
+			for(CraftJob* craftJob : m_unassignedProjectsByStepTypeCategory.at(category))
+				if(craftJob->stepIterator->skillType == skillType && actor.m_skillSet.get(skillType) >= craftJob->minimumSkillLevel)
+					return craftJob;
 	return nullptr;
 }
 std::pair<CraftJob*, Block*> HasCraftingLocationsAndJobs::getJobAndLocationFor(const Actor& actor, const SkillType& skillType)
@@ -224,7 +241,7 @@ std::pair<CraftJob*, Block*> HasCraftingLocationsAndJobs::getJobAndLocationFor(c
 	};
 	FindsPath findsPath(actor, false);
 	findsPath.pathToUnreservedAdjacentToPredicate(predicate, *actor.getFaction());
-	if(!findsPath.found())
+	if(!findsPath.found() && !findsPath.m_useCurrentLocation)
 		return std::make_pair(nullptr, nullptr);
 	else
 	{

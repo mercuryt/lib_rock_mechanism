@@ -1,5 +1,6 @@
 #pragma once
 
+#include "hasShape.h"
 #include "reservable.h"
 #include "actor.h"
 #include "eventSchedule.h"
@@ -32,7 +33,8 @@ struct ProjectItemCounts final
 	const uint8_t required;
 	uint8_t delivered;
 	uint8_t reserved;
-	ProjectItemCounts(const uint8_t r) : required(r), delivered(0), reserved(0) { }
+	bool consumed;
+	ProjectItemCounts(const uint8_t r, bool c) : required(r), delivered(0), reserved(0), consumed(c) { }
 };
 // Derived classes are expected to provide getDelay, getConsumedItems, getUnconsumedItems, getByproducts, and onComplete.
 class Project
@@ -47,6 +49,7 @@ class Project
 	//TODO: Reservations which cannot be honored cause the project to reset.
 	CanReserve m_canReserve;
 	std::vector<std::pair<ItemQuery, ProjectItemCounts>> m_requiredItems;
+	//TODO: required actors.
 	std::vector<std::pair<ActorQuery, ProjectItemCounts>> m_requiredActors;
 	std::unordered_set<Item*> m_toConsume;
 	size_t m_maxWorkers;
@@ -63,8 +66,6 @@ class Project
 	bool m_requirementsLoaded;
 	void addWorker(Actor& actor, Objective& objective);
 	void recordRequiredActorsAndItems();
-	[[nodiscard]] bool reservationsComplete() const;
-	[[nodiscard]] bool deliveriesComplete() const;
 protected:
 	Block& m_location;
 	const Faction& m_faction;
@@ -94,9 +95,12 @@ public:
 	[[nodiscard]] const Faction& getFaction() { return m_faction; }
 	[[nodiscard]] uint32_t getMinimumHaulSpeed() const { return Config::minimumHaulSpeed; }
 	[[nodiscard]] bool canAddWorker(const Actor& actor) const;
+	[[nodiscard]] bool reservationsComplete() const;
+	[[nodiscard]] bool deliveriesComplete() const;
 	[[nodiscard]] bool isOnDelay() { return m_delay; }
 	[[nodiscard]] Block& getLocation() { return m_location; }
 	[[nodiscard]] const Block& getLocation() const { return m_location; }
+	[[nodiscard]] bool hasCandidate(const Actor& actor) const;
 	// What would the total delay time be if we started from scratch now with current workers?
 	[[nodiscard]] virtual Step getDuration() const = 0;
 	virtual void onComplete() = 0;
@@ -159,6 +163,8 @@ class ProjectTryToAddWorkersThreadedTask final : public ThreadedTask
 {
 	Project& m_project;
 	std::unordered_set<Actor*> m_cannotPathToJobSite;
+	std::unordered_map<HasShape*, uint32_t> m_alreadyAtSite;
+	void resetProjectCounts();
 public:
 	ProjectTryToAddWorkersThreadedTask(Project& p);
 	void readStep();

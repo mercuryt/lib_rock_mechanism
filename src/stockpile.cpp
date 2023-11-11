@@ -80,6 +80,8 @@ void StockPileProject::onComplete()
 {
 	assert(m_workers.size() == 1);
 	m_workers.begin()->first->m_canPickup.putDown(m_location);
+	for(auto& [actor, projectWorker] : m_workers)
+		actor->m_hasObjectives.objectiveComplete(projectWorker.objective);
 }
 std::vector<std::pair<ItemQuery, uint32_t>> StockPileProject::getConsumed() const { return {}; }
 std::vector<std::pair<ItemQuery, uint32_t>> StockPileProject::getUnconsumed() const { return {{m_item, 1}}; }

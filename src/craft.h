@@ -19,18 +19,25 @@ struct skillType;
 struct CraftStepTypeCategory final
 {
 	const std::string name;
+	// Infastructure.
+	inline static std::list<CraftStepTypeCategory> data;
+	static CraftStepTypeCategory& byName(const std::string name)
+	{
+		auto found = std::ranges::find(data, name, &CraftStepTypeCategory::name);
+		assert(found != data.end());
+		return *found;
+	}
 };
 // Part of the definition of a particular CraftJobType which makes a specific Item.
 struct CraftStepType final
 {
 	const std::string name;
 	const CraftStepTypeCategory& craftStepTypeCategory;
-	const std::vector<std::pair<ItemQuery, uint32_t>> consumedItems;
-	const std::vector<std::pair<ItemQuery, uint32_t>> unconsumedItems;
-	const std::vector<std::pair<ItemType, uint32_t>> consumedItemsOfSameTypeAsProduct;
-	const std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> byproductItems;
 	const SkillType& skillType;
 	const Step stepsDuration;
+	std::vector<std::pair<ItemQuery, uint32_t>> consumed;
+	std::vector<std::pair<ItemQuery, uint32_t>> unconsumed;
+	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> byproducts;
 };
 // A specific step of a specific CraftJob.
 class CraftStepProject final : public Project
@@ -45,7 +52,7 @@ class CraftStepProject final : public Project
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
-	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
+	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const { return {}; }
 public:
 	CraftStepProject(const Faction* faction, Block& location, const CraftStepType& cst, CraftJob& cj) : Project(faction, location, 1), m_craftStepType(cst), m_craftJob(cj) { }
 	uint32_t getWorkerCraftScore(const Actor& actor) const;
@@ -54,11 +61,19 @@ public:
 struct CraftJobType final
 {
 	const std::string name;
-	const std::vector<const CraftStepType*> stepTypes;
 	const ItemType& productType;
 	const uint32_t productQuantity;
-	const std::unordered_map<const ItemType*, uint32_t> requiredItems;
-	const std::vector<const CraftStepTypeCategory*> requiredCraftingLocations;
+	const MaterialTypeCategory* materialtypeCategory;
+	std::vector<CraftStepType> stepTypes;
+	// Infastructure.
+	inline static std::list<CraftJobType> data;
+	static CraftJobType& byName(const std::string name)
+	{
+		auto found = std::ranges::find(data, name, &CraftJobType::name);
+		assert(!found->stepTypes.empty());
+		assert(found != data.end());
+		return *found;
+	}
 };
 // Make a specific product.
 struct CraftJob final
@@ -67,7 +82,7 @@ struct CraftJob final
 	HasCraftingLocationsAndJobs& hasCraftingLocationsAndJobs;
 	Item* workPiece;
 	const MaterialType* materialType;
-	std::vector<const CraftStepType*>::const_iterator stepIterator;
+	std::vector<CraftStepType>::const_iterator stepIterator;
 	std::unique_ptr<CraftStepProject> craftStepProject;
 	uint32_t minimumSkillLevel;
 	uint32_t totalSkillPoints;
@@ -78,7 +93,8 @@ struct CraftJob final
 	// No work piece provided is a create job.
 	CraftJob(const CraftJobType& cjt, HasCraftingLocationsAndJobs& hclaj, const MaterialType* mt, uint32_t msl) :
 	       	craftJobType(cjt), hasCraftingLocationsAndJobs(hclaj), workPiece(nullptr), materialType(mt), stepIterator(craftJobType.stepTypes.begin()), minimumSkillLevel(msl), totalSkillPoints(0), reservable(1) { }
-	u_int32_t getQuality() const;
+	uint32_t getQuality() const;
+	uint32_t getStep() const;
 	bool operator==(const CraftJob& other){ return &other == this; }
 };
 class CraftObjectiveType final : public ObjectiveType
@@ -127,10 +143,8 @@ class HasCraftingLocationsAndJobs final
 	std::unordered_map<const SkillType*, std::unordered_set<CraftJob*>> m_unassignedProjectsBySkill;
 	std::list<CraftJob> m_jobs;
 public:
-	void addLocation(std::vector<const CraftStepType*>& craftStepTypes, Block& block);
-	void removeLocation(std::vector<const CraftStepType*>& craftStepTypes, Block& block);
-	// To be used by the UI.
-	bool hasLocationsFor(const CraftJobType& craftJobType) const;
+	void addLocation(const CraftStepTypeCategory& craftStepTypeCategory, Block& block);
+	void removeLocation(const CraftStepTypeCategory& craftStepTypeCategory, Block& block);
 	void addJob(const CraftJobType& craftJobType, const MaterialType* materialType, uint32_t minimumSkillLevel = 0);
 	void stepComplete(CraftJob& craftJob, Actor& actor);
 	void stepInterupted(CraftJob& craftJob);
@@ -138,6 +152,8 @@ public:
 	void unindexAssigned(CraftJob& craftJob);
 	void jobComplete(CraftJob& craftJob);
 	void makeAndAssignStepProject(CraftJob& craftJob, Block& location, CraftObjective& objective);
+	// To be used by the UI.
+	[[nodiscard]] bool hasLocationsFor(const CraftJobType& craftJobType) const;
 	// May return nullptr;
 	CraftJob* getJobForAtLocation(const Actor& actor, const SkillType& skillType, const Block& block);
 	std::pair<CraftJob*, Block*> getJobAndLocationFor(const Actor& actor, const SkillType& skillType);

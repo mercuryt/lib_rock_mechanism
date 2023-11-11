@@ -67,6 +67,8 @@ public:
 	virtual const MoveType& getMoveType() const = 0;
 	virtual uint32_t singleUnitMass() const = 0;
 	friend class BlockHasShapes;
+	// For debugging.
+	virtual void log() const;
 };
 class BlockHasShapes
 {

@@ -96,6 +96,8 @@ public:
 	ThreadedTaskEngine& getThreadedTaskEngine();
 	Actor(const Actor& actor) = delete;
 	Actor(Actor&& actor) = delete;
+	// For debugging.
+	void log() const;
 };
 // To be used to find actors fitting criteria.
 struct ActorQuery

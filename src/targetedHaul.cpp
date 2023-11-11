@@ -4,7 +4,10 @@
 void TargetedHaulProject::onComplete()
 {
 	m_item.setLocation(m_location);
+	auto workers = std::move(m_workers);
 	m_location.m_area->m_targetedHauling.complete(*this);
+	for(auto& [actor, projectWorker] : workers)
+		actor->m_hasObjectives.objectiveComplete(projectWorker.objective);
 }
 TargetedHaulProject& AreaHasTargetedHauling::begin(std::vector<Actor*> actors, Item& item, Block& destination)
 {

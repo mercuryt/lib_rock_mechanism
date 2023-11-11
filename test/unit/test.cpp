@@ -24,6 +24,7 @@
 #include "haul.h"
 #include "dig.h"
 #include "construct.h"
+#include "craft.h"
 
 int main(int argc, char** argv) {
     doctest::Context context;

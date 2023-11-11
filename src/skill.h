@@ -11,7 +11,7 @@ struct SkillType final
 	float xpPerLevelModifier;
 	uint32_t level1Xp;
 	// Infastructure.
-	bool operator==(const SkillType& skillType){ return this == &skillType; }
+	bool operator==(const SkillType& skillType) const { return this == &skillType; }
 	inline static std::vector<SkillType> data;
 	static const SkillType& byName(const std::string name)
 	{

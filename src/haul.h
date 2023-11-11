@@ -47,7 +47,7 @@ class HaulSubproject final
 	ProjectItemCounts& m_projectItemCounts;
 	const ItemType* m_genericItemType;
 	const MaterialType* m_genericMaterialType;
-	void onComplete();
+	void complete(HasShape& delivered);
 public:
 	HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters);
 	void commandWorker(Actor& actor);

@@ -72,7 +72,7 @@ void ConstructObjective::cancel()
 }
 void ConstructObjective::reset() 
 { 
-	cancel(); 
+	m_constructThreadedTask.maybeCancel();
 	m_project = nullptr; 
 	m_actor.m_canReserve.clearAll();
 }
@@ -140,10 +140,17 @@ void ConstructProject::onComplete()
 {
 	assert(!m_location.isSolid());
 	if(m_blockFeatureType == nullptr)
+	{
+		m_location.m_hasItems.disperseAll();
+		//TODO: disperse actors.
 		m_location.setSolid(m_materialType);
+	}
 	else
 		m_location.m_hasBlockFeatures.construct(*m_blockFeatureType, m_materialType);
+	auto workers = std::move(m_workers);
 	m_location.m_area->m_hasConstructionDesignations.clearAll(m_location);
+	for(auto& [actor, projectWorker] : workers)
+		actor->m_hasObjectives.objectiveComplete(projectWorker.objective);
 }
 void ConstructProject::onDelay()
 {
@@ -159,7 +166,7 @@ Step ConstructProject::getDuration() const
 	uint32_t totalScore = 0;
 	for(auto& pair : m_workers)
 		totalScore += getWorkerConstructScore(*pair.first);
-	return Config::constructScoreCost / totalScore;
+	return m_materialType.constructionData->duration / totalScore;
 }
 // If blockFeatureType is null then construct a wall rather then a feature.
 void HasConstructionDesignationsForFaction::designate(Block& block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType)

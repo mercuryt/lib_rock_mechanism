@@ -259,7 +259,7 @@ Item* GivePlantsFluidObjective::getFluidHaulingItemAt(Block& block)
 	assert(m_plantLocation != nullptr);
 	assert(m_fluidHaulingItem == nullptr);
 	for(Item* item : block.m_hasItems.getAll())
-		if(item->m_itemType.canHoldFluids && m_actor.m_canPickup.canPickupAny(*item))
+		if(item->m_itemType.canHoldFluids && m_actor.m_canPickup.canPickupAny(*item) && !item->isWorkPiece())
 			return item;
 	return nullptr;
 }

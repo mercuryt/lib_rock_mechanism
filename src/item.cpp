@@ -2,6 +2,7 @@
 #include "item.h"
 #include "block.h"
 #include "area.h"
+#include <iostream>
 void Item::setVolume() { m_volume = m_quantity * m_itemType.volume; }
 void Item::setMass()
 { 
@@ -46,12 +47,22 @@ void Item::destroy()
 {
 	if(m_location != nullptr)
 		exit();
-	m_dataLocation->erase(m_iterator);
+	getSimulation().destroyItem(*this);
 }
 bool Item::isPreparedMeal() const
 {
 	static const ItemType& preparedMealType = ItemType::byName("prepared meal");
 	return &m_itemType == &preparedMealType;
+}
+void Item::log() const
+{
+	std::cout << m_itemType.name;
+	if(m_quantity != 1)
+		std::cout << "(" << m_quantity << ")";
+	if(m_craftJobForWorkPiece != nullptr)
+		std::cout << "{" << m_craftJobForWorkPiece->getStep() << "}";
+	HasShape::log();
+	std::cout << std::endl;
 }
 // Generic.
 Item::Item(Simulation& s, uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t q, CraftJob* cj):
@@ -298,6 +309,19 @@ void BlockHasItems::setTemperature(Temperature temperature)
 {
 	for(Item* item : m_items)
 		item->setTemperature(temperature);
+}
+void BlockHasItems::disperseAll()
+{
+	std::vector<Block*> blocks;
+	for(Block* block : m_block.getAdjacentOnSameZLevelOnly())
+		if(!block->isSolid())
+			blocks.push_back(block);
+	for(Item* item : m_items)
+	{
+		//TODO: split up stacks of generics, prefer blocks with more empty space.
+		Block* block = m_block.m_area->m_simulation.m_random.getInVector(blocks);
+		item->setLocation(*block);
+	}
 }
 uint32_t BlockHasItems::getCount(const ItemType& itemType, const MaterialType& materialType) const
 {
