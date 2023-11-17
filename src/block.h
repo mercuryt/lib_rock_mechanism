@@ -30,6 +30,7 @@
 class Area;
 class Item;
 class Actor;
+class BlockHasActors;
 
 // Fluid type and volume pairs are sorted by density, low to high.
 // This is useful for resolving overfill.
@@ -77,7 +78,7 @@ public:
 	BlockHasActors m_hasActors;
 	BlockHasItems m_hasItems;
 	HasDesignations m_hasDesignations;
-	BlockIsPartOfStockPile m_isPartOfStockPile;
+	BlockIsPartOfStockPiles m_isPartOfStockPiles;
 	IsPartOfFarmField m_isPartOfFarmField;
 	BlockHasTemperature m_blockHasTemperature;
 

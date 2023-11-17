@@ -3,7 +3,6 @@
 #include "area.h"
 void TargetedHaulProject::onComplete()
 {
-	m_item.setLocation(m_location);
 	auto workers = std::move(m_workers);
 	m_location.m_area->m_targetedHauling.complete(*this);
 	for(auto& [actor, projectWorker] : workers)

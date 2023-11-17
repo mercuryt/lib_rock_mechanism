@@ -16,12 +16,14 @@
 #include "datetime.h"
 #include "simulation.h"	
 #include "targetedHaul.h"	
+#include "fire.h"
 
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
 #include <tuple>
 #include <list>
+
 
 class Area final
 {
@@ -42,7 +44,7 @@ public:
 	HasHaulTools m_hasHaulTools;
 	HasDigDesignations m_hasDiggingDesignations;
 	HasConstructionDesignations m_hasConstructionDesignations;
-	HasStockPiles m_hasStockPiles;
+	AreaHasStockPiles m_hasStockPiles;
 	HasCraftingLocationsAndJobs m_hasCraftingLocationsAndJobs;
 	AreaHasTargetedHauling m_targetedHauling;
 	HasSleepingSpots m_hasSleepingSpots;

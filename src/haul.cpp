@@ -81,11 +81,23 @@ HasShape& CanPickup::putDown(Block& location, uint32_t quantity)
 	if(m_carrying->isGeneric())
 	{
 		Item& item = getItem();
-		if(item.getQuantity() > quantity)
-			item.removeQuantity(quantity);
-		else
+		if(item.getQuantity() == quantity)
+		{
 			m_carrying = nullptr;
-		output = &location.m_hasItems.add(item.m_itemType, item.m_materialType, quantity);
+			if(location.m_hasItems.getCount(item.m_itemType, item.m_materialType) == 0)
+			{
+				item.setLocation(location);
+				output = &item;
+			}
+			else
+				output = &location.m_hasItems.add(item.m_itemType, item.m_materialType, quantity);
+				
+		}
+		else
+		{
+			item.removeQuantity(quantity);
+			output = &location.m_hasItems.add(item.m_itemType, item.m_materialType, quantity);
+		}
 	}
 	else
 	{
@@ -96,10 +108,11 @@ HasShape& CanPickup::putDown(Block& location, uint32_t quantity)
 	m_actor.m_canMove.updateIndividualSpeed();
 	return *output;
 }
-void CanPickup::putDownIfAny(Block& location)
+HasShape* CanPickup::putDownIfAny(Block& location)
 {
 	if(m_carrying != nullptr)
-		putDown(location);
+		return &putDown(location);
+	return nullptr;
 }
 void CanPickup::removeFluidVolume(uint32_t volume)
 {
@@ -690,10 +703,15 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 	output.toHaul = &toHaul;
 	output.projectItemCounts = project.m_toPickup.at(&toHaul).first;
 	uint32_t maxQuantityRequested = project.m_toPickup.at(&toHaul).second;
+	uint32_t minimumSpeed = project.getMinimumHaulSpeed();
+	std::vector<Actor*> workers;
+	// TODO: shouldn't this be m_waiting?
+	for(auto& pair : project.m_workers)
+		workers.push_back(pair.first);
 	assert(maxQuantityRequested != 0);
 	// Individual
 	// TODO:: Prioritize cart if a large number of items are requested.
-	uint32_t maxQuantityCanCarry = worker.m_canPickup.maximumNumberWhichCanBeCarriedWithMinimumSpeed(toHaul, project.getMinimumHaulSpeed());
+	uint32_t maxQuantityCanCarry = worker.m_canPickup.maximumNumberWhichCanBeCarriedWithMinimumSpeed(toHaul, minimumSpeed);
 	if(maxQuantityCanCarry != 0)
 	{
 		output.strategy = HaulStrategy::Individual;
@@ -715,7 +733,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 	if(haulTool != nullptr)
 	{
 		// Cart
-		maxQuantityCanCarry = maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(worker, *haulTool, toHaul, project.getMinimumHaulSpeed());
+		maxQuantityCanCarry = maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(worker, *haulTool, toHaul, minimumSpeed);
 		if(maxQuantityCanCarry != 0)
 		{
 			output.strategy = HaulStrategy::Cart;
@@ -725,10 +743,10 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 			return output;
 		}
 		// Animal Cart
-		Actor* yoked = toHaul.m_location->m_area->m_hasHaulTools.getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(*worker.getFaction(), *haulTool, toHaul.getMass(), project.getMinimumHaulSpeed());
+		Actor* yoked = toHaul.m_location->m_area->m_hasHaulTools.getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(*worker.getFaction(), *haulTool, toHaul.getMass(), minimumSpeed);
 		if(yoked != nullptr)
 		{
-			maxQuantityCanCarry = maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(worker, *yoked, *haulTool, toHaul, project.getMinimumHaulSpeed());
+			maxQuantityCanCarry = maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(worker, *yoked, *haulTool, toHaul, minimumSpeed);
 			if(maxQuantityCanCarry != 0)
 			{
 				output.strategy = HaulStrategy::AnimalCart;
@@ -751,14 +769,14 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 		}
 	}
 	// Panniers
-	Actor* pannierBearer = toHaul.m_location->m_area->m_hasHaulTools.getPannierBearerToHaulCargoWithMassWithMinimumSpeed(*worker.getFaction(), toHaul, project.getMinimumHaulSpeed());
+	Actor* pannierBearer = toHaul.m_location->m_area->m_hasHaulTools.getPannierBearerToHaulCargoWithMassWithMinimumSpeed(*worker.getFaction(), toHaul, minimumSpeed);
 	if(pannierBearer != nullptr)
 	{
 		//TODO: If pannierBearer already has panniers equiped then use those, otherwise find ones to use. Same for animalCart.
 		Item* panniers = toHaul.m_location->m_area->m_hasHaulTools.getPanniersForActorToHaul(*worker.getFaction(), *pannierBearer, toHaul);
 		if(panniers != nullptr)
 		{
-			maxQuantityCanCarry = maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniersAndAnimal(worker, *pannierBearer, *panniers, toHaul, project.getMinimumHaulSpeed());
+			maxQuantityCanCarry = maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniersAndAnimal(worker, *pannierBearer, *panniers, toHaul, minimumSpeed);
 			if(maxQuantityCanCarry != 0)
 			{
 				output.strategy = HaulStrategy::Panniers;
@@ -793,6 +811,7 @@ void HaulSubproject::complete(HasShape& delivered)
 	delivered.m_reservable.reserveFor(m_project.m_canReserve, m_quantity);
 	std::vector<Actor*> workers(m_workers.begin(), m_workers.end());
 	Project& project = m_project;
+	m_project.onDelivered(delivered);
 	m_project.m_haulSubprojects.remove(*this);
 	for(Actor* worker : workers)
 	{

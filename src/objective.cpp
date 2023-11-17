@@ -4,6 +4,7 @@
 #include "actor.h"
 #include "stamina.h"
 #include "wander.h"
+#include <numbers>
 void ObjectiveTypePrioritySet::setPriority(const ObjectiveType& objectiveType, uint8_t priority)
 {
 	auto found = std::ranges::find_if(m_data, [&](ObjectivePriority& x) { return x.objectiveType == &objectiveType; });
@@ -148,6 +149,22 @@ void HasObjectives::destroy(Objective& objective)
 		std::erase_if(m_tasksQueue, [&](auto& o){ return &objective == o.get(); });
 	}
 	m_actor.m_canReserve.clearAll();
+	HasShape* wasCarrying = m_actor.m_canPickup.putDownIfAny(*m_actor.m_location);
+	if(wasCarrying != nullptr && m_actor.getFaction() != nullptr)
+	{
+		if(wasCarrying->isItem())
+		{
+			Item& item = static_cast<Item&>(*wasCarrying);
+			const Faction& faction = *m_actor.getFaction();
+			if(m_actor.m_location->m_area->m_hasStockPiles.contains(faction))
+				m_actor.m_location->m_area->m_hasStockPiles.at(faction).addItem(item);
+		}
+		else
+		{
+			assert(wasCarrying->isActor());
+			//TODO: add to medical listing.
+		}
+	}
 	if(isCurrent)
 		getNext();
 }
@@ -155,15 +172,15 @@ void HasObjectives::cancel(Objective& objective)
 {
 	objective.cancel();
 	m_actor.m_canMove.maybeCancelThreadedTask();
-	destroy(objective);
 	m_actor.m_project = nullptr;
+	destroy(objective);
 }
 void HasObjectives::objectiveComplete(Objective& objective)
 {
 	assert(m_actor.m_mustSleep.isAwake());
 	m_actor.m_canMove.maybeCancelThreadedTask();
-	destroy(objective);
 	m_actor.m_project = nullptr;
+	destroy(objective);
 }
 void HasObjectives::taskComplete()
 {

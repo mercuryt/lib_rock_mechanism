@@ -129,5 +129,8 @@
 	"stationPriority": 1500,
 	"secondsToDelayBeforeTryingAgainToFollowLeader": 40,
 	"getIntoAttackPositionMaxRange": 40,
-	"minutesToDelayBeforeTryingAgaintoReserveItemsAndActorsForAProject": 10
+	"minutesToDelayBeforeTryingAgaintoReserveItemsAndActorsForAProject": 10,
+	"minutesToDisableStockPile": 10,
+	"projectTryToMakeSubprojectRetriesBeforeProjectDelay": 5,
+	"maxWorkersForStockPileProject": 2
 }

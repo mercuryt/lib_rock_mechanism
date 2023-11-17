@@ -97,6 +97,16 @@ public:
 	bool containsGeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity) const;
 	bool empty() const { return m_fluidType == nullptr && m_shapes.empty(); }
 };
+//TODO: change from set to vector.
+class ItemCanBeStockPiled
+{
+	std::unordered_set<const Faction*> m_data;
+public:
+	void set(const Faction& faction) { assert(!m_data.contains(&faction)); m_data.insert(&faction); }
+	void unset(const Faction& faction) { assert(m_data.contains(&faction)); m_data.erase(&faction); }
+	void maybeUnset(const Faction& faction) { m_data.erase(&faction); }
+	[[nodiscard]] bool contains(const Faction& faction) { return m_data.contains(&faction); }
+};
 class Item final : public HasShape
 {
 	uint32_t m_quantity; // Always set to 1 for nongeneric types.
@@ -112,6 +122,7 @@ public:
 	bool m_installed;
 	CraftJob* m_craftJobForWorkPiece; // Used only for work in progress items.
 	ItemHasCargo m_hasCargo; //TODO: Change to reference to save some RAM?
+	ItemCanBeStockPiled m_canBeStockPiled;
 	//TODO: ItemHasOwners
 	std::list<Item>::iterator m_iterator;
 	std::list<Item>* m_dataLocation;

@@ -56,7 +56,7 @@ bool Item::isPreparedMeal() const
 }
 void Item::log() const
 {
-	std::cout << m_itemType.name;
+	std::cout << m_itemType.name << "[" << m_materialType.name << "]";
 	if(m_quantity != 1)
 		std::cout << "(" << m_quantity << ")";
 	if(m_craftJobForWorkPiece != nullptr)

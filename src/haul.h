@@ -1,6 +1,7 @@
 #pragma once
 
 #include "hasShape.h"
+#include <unordered_set>
 
 class Item;
 class Actor;
@@ -65,6 +66,7 @@ public:
 	[[nodiscard]] static uint32_t getSpeedWithHaulToolAndAnimal(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul, uint32_t quantity);
 	[[nodiscard]] static std::vector<Actor*> actorsNeededToHaulAtMinimumSpeedWithTool(const Project& project, Actor& leader, const HasShape& toHaul, const Item& haulTool);
 	[[nodiscard]] static uint32_t getSpeedWithPannierBearerAndPanniers(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul, uint32_t quantity);
+	[[nodiscard]] std::unordered_set<Actor*>& getWorkers() { return m_workers; }
 	// For testing.
 	[[nodiscard]] HaulStrategy getHaulStrategy() const { return m_strategy; }
 	[[nodiscard]] bool operator==(const HaulSubproject& other) const { return &other == this; }
@@ -82,7 +84,7 @@ public:
 	void pickUp(Actor& actor, uint32_t quantity = 1u);
 	// Returns a reference to has shape, which may be newly created or pre-existing due to generic items.
 	HasShape& putDown(Block& location, uint32_t quantity = 0u);
-	void putDownIfAny(Block& location);
+	HasShape* putDownIfAny(Block& location);
 	void removeFluidVolume(uint32_t volume);
 	void add(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity);
 	void remove(Item& item);
@@ -94,6 +96,7 @@ public:
 	[[nodiscard]] uint32_t canPickupQuantityOf(const ItemType& itemType, const MaterialType& materialType) const;
 	[[nodiscard]] uint32_t canPickupQuantityWithSingeUnitMass(uint32_t unitMass) const;
 	[[nodiscard]] bool canPickupAny(const HasShape& hasShape) const { return canPickupQuantityOf(hasShape) != 0; }
+	[[nodiscard]] bool isCarryingAnything() const { return m_carrying != nullptr; }
 	[[nodiscard]] bool isCarrying(const HasShape& hasShape) const { return &hasShape == m_carrying; }
 	[[nodiscard]] bool isCarryingGeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity) const;
 	[[nodiscard]] bool isCarryingFluidType(const FluidType& fluidType) const;

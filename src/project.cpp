@@ -37,8 +37,17 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::readStep()
 void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep()
 {
 	if(m_haulProjectParamaters.strategy == HaulStrategy::None)
-		// Nothing haulable found, wait a bit before we try again.
-		m_project.m_tryToHaulEvent.schedule(Config::stepsFrequencyToLookForHaulSubprojects, m_project);
+	{
+		if(++m_project.m_haulRetries == Config::projectTryToMakeSubprojectRetriesBeforeProjectDelay)
+		{
+			// Enough retries, delay.
+			m_project.setDelayOn();
+			m_project.m_haulRetries = 0;
+		}
+		else
+			// Nothing haulable found, wait a bit and try again.
+			m_project.m_tryToHaulEvent.schedule(Config::stepsFrequencyToLookForHaulSubprojects, m_project);
+	}
 	else if(!m_haulProjectParamaters.validate() && m_project.m_toPickup.at(m_haulProjectParamaters.toHaul).second >= m_haulProjectParamaters.quantity)
 	{
 		// Something that was avalible during read step is now reserved. Ensure that there is a new threaded task to try again.
@@ -49,12 +58,13 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep()
 	{
 		// All guards passed, create subproject.
 		assert(!m_haulProjectParamaters.workers.empty());
-		m_project.m_haulSubprojects.emplace_back(m_project, m_haulProjectParamaters);
+		HaulSubproject& subproject = m_project.m_haulSubprojects.emplace_back(m_project, m_haulProjectParamaters);
 		// Remove the target of the new haulSubproject from m_toPickup;
 		if(m_project.m_toPickup.at(m_haulProjectParamaters.toHaul).second == m_haulProjectParamaters.quantity)
 			m_project.m_toPickup.erase(m_haulProjectParamaters.toHaul);
 		else
 			m_project.m_toPickup.at(m_haulProjectParamaters.toHaul).second -= m_haulProjectParamaters.quantity;
+		m_project.onSubprojectCreated(subproject);
 	}
 }
 void ProjectTryToMakeHaulSubprojectThreadedTask::clearReferences() { m_project.m_tryToHaulThreadedTask.clearPointer(); }
@@ -136,8 +146,10 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 		resetProjectCounts();
 	}
 	else
+	{
 		// Found all materials, remove any workers which cannot path to the project location.
 		std::erase_if(m_project.m_workerCandidatesAndTheirObjectives, [&](auto& pair) { return m_cannotPathToJobSite.contains(pair.first); });
+	}
 }
 void ProjectTryToAddWorkersThreadedTask::writeStep()
 {
@@ -157,9 +169,22 @@ void ProjectTryToAddWorkersThreadedTask::writeStep()
 		for(auto& [hasShape, quantity] : m_alreadyAtSite)
 			hasShape->m_reservable.reserveFor(m_project.m_canReserve, quantity);
 		// Add all actors.
+		std::vector<Actor*> notAdded;
 		for(auto& [actor, objective] : m_project.m_workerCandidatesAndTheirObjectives)
-			m_project.addWorker(*actor, *objective);
+		{
+			if(m_project.canAddWorker(*actor))
+				m_project.addWorker(*actor, *objective);
+			else
+				notAdded.push_back(actor);
+		}
 		m_project.m_workerCandidatesAndTheirObjectives.clear();
+		m_project.onReserve();
+		for(Actor* actor : notAdded)
+		{
+			actor->m_hasObjectives.getCurrent().reset();
+			actor->m_project = nullptr;
+			actor->m_hasObjectives.cannotCompleteTask();
+		}
 	}
 	else
 	{
@@ -199,7 +224,7 @@ void ProjectTryToAddWorkersThreadedTask::resetProjectCounts()
 	m_project.m_toPickup.clear();
 }
 // Derived classes are expected to provide getDuration, getConsumedItems, getUnconsumedItems, getByproducts, onDelay, offDelay, and onComplete.
-Project::Project(const Faction* f, Block& l, size_t mw) : m_finishEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToReserveEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_tryToAddWorkersThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_gatherComplete(false), m_canReserve(f), m_maxWorkers(mw), m_delay(false), m_requirementsLoaded(false), m_location(l), m_faction(*f)
+Project::Project(const Faction* f, Block& l, size_t mw) : m_finishEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToReserveEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_tryToAddWorkersThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_canReserve(f), m_maxWorkers(mw), m_delay(false), m_haulRetries(0), m_requirementsLoaded(false), m_location(l), m_faction(*f)
 {
 	m_location.m_reservable.reserveFor(m_canReserve);
 }
@@ -246,6 +271,7 @@ void Project::addWorker(Actor& actor, Objective& objective)
 {
 	assert(!m_workers.contains(&actor));
 	assert(actor.isSentient());
+	assert(canAddWorker(actor));
 	// Initalize a ProjectWorker for this worker.
 	m_workers.emplace(&actor, objective);
 	commandWorker(actor);
@@ -253,6 +279,7 @@ void Project::addWorker(Actor& actor, Objective& objective)
 void Project::addWorkerCandidate(Actor& actor, Objective& objective)
 {
 	assert(actor.m_project == nullptr);
+	assert(canAddWorker(actor));
 	actor.m_project = this;
 	if(!m_requirementsLoaded)
 		recordRequiredActorsAndItems();
@@ -323,6 +350,7 @@ void Project::removeWorker(Actor& actor)
 	if(m_making.contains(&actor))
 		removeFromMaking(actor);
 	m_workers.erase(&actor);
+	onCancel();
 }
 void Project::addToMaking(Actor& actor)
 {

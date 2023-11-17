@@ -1,4 +1,9 @@
 #pragma once
+#include "eventSchedule.h"
+#include "faction.h"
+#include "hasShape.h"
+#include "haul.h"
+#include "materialType.h"
 #include "objective.h"
 #include "threadedTask.hpp"
 #include "project.h"
@@ -7,6 +12,7 @@
 #include "findsPath.h"
 
 #include <memory>
+#include <sys/types.h>
 #include <vector>
 #include <utility>
 #include <tuple>
@@ -17,12 +23,15 @@
 class Block;
 class StockPileThreadedTask;
 class StockPileProject;
+class Simulation;
+class ReenableStockPileScheduledEvent;
+class StockPile;
+class BlockIsPartOfStockPiles;
 class StockPileObjectiveType final : public ObjectiveType
 {
 public:
 	bool canBeAssigned(Actor& actor) const;
 	std::unique_ptr<Objective> makeFor(Actor& actor) const;
-	StockPileObjectiveType();
 	ObjectiveId getObjectiveId() const { return ObjectiveId::StockPile; }
 };
 class StockPileObjective final : public Objective
@@ -31,15 +40,15 @@ public:
 	Actor& m_actor;
 	HasThreadedTask<StockPileThreadedTask> m_threadedTask;
 	StockPileProject* m_project;
-	StockPileObjective(Actor& a) : Objective(Config::stockPilePriority), m_actor(a), m_threadedTask(m_actor.getThreadedTaskEngine()) { }
+	StockPileObjective(Actor& a) : Objective(Config::stockPilePriority), m_actor(a), m_threadedTask(m_actor.getThreadedTaskEngine()), m_project(nullptr) { }
 	void execute();
 	void cancel();
 	void delay() { cancel(); }
 	void reset();
-	std::string name() const { return "stock pile"; }
+	std::string name() const { return "stockpile"; }
 	ObjectiveId getObjectiveId() const { return ObjectiveId::StockPile; }
 };
-// Searches for an Item and destination to make a hauling project for m_objective.m_actor.
+// Searches for an Item and destination to make or find a hauling project for m_objective.m_actor.
 class StockPileThreadedTask final : public ThreadedTask
 {
 	StockPileObjective& m_objective;
@@ -52,21 +61,6 @@ public:
 	void writeStep();
 	void clearReferences();
 };
-class StockPileProject final : public Project
-{
-	Item& m_item;
-	Step getDuration() const;
-	void onComplete();
-	void onDelay() { cancel(); }
-	void offDelay() { assert(false); }
-	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
-	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
-	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
-	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
-public:
-	StockPileProject(const Faction* faction, Block& block, Item& item) : Project(faction, block, 1), m_item(item) { }
-	friend class HasStockPiles;
-};
 class StockPile
 {
 	std::vector<ItemQuery> m_queries;
@@ -74,55 +68,119 @@ class StockPile
 	uint32_t m_openBlocks;
 	Area& m_area;
 	const Faction& m_faction;
+	bool m_enabled;
+	HasScheduledEvent<ReenableStockPileScheduledEvent> m_reenableScheduledEvent;
+	StockPileProject* m_projectNeedingMoreWorkers;
 public:
-	StockPile(std::vector<ItemQuery>& q, Area& a, const Faction& f) : m_queries(q), m_openBlocks(0), m_area(a), m_faction(f) { }
+	StockPile(std::vector<ItemQuery>& q, Area& a, const Faction& f);
 	bool accepts(const Item& item) const;
-	void addBlock(Block* block);
-	void removeBlock(Block* block);
+	void addBlock(Block& block);
+	void removeBlock(Block& block);
 	void incrementOpenBlocks();
 	void decrementOpenBlocks();
-	friend class HasStockPiles;
-	bool operator==(const StockPile& other) const { return &other == this; }
+	void disableIndefinately() { m_enabled = false; }
+	void disableTemporarily(Step duration) { m_reenableScheduledEvent.schedule(*this, duration);  disableIndefinately(); }
+	void reenable() { m_enabled = true; } 
+	void addToProjectNeedingMoreWorkers(Actor& actor, StockPileObjective& objective);
+	[[nodiscard]] bool isEnabled() const { return m_enabled; }
+	[[nodiscard]] bool hasProjectNeedingMoreWorkers() const { return m_projectNeedingMoreWorkers != nullptr; }
+	[[nodiscard]] Simulation& getSimulation();
+	friend class AreaHasStockPilesForFaction;
+	friend class ReenableStockPileScheduledEvent;
+	friend class StockPileProject;
+	friend class BlockIsPartOfStockPiles;
+	[[nodiscard]] bool operator==(const StockPile& other) const { return &other == this; }
 };
-class BlockIsPartOfStockPile
+class StockPileProject final : public Project
+{
+	Item& m_item;
+	Item* m_delivered;
+	StockPile& m_stockpile;
+	bool m_dispatched;
+	Step getDuration() const;
+	void onComplete();
+	void onReserve();
+	void onDelivered(HasShape& delivered) { assert(delivered.isItem()); m_delivered = &static_cast<Item&>(delivered); }
+	// Mark dispatched as true and dismiss any unassigned workers and candidates.
+	void onSubprojectCreated(HaulSubproject& subproject);
+	void onCancel();
+	// TODO: geometric progresson of disable duration.
+	void onDelay() { cancel(); m_stockpile.disableTemporarily(Config::stepsToDisableStockPile); }
+	void offDelay() { assert(false); }
+	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
+	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
+	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
+	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
+public:
+	StockPileProject(const Faction* faction, Block& block, Item& item);
+	bool canAddWorker(const Actor& actor) const;
+	friend class AreaHasStockPilesForFaction;
+};
+class ReenableStockPileScheduledEvent final : public ScheduledEventWithPercent
+{
+	StockPile& m_stockPile;
+public:
+	ReenableStockPileScheduledEvent(StockPile& sp, Step duration) : ScheduledEventWithPercent(sp.getSimulation(), duration), m_stockPile(sp) { }
+	void execute() { m_stockPile.reenable(); }
+	void clearReferences() { m_stockPile.m_reenableScheduledEvent.clearPointer(); }
+};
+struct BlockIsPartOfStockPile
+{
+	StockPile& stockPile;
+	bool active;
+};
+class BlockIsPartOfStockPiles
 {
 	Block& m_block;
-	StockPile* m_stockPile;
-	bool m_isAvalable;
+	std::unordered_map<const Faction*, BlockIsPartOfStockPile> m_stockPiles;
 public:
-	BlockIsPartOfStockPile(Block& b) : m_block(b), m_stockPile(nullptr), m_isAvalable(true) { }
-	void setStockPile(StockPile& stockPile);
-	void clearStockPile();
-	StockPile& getStockPile();
-	const StockPile& getStockPile() const;
-	void setAvalable();
-	void setUnavalable();
-	bool hasStockPile() const;
-	bool getIsAvalable(const Faction& faction) const;
-	friend class StockPileThreadedTask;
+	BlockIsPartOfStockPiles(Block& b): m_block(b) { }
+	void recordMembership(StockPile& stockPile);
+	void recordNoLongerMember(StockPile& stockPile);
+	// When an item is added or removed update avalibility for all stockpiles.
+	void updateActive();
+	[[nodiscard]] StockPile* getForFaction(const Faction& faction) { if(!m_stockPiles.contains(&faction)) return nullptr; return &m_stockPiles.at(&faction).stockPile; }
+	[[nodiscard]] bool contains(const Faction& faction) const { return m_stockPiles.contains(const_cast<Faction*>(&faction)); }
+	[[nodiscard]] bool isAvalible(const Faction& faction) const;
 };
-class HasStockPiles
+class AreaHasStockPilesForFaction
 {
 	Area& m_area;
 	std::list<StockPile> m_stockPiles;
+	const Faction& m_faction;
 	std::unordered_map<const ItemType*, std::unordered_set<StockPile*>> m_availableStockPilesByItemType;
 	std::unordered_map<const ItemType*, std::unordered_set<Item*>> m_itemsWithoutDestinationsByItemType;
-	std::unordered_set<Item*> m_itemsWithDestinations;
+	std::unordered_set<Item*> m_itemsWithDestinationsWithoutProjects;
 	std::unordered_map<StockPile*, std::unordered_set<Item*>> m_itemsWithDestinationsByStockPile;
-	std::unordered_map<Item*, StockPileProject> m_projectsByItem;
+	std::unordered_map<Item*, std::list<StockPileProject>> m_projectsByItem;
 public:
-	HasStockPiles(Area& a) : m_area(a) { }
-	void addStockPile(std::vector<ItemQuery>&& queries, const Faction& faction);
+	AreaHasStockPilesForFaction(Area& a, const Faction& f) : m_area(a), m_faction(f) { }
+	StockPile& addStockPile(std::vector<ItemQuery>&& queries);
+	StockPile& addStockPile(std::vector<ItemQuery>& queries);
 	void removeStockPile(StockPile& stockPile);
-	bool isValidStockPileDestinationFor(const Block& block, const Item& item, const Faction& faction) const;
+	bool isValidStockPileDestinationFor(const Block& block, const Item& item) const;
 	void addItem(Item& item);
 	void removeItem(Item& item);
-	void setAvalable(StockPile& stockPile);
-	void setUnavalable(StockPile& stockPile);
+	void setAvailable(StockPile& stockPile);
+	void setUnavailable(StockPile& stockPile);
 	void makeProject(Item& item, Block& destination, StockPileObjective& objective);
 	void cancelProject(StockPileProject& project);
 	bool isAnyHaulingAvalableFor(const Actor& actor) const;
 	Item* getHaulableItemForAt(const Actor& actor, Block& block);
 	StockPile* getStockPileFor(const Item& item) const;
 	friend class StockPileThreadedTask;
+	// For testing.
+	[[maybe_unused, nodiscard]] std::unordered_set<Item*>& getItemsWithDestinations() { return m_itemsWithDestinationsWithoutProjects; }
+	[[maybe_unused, nodiscard]] std::unordered_map<StockPile*, std::unordered_set<Item*>>& getItemsWithDestinationsByStockPile() { return m_itemsWithDestinationsByStockPile; }
+};
+class AreaHasStockPiles
+{
+	Area& m_area;
+	std::unordered_map<const Faction*, AreaHasStockPilesForFaction> m_data;
+public:
+	AreaHasStockPiles(Area& a) : m_area(a) { }
+	void addFaction(const Faction& faction) { assert(!m_data.contains(&faction)); m_data.try_emplace(&faction, m_area, faction); }
+	void removeFaction(const Faction& faction) { assert(m_data.contains(&faction)); m_data.erase(&faction); }
+	AreaHasStockPilesForFaction& at(const Faction& faction) { assert(m_data.contains(&faction)); return m_data.at(&faction); }
+	[[nodiscard]] bool contains(const Faction& faction) { return m_data.contains(&faction); }
 };

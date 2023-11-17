@@ -145,6 +145,9 @@ namespace Config
 	inline Step stepsToDelayBeforeTryingAgainToFollowLeader;
 	inline uint32_t getIntoAttackPositionMaxRange;
 	inline Step stepsToDelayBeforeTryingAgainToReserveItemsAndActorsForAProject;
+	inline Step stepsToDisableStockPile;
+	inline uint8_t projectTryToMakeSubprojectRetriesBeforeProjectDelay;
+	inline uint32_t maxWorkersForStockPileProject;
 	
 	inline uint32_t convertBodyPartVolumeToArea(uint32_t volume){ return sqrt(volume); }
 	inline void load()
@@ -285,5 +288,8 @@ namespace Config
 		stepsToDelayBeforeTryingAgainToFollowLeader = data["secondsToDelayBeforeTryingAgainToFollowLeader"].get<uint32_t>() * stepsPerSecond;
 		getIntoAttackPositionMaxRange = data["getIntoAttackPositionMaxRange"].get<uint32_t>();
 		stepsToDelayBeforeTryingAgainToReserveItemsAndActorsForAProject = data["minutesToDelayBeforeTryingAgaintoReserveItemsAndActorsForAProject"].get<uint32_t>() * stepsPerMinute;
+		stepsToDisableStockPile = data["minutesToDisableStockPile"].get<uint32_t>() * stepsPerMinute;
+		projectTryToMakeSubprojectRetriesBeforeProjectDelay = data["projectTryToMakeSubprojectRetriesBeforeProjectDelay"].get<uint32_t>();
+		maxWorkersForStockPileProject = data["maxWorkersForStockPileProject"].get<uint32_t>();
 	}
 }

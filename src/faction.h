@@ -10,4 +10,7 @@ struct Faction
 	std::unordered_set<Faction*> allies;
 	std::unordered_set<Faction*> enemies;
 	Faction(std::wstring n) : m_name(n) { }
+	[[nodiscard]] bool operator==(const Faction& faction) const { return &faction == this;}
+	Faction(const Faction& faction) = delete;
+	Faction(Faction&& faction) = delete;
 };
