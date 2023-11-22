@@ -86,7 +86,7 @@ Wound& Body::addWound(BodyPart& bodyPart, Hit& hit)
 	uint32_t scale = m_actor.m_species.bodyScale;
 	uint32_t bleedVolumeRate = WoundCalculations::getBleedVolumeRate(hit, bodyPart.bodyPartType, scale);
 	Wound& wound = bodyPart.wounds.emplace_back(m_actor, hit.woundType, bodyPart, hit, bleedVolumeRate);
-	float ratio = hit.area / bodyPart.bodyPartType.volume * scale;
+	float ratio = (float)hit.area / bodyPart.bodyPartType.volume * scale;
 	if(bodyPart.bodyPartType.vital && hit.depth == 4 && ratio >= Config::hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea)
 	{
 		m_actor.die(CauseOfDeath::wound);
@@ -169,7 +169,7 @@ void Body::recalculateBleedAndImpairment()
 				m_impairManipulationPercent += wound.impairPercent();
 		}
 	}
-	if(m_impairManipulationPercent > 100u)
+	if(m_impairManipulationPercent > 100)
 		m_impairManipulationPercent = 100u;
 	m_impairMovePercent = std::min(Percent(100u), m_impairMovePercent);
 	if(bleedVolumeRate > 0)
@@ -243,7 +243,7 @@ Step Body::getStepsTillBleedToDeath() const
 		while(true)
 		{
 			output += m_bleedEvent.duration();
-			if(volume == 0 || volume / healthyBloodVolume() <= Config::bleedToDeathRatio)
+			if(volume == 0 || (float)volume / healthyBloodVolume() <= Config::bleedToDeathRatio)
 				return output;
 			volume--;
 		}
@@ -279,7 +279,7 @@ Volume Body::healthyBloodVolume() const
 {
 	return m_totalVolume * Config::ratioOfTotalBodyVolumeWhichIsBlood;
 }
-std::vector<Attack> Body::getAttacks() const
+std::vector<Attack> Body::getMeleeAttacks() const
 {
 	std::vector<Attack> output;
 	for(const BodyPart& bodyPart : m_bodyParts)

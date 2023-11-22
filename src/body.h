@@ -112,7 +112,7 @@ public:
 	[[nodiscard]] bool piercesMuscle(Hit hit, const BodyPart& bodyPart) const;
 	[[nodiscard]] bool piercesBone(Hit hit, const BodyPart& bodyPart) const;
 	[[nodiscard]] Volume healthyBloodVolume() const;
-	[[nodiscard]] std::vector<Attack> getAttacks() const;
+	[[nodiscard]] std::vector<Attack> getMeleeAttacks() const;
 	[[nodiscard]] Volume getVolume() const;
 	[[nodiscard]] bool isInjured() const;
 	[[nodiscard]] Step getStepsTillBleedToDeath() const;

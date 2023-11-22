@@ -17,7 +17,7 @@ void KillObjective::execute()
 	else
 		// If in range and has line of sight and attack not on cooldown then attack.
 		if(!m_killer.m_canFight.isOnCoolDown())
-			m_killer.m_canFight.attack(m_target);
+			m_killer.m_canFight.attackMeleeRange(m_target);
 }
 void KillObjective::reset() 
 { 

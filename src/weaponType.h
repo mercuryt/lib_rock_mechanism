@@ -7,5 +7,6 @@ struct WeaponType
 {
 	const SkillType* combatSkill;
 	uint32_t skillBonus;
+	Step cooldown;
 	std::vector<AttackType> attackTypes;
 };

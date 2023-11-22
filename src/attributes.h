@@ -3,6 +3,7 @@
 #include "animalSpecies.h"
 #include "config.h"
 
+#include <sys/types.h>
 #include <vector>
 #include <array>
 
@@ -26,6 +27,7 @@ class Attributes
 	Attribute mass;
 	Mass unencomberedCarryMass;
 	uint32_t moveSpeed;
+	uint32_t baseCombatScore;
 public:
 	Attributes(const AnimalSpecies& species, std::array<uint32_t, 4> modifierPercents, std::array<int32_t, 4> bonusOrPenalties, Percent percentGrown) :
 		strength(species.strength[0], species.strength[1], modifierPercents[1], bonusOrPenalties[1], percentGrown),
@@ -55,4 +57,5 @@ public:
 	void addMassBonusOrPenalty(uint32_t x) { mass.bonusOrPenalty += x; generate(); }
 	uint32_t getUnencomberedCarryMass() const { return unencomberedCarryMass; }
 	uint32_t getMoveSpeed() const { return moveSpeed; }
+	uint32_t getBaseCombatScore() const { return baseCombatScore; }
 };

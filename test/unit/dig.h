@@ -19,7 +19,7 @@ TEST_CASE("dig")
 	DigObjectiveType digObjectiveType;
 	Actor& dwarf1 = simulation.createActor(dwarf, area.m_blocks[1][1][4]);
 	dwarf1.setFaction(&faction);
-	Item& pick = simulation.createItem(ItemType::byName("pick"), bronze, 50u, 0u);
+	Item& pick = simulation.createItem(ItemType::byName("pick"), bronze, 50u, 0);
 	pick.setLocation(area.m_blocks[5][5][4]);
 	area.m_hasDiggingDesignations.addFaction(faction);
 	SUBCASE("dig hole")

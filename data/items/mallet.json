@@ -7,7 +7,6 @@
 	"weaponData":
 	{
 		"combatSkill": "mace",
-		"combatScoreBonus": 1,
 		"attackTypes":
 		[
 			{
@@ -15,7 +14,7 @@
 				"area": 25,
 				"baseForce": 1,
 				"range": 1,
-				"skillBonus": 1,
+				"combatScore": 1,
 				"woundType": "Bludgeon"
 			}
 		]

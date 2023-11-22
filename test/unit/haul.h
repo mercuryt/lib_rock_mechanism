@@ -50,7 +50,7 @@ TEST_CASE("haul")
 	SUBCASE("has haul tools")
 	{
 		Block& cartLocation = area.m_blocks[1][2][2];
-		Item& cart1 = simulation.createItem(cart, poplarWood, 3u, 0u);
+		Item& cart1 = simulation.createItem(cart, poplarWood, 3u, 0);
 		Item& chunk1 = simulation.createItem(chunk, gold, 1u);
 		cart1.setLocation(cartLocation);
 		area.m_hasHaulTools.registerHaulTool(cart1);
@@ -91,7 +91,7 @@ TEST_CASE("haul")
 		Item& chunk1 = simulation.createItem(chunk, lead, 1u);
 		chunk1.setLocation(chunkLocation);
 		REQUIRE(!dwarf1.m_canPickup.canPickupAny(chunk1));
-		Item& cart = simulation.createItem(ItemType::byName("cart"), MaterialType::byName("poplar wood"), 50u, 0u, nullptr);
+		Item& cart = simulation.createItem(ItemType::byName("cart"), MaterialType::byName("poplar wood"), 50u, 0);
 		Block& cartLocation = area.m_blocks[7][7][2];
 		cart.setLocation(cartLocation);
 		area.m_hasHaulTools.registerHaulTool(cart);
@@ -176,7 +176,7 @@ TEST_CASE("haul")
 		area.m_hasActors.add(donkey1);
 		area.m_hasHaulTools.registerYokeableActor(donkey1);
 		Block& panniersLocation = area.m_blocks[5][1][2];
-		Item& panniers1 = simulation.createItem(panniers, poplarWood, 3u, 0u);
+		Item& panniers1 = simulation.createItem(panniers, poplarWood, 3u, 0);
 		panniers1.setLocation(panniersLocation);
 		area.m_hasHaulTools.registerHaulTool(panniers1);
 		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1}), chunk1, destination);
@@ -220,7 +220,7 @@ TEST_CASE("haul")
 		area.m_hasActors.add(donkey1);
 		area.m_hasHaulTools.registerYokeableActor(donkey1);
 		Block& cartLocation = area.m_blocks[5][1][2];
-		Item& cart1 = simulation.createItem(cart, poplarWood, 3u, 0u);
+		Item& cart1 = simulation.createItem(cart, poplarWood, 3u, 0);
 		cart1.setLocation(cartLocation);
 		area.m_hasHaulTools.registerHaulTool(cart1);
 		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1}), boulder1, destination);
@@ -263,7 +263,7 @@ TEST_CASE("haul")
 		dwarf2.setFaction(&faction);
 		area.m_hasActors.add(dwarf2);
 		Block& cartLocation = area.m_blocks[5][1][2];
-		Item& cart1 = simulation.createItem(cart, poplarWood, 3u, 0u);
+		Item& cart1 = simulation.createItem(cart, poplarWood, 3u, 0);
 		cart1.setLocation(cartLocation);
 		area.m_hasHaulTools.registerHaulTool(cart1);
 		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1, &dwarf2}), cargo1, destination);

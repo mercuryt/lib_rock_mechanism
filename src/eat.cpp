@@ -378,7 +378,7 @@ uint32_t MustEat::massFoodForBodyMass() const
 	return std::max(1u, m_actor.getMass() / Config::unitsBodyMassPerUnitFoodConsumed);
 }
 const uint32_t& MustEat::getMassFoodRequested() const { return m_massFoodRequested; }
-uint32_t MustEat::getPercentStarved() const
+Percent MustEat::getPercentStarved() const
 {
 	if(!m_hungerEvent.exists())
 		return 0;

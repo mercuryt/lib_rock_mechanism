@@ -9,6 +9,7 @@
 #include "block.h"
 #include "area.h"
 
+#include <cstdint>
 #include <unordered_map>
 #include <unordered_set>
 #include <array>
@@ -234,6 +235,13 @@ uint32_t Block::distance(Block& block) const
 uint32_t Block::taxiDistance(const Block& block) const
 {
 	return abs((int)m_x - (int)block.m_x) + abs((int)m_y - (int)block.m_y) + abs((int)m_z - (int)block.m_z);
+}
+bool Block::squareOfDistanceIsMoreThen(const Block& block, uint32_t distanceCubed) const
+{
+	uint32_t dx = abs((int32_t)block.m_x - (int32_t)m_x);
+	uint32_t dy = abs((int32_t)block.m_y - (int32_t)m_y);
+	uint32_t dz = abs((int32_t)block.m_z - (int32_t)m_z);
+	return (dx * dx) + (dy * dy) + (dz * dz) > distanceCubed;
 }
 bool Block::isAdjacentToAny(std::unordered_set<Block*>& blocks) const
 {

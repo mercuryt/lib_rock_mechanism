@@ -131,15 +131,19 @@ namespace definitions
 			);
 		}
 	}
-	inline const AttackType loadAttackType(const Json& data)
+	inline const AttackType loadAttackType(const Json& data, const SkillType& defaultSkill)
 	{
 		return AttackType(
 			data["name"].get<std::string>(),
 			data["area"].get<uint32_t>(),
 			data["baseForce"].get<Force>(),
-			data["range"].get<uint32_t>(),
-			data["skillBonus"].get<uint32_t>(),
-			WoundCalculations::byName(data["woundType"].get<std::string>())
+			data["range"].get<float>(),
+			data["combatScore"].get<uint32_t>(),
+			data.contains("coolDownSeconds") ? data["coolDownSeconds"].get<uint32_t>() * Config::stepsPerSecond : 0,
+			data.contains("projectile") ? data["projectile"].get<bool>() : false,
+			WoundCalculations::byName(data["woundType"].get<std::string>()),
+			(data.contains("skillType") ? SkillType::byName(data["skillType"]) : defaultSkill),
+			(data.contains("projectileItemType") ? &ItemType::byName(data["projectileItemType"]) : nullptr)
 		);
 	}
 	inline void loadMaterialTypeConstuctionData()
@@ -252,6 +256,30 @@ namespace definitions
 			}
 		}
 	}
+	inline void loadWeaponsData()
+	{
+		for(const auto& file : std::filesystem::directory_iterator(path/"items"))
+		{
+			if(file.path().extension() != ".json")
+				continue;
+			Json data = tryParse(file.path());
+			auto& itemType = ItemType::byNameNonConst(data["name"].get<std::string>());
+			if(data.contains("weaponData"))
+			{
+				Json& weaponData = data["weaponData"];
+				const SkillType& skillType = SkillType::byName(weaponData["combatSkill"].get<std::string>());
+				auto& weapon = WeaponData::data.emplace_back(
+					&skillType,
+					weaponData.contains("coolDownSeconds") ? weaponData["coolDownSeconds"].get<float>() * Config::stepsPerSecond : Config::attackCoolDownDurationBaseSteps
+				);
+				for(Json attackTypeData : weaponData["attackTypes"])
+					weapon.attackTypes.push_back(loadAttackType(attackTypeData, skillType));
+				itemType.weaponData = &weapon;
+			}
+			else
+				itemType.weaponData = nullptr;
+		}
+	}
 	inline void loadItemTypes()
 	{
 		for(const auto& file : std::filesystem::directory_iterator(path/"items"))
@@ -271,19 +299,6 @@ namespace definitions
 				data.contains("edibleForDrinkersOf") ? &FluidType::byName(data["edibleForDrinkersOf"].get<std::string>()) : nullptr,
 				MoveType::byName(data.contains("moveType") ? data["moveType"].get<std::string>() : "none")
 			);
-			if(data.contains("weaponData"))
-			{
-				Json& weaponData = data["weaponData"];
-				auto& weapon = WeaponData::data.emplace_back(
-					&SkillType::byName(weaponData["combatSkill"].get<std::string>()),
-					weaponData["combatScoreBonus"].get<uint32_t>()
-				);
-				for(Json attackTypeData : weaponData["attackTypes"])
-					weapon.attackTypes.push_back(loadAttackType(attackTypeData));
-				itemType.weaponData = &weapon;
-			}
-			else
-				itemType.weaponData = nullptr;
 			if(data.contains("wearableData"))
 			{
 				Json& wearable = data["wearableData"];
@@ -378,8 +393,9 @@ namespace definitions
 				data["doesManipulation"].get<bool>(),
 				data.contains("vital")? data["vital"].get<bool>() : false
 			);
+			const SkillType& unarmedSkill = SkillType::byName("unarmed");
 			for(const Json& pair : data["attackTypesAndMaterials"])
-				bodyPartType.attackTypesAndMaterials.emplace_back(loadAttackType(pair.at(0)), &MaterialType::byName(pair.at(1)));
+				bodyPartType.attackTypesAndMaterials.emplace_back(loadAttackType(pair.at(0), unarmedSkill), &MaterialType::byName(pair.at(1)));
 		}
 	}
 	inline void loadBodyTypes()
@@ -448,6 +464,7 @@ namespace definitions
 		loadMoveTypes();
 		loadSkillTypes();
 		loadItemTypes();
+		loadWeaponsData();
 		loadMaterialTypeConstuctionData();
 		loadCraftJobs();
 		loadPlantSpecies();

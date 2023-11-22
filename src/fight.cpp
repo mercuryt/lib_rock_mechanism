@@ -1,102 +1,181 @@
 #include "fight.h"
 
+#include "simulation.h"
+#include "skill.h"
 #include "util.h"
 #include "actor.h"
 #include "weaponType.h"
 #include "block.h"
 #include "config.h"
+#include "random.h"
 
+#include <cstdint>
+#include <sys/types.h>
 #include <utility>
 #include <algorithm>
 // CanFight.
-CanFight::CanFight(Actor& a) : m_actor(a), m_maxRange(0), m_coolDownDuration(0), m_coolDown(m_actor.getEventSchedule()), m_getIntoAttackPositionThreadedTask(m_actor.getThreadedTaskEngine()) 
+CanFight::CanFight(Actor& a) : m_actor(a), m_maxMeleeRange(0), m_coolDownDurationModifier(1.f), m_coolDown(m_actor.getEventSchedule()), m_getIntoAttackPositionThreadedTask(m_actor.getThreadedTaskEngine()) 
 { 
 	update();
 }
-void CanFight::attack(Actor& target)
+void CanFight::attackMeleeRange(Actor& target)
 {
 	assert(!m_coolDown.exists());
-	m_coolDown.schedule(*this);
-	uint32_t attackerCombatScore = m_combatScore;
-	uint32_t targetCombatScore = target.m_canFight.m_combatScore;
+	uint32_t attackerCombatScore = getCurrentMeleeCombatScore();
+	uint32_t targetCombatScore = target.m_canFight.getCurrentMeleeCombatScore();
+	Step coolDownDuration = m_onMissCoolDownMelee;
 	if(attackerCombatScore > targetCombatScore)
 	{
+		// Attack hits.
 		const Attack& attack = getAttackForCombatScoreDifference(attackerCombatScore - targetCombatScore);
 		Force attackForce = attack.attackType->baseForce + (m_actor.m_attributes.getStrength() * Config::unitsOfAttackForcePerUnitOfStrength);
+		// TODO: Higher skill selects more important body parts to hit.
 		BodyPart& bodyPart = target.m_body.pickABodyPartByVolume();
 		Hit hit(attack.attackType->area, attackForce, *attack.materialType, attack.attackType->woundType);
 		target.takeHit(hit, bodyPart);
+		// If there is a weapon being used take the cool down from it, otherwise use onMiss cool down.
+		if(attack.item != nullptr)
+		{
+			coolDownDuration = attack.attackType->coolDown == 0 ? attack.item->m_itemType.weaponData->coolDown : attack.attackType->coolDown;
+			coolDownDuration *= m_coolDownDurationModifier;
+		}
 	}
+	m_coolDown.schedule(*this, coolDownDuration);
 	//TODO: Skill growth.
+}
+void CanFight::attackLongRange(Actor& target, Item* weapon, Item* ammo)
+{
+	//TODO: unarmed ranged attack?
+	const AttackType& attackType = getRangedAttackType(*weapon);
+	Step coolDown = attackType.coolDown == 0 ? weapon->m_itemType.weaponData->coolDown : attackType.coolDown;
+	Attack attack(&attackType, &ammo->m_materialType, weapon);
+	if(doesProjectileHit(attack, target))
+	{
+		// Attack hits.
+		// TODO: Higher skill selects more important body parts to hit.
+		BodyPart& bodyPart = target.m_body.pickABodyPartByVolume();
+		Hit hit(attackType.area, attackType.baseForce, *attack.materialType, attack.attackType->woundType);
+		target.takeHit(hit, bodyPart);
+	}
+	m_coolDown.schedule(*this, coolDown);
+}
+uint32_t CanFight::getCurrentMeleeCombatScore()
+{
+	const Faction& faction = *m_actor.getFaction();
+	uint32_t blocksContainingNonAllies = 0;
+	// Apply bonuses and penalties based on relative locations.
+	uint32_t output = m_combatScore;
+	for(HasShape* hasShape : m_actor.getAdjacentHasShapes())
+	{
+		uint32_t highestAllyCombatScore = 0;
+		bool nonAllyFound = false;
+		if(hasShape->isActor())
+		{
+			Actor& actor = static_cast<Actor&>(*hasShape);
+			if(actor.getFaction() != nullptr && (actor.getFaction() == &faction || actor.getFaction()->allies.contains(const_cast<Faction*>(&faction))))
+			{
+				if(actor.m_canFight.m_combatScore > highestAllyCombatScore)
+					highestAllyCombatScore = actor.m_canFight.m_combatScore;
+			}
+			else
+				nonAllyFound = true;
+		}
+		if(nonAllyFound)
+		{
+			if(highestAllyCombatScore != 0)
+				continue;
+			else
+				++blocksContainingNonAllies;
+		}
+		else
+			output += highestAllyCombatScore;
+	}
+	if(blocksContainingNonAllies > 1)
+	{
+		float flankingModifier =  1 + (blocksContainingNonAllies - 1) * Config::flankingModifier;
+		output /= flankingModifier;
+	}
+	return output;
 }
 void CanFight::coolDownCompleted()
 {
 	if(m_target == nullptr)
 		return;
-	if(m_actor.m_location->taxiDistance(*m_target->m_location) <= m_maxRange && m_actor.m_location->hasLineOfSightTo(*m_target->m_location))
-		attack(*m_target);
+	//TODO: Move line of sight check to threaded task?
+	if(m_actor.m_location->taxiDistance(*m_target->m_location) <= m_maxMeleeRange && m_actor.m_location->hasLineOfSightTo(*m_target->m_location))
+		attackMeleeRange(*m_target);
 }
 void CanFight::update()
 {
 	m_combatScore = 0;
-	m_maxRange = 0;
+	m_maxMeleeRange = 0.f;
+	m_maxRange = 0.f;
 	// Collect attacks and combat scores from body and equipment.
-	m_attackTable.clear();
-	for(Attack& attack : m_actor.m_body.getAttacks())
-		m_attackTable.emplace_back(getCombatScoreForAttack(attack), attack);
-	for(Attack& attack : m_actor.m_equipmentSet.getAttacks())
-		m_attackTable.emplace_back(getCombatScoreForAttack(attack), attack);
+	m_meleeAttackTable.clear();
+	for(Attack& attack : m_actor.m_body.getMeleeAttacks())
+		m_meleeAttackTable.emplace_back(getCombatScoreForAttack(attack), attack);
+	for(Attack& attack : m_actor.m_equipmentSet.getMeleeAttacks())
+		m_meleeAttackTable.emplace_back(getCombatScoreForAttack(attack), attack);
 	// Sort by combat score, low to high.
-	std::sort(m_attackTable.begin(), m_attackTable.end(), [](auto& a, auto& b){ return a.first < b.first; });
+	std::sort(m_meleeAttackTable.begin(), m_meleeAttackTable.end(), [](auto& a, auto& b){ return a.first < b.first; });
 	// Iterate attacks low to high, add running total to each score.
-	for(auto& pair : m_attackTable)
+	// Also find max melee attack range.
+	for(auto& pair : m_meleeAttackTable)
 	{
 		pair.first += m_combatScore;
-		m_combatScore += pair.first;
-		m_maxRange = std::min(m_maxRange, pair.second.attackType->range);
+		m_combatScore = pair.first;
+		float range = pair.second.attackType->range;
+		if(range > m_maxMeleeRange)
+			m_maxMeleeRange = range;
 	}
+	// Base stats give combat score.
+	m_combatScore += m_actor.m_attributes.getBaseCombatScore();
 	// Reduce combat score if manipulation is impaired.
 	m_combatScore = util::scaleByInversePercent(m_combatScore, m_actor.m_body.getImpairManipulationPercent());
 	// Update cool down duration.
-	// TODO: Manipulation impairment should apply to these as well?
-	uint32_t coolDownDurationDextarityBonus = m_actor.m_attributes.getDextarity();
-	float coolDownDurationEquipmentMassModifier = m_actor.m_equipmentSet.empty() ? 1u : 
-		std::max(1u, m_actor.m_attributes.getUnencomberedCarryMass() / m_actor.m_equipmentSet.getMass());
-	m_coolDownDuration = std::max(Step(1), Config::attackCoolDownDurationBase - coolDownDurationDextarityBonus) * coolDownDurationEquipmentMassModifier;
+	// TODO: Manipulation impairment should apply to cooldown as well?
+	m_coolDownDurationModifier = m_actor.m_equipmentSet.empty() ? 1.f : 
+		std::max(1.f, m_actor.m_attributes.getUnencomberedCarryMass() / (float)m_actor.m_equipmentSet.getMass());
+	m_coolDownDurationModifier -= (m_actor.m_attributes.getDextarity() - Config::attackCoolDownDurationBaseDextarity) * Config::fractionAttackCoolDownReductionPerPointOfDextarity;
+	// Find the on miss cool down.
+	Step baseOnMissCoolDownDuration = m_actor.m_equipmentSet.hasWeapons() ? m_actor.m_equipmentSet.getLongestMeleeWeaponCoolDown() : Config::attackCoolDownDurationBaseSteps;
+	m_onMissCoolDownMelee = m_coolDownDurationModifier * baseOnMissCoolDownDuration;
+	//Find max range.
+	m_maxRange = m_maxMeleeRange;
+	for(Item* item : m_actor.m_equipmentSet.getRangedWeapons())
+	{
+		AttackType* attackType = item->m_itemType.getRangedAttackType();
+		if(attackType->range > m_maxRange)
+			m_maxRange = attackType->range;
+	}
 }
 //TODO: Grasps cannot be used for both armed and unarmed attacks at the same time?
 uint32_t CanFight::getCombatScoreForAttack(const Attack& attack) const
 {
-	if(attack.item == nullptr)
-	{
-		// unarmed attack
-		static const SkillType& unarmedSkillType = SkillType::byName("unarmed");
-		uint32_t unarmedSkill = m_actor.m_skillSet.get(unarmedSkillType);
-		return Config::unarmedCombatScoreBase + unarmedSkill;
-	}
-	assert(attack.item->m_itemType.weaponData != nullptr);
-	uint32_t itemTypeCombatScore = attack.item->m_itemType.weaponData->combatScoreBonus;
-	uint32_t itemSkill = m_actor.m_skillSet.get(*attack.item->m_itemType.weaponData->combatSkill);
-	uint32_t itemQuality = attack.item->m_quality;
-	Percent percentItemWear = attack.item->m_percentWear;
-	return  (
-			(itemTypeCombatScore * Config::itemTypeCombatModifier) + 
-			(itemSkill * Config::itemSkillCombatModifier) + 
-			(itemQuality * Config::itemQualityCombatModifier) + 
-			(percentItemWear * Config::itemWearCombatModifier)
-		);
+	uint32_t output = attack.attackType->combatScore;
+	const SkillType& skill = attack.item == nullptr ?
+		SkillType::byName("unarmed") :
+		attack.attackType->skillType;
+	uint32_t skillValue = m_actor.m_skillSet.get(skill);
+	output += (skillValue * Config::attackSkillCombatModifier);
+	uint32_t quality = attack.item == nullptr ? Config::averageItemQuality : attack.item->m_quality;
+	output *= getQualityModifier(quality);
+	Percent percentItemWear = attack.item == nullptr ? 0u : attack.item->m_percentWear;
+	output -= percentItemWear * Config::itemWearCombatModifier;
+	return output;
 }
 const Attack& CanFight::getAttackForCombatScoreDifference(uint32_t scoreDifference) const
 {
-	for(auto& pair : m_attackTable)
+	for(auto& pair : m_meleeAttackTable)
 		if(pair.first > scoreDifference)
 			return pair.second;
-	return m_attackTable.back().second;
+	return m_meleeAttackTable.back().second;
 }
 void CanFight::setTarget(Actor& actor)
 {
 	m_target = &actor;
 	actor.m_canFight.recordTargetedBy(m_actor);
+	m_getIntoAttackPositionThreadedTask.create(m_actor, *m_target, m_maxMeleeRange);
 }
 void CanFight::recordTargetedBy(Actor& actor)
 {
@@ -147,37 +226,100 @@ void CanFight::targetNoLongerTargetable()
 void CanFight::onTargetMoved()
 {
 	if(!m_getIntoAttackPositionThreadedTask.exists())
-		m_getIntoAttackPositionThreadedTask.create(m_actor, *m_target, m_maxRange);
+		m_getIntoAttackPositionThreadedTask.create(m_actor, *m_target, m_actor.m_canFight.m_maxMeleeRange);
 }
 void CanFight::freeHit(Actor& actor)
 {
 	m_coolDown.maybeUnschedule();
-	attack(actor);
+	attackMeleeRange(actor);
 }
 bool CanFight::isOnCoolDown() const { return m_coolDown.exists(); }
-bool CanFight::inRange(const Actor& target) const { return m_actor.m_location->distance(*target.m_location) <= m_maxRange; }
+bool CanFight::inRange(const Actor& target) const { return m_actor.m_location->distance(*target.m_location) <= m_maxMeleeRange; }
+Percent CanFight::chanceOfProjectileHit(const Attack& attack, const Actor& target) const
+{
+	Percent chance = 100 - pow(m_actor.distanceTo(target), Config::projectileHitChanceFallsOffWithRangeExponent);
+	chance += m_actor.m_skillSet.get(attack.attackType->skillType) * Config::projectileHitPercentPerSkillPoint;
+	chance += ((int)target.getVolume() - (int)Config::projectileMedianTargetVolume) * Config::projectileHitPercentPerUnitVolume;
+	chance += m_actor.m_attributes.getDextarity() * Config::projectileHitPercentPerPointDextarity;
+	if(attack.item != nullptr)
+	{
+		chance += ((int)attack.item->m_quality - Config::averageItemQuality) * Config::projectileHitPercentPerPointQuality;
+		chance -= attack.item->m_percentWear * Config::projectileHitPercentPerPointWear;
+	}
+	chance -= target.m_canFight.getCombatScore() * Config::projectileHitPercentPerPointTargetCombatScore;
+	chance += attack.attackType->combatScore * Config::projectileHitPercentPerPointAttackTypeCombatScore;
+	return chance;
+}
+bool CanFight::doesProjectileHit(Attack& attack, const Actor& target) const
+{
+	Percent chance = chanceOfProjectileHit(attack, target);
+	return m_actor.getSimulation().m_random.percentChance(chance);
+}
+float CanFight::getQualityModifier(uint32_t quality) const
+{
+	int32_t adjusted = (int32_t)quality - (int32_t)Config::averageItemQuality;
+	return 1.f + (adjusted * Config::itemQualityCombatModifier);
+}
+bool CanFight::blockIsValidPosition(const Block& block, uint32_t attackRangeSquared) const
+{
+	if(m_target->m_blocks.contains(const_cast<Block*>(&block)))
+		return true;
+	if(block.squareOfDistanceIsMoreThen(*m_target->m_location, attackRangeSquared))
+		return false;
+	return block.hasLineOfSightTo(*m_target->m_location);
+}
+bool CanFight::predicate(const Block& block, Facing facing, uint32_t attackRangeSquared) const
+{
+	std::function<bool(const Block&)> occupiedCondition = [&](const Block& block) { return blockIsValidPosition(block, attackRangeSquared); };
+	return m_actor.getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(block, facing, occupiedCondition) != nullptr;
+}
+AttackType& CanFight::getRangedAttackType(Item& weapon)
+{
+	// Each ranged weapon has only one ranged attack type to pick.
+	assert(weapon.m_itemType.weaponData != nullptr);
+	for(const AttackType& attackType : weapon.m_itemType.weaponData->attackTypes)
+		if(attackType.projectile)
+			return const_cast<AttackType&>(attackType);
+	assert(false);
+}
 
-AttackCoolDown::AttackCoolDown(CanFight& cf) : ScheduledEventWithPercent(cf.m_actor.getSimulation(), cf.m_coolDownDuration), m_canFight(cf) { }
+AttackCoolDown::AttackCoolDown(CanFight& cf, Step duration) : ScheduledEventWithPercent(cf.m_actor.getSimulation(), duration), m_canFight(cf) { }
 
-GetIntoAttackPositionThreadedTask::GetIntoAttackPositionThreadedTask(Actor& a, Actor& t, uint32_t r) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_target(t), m_range(r), m_findsPath(a, true) {}
+GetIntoAttackPositionThreadedTask::GetIntoAttackPositionThreadedTask(Actor& a, Actor& t, float ar) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_target(t), m_attackRangeSquared(ar * ar), m_findsPath(a, true) {}
 void GetIntoAttackPositionThreadedTask::readStep()
 {
-	// TODO: Apply max range.
-	std::function<bool(const Block&, Facing)> destinatonCondition = [&](const Block& location, Facing facing)
+	std::function<bool(const Block&, Facing)> destinationCondition = [&](const Block& location, Facing facing)
 	{
-		std::function<bool(const Block&)> occupiedCondition = [&](const Block& block)
-		{
-			return block.taxiDistance(*m_target.m_location) <= m_range && block.hasLineOfSightTo(*m_target.m_location);
-		};
-		return m_actor.getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(location, facing, occupiedCondition) != nullptr;
+		return m_actor.m_canFight.predicate(location, facing, m_attackRangeSquared);
 	};
-	//TODO: Range attack units should use a different path priority condition to avoid getting too close.
-	m_findsPath.pathToPredicateWithHuristicDestination(destinatonCondition, *m_target.m_location);
+	// TODO: Range attack actors should use a different path priority condition to avoid getting too close.
+	m_findsPath.pathToPredicateWithHuristicDestination(destinationCondition, *m_target.m_location);
 }
 void GetIntoAttackPositionThreadedTask::writeStep()
 {
 	if(!m_findsPath.found())
-		m_actor.m_hasObjectives.cannotCompleteTask();
+	{
+		if(m_findsPath.m_useCurrentLocation)
+		{
+			if(!m_actor.m_canFight.m_coolDown.exists())
+			{
+				float range = m_actor.distanceTo(m_target);
+				if(range <= m_actor.m_canFight.m_maxMeleeRange)
+					// Melee range attack.
+					m_actor.m_canFight.attackMeleeRange(m_target);
+				else
+				{
+					// Long range attack.
+					// TODO: Unarmed long range attack, needs to prodive the material type somehow, maybe in body part?
+					Item* weapon = m_actor.m_equipmentSet.getWeaponToAttackAtRange(range);
+					Item* ammo = m_actor.m_equipmentSet.getAmmoForRangedWeapon(*weapon);
+					m_actor.m_canFight.attackLongRange(m_target, weapon, ammo);
+				}
+			}
+		}
+		else
+			m_actor.m_hasObjectives.cannotCompleteTask();
+	}
 	else
 		m_actor.m_canMove.setPath(m_findsPath.getPath());
 }

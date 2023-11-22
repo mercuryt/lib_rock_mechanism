@@ -17,4 +17,9 @@ void Attributes::generate()
 {
 	unencomberedCarryMass = strength.value * Config::unitsOfCarryMassPerUnitOfStrength;
 	moveSpeed = agility.value * Config::unitsOfMoveSpeedPerUnitOfAgility;
+	baseCombatScore = (
+		(strength.value * Config::pointsOfCombatScorePerUnitOfStrength) +
+		(agility.value * Config::pointsOfCombatScorePerUnitOfAgility) +
+		(dextarity.value * Config::pointsOfCombatScorePerUnitOfDextarity)
+	);
 }

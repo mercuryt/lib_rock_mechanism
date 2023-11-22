@@ -26,6 +26,7 @@
 #include "construct.h"
 #include "craft.h"
 #include "stockpile.h"
+#include "combat.h"
 
 int main(int argc, char** argv) {
     doctest::Context context;

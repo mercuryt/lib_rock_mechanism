@@ -10,8 +10,8 @@
 				"name": "kick",
 				"area": 5,
 				"baseForce": 2,
-				"range": 1,
-				"skillBonus": 1,
+				"range": 1.5,
+				"combatScore": 1,
 				"woundType": "Bludgeon"
 			},
 			"flesh"

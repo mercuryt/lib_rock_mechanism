@@ -7,32 +7,33 @@
 	"weaponData":
 	{
 		"combatSkill": "sword",
-		"combatScoreBonus": 10,
+		"coolDownSeconds": 0.75,
 		"attackTypes":
 		[
 			{
 				"name": "stab",
 				"area": 5,
 				"baseForce": 5,
-				"range": 1,
-				"skillBonus": 5,
+				"range": 1.5,
+				"combatScore": 5,
 				"woundType": "Pierce"
 			},
 			{
 				"name": "slash",
 				"area": 15,
 				"baseForce": 5,
-				"range": 1,
-				"skillBonus": 4,
+				"range": 1.5,
+				"combatScore": 4,
 				"woundType": "Cut"
 			},
 			{
 				"name": "pomel strike",
 				"area": 25,
-				"baseForce": 5,
-				"range": 1,
-				"skillBonus": 1,
-				"woundType": "Bludgeon"
+				"baseForce": 4,
+				"range": 1.5,
+				"combatScore": 1,
+				"woundType": "Bludgeon",
+				"coolDownSeconds": 0.6
 			}
 		]
 	}

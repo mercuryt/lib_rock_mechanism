@@ -4,6 +4,7 @@
  */
 #pragma once
 
+#include <sys/types.h>
 #include <unordered_map>
 #include <unordered_set>
 #include <map>
@@ -97,6 +98,7 @@ public:
 	std::vector<Block*> getEdgeAdjacentOnlyOnNextZLevelUp() const;
 	uint32_t distance(Block& block) const;
 	uint32_t taxiDistance(const Block& block) const;
+	bool squareOfDistanceIsMoreThen(const Block& block, uint32_t distanceSquared) const;
 	bool isAdjacentToAny(std::unordered_set<Block*>& blocks) const;
 	bool isAdjacentTo(Block& block) const;
 	bool isAdjacentToIncludingCornersAndEdges(Block& block) const;

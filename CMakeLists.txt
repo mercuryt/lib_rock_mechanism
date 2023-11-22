@@ -19,5 +19,7 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic -Werror -Wunused-function -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wnull-dereference -Wdouble-promotion )
 endif()
 
+# add_compile_options(-ffast-math)
+
 add_subdirectory (src)
 add_subdirectory (test)

@@ -34,6 +34,12 @@ bool HasShape::isAdjacentTo(const HasShape& other) const
 	std::function<bool(const Block&)> predicate = [&](const Block& block) { return larger->m_blocks.contains(const_cast<Block*>(&block)); };
 	return smaller->predicateForAnyAdjacentBlock(predicate);
 }
+uint32_t HasShape::distanceTo(const HasShape& other) const
+{
+	// TODO: Make handle multi block creatures correctly somehow.
+	// Use line of sight?
+	return m_location->distance(*other.m_location);
+}
 bool HasShape::allOccupiedBlocksAreReservable(const Faction& faction) const
 {
 	return allBlocksAtLocationAndFacingAreReservable(*m_location, m_facing, faction);

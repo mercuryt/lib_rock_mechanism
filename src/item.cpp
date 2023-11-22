@@ -3,6 +3,21 @@
 #include "block.h"
 #include "area.h"
 #include <iostream>
+AttackType* ItemType::getRangedAttackType() const
+{
+	for(const AttackType& attackType : weaponData->attackTypes)
+		if(attackType.projectileItemType != nullptr)
+			return const_cast<AttackType*>(&attackType);
+	return nullptr;
+}
+bool ItemType::hasRangedAttack() const { return getRangedAttackType() != nullptr; }
+bool ItemType::hasMeleeAttack() const
+{
+	for(const AttackType& attackType : weaponData->attackTypes)
+		if(attackType.projectileItemType == nullptr)
+			return true;
+	return false;
+}
 void Item::setVolume() { m_volume = m_quantity * m_itemType.volume; }
 void Item::setMass()
 { 

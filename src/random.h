@@ -23,6 +23,10 @@ public:
 	}
 	inline bool percentChance(Percent percent)
 	{
+		if(percent >= 100)
+			return true;
+		if(percent <= 0)
+			return false;
 		std::uniform_int_distribution<Percent> dist(1, 100);
 		return dist(rng) <= percent;
 	}

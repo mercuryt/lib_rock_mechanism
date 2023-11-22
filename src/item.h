@@ -6,6 +6,7 @@
 #include "fluidType.h"
 #include "move.h"
 
+#include <ratio>
 #include <string>
 #include <vector>
 #include <unordered_set>
@@ -34,7 +35,7 @@ struct WearableData final
 struct WeaponData final
 {
 	const SkillType* combatSkill;
-	const uint32_t combatScoreBonus;
+	Step coolDown;
 	std::vector<AttackType> attackTypes;
 	// Infastructure.
 	inline static std::list<WeaponData> data;
@@ -53,6 +54,9 @@ struct ItemType final
 	const MoveType& moveType;
        	const WearableData* wearableData;
        	const WeaponData* weaponData;
+	AttackType* getRangedAttackType() const;
+	bool hasRangedAttack() const;
+	bool hasMeleeAttack() const;
 	// Infastructure.
 	bool operator==(const ItemType& itemType) const { return this == &itemType; }
 	inline static std::vector<ItemType> data;
@@ -61,6 +65,10 @@ struct ItemType final
 		auto found = std::ranges::find(data, name, &ItemType::name);
 		assert(found != data.end());
 		return *found;
+	}
+	static ItemType& byNameNonConst(std::string name)
+	{
+		return const_cast<ItemType&>(byName(name));
 	}
 };
 class ItemHasCargo final

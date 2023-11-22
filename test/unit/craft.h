@@ -56,11 +56,11 @@ TEST_CASE("craft")
 		board.setLocation(boardLocation);
 		Item& rope = simulation.createItem(ItemType::byName("rope"), MaterialType::byName("plant matter"), 10u);
 		rope.setLocation(area.m_blocks[8][6][1]);
-		Item& saw = simulation.createItem(ItemType::byName("saw"), bronze, 25u, 0u);
+		Item& saw = simulation.createItem(ItemType::byName("saw"), bronze, 25u, 0);
 		saw.setLocation(area.m_blocks[3][7][1]);
-		Item& mallet = simulation.createItem(ItemType::byName("mallet"), bronze, 25u, 0u);
+		Item& mallet = simulation.createItem(ItemType::byName("mallet"), bronze, 25u, 0);
 		mallet.setLocation(area.m_blocks[4][9][1]);
-		Item& chisel = simulation.createItem(ItemType::byName("chisel"), bronze, 25u, 0u);
+		Item& chisel = simulation.createItem(ItemType::byName("chisel"), bronze, 25u, 0);
 		chisel.setLocation(area.m_blocks[4][9][1]);
 		REQUIRE(!craftObjectiveTypeWoodWorking.canBeAssigned(dwarf1));
 		area.m_hasCraftingLocationsAndJobs.addJob(woodBucket, &wood);

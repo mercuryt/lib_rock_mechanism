@@ -42,7 +42,7 @@ uint32_t WoundCalculations::getBleedVolumeRate(const Hit& hit, const BodyPartTyp
 			assert(false);
 	}
 }
-uint32_t WoundCalculations::getPercentTemporaryImpairment(const Hit& hit, const BodyPartType& bodyPartType, uint32_t scale)
+Percent WoundCalculations::getPercentTemporaryImpairment(const Hit& hit, const BodyPartType& bodyPartType, uint32_t scale)
 {
 	uint32_t hitVolume = hit.depth * hit.area * Config::hitScaleModifier;
 	uint32_t bodyPartVolume = bodyPartType.volume * scale;
@@ -59,12 +59,12 @@ uint32_t WoundCalculations::getPercentTemporaryImpairment(const Hit& hit, const 
 			assert(false);
 	}
 }
-uint32_t WoundCalculations::getPercentPermanentImpairment(const Hit& hit, const BodyPartType& bodyPartType, uint32_t scale)
+Percent WoundCalculations::getPercentPermanentImpairment(const Hit& hit, const BodyPartType& bodyPartType, uint32_t scale)
 {
 	uint32_t hitVolume = hit.depth * hit.area * Config::hitScaleModifier;
 	uint32_t bodyPartVolume = bodyPartType.volume * scale;
 	float ratio = (float)hitVolume / (float)bodyPartVolume;
-	uint32_t output;
+	Percent output;
 	switch (hit.woundType)
 	{
 		case WoundType::Pierce:

@@ -51,7 +51,7 @@ namespace Config
 	inline Step sowSeedsStepsDuration;
 	inline uint32_t sowSeedsPriority;
 	inline constexpr uint32_t fluidsSeepDiagonalModifier = 100;
-	inline float stepsAttackCoolDownReductionPerPointOfDextarity;
+	inline float fractionAttackCoolDownReductionPerPointOfDextarity;
 	inline float unitsOfMoveSpeedPerUnitOfAgility;
 	inline float unitsOfCarryMassPerUnitOfStrength;
 	inline uint32_t objectivePrioritySleep;
@@ -87,9 +87,9 @@ namespace Config
 	inline uint32_t maxSkillLevel;
 	inline uint32_t killPriority;
 	inline float unitsOfAttackForcePerUnitOfStrength;
-	inline Step attackCoolDownDurationBase;
+	inline Step attackCoolDownDurationBaseSteps;
 	inline float itemTypeCombatModifier;
-	inline float itemSkillCombatModifier;
+	inline float attackSkillCombatModifier;
 	inline float itemQualityCombatModifier;
 	inline float itemWearCombatModifier;
 	inline uint32_t givePlantsFluidPriority;
@@ -148,7 +148,21 @@ namespace Config
 	inline Step stepsToDisableStockPile;
 	inline uint8_t projectTryToMakeSubprojectRetriesBeforeProjectDelay;
 	inline uint32_t maxWorkersForStockPileProject;
-	
+	inline uint32_t averageItemQuality;
+	inline float pointsOfCombatScorePerUnitOfStrength;
+	inline float pointsOfCombatScorePerUnitOfAgility;
+	inline float pointsOfCombatScorePerUnitOfDextarity;
+	inline uint32_t projectileHitChanceFallsOffWithRangeExponent;
+	inline float projectileHitPercentPerSkillPoint;
+	inline float projectileHitPercentPerUnitVolume;
+	inline float projectileHitPercentPerPointDextarity;
+	inline float projectileHitPercentPerPointQuality;
+	inline float projectileHitPercentPerPointWear;
+	inline float projectileHitPercentPerPointTargetCombatScore;
+	inline Volume projectileMedianTargetVolume;
+	inline float projectileHitPercentPerPointAttackTypeCombatScore;
+	inline uint32_t attackCoolDownDurationBaseDextarity;
+
 	inline uint32_t convertBodyPartVolumeToArea(uint32_t volume){ return sqrt(volume); }
 	inline void load()
 	{
@@ -202,7 +216,7 @@ namespace Config
 		moveTryAttemptsBeforeDetour = data["moveTryAttemptsBeforeDetour"].get<uint32_t>();
 		sowSeedsStepsDuration = data["sowSeedsStepsDuration"].get<Step>();
 		sowSeedsPriority = data["sowSeedsPriority"].get<uint32_t>();
-		stepsAttackCoolDownReductionPerPointOfDextarity = data["secondsAttackCoolDownReductionPerPointOfDextarity"].get<float>() * stepsPerSecond;
+		fractionAttackCoolDownReductionPerPointOfDextarity = data["fractionAttackCoolDownReductionPerPointOfDextarity"].get<float>() * stepsPerSecond;
 		unitsOfMoveSpeedPerUnitOfAgility = data["unitsOfMoveSpeedPerUnitOfAgility"].get<float>();
 		unitsOfCarryMassPerUnitOfStrength = data["unitsOfCarryMassPerUnitOfStrength"].get<float>();
 		objectivePrioritySleep = data["objectivePrioritySleep"].get<uint32_t>();
@@ -237,9 +251,9 @@ namespace Config
 		maxSkillLevel = data["maxSkillLevel"].get<uint32_t>();
 		killPriority = data["killPriority"].get<uint32_t>();
 		unitsOfAttackForcePerUnitOfStrength = data["unitsOfAttackForcePerUnitOfStrength"].get<float>();
-		attackCoolDownDurationBase = data["attackCoolDownDurationBase"].get<Step>();
+		attackCoolDownDurationBaseSteps = data["attackCoolDownDurationBaseSeconds"].get<Step>() * stepsPerSecond;
 		itemTypeCombatModifier = data["itemTypeCombatModifier"].get<float>();
-		itemSkillCombatModifier = data["itemSkillCombatModifier"].get<float>();
+		attackSkillCombatModifier = data["attackSkillCombatModifier"].get<float>();
 		itemQualityCombatModifier = data["itemQualityCombatModifier"].get<float>();
 		itemWearCombatModifier = data["itemWearCombatModifier"].get<float>();
 		givePlantsFluidPriority = data["givePlantsFluidPriority"].get<uint32_t>();
@@ -291,5 +305,19 @@ namespace Config
 		stepsToDisableStockPile = data["minutesToDisableStockPile"].get<uint32_t>() * stepsPerMinute;
 		projectTryToMakeSubprojectRetriesBeforeProjectDelay = data["projectTryToMakeSubprojectRetriesBeforeProjectDelay"].get<uint32_t>();
 		maxWorkersForStockPileProject = data["maxWorkersForStockPileProject"].get<uint32_t>();
+		averageItemQuality = data["averageItemQuality"].get<uint32_t>();
+		pointsOfCombatScorePerUnitOfStrength = data["pointsOfCombatScorePerUnitOfStrength"].get<float>();
+		pointsOfCombatScorePerUnitOfAgility = data["pointsOfCombatScorePerUnitOfAgility"].get<float>();
+		pointsOfCombatScorePerUnitOfDextarity = data["pointsOfCombatScorePerUnitOfDextarity"].get<float>();
+		projectileHitChanceFallsOffWithRangeExponent = data["projectileHitChanceFallsOffWithRangeExponent"].get<uint32_t>();
+		projectileHitPercentPerSkillPoint = data["projectileHitPercentPerSkillPoint"].get<float>();
+		projectileHitPercentPerUnitVolume = data["projectileHitPercentPerUnitVolume"].get<float>();
+		projectileHitPercentPerPointDextarity = data["projectileHitPercentPerPointDextarity"].get<float>();
+		projectileHitPercentPerPointQuality = data["projectileHitPercentPerPointQuality"].get<float>();
+		projectileHitPercentPerPointWear = data["projectileHitPercentPerPointWear"].get<float>();
+		projectileHitPercentPerPointTargetCombatScore = data["projectileHitPercentPerPointTargetCombatScore"].get<float>();
+		projectileMedianTargetVolume = data["projectileMedianTargetVolume"].get<Volume>();
+		projectileHitPercentPerPointAttackTypeCombatScore = data["projectileHitPercentPerPointAttackTypeCombatScore"].get<float>();
+		attackCoolDownDurationBaseDextarity = data["attackCoolDownDurationBaseDextarity"].get<uint32_t>();
 	}
 }

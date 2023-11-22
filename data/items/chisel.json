@@ -7,7 +7,7 @@
 	"weaponData":
 	{
 		"combatSkill": "dagger",
-		"combatScoreBonus": 1,
+		"coolDownSeconds": 0.5,
 		"attackTypes":
 		[
 			{
@@ -15,7 +15,7 @@
 				"area": 1,
 				"baseForce": 5,
 				"range": 1,
-				"skillBonus": 5,
+				"combatScore": 3,
 				"woundType": "Pierce"
 			}
 		]

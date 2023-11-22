@@ -49,6 +49,7 @@ public:
 	bool allBlocksAtLocationAndFacingAreReservable(const Block& location, Facing facing, const Faction& faction) const;
 	bool allOccupiedBlocksAreReservable(const Faction& faction) const;
 	bool isAdjacentToAt(const Block& location, Facing facing, const HasShape& hasShape) const;
+	uint32_t distanceTo(const HasShape& other) const;
 	Block* getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(const Block& location, Facing facing, std::function<bool(const Block&)>& predicate);
 	Block* getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(const Block& location, Facing facing, std::function<bool(const Block&)>& predicate);
 	Block* getBlockWhichIsAdjacentWithPredicate(std::function<bool(const Block&)>& predicate);

@@ -7,6 +7,7 @@
 #include "weaponType.h"
 #include "actor.h"
 #include "simulation.h"
+#include <cstddef>
 
 bool EquipmentSortByLayer::operator()(Item* const& a, Item* const& b) const
 {
@@ -30,6 +31,14 @@ void EquipmentSet::addEquipment(Item& equipment)
 				m_bodyPartTypesWithRigidArmor.insert(bodyPartType);
 			}
 	}
+	if(equipment.m_itemType.weaponData != nullptr)
+	{
+		if(equipment.m_itemType.hasRangedAttack())
+			m_rangedWeapons.insert(&equipment);
+		if(equipment.m_itemType.hasMeleeAttack())
+			m_meleeWeapons.insert(&equipment);
+	}
+	m_actor.m_canFight.update();
 }
 void EquipmentSet::removeEquipment(Item& equipment)
 {
@@ -49,7 +58,7 @@ void EquipmentSet::modifyImpact(Hit& hit, const BodyPartType& bodyPartType)
 		Random& random = m_actor.getSimulation().m_random;
 		if(std::ranges::find(wearableData.bodyPartsCovered, &bodyPartType) != wearableData.bodyPartsCovered.end() && random.percentChance(wearableData.percentCoverage))
 		{
-			uint32_t pierceScore = (hit.force / hit.area) * hit.materialType.hardness * Config::pierceModifier;
+			uint32_t pierceScore = ((float)hit.force / hit.area) * hit.materialType.hardness * Config::pierceModifier;
 			uint32_t defenseScore = wearableData.defenseScore * equipment->m_materialType.hardness;
 			if(pierceScore < defenseScore)
 			{
@@ -67,13 +76,30 @@ void EquipmentSet::modifyImpact(Hit& hit, const BodyPartType& bodyPartType)
 	}
 	std::erase_if(m_equipments, [](Item* equipment){ return equipment->m_percentWear == 100; });
 }
-std::vector<Attack> EquipmentSet::getAttacks()
+std::vector<Attack> EquipmentSet::getMeleeAttacks()
 {
 	std::vector<Attack> output;
-	for(Item* equipment : m_equipments)
+	for(Item* equipment : m_meleeWeapons)
 		if(equipment->m_itemType.weaponData != nullptr)
 			for(const AttackType& attackType : equipment->m_itemType.weaponData->attackTypes)
 				output.emplace_back(&attackType, &equipment->m_materialType, equipment);
+	return output;
+}
+bool EquipmentSet::hasWeapons() const
+{
+	for(Item* equipment : m_equipments)
+		if(equipment->m_itemType.weaponData != nullptr)
+			return true;
+	return false;
+}
+Step EquipmentSet::getLongestMeleeWeaponCoolDown() const
+{
+	assert(!m_meleeWeapons.empty());
+	Step output = 0;
+	for(Item* equipment : m_meleeWeapons)
+		if(equipment->m_itemType.weaponData != nullptr)
+			output = std::max(output, equipment->m_itemType.weaponData->coolDown);
+	assert(output != 0);
 	return output;
 }
 const uint32_t& EquipmentSet::getMass() const
@@ -96,4 +122,26 @@ bool EquipmentSet::canEquipCurrently(Item& item) const
 					return false;
 	}
 	return true;
+}
+Item* EquipmentSet::getWeaponToAttackAtRange(float range)
+{
+	for(Item* item : m_rangedWeapons)
+	{
+		assert(item->m_itemType.weaponData != nullptr);
+		for(const AttackType& attackType : item->m_itemType.weaponData->attackTypes)
+			if(attackType.range >= range)
+				return item;
+	}
+	return nullptr;
+}
+Item* EquipmentSet::getAmmoForRangedWeapon(Item& weapon)
+{
+	assert(weapon.m_itemType.weaponData != nullptr);
+	const AttackType* attackType = weapon.m_itemType.getRangedAttackType();
+	assert(attackType->projectileItemType != nullptr);
+	const ItemType& ammoItemType = *attackType->projectileItemType;
+	for(Item* item : m_equipments)
+		if(item->m_itemType == ammoItemType)
+			return item;
+	return nullptr;
 }

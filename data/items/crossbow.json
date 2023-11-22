@@ -8,17 +8,18 @@
 	"weaponData":
 	{
 		"combatSkill": "crossbow",
-		"combatScoreBonus": 10,
 		"projectileItemType": "crossbow bolts",
 		"projectileSpeed": 10,
+		"coolDownSeconds": 2.25,
 		"attackTypes":
 		[
 			{
 				"name": "shoot",
 				"area": 2,
-				"baseForce": 5,
+				"baseForce": 50,
 				"range": 15,
-				"skillBonus": 0,
+				"combatScore": 10,
+				"projectile": true,
 				"woundType": "Pierce"
 			}
 		]
