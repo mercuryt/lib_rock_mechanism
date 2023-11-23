@@ -92,7 +92,7 @@ public:
 	void noFoodFound();
 	[[nodiscard]] std::string name() const { return "eat"; }
 	[[nodiscard]] bool canEatAt(const Block& block) const;
-	[[nodiscard]] ObjectiveId getObjectiveId() const { return ObjectiveId::Eat; }
+	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Eat; }
 	friend class EatEvent;
 	friend class EatThreadedTask;
 	// For testing.

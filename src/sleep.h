@@ -89,7 +89,7 @@ public:
 	std::string name() const { return "sleep"; }
 	uint32_t desireToSleepAt(const Block& block);
 	~SleepObjective();
-	ObjectiveId getObjectiveId() const { return ObjectiveId::Sleep; }
+	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Sleep; }
 	friend class SleepThreadedTask;
 	friend class MustSleep;
 };

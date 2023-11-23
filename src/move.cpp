@@ -79,7 +79,11 @@ void ActorCanMove::callback()
 		{
 			++m_pathIter;
 			assert(m_pathIter != m_path.end());
-			scheduleMove();
+			Block& nextBlock = **m_pathIter;
+			if(nextBlock.m_hasShapes.anythingCanEnterEver() && block.m_hasShapes.canEnterEverFrom(m_actor, *m_actor.m_location))
+				scheduleMove();
+			else
+				m_actor.m_hasObjectives.cannotCompleteTask();
 		}
 	}
 	else

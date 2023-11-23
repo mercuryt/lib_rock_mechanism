@@ -162,6 +162,7 @@ namespace Config
 	inline Volume projectileMedianTargetVolume;
 	inline float projectileHitPercentPerPointAttackTypeCombatScore;
 	inline uint32_t attackCoolDownDurationBaseDextarity;
+	inline uint32_t goToPriority;
 
 	inline uint32_t convertBodyPartVolumeToArea(uint32_t volume){ return sqrt(volume); }
 	inline void load()
@@ -319,5 +320,6 @@ namespace Config
 		projectileMedianTargetVolume = data["projectileMedianTargetVolume"].get<Volume>();
 		projectileHitPercentPerPointAttackTypeCombatScore = data["projectileHitPercentPerPointAttackTypeCombatScore"].get<float>();
 		attackCoolDownDurationBaseDextarity = data["attackCoolDownDurationBaseDextarity"].get<uint32_t>();
+		goToPriority = data["goToPriority"].get<uint32_t>();
 	}
 }

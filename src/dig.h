@@ -20,7 +20,7 @@ class DigObjectiveType : public ObjectiveType
 public:
 	bool canBeAssigned(Actor& actor) const;
 	std::unique_ptr<Objective> makeFor(Actor& actor) const;
-	ObjectiveId getObjectiveId() const { return ObjectiveId::Dig; }
+	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Dig; }
 };
 class DigObjective final : public Objective
 {
@@ -34,7 +34,7 @@ public:
 	void delay() { cancel(); }
 	void reset();
 	void joinProject(DigProject& project);
-	ObjectiveId getObjectiveId() const { return ObjectiveId::Dig; }
+	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Dig; }
 	std::string name() const { return "dig"; }
 	DigProject* getJoinableProjectAt(const Block& block);
 	friend class DigThreadedTask;

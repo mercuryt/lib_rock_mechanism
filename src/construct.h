@@ -21,7 +21,7 @@ class ConstructObjectiveType final : public ObjectiveType
 public:
 	bool canBeAssigned(Actor& actor) const;
 	std::unique_ptr<Objective> makeFor(Actor& actor) const;
-	ObjectiveId getObjectiveId() const { return ObjectiveId::Construct; }
+	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Construct; }
 };
 class ConstructObjective final : public Objective
 {
@@ -40,7 +40,7 @@ public:
 	ConstructProject* getProjectWhichActorCanJoinAt(Block& block);
 	bool joinableProjectExistsAt(const Block& block) const;
 	bool canJoinProjectAdjacentToLocationAndFacing(const Block& block, Facing facing) const;
-	ObjectiveId getObjectiveId() const { return ObjectiveId::Construct; }
+	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Construct; }
 	friend class ConstructThreadedTask;
 };
 class ConstructThreadedTask final : public ThreadedTask

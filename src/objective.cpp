@@ -38,9 +38,9 @@ void ObjectiveTypePrioritySet::setObjectiveFor(Actor& actor)
 	else
 		actor.m_hasObjectives.addTaskToStart(std::make_unique<WanderObjective>(actor));
 }
-void ObjectiveTypePrioritySet::setDelay(ObjectiveId objectiveId)
+void ObjectiveTypePrioritySet::setDelay(ObjectiveTypeId objectiveTypeId)
 {
-	auto found = std::ranges::find_if(m_data, [&](ObjectivePriority& objectivePriority){ return objectivePriority.objectiveType->getObjectiveId() == objectiveId; });
+	auto found = std::ranges::find_if(m_data, [&](ObjectivePriority& objectivePriority){ return objectivePriority.objectiveType->getObjectiveTypeId() == objectiveTypeId; });
 	// If found is not in data it was assigned by some other means (such as player interaction) so we don't need a delay.
 	if(found != m_data.end())
 		found->doNotAssignAginUntil = m_actor.getSimulation().m_step + Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective;
@@ -50,7 +50,7 @@ SupressedNeed::SupressedNeed(std::unique_ptr<Objective> o, Actor& a) : m_actor(a
 void SupressedNeed::callback() 
 {
 	auto objective = std::move(m_objective);
-	m_actor.m_hasObjectives.m_supressedNeeds.erase(objective->getObjectiveId());
+	m_actor.m_hasObjectives.m_supressedNeeds.erase(objective->getObjectiveTypeId());
        	m_actor.m_hasObjectives.addNeed(std::move(objective)); 
 }
 SupressedNeedEvent::SupressedNeedEvent(SupressedNeed& sn) : ScheduledEventWithPercent(sn.m_actor.getSimulation(), Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective), m_supressedNeed(sn) { }
@@ -104,8 +104,8 @@ void HasObjectives::setCurrentObjective(Objective& objective)
 }
 void HasObjectives::addNeed(std::unique_ptr<Objective> objective)
 {
-	ObjectiveId objectiveId = objective->getObjectiveId();
-	if(hasSupressedNeed(objectiveId))
+	ObjectiveTypeId objectiveTypeId = objective->getObjectiveTypeId();
+	if(hasSupressedNeed(objectiveTypeId))
 		return;
 	// Wake up to fulfil need.
 	if(!m_actor.m_mustSleep.isAwake())
@@ -113,7 +113,7 @@ void HasObjectives::addNeed(std::unique_ptr<Objective> objective)
 	Objective* o = objective.get();
 	m_needsQueue.push_back(std::move(objective));
 	m_needsQueue.sort([](const std::unique_ptr<Objective>& a, const std::unique_ptr<Objective>& b){ return a->m_priority > b->m_priority; });
-	m_idsOfObjectivesInNeedsQueue.insert(objectiveId);
+	m_idsOfObjectivesInNeedsQueue.insert(objectiveTypeId);
 	maybeUsurpsPriority(*o);
 }
 void HasObjectives::addTaskToEnd(std::unique_ptr<Objective> objective)
@@ -133,14 +133,14 @@ void HasObjectives::addTaskToStart(std::unique_ptr<Objective> objective)
 // TODO: seperate functions for tasks and needs?
 void HasObjectives::destroy(Objective& objective)
 {
-	ObjectiveId objectiveId = objective.getObjectiveId();
+	ObjectiveTypeId objectiveTypeId = objective.getObjectiveTypeId();
 	bool isCurrent = m_currentObjective == &objective;
-	if(m_idsOfObjectivesInNeedsQueue.contains(objectiveId))
+	if(m_idsOfObjectivesInNeedsQueue.contains(objectiveTypeId))
 	{
 		// Remove canceled objective from needs queue.
-		auto found = std::ranges::find_if(m_needsQueue, [&](auto& o){ return o->getObjectiveId() == objectiveId; });
+		auto found = std::ranges::find_if(m_needsQueue, [&](auto& o){ return o->getObjectiveTypeId() == objectiveTypeId; });
 		m_needsQueue.erase(found);
-		m_idsOfObjectivesInNeedsQueue.erase(objectiveId);
+		m_idsOfObjectivesInNeedsQueue.erase(objectiveTypeId);
 	}
 	else
 	{
@@ -207,15 +207,15 @@ Objective& HasObjectives::getCurrent()
 // Does not use ::cancel because needs to move supressed objective into storage.
 void HasObjectives::cannotFulfillNeed(Objective& objective)
 {
-	ObjectiveId objectiveId = objective.getObjectiveId();
+	ObjectiveTypeId objectiveTypeId = objective.getObjectiveTypeId();
 	bool isCurrent = m_currentObjective == &objective;
 	objective.cancel();
-	auto found = std::ranges::find_if(m_needsQueue, [&](std::unique_ptr<Objective>& o) { return o->getObjectiveId() == objectiveId; });
+	auto found = std::ranges::find_if(m_needsQueue, [&](std::unique_ptr<Objective>& o) { return o->getObjectiveTypeId() == objectiveTypeId; });
 	assert(found != m_needsQueue.end());
 	// Store supressed need.
-	m_supressedNeeds.try_emplace(objectiveId, std::move(*found), m_actor);
+	m_supressedNeeds.try_emplace(objectiveTypeId, std::move(*found), m_actor);
 	// Remove from needs queue.
-	m_idsOfObjectivesInNeedsQueue.erase(objectiveId);
+	m_idsOfObjectivesInNeedsQueue.erase(objectiveTypeId);
 	m_needsQueue.erase(found);
 	m_actor.m_canReserve.clearAll();
 	m_actor.m_canMove.maybeCancelThreadedTask();
@@ -225,7 +225,7 @@ void HasObjectives::cannotFulfillNeed(Objective& objective)
 void HasObjectives::cannotFulfillObjective(Objective& objective)
 {
 	// Store delay to wait before trying again.
-	m_prioritySet.setDelay(objective.getObjectiveId());
+	m_prioritySet.setDelay(objective.getObjectiveTypeId());
 	cancel(objective);
 	//TODO: generate cancelation message?
 }

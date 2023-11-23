@@ -104,7 +104,7 @@ public:
 	CraftObjectiveType(const SkillType& skillType) : ObjectiveType(), m_skillType(skillType) { }
 	bool canBeAssigned(Actor& actor) const;
 	std::unique_ptr<Objective> makeFor(Actor& actor) const;
-	ObjectiveId getObjectiveId() const { return ObjectiveId::Craft; }
+	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Craft; }
 };
 class CraftObjective final : public Objective
 {
@@ -118,7 +118,7 @@ public:
 	void cancel();
 	void delay() { cancel(); }
 	void reset();
-	ObjectiveId getObjectiveId() const { return ObjectiveId::Craft; }
+	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Craft; }
 	std::string name() const { return "craft"; }
 	friend class CraftThreadedTask;
 	friend class HasCraftingLocationsAndJobs;

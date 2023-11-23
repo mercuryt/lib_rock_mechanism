@@ -13,6 +13,6 @@ public:
 	void cancel() { }
 	void delay() { }
 	void reset();
-	ObjectiveId getObjectiveId() const { return ObjectiveId::Station; }
+	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Station; }
 	std::string name() const { return "station"; }
 };

@@ -16,7 +16,7 @@ class SowSeedsObjectiveType final : public ObjectiveType
 public:
 	bool canBeAssigned(Actor& actor) const;
 	std::unique_ptr<Objective> makeFor(Actor& actor) const;
-	ObjectiveId getObjectiveId() const { return ObjectiveId::SowSeeds; }
+	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::SowSeeds; }
 };
 class SowSeedsObjective final : public Objective
 {
@@ -35,7 +35,7 @@ public:
 	void begin();
 	void reset();
 	std::string name() const { return "sow seeds"; }
-	ObjectiveId getObjectiveId() const { return ObjectiveId::SowSeeds; }
+	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::SowSeeds; }
 	friend class SowSeedsEvent;
 	friend class SowSeedsThreadedTask;
 };

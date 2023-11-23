@@ -146,5 +146,6 @@
 	"projectileHitPercentPerPointTargetCombatScore": 0.1,
 	"projectileMedianTargetVolume": 6500,
 	"projectileHitPercentPerPointAttackTypeCombatScore": 0.4,
-	"attackCoolDownDurationBaseDextarity": 55
+	"attackCoolDownDurationBaseDextarity": 55,
+	"goToPriority": 1500
 }

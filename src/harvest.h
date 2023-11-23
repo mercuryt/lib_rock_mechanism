@@ -18,7 +18,7 @@ class HarvestObjectiveType final : public ObjectiveType
 public:
 	bool canBeAssigned(Actor& actor) const;
 	std::unique_ptr<Objective> makeFor(Actor& actor) const;
-	ObjectiveId getObjectiveId() const { return ObjectiveId::Harvest; }
+	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Harvest; }
 };
 class HarvestObjective final : public Objective
 {
@@ -35,7 +35,7 @@ public:
 	void begin();
 	void reset();
 	std::string name() const { return "harvest"; }
-	ObjectiveId getObjectiveId() const { return ObjectiveId::Harvest; }
+	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Harvest; }
 	Block* getBlockContainingPlantToHarvestAtLocationAndFacing(const Block& location, Facing facing);
 	bool blockContainsHarvestablePlant(const Block& block) const;
 	friend class HarvestEvent;

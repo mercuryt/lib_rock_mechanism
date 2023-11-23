@@ -61,7 +61,7 @@ public:
 	bool canDrinkItemAt(const Block& block) const;
 	Item* getItemToDrinkFromAt(Block& block) const;
 	bool containsSomethingDrinkable(const Block& block) const;
-	ObjectiveId getObjectiveId() const { return ObjectiveId::Drink; }
+	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Drink; }
 	friend class DrinkEvent;
 	friend class DrinkThreadedTask;
 };

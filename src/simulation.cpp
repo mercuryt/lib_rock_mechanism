@@ -154,6 +154,11 @@ void Simulation::fastForwardUntillActorIsAdjacentToDestination(Actor& actor, Blo
 	std::function<bool()> predicate = [&](){ return actor.isAdjacentTo(destination); };
 	fastForwardUntillPredicate(predicate);
 }
+void Simulation::fastForwardUntillActorIsAdjacentTo(Actor& actor, Block& block)
+{
+	std::function<bool()> predicate = [&](){ return actor.isAdjacentTo(block); };
+	fastForwardUntillPredicate(predicate);
+}
 void Simulation::fastForwardUntillActorIsAdjacentToHasShape(Actor& actor, HasShape& other)
 {
 	std::function<bool()> predicate = [&](){ return actor.isAdjacentTo(other); };

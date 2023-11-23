@@ -32,7 +32,7 @@ class StockPileObjectiveType final : public ObjectiveType
 public:
 	bool canBeAssigned(Actor& actor) const;
 	std::unique_ptr<Objective> makeFor(Actor& actor) const;
-	ObjectiveId getObjectiveId() const { return ObjectiveId::StockPile; }
+	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::StockPile; }
 };
 class StockPileObjective final : public Objective
 {
@@ -46,7 +46,7 @@ public:
 	void delay() { cancel(); }
 	void reset();
 	std::string name() const { return "stockpile"; }
-	ObjectiveId getObjectiveId() const { return ObjectiveId::StockPile; }
+	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::StockPile; }
 };
 // Searches for an Item and destination to make or find a hauling project for m_objective.m_actor.
 class StockPileThreadedTask final : public ThreadedTask

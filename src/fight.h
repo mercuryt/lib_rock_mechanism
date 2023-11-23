@@ -61,7 +61,7 @@ public:
 	[[nodiscard]] bool isOnCoolDown() const;
 	[[nodiscard]] bool inRange(const Actor& target) const;
 	[[nodiscard]] bool doesProjectileHit(Attack& attack, const Actor& target) const;
-	[[nodiscard]] Percent chanceOfProjectileHit(const Attack& attack, const Actor& target) const;
+	[[nodiscard]] Percent projectileHitPercent(const Attack& attack, const Actor& target) const;
 	[[nodiscard]] const float& getMaxRange() const { return m_maxMeleeRange; }
 	[[nodiscard]] uint32_t getCombatScoreForAttack(const Attack& attack) const;
 	[[nodiscard]] const Attack& getAttackForCombatScoreDifference(const uint32_t scoreDifference) const;

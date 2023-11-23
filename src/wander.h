@@ -20,7 +20,7 @@ public:
 	void delay() { cancel(); }
 	void reset();
 	std::string name() const { return "wander"; }
-	ObjectiveId getObjectiveId() const { return ObjectiveId::Wander; }
+	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Wander; }
 	friend class WanderThreadedTask;
 };
 class WanderThreadedTask final : public ThreadedTask

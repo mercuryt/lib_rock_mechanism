@@ -36,7 +36,7 @@ public:
 	void cancel() { m_project.removeWorker(m_actor); }
 	void delay() { }
 	void reset() { m_actor.m_canReserve.clearAll(); }
-	ObjectiveId getObjectiveId() const { return ObjectiveId::Haul; }
+	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Haul; }
 	std::string name() const { return "haul"; }
 };
 

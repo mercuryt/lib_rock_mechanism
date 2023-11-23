@@ -18,7 +18,7 @@ struct TestTaskObjective final : public Objective
 	void reset() { }
 	void detour() { }
 	std::string name() const { return "test task"; }
-	ObjectiveId getObjectiveId() const { return ObjectiveId::Construct; }
+	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Construct; }
 };
 
 struct TestNeedObjective final : public Objective
@@ -31,7 +31,7 @@ struct TestNeedObjective final : public Objective
 	void reset() { }
 	void detour() { }
 	std::string name() const { return "test need"; }
-	ObjectiveId getObjectiveId() const { return ObjectiveId::Dig; }
+	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Dig; }
 };
 
 TEST_CASE("objective")

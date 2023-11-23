@@ -82,7 +82,7 @@ TEST_CASE("combat")
 		REQUIRE(dwarf1.m_canFight.inRange(rabbit));
 		AttackType& attackType = dwarf1.m_canFight.getRangedAttackType(crossbow);
 		Attack attack(&attackType, &ammo.m_materialType, &crossbow);
-		REQUIRE(dwarf1.m_canFight.chanceOfProjectileHit(attack, rabbit) >= 100);
+		REQUIRE(dwarf1.m_canFight.projectileHitPercent(attack, rabbit) >= 100);
 		REQUIRE(!rabbit.m_body.isInjured());
 		dwarf1.m_canFight.attackLongRange(rabbit, &crossbow, &ammo);
 		REQUIRE(rabbit.m_body.isInjured());

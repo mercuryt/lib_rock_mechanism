@@ -18,7 +18,7 @@ public:
 	void delay() { cancel(); }
 	void reset();
 	std::string name() const { return "rest"; }
-	ObjectiveId getObjectiveId() const { return ObjectiveId::Rest; }
+	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Rest; }
 	friend class RestEvent;
 };
 class RestEvent final : public ScheduledEventWithPercent

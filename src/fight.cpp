@@ -235,7 +235,7 @@ void CanFight::freeHit(Actor& actor)
 }
 bool CanFight::isOnCoolDown() const { return m_coolDown.exists(); }
 bool CanFight::inRange(const Actor& target) const { return m_actor.m_location->distance(*target.m_location) <= m_maxMeleeRange; }
-Percent CanFight::chanceOfProjectileHit(const Attack& attack, const Actor& target) const
+Percent CanFight::projectileHitPercent(const Attack& attack, const Actor& target) const
 {
 	Percent chance = 100 - pow(m_actor.distanceTo(target), Config::projectileHitChanceFallsOffWithRangeExponent);
 	chance += m_actor.m_skillSet.get(attack.attackType->skillType) * Config::projectileHitPercentPerSkillPoint;
@@ -252,7 +252,7 @@ Percent CanFight::chanceOfProjectileHit(const Attack& attack, const Actor& targe
 }
 bool CanFight::doesProjectileHit(Attack& attack, const Actor& target) const
 {
-	Percent chance = chanceOfProjectileHit(attack, target);
+	Percent chance = projectileHitPercent(attack, target);
 	return m_actor.getSimulation().m_random.percentChance(chance);
 }
 float CanFight::getQualityModifier(uint32_t quality) const
