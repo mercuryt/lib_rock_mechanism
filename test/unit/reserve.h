@@ -54,4 +54,34 @@ TEST_CASE("reservations")
 		reservable.reserveFor(canReserve, 1);
 		REQUIRE(reservable.isFullyReserved(&faction1));
 	}
+	SUBCASE("dishonor callback clear all")
+	{
+		bool fired = false;
+		std::function<void(uint32_t, uint32_t)> callback = [&](uint32_t o, uint32_t n) 
+		{ 
+			REQUIRE(o == 1);
+			REQUIRE(n == 0);
+			fired = true; 
+		};
+		Reservable reservable(1);
+		CanReserve canReserve(&faction1);
+		reservable.reserveFor(canReserve, 1, callback);
+		reservable.clearAll();
+		REQUIRE(fired);
+	}
+	SUBCASE("dishonor callback reduce max reservable")
+	{
+		bool fired = false;
+		std::function<void(uint32_t, uint32_t)> callback = [&](uint32_t o, uint32_t n) 
+		{ 
+			REQUIRE(o == 2);
+			REQUIRE(n == 1);
+			fired = true; 
+		};
+		Reservable reservable(2);
+		CanReserve canReserve(&faction1);
+		reservable.reserveFor(canReserve, 2, callback);
+		reservable.setMaxReservations(1);
+		REQUIRE(fired);
+	}
 }
