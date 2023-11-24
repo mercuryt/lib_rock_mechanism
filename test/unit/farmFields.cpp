@@ -85,12 +85,16 @@ TEST_CASE("farmFields")
 		simulation.setDateTime({1, wheatGrass.dayOfYearForSowStart, 1200 });
 		const SowSeedsObjectiveType objectiveType;
 		actor.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 10);
+		REQUIRE(area.m_hasFarmFields.hasSowSeedsDesignations(faction));
 		simulation.doStep();
+		REQUIRE(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
 		REQUIRE(!actor.m_canMove.getPath().empty());
 		gateway.setSolid(marble);
 		simulation.fastForwardUntillActorIsAdjacentTo(actor, gateway);
 		// No alternative route or location found, cannot complete objective.
-		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "sow");
+		simulation.doStep();
+		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "sow seeds");
+		REQUIRE(area.m_hasFarmFields.hasSowSeedsDesignations(faction));
 	}
 	SUBCASE("location no longer viable to sow")
 	{
@@ -105,10 +109,11 @@ TEST_CASE("farmFields")
 		REQUIRE(!actor.m_canMove.getPath().empty());
 		block.getBlockBelow()->setSolid(marble);
 		REQUIRE(!block.m_hasPlant.canGrowHereAtSomePointToday(wheatGrass));
-		REQUIRE(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
 		simulation.fastForwardUntillActorIsAdjacentTo(actor, block);
 		// No alternative route or location found, cannot complete objective.
-		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "sow");
+		REQUIRE(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
+		simulation.doStep();
+		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "sow seeds");
 	}
 	SUBCASE("location no longer selected to sow")
 	{
@@ -124,7 +129,8 @@ TEST_CASE("farmFields")
 		area.m_hasFarmFields.at(faction).remove(field);
 		simulation.fastForwardUntillActorIsAdjacentTo(actor, block);
 		// Block is not select to grow anymore, cannot complete task, search for another route / another location to sow.
-		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "sow");
+		simulation.doStep();
+		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "sow seeds");
 	}
 	SUBCASE("player cancels sowing objective")
 	{
@@ -157,7 +163,7 @@ TEST_CASE("farmFields")
 		std::unique_ptr<GoToObjective> goToObjective = std::make_unique<GoToObjective>(actor, block);
 		actor.m_hasObjectives.addTaskToStart(std::move(goToObjective));
 		REQUIRE(block.m_hasDesignations.contains(faction, BlockDesignation::SowSeeds));
-		REQUIRE(block.m_reservable.isFullyReserved(&faction));
+		REQUIRE(!block.m_reservable.isFullyReserved(&faction));
 	}
 	SUBCASE("harvest")
 	{
@@ -171,7 +177,6 @@ TEST_CASE("farmFields")
 		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
 		const HarvestObjectiveType objectiveType;
 		actor.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 10);
-		//actor.m_hasObjectives.getNext();
 		REQUIRE(actor.m_hasObjectives.hasCurrent());
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "harvest");
 		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.size() == 1);
@@ -193,6 +198,96 @@ TEST_CASE("farmFields")
 		REQUIRE(item.m_materialType == MaterialType::byName("plant matter"));
 		REQUIRE(item.getQuantity() == wheatGrass.harvestData->itemQuantity);
 		REQUIRE(item.m_itemType == ItemType::byName("wheat seed"));
+	}
+	SUBCASE("location no longer accessable to harvest")
+	{
+		areaBuilderUtil::setSolidWall(area.m_blocks[0][3][2], area.m_blocks[8][3][2], marble);
+		Block& gateway = area.m_blocks[9][3][2];
+		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
+		block.m_hasPlant.addPlant(wheatGrass, 100);
+		// Skip ahead to harvest time.
+		simulation.setDateTime({1, wheatGrass.harvestData->dayOfYearToStart, 1200});
+		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
+		const HarvestObjectiveType objectiveType;
+		actor.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 10);
+		simulation.doStep();
+		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
+		REQUIRE(!actor.m_canMove.getPath().empty());
+		gateway.setSolid(marble);
+		simulation.fastForwardUntillActorIsAdjacentTo(actor, gateway);
+		// No alternative route or location found, cannot complete objective.
+		simulation.doStep();
+		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "harvest");
+		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
+	}
+	SUBCASE("location no longer contains plant")
+	{
+		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
+		block.m_hasPlant.addPlant(wheatGrass, 100);
+		// Skip ahead to harvest time.
+		simulation.setDateTime({1, wheatGrass.harvestData->dayOfYearToStart, 1200});
+		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
+		const HarvestObjectiveType objectiveType;
+		actor.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 10);
+		simulation.doStep();
+		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
+		REQUIRE(!actor.m_canMove.getPath().empty());
+		block.m_hasPlant.erase();
+		simulation.fastForwardUntillActorIsAdjacentTo(actor, block);
+		// No alternative route or location found, cannot complete objective.
+		simulation.doStep();
+		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "harvest");
+		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
+	}
+	SUBCASE("plant no longer harvestable")
+	{
+		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
+		block.m_hasPlant.addPlant(wheatGrass, 100);
+		// Skip ahead to harvest time.
+		simulation.setDateTime({1, wheatGrass.harvestData->dayOfYearToStart, 1200});
+		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
+		const HarvestObjectiveType objectiveType;
+		actor.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 10);
+		simulation.doStep();
+		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
+		REQUIRE(!actor.m_canMove.getPath().empty());
+		block.m_hasPlant.get().endOfHarvest();
+		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
+		simulation.fastForwardUntillActorIsAdjacentTo(actor, block);
+		// No alternative route or location found, cannot complete objective.
+		simulation.doStep();
+		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "harvest");
+	}
+	SUBCASE("player cancels harvest")
+	{
+		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
+		block.m_hasPlant.addPlant(wheatGrass, 100);
+		// Skip ahead to harvest time.
+		simulation.setDateTime({1, wheatGrass.harvestData->dayOfYearToStart, 1200});
+		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
+		const HarvestObjectiveType objectiveType;
+		actor.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 10);
+		simulation.doStep();
+		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
+		REQUIRE(!block.m_hasDesignations.contains(faction, BlockDesignation::Harvest));
+		actor.m_hasObjectives.cancel(actor.m_hasObjectives.getCurrent());
+		REQUIRE(block.m_hasDesignations.contains(faction, BlockDesignation::Harvest));
+	}
+	SUBCASE("player delays harvest")
+	{
+		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
+		block.m_hasPlant.addPlant(wheatGrass, 100);
+		// Skip ahead to harvest time.
+		simulation.setDateTime({1, wheatGrass.harvestData->dayOfYearToStart, 1200});
+		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
+		const HarvestObjectiveType objectiveType;
+		actor.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 10);
+		simulation.doStep();
+		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
+		REQUIRE(!block.m_hasDesignations.contains(faction, BlockDesignation::Harvest));
+		std::unique_ptr<GoToObjective> goToObjective = std::make_unique<GoToObjective>(actor, block);
+		actor.m_hasObjectives.addTaskToStart(std::move(goToObjective));
+		REQUIRE(block.m_hasDesignations.contains(faction, BlockDesignation::Harvest));
 	}
 	SUBCASE("give plants fluid")
 	{

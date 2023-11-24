@@ -32,7 +32,8 @@ public:
 	void removeAllSowSeedsDesignations();
 	bool isSowingSeasonFor(const PlantSpecies& species) const;
 	// For testing.
-	[[maybe_unused]]bool contains(const Faction& faction) { return m_farmFields.contains(&faction); }
+	[[maybe_unused]] bool contains(const Faction& faction) const { return m_farmFields.contains(&faction); }
+	[[maybe_unused]] FarmField* get(const Faction& faction) { if(!m_farmFields.contains(&faction)) return nullptr; return m_farmFields.at(&faction); }
 };
 // To be used by HasFarmFields, which is used by Area.
 class HasFarmFieldsForFaction

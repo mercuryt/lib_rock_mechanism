@@ -1,6 +1,7 @@
 #include "sowSeeds.h"
 #include "area.h"
 #include "actor.h"
+#include "farmFields.h"
 SowSeedsEvent::SowSeedsEvent(Step delay, SowSeedsObjective& o) : ScheduledEventWithPercent(o.m_actor.getSimulation(), delay), m_objective(o) { }
 void SowSeedsEvent::execute()
 {
@@ -83,16 +84,21 @@ void SowSeedsObjective::execute()
 	if(m_block != nullptr)
 	{
 		if(m_actor.isAdjacentTo(*m_block))
-			begin();
-		else
 		{
-			// Previously found path no longer valid, redo from start.
-			reset();
-			execute();
+			FarmField* field = m_block->m_isPartOfFarmField.get(*m_actor.getFaction());
+			if(field != nullptr && m_block->m_hasPlant.canGrowHereAtSomePointToday(*field->plantSpecies))
+			{
+				begin();
+				return;
+			}
 		}
+		// Previously found m_block or path no longer valid, redo from start.
+		reset();
+		execute();
 	}
 	else
 	{
+		// Check if we can use an adjacent as m_block.
 		if(m_actor.allOccupiedBlocksAreReservable(*m_actor.getFaction()))
 		{
 			Block* block = getBlockToSowAt(*m_actor.m_location, m_actor.m_facing);
@@ -110,10 +116,18 @@ void SowSeedsObjective::execute()
 }
 void SowSeedsObjective::cancel()
 {
+	m_actor.m_canReserve.clearAll();
 	m_threadedTask.maybeCancel();
 	m_event.maybeUnschedule();
-	if(m_block != nullptr && m_actor.getFaction() != nullptr)
-		m_block->m_area->m_hasFarmFields.at(*m_actor.getFaction()).addSowSeedsDesignation(*m_block);
+	if(m_block != nullptr && m_block->m_isPartOfFarmField.contains(*m_actor.getFaction()))
+	{
+		FarmField* field = m_block->m_isPartOfFarmField.get(*m_actor.getFaction());
+		if(field == nullptr)
+			return;
+		//TODO: check it is still planting season.
+		if(m_block->m_hasPlant.canGrowHereAtSomePointToday(*field->plantSpecies))
+			m_block->m_area->m_hasFarmFields.at(*m_actor.getFaction()).addSowSeedsDesignation(*m_block);
+	}
 }
 void SowSeedsObjective::select(Block& block)
 {
@@ -132,7 +146,7 @@ void SowSeedsObjective::begin()
 }
 void SowSeedsObjective::reset()
 {
-	m_actor.m_canReserve.clearAll();
+	cancel();
 	m_block = nullptr;
 }
 bool SowSeedsObjective::canSowAt(const Block& block) const

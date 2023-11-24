@@ -1,5 +1,7 @@
 #include "harvest.h"
 #include "area.h"
+#include "farmFields.h"
+#include "plant.h"
 // Event.
 HarvestEvent::HarvestEvent(Step delay, HarvestObjective& ho) : ScheduledEventWithPercent(ho.m_actor.getSimulation(), delay), m_harvestObjective(ho) {}
 void HarvestEvent::execute()
@@ -72,11 +74,12 @@ void HarvestObjective::execute()
 {
 	if(m_block != nullptr)
 	{
-		if(m_actor.isAdjacentTo(*m_block))
+		//TODO: Area level listing of plant species to not harvest.
+		if(m_actor.isAdjacentTo(*m_block) && m_block->m_hasPlant.exists() && m_block->m_hasPlant.get().readyToHarvest())
 			begin();
 		else
 		{
-			// Previously found route is no longer valid, redo from start.
+			// Previously found block or route is no longer valid, redo from start.
 			reset();
 			execute();
 		}
@@ -86,7 +89,7 @@ void HarvestObjective::execute()
 		if(m_actor.allOccupiedBlocksAreReservable(*m_actor.getFaction()))
 		{
 			Block* block = getBlockContainingPlantToHarvestAtLocationAndFacing(*m_actor.m_location, m_actor.m_facing);
-			if(block != nullptr)
+			if(block != nullptr && m_block->m_hasPlant.exists() && m_block->m_hasPlant.get().readyToHarvest())
 			{
 				m_actor.reserveOccupied(m_actor.m_canReserve);
 				select(*block);
@@ -101,6 +104,10 @@ void HarvestObjective::cancel()
 {
 	m_threadedTask.maybeCancel();
 	m_harvestEvent.maybeUnschedule();
+	if(m_block != nullptr && m_block->m_hasPlant.exists() && m_block->m_hasPlant.get().readyToHarvest())
+		m_block->m_area->m_hasFarmFields.at(*m_actor.getFaction()).addHarvestDesignation(m_block->m_hasPlant.get());
+	//TODO: This probably should be in hasObjectives instead of here, is this needed at all?
+	m_actor.m_canReserve.clearAll();
 }
 void HarvestObjective::select(Block& block)
 {
@@ -118,7 +125,7 @@ void HarvestObjective::begin()
 }
 void HarvestObjective::reset()
 {
-	m_actor.m_canReserve.clearAll();
+	cancel();
 	m_block = nullptr;
 }
 Block* HarvestObjective::getBlockContainingPlantToHarvestAtLocationAndFacing(const Block& location, Facing facing)

@@ -1,6 +1,7 @@
 #include "farmFields.h"
 #include "block.h"
 #include "area.h"
+#include "designations.h"
 #include "simulation.h"
 #include <algorithm>
 void IsPartOfFarmField::insert(const Faction& faction, FarmField& farmField)
@@ -12,6 +13,9 @@ void IsPartOfFarmField::remove(const Faction& faction)
 {
 	assert(m_farmFields.contains(&faction));
 	m_farmFields.erase(&faction);
+	m_block.m_hasDesignations.removeIfExists(faction, BlockDesignation::SowSeeds);
+	m_block.m_hasDesignations.removeIfExists(faction, BlockDesignation::GivePlantFluid);
+	m_block.m_hasDesignations.removeIfExists(faction, BlockDesignation::Harvest);
 }
 void IsPartOfFarmField::designateForHarvestIfPartOfFarmField(Plant& plant)
 {

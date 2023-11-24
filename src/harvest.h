@@ -34,6 +34,7 @@ public:
 	void select(Block& block);
 	void begin();
 	void reset();
+	bool canHarvestAt(const Block& block) const;
 	std::string name() const { return "harvest"; }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Harvest; }
 	Block* getBlockContainingPlantToHarvestAtLocationAndFacing(const Block& location, Facing facing);

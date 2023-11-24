@@ -21,7 +21,7 @@ struct HarvestData final
 	const uint32_t itemQuantity;
 	const ItemType& fruitItemType;
 	// Infastructure.
-	bool operator==(const HarvestData& harvestData){ return this == &harvestData; }
+	bool operator==(const HarvestData& harvestData) const { return this == &harvestData; }
 	inline static std::vector<HarvestData> data;
 };
 struct PlantSpecies final
@@ -45,7 +45,7 @@ struct PlantSpecies final
 	const FluidType& fluidType;
 	const HarvestData* harvestData;
 	// Infastructure.
-	bool operator==(const PlantSpecies& plantSpecies){ return this == &plantSpecies; }
+	bool operator==(const PlantSpecies& plantSpecies) const { return this == &plantSpecies; }
 	inline static std::vector<PlantSpecies> data;
 	static const PlantSpecies& byName(std::string name)
 	{

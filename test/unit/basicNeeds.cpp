@@ -218,7 +218,8 @@ TEST_CASE("basicNeedsNonsentient")
 		REQUIRE(bear.m_mustEat.getMassFoodRequested() != 0);
 		// Bear goes to deer corpse.
 		simulation.doStep();
-		simulation.fastForwardUntillActorIsAdjacentToHasShape(bear, deer);
+		if(!bear.isAdjacentTo(deer))
+			simulation.fastForwardUntillActorIsAdjacentToHasShape(bear, deer);
 		// Bear eats.
 		simulation.fastForward(Config::stepsToEat);
 		REQUIRE(!bear.m_mustEat.needsFood());
