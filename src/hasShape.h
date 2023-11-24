@@ -94,6 +94,7 @@ public:
 	bool anythingCanEnterEver() const;
 	bool canEnterEverFrom(const HasShape& shape, const Block& block) const;
 	bool canEnterEverWithFacing(const HasShape& hasShape, const uint8_t facing) const;
+	bool canEnterEverWithAnyFacing(const HasShape& hasShape) const;
 	bool shapeAndMoveTypeCanEnterEverFrom(const Shape& shape, const MoveType& moveType, const Block& block) const;
 	bool shapeAndMoveTypeCanEnterEverWithFacing(const Shape& shape, const MoveType& moveType, const uint8_t facing) const;
 	bool moveTypeCanEnter(const MoveType& moveType) const;

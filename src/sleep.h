@@ -38,12 +38,14 @@ public:
 	void notTired();
 	bool isAwake() const { return m_isAwake; }
 	bool getNeedsSleep() const { return m_needsSleep; }
+	Block* getLocation() { return m_location; }
 	friend class SleepEvent;
 	friend class TiredEvent;
 	friend class SleepThreadedTask;
 	friend class SleepObjective;
 	// For testing.
-	[[maybe_unused]]bool hasTiredEvent() const { return m_tiredEvent.exists(); }
+	[[maybe_unused, nodiscard]] bool hasTiredEvent() const { return m_tiredEvent.exists(); }
+	[[maybe_unused, nodiscard]] SleepObjective* getObjective() { return m_objective; }
 };
 class SleepEvent final : public ScheduledEventWithPercent
 {
@@ -83,15 +85,19 @@ class SleepObjective final : public Objective
 public:
 	SleepObjective(Actor& a);
 	void execute();
-	void cancel() { m_threadedTask.maybeCancel(); }
+	void cancel();
 	void delay() { cancel(); }
 	void reset();
-	std::string name() const { return "sleep"; }
-	uint32_t desireToSleepAt(const Block& block);
+	bool onNoPath();
+	[[nodiscard]] uint32_t desireToSleepAt(const Block& block) const;
+	[[nodiscard]] std::string name() const { return "sleep"; }
+	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Sleep; }
+	[[nodiscard]] bool isNeed() const { return true; }
 	~SleepObjective();
-	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Sleep; }
 	friend class SleepThreadedTask;
 	friend class MustSleep;
+	// For testing.
+	[[maybe_unused, nodiscard]] bool threadedTaskExists() const { return m_threadedTask.exists(); }
 };
 class HasSleepingSpots final
 {

@@ -19,8 +19,9 @@ TEST_CASE("dig")
 	DigObjectiveType digObjectiveType;
 	Actor& dwarf1 = simulation.createActor(dwarf, area.m_blocks[1][1][4]);
 	dwarf1.setFaction(&faction);
+	Block& pickLocation = area.m_blocks[5][5][4];
 	Item& pick = simulation.createItem(ItemType::byName("pick"), bronze, 50u, 0);
-	pick.setLocation(area.m_blocks[5][5][4]);
+	pick.setLocation(pickLocation);
 	area.m_hasDiggingDesignations.addFaction(faction);
 	SUBCASE("dig hole")
 	{
@@ -32,13 +33,13 @@ TEST_CASE("dig")
 		REQUIRE(digObjectiveType.canBeAssigned(dwarf1));
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "dig");
+		// One step to find the designation.
+		simulation.doStep();
 		// One step to activate the project and reserve the pick.
 		simulation.doStep();
 		// One step to select haul type.
 		simulation.doStep();
 		// Another step to path to the pick.
-		simulation.doStep();
-		// And another for some reason??
 		simulation.doStep();
 		REQUIRE(!dwarf1.m_canMove.getPath().empty());
 		REQUIRE(pick.isAdjacentTo(*dwarf1.m_canMove.getDestination()));
@@ -88,5 +89,71 @@ TEST_CASE("dig")
 		REQUIRE(dwarf2.m_hasObjectives.getCurrent().name() == "dig");
 		std::function<bool()> predicate = [&]() { return !holeLocation.isSolid(); };
 		simulation.fastForwardUntillPredicate(predicate, Step(22));
+	}
+	SUBCASE("cannot path to spot")
+	{
+		areaBuilderUtil::setSolidWall(area.m_blocks[0][3][4], area.m_blocks[8][3][4], dirt);
+		Block& gateway = area.m_blocks[9][3][4];
+		Block& holeLocation = area.m_blocks[8][4][3];
+		area.m_hasDiggingDesignations.designate(faction, holeLocation, nullptr);
+		DigProject& project = area.m_hasDiggingDesignations.at(faction, holeLocation);
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
+		// One step to find the designation.
+		simulation.doStep();
+		// One step to activate the project and reserve the pick.
+		simulation.doStep();
+		REQUIRE(pick.m_reservable.isFullyReserved(&faction));
+		// One step to select haul type.
+		simulation.doStep();
+		// Another step to path to the pick.
+		simulation.doStep();
+		gateway.setSolid(dirt);
+		simulation.fastForwardUntillActorIsAdjacentTo(dwarf1, gateway);
+		// Cannot detour or find alternative block.
+		simulation.doStep();
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "dig");
+		REQUIRE(!pick.m_reservable.isFullyReserved(&faction));
+		REQUIRE(project.getWorkers().empty());
+	}
+	SUBCASE("spot already dug")
+	{
+		Block& holeLocation = area.m_blocks[8][4][3];
+		area.m_hasDiggingDesignations.designate(faction, holeLocation, nullptr);
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
+		// One step to find the designation.
+		simulation.doStep();
+		// One step to activate the project and reserve the pick.
+		simulation.doStep();
+		REQUIRE(pick.m_reservable.isFullyReserved(&faction));
+		// One step to select haul type.
+		simulation.doStep();
+		// Another step to path to the pick.
+		simulation.doStep();
+		holeLocation.setNotSolid();
+		simulation.fastForwardUntillActorIsAdjacentTo(dwarf1, holeLocation);
+		REQUIRE(dwarf1.m_canPickup.isCarrying(pick));
+		simulation.doStep();
+		REQUIRE(!dwarf1.m_canPickup.isCarrying(pick));
+		REQUIRE(!pick.m_reservable.isFullyReserved(&faction));
+		REQUIRE(!area.m_hasDiggingDesignations.areThereAnyForFaction(faction));
+	}
+	SUBCASE("pick destroyed")
+	{
+		Block& holeLocation = area.m_blocks[8][4][3];
+		area.m_hasDiggingDesignations.designate(faction, holeLocation, nullptr);
+		DigProject& project = area.m_hasDiggingDesignations.at(faction, holeLocation);
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
+		// One step to find the designation.
+		simulation.doStep();
+		// One step to activate the project and reserve the pick.
+		simulation.doStep();
+		REQUIRE(pick.m_reservable.isFullyReserved(&faction));
+		// One step to select haul type.
+		simulation.doStep();
+		// Another step to path to the pick.
+		simulation.doStep();
+		pick.destroy();
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "dig");
+		REQUIRE(project.getWorkers().empty());
 	}
 }

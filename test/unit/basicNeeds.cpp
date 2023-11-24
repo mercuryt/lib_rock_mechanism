@@ -183,23 +183,43 @@ TEST_CASE("basicNeedsNonsentient")
 	}
 	SUBCASE("sleep at assigned spot")
 	{
+		areaBuilderUtil::setSolidWall(area.m_blocks[0][2][2], area.m_blocks[8][2][2], dirt);
+		Block& gateway = area.m_blocks[9][2][2];
 		Block& spot = area.m_blocks[5][5][2];
 		actor.m_mustSleep.setLocation(spot);
-		// Generate objectives, discard eat and drink if they exist.
-		simulation.fastForward(redDeer.stepsSleepFrequency);
-		if(actor.m_mustDrink.getVolumeFluidRequested() != 0)
-			actor.m_mustDrink.drink(actor.m_mustDrink.getVolumeFluidRequested());
-		if(actor.m_mustEat.getMassFoodRequested() != 0)
-			actor.m_mustEat.eat(actor.m_mustEat.getMassFoodRequested());
+		actor.m_mustSleep.tired();
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "sleep");
 		// Path to spot.
 		simulation.doStep();
 		REQUIRE(actor.m_canMove.getDestination() == &spot);
-		simulation.fastForwardUntillActorIsAtDestination(actor, spot);
-		// Wait for wake up.
-		simulation.fastForward(redDeer.stepsSleepDuration);
-		REQUIRE(actor.m_mustSleep.isAwake());
-		REQUIRE(actor.m_mustSleep.hasTiredEvent());
+		SUBCASE("success")
+		{
+			simulation.fastForwardUntillActorIsAtDestination(actor, spot);
+			// Wait for wake up.
+			simulation.fastForward(redDeer.stepsSleepDuration);
+			REQUIRE(actor.m_mustSleep.isAwake());
+			REQUIRE(actor.m_mustSleep.hasTiredEvent());
+		}
+		SUBCASE("spot no longer suitable")
+		{
+			spot.setSolid(dirt);
+			simulation.fastForwardUntillActorIsAdjacentTo(actor, spot);
+			REQUIRE(actor.m_canMove.getDestination() == nullptr);
+			REQUIRE(actor.m_hasObjectives.getCurrent().name() == "sleep");
+			REQUIRE(actor.m_mustSleep.getLocation() == nullptr);
+			REQUIRE(actor.m_mustSleep.getObjective()->threadedTaskExists());
+		}
+		SUBCASE("cannot path to spot")
+		{
+			gateway.setSolid(dirt);
+			simulation.fastForwardUntillActorIsAdjacentTo(actor, gateway);
+			REQUIRE(actor.m_canMove.hasThreadedTask());
+			// Path to designated spot blocked, try to repath, no path found, clear designated spot.
+			simulation.doStep();
+			REQUIRE(actor.m_mustSleep.getLocation() == nullptr);
+			REQUIRE(actor.m_hasObjectives.getCurrent().name() == "sleep");
+			REQUIRE(actor.m_mustSleep.getObjective()->threadedTaskExists());
+		}
 	}
 	SUBCASE("try to find a spot inside")
 	{

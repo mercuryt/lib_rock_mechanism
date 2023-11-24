@@ -55,13 +55,14 @@ public:
 	void cancel();
 	void delay();
 	void reset();
-	std::string name() const { return "drink"; }
-	bool canDrinkAt(const Block& block, Facing facing) const;
+	[[nodiscard]] std::string name() const { return "drink"; }
+	[[nodiscard]] bool canDrinkAt(const Block& block, Facing facing) const;
 	Block* getAdjacentBlockToDrinkAt(const Block& block, Facing facing) const;
-	bool canDrinkItemAt(const Block& block) const;
-	Item* getItemToDrinkFromAt(Block& block) const;
-	bool containsSomethingDrinkable(const Block& block) const;
-	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Drink; }
+	[[nodiscard]] bool canDrinkItemAt(const Block& block) const;
+	[[nodiscard]] Item* getItemToDrinkFromAt(Block& block) const;
+	[[nodiscard]] bool containsSomethingDrinkable(const Block& block) const;
+	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Drink; }
+	[[nodiscard]] bool isNeed() const { return true; }
 	friend class DrinkEvent;
 	friend class DrinkThreadedTask;
 };

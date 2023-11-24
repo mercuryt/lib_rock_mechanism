@@ -239,7 +239,17 @@ void PathThreadedTask::writeStep()
 		// This is probably best solved by callback.
 		//TODO: This conditional only exists because objectives are not mandated to always exist for all actors.
 		if(m_actor.m_hasObjectives.hasCurrent())
-			m_actor.m_hasObjectives.cannotFulfillObjective(m_actor.m_hasObjectives.getCurrent());
+		{
+			// Objectives can handle the path not found situation directly or default to cannotFulfill.
+			Objective& objective = m_actor.m_hasObjectives.getCurrent();
+			if(!objective.onNoPath())
+			{
+				if(objective.isNeed())
+					m_actor.m_hasObjectives.cannotFulfillNeed(objective);
+				else
+					m_actor.m_hasObjectives.cannotFulfillObjective(objective);
+			}
+		}
 	}
 	else
 	{

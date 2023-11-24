@@ -135,9 +135,16 @@ void SleepObjective::execute()
 			m_actor.m_mustSleep.sleep(); 
 	}
 	else
-		m_actor.m_canMove.setDestination(*m_actor.m_mustSleep.m_location, m_detour);
+		if(m_actor.m_mustSleep.m_location->m_hasShapes.canEnterEverWithAnyFacing(m_actor))
+			m_actor.m_canMove.setDestination(*m_actor.m_mustSleep.m_location, m_detour);
+		else
+		{
+			// Location no longer can be entered. 
+			m_actor.m_mustSleep.m_location = nullptr;
+			execute();
+		}
 }
-uint32_t SleepObjective::desireToSleepAt(const Block& block)
+uint32_t SleepObjective::desireToSleepAt(const Block& block) const
 {
 	if(block.m_reservable.isFullyReserved(m_actor.getFaction()) || !m_actor.m_needsSafeTemperature.isSafe(block.m_blockHasTemperature.get()))
 		return 0;
@@ -148,12 +155,18 @@ uint32_t SleepObjective::desireToSleepAt(const Block& block)
 	else
 		return 2;
 }
+void SleepObjective::cancel() 
+{ 
+	m_threadedTask.maybeCancel();
+	m_actor.m_canReserve.clearAll(); 
+}
 void SleepObjective::reset() 
 { 
 	cancel(); 
 	m_noWhereToSleepFound = false; 
-	m_actor.m_canReserve.clearAll(); 
 }
+
+bool SleepObjective::onNoPath() { m_actor.m_mustSleep.m_location = nullptr; execute(); return true;}
 SleepObjective::~SleepObjective() { m_actor.m_mustSleep.m_objective = nullptr; }
 // Needs Sleep.
 MustSleep::MustSleep(Actor& a) : m_actor(a), m_location(nullptr), m_sleepEvent(a.getEventSchedule()), m_tiredEvent(a.getEventSchedule()), m_objective(nullptr), m_needsSleep(false), m_isAwake(true)
@@ -177,6 +190,7 @@ void MustSleep::tired()
 	else
 	{
 		m_needsSleep = true;
+		m_tiredEvent.maybeUnschedule();
 		m_tiredEvent.schedule(m_actor.m_species.stepsTillSleepOveride, *this);
 		makeSleepObjective();
 	}

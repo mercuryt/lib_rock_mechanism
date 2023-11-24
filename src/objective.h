@@ -36,9 +36,11 @@ public:
 	virtual void cancel() = 0;
 	virtual void delay() = 0;
 	virtual void reset() = 0;
+	virtual bool onNoPath() { return false; }
 	void detour() { m_detour = true; execute(); }
 	[[nodiscard]] virtual std::string name() const = 0;
 	[[nodiscard]] virtual ObjectiveTypeId getObjectiveTypeId() const = 0;
+	[[nodiscard]] virtual bool isNeed() const { return false; }
 	Objective(uint32_t p);
 	Objective(const Objective&) = delete;
 	Objective(Objective&&) = delete;

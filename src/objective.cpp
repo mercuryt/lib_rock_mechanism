@@ -192,6 +192,7 @@ void HasObjectives::taskComplete()
 }
 void HasObjectives::cannotCompleteTask()
 {
+	m_actor.m_canMove.clearPath();
 	//TODO: generate cancelaton message?
 	//TODO: mandate existance of objective?
 	if(m_currentObjective == nullptr)
@@ -207,6 +208,8 @@ Objective& HasObjectives::getCurrent()
 // Does not use ::cancel because needs to move supressed objective into storage.
 void HasObjectives::cannotFulfillNeed(Objective& objective)
 {
+	m_actor.m_canMove.clearPath();
+	m_actor.m_canReserve.clearAll();
 	ObjectiveTypeId objectiveTypeId = objective.getObjectiveTypeId();
 	bool isCurrent = m_currentObjective == &objective;
 	objective.cancel();
@@ -224,6 +227,8 @@ void HasObjectives::cannotFulfillNeed(Objective& objective)
 }
 void HasObjectives::cannotFulfillObjective(Objective& objective)
 {
+	m_actor.m_canMove.clearPath();
+	m_actor.m_canReserve.clearAll();
 	// Store delay to wait before trying again.
 	m_prioritySet.setDelay(objective.getObjectiveTypeId());
 	cancel(objective);

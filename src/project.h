@@ -110,6 +110,8 @@ public:
 	void haulSubprojectComplete(HaulSubproject& haulSubproject);
 	void setDelayOn() { m_delay = true; onDelay(); }
 	void setDelayOff() { m_delay = false; offDelay(); }
+	// To be called when the last worker is removed, resets to pre-reservations complete status.
+	virtual void reset();
 	// TODO: minimum speed decreses with failed attempts to generate haul subprojects.
 	[[nodiscard]] const Faction& getFaction() { return m_faction; }
 	[[nodiscard]] uint32_t getMinimumHaulSpeed() const { return Config::minimumHaulSpeed; }

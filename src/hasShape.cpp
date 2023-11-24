@@ -277,6 +277,13 @@ bool BlockHasShapes::canEnterEverWithFacing(const HasShape& hasShape, const uint
 {
 	return shapeAndMoveTypeCanEnterEverWithFacing(*hasShape.m_shape, hasShape.getMoveType(), facing);
 }
+bool BlockHasShapes::canEnterEverWithAnyFacing(const HasShape& hasShape) const
+{
+	for(Facing facing = 0; facing < 4; ++facing)
+		if(canEnterEverWithFacing(hasShape, facing))
+			return true;
+	return false;
+}
 bool BlockHasShapes::shapeAndMoveTypeCanEnterEverFrom(const Shape& shape, const MoveType& moveType, const Block& from) const
 {
 	assert(from.m_hasShapes.anythingCanEnterEver());

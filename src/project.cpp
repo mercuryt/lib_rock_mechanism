@@ -398,6 +398,10 @@ void Project::haulSubprojectComplete(HaulSubproject& haulSubproject)
 	for(Actor* actor : workers)
 		commandWorker(*actor);
 }
+void Project::reset()
+{
+	assert(!m_workers.empty());
+}
 bool Project::canAddWorker(const Actor& actor) const
 {
 	assert(!m_workers.contains(&const_cast<Actor&>(actor)));

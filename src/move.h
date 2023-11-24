@@ -53,6 +53,7 @@ public:
 	[[maybe_unused, nodiscard]] std::vector<Block*>& getPath() { return m_path; }
 	[[maybe_unused, nodiscard]] Block* getDestination() { return m_destination; }
 	[[maybe_unused, nodiscard]] bool hasEvent() { return m_event.exists(); }
+	[[maybe_unused, nodiscard]] bool hasThreadedTask() { return m_threadedTask.exists(); }
 	friend class MoveEvent;
 	friend class PathThreadedTask;
 };
