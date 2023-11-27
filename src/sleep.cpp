@@ -166,7 +166,14 @@ void SleepObjective::reset()
 	m_noWhereToSleepFound = false; 
 }
 
-bool SleepObjective::onNoPath() { m_actor.m_mustSleep.m_location = nullptr; execute(); return true;}
+bool SleepObjective::onNoPath() 
+{ 
+	if(m_actor.m_mustSleep.m_location == nullptr)
+		return false;
+	m_actor.m_mustSleep.m_location = nullptr; 
+	execute(); 
+	return true;
+}
 SleepObjective::~SleepObjective() { m_actor.m_mustSleep.m_objective = nullptr; }
 // Needs Sleep.
 MustSleep::MustSleep(Actor& a) : m_actor(a), m_location(nullptr), m_sleepEvent(a.getEventSchedule()), m_tiredEvent(a.getEventSchedule()), m_objective(nullptr), m_needsSleep(false), m_isAwake(true)

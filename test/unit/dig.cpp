@@ -5,6 +5,7 @@
 #include "../../src/simulation.h"
 #include "../../src/dig.h"
 #include "../../src/cuboid.h"
+#include "goTo.h"
 TEST_CASE("dig")
 {
 	static const MaterialType& dirt = MaterialType::byName("dirt");
@@ -19,17 +20,18 @@ TEST_CASE("dig")
 	DigObjectiveType digObjectiveType;
 	Actor& dwarf1 = simulation.createActor(dwarf, area.m_blocks[1][1][4]);
 	dwarf1.setFaction(&faction);
+	area.m_hasActors.add(dwarf1);
 	Block& pickLocation = area.m_blocks[5][5][4];
 	Item& pick = simulation.createItem(ItemType::byName("pick"), bronze, 50u, 0);
 	pick.setLocation(pickLocation);
-	area.m_hasDiggingDesignations.addFaction(faction);
+	area.m_hasDigDesignations.addFaction(faction);
 	SUBCASE("dig hole")
 	{
 		Block& holeLocation = area.m_blocks[8][4][3];
-		area.m_hasDiggingDesignations.designate(faction, holeLocation, nullptr);
-		DigProject& project = area.m_hasDiggingDesignations.at(faction, holeLocation);
+		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
+		DigProject& project = area.m_hasDigDesignations.at(faction, holeLocation);
 		REQUIRE(holeLocation.m_hasDesignations.contains(faction, BlockDesignation::Dig));
-		REQUIRE(area.m_hasDiggingDesignations.contains(faction, holeLocation));
+		REQUIRE(area.m_hasDigDesignations.contains(faction, holeLocation));
 		REQUIRE(digObjectiveType.canBeAssigned(dwarf1));
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "dig");
@@ -62,10 +64,10 @@ TEST_CASE("dig")
 		Block& tunnelStart = area.m_blocks[8][5][2];
 		Block& tunnelEnd = area.m_blocks[8][6][2];
 		Cuboid tunnel(tunnelEnd, tunnelStart);
-		area.m_hasDiggingDesignations.designate(faction, stairsLocation1, &BlockFeatureType::stairs);
-		area.m_hasDiggingDesignations.designate(faction, stairsLocation2, &BlockFeatureType::stairs);
+		area.m_hasDigDesignations.designate(faction, stairsLocation1, &BlockFeatureType::stairs);
+		area.m_hasDigDesignations.designate(faction, stairsLocation2, &BlockFeatureType::stairs);
 		for(Block& block : tunnel)
-			area.m_hasDiggingDesignations.designate(faction, block, nullptr);
+			area.m_hasDigDesignations.designate(faction, block, nullptr);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "dig");
 		std::function<bool()> predicate = [&]() { return !stairsLocation1.isSolid(); };
@@ -82,7 +84,7 @@ TEST_CASE("dig")
 		Actor& dwarf2 = simulation.createActor(dwarf, area.m_blocks[1][2][4]);
 		dwarf2.setFaction(&faction);
 		Block& holeLocation = area.m_blocks[8][4][3];
-		area.m_hasDiggingDesignations.designate(faction, holeLocation, nullptr);
+		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "dig");
 		dwarf2.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
@@ -90,13 +92,28 @@ TEST_CASE("dig")
 		std::function<bool()> predicate = [&]() { return !holeLocation.isSolid(); };
 		simulation.fastForwardUntillPredicate(predicate, Step(22));
 	}
+	SUBCASE("two workers two holes")
+	{
+		Actor& dwarf2 = simulation.createActor(dwarf, area.m_blocks[1][2][4]);
+		dwarf2.setFaction(&faction);
+		Block& holeLocation1 = area.m_blocks[8][4][3];
+		Block& holeLocation2 = area.m_blocks[8][3][3];
+		area.m_hasDigDesignations.designate(faction, holeLocation1, nullptr);
+		area.m_hasDigDesignations.designate(faction, holeLocation2, nullptr);
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "dig");
+		dwarf2.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
+		REQUIRE(dwarf2.m_hasObjectives.getCurrent().name() == "dig");
+		std::function<bool()> predicate = [&]() { return !holeLocation1.isSolid() && !holeLocation2.isSolid(); };
+		simulation.fastForwardUntillPredicate(predicate, Step(45));
+	}
 	SUBCASE("cannot path to spot")
 	{
 		areaBuilderUtil::setSolidWall(area.m_blocks[0][3][4], area.m_blocks[8][3][4], dirt);
 		Block& gateway = area.m_blocks[9][3][4];
 		Block& holeLocation = area.m_blocks[8][4][3];
-		area.m_hasDiggingDesignations.designate(faction, holeLocation, nullptr);
-		DigProject& project = area.m_hasDiggingDesignations.at(faction, holeLocation);
+		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
+		DigProject& project = area.m_hasDigDesignations.at(faction, holeLocation);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
 		// One step to find the designation.
 		simulation.doStep();
@@ -117,8 +134,8 @@ TEST_CASE("dig")
 	}
 	SUBCASE("spot already dug")
 	{
-		Block& holeLocation = area.m_blocks[8][4][3];
-		area.m_hasDiggingDesignations.designate(faction, holeLocation, nullptr);
+		Block& holeLocation = area.m_blocks[8][8][3];
+		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
 		// One step to find the designation.
 		simulation.doStep();
@@ -129,19 +146,18 @@ TEST_CASE("dig")
 		simulation.doStep();
 		// Another step to path to the pick.
 		simulation.doStep();
+		// Setting holeLocation as not solid immideatly triggers the project locationDishonorCallback, which cancels the project.
 		holeLocation.setNotSolid();
-		simulation.fastForwardUntillActorIsAdjacentTo(dwarf1, holeLocation);
-		REQUIRE(dwarf1.m_canPickup.isCarrying(pick));
-		simulation.doStep();
 		REQUIRE(!dwarf1.m_canPickup.isCarrying(pick));
+		REQUIRE(dwarf1.m_project == nullptr);
 		REQUIRE(!pick.m_reservable.isFullyReserved(&faction));
-		REQUIRE(!area.m_hasDiggingDesignations.areThereAnyForFaction(faction));
+		REQUIRE(!area.m_hasDigDesignations.areThereAnyForFaction(faction));
 	}
 	SUBCASE("pick destroyed")
 	{
 		Block& holeLocation = area.m_blocks[8][4][3];
-		area.m_hasDiggingDesignations.designate(faction, holeLocation, nullptr);
-		DigProject& project = area.m_hasDiggingDesignations.at(faction, holeLocation);
+		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
+		DigProject& project = area.m_hasDigDesignations.at(faction, holeLocation);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
 		// One step to find the designation.
 		simulation.doStep();
@@ -152,8 +168,52 @@ TEST_CASE("dig")
 		simulation.doStep();
 		// Another step to path to the pick.
 		simulation.doStep();
+		// Destroying the pick triggers a dishonor callback which resets the project.
 		pick.destroy();
-		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "dig");
 		REQUIRE(project.getWorkers().empty());
+		REQUIRE(!project.reservationsComplete());
+		REQUIRE(!project.hasCandidate(dwarf1));
+	}
+	SUBCASE("player cancels")
+	{
+		Block& holeLocation = area.m_blocks[8][8][3];
+		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
+		// One step to find the designation.
+		simulation.doStep();
+		// One step to activate the project and reserve the pick.
+		simulation.doStep();
+		// One step to select haul type.
+		simulation.doStep();
+		// Another step to path to the pick.
+		simulation.doStep();
+		// Setting holeLocation as not solid immideatly triggers the project locationDishonorCallback, which cancels the project.
+		area.m_hasDigDesignations.undesignate(faction, holeLocation);
+		REQUIRE(!dwarf1.m_canPickup.isCarrying(pick));
+		REQUIRE(dwarf1.m_project == nullptr);
+		REQUIRE(!pick.m_reservable.isFullyReserved(&faction));
+		REQUIRE(!area.m_hasDigDesignations.areThereAnyForFaction(faction));
+	}
+	SUBCASE("player interrupts")
+	{
+		Block& holeLocation = area.m_blocks[8][8][3];
+		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
+		// One step to find the designation.
+		simulation.doStep();
+		// One step to activate the project and reserve the pick.
+		simulation.doStep();
+		// One step to select haul type.
+		simulation.doStep();
+		// Another step to path to the pick.
+		simulation.doStep();
+		// Setting holeLocation as not solid immideatly triggers the project locationDishonorCallback, which cancels the project.
+		std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(dwarf1, area.m_blocks[1][8][4]);
+		dwarf1.m_hasObjectives.addTaskToStart(std::move(objective));
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "dig");
+		REQUIRE(!dwarf1.m_canPickup.isCarrying(pick));
+		REQUIRE(dwarf1.m_project == nullptr);
+		REQUIRE(!pick.m_reservable.isFullyReserved(&faction));
+		REQUIRE(area.m_hasDigDesignations.areThereAnyForFaction(faction));
 	}
 }

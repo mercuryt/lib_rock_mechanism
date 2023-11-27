@@ -92,7 +92,7 @@ protected:
 	// Single hauling operations are managed by haul subprojects.
 	// They have one or more workers plus optional haul tool and beast of burden.
 	std::list<HaulSubproject> m_haulSubprojects;
-	Project(const Faction* f, Block& l, size_t mw);
+	Project(const Faction* f, Block& l, size_t mw, DishonorCallback locationDishonorCallback = nullptr);
 public:
 	void addWorkerCandidate(Actor& actor, Objective& objective);
 	void removeWorkerCandidate(Actor& actor);

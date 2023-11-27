@@ -2,7 +2,9 @@
 #include "block.h"
 #include "area.h"
 #include "random.h"
+#include "reservable.h"
 #include "util.h"
+#include <sys/types.h>
 DigThreadedTask::DigThreadedTask(DigObjective& digObjective) : ThreadedTask(digObjective.m_actor.m_location->m_area->m_simulation.m_threadedTaskEngine), m_digObjective(digObjective), m_findsPath(digObjective.m_actor, digObjective.m_detour) { }
 void DigThreadedTask::readStep()
 {
@@ -26,7 +28,7 @@ void DigThreadedTask::writeStep()
 			return;
 		}
 		Block& target = *m_findsPath.getBlockWhichPassedPredicate();
-		DigProject& project = target.m_area->m_hasDiggingDesignations.at(*m_digObjective.m_actor.getFaction(), target);
+		DigProject& project = target.m_area->m_hasDigDesignations.at(*m_digObjective.m_actor.getFaction(), target);
 		if(project.canAddWorker(m_digObjective.m_actor))
 		{
 			// Join project and reserve standing room.
@@ -54,7 +56,7 @@ void DigObjective::execute()
 		{ 
 			if(!getJoinableProjectAt(block))
 				return false;
-			project = &block.m_area->m_hasDiggingDesignations.at(*m_actor.getFaction(), block);
+			project = &block.m_area->m_hasDigDesignations.at(*m_actor.getFaction(), block);
 			if(project->canAddWorker(m_actor))
 				return true;
 			return false;
@@ -77,8 +79,9 @@ void DigObjective::cancel()
 }
 void DigObjective::reset() 
 { 
-	cancel(); 
+	m_digThreadedTask.maybeCancel();
 	m_project = nullptr; 
+	m_actor.m_project = nullptr;
 	m_actor.m_canReserve.clearAll();
 }
 void DigObjective::joinProject(DigProject& project)
@@ -91,7 +94,7 @@ DigProject* DigObjective::getJoinableProjectAt(const Block& block)
 {
 	if(!block.m_hasDesignations.contains(*m_actor.getFaction(), BlockDesignation::Dig))
 		return nullptr;
-	DigProject& output = block.m_area->m_hasDiggingDesignations.at(*m_actor.getFaction(), block);
+	DigProject& output = block.m_area->m_hasDigDesignations.at(*m_actor.getFaction(), block);
 	if(!output.canAddWorker(m_actor))
 		return nullptr;
 	return &output;
@@ -99,7 +102,7 @@ DigProject* DigObjective::getJoinableProjectAt(const Block& block)
 bool DigObjectiveType::canBeAssigned(Actor& actor) const
 {
 	//TODO: check for any picks?
-	return actor.m_location->m_area->m_hasDiggingDesignations.areThereAnyForFaction(*actor.getFaction());
+	return actor.m_location->m_area->m_hasDigDesignations.areThereAnyForFaction(*actor.getFaction());
 }
 std::unique_ptr<Objective> DigObjectiveType::makeFor(Actor& actor) const
 {
@@ -140,9 +143,25 @@ void DigProject::onComplete()
 		m_location.m_hasBlockFeatures.hew(*m_blockFeatureType);
 	// Remove designations for other factions as well as owning faction.
 	auto workers = std::move(m_workers);
-	m_location.m_area->m_hasDiggingDesignations.clearAll(m_location);
+	m_location.m_area->m_hasDigDesignations.clearAll(m_location);
 	for(auto& [actor, projectWorker] : workers)
 		actor->m_hasObjectives.objectiveComplete(projectWorker.objective);
+}
+void DigProject::onCancel()
+{
+	//TODO: use std::copy with a projection.
+	std::vector<Actor*> actors;
+	actors.reserve(m_workers.size());
+	for(auto& pair : m_workers)
+		actors.push_back(pair.first);
+	m_location.m_area->m_hasDigDesignations.remove(m_faction, m_location);
+	for(Actor* actor : actors)
+	{
+		static_cast<DigObjective&>(actor->m_hasObjectives.getCurrent()).m_project = nullptr;
+		actor->m_project = nullptr;
+		actor->m_hasObjectives.getCurrent().reset();
+		actor->m_hasObjectives.cannotCompleteTask();
+	}
 }
 void DigProject::onDelay()
 {
@@ -164,7 +183,15 @@ void HasDigDesignationsForFaction::designate(Block& block, const BlockFeatureTyp
 {
 	assert(!m_data.contains(&block));
 	block.m_hasDesignations.insert(m_faction, BlockDesignation::Dig);
-	m_data.try_emplace(&block, &m_faction, block, blockFeatureType);
+	// To be called when block is no longer a suitable location, for example if it got dug out already.
+	DishonorCallback locationDishonorCallback = [&]([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { undesignate(block); };
+	m_data.try_emplace(&block, &m_faction, block, blockFeatureType, locationDishonorCallback);
+}
+void HasDigDesignationsForFaction::undesignate(Block& block)
+{
+	assert(m_data.contains(&block));
+	DigProject& project = m_data.at(&block);
+	project.cancel();
 }
 void HasDigDesignationsForFaction::remove(Block& block)
 {
@@ -194,6 +221,10 @@ void HasDigDesignations::removeFaction(const Faction& faction)
 void HasDigDesignations::designate(const Faction& faction, Block& block, const BlockFeatureType* blockFeatureType)
 {
 	m_data.at(&faction).designate(block, blockFeatureType);
+}
+void HasDigDesignations::undesignate(const Faction& faction, Block& block)
+{
+	m_data.at(&faction).undesignate(block);
 }
 void HasDigDesignations::remove(const Faction& faction, Block& block)
 {

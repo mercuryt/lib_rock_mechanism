@@ -1,6 +1,7 @@
 #include "project.h"
 #include "block.h"
 #include "area.h"
+#include "reservable.h"
 #include <algorithm>
 ProjectFinishEvent::ProjectFinishEvent(const Step delay, Project& p) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay), m_project(p) {}
 void ProjectFinishEvent::execute() { m_project.complete(); }
@@ -164,10 +165,13 @@ void ProjectTryToAddWorkersThreadedTask::writeStep()
 			return;
 		}
 		// Reserve all required.
+		// Get a pointer to project to copy into the callback since this may be destroyed before it fires.
+		Project* project = &m_project;
+		DishonorCallback dishonorCallback = [project]([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount){ project->reset(); };
 		for(auto& [hasShape, pair] : m_project.m_toPickup)
-			hasShape->m_reservable.reserveFor(m_project.m_canReserve, pair.second);
+			hasShape->m_reservable.reserveFor(m_project.m_canReserve, pair.second, dishonorCallback);
 		for(auto& [hasShape, quantity] : m_alreadyAtSite)
-			hasShape->m_reservable.reserveFor(m_project.m_canReserve, quantity);
+			hasShape->m_reservable.reserveFor(m_project.m_canReserve, quantity, dishonorCallback);
 		// Add all actors.
 		std::vector<Actor*> notAdded;
 		for(auto& [actor, objective] : m_project.m_workerCandidatesAndTheirObjectives)
@@ -190,13 +194,7 @@ void ProjectTryToAddWorkersThreadedTask::writeStep()
 	{
 		// Could not find required items / actors, activate delay and release candidates.
 		m_project.setDelayOn();
-		for(auto& pair : m_project.m_workerCandidatesAndTheirObjectives)
-		{
-			pair.second->reset();
-			pair.first->m_project = nullptr;
-			pair.first->m_hasObjectives.cannotCompleteTask();
-		}
-		m_project.m_workerCandidatesAndTheirObjectives.clear();
+		m_project.reset();
 		m_project.m_tryToReserveEvent.schedule(Config::stepsToDelayBeforeTryingAgainToReserveItemsAndActorsForAProject, m_project);
 	}
 	for(Actor* actor : m_cannotPathToJobSite)
@@ -224,12 +222,14 @@ void ProjectTryToAddWorkersThreadedTask::resetProjectCounts()
 	m_project.m_toPickup.clear();
 }
 // Derived classes are expected to provide getDuration, getConsumedItems, getUnconsumedItems, getByproducts, onDelay, offDelay, and onComplete.
-Project::Project(const Faction* f, Block& l, size_t mw) : m_finishEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToReserveEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_tryToAddWorkersThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_canReserve(f), m_maxWorkers(mw), m_delay(false), m_haulRetries(0), m_requirementsLoaded(false), m_location(l), m_faction(*f)
+Project::Project(const Faction* f, Block& l, size_t mw, DishonorCallback locationDishonorCallback) : m_finishEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToReserveEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_tryToAddWorkersThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_canReserve(f), m_maxWorkers(mw), m_delay(false), m_haulRetries(0), m_requirementsLoaded(false), m_location(l), m_faction(*f)
 {
-	m_location.m_reservable.reserveFor(m_canReserve);
+	m_location.m_reservable.reserveFor(m_canReserve, 1u, locationDishonorCallback);
 }
 bool Project::reservationsComplete() const
 {
+	if(!m_requirementsLoaded)
+		return false;
 	for(auto& pair : m_requiredItems)
 		if(pair.second.required > pair.second.reserved)
 			return false;
@@ -350,7 +350,8 @@ void Project::removeWorker(Actor& actor)
 	if(m_making.contains(&actor))
 		removeFromMaking(actor);
 	m_workers.erase(&actor);
-	onCancel();
+	if(m_workers.empty())
+		reset();
 }
 void Project::addToMaking(Actor& actor)
 {
@@ -379,11 +380,8 @@ void Project::complete()
 }
 void Project::cancel()
 {
-	m_finishEvent.maybeUnschedule();
-	for(auto& pair : m_workers)
-		pair.first->m_hasObjectives.cannotFulfillObjective(pair.second.objective);
-	m_workers.clear();
 	m_canReserve.clearAll();
+	onCancel();
 }
 void Project::scheduleEvent()
 {
@@ -400,7 +398,33 @@ void Project::haulSubprojectComplete(HaulSubproject& haulSubproject)
 }
 void Project::reset()
 {
-	assert(!m_workers.empty());
+	assert(!m_finishEvent.exists());
+	assert(!m_tryToHaulEvent.exists());
+	assert(!m_tryToReserveEvent.exists());
+	assert(!m_tryToHaulThreadedTask.exists());
+	m_toConsume.clear();
+	m_haulRetries = 0;
+	m_requiredItems.clear();
+	m_requiredActors.clear();
+	m_toPickup.clear();
+	// I guess we are doing this in case requirements change. Probably not needed.
+	m_requirementsLoaded = false;
+	m_haulSubprojects.clear();
+	m_canReserve.clearAll();
+	// Dismiss workers and candidates.
+	for(auto& pair : m_workers)
+	{
+		pair.second.objective.reset();
+		pair.second.haulSubproject = nullptr;
+		pair.first->m_hasObjectives.cannotCompleteTask();
+	}
+	m_workers.clear();
+	for(auto& pair : m_workerCandidatesAndTheirObjectives)
+	{
+		pair.second->reset();
+		pair.first->m_hasObjectives.cannotCompleteTask();
+	}
+	m_workerCandidatesAndTheirObjectives.clear();
 }
 bool Project::canAddWorker(const Actor& actor) const
 {

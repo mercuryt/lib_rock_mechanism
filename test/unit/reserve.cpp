@@ -57,7 +57,7 @@ TEST_CASE("reservations")
 	SUBCASE("dishonor callback clear all")
 	{
 		bool fired = false;
-		std::function<void(uint32_t, uint32_t)> callback = [&](uint32_t o, uint32_t n) 
+		DishonorCallback callback = [&](uint32_t o, uint32_t n) 
 		{ 
 			REQUIRE(o == 1);
 			REQUIRE(n == 0);
@@ -72,7 +72,7 @@ TEST_CASE("reservations")
 	SUBCASE("dishonor callback reduce max reservable")
 	{
 		bool fired = false;
-		std::function<void(uint32_t, uint32_t)> callback = [&](uint32_t o, uint32_t n) 
+		DishonorCallback callback = [&](uint32_t o, uint32_t n) 
 		{ 
 			REQUIRE(o == 2);
 			REQUIRE(n == 1);

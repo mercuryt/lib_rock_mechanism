@@ -284,6 +284,8 @@ void Block::setNotSolid()
 		setExposedToSky(true);
 		setBelowExposedToSky();
 	}
+	// Dishonor all reservations: there are no reservations which can exist on both a solid and not solid block.
+	m_reservable.clearAll();
 }
 void Block::setExposedToSky(bool exposed)
 {
@@ -314,6 +316,7 @@ void Block::setSolid(const MaterialType& materialType)
 	assert(m_hasItems.empty());
 	if(&materialType == m_solid)
 		return;
+	bool wasEmpty = m_solid == nullptr;
 	m_solid = &materialType;
 	// Displace fluids.
 	m_totalFluidVolume = 0;
@@ -354,14 +357,17 @@ void Block::setSolid(const MaterialType& materialType)
 		if(adjacent->fluidCanEnterEver())
 			for(auto& [fluidType, pair] : adjacent->m_fluids)
 				pair.second->m_fillQueue.removeBlock(this);
-	// Possible expire path caches.
-	// If more then one adjacent block can be entered then this block being cleared may open a new shortest path.
+	// Clear move cost caches for this and adjacent
 	m_hasShapes.clearCache();
+	// Opacity.
 	if(m_area->m_visionCuboidsActive && !materialType.transparent)
 		VisionCuboid::BlockIsSometimesOpaque(*this);
 	// Set blocks below as not exposed to sky.
 	setExposedToSky(false);
 	setBelowNotExposedToSky();
+	if(wasEmpty)
+		// Dishonor all reservations: there are no reservations which can exist on both a solid and not solid block.
+		m_reservable.clearAll();
 }
 uint32_t Block::getMass() const
 {

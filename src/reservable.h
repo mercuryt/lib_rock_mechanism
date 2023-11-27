@@ -12,6 +12,8 @@
 #include <cstdint>
 #include <vector>
 #include <functional>
+
+using DishonorCallback = std::function<void(uint32_t oldCount, uint32_t newCount)>;
 class Faction;
 class Reservable;
 class CanReserve final
@@ -35,13 +37,13 @@ class Reservable final
 	std::unordered_map<CanReserve*, uint32_t> m_canReserves;
 	uint32_t m_maxReservations;
 	std::unordered_map<const Faction*, uint32_t> m_reservedCounts;
-	std::unordered_map<CanReserve*, std::function<void(uint32_t oldCount, uint32_t newCount)>> m_dishonorCallbacks;
+	std::unordered_map<CanReserve*, DishonorCallback> m_dishonorCallbacks;
 	void eraseReservationFor(CanReserve& canReserve);
 public:
 	Reservable(uint32_t mr) : m_maxReservations(mr) {}
 	bool isFullyReserved(const Faction* faction) const;
 	std::unordered_map<CanReserve*, uint32_t>& getReservedBy();
-	void reserveFor(CanReserve& canReserve, const uint32_t quantity = 1u, std::function<void(uint32_t oldCount, uint32_t newCount)> dishonorCallback = nullptr); 
+	void reserveFor(CanReserve& canReserve, const uint32_t quantity = 1u, DishonorCallback dishonorCallback = nullptr); 
 	void clearReservationFor(CanReserve& canReserve, const uint32_t quantity = 1u);
 	void clearReservationsFor(const Faction& faction);
 	void maybeClearReservationFor(CanReserve& canReserve, const uint32_t quantity = 1u);

@@ -2,6 +2,7 @@
 
 #include "config.h"
 #include "objective.h"
+#include "reservable.h"
 #include "threadedTask.h"
 #include "eventSchedule.h"
 #include "project.h"
@@ -42,6 +43,7 @@ public:
 	bool canJoinProjectAdjacentToLocationAndFacing(const Block& block, Facing facing) const;
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Construct; }
 	friend class ConstructThreadedTask;
+	friend class ConstructProject;
 };
 class ConstructThreadedTask final : public ThreadedTask
 {
@@ -64,11 +66,12 @@ class ConstructProject final : public Project
 	uint32_t getWorkerConstructScore(Actor& actor) const;
 	Step getDuration() const;
 	void onComplete();
+	void onCancel();
 	void onDelay();
 	void offDelay();
 public:
 	// BlockFeatureType can be null, meaning the block is to be filled with a constructed wall.
-	ConstructProject(const Faction* faction, Block& b, const BlockFeatureType* bft, const MaterialType& mt) : Project(faction, b, Config::maxNumberOfWorkersForConstructionProject), m_blockFeatureType(bft), m_materialType(mt) { }
+	ConstructProject(const Faction* faction, Block& b, const BlockFeatureType* bft, const MaterialType& mt, DishonorCallback dishonorCallback) : Project(faction, b, Config::maxNumberOfWorkersForConstructionProject, dishonorCallback), m_blockFeatureType(bft), m_materialType(mt) { }
 	// What would the total delay time be if we started from scratch now with current workers?
 	friend class HasConstructionDesignationsForFaction;
 };
@@ -81,6 +84,7 @@ public:
 	HasConstructionDesignationsForFaction(const Faction& p) : m_faction(p) { }
 	// If blockFeatureType is null then construct a wall rather then a feature.
 	void designate(Block& block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType);
+	void undesignate(Block& block);
 	void remove(Block& block);
 	void removeIfExists(Block& block);
 	bool contains(const Block& block) const;
@@ -97,6 +101,7 @@ public:
 	void removeFaction(const Faction& faction);
 	// If blockFeatureType is null then dig out fully rather then digging out a feature.
 	void designate(const Faction& faction, Block& block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType);
+	void undesignate(const Faction& faction, Block& block);
 	void remove(const Faction& faction, Block& block);
 	void clearAll(Block& block);
 	bool areThereAnyForFaction(const Faction& faction) const;

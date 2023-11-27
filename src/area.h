@@ -42,7 +42,7 @@ public:
 	HasFires m_fires;
 	HasFarmFields m_hasFarmFields;
 	HasHaulTools m_hasHaulTools;
-	HasDigDesignations m_hasDiggingDesignations;
+	HasDigDesignations m_hasDigDesignations;
 	HasConstructionDesignations m_hasConstructionDesignations;
 	AreaHasStockPiles m_hasStockPiles;
 	HasCraftingLocationsAndJobs m_hasCraftingLocationsAndJobs;

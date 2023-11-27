@@ -1,5 +1,6 @@
 #pragma once
 
+#include "reservable.h"
 #include "types.h"
 #include "objective.h"
 #include "threadedTask.hpp"
@@ -38,6 +39,7 @@ public:
 	std::string name() const { return "dig"; }
 	DigProject* getJoinableProjectAt(const Block& block);
 	friend class DigThreadedTask;
+	friend class DigProject;
 };
 // Find a place to dig.
 class DigThreadedTask final : public ThreadedTask
@@ -56,6 +58,7 @@ class DigProject final : public Project
 	void onDelay();
 	void offDelay();
 	void onComplete();
+	void onCancel();
 	const BlockFeatureType* m_blockFeatureType;
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
@@ -65,7 +68,8 @@ class DigProject final : public Project
 	// What would the total delay time be if we started from scratch now with current workers?
 public:
 	// BlockFeatureType can be null, meaning the block is to be fully excavated.
-	DigProject(const Faction* faction, Block& block, const BlockFeatureType* bft) : Project(faction, block, Config::maxNumberOfWorkersForDigProject), m_blockFeatureType(bft) { }
+	DigProject(const Faction* faction, Block& block, const BlockFeatureType* bft, DishonorCallback locationDishonorCallback) : 
+		Project(faction, block, Config::maxNumberOfWorkersForDigProject, locationDishonorCallback), m_blockFeatureType(bft) { }
 	Step getDuration() const;
 	friend class HasDigDesignationsForFaction;
 };
@@ -77,6 +81,8 @@ class HasDigDesignationsForFaction final
 public:
 	HasDigDesignationsForFaction(const Faction& p) : m_faction(p) { }
 	void designate(Block& block, const BlockFeatureType* blockFeatureType);
+	void undesignate(Block& block);
+	// To be called by undesignate as well as by DigProject::onCancel.
 	void remove(Block& block);
 	void removeIfExists(Block& block);
 	const BlockFeatureType* at(const Block& block) const;
@@ -92,6 +98,7 @@ public:
 	void removeFaction(const Faction& faction);
 	// If blockFeatureType is null then dig out fully rather then digging out a feature.
 	void designate(const Faction& faction, Block& block, const BlockFeatureType* blockFeatureType);
+	void undesignate(const Faction& faction, Block& block);
 	void remove(const Faction& faction, Block& block);
 	void clearAll(Block& block);
 	bool areThereAnyForFaction(const Faction& faction) const;

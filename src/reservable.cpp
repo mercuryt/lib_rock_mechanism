@@ -34,7 +34,7 @@ bool Reservable::isFullyReserved(const Faction* faction) const
 	return m_reservedCounts.contains(faction) && m_reservedCounts.at(faction) == m_maxReservations; 
 }
 std::unordered_map<CanReserve*, uint32_t>& Reservable::getReservedBy() { return m_canReserves; }
-void Reservable::reserveFor(CanReserve& canReserve, const uint32_t quantity, std::function<void(uint32_t oldCount, uint32_t newCount)> dishonorCallback) 
+void Reservable::reserveFor(CanReserve& canReserve, const uint32_t quantity, DishonorCallback dishonorCallback) 
 {
 	// No reservations are made for actors with no faction because there is no one to reserve it from.
 	if(canReserve.m_faction == nullptr)
@@ -128,17 +128,18 @@ void Reservable::updateFactionFor(CanReserve& canReserve, const Faction* oldFact
 }
 void Reservable::clearAll()
 {
-	std::vector<std::pair<CanReserve*, uint32_t>> toErase;
+	std::vector<std::tuple<CanReserve*, uint32_t, DishonorCallback>> toErase;
 	for(auto& pair : m_canReserves)
-		toErase.push_back(pair);
-	for(auto& [canReserve, callback] : m_dishonorCallbacks)
 	{
-		assert(m_canReserves.contains(canReserve));
-		uint32_t quantity = m_canReserves.at(canReserve);
-		callback(quantity, 0);
+		DishonorCallback dishonorCallback = m_dishonorCallbacks.contains(pair.first) ? m_dishonorCallbacks.at(pair.first) : nullptr;
+		toErase.emplace_back(pair.first, pair.second, dishonorCallback);
 	}
-	for(auto& [canReserve, quantity] : toErase)
+	for(auto& [canReserve, quantity, dishonorCallback] : toErase)
+	{
 		clearReservationFor(*canReserve, quantity);
+		if(dishonorCallback != nullptr)
+			dishonorCallback(quantity, 0);
+	}
 	assert(m_reservedCounts.empty());
 	assert(m_canReserves.empty());
 	assert(m_dishonorCallbacks.empty());

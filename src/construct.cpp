@@ -2,6 +2,7 @@
 #include "item.h"
 #include "block.h"
 #include "area.h"
+#include "reservable.h"
 #include "util.h"
 ConstructThreadedTask::ConstructThreadedTask(ConstructObjective& co) : ThreadedTask(co.m_actor.getThreadedTaskEngine()), m_constructObjective(co), m_findsPath(co.m_actor, co.m_detour) { }
 void ConstructThreadedTask::readStep()
@@ -74,6 +75,7 @@ void ConstructObjective::reset()
 { 
 	m_constructThreadedTask.maybeCancel();
 	m_project = nullptr; 
+	m_actor.m_project = nullptr;
 	m_actor.m_canReserve.clearAll();
 }
 void ConstructObjective::joinProject(ConstructProject& project)
@@ -152,6 +154,22 @@ void ConstructProject::onComplete()
 	for(auto& [actor, projectWorker] : workers)
 		actor->m_hasObjectives.objectiveComplete(projectWorker.objective);
 }
+void ConstructProject::onCancel()
+{
+	//TODO: use std::copy with a projection.
+	std::vector<Actor*> actors;
+	actors.reserve(m_workers.size());
+	for(auto& pair : m_workers)
+		actors.push_back(pair.first);
+	m_location.m_area->m_hasConstructionDesignations.remove(m_faction, m_location);
+	for(Actor* actor : actors)
+	{
+		static_cast<ConstructObjective&>(actor->m_hasObjectives.getCurrent()).m_project = nullptr;
+		actor->m_project = nullptr;
+		actor->m_hasObjectives.getCurrent().reset();
+		actor->m_hasObjectives.cannotCompleteTask();
+	}
+}
 void ConstructProject::onDelay()
 {
 	m_location.m_hasDesignations.removeIfExists(m_faction, BlockDesignation::Construct);
@@ -172,8 +190,15 @@ Step ConstructProject::getDuration() const
 void HasConstructionDesignationsForFaction::designate(Block& block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType)
 {
 	assert(!contains(block));
-	m_data.try_emplace(&block, &m_faction, block, blockFeatureType, materialType);
 	block.m_hasDesignations.insert(m_faction, BlockDesignation::Construct);
+	DishonorCallback locationDishonorCallback = [&]([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { undesignate(block); };
+	m_data.try_emplace(&block, &m_faction, block, blockFeatureType, materialType, locationDishonorCallback);
+}
+void HasConstructionDesignationsForFaction::undesignate(Block& block)
+{
+	assert(m_data.contains(&block));
+	ConstructProject& project = m_data.at(&block);
+	project.cancel();
 }
 void HasConstructionDesignationsForFaction::remove(Block& block)
 {
@@ -205,6 +230,10 @@ void HasConstructionDesignations::designate(const Faction& faction, Block& block
 	if(!m_data.contains(&faction))
 		addFaction(faction);
 	m_data.at(&faction).designate(block, blockFeatureType, materialType);
+}
+void HasConstructionDesignations::undesignate(const Faction& faction, Block& block)
+{
+	m_data.at(&faction).undesignate(block);
 }
 void HasConstructionDesignations::remove(const Faction& faction, Block& block)
 {

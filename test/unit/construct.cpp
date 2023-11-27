@@ -5,6 +5,7 @@
 #include "../../src/simulation.h"
 #include "../../src/construct.h"
 #include "../../src/cuboid.h"
+#include "../../src/goTo.h"
 TEST_CASE("construct")
 {
 	static const MaterialType& wood = MaterialType::byName("poplar wood");
@@ -19,17 +20,17 @@ TEST_CASE("construct")
 	dwarf1.setFaction(&faction);
 	area.m_hasActors.add(dwarf1);
 	area.m_hasConstructionDesignations.addFaction(faction);
+	Item& boards = simulation.createItem(ItemType::byName("board"), wood, 50u);
+	boards.setLocation(area.m_blocks[8][7][2]);
+	Item& pegs = simulation.createItem(ItemType::byName("peg"), wood, 50u);
+	pegs.setLocation(area.m_blocks[3][8][2]);
+	Item& saw = simulation.createItem(ItemType::byName("saw"), MaterialType::byName("bronze"), 25u, 0);
+	saw.setLocation(area.m_blocks[5][7][2]);
+	Item& mallet = simulation.createItem(ItemType::byName("mallet"), wood, 25u, 0);
+	mallet.setLocation(area.m_blocks[9][5][2]);
 	SUBCASE("make wall")
 	{
 		Block& wallLocation = area.m_blocks[8][4][2];
-		Item& boards = simulation.createItem(ItemType::byName("board"), wood, 50u);
-		boards.setLocation(area.m_blocks[8][7][2]);
-		Item& pegs = simulation.createItem(ItemType::byName("peg"), wood, 50u);
-		pegs.setLocation(area.m_blocks[3][8][2]);
-		Item& saw = simulation.createItem(ItemType::byName("saw"), MaterialType::byName("bronze"), 25u, 0);
-		saw.setLocation(area.m_blocks[5][7][2]);
-		Item& mallet = simulation.createItem(ItemType::byName("mallet"), wood, 25u, 0);
-		mallet.setLocation(area.m_blocks[9][5][2]);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
 		ConstructProject& project = area.m_hasConstructionDesignations.getProject(faction, wallLocation);
 		REQUIRE(wallLocation.m_hasDesignations.contains(faction, BlockDesignation::Construct));
@@ -65,14 +66,6 @@ TEST_CASE("construct")
 	{
 		Block& wallLocation1 = area.m_blocks[8][4][2];
 		Block& wallLocation2 = area.m_blocks[8][5][2];
-		Item& boards = simulation.createItem(ItemType::byName("board"), wood, 50u);
-		boards.setLocation(area.m_blocks[8][7][2]);
-		Item& pegs = simulation.createItem(ItemType::byName("peg"), wood, 50u);
-		pegs.setLocation(area.m_blocks[3][8][2]);
-		Item& saw = simulation.createItem(ItemType::byName("saw"), MaterialType::byName("bronze"), 25u, 0);
-		saw.setLocation(area.m_blocks[5][7][2]);
-		Item& mallet = simulation.createItem(ItemType::byName("mallet"), wood, 25u, 0);
-		mallet.setLocation(area.m_blocks[9][5][2]);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation1, nullptr, wood);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation2, nullptr, wood);
 		REQUIRE(constructObjectiveType.canBeAssigned(dwarf1));
@@ -91,14 +84,6 @@ TEST_CASE("construct")
 		dwarf2.setFaction(&faction);
 		area.m_hasActors.add(dwarf2);
 		Block& wallLocation = area.m_blocks[8][4][2];
-		Item& boards = simulation.createItem(ItemType::byName("board"), wood, 50u);
-		boards.setLocation(area.m_blocks[8][7][2]);
-		Item& pegs = simulation.createItem(ItemType::byName("peg"), wood, 50u);
-		pegs.setLocation(area.m_blocks[3][8][2]);
-		Item& saw = simulation.createItem(ItemType::byName("saw"), MaterialType::byName("bronze"), 25u, 0);
-		saw.setLocation(area.m_blocks[5][7][2]);
-		Item& mallet = simulation.createItem(ItemType::byName("mallet"), wood, 25u, 0);
-		mallet.setLocation(area.m_blocks[9][5][2]);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
 		REQUIRE(constructObjectiveType.canBeAssigned(dwarf1));
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);
@@ -118,14 +103,6 @@ TEST_CASE("construct")
 		area.m_hasActors.add(dwarf2);
 		Block& wallLocation1 = area.m_blocks[8][4][2];
 		Block& wallLocation2 = area.m_blocks[8][5][2];
-		Item& boards = simulation.createItem(ItemType::byName("board"), wood, 50u);
-		boards.setLocation(area.m_blocks[8][7][2]);
-		Item& pegs = simulation.createItem(ItemType::byName("peg"), wood, 50u);
-		pegs.setLocation(area.m_blocks[3][8][2]);
-		Item& saw = simulation.createItem(ItemType::byName("saw"), MaterialType::byName("bronze"), 25u, 0);
-		saw.setLocation(area.m_blocks[5][7][2]);
-		Item& mallet = simulation.createItem(ItemType::byName("mallet"), wood, 25u, 0);
-		mallet.setLocation(area.m_blocks[9][5][2]);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation1, nullptr, wood);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation2, nullptr, wood);
 		REQUIRE(constructObjectiveType.canBeAssigned(dwarf1));
@@ -169,12 +146,11 @@ TEST_CASE("construct")
 		REQUIRE(area.m_hasConstructionDesignations.contains(faction, wallLocation2));
 		REQUIRE(!project2.isOnDelay());
 		REQUIRE(project2.getLocation().m_hasDesignations.contains(faction, BlockDesignation::Construct));
-		// Both dwarves seek a project to join and find project2. This does not require a step as they are already adjacent.
+		// Both dwarves seek a project to join and find project2. This does not require a step if they are already adjacent but does if they are not.
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "construct");
 		REQUIRE(dwarf2.m_hasObjectives.getCurrent().name() == "construct");
-		REQUIRE(project2.hasCandidate(dwarf1));
-		REQUIRE(project2.hasCandidate(dwarf2));
-		// Project2a completes reservations and both dwarfs graduate from candidate to worker.
+		simulation.doStep();
+		// Project2 completes reservations and both dwarfs graduate from candidate to worker.
 		simulation.doStep();
 		REQUIRE(project2.getWorkers().contains(&dwarf1));
 		REQUIRE(project2.getWorkers().contains(&dwarf2));
@@ -191,14 +167,6 @@ TEST_CASE("construct")
 	SUBCASE("make stairs")
 	{
 		Block& stairsLocation = area.m_blocks[8][4][2];
-		Item& boards = simulation.createItem(ItemType::byName("board"), wood, 50u);
-		boards.setLocation(area.m_blocks[8][7][2]);
-		Item& pegs = simulation.createItem(ItemType::byName("peg"), wood, 50u);
-		pegs.setLocation(area.m_blocks[3][8][2]);
-		Item& saw = simulation.createItem(ItemType::byName("saw"), MaterialType::byName("bronze"), 25u, 0);
-		saw.setLocation(area.m_blocks[5][7][2]);
-		Item& mallet = simulation.createItem(ItemType::byName("mallet"), wood, 25u, 0);
-		mallet.setLocation(area.m_blocks[9][5][2]);
 		area.m_hasConstructionDesignations.designate(faction, stairsLocation, &BlockFeatureType::stairs, wood);
 		REQUIRE(stairsLocation.m_hasDesignations.contains(faction, BlockDesignation::Construct));
 		REQUIRE(area.m_hasConstructionDesignations.contains(faction, stairsLocation));
@@ -220,5 +188,116 @@ TEST_CASE("construct")
 		std::function<bool()> predicate = [&]() { return stairsLocation.m_hasBlockFeatures.contains(BlockFeatureType::stairs); };
 		simulation.fastForwardUntillPredicate(predicate, 180);
 		REQUIRE(stairsLocation.m_hasBlockFeatures.contains(BlockFeatureType::stairs));
+	}
+	SUBCASE("cannot path to spot")
+	{
+		areaBuilderUtil::setSolidWall(area.m_blocks[0][3][4], area.m_blocks[8][3][4], wood);
+		Block& gateway = area.m_blocks[9][3][4];
+		Block& wallLocation = area.m_blocks[8][4][3];
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
+		ConstructProject& project = area.m_hasConstructionDesignations.getProject(faction, wallLocation);
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);
+		// One step to find the designation.
+		simulation.doStep();
+		// One step to activate the project and reserve the pick.
+		simulation.doStep();
+		// One step to select haul type.
+		simulation.doStep();
+		// Another step to path to the pick.
+		simulation.doStep();
+		gateway.setSolid(wood);
+		simulation.fastForwardUntillActorIsAdjacentTo(dwarf1, gateway);
+		// Cannot detour or find alternative block.
+		simulation.doStep();
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "construct");
+		REQUIRE(!saw.m_reservable.isFullyReserved(&faction));
+		REQUIRE(project.getWorkers().empty());
+	}
+	SUBCASE("spot has become solid")
+	{
+		Block& wallLocation = area.m_blocks[8][8][3];
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);
+		// One step to find the designation.
+		simulation.doStep();
+		// One step to activate the project and reserve the pick.
+		simulation.doStep();
+		// One step to select haul type.
+		simulation.doStep();
+		// Another step to path to the pick.
+		simulation.doStep();
+		// Setting wallLocation as not solid immideatly triggers the project locationDishonorCallback, which cancels the project.
+		wallLocation.setNotSolid();
+		REQUIRE(dwarf1.m_project == nullptr);
+		REQUIRE(!saw.m_reservable.isFullyReserved(&faction));
+		REQUIRE(!area.m_hasConstructionDesignations.areThereAnyForFaction(faction));
+	}
+	SUBCASE("saw destroyed")
+	{
+		Block& wallLocation = area.m_blocks[8][4][3];
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
+		ConstructProject& project = area.m_hasConstructionDesignations.getProject(faction, wallLocation);
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);
+		// One step to find the designation.
+		simulation.doStep();
+		// One step to activate the project and reserve the pick.
+		simulation.doStep();
+		// One step to select haul type.
+		simulation.doStep();
+		// Another step to path to the pick.
+		simulation.doStep();
+		// Destroying the saw triggers a dishonor callback which resets the project.
+		saw.destroy();
+		REQUIRE(project.getWorkers().empty());
+		REQUIRE(!project.reservationsComplete());
+		REQUIRE(project.hasCandidate(dwarf1));
+	}
+	SUBCASE("player cancels")
+	{
+		Block& wallLocation = area.m_blocks[8][8][3];
+		Item& boards = simulation.createItem(ItemType::byName("board"), wood, 50u);
+		boards.setLocation(area.m_blocks[8][7][2]);
+		Item& pegs = simulation.createItem(ItemType::byName("peg"), wood, 50u);
+		pegs.setLocation(area.m_blocks[3][8][2]);
+		Item& saw = simulation.createItem(ItemType::byName("saw"), MaterialType::byName("bronze"), 25u, 0);
+		saw.setLocation(area.m_blocks[5][7][2]);
+		Item& mallet = simulation.createItem(ItemType::byName("mallet"), wood, 25u, 0);
+		mallet.setLocation(area.m_blocks[9][5][2]);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);
+		// One step to find the designation.
+		simulation.doStep();
+		// One step to activate the project and reserve the pick.
+		simulation.doStep();
+		// One step to select haul type.
+		simulation.doStep();
+		// Another step to path to the pick.
+		simulation.doStep();
+		// Setting wallLocation as not solid immideatly triggers the project locationDishonorCallback, which cancels the project.
+		area.m_hasConstructionDesignations.undesignate(faction, wallLocation);
+		REQUIRE(dwarf1.m_project == nullptr);
+		REQUIRE(!saw.m_reservable.isFullyReserved(&faction));
+		REQUIRE(!area.m_hasConstructionDesignations.areThereAnyForFaction(faction));
+	}
+	SUBCASE("player interrupts")
+	{
+		Block& wallLocation = area.m_blocks[8][8][3];
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);
+		// One step to find the designation.
+		simulation.doStep();
+		// One step to activate the project and reserve the pick.
+		simulation.doStep();
+		// One step to select haul type.
+		simulation.doStep();
+		// Another step to path to the pick.
+		simulation.doStep();
+		// Setting wallLocation as not solid immideatly triggers the project locationDishonorCallback, which cancels the project.
+		std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(dwarf1, area.m_blocks[0][8][3]);
+		dwarf1.m_hasObjectives.addTaskToStart(std::move(objective));
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "construct");
+		REQUIRE(dwarf1.m_project == nullptr);
+		REQUIRE(!saw.m_reservable.isFullyReserved(&faction));
+		REQUIRE(area.m_hasConstructionDesignations.areThereAnyForFaction(faction));
 	}
 }
