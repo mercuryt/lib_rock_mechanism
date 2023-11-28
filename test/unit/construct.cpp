@@ -191,9 +191,9 @@ TEST_CASE("construct")
 	}
 	SUBCASE("cannot path to spot")
 	{
-		areaBuilderUtil::setSolidWall(area.m_blocks[0][3][4], area.m_blocks[8][3][4], wood);
-		Block& gateway = area.m_blocks[9][3][4];
-		Block& wallLocation = area.m_blocks[8][4][3];
+		areaBuilderUtil::setSolidWall(area.m_blocks[0][3][2], area.m_blocks[8][3][2], wood);
+		Block& gateway = area.m_blocks[9][3][2];
+		Block& wallLocation = area.m_blocks[8][4][2];
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
 		ConstructProject& project = area.m_hasConstructionDesignations.getProject(faction, wallLocation);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);
@@ -215,7 +215,7 @@ TEST_CASE("construct")
 	}
 	SUBCASE("spot has become solid")
 	{
-		Block& wallLocation = area.m_blocks[8][8][3];
+		Block& wallLocation = area.m_blocks[8][8][2];
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);
 		// One step to find the designation.
@@ -227,14 +227,14 @@ TEST_CASE("construct")
 		// Another step to path to the pick.
 		simulation.doStep();
 		// Setting wallLocation as not solid immideatly triggers the project locationDishonorCallback, which cancels the project.
-		wallLocation.setNotSolid();
+		wallLocation.setSolid(wood);
 		REQUIRE(dwarf1.m_project == nullptr);
 		REQUIRE(!saw.m_reservable.isFullyReserved(&faction));
 		REQUIRE(!area.m_hasConstructionDesignations.areThereAnyForFaction(faction));
 	}
 	SUBCASE("saw destroyed")
 	{
-		Block& wallLocation = area.m_blocks[8][4][3];
+		Block& wallLocation = area.m_blocks[8][4][2];
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
 		ConstructProject& project = area.m_hasConstructionDesignations.getProject(faction, wallLocation);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);
@@ -250,19 +250,11 @@ TEST_CASE("construct")
 		saw.destroy();
 		REQUIRE(project.getWorkers().empty());
 		REQUIRE(!project.reservationsComplete());
-		REQUIRE(project.hasCandidate(dwarf1));
+		REQUIRE(!project.hasCandidate(dwarf1));
 	}
 	SUBCASE("player cancels")
 	{
-		Block& wallLocation = area.m_blocks[8][8][3];
-		Item& boards = simulation.createItem(ItemType::byName("board"), wood, 50u);
-		boards.setLocation(area.m_blocks[8][7][2]);
-		Item& pegs = simulation.createItem(ItemType::byName("peg"), wood, 50u);
-		pegs.setLocation(area.m_blocks[3][8][2]);
-		Item& saw = simulation.createItem(ItemType::byName("saw"), MaterialType::byName("bronze"), 25u, 0);
-		saw.setLocation(area.m_blocks[5][7][2]);
-		Item& mallet = simulation.createItem(ItemType::byName("mallet"), wood, 25u, 0);
-		mallet.setLocation(area.m_blocks[9][5][2]);
+		Block& wallLocation = area.m_blocks[8][8][2];
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);
 		// One step to find the designation.
@@ -281,7 +273,7 @@ TEST_CASE("construct")
 	}
 	SUBCASE("player interrupts")
 	{
-		Block& wallLocation = area.m_blocks[8][8][3];
+		Block& wallLocation = area.m_blocks[8][8][2];
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);
 		// One step to find the designation.
