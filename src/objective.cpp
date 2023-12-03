@@ -99,6 +99,7 @@ void HasObjectives::maybeUsurpsPriority(Objective& objective)
 void HasObjectives::setCurrentObjective(Objective& objective)
 {
 	m_actor.m_canMove.clearPath();
+	m_actor.m_project = nullptr;
 	m_currentObjective = &objective;
 	objective.execute();
 }

@@ -9,7 +9,7 @@
 #include <numeric>
 
 Area::Area(Simulation& s, uint32_t x, uint32_t y, uint32_t z) :
-	m_simulation(s), m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_areaHasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasRain(*this), m_visionCuboidsActive(false)
+	m_simulation(s), m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_areaHasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_hasRain(*this), m_visionCuboidsActive(false)
 {
 	// build m_blocks
 	m_blocks.resize(m_sizeX);

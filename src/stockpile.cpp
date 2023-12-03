@@ -2,6 +2,8 @@
 #include "block.h"
 #include "area.h"
 #include "config.h"
+#include "rain.h"
+#include "reservable.h"
 #include "simulation.h"
 #include <cwchar>
 #include <functional>
@@ -18,37 +20,39 @@ void StockPileThreadedTask::readStep()
 		};
 		std::function<bool(const Block&)> blocksContainsItemCondition = [&](const Block& block)
 		{
-			return getItem(block) != nullptr;
-		};
-		std::function<bool(const Block&)> destinationCondition = [&](const Block& block)
-		{
-			//TODO: Allow any facing.
-			if(!block.m_hasShapes.canEnterCurrentlyWithFacing(*m_item, 0))
+			// This is a nested path condition. Is there a faster way?
+			// Find a path to a stockpileable item and then find a path to an appropriate stock pile.
+			// Would it be better to collect a list of stockpiles reach and if we can reach them and then check each item against that prior to resorting to repeated nested paths?
+			Item* item = getItem(block);
+			if(item == nullptr)
 				return false;
-			if(!block.m_hasItems.empty())
-				if(!m_item->isGeneric() || block.m_hasItems.getCount(m_item->m_itemType, m_item->m_materialType) == 0)
+			// Item and path to it found, now check for path to destinaiton.
+			// TODO: Path from item location rather then from actor location, requires adding a setStart method to FindsPath.
+			std::function<bool(const Block&)> destinationCondition = [&](const Block& block)
+			{
+				if(!block.m_hasShapes.canEnterCurrentlyWithAnyFacing(*item))
 					return false;
-			const StockPile* stockpile = const_cast<Block&>(block).m_isPartOfStockPiles.getForFaction(*m_objective.m_actor.getFaction());
-			const Faction& faction = *m_objective.m_actor.getFaction();
-			if(stockpile == nullptr || !stockpile->isEnabled() || !block.m_isPartOfStockPiles.isAvalible(faction))
-			       return false;
-			if(block.m_reservable.isFullyReserved(&faction))
-			       return false;
-			if(!stockpile->accepts(*m_item))
-				return false;
-			return true;
+				if(!block.m_hasItems.empty())
+					if(!item->isGeneric() || block.m_hasItems.getCount(item->m_itemType, item->m_materialType) == 0)
+						return false;
+				const StockPile* stockpile = const_cast<Block&>(block).m_isPartOfStockPiles.getForFaction(*m_objective.m_actor.getFaction());
+				const Faction& faction = *m_objective.m_actor.getFaction();
+				if(stockpile == nullptr || !stockpile->isEnabled() || !block.m_isPartOfStockPiles.isAvalible(faction))
+					return false;
+				if(block.m_reservable.isFullyReserved(&faction))
+					return false;
+				if(!stockpile->accepts(*item))
+					return false;
+				m_destination = &const_cast<Block&>(block);
+				return true;
+			};
+			FindsPath findAnotherPath(m_objective.m_actor, false);
+			findAnotherPath.pathToUnreservedAdjacentToPredicate(destinationCondition, *m_objective.m_actor.getFaction());
+			return findAnotherPath.found() || findAnotherPath.m_useCurrentLocation;
 		};
 		m_findsPath.pathToUnreservedAdjacentToPredicate(blocksContainsItemCondition, *m_objective.m_actor.getFaction());
 		if(m_findsPath.found())
-		{
 			m_item = getItem(*m_findsPath.getBlockWhichPassedPredicate());
-			// Item and path to it found, now check for path to destinaiton.
-			// TODO: Path from item location rather then from actor location, requires adding a setStart method to FindsPath.
-			FindsPath findAnotherPath(m_objective.m_actor, false);
-			findAnotherPath.pathToUnreservedAdjacentToPredicate(destinationCondition, *m_objective.m_actor.getFaction());
-			if(findAnotherPath.found())
-				m_destination = findAnotherPath.getBlockWhichPassedPredicate();
-		}
 	}
 	else
 	{
@@ -122,8 +126,7 @@ void StockPileObjective::cancel()
 	if(m_project != nullptr)
 	{
 		m_project->removeWorker(m_actor);
-		if(m_project->getWorkers().empty())
-			m_project->cancel();
+		m_project = nullptr;
 	}
 	m_threadedTask.maybeCancel();
 }
@@ -179,7 +182,20 @@ void StockPileProject::onSubprojectCreated(HaulSubproject& subproject)
 }
 void StockPileProject::onCancel()
 {
-	m_item.m_canBeStockPiled.set(m_stockpile.m_faction);
+	std::vector<Actor*> actors = getWorkersAndCandidates();
+	m_location.m_area->m_hasStockPiles.at(m_faction).destroyProject(*this);
+	for(Actor* actor : actors)
+	{
+		static_cast<StockPileObjective&>(actor->m_hasObjectives.getCurrent()).m_project = nullptr;
+		actor->m_project = nullptr;
+		actor->m_hasObjectives.getCurrent().reset();
+		actor->m_hasObjectives.cannotCompleteTask();
+	}
+}
+void StockPileProject::onHasShapeReservationDishonored([[maybe_unused]] const HasShape& hasShape, [[maybe_unused]] uint32_t oldCount, uint32_t newCount)
+{
+	if(newCount == 0)
+		cancel();
 }
 std::vector<std::pair<ItemQuery, uint32_t>> StockPileProject::getConsumed() const { return {}; }
 std::vector<std::pair<ItemQuery, uint32_t>> StockPileProject::getUnconsumed() const { return {{m_item, 1}}; }
@@ -207,10 +223,22 @@ void StockPile::removeBlock(Block& block)
 	assert(m_blocks.contains(&block));
 	assert(block.m_isPartOfStockPiles.contains(m_faction));
 	assert(block.m_isPartOfStockPiles.getForFaction(m_faction) == this);
+	// Collect projects delivering items to block.
+	// This is very slow, particularly when destroying a large stockpile when many stockpile projects exist. Probably doesn't get called often enough to matter.
+	std::vector<Project*> projectsToCancel;
+	for(auto& pair : block.m_area->m_hasStockPiles.at(m_faction).m_projectsByItem)
+		for(Project& project : pair.second)
+			if(project.getLocation() == block)
+				projectsToCancel.push_back(&project);
 	block.m_isPartOfStockPiles.recordNoLongerMember(*this);
 	if(block.m_isPartOfStockPiles.isAvalible(m_faction))
 		decrementOpenBlocks();
 	m_blocks.erase(&block);
+	if(m_blocks.empty())
+		m_area.m_hasStockPiles.at(m_faction).destroyStockPile(*this);
+	// Cancel collected projects.
+	for(Project* project : projectsToCancel)
+		project->cancel();
 }
 void StockPile::incrementOpenBlocks()
 {
@@ -233,6 +261,12 @@ void StockPile::addToProjectNeedingMoreWorkers(Actor& actor, StockPileObjective&
 {
 	assert(m_projectNeedingMoreWorkers != nullptr);
 	m_projectNeedingMoreWorkers->addWorkerCandidate(actor, objective);
+}
+void StockPile::destroy()
+{
+	std::vector<Block*> blocks(m_blocks.begin(), m_blocks.end());
+	for(Block* block : blocks)
+		removeBlock(*block);
 }
 void BlockIsPartOfStockPiles::recordMembership(StockPile& stockPile)
 {
@@ -291,11 +325,36 @@ StockPile& AreaHasStockPilesForFaction::addStockPile(std::vector<ItemQuery>& que
 		m_availableStockPilesByItemType[itemQuery.m_itemType].insert(&stockPile);
 	return stockPile;
 }
-void AreaHasStockPilesForFaction::removeStockPile(StockPile& stockPile)
+void AreaHasStockPilesForFaction::destroyStockPile(StockPile& stockPile)
 {
 	assert(stockPile.m_blocks.empty());
+	// Erase pointers from avalible stockpiles by item type.
 	for(ItemQuery& itemQuery : stockPile.m_queries)
 		m_availableStockPilesByItemType[itemQuery.m_itemType].erase(&stockPile);
+	// Potentially transfer items from withDestination to withoutDestination, also cancel any associated projects and remove from items with destinations without projects.
+	// Sort items which no longer have a potential destination from ones which have a new one.
+	if(m_itemsWithDestinationsByStockPile.contains(&stockPile))
+		for(Item* item : m_itemsWithDestinationsByStockPile.at(&stockPile))
+		{
+			StockPile* newStockPile = getStockPileFor(*item);
+			assert(newStockPile != &stockPile);
+			if(newStockPile == nullptr)
+			{
+				// Remove all those which no longer have a destination from items with destination without projects.
+				// Add them to items without destinaitons by item type.
+				if(m_itemsWithDestinationsWithoutProjects.contains(item))
+				{
+					m_itemsWithDestinationsWithoutProjects.erase(item);
+					m_itemsWithoutDestinationsByItemType[&item->m_itemType].insert(item);
+				}
+			}
+			else
+				// Record the new stockpile in items with destinations by stockpile.
+				m_itemsWithDestinationsByStockPile[newStockPile].insert(item);
+		}
+	// Remove the stockpile entry from items with destinations by stockpile.
+	m_itemsWithDestinationsByStockPile.erase(&stockPile);
+	// Destruct.
 	m_stockPiles.remove(stockPile);
 }
 bool AreaHasStockPilesForFaction::isValidStockPileDestinationFor(const Block& block, const Item& item) const
@@ -337,9 +396,15 @@ void AreaHasStockPilesForFaction::removeItem(Item& item)
 				else
 					m_itemsWithDestinationsByStockPile.at(&stockPile).erase(&item);
 			}
-			m_projectsByItem.erase(&item);
+			// We don't need to cancel the stockpile projects here because they will be canceled by dishonorCallback anyway.
 		}
 	}
+}
+void AreaHasStockPilesForFaction::removeBlock(Block& block)
+{
+	StockPile* stockpile = block.m_isPartOfStockPiles.getForFaction(m_faction);
+	if(stockpile != nullptr)
+		stockpile->removeBlock(block);
 }
 void AreaHasStockPilesForFaction::setAvailable(StockPile& stockPile)
 {
@@ -363,10 +428,9 @@ void AreaHasStockPilesForFaction::setUnavailable(StockPile& stockPile)
 		m_availableStockPilesByItemType.at(itemQuery.m_itemType).erase(&stockPile);
 	for(Item* item : m_itemsWithDestinationsByStockPile.at(&stockPile))
 	{
-		m_projectsByItem.erase(item);
 		StockPile* newStockPile = getStockPileFor(*item);
 		if(newStockPile == nullptr)
-			m_itemsWithoutDestinationsByItemType.at(&item->m_itemType).insert(item);
+			m_itemsWithoutDestinationsByItemType[&item->m_itemType].insert(item);
 		else
 			m_itemsWithDestinationsByStockPile[newStockPile].insert(item);
 	}
@@ -376,14 +440,24 @@ void AreaHasStockPilesForFaction::makeProject(Item& item, Block& destination, St
 {
 	assert(destination.m_isPartOfStockPiles.contains(*objective.m_actor.getFaction()));
 	StockPileProject& project = m_projectsByItem[&item].emplace_back(objective.m_actor.getFaction(), destination, item);
+	DishonorCallback dishonorCallback = [&]([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { cancelProject(project); };
+	project.setLocationDishonorCallback(dishonorCallback);
 	project.addWorkerCandidate(objective.m_actor, objective);	
 	objective.m_project = &project;
+	objective.m_actor.m_project = &project;
 }
 void AreaHasStockPilesForFaction::cancelProject(StockPileProject& project)
 {
 	Item& item = project.m_item;
-	m_projectsByItem.at(&project.m_item).remove(project);
+	destroyProject(project);
 	addItem(item);
+}
+void AreaHasStockPilesForFaction::destroyProject(StockPileProject& project)
+{
+	if(m_projectsByItem.at(&project.m_item).size() == 1)
+		m_projectsByItem.erase(&project.m_item);
+	else
+		m_projectsByItem.at(&project.m_item).remove(project);
 }
 bool AreaHasStockPilesForFaction::isAnyHaulingAvalableFor(const Actor& actor) const
 {

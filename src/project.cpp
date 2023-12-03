@@ -2,6 +2,7 @@
 #include "block.h"
 #include "area.h"
 #include "reservable.h"
+#include "simulation.h"
 #include <algorithm>
 ProjectFinishEvent::ProjectFinishEvent(const Step delay, Project& p) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay), m_project(p) {}
 void ProjectFinishEvent::execute() { m_project.complete(); }
@@ -42,8 +43,8 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep()
 		if(++m_project.m_haulRetries == Config::projectTryToMakeSubprojectRetriesBeforeProjectDelay)
 		{
 			// Enough retries, delay.
-			m_project.setDelayOn();
 			m_project.m_haulRetries = 0;
+			m_project.setDelayOn();
 		}
 		else
 			// Nothing haulable found, wait a bit and try again.
@@ -61,10 +62,7 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep()
 		assert(!m_haulProjectParamaters.workers.empty());
 		HaulSubproject& subproject = m_project.m_haulSubprojects.emplace_back(m_project, m_haulProjectParamaters);
 		// Remove the target of the new haulSubproject from m_toPickup;
-		if(m_project.m_toPickup.at(m_haulProjectParamaters.toHaul).second == m_haulProjectParamaters.quantity)
-			m_project.m_toPickup.erase(m_haulProjectParamaters.toHaul);
-		else
-			m_project.m_toPickup.at(m_haulProjectParamaters.toHaul).second -= m_haulProjectParamaters.quantity;
+		m_project.removeToPickup(*m_haulProjectParamaters.toHaul, m_haulProjectParamaters.quantity);
 		m_project.onSubprojectCreated(subproject);
 	}
 }
@@ -84,7 +82,7 @@ ProjectTryToAddWorkersThreadedTask::ProjectTryToAddWorkersThreadedTask(Project& 
 void ProjectTryToAddWorkersThreadedTask::readStep()
 {
 	// Iterate candidate workers, verify that they can path to the project
-	// location.  Accumulate resources they can path to untill reservations
+	// location.  Accumulate resources that they can path to untill reservations
 	// are complete.
 	// If reservations are not complete flush the data from project.
 	// TODO: Unwisely modifing data out side the object durring read step.
@@ -125,12 +123,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 							m_alreadyAtSite[item] = quantity;
 						}
 						else
-						{
-							if(m_project.m_toPickup.contains(item))
-								m_project.m_toPickup[item].second += quantity;
-							else
-								m_project.m_toPickup.try_emplace(item, &projectItemCounts, quantity);
-						}
+							m_project.addToPickup(*item, projectItemCounts, quantity);
 						if(m_project.reservationsComplete())
 							return true;
 					}
@@ -167,11 +160,22 @@ void ProjectTryToAddWorkersThreadedTask::writeStep()
 		// Reserve all required.
 		// Get a pointer to project to copy into the callback since this may be destroyed before it fires.
 		Project* project = &m_project;
-		DishonorCallback dishonorCallback = [project]([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount){ project->reset(); };
 		for(auto& [hasShape, pair] : m_project.m_toPickup)
+		{
+			DishonorCallback dishonorCallback = [project, hasShape](uint32_t oldCount, uint32_t newCount)
+			{ 
+				project->onHasShapeReservationDishonored(*hasShape, oldCount, newCount);
+			};
 			hasShape->m_reservable.reserveFor(m_project.m_canReserve, pair.second, dishonorCallback);
+		}
 		for(auto& [hasShape, quantity] : m_alreadyAtSite)
+		{
+			DishonorCallback dishonorCallback = [project, hasShape](uint32_t oldCount, uint32_t newCount)
+			{ 
+				project->onHasShapeReservationDishonored(*hasShape, oldCount, newCount);
+			};
 			hasShape->m_reservable.reserveFor(m_project.m_canReserve, quantity, dishonorCallback);
+		}
 		// Add all actors.
 		std::vector<Actor*> notAdded;
 		for(auto& [actor, objective] : m_project.m_workerCandidatesAndTheirObjectives)
@@ -334,7 +338,7 @@ void Project::commandWorker(Actor& actor)
 		}
 	}
 }
-// To be called by Objective::cancel and Objective::delay.
+// To be called by Objective::cancel, Objective::delay.
 void Project::removeWorker(Actor& actor)
 {
 	assert(actor.m_project == this);
@@ -346,12 +350,17 @@ void Project::removeWorker(Actor& actor)
 	assert(m_workers.contains(&actor));
 	actor.m_project = nullptr;
 	if(m_workers.at(&actor).haulSubproject != nullptr)
-		m_workers.at(&actor).haulSubproject->cancel();
+		m_workers.at(&actor).haulSubproject->removeWorker(actor);
 	if(m_making.contains(&actor))
 		removeFromMaking(actor);
 	m_workers.erase(&actor);
 	if(m_workers.empty())
-		reset();
+	{
+		if(canReset())
+			reset();
+		else
+			cancel();
+	}
 }
 void Project::addToMaking(Actor& actor)
 {
@@ -394,14 +403,49 @@ void Project::haulSubprojectComplete(HaulSubproject& haulSubproject)
 	auto workers = std::move(haulSubproject.m_workers);
 	m_haulSubprojects.remove(haulSubproject);
 	for(Actor* actor : workers)
+	{
+		m_workers.at(actor).haulSubproject = nullptr;
 		commandWorker(*actor);
+	}
+}
+void Project::haulSubprojectCancel(HaulSubproject& haulSubproject)
+{
+	addToPickup(haulSubproject.m_toHaul, haulSubproject.m_projectItemCounts, haulSubproject.m_quantity);
+	for(Actor* actor : haulSubproject.m_workers)
+	{
+		actor->m_canPickup.putDownIfAny(*actor->m_location);
+		actor->m_canFollow.unfollowIfFollowing();
+		actor->m_canMove.clearPath();
+		actor->m_canReserve.clearAll();
+		m_workers.at(actor).haulSubproject = nullptr;
+		commandWorker(*actor);
+	}
+	m_haulSubprojects.remove(haulSubproject);
+}
+void Project::setLocationDishonorCallback(DishonorCallback dishonorCallback)
+{
+	m_location.m_reservable.setDishonorCallbackFor(m_canReserve, dishonorCallback);
+}
+void Project::addToPickup(HasShape& hasShape, ProjectItemCounts& counts, uint32_t quantity)
+{
+	if(m_toPickup.contains(&hasShape))
+		m_toPickup[&hasShape].second += quantity;
+	else
+		m_toPickup.try_emplace(&hasShape, &counts, quantity);
+}
+void Project::removeToPickup(HasShape& hasShape, uint32_t quantity)
+{
+	if(m_toPickup.at(&hasShape).second == quantity)
+		m_toPickup.erase(&hasShape);
+	else
+		m_toPickup.at(&hasShape).second -= quantity;
 }
 void Project::reset()
 {
-	assert(!m_finishEvent.exists());
-	assert(!m_tryToHaulEvent.exists());
-	assert(!m_tryToReserveEvent.exists());
-	assert(!m_tryToHaulThreadedTask.exists());
+	m_finishEvent.maybeUnschedule();
+	m_tryToHaulEvent.maybeUnschedule();
+	m_tryToReserveEvent.maybeUnschedule();
+	m_tryToHaulThreadedTask.maybeCancel();
 	m_toConsume.clear();
 	m_haulRetries = 0;
 	m_requiredItems.clear();
@@ -439,4 +483,14 @@ Project::~Project()
 bool Project::hasCandidate(const Actor& actor) const
 {
 	return std::ranges::find(m_workerCandidatesAndTheirObjectives, &actor, &std::pair<Actor*, Objective*>::first) != m_workerCandidatesAndTheirObjectives.end();
+}
+std::vector<Actor*> Project::getWorkersAndCandidates()
+{
+	std::vector<Actor*> output;
+	output.reserve(m_workers.size() + m_workerCandidatesAndTheirObjectives.size());
+	for(auto& pair : m_workers)
+		output.push_back(pair.first);
+	for(auto& pair : m_workerCandidatesAndTheirObjectives)
+		output.push_back(pair.first);
+	return output;
 }

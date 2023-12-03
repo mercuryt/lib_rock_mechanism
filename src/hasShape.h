@@ -101,6 +101,7 @@ public:
 	bool moveTypeCanEnterFrom(const MoveType& moveType, const Block& from) const;
 	bool canEnterCurrentlyFrom(const HasShape& hasShape, const Block& block) const;
 	bool canEnterCurrentlyWithFacing(const HasShape& hasShape, const uint8_t& facing) const;
+	bool canEnterCurrentlyWithAnyFacing(const HasShape& hasShape) const;
 	// Durring pathing the algorithm will first check if cached move costs exist, if so it will use them.
 	// If not it will make a new set of costs and store them within it's self.
 	// During the next write phase the newly made costs will be added to the cache via ::tryToCacheMoveCosts.

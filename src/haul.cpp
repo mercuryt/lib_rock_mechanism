@@ -3,6 +3,8 @@
 #include "hasShape.h"
 #include "item.h"
 #include "area.h"
+#include "reservable.h"
+#include <sys/types.h>
 #include <unordered_set>
 #include <algorithm>
 void HaulSubprojectParamaters::reset()
@@ -242,10 +244,11 @@ uint32_t CanPickup::maximumNumberWhichCanBeCarriedWithMinimumSpeed(const HasShap
 HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters) : m_project(p), m_workers(paramaters.workers.begin(), paramaters.workers.end()), m_toHaul(*paramaters.toHaul), m_quantity(paramaters.quantity), m_strategy(paramaters.strategy), m_haulTool(paramaters.haulTool), m_leader(nullptr), m_itemIsMoving(false), m_beastOfBurden(paramaters.beastOfBurden), m_projectItemCounts(*paramaters.projectItemCounts), m_genericItemType(nullptr), m_genericMaterialType(nullptr)
 {
 	assert(!m_workers.empty());
+	DishonorCallback dishonorCallback = [&]([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount){ cancel(); };
 	if(m_haulTool != nullptr)
-		m_haulTool->m_reservable.reserveFor(m_project.m_canReserve, 1u);
+		m_haulTool->m_reservable.reserveFor(m_project.m_canReserve, 1u, dishonorCallback);
 	if(m_beastOfBurden != nullptr)
-		m_beastOfBurden->m_reservable.reserveFor(m_project.m_canReserve, 1u);
+		m_beastOfBurden->m_reservable.reserveFor(m_project.m_canReserve, 1u, dishonorCallback);
 	if(m_toHaul.isGeneric())
 	{
 		m_genericItemType = &static_cast<Item&>(m_toHaul).m_itemType;
@@ -344,7 +347,8 @@ void HaulSubproject::commandWorker(Actor& actor)
 					}
 					else
 						// Actor is not at lift point.
-						actor.m_canMove.setDestination(*m_liftPoints.at(&actor), detour);
+						// destination, detour, adjacent, unreserved, reserve
+						actor.m_canMove.setDestination(*m_liftPoints.at(&actor), detour, false, false, false);
 				}
 				else
 				{
@@ -685,12 +689,7 @@ void HaulSubproject::removeWorker(Actor& actor)
 }
 void HaulSubproject::cancel()
 {
-	for(Actor* actor : m_workers)
-	{
-		actor->m_canPickup.putDownIfAny(*actor->m_location);
-		actor->m_hasObjectives.taskComplete();
-		actor->m_canFollow.unfollowIfFollowing();
-	}
+	m_project.haulSubprojectCancel(*this);
 }
 bool HaulSubproject::allWorkersAreAdjacentTo(HasShape& hasShape)
 {

@@ -5,6 +5,7 @@
 #include "haul.h"
 #include "materialType.h"
 #include "objective.h"
+#include "reservable.h"
 #include "threadedTask.hpp"
 #include "project.h"
 #include "item.h"
@@ -82,6 +83,7 @@ public:
 	void disableTemporarily(Step duration) { m_reenableScheduledEvent.schedule(*this, duration);  disableIndefinately(); }
 	void reenable() { m_enabled = true; } 
 	void addToProjectNeedingMoreWorkers(Actor& actor, StockPileObjective& objective);
+	void destroy();
 	[[nodiscard]] bool isEnabled() const { return m_enabled; }
 	[[nodiscard]] bool hasProjectNeedingMoreWorkers() const { return m_projectNeedingMoreWorkers != nullptr; }
 	[[nodiscard]] Simulation& getSimulation();
@@ -105,8 +107,10 @@ class StockPileProject final : public Project
 	void onSubprojectCreated(HaulSubproject& subproject);
 	void onCancel();
 	// TODO: geometric progresson of disable duration.
-	void onDelay() { cancel(); m_stockpile.disableTemporarily(Config::stepsToDisableStockPile); }
+	void onDelay() { m_item.m_canBeStockPiled.maybeUnsetAndScheduleReset(m_faction, Config::stepsToDisableStockPile); cancel(); }
 	void offDelay() { assert(false); }
+	void onHasShapeReservationDishonored(const HasShape& hasShape, uint32_t oldCount, uint32_t newCount);
+	[[nodiscard]] bool canReset() const { return false; }
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
@@ -142,36 +146,48 @@ public:
 	[[nodiscard]] StockPile* getForFaction(const Faction& faction) { if(!m_stockPiles.contains(&faction)) return nullptr; return &m_stockPiles.at(&faction).stockPile; }
 	[[nodiscard]] bool contains(const Faction& faction) const { return m_stockPiles.contains(const_cast<Faction*>(&faction)); }
 	[[nodiscard]] bool isAvalible(const Faction& faction) const;
+	friend class AreaHasStockPilesForFaction;
 };
 class AreaHasStockPilesForFaction
 {
 	Area& m_area;
 	std::list<StockPile> m_stockPiles;
 	const Faction& m_faction;
+	// Stockpiles may accept multiple item types and thus may appear here more then once.
 	std::unordered_map<const ItemType*, std::unordered_set<StockPile*>> m_availableStockPilesByItemType;
+	// These items are checked whenever a new stockpile is created to see if they should be move to items with destinations.
 	std::unordered_map<const ItemType*, std::unordered_set<Item*>> m_itemsWithoutDestinationsByItemType;
+	// Only when an item is added here does it get designated for stockpileing.
 	std::unordered_set<Item*> m_itemsWithDestinationsWithoutProjects;
+	// The stockpile used as index here is not neccesarily where the item will go, it is used to prove that there is somewhere the item could go.
 	std::unordered_map<StockPile*, std::unordered_set<Item*>> m_itemsWithDestinationsByStockPile;
+	// Multiple projects per item due to generic item stacking.
 	std::unordered_map<Item*, std::list<StockPileProject>> m_projectsByItem;
+	// To be called when the last block is removed from the stockpile.
+	// To remove all blocks call StockPile::destroy.
+	void destroyStockPile(StockPile& stockPile);
 public:
 	AreaHasStockPilesForFaction(Area& a, const Faction& f) : m_area(a), m_faction(f) { }
 	StockPile& addStockPile(std::vector<ItemQuery>&& queries);
 	StockPile& addStockPile(std::vector<ItemQuery>& queries);
-	void removeStockPile(StockPile& stockPile);
 	bool isValidStockPileDestinationFor(const Block& block, const Item& item) const;
 	void addItem(Item& item);
 	void removeItem(Item& item);
+	void removeBlock(Block& block);
 	void setAvailable(StockPile& stockPile);
 	void setUnavailable(StockPile& stockPile);
 	void makeProject(Item& item, Block& destination, StockPileObjective& objective);
 	void cancelProject(StockPileProject& project);
-	bool isAnyHaulingAvalableFor(const Actor& actor) const;
+	void destroyProject(StockPileProject& project);
+	[[nodiscard]] bool isAnyHaulingAvalableFor(const Actor& actor) const;
 	Item* getHaulableItemForAt(const Actor& actor, Block& block);
 	StockPile* getStockPileFor(const Item& item) const;
 	friend class StockPileThreadedTask;
+	friend class StockPile;
 	// For testing.
 	[[maybe_unused, nodiscard]] std::unordered_set<Item*>& getItemsWithDestinations() { return m_itemsWithDestinationsWithoutProjects; }
 	[[maybe_unused, nodiscard]] std::unordered_map<StockPile*, std::unordered_set<Item*>>& getItemsWithDestinationsByStockPile() { return m_itemsWithDestinationsByStockPile; }
+	[[maybe_unused, nodiscard]] uint32_t getItemsWithProjectsCount() { return m_projectsByItem.size(); }
 };
 class AreaHasStockPiles
 {
@@ -181,6 +197,8 @@ public:
 	AreaHasStockPiles(Area& a) : m_area(a) { }
 	void addFaction(const Faction& faction) { assert(!m_data.contains(&faction)); m_data.try_emplace(&faction, m_area, faction); }
 	void removeFaction(const Faction& faction) { assert(m_data.contains(&faction)); m_data.erase(&faction); }
+	void removeItemFromAllFactions(Item& item) { for(auto& pair : m_data) { pair.second.removeItem(item); } }
+	void removeBlockFromAllFactions(Block& block) { for(auto& pair : m_data) { pair.second.removeBlock(block); }} 
 	AreaHasStockPilesForFaction& at(const Faction& faction) { assert(m_data.contains(&faction)); return m_data.at(&faction); }
 	[[nodiscard]] bool contains(const Faction& faction) { return m_data.contains(&faction); }
 };

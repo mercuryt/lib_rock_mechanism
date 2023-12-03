@@ -425,6 +425,13 @@ bool BlockHasShapes::canEnterCurrentlyWithFacing(const HasShape& hasShape, const
 	}
 	return true;
 }
+bool BlockHasShapes::canEnterCurrentlyWithAnyFacing(const HasShape& hasShape) const
+{
+	for(Facing facing = 0; facing < 4; ++facing)
+		if(canEnterCurrentlyWithFacing(hasShape, facing))
+			return true;
+	return false;
+}
 uint32_t BlockHasShapes::getVolume(const HasShape& hasShape) const
 {	
 	auto found = m_shapes.find(const_cast<HasShape*>(&hasShape));

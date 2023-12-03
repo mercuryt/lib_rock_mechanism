@@ -1,5 +1,7 @@
 #pragma once
 
+#include "eventSchedule.h"
+#include "eventSchedule.hpp"
 #include "materialType.h"
 #include "hasShape.h"
 #include "attackType.h"
@@ -105,15 +107,33 @@ public:
 	bool containsGeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity) const;
 	bool empty() const { return m_fluidType == nullptr && m_shapes.empty(); }
 };
-//TODO: change from set to vector.
+class RemarkItemForStockPilingEvent final : public ScheduledEventWithPercent
+{
+	Item& m_item;
+	const Faction& m_faction;
+public:
+	RemarkItemForStockPilingEvent(Item& i, const Faction& f, Step duration);
+	void execute();
+	void clearReferences();
+};
+//TODO: Flat set.
+//TODO: Change from linear to geometric delay duration.
 class ItemCanBeStockPiled
 {
+	Item& m_item;
 	std::unordered_set<const Faction*> m_data;
+	std::unordered_map<const Faction*, HasScheduledEvent<RemarkItemForStockPilingEvent>> m_scheduledEvents;
+	void scheduleReset(const Faction& faction, Step duration);
 public:
+	ItemCanBeStockPiled(Item& i) : m_item(i) { }
 	void set(const Faction& faction) { assert(!m_data.contains(&faction)); m_data.insert(&faction); }
+	void maybeSet(const Faction& faction) { m_data.insert(&faction); }
 	void unset(const Faction& faction) { assert(m_data.contains(&faction)); m_data.erase(&faction); }
 	void maybeUnset(const Faction& faction) { m_data.erase(&faction); }
+	void unsetAndScheduleReset(const Faction& faction, Step duration) { unset(faction); scheduleReset(faction, duration); }
+	void maybeUnsetAndScheduleReset(const Faction& faction, Step duration)  { maybeUnset(faction); scheduleReset(faction, duration); }
 	[[nodiscard]] bool contains(const Faction& faction) { return m_data.contains(&faction); }
+	friend class RemarkItemForStockPilingEvent;
 };
 class Item final : public HasShape
 {
@@ -205,8 +225,10 @@ public:
 };
 class AreaHasItems final
 {
+	Area& m_area;
 	std::unordered_set<Item*> m_onSurface;
 public:
+	AreaHasItems(Area& a) : m_area(a) { }
 	void setItemIsOnSurface(Item& item);
 	void setItemIsNotOnSurface(Item& item);
 	void onChangeAmbiantSurfaceTemperature();

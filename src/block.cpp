@@ -365,6 +365,8 @@ void Block::setSolid(const MaterialType& materialType)
 	// Set blocks below as not exposed to sky.
 	setExposedToSky(false);
 	setBelowNotExposedToSky();
+	// Remove from stockpiles.
+	m_area->m_hasStockPiles.removeBlockFromAllFactions(*this);
 	if(wasEmpty)
 		// Dishonor all reservations: there are no reservations which can exist on both a solid and not solid block.
 		m_reservable.clearAll();

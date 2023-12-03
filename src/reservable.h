@@ -30,7 +30,7 @@ public:
 	[[nodiscard]] bool hasReservations() const;
 	~CanReserve();
 };
-// TODO: A specalized reservable for block without count or callbacks ( to save RAM ).
+// TODO: A specalized reservable for block without count ( to save RAM ).
 class Reservable final
 {
 	friend class CanReserve;
@@ -49,6 +49,7 @@ public:
 	void maybeClearReservationFor(CanReserve& canReserve, const uint32_t quantity = 1u);
 	void setMaxReservations(const uint32_t mr);
 	void updateFactionFor(CanReserve& canReserve, const Faction* oldFaction, const Faction* newFaction);
+	void setDishonorCallbackFor(CanReserve& canReserve, DishonorCallback dishonorCallback) { m_dishonorCallbacks[&canReserve] = dishonorCallback; }
 	void clearAll();
 	uint32_t getUnreservedCount(const Faction& faction) const;
 	~Reservable();

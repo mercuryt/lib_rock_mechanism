@@ -106,12 +106,15 @@ public:
 	void cancel();
 	void dismissWorkers();
 	void scheduleEvent();
-	void createHaulSubproject(const HaulSubprojectParamaters haulSubprojectParamaters);
 	void haulSubprojectComplete(HaulSubproject& haulSubproject);
+	void haulSubprojectCancel(HaulSubproject& haulSubproject);
+	void setLocationDishonorCallback(DishonorCallback dishonorCallback);
 	void setDelayOn() { m_delay = true; onDelay(); }
 	void setDelayOff() { m_delay = false; offDelay(); }
-	// To be called when the last worker is removed, resets to pre-reservations complete status.
-	virtual void reset();
+	void addToPickup(HasShape& hasShape, ProjectItemCounts& counts, uint32_t quantity);
+	void removeToPickup(HasShape& hasShape, uint32_t quantity);
+	// To be called when the last worker is removed or when a required reservation is dishonored, resets to pre-reservations complete status.
+	void reset();
 	// TODO: minimum speed decreses with failed attempts to generate haul subprojects.
 	[[nodiscard]] const Faction& getFaction() { return m_faction; }
 	[[nodiscard]] uint32_t getMinimumHaulSpeed() const { return Config::minimumHaulSpeed; }
@@ -121,6 +124,8 @@ public:
 	[[nodiscard]] Block& getLocation() { return m_location; }
 	[[nodiscard]] const Block& getLocation() const { return m_location; }
 	[[nodiscard]] bool hasCandidate(const Actor& actor) const;
+	[[nodiscard]] virtual bool canReset() const { return true; }
+	[[nodiscard]] std::vector<Actor*> getWorkersAndCandidates();
 	[[nodiscard]] virtual bool canAddWorker(const Actor& actor) const;
 	// What would the total delay time be if we started from scratch now with current workers?
 	[[nodiscard]] virtual Step getDuration() const = 0;
@@ -129,6 +134,7 @@ public:
 	virtual void onCancel() { }
 	virtual void onDelivered(HasShape& hasShape) { (void)hasShape; }
 	virtual void onSubprojectCreated(HaulSubproject& subproject) { (void)subproject; }
+	virtual void onHasShapeReservationDishonored([[maybe_unused]] const HasShape& hasShape, [[maybe_unused]]uint32_t oldCount, [[maybe_unused]]uint32_t newCount) { reset(); }
 	// Projects which are initiated by the users, such as dig or construct, must be delayed when they cannot be completed. Projectes which are initiated automatically, such as Stockpile or Craft, can be canceled.
 	virtual void onDelay() = 0;
 	virtual void offDelay() = 0;
@@ -142,6 +148,11 @@ public:
 	// For testing.
 	[[nodiscard]] ProjectWorker& getProjectWorkerFor(Actor& actor) { return m_workers.at(&actor); }
 	[[nodiscard, maybe_unused]] std::unordered_map<Actor*, ProjectWorker> getWorkers() { return m_workers; }
+	[[nodiscard, maybe_unused]] uint32_t getHaulRetries() const { return m_haulRetries; }
+	[[nodiscard, maybe_unused]] bool hasTryToHaulThreadedTask() const { return m_tryToHaulThreadedTask.exists(); }
+	[[nodiscard, maybe_unused]] bool hasTryToHaulEvent() const { return m_tryToHaulEvent.exists(); }
+	[[nodiscard, maybe_unused]] bool hasTryToAddWorkersThreadedTask() const { return m_tryToAddWorkersThreadedTask.exists(); }
+	[[nodiscard, maybe_unused]] bool hasTryToReserveEvent() const { return m_tryToReserveEvent.exists(); }
 	friend class ProjectFinishEvent;
 	friend class ProjectTryToHaulEvent;
 	friend class ProjectTryToReserveEvent;

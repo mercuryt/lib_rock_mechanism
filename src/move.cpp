@@ -146,9 +146,13 @@ void ActorCanMove::setDestinationAdjacentTo(Block& destination, bool detour, boo
 void ActorCanMove::setDestinationAdjacentTo(HasShape& hasShape, bool detour, bool unreserved, bool reserve) 
 {
 	assert(!m_actor.isAdjacentTo(hasShape));
-	std::function<bool(const Block&)> predicate = [&](const Block& block){ return hasShape.m_blocks.contains(const_cast<Block*>(&block)); };
+	//TODO: Flat set
+	std::unordered_set<Block*> hasShapeBlocks = hasShape.m_blocks;
+	//TODO: Don't bother checking for adjacent if taxi distance is large.
+	std::function<bool(const Block&)> predicate = [hasShapeBlocks](const Block& block){ return hasShapeBlocks.contains(const_cast<Block*>(&block)); };
 	// Actor, predicate, destinationHuristic, detour, adjacent, unreserved.
 	m_threadedTask.create(m_actor, predicate, hasShape.m_location, detour, true, unreserved, reserve);
+	std::function<void()> onDestroyHasShape = [&](){ m_threadedTask.cancel(); };
 }
 void ActorCanMove::setDestinationToUnreservedAdjacentToPredicate(std::function<bool(const Block&)>& predicate, bool detour, bool reserve)
 {

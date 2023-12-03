@@ -1,3 +1,4 @@
+#include "eventSchedule.hpp"
 #include "util.h"
 #include "item.h"
 #include "block.h"
@@ -18,6 +19,24 @@ bool ItemType::hasMeleeAttack() const
 			return true;
 	return false;
 }
+// RemarkItemForStockPilingEvent
+RemarkItemForStockPilingEvent::RemarkItemForStockPilingEvent(Item& i, const Faction& f, Step duration) : ScheduledEventWithPercent(i.getSimulation(), duration), m_item(i), m_faction(f) { }
+void RemarkItemForStockPilingEvent::execute() 
+{ 
+	m_item.m_canBeStockPiled.maybeSet(m_faction); 
+	m_item.m_canBeStockPiled.m_scheduledEvents.erase(&m_faction); 
+}
+void RemarkItemForStockPilingEvent::clearReferences() { }
+// ItemCanBeStockPiled
+void ItemCanBeStockPiled::scheduleReset(const Faction& faction, Step duration)
+{
+	assert(!m_scheduledEvents.contains(&faction));
+	auto [iter, created] = m_scheduledEvents.emplace(&faction, m_item.getEventSchedule());
+	assert(created);
+	HasScheduledEvent<RemarkItemForStockPilingEvent>& eventHandle = iter->second;
+	eventHandle.schedule(m_item, faction, duration);
+}
+// Item
 void Item::setVolume() { m_volume = m_quantity * m_itemType.volume; }
 void Item::setMass()
 { 
@@ -61,7 +80,11 @@ void Item::removeQuantity(uint32_t delta)
 void Item::destroy()
 {
 	if(m_location != nullptr)
+	{
+		Area* area = m_location->m_area;
 		exit();
+		area->m_hasItems.remove(*this);
+	}
 	getSimulation().destroyItem(*this);
 }
 bool Item::isPreparedMeal() const
@@ -81,7 +104,7 @@ void Item::log() const
 }
 // Generic.
 Item::Item(Simulation& s, uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t q, CraftJob* cj):
-	HasShape(s, it.shape, true, 0, q), m_quantity(q), m_id(i), m_itemType(it), m_materialType(mt), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this)
+	HasShape(s, it.shape, true, 0, q), m_quantity(q), m_id(i), m_itemType(it), m_materialType(mt), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this), m_canBeStockPiled(*this)
 {
 	assert(m_itemType.generic);
 	m_volume = m_itemType.volume * m_quantity;
@@ -89,7 +112,7 @@ Item::Item(Simulation& s, uint32_t i, const ItemType& it, const MaterialType& mt
 }
 // NonGeneric.
 Item::Item(Simulation& s, uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t qual, Percent pw, CraftJob* cj):
-	HasShape(s, it.shape, true), m_quantity(1u), m_id(i), m_itemType(it), m_materialType(mt), m_quality(qual), m_percentWear(pw), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this)
+	HasShape(s, it.shape, true), m_quantity(1u), m_id(i), m_itemType(it), m_materialType(mt), m_quality(qual), m_percentWear(pw), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this), m_canBeStockPiled(*this)
 {
 	assert(!m_itemType.generic);
 	m_mass = m_itemType.volume * m_materialType.density;
@@ -97,7 +120,7 @@ Item::Item(Simulation& s, uint32_t i, const ItemType& it, const MaterialType& mt
 }
 // Named.
 Item::Item(Simulation& s, uint32_t i, const ItemType& it, const MaterialType& mt, std::string n, uint32_t qual, Percent pw, CraftJob* cj):
-	HasShape(s, it.shape, true), m_quantity(1u), m_id(i), m_itemType(it), m_materialType(mt), m_name(n), m_quality(qual), m_percentWear(pw), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this)
+	HasShape(s, it.shape, true), m_quantity(1u), m_id(i), m_itemType(it), m_materialType(mt), m_name(n), m_quality(qual), m_percentWear(pw), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this), m_canBeStockPiled(*this)
 {
 	assert(!m_itemType.generic);
 	m_mass = m_itemType.volume * m_materialType.density;
@@ -393,4 +416,8 @@ void AreaHasItems::onChangeAmbiantSurfaceTemperature()
 void AreaHasItems::remove(Item& item)
 {
 	m_onSurface.erase(&item);
+	m_area.m_hasStockPiles.removeItemFromAllFactions(item);
+	if(item.m_itemType.internalVolume != 0)
+		m_area.m_hasHaulTools.unregisterHaulTool(item);
+	item.m_reservable.clearAll();
 }

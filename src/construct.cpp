@@ -157,10 +157,7 @@ void ConstructProject::onComplete()
 void ConstructProject::onCancel()
 {
 	//TODO: use std::copy with a projection.
-	std::vector<Actor*> actors;
-	actors.reserve(m_workers.size());
-	for(auto& pair : m_workers)
-		actors.push_back(pair.first);
+	std::vector<Actor*> actors = getWorkersAndCandidates();
 	m_location.m_area->m_hasConstructionDesignations.remove(m_faction, m_location);
 	for(Actor* actor : actors)
 	{

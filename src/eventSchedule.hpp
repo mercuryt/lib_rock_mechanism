@@ -46,7 +46,11 @@ public:
 	}
 	[[nodiscard]]Step remainingSteps() const { return m_event->remaningSteps(); }
 	[[nodiscard]]Step duration() const { return m_event->duration(); }
-	~HasScheduledEvent() { maybeUnschedule(); }
+	~HasScheduledEvent() 
+	{ 
+		if(m_event != nullptr)
+			m_event->cancel();
+	}
 };
 template<class EventType>
 class HasScheduledEventPausable : public HasScheduledEvent<EventType>
