@@ -115,6 +115,7 @@ public:
 	void removeToPickup(HasShape& hasShape, uint32_t quantity);
 	// To be called when the last worker is removed or when a required reservation is dishonored, resets to pre-reservations complete status.
 	void reset();
+	void resetOrCancel();
 	// TODO: minimum speed decreses with failed attempts to generate haul subprojects.
 	[[nodiscard]] const Faction& getFaction() { return m_faction; }
 	[[nodiscard]] uint32_t getMinimumHaulSpeed() const { return Config::minimumHaulSpeed; }
@@ -126,6 +127,7 @@ public:
 	[[nodiscard]] bool hasCandidate(const Actor& actor) const;
 	[[nodiscard]] virtual bool canReset() const { return true; }
 	[[nodiscard]] std::vector<Actor*> getWorkersAndCandidates();
+	[[nodiscard]] std::vector<std::pair<Actor*, Objective*>> getWorkersAndCandidatesWithObjectives();
 	[[nodiscard]] virtual bool canAddWorker(const Actor& actor) const;
 	// What would the total delay time be if we started from scratch now with current workers?
 	[[nodiscard]] virtual Step getDuration() const = 0;

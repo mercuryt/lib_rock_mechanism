@@ -197,9 +197,14 @@ void ProjectTryToAddWorkersThreadedTask::writeStep()
 	else
 	{
 		// Could not find required items / actors, activate delay and release candidates.
-		m_project.setDelayOn();
-		m_project.reset();
-		m_project.m_tryToReserveEvent.schedule(Config::stepsToDelayBeforeTryingAgainToReserveItemsAndActorsForAProject, m_project);
+		if(m_project.canReset())
+		{
+			m_project.setDelayOn();
+			m_project.reset();
+			m_project.m_tryToReserveEvent.schedule(Config::stepsToDelayBeforeTryingAgainToReserveItemsAndActorsForAProject, m_project);
+		}
+		else
+			m_project.cancel();
 	}
 	for(Actor* actor : m_cannotPathToJobSite)
 		actor->m_hasObjectives.cannotCompleteTask();
@@ -355,12 +360,14 @@ void Project::removeWorker(Actor& actor)
 		removeFromMaking(actor);
 	m_workers.erase(&actor);
 	if(m_workers.empty())
-	{
-		if(canReset())
-			reset();
-		else
-			cancel();
-	}
+		resetOrCancel();
+}
+void Project::resetOrCancel()
+{
+	if(canReset())
+		reset();
+	else
+		cancel();
 }
 void Project::addToMaking(Actor& actor)
 {
@@ -453,21 +460,13 @@ void Project::reset()
 	m_toPickup.clear();
 	// I guess we are doing this in case requirements change. Probably not needed.
 	m_requirementsLoaded = false;
-	m_haulSubprojects.clear();
+	for(Actor* actor : getWorkersAndCandidates())
+	{
+		actor->m_hasObjectives.getCurrent().reset();
+		actor->m_hasObjectives.cannotCompleteTask();
+	}
 	m_canReserve.clearAll();
-	// Dismiss workers and candidates.
-	for(auto& pair : m_workers)
-	{
-		pair.second.objective.reset();
-		pair.second.haulSubproject = nullptr;
-		pair.first->m_hasObjectives.cannotCompleteTask();
-	}
 	m_workers.clear();
-	for(auto& pair : m_workerCandidatesAndTheirObjectives)
-	{
-		pair.second->reset();
-		pair.first->m_hasObjectives.cannotCompleteTask();
-	}
 	m_workerCandidatesAndTheirObjectives.clear();
 }
 bool Project::canAddWorker(const Actor& actor) const
@@ -492,5 +491,15 @@ std::vector<Actor*> Project::getWorkersAndCandidates()
 		output.push_back(pair.first);
 	for(auto& pair : m_workerCandidatesAndTheirObjectives)
 		output.push_back(pair.first);
+	return output;
+}
+std::vector<std::pair<Actor*, Objective*>> Project::getWorkersAndCandidatesWithObjectives()
+{
+	std::vector<std::pair<Actor*, Objective*>> output;
+	output.reserve(m_workers.size() + m_workerCandidatesAndTheirObjectives.size());
+	for(auto& pair : m_workers)
+		output.emplace_back(pair.first, &pair.second.objective);
+	for(auto& pair : m_workerCandidatesAndTheirObjectives)
+		output.push_back(pair);
 	return output;
 }

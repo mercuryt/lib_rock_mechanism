@@ -127,14 +127,11 @@ void StockPileObjective::cancel()
 	{
 		m_project->removeWorker(m_actor);
 		m_project = nullptr;
+		m_actor.m_project = nullptr;
 	}
+	else
+		assert(m_actor.m_project == nullptr);
 	m_threadedTask.maybeCancel();
-}
-void StockPileObjective::reset()
-{
-	cancel();
-	m_project = nullptr;
-	m_actor.m_project = nullptr;
 	m_actor.m_canReserve.clearAll();
 }
 StockPileProject::StockPileProject(const Faction* faction, Block& block, Item& item) : Project(faction, block, Config::maxWorkersForStockPileProject), m_item(item), m_delivered(nullptr), m_stockpile(*block.m_isPartOfStockPiles.getForFaction(*faction)), m_dispatched(false) { }

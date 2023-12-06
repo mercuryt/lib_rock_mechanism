@@ -45,7 +45,7 @@ public:
 	void execute();
 	void cancel();
 	void delay() { cancel(); }
-	void reset();
+	void reset() { cancel(); }
 	std::string name() const { return "stockpile"; }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::StockPile; }
 };

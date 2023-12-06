@@ -2,7 +2,7 @@
 
 #include "item.h"
 #include "project.h"
-#include "block.h"
+#include "reservable.h"
 
 #include <vector>
 #include <utility>
@@ -12,9 +12,10 @@
 #include <functional>
 
 struct CraftJob;
-class HasCraftingLocationsAndJobs;
+class HasCraftingLocationsAndJobsForFaction;
 class CraftThreadedTask;
 struct skillType;
+class Block;
 // Drill, saw, forge, etc.
 struct CraftStepTypeCategory final
 {
@@ -46,15 +47,18 @@ class CraftStepProject final : public Project
 	CraftJob& m_craftJob;
 	Step getDuration() const;
 	void onComplete();
+	void onCancel();
+	void onHasShapeReservationDishonored([[maybe_unused]] const HasShape& hasShape, [[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { cancel(); }
 	void onDelay() { cancel(); }
 	void offDelay() { assert(false); }
+	bool canReset() const  { return false; }
 	// Use copies rather then references for return types to allow specalization of Queries as well as byproduct material type.
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
 	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const { return {}; }
 public:
-	CraftStepProject(const Faction* faction, Block& location, const CraftStepType& cst, CraftJob& cj) : Project(faction, location, 1), m_craftStepType(cst), m_craftJob(cj) { }
+	CraftStepProject(const Faction* faction, Block& location, const CraftStepType& cst, CraftJob& cj, DishonorCallback dc) : Project(faction, location, 1, dc), m_craftStepType(cst), m_craftJob(cj) { }
 	uint32_t getWorkerCraftScore(const Actor& actor) const;
 };
 // Data about making a specific product type.
@@ -79,7 +83,7 @@ struct CraftJobType final
 struct CraftJob final
 {
 	const CraftJobType& craftJobType;
-	HasCraftingLocationsAndJobs& hasCraftingLocationsAndJobs;
+	HasCraftingLocationsAndJobsForFaction& hasCraftingLocationsAndJobs;
 	Item* workPiece;
 	const MaterialType* materialType;
 	std::vector<CraftStepType>::const_iterator stepIterator;
@@ -88,10 +92,10 @@ struct CraftJob final
 	uint32_t totalSkillPoints;
 	Reservable reservable;
 	// If work piece is provided then this is an upgrade job.
-	CraftJob(const CraftJobType& cjt, HasCraftingLocationsAndJobs& hclaj, Item& wp, const MaterialType* mt, uint32_t msl) : 
+	CraftJob(const CraftJobType& cjt, HasCraftingLocationsAndJobsForFaction& hclaj, Item& wp, const MaterialType* mt, uint32_t msl) : 
 		craftJobType(cjt), hasCraftingLocationsAndJobs(hclaj), workPiece(&wp), materialType(mt), stepIterator(craftJobType.stepTypes.begin()), minimumSkillLevel(msl), totalSkillPoints(0), reservable(1) { }
 	// No work piece provided is a create job.
-	CraftJob(const CraftJobType& cjt, HasCraftingLocationsAndJobs& hclaj, const MaterialType* mt, uint32_t msl) :
+	CraftJob(const CraftJobType& cjt, HasCraftingLocationsAndJobsForFaction& hclaj, const MaterialType* mt, uint32_t msl) :
 	       	craftJobType(cjt), hasCraftingLocationsAndJobs(hclaj), workPiece(nullptr), materialType(mt), stepIterator(craftJobType.stepTypes.begin()), minimumSkillLevel(msl), totalSkillPoints(0), reservable(1) { }
 	uint32_t getQuality() const;
 	uint32_t getStep() const;
@@ -112,16 +116,23 @@ class CraftObjective final : public Objective
 	const SkillType& m_skillType;
 	CraftJob* m_craftJob;
 	HasThreadedTask<CraftThreadedTask> m_threadedTask;
+	std::unordered_set<CraftJob*> m_failedJobs;
 public:
 	CraftObjective(Actor& a, const SkillType& st);
 	void execute();
 	void cancel();
 	void delay() { cancel(); }
 	void reset();
+	void recordFailedJob(CraftJob& craftJob) { assert(!m_failedJobs.contains(&craftJob)); m_failedJobs.insert(&craftJob); }
+	std::unordered_set<CraftJob*>& getFailedJobs() { return m_failedJobs; }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Craft; }
 	std::string name() const { return "craft"; }
 	friend class CraftThreadedTask;
-	friend class HasCraftingLocationsAndJobs;
+	friend class HasCraftingLocationsAndJobsForFaction;
+	// For testing.
+	[[maybe_unused, nodiscard]] CraftJob* getCraftJob() { return m_craftJob; }
+	[[maybe_unused, nodiscard]] bool hasThreadedTask() { return m_threadedTask.exists(); }
+
 };
 class CraftThreadedTask final : public ThreadedTask
 {
@@ -135,27 +146,54 @@ public:
 	void clearReferences();
 };
 // To be used by Area.
-class HasCraftingLocationsAndJobs final
+class HasCraftingLocationsAndJobsForFaction final
 {
+	const Faction& m_faction;
 	std::unordered_map<const CraftStepTypeCategory*, std::unordered_set<Block*>> m_locationsByCategory;
 	std::unordered_map<Block*, std::unordered_set<const CraftStepTypeCategory*>> m_stepTypeCategoriesByLocation;
 	std::unordered_map<const CraftStepTypeCategory*, std::unordered_set<CraftJob*>> m_unassignedProjectsByStepTypeCategory;
 	std::unordered_map<const SkillType*, std::unordered_set<CraftJob*>> m_unassignedProjectsBySkill;
 	std::list<CraftJob> m_jobs;
 public:
+	HasCraftingLocationsAndJobsForFaction(const Faction& f) : m_faction(f) { }
+	// To be used by the player.
 	void addLocation(const CraftStepTypeCategory& craftStepTypeCategory, Block& block);
+	// To be used by the player.
 	void removeLocation(const CraftStepTypeCategory& craftStepTypeCategory, Block& block);
+	// To be used by invalidating events such as set solid.
+	void maybeRemoveLocation(Block& block);
+	// designate something to be crafted.
+	// TODO: Quantity.
 	void addJob(const CraftJobType& craftJobType, const MaterialType* materialType, uint32_t minimumSkillLevel = 0);
+	// To be called by CraftStepProject::onComplete.
 	void stepComplete(CraftJob& craftJob, Actor& actor);
-	void stepInterupted(CraftJob& craftJob);
+	// To be called by CraftStepProject::onCancel.
+	void stepDestroy(CraftJob& craftJob);
+	// List a project as being in need of workers.
 	void indexUnassigned(CraftJob& craftJob);
+	// Unlist a project.
 	void unindexAssigned(CraftJob& craftJob);
+	// To be called when all steps are complete.
 	void jobComplete(CraftJob& craftJob);
+	// Generate a project step for craftJob and dispatch the worker from objective.
 	void makeAndAssignStepProject(CraftJob& craftJob, Block& location, CraftObjective& objective);
 	// To be used by the UI.
 	[[nodiscard]] bool hasLocationsFor(const CraftJobType& craftJobType) const;
 	// May return nullptr;
-	CraftJob* getJobForAtLocation(const Actor& actor, const SkillType& skillType, const Block& block);
-	std::pair<CraftJob*, Block*> getJobAndLocationFor(const Actor& actor, const SkillType& skillType);
+	CraftJob* getJobForAtLocation(const Actor& actor, const SkillType& skillType, const Block& block, std::unordered_set<CraftJob*>& excludeJobs);
+	std::pair<CraftJob*, Block*> getJobAndLocationForWhileExcluding(const Actor& actor, const SkillType& skillType, std::unordered_set<CraftJob*>& excludeJobs);
 	friend class CraftObjectiveType;
+	// For testing.
+	[[maybe_unused, nodiscard]] bool hasJobs() const { return !m_jobs.empty(); }
+	[[maybe_unused, nodiscard]] bool hasLocationsForCategory(const CraftStepTypeCategory& category) const { return m_locationsByCategory.contains(&category); }
+	[[maybe_unused, nodiscard]] bool hasUnassignedProjectsForCategory(const CraftStepTypeCategory& category) const { return m_unassignedProjectsByStepTypeCategory.contains(&category); }
+};
+class HasCraftingLocationsAndJobs final
+{
+	std::unordered_map<const Faction*, HasCraftingLocationsAndJobsForFaction> m_data;
+public:
+	void addFaction(const Faction& faction) { m_data.try_emplace(&faction, faction); }
+	void removeFaction(const Faction& faction) { m_data.erase(&faction); }
+	void maybeRemoveLocation(Block& location) { for(auto& pair : m_data) pair.second.maybeRemoveLocation(location); }
+	[[nodiscard]] HasCraftingLocationsAndJobsForFaction& at(const Faction& faction) { assert(m_data.contains(&faction)); return m_data.at(&faction); }
 };

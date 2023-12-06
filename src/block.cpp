@@ -367,6 +367,7 @@ void Block::setSolid(const MaterialType& materialType)
 	setBelowNotExposedToSky();
 	// Remove from stockpiles.
 	m_area->m_hasStockPiles.removeBlockFromAllFactions(*this);
+	m_area->m_hasCraftingLocationsAndJobs.maybeRemoveLocation(*this);
 	if(wasEmpty)
 		// Dishonor all reservations: there are no reservations which can exist on both a solid and not solid block.
 		m_reservable.clearAll();
