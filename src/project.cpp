@@ -1,9 +1,15 @@
 #include "project.h"
 #include "block.h"
 #include "area.h"
+#include "hasShape.h"
 #include "reservable.h"
 #include "simulation.h"
 #include <algorithm>
+#include <memory>
+void ProjectRequiredShapeDishonoredCallback::execute(uint32_t oldCount, uint32_t newCount)
+{
+	m_project.onHasShapeReservationDishonored(m_hasShape, oldCount, newCount);
+}
 ProjectFinishEvent::ProjectFinishEvent(const Step delay, Project& p) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay), m_project(p) {}
 void ProjectFinishEvent::execute() { m_project.complete(); }
 void ProjectFinishEvent::clearReferences() { m_project.m_finishEvent.clearPointer(); }
@@ -98,32 +104,49 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 		}
 		if(!m_project.reservationsComplete())
 		{
+			auto record = [&](HasShape& hasShape, ProjectRequirementCounts& counts)
+			{
+				uint32_t desiredQuantity = counts.required - counts.reserved;
+				uint32_t quantity = std::min(desiredQuantity, hasShape.m_reservable.getUnreservedCount(m_project.m_faction));
+				assert(quantity != 0);
+				counts.reserved += quantity;
+				assert(counts.reserved <= counts.required);
+				if(*hasShape.m_location == m_project.m_location || hasShape.isAdjacentTo(m_project.m_location))
+				{
+					// Item is already at or next to project location.
+					counts.delivered += quantity;
+					assert(!m_alreadyAtSite.contains(&hasShape));
+					m_alreadyAtSite[&hasShape] = quantity;
+				}
+				else
+					m_project.addToPickup(hasShape, counts, quantity);
+			};
 			// Verfy the worker can path to the required materials. Cumulative for all candidates in this step but reset if not satisfied.
 			std::function<bool(const Block&)> predicate = [&](const Block& block)
 			{
 				for(Item* item : block.m_hasItems.getAll())
-					for(auto& [itemQuery, projectItemCounts] : m_project.m_requiredItems)
+					for(auto& [itemQuery, projectRequirementCounts] : m_project.m_requiredItems)
 					{
-						if(projectItemCounts.required == projectItemCounts.reserved)
+						if(projectRequirementCounts.required == projectRequirementCounts.reserved)
 							continue;
 						if(item->m_reservable.isFullyReserved(&m_project.m_faction))
 							continue;	
 						if(!itemQuery(*item))
 							continue;
-						uint32_t desiredQuantity = projectItemCounts.required - projectItemCounts.reserved;
-						uint32_t quantity = std::min(desiredQuantity, item->m_reservable.getUnreservedCount(m_project.m_faction));
-						assert(quantity != 0);
-						projectItemCounts.reserved += quantity;
-						assert(projectItemCounts.reserved <= projectItemCounts.required);
-						if(*item->m_location == m_project.m_location || item->isAdjacentTo(m_project.m_location))
-						{
-							// Item is already at or next to project location.
-							projectItemCounts.delivered += quantity;
-							assert(!m_alreadyAtSite.contains(item));
-							m_alreadyAtSite[item] = quantity;
-						}
-						else
-							m_project.addToPickup(*item, projectItemCounts, quantity);
+						record(*item, projectRequirementCounts);
+						if(m_project.reservationsComplete())
+							return true;
+					}
+				for(Actor* actor : block.m_hasActors.getAll())
+					for(auto& [actorQuery, projectRequirementCounts] : m_project.m_requiredActors)
+					{
+						if(projectRequirementCounts.required == projectRequirementCounts.reserved)
+							continue;
+						if(actor->m_reservable.isFullyReserved(&m_project.m_faction))
+							continue;	
+						if(!actorQuery(*actor))
+							continue;
+						record(*actor, projectRequirementCounts);
 						if(m_project.reservationsComplete())
 							return true;
 					}
@@ -162,19 +185,13 @@ void ProjectTryToAddWorkersThreadedTask::writeStep()
 		Project* project = &m_project;
 		for(auto& [hasShape, pair] : m_project.m_toPickup)
 		{
-			DishonorCallback dishonorCallback = [project, hasShape](uint32_t oldCount, uint32_t newCount)
-			{ 
-				project->onHasShapeReservationDishonored(*hasShape, oldCount, newCount);
-			};
-			hasShape->m_reservable.reserveFor(m_project.m_canReserve, pair.second, dishonorCallback);
+			std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<ProjectRequiredShapeDishonoredCallback>(*project, *hasShape);
+			hasShape->m_reservable.reserveFor(m_project.m_canReserve, pair.second, std::move(dishonorCallback));
 		}
 		for(auto& [hasShape, quantity] : m_alreadyAtSite)
 		{
-			DishonorCallback dishonorCallback = [project, hasShape](uint32_t oldCount, uint32_t newCount)
-			{ 
-				project->onHasShapeReservationDishonored(*hasShape, oldCount, newCount);
-			};
-			hasShape->m_reservable.reserveFor(m_project.m_canReserve, quantity, dishonorCallback);
+			std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<ProjectRequiredShapeDishonoredCallback>(*project, *hasShape);
+			hasShape->m_reservable.reserveFor(m_project.m_canReserve, quantity, std::move(dishonorCallback));
 		}
 		// Add all actors.
 		std::vector<Actor*> notAdded;
@@ -196,7 +213,7 @@ void ProjectTryToAddWorkersThreadedTask::writeStep()
 	}
 	else
 	{
-		// Could not find required items / actors, activate delay and release candidates.
+		// Could not find required items / actors, activate delay and reset.
 		if(m_project.canReset())
 		{
 			m_project.setDelayOn();
@@ -223,17 +240,22 @@ bool ProjectTryToAddWorkersThreadedTask::validate()
 }
 void ProjectTryToAddWorkersThreadedTask::resetProjectCounts()
 {
-	for(auto& [itemQuery, projectItemCounts] : m_project.m_requiredItems)
+	for(auto& pair : m_project.m_requiredItems)
 	{
-		projectItemCounts.reserved = 0;
-		projectItemCounts.delivered = 0;
+		pair.second.reserved = 0;
+		pair.second.delivered = 0;
+	}
+	for(auto& pair : m_project.m_requiredActors)
+	{
+		pair.second.reserved = 0;
+		pair.second.delivered = 0;
 	}
 	m_project.m_toPickup.clear();
 }
 // Derived classes are expected to provide getDuration, getConsumedItems, getUnconsumedItems, getByproducts, onDelay, offDelay, and onComplete.
-Project::Project(const Faction* f, Block& l, size_t mw, DishonorCallback locationDishonorCallback) : m_finishEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToReserveEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_tryToAddWorkersThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_canReserve(f), m_maxWorkers(mw), m_delay(false), m_haulRetries(0), m_requirementsLoaded(false), m_location(l), m_faction(*f)
+Project::Project(const Faction* f, Block& l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback) : m_finishEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToReserveEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_tryToAddWorkersThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_canReserve(f), m_maxWorkers(mw), m_delay(false), m_haulRetries(0), m_requirementsLoaded(false), m_location(l), m_faction(*f)
 {
-	m_location.m_reservable.reserveFor(m_canReserve, 1u, locationDishonorCallback);
+	m_location.m_reservable.reserveFor(m_canReserve, 1u, std::move(locationDishonorCallback));
 }
 bool Project::reservationsComplete() const
 {
@@ -262,18 +284,18 @@ void Project::recordRequiredActorsAndItems()
 	m_requirementsLoaded = true;
 	for(auto& [itemQuery, quantity] : getConsumed())
 	{
-		ProjectItemCounts projectItemCounts(quantity, true);
-		m_requiredItems.emplace_back(itemQuery, std::move(projectItemCounts));
+		ProjectRequirementCounts projectRequirementCounts(quantity, true);
+		m_requiredItems.emplace_back(itemQuery, std::move(projectRequirementCounts));
 	}
 	for(auto& [itemQuery, quantity] : getUnconsumed())
 	{
-		ProjectItemCounts projectItemCounts(quantity, false);
-		m_requiredItems.emplace_back(itemQuery, std::move(projectItemCounts));
+		ProjectRequirementCounts projectRequirementCounts(quantity, false);
+		m_requiredItems.emplace_back(itemQuery, std::move(projectRequirementCounts));
 	}
 	for(auto& [actorQuery, quantity] : getActors())
 	{
-		ProjectItemCounts projectItemCounts(quantity, false);
-		m_requiredActors.emplace_back(actorQuery, std::move(projectItemCounts));
+		ProjectRequirementCounts projectRequirementCounts(quantity, false);
+		m_requiredActors.emplace_back(actorQuery, std::move(projectRequirementCounts));
 	}
 }
 void Project::addWorker(Actor& actor, Objective& objective)
@@ -360,14 +382,12 @@ void Project::removeWorker(Actor& actor)
 		removeFromMaking(actor);
 	m_workers.erase(&actor);
 	if(m_workers.empty())
-		resetOrCancel();
-}
-void Project::resetOrCancel()
-{
-	if(canReset())
-		reset();
-	else
-		cancel();
+	{
+		if(canReset())
+			reset();
+		else
+			cancel();
+	}
 }
 void Project::addToMaking(Actor& actor)
 {
@@ -417,7 +437,7 @@ void Project::haulSubprojectComplete(HaulSubproject& haulSubproject)
 }
 void Project::haulSubprojectCancel(HaulSubproject& haulSubproject)
 {
-	addToPickup(haulSubproject.m_toHaul, haulSubproject.m_projectItemCounts, haulSubproject.m_quantity);
+	addToPickup(haulSubproject.m_toHaul, haulSubproject.m_projectRequirementCounts, haulSubproject.m_quantity);
 	for(Actor* actor : haulSubproject.m_workers)
 	{
 		actor->m_canPickup.putDownIfAny(*actor->m_location);
@@ -429,11 +449,11 @@ void Project::haulSubprojectCancel(HaulSubproject& haulSubproject)
 	}
 	m_haulSubprojects.remove(haulSubproject);
 }
-void Project::setLocationDishonorCallback(DishonorCallback dishonorCallback)
+void Project::setLocationDishonorCallback(std::unique_ptr<DishonorCallback> dishonorCallback)
 {
-	m_location.m_reservable.setDishonorCallbackFor(m_canReserve, dishonorCallback);
+	m_location.m_reservable.setDishonorCallbackFor(m_canReserve, std::move(dishonorCallback));
 }
-void Project::addToPickup(HasShape& hasShape, ProjectItemCounts& counts, uint32_t quantity)
+void Project::addToPickup(HasShape& hasShape, ProjectRequirementCounts& counts, uint32_t quantity)
 {
 	if(m_toPickup.contains(&hasShape))
 		m_toPickup[&hasShape].second += quantity;

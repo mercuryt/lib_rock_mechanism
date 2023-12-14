@@ -24,12 +24,12 @@ TEST_CASE("farmFields")
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	Simulation simulation;
 	Area& area = simulation.createArea(10,10,10);
-	Block& block = area.m_blocks[4][4][2];
+	Block& block = area.getBlock(4, 4, 2);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	area.m_hasFarmFields.registerFaction(faction);
 	Cuboid cuboid(block, block);
 	FarmField& field = area.m_hasFarmFields.at(faction).create(cuboid);
-	Actor& actor = simulation.createActor(dwarf, area.m_blocks[1][1][2]);
+	Actor& actor = simulation.createActor(dwarf, area.getBlock(1, 1, 2));
 	actor.setFaction(&faction);
 	SUBCASE("sow")
 	{
@@ -76,8 +76,8 @@ TEST_CASE("farmFields")
 	}
 	SUBCASE("location no longer accessable to sow")
 	{
-		areaBuilderUtil::setSolidWall(area.m_blocks[0][3][2], area.m_blocks[8][3][2], marble);
-		Block& gateway = area.m_blocks[9][3][2];
+		areaBuilderUtil::setSolidWall(area.getBlock(0, 3, 2), area.getBlock(8, 3, 2), marble);
+		Block& gateway = area.getBlock(9, 3, 2);
 		uint16_t dayBeforeSowingStarts = wheatGrass.dayOfYearForSowStart - 1u;
 		simulation.setDateTime({1, dayBeforeSowingStarts, 1200 });
 		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
@@ -201,8 +201,8 @@ TEST_CASE("farmFields")
 	}
 	SUBCASE("location no longer accessable to harvest")
 	{
-		areaBuilderUtil::setSolidWall(area.m_blocks[0][3][2], area.m_blocks[8][3][2], marble);
-		Block& gateway = area.m_blocks[9][3][2];
+		areaBuilderUtil::setSolidWall(area.getBlock(0, 3, 2), area.getBlock(8, 3, 2), marble);
+		Block& gateway = area.getBlock(9, 3, 2);
 		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
 		block.m_hasPlant.addPlant(wheatGrass, 100);
 		// Skip ahead to harvest time.
@@ -298,9 +298,9 @@ TEST_CASE("farmFields")
 		REQUIRE(!area.m_hasFarmFields.hasGivePlantsFluidDesignations(faction));
 		REQUIRE(plant.m_growthEvent.exists());
 		Item& bucket = simulation.createItem(ItemType::byName("bucket"), MaterialType::byName("poplar wood"), 50u, 0);
-		Block& bucketLocation = area.m_blocks[7][7][2];
+		Block& bucketLocation = area.getBlock(7, 7, 2);
 		bucket.setLocation(bucketLocation);
-		Block& pondLocation = area.m_blocks[3][9][1];
+		Block& pondLocation = area.getBlock(3, 9, 1);
 		pondLocation.setNotSolid();
 		pondLocation.addFluid(100, water);
 		REQUIRE(actor.m_canPickup.canPickupAny(bucket));

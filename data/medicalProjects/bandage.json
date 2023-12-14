@@ -1,0 +1,11 @@
+{
+	"name": "bandage",
+	"baseMinutesDuration": 20,
+	"consumedItems":
+	[
+		{
+			"itemType": "bandage",
+			"quantity": 1
+		}
+	]
+}

@@ -21,8 +21,8 @@ TEST_CASE("craft")
 	Simulation simulation;
 	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName("marble"));
-	Block& chiselLocation = area.m_blocks[3][5][1];
-	Block& sawingLocation = area.m_blocks[9][9][1];
+	Block& chiselLocation = area.getBlock(3, 5, 1);
+	Block& sawingLocation = area.getBlock(9, 9, 1);
 	Faction faction(L"tower of power");
 	area.m_hasCraftingLocationsAndJobs.addFaction(faction);
 	REQUIRE(!area.m_hasCraftingLocationsAndJobs.at(faction).hasLocationsFor(woodBucket));
@@ -32,7 +32,7 @@ TEST_CASE("craft")
 	REQUIRE(area.m_hasCraftingLocationsAndJobs.at(faction).hasLocationsFor(woodBucket));
 	CraftObjectiveType craftObjectiveTypeWoodWorking(woodWorking);
 	CraftObjectiveType craftObjectiveTypeAssembling(assembling);
-	Actor& dwarf1 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.m_blocks[1][1][1]);
+	Actor& dwarf1 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 1, 1));
 	dwarf1.setFaction(&faction);
 	area.m_hasActors.add(dwarf1);
 	std::unordered_set<CraftJob*> emptyJobSet;
@@ -57,17 +57,17 @@ TEST_CASE("craft")
 	}
 	SUBCASE("craft bucket")
 	{
-		Block& boardLocation = area.m_blocks[6][6][1];
+		Block& boardLocation = area.getBlock(6, 6, 1);
 		Item& board = simulation.createItem(ItemType::byName("board"), wood, 10u);
 		board.setLocation(boardLocation);
 		Item& rope = simulation.createItem(ItemType::byName("rope"), MaterialType::byName("plant matter"), 10u);
-		rope.setLocation(area.m_blocks[8][6][1]);
+		rope.setLocation(area.getBlock(8, 6, 1));
 		Item& saw = simulation.createItem(ItemType::byName("saw"), bronze, 25u, 0);
-		saw.setLocation(area.m_blocks[3][7][1]);
+		saw.setLocation(area.getBlock(3, 7, 1));
 		Item& mallet = simulation.createItem(ItemType::byName("mallet"), bronze, 25u, 0);
-		mallet.setLocation(area.m_blocks[4][9][1]);
+		mallet.setLocation(area.getBlock(4, 9, 1));
 		Item& chisel = simulation.createItem(ItemType::byName("chisel"), bronze, 25u, 0);
-		chisel.setLocation(area.m_blocks[4][9][1]);
+		chisel.setLocation(area.getBlock(4, 9, 1));
 		REQUIRE(!craftObjectiveTypeWoodWorking.canBeAssigned(dwarf1));
 		area.m_hasCraftingLocationsAndJobs.at(faction).addJob(woodBucket, &wood);
 		// There is wood working to be done.
@@ -177,7 +177,7 @@ TEST_CASE("craft")
 		}
 		SUBCASE("location inaccessable")
 		{
-			areaBuilderUtil::setSolidWall(area.m_blocks[0][3][1], area.m_blocks[9][3][1], wood);
+			areaBuilderUtil::setSolidWall(area.getBlock(0, 3, 1), area.getBlock(9, 3, 1), wood);
 			simulation.fastForwardUntillActorHasNoDestination(dwarf1);
 			REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "craft");
 			REQUIRE(dwarf1.m_project != nullptr);
@@ -190,7 +190,7 @@ TEST_CASE("craft")
 		SUBCASE("worker dies")
 		{
 			dwarf1.die(CauseOfDeath::thirst);
-			Actor& dwarf2 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.m_blocks[1][5][1]);
+			Actor& dwarf2 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 5, 1));
 			dwarf2.setFaction(&faction);
 			area.m_hasActors.add(dwarf2);
 			REQUIRE(craftObjectiveTypeWoodWorking.canBeAssigned(dwarf2));

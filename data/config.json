@@ -147,5 +147,7 @@
 	"projectileMedianTargetVolume": 6500,
 	"projectileHitPercentPerPointAttackTypeCombatScore": 0.4,
 	"attackCoolDownDurationBaseDextarity": 55,
-	"goToPriority": 1500
+	"goToPriority": 1500,
+	"medicalPriority": 200,
+	"medicalProjectDelayMinutes": 10
 }

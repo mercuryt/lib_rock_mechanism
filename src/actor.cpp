@@ -57,6 +57,7 @@ void Actor::die(CauseOfDeath causeOfDeath)
 		m_location->m_area->m_hasActors.remove(*this);
 	if(m_project != nullptr)
 		m_project->removeWorker(*this);
+	setStatic(true);
 }
 void Actor::passout(Step duration)
 {

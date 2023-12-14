@@ -4,6 +4,7 @@
 #include "item.h"
 #include "area.h"
 #include "reservable.h"
+#include <memory>
 #include <sys/types.h>
 #include <unordered_set>
 #include <algorithm>
@@ -15,7 +16,7 @@ void HaulSubprojectParamaters::reset()
 	strategy = HaulStrategy::None;
 	haulTool = nullptr;
 	beastOfBurden = nullptr;
-	projectItemCounts = nullptr;	
+	projectRequirementCounts = nullptr;	
 }
 // Check that the haul strategy selected in read step is still valid in write step.
 bool HaulSubprojectParamaters::validate() const
@@ -23,7 +24,7 @@ bool HaulSubprojectParamaters::validate() const
 	assert(toHaul != nullptr);
 	assert(quantity != 0);
 	assert(strategy != HaulStrategy::None);
-	assert(projectItemCounts != nullptr);
+	assert(projectRequirementCounts != nullptr);
 	const Faction& faction = *(*workers.begin())->getFaction();
 	for(Actor* worker : workers)
 		if(worker->m_reservable.isFullyReserved(&faction))
@@ -241,14 +242,19 @@ uint32_t CanPickup::maximumNumberWhichCanBeCarriedWithMinimumSpeed(const HasShap
 		quantity++;
 	return quantity;
 }
-HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters) : m_project(p), m_workers(paramaters.workers.begin(), paramaters.workers.end()), m_toHaul(*paramaters.toHaul), m_quantity(paramaters.quantity), m_strategy(paramaters.strategy), m_haulTool(paramaters.haulTool), m_leader(nullptr), m_itemIsMoving(false), m_beastOfBurden(paramaters.beastOfBurden), m_projectItemCounts(*paramaters.projectItemCounts), m_genericItemType(nullptr), m_genericMaterialType(nullptr)
+HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters) : m_project(p), m_workers(paramaters.workers.begin(), paramaters.workers.end()), m_toHaul(*paramaters.toHaul), m_quantity(paramaters.quantity), m_strategy(paramaters.strategy), m_haulTool(paramaters.haulTool), m_leader(nullptr), m_itemIsMoving(false), m_beastOfBurden(paramaters.beastOfBurden), m_projectRequirementCounts(*paramaters.projectRequirementCounts), m_genericItemType(nullptr), m_genericMaterialType(nullptr)
 {
 	assert(!m_workers.empty());
-	DishonorCallback dishonorCallback = [&]([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount){ cancel(); };
 	if(m_haulTool != nullptr)
-		m_haulTool->m_reservable.reserveFor(m_project.m_canReserve, 1u, dishonorCallback);
+	{
+		std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<HaulSubprojectDishonorCallback>(*this);
+		m_haulTool->m_reservable.reserveFor(m_project.m_canReserve, 1u, std::move(dishonorCallback));
+	}
 	if(m_beastOfBurden != nullptr)
-		m_beastOfBurden->m_reservable.reserveFor(m_project.m_canReserve, 1u, dishonorCallback);
+	{
+		std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<HaulSubprojectDishonorCallback>(*this);
+		m_beastOfBurden->m_reservable.reserveFor(m_project.m_canReserve, 1u, std::move(dishonorCallback));
+	}
 	if(m_toHaul.isGeneric())
 	{
 		m_genericItemType = &static_cast<Item&>(m_toHaul).m_itemType;
@@ -700,7 +706,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 	// TODO: make exception for slow haul if very close.
 	HaulSubprojectParamaters output;
 	output.toHaul = &toHaul;
-	output.projectItemCounts = project.m_toPickup.at(&toHaul).first;
+	output.projectRequirementCounts = project.m_toPickup.at(&toHaul).first;
 	uint32_t maxQuantityRequested = project.m_toPickup.at(&toHaul).second;
 	uint32_t minimumSpeed = project.getMinimumHaulSpeed();
 	std::vector<Actor*> workers;
@@ -796,11 +802,11 @@ void HaulSubproject::complete(HasShape& delivered)
 		m_haulTool->m_reservable.clearReservationFor(m_project.m_canReserve);
 	if(m_beastOfBurden != nullptr)
 		m_beastOfBurden->m_reservable.clearReservationFor(m_project.m_canReserve);
-	m_projectItemCounts.delivered += m_quantity;
-	assert(m_projectItemCounts.delivered <= m_projectItemCounts.required);
+	m_projectRequirementCounts.delivered += m_quantity;
+	assert(m_projectRequirementCounts.delivered <= m_projectRequirementCounts.required);
 	if(delivered.isItem())
 	{
-		if(m_projectItemCounts.consumed)
+		if(m_projectRequirementCounts.consumed)
 			m_project.m_toConsume.insert(static_cast<Item*>(&delivered));
 		if(static_cast<Item&>(delivered).isWorkPiece())
 			delivered.setLocation(m_project.m_location);

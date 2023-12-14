@@ -13,12 +13,12 @@ TEST_CASE("basicNeedsSentient")
 	Simulation simulation;
 	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
-	Actor& actor = simulation.createActor(dwarf, area.m_blocks[1][1][2], 50);
+	Actor& actor = simulation.createActor(dwarf, area.getBlock(1, 1, 2), 50);
 	actor.setFaction(&faction);
 	REQUIRE(actor.m_canGrow.isGrowing());
 	SUBCASE("drink from pond")
 	{
-		Block& pondLocation = area.m_blocks[3][3][1];
+		Block& pondLocation = area.getBlock(3, 3, 1);
 		pondLocation.setNotSolid();
 		pondLocation.addFluid(100, water);
 		simulation.fastForward(dwarf.stepsFluidDrinkFreqency);
@@ -40,7 +40,7 @@ TEST_CASE("basicNeedsSentient")
 	SUBCASE("drink from bucket")
 	{
 		Item& bucket = simulation.createItem(ItemType::byName("bucket"), MaterialType::byName("poplar wood"), 50u, 0u, nullptr);
-		Block& bucketLocation = area.m_blocks[7][7][2];
+		Block& bucketLocation = area.getBlock(7, 7, 2);
 		bucket.setLocation(bucketLocation);
 		bucket.m_hasCargo.add(water, 10);
 		simulation.fastForward(dwarf.stepsFluidDrinkFreqency);
@@ -65,7 +65,7 @@ TEST_CASE("basicNeedsSentient")
 	SUBCASE("eat prepared meal")
 	{
 		Item& meal = simulation.createItem(ItemType::byName("prepared meal"), MaterialType::byName("fruit"), 50u, 0u, nullptr);
-		Block& mealLocation = area.m_blocks[5][5][2];
+		Block& mealLocation = area.getBlock(5, 5, 2);
 		meal.setLocation(mealLocation);
 		REQUIRE(actor.m_mustEat.getDesireToEatSomethingAt(mealLocation) == UINT32_MAX);
 		simulation.fastForward(dwarf.stepsEatFrequency);
@@ -91,7 +91,7 @@ TEST_CASE("basicNeedsSentient")
 	SUBCASE("eat fruit")
 	{
 		Item& fruit = simulation.createItem(ItemType::byName("apple"), MaterialType::byName("fruit"), 50u);
-		Block& fruitLocation = area.m_blocks[6][5][2];
+		Block& fruitLocation = area.getBlock(6, 5, 2);
 		fruit.setLocation(fruitLocation);
 		REQUIRE(actor.m_mustEat.getDesireToEatSomethingAt(fruitLocation) == 2);
 		simulation.fastForward(dwarf.stepsEatFrequency);
@@ -123,10 +123,10 @@ TEST_CASE("basicNeedsNonsentient")
 	Simulation simulation;
 	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
-	Actor& actor = simulation.createActor(redDeer, area.m_blocks[1][1][2], 50);
+	Actor& actor = simulation.createActor(redDeer, area.getBlock(1, 1, 2), 50);
 	REQUIRE(actor.m_canGrow.isGrowing());
 	REQUIRE(actor.m_mustDrink.thirstEventExists());
-	Block& pondLocation = area.m_blocks[3][3][1];
+	Block& pondLocation = area.getBlock(3, 3, 1);
 	pondLocation.setNotSolid();
 	pondLocation.addFluid(100, water);
 	SUBCASE("sleep outside at current location")
@@ -155,7 +155,7 @@ TEST_CASE("basicNeedsNonsentient")
 	}
 	SUBCASE("eat leaves")
 	{
-		Block& grassLocation = area.m_blocks[5][5][2];
+		Block& grassLocation = area.getBlock(5, 5, 2);
 		grassLocation.m_hasPlant.addPlant(wheatGrass, 100);
 		Plant& grass = grassLocation.m_hasPlant.get();
 		// Generate objectives.
@@ -183,9 +183,9 @@ TEST_CASE("basicNeedsNonsentient")
 	}
 	SUBCASE("sleep at assigned spot")
 	{
-		areaBuilderUtil::setSolidWall(area.m_blocks[0][2][2], area.m_blocks[8][2][2], dirt);
-		Block& gateway = area.m_blocks[9][2][2];
-		Block& spot = area.m_blocks[5][5][2];
+		areaBuilderUtil::setSolidWall(area.getBlock(0, 2, 2), area.getBlock(8, 2, 2), dirt);
+		Block& gateway = area.getBlock(9, 2, 2);
+		Block& spot = area.getBlock(5, 5, 2);
 		actor.m_mustSleep.setLocation(spot);
 		actor.m_mustSleep.tired();
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "sleep");
@@ -228,7 +228,7 @@ TEST_CASE("basicNeedsNonsentient")
 	SUBCASE("scavenge corpse")
 	{
 		const AnimalSpecies& blackBear = AnimalSpecies::byName("black bear");
-		Actor& bear = simulation.createActor(blackBear, area.m_blocks[5][1][2]);
+		Actor& bear = simulation.createActor(blackBear, area.getBlock(5, 1, 2));
 		Actor& deer = actor;
 		uint32_t deerMass = deer.getMass();
 		deer.die(CauseOfDeath::thirst);
@@ -249,7 +249,7 @@ TEST_CASE("basicNeedsNonsentient")
 	SUBCASE("leave location with unsafe temperature")
 	{
 		REQUIRE(actor.m_canGrow.isGrowing());
-		Block& temperatureSourceLocation = area.m_blocks[1][1][3];
+		Block& temperatureSourceLocation = area.getBlock(1, 1, 3);
 		area.m_areaHasTemperature.addTemperatureSource(temperatureSourceLocation, 200);
 		simulation.doStep();
 		REQUIRE(!actor.m_needsSafeTemperature.isSafeAtCurrentLocation());
@@ -266,7 +266,7 @@ TEST_CASE("death")
 	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	areaBuilderUtil::setSolidWalls(area, 5, MaterialType::byName("marble"));
-	Actor& actor = simulation.createActor(redDeer, area.m_blocks[1][1][2], 50);
+	Actor& actor = simulation.createActor(redDeer, area.getBlock(1, 1, 2), 50);
 	SUBCASE("thirst")
 	{
 		// Generate objectives, discard eat if it exists.
@@ -282,7 +282,7 @@ TEST_CASE("death")
 	}
 	SUBCASE("hunger")
 	{
-		Block& pondLocation = area.m_blocks[3][3][1];
+		Block& pondLocation = area.getBlock(3, 3, 1);
 		pondLocation.setNotSolid();
 		pondLocation.addFluid(100, FluidType::byName("water"));
 		// Generate objectives, discard drink if it exists.
@@ -297,7 +297,7 @@ TEST_CASE("death")
 	}
 	SUBCASE("temperature")
 	{
-		Block& temperatureSourceLocation = area.m_blocks[5][5][2];
+		Block& temperatureSourceLocation = area.getBlock(5, 5, 2);
 		area.m_areaHasTemperature.addTemperatureSource(temperatureSourceLocation, 60000);
 		simulation.doStep();
 		REQUIRE(!actor.m_needsSafeTemperature.isSafeAtCurrentLocation());

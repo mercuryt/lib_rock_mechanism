@@ -21,7 +21,7 @@ void ConstructThreadedTask::writeStep()
 	{
 		if(!m_findsPath.areAllBlocksAtDestinationReservable(m_constructObjective.m_actor.getFaction()))
 		{
-			// Proposed location while constructging has been reserved already, try to find another.
+			// Proposed location while constructing has been reserved already, try to find another.
 			m_constructObjective.m_constructThreadedTask.create(m_constructObjective);
 			return;
 		}
@@ -183,13 +183,17 @@ Step ConstructProject::getDuration() const
 		totalScore += getWorkerConstructScore(*pair.first);
 	return m_materialType.constructionData->duration / totalScore;
 }
+void ConstructionLocationDishonorCallback::execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount)
+{
+	m_hasConstructionDesignationsForFaction.undesignate(m_location);
+}
 // If blockFeatureType is null then construct a wall rather then a feature.
 void HasConstructionDesignationsForFaction::designate(Block& block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType)
 {
 	assert(!contains(block));
 	block.m_hasDesignations.insert(m_faction, BlockDesignation::Construct);
-	DishonorCallback locationDishonorCallback = [&]([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { undesignate(block); };
-	m_data.try_emplace(&block, &m_faction, block, blockFeatureType, materialType, locationDishonorCallback);
+	std::unique_ptr<DishonorCallback> locationDishonorCallback = std::make_unique<ConstructionLocationDishonorCallback>(*this, block);
+	m_data.try_emplace(&block, &m_faction, block, blockFeatureType, materialType, std::move(locationDishonorCallback));
 }
 void HasConstructionDesignationsForFaction::undesignate(Block& block)
 {

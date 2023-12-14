@@ -11,7 +11,7 @@ TEST_CASE("plant")
 	DateTime now = {12, 100, 1200}; 
 	Simulation simulation(now);
 	Area& area = simulation.createArea(10,10,10);
-	Block& location = area.m_blocks[5][5][2];
+	Block& location = area.getBlock(5, 5, 2);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	areaBuilderUtil::setSolidLayer(area, 1, dirt);
 	simulation.m_step = 0;

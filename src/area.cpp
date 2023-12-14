@@ -9,25 +9,18 @@
 #include <numeric>
 
 Area::Area(Simulation& s, uint32_t x, uint32_t y, uint32_t z) :
-	m_simulation(s), m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_areaHasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_hasRain(*this), m_visionCuboidsActive(false)
+	m_blocks(x*y*z), m_simulation(s), m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_areaHasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_hasRain(*this), m_visionCuboidsActive(false)
 {
 	// build m_blocks
-	m_blocks.resize(m_sizeX);
 	for(uint32_t x = 0; x < m_sizeX; ++x)
-	{
-		m_blocks[x].resize(m_sizeY);
 		for(uint32_t y = 0; y < m_sizeY; ++y)
-		{
-			m_blocks[x][y].resize(m_sizeZ);
 			for(uint32_t z = 0; z < m_sizeZ; ++z)
-				m_blocks[x][y][z].setup(*this, x, y, z);
-		}
-	}
+				getBlock(x, y, z).setup(*this, x, y, z);
 	// record adjacent blocks
 	for(uint32_t x = 0; x < m_sizeX; ++x)
 		for(uint32_t y = 0; y < m_sizeY; ++y)
 			for(uint32_t z = 0; z < m_sizeZ; ++z)
-				m_blocks[x][y][z].recordAdjacent();
+				getBlock(x, y, z).recordAdjacent();
 	setDateTime(m_simulation.m_now);
 }
 void Area::readStep()
@@ -131,6 +124,11 @@ void Area::writeStep()
 	// Apply rain.
 	m_hasRain.writeStep();
 }
+Block& Area::getBlock(uint32_t x, uint32_t y, uint32_t z)
+{
+	size_t index = x + (y * m_sizeX) + (z * m_sizeY * m_sizeX); 
+	return m_blocks[index];
+}
 FluidGroup* Area::createFluidGroup(const FluidType& fluidType, std::unordered_set<Block*>& blocks, bool checkMerge)
 {
 	m_fluidGroups.emplace_back(fluidType, blocks, *this, checkMerge);
@@ -156,7 +154,7 @@ void Area::setDateTime(DateTime now)
 }
 Cuboid Area::getZLevel(uint32_t z)
 {
-	return Cuboid(m_blocks[m_sizeX - 1][m_sizeY - 1][z], m_blocks[0][0][z]);
+	return Cuboid(getBlock(m_sizeX - 1, m_sizeY - 1, z), getBlock(0, 0, z));
 }
 void Area::validateAllFluidGroups()
 {

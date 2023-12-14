@@ -15,10 +15,10 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Create Fluid.")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		Block& block = area.m_blocks[5][5][1];
+		Block& block = area.getBlock(5, 5, 1);
 		block.setNotSolid();
 		block.addFluid(100, water);
-		CHECK(area.m_blocks[5][5][1].m_fluids.contains(&water));
+		CHECK(area.getBlock(5, 5, 1).m_fluids.contains(&water));
 		FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
 		CHECK(fluidGroup->m_fillQueue.m_set.size() == 1);
 		fluidGroup->readStep();
@@ -27,16 +27,16 @@ TEST_CASE("fluids smaller")
 		fluidGroup->afterWriteStep();
 		fluidGroup->mergeStep();
 		fluidGroup->splitStep();
-		CHECK(!area.m_blocks[5][5][2].m_fluids.contains(&water));
-		CHECK(area.m_blocks[5][5][1].m_fluids.contains(&water));
+		CHECK(!area.getBlock(5, 5, 2).m_fluids.contains(&water));
+		CHECK(area.getBlock(5, 5, 1).m_fluids.contains(&water));
 		CHECK(area.m_fluidGroups.size() == 1);
 	}
 	SUBCASE("Excess volume spawns and negitive excess despawns.")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 2, marble);
-		Block& block = area.m_blocks[5][5][1];
-		Block& block2 = area.m_blocks[5][5][2];
-		Block& block3 = area.m_blocks[5][5][3];
+		Block& block = area.getBlock(5, 5, 1);
+		Block& block2 = area.getBlock(5, 5, 2);
+		Block& block3 = area.getBlock(5, 5, 3);
 		block.setNotSolid();
 		block2.setNotSolid();
 		block.addFluid(Config::maxBlockVolume * 2, water);
@@ -67,7 +67,7 @@ TEST_CASE("fluids smaller")
 		fluidGroup->splitStep();
 		fluidGroup->mergeStep();
 		CHECK(block2.m_fluids.contains(&water));
-		CHECK(!area.m_blocks[5][5][3].m_fluids.contains(&water));
+		CHECK(!area.getBlock(5, 5, 3).m_fluids.contains(&water));
 		block.removeFluid(Config::maxBlockVolume, water);
 		CHECK(!fluidGroup->m_stable);
 		// Step 3.
@@ -85,7 +85,7 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Remove volume can destroy FluidGroups.")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		Block& block = area.m_blocks[5][5][1];
+		Block& block = area.getBlock(5, 5, 1);
 		block.setNotSolid();
 		block.addFluid(100, water);
 		FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
@@ -107,11 +107,11 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Flow into adjacent hole")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 2, marble);
-		Block& destination = area.m_blocks[5][5][1];
-		Block& block2 = area.m_blocks[5][5][2];
-		Block& origin = area.m_blocks[5][6][2];
-		Block& block4 = area.m_blocks[5][5][3];
-		Block& block5 = area.m_blocks[5][6][3];
+		Block& destination = area.getBlock(5, 5, 1);
+		Block& block2 = area.getBlock(5, 5, 2);
+		Block& origin = area.getBlock(5, 6, 2);
+		Block& block4 = area.getBlock(5, 5, 3);
+		Block& block5 = area.getBlock(5, 6, 3);
 		destination.setNotSolid();
 		block2.setNotSolid();
 		origin.setNotSolid();
@@ -175,15 +175,15 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Flow across area and then fill hole")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		Block& block = area.m_blocks[5][5][2];
-		Block& block2a = area.m_blocks[5][6][2];
-		Block& block2b = area.m_blocks[6][5][2];
-		Block& block2c = area.m_blocks[5][4][2];
-		Block& block2d = area.m_blocks[4][5][2];
-		Block& block3 = area.m_blocks[6][6][2];
-		Block& block4 = area.m_blocks[5][7][2];
-		Block& block5 = area.m_blocks[5][7][1];
-		Block& block6 = area.m_blocks[5][8][2];
+		Block& block = area.getBlock(5, 5, 2);
+		Block& block2a = area.getBlock(5, 6, 2);
+		Block& block2b = area.getBlock(6, 5, 2);
+		Block& block2c = area.getBlock(5, 4, 2);
+		Block& block2d = area.getBlock(4, 5, 2);
+		Block& block3 = area.getBlock(6, 6, 2);
+		Block& block4 = area.getBlock(5, 7, 2);
+		Block& block5 = area.getBlock(5, 7, 1);
+		Block& block6 = area.getBlock(5, 8, 2);
 		block.addFluid(Config::maxBlockVolume, water);
 		block5.setNotSolid();
 		FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
@@ -242,10 +242,10 @@ TEST_CASE("fluids smaller")
 	SUBCASE("FluidGroups are able to split into parts")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 2, marble);
-		Block& destination1 = area.m_blocks[5][4][1];
-		Block& destination2 = area.m_blocks[5][6][1];
-		Block& origin1 = area.m_blocks[5][5][2];
-		Block& origin2 = area.m_blocks[5][5][3];
+		Block& destination1 = area.getBlock(5, 4, 1);
+		Block& destination2 = area.getBlock(5, 6, 1);
+		Block& origin1 = area.getBlock(5, 5, 2);
+		Block& origin2 = area.getBlock(5, 5, 3);
 		destination1.setNotSolid();
 		destination2.setNotSolid();
 		destination1.m_adjacents[5]->setNotSolid();
@@ -282,9 +282,9 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Fluid Groups merge")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		Block& origin1 = area.m_blocks[5][4][1];
-		Block& block1 = area.m_blocks[5][5][1];
-		Block& origin2 = area.m_blocks[5][6][1];
+		Block& origin1 = area.getBlock(5, 4, 1);
+		Block& block1 = area.getBlock(5, 5, 1);
+		Block& origin2 = area.getBlock(5, 6, 1);
 		origin1.setNotSolid();
 		block1.setNotSolid();
 		origin2.setNotSolid();
@@ -335,10 +335,10 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Fluid Groups merge four blocks")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		Block& block1 = area.m_blocks[5][4][1];
-		Block& block2 = area.m_blocks[5][5][1];
-		Block& block3 = area.m_blocks[5][6][1];
-		Block& block4 = area.m_blocks[5][7][1];
+		Block& block1 = area.getBlock(5, 4, 1);
+		Block& block2 = area.getBlock(5, 5, 1);
+		Block& block3 = area.getBlock(5, 6, 1);
+		Block& block4 = area.getBlock(5, 7, 1);
 		block1.setNotSolid();
 		block2.setNotSolid();
 		block3.setNotSolid();
@@ -380,9 +380,9 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Denser fluids sink")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 2, marble);
-		Block& block1 = area.m_blocks[5][5][1];
-		Block& block2 = area.m_blocks[5][5][2];
-		Block& block3 = area.m_blocks[5][5][3];
+		Block& block1 = area.getBlock(5, 5, 1);
+		Block& block2 = area.getBlock(5, 5, 2);
+		Block& block3 = area.getBlock(5, 5, 3);
 		block1.setNotSolid();
 		block2.setNotSolid();
 		block1.addFluid(100, water);
@@ -477,13 +477,13 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Merge 3 groups at two block distance")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		Block& block1 = area.m_blocks[5][2][1];
-		Block& block2 = area.m_blocks[5][3][1];
-		Block& block3 = area.m_blocks[5][4][1];
-		Block& block4 = area.m_blocks[5][5][1];
-		Block& block5 = area.m_blocks[5][6][1];
-		Block& block6 = area.m_blocks[5][7][1];
-		Block& block7 = area.m_blocks[5][8][1];
+		Block& block1 = area.getBlock(5, 2, 1);
+		Block& block2 = area.getBlock(5, 3, 1);
+		Block& block3 = area.getBlock(5, 4, 1);
+		Block& block4 = area.getBlock(5, 5, 1);
+		Block& block5 = area.getBlock(5, 6, 1);
+		Block& block6 = area.getBlock(5, 7, 1);
+		Block& block7 = area.getBlock(5, 8, 1);
 		block1.setNotSolid();
 		block2.setNotSolid();
 		block3.setNotSolid();
@@ -548,13 +548,13 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Split test 2")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 4, marble);
-		Block& block1 = area.m_blocks[5][4][1];
-		Block& block2 = area.m_blocks[5][5][1];
-		Block& block3 = area.m_blocks[5][5][2];
-		Block& origin1 = area.m_blocks[5][5][3];
-		Block& origin2 = area.m_blocks[5][6][3];
-		Block& origin3 = area.m_blocks[5][7][3];
-		Block& block4 = area.m_blocks[5][7][2];
+		Block& block1 = area.getBlock(5, 4, 1);
+		Block& block2 = area.getBlock(5, 5, 1);
+		Block& block3 = area.getBlock(5, 5, 2);
+		Block& origin1 = area.getBlock(5, 5, 3);
+		Block& origin2 = area.getBlock(5, 6, 3);
+		Block& origin3 = area.getBlock(5, 7, 3);
+		Block& block4 = area.getBlock(5, 7, 2);
 		origin1.setNotSolid();
 		origin2.setNotSolid();
 		origin3.setNotSolid();
@@ -630,13 +630,13 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Merge with group as it splits")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 4, marble);
-		Block& origin1 = area.m_blocks[5][4][1];
-		Block& block1 = area.m_blocks[5][5][1];
-		Block& block2 = area.m_blocks[5][5][2];
-		Block& origin2 = area.m_blocks[5][5][3];
-		Block& origin3 = area.m_blocks[5][6][3];
-		Block& origin4 = area.m_blocks[5][7][3];
-		Block& block3 = area.m_blocks[5][7][2];
+		Block& origin1 = area.getBlock(5, 4, 1);
+		Block& block1 = area.getBlock(5, 5, 1);
+		Block& block2 = area.getBlock(5, 5, 2);
+		Block& origin2 = area.getBlock(5, 5, 3);
+		Block& origin3 = area.getBlock(5, 6, 3);
+		Block& origin4 = area.getBlock(5, 7, 3);
+		Block& block3 = area.getBlock(5, 7, 2);
 		origin1.setNotSolid();
 		origin2.setNotSolid();
 		origin3.setNotSolid();
@@ -698,15 +698,15 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Merge with two groups while spliting")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 4, marble);
-		Block& origin1 = area.m_blocks[5][4][1];
-		Block& block1 = area.m_blocks[5][5][1];
-		Block& block2 = area.m_blocks[5][5][2];
-		Block& origin2 = area.m_blocks[5][5][3];
-		Block& origin3 = area.m_blocks[5][6][3];
-		Block& origin4 = area.m_blocks[5][7][3];
-		Block& block3 = area.m_blocks[5][7][2];
-		Block& block4 = area.m_blocks[5][7][1];
-		Block& origin5 = area.m_blocks[5][8][1];
+		Block& origin1 = area.getBlock(5, 4, 1);
+		Block& block1 = area.getBlock(5, 5, 1);
+		Block& block2 = area.getBlock(5, 5, 2);
+		Block& origin2 = area.getBlock(5, 5, 3);
+		Block& origin3 = area.getBlock(5, 6, 3);
+		Block& origin4 = area.getBlock(5, 7, 3);
+		Block& block3 = area.getBlock(5, 7, 2);
+		Block& block4 = area.getBlock(5, 7, 1);
+		Block& origin5 = area.getBlock(5, 8, 1);
 		origin1.setNotSolid();
 		origin2.setNotSolid();
 		origin3.setNotSolid();
@@ -790,10 +790,10 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Bubbles")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 4, marble);
-		Block& origin1 = area.m_blocks[5][5][1];
-		Block& origin2 = area.m_blocks[5][5][2];
-		Block& origin3 = area.m_blocks[5][5][3];
-		Block& block1 = area.m_blocks[5][5][4];
+		Block& origin1 = area.getBlock(5, 5, 1);
+		Block& origin2 = area.getBlock(5, 5, 2);
+		Block& origin3 = area.getBlock(5, 5, 3);
+		Block& block1 = area.getBlock(5, 5, 4);
 		origin1.setNotSolid();
 		origin2.setNotSolid();
 		origin3.setNotSolid();
@@ -860,10 +860,10 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Three liquids")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 4, marble);
-		Block& origin1 = area.m_blocks[5][5][1];
-		Block& origin2 = area.m_blocks[5][5][2];
-		Block& origin3 = area.m_blocks[5][5][3];
-		Block& block1 = area.m_blocks[5][5][4];
+		Block& origin1 = area.getBlock(5, 5, 1);
+		Block& origin2 = area.getBlock(5, 5, 2);
+		Block& origin3 = area.getBlock(5, 5, 3);
+		Block& block1 = area.getBlock(5, 5, 4);
 		origin1.setNotSolid();
 		origin2.setNotSolid();
 		origin3.setNotSolid();
@@ -987,9 +987,9 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Set not solid")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		Block& origin1 = area.m_blocks[5][5][1];
-		Block& block1 = area.m_blocks[5][6][1];
-		Block& block2 = area.m_blocks[5][7][1];
+		Block& origin1 = area.getBlock(5, 5, 1);
+		Block& block1 = area.getBlock(5, 6, 1);
+		Block& block2 = area.getBlock(5, 7, 1);
 		origin1.setNotSolid();
 		block2.setNotSolid();
 		origin1.addFluid(100, water);
@@ -1028,9 +1028,9 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Set solid")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		Block& origin1 = area.m_blocks[5][5][1];
-		Block& block1 = area.m_blocks[5][6][1];
-		Block& block2 = area.m_blocks[5][7][1];
+		Block& origin1 = area.getBlock(5, 5, 1);
+		Block& block1 = area.getBlock(5, 6, 1);
+		Block& block2 = area.getBlock(5, 7, 1);
 		origin1.setNotSolid();
 		block1.setNotSolid();
 		block2.setNotSolid();
@@ -1050,9 +1050,9 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Set solid and split")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		Block& block1 = area.m_blocks[5][5][1];
-		Block& origin1 = area.m_blocks[5][6][1];
-		Block& block2 = area.m_blocks[5][7][1];
+		Block& block1 = area.getBlock(5, 5, 1);
+		Block& origin1 = area.getBlock(5, 6, 1);
+		Block& block2 = area.getBlock(5, 7, 1);
 		block1.setNotSolid();
 		origin1.setNotSolid();
 		block2.setNotSolid();
@@ -1094,8 +1094,8 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Cave in falls in fluid and pistons it up")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		Block& block1 = area.m_blocks[5][5][1];
-		Block& block2 = area.m_blocks[5][5][2];
+		Block& block1 = area.getBlock(5, 5, 1);
+		Block& block2 = area.getBlock(5, 5, 2);
 		block1.setNotSolid();
 		block1.addFluid(100, water);
 		block2.setSolid(marble);
@@ -1131,8 +1131,8 @@ TEST_CASE("fluids smaller")
 			return;
 		simulation.m_step = 1;
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		Block& block1 = area.m_blocks[5][5][1];
-		Block& block2 = area.m_blocks[6][6][1];
+		Block& block1 = area.getBlock(5, 5, 1);
+		Block& block2 = area.getBlock(6, 6, 1);
 		block1.setNotSolid();
 		block2.setNotSolid();
 		block1.addFluid(10, water);
@@ -1172,11 +1172,11 @@ TEST_CASE("fluids smaller")
 	{
 		simulation.m_step = 1;
 		areaBuilderUtil::setSolidLayers(area, 0, 2, marble);
-		Block& block1 = area.m_blocks[5][5][1];
-		Block& block2 = area.m_blocks[5][5][2];
-		Block& block3 = area.m_blocks[5][5][3];
-		Block& block4 = area.m_blocks[5][5][4];
-		Block& block5 = area.m_blocks[5][6][3];
+		Block& block1 = area.getBlock(5, 5, 1);
+		Block& block2 = area.getBlock(5, 5, 2);
+		Block& block3 = area.getBlock(5, 5, 3);
+		Block& block4 = area.getBlock(5, 5, 4);
+		Block& block5 = area.getBlock(5, 6, 3);
 		block1.setNotSolid();
 		block2.setNotSolid();
 		block3.addFluid(100, water);
@@ -1215,15 +1215,15 @@ TEST_CASE("area larger")
 	SUBCASE("Flow across flat area double stack")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		Block& origin1 = area.m_blocks[10][10][1];
-		Block& origin2 = area.m_blocks[10][10][2];
-		Block& block1 = area.m_blocks[10][11][1];
-		Block& block2 = area.m_blocks[11][11][1];
-		Block& block3 = area.m_blocks[10][12][1];
-		Block& block4 = area.m_blocks[10][13][1];
-		Block& block5 = area.m_blocks[10][14][1];
-		Block& block6 = area.m_blocks[15][10][1];
-		Block& block7 = area.m_blocks[16][10][1];
+		Block& origin1 = area.getBlock(10, 10, 1);
+		Block& origin2 = area.getBlock(10, 10, 2);
+		Block& block1 = area.getBlock(10, 11, 1);
+		Block& block2 = area.getBlock(11, 11, 1);
+		Block& block3 = area.getBlock(10, 12, 1);
+		Block& block4 = area.getBlock(10, 13, 1);
+		Block& block5 = area.getBlock(10, 14, 1);
+		Block& block6 = area.getBlock(15, 10, 1);
+		Block& block7 = area.getBlock(16, 10, 1);
 		origin1.addFluid(100, water);
 		origin2.addFluid(100, water);
 		FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
@@ -1317,14 +1317,14 @@ TEST_CASE("area larger")
 	SUBCASE("Flow across flat area")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		Block& block = area.m_blocks[10][10][1];
-		Block& block2 = area.m_blocks[10][12][1];
-		Block& block3 = area.m_blocks[11][11][1];
-		Block& block4 = area.m_blocks[10][13][1];
-		Block& block5 = area.m_blocks[10][14][1];
-		Block& block6 = area.m_blocks[10][15][1];
-		Block& block7 = area.m_blocks[16][10][1];
-		Block& block8 = area.m_blocks[17][10][1];
+		Block& block = area.getBlock(10, 10, 1);
+		Block& block2 = area.getBlock(10, 12, 1);
+		Block& block3 = area.getBlock(11, 11, 1);
+		Block& block4 = area.getBlock(10, 13, 1);
+		Block& block5 = area.getBlock(10, 14, 1);
+		Block& block6 = area.getBlock(10, 15, 1);
+		Block& block7 = area.getBlock(16, 10, 1);
+		Block& block8 = area.getBlock(17, 10, 1);
 		block.addFluid(Config::maxBlockVolume, water);
 		FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
 		//Step 1.
@@ -1444,12 +1444,12 @@ TEST_CASE("fluids multi scale")
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 		// Water
-		Block& water1 = area.m_blocks[1][1][1];
-		Block& water2 = area.m_blocks[halfMaxX - 1][maxY - 2][maxZ - 1];		
+		Block& water1 = area.getBlock(1, 1, 1);
+		Block& water2 = area.getBlock(halfMaxX - 1, maxY - 2, maxZ - 1);		
 		areaBuilderUtil::setFullFluidCuboid(water1, water2, water);
 		// CO2
-		Block& CO2_1 = area.m_blocks[halfMaxX][1][1];
-		Block& CO2_2 = area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
+		Block& CO2_1 = area.getBlock(halfMaxX, 1, 1);
+		Block& CO2_2 = area.getBlock(maxX - 2, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(CO2_1, CO2_2, CO2);
 		CHECK(area.m_fluidGroups.size() == 2);
 		FluidGroup* fgWater = water1.getFluidGroup(water);
@@ -1474,10 +1474,10 @@ TEST_CASE("fluids multi scale")
 		CHECK(fgCO2->m_stable);
 		CHECK(fgCO2->m_drainQueue.m_set.size() == expectedBlocks);
 		CHECK(fgCO2->totalVolume() == totalVolume);
-		CHECK(area.m_blocks[1][1][1].m_fluids.contains(&water));
-		CHECK(area.m_blocks[maxX - 2][1][1].m_fluids.contains(&water));
-		CHECK(area.m_blocks[1][1][maxZ - 1].m_fluids.contains(&CO2));
-		CHECK(area.m_blocks[maxX - 2][1][maxZ - 1].m_fluids.contains(&CO2));
+		CHECK(area.getBlock(1, 1, 1).m_fluids.contains(&water));
+		CHECK(area.getBlock(maxX - 2, 1, 1).m_fluids.contains(&water));
+		CHECK(area.getBlock(1, 1, maxZ - 1).m_fluids.contains(&CO2));
+		CHECK(area.getBlock(maxX - 2, 1, maxZ - 1).m_fluids.contains(&CO2));
 	};
 	SUBCASE("trench test 2 fluids scale 2-1")
 	{
@@ -1506,16 +1506,16 @@ TEST_CASE("fluids multi scale")
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 		// Water
-		Block& water1 = area.m_blocks[1][1][1];
-		Block& water2 = area.m_blocks[thirdMaxX][maxY - 2][maxZ - 1];		
+		Block& water1 = area.getBlock(1, 1, 1);
+		Block& water2 = area.getBlock(thirdMaxX, maxY - 2, maxZ - 1);		
 		areaBuilderUtil::setFullFluidCuboid(water1, water2, water);
 		// CO2
-		Block& CO2_1 = area.m_blocks[thirdMaxX + 1][1][1];
-		Block& CO2_2 = area.m_blocks[(thirdMaxX * 2)][maxY - 2][maxZ - 1];
+		Block& CO2_1 = area.getBlock(thirdMaxX + 1, 1, 1);
+		Block& CO2_2 = area.getBlock((thirdMaxX * 2), maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(CO2_1, CO2_2, CO2);
 		// Lava
-		Block& lava1 = area.m_blocks[(thirdMaxX * 2) + 1][1][1];
-		Block& lava2 = area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
+		Block& lava1 = area.getBlock((thirdMaxX * 2) + 1, 1, 1);
+		Block& lava2 = area.getBlock(maxX - 2, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(lava1, lava2, lava);
 		CHECK(area.m_fluidGroups.size() == 3);
 		FluidGroup* fgWater = water1.getFluidGroup(water);
@@ -1542,10 +1542,10 @@ TEST_CASE("fluids multi scale")
 		CHECK(fgLava->m_stable);
 		CHECK(fgLava->m_drainQueue.m_set.size() == expectedBlocks);
 		CHECK(fgLava->totalVolume() == totalVolume);
-		CHECK(area.m_blocks[1][1][1].m_fluids.contains(&lava));
-		CHECK(area.m_blocks[maxX - 2][1][1].m_fluids.contains(&lava));
-		CHECK(area.m_blocks[1][1][maxZ - 1].m_fluids.contains(&CO2));
-		CHECK(area.m_blocks[maxX - 2][1][maxZ - 1].m_fluids.contains(&CO2));
+		CHECK(area.getBlock(1, 1, 1).m_fluids.contains(&lava));
+		CHECK(area.getBlock(maxX - 2, 1, 1).m_fluids.contains(&lava));
+		CHECK(area.getBlock(1, 1, maxZ - 1).m_fluids.contains(&CO2));
+		CHECK(area.getBlock(maxX - 2, 1, maxZ - 1).m_fluids.contains(&CO2));
 	};
 	SUBCASE("trench test 3 fluids scale 3-1")
 	{
@@ -1574,20 +1574,20 @@ TEST_CASE("fluids multi scale")
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 		// Water
-		Block& water1 = area.m_blocks[1][1][1];
-		Block& water2 = area.m_blocks[quarterMaxX][maxY - 2][maxZ - 1];		
+		Block& water1 = area.getBlock(1, 1, 1);
+		Block& water2 = area.getBlock(quarterMaxX, maxY - 2, maxZ - 1);		
 		areaBuilderUtil::setFullFluidCuboid(water1, water2, water);
 		// CO2
-		Block& CO2_1 = area.m_blocks[quarterMaxX + 1][1][1];
-		Block& CO2_2 = area.m_blocks[(quarterMaxX * 2)][maxY - 2][maxZ - 1];
+		Block& CO2_1 = area.getBlock(quarterMaxX + 1, 1, 1);
+		Block& CO2_2 = area.getBlock((quarterMaxX * 2), maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(CO2_1, CO2_2, CO2);
 		// Lava
-		Block& lava1 = area.m_blocks[(quarterMaxX * 2) + 1][1][1];
-		Block& lava2 = area.m_blocks[quarterMaxX * 3][maxY - 2][maxZ - 1];
+		Block& lava1 = area.getBlock((quarterMaxX * 2) + 1, 1, 1);
+		Block& lava2 = area.getBlock(quarterMaxX * 3, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(lava1, lava2, lava);
 		// Mercury
-		Block& mercury1 = area.m_blocks[(quarterMaxX * 3) + 1][1][1];
-		Block& mercury2 = area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
+		Block& mercury1 = area.getBlock((quarterMaxX * 3) + 1, 1, 1);
+		Block& mercury2 = area.getBlock(maxX - 2, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(mercury1, mercury2, mercury);
 		CHECK(area.m_fluidGroups.size() == 4);
 		FluidGroup* fgWater = water1.getFluidGroup(water);
@@ -1629,10 +1629,10 @@ TEST_CASE("fluids multi scale")
 		CHECK(fgMercury->m_stable);
 		CHECK(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
 		CHECK(fgMercury->totalVolume() == totalVolume);
-		CHECK(area.m_blocks[1][1][1].m_fluids.contains(&lava));
-		CHECK(area.m_blocks[maxX - 2][1][1].m_fluids.contains(&lava));
-		CHECK(area.m_blocks[1][1][maxZ - 1].m_fluids.contains(&CO2));
-		CHECK(area.m_blocks[maxX - 2][1][maxZ - 1].m_fluids.contains(&CO2));
+		CHECK(area.getBlock(1, 1, 1).m_fluids.contains(&lava));
+		CHECK(area.getBlock(maxX - 2, 1, 1).m_fluids.contains(&lava));
+		CHECK(area.getBlock(1, 1, maxZ - 1).m_fluids.contains(&CO2));
+		CHECK(area.getBlock(maxX - 2, 1, maxZ - 1).m_fluids.contains(&CO2));
 		CHECK(area.m_fluidGroups.size() == 4);
 		CHECK(area.m_unstableFluidGroups.empty());
 	};
@@ -1671,20 +1671,20 @@ TEST_CASE("fluids multi scale")
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 		// Water
-		Block& water1 = area.m_blocks[1][1][1];
-		Block& water2 = area.m_blocks[quarterMaxX][maxY - 2][maxZ - 1];		
+		Block& water1 = area.getBlock(1, 1, 1);
+		Block& water2 = area.getBlock(quarterMaxX, maxY - 2, maxZ - 1);		
 		areaBuilderUtil::setFullFluidCuboid(water1, water2, water);
 		// CO2
-		Block& CO2_1 = area.m_blocks[quarterMaxX + 1][1][1];
-		Block& CO2_2 = area.m_blocks[(quarterMaxX * 2)][maxY - 2][maxZ - 1];
+		Block& CO2_1 = area.getBlock(quarterMaxX + 1, 1, 1);
+		Block& CO2_2 = area.getBlock((quarterMaxX * 2), maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(CO2_1, CO2_2, CO2);
 		// Water
-		Block& water3 = area.m_blocks[(quarterMaxX * 2) + 1][1][1];
-		Block& water4 = area.m_blocks[quarterMaxX * 3][maxY - 2][maxZ - 1];
+		Block& water3 = area.getBlock((quarterMaxX * 2) + 1, 1, 1);
+		Block& water4 = area.getBlock(quarterMaxX * 3, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(water3, water4, water);
 		// CO2
-		Block& CO2_3 = area.m_blocks[(quarterMaxX * 3) + 1][1][1];
-		Block& CO2_4 = area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
+		Block& CO2_3 = area.getBlock((quarterMaxX * 3) + 1, 1, 1);
+		Block& CO2_4 = area.getBlock(maxX - 2, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(CO2_3, CO2_4, CO2);
 		CHECK(area.m_fluidGroups.size() == 4);
 		FluidGroup* fgWater = water1.getFluidGroup(water);
@@ -1736,20 +1736,20 @@ TEST_CASE("fluids multi scale")
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 		// Water
-		Block& water1 = area.m_blocks[1][1][1];
-		Block& water2 = area.m_blocks[quarterMaxX][maxY - 2][maxZ - 1];		
+		Block& water1 = area.getBlock(1, 1, 1);
+		Block& water2 = area.getBlock(quarterMaxX, maxY - 2, maxZ - 1);		
 		areaBuilderUtil::setFullFluidCuboid(water1, water2, water);
 		// CO2
-		Block& CO2_1 = area.m_blocks[quarterMaxX + 1][1][1];
-		Block& CO2_2 = area.m_blocks[(quarterMaxX * 2)][maxY - 2][maxZ - 1];
+		Block& CO2_1 = area.getBlock(quarterMaxX + 1, 1, 1);
+		Block& CO2_2 = area.getBlock((quarterMaxX * 2), maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(CO2_1, CO2_2, CO2);
 		// Mercury
-		Block& mercury1 = area.m_blocks[(quarterMaxX * 2) + 1][1][1];
-		Block& mercury2 = area.m_blocks[quarterMaxX * 3][maxY - 2][maxZ - 1];
+		Block& mercury1 = area.getBlock((quarterMaxX * 2) + 1, 1, 1);
+		Block& mercury2 = area.getBlock(quarterMaxX * 3, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(mercury1, mercury2, mercury);
 		// CO2
-		Block& CO2_3 = area.m_blocks[(quarterMaxX * 3) + 1][1][1];
-		Block& CO2_4 = area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
+		Block& CO2_3 = area.getBlock((quarterMaxX * 3) + 1, 1, 1);
+		Block& CO2_4 = area.getBlock(maxX - 2, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(CO2_3, CO2_4, CO2);
 		CHECK(area.m_fluidGroups.size() == 4);
 		FluidGroup* fgWater = water1.getFluidGroup(water);
@@ -1814,20 +1814,20 @@ TEST_CASE("fluids multi scale")
 		areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 		std::vector<FluidGroup*> newlySplit;
 		// Water is at 0,0
-		Block& water1 = area.m_blocks[1][1][1];
-		Block& water2 = area.m_blocks[halfMaxX - 1][halfMaxY - 1][maxZ - 1];		
+		Block& water1 = area.getBlock(1, 1, 1);
+		Block& water2 = area.getBlock(halfMaxX - 1, halfMaxY - 1, maxZ - 1);		
 		areaBuilderUtil::setFullFluidCuboid(water1, water2, water);
 		// CO2 is at 0,1
-		Block& CO2_1 = area.m_blocks[1][halfMaxY][1];
-		Block& CO2_2 = area.m_blocks[halfMaxX - 1][maxY - 2][maxZ - 1];
+		Block& CO2_1 = area.getBlock(1, halfMaxY, 1);
+		Block& CO2_2 = area.getBlock(halfMaxX - 1, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(CO2_1, CO2_2, CO2);
 		// Lava is at 1,0
-		Block& lava1 = area.m_blocks[halfMaxX][1][1];
-		Block& lava2 = area.m_blocks[maxX - 2][halfMaxY - 1][maxZ - 1];
+		Block& lava1 = area.getBlock(halfMaxX, 1, 1);
+		Block& lava2 = area.getBlock(maxX - 2, halfMaxY - 1, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(lava1, lava2, lava);
 		// Mercury is at 1,1
-		Block& mercury1 = area.m_blocks[halfMaxX][halfMaxY][1];
-		Block& mercury2 = area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
+		Block& mercury1 = area.getBlock(halfMaxX, halfMaxY, 1);
+		Block& mercury2 = area.getBlock(maxX - 2, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(mercury1, mercury2, mercury);
 		CHECK(area.m_fluidGroups.size() == 4);
 		FluidGroup* fgWater = water1.getFluidGroup(water);
@@ -1871,8 +1871,8 @@ TEST_CASE("fluids multi scale")
 		CHECK(fgMercury->m_stable);
 		CHECK(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
 		CHECK(fgMercury->totalVolume() == totalVolume);
-		CHECK(area.m_blocks[1][1][1].m_fluids.contains(&lava));
-		CHECK(area.m_blocks[1][1][maxZ - 1].m_fluids.contains(&CO2));
+		CHECK(area.getBlock(1, 1, 1).m_fluids.contains(&lava));
+		CHECK(area.getBlock(1, 1, maxZ - 1).m_fluids.contains(&CO2));
 	};
 	SUBCASE("four fluids scale 2")
 	{

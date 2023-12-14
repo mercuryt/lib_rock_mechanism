@@ -148,6 +148,14 @@ public:
 	[[nodiscard]] bool isAvalible(const Faction& faction) const;
 	friend class AreaHasStockPilesForFaction;
 };
+struct StockPileHasShapeDishonorCallback final : public DishonorCallback
+{
+	StockPileProject& m_stockPileProject;
+	StockPileHasShapeDishonorCallback(StockPileProject& hs) : m_stockPileProject(hs) { } 
+	// Craft step project cannot reset so cancel instead and allow to be recreated later.
+	// TODO: Why?
+	void execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { m_stockPileProject.cancel(); }
+};
 class AreaHasStockPilesForFaction
 {
 	Area& m_area;

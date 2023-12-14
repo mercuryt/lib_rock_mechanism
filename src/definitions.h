@@ -146,9 +146,20 @@ namespace definitions
 			(data.contains("projectileItemType") ? &ItemType::byName(data["projectileItemType"]) : nullptr)
 		);
 	}
+	inline std::pair<ItemQuery, uint32_t> loaditemQuery(const Json& data)
+	{
+		const ItemType& itemType = ItemType::byName(data["itemType"].get<std::string>());
+		uint32_t quantity = data["quantity"].get<uint32_t>();
+		ItemQuery query(itemType);
+		if(data.contains("materialType"))
+			query.m_materialType = &MaterialType::byName(data["materialType"].get<std::string>());
+		if(data.contains("materialTypeCategory"))
+			query.m_materialTypeCategory = &MaterialTypeCategory::byName(data["materialTypeCategory"].get<std::string>());
+		return std::make_pair(query, quantity);
+	}
 	inline void loadMaterialTypeConstuctionData()
 	{
-		for(const  Json& data : tryParse(path/"materialConstructionData.json"))
+		for(const Json& data : tryParse(path/"materialConstructionData.json"))
 		{
 			MaterialConstructionData& constructionData = MaterialConstructionData::data.emplace_back
 			(
@@ -158,27 +169,12 @@ namespace definitions
 			 );
 			for(const Json& item : data["consumed"])
 			{
-				const ItemType& itemType = ItemType::byName(item["itemType"].get<std::string>());
-				uint32_t quantity = item["quantity"].get<uint32_t>();
-				ItemQuery query(itemType);
-				if(item.contains("materialType"))
-					query.m_materialType = &MaterialType::byName(item["materialType"].get<std::string>());
-				if(item.contains("materialTypeCategory"))
-					query.m_materialTypeCategory = &MaterialTypeCategory::byName(item["materialTypeCategory"].get<std::string>());
+				auto [query, quantity] = loaditemQuery(item);
 				constructionData.consumed.emplace_back(query, quantity);
 			}
 			for(const Json& item : data["unconsumed"])
 			{
-				const ItemType& itemType = ItemType::byName(item["itemType"].get<std::string>());
-				uint32_t quantity = item["quantity"].get<uint32_t>();
-				ItemQuery query(itemType);
-				if(item.contains("materialType"))
-					query.m_materialType = &MaterialType::byName(item["materialType"].get<std::string>());
-				if(item.contains("materialTypeCategory"))
-				{
-					assert(query.m_materialType == nullptr);
-					query.m_materialTypeCategory = &MaterialTypeCategory::byName(item["materialTypeCategory"].get<std::string>());
-				}
+				auto [query, quantity] = loaditemQuery(item);
 				constructionData.unconsumed.emplace_back(query, quantity);
 			}
 			for(const Json& item : data["byproducts"])
@@ -193,6 +189,41 @@ namespace definitions
 		}
 
 	}
+	/*
+	inline void loadMedicalProjectTypes()
+	{
+
+		for(const auto& file : std::filesystem::directory_iterator(path/"medicalProjectTypes"))
+		{
+			if(file.path().extension() != ".json")
+				continue;
+			Json data = tryParse(file.path());
+			auto& medicalProjectType = MedicalProjectType::data.emplace_back(
+				data["name"].get<std::string>(),
+				data["baseMinutesDuration"].get<uint32_t>() * Config::stepsPerMinute
+			);
+			for(const Json& item : data["consumed"])
+			{
+				auto [query, quantity] = loaditemQuery(item);
+				medicalProjectType.consumedItems.emplace_back(query, quantity);
+			}
+			for(const Json& item : data["unconsumed"])
+			{
+				auto [query, quantity] = loaditemQuery(item);
+				medicalProjectType.unconsumedItems.emplace_back(query, quantity);
+			}
+			for(const Json& item : data["byproducts"])
+			{
+				const ItemType& itemType = ItemType::byName(item["itemType"].get<std::string>());
+				uint32_t quantity = item["quantity"].get<uint32_t>();
+				const MaterialType* materialType = item.contains("materialType") ?
+					&MaterialType::byName(item["materialType"]) :
+					nullptr;
+				medicalProjectType.byproductItems.emplace_back(&itemType, materialType, quantity);
+			}
+		}
+	}
+	*/
 	inline void loadCraftJobs()
 	{
 		for(const Json& data : tryParse(path/"craftStepTypeCategory.json"))
@@ -219,28 +250,13 @@ namespace definitions
 				if(stepData.contains("consumed"))
 					for(const Json& item : stepData["consumed"])
 					{
-						const ItemType& itemType = ItemType::byName(item["itemType"].get<std::string>());
-						uint32_t quantity = item["quantity"].get<uint32_t>();
-						ItemQuery query(itemType);
-						if(item.contains("materialType"))
-							query.m_materialType = &MaterialType::byName(item["materialType"].get<std::string>());
-						if(item.contains("materialTypeCategory"))
-							query.m_materialTypeCategory = &MaterialTypeCategory::byName(item["materialTypeCategory"].get<std::string>());
+						auto [query, quantity] = loaditemQuery(item);
 						stepType.consumed.emplace_back(query, quantity);
 					}
 				if(stepData.contains("unconsumed"))
 					for(const Json& item : stepData["unconsumed"])
 					{
-						const ItemType& itemType = ItemType::byName(item["itemType"].get<std::string>());
-						uint32_t quantity = item["quantity"].get<uint32_t>();
-						ItemQuery query(itemType);
-						if(item.contains("materialType"))
-							query.m_materialType = &MaterialType::byName(item["materialType"].get<std::string>());
-						if(item.contains("materialTypeCategory"))
-						{
-							assert(query.m_materialType == nullptr);
-							query.m_materialTypeCategory = &MaterialTypeCategory::byName(item["materialTypeCategory"].get<std::string>());
-						}
+						auto [query, quantity] = loaditemQuery(item);
 						stepType.unconsumed.emplace_back(query, quantity);
 					}
 				if(stepData.contains("byproducts"))
@@ -467,6 +483,7 @@ namespace definitions
 		loadWeaponsData();
 		loadMaterialTypeConstuctionData();
 		loadCraftJobs();
+		//loadMedicalProjectTypes();
 		loadPlantSpecies();
 		loadBodyPartTypes();
 		loadBodyTypes();

@@ -7,6 +7,7 @@
 #include "simulation.h"
 #include <cwchar>
 #include <functional>
+#include <memory>
 // Searches for an Item and destination to make a hauling project for m_objective.m_actor.
 void StockPileThreadedTask::readStep()
 {
@@ -437,8 +438,8 @@ void AreaHasStockPilesForFaction::makeProject(Item& item, Block& destination, St
 {
 	assert(destination.m_isPartOfStockPiles.contains(*objective.m_actor.getFaction()));
 	StockPileProject& project = m_projectsByItem[&item].emplace_back(objective.m_actor.getFaction(), destination, item);
-	DishonorCallback dishonorCallback = [&]([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { cancelProject(project); };
-	project.setLocationDishonorCallback(dishonorCallback);
+	std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<StockPileHasShapeDishonorCallback>(project);
+	project.setLocationDishonorCallback(std::move(dishonorCallback));
 	project.addWorkerCandidate(objective.m_actor, objective);	
 	objective.m_project = &project;
 	objective.m_actor.m_project = &project;

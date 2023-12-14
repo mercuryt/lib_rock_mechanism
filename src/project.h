@@ -28,13 +28,20 @@ struct ProjectWorker final
 	Objective& objective;
 	ProjectWorker(Objective& o) : haulSubproject(nullptr), objective(o) { }
 };
-struct ProjectItemCounts final
+struct ProjectRequirementCounts final
 {
 	const uint8_t required;
 	uint8_t delivered;
 	uint8_t reserved;
 	bool consumed;
-	ProjectItemCounts(const uint8_t r, bool c) : required(r), delivered(0), reserved(0), consumed(c) { }
+	ProjectRequirementCounts(const uint8_t r, bool c) : required(r), delivered(0), reserved(0), consumed(c) { }
+};
+struct ProjectRequiredShapeDishonoredCallback final : public DishonorCallback
+{
+	Project& m_project;
+	HasShape& m_hasShape;
+	ProjectRequiredShapeDishonoredCallback(Project& p, HasShape& hs) : m_project(p), m_hasShape(hs) { }
+	void execute(uint32_t oldCount, uint32_t newCount);
 };
 // Derived classes are expected to provide getDelay, getConsumedItems, getUnconsumedItems, getByproducts, and onComplete.
 class Project
@@ -54,9 +61,9 @@ class Project
 	//TODO: Reservations which cannot be honored cause the project to reset.
 	CanReserve m_canReserve;
 	// Queries for items needed for the project, counts of required, reserved and delivered.
-	std::vector<std::pair<ItemQuery, ProjectItemCounts>> m_requiredItems;
+	std::vector<std::pair<ItemQuery, ProjectRequirementCounts>> m_requiredItems;
 	//TODO: required actors are not suported in several places.
-	std::vector<std::pair<ActorQuery, ProjectItemCounts>> m_requiredActors;
+	std::vector<std::pair<ActorQuery, ProjectRequirementCounts>> m_requiredActors;
 	// Required items which will be destroyed at the end of the project.
 	std::unordered_set<Item*> m_toConsume;
 	size_t m_maxWorkers;
@@ -69,7 +76,7 @@ class Project
 	// Once we hit the limit, defined as projectTryToMakeSubprojectRetriesBeforeProjectDelay in config.json, the project calls setDelayOn.
 	uint8_t m_haulRetries;
 	// Targets for haul subprojects awaiting dispatch.
-	std::unordered_map<HasShape*, std::pair<ProjectItemCounts*, uint32_t>> m_toPickup;
+	std::unordered_map<HasShape*, std::pair<ProjectRequirementCounts*, uint32_t>> m_toPickup;
 	bool m_requirementsLoaded;
 	// To be called by addWorkerThreadedTask, after validating the worker has access to the project location.
 	void addWorker(Actor& actor, Objective& objective);
@@ -92,7 +99,7 @@ protected:
 	// Single hauling operations are managed by haul subprojects.
 	// They have one or more workers plus optional haul tool and beast of burden.
 	std::list<HaulSubproject> m_haulSubprojects;
-	Project(const Faction* f, Block& l, size_t mw, DishonorCallback locationDishonorCallback = nullptr);
+	Project(const Faction* f, Block& l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr);
 public:
 	void addWorkerCandidate(Actor& actor, Objective& objective);
 	void removeWorkerCandidate(Actor& actor);
@@ -108,10 +115,10 @@ public:
 	void scheduleEvent();
 	void haulSubprojectComplete(HaulSubproject& haulSubproject);
 	void haulSubprojectCancel(HaulSubproject& haulSubproject);
-	void setLocationDishonorCallback(DishonorCallback dishonorCallback);
+	void setLocationDishonorCallback(std::unique_ptr<DishonorCallback> dishonorCallback);
 	void setDelayOn() { m_delay = true; onDelay(); }
 	void setDelayOff() { m_delay = false; offDelay(); }
-	void addToPickup(HasShape& hasShape, ProjectItemCounts& counts, uint32_t quantity);
+	void addToPickup(HasShape& hasShape, ProjectRequirementCounts& counts, uint32_t quantity);
 	void removeToPickup(HasShape& hasShape, uint32_t quantity);
 	// To be called when the last worker is removed or when a required reservation is dishonored, resets to pre-reservations complete status.
 	void reset();

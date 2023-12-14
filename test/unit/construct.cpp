@@ -16,21 +16,21 @@ TEST_CASE("construct")
 	areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
 	Faction faction(L"tower of power");
 	ConstructObjectiveType constructObjectiveType;
-	Actor& dwarf1 = simulation.createActor(dwarf, area.m_blocks[1][1][2]);
+	Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(1, 1, 2));
 	dwarf1.setFaction(&faction);
 	area.m_hasActors.add(dwarf1);
 	area.m_hasConstructionDesignations.addFaction(faction);
 	Item& boards = simulation.createItem(ItemType::byName("board"), wood, 50u);
-	boards.setLocation(area.m_blocks[8][7][2]);
+	boards.setLocation(area.getBlock(8, 7, 2));
 	Item& pegs = simulation.createItem(ItemType::byName("peg"), wood, 50u);
-	pegs.setLocation(area.m_blocks[3][8][2]);
+	pegs.setLocation(area.getBlock(3, 8, 2));
 	Item& saw = simulation.createItem(ItemType::byName("saw"), MaterialType::byName("bronze"), 25u, 0);
-	saw.setLocation(area.m_blocks[5][7][2]);
+	saw.setLocation(area.getBlock(5, 7, 2));
 	Item& mallet = simulation.createItem(ItemType::byName("mallet"), wood, 25u, 0);
-	mallet.setLocation(area.m_blocks[9][5][2]);
+	mallet.setLocation(area.getBlock(9, 5, 2));
 	SUBCASE("make wall")
 	{
-		Block& wallLocation = area.m_blocks[8][4][2];
+		Block& wallLocation = area.getBlock(8, 4, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
 		ConstructProject& project = area.m_hasConstructionDesignations.getProject(faction, wallLocation);
 		REQUIRE(wallLocation.m_hasDesignations.contains(faction, BlockDesignation::Construct));
@@ -64,8 +64,8 @@ TEST_CASE("construct")
 	}
 	SUBCASE("make two walls")
 	{
-		Block& wallLocation1 = area.m_blocks[8][4][2];
-		Block& wallLocation2 = area.m_blocks[8][5][2];
+		Block& wallLocation1 = area.getBlock(8, 4, 2);
+		Block& wallLocation2 = area.getBlock(8, 5, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation1, nullptr, wood);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation2, nullptr, wood);
 		REQUIRE(constructObjectiveType.canBeAssigned(dwarf1));
@@ -80,10 +80,10 @@ TEST_CASE("construct")
 	}
 	SUBCASE("make wall with two workers")
 	{
-		Actor& dwarf2 = simulation.createActor(dwarf, area.m_blocks[1][4][2]);
+		Actor& dwarf2 = simulation.createActor(dwarf, area.getBlock(1, 4, 2));
 		dwarf2.setFaction(&faction);
 		area.m_hasActors.add(dwarf2);
-		Block& wallLocation = area.m_blocks[8][4][2];
+		Block& wallLocation = area.getBlock(8, 4, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
 		REQUIRE(constructObjectiveType.canBeAssigned(dwarf1));
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);
@@ -98,11 +98,11 @@ TEST_CASE("construct")
 	}
 	SUBCASE("make two walls with two workers")
 	{
-		Actor& dwarf2 = simulation.createActor(dwarf, area.m_blocks[1][4][2]);
+		Actor& dwarf2 = simulation.createActor(dwarf, area.getBlock(1, 4, 2));
 		dwarf2.setFaction(&faction);
 		area.m_hasActors.add(dwarf2);
-		Block& wallLocation1 = area.m_blocks[8][4][2];
-		Block& wallLocation2 = area.m_blocks[8][5][2];
+		Block& wallLocation1 = area.getBlock(8, 4, 2);
+		Block& wallLocation2 = area.getBlock(8, 5, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation1, nullptr, wood);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation2, nullptr, wood);
 		REQUIRE(constructObjectiveType.canBeAssigned(dwarf1));
@@ -166,7 +166,7 @@ TEST_CASE("construct")
 	}
 	SUBCASE("make stairs")
 	{
-		Block& stairsLocation = area.m_blocks[8][4][2];
+		Block& stairsLocation = area.getBlock(8, 4, 2);
 		area.m_hasConstructionDesignations.designate(faction, stairsLocation, &BlockFeatureType::stairs, wood);
 		REQUIRE(stairsLocation.m_hasDesignations.contains(faction, BlockDesignation::Construct));
 		REQUIRE(area.m_hasConstructionDesignations.contains(faction, stairsLocation));
@@ -191,9 +191,9 @@ TEST_CASE("construct")
 	}
 	SUBCASE("cannot path to spot")
 	{
-		areaBuilderUtil::setSolidWall(area.m_blocks[0][3][2], area.m_blocks[8][3][2], wood);
-		Block& gateway = area.m_blocks[9][3][2];
-		Block& wallLocation = area.m_blocks[8][4][2];
+		areaBuilderUtil::setSolidWall(area.getBlock(0, 3, 2), area.getBlock(8, 3, 2), wood);
+		Block& gateway = area.getBlock(9, 3, 2);
+		Block& wallLocation = area.getBlock(8, 4, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
 		ConstructProject& project = area.m_hasConstructionDesignations.getProject(faction, wallLocation);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);
@@ -215,7 +215,7 @@ TEST_CASE("construct")
 	}
 	SUBCASE("spot has become solid")
 	{
-		Block& wallLocation = area.m_blocks[8][8][2];
+		Block& wallLocation = area.getBlock(8, 8, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);
 		// One step to find the designation.
@@ -234,7 +234,7 @@ TEST_CASE("construct")
 	}
 	SUBCASE("saw destroyed")
 	{
-		Block& wallLocation = area.m_blocks[8][4][2];
+		Block& wallLocation = area.getBlock(8, 4, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
 		ConstructProject& project = area.m_hasConstructionDesignations.getProject(faction, wallLocation);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);
@@ -254,7 +254,7 @@ TEST_CASE("construct")
 	}
 	SUBCASE("player cancels")
 	{
-		Block& wallLocation = area.m_blocks[8][8][2];
+		Block& wallLocation = area.getBlock(8, 8, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);
 		// One step to find the designation.
@@ -273,7 +273,7 @@ TEST_CASE("construct")
 	}
 	SUBCASE("player interrupts")
 	{
-		Block& wallLocation = area.m_blocks[8][8][2];
+		Block& wallLocation = area.getBlock(8, 8, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);
 		// One step to find the designation.
@@ -285,7 +285,7 @@ TEST_CASE("construct")
 		// Another step to path to the pick.
 		simulation.doStep();
 		// Setting wallLocation as not solid immideatly triggers the project locationDishonorCallback, which cancels the project.
-		std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(dwarf1, area.m_blocks[0][8][3]);
+		std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(dwarf1, area.getBlock(0, 8, 3));
 		dwarf1.m_hasObjectives.addTaskToStart(std::move(objective));
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "construct");
 		REQUIRE(dwarf1.m_project == nullptr);

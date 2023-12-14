@@ -15,7 +15,7 @@ namespace areaBuilderUtil
 	{
 		for(uint32_t x = 0; x != area.m_sizeX; ++x)
 			for(uint32_t y = 0; y != area.m_sizeY; ++y)
-				area.m_blocks[x][y][z].setSolid(materialType);
+				area.getBlock(x, y, z).setSolid(materialType);
 	}
 	inline void setSolidLayers(Area& area, uint32_t zbegin, uint32_t zend, const MaterialType& materialType)
 	{
@@ -34,13 +34,13 @@ namespace areaBuilderUtil
 		{
 			for(uint32_t x = 0; x != area.m_sizeX; ++x)
 			{
-				area.m_blocks[x][0][z].setSolid(materialType);
-				area.m_blocks[x][area.m_sizeY - 1][z].setSolid(materialType);
+				area.getBlock(x, 0, z).setSolid(materialType);
+				area.getBlock(x, area.m_sizeY - 1, z).setSolid(materialType);
 			}
 			for(uint32_t y = 0; y != area.m_sizeY; ++y)
 			{
-				area.m_blocks[0][y][z].setSolid(materialType);
-				area.m_blocks[area.m_sizeX - 1][y][z].setSolid(materialType);
+				area.getBlock(0, y, z).setSolid(materialType);
+				area.getBlock(area.m_sizeX - 1, y, z).setSolid(materialType);
 			}
 		}
 	}
@@ -50,18 +50,18 @@ namespace areaBuilderUtil
 		{
 			for(uint32_t x = 0; x != cuboid.m_highest->m_x + 1; ++x)
 			{
-				area.m_blocks[x][0][z].setSolid(materialType);
-				area.m_blocks[x][area.m_sizeY - 1][z].setSolid(materialType);
+				area.getBlock(x, 0, z).setSolid(materialType);
+				area.getBlock(x, area.m_sizeY - 1, z).setSolid(materialType);
 			}
 			for(uint32_t y = 0; y != cuboid.m_highest->m_y + 1; ++y)
 			{
-				area.m_blocks[0][y][z].setSolid(materialType);
-				area.m_blocks[area.m_sizeX - 1][y][z].setSolid(materialType);
+				area.getBlock(0, y, z).setSolid(materialType);
+				area.getBlock(area.m_sizeX - 1, y, z).setSolid(materialType);
 			}
 		}
 		for(uint32_t x = 0; x != cuboid.m_highest->m_x + 1; ++x)
 			for(uint32_t y = 0; y != cuboid.m_highest->m_y + 1; ++y)
-				area.m_blocks[x][y][cuboid.m_highest->m_z + 1].m_hasBlockFeatures.construct(BlockFeatureType::floor, materialType);
+				area.getBlock(x, y, cuboid.m_highest->m_z + 1).m_hasBlockFeatures.construct(BlockFeatureType::floor, materialType);
 	}
 	inline void setFullFluidCuboid(Block& low, Block& high, const FluidType& fluidType)
 	{
@@ -82,7 +82,7 @@ namespace areaBuilderUtil
 		for(uint32_t x = 0; x < area.m_sizeX; ++x)
 			for(uint32_t y = 0; y < area.m_sizeY; ++y)
 				for(uint32_t z = 0; z < area.m_sizeZ; ++z)
-					for(auto& [fluidType, pair] : area.m_blocks[x][y][z].m_fluids)
+					for(auto& [fluidType, pair] : area.getBlock(x, y, z).m_fluids)
 						assert(pair.second->m_fluidType == *fluidType);
 	}
 	// Get one fluid group with the specified type. Return null if there is more then one.

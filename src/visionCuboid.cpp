@@ -8,7 +8,7 @@ void VisionCuboid::setup(Area& area)
 		for(uint32_t y = 0; y != area.m_sizeY; ++y)
 			for(uint32_t z = 0; z != area.m_sizeZ; ++z)
 			{
-				Block* block = &area.m_blocks[x][y][z];
+				Block* block = &area.getBlock(x, y, z);
 				assert(block != nullptr);
 				if(!block->canSeeThrough())
 					continue;
@@ -99,22 +99,22 @@ void VisionCuboid::splitAt(Block& split)
 	newCuboids.reserve(6);
 	// Blocks with a lower X then splt.
 	if(split.m_x != m_cuboid.m_lowest->m_x)
-		newCuboids.emplace_back(&split.m_area->m_blocks[split.m_x - 1][m_cuboid.m_highest->m_y][m_cuboid.m_highest->m_z], m_cuboid.m_lowest);
+		newCuboids.emplace_back(&split.m_area->getBlock(split.m_x - 1, m_cuboid.m_highest->m_y, m_cuboid.m_highest->m_z), m_cuboid.m_lowest);
 	// Blocks with a higher X then split.
 	if(split.m_x != m_cuboid.m_highest->m_x)
-		newCuboids.emplace_back(m_cuboid.m_highest, &split.m_area->m_blocks[split.m_x + 1][m_cuboid.m_lowest->m_y][m_cuboid.m_lowest->m_z]);
+		newCuboids.emplace_back(m_cuboid.m_highest, &split.m_area->getBlock(split.m_x + 1, m_cuboid.m_lowest->m_y, m_cuboid.m_lowest->m_z));
 	// Remaining blocks with a lower Y, only blocks on the same x plane as split are left avalible.
 	if(split.m_y != m_cuboid.m_lowest->m_y)
-		newCuboids.emplace_back(&split.m_area->m_blocks[split.m_x][split.m_y - 1][m_cuboid.m_highest->m_z], &split.m_area->m_blocks[split.m_x][m_cuboid.m_lowest->m_y][m_cuboid.m_lowest->m_z]);
+		newCuboids.emplace_back(&split.m_area->getBlock(split.m_x, split.m_y - 1, m_cuboid.m_highest->m_z), &split.m_area->getBlock(split.m_x, m_cuboid.m_lowest->m_y, m_cuboid.m_lowest->m_z));
 	// Remaining blocks with a higher Y.
 	if(split.m_y != m_cuboid.m_highest->m_y)
-		newCuboids.emplace_back(&split.m_area->m_blocks[split.m_x][m_cuboid.m_highest->m_y][m_cuboid.m_highest->m_z], &split.m_area->m_blocks[split.m_x][split.m_y + 1][m_cuboid.m_lowest->m_z]);
+		newCuboids.emplace_back(&split.m_area->getBlock(split.m_x, m_cuboid.m_highest->m_y, m_cuboid.m_highest->m_z), &split.m_area->getBlock(split.m_x, split.m_y + 1, m_cuboid.m_lowest->m_z));
 	// Remaining blocks with a lower Z, only block on the same x and y planes as split are left avalible.
 	if(split.m_z != m_cuboid.m_lowest->m_z)
-		newCuboids.emplace_back(&split.m_area->m_blocks[split.m_x][split.m_y][split.m_z - 1], &split.m_area->m_blocks[split.m_x][split.m_y][m_cuboid.m_lowest->m_z]);
+		newCuboids.emplace_back(&split.m_area->getBlock(split.m_x, split.m_y, split.m_z - 1), &split.m_area->getBlock(split.m_x, split.m_y, m_cuboid.m_lowest->m_z));
 	// Remaining blocks with a higher Z.
 	if(split.m_z != m_cuboid.m_highest->m_z)
-		newCuboids.emplace_back(&split.m_area->m_blocks[split.m_x][split.m_y][m_cuboid.m_highest->m_z], &split.m_area->m_blocks[split.m_x][split.m_y][split.m_z + 1]);
+		newCuboids.emplace_back(&split.m_area->getBlock(split.m_x, split.m_y, m_cuboid.m_highest->m_z), &split.m_area->getBlock(split.m_x, split.m_y, split.m_z + 1));
 	for(Cuboid& cuboid : newCuboids)
 	{
 		VisionCuboid* toCombine = VisionCuboid::getTargetToCombineWith(cuboid);
@@ -134,9 +134,9 @@ void VisionCuboid::splitBelow(Block& split)
 	newCuboids.reserve(2);
 	// Blocks with a lower Z.
 	if(split.m_z != m_cuboid.m_lowest->m_z)
-		newCuboids.emplace_back(&split.m_area->m_blocks[m_cuboid.m_highest->m_x][m_cuboid.m_highest->m_y][split.m_z - 1], m_cuboid.m_lowest);
+		newCuboids.emplace_back(&split.m_area->getBlock(m_cuboid.m_highest->m_x, m_cuboid.m_highest->m_y, split.m_z - 1), m_cuboid.m_lowest);
 	// Blocks with a higher Z or equal Z.
-	newCuboids.emplace_back(m_cuboid.m_highest, &split.m_area->m_blocks[m_cuboid.m_lowest->m_x][m_cuboid.m_lowest->m_y][split.m_z]);
+	newCuboids.emplace_back(m_cuboid.m_highest, &split.m_area->getBlock(m_cuboid.m_lowest->m_x, m_cuboid.m_lowest->m_y, split.m_z));
 	for(Cuboid& newCuboid : newCuboids)
 	{
 		assert(!newCuboid.empty());

@@ -10,12 +10,12 @@ TEST_CASE("wound")
 	Simulation simulation;
 	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
-	Actor& actor = simulation.createActor(dwarf, area.m_blocks[1][1][2]);
-	Block& pondLocation = area.m_blocks[3][7][1];
+	Actor& actor = simulation.createActor(dwarf, area.getBlock(1, 1, 2));
+	Block& pondLocation = area.getBlock(3, 7, 1);
 	pondLocation.setNotSolid();
 	pondLocation.addFluid(Config::maxBlockVolume, FluidType::byName("water"));
 	Item& fruit = simulation.createItem(ItemType::byName("apple"), MaterialType::byName("fruit"), 50u);
-	Block& fruitLocation = area.m_blocks[6][5][2];
+	Block& fruitLocation = area.getBlock(6, 5, 2);
 	fruit.setLocation(fruitLocation);
 	SUBCASE("bleed to death")
 	{

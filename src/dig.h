@@ -16,6 +16,7 @@ class Faction;
 class DigThreadedTask;
 struct BlockFeatureType;
 class DigProject;
+class HasDigDesignationsForFaction;
 class DigObjectiveType : public ObjectiveType
 {
 public:
@@ -55,11 +56,11 @@ public:
 };
 class DigProject final : public Project
 {
+	const BlockFeatureType* m_blockFeatureType;
 	void onDelay();
 	void offDelay();
 	void onComplete();
 	void onCancel();
-	const BlockFeatureType* m_blockFeatureType;
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
 	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
@@ -68,10 +69,17 @@ class DigProject final : public Project
 	// What would the total delay time be if we started from scratch now with current workers?
 public:
 	// BlockFeatureType can be null, meaning the block is to be fully excavated.
-	DigProject(const Faction* faction, Block& block, const BlockFeatureType* bft, DishonorCallback locationDishonorCallback) : 
-		Project(faction, block, Config::maxNumberOfWorkersForDigProject, locationDishonorCallback), m_blockFeatureType(bft) { }
+	DigProject(const Faction* faction, Block& block, const BlockFeatureType* bft, std::unique_ptr<DishonorCallback> locationDishonorCallback) : 
+		Project(faction, block, Config::maxNumberOfWorkersForDigProject, std::move(locationDishonorCallback)), m_blockFeatureType(bft) { }
 	Step getDuration() const;
 	friend class HasDigDesignationsForFaction;
+};
+struct DigLocationDishonorCallback final : public DishonorCallback
+{
+	HasDigDesignationsForFaction& m_hasDigDesignationsForFaction;
+	Block& m_location;
+	DigLocationDishonorCallback(HasDigDesignationsForFaction& hcdff, Block& l) : m_hasDigDesignationsForFaction(hcdff), m_location(l) { }
+	void execute(uint32_t oldCount, uint32_t newCount);
 };
 // Part of HasDigDesignations.
 class HasDigDesignationsForFaction final

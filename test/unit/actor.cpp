@@ -11,11 +11,11 @@ TEST_CASE("actor")
 	static const MaterialType& marble = MaterialType::byName("marble");
 	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
-	Block& origin1 = area.m_blocks[5][5][1];
-	Block& origin2 = area.m_blocks[7][7][1];
-	Block& block1 = area.m_blocks[6][7][1];
-	Block& block2 = area.m_blocks[7][8][1];
-	Block& block3 = area.m_blocks[6][8][1];
+	Block& origin1 = area.getBlock(5, 5, 1);
+	Block& origin2 = area.getBlock(7, 7, 1);
+	Block& block1 = area.getBlock(6, 7, 1);
+	Block& block2 = area.getBlock(7, 8, 1);
+	Block& block3 = area.getBlock(6, 8, 1);
 	// Single tile.
 	REQUIRE(simulation.m_eventSchedule.count() == 1);
 	Actor& dwarf1 = simulation.createActor(dwarf, origin1);

@@ -15,6 +15,7 @@ struct CraftJob;
 class HasCraftingLocationsAndJobsForFaction;
 class CraftThreadedTask;
 struct skillType;
+class CraftStepProject;
 class Block;
 // Drill, saw, forge, etc.
 struct CraftStepTypeCategory final
@@ -48,18 +49,26 @@ class CraftStepProject final : public Project
 	Step getDuration() const;
 	void onComplete();
 	void onCancel();
-	void onHasShapeReservationDishonored([[maybe_unused]] const HasShape& hasShape, [[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { cancel(); }
 	void onDelay() { cancel(); }
 	void offDelay() { assert(false); }
 	bool canReset() const  { return false; }
+	virtual void onHasShapeReservationDishonored([[maybe_unused]] const HasShape& hasShape, [[maybe_unused]]uint32_t oldCount, [[maybe_unused]]uint32_t newCount) { cancel(); }
 	// Use copies rather then references for return types to allow specalization of Queries as well as byproduct material type.
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
 	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const { return {}; }
 public:
-	CraftStepProject(const Faction* faction, Block& location, const CraftStepType& cst, CraftJob& cj, DishonorCallback dc) : Project(faction, location, 1, dc), m_craftStepType(cst), m_craftJob(cj) { }
+	CraftStepProject(const Faction* faction, Block& location, const CraftStepType& cst, CraftJob& cj) : Project(faction, location, 1), m_craftStepType(cst), m_craftJob(cj) { }
 	uint32_t getWorkerCraftScore(const Actor& actor) const;
+};
+struct CraftStepProjectHasShapeDishonorCallback final : public DishonorCallback
+{
+	CraftStepProject& m_craftStepProject;
+	CraftStepProjectHasShapeDishonorCallback(CraftStepProject& hs) : m_craftStepProject(hs) { } 
+	// Craft step project cannot reset so cancel instead and allow to be recreated later.
+	// TODO: Why?
+	void execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { m_craftStepProject.cancel(); }
 };
 // Data about making a specific product type.
 struct CraftJobType final

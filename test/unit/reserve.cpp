@@ -1,6 +1,30 @@
 #include "../../lib/doctest.h"
 #include "../../src/reservable.h"
 #include "../../src/faction.h"
+#include <memory>
+
+struct TestReservationDishonorCallback1 final : public DishonorCallback
+{
+	bool& fired;
+	TestReservationDishonorCallback1(bool& f) : fired(f) { }
+	void execute(uint32_t o, uint32_t n)
+	{
+			REQUIRE(o == 1);
+			REQUIRE(n == 0);
+			fired = true; 
+	}
+};
+struct TestReservationDishonorCallback2 final : public DishonorCallback
+{
+	bool& fired;
+	TestReservationDishonorCallback2(bool& f) : fired(f) { }
+	void execute(uint32_t o, uint32_t n)
+	{
+			REQUIRE(o == 2);
+			REQUIRE(n == 1);
+			fired = true;
+	}
+};
 TEST_CASE("reservations")
 {
 	const Faction faction1(L"test faction1");
@@ -57,30 +81,20 @@ TEST_CASE("reservations")
 	SUBCASE("dishonor callback clear all")
 	{
 		bool fired = false;
-		DishonorCallback callback = [&](uint32_t o, uint32_t n) 
-		{ 
-			REQUIRE(o == 1);
-			REQUIRE(n == 0);
-			fired = true; 
-		};
+		std::unique_ptr<DishonorCallback> callback = std::make_unique<TestReservationDishonorCallback1>(fired);
 		Reservable reservable(1);
 		CanReserve canReserve(&faction1);
-		reservable.reserveFor(canReserve, 1, callback);
+		reservable.reserveFor(canReserve, 1, std::move(callback));
 		reservable.clearAll();
 		REQUIRE(fired);
 	}
 	SUBCASE("dishonor callback reduce max reservable")
 	{
 		bool fired = false;
-		DishonorCallback callback = [&](uint32_t o, uint32_t n) 
-		{ 
-			REQUIRE(o == 2);
-			REQUIRE(n == 1);
-			fired = true; 
-		};
+		std::unique_ptr<DishonorCallback> callback = std::make_unique<TestReservationDishonorCallback2>(fired);
 		Reservable reservable(2);
 		CanReserve canReserve(&faction1);
-		reservable.reserveFor(canReserve, 2, callback);
+		reservable.reserveFor(canReserve, 2, std::move(callback));
 		reservable.setMaxReservations(1);
 		REQUIRE(fired);
 	}

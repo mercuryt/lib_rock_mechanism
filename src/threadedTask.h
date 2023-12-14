@@ -12,6 +12,7 @@ class ThreadedTaskEngine
 	Simulation& m_simulation;
 public:
 	ThreadedTaskEngine(Simulation& s) : m_simulation(s) { }
+	//TODO: These should be vectors?
 	std::unordered_set<std::unique_ptr<ThreadedTask>> m_tasksForThisStep;
 	std::unordered_set<std::unique_ptr<ThreadedTask>> m_tasksForNextStep;
 	void readStep();

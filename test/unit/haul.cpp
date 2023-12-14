@@ -23,22 +23,22 @@ TEST_CASE("haul")
 	Simulation simulation;
 	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
-	Actor& dwarf1 = simulation.createActor(dwarf, area.m_blocks[1][1][2]);
+	Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(1, 1, 2));
 	Faction faction(L"tower of power");
 	dwarf1.setFaction(&faction);
 	area.m_hasActors.add(dwarf1);
 	REQUIRE(!dwarf1.m_canPickup.exists());
 	SUBCASE("canPickup")
 	{
-		Block& chunkLocation = area.m_blocks[1][2][2];
+		Block& chunkLocation = area.getBlock(1, 2, 2);
 		Item& chunk1 = simulation.createItem(chunk, marble, 1);
 		chunk1.setLocation(chunkLocation);
 		Item& chunk2 = simulation.createItem(chunk, gold, 1);
-		chunk2.setLocation(area.m_blocks[6][2][2]);
+		chunk2.setLocation(area.getBlock(6, 2, 2));
 		REQUIRE(dwarf1.m_canPickup.canPickupAny(chunk1));
 		REQUIRE(!dwarf1.m_canPickup.canPickupAny(chunk2));
 		dwarf1.m_canPickup.pickUp(chunk1, 1);
-		Block& destination = area.m_blocks[5][5][2];
+		Block& destination = area.getBlock(5, 5, 2);
 		dwarf1.m_canMove.setDestination(destination);
 		simulation.doStep();
 		REQUIRE(!dwarf1.m_canMove.getPath().empty());
@@ -49,7 +49,7 @@ TEST_CASE("haul")
 	}
 	SUBCASE("has haul tools")
 	{
-		Block& cartLocation = area.m_blocks[1][2][2];
+		Block& cartLocation = area.getBlock(1, 2, 2);
 		Item& cart1 = simulation.createItem(cart, poplarWood, 3u, 0);
 		Item& chunk1 = simulation.createItem(chunk, gold, 1u);
 		cart1.setLocation(cartLocation);
@@ -58,8 +58,8 @@ TEST_CASE("haul")
 	}
 	SUBCASE("individual haul strategy")
 	{
-		Block& destination = area.m_blocks[5][5][2];
-		Block& chunkLocation = area.m_blocks[1][5][2];
+		Block& destination = area.getBlock(5, 5, 2);
+		Block& chunkLocation = area.getBlock(1, 5, 2);
 		Item& chunk1 = simulation.createItem(chunk, marble, 1u);
 		chunk1.setLocation(chunkLocation);
 		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1}), chunk1, destination);
@@ -86,13 +86,13 @@ TEST_CASE("haul")
 	}
 	SUBCASE("hand cart haul strategy")
 	{
-		Block& destination = area.m_blocks[5][5][2];
-		Block& chunkLocation = area.m_blocks[1][5][2];
+		Block& destination = area.getBlock(5, 5, 2);
+		Block& chunkLocation = area.getBlock(1, 5, 2);
 		Item& chunk1 = simulation.createItem(chunk, lead, 1u);
 		chunk1.setLocation(chunkLocation);
 		REQUIRE(!dwarf1.m_canPickup.canPickupAny(chunk1));
 		Item& cart = simulation.createItem(ItemType::byName("cart"), MaterialType::byName("poplar wood"), 50u, 0);
-		Block& cartLocation = area.m_blocks[7][7][2];
+		Block& cartLocation = area.getBlock(7, 7, 2);
 		cart.setLocation(cartLocation);
 		area.m_hasHaulTools.registerHaulTool(cart);
 		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1}), chunk1, destination);
@@ -126,12 +126,12 @@ TEST_CASE("haul")
 	}
 	SUBCASE("team haul strategy")
 	{
-		Block& destination = area.m_blocks[8][8][2];
-		Block& chunkLocation = area.m_blocks[1][5][2];
+		Block& destination = area.getBlock(8, 8, 2);
+		Block& chunkLocation = area.getBlock(1, 5, 2);
 		Item& chunk1 = simulation.createItem(chunk, lead, 1u);
 		chunk1.setLocation(chunkLocation);
 		REQUIRE(!dwarf1.m_canPickup.canPickupAny(chunk1));
-		Actor& dwarf2 = simulation.createActor(dwarf, area.m_blocks[1][2][2]);
+		Actor& dwarf2 = simulation.createActor(dwarf, area.getBlock(1, 2, 2));
 		dwarf2.setFaction(&faction);
 		area.m_hasActors.add(dwarf2);
 		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1, &dwarf2}), chunk1, destination);
@@ -166,16 +166,16 @@ TEST_CASE("haul")
 	}
 	SUBCASE("panniers haul strategy")
 	{
-		Block& destination = area.m_blocks[8][8][2];
-		Block& chunkLocation = area.m_blocks[1][5][2];
+		Block& destination = area.getBlock(8, 8, 2);
+		Block& chunkLocation = area.getBlock(1, 5, 2);
 		Item& chunk1 = simulation.createItem(chunk, gold, 1u);
 		chunk1.setLocation(chunkLocation);
 		REQUIRE(!dwarf1.m_canPickup.canPickupAny(chunk1));
-		Block& donkeyLocation = area.m_blocks[1][2][2];
+		Block& donkeyLocation = area.getBlock(1, 2, 2);
 		Actor& donkey1 = simulation.createActor(donkey, donkeyLocation);
 		area.m_hasActors.add(donkey1);
 		area.m_hasHaulTools.registerYokeableActor(donkey1);
-		Block& panniersLocation = area.m_blocks[5][1][2];
+		Block& panniersLocation = area.getBlock(5, 1, 2);
 		Item& panniers1 = simulation.createItem(panniers, poplarWood, 3u, 0);
 		panniers1.setLocation(panniersLocation);
 		area.m_hasHaulTools.registerHaulTool(panniers1);
@@ -211,15 +211,15 @@ TEST_CASE("haul")
 	}
 	SUBCASE("animal cart haul strategy")
 	{
-		Block& destination = area.m_blocks[5][5][2];
-		Block& boulderLocation = area.m_blocks[1][5][2];
+		Block& destination = area.getBlock(5, 5, 2);
+		Block& boulderLocation = area.getBlock(1, 5, 2);
 		Item& boulder1 = simulation.createItem(boulder, peridotite, 1u);
 		boulder1.setLocation(boulderLocation);
-		Block& donkeyLocation = area.m_blocks[4][3][2];
+		Block& donkeyLocation = area.getBlock(4, 3, 2);
 		Actor& donkey1 = simulation.createActor(donkey, donkeyLocation);
 		area.m_hasActors.add(donkey1);
 		area.m_hasHaulTools.registerYokeableActor(donkey1);
-		Block& cartLocation = area.m_blocks[5][1][2];
+		Block& cartLocation = area.getBlock(5, 1, 2);
 		Item& cart1 = simulation.createItem(cart, poplarWood, 3u, 0);
 		cart1.setLocation(cartLocation);
 		area.m_hasHaulTools.registerHaulTool(cart1);
@@ -254,15 +254,15 @@ TEST_CASE("haul")
 	}
 	SUBCASE("team hand cart haul strategy")
 	{
-		Block& destination = area.m_blocks[5][5][2];
-		Block& cargoLocation = area.m_blocks[1][5][2];
+		Block& destination = area.getBlock(5, 5, 2);
+		Block& cargoLocation = area.getBlock(1, 5, 2);
 		Item& cargo1 = simulation.createItem(boulder, peridotite, 1u);
 		cargo1.setLocation(cargoLocation);
-		Block& origin2 = area.m_blocks[4][3][2];
+		Block& origin2 = area.getBlock(4, 3, 2);
 		Actor& dwarf2 = simulation.createActor(dwarf, origin2);
 		dwarf2.setFaction(&faction);
 		area.m_hasActors.add(dwarf2);
-		Block& cartLocation = area.m_blocks[5][1][2];
+		Block& cartLocation = area.getBlock(5, 1, 2);
 		Item& cart1 = simulation.createItem(cart, poplarWood, 3u, 0);
 		cart1.setLocation(cartLocation);
 		area.m_hasHaulTools.registerHaulTool(cart1);

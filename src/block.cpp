@@ -18,12 +18,12 @@
 #include <cassert>
 
 Block::Block() : m_solid(nullptr), m_totalFluidVolume(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr), m_fires(nullptr), m_exposedToSky(true), m_underground(false), m_outdoors(true), m_hasShapes(*this), m_reservable(1), m_hasPlant(*this), m_hasBlockFeatures(*this), m_hasActors(*this), m_hasItems(*this), m_isPartOfStockPiles(*this), m_isPartOfFarmField(*this), m_blockHasTemperature(*this) {}
-void Block::setup(Area& a, uint32_t ax, uint32_t ay, uint32_t az)
+void Block::setup(Area& area, uint32_t ax, uint32_t ay, uint32_t az)
 {
-	m_area=&a;
 	m_x=ax;
 	m_y=ay;
 	m_z=az;
+	m_area = &area;
 	m_locationBucket = m_area->m_hasActors.m_locationBuckets.getBucketFor(*this);
 	m_isEdge = (m_x == 0 || m_x == (m_area->m_sizeX - 1) ||  m_y == 0 || m_y == (m_area->m_sizeY - 1) || m_z == 0 || m_z == (m_area->m_sizeZ - 1) );
 }
@@ -429,7 +429,7 @@ Block* Block::offset(int32_t ax, int32_t ay, int32_t az) const
 	az += m_z;
 	if(ax < 0 || (uint32_t)ax >= m_area->m_sizeX || ay < 0 || (uint32_t)ay >= m_area->m_sizeY || az < 0 || (uint32_t)az >= m_area->m_sizeZ)
 		return nullptr;
-	return &m_area->m_blocks[ax][ay][az];
+	return &m_area->getBlock(ax, ay, az);
 }
 bool Block::canSeeThrough() const
 {
@@ -652,7 +652,7 @@ std::vector<Block*> Block::selectBetweenCorners(Block* otherBlock) const
 		for(uint32_t y = minY; y <= maxY; ++y)
 			for(uint32_t z = minZ; z <= maxZ; ++z)
 			{
-				output.push_back(&m_area->m_blocks[x][y][z]);
+				output.push_back(&m_area->getBlock(x, y, z));
 				assert(output.back() != nullptr);
 			}
 	return output;

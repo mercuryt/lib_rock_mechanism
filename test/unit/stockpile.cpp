@@ -24,7 +24,7 @@ TEST_CASE("stockpile")
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	Faction faction(L"tower of power");
 	area.m_hasStockPiles.addFaction(faction);
-	Actor& dwarf1 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.m_blocks[1][1][1]);
+	Actor& dwarf1 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 1, 1));
 	dwarf1.setFaction(&faction);
 	area.m_hasActors.add(dwarf1);
 	StockPileObjectiveType objectiveType;
@@ -33,8 +33,8 @@ TEST_CASE("stockpile")
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk, wood);
 		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
-		Block& stockpileLocation = area.m_blocks[5][5][1];
-		Block& chunkLocation = area.m_blocks[1][8][1];
+		Block& stockpileLocation = area.getBlock(5, 5, 1);
+		Block& chunkLocation = area.getBlock(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
 		Item& chunk1 = simulation.createItem(chunk, wood, 1u);
 		chunk1.setLocation(chunkLocation);
@@ -69,10 +69,10 @@ TEST_CASE("stockpile")
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk);
 		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
-		Block& stockpileLocation1 = area.m_blocks[5][5][1];
-		Block& stockpileLocation2 = area.m_blocks[5][6][1];
-		Block& chunkLocation1 = area.m_blocks[1][8][1];
-		Block& chunkLocation2 = area.m_blocks[9][8][1];
+		Block& stockpileLocation1 = area.getBlock(5, 5, 1);
+		Block& stockpileLocation2 = area.getBlock(5, 6, 1);
+		Block& chunkLocation1 = area.getBlock(1, 8, 1);
+		Block& chunkLocation2 = area.getBlock(9, 8, 1);
 		stockpile.addBlock(stockpileLocation1);
 		stockpile.addBlock(stockpileLocation2);
 		Item& chunk1 = simulation.createItem(chunk, wood, 1u);
@@ -105,10 +105,10 @@ TEST_CASE("stockpile")
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk);
 		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
-		Block& stockpileLocation1 = area.m_blocks[5][5][1];
-		Block& stockpileLocation2 = area.m_blocks[5][6][1];
-		Block& chunkLocation1 = area.m_blocks[1][8][1];
-		Block& chunkLocation2 = area.m_blocks[9][8][1];
+		Block& stockpileLocation1 = area.getBlock(5, 5, 1);
+		Block& stockpileLocation2 = area.getBlock(5, 6, 1);
+		Block& chunkLocation1 = area.getBlock(1, 8, 1);
+		Block& chunkLocation2 = area.getBlock(9, 8, 1);
 		stockpile.addBlock(stockpileLocation1);
 		stockpile.addBlock(stockpileLocation2);
 		Item& chunk1 = simulation.createItem(chunk, marble, 1u);
@@ -117,7 +117,7 @@ TEST_CASE("stockpile")
 		chunk2.setLocation(chunkLocation2);
 		area.m_hasStockPiles.at(faction).addItem(chunk1);
 		area.m_hasStockPiles.at(faction).addItem(chunk2);
-		Actor& dwarf2 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.m_blocks[1][2][1]);
+		Actor& dwarf2 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 2, 1));
 		dwarf2.setFaction(&faction);
 		area.m_hasActors.add(dwarf2);
 		StockPileObjectiveType objectiveType;
@@ -166,16 +166,16 @@ TEST_CASE("stockpile")
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk, lead);
 		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
-		Block& stockpileLocation1 = area.m_blocks[5][5][1];
-		Block& stockpileLocation2 = area.m_blocks[5][6][1];
-		Block& chunkLocation = area.m_blocks[1][8][1];
+		Block& stockpileLocation1 = area.getBlock(5, 5, 1);
+		Block& stockpileLocation2 = area.getBlock(5, 6, 1);
+		Block& chunkLocation = area.getBlock(1, 8, 1);
 		stockpile.addBlock(stockpileLocation1);
 		stockpile.addBlock(stockpileLocation2);
 		Item& chunk1 = simulation.createItem(chunk, lead, 1u);
 		chunk1.setLocation(chunkLocation);
 		REQUIRE(!dwarf1.m_canPickup.canPickupAny(chunk1));
 		area.m_hasStockPiles.at(faction).addItem(chunk1);
-		Actor& dwarf2 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.m_blocks[1][2][1]);
+		Actor& dwarf2 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 2, 1));
 		dwarf2.setFaction(&faction);
 		area.m_hasActors.add(dwarf2);
 		StockPileObjectiveType objectiveType;
@@ -205,13 +205,13 @@ TEST_CASE("stockpile")
 	}
 	SUBCASE("path to item is blocked")
 	{
-		areaBuilderUtil::setSolidWall(area.m_blocks[0][3][2], area.m_blocks[8][3][2], wood);
-		Block& gateway = area.m_blocks[9][3][2];
+		areaBuilderUtil::setSolidWall(area.getBlock(0, 3, 2), area.getBlock(8, 3, 2), wood);
+		Block& gateway = area.getBlock(9, 3, 2);
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk, wood);
 		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
-		Block& stockpileLocation = area.m_blocks[5][5][1];
-		Block& chunkLocation = area.m_blocks[1][8][1];
+		Block& stockpileLocation = area.getBlock(5, 5, 1);
+		Block& chunkLocation = area.getBlock(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
 		Item& chunk1 = simulation.createItem(chunk, wood, 1u);
 		chunk1.setLocation(chunkLocation);
@@ -234,13 +234,13 @@ TEST_CASE("stockpile")
 	}
 	SUBCASE("path to stockpile is blocked")
 	{
-		areaBuilderUtil::setSolidWall(area.m_blocks[0][5][1], area.m_blocks[8][5][1], wood);
-		Block& gateway = area.m_blocks[9][5][1];
+		areaBuilderUtil::setSolidWall(area.getBlock(0, 5, 1), area.getBlock(8, 5, 1), wood);
+		Block& gateway = area.getBlock(9, 5, 1);
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk, wood);
 		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
-		Block& stockpileLocation = area.m_blocks[5][8][1];
-		Block& chunkLocation = area.m_blocks[8][1][1];
+		Block& stockpileLocation = area.getBlock(5, 8, 1);
+		Block& chunkLocation = area.getBlock(8, 1, 1);
 		stockpile.addBlock(stockpileLocation);
 		Item& chunk1 = simulation.createItem(chunk, wood, 1u);
 		chunk1.setLocation(chunkLocation);
@@ -270,14 +270,14 @@ TEST_CASE("stockpile")
 	}
 	SUBCASE("path to haul tool is blocked")
 	{
-		areaBuilderUtil::setSolidWall(area.m_blocks[0][6][1], area.m_blocks[8][6][1], wood);
-		Block& gateway = area.m_blocks[9][6][1];
+		areaBuilderUtil::setSolidWall(area.getBlock(0, 6, 1), area.getBlock(8, 6, 1), wood);
+		Block& gateway = area.getBlock(9, 6, 1);
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk, lead);
 		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
-		Block& stockpileLocation = area.m_blocks[5][5][1];
-		Block& chunkLocation = area.m_blocks[1][5][1];
-		Block& cartLocation = area.m_blocks[8][8][1];
+		Block& stockpileLocation = area.getBlock(5, 5, 1);
+		Block& chunkLocation = area.getBlock(1, 5, 1);
+		Block& cartLocation = area.getBlock(8, 8, 1);
 		stockpile.addBlock(stockpileLocation);
 		Item& chunk1 = simulation.createItem(chunk, lead, 1u);
 		chunk1.setLocation(chunkLocation);
@@ -317,9 +317,9 @@ TEST_CASE("stockpile")
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk, lead);
 		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
-		Block& stockpileLocation = area.m_blocks[5][5][1];
-		Block& chunkLocation = area.m_blocks[1][5][1];
-		Block& cartLocation = area.m_blocks[8][8][1];
+		Block& stockpileLocation = area.getBlock(5, 5, 1);
+		Block& chunkLocation = area.getBlock(1, 5, 1);
+		Block& cartLocation = area.getBlock(8, 8, 1);
 		stockpile.addBlock(stockpileLocation);
 		Item& chunk1 = simulation.createItem(chunk, lead, 1u);
 		chunk1.setLocation(chunkLocation);
@@ -372,8 +372,8 @@ TEST_CASE("stockpile")
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk, wood);
 		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
-		Block& stockpileLocation = area.m_blocks[5][5][1];
-		Block& chunkLocation = area.m_blocks[1][8][1];
+		Block& stockpileLocation = area.getBlock(5, 5, 1);
+		Block& chunkLocation = area.getBlock(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
 		Item& chunk1 = simulation.createItem(chunk, wood, 1u);
 		chunk1.setLocation(chunkLocation);
@@ -398,8 +398,8 @@ TEST_CASE("stockpile")
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk, wood);
 		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
-		Block& stockpileLocation = area.m_blocks[5][5][1];
-		Block& chunkLocation = area.m_blocks[1][8][1];
+		Block& stockpileLocation = area.getBlock(5, 5, 1);
+		Block& chunkLocation = area.getBlock(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
 		Item& chunk1 = simulation.createItem(chunk, wood, 1u);
 		chunk1.setLocation(chunkLocation);
@@ -428,8 +428,8 @@ TEST_CASE("stockpile")
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk, wood);
 		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
-		Block& stockpileLocation = area.m_blocks[5][5][1];
-		Block& chunkLocation = area.m_blocks[1][8][1];
+		Block& stockpileLocation = area.getBlock(5, 5, 1);
+		Block& chunkLocation = area.getBlock(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
 		Item& chunk1 = simulation.createItem(chunk, wood, 1u);
 		chunk1.setLocation(chunkLocation);
@@ -454,8 +454,8 @@ TEST_CASE("stockpile")
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk, wood);
 		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
-		Block& stockpileLocation = area.m_blocks[5][5][1];
-		Block& chunkLocation = area.m_blocks[1][8][1];
+		Block& stockpileLocation = area.getBlock(5, 5, 1);
+		Block& chunkLocation = area.getBlock(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
 		Item& chunk1 = simulation.createItem(chunk, wood, 1u);
 		chunk1.setLocation(chunkLocation);
@@ -469,7 +469,7 @@ TEST_CASE("stockpile")
 		simulation.doStep();
 		// Path to chunk.
 		simulation.doStep();
-		std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(dwarf1, area.m_blocks[5][9][1]);
+		std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(dwarf1, area.getBlock(5, 9, 1));
 		dwarf1.m_hasObjectives.addTaskToStart(std::move(objective));
 		REQUIRE(dwarf1.m_project == nullptr);
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "stockpile");
@@ -480,8 +480,8 @@ TEST_CASE("stockpile")
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk, wood);
 		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
-		Block& stockpileLocation = area.m_blocks[5][5][1];
-		Block& chunkLocation = area.m_blocks[1][8][1];
+		Block& stockpileLocation = area.getBlock(5, 5, 1);
+		Block& chunkLocation = area.getBlock(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
 		Item& chunk1 = simulation.createItem(chunk, wood, 1u);
 		chunk1.setLocation(chunkLocation);

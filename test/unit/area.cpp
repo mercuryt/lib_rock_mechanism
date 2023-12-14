@@ -19,7 +19,7 @@ TEST_CASE("Area")
 		CHECK(area.m_sizeZ == 10);
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		CHECK(water.name == "water");
-		CHECK(area.m_blocks[5][5][0].getSolidMaterial() == marble);
+		CHECK(area.getBlock(5, 5, 0).getSolidMaterial() == marble);
 		area.readStep();
 		simulation.m_pool.wait_for_tasks();
 		area.writeStep();
@@ -28,8 +28,8 @@ TEST_CASE("Area")
 	{
 		simulation.m_step = 0;
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		Block& block1 = area.m_blocks[5][5][1];
-		Block& block2 = area.m_blocks[5][5][2];
+		Block& block1 = area.getBlock(5, 5, 1);
+		Block& block2 = area.getBlock(5, 5, 2);
 		block1.setNotSolid();
 		block2.addFluid(100, water);
 		FluidGroup* fluidGroup = block2.getFluidGroup(water);
@@ -50,8 +50,8 @@ TEST_CASE("Area")
 	{
 		simulation.m_step = 0;
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		Block& block1 = area.m_blocks[5][5][1];
-		Block& block2 = area.m_blocks[5][5][2];
+		Block& block1 = area.getBlock(5, 5, 1);
+		Block& block2 = area.getBlock(5, 5, 2);
 		block1.setNotSolid();
 		block1.addFluid(100, water);
 		block2.setSolid(marble);
@@ -88,8 +88,8 @@ TEST_CASE("Area")
 	SUBCASE("Test move with threading")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		Block& origin = area.m_blocks[1][1][1];
-		Block& destination = area.m_blocks[8][8][1];
+		Block& origin = area.getBlock(1, 1, 1);
+		Block& destination = area.getBlock(8, 8, 1);
 		Actor& actor = simulation.createActor(dwarf, origin);
 		area.m_hasActors.add(actor);
 		actor.m_canMove.setDestination(destination);
@@ -132,10 +132,10 @@ TEST_CASE("Area")
 	SUBCASE("Test mist spreads")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		Block& origin = area.m_blocks[5][5][1];
-		Block& block1 = area.m_blocks[5][6][1];
-		Block& block2 = area.m_blocks[6][6][1];
-		Block& block3 = area.m_blocks[5][5][2];
+		Block& origin = area.getBlock(5, 5, 1);
+		Block& block1 = area.getBlock(5, 6, 1);
+		Block& block2 = area.getBlock(6, 6, 1);
+		Block& block3 = area.getBlock(5, 5, 2);
 		origin.m_mistSource = &water;
 		origin.spawnMist(water);
 		uint32_t scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
@@ -220,8 +220,8 @@ TEST_CASE("vision-threading")
 	Simulation simulation;
 	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
-	Block& block1 = area.m_blocks[3][3][1];
-	Block& block2 = area.m_blocks[7][7][1];
+	Block& block1 = area.getBlock(3, 3, 1);
+	Block& block2 = area.getBlock(7, 7, 1);
 	Actor& a1 = simulation.createActor(dwarf, block1);
 	area.m_hasActors.add(a1);
 	REQUIRE(area.m_hasActors.m_visionBuckets.get(a1.m_id).size() == 1);
@@ -259,20 +259,20 @@ inline void fourFluidsTestParallel(uint32_t scale, uint32_t steps)
 	areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 	std::vector<FluidGroup*> newlySplit;
 	// Water is at 0,0
-	Block& water1 = area.m_blocks[1][1][1];
-	Block& water2 = area.m_blocks[halfMaxX - 1][halfMaxY - 1][maxZ - 1];		
+	Block& water1 = area.getBlock(1, 1, 1);
+	Block& water2 = area.getBlock(halfMaxX - 1, halfMaxY - 1, maxZ - 1);		
 	areaBuilderUtil::setFullFluidCuboid(water1, water2, water);
 	// CO2 is at 0,1
-	Block& CO2_1 = area.m_blocks[1][halfMaxY][1];
-	Block& CO2_2 = area.m_blocks[halfMaxX - 1][maxY - 2][maxZ - 1];
+	Block& CO2_1 = area.getBlock(1, halfMaxY, 1);
+	Block& CO2_2 = area.getBlock(halfMaxX - 1, maxY - 2, maxZ - 1);
 	areaBuilderUtil::setFullFluidCuboid(CO2_1, CO2_2, CO2);
 	// Lava is at 1,0
-	Block& lava1 = area.m_blocks[halfMaxX][1][1];
-	Block& lava2 = area.m_blocks[maxX - 2][halfMaxY - 1][maxZ - 1];
+	Block& lava1 = area.getBlock(halfMaxX, 1, 1);
+	Block& lava2 = area.getBlock(maxX - 2, halfMaxY - 1, maxZ - 1);
 	areaBuilderUtil::setFullFluidCuboid(lava1, lava2, lava);
 	// Mercury is at 1,1
-	Block& mercury1 = area.m_blocks[halfMaxX][halfMaxY][1];
-	Block& mercury2 = area.m_blocks[maxX - 2][maxY - 2][maxZ - 1];
+	Block& mercury1 = area.getBlock(halfMaxX, halfMaxY, 1);
+	Block& mercury2 = area.getBlock(maxX - 2, maxY - 2, maxZ - 1);
 	areaBuilderUtil::setFullFluidCuboid(mercury1, mercury2, mercury);
 	REQUIRE(area.m_fluidGroups.size() == 4);
 	FluidGroup* fgWater = water1.getFluidGroup(water);
@@ -314,8 +314,8 @@ inline void fourFluidsTestParallel(uint32_t scale, uint32_t steps)
 	if(scale != 3)
 		REQUIRE(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
 	REQUIRE(fgMercury->totalVolume() == totalVolume);
-	REQUIRE(area.m_blocks[1][1][1].m_fluids.contains(&lava));
-	REQUIRE(area.m_blocks[1][1][maxZ - 1].m_fluids.contains(&CO2));
+	REQUIRE(area.getBlock(1, 1, 1).m_fluids.contains(&lava));
+	REQUIRE(area.getBlock(1, 1, maxZ - 1).m_fluids.contains(&CO2));
 }
 TEST_CASE("four fluids scale 2 parallel")
 {

@@ -4,6 +4,7 @@
 #include "random.h"
 #include "reservable.h"
 #include "util.h"
+#include <memory>
 #include <sys/types.h>
 DigThreadedTask::DigThreadedTask(DigObjective& digObjective) : ThreadedTask(digObjective.m_actor.m_location->m_area->m_simulation.m_threadedTaskEngine), m_digObjective(digObjective), m_findsPath(digObjective.m_actor, digObjective.m_detour) { }
 void DigThreadedTask::readStep()
@@ -175,13 +176,17 @@ Step DigProject::getDuration() const
 		totalScore += getWorkerDigScore(*pair.first);
 	return std::max(Step(1u), Config::digMaxSteps / totalScore);
 }
+void DigLocationDishonorCallback::execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount)
+{
+	m_hasDigDesignationsForFaction.undesignate(m_location);
+}
 void HasDigDesignationsForFaction::designate(Block& block, const BlockFeatureType* blockFeatureType)
 {
 	assert(!m_data.contains(&block));
 	block.m_hasDesignations.insert(m_faction, BlockDesignation::Dig);
 	// To be called when block is no longer a suitable location, for example if it got dug out already.
-	DishonorCallback locationDishonorCallback = [&]([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { undesignate(block); };
-	m_data.try_emplace(&block, &m_faction, block, blockFeatureType, locationDishonorCallback);
+	std::unique_ptr<DishonorCallback> locationDishonorCallback = std::make_unique<DigLocationDishonorCallback>(*this, block);
+	m_data.try_emplace(&block, &m_faction, block, blockFeatureType, std::move(locationDishonorCallback));
 }
 void HasDigDesignationsForFaction::undesignate(Block& block)
 {

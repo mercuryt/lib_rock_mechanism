@@ -163,6 +163,8 @@ namespace Config
 	inline float projectileHitPercentPerPointAttackTypeCombatScore;
 	inline uint32_t attackCoolDownDurationBaseDextarity;
 	inline uint32_t goToPriority;
+	//inline uint32_t medicalPriority;
+	//inline uint32_t medicalProjectDelaySteps;
 
 	inline uint32_t convertBodyPartVolumeToArea(uint32_t volume){ return sqrt(volume); }
 	inline void load()
@@ -321,5 +323,7 @@ namespace Config
 		projectileHitPercentPerPointAttackTypeCombatScore = data["projectileHitPercentPerPointAttackTypeCombatScore"].get<float>();
 		attackCoolDownDurationBaseDextarity = data["attackCoolDownDurationBaseDextarity"].get<uint32_t>();
 		goToPriority = data["goToPriority"].get<uint32_t>();
+		//medicalPriority = data["medicalPriority"].get<uint32_t>();
+		//medicalProjectDelaySteps = data["medicalProjectDelayMinutes"].get<uint32_t>() * stepsPerMinute;
 	}
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "hasShape.h"
+#include "reservable.h"
 #include <unordered_set>
 
 class Item;
@@ -11,8 +12,9 @@ struct FluidType;
 struct ItemType;
 struct MaterialType;
 class Project;
-struct ProjectItemCounts;
+struct ProjectRequirementCounts;
 class Faction;
+class HaulSubproject;
 
 enum class HaulStrategy { None, Individual, Team, Cart, TeamCart, Panniers, AnimalCart, StrongSentient };
 
@@ -25,11 +27,12 @@ struct HaulSubprojectParamaters final
 	std::vector<Actor*> workers;
 	Item* haulTool;
 	Actor* beastOfBurden;
-	ProjectItemCounts* projectItemCounts;
+	ProjectRequirementCounts* projectRequirementCounts;
 	HaulSubprojectParamaters() { reset(); }
 	void reset();
 	[[nodiscard, maybe_unused]] bool validate() const;
 };
+
 // Dispatch one or more actors from a project to haul an item or actor to the project location.
 // ToHaul is either an Item or an Actor.
 class HaulSubproject final
@@ -45,7 +48,7 @@ class HaulSubproject final
 	Actor* m_leader;
 	bool m_itemIsMoving;
 	Actor* m_beastOfBurden;
-	ProjectItemCounts& m_projectItemCounts;
+	ProjectRequirementCounts& m_projectRequirementCounts;
 	const ItemType* m_genericItemType;
 	const MaterialType* m_genericMaterialType;
 	void complete(HasShape& delivered);
@@ -71,6 +74,12 @@ public:
 	[[nodiscard]] HaulStrategy getHaulStrategy() const { return m_strategy; }
 	[[nodiscard]] bool operator==(const HaulSubproject& other) const { return &other == this; }
 	friend class Project;
+};
+struct HaulSubprojectDishonorCallback final : public DishonorCallback
+{
+	HaulSubproject& m_haulSubproject;
+	HaulSubprojectDishonorCallback(HaulSubproject& hs) : m_haulSubproject(hs) { } 
+	void execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { m_haulSubproject.cancel(); }
 };
 // Used by Actor for individual haul strategy only. Other strategies use lead/follow.
 class CanPickup final

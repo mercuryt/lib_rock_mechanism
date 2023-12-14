@@ -17,6 +17,7 @@ class Faction;
 struct BlockFeatureType;
 class ConstructObjective;
 class ConstructProject;
+class HasConstructionDesignationsForFaction;
 class ConstructObjectiveType final : public ObjectiveType
 {
 public:
@@ -71,9 +72,16 @@ class ConstructProject final : public Project
 	void offDelay();
 public:
 	// BlockFeatureType can be null, meaning the block is to be filled with a constructed wall.
-	ConstructProject(const Faction* faction, Block& b, const BlockFeatureType* bft, const MaterialType& mt, DishonorCallback dishonorCallback) : Project(faction, b, Config::maxNumberOfWorkersForConstructionProject, dishonorCallback), m_blockFeatureType(bft), m_materialType(mt) { }
+	ConstructProject(const Faction* faction, Block& b, const BlockFeatureType* bft, const MaterialType& mt, std::unique_ptr<DishonorCallback> dishonorCallback) : Project(faction, b, Config::maxNumberOfWorkersForConstructionProject, std::move(dishonorCallback)), m_blockFeatureType(bft), m_materialType(mt) { }
 	// What would the total delay time be if we started from scratch now with current workers?
 	friend class HasConstructionDesignationsForFaction;
+};
+struct ConstructionLocationDishonorCallback final : public DishonorCallback
+{
+	HasConstructionDesignationsForFaction& m_hasConstructionDesignationsForFaction;
+	Block& m_location;
+	ConstructionLocationDishonorCallback(HasConstructionDesignationsForFaction& hcdff, Block& l) : m_hasConstructionDesignationsForFaction(hcdff), m_location(l) { }
+	void execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount);
 };
 class HasConstructionDesignationsForFaction final
 {

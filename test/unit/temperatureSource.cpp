@@ -11,12 +11,12 @@ TEST_CASE("temperature")
 	Area& area = simulation.createArea(10,10,10);
 	SUBCASE("solid blocks burn")
 	{
-		Block& origin = area.m_blocks[5][5][5];
-		Block& b1 = area.m_blocks[5][5][6];
-		Block& b2 = area.m_blocks[5][7][5];
-		Block& b3 = area.m_blocks[9][9][9];
-		Block& toBurn = area.m_blocks[6][5][5];
-		Block& toNotBurn = area.m_blocks[4][5][5];
+		Block& origin = area.getBlock(5, 5, 5);
+		Block& b1 = area.getBlock(5, 5, 6);
+		Block& b2 = area.getBlock(5, 7, 5);
+		Block& b3 = area.getBlock(9, 9, 9);
+		Block& toBurn = area.getBlock(6, 5, 5);
+		Block& toNotBurn = area.getBlock(4, 5, 5);
 		auto& wood = MaterialType::byName("poplar wood");
 		auto& marble = MaterialType::byName("marble");
 		toBurn.setSolid(wood);
@@ -42,8 +42,8 @@ TEST_CASE("temperature")
 	}
 	SUBCASE("burnt to ash")
 	{
-		Block& origin = area.m_blocks[5][5][5];
-		Block& toBurn = area.m_blocks[6][5][5];
+		Block& origin = area.getBlock(5, 5, 5);
+		Block& toBurn = area.getBlock(6, 5, 5);
 		auto& wood = MaterialType::byName("poplar wood");
 		toBurn.setSolid(wood);
 		area.m_areaHasTemperature.addTemperatureSource(origin, 1000);

@@ -21,7 +21,7 @@ TEST_CASE("vision")
 	SUBCASE("See no one when no one is present to be seen")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		Block& block = area.m_blocks[5][5][1];
+		Block& block = area.getBlock(5, 5, 1);
 		Actor& actor = simulation.createActor(dwarf, block);
 		VisionRequest visionRequest(actor);
 		visionRequest.readStep();
@@ -30,8 +30,8 @@ TEST_CASE("vision")
 	SUBCASE("See someone nearby")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		Block& block1 = area.m_blocks[3][3][1];
-		Block& block2 = area.m_blocks[7][7][1];
+		Block& block1 = area.getBlock(3, 3, 1);
+		Block& block2 = area.getBlock(7, 7, 1);
 		Actor& a1 = simulation.createActor(dwarf, block1);
 		Actor& a2 = simulation.createActor(dwarf, block2);
 		VisionRequest visionRequest(a1);
@@ -42,9 +42,9 @@ TEST_CASE("vision")
 	SUBCASE("Vision blocked by wall")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		Block& block1 = area.m_blocks[5][3][1];
-		Block& block2 = area.m_blocks[5][5][1];
-		Block& block3 = area.m_blocks[5][7][1];
+		Block& block1 = area.getBlock(5, 3, 1);
+		Block& block2 = area.getBlock(5, 5, 1);
+		Block& block3 = area.getBlock(5, 7, 1);
 		block2.setSolid(marble);
 		Actor& a1 = simulation.createActor(dwarf, block1);
 		simulation.createActor(dwarf, block3);
@@ -55,9 +55,9 @@ TEST_CASE("vision")
 	SUBCASE("Vision not blocked by wall not directly in the line of sight")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		Block& block1 = area.m_blocks[5][3][1];
-		Block& block2 = area.m_blocks[5][5][1];
-		Block& block3 = area.m_blocks[6][6][1];
+		Block& block1 = area.getBlock(5, 3, 1);
+		Block& block2 = area.getBlock(5, 5, 1);
+		Block& block3 = area.getBlock(6, 6, 1);
 		block2.setSolid(marble);
 		Actor& a1 = simulation.createActor(dwarf, block1);
 		simulation.createActor(dwarf, block3);
@@ -68,9 +68,9 @@ TEST_CASE("vision")
 	SUBCASE("Vision not blocked by one by one wall for two by two shape")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		Block& block1 = area.m_blocks[5][3][1];
-		Block& block2 = area.m_blocks[5][5][1];
-		Block& block3 = area.m_blocks[5][7][1];
+		Block& block1 = area.getBlock(5, 3, 1);
+		Block& block2 = area.getBlock(5, 5, 1);
+		Block& block3 = area.getBlock(5, 7, 1);
 		block2.setSolid(marble);
 		Actor& a1 = simulation.createActor(dwarf, block1);
 		simulation.createActor(troll, block3);
@@ -81,9 +81,9 @@ TEST_CASE("vision")
 	SUBCASE("Vision not blocked by glass wall")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		Block& block1 = area.m_blocks[5][3][1];
-		Block& block2 = area.m_blocks[5][5][1];
-		Block& block3 = area.m_blocks[5][7][1];
+		Block& block1 = area.getBlock(5, 3, 1);
+		Block& block2 = area.getBlock(5, 5, 1);
+		Block& block3 = area.getBlock(5, 7, 1);
 		block2.setSolid(glass);
 		Actor& a1 = simulation.createActor(dwarf, block1);
 		simulation.createActor(dwarf, block3);
@@ -94,9 +94,9 @@ TEST_CASE("vision")
 	SUBCASE("Vision blocked by closed door")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		Block& block1 = area.m_blocks[5][3][1];
-		Block& block2 = area.m_blocks[5][5][1];
-		Block& block3 = area.m_blocks[5][7][1];
+		Block& block1 = area.getBlock(5, 3, 1);
+		Block& block2 = area.getBlock(5, 5, 1);
+		Block& block3 = area.getBlock(5, 7, 1);
 		block2.m_hasBlockFeatures.construct(door, marble);
 		Actor& a1 = simulation.createActor(dwarf, block1);
 		simulation.createActor(dwarf, block3);
@@ -111,9 +111,9 @@ TEST_CASE("vision")
 	SUBCASE("Vision from above and below blocked by closed hatch")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 3, marble);
-		Block& block1 = area.m_blocks[5][5][1];
-		Block& block2 = area.m_blocks[5][5][2];
-		Block& block3 = area.m_blocks[5][5][3];
+		Block& block1 = area.getBlock(5, 5, 1);
+		Block& block2 = area.getBlock(5, 5, 2);
+		Block& block3 = area.getBlock(5, 5, 3);
 		block1.setNotSolid();
 		block2.setNotSolid();
 		block3.setNotSolid();
@@ -134,9 +134,9 @@ TEST_CASE("vision")
 	SUBCASE("Vision not blocked by closed hatch on the same z level")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		Block& block1 = area.m_blocks[5][3][1];
-		Block& block2 = area.m_blocks[5][5][1];
-		Block& block3 = area.m_blocks[5][7][1];
+		Block& block1 = area.getBlock(5, 3, 1);
+		Block& block2 = area.getBlock(5, 5, 1);
+		Block& block3 = area.getBlock(5, 7, 1);
 		block2.m_hasBlockFeatures.construct(hatch, marble);
 		Actor& a1 = simulation.createActor(dwarf, block1);
 		simulation.createActor(dwarf, block3);
@@ -147,9 +147,9 @@ TEST_CASE("vision")
 	SUBCASE("Vision from above and below blocked by floor")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 3, marble);
-		Block& block1 = area.m_blocks[5][5][1];
-		Block& block2 = area.m_blocks[5][5][2];
-		Block& block3 = area.m_blocks[5][5][3];
+		Block& block1 = area.getBlock(5, 5, 1);
+		Block& block2 = area.getBlock(5, 5, 2);
+		Block& block3 = area.getBlock(5, 5, 3);
 		block1.setNotSolid();
 		block2.setNotSolid();
 		block3.setNotSolid();
@@ -170,9 +170,9 @@ TEST_CASE("vision")
 	SUBCASE("Vision from below not blocked by glass floor")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 3, marble);
-		Block& block1 = area.m_blocks[5][5][1];
-		Block& block2 = area.m_blocks[5][5][2];
-		Block& block3 = area.m_blocks[5][5][3];
+		Block& block1 = area.getBlock(5, 5, 1);
+		Block& block2 = area.getBlock(5, 5, 2);
+		Block& block3 = area.getBlock(5, 5, 3);
 		block1.setNotSolid();
 		block2.setNotSolid();
 		block3.setNotSolid();
@@ -190,9 +190,9 @@ TEST_CASE("vision")
 	SUBCASE("Vision not blocked by floor on the same z level")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		Block& block1 = area.m_blocks[5][3][1];
-		Block& block2 = area.m_blocks[5][5][1];
-		Block& block3 = area.m_blocks[5][7][1];
+		Block& block1 = area.getBlock(5, 3, 1);
+		Block& block2 = area.getBlock(5, 5, 1);
+		Block& block3 = area.getBlock(5, 7, 1);
 		block2.m_hasBlockFeatures.construct(floor, marble);
 		Actor& a1 = simulation.createActor(dwarf, block1);
 		simulation.createActor(dwarf, block3);
@@ -210,11 +210,11 @@ TEST_CASE("vision")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		area.visionCuboidsActivate();
-		Block& block1 = area.m_blocks[1][1][1];
-		Block& block2 = area.m_blocks[5][5][2];
-		Block& block3 = area.m_blocks[5][5][5];
-		Block& block4 = area.m_blocks[1][1][7];
-		Block& block5 = area.m_blocks[9][9][1];
+		Block& block1 = area.getBlock(1, 1, 1);
+		Block& block2 = area.getBlock(5, 5, 2);
+		Block& block3 = area.getBlock(5, 5, 5);
+		Block& block4 = area.getBlock(1, 1, 7);
+		Block& block5 = area.getBlock(9, 9, 1);
 		CHECK(area.m_visionCuboids.size() == 1);
 		CHECK(block1.m_visionCuboid->m_cuboid.size() == 900);
 		CHECK(block1.m_visionCuboid == block2.m_visionCuboid);
@@ -255,8 +255,8 @@ TEST_CASE("vision")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		area.visionCuboidsActivate();
-		Block& block1 = area.m_blocks[3][3][1];
-		Block& block2 = area.m_blocks[7][7][1];
+		Block& block1 = area.getBlock(3, 3, 1);
+		Block& block2 = area.getBlock(7, 7, 1);
 		Actor& a1 = simulation.createActor(dwarf, block1);
 		Actor& a2 = simulation.createActor(dwarf, block2);
 		VisionRequest visionRequest(a1);
@@ -272,8 +272,8 @@ TEST_CASE("Too far to see")
 	Simulation simulation;
 	Area& area = simulation.createArea(20,20,20);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
-	Block& block1 = area.m_blocks[0][0][1];
-	Block& block2 = area.m_blocks[19][19][1];
+	Block& block1 = area.getBlock(0, 0, 1);
+	Block& block2 = area.getBlock(19, 19, 1);
 	Actor& a1 = simulation.createActor(dwarf, block1);
 	simulation.createActor(dwarf, block2);
 	VisionRequest visionRequest(a1);

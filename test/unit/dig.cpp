@@ -18,16 +18,16 @@ TEST_CASE("dig")
 	areaBuilderUtil::setSolidLayers(area, 2, 3, dirt);
 	Faction faction(L"tower of power");
 	DigObjectiveType digObjectiveType;
-	Actor& dwarf1 = simulation.createActor(dwarf, area.m_blocks[1][1][4]);
+	Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(1, 1, 4));
 	dwarf1.setFaction(&faction);
 	area.m_hasActors.add(dwarf1);
-	Block& pickLocation = area.m_blocks[5][5][4];
+	Block& pickLocation = area.getBlock(5, 5, 4);
 	Item& pick = simulation.createItem(ItemType::byName("pick"), bronze, 50u, 0);
 	pick.setLocation(pickLocation);
 	area.m_hasDigDesignations.addFaction(faction);
 	SUBCASE("dig hole")
 	{
-		Block& holeLocation = area.m_blocks[8][4][3];
+		Block& holeLocation = area.getBlock(8, 4, 3);
 		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
 		DigProject& project = area.m_hasDigDesignations.at(faction, holeLocation);
 		REQUIRE(holeLocation.m_hasDesignations.contains(faction, BlockDesignation::Dig));
@@ -58,11 +58,11 @@ TEST_CASE("dig")
 	}
 	SUBCASE("dig stairs and tunnel")
 	{
-		Block& stairsLocation1 = area.m_blocks[8][4][3];
-		Block& stairsLocation2 = area.m_blocks[8][4][2];
-		Block& aboveStairs = area.m_blocks[8][4][4];
-		Block& tunnelStart = area.m_blocks[8][5][2];
-		Block& tunnelEnd = area.m_blocks[8][6][2];
+		Block& stairsLocation1 = area.getBlock(8, 4, 3);
+		Block& stairsLocation2 = area.getBlock(8, 4, 2);
+		Block& aboveStairs = area.getBlock(8, 4, 4);
+		Block& tunnelStart = area.getBlock(8, 5, 2);
+		Block& tunnelEnd = area.getBlock(8, 6, 2);
 		Cuboid tunnel(tunnelEnd, tunnelStart);
 		area.m_hasDigDesignations.designate(faction, stairsLocation1, &BlockFeatureType::stairs);
 		area.m_hasDigDesignations.designate(faction, stairsLocation2, &BlockFeatureType::stairs);
@@ -81,9 +81,9 @@ TEST_CASE("dig")
 	}
 	SUBCASE("two workers")
 	{
-		Actor& dwarf2 = simulation.createActor(dwarf, area.m_blocks[1][2][4]);
+		Actor& dwarf2 = simulation.createActor(dwarf, area.getBlock(1, 2, 4));
 		dwarf2.setFaction(&faction);
-		Block& holeLocation = area.m_blocks[8][4][3];
+		Block& holeLocation = area.getBlock(8, 4, 3);
 		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "dig");
@@ -94,10 +94,10 @@ TEST_CASE("dig")
 	}
 	SUBCASE("two workers two holes")
 	{
-		Actor& dwarf2 = simulation.createActor(dwarf, area.m_blocks[1][2][4]);
+		Actor& dwarf2 = simulation.createActor(dwarf, area.getBlock(1, 2, 4));
 		dwarf2.setFaction(&faction);
-		Block& holeLocation1 = area.m_blocks[8][4][3];
-		Block& holeLocation2 = area.m_blocks[8][3][3];
+		Block& holeLocation1 = area.getBlock(8, 4, 3);
+		Block& holeLocation2 = area.getBlock(8, 3, 3);
 		area.m_hasDigDesignations.designate(faction, holeLocation1, nullptr);
 		area.m_hasDigDesignations.designate(faction, holeLocation2, nullptr);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
@@ -109,9 +109,9 @@ TEST_CASE("dig")
 	}
 	SUBCASE("cannot path to spot")
 	{
-		areaBuilderUtil::setSolidWall(area.m_blocks[0][3][4], area.m_blocks[8][3][4], dirt);
-		Block& gateway = area.m_blocks[9][3][4];
-		Block& holeLocation = area.m_blocks[8][4][3];
+		areaBuilderUtil::setSolidWall(area.getBlock(0, 3, 4), area.getBlock(8, 3, 4), dirt);
+		Block& gateway = area.getBlock(9, 3, 4);
+		Block& holeLocation = area.getBlock(8, 4, 3);
 		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
 		DigProject& project = area.m_hasDigDesignations.at(faction, holeLocation);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
@@ -134,7 +134,7 @@ TEST_CASE("dig")
 	}
 	SUBCASE("spot already dug")
 	{
-		Block& holeLocation = area.m_blocks[8][8][3];
+		Block& holeLocation = area.getBlock(8, 8, 3);
 		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
 		// One step to find the designation.
@@ -155,7 +155,7 @@ TEST_CASE("dig")
 	}
 	SUBCASE("pick destroyed")
 	{
-		Block& holeLocation = area.m_blocks[8][4][3];
+		Block& holeLocation = area.getBlock(8, 4, 3);
 		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
 		DigProject& project = area.m_hasDigDesignations.at(faction, holeLocation);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
@@ -176,7 +176,7 @@ TEST_CASE("dig")
 	}
 	SUBCASE("player cancels")
 	{
-		Block& holeLocation = area.m_blocks[8][8][3];
+		Block& holeLocation = area.getBlock(8, 8, 3);
 		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
 		// One step to find the designation.
@@ -196,7 +196,7 @@ TEST_CASE("dig")
 	}
 	SUBCASE("player interrupts")
 	{
-		Block& holeLocation = area.m_blocks[8][8][3];
+		Block& holeLocation = area.getBlock(8, 8, 3);
 		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
 		// One step to find the designation.
@@ -208,7 +208,7 @@ TEST_CASE("dig")
 		// Another step to path to the pick.
 		simulation.doStep();
 		// Setting holeLocation as not solid immideatly triggers the project locationDishonorCallback, which cancels the project.
-		std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(dwarf1, area.m_blocks[1][8][4]);
+		std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(dwarf1, area.getBlock(1, 8, 4));
 		dwarf1.m_hasObjectives.addTaskToStart(std::move(objective));
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "dig");
 		REQUIRE(!dwarf1.m_canPickup.isCarrying(pick));

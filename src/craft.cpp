@@ -1,6 +1,7 @@
 #include "craft.h"
 #include "area.h"
 #include "util.h"
+#include <memory>
 Step CraftStepProject::getDuration() const
 {
 	uint32_t totalScore = 0;
@@ -131,12 +132,12 @@ void CraftObjective::cancel()
 	if(m_craftJob != nullptr && m_craftJob->craftStepProject)
 		m_craftJob->craftStepProject->removeWorker(m_actor);
 	m_threadedTask.maybeCancel();
+	m_actor.m_canReserve.clearAll();
 }
 void CraftObjective::reset() 
 { 
 	cancel(); 
 	m_craftJob = nullptr;
-	m_actor.m_canReserve.clearAll();
 }
 void HasCraftingLocationsAndJobsForFaction::addLocation(const CraftStepTypeCategory& category, Block& block)
 {
@@ -250,8 +251,9 @@ void HasCraftingLocationsAndJobsForFaction::jobComplete(CraftJob& craftJob)
 }
 void HasCraftingLocationsAndJobsForFaction::makeAndAssignStepProject(CraftJob& craftJob, Block& location, CraftObjective& objective)
 {
-	DishonorCallback dishonorCallback = [&]([[maybe_unused]] uint32_t oldCount,[[maybe_unused]]  uint32_t newCount){ craftJob.craftStepProject->cancel(); };
-	craftJob.craftStepProject = std::make_unique<CraftStepProject>(objective.m_actor.getFaction(), location, *craftJob.stepIterator, craftJob, dishonorCallback);
+	craftJob.craftStepProject = std::make_unique<CraftStepProject>(objective.m_actor.getFaction(), location, *craftJob.stepIterator, craftJob);
+	std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<CraftStepProjectHasShapeDishonorCallback>(*craftJob.craftStepProject.get());
+	craftJob.craftStepProject->setLocationDishonorCallback(std::move(dishonorCallback));
 	craftJob.craftStepProject->addWorkerCandidate(objective.m_actor, objective);
 	unindexAssigned(craftJob);
 }

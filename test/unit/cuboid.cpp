@@ -8,15 +8,15 @@ TEST_CASE("cuboid")
 	Area& area = simulation.createArea(2,2,2);
 	SUBCASE("create")
 	{
-		Cuboid cuboid(&area.m_blocks[1][1][1], &area.m_blocks[0][0][0]);
+		Cuboid cuboid(&area.getBlock(1, 1, 1), &area.getBlock(0, 0, 0));
 		CHECK(cuboid.size() == 8);
-		cuboid.contains(area.m_blocks[1][1][0]);
+		cuboid.contains(area.getBlock(1, 1, 0));
 	}
 	SUBCASE("merge")
 	{
-		Cuboid c1(&area.m_blocks[0][1][1], &area.m_blocks[0][0][0]);
+		Cuboid c1(&area.getBlock(0, 1, 1), &area.getBlock(0, 0, 0));
 		CHECK(c1.size() == 4);
-		Cuboid c2(&area.m_blocks[1][1][1], &area.m_blocks[1][0][0]);
+		Cuboid c2(&area.getBlock(1, 1, 1), &area.getBlock(1, 0, 0));
 		CHECK(c1.canMerge(c2));
 		Cuboid sum = c1.sum(c2);
 		CHECK(sum.size() == 8);
@@ -26,10 +26,10 @@ TEST_CASE("cuboid")
 	}
 	SUBCASE("get face")
 	{
-		Cuboid c1(&area.m_blocks[1][1][1], &area.m_blocks[0][0][0]);
+		Cuboid c1(&area.getBlock(1, 1, 1), &area.getBlock(0, 0, 0));
 		Cuboid face = c1.getFace(4);
 		CHECK(face.size() == 4);
-		CHECK(face.contains(area.m_blocks[1][0][0]));
-		CHECK(!face.contains(area.m_blocks[0][0][0]));
+		CHECK(face.contains(area.getBlock(1, 0, 0)));
+		CHECK(!face.contains(area.getBlock(0, 0, 0)));
 	}
 }

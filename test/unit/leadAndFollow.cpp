@@ -14,10 +14,10 @@ TEST_CASE("leadAndFollow")
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	SUBCASE("two dwarves")
 	{
-		Block& origin1 = area.m_blocks[2][2][1];
-		Block& origin2 = area.m_blocks[1][1][1];
-		Block& destination1 = area.m_blocks[9][9][1];
-		Block& destination2 = area.m_blocks[8][8][1];
+		Block& origin1 = area.getBlock(2, 2, 1);
+		Block& origin2 = area.getBlock(1, 1, 1);
+		Block& destination1 = area.getBlock(9, 9, 1);
+		Block& destination2 = area.getBlock(8, 8, 1);
 		Actor& dwarf1 = simulation.createActor(dwarf, origin1);
 		Actor& dwarf2 = simulation.createActor(dwarf, origin2);
 		dwarf2.m_canFollow.follow(dwarf1.m_canLead);
@@ -32,10 +32,10 @@ TEST_CASE("leadAndFollow")
 	}
 	SUBCASE("dwarf leads troll")
 	{
-		Block& origin1 = area.m_blocks[3][3][1];
-		Block& origin2 = area.m_blocks[2][2][1];
-		Block& destination1 = area.m_blocks[9][9][1];
-		Block& destination2 = area.m_blocks[8][8][1];
+		Block& origin1 = area.getBlock(3, 3, 1);
+		Block& origin2 = area.getBlock(2, 2, 1);
+		Block& destination1 = area.getBlock(9, 9, 1);
+		Block& destination2 = area.getBlock(8, 8, 1);
 		Actor& dwarf1 = simulation.createActor(dwarf, origin1);
 		Actor& troll1 = simulation.createActor(troll, origin2);
 		troll1.m_canFollow.follow(dwarf1.m_canLead);
@@ -50,10 +50,10 @@ TEST_CASE("leadAndFollow")
 	}
 	SUBCASE("troll leads dwarf")
 	{
-		Block& origin1 = area.m_blocks[3][2][1];
-		Block& origin2 = area.m_blocks[1][1][1];
-		Block& destination1 = area.m_blocks[8][8][1];
-		Block& destination2 = area.m_blocks[7][6][1];
+		Block& origin1 = area.getBlock(3, 2, 1);
+		Block& origin2 = area.getBlock(1, 1, 1);
+		Block& destination1 = area.getBlock(8, 8, 1);
+		Block& destination2 = area.getBlock(7, 6, 1);
 		Actor& troll1 = simulation.createActor(troll, origin1);
 		Actor& dwarf1 = simulation.createActor(dwarf, origin2);
 		dwarf1.m_canFollow.follow(troll1.m_canLead);
@@ -68,13 +68,13 @@ TEST_CASE("leadAndFollow")
 	}
 	SUBCASE("use largest shape for pathing")
 	{
-		Block& origin1 = area.m_blocks[2][2][1];
-		Block& origin2 = area.m_blocks[1][1][1];
-		Block& destination1 = area.m_blocks[9][9][1];
-		area.m_blocks[5][1][1].setSolid(marble);
-		area.m_blocks[5][3][1].setSolid(marble);
-		area.m_blocks[5][5][1].setSolid(marble);
-		area.m_blocks[5][7][1].setSolid(marble);
+		Block& origin1 = area.getBlock(2, 2, 1);
+		Block& origin2 = area.getBlock(1, 1, 1);
+		Block& destination1 = area.getBlock(9, 9, 1);
+		area.getBlock(5, 1, 1).setSolid(marble);
+		area.getBlock(5, 3, 1).setSolid(marble);
+		area.getBlock(5, 5, 1).setSolid(marble);
+		area.getBlock(5, 7, 1).setSolid(marble);
 		Actor& dwarf1 = simulation.createActor(AnimalSpecies::byName("dwarf"), origin1);
 		Actor& troll1 = simulation.createActor(troll, origin2);
 		troll1.m_canFollow.follow(dwarf1.m_canLead);
@@ -84,11 +84,11 @@ TEST_CASE("leadAndFollow")
 	}
 	SUBCASE("wait for follower to keep up if blocked temporarily")
 	{
-		Block& origin1 = area.m_blocks[2][2][1];
-		Block& origin2 = area.m_blocks[1][1][1];
-		Block& origin3 = area.m_blocks[3][2][1];
-		Block& destination1 = area.m_blocks[9][9][1];
-		Block& destination2 = area.m_blocks[8][8][1];
+		Block& origin1 = area.getBlock(2, 2, 1);
+		Block& origin2 = area.getBlock(1, 1, 1);
+		Block& origin3 = area.getBlock(3, 2, 1);
+		Block& destination1 = area.getBlock(9, 9, 1);
+		Block& destination2 = area.getBlock(8, 8, 1);
 		Actor& dwarf1 = simulation.createActor(dwarf, origin1);
 		Actor& troll1 = simulation.createActor(troll, origin2);
 		Actor& dwarf2 = simulation.createActor(dwarf, origin3);
@@ -106,7 +106,7 @@ TEST_CASE("leadAndFollow")
 		Block* dwarf1FirstStep = dwarf1.m_location;
 		REQUIRE(troll1.m_location == &origin2);
 		REQUIRE(!origin1.m_hasShapes.canEnterCurrentlyFrom(troll1, *troll1.m_location));
-		dwarf2.setLocation(area.m_blocks[9][1][1]);
+		dwarf2.setLocation(area.getBlock(9, 1, 1));
 		REQUIRE(origin1.m_hasShapes.canEnterCurrentlyFrom(troll1, *troll1.m_location));
 		simulation.fastForwardUntillActorIsAt(troll1, origin1);
 		REQUIRE(dwarf1.m_location == dwarf1FirstStep);
@@ -116,15 +116,15 @@ TEST_CASE("leadAndFollow")
 	}
 	SUBCASE("disband line if follower blocked permanantly")
 	{
-		Block& origin1 = area.m_blocks[2][2][1];
-		Block& origin2 = area.m_blocks[1][1][1];
-		Block& destination1 = area.m_blocks[9][9][1];
+		Block& origin1 = area.getBlock(2, 2, 1);
+		Block& origin2 = area.getBlock(1, 1, 1);
+		Block& destination1 = area.getBlock(9, 9, 1);
 		Actor& dwarf1 = simulation.createActor(dwarf, origin1);
 		Actor& troll1 = simulation.createActor(troll, origin2);
 		troll1.m_canFollow.follow(dwarf1.m_canLead);
 		dwarf1.m_canMove.setDestination(destination1);
 		simulation.doStep();
-		area.m_blocks[2][1][1].setSolid(marble);
+		area.getBlock(2, 1, 1).setSolid(marble);
 		while(dwarf1.m_location == &origin1)
 			simulation.doStep();
 		REQUIRE(!dwarf1.m_canLead.isLeading());

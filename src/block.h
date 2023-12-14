@@ -53,6 +53,7 @@ public:
 	// Store adjacent in an array, with index determined by relative position.
 	// below = 0, < = 1, ^ = 2, > = 3, v = 4, above = 5.
 	std::array<Block*, 6> m_adjacents;
+	// Contains only those adjacents which aren't null.
 	std::vector<Block*> m_adjacentsVector;
 	// Sorted by density, low to high.
 	// TODO: Try replacing with a flatmap.
@@ -83,9 +84,11 @@ public:
 	IsPartOfFarmField m_isPartOfFarmField;
 	BlockHasTemperature m_blockHasTemperature;
 
-	// Constructor initalizes some members.
 	Block();
-	void setup(Area& a, uint32_t ax, uint32_t ay, uint32_t az);
+	Block(const Block&) = delete;
+	Block(Block&&) = delete;
+	Block& operator=(const Block&) = delete;
+	void setup(Area& area, uint32_t ax, uint32_t ay, uint32_t az);
 	void recordAdjacent();
 	std::vector<Block*> getAdjacentWithEdgeAdjacent() const;
 	std::vector<Block*> getAdjacentWithEdgeAndCornerAdjacent() const;
@@ -144,6 +147,7 @@ public:
 	std::vector<Block*> selectBetweenCorners(Block* otherBlock) const;
 
 	bool operator==(const Block& block) const;
+	//TODO: Use std::function instead of template.
 	template <typename F>
 	std::unordered_set<Block*> collectAdjacentsWithCondition(F&& condition)
 	{

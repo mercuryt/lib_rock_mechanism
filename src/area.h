@@ -17,7 +17,9 @@
 #include "simulation.h"	
 #include "targetedHaul.h"	
 #include "fire.h"
+//#include "medical.h"
 
+#include <sys/types.h>
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
@@ -27,12 +29,13 @@
 
 class Area final
 {
+	std::vector<Block> m_blocks;
 public:
 	Simulation& m_simulation;
 	uint32_t m_sizeX;
 	uint32_t m_sizeY;
 	uint32_t m_sizeZ;
-	std::vector<std::vector<std::vector<Block>>> m_blocks;
+	//TODO: make into 1d vector.
 	std::unordered_set<Block*> m_caveInCheck;
 	std::vector<std::tuple<std::vector<Block*>,uint32_t,uint32_t>> m_caveInData;
 
@@ -48,6 +51,7 @@ public:
 	HasCraftingLocationsAndJobs m_hasCraftingLocationsAndJobs;
 	AreaHasTargetedHauling m_targetedHauling;
 	HasSleepingSpots m_hasSleepingSpots;
+	//AreaHasMedicalPatients m_hasMedicalPatients;
 	//TODO: HasItems
 	AreaHasItems m_hasItems;
 	//TODO: HasFluidGroups.
@@ -65,6 +69,7 @@ public:
 	void readStep();
 	void writeStep();
 	
+	Block& getBlock(uint32_t x, uint32_t y, uint32_t z);
 	// Create a fluid group.
 	FluidGroup* createFluidGroup(const FluidType& fluidType, std::unordered_set<Block*>& blocks, bool checkMerge = true);
 

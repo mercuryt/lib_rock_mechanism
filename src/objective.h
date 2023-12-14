@@ -16,7 +16,7 @@ class WaitEvent;
 class Objective;
 class SupressedNeedEvent;
 
-enum class ObjectiveTypeId { Construct, Craft, Dig, Drink, Eat, GetToSafeTemperature, GivePlantsFluid, GoTo, Harvest, Haul, Kill, Rest, Sleep, Station, SowSeeds, StockPile, Wait, Wander };
+enum class ObjectiveTypeId { Construct, Craft, Dig, Drink, Eat, GetToSafeTemperature, GivePlantsFluid, GoTo, Harvest, Haul, Kill, Medical, Rest, Sleep, Station, SowSeeds, StockPile, Wait, Wander };
 struct ObjectiveType
 {
 	[[nodiscard]] virtual bool canBeAssigned(Actor& actor) const = 0;
