@@ -36,7 +36,7 @@ TEST_CASE("stockpile")
 		Block& stockpileLocation = area.getBlock(5, 5, 1);
 		Block& chunkLocation = area.getBlock(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
-		Item& chunk1 = simulation.createItem(chunk, wood, 1u);
+		Item& chunk1 = simulation.createItemGeneric(chunk, wood, 1u);
 		chunk1.setLocation(chunkLocation);
 		area.m_hasStockPiles.at(faction).addItem(chunk1);
 		REQUIRE(objectiveType.canBeAssigned(dwarf1));
@@ -75,8 +75,8 @@ TEST_CASE("stockpile")
 		Block& chunkLocation2 = area.getBlock(9, 8, 1);
 		stockpile.addBlock(stockpileLocation1);
 		stockpile.addBlock(stockpileLocation2);
-		Item& chunk1 = simulation.createItem(chunk, wood, 1u);
-		Item& chunk2 = simulation.createItem(chunk, marble, 1u);
+		Item& chunk1 = simulation.createItemGeneric(chunk, wood, 1u);
+		Item& chunk2 = simulation.createItemGeneric(chunk, marble, 1u);
 		chunk1.setLocation(chunkLocation1);
 		chunk2.setLocation(chunkLocation2);
 		REQUIRE(area.m_hasStockPiles.at(faction).getStockPileFor(chunk1) == &stockpile);
@@ -111,8 +111,8 @@ TEST_CASE("stockpile")
 		Block& chunkLocation2 = area.getBlock(9, 8, 1);
 		stockpile.addBlock(stockpileLocation1);
 		stockpile.addBlock(stockpileLocation2);
-		Item& chunk1 = simulation.createItem(chunk, marble, 1u);
-		Item& chunk2 = simulation.createItem(chunk, wood, 1u);
+		Item& chunk1 = simulation.createItemGeneric(chunk, marble, 1u);
+		Item& chunk2 = simulation.createItemGeneric(chunk, wood, 1u);
 		chunk1.setLocation(chunkLocation1);
 		chunk2.setLocation(chunkLocation2);
 		area.m_hasStockPiles.at(faction).addItem(chunk1);
@@ -171,7 +171,7 @@ TEST_CASE("stockpile")
 		Block& chunkLocation = area.getBlock(1, 8, 1);
 		stockpile.addBlock(stockpileLocation1);
 		stockpile.addBlock(stockpileLocation2);
-		Item& chunk1 = simulation.createItem(chunk, lead, 1u);
+		Item& chunk1 = simulation.createItemGeneric(chunk, lead, 1u);
 		chunk1.setLocation(chunkLocation);
 		REQUIRE(!dwarf1.m_canPickup.canPickupAny(chunk1));
 		area.m_hasStockPiles.at(faction).addItem(chunk1);
@@ -213,7 +213,7 @@ TEST_CASE("stockpile")
 		Block& stockpileLocation = area.getBlock(5, 5, 1);
 		Block& chunkLocation = area.getBlock(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
-		Item& chunk1 = simulation.createItem(chunk, wood, 1u);
+		Item& chunk1 = simulation.createItemGeneric(chunk, wood, 1u);
 		chunk1.setLocation(chunkLocation);
 		area.m_hasStockPiles.at(faction).addItem(chunk1);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 100);
@@ -242,7 +242,7 @@ TEST_CASE("stockpile")
 		Block& stockpileLocation = area.getBlock(5, 8, 1);
 		Block& chunkLocation = area.getBlock(8, 1, 1);
 		stockpile.addBlock(stockpileLocation);
-		Item& chunk1 = simulation.createItem(chunk, wood, 1u);
+		Item& chunk1 = simulation.createItemGeneric(chunk, wood, 1u);
 		chunk1.setLocation(chunkLocation);
 		area.m_hasStockPiles.at(faction).addItem(chunk1);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 100);
@@ -279,9 +279,9 @@ TEST_CASE("stockpile")
 		Block& chunkLocation = area.getBlock(1, 5, 1);
 		Block& cartLocation = area.getBlock(8, 8, 1);
 		stockpile.addBlock(stockpileLocation);
-		Item& chunk1 = simulation.createItem(chunk, lead, 1u);
+		Item& chunk1 = simulation.createItemGeneric(chunk, lead, 1u);
 		chunk1.setLocation(chunkLocation);
-		Item& cart1 = simulation.createItem(cart, wood, 30u, 0);
+		Item& cart1 = simulation.createItemNongeneric(cart, wood, 30u, 0);
 		cart1.setLocation(cartLocation);
 		area.m_hasHaulTools.registerHaulTool(cart1);
 		REQUIRE(!dwarf1.m_canPickup.canPickupAny(chunk1));
@@ -321,9 +321,9 @@ TEST_CASE("stockpile")
 		Block& chunkLocation = area.getBlock(1, 5, 1);
 		Block& cartLocation = area.getBlock(8, 8, 1);
 		stockpile.addBlock(stockpileLocation);
-		Item& chunk1 = simulation.createItem(chunk, lead, 1u);
+		Item& chunk1 = simulation.createItemGeneric(chunk, lead, 1u);
 		chunk1.setLocation(chunkLocation);
-		Item& cart1 = simulation.createItem(cart, wood, 30u, 0);
+		Item& cart1 = simulation.createItemNongeneric(cart, wood, 30u, 0);
 		cart1.setLocation(cartLocation);
 		area.m_hasHaulTools.registerHaulTool(cart1);
 		REQUIRE(!dwarf1.m_canPickup.canPickupAny(chunk1));
@@ -375,7 +375,7 @@ TEST_CASE("stockpile")
 		Block& stockpileLocation = area.getBlock(5, 5, 1);
 		Block& chunkLocation = area.getBlock(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
-		Item& chunk1 = simulation.createItem(chunk, wood, 1u);
+		Item& chunk1 = simulation.createItemGeneric(chunk, wood, 1u);
 		chunk1.setLocation(chunkLocation);
 		area.m_hasStockPiles.at(faction).addItem(chunk1);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 100);
@@ -401,7 +401,7 @@ TEST_CASE("stockpile")
 		Block& stockpileLocation = area.getBlock(5, 5, 1);
 		Block& chunkLocation = area.getBlock(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
-		Item& chunk1 = simulation.createItem(chunk, wood, 1u);
+		Item& chunk1 = simulation.createItemGeneric(chunk, wood, 1u);
 		chunk1.setLocation(chunkLocation);
 		area.m_hasStockPiles.at(faction).addItem(chunk1);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 100);
@@ -431,7 +431,7 @@ TEST_CASE("stockpile")
 		Block& stockpileLocation = area.getBlock(5, 5, 1);
 		Block& chunkLocation = area.getBlock(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
-		Item& chunk1 = simulation.createItem(chunk, wood, 1u);
+		Item& chunk1 = simulation.createItemGeneric(chunk, wood, 1u);
 		chunk1.setLocation(chunkLocation);
 		area.m_hasStockPiles.at(faction).addItem(chunk1);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 100);
@@ -457,7 +457,7 @@ TEST_CASE("stockpile")
 		Block& stockpileLocation = area.getBlock(5, 5, 1);
 		Block& chunkLocation = area.getBlock(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
-		Item& chunk1 = simulation.createItem(chunk, wood, 1u);
+		Item& chunk1 = simulation.createItemGeneric(chunk, wood, 1u);
 		chunk1.setLocation(chunkLocation);
 		area.m_hasStockPiles.at(faction).addItem(chunk1);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 100);
@@ -483,7 +483,7 @@ TEST_CASE("stockpile")
 		Block& stockpileLocation = area.getBlock(5, 5, 1);
 		Block& chunkLocation = area.getBlock(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
-		Item& chunk1 = simulation.createItem(chunk, wood, 1u);
+		Item& chunk1 = simulation.createItemGeneric(chunk, wood, 1u);
 		chunk1.setLocation(chunkLocation);
 		area.m_hasStockPiles.at(faction).addItem(chunk1);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 100);

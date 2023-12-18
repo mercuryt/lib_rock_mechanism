@@ -297,7 +297,7 @@ TEST_CASE("farmFields")
 		Plant& plant = block.m_hasPlant.get();
 		REQUIRE(!area.m_hasFarmFields.hasGivePlantsFluidDesignations(faction));
 		REQUIRE(plant.m_growthEvent.exists());
-		Item& bucket = simulation.createItem(ItemType::byName("bucket"), MaterialType::byName("poplar wood"), 50u, 0);
+		Item& bucket = simulation.createItemNongeneric(ItemType::byName("bucket"), MaterialType::byName("poplar wood"), 50u, 0);
 		Block& bucketLocation = area.getBlock(7, 7, 2);
 		bucket.setLocation(bucketLocation);
 		Block& pondLocation = area.getBlock(3, 9, 1);

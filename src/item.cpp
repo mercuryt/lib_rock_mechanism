@@ -118,14 +118,6 @@ Item::Item(Simulation& s, uint32_t i, const ItemType& it, const MaterialType& mt
 	m_mass = m_itemType.volume * m_materialType.density;
 	m_volume = m_itemType.volume;
 }
-// Named.
-Item::Item(Simulation& s, uint32_t i, const ItemType& it, const MaterialType& mt, std::string n, uint32_t qual, Percent pw, CraftJob* cj):
-	HasShape(s, it.shape, true), m_quantity(1u), m_id(i), m_itemType(it), m_materialType(mt), m_name(n), m_quality(qual), m_percentWear(pw), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this), m_canBeStockPiled(*this)
-{
-	assert(!m_itemType.generic);
-	m_mass = m_itemType.volume * m_materialType.density;
-	m_volume = m_itemType.volume;
-}
 void ItemHasCargo::add(HasShape& hasShape)
 {
 	//TODO: This method does not call hasShape.exit(), which is not consistant with the behaviour of CanPickup::pickup.

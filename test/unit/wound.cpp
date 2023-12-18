@@ -14,7 +14,7 @@ TEST_CASE("wound")
 	Block& pondLocation = area.getBlock(3, 7, 1);
 	pondLocation.setNotSolid();
 	pondLocation.addFluid(Config::maxBlockVolume, FluidType::byName("water"));
-	Item& fruit = simulation.createItem(ItemType::byName("apple"), MaterialType::byName("fruit"), 50u);
+	Item& fruit = simulation.createItemNongeneric(ItemType::byName("apple"), MaterialType::byName("fruit"), 50u);
 	Block& fruitLocation = area.getBlock(6, 5, 2);
 	fruit.setLocation(fruitLocation);
 	SUBCASE("bleed to death")

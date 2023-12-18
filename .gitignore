@@ -31,3 +31,4 @@ test/benchmark/*
 test/inconsistantErrors/*
 *\.vscode
 .cache
+*\.so

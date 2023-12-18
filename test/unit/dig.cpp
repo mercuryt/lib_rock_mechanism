@@ -5,7 +5,7 @@
 #include "../../src/simulation.h"
 #include "../../src/dig.h"
 #include "../../src/cuboid.h"
-#include "goTo.h"
+#include "../../src/goTo.h"
 TEST_CASE("dig")
 {
 	static const MaterialType& dirt = MaterialType::byName("dirt");
@@ -22,7 +22,7 @@ TEST_CASE("dig")
 	dwarf1.setFaction(&faction);
 	area.m_hasActors.add(dwarf1);
 	Block& pickLocation = area.getBlock(5, 5, 4);
-	Item& pick = simulation.createItem(ItemType::byName("pick"), bronze, 50u, 0);
+	Item& pick = simulation.createItemNongeneric(ItemType::byName("pick"), bronze, 50u, 0);
 	pick.setLocation(pickLocation);
 	area.m_hasDigDesignations.addFaction(faction);
 	SUBCASE("dig hole")

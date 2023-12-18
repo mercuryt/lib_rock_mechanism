@@ -60,35 +60,21 @@ Actor& Simulation::createActor(const AnimalSpecies& species, Block& block, Perce
 }
 // Nongeneric
 // No name or id.
-Item& Simulation::createItem(const ItemType& itemType, const MaterialType& materialType, uint32_t quality, Percent percentWear, CraftJob* cj)
-{
-	return createItem(itemType, materialType, "", quality, percentWear, cj);
-}
-// Name but no id.
-Item& Simulation::createItem(const ItemType& itemType, const MaterialType& materialType, std::string name, uint32_t quality, Percent percentWear, CraftJob* cj)
+Item& Simulation::createItemNongeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quality, Percent percentWear, CraftJob* cj)
 {
 	const uint32_t id = ++ m_nextItemId;
-	return createItem(id, itemType, materialType, name, quality, percentWear, cj);
-}
-// Name and id.
-Item& Simulation::createItem(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, std::string name, uint32_t quality, Percent percentWear, CraftJob* cj)
-{
-	if(m_nextItemId <= id) m_nextItemId = id + 1;
-	std::list<Item>::iterator iterator = m_items.emplace(m_items.end(), *this, id, itemType, materialType, name, quality, percentWear, cj);
-	iterator->m_iterator = iterator;
-	iterator->m_dataLocation = &m_items;
-	return *iterator;
+	return loadItemNongeneric(id, itemType, materialType, quality, percentWear, cj);
 }
 // Generic
 // No id.
-Item& Simulation::createItem(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity, CraftJob* cj)
+Item& Simulation::createItemGeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity, CraftJob* cj)
 {
 
 	const uint32_t id = ++ m_nextItemId;
-	return createItem(id, itemType, materialType, quantity, cj);
+	return loadItemGeneric(id, itemType, materialType, quantity, cj);
 }
 // Id.
-Item& Simulation::createItem(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, uint32_t quantity, CraftJob* cj)
+Item& Simulation::loadItemGeneric(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, uint32_t quantity, CraftJob* cj)
 {
 	if(m_nextItemId <= id) m_nextItemId = id + 1;
 	std::list<Item>::iterator iterator = m_items.emplace(m_items.end(), *this, id, itemType, materialType, quantity, cj);
@@ -96,9 +82,23 @@ Item& Simulation::createItem(const uint32_t id, const ItemType& itemType, const 
 	iterator->m_dataLocation = &m_items;
 	return *iterator;
 }
+Item& Simulation::loadItemNongeneric(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, uint32_t quality, Percent percentWear, CraftJob* cj)
+{
+	if(m_nextItemId <= id) m_nextItemId = id + 1;
+	std::list<Item>::iterator iterator = m_items.emplace(m_items.end(), *this, id, itemType, materialType, quality, percentWear, cj);
+	iterator->m_iterator = iterator;
+	iterator->m_dataLocation = &m_items;
+	return *iterator;
+}
 void Simulation::destroyItem(Item& item)
 {
 	item.m_dataLocation->erase(item.m_iterator);
+}
+void Simulation::destroyArea(Area& area)
+{
+	for(Actor* actor : area.m_hasActors.getAll())
+		actor->
+	m_areas.remove(area);
 }
 Simulation::~Simulation()
 {

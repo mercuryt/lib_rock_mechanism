@@ -96,7 +96,7 @@ void Area::writeStep()
 		fluidGroup.validate();
 	for(const FluidGroup* fluidGroup : m_unstableFluidGroups)
 	{
-		bool found = false;
+		[[maybe_unused]] bool found = false;
 		for(FluidGroup& fg : m_fluidGroups)
 			if(&fg == fluidGroup)
 			{

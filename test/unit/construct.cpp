@@ -20,13 +20,13 @@ TEST_CASE("construct")
 	dwarf1.setFaction(&faction);
 	area.m_hasActors.add(dwarf1);
 	area.m_hasConstructionDesignations.addFaction(faction);
-	Item& boards = simulation.createItem(ItemType::byName("board"), wood, 50u);
+	Item& boards = simulation.createItemGeneric(ItemType::byName("board"), wood, 50u);
 	boards.setLocation(area.getBlock(8, 7, 2));
-	Item& pegs = simulation.createItem(ItemType::byName("peg"), wood, 50u);
+	Item& pegs = simulation.createItemGeneric(ItemType::byName("peg"), wood, 50u);
 	pegs.setLocation(area.getBlock(3, 8, 2));
-	Item& saw = simulation.createItem(ItemType::byName("saw"), MaterialType::byName("bronze"), 25u, 0);
+	Item& saw = simulation.createItemNongeneric(ItemType::byName("saw"), MaterialType::byName("bronze"), 25u, 0);
 	saw.setLocation(area.getBlock(5, 7, 2));
-	Item& mallet = simulation.createItem(ItemType::byName("mallet"), wood, 25u, 0);
+	Item& mallet = simulation.createItemNongeneric(ItemType::byName("mallet"), wood, 25u, 0);
 	mallet.setLocation(area.getBlock(9, 5, 2));
 	SUBCASE("make wall")
 	{

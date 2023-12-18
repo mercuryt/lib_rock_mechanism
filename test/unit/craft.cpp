@@ -5,7 +5,7 @@
 #include "../../src/areaBuilderUtil.h"
 #include "../../src/simulation.h"
 #include "../../src/craft.h"
-#include "materialType.h"
+#include "../../src/materialType.h"
 #include "objective.h"
 #include "project.h"
 #include "skill.h"
@@ -58,15 +58,15 @@ TEST_CASE("craft")
 	SUBCASE("craft bucket")
 	{
 		Block& boardLocation = area.getBlock(6, 6, 1);
-		Item& board = simulation.createItem(ItemType::byName("board"), wood, 10u);
+		Item& board = simulation.createItemGeneric(ItemType::byName("board"), wood, 10u);
 		board.setLocation(boardLocation);
-		Item& rope = simulation.createItem(ItemType::byName("rope"), MaterialType::byName("plant matter"), 10u);
+		Item& rope = simulation.createItemGeneric(ItemType::byName("rope"), MaterialType::byName("plant matter"), 10u);
 		rope.setLocation(area.getBlock(8, 6, 1));
-		Item& saw = simulation.createItem(ItemType::byName("saw"), bronze, 25u, 0);
+		Item& saw = simulation.createItemNongeneric(ItemType::byName("saw"), bronze, 25u, 0);
 		saw.setLocation(area.getBlock(3, 7, 1));
-		Item& mallet = simulation.createItem(ItemType::byName("mallet"), bronze, 25u, 0);
+		Item& mallet = simulation.createItemNongeneric(ItemType::byName("mallet"), bronze, 25u, 0);
 		mallet.setLocation(area.getBlock(4, 9, 1));
-		Item& chisel = simulation.createItem(ItemType::byName("chisel"), bronze, 25u, 0);
+		Item& chisel = simulation.createItemNongeneric(ItemType::byName("chisel"), bronze, 25u, 0);
 		chisel.setLocation(area.getBlock(4, 9, 1));
 		REQUIRE(!craftObjectiveTypeWoodWorking.canBeAssigned(dwarf1));
 		area.m_hasCraftingLocationsAndJobs.at(faction).addJob(woodBucket, &wood);

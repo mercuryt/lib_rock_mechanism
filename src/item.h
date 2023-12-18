@@ -159,8 +159,7 @@ public:
 	Item(Simulation& s, uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t q, CraftJob* cj);
 	// NonGeneric.
 	Item(Simulation& s, uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t qual, Percent pw, CraftJob* cj);
-	// Named.
-	Item(Simulation& s, uint32_t i, const ItemType& it, const MaterialType& mt, std::string n, uint32_t qual, Percent pw, CraftJob* cj);
+	void setName(std::string name) { m_name = name; }
 	void setVolume();
 	void setMass();
 	void destroy();
