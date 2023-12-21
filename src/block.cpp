@@ -3,6 +3,7 @@
  * Total volume is 100.
  */
 
+#include "materialType.h"
 #include "moveType.h"
 #include "shape.h"
 #include "hasShape.h"
@@ -666,5 +667,48 @@ std::vector<Block*> Block::collectAdjacentsInRangeVector(uint32_t range)
 {
 	auto result = collectAdjacentsInRange(range);
 	std::vector<Block*> output(result.begin(), result.end());
+	return output;
+}
+void Block::loadFromJson(Json data)
+{
+	if(data.contains("solid"))
+		m_solid = &MaterialType::byName(data["solid"].get<std::string>());
+	if(data.contains("blockFeatures"))
+		for(Json blockFeatureData : data["blockFeatures"])
+		{
+			const BlockFeatureType& blockFeatureType = BlockFeatureType::byName(blockFeatureData["blockFeatureType"].get<std::string>());
+			const MaterialType& materialType = MaterialType::byName(blockFeatureData["materialType"].get<std::string>());
+			if(blockFeatureData.contains("hewn"))
+			{
+				m_solid = &materialType;
+				m_hasBlockFeatures.hew(blockFeatureType);
+			}
+			else
+				m_hasBlockFeatures.construct(blockFeatureType, materialType);
+		}
+}
+Json Block::toJson() const 
+{
+	Json output;
+	if(m_solid != nullptr)
+		output["solid"] = m_solid->name;
+	for(const BlockFeature& blockFeature : m_hasBlockFeatures.get())
+	{
+		Json blockFeatureData;
+		blockFeatureData["materialType"] = blockFeature.materialType->name;
+		blockFeatureData["blockFeatureType"] = blockFeature.blockFeatureType->name;
+		if(blockFeature.hewn)
+			blockFeatureData["hewn"] = true;
+		output["blockFeatures"].push_back(blockFeatureData);
+	}
+	return output;
+}
+Json Block::positionToJson() const
+{
+	Json output;
+	output["x"] = m_x;
+	output["y"] = m_y;
+	output["z"] = m_z;
+	output["area"] = m_area->m_id;
 	return output;
 }

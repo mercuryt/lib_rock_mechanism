@@ -1,4 +1,5 @@
 #pragma once
+#include "config.h"
 #include "threadedTask.hpp"
 #include "eventSchedule.hpp"
 #include "findsPath.h"
@@ -26,6 +27,7 @@ class ActorCanMove final
 	HasThreadedTask<PathThreadedTask> m_threadedTask;
 public:
 	ActorCanMove(Actor& a);
+	ActorCanMove(const Json& data, Actor& a);
 	void updateIndividualSpeed();
 	void updateActualSpeed();
 	void setMoveType(const MoveType& moveType);
@@ -48,6 +50,7 @@ public:
 	[[nodiscard]] uint32_t getIndividualMoveSpeedWithAddedMass(Mass mass) const;
 	[[nodiscard]] uint32_t getMoveSpeed() const { return m_speedActual; }
 	[[nodiscard]] bool canMove() const;
+	[[nodiscard]] Json toJson() const;
 	// For testing.
 	[[maybe_unused, nodiscard]] PathThreadedTask& getPathThreadedTask() { return m_threadedTask.get(); }
 	[[maybe_unused, nodiscard]] std::vector<Block*>& getPath() { return m_path; }

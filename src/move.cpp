@@ -1,10 +1,54 @@
 #include "move.h"
 #include "actor.h"
 #include "block.h"
+#include "moveType.h"
+#include "types.h"
+#include "simulation.h"
 #include "util.h"
 ActorCanMove::ActorCanMove(Actor& a) : m_actor(a), m_moveType(&m_actor.m_species.moveType), m_destination(nullptr), m_pathIter(m_path.end()),  m_retries(0), m_event(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()) 
 {
 	updateIndividualSpeed();
+}
+ActorCanMove::ActorCanMove(const Json& data, Actor& a) :
+	m_actor(a),
+	m_moveType(&MoveType::byName(data["moveType"].get<std::string>())),
+	m_destination(data.contains("destination") ? &a.getSimulation().getBlockForJsonQuery(data["destination"]) : nullptr),
+	m_pathIter(m_path.begin()), m_retries(data["retries"].get<uint8_t>()), m_event(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine())
+{
+	updateIndividualSpeed();
+	if(data.contains("path"))
+	{
+		assert(!data["path"].empty());
+		for(const Json& blockQuery : data["path"])
+			m_path.push_back(&a.getSimulation().getBlockForJsonQuery(blockQuery));
+		m_pathIter = m_path.begin() + data["pathIterOffset"].get<size_t>();
+		if(data.contains("moveEventStart"))
+			m_event.schedule(data["moveEventDuration"].get<Step>(), *this, data["moveEventStart"].get<Step>());
+	}
+	else if(data.contains("threadedTask"))
+		m_threadedTask.create(data["threadedTask"]);
+}
+Json ActorCanMove::toJson() const
+{
+	Json data;
+	data["moveType"] = m_moveType->name;
+	if(m_destination != nullptr)
+		data["destination"] = m_destination->positionToJson();
+	data["retries"] = m_retries;
+	if(!m_path.empty())
+	{
+		data["path"] = Json::array();
+		for(Block* block : m_path)
+			data["path"].push_back(block->positionToJson());
+	}
+	if(m_event.exists())
+	{
+		data["moveEventStart"] = m_event.getStartStep();
+		data["duration"] = m_event.duration();
+	}
+	if(m_threadedTask.exists())
+		data["threadedTask"] = m_threadedTask.toJson();
+	return data;
 }
 uint32_t ActorCanMove::getIndividualMoveSpeedWithAddedMass(Mass mass) const
 {

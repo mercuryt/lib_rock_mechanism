@@ -1,5 +1,6 @@
 #pragma once
 
+#include "config.h"
 #include "objective.h"
 #include "threadedTask.hpp"
 #include "eventSchedule.hpp"
@@ -20,6 +21,8 @@ class MustEat final
 	EatObjective* m_eatObjective;
 public:
 	MustEat(Actor& a);
+	MustEat(const Json& data, Actor& a);
+	Json toJson() const;
 	Block* m_eatingLocation;
 	void eat(Mass mass);
 	void setNeedsFood();

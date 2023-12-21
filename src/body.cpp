@@ -2,13 +2,20 @@
 #include "actor.h"
 #include "config.h"
 #include "random.h"
+#include "types.h"
 #include "util.h"
 #include "simulation.h"
+#include "woundType.h"
+#include <cstdint>
 Wound::Wound(Actor& a, const WoundType wt, BodyPart& bp, Hit h, uint32_t bvr, Percent ph) : woundType(wt), bodyPart(bp), hit(h), bleedVolumeRate(bvr), percentHealed(ph), healEvent(a.getEventSchedule()) 
 { 
 	maxPercentTemporaryImpairment = WoundCalculations::getPercentTemporaryImpairment(hit, bodyPart.bodyPartType, a.m_species.bodyScale);
 	maxPercentPermanantImpairment = WoundCalculations::getPercentPermanentImpairment(hit, bodyPart.bodyPartType, a.m_species.bodyScale);
 }
+Wound::Wound(Json data, Actor& a, BodyPart& bp) :
+	woundType(woundTypeByName(data["woundType"].get<std::string>())),
+	bodyPart(bp), hit(data["hit"]), bleedVolumeRate(data["bleedVolumeRate"].get<uint32_t>()),
+	percentHealed(data["percentHealed"].get<Percent>()), healEvent(a.getEventSchedule()) { }
 Percent Wound::getPercentHealed() const
 {
 	Percent output = percentHealed;
@@ -25,6 +32,34 @@ Percent Wound::impairPercent() const
 {
 	return util::scaleByInversePercent(maxPercentTemporaryImpairment, getPercentHealed()) + maxPercentPermanantImpairment;
 }
+Json Wound::toJson() const
+{
+	Json data;
+	data["woundType"] = getWoundTypeName(woundType);
+	data["hit"] = hit.toJson();
+	data["bleedVolumeRate"] = bleedVolumeRate;
+	data["percentHealed"] = getPercentHealed();
+	return data;
+}
+BodyPart::BodyPart(const Json data) :
+	bodyPartType(BodyPartType::byName(data["bodyPartType"].get<std::string>())),
+	materialType(MaterialType::byName(data["materialType"].get<std::string>())),
+	severed(data["severed"].get<bool>()) 
+{ 
+	for(const Json& wound : data["wounds"])
+		wounds.emplace_back(wound);
+}
+Json BodyPart::toJson() const
+{
+	Json data;
+	data["bodyPartType"] = bodyPartType.name;
+	data["materialType"] = materialType.name;
+	data["severed"] = severed;
+	data["wounds"] = Json::array();
+	for(const Wound& wound : wounds)
+		data["wounds"].push_back(wound.toJson());
+	return data;
+}
 Body::Body(Actor& a) :  m_actor(a), m_totalVolume(0), m_impairMovePercent(0), m_impairManipulationPercent(0), m_isBleeding(false), m_bleedEvent(a.getEventSchedule()), m_woundsCloseEvent(a.getEventSchedule())
 {
 	for(const BodyPartType* bodyPartType : m_actor.m_species.bodyType.bodyPartTypes)
@@ -33,6 +68,20 @@ Body::Body(Actor& a) :  m_actor(a), m_totalVolume(0), m_impairMovePercent(0), m_
 		m_totalVolume += bodyPartType->volume;
 	}
 	m_volumeOfBlood = healthyBloodVolume();
+}
+Body::Body(const Json& data, Actor& a) : m_actor(a), 
+	m_materialType(&MaterialType::byName(data["materialType"].get<std::string>())),
+	m_totalVolume(data["totalVolume"].get<Volume>()), 
+	m_volumeOfBlood(data["volumeOfBlood"].get<Volume>()),
+	m_isBleeding(data["isBleeding"].get<bool>()),
+	m_bleedEvent(a.getEventSchedule()), m_woundsCloseEvent(a.getEventSchedule())
+{
+	for(const Json& bodyPart : data["bodyParts"])
+		m_bodyParts.emplace_back(bodyPart, *this, m_actor);
+	if(data.contains("woundsCloseEventStart"))
+		m_woundsCloseEvent.schedule(data["woundsCloseEventDuration"].get<Step>(), *this, data["woundsCloseEventStart"].get<Step>()); 
+	if(data.contains("bleedEventStart"))
+		m_bleedEvent.schedule(data["bleedEventDuration"].get<Step>(), *this, data["bleedEventStart"].get<Step>()); 
 }
 BodyPart& Body::pickABodyPartByVolume()
 {
@@ -194,10 +243,7 @@ void Body::recalculateBleedAndImpairment()
 			Step adjustedWoundsCloseDelay = util::scaleByInversePercent(baseWoundsCloseDelay, m_woundsCloseEvent.percentComplete());
 			toScheduleStep = m_actor.getSimulation().m_step + adjustedWoundsCloseDelay;
 			if(!m_woundsCloseEvent.exists() || toScheduleStep != m_woundsCloseEvent.getStep())
-			{
-				m_woundsCloseEvent.maybeUnschedule();
 				m_woundsCloseEvent.schedule(adjustedWoundsCloseDelay, *this);
-			}
 		}
 		else
 		{
@@ -313,6 +359,28 @@ uint32_t Body::getImpairPercentFor(const BodyPartType& bodyPartType) const
 			for(const Wound& wound : bodyPart.wounds)
 				output += wound.impairPercent();
 	return output;
+}
+Json Body::toJson() const 
+{
+	Json data;
+	data["materialType"] = m_materialType->name;
+	data["totalVolume"] = m_totalVolume;
+	data["volumeOfBlood"] = m_volumeOfBlood;
+	data["isBleeding"] = m_isBleeding;
+	if(m_bleedEvent.exists())
+	{
+		data["bleedEventStart"] = m_bleedEvent.getStartStep();
+		data["bleedEventDuration"] = m_bleedEvent.duration();
+	}
+	if(m_woundsCloseEvent.exists())
+	{
+		data["woundsCloseEventStart"] = m_woundsCloseEvent.getStartStep();
+		data["woundsCloseEventDuration"] = m_woundsCloseEvent.duration();
+	}
+	data["bodyParts"] = Json::array();
+	for(const BodyPart& bodyPart : m_bodyParts)
+		data["bodyParts"].push_back(bodyPart.toJson());
+	return data;
 }
 WoundHealEvent::WoundHealEvent(const Step delay, Wound& w, Body& b) : ScheduledEventWithPercent(b.m_actor.getSimulation(), delay), m_wound(w), m_body(b) {}
 BleedEvent::BleedEvent(const Step delay, Body& b) : ScheduledEventWithPercent(b.m_actor.getSimulation(), delay), m_body(b) {}

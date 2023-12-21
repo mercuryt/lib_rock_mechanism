@@ -64,9 +64,11 @@ struct Wound final
 	Percent maxPercentPermanantImpairment;
 	HasScheduledEvent<WoundHealEvent> healEvent;
 	Wound(Actor& a, const WoundType wt, BodyPart& bp, Hit h, uint32_t bvr, Percent ph = 0);
+	Wound(const Json data, Actor& a, BodyPart& bp);
 	bool operator==(const Wound& other) const { return &other == this; }
 	Percent getPercentHealed() const;
 	Percent impairPercent() const;
+	[[nodiscard]] Json toJson() const;
 };
 struct BodyPart final
 {
@@ -75,6 +77,8 @@ struct BodyPart final
 	std::list<Wound> wounds;
 	bool severed;
 	BodyPart(const BodyPartType& bpt, const MaterialType& mt) : bodyPartType(bpt), materialType(mt), severed(false) {}
+	BodyPart(const Json data);
+	[[nodiscard]] Json toJson() const;
 };
 /*
  * Body handles reciving wounds, bleeding, healing, temporary and permanant disability.
@@ -83,7 +87,6 @@ struct BodyPart final
 class Body final
 {
 	Actor& m_actor;
-	std::list<BodyPart> m_bodyParts;
 	const MaterialType* m_materialType;
 	uint32_t m_totalVolume;
 	Percent m_impairMovePercent;
@@ -93,7 +96,9 @@ class Body final
 	HasScheduledEvent<BleedEvent> m_bleedEvent;
 	HasScheduledEvent<WoundsCloseEvent> m_woundsCloseEvent;
 public:
+	std::list<BodyPart> m_bodyParts;
 	Body(Actor& a);
+	Body(const Json& data, Actor& a);
 	BodyPart& pickABodyPartByVolume();
 	BodyPart& pickABodyPartByType(const BodyPartType& bodyPartType);
 	// Armor has already been applied, calculate hit depth.
@@ -120,6 +125,7 @@ public:
 	[[nodiscard]] Step getStepsTillWoundsClose() const { return m_woundsCloseEvent.remainingSteps(); }
 	[[nodiscard]] Percent getImpairMovePercent() { return m_impairMovePercent; }
 	[[nodiscard]] Percent getImpairManipulationPercent() { return m_impairManipulationPercent; }
+	[[nodiscard]] Json toJson() const;
 	// For testing.
 	[[maybe_unused, nodiscard]] bool hasBleedEvent() const { return m_bleedEvent.exists(); }
 	[[maybe_unused, nodiscard]] bool hasBodyPart() const;

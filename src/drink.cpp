@@ -8,6 +8,19 @@ MustDrink::MustDrink(Actor& a) : m_actor(a), m_volumeDrinkRequested(0), m_fluidT
 { 
 	m_thirstEvent.schedule(m_actor.m_species.stepsFluidDrinkFreqency, m_actor);
 }
+MustDrink::MustDrink(const Json& data, Actor& a) : m_actor(a), m_volumeDrinkRequested(data["volumeDrinkRequested"].get<Volume>()), m_fluidType(&m_actor.m_species.fluidType), m_objective(nullptr), m_thirstEvent(a.getEventSchedule())
+{
+	if(data.contains("thirstEventStart"))
+		m_thirstEvent.schedule(m_actor.m_species.stepsFluidDrinkFreqency, m_actor, data["thirstEventStart"].get<Step>());
+}
+Json MustDrink::toJson() const
+{
+	Json data;
+	data["volumeDrinkRequested"] = m_volumeDrinkRequested;
+	if(m_thirstEvent.exists())
+		data["thirstEventStart"] = m_thirstEvent.getStartStep();
+	return data;
+}
 void MustDrink::drink(uint32_t volume)
 {
 	assert(m_volumeDrinkRequested >= volume);

@@ -118,9 +118,13 @@ class ActorNeedsSafeTemperature
 	bool m_objectiveExists;
 public:
 	ActorNeedsSafeTemperature(Actor& a);
+	ActorNeedsSafeTemperature(const Json& data, Actor& a);
+	Json toJson() const;
 	void onChange();
 	bool isSafe(Temperature temperature) const;
 	bool isSafeAtCurrentLocation() const;
 	friend class GetToSafeTemperatureObjective;
 	friend class UnsafeTemperatureEvent;
+	// For UI.
+	[[nodiscard]] Percent dieFromTemperaturePercent() const { return isSafeAtCurrentLocation() ? 0 : m_event.percentComplete(); }
 };

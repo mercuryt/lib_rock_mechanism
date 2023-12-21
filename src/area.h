@@ -31,6 +31,7 @@ class Area final
 {
 	std::vector<Block> m_blocks;
 public:
+	AreaId m_id;
 	Simulation& m_simulation;
 	uint32_t m_sizeX;
 	uint32_t m_sizeY;
@@ -64,7 +65,7 @@ public:
 	bool m_visionCuboidsActive;
 
 	// Create blocks and store adjacent
-	Area(Simulation& s, uint32_t x, uint32_t y, uint32_t z);
+	Area(AreaId id, Simulation& s, uint32_t x, uint32_t y, uint32_t z);
 
 	void readStep();
 	void writeStep();
@@ -87,6 +88,9 @@ public:
 	std::string toS();
 
 	Cuboid getZLevel(uint32_t z);
+	Json toJson() const;
+	void loadPlantFromJson(const Json& data);
+	void loadFireFromJson(const Json& data);
 	// For testing.
 	[[maybe_unused]] void logActorsAndItems() const;
 	uint32_t getTotalCountOfItemTypeOnSurface(const ItemType& itemType) const;

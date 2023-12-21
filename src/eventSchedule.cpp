@@ -3,9 +3,10 @@
 #include "util.h"
 #include "area.h"
 #include <cassert>
-ScheduledEvent::ScheduledEvent(Simulation& simulation, const Step delay) : m_simulation(simulation), m_step(delay + simulation.m_step), m_cancel(false) 
+ScheduledEvent::ScheduledEvent(Simulation& simulation, const Step delay, const Step start) : m_simulation(simulation), m_step(start + delay), m_cancel(false) 
 {
 	assert(delay != 0);
+	assert(m_simulation.m_step <= m_step);
 }
 void ScheduledEvent::cancel() 
 {
@@ -14,7 +15,8 @@ void ScheduledEvent::cancel()
 }
 Step ScheduledEvent::remaningSteps() const { return m_step - m_simulation.m_step; }
 
-ScheduledEventWithPercent::ScheduledEventWithPercent(Simulation& simulation, const Step delay) : ScheduledEvent(simulation, delay), m_startStep(simulation.m_step) {}
+//TODO: The same ternary is used twice here.
+ScheduledEventWithPercent::ScheduledEventWithPercent(Simulation& simulation, const Step delay, const Step start) : ScheduledEvent(simulation, delay, (start == 0 ? simulation.m_step : start)), m_startStep((start == 0 ? simulation.m_step : start)) {}
 Percent ScheduledEventWithPercent::percentComplete() const
 {
 	Step totalSteps = m_step - m_startStep;

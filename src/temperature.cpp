@@ -157,7 +157,7 @@ void BlockHasTemperature::freeze(const FluidType& fluidType)
 		//TODO: add remainder to fluid group or above block.
 	}
 	else
-		m_block.m_hasItems.add(chunk, *fluidType.freezesInto,  fluidVolume);
+		m_block.m_hasItems.addGeneric(chunk, *fluidType.freezesInto,  fluidVolume);
 }
 void BlockHasTemperature::melt()
 {
@@ -246,6 +246,19 @@ UnsafeTemperatureEvent::UnsafeTemperatureEvent(Actor& a) : ScheduledEventWithPer
 void UnsafeTemperatureEvent::execute() { m_actor.die(CauseOfDeath::temperature); }
 void UnsafeTemperatureEvent::clearReferences() { m_actor.m_needsSafeTemperature.m_event.clearPointer(); }
 ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(Actor& a) : m_actor(a), m_event(a.getEventSchedule()), m_objectiveExists(false) { }
+ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(const Json& data, Actor& a) : m_actor(a), m_event(a.getEventSchedule()), m_objectiveExists(data["objectiveExists"].get<bool>())
+{
+	if(data.contains("eventStart"))
+		m_event.schedule(m_actor, data["eventStart"].get<Step>());
+}
+Json ActorNeedsSafeTemperature::toJson() const
+{
+	Json data;
+	data["objectiveExists"] = m_objectiveExists;
+	if(m_event.exists())
+		data["eventStart"] = m_event.getStartStep();
+	return data;
+}
 void ActorNeedsSafeTemperature::onChange()
 {
 	m_actor.m_canGrow.updateGrowingStatus();

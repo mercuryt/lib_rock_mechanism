@@ -38,13 +38,13 @@ class Actor final : public HasShape
 {	
 	const Faction* m_faction;
 public:
-	const uint32_t m_id;
+	const ActorId m_id;
 	std::wstring m_name;
 	const AnimalSpecies& m_species;
 	bool m_alive;
 	CauseOfDeath m_causeOfDeath;
 	Body m_body;
-	Project* m_project;//We don't actually need to store this data, it's just used for asserts.
+	Project* m_project;
 	Attributes m_attributes;
 	SkillSet m_skillSet;
 	EquipmentSet m_equipmentSet;
@@ -62,7 +62,8 @@ public:
 	std::unordered_set<Actor*> m_canSee;
 	uint32_t m_visionRange;
 
-	Actor(Simulation& simulation, uint32_t id, const std::wstring& name, const AnimalSpecies& species, Percent percentGrown, Faction* faction, Attributes attributes);
+	Actor(Simulation& simulation, ActorId id, const std::wstring& name, const AnimalSpecies& species, Percent percentGrown, Faction* faction, Attributes attributes);
+	Actor(Simulation& simulation, Json data);
 	void setLocation(Block& block);
 	void exit();
 	void removeMassFromCorpse(Mass mass);

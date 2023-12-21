@@ -1,4 +1,5 @@
 #pragma once
+#include "config.h"
 #include <unordered_map>
 #include <string>
 #include <vector>
@@ -27,13 +28,25 @@ public:
 	uint32_t m_level;
 	uint32_t m_xp;
 	uint32_t m_xpForNextLevel;
-	Skill(const SkillType& st, uint32_t l = 0, uint32_t xp = 0) : m_skillType(st), m_level(l), m_xp(xp)
+	Skill(const SkillType& st, uint32_t l = 0, uint32_t xp = 0) : m_skillType(st), m_level(l), m_xp(xp) { setup(); }
+	Skill(const Json& data) : 
+		m_skillType(SkillType::byName(data["skillType"].get<std::string>())),
+		m_level(data["level"].get<uint32_t>()),
+		m_xp(data["xp"].get<uint32_t>()) 
+	{ setup();}
+	void setup()
 	{
 		m_xpForNextLevel = m_skillType.level1Xp;
 		for(uint32_t i = 0; i < m_level; ++i)
-		{
 			m_xpForNextLevel *= m_skillType.xpPerLevelModifier;
-		}
+	}
+	Json toJson() const 
+	{
+		Json data;
+		data["skillType"] = m_skillType.name;
+		data["level"] = m_level;
+		data["xp"] = m_xp;
+		return data;
 	}
 	void addXp(uint32_t xp)
 	{
@@ -52,6 +65,23 @@ public:
 class SkillSet final
 {
 public:
+	SkillSet(const Json& data)
+	{
+		for(const Json& skillData : data["skills"])
+		{
+			const SkillType& skillType = SkillType::byName(skillData["skillType"].get<std::string>());
+			auto pair = m_skills.try_emplace(&skillType, skillData);
+			assert(pair.second);
+		}
+	}
+	Json toJson() const
+	{
+		Json data;
+		data["skills"] = Json::array();
+		for(auto pair : m_skills)
+			data["skills"].push_back(pair.second.toJson());
+		return data;
+	}
 	std::unordered_map<const SkillType*, Skill> m_skills;
 	void addXp(const SkillType& skillType, uint32_t& xp)
 	{

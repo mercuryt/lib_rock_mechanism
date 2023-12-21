@@ -72,7 +72,7 @@ public:
 	Reservable m_reservable;
 	Volume m_volumeFluidRequested;
 
-	Plant(Block& l, const PlantSpecies& ps, Percent pg = 0);
+	Plant(Block& l, const PlantSpecies& ps, Percent pg = 0, Volume volumeFluidRequested = 0, Step needsFluidEventStart = 0, bool temperatureIsUnsafe = 0, Step unsafeTemperatureEventStart = 0, uint32_t harvestableQuantity = 0, Percent percentFoliage = 100);
 	void die();
 	void setTemperature(Temperature temperature);
 	void setHasFluidForNow();
@@ -104,7 +104,7 @@ class PlantGrowthEvent final : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
 public:
-	PlantGrowthEvent(const Step delay, Plant& p);
+	PlantGrowthEvent(const Step delay, Plant& p, Step start = 0);
 	void execute()
 	{
 		m_plant.m_percentGrown = 100;
@@ -117,7 +117,7 @@ class PlantFoliageGrowthEvent final : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
 public:
-	PlantFoliageGrowthEvent(const Step delay, Plant& p);
+	PlantFoliageGrowthEvent(const Step delay, Plant& p, Step start = 0);
 	void execute(){ m_plant.foliageGrowth(); }
 	void clearReferences(){ m_plant.m_foliageGrowthEvent.clearPointer(); }
 };
@@ -125,7 +125,7 @@ class PlantEndOfHarvestEvent final : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
 public:
-	PlantEndOfHarvestEvent(const Step delay, Plant& p);
+	PlantEndOfHarvestEvent(const Step delay, Plant& p, Step start = 0);
 	void execute() { m_plant.endOfHarvest(); }
 	void clearReferences() { m_plant.m_endOfHarvestEvent.clearPointer(); }
 };
@@ -133,7 +133,7 @@ class PlantFluidEvent final : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
 public:
-	PlantFluidEvent(const Step delay, Plant& p);
+	PlantFluidEvent(const Step delay, Plant& p, Step start = 0);
 	void execute() { m_plant.setMaybeNeedsFluid(); }
 	void clearReferences() { m_plant.m_fluidEvent.clearPointer(); }
 };
@@ -141,7 +141,7 @@ class PlantTemperatureEvent final : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
 public:
-	PlantTemperatureEvent(const Step delay, Plant& p);
+	PlantTemperatureEvent(const Step delay, Plant& p, Step start = 0);
 	void execute() { m_plant.die(); }
 	void clearReferences() { m_plant.m_temperatureEvent.clearPointer(); }
 };
@@ -169,7 +169,7 @@ class HasPlants final
 	std::list<Plant> m_plants;
 	std::unordered_set<Plant*> m_plantsOnSurface;
 public:
-	Plant& emplace(Block& location, const PlantSpecies& species, Percent percentGrowth);
+	Plant& emplace(Block& location, const PlantSpecies& species, Percent percentGrowth = 0, Volume volumeFluidRequested = 0, Step needsFluidEventStart = 0, bool temperatureIsUnsafe = 0, Step unsafeTemperatureEventStart = 0, uint32_t harvestableQuantity = 0, Percent percentFoliage = 100);
 	void erase(Plant& plant);
 	void onChangeAmbiantSurfaceTemperature();
 	std::unordered_set<Plant*>& getPlantsOnSurface() { return m_plantsOnSurface; }

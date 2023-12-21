@@ -43,4 +43,5 @@ public:
 	bool hasAtLeast(uint32_t stamina) const;
 	bool isFull() const;
 	uint32_t getMax() const;
+	uint32_t get() const { return m_stamina; }
 };

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "config.h"
 #include "objective.h"
 #include "threadedTask.hpp"
 #include "eventSchedule.hpp"
@@ -28,6 +29,8 @@ class MustDrink final
 
 public:
 	MustDrink(Actor& a);
+	MustDrink(const Json& data, Actor& a);
+	Json toJson() const;
 	void drink(const uint32_t volume);
 	void setNeedsFluid();
 	void onDeath();

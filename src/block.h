@@ -62,6 +62,7 @@ public:
 	uint32_t m_totalFluidVolume;
 	// For mist.
 	const FluidType* m_mist;
+	//TODO: remove mistSource?
 	const FluidType* m_mistSource;
 	uint32_t m_mistInverseDistanceFromSource;
 	// Store the location bucket this block belongs to.
@@ -170,4 +171,7 @@ public:
 	}
 	std::unordered_set<Block*> collectAdjacentsInRange(uint32_t range);
 	std::vector<Block*> collectAdjacentsInRangeVector(uint32_t range);
+	void loadFromJson(Json data);
+	Json toJson() const;
+	Json positionToJson() const;
 };

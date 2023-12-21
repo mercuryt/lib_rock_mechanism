@@ -1,5 +1,6 @@
 #include "haul.h"
 #include "actor.h"
+#include "config.h"
 #include "hasShape.h"
 #include "item.h"
 #include "area.h"
@@ -34,6 +35,25 @@ bool HaulSubprojectParamaters::validate() const
 	if(beastOfBurden != nullptr && beastOfBurden->m_reservable.isFullyReserved(&faction))
 		return false;
 	return true;
+}
+CanPickup::CanPickup(const Json& data, Actor& a) : m_actor(a), m_carrying(nullptr)
+{
+	if(data.contains("carryingItem"))
+		m_carrying = &m_actor.getSimulation().getItemById(data["carryingItem"].get<ItemId>());
+	else if(data.contains("carryingActor"))
+		m_carrying = &m_actor.getSimulation().getActorById(data["carryingActor"].get<ActorId>());
+}
+Json CanPickup::toJson() const 
+{
+	Json data;
+	if(m_carrying != nullptr)
+	{
+		if(m_carrying->isItem())
+			data["carryingItem"] = static_cast<Item&>(*m_carrying).m_id;
+		else
+			data["carryingActor"] = static_cast<Actor&>(*m_carrying).m_id;
+	}
+	return data;
 }
 void CanPickup::pickUp(HasShape& hasShape, uint32_t quantity)
 {
@@ -93,13 +113,13 @@ HasShape& CanPickup::putDown(Block& location, uint32_t quantity)
 				output = &item;
 			}
 			else
-				output = &location.m_hasItems.add(item.m_itemType, item.m_materialType, quantity);
+				output = &location.m_hasItems.addGeneric(item.m_itemType, item.m_materialType, quantity);
 				
 		}
 		else
 		{
 			item.removeQuantity(quantity);
-			output = &location.m_hasItems.add(item.m_itemType, item.m_materialType, quantity);
+			output = &location.m_hasItems.addGeneric(item.m_itemType, item.m_materialType, quantity);
 		}
 	}
 	else

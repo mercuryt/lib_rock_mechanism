@@ -409,7 +409,7 @@ void Project::complete()
 	for(Item* item : m_toConsume)
 		item->destroy();
 	for(auto& [itemType, materialType, quantity] : getByproducts())
-		m_location.m_hasItems.add(*itemType, *materialType, quantity);
+		m_location.m_hasItems.addGeneric(*itemType, *materialType, quantity);
 	for(auto& [actor, projectWorker] : m_workers)
 		actor->m_project = nullptr;
 	onComplete();

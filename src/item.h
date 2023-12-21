@@ -139,7 +139,7 @@ class Item final : public HasShape
 {
 	uint32_t m_quantity; // Always set to 1 for nongeneric types.
 public:
-	const uint32_t m_id;
+	const ItemId m_id;
 	const ItemType& m_itemType;
 	const MaterialType& m_materialType;
 	Mass m_mass;
@@ -156,9 +156,9 @@ public:
 	std::list<Item>* m_dataLocation;
 
 	// Generic.
-	Item(Simulation& s, uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t q, CraftJob* cj);
+	Item(Simulation& s, ItemId i, const ItemType& it, const MaterialType& mt, uint32_t q, CraftJob* cj);
 	// NonGeneric.
-	Item(Simulation& s, uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t qual, Percent pw, CraftJob* cj);
+	Item(Simulation& s, ItemId i, const ItemType& it, const MaterialType& mt, uint32_t qual, Percent pw, CraftJob* cj);
 	void setName(std::string name) { m_name = name; }
 	void setVolume();
 	void setMass();
@@ -179,6 +179,7 @@ public:
 	Mass getMass() const { return m_quantity * singleUnitMass(); }
 	Volume getVolume() const { return m_quantity * m_itemType.volume; }
 	const MoveType& getMoveType() const { return m_itemType.moveType; }
+	Json toJson() const;
 	bool operator==(const Item& item) const { return this == &item; }
 	//TODO: Items leave area.
 	// For debugging.
@@ -209,7 +210,7 @@ public:
 	// Non generic types have Shape.
 	void add(Item& item);
 	void remove(Item& item);
-	Item& add(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity);
+	Item& addGeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity);
 	void remove(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity);
 	void setTemperature(Temperature temperature);
 	void disperseAll();

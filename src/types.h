@@ -11,3 +11,6 @@ using Density = uint32_t; // grams per 10 cubic centimeters.
 using Force = uint32_t;
 using Percent = int32_t;
 using Facing = uint8_t;
+using AreaId = uint32_t;
+using ItemId = uint32_t;
+using ActorId = uint32_t;

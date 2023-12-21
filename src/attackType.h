@@ -1,7 +1,7 @@
 #pragma once
 
 #include "woundType.h"
-
+#include "types.h"
 class SkillType;
 struct ItemType;
 

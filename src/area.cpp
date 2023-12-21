@@ -3,13 +3,15 @@
 */
 
 #include "area.h"
+#include "fire.h"
+#include "plant.h"
 #include "simulation.h"
 #include <algorithm>
 #include <iostream>
 #include <numeric>
 
-Area::Area(Simulation& s, uint32_t x, uint32_t y, uint32_t z) :
-	m_blocks(x*y*z), m_simulation(s), m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_areaHasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_hasRain(*this), m_visionCuboidsActive(false)
+Area::Area(AreaId id, Simulation& s, uint32_t x, uint32_t y, uint32_t z) :
+	m_blocks(x*y*z), m_id(id), m_simulation(s), m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_areaHasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_hasRain(*this), m_visionCuboidsActive(false)
 {
 	// build m_blocks
 	for(uint32_t x = 0; x < m_sizeX; ++x)
@@ -202,4 +204,35 @@ uint32_t Area::getTotalCountOfItemTypeOnSurface(const ItemType& itemType) const
 		if(itemType == item->m_itemType)
 			output += item->getQuantity();
 	return output;
+}
+Json Area::toJson() const
+{
+	Json data;
+	data["id"] = m_id;
+	data["sizeX"] = m_sizeX;
+	data["sizeY"] = m_sizeY;
+	data["sizeZ"] = m_sizeZ;
+	return data;
+}
+void Area::loadPlantFromJson(Json data)
+{
+	Block& location = m_simulation.getBlockForJsonQuery(data["location"]);
+	const PlantSpecies& species = PlantSpecies::byName(data["species"].get<std::string>());
+	Percent percentGrowth = data["percentGrowth"].get<Percent>();
+	Volume volumeFluidRequested = data["volumeFluidRequested"].get<Volume>();
+	Step needsFluidEventStart = data["needsFluidEventStart"].get<Step>();
+	bool temperatureIsUnsafe = data["temperatureIsUnsafe"].get<bool>();
+	Step unsafeTemperatureEventStart = data["unsafeTemperatureEventStart"].get<Step>();
+	uint32_t harvestableQuantity = data["harvestableQuantity"].get<uint32_t>();
+	Percent percentFoliage = data["perecntFoliage"].get<Percent>();
+	m_hasPlants.emplace(location, species, percentGrowth, volumeFluidRequested, needsFluidEventStart, temperatureIsUnsafe, unsafeTemperatureEventStart, harvestableQuantity, percentFoliage);
+}
+void Area::loadFireFromJson(Json data)
+{
+	Block& location = m_simulation.getBlockForJsonQuery(data["location"]);
+	const MaterialType& materialType = MaterialType::byName(data["materialType"].get<std::string>());
+	FireStage stage = fireStageByName(data["stage"].get<std::string>());
+	bool hasPeaked = data["hasPeaked"].get<bool>();
+	Step stageStart = data["stageStart"].get<Percent>();
+	m_fires.load(location, materialType, hasPeaked, stage, stageStart);
 }

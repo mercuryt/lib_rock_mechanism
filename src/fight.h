@@ -1,5 +1,6 @@
 #pragma once
 
+#include "config.h"
 #include "eventSchedule.h"
 #include "item.h"
 #include "hit.h"
@@ -39,10 +40,12 @@ class CanFight final
 	HasThreadedTask<GetIntoAttackPositionThreadedTask> m_getIntoAttackPositionThreadedTask;
 	std::vector<std::pair<uint32_t, Attack>> m_meleeAttackTable;
 	Actor* m_target;
-	//TODO: Should be a vector.
+	//TODO: Should be a flat set.
 	std::unordered_set<Actor*> m_targetedBy;
 public:
 	CanFight(Actor& a);
+	CanFight(const Json& data, Actor& a);
+	Json toJson() const;
 	void attackMeleeRange(Actor& target);
 	void attackLongRange(Actor& target, Item* weapon, Item* ammo);
 	uint32_t getCurrentMeleeCombatScore();

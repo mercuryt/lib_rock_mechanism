@@ -4,6 +4,7 @@
 #include <cassert>
 struct DateTime
 {
+	//TODO: Add Minute and second?
 	uint8_t hour;
 	uint16_t day;
 	uint16_t year;
@@ -16,4 +17,18 @@ struct DateTime
 		assert(year != 0);
 	}
 	DateTime() : hour(0), day(0), year(0) { }
+	Json toJson() const
+	{
+		Json output;
+		output["hour"] = hour;
+		output["day"] = day;
+		output["year"] = year;
+		return output;
+	}
+	void fromJson(Json data)
+	{
+		hour = data["hour"].get<uint8_t>();
+		day = data["day"].get<uint16_t>();
+		year = data["year"].get<uint16_t>();
+	}
 };

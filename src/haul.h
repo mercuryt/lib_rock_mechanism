@@ -88,6 +88,8 @@ class CanPickup final
 	HasShape* m_carrying;
 public:
 	CanPickup(Actor& a) : m_actor(a), m_carrying(nullptr) { }
+	CanPickup(const Json& data, Actor& a);
+	Json toJson() const;
 	void pickUp(HasShape& hasShape, uint32_t quantity = 1u);
 	void pickUp(Item& item, uint32_t quantity = 1u);
 	void pickUp(Actor& actor, uint32_t quantity = 1u);
@@ -116,6 +118,8 @@ public:
 	[[nodiscard]] bool exists() const { return m_carrying != nullptr; }
 	[[nodiscard]] uint32_t speedIfCarryingQuantity(const HasShape& hasShape, uint32_t quantity) const;
 	[[nodiscard]] uint32_t maximumNumberWhichCanBeCarriedWithMinimumSpeed(const HasShape& hasShape, uint32_t minimumSpeed) const;
+	// For UI.
+	[[nodiscard]] HasShape* getCarrying(){ return m_carrying; }
 };
 // For Area.
 class HasHaulTools final

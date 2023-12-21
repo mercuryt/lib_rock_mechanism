@@ -6,10 +6,13 @@
 
 #include <algorithm>
 
-Plant::Plant(Block& l, const PlantSpecies& pt, Percent pg) : m_location(l), m_fluidSource(nullptr), m_plantSpecies(pt), m_growthEvent(l.m_area->m_simulation.m_eventSchedule), m_fluidEvent(l.m_area->m_simulation.m_eventSchedule), m_temperatureEvent(l.m_area->m_simulation.m_eventSchedule), m_endOfHarvestEvent(l.m_area->m_simulation.m_eventSchedule), m_foliageGrowthEvent(l.m_area->m_simulation.m_eventSchedule), m_percentGrown(pg), m_quantityToHarvest(0), m_percentFoliage(100), m_reservable(1), m_volumeFluidRequested(0)
+Plant::Plant(Block& l, const PlantSpecies& pt, Percent pg, Volume volumeFluidRequested, Step needsFluidEventStart, bool temperatureIsUnsafe, Step unsafeTemperatureEventStart, uint32_t harvestableQuantity, Percent percentFoliage) :
+       	m_location(l), m_fluidSource(nullptr), m_plantSpecies(pt), m_growthEvent(l.m_area->m_simulation.m_eventSchedule), m_fluidEvent(l.m_area->m_simulation.m_eventSchedule), m_temperatureEvent(l.m_area->m_simulation.m_eventSchedule), m_endOfHarvestEvent(l.m_area->m_simulation.m_eventSchedule), m_foliageGrowthEvent(l.m_area->m_simulation.m_eventSchedule), m_percentGrown(pg), m_quantityToHarvest(harvestableQuantity), m_percentFoliage(percentFoliage), m_reservable(1), m_volumeFluidRequested(volumeFluidRequested)
 {
 	assert(m_location.m_hasPlant.canGrowHereAtSomePointToday(m_plantSpecies));
-	m_fluidEvent.schedule(m_plantSpecies.stepsNeedsFluidFrequency, *this);
+	m_fluidEvent.schedule(m_plantSpecies.stepsNeedsFluidFrequency, *this, needsFluidEventStart);
+	if(temperatureIsUnsafe)
+		m_temperatureEvent.schedule(m_plantSpecies.stepsTillDieFromTemperature, *this, unsafeTemperatureEventStart);
 	updateGrowingStatus();
 	m_location.m_area->m_hasFarmFields.removeAllSowSeedsDesignations(m_location);
 }
@@ -220,11 +223,16 @@ Step Plant::getStepAtWhichPlantWillDieFromLackOfFluid() const
 	return m_fluidEvent.getStep();
 }
 // Events.
-PlantGrowthEvent::PlantGrowthEvent(const Step delay, Plant& p) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay), m_plant(p) {}
-PlantFoliageGrowthEvent::PlantFoliageGrowthEvent(const Step delay, Plant& p) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay), m_plant(p) {}
-PlantEndOfHarvestEvent::PlantEndOfHarvestEvent(const Step delay, Plant& p) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay), m_plant(p) {}
-PlantFluidEvent::PlantFluidEvent(const Step delay, Plant& p) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay), m_plant(p) {}
-PlantTemperatureEvent::PlantTemperatureEvent(const Step delay, Plant& p) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay), m_plant(p) {}
+PlantGrowthEvent::PlantGrowthEvent(const Step delay, Plant& p, Step start) : 
+	ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay, start), m_plant(p) {}
+PlantFoliageGrowthEvent::PlantFoliageGrowthEvent(const Step delay, Plant& p, Step start) : 
+	ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay, start), m_plant(p) {}
+PlantEndOfHarvestEvent::PlantEndOfHarvestEvent(const Step delay, Plant& p, Step start) :
+	ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay, start), m_plant(p) {}
+PlantFluidEvent::PlantFluidEvent(const Step delay, Plant& p, Step start) :
+	ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay, start), m_plant(p) {}
+PlantTemperatureEvent::PlantTemperatureEvent(const Step delay, Plant& p, Step start) :
+	ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay, start), m_plant(p) {}
 // HasPlant.
 void HasPlant::addPlant(const PlantSpecies& plantSpecies, Percent growthPercent)
 {
@@ -275,11 +283,11 @@ bool HasPlant::canGrowHereAtSomePointToday(const PlantSpecies& plantSpecies) con
 		return false;
 	return true;
 }
-Plant& HasPlants::emplace(Block& location, const PlantSpecies& species, Percent percentGrowth)
+Plant& HasPlants::emplace(Block& location, const PlantSpecies& species, Percent percentGrowth, Volume volumeFluidRequested, Step needsFluidEventStart, bool temperatureIsUnsafe, Step unsafeTemperatureEventStart, uint32_t harvestableQuantity, Percent percentFoliage)
 {
 	assert(location.m_hasPlant.canGrowHereAtSomePointToday(species));
 	assert(!location.m_hasPlant.exists());
-	Plant& plant = m_plants.emplace_back(location, species, percentGrowth);
+	Plant& plant = m_plants.emplace_back(location, species, percentGrowth, volumeFluidRequested, needsFluidEventStart, temperatureIsUnsafe, unsafeTemperatureEventStart, harvestableQuantity, percentFoliage);
 	// TODO: plants above ground but under roof?
 	if(!location.m_underground)
 		m_plantsOnSurface.insert(&plant);

@@ -9,6 +9,22 @@
 #include "simulation.h"
 #include <cstddef>
 
+EquipmentSet::EquipmentSet(const Json& data, Actor& a) : m_actor(a), m_mass(0)
+{
+	for(const Json& equipmentId : data["equipments"])
+	{
+		Item& equipment = m_actor.getSimulation().getItemById(equipmentId.get<ItemId>());
+		addEquipment(equipment);
+	}
+}
+Json EquipmentSet::toJson() const 
+{
+	Json data;
+	data["equipments"] = Json::array();
+	for(const Item* equipment : m_equipments)
+		data["equipments"].push_back(equipment->m_id);
+	return data;
+}
 bool EquipmentSortByLayer::operator()(Item* const& a, Item* const& b) const
 {
 	assert(a->m_itemType.wearableData != nullptr);

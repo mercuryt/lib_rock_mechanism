@@ -2,6 +2,7 @@
 
 #include "animalSpecies.h"
 #include "config.h"
+#include "types.h"
 
 #include <sys/types.h>
 #include <vector>
@@ -17,7 +18,9 @@ struct Attribute
 	Percent baseModifierPercent;
 	int32_t bonusOrPenalty;
 	Attribute(const uint32_t& snv, const uint32_t& sav, uint32_t bmp, int32_t bop, Percent percentGrown) : speciesNewbornValue(snv), speciesAdultValue(sav), baseModifierPercent(bmp), bonusOrPenalty(bop) { setPercentGrown(percentGrown); }
+	Attribute(const Json& data, const uint32_t& speciesNewbornValue, const uint32_t& speciesAdultValue, Percent percentGrown);
 	void setPercentGrown(Percent percentGrown);
+	Json toJson() const;
 };
 class Attributes
 {
@@ -33,13 +36,15 @@ public:
 		strength(species.strength[0], species.strength[1], modifierPercents[1], bonusOrPenalties[1], percentGrown),
 		dextarity(species.dextarity[0], species.dextarity[1], modifierPercents[1], bonusOrPenalties[1], percentGrown),
 		agility(species.agility[0], species.agility[1], modifierPercents[2], bonusOrPenalties[2], percentGrown),
-		mass(species.mass[0], species.mass[1], modifierPercents[3], bonusOrPenalties[3], percentGrown) { generate(); }
+		mass(species.mass[0], species.mass[1], modifierPercents[3], bonusOrPenalties[3], percentGrown) 
+	{ generate(); }
 	Attributes(const AnimalSpecies& species, Percent percentGrown) :
 		strength(species.strength[0], species.strength[1], 100, 0, percentGrown),
 		dextarity(species.dextarity[0], species.dextarity[1], 100, 0, percentGrown),
 		agility(species.agility[0], species.agility[1], 100, 0, percentGrown),
 		mass(species.mass[0], species.mass[1], 100, 0, percentGrown)
 	{ generate(); }
+	Attributes(const Json& data, AnimalSpecies& species, Percent percentGrown);
 	void updatePercentGrown(Percent percentGrown);
 	void generate();
 	void removeMass(Mass m)
@@ -58,4 +63,5 @@ public:
 	uint32_t getUnencomberedCarryMass() const { return unencomberedCarryMass; }
 	uint32_t getMoveSpeed() const { return moveSpeed; }
 	uint32_t getBaseCombatScore() const { return baseCombatScore; }
+	Json toJson() const;
 };

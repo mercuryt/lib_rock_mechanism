@@ -1,12 +1,16 @@
 #include "simulation.h"
+#include "animalSpecies.h"
 #include "area.h"
 #include "config.h"
 #include "threadedTask.h"
+#include "types.h"
+#include <cstdint>
 #include <functional>
 Simulation::Simulation(DateTime n, Step s) :  m_step(s), m_now(n), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this)
 { 
 	m_nextActorId = 1;
 	m_nextItemId = 1;
+	m_nextAreaId = 1;
 	m_hourlyEvent.schedule(*this);
 }
 void Simulation::doStep()
@@ -40,12 +44,24 @@ void Simulation::incrementHour()
 	}
 	m_hourlyEvent.schedule(*this);
 }
+Area& Simulation::createArea(uint32_t x, uint32_t y, uint32_t z)
+{ 
+	AreaId id = m_nextAreaId++;
+	return loadArea(id, x, y, z);
+}
+Area& Simulation::loadArea(AreaId id, uint32_t x, uint32_t y, uint32_t z)
+{
+	Area& area = m_areas.emplace_back(id, *this, x, y, z); 
+	m_areasById[id] = &area;
+	return area;
+}
 Actor& Simulation::createActor(const AnimalSpecies& species, Block& block, Percent percentGrown)
 {
 	Attributes attributes(species, percentGrown);
 	std::wstring name(species.name.begin(), species.name.end());
 	name.append(std::to_wstring(m_nextActorId));
-	Actor& output = m_actors.emplace_back(
+	auto [iter, emplaced] = m_actors.try_emplace(
+		m_nextActorId,
 		*this,
 		m_nextActorId,
 		name,
@@ -54,7 +70,8 @@ Actor& Simulation::createActor(const AnimalSpecies& species, Block& block, Perce
 		nullptr,
 		attributes
 	);	
-	m_nextActorId++;
+	assert(emplaced);
+	Actor& output = iter->second;
 	output.setLocation(block);
 	return output;
 }
@@ -63,7 +80,7 @@ Actor& Simulation::createActor(const AnimalSpecies& species, Block& block, Perce
 Item& Simulation::createItemNongeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quality, Percent percentWear, CraftJob* cj)
 {
 	const uint32_t id = ++ m_nextItemId;
-	return loadItemNongeneric(id, itemType, materialType, quality, percentWear, cj);
+	return loadItemNongeneric(id, itemType, materialType, quality, percentWear, L"", cj);
 }
 // Generic
 // No id.
@@ -77,18 +94,16 @@ Item& Simulation::createItemGeneric(const ItemType& itemType, const MaterialType
 Item& Simulation::loadItemGeneric(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, uint32_t quantity, CraftJob* cj)
 {
 	if(m_nextItemId <= id) m_nextItemId = id + 1;
-	std::list<Item>::iterator iterator = m_items.emplace(m_items.end(), *this, id, itemType, materialType, quantity, cj);
-	iterator->m_iterator = iterator;
-	iterator->m_dataLocation = &m_items;
-	return *iterator;
+	auto [iter, emplaced] = m_items.try_emplace(id, m_items.end(), *this, id, itemType, materialType, quantity, cj);
+	assert(emplaced);
+	return iter->second;
 }
-Item& Simulation::loadItemNongeneric(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, uint32_t quality, Percent percentWear, CraftJob* cj)
+Item& Simulation::loadItemNongeneric(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, uint32_t quality, Percent percentWear, std::wstring name, CraftJob* cj)
 {
 	if(m_nextItemId <= id) m_nextItemId = id + 1;
-	std::list<Item>::iterator iterator = m_items.emplace(m_items.end(), *this, id, itemType, materialType, quality, percentWear, cj);
-	iterator->m_iterator = iterator;
-	iterator->m_dataLocation = &m_items;
-	return *iterator;
+	auto [iter, emplaced] = m_items.try_emplace(id, m_items.end(), *this, id, itemType, materialType, quality, percentWear, name, cj);
+	assert(emplaced);
+	return iter->second;
 }
 void Simulation::destroyItem(Item& item)
 {
@@ -97,7 +112,8 @@ void Simulation::destroyItem(Item& item)
 void Simulation::destroyArea(Area& area)
 {
 	for(Actor* actor : area.m_hasActors.getAll())
-		actor->
+		actor->exit();
+	m_areasById.erase(area.m_id);
 	m_areas.remove(area);
 }
 Simulation::~Simulation()
@@ -186,3 +202,119 @@ void Simulation::fastForwardUntillPredicate(std::function<bool()> predicate, uin
 			break;
 	}
 }
+Json Simulation::toJson() const
+{
+	Json output;
+	output["step"] = m_step;
+	output["now"] = m_now.toJson();
+	output["nextActorId"] = m_nextActorId;
+	output["nextItemId"] = m_nextItemId;
+	return output;
+}
+void Simulation::fromJson(const Json& data)
+{
+	m_step = data["step"].get<Step>();
+	m_now.fromJson(data["now"]);
+	m_nextActorId = data["nextActorId"].get<Step>();
+	m_nextItemId = data["nextItemId"].get<Step>();
+}
+void Simulation::loadAreaFromJson(const Json& data)
+{
+	auto x = data["sizeX"].get<uint32_t>();
+	auto y = data["sizeY"].get<uint32_t>();
+	auto z = data["sizeZ"].get<uint32_t>();
+	auto id = data["id"].get<AreaId>();
+	Area& area = loadArea(id, x, y, z);
+	for(const Json& blockData : data["blocks"])
+	{
+		auto x = blockData["sizeX"].get<uint32_t>();
+		auto y = blockData["sizeY"].get<uint32_t>();
+		auto z = blockData["sizeZ"].get<uint32_t>();
+		area.getBlock(x, y, z).loadFromJson(blockData);
+	}
+	for(const Json& fireData : data["fires"])
+		area.loadFireFromJson(fireData);
+	for(const Json& plantData : data["plants"])
+		area.loadPlantFromJson(plantData);
+}
+Item& Simulation::loadItemFromJson(const Json& data)
+{
+	auto id = data["id"].get<ItemId>();
+	const auto& itemType = ItemType::byName(data["itemType"].get<std::string>());
+	const auto& materialType = MaterialType::byName(data["materialType"].get<std::string>());
+	//TODO: CraftJob.
+	if(itemType.generic)
+	{
+		auto quantity = data["quantity"].get<uint32_t>();
+		return loadItemGeneric(id, itemType, materialType, quantity);
+	}
+	else
+	{
+		auto quality = data["quality"].get<uint32_t>();
+		auto percentWear = data["percentWear"].get<Percent>();
+		auto name = data.contains("name") ? data["name"].get<std::wstring>() : L"";
+		return loadItemNongeneric(id, itemType, materialType, quality, percentWear, name);
+	}
+}
+Actor& Simulation::loadActorFromJson(const Json& data)
+{
+	auto id = data["id"].get<ActorId>();
+	auto name = data["name"].get<std::wstring>();
+	auto& species = AnimalSpecies::byName(data["species"].get<std::string>());
+	auto& location = getBlockForJsonQuery(data["location"]);
+	auto facing = data["facing"].get<Facing>();
+	auto isAlive = data["isAlive"].get<bool>();
+	const Faction* faction = data.contains("faction") ? m_hasFactions.byName(data["faction"].get<std::wstring>()) : nullptr;
+	 
+	if(data.contains("path"))
+	{
+	}
+	else if(data.contains("destination"))
+	{
+	}
+	if(data.contains("moveEventStart"))
+	{
+	}
+	auto strength = data["strength"].get<uint32_t>();
+	auto agility = data["agility"].get<uint32_t>();
+	auto dextarity = data["dextarity"].get<uint32_t>();
+	if(data.contains("equipmentSet"))
+	{
+	}
+	if(data.contains("objectives"))
+	{
+	}
+	if(data.contains("reservations"))
+	{
+	}
+}
+Block& Simulation::getBlockForJsonQuery(const Json& data)
+{
+	auto x = data["x"].get<uint32_t>();
+	auto y = data["y"].get<uint32_t>();
+	auto z = data["z"].get<uint32_t>();
+	auto id = data["area"].get<AreaId>();
+	assert(m_areasById.contains(id));
+	Area& area = *m_areasById.at(id);
+	return area.getBlock(x, y, z);
+}
+Actor& Simulation::getActorById(ActorId id) 
+{ 
+	if(!m_actors.contains(id))
+	{
+		//TODO: Load from world DB.
+		assert(false);
+	}
+	else
+		return m_actors.at(id); 
+} 
+Item& Simulation::getItemById(ItemId id) 
+{
+	if(!m_items.contains(id))
+	{
+		//TODO: Load from world DB.
+		assert(false);
+	}
+	else
+		return m_items.at(id); 
+} 

@@ -238,7 +238,7 @@ void HasCraftingLocationsAndJobsForFaction::jobComplete(CraftJob& craftJob)
 	assert(craftJob.workPiece != nullptr);
 	if(craftJob.craftJobType.productType.generic)
 	{
-		craftJob.workPiece->m_location->m_hasItems.add(craftJob.craftJobType.productType, *craftJob.materialType, craftJob.craftJobType.productQuantity);
+		craftJob.workPiece->m_location->m_hasItems.addGeneric(craftJob.craftJobType.productType, *craftJob.materialType, craftJob.craftJobType.productQuantity);
 		craftJob.workPiece->destroy();
 	}
 	else

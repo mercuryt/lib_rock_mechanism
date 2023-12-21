@@ -20,7 +20,7 @@ void HarvestEvent::execute()
 	assert(numberItemsHarvested != 0);
 	//TODO: apply horticulture skill.
 	plant.harvest(numberItemsHarvested);
-	actor.m_location->m_hasItems.add(fruitItemType, plantMatter, numberItemsHarvested);
+	actor.m_location->m_hasItems.addGeneric(fruitItemType, plantMatter, numberItemsHarvested);
 	actor.m_hasObjectives.objectiveComplete(m_harvestObjective);
 }	
 void HarvestEvent::clearReferences() { m_harvestObjective.m_harvestEvent.clearPointer(); } 

@@ -180,6 +180,29 @@ MustSleep::MustSleep(Actor& a) : m_actor(a), m_location(nullptr), m_sleepEvent(a
 {
 	m_tiredEvent.schedule(m_actor.m_species.stepsSleepFrequency, *this);
 }
+MustSleep::MustSleep(const Json data, Actor& a) : 
+	m_actor(a), m_location(data.contains("location") ? &a.getSimulation().getBlockForJsonQuery(data["location"]) : nullptr), 
+	m_sleepEvent(a.getEventSchedule()), m_tiredEvent(a.getEventSchedule()), m_objective(nullptr), 
+	m_needsSleep(data["needsSleep"].get<bool>()), m_isAwake(data["isAwake"].get<bool>())
+{
+	if(data.contains("sleepEventStart"))
+		m_sleepEvent.schedule(m_actor.m_species.stepsSleepDuration, *this, data["sleepEventStart"].get<Step>());
+	if(data.contains("tiredEventStart"))
+		m_tiredEvent.schedule(m_actor.m_species.stepsSleepFrequency, *this, data["tiredEventStart"].get<Step>());
+}
+Json MustSleep::toJson() const
+{
+	Json data;
+	if(m_location != nullptr)
+		data["location"] = m_location->positionToJson();
+	data["needsSleep"] = m_needsSleep;
+	data["isAwake"] = m_isAwake;
+	if(m_sleepEvent.exists())
+		data["sleepEventStart"] = m_sleepEvent.getStartStep();
+	if(m_tiredEvent.exists())
+		data["tiredEventStart"] = m_tiredEvent.getStartStep();
+	return data;
+}
 void MustSleep::notTired()
 {
 	assert(m_isAwake);

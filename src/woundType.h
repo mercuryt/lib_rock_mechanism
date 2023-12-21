@@ -10,6 +10,24 @@ struct Hit;
 struct BodyPartType;
 enum class WoundType { Pierce, Cut, Bludgeon };
 
+inline WoundType woundTypeByName(std::string name)
+{
+	if(name == "Pierce")
+		return WoundType::Pierce;
+	if(name == "Cut")
+		return WoundType::Cut;
+	assert(name == "Bludgeon");
+	return WoundType::Bludgeon;
+}
+inline std::string getWoundTypeName(WoundType woundType)
+{
+	if(woundType == WoundType::Pierce)
+		return "Pierce";
+	if(woundType == WoundType::Cut)
+		return "Cut";
+	assert(woundType == WoundType::Bludgeon);
+	return "Bludgeon";
+}
 namespace WoundCalculations
 {
 	Step getStepsTillHealed(const Hit& hit, const BodyPartType& bodyPartType, uint32_t scale);

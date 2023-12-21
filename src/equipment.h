@@ -27,6 +27,8 @@ class EquipmentSet
 	uint32_t m_mass;
 public:
 	EquipmentSet(Actor& a) : m_actor(a), m_mass(0) { }
+	EquipmentSet(const Json& data, Actor& a);
+	Json toJson() const;
 	void addEquipment(Item& equipment);
 	void removeEquipment(Item& equipment);
 	void modifyImpact(Hit& hit, const BodyPartType& bodyPartType);
@@ -40,4 +42,5 @@ public:
 	[[nodiscard]] bool empty() const { return m_equipments.empty(); }
 	[[nodiscard]] Item* getWeaponToAttackAtRange(float range);
 	[[nodiscard]] Item* getAmmoForRangedWeapon(Item& weapon);
+	[[nodiscard]] std::unordered_set<Item*>& getAll() { return m_equipments; }
 };

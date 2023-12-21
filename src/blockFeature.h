@@ -24,6 +24,27 @@ struct BlockFeatureType
 	static BlockFeatureType ramp;
 	static BlockFeatureType fortification;
 	static void load();
+	static const BlockFeatureType& byName(std::string name)
+	{
+		if(name == "floor")
+			return floor;
+		if(name == "door")
+			return door;
+		if(name == "flap")
+			return flap;
+		if(name == "hatch")
+			return hatch;
+		if(name == "stairs")
+			return stairs;
+		if(name == "floodGate")
+			return floodGate;
+		if(name == "floorGrate")
+			return floorGrate;
+		if(name == "ramp")
+			return ramp;
+		assert(name == "fortification");
+		return fortification;
+	}
 };
 
 struct BlockFeature

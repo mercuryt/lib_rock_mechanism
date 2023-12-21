@@ -118,6 +118,37 @@ Item::Item(Simulation& s, uint32_t i, const ItemType& it, const MaterialType& mt
 	m_mass = m_itemType.volume * m_materialType.density;
 	m_volume = m_itemType.volume;
 }
+Json Item::toJson() const
+{
+	Json data;
+	data["id"] = m_id;
+	data["name"] = m_name;
+	data["location"] = m_location->positionToJson();
+	data["itemType"] = m_itemType.name;
+	data["materialType"] = m_materialType.name;
+	data["quality"] = m_quality;
+	data["quantity"] = m_quantity;
+	data["percentWear"] = m_percentWear;
+	if(m_itemType.internalVolume != 0)
+	{
+		if(m_hasCargo.containsAnyFluid())
+		{
+			data["fluidCargoType"] = m_hasCargo.getFluidType().name;
+			data["fluidCargoVolume"] = m_hasCargo.getFluidVolume();
+		}
+		else if(!m_hasCargo.empty())
+		{
+			data["itemCargo"] = Json::array();
+			data["actorCargo"] = Json::array();
+			for(HasShape* hasShape : const_cast<ItemHasCargo&>(m_hasCargo).getContents())
+				if(hasShape->isItem())
+					data["itemCargo"].push_back(static_cast<Item*>(hasShape)->m_id);
+				else
+					data["actorCargo"].push_back(static_cast<Actor*>(hasShape)->m_id);
+		}
+	}
+	return data;
+}
 void ItemHasCargo::add(HasShape& hasShape)
 {
 	//TODO: This method does not call hasShape.exit(), which is not consistant with the behaviour of CanPickup::pickup.
@@ -232,7 +263,7 @@ void ItemHasCargo::unloadTo(HasShape& hasShape, Block& location)
 Item& ItemHasCargo::unloadGenericTo(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity, Block& location)
 {
 	remove(itemType, materialType, quantity);
-	return location.m_hasItems.add(itemType, materialType, quantity);
+	return location.m_hasItems.addGeneric(itemType, materialType, quantity);
 }
 bool ItemHasCargo::canAdd(HasShape& hasShape) const { return m_volume + hasShape.getVolume() <= m_item.m_itemType.internalVolume; }
 bool ItemHasCargo::canAdd(FluidType& fluidType) const { return m_fluidType == nullptr || m_fluidType == &fluidType; }
@@ -292,7 +323,7 @@ void BlockHasItems::remove(Item& item)
 	std::erase(m_items, &item);
 	m_block.m_hasShapes.exit(item);
 }
-Item& BlockHasItems::add(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity)
+Item& BlockHasItems::addGeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity)
 {
 	assert(itemType.generic);
 	auto found = std::ranges::find_if(m_items, [&](Item* item) { return item->m_itemType == itemType && item->m_materialType == materialType; });
@@ -305,7 +336,7 @@ Item& BlockHasItems::add(const ItemType& itemType, const MaterialType& materialT
 	// Create.
 	else
 	{
-		Item& item = m_block.m_area->m_simulation.createItem(itemType, materialType, quantity);
+		Item& item = m_block.m_area->m_simulation.createItemGeneric(itemType, materialType, quantity);
 		m_items.push_back(&item);
 		m_block.m_hasShapes.enter(item);
 		if(m_block.m_outdoors)

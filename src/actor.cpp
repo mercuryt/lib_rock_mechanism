@@ -1,4 +1,5 @@
 #include "actor.h"
+#include "animalSpecies.h"
 #include "block.h"
 #include "area.h"
 #include "simulation.h"
@@ -13,6 +14,11 @@ Actor::Actor(Simulation& simulation, uint32_t id, const std::wstring& name, cons
 	// TODO: Having this line here requires making the existance of objectives mandatory at all times. Good idea?
 	//m_hasObjectives.getNext();
 }
+Actor::Actor(Simulation& simulation, Json data) :
+	HasShape(simulation, AnimalSpecies::byName(data["species"].get<std::string>()).shapeForPercentGrown(data["percentGrown"].get<Percent>()), false), 
+	m_faction(simulation.m_hasFactions.byName(data["faction"].get<std::wstring>())), 
+	m_id(data["id"].get<ActorId>()), m_name(data["name"].get<std::wstring>()), m_species(AnimalSpecies::byName(data["species"].get<std::string>())), 
+	m_alive(data["alive"].get<bool>()), m_body(*this, data), m_project(nullptr), m_attributes(data), m_equipmentSet(*this, data), m_mustEat(*this, data), m_mustDrink(*this, data), m_mustSleep(*this, data), m_needsSafeTemperature(*this, data), m_canPickup(*this, data), m_canMove(*this, data), m_canFight(*this, data), m_canGrow(*this, data), m_hasObjectives(*this, data), m_canReserve(data), m_stamina(*this, data), m_visionRange(m_species.visionRange) { }
 void Actor::setLocation(Block& block)
 {
 	assert(&block != HasShape::m_location);

@@ -33,19 +33,20 @@ public:
 		assert(m_event != nullptr);
 		m_event = nullptr;
 	}
-	[[nodiscard]]Percent percentComplete() const
+	[[nodiscard]] Percent percentComplete() const
 	{
 		assert(m_event != nullptr);
 		return m_event->percentComplete();
 	}
-	[[nodiscard]]bool exists() const { return m_event != nullptr; }
-	[[nodiscard]]const Step& getStep() const
+	[[nodiscard]] bool exists() const { return m_event != nullptr; }
+	[[nodiscard]] const Step& getStep() const
 	{
 		assert(m_event != nullptr);
 		return m_event->m_step;
 	}
-	[[nodiscard]]Step remainingSteps() const { return m_event->remaningSteps(); }
-	[[nodiscard]]Step duration() const { return m_event->duration(); }
+	[[nodiscard]] Step getStartStep() const { return m_event->m_startStep; }
+	[[nodiscard]] Step remainingSteps() const { return m_event->remaningSteps(); }
+	[[nodiscard]] Step duration() const { return m_event->duration(); }
 	~HasScheduledEvent() 
 	{ 
 		if(m_event != nullptr)

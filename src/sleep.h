@@ -26,6 +26,8 @@ class MustSleep final
 	bool m_isAwake;
 public:
 	MustSleep(Actor& a);
+	MustSleep(const Json data, Actor& a);
+	Json toJson() const;
 	void tired();
 	void sleep();
 	void passout(Step duration);
@@ -36,13 +38,16 @@ public:
 	void setLocation(Block& block);
 	void onDeath();
 	void notTired();
-	bool isAwake() const { return m_isAwake; }
-	bool getNeedsSleep() const { return m_needsSleep; }
-	Block* getLocation() { return m_location; }
+	[[nodiscard]] bool isAwake() const { return m_isAwake; }
+	[[nodiscard]] bool getNeedsSleep() const { return m_needsSleep; }
+	[[nodiscard]] Block* getLocation() { return m_location; }
 	friend class SleepEvent;
 	friend class TiredEvent;
 	friend class SleepThreadedTask;
 	friend class SleepObjective;
+	// For UI.
+	[[nodiscard]] Percent getSleepPercent() const { return m_isAwake ? 0 : m_sleepEvent.percentComplete(); }
+	[[nodiscard]] Percent getTiredPercent() const { return !m_isAwake ? 0 : m_tiredEvent.percentComplete(); }
 	// For testing.
 	[[maybe_unused, nodiscard]] bool hasTiredEvent() const { return m_tiredEvent.exists(); }
 	[[maybe_unused, nodiscard]] SleepObjective* getObjective() { return m_objective; }
