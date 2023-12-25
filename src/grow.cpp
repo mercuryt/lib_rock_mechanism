@@ -6,6 +6,28 @@ CanGrow::CanGrow(Actor& a, Percent pg) : m_actor(a), m_event(a.getEventSchedule(
 	// Note: CanGrow must be initalized after MustEat, MustDrink, and SafeTemperature.
 	updateGrowingStatus();
 }
+CanGrow::CanGrow(const Json& data, Actor& a) : m_actor(a), m_event(a.getEventSchedule()), m_updateEvent(a.getEventSchedule()), m_percentGrown(data["percentGrown"].get<Percent>())
+{
+	if(data.contains("eventStart"))
+		m_event.schedule(data["eventDelay"].get<Step>(), *this, data["eventStart"].get<Step>());
+	if(data.contains("updateEventStart"))
+		m_updateEvent.schedule(data["updateEventDelay"].get<Step>(), *this, data["updateEventStart"].get<Step>());
+}
+Json CanGrow::toJson()
+{
+	Json data({{"percentGrown", growthPercent()}});
+	if(m_event.exists())
+	{
+		data["eventStart"] = m_event.getStartStep();
+		data["eventDelay"] = m_event.delay();
+	}
+	if(m_updateEvent.exists())
+	{
+		data["updateEventStart"] = m_updateEvent.getStartStep();
+		data["updateEventDelay"] = m_updateEvent.delay();
+	}
+	return data;
+}
 void CanGrow::updateGrowingStatus()
 {
 	if(m_percentGrown != 100 && !m_actor.m_mustEat.needsFood() && !m_actor.m_mustDrink.needsFluid() && m_actor.m_needsSafeTemperature.isSafeAtCurrentLocation())

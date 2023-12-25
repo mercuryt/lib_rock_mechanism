@@ -2,6 +2,7 @@
 #include "../../lib/doctest.h"
 #include "../../src/config.h"
 #include "../../src/definitions.h"
+#include "../../src/objectiveTypeInstances.h"
 
 int main(int argc, char** argv) {
     doctest::Context context;
@@ -15,6 +16,7 @@ int main(int argc, char** argv) {
     // Config must be loaded before definitions.
     Config::load();
     definitions::load();
+    ObjectiveTypeInstances::load();
 
     int res = context.run(); // run
 

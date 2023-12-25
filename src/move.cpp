@@ -196,12 +196,6 @@ void ActorCanMove::setDestinationAdjacentTo(HasShape& hasShape, bool detour, boo
 	std::function<bool(const Block&)> predicate = [hasShapeBlocks](const Block& block){ return hasShapeBlocks.contains(const_cast<Block*>(&block)); };
 	// Actor, predicate, destinationHuristic, detour, adjacent, unreserved.
 	m_threadedTask.create(m_actor, predicate, hasShape.m_location, detour, true, unreserved, reserve);
-	std::function<void()> onDestroyHasShape = [&](){ m_threadedTask.cancel(); };
-}
-void ActorCanMove::setDestinationToUnreservedAdjacentToPredicate(std::function<bool(const Block&)>& predicate, bool detour, bool reserve)
-{
-	// Actor, predicate, huristic Destinaiton, detour, unreserved, reserve.
-	m_threadedTask.create(m_actor, predicate, nullptr, detour, true, reserve); 
 }
 void ActorCanMove::setMoveType(const MoveType& moveType)
 {
@@ -246,26 +240,50 @@ Block* ActorCanMove::ensureIsAdjacentToPredicateAndUnreserved(std::function<bool
 MoveEvent::MoveEvent(Step delay, ActorCanMove& cm) : ScheduledEventWithPercent(cm.m_actor.getSimulation(), delay), m_canMove(cm) { }
 
 // Path Threaded Task.
-PathThreadedTask::PathThreadedTask(Actor& a, std::function<bool(const Block&)>& p, const Block* hd, bool d, bool ad, bool ur, bool r) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_predicate(p), m_huristicDestination(hd), m_detour(d), m_adjacent(ad), m_unreservedDestination(ur), m_reserveDestination(r), m_findsPath(a, d) 
+PathThreadedTask::PathThreadedTask(Actor& a, HasShape& hs, const Block* hd, bool d, bool ad, bool ur, bool r) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_hasShape(hs), m_huristicDestination(hd), m_detour(d), m_adjacent(ad), m_unreservedDestination(ur), m_reserveDestination(r), m_findsPath(a, d) 
 { 
 	if(m_reserveDestination)
 		assert(m_unreservedDestination);
 }
+PathThreadedTask::PathThreadedTask(const Json& data, Actor& a, DeserilizationMemo& deserializationMemo) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), 
+	m_hasShape(data.contains("hasShape") ? deserializationMemo.m_hasShapes.at(data["hasShape"].get<uintptr_t>()) : nullptr),
+	m_huristicDestination(data.contains("huristicDestination") ? deserializationMemo.m_simulation.getBlockForJsonQuery(data["huristicDestination"]) : nullptr),
+	m_detour(data["detour"].get<bool>()),
+	m_adjacent(data["adjacent"].get<bool>()),
+	m_unreservedDestination(data["unreservedDestination"].get<bool>()),
+	m_reserveDestination(data["reserveDestination"].get<bool>()), 
+	m_findsPath(m_actor, m_detour) { }
+Json toJson() const
+{
+	Json data({{"detour", m_detour}, {"adjacent", m_adjacent}, {"unreservedDestination", m_unreservedDestination}, {"reserveDestination", m_reserveDestination}});
+	if(m_hasShape != nullptr)
+		data["hasShape"] = reinterpret_cast<uintptr_t>(m_hasShape);
+	if(m_huristicDestination != nullptr)
+		data["huristicDestination"] = m_huristicDestination->positionToJson();
+	return data;
+}
 void PathThreadedTask::readStep()
 {
 	m_findsPath.m_huristicDestination = m_huristicDestination;
+	std::function<bool(const Block& block) predicate;
+	assert(huristicDestination != nullptr || m_hasShape != nullptr);
+	if(m_hasShape != nullptr)
+		predicate = [&](const Block& block){ return m_hasShape->m_blocks.contains(&block); };
+	else
+		predicate = [&](const Block& block){ return block == *m_huristicDestination; }
+
 	if(m_unreservedDestination)
 	{
 		if(m_adjacent)
-			m_findsPath.pathToUnreservedAdjacentToPredicate(m_predicate, *m_actor.getFaction());
+			m_findsPath.pathToUnreservedAdjacentToPredicate(predicate, *m_actor.getFaction());
 		else
-			m_findsPath.pathToUnreservedPredicate(m_predicate, *m_actor.getFaction());
+			m_findsPath.pathToUnreservedPredicate(predicate, *m_actor.getFaction());
 	}
 	else
 		if(m_adjacent)
-			m_findsPath.pathToAdjacentToPredicate(m_predicate);
+			m_findsPath.pathToAdjacentToPredicate(predicate);
 		else
-			m_findsPath.pathToOccupiedPredicate(m_predicate);
+			m_findsPath.pathToOccupiedPredicate(predicate);
 }
 void PathThreadedTask::writeStep()
 {

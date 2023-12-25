@@ -39,6 +39,22 @@ void ConstructThreadedTask::writeStep()
 	}
 }
 void ConstructThreadedTask::clearReferences() { m_constructObjective.m_constructThreadedTask.clearPointer(); }
+ConstructObjective::ConstructObjective(const Json& data, DeserilizationMemo& deserilizationMemo) :
+	Objective(data, deserilizationMemo), m_constructThreadedTask(m_actor.m_location->m_area->m_simulation.m_threadedTaskEngine), 
+	m_project(data.contains("project") ? deserilizationMemo.m_projects.at(data["project"].get<uintptr_t>()) : nullptr)
+{
+	if(data.contains("threadedTask"))
+		m_constructThreadedTask.create(*this);
+}
+Json ConstructObjective::toJson() const
+{
+	Json data = Objective::toJson();
+	if(m_project != nullptr)
+		data["project"] = m_project;
+	if(m_constructThreadedTask.exists())
+		data["threadedTask"] = true;
+	return data;
+}
 void ConstructObjective::execute()
 {
 	if(m_project != nullptr)
@@ -117,6 +133,16 @@ bool ConstructObjectiveType::canBeAssigned(Actor& actor) const
 	return actor.m_location->m_area->m_hasConstructionDesignations.areThereAnyForFaction(*actor.getFaction());
 }
 std::unique_ptr<Objective> ConstructObjectiveType::makeFor(Actor& actor) const { return std::make_unique<ConstructObjective>(actor); }
+ConstructProject::ConstructProject(const Json& data, DeserilizationMemo& deserilizationMemo) : Project(data, deserilizationMemo), 
+	m_blockFeatureType(&BlockFeatureType::byName(data["blockFeatureType"].get<std::string>())),
+	m_materialType(MaterialType::byName(data["materialType"].get<std::string>())) { }
+Json ConstructProject::toJson() const
+{
+	Json data = Project::toJson();
+	data["blockFeatureType"] = m_blockFeatureType->name;
+	data["materialType"] = m_materialType.name;
+	return data;
+}
 std::vector<std::pair<ItemQuery, uint32_t>> ConstructProject::getConsumed() const
 {
 	assert(m_materialType.constructionData != nullptr);
@@ -183,16 +209,38 @@ Step ConstructProject::getDuration() const
 		totalScore += getWorkerConstructScore(*pair.first);
 	return m_materialType.constructionData->duration / totalScore;
 }
+ConstructionLocationDishonorCallback::ConstructionLocationDishonorCallback(const Json& data, DeserilizationMemo& deserializationMemo) : 
+	m_faction(deserializationMemo.faction(data["faction"].get<std::wstring>())),
+	m_location(deserializationMemo.m_simulation.getBlockForJsonQuery(data["location"])) { }
+Json ConstructionLocationDishonorCallback::toJson() const { return Json({{"type", "ConstructionLocationDishonorCallback"}, {"faction", m_faction.m_name}, {"location", m_location.positionToJson()}}); }
 void ConstructionLocationDishonorCallback::execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount)
 {
-	m_hasConstructionDesignationsForFaction.undesignate(m_location);
+	m_location.m_area->m_hasConstructionDesignations.at(m_faction).undesignate(m_location);
+}
+HasConstructionDesignationsForFaction::HasConstructionDesignationsForFaction(const Json& data, DeserilizationMemo& deserilizationMemo, const Faction& faction) : m_faction(faction)
+{
+	for(const Json& pair : data)
+	{
+		Block& block = deserilizationMemo.m_simulation.getBlockForJsonQuery(pair[0]);
+		m_data.try_emplace(&block, pair[1], deserilizationMemo);
+	}
+}
+Json HasConstructionDesignationsForFaction::toJson() const
+{
+	Json data;
+	for(auto& pair : m_data)
+	{
+		Json jsonPair{pair.first->positionToJson(), pair.second.toJson()};
+		data.push_back(jsonPair);
+	}
+	return data;
 }
 // If blockFeatureType is null then construct a wall rather then a feature.
 void HasConstructionDesignationsForFaction::designate(Block& block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType)
 {
 	assert(!contains(block));
 	block.m_hasDesignations.insert(m_faction, BlockDesignation::Construct);
-	std::unique_ptr<DishonorCallback> locationDishonorCallback = std::make_unique<ConstructionLocationDishonorCallback>(*this, block);
+	std::unique_ptr<DishonorCallback> locationDishonorCallback = std::make_unique<ConstructionLocationDishonorCallback>(m_faction, block);
 	m_data.try_emplace(&block, &m_faction, block, blockFeatureType, materialType, std::move(locationDishonorCallback));
 }
 void HasConstructionDesignationsForFaction::undesignate(Block& block)
@@ -216,6 +264,26 @@ bool HasConstructionDesignationsForFaction::contains(const Block& block) const {
 const BlockFeatureType* HasConstructionDesignationsForFaction::at(const Block& block) const { return m_data.at(const_cast<Block*>(&block)).m_blockFeatureType; }
 bool HasConstructionDesignationsForFaction::empty() const { return m_data.empty(); }
 // To be used by Area.
+void HasConstructionDesignations::load(const Json& data, DeserilizationMemo& deserilizationMemo)
+{
+	for(const Json& pair : data)
+	{
+		const Faction& faction = deserilizationMemo.faction(pair[0]);
+		m_data.emplace(&faction, pair[1], deserilizationMemo, faction);
+	}
+}
+Json HasConstructionDesignations::toJson() const
+{
+	Json data;
+	for(auto& pair : m_data)
+	{
+		Json jsonPair;
+		jsonPair[0] = pair.first->m_name;
+		jsonPair[1] = pair.second.toJson();
+		data.push_back(jsonPair);
+	}
+	return data;
+}
 void HasConstructionDesignations::addFaction(const Faction& faction)
 {
 	assert(!m_data.contains(&faction));

@@ -1,4 +1,26 @@
 #include "reservable.h"
+#include "simulation.h"
+#include "deserializeDishonorCallbacks.h"
+void CanReserve::load(const Json& data, DeserilizationMemo& deserializationMemo)
+{ 
+	m_faction = deserializationMemo.m_simulation.m_hasFactions.byName(data["faction"].get<std::wstring>());
+	for(const Json& reservationData : data["reservations"])
+	{
+		Reservable& reservable = *deserializationMemo.m_reservables.at(reservationData["reservable"].get<uintptr_t>());
+		std::unique_ptr<DishonorCallback> dishonorCallback = data.contains("dishonorCallback") ?
+			deserializeDishonorCallback(data["dishonorCallback"], deserializationMemo) : nullptr;
+		reservable.reserveFor(*this, reservationData["count"].get<uint32_t>(), std::move(dishonorCallback));
+	}
+}
+Json CanReserve::toJson() const 
+{
+	Json data;
+	data["faction"] = m_faction->m_name;
+	data["reservations"] = Json::array();
+	for(Reservable* reservable : m_reservables)
+		data["reservations"].push_back(reservable->jsonReservationFor(const_cast<CanReserve&>(*this)));
+	return data;
+}
 void CanReserve::clearAll()
 {
 	for(Reservable* reservable : m_reservables)
@@ -152,5 +174,16 @@ uint32_t Reservable::getUnreservedCount(const Faction& faction) const
 	if(!m_reservedCounts.contains(&faction))
 		return m_maxReservations;
 	return m_maxReservations - m_reservedCounts.at(&faction);
+}
+Json Reservable::jsonReservationFor(CanReserve& canReserve) const
+{
+
+	Json data({
+		{"count", m_canReserves.at(&canReserve)},
+		{"reservable", reinterpret_cast<uintptr_t>(this)}
+	});
+	if(m_dishonorCallbacks.contains(&canReserve))
+		data["dishonorCallback"] = m_dishonorCallbacks.at(&canReserve)->toJson();
+	return data;
 }
 Reservable::~Reservable() { clearAll(); }

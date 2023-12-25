@@ -1,12 +1,33 @@
 #include "targetedHaul.h"
 #include "block.h"
 #include "area.h"
+#include "deserilizationMemo.h"
+#include "objective.h"
+#include "stockpile.h"
+Json TargetedHaulObjective::toJson() const
+{
+	Json data = Objective::toJson();
+	data["project"] = reinterpret_cast<uintptr_t>(&m_project);
+	return data;
+}
 void TargetedHaulProject::onComplete()
 {
 	auto workers = std::move(m_workers);
 	m_location.m_area->m_targetedHauling.complete(*this);
 	for(auto& [actor, projectWorker] : workers)
 		actor->m_hasObjectives.objectiveComplete(projectWorker.objective);
+}
+void AreaHasTargetedHauling::load(const Json& data, DeserilizationMemo& deserilizationMemo)
+{
+	for(const Json& project : data["projects"])
+		m_projects.emplace_back(project, deserilizationMemo);
+}
+Json AreaHasTargetedHauling::toJson() const 
+{
+	Json data{{"projects", Json::array()}};
+	for(const Project& project : m_projects)
+		data["projects"].push_back(project);
+	return data;
 }
 TargetedHaulProject& AreaHasTargetedHauling::begin(std::vector<Actor*> actors, Item& item, Block& destination)
 {

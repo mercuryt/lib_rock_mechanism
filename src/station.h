@@ -1,14 +1,17 @@
 #pragma once
+#include "deserilizationMemo.h"
 #include "objective.h"
 #include "config.h"
+#include "simulation.h"
 class Block;
 class Actor;
 class StationObjective final : public Objective
 {
-	Actor& m_actor;
 	Block& m_location;
 public:
-	StationObjective(Actor& a, Block& l) : Objective(Config::stationPriority), m_actor(a), m_location(l) { }
+	StationObjective(Actor& a, Block& l) : Objective(a, Config::stationPriority), m_location(l) { }
+	StationObjective(const Json& data, DeserilizationMemo& deserilizationMemo) : Objective(data, deserilizationMemo), 
+	m_location(deserilizationMemo.m_simulation.getBlockForJsonQuery(data["block"])) { }
 	void execute();
 	void cancel() { }
 	void delay() { }

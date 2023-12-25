@@ -1,7 +1,21 @@
 #include "stamina.h"
 #include "actor.h"
+#include "objective.h"
+#include "simulation.h"
 
-RestObjective::RestObjective(Actor& a) : Objective(0), m_actor(a), m_restEvent(a.getEventSchedule()) { }
+RestObjective::RestObjective(Actor& a) : Objective(a, 0), m_restEvent(a.getEventSchedule()) { }
+RestObjective::RestObjective(const Json& data, DeserilizationMemo& deserilizationMemo) : Objective(data, deserilizationMemo), m_restEvent(deserilizationMemo.m_simulation.m_eventSchedule) 
+{
+	if(data.contains("eventStart"))
+		m_restEvent.schedule(*this, data["eventStart"].get<Step>());
+}
+Json RestObjective::toJson() const
+{
+	Json data = Objective::toJson();
+	if(m_restEvent.exists())
+		data["eventStart"] = m_restEvent.getStartStep();
+	return data;
+}
 void RestObjective::reset() 
 { 
 	cancel(); 

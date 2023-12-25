@@ -10,8 +10,10 @@
 #pragma once
 
 #include "config.h"
+#include "deserilizationMemo.h"
 #include "objective.h"
 #include "eventSchedule.h"
+#include "simulation.h"
 #include "threadedTask.h"
 #include "actor.h"
 #include "fight.h"
@@ -24,7 +26,15 @@ class KillObjective final : public Objective
 	Actor& m_target;
 	HasThreadedTask<GetIntoAttackPositionThreadedTask> m_getIntoRangeAndLineOfSightThreadedTask;
 public:
-	KillObjective(Actor& k, Actor& t) : Objective(Config::killPriority), m_killer(k), m_target(t), m_getIntoRangeAndLineOfSightThreadedTask(k.getThreadedTaskEngine()) { }
+	KillObjective(Actor& k, Actor& t) : Objective(k, Config::killPriority), m_killer(k), m_target(t), m_getIntoRangeAndLineOfSightThreadedTask(k.getThreadedTaskEngine()) { }
+	KillObjective(const Json& data, DeserilizationMemo& deserilizationMemo) : Objective(data, deserilizationMemo), 
+	m_killer(deserilizationMemo.m_simulation.getActorById(data["killer"].get<ActorId>())), 
+	m_target(deserilizationMemo.m_simulation.getActorById(data["target"].get<ActorId>())), 
+	m_getIntoRangeAndLineOfSightThreadedTask(deserilizationMemo.m_simulation.m_threadedTaskEngine)
+	{ 
+		if(data["threadedTask"])
+			m_getIntoRangeAndLineOfSightThreadedTask.create(m_killer, m_target, m_killer.m_canFight.getMaxRange());
+	}
 	void execute();
 	void cancel() { m_getIntoRangeAndLineOfSightThreadedTask.maybeCancel(); }
 	void delay() { cancel(); }

@@ -133,6 +133,24 @@ void Actor::log() const
 	HasShape::log();
 	std::cout << std::endl;
 }
+ActorQuery::ActorQuery(const Json& data, DeserilizationMemo& deserilizationMemo) :
+	actor(data.contains("actor") ? &deserilizationMemo.m_simulation.getActorById(data["actor"].get<ActorId>()) : nullptr),
+	carryWeight(data.contains("carryWeight") ? data["carryWeight"].get<Mass>() : 0),
+	checkIfSentient(data.contains("checkIfSentient")),
+	sentient(data.contains("sentient")) { }
+Json ActorQuery::toJson() const
+{
+	Json data;
+	if(actor)
+		data["actor"] = actor->m_id;
+	if(carryWeight)
+		data["carryWeight"] = carryWeight;
+	if(checkIfSentient)
+		data["checkIfSentient"] = checkIfSentient;
+	if(sentient)
+		data["sentient"] = sentient;
+	return data;
+}
 // ActorQuery, to be used to search for actors.
 bool ActorQuery::operator()(Actor& other) const
 {

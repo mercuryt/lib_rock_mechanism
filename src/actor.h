@@ -41,6 +41,7 @@ public:
 	const ActorId m_id;
 	std::wstring m_name;
 	const AnimalSpecies& m_species;
+	const DateTime m_birthDate;
 	bool m_alive;
 	CauseOfDeath m_causeOfDeath;
 	Body m_body;
@@ -100,6 +101,7 @@ public:
 	// For debugging.
 	void log() const;
 };
+inline void to_json(Json& data, const Actor& actor){ data = actor.m_id; }
 // To be used to find actors fitting criteria.
 struct ActorQuery
 {
@@ -109,6 +111,8 @@ struct ActorQuery
 	bool sentient;
 	ActorQuery(Actor& a) : actor(&a) { }
 	ActorQuery(Mass cw, bool cis, bool s) : carryWeight(cw), checkIfSentient(cis), sentient(s) { }
+	ActorQuery(const Json& data, DeserilizationMemo& deserilizationMemo);
+	Json toJson() const;
 	bool operator()(Actor& actor) const;
 	static ActorQuery makeFor(Actor& a);
 	static ActorQuery makeForCarryWeight(Mass cw);

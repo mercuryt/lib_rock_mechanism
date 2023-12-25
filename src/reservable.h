@@ -5,6 +5,8 @@
 
 #pragma once
 //TODO: Use vector instead of unordered set.
+#include "config.h"
+#include "deserilizationMemo.h"
 #include <algorithm>
 #include <sys/types.h>
 #include <unordered_set>
@@ -21,6 +23,7 @@ struct DishonorCallback
 {
 	virtual void execute(uint32_t oldCount, uint32_t newCount) = 0;
 	virtual ~DishonorCallback() = default;
+	virtual Json toJson() const;
 };
 class CanReserve final
 {
@@ -29,6 +32,8 @@ class CanReserve final
 	friend class Reservable;
 public:
 	CanReserve(const Faction* f) : m_faction(f) { }
+	void load(const Json& data, DeserilizationMemo& deserializeMemo);
+	Json toJson() const;
 	void clearAll();
 	void setFaction(const Faction* faction);
 	[[nodiscard]] bool hasFaction() const;
@@ -60,6 +65,7 @@ public:
 	void setDishonorCallbackFor(CanReserve& canReserve, std::unique_ptr<DishonorCallback> dishonorCallback) { m_dishonorCallbacks[&canReserve] = std::move(dishonorCallback); }
 	void clearAll();
 	uint32_t getUnreservedCount(const Faction& faction) const;
+	Json jsonReservationFor(CanReserve& canReserve) const;
 	~Reservable();
 	Reservable(Reservable& reservable) = delete;
 	Reservable(Reservable&& reservable) = delete;

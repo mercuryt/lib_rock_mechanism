@@ -3,14 +3,15 @@
 #include "../src/config.h"
 #include "../src/datetime.h"
 #include "../src/types.h"
-#include "actor.h"
-#include "animalSpecies.h"
-#include "attributes.h"
-#include "body.h"
-#include "equipment.h"
-#include "objective.h"
-#include "plant.h"
-#include "woundType.h"
+#include "../src/objectiveTypeInstances.h"
+#include "../src/actor.h"
+#include "../src/animalSpecies.h"
+#include "../src/attributes.h"
+#include "../src/body.h"
+#include "../src/equipment.h"
+#include "../src/objective.h"
+#include "../src/plant.h"
+#include "../src/woundType.h"
 
 #include <nanobind/nanobind.h>
 #include <cstdint>
@@ -21,6 +22,7 @@ void loadConfigAndDefinitions()
 {
 	Config::load();
 	definitions::load();
+	ObjectiveTypeInstances::load();
 }
 
 NB_MODULE(bound, m)

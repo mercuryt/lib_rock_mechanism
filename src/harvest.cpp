@@ -1,6 +1,8 @@
 #include "harvest.h"
 #include "area.h"
+#include "config.h"
 #include "farmFields.h"
+#include "objective.h"
 #include "plant.h"
 // Event.
 HarvestEvent::HarvestEvent(Step delay, HarvestObjective& ho) : ScheduledEventWithPercent(ho.m_actor.getSimulation(), delay), m_harvestObjective(ho) {}
@@ -69,7 +71,27 @@ std::unique_ptr<Objective> HarvestObjectiveType::makeFor(Actor& actor) const
 	return std::make_unique<HarvestObjective>(actor);
 }
 // Objective.
-HarvestObjective::HarvestObjective(Actor& a) : Objective(Config::harvestPriority), m_actor(a), m_block(nullptr), m_harvestEvent(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()) {}
+HarvestObjective::HarvestObjective(Actor& a) : Objective(a, Config::harvestPriority), m_block(nullptr), m_harvestEvent(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()) {}
+HarvestObjective::HarvestObjective(const Json& data, DeserilizationMemo& deserilizationMemo) : Objective(data, deserilizationMemo), m_block(nullptr), m_harvestEvent(deserilizationMemo.m_simulation.m_eventSchedule), m_threadedTask(deserilizationMemo.m_simulation.m_threadedTaskEngine)
+{
+	if(data.contains("threadedTask"))
+		m_threadedTask.create(*this);
+	if(data.contains("eventStart"))
+		m_harvestEvent.schedule(Config::harvestEventDuration, *this, data["eventStart"].get<Step>());
+	if(data.contains("block"))
+		m_block = &deserilizationMemo.m_simulation.getBlockForJsonQuery(data["block"]);
+}
+Json HarvestObjective::toJson() const
+{
+	Json data = Objective::toJson();
+	if(m_block)
+		data["block"] = m_block;
+	if(m_harvestEvent.exists())
+		data["eventStart"] = m_harvestEvent.getStartStep();
+	if(m_threadedTask.exists())
+		data["threadedTask"] = true;
+	return data;
+}
 void HarvestObjective::execute()
 {
 	if(m_block != nullptr)

@@ -1,7 +1,9 @@
 #include "project.h"
 #include "block.h"
 #include "area.h"
+#include "deserilizationMemo.h"
 #include "hasShape.h"
+#include "haul.h"
 #include "reservable.h"
 #include "simulation.h"
 #include <algorithm>
@@ -257,6 +259,119 @@ Project::Project(const Faction* f, Block& l, size_t mw, std::unique_ptr<Dishonor
 {
 	m_location.m_reservable.reserveFor(m_canReserve, 1u, std::move(locationDishonorCallback));
 }
+Project::Project(const Json& data, DeserilizationMemo& deserilizationMemo) : m_finishEvent(deserilizationMemo.m_simulation.m_eventSchedule), m_tryToHaulEvent(deserilizationMemo.m_simulation.m_eventSchedule), m_tryToReserveEvent(deserilizationMemo.m_simulation.m_eventSchedule), m_tryToHaulThreadedTask(deserilizationMemo.m_simulation.m_threadedTaskEngine), m_tryToAddWorkersThreadedTask(deserilizationMemo.m_simulation.m_threadedTaskEngine), 
+	m_canReserve(deserilizationMemo.m_simulation.m_hasFactions.byName(data["faction"].get<std::wstring>())),
+	m_maxWorkers(data["maxWorkers"].get<uint32_t>()), m_delay(data["delay"].get<bool>()), 
+	m_haulRetries(data["haulRetries"].get<uint8_t>()), m_requirementsLoaded(data["requirementsLoaded"].get<bool>()), 
+	m_location(deserilizationMemo.m_simulation.getBlockForJsonQuery(data["location"])), 
+	m_faction(*deserilizationMemo.m_simulation.m_hasFactions.byName(data["faction"].get<std::wstring>())) 
+{ 
+	if(data.contains("requiredItems"))
+		for(const Json& pair : data["requiredItems"])
+			m_requiredItems.emplace_back(pair[0], pair[1]);
+	if(data.contains("requiredActors"))
+		for(const Json& pair : data["requiredActors"])
+			m_requiredActors.emplace_back(pair[0], pair[1]);
+	if(data.contains("toConsume"))
+		for(const Json& itemId : data["toConsume"])
+			m_toConsume.insert(&deserilizationMemo.m_simulation.getItemById(itemId.get<ItemId>()));
+	if(data.contains("toPickup"))
+		for(const Json& pair : data["toPickup"])
+		{
+			HasShape& hasShape = *deserilizationMemo.m_hasShapes.at(pair[0].get<uintptr_t>());
+			ProjectRequirementCounts& projectRequirementCounts = *deserilizationMemo.m_projectRequirementCounts.at(pair[1][0].get<uintptr_t>());
+			uint32_t quantity = pair[1][1].get<uint32_t>();
+			m_toPickup[&hasShape] = std::make_pair(&projectRequirementCounts, quantity);
+		}
+	if(data.contains("haulSubprojects"))
+		for(const Json& haulSubprojectData : data["haulSubprojects"])
+			m_haulSubprojects.emplace_back(haulSubprojectData, deserilizationMemo);
+	m_canReserve.load(data["canReserve"], deserilizationMemo);
+	if(data.contains("finishEventStart"))
+		m_finishEvent.schedule(data["finishEventDuration"].get<Step>(), *this, data["finishEventStart"].get<Step>());
+	if(data.contains("tryToHaulEventStart"))
+		m_tryToHaulEvent.schedule(Config::stepsFrequencyToLookForHaulSubprojects, *this, data["tryToHaulEventStart"].get<Step>());
+	if(data.contains("tryToReserveEventStart"))
+		m_tryToReserveEvent.schedule(Config::stepsToDelayBeforeTryingAgainToReserveItemsAndActorsForAProject, *this, data["tryToReserveEventStart"].get<Step>());
+	if(data.contains("tryToHaulThreadedTaskExists"))
+		m_tryToHaulThreadedTask.create(*this);
+	if(data.contains("tryToAddWorkersThreadedTaskExists"))
+		m_tryToHaulThreadedTask.create(*this);
+	deserilizationMemo.m_projects[data["address"].get<uintptr_t>()] = this;
+}
+void Project::loadWorkers(const Json& data, DeserilizationMemo& deserilizationMemo)
+{
+	for(const Json& projectWorkerData : data["workers"])
+	{
+		Actor& worker = deserilizationMemo.m_simulation.getActorById(projectWorkerData["actor"].get<ActorId>());
+		m_workers.emplace(&worker, projectWorkerData["projectWorker"]);
+	}
+}
+Json Project::toJson() const
+{
+	Json data({
+		{"address", reinterpret_cast<uintptr_t>(this)},
+		{"faction", m_faction.m_name},
+		{"maxWorkers", m_maxWorkers},
+		{"delay", m_delay},
+		{"haulRetries", m_haulRetries},
+		{"location", m_location.positionToJson()},
+	});
+	if(!m_requiredItems.empty())
+	{
+		data["requiredItems"] = Json::array();
+		for(auto& [itemQuery, requiredCounts] : m_requiredItems)
+		{
+			Json pair({itemQuery.toJson(), requiredCounts.toJson()});
+			data["requiredItems"].push_back(pair);
+		}
+	}
+	if(!m_requiredActors.empty())
+	{
+		data["requiredActors"] = Json::array();
+		for(auto& [actorQuery, requiredCounts] : m_requiredActors)
+		{
+			Json pair({actorQuery.toJson(), requiredCounts.toJson()});
+			data["requiredActors"].push_back(pair);
+		}
+	}
+	if(!m_toConsume.empty())
+	{
+		data["toConsume"] = Json::array();
+		for(Item* item : m_toConsume)
+			data["toConsume"].push_back(item->m_id);
+	}
+	if(!m_toPickup.empty())
+	{
+		data["toPickup"] = Json::array();
+		for(auto& [hasShape, pair] : m_toPickup)
+		{
+			Json jsonPair({pair.first->toJson(), pair.second});
+			data["toPickup"].emplace_back(reinterpret_cast<uintptr_t>(hasShape), jsonPair);
+		}
+	}
+	if(!m_haulSubprojects.empty())
+	{
+		data["haulSubprojects"] = Json::array();
+		for(const HaulSubproject& subproject : m_haulSubprojects)
+			data["haulSubprojects"].push_back(subproject.toJson());
+	}
+	data["canReserve"] = m_canReserve.toJson();
+	if(m_finishEvent.exists())
+	{
+		data["finishEventStart"] = m_finishEvent.getStartStep();
+		data["finishEventDuration"] = m_finishEvent.duration();
+	}
+	if(m_tryToHaulEvent.exists())
+		data["tryToHaulEventStart"] = m_tryToHaulEvent.getStartStep();
+	if(m_tryToReserveEvent.exists())
+		data["tryToReserveEventStart"] = m_tryToReserveEvent.getStartStep();
+	if(m_tryToHaulThreadedTask.exists())
+		data["tryToHaulThreadedTask"] = true;
+	if(m_tryToAddWorkersThreadedTask.exists())
+		data["tryToAddWorkersThreadedTask"] = true;
+	return data;
+}
 bool Project::reservationsComplete() const
 {
 	if(!m_requirementsLoaded)
@@ -419,11 +534,13 @@ void Project::cancel()
 	m_canReserve.clearAll();
 	onCancel();
 }
-void Project::scheduleEvent()
+void Project::scheduleEvent(Step start)
 {
+	if(start == 0)
+		start = m_location.m_area->m_simulation.m_step;
 	m_finishEvent.maybeUnschedule();
 	uint32_t delay = util::scaleByPercent(getDuration(), 100u - m_finishEvent.percentComplete());
-	m_finishEvent.schedule(delay, *this);
+	m_finishEvent.schedule(delay, *this, start);
 }
 void Project::haulSubprojectComplete(HaulSubproject& haulSubproject)
 {

@@ -38,8 +38,6 @@ public:
 	void setDestination(Block& destination, bool detour = false, bool adjacent = false, bool unreserved = true, bool reserve = true);
 	void setDestinationAdjacentTo(Block& destination, bool detour = false, bool unreserved = true, bool reserve = true);
 	void setDestinationAdjacentTo(HasShape& hasShape, bool detour = false, bool unreserved = true, bool reserve = true);
-	void setDestinationToUnreservedAdjacentToPredicate(std::function<bool(const Block&)>& predicate, bool detour = false, bool reserve = true);
-	void setDestinationToUnreservedAdjacentToPredicateAndThen(std::function<bool(const Block&)>& predicate, std::function<void(Block&)> continuation, bool detour = false, bool reserve = true);
 	void clearAllEventsAndTasks();
 	void onDeath();
 	void onLeaveArea();
@@ -71,7 +69,7 @@ public:
 class PathThreadedTask final : public ThreadedTask
 {
 	Actor& m_actor;
-	std::function<bool(const Block&)> m_predicate;
+	HasShape* m_hasShape;
 	const Block* m_huristicDestination;
 	bool m_detour;
 	bool m_adjacent;
@@ -79,7 +77,9 @@ class PathThreadedTask final : public ThreadedTask
 	bool m_reserveDestination;
 	FindsPath m_findsPath;
 public:
-	PathThreadedTask(Actor& a, std::function<bool(const Block&)>& predicate, const Block* huristicDestination = nullptr, bool detour = false, bool adjacent = false, bool m_unreservedDestination = true, bool m_reserveDestination = true);
+	PathThreadedTask(Actor& a, HasShape* hasShape = nullptr, const Block* huristicDestination = nullptr, bool detour = false, bool adjacent = false, bool m_unreservedDestination = true, bool m_reserveDestination = true);
+	PathThreadedTask(const Json& data, Actor& a);
+	Json toJson() const;
 	void readStep();
 	void writeStep();
 	void clearReferences();

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "deserilizationMemo.h"
 #include "eventSchedule.h"
 #include "eventSchedule.hpp"
 #include "materialType.h"
@@ -197,6 +198,8 @@ public:
 	ItemQuery(const ItemType& m_itemType);
 	ItemQuery(const ItemType& m_itemType, const MaterialTypeCategory& mtc);
 	ItemQuery(const ItemType& m_itemType, const MaterialType& mt);
+	ItemQuery(const Json& data, DeserilizationMemo& deserilizationMemo);
+	Json toJson() const;
 	bool operator()(const Item& item) const;
 	void specalize(Item& item);
 	void specalize(const MaterialType& materialType);

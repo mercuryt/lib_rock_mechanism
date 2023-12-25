@@ -1,6 +1,7 @@
 #include "givePlantsFluid.h"
 #include "area.h"
 #include "config.h"
+#include "objective.h"
 GivePlantsFluidEvent::GivePlantsFluidEvent(Step delay, GivePlantsFluidObjective& gpfo) : ScheduledEventWithPercent(gpfo.m_actor.getSimulation(), delay), m_objective(gpfo) { }
 void GivePlantsFluidEvent::execute()
 {
@@ -105,7 +106,12 @@ std::unique_ptr<Objective> GivePlantsFluidObjectiveType::makeFor(Actor& actor) c
 {
 	return std::make_unique<GivePlantsFluidObjective>(actor);
 }
-GivePlantsFluidObjective::GivePlantsFluidObjective(Actor& a ) : Objective(Config::givePlantsFluidPriority), m_actor(a), m_plantLocation(nullptr), m_fluidHaulingItem(nullptr), m_event(m_actor.getEventSchedule()), m_threadedTask(m_actor.getThreadedTaskEngine()) { }
+GivePlantsFluidObjective::GivePlantsFluidObjective(Actor& a ) : Objective(a, Config::givePlantsFluidPriority), m_plantLocation(nullptr), m_fluidHaulingItem(nullptr), m_event(m_actor.getEventSchedule()), m_threadedTask(m_actor.getThreadedTaskEngine()) { }
+GivePlantsFluidObjective::GivePlantsFluidObjective(const Json& data, DishonorCallback& dishonorCallback) : Objective(data, dishonorCallback), 
+{
+
+}
+Json GivePlantsFluidObjective::toJson() const;
 // Either get plant from Area::m_hasFarmFields or get the the nearest candidate.
 // This method and GivePlantsFluidThreadedTask are complimentary state machines, with this one handling syncronus tasks.
 // TODO: multi block actors.

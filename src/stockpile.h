@@ -1,4 +1,5 @@
 #pragma once
+#include "deserilizationMemo.h"
 #include "eventSchedule.h"
 #include "faction.h"
 #include "hasShape.h"
@@ -34,14 +35,17 @@ public:
 	bool canBeAssigned(Actor& actor) const;
 	std::unique_ptr<Objective> makeFor(Actor& actor) const;
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::StockPile; }
+	StockPileObjectiveType() = default;
+	StockPileObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserilizationMemo& deserilizationMemo){ }
 };
 class StockPileObjective final : public Objective
 {
 public:
-	Actor& m_actor;
 	HasThreadedTask<StockPileThreadedTask> m_threadedTask;
 	StockPileProject* m_project;
-	StockPileObjective(Actor& a) : Objective(Config::stockPilePriority), m_actor(a), m_threadedTask(m_actor.getThreadedTaskEngine()), m_project(nullptr) { }
+	StockPileObjective(Actor& a) : Objective(a, Config::stockPilePriority), m_threadedTask(a.getThreadedTaskEngine()), m_project(nullptr) { }
+	StockPileObjective(const Json& data, DeserilizationMemo& deserilizationMemo);
+	Json toJson() const;
 	void execute();
 	void cancel();
 	void delay() { cancel(); }
@@ -74,6 +78,8 @@ class StockPile
 	StockPileProject* m_projectNeedingMoreWorkers;
 public:
 	StockPile(std::vector<ItemQuery>& q, Area& a, const Faction& f);
+	StockPile(const Json& data, DeserilizationMemo& deserilizationMemo, Area& area);
+	Json toJson() const;
 	bool accepts(const Item& item) const;
 	void addBlock(Block& block);
 	void removeBlock(Block& block);
@@ -117,6 +123,8 @@ class StockPileProject final : public Project
 	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
 public:
 	StockPileProject(const Faction* faction, Block& block, Item& item);
+	StockPileProject(const Json& data, DeserilizationMemo& deserilizationMemo);
+	Json toJson() const;
 	bool canAddWorker(const Actor& actor) const;
 	friend class AreaHasStockPilesForFaction;
 };
@@ -152,6 +160,9 @@ struct StockPileHasShapeDishonorCallback final : public DishonorCallback
 {
 	StockPileProject& m_stockPileProject;
 	StockPileHasShapeDishonorCallback(StockPileProject& hs) : m_stockPileProject(hs) { } 
+	StockPileHasShapeDishonorCallback(const Json& data, DeserilizationMemo& deserilizationMemo) : 
+		m_stockPileProject(static_cast<StockPileProject&>(*deserilizationMemo.m_projects.at(data["project"].get<uintptr_t>()))) { }
+	Json toJson() const { return Json({{"type", "StockPileHasShapeDishonorCallback"}, {"project", reinterpret_cast<uintptr_t>(&m_stockPileProject)}}); }
 	// Craft step project cannot reset so cancel instead and allow to be recreated later.
 	// TODO: Why?
 	void execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { m_stockPileProject.cancel(); }
@@ -176,6 +187,8 @@ class AreaHasStockPilesForFaction
 	void destroyStockPile(StockPile& stockPile);
 public:
 	AreaHasStockPilesForFaction(Area& a, const Faction& f) : m_area(a), m_faction(f) { }
+	AreaHasStockPilesForFaction(const Json& data, DeserilizationMemo& deserilizationMemo, Area& a, const Faction& f);
+	Json toJson() const;
 	StockPile& addStockPile(std::vector<ItemQuery>&& queries);
 	StockPile& addStockPile(std::vector<ItemQuery>& queries);
 	bool isValidStockPileDestinationFor(const Block& block, const Item& item) const;
@@ -203,6 +216,8 @@ class AreaHasStockPiles
 	std::unordered_map<const Faction*, AreaHasStockPilesForFaction> m_data;
 public:
 	AreaHasStockPiles(Area& a) : m_area(a) { }
+	void load(const Json& data, DeserilizationMemo& deserilizationMemo);
+	Json toJson() const;
 	void addFaction(const Faction& faction) { assert(!m_data.contains(&faction)); m_data.try_emplace(&faction, m_area, faction); }
 	void removeFaction(const Faction& faction) { assert(m_data.contains(&faction)); m_data.erase(&faction); }
 	void removeItemFromAllFactions(Item& item) { for(auto& pair : m_data) { pair.second.removeItem(item); } }

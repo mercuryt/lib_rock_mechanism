@@ -1,7 +1,10 @@
 #pragma once
 #include "../lib/BS_thread_pool_light.hpp"
-#include "area.h"
 #include "types.h"
+#include "area.h"
+#include "project.h"
+#include "types.h"
+#include "config.h"
 #include "datetime.h"
 #include "eventSchedule.hpp"
 #include "config.h"
@@ -33,6 +36,7 @@ public:
 	Random m_random;
 	SimulationHasFactions m_hasFactions;
 	Simulation(DateTime n = {12, 150, 1200}, Step s = 1);
+	Simulation(const Json& data);
 	void doStep();
 	void incrementHour();
 	//TODO: latitude, longitude, altitude.
@@ -50,7 +54,6 @@ public:
 	void destroyItem(Item& item);
 	void destroyArea(Area& area);
 	Json toJson() const;
-	void fromJson(const Json& data);
 	void loadAreaFromJson(const Json& data);
 	Item& loadItemFromJson(const Json& data);
 	Actor& loadActorFromJson(const Json& data);

@@ -2,6 +2,7 @@
 
 #include "objective.h"
 #include "eventSchedule.hpp"
+#include "reservable.h"
 #include "threadedTask.hpp"
 #include "findsPath.h"
 #include "onDestroy.h"
@@ -41,17 +42,20 @@ public:
 	bool canBeAssigned(Actor& actor) const;
 	std::unique_ptr<Objective> makeFor(Actor& actor) const;
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::GivePlantsFluid; }
+	GivePlantsFluidObjectiveType() = default;
+	GivePlantsFluidObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserilizationMemo& deserilizationMemo){ }
 };
 class GivePlantsFluidObjective final : public Objective
 {
-	Actor& m_actor;
 	Block* m_plantLocation;
 	Item* m_fluidHaulingItem;
 	HasOnDestroySubscription m_fluidHaulingItemOnDestroy;
 	HasScheduledEvent<GivePlantsFluidEvent> m_event;
 	HasThreadedTask<GivePlantsFluidThreadedTask> m_threadedTask;
 public:
-	GivePlantsFluidObjective(Actor& a );
+	GivePlantsFluidObjective(Actor& a);
+	GivePlantsFluidObjective(const Json& data, DishonorCallback& dishonorCallback);
+	Json toJson() const;
 	void execute();
 	void cancel();
 	void fillContainer(Block& fillLocation);

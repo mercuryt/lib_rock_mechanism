@@ -2,16 +2,19 @@
 #include "animalSpecies.h"
 #include "area.h"
 #include "config.h"
+#include "haul.h"
 #include "threadedTask.h"
-#include "types.h"
 #include <cstdint>
 #include <functional>
-Simulation::Simulation(DateTime n, Step s) :  m_step(s), m_now(n), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this)
+Simulation::Simulation(DateTime n, Step s) :  m_nextAreaId(1), m_step(s), m_now(n), m_nextActorId(1), m_nextItemId(1), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this)
 { 
-	m_nextActorId = 1;
-	m_nextItemId = 1;
-	m_nextAreaId = 1;
 	m_hourlyEvent.schedule(*this);
+}
+Simulation::Simulation(const Json& data) : m_step(data["step"].get<Step>()), m_now(data["now"]), 
+	m_nextActorId(data["nextActorId"].get<Step>()), m_nextItemId(data["nextItemId"].get<Step>()),
+	m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this) 
+{ 
+	m_hourlyEvent.schedule(*this, data["hourlyEventStart"].get<Step>());
 }
 void Simulation::doStep()
 {
@@ -23,7 +26,7 @@ void Simulation::doStep()
 		area.writeStep();
 	// Do threaded tasks write step before events so other tasks created on this turn will not run write without having run read.
 	m_threadedTaskEngine.writeStep();
-	// Do scheduled events last to avoid unexpected state changes in thereaded task data between read and write.
+	// Do scheduled events last to avoid unexpected state changes in threaded task data between read and write.
 	m_eventSchedule.execute(m_step);
 	++m_step;
 }
@@ -211,13 +214,6 @@ Json Simulation::toJson() const
 	output["nextItemId"] = m_nextItemId;
 	return output;
 }
-void Simulation::fromJson(const Json& data)
-{
-	m_step = data["step"].get<Step>();
-	m_now.fromJson(data["now"]);
-	m_nextActorId = data["nextActorId"].get<Step>();
-	m_nextItemId = data["nextItemId"].get<Step>();
-}
 void Simulation::loadAreaFromJson(const Json& data)
 {
 	auto x = data["sizeX"].get<uint32_t>();
@@ -264,7 +260,7 @@ Actor& Simulation::loadActorFromJson(const Json& data)
 	auto& location = getBlockForJsonQuery(data["location"]);
 	auto facing = data["facing"].get<Facing>();
 	auto isAlive = data["isAlive"].get<bool>();
-	const Faction* faction = data.contains("faction") ? m_hasFactions.byName(data["faction"].get<std::wstring>()) : nullptr;
+	const Faction* faction = data.contains("faction") ? &m_hasFactions.byName(data["faction"].get<std::wstring>()) : nullptr;
 	 
 	if(data.contains("path"))
 	{

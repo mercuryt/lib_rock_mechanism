@@ -1,5 +1,6 @@
 #pragma once
 
+#include "deserilizationMemo.h"
 #include "objective.h"
 #include "threadedTask.hpp"
 #include "findsPath.h"
@@ -10,11 +11,12 @@ class WanderThreadedTask;
 
 class WanderObjective final : public Objective
 {
-	Actor& m_actor;
 	HasThreadedTask<WanderThreadedTask> m_threadedTask;
 	bool m_routeFound;
 public:
 	WanderObjective(Actor& a);
+	WanderObjective(const Json& data, DeserilizationMemo& deserilizationMemo);
+	Json toJson() const;
 	void execute();
 	void cancel() { m_threadedTask.maybeCancel(); }
 	void delay() { cancel(); }

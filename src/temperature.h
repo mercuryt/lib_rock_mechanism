@@ -1,5 +1,6 @@
 #pragma once
 
+#include "deserilizationMemo.h"
 #include "nthAdjacentOffsets.h"
 #include "eventSchedule.hpp"
 #include "config.h"
@@ -78,11 +79,12 @@ public:
 };
 class GetToSafeTemperatureObjective final : public Objective
 {
-	Actor& m_actor;
 	HasThreadedTask<GetToSafeTemperatureThreadedTask> m_getToSafeTemperatureThreadedTask;
 	bool m_noWhereWithSafeTemperatureFound;
 public:
 	GetToSafeTemperatureObjective(Actor& a);
+	GetToSafeTemperatureObjective(const Json& data, DeserilizationMemo& deserilizationMemo);
+	Json toJson() const;
 	void execute();
 	void cancel() { m_getToSafeTemperatureThreadedTask.maybeCancel(); }
 	void delay() { cancel(); }

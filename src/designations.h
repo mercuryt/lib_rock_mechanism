@@ -3,17 +3,49 @@
  */
 #pragma once
 
+#include "config.h"
+#include "deserilizationMemo.h"
+#include "faction.h"
 #include <unordered_set>
 #include <unordered_map>
 #include <cassert>
 
-class Faction;
-
 enum class BlockDesignation { Dig, Construct, SowSeeds, GivePlantFluid, Harvest, StockPileHaulFrom, StockPileHaulTo, Sleep, Rescue, FluidSource };
+NLOHMANN_JSON_SERIALIZE_ENUM(BlockDesignation, {
+		{BlockDesignation::Dig, "Dig"},
+		{BlockDesignation::Construct, "Construct"},
+		{BlockDesignation::SowSeeds, "SowSeeds"},
+		{BlockDesignation::GivePlantFluid, "GivePlantFluid"},
+		{BlockDesignation::Harvest, "Harvest"},
+		{BlockDesignation::StockPileHaulFrom, "StockPileHaulFrom"},
+		{BlockDesignation::StockPileHaulTo, "StockPileHaulTo"},
+		{BlockDesignation::Sleep, "Sleep"},
+		{BlockDesignation::Rescue, "Rescue"},
+		{BlockDesignation::FluidSource , "FluidSource"}});
 class HasDesignations
 {
 	std::unordered_map<const Faction*, std::unordered_set<BlockDesignation>> m_designations;
 public:
+	HasDesignations(const Json& data, DeserilizationMemo& deserilizationMemo)
+	{
+		for(const Json& pair : data)
+		{
+			const Faction& faction = deserilizationMemo.faction(pair[0].get<std::wstring>());
+			for(const Json& designation : pair[1])
+				m_designations[&faction].insert(designation.get<BlockDesignation>());
+		}
+	}
+	Json toJson() const
+	{
+		Json data;
+		for(auto pair : m_designations)
+		{
+			Json jsonPair{pair.first->m_name, Json::array()};
+			for(BlockDesignation designation : pair.second)
+				jsonPair[1].push_back(designation);
+		}
+		return data;
+	}
 	bool contains(const Faction& f, const BlockDesignation& bd) const 
 	{ 
 		if(!m_designations.contains(&f))

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "deserilizationMemo.h"
+#include "hasShape.h"
 #include "objective.h"
 #include "config.h"
 #include "findsPath.h"
@@ -84,11 +86,12 @@ public:
 };
 class SleepObjective final : public Objective
 {
-	Actor& m_actor;
 	HasThreadedTask<SleepThreadedTask> m_threadedTask;
 	bool m_noWhereToSleepFound;
 public:
 	SleepObjective(Actor& a);
+	SleepObjective(const Json& data, DeserilizationMemo& deserilizationMemo);
+	Json toJson() const;
 	void execute();
 	void cancel();
 	void delay() { cancel(); }
@@ -108,5 +111,7 @@ class HasSleepingSpots final
 {
 	std::unordered_set<Block*> m_unassigned;
 public:
+	HasSleepingSpots(const Json& data, DeserilizationMemo& deserilizationMemo);
+	Json toJson() const;
 	bool containsUnassigned(const Block& block) const { return m_unassigned.contains(const_cast<Block*>(&block)); }
 };

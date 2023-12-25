@@ -3,6 +3,7 @@
 #include "area.h"
 #include "nthAdjacentOffsets.h"
 #include "config.h"
+#include "objective.h"
 #include "simulation.h"
 #include <cmath>
 enum class TemperatureZone { Surface, Underground, LavaSea };
@@ -217,7 +218,20 @@ void GetToSafeTemperatureThreadedTask::writeStep()
 	m_objective.m_actor.m_canMove.setPath(m_findsPath.getPath());
 }
 void GetToSafeTemperatureThreadedTask::clearReferences(){ m_objective.m_getToSafeTemperatureThreadedTask.clearPointer(); }
-GetToSafeTemperatureObjective::GetToSafeTemperatureObjective(Actor& a) : Objective(Config::getToSafeTemperaturePriority), m_actor(a), m_getToSafeTemperatureThreadedTask(a.getThreadedTaskEngine()), m_noWhereWithSafeTemperatureFound(false) { }
+GetToSafeTemperatureObjective::GetToSafeTemperatureObjective(Actor& a) : Objective(a, Config::getToSafeTemperaturePriority), m_getToSafeTemperatureThreadedTask(a.getThreadedTaskEngine()), m_noWhereWithSafeTemperatureFound(false) { }
+GetToSafeTemperatureObjective::GetToSafeTemperatureObjective(const Json& data, DeserilizationMemo& deserilizationMemo) : Objective(data, deserilizationMemo), m_getToSafeTemperatureThreadedTask(deserilizationMemo.m_simulation.m_threadedTaskEngine), m_noWhereWithSafeTemperatureFound(data["noWhereSafeFound"].get<bool>())
+{
+	if(data.contains("threadedTask"))
+		m_getToSafeTemperatureThreadedTask.create(*this);
+}
+Json GetToSafeTemperatureObjective::toJson() const
+{
+	Json data = Objective::toJson();
+	data["noWhereSafeFound"] = m_noWhereWithSafeTemperatureFound;
+	if(m_getToSafeTemperatureThreadedTask.exists())
+		data["threadedTask"] = true;
+	return data;
+}
 void GetToSafeTemperatureObjective::execute()
 {
 	if(m_noWhereWithSafeTemperatureFound)

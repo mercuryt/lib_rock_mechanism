@@ -1,5 +1,6 @@
 #pragma once
 
+#include "deserilizationMemo.h"
 #include "objective.h"
 #include "eventSchedule.h"
 #include "config.h"
@@ -9,10 +10,11 @@ class Actor;
 
 class RestObjective final : public Objective
 {
-	Actor& m_actor;
 	HasScheduledEvent<RestEvent> m_restEvent;
 public:
 	RestObjective(Actor& a);
+	RestObjective(const Json& data, DeserilizationMemo& deserilizationMemo);
+	Json toJson() const;
 	void execute() { m_restEvent.schedule(*this); }
 	void cancel() { m_restEvent.maybeUnschedule(); }
 	void delay() { cancel(); }
@@ -37,6 +39,7 @@ class ActorHasStamina final
 
 public:
 	ActorHasStamina(Actor& a) : m_actor(a), m_stamina(getMax()) { }
+	ActorHasStamina(Actor& a, uint32_t stamina) : m_actor(a), m_stamina(stamina) { }
 	void recover();
 	void spend(uint32_t stamina);
 	void setFull();

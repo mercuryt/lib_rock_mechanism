@@ -1,6 +1,8 @@
 #include "dig.h"
 #include "block.h"
 #include "area.h"
+#include "blockFeature.h"
+#include "deserilizationMemo.h"
 #include "random.h"
 #include "reservable.h"
 #include "util.h"
@@ -42,9 +44,25 @@ void DigThreadedTask::writeStep()
 	}
 }
 void DigThreadedTask::clearReferences() { m_digObjective.m_digThreadedTask.clearPointer(); }
-DigObjective::DigObjective(Actor& a) : Objective(Config::digObjectivePriority), m_actor(a), m_digThreadedTask(m_actor.m_location->m_area->m_simulation.m_threadedTaskEngine) , m_project(nullptr) 
+DigObjective::DigObjective(Actor& a) : Objective(a, Config::digObjectivePriority), m_digThreadedTask(m_actor.m_location->m_area->m_simulation.m_threadedTaskEngine) , m_project(nullptr) 
 { 
 	assert(m_actor.getFaction() != nullptr);
+}
+DigObjective::DigObjective(const Json& data, DeserilizationMemo& deserilizationMemo) :
+	Objective(data, deserilizationMemo), m_digThreadedTask(m_actor.m_location->m_area->m_simulation.m_threadedTaskEngine), 
+	m_project(data.contains("project") ? deserilizationMemo.m_projects.at(data["project"].get<uintptr_t>()) : nullptr)
+{
+	if(data.contains("threadedTask"))
+		m_digThreadedTask.create(*this);
+}
+Json DigObjective::toJson() const
+{
+	Json data = Objective::toJson();
+	if(m_project != nullptr)
+		data["project"] = m_project;
+	if(m_digThreadedTask.exists())
+		data["threadedTask"] = true;
+	return data;
 }
 void DigObjective::execute()
 {
@@ -109,6 +127,14 @@ std::unique_ptr<Objective> DigObjectiveType::makeFor(Actor& actor) const
 {
 	std::unique_ptr<Objective> objective = std::make_unique<DigObjective>(actor);
 	return objective;
+}
+DigProject::DigProject(const Json& data, DeserilizationMemo& deserilizationMemo) : Project(data, deserilizationMemo), 
+	m_blockFeatureType(&BlockFeatureType::byName(data["blockFeatureType"].get<std::string>())) { }
+Json DigProject::toJson() const
+{
+	Json data = Project::toJson();
+	data["blockFeatureType"] = m_blockFeatureType->name;
+	return data;
 }
 std::vector<std::pair<ItemQuery, uint32_t>> DigProject::getConsumed() const { return {}; }
 std::vector<std::pair<ItemQuery, uint32_t>> DigProject::getUnconsumed() const
@@ -176,16 +202,38 @@ Step DigProject::getDuration() const
 		totalScore += getWorkerDigScore(*pair.first);
 	return std::max(Step(1u), Config::digMaxSteps / totalScore);
 }
+DigLocationDishonorCallback::DigLocationDishonorCallback(const Json& data, DeserilizationMemo& deserializationMemo) : 
+	m_faction(deserializationMemo.faction(data["faction"].get<std::wstring>())),
+	m_location(deserializationMemo.m_simulation.getBlockForJsonQuery(data["location"])) { }
+Json DigLocationDishonorCallback::toJson() const { return Json({{"type", "DigLocationDishonorCallback"}, {"faction", m_faction.m_name}, {"location", m_location.positionToJson()}}); }
 void DigLocationDishonorCallback::execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount)
 {
-	m_hasDigDesignationsForFaction.undesignate(m_location);
+	m_location.m_area->m_hasDigDesignations.undesignate(m_faction, m_location);
+}
+HasDigDesignationsForFaction::HasDigDesignationsForFaction(const Json& data, DeserilizationMemo& deserilizationMemo, const Faction& faction) : m_faction(faction)
+{
+	for(const Json& pair : data)
+	{
+		Block& block = deserilizationMemo.m_simulation.getBlockForJsonQuery(pair[0]);
+		m_data.try_emplace(&block, pair[1], deserilizationMemo);
+	}
+}
+Json HasDigDesignationsForFaction::toJson() const
+{
+	Json data;
+	for(auto& pair : m_data)
+	{
+		Json jsonPair{pair.first->positionToJson(), pair.second.toJson()};
+		data.push_back(jsonPair);
+	}
+	return data;
 }
 void HasDigDesignationsForFaction::designate(Block& block, const BlockFeatureType* blockFeatureType)
 {
 	assert(!m_data.contains(&block));
 	block.m_hasDesignations.insert(m_faction, BlockDesignation::Dig);
 	// To be called when block is no longer a suitable location, for example if it got dug out already.
-	std::unique_ptr<DishonorCallback> locationDishonorCallback = std::make_unique<DigLocationDishonorCallback>(*this, block);
+	std::unique_ptr<DishonorCallback> locationDishonorCallback = std::make_unique<DigLocationDishonorCallback>(m_faction, block);
 	m_data.try_emplace(&block, &m_faction, block, blockFeatureType, std::move(locationDishonorCallback));
 }
 void HasDigDesignationsForFaction::undesignate(Block& block)
@@ -208,6 +256,26 @@ void HasDigDesignationsForFaction::removeIfExists(Block& block)
 const BlockFeatureType* HasDigDesignationsForFaction::at(const Block& block) const { return m_data.at(const_cast<Block*>(&block)).m_blockFeatureType; }
 bool HasDigDesignationsForFaction::empty() const { return m_data.empty(); }
 // To be used by Area.
+void HasDigDesignations::load(const Json& data, DeserilizationMemo& deserilizationMemo)
+{
+	for(const Json& pair : data)
+	{
+		const Faction& faction = deserilizationMemo.faction(pair[0]);
+		m_data.emplace(&faction, pair[1], deserilizationMemo, faction);
+	}
+}
+Json HasDigDesignations::toJson() const
+{
+	Json data;
+	for(auto& pair : m_data)
+	{
+		Json jsonPair;
+		jsonPair[0] = pair.first->m_name;
+		jsonPair[1] = pair.second.toJson();
+		data.push_back(jsonPair);
+	}
+	return data;
+}
 void HasDigDesignations::addFaction(const Faction& faction)
 {
 	assert(!m_data.contains(&faction));

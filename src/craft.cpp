@@ -1,7 +1,13 @@
 #include "craft.h"
 #include "area.h"
+#include "deserilizationMemo.h"
+#include "materialType.h"
 #include "util.h"
+#include <chrono>
+#include <cstdint>
 #include <memory>
+CraftStepProject::CraftStepProject(const Json& data, DeserilizationMemo& deserilizationMemo, CraftJob& cj) : 
+	Project(data, deserilizationMemo), m_craftStepType(cj.craftStepProject->m_craftStepType), m_craftJob(cj) { }
 Step CraftStepProject::getDuration() const
 {
 	uint32_t totalScore = 0;
@@ -63,6 +69,33 @@ std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> CraftSte
 			std::get<1>(tuple) = m_craftJob.materialType;
 	return output; 
 }
+CraftJob::CraftJob(const Json& data, DeserilizationMemo& deserilizationMemo, HasCraftingLocationsAndJobsForFaction& hclaj) :
+	craftJobType(*data["craftJobType"].get<const CraftJobType*>()),
+	hasCraftingLocationsAndJobs(hclaj),
+	workPiece(data.contains("workPiece") ? &deserilizationMemo.m_simulation.getItemById(data["workPiece"].get<ItemId>()) : nullptr),
+	materialType(data.contains("materialType") ? &MaterialType::byName(data["materialType"].get<std::string>()) : nullptr),
+	stepIterator(craftJobType.stepTypes.begin() + data["stepIndex"].get<size_t>()),
+	craftStepProject(std::make_unique<CraftStepProject>(data["craftStepProject"], deserilizationMemo, *this)),
+	minimumSkillLevel(data["minimumSkillLevel"].get<uint32_t>()),
+	totalSkillPoints(data["totalSkillPoints"].get<uint32_t>()), reservable(1) 
+{ 
+	deserilizationMemo.m_craftJobs[data["address"].get<uintptr_t>()] = this;
+}
+Json CraftJob::toJson() const
+{
+	Json data{
+		{"craftJobType", craftJobType},
+		{"stepIndex", stepIterator - craftJobType.stepTypes.begin()},
+		{"craftStepProejct", craftStepProject->toJson()},
+		{"minimumSkillLevel", minimumSkillLevel},
+		{"totalSkillPoints", totalSkillPoints}
+	};
+	if(workPiece != nullptr)
+		data["workPiece"] = workPiece->m_id;
+	if(materialType != nullptr)
+		data["materialType"] = materialType->name;
+	return data;
+}
 uint32_t CraftJob::getQuality() const
 {
 	float pointsPerStep = (float)totalSkillPoints / craftJobType.stepTypes.size();
@@ -98,7 +131,8 @@ void CraftThreadedTask::writeStep()
 		}
 }
 void CraftThreadedTask::clearReferences(){ m_craftObjective.m_threadedTask.clearPointer(); }
-CraftObjective::CraftObjective(Actor& a, const SkillType& st) : Objective(Config::craftObjectivePriority), m_actor(a), m_skillType(st), m_craftJob(nullptr), m_threadedTask(a.getThreadedTaskEngine()) { }
+// ObjectiveType.
+CraftObjectiveType::CraftObjectiveType(const Json& data, [[maybe_unused]] DeserilizationMemo& deserilizationMemo) : m_skillType(*data["skillType"].get<const SkillType*>()) { }
 bool CraftObjectiveType::canBeAssigned(Actor& actor) const
 {
 	auto& hasCrafting = actor.m_location->m_area->m_hasCraftingLocationsAndJobs.at(*actor.getFaction());
@@ -120,67 +154,33 @@ std::unique_ptr<Objective> CraftObjectiveType::makeFor(Actor& actor) const
 {
 	return std::make_unique<CraftObjective>(actor, m_skillType);
 }
-void CraftObjective::execute()
+// Objective.
+CraftObjective::CraftObjective(Actor& a, const SkillType& st) : Objective(a, Config::craftObjectivePriority), m_skillType(st), m_craftJob(nullptr), m_threadedTask(a.getThreadedTaskEngine()) { }
+CraftObjective::CraftObjective(const Json& data, DeserilizationMemo& deserilizationMemo) : Objective(data, deserilizationMemo), 
+	m_skillType(*data["skillType"].get<const SkillType*>()), m_craftJob(deserilizationMemo.m_craftJobs.at(data["craftJob"].get<uintptr_t>())), 
+	m_threadedTask(deserilizationMemo.m_simulation.m_threadedTaskEngine) 
 { 
-	if(m_craftJob == nullptr)
-		m_threadedTask.create(*this); 
-	else
-		m_craftJob->craftStepProject->commandWorker(m_actor);
+	if(data.contains("failedJobs"))
+		for(const Json& job : data["failedJobs"])
+			m_failedJobs.insert(deserilizationMemo.m_craftJobs.at(job.get<uintptr_t>()));
+	if(data.contains("threadedTask"))
+		m_threadedTask.create(*this);
 }
-void CraftObjective::cancel()
+Json CraftObjective::toJson() const 
 {
-	if(m_craftJob != nullptr && m_craftJob->craftStepProject)
-		m_craftJob->craftStepProject->removeWorker(m_actor);
-	m_threadedTask.maybeCancel();
-	m_actor.m_canReserve.clearAll();
+	Json data = Objective::toJson();
+	data["skillType"] = m_skillType;
+	data["craftJob"] = m_craftJob;
+	if(m_threadedTask.exists())
+		data["threadedTask"] = true;
+	if(!m_failedJobs.empty())
+	{
+		data["failedJobs"] = Json::array();
+		for(CraftJob* job : m_failedJobs)
+			data["failedJobs"].push_back(job);
+	}
+	return data;
 }
-void CraftObjective::reset() 
-{ 
-	cancel(); 
-	m_craftJob = nullptr;
-}
-void HasCraftingLocationsAndJobsForFaction::addLocation(const CraftStepTypeCategory& category, Block& block)
-{
-	m_locationsByCategory[&category].insert(&block);
-	m_stepTypeCategoriesByLocation[&block].insert(&category);
-}
-void HasCraftingLocationsAndJobsForFaction::removeLocation(const CraftStepTypeCategory& category, Block& block)
-{
-	assert(m_locationsByCategory.contains(&category));
-	assert(m_stepTypeCategoriesByLocation.contains(&block));
-	if(m_locationsByCategory.at(&category).size() == 1)
-		m_locationsByCategory.erase(&category);
-	else
-		m_locationsByCategory.at(&category).erase(&block);
-	if(m_stepTypeCategoriesByLocation.at(&block).size() == 0)
-		m_stepTypeCategoriesByLocation.erase(&block);
-	else
-		m_stepTypeCategoriesByLocation.at(&block).erase(&category);
-	std::vector<CraftJob*> jobsWithStepsToCancel;
-	for(CraftJob& craftJob : m_jobs)
-		if(craftJob.craftStepProject && craftJob.craftStepProject->getLocation() == block)
-			jobsWithStepsToCancel.push_back(&craftJob);
-	for(CraftJob* craftJob : jobsWithStepsToCancel)
-		craftJob->craftStepProject->cancel();
-}
-void HasCraftingLocationsAndJobsForFaction::maybeRemoveLocation(Block& block)
-{
-	auto categories = m_stepTypeCategoriesByLocation.find(&block);
-	if(categories == m_stepTypeCategoriesByLocation.end())
-		return;
-	auto categoriesCopy = categories->second;
-	for(const CraftStepTypeCategory* category : categoriesCopy)
-		removeLocation(*category, block);
-}
-// To be used by the UI.
-bool HasCraftingLocationsAndJobsForFaction::hasLocationsFor(const CraftJobType& craftJobType) const
-{
-	for(auto& craftStepType : craftJobType.stepTypes)
-		if(!m_locationsByCategory.contains(&craftStepType.craftStepTypeCategory))
-			return false;
-	return true;
-}
-// Material type may be null.
 void HasCraftingLocationsAndJobsForFaction::addJob(const CraftJobType& craftJobType, const MaterialType* materialType, uint32_t minimumSkillLevel)
 {
 	if(craftJobType.materialtypeCategory != nullptr)
@@ -201,7 +201,7 @@ void HasCraftingLocationsAndJobsForFaction::stepComplete(CraftJob& craftJob, Act
 		if(craftJob.workPiece == nullptr)
 		{
 			// ItemType, MaterialType, quality, wear, craftJob.
-			Item& item = location->m_area->m_simulation.createItem(craftJob.craftJobType.productType, *craftJob.materialType, "", 0, 0, &craftJob);
+			Item& item = location->m_area->m_simulation.createItemNongeneric(craftJob.craftJobType.productType, *craftJob.materialType, 0, 0, &craftJob);
 			//TODO: Should the item be reserved?
 			location->m_hasItems.add(item);
 			craftJob.workPiece = &item;
@@ -284,5 +284,13 @@ std::pair<CraftJob*, Block*> HasCraftingLocationsAndJobsForFaction::getJobAndLoc
 	{
 		auto& block = *findsPath.getBlockWhichPassedPredicate();
 		return std::make_pair(getJobForAtLocation(actor, skillType, block, excludeJobs), &block);
+	}
+}
+void HasCraftingLocationsAndJobs::load(const Json& data, DeserilizationMemo& deserilizationMemo)
+{
+	for(const Json& pair : data)
+	{
+		const Faction& faction = deserilizationMemo.faction(pair[0].get<std::wstring>());
+		m_data.try_emplace(&faction, pair[1], deserilizationMemo, faction);
 	}
 }

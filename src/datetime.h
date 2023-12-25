@@ -17,6 +17,7 @@ struct DateTime
 		assert(year != 0);
 	}
 	DateTime() : hour(0), day(0), year(0) { }
+	DateTime(const Json& data) : hour(data["hour"].get<uint8_t>()), day(data["day"].get<uint16_t>()), year(data["year"].get<uint16_t>()) { }
 	Json toJson() const
 	{
 		Json output;
@@ -24,11 +25,5 @@ struct DateTime
 		output["day"] = day;
 		output["year"] = year;
 		return output;
-	}
-	void fromJson(Json data)
-	{
-		hour = data["hour"].get<uint8_t>();
-		day = data["day"].get<uint16_t>();
-		year = data["year"].get<uint16_t>();
 	}
 };

@@ -21,6 +21,9 @@ struct SkillType final
 		return *found;
 	}
 };
+inline void to_json(Json& data, const SkillType* const& skillType){ data = skillType->name; }
+inline void to_json(Json& data, const SkillType& skillType){ data = skillType.name; }
+inline void from_json(const Json& data, const SkillType*& skillType){ skillType = &SkillType::byName(data.get<std::string>()); }
 class Skill final
 {
 public:
@@ -65,6 +68,7 @@ public:
 class SkillSet final
 {
 public:
+	SkillSet() = default;
 	SkillSet(const Json& data)
 	{
 		for(const Json& skillData : data["skills"])

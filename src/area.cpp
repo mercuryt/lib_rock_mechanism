@@ -3,6 +3,7 @@
 */
 
 #include "area.h"
+#include "deserilizationMemo.h"
 #include "fire.h"
 #include "plant.h"
 #include "simulation.h"
@@ -212,9 +213,18 @@ Json Area::toJson() const
 	data["sizeX"] = m_sizeX;
 	data["sizeY"] = m_sizeY;
 	data["sizeZ"] = m_sizeZ;
+	data["hasSleepingSpots"] = m_hasSleepingSpots.toJson();
 	return data;
 }
-void Area::loadPlantFromJson(Json data)
+void Area::loadProjects(const Json& data, DeserilizationMemo& deserilizationMemo)
+{
+	m_hasDigDesignations.load(data["hasDigDesignations"], deserilizationMemo);
+	m_hasConstructionDesignations.load(data["hasConstructionDesignations"], deserilizationMemo);
+	m_hasStockPiles.load(data["hasStockpiles"], deserilizationMemo);
+	m_hasCraftingLocationsAndJobs.load(data["hasCraftingLocationsAndJobs"], deserilizationMemo);
+	m_targetedHauling.load(data["targetedHauling"], deserilizationMemo);
+}
+void Area::loadPlantFromJson(Json& data)
 {
 	Block& location = m_simulation.getBlockForJsonQuery(data["location"]);
 	const PlantSpecies& species = PlantSpecies::byName(data["species"].get<std::string>());
@@ -227,7 +237,7 @@ void Area::loadPlantFromJson(Json data)
 	Percent percentFoliage = data["perecntFoliage"].get<Percent>();
 	m_hasPlants.emplace(location, species, percentGrowth, volumeFluidRequested, needsFluidEventStart, temperatureIsUnsafe, unsafeTemperatureEventStart, harvestableQuantity, percentFoliage);
 }
-void Area::loadFireFromJson(Json data)
+void Area::loadFireFromJson(Json& data)
 {
 	Block& location = m_simulation.getBlockForJsonQuery(data["location"]);
 	const MaterialType& materialType = MaterialType::byName(data["materialType"].get<std::string>());

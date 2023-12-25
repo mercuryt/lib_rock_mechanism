@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "deserilizationMemo.h"
+#include "types.h"
 #include "block.h"
 #include "fluidGroup.h"
 #include "mistDisperseEvent.h"
@@ -89,6 +91,8 @@ public:
 
 	Cuboid getZLevel(uint32_t z);
 	Json toJson() const;
+	// To be run after items and actors are loaded.
+	void loadProjects(const Json& data, DeserilizationMemo& deserilizationMemo);
 	void loadPlantFromJson(const Json& data);
 	void loadFireFromJson(const Json& data);
 	// For testing.

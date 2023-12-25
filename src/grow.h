@@ -10,9 +10,10 @@ class CanGrow final
 	HasScheduledEvent<AnimalGrowthEvent> m_event;
 	HasScheduledEvent<AnimalGrowthUpdateEvent> m_updateEvent;
 	Percent m_percentGrown;
-	uint32_t m_birthStep;
 public:
 	CanGrow(Actor& a, Percent pg);
+	CanGrow(const Json& data);
+	Json toJSon() const;
 	void updateGrowingStatus();
 	Percent growthPercent() const;
 	void update();

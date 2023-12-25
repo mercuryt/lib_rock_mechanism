@@ -4,11 +4,47 @@
 #include "hasShape.h"
 #include "item.h"
 #include "area.h"
+#include "project.h"
 #include "reservable.h"
 #include <memory>
 #include <sys/types.h>
 #include <unordered_set>
 #include <algorithm>
+
+HaulStrategy haulStrategyFromName(std::string name)
+{
+	if(name == "Individual")
+		return HaulStrategy::Individual;
+	if(name == "Team")
+		return HaulStrategy::Team;
+	if(name == "Cart")
+		return HaulStrategy::Cart;
+	if(name == "TeamCart")
+		return HaulStrategy::TeamCart;
+	if(name == "Panniers")
+		return HaulStrategy::Panniers;
+	if(name == "AnimalCart")
+		return HaulStrategy::AnimalCart;
+	assert(name == "StrongSentient");
+	return HaulStrategy::StrongSentient;
+}
+std::string haulStrategyToName(HaulStrategy strategy)
+{
+	if(strategy == HaulStrategy::Individual)
+		return "Individual";
+	if(strategy == HaulStrategy::Team)
+		return "Team";
+	if(strategy == HaulStrategy::Cart)
+		return "Cart";
+	if(strategy == HaulStrategy::TeamCart)
+		return "TeamCart";
+	if(strategy == HaulStrategy::Panniers)
+		return "Panniers";
+	if(strategy == HaulStrategy::AnimalCart)
+		return "AnimalCart";
+	assert(strategy == HaulStrategy::StrongSentient);
+	return "StrongSentient";
+}
 void HaulSubprojectParamaters::reset()
 {
 	toHaul = nullptr;
@@ -78,7 +114,7 @@ void CanPickup::pickUp(Item& item, uint32_t quantity)
 	else
 	{
 		item.removeQuantity(quantity);
-		Item& newItem = m_actor.getSimulation().createItem(item.m_itemType, item.m_materialType, quantity);
+		Item& newItem = m_actor.getSimulation().createItemGeneric(item.m_itemType, item.m_materialType, quantity);
 		m_carrying = &newItem;
 	}
 	m_actor.m_canMove.updateIndividualSpeed();
@@ -149,7 +185,7 @@ void CanPickup::removeFluidVolume(uint32_t volume)
 void CanPickup::add(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity)
 {
 	if(m_carrying == nullptr)
-		m_carrying = &m_actor.getSimulation().createItem(itemType, materialType, quantity);
+		m_carrying = &m_actor.getSimulation().createItemGeneric(itemType, materialType, quantity);
 	else
 	{
 		assert(m_carrying->isItem());	
@@ -263,7 +299,7 @@ uint32_t CanPickup::maximumNumberWhichCanBeCarriedWithMinimumSpeed(const HasShap
 	return quantity;
 }
 HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters) : m_project(p), m_workers(paramaters.workers.begin(), paramaters.workers.end()), m_toHaul(*paramaters.toHaul), m_quantity(paramaters.quantity), m_strategy(paramaters.strategy), m_haulTool(paramaters.haulTool), m_leader(nullptr), m_itemIsMoving(false), m_beastOfBurden(paramaters.beastOfBurden), m_projectRequirementCounts(*paramaters.projectRequirementCounts), m_genericItemType(nullptr), m_genericMaterialType(nullptr)
-{
+{ 
 	assert(!m_workers.empty());
 	if(m_haulTool != nullptr)
 	{
@@ -285,6 +321,81 @@ HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters)
 		m_project.m_workers.at(actor).haulSubproject = this;
 		commandWorker(*actor);
 	}
+}
+HaulSubproject::HaulSubproject(const Json& data, Project& p, ProjectRequirementCounts& projectRequirementCounts, DeserilizationMemo& deserilizationMemo) : m_project(p), 
+	m_toHaul(*deserilizationMemo.m_hasShapes.at(data["toHaul"].get<uintptr_t>())), 
+	m_quantity(data["quantity"].get<uint32_t>()), 
+	m_strategy(haulStrategyFromName(data["haulStrategy"].get<std::string>())),
+	m_haulTool(nullptr), 
+	m_leader(nullptr), 
+	m_itemIsMoving(data["itemIsMoving"].get<bool>()), 
+	m_beastOfBurden(nullptr), 
+	m_projectRequirementCounts(projectRequirementCounts),
+       	m_genericItemType(nullptr), 
+	m_genericMaterialType(nullptr)
+{ 
+	if(data.contains("haulTool"))
+		m_haulTool = &deserilizationMemo.m_simulation.getItemById(data["haulTool"].get<ItemId>());
+	if(data.contains("leader"))
+		m_leader = &deserilizationMemo.m_simulation.getActorById(data["leader"].get<ActorId>());
+	if(data.contains("beastOfBurden"))
+		m_beastOfBurden = &deserilizationMemo.m_simulation.getActorById(data["beastOfBurden"].get<ActorId>());
+	if(data.contains("genericItemType"))
+		m_genericItemType = &ItemType::byName(data["genericItemType"].get<std::string>());
+	if(data.contains("genericMaterialType"))
+		m_genericMaterialType = &MaterialType::byName(data["genericMaterialType"].get<std::string>());
+	if(data.contains("workers"))
+		for(const Json& workerId : data["workers"])
+			m_workers.insert(&deserilizationMemo.m_simulation.getActorById(workerId.get<ActorId>()));
+	if(data.contains("nonsentients"))
+		for(const Json& actorId : data["nonsentients"])
+			m_nonsentients.insert(&deserilizationMemo.m_simulation.getActorById(actorId.get<ActorId>()));
+	if(data.contains("liftPoints"))
+		for(const Json& liftPointData : data["liftPoints"])
+		{
+			Actor& actor = deserilizationMemo.m_simulation.getActorById(liftPointData[0].get<ActorId>());
+			m_liftPoints[&actor] = &deserilizationMemo.m_simulation.getBlockForJsonQuery(liftPointData[1]);
+		}
+	deserilizationMemo.m_haulSubprojects[data["address"].get<uintptr_t>()] = this;
+}
+Json HaulSubproject::toJson() const
+{
+	Json data({
+		{"toHaul", reinterpret_cast<uintptr_t>(&m_toHaul)},
+		{"quantity", m_quantity},
+		{"haulStrategy", haulStrategyToName(m_strategy)},
+		{"itemIsMoving", m_itemIsMoving},
+		{"address", reinterpret_cast<uintptr_t>(this)},
+	});
+	if(m_haulTool != nullptr)
+		data["haulTool"] = m_haulTool->m_id;
+	if(m_leader != nullptr)
+		data["leader"] = m_leader->m_id;
+	if(m_beastOfBurden != nullptr)
+		data["beastOfBurden"] = m_beastOfBurden->m_id;
+	if(m_genericItemType != nullptr)
+		data["genericItemType"] = m_genericItemType->name;
+	if(m_genericMaterialType!= nullptr)
+		data["genericMaterialType"] = m_genericMaterialType->name;
+	if(!m_workers.empty())
+	{
+		data["workers"] = Json::array();
+		for(Actor* worker : m_workers)
+			data["workers"].push_back(worker->m_id);
+	}
+	if(!m_nonsentients.empty())
+	{
+		data["nonsentients"] = Json::array();
+		for(Actor* nonsentient : m_nonsentients)
+			data["nonsentients"].push_back(nonsentient->m_id);
+	}
+	if(!m_liftPoints.empty())
+	{
+		data["liftPoints"] = Json::array();
+		for(auto& [actor, block] : m_liftPoints)
+			data["liftPoints"].push_back(Json::array({actor->m_id, block->positionToJson()}));
+	}
+	return data;
 }
 void HaulSubproject::commandWorker(Actor& actor)
 {

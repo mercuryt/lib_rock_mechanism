@@ -1,4 +1,6 @@
+#include "deserilizationMemo.h"
 #include "eventSchedule.hpp"
+#include "materialType.h"
 #include "util.h"
 #include "item.h"
 #include "block.h"
@@ -188,7 +190,7 @@ Item& ItemHasCargo::add(const ItemType& itemType, const MaterialType& materialTy
 			return *item;
 		}
 	// Create new stack.
-	Item& newItem = m_item.getSimulation().createItem(itemType, materialType, quantity);
+	Item& newItem = m_item.getSimulation().createItemGeneric(itemType, materialType, quantity);
 	add(newItem);
 	return newItem;
 }
@@ -280,6 +282,24 @@ ItemQuery::ItemQuery(Item& item) : m_item(&item), m_itemType(nullptr), m_materia
 ItemQuery::ItemQuery(const ItemType& m_itemType) : m_item(nullptr), m_itemType(&m_itemType), m_materialTypeCategory(nullptr), m_materialType(nullptr) { }
 ItemQuery::ItemQuery(const ItemType& m_itemType, const MaterialTypeCategory& mtc) : m_item(nullptr), m_itemType(&m_itemType), m_materialTypeCategory(&mtc), m_materialType(nullptr) { }
 ItemQuery::ItemQuery(const ItemType& m_itemType, const MaterialType& mt) : m_item(nullptr), m_itemType(&m_itemType), m_materialTypeCategory(nullptr), m_materialType(&mt) { }
+ItemQuery::ItemQuery(const Json& data, DeserilizationMemo& deserilizationMemo) :
+	m_item(data.contains("item") ? &deserilizationMemo.m_simulation.getItemById(data["item"].get<ItemId>()) : nullptr),
+	m_itemType(data.contains("itemType") ? &ItemType::byName(data["itemType"].get<std::string>()) : nullptr),
+	m_materialTypeCategory(data.contains("materialTypeCategory") ? &MaterialTypeCategory::byName(data["materialTypeCategory"].get<std::string>()) : nullptr),
+	m_materialType(data.contains("materialType") ? &MaterialType::byName(data["materialType"].get<std::string>()) : nullptr) { }
+Json ItemQuery::toJson() const
+{
+	Json data;
+	if(m_item)
+		data["item"] = m_item->m_id;
+	if(m_itemType)
+		data["itemType"] = m_itemType->name;
+	if(m_materialType)
+		data["materialType"] = m_materialType->name;
+	if(m_materialTypeCategory)
+		data["materialTypeCategory"] = m_materialTypeCategory->name;
+	return data;
+}
 bool ItemQuery::operator()(const Item& item) const
 {
 	if(m_item != nullptr)

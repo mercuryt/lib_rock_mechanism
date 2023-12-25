@@ -1,6 +1,7 @@
 #include "sowSeeds.h"
 #include "area.h"
 #include "actor.h"
+#include "deserilizationMemo.h"
 #include "farmFields.h"
 SowSeedsEvent::SowSeedsEvent(Step delay, SowSeedsObjective& o) : ScheduledEventWithPercent(o.m_actor.getSimulation(), delay), m_objective(o) { }
 void SowSeedsEvent::execute()
@@ -69,7 +70,27 @@ void SowSeedsThreadedTask::writeStep()
 	}
 }
 void SowSeedsThreadedTask::clearReferences() { m_objective.m_threadedTask.clearPointer(); }
-SowSeedsObjective::SowSeedsObjective(Actor& a) : Objective(Config::sowSeedsPriority), m_actor(a), m_event(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()), m_block(nullptr) { }
+SowSeedsObjective::SowSeedsObjective(Actor& a) : Objective(a, Config::sowSeedsPriority), m_event(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()), m_block(nullptr) { }
+SowSeedsObjective::SowSeedsObjective(const Json& data, DeserilizationMemo& deserilizationMemo) : Objective(data, deserilizationMemo), 
+	m_event(deserilizationMemo.m_simulation.m_eventSchedule), m_threadedTask(deserilizationMemo.m_simulation.m_threadedTaskEngine), 
+	m_block(data.contains("block") ? &deserilizationMemo.m_simulation.getBlockForJsonQuery(data["block"]) : nullptr)
+{
+	if(data.contains("threadedTask"))
+		m_threadedTask.create(*this);
+	if(data.contains("eventStart"))
+		m_event.schedule(Config::sowSeedsStepsDuration, *this, data["eventStart"].get<Step>());
+}
+Json SowSeedsObjective::toJson() const
+{
+	Json data = Objective::toJson();
+	if(m_block)
+		data["block"] = m_block;
+	if(m_threadedTask.exists())
+		data["threadedTask"] = true;
+	if(m_event.exists())
+		data["eventStart"] = m_event.getStartStep();
+	return data;
+}
 Block* SowSeedsObjective::getBlockToSowAt(Block& location, Facing facing)
 {
 	const Faction* faction = m_actor.getFaction();

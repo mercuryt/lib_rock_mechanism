@@ -1,4 +1,5 @@
 #pragma once
+#include "deserilizationMemo.h"
 #include "objective.h"
 #include "plant.h"
 #include "eventSchedule.hpp"
@@ -17,10 +18,11 @@ public:
 	bool canBeAssigned(Actor& actor) const;
 	std::unique_ptr<Objective> makeFor(Actor& actor) const;
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::SowSeeds; }
+	SowSeedsObjectiveType() = default;
+	SowSeedsObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserilizationMemo& deserilizationMemo){ }
 };
 class SowSeedsObjective final : public Objective
 {
-	Actor& m_actor;
 	HasScheduledEvent<SowSeedsEvent> m_event;
 	HasThreadedTask<SowSeedsThreadedTask> m_threadedTask;
 	Block* m_block;
@@ -28,6 +30,8 @@ class SowSeedsObjective final : public Objective
 	bool canSowAt(const Block& block) const;
 public:
 	SowSeedsObjective(Actor& a);
+	SowSeedsObjective(const Json& data, DeserilizationMemo& deserilizationMemo);
+	Json toJson() const;
 	void execute();
 	void cancel();
 	void delay() { cancel(); }

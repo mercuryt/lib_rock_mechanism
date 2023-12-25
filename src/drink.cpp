@@ -1,5 +1,8 @@
 #include "drink.h"
 #include "actor.h"
+#include "deserilizationMemo.h"
+#include "objective.h"
+#include "simulation.h"
 #include "util.h"
 #include "block.h"
 #include <algorithm>
@@ -133,7 +136,24 @@ void DrinkThreadedTask::writeStep()
 }
 void DrinkThreadedTask::clearReferences() { m_drinkObjective.m_threadedTask.clearPointer(); }
 // Drink Objective.
-DrinkObjective::DrinkObjective(Actor& a) : Objective(Config::drinkPriority), m_actor(a), m_threadedTask(a.getThreadedTaskEngine()), m_drinkEvent(a.getEventSchedule()), m_noDrinkFound(false) { }
+DrinkObjective::DrinkObjective(Actor& a) : Objective(a, Config::drinkPriority), m_threadedTask(a.getThreadedTaskEngine()), m_drinkEvent(a.getEventSchedule()), m_noDrinkFound(false) { }
+DrinkObjective::DrinkObjective(const Json& data, DeserilizationMemo& deserilizationMemo) : Objective(data, deserilizationMemo), m_threadedTask(deserilizationMemo.m_simulation.m_threadedTaskEngine), m_drinkEvent(deserilizationMemo.m_simulation.m_eventSchedule), m_noDrinkFound(data["noDrinkFound"].get<bool>())
+{ 
+	if(data.contains("threadedTask"))
+		m_threadedTask.create(*this);
+	if(data.contains("eventStart"))
+		m_drinkEvent.schedule(Config::stepsToDrink, *this, data["eventStart"].get<Step>());
+}
+Json DrinkObjective::toJson() const
+{
+	Json data = Objective::toJson();
+	data["noDrinkFound"] = m_noDrinkFound;
+	if(m_threadedTask.exists())
+		data["threadedTask"] = true;
+	if(m_drinkEvent.exists())
+		data["eventStart"] = m_drinkEvent.getStartStep();
+	return data;
+}
 void DrinkObjective::execute()
 {
 	if(m_noDrinkFound)

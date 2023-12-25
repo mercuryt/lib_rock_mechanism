@@ -1,6 +1,8 @@
 #include "eat.h"
 #include "actor.h"
 #include "block.h"
+#include "config.h"
+#include "objective.h"
 #include "plant.h"
 #include "area.h"
 #include "kill.h"
@@ -214,7 +216,28 @@ void EatThreadedTask::writeStep()
 }
 void EatThreadedTask::clearReferences() { m_eatObjective.m_threadedTask.clearPointer(); }
 EatObjective::EatObjective(Actor& a) :
-	Objective(Config::eatPriority), m_actor(a), m_threadedTask(a.getThreadedTaskEngine()), m_eatEvent(a.getEventSchedule()), m_destination(nullptr), m_noFoodFound(false) { }
+	Objective(a, Config::eatPriority), m_threadedTask(a.getThreadedTaskEngine()), m_eatEvent(a.getEventSchedule()), m_destination(nullptr), m_noFoodFound(false) { }
+EatObjective::EatObjective(const Json& data, DeserilizationMemo& deserilizationMemo) : Objective(data, deserilizationMemo), m_threadedTask(deserilizationMemo.m_simulation.m_threadedTaskEngine), m_eatEvent(deserilizationMemo.m_simulation.m_eventSchedule), m_destination(nullptr), m_noFoodFound(data["noFoodFound"].get<bool>())
+{
+	if(data.contains("destination"))
+		m_destination = &deserilizationMemo.m_simulation.getBlockForJsonQuery(data["destination"]);
+	if(data.contains("threadedTask"))
+		m_threadedTask.create(*this);
+	if(data.contains("eventStart"))
+		m_eatEvent.schedule(Config::stepsToEat, *this, data["eventStart"].get<Step>());
+}
+Json EatObjective::toJson() const
+{
+	Json data = Objective::toJson();
+	data["noFoodFound"] = m_noFoodFound;
+	if(m_destination)
+		data["destination"] = m_destination;
+	if(m_threadedTask.exists())
+		data["threadedTask"] = true;
+	if(m_eatEvent.exists())
+		data["eatStart"] = m_eatEvent.getStartStep();
+	return data;
+}
 void EatObjective::execute()
 {
 	if(m_noFoodFound)

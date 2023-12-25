@@ -1,5 +1,7 @@
 #include "sleep.h"
 #include "area.h"
+#include "hasShape.h"
+#include "objective.h"
 #include <cassert>
 // Sleep Event.
 SleepEvent::SleepEvent(Step step, MustSleep& ns, bool f) : ScheduledEventWithPercent(ns.m_actor.getSimulation(), step), m_needsSleep(ns), m_force(f) { }
@@ -103,7 +105,21 @@ void SleepThreadedTask::writeStep()
 }
 void SleepThreadedTask::clearReferences() { m_sleepObjective.m_threadedTask.clearPointer(); }
 // Sleep Objective.
-SleepObjective::SleepObjective(Actor& a) : Objective(Config::sleepObjectivePriority), m_actor(a), m_threadedTask(a.getThreadedTaskEngine()), m_noWhereToSleepFound(false) { }
+SleepObjective::SleepObjective(Actor& a) : Objective(a, Config::sleepObjectivePriority), m_threadedTask(a.getThreadedTaskEngine()), m_noWhereToSleepFound(false) { }
+SleepObjective::SleepObjective(const Json& data, DeserilizationMemo& deserilizationMemo) : Objective(data, deserilizationMemo), 
+	m_threadedTask(deserilizationMemo.m_simulation.m_threadedTaskEngine), m_noWhereToSleepFound(data["noWhereToSleepFound"].get<bool>())
+{
+	if(data.contains("threadedTask"))
+		m_threadedTask.create(*this);
+}
+Json SleepObjective::toJson() const
+{
+	Json data = Objective::toJson();
+	data["noWhereToSleepFound"] = m_noWhereToSleepFound;
+	if(m_threadedTask.exists())
+		data["threadedTask"] = true;
+	return data;
+}
 void SleepObjective::execute()
 {
 	assert(m_actor.m_mustSleep.m_isAwake);
@@ -274,4 +290,16 @@ void MustSleep::setLocation(Block& block)
 void MustSleep::onDeath()
 {
 	m_tiredEvent.maybeUnschedule();
+}
+HasSleepingSpots::HasSleepingSpots(const Json& data, DeserilizationMemo& deserilizationMemo)
+{
+	for(const Json& block : data["unassigned"])
+		m_unassigned.insert(&deserilizationMemo.m_simulation.getBlockForJsonQuery(block));
+}
+Json HasSleepingSpots::toJson() const
+{
+	Json data;
+	for(Block* block : m_unassigned)
+		data.push_back(block);
+	return data;
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "deserilizationMemo.h"
 #include "hasShape.h"
 #include "reservable.h"
 #include <unordered_set>
@@ -12,11 +13,14 @@ struct FluidType;
 struct ItemType;
 struct MaterialType;
 class Project;
-struct ProjectRequirementCounts;
+class ProjectRequirementCounts;
 class Faction;
 class HaulSubproject;
 
 enum class HaulStrategy { None, Individual, Team, Cart, TeamCart, Panniers, AnimalCart, StrongSentient };
+
+HaulStrategy haulStrategyFromName(std::string);
+std::string haulStrategyToName(HaulStrategy);
 
 struct HaulSubprojectParamaters final
 {
@@ -54,6 +58,9 @@ class HaulSubproject final
 	void complete(HasShape& delivered);
 public:
 	HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters);
+	HaulSubproject(const Json& json, Project& m_project, ProjectRequirementCounts& projectRequirementCounts, DeserilizationMemo& deserilizationMemo);
+	Json toJson() const;
+	void setup();
 	void commandWorker(Actor& actor);
 	void addWorker(Actor& actor);
 	void removeWorker(Actor& actor);
@@ -79,7 +86,9 @@ struct HaulSubprojectDishonorCallback final : public DishonorCallback
 {
 	HaulSubproject& m_haulSubproject;
 	HaulSubprojectDishonorCallback(HaulSubproject& hs) : m_haulSubproject(hs) { } 
+	HaulSubprojectDishonorCallback(const Json data, DeserilizationMemo& deserilizationMemo) : m_haulSubproject(*deserilizationMemo.m_haulSubprojects.at(data["haulSubproject"])) { }
 	void execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { m_haulSubproject.cancel(); }
+	Json toJson() const { return {{"type", "HaulSubprojectDishonorCallback"}, {"haulSubproject", reinterpret_cast<uintptr_t>(&m_haulSubproject)}}; }
 };
 // Used by Actor for individual haul strategy only. Other strategies use lead/follow.
 class CanPickup final

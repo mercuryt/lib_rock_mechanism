@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config.h"
+#include "deserilizationMemo.h"
 #include "objective.h"
 #include "threadedTask.hpp"
 #include "eventSchedule.hpp"
@@ -81,13 +82,14 @@ public:
 };
 class EatObjective final : public Objective
 {
-	Actor& m_actor;
 	HasThreadedTask<EatThreadedTask> m_threadedTask;
 	HasScheduledEvent<EatEvent> m_eatEvent;
 	Block* m_destination;
 	bool m_noFoodFound;
 public:
 	EatObjective(Actor& a);
+	EatObjective(const Json& data, DeserilizationMemo& deserilizationMemo);
+	Json toJson() const;
 	void execute();
 	void cancel();
 	void delay();

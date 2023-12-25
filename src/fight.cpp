@@ -14,9 +14,26 @@
 #include <utility>
 #include <algorithm>
 // CanFight.
-CanFight::CanFight(Actor& a) : m_actor(a), m_maxMeleeRange(0), m_coolDownDurationModifier(1.f), m_coolDown(m_actor.getEventSchedule()), m_getIntoAttackPositionThreadedTask(m_actor.getThreadedTaskEngine()) 
+CanFight::CanFight(Actor& a) : m_actor(a), m_maxMeleeRange(0), m_coolDownDurationModifier(1.f), m_coolDown(m_actor.getEventSchedule()), m_getIntoAttackPositionThreadedTask(m_actor.getThreadedTaskEngine()), m_target(nullptr)
 { 
 	update();
+}
+CanFight::CanFight(const Json& data, Actor& a) : m_actor(a), m_maxMeleeRange(0), m_coolDownDurationModifier(1.f), m_coolDown(m_actor.getEventSchedule()), m_getIntoAttackPositionThreadedTask(m_actor.getThreadedTaskEngine()), m_target(nullptr)
+{
+	update();
+	if(data.contains("coolDownStart"))
+		m_coolDown.schedule(*this, data["coolDownDuration"].get<Step>(), data["coolDownStart"].get<Step>());
+	if(data.contains("target"))
+		setTarget(m_actor.getSimulation().getActorById(data["target"].get<ActorId>()));
+}
+Json CanFight::toJson() const
+{
+	Json data;
+	if(m_coolDown.exists())
+		data["coolDownStart"] = m_coolDown.getStartStep();
+	if(m_target != nullptr)
+		data["target"] = m_target->m_id;
+	return data;
 }
 void CanFight::attackMeleeRange(Actor& target)
 {
@@ -175,7 +192,7 @@ void CanFight::setTarget(Actor& actor)
 {
 	m_target = &actor;
 	actor.m_canFight.recordTargetedBy(m_actor);
-	m_getIntoAttackPositionThreadedTask.create(m_actor, *m_target, m_maxMeleeRange);
+	m_getIntoAttackPositionThreadedTask.create(m_actor, *m_target, m_maxRange);
 }
 void CanFight::recordTargetedBy(Actor& actor)
 {
@@ -226,7 +243,7 @@ void CanFight::targetNoLongerTargetable()
 void CanFight::onTargetMoved()
 {
 	if(!m_getIntoAttackPositionThreadedTask.exists())
-		m_getIntoAttackPositionThreadedTask.create(m_actor, *m_target, m_actor.m_canFight.m_maxMeleeRange);
+		m_getIntoAttackPositionThreadedTask.create(m_actor, *m_target, m_actor.m_canFight.m_maxRange);
 }
 void CanFight::freeHit(Actor& actor)
 {
@@ -234,7 +251,7 @@ void CanFight::freeHit(Actor& actor)
 	attackMeleeRange(actor);
 }
 bool CanFight::isOnCoolDown() const { return m_coolDown.exists(); }
-bool CanFight::inRange(const Actor& target) const { return m_actor.m_location->distance(*target.m_location) <= m_maxMeleeRange; }
+bool CanFight::inRange(const Actor& target) const { return m_actor.m_location->distance(*target.m_location) <= m_maxRange; }
 Percent CanFight::projectileHitPercent(const Attack& attack, const Actor& target) const
 {
 	Percent chance = 100 - pow(m_actor.distanceTo(target), Config::projectileHitChanceFallsOffWithRangeExponent);

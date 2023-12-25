@@ -1,5 +1,6 @@
 #pragma once
 
+#include "deserilizationMemo.h"
 #include "reservable.h"
 #include "types.h"
 #include "objective.h"
@@ -23,14 +24,17 @@ public:
 	bool canBeAssigned(Actor& actor) const;
 	std::unique_ptr<Objective> makeFor(Actor& actor) const;
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Dig; }
+	DigObjectiveType() = default;
+	DigObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserilizationMemo& deserilizationMemo){ }
 };
 class DigObjective final : public Objective
 {
-	Actor& m_actor;
 	HasThreadedTask<DigThreadedTask> m_digThreadedTask;
 	Project* m_project;
 public:
 	DigObjective(Actor& a);
+	DigObjective(const Json& data, DeserilizationMemo& deserilizationMemo);
+	Json toJson() const;
 	void execute();
 	void cancel();
 	void delay() { cancel(); }
@@ -71,14 +75,18 @@ public:
 	// BlockFeatureType can be null, meaning the block is to be fully excavated.
 	DigProject(const Faction* faction, Block& block, const BlockFeatureType* bft, std::unique_ptr<DishonorCallback> locationDishonorCallback) : 
 		Project(faction, block, Config::maxNumberOfWorkersForDigProject, std::move(locationDishonorCallback)), m_blockFeatureType(bft) { }
+	DigProject(const Json& data, DeserilizationMemo& deserilizationMemo);
+	Json toJson() const;
 	Step getDuration() const;
 	friend class HasDigDesignationsForFaction;
 };
 struct DigLocationDishonorCallback final : public DishonorCallback
 {
-	HasDigDesignationsForFaction& m_hasDigDesignationsForFaction;
+	const Faction& m_faction;
 	Block& m_location;
-	DigLocationDishonorCallback(HasDigDesignationsForFaction& hcdff, Block& l) : m_hasDigDesignationsForFaction(hcdff), m_location(l) { }
+	DigLocationDishonorCallback(const Faction& f, Block& l) : m_faction(f), m_location(l) { }
+	DigLocationDishonorCallback(const Json& data, DeserilizationMemo& deserializationMemo);
+	Json toJson() const;
 	void execute(uint32_t oldCount, uint32_t newCount);
 };
 // Part of HasDigDesignations.
@@ -88,6 +96,8 @@ class HasDigDesignationsForFaction final
 	std::unordered_map<Block*, DigProject> m_data;
 public:
 	HasDigDesignationsForFaction(const Faction& p) : m_faction(p) { }
+	HasDigDesignationsForFaction(const Json& data, DeserilizationMemo& deserilizationMemo, const Faction& faction);
+	Json toJson() const;
 	void designate(Block& block, const BlockFeatureType* blockFeatureType);
 	void undesignate(Block& block);
 	// To be called by undesignate as well as by DigProject::onCancel.
@@ -102,6 +112,8 @@ class HasDigDesignations final
 {
 	std::unordered_map<const Faction*, HasDigDesignationsForFaction> m_data;
 public:
+	void load(const Json& data, DeserilizationMemo& deserilizationMemo);
+	Json toJson() const;
 	void addFaction(const Faction& faction);
 	void removeFaction(const Faction& faction);
 	// If blockFeatureType is null then dig out fully rather then digging out a feature.

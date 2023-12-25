@@ -1,5 +1,6 @@
 #pragma once
 
+#include "deserilizationMemo.h"
 #include "objective.h"
 #include "config.h"
 #include "eventSchedule.hpp"
@@ -19,13 +20,16 @@ public:
 	bool canBeAssigned(Actor& actor) const;
 	std::unique_ptr<Objective> makeFor(Actor& actor) const;
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Harvest; }
+	HarvestObjectiveType() = default;
+	HarvestObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserilizationMemo& deserilizationMemo){ }
 };
 class HarvestObjective final : public Objective
 {
-	Actor& m_actor;
 	Block* m_block;
 public:
 	HarvestObjective(Actor& a);
+	HarvestObjective(const Json& data, DeserilizationMemo& deserilizationMemo);
+	Json toJson() const;
 	HasScheduledEvent<HarvestEvent> m_harvestEvent;
 	HasThreadedTask<HarvestThreadedTask> m_threadedTask;
 	void execute();

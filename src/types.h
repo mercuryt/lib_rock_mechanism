@@ -14,3 +14,5 @@ using Facing = uint8_t;
 using AreaId = uint32_t;
 using ItemId = uint32_t;
 using ActorId = uint32_t;
+using HaulSubprojectId = uint32_t;
+using ProjectId = uint32_t;

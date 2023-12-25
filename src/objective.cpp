@@ -1,10 +1,23 @@
 //ObjectiveTypePrioritySet
 #include "objective.h"
+#include "deserilizationMemo.h"
 #include "simulation.h"
 #include "actor.h"
 #include "stamina.h"
+#include "sowSeeds.h"
+#include "givePlantsFluid.h"
+#include "harvest.h"
 #include "wander.h"
+#include <cstdio>
 #include <numbers>
+void ObjectiveTypePrioritySet::load(const Json& data, [[maybe_unused]] DeserilizationMemo& deserilizationMemo)
+{
+	m_data = data["data"].get<std::vector<ObjectivePriority>>();
+}
+Json ObjectiveTypePrioritySet::toJson() const
+{
+	return Json{{"data", m_data}};
+}
 void ObjectiveTypePrioritySet::setPriority(const ObjectiveType& objectiveType, uint8_t priority)
 {
 	auto found = std::ranges::find_if(m_data, [&](ObjectivePriority& x) { return x.objectiveType == &objectiveType; });
@@ -27,7 +40,7 @@ void ObjectiveTypePrioritySet::setObjectiveFor(Actor& actor)
 	assert(actor.m_hasObjectives.m_tasksQueue.empty());
 	Step currentStep = actor.getSimulation().m_step;
 	for(auto& objectivePriority : m_data)
-		if(currentStep > objectivePriority.doNotAssignAginUntil && objectivePriority.objectiveType->canBeAssigned(actor))
+		if(currentStep > objectivePriority.doNotAssignAgainUntil && objectivePriority.objectiveType->canBeAssigned(actor))
 		{
 			actor.m_hasObjectives.addTaskToStart(objectivePriority.objectiveType->makeFor(actor));
 			return;
@@ -43,10 +56,23 @@ void ObjectiveTypePrioritySet::setDelay(ObjectiveTypeId objectiveTypeId)
 	auto found = std::ranges::find_if(m_data, [&](ObjectivePriority& objectivePriority){ return objectivePriority.objectiveType->getObjectiveTypeId() == objectiveTypeId; });
 	// If found is not in data it was assigned by some other means (such as player interaction) so we don't need a delay.
 	if(found != m_data.end())
-		found->doNotAssignAginUntil = m_actor.getSimulation().m_step + Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective;
+		found->doNotAssignAgainUntil = m_actor.getSimulation().m_step + Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective;
 }
 // SupressedNeed
 SupressedNeed::SupressedNeed(std::unique_ptr<Objective> o, Actor& a) : m_actor(a), m_objective(std::move(o)), m_event(a.getSimulation().m_eventSchedule) { }
+SupressedNeed::SupressedNeed(const Json& data, DeserilizationMemo& deserilizationMemo, Actor& a) : m_actor(a), m_event(deserilizationMemo.m_simulation.m_eventSchedule)
+{
+	m_objective = deserilizationMemo.loadObjective(data["objective"]);
+	if(data.contains("eventStart"))
+		m_event.schedule(*this, data["eventStart"].get<Step>());
+}
+Json SupressedNeed::toJson() const
+{
+	 Json data{{"objective", m_objective->toJson()}};
+	 if(m_event.exists())
+		 data["eventStart"] = m_event.getStartStep();
+	 return data;
+}
 void SupressedNeed::callback() 
 {
 	auto objective = std::move(m_objective);
@@ -56,10 +82,66 @@ void SupressedNeed::callback()
 SupressedNeedEvent::SupressedNeedEvent(SupressedNeed& sn) : ScheduledEventWithPercent(sn.m_actor.getSimulation(), Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective), m_supressedNeed(sn) { }
 void SupressedNeedEvent::execute() { m_supressedNeed.callback(); }
 void SupressedNeedEvent::clearReferences() { m_supressedNeed.m_event.clearPointer(); }
+// ObjectiveType.
+Json ObjectiveType::toJson() const { return Json{{"type", getObjectiveTypeId()}}; }
+void ObjectiveType::load()
+{
+	objectiveTypes["wood working"] = std::make_unique<CraftObjectiveType>(SkillType::byName("wood working"));
+	objectiveTypes["metal working"] = std::make_unique<CraftObjectiveType>(SkillType::byName("metal working"));
+	objectiveTypes["stone carving"] = std::make_unique<CraftObjectiveType>(SkillType::byName("stone carving"));
+	objectiveTypes["bone carving"] = std::make_unique<CraftObjectiveType>(SkillType::byName("bone carving"));
+	objectiveTypes["assembling"] = std::make_unique<CraftObjectiveType>(SkillType::byName("assembling"));
+	objectiveTypes["dig"] = std::make_unique<DigObjectiveType>();
+	objectiveTypes["construct"] = std::make_unique<ConstructObjectiveType>();
+	objectiveTypes["stockpile"] = std::make_unique<StockPileObjectiveType>();
+	objectiveTypes["sow seeds"] = std::make_unique<SowSeedsObjectiveType>();
+	objectiveTypes["give plants fluid"] = std::make_unique<GivePlantsFluidObjectiveType>();
+	objectiveTypes["harvest"] = std::make_unique<HarvestObjectiveType>();
+	for(auto& [name, objectiveType] : objectiveTypes)
+		objectiveTypeNames[objectiveType.get()] = name;
+}
 // Objective.
-Objective::Objective(uint32_t p) : m_priority(p) {}
+Objective::Objective(Actor& a, uint32_t p) : m_actor(a), m_priority(p) {}
+Objective::Objective(const Json& data, [[maybe_unused]] DeserilizationMemo& deserilizationMemo) :
+	m_actor(deserilizationMemo.m_simulation.getActorById(data["actor"].get<ActorId>())), m_priority(data["priority"].get<uint32_t>()), m_detour(data["detour"].get<bool>()) { }
+Json Objective::toJson() const { return Json{{"type", getObjectiveTypeId()}, {"actor", m_actor}, {"priority", m_priority}, {"detour", m_detour}}; }
 // HasObjectives.
 HasObjectives::HasObjectives(Actor& a) : m_actor(a), m_currentObjective(nullptr), m_prioritySet(a) { }
+void HasObjectives::load(const Json& data, DeserilizationMemo& deserilizationMemo)
+{
+	for(const Json& objective : data["needsQueue"])
+	{
+		m_needsQueue.push_back(deserilizationMemo.loadObjective(objective));
+		m_idsOfObjectivesInNeedsQueue.insert(m_needsQueue.back()->getObjectiveTypeId());
+	}
+	for(const Json& objective : data["tasksQueue"])
+		m_tasksQueue.push_back(deserilizationMemo.loadObjective(objective));
+	if(data.contains("currentObjective"))
+		m_currentObjective = deserilizationMemo.m_objectives.at(data["currentObjective"].get<uintptr_t>());
+	for(const Json& pair : data["supressedNeeds"])
+		m_supressedNeeds.try_emplace(pair[0].get<ObjectiveTypeId>(), pair[1], deserilizationMemo, m_actor);
+	m_prioritySet.load(data["prioritySet"], deserilizationMemo);
+}
+Json HasObjectives::toJson() const
+{
+	Json data;
+	data["needsQueue"] = Json::array();
+	for(auto& objective : m_needsQueue)
+		data["needsQueue"].push_back(objective->toJson());
+	data["tasksQueue"] = Json::array();
+	for(auto& objective : m_tasksQueue)
+		data["tasksQueue"].push_back(objective->toJson());
+	if(m_currentObjective)
+		data["currentObjective"] = reinterpret_cast<uintptr_t>(m_currentObjective);
+	data["supressedNeeds"] = Json::array();
+	for(auto& supressedNeed : m_supressedNeeds)
+	{
+		Json pair{supressedNeed.first, supressedNeed.second.toJson()};
+		data["supressedNeeds"].push_back(pair);
+	}
+	data["prioritySet"] = m_prioritySet.toJson();
+	return data;
+}
 void HasObjectives::getNext()
 {
 	m_currentObjective = nullptr;

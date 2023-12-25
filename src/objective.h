@@ -1,6 +1,8 @@
 //TODO: Objectives can use reservations from other objectives on the same actor, or make delay call reset.
 #pragma once
 
+#include "config.h"
+#include "deserilizationMemo.h"
 #include "eventSchedule.h"
 #include "eventSchedule.hpp"
 
@@ -17,19 +19,49 @@ class Objective;
 class SupressedNeedEvent;
 
 enum class ObjectiveTypeId { Construct, Craft, Dig, Drink, Eat, GetToSafeTemperature, GivePlantsFluid, GoTo, Harvest, Haul, Kill, Medical, Rest, Sleep, Station, SowSeeds, StockPile, Wait, Wander };
+NLOHMANN_JSON_SERIALIZE_ENUM(ObjectiveTypeId, {
+		{"Construct", ObjectiveTypeId::Construct}, 
+		{"Craft", ObjectiveTypeId::Craft},
+		{"Construct", ObjectiveTypeId::Dig}, 
+		{"Drink", ObjectiveTypeId::Drink}, 
+		{"Eat", ObjectiveTypeId::Eat}, 
+		{"GetToSafeTemperature", ObjectiveTypeId::GetToSafeTemperature}, 
+		{"GivePlantsFluid", ObjectiveTypeId::GivePlantsFluid}, 
+		{"GoTo", ObjectiveTypeId::GoTo}, 
+		{"Harvest", ObjectiveTypeId::Harvest}, 
+		{"Haul", ObjectiveTypeId::Haul}, 
+		{"Kill", ObjectiveTypeId::Kill}, 
+		{"Medical", ObjectiveTypeId::Medical}, 
+		{"Rest", ObjectiveTypeId::Rest}, 
+		{"Sleep", ObjectiveTypeId::Sleep}, 
+		{"Station", ObjectiveTypeId::Station}, 
+		{"SowSeeds", ObjectiveTypeId::SowSeeds}, 
+		{"StockPile", ObjectiveTypeId::StockPile}, 
+		{"Wait", ObjectiveTypeId::Wait}, 
+		{"Wander", ObjectiveTypeId::Wander},
+});
 struct ObjectiveType
 {
 	[[nodiscard]] virtual bool canBeAssigned(Actor& actor) const = 0;
 	[[nodiscard]] virtual std::unique_ptr<Objective> makeFor(Actor& actor) const = 0;
 	[[nodiscard]] virtual ObjectiveTypeId getObjectiveTypeId() const = 0;
+	[[nodiscard]] virtual Json& toJson();
 	ObjectiveType() = default;
 	ObjectiveType(const ObjectiveType&) = delete;
 	ObjectiveType(ObjectiveType&&) = delete;
+	virtual Json toJson() const;
+	// Infastructure
+	static std::map<std::string, std::unique_ptr<ObjectiveType>> objectiveTypes;
+	static std::map<const ObjectiveType*, std::string> objectiveTypeNames;
+	inline static void load();
 	[[nodiscard]] bool operator==(const ObjectiveType& other) const { return &other == this; }
 };
+inline void to_json(Json& data, const ObjectiveType* const& objectiveType){ data = ObjectiveType::objectiveTypeNames[objectiveType]; }
+inline void from_json(const Json& data, const ObjectiveType*& objectiveType){ objectiveType = ObjectiveType::objectiveTypes[data.get<std::string>()].get(); }
 class Objective
 {
 public:
+	Actor& m_actor;
 	uint32_t m_priority;
 	bool m_detour = false;
 	virtual void execute() = 0;
@@ -41,9 +73,11 @@ public:
 	[[nodiscard]] virtual std::string name() const = 0;
 	[[nodiscard]] virtual ObjectiveTypeId getObjectiveTypeId() const = 0;
 	[[nodiscard]] virtual bool isNeed() const { return false; }
-	Objective(uint32_t p);
+	Objective(Actor& a, uint32_t p);
 	Objective(const Objective&) = delete;
 	Objective(Objective&&) = delete;
+	Objective(const Json& data, DeserilizationMemo& deserilizationMemo);
+	virtual Json toJson() const;
 	bool operator==(const Objective& other) const { return &other == this; }
 	virtual ~Objective() = default;
 };
@@ -51,14 +85,17 @@ struct ObjectivePriority
 {
 	const ObjectiveType* objectiveType;
 	uint8_t priority;
-	Step doNotAssignAginUntil;
+	Step doNotAssignAgainUntil;
 };
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ObjectivePriority, objectiveType, priority, doNotAssignAgainUntil);
 class ObjectiveTypePrioritySet final
 {
 	Actor& m_actor;
 	std::vector<ObjectivePriority> m_data;
 public:
 	ObjectiveTypePrioritySet(Actor& a) : m_actor(a) { }
+	void load(const Json& data, DeserilizationMemo& deserilizationMemo);
+	Json toJson() const;
 	void setPriority(const ObjectiveType& objectiveType, uint8_t priority);
 	void remove(const ObjectiveType& objectiveType);
 	void setObjectiveFor(Actor& actor);
@@ -73,6 +110,8 @@ class SupressedNeed final
 	HasScheduledEvent<SupressedNeedEvent> m_event;
 public:
 	SupressedNeed(std::unique_ptr<Objective> o, Actor& a);
+	SupressedNeed(const Json& data, DeserilizationMemo& deserilizationMemo, Actor& a);
+	Json toJson() const;
 	void callback();
 	friend class SupressedNeedEvent;
 	bool operator==(const SupressedNeed& supressedNeed){ return &supressedNeed == this; }
@@ -105,6 +144,8 @@ public:
 	ObjectiveTypePrioritySet m_prioritySet;
 
 	HasObjectives(Actor& a);
+	void load(const Json& data, DeserilizationMemo& deserilizationMemo);
+	Json toJson() const;
 	void getNext();
 	void addNeed(std::unique_ptr<Objective> objective);
 	void addTaskToEnd(std::unique_ptr<Objective> objective);

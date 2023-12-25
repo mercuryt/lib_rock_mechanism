@@ -1,5 +1,6 @@
 #pragma once
 
+#include "deserilizationMemo.h"
 #include "hasShape.h"
 #include "reservable.h"
 #include "actor.h"
@@ -27,6 +28,8 @@ struct ProjectWorker final
 	HaulSubproject* haulSubproject;
 	Objective& objective;
 	ProjectWorker(Objective& o) : haulSubproject(nullptr), objective(o) { }
+	ProjectWorker(const Json& data, DeserilizationMemo& deserilizationMemo);
+	Json toJson() const;
 };
 struct ProjectRequirementCounts final
 {
@@ -35,12 +38,16 @@ struct ProjectRequirementCounts final
 	uint8_t reserved;
 	bool consumed;
 	ProjectRequirementCounts(const uint8_t r, bool c) : required(r), delivered(0), reserved(0), consumed(c) { }
+	ProjectRequirementCounts(const Json& data, DeserilizationMemo& deserilizationMemo);
+	Json toJson() const;
 };
 struct ProjectRequiredShapeDishonoredCallback final : public DishonorCallback
 {
 	Project& m_project;
 	HasShape& m_hasShape;
 	ProjectRequiredShapeDishonoredCallback(Project& p, HasShape& hs) : m_project(p), m_hasShape(hs) { }
+	ProjectRequiredShapeDishonoredCallback(const Json& data, DeserilizationMemo& deserializationMemo) : m_project(*deserializationMemo.m_projects.at(data["project"].get<uintptr_t>())), m_hasShape(*deserializationMemo.m_hasShapes.at(data["hasShape"].get<uintptr_t>())) { }
+	Json toJson() const { return Json({{"type", "ProjectRequiredShapeDishonoredCallback"}, {"project", reinterpret_cast<uintptr_t>(&m_project)}, {"hasShape", reinterpret_cast<uintptr_t>(&m_hasShape)}}); }
 	void execute(uint32_t oldCount, uint32_t newCount);
 };
 // Derived classes are expected to provide getDelay, getConsumedItems, getUnconsumedItems, getByproducts, and onComplete.
@@ -82,6 +89,8 @@ class Project
 	void addWorker(Actor& actor, Objective& objective);
 	// Load requirements from child class.
 	void recordRequiredActorsAndItems();
+	// After create.
+	void setup();
 protected:
 	// Where the materials are delivered to and where the work gets done.
 	Block& m_location;
@@ -100,7 +109,11 @@ protected:
 	// They have one or more workers plus optional haul tool and beast of burden.
 	std::list<HaulSubproject> m_haulSubprojects;
 	Project(const Faction* f, Block& l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr);
+	Project(const Json& data, DeserilizationMemo& deserilizationMemo);
 public:
+	Json toJson() const;
+	// Seperated from primary Json constructor because must be run after objectives are created.
+	void loadWorkers(const Json& data, DeserilizationMemo& deserilizationMemo);
 	void addWorkerCandidate(Actor& actor, Objective& objective);
 	void removeWorkerCandidate(Actor& actor);
 	// To be called by Objective::execute.
@@ -112,7 +125,7 @@ public:
 	void complete();
 	void cancel();
 	void dismissWorkers();
-	void scheduleEvent();
+	void scheduleEvent(Step start = 0);
 	void haulSubprojectComplete(HaulSubproject& haulSubproject);
 	void haulSubprojectCancel(HaulSubproject& haulSubproject);
 	void setLocationDishonorCallback(std::unique_ptr<DishonorCallback> dishonorCallback);
@@ -169,6 +182,7 @@ public:
 	friend class ProjectTryToAddWorkersThreadedTask;
 	friend class HaulSubproject;
 };
+inline void to_json(Json& data, const Project& project){ data = reinterpret_cast<uintptr_t>(&project); }
 class ProjectFinishEvent final : public ScheduledEventWithPercent
 {
 	Project& m_project;
