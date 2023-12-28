@@ -1,5 +1,5 @@
 #pragma once
-#include "deserilizationMemo.h"
+#include "deserializationMemo.h"
 #include "eventSchedule.hpp"
 #include "objective.h"
 #include <string>
@@ -13,7 +13,7 @@ class WaitObjective final : public Objective
 public:
 	// Priority of waiting is 0.
 	WaitObjective(Actor& a, Step duration);
-	WaitObjective(const Json& data, DeserilizationMemo& deserilizationMemo);
+	WaitObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void execute();
 	void delay() { reset(); }
@@ -27,7 +27,7 @@ class WaitScheduledEvent final : public ScheduledEventWithPercent
 {
 	WaitObjective& m_objective;
 public:
-	WaitScheduledEvent(Step delay, WaitObjective& wo);
+	WaitScheduledEvent(Step delay, WaitObjective& wo, const Step start = 0);
 	void execute() { m_objective.execute(); }
 	void clearReferences() { m_objective.m_event.clearPointer(); }
 };

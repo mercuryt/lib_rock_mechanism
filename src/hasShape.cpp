@@ -3,6 +3,20 @@
 #include "simulation.h"
 #include <cassert>
 #include <iostream>
+// TODO: dynamic shapes.
+HasShape::HasShape(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) : 
+	m_simulation(deserializationMemo.m_simulation), m_static(data["static"].get<bool>()), m_shape(&Shape::byName(data["shape"].get<std::string>())),
+	m_canLead(*this), m_canFollow(*this), m_reservable(data["maxReservations"].get<uint32_t>()), m_isUnderground(data["isUnderground"].get<bool>()) { }
+Json HasShape:: toJson() const
+{
+	Json data{{"static", m_static}, {"shape", m_shape}, {"canFollow", m_canFollow.toJson()}, {"isUnderground", m_isUnderground}};
+	if(m_location)
+	{
+		data["location"] = m_location;
+		data["facing"] = m_facing;
+	}
+	return data;
+}
 void HasShape::setStatic(bool isTrue)
 {
 	assert(m_static != isTrue);

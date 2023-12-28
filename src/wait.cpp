@@ -6,7 +6,7 @@ WaitObjective::WaitObjective(Actor& a, Step duration) : Objective(a, 0), m_event
 {
 	m_event.schedule(duration, *this);
 }
-WaitObjective::WaitObjective(const Json& data, DeserilizationMemo& deserilizationMemo) : Objective(data, deserilizationMemo), m_event(deserilizationMemo.m_simulation.m_eventSchedule)
+WaitObjective::WaitObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), m_event(deserializationMemo.m_simulation.m_eventSchedule)
 {
 	if(data.contains("eventStart"))
 		m_event.schedule(data["duration"].get<Step>(), *this, data["eventStart"].get<Step>());
@@ -27,4 +27,4 @@ void WaitObjective::reset()
 	m_event.maybeUnschedule(); 
 	m_actor.m_canReserve.clearAll(); 
 }
-WaitScheduledEvent::WaitScheduledEvent(Step delay, WaitObjective& wo) : ScheduledEventWithPercent(wo.m_actor.getSimulation(), delay), m_objective(wo) { }
+WaitScheduledEvent::WaitScheduledEvent(Step delay, WaitObjective& wo, const Step start) : ScheduledEventWithPercent(wo.m_actor.getSimulation(), delay, start), m_objective(wo) { }

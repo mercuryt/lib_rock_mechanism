@@ -1,8 +1,12 @@
 #include "givePlantsFluid.h"
 #include "area.h"
 #include "config.h"
+#include "deserializationMemo.h"
+#include "eventSchedule.h"
 #include "objective.h"
-GivePlantsFluidEvent::GivePlantsFluidEvent(Step delay, GivePlantsFluidObjective& gpfo) : ScheduledEventWithPercent(gpfo.m_actor.getSimulation(), delay), m_objective(gpfo) { }
+#include "reservable.h"
+#include <memory>
+GivePlantsFluidEvent::GivePlantsFluidEvent(Step delay, GivePlantsFluidObjective& gpfo, const Step start) : ScheduledEventWithPercent(gpfo.m_actor.getSimulation(), delay, start), m_objective(gpfo) { }
 void GivePlantsFluidEvent::execute()
 {
 	Plant& plant = m_objective.m_plantLocation->m_hasPlant.get();
@@ -106,12 +110,31 @@ std::unique_ptr<Objective> GivePlantsFluidObjectiveType::makeFor(Actor& actor) c
 {
 	return std::make_unique<GivePlantsFluidObjective>(actor);
 }
+void GivePlantsFluidItemDishonorCallback::execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { m_actor.m_hasObjectives.cannotCompleteTask(); }
 GivePlantsFluidObjective::GivePlantsFluidObjective(Actor& a ) : Objective(a, Config::givePlantsFluidPriority), m_plantLocation(nullptr), m_fluidHaulingItem(nullptr), m_event(m_actor.getEventSchedule()), m_threadedTask(m_actor.getThreadedTaskEngine()) { }
-GivePlantsFluidObjective::GivePlantsFluidObjective(const Json& data, DishonorCallback& dishonorCallback) : Objective(data, dishonorCallback), 
+GivePlantsFluidObjective::GivePlantsFluidObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo),
+	m_plantLocation(data.contains("plantLocation") ? &deserializationMemo.m_simulation.getBlockForJsonQuery(data["plantLocation"]) : nullptr),
+	m_fluidHaulingItem(data.contains("fluidHaulingItem") ? &deserializationMemo.m_simulation.m_items.at(data["fluidHaulingItem"].get<ItemId>()) : nullptr),
+	m_event(m_actor.getEventSchedule()), m_threadedTask(m_actor.getThreadedTaskEngine())
 {
-
+	if(data.contains("eventStart"))
+		m_event.schedule(Config::givePlantsFluidDelaySteps, *this, data["eventStart"].get<Step>());
+	if(data.contains("threadedTask"))
+		m_threadedTask.create(*this);
 }
-Json GivePlantsFluidObjective::toJson() const;
+Json GivePlantsFluidObjective::toJson() const
+{
+	Json data = Objective::toJson();
+	if(m_plantLocation)
+		data["plantLocation"] = m_plantLocation;
+	if(m_fluidHaulingItem)
+		data["fluidHaulingItem"] = m_fluidHaulingItem;
+	if(m_threadedTask.exists())
+		data["threadedTask"] = true;
+	if(m_event.exists())
+		data["eventStart"] = m_event.getStartStep();
+	return data;
+}
 // Either get plant from Area::m_hasFarmFields or get the the nearest candidate.
 // This method and GivePlantsFluidThreadedTask are complimentary state machines, with this one handling syncronus tasks.
 // TODO: multi block actors.
@@ -146,10 +169,10 @@ void GivePlantsFluidObjective::execute()
 	}
 	else if(m_actor.m_canPickup.isCarrying(*m_fluidHaulingItem))
 	{
+		Plant& plant = m_plantLocation->m_hasPlant.get();
 		// Has fluid item.
 		if(m_actor.m_canPickup.getFluidVolume() != 0)
 		{
-			Plant& plant = m_plantLocation->m_hasPlant.get();
 			assert(m_fluidHaulingItem->m_hasCargo.getFluidType() == plant.m_plantSpecies.fluidType);
 			// Has fluid.
 			if(m_actor.isAdjacentTo(plant.m_location))
@@ -173,7 +196,7 @@ void GivePlantsFluidObjective::execute()
 				execute();
 			}
 			else
-				m_actor.m_canMove.setDestinationToUnreservedAdjacentToPredicate(predicate, m_detour);
+				m_actor.m_canMove.setDestinationAdjacentTo(plant.m_plantSpecies.fluidType, m_detour);
 		}
 	}
 	else
@@ -195,7 +218,6 @@ void GivePlantsFluidObjective::cancel()
 {
 	m_event.maybeUnschedule();
 	m_threadedTask.maybeCancel();
-	m_fluidHaulingItemOnDestroy.maybeUnsubscribe();
 	if(m_plantLocation != nullptr)
 		m_plantLocation->m_area->m_hasFarmFields.at(*m_actor.getFaction()).addGivePlantFluidDesignation(m_plantLocation->m_hasPlant.get());
 }
@@ -208,9 +230,8 @@ void GivePlantsFluidObjective::select(Block& block)
 void GivePlantsFluidObjective::select(Item& item)
 {
 	m_fluidHaulingItem = &item;
-	item.m_reservable.reserveFor(m_actor.m_canReserve);
-	std::function<void()> callback = [&]() { reset(); execute(); };
-	m_fluidHaulingItemOnDestroy.subscribe(item.m_onDestroy, callback);
+	std::unique_ptr<DishonorCallback> callback = std::make_unique<GivePlantsFluidItemDishonorCallback>(m_actor);
+	item.m_reservable.reserveFor(m_actor.m_canReserve, 1u, std::move(callback));
 }
 void GivePlantsFluidObjective::reset()
 {

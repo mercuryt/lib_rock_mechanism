@@ -1,4 +1,5 @@
 #pragma once
+#include "deserializationMemo.h"
 #include "fluidType.h"
 #include "eventSchedule.hpp"
 class Area;
@@ -11,6 +12,8 @@ class AreaHasRain final
 	HasScheduledEvent<StopRainEvent> m_stopEvent;
 public:
 	AreaHasRain(Area& a);
+	void load(const Json& data, DeserializationMemo& deserializationMemo);
+	Json toJson() const;
 	void start(const FluidType& fluidType, Percent intensityPercent, Step stepsDuration);
 	void stop();
 	void writeStep();
@@ -20,7 +23,7 @@ class StopRainEvent final : public ScheduledEventWithPercent
 {
 	AreaHasRain& m_areaHasRain;
 public:
-	StopRainEvent(Step delay, AreaHasRain& ahr);
+	StopRainEvent(Step delay, AreaHasRain& ahr, const Step start = 0);
 	void execute() { m_areaHasRain.stop(); }
 	void clearReferences() { m_areaHasRain.m_stopEvent.clearPointer(); }
 };

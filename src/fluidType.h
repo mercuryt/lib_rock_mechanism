@@ -1,5 +1,6 @@
 #pragma once
 
+#include "config.h"
 #include "types.h"
 
 #include <string>
@@ -34,3 +35,6 @@ struct FluidType
 		return *found;
 	}
 };
+inline void to_json(Json& data, const FluidType* const& fluidType){ data = fluidType->name; }
+inline void to_json(Json& data, const FluidType& fluidType){ data = fluidType.name; }
+inline void from_json(const Json& data, const FluidType*& fluidType){ fluidType = &FluidType::byName(data["fluidType"].get<std::string>()); }

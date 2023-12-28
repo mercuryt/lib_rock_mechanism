@@ -8,7 +8,7 @@
 #include "kill.h"
 #include "util.h"
 
-EatEvent::EatEvent(const Step delay, EatObjective& eo) : ScheduledEventWithPercent(eo.m_actor.getSimulation(), delay), m_eatObjective(eo) { }
+EatEvent::EatEvent(const Step delay, EatObjective& eo, const Step start) : ScheduledEventWithPercent(eo.m_actor.getSimulation(), delay, start), m_eatObjective(eo) { }
 
 void EatEvent::execute()
 {
@@ -123,7 +123,7 @@ void EatEvent::eatFruitFromPlant(Plant& plant)
 	eater.m_mustEat.eat(quantityEaten * unitMass);
 	plant.removeFruitQuantity(quantityEaten);
 }
-HungerEvent::HungerEvent(const Step delay, Actor& a) : ScheduledEventWithPercent(a.getSimulation(), delay), m_actor(a) { }
+HungerEvent::HungerEvent(const Step delay, Actor& a, const Step start) : ScheduledEventWithPercent(a.getSimulation(), delay, start), m_actor(a) { }
 void HungerEvent::execute()
 {
 	m_actor.m_mustEat.setNeedsFood();
@@ -217,10 +217,10 @@ void EatThreadedTask::writeStep()
 void EatThreadedTask::clearReferences() { m_eatObjective.m_threadedTask.clearPointer(); }
 EatObjective::EatObjective(Actor& a) :
 	Objective(a, Config::eatPriority), m_threadedTask(a.getThreadedTaskEngine()), m_eatEvent(a.getEventSchedule()), m_destination(nullptr), m_noFoodFound(false) { }
-EatObjective::EatObjective(const Json& data, DeserilizationMemo& deserilizationMemo) : Objective(data, deserilizationMemo), m_threadedTask(deserilizationMemo.m_simulation.m_threadedTaskEngine), m_eatEvent(deserilizationMemo.m_simulation.m_eventSchedule), m_destination(nullptr), m_noFoodFound(data["noFoodFound"].get<bool>())
+EatObjective::EatObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), m_threadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine), m_eatEvent(deserializationMemo.m_simulation.m_eventSchedule), m_destination(nullptr), m_noFoodFound(data["noFoodFound"].get<bool>())
 {
 	if(data.contains("destination"))
-		m_destination = &deserilizationMemo.m_simulation.getBlockForJsonQuery(data["destination"]);
+		m_destination = &deserializationMemo.m_simulation.getBlockForJsonQuery(data["destination"]);
 	if(data.contains("threadedTask"))
 		m_threadedTask.create(*this);
 	if(data.contains("eventStart"))

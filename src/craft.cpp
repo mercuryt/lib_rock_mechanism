@@ -1,13 +1,13 @@
 #include "craft.h"
 #include "area.h"
-#include "deserilizationMemo.h"
+#include "deserializationMemo.h"
 #include "materialType.h"
 #include "util.h"
 #include <chrono>
 #include <cstdint>
 #include <memory>
-CraftStepProject::CraftStepProject(const Json& data, DeserilizationMemo& deserilizationMemo, CraftJob& cj) : 
-	Project(data, deserilizationMemo), m_craftStepType(cj.craftStepProject->m_craftStepType), m_craftJob(cj) { }
+CraftStepProject::CraftStepProject(const Json& data, DeserializationMemo& deserializationMemo, CraftJob& cj) : 
+	Project(data, deserializationMemo), m_craftStepType(cj.craftStepProject->m_craftStepType), m_craftJob(cj) { }
 Step CraftStepProject::getDuration() const
 {
 	uint32_t totalScore = 0;
@@ -69,17 +69,17 @@ std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> CraftSte
 			std::get<1>(tuple) = m_craftJob.materialType;
 	return output; 
 }
-CraftJob::CraftJob(const Json& data, DeserilizationMemo& deserilizationMemo, HasCraftingLocationsAndJobsForFaction& hclaj) :
+CraftJob::CraftJob(const Json& data, DeserializationMemo& deserializationMemo, HasCraftingLocationsAndJobsForFaction& hclaj) :
 	craftJobType(*data["craftJobType"].get<const CraftJobType*>()),
 	hasCraftingLocationsAndJobs(hclaj),
-	workPiece(data.contains("workPiece") ? &deserilizationMemo.m_simulation.getItemById(data["workPiece"].get<ItemId>()) : nullptr),
+	workPiece(data.contains("workPiece") ? &deserializationMemo.m_simulation.getItemById(data["workPiece"].get<ItemId>()) : nullptr),
 	materialType(data.contains("materialType") ? &MaterialType::byName(data["materialType"].get<std::string>()) : nullptr),
 	stepIterator(craftJobType.stepTypes.begin() + data["stepIndex"].get<size_t>()),
-	craftStepProject(std::make_unique<CraftStepProject>(data["craftStepProject"], deserilizationMemo, *this)),
+	craftStepProject(std::make_unique<CraftStepProject>(data["craftStepProject"], deserializationMemo, *this)),
 	minimumSkillLevel(data["minimumSkillLevel"].get<uint32_t>()),
 	totalSkillPoints(data["totalSkillPoints"].get<uint32_t>()), reservable(1) 
 { 
-	deserilizationMemo.m_craftJobs[data["address"].get<uintptr_t>()] = this;
+	deserializationMemo.m_craftJobs[data["address"].get<uintptr_t>()] = this;
 }
 Json CraftJob::toJson() const
 {
@@ -132,7 +132,7 @@ void CraftThreadedTask::writeStep()
 }
 void CraftThreadedTask::clearReferences(){ m_craftObjective.m_threadedTask.clearPointer(); }
 // ObjectiveType.
-CraftObjectiveType::CraftObjectiveType(const Json& data, [[maybe_unused]] DeserilizationMemo& deserilizationMemo) : m_skillType(*data["skillType"].get<const SkillType*>()) { }
+CraftObjectiveType::CraftObjectiveType(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) : m_skillType(*data["skillType"].get<const SkillType*>()) { }
 bool CraftObjectiveType::canBeAssigned(Actor& actor) const
 {
 	auto& hasCrafting = actor.m_location->m_area->m_hasCraftingLocationsAndJobs.at(*actor.getFaction());
@@ -156,13 +156,13 @@ std::unique_ptr<Objective> CraftObjectiveType::makeFor(Actor& actor) const
 }
 // Objective.
 CraftObjective::CraftObjective(Actor& a, const SkillType& st) : Objective(a, Config::craftObjectivePriority), m_skillType(st), m_craftJob(nullptr), m_threadedTask(a.getThreadedTaskEngine()) { }
-CraftObjective::CraftObjective(const Json& data, DeserilizationMemo& deserilizationMemo) : Objective(data, deserilizationMemo), 
-	m_skillType(*data["skillType"].get<const SkillType*>()), m_craftJob(deserilizationMemo.m_craftJobs.at(data["craftJob"].get<uintptr_t>())), 
-	m_threadedTask(deserilizationMemo.m_simulation.m_threadedTaskEngine) 
+CraftObjective::CraftObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), 
+	m_skillType(*data["skillType"].get<const SkillType*>()), m_craftJob(deserializationMemo.m_craftJobs.at(data["craftJob"].get<uintptr_t>())), 
+	m_threadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine) 
 { 
 	if(data.contains("failedJobs"))
 		for(const Json& job : data["failedJobs"])
-			m_failedJobs.insert(deserilizationMemo.m_craftJobs.at(job.get<uintptr_t>()));
+			m_failedJobs.insert(deserializationMemo.m_craftJobs.at(job.get<uintptr_t>()));
 	if(data.contains("threadedTask"))
 		m_threadedTask.create(*this);
 }
@@ -286,11 +286,11 @@ std::pair<CraftJob*, Block*> HasCraftingLocationsAndJobsForFaction::getJobAndLoc
 		return std::make_pair(getJobForAtLocation(actor, skillType, block, excludeJobs), &block);
 	}
 }
-void HasCraftingLocationsAndJobs::load(const Json& data, DeserilizationMemo& deserilizationMemo)
+void HasCraftingLocationsAndJobs::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	for(const Json& pair : data)
 	{
-		const Faction& faction = deserilizationMemo.faction(pair[0].get<std::wstring>());
-		m_data.try_emplace(&faction, pair[1], deserilizationMemo, faction);
+		const Faction& faction = deserializationMemo.faction(pair[0].get<std::wstring>());
+		m_data.try_emplace(&faction, pair[1], deserializationMemo, faction);
 	}
 }

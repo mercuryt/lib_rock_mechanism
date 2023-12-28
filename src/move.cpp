@@ -1,6 +1,7 @@
 #include "move.h"
 #include "actor.h"
 #include "block.h"
+#include "deserializationMemo.h"
 #include "moveType.h"
 #include "types.h"
 #include "simulation.h"
@@ -9,7 +10,7 @@ ActorCanMove::ActorCanMove(Actor& a) : m_actor(a), m_moveType(&m_actor.m_species
 {
 	updateIndividualSpeed();
 }
-ActorCanMove::ActorCanMove(const Json& data, Actor& a) :
+ActorCanMove::ActorCanMove(const Json& data, DeserializationMemo& deserializationMemo, Actor& a) :
 	m_actor(a),
 	m_moveType(&MoveType::byName(data["moveType"].get<std::string>())),
 	m_destination(data.contains("destination") ? &a.getSimulation().getBlockForJsonQuery(data["destination"]) : nullptr),
@@ -26,7 +27,7 @@ ActorCanMove::ActorCanMove(const Json& data, Actor& a) :
 			m_event.schedule(data["moveEventDuration"].get<Step>(), *this, data["moveEventStart"].get<Step>());
 	}
 	else if(data.contains("threadedTask"))
-		m_threadedTask.create(data["threadedTask"]);
+		m_threadedTask.create(data["threadedTask"], deserializationMemo, m_actor);
 }
 Json ActorCanMove::toJson() const
 {
@@ -47,7 +48,7 @@ Json ActorCanMove::toJson() const
 		data["duration"] = m_event.duration();
 	}
 	if(m_threadedTask.exists())
-		data["threadedTask"] = m_threadedTask.toJson();
+		data["threadedTask"] = m_threadedTask.get().toJson();
 	return data;
 }
 uint32_t ActorCanMove::getIndividualMoveSpeedWithAddedMass(Mass mass) const
@@ -180,8 +181,8 @@ void ActorCanMove::setDestination(Block& destination, bool detour, bool adjacent
 	if(unreserved && !adjacent)
 		assert(!destination.m_reservable.isFullyReserved(m_actor.getFaction()));
 	std::function<bool(const Block&)> predicate = [&](const Block& block){ return block == destination; };
-	// Actor, predicate, destinationHuristic, detour, adjacent, unreserved.
-	m_threadedTask.create(m_actor, predicate, &destination, detour, adjacent, unreserved, reserve);
+	// Actor, hasShape, fluidType, destinationHuristic, detour, adjacent, unreserved.
+	m_threadedTask.create(m_actor, nullptr, nullptr, &destination, detour, adjacent, unreserved, reserve);
 }
 void ActorCanMove::setDestinationAdjacentTo(Block& destination, bool detour, bool unreserved, bool reserve)
 {
@@ -190,12 +191,12 @@ void ActorCanMove::setDestinationAdjacentTo(Block& destination, bool detour, boo
 void ActorCanMove::setDestinationAdjacentTo(HasShape& hasShape, bool detour, bool unreserved, bool reserve) 
 {
 	assert(!m_actor.isAdjacentTo(hasShape));
-	//TODO: Flat set
-	std::unordered_set<Block*> hasShapeBlocks = hasShape.m_blocks;
-	//TODO: Don't bother checking for adjacent if taxi distance is large.
-	std::function<bool(const Block&)> predicate = [hasShapeBlocks](const Block& block){ return hasShapeBlocks.contains(const_cast<Block*>(&block)); };
 	// Actor, predicate, destinationHuristic, detour, adjacent, unreserved.
-	m_threadedTask.create(m_actor, predicate, hasShape.m_location, detour, true, unreserved, reserve);
+	m_threadedTask.create(m_actor, &hasShape, nullptr, hasShape.m_location, detour, true, unreserved, reserve);
+}
+void ActorCanMove::setDestinationAdjacentTo(const FluidType& fluidType, bool detour, bool unreserved, bool reserve) 
+{
+	m_threadedTask.create(m_actor, nullptr, &fluidType, nullptr, detour, true, unreserved, reserve);
 }
 void ActorCanMove::setMoveType(const MoveType& moveType)
 {
@@ -216,44 +217,22 @@ bool ActorCanMove::canMove() const
 		return false;
 	return true;
 }
-bool ActorCanMove::ensureIsAdjacent(Block& block)
-{
-	assert(block.m_area == m_actor.m_location->m_area);
-	// Currently adjacent.
-	if(m_actor.isAdjacentTo(block))
-		return true;
-	// Path to adjacent location.
-	setDestinationAdjacentTo(block);
-	return false;
-}
-Block* ActorCanMove::ensureIsAdjacentToPredicateAndUnreserved(std::function<bool(const Block&)> predicate)
-{
-	Block* alredyAdjacent = m_actor.getBlockWhichIsAdjacentWithPredicate(predicate);
-	if(alredyAdjacent != nullptr)
-		return alredyAdjacent;
-	else
-	{
-		setDestinationToUnreservedAdjacentToPredicate(predicate);
-		return nullptr;
-	}
-}
-MoveEvent::MoveEvent(Step delay, ActorCanMove& cm) : ScheduledEventWithPercent(cm.m_actor.getSimulation(), delay), m_canMove(cm) { }
-
+MoveEvent::MoveEvent(Step delay, ActorCanMove& cm, const Step start) : ScheduledEventWithPercent(cm.m_actor.getSimulation(), delay, start), m_canMove(cm) { }
 // Path Threaded Task.
-PathThreadedTask::PathThreadedTask(Actor& a, HasShape& hs, const Block* hd, bool d, bool ad, bool ur, bool r) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_hasShape(hs), m_huristicDestination(hd), m_detour(d), m_adjacent(ad), m_unreservedDestination(ur), m_reserveDestination(r), m_findsPath(a, d) 
+PathThreadedTask::PathThreadedTask(Actor& a, HasShape* hs, const FluidType* ft, const Block* hd, bool d, bool ad, bool ur, bool r) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_hasShape(hs), m_fluidType(ft), m_huristicDestination(hd), m_detour(d), m_adjacent(ad), m_unreservedDestination(ur), m_reserveDestination(r), m_findsPath(a, d) 
 { 
 	if(m_reserveDestination)
 		assert(m_unreservedDestination);
 }
-PathThreadedTask::PathThreadedTask(const Json& data, Actor& a, DeserilizationMemo& deserializationMemo) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), 
+PathThreadedTask::PathThreadedTask(const Json& data, DeserializationMemo& deserializationMemo, Actor& a) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), 
 	m_hasShape(data.contains("hasShape") ? deserializationMemo.m_hasShapes.at(data["hasShape"].get<uintptr_t>()) : nullptr),
-	m_huristicDestination(data.contains("huristicDestination") ? deserializationMemo.m_simulation.getBlockForJsonQuery(data["huristicDestination"]) : nullptr),
+	m_huristicDestination(data.contains("huristicDestination") ? &deserializationMemo.m_simulation.getBlockForJsonQuery(data["huristicDestination"]) : nullptr),
 	m_detour(data["detour"].get<bool>()),
 	m_adjacent(data["adjacent"].get<bool>()),
 	m_unreservedDestination(data["unreservedDestination"].get<bool>()),
 	m_reserveDestination(data["reserveDestination"].get<bool>()), 
 	m_findsPath(m_actor, m_detour) { }
-Json toJson() const
+Json PathThreadedTask::toJson() const
 {
 	Json data({{"detour", m_detour}, {"adjacent", m_adjacent}, {"unreservedDestination", m_unreservedDestination}, {"reserveDestination", m_reserveDestination}});
 	if(m_hasShape != nullptr)
@@ -265,12 +244,20 @@ Json toJson() const
 void PathThreadedTask::readStep()
 {
 	m_findsPath.m_huristicDestination = m_huristicDestination;
-	std::function<bool(const Block& block) predicate;
-	assert(huristicDestination != nullptr || m_hasShape != nullptr);
+	std::function<bool(const Block& block)> predicate;
+	assert(m_huristicDestination != nullptr || m_hasShape != nullptr || m_fluidType != nullptr);
 	if(m_hasShape != nullptr)
-		predicate = [&](const Block& block){ return m_hasShape->m_blocks.contains(&block); };
+	{
+		predicate = [&](const Block& block){ return m_hasShape->m_blocks.contains(const_cast<Block*>(&block)); };
+		assert(m_adjacent);
+	}
+	else if(m_fluidType != nullptr)
+	{
+		predicate = [&](const Block& block){ return block.m_fluids.contains(m_fluidType); };
+		assert(m_adjacent);
+	}
 	else
-		predicate = [&](const Block& block){ return block == *m_huristicDestination; }
+		predicate = [&](const Block& block){ return block == *m_huristicDestination; };
 
 	if(m_unreservedDestination)
 	{
@@ -322,8 +309,8 @@ void PathThreadedTask::writeStep()
 		if(m_unreservedDestination && !m_findsPath.areAllBlocksAtDestinationReservable(m_actor.getFaction()))
 		{
 			// Destination is now reserved, try again.
-			// Actor, predicate, destinationHuristic, detour, adjacent, unreserved, reserve
-			m_actor.m_canMove.m_threadedTask.create(m_actor, m_predicate, m_huristicDestination, m_detour, m_adjacent, m_unreservedDestination, m_reserveDestination);
+			// Actor, hasShape, fluidType, destinationHuristic, detour, adjacent, unreserved, reserve
+			m_actor.m_canMove.m_threadedTask.create(m_actor, m_hasShape, m_fluidType, m_huristicDestination, m_detour, m_adjacent, m_unreservedDestination, m_reserveDestination);
 			return;
 		}
 		if(m_reserveDestination)

@@ -6,12 +6,12 @@ void FireEvent::execute()
 {
 	if(!m_fire.m_hasPeaked &&m_fire.m_stage == FireStage::Smouldering)
 	{
-		m_fire.m_stage = FireStage::Burining;
+		m_fire.m_stage = FireStage::Burning;
 		int32_t temperature = m_fire.m_materialType.burnData->flameTemperature * Config::heatFractionForBurn;
 		m_fire.m_temperatureSource.setTemperature(temperature);
 		m_fire.m_event.schedule(m_fire.m_materialType.burnData->burnStageDuration, m_fire);
 	}
-	else if(!m_fire.m_hasPeaked && m_fire.m_stage == FireStage::Burining)
+	else if(!m_fire.m_hasPeaked && m_fire.m_stage == FireStage::Burning)
 	{
 		m_fire.m_stage = FireStage::Flaming;
 		int32_t temperature = m_fire.m_materialType.burnData->flameTemperature;
@@ -21,7 +21,7 @@ void FireEvent::execute()
 	else if(m_fire.m_stage == FireStage::Flaming)
 	{
 		m_fire.m_hasPeaked = true;
-		m_fire.m_stage = FireStage::Burining;
+		m_fire.m_stage = FireStage::Burning;
 		int32_t temperature = m_fire.m_materialType.burnData->flameTemperature * Config::heatFractionForBurn;
 		m_fire.m_temperatureSource.setTemperature(temperature);
 		uint32_t delay = m_fire.m_materialType.burnData->burnStageDuration * Config::fireRampDownPhaseDurationFraction;
@@ -32,7 +32,7 @@ void FireEvent::execute()
 			//TODO: create debris / wreckage?
 		}
 	}
-	else if(m_fire.m_hasPeaked && m_fire.m_stage == FireStage::Burining)
+	else if(m_fire.m_hasPeaked && m_fire.m_stage == FireStage::Burning)
 	{
 		m_fire.m_stage = FireStage::Smouldering;
 		int32_t temperature = m_fire.m_materialType.burnData->flameTemperature * Config::heatFractionForSmoulder;
@@ -50,21 +50,12 @@ void FireEvent::execute()
 	}
 }
 void FireEvent::clearReferences() { m_fire.m_event.clearPointer(); }
+// Fire.
 Fire::Fire(Block& l, const MaterialType& mt, bool hasPeaked, FireStage stage, Step start) : m_location(l), m_materialType(mt), m_event(l.m_area->m_simulation.m_eventSchedule), m_stage(stage), m_hasPeaked(hasPeaked), m_temperatureSource(m_materialType.burnData->flameTemperature * Config::heatFractionForSmoulder, l)
 {
 	m_event.schedule(m_materialType.burnData->burnStageDuration, *this, start);
 }
-Json Fire::toJson() const
-{
-	Json data;
-	data["location"] = m_location.positionToJson();
-	data["materialType"] = m_materialType.name;
-	data["hasPeaked"] = m_hasPeaked;
-	data["stage"] = fireStageToString(m_stage);
-	data["stageStart"] = m_event.getStartStep();
-	return data;
-}
-void HasFires::ignite(Block& block, const MaterialType& materialType)
+void AreaHasFires::ignite(Block& block, const MaterialType& materialType)
 {
 	if(m_fires.contains(&block))
 		assert(!m_fires.at(&block).contains(&materialType));
@@ -72,7 +63,7 @@ void HasFires::ignite(Block& block, const MaterialType& materialType)
 	if(block.m_fires == nullptr)
 		block.m_fires = &m_fires.at(&block);
 }
-void HasFires::extinguish(Fire& fire)
+void AreaHasFires::extinguish(Fire& fire)
 {
 	assert(m_fires.contains(&fire.m_location));
 	Block& block = fire.m_location;
@@ -81,7 +72,26 @@ void HasFires::extinguish(Fire& fire)
 	if(m_fires.at(&block).empty())
 		block.m_fires = nullptr;
 }
-void HasFires::load(Block& block, const MaterialType& materialType, bool hasPeaked, FireStage stage, Step start)
+void AreaHasFires::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
-	m_fires[&block].try_emplace(&materialType, block, materialType, hasPeaked, stage, start);
+	for(const Json& fireData : data)
+	{
+		Block& block = deserializationMemo.m_simulation.getBlockForJsonQuery(fireData["location"]);
+		const MaterialType& materialType = *fireData["materialType"].get<const MaterialType*>();
+		m_fires[&block].try_emplace(&materialType, block, materialType, fireData["hasPeaked"].get<bool>(), fireData["stage"].get<FireStage>(), fireData["start"].get<Step>());
+	}
+}
+Json AreaHasFires::toJson() const
+{
+	Json data;
+	for(auto& [blockReference, fires] : m_fires)
+	{
+		data.push_back(Json{blockReference, Json::array()});
+		for(auto& [materialType, fire] : fires)
+		{
+			Json fireData{{"location", &fire.m_location}, {"materialType", fire.m_materialType}, {"hasPeaked", fire.m_hasPeaked}, {"stage", fire.m_stage}, {"start", fire.m_event.getStartStep()}};
+			data.back()[1].push_back(Json{materialType, fireData});
+		}
+	}
+	return data;
 }

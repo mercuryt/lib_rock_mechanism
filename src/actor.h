@@ -4,6 +4,7 @@
  */
 #pragma once
 
+#include "deserializationMemo.h"
 #include "hasShape.h"
 #include "objective.h"
 #include "eat.h"
@@ -30,7 +31,7 @@
 
 struct MoveType;
 struct AnimalSpecies;
-class Faction;
+struct Faction;
 
 enum class CauseOfDeath { none, thirst, hunger, bloodLoss, wound, temperature };
 
@@ -64,7 +65,8 @@ public:
 	uint32_t m_visionRange;
 
 	Actor(Simulation& simulation, ActorId id, const std::wstring& name, const AnimalSpecies& species, Percent percentGrown, Faction* faction, Attributes attributes);
-	Actor(Simulation& simulation, Json data);
+	Actor(const Json& data, DeserializationMemo& deserializationMemo);
+	Json toJson() const;
 	void setLocation(Block& block);
 	void exit();
 	void removeMassFromCorpse(Mass mass);
@@ -102,6 +104,7 @@ public:
 	void log() const;
 };
 inline void to_json(Json& data, const Actor& actor){ data = actor.m_id; }
+inline void to_json(Json& data, const Actor* const & actor){ data = actor->m_id; }
 // To be used to find actors fitting criteria.
 struct ActorQuery
 {
@@ -111,7 +114,7 @@ struct ActorQuery
 	bool sentient;
 	ActorQuery(Actor& a) : actor(&a) { }
 	ActorQuery(Mass cw, bool cis, bool s) : carryWeight(cw), checkIfSentient(cis), sentient(s) { }
-	ActorQuery(const Json& data, DeserilizationMemo& deserilizationMemo);
+	ActorQuery(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	bool operator()(Actor& actor) const;
 	static ActorQuery makeFor(Actor& a);

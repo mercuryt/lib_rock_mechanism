@@ -1,13 +1,21 @@
 #include "targetedHaul.h"
 #include "block.h"
 #include "area.h"
-#include "deserilizationMemo.h"
+#include "deserializationMemo.h"
 #include "objective.h"
+#include "project.h"
 #include "stockpile.h"
 Json TargetedHaulObjective::toJson() const
 {
 	Json data = Objective::toJson();
 	data["project"] = reinterpret_cast<uintptr_t>(&m_project);
+	return data;
+}
+TargetedHaulProject::TargetedHaulProject(const Json& data, DeserializationMemo& deserializationMemo) : Project(data, deserializationMemo), m_item(deserializationMemo.itemReference(data["item"])) { }
+Json TargetedHaulProject::toJson() const
+{
+	Json data = Project::toJson();
+	data["item"] = m_item;
 	return data;
 }
 void TargetedHaulProject::onComplete()
@@ -17,10 +25,10 @@ void TargetedHaulProject::onComplete()
 	for(auto& [actor, projectWorker] : workers)
 		actor->m_hasObjectives.objectiveComplete(projectWorker.objective);
 }
-void AreaHasTargetedHauling::load(const Json& data, DeserilizationMemo& deserilizationMemo)
+void AreaHasTargetedHauling::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	for(const Json& project : data["projects"])
-		m_projects.emplace_back(project, deserilizationMemo);
+		m_projects.emplace_back(project, deserializationMemo);
 }
 Json AreaHasTargetedHauling::toJson() const 
 {

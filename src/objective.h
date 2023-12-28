@@ -2,7 +2,7 @@
 #pragma once
 
 #include "config.h"
-#include "deserilizationMemo.h"
+#include "deserializationMemo.h"
 #include "eventSchedule.h"
 #include "eventSchedule.hpp"
 
@@ -20,25 +20,25 @@ class SupressedNeedEvent;
 
 enum class ObjectiveTypeId { Construct, Craft, Dig, Drink, Eat, GetToSafeTemperature, GivePlantsFluid, GoTo, Harvest, Haul, Kill, Medical, Rest, Sleep, Station, SowSeeds, StockPile, Wait, Wander };
 NLOHMANN_JSON_SERIALIZE_ENUM(ObjectiveTypeId, {
-		{"Construct", ObjectiveTypeId::Construct}, 
-		{"Craft", ObjectiveTypeId::Craft},
-		{"Construct", ObjectiveTypeId::Dig}, 
-		{"Drink", ObjectiveTypeId::Drink}, 
-		{"Eat", ObjectiveTypeId::Eat}, 
-		{"GetToSafeTemperature", ObjectiveTypeId::GetToSafeTemperature}, 
-		{"GivePlantsFluid", ObjectiveTypeId::GivePlantsFluid}, 
-		{"GoTo", ObjectiveTypeId::GoTo}, 
-		{"Harvest", ObjectiveTypeId::Harvest}, 
-		{"Haul", ObjectiveTypeId::Haul}, 
-		{"Kill", ObjectiveTypeId::Kill}, 
-		{"Medical", ObjectiveTypeId::Medical}, 
-		{"Rest", ObjectiveTypeId::Rest}, 
-		{"Sleep", ObjectiveTypeId::Sleep}, 
-		{"Station", ObjectiveTypeId::Station}, 
-		{"SowSeeds", ObjectiveTypeId::SowSeeds}, 
-		{"StockPile", ObjectiveTypeId::StockPile}, 
-		{"Wait", ObjectiveTypeId::Wait}, 
-		{"Wander", ObjectiveTypeId::Wander},
+	{ObjectiveTypeId::Construct, "Construct"}, 
+	{ObjectiveTypeId::Craft, "Craft"},
+	{ObjectiveTypeId::Dig,"Dig"}, 
+	{ObjectiveTypeId::Drink, "Drink"}, 
+	{ObjectiveTypeId::Eat, "Eat"}, 
+	{ObjectiveTypeId::GetToSafeTemperature, "GetToSafeTemperature"}, 
+	{ObjectiveTypeId::GivePlantsFluid, "GivePlantsFluid"}, 
+	{ObjectiveTypeId::GoTo, "GoTo"}, 
+	{ObjectiveTypeId::Harvest, "Harvest"}, 
+	{ObjectiveTypeId::Haul, "Haul"}, 
+	{ObjectiveTypeId::Kill, "Kill"}, 
+	{ObjectiveTypeId::Medical, "Medical"}, 
+	{ObjectiveTypeId::Rest, "Rest"}, 
+	{ObjectiveTypeId::Sleep, "Sleep"}, 
+	{ObjectiveTypeId::Station, "Station"}, 
+	{ObjectiveTypeId::SowSeeds, "SowSeeds"}, 
+	{ObjectiveTypeId::StockPile, "StockPile"}, 
+	{ObjectiveTypeId::Wait, "Wait"}, 
+	{ObjectiveTypeId::Wander, "Wander"},
 });
 struct ObjectiveType
 {
@@ -76,7 +76,7 @@ public:
 	Objective(Actor& a, uint32_t p);
 	Objective(const Objective&) = delete;
 	Objective(Objective&&) = delete;
-	Objective(const Json& data, DeserilizationMemo& deserilizationMemo);
+	Objective(const Json& data, DeserializationMemo& deserializationMemo);
 	virtual Json toJson() const;
 	bool operator==(const Objective& other) const { return &other == this; }
 	virtual ~Objective() = default;
@@ -94,7 +94,7 @@ class ObjectiveTypePrioritySet final
 	std::vector<ObjectivePriority> m_data;
 public:
 	ObjectiveTypePrioritySet(Actor& a) : m_actor(a) { }
-	void load(const Json& data, DeserilizationMemo& deserilizationMemo);
+	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void setPriority(const ObjectiveType& objectiveType, uint8_t priority);
 	void remove(const ObjectiveType& objectiveType);
@@ -110,7 +110,7 @@ class SupressedNeed final
 	HasScheduledEvent<SupressedNeedEvent> m_event;
 public:
 	SupressedNeed(std::unique_ptr<Objective> o, Actor& a);
-	SupressedNeed(const Json& data, DeserilizationMemo& deserilizationMemo, Actor& a);
+	SupressedNeed(const Json& data, DeserializationMemo& deserializationMemo, Actor& a);
 	Json toJson() const;
 	void callback();
 	friend class SupressedNeedEvent;
@@ -120,7 +120,7 @@ class SupressedNeedEvent final : public ScheduledEventWithPercent
 {
 	SupressedNeed& m_supressedNeed;
 public:
-	SupressedNeedEvent(SupressedNeed& sn);
+	SupressedNeedEvent(SupressedNeed& sn, const Step start = 0);
 	void execute();
 	void clearReferences();
 };
@@ -144,7 +144,7 @@ public:
 	ObjectiveTypePrioritySet m_prioritySet;
 
 	HasObjectives(Actor& a);
-	void load(const Json& data, DeserilizationMemo& deserilizationMemo);
+	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void getNext();
 	void addNeed(std::unique_ptr<Objective> objective);

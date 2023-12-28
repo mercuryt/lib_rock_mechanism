@@ -1,5 +1,6 @@
 #pragma once
-#include "deserilizationMemo.h"
+//TODO: Move implimentations into cpp file and replace includes with forward declarations it imporove compile time.
+#include "deserializationMemo.h"
 #include "eventSchedule.h"
 #include "faction.h"
 #include "hasShape.h"
@@ -36,7 +37,7 @@ public:
 	std::unique_ptr<Objective> makeFor(Actor& actor) const;
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::StockPile; }
 	StockPileObjectiveType() = default;
-	StockPileObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserilizationMemo& deserilizationMemo){ }
+	StockPileObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo){ }
 };
 class StockPileObjective final : public Objective
 {
@@ -44,7 +45,7 @@ public:
 	HasThreadedTask<StockPileThreadedTask> m_threadedTask;
 	StockPileProject* m_project;
 	StockPileObjective(Actor& a) : Objective(a, Config::stockPilePriority), m_threadedTask(a.getThreadedTaskEngine()), m_project(nullptr) { }
-	StockPileObjective(const Json& data, DeserilizationMemo& deserilizationMemo);
+	StockPileObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void execute();
 	void cancel();
@@ -78,7 +79,7 @@ class StockPile
 	StockPileProject* m_projectNeedingMoreWorkers;
 public:
 	StockPile(std::vector<ItemQuery>& q, Area& a, const Faction& f);
-	StockPile(const Json& data, DeserilizationMemo& deserilizationMemo, Area& area);
+	StockPile(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	Json toJson() const;
 	bool accepts(const Item& item) const;
 	void addBlock(Block& block);
@@ -123,7 +124,7 @@ class StockPileProject final : public Project
 	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
 public:
 	StockPileProject(const Faction* faction, Block& block, Item& item);
-	StockPileProject(const Json& data, DeserilizationMemo& deserilizationMemo);
+	StockPileProject(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	bool canAddWorker(const Actor& actor) const;
 	friend class AreaHasStockPilesForFaction;
@@ -132,7 +133,7 @@ class ReenableStockPileScheduledEvent final : public ScheduledEventWithPercent
 {
 	StockPile& m_stockPile;
 public:
-	ReenableStockPileScheduledEvent(StockPile& sp, Step duration) : ScheduledEventWithPercent(sp.getSimulation(), duration), m_stockPile(sp) { }
+	ReenableStockPileScheduledEvent(StockPile& sp, Step duration, const Step start = 0) : ScheduledEventWithPercent(sp.getSimulation(), duration, start), m_stockPile(sp) { }
 	void execute() { m_stockPile.reenable(); }
 	void clearReferences() { m_stockPile.m_reenableScheduledEvent.clearPointer(); }
 };
@@ -160,8 +161,8 @@ struct StockPileHasShapeDishonorCallback final : public DishonorCallback
 {
 	StockPileProject& m_stockPileProject;
 	StockPileHasShapeDishonorCallback(StockPileProject& hs) : m_stockPileProject(hs) { } 
-	StockPileHasShapeDishonorCallback(const Json& data, DeserilizationMemo& deserilizationMemo) : 
-		m_stockPileProject(static_cast<StockPileProject&>(*deserilizationMemo.m_projects.at(data["project"].get<uintptr_t>()))) { }
+	StockPileHasShapeDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
+		m_stockPileProject(static_cast<StockPileProject&>(*deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()))) { }
 	Json toJson() const { return Json({{"type", "StockPileHasShapeDishonorCallback"}, {"project", reinterpret_cast<uintptr_t>(&m_stockPileProject)}}); }
 	// Craft step project cannot reset so cancel instead and allow to be recreated later.
 	// TODO: Why?
@@ -187,7 +188,7 @@ class AreaHasStockPilesForFaction
 	void destroyStockPile(StockPile& stockPile);
 public:
 	AreaHasStockPilesForFaction(Area& a, const Faction& f) : m_area(a), m_faction(f) { }
-	AreaHasStockPilesForFaction(const Json& data, DeserilizationMemo& deserilizationMemo, Area& a, const Faction& f);
+	AreaHasStockPilesForFaction(const Json& data, DeserializationMemo& deserializationMemo, Area& a, const Faction& f);
 	Json toJson() const;
 	StockPile& addStockPile(std::vector<ItemQuery>&& queries);
 	StockPile& addStockPile(std::vector<ItemQuery>& queries);
@@ -216,7 +217,7 @@ class AreaHasStockPiles
 	std::unordered_map<const Faction*, AreaHasStockPilesForFaction> m_data;
 public:
 	AreaHasStockPiles(Area& a) : m_area(a) { }
-	void load(const Json& data, DeserilizationMemo& deserilizationMemo);
+	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void addFaction(const Faction& faction) { assert(!m_data.contains(&faction)); m_data.try_emplace(&faction, m_area, faction); }
 	void removeFaction(const Faction& faction) { assert(m_data.contains(&faction)); m_data.erase(&faction); }

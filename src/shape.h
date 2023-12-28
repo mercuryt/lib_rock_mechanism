@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "config.h"
 #include "types.h"
 
 #include <cassert>
@@ -93,3 +94,6 @@ struct Shape
 		return *found;
 	}
 };
+inline void to_json(Json& data, const Shape* const& shape){ data = shape->name; }
+inline void to_json(Json& data, const Shape& shape){ data = shape.name; }
+inline void from_json(const Json& data, const Shape*& shape){ shape = &Shape::byName(data.get<std::string>()); }

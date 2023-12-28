@@ -1,6 +1,6 @@
 // Send specific actors to haul a specific item to a specific place.
 #pragma once
-#include "deserilizationMemo.h"
+#include "deserializationMemo.h"
 #include "project.h"
 #include "objective.h"
 
@@ -23,6 +23,8 @@ class TargetedHaulProject final : public Project
 	Step getDuration() const { return Config::addToStockPileDelaySteps; }
 public:
 	TargetedHaulProject(const Faction* f, Block& l, Item& i) : Project(f, l, 4), m_item(i) { }
+	TargetedHaulProject(const Json& data, DeserializationMemo& deserializationMemo);
+	Json toJson() const;
 };
 class TargetedHaulObjective final : public Objective
 {
@@ -30,8 +32,8 @@ class TargetedHaulObjective final : public Objective
 public:
 	TargetedHaulObjective(Actor& a, TargetedHaulProject& p) : Objective(a, Config::targetedHaulPriority), m_project(p)
 	{ m_project.addWorkerCandidate(m_actor, *this); }
-	TargetedHaulObjective(const Json& data, DeserilizationMemo& deserilizationMemo) : Objective(data, deserilizationMemo), 
-	m_project(static_cast<TargetedHaulProject&>(*deserilizationMemo.m_projects.at(data["project"].get<uintptr_t>()))) { }
+	TargetedHaulObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), 
+	m_project(static_cast<TargetedHaulProject&>(*deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()))) { }
 	Json toJson() const;
 	void execute() { m_project.commandWorker(m_actor); }
 	void cancel() { m_project.removeWorker(m_actor); }
@@ -46,7 +48,7 @@ class AreaHasTargetedHauling
 	std::list<TargetedHaulProject> m_projects;
 public:
 	TargetedHaulProject& begin(std::vector<Actor*> actors, Item& item, Block& destination);
-	void load(const Json& data, DeserilizationMemo& deserilizationMemo);
+	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void cancel(TargetedHaulProject& project);
 	void complete(TargetedHaulProject& project);

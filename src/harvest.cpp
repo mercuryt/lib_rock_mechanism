@@ -5,7 +5,7 @@
 #include "objective.h"
 #include "plant.h"
 // Event.
-HarvestEvent::HarvestEvent(Step delay, HarvestObjective& ho) : ScheduledEventWithPercent(ho.m_actor.getSimulation(), delay), m_harvestObjective(ho) {}
+HarvestEvent::HarvestEvent(Step delay, HarvestObjective& ho, const Step start) : ScheduledEventWithPercent(ho.m_actor.getSimulation(), delay, start), m_harvestObjective(ho) {}
 void HarvestEvent::execute()
 {
 	assert(m_harvestObjective.m_block != nullptr);
@@ -72,14 +72,14 @@ std::unique_ptr<Objective> HarvestObjectiveType::makeFor(Actor& actor) const
 }
 // Objective.
 HarvestObjective::HarvestObjective(Actor& a) : Objective(a, Config::harvestPriority), m_block(nullptr), m_harvestEvent(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()) {}
-HarvestObjective::HarvestObjective(const Json& data, DeserilizationMemo& deserilizationMemo) : Objective(data, deserilizationMemo), m_block(nullptr), m_harvestEvent(deserilizationMemo.m_simulation.m_eventSchedule), m_threadedTask(deserilizationMemo.m_simulation.m_threadedTaskEngine)
+HarvestObjective::HarvestObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), m_block(nullptr), m_harvestEvent(deserializationMemo.m_simulation.m_eventSchedule), m_threadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine)
 {
 	if(data.contains("threadedTask"))
 		m_threadedTask.create(*this);
 	if(data.contains("eventStart"))
 		m_harvestEvent.schedule(Config::harvestEventDuration, *this, data["eventStart"].get<Step>());
 	if(data.contains("block"))
-		m_block = &deserilizationMemo.m_simulation.getBlockForJsonQuery(data["block"]);
+		m_block = &deserializationMemo.m_simulation.getBlockForJsonQuery(data["block"]);
 }
 Json HarvestObjective::toJson() const
 {

@@ -1,4 +1,5 @@
 #pragma once
+#include "deserializationMemo.h"
 #include "plant.h"
 #include "faction.h"
 #include "cuboid.h"
@@ -15,6 +16,8 @@ struct FarmField
 	const PlantSpecies* plantSpecies;
 	bool timeToSow;
 	FarmField(std::unordered_set<Block*> b) : blocks(b), plantSpecies(nullptr), timeToSow(false) { }
+	FarmField(const Json& data, DeserializationMemo& deserializationMemo, const Faction& faction);
+	Json toJson() const;
 };
 class IsPartOfFarmField
 {
@@ -47,6 +50,8 @@ class HasFarmFieldsForFaction
 	bool m_plantsNeedingFluidIsSorted;
 public:
 	HasFarmFieldsForFaction(Area& a, const Faction& f) : m_area(a), m_faction(f) { }
+	HasFarmFieldsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Area& a, const Faction& f);
+	Json toJson() const;
 	void addGivePlantFluidDesignation(Plant& plant);
 	void removeGivePlantFluidDesignation(Plant& plant);
 	void addSowSeedsDesignation(Block& block);
@@ -76,6 +81,8 @@ class HasFarmFields
 	std::unordered_map<const Faction*, HasFarmFieldsForFaction> m_data;
 public:
 	HasFarmFields(Area& a) : m_area(a) { } 
+	void load(const Json& data, DeserializationMemo& deserializationMemo);
+	Json toJson() const;
 	HasFarmFieldsForFaction& at(const Faction& faction);
 	void registerFaction(const Faction& faction);
 	void unregisterFaction(const Faction& faction);

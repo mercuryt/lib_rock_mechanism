@@ -1,6 +1,6 @@
 #pragma once
 
-#include "deserilizationMemo.h"
+#include "deserializationMemo.h"
 #include "nthAdjacentOffsets.h"
 #include "eventSchedule.hpp"
 #include "config.h"
@@ -83,7 +83,7 @@ class GetToSafeTemperatureObjective final : public Objective
 	bool m_noWhereWithSafeTemperatureFound;
 public:
 	GetToSafeTemperatureObjective(Actor& a);
-	GetToSafeTemperatureObjective(const Json& data, DeserilizationMemo& deserilizationMemo);
+	GetToSafeTemperatureObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void execute();
 	void cancel() { m_getToSafeTemperatureThreadedTask.maybeCancel(); }
@@ -109,7 +109,7 @@ class UnsafeTemperatureEvent final : public ScheduledEventWithPercent
 {
 	Actor& m_actor;
 public:
-	UnsafeTemperatureEvent(Actor& a);
+	UnsafeTemperatureEvent(Actor& a, const Step start = 0);
 	void execute();
 	void clearReferences();
 };

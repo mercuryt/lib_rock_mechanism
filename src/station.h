@@ -1,5 +1,5 @@
 #pragma once
-#include "deserilizationMemo.h"
+#include "deserializationMemo.h"
 #include "objective.h"
 #include "config.h"
 #include "simulation.h"
@@ -10,8 +10,8 @@ class StationObjective final : public Objective
 	Block& m_location;
 public:
 	StationObjective(Actor& a, Block& l) : Objective(a, Config::stationPriority), m_location(l) { }
-	StationObjective(const Json& data, DeserilizationMemo& deserilizationMemo) : Objective(data, deserilizationMemo), 
-	m_location(deserilizationMemo.m_simulation.getBlockForJsonQuery(data["block"])) { }
+	StationObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), 
+	m_location(deserializationMemo.m_simulation.getBlockForJsonQuery(data["block"])) { }
 	void execute();
 	void cancel() { }
 	void delay() { }

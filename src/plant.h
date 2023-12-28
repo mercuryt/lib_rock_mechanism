@@ -1,5 +1,6 @@
 #pragma once
 
+#include "deserializationMemo.h"
 #include "reservable.h"
 #include "eventSchedule.hpp"
 
@@ -54,6 +55,9 @@ struct PlantSpecies final
 		return *found;
 	}
 };
+inline void to_json(Json& data, const PlantSpecies* const& plantSpecies){ data = plantSpecies->name; }
+inline void to_json(Json& data, const PlantSpecies& plantSpecies){ data = plantSpecies.name; }
+inline void from_json(const Json& data, const PlantSpecies*& plantSpecies){ plantSpecies = &PlantSpecies::byName(data.get<std::string>()); }
 class Plant final
 {
 public:
@@ -73,6 +77,8 @@ public:
 	Volume m_volumeFluidRequested;
 
 	Plant(Block& l, const PlantSpecies& ps, Percent pg = 0, Volume volumeFluidRequested = 0, Step needsFluidEventStart = 0, bool temperatureIsUnsafe = 0, Step unsafeTemperatureEventStart = 0, uint32_t harvestableQuantity = 0, Percent percentFoliage = 100);
+	Plant(const Json& data, DeserializationMemo& deserializationMemo, Block& location);
+	Json toJson() const;
 	void die();
 	void setTemperature(Temperature temperature);
 	void setHasFluidForNow();
@@ -99,7 +105,7 @@ public:
 	const Volume& getVolumeFluidRequested() { return m_volumeFluidRequested; }
 	bool operator==(const Plant& p) const { return &p == this; }
 };
-
+void to_json(Json& data, const Plant* const& plant);
 class PlantGrowthEvent final : public ScheduledEventWithPercent
 {
 	Plant& m_plant;
@@ -170,8 +176,10 @@ class HasPlants final
 	std::unordered_set<Plant*> m_plantsOnSurface;
 public:
 	Plant& emplace(Block& location, const PlantSpecies& species, Percent percentGrowth = 0, Volume volumeFluidRequested = 0, Step needsFluidEventStart = 0, bool temperatureIsUnsafe = 0, Step unsafeTemperatureEventStart = 0, uint32_t harvestableQuantity = 0, Percent percentFoliage = 100);
+	Plant& emplace(const Json& data, DeserializationMemo& deserializationMemo);
 	void erase(Plant& plant);
 	void onChangeAmbiantSurfaceTemperature();
 	std::unordered_set<Plant*>& getPlantsOnSurface() { return m_plantsOnSurface; }
 	std::list<Plant>& getAll() { return m_plants; }
+	const std::list<Plant>& getAllConst() const { return m_plants; }
 };

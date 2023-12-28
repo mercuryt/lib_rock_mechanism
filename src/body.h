@@ -1,15 +1,21 @@
 #pragma once
 
-#include "materialType.h"
-#include "woundType.h"
 #include "attackType.h"
-#include "fight.h"
+#include "deserializationMemo.h"
+#include "woundType.h"
 #include "hit.h"
-#include "eventSchedule.h"
 #include "eventSchedule.hpp"
+#include "fight.h"
 
 #include <vector>
 #include <utility>
+
+struct BodyPart;
+class WoundHealEvent;
+class BleedEvent;
+class WoundsCloseEvent;
+struct MaterialType;
+class Actor;
 
 // For example: 'left arm', 'head', etc.
 struct BodyPartType final
@@ -49,10 +55,6 @@ struct BodyType final
 		return std::ranges::find(bodyPartTypes, &bodyPartType) != bodyPartTypes.end();
 	}
 };
-struct BodyPart;
-class WoundHealEvent;
-class BleedEvent;
-class WoundsCloseEvent;
 struct Wound final
 {
 	const WoundType woundType;
@@ -64,7 +66,7 @@ struct Wound final
 	Percent maxPercentPermanantImpairment;
 	HasScheduledEvent<WoundHealEvent> healEvent;
 	Wound(Actor& a, const WoundType wt, BodyPart& bp, Hit h, uint32_t bvr, Percent ph = 0);
-	Wound(const Json data, Actor& a, BodyPart& bp);
+	Wound(const Json& data, DeserializationMemo& deserializationMemo, BodyPart& bp);
 	bool operator==(const Wound& other) const { return &other == this; }
 	Percent getPercentHealed() const;
 	Percent impairPercent() const;
@@ -77,7 +79,7 @@ struct BodyPart final
 	std::list<Wound> wounds;
 	bool severed;
 	BodyPart(const BodyPartType& bpt, const MaterialType& mt) : bodyPartType(bpt), materialType(mt), severed(false) {}
-	BodyPart(const Json data);
+	BodyPart(const Json data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 };
 /*
@@ -98,7 +100,7 @@ class Body final
 public:
 	std::list<BodyPart> m_bodyParts;
 	Body(Actor& a);
-	Body(const Json& data, Actor& a);
+	Body(const Json& data, DeserializationMemo& deserializationMemo, Actor& a);
 	BodyPart& pickABodyPartByVolume();
 	BodyPart& pickABodyPartByType(const BodyPartType& bodyPartType);
 	// Armor has already been applied, calculate hit depth.
@@ -139,7 +141,7 @@ class WoundHealEvent : public ScheduledEventWithPercent
 	Wound& m_wound;
 	Body& m_body;
 public:
-	WoundHealEvent(const Step delay, Wound& w, Body& b);
+	WoundHealEvent(const Step delay, Wound& w, Body& b, const Step start = 0);
 	void execute() { m_body.healWound(m_wound); }
 	void clearReferences() { m_wound.healEvent.clearPointer(); }
 };
@@ -147,7 +149,7 @@ class BleedEvent : public ScheduledEventWithPercent
 {
 	Body& m_body;
 public:
-	BleedEvent(const Step delay, Body& b);
+	BleedEvent(const Step delay, Body& b, const Step start = 0);
 	void execute() { m_body.bleed(); }
 	void clearReferences() { m_body.m_bleedEvent.clearPointer(); }
 };
@@ -155,7 +157,7 @@ class WoundsCloseEvent : public ScheduledEventWithPercent
 {
 	Body& m_body;
 public:
-	WoundsCloseEvent(const Step delay, Body& b);
+	WoundsCloseEvent(const Step delay, Body& b, const Step start = 0);
 	void execute() { m_body.woundsClose(); }
 	void clearReferences() { m_body.m_woundsCloseEvent.clearPointer(); }
 };

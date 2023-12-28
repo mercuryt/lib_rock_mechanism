@@ -3,7 +3,26 @@
 #include "area.h"
 #include "designations.h"
 #include "simulation.h"
+#include "plant.h"
 #include <algorithm>
+FarmField::FarmField(const Json& data, DeserializationMemo& deserializationMemo, const Faction& faction)
+{
+	for(const Json& blockReference : data["blocks"])
+	{
+		Block& block = deserializationMemo.blockReference(blockReference);
+		blocks.insert(&block);
+		block.m_isPartOfFarmField.insert(faction, *this);
+	}
+	plantSpecies = data["plantSpecies"].get<const PlantSpecies*>();
+	timeToSow = data["timeToSow"];
+}
+Json FarmField::toJson() const 
+{
+	Json data{{"blocks", Json::array()}, {"plantSpecies", plantSpecies}, {"timeToSow", timeToSow}};
+	for(Block* block : blocks)
+		data["blocks"].push_back(block);
+	return data;
+}
 void IsPartOfFarmField::insert(const Faction& faction, FarmField& farmField)
 {
 	assert(!m_farmFields.contains(&faction));
@@ -61,6 +80,30 @@ void IsPartOfFarmField::removeAllSowSeedsDesignations()
 bool IsPartOfFarmField::isSowingSeasonFor(const PlantSpecies& species) const
 {
 	return m_block.m_area->m_simulation.m_now.day >= species.dayOfYearForSowStart && m_block.m_area->m_simulation.m_now.day <= species.dayOfYearForSowEnd;
+}
+HasFarmFieldsForFaction::HasFarmFieldsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Area& a, const Faction& f) : m_area(a), m_faction(f), m_plantsNeedingFluidIsSorted(data["plantsNeedingFluidIsSorted"].get<bool>())
+{
+	for(const Json& farmFieldData : data["farmFields"])
+		m_farmFields.emplace_back(farmFieldData, deserializationMemo, m_faction);
+	for(const Json& plantReference : data["plantsNeedingFluid"])
+		m_plantsNeedingFluid.push_back(&deserializationMemo.plantReference(plantReference));
+	for(const Json& plantReference : data["plantsToHarvest"])
+		m_plantsToHarvest.insert(&deserializationMemo.plantReference(plantReference));
+	for(const Json& blockReference : data["blocksNeedingSeedsSewn"])
+		m_blocksNeedingSeedsSewn.insert(&deserializationMemo.blockReference(blockReference));
+}
+Json HasFarmFieldsForFaction::toJson() const
+{
+	Json data{{"farmFields", Json::array(), "plantsNeedingFluid", Json::array()}, {"plantsToHarvest", Json::array()}, {"blocksNeedingSeedsSewn", Json::array()}, {"plantsNeedingFluidIsSorted", m_plantsNeedingFluidIsSorted}};
+	for(const FarmField& farmField : m_farmFields)
+		data["farmFields"].push_back(farmField.toJson());
+	for(const Plant* plant : m_plantsNeedingFluid)
+		data["plantsNeedingFluid"].push_back(plant);
+	for(const Plant* plant : m_plantsToHarvest)
+		data["plantsToHarvest"].push_back(plant);
+	for(const Block* block : m_blocksNeedingSeedsSewn)
+		data["blocksNeedingSeedsSewn"].push_back(block);
+	return data;
 }
 bool HasFarmFieldsForFaction::hasGivePlantsFluidDesignations() const
 {
@@ -236,6 +279,22 @@ void HasFarmFieldsForFaction::undesignateBlocks(std::unordered_set<Block*>& bloc
 HasFarmFieldsForFaction& HasFarmFields::at(const Faction& faction)
 {
 	return m_data.at(&faction);
+}
+void HasFarmFields::load(const Json& data, DeserializationMemo& deserializationMemo)
+{
+	for(const Json& pair : data)
+	{
+		const Faction& faction = deserializationMemo.faction(pair[0]);
+		assert(!m_data.contains(&faction));
+		m_data.try_emplace(&faction, pair[1], deserializationMemo, m_area, faction);
+	}
+}
+Json HasFarmFields::toJson() const
+{
+	Json data;
+	for(auto& [faction, hasFarmFieldsForFaction] : m_data)
+		Json pair{faction, hasFarmFieldsForFaction.toJson()};
+	return data;
 }
 void HasFarmFields::registerFaction(const Faction& faction)
 {

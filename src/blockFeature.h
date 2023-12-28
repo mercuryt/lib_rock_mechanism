@@ -46,7 +46,7 @@ struct BlockFeatureType
 		return fortification;
 	}
 };
-
+inline void to_json(Json& data, const BlockFeatureType* const & blockFeatueType){ data = blockFeatueType->name; }
 struct BlockFeature
 {
 	// Use pointers rather then references so we can store in vector and be able to erase at arbirtary index.

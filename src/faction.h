@@ -20,6 +20,7 @@ struct Faction
 	Faction(Faction&& faction) = delete;
 };
 inline void to_json(Json& data, const Faction& faction) { data = faction.m_name; }
+inline void to_json(Json& data, const Faction* const& faction) { data = faction->m_name; }
 
 class SimulationHasFactions final
 {

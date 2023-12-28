@@ -1,9 +1,9 @@
 #include "reservable.h"
 #include "simulation.h"
 #include "deserializeDishonorCallbacks.h"
-void CanReserve::load(const Json& data, DeserilizationMemo& deserializationMemo)
+void CanReserve::load(const Json& data, DeserializationMemo& deserializationMemo)
 { 
-	m_faction = deserializationMemo.m_simulation.m_hasFactions.byName(data["faction"].get<std::wstring>());
+	m_faction = &deserializationMemo.faction(data["faction"].get<std::wstring>());
 	for(const Json& reservationData : data["reservations"])
 	{
 		Reservable& reservable = *deserializationMemo.m_reservables.at(reservationData["reservable"].get<uintptr_t>());

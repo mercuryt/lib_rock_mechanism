@@ -1,5 +1,6 @@
 #include "leadAndFollow.h"
 #include "block.h"
+#include "deserializationMemo.h"
 void CanLead::onMove()
 {
 	if(!isLeading())
@@ -77,6 +78,14 @@ std::deque<Block*>& CanLead::getLocationQueue()
 	return m_hasShape.m_canFollow.getLineLeader().m_canLead.m_locationQueue;
 }
 CanFollow::CanFollow(HasShape& a) : m_hasShape(a), m_canLead(nullptr), m_event(a.getEventSchedule()) { }
+void CanFollow::load(const Json& data, DeserializationMemo& deserializationMemo)
+{
+	if(data.contains("leader"))
+	{
+		HasShape& leader = deserializationMemo.hasShapeReference(data["leader"]);
+		follow(leader.m_canLead, false);
+	}
+}
 void CanFollow::follow(CanLead& canLead, bool doAdjacentCheck)
 {
 	assert(m_canLead == nullptr);
@@ -153,6 +162,6 @@ HasShape& CanFollow::getLineLeader()
 	else
 		return m_canLead->m_hasShape.m_canFollow.getLineLeader();
 }
-CanFollowEvent::CanFollowEvent(HasShape& hasShape) : ScheduledEventWithPercent(hasShape.getSimulation(), Config::stepsToDelayBeforeTryingAgainToFollowLeader), m_hasShape(hasShape) { }
+CanFollowEvent::CanFollowEvent(HasShape& hasShape, const Step start) : ScheduledEventWithPercent(hasShape.getSimulation(), Config::stepsToDelayBeforeTryingAgainToFollowLeader, start), m_hasShape(hasShape) { }
 void CanFollowEvent::execute() { m_hasShape.m_canFollow.tryToMove(); }
 void CanFollowEvent::clearReferences() { m_hasShape.m_canFollow.m_event.clearPointer(); }

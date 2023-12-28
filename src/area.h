@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "deserilizationMemo.h"
+#include "deserializationMemo.h"
 #include "types.h"
 #include "block.h"
 #include "fluidGroup.h"
@@ -42,10 +42,10 @@ public:
 	std::unordered_set<Block*> m_caveInCheck;
 	std::vector<std::tuple<std::vector<Block*>,uint32_t,uint32_t>> m_caveInData;
 
-	AreaHasTemperature m_areaHasTemperature;
+	AreaHasTemperature m_hasTemperature;
 	AreaHasActors m_hasActors;
 	HasPlants m_hasPlants;
-	HasFires m_fires;
+	AreaHasFires m_fires;
 	HasFarmFields m_hasFarmFields;
 	HasHaulTools m_hasHaulTools;
 	HasDigDesignations m_hasDigDesignations;
@@ -68,6 +68,10 @@ public:
 
 	// Create blocks and store adjacent
 	Area(AreaId id, Simulation& s, uint32_t x, uint32_t y, uint32_t z);
+	Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& s);
+	Area(const Area& area) = delete;
+	Area(const Area&& area) = delete;
+	void setup();
 
 	void readStep();
 	void writeStep();
@@ -91,10 +95,7 @@ public:
 
 	Cuboid getZLevel(uint32_t z);
 	Json toJson() const;
-	// To be run after items and actors are loaded.
-	void loadProjects(const Json& data, DeserilizationMemo& deserilizationMemo);
-	void loadPlantFromJson(const Json& data);
-	void loadFireFromJson(const Json& data);
+	bool operator==(const Area& other) const { return this == &other; }
 	// For testing.
 	[[maybe_unused]] void logActorsAndItems() const;
 	uint32_t getTotalCountOfItemTypeOnSurface(const ItemType& itemType) const;

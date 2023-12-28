@@ -1,7 +1,7 @@
 #include "wander.h"
 #include "actor.h"
 #include "block.h"
-#include "deserilizationMemo.h"
+#include "deserializationMemo.h"
 #include "random.h"
 #include "config.h"
 #include "simulation.h"
@@ -35,8 +35,8 @@ void WanderThreadedTask::writeStep()
 }
 void WanderThreadedTask::clearReferences() { m_objective.m_threadedTask.clearPointer(); }
 WanderObjective::WanderObjective(Actor& a) : Objective(a, 0u), m_threadedTask(a.getThreadedTaskEngine()), m_routeFound(false) { }
-WanderObjective::WanderObjective(const Json& data, DeserilizationMemo& deserilizationMemo) : Objective(data, deserilizationMemo), 
-	m_threadedTask(deserilizationMemo.m_simulation.m_threadedTaskEngine), m_routeFound(false)
+WanderObjective::WanderObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), 
+	m_threadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine), m_routeFound(false)
 {
 	if(data.contains("threadedTask"))
 		m_threadedTask.create(*this);

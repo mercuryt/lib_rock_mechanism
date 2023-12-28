@@ -1,7 +1,7 @@
 #pragma once
 
 #include "config.h"
-#include "deserilizationMemo.h"
+#include "deserializationMemo.h"
 #include "objective.h"
 #include "reservable.h"
 #include "threadedTask.h"
@@ -26,7 +26,7 @@ public:
 	std::unique_ptr<Objective> makeFor(Actor& actor) const;
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Construct; }
 	ConstructObjectiveType() = default;
-	ConstructObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserilizationMemo& deserilizationMemo){ }
+	ConstructObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo){ }
 };
 class ConstructObjective final : public Objective
 {
@@ -34,7 +34,7 @@ class ConstructObjective final : public Objective
 	Project* m_project;
 public:
 	ConstructObjective(Actor& a) : Objective(a, Config::constructObjectivePriority), m_constructThreadedTask(a.getThreadedTaskEngine()), m_project(nullptr) { }
-	ConstructObjective(const Json& data, DeserilizationMemo& deserilizationMemo);
+	ConstructObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void execute();
 	void cancel();
@@ -77,7 +77,7 @@ class ConstructProject final : public Project
 public:
 	// BlockFeatureType can be null, meaning the block is to be filled with a constructed wall.
 	ConstructProject(const Faction* faction, Block& b, const BlockFeatureType* bft, const MaterialType& mt, std::unique_ptr<DishonorCallback> dishonorCallback) : Project(faction, b, Config::maxNumberOfWorkersForConstructionProject, std::move(dishonorCallback)), m_blockFeatureType(bft), m_materialType(mt) { }
-	ConstructProject(const Json& data, DeserilizationMemo& deserilizationMemo);
+	ConstructProject(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	// What would the total delay time be if we started from scratch now with current workers?
 	friend class HasConstructionDesignationsForFaction;
@@ -87,7 +87,7 @@ struct ConstructionLocationDishonorCallback final : public DishonorCallback
 	const Faction& m_faction;
 	Block& m_location;
 	ConstructionLocationDishonorCallback(const Faction& f, Block& l) : m_faction(f), m_location(l) { }
-	ConstructionLocationDishonorCallback(const Json& data, DeserilizationMemo& deserilizationMemo);
+	ConstructionLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount);
 };
@@ -98,7 +98,7 @@ class HasConstructionDesignationsForFaction final
 	std::unordered_map<Block*, ConstructProject> m_data;
 public:
 	HasConstructionDesignationsForFaction(const Faction& p) : m_faction(p) { }
-	HasConstructionDesignationsForFaction(const Json& data, DeserilizationMemo& deserilizationMemo, const Faction& faction);
+	HasConstructionDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const Faction& faction);
 	Json toJson() const;
 	// If blockFeatureType is null then construct a wall rather then a feature.
 	void designate(Block& block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType);
@@ -115,7 +115,7 @@ class HasConstructionDesignations final
 {
 	std::unordered_map<const Faction*, HasConstructionDesignationsForFaction> m_data;
 public:
-	void load(const Json& data, DeserilizationMemo& deserilizationMemo);
+	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void addFaction(const Faction& faction);
 	void removeFaction(const Faction& faction);

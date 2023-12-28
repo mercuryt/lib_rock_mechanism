@@ -9,22 +9,22 @@ CanGrow::CanGrow(Actor& a, Percent pg) : m_actor(a), m_event(a.getEventSchedule(
 CanGrow::CanGrow(const Json& data, Actor& a) : m_actor(a), m_event(a.getEventSchedule()), m_updateEvent(a.getEventSchedule()), m_percentGrown(data["percentGrown"].get<Percent>())
 {
 	if(data.contains("eventStart"))
-		m_event.schedule(data["eventDelay"].get<Step>(), *this, data["eventStart"].get<Step>());
+		m_event.schedule(data["eventDuration"].get<Step>(), *this, data["eventStart"].get<Step>());
 	if(data.contains("updateEventStart"))
-		m_updateEvent.schedule(data["updateEventDelay"].get<Step>(), *this, data["updateEventStart"].get<Step>());
+		m_updateEvent.schedule(data["updateEventDuration"].get<Step>(), *this, data["updateEventStart"].get<Step>());
 }
-Json CanGrow::toJson()
+Json CanGrow::toJson() const
 {
 	Json data({{"percentGrown", growthPercent()}});
 	if(m_event.exists())
 	{
 		data["eventStart"] = m_event.getStartStep();
-		data["eventDelay"] = m_event.delay();
+		data["eventuration"] = m_event.duration();
 	}
 	if(m_updateEvent.exists())
 	{
 		data["updateEventStart"] = m_updateEvent.getStartStep();
-		data["updateEventDelay"] = m_updateEvent.delay();
+		data["updateEventDuration"] = m_updateEvent.duration();
 	}
 	return data;
 }
@@ -78,5 +78,5 @@ void CanGrow::maybeStart()
 	if(m_event.exists())
 		updateGrowingStatus();
 }
-AnimalGrowthEvent::AnimalGrowthEvent(Step delay, CanGrow& cg) : ScheduledEventWithPercent(cg.m_actor.getSimulation(), delay), m_canGrow(cg) { }
-AnimalGrowthUpdateEvent::AnimalGrowthUpdateEvent(Step delay, CanGrow& cg) : ScheduledEventWithPercent(cg.m_actor.getSimulation(), delay), m_canGrow(cg) { }
+AnimalGrowthEvent::AnimalGrowthEvent(Step delay, CanGrow& cg, const Step start) : ScheduledEventWithPercent(cg.m_actor.getSimulation(), delay, start), m_canGrow(cg) { }
+AnimalGrowthUpdateEvent::AnimalGrowthUpdateEvent(Step delay, CanGrow& cg, const Step start) : ScheduledEventWithPercent(cg.m_actor.getSimulation(), delay, start), m_canGrow(cg) { }

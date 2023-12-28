@@ -3,6 +3,8 @@
  */
 #pragma once
 
+#include "deserializationMemo.h"
+#include "faction.h"
 #include "shape.h"
 #include "leadAndFollow.h"
 #include "onDestroy.h"
@@ -15,14 +17,16 @@ struct MoveType;
 class BlockHasShapes;
 class Actor;
 class Item;
-class Faction;
+struct Faction;
 class CanReserve;
-
+class Simulation;
 class HasShape
 {
 	Simulation& m_simulation;
 protected:
 	HasShape(Simulation& simulation, const Shape& shape, bool st, uint8_t f = 0u, uint32_t mr = 1u) : m_simulation(simulation), m_static(st), m_shape(&shape), m_location(nullptr), m_facing(f), m_canLead(*this), m_canFollow(*this), m_reservable(mr), m_isUnderground(false)  {}
+	HasShape(const Json& data, DeserializationMemo& deserializationMemo);
+	Json toJson() const;
 	bool m_static;
 public:
 	const Shape* m_shape;
@@ -118,3 +122,4 @@ public:
 	// For testing.
 	[[maybe_unused, nodiscard]] bool moveCostCacheIsEmpty() const { return m_moveCostsCache.empty(); }
 };
+inline void to_json(Json& data, const HasShape* const& hasShape){ data = reinterpret_cast<uintptr_t>(hasShape); }

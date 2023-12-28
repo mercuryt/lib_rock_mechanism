@@ -18,23 +18,23 @@ Temperature TemperatureSource::getTemperatureDeltaForRange(Temperature range)
 }
 void TemperatureSource::apply()
 {
-	m_block.m_area->m_areaHasTemperature.addDelta(m_block, m_temperature);
+	m_block.m_area->m_hasTemperature.addDelta(m_block, m_temperature);
 	int range = 1;
 	while(int delta = getTemperatureDeltaForRange(range))
 	{
 		for(Block* block : getNthAdjacentBlocks(m_block, range))
-			block->m_area->m_areaHasTemperature.addDelta(*block, delta);
+			block->m_area->m_hasTemperature.addDelta(*block, delta);
 		++range;
 	}
 }
 void TemperatureSource::unapply()
 {
-	m_block.m_area->m_areaHasTemperature.addDelta(m_block, m_temperature * -1);
+	m_block.m_area->m_hasTemperature.addDelta(m_block, m_temperature * -1);
 	int range = 1;
 	while(int delta = getTemperatureDeltaForRange(range))
 	{
 		for(Block* block : getNthAdjacentBlocks(m_block, range))
-			block->m_area->m_areaHasTemperature.addDelta(*block, delta * -1);
+			block->m_area->m_hasTemperature.addDelta(*block, delta * -1);
 		++range;
 	}
 }
@@ -175,7 +175,7 @@ const Temperature& BlockHasTemperature::getAmbientTemperature() const
 		else
 			return Config::undergroundAmbiantTemperature;
 	}
-	return m_block.m_area->m_areaHasTemperature.getAmbientSurfaceTemperature();
+	return m_block.m_area->m_hasTemperature.getAmbientSurfaceTemperature();
 }
 Temperature BlockHasTemperature::getDailyAverageAmbientTemperature() const 
 {
@@ -186,7 +186,7 @@ Temperature BlockHasTemperature::getDailyAverageAmbientTemperature() const
 		else
 			return Config::undergroundAmbiantTemperature;
 	}
-	return m_block.m_area->m_areaHasTemperature.getDailyAverageAmbientSurfaceTemperature(m_block.m_area->m_simulation.m_now);
+	return m_block.m_area->m_hasTemperature.getDailyAverageAmbientSurfaceTemperature(m_block.m_area->m_simulation.m_now);
 }
 //TODO: Detour locked to true for emergency moves.
 GetToSafeTemperatureThreadedTask::GetToSafeTemperatureThreadedTask(GetToSafeTemperatureObjective& o) : ThreadedTask(o.m_actor.getThreadedTaskEngine()), m_objective(o), m_findsPath(o.m_actor, true) ,m_noWhereWithSafeTemperatureFound(false) { }
@@ -219,7 +219,7 @@ void GetToSafeTemperatureThreadedTask::writeStep()
 }
 void GetToSafeTemperatureThreadedTask::clearReferences(){ m_objective.m_getToSafeTemperatureThreadedTask.clearPointer(); }
 GetToSafeTemperatureObjective::GetToSafeTemperatureObjective(Actor& a) : Objective(a, Config::getToSafeTemperaturePriority), m_getToSafeTemperatureThreadedTask(a.getThreadedTaskEngine()), m_noWhereWithSafeTemperatureFound(false) { }
-GetToSafeTemperatureObjective::GetToSafeTemperatureObjective(const Json& data, DeserilizationMemo& deserilizationMemo) : Objective(data, deserilizationMemo), m_getToSafeTemperatureThreadedTask(deserilizationMemo.m_simulation.m_threadedTaskEngine), m_noWhereWithSafeTemperatureFound(data["noWhereSafeFound"].get<bool>())
+GetToSafeTemperatureObjective::GetToSafeTemperatureObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), m_getToSafeTemperatureThreadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine), m_noWhereWithSafeTemperatureFound(data["noWhereSafeFound"].get<bool>())
 {
 	if(data.contains("threadedTask"))
 		m_getToSafeTemperatureThreadedTask.create(*this);
@@ -256,7 +256,7 @@ void GetToSafeTemperatureObjective::reset()
 	m_actor.m_canReserve.clearAll();
 }
 GetToSafeTemperatureObjective::~GetToSafeTemperatureObjective() { m_actor.m_needsSafeTemperature.m_objectiveExists = false; }
-UnsafeTemperatureEvent::UnsafeTemperatureEvent(Actor& a) : ScheduledEventWithPercent(a.getSimulation(), a.m_species.stepsTillDieInUnsafeTemperature), m_actor(a) { }
+UnsafeTemperatureEvent::UnsafeTemperatureEvent(Actor& a, const Step start) : ScheduledEventWithPercent(a.getSimulation(), a.m_species.stepsTillDieInUnsafeTemperature, start), m_actor(a) { }
 void UnsafeTemperatureEvent::execute() { m_actor.die(CauseOfDeath::temperature); }
 void UnsafeTemperatureEvent::clearReferences() { m_actor.m_needsSafeTemperature.m_event.clearPointer(); }
 ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(Actor& a) : m_actor(a), m_event(a.getEventSchedule()), m_objectiveExists(false) { }

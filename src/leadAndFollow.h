@@ -1,5 +1,6 @@
 #pragma once
 
+#include "deserializationMemo.h"
 #include "eventSchedule.hpp"
 #include "config.h"
 
@@ -19,6 +20,8 @@ class CanFollow final
 	HasScheduledEvent<CanFollowEvent> m_event;
 public:
 	CanFollow(HasShape& a);
+	void load(const Json& data, DeserializationMemo& deserializationMemo);
+	[[nodiscard]] Json toJson() const;
 	void follow(CanLead& canLead, bool doAdjacentCheck = true);
 	void unfollow();
 	void unfollowIfFollowing();
@@ -55,7 +58,7 @@ class CanFollowEvent final : public ScheduledEventWithPercent
 	//TODO: Cache moveTo.
 	HasShape& m_hasShape;
 public:
-	CanFollowEvent(HasShape& hasShape);
+	CanFollowEvent(HasShape& hasShape, const Step start = 0);
 	void execute();
 	void clearReferences();
 };

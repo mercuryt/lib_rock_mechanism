@@ -1,10 +1,12 @@
 #pragma once
 
-#include "fight.h"
-#include "hit.h"
-#include "materialType.h"
-#include "body.h"
-#include "item.h"
+#include "config.h"
+
+class Actor;
+class Item;
+class BodyPartType;
+struct Attack;
+struct Hit;
 
 #include <vector>
 #include <queue>

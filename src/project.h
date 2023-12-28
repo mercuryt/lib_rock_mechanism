@@ -1,6 +1,6 @@
 #pragma once
 
-#include "deserilizationMemo.h"
+#include "deserializationMemo.h"
 #include "hasShape.h"
 #include "reservable.h"
 #include "actor.h"
@@ -28,7 +28,7 @@ struct ProjectWorker final
 	HaulSubproject* haulSubproject;
 	Objective& objective;
 	ProjectWorker(Objective& o) : haulSubproject(nullptr), objective(o) { }
-	ProjectWorker(const Json& data, DeserilizationMemo& deserilizationMemo);
+	ProjectWorker(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 };
 struct ProjectRequirementCounts final
@@ -38,7 +38,7 @@ struct ProjectRequirementCounts final
 	uint8_t reserved;
 	bool consumed;
 	ProjectRequirementCounts(const uint8_t r, bool c) : required(r), delivered(0), reserved(0), consumed(c) { }
-	ProjectRequirementCounts(const Json& data, DeserilizationMemo& deserilizationMemo);
+	ProjectRequirementCounts(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 };
 struct ProjectRequiredShapeDishonoredCallback final : public DishonorCallback
@@ -46,7 +46,7 @@ struct ProjectRequiredShapeDishonoredCallback final : public DishonorCallback
 	Project& m_project;
 	HasShape& m_hasShape;
 	ProjectRequiredShapeDishonoredCallback(Project& p, HasShape& hs) : m_project(p), m_hasShape(hs) { }
-	ProjectRequiredShapeDishonoredCallback(const Json& data, DeserilizationMemo& deserializationMemo) : m_project(*deserializationMemo.m_projects.at(data["project"].get<uintptr_t>())), m_hasShape(*deserializationMemo.m_hasShapes.at(data["hasShape"].get<uintptr_t>())) { }
+	ProjectRequiredShapeDishonoredCallback(const Json& data, DeserializationMemo& deserializationMemo) : m_project(*deserializationMemo.m_projects.at(data["project"].get<uintptr_t>())), m_hasShape(*deserializationMemo.m_hasShapes.at(data["hasShape"].get<uintptr_t>())) { }
 	Json toJson() const { return Json({{"type", "ProjectRequiredShapeDishonoredCallback"}, {"project", reinterpret_cast<uintptr_t>(&m_project)}, {"hasShape", reinterpret_cast<uintptr_t>(&m_hasShape)}}); }
 	void execute(uint32_t oldCount, uint32_t newCount);
 };
@@ -109,11 +109,11 @@ protected:
 	// They have one or more workers plus optional haul tool and beast of burden.
 	std::list<HaulSubproject> m_haulSubprojects;
 	Project(const Faction* f, Block& l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr);
-	Project(const Json& data, DeserilizationMemo& deserilizationMemo);
+	Project(const Json& data, DeserializationMemo& deserializationMemo);
 public:
 	Json toJson() const;
 	// Seperated from primary Json constructor because must be run after objectives are created.
-	void loadWorkers(const Json& data, DeserilizationMemo& deserilizationMemo);
+	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	void addWorkerCandidate(Actor& actor, Objective& objective);
 	void removeWorkerCandidate(Actor& actor);
 	// To be called by Objective::execute.
@@ -183,11 +183,12 @@ public:
 	friend class HaulSubproject;
 };
 inline void to_json(Json& data, const Project& project){ data = reinterpret_cast<uintptr_t>(&project); }
+inline void to_json(Json& data, const Project* const& project){ data = reinterpret_cast<uintptr_t>(&project); }
 class ProjectFinishEvent final : public ScheduledEventWithPercent
 {
 	Project& m_project;
 public:
-	ProjectFinishEvent(const Step delay, Project& p);
+	ProjectFinishEvent(const Step delay, Project& p, const Step start = 0);
 	void execute();
 	void clearReferences();
 };
@@ -195,7 +196,7 @@ class ProjectTryToHaulEvent final : public ScheduledEventWithPercent
 {
 	Project& m_project;
 public:
-	ProjectTryToHaulEvent(const Step delay, Project& p);
+	ProjectTryToHaulEvent(const Step delay, Project& p, const Step start = 0);
 	void execute();
 	void clearReferences();
 };
@@ -203,7 +204,7 @@ class ProjectTryToReserveEvent final : public ScheduledEventWithPercent
 {
 	Project& m_project;
 public:
-	ProjectTryToReserveEvent(const Step delay, Project& p);
+	ProjectTryToReserveEvent(const Step delay, Project& p, const Step start = 0);
 	void execute();
 	void clearReferences();
 };

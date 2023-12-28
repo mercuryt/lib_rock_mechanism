@@ -51,3 +51,6 @@ struct AnimalSpecies
 		return *found;
 	}
 };
+inline void to_json(Json& data, const AnimalSpecies* const& species){ data = species->name; }
+inline void to_json(Json& data, const AnimalSpecies& species){ data = species.name; }
+inline void from_json(const Json& data, const AnimalSpecies*& species){ species = &AnimalSpecies::byName(data.get<std::string>()); }

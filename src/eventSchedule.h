@@ -20,13 +20,12 @@ public:
 	Simulation& m_simulation;
 	const Step m_step;
 	bool m_cancel;
-	ScheduledEvent(Simulation& simulation, const Step delay, const Step start);
+	ScheduledEvent(Simulation& simulation, const Step delay, const Step start = 0);
 	void cancel();
 	virtual void execute() = 0;
 	virtual void clearReferences() = 0;
 	virtual void onCancel() { }
 	[[nodiscard]] Step remaningSteps() const;
-
 	ScheduledEvent(const ScheduledEvent&) = delete;
 	ScheduledEvent(ScheduledEvent&&) = delete;
 	virtual ~ScheduledEvent() = default;
@@ -35,9 +34,9 @@ class ScheduledEventWithPercent : public ScheduledEvent
 {
 public:
 	Step m_startStep;
-	// If no value is passed to start then the sentinal value of 0 is generated and then replaced with the current step number.
-	// This is for deserializing.
-	ScheduledEventWithPercent(Simulation& simulation, const Step delay, const Step start = 0);
+	// If the value 0 is passed then the current step is used for start
+	// Passing a differernt start is for deserializing.
+	ScheduledEventWithPercent(Simulation& simulation, const Step delay, const Step start);
 	[[nodiscard]] Percent percentComplete() const;
 	[[nodiscard]] Step duration() const;
 };

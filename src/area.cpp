@@ -3,16 +3,98 @@
 */
 
 #include "area.h"
-#include "deserilizationMemo.h"
+#include "deserializationMemo.h"
 #include "fire.h"
 #include "plant.h"
 #include "simulation.h"
 #include <algorithm>
 #include <iostream>
 #include <numeric>
+#include <sys/types.h>
+#include <unordered_set>
 
 Area::Area(AreaId id, Simulation& s, uint32_t x, uint32_t y, uint32_t z) :
-	m_blocks(x*y*z), m_id(id), m_simulation(s), m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_areaHasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_hasRain(*this), m_visionCuboidsActive(false)
+	m_blocks(x*y*z), m_id(id), m_simulation(s), m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_hasRain(*this), m_visionCuboidsActive(false)
+{ setup(); }
+Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& s) : 
+	m_blocks(data["sizeX"].get<uint32_t>() * data["sizeY"].get<uint32_t>() * data["sizeZ"].get<uint32_t>()),
+	m_id(data["id"].get<AreaId>()), m_simulation(s), 
+	m_sizeX(data["sizeX"].get<uint32_t>()), m_sizeY(data["sizeY"].get<uint32_t>()), m_sizeZ(data["sizeZ"].get<uint32_t>()), 
+	m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_hasRain(*this), m_visionCuboidsActive(false)
+{
+	setup();
+	// Load blocks.
+	for(const Json& blockData : data["blocks"])
+		getBlock(blockData["x"].get<uint32_t>(), blockData["y"].get<uint32_t>(), blockData["z"].get<uint32_t>()).loadFromJson(blockData, deserializationMemo);
+	// Load fires.
+	m_fires.load(data["fires"], deserializationMemo);
+	// Load plants.
+	for(const Json& plant : data["plants"])
+		m_hasPlants.emplace(plant, deserializationMemo);
+	// Load fields.
+	m_hasFarmFields.load(data["hasFarmFields"], deserializationMemo);
+	// Load Items.
+	for(const Json& item : data["items"])
+		m_simulation.loadItemFromJson(item, deserializationMemo);
+	// Load Actors.
+	for(const Json& actor : data["actors"])
+		m_simulation.loadActorFromJson(actor, deserializationMemo);
+	// Load Projects
+	m_hasConstructionDesignations.load(data["hasConstructionDesignations"], deserializationMemo);
+	m_hasDigDesignations.load(data["hasDigDesignations"], deserializationMemo);
+	m_hasCraftingLocationsAndJobs.load(data["hasCraftingLocationsAndJobs"], deserializationMemo);
+	m_hasStockPiles.load(data["hasStockPiles"], deserializationMemo);
+	m_targetedHauling.load(data["targetedHauling"], deserializationMemo);
+	// Load sleeping spots.
+	m_hasSleepingSpots.load(data["sleepingSpots"], deserializationMemo);
+	// Load Item cargo.
+	for(const Json& itemData : data["items"])
+		if(itemData.contains("hasCargo"))
+		{
+			Item& item = m_simulation.getItemById(itemData["id"].get<ItemId>());
+			item.m_hasCargo.loadJson(itemData["hasCargo"], deserializationMemo);
+		}
+	// Load Actor objectives and reservations.
+	for(const Json& actorData : data["actors"])
+	{
+		Actor& actor = m_simulation.getActorById(actorData["id"].get<ActorId>());
+		if(actorData.contains("hasObjectives"))
+			actor.m_hasObjectives.load(actorData["hasObjectives"], deserializationMemo);
+		if(actorData.contains("canFollow"))
+			actor.m_canFollow.load(actorData["canFollow"], deserializationMemo);
+
+	}
+}
+Json Area::toJson() const
+{
+	Json data{
+		{"id", m_id}, {"sizeX", m_sizeX}, {"sizeY", m_sizeY}, {"sizeZ", m_sizeZ}, 
+		{"actors", Json::array()}, {"items", Json::array()}, {"blocks", Json::array()},
+		{"plants", Json::array()}
+	};
+	std::unordered_set<Item*> items;
+	for(const Block& block : m_blocks)
+	{
+		data["blocks"].push_back(block.toJson());
+		for(Item* item : items)
+			items.insert(item);
+	}
+	for(Actor* actor : m_hasActors.getAllConst())
+		data["actors"].push_back(actor->toJson());
+	for(Item* item : items)
+		data["items"].push_back(item->toJson());
+	for(const Plant& plant : m_hasPlants.getAllConst())
+		data["plants"].push_back(plant.toJson());
+	data["hasFarmFields"] = m_hasFarmFields.toJson();
+	data["hasSleepingSpots"] = m_hasSleepingSpots.toJson();
+	data["hasConstructionDesignations"] = m_hasConstructionDesignations.toJson();
+	data["hasDigDesignations"] = m_hasDigDesignations.toJson();
+	data["hasCraftingLocationsAndJobs"] = m_hasCraftingLocationsAndJobs.toJson();
+	data["hasStockPiles"] = m_hasStockPiles.toJson();
+	data["targetedHauling"] = m_targetedHauling.toJson();
+	return data;
+}
+void Area::setup()
 {
 	// build m_blocks
 	for(uint32_t x = 0; x < m_sizeX; ++x)
@@ -123,7 +205,7 @@ void Area::writeStep()
 	// Apply vision.
 	m_hasActors.processVisionWriteStep();
 	// Apply temperature deltas.
-	m_areaHasTemperature.applyDeltas();
+	m_hasTemperature.applyDeltas();
 	// Apply rain.
 	m_hasRain.writeStep();
 }
@@ -147,7 +229,7 @@ void Area::visionCuboidsActivate()
 void Area::setDateTime(DateTime now)
 {
 	//TODO: daylight.
-	m_areaHasTemperature.setAmbientSurfaceTemperatureFor(now);
+	m_hasTemperature.setAmbientSurfaceTemperatureFor(now);
 	if(now.hour == 1)
 	{
 		for(Plant& plant : m_hasPlants.getAll())
@@ -205,44 +287,4 @@ uint32_t Area::getTotalCountOfItemTypeOnSurface(const ItemType& itemType) const
 		if(itemType == item->m_itemType)
 			output += item->getQuantity();
 	return output;
-}
-Json Area::toJson() const
-{
-	Json data;
-	data["id"] = m_id;
-	data["sizeX"] = m_sizeX;
-	data["sizeY"] = m_sizeY;
-	data["sizeZ"] = m_sizeZ;
-	data["hasSleepingSpots"] = m_hasSleepingSpots.toJson();
-	return data;
-}
-void Area::loadProjects(const Json& data, DeserilizationMemo& deserilizationMemo)
-{
-	m_hasDigDesignations.load(data["hasDigDesignations"], deserilizationMemo);
-	m_hasConstructionDesignations.load(data["hasConstructionDesignations"], deserilizationMemo);
-	m_hasStockPiles.load(data["hasStockpiles"], deserilizationMemo);
-	m_hasCraftingLocationsAndJobs.load(data["hasCraftingLocationsAndJobs"], deserilizationMemo);
-	m_targetedHauling.load(data["targetedHauling"], deserilizationMemo);
-}
-void Area::loadPlantFromJson(Json& data)
-{
-	Block& location = m_simulation.getBlockForJsonQuery(data["location"]);
-	const PlantSpecies& species = PlantSpecies::byName(data["species"].get<std::string>());
-	Percent percentGrowth = data["percentGrowth"].get<Percent>();
-	Volume volumeFluidRequested = data["volumeFluidRequested"].get<Volume>();
-	Step needsFluidEventStart = data["needsFluidEventStart"].get<Step>();
-	bool temperatureIsUnsafe = data["temperatureIsUnsafe"].get<bool>();
-	Step unsafeTemperatureEventStart = data["unsafeTemperatureEventStart"].get<Step>();
-	uint32_t harvestableQuantity = data["harvestableQuantity"].get<uint32_t>();
-	Percent percentFoliage = data["perecntFoliage"].get<Percent>();
-	m_hasPlants.emplace(location, species, percentGrowth, volumeFluidRequested, needsFluidEventStart, temperatureIsUnsafe, unsafeTemperatureEventStart, harvestableQuantity, percentFoliage);
-}
-void Area::loadFireFromJson(Json& data)
-{
-	Block& location = m_simulation.getBlockForJsonQuery(data["location"]);
-	const MaterialType& materialType = MaterialType::byName(data["materialType"].get<std::string>());
-	FireStage stage = fireStageByName(data["stage"].get<std::string>());
-	bool hasPeaked = data["hasPeaked"].get<bool>();
-	Step stageStart = data["stageStart"].get<Percent>();
-	m_fires.load(location, materialType, hasPeaked, stage, stageStart);
 }

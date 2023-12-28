@@ -1,6 +1,6 @@
 #pragma once
 
-#include "deserilizationMemo.h"
+#include "deserializationMemo.h"
 #include "hasShape.h"
 #include "objective.h"
 #include "config.h"
@@ -59,7 +59,7 @@ class SleepEvent final : public ScheduledEventWithPercent
 	MustSleep& m_needsSleep;
 	bool m_force;
 public:
-	SleepEvent(const Step delay, MustSleep& ns, bool force);
+	SleepEvent(const Step delay, MustSleep& ns, bool force, const Step start = 0);
 	void execute();
 	void clearReferences();
 };
@@ -67,7 +67,7 @@ class TiredEvent final : public ScheduledEventWithPercent
 {
 	MustSleep& m_needsSleep;
 public:
-	TiredEvent(const Step delay, MustSleep& ns);
+	TiredEvent(const Step delay, MustSleep& ns, const Step start = 0);
 	void execute();
 	void clearReferences();
 };
@@ -90,7 +90,7 @@ class SleepObjective final : public Objective
 	bool m_noWhereToSleepFound;
 public:
 	SleepObjective(Actor& a);
-	SleepObjective(const Json& data, DeserilizationMemo& deserilizationMemo);
+	SleepObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void execute();
 	void cancel();
@@ -111,7 +111,7 @@ class HasSleepingSpots final
 {
 	std::unordered_set<Block*> m_unassigned;
 public:
-	HasSleepingSpots(const Json& data, DeserilizationMemo& deserilizationMemo);
+	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	bool containsUnassigned(const Block& block) const { return m_unassigned.contains(const_cast<Block*>(&block)); }
 };

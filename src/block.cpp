@@ -3,6 +3,7 @@
  * Total volume is 100.
  */
 
+#include "deserializationMemo.h"
 #include "materialType.h"
 #include "moveType.h"
 #include "shape.h"
@@ -669,7 +670,7 @@ std::vector<Block*> Block::collectAdjacentsInRangeVector(uint32_t range)
 	std::vector<Block*> output(result.begin(), result.end());
 	return output;
 }
-void Block::loadFromJson(Json data)
+void Block::loadFromJson(Json data, DeserializationMemo& deserializationMemo)
 {
 	if(data.contains("solid"))
 		m_solid = &MaterialType::byName(data["solid"].get<std::string>());
@@ -686,22 +687,37 @@ void Block::loadFromJson(Json data)
 			else
 				m_hasBlockFeatures.construct(blockFeatureType, materialType);
 		}
+	if(data.contains("fluids"))
+		for(const Json& pair : data["fluids"])
+			addFluid(pair[1].get<Volume>(), *pair[0].get<const FluidType*>());
+	if(data.contains("hasDesignations"))
+		m_hasDesignations.load(data["hasDesignations"], deserializationMemo);
 }
 Json Block::toJson() const 
 {
-	Json output;
+	Json data;
 	if(m_solid != nullptr)
-		output["solid"] = m_solid->name;
-	for(const BlockFeature& blockFeature : m_hasBlockFeatures.get())
+		data["solid"] = m_solid->name;
+	if(!m_hasBlockFeatures.empty())
 	{
-		Json blockFeatureData;
-		blockFeatureData["materialType"] = blockFeature.materialType->name;
-		blockFeatureData["blockFeatureType"] = blockFeature.blockFeatureType->name;
-		if(blockFeature.hewn)
-			blockFeatureData["hewn"] = true;
-		output["blockFeatures"].push_back(blockFeatureData);
+		data["blockFeatures"] = Json::array();
+		for(const BlockFeature& blockFeature : m_hasBlockFeatures.get())
+		{
+			Json blockFeatureData{{"materialType", blockFeature.materialType}, {"blockFeatureType", blockFeature.blockFeatureType}};
+			if(blockFeature.hewn)
+				blockFeatureData["hewn"] = true;
+			data["blockFeatures"].push_back(blockFeatureData);
+		}
 	}
-	return output;
+	if(m_totalFluidVolume != 0)
+	{
+		data["fluids"] = Json::array();
+		for(auto& [fluidType, pair] : m_fluids)
+			data["fluids"].push_back({fluidType, pair.first});
+	}
+	if(!m_hasDesignations.empty())
+		data["hasDesignations"] = m_hasDesignations.toJson();
+	return data;
 }
 Json Block::positionToJson() const
 {

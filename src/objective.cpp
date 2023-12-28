@@ -1,6 +1,6 @@
 //ObjectiveTypePrioritySet
 #include "objective.h"
-#include "deserilizationMemo.h"
+#include "deserializationMemo.h"
 #include "simulation.h"
 #include "actor.h"
 #include "stamina.h"
@@ -10,7 +10,7 @@
 #include "wander.h"
 #include <cstdio>
 #include <numbers>
-void ObjectiveTypePrioritySet::load(const Json& data, [[maybe_unused]] DeserilizationMemo& deserilizationMemo)
+void ObjectiveTypePrioritySet::load(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo)
 {
 	m_data = data["data"].get<std::vector<ObjectivePriority>>();
 }
@@ -60,9 +60,9 @@ void ObjectiveTypePrioritySet::setDelay(ObjectiveTypeId objectiveTypeId)
 }
 // SupressedNeed
 SupressedNeed::SupressedNeed(std::unique_ptr<Objective> o, Actor& a) : m_actor(a), m_objective(std::move(o)), m_event(a.getSimulation().m_eventSchedule) { }
-SupressedNeed::SupressedNeed(const Json& data, DeserilizationMemo& deserilizationMemo, Actor& a) : m_actor(a), m_event(deserilizationMemo.m_simulation.m_eventSchedule)
+SupressedNeed::SupressedNeed(const Json& data, DeserializationMemo& deserializationMemo, Actor& a) : m_actor(a), m_event(deserializationMemo.m_simulation.m_eventSchedule)
 {
-	m_objective = deserilizationMemo.loadObjective(data["objective"]);
+	m_objective = deserializationMemo.loadObjective(data["objective"]);
 	if(data.contains("eventStart"))
 		m_event.schedule(*this, data["eventStart"].get<Step>());
 }
@@ -79,7 +79,7 @@ void SupressedNeed::callback()
 	m_actor.m_hasObjectives.m_supressedNeeds.erase(objective->getObjectiveTypeId());
        	m_actor.m_hasObjectives.addNeed(std::move(objective)); 
 }
-SupressedNeedEvent::SupressedNeedEvent(SupressedNeed& sn) : ScheduledEventWithPercent(sn.m_actor.getSimulation(), Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective), m_supressedNeed(sn) { }
+SupressedNeedEvent::SupressedNeedEvent(SupressedNeed& sn, const Step start) : ScheduledEventWithPercent(sn.m_actor.getSimulation(), Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective, start), m_supressedNeed(sn) { }
 void SupressedNeedEvent::execute() { m_supressedNeed.callback(); }
 void SupressedNeedEvent::clearReferences() { m_supressedNeed.m_event.clearPointer(); }
 // ObjectiveType.
@@ -102,25 +102,25 @@ void ObjectiveType::load()
 }
 // Objective.
 Objective::Objective(Actor& a, uint32_t p) : m_actor(a), m_priority(p) {}
-Objective::Objective(const Json& data, [[maybe_unused]] DeserilizationMemo& deserilizationMemo) :
-	m_actor(deserilizationMemo.m_simulation.getActorById(data["actor"].get<ActorId>())), m_priority(data["priority"].get<uint32_t>()), m_detour(data["detour"].get<bool>()) { }
+Objective::Objective(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) :
+	m_actor(deserializationMemo.m_simulation.getActorById(data["actor"].get<ActorId>())), m_priority(data["priority"].get<uint32_t>()), m_detour(data["detour"].get<bool>()) { }
 Json Objective::toJson() const { return Json{{"type", getObjectiveTypeId()}, {"actor", m_actor}, {"priority", m_priority}, {"detour", m_detour}}; }
 // HasObjectives.
 HasObjectives::HasObjectives(Actor& a) : m_actor(a), m_currentObjective(nullptr), m_prioritySet(a) { }
-void HasObjectives::load(const Json& data, DeserilizationMemo& deserilizationMemo)
+void HasObjectives::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	for(const Json& objective : data["needsQueue"])
 	{
-		m_needsQueue.push_back(deserilizationMemo.loadObjective(objective));
+		m_needsQueue.push_back(deserializationMemo.loadObjective(objective));
 		m_idsOfObjectivesInNeedsQueue.insert(m_needsQueue.back()->getObjectiveTypeId());
 	}
 	for(const Json& objective : data["tasksQueue"])
-		m_tasksQueue.push_back(deserilizationMemo.loadObjective(objective));
+		m_tasksQueue.push_back(deserializationMemo.loadObjective(objective));
 	if(data.contains("currentObjective"))
-		m_currentObjective = deserilizationMemo.m_objectives.at(data["currentObjective"].get<uintptr_t>());
+		m_currentObjective = deserializationMemo.m_objectives.at(data["currentObjective"].get<uintptr_t>());
 	for(const Json& pair : data["supressedNeeds"])
-		m_supressedNeeds.try_emplace(pair[0].get<ObjectiveTypeId>(), pair[1], deserilizationMemo, m_actor);
-	m_prioritySet.load(data["prioritySet"], deserilizationMemo);
+		m_supressedNeeds.try_emplace(pair[0].get<ObjectiveTypeId>(), pair[1], deserializationMemo, m_actor);
+	m_prioritySet.load(data["prioritySet"], deserializationMemo);
 }
 Json HasObjectives::toJson() const
 {

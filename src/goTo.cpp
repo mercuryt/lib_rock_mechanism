@@ -3,8 +3,8 @@
 #include "block.h"
 #include "objective.h"
 #include "simulation.h"
-GoToObjective::GoToObjective(const Json& data, DeserilizationMemo& deserilizationMemo) : Objective(data, deserilizationMemo),
-	m_location(deserilizationMemo.m_simulation.getBlockForJsonQuery(data["location"])) { }
+GoToObjective::GoToObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo),
+	m_location(deserializationMemo.m_simulation.getBlockForJsonQuery(data["location"])) { }
 Json GoToObjective::toJson() const { return Json{{"location", m_location.positionToJson()}}; }
 void GoToObjective::execute()
 {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "config.h"
 #include "types.h"
 
 #include <string>
@@ -91,3 +92,6 @@ struct MaterialType
 		return *found;
 	}
 };
+inline void to_json(Json& data, const MaterialType* const& materialType){ data = materialType->name; }
+inline void to_json(Json& data, const MaterialType& materialType){ data = materialType.name; }
+inline void from_json(const Json& data, const MaterialType*& materialType){ materialType = &MaterialType::byName(data.get<std::string>()); }

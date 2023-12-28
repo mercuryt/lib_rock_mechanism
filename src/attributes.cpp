@@ -49,7 +49,7 @@ Json Attributes::toJson() const
 	data["mass"] = mass.toJson();
 	return data;
 }
-Attributes::Attributes(const Json& data, AnimalSpecies& species, Percent percentGrown) :
+Attributes::Attributes(const Json& data, const AnimalSpecies& species, Percent percentGrown) :
 	strength(data["strength"], species.strength[0], species.strength[1], percentGrown),
 	dextarity(data["dextarity"], species.dextarity[0], species.dextarity[1], percentGrown),
 	agility(data["agility"], species.agility[0], species.agility[1], percentGrown),

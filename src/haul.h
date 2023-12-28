@@ -1,6 +1,6 @@
 #pragma once
 
-#include "deserilizationMemo.h"
+#include "deserializationMemo.h"
 #include "hasShape.h"
 #include "reservable.h"
 #include <unordered_set>
@@ -14,7 +14,7 @@ struct ItemType;
 struct MaterialType;
 class Project;
 class ProjectRequirementCounts;
-class Faction;
+struct Faction;
 class HaulSubproject;
 
 enum class HaulStrategy { None, Individual, Team, Cart, TeamCart, Panniers, AnimalCart, StrongSentient };
@@ -58,7 +58,7 @@ class HaulSubproject final
 	void complete(HasShape& delivered);
 public:
 	HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters);
-	HaulSubproject(const Json& json, Project& m_project, ProjectRequirementCounts& projectRequirementCounts, DeserilizationMemo& deserilizationMemo);
+	HaulSubproject(const Json& json, Project& m_project, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void setup();
 	void commandWorker(Actor& actor);
@@ -86,7 +86,7 @@ struct HaulSubprojectDishonorCallback final : public DishonorCallback
 {
 	HaulSubproject& m_haulSubproject;
 	HaulSubprojectDishonorCallback(HaulSubproject& hs) : m_haulSubproject(hs) { } 
-	HaulSubprojectDishonorCallback(const Json data, DeserilizationMemo& deserilizationMemo) : m_haulSubproject(*deserilizationMemo.m_haulSubprojects.at(data["haulSubproject"])) { }
+	HaulSubprojectDishonorCallback(const Json data, DeserializationMemo& deserializationMemo) : m_haulSubproject(*deserializationMemo.m_haulSubprojects.at(data["haulSubproject"])) { }
 	void execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { m_haulSubproject.cancel(); }
 	Json toJson() const { return {{"type", "HaulSubprojectDishonorCallback"}, {"haulSubproject", reinterpret_cast<uintptr_t>(&m_haulSubproject)}}; }
 };

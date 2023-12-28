@@ -1,7 +1,7 @@
 #pragma once
 
 #include "config.h"
-#include "deserilizationMemo.h"
+#include "deserializationMemo.h"
 #include "objective.h"
 #include "threadedTask.hpp"
 #include "eventSchedule.hpp"
@@ -48,7 +48,7 @@ class EatEvent final : public ScheduledEventWithPercent
 {
 	EatObjective& m_eatObjective;
 public:
-	EatEvent(const Step delay, EatObjective& eo);
+	EatEvent(const Step delay, EatObjective& eo, const Step start = 0);
 	void execute();
 	void clearReferences();
 	void eatPreparedMeal(Item& item);
@@ -64,7 +64,7 @@ class HungerEvent final : public ScheduledEventWithPercent
 {
 	Actor& m_actor;
 public:
-	HungerEvent(const Step delay, Actor& a);
+	HungerEvent(const Step delay, Actor& a, const Step start = 0);
 	void execute();
 	void clearReferences();
 };
@@ -88,7 +88,7 @@ class EatObjective final : public Objective
 	bool m_noFoodFound;
 public:
 	EatObjective(Actor& a);
-	EatObjective(const Json& data, DeserilizationMemo& deserilizationMemo);
+	EatObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void execute();
 	void cancel();

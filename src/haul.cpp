@@ -322,41 +322,41 @@ HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters)
 		commandWorker(*actor);
 	}
 }
-HaulSubproject::HaulSubproject(const Json& data, Project& p, ProjectRequirementCounts& projectRequirementCounts, DeserilizationMemo& deserilizationMemo) : m_project(p), 
-	m_toHaul(*deserilizationMemo.m_hasShapes.at(data["toHaul"].get<uintptr_t>())), 
+HaulSubproject::HaulSubproject(const Json& data, Project& p, DeserializationMemo& deserializationMemo) : m_project(p), 
+	m_toHaul(*deserializationMemo.m_hasShapes.at(data["toHaul"].get<uintptr_t>())), 
 	m_quantity(data["quantity"].get<uint32_t>()), 
 	m_strategy(haulStrategyFromName(data["haulStrategy"].get<std::string>())),
 	m_haulTool(nullptr), 
 	m_leader(nullptr), 
 	m_itemIsMoving(data["itemIsMoving"].get<bool>()), 
 	m_beastOfBurden(nullptr), 
-	m_projectRequirementCounts(projectRequirementCounts),
+	m_projectRequirementCounts(deserializationMemo.projectRequirementCountsReference(data["projectRequirementCounts"])),
        	m_genericItemType(nullptr), 
 	m_genericMaterialType(nullptr)
 { 
 	if(data.contains("haulTool"))
-		m_haulTool = &deserilizationMemo.m_simulation.getItemById(data["haulTool"].get<ItemId>());
+		m_haulTool = &deserializationMemo.m_simulation.getItemById(data["haulTool"].get<ItemId>());
 	if(data.contains("leader"))
-		m_leader = &deserilizationMemo.m_simulation.getActorById(data["leader"].get<ActorId>());
+		m_leader = &deserializationMemo.m_simulation.getActorById(data["leader"].get<ActorId>());
 	if(data.contains("beastOfBurden"))
-		m_beastOfBurden = &deserilizationMemo.m_simulation.getActorById(data["beastOfBurden"].get<ActorId>());
+		m_beastOfBurden = &deserializationMemo.m_simulation.getActorById(data["beastOfBurden"].get<ActorId>());
 	if(data.contains("genericItemType"))
 		m_genericItemType = &ItemType::byName(data["genericItemType"].get<std::string>());
 	if(data.contains("genericMaterialType"))
 		m_genericMaterialType = &MaterialType::byName(data["genericMaterialType"].get<std::string>());
 	if(data.contains("workers"))
 		for(const Json& workerId : data["workers"])
-			m_workers.insert(&deserilizationMemo.m_simulation.getActorById(workerId.get<ActorId>()));
+			m_workers.insert(&deserializationMemo.m_simulation.getActorById(workerId.get<ActorId>()));
 	if(data.contains("nonsentients"))
 		for(const Json& actorId : data["nonsentients"])
-			m_nonsentients.insert(&deserilizationMemo.m_simulation.getActorById(actorId.get<ActorId>()));
+			m_nonsentients.insert(&deserializationMemo.m_simulation.getActorById(actorId.get<ActorId>()));
 	if(data.contains("liftPoints"))
 		for(const Json& liftPointData : data["liftPoints"])
 		{
-			Actor& actor = deserilizationMemo.m_simulation.getActorById(liftPointData[0].get<ActorId>());
-			m_liftPoints[&actor] = &deserilizationMemo.m_simulation.getBlockForJsonQuery(liftPointData[1]);
+			Actor& actor = deserializationMemo.m_simulation.getActorById(liftPointData[0].get<ActorId>());
+			m_liftPoints[&actor] = &deserializationMemo.m_simulation.getBlockForJsonQuery(liftPointData[1]);
 		}
-	deserilizationMemo.m_haulSubprojects[data["address"].get<uintptr_t>()] = this;
+	deserializationMemo.m_haulSubprojects[data["address"].get<uintptr_t>()] = this;
 }
 Json HaulSubproject::toJson() const
 {
@@ -366,6 +366,7 @@ Json HaulSubproject::toJson() const
 		{"haulStrategy", haulStrategyToName(m_strategy)},
 		{"itemIsMoving", m_itemIsMoving},
 		{"address", reinterpret_cast<uintptr_t>(this)},
+		{"requirementCounts", reinterpret_cast<uintptr_t>(&m_projectRequirementCounts)},
 	});
 	if(m_haulTool != nullptr)
 		data["haulTool"] = m_haulTool->m_id;

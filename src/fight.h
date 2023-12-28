@@ -84,7 +84,7 @@ class AttackCoolDown final : public ScheduledEventWithPercent
 {
 	CanFight& m_canFight;
 public:
-	AttackCoolDown(CanFight& cf, Step duration);
+	AttackCoolDown(CanFight& cf, Step duration, const Step start = 0);
 	void execute() { m_canFight.coolDownCompleted(); }
 	void clearReferences() { m_canFight.m_coolDown.clearPointer(); }
 };

@@ -1,4 +1,4 @@
-#include "deserilizationMemo.h"
+#include "deserializationMemo.h"
 #include "construct.h"
 #include "simulation.h"
 #include "objective.h"
@@ -12,8 +12,14 @@
 #include "wait.h"
 #include "wander.h"
 #include "goTo.h"
-Faction& DeserilizationMemo::faction(std::wstring name) { return m_simulation.m_hasFactions.byName(name); }
-std::unique_ptr<Objective> DeserilizationMemo::loadObjective(const Json& data)
+#include <cstdint>
+Faction& DeserializationMemo::faction(std::wstring name) { return m_simulation.m_hasFactions.byName(name); }
+Plant& DeserializationMemo::plantReference(const Json& data) { return m_simulation.getBlockForJsonQuery(data).m_hasPlant.get(); }
+Block& DeserializationMemo::blockReference(const Json& data) { return m_simulation.getBlockForJsonQuery(data); }
+Item& DeserializationMemo::itemReference(const Json& data) { return m_simulation.getItemById(data.get<ItemId>()); }
+HasShape& DeserializationMemo::hasShapeReference(const Json& data) { return *m_hasShapes.at(data.get<uintptr_t>()); }
+ProjectRequirementCounts& DeserializationMemo::projectRequirementCountsReference(const Json& data) { return *m_projectRequirementCounts.at(data.get<uintptr_t>()); }
+std::unique_ptr<Objective> DeserializationMemo::loadObjective(const Json& data)
 {
 	ObjectiveTypeId typeId = data["type"].get<ObjectiveTypeId>();
 	switch(typeId)
@@ -59,7 +65,7 @@ std::unique_ptr<Objective> DeserilizationMemo::loadObjective(const Json& data)
 			return std::make_unique<WanderObjective>(data, *this);
 	}
 }
-std::unique_ptr<ObjectiveType> DeserilizationMemo::loadObjectiveType(const Json& data)
+std::unique_ptr<ObjectiveType> DeserializationMemo::loadObjectiveType(const Json& data)
 {
 	ObjectiveTypeId typeId = data["type"].get<ObjectiveTypeId>();
 	switch(typeId)

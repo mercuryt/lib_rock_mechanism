@@ -4,11 +4,11 @@
 #include "objective.h"
 #include <cassert>
 // Sleep Event.
-SleepEvent::SleepEvent(Step step, MustSleep& ns, bool f) : ScheduledEventWithPercent(ns.m_actor.getSimulation(), step), m_needsSleep(ns), m_force(f) { }
+SleepEvent::SleepEvent(Step step, MustSleep& ns, bool f, const Step start) : ScheduledEventWithPercent(ns.m_actor.getSimulation(), step, start), m_needsSleep(ns), m_force(f) { }
 void SleepEvent::execute(){ m_needsSleep.wakeUp(); }
 void SleepEvent::clearReferences(){ m_needsSleep.m_sleepEvent.clearPointer(); }
 // Tired Event.
-TiredEvent::TiredEvent(Step step, MustSleep& ns) : ScheduledEventWithPercent(ns.m_actor.getSimulation(), step), m_needsSleep(ns) { }
+TiredEvent::TiredEvent(Step step, MustSleep& ns, const Step start) : ScheduledEventWithPercent(ns.m_actor.getSimulation(), step, start), m_needsSleep(ns) { }
 void TiredEvent::execute(){ m_needsSleep.tired(); }
 void TiredEvent::clearReferences(){ m_needsSleep.m_tiredEvent.clearPointer(); }
 // Threaded Task.
@@ -106,8 +106,8 @@ void SleepThreadedTask::writeStep()
 void SleepThreadedTask::clearReferences() { m_sleepObjective.m_threadedTask.clearPointer(); }
 // Sleep Objective.
 SleepObjective::SleepObjective(Actor& a) : Objective(a, Config::sleepObjectivePriority), m_threadedTask(a.getThreadedTaskEngine()), m_noWhereToSleepFound(false) { }
-SleepObjective::SleepObjective(const Json& data, DeserilizationMemo& deserilizationMemo) : Objective(data, deserilizationMemo), 
-	m_threadedTask(deserilizationMemo.m_simulation.m_threadedTaskEngine), m_noWhereToSleepFound(data["noWhereToSleepFound"].get<bool>())
+SleepObjective::SleepObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), 
+	m_threadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine), m_noWhereToSleepFound(data["noWhereToSleepFound"].get<bool>())
 {
 	if(data.contains("threadedTask"))
 		m_threadedTask.create(*this);
@@ -291,10 +291,10 @@ void MustSleep::onDeath()
 {
 	m_tiredEvent.maybeUnschedule();
 }
-HasSleepingSpots::HasSleepingSpots(const Json& data, DeserilizationMemo& deserilizationMemo)
+void HasSleepingSpots::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	for(const Json& block : data["unassigned"])
-		m_unassigned.insert(&deserilizationMemo.m_simulation.getBlockForJsonQuery(block));
+		m_unassigned.insert(&deserializationMemo.m_simulation.getBlockForJsonQuery(block));
 }
 Json HasSleepingSpots::toJson() const
 {

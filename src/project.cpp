@@ -1,7 +1,8 @@
 #include "project.h"
 #include "block.h"
 #include "area.h"
-#include "deserilizationMemo.h"
+#include "config.h"
+#include "deserializationMemo.h"
 #include "hasShape.h"
 #include "haul.h"
 #include "reservable.h"
@@ -12,15 +13,15 @@ void ProjectRequiredShapeDishonoredCallback::execute(uint32_t oldCount, uint32_t
 {
 	m_project.onHasShapeReservationDishonored(m_hasShape, oldCount, newCount);
 }
-ProjectFinishEvent::ProjectFinishEvent(const Step delay, Project& p) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay), m_project(p) {}
+ProjectFinishEvent::ProjectFinishEvent(const Step delay, Project& p, const Step start) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay, start), m_project(p) {}
 void ProjectFinishEvent::execute() { m_project.complete(); }
 void ProjectFinishEvent::clearReferences() { m_project.m_finishEvent.clearPointer(); }
 
-ProjectTryToHaulEvent::ProjectTryToHaulEvent(const Step delay, Project& p) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay), m_project(p) { }
+ProjectTryToHaulEvent::ProjectTryToHaulEvent(const Step delay, Project& p, const Step start) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay, start), m_project(p) { }
 void ProjectTryToHaulEvent::execute() { m_project.m_tryToHaulThreadedTask.create(m_project); }
 void ProjectTryToHaulEvent::clearReferences() { m_project.m_tryToHaulEvent.clearPointer(); }
 
-ProjectTryToReserveEvent::ProjectTryToReserveEvent(const Step delay, Project& p) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay), m_project(p) { }
+ProjectTryToReserveEvent::ProjectTryToReserveEvent(const Step delay, Project& p, const Step start) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay, start), m_project(p) { }
 void ProjectTryToReserveEvent::execute() 
 { 
 	m_project.setDelayOff();
@@ -259,34 +260,42 @@ Project::Project(const Faction* f, Block& l, size_t mw, std::unique_ptr<Dishonor
 {
 	m_location.m_reservable.reserveFor(m_canReserve, 1u, std::move(locationDishonorCallback));
 }
-Project::Project(const Json& data, DeserilizationMemo& deserilizationMemo) : m_finishEvent(deserilizationMemo.m_simulation.m_eventSchedule), m_tryToHaulEvent(deserilizationMemo.m_simulation.m_eventSchedule), m_tryToReserveEvent(deserilizationMemo.m_simulation.m_eventSchedule), m_tryToHaulThreadedTask(deserilizationMemo.m_simulation.m_threadedTaskEngine), m_tryToAddWorkersThreadedTask(deserilizationMemo.m_simulation.m_threadedTaskEngine), 
-	m_canReserve(deserilizationMemo.m_simulation.m_hasFactions.byName(data["faction"].get<std::wstring>())),
+Project::Project(const Json& data, DeserializationMemo& deserializationMemo) : m_finishEvent(deserializationMemo.m_simulation.m_eventSchedule), m_tryToHaulEvent(deserializationMemo.m_simulation.m_eventSchedule), m_tryToReserveEvent(deserializationMemo.m_simulation.m_eventSchedule), m_tryToHaulThreadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine), m_tryToAddWorkersThreadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine), 
+	m_canReserve(&deserializationMemo.faction(data["faction"].get<std::wstring>())),
 	m_maxWorkers(data["maxWorkers"].get<uint32_t>()), m_delay(data["delay"].get<bool>()), 
 	m_haulRetries(data["haulRetries"].get<uint8_t>()), m_requirementsLoaded(data["requirementsLoaded"].get<bool>()), 
-	m_location(deserilizationMemo.m_simulation.getBlockForJsonQuery(data["location"])), 
-	m_faction(*deserilizationMemo.m_simulation.m_hasFactions.byName(data["faction"].get<std::wstring>())) 
+	m_location(deserializationMemo.m_simulation.getBlockForJsonQuery(data["location"])), 
+	m_faction(deserializationMemo.faction(data["faction"].get<std::wstring>())) 
 { 
 	if(data.contains("requiredItems"))
 		for(const Json& pair : data["requiredItems"])
-			m_requiredItems.emplace_back(pair[0], pair[1]);
+		{
+			ItemQuery itemQuery(pair[0], deserializationMemo);
+			ProjectRequirementCounts requirementCounts(pair[1], deserializationMemo);
+			m_requiredItems.emplace_back(std::make_pair(itemQuery, requirementCounts));
+		}
 	if(data.contains("requiredActors"))
 		for(const Json& pair : data["requiredActors"])
-			m_requiredActors.emplace_back(pair[0], pair[1]);
+		{
+			ActorQuery actorQuery(pair[0], deserializationMemo);
+			ProjectRequirementCounts requirementCounts(pair[1], deserializationMemo);
+			m_requiredActors.emplace_back(std::make_pair(actorQuery, requirementCounts));
+		}
 	if(data.contains("toConsume"))
 		for(const Json& itemId : data["toConsume"])
-			m_toConsume.insert(&deserilizationMemo.m_simulation.getItemById(itemId.get<ItemId>()));
+			m_toConsume.insert(&deserializationMemo.m_simulation.getItemById(itemId.get<ItemId>()));
 	if(data.contains("toPickup"))
 		for(const Json& pair : data["toPickup"])
 		{
-			HasShape& hasShape = *deserilizationMemo.m_hasShapes.at(pair[0].get<uintptr_t>());
-			ProjectRequirementCounts& projectRequirementCounts = *deserilizationMemo.m_projectRequirementCounts.at(pair[1][0].get<uintptr_t>());
+			HasShape& hasShape = *deserializationMemo.m_hasShapes.at(pair[0].get<uintptr_t>());
+			ProjectRequirementCounts& projectRequirementCounts = *deserializationMemo.m_projectRequirementCounts.at(pair[1][0].get<uintptr_t>());
 			uint32_t quantity = pair[1][1].get<uint32_t>();
 			m_toPickup[&hasShape] = std::make_pair(&projectRequirementCounts, quantity);
 		}
 	if(data.contains("haulSubprojects"))
 		for(const Json& haulSubprojectData : data["haulSubprojects"])
-			m_haulSubprojects.emplace_back(haulSubprojectData, deserilizationMemo);
-	m_canReserve.load(data["canReserve"], deserilizationMemo);
+			m_haulSubprojects.emplace_back(haulSubprojectData, *this, deserializationMemo);
+	m_canReserve.load(data["canReserve"], deserializationMemo);
 	if(data.contains("finishEventStart"))
 		m_finishEvent.schedule(data["finishEventDuration"].get<Step>(), *this, data["finishEventStart"].get<Step>());
 	if(data.contains("tryToHaulEventStart"))
@@ -297,14 +306,14 @@ Project::Project(const Json& data, DeserilizationMemo& deserilizationMemo) : m_f
 		m_tryToHaulThreadedTask.create(*this);
 	if(data.contains("tryToAddWorkersThreadedTaskExists"))
 		m_tryToHaulThreadedTask.create(*this);
-	deserilizationMemo.m_projects[data["address"].get<uintptr_t>()] = this;
+	deserializationMemo.m_projects[data["address"].get<uintptr_t>()] = this;
 }
-void Project::loadWorkers(const Json& data, DeserilizationMemo& deserilizationMemo)
+void Project::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	for(const Json& projectWorkerData : data["workers"])
 	{
-		Actor& worker = deserilizationMemo.m_simulation.getActorById(projectWorkerData["actor"].get<ActorId>());
-		m_workers.emplace(&worker, projectWorkerData["projectWorker"]);
+		Actor& worker = deserializationMemo.m_simulation.getActorById(projectWorkerData["actor"].get<ActorId>());
+		m_workers.try_emplace(&worker, projectWorkerData["projectWorker"], deserializationMemo);
 	}
 }
 Json Project::toJson() const

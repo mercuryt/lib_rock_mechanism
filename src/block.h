@@ -14,6 +14,7 @@
 #include <vector>
 #include <string>
 
+#include "deserializationMemo.h"
 #include "moveType.h"
 #include "shape.h"
 #include "visionCuboid.h"
@@ -171,7 +172,7 @@ public:
 	}
 	std::unordered_set<Block*> collectAdjacentsInRange(uint32_t range);
 	std::vector<Block*> collectAdjacentsInRangeVector(uint32_t range);
-	void loadFromJson(Json data);
+	void loadFromJson(Json data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	Json positionToJson() const;
 };

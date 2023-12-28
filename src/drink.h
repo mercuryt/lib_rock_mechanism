@@ -1,7 +1,7 @@
 #pragma once
 
 #include "config.h"
-#include "deserilizationMemo.h"
+#include "deserializationMemo.h"
 #include "objective.h"
 #include "threadedTask.hpp"
 #include "eventSchedule.hpp"
@@ -54,7 +54,7 @@ class DrinkObjective final : public Objective
 	bool m_noDrinkFound;
 public:
 	DrinkObjective(Actor& a);
-	DrinkObjective(const Json& data, DeserilizationMemo& deserilizationMemo);
+	DrinkObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void execute();
 	void cancel();
@@ -76,8 +76,8 @@ class DrinkEvent final : public ScheduledEventWithPercent
 	DrinkObjective& m_drinkObjective;
 	Item* m_item;
 public:
-	DrinkEvent(const Step delay, DrinkObjective& drob);
-	DrinkEvent(const Step delay, DrinkObjective& drob, Item& i);
+	DrinkEvent(const Step delay, DrinkObjective& drob, const Step start = 0);
+	DrinkEvent(const Step delay, DrinkObjective& drob, Item& i, const Step start = 0);
 	void execute();
 	void clearReferences();
 };
@@ -85,7 +85,7 @@ class ThirstEvent final : public ScheduledEventWithPercent
 {
 	Actor& m_actor;
 public:
-	ThirstEvent(const Step delay, Actor& a);
+	ThirstEvent(const Step delay, Actor& a, const Step start = 0);
 	void execute();
 	void clearReferences();
 };

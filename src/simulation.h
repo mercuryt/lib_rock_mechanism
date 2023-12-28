@@ -17,7 +17,7 @@
 
 class HourlyEvent;
 
-class Simulation
+class Simulation final
 {
 	AreaId m_nextAreaId;
 	std::list<Area> m_areas;
@@ -37,6 +37,7 @@ public:
 	SimulationHasFactions m_hasFactions;
 	Simulation(DateTime n = {12, 150, 1200}, Step s = 1);
 	Simulation(const Json& data);
+	Json toJson() const;
 	void doStep();
 	void incrementHour();
 	//TODO: latitude, longitude, altitude.
@@ -53,10 +54,9 @@ public:
 	Item& loadItemGeneric(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, uint32_t quantity, CraftJob* cj = nullptr);
 	void destroyItem(Item& item);
 	void destroyArea(Area& area);
-	Json toJson() const;
 	void loadAreaFromJson(const Json& data);
-	Item& loadItemFromJson(const Json& data);
-	Actor& loadActorFromJson(const Json& data);
+	Item& loadItemFromJson(const Json& data, DeserializationMemo& deserializationMemo);
+	Actor& loadActorFromJson(const Json& data, DeserializationMemo& deserializationMemo);
 	Block& getBlockForJsonQuery(const Json& data);
 	Actor& getActorById(ActorId id);
 	Item& getItemById(ItemId id);
@@ -77,7 +77,7 @@ class HourlyEvent final : public ScheduledEventWithPercent
 {
 	Simulation& m_simulation;
 public:
-	HourlyEvent(Simulation& s) : ScheduledEventWithPercent(s, Config::stepsPerHour), m_simulation(s) { }
+	HourlyEvent(Simulation& s, const Step start = 0) : ScheduledEventWithPercent(s, Config::stepsPerHour, start), m_simulation(s) { }
 	inline void execute(){ m_simulation.incrementHour(); }
 	inline void clearReferences(){ m_simulation.m_hourlyEvent.clearPointer(); }
 };

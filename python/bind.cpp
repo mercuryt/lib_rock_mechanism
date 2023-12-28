@@ -108,11 +108,11 @@ NB_MODULE(bound, m)
 		.export_values();
 	// BodyPartType
 	nb::class_<BodyPartType>(m, "BodyPartType")
-		.def("name", &BodyPartType::name)
-		.def("volume", &BodyPartType::volume)
-		.def("doesLocamotion", &BodyPartType::doesLocamotion)
-		.def("doesManipulation", &BodyPartType::doesManipulation)
-		.def("vital", &BodyPartType::vital);
+		.def_ro("name", &BodyPartType::name)
+		.def_ro("volume", &BodyPartType::volume)
+		.def_ro("doesLocamotion", &BodyPartType::doesLocamotion)
+		.def_ro("doesManipulation", &BodyPartType::doesManipulation)
+		.def_ro("vital", &BodyPartType::vital);
 		//TODO: attackTypesAndMaterials
 	// DateTime
 	nb::class_<DateTime>(m, "DateTime")
@@ -136,7 +136,7 @@ NB_MODULE(bound, m)
 	nb::class_<Area>(m, "Area")
 		.def("getBlock", &Area::getBlock, nb::rv_policy::reference)
 		.def("getZLevel", &Area::getZLevel, nb::rv_policy::take_ownership)
-		.def_ro("sizeX", &Area::m_sizeX)
+		.def_ro("id", &Area::m_id)
 		.def_ro("sizeY", &Area::m_sizeY)
 		.def_ro("sizeZ", &Area::m_sizeZ);
 		//TODO: Has rain.
@@ -154,7 +154,7 @@ NB_MODULE(bound, m)
 		.def("getActors", [](Block& block){ return block.m_hasActors.getAll(); }, nb::rv_policy::reference)
 		.def("getItems", [](Block& block){ return block.m_hasItems.getAll(); }, nb::rv_policy::reference)
 		.def("getPlant", [](Block& block) -> Plant& { return block.m_hasPlant.get(); }, nb::rv_policy::reference)
-		.def("getFluids", &Block::m_fluids, nb::rv_policy::reference)
+		.def_ro("getFluids", &Block::m_fluids, nb::rv_policy::reference)
 		.def("addFluid", &Block::addFluid);
 	// CauseOfDeath
 	nb::enum_<CauseOfDeath>(m, "CauseOfDeath")
@@ -167,8 +167,8 @@ NB_MODULE(bound, m)
 		.export_values();
 	// Wound
 	nb::class_<Wound>(m, "Wound")
-		.def("woundType", &Wound::woundType)
-		.def("bleedVolumeRate", &Wound::bleedVolumeRate)
+		.def_ro("woundType", &Wound::woundType)
+		.def_ro("bleedVolumeRate", &Wound::bleedVolumeRate)
 		.def("getPercentHealed", &Wound::getPercentHealed)
 		.def("impairPercent", &Wound::impairPercent);
 	// BodyPart
@@ -179,9 +179,9 @@ NB_MODULE(bound, m)
 		.def_ro("severed", &BodyPart::severed);
 	// Body
 	nb::class_<Body>(m, "Body")
-		.def_ro("bodyParts", &Body::m_bodyParts)
-		.def_ro("getVolume", &Body::getVolume)
-		.def_ro("isBleeding", &Body::hasBleedEvent)
+		.def_ro("bodyParts", &Body::m_bodyParts, nb::rv_policy::reference)
+		.def("getVolume", &Body::getVolume)
+		.def("isBleeding", &Body::hasBleedEvent)
 		.def("getImpairMovePercent", &Body::getImpairMovePercent)
 		.def("getImpairManipulationPercent", &Body::getImpairManipulationPercent);
 	// Attributes
@@ -222,8 +222,8 @@ NB_MODULE(bound, m)
 		.def("currentObjectiveName", [](Actor& actor){ return actor.m_hasObjectives.getCurrent().name(); })
 		.def("currentStamina", [](Actor& actor){ return actor.m_stamina.get(); })
 		.def("maxStamina", [](Actor& actor){ return actor.m_stamina.getMax(); })
-		.def("canSee", &Actor::m_canSee)
-		.def("visionRange", &Actor::m_visionRange);
+		.def_ro("canSee", &Actor::m_canSee)
+		.def_ro("visionRange", &Actor::m_visionRange);
 	// Item
 	nb::class_<Item>(m, "Item")
 		.def_ro("id", &Item::m_id)

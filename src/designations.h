@@ -4,7 +4,7 @@
 #pragma once
 
 #include "config.h"
-#include "deserilizationMemo.h"
+#include "deserializationMemo.h"
 #include "faction.h"
 #include <unordered_set>
 #include <unordered_map>
@@ -26,11 +26,11 @@ class HasDesignations
 {
 	std::unordered_map<const Faction*, std::unordered_set<BlockDesignation>> m_designations;
 public:
-	HasDesignations(const Json& data, DeserilizationMemo& deserilizationMemo)
+	void load(const Json& data, DeserializationMemo& deserializationMemo)
 	{
 		for(const Json& pair : data)
 		{
-			const Faction& faction = deserilizationMemo.faction(pair[0].get<std::wstring>());
+			const Faction& faction = deserializationMemo.faction(pair[0].get<std::wstring>());
 			for(const Json& designation : pair[1])
 				m_designations[&faction].insert(designation.get<BlockDesignation>());
 		}
@@ -51,6 +51,10 @@ public:
 		if(!m_designations.contains(&f))
 			return false;
 		return m_designations.at(&f).contains(bd); 
+	}
+	bool empty() const 
+	{
+		return m_designations.empty();
 	}
 	void insert(const Faction& f, const BlockDesignation& bd)
 	{

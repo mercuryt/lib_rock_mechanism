@@ -1,7 +1,9 @@
 #include "body.h"
 #include "actor.h"
 #include "config.h"
+#include "deserializationMemo.h"
 #include "random.h"
+#include "reservable.h"
 #include "types.h"
 #include "util.h"
 #include "simulation.h"
@@ -12,10 +14,10 @@ Wound::Wound(Actor& a, const WoundType wt, BodyPart& bp, Hit h, uint32_t bvr, Pe
 	maxPercentTemporaryImpairment = WoundCalculations::getPercentTemporaryImpairment(hit, bodyPart.bodyPartType, a.m_species.bodyScale);
 	maxPercentPermanantImpairment = WoundCalculations::getPercentPermanentImpairment(hit, bodyPart.bodyPartType, a.m_species.bodyScale);
 }
-Wound::Wound(Json data, Actor& a, BodyPart& bp) :
+Wound::Wound(const Json& data, DeserializationMemo& deserializationMemo, BodyPart& bp) :
 	woundType(woundTypeByName(data["woundType"].get<std::string>())),
 	bodyPart(bp), hit(data["hit"]), bleedVolumeRate(data["bleedVolumeRate"].get<uint32_t>()),
-	percentHealed(data["percentHealed"].get<Percent>()), healEvent(a.getEventSchedule()) { }
+	percentHealed(data["percentHealed"].get<Percent>()), healEvent(deserializationMemo.m_simulation.m_eventSchedule) { }
 Percent Wound::getPercentHealed() const
 {
 	Percent output = percentHealed;
@@ -41,13 +43,13 @@ Json Wound::toJson() const
 	data["percentHealed"] = getPercentHealed();
 	return data;
 }
-BodyPart::BodyPart(const Json data) :
+BodyPart::BodyPart(const Json data, DeserializationMemo& deserializationMemo) :
 	bodyPartType(BodyPartType::byName(data["bodyPartType"].get<std::string>())),
 	materialType(MaterialType::byName(data["materialType"].get<std::string>())),
 	severed(data["severed"].get<bool>()) 
 { 
 	for(const Json& wound : data["wounds"])
-		wounds.emplace_back(wound);
+		wounds.emplace_back(wound, deserializationMemo, *this);
 }
 Json BodyPart::toJson() const
 {
@@ -69,7 +71,7 @@ Body::Body(Actor& a) :  m_actor(a), m_totalVolume(0), m_impairMovePercent(0), m_
 	}
 	m_volumeOfBlood = healthyBloodVolume();
 }
-Body::Body(const Json& data, Actor& a) : m_actor(a), 
+Body::Body(const Json& data, DeserializationMemo& deserializationMemo, Actor& a) : m_actor(a), 
 	m_materialType(&MaterialType::byName(data["materialType"].get<std::string>())),
 	m_totalVolume(data["totalVolume"].get<Volume>()), 
 	m_volumeOfBlood(data["volumeOfBlood"].get<Volume>()),
@@ -77,7 +79,7 @@ Body::Body(const Json& data, Actor& a) : m_actor(a),
 	m_bleedEvent(a.getEventSchedule()), m_woundsCloseEvent(a.getEventSchedule())
 {
 	for(const Json& bodyPart : data["bodyParts"])
-		m_bodyParts.emplace_back(bodyPart, *this, m_actor);
+		m_bodyParts.emplace_back(bodyPart, deserializationMemo);
 	if(data.contains("woundsCloseEventStart"))
 		m_woundsCloseEvent.schedule(data["woundsCloseEventDuration"].get<Step>(), *this, data["woundsCloseEventStart"].get<Step>()); 
 	if(data.contains("bleedEventStart"))
@@ -382,6 +384,6 @@ Json Body::toJson() const
 		data["bodyParts"].push_back(bodyPart.toJson());
 	return data;
 }
-WoundHealEvent::WoundHealEvent(const Step delay, Wound& w, Body& b) : ScheduledEventWithPercent(b.m_actor.getSimulation(), delay), m_wound(w), m_body(b) {}
-BleedEvent::BleedEvent(const Step delay, Body& b) : ScheduledEventWithPercent(b.m_actor.getSimulation(), delay), m_body(b) {}
-WoundsCloseEvent::WoundsCloseEvent(const Step delay, Body& b) : ScheduledEventWithPercent(b.m_actor.getSimulation(), delay), m_body(b) {}
+WoundHealEvent::WoundHealEvent(const Step delay, Wound& w, Body& b, const Step start) : ScheduledEventWithPercent(b.m_actor.getSimulation(), delay, start), m_wound(w), m_body(b) {}
+BleedEvent::BleedEvent(const Step delay, Body& b, const Step start) : ScheduledEventWithPercent(b.m_actor.getSimulation(), delay, start), m_body(b) {}
+WoundsCloseEvent::WoundsCloseEvent(const Step delay, Body& b, const Step start) : ScheduledEventWithPercent(b.m_actor.getSimulation(), delay, start), m_body(b) {}

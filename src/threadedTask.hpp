@@ -24,6 +24,7 @@ public:
 	bool exists() const { return m_threadedTask != nullptr; }
 	void maybeCancel() { if(exists()) cancel(); }
 	TaskType& get() { assert(m_threadedTask != nullptr); return *m_threadedTask; }
+	const TaskType& get() const { assert(m_threadedTask != nullptr); return *m_threadedTask; }
 	// Threaded tasks must be canceled before the holder is destroyed.
 	~HasThreadedTask() { maybeCancel(); }
 };

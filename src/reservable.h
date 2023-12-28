@@ -6,7 +6,7 @@
 #pragma once
 //TODO: Use vector instead of unordered set.
 #include "config.h"
-#include "deserilizationMemo.h"
+#include "deserializationMemo.h"
 #include <algorithm>
 #include <sys/types.h>
 #include <unordered_set>
@@ -32,7 +32,7 @@ class CanReserve final
 	friend class Reservable;
 public:
 	CanReserve(const Faction* f) : m_faction(f) { }
-	void load(const Json& data, DeserilizationMemo& deserializeMemo);
+	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void clearAll();
 	void setFaction(const Faction* faction);

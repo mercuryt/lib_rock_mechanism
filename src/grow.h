@@ -1,4 +1,5 @@
 #pragma once
+#include "config.h"
 #include "eventSchedule.h"
 #include "eventSchedule.hpp"
 class AnimalGrowthEvent;
@@ -12,8 +13,8 @@ class CanGrow final
 	Percent m_percentGrown;
 public:
 	CanGrow(Actor& a, Percent pg);
-	CanGrow(const Json& data);
-	Json toJSon() const;
+	CanGrow(const Json& data, Actor& actor);
+	Json toJson() const;
 	void updateGrowingStatus();
 	Percent growthPercent() const;
 	void update();
@@ -28,7 +29,7 @@ class AnimalGrowthEvent final : public ScheduledEventWithPercent
 {
 	CanGrow& m_canGrow;
 public:
-	AnimalGrowthEvent(Step delay, CanGrow& cg);
+	AnimalGrowthEvent(Step delay, CanGrow& cg, const Step start = 0);
 	void execute() { m_canGrow.complete(); }
 	void clearReferences(){ m_canGrow.m_event.clearPointer(); }
 };
@@ -36,7 +37,7 @@ class AnimalGrowthUpdateEvent final : public ScheduledEventWithPercent
 {
 	CanGrow& m_canGrow;
 public:
-	AnimalGrowthUpdateEvent(Step delay, CanGrow& cg);
+	AnimalGrowthUpdateEvent(Step delay, CanGrow& cg, const Step start = 0);
 	void execute() { m_canGrow.update(); }
 	void clearReferences(){ m_canGrow.m_updateEvent.clearPointer(); }
 };

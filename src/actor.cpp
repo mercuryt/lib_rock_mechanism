@@ -2,6 +2,8 @@
 #include "animalSpecies.h"
 #include "block.h"
 #include "area.h"
+#include "deserializationMemo.h"
+#include "eventSchedule.hpp"
 #include "simulation.h"
 #include "wait.h"
 
@@ -14,11 +16,47 @@ Actor::Actor(Simulation& simulation, uint32_t id, const std::wstring& name, cons
 	// TODO: Having this line here requires making the existance of objectives mandatory at all times. Good idea?
 	//m_hasObjectives.getNext();
 }
-Actor::Actor(Simulation& simulation, Json data) :
-	HasShape(simulation, AnimalSpecies::byName(data["species"].get<std::string>()).shapeForPercentGrown(data["percentGrown"].get<Percent>()), false), 
-	m_faction(simulation.m_hasFactions.byName(data["faction"].get<std::wstring>())), 
+Actor::Actor(const Json& data, DeserializationMemo& deserializationMemo) :
+	HasShape(data, deserializationMemo),
+	m_faction(data.contains("faction") ? &deserializationMemo.m_simulation.m_hasFactions.byName(data["faction"].get<std::wstring>()) : nullptr), 
 	m_id(data["id"].get<ActorId>()), m_name(data["name"].get<std::wstring>()), m_species(AnimalSpecies::byName(data["species"].get<std::string>())), 
-	m_alive(data["alive"].get<bool>()), m_body(*this, data), m_project(nullptr), m_attributes(data), m_equipmentSet(*this, data), m_mustEat(*this, data), m_mustDrink(*this, data), m_mustSleep(*this, data), m_needsSafeTemperature(*this, data), m_canPickup(*this, data), m_canMove(*this, data), m_canFight(*this, data), m_canGrow(*this, data), m_hasObjectives(*this, data), m_canReserve(data), m_stamina(*this, data), m_visionRange(m_species.visionRange) { }
+	m_alive(data["alive"].get<bool>()), m_body(data["body"], deserializationMemo, *this), m_project(nullptr), 
+	m_attributes(data["attributes"], *data["species"].get<const AnimalSpecies*>(), data["percentGrown"].get<Percent>()), 
+	m_equipmentSet(data["equipmentSet"], *this), m_mustEat(data["mustEat"], *this), m_mustDrink(data["mustDrink"], *this), m_mustSleep(data["mustSleep"], *this), m_needsSafeTemperature(data["needsSafeTemperature"], *this), 
+	m_canPickup(data["canPickup"], *this), m_canMove(data["canMove"], deserializationMemo, *this), m_canFight(data["canFight"], *this), m_canGrow(data["canGrow"], *this), 
+	// Wait untill projects have been loaded before loading hasObjectives.
+	m_hasObjectives(*this), m_canReserve(m_faction), m_stamina(*this, data["stamina"].get<uint32_t>()), m_visionRange(m_species.visionRange) 
+{ 
+	Block& block = deserializationMemo.blockReference(data["location"]);
+	setLocation(block);
+}
+Json Actor::toJson() const
+{
+	Json data = HasShape::toJson();
+	data["species"] = m_species;
+	data["percentGrown"] = m_canGrow.growthPercent();
+	data["id"] = m_id;
+	data["name"] = m_name;
+	data["alive"] = m_alive;
+	data["body"] = m_body.toJson();
+	data["attributes"] = m_attributes.toJson();
+	data["equipmentSet"] = m_equipmentSet.toJson();
+	data["mustEat"] = m_mustEat.toJson();
+	data["mustDrink"] = m_mustDrink.toJson();
+	data["mustSleep"] = m_mustSleep.toJson();
+	data["canPickup"] = m_canPickup.toJson();
+	data["canMove"] = m_canMove.toJson();
+	data["canFight"] = m_canFight.toJson();
+	data["canGrow"] = m_canGrow.toJson();
+	data["stamina"] = m_stamina.get();
+	if(m_faction != nullptr)
+		data["faction"] = m_faction;
+	if(m_location != nullptr)
+		data["location"] = m_location;
+	if(m_canReserve.hasReservations())
+		data["canReserve"] = m_canReserve.toJson();
+	return data;
+}
 void Actor::setLocation(Block& block)
 {
 	assert(&block != HasShape::m_location);
@@ -133,8 +171,8 @@ void Actor::log() const
 	HasShape::log();
 	std::cout << std::endl;
 }
-ActorQuery::ActorQuery(const Json& data, DeserilizationMemo& deserilizationMemo) :
-	actor(data.contains("actor") ? &deserilizationMemo.m_simulation.getActorById(data["actor"].get<ActorId>()) : nullptr),
+ActorQuery::ActorQuery(const Json& data, DeserializationMemo& deserializationMemo) :
+	actor(data.contains("actor") ? &deserializationMemo.m_simulation.getActorById(data["actor"].get<ActorId>()) : nullptr),
 	carryWeight(data.contains("carryWeight") ? data["carryWeight"].get<Mass>() : 0),
 	checkIfSentient(data.contains("checkIfSentient")),
 	sentient(data.contains("sentient")) { }

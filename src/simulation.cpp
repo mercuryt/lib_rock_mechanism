@@ -2,6 +2,7 @@
 #include "animalSpecies.h"
 #include "area.h"
 #include "config.h"
+#include "deserializationMemo.h"
 #include "haul.h"
 #include "threadedTask.h"
 #include <cstdint>
@@ -15,6 +16,9 @@ Simulation::Simulation(const Json& data) : m_step(data["step"].get<Step>()), m_n
 	m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this) 
 { 
 	m_hourlyEvent.schedule(*this, data["hourlyEventStart"].get<Step>());
+	DeserializationMemo deserializationMemo(*this);
+	for(const Json& areaData : data["areas"])
+		m_areas.emplace_back(areaData, deserializationMemo, *this);
 }
 void Simulation::doStep()
 {
@@ -97,16 +101,18 @@ Item& Simulation::createItemGeneric(const ItemType& itemType, const MaterialType
 Item& Simulation::loadItemGeneric(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, uint32_t quantity, CraftJob* cj)
 {
 	if(m_nextItemId <= id) m_nextItemId = id + 1;
-	auto [iter, emplaced] = m_items.try_emplace(id, m_items.end(), *this, id, itemType, materialType, quantity, cj);
+	auto [iter, emplaced] = m_items.try_emplace(id, *this, id, itemType, materialType, quantity, cj);
 	assert(emplaced);
 	return iter->second;
 }
 Item& Simulation::loadItemNongeneric(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, uint32_t quality, Percent percentWear, std::wstring name, CraftJob* cj)
 {
 	if(m_nextItemId <= id) m_nextItemId = id + 1;
-	auto [iter, emplaced] = m_items.try_emplace(id, m_items.end(), *this, id, itemType, materialType, quality, percentWear, name, cj);
+	auto [iter, emplaced] = m_items.try_emplace(id, *this, id, itemType, materialType, quality, percentWear, cj);
 	assert(emplaced);
-	return iter->second;
+	Item& item = iter->second;
+	item.m_name = name;
+	return item;
 }
 void Simulation::destroyItem(Item& item)
 {
@@ -214,75 +220,17 @@ Json Simulation::toJson() const
 	output["nextItemId"] = m_nextItemId;
 	return output;
 }
-void Simulation::loadAreaFromJson(const Json& data)
-{
-	auto x = data["sizeX"].get<uint32_t>();
-	auto y = data["sizeY"].get<uint32_t>();
-	auto z = data["sizeZ"].get<uint32_t>();
-	auto id = data["id"].get<AreaId>();
-	Area& area = loadArea(id, x, y, z);
-	for(const Json& blockData : data["blocks"])
-	{
-		auto x = blockData["sizeX"].get<uint32_t>();
-		auto y = blockData["sizeY"].get<uint32_t>();
-		auto z = blockData["sizeZ"].get<uint32_t>();
-		area.getBlock(x, y, z).loadFromJson(blockData);
-	}
-	for(const Json& fireData : data["fires"])
-		area.loadFireFromJson(fireData);
-	for(const Json& plantData : data["plants"])
-		area.loadPlantFromJson(plantData);
-}
-Item& Simulation::loadItemFromJson(const Json& data)
+Item& Simulation::loadItemFromJson(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	auto id = data["id"].get<ItemId>();
-	const auto& itemType = ItemType::byName(data["itemType"].get<std::string>());
-	const auto& materialType = MaterialType::byName(data["materialType"].get<std::string>());
-	//TODO: CraftJob.
-	if(itemType.generic)
-	{
-		auto quantity = data["quantity"].get<uint32_t>();
-		return loadItemGeneric(id, itemType, materialType, quantity);
-	}
-	else
-	{
-		auto quality = data["quality"].get<uint32_t>();
-		auto percentWear = data["percentWear"].get<Percent>();
-		auto name = data.contains("name") ? data["name"].get<std::wstring>() : L"";
-		return loadItemNongeneric(id, itemType, materialType, quality, percentWear, name);
-	}
+	m_items.try_emplace(id, data, deserializationMemo, id);
+	return m_items.at(id);
 }
-Actor& Simulation::loadActorFromJson(const Json& data)
+Actor& Simulation::loadActorFromJson(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	auto id = data["id"].get<ActorId>();
-	auto name = data["name"].get<std::wstring>();
-	auto& species = AnimalSpecies::byName(data["species"].get<std::string>());
-	auto& location = getBlockForJsonQuery(data["location"]);
-	auto facing = data["facing"].get<Facing>();
-	auto isAlive = data["isAlive"].get<bool>();
-	const Faction* faction = data.contains("faction") ? &m_hasFactions.byName(data["faction"].get<std::wstring>()) : nullptr;
-	 
-	if(data.contains("path"))
-	{
-	}
-	else if(data.contains("destination"))
-	{
-	}
-	if(data.contains("moveEventStart"))
-	{
-	}
-	auto strength = data["strength"].get<uint32_t>();
-	auto agility = data["agility"].get<uint32_t>();
-	auto dextarity = data["dextarity"].get<uint32_t>();
-	if(data.contains("equipmentSet"))
-	{
-	}
-	if(data.contains("objectives"))
-	{
-	}
-	if(data.contains("reservations"))
-	{
-	}
+	m_items.try_emplace(id, data, deserializationMemo, id);
+	return m_actors.at(id);
 }
 Block& Simulation::getBlockForJsonQuery(const Json& data)
 {

@@ -44,7 +44,7 @@ public:
 		agility(species.agility[0], species.agility[1], 100, 0, percentGrown),
 		mass(species.mass[0], species.mass[1], 100, 0, percentGrown)
 	{ generate(); }
-	Attributes(const Json& data, AnimalSpecies& species, Percent percentGrown);
+	Attributes(const Json& data, const AnimalSpecies& species, Percent percentGrown);
 	void updatePercentGrown(Percent percentGrown);
 	void generate();
 	void removeMass(Mass m)

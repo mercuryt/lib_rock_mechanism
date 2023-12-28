@@ -1,5 +1,5 @@
 #pragma once
-#include "deserilizationMemo.h"
+#include "deserializationMemo.h"
 #include "objective.h"
 #include "plant.h"
 #include "eventSchedule.hpp"
@@ -19,7 +19,7 @@ public:
 	std::unique_ptr<Objective> makeFor(Actor& actor) const;
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::SowSeeds; }
 	SowSeedsObjectiveType() = default;
-	SowSeedsObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserilizationMemo& deserilizationMemo){ }
+	SowSeedsObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo){ }
 };
 class SowSeedsObjective final : public Objective
 {
@@ -30,7 +30,7 @@ class SowSeedsObjective final : public Objective
 	bool canSowAt(const Block& block) const;
 public:
 	SowSeedsObjective(Actor& a);
-	SowSeedsObjective(const Json& data, DeserilizationMemo& deserilizationMemo);
+	SowSeedsObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void execute();
 	void cancel();
@@ -47,7 +47,7 @@ class SowSeedsEvent final : public ScheduledEventWithPercent
 {
 	SowSeedsObjective& m_objective;
 public:
-	SowSeedsEvent(Step delay, SowSeedsObjective& o);
+	SowSeedsEvent(Step delay, SowSeedsObjective& o, const Step start = 0);
 	void execute();
 	void clearReferences();
 };

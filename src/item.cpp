@@ -1,5 +1,6 @@
-#include "deserilizationMemo.h"
+#include "deserializationMemo.h"
 #include "eventSchedule.hpp"
+#include "hasShape.h"
 #include "materialType.h"
 #include "util.h"
 #include "item.h"
@@ -22,7 +23,7 @@ bool ItemType::hasMeleeAttack() const
 	return false;
 }
 // RemarkItemForStockPilingEvent
-RemarkItemForStockPilingEvent::RemarkItemForStockPilingEvent(Item& i, const Faction& f, Step duration) : ScheduledEventWithPercent(i.getSimulation(), duration), m_item(i), m_faction(f) { }
+RemarkItemForStockPilingEvent::RemarkItemForStockPilingEvent(Item& i, const Faction& f, Step duration, const Step start) : ScheduledEventWithPercent(i.getSimulation(), duration, start), m_item(i), m_faction(f) { }
 void RemarkItemForStockPilingEvent::execute() 
 { 
 	m_item.m_canBeStockPiled.maybeSet(m_faction); 
@@ -105,7 +106,7 @@ void Item::log() const
 	std::cout << std::endl;
 }
 // Generic.
-Item::Item(Simulation& s, uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t q, CraftJob* cj):
+Item::Item(Simulation& s, ItemId i, const ItemType& it, const MaterialType& mt, uint32_t q, CraftJob* cj):
 	HasShape(s, it.shape, true, 0, q), m_quantity(q), m_id(i), m_itemType(it), m_materialType(mt), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this), m_canBeStockPiled(*this)
 {
 	assert(m_itemType.generic);
@@ -113,16 +114,23 @@ Item::Item(Simulation& s, uint32_t i, const ItemType& it, const MaterialType& mt
 	m_mass = m_volume * m_materialType.density;
 }
 // NonGeneric.
-Item::Item(Simulation& s, uint32_t i, const ItemType& it, const MaterialType& mt, uint32_t qual, Percent pw, CraftJob* cj):
+Item::Item(Simulation& s, ItemId i, const ItemType& it, const MaterialType& mt, uint32_t qual, Percent pw, CraftJob* cj):
 	HasShape(s, it.shape, true), m_quantity(1u), m_id(i), m_itemType(it), m_materialType(mt), m_quality(qual), m_percentWear(pw), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this), m_canBeStockPiled(*this)
 {
 	assert(!m_itemType.generic);
 	m_mass = m_itemType.volume * m_materialType.density;
 	m_volume = m_itemType.volume;
 }
+Item::Item(const Json& data, DeserializationMemo& deserializationMemo, ItemId id) : 
+	HasShape(data, deserializationMemo),
+	m_quantity(data.contains("quantity") ? data["quantity"].get<uint32_t>() : 1u),
+	m_id(id), m_itemType(*data["itemType"].get<const ItemType*>()), m_materialType(*data["materialType"].get<const MaterialType*>()),
+	m_quality(data["quality"].get<uint32_t>()), m_percentWear(data["percentWear"].get<Percent>()), m_installed(data["installed"].get<bool>()),
+	m_craftJobForWorkPiece(deserializationMemo.m_craftJobs.at(data["craftJobForWorkPiece"])),
+	m_hasCargo(*this), m_canBeStockPiled(data["canBeStockPiled"], deserializationMemo, *this) { }
 Json Item::toJson() const
 {
-	Json data;
+	Json data = HasShape::toJson();
 	data["id"] = m_id;
 	data["name"] = m_name;
 	data["location"] = m_location->positionToJson();
@@ -149,6 +157,29 @@ Json Item::toJson() const
 					data["actorCargo"].push_back(static_cast<Actor*>(hasShape)->m_id);
 		}
 	}
+	return data;
+}
+// HasCargo.
+void ItemHasCargo::loadJson(const Json& data, DeserializationMemo& deserializationMemo)
+{
+	m_volume = data["volume"].get<Volume>();
+	m_mass = data["mass"].get<Mass>();
+	m_fluidType = data.contains("fluidType") ? data["fluidType"].get<const FluidType*>() : nullptr;
+	m_fluidVolume = data.contains("fluidVolume") ? data["fluidVolume"].get<Volume>() : 0u;
+	if(data.contains("hasShapes"))
+		for(const Json& shapeReference : data["hasShapes"])
+			m_shapes.push_back(&deserializationMemo.hasShapeReference(shapeReference));
+	if(data.contains("items"))
+		for(const Json& itemReference : data["items"])
+			m_items.push_back(&deserializationMemo.itemReference(itemReference));
+}
+Json ItemHasCargo::toJson() const
+{
+	Json data{{"volume", m_volume}, {"mass", m_mass}, {"fluidType", m_fluidType}, {"fluidVolume", m_fluidVolume}, {"hasShapes", Json::array()}, {"items", Json::array()}};
+	for(const HasShape* shape : m_shapes)
+		data["hasShapes"].push_back(shape);
+	for(const Item* item : m_items)
+		data["items"].push_back(item);
 	return data;
 }
 void ItemHasCargo::add(HasShape& hasShape)
@@ -282,8 +313,8 @@ ItemQuery::ItemQuery(Item& item) : m_item(&item), m_itemType(nullptr), m_materia
 ItemQuery::ItemQuery(const ItemType& m_itemType) : m_item(nullptr), m_itemType(&m_itemType), m_materialTypeCategory(nullptr), m_materialType(nullptr) { }
 ItemQuery::ItemQuery(const ItemType& m_itemType, const MaterialTypeCategory& mtc) : m_item(nullptr), m_itemType(&m_itemType), m_materialTypeCategory(&mtc), m_materialType(nullptr) { }
 ItemQuery::ItemQuery(const ItemType& m_itemType, const MaterialType& mt) : m_item(nullptr), m_itemType(&m_itemType), m_materialTypeCategory(nullptr), m_materialType(&mt) { }
-ItemQuery::ItemQuery(const Json& data, DeserilizationMemo& deserilizationMemo) :
-	m_item(data.contains("item") ? &deserilizationMemo.m_simulation.getItemById(data["item"].get<ItemId>()) : nullptr),
+ItemQuery::ItemQuery(const Json& data, DeserializationMemo& deserializationMemo) :
+	m_item(data.contains("item") ? &deserializationMemo.m_simulation.getItemById(data["item"].get<ItemId>()) : nullptr),
 	m_itemType(data.contains("itemType") ? &ItemType::byName(data["itemType"].get<std::string>()) : nullptr),
 	m_materialTypeCategory(data.contains("materialTypeCategory") ? &MaterialTypeCategory::byName(data["materialTypeCategory"].get<std::string>()) : nullptr),
 	m_materialType(data.contains("materialType") ? &MaterialType::byName(data["materialType"].get<std::string>()) : nullptr) { }

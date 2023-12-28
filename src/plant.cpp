@@ -1,4 +1,7 @@
 #include "plant.h"
+#include "deserializationMemo.h"
+#include "eventSchedule.h"
+#include "types.h"
 #include "util.h"
 #include "plant.h"
 #include "block.h"
@@ -16,6 +19,63 @@ Plant::Plant(Block& l, const PlantSpecies& pt, Percent pg, Volume volumeFluidReq
 	updateGrowingStatus();
 	m_location.m_area->m_hasFarmFields.removeAllSowSeedsDesignations(m_location);
 }
+Plant::Plant(const Json& data, DeserializationMemo& deserializationMemo, Block& l) : m_location(l), 
+	m_fluidSource(&deserializationMemo.blockReference(data["fluidSource"])), m_plantSpecies(*data["species"].get<const PlantSpecies*>()),
+	m_growthEvent(l.m_area->m_simulation.m_eventSchedule), m_fluidEvent(l.m_area->m_simulation.m_eventSchedule), 
+	m_temperatureEvent(l.m_area->m_simulation.m_eventSchedule), m_endOfHarvestEvent(l.m_area->m_simulation.m_eventSchedule), 
+	m_foliageGrowthEvent(l.m_area->m_simulation.m_eventSchedule), m_percentGrown(data["precentGrown"].get<Percent>()), 
+	m_quantityToHarvest(data["harvestableQuantity"].get<uint32_t>()), m_percentFoliage(data["percentFoliage"].get<Percent>()), 
+	m_reservable(1), m_volumeFluidRequested(data["volumeFluidRequested"].get<Volume>())
+{
+	if(data.contains("growthEventStart"))
+		m_growthEvent.schedule(data["growthEventDuration"].get<Step>(), *this, data["growthEventStart"].get<Step>());
+	if(data.contains("fluidEventStart"))
+		m_fluidEvent.schedule(data["fluidEventDuration"].get<Step>(), *this, data["fluidEventStart"].get<Step>());
+	if(data.contains("temperatureEventStart"))
+		m_temperatureEvent.schedule(data["temperatureEventDuration"].get<Step>(), *this, data["temperatureEventStart"].get<Step>());
+	if(data.contains("endOfHarvestEventStart"))
+		m_endOfHarvestEvent.schedule(data["endOfHarvestEventDuration"].get<Step>(), *this, data["endOfHarvestEventStart"].get<Step>());
+	if(data.contains("foliageGrowthEventStart"))
+		m_foliageGrowthEvent.schedule(data["foliageGrowthEventDuration"].get<Step>(), *this, data["foliageGrowthEventStart"].get<Step>());
+}
+Json Plant::toJson() const
+{
+	Json data{
+		{"fluidSource", m_fluidSource},
+		{"species", m_plantSpecies},
+		{"percentGrown", getGrowthPercent()},
+		{"harvestableQuantity", m_quantityToHarvest},
+		{"percentFoliage", m_percentFoliage},
+		{"volumeFluidRequested", m_volumeFluidRequested}
+	};
+	if(m_growthEvent.exists())
+	{
+		data["growthEventStart"] = m_growthEvent.getStartStep();
+		data["growthEventDuration"] = m_growthEvent.duration();
+	}
+	if(m_fluidEvent.exists())
+	{
+		data["fluidEventStart"] = m_fluidEvent.getStartStep();
+		data["fluidEventDuration"] = m_fluidEvent.duration();
+	}
+	if(m_temperatureEvent.exists())
+	{
+		data["temperatureEventStart"] = m_temperatureEvent.getStartStep();
+		data["temperatureEventDuration"] = m_temperatureEvent.duration();
+	}
+	if(m_endOfHarvestEvent.exists())
+	{
+		data["endOfHarvestEventStart"] = m_endOfHarvestEvent.getStartStep();
+		data["endOfHarvestEventDuration"] = m_endOfHarvestEvent.duration();
+	}
+	if(m_foliageGrowthEvent.exists())
+	{
+		data["foliageGrowthEventStart"] = m_foliageGrowthEvent.getStartStep();
+		data["foliageGrowthEventDuration"] = m_foliageGrowthEvent.duration();
+	}
+	return data;
+}
+void to_json(Json& data, const Plant* const& plant){ data = plant->m_location.positionToJson(); }
 void Plant::die()
 {
 	m_growthEvent.maybeUnschedule();
@@ -292,6 +352,20 @@ Plant& HasPlants::emplace(Block& location, const PlantSpecies& species, Percent 
 	if(!location.m_underground)
 		m_plantsOnSurface.insert(&plant);
 	return plant;
+}
+Plant& HasPlants::emplace(const Json& data, DeserializationMemo& deserializationMemo)
+{
+	return emplace(
+		deserializationMemo.blockReference(data["location"]),
+		*data["species"].get<const PlantSpecies*>(),
+		data["percentGrowth"].get<Percent>(),
+		data["volumeFluidRequested"].get<Volume>(),
+		data["needsFluidEventStart"].get<Step>(),
+		data["temperatureIsUnsafe"].get<bool>(),
+		data["unsafeTemperatureEventStart"].get<Step>(),
+		data["harvestableQuantity"].get<uint32_t>(),
+		data["percentFoliage"].get<Percent>()
+	);
 }
 void HasPlants::erase(Plant& plant)
 {

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "config.h"
-#include "deserilizationMemo.h"
+#include "deserializationMemo.h"
 #include "item.h"
 #include "project.h"
 #include "reservable.h"
@@ -64,7 +64,7 @@ class CraftStepProject final : public Project
 	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const { return {}; }
 public:
 	CraftStepProject(const Faction* faction, Block& location, const CraftStepType& cst, CraftJob& cj) : Project(faction, location, 1), m_craftStepType(cst), m_craftJob(cj) { }
-	CraftStepProject(const Json& data, DeserilizationMemo& deserilizationMemo, CraftJob& cj);
+	CraftStepProject(const Json& data, DeserializationMemo& deserializationMemo, CraftJob& cj);
 	// No toJson needed here, the base class one has everything.
 	uint32_t getWorkerCraftScore(const Actor& actor) const;
 };
@@ -72,8 +72,8 @@ struct CraftStepProjectHasShapeDishonorCallback final : public DishonorCallback
 {
 	CraftStepProject& m_craftStepProject;
 	CraftStepProjectHasShapeDishonorCallback(CraftStepProject& hs) : m_craftStepProject(hs) { } 
-	CraftStepProjectHasShapeDishonorCallback(const Json& data, DeserilizationMemo& deserilizationMemo) : 
-		m_craftStepProject(*static_cast<CraftStepProject*>(deserilizationMemo.m_projects.at(data["proejct"].get<uintptr_t>()))) { } 
+	CraftStepProjectHasShapeDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
+		m_craftStepProject(*static_cast<CraftStepProject*>(deserializationMemo.m_projects.at(data["proejct"].get<uintptr_t>()))) { } 
 	Json toJson() const { return Json({{"type", "CraftStepProjectHasShapeDishonorCallback"}, {"project", reinterpret_cast<uintptr_t>(&m_craftStepProject)}}); }
 	// Craft step project cannot reset so cancel instead and allow to be recreated later.
 	// TODO: Why?
@@ -118,7 +118,7 @@ struct CraftJob final
 	// No work piece provided is a create job.
 	CraftJob(const CraftJobType& cjt, HasCraftingLocationsAndJobsForFaction& hclaj, const MaterialType* mt, uint32_t msl) :
 	       	craftJobType(cjt), hasCraftingLocationsAndJobs(hclaj), workPiece(nullptr), materialType(mt), stepIterator(craftJobType.stepTypes.begin()), minimumSkillLevel(msl), totalSkillPoints(0), reservable(1) { }
-	CraftJob(const Json& data, DeserilizationMemo& deserilizationMemo, HasCraftingLocationsAndJobsForFaction& hclaj);
+	CraftJob(const Json& data, DeserializationMemo& deserializationMemo, HasCraftingLocationsAndJobsForFaction& hclaj);
 	Json toJson() const;
 	uint32_t getQuality() const;
 	uint32_t getStep() const;
@@ -130,7 +130,7 @@ class CraftObjectiveType final : public ObjectiveType
 	const SkillType& m_skillType; // Multiple skills are represented by CraftObjective and CraftObjectiveType, such as Leatherworking, Woodworking, Metalworking, etc.
 public:
 	CraftObjectiveType(const SkillType& skillType) : ObjectiveType(), m_skillType(skillType) { }
-	CraftObjectiveType(const Json& data, DeserilizationMemo& deserilizationMemo);
+	CraftObjectiveType(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	bool canBeAssigned(Actor& actor) const;
 	std::unique_ptr<Objective> makeFor(Actor& actor) const;
@@ -144,7 +144,7 @@ class CraftObjective final : public Objective
 	std::unordered_set<CraftJob*> m_failedJobs;
 public:
 	CraftObjective(Actor& a, const SkillType& st);
-	CraftObjective(const Json& data, DeserilizationMemo& deserilizationMemo);
+	CraftObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void execute();
 	void cancel();
@@ -183,7 +183,7 @@ class HasCraftingLocationsAndJobsForFaction final
 	std::list<CraftJob> m_jobs;
 public:
 	HasCraftingLocationsAndJobsForFaction(const Faction& f) : m_faction(f) { }
-	HasCraftingLocationsAndJobsForFaction(const Json& data, DeserilizationMemo& deserilizationMemo, const Faction& f);
+	HasCraftingLocationsAndJobsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const Faction& f);
 	Json toJson() const;
 	// To be used by the player.
 	void addLocation(const CraftStepTypeCategory& craftStepTypeCategory, Block& block);
@@ -221,7 +221,7 @@ class HasCraftingLocationsAndJobs final
 {
 	std::unordered_map<const Faction*, HasCraftingLocationsAndJobsForFaction> m_data;
 public:
-	void load(const Json& data, DeserilizationMemo& deserilizationMemo);
+	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void addFaction(const Faction& faction) { m_data.try_emplace(&faction, faction); }
 	void removeFaction(const Faction& faction) { m_data.erase(&faction); }

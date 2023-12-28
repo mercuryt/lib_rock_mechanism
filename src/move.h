@@ -1,5 +1,7 @@
 #pragma once
 #include "config.h"
+#include "deserializationMemo.h"
+#include "fluidType.h"
 #include "threadedTask.hpp"
 #include "eventSchedule.hpp"
 #include "findsPath.h"
@@ -27,7 +29,7 @@ class ActorCanMove final
 	HasThreadedTask<PathThreadedTask> m_threadedTask;
 public:
 	ActorCanMove(Actor& a);
-	ActorCanMove(const Json& data, Actor& a);
+	ActorCanMove(const Json& data, DeserializationMemo& deserializationMemo, Actor& a);
 	void updateIndividualSpeed();
 	void updateActualSpeed();
 	void setMoveType(const MoveType& moveType);
@@ -38,17 +40,16 @@ public:
 	void setDestination(Block& destination, bool detour = false, bool adjacent = false, bool unreserved = true, bool reserve = true);
 	void setDestinationAdjacentTo(Block& destination, bool detour = false, bool unreserved = true, bool reserve = true);
 	void setDestinationAdjacentTo(HasShape& hasShape, bool detour = false, bool unreserved = true, bool reserve = true);
+	void setDestinationAdjacentTo(const FluidType& fluidType, bool detour = false, bool unreserved = true, bool reserve = true);
 	void clearAllEventsAndTasks();
 	void onDeath();
 	void onLeaveArea();
 	void maybeCancelThreadedTask() { m_threadedTask.maybeCancel(); }
-	[[nodiscard]] bool ensureIsAdjacent(Block& block);
-	[[nodiscard]] Block* ensureIsAdjacentToPredicateAndUnreserved(std::function<bool(const Block&)> condition);
+	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] const MoveType& getMoveType() const { return *m_moveType; }
 	[[nodiscard]] uint32_t getIndividualMoveSpeedWithAddedMass(Mass mass) const;
 	[[nodiscard]] uint32_t getMoveSpeed() const { return m_speedActual; }
 	[[nodiscard]] bool canMove() const;
-	[[nodiscard]] Json toJson() const;
 	// For testing.
 	[[maybe_unused, nodiscard]] PathThreadedTask& getPathThreadedTask() { return m_threadedTask.get(); }
 	[[maybe_unused, nodiscard]] std::vector<Block*>& getPath() { return m_path; }
@@ -62,7 +63,7 @@ class MoveEvent final : public ScheduledEventWithPercent
 {
 	ActorCanMove& m_canMove;
 public:
-	MoveEvent(Step delay, ActorCanMove& cm);
+	MoveEvent(Step delay, ActorCanMove& cm, const Step start = 0);
 	void execute() { m_canMove.callback(); }
 	void clearReferences() { m_canMove.m_event.clearPointer(); }
 };
@@ -70,6 +71,7 @@ class PathThreadedTask final : public ThreadedTask
 {
 	Actor& m_actor;
 	HasShape* m_hasShape;
+	const FluidType* m_fluidType;
 	const Block* m_huristicDestination;
 	bool m_detour;
 	bool m_adjacent;
@@ -77,8 +79,8 @@ class PathThreadedTask final : public ThreadedTask
 	bool m_reserveDestination;
 	FindsPath m_findsPath;
 public:
-	PathThreadedTask(Actor& a, HasShape* hasShape = nullptr, const Block* huristicDestination = nullptr, bool detour = false, bool adjacent = false, bool m_unreservedDestination = true, bool m_reserveDestination = true);
-	PathThreadedTask(const Json& data, Actor& a);
+	PathThreadedTask(Actor& a, HasShape* hasShape = nullptr, const FluidType* fluidType = nullptr, const Block* huristicDestination = nullptr, bool detour = false, bool adjacent = false, bool m_unreservedDestination = true, bool m_reserveDestination = true);
+	PathThreadedTask(const Json& data, DeserializationMemo& deserializationMemo, Actor& a);
 	Json toJson() const;
 	void readStep();
 	void writeStep();

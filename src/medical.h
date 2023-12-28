@@ -129,7 +129,7 @@ class MedicalPatientRelistEvent final : public ScheduledEventWithPercent
 {
 	Actor& m_patient;
 public:
-	MedicalPatientRelistEvent(Actor& p) : ScheduledEventWithPercent(p.getSimulation(), Config::medicalProjectDelaySteps), m_patient(p) { }
+	MedicalPatientRelistEvent(Actor& p, const Step start = 0) : ScheduledEventWithPercent(p.getSimulation(), Config::medicalProjectDelaySteps, start), m_patient(p) { }
 	void execute();
 	void clearReferences();
 };

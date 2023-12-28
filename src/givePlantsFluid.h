@@ -1,11 +1,11 @@
 #pragma once
 
+#include "deserializationMemo.h"
 #include "objective.h"
 #include "eventSchedule.hpp"
 #include "reservable.h"
 #include "threadedTask.hpp"
 #include "findsPath.h"
-#include "onDestroy.h"
 
 #include <memory>
 #include <vector>
@@ -19,7 +19,7 @@ class GivePlantsFluidEvent final : public ScheduledEventWithPercent
 {
 	GivePlantsFluidObjective& m_objective;
 public:
-	GivePlantsFluidEvent(Step step, GivePlantsFluidObjective& gpfo);
+	GivePlantsFluidEvent(Step step, GivePlantsFluidObjective& gpfo, const Step start = 0);
 	void execute();
 	void clearReferences();
 	void onCancel();
@@ -43,18 +43,26 @@ public:
 	std::unique_ptr<Objective> makeFor(Actor& actor) const;
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::GivePlantsFluid; }
 	GivePlantsFluidObjectiveType() = default;
-	GivePlantsFluidObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserilizationMemo& deserilizationMemo){ }
+	GivePlantsFluidObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo){ }
+};
+class GivePlantsFluidItemDishonorCallback final : public DishonorCallback
+{
+	Actor& m_actor;
+public:
+	GivePlantsFluidItemDishonorCallback(Actor& a) : m_actor(a) { }
+	GivePlantsFluidItemDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo);
+	Json toJson() const;
+	void execute(uint32_t oldCount, uint32_t newCount);
 };
 class GivePlantsFluidObjective final : public Objective
 {
 	Block* m_plantLocation;
 	Item* m_fluidHaulingItem;
-	HasOnDestroySubscription m_fluidHaulingItemOnDestroy;
 	HasScheduledEvent<GivePlantsFluidEvent> m_event;
 	HasThreadedTask<GivePlantsFluidThreadedTask> m_threadedTask;
 public:
 	GivePlantsFluidObjective(Actor& a);
-	GivePlantsFluidObjective(const Json& data, DishonorCallback& dishonorCallback);
+	GivePlantsFluidObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void execute();
 	void cancel();

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "deserilizationMemo.h"
+#include "deserializationMemo.h"
 #include "eventSchedule.h"
 #include "eventSchedule.hpp"
 #include "materialType.h"
@@ -74,6 +74,9 @@ struct ItemType final
 		return const_cast<ItemType&>(byName(name));
 	}
 };
+inline void to_json(Json& data, const ItemType* const& itemType){ data = itemType->name; }
+inline void to_json(Json& data, const ItemType& itemType){ data = itemType.name; }
+inline void from_json(const Json& data, const ItemType*& itemType){ itemType = &ItemType::byName(data.get<std::string>()); }
 class ItemHasCargo final
 {
 	Item& m_item;
@@ -85,6 +88,8 @@ class ItemHasCargo final
 	Volume m_fluidVolume;
 public:
 	ItemHasCargo(Item& i) : m_item(i), m_volume(0), m_mass(0), m_fluidType(nullptr), m_fluidVolume(0) { }
+	void loadJson(const Json& data, DeserializationMemo& deserializationMemo);
+	Json toJson() const;
 	void add(HasShape& hasShape);
 	void add(const FluidType& fluidType, Volume volume);
 	Item& add(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity);
@@ -113,7 +118,7 @@ class RemarkItemForStockPilingEvent final : public ScheduledEventWithPercent
 	Item& m_item;
 	const Faction& m_faction;
 public:
-	RemarkItemForStockPilingEvent(Item& i, const Faction& f, Step duration);
+	RemarkItemForStockPilingEvent(Item& i, const Faction& f, Step duration, const Step start = 0);
 	void execute();
 	void clearReferences();
 };
@@ -127,6 +132,8 @@ class ItemCanBeStockPiled
 	void scheduleReset(const Faction& faction, Step duration);
 public:
 	ItemCanBeStockPiled(Item& i) : m_item(i) { }
+	ItemCanBeStockPiled(const Json& data, DeserializationMemo& deserializationMemo, Item& item);
+	Json toJson() const;
 	void set(const Faction& faction) { assert(!m_data.contains(&faction)); m_data.insert(&faction); }
 	void maybeSet(const Faction& faction) { m_data.insert(&faction); }
 	void unset(const Faction& faction) { assert(m_data.contains(&faction)); m_data.erase(&faction); }
@@ -145,7 +152,7 @@ public:
 	const MaterialType& m_materialType;
 	Mass m_mass;
 	Volume m_volume;
-	std::string m_name;
+	std::wstring m_name;
 	uint32_t m_quality;
 	Percent m_percentWear;
 	bool m_installed;
@@ -160,7 +167,9 @@ public:
 	Item(Simulation& s, ItemId i, const ItemType& it, const MaterialType& mt, uint32_t q, CraftJob* cj);
 	// NonGeneric.
 	Item(Simulation& s, ItemId i, const ItemType& it, const MaterialType& mt, uint32_t qual, Percent pw, CraftJob* cj);
-	void setName(std::string name) { m_name = name; }
+	Item(const Json& data, DeserializationMemo& deserializationMemo, ItemId i);
+	[[nodiscard]] Json toJson() const;
+	void setName(std::wstring name) { m_name = name; }
 	void setVolume();
 	void setMass();
 	void destroy();
@@ -180,12 +189,13 @@ public:
 	Mass getMass() const { return m_quantity * singleUnitMass(); }
 	Volume getVolume() const { return m_quantity * m_itemType.volume; }
 	const MoveType& getMoveType() const { return m_itemType.moveType; }
-	Json toJson() const;
 	bool operator==(const Item& item) const { return this == &item; }
 	//TODO: Items leave area.
 	// For debugging.
 	void log() const;
 };
+inline void to_json(Json& data, Item* const& item){ data = item->m_id; }
+inline void to_json(Json& data, const Item& item){ data = item.m_id; }
 class ItemQuery final
 {
 public:
@@ -198,7 +208,7 @@ public:
 	ItemQuery(const ItemType& m_itemType);
 	ItemQuery(const ItemType& m_itemType, const MaterialTypeCategory& mtc);
 	ItemQuery(const ItemType& m_itemType, const MaterialType& mt);
-	ItemQuery(const Json& data, DeserilizationMemo& deserilizationMemo);
+	ItemQuery(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	bool operator()(const Item& item) const;
 	void specalize(Item& item);

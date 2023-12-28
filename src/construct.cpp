@@ -39,9 +39,9 @@ void ConstructThreadedTask::writeStep()
 	}
 }
 void ConstructThreadedTask::clearReferences() { m_constructObjective.m_constructThreadedTask.clearPointer(); }
-ConstructObjective::ConstructObjective(const Json& data, DeserilizationMemo& deserilizationMemo) :
-	Objective(data, deserilizationMemo), m_constructThreadedTask(m_actor.m_location->m_area->m_simulation.m_threadedTaskEngine), 
-	m_project(data.contains("project") ? deserilizationMemo.m_projects.at(data["project"].get<uintptr_t>()) : nullptr)
+ConstructObjective::ConstructObjective(const Json& data, DeserializationMemo& deserializationMemo) :
+	Objective(data, deserializationMemo), m_constructThreadedTask(m_actor.m_location->m_area->m_simulation.m_threadedTaskEngine), 
+	m_project(data.contains("project") ? deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()) : nullptr)
 {
 	if(data.contains("threadedTask"))
 		m_constructThreadedTask.create(*this);
@@ -133,7 +133,7 @@ bool ConstructObjectiveType::canBeAssigned(Actor& actor) const
 	return actor.m_location->m_area->m_hasConstructionDesignations.areThereAnyForFaction(*actor.getFaction());
 }
 std::unique_ptr<Objective> ConstructObjectiveType::makeFor(Actor& actor) const { return std::make_unique<ConstructObjective>(actor); }
-ConstructProject::ConstructProject(const Json& data, DeserilizationMemo& deserilizationMemo) : Project(data, deserilizationMemo), 
+ConstructProject::ConstructProject(const Json& data, DeserializationMemo& deserializationMemo) : Project(data, deserializationMemo), 
 	m_blockFeatureType(&BlockFeatureType::byName(data["blockFeatureType"].get<std::string>())),
 	m_materialType(MaterialType::byName(data["materialType"].get<std::string>())) { }
 Json ConstructProject::toJson() const
@@ -209,7 +209,7 @@ Step ConstructProject::getDuration() const
 		totalScore += getWorkerConstructScore(*pair.first);
 	return m_materialType.constructionData->duration / totalScore;
 }
-ConstructionLocationDishonorCallback::ConstructionLocationDishonorCallback(const Json& data, DeserilizationMemo& deserializationMemo) : 
+ConstructionLocationDishonorCallback::ConstructionLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
 	m_faction(deserializationMemo.faction(data["faction"].get<std::wstring>())),
 	m_location(deserializationMemo.m_simulation.getBlockForJsonQuery(data["location"])) { }
 Json ConstructionLocationDishonorCallback::toJson() const { return Json({{"type", "ConstructionLocationDishonorCallback"}, {"faction", m_faction.m_name}, {"location", m_location.positionToJson()}}); }
@@ -217,12 +217,12 @@ void ConstructionLocationDishonorCallback::execute([[maybe_unused]] uint32_t old
 {
 	m_location.m_area->m_hasConstructionDesignations.at(m_faction).undesignate(m_location);
 }
-HasConstructionDesignationsForFaction::HasConstructionDesignationsForFaction(const Json& data, DeserilizationMemo& deserilizationMemo, const Faction& faction) : m_faction(faction)
+HasConstructionDesignationsForFaction::HasConstructionDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const Faction& faction) : m_faction(faction)
 {
 	for(const Json& pair : data)
 	{
-		Block& block = deserilizationMemo.m_simulation.getBlockForJsonQuery(pair[0]);
-		m_data.try_emplace(&block, pair[1], deserilizationMemo);
+		Block& block = deserializationMemo.m_simulation.getBlockForJsonQuery(pair[0]);
+		m_data.try_emplace(&block, pair[1], deserializationMemo);
 	}
 }
 Json HasConstructionDesignationsForFaction::toJson() const
@@ -264,12 +264,12 @@ bool HasConstructionDesignationsForFaction::contains(const Block& block) const {
 const BlockFeatureType* HasConstructionDesignationsForFaction::at(const Block& block) const { return m_data.at(const_cast<Block*>(&block)).m_blockFeatureType; }
 bool HasConstructionDesignationsForFaction::empty() const { return m_data.empty(); }
 // To be used by Area.
-void HasConstructionDesignations::load(const Json& data, DeserilizationMemo& deserilizationMemo)
+void HasConstructionDesignations::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	for(const Json& pair : data)
 	{
-		const Faction& faction = deserilizationMemo.faction(pair[0]);
-		m_data.emplace(&faction, pair[1], deserilizationMemo, faction);
+		const Faction& faction = deserializationMemo.faction(pair[0]);
+		m_data.try_emplace(&faction, pair[1], deserializationMemo, faction);
 	}
 }
 Json HasConstructionDesignations::toJson() const
