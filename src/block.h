@@ -1,5 +1,5 @@
 /*
- * A block. Contains either a single type of material in 'solid' form or arbitrary objects with volume, generic solids and liquids.
+a* A block. Contains either a single type of material in 'solid' form or arbitrary objects with volume, generic solids and liquids.
  * Should only be used as inheritance target by Block, not intended to ever be instanced.
  */
 #pragma once

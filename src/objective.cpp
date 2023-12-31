@@ -10,6 +10,15 @@
 #include "wander.h"
 #include <cstdio>
 #include <numbers>
+// Input.
+void ObjectiveTypeSetPriorityInputAction::execute()
+{
+	m_actor.m_hasObjectives.m_prioritySet.setPriority(m_objectiveType, m_priority);
+}
+void ObjectiveTypeRemoveInputAction::execute()
+{
+	m_actor.m_hasObjectives.m_prioritySet.remove(m_objectiveType);
+}
 void ObjectiveTypePrioritySet::load(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo)
 {
 	m_data = data["data"].get<std::vector<ObjectivePriority>>();

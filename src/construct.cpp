@@ -4,6 +4,24 @@
 #include "area.h"
 #include "reservable.h"
 #include "util.h"
+// Input.
+void DesignateConstructInputAction::execute()
+{
+	Block& block = *m_cuboid.begin();
+	auto& constructDesginations = block.m_area->m_hasConstructionDesignations;
+	const Faction& faction = *(**m_actors.begin()).getFaction();
+	for(Block& block : m_cuboid)
+		constructDesginations.designate(faction, block, m_blockFeatureType, m_materialType);
+};
+void UndesignateConstructInputAction::execute()
+{
+	Block& block = *m_cuboid.begin();
+	auto& constructDesginations = block.m_area->m_hasConstructionDesignations;
+	const Faction& faction = *(**m_actors.begin()).getFaction();
+	for(Block& block : m_cuboid)
+		constructDesginations.undesignate(faction, block);
+}
+// ThreadedTask.
 ConstructThreadedTask::ConstructThreadedTask(ConstructObjective& co) : ThreadedTask(co.m_actor.getThreadedTaskEngine()), m_constructObjective(co), m_findsPath(co.m_actor, co.m_detour) { }
 void ConstructThreadedTask::readStep()
 {

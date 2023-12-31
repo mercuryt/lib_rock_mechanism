@@ -3,12 +3,36 @@
 #include "area.h"
 #include "config.h"
 #include "deserializationMemo.h"
+#include "item.h"
 #include "rain.h"
 #include "reservable.h"
 #include "simulation.h"
 #include <cwchar>
 #include <functional>
 #include <memory>
+//Input
+void StockPileCreateInputAction::execute()
+{
+	auto& hasStockPiles = (*m_cuboid.begin()).m_area->m_hasStockPiles.at(m_faction);
+	StockPile& stockpile = hasStockPiles.addStockPile(m_queries);
+	for(Block& block : m_cuboid)
+		stockpile.addBlock(block);
+}
+void StockPileRemoveInputAction::execute()
+{
+	auto& hasStockPiles = (*m_cuboid.begin()).m_area->m_hasStockPiles.at(m_faction);
+	for(Block& block : m_cuboid)
+		hasStockPiles.removeBlock(block);
+}
+void StockPileExpandInputAction::execute()
+{
+	for(Block& block : m_cuboid)
+		m_stockpile.addBlock(block);
+}
+void StockPileUpdateInputAction::execute()
+{
+	m_stockpile.updateQueries(m_queries);
+}
 // Searches for an Item and destination to make a hauling project for m_objective.m_actor.
 void StockPileThreadedTask::readStep()
 {
@@ -294,6 +318,11 @@ void StockPile::removeBlock(Block& block)
 	// Cancel collected projects.
 	for(Project* project : projectsToCancel)
 		project->cancel();
+}
+void StockPile::updateQueries(std::vector<ItemQuery>& queries)
+{
+	m_queries = queries;
+	//TODO: cancel projects targeting items in this stockpile which now match? Do we need to notify ItemCanBeStockPiled?
 }
 void StockPile::incrementOpenBlocks()
 {

@@ -1,5 +1,6 @@
 #pragma once
 #include "deserializationMemo.h"
+#include "input.h"
 #include "plant.h"
 #include "faction.h"
 #include "cuboid.h"
@@ -9,6 +10,40 @@
 
 class Block;
 class Area;
+struct FarmField;
+
+
+class FarmFieldCreateInputAction final : public InputAction
+{
+	Cuboid m_cuboid;
+	const Faction& m_faction;
+	const PlantSpecies& m_species;
+	FarmFieldCreateInputAction(InputQueue& inputQueue, Cuboid& cuboid, const Faction& faction, const PlantSpecies& species) : InputAction(inputQueue), m_cuboid(cuboid), m_faction(faction), m_species(species) { }
+	void execute();
+};
+class FarmFieldRemoveInputAction final : public InputAction
+{
+	Cuboid m_cuboid;
+	const Faction& m_faction;
+	FarmFieldRemoveInputAction(InputQueue& inputQueue, Cuboid& cuboid, const Faction& faction ) : InputAction(inputQueue), m_cuboid(cuboid), m_faction(faction) { }
+	void execute();
+};
+class FarmFieldExpandInputAction final : public InputAction
+{
+	Cuboid m_cuboid;
+	const Faction& m_faction;
+	FarmField& m_farmField;
+	FarmFieldExpandInputAction(InputQueue& inputQueue, const Faction& faction, Cuboid& cuboid, FarmField& farmField) : InputAction(inputQueue), m_cuboid(cuboid), m_faction(faction), m_farmField(farmField) { }
+	void execute();
+};
+class FarmFieldUpdateInputAction final : public InputAction
+{
+	FarmField& m_farmField;
+	const PlantSpecies& m_species;
+	const Faction& m_faction;
+	FarmFieldUpdateInputAction(InputQueue& inputQueue, const Faction& faction, FarmField& farmField, const PlantSpecies& species) : InputAction(inputQueue), m_farmField(farmField), m_species(species), m_faction(faction) { }
+	void execute();
+};
 
 struct FarmField
 {

@@ -17,6 +17,9 @@ public:
 	void start(const FluidType& fluidType, Percent intensityPercent, Step stepsDuration);
 	void stop();
 	void writeStep();
+	[[nodiscard]] bool isRaining() const { return m_intensityPercent != 0; }
+	[[nodiscard]] const FluidType& getFluidType() const { assert(m_currentlyRainingFluidType); return *m_currentlyRainingFluidType; }
+	[[nodiscard]] Percent getIntensityPercent() const { return m_intensityPercent; }
 	friend class StopRainEvent;
 };
 class StopRainEvent final : public ScheduledEventWithPercent

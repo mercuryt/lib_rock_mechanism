@@ -6,6 +6,14 @@
 #include <chrono>
 #include <cstdint>
 #include <memory>
+void CraftInputAction::execute()
+{
+	m_area.m_hasCraftingLocationsAndJobs.at(m_faction).addJob(m_craftJobType, m_materialType, m_quantity);
+}
+void CraftCancelInputAction::execute()
+{
+	m_area.m_hasCraftingLocationsAndJobs.at(m_faction).removeJob(m_job);
+}
 CraftStepProject::CraftStepProject(const Json& data, DeserializationMemo& deserializationMemo, CraftJob& cj) : 
 	Project(data, deserializationMemo), m_craftStepType(cj.craftStepProject->m_craftStepType), m_craftJob(cj) { }
 Step CraftStepProject::getDuration() const
@@ -181,12 +189,21 @@ Json CraftObjective::toJson() const
 	}
 	return data;
 }
-void HasCraftingLocationsAndJobsForFaction::addJob(const CraftJobType& craftJobType, const MaterialType* materialType, uint32_t minimumSkillLevel)
+void HasCraftingLocationsAndJobsForFaction::addJob(const CraftJobType& craftJobType, const MaterialType* materialType, uint32_t quantity, uint32_t minimumSkillLevel)
 {
 	if(craftJobType.materialtypeCategory != nullptr)
 		assert(materialType->materialTypeCategory == craftJobType.materialtypeCategory);
-	CraftJob& craftJob = m_jobs.emplace_back(craftJobType, *this, materialType, minimumSkillLevel);
-	indexUnassigned(craftJob);
+	for(uint32_t i = 0; i < quantity; i++)
+	{
+		CraftJob& craftJob = m_jobs.emplace_back(craftJobType, *this, materialType, minimumSkillLevel);
+		indexUnassigned(craftJob);
+	}
+}
+void HasCraftingLocationsAndJobsForFaction::removeJob(CraftJob& job)
+{
+	if(job.craftStepProject)
+		job.craftStepProject->cancel();
+	m_jobs.remove(job);
 }
 void HasCraftingLocationsAndJobsForFaction::stepComplete(CraftJob& craftJob, Actor& actor)
 {

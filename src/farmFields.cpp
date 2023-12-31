@@ -5,6 +5,31 @@
 #include "simulation.h"
 #include "plant.h"
 #include <algorithm>
+//Input
+void FarmFieldCreateInputAction::execute()
+{
+	auto& hasFarmFields = (*m_cuboid.begin()).m_area->m_hasFarmFields.at(m_faction);
+	FarmField& farmField = hasFarmFields.create(m_cuboid);
+	hasFarmFields.setSpecies(farmField, m_species);
+
+}
+void FarmFieldRemoveInputAction::execute()
+{
+	auto& hasFarmFields = (*m_cuboid.begin()).m_area->m_hasFarmFields.at(m_faction);
+	std::unordered_set<Block*> blocks = m_cuboid.toSet();
+	hasFarmFields.undesignateBlocks(blocks);
+}
+void FarmFieldExpandInputAction::execute()
+{
+	auto& hasFarmFields = (*m_cuboid.begin()).m_area->m_hasFarmFields.at(m_faction);
+	std::unordered_set<Block*> blocks = m_cuboid.toSet();
+	hasFarmFields.designateBlocks(m_farmField, blocks);
+}
+void FarmFieldUpdateInputAction::execute()
+{
+	auto& hasFarmFields = (**m_farmField.blocks.begin()).m_area->m_hasFarmFields.at(m_faction);
+	hasFarmFields.setSpecies(m_farmField, m_species);
+}
 FarmField::FarmField(const Json& data, DeserializationMemo& deserializationMemo, const Faction& faction)
 {
 	for(const Json& blockReference : data["blocks"])

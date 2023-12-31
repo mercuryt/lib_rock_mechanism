@@ -263,7 +263,7 @@ void AreaHasActors::processVisionReadStep()
 	while(visionIter < m_visionRequestQueue.end())
 	{
 		auto end = std::min(m_visionRequestQueue.end(), visionIter + Config::visionThreadingBatchSize);
-		m_area.m_simulation.m_pool.push_task([=](){ VisionRequest::readSteps(visionIter, end); });
+		m_area.m_simulation.m_taskFutures.push_back(m_area.m_simulation.m_pool.submit([=](){ VisionRequest::readSteps(visionIter, end); }));
 		visionIter = end;
 	}
 }

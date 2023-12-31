@@ -1,21 +1,43 @@
 #pragma once
 
-#include "objective.h"
-#include "queuedAction.h"
-#include <vector>
+#include "types.h"
+#include "onDestroy.h"
 #include <memory>
+#include <queue>
+#include <unordered_set>
+#include <mutex>
 
-template<class Actor>
-class InputObjective : Objective
+class Block;
+class Actor;
+class InputQueue;
+class InputAction;
+class Objective;
+enum class NewObjectiveEmplacementType { Replace, Before, After };
+
+using Queue = std::deque<std::unique_ptr<InputAction>>;
+//TODO: for multiplayer, multiple input queues sorted by player id. Serialization.
+class InputAction
 {
-	Actor& m_actor;
-	std::vector<std::unique_ptr<QueuedAction>> m_actions;
-	InputObjective(Actor& a) : Objective(Config::inputObjectivePriority), m_actor(a) {}
+	NewObjectiveEmplacementType m_emplacementType;
+	Queue::iterator m_iterator;
+protected:
+	HasOnDestroySubscriptions m_onDestroySubscriptions;
+	std::unordered_set<Actor*> m_actors;
+	InputAction(std::unordered_set<Actor*>& m_actors, NewObjectiveEmplacementType m_emplacementType, InputQueue& inputQueue);
+	InputAction(InputQueue& inputQueue);
+	void insertObjective(std::unique_ptr<Objective> objective, Actor& actor);
+public:
+	virtual void execute() = 0;
+	virtual ~InputAction() = default;
+	friend class InputQueue;
+};
 
-	void execute()
-	{
-		assert(m_actor.m_actionQueue.empty());
-		for(std::unique_ptr<QueuedAction>& action : m_actions)
-			m_actor.m_actionQueue.push_back(std::move(action));
-	}
-}
+class InputQueue
+{
+	Queue m_actions;
+	std::mutex m_mutex;
+public:
+	Queue::iterator insert(std::unique_ptr<InputAction> action);
+	void remove(Queue::iterator action);
+	void flush();
+};

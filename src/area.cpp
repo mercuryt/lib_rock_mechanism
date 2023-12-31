@@ -115,12 +115,12 @@ void Area::readStep()
 	// It seems like having the vision requests permanantly embeded in the actors and iterating the vision bucket directly rather then using the visionRequestQueue should be faster but limited testing shows otherwise.
 	m_hasActors.processVisionReadStep();
 	// Calculate cave in.
-	m_simulation.m_pool.push_task([&](){ stepCaveInRead(); });
+	m_simulation.m_taskFutures.push_back(m_simulation.m_pool.submit([&](){ stepCaveInRead(); }));
 	// Calculate flow.
 	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
 	{
 		assert(!fluidGroup->m_destroy);
-		m_simulation.m_pool.push_task([=](){ fluidGroup->readStep(); });
+		m_simulation.m_taskFutures.push_back(m_simulation.m_pool.submit([=](){ fluidGroup->readStep(); }));
 	}
 }
 void Area::writeStep()

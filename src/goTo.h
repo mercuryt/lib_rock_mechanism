@@ -2,6 +2,7 @@
 #include "deserializationMemo.h"
 #include "objective.h"
 #include "config.h"
+#include "input.h"
 class Block;
 class Actor;
 class GoToObjective final : public Objective
@@ -17,4 +18,11 @@ public:
 	void reset() { }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::GoTo; }
 	std::string name() const { return "go to"; }
+};
+class GoToInputAction final : public InputAction
+{
+public:
+	Block& m_block;
+	GoToInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, Block& b);
+	void execute();
 };

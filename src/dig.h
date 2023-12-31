@@ -1,6 +1,8 @@
 #pragma once
 
+#include "cuboid.h"
 #include "deserializationMemo.h"
+#include "input.h"
 #include "reservable.h"
 #include "types.h"
 #include "objective.h"
@@ -18,7 +20,20 @@ class DigThreadedTask;
 struct BlockFeatureType;
 class DigProject;
 class HasDigDesignationsForFaction;
-class DigObjectiveType : public ObjectiveType
+class DesignateDigInputAction final : public InputAction
+{
+	Cuboid m_cuboid;
+	BlockFeatureType* m_blockFeatureType;
+	DesignateDigInputAction(InputQueue& inputQueue, Cuboid& cuboid, BlockFeatureType* blockFeatureType) : InputAction(inputQueue), m_cuboid(cuboid), m_blockFeatureType(blockFeatureType) { }
+	void execute();
+};
+class UndesignateDigInputAction final : public InputAction
+{
+	Cuboid m_cuboid;
+	UndesignateDigInputAction(InputQueue& inputQueue, Cuboid& cuboid) : InputAction(inputQueue), m_cuboid(cuboid) { }
+	void execute();
+};
+class DigObjectiveType final : public ObjectiveType
 {
 public:
 	bool canBeAssigned(Actor& actor) const;

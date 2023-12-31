@@ -14,7 +14,7 @@ void ThreadedTaskEngine::readStep()
 	m_tasksForNextStep.clear();
 	// TODO: Batching, adaptive batching.
 	for(auto& task : m_tasksForThisStep)
-		m_simulation.m_pool.push_task([&](){ task->readStep(); });
+		m_simulation.m_taskFutures.push_back(m_simulation.m_pool.submit([&](){ task->readStep(); }));
 }
 void ThreadedTaskEngine::writeStep()
 {

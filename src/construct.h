@@ -1,7 +1,10 @@
 #pragma once
 
 #include "config.h"
+#include "cuboid.h"
 #include "deserializationMemo.h"
+#include "input.h"
+#include "materialType.h"
 #include "objective.h"
 #include "reservable.h"
 #include "threadedTask.h"
@@ -14,11 +17,25 @@
 
 class ConstructThreadedTask;
 class Block;
-class Faction;
+struct Faction;
 struct BlockFeatureType;
 class ConstructObjective;
 class ConstructProject;
 class HasConstructionDesignationsForFaction;
+class DesignateConstructInputAction final : public InputAction
+{
+	Cuboid m_cuboid;
+	const BlockFeatureType* m_blockFeatureType;
+	const MaterialType& m_materialType;
+	DesignateConstructInputAction(InputQueue& inputQueue, Cuboid& cuboid, BlockFeatureType* blockFeatureType, const MaterialType& materialType) : InputAction(inputQueue), m_cuboid(cuboid), m_blockFeatureType(blockFeatureType), m_materialType(materialType) { }
+	void execute();
+};
+class UndesignateConstructInputAction final : public InputAction
+{
+	Cuboid m_cuboid;
+	UndesignateConstructInputAction(InputQueue& inputQueue, Cuboid& cuboid) : InputAction(inputQueue), m_cuboid(cuboid) { }
+	void execute();
+};
 class ConstructObjectiveType final : public ObjectiveType
 {
 public:

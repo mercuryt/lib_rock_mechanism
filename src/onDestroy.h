@@ -4,26 +4,28 @@
 #include <cassert>
 #include <unordered_set>
 
-class HasOnDestroySubscription;
+class HasOnDestroySubscriptions;
 
 class OnDestroy
 {
-	std::unordered_set<HasOnDestroySubscription*> m_subscriptions;
+	std::unordered_set<HasOnDestroySubscriptions*> m_subscriptions;
 public:
-	void subscribe(HasOnDestroySubscription& hasSubscription);
-	void unsubscribe(HasOnDestroySubscription& hasSubscription);
+	void subscribe(HasOnDestroySubscriptions& hasSubscription);
+	void unsubscribe(HasOnDestroySubscriptions& hasSubscription);
 	~OnDestroy();
 };
 
-class HasOnDestroySubscription
+class HasOnDestroySubscriptions
 {
 	std::function<void()> m_callback;
-	OnDestroy* m_onDestroy;
+	std::unordered_set<OnDestroy*> m_onDestroys;
 public:
-	HasOnDestroySubscription() : m_callback(nullptr), m_onDestroy(nullptr) { }
-	void subscribe(OnDestroy& onDestroy, std::function<void()>& cb);
-	void unsubscribe();
-	void maybeUnsubscribe();
+	HasOnDestroySubscriptions() : m_callback(nullptr) { }
+	void subscribe(OnDestroy& onDestroy);
+	void unsubscribe(OnDestroy& onDestroy);
+	void unsubscribeAll();
+	void maybeUnsubscribe(OnDestroy& onDestroy);
+	void setCallback(std::function<void()>& callback);
 	void callback();
-	~HasOnDestroySubscription();
+	~HasOnDestroySubscriptions();
 };

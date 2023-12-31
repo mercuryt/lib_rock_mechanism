@@ -1,6 +1,13 @@
 #include "kill.h"
 #include "block.h"
+#include "objective.h"
 #include "visionRequest.h"
+#include <memory>
+void KillInputAction::execute()
+{
+	std::unique_ptr<Objective> objective = std::make_unique<KillObjective>(m_killer, m_target);
+	insertObjective(std::move(objective), m_killer);
+}
 void KillObjective::execute()
 {
 	if(!m_target.m_alive)

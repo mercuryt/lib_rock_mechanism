@@ -1,10 +1,12 @@
 #pragma once
 //TODO: Move implimentations into cpp file and replace includes with forward declarations it imporove compile time.
+#include "cuboid.h"
 #include "deserializationMemo.h"
 #include "eventSchedule.h"
 #include "faction.h"
 #include "hasShape.h"
 #include "haul.h"
+#include "input.h"
 #include "materialType.h"
 #include "objective.h"
 #include "reservable.h"
@@ -30,6 +32,35 @@ class Simulation;
 class ReenableStockPileScheduledEvent;
 class StockPile;
 class BlockIsPartOfStockPiles;
+class StockPileCreateInputAction final : public InputAction
+{
+	Cuboid m_cuboid;
+	const Faction& m_faction;
+	std::vector<ItemQuery> m_queries;
+	StockPileCreateInputAction(InputQueue& inputQueue, Cuboid& cuboid, const Faction& faction, std::vector<ItemQuery>& queries) : InputAction(inputQueue), m_cuboid(cuboid), m_faction(faction), m_queries(queries) { }
+	void execute();
+};
+class StockPileRemoveInputAction final : public InputAction
+{
+	Cuboid m_cuboid;
+	const Faction& m_faction;
+	StockPileRemoveInputAction(InputQueue& inputQueue, Cuboid& cuboid, const Faction& faction ) : InputAction(inputQueue), m_cuboid(cuboid), m_faction(faction) { }
+	void execute();
+};
+class StockPileExpandInputAction final : public InputAction
+{
+	Cuboid m_cuboid;
+	StockPile& m_stockpile;
+	StockPileExpandInputAction(InputQueue& inputQueue, Cuboid& cuboid, StockPile& stockpile) : InputAction(inputQueue), m_cuboid(cuboid), m_stockpile(stockpile) { }
+	void execute();
+};
+class StockPileUpdateInputAction final : public InputAction
+{
+	StockPile& m_stockpile;
+	std::vector<ItemQuery> m_queries;
+	StockPileUpdateInputAction(InputQueue& inputQueue, StockPile& stockpile, std::vector<ItemQuery>& queries) : InputAction(inputQueue), m_stockpile(stockpile), m_queries(queries) { }
+	void execute();
+};
 class StockPileObjectiveType final : public ObjectiveType
 {
 public:
@@ -84,6 +115,7 @@ public:
 	bool accepts(const Item& item) const;
 	void addBlock(Block& block);
 	void removeBlock(Block& block);
+	void updateQueries(std::vector<ItemQuery>& queries);
 	void incrementOpenBlocks();
 	void decrementOpenBlocks();
 	void disableIndefinately() { m_enabled = false; }

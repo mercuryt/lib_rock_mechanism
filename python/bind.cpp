@@ -138,8 +138,10 @@ NB_MODULE(bound, m)
 		.def("getZLevel", &Area::getZLevel, nb::rv_policy::take_ownership)
 		.def_ro("id", &Area::m_id)
 		.def_ro("sizeY", &Area::m_sizeY)
-		.def_ro("sizeZ", &Area::m_sizeZ);
-		//TODO: Has rain.
+		.def_ro("sizeZ", &Area::m_sizeZ)
+		.def("isRaining", [](Area& area){ return area.m_hasRain.isRaining(); })
+		.def("rainFluidType", [](Area& area){ return area.m_hasRain.getFluidType(); })
+		.def("rainIntensityPercent", [](Area& area){ return area.m_hasRain.getIntensityPercent(); });
 	// Block
 	nb::class_<Block>(m, "Block")
 		.def("isSolid", &Block::isSolid)

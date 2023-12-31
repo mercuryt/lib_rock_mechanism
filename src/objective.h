@@ -5,6 +5,7 @@
 #include "deserializationMemo.h"
 #include "eventSchedule.h"
 #include "eventSchedule.hpp"
+#include "input.h"
 
 #include <map>
 #include <memory>
@@ -18,6 +19,25 @@ class WaitEvent;
 class Objective;
 class SupressedNeedEvent;
 
+//Action.
+
+class ObjectiveTypeSetPriorityInputAction final : public InputAction
+{
+	Actor& m_actor;
+	const ObjectiveType& m_objectiveType;
+	uint8_t m_priority;
+public:
+	ObjectiveTypeSetPriorityInputAction(InputQueue& inputQueue, Actor& actor, const ObjectiveType& objectiveType, uint8_t priority) : InputAction(inputQueue), m_actor(actor), m_objectiveType(objectiveType), m_priority(priority) { }
+	void execute();
+};
+class ObjectiveTypeRemoveInputAction final : public InputAction
+{
+	Actor& m_actor;
+	const ObjectiveType& m_objectiveType;
+public:
+	ObjectiveTypeRemoveInputAction(InputQueue& inputQueue, Actor& actor, const ObjectiveType& objectiveType) : InputAction(inputQueue), m_actor(actor), m_objectiveType(objectiveType) { }
+	void execute();
+};
 enum class ObjectiveTypeId { Construct, Craft, Dig, Drink, Eat, GetToSafeTemperature, GivePlantsFluid, GoTo, Harvest, Haul, Kill, Medical, Rest, Sleep, Station, SowSeeds, StockPile, Wait, Wander };
 NLOHMANN_JSON_SERIALIZE_ENUM(ObjectiveTypeId, {
 	{ObjectiveTypeId::Construct, "Construct"}, 
@@ -150,6 +170,7 @@ public:
 	void addNeed(std::unique_ptr<Objective> objective);
 	void addTaskToEnd(std::unique_ptr<Objective> objective);
 	void addTaskToStart(std::unique_ptr<Objective> objective);
+	void replaceTasks(std::unique_ptr<Objective> objective);
 	void destroy(Objective& objective);
 	void cancel(Objective& objective);
 	void objectiveComplete(Objective& objective);

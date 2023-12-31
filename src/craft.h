@@ -2,7 +2,9 @@
 
 #include "config.h"
 #include "deserializationMemo.h"
+#include "input.h"
 #include "item.h"
+#include "materialType.h"
 #include "project.h"
 #include "reservable.h"
 
@@ -14,11 +16,33 @@
 #include <functional>
 
 struct CraftJob;
+struct CraftJobType;
 class HasCraftingLocationsAndJobsForFaction;
 class CraftThreadedTask;
 struct skillType;
 class CraftStepProject;
 class Block;
+class CraftInputAction final : public InputAction
+{
+	Area& m_area;
+	const Faction& m_faction;
+	const CraftJobType& m_craftJobType;
+	const MaterialType* m_materialType;
+	uint32_t m_quantity;
+	uint32_t m_quality;
+	CraftInputAction(Area& area, const Faction& faction, InputQueue& inputQueue, const CraftJobType& craftJobType, const MaterialType* materialType, uint32_t quantity) : 
+		InputAction(inputQueue), m_area(area), m_faction(faction), m_craftJobType(craftJobType), m_materialType(materialType), m_quantity(quantity) { }
+	void execute();
+};
+class CraftCancelInputAction final : public InputAction
+{
+	Area& m_area;
+	CraftJob& m_job;
+	const Faction& m_faction;
+	CraftCancelInputAction(Area& area, const Faction& faction, InputQueue& inputQueue, CraftJob& job) : 
+		InputAction(inputQueue), m_area(area), m_job(job), m_faction(faction) { }
+	void execute();
+};
 // Drill, saw, forge, etc.
 struct CraftStepTypeCategory final
 {
@@ -192,8 +216,9 @@ public:
 	// To be used by invalidating events such as set solid.
 	void maybeRemoveLocation(Block& block);
 	// designate something to be crafted.
-	// TODO: Quantity.
-	void addJob(const CraftJobType& craftJobType, const MaterialType* materialType, uint32_t minimumSkillLevel = 0);
+	void addJob(const CraftJobType& craftJobType, const MaterialType* materialType, uint32_t quantity, uint32_t minimumSkillLevel = 0);
+	// Undo an addJob order.
+	void removeJob(CraftJob&);
 	// To be called by CraftStepProject::onComplete.
 	void stepComplete(CraftJob& craftJob, Actor& actor);
 	// To be called by CraftStepProject::onCancel.

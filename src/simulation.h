@@ -12,8 +12,10 @@
 #include "actor.h"
 #include "item.h"
 #include "random.h"
+#include "input.h"
 #include <list>
 #include <unordered_map>
+#include <mutex>
 
 class HourlyEvent;
 
@@ -24,6 +26,8 @@ class Simulation final
 	std::unordered_map<AreaId, Area*> m_areasById;
 public:
 	BS::thread_pool_light m_pool;
+	std::vector<std::future<void>> m_taskFutures;
+	std::mutex m_uiReadMutex;
 	Step m_step;
 	DateTime m_now;
 	ActorId m_nextActorId;
@@ -34,12 +38,15 @@ public:
 	HasScheduledEvent<HourlyEvent> m_hourlyEvent;
 	ThreadedTaskEngine m_threadedTaskEngine;
 	Random m_random;
+	InputQueue m_inputQueue;
 	SimulationHasFactions m_hasFactions;
 	Simulation(DateTime n = {12, 150, 1200}, Step s = 1);
-	Simulation(const Json& data);
+	Simulation(const Json& data, std::filesystem::path path);
 	Json toJson() const;
 	void doStep();
 	void incrementHour();
+	void save(std::filesystem::path path);
+	void loadAreas(const Json& data, std::filesystem::path path);
 	//TODO: latitude, longitude, altitude.
 	Area& createArea(uint32_t x, uint32_t y, uint32_t z);
 	Area& loadArea(AreaId id, uint32_t x, uint32_t y, uint32_t z);
@@ -54,7 +61,7 @@ public:
 	Item& loadItemGeneric(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, uint32_t quantity, CraftJob* cj = nullptr);
 	void destroyItem(Item& item);
 	void destroyArea(Area& area);
-	void loadAreaFromJson(const Json& data);
+	Area& loadAreaFromJson(const Json& data);
 	Item& loadItemFromJson(const Json& data, DeserializationMemo& deserializationMemo);
 	Actor& loadActorFromJson(const Json& data, DeserializationMemo& deserializationMemo);
 	Block& getBlockForJsonQuery(const Json& data);

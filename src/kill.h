@@ -11,6 +11,7 @@
 
 #include "config.h"
 #include "deserializationMemo.h"
+#include "input.h"
 #include "objective.h"
 #include "eventSchedule.h"
 #include "simulation.h"
@@ -19,6 +20,16 @@
 #include "fight.h"
 
 class Actor;
+
+class KillInputAction final : public InputAction
+{
+	Actor& m_killer;
+	Actor& m_target;
+	KillInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, Actor& killer, Actor& target) : 
+		InputAction(actors, emplacementType, inputQueue), m_killer(killer), m_target(target) 
+	{ m_onDestroySubscriptions.subscribe(m_target.m_onDestroy); }
+	void execute();
+};
 
 class KillObjective final : public Objective
 {

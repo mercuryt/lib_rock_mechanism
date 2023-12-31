@@ -19,3 +19,10 @@ public:
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Station; }
 	std::string name() const { return "station"; }
 };
+class StationInputAction final : public InputAction
+{
+public:
+	Block& m_block;
+	StationInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, Block& b);
+	void execute();
+};

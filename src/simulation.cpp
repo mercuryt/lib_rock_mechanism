@@ -2,6 +2,7 @@
 #include "animalSpecies.h"
 #include "area.h"
 #include "config.h"
+#include "definitions.h"
 #include "deserializationMemo.h"
 #include "haul.h"
 #include "threadedTask.h"
@@ -11,27 +12,37 @@ Simulation::Simulation(DateTime n, Step s) :  m_nextAreaId(1), m_step(s), m_now(
 { 
 	m_hourlyEvent.schedule(*this);
 }
-Simulation::Simulation(const Json& data) : m_step(data["step"].get<Step>()), m_now(data["now"]), 
+Simulation::Simulation(const Json& data, std::filesystem::path path) : m_step(data["step"].get<Step>()), m_now(data["now"]), 
 	m_nextActorId(data["nextActorId"].get<Step>()), m_nextItemId(data["nextItemId"].get<Step>()),
 	m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this) 
 { 
 	m_hourlyEvent.schedule(*this, data["hourlyEventStart"].get<Step>());
 	DeserializationMemo deserializationMemo(*this);
-	for(const Json& areaData : data["areas"])
+	for(const Json& areaId : data["areaIds"])
+	{
+		std::ifstream af(path/"area"/(std::to_string(areaId.get<AreaId>()) + ".json"));
+		Json areaData = Json::parse(af);
 		m_areas.emplace_back(areaData, deserializationMemo, *this);
+	}
 }
 void Simulation::doStep()
 {
+	m_taskFutures.clear();
 	m_threadedTaskEngine.readStep();
 	for(Area& area : m_areas)
 		area.readStep();
-	m_pool.wait_for_tasks();
+	// Wait for all the tasks to complete.
+	for(auto& future : m_taskFutures)
+		future.wait();
+	// Aquire UI read mutex.
+	std::scoped_lock lock(m_uiReadMutex);
 	for(Area& area : m_areas)
 		area.writeStep();
-	// Do threaded tasks write step before events so other tasks created on this turn will not run write without having run read.
 	m_threadedTaskEngine.writeStep();
 	// Do scheduled events last to avoid unexpected state changes in threaded task data between read and write.
 	m_eventSchedule.execute(m_step);
+	// Apply user input.
+	m_inputQueue.flush();
 	++m_step;
 }
 void Simulation::incrementHour()
@@ -50,6 +61,16 @@ void Simulation::incrementHour()
 			area.setDateTime(m_now);
 	}
 	m_hourlyEvent.schedule(*this);
+}
+void Simulation::save(std::filesystem::path path)
+{
+	std::ofstream f(path/"simulation.json");
+	f << toJson();
+	for(Area& area : m_areas)
+	{
+		std::ofstream af(path/"area"/(std::to_string(area.m_id) + ".json"));
+		af << area.toJson();
+	}
 }
 Area& Simulation::createArea(uint32_t x, uint32_t y, uint32_t z)
 { 
@@ -219,6 +240,14 @@ Json Simulation::toJson() const
 	output["nextActorId"] = m_nextActorId;
 	output["nextItemId"] = m_nextItemId;
 	return output;
+}
+Area& Simulation::loadAreaFromJson(const Json& data)
+{
+	//TODO: embed data in structure with factions to allow json pointer access.
+	DeserializationMemo deserializationMemo(*this);
+	m_areas.emplace_back(data, deserializationMemo, *this);
+	m_areasById[m_areas.back().m_id] = &m_areas.back();
+	return m_areas.back();
 }
 Item& Simulation::loadItemFromJson(const Json& data, DeserializationMemo& deserializationMemo)
 {

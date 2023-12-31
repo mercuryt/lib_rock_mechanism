@@ -8,6 +8,23 @@
 #include "util.h"
 #include <memory>
 #include <sys/types.h>
+// Input.
+void DesignateDigInputAction::execute()
+{
+	Block& block = *m_cuboid.begin();
+	auto& digDesginations = block.m_area->m_hasDigDesignations;
+	const Faction& faction = *(**m_actors.begin()).getFaction();
+	for(Block& block : m_cuboid)
+		digDesginations.designate(faction, block, m_blockFeatureType);
+};
+void UndesignateDigInputAction::execute()
+{
+	Block& block = *m_cuboid.begin();
+	auto& digDesginations = block.m_area->m_hasDigDesignations;
+	const Faction& faction = *(**m_actors.begin()).getFaction();
+	for(Block& block : m_cuboid)
+		digDesginations.undesignate(faction, block);
+}
 DigThreadedTask::DigThreadedTask(DigObjective& digObjective) : ThreadedTask(digObjective.m_actor.m_location->m_area->m_simulation.m_threadedTaskEngine), m_digObjective(digObjective), m_findsPath(digObjective.m_actor, digObjective.m_detour) { }
 void DigThreadedTask::readStep()
 {

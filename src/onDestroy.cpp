@@ -1,37 +1,40 @@
 #include "onDestroy.h"
-void OnDestroy::subscribe(HasOnDestroySubscription& hasSubscription) { m_subscriptions.insert(&hasSubscription); }
-void OnDestroy::unsubscribe(HasOnDestroySubscription& hasSubscription) { m_subscriptions.erase(&hasSubscription); }
+void OnDestroy::subscribe(HasOnDestroySubscriptions& hasSubscription) { m_subscriptions.insert(&hasSubscription); }
+void OnDestroy::unsubscribe(HasOnDestroySubscriptions& hasSubscription) { m_subscriptions.erase(&hasSubscription); }
 OnDestroy::~OnDestroy()
 {
-	for(HasOnDestroySubscription* hasSubscription : m_subscriptions)
+	for(HasOnDestroySubscriptions* hasSubscription : m_subscriptions)
 		hasSubscription->callback();
 }
 
-void HasOnDestroySubscription::subscribe(OnDestroy& onDestroy, std::function<void()>& cb) 
+void HasOnDestroySubscriptions::subscribe(OnDestroy& onDestroy) 
 { 
-	assert(m_onDestroy == nullptr);
+	assert(!m_onDestroys.contains(&onDestroy));
 	assert(m_callback == nullptr);
-	m_onDestroy = &onDestroy;
-	m_callback = cb;
+	m_onDestroys.insert(&onDestroy);
 	onDestroy.subscribe(*this);
 }
-void HasOnDestroySubscription::unsubscribe()
+void HasOnDestroySubscriptions::unsubscribe(OnDestroy& onDestroy)
 {
-	assert(m_onDestroy != nullptr);
-	m_onDestroy->unsubscribe(*this);
-	m_onDestroy = nullptr;
-	m_callback = nullptr;
+	assert(m_onDestroys.contains(&onDestroy));
+	onDestroy.unsubscribe(*this);
+	m_onDestroys.erase(&onDestroy);
 }
-void HasOnDestroySubscription::maybeUnsubscribe()
+void HasOnDestroySubscriptions::maybeUnsubscribe(OnDestroy& onDestroy)
 {
-	if(m_onDestroy != nullptr)
-		unsubscribe();
+	if(m_onDestroys.contains(&onDestroy))
+		unsubscribe(onDestroy);
 }
-void HasOnDestroySubscription::callback()
+void HasOnDestroySubscriptions::unsubscribeAll()
+{
+	for(OnDestroy* onDestroy : m_onDestroys)
+		unsubscribe(*onDestroy);
+}
+void HasOnDestroySubscriptions::setCallback(std::function<void()>& callback) { m_callback = callback; }
+void HasOnDestroySubscriptions::callback()
 {
 	auto cb = std::move(m_callback);
-	m_onDestroy = nullptr;
 	m_callback = nullptr;
 	cb();
 }
-HasOnDestroySubscription::~HasOnDestroySubscription() { maybeUnsubscribe(); }
+HasOnDestroySubscriptions::~HasOnDestroySubscriptions() { unsubscribeAll(); }

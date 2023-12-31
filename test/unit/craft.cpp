@@ -6,9 +6,6 @@
 #include "../../src/simulation.h"
 #include "../../src/craft.h"
 #include "../../src/materialType.h"
-#include "objective.h"
-#include "project.h"
-#include "skill.h"
 #include <functional>
 TEST_CASE("craft")
 {
@@ -38,7 +35,7 @@ TEST_CASE("craft")
 	std::unordered_set<CraftJob*> emptyJobSet;
 	SUBCASE("infastructure")
 	{
-		area.m_hasCraftingLocationsAndJobs.at(faction).addJob(woodBucket, &wood);
+		area.m_hasCraftingLocationsAndJobs.at(faction).addJob(woodBucket, &wood, 1);
 		auto pair = area.m_hasCraftingLocationsAndJobs.at(faction).getJobAndLocationForWhileExcluding(dwarf1, woodWorking, emptyJobSet);
 		CraftJob* job = pair.first;
 		Block* location = pair.second;
@@ -69,7 +66,7 @@ TEST_CASE("craft")
 		Item& chisel = simulation.createItemNongeneric(ItemType::byName("chisel"), bronze, 25u, 0);
 		chisel.setLocation(area.getBlock(4, 9, 1));
 		REQUIRE(!craftObjectiveTypeWoodWorking.canBeAssigned(dwarf1));
-		area.m_hasCraftingLocationsAndJobs.at(faction).addJob(woodBucket, &wood);
+		area.m_hasCraftingLocationsAndJobs.at(faction).addJob(woodBucket, &wood, 1);
 		// There is wood working to be done.
 		REQUIRE(craftObjectiveTypeWoodWorking.canBeAssigned(dwarf1));
 		// There is not assembling to be done yet.
