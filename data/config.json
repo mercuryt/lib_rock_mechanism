@@ -149,5 +149,10 @@
 	"attackCoolDownDurationBaseDextarity": 55,
 	"goToPriority": 1500,
 	"medicalPriority": 200,
-	"medicalProjectDelayMinutes": 10
+	"medicalProjectDelayMinutes": 10,
+	"maxNumberOfWorkersForWoodCuttingProject": 2,
+	"woodCuttingStrengthModifier": 0.1,
+	"woodCuttingSkillModifier": 0.1,
+	"woodCuttingObjectivePriority": 100,
+	"woodCuttingMaxMinutes": 300
 }

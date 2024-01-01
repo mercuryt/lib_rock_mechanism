@@ -56,8 +56,8 @@ public:
 	void reset();
 	void joinProject(DigProject& project);
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Dig; }
-	std::string name() const { return "dig"; }
 	DigProject* getJoinableProjectAt(const Block& block);
+	std::string name() const { return "dig"; }
 	friend class DigThreadedTask;
 	friend class DigProject;
 };

@@ -163,6 +163,11 @@ namespace Config
 	inline float projectileHitPercentPerPointAttackTypeCombatScore;
 	inline uint32_t attackCoolDownDurationBaseDextarity;
 	inline uint32_t goToPriority;
+	inline uint32_t maxNumberOfWorkersForWoodCuttingProject;
+	inline float woodCuttingStrengthModifier;
+	inline float woodCuttingSkillModifier;
+	inline uint32_t woodCuttingObjectivePriority;
+	inline Step woodCuttingMaxSteps;
 	//inline uint32_t medicalPriority;
 	//inline uint32_t medicalProjectDelaySteps;
 
@@ -323,6 +328,11 @@ namespace Config
 		projectileHitPercentPerPointAttackTypeCombatScore = data["projectileHitPercentPerPointAttackTypeCombatScore"].get<float>();
 		attackCoolDownDurationBaseDextarity = data["attackCoolDownDurationBaseDextarity"].get<uint32_t>();
 		goToPriority = data["goToPriority"].get<uint32_t>();
+		maxNumberOfWorkersForWoodCuttingProject = data["maxNumberOfWorkersForWoodCuttingProject"].get<uint32_t>();
+		woodCuttingStrengthModifier = data["woodCuttingStrengthModifier"].get<float>();
+		woodCuttingSkillModifier = data["woodCuttingSkillModifier"].get<float>();
+		woodCuttingObjectivePriority = data["woodCuttingObjectivePriority"].get<uint32_t>();
+		woodCuttingMaxSteps = data["woodCuttingMaxSteps"].get<Step>();
 		//medicalPriority = data["medicalPriority"].get<uint32_t>();
 		//medicalProjectDelaySteps = data["medicalProjectDelayMinutes"].get<uint32_t>() * stepsPerMinute;
 	}

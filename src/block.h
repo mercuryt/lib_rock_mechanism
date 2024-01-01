@@ -116,6 +116,7 @@ public:
 	uint32_t getMass() const;
 	// Get block at offset coordinates. Can return nullptr.
 	Block* offset(int32_t ax, int32_t ay, int32_t az) const;
+	std::array<int32_t, 3> relativeOffsetTo(const Block& block) const; 
 	bool canSeeThrough() const;
 	bool canSeeThroughFrom(const Block& block) const;
 	Facing facingToSetWhenEnteringFrom(const Block& block) const;

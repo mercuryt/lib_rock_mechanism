@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <cassert>
 
-enum class BlockDesignation { Dig, Construct, SowSeeds, GivePlantFluid, Harvest, StockPileHaulFrom, StockPileHaulTo, Sleep, Rescue, FluidSource };
+enum class BlockDesignation { Dig, Construct, SowSeeds, GivePlantFluid, Harvest, StockPileHaulFrom, StockPileHaulTo, Sleep, Rescue, FluidSource, WoodCutting };
 NLOHMANN_JSON_SERIALIZE_ENUM(BlockDesignation, {
 		{BlockDesignation::Dig, "Dig"},
 		{BlockDesignation::Construct, "Construct"},
@@ -21,7 +21,9 @@ NLOHMANN_JSON_SERIALIZE_ENUM(BlockDesignation, {
 		{BlockDesignation::StockPileHaulTo, "StockPileHaulTo"},
 		{BlockDesignation::Sleep, "Sleep"},
 		{BlockDesignation::Rescue, "Rescue"},
-		{BlockDesignation::FluidSource , "FluidSource"}});
+		{BlockDesignation::FluidSource, "FluidSource"},
+		{BlockDesignation::WoodCutting, "WoodCutting"},
+});
 class HasDesignations
 {
 	std::unordered_map<const Faction*, std::unordered_set<BlockDesignation>> m_designations;

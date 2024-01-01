@@ -379,8 +379,16 @@ namespace definitions
 				data["adultMass"].get<Mass>(),
 				data["dayOfYearForSowStart"].get<uint16_t>(),
 				data["dayOfYearForSowEnd"].get<uint16_t>(),
-				FluidType::byName(data["fluidType"].get<std::string>())
+				FluidType::byName(data["fluidType"].get<std::string>()),
+				data.contains("maxWildGrowth") ? data["maxWildGrowth"].get<uint8_t>() : 0,
+				data.contains("isTree") ? data["isTree"].get<bool>() : false,
+				data.contains("logsGeneratedByFellingWhenFullGrown") ? data["logsGeneratedByFellingWhenFullGrown"].get<uint32_t>() : 0,
+				data.contains("branchesGeneratedByFellingWhenFullGrown") ? data["branchesGeneratedByFellingWhenFullGrown"].get<uint32_t>() : 0,
+				data.contains("woodType") ? data["woodType"].get<const MaterialType*>() : nullptr
 			);
+			assert(data.contains("shapes"));
+			for(const auto& shapeName : data["shapes"])
+				plantSpecies.shapes.push_back(&Shape::byName(shapeName.get<std::string>()));
 			if(data.contains("harvestData"))
 			{
 				auto& harvestData = HarvestData::data.emplace_back(

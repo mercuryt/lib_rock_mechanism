@@ -38,7 +38,7 @@ public:
 	ObjectiveTypeRemoveInputAction(InputQueue& inputQueue, Actor& actor, const ObjectiveType& objectiveType) : InputAction(inputQueue), m_actor(actor), m_objectiveType(objectiveType) { }
 	void execute();
 };
-enum class ObjectiveTypeId { Construct, Craft, Dig, Drink, Eat, GetToSafeTemperature, GivePlantsFluid, GoTo, Harvest, Haul, Kill, Medical, Rest, Sleep, Station, SowSeeds, StockPile, Wait, Wander };
+enum class ObjectiveTypeId { Construct, Craft, Dig, Drink, Eat, GetToSafeTemperature, GivePlantsFluid, GoTo, Harvest, Haul, Kill, Medical, Rest, Sleep, Station, SowSeeds, StockPile, Wait, Wander, WoodCutting };
 NLOHMANN_JSON_SERIALIZE_ENUM(ObjectiveTypeId, {
 	{ObjectiveTypeId::Construct, "Construct"}, 
 	{ObjectiveTypeId::Craft, "Craft"},
@@ -65,11 +65,10 @@ struct ObjectiveType
 	[[nodiscard]] virtual bool canBeAssigned(Actor& actor) const = 0;
 	[[nodiscard]] virtual std::unique_ptr<Objective> makeFor(Actor& actor) const = 0;
 	[[nodiscard]] virtual ObjectiveTypeId getObjectiveTypeId() const = 0;
-	[[nodiscard]] virtual Json& toJson();
+	[[nodiscard]] virtual Json toJson() const;
 	ObjectiveType() = default;
 	ObjectiveType(const ObjectiveType&) = delete;
 	ObjectiveType(ObjectiveType&&) = delete;
-	virtual Json toJson() const;
 	// Infastructure
 	static std::map<std::string, std::unique_ptr<ObjectiveType>> objectiveTypes;
 	static std::map<const ObjectiveType*, std::string> objectiveTypeNames;

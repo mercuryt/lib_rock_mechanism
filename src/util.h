@@ -61,6 +61,12 @@ namespace util
 	{
 		return ((float)numerator / (float)denominator) * 100;
 	}
+	template<typename T>
+	inline bool sortedVectorContainsDuplicates(std::vector<T> vector)
+	{
+		auto it = std::adjacent_find(vector.begin(), vector.end());
+		return it == vector.end();
+	}
 	//template<typename T>
 	//struct AddressEquivalence{ bool operator()(T& other){ return &other == this; } };
 };

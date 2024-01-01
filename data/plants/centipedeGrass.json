@@ -15,5 +15,6 @@
   "adultMass": 5,
   "dayOfYearForSowStart": 50,
   "dayOfYearForSowEnd": 150,
-  "fluidType": "water"
+  "fluidType": "water",
+  "shapes": ["oneByOneHundredth", "oneByOneThirtySecond", "OneByOneSixteenth", "oneByOneEighth"]
 }

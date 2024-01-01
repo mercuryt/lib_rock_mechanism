@@ -39,6 +39,7 @@ public:
 	ThreadedTaskEngine m_threadedTaskEngine;
 	Random m_random;
 	InputQueue m_inputQueue;
+	SimulationHasShapes m_shapes;
 	SimulationHasFactions m_hasFactions;
 	Simulation(DateTime n = {12, 150, 1200}, Step s = 1);
 	Simulation(const Json& data, std::filesystem::path path);

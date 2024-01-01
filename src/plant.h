@@ -3,6 +3,12 @@
 #include "deserializationMemo.h"
 #include "reservable.h"
 #include "eventSchedule.hpp"
+#include "hasShape.h"
+
+#include <algorithm>
+#include <iostream>
+
+class Block;
 
 #include <algorithm>
 
@@ -14,6 +20,7 @@ class PlantEndOfHarvestEvent;
 class PlantTemperatureEvent;
 struct ItemType;
 struct FluidType;
+struct MaterialType;
 
 struct HarvestData final
 {
@@ -43,8 +50,31 @@ struct PlantSpecies final
 	const Mass adultMass;
 	const uint16_t dayOfYearForSowStart;
 	const uint16_t dayOfYearForSowEnd;
+	const bool isTree;
+	const uint32_t logsGeneratedByFellingWhenFullGrown;
+	const uint32_t branchesGeneratedByFellingWhenFullGrown;
 	const FluidType& fluidType;
 	const HarvestData* harvestData;
+	const MaterialType* woodType;
+	std::vector<const Shape*> shapes;
+	const uint8_t maxWildGrowth;
+	// returns base shape and wild growth steps.
+	const std::pair<const Shape*, uint8_t> shapeAndWildGrowthForPercentGrown(Percent percentGrown) const
+	{
+		size_t totalGrowthStages = shapes.size() + maxWildGrowth;
+		size_t growthStage = util::scaleByPercentRange(0, totalGrowthStages - 1, percentGrown);
+		size_t index = std::min(growthStage, shapes.size() - 1);
+		int32_t wildGrowthSteps = growthStage <= shapes.size() ? 0 : growthStage - shapes.size();
+		return std::make_pair(shapes.at(index), wildGrowthSteps);
+	}
+	const Shape& shapeForPercentGrown(Percent percentGrown) const
+	{
+		return *shapeAndWildGrowthForPercentGrown(percentGrown).first;
+	}
+	uint8_t wildGrowthForPercentGrown(Percent percentGrown) const
+	{
+		return shapeAndWildGrowthForPercentGrown(percentGrown).second;
+	}
 	// Infastructure.
 	bool operator==(const PlantSpecies& plantSpecies) const { return this == &plantSpecies; }
 	inline static std::vector<PlantSpecies> data;
@@ -58,7 +88,7 @@ struct PlantSpecies final
 inline void to_json(Json& data, const PlantSpecies* const& plantSpecies){ data = plantSpecies->name; }
 inline void to_json(Json& data, const PlantSpecies& plantSpecies){ data = plantSpecies.name; }
 inline void from_json(const Json& data, const PlantSpecies*& plantSpecies){ plantSpecies = &PlantSpecies::byName(data.get<std::string>()); }
-class Plant final
+class Plant final : public HasShape
 {
 public:
 	Block& m_location;
@@ -75,8 +105,10 @@ public:
 	//TODO: Set max reservations to 1 to start, maybe increase later with size?
 	Reservable m_reservable;
 	Volume m_volumeFluidRequested;
+	uint8_t m_wildGrowth;
 
-	Plant(Block& l, const PlantSpecies& ps, Percent pg = 0, Volume volumeFluidRequested = 0, Step needsFluidEventStart = 0, bool temperatureIsUnsafe = 0, Step unsafeTemperatureEventStart = 0, uint32_t harvestableQuantity = 0, Percent percentFoliage = 100);
+	// Shape is passed as a pointer because it may be null, in which case the shape from the species for the given percentGrowth should be used.
+	Plant(Block& l, const PlantSpecies& ps, const Shape* shape, Percent pg = 0, Volume volumeFluidRequested = 0, Step needsFluidEventStart = 0, bool temperatureIsUnsafe = 0, Step unsafeTemperatureEventStart = 0, uint32_t harvestableQuantity = 0, Percent percentFoliage = 100);
 	Plant(const Json& data, DeserializationMemo& deserializationMemo, Block& location);
 	Json toJson() const;
 	void die();
@@ -90,6 +122,7 @@ public:
 	void endOfHarvest();
 	void updateGrowingStatus();
 	void removeFoliageMass(Mass mass);
+	void doWildGrowth(uint8_t count = 1);
 	Mass getFruitMass() const;
 	void removeFruitQuantity(uint32_t quantity);
 	void makeFoliageGrowthEvent();
@@ -104,6 +137,17 @@ public:
 	bool readyToHarvest() const { return m_quantityToHarvest != 0; }
 	const Volume& getVolumeFluidRequested() { return m_volumeFluidRequested; }
 	bool operator==(const Plant& p) const { return &p == this; }
+	// Virtual methods.
+	void setLocation([[maybe_unused]] Block& block) { assert(false); }
+	void exit() { assert(false); }
+	bool isItem() const { return false; }
+	bool isActor() const { return false; }
+	bool isGeneric() const { assert(false); }
+	uint32_t getMass() const { assert(false); }
+	uint32_t getVolume() const { assert(false); }
+	const MoveType& getMoveType() const { assert(false); }
+	uint32_t singleUnitMass() const { return getMass(); }
+	void log() const { std::cout << m_plantSpecies.name << std::to_string(getGrowthPercent()); }
 };
 void to_json(Json& data, const Plant* const& plant);
 class PlantGrowthEvent final : public ScheduledEventWithPercent

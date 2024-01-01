@@ -19,6 +19,7 @@
 #include "simulation.h"	
 #include "targetedHaul.h"	
 #include "fire.h"
+#include "woodcutting.h"
 //#include "medical.h"
 
 #include <sys/types.h>
@@ -54,6 +55,7 @@ public:
 	HasCraftingLocationsAndJobs m_hasCraftingLocationsAndJobs;
 	AreaHasTargetedHauling m_targetedHauling;
 	HasSleepingSpots m_hasSleepingSpots;
+	HasWoodCuttingDesignations m_hasWoodCuttingDesignations;
 	//AreaHasMedicalPatients m_hasMedicalPatients;
 	//TODO: HasItems
 	AreaHasItems m_hasItems;
