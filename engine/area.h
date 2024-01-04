@@ -102,3 +102,4 @@ public:
 	[[maybe_unused]] void logActorsAndItems() const;
 	uint32_t getTotalCountOfItemTypeOnSurface(const ItemType& itemType) const;
 };
+inline void to_json(Json& data, const Area* const& area){ data = area->m_id; }

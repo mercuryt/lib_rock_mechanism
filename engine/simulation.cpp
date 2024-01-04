@@ -12,10 +12,15 @@ Simulation::Simulation(DateTime n, Step s) :  m_nextAreaId(1), m_step(s), m_now(
 { 
 	m_hourlyEvent.schedule(*this);
 }
-Simulation::Simulation(const Json& data, std::filesystem::path path) : m_step(data["step"].get<Step>()), m_now(data["now"]), 
-	m_nextActorId(data["nextActorId"].get<Step>()), m_nextItemId(data["nextItemId"].get<Step>()),
-	m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this) 
-{ 
+Simulation::Simulation(std::filesystem::path path) : m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this) 
+{
+	std::ifstream simulationFile(path/"simulation.json");
+	const Json& data = Json::parse(simulationFile);
+	m_step = data["step"].get<Step>();
+	m_now = data["now"].get<DateTime>();
+	m_nextItemId = data["nextItemId"].get<ItemId>();
+	m_nextActorId = data["nextActorId"].get<ActorId>();
+	m_nextAreaId = data["nextAreaId"].get<AreaId>();
 	m_hourlyEvent.schedule(*this, data["hourlyEventStart"].get<Step>());
 	DeserializationMemo deserializationMemo(*this);
 	for(const Json& areaId : data["areaIds"])
@@ -236,7 +241,7 @@ Json Simulation::toJson() const
 {
 	Json output;
 	output["step"] = m_step;
-	output["now"] = m_now.toJson();
+	output["now"] = m_now;
 	output["nextActorId"] = m_nextActorId;
 	output["nextItemId"] = m_nextItemId;
 	return output;

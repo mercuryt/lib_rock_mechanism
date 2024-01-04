@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <cassert>
 
-Block::Block() : m_solid(nullptr), m_totalFluidVolume(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr), m_fires(nullptr), m_exposedToSky(true), m_underground(false), m_outdoors(true), m_hasShapes(*this), m_reservable(1), m_hasPlant(*this), m_hasBlockFeatures(*this), m_hasActors(*this), m_hasItems(*this), m_isPartOfStockPiles(*this), m_isPartOfFarmField(*this), m_blockHasTemperature(*this) {}
+Block::Block() : m_solid(nullptr), m_totalFluidVolume(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr), m_fires(nullptr), m_exposedToSky(true), m_underground(false), m_outdoors(true), m_visible(true), m_hasShapes(*this), m_reservable(1), m_hasPlant(*this), m_hasBlockFeatures(*this), m_hasActors(*this), m_hasItems(*this), m_isPartOfStockPiles(*this), m_isPartOfFarmField(*this), m_blockHasTemperature(*this) {}
 void Block::setup(Area& area, uint32_t ax, uint32_t ay, uint32_t az)
 {
 	m_x=ax;
@@ -28,6 +28,8 @@ void Block::setup(Area& area, uint32_t ax, uint32_t ay, uint32_t az)
 	m_area = &area;
 	m_locationBucket = m_area->m_hasActors.m_locationBuckets.getBucketFor(*this);
 	m_isEdge = (m_x == 0 || m_x == (m_area->m_sizeX - 1) ||  m_y == 0 || m_y == (m_area->m_sizeY - 1) || m_z == 0 || m_z == (m_area->m_sizeZ - 1) );
+	uint32_t seed = (m_x * 1'000'000) + (m_y * 1'000) + m_z;
+	m_seed = m_area->m_simulation.m_random.deterministicScramble(seed);
 }
 void Block::recordAdjacent()
 {
@@ -359,6 +361,7 @@ void Block::setSolid(const MaterialType& materialType)
 		if(adjacent->fluidCanEnterEver())
 			for(auto& [fluidType, pair] : adjacent->m_fluids)
 				pair.second->m_fillQueue.removeBlock(this);
+	m_visible = false;
 	// Clear move cost caches for this and adjacent
 	m_hasShapes.clearCache();
 	// Opacity.
@@ -676,6 +679,10 @@ std::vector<Block*> Block::collectAdjacentsInRangeVector(uint32_t range)
 }
 void Block::loadFromJson(Json data, DeserializationMemo& deserializationMemo)
 {
+	m_exposedToSky = data["exposedToSky"].get<bool>();
+	m_underground = data["underground"].get<bool>();
+	m_outdoors = data["outdoors"].get<bool>();
+	m_visible = data["visible"].get<bool>();
 	if(data.contains("solid"))
 		m_solid = &MaterialType::byName(data["solid"].get<std::string>());
 	if(data.contains("blockFeatures"))
@@ -696,10 +703,11 @@ void Block::loadFromJson(Json data, DeserializationMemo& deserializationMemo)
 			addFluid(pair[1].get<Volume>(), *pair[0].get<const FluidType*>());
 	if(data.contains("hasDesignations"))
 		m_hasDesignations.load(data["hasDesignations"], deserializationMemo);
+	m_visible = data.contains("visible");
 }
 Json Block::toJson() const 
 {
-	Json data;
+	Json data{{"exposedToSky", m_exposedToSky}, {"underground", m_underground}, {"isEdge", m_isEdge}, {"outdoors", m_outdoors}, {"visible", m_visible}};
 	if(m_solid != nullptr)
 		data["solid"] = m_solid->name;
 	if(!m_hasBlockFeatures.empty())

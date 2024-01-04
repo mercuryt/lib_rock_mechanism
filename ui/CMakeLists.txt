@@ -1,0 +1,6 @@
+add_library (UI main.cpp window.cpp detail.cpp population.cpp log.cpp productionOrders.cpp stockpile.cpp)
+target_compile_features(UI PUBLIC cxx_std_20)
+target_include_directories (UI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(unit LINK_PUBLIC Engine)
+find_package(TGUI 1 REQUIRED)
+target_link_libraries(UI PRIVATE TGUI::TGUI)

@@ -298,6 +298,14 @@ Item& ItemHasCargo::unloadGenericTo(const ItemType& itemType, const MaterialType
 	remove(itemType, materialType, quantity);
 	return location.m_hasItems.addGeneric(itemType, materialType, quantity);
 }
+std::vector<Actor*> ItemHasCargo::getActors()
+{
+	std::vector<Actor*> output;
+	for(HasShape* hasShape : m_shapes)
+		if(hasShape->isActor())
+			output.push_back(static_cast<Actor*>(hasShape));
+	return output;
+}
 bool ItemHasCargo::canAdd(HasShape& hasShape) const { return m_volume + hasShape.getVolume() <= m_item.m_itemType.internalVolume; }
 bool ItemHasCargo::canAdd(FluidType& fluidType) const { return m_fluidType == nullptr || m_fluidType == &fluidType; }
 bool ItemHasCargo::containsGeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity) const

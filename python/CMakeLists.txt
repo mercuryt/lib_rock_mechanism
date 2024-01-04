@@ -6,4 +6,5 @@ execute_process(
 list(APPEND CMAKE_PREFIX_PATH "${NB_DIR}")
 find_package(nanobind CONFIG REQUIRED)
 nanobind_add_module(bound bind.cpp)
-target_link_libraries(bound LINK_PUBLIC Source)
+target_link_libraries(bound LINK_PUBLIC Engine)
+add_compile_options(-fPIC)

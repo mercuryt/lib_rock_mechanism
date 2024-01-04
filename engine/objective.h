@@ -119,6 +119,7 @@ public:
 	void remove(const ObjectiveType& objectiveType);
 	void setObjectiveFor(Actor& actor);
 	void setDelay(ObjectiveTypeId objectiveTypeId);
+	[[nodiscard]] uint8_t getPriorityFor(ObjectiveTypeId objectiveTypeId) const;
 	// For testing.
 	[[nodiscard, maybe_unused]] bool isOnDelay(ObjectiveTypeId);
 };

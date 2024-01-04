@@ -17,13 +17,16 @@ struct DateTime
 		assert(year != 0);
 	}
 	DateTime() : hour(0), day(0), year(0) { }
-	DateTime(const Json& data) : hour(data["hour"].get<uint8_t>()), day(data["day"].get<uint16_t>()), year(data["year"].get<uint16_t>()) { }
-	Json toJson() const
-	{
-		Json output;
-		output["hour"] = hour;
-		output["day"] = day;
-		output["year"] = year;
-		return output;
-	}
 };
+inline void from_json(const Json& data, DateTime& dateTime)
+{
+	dateTime.hour = data["hour"].get<uint8_t>();
+	dateTime.day = data["day"].get<uint16_t>();
+	dateTime.year = data["year"].get<uint16_t>();
+}
+inline void to_json(Json& data, const DateTime& dateTime)
+{
+	data["hour"] = dateTime.hour;
+	data["day"] = dateTime.day;
+	data["year"] = dateTime.year;
+}

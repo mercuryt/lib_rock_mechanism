@@ -75,6 +75,8 @@ public:
 	bool m_underground;
 	bool m_isEdge;
 	bool m_outdoors;
+	bool m_visible;
+	uint32_t m_seed;
 	BlockHasShapes m_hasShapes;
 	Reservable m_reservable;
 	HasPlant m_hasPlant;

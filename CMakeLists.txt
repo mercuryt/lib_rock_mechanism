@@ -16,9 +16,9 @@ else()
 endif()
 
 # add_compile_options(-ffast-math)
-add_compile_options(-fPIC)
 
-add_subdirectory(src)
+add_subdirectory(engine)
+add_subdirectory(ui)
 add_subdirectory(test)
 add_subdirectory(python)
 

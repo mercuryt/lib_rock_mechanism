@@ -57,6 +57,7 @@ class SimulationHasShapes final
 	std::unordered_map<const Shape*, std::string> m_namesByShape;
 public:
 	SimulationHasShapes(const Json& data, DeserializationMemo& deserializationMemo);
+	SimulationHasShapes() = default;
 	Json toJson() const;
 	// creates a copy, adds a position to it and returns it.
 	const Shape& mutateAdd(const Shape& shape, std::array<int32_t, 4> position);

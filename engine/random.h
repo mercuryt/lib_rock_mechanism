@@ -13,6 +13,7 @@ public:
 	inline int getInRange(int lowest, int highest)
 	{
 		assert(lowest < highest);
+		//TODO: should uniform distribution be static?
 		std::uniform_int_distribution<int> dist(lowest, highest);
 		return dist(rng);
 	}
@@ -42,4 +43,10 @@ public:
 		{
 			return vector[getInRange(0, vector.size() - 1)];
 		}
+	inline uint32_t deterministicScramble(uint32_t seed)
+	{
+		std::mt19937 rng(seed);
+		std::uniform_int_distribution<uint32_t> dist(0, UINT32_MAX);
+		return dist(rng);
+	}
 };

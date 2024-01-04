@@ -67,6 +67,13 @@ void ObjectiveTypePrioritySet::setDelay(ObjectiveTypeId objectiveTypeId)
 	if(found != m_data.end())
 		found->doNotAssignAgainUntil = m_actor.getSimulation().m_step + Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective;
 }
+uint8_t ObjectiveTypePrioritySet::getPriorityFor(ObjectiveTypeId objectiveTypeId) const
+{
+	auto found = std::ranges::find_if(m_data, [&](const ObjectivePriority& objectivePriority){ return objectivePriority.objectiveType->getObjectiveTypeId() == objectiveTypeId; });
+	if(found == m_data.end())
+		return 0;
+	return found->priority;
+}
 // SupressedNeed
 SupressedNeed::SupressedNeed(std::unique_ptr<Objective> o, Actor& a) : m_actor(a), m_objective(std::move(o)), m_event(a.getSimulation().m_eventSchedule) { }
 SupressedNeed::SupressedNeed(const Json& data, DeserializationMemo& deserializationMemo, Actor& a) : m_actor(a), m_event(deserializationMemo.m_simulation.m_eventSchedule)

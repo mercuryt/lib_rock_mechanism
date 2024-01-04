@@ -24,6 +24,7 @@ class Simulation final
 	AreaId m_nextAreaId;
 	std::list<Area> m_areas;
 	std::unordered_map<AreaId, Area*> m_areasById;
+	std::future<void> m_stepFuture;
 public:
 	BS::thread_pool_light m_pool;
 	std::vector<std::future<void>> m_taskFutures;
@@ -42,7 +43,7 @@ public:
 	SimulationHasShapes m_shapes;
 	SimulationHasFactions m_hasFactions;
 	Simulation(DateTime n = {12, 150, 1200}, Step s = 1);
-	Simulation(const Json& data, std::filesystem::path path);
+	Simulation(std::filesystem::path path);
 	Json toJson() const;
 	void doStep();
 	void incrementHour();
@@ -68,6 +69,7 @@ public:
 	Block& getBlockForJsonQuery(const Json& data);
 	Actor& getActorById(ActorId id);
 	Item& getItemById(ItemId id);
+	Area& getAreaById(AreaId id) const {return *m_areasById.at(id); }
 	~Simulation();
 	// For testing.
 	[[maybe_unused]] void setDateTime(DateTime now);

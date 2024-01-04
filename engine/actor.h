@@ -115,10 +115,10 @@ struct ActorQuery
 	ActorQuery(Actor& a) : actor(&a) { }
 	ActorQuery(Mass cw, bool cis, bool s) : carryWeight(cw), checkIfSentient(cis), sentient(s) { }
 	ActorQuery(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	bool operator()(Actor& actor) const;
-	static ActorQuery makeFor(Actor& a);
-	static ActorQuery makeForCarryWeight(Mass cw);
+	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] bool operator()(Actor& actor) const;
+	[[nodiscard]] static ActorQuery makeFor(Actor& a);
+	[[nodiscard]] static ActorQuery makeForCarryWeight(Mass cw);
 };
 class BlockHasActors
 {
@@ -129,12 +129,13 @@ public:
 	void enter(Actor& actor);
 	void exit(Actor& actor);
 	void setTemperature(Temperature temperature);
-	bool canStandIn() const;
-	bool contains(Actor& actor) const;
-	Volume volumeOf(Actor& actor) const;
-	std::vector<Actor*>& getAll() { return m_actors; }
-	const std::vector<Actor*>& getAll() const { return m_actors; }
-	const std::vector<Actor*>& getAllConst() const { return m_actors; }
+	[[nodiscard]] bool canStandIn() const;
+	[[nodiscard]] bool contains(Actor& actor) const;
+	[[nodiscard]] bool empty() const { return m_actors.empty(); }
+	[[nodiscard]] Volume volumeOf(Actor& actor) const;
+	[[nodiscard]] std::vector<Actor*>& getAll() { return m_actors; }
+	[[nodiscard]] const std::vector<Actor*>& getAll() const { return m_actors; }
+	[[nodiscard]] const std::vector<Actor*>& getAllConst() const { return m_actors; }
 };
 class AreaHasActors
 {
@@ -158,6 +159,6 @@ public:
 	void setUnderground(Actor& actor);
 	void setNotUnderground(Actor& actor);
 	~AreaHasActors() { m_visionRequestQueue.clear(); }
-	std::unordered_set<Actor*>& getAll() { return m_actors; }
-	const std::unordered_set<Actor*>& getAllConst() const { return m_actors; }
+	[[nodiscard]] std::unordered_set<Actor*>& getAll() { return m_actors; }
+	[[nodiscard]] const std::unordered_set<Actor*>& getAllConst() const { return m_actors; }
 };

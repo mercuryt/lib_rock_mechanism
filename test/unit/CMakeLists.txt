@@ -3,6 +3,6 @@ add_executable (unit test.cpp actor.cpp area.cpp basicNeeds.cpp buckets.cpp cave
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-target_link_libraries(unit LINK_PUBLIC Source)
+target_link_libraries(unit LINK_PUBLIC Engine)
 
 set(CMAKE_BUILD_TYPE Debug)

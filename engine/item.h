@@ -103,6 +103,7 @@ public:
 	Item& unloadGenericTo(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity, Block& location);
 	std::vector<HasShape*>& getContents() { return m_shapes; }
 	std::vector<Item*>& getItems() { return m_items; }
+	std::vector<Actor*> getActors();
 	const std::vector<Item*>& getItems() const { return m_items; }
 	bool canAdd(HasShape& hasShape) const;
 	bool canAdd(FluidType& fluidType) const;
