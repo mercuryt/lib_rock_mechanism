@@ -17,7 +17,6 @@ void GoToObjective::execute()
 	else
 		m_actor.m_hasObjectives.objectiveComplete(*this);
 }
-
 GoToInputAction::GoToInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, Block& b) : 
 	InputAction(actors, emplacementType, inputQueue), m_block(b) { }
 void GoToInputAction::execute()

@@ -69,4 +69,16 @@ namespace util
 	}
 	//template<typename T>
 	//struct AddressEquivalence{ bool operator()(T& other){ return &other == this; } };
+	inline std::array<int32_t, 3> rotateOffsetToFacing(const std::array<int32_t, 3>& position, Facing facing)
+	{
+		auto [x, y, z] = position;
+		if(facing == 0)
+			return position;
+		if(facing == 1)
+			return {y, x, z};
+		if(facing == 2)
+			return {x, y*-1, z};
+		assert(facing ==  3);
+		return {y * -1, x, z};
+	}
 };

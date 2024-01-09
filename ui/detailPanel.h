@@ -23,5 +23,5 @@ public:
 	void display(Plant& plant);
 	void display(Actor& actor);
 	void hide() { m_panel->setVisible(false); }
-	bool isVisible() { return m_panel->isVisible(); }
+	bool isVisible() const { return m_panel->isVisible(); }
 };

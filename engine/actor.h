@@ -105,21 +105,6 @@ public:
 };
 inline void to_json(Json& data, const Actor& actor){ data = actor.m_id; }
 inline void to_json(Json& data, const Actor* const & actor){ data = actor->m_id; }
-// To be used to find actors fitting criteria.
-struct ActorQuery
-{
-	Actor* actor;
-	Mass carryWeight;
-	bool checkIfSentient;
-	bool sentient;
-	ActorQuery(Actor& a) : actor(&a) { }
-	ActorQuery(Mass cw, bool cis, bool s) : carryWeight(cw), checkIfSentient(cis), sentient(s) { }
-	ActorQuery(const Json& data, DeserializationMemo& deserializationMemo);
-	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] bool operator()(Actor& actor) const;
-	[[nodiscard]] static ActorQuery makeFor(Actor& a);
-	[[nodiscard]] static ActorQuery makeForCarryWeight(Mass cw);
-};
 class BlockHasActors
 {
 	Block& m_block;

@@ -3,14 +3,14 @@
 #include "deserializationMemo.h"
 #include "hasShape.h"
 #include "reservable.h"
-#include "actor.h"
+#include "actorQuery.h"
+#include "itemQuery.h"
 #include "eventSchedule.h"
 #include "threadedTask.h"
 #include "haul.h"
-#include "item.h"
-#include "actor.h"
 #include "findsPath.h"
 #include "eventSchedule.hpp"
+#include "threadedTask.hpp"
 
 #include <vector>
 #include <utility>
@@ -22,6 +22,8 @@ class ProjectTryToReserveEvent;
 class ProjectTryToMakeHaulSubprojectThreadedTask;
 class ProjectTryToAddWorkersThreadedTask;
 class Block;
+class Actor;
+class Item;
 
 struct ProjectWorker final
 {

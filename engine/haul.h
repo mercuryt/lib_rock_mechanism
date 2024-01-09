@@ -13,7 +13,7 @@ struct FluidType;
 struct ItemType;
 struct MaterialType;
 class Project;
-class ProjectRequirementCounts;
+struct ProjectRequirementCounts;
 struct Faction;
 class HaulSubproject;
 

@@ -18,6 +18,7 @@ public:
 	void reset() { }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::GoTo; }
 	std::string name() const { return "go to"; }
+	static void create(Actor& actor, Block& block);
 };
 class GoToInputAction final : public InputAction
 {

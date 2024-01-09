@@ -85,6 +85,28 @@ Body::Body(const Json& data, DeserializationMemo& deserializationMemo, Actor& a)
 	if(data.contains("bleedEventStart"))
 		m_bleedEvent.schedule(data["bleedEventDuration"].get<Step>(), *this, data["bleedEventStart"].get<Step>()); 
 }
+Json Body::toJson() const 
+{
+	Json data;
+	data["materialType"] = m_materialType->name;
+	data["totalVolume"] = m_totalVolume;
+	data["volumeOfBlood"] = m_volumeOfBlood;
+	data["isBleeding"] = m_isBleeding;
+	if(m_bleedEvent.exists())
+	{
+		data["bleedEventStart"] = m_bleedEvent.getStartStep();
+		data["bleedEventDuration"] = m_bleedEvent.duration();
+	}
+	if(m_woundsCloseEvent.exists())
+	{
+		data["woundsCloseEventStart"] = m_woundsCloseEvent.getStartStep();
+		data["woundsCloseEventDuration"] = m_woundsCloseEvent.duration();
+	}
+	data["bodyParts"] = Json::array();
+	for(const BodyPart& bodyPart : m_bodyParts)
+		data["bodyParts"].push_back(bodyPart.toJson());
+	return data;
+}
 BodyPart& Body::pickABodyPartByVolume()
 {
 	Random& random = m_actor.getSimulation().m_random;
@@ -362,27 +384,13 @@ uint32_t Body::getImpairPercentFor(const BodyPartType& bodyPartType) const
 				output += wound.impairPercent();
 	return output;
 }
-Json Body::toJson() const 
+std::vector<Wound*> Body::getAllWounds()
 {
-	Json data;
-	data["materialType"] = m_materialType->name;
-	data["totalVolume"] = m_totalVolume;
-	data["volumeOfBlood"] = m_volumeOfBlood;
-	data["isBleeding"] = m_isBleeding;
-	if(m_bleedEvent.exists())
-	{
-		data["bleedEventStart"] = m_bleedEvent.getStartStep();
-		data["bleedEventDuration"] = m_bleedEvent.duration();
-	}
-	if(m_woundsCloseEvent.exists())
-	{
-		data["woundsCloseEventStart"] = m_woundsCloseEvent.getStartStep();
-		data["woundsCloseEventDuration"] = m_woundsCloseEvent.duration();
-	}
-	data["bodyParts"] = Json::array();
+	std::vector<Wound*> output;
 	for(const BodyPart& bodyPart : m_bodyParts)
-		data["bodyParts"].push_back(bodyPart.toJson());
-	return data;
+		for(const Wound& wound : bodyPart.wounds)
+			output.push_back(&const_cast<Wound&>(wound));
+	return output;
 }
 WoundHealEvent::WoundHealEvent(const Step delay, Wound& w, Body& b, const Step start) : ScheduledEventWithPercent(b.m_actor.getSimulation(), delay, start), m_wound(w), m_body(b) {}
 BleedEvent::BleedEvent(const Step delay, Body& b, const Step start) : ScheduledEventWithPercent(b.m_actor.getSimulation(), delay, start), m_body(b) {}

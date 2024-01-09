@@ -40,7 +40,7 @@ namespace Config
 	inline float maxDistanceVisionModifier;
 	inline Percent percentOfPlantMassWhichIsFoliage;
 	inline Percent minimumPercentFoliageForGrow;
-	inline Step installItemDelay;
+	inline Step installItemDuration;
 	inline uint32_t objectivePrioiorityKill;
 	inline float pathHuristicConstant;
 	inline Volume impassibleItemVolume;
@@ -168,6 +168,8 @@ namespace Config
 	inline float woodCuttingSkillModifier;
 	inline uint32_t woodCuttingObjectivePriority;
 	inline Step woodCuttingMaxSteps;
+	inline uint32_t equipPriority;
+	inline uint32_t installItemPriority;
 	//inline uint32_t medicalPriority;
 	//inline uint32_t medicalProjectDelaySteps;
 
@@ -215,7 +217,7 @@ namespace Config
 		maxDistanceVisionModifier = data["maxDistanceVisionModifier"].get<float>();
 		percentOfPlantMassWhichIsFoliage = data["percentOfPlantMassWhichIsFoliage"].get<Percent>();
 		minimumPercentFoliageForGrow = data["minimumPercentFoliageForGrow"].get<Percent>();
-		installItemDelay = data["installItemDelay"].get<Step>();
+		installItemDuration = data["installItemDurationSeconds"].get<uint32_t>() * stepsPerSecond;
 		objectivePrioiorityKill = data["objectivePrioiorityKill"].get<uint32_t>();
 		pathHuristicConstant = data["pathHuristicConstant"].get<float>();
 		impassibleItemVolume = data["impassibleItemVolume"].get<Volume>();
@@ -333,6 +335,8 @@ namespace Config
 		woodCuttingSkillModifier = data["woodCuttingSkillModifier"].get<float>();
 		woodCuttingObjectivePriority = data["woodCuttingObjectivePriority"].get<uint32_t>();
 		woodCuttingMaxSteps = data["woodCuttingMaxSteps"].get<Step>();
+		equipPriority = data["equipPriority"].get<uint32_t>();
+		installItemPriority = data["installItemPriority"].get<uint32_t>();
 		//medicalPriority = data["medicalPriority"].get<uint32_t>();
 		//medicalProjectDelaySteps = data["medicalProjectDelayMinutes"].get<uint32_t>() * stepsPerMinute;
 	}

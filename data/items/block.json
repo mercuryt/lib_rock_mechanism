@@ -3,5 +3,6 @@
 	"shape": "oneByOneSixteenth",
 	"volume": 2000,
 	"generic": true,
-	"value": 5
+	"value": 5,
+	"cratable": true
 }

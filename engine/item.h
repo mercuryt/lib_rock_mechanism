@@ -1,5 +1,6 @@
 #pragma once
 
+#include "craft.h"
 #include "deserializationMemo.h"
 #include "eventSchedule.h"
 #include "eventSchedule.hpp"
@@ -21,6 +22,7 @@ class Item;
 class Area;
 class Actor;
 struct CraftJob;
+struct CraftStepTypeCategory;
 
 struct WearableData final
 {
@@ -57,9 +59,12 @@ struct ItemType final
 	const MoveType& moveType;
        	const WearableData* wearableData;
        	const WeaponData* weaponData;
+	const std::array<int32_t, 3> craftLocationOffset;
+	const CraftStepTypeCategory* craftLocationStepTypeCategory;
 	AttackType* getRangedAttackType() const;
 	bool hasRangedAttack() const;
 	bool hasMeleeAttack() const;
+	Block* getCraftLocation(const Block& location, Facing facing) const;
 	// Infastructure.
 	bool operator==(const ItemType& itemType) const { return this == &itemType; }
 	inline static std::vector<ItemType> data;
@@ -180,6 +185,7 @@ public:
 	void setTemperature(Temperature temperature);
 	void addQuantity(uint32_t delta);
 	void removeQuantity(uint32_t delta);
+	void install(Block& block, Facing facing, const Faction& faction);
 	[[nodiscard]] uint32_t getQuantity() const { return m_quantity; }
 	[[nodiscard]] bool isItem() const { return true; }
 	[[nodiscard]] bool isGeneric() const { return m_itemType.generic; }
@@ -197,24 +203,6 @@ public:
 };
 inline void to_json(Json& data, Item* const& item){ data = item->m_id; }
 inline void to_json(Json& data, const Item& item){ data = item.m_id; }
-class ItemQuery final
-{
-public:
-	Item* m_item;
-	const ItemType* m_itemType;
-	const MaterialTypeCategory* m_materialTypeCategory;
-	const MaterialType* m_materialType;
-	// To be used when inserting workpiece to project unconsumed items.
-	ItemQuery(Item& item);
-	ItemQuery(const ItemType& m_itemType);
-	ItemQuery(const ItemType& m_itemType, const MaterialTypeCategory& mtc);
-	ItemQuery(const ItemType& m_itemType, const MaterialType& mt);
-	ItemQuery(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	bool operator()(const Item& item) const;
-	void specalize(Item& item);
-	void specalize(const MaterialType& materialType);
-};
 class BlockHasItems final
 {
 	Block& m_block;

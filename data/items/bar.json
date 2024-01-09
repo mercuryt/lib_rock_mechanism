@@ -3,5 +3,6 @@
 	"shape": "oneByOneThirtySecond",
 	"volume": 100,
 	"generic": true,
-	"value": 3
+	"value": 3,
+	"cratable": true
 }

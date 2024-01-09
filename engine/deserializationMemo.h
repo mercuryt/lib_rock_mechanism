@@ -12,7 +12,7 @@ class Reservable;
 class CanReserve;
 class Simulation;
 class HasShape;
-class ProjectRequirementCounts;
+struct ProjectRequirementCounts;
 class StockPile;
 class Faction;
 struct CraftJob;

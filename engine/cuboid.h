@@ -16,16 +16,20 @@ public:
 	Cuboid(Block* h, Block* l);
 	Cuboid(Block& h, Block& l);
 	Cuboid() : m_highest(nullptr), m_lowest(nullptr) {}
-	std::unordered_set<Block*> toSet();
-	bool contains(const Block& block) const;
-	bool canMerge(const Cuboid& cuboid) const;
-	Cuboid sum(const Cuboid& cuboid) const;
 	void merge(const Cuboid& cuboid);
-	Cuboid getFace(uint32_t faceing) const;
-	bool overlapsWith(const Cuboid& cuboid) const;
-	size_t size() const;
-	bool empty() const { return size() == 0; }
-	bool operator==(const Cuboid& cuboid) const;
+	void setFrom(Block& block);
+	void setFrom(Block& a, Block& b);
+	[[nodiscard]] std::unordered_set<Block*> toSet();
+	[[nodiscard]] bool contains(const Block& block) const;
+	[[nodiscard]] bool canMerge(const Cuboid& cuboid) const;
+	[[nodiscard]] Cuboid sum(const Cuboid& cuboid) const;
+	[[nodiscard]] Cuboid getFace(uint32_t faceing) const;
+	[[nodiscard]] bool overlapsWith(const Cuboid& cuboid) const;
+	[[nodiscard]] size_t size() const;
+	[[nodiscard]] bool empty() const { return size() == 0; }
+	[[nodiscard]] bool operator==(const Cuboid& cuboid) const;
+	[[nodiscard]] static Cuboid fromBlock(Block& block);
+	[[nodiscard]] static Cuboid fromBlockPair(Block& a, Block& b);
 	struct iterator
 	{
 		Cuboid* cuboid;

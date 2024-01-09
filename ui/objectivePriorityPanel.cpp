@@ -25,7 +25,7 @@ ObjectivePriorityView::ObjectivePriorityView(Window& w) : m_window(w), m_group(t
 	}
 }
 
-void ObjectivePriorityView::display(Actor& actor)
+void ObjectivePriorityView::draw(Actor& actor)
 {
 	m_actor = &actor;
 	m_actorName->setText(m_actor->m_name);
@@ -35,4 +35,5 @@ void ObjectivePriorityView::display(Actor& actor)
 		tgui::SpinButton::Ptr input = m_spinButtons.at(id);
 		input->setValue(actor.m_hasObjectives.m_prioritySet.getPriorityFor(id));
 	}
+	show();
 }

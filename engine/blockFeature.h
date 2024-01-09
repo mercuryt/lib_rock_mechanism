@@ -24,6 +24,7 @@ struct BlockFeatureType
 	static BlockFeatureType ramp;
 	static BlockFeatureType fortification;
 	static void load();
+	static std::vector<BlockFeatureType*> getAll() { return std::vector{&floor, &door, &flap, &hatch, &stairs, &floodGate, &floorGrate, &ramp, &fortification};  }
 	static const BlockFeatureType& byName(std::string name)
 	{
 		if(name == "floor")

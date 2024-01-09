@@ -211,6 +211,7 @@ public:
 	const Plant& get() const { assert(m_plant != nullptr); return *m_plant; }
 	bool canGrowHereCurrently(const PlantSpecies& plantSpecies) const;
 	bool canGrowHereAtSomePointToday(const PlantSpecies& plantSpecies) const;
+	bool canGrowHereEver(const PlantSpecies& plantSpecies) const;
 	bool exists() const { return m_plant != nullptr; }
 };
 // To be used by Area.

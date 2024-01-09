@@ -101,6 +101,7 @@ public:
 	std::list<BodyPart> m_bodyParts;
 	Body(Actor& a);
 	Body(const Json& data, DeserializationMemo& deserializationMemo, Actor& a);
+	[[nodiscard]] Json toJson() const;
 	BodyPart& pickABodyPartByVolume();
 	BodyPart& pickABodyPartByType(const BodyPartType& bodyPartType);
 	// Armor has already been applied, calculate hit depth.
@@ -127,7 +128,7 @@ public:
 	[[nodiscard]] Step getStepsTillWoundsClose() const { return m_woundsCloseEvent.remainingSteps(); }
 	[[nodiscard]] Percent getImpairMovePercent() { return m_impairMovePercent; }
 	[[nodiscard]] Percent getImpairManipulationPercent() { return m_impairManipulationPercent; }
-	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] std::vector<Wound*> getAllWounds();
 	// For testing.
 	[[maybe_unused, nodiscard]] bool hasBleedEvent() const { return m_bleedEvent.exists(); }
 	[[maybe_unused, nodiscard]] bool hasBodyPart() const;

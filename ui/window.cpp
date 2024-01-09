@@ -1,14 +1,17 @@
 #include "window.h"
+#include <SFML/Window/Keyboard.hpp>
 #include <TGUI/Widgets/FileDialog.hpp>
 #include <chrono>
 #include <filesystem>
 #include <memory>
 #include <ratio>
 #include <shared_mutex>
-Window::Window() : m_window(sf::VideoMode(600, 600), "Goblin Pit", sf::Style::Fullscreen), m_view(m_window.getDefaultView()), m_gui(m_window), 
-	m_mainMenuGui(tgui::Group::create()), m_loadGui(tgui::Group::create()), m_gameGui(tgui::Group::create()), m_objectivePriorityGui(tgui::Group::create()), m_detailPanel(*this, m_gameGui),
-	m_simulation(nullptr), m_selectedBlock(nullptr), m_selectedItem(nullptr), m_selectedPlant(nullptr), m_selectedActor(nullptr), 
-	m_paused(true), m_minimumMillisecondsPerFrame(200), m_minimumMillisecondsPerStep(200),
+#include <unordered_set>
+Window::Window() : m_window(sf::VideoMode(600, 600), "Goblin Pit", sf::Style::Fullscreen), m_view(m_window.getDefaultView()), 
+	m_mainMenuView(*this), m_loadView(*this), m_gameOverlay(*this), m_objectivePriorityView(*this), 
+	m_productionView(*this), m_uniformView(*this), m_stocksView(*this), m_actorView(*this),
+	m_simulation(nullptr), m_faction(nullptr),
+	m_paused(true), m_minimumMillisecondsPerFrame(200), m_minimumMillisecondsPerStep(200), 
 	m_simulationThread([&](){
 		std::chrono::milliseconds start = msSinceEpoch();
 		if(m_simulation && !m_paused)
@@ -16,22 +19,9 @@ Window::Window() : m_window(sf::VideoMode(600, 600), "Goblin Pit", sf::Style::Fu
 		std::chrono::milliseconds delta = msSinceEpoch() - start;
 		if(delta < m_minimumMillisecondsPerStep)
 			std::this_thread::sleep_for(m_minimumMillisecondsPerStep - delta);
-	})
+	}), m_gui(m_window)
 {
 	m_font.loadFromFile("lib/arial.ttf");
-	// Create load screen.
-	m_gui.add(m_loadGui);
-	auto fileDialog = tgui::FileDialog::create("open file", "open");
-	fileDialog->onFileSelect([this](const std::filesystem::path path){ load(path); });
-	fileDialog->setPath("save");
-	m_loadGui->add(fileDialog);
-	auto cancelButton = tgui::Button::create("cancel");
-	cancelButton->onPress(&Window::showMainMenu);
-	m_loadGui->add(cancelButton);
-	// Create game view.
-	m_gui.add(m_gameGui);
-	// Create objective priority view.
-	m_gui.add(m_objectivePriorityGui);
 	showMainMenu();
 }
 void Window::setArea(Area& area, Block& center, uint32_t scale)
@@ -43,7 +33,7 @@ void Window::setArea(Area& area, Block& center, uint32_t scale)
 void Window::centerView(const Block& block)
 {
 	m_z = block.m_z;
-	sf::Vector2f globalPosition(m_selectedBlock->m_x * m_scale, m_selectedBlock->m_y * m_scale);
+	sf::Vector2f globalPosition(block.m_x * m_scale, block.m_y * m_scale);
 	sf::Vector2i pixelPosition = m_window.mapCoordsToPixel(globalPosition);
 	pixelPosition.x -= m_view.getCenter().x - m_view.getSize().x / 2;
 	pixelPosition.y -= m_view.getCenter().y - m_view.getSize().y / 2;
@@ -55,6 +45,15 @@ void Window::centerView(const Block& block)
 		m_view.move(0.f, -20.f);
 	else if (pixelPosition.y > m_view.getSize().y - 50 && m_view.getCenter().y < m_area->m_sizeY * m_scale - (m_view.getSize().y / 2) + 10)
 		m_view.move(0.f, 20.f);
+}
+void Window::hideAllPanels()
+{
+	m_mainMenuView.hide();
+	m_gameOverlay.hide();
+	m_loadView.hide();
+	m_objectivePriorityView.hide();
+	m_productionView.hide();
+	m_uniformView.hide();
 }
 void Window::startLoop()
 {
@@ -129,19 +128,112 @@ void Window::startLoop()
 						case sf::Keyboard::Space:
 							m_paused = !m_paused;
 							break;
+						case sf::Keyboard::Escape:
+							if(m_gameOverlay.isVisible())
+								if(m_gameOverlay.menuIsVisible())
+									m_gameOverlay.closeMenu();
+								else if(m_gameOverlay.contextMenuIsVisible())
+									m_gameOverlay.closeContextMenu();
+								else if(m_gameOverlay.detailPanelIsVisible())
+									m_gameOverlay.closeDetailPanel();
+								else
+									m_gameOverlay.drawMenu();
+							if(m_productionView.isVisible())
+								if(m_productionView.createIsVisible())
+									m_productionView.closeCreate();
+								else
+									m_window.showGame();
+							else
+								m_window.showGame();
+							break;
+						case sf::Keyboard::Num1:
+							showGame();
+							break;
+						case sf::Keyboard::Num2:
+							showStocks();
+							break;
+						case sf::Keyboard::Num3:
+							showProduction();
+							break;
+						case sf::Keyboard::Num4:
+							showUniforms();
+							break;
+						case sf::Keyboard::Num5:
+							if(m_selectedActors.size() == 1)
+								showActorDetail(**m_selectedActors.begin());
+							break;
+						case sf::Keyboard::Num6:
+							if(m_selectedActors.size() == 1)
+								showObjectivePriority(**m_selectedActors.begin());
+							break;
 						default:
 							assert(false);
 					}
 					break;
 				case sf::Event::MouseButtonPressed:
 				{
-					sf::Vector2i pixelPos = sf::Mouse::getPosition(m_window);
-					sf::Vector2f worldPos = m_window.mapPixelToCoords(pixelPos);
-					uint32_t x = worldPos.x + m_view.getCenter().x - m_view.getSize().x / 2;
-					uint32_t y = worldPos.y + m_view.getCenter().y - m_view.getSize().y / 2;
-					x = std::min(m_area->m_sizeX - 1, x / m_scale);
-					y = std::min(m_area->m_sizeY - 1, y / m_scale);
-					m_selectedBlock = &m_area->getBlock(x, y, m_z);
+					Block& block = getBlockUnderCursor();
+					if(event.mouseButton.button == sf::Mouse::Button::Left)
+					{
+						m_firstCornerOfSelection = &block;
+						m_selectedActors.clear();
+						m_selectedItems.clear();
+						m_selectedPlants.clear();
+					}
+					break;
+				}
+				case sf::Event::MouseButtonReleased:
+				{
+					Block& block = getBlockUnderCursor();
+					if(event.mouseButton.button == sf::Mouse::Button::Left)
+					{
+						Cuboid blocks;
+						// Find the selected area.
+						if(m_firstCornerOfSelection)
+							blocks.setFrom(*m_firstCornerOfSelection, block);
+						else
+							blocks.setFrom(block);
+						bool selectActors = sf::Keyboard::isKeyPressed(sf::Keyboard::LShift);
+						bool selectItems = sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && !sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt);
+						bool selectPlants = sf::Keyboard::isKeyPressed(sf::Keyboard::LControl && sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt);
+						bool selectBlocks = sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt);
+						if(selectActors)
+							for(Block& block : blocks)
+								m_selectedActors.insert(block.m_hasActors.getAll());
+						else if(selectItems)
+							for(Block& block : blocks)
+								m_selectedItems.insert(block.m_hasItems.getAll());
+						else if(selectPlants)
+							for(Block& block : blocks)
+								m_selectedPlants.insert(block.m_hasPlant.get());
+						else if(selectBlocks)
+							m_selectedBlocks = blocks;
+						else
+						{
+							// No modifier key to choose what type to select, check for everything.
+							std::unordered_set<Actor*> foundActors;
+							std::unordered_set<Item*> foundItems;
+							std::unordered_set<Plant*> foundPlants;
+							for(Block& block : blocks)
+							{
+								foundActors.insert(block.m_hasActors.getAll());
+								foundItems.insert(block.m_hasItems.getAll());
+								foundPlants.insert(block.m_hasPlant.get());
+							}
+							if(!foundActors.empty())
+								m_selectedActors = foundActors;
+							else if(!foundItems.empty())
+								m_selectedItems = foundItems;
+							else if(!foundPlants.emptpy())
+								m_selectedPlants = foundPlants;
+							else
+								m_selectedBlocks = blocks;
+						}
+					}
+					else if(event.mouseButton.button == sf::Mouse::Button::Right)
+						// Display context menu.
+						//TODO: Left click and drag shortcut for select and open context.
+						m_gameOverlay.drawContextMenu(block);
 					break;
 				}
 				default:
@@ -282,18 +374,19 @@ void Window::drawActor(const Actor& actor)
 	//text.setScale(static_cast<float>(m_scale), static_cast<float>(m_scale));
 	m_window.draw(text);
 }
-void Window::save(std::filesystem::path path)
+void Window::save()
 {
 	assert(m_simulation);
-	m_simulation->save(path);
+	m_simulation->save(m_path);
 	const Json povData = povToJson();
-	std::ofstream file(path/"pov.json");
+	std::ofstream file(m_path/"pov.json");
 	file << povData;
 }
 void Window::load(std::filesystem::path path)
 {
-	m_simulation = std::make_unique<Simulation>(path);
-	std::ifstream af(path/"pov.json");
+	m_path = path;
+	m_simulation = std::make_unique<Simulation>(m_path);
+	std::ifstream af(m_path/"pov.json");
 	Json povData = Json::parse(af);
 	povFromJson(povData);
 	showGame();
@@ -313,8 +406,6 @@ void Window::povFromJson(const Json& data)
 }
 void Window::selectBlock(Block& block)
 {
-	if(m_selectedBlock == &block || m_detailPanel.isVisible())
-		m_detailPanel.display(block);
 	m_selectedBlock = &block;
 	m_selectedItem = nullptr;
 	m_selectedPlant = nullptr;
@@ -322,8 +413,6 @@ void Window::selectBlock(Block& block)
 }
 void Window::selectItem(Item& item)
 {
-	if(m_selectedItem == &item || m_detailPanel.isVisible())
-		m_detailPanel.display(item);
 	m_selectedBlock = nullptr;
 	m_selectedItem = &item;
 	m_selectedPlant = nullptr;
@@ -331,8 +420,6 @@ void Window::selectItem(Item& item)
 }
 void Window::selectPlant(Plant& plant)
 {
-	if(m_selectedPlant == &plant || m_detailPanel.isVisible())
-		m_detailPanel.display(plant);
 	m_selectedPlant = nullptr;
 	m_selectedItem = nullptr;
 	m_selectedPlant = &plant;
@@ -340,12 +427,20 @@ void Window::selectPlant(Plant& plant)
 }
 void Window::selectActor(Actor& actor)
 {
-	if(m_selectedActor == &actor || m_detailPanel.isVisible())
-		m_detailPanel.display(actor);
 	m_selectedBlock = nullptr;
 	m_selectedItem = nullptr;
 	m_selectedPlant = nullptr;
 	m_selectedActor = &actor;
+}
+Block& Window::getBlockUnderCursor()
+{
+	sf::Vector2i pixelPos = sf::Mouse::getPosition(m_window);
+	sf::Vector2f worldPos = m_window.mapPixelToCoords(pixelPos);
+	uint32_t x = worldPos.x + m_view.getCenter().x - m_view.getSize().x / 2;
+	uint32_t y = worldPos.y + m_view.getCenter().y - m_view.getSize().y / 2;
+	x = std::min(m_area->m_sizeX - 1, x / m_scale);
+	y = std::min(m_area->m_sizeY - 1, y / m_scale);
+	return &m_area->getBlock(x, y, m_z);
 }
 [[nodiscard]] Json Window::povToJson() const
 {
@@ -379,4 +474,23 @@ std::wstring Window::displayNameForItem(Item& item)
 		output.append(L" ");
 	output.append(util::stringToWideString(item.m_itemType.name));
 	return output;
+}
+std::wstring Window::displayNameForCraftJob(CraftJob& craftJob)
+{
+	std::wstring output;
+	output.append(util::stringToWideString(craftJob.materialType->name));
+	output.append(L" ");
+	output.append(util::stringToWideString(craftJob.craftJobType.name));
+	return output;
+}
+std::string Window::facingToString(Facing facing)
+{
+	if(facing == 0)
+		return "up";
+	if(facing == 1)
+		return "right";
+	if(facing == 2)
+		return "down";
+	assert(facing == 3);
+	return "left";
 }

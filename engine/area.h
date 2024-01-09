@@ -5,6 +5,7 @@
 #pragma once
 
 #include "deserializationMemo.h"
+#include "installItem.h"
 #include "types.h"
 #include "block.h"
 #include "fluidGroup.h"
@@ -20,6 +21,7 @@
 #include "targetedHaul.h"	
 #include "fire.h"
 #include "woodcutting.h"
+#include "stocks.h"
 //#include "medical.h"
 
 #include <sys/types.h>
@@ -28,7 +30,6 @@
 #include <unordered_set>
 #include <tuple>
 #include <list>
-
 
 class Area final
 {
@@ -52,10 +53,12 @@ public:
 	HasDigDesignations m_hasDigDesignations;
 	HasConstructionDesignations m_hasConstructionDesignations;
 	AreaHasStockPiles m_hasStockPiles;
+	AreaHasStocks m_hasStocks;
 	HasCraftingLocationsAndJobs m_hasCraftingLocationsAndJobs;
 	AreaHasTargetedHauling m_targetedHauling;
 	HasSleepingSpots m_hasSleepingSpots;
 	HasWoodCuttingDesignations m_hasWoodCuttingDesignations;
+	HasInstallItemDesignations m_hasInstallItemDesignations;
 	//AreaHasMedicalPatients m_hasMedicalPatients;
 	//TODO: HasItems
 	AreaHasItems m_hasItems;

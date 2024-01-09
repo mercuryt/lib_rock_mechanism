@@ -13,6 +13,7 @@
 #include "item.h"
 #include "random.h"
 #include "input.h"
+#include "uniform.h"
 #include <list>
 #include <unordered_map>
 #include <mutex>
@@ -40,6 +41,7 @@ public:
 	ThreadedTaskEngine m_threadedTaskEngine;
 	Random m_random;
 	InputQueue m_inputQueue;
+	SimulationHasUniforms m_hasUniforms;
 	SimulationHasShapes m_shapes;
 	SimulationHasFactions m_hasFactions;
 	Simulation(DateTime n = {12, 150, 1200}, Step s = 1);

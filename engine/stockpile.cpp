@@ -7,6 +7,7 @@
 #include "rain.h"
 #include "reservable.h"
 #include "simulation.h"
+#include "stocks.h"
 #include <cwchar>
 #include <functional>
 #include <memory>
@@ -213,6 +214,7 @@ void StockPileProject::onComplete()
 	m_location.m_area->m_hasStockPiles.at(m_stockpile.m_faction).removeItem(m_item);
 	for(auto& [actor, projectWorker] : workers)
 		actor->m_hasObjectives.objectiveComplete(projectWorker.objective);
+	m_location.m_area->m_hasStocks.at(m_faction).record(*m_delivered);
 }
 void StockPileProject::onReserve()
 {
@@ -261,22 +263,6 @@ std::vector<std::pair<ItemQuery, uint32_t>> StockPileProject::getConsumed() cons
 std::vector<std::pair<ItemQuery, uint32_t>> StockPileProject::getUnconsumed() const { return {{m_item, 1}}; }
 std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> StockPileProject::getByproducts() const {return {}; }
 std::vector<std::pair<ActorQuery, uint32_t>> StockPileProject::getActors() const { return {}; }
-bool StockPile::accepts(const Item& item) const 
-{
-	for(const ItemQuery& itemQuery : m_queries)
-		if(itemQuery(item))
-			return true;
-	return false;
-}
-void StockPile::addBlock(Block& block)
-{
-	assert(!m_blocks.contains(&block));
-	assert(!block.m_isPartOfStockPiles.contains(m_faction));
-	block.m_isPartOfStockPiles.recordMembership(*this);
-	if(block.m_isPartOfStockPiles.isAvalible(m_faction))
-		incrementOpenBlocks();
-	m_blocks.insert(&block);
-}
 StockPile::StockPile(std::vector<ItemQuery>& q, Area& a, const Faction& f) : m_queries(q), m_openBlocks(0), m_area(a), m_faction(f), m_enabled(true), m_reenableScheduledEvent(m_area.m_simulation.m_eventSchedule), m_projectNeedingMoreWorkers(nullptr) { }
 StockPile::StockPile(const Json& data, DeserializationMemo& deserializationMemo, Area& area) : 
 	m_openBlocks(data["openBlocks"].get<uint32_t>()), 
@@ -296,6 +282,25 @@ Json StockPile::toJson() const
 		{"projectNeedingMoreWorkers", reinterpret_cast<uintptr_t>(m_projectNeedingMoreWorkers)},
 
 	};
+}
+bool StockPile::accepts(const Item& item) const 
+{
+	for(const ItemQuery& itemQuery : m_queries)
+		if(itemQuery(item))
+			return true;
+	return false;
+}
+void StockPile::addBlock(Block& block)
+{
+	assert(!m_blocks.contains(&block));
+	assert(!block.m_isPartOfStockPiles.contains(m_faction));
+	block.m_isPartOfStockPiles.recordMembership(*this);
+	if(block.m_isPartOfStockPiles.isAvalible(m_faction))
+		incrementOpenBlocks();
+	m_blocks.insert(&block);
+	for(Item* item : block.m_hasItems.getAll())
+		if(accepts(*item))
+			m_area.m_hasStocks.at(m_faction).record(*item);
 }
 void StockPile::removeBlock(Block& block)
 {
@@ -318,6 +323,9 @@ void StockPile::removeBlock(Block& block)
 	// Cancel collected projects.
 	for(Project* project : projectsToCancel)
 		project->cancel();
+	for(Item* item : block.m_hasItems.getAll())
+		if(accepts(*item))
+			m_area.m_hasStocks.at(m_faction).unrecord(*item);
 }
 void StockPile::updateQueries(std::vector<ItemQuery>& queries)
 {

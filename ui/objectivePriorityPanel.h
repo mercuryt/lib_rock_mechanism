@@ -12,7 +12,7 @@ class ObjectivePriorityView final
 	std::map<ObjectiveTypeId, tgui::SpinButton::Ptr> m_spinButtons;
 public:
 	ObjectivePriorityView(Window& w);
-	void display(Actor& actor);
+	void draw(Actor& actor);
 	void show() { m_group->setVisible(true); }
 	void hide() { m_group->setVisible(false); }
 };

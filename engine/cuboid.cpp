@@ -62,6 +62,16 @@ void Cuboid::merge(const Cuboid& cuboid)
 	m_highest = sum.m_highest;
 	m_lowest = sum.m_lowest;
 }
+void Cuboid::setFrom(Block& block)
+{
+	m_highest = m_lowest = &block;
+}
+void Cuboid::setFrom(Block& a, Block& b)
+{
+	Cuboid result = fromBlockPair(a, b);
+	m_highest = result.m_highest;
+	m_lowest = result.m_lowest;
+}
 Cuboid Cuboid::getFace(uint32_t facing) const
 {
 	assert(facing < 6);
@@ -112,6 +122,24 @@ bool Cuboid::overlapsWith(const Cuboid& cuboid) const
 size_t Cuboid::size() const
 {
 	return ((m_highest->m_x + 1) - m_lowest->m_x) * ((m_highest->m_y + 1) - m_lowest->m_y) * ((m_highest->m_z + 1) - m_lowest->m_z);
+}
+// static method
+Cuboid Cuboid::fromBlock(Block& block)
+{
+	return Cuboid(block, block);
+}
+Cuboid Cuboid::fromBlockPair(Block& a, Block& b)
+{
+	Cuboid output;
+	uint32_t maxX = std::max(a.m_x, b.m_x);
+	uint32_t maxY = std::max(a.m_y, b.m_y);
+	uint32_t maxZ = std::max(a.m_z, b.m_z);
+	output.m_highest = &a.m_area->getBlock(maxX, maxY, maxZ);
+	uint32_t minX = std::min(a.m_x, b.m_x);
+	uint32_t minY = std::min(a.m_y, b.m_y);
+	uint32_t minZ = std::min(a.m_z, b.m_z);
+	output.m_lowest = &a.m_area->getBlock(minX, minY, minZ);
+	return output;
 }
 bool Cuboid::operator==(const Cuboid& cuboid) const
 {

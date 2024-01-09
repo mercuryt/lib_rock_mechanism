@@ -233,6 +233,7 @@ public:
 	void makeAndAssignStepProject(CraftJob& craftJob, Block& location, CraftObjective& objective);
 	// To be used by the UI.
 	[[nodiscard]] bool hasLocationsFor(const CraftJobType& craftJobType) const;
+	[[nodiscard]] std::list<CraftJob>& getAllJobs() { return m_jobs; }
 	// May return nullptr;
 	CraftJob* getJobForAtLocation(const Actor& actor, const SkillType& skillType, const Block& block, std::unordered_set<CraftJob*>& excludeJobs);
 	std::pair<CraftJob*, Block*> getJobAndLocationForWhileExcluding(const Actor& actor, const SkillType& skillType, std::unordered_set<CraftJob*>& excludeJobs);
