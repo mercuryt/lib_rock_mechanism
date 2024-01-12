@@ -80,7 +80,7 @@ public:
 	[[maybe_unused, nodiscard]] float getCoolDownDurationModifier() { return m_coolDownDurationModifier; }
 	[[nodiscard, maybe_unused]] uint32_t getCombatScore() const { return m_combatScore; }
 };
-class AttackCoolDown final : public ScheduledEventWithPercent
+class AttackCoolDown final : public ScheduledEvent
 {
 	CanFight& m_canFight;
 public:

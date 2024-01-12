@@ -217,7 +217,7 @@ bool ActorCanMove::canMove() const
 		return false;
 	return true;
 }
-MoveEvent::MoveEvent(Step delay, ActorCanMove& cm, const Step start) : ScheduledEventWithPercent(cm.m_actor.getSimulation(), delay, start), m_canMove(cm) { }
+MoveEvent::MoveEvent(Step delay, ActorCanMove& cm, const Step start) : ScheduledEvent(cm.m_actor.getSimulation(), delay, start), m_canMove(cm) { }
 // Path Threaded Task.
 PathThreadedTask::PathThreadedTask(Actor& a, HasShape* hs, const FluidType* ft, const Block* hd, bool d, bool ad, bool ur, bool r) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_hasShape(hs), m_fluidType(ft), m_huristicDestination(hd), m_detour(d), m_adjacent(ad), m_unreservedDestination(ur), m_reserveDestination(r), m_findsPath(a, d) 
 { 

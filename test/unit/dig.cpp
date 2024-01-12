@@ -1,11 +1,11 @@
 #include "../../lib/doctest.h"
-#include "../../src/actor.h"
-#include "../../src/area.h"
-#include "../../src/areaBuilderUtil.h"
-#include "../../src/simulation.h"
-#include "../../src/dig.h"
-#include "../../src/cuboid.h"
-#include "../../src/goTo.h"
+#include "../../engine/actor.h"
+#include "../../engine/area.h"
+#include "../../engine/areaBuilderUtil.h"
+#include "../../engine/simulation.h"
+#include "../../engine/dig.h"
+#include "../../engine/cuboid.h"
+#include "../../engine/goTo.h"
 TEST_CASE("dig")
 {
 	static const MaterialType& dirt = MaterialType::byName("dirt");

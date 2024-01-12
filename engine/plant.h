@@ -53,11 +53,11 @@ struct PlantSpecies final
 	const bool isTree;
 	const uint32_t logsGeneratedByFellingWhenFullGrown;
 	const uint32_t branchesGeneratedByFellingWhenFullGrown;
-	const FluidType& fluidType;
-	const HarvestData* harvestData;
-	const MaterialType* woodType;
-	std::vector<const Shape*> shapes;
 	const uint8_t maxWildGrowth;
+	const FluidType& fluidType;
+	const MaterialType* woodType;
+	const HarvestData* harvestData;
+	std::vector<const Shape*> shapes;
 	// returns base shape and wild growth steps.
 	const std::pair<const Shape*, uint8_t> shapeAndWildGrowthForPercentGrown(Percent percentGrown) const
 	{
@@ -108,8 +108,9 @@ public:
 	uint8_t m_wildGrowth;
 
 	// Shape is passed as a pointer because it may be null, in which case the shape from the species for the given percentGrowth should be used.
-	Plant(Block& l, const PlantSpecies& ps, const Shape* shape, Percent pg = 0, Volume volumeFluidRequested = 0, Step needsFluidEventStart = 0, bool temperatureIsUnsafe = 0, Step unsafeTemperatureEventStart = 0, uint32_t harvestableQuantity = 0, Percent percentFoliage = 100);
+	Plant(Block& l, const PlantSpecies& ps, const Shape* shape = nullptr, Percent pg = 0, Volume volumeFluidRequested = 0, Step needsFluidEventStart = 0, bool temperatureIsUnsafe = 0, Step unsafeTemperatureEventStart = 0, uint32_t harvestableQuantity = 0, Percent percentFoliage = 100);
 	Plant(const Json& data, DeserializationMemo& deserializationMemo, Block& location);
+	Plant(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void die();
 	void setTemperature(Temperature temperature);
@@ -150,7 +151,7 @@ public:
 	void log() const { std::cout << m_plantSpecies.name << std::to_string(getGrowthPercent()); }
 };
 void to_json(Json& data, const Plant* const& plant);
-class PlantGrowthEvent final : public ScheduledEventWithPercent
+class PlantGrowthEvent final : public ScheduledEvent
 {
 	Plant& m_plant;
 public:
@@ -163,7 +164,7 @@ public:
 	}
 	void clearReferences() { m_plant.m_growthEvent.clearPointer(); }
 };
-class PlantFoliageGrowthEvent final : public ScheduledEventWithPercent
+class PlantFoliageGrowthEvent final : public ScheduledEvent
 {
 	Plant& m_plant;
 public:
@@ -171,7 +172,7 @@ public:
 	void execute(){ m_plant.foliageGrowth(); }
 	void clearReferences(){ m_plant.m_foliageGrowthEvent.clearPointer(); }
 };
-class PlantEndOfHarvestEvent final : public ScheduledEventWithPercent
+class PlantEndOfHarvestEvent final : public ScheduledEvent
 {
 	Plant& m_plant;
 public:
@@ -179,7 +180,7 @@ public:
 	void execute() { m_plant.endOfHarvest(); }
 	void clearReferences() { m_plant.m_endOfHarvestEvent.clearPointer(); }
 };
-class PlantFluidEvent final : public ScheduledEventWithPercent
+class PlantFluidEvent final : public ScheduledEvent
 {
 	Plant& m_plant;
 public:
@@ -187,7 +188,7 @@ public:
 	void execute() { m_plant.setMaybeNeedsFluid(); }
 	void clearReferences() { m_plant.m_fluidEvent.clearPointer(); }
 };
-class PlantTemperatureEvent final : public ScheduledEventWithPercent
+class PlantTemperatureEvent final : public ScheduledEvent
 {
 	Plant& m_plant;
 public:
@@ -220,7 +221,7 @@ class HasPlants final
 	std::list<Plant> m_plants;
 	std::unordered_set<Plant*> m_plantsOnSurface;
 public:
-	Plant& emplace(Block& location, const PlantSpecies& species, Percent percentGrowth = 0, Volume volumeFluidRequested = 0, Step needsFluidEventStart = 0, bool temperatureIsUnsafe = 0, Step unsafeTemperatureEventStart = 0, uint32_t harvestableQuantity = 0, Percent percentFoliage = 100);
+	Plant& emplace(Block& location, const PlantSpecies& species, const Shape* shape = nullptr, Percent percentGrowth = 0, Volume volumeFluidRequested = 0, Step needsFluidEventStart = 0, bool temperatureIsUnsafe = 0, Step unsafeTemperatureEventStart = 0, uint32_t harvestableQuantity = 0, Percent percentFoliage = 100);
 	Plant& emplace(const Json& data, DeserializationMemo& deserializationMemo);
 	void erase(Plant& plant);
 	void onChangeAmbiantSurfaceTemperature();

@@ -25,6 +25,10 @@ void TargetedHaulProject::onComplete()
 	for(auto& [actor, projectWorker] : workers)
 		actor->m_hasObjectives.objectiveComplete(projectWorker.objective);
 }
+// Objective.
+TargetedHaulObjective::TargetedHaulObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), m_project(*static_cast<TargetedHaulProject*>(deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()))) { }
+void Objective::reset() { m_actor.m_canReserve.clearAll(); }
+// AreaHas.
 void AreaHasTargetedHauling::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	for(const Json& project : data["projects"])

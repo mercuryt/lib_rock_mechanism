@@ -25,7 +25,7 @@ public:
 	friend class AnimalGrowthEvent;
 	friend class AnimalGrowthUpdateEvent;
 };
-class AnimalGrowthEvent final : public ScheduledEventWithPercent
+class AnimalGrowthEvent final : public ScheduledEvent
 {
 	CanGrow& m_canGrow;
 public:
@@ -33,7 +33,7 @@ public:
 	void execute() { m_canGrow.complete(); }
 	void clearReferences(){ m_canGrow.m_event.clearPointer(); }
 };
-class AnimalGrowthUpdateEvent final : public ScheduledEventWithPercent
+class AnimalGrowthUpdateEvent final : public ScheduledEvent
 {
 	CanGrow& m_canGrow;
 public:

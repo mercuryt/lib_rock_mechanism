@@ -1,15 +1,15 @@
 #include "../../lib/doctest.h"
-#include "../../src/actor.h"
-#include "../../src/area.h"
-#include "../../src/item.h"
-#include "../../src/areaBuilderUtil.h"
-#include "../../src/simulation.h"
-#include "../../src/stockpile.h"
-#include "../../src/materialType.h"
-#include "../../src/project.h"
-#include "../../src/config.h"
-#include "../../src/haul.h"
-#include "../../src/goTo.h"
+#include "../../engine/actor.h"
+#include "../../engine/area.h"
+#include "../../engine/item.h"
+#include "../../engine/areaBuilderUtil.h"
+#include "../../engine/simulation.h"
+#include "../../engine/stockpile.h"
+#include "../../engine/materialType.h"
+#include "../../engine/project.h"
+#include "../../engine/config.h"
+#include "../../engine/haul.h"
+#include "../../engine/goTo.h"
 #include <functional>
 #include <memory>
 TEST_CASE("stockpile")
@@ -24,6 +24,7 @@ TEST_CASE("stockpile")
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	Faction faction(L"tower of power");
 	area.m_hasStockPiles.addFaction(faction);
+	area.m_hasStocks.addFaction(faction);
 	Actor& dwarf1 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 1, 1));
 	dwarf1.setFaction(&faction);
 	area.m_hasActors.add(dwarf1);

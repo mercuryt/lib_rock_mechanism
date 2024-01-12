@@ -21,6 +21,6 @@ class AreaHasStocks final
 	std::unordered_map<const Faction*, AreaHasStocksForFaction> m_data;
 public:
 	AreaHasStocksForFaction& at(const Faction& faction) { assert(m_data.contains(&faction)); return m_data.at(&faction); }
-	void registerFaction(const Faction& faction) { m_data.try_emplace(&faction); }
-	void unregisterFaction(const Faction& faction) { assert(m_data.contains(&faction)); m_data.erase(&faction); }
+	void addFaction(const Faction& faction) { m_data.try_emplace(&faction); }
+	void removeFaction(const Faction& faction) { assert(m_data.contains(&faction)); m_data.erase(&faction); }
 };

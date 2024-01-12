@@ -88,8 +88,18 @@ Area& Simulation::loadArea(AreaId id, uint32_t x, uint32_t y, uint32_t z)
 	m_areasById[id] = &area;
 	return area;
 }
-Actor& Simulation::createActor(const AnimalSpecies& species, Block& block, Percent percentGrown)
+Actor& Simulation::createActor(const AnimalSpecies& species, Block& block, Percent percentGrown, DateTime birthDate)
 {
+	if(!birthDate)
+	{
+		// Create a plausible birth date.
+		Step steps;
+		if(percentGrown == 100)
+			steps = m_random.getInRange(species.stepsTillFullyGrown, species.deathAgeSteps[1]);
+		else
+			steps = util::scaleByPercent(species.stepsTillFullyGrown, percentGrown);
+		birthDate = DateTime::fromPastBySteps(steps);
+	}
 	Attributes attributes(species, percentGrown);
 	std::wstring name(species.name.begin(), species.name.end());
 	name.append(std::to_wstring(m_nextActorId));
@@ -99,11 +109,13 @@ Actor& Simulation::createActor(const AnimalSpecies& species, Block& block, Perce
 		m_nextActorId,
 		name,
 		species,
+		birthDate,
 		percentGrown,
 		nullptr,
 		attributes
 	);	
 	assert(emplaced);
+	++m_nextActorId;
 	Actor& output = iter->second;
 	output.setLocation(block);
 	return output;
@@ -142,7 +154,7 @@ Item& Simulation::loadItemNongeneric(const uint32_t id, const ItemType& itemType
 }
 void Simulation::destroyItem(Item& item)
 {
-	item.m_dataLocation->erase(item.m_iterator);
+	m_items.erase(item.m_id);
 }
 void Simulation::destroyArea(Area& area)
 {

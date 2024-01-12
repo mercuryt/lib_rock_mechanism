@@ -1,6 +1,6 @@
 #include "../../lib/doctest.h"
-#include "../../src/reservable.h"
-#include "../../src/faction.h"
+#include "../../engine/reservable.h"
+#include "../../engine/faction.h"
 #include <memory>
 
 struct TestReservationDishonorCallback1 final : public DishonorCallback
@@ -13,6 +13,7 @@ struct TestReservationDishonorCallback1 final : public DishonorCallback
 			REQUIRE(n == 0);
 			fired = true; 
 	}
+	Json toJson() const { return {}; }
 };
 struct TestReservationDishonorCallback2 final : public DishonorCallback
 {
@@ -24,6 +25,7 @@ struct TestReservationDishonorCallback2 final : public DishonorCallback
 			REQUIRE(n == 1);
 			fired = true;
 	}
+	Json toJson() const { return {}; }
 };
 TEST_CASE("reservations")
 {

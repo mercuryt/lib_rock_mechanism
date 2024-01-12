@@ -105,7 +105,7 @@ public:
 	void writeStep();
 	void clearReferences();
 };
-class UnsafeTemperatureEvent final : public ScheduledEventWithPercent
+class UnsafeTemperatureEvent final : public ScheduledEvent
 {
 	Actor& m_actor;
 public:

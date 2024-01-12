@@ -1,6 +1,6 @@
 #include "gameOverlay.h"
 #include "window.h"
-GameOverlay::GameOverlay(Window& w) : m_window(w), m_group(tgui::Group::create()), m_menu(tgui::Panel::create()), m_detailPanel(w, m_group), m_contextMenu(w, m_group)
+GameOverlay::GameOverlay(Window& w) : m_window(w), m_group(tgui::Group::create()), m_menu(tgui::Panel::create()), m_detailPanel(w, m_group), m_contextMenu(w, m_group), m_itemBeingInstalled(nullptr), m_facing(0)
 { 
 	m_window.m_gui.add(m_group);
 	m_group->setVisible(false);
@@ -20,4 +20,10 @@ GameOverlay::GameOverlay(Window& w) : m_window(w), m_group(tgui::Group::create()
 	close->onClick([&]{ m_group->setVisible(false); });
 	//TODO: settings.
 	m_menu->setPosition("50%", "50%");
+}
+void GameOverlay::installItem(Block& block)
+{
+	assert(m_itemBeingInstalled);
+	m_window.getArea()->m_hasInstallItemDesignations.at(*m_window.getFaction()).add(block, *m_itemBeingInstalled, m_facing, *m_window.getFaction());
+	m_itemBeingInstalled = nullptr;
 }

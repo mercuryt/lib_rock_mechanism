@@ -1,9 +1,9 @@
 #include "../../lib/doctest.h"
-#include "../../src/area.h"
-#include "../../src/fluidGroup.h"
-#include "../../src/materialType.h"
-#include "../../src/areaBuilderUtil.h"
-#include "../../src/simulation.h"
+#include "../../engine/area.h"
+#include "../../engine/fluidGroup.h"
+#include "../../engine/materialType.h"
+#include "../../engine/areaBuilderUtil.h"
+#include "../../engine/simulation.h"
 TEST_CASE("fluids smaller")
 {
 	static const MaterialType& marble = MaterialType::byName("marble");

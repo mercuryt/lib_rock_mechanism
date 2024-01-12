@@ -59,7 +59,7 @@ public:
 	friend class MoveEvent;
 	friend class PathThreadedTask;
 };
-class MoveEvent final : public ScheduledEventWithPercent
+class MoveEvent final : public ScheduledEvent
 {
 	ActorCanMove& m_canMove;
 public:

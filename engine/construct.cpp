@@ -57,6 +57,8 @@ void ConstructThreadedTask::writeStep()
 	}
 }
 void ConstructThreadedTask::clearReferences() { m_constructObjective.m_constructThreadedTask.clearPointer(); }
+// Objective.
+ConstructObjective::ConstructObjective(Actor& a) : Objective(a, Config::constructObjectivePriority), m_constructThreadedTask(a.getThreadedTaskEngine()), m_project(nullptr) { }
 ConstructObjective::ConstructObjective(const Json& data, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo), m_constructThreadedTask(m_actor.m_location->m_area->m_simulation.m_threadedTaskEngine), 
 	m_project(data.contains("project") ? deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()) : nullptr)
@@ -151,6 +153,7 @@ bool ConstructObjectiveType::canBeAssigned(Actor& actor) const
 	return actor.m_location->m_area->m_hasConstructionDesignations.areThereAnyForFaction(*actor.getFaction());
 }
 std::unique_ptr<Objective> ConstructObjectiveType::makeFor(Actor& actor) const { return std::make_unique<ConstructObjective>(actor); }
+// Project.
 ConstructProject::ConstructProject(const Json& data, DeserializationMemo& deserializationMemo) : Project(data, deserializationMemo), 
 	m_blockFeatureType(&BlockFeatureType::byName(data["blockFeatureType"].get<std::string>())),
 	m_materialType(MaterialType::byName(data["materialType"].get<std::string>())) { }

@@ -125,11 +125,11 @@ public:
 	bool hasPatients() const;
 	friend class MedicalPatientRelistEvent;
 };
-class MedicalPatientRelistEvent final : public ScheduledEventWithPercent
+class MedicalPatientRelistEvent final : public ScheduledEvent
 {
 	Actor& m_patient;
 public:
-	MedicalPatientRelistEvent(Actor& p, const Step start = 0) : ScheduledEventWithPercent(p.getSimulation(), Config::medicalProjectDelaySteps, start), m_patient(p) { }
+	MedicalPatientRelistEvent(Actor& p, const Step start = 0) : ScheduledEvent(p.getSimulation(), Config::medicalProjectDelaySteps, start), m_patient(p) { }
 	void execute();
 	void clearReferences();
 };

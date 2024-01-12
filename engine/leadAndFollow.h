@@ -28,6 +28,7 @@ public:
 	void disband();
 	void tryToMove();
 	HasShape& getLineLeader();
+	HasShape& getLeader();
 	bool isFollowing() const { return m_canLead != nullptr; }
 	friend class CanLead;
 	friend class CanFollowEvent;
@@ -39,6 +40,8 @@ class CanLead final
 	std::deque<Block*> m_locationQueue;
 public:
 	CanLead(HasShape& a) : m_hasShape(a), m_canFollow(nullptr) { }
+	void load(const Json& data, DeserializationMemo& deserializationMemo);
+	[[nodiscard]] Json toJson() const;
 	// Call from BlockHasShapes::enter.
 	void onMove();
 	// Use in canEnterCurrently to prevent leader from moving too far ahead.
@@ -53,7 +56,7 @@ public:
 	static uint32_t getMoveSpeedForGroupWithAddedMass(std::vector<const HasShape*>& actorsAndItems, uint32_t addedRollingMass = 0, uint32_t addedDeadMass = 0);
 	static uint32_t getMoveSpeedForGroup(std::vector<const HasShape*>& actorsAndItems) { return getMoveSpeedForGroupWithAddedMass(actorsAndItems); }
 };
-class CanFollowEvent final : public ScheduledEventWithPercent
+class CanFollowEvent final : public ScheduledEvent
 {
 	//TODO: Cache moveTo.
 	HasShape& m_hasShape;

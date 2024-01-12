@@ -8,7 +8,7 @@
 #include "kill.h"
 #include "util.h"
 
-EatEvent::EatEvent(const Step delay, EatObjective& eo, const Step start) : ScheduledEventWithPercent(eo.m_actor.getSimulation(), delay, start), m_eatObjective(eo) { }
+EatEvent::EatEvent(const Step delay, EatObjective& eo, const Step start) : ScheduledEvent(eo.m_actor.getSimulation(), delay, start), m_eatObjective(eo) { }
 
 void EatEvent::execute()
 {
@@ -123,7 +123,7 @@ void EatEvent::eatFruitFromPlant(Plant& plant)
 	eater.m_mustEat.eat(quantityEaten * unitMass);
 	plant.removeFruitQuantity(quantityEaten);
 }
-HungerEvent::HungerEvent(const Step delay, Actor& a, const Step start) : ScheduledEventWithPercent(a.getSimulation(), delay, start), m_actor(a) { }
+HungerEvent::HungerEvent(const Step delay, Actor& a, const Step start) : ScheduledEvent(a.getSimulation(), delay, start), m_actor(a) { }
 void HungerEvent::execute()
 {
 	m_actor.m_mustEat.setNeedsFood();

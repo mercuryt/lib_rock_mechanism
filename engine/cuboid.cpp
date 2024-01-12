@@ -72,6 +72,7 @@ void Cuboid::setFrom(Block& a, Block& b)
 	m_highest = result.m_highest;
 	m_lowest = result.m_lowest;
 }
+void Cuboid::clear() { m_lowest = m_highest = nullptr; }
 Cuboid Cuboid::getFace(uint32_t facing) const
 {
 	assert(facing < 6);

@@ -10,8 +10,8 @@
 #include <algorithm>
 #include <iostream>
 
-Actor::Actor(Simulation& simulation, uint32_t id, const std::wstring& name, const AnimalSpecies& species, Percent percentGrown, Faction* faction, Attributes attributes) :
-	HasShape(simulation, species.shapeForPercentGrown(percentGrown), false), m_faction(faction), m_id(id), m_name(name), m_species(species), m_alive(true), m_body(*this), m_project(nullptr), m_attributes(attributes), m_equipmentSet(*this), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canPickup(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_canReserve(faction), m_stamina(*this), m_visionRange(species.visionRange) 
+Actor::Actor(Simulation& simulation, uint32_t id, const std::wstring& name, const AnimalSpecies& species, DateTime birthDate, Percent percentGrown, Faction* faction, Attributes attributes) :
+	HasShape(simulation, species.shapeForPercentGrown(percentGrown), false), m_faction(faction), m_id(id), m_name(name), m_species(species), m_birthDate(birthDate), m_alive(true), m_body(*this), m_project(nullptr), m_attributes(attributes), m_equipmentSet(*this), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canPickup(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_canReserve(faction), m_stamina(*this), m_visionRange(species.visionRange) 
 {
 	// TODO: Having this line here requires making the existance of objectives mandatory at all times. Good idea?
 	//m_hasObjectives.getNext();
@@ -20,7 +20,7 @@ Actor::Actor(const Json& data, DeserializationMemo& deserializationMemo) :
 	HasShape(data, deserializationMemo),
 	m_faction(data.contains("faction") ? &deserializationMemo.m_simulation.m_hasFactions.byName(data["faction"].get<std::wstring>()) : nullptr), 
 	m_id(data["id"].get<ActorId>()), m_name(data["name"].get<std::wstring>()), m_species(AnimalSpecies::byName(data["species"].get<std::string>())), 
-	m_alive(data["alive"].get<bool>()), m_body(data["body"], deserializationMemo, *this), m_project(nullptr), 
+	m_birthDate(data["birthDate"]), m_alive(data["alive"].get<bool>()), m_body(data["body"], deserializationMemo, *this), m_project(nullptr), 
 	m_attributes(data["attributes"], *data["species"].get<const AnimalSpecies*>(), data["percentGrown"].get<Percent>()), 
 	m_equipmentSet(data["equipmentSet"], *this), m_mustEat(data["mustEat"], *this), m_mustDrink(data["mustDrink"], *this), m_mustSleep(data["mustSleep"], *this), m_needsSafeTemperature(data["needsSafeTemperature"], *this), 
 	m_canPickup(data["canPickup"], *this), m_canMove(data["canMove"], deserializationMemo, *this), m_canFight(data["canFight"], *this), m_canGrow(data["canGrow"], *this), 
@@ -34,6 +34,7 @@ Json Actor::toJson() const
 {
 	Json data = HasShape::toJson();
 	data["species"] = m_species;
+	data["birthDate"] = m_birthDate;
 	data["percentGrown"] = m_canGrow.growthPercent();
 	data["id"] = m_id;
 	data["name"] = m_name;
@@ -141,6 +142,14 @@ Mass Actor::getMass() const
 Volume Actor::getVolume() const
 {
 	return m_body.getVolume();
+}
+uint32_t Actor::getAgeInYears() const
+{
+	DateTime now = const_cast<Actor&>(*this).getSimulation().m_now;
+	uint32_t differenceYears = now.year - m_birthDate.year;
+	if(now.day > m_birthDate.day)
+		++differenceYears;
+	return differenceYears;
 }
 bool Actor::allBlocksAtLocationAndFacingAreReservable(const Block& location, Facing facing) const
 {

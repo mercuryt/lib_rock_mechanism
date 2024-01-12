@@ -19,6 +19,7 @@ public:
 	void merge(const Cuboid& cuboid);
 	void setFrom(Block& block);
 	void setFrom(Block& a, Block& b);
+	void clear();
 	[[nodiscard]] std::unordered_set<Block*> toSet();
 	[[nodiscard]] bool contains(const Block& block) const;
 	[[nodiscard]] bool canMerge(const Cuboid& cuboid) const;

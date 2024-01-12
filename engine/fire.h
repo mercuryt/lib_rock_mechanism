@@ -21,7 +21,7 @@ struct MaterialType;
 /*
  * Progress through the stages of fire with scheduled events.
  */
-class FireEvent final : public ScheduledEventWithPercent
+class FireEvent final : public ScheduledEvent
 {
 public:
 	Fire& m_fire;

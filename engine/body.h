@@ -137,7 +137,7 @@ public:
 	friend class BleedEvent;
 	friend class WoundsCloseEvent;
 };
-class WoundHealEvent : public ScheduledEventWithPercent
+class WoundHealEvent : public ScheduledEvent
 {
 	Wound& m_wound;
 	Body& m_body;
@@ -146,7 +146,7 @@ public:
 	void execute() { m_body.healWound(m_wound); }
 	void clearReferences() { m_wound.healEvent.clearPointer(); }
 };
-class BleedEvent : public ScheduledEventWithPercent
+class BleedEvent : public ScheduledEvent
 {
 	Body& m_body;
 public:
@@ -154,7 +154,7 @@ public:
 	void execute() { m_body.bleed(); }
 	void clearReferences() { m_body.m_bleedEvent.clearPointer(); }
 };
-class WoundsCloseEvent : public ScheduledEventWithPercent
+class WoundsCloseEvent : public ScheduledEvent
 {
 	Body& m_body;
 public:

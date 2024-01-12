@@ -54,8 +54,8 @@ public:
 	//TODO: latitude, longitude, altitude.
 	Area& createArea(uint32_t x, uint32_t y, uint32_t z);
 	Area& loadArea(AreaId id, uint32_t x, uint32_t y, uint32_t z);
-	Actor& createActor(const AnimalSpecies& species, Block& block, Percent percentGrown = 100);
-	// Non generic, no id.
+	Actor& createActor(const AnimalSpecies& species, Block& block, Percent percentGrown = 100, DateTime birthDate = {0,0,0});
+	// Non generic, no id
 	Item& createItemNongeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quality, Percent percentWear, CraftJob* cj = nullptr);
 	// Generic, no id.
 	Item& createItemGeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity, CraftJob* cj = nullptr);
@@ -85,11 +85,11 @@ public:
 	[[maybe_unused]] void fastForwardUntillPredicate(std::function<bool()> predicate, uint32_t minutes = 10);
 };
 
-class HourlyEvent final : public ScheduledEventWithPercent
+class HourlyEvent final : public ScheduledEvent
 {
 	Simulation& m_simulation;
 public:
-	HourlyEvent(Simulation& s, const Step start = 0) : ScheduledEventWithPercent(s, Config::stepsPerHour, start), m_simulation(s) { }
+	HourlyEvent(Simulation& s, const Step start = 0) : ScheduledEvent(s, Config::stepsPerHour, start), m_simulation(s) { }
 	inline void execute(){ m_simulation.incrementHour(); }
 	inline void clearReferences(){ m_simulation.m_hourlyEvent.clearPointer(); }
 };

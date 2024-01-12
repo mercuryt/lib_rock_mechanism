@@ -22,7 +22,7 @@ public:
 	[[nodiscard]] Percent getIntensityPercent() const { return m_intensityPercent; }
 	friend class StopRainEvent;
 };
-class StopRainEvent final : public ScheduledEventWithPercent
+class StopRainEvent final : public ScheduledEvent
 {
 	AreaHasRain& m_areaHasRain;
 public:

@@ -78,5 +78,5 @@ void CanGrow::maybeStart()
 	if(m_event.exists())
 		updateGrowingStatus();
 }
-AnimalGrowthEvent::AnimalGrowthEvent(Step delay, CanGrow& cg, const Step start) : ScheduledEventWithPercent(cg.m_actor.getSimulation(), delay, start), m_canGrow(cg) { }
-AnimalGrowthUpdateEvent::AnimalGrowthUpdateEvent(Step delay, CanGrow& cg, const Step start) : ScheduledEventWithPercent(cg.m_actor.getSimulation(), delay, start), m_canGrow(cg) { }
+AnimalGrowthEvent::AnimalGrowthEvent(Step delay, CanGrow& cg, const Step start) : ScheduledEvent(cg.m_actor.getSimulation(), delay, start), m_canGrow(cg) { }
+AnimalGrowthUpdateEvent::AnimalGrowthUpdateEvent(Step delay, CanGrow& cg, const Step start) : ScheduledEvent(cg.m_actor.getSimulation(), delay, start), m_canGrow(cg) { }

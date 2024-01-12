@@ -17,10 +17,19 @@ public:
 		std::uniform_int_distribution<int> dist(lowest, highest);
 		return dist(rng);
 	}
-	inline uint32_t getInRange(uint32_t lowest, uint32_t highest)
+	inline long getInRange(long lowest, long highest)
 	{
-		// TODO: optimize by mostly copying code from int get in range?
-		return getInRange((int32_t)lowest, (int32_t)highest);
+		assert(lowest < highest);
+		//TODO: should uniform distribution be static?
+		std::uniform_int_distribution<long> dist(lowest, highest);
+		return dist(rng);
+	}
+	inline unsigned int getInRange(unsigned int lowest, unsigned int highest)
+	{
+		assert(lowest < highest);
+		//TODO: should uniform distribution be static?
+		std::uniform_int_distribution<unsigned int> dist(lowest, highest);
+		return dist(rng);
 	}
 	inline bool percentChance(Percent percent)
 	{

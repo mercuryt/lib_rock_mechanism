@@ -7,6 +7,7 @@
 #include "materialType.h"
 #include "project.h"
 #include "reservable.h"
+#include "objective.h"
 
 #include <vector>
 #include <utility>
@@ -22,6 +23,7 @@ class CraftThreadedTask;
 struct skillType;
 class CraftStepProject;
 class Block;
+class Area;
 class CraftInputAction final : public InputAction
 {
 	Area& m_area;
@@ -100,7 +102,6 @@ struct CraftStepProjectHasShapeDishonorCallback final : public DishonorCallback
 		m_craftStepProject(*static_cast<CraftStepProject*>(deserializationMemo.m_projects.at(data["proejct"].get<uintptr_t>()))) { } 
 	Json toJson() const { return Json({{"type", "CraftStepProjectHasShapeDishonorCallback"}, {"project", reinterpret_cast<uintptr_t>(&m_craftStepProject)}}); }
 	// Craft step project cannot reset so cancel instead and allow to be recreated later.
-	// TODO: Why?
 	void execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { m_craftStepProject.cancel(); }
 };
 // Data about making a specific product type.
@@ -191,7 +192,7 @@ class CraftThreadedTask final : public ThreadedTask
 	CraftJob* m_craftJob;
 	Block* m_location;
 public:
-	CraftThreadedTask(CraftObjective& co) : ThreadedTask(co.m_actor.getThreadedTaskEngine()), m_craftObjective(co), m_craftJob(nullptr), m_location(nullptr) { }
+	CraftThreadedTask(CraftObjective& co);
 	void readStep();
 	void writeStep();
 	void clearReferences();
@@ -217,8 +218,9 @@ public:
 	void maybeRemoveLocation(Block& block);
 	// designate something to be crafted.
 	void addJob(const CraftJobType& craftJobType, const MaterialType* materialType, uint32_t quantity, uint32_t minimumSkillLevel = 0);
+	void cloneJob(CraftJob& craftJob);
 	// Undo an addJob order.
-	void removeJob(CraftJob&);
+	void removeJob(CraftJob& craftJob);
 	// To be called by CraftStepProject::onComplete.
 	void stepComplete(CraftJob& craftJob, Actor& actor);
 	// To be called by CraftStepProject::onCancel.

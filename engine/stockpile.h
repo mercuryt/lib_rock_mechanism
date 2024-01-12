@@ -161,11 +161,11 @@ public:
 	bool canAddWorker(const Actor& actor) const;
 	friend class AreaHasStockPilesForFaction;
 };
-class ReenableStockPileScheduledEvent final : public ScheduledEventWithPercent
+class ReenableStockPileScheduledEvent final : public ScheduledEvent
 {
 	StockPile& m_stockPile;
 public:
-	ReenableStockPileScheduledEvent(StockPile& sp, Step duration, const Step start = 0) : ScheduledEventWithPercent(sp.getSimulation(), duration, start), m_stockPile(sp) { }
+	ReenableStockPileScheduledEvent(StockPile& sp, Step duration, const Step start = 0) : ScheduledEvent(sp.getSimulation(), duration, start), m_stockPile(sp) { }
 	void execute() { m_stockPile.reenable(); }
 	void clearReferences() { m_stockPile.m_reenableScheduledEvent.clearPointer(); }
 };

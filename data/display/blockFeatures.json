@@ -1,0 +1,30 @@
+[
+	{
+		"blockFeature": "floor",
+		"symbol": "🝚 "
+	},{
+		"blockFeature": "door",
+		"symbol": "🚪"
+	},{
+		"blockFeature": "flap",
+		"symbol": "𐂧 "
+	},{
+		"blockFeature": "hatch",
+		"symbol": "🀆 "
+	},{
+		"blockFeature": "stairs",
+		"symbol": "𝄛 "
+	},{
+		"blockFeature": "flood gate",
+		"symbol": "𞠍"
+	},{
+		"blockFeature": "floor grate",
+		"symbol": "#"
+	},{
+		"blockFeature": "ramp",
+		"symbol": "𝀄 "
+	},{
+		"blockFeature": "fortification",
+		"symbol": "𞠤"
+	}
+]

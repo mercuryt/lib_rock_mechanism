@@ -4,11 +4,11 @@
 #include "objective.h"
 #include <cassert>
 // Sleep Event.
-SleepEvent::SleepEvent(Step step, MustSleep& ns, bool f, const Step start) : ScheduledEventWithPercent(ns.m_actor.getSimulation(), step, start), m_needsSleep(ns), m_force(f) { }
+SleepEvent::SleepEvent(Step step, MustSleep& ns, bool f, const Step start) : ScheduledEvent(ns.m_actor.getSimulation(), step, start), m_needsSleep(ns), m_force(f) { }
 void SleepEvent::execute(){ m_needsSleep.wakeUp(); }
 void SleepEvent::clearReferences(){ m_needsSleep.m_sleepEvent.clearPointer(); }
 // Tired Event.
-TiredEvent::TiredEvent(Step step, MustSleep& ns, const Step start) : ScheduledEventWithPercent(ns.m_actor.getSimulation(), step, start), m_needsSleep(ns) { }
+TiredEvent::TiredEvent(Step step, MustSleep& ns, const Step start) : ScheduledEvent(ns.m_actor.getSimulation(), step, start), m_needsSleep(ns) { }
 void TiredEvent::execute(){ m_needsSleep.tired(); }
 void TiredEvent::clearReferences(){ m_needsSleep.m_tiredEvent.clearPointer(); }
 // Threaded Task.

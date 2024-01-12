@@ -23,7 +23,7 @@ public:
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Rest; }
 	friend class RestEvent;
 };
-class RestEvent final : public ScheduledEventWithPercent
+class RestEvent final : public ScheduledEvent
 {
 	RestObjective& m_objective;
 public:

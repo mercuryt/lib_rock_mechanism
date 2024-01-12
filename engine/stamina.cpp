@@ -21,7 +21,7 @@ void RestObjective::reset()
 	cancel(); 
 	m_actor.m_canReserve.clearAll();
 }
-RestEvent::RestEvent(RestObjective& ro, const Step start) : ScheduledEventWithPercent(ro.m_actor.getSimulation(), Config::restIntervalSteps, start), m_objective(ro) { }
+RestEvent::RestEvent(RestObjective& ro, const Step start) : ScheduledEvent(ro.m_actor.getSimulation(), Config::restIntervalSteps, start), m_objective(ro) { }
 void RestEvent::execute()
 {
 	m_objective.m_actor.m_stamina.recover();

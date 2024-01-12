@@ -1,0 +1,42 @@
+[
+	{
+		"materialType": "marble",
+		"color": [255, 255, 255, 1]
+	},
+	{
+		"materialType": "dirt",
+		"color": [82, 42, 0, 1]
+	},
+	{
+		"materialType": "bronze",
+		"color": [132, 104, 89, 1]
+	},
+	{
+		"materialType": "bismuth",
+		"color": [124, 119, 115, 1]
+	},
+	{
+		"materialType": "glass",
+		"color": [255, 255, 255, 0.5]
+	},
+	{
+		"materialType": "gold",
+		"color": [186, 144, 24, 1]
+	},
+	{
+		"materialType": "peridotite",
+		"color": [114, 112, 60, 1]
+	},
+	{
+		"materialType": "obsidion",
+		"color": [0, 0, 0, 1]
+	},
+	{
+		"materialType": "lead",
+		"color": [85, 85, 85, 1]
+	},
+	{
+		"materialType": "poplar wood",
+		"color": [222, 192, 140, 1]
+	}
+]

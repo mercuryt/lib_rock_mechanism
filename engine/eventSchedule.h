@@ -18,27 +18,22 @@ class ScheduledEvent
 {
 public:
 	Simulation& m_simulation;
+	const Step m_startStep;
 	const Step m_step;
 	bool m_cancel;
+	// If the value 0 is passed then the current step is used for start
+	// Passing a differernt start is for deserializing.
 	ScheduledEvent(Simulation& simulation, const Step delay, const Step start = 0);
 	void cancel();
 	virtual void execute() = 0;
 	virtual void clearReferences() = 0;
 	virtual void onCancel() { }
+	virtual ~ScheduledEvent() = default;
+	[[nodiscard]] Percent percentComplete() const;
+	[[nodiscard]] Step duration() const;
 	[[nodiscard]] Step remaningSteps() const;
 	ScheduledEvent(const ScheduledEvent&) = delete;
 	ScheduledEvent(ScheduledEvent&&) = delete;
-	virtual ~ScheduledEvent() = default;
-};
-class ScheduledEventWithPercent : public ScheduledEvent
-{
-public:
-	Step m_startStep;
-	// If the value 0 is passed then the current step is used for start
-	// Passing a differernt start is for deserializing.
-	ScheduledEventWithPercent(Simulation& simulation, const Step delay, const Step start);
-	[[nodiscard]] Percent percentComplete() const;
-	[[nodiscard]] Step duration() const;
 };
 class EventSchedule
 {
@@ -48,7 +43,6 @@ public:
 	EventSchedule(Simulation& s) : m_simulation(s), m_lowestStepWithEventsScheduled(0) { }
 	std::map<Step, std::list<std::unique_ptr<ScheduledEvent>>> m_data;
 	void schedule(std::unique_ptr<ScheduledEvent> scheduledEvent);
-	void schedule(std::unique_ptr<ScheduledEventWithPercent> scheduledEvent);
 	void unschedule(ScheduledEvent& scheduledEvent);
 	void execute(const Step stepNumber);
 	// For testing.

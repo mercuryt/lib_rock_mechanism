@@ -95,7 +95,7 @@ void SupressedNeed::callback()
 	m_actor.m_hasObjectives.m_supressedNeeds.erase(objective->getObjectiveTypeId());
        	m_actor.m_hasObjectives.addNeed(std::move(objective)); 
 }
-SupressedNeedEvent::SupressedNeedEvent(SupressedNeed& sn, const Step start) : ScheduledEventWithPercent(sn.m_actor.getSimulation(), Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective, start), m_supressedNeed(sn) { }
+SupressedNeedEvent::SupressedNeedEvent(SupressedNeed& sn, const Step start) : ScheduledEvent(sn.m_actor.getSimulation(), Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective, start), m_supressedNeed(sn) { }
 void SupressedNeedEvent::execute() { m_supressedNeed.callback(); }
 void SupressedNeedEvent::clearReferences() { m_supressedNeed.m_event.clearPointer(); }
 // ObjectiveType.
@@ -227,6 +227,12 @@ void HasObjectives::addTaskToStart(std::unique_ptr<Objective> objective)
 	Objective* o = objective.get();
 	m_tasksQueue.push_front(std::move(objective));
 	maybeUsurpsPriority(*o);
+}
+void HasObjectives::replaceTasks(std::unique_ptr<Objective> objective)
+{
+	m_currentObjective = nullptr;
+	m_tasksQueue.clear();
+	addTaskToStart(std::move(objective));
 }
 // Called when an objective is canceled by the player, canceled by the actor, or completed sucessfully.
 // TODO: seperate functions for tasks and needs?

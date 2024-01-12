@@ -1,11 +1,11 @@
 #include "../../lib/doctest.h"
-#include "../../src/actor.h"
-#include "../../src/area.h"
-#include "../../src/item.h"
-#include "../../src/areaBuilderUtil.h"
-#include "../../src/simulation.h"
-#include "../../src/craft.h"
-#include "../../src/materialType.h"
+#include "../../engine/actor.h"
+#include "../../engine/area.h"
+#include "../../engine/item.h"
+#include "../../engine/areaBuilderUtil.h"
+#include "../../engine/simulation.h"
+#include "../../engine/craft.h"
+#include "../../engine/materialType.h"
 #include <functional>
 TEST_CASE("craft")
 {
@@ -181,6 +181,7 @@ TEST_CASE("craft")
 			REQUIRE(board.getQuantity() == 10);
 			REQUIRE(dwarf1.m_canMove.hasThreadedTask());
 			simulation.doStep();
+			REQUIRE(job->craftStepProject == nullptr);
 			REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "craft");
 			REQUIRE(dwarf1.m_project == nullptr);
 		}

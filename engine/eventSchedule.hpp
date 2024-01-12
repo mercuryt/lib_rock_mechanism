@@ -5,7 +5,7 @@ template<class EventType>
 class HasScheduledEvent
 {
 protected:
-	ScheduledEventWithPercent* m_event;
+	ScheduledEvent* m_event;
 	EventSchedule& m_schedule;
 public:
 	HasScheduledEvent(EventSchedule& s) : m_event(nullptr), m_schedule(s) {}
@@ -13,7 +13,7 @@ public:
 	void schedule(Args&& ...args)
 	{
 		assert(m_event == nullptr);
-		std::unique_ptr<ScheduledEventWithPercent> event = std::make_unique<EventType>(args...);
+		std::unique_ptr<ScheduledEvent> event = std::make_unique<EventType>(args...);
 		m_event = event.get();
 		m_schedule.schedule(std::move(event));
 	}

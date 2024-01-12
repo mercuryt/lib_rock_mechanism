@@ -64,7 +64,7 @@ public:
 	std::unordered_set<Actor*> m_canSee;
 	uint32_t m_visionRange;
 
-	Actor(Simulation& simulation, ActorId id, const std::wstring& name, const AnimalSpecies& species, Percent percentGrown, Faction* faction, Attributes attributes);
+	Actor(Simulation& simulation, ActorId id, const std::wstring& name, const AnimalSpecies& species, DateTime birthDate, Percent percentGrown, Faction* faction, Attributes attributes);
 	Actor(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void setLocation(Block& block);
@@ -92,6 +92,7 @@ public:
 	const MoveType& getMoveType() const { return m_canMove.getMoveType(); }
 	Mass singleUnitMass() const { return getMass(); }
 	const Faction* getFaction() const { return m_faction; }
+	uint32_t getAgeInYears() const;
 	bool allBlocksAtLocationAndFacingAreReservable(const Block& location, Facing facing) const;
 	void reserveAllBlocksAtLocationAndFacing(const Block& location, Facing facing);
 	void unreserveAllBlocksAtLocationAndFacing(const Block& location, Facing facing);

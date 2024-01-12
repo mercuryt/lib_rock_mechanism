@@ -100,6 +100,7 @@ namespace Config
 	inline Step stepsPerMinute;
 	inline Step stepsPerHour;
 	inline Step stepsPerDay;
+	inline Step stepsPerYear;
 	inline uint32_t sleepObjectivePriority;
 	inline uint32_t minimumHaulSpeed;
 	inline Step stepsFrequencyToLookForHaulSubprojects;
@@ -181,10 +182,12 @@ namespace Config
 		hoursPerDay = data["hoursPerDay"].get<uint32_t>();
 		minutesPerHour = data["minutesPerHour"].get<uint32_t>();
 		secondsPerMinute = data["secondsPerMinute"].get<uint32_t>();
+		daysPerYear = data["daysPerYear"].get<uint16_t>();
 		stepsPerSecond = data["stepsPerSecond"].get<Step>();
 		stepsPerMinute = stepsPerSecond * secondsPerMinute;
 		stepsPerHour = stepsPerMinute * minutesPerHour;
 		stepsPerDay = stepsPerHour * hoursPerDay;
+		stepsPerYear = daysPerYear * stepsPerDay;
 		addToStockPileDelaySteps = data["addToStockPileDelaySteps"].get<Step>();
 		maxBlockVolume = data["maxBlockVolume"].get<Volume>();
 		maxBlockVolumeHardLimit = data["maxBlockVolumeHardLimit"].get<Volume>();
@@ -293,7 +296,6 @@ namespace Config
 		percentPermanantImparmentMinimum = data["percentPermanantImparmentMinimum"].get<uint32_t>();
 		heatDisipatesAtDistanceExponent = data["heatDisipatesAtDistanceExponent"].get<float>();
 		heatRadianceMinimum = data["heatRadianceMinimum"].get<uint32_t>();
-		daysPerYear = data["daysPerYear"].get<uint16_t>();
 		rainFrequencyModifier = data["rainFrequencyModifier"].get<uint32_t>();
 		restIntervalSteps = data["restIntervalSteps"].get<Step>();
 		staminaPointsPerRestPeriod = data["staminaPointsPerRestPeriod"].get<uint32_t>();
@@ -334,7 +336,7 @@ namespace Config
 		woodCuttingStrengthModifier = data["woodCuttingStrengthModifier"].get<float>();
 		woodCuttingSkillModifier = data["woodCuttingSkillModifier"].get<float>();
 		woodCuttingObjectivePriority = data["woodCuttingObjectivePriority"].get<uint32_t>();
-		woodCuttingMaxSteps = data["woodCuttingMaxSteps"].get<Step>();
+		woodCuttingMaxSteps = data["woodCuttingMaxMinutes"].get<uint32_t>() * stepsPerMinute;
 		equipPriority = data["equipPriority"].get<uint32_t>();
 		installItemPriority = data["installItemPriority"].get<uint32_t>();
 		//medicalPriority = data["medicalPriority"].get<uint32_t>();

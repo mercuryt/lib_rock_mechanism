@@ -1,0 +1,118 @@
+[
+	{
+		"itemType": "axe",
+		"symbol": "🪓"
+	},{
+		"itemType": "apple",
+		"symbol": "🍏"
+	},{
+		"itemType": "bar",
+		"symbol": "―"
+	},{
+		"itemType": "block",
+		"symbol": "▂"
+	},{
+		"itemType": "board",
+		"symbol": "▂"
+	},{
+		"itemType": "boulder",
+		"symbol": "🪨"
+	},{
+		"itemType": "bucket",
+		"symbol": "🪣"
+	},{
+		"itemType": "bucking bar",
+		"symbol": "🛠"
+	},{
+		"itemType": "cart",
+		"symbol": "𐃏🭕█"
+	},{
+		"itemType": "chisel",
+		"symbol": "c"
+	},{
+		"itemType": "chunk",
+		"symbol": "🪨",
+		"scale": 0.5
+	},{
+		"itemType": "crossbowBolts",
+		"symbol": "➸"
+	},{
+		"itemType": "crossbow",
+		"symbol": "🏹"
+	},{
+		"itemType": "dagger",
+		"symbol": "🗡"
+	},{
+		"itemType": "dirt",
+		"symbol": "░"
+	},{
+		"itemType": "draw shave",
+		"symbol": "🛠"
+	},{
+		"itemType": "gravel",
+		"symbol": "▒"
+	},{
+		"itemType": "hammer",
+		"symbol": "🔨"
+	},{
+		"itemType": "log",
+		"symbol": "🪵"
+	},{
+		"itemType": "longsword",
+		"symbol": "⚔"
+	},{
+		"itemType": "mallet",
+		"symbol": "🛠"
+	},{
+		"itemType": "morter",
+		"symbol": "▓"
+	},{
+		"itemType": "organic waste",
+		"symbol": "▓"
+	},{
+		"itemType": "panniers",
+		"symbol": "👜"
+	},{
+		"itemType": "pants",
+		"symbol": "👖"
+	},{
+		"itemType": "peg",
+		"symbol": "🔩"
+	},{
+		"itemType": "pick",
+		"symbol": "⛏"
+	},{
+		"itemType": "prepared meal",
+		"symbol": "🍲"
+	},{
+		"itemType": "rivet",
+		"symbol": "🔩"
+	},{
+		"itemType": "rope",
+		"symbol": "꩜ "
+	},{
+		"itemType": "rough board",
+		"symbol": "▁"
+	},{
+		"itemType": "sand",
+		"symbol": "▒"
+	},{
+		"itemType": "saw",
+		"symbol": "🪚"
+	},{
+		"itemType": "scrap",
+		"symbol": "▓"
+	},{
+		"itemType": "sticks",
+		"symbol": "ᚬ"
+	},{
+		"itemType": "trowel",
+		"symbol": "🛠"
+	},{
+		"itemType": "wheet seed",
+		"symbol": "▒"
+	},{
+		"itemType": "wood chip",
+		"symbol": "▒"
+	}
+]

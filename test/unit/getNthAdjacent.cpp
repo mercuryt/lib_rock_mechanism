@@ -1,5 +1,5 @@
 #include "../../lib/doctest.h"
-#include "../../src/nthAdjacentOffsets.h"
+#include "../../engine/nthAdjacentOffsets.h"
 #include <algorithm>
 TEST_CASE("getNthAdjacentOffsets")
 {

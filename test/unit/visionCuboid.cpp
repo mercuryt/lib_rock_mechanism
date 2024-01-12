@@ -1,7 +1,7 @@
 #include "../../lib/doctest.h"
-#include "../../src/visionCuboid.h"
-#include "../../src/area.h"
-#include "../../src/simulation.h"
+#include "../../engine/visionCuboid.h"
+#include "../../engine/area.h"
+#include "../../engine/simulation.h"
 TEST_CASE("vision cuboid basic")
 {
 	Simulation simulation;

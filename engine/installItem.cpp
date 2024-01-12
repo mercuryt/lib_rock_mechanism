@@ -1,6 +1,7 @@
 #include "installItem.h"
 #include "block.h"
 #include "area.h"
+#include "deserializationMemo.h"
 #include "threadedTask.h"
 
 // Project.
@@ -37,10 +38,26 @@ void InstallItemThreadedTask::writeStep()
 	}
 
 }
+void InstallItemThreadedTask::clearReferences() { m_installItemObjective.m_threadedTask.clearPointer(); }
 // Objective.
 InstallItemObjective::InstallItemObjective(Actor& a) : Objective(a, Config::installItemPriority), m_threadedTask(a.getThreadedTaskEngine()) { }
 InstallItemObjective::InstallItemObjective(const Json& data, DeserializationMemo& deserializationMemo) : 
-	Objective(data, deserializationMemo), m_threadedTask(m_actor.getThreadedTaskEngine()) { }
+	Objective(data, deserializationMemo), m_threadedTask(m_actor.getThreadedTaskEngine())
+{ 
+	if(data.contains("project"))
+		m_project = static_cast<InstallItemProject*>(deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()));
+	if(data.contains("threadedTask"))
+		m_threadedTask.create(*this);
+}
+Json InstallItemObjective::toJson() const
+{
+	Json data = Objective::toJson();
+	if(m_project)
+		data["project"] = m_project;
+	if(m_threadedTask.exists())
+		data["threadedTask"] = true;
+	return data;
+}
 void InstallItemObjective::execute()
 {
 	if(m_project)
@@ -59,10 +76,10 @@ std::unique_ptr<Objective> InstallItemObjectiveType::makeFor(Actor& actor) const
 }
 void InstallItemObjective::reset() { m_actor.m_canReserve.clearAll(); m_project = nullptr; }
 // HasDesignations.
-void HasInstallItemDesignationsForFaction::add(Block& block, Item& item)
+void HasInstallItemDesignationsForFaction::add(Block& block, Item& item, Facing facing, const Faction& faction)
 {
 	assert(!m_designations.contains(&block));
-	m_designations.try_emplace(&block, item, block);
+	m_designations.try_emplace(&block, item, block, facing, faction);
 }
 void HasInstallItemDesignationsForFaction::remove(Item& item)
 {

@@ -1,8 +1,8 @@
 #include "../../lib/doctest.h"
-#include "../../src/area.h"
-#include "../../src/areaBuilderUtil.h"
-#include "../../src/definitions.h"
-#include "../../src/simulation.h"
+#include "../../engine/area.h"
+#include "../../engine/areaBuilderUtil.h"
+#include "../../engine/definitions.h"
+#include "../../engine/simulation.h"
 TEST_CASE("Cave In")
 {
 	Simulation simulation;

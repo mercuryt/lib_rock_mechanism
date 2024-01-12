@@ -6,7 +6,7 @@
 #include "objective.h"
 #include "reservable.h"
 #include <memory>
-GivePlantsFluidEvent::GivePlantsFluidEvent(Step delay, GivePlantsFluidObjective& gpfo, const Step start) : ScheduledEventWithPercent(gpfo.m_actor.getSimulation(), delay, start), m_objective(gpfo) { }
+GivePlantsFluidEvent::GivePlantsFluidEvent(Step delay, GivePlantsFluidObjective& gpfo, const Step start) : ScheduledEvent(gpfo.m_actor.getSimulation(), delay, start), m_objective(gpfo) { }
 void GivePlantsFluidEvent::execute()
 {
 	Plant& plant = m_objective.m_plantLocation->m_hasPlant.get();
@@ -110,7 +110,7 @@ std::unique_ptr<Objective> GivePlantsFluidObjectiveType::makeFor(Actor& actor) c
 {
 	return std::make_unique<GivePlantsFluidObjective>(actor);
 }
-void GivePlantsFluidItemDishonorCallback::execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { m_actor.m_hasObjectives.cannotCompleteTask(); }
+// Objective
 GivePlantsFluidObjective::GivePlantsFluidObjective(Actor& a ) : Objective(a, Config::givePlantsFluidPriority), m_plantLocation(nullptr), m_fluidHaulingItem(nullptr), m_event(m_actor.getEventSchedule()), m_threadedTask(m_actor.getThreadedTaskEngine()) { }
 GivePlantsFluidObjective::GivePlantsFluidObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo),
 	m_plantLocation(data.contains("plantLocation") ? &deserializationMemo.m_simulation.getBlockForJsonQuery(data["plantLocation"]) : nullptr),
@@ -290,3 +290,10 @@ Item* GivePlantsFluidObjective::getFluidHaulingItemAt(Block& block)
 			return item;
 	return nullptr;
 }
+GivePlantsFluidItemDishonorCallback::GivePlantsFluidItemDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
+	m_actor(deserializationMemo.m_simulation.getActorById(data["actor"].get<ActorId>())) { }
+Json GivePlantsFluidItemDishonorCallback::toJson() const
+{
+	return {{"actor", m_actor}};
+}
+void GivePlantsFluidItemDishonorCallback::execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { m_actor.m_hasObjectives.cannotCompleteTask(); }

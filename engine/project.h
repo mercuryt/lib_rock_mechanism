@@ -41,7 +41,7 @@ struct ProjectRequirementCounts final
 	bool consumed;
 	ProjectRequirementCounts(const uint8_t r, bool c) : required(r), delivered(0), reserved(0), consumed(c) { }
 	ProjectRequirementCounts(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(ProjectRequirementCounts, required, delivered, reserved, consumed);
 };
 struct ProjectRequiredShapeDishonoredCallback final : public DishonorCallback
 {
@@ -186,7 +186,7 @@ public:
 };
 inline void to_json(Json& data, const Project& project){ data = reinterpret_cast<uintptr_t>(&project); }
 inline void to_json(Json& data, const Project* const& project){ data = reinterpret_cast<uintptr_t>(&project); }
-class ProjectFinishEvent final : public ScheduledEventWithPercent
+class ProjectFinishEvent final : public ScheduledEvent
 {
 	Project& m_project;
 public:
@@ -194,7 +194,7 @@ public:
 	void execute();
 	void clearReferences();
 };
-class ProjectTryToHaulEvent final : public ScheduledEventWithPercent
+class ProjectTryToHaulEvent final : public ScheduledEvent
 {
 	Project& m_project;
 public:
@@ -202,7 +202,7 @@ public:
 	void execute();
 	void clearReferences();
 };
-class ProjectTryToReserveEvent final : public ScheduledEventWithPercent
+class ProjectTryToReserveEvent final : public ScheduledEvent
 {
 	Project& m_project;
 public:

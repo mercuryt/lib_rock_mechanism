@@ -16,7 +16,7 @@
   "dayOfYearForSowStart": 50,
   "dayOfYearForSowEnd": 150,
   "fluidType": "water",
-  "shapes": ["oneByOneHundredth", "oneByOneThirtySecond", "OneByOneSixteenth", "oneByOneEighth"],
+  "shapes": ["oneByOneHundredth", "oneByOneThirtySecond", "oneByOneSixteenth", "oneByOneEighth"],
   "harvestData":
   {
     "dayOfYearToStart": 260,

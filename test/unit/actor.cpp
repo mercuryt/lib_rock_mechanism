@@ -1,8 +1,8 @@
 #include "../../lib/doctest.h"
-#include "../../src/simulation.h"
-#include "../../src/area.h"
-#include "../../src/areaBuilderUtil.h"
-#include "../../src/actor.h"
+#include "../../engine/simulation.h"
+#include "../../engine/area.h"
+#include "../../engine/areaBuilderUtil.h"
+#include "../../engine/actor.h"
 TEST_CASE("actor")
 {
 	Simulation simulation;

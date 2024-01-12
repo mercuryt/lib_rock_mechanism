@@ -23,7 +23,7 @@ public:
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Wait; }
 	friend class WaitScheduledEvent;
 };
-class WaitScheduledEvent final : public ScheduledEventWithPercent
+class WaitScheduledEvent final : public ScheduledEvent
 {
 	WaitObjective& m_objective;
 public:

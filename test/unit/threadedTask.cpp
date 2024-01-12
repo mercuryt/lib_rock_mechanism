@@ -1,6 +1,6 @@
 #include "../../lib/doctest.h"
-#include "../../src/threadedTask.hpp"
-#include "../../src/simulation.h"
+#include "../../engine/threadedTask.hpp"
+#include "../../engine/simulation.h"
 class TestThreadedTask final : public ThreadedTask
 {
 	bool& fired;

@@ -34,7 +34,6 @@ public:
 	void readStep();
 	void writeStep();
 	void clearReferences();
-	~InstallItemThreadedTask();
 };
 class InstallItemObjective final : public Objective
 {
@@ -65,7 +64,7 @@ class HasInstallItemDesignationsForFaction final
 	const Faction& m_faction;
 public:
 	HasInstallItemDesignationsForFaction(const Faction& faction) : m_faction(faction) { }
-	void add(Block& block, Item& item);
+	void add(Block& block, Item& item, Facing facing, const Faction& faction);
 	void remove(Item& item);
 	bool empty() const { return m_designations.empty(); }
 	bool contains(const Block& block) const { return m_designations.contains(&const_cast<Block&>(block)); }

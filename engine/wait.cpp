@@ -27,4 +27,4 @@ void WaitObjective::reset()
 	m_event.maybeUnschedule(); 
 	m_actor.m_canReserve.clearAll(); 
 }
-WaitScheduledEvent::WaitScheduledEvent(Step delay, WaitObjective& wo, const Step start) : ScheduledEventWithPercent(wo.m_actor.getSimulation(), delay, start), m_objective(wo) { }
+WaitScheduledEvent::WaitScheduledEvent(Step delay, WaitObjective& wo, const Step start) : ScheduledEvent(wo.m_actor.getSimulation(), delay, start), m_objective(wo) { }

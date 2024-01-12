@@ -1,4 +1,5 @@
 #include "load.h"
+#include "window.h"
 class Window;
 LoadView::LoadView(Window& window) : m_window(window), m_group(tgui::Group::create())
 {
@@ -10,6 +11,6 @@ LoadView::LoadView(Window& window) : m_window(window), m_group(tgui::Group::crea
 	m_group->add(fileDialog);
 	// Cancel.
 	auto cancelButton = tgui::Button::create("cancel");
-	cancelButton->onPress(&Window::showMainMenu);
-	m_loadGui->add(cancelButton);
+	cancelButton->onPress([&]{ m_window.showMainMenu(); });
+	m_group->add(cancelButton);
 }

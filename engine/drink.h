@@ -71,7 +71,7 @@ public:
 	friend class DrinkEvent;
 	friend class DrinkThreadedTask;
 };
-class DrinkEvent final : public ScheduledEventWithPercent
+class DrinkEvent final : public ScheduledEvent
 {
 	DrinkObjective& m_drinkObjective;
 	Item* m_item;
@@ -81,7 +81,7 @@ public:
 	void execute();
 	void clearReferences();
 };
-class ThirstEvent final : public ScheduledEventWithPercent
+class ThirstEvent final : public ScheduledEvent
 {
 	Actor& m_actor;
 public:

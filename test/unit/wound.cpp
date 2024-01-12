@@ -1,8 +1,8 @@
 #include "../../lib/doctest.h"
-#include "../../src/actor.h"
-#include "../../src/area.h"
-#include "../../src/areaBuilderUtil.h"
-#include "../../src/simulation.h"
+#include "../../engine/actor.h"
+#include "../../engine/area.h"
+#include "../../engine/areaBuilderUtil.h"
+#include "../../engine/simulation.h"
 TEST_CASE("wound")
 {
 	static const MaterialType& dirt = MaterialType::byName("dirt");
@@ -14,7 +14,7 @@ TEST_CASE("wound")
 	Block& pondLocation = area.getBlock(3, 7, 1);
 	pondLocation.setNotSolid();
 	pondLocation.addFluid(Config::maxBlockVolume, FluidType::byName("water"));
-	Item& fruit = simulation.createItemNongeneric(ItemType::byName("apple"), MaterialType::byName("fruit"), 50u);
+	Item& fruit = simulation.createItemGeneric(ItemType::byName("apple"), MaterialType::byName("fruit"), 50u);
 	Block& fruitLocation = area.getBlock(6, 5, 2);
 	fruit.setLocation(fruitLocation);
 	SUBCASE("bleed to death")

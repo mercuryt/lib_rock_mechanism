@@ -1,9 +1,9 @@
 #include "../../lib/doctest.h"
-#include "../../src/simulation.h"
-#include "../../src/animalSpecies.h"
-#include "../../src/area.h"
-#include "../../src/areaBuilderUtil.h"
-#include "../../src/plant.h"
+#include "../../engine/simulation.h"
+#include "../../engine/animalSpecies.h"
+#include "../../engine/area.h"
+#include "../../engine/areaBuilderUtil.h"
+#include "../../engine/plant.h"
 TEST_CASE("basicNeedsSentient")
 {
 	static const MaterialType& dirt = MaterialType::byName("dirt");
@@ -250,7 +250,7 @@ TEST_CASE("basicNeedsNonsentient")
 	{
 		REQUIRE(actor.m_canGrow.isGrowing());
 		Block& temperatureSourceLocation = area.getBlock(1, 1, 3);
-		area.m_areaHasTemperature.addTemperatureSource(temperatureSourceLocation, 200);
+		area.m_hasTemperature.addTemperatureSource(temperatureSourceLocation, 200);
 		simulation.doStep();
 		REQUIRE(!actor.m_needsSafeTemperature.isSafeAtCurrentLocation());
 		REQUIRE(actor.m_location->m_blockHasTemperature.get() > actor.m_species.maximumSafeTemperature);
@@ -298,7 +298,7 @@ TEST_CASE("death")
 	SUBCASE("temperature")
 	{
 		Block& temperatureSourceLocation = area.getBlock(5, 5, 2);
-		area.m_areaHasTemperature.addTemperatureSource(temperatureSourceLocation, 60000);
+		area.m_hasTemperature.addTemperatureSource(temperatureSourceLocation, 60000);
 		simulation.doStep();
 		REQUIRE(!actor.m_needsSafeTemperature.isSafeAtCurrentLocation());
 		simulation.fastForward(actor.m_species.stepsTillDieInUnsafeTemperature - 2);

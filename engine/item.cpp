@@ -30,21 +30,60 @@ Block* ItemType::getCraftLocation(const Block& location, Facing facing) const
 	return location.offset(x, y, z);
 }
 // RemarkItemForStockPilingEvent
-RemarkItemForStockPilingEvent::RemarkItemForStockPilingEvent(Item& i, const Faction& f, Step duration, const Step start) : ScheduledEventWithPercent(i.getSimulation(), duration, start), m_item(i), m_faction(f) { }
-void RemarkItemForStockPilingEvent::execute() 
+ReMarkItemForStockPilingEvent::ReMarkItemForStockPilingEvent(Item& i, const Faction& f, Step duration, const Step start) : ScheduledEvent(i.getSimulation(), duration, start), m_item(i), m_faction(f) { }
+void ReMarkItemForStockPilingEvent::execute() 
 { 
 	m_item.m_canBeStockPiled.maybeSet(m_faction); 
 	m_item.m_canBeStockPiled.m_scheduledEvents.erase(&m_faction); 
 }
-void RemarkItemForStockPilingEvent::clearReferences() { }
+void ReMarkItemForStockPilingEvent::clearReferences() { }
 // ItemCanBeStockPiled
-void ItemCanBeStockPiled::scheduleReset(const Faction& faction, Step duration)
+ItemCanBeStockPiled::ItemCanBeStockPiled(const Json& data, DeserializationMemo& deserializationMemo, Item& i) : m_item(i)
+{
+	if(data.contains("data"))
+		for(const Json& factionData : data["data"])
+			m_data.insert(&deserializationMemo.faction(factionData));
+	if(data.contains("scheduledEvents"))
+		for(const Json& eventData : data["scheduledEvents"])
+		{
+			const Faction& faction = deserializationMemo.faction(eventData[0]);
+			Step start = eventData[1]["start"].get<Step>();
+			Step duration = eventData[1]["duration"].get<Step>();
+			scheduleReset(faction, duration, start);
+		}
+
+}
+Json ItemCanBeStockPiled::toJson() const
+{
+	Json data;
+	if(!m_data.empty())
+	{
+		data["data"] = Json::array();
+		for(const Faction* faction : m_data)
+			data["data"].push_back(faction);
+		if(!m_scheduledEvents.empty())
+		{
+			data["scheduledEvents"] = Json::array();
+			for(auto [faction, event] : m_scheduledEvents)
+			{
+				Json pair;
+				pair[0] = faction;
+				pair[1] = Json();
+				pair[1]["start"] = event.getStartStep();
+				pair[1]["duration"] = event.duration();
+				data["scheduledEvents"].push_back(pair);
+			}
+		}
+	}
+	return data;
+}
+void ItemCanBeStockPiled::scheduleReset(const Faction& faction, Step duration, Step start)
 {
 	assert(!m_scheduledEvents.contains(&faction));
 	auto [iter, created] = m_scheduledEvents.emplace(&faction, m_item.getEventSchedule());
 	assert(created);
-	HasScheduledEvent<RemarkItemForStockPilingEvent>& eventHandle = iter->second;
-	eventHandle.schedule(m_item, faction, duration);
+	HasScheduledEvent<ReMarkItemForStockPilingEvent>& eventHandle = iter->second;
+	eventHandle.schedule(m_item, faction, duration, start);
 }
 // Item
 void Item::setVolume() { m_volume = m_quantity * m_itemType.volume; }

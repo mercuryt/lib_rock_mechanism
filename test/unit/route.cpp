@@ -1,9 +1,9 @@
 #include "../../lib/doctest.h"
-#include "../../src/area.h"
-#include "../../src/areaBuilderUtil.h"
-#include "../../src/actor.h"
-#include "../../src/materialType.h"
-#include "../../src/simulation.h"
+#include "../../engine/area.h"
+#include "../../engine/areaBuilderUtil.h"
+#include "../../engine/actor.h"
+#include "../../engine/materialType.h"
+#include "../../engine/simulation.h"
 TEST_CASE("route_10_10_10")
 {
 	Simulation simulation;

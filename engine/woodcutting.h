@@ -30,7 +30,6 @@ public:
 	[[nodiscard]] bool canBeAssigned(Actor& actor) const;
 	[[nodiscard]] std::unique_ptr<Objective> makeFor(Actor& actor) const;
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::WoodCutting; }
-	[[nodiscard]] Json toJson() const;
 };
 // Objective
 class WoodCuttingObjective final : public Objective

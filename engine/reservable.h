@@ -23,7 +23,7 @@ struct DishonorCallback
 {
 	virtual void execute(uint32_t oldCount, uint32_t newCount) = 0;
 	virtual ~DishonorCallback() = default;
-	virtual Json toJson() const;
+	virtual Json toJson() const = 0;
 };
 class CanReserve final
 {
@@ -36,6 +36,7 @@ public:
 	Json toJson() const;
 	void clearAll();
 	void setFaction(const Faction* faction);
+	void deleteAllWithoutCallback() { m_reservables.clear(); }
 	[[nodiscard]] bool hasFaction() const;
 	[[nodiscard]] bool hasReservationWith(Reservable& reservable) const;
 	[[nodiscard]] bool hasReservations() const;

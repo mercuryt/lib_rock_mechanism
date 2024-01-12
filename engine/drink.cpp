@@ -65,8 +65,8 @@ void MustDrink::onDeath()
 }
 uint32_t MustDrink::drinkVolumeFor(Actor& actor) { return std::max(1u, actor.getMass() / Config::unitsBodyMassPerUnitFluidConsumed); }
 // Drink Event.
-DrinkEvent::DrinkEvent(const Step delay, DrinkObjective& drob, const Step start) : ScheduledEventWithPercent(drob.m_actor.getSimulation(), delay, start), m_drinkObjective(drob), m_item(nullptr) {}
-DrinkEvent::DrinkEvent(const Step delay, DrinkObjective& drob, Item& i, const Step start) : ScheduledEventWithPercent(drob.m_actor.getSimulation(), delay, start), m_drinkObjective(drob), m_item(&i) {}
+DrinkEvent::DrinkEvent(const Step delay, DrinkObjective& drob, const Step start) : ScheduledEvent(drob.m_actor.getSimulation(), delay, start), m_drinkObjective(drob), m_item(nullptr) {}
+DrinkEvent::DrinkEvent(const Step delay, DrinkObjective& drob, Item& i, const Step start) : ScheduledEvent(drob.m_actor.getSimulation(), delay, start), m_drinkObjective(drob), m_item(&i) {}
 void DrinkEvent::execute()
 {
 	auto& actor = m_drinkObjective.m_actor;
@@ -93,7 +93,7 @@ void DrinkEvent::execute()
 	actor.m_mustDrink.drink(volume);
 }
 void DrinkEvent::clearReferences() { m_drinkObjective.m_drinkEvent.clearPointer(); }
-ThirstEvent::ThirstEvent(const Step delay, Actor& a, const Step start) : ScheduledEventWithPercent(a.getSimulation(), delay, start), m_actor(a) { }
+ThirstEvent::ThirstEvent(const Step delay, Actor& a, const Step start) : ScheduledEvent(a.getSimulation(), delay, start), m_actor(a) { }
 void ThirstEvent::execute() { m_actor.m_mustDrink.setNeedsFluid(); }
 void ThirstEvent::clearReferences() { m_actor.m_mustDrink.m_thirstEvent.clearPointer(); }
 // Drink Threaded Task.

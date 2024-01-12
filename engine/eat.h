@@ -44,7 +44,7 @@ public:
 	[[maybe_unused]]bool hasObjecive() const { return m_eatObjective != nullptr; }
 	[[maybe_unused]]Step getHungerEventStep() const { return m_hungerEvent.getStep(); }
 };
-class EatEvent final : public ScheduledEventWithPercent
+class EatEvent final : public ScheduledEvent
 {
 	EatObjective& m_eatObjective;
 public:
@@ -60,7 +60,7 @@ public:
 	[[nodiscard]] uint32_t getDesireToEatSomethingAt(const Block& block) const;
 	[[nodiscard]] uint32_t getMinimumAcceptableDesire() const;
 };
-class HungerEvent final : public ScheduledEventWithPercent
+class HungerEvent final : public ScheduledEvent
 {
 	Actor& m_actor;
 public:

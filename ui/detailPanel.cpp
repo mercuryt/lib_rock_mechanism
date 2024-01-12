@@ -112,7 +112,7 @@ void DetailPanel::display(Actor& actor)
 	std::wstring descriptionText;
 	descriptionText.append(util::stringToWideString(actor.m_species.name));
 	descriptionText.append(L"age: ");
-	descriptionText.append(actor.getAge());
+	descriptionText.append(std::to_wstring(actor.getAgeInYears()));
 	m_description->setText(descriptionText);
 	m_contents->removeAllWidgets();
 	for(Item* item : actor.m_equipmentSet.getAll())
@@ -122,7 +122,7 @@ void DetailPanel::display(Actor& actor)
 		m_contents->add(button);
 	}
 	m_more->setVisible(true);
-	m_more->onClick([&]{ m_window.detailView(actor); });
+	m_more->onClick([&]{ m_window.showActorDetail(actor); });
 	m_panel->setVisible(true);
 }
 void DetailPanel::display(Plant& plant)
@@ -130,8 +130,6 @@ void DetailPanel::display(Plant& plant)
 	m_name->setVisible(true);
 	m_name->setText(plant.m_plantSpecies.name);
 	std::wstring descriptionText;
-	descriptionText.append(L"age: ");
-	descriptionText.append(std::to_wstring(plant.getAge()));
 	descriptionText.append(L"percent grown: ");
 	descriptionText.append(std::to_wstring(plant.getGrowthPercent()));
 	descriptionText.append(L"percent foliage: ");

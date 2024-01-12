@@ -112,7 +112,8 @@ uint32_t CraftJob::getQuality() const
 uint32_t CraftJob::getStep() const
 {
 	return 1 + (stepIterator - craftJobType.stepTypes.begin());
-}
+} 
+CraftThreadedTask::CraftThreadedTask(CraftObjective& co): ThreadedTask(co.m_actor.getThreadedTaskEngine()), m_craftObjective(co), m_craftJob(nullptr), m_location(nullptr) { }
 void CraftThreadedTask::readStep()
 {
 	assert(m_craftObjective.m_craftJob == nullptr);
@@ -162,6 +163,12 @@ std::unique_ptr<Objective> CraftObjectiveType::makeFor(Actor& actor) const
 {
 	return std::make_unique<CraftObjective>(actor, m_skillType);
 }
+Json CraftObjectiveType::toJson() const 
+{
+	Json data = ObjectiveType::toJson();
+	data["skillType"] = m_skillType;
+	return data;
+}
 // Objective.
 CraftObjective::CraftObjective(Actor& a, const SkillType& st) : Objective(a, Config::craftObjectivePriority), m_skillType(st), m_craftJob(nullptr), m_threadedTask(a.getThreadedTaskEngine()) { }
 CraftObjective::CraftObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), 
@@ -189,6 +196,126 @@ Json CraftObjective::toJson() const
 	}
 	return data;
 }
+void CraftObjective::execute()
+{
+	if(m_craftJob)
+		m_craftJob->craftStepProject->commandWorker(m_actor);
+	else
+		m_threadedTask.create(*this);
+}
+void CraftObjective::cancel()
+{
+	m_threadedTask.maybeCancel();
+	if(m_craftJob && m_craftJob->craftStepProject)
+		m_craftJob->craftStepProject->cancel();
+}
+void CraftObjective::reset()
+{
+	m_actor.m_canReserve.clearAll();
+	m_craftJob = nullptr;
+	cancel();
+}
+// HasCraftingLocationsAndJobs
+HasCraftingLocationsAndJobsForFaction::HasCraftingLocationsAndJobsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const Faction& f) : m_faction(f)
+{
+	for(const Json& pair : data["locationsByCategory"])
+	{
+		const CraftStepTypeCategory& category = CraftStepTypeCategory::byName(pair[0].get<std::string>());
+		for(const Json& blockQuery : pair[1])
+		{
+			Block& block = deserializationMemo.blockReference(blockQuery);
+			m_locationsByCategory[&category].insert(&block);
+			m_stepTypeCategoriesByLocation[&block].insert(&category);
+		}
+	}
+	for(const Json& jobData : data["jobs"])
+		m_jobs.emplace_back(jobData, deserializationMemo, *this);
+	for(const Json& pair : data["unassignedProjectsByStepTypeCategory"])
+	{
+		const CraftStepTypeCategory& category = CraftStepTypeCategory::byName(pair[0].get<std::string>());
+		for(const Json& jobReference : pair[1])
+			m_unassignedProjectsByStepTypeCategory[&category].insert(deserializationMemo.m_craftJobs.at(jobReference.get<uintptr_t>()));
+	}
+	for(const Json& pair : data["unassignedProjectsBySkill"])
+	{
+		const SkillType& skill = SkillType::byName(pair[0].get<std::string>());
+		for(const Json& jobReference : pair[1])
+			m_unassignedProjectsBySkill[&skill].insert(deserializationMemo.m_craftJobs.at(jobReference.get<uintptr_t>()));
+	}
+}
+Json HasCraftingLocationsAndJobsForFaction::toJson() const
+{
+	Json data{{"faction", m_faction}, {"locationsByCategory", Json::array()}, {"stepTypeCategoriesByLocation", Json::array()}, {"unassignedProjectsByStepTypeCategory", Json::array()}, {"unassignedProjectsBySkill", Json::array()}};
+	for(auto& [category, locations] : m_locationsByCategory)
+	{
+		Json pair = Json::array();
+		pair[0] = category;
+		pair[1] = Json::array();
+		for(Block* location : locations)
+			pair[1].push_back(location->positionToJson());
+		data["locationsByCagegory"].push_back(pair);
+	}
+	for(auto& [location, categories] : m_stepTypeCategoriesByLocation)
+	{
+		Json pair = Json::array();
+		pair[0] = location->positionToJson();
+		pair[1] = Json::array();
+		for(auto& category : categories)
+			pair[1].push_back(category);
+		data["stepTypeCategoriesByLocation"].push_back(pair);
+	}
+	for(auto& [category, projects] : m_unassignedProjectsByStepTypeCategory)
+	{
+		Json pair = Json::array();
+		pair[0] = category;
+		pair[1] = Json::array();
+		for(auto* project : projects)
+			pair[1].push_back(project);
+		data["unassignedProjectsByStepTypeCategory"].push_back(pair);
+	}
+	for(auto& [skill, projects] : m_unassignedProjectsBySkill)
+	{
+		Json pair = Json::array();
+		pair[0] = skill;
+		pair[1] = Json::array();
+		for(auto* project : projects)
+			pair[1].push_back(project);
+		data["unassignedProjectsBySkill"].push_back(pair);
+	}
+	for(auto& job : m_jobs)
+		data["jobs"].push_back(job.toJson());
+	return data;
+}
+void HasCraftingLocationsAndJobsForFaction::addLocation(const CraftStepTypeCategory& category, Block& block)
+{
+	m_locationsByCategory[&category].insert(&block);
+	m_stepTypeCategoriesByLocation[&block].insert(&category);
+}
+void HasCraftingLocationsAndJobsForFaction::removeLocation(const CraftStepTypeCategory& category, Block& block)
+{
+	for(const CraftJob& craftJob : m_jobs)
+	{
+		if(craftJob.craftStepProject && craftJob.craftStepProject->getLocation() == block)
+			craftJob.craftStepProject->cancel();
+	}
+	if(m_locationsByCategory.at(&category).size() == 1)
+		m_locationsByCategory.erase(&category);
+	else
+		m_locationsByCategory[&category].erase(&block);
+	if(m_stepTypeCategoriesByLocation.at(&block).size() == 1)
+		m_stepTypeCategoriesByLocation.erase(&block);
+	else
+		m_stepTypeCategoriesByLocation[&block].erase(&category);
+}
+void HasCraftingLocationsAndJobsForFaction::maybeRemoveLocation(Block& block)
+{
+	if(m_stepTypeCategoriesByLocation.contains(&block))
+	{
+		std::vector<const CraftStepTypeCategory*> categories(m_stepTypeCategoriesByLocation.at(&block).begin(), m_stepTypeCategoriesByLocation.at(&block).end());
+		for(auto* category : categories)
+			removeLocation(*category, block);
+	}
+}
 void HasCraftingLocationsAndJobsForFaction::addJob(const CraftJobType& craftJobType, const MaterialType* materialType, uint32_t quantity, uint32_t minimumSkillLevel)
 {
 	if(craftJobType.materialtypeCategory != nullptr)
@@ -198,6 +325,11 @@ void HasCraftingLocationsAndJobsForFaction::addJob(const CraftJobType& craftJobT
 		CraftJob& craftJob = m_jobs.emplace_back(craftJobType, *this, materialType, minimumSkillLevel);
 		indexUnassigned(craftJob);
 	}
+}
+void HasCraftingLocationsAndJobsForFaction::cloneJob(CraftJob& job)
+{
+	CraftJob& craftJob = m_jobs.emplace_back(job.craftJobType, *this, job.materialType, job.minimumSkillLevel);
+	indexUnassigned(craftJob);
 }
 void HasCraftingLocationsAndJobsForFaction::removeJob(CraftJob& job)
 {
@@ -274,6 +406,13 @@ void HasCraftingLocationsAndJobsForFaction::makeAndAssignStepProject(CraftJob& c
 	craftJob.craftStepProject->addWorkerCandidate(objective.m_actor, objective);
 	unindexAssigned(craftJob);
 }
+bool HasCraftingLocationsAndJobsForFaction::hasLocationsFor(const CraftJobType& craftJobType) const
+{
+	for(const CraftStepType& craftStepType : craftJobType.stepTypes)
+		if(!m_locationsByCategory.contains(&craftStepType.craftStepTypeCategory))
+			return false;
+	return true;
+}
 // May return nullptr;
 CraftJob* HasCraftingLocationsAndJobsForFaction::getJobForAtLocation(const Actor& actor, const SkillType& skillType, const Block& block, std::unordered_set<CraftJob*>& excludeJobs)
 {
@@ -310,4 +449,16 @@ void HasCraftingLocationsAndJobs::load(const Json& data, DeserializationMemo& de
 		const Faction& faction = deserializationMemo.faction(pair[0].get<std::wstring>());
 		m_data.try_emplace(&faction, pair[1], deserializationMemo, faction);
 	}
+}
+Json HasCraftingLocationsAndJobs::toJson() const
+{
+	Json data = Json::array();
+	for(auto& [faction, hasCraftingLocationsAndJobsForFaction] : m_data)
+	{
+		auto pair = Json::array();
+		pair[0] = faction;
+		pair[1] = hasCraftingLocationsAndJobsForFaction.toJson();
+		data.push_back(pair);
+	}
+	return data;
 }

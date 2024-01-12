@@ -300,7 +300,7 @@ AttackType& CanFight::getRangedAttackType(Item& weapon)
 	assert(false);
 }
 
-AttackCoolDown::AttackCoolDown(CanFight& cf, Step duration, const Step start) : ScheduledEventWithPercent(cf.m_actor.getSimulation(), duration, start), m_canFight(cf) { }
+AttackCoolDown::AttackCoolDown(CanFight& cf, Step duration, const Step start) : ScheduledEvent(cf.m_actor.getSimulation(), duration, start), m_canFight(cf) { }
 
 GetIntoAttackPositionThreadedTask::GetIntoAttackPositionThreadedTask(Actor& a, Actor& t, float ar) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_target(t), m_attackRangeSquared(ar * ar), m_findsPath(a, true) {}
 void GetIntoAttackPositionThreadedTask::readStep()

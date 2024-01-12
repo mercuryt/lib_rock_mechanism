@@ -1,7 +1,7 @@
 #include "../../lib/doctest.h"
-#include "../../src/area.h"
-#include "../../src/areaBuilderUtil.h"
-#include "../../src/simulation.h"
+#include "../../engine/area.h"
+#include "../../engine/areaBuilderUtil.h"
+#include "../../engine/simulation.h"
 TEST_CASE("plant")
 {
 	static const MaterialType& marble = MaterialType::byName("marble");
@@ -31,10 +31,10 @@ TEST_CASE("plant")
 	area.m_hasRain.start(water, 1, 100);
 	CHECK(plant.m_volumeFluidRequested == 0);
 	CHECK(plant.m_growthEvent.exists());
-	area.m_areaHasTemperature.setAmbientSurfaceTemperature(wheatGrass.minimumGrowingTemperature - 1);
+	area.m_hasTemperature.setAmbientSurfaceTemperature(wheatGrass.minimumGrowingTemperature - 1);
 	CHECK(!plant.m_growthEvent.exists());
 	CHECK(plant.m_temperatureEvent.exists());
-	area.m_areaHasTemperature.setAmbientSurfaceTemperature(wheatGrass.minimumGrowingTemperature);
+	area.m_hasTemperature.setAmbientSurfaceTemperature(wheatGrass.minimumGrowingTemperature);
 	CHECK(plant.m_growthEvent.exists());
 	CHECK(!plant.m_temperatureEvent.exists());
 	Block& above = *location.m_adjacents[5];

@@ -35,4 +35,4 @@ void AreaHasRain::writeStep()
 			if(m_area.m_simulation.m_random.chance((double)m_intensityPercent / (double)Config::rainFrequencyModifier))
 				block.addFluid(1, *m_currentlyRainingFluidType);
 }
-StopRainEvent::StopRainEvent(Step delay, AreaHasRain& ahr, const Step start) : ScheduledEventWithPercent(ahr.m_area.m_simulation, delay, start), m_areaHasRain(ahr) { }
+StopRainEvent::StopRainEvent(Step delay, AreaHasRain& ahr, const Step start) : ScheduledEvent(ahr.m_area.m_simulation, delay, start), m_areaHasRain(ahr) { }

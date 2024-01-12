@@ -1,5 +1,5 @@
 #include "../../lib/doctest.h"
-#include "../../src/definitions.h"
+#include "../../engine/definitions.h"
 TEST_CASE("load")
 {
 	definitions::loadShapes();

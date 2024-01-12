@@ -1,11 +1,11 @@
 #include "../../lib/doctest.h"
-#include "../../src/actor.h"
-#include "../../src/area.h"
-#include "../../src/block.h"
-#include "../../src/areaBuilderUtil.h"
-#include "../../src/animalSpecies.h"
-#include "../../src/simulation.h"
-#include "../../src/visionRequest.h"
+#include "../../engine/actor.h"
+#include "../../engine/area.h"
+#include "../../engine/block.h"
+#include "../../engine/areaBuilderUtil.h"
+#include "../../engine/animalSpecies.h"
+#include "../../engine/simulation.h"
+#include "../../engine/visionRequest.h"
 TEST_CASE("vision")
 {
 	Simulation simulation;

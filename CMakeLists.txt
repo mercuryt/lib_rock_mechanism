@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS True)
 set(CMAKE_BUILD_TYPE Debug)
+# set(CMAKE_CXX_CPPCHECK "cppcheck")
 
 if(MSVC)
     # warning level 4
@@ -18,9 +19,9 @@ endif()
 # add_compile_options(-ffast-math)
 
 add_subdirectory(engine)
-add_subdirectory(ui)
+#add_subdirectory(ui)
 add_subdirectory(test)
-add_subdirectory(python)
+#add_subdirectory(python)
 
 # release build by default
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)

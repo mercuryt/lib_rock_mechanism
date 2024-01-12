@@ -1,10 +1,10 @@
 #include "../../lib/doctest.h"
-#include "../../src/actor.h"
-#include "../../src/area.h"
-#include "../../src/item.h"
-#include "../../src/areaBuilderUtil.h"
-#include "../../src/simulation.h"
-#include "../../src/medical.h"
+#include "../../engine/actor.h"
+#include "../../engine/area.h"
+#include "../../engine/item.h"
+#include "../../engine/areaBuilderUtil.h"
+#include "../../engine/simulation.h"
+#include "../../engine/medical.h"
 #include <functional>
 TEST_CASE("medical")
 {

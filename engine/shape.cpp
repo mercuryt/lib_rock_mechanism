@@ -14,7 +14,10 @@ Shape::Shape(const std::string n, std::vector<std::array<int32_t, 4>> p) : name(
 Shape::Shape(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) : name(""), isMultiTile(data["positions"].size() != 1)
 {
 	for(const Json& position : data["positions"])
-		positions.emplace_back(position[0].get<int32_t>(), position[1].get<uint32_t>(), position[2].get<int32_t>(), position[3].get<int32_t>());
+	{
+		std::array<int32_t, 4> p{position[0].get<int32_t>(), position[1].get<int32_t>(), position[2].get<int32_t>(), position[3].get<int32_t>()};
+		positions.emplace_back(p);
+	}
 }
 Json Shape::toJson() const
 {
@@ -102,7 +105,7 @@ const Shape& SimulationHasShapes::mutateAdd(const Shape& shape, std::array<int32
 	if(m_shapes.contains(name))
 		return m_shapes.at(name);
 	Shape newShape(name, positions);
-	auto pair = m_shapes.try_emplace(name, name, position);
+	auto pair = m_shapes.try_emplace(name, name, positions);
 	assert(pair.second);
 	const Shape& output = pair.first->second;
 	m_namesByShape[&output] = name;

@@ -1,8 +1,8 @@
 #define DOCTEST_CONFIG_IMPLEMENT
 #include "../../lib/doctest.h"
-#include "../../src/config.h"
-#include "../../src/definitions.h"
-#include "../../src/objectiveTypeInstances.h"
+#include "../../engine/config.h"
+#include "../../engine/definitions.h"
+#include "../../engine/objectiveTypeInstances.h"
 
 int main(int argc, char** argv) {
     doctest::Context context;

@@ -42,12 +42,20 @@ class Window final
 	std::chrono::milliseconds m_minimumMillisecondsPerFrame;
 	std::chrono::milliseconds m_minimumMillisecondsPerStep;
 	std::thread m_simulationThread;
+	sf::Vector2i m_positionWhereMouseDragBegan;
 	Block* m_firstCornerOfSelection;
 	std::filesystem::path m_path;
 	
 	void drawView();
 	void drawBlock(const Block& block);
+	void drawValidOnBlock(const Block& block);
+	void drawInvalidOnBlock(const Block& block);
+	void drawColorOnBlock(const Block& block, sf::Color color);
+	void drawOutlineOnBlock(const Block& block, sf::Color color, float thickness = 3.f);
+	void drawStringOnBlock(const Block& block, std::wstring string, sf::Color color);
 	void drawActor(const Actor& actor);
+	void drawItem(const Item& item);
+	void drawPlant(const Plant& plant);
 	void povFromJson(const Json& data);
 	[[nodiscard]] Json povToJson() const;
 	[[nodiscard]] static std::chrono::milliseconds msSinceEpoch();
@@ -59,6 +67,7 @@ public:
 	void startLoop();
 	void centerView(const Block& block);
 	void setFrameRate(uint32_t);
+	void setItemToInstall(Item& item) { m_gameOverlay.m_itemBeingInstalled = &item; }
 	// Show panels.
 	void hideAllPanels();
 	void showMainMenu() { hideAllPanels(); m_mainMenuView.show(); }
@@ -70,6 +79,7 @@ public:
 	void showStocks() { hideAllPanels(); m_stocksView.show(); }
 	void showActorDetail(Actor& actor) { hideAllPanels(); m_actorView.draw(actor); }
 	// Select.
+	void deselectAll();
 	void selectBlock(Block& block);
 	void selectItem(Item& item);
 	void selectPlant(Plant& plant);

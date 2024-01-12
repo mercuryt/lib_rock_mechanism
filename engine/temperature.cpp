@@ -256,7 +256,7 @@ void GetToSafeTemperatureObjective::reset()
 	m_actor.m_canReserve.clearAll();
 }
 GetToSafeTemperatureObjective::~GetToSafeTemperatureObjective() { m_actor.m_needsSafeTemperature.m_objectiveExists = false; }
-UnsafeTemperatureEvent::UnsafeTemperatureEvent(Actor& a, const Step start) : ScheduledEventWithPercent(a.getSimulation(), a.m_species.stepsTillDieInUnsafeTemperature, start), m_actor(a) { }
+UnsafeTemperatureEvent::UnsafeTemperatureEvent(Actor& a, const Step start) : ScheduledEvent(a.getSimulation(), a.m_species.stepsTillDieInUnsafeTemperature, start), m_actor(a) { }
 void UnsafeTemperatureEvent::execute() { m_actor.die(CauseOfDeath::temperature); }
 void UnsafeTemperatureEvent::clearReferences() { m_actor.m_needsSafeTemperature.m_event.clearPointer(); }
 ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(Actor& a) : m_actor(a), m_event(a.getEventSchedule()), m_objectiveExists(false) { }

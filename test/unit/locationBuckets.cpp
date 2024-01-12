@@ -1,7 +1,7 @@
 #include "../../lib/doctest.h"
-#include "../../src/locationBuckets.h"
-#include "../../src/area.h"
-#include "../../src/block.h"
+#include "../../engine/locationBuckets.h"
+#include "../../engine/area.h"
+#include "../../engine/block.h"
 TEST_CASE("locationBuckets")
 {
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");

@@ -54,7 +54,7 @@ public:
 	[[maybe_unused, nodiscard]] bool hasTiredEvent() const { return m_tiredEvent.exists(); }
 	[[maybe_unused, nodiscard]] SleepObjective* getObjective() { return m_objective; }
 };
-class SleepEvent final : public ScheduledEventWithPercent
+class SleepEvent final : public ScheduledEvent
 {
 	MustSleep& m_needsSleep;
 	bool m_force;
@@ -63,7 +63,7 @@ public:
 	void execute();
 	void clearReferences();
 };
-class TiredEvent final : public ScheduledEventWithPercent
+class TiredEvent final : public ScheduledEvent
 {
 	MustSleep& m_needsSleep;
 public:

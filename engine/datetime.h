@@ -10,13 +10,23 @@ struct DateTime
 	uint16_t year;
 	DateTime(uint8_t h, uint16_t d, uint16_t y) : hour(h), day(d), year(y)
 	{
-		assert(hour != 0);
+		if(hour == 0 || day == 0 || year == 0)
+			assert(hour == day && day == year);
 		assert(hour <= Config::hoursPerDay);
-		assert(day != 0);
 		assert(day <= Config::daysPerYear);
-		assert(year != 0);
 	}
 	DateTime() : hour(0), day(0), year(0) { }
+	[[nodiscard]] explicit operator bool() const { return hour || day || year; }
+	static DateTime fromPastBySteps(Step steps)
+	{
+		DateTime output;
+		output.year = steps / Config::stepsPerYear;
+		steps -= output.year * Config::stepsPerYear;
+		output.day = steps / Config::stepsPerDay;
+		steps -= output.day * Config::stepsPerDay;
+		output.hour = steps / Config::stepsPerHour;
+		return output;
+	}
 };
 inline void from_json(const Json& data, DateTime& dateTime)
 {

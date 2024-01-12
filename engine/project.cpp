@@ -9,19 +9,34 @@
 #include "simulation.h"
 #include <algorithm>
 #include <memory>
+// ProjectRequirementCounts
+ProjectRequirementCounts::ProjectRequirementCounts(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) :
+	required(data["required"].get<const uint8_t>()), delivered(data["delivered"].get<uint8_t>()), 
+	reserved(data["reserved"].get<uint8_t>()), consumed(data["consumed"].get<uint8_t>()) { }
+// Project worker.
+ProjectWorker::ProjectWorker(const Json& data, DeserializationMemo& deserializationMemo) : 
+	objective(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))
+{
+	haulSubproject = deserializationMemo.m_haulSubprojects.at(data["haulSubproject"].get<uintptr_t>());
+}
+Json ProjectWorker::toJson() const
+{
+	return {{"haulSubproject", haulSubproject}, {"objective", &objective}};
+}
+// DishonorCallback.
 void ProjectRequiredShapeDishonoredCallback::execute(uint32_t oldCount, uint32_t newCount)
 {
 	m_project.onHasShapeReservationDishonored(m_hasShape, oldCount, newCount);
 }
-ProjectFinishEvent::ProjectFinishEvent(const Step delay, Project& p, const Step start) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay, start), m_project(p) {}
+ProjectFinishEvent::ProjectFinishEvent(const Step delay, Project& p, const Step start) : ScheduledEvent(p.m_location.m_area->m_simulation, delay, start), m_project(p) {}
 void ProjectFinishEvent::execute() { m_project.complete(); }
 void ProjectFinishEvent::clearReferences() { m_project.m_finishEvent.clearPointer(); }
 
-ProjectTryToHaulEvent::ProjectTryToHaulEvent(const Step delay, Project& p, const Step start) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay, start), m_project(p) { }
+ProjectTryToHaulEvent::ProjectTryToHaulEvent(const Step delay, Project& p, const Step start) : ScheduledEvent(p.m_location.m_area->m_simulation, delay, start), m_project(p) { }
 void ProjectTryToHaulEvent::execute() { m_project.m_tryToHaulThreadedTask.create(m_project); }
 void ProjectTryToHaulEvent::clearReferences() { m_project.m_tryToHaulEvent.clearPointer(); }
 
-ProjectTryToReserveEvent::ProjectTryToReserveEvent(const Step delay, Project& p, const Step start) : ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay, start), m_project(p) { }
+ProjectTryToReserveEvent::ProjectTryToReserveEvent(const Step delay, Project& p, const Step start) : ScheduledEvent(p.m_location.m_area->m_simulation, delay, start), m_project(p) { }
 void ProjectTryToReserveEvent::execute() 
 { 
 	m_project.setDelayOff();
@@ -331,7 +346,7 @@ Json Project::toJson() const
 		data["requiredItems"] = Json::array();
 		for(auto& [itemQuery, requiredCounts] : m_requiredItems)
 		{
-			Json pair({itemQuery.toJson(), requiredCounts.toJson()});
+			Json pair({itemQuery.toJson(), requiredCounts});
 			data["requiredItems"].push_back(pair);
 		}
 	}
@@ -340,7 +355,7 @@ Json Project::toJson() const
 		data["requiredActors"] = Json::array();
 		for(auto& [actorQuery, requiredCounts] : m_requiredActors)
 		{
-			Json pair({actorQuery.toJson(), requiredCounts.toJson()});
+			Json pair({actorQuery.toJson(), requiredCounts});
 			data["requiredActors"].push_back(pair);
 		}
 	}
@@ -355,7 +370,7 @@ Json Project::toJson() const
 		data["toPickup"] = Json::array();
 		for(auto& [hasShape, pair] : m_toPickup)
 		{
-			Json jsonPair({pair.first->toJson(), pair.second});
+			Json jsonPair({*pair.first, pair.second});
 			data["toPickup"].emplace_back(reinterpret_cast<uintptr_t>(hasShape), jsonPair);
 		}
 	}

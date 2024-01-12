@@ -267,7 +267,10 @@ void Body::recalculateBleedAndImpairment()
 			Step adjustedWoundsCloseDelay = util::scaleByInversePercent(baseWoundsCloseDelay, m_woundsCloseEvent.percentComplete());
 			toScheduleStep = m_actor.getSimulation().m_step + adjustedWoundsCloseDelay;
 			if(!m_woundsCloseEvent.exists() || toScheduleStep != m_woundsCloseEvent.getStep())
+			{
+				m_woundsCloseEvent.maybeUnschedule();
 				m_woundsCloseEvent.schedule(adjustedWoundsCloseDelay, *this);
+			}
 		}
 		else
 		{
@@ -392,6 +395,6 @@ std::vector<Wound*> Body::getAllWounds()
 			output.push_back(&const_cast<Wound&>(wound));
 	return output;
 }
-WoundHealEvent::WoundHealEvent(const Step delay, Wound& w, Body& b, const Step start) : ScheduledEventWithPercent(b.m_actor.getSimulation(), delay, start), m_wound(w), m_body(b) {}
-BleedEvent::BleedEvent(const Step delay, Body& b, const Step start) : ScheduledEventWithPercent(b.m_actor.getSimulation(), delay, start), m_body(b) {}
-WoundsCloseEvent::WoundsCloseEvent(const Step delay, Body& b, const Step start) : ScheduledEventWithPercent(b.m_actor.getSimulation(), delay, start), m_body(b) {}
+WoundHealEvent::WoundHealEvent(const Step delay, Wound& w, Body& b, const Step start) : ScheduledEvent(b.m_actor.getSimulation(), delay, start), m_wound(w), m_body(b) {}
+BleedEvent::BleedEvent(const Step delay, Body& b, const Step start) : ScheduledEvent(b.m_actor.getSimulation(), delay, start), m_body(b) {}
+WoundsCloseEvent::WoundsCloseEvent(const Step delay, Body& b, const Step start) : ScheduledEvent(b.m_actor.getSimulation(), delay, start), m_body(b) {}

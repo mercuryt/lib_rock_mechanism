@@ -1,8 +1,8 @@
 #include "../../lib/doctest.h"
-#include "../../src/eventSchedule.h"
-#include "../../src/mistDisperseEvent.h"
-#include "../../src/block.h"
-#include "../../src/simulation.h"
+#include "../../engine/eventSchedule.h"
+#include "../../engine/mistDisperseEvent.h"
+#include "../../engine/block.h"
+#include "../../engine/simulation.h"
 
 class TestEvent final : public ScheduledEvent
 {
@@ -12,12 +12,12 @@ public:
 	void execute(){ fired = true; }
 	void clearReferences() { }
 };
-class TestEventWithPercent final : public ScheduledEventWithPercent
+class TestEventWithPercent final : public ScheduledEvent
 {
 public:
 	bool& fired;
 	HasScheduledEvent<TestEventWithPercent>& hasScheduledEvent;
-	TestEventWithPercent(uint32_t delay, bool& f, HasScheduledEvent<TestEventWithPercent>& hse, Simulation& s) : ScheduledEventWithPercent(s, delay), fired(f), hasScheduledEvent(hse) { }
+	TestEventWithPercent(uint32_t delay, bool& f, HasScheduledEvent<TestEventWithPercent>& hse, Simulation& s) : ScheduledEvent(s, delay, 0), fired(f), hasScheduledEvent(hse) { }
 	void execute(){ fired = true; }
 	void clearReferences() { hasScheduledEvent.clearPointer(); }
 };

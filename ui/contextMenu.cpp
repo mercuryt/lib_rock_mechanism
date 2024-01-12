@@ -14,70 +14,6 @@ ContextMenu::ContextMenu(Window& window, tgui::Group::Ptr gameOverlayGroup) : m_
 void ContextMenu::draw(Block& block)
 {
 	//TODO: shift to add to end of work queue.
-	auto actors = m_window.getSelectedActors();
-	if(actors.size())
-	{
-		// Go.
-		auto goTo = tgui::Button::create("go to");
-		m_rootGui->add(goTo);
-		goTo->onClick([&]{
-			for(Actor* actor : actors)
-			{
-				std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(*actor, block);
-				actor->m_hasObjectives.replaceTasks(std::move(objective));
-			}
-		});
-		// Station.
-		auto station = tgui::Button::create("station");
-		m_rootGui->add(station);
-		station->onClick([&]{
-			for(Actor* actor : actors)
-			{
-				std::unique_ptr<Objective> objective = std::make_unique<StationObjective>(*actor, block);
-				actor->m_hasObjectives.replaceTasks(std::move(objective));
-			}
-		});
-		// Kill.
-		for(Actor* otherActor : block.m_hasActors.getAll())
-		{
-			const Faction& faction = *(*actors.begin())->getFaction();
-			const Faction& otherFaction = *otherActor->getFaction();
-			if(faction.enemies.contains(const_cast<Faction*>(&otherFaction)))
-			{
-				tgui::Button::Ptr kill = tgui::Button::create("kill");
-				m_rootGui->add(kill);
-				kill->onClick([&]{
-					for(Actor* actor : actors)
-					{
-						std::unique_ptr<Objective> objective = std::make_unique<KillObjective>(*actor, *otherActor);
-						actor->m_hasObjectives.replaceTasks(std::move(objective));
-					}
-				});
-			}
-			//TODO: follow objective, attack move, targeted haul.
-		}
-	}
-	auto items = m_window.getSelectedItems();
-	if(items.size() == 1)
-	{
-		Item& item = **items.begin();
-		if(item.m_itemType.installable)
-		{
-			// Install item.
-			auto install = tgui::Label::create("install...");
-			m_rootGui->add(install);
-			install->onMouseEnter([&]{
-				auto submenu = makeSubmenu(0, install);
-				for(Facing facing = 0; facing < 4; ++facing)
-				{
-					auto button = tgui::Button::create(m_window.facingToString(facing));
-					submenu->add(button);
-					button->onClick([&]{ m_window.getArea()->m_hasInstallItemDesignations.at(*m_window.getFaction()).add(block, item); });
-				}
-			});
-			// TODO: targeted haul.
-		}
-	}
 	if(block.isSolid())
 	{
 		// Dig.
@@ -108,6 +44,77 @@ void ContextMenu::draw(Block& block)
 	}
 	else
 	{
+		auto actors = m_window.getSelectedActors();
+		if(actors.size())
+		{
+			// Go.
+			auto goTo = tgui::Button::create("go to");
+			m_rootGui->add(goTo);
+			goTo->onClick([&]{
+				for(Actor* actor : actors)
+				{
+					std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(*actor, block);
+					actor->m_hasObjectives.replaceTasks(std::move(objective));
+				}
+			});
+			// Station.
+			auto station = tgui::Button::create("station");
+			m_rootGui->add(station);
+			station->onClick([&]{
+				for(Actor* actor : actors)
+				{
+					std::unique_ptr<Objective> objective = std::make_unique<StationObjective>(*actor, block);
+					actor->m_hasObjectives.replaceTasks(std::move(objective));
+				}
+			});
+			// Kill.
+			for(Actor* otherActor : block.m_hasActors.getAll())
+			{
+				const Faction& faction = *(*actors.begin())->getFaction();
+				const Faction& otherFaction = *otherActor->getFaction();
+				if(faction.enemies.contains(const_cast<Faction*>(&otherFaction)))
+				{
+					tgui::Button::Ptr kill = tgui::Button::create("kill");
+					m_rootGui->add(kill);
+					kill->onClick([&]{
+						for(Actor* actor : actors)
+						{
+							std::unique_ptr<Objective> objective = std::make_unique<KillObjective>(*actor, *otherActor);
+							actor->m_hasObjectives.replaceTasks(std::move(objective));
+						}
+					});
+				}
+				//TODO: follow objective, attack move, targeted haul.
+			}
+		}
+		// Items.
+		auto items = m_window.getSelectedItems();
+		if(items.size() == 1)
+		{
+			Item& item = **items.begin();
+			if(item.m_itemType.installable)
+			{
+				// Install item.
+				auto install = tgui::Label::create("install...");
+				m_rootGui->add(install);
+				install->onMouseEnter([&]{
+					auto submenu = makeSubmenu(0, install);
+					for(Facing facing = 0; facing < 4; ++facing)
+					{
+						auto button = tgui::Button::create(m_window.facingToString(facing));
+						submenu->add(button);
+						button->onClick([&]{ m_window.getArea()->m_hasInstallItemDesignations.at(*m_window.getFaction()).add(block, item, facing, *m_window.getFaction()); hide(); });
+					}
+				});
+				// TODO: targeted haul.
+			}
+		}
+		for(Item* item : block.m_hasItems.getAll())
+		{
+			auto button = tgui::Button::create(m_window.displayNameForItem(*item) + L" install at...");
+			m_rootGui->add(button);
+			button->onClick([&]{ m_window.setItemToInstall(*item); hide(); });
+		}
 		// Construct.
 		auto constructButton = tgui::Button::create("construct");
 		m_rootGui->add(constructButton);

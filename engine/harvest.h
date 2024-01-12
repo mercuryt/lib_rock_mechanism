@@ -46,7 +46,7 @@ public:
 	friend class HarvestEvent;
 	friend class HarvestThreadedTask;
 };
-class HarvestEvent final : public ScheduledEventWithPercent
+class HarvestEvent final : public ScheduledEvent
 {
 	HarvestObjective& m_harvestObjective;
 public:

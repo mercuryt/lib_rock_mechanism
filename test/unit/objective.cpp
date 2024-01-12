@@ -1,17 +1,17 @@
 #include "../../lib/doctest.h"
-#include "../../src/objective.h"
-#include "../../src/animalSpecies.h"
-#include "../../src/actor.h"
-#include "../../src/area.h"
-#include "../../src/areaBuilderUtil.h"
-#include "../../src/simulation.h"
+#include "../../engine/objective.h"
+#include "../../engine/animalSpecies.h"
+#include "../../engine/actor.h"
+#include "../../engine/area.h"
+#include "../../engine/areaBuilderUtil.h"
+#include "../../engine/simulation.h"
 
 #include <memory>
 
 struct TestTaskObjective final : public Objective
 {
 	bool& x;
-	TestTaskObjective(uint32_t priority, bool& ax) : Objective(priority), x(ax) { }
+	TestTaskObjective(Actor& a, uint32_t priority, bool& ax) : Objective(a, priority), x(ax) { }
 	void execute() { x = !x; }
 	void cancel() { }
 	void delay() { }
@@ -24,7 +24,7 @@ struct TestTaskObjective final : public Objective
 struct TestNeedObjective final : public Objective
 {
 	bool& x;
-	TestNeedObjective(uint32_t priority, bool& ax) : Objective(priority), x(ax) { }
+	TestNeedObjective(Actor& a, uint32_t priority, bool& ax) : Objective(a, priority), x(ax) { }
 	void execute() { x = !x; }
 	void cancel() { }
 	void delay() { }
@@ -43,12 +43,12 @@ TEST_CASE("objective")
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	Actor& actor = simulation.createActor(dwarf, area.getBlock(5, 5, 1));
 	bool x = false;
-	std::unique_ptr<Objective> objective = std::make_unique<TestTaskObjective>(1, x);
+	std::unique_ptr<Objective> objective = std::make_unique<TestTaskObjective>(actor, 1, x);
 	Objective* ptr = objective.get();
 	actor.m_hasObjectives.addTaskToEnd(std::move(objective));
 	CHECK(&actor.m_hasObjectives.getCurrent() == ptr);
 	CHECK(x);
-	std::unique_ptr<Objective> objective2 = std::make_unique<TestNeedObjective>(2, x);
+	std::unique_ptr<Objective> objective2 = std::make_unique<TestNeedObjective>(actor, 2, x);
 	Objective* ptr2 = objective2.get();
 	actor.m_hasObjectives.addNeed(std::move(objective2));
 	CHECK(&actor.m_hasObjectives.getCurrent() == ptr2);
@@ -56,13 +56,13 @@ TEST_CASE("objective")
 	actor.m_hasObjectives.objectiveComplete(*ptr2);
 	CHECK(&actor.m_hasObjectives.getCurrent() == ptr);
 	CHECK(x);
-	std::unique_ptr<Objective> objective3 = std::make_unique<TestTaskObjective>(2, x);
+	std::unique_ptr<Objective> objective3 = std::make_unique<TestTaskObjective>(actor, 2, x);
 	Objective* ptr3 = objective3.get();
 	actor.m_hasObjectives.addTaskToEnd(std::move(objective3));
 	actor.m_hasObjectives.objectiveComplete(*ptr);
 	CHECK(&actor.m_hasObjectives.getCurrent() == ptr3);
 	CHECK(!x);
-	std::unique_ptr<Objective> objective4 = std::make_unique<TestNeedObjective>(1, x);
+	std::unique_ptr<Objective> objective4 = std::make_unique<TestNeedObjective>(actor, 1, x);
 	Objective* ptr4 = objective4.get();
 	actor.m_hasObjectives.addNeed(std::move(objective4));
 	CHECK(&actor.m_hasObjectives.getCurrent() == ptr3);

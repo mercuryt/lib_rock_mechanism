@@ -43,7 +43,7 @@ public:
 	friend class SowSeedsEvent;
 	friend class SowSeedsThreadedTask;
 };
-class SowSeedsEvent final : public ScheduledEventWithPercent
+class SowSeedsEvent final : public ScheduledEvent
 {
 	SowSeedsObjective& m_objective;
 public:

@@ -1,3 +1,4 @@
+#pragma once
 #include "../engine/objective.h"
 #include <TGUI/TGUI.hpp>
 class Window;

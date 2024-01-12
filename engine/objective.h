@@ -69,9 +69,10 @@ struct ObjectiveType
 	ObjectiveType() = default;
 	ObjectiveType(const ObjectiveType&) = delete;
 	ObjectiveType(ObjectiveType&&) = delete;
+	virtual ~ObjectiveType() = default;
 	// Infastructure
-	static std::map<std::string, std::unique_ptr<ObjectiveType>> objectiveTypes;
-	static std::map<const ObjectiveType*, std::string> objectiveTypeNames;
+	inline static std::map<std::string, std::unique_ptr<ObjectiveType>> objectiveTypes;
+	inline static std::map<const ObjectiveType*, std::string> objectiveTypeNames;
 	inline static void load();
 	[[nodiscard]] bool operator==(const ObjectiveType& other) const { return &other == this; }
 };
@@ -100,6 +101,7 @@ public:
 	bool operator==(const Objective& other) const { return &other == this; }
 	virtual ~Objective() = default;
 };
+inline void to_json(Json& data, const Objective* const& objective){ data = reinterpret_cast<uintptr_t>(objective); }
 struct ObjectivePriority
 {
 	const ObjectiveType* objectiveType;
@@ -136,7 +138,7 @@ public:
 	friend class SupressedNeedEvent;
 	bool operator==(const SupressedNeed& supressedNeed){ return &supressedNeed == this; }
 };
-class SupressedNeedEvent final : public ScheduledEventWithPercent
+class SupressedNeedEvent final : public ScheduledEvent
 {
 	SupressedNeed& m_supressedNeed;
 public:

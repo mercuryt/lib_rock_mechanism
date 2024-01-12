@@ -90,6 +90,7 @@ struct HaulSubprojectDishonorCallback final : public DishonorCallback
 	void execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { m_haulSubproject.cancel(); }
 	Json toJson() const { return {{"type", "HaulSubprojectDishonorCallback"}, {"haulSubproject", reinterpret_cast<uintptr_t>(&m_haulSubproject)}}; }
 };
+inline void to_json(Json& data, const HaulSubproject* const & haulSubproject){ data = reinterpret_cast<uintptr_t>(&haulSubproject); }
 // Used by Actor for individual haul strategy only. Other strategies use lead/follow.
 class CanPickup final
 {

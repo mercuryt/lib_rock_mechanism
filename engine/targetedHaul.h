@@ -30,15 +30,13 @@ class TargetedHaulObjective final : public Objective
 {
 	TargetedHaulProject& m_project;
 public:
-	TargetedHaulObjective(Actor& a, TargetedHaulProject& p) : Objective(a, Config::targetedHaulPriority), m_project(p)
-	{ m_project.addWorkerCandidate(m_actor, *this); }
-	TargetedHaulObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), 
-	m_project(static_cast<TargetedHaulProject&>(*deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()))) { }
+	TargetedHaulObjective(Actor& a, TargetedHaulProject& p) : Objective(a, Config::targetedHaulPriority), m_project(p) { m_project.addWorkerCandidate(m_actor, *this); }
+	TargetedHaulObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void execute() { m_project.commandWorker(m_actor); }
 	void cancel() { m_project.removeWorker(m_actor); }
 	void delay() { }
-	void reset() { m_actor.m_canReserve.clearAll(); }
+	void reset() { cancel(); }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Haul; }
 	std::string name() const { return "haul"; }
 };

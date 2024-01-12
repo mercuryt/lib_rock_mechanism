@@ -1,10 +1,10 @@
 #include "../../lib/doctest.h"
-#include "../../src/temperature.h"
-#include "../../src/area.h"
-#include "../../src/materialType.h"
-#include "../../src/simulation.h"
-#include "../../src/block.h"
-#include "../../src/definitions.h"
+#include "../../engine/temperature.h"
+#include "../../engine/area.h"
+#include "../../engine/materialType.h"
+#include "../../engine/simulation.h"
+#include "../../engine/block.h"
+#include "../../engine/definitions.h"
 TEST_CASE("temperature")
 {
 	Simulation simulation;
@@ -22,8 +22,8 @@ TEST_CASE("temperature")
 		toBurn.setSolid(wood);
 		toNotBurn.setSolid(marble);
 		uint32_t temperatureBeforeHeatSource = origin.m_blockHasTemperature.get();
-		area.m_areaHasTemperature.addTemperatureSource(origin, 1000);
-		area.m_areaHasTemperature.applyDeltas();
+		area.m_hasTemperature.addTemperatureSource(origin, 1000);
+		area.m_hasTemperature.applyDeltas();
 		REQUIRE(origin.m_blockHasTemperature.get() == temperatureBeforeHeatSource + 1000);
 		REQUIRE(b1.m_blockHasTemperature.get() == temperatureBeforeHeatSource + 1000);
 		REQUIRE(b2.m_blockHasTemperature.get() == 367);
@@ -36,7 +36,7 @@ TEST_CASE("temperature")
 		REQUIRE(toNotBurn.m_fires == nullptr);
 		REQUIRE(toNotBurn.m_blockHasTemperature.get() == temperatureBeforeHeatSource + 1000);
 		REQUIRE(!simulation.m_eventSchedule.m_data.empty());
-		area.m_areaHasTemperature.applyDeltas();
+		area.m_hasTemperature.applyDeltas();
 		REQUIRE(toBurn.m_blockHasTemperature.get() > temperatureBeforeHeatSource + 1000);
 		REQUIRE(toNotBurn.m_blockHasTemperature.get() > temperatureBeforeHeatSource + 1000);
 	}
@@ -46,18 +46,18 @@ TEST_CASE("temperature")
 		Block& toBurn = area.getBlock(6, 5, 5);
 		auto& wood = MaterialType::byName("poplar wood");
 		toBurn.setSolid(wood);
-		area.m_areaHasTemperature.addTemperatureSource(origin, 1000);
+		area.m_hasTemperature.addTemperatureSource(origin, 1000);
 		simulation.doStep();
 		REQUIRE(toBurn.m_fires != nullptr);
 		Fire& fire = toBurn.m_fires->at(&wood);
 		REQUIRE(area.m_fires.containsFireAt(fire, toBurn));
 		REQUIRE(fire.m_stage == FireStage::Smouldering);
 		simulation.fastForward(wood.burnData->burnStageDuration - 1);
-		REQUIRE(fire.m_stage == FireStage::Burining);
+		REQUIRE(fire.m_stage == FireStage::Burning);
 		simulation.fastForward(wood.burnData->burnStageDuration);
 		REQUIRE(fire.m_stage == FireStage::Flaming);
 		simulation.fastForward(wood.burnData->flameStageDuration);
-		REQUIRE(fire.m_stage == FireStage::Burining);
+		REQUIRE(fire.m_stage == FireStage::Burning);
 		REQUIRE(fire.m_hasPeaked == true);
 		simulation.fastForward(wood.burnData->burnStageDuration * Config::fireRampDownPhaseDurationFraction);
 		REQUIRE(fire.m_stage == FireStage::Smouldering);

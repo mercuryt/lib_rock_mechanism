@@ -15,7 +15,7 @@ class Plant;
 class Block;
 class Item;
 class GivePlantsFluidObjective;
-class GivePlantsFluidEvent final : public ScheduledEventWithPercent
+class GivePlantsFluidEvent final : public ScheduledEvent
 {
 	GivePlantsFluidObjective& m_objective;
 public:

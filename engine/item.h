@@ -119,12 +119,12 @@ public:
 	bool containsGeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity) const;
 	bool empty() const { return m_fluidType == nullptr && m_shapes.empty(); }
 };
-class RemarkItemForStockPilingEvent final : public ScheduledEventWithPercent
+class ReMarkItemForStockPilingEvent final : public ScheduledEvent
 {
 	Item& m_item;
 	const Faction& m_faction;
 public:
-	RemarkItemForStockPilingEvent(Item& i, const Faction& f, Step duration, const Step start = 0);
+	ReMarkItemForStockPilingEvent(Item& i, const Faction& f, Step duration, const Step start = 0);
 	void execute();
 	void clearReferences();
 };
@@ -134,8 +134,8 @@ class ItemCanBeStockPiled
 {
 	Item& m_item;
 	std::unordered_set<const Faction*> m_data;
-	std::unordered_map<const Faction*, HasScheduledEvent<RemarkItemForStockPilingEvent>> m_scheduledEvents;
-	void scheduleReset(const Faction& faction, Step duration);
+	std::unordered_map<const Faction*, HasScheduledEvent<ReMarkItemForStockPilingEvent>> m_scheduledEvents;
+	void scheduleReset(const Faction& faction, Step duration, Step start = 0);
 public:
 	ItemCanBeStockPiled(Item& i) : m_item(i) { }
 	ItemCanBeStockPiled(const Json& data, DeserializationMemo& deserializationMemo, Item& item);
@@ -147,7 +147,7 @@ public:
 	void unsetAndScheduleReset(const Faction& faction, Step duration) { unset(faction); scheduleReset(faction, duration); }
 	void maybeUnsetAndScheduleReset(const Faction& faction, Step duration)  { maybeUnset(faction); scheduleReset(faction, duration); }
 	[[nodiscard]] bool contains(const Faction& faction) { return m_data.contains(&faction); }
-	friend class RemarkItemForStockPilingEvent;
+	friend class ReMarkItemForStockPilingEvent;
 };
 class Item final : public HasShape
 {
@@ -166,9 +166,6 @@ public:
 	ItemHasCargo m_hasCargo; //TODO: Change to reference to save some RAM?
 	ItemCanBeStockPiled m_canBeStockPiled;
 	//TODO: ItemHasOwners
-	std::list<Item>::iterator m_iterator;
-	std::list<Item>* m_dataLocation;
-
 	// Generic.
 	Item(Simulation& s, ItemId i, const ItemType& it, const MaterialType& mt, uint32_t q, CraftJob* cj);
 	// NonGeneric.

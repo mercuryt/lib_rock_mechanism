@@ -15,8 +15,8 @@
 #include <map>
 struct ObjectiveTypeInstances
 {
-	static std::map<std::string, std::unique_ptr<ObjectiveType>> objectiveTypes;
-	static std::map<const ObjectiveType*, std::string> objectiveTypeNames;
+	inline static std::map<std::string, std::unique_ptr<ObjectiveType>> objectiveTypes;
+	inline static std::map<const ObjectiveType*, std::string> objectiveTypeNames;
 	inline static void load()
 	{
 		objectiveTypes["wood working"] = std::make_unique<CraftObjectiveType>(SkillType::byName("wood working"));

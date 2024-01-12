@@ -3,7 +3,7 @@
 #include "util.h"
 #include "area.h"
 #include <cassert>
-ScheduledEvent::ScheduledEvent(Simulation& simulation, const Step delay, const Step start) : m_simulation(simulation), m_step(start + delay), m_cancel(false) 
+ScheduledEvent::ScheduledEvent(Simulation& simulation, const Step delay, const Step start) : m_simulation(simulation), m_startStep(start == 0 ? simulation.m_step : start), m_step(m_startStep + delay), m_cancel(false) 
 {
 	assert(delay != 0);
 	assert(m_simulation.m_step <= m_step);
@@ -16,20 +16,15 @@ void ScheduledEvent::cancel()
 Step ScheduledEvent::remaningSteps() const { return m_step - m_simulation.m_step; }
 
 //TODO: The same ternary is used twice here.
-ScheduledEventWithPercent::ScheduledEventWithPercent(Simulation& simulation, const Step delay, const Step start) : ScheduledEvent(simulation, delay, (start == 0 ? simulation.m_step : start)), m_startStep((start == 0 ? simulation.m_step : start)) {}
-Percent ScheduledEventWithPercent::percentComplete() const
+Percent ScheduledEvent::percentComplete() const
 {
 	Step totalSteps = m_step - m_startStep;
 	Step elapsedSteps = m_simulation.m_step - m_startStep;
 	return ((float)elapsedSteps / (float)totalSteps) * 100u;
 }
 
-Step ScheduledEventWithPercent::duration() const { return m_step - m_startStep ; }
+Step ScheduledEvent::duration() const { return m_step - m_startStep ; }
 void EventSchedule::schedule(std::unique_ptr<ScheduledEvent> scheduledEvent)
-{
-	m_data[scheduledEvent->m_step].push_back(std::move(scheduledEvent));
-}
-void EventSchedule::schedule(std::unique_ptr<ScheduledEventWithPercent> scheduledEvent)
 {
 	m_data[scheduledEvent->m_step].push_back(std::move(scheduledEvent));
 }

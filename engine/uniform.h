@@ -11,6 +11,7 @@ struct UniformElement final
 	ItemQuery itemQuery;
 	uint32_t quantity;
 	UniformElement(const ItemType& itemType, const MaterialType* materialType, uint32_t quality = 0, uint32_t quantity = 0);
+	[[nodiscard]] bool operator==(const UniformElement& other) const { return &other == this; }
 };
 struct Uniform final
 {

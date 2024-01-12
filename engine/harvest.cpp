@@ -5,7 +5,7 @@
 #include "objective.h"
 #include "plant.h"
 // Event.
-HarvestEvent::HarvestEvent(Step delay, HarvestObjective& ho, const Step start) : ScheduledEventWithPercent(ho.m_actor.getSimulation(), delay, start), m_harvestObjective(ho) {}
+HarvestEvent::HarvestEvent(Step delay, HarvestObjective& ho, const Step start) : ScheduledEvent(ho.m_actor.getSimulation(), delay, start), m_harvestObjective(ho) {}
 void HarvestEvent::execute()
 {
 	assert(m_harvestObjective.m_block != nullptr);

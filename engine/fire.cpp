@@ -1,7 +1,7 @@
 #include "fire.h"
 #include "block.h"
 #include "area.h"
-FireEvent::FireEvent(Step delay, Fire& f, Step start) : ScheduledEventWithPercent(f.m_location.m_area->m_simulation, delay, start), m_fire(f) {}
+FireEvent::FireEvent(Step delay, Fire& f, Step start) : ScheduledEvent(f.m_location.m_area->m_simulation, delay, start), m_fire(f) {}
 void FireEvent::execute()
 {
 	if(!m_fire.m_hasPeaked &&m_fire.m_stage == FireStage::Smouldering)

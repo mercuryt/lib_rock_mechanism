@@ -1,6 +1,24 @@
 #include "leadAndFollow.h"
 #include "block.h"
 #include "deserializationMemo.h"
+void CanLead::load(const Json& data, DeserializationMemo& deserializationMemo)
+{
+
+	if(data.contains("canFollow"))
+		m_canFollow = &deserializationMemo.hasShapeReference(data["canFollow"]).m_canFollow;
+	if(data.contains("locationQueue"))
+		for(const Json& blockQuery : data["locationQueue"])
+			m_locationQueue.push_back(&deserializationMemo.blockReference(blockQuery));
+}
+Json CanLead::toJson() const
+{
+	Json data;
+	if(m_canFollow)
+		data["canFollow"] = &m_canFollow->m_hasShape;
+	if(!m_locationQueue.empty())
+		data["locationQueue"] = m_locationQueue;
+	return data;
+}
 void CanLead::onMove()
 {
 	if(!isLeading())
@@ -80,11 +98,19 @@ std::deque<Block*>& CanLead::getLocationQueue()
 CanFollow::CanFollow(HasShape& a) : m_hasShape(a), m_canLead(nullptr), m_event(a.getEventSchedule()) { }
 void CanFollow::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
-	if(data.contains("leader"))
-	{
-		HasShape& leader = deserializationMemo.hasShapeReference(data["leader"]);
-		follow(leader.m_canLead, false);
-	}
+	if(data.contains("canLead"))
+		m_canLead = &deserializationMemo.hasShapeReference(data["canLead"]).m_canLead;
+	if(data.contains("eventStart"))
+		m_event.schedule(m_hasShape, data["eventStart"].get<Step>());
+}
+Json CanFollow::toJson() const
+{
+	Json data;
+	if(m_canLead)
+		data["canLead"] = &m_canLead->m_hasShape;
+	if(m_event.exists())
+		data["eventStart"] = m_event.getStartStep();
+	return data;
 }
 void CanFollow::follow(CanLead& canLead, bool doAdjacentCheck)
 {
@@ -162,6 +188,6 @@ HasShape& CanFollow::getLineLeader()
 	else
 		return m_canLead->m_hasShape.m_canFollow.getLineLeader();
 }
-CanFollowEvent::CanFollowEvent(HasShape& hasShape, const Step start) : ScheduledEventWithPercent(hasShape.getSimulation(), Config::stepsToDelayBeforeTryingAgainToFollowLeader, start), m_hasShape(hasShape) { }
+CanFollowEvent::CanFollowEvent(HasShape& hasShape, const Step start) : ScheduledEvent(hasShape.getSimulation(), Config::stepsToDelayBeforeTryingAgainToFollowLeader, start), m_hasShape(hasShape) { }
 void CanFollowEvent::execute() { m_hasShape.m_canFollow.tryToMove(); }
 void CanFollowEvent::clearReferences() { m_hasShape.m_canFollow.m_event.clearPointer(); }

@@ -16,6 +16,7 @@ void SimulationHasUniformsForFaction::destroyUniform(Uniform& uniform)
 {
 	m_data.erase(uniform.name);
 }
+std::unordered_map<std::wstring, Uniform>& SimulationHasUniformsForFaction::getAll(){ return m_data; }
 EquipItemThreadedTask::EquipItemThreadedTask(EquipItemObjective& objective) : ThreadedTask(objective.m_actor.getThreadedTaskEngine()), m_objective(objective), m_findsPath(objective.m_actor, false) { }
 void EquipItemThreadedTask::readStep()
 {
@@ -68,7 +69,15 @@ void EquipItemThreadedTask::writeStep()
 			m_objective.m_actor.m_hasObjectives.cannotFulfillObjective(m_objective);
 	}
 }
+void EquipItemThreadedTask::clearReferences() { m_objective.m_threadedTask.clearPointer(); }
 EquipItemObjective::EquipItemObjective(Actor& actor, ItemQuery& itemQuery) : Objective(actor, Config::equipPriority), m_itemQuery(itemQuery), m_threadedTask(actor.getThreadedTaskEngine()) { }
+Json EquipItemObjective::toJson() const
+{
+	Json data = Objective::toJson();
+	data["itemQuery"] = m_itemQuery.toJson();
+	data["item"] = m_item;
+	return data;
+}
 void EquipItemObjective::execute()
 {
 	if(m_item)

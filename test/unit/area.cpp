@@ -1,8 +1,8 @@
 #include "../../lib/doctest.h"
-#include "../../src/area.h"
-#include "../../src/areaBuilderUtil.h"
-#include "../../src/simulation.h"
-#include "../../src/threadedTask.h"
+#include "../../engine/area.h"
+#include "../../engine/areaBuilderUtil.h"
+#include "../../engine/simulation.h"
+#include "../../engine/threadedTask.h"
 
 TEST_CASE("Area")
 {

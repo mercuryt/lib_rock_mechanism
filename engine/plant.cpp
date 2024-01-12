@@ -44,6 +44,7 @@ Plant::Plant(const Json& data, DeserializationMemo& deserializationMemo, Block& 
 		m_foliageGrowthEvent.schedule(data["foliageGrowthEventDuration"].get<Step>(), *this, data["foliageGrowthEventStart"].get<Step>());
 	m_location.m_hasShapes.enter(*this);
 }
+Plant::Plant(const Json& data, DeserializationMemo& deserializationMemo) : Plant(data, deserializationMemo, deserializationMemo.blockReference(data["location"])){ }
 Json Plant::toJson() const
 {
 	Json data = HasShape::toJson();
@@ -91,9 +92,9 @@ void Plant::die()
 	m_location.m_isPartOfFarmField.removeAllHarvestDesignations();
 	m_location.m_isPartOfFarmField.removeAllGiveFluidDesignations();
 	Block& location = m_location;
+	m_location.m_hasShapes.exit(*this);
 	m_location.m_area->m_hasPlants.erase(*this);
 	location.m_isPartOfFarmField.maybeDesignateForSowingIfPartOfFarmField();
-	m_location.m_hasShapes.exit(*this);
 	//TODO: Create rot away event.
 }
 void Plant::setTemperature(Temperature temperature)
@@ -310,20 +311,20 @@ Step Plant::getStepAtWhichPlantWillDieFromLackOfFluid() const
 }
 // Events.
 PlantGrowthEvent::PlantGrowthEvent(const Step delay, Plant& p, Step start) : 
-	ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay, start), m_plant(p) {}
+	ScheduledEvent(p.m_location.m_area->m_simulation, delay, start), m_plant(p) {}
 PlantFoliageGrowthEvent::PlantFoliageGrowthEvent(const Step delay, Plant& p, Step start) : 
-	ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay, start), m_plant(p) {}
+	ScheduledEvent(p.m_location.m_area->m_simulation, delay, start), m_plant(p) {}
 PlantEndOfHarvestEvent::PlantEndOfHarvestEvent(const Step delay, Plant& p, Step start) :
-	ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay, start), m_plant(p) {}
+	ScheduledEvent(p.m_location.m_area->m_simulation, delay, start), m_plant(p) {}
 PlantFluidEvent::PlantFluidEvent(const Step delay, Plant& p, Step start) :
-	ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay, start), m_plant(p) {}
+	ScheduledEvent(p.m_location.m_area->m_simulation, delay, start), m_plant(p) {}
 PlantTemperatureEvent::PlantTemperatureEvent(const Step delay, Plant& p, Step start) :
-	ScheduledEventWithPercent(p.m_location.m_area->m_simulation, delay, start), m_plant(p) {}
+	ScheduledEvent(p.m_location.m_area->m_simulation, delay, start), m_plant(p) {}
 // HasPlant.
 void HasPlant::addPlant(const PlantSpecies& plantSpecies, Percent growthPercent)
 {
 	assert(m_plant == nullptr);
-	m_plant = &m_block.m_area->m_hasPlants.emplace(m_block, plantSpecies, growthPercent);
+	m_plant = &m_block.m_area->m_hasPlants.emplace(m_block, plantSpecies, nullptr, growthPercent);
 }
 void HasPlant::updateGrowingStatus()
 {
@@ -362,6 +363,13 @@ bool HasPlant::canGrowHereAtSomePointToday(const PlantSpecies& plantSpecies) con
 	Temperature temperature = m_block.m_blockHasTemperature.getDailyAverageAmbientTemperature();
 	if(plantSpecies.maximumGrowingTemperature < temperature || plantSpecies.minimumGrowingTemperature > temperature)
 		return false;
+	if(!canGrowHereEver(plantSpecies))
+		return false;
+	return true;
+
+}
+bool HasPlant::canGrowHereEver(const PlantSpecies& plantSpecies) const
+{
 	if(plantSpecies.growsInSunLight != m_block.m_outdoors)
 		return false;
 	static const MaterialType& dirtType = MaterialType::byName("dirt");
@@ -369,11 +377,11 @@ bool HasPlant::canGrowHereAtSomePointToday(const PlantSpecies& plantSpecies) con
 		return false;
 	return true;
 }
-Plant& HasPlants::emplace(Block& location, const PlantSpecies& species, Percent percentGrowth, Volume volumeFluidRequested, Step needsFluidEventStart, bool temperatureIsUnsafe, Step unsafeTemperatureEventStart, uint32_t harvestableQuantity, Percent percentFoliage)
+Plant& HasPlants::emplace(Block& location, const PlantSpecies& species, const Shape* shape, Percent percentGrowth, Volume volumeFluidRequested, Step needsFluidEventStart, bool temperatureIsUnsafe, Step unsafeTemperatureEventStart, uint32_t harvestableQuantity, Percent percentFoliage)
 {
 	assert(location.m_hasPlant.canGrowHereAtSomePointToday(species));
 	assert(!location.m_hasPlant.exists());
-	Plant& plant = m_plants.emplace_back(location, species, percentGrowth, volumeFluidRequested, needsFluidEventStart, temperatureIsUnsafe, unsafeTemperatureEventStart, harvestableQuantity, percentFoliage);
+	Plant& plant = m_plants.emplace_back(location, species, shape, percentGrowth, volumeFluidRequested, needsFluidEventStart, temperatureIsUnsafe, unsafeTemperatureEventStart, harvestableQuantity, percentFoliage);
 	// TODO: plants above ground but under roof?
 	if(!location.m_underground)
 		m_plantsOnSurface.insert(&plant);
@@ -381,17 +389,10 @@ Plant& HasPlants::emplace(Block& location, const PlantSpecies& species, Percent 
 }
 Plant& HasPlants::emplace(const Json& data, DeserializationMemo& deserializationMemo)
 {
-	return emplace(
-		deserializationMemo.blockReference(data["location"]),
-		*data["species"].get<const PlantSpecies*>(),
-		data["percentGrowth"].get<Percent>(),
-		data["volumeFluidRequested"].get<Volume>(),
-		data["needsFluidEventStart"].get<Step>(),
-		data["temperatureIsUnsafe"].get<bool>(),
-		data["unsafeTemperatureEventStart"].get<Step>(),
-		data["harvestableQuantity"].get<uint32_t>(),
-		data["percentFoliage"].get<Percent>()
-	);
+	Plant& plant = m_plants.emplace_back(data, deserializationMemo);
+	if(!plant.m_location.m_underground)
+		m_plantsOnSurface.insert(&plant);
+	return plant;
 }
 void HasPlants::erase(Plant& plant)
 {

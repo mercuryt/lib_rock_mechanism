@@ -31,7 +31,7 @@
 	"maxDistanceVisionModifier": 1.1,
 	"percentOfPlantMassWhichIsFoliage": 30,
 	"minimumPercentFoliageForGrow": 90,
-	"installItemDelaySeconds": 10,
+	"installItemDurationSeconds": 10,
 	"objectivePrioiorityKill": 1000,
 	"pathHuristicConstant": 1,
 	"impassibleItemVolume": 60,
@@ -156,5 +156,5 @@
 	"woodCuttingObjectivePriority": 100,
 	"woodCuttingMaxMinutes": 300,
 	"equipPriority": 1000,
-	"installItemPriority": 500,
+	"installItemPriority": 500
 }

@@ -50,7 +50,7 @@ class ConstructObjective final : public Objective
 	HasThreadedTask<ConstructThreadedTask> m_constructThreadedTask;
 	Project* m_project;
 public:
-	ConstructObjective(Actor& a) : Objective(a, Config::constructObjectivePriority), m_constructThreadedTask(a.getThreadedTaskEngine()), m_project(nullptr) { }
+	ConstructObjective(Actor& a);
 	ConstructObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void execute();

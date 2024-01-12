@@ -34,6 +34,7 @@ void WanderThreadedTask::writeStep()
 	m_findsPath.cacheMoveCosts();
 }
 void WanderThreadedTask::clearReferences() { m_objective.m_threadedTask.clearPointer(); }
+// Objective.
 WanderObjective::WanderObjective(Actor& a) : Objective(a, 0u), m_threadedTask(a.getThreadedTaskEngine()), m_routeFound(false) { }
 WanderObjective::WanderObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), 
 	m_threadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine), m_routeFound(false)
@@ -41,6 +42,7 @@ WanderObjective::WanderObjective(const Json& data, DeserializationMemo& deserial
 	if(data.contains("threadedTask"))
 		m_threadedTask.create(*this);
 }
+Json WanderObjective::toJson() const { return {{"routeFound", m_routeFound}}; }
 void WanderObjective::execute() 
 { 
 	if(m_routeFound)
