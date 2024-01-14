@@ -1,7 +1,6 @@
 #include "../../lib/doctest.h"
-#include "../../engine/area.h"
-#include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation.h"
+#include "../../engine/areaBuilderUtil.h"
 TEST_CASE("plant")
 {
 	static const MaterialType& marble = MaterialType::byName("marble");
@@ -15,12 +14,12 @@ TEST_CASE("plant")
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	areaBuilderUtil::setSolidLayer(area, 1, dirt);
 	simulation.m_step = 0;
-	location.m_hasPlant.addPlant(wheatGrass, 50);
+	location.m_hasPlant.createPlant(wheatGrass, 50);
 	Plant& plant = location.m_hasPlant.get();
 	CHECK(plant.m_growthEvent.exists());
 	CHECK(simulation.m_eventSchedule.m_data.contains(wheatGrass.stepsTillFullyGrown / 2));
 	CHECK(simulation.m_eventSchedule.m_data.contains(wheatGrass.stepsNeedsFluidFrequency));
-	CHECK(plant.m_location.m_exposedToSky);
+	CHECK(plant.m_location->m_exposedToSky);
 	CHECK(!plant.m_temperatureEvent.exists());
 	CHECK(area.m_hasPlants.getPlantsOnSurface().contains(&plant));
 	simulation.fastForward(wheatGrass.stepsNeedsFluidFrequency);
@@ -48,4 +47,5 @@ TEST_CASE("plant")
 	CHECK(plant.m_quantityToHarvest != 0);
 	simulation.fastForward(plant.m_plantSpecies.harvestData->stepsDuration);
 	CHECK(plant.m_quantityToHarvest == 0);
+	plant.die();
 }

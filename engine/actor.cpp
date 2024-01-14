@@ -11,7 +11,7 @@
 #include <iostream>
 
 Actor::Actor(Simulation& simulation, uint32_t id, const std::wstring& name, const AnimalSpecies& species, DateTime birthDate, Percent percentGrown, Faction* faction, Attributes attributes) :
-	HasShape(simulation, species.shapeForPercentGrown(percentGrown), false), m_faction(faction), m_id(id), m_name(name), m_species(species), m_birthDate(birthDate), m_alive(true), m_body(*this), m_project(nullptr), m_attributes(attributes), m_equipmentSet(*this), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canPickup(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_canReserve(faction), m_stamina(*this), m_visionRange(species.visionRange) 
+	HasShape(simulation, species.shapeForPercentGrown(percentGrown), false), m_faction(faction), m_id(id), m_name(name), m_species(species), m_birthDate(birthDate), m_alive(true), m_body(*this), m_project(nullptr), m_attributes(attributes), m_equipmentSet(*this), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canPickup(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_canReserve(faction), m_stamina(*this), m_hasUniform(*this), m_visionRange(species.visionRange)
 {
 	// TODO: Having this line here requires making the existance of objectives mandatory at all times. Good idea?
 	//m_hasObjectives.getNext();
@@ -25,7 +25,7 @@ Actor::Actor(const Json& data, DeserializationMemo& deserializationMemo) :
 	m_equipmentSet(data["equipmentSet"], *this), m_mustEat(data["mustEat"], *this), m_mustDrink(data["mustDrink"], *this), m_mustSleep(data["mustSleep"], *this), m_needsSafeTemperature(data["needsSafeTemperature"], *this), 
 	m_canPickup(data["canPickup"], *this), m_canMove(data["canMove"], deserializationMemo, *this), m_canFight(data["canFight"], *this), m_canGrow(data["canGrow"], *this), 
 	// Wait untill projects have been loaded before loading hasObjectives.
-	m_hasObjectives(*this), m_canReserve(m_faction), m_stamina(*this, data["stamina"].get<uint32_t>()), m_visionRange(m_species.visionRange) 
+	m_hasObjectives(*this), m_canReserve(m_faction), m_stamina(*this, data["stamina"].get<uint32_t>()), m_hasUniform(*this), m_visionRange(m_species.visionRange)
 { 
 	Block& block = deserializationMemo.blockReference(data["location"]);
 	setLocation(block);
@@ -56,6 +56,8 @@ Json Actor::toJson() const
 		data["location"] = m_location;
 	if(m_canReserve.hasReservations())
 		data["canReserve"] = m_canReserve.toJson();
+	if(m_hasUniform.exists())
+		data["uniform"] = &m_hasUniform.get();
 	return data;
 }
 void Actor::setLocation(Block& block)
@@ -218,6 +220,7 @@ bool BlockHasActors::contains(Actor& actor) const
 void AreaHasActors::add(Actor& actor)
 {
 	assert(actor.m_location != nullptr);
+	assert(!m_actors.contains(&actor));
 	m_actors.insert(&actor);
 	m_locationBuckets.insert(actor, *actor.m_location);
 	m_visionBuckets.add(actor);

@@ -6,8 +6,6 @@
 #include "../../engine/simulation.h"
 #include "../../engine/materialType.h"
 #include "../../engine/animalSpecies.h"
-#include "fight.h"
-#include "grow.h"
 #include <functional>
 TEST_CASE("combat")
 {
@@ -19,7 +17,6 @@ TEST_CASE("combat")
 	area.m_hasStockPiles.addFaction(faction);
 	Actor& dwarf1 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 1, 1));
 	dwarf1.setFaction(&faction);
-	area.m_hasActors.add(dwarf1);
 	Item& pants = simulation.createItemNongeneric(ItemType::byName("pants"), MaterialType::byName("plant matter"), 50u, 10);
 	dwarf1.m_equipmentSet.addEquipment(pants);
 	SUBCASE("attack table")
@@ -61,7 +58,6 @@ TEST_CASE("combat")
 		uint32_t initalScore = dwarf1.m_canFight.getCurrentMeleeCombatScore();
 		Actor& dwarf2 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(2, 1, 1));
 		dwarf2.setFaction(&faction);
-		area.m_hasActors.add(dwarf2);
 		REQUIRE(dwarf1.m_canFight.getCurrentMeleeCombatScore() > initalScore);
 	}
 	SUBCASE("flanking enemies reduce combat score")

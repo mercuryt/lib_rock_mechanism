@@ -91,7 +91,6 @@ TEST_CASE("Area")
 		Block& origin = area.getBlock(1, 1, 1);
 		Block& destination = area.getBlock(8, 8, 1);
 		Actor& actor = simulation.createActor(dwarf, origin);
-		area.m_hasActors.add(actor);
 		actor.m_canMove.setDestination(destination);
 		area.readStep();
 		simulation.m_threadedTaskEngine.readStep();
@@ -223,11 +222,9 @@ TEST_CASE("vision-threading")
 	Block& block1 = area.getBlock(3, 3, 1);
 	Block& block2 = area.getBlock(7, 7, 1);
 	Actor& a1 = simulation.createActor(dwarf, block1);
-	area.m_hasActors.add(a1);
 	REQUIRE(area.m_hasActors.m_visionBuckets.get(a1.m_id).size() == 1);
 	REQUIRE(area.m_hasActors.m_visionBuckets.get(a1.m_id)[0] == &a1);
 	Actor& a2 = simulation.createActor(dwarf, block2);
-	area.m_hasActors.add(a2);
 	REQUIRE(area.m_hasActors.m_visionBuckets.get(a2.m_id).size() == 1);
 	REQUIRE(area.m_hasActors.m_visionBuckets.get(a2.m_id)[0] == &a2);
 	area.readStep();

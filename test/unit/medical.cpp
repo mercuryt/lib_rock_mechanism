@@ -16,5 +16,4 @@ TEST_CASE("medical")
 	area.m_hasStockPiles.addFaction(faction);
 	Actor& dwarf1 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 1, 1));
 	dwarf1.setFaction(&faction);
-	area.m_hasActors.add(dwarf1);
 }

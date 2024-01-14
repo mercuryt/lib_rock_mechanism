@@ -109,6 +109,7 @@ public:
 	bool isAdjacentToAny(std::unordered_set<Block*>& blocks) const;
 	bool isAdjacentTo(Block& block) const;
 	bool isAdjacentToIncludingCornersAndEdges(Block& block) const;
+	bool isAdjacentTo(HasShape& hasShape) const;
 	void setNotSolid();
 	void setSolid(const MaterialType& materialType);
 	bool isSolid() const;

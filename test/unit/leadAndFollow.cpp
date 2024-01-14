@@ -96,9 +96,6 @@ TEST_CASE("leadAndFollow")
 		dwarf2.m_hasObjectives.addTaskToStart(std::move(stationObjective));
 		troll1.m_canFollow.follow(dwarf1.m_canLead);
 		dwarf1.m_canMove.setDestination(destination1);
-		area.m_hasActors.add(dwarf1);
-		area.m_hasActors.add(dwarf2);
-		area.m_hasActors.add(troll1);
 		simulation.doStep();
 		REQUIRE(dwarf1.m_canMove.getPath().size() == 7);
 		while(dwarf1.m_location == &origin1)

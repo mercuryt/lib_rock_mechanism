@@ -18,7 +18,6 @@ TEST_CASE("construct")
 	ConstructObjectiveType constructObjectiveType;
 	Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(1, 1, 2));
 	dwarf1.setFaction(&faction);
-	area.m_hasActors.add(dwarf1);
 	area.m_hasConstructionDesignations.addFaction(faction);
 	Item& boards = simulation.createItemGeneric(ItemType::byName("board"), wood, 50u);
 	boards.setLocation(area.getBlock(8, 7, 2));
@@ -82,7 +81,6 @@ TEST_CASE("construct")
 	{
 		Actor& dwarf2 = simulation.createActor(dwarf, area.getBlock(1, 4, 2));
 		dwarf2.setFaction(&faction);
-		area.m_hasActors.add(dwarf2);
 		Block& wallLocation = area.getBlock(8, 4, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
 		REQUIRE(constructObjectiveType.canBeAssigned(dwarf1));
@@ -100,7 +98,6 @@ TEST_CASE("construct")
 	{
 		Actor& dwarf2 = simulation.createActor(dwarf, area.getBlock(1, 4, 2));
 		dwarf2.setFaction(&faction);
-		area.m_hasActors.add(dwarf2);
 		Block& wallLocation1 = area.getBlock(8, 4, 2);
 		Block& wallLocation2 = area.getBlock(8, 5, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation1, nullptr, wood);

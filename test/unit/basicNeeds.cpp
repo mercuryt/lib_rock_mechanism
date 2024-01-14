@@ -156,7 +156,7 @@ TEST_CASE("basicNeedsNonsentient")
 	SUBCASE("eat leaves")
 	{
 		Block& grassLocation = area.getBlock(5, 5, 2);
-		grassLocation.m_hasPlant.addPlant(wheatGrass, 100);
+		grassLocation.m_hasPlant.createPlant(wheatGrass, 100);
 		Plant& grass = grassLocation.m_hasPlant.get();
 		// Generate objectives.
 		simulation.fastForward(redDeer.stepsEatFrequency);

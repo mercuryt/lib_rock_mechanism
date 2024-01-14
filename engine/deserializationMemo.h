@@ -21,6 +21,7 @@ struct ObjectiveType;
 class Plant;
 class Block;
 class Item;
+struct Uniform;
 
 struct DeserializationMemo final
 {
@@ -34,6 +35,7 @@ struct DeserializationMemo final
 	std::unordered_map<uintptr_t, StockPile*> m_stockpiles;
 	std::unordered_map<uintptr_t, CraftJob*> m_craftJobs;
 	std::unordered_map<uintptr_t, Objective*> m_objectives;
+	std::unordered_map<uintptr_t, Uniform*> m_uniform;
 	Faction& faction(std::wstring name);
 	Plant& plantReference(const Json& data);
 	Block& blockReference(const Json& data);

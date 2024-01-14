@@ -82,6 +82,7 @@ public:
 	[[maybe_unused]] void fastForwardUntillActorIsAdjacentTo(Actor& actor, Block& block);
 	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToHasShape(Actor& actor, HasShape& other);
 	[[maybe_unused]] void fastForwardUntillActorHasNoDestination(Actor& actor);
+	[[maybe_unused]] void fastForwardUntillActorHasEquipment(Actor& actor, Item& item);
 	[[maybe_unused]] void fastForwardUntillPredicate(std::function<bool()> predicate, uint32_t minutes = 10);
 };
 

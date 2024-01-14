@@ -147,7 +147,7 @@ void GivePlantsFluidObjective::execute()
 		Plant* plant = m_actor.m_location->m_area->m_hasFarmFields.getHighestPriorityPlantForGiveFluid(*m_actor.getFaction());
 		if(plant != nullptr)
 		{
-			select(plant->m_location);
+			select(*plant->m_location);
 			execute();
 		}
 		else
@@ -175,12 +175,12 @@ void GivePlantsFluidObjective::execute()
 		{
 			assert(m_fluidHaulingItem->m_hasCargo.getFluidType() == plant.m_plantSpecies.fluidType);
 			// Has fluid.
-			if(m_actor.isAdjacentTo(plant.m_location))
+			if(m_actor.isAdjacentTo(plant))
 				// At plant, begin giving.
 				m_event.schedule(Config::givePlantsFluidDelaySteps, *this);
 			else
 				// Go to plant.
-				m_actor.m_canMove.setDestinationAdjacentTo(plant.m_location, m_detour);
+				m_actor.m_canMove.setDestinationAdjacentTo(plant, m_detour);
 		}
 		else
 		{

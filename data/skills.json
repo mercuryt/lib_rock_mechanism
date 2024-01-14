@@ -8,6 +8,10 @@
 		"xpPerLevelModifier": 3.0,
 		"level1Xp": 100
 	},{
+		"name": "axe",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
 		"name": "pick",
 		"xpPerLevelModifier": 3.0,
 		"level1Xp": 300
@@ -45,6 +49,10 @@
 		"level1Xp": 100
 	},{
 		"name": "dig",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
+		"name": "wood cutting",
 		"xpPerLevelModifier": 2.0,
 		"level1Xp": 100
 	},{

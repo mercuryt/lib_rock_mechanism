@@ -171,6 +171,7 @@ namespace Config
 	inline Step woodCuttingMaxSteps;
 	inline uint32_t equipPriority;
 	inline uint32_t installItemPriority;
+	inline Percent minimumPercentGrowthForWoodCutting;
 	//inline uint32_t medicalPriority;
 	//inline uint32_t medicalProjectDelaySteps;
 
@@ -339,6 +340,7 @@ namespace Config
 		woodCuttingMaxSteps = data["woodCuttingMaxMinutes"].get<uint32_t>() * stepsPerMinute;
 		equipPriority = data["equipPriority"].get<uint32_t>();
 		installItemPriority = data["installItemPriority"].get<uint32_t>();
+		minimumPercentGrowthForWoodCutting = data["minimumPercentGrowthForWoodCutting"].get<Percent>();
 		//medicalPriority = data["medicalPriority"].get<uint32_t>();
 		//medicalProjectDelaySteps = data["medicalProjectDelayMinutes"].get<uint32_t>() * stepsPerMinute;
 	}

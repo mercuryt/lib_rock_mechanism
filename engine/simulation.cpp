@@ -118,6 +118,7 @@ Actor& Simulation::createActor(const AnimalSpecies& species, Block& block, Perce
 	++m_nextActorId;
 	Actor& output = iter->second;
 	output.setLocation(block);
+	block.m_area->m_hasActors.add(output);
 	return output;
 }
 // Nongeneric
@@ -230,6 +231,11 @@ void Simulation::fastForwardUntillActorIsAdjacentToHasShape(Actor& actor, HasSha
 void Simulation::fastForwardUntillActorHasNoDestination(Actor& actor)
 {
 	std::function<bool()> predicate = [&](){ return actor.m_canMove.getDestination() == nullptr; };
+	fastForwardUntillPredicate(predicate);
+}
+void Simulation::fastForwardUntillActorHasEquipment(Actor& actor, Item& item)
+{
+	std::function<bool()> predicate = [&](){ return actor.m_equipmentSet.contains(item); };
 	fastForwardUntillPredicate(predicate);
 }
 void Simulation::fastForwardUntillPredicate(std::function<bool()> predicate, uint32_t minutes)

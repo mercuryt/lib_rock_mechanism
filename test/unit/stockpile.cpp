@@ -27,7 +27,6 @@ TEST_CASE("stockpile")
 	area.m_hasStocks.addFaction(faction);
 	Actor& dwarf1 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 1, 1));
 	dwarf1.setFaction(&faction);
-	area.m_hasActors.add(dwarf1);
 	StockPileObjectiveType objectiveType;
 	SUBCASE("basic")
 	{
@@ -120,7 +119,6 @@ TEST_CASE("stockpile")
 		area.m_hasStockPiles.at(faction).addItem(chunk2);
 		Actor& dwarf2 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 2, 1));
 		dwarf2.setFaction(&faction);
-		area.m_hasActors.add(dwarf2);
 		StockPileObjectiveType objectiveType;
 		REQUIRE(objectiveType.canBeAssigned(dwarf2));
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 100);
@@ -178,7 +176,6 @@ TEST_CASE("stockpile")
 		area.m_hasStockPiles.at(faction).addItem(chunk1);
 		Actor& dwarf2 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 2, 1));
 		dwarf2.setFaction(&faction);
-		area.m_hasActors.add(dwarf2);
 		StockPileObjectiveType objectiveType;
 		REQUIRE(objectiveType.canBeAssigned(dwarf1));
 		REQUIRE(objectiveType.canBeAssigned(dwarf2));

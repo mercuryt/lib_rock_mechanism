@@ -168,6 +168,7 @@ Item::Item(Simulation& s, ItemId i, const ItemType& it, const MaterialType& mt, 
 	HasShape(s, it.shape, true, 0, q), m_quantity(q), m_id(i), m_itemType(it), m_materialType(mt), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this), m_canBeStockPiled(*this)
 {
 	assert(m_itemType.generic);
+	assert(m_quantity);
 	m_volume = m_itemType.volume * m_quantity;
 	m_mass = m_volume * m_materialType.density;
 }

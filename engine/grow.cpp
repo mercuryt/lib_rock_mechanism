@@ -34,7 +34,7 @@ void CanGrow::updateGrowingStatus()
 	{
 		if(!m_event.exists())
 		{
-			Percent delay = (m_percentGrown == 0 ?
+			Step delay = (m_percentGrown == 0 ?
 					m_actor.m_species.stepsTillFullyGrown :
 					((m_actor.m_species.stepsTillFullyGrown * m_percentGrown) / 100u));
 			m_event.schedule(delay, *this);
@@ -59,6 +59,9 @@ void CanGrow::update()
 {
 	Percent percent = growthPercent();
 	m_actor.m_attributes.updatePercentGrown(percent);
+	const Shape& shape = m_actor.m_species.shapeForPercentGrown(percent);
+	if(&shape != m_actor.m_shape)
+		m_actor.setShape(shape);
 	if(percent != 100)
 		m_updateEvent.schedule(Config::statsGrowthUpdateFrequency, *this);
 }

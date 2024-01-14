@@ -6,11 +6,13 @@
 #include <string>
 #include <unordered_set>
 class EquipItemObjective;
+class UniformObjective;
+class Actor;
 struct UniformElement final 
 {
 	ItemQuery itemQuery;
 	uint32_t quantity;
-	UniformElement(const ItemType& itemType, const MaterialType* materialType, uint32_t quality = 0, uint32_t quantity = 0);
+	UniformElement(const ItemType& itemType, uint32_t quantity = 1, const MaterialType* materialType = nullptr, uint32_t qualityMin = 0);
 	[[nodiscard]] bool operator==(const UniformElement& other) const { return &other == this; }
 };
 struct Uniform final
@@ -18,6 +20,7 @@ struct Uniform final
 	std::wstring name;
 	std::vector<UniformElement> elements;
 };
+inline void to_json(Json& data, const Uniform* const& uniform){ data = uniform->name; }
 class SimulationHasUniformsForFaction final
 {
 	const Faction& m_faction;
@@ -59,11 +62,61 @@ public:
 	void delay() { cancel(); }
 	void reset();
 	[[nodiscard]] std::string name() const { return "equip"; }
-	[[nodiscard]]ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Equip; }
+	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Equip; }
 	Json toJson() const;
 	// non virtual methods.
 	bool blockContainsItem(const Block& block) const { return const_cast<EquipItemObjective*>(this)->getItemAtBlock(block) != nullptr; }
 	Item* getItemAtBlock(const Block& block);
 	void select(Item& item);
 	friend class EquipItemThreadedTask;
+};
+class UniformThreadedTask final : public ThreadedTask
+{
+	UniformObjective& m_objective;
+	FindsPath m_findsPath;
+public:
+	UniformThreadedTask(UniformObjective& objective);
+	void readStep();
+	void writeStep();
+	void clearReferences();
+};
+class UniformObjective final : public Objective
+{
+	HasThreadedTask<UniformThreadedTask> m_threadedTask;
+	std::vector<UniformElement> m_elementsCopy;
+	Item* m_item;
+public:
+	UniformObjective(Actor& actor);
+	UniformObjective(const Json& data, DeserializationMemo& deserializationMemo);
+	Json toJson() const;
+	void execute();
+	void cancel();
+	void delay() { cancel(); }
+	void reset();
+	[[nodiscard]] std::string name() const { return "uniform"; }
+	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Uniform; }
+	// non virtual.
+	void equip(Item& item);
+	void select(Item& item);
+	bool blockContainsItem(const Block& block) const { return const_cast<UniformObjective*>(this)->getItemAtBlock(block) != nullptr; }
+	Item* getItemAtBlock(const Block& block);
+	// For testing.
+	[[nodiscard]] Item* getItem() { return m_item; }
+	friend class UniformThreadedTask;
+	
+};
+class ActorHasUniform final
+{
+	Actor& m_actor;
+	Uniform* m_uniform;
+	UniformObjective* m_objective;
+public:
+	ActorHasUniform(Actor& actor) : m_actor(actor), m_uniform(nullptr), m_objective(nullptr) { }
+	void set(Uniform& uniform);
+	void unset();
+	void recordObjective(UniformObjective& objective);
+	void clearObjective(UniformObjective& objective);
+	bool exists() const { return m_uniform; }
+	Uniform& get() { return *m_uniform; }
+	const Uniform& get() const { return *m_uniform; }
 };

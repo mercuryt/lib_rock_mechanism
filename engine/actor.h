@@ -23,6 +23,7 @@
 #include "buckets.h"
 #include "locationBuckets.h"
 #include "stamina.h"
+#include "uniform.h"
 
 #include <string>
 #include <vector>
@@ -61,6 +62,7 @@ public:
 	HasObjectives m_hasObjectives;
 	CanReserve m_canReserve;
 	ActorHasStamina m_stamina;
+	ActorHasUniform m_hasUniform;
 	std::unordered_set<Actor*> m_canSee;
 	uint32_t m_visionRange;
 

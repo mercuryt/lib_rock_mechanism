@@ -26,7 +26,6 @@ TEST_CASE("haul")
 	Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(1, 1, 2));
 	Faction faction(L"tower of power");
 	dwarf1.setFaction(&faction);
-	area.m_hasActors.add(dwarf1);
 	REQUIRE(!dwarf1.m_canPickup.exists());
 	SUBCASE("canPickup")
 	{
@@ -133,7 +132,6 @@ TEST_CASE("haul")
 		REQUIRE(!dwarf1.m_canPickup.canPickupAny(chunk1));
 		Actor& dwarf2 = simulation.createActor(dwarf, area.getBlock(1, 2, 2));
 		dwarf2.setFaction(&faction);
-		area.m_hasActors.add(dwarf2);
 		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1, &dwarf2}), chunk1, destination);
 		// One step to activate the project and make reservations.
 		simulation.doStep();
@@ -173,7 +171,6 @@ TEST_CASE("haul")
 		REQUIRE(!dwarf1.m_canPickup.canPickupAny(chunk1));
 		Block& donkeyLocation = area.getBlock(1, 2, 2);
 		Actor& donkey1 = simulation.createActor(donkey, donkeyLocation);
-		area.m_hasActors.add(donkey1);
 		area.m_hasHaulTools.registerYokeableActor(donkey1);
 		Block& panniersLocation = area.getBlock(5, 1, 2);
 		Item& panniers1 = simulation.createItemNongeneric(panniers, poplarWood, 3u, 0);
@@ -217,7 +214,6 @@ TEST_CASE("haul")
 		boulder1.setLocation(boulderLocation);
 		Block& donkeyLocation = area.getBlock(4, 3, 2);
 		Actor& donkey1 = simulation.createActor(donkey, donkeyLocation);
-		area.m_hasActors.add(donkey1);
 		area.m_hasHaulTools.registerYokeableActor(donkey1);
 		Block& cartLocation = area.getBlock(5, 1, 2);
 		Item& cart1 = simulation.createItemNongeneric(cart, poplarWood, 3u, 0);
@@ -261,7 +257,6 @@ TEST_CASE("haul")
 		Block& origin2 = area.getBlock(4, 3, 2);
 		Actor& dwarf2 = simulation.createActor(dwarf, origin2);
 		dwarf2.setFaction(&faction);
-		area.m_hasActors.add(dwarf2);
 		Block& cartLocation = area.getBlock(5, 1, 2);
 		Item& cart1 = simulation.createItemNongeneric(cart, poplarWood, 3u, 0);
 		cart1.setLocation(cartLocation);

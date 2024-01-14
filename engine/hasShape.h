@@ -40,6 +40,7 @@ public:
 	Reservable m_reservable;
 	bool m_isUnderground;
 
+	void setShape(const Shape& shape);
 	void setStatic(bool isTrue);
 	void reserveOccupied(CanReserve& canReserve);
 	bool isAdjacentTo(const HasShape& other) const;

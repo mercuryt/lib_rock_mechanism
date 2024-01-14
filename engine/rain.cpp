@@ -19,7 +19,7 @@ void AreaHasRain::start(const FluidType& fluidType, Percent intensityPercent, St
 	m_currentlyRainingFluidType = &fluidType;
 	m_intensityPercent = intensityPercent;
 	for(Plant* plant : m_area.m_hasPlants.getPlantsOnSurface())
-		if(plant->m_plantSpecies.fluidType == fluidType && plant->m_location.m_exposedToSky)
+		if(plant->m_plantSpecies.fluidType == fluidType && plant->m_location->m_exposedToSky)
 			plant->setHasFluidForNow();
 	m_stopEvent.schedule(stepsDuration, *this);
 }

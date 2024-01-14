@@ -147,29 +147,27 @@ std::unique_ptr<Objective> WoodCuttingObjectiveType::makeFor(Actor& actor) const
 }
 WoodCuttingProject::WoodCuttingProject(const Json& data, DeserializationMemo& deserializationMemo) : Project(data, deserializationMemo) { }
 std::vector<std::pair<ItemQuery, uint32_t>> WoodCuttingProject::getConsumed() const { return {}; }
-std::vector<std::pair<ItemQuery, uint32_t>> WoodCuttingProject::getUnconsumed() const
-{
-	static const ItemType& axe = ItemType::byName("axe");
-	return {{axe, 1}}; 
-}
+std::vector<std::pair<ItemQuery, uint32_t>> WoodCuttingProject::getUnconsumed() const { return {{ItemType::byName("axe"), 1}}; }
 std::vector<std::pair<ActorQuery, uint32_t>> WoodCuttingProject::getActors() const { return {}; }
 std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> WoodCuttingProject::getByproducts() const
 {
-	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> output;
-	Random& random = m_location.m_area->m_simulation.m_random;
-	for(const SpoilData& spoilData : getLocation().getSolidMaterial().spoilData)
-	{
-		if(!random.percentChance(spoilData.chance))
-			continue;
-		uint32_t quantity = random.getInRange(spoilData.min, spoilData.max);
-		output.emplace_back(&spoilData.itemType, &spoilData.materialType, quantity);
-	}
+	Plant& plant = m_location.m_hasPlant.get();
+	uint32_t unitsLogsGenerated = util::scaleByPercent(plant.m_plantSpecies.logsGeneratedByFellingWhenFullGrown, plant.getGrowthPercent());
+	uint32_t unitsBranchesGenerated = util::scaleByPercent(plant.m_plantSpecies.branchesGeneratedByFellingWhenFullGrown, plant.getGrowthPercent());
+	assert(unitsLogsGenerated);
+	assert(unitsBranchesGenerated);
+	auto& woodType = plant.m_plantSpecies.woodType;
+	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> output{
+		
+		{&ItemType::byName("branch"), woodType, unitsBranchesGenerated},
+		{&ItemType::byName("log"), woodType, unitsLogsGenerated}
+	};
 	return output;
 }
 // Static.
 uint32_t WoodCuttingProject::getWorkerWoodCuttingScore(Actor& actor)
 {
-	static const SkillType& woodCuttingType = SkillType::byName("woodCutting");
+	static const SkillType& woodCuttingType = SkillType::byName("wood cutting");
 	return (actor.m_attributes.getStrength() * Config::woodCuttingStrengthModifier) + (actor.m_skillSet.get(woodCuttingType) * Config::woodCuttingSkillModifier);
 }
 void WoodCuttingProject::onComplete()
@@ -177,14 +175,7 @@ void WoodCuttingProject::onComplete()
 	if(m_location.m_hasPlant.exists())
 	{
 		Plant& plant = m_location.m_hasPlant.get();
-		// Create logs and branches.
-		uint32_t unitsLogsGenerated = util::scaleByPercent(plant.m_plantSpecies.logsGeneratedByFellingWhenFullGrown, plant.getGrowthPercent());
-		uint32_t unitsBranchesGenerated = util::scaleByPercent(plant.m_plantSpecies.branchesGeneratedByFellingWhenFullGrown, plant.getGrowthPercent());
 		plant.die();
-		static const ItemType& log = ItemType::byName("log");
-		static const ItemType& branch = ItemType::byName("branch");
-		m_location.m_hasItems.addGeneric(log, *plant.m_plantSpecies.woodType, unitsLogsGenerated);
-		m_location.m_hasItems.addGeneric(branch, *plant.m_plantSpecies.woodType, unitsBranchesGenerated);
 	}
 	// Remove designations for other factions as well as owning faction.
 	auto workers = std::move(m_workers);
@@ -251,6 +242,7 @@ void HasWoodCuttingDesignationsForFaction::designate(Block& block)
 	assert(!m_data.contains(&block));
 	assert(block.m_hasPlant.exists());
 	assert(block.m_hasPlant.get().m_plantSpecies.isTree);
+	assert(block.m_hasPlant.get().getGrowthPercent() >= Config::minimumPercentGrowthForWoodCutting);
 	block.m_hasDesignations.insert(m_faction, BlockDesignation::WoodCutting);
 	// To be called when block is no longer a suitable location, for example if it got crushed by a collapse.
 	std::unique_ptr<DishonorCallback> locationDishonorCallback = std::make_unique<WoodCuttingLocationDishonorCallback>(m_faction, block);
@@ -308,10 +300,12 @@ void HasWoodCuttingDesignations::removeFaction(const Faction& faction)
 // If blockFeatureType is null then woodCutting out fully rather then woodCuttingging out a feature.
 void HasWoodCuttingDesignations::designate(const Faction& faction, Block& block)
 {
+	assert(m_data.contains(&faction));
 	m_data.at(&faction).designate(block);
 }
 void HasWoodCuttingDesignations::undesignate(const Faction& faction, Block& block)
 {
+	assert(m_data.contains(&faction));
 	m_data.at(&faction).undesignate(block);
 }
 void HasWoodCuttingDesignations::remove(const Faction& faction, Block& block)

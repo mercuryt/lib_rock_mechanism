@@ -26,6 +26,15 @@ Json HasShape::toJson() const
 	}
 	return data;
 }
+void HasShape::setShape(const Shape& shape)
+{
+	Block* location = m_location;
+	if(m_location)
+		exit();
+	m_shape = &shape;
+	if(location)
+		setLocation(*location);
+}
 void HasShape::setStatic(bool isTrue)
 {
 	assert(m_static != isTrue);
@@ -50,6 +59,8 @@ void HasShape::reserveOccupied(CanReserve& canReserve)
 }
 bool HasShape::isAdjacentTo(const HasShape& other) const
 {
+	assert(m_location);
+	assert(other.m_location);
 	const HasShape* smaller = this;
 	const HasShape* larger = &other;
 	if(smaller->m_blocks.size () > larger->m_blocks.size())

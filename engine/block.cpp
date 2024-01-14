@@ -268,6 +268,10 @@ bool Block::isAdjacentToIncludingCornersAndEdges(Block& block) const
 			return true;
 	return false;
 }
+bool Block::isAdjacentTo(HasShape& hasShape) const
+{
+	return hasShape.getAdjacentBlocks().contains(const_cast<Block*>(this));
+}
 void Block::setNotSolid()
 {
 	if(m_solid == nullptr)

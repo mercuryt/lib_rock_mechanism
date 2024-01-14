@@ -15,7 +15,7 @@ void SowSeedsEvent::execute()
 		m_objective.execute();
 	}
 	const PlantSpecies& plantSpecies = block.m_area->m_hasFarmFields.getPlantSpeciesFor(faction, block);
-	block.m_hasPlant.addPlant(plantSpecies);
+	block.m_hasPlant.createPlant(plantSpecies);
 	m_objective.m_actor.m_hasObjectives.objectiveComplete(m_objective);
 }
 void SowSeedsEvent::clearReferences(){ m_objective.m_event.clearPointer(); }

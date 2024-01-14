@@ -65,13 +65,13 @@ void IsPartOfFarmField::designateForHarvestIfPartOfFarmField(Plant& plant)
 {
 	for(auto& [faction, farmField] : m_farmFields)
 		if(farmField->plantSpecies == &plant.m_plantSpecies)
-			plant.m_location.m_area->m_hasFarmFields.at(*faction).addHarvestDesignation(plant);
+			plant.m_location->m_area->m_hasFarmFields.at(*faction).addHarvestDesignation(plant);
 }
 void IsPartOfFarmField::designateForGiveFluidIfPartOfFarmField(Plant& plant)
 {
 	for(auto& [faction, farmField] : m_farmFields)
 		if(farmField->plantSpecies == &plant.m_plantSpecies)
-			plant.m_location.m_area->m_hasFarmFields.at(*faction).addGivePlantFluidDesignation(plant);
+			plant.m_location->m_area->m_hasFarmFields.at(*faction).addGivePlantFluidDesignation(plant);
 }
 void IsPartOfFarmField::maybeDesignateForSowingIfPartOfFarmField()
 {
@@ -167,13 +167,13 @@ void HasFarmFieldsForFaction::addGivePlantFluidDesignation(Plant& plant)
 	assert(std::ranges::find(m_plantsNeedingFluid, &plant) == m_plantsNeedingFluid.end());
 	m_plantsNeedingFluidIsSorted = false;
 	m_plantsNeedingFluid.push_back(&plant);
-	plant.m_location.m_hasDesignations.insert(m_faction, BlockDesignation::GivePlantFluid);
+	plant.m_location->m_hasDesignations.insert(m_faction, BlockDesignation::GivePlantFluid);
 }
 void HasFarmFieldsForFaction::removeGivePlantFluidDesignation(Plant& plant)
 {
 	assert(std::ranges::find(m_plantsNeedingFluid, &plant) != m_plantsNeedingFluid.end());
 	std::erase(m_plantsNeedingFluid, &plant);
-	plant.m_location.m_hasDesignations.remove(m_faction, BlockDesignation::GivePlantFluid);
+	plant.m_location->m_hasDesignations.remove(m_faction, BlockDesignation::GivePlantFluid);
 }
 void HasFarmFieldsForFaction::addSowSeedsDesignation(Block& block)
 {
@@ -191,13 +191,13 @@ void HasFarmFieldsForFaction::addHarvestDesignation(Plant& plant)
 {
 	assert(!m_plantsToHarvest.contains(&plant));
 	m_plantsToHarvest.insert(&plant);
-	plant.m_location.m_hasDesignations.insert(m_faction, BlockDesignation::Harvest);
+	plant.m_location->m_hasDesignations.insert(m_faction, BlockDesignation::Harvest);
 }
 void HasFarmFieldsForFaction::removeHarvestDesignation(Plant& plant)
 {
 	assert(m_plantsToHarvest.contains(&plant));
 	m_plantsToHarvest.erase(&plant);
-	plant.m_location.m_hasDesignations.remove(m_faction, BlockDesignation::Harvest);
+	plant.m_location->m_hasDesignations.remove(m_faction, BlockDesignation::Harvest);
 }
 void HasFarmFieldsForFaction::setDayOfYear(uint32_t dayOfYear)
 {

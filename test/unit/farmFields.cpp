@@ -166,7 +166,7 @@ TEST_CASE("farmFields")
 	SUBCASE("harvest")
 	{
 		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
-		block.m_hasPlant.addPlant(wheatGrass, 100);
+		block.m_hasPlant.createPlant(wheatGrass, 100);
 		uint16_t dayBeforeHarvest = wheatGrass.harvestData->dayOfYearToStart - 1u;
 		simulation.setDateTime({1, dayBeforeHarvest, 1200});
 		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
@@ -202,7 +202,7 @@ TEST_CASE("farmFields")
 		areaBuilderUtil::setSolidWall(area.getBlock(0, 3, 2), area.getBlock(8, 3, 2), marble);
 		Block& gateway = area.getBlock(9, 3, 2);
 		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
-		block.m_hasPlant.addPlant(wheatGrass, 100);
+		block.m_hasPlant.createPlant(wheatGrass, 100);
 		// Skip ahead to harvest time.
 		simulation.setDateTime({1, wheatGrass.harvestData->dayOfYearToStart, 1200});
 		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
@@ -221,7 +221,7 @@ TEST_CASE("farmFields")
 	SUBCASE("location no longer contains plant")
 	{
 		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
-		block.m_hasPlant.addPlant(wheatGrass, 100);
+		block.m_hasPlant.createPlant(wheatGrass, 100);
 		// Skip ahead to harvest time.
 		simulation.setDateTime({1, wheatGrass.harvestData->dayOfYearToStart, 1200});
 		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
@@ -240,7 +240,7 @@ TEST_CASE("farmFields")
 	SUBCASE("plant no longer harvestable")
 	{
 		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
-		block.m_hasPlant.addPlant(wheatGrass, 100);
+		block.m_hasPlant.createPlant(wheatGrass, 100);
 		// Skip ahead to harvest time.
 		simulation.setDateTime({1, wheatGrass.harvestData->dayOfYearToStart, 1200});
 		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
@@ -259,7 +259,7 @@ TEST_CASE("farmFields")
 	SUBCASE("player cancels harvest")
 	{
 		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
-		block.m_hasPlant.addPlant(wheatGrass, 100);
+		block.m_hasPlant.createPlant(wheatGrass, 100);
 		// Skip ahead to harvest time.
 		simulation.setDateTime({1, wheatGrass.harvestData->dayOfYearToStart, 1200});
 		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
@@ -274,7 +274,7 @@ TEST_CASE("farmFields")
 	SUBCASE("player delays harvest")
 	{
 		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
-		block.m_hasPlant.addPlant(wheatGrass, 100);
+		block.m_hasPlant.createPlant(wheatGrass, 100);
 		// Skip ahead to harvest time.
 		simulation.setDateTime({1, wheatGrass.harvestData->dayOfYearToStart, 1200});
 		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
@@ -291,7 +291,7 @@ TEST_CASE("farmFields")
 	{
 		static const FluidType& water = FluidType::byName("water");
 		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
-		block.m_hasPlant.addPlant(wheatGrass);
+		block.m_hasPlant.createPlant(wheatGrass);
 		Plant& plant = block.m_hasPlant.get();
 		REQUIRE(!area.m_hasFarmFields.hasGivePlantsFluidDesignations(faction));
 		REQUIRE(plant.m_growthEvent.exists());

@@ -14,6 +14,7 @@ class Block;
 
 class Block;
 class PlantGrowthEvent;
+class PlantShapeGrowthEvent;
 class PlantFluidEvent;
 class PlantFoliageGrowthEvent;
 class PlantEndOfHarvestEvent;
@@ -59,22 +60,9 @@ struct PlantSpecies final
 	const HarvestData* harvestData;
 	std::vector<const Shape*> shapes;
 	// returns base shape and wild growth steps.
-	const std::pair<const Shape*, uint8_t> shapeAndWildGrowthForPercentGrown(Percent percentGrown) const
-	{
-		size_t totalGrowthStages = shapes.size() + maxWildGrowth;
-		size_t growthStage = util::scaleByPercentRange(0, totalGrowthStages - 1, percentGrown);
-		size_t index = std::min(growthStage, shapes.size() - 1);
-		int32_t wildGrowthSteps = growthStage <= shapes.size() ? 0 : growthStage - shapes.size();
-		return std::make_pair(shapes.at(index), wildGrowthSteps);
-	}
-	const Shape& shapeForPercentGrown(Percent percentGrown) const
-	{
-		return *shapeAndWildGrowthForPercentGrown(percentGrown).first;
-	}
-	uint8_t wildGrowthForPercentGrown(Percent percentGrown) const
-	{
-		return shapeAndWildGrowthForPercentGrown(percentGrown).second;
-	}
+	const std::pair<const Shape*, uint8_t> shapeAndWildGrowthForPercentGrown(Percent percentGrown) const;
+	const Shape& shapeForPercentGrown(Percent percentGrown) const { return *shapeAndWildGrowthForPercentGrown(percentGrown).first; }
+	uint8_t wildGrowthForPercentGrown(Percent percentGrown) const { return shapeAndWildGrowthForPercentGrown(percentGrown).second; }
 	// Infastructure.
 	bool operator==(const PlantSpecies& plantSpecies) const { return this == &plantSpecies; }
 	inline static std::vector<PlantSpecies> data;
@@ -91,10 +79,10 @@ inline void from_json(const Json& data, const PlantSpecies*& plantSpecies){ plan
 class Plant final : public HasShape
 {
 public:
-	Block& m_location;
 	Block* m_fluidSource;
 	const PlantSpecies& m_plantSpecies;
 	HasScheduledEvent<PlantGrowthEvent> m_growthEvent;
+	HasScheduledEvent<PlantShapeGrowthEvent> m_shapeGrowthEvent;
 	HasScheduledEvent<PlantFluidEvent> m_fluidEvent;
 	HasScheduledEvent<PlantTemperatureEvent> m_temperatureEvent;
 	HasScheduledEvent<PlantEndOfHarvestEvent> m_endOfHarvestEvent;
@@ -108,7 +96,7 @@ public:
 	uint8_t m_wildGrowth;
 
 	// Shape is passed as a pointer because it may be null, in which case the shape from the species for the given percentGrowth should be used.
-	Plant(Block& l, const PlantSpecies& ps, const Shape* shape = nullptr, Percent pg = 0, Volume volumeFluidRequested = 0, Step needsFluidEventStart = 0, bool temperatureIsUnsafe = 0, Step unsafeTemperatureEventStart = 0, uint32_t harvestableQuantity = 0, Percent percentFoliage = 100);
+	Plant(Block& location, const PlantSpecies& ps, const Shape* shape = nullptr, Percent pg = 0, Volume volumeFluidRequested = 0, Step needsFluidEventStart = 0, bool temperatureIsUnsafe = 0, Step unsafeTemperatureEventStart = 0, uint32_t harvestableQuantity = 0, Percent percentFoliage = 100);
 	Plant(const Json& data, DeserializationMemo& deserializationMemo, Block& location);
 	Plant(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
@@ -128,6 +116,7 @@ public:
 	void removeFruitQuantity(uint32_t quantity);
 	void makeFoliageGrowthEvent();
 	void foliageGrowth();
+	void updateShape();
 	bool hasFluidSource();
 	Percent getGrowthPercent() const;
 	uint32_t getRootRange() const;
@@ -135,12 +124,13 @@ public:
 	uint32_t getFoliageMass() const;
 	Step getStepAtWhichPlantWillDieFromLackOfFluid() const;
 	Volume getFluidDrinkVolume() const;
+	Step stepsPerShapeChange() const;
 	bool readyToHarvest() const { return m_quantityToHarvest != 0; }
 	const Volume& getVolumeFluidRequested() { return m_volumeFluidRequested; }
 	bool operator==(const Plant& p) const { return &p == this; }
 	// Virtual methods.
-	void setLocation([[maybe_unused]] Block& block) { assert(false); }
-	void exit() { assert(false); }
+	void setLocation(Block& block);
+	void exit();
 	bool isItem() const { return false; }
 	bool isActor() const { return false; }
 	bool isGeneric() const { assert(false); }
@@ -164,10 +154,23 @@ public:
 	}
 	void clearReferences() { m_plant.m_growthEvent.clearPointer(); }
 };
-class PlantFoliageGrowthEvent final : public ScheduledEvent
+class PlantShapeGrowthEvent final : public ScheduledEvent
 {
 	Plant& m_plant;
 public:
+	PlantShapeGrowthEvent(const Step delay, Plant& p, Step start = 0);
+	void execute()
+	{
+		m_plant.updateShape();
+		if(m_plant.getGrowthPercent() != 100)
+			m_plant.m_shapeGrowthEvent.schedule(m_plant.stepsPerShapeChange(), m_plant);
+	}
+	void clearReferences() { m_plant.m_shapeGrowthEvent.clearPointer(); }
+};
+class PlantFoliageGrowthEvent final : public ScheduledEvent
+{
+	Plant& m_plant;
+	public:
 	PlantFoliageGrowthEvent(const Step delay, Plant& p, Step start = 0);
 	void execute(){ m_plant.foliageGrowth(); }
 	void clearReferences(){ m_plant.m_foliageGrowthEvent.clearPointer(); }
@@ -175,7 +178,7 @@ public:
 class PlantEndOfHarvestEvent final : public ScheduledEvent
 {
 	Plant& m_plant;
-public:
+	public:
 	PlantEndOfHarvestEvent(const Step delay, Plant& p, Step start = 0);
 	void execute() { m_plant.endOfHarvest(); }
 	void clearReferences() { m_plant.m_endOfHarvestEvent.clearPointer(); }
@@ -183,7 +186,7 @@ public:
 class PlantFluidEvent final : public ScheduledEvent
 {
 	Plant& m_plant;
-public:
+	public:
 	PlantFluidEvent(const Step delay, Plant& p, Step start = 0);
 	void execute() { m_plant.setMaybeNeedsFluid(); }
 	void clearReferences() { m_plant.m_fluidEvent.clearPointer(); }
@@ -203,13 +206,14 @@ class HasPlant final
 	Plant* m_plant;
 public:
 	HasPlant(Block& b) : m_block(b), m_plant(nullptr) { }
-	void addPlant(const PlantSpecies& plantSpecies, Percent growthPercent = 0);
+	void createPlant(const PlantSpecies& plantSpecies, Percent growthPercent = 0);
 	void updateGrowingStatus();
 	void clearPointer();
 	void setTemperature(Temperature temperature);
 	void erase();
-	Plant& get() { assert(m_plant != nullptr); return *m_plant; }
-	const Plant& get() const { assert(m_plant != nullptr); return *m_plant; }
+	void set(Plant& plant) { assert(!m_plant); m_plant = &plant; }
+	Plant& get() { assert(m_plant); return *m_plant; }
+	const Plant& get() const { assert(m_plant); return *m_plant; }
 	bool canGrowHereCurrently(const PlantSpecies& plantSpecies) const;
 	bool canGrowHereAtSomePointToday(const PlantSpecies& plantSpecies) const;
 	bool canGrowHereEver(const PlantSpecies& plantSpecies) const;

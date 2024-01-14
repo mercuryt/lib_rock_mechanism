@@ -20,7 +20,6 @@ TEST_CASE("dig")
 	DigObjectiveType digObjectiveType;
 	Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(1, 1, 4));
 	dwarf1.setFaction(&faction);
-	area.m_hasActors.add(dwarf1);
 	Block& pickLocation = area.getBlock(5, 5, 4);
 	Item& pick = simulation.createItemNongeneric(ItemType::byName("pick"), bronze, 50u, 0);
 	pick.setLocation(pickLocation);

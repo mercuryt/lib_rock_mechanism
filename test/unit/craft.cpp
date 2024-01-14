@@ -31,7 +31,6 @@ TEST_CASE("craft")
 	CraftObjectiveType craftObjectiveTypeAssembling(assembling);
 	Actor& dwarf1 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 1, 1));
 	dwarf1.setFaction(&faction);
-	area.m_hasActors.add(dwarf1);
 	std::unordered_set<CraftJob*> emptyJobSet;
 	SUBCASE("infastructure")
 	{
@@ -190,7 +189,6 @@ TEST_CASE("craft")
 			dwarf1.die(CauseOfDeath::thirst);
 			Actor& dwarf2 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 5, 1));
 			dwarf2.setFaction(&faction);
-			area.m_hasActors.add(dwarf2);
 			REQUIRE(craftObjectiveTypeWoodWorking.canBeAssigned(dwarf2));
 		}
 	}

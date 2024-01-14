@@ -98,13 +98,12 @@ Json SimulationHasShapes::toJson() const
 const Shape& SimulationHasShapes::mutateAdd(const Shape& shape, std::array<int32_t, 4> position)
 {
 	auto positions = shape.positions;
+	assert(std::ranges::find(positions, position) == positions.end());
 	positions.push_back(position);
 	std::ranges::sort(positions);
-	assert(!util::sortedVectorContainsDuplicates(positions));
 	std::string name = makeName(positions);
 	if(m_shapes.contains(name))
 		return m_shapes.at(name);
-	Shape newShape(name, positions);
 	auto pair = m_shapes.try_emplace(name, name, positions);
 	assert(pair.second);
 	const Shape& output = pair.first->second;

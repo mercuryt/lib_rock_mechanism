@@ -1,0 +1,13 @@
+{
+  "name": "pig leather",
+  "density": 80,
+  "hardness": 40,
+  "transparent": false,
+  "burnData":
+  {
+	  "ignitionTemperature": 1144,
+	  "flameTemperature": 300,
+	  "burnStageDuration": 5000,
+	  "flameStageDuration": 10000
+  }
+}
