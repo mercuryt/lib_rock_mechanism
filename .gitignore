@@ -32,3 +32,4 @@ test/inconsistantErrors/*
 *\.vscode
 .cache
 *\.so
+*.pyc
