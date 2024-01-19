@@ -1,0 +1,18 @@
+[
+	{
+		"name": "biped",
+		"bodyPartTypes": ["head", "torso", "left leg", "right leg", "left arm", "right arm"]
+	},
+	{
+		"name": "quadraped",
+		"bodyPartTypes": ["head", "torso", "left front leg", "right front leg", "left rear leg", "right rear leg"]
+	},
+	{
+		"name": "bird",
+		"bodyPartTypes": ["head", "torso", "left leg", "right leg", "left wing", "right wing"]
+	},
+	{
+		"name": "fish",
+		"bodyPartTypes": ["head", "torso", "tail"]
+	}
+]

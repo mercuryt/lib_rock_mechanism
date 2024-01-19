@@ -1,0 +1,8 @@
+{
+	"name": "organic waste",
+	"shape": "oneByOneHundredth",
+	"volume": 1,
+	"generic": true,
+	"value": 0,
+	"moveType": "none"
+}

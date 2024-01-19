@@ -1,0 +1,24 @@
+{
+  "name": "dirt",
+  "density": 50,
+  "hardness": 30,
+  "transparent": false,
+  "meltingPoint": 1612,
+  "meltsInto": "lava",
+  "spoilData": 
+  [
+	  {
+        "materialType": "dirt",
+        "itemType": "dirt",
+	"chance": 100,
+	"min": 50,
+	"max": 70
+      },{
+        "materialType": "marble",
+        "itemType": "gravel",
+	"chance": 100,
+	"min": 10,
+	"max": 20
+      }
+    ]
+}

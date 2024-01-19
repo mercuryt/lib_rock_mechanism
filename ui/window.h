@@ -1,0 +1,107 @@
+#pragma once
+#include <SFML/Graphics.hpp>
+#include <TGUI/TGUI.hpp>
+#include <TGUI/Backend/SFML-Graphics.hpp>
+#include <chrono>
+#include "../engine/simulation.h"
+#include "../engine/area.h"
+#include "../engine/block.h"
+#include "../engine/input.h"
+#include "gameOverlay.h"
+#include "mainMenu.h"
+#include "objectivePriorityPanel.h"
+#include "load.h"
+#include "production.h"
+#include "stocksPanel.h"
+#include "uniformPanel.h"
+#include "actorPanel.h"
+#include "worldParamatersPanel.h"
+class Window final
+{
+	sf::RenderWindow m_window;
+	tgui::Gui m_gui;
+	sf::Font m_font;
+	sf::View m_view;
+	MainMenuView m_mainMenuView;
+	LoadView m_loadView;
+	GameOverlay m_gameOverlay;
+	ObjectivePriorityView m_objectivePriorityView;
+	ProductionView m_productionView;
+	UniformListView m_uniformView;
+	StocksView m_stocksView;
+	ActorView m_actorView;
+	WorldParamatersView m_worldParamatersView;
+	std::unique_ptr<Simulation> m_simulation;
+	Area* m_area;
+	uint32_t m_scale;
+	uint32_t m_z;
+	//TODO: multi select.
+	Cuboid m_selectedBlocks;
+	std::unordered_set<Actor*> m_selectedActors;
+	std::unordered_set<Item*> m_selectedItems;
+	std::unordered_set<Plant*> m_selectedPlants;
+	Faction* m_faction;
+	std::atomic<bool> m_paused;
+	std::chrono::milliseconds m_minimumMillisecondsPerFrame;
+	std::chrono::milliseconds m_minimumMillisecondsPerStep;
+	std::thread m_simulationThread;
+	sf::Vector2i m_positionWhereMouseDragBegan;
+	Block* m_firstCornerOfSelection;
+	std::filesystem::path m_path;
+	
+	void drawView();
+	void drawBlock(const Block& block);
+	void drawValidOnBlock(const Block& block);
+	void drawInvalidOnBlock(const Block& block);
+	void drawColorOnBlock(const Block& block, sf::Color color);
+	void drawOutlineOnBlock(const Block& block, sf::Color color, float thickness = 3.f);
+	void drawStringOnBlock(const Block& block, std::wstring string, sf::Color color);
+	void drawActor(const Actor& actor);
+	void drawItem(const Item& item);
+	void drawPlant(const Plant& plant);
+	void povFromJson(const Json& data);
+	[[nodiscard]] Json povToJson() const;
+	[[nodiscard]] static std::chrono::milliseconds msSinceEpoch();
+public:
+	InputQueue m_inputQueue;
+	Window();
+	void setArea(Area& area, Block& center, uint32_t scale);
+	void startLoop();
+	void centerView(const Block& block);
+	void setFrameRate(uint32_t);
+	void setItemToInstall(Item& item) { m_gameOverlay.m_itemBeingInstalled = &item; }
+	void close() { m_window.close(); }
+	[[nodiscard]] tgui::Gui& getGui() { return m_gui; }
+	// Show panels.
+	void hideAllPanels();
+	void showMainMenu() { hideAllPanels(); m_mainMenuView.show(); }
+	void showGame() { hideAllPanels(); m_gameOverlay.show(); }
+	void showLoad() { hideAllPanels(); m_loadView.show(); }
+	void showProduction() { hideAllPanels(); m_productionView.show(); }
+	void showUniforms() { hideAllPanels(); m_uniformView.show(); }
+	void showObjectivePriority(Actor& actor) { hideAllPanels(); m_objectivePriorityView.draw(actor); }
+	void showStocks() { hideAllPanels(); m_stocksView.show(); }
+	void showActorDetail(Actor& actor) { hideAllPanels(); m_actorView.draw(actor); }
+	void showCreateWorld() { hideAllPanels(); m_worldParamatersView.show(); }
+	// Select.
+	void deselectAll();
+	void selectBlock(Block& block);
+	void selectItem(Item& item);
+	void selectPlant(Plant& plant);
+	void selectActor(Actor& actor);
+	Cuboid getSelectedBlocks() { return m_selectedBlocks; }
+	std::unordered_set<Item*> getSelectedItems() { return m_selectedItems; }
+	std::unordered_set<Plant*> getSelectedPlants() { return m_selectedPlants; }
+	std::unordered_set<Actor*> getSelectedActors() { return m_selectedActors; }
+	[[nodiscard]] Block& getBlockUnderCursor();
+	// Filesystem;
+	void save();
+	void load(std::filesystem::path path);
+	[[nodiscard]] const Faction* getFaction() const { return m_faction;}
+	[[nodiscard]] Simulation* getSimulation() { return m_simulation.get(); }
+	[[nodiscard]] Area* getArea() { return m_area; }
+	// String utilities.
+	static std::wstring displayNameForItem(Item& item);
+	static std::wstring displayNameForCraftJob(CraftJob& craftJob);
+	std::string facingToString(Facing facing);
+};

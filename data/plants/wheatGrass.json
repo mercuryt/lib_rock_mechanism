@@ -1,0 +1,27 @@
+{
+  "name": "wheat grass",
+  "annual": false,
+  "maximumGrowingTemperature": 316,
+  "minimumGrowingTemperature": 256,
+  "daysTillDieFromTemperature": 1,
+  "daysNeedsFluidFrequency": 6,
+  "volumeFluidConsumed":2,
+  "daysTillDieWithoutFluid": 20,
+  "daysTillFullyGrown": 200,
+  "daysTillFoliageGrowsFromZero": 200,
+  "growsInSunlight": true,
+  "rootRangeMin": 1,
+  "rootRangeMax": 2,
+  "adultMass": 5000,
+  "dayOfYearForSowStart": 50,
+  "dayOfYearForSowEnd": 150,
+  "fluidType": "water",
+  "shapes": ["oneByOneHundredth", "oneByOneThirtySecond", "oneByOneSixteenth", "oneByOneEighth"],
+  "harvestData":
+  {
+    "dayOfYearToStart": 260,
+    "daysDuration": 20,
+    "quantity": 10,
+    "itemType": "wheat seed"
+  }
+}

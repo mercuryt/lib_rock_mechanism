@@ -1,0 +1,56 @@
+{
+	"name": "saw boards",
+	"productType": "board",
+	"productQuantity": 20,
+	"steps":
+	[
+		{
+			"name": "debark",
+			"category": "scrape",
+			"skillType": "wood working",
+			"minutesDuration": 30,
+			"consumed":
+			[
+				{
+					"itemType": "log",
+					"quantity": 1
+				}
+			],
+			"unconsumed":
+			[
+				{
+					"itemType": "chisel",
+					"quantity": 1
+				}
+			],
+			"byproducts":
+			[
+				{
+					"itemType": "organic waste",
+					"materialType": "organic waste",
+					"quantity": 20
+				}
+			]
+		}, {
+			"name": "saw",
+			"category": "saw",
+			"skillType": "wood working",
+			"minutesDuration": 60,
+			"unconsumed":
+			[
+				{
+					"itemType": "saw",
+					"quantity": 1
+				}
+			],
+			"byproducts":
+			[
+				{
+					"itemType": "organic waste",
+					"materialType": "organic waste",
+					"quantity": 20
+				}
+			]
+		}
+	]
+}

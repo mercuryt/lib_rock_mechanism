@@ -1,0 +1,32 @@
+{
+	"name": "axe",
+	"shape": "oneByOneSixteenth",
+	"volume": 200,
+	"generic": false,
+	"value": 150,
+	"weaponData":
+	{
+		"combatSkill": "axe",
+		"coolDownSeconds": 1.25,
+		"attackTypes":
+		[
+			{
+				"name": "hack",
+				"area": 20,
+				"baseForce": 8,
+				"range": 1.5,
+				"combatScore": 3,
+				"woundType": "Cut"
+			},
+			{
+				"name": "pomel strike",
+				"area": 25,
+				"baseForce": 4,
+				"range": 1.5,
+				"combatScore": 1,
+				"woundType": "Bludgeon",
+				"coolDownSeconds": 0.9
+			}
+		]
+	}
+}

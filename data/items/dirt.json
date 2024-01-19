@@ -1,0 +1,8 @@
+{
+	"name": "dirt",
+	"shape": "oneByOneHundredth",
+	"volume": 100,
+	"generic": true,
+	"value": 1,
+	"moveType": "none"
+}

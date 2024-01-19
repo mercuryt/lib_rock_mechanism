@@ -1,0 +1,20 @@
+{
+	"name": "left rear leg",
+	"volume": 10,
+	"doesLocamotion": true,
+	"doesManipulation": false,
+	"attackTypesAndMaterials":
+	[
+		[
+			{
+				"name": "kick",
+				"area": 5,
+				"baseForce": 2,
+				"range": 1.5,
+				"combatScore": 1,
+				"woundType": "Bludgeon"
+			},
+			"flesh"
+		]
+	]
+}

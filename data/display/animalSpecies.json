@@ -1,0 +1,43 @@
+[
+	{
+		"animalSpecies": "black bear",
+		"symbol": "🐻",
+		"color": [4, 3, 8, 1]
+	},{
+		"animalSpecies": "carp",
+		"symbol": "🐟",
+		"color": [135, 140, 245, 1]
+	},{
+		"animalSpecies": "deer",
+		"symbol": "🦌",
+		"color": [179, 143, 125, 1]
+	},{
+		"animalSpecies": "donkey",
+		"symbol": "🐴",
+		"color": [179, 143, 125, 1]
+	},{
+		"animalSpecies": "dwarf",
+		"symbol": "Dw",
+		"color": [179, 143, 125, 1]
+	},{
+		"animalSpecies": "eagle",
+		"symbol": "🦅",
+		"color": [179, 143, 125, 1]
+	},{
+		"animalSpecies": "rabbit",
+		"symbol": "🐇",
+		"color": [105, 93, 87, 1]
+	},{
+		"animalSpecies": "red fox",
+		"symbol": "🦊",
+		"color": [115, 45, 10, 1]
+	},{
+		"animalSpecies": "goblin",
+		"symbol": "🧌T ",
+		"color": [11, 66, 12, 1]
+	},{
+		"animalSpecies": "troll",
+		"symbol": "🗿",
+		"color": [197, 201, 197, 1]
+	}
+]

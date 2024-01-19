@@ -1,0 +1,18 @@
+{
+  "name": "gold",
+  "density": 193,
+  "hardness": 10,
+  "transparent": false,
+  "meltingPoint": 1186,
+  "meltsInto": "moltenGold",
+  "constructionData": "metal",
+  "spoilData": [
+    {
+      "materialType": "gold",
+      "itemType": "chunk",
+      "chance": 100,
+      "min": 4,
+      "max": 5
+    }
+  ]
+}

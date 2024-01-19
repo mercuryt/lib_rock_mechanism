@@ -1,0 +1,7 @@
+{
+	"name": "board",
+	"shape": "oneByOneSixteenth",
+	"volume": 500,
+	"generic": true,
+	"value": 5
+}

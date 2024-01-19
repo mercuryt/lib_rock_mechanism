@@ -1,0 +1,6 @@
+To run tests:
+	Set up testing by running 'cmake ..' in /build.
+	Run tests with 'reset && make -j2 && mv build/test/unit/unit . && gdb --args ./unit'
+
+compiler flags to try for optimization:
+-ffinite-math-only -fno-signed-zeros

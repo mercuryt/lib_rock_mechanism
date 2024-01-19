@@ -1,0 +1,9 @@
+{
+	"name": "wheat seed",
+	"shape": "oneByOneHundredth",
+	"volume": 10,
+	"generic": true,
+	"value": 5,
+	"moveType": "none",
+	"edibleForDrinkersOf" : "water"
+}

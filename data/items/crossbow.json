@@ -1,0 +1,27 @@
+{
+	"name": "crossbow",
+	"shape": "oneByOneSixteenth",
+	"volume": 20000,
+	"generic": false,
+	"value": 100,
+	"moveType": "none",
+	"weaponData":
+	{
+		"combatSkill": "crossbow",
+		"projectileItemType": "crossbow bolts",
+		"projectileSpeed": 10,
+		"coolDownSeconds": 2.25,
+		"attackTypes":
+		[
+			{
+				"name": "shoot",
+				"area": 2,
+				"baseForce": 50,
+				"range": 15,
+				"combatScore": 10,
+				"projectile": true,
+				"woundType": "Pierce"
+			}
+		]
+	}
+}

@@ -1,0 +1,32 @@
+{
+  "name": "peridotite",
+  "density": 34,
+  "hardness": 7,
+  "transparent": false,
+  "meltingPoint": 1773,
+  "meltsInto": "lava",
+  "constructionData": "stone",
+  "spoilData": [
+    {
+      "materialType": "peridotite",
+      "itemType": "gravel",
+      "chance": 100,
+      "min": 10,
+      "max": 20
+    },
+    {
+      "materialType": "peridotite",
+      "itemType": "sand",
+      "chance": 100,
+      "min": 10,
+      "max": 15
+    },
+    {
+      "materialType": "peridotite",
+      "itemType": "chunk",
+      "chance": 100,
+      "min": 2,
+      "max": 3
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+[
+	{
+		"name": "wood",
+		"minutesDuration": 1000,
+		"consumed":
+		[
+			{
+				"itemType": "board",
+				"quantity": 10
+			},{
+				"itemType": "peg",
+				"materialTypeCategory": "wood",
+				"quantity": 5
+			}
+		],
+		"unconsumed":
+		[
+			{
+				"itemType": "mallet",
+				"quantity": 1
+			},{
+				"itemType": "saw",
+				"quantity": 1
+			}
+		],
+		"byproducts":
+		[
+			{
+				"itemType": "wood chip",
+				"quantity": 10
+			}
+		],
+		"skill": "carpentry"
+	},{
+
+		"name": "stone",
+		"minutesDuration": 2000,
+		"consumed":
+		[
+			{
+				"itemType": "block",
+				"quantity": 10
+			},{
+				"itemType": "morter",
+				"quantity": 20
+			}
+		],
+		"unconsumed":
+		[
+			{
+				"itemType": "mallet",
+				"quantity": 1
+			},{
+				"itemType": "trowel",
+				"quantity": 1
+			}
+		],
+		"byproducts":
+		[
+			{
+				"itemType": "gravel",
+				"quantity": 10
+			}
+		],
+		"skill": "masonry"
+	},{
+		"name": "metal",
+		"minutesDuration": 1300,
+		"consumed":
+		[
+			{
+				"itemType": "round bar",
+				"quantity": 10
+			},{
+				"itemType": "block",
+				"quantity": 10
+			},{
+				"itemType": "rivet",
+				"materialTypeCategory": "metal",
+				"quantity": 20
+			}
+		],
+		"unconsumed":
+		[
+			{
+				"itemType": "hammer",
+				"quantity": 1
+			},{
+				"itemType": "bucking bar",
+				"quantity": 1
+			}
+		],
+		"byproducts":
+		[
+			{
+				"itemType": "scrap",
+				"quantity": 10
+			}
+		],
+		"skill": "metal working"
+	}
+]

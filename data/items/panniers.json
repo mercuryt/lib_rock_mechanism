@@ -1,0 +1,20 @@
+{
+	"name": "panniers",
+	"shape": "oneByOneHalf",
+	"volume": 100,
+	"generic": false,
+	"internalVolume" : 1200,
+	"canHoldFluids": false,
+	"value": 100,
+	"moveType": "none",
+	"wearableType":
+	{
+		"percentCoverage": 50,
+		"defenseScore": 0,
+		"rigid": false,
+		"layer": 1,
+		"forceAbsorbedPiercedModifier": 1,
+		"forceAbsorbedUnpiercedModifier": 1,
+		"bodyPartsCovered": [ "torso" ]
+	}
+}

@@ -1,0 +1,8 @@
+{
+	"name": "block",
+	"shape": "oneByOneSixteenth",
+	"volume": 2000,
+	"generic": true,
+	"value": 5,
+	"cratable": true
+}

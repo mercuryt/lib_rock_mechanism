@@ -1,0 +1,9 @@
+{
+	"name": "apple",
+	"shape": "oneByOneThirtySecond",
+	"volume": 200,
+	"generic": true,
+	"value": 50,
+	"moveType": "none",
+	"edibleForDrinkersOf" : "water"
+}

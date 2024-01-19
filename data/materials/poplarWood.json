@@ -1,0 +1,25 @@
+{
+  "name": "poplar wood",
+  "category": "wood",
+  "density": 30,
+  "hardness": 30,
+  "transparent": false,
+  "constructionData": "wood",
+  "burnData":
+  {
+	  "ignitionTemperature": 533,
+	  "flameTemperature": 1172,
+	  "burnStageDuration": 10000,
+	  "flameStageDuration": 40000
+  },
+  "spoilData": 
+    [
+      {
+        "materialType": "poplar wood",
+        "itemType": "sticks",
+	"chance": 100,
+	"min": 10,
+	"max": 12
+      }
+    ]
+}

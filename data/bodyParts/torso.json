@@ -1,0 +1,8 @@
+{
+	"name": "torso",
+	"volume": 15,
+	"doesLocamotion": false,
+	"doesManipulation": false,
+	"piercedBoneIsFatalPercent": 20,
+	"vital": true
+}

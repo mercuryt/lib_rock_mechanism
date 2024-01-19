@@ -1,0 +1,23 @@
+{
+	"name": "chisel",
+	"shape": "oneByOneThirtySecond",
+	"volume": 50,
+	"generic": false,
+	"value": 50,
+	"weaponData":
+	{
+		"combatSkill": "dagger",
+		"coolDownSeconds": 0.5,
+		"attackTypes":
+		[
+			{
+				"name": "stab",
+				"area": 1,
+				"baseForce": 5,
+				"range": 1,
+				"combatScore": 3,
+				"woundType": "Pierce"
+			}
+		]
+	}
+}

@@ -1,0 +1,10 @@
+{
+	"name": "cart",
+	"shape": "oneByOneHalf",
+	"volume": 1000,
+	"generic": false,
+	"internalVolume" : 10000,
+	"canHoldFluids": false,
+	"value": 200,
+	"moveType": "roll"
+}

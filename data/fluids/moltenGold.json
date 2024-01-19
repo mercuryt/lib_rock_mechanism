@@ -1,0 +1,6 @@
+{
+  "name": "moltenGold",
+  "viscosity": 10,
+  "density": 197,
+  "freezesInto": "gold"
+}

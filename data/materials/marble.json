@@ -1,0 +1,32 @@
+{
+  "name": "marble",
+  "density": 27,
+  "hardness": 30,
+  "transparent": false,
+  "meltingPoint": 1612,
+  "meltsInto": "lava",
+  "constructionData": "stone",
+  "spoilData": [
+    {
+      "materialType": "marble",
+      "itemType": "gravel",
+      "chance": 100,
+      "min": 10,
+      "max": 20
+    },
+    {
+      "materialType": "marble",
+      "itemType": "sand",
+      "chance": 100,
+      "min": 10,
+      "max": 15
+    },
+    {
+      "materialType": "marble",
+      "itemType": "chunk",
+      "chance": 100,
+      "min": 2,
+      "max": 3
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "name": "centipede grass",
+  "annual": false,
+  "maximumGrowingTemperature": 316,
+  "minimumGrowingTemperature": 283,
+  "daysTillDieFromTemperature": 1,
+  "daysNeedsFluidFrequency": 6,
+  "volumeFluidConsumed":1,
+  "daysTillDieWithoutFluid": 20,
+  "daysTillFullyGrown": 200,
+  "daysTillFoliageGrowsFromZero": 200,
+  "growsInSunlight": true,
+  "rootRangeMin": 1,
+  "rootRangeMax": 2,
+  "adultMass": 5,
+  "dayOfYearForSowStart": 50,
+  "dayOfYearForSowEnd": 150,
+  "fluidType": "water",
+  "shapes": ["oneByOneHundredth", "oneByOneThirtySecond", "oneByOneSixteenth", "oneByOneEighth"]
+}

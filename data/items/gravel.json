@@ -1,0 +1,8 @@
+{
+	"name": "gravel",
+	"shape": "oneByOneHundredth",
+	"volume": 1,
+	"generic": true,
+	"value": 1,
+	"moveType": "none"
+}

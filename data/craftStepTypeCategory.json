@@ -1,0 +1,10 @@
+[
+	{ "name": "saw" },
+	{ "name": "drill" },
+	{ "name": "carve" },
+	{ "name": "forge" },
+	{ "name": "cast" },
+	{ "name": "pound" },
+	{ "name": "scrape" },
+	{ "name": "assemble" }
+]

@@ -1,0 +1,22 @@
+{
+	"name": "mallet",
+	"shape": "oneByOneThirtySecond",
+	"volume": 150,
+	"generic": false,
+	"value": 20,
+	"weaponData":
+	{
+		"combatSkill": "mace",
+		"attackTypes":
+		[
+			{
+				"name": "bash",
+				"area": 25,
+				"baseForce": 1,
+				"range": 1,
+				"combatScore": 1,
+				"woundType": "Bludgeon"
+			}
+		]
+	}
+}

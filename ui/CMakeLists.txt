@@ -1,0 +1,8 @@
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+add_executable (UI main.cpp actorPanel.cpp contextMenu.cpp detailPanel.cpp gameOverlay.cpp load.cpp main.cpp mainMenu.cpp objectivePriorityPanel.cpp production.cpp stocksPanel.cpp uniformPanel.cpp window.cpp)
+target_compile_features(UI PUBLIC cxx_std_20)
+#target_include_directories (UI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(UI LINK_PUBLIC Engine)
+find_package(TGUI 1 REQUIRED)
+target_link_libraries(UI PRIVATE TGUI::TGUI)

@@ -1,0 +1,18 @@
+{
+	"name": "pants",
+	"shape": "oneByOneHundredth",
+	"volume": 1000,
+	"generic": false,
+	"value": 100,
+	"moveType": "none",
+	"wearableType":
+	{
+		"percentCoverage": 100,
+		"defenseScore": 0,
+		"rigid": false,
+		"layer": 1,
+		"forceAbsorbedPiercedModifier": 1,
+		"forceAbsorbedUnpiercedModifier": 1,
+		"bodyPartsCovered": [ "right leg", "left leg" ]
+	}
+}

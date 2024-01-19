@@ -1,0 +1,32 @@
+{
+  "name": "obsidion",
+  "density": 25,
+  "hardness": 100,
+  "transparent": false,
+  "meltingPoint": 1173,
+  "meltsInto": "lava",
+  "contsructionData": "stone",
+  "spoilData": [
+    {
+      "materialType": "obsidion",
+      "itemType": "gravel",
+      "chance": 100,
+      "min": 10,
+      "max": 20
+    },
+    {
+      "materialType": "obsidion",
+      "itemType": "sand",
+      "chance": 100,
+      "min": 10,
+      "max": 15
+    },
+    {
+      "materialType": "obsidion",
+      "itemType": "chunk",
+      "chance": 100,
+      "min": 2,
+      "max": 3
+    }
+  ]
+}

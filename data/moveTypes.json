@@ -1,0 +1,97 @@
+[
+  {
+    "name": "two legs",
+    "walk": true,
+    "swim": null,
+    "climb": 0,
+    "jumpDown": false,
+    "fly": false
+  },{
+    "name": "four legs",
+    "walk": true,
+    "swim": null,
+    "climb": 0,
+    "jumpDown": false,
+    "fly": false
+  },{
+    "name": "fly",
+    "walk": false,
+    "swim": null,
+    "climb": 0,
+    "jumpDown": false,
+    "fly": true
+  },{
+    "name": "swim in water",
+    "walk": false,
+    "swim": {
+      "water": 50
+    },
+    "climb": 0,
+    "jumpDown": false,
+    "fly": false
+  },{
+    "name": "two legs and swim in water",
+    "walk": true,
+    "swim": {
+      "water": 50
+    },
+    "climb": 0,
+    "jumpDown": false,
+    "fly": false
+  },{
+    "name": "four legs and swim in water",
+    "walk": true,
+    "swim": {
+      "water": 50
+    },
+    "climb": 0,
+    "jumpDown": false,
+    "fly": false
+  },{
+    "name": "swim in mercury",
+    "walk": false,
+    "swim": {
+      "mercury": 50
+    },
+    "climb": 0,
+    "jumpDown": false,
+    "fly": false
+  },{
+    "name": "two legs and swim in mercury",
+    "walk": true,
+    "swim": {
+      "mercury": 50
+    },
+    "climb": 0,
+    "jumpDown": false,
+    "fly": false
+  },{
+    "name": "two legs and climb 1",
+    "walk": true,
+    "swim": null,
+    "climb": 1,
+    "jumpDown": false,
+    "fly": false
+  },{
+    "name": "two legs and climb 2",
+    "walk": true,
+    "swim": null,
+    "climb": 2,
+    "jumpDown": false,
+    "fly": false
+  },{
+    "name": "roll",
+    "walk": true,
+    "swim": null,
+    "climb": 0,
+    "jumpDown": false,
+    "fly": false
+  },{
+    "name": "none",
+    "walk": true,
+    "swim": null,
+    "climb": 0,
+    "jumpDown": false,
+    "fly": false
+  }
+]
