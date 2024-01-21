@@ -205,6 +205,7 @@ void FindsPath::pathToUnreservedAdjacentToHasShape(const HasShape& hasShape, con
 	std::function<bool(const Block&)> predicate = [&](const Block& block) { return hasShape.m_blocks.contains(const_cast<Block*>(&block)); };
 	pathToUnreservedAdjacentToPredicate(predicate, faction);
 }
+//TODO: Would template / lambda be faster then std::function? Do we need to store it somewhere?
 void FindsPath::pathToPredicateWithHuristicDestination(std::function<bool(const Block&, Facing facing)>& predicate, const Block& huristicDestination)
 {
 	assert(m_route.empty());
@@ -228,6 +229,7 @@ void FindsPath::pathToPredicateWithHuristicDestination(std::function<bool(const 
 		const RouteNode* routeNode = proposedRouteStep.routeNode;
 		const Block& block = routeNode->block;
 		openList.pop();
+		//TODO: Swap this if with the below for to prevent out of range blocks being added to the open list.
 		if(m_maxRange >= m_hasShape.m_location->taxiDistance(block))
 		{
 			// Is in range.
@@ -236,6 +238,7 @@ void FindsPath::pathToPredicateWithHuristicDestination(std::function<bool(const 
 				if(closedList.contains(adjacent))
 					continue;
 				closedList.insert(adjacent);
+				// TODO: Hot path for shapes with radial symetry which disregards facing.
 				Facing facing = adjacent->facingToSetWhenEnteringFrom(block);
 				if(m_detour && !adjacent->m_hasShapes.canEnterCurrentlyWithFacing(m_hasShape, facing))
 					continue;

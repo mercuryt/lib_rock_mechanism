@@ -182,6 +182,7 @@ bool VisionRequest::hasLineOfSightBasic(const Block& from, const Block& to)
 		xCumulative += xDiffNormalized;
 		yCumulative += yDiffNormalized;
 		zCumulative += zDiffNormalized;
+		// TODO: create an offsetNotNull to prevent an unnessesary branch.
 		Block* block = to.offset(std::round(xCumulative), std::round(yCumulative), std::round(zCumulative));
 		if(!block->canSeeThroughFrom(*previous))
 			return false;

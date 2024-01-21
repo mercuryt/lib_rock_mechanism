@@ -13,7 +13,7 @@ constexpr sf::Mouse::Button actionMouseButton = sf::Mouse::Button::Right;
 sf::Color selectColor = sf::Color::Yellow;
 Window::Window() : m_window(sf::VideoMode::getDesktopMode(), "Goblin Pit", sf::Style::Fullscreen), m_gui(m_window), m_view(m_window.getDefaultView()), 
 	m_mainMenuView(*this), m_loadView(*this), m_gameOverlay(*this), m_objectivePriorityView(*this), 
-	m_productionView(*this), m_uniformView(*this), m_stocksView(*this), m_actorView(*this),
+	m_productionView(*this), m_uniformView(*this), m_stocksView(*this), m_actorView(*this), m_worldParamatersView(*this),
 	m_simulation(nullptr), m_faction(nullptr),
 	m_paused(true), m_minimumMillisecondsPerFrame(200), m_minimumMillisecondsPerStep(200),
 	m_simulationThread([&](){

@@ -141,7 +141,7 @@ void Plant::setMaybeNeedsFluid()
 	}
 	else // Needs fluid, stop growing and set death timer.
 	{
-		m_volumeFluidRequested = std::max(1, util::scaleByPercent(m_plantSpecies.volumeFluidConsumed, getGrowthPercent()));
+		m_volumeFluidRequested = std::max(1u, util::scaleByPercent(m_plantSpecies.volumeFluidConsumed, getGrowthPercent()));
 		stepsTillNextFluidEvent = m_plantSpecies.stepsTillDieWithoutFluid;
 		m_location->m_isPartOfFarmField.designateForGiveFluidIfPartOfFarmField(*this);
 	}

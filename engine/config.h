@@ -357,7 +357,7 @@ namespace Config
 		percentHeightCarvedByRivers = data["percentHeightCarvedByRivers"].get<Percent>();
 		minimumAltitudeForHeadwaterFormation = data["minimumAltitudeForHeadwaterFormation"].get<Meters>();
 		blocksPerMeter = data["blocksPerMeter"].get<float>();
-		averageLandHeightBlocks = data["averageHeightBlocks"].get<float>();
+		averageLandHeightBlocks = data["averageLandHeightBlocks"].get<float>();
 		maxAnimalInsertLocationSearchRetries = data["maxAnimalInsertLocationSearchRetries"].get<uint32_t>();
 		lakeRadiusModifier = data["lakeRadiusModifier"].get<double>();
 		lakeDepthModifier = data["lakeDepthModifier"].get<double>();

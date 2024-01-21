@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config.h"
+#include "worldforge/worldLocation.h"
 #include <cstdint>
 #include <string>
 #include <unordered_map>
@@ -22,6 +23,7 @@ class Plant;
 class Block;
 class Item;
 struct Uniform;
+struct WorldLocation;
 
 struct DeserializationMemo final
 {
@@ -42,6 +44,7 @@ struct DeserializationMemo final
 	Item& itemReference(const Json& data);
 	HasShape& hasShapeReference(const Json& data);
 	ProjectRequirementCounts& projectRequirementCountsReference(const Json& data);
+	WorldLocation& getLocationByNormalizedLatLng(const Json& data);
 	std::unique_ptr<Objective> loadObjective(const Json& data);
 	std::unique_ptr<ObjectiveType> loadObjectiveType(const Json& data);
 	DeserializationMemo(Simulation& simulation) : m_simulation(simulation) { }

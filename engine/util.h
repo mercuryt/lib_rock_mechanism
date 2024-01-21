@@ -2,6 +2,7 @@
 
 #include "types.h"
 
+#include <algorithm>
 #include <unordered_set>
 #include <stack>
 #include <vector>
@@ -81,7 +82,7 @@ namespace util
 		assert(facing ==  3);
 		return {y * -1, x, z};
 	}
-	double radiansToDegrees(double radians)
+	inline double radiansToDegrees(double radians)
 	{
 		return radians * (180.0/3.141592653589793238463);
 	}

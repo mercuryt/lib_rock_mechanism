@@ -68,7 +68,7 @@ public:
 			return vector[getInRange(0, vector.size() - 1)];
 		}
 	template<typename T>
-		inline std::vector<T*> getMultipleInVector(std::vector<T>& vector, uint32_t count)
+		inline std::vector<T*> getMultipleInVector(std::vector<T*>& vector, uint32_t count)
 		{
 			assert(count <= vector.size());
 			auto copy = vector;
@@ -81,17 +81,18 @@ public:
 			}
 			return output;
 		}
-	template<typename T, typename Probability>
-		inline T& getInMap(std::unordered_map<T, Probability>&& map)
+	//TODO: duplication.
+	template<typename T>
+		inline T& getInMap(std::unordered_map<T, float>&& map)
 		{
-			Probability previous = 0;
+			float previous = 0;
 			// Make probabilities cumulative.
 			for(auto& pair : map)
 				previous = (pair.second += previous);
-			Probability roll = getInRange(0, previous);
+			float roll = getInRange(0.f, previous);
 			for(auto& pair : map)
 				if(roll <= pair.second)
-					return pair.first;
+					return const_cast<T&>(pair.first);
 			assert(false);
 		}
 	inline uint32_t deterministicScramble(uint32_t seed)

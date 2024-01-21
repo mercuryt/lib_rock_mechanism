@@ -2,12 +2,11 @@
 #include "../config.h"
 #include "lake.h"
 #include "worldLocation.h"
-Lake::Lake(const Json& data, DeserializationMemo& deserializationMemo) : name(data["name"])
+#include <string>
+Lake::Lake(const Json& data, DeserializationMemo& deserializationMemo) : name(data["name"].get<std::wstring>())
 {
 	for(const Json& locationData : data["locations"])
-	{
-		WorldLocation& location = deserializationMemo.getLocationByLatLng(locationData);
-	}
+		locations.push_back(&deserializationMemo.getLocationByNormalizedLatLng(locationData));
 }
 Json Lake::toJson() const
 {

@@ -2,15 +2,17 @@
 
 #include "../types.h"
 #include "lociiConfig.h"
+#include "gps.h"
 #include <algorithm>
 #include <cstdint>
 #include <vector>
 
 class World;
+struct DeserializationMemo;
 
 struct Locii final
 {
-	const std::vector<LatLng> positions;
+	std::vector<LatLng> positions;
 	const float intensity;
 	// How quickly intesity is lost over distance after sustain.
 	const float decay;
@@ -21,30 +23,9 @@ struct Locii final
 	const Kilometers maxRange;
 	Locii(std::vector<LatLng>& p, float i, float d, Kilometers s, float e) : positions(p), intensity(i), decay(d), sustain(s), exponent(e),
 		maxRange(sustain + (intensity * decay)) { }
-	float intensityAtDistance(Kilometers distance) const
-	{
-		if(sustain >= distance)
-			return intensity;
-		auto modifiedDistance = distance - sustain;
-		float intensityModifier = modifiedDistance * decay;
-		return intensityModifier > 1.f ? 0.f : intensity * (1.f-intensityModifier);
-	};
-	Kilometers distanceTo(Latitude latitude, Longitude longitude)
-	{
-		bool found = false;
-		Kilometers output = 0;
-		for(const LatLng& position : positions)
-		{
-			Kilometers distance = position.distanceTo(latitude, longitude);
-			if(!found || output > distance)
-			{
-				found = true;
-				output = distance;
-			}
-		}
-		if(!found)
-			return UINT32_MAX;
-		return output;
-	}
+	Locii(const Json& data, DeserializationMemo& deserializationMemo);
+	Json toJson() const;
+	float intensityAtDistance(Kilometers distance) const;
+	Kilometers distanceTo(Latitude latitude, Longitude longitude) const;
 	static Locii make(LociiConfig& config, World& world);
 };

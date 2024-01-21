@@ -1,7 +1,9 @@
 #include "river.h"
+#include "deserializationMemo.h"
 #include "world.h"
 #include "worldLocation.h"
 #include <list>
+#include <string>
 #include <unordered_set>
 
 struct WorldLocation;
@@ -15,8 +17,8 @@ River::River(std::wstring n, uint8_t rate, WorldLocation& headWater, World& worl
 {
 	std::list<RouteNode> nodes;
 	std::unordered_set<WorldLocation*> closed;
-	std::list<RouteNode*> open;
-	open.emplace_back(&headWater, nullptr);
+	nodes.emplace_back(&headWater, nullptr);
+	std::list<RouteNode*> open{&nodes.back()};
 	closed.insert(&headWater);
 	while(true)
 	{
@@ -42,7 +44,8 @@ River::River(std::wstring n, uint8_t rate, WorldLocation& headWater, World& worl
 			if(closed.contains(adjacent))
 				continue;
 			closed.insert(adjacent);
-			open.emplace_back(adjacent, &node);
+			nodes.emplace_back(adjacent, node);
+			open.push_back(&nodes.back());
 		}
 		if(open.empty())
 		{
@@ -52,6 +55,11 @@ River::River(std::wstring n, uint8_t rate, WorldLocation& headWater, World& worl
 	}
 	
 }
+River::River(const Json& data, DeserializationMemo& deserializationMemo, World& world) : River(
+		data["name"].get<std::wstring>(),
+		data["rate"].get<uint8_t>(),
+		deserializationMemo.getLocationByNormalizedLatLng(data["headWater"]),
+		world) {}
 void River::setLocations(std::vector<WorldLocation*> locations)
 {
 	m_locations = locations;

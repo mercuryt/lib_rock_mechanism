@@ -10,7 +10,7 @@ TEST_CASE("route_10_10_10")
 	static const MaterialType& marble = MaterialType::byName("marble");
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	static const AnimalSpecies& troll = AnimalSpecies::byName("troll");
-	static const AnimalSpecies& eagle = AnimalSpecies::byName("eagle");
+	static const AnimalSpecies& eagle = AnimalSpecies::byName("golden eagle");
 	static const AnimalSpecies& carp = AnimalSpecies::byName("carp");
 	static const FluidType& water = FluidType::byName("water");
 	Area& area = simulation.createArea(10,10,10);

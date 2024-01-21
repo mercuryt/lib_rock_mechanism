@@ -83,6 +83,7 @@ class BlockHasShapes
 	uint32_t m_totalVolume;
 	uint32_t m_staticVolume;
 	// Move costs cache is a structure made up of shape, moveType, and a vector of blocks which can be moved to from here, along with their move cost.
+	// TODO: Store a pointer to the relevent section of move cost cache for adjacent blocks.
 	std::unordered_map<const Shape*, std::unordered_map<const MoveType*, std::vector<std::pair<Block*, uint32_t>>>> m_moveCostsCache;
 	void record(HasShape& hasShape, uint32_t volume);
 	void remove(HasShape& hasShape);

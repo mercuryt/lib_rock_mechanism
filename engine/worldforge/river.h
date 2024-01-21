@@ -1,11 +1,11 @@
 #pragma once
 #include "../util.h"
 #include "../config.h"
+#include "worldLocation.h"
 #include <string>
 #include <sys/types.h>
 #include <vector>
 #include <algorithm>
-struct WorldLocation;
 class World;
 class River
 {
@@ -14,6 +14,7 @@ public:
 	std::vector<WorldLocation*> m_locations;
 	uint8_t m_rate;
 	River(std::wstring n, uint8_t rate, WorldLocation& headWater, World& world);
+	River(const Json& data, DeserializationMemo& deserializationMemo, World& world);
 	void setLocations(std::vector<WorldLocation*> locations);
 	static Meters valleyDepth(Meters inital)
 	{
@@ -39,5 +40,5 @@ public:
 			return nullptr;
 		return *(++iterator);
 	}
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(River, m_name, m_locations);
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(River, m_name, m_locations);
 };

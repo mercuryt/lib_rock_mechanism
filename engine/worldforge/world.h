@@ -24,7 +24,6 @@ struct WorldConfig final
 	uint32_t areaSizeY;
 	uint32_t areaSizeZ;
 	size_t averageLandHeightBlocks;
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(WorldConfig, elevation, biomeConfigs, equatorSize, areaSizeX, areaSizeY, averageLandHeightBlocks);
 };
 class World final
 {
@@ -63,4 +62,5 @@ public:
 	LatLng getRandomCoordinates();
 	LatLng getRandomCoordinatesInRangeOf(LatLng location, Kilometers range);
 	Area& getAreaForLocation(WorldLocation& location);
+	WorldLocation& getLocationByNormalizedLatLng(LatLng location);
 };

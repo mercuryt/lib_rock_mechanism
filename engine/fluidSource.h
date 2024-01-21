@@ -1,11 +1,18 @@
 #pragma once
-#include "deserializationMemo.h"
 #include "types.h"
 #include "config.h"
 #include <vector>
 class FluidType;
 class Block;
-struct FluidSource;
+struct DeserializationMemo;
+struct FluidSource final
+{
+	Block* block;
+	const FluidType* fluidType;
+	Volume level;
+	FluidSource(Block* b, const FluidType* ft, Volume l) : block(b), fluidType(ft), level(l) { }
+	FluidSource(const Json& data, DeserializationMemo& deserializationMemo);
+};
 class AreaHasFluidSources final
 {
 	std::vector<FluidSource> m_data;

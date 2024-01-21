@@ -11,6 +11,7 @@
 #include <list>
 #include <unordered_set>
 
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WorldConfig, elevation, biomeConfigs, equatorSize, areaSizeX, areaSizeY, averageLandHeightBlocks);
 World::World(WorldConfig config, Simulation& simulation) : m_simulation(simulation), m_config(config), m_equatorSize(config.equatorSize), m_poleSizeHorizontal(m_equatorSize / 2), m_poleDistance(((float)m_equatorSize * 3.f) / 4)
 {
 	// This is reserving extra, as if the map were a rectangle.
@@ -67,13 +68,13 @@ World::World(const Json& data, DeserializationMemo& deserializationMemo) :
 	m_poleSizeHorizontal(m_equatorSize / 2), m_poleDistance(((float)m_equatorSize * 3.f) / 4), m_kilometersPerDegreeLongitude(data["kilometersPerDegreeLongitude"])
 {
 	for(const Json& locationData : data["locations"])
-		m_locations.emplace_back(locationData, deserializationMemo);
+		m_locations.emplace_back(locationData);
 	for(const Json& elevationLociiData : data["elevationLocii"])
 		m_elevationLocii.emplace_back(elevationLociiData, deserializationMemo);
 	for(const Json& biomeLociiData : data["biomeLocii"])
 		m_elevationLocii.emplace_back(biomeLociiData, deserializationMemo);
 	for(const Json& riversData : data["rivers"])
-		m_rivers.emplace_back(riversData, deserializationMemo);
+		m_rivers.emplace_back(riversData, deserializationMemo, *this);
 	for(const Json& lakeData : data["lakes"])
 		m_lakes.emplace_back(lakeData, deserializationMemo);
 }
@@ -187,10 +188,12 @@ void World::generateRivers()
 		// TODO: prevent generating adjacent.
 		auto headwaterLocations = m_random.getMultipleInVector(vector, numberOfRivers);
 		// Path.
-		for(auto& location : headwaterLocations)
+		for(WorldLocation* location : headwaterLocations)
 		{
 			std::wstring name = L"river";
-			m_rivers.emplace_back(name, location);
+			// TODO: calculate or generate rate somehow.
+			uint8_t rate = 3;
+			m_rivers.emplace_back(name, rate, *location, *this);
 		}
 		// Make vallies.
 		for(River& river : m_rivers)
@@ -209,7 +212,8 @@ void World::setLake(WorldLocation& location)
 		}
 		else
 		{
-			m_lakes.emplace_back(L"lake");
+			uint8_t size = 3;
+			m_lakes.emplace_back(L"lake", size);
 			m_lakes.back().locations.push_back(&location);
 		}
 }
@@ -277,4 +281,11 @@ LatLng World::getRandomCoordinatesInRangeOf(LatLng location, Kilometers range)
 			m_random.getInRange(location.longitude - maxDegreesOffset, location.longitude + maxDegreesOffset)
 		};
 	return candidate;
+}
+
+WorldLocation& World::getLocationByNormalizedLatLng(LatLng location)
+{
+	auto iter =  std::ranges::find_if(m_locations, [&](const WorldLocation& wl){ return location.latitude == wl.latitude && location.longitude == wl.longitude; });
+	assert(iter != m_locations.end());
+	return *iter;
 }

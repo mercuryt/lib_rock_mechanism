@@ -1,4 +1,3 @@
-#pragma once
 #include "../simulation.h"
 #include "../nthAdjacentOffsets.h"
 #include "worldLocation.h"

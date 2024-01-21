@@ -15,9 +15,11 @@
 #include "input.h"
 #include "uniform.h"
 #include <list>
+#include <memory>
 #include <unordered_map>
 #include <mutex>
 
+class World;
 class HourlyEvent;
 
 class Simulation final
@@ -33,8 +35,9 @@ public:
 	Step m_step;
 	DateTime m_now;
 	ActorId m_nextActorId;
-	std::unordered_map<ActorId, Actor> m_actors;
 	ItemId m_nextItemId;
+	std::unique_ptr<World> m_world;
+	std::unordered_map<ActorId, Actor> m_actors;
 	std::unordered_map<ItemId, Item> m_items;
 	EventSchedule m_eventSchedule;
 	HasScheduledEvent<HourlyEvent> m_hourlyEvent;

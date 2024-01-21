@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <string>
 #include <unordered_map>
+#include <algorithm>
 class Block;
 class Random;
 class Simulation;
@@ -22,8 +23,15 @@ public:
 	virtual void createPlantsAndRocks(Block& block, Simulation& simulation, Random& random) const = 0;
 	virtual std::unordered_map<std::string, float> getAnimalProbabilities(WorldLocation& location) const = 0;
 	virtual ~Biome() = default;
+	// Infastructure
+	inline static std::vector<Biome> data;
+	inline static const Biome& byType(BiomeId biomeId) 
+	{ 
+		return *std::find_if(data.begin(), data.end(), [&](Biome& biome){ return biome.getType() == biomeId; }); 
+	}
 };
 inline void to_json(Json& data, const Biome* const& biomePointer){ data = biomePointer->getType(); }
+inline void from_json(const Json& data, const Biome*& biomePointer){ biomePointer = &Biome::byType(data.get<BiomeId>()); }
 class GrasslandBiome final : public Biome
 {
 public:
