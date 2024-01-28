@@ -28,8 +28,9 @@ void Block::setup(Area& area, uint32_t ax, uint32_t ay, uint32_t az)
 	m_area = &area;
 	m_locationBucket = m_area->m_hasActors.m_locationBuckets.getBucketFor(*this);
 	m_isEdge = (m_x == 0 || m_x == (m_area->m_sizeX - 1) ||  m_y == 0 || m_y == (m_area->m_sizeY - 1) || m_z == 0 || m_z == (m_area->m_sizeZ - 1) );
-	uint32_t seed = (m_x * 1'000'000) + (m_y * 1'000) + m_z;
-	m_seed = m_area->m_simulation.m_random.deterministicScramble(seed);
+	// This is too slow to do on init.
+	//uint32_t seed = (m_x * 1'000'000) + (m_y * 1'000) + m_z;
+	//m_seed = m_area->m_simulation.m_random.deterministicScramble(seed);
 }
 void Block::recordAdjacent()
 {

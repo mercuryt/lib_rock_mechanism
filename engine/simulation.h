@@ -19,24 +19,25 @@
 #include <unordered_map>
 #include <mutex>
 
-class World;
+//class World;
 class HourlyEvent;
 
 class Simulation final
 {
 	AreaId m_nextAreaId;
-	std::list<Area> m_areas;
 	std::unordered_map<AreaId, Area*> m_areasById;
 	std::future<void> m_stepFuture;
 public:
 	BS::thread_pool_light m_pool;
 	std::vector<std::future<void>> m_taskFutures;
 	std::mutex m_uiReadMutex;
+	std::wstring m_name;
 	Step m_step;
 	DateTime m_now;
 	ActorId m_nextActorId;
 	ItemId m_nextItemId;
-	std::unique_ptr<World> m_world;
+	//std::unique_ptr<World> m_world;
+	std::list<Area> m_areas;
 	std::unordered_map<ActorId, Actor> m_actors;
 	std::unordered_map<ItemId, Item> m_items;
 	EventSchedule m_eventSchedule;
@@ -47,7 +48,8 @@ public:
 	SimulationHasUniforms m_hasUniforms;
 	SimulationHasShapes m_shapes;
 	SimulationHasFactions m_hasFactions;
-	Simulation(DateTime n = {12, 150, 1200}, Step s = 1);
+
+	Simulation(std::wstring name = L"", DateTime n = {12, 150, 1200}, Step s = 1);
 	Simulation(std::filesystem::path path);
 	Json toJson() const;
 	void doStep();
@@ -56,9 +58,10 @@ public:
 	void loadAreas(const Json& data, std::filesystem::path path);
 	//TODO: latitude, longitude, altitude.
 	Area& createArea(uint32_t x, uint32_t y, uint32_t z);
-	Area& loadArea(AreaId id, uint32_t x, uint32_t y, uint32_t z);
+	Area& loadArea(AreaId id, std::wstring name, uint32_t x, uint32_t y, uint32_t z);
 	Actor& createActor(const AnimalSpecies& species, Block& block, Percent percentGrown = 100, DateTime birthDate = {0,0,0});
 	Actor& createActor(const AnimalSpecies& species, Percent percentGrown = 100, DateTime birthDate = {0,0,0});
+	Actor& createActorWithRandomAge(const AnimalSpecies& species, Block& block);
 	// Non generic, no id
 	Item& createItemNongeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quality, Percent percentWear, CraftJob* cj = nullptr);
 	// Generic, no id.

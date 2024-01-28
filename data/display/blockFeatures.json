@@ -1,30 +1,30 @@
 [
 	{
-		"blockFeature": "floor",
+		"name": "floor",
 		"symbol": "🝚 "
 	},{
-		"blockFeature": "door",
+		"name": "door",
 		"symbol": "🚪"
 	},{
-		"blockFeature": "flap",
+		"name": "flap",
 		"symbol": "𐂧 "
 	},{
-		"blockFeature": "hatch",
+		"name": "hatch",
 		"symbol": "🀆 "
 	},{
-		"blockFeature": "stairs",
+		"name": "stairs",
 		"symbol": "𝄛 "
 	},{
-		"blockFeature": "flood gate",
+		"name": "floodGate",
 		"symbol": "𞠍"
 	},{
-		"blockFeature": "floor grate",
+		"name": "floorGrate",
 		"symbol": "#"
 	},{
-		"blockFeature": "ramp",
+		"name": "ramp",
 		"symbol": "𝀄 "
 	},{
-		"blockFeature": "fortification",
+		"name": "fortification",
 		"symbol": "𞠤"
 	}
 ]

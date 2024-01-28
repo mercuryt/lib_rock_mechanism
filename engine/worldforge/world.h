@@ -41,7 +41,7 @@ class World final
 	std::unordered_map<const Biome*, std::vector<Locii>> m_biomeLocii;
 	std::vector<River> m_rivers;
 	std::vector<Lake> m_lakes;
-	std::vector<WorldLocation> m_locations;
+	std::unordered_map<LatLng, WorldLocation> m_locations;
 	
 	void setElevationForLocation(WorldLocation& location);
 	void setAdjacentFor(WorldLocation& location, size_t horizontal, size_t horizontalSize, size_t previousHorizontalSize, size_t nextHorizontalSize, WorldLocation* previousHorizontalStart, WorldLocation* nextHorizontalStart);

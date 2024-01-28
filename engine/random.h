@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cassert>
 #include <unordered_set>
+#include <unordered_map>
 
 class Random
 {

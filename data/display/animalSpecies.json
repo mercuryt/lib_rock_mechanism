@@ -1,43 +1,43 @@
 [
 	{
-		"animalSpecies": "black bear",
+		"name": "black bear",
 		"symbol": "🐻",
-		"color": [4, 3, 8, 1]
+		"color": [4, 3, 8, 255]
 	},{
-		"animalSpecies": "carp",
+		"name": "carp",
 		"symbol": "🐟",
-		"color": [135, 140, 245, 1]
+		"color": [135, 140, 245, 255]
 	},{
-		"animalSpecies": "deer",
+		"name": "red deer",
 		"symbol": "🦌",
-		"color": [179, 143, 125, 1]
+		"color": [179, 143, 125, 255]
 	},{
-		"animalSpecies": "donkey",
+		"name": "jackstock donkey",
 		"symbol": "🐴",
-		"color": [179, 143, 125, 1]
+		"color": [179, 143, 125, 255]
 	},{
-		"animalSpecies": "dwarf",
+		"name": "dwarf",
 		"symbol": "Dw",
-		"color": [179, 143, 125, 1]
+		"color": [179, 143, 125, 255]
 	},{
-		"animalSpecies": "eagle",
+		"name": "golden eagle",
 		"symbol": "🦅",
-		"color": [179, 143, 125, 1]
+		"color": [179, 143, 125, 255]
 	},{
-		"animalSpecies": "rabbit",
+		"name": "dwarf rabbit",
 		"symbol": "🐇",
-		"color": [105, 93, 87, 1]
+		"color": [105, 93, 87, 255]
 	},{
-		"animalSpecies": "red fox",
+		"name": "red fox",
 		"symbol": "🦊",
-		"color": [115, 45, 10, 1]
+		"color": [115, 45, 10, 255]
 	},{
-		"animalSpecies": "goblin",
+		"name": "goblin",
 		"symbol": "🧌T ",
-		"color": [11, 66, 12, 1]
+		"color": [11, 66, 12, 255]
 	},{
-		"animalSpecies": "troll",
+		"name": "troll",
 		"symbol": "🗿",
-		"color": [197, 201, 197, 1]
+		"color": [197, 201, 197, 255]
 	}
 ]

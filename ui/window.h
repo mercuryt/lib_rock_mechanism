@@ -3,10 +3,13 @@
 #include <TGUI/TGUI.hpp>
 #include <TGUI/Backend/SFML-Graphics.hpp>
 #include <chrono>
+#include <memory>
 #include "../engine/simulation.h"
 #include "../engine/area.h"
 #include "../engine/block.h"
 #include "../engine/input.h"
+#include "editRealityPanel.h"
+#include "editAreaPanel.h"
 #include "gameOverlay.h"
 #include "mainMenu.h"
 #include "objectivePriorityPanel.h"
@@ -15,7 +18,12 @@
 #include "stocksPanel.h"
 #include "uniformPanel.h"
 #include "actorPanel.h"
-#include "worldParamatersPanel.h"
+//#include "worldParamatersPanel.h"
+struct GameView final 
+{
+	Block* center;
+	uint32_t scale;
+};
 class Window final
 {
 	sf::RenderWindow m_window;
@@ -30,11 +38,14 @@ class Window final
 	UniformListView m_uniformView;
 	StocksView m_stocksView;
 	ActorView m_actorView;
-	WorldParamatersView m_worldParamatersView;
+	//WorldParamatersView m_worldParamatersView;
+	EditRealityView m_editRealityView;
+	EditAreaView m_editAreaView;
 	std::unique_ptr<Simulation> m_simulation;
 	Area* m_area;
 	uint32_t m_scale;
 	uint32_t m_z;
+	std::unordered_map<AreaId, GameView> m_lastViewedSpotInArea;
 	//TODO: multi select.
 	Cuboid m_selectedBlocks;
 	std::unordered_set<Actor*> m_selectedActors;
@@ -48,6 +59,7 @@ class Window final
 	sf::Vector2i m_positionWhereMouseDragBegan;
 	Block* m_firstCornerOfSelection;
 	std::filesystem::path m_path;
+	static constexpr int gameMarginSize = 400;
 	
 	void drawView();
 	void drawBlock(const Block& block);
@@ -60,12 +72,15 @@ class Window final
 	void drawItem(const Item& item);
 	void drawPlant(const Plant& plant);
 	void povFromJson(const Json& data);
+	void setZ(const uint32_t z);
+	void setPaused(bool paused);
 	[[nodiscard]] Json povToJson() const;
 	[[nodiscard]] static std::chrono::milliseconds msSinceEpoch();
 public:
 	InputQueue m_inputQueue;
+	bool m_editMode;
 	Window();
-	void setArea(Area& area, Block& center, uint32_t scale);
+	void setArea(Area& area, GameView* gameView = nullptr);
 	void startLoop();
 	void centerView(const Block& block);
 	void setFrameRate(uint32_t);
@@ -82,7 +97,9 @@ public:
 	void showObjectivePriority(Actor& actor) { hideAllPanels(); m_objectivePriorityView.draw(actor); }
 	void showStocks() { hideAllPanels(); m_stocksView.show(); }
 	void showActorDetail(Actor& actor) { hideAllPanels(); m_actorView.draw(actor); }
-	void showCreateWorld() { hideAllPanels(); m_worldParamatersView.show(); }
+	//void showCreateWorld() { hideAllPanels(); m_worldParamatersView.show(); }
+	void showEditReality() { hideAllPanels(); m_editRealityView.draw(); }
+	void showEditArea(Area* area = nullptr) { hideAllPanels(); m_editAreaView.draw(area); }
 	// Select.
 	void deselectAll();
 	void selectBlock(Block& block);
@@ -90,15 +107,17 @@ public:
 	void selectPlant(Plant& plant);
 	void selectActor(Actor& actor);
 	Cuboid getSelectedBlocks() { return m_selectedBlocks; }
-	std::unordered_set<Item*> getSelectedItems() { return m_selectedItems; }
-	std::unordered_set<Plant*> getSelectedPlants() { return m_selectedPlants; }
-	std::unordered_set<Actor*> getSelectedActors() { return m_selectedActors; }
+	std::unordered_set<Item*>& getSelectedItems() { return m_selectedItems; }
+	std::unordered_set<Plant*>& getSelectedPlants() { return m_selectedPlants; }
+	std::unordered_set<Actor*>& getSelectedActors() { return m_selectedActors; }
 	[[nodiscard]] Block& getBlockUnderCursor();
-	// Filesystem;
+	// Filesystem.
 	void save();
 	void load(std::filesystem::path path);
+	// Accessors.
 	[[nodiscard]] const Faction* getFaction() const { return m_faction;}
 	[[nodiscard]] Simulation* getSimulation() { return m_simulation.get(); }
+	void setSimulation(std::unique_ptr<Simulation> simulation) { m_simulation = std::move(simulation); }
 	[[nodiscard]] Area* getArea() { return m_area; }
 	// String utilities.
 	static std::wstring displayNameForItem(Item& item);

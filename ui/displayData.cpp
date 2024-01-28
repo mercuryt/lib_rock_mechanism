@@ -7,6 +7,19 @@
 #include "../engine/animalSpecies.h"
 #include "../engine/blockFeature.h"
 #include <SFML/Graphics/Color.hpp>
+#include <string>
+
+std::wstring loadWString(const Json& data)
+{
+	std::wstring output;
+	if(data.is_string())
+		for(auto codePoint : data.get<std::string>())
+			output += codePoint;
+	else
+		for(const Json& codePoint : data)
+			output += std::to_wstring(codePoint.get<long>());
+	return output;
+}
 
 sf::Color colorFromJson(const Json& data)
 {
@@ -32,21 +45,21 @@ void displayData::load()
 	for(const Json& data : definitions::tryParse(path/"itemTypes.json"))
 	{
 		const ItemType& itemType = ItemType::byName(data["name"].get<std::string>());
-		itemSymbols[&itemType] = data["symbol"].get<std::wstring>();
+		itemSymbols[&itemType] = loadWString(data["symbol"]);
 	}
 	for(const Json& data : definitions::tryParse(path/"plantSpecies.json"))
 	{
 		const PlantSpecies& plantSpecies = PlantSpecies::byName(data["name"].get<std::string>());
-		plantSymbols[&plantSpecies] = data["symbol"].get<std::wstring>();
+		plantSymbols[&plantSpecies] = loadWString(data["symbol"]);
 	}
-	for(const Json& data : definitions::tryParse(path/"actorSpecies.json"))
+	for(const Json& data : definitions::tryParse(path/"animalSpecies.json"))
 	{
 		const AnimalSpecies& animalSpecies = AnimalSpecies::byName(data["name"].get<std::string>());
-		actorSymbols[&animalSpecies] = data["symbol"].get<std::wstring>();
+		actorSymbols[&animalSpecies] = loadWString(data["symbol"]);
 	}
-	for(const Json& data : definitions::tryParse(path/"blockFeature.json"))
+	for(const Json& data : definitions::tryParse(path/"blockFeatures.json"))
 	{
 		const BlockFeatureType& blockFeatureType = BlockFeatureType::byName(data["name"].get<std::string>());
-		blockFeatureSymbols[&blockFeatureType] = data["symbol"].get<std::wstring>();
+		blockFeatureSymbols[&blockFeatureType] = loadWString(data["symbol"]);
 	}
 }

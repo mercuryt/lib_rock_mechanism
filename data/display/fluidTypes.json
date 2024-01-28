@@ -1,15 +1,15 @@
 [
 	{
-		"fluidType": "water",
-		"color": [23, 78, 116, 0.8]
+		"name": "water",
+		"color": [23, 78, 116, 122]
 	},{
-		"fluidType": "mercury",
-		"color": [17, 119, 68, 1]
+		"name": "mercury",
+		"color": [17, 119, 68, 255]
 	},{
-		"fluidType": "CO2",
-		"color": [255, 255, 255, 0]
+		"name": "CO2",
+		"color": [255, 255, 255, 20]
 	},{
-		"fluidType": "lava",
-		"color": [204, 42, 17, 0]
+		"name": "lava",
+		"color": [204, 42, 17, 255]
 	}
 ]

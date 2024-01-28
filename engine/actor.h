@@ -80,6 +80,8 @@ public:
 	void takeHit(Hit& hit, BodyPart& bodyPart);
 	// May be null.
 	void setFaction(const Faction* faction) { m_faction = faction; m_canReserve.setFaction(faction); }
+	void reserveAllBlocksAtLocationAndFacing(const Block& location, Facing facing);
+	void unreserveAllBlocksAtLocationAndFacing(const Block& location, Facing facing);
 	bool isItem() const { return false; }
 	bool isActor() const { return true; }
 	bool isGeneric() const { return false; }
@@ -96,8 +98,6 @@ public:
 	const Faction* getFaction() const { return m_faction; }
 	uint32_t getAgeInYears() const;
 	bool allBlocksAtLocationAndFacingAreReservable(const Block& location, Facing facing) const;
-	void reserveAllBlocksAtLocationAndFacing(const Block& location, Facing facing);
-	void unreserveAllBlocksAtLocationAndFacing(const Block& location, Facing facing);
 	// May return nullptr.
 	EventSchedule& getEventSchedule();
 	ThreadedTaskEngine& getThreadedTaskEngine();

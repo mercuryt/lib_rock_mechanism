@@ -4,15 +4,15 @@
 struct LociiConfig final
 {
 	uint32_t numberOfLocationsPerLocii;
-	float maximumIntensity;
 	float minimumIntensity;
-	float maximumSustain;
+	float maximumIntensity;
 	float minimumSustain;
-	float maximumDecay;
+	float maximumSustain;
 	float minimumDecay;
-	float maximumExponent;
+	float maximumDecay;
 	float minimumExponent;
-	uint32_t maximumPositions;
+	float maximumExponent;
 	uint32_t minimumPositions;
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(LociiConfig, numberOfLocationsPerLocii, maximumIntensity, minimumIntensity, maximumSustain, minimumSustain, maximumDecay, minimumDecay, maximumExponent, minimumExponent, maximumPositions, minimumPositions);
+	uint32_t maximumPositions;
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(LociiConfig, numberOfLocationsPerLocii, minimumIntensity, maximumIntensity, minimumSustain, maximumSustain, minimumDecay, maximumDecay, minimumExponent, maximumExponent, minimumPositions, maximumPositions);
 };

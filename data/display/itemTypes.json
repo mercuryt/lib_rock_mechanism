@@ -1,118 +1,118 @@
 [
 	{
-		"itemType": "axe",
-		"symbol": "🪓"
+		"name": "axe",
+		"symbol": "axe"
 	},{
-		"itemType": "apple",
+		"name": "apple",
 		"symbol": "🍏"
 	},{
-		"itemType": "bar",
+		"name": "round bar",
 		"symbol": "―"
 	},{
-		"itemType": "block",
+		"name": "block",
 		"symbol": "▂"
 	},{
-		"itemType": "board",
+		"name": "board",
 		"symbol": "▂"
 	},{
-		"itemType": "boulder",
+		"name": "boulder",
 		"symbol": "🪨"
 	},{
-		"itemType": "bucket",
+		"name": "bucket",
 		"symbol": "🪣"
 	},{
-		"itemType": "bucking bar",
+		"name": "bucking bar",
 		"symbol": "🛠"
 	},{
-		"itemType": "cart",
+		"name": "cart",
 		"symbol": "𐃏🭕█"
 	},{
-		"itemType": "chisel",
+		"name": "chisel",
 		"symbol": "c"
 	},{
-		"itemType": "chunk",
+		"name": "chunk",
 		"symbol": "🪨",
 		"scale": 0.5
 	},{
-		"itemType": "crossbowBolts",
+		"name": "crossbow bolt",
 		"symbol": "➸"
 	},{
-		"itemType": "crossbow",
+		"name": "crossbow",
 		"symbol": "🏹"
 	},{
-		"itemType": "dagger",
+		"name": "dagger",
 		"symbol": "🗡"
 	},{
-		"itemType": "dirt",
+		"name": "dirt",
 		"symbol": "░"
 	},{
-		"itemType": "draw shave",
+		"name": "draw shave",
 		"symbol": "🛠"
 	},{
-		"itemType": "gravel",
+		"name": "gravel",
 		"symbol": "▒"
 	},{
-		"itemType": "hammer",
+		"name": "hammer",
 		"symbol": "🔨"
 	},{
-		"itemType": "log",
+		"name": "log",
 		"symbol": "🪵"
 	},{
-		"itemType": "longsword",
+		"name": "long sword",
 		"symbol": "⚔"
 	},{
-		"itemType": "mallet",
+		"name": "mallet",
 		"symbol": "🛠"
 	},{
-		"itemType": "morter",
+		"name": "morter",
 		"symbol": "▓"
 	},{
-		"itemType": "organic waste",
+		"name": "organic waste",
 		"symbol": "▓"
 	},{
-		"itemType": "panniers",
+		"name": "panniers",
 		"symbol": "👜"
 	},{
-		"itemType": "pants",
+		"name": "pants",
 		"symbol": "👖"
 	},{
-		"itemType": "peg",
+		"name": "peg",
 		"symbol": "🔩"
 	},{
-		"itemType": "pick",
+		"name": "pick",
 		"symbol": "⛏"
 	},{
-		"itemType": "prepared meal",
+		"name": "prepared meal",
 		"symbol": "🍲"
 	},{
-		"itemType": "rivet",
+		"name": "rivet",
 		"symbol": "🔩"
 	},{
-		"itemType": "rope",
+		"name": "rope",
 		"symbol": "꩜ "
 	},{
-		"itemType": "rough board",
+		"name": "rough board",
 		"symbol": "▁"
 	},{
-		"itemType": "sand",
+		"name": "sand",
 		"symbol": "▒"
 	},{
-		"itemType": "saw",
+		"name": "saw",
 		"symbol": "🪚"
 	},{
-		"itemType": "scrap",
+		"name": "scrap",
 		"symbol": "▓"
 	},{
-		"itemType": "sticks",
+		"name": "sticks",
 		"symbol": "ᚬ"
 	},{
-		"itemType": "trowel",
+		"name": "trowel",
 		"symbol": "🛠"
 	},{
-		"itemType": "wheet seed",
+		"name": "wheat seed",
 		"symbol": "▒"
 	},{
-		"itemType": "wood chip",
+		"name": "wood chip",
 		"symbol": "▒"
 	}
 ]

@@ -1,9 +1,9 @@
 [
 	{
-		"plantSpecies": "centipede grass",
+		"name": "centipede grass",
 		"symbol": "🌱"
 	},{
-		"plantSpecies": "wheat grass",
+		"name": "wheat grass",
 		"symbol": "🌾"
 	}
 ]

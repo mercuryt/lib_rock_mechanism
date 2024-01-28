@@ -8,7 +8,7 @@ TEST_CASE("plant")
 	static const PlantSpecies& wheatGrass = PlantSpecies::byName("wheat grass");
 	static const FluidType& water = FluidType::byName("water");
 	DateTime now = {12, 100, 1200}; 
-	Simulation simulation(now);
+	Simulation simulation(L"test", now);
 	Area& area = simulation.createArea(10,10,10);
 	Block& location = area.getBlock(5, 5, 2);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);

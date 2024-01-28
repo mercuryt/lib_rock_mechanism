@@ -1,6 +1,10 @@
 #include "gameOverlay.h"
 #include "window.h"
-GameOverlay::GameOverlay(Window& w) : m_window(w), m_group(tgui::Group::create()), m_menu(tgui::Panel::create()), m_detailPanel(w, m_group), m_contextMenu(w, m_group), m_itemBeingInstalled(nullptr), m_facing(0)
+#include <TGUI/Widgets/HorizontalLayout.hpp>
+GameOverlay::GameOverlay(Window& w) : m_window(w), 
+	m_group(tgui::Group::create()), m_menu(tgui::Panel::create()), m_detailPanel(w, m_group), m_contextMenu(w, m_group), 
+	m_x(tgui::Label::create()), m_y(tgui::Label::create()), m_z(tgui::Label::create()), m_paused(tgui::Label::create("paused")),
+	m_itemBeingInstalled(nullptr), m_facing(0) 
 { 
 	m_window.getGui().add(m_group);
 	m_group->setVisible(false);
@@ -20,6 +24,18 @@ GameOverlay::GameOverlay(Window& w) : m_window(w), m_group(tgui::Group::create()
 	close->onClick([&]{ m_group->setVisible(false); });
 	//TODO: settings.
 	m_menu->setPosition("50%", "50%");
+	auto topBar = tgui::HorizontalLayout::create();
+	auto leftSide = tgui::Group::create();
+	topBar->add(leftSide);
+	auto coordinateHolder = tgui::HorizontalLayout::create();
+	coordinateHolder->setWidth("10%");
+	leftSide->add(coordinateHolder);
+	coordinateHolder->add(m_x);
+	coordinateHolder->add(m_y);
+	coordinateHolder->add(m_z);
+	topBar->setHeight("5%");
+	topBar->add(m_paused);
+	m_group->add(topBar);
 }
 void GameOverlay::installItem(Block& block)
 {

@@ -13,9 +13,9 @@ constexpr sf::Mouse::Button actionMouseButton = sf::Mouse::Button::Right;
 sf::Color selectColor = sf::Color::Yellow;
 Window::Window() : m_window(sf::VideoMode::getDesktopMode(), "Goblin Pit", sf::Style::Fullscreen), m_gui(m_window), m_view(m_window.getDefaultView()), 
 	m_mainMenuView(*this), m_loadView(*this), m_gameOverlay(*this), m_objectivePriorityView(*this), 
-	m_productionView(*this), m_uniformView(*this), m_stocksView(*this), m_actorView(*this), m_worldParamatersView(*this),
-	m_simulation(nullptr), m_faction(nullptr),
-	m_paused(true), m_minimumMillisecondsPerFrame(200), m_minimumMillisecondsPerStep(200),
+	m_productionView(*this), m_uniformView(*this), m_stocksView(*this), m_actorView(*this), //m_worldParamatersView(*this),
+	m_editRealityView(*this), m_editAreaView(*this), m_area(nullptr), m_scale(32), m_faction(nullptr),
+	m_minimumMillisecondsPerFrame(200), m_minimumMillisecondsPerStep(200),
 	m_simulationThread([&](){
 		std::chrono::milliseconds start = msSinceEpoch();
 		if(m_simulation && !m_paused)
@@ -23,20 +23,33 @@ Window::Window() : m_window(sf::VideoMode::getDesktopMode(), "Goblin Pit", sf::S
 		std::chrono::milliseconds delta = msSinceEpoch() - start;
 		if(delta < m_minimumMillisecondsPerStep)
 			std::this_thread::sleep_for(m_minimumMillisecondsPerStep - delta);
-	})
+	}), m_editMode(false)
 {
+	setZ(0);
+	setPaused(true);
 	m_font.loadFromFile("lib/arial.ttf");
 	showMainMenu();
 }
-void Window::setArea(Area& area, Block& center, uint32_t scale)
+void Window::setArea(Area& area, GameView* gameView)
 {
+	if(!gameView)
+	{
+		if(m_lastViewedSpotInArea.contains(area.m_id))
+			gameView = &m_lastViewedSpotInArea.at(area.m_id);
+		else
+		{
+			auto pair = m_lastViewedSpotInArea.try_emplace(area.m_id, &area.getMiddleAtGroundLevel(), 32u);
+			assert(pair.second);
+			gameView = &pair.first->second;
+		}
+	}
 	m_area = &area;
-	m_scale = scale;
-	centerView(center);
+	m_scale = gameView->scale;
+	centerView(*gameView->center);
 }
 void Window::centerView(const Block& block)
 {
-	m_z = block.m_z;
+	setZ(block.m_z);
 	sf::Vector2f globalPosition(block.m_x * m_scale, block.m_y * m_scale);
 	sf::Vector2i pixelPosition = m_window.mapCoordsToPixel(globalPosition);
 	pixelPosition.x -= m_view.getCenter().x - m_view.getSize().x / 2;
@@ -58,7 +71,9 @@ void Window::hideAllPanels()
 	m_objectivePriorityView.hide();
 	m_productionView.hide();
 	m_uniformView.hide();
-	m_worldParamatersView.hide();
+	m_editAreaView.hide();
+	m_editRealityView.hide();
+	//m_worldParamatersView.hide();
 }
 void Window::startLoop()
 {
@@ -85,27 +100,41 @@ void Window::startLoop()
 							break;
 						case sf::Keyboard::PageUp:
 							if(m_gameOverlay.isVisible() && (m_z + 1) < m_area->m_sizeZ)
-								++m_z;
+								setZ(m_z + 1);
 							break;
 						case sf::Keyboard::PageDown:
 							if(m_gameOverlay.isVisible() && m_z > 0)
-								--m_z;
+								setZ(m_z - 1);
 							break;
 						case sf::Keyboard::Up:
-							if(m_gameOverlay.isVisible() && m_view.getCenter().y > (m_view.getSize().y / 2) - 10)
+							if(m_gameOverlay.isVisible() && m_view.getCenter().y > (m_view.getSize().y / 2) - gameMarginSize)
 								m_view.move(0.f, scrollSteps * -20.f);
 							break;
 						case sf::Keyboard::Down:
-							if(m_gameOverlay.isVisible() && m_view.getCenter().y < m_area->m_sizeY * m_scale - (m_view.getSize().y / 2) + 10)
+							if(m_gameOverlay.isVisible() && m_view.getCenter().y < m_area->m_sizeY * m_scale - (m_view.getSize().y / 2) + gameMarginSize)
 								m_view.move(0.f, scrollSteps * 20.f);
 							break;
 						case sf::Keyboard::Left:
-							if(m_gameOverlay.isVisible() && m_view.getCenter().x > (m_view.getSize().x / 2) - 10)
+							if(m_gameOverlay.isVisible() && m_view.getCenter().x > (m_view.getSize().x / 2) - gameMarginSize)
 								m_view.move(scrollSteps * -20.f, 0.f);
 							break;
 						case sf::Keyboard::Right:
-							if(m_gameOverlay.isVisible() && m_view.getCenter().x < m_area->m_sizeX * m_scale - (m_view.getSize().x / 2) + 10)
+							if(m_gameOverlay.isVisible() && m_view.getCenter().x < m_area->m_sizeX * m_scale - (m_view.getSize().x / 2) + gameMarginSize)
 								m_view.move(scrollSteps * 20.f, 0.f);
+							break;
+						case sf::Keyboard::Subtract:
+							{
+								m_scale = std::max(1u, (int)m_scale - scrollSteps);
+								Block& center = getBlockUnderCursor();
+								m_view.move(-1.f *center.m_x * scrollSteps, -1.f * center.m_y * scrollSteps);
+							}
+							break;
+						case sf::Keyboard::Add:
+							{
+								m_scale += 1 * scrollSteps;
+								Block& center = getBlockUnderCursor();
+								m_view.move(center.m_x * scrollSteps, center.m_y * scrollSteps);
+							}
 							break;
 						case sf::Keyboard::Period:
 							if(m_gameOverlay.isVisible() && m_paused)
@@ -113,7 +142,7 @@ void Window::startLoop()
 							break;
 						case sf::Keyboard::Space:
 							if(m_gameOverlay.isVisible())
-								m_paused = !m_paused;
+								setPaused(!m_paused);
 							break;
 						case sf::Keyboard::Escape:
 							if(m_gameOverlay.isVisible())
@@ -172,6 +201,7 @@ void Window::startLoop()
 						Block& block = getBlockUnderCursor();
 						if(event.mouseButton.button == selectMouseButton)
 						{
+							m_gameOverlay.closeContextMenu();
 							m_firstCornerOfSelection = &block;
 							m_positionWhereMouseDragBegan = sf::Mouse::getPosition();
 							//TODO: Additive select.
@@ -222,7 +252,8 @@ void Window::startLoop()
 								{
 									m_selectedActors.insert(block.m_hasActors.getAll().begin(), block.m_hasActors.getAll().end());
 									m_selectedItems.insert(block.m_hasItems.getAll().begin(), block.m_hasItems.getAll().end());
-									m_selectedPlants.insert(&block.m_hasPlant.get());
+									if(block.m_hasPlant.exists())
+										m_selectedPlants.insert(&block.m_hasPlant.get());
 								}
 								if(!foundActors.empty())
 									m_selectedActors = foundActors;
@@ -243,10 +274,18 @@ void Window::startLoop()
 							else
 								m_gameOverlay.drawContextMenu(block);
 						}
+						else
+							m_gameOverlay.closeContextMenu();
 					}
 					break;
 				}
 				default:
+					if(m_area)
+					{
+						const Block& block = getBlockUnderCursor();
+						m_gameOverlay.m_x->setText(std::to_string(block.m_x));
+						m_gameOverlay.m_y->setText(std::to_string(block.m_y));
+					}
 					break;
 			}
 		}
@@ -314,13 +353,14 @@ void Window::drawView()
 		auto start = m_positionWhereMouseDragBegan;
 		uint32_t xSize = std::abs((int32_t)start.x - (int32_t)end.x);
 		uint32_t ySize = std::abs((int32_t)start.y - (int32_t)end.y);
-		uint32_t left = std::min(start.x, end.x);
-		uint32_t top = std::min(start.y, end.y);
+		int32_t left = std::min(start.x, end.x);
+		int32_t top = std::min(start.y, end.y);
+		sf::Vector2f worldPos = m_window.mapPixelToCoords({left, top});
 		sf::RectangleShape square(sf::Vector2f(xSize, ySize));
 		square.setFillColor(sf::Color::Transparent);
 		square.setOutlineColor(selectColor);
 		square.setOutlineThickness(3.f);
-		square.setPosition(left, top);
+		square.setPosition(worldPos);
 		m_window.draw(square);
 	}
 	// Install item.
@@ -344,11 +384,8 @@ void Window::drawBlock(const Block& block)
 		{
 			if(adjacent->m_visible)
 			{
+				assert(displayData::materialColors.contains(&block.getSolidMaterial()));
 				drawColorOnBlock(block, displayData::materialColors.at(&block.getSolidMaterial()));
-				sf::RectangleShape square(sf::Vector2f(m_scale, m_scale));
-				square.setFillColor(sf::Color::White);
-				square.setPosition(static_cast<float>(block.m_x * m_scale), static_cast<float>(block.m_y * m_scale));
-				m_window.draw(square);
 				break;
 			}
 		}
@@ -472,12 +509,22 @@ void Window::load(std::filesystem::path path)
 	povFromJson(povData);
 	showGame();
 }
+void Window::setZ(const uint32_t z)
+{
+	m_z = z;
+	m_gameOverlay.m_z->setText(std::to_string(z));
+}
+void Window::setPaused(const bool paused)
+{
+	m_paused = paused;
+	m_gameOverlay.m_paused->setVisible(paused);
+}
 void Window::povFromJson(const Json& data)
 {
 	assert(m_simulation);
 	m_area = &m_simulation->getAreaById(data["area"].get<AreaId>());
 	m_scale = data["scale"].get<uint32_t>();
-	m_z = data["m_z"].get<uint32_t>();
+	setZ(data["m_z"].get<uint32_t>());
 	if(data.contains("selectedBlock"))
 	{
 		uint32_t x = data["x"].get<uint32_t>();
@@ -517,8 +564,8 @@ Block& Window::getBlockUnderCursor()
 {
 	sf::Vector2i pixelPos = sf::Mouse::getPosition(m_window);
 	sf::Vector2f worldPos = m_window.mapPixelToCoords(pixelPos);
-	uint32_t x = worldPos.x + m_view.getCenter().x - m_view.getSize().x / 2;
-	uint32_t y = worldPos.y + m_view.getCenter().y - m_view.getSize().y / 2;
+	uint32_t x = std::max(0.f, worldPos.x + m_view.getCenter().x - m_view.getSize().x / 2);
+	uint32_t y = std::max(0.f, worldPos.y + m_view.getCenter().y - m_view.getSize().y / 2);
 	x = std::min(m_area->m_sizeX - 1, x / m_scale);
 	y = std::min(m_area->m_sizeY - 1, y / m_scale);
 	return m_area->getBlock(x, y, m_z);

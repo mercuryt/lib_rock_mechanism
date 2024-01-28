@@ -7,19 +7,20 @@
 #include "fire.h"
 #include "plant.h"
 #include "simulation.h"
-#include "worldforge/worldLocation.h"
+//#include "worldforge/worldLocation.h"
 #include <algorithm>
 #include <iostream>
 #include <numeric>
+#include <string>
 #include <sys/types.h>
 #include <unordered_set>
 
-Area::Area(AreaId id, Simulation& s, uint32_t x, uint32_t y, uint32_t z) :
-	m_blocks(x*y*z), m_id(id), m_worldLocation(nullptr), m_simulation(s), m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_hasRain(*this), m_visionCuboidsActive(false)
+Area::Area(AreaId id, std::wstring n, Simulation& s, uint32_t x, uint32_t y, uint32_t z) :
+	m_blocks(x*y*z), m_id(id), m_name(n), m_simulation(s), m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_hasRain(*this), m_visionCuboidsActive(false)
 { setup(); }
 Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& s) : 
 	m_blocks(data["sizeX"].get<uint32_t>() * data["sizeY"].get<uint32_t>() * data["sizeZ"].get<uint32_t>()),
-	m_id(data["id"].get<AreaId>()), m_worldLocation(nullptr), m_simulation(s), 
+	m_id(data["id"].get<AreaId>()), m_name(data["name"].get<std::wstring>()), m_simulation(s),
 	m_sizeX(data["sizeX"].get<uint32_t>()), m_sizeY(data["sizeY"].get<uint32_t>()), m_sizeZ(data["sizeZ"].get<uint32_t>()), 
 	m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_hasRain(*this), m_visionCuboidsActive(false)
 {
@@ -70,7 +71,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 Json Area::toJson() const
 {
 	Json data{
-		{"id", m_id}, {"sizeX", m_sizeX}, {"sizeY", m_sizeY}, {"sizeZ", m_sizeZ}, 
+		{"id", m_id}, {"name", m_name}, {"sizeX", m_sizeX}, {"sizeY", m_sizeY}, {"sizeZ", m_sizeZ}, 
 		{"actors", Json::array()}, {"items", Json::array()}, {"blocks", Json::array()},
 		{"plants", Json::array()}, {"fluidSources", m_fluidSources.toJson()}
 	};
@@ -220,9 +221,13 @@ Block& Area::getBlock(uint32_t x, uint32_t y, uint32_t z)
 }
 Block& Area::getGroundLevel(uint32_t x, uint32_t y)
 {
-	Block* block = &getBlock(x, y, 0);
+	Block* block = &getBlock(x, y, m_sizeZ - 1);
 	while(!block->isSolid())
+	{
+		if(!block->getBlockBelow())
+			return *block;
 		block = block->getBlockBelow();
+	}
 	return block->getBlockAbove() ? *block->getBlockAbove() : *block;
 }
 Block& Area::getMiddleAtGroundLevel()
@@ -231,6 +236,7 @@ Block& Area::getMiddleAtGroundLevel()
 	uint32_t y = (m_sizeY - 1) / 2;
 	return getGroundLevel(x, y);
 }
+/*
 Block& Area::getBlockForAdjacentLocation(WorldLocation& location)
 {
 	if(&location == m_worldLocation->west)
@@ -264,6 +270,7 @@ Block& Area::getBlockForAdjacentLocation(WorldLocation& location)
 	assert(&location == m_worldLocation->east);
 	return getGroundLevel(0, (m_sizeY - 1) / 2);
 }
+*/
 FluidGroup* Area::createFluidGroup(const FluidType& fluidType, std::unordered_set<Block*>& blocks, bool checkMerge)
 {
 	m_fluidGroups.emplace_back(fluidType, blocks, *this, checkMerge);

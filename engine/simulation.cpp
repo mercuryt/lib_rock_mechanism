@@ -6,10 +6,11 @@
 #include "deserializationMemo.h"
 #include "haul.h"
 #include "threadedTask.h"
-#include "worldforge/world.h"
+#include "util.h"
+//#include "worldforge/world.h"
 #include <cstdint>
 #include <functional>
-Simulation::Simulation(DateTime n, Step s) :  m_nextAreaId(1), m_step(s), m_now(n), m_nextActorId(1), m_nextItemId(1), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this)
+Simulation::Simulation(std::wstring name, DateTime n, Step s) :  m_nextAreaId(1), m_name(name), m_step(s), m_now(n), m_nextActorId(1), m_nextItemId(1), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this)
 { 
 	m_hourlyEvent.schedule(*this);
 }
@@ -17,14 +18,15 @@ Simulation::Simulation(std::filesystem::path path) : m_eventSchedule(*this), m_h
 {
 	std::ifstream simulationFile(path/"simulation.json");
 	const Json& data = Json::parse(simulationFile);
+	m_name = data["name"].get<std::wstring>();
 	m_step = data["step"].get<Step>();
 	m_now = data["now"].get<DateTime>();
 	m_nextItemId = data["nextItemId"].get<ItemId>();
 	m_nextActorId = data["nextActorId"].get<ActorId>();
 	m_nextAreaId = data["nextAreaId"].get<AreaId>();
 	DeserializationMemo deserializationMemo(*this);
-	if(data["world"])
-		m_world = std::make_unique<World>(data["world"], deserializationMemo);
+	//if(data["world"])
+		//m_world = std::make_unique<World>(data["world"], deserializationMemo);
 	for(const Json& areaId : data["areaIds"])
 	{
 		std::ifstream af(path/"area"/(std::to_string(areaId.get<AreaId>()) + ".json"));
@@ -83,11 +85,11 @@ void Simulation::save(std::filesystem::path path)
 Area& Simulation::createArea(uint32_t x, uint32_t y, uint32_t z)
 { 
 	AreaId id = m_nextAreaId++;
-	return loadArea(id, x, y, z);
+	return loadArea(id, L"unnamed area " + std::to_wstring(id), x, y, z);
 }
-Area& Simulation::loadArea(AreaId id, uint32_t x, uint32_t y, uint32_t z)
+Area& Simulation::loadArea(AreaId id, std::wstring name, uint32_t x, uint32_t y, uint32_t z)
 {
-	Area& area = m_areas.emplace_back(id, *this, x, y, z); 
+	Area& area = m_areas.emplace_back(id, name, *this, x, y, z); 
 	m_areasById[id] = &area;
 	return area;
 }
@@ -128,6 +130,14 @@ Actor& Simulation::createActor(const AnimalSpecies& species, Block& block, Perce
 	output.setLocation(block);
 	block.m_area->m_hasActors.add(output);
 	return output;
+}
+Actor& Simulation::createActorWithRandomAge(const AnimalSpecies& species, Block& block)
+{
+	Percent percentLifeTime = m_random.getInRange(0, 100);
+	Step ageSteps = util::scaleByPercent(species.deathAgeSteps[1], percentLifeTime);
+	Percent percentGrown = std::min(100, util::fractionToPercent(ageSteps, species.stepsTillFullyGrown));
+	auto birthDate = DateTime::fromPastBySteps(ageSteps);
+	return createActor(species, block, percentGrown, birthDate);
 }
 // Nongeneric
 // No name or id.
@@ -271,6 +281,8 @@ void Simulation::fastForwardUntillPredicate(std::function<bool()> predicate, uin
 Json Simulation::toJson() const
 {
 	Json output;
+	output["name"] = m_name;
+	//output["world"] = m_world;
 	output["step"] = m_step;
 	output["now"] = m_now;
 	output["nextActorId"] = m_nextActorId;

@@ -33,3 +33,4 @@ test/inconsistantErrors/*
 .cache
 *\.so
 *.pyc
+UI

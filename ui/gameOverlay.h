@@ -1,5 +1,6 @@
 #pragma once
 #include <TGUI/TGUI.hpp>
+#include <TGUI/Widgets/Label.hpp>
 #include "contextMenu.h"
 #include "detailPanel.h"
 #include "../engine/types.h"
@@ -12,6 +13,10 @@ class GameOverlay final
 	DetailPanel m_detailPanel;
 	ContextMenu m_contextMenu;
 public:
+	tgui::Label::Ptr m_x;
+	tgui::Label::Ptr m_y;
+	tgui::Label::Ptr m_z;
+	tgui::Label::Ptr m_paused;
 	Item* m_itemBeingInstalled;
 	Facing m_facing;
 	GameOverlay(Window& w);

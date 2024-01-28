@@ -24,6 +24,12 @@ std::unordered_set<Block*> Cuboid::toSet()
 }
 bool Cuboid::contains(const Block& block) const
 {
+	if(!m_highest)
+	{
+		assert(!m_lowest);
+		return  false;
+	}
+	assert(m_lowest);
 	return (
 			block.m_x <= m_highest->m_x && block.m_x >= m_lowest->m_x &&
 			block.m_y <= m_highest->m_y && block.m_y >= m_lowest->m_y &&
@@ -122,6 +128,12 @@ bool Cuboid::overlapsWith(const Cuboid& cuboid) const
 }
 size_t Cuboid::size() const
 {
+	if(!m_highest)
+	{
+		assert(!m_lowest);
+		return 0;
+	}
+	assert(m_lowest);
 	return ((m_highest->m_x + 1) - m_lowest->m_x) * ((m_highest->m_y + 1) - m_lowest->m_y) * ((m_highest->m_z + 1) - m_lowest->m_z);
 }
 // static method

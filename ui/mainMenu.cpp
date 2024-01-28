@@ -1,22 +1,41 @@
 #include "mainMenu.h"
 #include "window.h"
+#include "widgets.h"
 #include <TGUI/Widgets/Group.hpp>
+#include <TGUI/Widgets/VerticalLayout.hpp>
 MainMenuView::MainMenuView(Window& w) : m_window(w), m_panel(tgui::Panel::create())
 {
 	m_window.getGui().add(m_panel);
-	m_panel->setAutoLayout(tgui::AutoLayout::Fill);
 	auto title = tgui::Label::create("Goblin Pit");
+	title->setPosition("50%", "5%");
+	title->setOrigin(0.5, 0);
 	m_panel->add(title);
+	auto layout = tgui::VerticalLayout::create();
+	m_panel->add(layout);
+	layout->setSize("60%", "70%");
+	layout->setPosition("20%", "15%");
+
 	auto quickStartButton = tgui::Button::create("quick start");
 	quickStartButton->onClick([this]{ m_window.load("campaign/default"); });
-	m_panel->add(quickStartButton);
+	layout->add(quickStartButton);
+
 	auto loadButton = tgui::Button::create("load");
-	loadButton->onClick([this]{ m_window.showLoad(); });
-	m_panel->add(loadButton);
-	auto createWorld = tgui::Button::create("create world");
-	loadButton->onClick([this]{ m_window.showCreateWorld(); });
-	m_panel->add(loadButton);
+	loadButton->onClick([this]{ m_window.m_editMode = false; m_window.showLoad(); });
+	layout->add(loadButton);
+	/*
+	auto createWorldButton = tgui::Button::create("create world");
+	createWorldButton->onClick([this]{ m_window.showCreateWorld(); });
+	layout->add(createWorldButton);
+	*/
+	auto editCreateButton = tgui::Button::create("create and edit");
+	layout->add(editCreateButton);
+	editCreateButton->onClick([&]{ m_window.m_editMode = true; m_window.showEditReality(); });
+
+	auto editLoadButton = tgui::Button::create("load and edit");
+	layout->add(editLoadButton);
+	editLoadButton->onClick([&]{ m_window.m_editMode = true; m_window.showLoad(); });
+
 	auto exitButton = tgui::Button::create("quit");
 	exitButton->onClick([this]{ m_window.close(); });
-	m_panel->add(exitButton);
+	layout->add(exitButton);
 }

@@ -23,7 +23,6 @@
 #include "woodcutting.h"
 #include "stocks.h"
 #include "fluidSource.h"
-#include "worldforge/locii.h"
 //#include "medical.h"
 
 #include <sys/types.h>
@@ -33,14 +32,15 @@
 #include <tuple>
 #include <list>
 
-struct WorldLocation;
+//struct WorldLocation;
 
 class Area final
 {
 	std::vector<Block> m_blocks;
 public:
 	AreaId m_id;
-	WorldLocation* m_worldLocation;
+	std::wstring m_name;
+	//WorldLocation* m_worldLocation;
 	Simulation& m_simulation;
 	uint32_t m_sizeX;
 	uint32_t m_sizeY;
@@ -77,7 +77,7 @@ public:
 	bool m_visionCuboidsActive;
 
 	// Create blocks and store adjacent
-	Area(AreaId id, Simulation& s, uint32_t x, uint32_t y, uint32_t z);
+	Area(AreaId id, std::wstring n, Simulation& s, uint32_t x, uint32_t y, uint32_t z);
 	Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& s);
 	Area(const Area& area) = delete;
 	Area(const Area&& area) = delete;
@@ -89,7 +89,7 @@ public:
 	Block& getBlock(uint32_t x, uint32_t y, uint32_t z);
 	Block& getMiddleAtGroundLevel();
 	Block& getGroundLevel(uint32_t x, uint32_t y);
-	Block& getBlockForAdjacentLocation(WorldLocation& location);
+	//Block& getBlockForAdjacentLocation(WorldLocation& location);
 	// Create a fluid group.
 	FluidGroup* createFluidGroup(const FluidType& fluidType, std::unordered_set<Block*>& blocks, bool checkMerge = true);
 

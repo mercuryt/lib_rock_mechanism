@@ -1,42 +1,81 @@
 #include "contextMenu.h"
+#include "blockFeature.h"
+#include "plant.h"
+#include "widgets.h"
 #include "window.h"
 #include "../engine/actor.h"
 #include "../engine/goTo.h"
 #include "../engine/station.h"
 #include "../engine/installItem.h"
 #include "../engine/kill.h"
+#include "../engine/uniform.h"
+#include <SFML/Graphics/Color.hpp>
 #include <TGUI/Layout.hpp>
-ContextMenu::ContextMenu(Window& window, tgui::Group::Ptr gameOverlayGroup) : m_window(window), m_group(tgui::Panel::create()), m_gameOverlayGroup(gameOverlayGroup)
-{
-	gameOverlayGroup->add(m_group);
-	m_group->setVisible(false);
+#include <TGUI/Widgets/ComboBox.hpp>
+#include <TGUI/Widgets/EditBox.hpp>
+#include <TGUI/Widgets/VerticalLayout.hpp>
+// Menu segment
+ContextMenuSegment::ContextMenuSegment(tgui::Group::Ptr overlayGroup) : m_gameOverlayGroup(overlayGroup), m_widget(tgui::Grid::create()) 
+{ 
+	m_widget->setOrigin(0, 0.5);
 }
+void ContextMenuSegment::add(tgui::Widget::Ptr widget, std::string id) 
+{
+	widget->setSize(width, height); 
+	m_widget->add(widget, id); 
+	m_widget->setWidgetCell(widget, m_count++, 1); 
+}
+ContextMenuSegment::~ContextMenuSegment() { m_gameOverlayGroup->remove(m_widget); }
+// Menu
+ContextMenu::ContextMenu(Window& window, tgui::Group::Ptr gameOverlayGroup) : m_window(window), m_root(gameOverlayGroup), m_gameOverlayGroup(gameOverlayGroup)
+{
+	gameOverlayGroup->add(m_root.m_widget);
+	m_root.m_widget->setVisible(false);
+	m_root.m_widget->setOrigin(1.0, 0.5);
+}
+tgui::Color buttonColor{tgui::Color::Blue};
+tgui::Color labelColor{tgui::Color::Black};
 void ContextMenu::draw(Block& block)
 {
+	m_root.m_widget->setVisible(true);
+	m_root.m_widget->setPosition(sf::Mouse::getPosition().x, sf::Mouse::getPosition().y);
+	m_root.m_widget->removeAllWidgets();
+	m_submenus.clear();
 	//TODO: shift to add to end of work queue.
 	if(block.isSolid())
 	{
 		// Dig.
 		auto digButton = tgui::Button::create("dig");
-		m_group->add(digButton);
-		digButton->onClick([&]{
+		digButton->getRenderer()->setBackgroundColor(buttonColor);
+		m_root.add(digButton);
+		digButton->onClick([this]{
 			for(Block& selectedBlock : m_window.getSelectedBlocks())
 				if(selectedBlock.isSolid())
-					m_window.getArea()->m_hasDigDesignations.designate(*m_window.getFaction(), selectedBlock, nullptr);
+				{
+					if (m_window.m_editMode)
+						selectedBlock.setNotSolid();
+					else
+						m_window.getArea()->m_hasDigDesignations.designate(*m_window.getFaction(), selectedBlock, nullptr);
+				}
 			hide();
 		});
-		digButton->onMouseEnter([&]{
-			auto subMenu = makeSubmenu(0, digButton);
-			m_gameOverlayGroup->add(subMenu);
-			subMenu->setPosition("rootGui.right", "digButton.top");
+		digButton->onMouseEnter([this]{
+			auto& subMenu = makeSubmenu(0);
 			for(const BlockFeatureType* blockFeatureType : BlockFeatureType::getAll())
 				if(blockFeatureType->canBeHewn)
 				{
 					auto button = tgui::Button::create(blockFeatureType->name);
-					button->onClick([&]{
+					subMenu.add(button);
+					button->getRenderer()->setBackgroundColor(buttonColor);
+					button->onClick([this, blockFeatureType]{
 						for(Block& selectedBlock : m_window.getSelectedBlocks())
 							if(selectedBlock.isSolid())
-								m_window.getArea()->m_hasDigDesignations.designate(*m_window.getFaction(), selectedBlock, blockFeatureType);
+							{
+								if(m_window.m_editMode)
+									selectedBlock.m_hasBlockFeatures.hew(*blockFeatureType);
+								else
+									m_window.getArea()->m_hasDigDesignations.designate(*m_window.getFaction(), selectedBlock, blockFeatureType);
+							}
 						hide();
 					});
 				}
@@ -44,14 +83,51 @@ void ContextMenu::draw(Block& block)
 	}
 	else
 	{
-		auto actors = m_window.getSelectedActors();
+		if(m_window.m_editMode)
+		{
+			if(block.m_hasPlant.exists())
+			{
+				auto removePlant = tgui::Button::create("remove " + block.m_hasPlant.get().m_plantSpecies.name);
+				removePlant->getRenderer()->setBackgroundColor(buttonColor);
+				removePlant->onClick([this, &block]{
+					block.m_hasPlant.erase();
+					hide();
+				});
+				m_root.add(removePlant);
+			}
+			else if(block.getBlockBelow() && block.getBlockBelow()->isSolid())
+			{
+				auto addPlant = tgui::Label::create("add plant");
+				addPlant->getRenderer()->setBackgroundColor(buttonColor);
+				m_root.add(addPlant);
+				addPlant->onMouseEnter([this, &block]{
+					auto& submenu = makeSubmenu(0);
+					auto speciesUI = widgetUtil::makePlantSpeciesSelectUI();
+					submenu.add(speciesUI);
+					auto percentGrownUI = tgui::SpinControl::create();
+					auto percentGrownLabel = tgui::Label::create("percent grown");
+					submenu.add(percentGrownLabel);
+					percentGrownLabel->getRenderer()->setBackgroundColor(labelColor);
+					submenu.add(percentGrownUI);
+					auto confirm = tgui::Button::create("confirm");
+					confirm->getRenderer()->setBackgroundColor(buttonColor);
+					submenu.add(confirm);
+					confirm->onClick([&block, speciesUI, percentGrownUI]{
+						const PlantSpecies& species = PlantSpecies::byName(speciesUI->getSelectedItemId().toStdString());
+						block.m_hasPlant.createPlant(species, percentGrownUI->getValue());
+					});
+				});
+			}
+		}
+		auto& actors = m_window.getSelectedActors();
 		if(actors.size())
 		{
 			// Go.
 			auto goTo = tgui::Button::create("go to");
-			m_group->add(goTo);
-			goTo->onClick([&]{
-				for(Actor* actor : actors)
+			goTo->getRenderer()->setBackgroundColor(buttonColor);
+			m_root.add(goTo);
+			goTo->onClick([this, &block]{
+				for(Actor* actor : m_window.getSelectedActors())
 				{
 					std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(*actor, block);
 					actor->m_hasObjectives.replaceTasks(std::move(objective));
@@ -60,9 +136,10 @@ void ContextMenu::draw(Block& block)
 			});
 			// Station.
 			auto station = tgui::Button::create("station");
-			m_group->add(station);
-			station->onClick([&]{
-				for(Actor* actor : actors)
+			station->getRenderer()->setBackgroundColor(buttonColor);
+			m_root.add(station);
+			station->onClick([this, &block]{
+				for(Actor* actor : m_window.getSelectedActors())
 				{
 					std::unique_ptr<Objective> objective = std::make_unique<StationObjective>(*actor, block);
 					actor->m_hasObjectives.replaceTasks(std::move(objective));
@@ -77,9 +154,10 @@ void ContextMenu::draw(Block& block)
 				if(faction.enemies.contains(const_cast<Faction*>(&otherFaction)))
 				{
 					tgui::Button::Ptr kill = tgui::Button::create("kill");
-					m_group->add(kill);
-					kill->onClick([&]{
-						for(Actor* actor : actors)
+					kill->getRenderer()->setBackgroundColor(buttonColor);
+					m_root.add(kill);
+					kill->onClick([this, otherActor]{
+						for(Actor* actor : m_window.getSelectedActors())
 						{
 							std::unique_ptr<Objective> objective = std::make_unique<KillObjective>(*actor, *otherActor);
 							actor->m_hasObjectives.replaceTasks(std::move(objective));
@@ -98,8 +176,9 @@ void ContextMenu::draw(Block& block)
 					{
 						ItemQuery query(*item);
 						auto button = tgui::Button::create(m_window.displayNameForItem(*item));
-						m_group->add(button);
-						button->onClick([&]{
+						button->getRenderer()->setBackgroundColor(buttonColor);
+						m_root.add(button);
+						button->onClick([this, &actor, query] () mutable {
 							std::unique_ptr<Objective> objective = std::make_unique<EquipItemObjective>(actor, query);
 							actor.m_hasObjectives.replaceTasks(std::move(objective));
 							hide();
@@ -116,14 +195,19 @@ void ContextMenu::draw(Block& block)
 			{
 				// Install item.
 				auto install = tgui::Label::create("install...");
-				m_group->add(install);
-				install->onMouseEnter([&]{
-					auto submenu = makeSubmenu(0, install);
+				install->getRenderer()->setBackgroundColor(buttonColor);
+				m_root.add(install);
+				install->onMouseEnter([this, &block, &item]{
+					auto& submenu = makeSubmenu(0);
 					for(Facing facing = 0; facing < 4; ++facing)
 					{
 						auto button = tgui::Button::create(m_window.facingToString(facing));
-						submenu->add(button);
-						button->onClick([&]{ m_window.getArea()->m_hasInstallItemDesignations.at(*m_window.getFaction()).add(block, item, facing, *m_window.getFaction()); hide(); });
+						button->getRenderer()->setBackgroundColor(buttonColor);
+						submenu.add(button);
+						button->onClick([this, &block, &item, facing]{ 
+							m_window.getArea()->m_hasInstallItemDesignations.at(*m_window.getFaction()).add(block, item, facing, *m_window.getFaction()); 
+							hide(); 
+						});
 					}
 				});
 				// TODO: targeted haul.
@@ -131,144 +215,205 @@ void ContextMenu::draw(Block& block)
 		}
 		for(Item* item : block.m_hasItems.getAll())
 		{
-			auto button = tgui::Button::create(m_window.displayNameForItem(*item) + L" install at...");
-			m_group->add(button);
-			button->onClick([&]{ m_window.setItemToInstall(*item); hide(); });
+			auto name = m_window.displayNameForItem(*item);
+			auto button = tgui::Button::create(name + L" install at...");
+			button->getRenderer()->setBackgroundColor(buttonColor);
+			m_root.add(button);
+			button->onClick([this, item]{ m_window.setItemToInstall(*item); hide(); });
+			if(m_window.m_editMode)
+			{
+				auto destroy = tgui::Button::create(name + L" destroy");
+				destroy->onClick([item]{ item->destroy(); });
+				m_root.add(destroy);
+			}
 		}
 		// Construct.
-		auto constructButton = tgui::Button::create("construct");
-		m_group->add(constructButton);
-		constructButton->onClick([&]{
-			auto subMenu = makeSubmenu(0, constructButton);
-			auto materialTypeSelector = tgui::ComboBox::create();
-			subMenu->add(materialTypeSelector);
-			for(MaterialType& materialType : MaterialType::data)
-				if(materialType.constructionData)
-					materialTypeSelector->addItem(materialType.name, materialType.name);
-			materialTypeSelector->onItemSelect([&](const tgui::String& name){
-				const MaterialType& materialType = MaterialType::byName(name.toStdString());
-				for(Block& selectedBlock : m_window.getSelectedBlocks())
-					if(!selectedBlock.isSolid())
-						m_window.getArea()->m_hasConstructionDesignations.designate(*m_window.getFaction(), block, nullptr, materialType);
-				hide();
-			});
-		});
-		constructButton->onMouseEnter([&]{
-			auto subMenu = makeSubmenu(0, constructButton);
-			m_gameOverlayGroup->add(subMenu);
-			subMenu->setPosition("rootGui.right", "constructButton.top");
+		auto constructLabel = tgui::Label::create("construct");
+		constructLabel->getRenderer()->setBackgroundColor(buttonColor);
+		m_root.add(constructLabel);
+		constructLabel->onMouseEnter([this, &block]{
+			auto& subMenu = makeSubmenu(0);
+			auto materialTypeSelector = widgetUtil::makeMaterialSelectUI();
+			subMenu.add(materialTypeSelector, "materialTypeSelector");
+			std::map<std::string, const BlockFeatureType*> m_buttons{{"solid", nullptr}};
 			for(const BlockFeatureType* blockFeatureType : BlockFeatureType::getAll())
+				m_buttons[blockFeatureType->name] = blockFeatureType;
+			for(auto& [name, type] : m_buttons)
 			{
-				if(blockFeatureType->canBeHewn)
-				{
-					auto button = tgui::Button::create(blockFeatureType->name);
-					button->onClick([&]{
-						auto subMenu = makeSubmenu(1, constructButton);
-						auto materialTypeSelector = tgui::ComboBox::create();
-						subMenu->add(materialTypeSelector);
-						for(MaterialType& materialType : MaterialType::data)
-							if(materialType.constructionData)
-								materialTypeSelector->addItem(materialType.name, materialType.name);
-						materialTypeSelector->onItemSelect([&](const tgui::String& name){
-							const MaterialType& materialType = MaterialType::byName(name.toStdString());
-							for(Block& selectedBlock : m_window.getSelectedBlocks())
-								if(!selectedBlock.isSolid())
-									m_window.getArea()->m_hasConstructionDesignations.designate(*m_window.getFaction(), selectedBlock, nullptr, materialType);
-							hide();
-						});
-					});
-				}
+				auto button = tgui::Button::create(name);
+				subMenu.add(button);
+				button->onClick([this, &block, &subMenu, type]{
+					std::string materialTypeName = subMenu.m_widget->get<tgui::ComboBox>("materialTypeSelector")->getSelectedItemId().toStdString();
+					const MaterialType& materialType = MaterialType::byName(materialTypeName);
+					if(m_window.getSelectedBlocks().empty())
+						m_window.selectBlock(block);
+					for(Block& selectedBlock : m_window.getSelectedBlocks())
+						if(!selectedBlock.isSolid())
+						{
+							if (m_window.m_editMode)
+							{
+								if(type == nullptr)
+									selectedBlock.setSolid(materialType);
+								else
+									selectedBlock.m_hasBlockFeatures.construct(*type, materialType);
+
+							}
+							else
+								m_window.getArea()->m_hasConstructionDesignations.designate(*m_window.getFaction(), selectedBlock, type, materialType);
+						}
+					hide();
+				});
 			}
 		});
 		// Farm
 		if(block.m_isPartOfFarmField.contains(*m_window.getFaction()))
 		{
 			auto shrinkButton = tgui::Button::create("shrink farm field(s)");
-			m_group->add(shrinkButton);
-			shrinkButton->onClick([&]{
+			shrinkButton->getRenderer()->setBackgroundColor(buttonColor);
+			m_root.add(shrinkButton);
+			shrinkButton->onClick([this]{
 				for(Block& block : m_window.getSelectedBlocks())
 					block.m_isPartOfFarmField.remove(*m_window.getFaction());
 				hide();
 			});
 			auto setFarmSpeciesButton = tgui::Button::create("set farm species");
-			m_group->add(setFarmSpeciesButton);
-			setFarmSpeciesButton->onClick([&]{
-				auto submenu = makeSubmenu(0, setFarmSpeciesButton);
-				auto plantSpecies = tgui::ComboBox::create();
-				for(const PlantSpecies& species : PlantSpecies::data)
-					if(block.m_hasPlant.canGrowHereEver(species))
-					{
-						auto button = tgui::Button::create(species.name);
-						submenu->add(button);
-						button->onClick([&]{
-							FarmField& field = *block.m_isPartOfFarmField.get(*m_window.getFaction());
-							block.m_area->m_hasFarmFields.at(*m_window.getFaction()).setSpecies(field, species);
-							hide();
-						});
-					}
+			setFarmSpeciesButton->getRenderer()->setBackgroundColor(buttonColor);
+			m_root.add(setFarmSpeciesButton);
+			setFarmSpeciesButton->onClick([this, &block]{
+				auto& submenu = makeSubmenu(0);
+				auto plantSpeciesUI = widgetUtil::makePlantSpeciesSelectUI();
+				submenu.add(plantSpeciesUI);
+				plantSpeciesUI->onItemSelect([this, &block](const tgui::String& string)
+				{
+					const PlantSpecies& species = PlantSpecies::byName(string.toStdString());
+					FarmField& field = *block.m_isPartOfFarmField.get(*m_window.getFaction());
+					block.m_area->m_hasFarmFields.at(*m_window.getFaction()).setSpecies(field, species);
+					hide();
+					
+				});
 			});
 		}
 		else 
 		{
-			auto createButton = tgui::Button::create("create farm field");	
-			m_group->add(createButton);
-			createButton->onClick([&]{
-				auto submenu = makeSubmenu(0, createButton);
-				auto plantSpecies = tgui::ComboBox::create();
-				for(const PlantSpecies& species : PlantSpecies::data)
-					if(block.m_hasPlant.canGrowHereEver(species))
-					{
-						auto button = tgui::Button::create(species.name);
-						submenu->add(button);
-						button->onClick([&]{
-							for(Block& block : m_window.getSelectedBlocks())
-								block.m_isPartOfFarmField.remove(*m_window.getFaction());
-							auto fieldsForFaction = block.m_area->m_hasFarmFields.at(*m_window.getFaction());
-							FarmField& field = fieldsForFaction.create(m_window.getSelectedBlocks());
-							fieldsForFaction.setSpecies(field, species);
-							hide();
-						});
-					}
+			if(!m_window.getSelectedBlocks().empty())
+				m_window.selectBlock(block);
+			auto createLabel = tgui::Label::create("create farm field");	
+			createLabel->getRenderer()->setBackgroundColor(buttonColor);
+			m_root.add(createLabel);
+			createLabel->onMouseEnter([this, &block]{
+				auto& submenu = makeSubmenu(0);
+				auto plantSpeciesUI = widgetUtil::makePlantSpeciesSelectUI();
+				submenu.add(plantSpeciesUI);
+				plantSpeciesUI->onItemSelect([this, &block](const tgui::String name){ 
+					for(Block& block : m_window.getSelectedBlocks())
+						block.m_isPartOfFarmField.remove(*m_window.getFaction());
+					auto fieldsForFaction = block.m_area->m_hasFarmFields.at(*m_window.getFaction());
+					FarmField& field = fieldsForFaction.create(m_window.getSelectedBlocks());
+					fieldsForFaction.setSpecies(field, PlantSpecies::byName(name.toStdString()));
+					hide();
+				});
 			});
 		}
 		// Actor details.
 		for(Actor* actor : block.m_hasActors.getAll())
 		{
 			auto details = tgui::Button::create(actor->m_name);
-			m_group->add(details);
-			details->onClick([&]{
+			details->getRenderer()->setBackgroundColor(buttonColor);
+			m_root.add(details);
+			details->onClick([this, actor]{
 				m_window.showActorDetail(*actor);
 				hide();
 			});
-			details->onMouseEnter([&]{
-				auto submenu = makeSubmenu(0, details);
+			details->onMouseEnter([this, actor]{
+				auto& submenu = makeSubmenu(0);
 				auto priorities = tgui::Button::create("priorities");
-				submenu->add(priorities);
-				priorities->onClick([&]{
+				priorities->getRenderer()->setBackgroundColor(buttonColor);
+				submenu.add(priorities);
+				priorities->onClick([this, actor]{
 					m_window.showObjectivePriority(*actor);
+					hide();
+				});
+				if(m_window.m_editMode)
+				{
+					auto destroy = tgui::Button::create("destroy");
+					destroy->getRenderer()->setBackgroundColor(buttonColor);
+					destroy->onClick([this, actor]{ m_window.getSimulation()->destroyActor(*actor);});
+					submenu.add(destroy);
+				}
+			});
+		}
+		if(m_window.m_editMode)
+		{
+			auto createActor = tgui::Label::create("create actor");
+			createActor->getRenderer()->setBackgroundColor(buttonColor);
+			m_root.add(createActor);
+			createActor->onMouseEnter([this, &block]{
+				auto& submenu = makeSubmenu(0);
+				auto nameLabel = tgui::Label::create("name");
+				nameLabel->getRenderer()->setBackgroundColor(labelColor);
+				submenu.add(nameLabel);
+				auto name = tgui::EditBox::create();
+				submenu.add(name);
+				auto speciesLabel = tgui::Label::create("species");
+				speciesLabel->getRenderer()->setBackgroundColor(labelColor);
+				submenu.add(speciesLabel);
+				auto speciesUI = widgetUtil::makeAnimalSpeciesSelectUI();
+				submenu.add(speciesUI);
+				auto age = tgui::SpinControl::create();
+				submenu.add(age);
+				auto confirm = tgui::Button::create("create");
+				confirm->getRenderer()->setBackgroundColor(buttonColor);
+				confirm->onClick([this, &block, speciesUI]{
+					m_window.getSimulation()->createActorWithRandomAge(AnimalSpecies::byName(speciesUI->getSelectedItemId().toStdString()), block);
+				});
+				
+			});
+
+			auto createFluidSource = tgui::Label::create("create fluid source");
+			createFluidSource->getRenderer()->setBackgroundColor(buttonColor);
+			m_root.add(createFluidSource);
+			createFluidSource->onMouseEnter([this, &block]{
+				auto& submenu = makeSubmenu(0);
+				auto fluidTypeLabel = tgui::Label::create("fluid type");
+				submenu.add(fluidTypeLabel);
+				fluidTypeLabel->getRenderer()->setBackgroundColor(labelColor);
+				auto fluidTypeUI = widgetUtil::makeFluidTypeSelectUI();
+				submenu.add(fluidTypeUI);
+				auto levelLabel = tgui::Label::create("level");
+				levelLabel->getRenderer()->setBackgroundColor(labelColor);
+				submenu.add(levelLabel);
+				auto levelUI = tgui::SpinControl::create();
+				submenu.add(levelUI);
+				auto confirm = tgui::Button::create("create");
+				confirm->getRenderer()->setBackgroundColor(buttonColor);
+				submenu.add(confirm);
+				confirm->onClick([this, &block, fluidTypeUI, levelUI]{
+					m_window.getArea()->m_fluidSources.create(
+						block, 
+						FluidType::byName(fluidTypeUI->getSelectedItemId().toStdString()), 
+						levelUI->getValue()
+					);
 					hide();
 				});
 			});
 		}
 	}
 }
-tgui::Panel::Ptr ContextMenu::makeSubmenu(size_t index, tgui::Widget::Ptr creator)
+ContextMenuSegment& ContextMenu::makeSubmenu(size_t index)
 {
-	assert(m_submenus.size() + 1 >= index);
+	assert(m_submenus.size() + 1 > index);
 	// destroy old submenus.
-	size_t i = m_submenus.size() - 1;
-	while(i >= index)
-		m_group->remove(m_submenus[i]);
-	m_submenus.resize(index);
-	auto submenu = m_submenus.back();
-	m_gameOverlayGroup->add(submenu);
-	// If this is the first submenu then index is 0 and x position is taken from rootGui, otherwise it is taken from the previous submenu.
-	auto xBinding = index ? tgui::bindRight(m_submenus[index - 1]) : tgui::bindRight(m_group);
-	submenu->setPosition(xBinding, creator->getPosition().y);
+	m_submenus.resize(index, {m_gameOverlayGroup});
+	m_submenus.emplace_back(m_gameOverlayGroup);
+	auto& submenu = m_submenus.back();
+	m_gameOverlayGroup->add(submenu.m_widget);
+	ContextMenuSegment& previous = index == 0 ? m_root : m_submenus[index - 1];
+	sf::Vector2i pixelPos = sf::Mouse::getPosition();
+	submenu.m_widget->setPosition(tgui::bindRight(previous.m_widget), pixelPos.y);
 	return submenu;
 }
 void ContextMenu::hide()
 {
 	m_submenus.clear();
-	m_group->removeAllWidgets();
+	m_root.m_widget->removeAllWidgets();
 }
