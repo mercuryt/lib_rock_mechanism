@@ -192,7 +192,8 @@ void ConstructProject::onComplete()
 	{
 		m_location.m_hasItems.disperseAll();
 		//TODO: disperse actors.
-		m_location.setSolid(m_materialType);
+		// Arguments: materialType, constructed.
+		m_location.setSolid(m_materialType, true);
 	}
 	else
 		m_location.m_hasBlockFeatures.construct(*m_blockFeatureType, m_materialType);

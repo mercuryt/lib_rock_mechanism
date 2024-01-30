@@ -42,7 +42,7 @@ bool MistDisperseEvent::continuesToExist() const
 	// if adjacent to falling fluid on same z level
 	for(Block* adjacent : m_block.getAdjacentOnSameZLevelOnly())
 		// if adjacent to falling fluid.
-		if(adjacent->m_fluids.contains(&m_fluidType) && !adjacent->m_adjacents[0]->isSolid())
+		if(adjacent->m_fluids.contains(&m_fluidType) && adjacent->getBlockBelow() && !adjacent->getBlockBelow()->isSolid())
 			return true;
 	for(Block* adjacent : m_block.m_adjacentsVector)
 		// if adjacent to block with mist with lower distance to source.

@@ -104,6 +104,7 @@ void Area::setup()
 		for(uint32_t y = 0; y < m_sizeY; ++y)
 			for(uint32_t z = 0; z < m_sizeZ; ++z)
 				getBlock(x, y, z).setup(*this, x, y, z);
+	//TODO: Can we decrease cache misses by sorting blocks by distance from center?
 	// record adjacent blocks
 	for(uint32_t x = 0; x < m_sizeX; ++x)
 		for(uint32_t y = 0; y < m_sizeY; ++y)

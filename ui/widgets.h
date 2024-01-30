@@ -34,7 +34,7 @@ public:
 namespace widgetUtil
 {
 	inline const PlantSpecies* lastSelectedPlantSpecies = nullptr;
-	tgui::ComboBox::Ptr makePlantSpeciesSelectUI();
+	tgui::ComboBox::Ptr makePlantSpeciesSelectUI(Block* block);
 	inline const MaterialType* lastSelectedMaterial = nullptr;
 	tgui::ComboBox::Ptr makeMaterialSelectUI();
 	inline const AnimalSpecies* lastSelectedAnimalSpecies = nullptr;

@@ -18,7 +18,7 @@ void AreaHasFluidSources::step()
 }
 void AreaHasFluidSources::create(Block& block, const FluidType& fluidType, Volume level)
 {
-	assert(std::ranges::find(m_data, &block, &FluidSource::block) == m_data.end());
+	assert(!contains(block));
 	m_data.emplace_back(&block, &fluidType, level);
 }
 void AreaHasFluidSources::destroy(Block& block)
@@ -37,4 +37,8 @@ Json AreaHasFluidSources::toJson() const
 	for(const FluidSource& source : m_data)
 		data.push_back(source);
 	return data;
+}
+bool AreaHasFluidSources::contains(Block& block) const
+{
+	return std::ranges::find(m_data, &block, &FluidSource::block) != m_data.end();
 }

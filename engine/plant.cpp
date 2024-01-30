@@ -419,6 +419,10 @@ bool HasPlant::canGrowHereEver(const PlantSpecies& plantSpecies) const
 {
 	if(plantSpecies.growsInSunLight != m_block.m_outdoors)
 		return false;
+	return anythingCanGrowHereEver();
+}
+bool HasPlant::anythingCanGrowHereEver() const
+{
 	static const MaterialType& dirtType = MaterialType::byName("dirt");
 	if(m_block.m_adjacents[0] == nullptr || !m_block.m_adjacents[0]->isSolid() || m_block.m_adjacents[0]->getSolidMaterial() != dirtType)
 		return false;

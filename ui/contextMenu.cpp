@@ -1,5 +1,6 @@
 #include "contextMenu.h"
 #include "blockFeature.h"
+#include "config.h"
 #include "plant.h"
 #include "widgets.h"
 #include "window.h"
@@ -102,7 +103,7 @@ void ContextMenu::draw(Block& block)
 				m_root.add(addPlant);
 				addPlant->onMouseEnter([this, &block]{
 					auto& submenu = makeSubmenu(0);
-					auto speciesUI = widgetUtil::makePlantSpeciesSelectUI();
+					auto speciesUI = widgetUtil::makePlantSpeciesSelectUI(&block);
 					submenu.add(speciesUI);
 					auto percentGrownUI = tgui::SpinControl::create();
 					auto percentGrownLabel = tgui::Label::create("percent grown");
@@ -234,7 +235,15 @@ void ContextMenu::draw(Block& block)
 		constructLabel->onMouseEnter([this, &block]{
 			auto& subMenu = makeSubmenu(0);
 			auto materialTypeSelector = widgetUtil::makeMaterialSelectUI();
-			subMenu.add(materialTypeSelector, "materialTypeSelector");
+			subMenu.add(materialTypeSelector);
+			static bool constructed = false;
+			if(m_window.m_editMode)
+			{
+				auto constructedUI = tgui::CheckBox::create();
+				subMenu.add(constructedUI);
+				constructedUI->setChecked(constructed);
+				constructedUI->onChange([&](bool value){ constructed = value; });
+			}
 			std::map<std::string, const BlockFeatureType*> m_buttons{{"solid", nullptr}};
 			for(const BlockFeatureType* blockFeatureType : BlockFeatureType::getAll())
 				m_buttons[blockFeatureType->name] = blockFeatureType;
@@ -242,9 +251,8 @@ void ContextMenu::draw(Block& block)
 			{
 				auto button = tgui::Button::create(name);
 				subMenu.add(button);
-				button->onClick([this, &block, &subMenu, type]{
-					std::string materialTypeName = subMenu.m_widget->get<tgui::ComboBox>("materialTypeSelector")->getSelectedItemId().toStdString();
-					const MaterialType& materialType = MaterialType::byName(materialTypeName);
+				button->onClick([this, &block, type, materialTypeSelector]{
+					const MaterialType& materialType = MaterialType::byName(materialTypeSelector->getSelectedItemId().toStdString());
 					if(m_window.getSelectedBlocks().empty())
 						m_window.selectBlock(block);
 					for(Block& selectedBlock : m_window.getSelectedBlocks())
@@ -253,9 +261,16 @@ void ContextMenu::draw(Block& block)
 							if (m_window.m_editMode)
 							{
 								if(type == nullptr)
-									selectedBlock.setSolid(materialType);
+									selectedBlock.setSolid(materialType, constructed);
 								else
-									selectedBlock.m_hasBlockFeatures.construct(*type, materialType);
+									if(!constructed)
+									{
+										if(!block.isSolid())
+											block.setSolid(materialType);
+										selectedBlock.m_hasBlockFeatures.hew(*type);
+									}
+									else
+										selectedBlock.m_hasBlockFeatures.construct(*type, materialType);
 
 							}
 							else
@@ -281,7 +296,7 @@ void ContextMenu::draw(Block& block)
 			m_root.add(setFarmSpeciesButton);
 			setFarmSpeciesButton->onClick([this, &block]{
 				auto& submenu = makeSubmenu(0);
-				auto plantSpeciesUI = widgetUtil::makePlantSpeciesSelectUI();
+				auto plantSpeciesUI = widgetUtil::makePlantSpeciesSelectUI(&block);
 				submenu.add(plantSpeciesUI);
 				plantSpeciesUI->onItemSelect([this, &block](const tgui::String& string)
 				{
@@ -293,18 +308,18 @@ void ContextMenu::draw(Block& block)
 				});
 			});
 		}
-		else 
+		else if(block.getBlockBelow() && block.getBlockBelow()->m_hasPlant.anythingCanGrowHereEver())
 		{
-			if(!m_window.getSelectedBlocks().empty())
-				m_window.selectBlock(block);
 			auto createLabel = tgui::Label::create("create farm field");	
 			createLabel->getRenderer()->setBackgroundColor(buttonColor);
 			m_root.add(createLabel);
 			createLabel->onMouseEnter([this, &block]{
 				auto& submenu = makeSubmenu(0);
-				auto plantSpeciesUI = widgetUtil::makePlantSpeciesSelectUI();
+				auto plantSpeciesUI = widgetUtil::makePlantSpeciesSelectUI(&block);
 				submenu.add(plantSpeciesUI);
 				plantSpeciesUI->onItemSelect([this, &block](const tgui::String name){ 
+					if(m_window.getSelectedBlocks().empty())
+						m_window.selectBlock(block);
 					for(Block& block : m_window.getSelectedBlocks())
 						block.m_isPartOfFarmField.remove(*m_window.getFaction());
 					auto fieldsForFaction = block.m_area->m_hasFarmFields.at(*m_window.getFaction());
@@ -359,19 +374,21 @@ void ContextMenu::draw(Block& block)
 				submenu.add(speciesLabel);
 				auto speciesUI = widgetUtil::makeAnimalSpeciesSelectUI();
 				submenu.add(speciesUI);
-				auto age = tgui::SpinControl::create();
-				submenu.add(age);
+				//TODO: generate a default name when species is selected if name is blank.
 				auto confirm = tgui::Button::create("create");
 				confirm->getRenderer()->setBackgroundColor(buttonColor);
+				submenu.add(confirm);
 				confirm->onClick([this, &block, speciesUI]{
 					m_window.getSimulation()->createActorWithRandomAge(AnimalSpecies::byName(speciesUI->getSelectedItemId().toStdString()), block);
+					hide();
 				});
 				
 			});
 
-			auto createFluidSource = tgui::Label::create("create fluid source");
+			auto createFluidSource = tgui::Label::create("create fluid");
 			createFluidSource->getRenderer()->setBackgroundColor(buttonColor);
 			m_root.add(createFluidSource);
+			static Volume fluidLevel = Config::maxBlockVolume;
 			createFluidSource->onMouseEnter([this, &block]{
 				auto& submenu = makeSubmenu(0);
 				auto fluidTypeLabel = tgui::Label::create("fluid type");
@@ -383,18 +400,47 @@ void ContextMenu::draw(Block& block)
 				levelLabel->getRenderer()->setBackgroundColor(labelColor);
 				submenu.add(levelLabel);
 				auto levelUI = tgui::SpinControl::create();
+				levelUI->setMinimum(1);
+				levelUI->onValueChange([&](const float value){fluidLevel = value;});
+				levelUI->setValue(fluidLevel);
 				submenu.add(levelUI);
-				auto confirm = tgui::Button::create("create");
-				confirm->getRenderer()->setBackgroundColor(buttonColor);
-				submenu.add(confirm);
-				confirm->onClick([this, &block, fluidTypeUI, levelUI]{
-					m_window.getArea()->m_fluidSources.create(
-						block, 
-						FluidType::byName(fluidTypeUI->getSelectedItemId().toStdString()), 
-						levelUI->getValue()
-					);
+				auto createFluid = tgui::Button::create("create fluid");
+				createFluid->getRenderer()->setBackgroundColor(buttonColor);
+				submenu.add(createFluid);
+				createFluid->onClick([this, &block, fluidTypeUI, levelUI]{
+					if(m_window.getSelectedBlocks().empty())
+						m_window.selectBlock(block);
+					for(Block& block : m_window.getSelectedBlocks())
+						block.addFluid(fluidLevel, FluidType::byName(fluidTypeUI->getSelectedItemId().toStdString()));
 					hide();
 				});
+				if(!m_window.getArea()->m_fluidSources.contains(block))
+				{
+					auto createSource = tgui::Button::create("create source");
+					createSource->getRenderer()->setBackgroundColor(buttonColor);
+					submenu.add(createSource);
+					createSource->onClick([this, &block, fluidTypeUI, levelUI]{
+						if(m_window.getSelectedBlocks().empty())
+							m_window.selectBlock(block);
+						for(Block& selectedBlock: m_window.getSelectedBlocks())
+							m_window.getArea()->m_fluidSources.create(
+								selectedBlock, 
+								FluidType::byName(fluidTypeUI->getSelectedItemId().toStdString()), 
+								fluidLevel
+							);
+						hide();
+					});
+				}
+			});
+		}
+		if(m_window.getArea()->m_fluidSources.contains(block))
+		{
+			auto removeFluidSourceButton = tgui::Label::create("remove fluid source");
+			removeFluidSourceButton->getRenderer()->setBackgroundColor(buttonColor);
+			m_root.add(removeFluidSourceButton);
+			removeFluidSourceButton->onClick([&]{
+				m_window.getArea()->m_fluidSources.destroy(block);
+				hide();
 			});
 		}
 	}

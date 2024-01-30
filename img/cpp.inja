@@ -1,0 +1,20 @@
+// automatically generated with spright
+// https://github.com/houmain/spright
+#include <unordered_map>
+#include <string>
+
+namespace spriteCoordinates
+{
+	struct SpriteCoords {
+		int x, y, w, h;
+		float pivot_x, pivot_y;
+	};
+	inline std::unordered_map<std::string, SpriteCoords> data;
+
+	inline void load()
+	{
+		{% for sprite in sprites -%}
+		data.try_emplace("{{ sprite.id }}", {{ sprite.trimmedRect.x }}, {{ sprite.trimmedRect.y }}, {{ sprite.trimmedRect.w }}, {{ sprite.trimmedRect.h }}, {{ sprite.pivot.x }}, {{ sprite.pivot.y }} );
+		{% endfor %}
+	}
+} // namespace

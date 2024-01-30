@@ -1,0 +1,122 @@
+{
+	"inputs": [
+		{
+			"filename": "source/sprites.png",
+			"sources": [
+				{
+					"index": 0,
+					"spriteIndices": [0,1]
+				}
+			]
+		}
+	],
+	"slices": [
+		{
+			"spriteIndices": [0,1]
+		}
+	],
+	"sources": [
+		{
+			"filename": "source/sprites.png",
+			"height": 128,
+			"path": "",
+			"width": 128
+		}
+	],
+	"sprites": [
+		{
+			"data": {},
+			"id": "roughFloor",
+			"index": 0,
+			"inputIndex": 0,
+			"inputSpriteIndex": 0,
+			"pivot": {
+				"x": 16.0,
+				"y": 16.0
+			},
+			"rect": {
+				"h": 32,
+				"w": 32,
+				"x": 0,
+				"y": 0
+			},
+			"rotated": false,
+			"sliceIndex": 0,
+			"sliceSpriteIndex": 0,
+			"sourceIndex": 0,
+			"sourceRect": {
+				"h": 32,
+				"w": 32,
+				"x": 0,
+				"y": 0
+			},
+			"tags": {},
+			"trimmedRect": {
+				"h": 32,
+				"w": 32,
+				"x": 0,
+				"y": 0
+			},
+			"trimmedSourceRect": {
+				"h": 32,
+				"w": 32,
+				"x": 0,
+				"y": 0
+			},
+			"vertices": [0.0,0.0,32.0,0.0,32.0,32.0,0.0,32.0]
+		},
+		{
+			"data": {},
+			"id": "roughWall",
+			"index": 1,
+			"inputIndex": 0,
+			"inputSpriteIndex": 1,
+			"pivot": {
+				"x": 16.0,
+				"y": 16.0
+			},
+			"rect": {
+				"h": 32,
+				"w": 32,
+				"x": 32,
+				"y": 0
+			},
+			"rotated": false,
+			"sliceIndex": 0,
+			"sliceSpriteIndex": 1,
+			"sourceIndex": 0,
+			"sourceRect": {
+				"h": 32,
+				"w": 32,
+				"x": 32,
+				"y": 0
+			},
+			"tags": {},
+			"trimmedRect": {
+				"h": 32,
+				"w": 32,
+				"x": 32,
+				"y": 0
+			},
+			"trimmedSourceRect": {
+				"h": 32,
+				"w": 32,
+				"x": 32,
+				"y": 0
+			},
+			"vertices": [0.0,0.0,32.0,0.0,32.0,32.0,0.0,32.0]
+		}
+	],
+	"tags": {},
+	"textures": [
+		{
+			"filename": "build/sheet0.png",
+			"height": 32,
+			"map": "",
+			"scale": 1.0,
+			"sliceIndex": 0,
+			"spriteIndices": [0,1],
+			"width": 64
+		}
+	]
+}

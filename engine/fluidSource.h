@@ -22,4 +22,5 @@ public:
 	void step();
 	void create(Block& block, const FluidType& fluidType, Volume level);
 	void destroy(Block&);
+	bool contains(Block& block) const;
 };

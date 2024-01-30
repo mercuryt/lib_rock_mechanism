@@ -217,6 +217,7 @@ public:
 	bool canGrowHereCurrently(const PlantSpecies& plantSpecies) const;
 	bool canGrowHereAtSomePointToday(const PlantSpecies& plantSpecies) const;
 	bool canGrowHereEver(const PlantSpecies& plantSpecies) const;
+	bool anythingCanGrowHereEver() const;
 	bool exists() const { return m_plant != nullptr; }
 };
 // To be used by Area.

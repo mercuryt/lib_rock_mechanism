@@ -1,5 +1,6 @@
 #include "window.h"
 #include "displayData.h"
+#include "sprite.h"
 #include <SFML/Window/Keyboard.hpp>
 #include <TGUI/Widgets/FileDialog.hpp>
 #include <chrono>
@@ -15,19 +16,23 @@ Window::Window() : m_window(sf::VideoMode::getDesktopMode(), "Goblin Pit", sf::S
 	m_mainMenuView(*this), m_loadView(*this), m_gameOverlay(*this), m_objectivePriorityView(*this), 
 	m_productionView(*this), m_uniformView(*this), m_stocksView(*this), m_actorView(*this), //m_worldParamatersView(*this),
 	m_editRealityView(*this), m_editAreaView(*this), m_area(nullptr), m_scale(32), m_faction(nullptr),
-	m_minimumMillisecondsPerFrame(200), m_minimumMillisecondsPerStep(200),
+	m_minimumMillisecondsPerFrame(200), m_minimumMillisecondsPerStep(200), m_draw(*this),
 	m_simulationThread([&](){
-		std::chrono::milliseconds start = msSinceEpoch();
-		if(m_simulation && !m_paused)
-			m_simulation->doStep();
-		std::chrono::milliseconds delta = msSinceEpoch() - start;
-		if(delta < m_minimumMillisecondsPerStep)
-			std::this_thread::sleep_for(m_minimumMillisecondsPerStep - delta);
+		while(true)
+		{
+			std::chrono::milliseconds start = msSinceEpoch();
+			if(m_simulation && !m_paused)
+				m_simulation->doStep();
+			std::chrono::milliseconds delta = msSinceEpoch() - start;
+			if(delta < m_minimumMillisecondsPerStep)
+				std::this_thread::sleep_for(m_minimumMillisecondsPerStep - delta);
+		}
 	}), m_editMode(false)
 {
 	setZ(0);
 	setPaused(true);
-	m_font.loadFromFile("lib/arial.ttf");
+	m_font.loadFromFile("lib/fonts/UbuntuMono-R.ttf");
+	m_font.loadFromFile("lib/fonts/NotoEmoji-Regular.ttf");
 	showMainMenu();
 }
 void Window::setArea(Area& area, GameView* gameView)
@@ -38,7 +43,7 @@ void Window::setArea(Area& area, GameView* gameView)
 			gameView = &m_lastViewedSpotInArea.at(area.m_id);
 		else
 		{
-			auto pair = m_lastViewedSpotInArea.try_emplace(area.m_id, &area.getMiddleAtGroundLevel(), 32u);
+			auto pair = m_lastViewedSpotInArea.try_emplace(area.m_id, &area.getMiddleAtGroundLevel(), displayData::defaultScale);
 			assert(pair.second);
 			gameView = &pair.first->second;
 		}
@@ -122,14 +127,14 @@ void Window::startLoop()
 							if(m_gameOverlay.isVisible() && m_view.getCenter().x < m_area->m_sizeX * m_scale - (m_view.getSize().x / 2) + gameMarginSize)
 								m_view.move(scrollSteps * 20.f, 0.f);
 							break;
-						case sf::Keyboard::Subtract:
+						case sf::Keyboard::Delete:
 							{
 								m_scale = std::max(1u, (int)m_scale - scrollSteps);
 								Block& center = getBlockUnderCursor();
 								m_view.move(-1.f *center.m_x * scrollSteps, -1.f * center.m_y * scrollSteps);
 							}
 							break;
-						case sf::Keyboard::Add:
+						case sf::Keyboard::Insert:
 							{
 								m_scale += 1 * scrollSteps;
 								Block& center = getBlockUnderCursor();
@@ -289,6 +294,8 @@ void Window::startLoop()
 					break;
 			}
 		}
+		// Clear sprites generated for previous frame.
+		sprites::flush();
 		// Begin draw.
 		m_window.clear();
 		// Draw main m_view.
@@ -318,7 +325,7 @@ void Window::drawView()
 	std::unordered_set<const Actor*> multiTileActors;
 	for(Block& block : m_area->getZLevel(m_z))
 	{
-		drawBlock(block);
+		m_draw.block(block);
 		for(const Actor* actor : block.m_hasActors.getAllConst())
 		{
 			if(actor->m_shape->isMultiTile)
@@ -331,7 +338,7 @@ void Window::drawView()
 	// Do multi tile actors first.
 	//TODO: what if multitile actors overlap?
 	for(const Actor* actor : multiTileActors)
-		drawActor(*actor);
+		m_draw.actor(*actor);
 	// Do single tile actors.
 	auto duration = std::chrono::system_clock::now().time_since_epoch();
 	auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration).count();
@@ -344,7 +351,7 @@ void Window::drawView()
 		uint8_t modulo = seconds % count;
 		//TODO: hide some actors from player?
 		const std::vector<Actor*> actors = block->m_hasActors.getAllConst();
-		drawActor(*actors[modulo]);
+		m_draw.actor(*actors[modulo]);
 	}
 	// Selection Box.
 	if(m_firstCornerOfSelection && sf::Mouse::isButtonPressed(selectMouseButton))
@@ -371,126 +378,10 @@ void Window::drawView()
 		bool valid = hoverBlock.m_hasShapes.canEnterEverWithFacing(*m_gameOverlay.m_itemBeingInstalled, m_gameOverlay.m_facing);
 		for(Block* block : blocks)
 			if(!valid)
-				drawInvalidOnBlock(*block);
+				m_draw.invalidOnBlock(*block);
 			else
-				drawValidOnBlock(*block);
+				m_draw.validOnBlock(*block);
 	}
-}
-void Window::drawBlock(const Block& block)
-{
-	if(block.isSolid())
-	{
-		for(Block* adjacent : block.m_adjacentsVector)
-		{
-			if(adjacent->m_visible)
-			{
-				assert(displayData::materialColors.contains(&block.getSolidMaterial()));
-				drawColorOnBlock(block, displayData::materialColors.at(&block.getSolidMaterial()));
-				break;
-			}
-		}
-	}
-	else
-	{
-		// If the last bit of the block seed address is set.
-		/*
-		if(block.m_seed & (1<<1))
-		{
-			if(block.m_seed & (1<<1))
-				text.setString('.');
-			else
-				text.setString(':');
-		}
-		else
-		{
-			if(block.m_seed & (1<<1))
-				text.setString(',');
-			else
-				text.setString(';');
-		}
-		*/
-		// Block Features
-		//TODO: Draw order.
-		for(const BlockFeature& blockFeature : block.m_hasBlockFeatures.get())
-		{
-			auto string = displayData::blockFeatureSymbols.at(blockFeature.blockFeatureType);
-			sf::Color color = displayData::materialColors.at(blockFeature.materialType);
-			drawStringOnBlock(block, string, color);
-		}
-		// Fluids
-		if(block.m_totalFluidVolume)
-		{
-			const FluidType& fluidType = block.getFluidTypeWithMostVolume();
-			Volume volume = block.m_fluids.at(&fluidType).first;
-			sf::Color color = displayData::fluidColors.at(&fluidType);
-			drawStringOnBlock(block, std::to_wstring(volume), color);
-		}
-	}
-	if(m_selectedBlocks.contains(block))
-		drawOutlineOnBlock(block, selectColor);
-}
-void Window::drawValidOnBlock(const Block& block)
-{
-	drawColorOnBlock(block, {0, 255, 0, 122});
-}
-void Window::drawInvalidOnBlock(const Block& block)
-{
-	drawColorOnBlock(block, {255, 0, 0, 122});
-}
-void Window::drawColorOnBlock(const Block& block, sf::Color color)
-{
-	sf::RectangleShape square(sf::Vector2f(m_scale, m_scale));
-	square.setFillColor(color);
-	square.setPosition(static_cast<float>(block.m_x * m_scale), static_cast<float>(block.m_y * m_scale));
-	m_window.draw(square);
-}
-void Window::drawOutlineOnBlock(const Block& block, sf::Color color, float thickness)
-{
-	sf::RectangleShape square(sf::Vector2f(m_scale, m_scale));
-	square.setFillColor(sf::Color::Transparent);
-	square.setOutlineColor(color);
-	square.setOutlineThickness(thickness);
-	square.setPosition(static_cast<float>(block.m_x * m_scale), static_cast<float>(block.m_y * m_scale));
-	m_window.draw(square);
-}
-void Window::drawStringOnBlock(const Block& block, std::wstring string, sf::Color color)
-{
-
-	sf::Text text;
-	text.setFont(m_font);
-	text.setFillColor(color);
-	text.setCharacterSize(10);
-	text.setString(string);
-	text.setPosition(static_cast<float>(block.m_x * m_scale), static_cast<float>(block.m_y * m_scale));
-	//text.setScale(static_cast<float>(m_scale), static_cast<float>(m_scale));
-	m_window.draw(text);
-}
-void Window::drawActor(const Actor& actor)
-{
-	auto str = displayData::actorSymbols.at(&actor.m_species);
-	// TODO: Toggle team colors, job colors, weapon border.
-	sf::Color color = displayData::actorColors.at(&actor.m_species);
-	drawStringOnBlock(*actor.m_location, str, color);
-	if(m_selectedActors.contains(&const_cast<Actor&>(actor)))
-		for(Block* occupied : actor.m_blocks)
-			drawOutlineOnBlock(*occupied, selectColor);
-}
-void Window::drawItem(const Item& item)
-{
-	auto str = displayData::itemSymbols.at(&item.m_itemType);
-	sf::Color color = displayData::materialColors.at(&item.m_materialType);
-	drawStringOnBlock(*item.m_location, str, color);
-	if(m_selectedItems.contains(&const_cast<Item&>(item)))
-		for(Block* occupied : item.m_blocks)
-			drawOutlineOnBlock(*occupied, selectColor);
-}
-void Window::drawPlant(const Plant& plant)
-{
-	auto str = displayData::plantSymbols.at(&plant.m_plantSpecies);
-	drawStringOnBlock(*plant.m_location, str, sf::Color::Green);
-	if(m_selectedPlants.contains(&const_cast<Plant&>(plant)))
-		for(Block* occupied : plant.m_blocks)
-			drawOutlineOnBlock(*occupied, selectColor);
 }
 void Window::save()
 {

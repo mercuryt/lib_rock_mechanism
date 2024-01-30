@@ -12,3 +12,5 @@ LLVM bolt
 
 to check for branch mispredictions with profiler
 perf stat exe
+
+optimizations to try : Boost::graph

@@ -56,10 +56,13 @@ void displayData::load()
 	{
 		const AnimalSpecies& animalSpecies = AnimalSpecies::byName(data["name"].get<std::string>());
 		actorSymbols[&animalSpecies] = loadWString(data["symbol"]);
+		actorColors[&animalSpecies] = colorFromJson(data["color"]);
 	}
 	for(const Json& data : definitions::tryParse(path/"blockFeatures.json"))
 	{
 		const BlockFeatureType& blockFeatureType = BlockFeatureType::byName(data["name"].get<std::string>());
 		blockFeatureSymbols[&blockFeatureType] = loadWString(data["symbol"]);
 	}
+	const Json& data = definitions::tryParse(path/"config.json");
+	ratioOfScaleToFontSize = data["ratioOfScaleToFontSize"].get<float>();
 }

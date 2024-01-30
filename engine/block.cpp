@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <cassert>
 
-Block::Block() : m_solid(nullptr), m_totalFluidVolume(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr), m_fires(nullptr), m_exposedToSky(true), m_underground(false), m_outdoors(true), m_visible(true), m_hasShapes(*this), m_reservable(1), m_hasPlant(*this), m_hasBlockFeatures(*this), m_hasActors(*this), m_hasItems(*this), m_isPartOfStockPiles(*this), m_isPartOfFarmField(*this), m_blockHasTemperature(*this) {}
+Block::Block() : m_solid(nullptr), m_constructed(false), m_totalFluidVolume(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr), m_fires(nullptr), m_exposedToSky(true), m_underground(false), m_outdoors(true), m_visible(true), m_hasShapes(*this), m_reservable(1), m_hasPlant(*this), m_hasBlockFeatures(*this), m_hasActors(*this), m_hasItems(*this), m_isPartOfStockPiles(*this), m_isPartOfFarmField(*this), m_blockHasTemperature(*this) {}
 void Block::setup(Area& area, uint32_t ax, uint32_t ay, uint32_t az)
 {
 	m_x=ax;
@@ -39,7 +39,7 @@ void Block::recordAdjacent()
 	{
 		auto& offsets = offsetsList[i];
 		Block* block = m_adjacents[i] = offset(offsets[0],offsets[1],offsets[2]);
-		if(block != nullptr)
+		if(block)
 			m_adjacentsVector.push_back(block);
 	}
 }
@@ -64,7 +64,7 @@ std::vector<Block*> Block::getAdjacentWithEdgeAdjacent() const
 	{
 		auto& offsets = offsetsList[i];
 		Block* block = offset(offsets[0],offsets[1],offsets[2]);
-		if(block != nullptr)
+		if(block)
 			output.push_back(block);
 	}
 	return output;
@@ -91,7 +91,7 @@ std::vector<Block*> Block::getAdjacentWithEdgeAndCornerAdjacent() const
 	{
 		auto& offsets = offsetsList[i];
 		Block* block = offset(offsets[0],offsets[1],offsets[2]);
-		if(block != nullptr)
+		if(block)
 			output.push_back(block);
 	}
 	return output;
@@ -114,7 +114,7 @@ std::vector<Block*> Block::getEdgeAdjacentOnly() const
 	{
 		auto& offsets = offsetsList[i];
 		Block* block = offset(offsets[0],offsets[1],offsets[2]);
-		if(block != nullptr)
+		if(block)
 			output.push_back(block);
 	}
 	return output;
@@ -131,7 +131,7 @@ std::vector<Block*> Block::getEdgeAdjacentOnSameZLevelOnly() const
 	{
 		auto& offsets = offsetsList[i];
 		Block* block = offset(offsets[0],offsets[1],offsets[2]);
-		if(block != nullptr)
+		if(block)
 			output.push_back(block);
 	}
 	return output;
@@ -148,7 +148,7 @@ std::vector<Block*> Block::getEdgeAdjacentOnlyOnNextZLevelDown() const
 	{
 		auto& offsets = offsetsList[i];
 		Block* block = offset(offsets[0],offsets[1],offsets[2]);
-		if(block != nullptr)
+		if(block)
 			output.push_back(block);
 	}
 	return output;
@@ -166,7 +166,7 @@ std::vector<Block*> Block::getEdgeAndCornerAdjacentOnlyOnNextZLevelDown() const
 	{
 		auto& offsets = offsetsList[i];
 		Block* block = offset(offsets[0],offsets[1],offsets[2]);
-		if(block != nullptr)
+		if(block)
 			output.push_back(block);
 	}
 	return output;
@@ -183,7 +183,7 @@ std::vector<Block*> Block::getEdgeAdjacentOnlyOnNextZLevelUp() const
 	{
 		auto& offsets = offsetsList[i];
 		Block* block = offset(offsets[0],offsets[1],offsets[2]);
-		if(block != nullptr)
+		if(block)
 			output.push_back(block);
 	}
 	return output;
@@ -208,7 +208,7 @@ std::vector<Block*> Block::getEdgeAndCornerAdjacentOnly() const
 	{
 		auto& offsets = offsetsList[i];
 		Block* block = offset(offsets[0],offsets[1],offsets[2]);
-		if(block != nullptr)
+		if(block)
 			output.push_back(block);
 	}
 	return output;
@@ -225,7 +225,7 @@ std::vector<Block*> Block::getAdjacentOnSameZLevelOnly() const
 	{
 		auto& offsets = offsetsList[i];
 		Block* block = offset(offsets[0],offsets[1],offsets[2]);
-		if(block != nullptr)
+		if(block)
 			output.push_back(block);
 	}
 	return output;
@@ -278,6 +278,7 @@ void Block::setNotSolid()
 	if(m_solid == nullptr)
 		return;
 	m_solid = nullptr;
+	m_constructed = false;
 	for(Block* adjacent : m_adjacentsVector)
 		if(adjacent->fluidCanEnterEver())
 			for(auto& [fluidType, pair] : adjacent->m_fluids)
@@ -320,13 +321,14 @@ void Block::setBelowNotExposedToSky()
 		block = block->m_adjacents[0];
 	}
 }
-void Block::setSolid(const MaterialType& materialType)
+void Block::setSolid(const MaterialType& materialType, bool constructed)
 {
 	assert(m_hasItems.empty());
 	if(&materialType == m_solid)
 		return;
 	bool wasEmpty = m_solid == nullptr;
 	m_solid = &materialType;
+	m_constructed = constructed;
 	// Displace fluids.
 	m_totalFluidVolume = 0;
 	for(auto& [fluidType, pair] : m_fluids)

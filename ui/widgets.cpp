@@ -58,12 +58,14 @@ Area& AreaSelectUI::get() const
 }
 bool AreaSelectUI::hasSelection() const { return !m_widget->getSelectedItemId().empty(); }
 // Plant SpeciesSelector
-tgui::ComboBox::Ptr widgetUtil::makePlantSpeciesSelectUI()
+tgui::ComboBox::Ptr widgetUtil::makePlantSpeciesSelectUI(Block* block)
 {
 	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
 	bool selected = false;
 	for(const PlantSpecies& plantSpecies : PlantSpecies::data)
 	{
+		if(block && !block->m_hasPlant.canGrowHereEver(plantSpecies))
+			continue;
 		output->addItem(plantSpecies.name, plantSpecies.name);
 		if(lastSelectedPlantSpecies && *lastSelectedPlantSpecies == plantSpecies)
 			output->setSelectedItemById(plantSpecies.name);

@@ -1,5 +1,6 @@
 #pragma once
 #include <SFML/Graphics.hpp>
+#include <SFML/Graphics/RenderWindow.hpp>
 #include <TGUI/TGUI.hpp>
 #include <TGUI/Backend/SFML-Graphics.hpp>
 #include <chrono>
@@ -8,6 +9,7 @@
 #include "../engine/area.h"
 #include "../engine/block.h"
 #include "../engine/input.h"
+#include "draw.h"
 #include "editRealityPanel.h"
 #include "editAreaPanel.h"
 #include "gameOverlay.h"
@@ -18,6 +20,7 @@
 #include "stocksPanel.h"
 #include "uniformPanel.h"
 #include "actorPanel.h"
+#include "draw.h"
 //#include "worldParamatersPanel.h"
 struct GameView final 
 {
@@ -55,6 +58,7 @@ class Window final
 	std::atomic<bool> m_paused;
 	std::chrono::milliseconds m_minimumMillisecondsPerFrame;
 	std::chrono::milliseconds m_minimumMillisecondsPerStep;
+	Draw m_draw;
 	std::thread m_simulationThread;
 	sf::Vector2i m_positionWhereMouseDragBegan;
 	Block* m_firstCornerOfSelection;
@@ -62,15 +66,6 @@ class Window final
 	static constexpr int gameMarginSize = 400;
 	
 	void drawView();
-	void drawBlock(const Block& block);
-	void drawValidOnBlock(const Block& block);
-	void drawInvalidOnBlock(const Block& block);
-	void drawColorOnBlock(const Block& block, sf::Color color);
-	void drawOutlineOnBlock(const Block& block, sf::Color color, float thickness = 3.f);
-	void drawStringOnBlock(const Block& block, std::wstring string, sf::Color color);
-	void drawActor(const Actor& actor);
-	void drawItem(const Item& item);
-	void drawPlant(const Plant& plant);
 	void povFromJson(const Json& data);
 	void setZ(const uint32_t z);
 	void setPaused(bool paused);
@@ -87,6 +82,7 @@ public:
 	void setItemToInstall(Item& item) { m_gameOverlay.m_itemBeingInstalled = &item; }
 	void close() { m_window.close(); }
 	[[nodiscard]] tgui::Gui& getGui() { return m_gui; }
+	[[nodiscard]] sf::RenderWindow& getRenderWindow() { return m_window; }
 	// Show panels.
 	void hideAllPanels();
 	void showMainMenu() { hideAllPanels(); m_mainMenuView.show(); }
@@ -123,4 +119,5 @@ public:
 	static std::wstring displayNameForItem(Item& item);
 	static std::wstring displayNameForCraftJob(CraftJob& craftJob);
 	std::string facingToString(Facing facing);
+	friend class Draw;
 };

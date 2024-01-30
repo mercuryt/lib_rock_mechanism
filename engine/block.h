@@ -45,6 +45,7 @@ class Block final
 {
 	// If this block is solid stone, solid dirt, etc. then store it here. Otherwise nullptr.
 	const MaterialType* m_solid;
+	bool m_constructed;
 public:
 	uint32_t m_x, m_y, m_z;
 	// Store area as a pointer rather then a reference to keep block default constructable.
@@ -111,9 +112,10 @@ public:
 	bool isAdjacentToIncludingCornersAndEdges(Block& block) const;
 	bool isAdjacentTo(HasShape& hasShape) const;
 	void setNotSolid();
-	void setSolid(const MaterialType& materialType);
+	void setSolid(const MaterialType& materialType, bool contructed = false);
 	bool isSolid() const;
 	const MaterialType& getSolidMaterial() const;
+	bool isConstructed() const { return m_constructed; }
 	bool canSeeIntoFromAlways(const Block& block) const;
 	void moveContentsTo(Block& block);
 	uint32_t getMass() const;
@@ -145,7 +147,17 @@ public:
 	// Move less dense fluids to their group's excessVolume until Config::maxBlockVolume is achieved.
 	void resolveFluidOverfull();
 	Block* getBlockBelow() { return m_adjacents[0]; }
+	const Block* getBlockBelow() const { return m_adjacents[0]; }
 	Block* getBlockAbove() { return m_adjacents[5]; }
+	const Block* getBlockAbove() const { return m_adjacents[5]; }
+	Block* getBlockNorth() { return m_adjacents[1]; }
+	const Block* getBlockNorth() const { return m_adjacents[1]; }
+	Block* getBlockEast() { return m_adjacents[2]; }
+	const Block* getBlockEast() const { return m_adjacents[1]; }
+	Block* getBlockSouth() { return m_adjacents[3]; }
+	const Block* getBlockSouth() const { return m_adjacents[3]; }
+	Block* getBlockWest() { return m_adjacents[4]; }
+	const Block* getBlockWest() const { return m_adjacents[4]; }
 	// Called from setSolid / setNotSolid as well as from user code such as construct / remove floor.
 	void setExposedToSky(bool exposed);
 	void setBelowExposedToSky();
