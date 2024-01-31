@@ -320,12 +320,12 @@ void Window::drawView()
 {
 	// Aquire Area read mutex.
 	std::lock_guard lock(m_simulation->m_uiReadMutex);
-	// Render blocks, collect actors into single and multi tile groups.
+	// Render block floors, collect actors into single and multi tile groups.
 	std::unordered_set<const Block*> singleTileActorBlocks;
 	std::unordered_set<const Actor*> multiTileActors;
 	for(Block& block : m_area->getZLevel(m_z))
 	{
-		m_draw.block(block);
+		m_draw.blockFloor(block);
 		for(const Actor* actor : block.m_hasActors.getAllConst())
 		{
 			if(actor->m_shape->isMultiTile)
@@ -334,6 +334,18 @@ void Window::drawView()
 				singleTileActorBlocks.insert(&block);
 		}
 	}
+	// Render block wall corners.
+	for(Block& block : m_area->getZLevel(m_z))
+		m_draw.blockWallCorners(block);
+	// Render block walls.
+	for(Block& block : m_area->getZLevel(m_z))
+		m_draw.blockWalls(block);
+	// Render block features and fluids.
+	for(Block& block : m_area->getZLevel(m_z))
+		m_draw.blockFeaturesAndFluids(block);
+	// Render block wall tops.
+	for(Block& block : m_area->getZLevel(m_z))
+		m_draw.blockWallTops(block);
 	// Render Actors.
 	// Do multi tile actors first.
 	//TODO: what if multitile actors overlap?

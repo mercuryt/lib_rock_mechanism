@@ -152,16 +152,17 @@ public:
 	const Block* getBlockAbove() const { return m_adjacents[5]; }
 	Block* getBlockNorth() { return m_adjacents[1]; }
 	const Block* getBlockNorth() const { return m_adjacents[1]; }
-	Block* getBlockEast() { return m_adjacents[2]; }
-	const Block* getBlockEast() const { return m_adjacents[1]; }
+	Block* getBlockWest() { return m_adjacents[2]; }
+	const Block* getBlockWest() const { return m_adjacents[2]; }
 	Block* getBlockSouth() { return m_adjacents[3]; }
 	const Block* getBlockSouth() const { return m_adjacents[3]; }
-	Block* getBlockWest() { return m_adjacents[4]; }
-	const Block* getBlockWest() const { return m_adjacents[4]; }
+	Block* getBlockEast() { return m_adjacents[4]; }
+	const Block* getBlockEast() const { return m_adjacents[4]; }
 	// Called from setSolid / setNotSolid as well as from user code such as construct / remove floor.
 	void setExposedToSky(bool exposed);
 	void setBelowExposedToSky();
 	void setBelowNotExposedToSky();
+	void setBelowVisible();
 
 	std::vector<Block*> selectBetweenCorners(Block* otherBlock) const;
 

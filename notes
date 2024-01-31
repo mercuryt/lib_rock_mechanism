@@ -13,4 +13,7 @@ LLVM bolt
 to check for branch mispredictions with profiler
 perf stat exe
 
+libc++ debug mode
+GLIBCXX_DEBUG (macro)
+
 optimizations to try : Boost::graph

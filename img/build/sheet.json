@@ -5,22 +5,22 @@
 			"sources": [
 				{
 					"index": 0,
-					"spriteIndices": [0,1]
+					"spriteIndices": [0,1,2,3,4,5,6,7,8,9,10,11,12,13]
 				}
 			]
 		}
 	],
 	"slices": [
 		{
-			"spriteIndices": [0,1]
+			"spriteIndices": [0,1,2,3,4,5,6,7,8,9,10,11,12,13]
 		}
 	],
 	"sources": [
 		{
 			"filename": "source/sprites.png",
-			"height": 128,
+			"height": 256,
 			"path": "",
-			"width": 128
+			"width": 512
 		}
 	],
 	"sprites": [
@@ -73,13 +73,13 @@
 			"inputSpriteIndex": 1,
 			"pivot": {
 				"x": 16.0,
-				"y": 16.0
+				"y": 9.5
 			},
 			"rect": {
-				"h": 32,
+				"h": 19,
 				"w": 32,
-				"x": 32,
-				"y": 0
+				"x": 64,
+				"y": 64
 			},
 			"rotated": false,
 			"sliceIndex": 0,
@@ -93,6 +93,88 @@
 			},
 			"tags": {},
 			"trimmedRect": {
+				"h": 19,
+				"w": 32,
+				"x": 64,
+				"y": 64
+			},
+			"trimmedSourceRect": {
+				"h": 19,
+				"w": 32,
+				"x": 32,
+				"y": 13
+			},
+			"vertices": [0.0,0.0,32.0,0.0,32.0,19.0,0.0,19.0]
+		},
+		{
+			"data": {},
+			"id": "roughWallTop",
+			"index": 2,
+			"inputIndex": 0,
+			"inputSpriteIndex": 2,
+			"pivot": {
+				"x": 16.0,
+				"y": 5.0
+			},
+			"rect": {
+				"h": 10,
+				"w": 32,
+				"x": 96,
+				"y": 81
+			},
+			"rotated": false,
+			"sliceIndex": 0,
+			"sliceSpriteIndex": 2,
+			"sourceIndex": 0,
+			"sourceRect": {
+				"h": 32,
+				"w": 32,
+				"x": 64,
+				"y": 0
+			},
+			"tags": {},
+			"trimmedRect": {
+				"h": 10,
+				"w": 32,
+				"x": 96,
+				"y": 81
+			},
+			"trimmedSourceRect": {
+				"h": 10,
+				"w": 32,
+				"x": 64,
+				"y": 0
+			},
+			"vertices": [0.0,0.0,32.0,0.0,32.0,10.0,0.0,10.0]
+		},
+		{
+			"data": {},
+			"id": "door",
+			"index": 3,
+			"inputIndex": 0,
+			"inputSpriteIndex": 3,
+			"pivot": {
+				"x": 16.0,
+				"y": 16.0
+			},
+			"rect": {
+				"h": 32,
+				"w": 32,
+				"x": 32,
+				"y": 0
+			},
+			"rotated": false,
+			"sliceIndex": 0,
+			"sliceSpriteIndex": 3,
+			"sourceIndex": 0,
+			"sourceRect": {
+				"h": 32,
+				"w": 32,
+				"x": 96,
+				"y": 0
+			},
+			"tags": {},
+			"trimmedRect": {
 				"h": 32,
 				"w": 32,
 				"x": 32,
@@ -101,22 +183,432 @@
 			"trimmedSourceRect": {
 				"h": 32,
 				"w": 32,
-				"x": 32,
+				"x": 96,
 				"y": 0
 			},
 			"vertices": [0.0,0.0,32.0,0.0,32.0,32.0,0.0,32.0]
+		},
+		{
+			"data": {},
+			"id": "flap",
+			"index": 4,
+			"inputIndex": 0,
+			"inputSpriteIndex": 4,
+			"pivot": {
+				"x": 16.0,
+				"y": 16.0
+			},
+			"rect": {
+				"h": 32,
+				"w": 32,
+				"x": 64,
+				"y": 0
+			},
+			"rotated": false,
+			"sliceIndex": 0,
+			"sliceSpriteIndex": 4,
+			"sourceIndex": 0,
+			"sourceRect": {
+				"h": 32,
+				"w": 32,
+				"x": 128,
+				"y": 0
+			},
+			"tags": {},
+			"trimmedRect": {
+				"h": 32,
+				"w": 32,
+				"x": 64,
+				"y": 0
+			},
+			"trimmedSourceRect": {
+				"h": 32,
+				"w": 32,
+				"x": 128,
+				"y": 0
+			},
+			"vertices": [0.0,0.0,32.0,0.0,32.0,32.0,0.0,32.0]
+		},
+		{
+			"data": {},
+			"id": "hatch",
+			"index": 5,
+			"inputIndex": 0,
+			"inputSpriteIndex": 5,
+			"pivot": {
+				"x": 16.0,
+				"y": 16.0
+			},
+			"rect": {
+				"h": 32,
+				"w": 32,
+				"x": 96,
+				"y": 0
+			},
+			"rotated": false,
+			"sliceIndex": 0,
+			"sliceSpriteIndex": 5,
+			"sourceIndex": 0,
+			"sourceRect": {
+				"h": 32,
+				"w": 32,
+				"x": 160,
+				"y": 0
+			},
+			"tags": {},
+			"trimmedRect": {
+				"h": 32,
+				"w": 32,
+				"x": 96,
+				"y": 0
+			},
+			"trimmedSourceRect": {
+				"h": 32,
+				"w": 32,
+				"x": 160,
+				"y": 0
+			},
+			"vertices": [0.0,0.0,32.0,0.0,32.0,32.0,0.0,32.0]
+		},
+		{
+			"data": {},
+			"id": "stairs",
+			"index": 6,
+			"inputIndex": 0,
+			"inputSpriteIndex": 6,
+			"pivot": {
+				"x": 16.0,
+				"y": 16.0
+			},
+			"rect": {
+				"h": 32,
+				"w": 32,
+				"x": 0,
+				"y": 32
+			},
+			"rotated": false,
+			"sliceIndex": 0,
+			"sliceSpriteIndex": 6,
+			"sourceIndex": 0,
+			"sourceRect": {
+				"h": 32,
+				"w": 32,
+				"x": 192,
+				"y": 0
+			},
+			"tags": {},
+			"trimmedRect": {
+				"h": 32,
+				"w": 32,
+				"x": 0,
+				"y": 32
+			},
+			"trimmedSourceRect": {
+				"h": 32,
+				"w": 32,
+				"x": 192,
+				"y": 0
+			},
+			"vertices": [0.0,0.0,32.0,0.0,32.0,32.0,0.0,32.0]
+		},
+		{
+			"data": {},
+			"id": "ramp",
+			"index": 7,
+			"inputIndex": 0,
+			"inputSpriteIndex": 7,
+			"pivot": {
+				"x": 16.0,
+				"y": 16.0
+			},
+			"rect": {
+				"h": 32,
+				"w": 32,
+				"x": 32,
+				"y": 32
+			},
+			"rotated": false,
+			"sliceIndex": 0,
+			"sliceSpriteIndex": 7,
+			"sourceIndex": 0,
+			"sourceRect": {
+				"h": 32,
+				"w": 32,
+				"x": 224,
+				"y": 0
+			},
+			"tags": {},
+			"trimmedRect": {
+				"h": 32,
+				"w": 32,
+				"x": 32,
+				"y": 32
+			},
+			"trimmedSourceRect": {
+				"h": 32,
+				"w": 32,
+				"x": 224,
+				"y": 0
+			},
+			"vertices": [0.0,0.0,32.0,0.0,32.0,32.0,0.0,32.0]
+		},
+		{
+			"data": {},
+			"id": "floorGrate",
+			"index": 8,
+			"inputIndex": 0,
+			"inputSpriteIndex": 8,
+			"pivot": {
+				"x": 16.0,
+				"y": 10.5
+			},
+			"rect": {
+				"h": 21,
+				"w": 32,
+				"x": 32,
+				"y": 64
+			},
+			"rotated": false,
+			"sliceIndex": 0,
+			"sliceSpriteIndex": 8,
+			"sourceIndex": 0,
+			"sourceRect": {
+				"h": 32,
+				"w": 32,
+				"x": 256,
+				"y": 0
+			},
+			"tags": {},
+			"trimmedRect": {
+				"h": 21,
+				"w": 32,
+				"x": 32,
+				"y": 64
+			},
+			"trimmedSourceRect": {
+				"h": 21,
+				"w": 32,
+				"x": 256,
+				"y": 5
+			},
+			"vertices": [0.0,0.0,32.0,0.0,32.0,21.0,0.0,21.0]
+		},
+		{
+			"data": {},
+			"id": "floodGate",
+			"index": 9,
+			"inputIndex": 0,
+			"inputSpriteIndex": 9,
+			"pivot": {
+				"x": 16.0,
+				"y": 16.0
+			},
+			"rect": {
+				"h": 32,
+				"w": 32,
+				"x": 64,
+				"y": 32
+			},
+			"rotated": false,
+			"sliceIndex": 0,
+			"sliceSpriteIndex": 9,
+			"sourceIndex": 0,
+			"sourceRect": {
+				"h": 32,
+				"w": 32,
+				"x": 288,
+				"y": 0
+			},
+			"tags": {},
+			"trimmedRect": {
+				"h": 32,
+				"w": 32,
+				"x": 64,
+				"y": 32
+			},
+			"trimmedSourceRect": {
+				"h": 32,
+				"w": 32,
+				"x": 288,
+				"y": 0
+			},
+			"vertices": [0.0,0.0,32.0,0.0,32.0,32.0,0.0,32.0]
+		},
+		{
+			"data": {},
+			"id": "fortification",
+			"index": 10,
+			"inputIndex": 0,
+			"inputSpriteIndex": 10,
+			"pivot": {
+				"x": 16.0,
+				"y": 16.0
+			},
+			"rect": {
+				"h": 32,
+				"w": 32,
+				"x": 96,
+				"y": 32
+			},
+			"rotated": false,
+			"sliceIndex": 0,
+			"sliceSpriteIndex": 10,
+			"sourceIndex": 0,
+			"sourceRect": {
+				"h": 32,
+				"w": 32,
+				"x": 320,
+				"y": 0
+			},
+			"tags": {},
+			"trimmedRect": {
+				"h": 32,
+				"w": 32,
+				"x": 96,
+				"y": 32
+			},
+			"trimmedSourceRect": {
+				"h": 32,
+				"w": 32,
+				"x": 320,
+				"y": 0
+			},
+			"vertices": [0.0,0.0,32.0,0.0,32.0,32.0,0.0,32.0]
+		},
+		{
+			"data": {},
+			"id": "blockFloor",
+			"index": 11,
+			"inputIndex": 0,
+			"inputSpriteIndex": 11,
+			"pivot": {
+				"x": 16.0,
+				"y": 16.0
+			},
+			"rect": {
+				"h": 32,
+				"w": 32,
+				"x": 0,
+				"y": 64
+			},
+			"rotated": false,
+			"sliceIndex": 0,
+			"sliceSpriteIndex": 11,
+			"sourceIndex": 0,
+			"sourceRect": {
+				"h": 32,
+				"w": 32,
+				"x": 0,
+				"y": 32
+			},
+			"tags": {},
+			"trimmedRect": {
+				"h": 32,
+				"w": 32,
+				"x": 0,
+				"y": 64
+			},
+			"trimmedSourceRect": {
+				"h": 32,
+				"w": 32,
+				"x": 0,
+				"y": 32
+			},
+			"vertices": [0.0,0.0,32.0,0.0,32.0,32.0,0.0,32.0]
+		},
+		{
+			"data": {},
+			"id": "blockWall",
+			"index": 12,
+			"inputIndex": 0,
+			"inputSpriteIndex": 12,
+			"pivot": {
+				"x": 16.0,
+				"y": 8.5
+			},
+			"rect": {
+				"h": 17,
+				"w": 32,
+				"x": 96,
+				"y": 64
+			},
+			"rotated": false,
+			"sliceIndex": 0,
+			"sliceSpriteIndex": 12,
+			"sourceIndex": 0,
+			"sourceRect": {
+				"h": 32,
+				"w": 32,
+				"x": 32,
+				"y": 32
+			},
+			"tags": {},
+			"trimmedRect": {
+				"h": 17,
+				"w": 32,
+				"x": 96,
+				"y": 64
+			},
+			"trimmedSourceRect": {
+				"h": 17,
+				"w": 32,
+				"x": 32,
+				"y": 47
+			},
+			"vertices": [0.0,0.0,32.0,0.0,32.0,17.0,0.0,17.0]
+		},
+		{
+			"data": {},
+			"id": "blockWallTop",
+			"index": 13,
+			"inputIndex": 0,
+			"inputSpriteIndex": 13,
+			"pivot": {
+				"x": 16.0,
+				"y": 3.0
+			},
+			"rect": {
+				"h": 6,
+				"w": 32,
+				"x": 64,
+				"y": 83
+			},
+			"rotated": false,
+			"sliceIndex": 0,
+			"sliceSpriteIndex": 13,
+			"sourceIndex": 0,
+			"sourceRect": {
+				"h": 32,
+				"w": 32,
+				"x": 64,
+				"y": 32
+			},
+			"tags": {},
+			"trimmedRect": {
+				"h": 6,
+				"w": 32,
+				"x": 64,
+				"y": 83
+			},
+			"trimmedSourceRect": {
+				"h": 6,
+				"w": 32,
+				"x": 64,
+				"y": 32
+			},
+			"vertices": [0.0,0.0,32.0,0.0,32.0,6.0,0.0,6.0]
 		}
 	],
 	"tags": {},
 	"textures": [
 		{
 			"filename": "build/sheet0.png",
-			"height": 32,
+			"height": 128,
 			"map": "",
 			"scale": 1.0,
 			"sliceIndex": 0,
-			"spriteIndices": [0,1],
-			"width": 64
+			"spriteIndices": [0,1,2,3,4,5,6,7,8,9,10,11,12,13],
+			"width": 128
 		}
 	]
 }

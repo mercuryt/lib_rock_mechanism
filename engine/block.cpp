@@ -294,6 +294,9 @@ void Block::setNotSolid()
 		setExposedToSky(true);
 		setBelowExposedToSky();
 	}
+	//TODO: Check if any adjacent are visible first?
+	m_visible = true;
+	setBelowVisible();
 	// Dishonor all reservations: there are no reservations which can exist on both a solid and not solid block.
 	m_reservable.clearAll();
 }
@@ -304,11 +307,19 @@ void Block::setExposedToSky(bool exposed)
 }
 void Block::setBelowExposedToSky()
 {
-	// Set blocks below as exposed to sky.
 	Block* block = m_adjacents[0];
 	while(block != nullptr && block->canSeeThroughFrom(*block->m_adjacents[5]) && !block->m_exposedToSky)
 	{
 		block->setExposedToSky(true);
+		block = block->m_adjacents[0];
+	}
+}
+void Block::setBelowVisible()
+{
+	Block* block = getBlockBelow();
+	while(block && block->canSeeThroughFrom(*block->m_adjacents[5]) && !block->m_visible)
+	{
+		block->m_visible = true;
 		block = block->m_adjacents[0];
 	}
 }

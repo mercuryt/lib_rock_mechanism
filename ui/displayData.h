@@ -22,5 +22,7 @@ namespace displayData
 	inline float ratioOfScaleToFontSize;
 	inline static const sf::Color selectColor = sf::Color::Yellow;
 	inline static const uint32_t defaultScale = 32u;
+	inline static const float wallTopOffsetRatio = 0.18;
+	inline static const float wallOffsetRatio = 0.00;
 	void load();
 }
