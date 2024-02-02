@@ -21,7 +21,7 @@ Plant::Plant(Block& location, const PlantSpecies& pt, const Shape* shape, Percen
 	HasShape(location.m_area->m_simulation, (shape ? *shape : pt.shapeForPercentGrown(pg)), true), m_fluidSource(nullptr), m_plantSpecies(pt), m_growthEvent(location.m_area->m_simulation.m_eventSchedule), m_shapeGrowthEvent(location.m_area->m_simulation.m_eventSchedule), m_fluidEvent(location.m_area->m_simulation.m_eventSchedule), m_temperatureEvent(location.m_area->m_simulation.m_eventSchedule), m_endOfHarvestEvent(location.m_area->m_simulation.m_eventSchedule), m_foliageGrowthEvent(location.m_area->m_simulation.m_eventSchedule), m_percentGrown(pg), m_quantityToHarvest(harvestableQuantity), m_percentFoliage(percentFoliage), m_reservable(1), m_volumeFluidRequested(volumeFluidRequested), m_wildGrowth(0)
 {
 	setLocation(location);
-	assert(m_location->m_hasPlant.canGrowHereAtSomePointToday(m_plantSpecies));
+	assert(m_location->m_hasPlant.canGrowHereEver(m_plantSpecies));
 	uint8_t wildGrowth = pt.wildGrowthForPercentGrown(m_percentGrown);
 	if(wildGrowth)
 		doWildGrowth(wildGrowth);
@@ -430,7 +430,7 @@ bool HasPlant::anythingCanGrowHereEver() const
 }
 Plant& HasPlants::emplace(Block& location, const PlantSpecies& species, const Shape* shape, Percent percentGrowth, Volume volumeFluidRequested, Step needsFluidEventStart, bool temperatureIsUnsafe, Step unsafeTemperatureEventStart, uint32_t harvestableQuantity, Percent percentFoliage)
 {
-	assert(location.m_hasPlant.canGrowHereAtSomePointToday(species));
+	assert(location.m_hasPlant.canGrowHereEver(species));
 	assert(!location.m_hasPlant.exists());
 	Plant& plant = m_plants.emplace_back(location, species, shape, percentGrowth, volumeFluidRequested, needsFluidEventStart, temperatureIsUnsafe, unsafeTemperatureEventStart, harvestableQuantity, percentFoliage);
 	// TODO: plants above ground but under roof?

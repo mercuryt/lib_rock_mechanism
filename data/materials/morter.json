@@ -1,19 +1,13 @@
 {
-  "name": "dirt",
+  "name": "morter",
   "density": 50,
   "hardness": 30,
   "transparent": false,
-  "meltingPoint": 1612,
+  "meltingPoint": 2612,
   "meltsInto": "lava",
   "spoilData": 
   [
-	  {
-        "materialType": "dirt",
-        "itemType": "pile",
-	"chance": 100,
-	"min": 50,
-	"max": 70
-      },{
+     {
         "materialType": "gravel",
         "itemType": "pile",
 	"chance": 100,

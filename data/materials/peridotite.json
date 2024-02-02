@@ -8,15 +8,15 @@
   "constructionData": "stone",
   "spoilData": [
     {
-      "materialType": "peridotite",
-      "itemType": "gravel",
+      "materialType": "gravel",
+      "itemType": "pile",
       "chance": 100,
       "min": 10,
       "max": 20
     },
     {
-      "materialType": "peridotite",
-      "itemType": "sand",
+      "materialType": "sand",
+      "itemType": "pile",
       "chance": 100,
       "min": 10,
       "max": 15

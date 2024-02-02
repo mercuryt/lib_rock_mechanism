@@ -26,7 +26,8 @@
 		"byproducts":
 		[
 			{
-				"itemType": "wood chip",
+				"itemType": "pile",
+				"materialType": "organic waste",
 				"quantity": 10
 			}
 		],
@@ -41,7 +42,8 @@
 				"itemType": "block",
 				"quantity": 10
 			},{
-				"itemType": "morter",
+				"itemType": "pile",
+				"materialType": "morter",
 				"quantity": 20
 			}
 		],
@@ -58,7 +60,8 @@
 		"byproducts":
 		[
 			{
-				"itemType": "gravel",
+				"itemType": "pile",
+				"materialType": "gravel",
 				"quantity": 10
 			}
 		],

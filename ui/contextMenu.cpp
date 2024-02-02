@@ -101,6 +101,7 @@ void ContextMenu::draw(Block& block)
 				auto addPlant = tgui::Label::create("add plant");
 				addPlant->getRenderer()->setBackgroundColor(buttonColor);
 				m_root.add(addPlant);
+				static Percent percentGrown = 100;
 				addPlant->onMouseEnter([this, &block]{
 					auto& submenu = makeSubmenu(0);
 					auto speciesUI = widgetUtil::makePlantSpeciesSelectUI(&block);
@@ -110,12 +111,17 @@ void ContextMenu::draw(Block& block)
 					submenu.add(percentGrownLabel);
 					percentGrownLabel->getRenderer()->setBackgroundColor(labelColor);
 					submenu.add(percentGrownUI);
+					percentGrownUI->setMinimum(1);
+					percentGrownUI->setMaximum(100);
+					percentGrownUI->setValue(percentGrown);
+					percentGrownUI->onValueChange([](const float value){ percentGrown = value; });
 					auto confirm = tgui::Button::create("confirm");
 					confirm->getRenderer()->setBackgroundColor(buttonColor);
 					submenu.add(confirm);
-					confirm->onClick([&block, speciesUI, percentGrownUI]{
+					confirm->onClick([this, &block, speciesUI, percentGrownUI]{
 						const PlantSpecies& species = PlantSpecies::byName(speciesUI->getSelectedItemId().toStdString());
 						block.m_hasPlant.createPlant(species, percentGrownUI->getValue());
+						hide();
 					});
 				});
 			}
@@ -150,9 +156,9 @@ void ContextMenu::draw(Block& block)
 			// Kill.
 			for(Actor* otherActor : block.m_hasActors.getAll())
 			{
-				const Faction& faction = *(*actors.begin())->getFaction();
-				const Faction& otherFaction = *otherActor->getFaction();
-				if(faction.enemies.contains(const_cast<Faction*>(&otherFaction)))
+				const Faction* faction = m_window.getFaction();
+				const Faction* otherFaction = otherActor->getFaction();
+				if(!otherFaction || !faction || faction->enemies.contains(const_cast<Faction*>(otherFaction)))
 				{
 					tgui::Button::Ptr kill = tgui::Button::create("kill");
 					kill->getRenderer()->setBackgroundColor(buttonColor);

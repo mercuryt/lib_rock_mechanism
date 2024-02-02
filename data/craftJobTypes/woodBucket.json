@@ -27,7 +27,7 @@
 			"byproducts":
 			[
 				{
-					"itemType": "organic waste",
+					"itemType": "pile",
 					"materialType": "organic waste",
 					"quantity": 2
 				}
@@ -52,7 +52,7 @@
 			"byproducts":
 			[
 				{
-					"itemType": "organic waste",
+					"itemType": "pile",
 					"materialType": "organic waste",
 					"quantity": 1
 				}

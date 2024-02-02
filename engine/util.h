@@ -27,6 +27,10 @@ namespace util
 	{
 		return (base * percent) / 100u;
 	}
+	inline float scaleByPercent(float base, Percent percent)
+	{
+		return (base * percent) / 100u;
+	}
 	inline int scaleByInversePercent(int base, Percent percent)
 	{
 		return scaleByPercent(base, 100 - percent);

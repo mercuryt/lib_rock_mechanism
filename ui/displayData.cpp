@@ -24,8 +24,8 @@ std::wstring loadWString(const Json& data)
 sf::Color colorFromJson(const Json& data)
 {
 	auto r = data[0].get<uint8_t>();
-	auto b = data[1].get<uint8_t>();
-	auto g = data[2].get<uint8_t>();
+	auto g = data[1].get<uint8_t>();
+	auto b = data[2].get<uint8_t>();
 	auto a = data[3].get<uint8_t>();
 	return sf::Color(r, g, b, a);
 }
@@ -45,23 +45,33 @@ void displayData::load()
 	for(const Json& data : definitions::tryParse(path/"itemTypes.json"))
 	{
 		const ItemType& itemType = ItemType::byName(data["name"].get<std::string>());
-		itemSymbols[&itemType] = loadWString(data["symbol"]);
+		auto pair = itemData.try_emplace( &itemType,
+			data["image"].get<std::string>(),
+			data.contains("color") ? colorFromJson(data["color"]) : sf::Color::White,
+			data.contains("scale") ? data["scale"].get<float>() : 1.0f
+		);
+		assert(pair.second);
 	}
 	for(const Json& data : definitions::tryParse(path/"plantSpecies.json"))
 	{
 		const PlantSpecies& plantSpecies = PlantSpecies::byName(data["name"].get<std::string>());
-		plantSymbols[&plantSpecies] = loadWString(data["symbol"]);
+		auto pair = plantData.try_emplace( &plantSpecies,
+			data["image"].get<std::string>(),
+			data.contains("color") ? colorFromJson(data["color"]) : sf::Color::White,
+			data.contains("scale") ? data["scale"].get<float>() : 1.0f,
+			data.contains("groundCover") && data["groundCover"].get<bool>()
+		);
+		assert(pair.second);
 	}
 	for(const Json& data : definitions::tryParse(path/"animalSpecies.json"))
 	{
 		const AnimalSpecies& animalSpecies = AnimalSpecies::byName(data["name"].get<std::string>());
-		actorSymbols[&animalSpecies] = loadWString(data["symbol"]);
-		actorColors[&animalSpecies] = colorFromJson(data["color"]);
-	}
-	for(const Json& data : definitions::tryParse(path/"blockFeatures.json"))
-	{
-		const BlockFeatureType& blockFeatureType = BlockFeatureType::byName(data["name"].get<std::string>());
-		blockFeatureSymbols[&blockFeatureType] = loadWString(data["symbol"]);
+		auto pair = actorData.try_emplace( &animalSpecies,
+			data["image"].get<std::string>(),
+			data.contains("color") ? colorFromJson(data["color"]) : sf::Color::White,
+			data.contains("scale") ? data["scale"].get<float>() : 1.0f
+		);
+		assert(pair.second);
 	}
 	const Json& data = definitions::tryParse(path/"config.json");
 	ratioOfScaleToFontSize = data["ratioOfScaleToFontSize"].get<float>();

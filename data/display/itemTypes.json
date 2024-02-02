@@ -1,118 +1,103 @@
 [
 	{
 		"name": "axe",
-		"symbol": "axe"
+		"image": "axe"
 	},{
 		"name": "apple",
-		"symbol": "🍏"
+		"image": "fruit"
 	},{
 		"name": "round bar",
-		"symbol": "―"
+		"image": "bar"
 	},{
 		"name": "block",
-		"symbol": "▂"
+		"image": "block"
 	},{
 		"name": "board",
-		"symbol": "▂"
+		"image": "board"
 	},{
 		"name": "boulder",
-		"symbol": "🪨"
+		"image": "rock"
 	},{
 		"name": "bucket",
-		"symbol": "🪣"
+		"image": "bucket"
 	},{
 		"name": "bucking bar",
-		"symbol": "🛠"
+		"image": "tool"
 	},{
 		"name": "cart",
-		"symbol": "𐃏🭕█"
+		"image": "cart"
 	},{
 		"name": "chisel",
-		"symbol": "c"
+		"image": "tool"
 	},{
 		"name": "chunk",
-		"symbol": "🪨",
+		"image": "rock",
 		"scale": 0.5
 	},{
 		"name": "crossbow bolt",
-		"symbol": "➸"
+		"image": "arrow"
 	},{
 		"name": "crossbow",
-		"symbol": "🏹"
+		"image": "crossbow"
 	},{
 		"name": "dagger",
-		"symbol": "🗡"
+		"image": "dagger"
 	},{
-		"name": "dirt",
-		"symbol": "░"
+		"name": "pile",
+		"image": "pile"
 	},{
 		"name": "draw shave",
-		"symbol": "🛠"
-	},{
-		"name": "gravel",
-		"symbol": "▒"
+		"image": "tool"
 	},{
 		"name": "hammer",
-		"symbol": "🔨"
+		"image": "tool"
 	},{
 		"name": "log",
-		"symbol": "🪵"
+		"image": "log"
 	},{
 		"name": "long sword",
-		"symbol": "⚔"
+		"image": "sword"
 	},{
 		"name": "mallet",
-		"symbol": "🛠"
-	},{
-		"name": "morter",
-		"symbol": "▓"
-	},{
-		"name": "organic waste",
-		"symbol": "▓"
+		"image": "tool"
 	},{
 		"name": "panniers",
-		"symbol": "👜"
+		"image": "panniers"
 	},{
 		"name": "pants",
-		"symbol": "👖"
+		"image": "cloths"
 	},{
 		"name": "peg",
-		"symbol": "🔩"
+		"image": "peg"
 	},{
 		"name": "pick",
-		"symbol": "⛏"
+		"image": "tool"
 	},{
 		"name": "prepared meal",
-		"symbol": "🍲"
+		"image": "meal"
 	},{
 		"name": "rivet",
-		"symbol": "🔩"
+		"image": "peg"
 	},{
 		"name": "rope",
-		"symbol": "꩜ "
+		"image": "rope"
 	},{
 		"name": "rough board",
-		"symbol": "▁"
-	},{
-		"name": "sand",
-		"symbol": "▒"
+		"image": "board"
 	},{
 		"name": "saw",
-		"symbol": "🪚"
+		"image": "tool"
 	},{
 		"name": "scrap",
-		"symbol": "▓"
+		"image": "pile"
 	},{
 		"name": "sticks",
-		"symbol": "ᚬ"
+		"image": "pile"
 	},{
 		"name": "trowel",
-		"symbol": "🛠"
+		"image": "tool"
 	},{
 		"name": "wheat seed",
-		"symbol": "▒"
-	},{
-		"name": "wood chip",
-		"symbol": "▒"
+		"image": "seed"
 	}
 ]

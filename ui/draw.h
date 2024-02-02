@@ -30,7 +30,8 @@ public:
 	void outlineOnBlock(const Block& block, sf::Color color, float thickness = 3.f);
 	void stringOnBlock(const Block& block, std::wstring string, sf::Color color);
 
+	void nonGroundCoverPlant(const Block& block);
 	void item(const Item& item);
-	void actor(const Actor& actor);
-	void plant(const Plant& plant);
+	void singleTileActor(const Actor& actor);
+	void multiTileActor(const Actor& actor);
 };

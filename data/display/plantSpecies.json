@@ -1,9 +1,17 @@
 [
 	{
 		"name": "centipede grass",
-		"symbol": "🌱"
+		"image": "grass",
+		"groundCover": true
 	},{
 		"name": "wheat grass",
-		"symbol": "🌾"
+		"image": "grass",
+		"groundCover": true
+	},{
+		"name": "poplar tree",
+		"image": "tree"
+	},{
+		"name": "sage brush",
+		"image": "bush"
 	}
 ]

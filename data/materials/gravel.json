@@ -1,0 +1,18 @@
+{
+  "name": "gravel",
+  "density": 150,
+  "hardness": 60,
+  "transparent": false,
+  "meltingPoint": 1612,
+  "meltsInto": "lava",
+  "spoilData": 
+  [
+      {
+        "materialType": "gravel",
+        "itemType": "pile",
+	"chance": 100,
+	"min": 20,
+	"max": 40
+      }
+    ]
+}

@@ -340,6 +340,9 @@ void Window::drawView()
 	// Render block walls.
 	for(Block& block : m_area->getZLevel(m_z))
 		m_draw.blockWalls(block);
+	// Render block plants.
+	for(Block& block : m_area->getZLevel(m_z))
+		m_draw.nonGroundCoverPlant(block);
 	// Render block features and fluids.
 	for(Block& block : m_area->getZLevel(m_z))
 		m_draw.blockFeaturesAndFluids(block);
@@ -350,7 +353,7 @@ void Window::drawView()
 	// Do multi tile actors first.
 	//TODO: what if multitile actors overlap?
 	for(const Actor* actor : multiTileActors)
-		m_draw.actor(*actor);
+		m_draw.multiTileActor(*actor);
 	// Do single tile actors.
 	auto duration = std::chrono::system_clock::now().time_since_epoch();
 	auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration).count();
@@ -360,10 +363,15 @@ void Window::drawView()
 		// Multiple actors, cycle through them over time.
 		// Use real time rather then m_step to continue cycling while paused.
 		uint32_t count = block->m_hasActors.getAllConst().size();
-		uint8_t modulo = seconds % count;
-		//TODO: hide some actors from player?
-		const std::vector<Actor*> actors = block->m_hasActors.getAllConst();
-		m_draw.actor(*actors[modulo]);
+		if(count == 1)
+			m_draw.singleTileActor(*block->m_hasActors.getAllConst().front());
+		else
+		{
+			uint8_t index = (seconds % count);
+			//TODO: hide some actors from player?
+			const std::vector<Actor*> actors = block->m_hasActors.getAllConst();
+			m_draw.singleTileActor(*actors[index]);
+		}
 	}
 	// Selection Box.
 	if(m_firstCornerOfSelection && sf::Mouse::isButtonPressed(selectMouseButton))
