@@ -135,6 +135,25 @@ tgui::ComboBox::Ptr widgetUtil::makeFluidTypeSelectUI()
 	output->onItemSelect([&](const tgui::String name){ lastSelectedFluidType = &FluidType::byName(name.toStdString()); });
 	return output;
 }
+// ItemTypeSelectUI
+tgui::ComboBox::Ptr widgetUtil::makeItemTypeSelectUI()
+{
+	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
+	bool selected = false;
+	for(const ItemType& itemType : ItemType::data)
+	{
+		output->addItem(itemType.name, itemType.name);
+		if(lastSelectedItemType && lastSelectedItemType == &itemType)
+			output->setSelectedItemById(itemType.name);
+		else if(!selected)
+		{
+			output->setSelectedItemById(itemType.name);
+			selected = true;
+		}
+	}
+	output->onItemSelect([&](const tgui::String name){ lastSelectedItemType = &ItemType::byName(name.toStdString()); });
+	return output;
+}
 // Util
 void widgetUtil::setPadding(tgui::Widget::Ptr wigdet)
 {

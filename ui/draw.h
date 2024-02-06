@@ -21,6 +21,7 @@ public:
 	void invalidOnBlock(const Block& block);
 	void colorOnBlock(const Block& block, sf::Color color);
 
+	void spriteOnBlockWithScale(const Block& block, sf::Sprite& sprite, float scaleRatio, sf::Color* = nullptr);
 	void spriteOnBlock(const Block& block, sf::Sprite& sprite, sf::Color* = nullptr);
 	void imageOnBlock(const Block& block, std::string name, sf::Color* = nullptr);
 	void imageOnBlockWestAlign(const Block& block, std::string name, sf::Color* = nullptr);
@@ -31,7 +32,7 @@ public:
 	void stringOnBlock(const Block& block, std::wstring string, sf::Color color);
 
 	void nonGroundCoverPlant(const Block& block);
-	void item(const Item& item);
+	void item(const Block& block);
 	void singleTileActor(const Actor& actor);
 	void multiTileActor(const Actor& actor);
 };

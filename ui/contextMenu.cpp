@@ -10,38 +10,40 @@
 #include "../engine/installItem.h"
 #include "../engine/kill.h"
 #include "../engine/uniform.h"
-#include <SFML/Graphics/Color.hpp>
-#include <TGUI/Layout.hpp>
-#include <TGUI/Widgets/ComboBox.hpp>
-#include <TGUI/Widgets/EditBox.hpp>
-#include <TGUI/Widgets/VerticalLayout.hpp>
+#include <TGUI/Widgets/HorizontalLayout.hpp>
 // Menu segment
-ContextMenuSegment::ContextMenuSegment(tgui::Group::Ptr overlayGroup) : m_gameOverlayGroup(overlayGroup), m_widget(tgui::Grid::create()) 
+ContextMenuSegment::ContextMenuSegment(tgui::Group::Ptr overlayGroup) : m_gameOverlayGroup(overlayGroup), m_panel(tgui::Panel::create()), m_grid(tgui::Grid::create()) 
 { 
-	m_widget->setOrigin(0, 0.5);
+	m_panel->add(m_grid);
+	m_panel->setSize(tgui::bindWidth(m_grid) + 4, tgui::bindHeight(m_grid) + 4);
+	m_grid->setPosition(2,2);
 }
 void ContextMenuSegment::add(tgui::Widget::Ptr widget, std::string id) 
 {
 	widget->setSize(width, height); 
-	m_widget->add(widget, id); 
-	m_widget->setWidgetCell(widget, m_count++, 1); 
+	m_grid->add(widget, id); 
+	m_grid->setWidgetCell(widget, m_count++, 1, tgui::Grid::Alignment::Center, tgui::Padding{1, 5});
 }
-ContextMenuSegment::~ContextMenuSegment() { m_gameOverlayGroup->remove(m_widget); }
+ContextMenuSegment::~ContextMenuSegment() { m_gameOverlayGroup->remove(m_panel); }
 // Menu
 ContextMenu::ContextMenu(Window& window, tgui::Group::Ptr gameOverlayGroup) : m_window(window), m_root(gameOverlayGroup), m_gameOverlayGroup(gameOverlayGroup)
 {
-	gameOverlayGroup->add(m_root.m_widget);
-	m_root.m_widget->setVisible(false);
-	m_root.m_widget->setOrigin(1.0, 0.5);
+	gameOverlayGroup->add(m_root.m_panel);
+	m_root.m_panel->setVisible(false);
 }
 tgui::Color buttonColor{tgui::Color::Blue};
 tgui::Color labelColor{tgui::Color::Black};
 void ContextMenu::draw(Block& block)
 {
-	m_root.m_widget->setVisible(true);
-	m_root.m_widget->setPosition(sf::Mouse::getPosition().x, sf::Mouse::getPosition().y);
-	m_root.m_widget->removeAllWidgets();
+	m_root.m_panel->setVisible(true);
+	m_root.m_panel->setOrigin(1, getOriginYForMousePosition());
+	auto xPosition = std::max(ContextMenuSegment::width, sf::Mouse::getPosition().x);
+	m_root.m_panel->setPosition(xPosition, sf::Mouse::getPosition().y);
+	m_root.m_grid->removeAllWidgets();
 	m_submenus.clear();
+	auto blockInfoButton = tgui::Button::create("location info");
+	m_root.add(blockInfoButton);
+	blockInfoButton->onClick([&]{ m_window.getGameOverlay().drawInfoPopup(block); });
 	//TODO: shift to add to end of work queue.
 	if(block.isSolid())
 	{
@@ -118,14 +120,98 @@ void ContextMenu::draw(Block& block)
 					auto confirm = tgui::Button::create("confirm");
 					confirm->getRenderer()->setBackgroundColor(buttonColor);
 					submenu.add(confirm);
-					confirm->onClick([this, &block, speciesUI, percentGrownUI]{
-						const PlantSpecies& species = PlantSpecies::byName(speciesUI->getSelectedItemId().toStdString());
-						block.m_hasPlant.createPlant(species, percentGrownUI->getValue());
+					confirm->onClick([this, speciesUI, percentGrownUI]{
+						if(!speciesUI->getSelectedItem().empty())
+						{
+							const PlantSpecies& species = PlantSpecies::byName(speciesUI->getSelectedItemId().toStdString());
+							for(Block& block : m_window.getSelectedBlocks())
+								block.m_hasPlant.createPlant(species, percentGrownUI->getValue());
+						}
 						hide();
 					});
 				});
 			}
+			auto addItem = tgui::Label::create("add item");
+			addItem->getRenderer()->setBackgroundColor(buttonColor);
+			m_root.add(addItem);
+			static uint32_t quantity = 1;
+			static uint32_t quality = 0;
+			static uint32_t percentWear = 0;
+			addItem->onMouseEnter([this, &block]{
+				auto& submenu = makeSubmenu(0);
+				auto itemTypeSelectUI = widgetUtil::makeItemTypeSelectUI();
+				submenu.add(itemTypeSelectUI);
+				auto materialTypeSelectUI = widgetUtil::makeMaterialSelectUI();
+				submenu.add(materialTypeSelectUI);
+				std::function<void(const ItemType&)> onSelect = [this, itemTypeSelectUI, materialTypeSelectUI, &block](const ItemType& itemType){
+					if(itemType.generic)
+					{
+						auto& subSubMenu = makeSubmenu(1);
+						auto quantityLabel = tgui::Label::create("quantity");
+						subSubMenu.add(quantityLabel);
+						quantityLabel->getRenderer()->setBackgroundColor(labelColor);
+						auto quantityUI = tgui::SpinControl::create();
+						quantityUI->setMinimum(1);
+						quantityUI->setValue(quantity);
+						quantityUI->onValueChange([](const float value){ quantity = value; });
+						subSubMenu.add(quantityUI);
+						auto confirm = tgui::Button::create("confirm");
+						confirm->getRenderer()->setBackgroundColor(buttonColor);
+						subSubMenu.add(confirm);
+						confirm->onClick([this, itemTypeSelectUI, materialTypeSelectUI]{
+							const MaterialType& materialType = MaterialType::byName(materialTypeSelectUI->getSelectedItemId().toStdString());
+							const ItemType& itemType = ItemType::byName(itemTypeSelectUI->getSelectedItemId().toStdString());
+							for(Block& block : m_window.getSelectedBlocks())
+							{
+								Item& item = m_window.getSimulation()->createItemGeneric(itemType, materialType, quantity);
+								item.setLocation(block);
+							}
+							hide();
+						});
+					}
+					else
+					{
+						auto& subSubMenu = makeSubmenu(1);
+						auto qualityLabel = tgui::Label::create("quality");
+						subSubMenu.add(qualityLabel);
+						qualityLabel->getRenderer()->setBackgroundColor(labelColor);
+						auto qualityUI = tgui::SpinControl::create();
+						qualityUI->setMinimum(1);
+						qualityUI->setValue(quality);
+						qualityUI->onValueChange([](const float value){ quality = value; });
+						subSubMenu.add(qualityUI);
+						auto percentWearLabel = tgui::Label::create("percentWear");
+						subSubMenu.add(percentWearLabel);
+						percentWearLabel->getRenderer()->setBackgroundColor(labelColor);
+						auto percentWearUI = tgui::SpinControl::create();
+						percentWearUI->setMinimum(1);
+						percentWearUI->setValue(percentWear);
+						percentWearUI->onValueChange([](const float value){ percentWear = value; });
+						subSubMenu.add(percentWearUI);
+						auto confirm = tgui::Button::create("confirm");
+						confirm->getRenderer()->setBackgroundColor(buttonColor);
+						subSubMenu.add(confirm);
+						confirm->onClick([this, itemTypeSelectUI, materialTypeSelectUI]{
+							const MaterialType& materialType = MaterialType::byName(materialTypeSelectUI->getSelectedItemId().toStdString());
+							const ItemType& itemType = ItemType::byName(itemTypeSelectUI->getSelectedItemId().toStdString());
+							for(Block& block : m_window.getSelectedBlocks())
+							{
+								Item& item = m_window.getSimulation()->createItemNongeneric(itemType, materialType, quality, percentWear);
+								item.setLocation(block);
+							}
+							hide();
+						});
+					}
+				};
+				itemTypeSelectUI->onItemSelect([onSelect](const tgui::String& value){
+					const ItemType& itemType = ItemType::byName(value.toStdString());
+					onSelect(itemType);
+				});
+				const ItemType& itemType = ItemType::byName(itemTypeSelectUI->getSelectedItemId().toStdString());
+				onSelect(itemType);
+			});
 		}
+		// Orders for selected actors.
 		auto& actors = m_window.getSelectedActors();
 		if(actors.size())
 		{
@@ -234,6 +320,18 @@ void ContextMenu::draw(Block& block)
 				m_root.add(destroy);
 			}
 		}
+		if(block.m_hasPlant.exists())
+		{
+			const Plant& plant = block.m_hasPlant.get();
+			auto label = tgui::Label::create(plant.m_plantSpecies.name);
+			m_root.add(label);
+			label->onMouseEnter([this, &plant]{
+				auto& submenu = makeSubmenu(0);
+				auto info = tgui::Button::create("info");
+				submenu.add(info);
+				info->onClick([this, &plant]{ m_window.getGameOverlay().drawInfoPopup(plant); });
+			});
+		}
 		// Construct.
 		auto constructLabel = tgui::Label::create("construct");
 		constructLabel->getRenderer()->setBackgroundColor(buttonColor);
@@ -245,8 +343,11 @@ void ContextMenu::draw(Block& block)
 			static bool constructed = false;
 			if(m_window.m_editMode)
 			{
+				auto label = tgui::Label::create("constructed");
+				subMenu.add(label);
 				auto constructedUI = tgui::CheckBox::create();
 				subMenu.add(constructedUI);
+				constructedUI->setSize(10, 10);
 				constructedUI->setChecked(constructed);
 				constructedUI->onChange([&](bool value){ constructed = value; });
 			}
@@ -257,7 +358,7 @@ void ContextMenu::draw(Block& block)
 			{
 				auto button = tgui::Button::create(name);
 				subMenu.add(button);
-				button->onClick([this, &block, type, materialTypeSelector]{
+				button->onClick([this, &block, type, materialTypeSelector, button]{
 					const MaterialType& materialType = MaterialType::byName(materialTypeSelector->getSelectedItemId().toStdString());
 					if(m_window.getSelectedBlocks().empty())
 						m_window.selectBlock(block);
@@ -338,22 +439,33 @@ void ContextMenu::draw(Block& block)
 		// Actor details.
 		for(Actor* actor : block.m_hasActors.getAll())
 		{
-			auto details = tgui::Button::create(actor->m_name);
-			details->getRenderer()->setBackgroundColor(buttonColor);
-			m_root.add(details);
-			details->onClick([this, actor]{
-				m_window.showActorDetail(*actor);
-				hide();
-			});
-			details->onMouseEnter([this, actor]{
+			auto label = tgui::Label::create(actor->m_name);
+			label->getRenderer()->setBackgroundColor(buttonColor);
+			m_root.add(label);
+			label->onMouseEnter([this, actor]{
 				auto& submenu = makeSubmenu(0);
-				auto priorities = tgui::Button::create("priorities");
-				priorities->getRenderer()->setBackgroundColor(buttonColor);
-				submenu.add(priorities);
-				priorities->onClick([this, actor]{
-					m_window.showObjectivePriority(*actor);
-					hide();
-				});
+				auto actorInfoButton = tgui::Button::create("info");
+				submenu.add(actorInfoButton);
+				actorInfoButton->onClick([this, actor]{ m_window.getGameOverlay().drawInfoPopup(*actor);});
+				auto actorDetailButton = tgui::Button::create("details");
+				submenu.add(actorDetailButton);
+				actorDetailButton->onClick([this, actor]{ m_window.showActorDetail(*actor); hide(); });
+				if(m_window.m_editMode)
+				{
+					auto actorEditButton = tgui::Button::create("edit");
+					submenu.add(actorEditButton);
+					actorEditButton->onClick([this, actor]{ m_window.showEditActor(*actor); hide(); });
+				}
+				if(m_window.m_editMode || (m_window.getFaction() && m_window.getFaction() == actor->getFaction()))
+				{
+					auto priorities = tgui::Button::create("priorities");
+					priorities->getRenderer()->setBackgroundColor(buttonColor);
+					submenu.add(priorities);
+					priorities->onClick([this, actor]{
+						m_window.showObjectivePriority(*actor);
+						hide();
+					});
+				}
 				if(m_window.m_editMode)
 				{
 					auto destroy = tgui::Button::create("destroy");
@@ -458,14 +570,27 @@ ContextMenuSegment& ContextMenu::makeSubmenu(size_t index)
 	m_submenus.resize(index, {m_gameOverlayGroup});
 	m_submenus.emplace_back(m_gameOverlayGroup);
 	auto& submenu = m_submenus.back();
-	m_gameOverlayGroup->add(submenu.m_widget);
+	m_gameOverlayGroup->add(submenu.m_panel);
 	ContextMenuSegment& previous = index == 0 ? m_root : m_submenus[index - 1];
 	sf::Vector2i pixelPos = sf::Mouse::getPosition();
-	submenu.m_widget->setPosition(tgui::bindRight(previous.m_widget), pixelPos.y);
+	submenu.m_panel->setOrigin(0, getOriginYForMousePosition());
+	submenu.m_panel->setPosition(tgui::bindRight(previous.m_panel), pixelPos.y);
 	return submenu;
 }
 void ContextMenu::hide()
 {
+	m_window.getGameOverlay().unfocusUI();
 	m_submenus.clear();
-	m_root.m_widget->removeAllWidgets();
+	m_root.m_grid->removeAllWidgets();
+	m_root.m_panel->setVisible(false);
+}
+[[nodiscard]] float ContextMenu::getOriginYForMousePosition() const
+{
+	sf::Vector2i pixelPos = sf::Mouse::getPosition();
+	int windowHeight = m_window.getRenderWindow().getSize().y;
+	if(pixelPos.y < ((int)m_window.getRenderWindow().getSize().y / 4))
+		return 0;
+	else if(pixelPos.y > (windowHeight * 3) / 4)
+		return 1;
+	return 0.5;
 }

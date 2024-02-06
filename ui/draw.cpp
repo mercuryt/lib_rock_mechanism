@@ -51,7 +51,7 @@ void Draw::blockFloor(const Block& block)
 					return;
 				}
 			}
-			std::string name = block.isConstructed() ? "blockFloor" : "roughFloor";
+			std::string name = block.getBlockBelow()->isConstructed() ? "blockFloor" : "roughFloor";
 			imageOnBlock(block, "roughFloor", &displayData::materialColors.at(&block.getBlockBelow()->getSolidMaterial()));
 		}
 }
@@ -103,11 +103,13 @@ void Draw::blockWallTops(const Block& block)
 {
 	if(block.isSolid())
 	{
-		const Block* adjacent = block.getBlockNorth();
+		auto adjacentPredicate = [](const Block* adjacent){ 
+			return adjacent && adjacent->m_visible && !adjacent->isSolid() && !adjacent->m_hasBlockFeatures.contains(BlockFeatureType::stairs) && !adjacent->m_hasBlockFeatures.contains(BlockFeatureType::ramp);
+		};
 		float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
 		sf::Color color = displayData::materialColors.at(&block.getSolidMaterial());
 		float offset = displayData::wallTopOffsetRatio * m_window.m_scale;
-		if(adjacent && adjacent->m_visible && !adjacent->isSolid())
+		if(adjacentPredicate(block.getBlockNorth()))
 		{
 			sf::Sprite& sprite = sprites::make(block.isConstructed() ? "blockWallTop" : "roughWallTop");
 			sprite.setRotation(180);
@@ -116,8 +118,7 @@ void Draw::blockWallTops(const Block& block)
 			sprite.setColor(color);
 			m_window.getRenderWindow().draw(sprite);
 		}
-		adjacent = block.getBlockEast();
-		if(adjacent && adjacent->m_visible && !adjacent->isSolid())
+		if(adjacentPredicate(block.getBlockEast()))
 		{
 			sf::Sprite& sprite = sprites::make(block.isConstructed() ? "blockWallTop" : "roughWallTop");
 			sprite.setRotation(270);
@@ -126,8 +127,7 @@ void Draw::blockWallTops(const Block& block)
 			sprite.setColor(color);
 			m_window.getRenderWindow().draw(sprite);
 		}
-		adjacent = block.getBlockWest();
-		if(adjacent && adjacent->m_visible && !adjacent->isSolid())
+		if(adjacentPredicate(block.getBlockWest()))
 		{
 			sf::Sprite& sprite = sprites::make(block.isConstructed() ? "blockWallTop" : "roughWallTop");
 			sprite.setRotation(90);
@@ -136,8 +136,7 @@ void Draw::blockWallTops(const Block& block)
 			sprite.setColor(color);
 			m_window.getRenderWindow().draw(sprite);
 		}
-		adjacent = block.getBlockSouth();
-		if(adjacent && adjacent->m_visible && !adjacent->isSolid())
+		if(adjacentPredicate(block.getBlockSouth()))
 		{
 			sf::Sprite& sprite = sprites::make(block.isConstructed() ? "blockWallTop" : "roughWallTop");
 			sprite.setPosition(static_cast<float>((block.m_x) * m_window.m_scale), static_cast<float>((block.m_y + 1) * m_window.m_scale) - offset);
@@ -195,6 +194,17 @@ void Draw::colorOnBlock(const Block& block, sf::Color color)
 	square.setFillColor(color);
 	square.setPosition(static_cast<float>(block.m_x * m_window.m_scale), static_cast<float>(block.m_y * m_window.m_scale));
 	m_window.getRenderWindow().draw(square);
+}
+void Draw::spriteOnBlockWithScale(const Block& block, sf::Sprite& sprite, float scale, sf::Color* color)
+{
+	// Origin is assumed to already be set.
+	float windowScale = m_window.m_scale;
+	scale = scale * (windowScale / (float)displayData::defaultScale);
+	sprite.setScale(scale, scale);
+	sprite.setPosition(((float)block.m_x + 0.5f) * windowScale, ((float)block.m_y + 0.5f) * windowScale);
+	if(color)
+		sprite.setColor(*color);
+	m_window.getRenderWindow().draw(sprite);
 }
 void Draw::spriteOnBlock(const Block& block, sf::Sprite& sprite, sf::Color* color)
 {
@@ -262,29 +272,34 @@ void Draw::nonGroundCoverPlant(const Block& block)
 	sf::Sprite& sprite = sprites::make(display.image);
 	//TODO: color
 	sprite.setOrigin(scale / 2.f, scale / 1.4f);
-	float scaleRatio = scale / (float)displayData::defaultScale;
-	scaleRatio = util::scaleByPercent(scaleRatio, plant.getGrowthPercent() + 5);
-	sprite.setScale(scaleRatio, scaleRatio);
-	sprite.setPosition(((float)block.m_x + 0.5f) * scale, ((float)block.m_y + 0.5f) * scale);
-	m_window.getRenderWindow().draw(sprite);
+	spriteOnBlockWithScale(block, sprite, (float)plant.getGrowthPercent() / 100.f);
 }
 // Item.
-void Draw::item(const Item& item)
+void Draw::item(const Block& block)
 {
+	if(block.m_hasItems.empty())
+		return;
+	Item& item = *block.m_hasItems.getAll().front();
 	ItemTypeDisplayData& display = displayData::itemData.at(&item.m_itemType);
 	sf::Sprite& sprite = sprites::make(display.image);
+	sprite.setOrigin(m_window.m_scale / 2.f, m_window.m_scale / 1.3f);
 	sprite.setColor(display.color);
-	//TODO: scale.
-	m_window.getRenderWindow().draw(sprite);
+	sf::Color materialColor = displayData::materialColors.at(&item.m_materialType);
+	sprite.setColor(materialColor);
+	spriteOnBlockWithScale(block, sprite, display.scale);
+	if(block.m_hasItems.getAll().size() > 1)
+		stringOnBlock(block, std::to_wstring(block.m_hasItems.getAll().size()), sf::Color::Black);
 }
 // Actor.
 void Draw::singleTileActor(const Actor& actor)
 {
+	Block& block = *actor.m_location;
 	AnimalSpeciesDisplayData& display = displayData::actorData.at(&actor.m_species);
 	sf::Sprite& sprite = sprites::make(display.image);
-	sprite.setColor(display.color);
-	//TODO: scale.
-	spriteOnBlock(*actor.m_location, sprite);
+	//sprite.setColor(display.color);
+	float scale = m_window.m_scale;
+	sprite.setOrigin(scale / 2.f, scale / 1.3f);
+	spriteOnBlockWithScale(block, sprite, (float)actor.m_canGrow.growthPercent() / 90.f);
 }
 void Draw::multiTileActor(const Actor& actor)
 {

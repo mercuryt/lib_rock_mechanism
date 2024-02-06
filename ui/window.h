@@ -1,6 +1,5 @@
 #pragma once
 #include <SFML/Graphics.hpp>
-#include <SFML/Graphics/RenderWindow.hpp>
 #include <TGUI/TGUI.hpp>
 #include <TGUI/Backend/SFML-Graphics.hpp>
 #include <chrono>
@@ -12,6 +11,7 @@
 #include "draw.h"
 #include "editRealityPanel.h"
 #include "editAreaPanel.h"
+#include "editActorPanel.h"
 #include "gameOverlay.h"
 #include "mainMenu.h"
 #include "objectivePriorityPanel.h"
@@ -43,6 +43,7 @@ class Window final
 	ActorView m_actorView;
 	//WorldParamatersView m_worldParamatersView;
 	EditRealityView m_editRealityView;
+	EditActorView m_editActorView;
 	EditAreaView m_editAreaView;
 	std::unique_ptr<Simulation> m_simulation;
 	Area* m_area;
@@ -83,6 +84,7 @@ public:
 	void close() { m_window.close(); }
 	[[nodiscard]] tgui::Gui& getGui() { return m_gui; }
 	[[nodiscard]] sf::RenderWindow& getRenderWindow() { return m_window; }
+	[[nodiscard]] GameOverlay& getGameOverlay() { return m_gameOverlay; }
 	// Show panels.
 	void hideAllPanels();
 	void showMainMenu() { hideAllPanels(); m_mainMenuView.show(); }
@@ -95,6 +97,7 @@ public:
 	void showActorDetail(Actor& actor) { hideAllPanels(); m_actorView.draw(actor); }
 	//void showCreateWorld() { hideAllPanels(); m_worldParamatersView.show(); }
 	void showEditReality() { hideAllPanels(); m_editRealityView.draw(); }
+	void showEditActor(Actor& actor) { hideAllPanels(); m_editActorView.draw(actor); }
 	void showEditArea(Area* area = nullptr) { hideAllPanels(); m_editAreaView.draw(area); }
 	// Select.
 	void deselectAll();
@@ -107,6 +110,7 @@ public:
 	std::unordered_set<Plant*>& getSelectedPlants() { return m_selectedPlants; }
 	std::unordered_set<Actor*>& getSelectedActors() { return m_selectedActors; }
 	[[nodiscard]] Block& getBlockUnderCursor();
+	[[nodiscard]] Block& getBlockAtPosition(sf::Vector2i pixelPos);
 	// Filesystem.
 	void save();
 	void load(std::filesystem::path path);

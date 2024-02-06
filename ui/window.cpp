@@ -1,6 +1,7 @@
 #include "window.h"
 #include "displayData.h"
 #include "sprite.h"
+#include <SFML/Window/Event.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include <TGUI/Widgets/FileDialog.hpp>
 #include <chrono>
@@ -15,7 +16,7 @@ sf::Color selectColor = sf::Color::Yellow;
 Window::Window() : m_window(sf::VideoMode::getDesktopMode(), "Goblin Pit", sf::Style::Fullscreen), m_gui(m_window), m_view(m_window.getDefaultView()), 
 	m_mainMenuView(*this), m_loadView(*this), m_gameOverlay(*this), m_objectivePriorityView(*this), 
 	m_productionView(*this), m_uniformView(*this), m_stocksView(*this), m_actorView(*this), //m_worldParamatersView(*this),
-	m_editRealityView(*this), m_editAreaView(*this), m_area(nullptr), m_scale(32), m_faction(nullptr),
+	m_editRealityView(*this), m_editActorView(*this), m_editAreaView(*this), m_area(nullptr), m_scale(32), m_faction(nullptr),
 	m_minimumMillisecondsPerFrame(200), m_minimumMillisecondsPerStep(200), m_draw(*this),
 	m_simulationThread([&](){
 		while(true)
@@ -78,6 +79,8 @@ void Window::hideAllPanels()
 	m_uniformView.hide();
 	m_editAreaView.hide();
 	m_editRealityView.hide();
+	m_actorView.hide();
+	m_editActorView.hide();
 	//m_worldParamatersView.hide();
 }
 void Window::startLoop()
@@ -156,8 +159,8 @@ void Window::startLoop()
 									m_gameOverlay.closeMenu();
 								else if(m_gameOverlay.contextMenuIsVisible())
 									m_gameOverlay.closeContextMenu();
-								else if(m_gameOverlay.detailPanelIsVisible())
-									m_gameOverlay.closeDetailPanel();
+								else if(m_gameOverlay.infoPopupIsVisible())
+									m_gameOverlay.closeInfoPopup();
 								else if(m_gameOverlay.m_itemBeingInstalled)
 									m_gameOverlay.m_itemBeingInstalled = nullptr;
 								else
@@ -203,12 +206,11 @@ void Window::startLoop()
 				{
 					if(m_area)
 					{
-						Block& block = getBlockUnderCursor();
 						if(event.mouseButton.button == selectMouseButton)
 						{
 							m_gameOverlay.closeContextMenu();
-							m_firstCornerOfSelection = &block;
-							m_positionWhereMouseDragBegan = sf::Mouse::getPosition();
+							m_firstCornerOfSelection = &getBlockAtPosition({event.mouseButton.x, event.mouseButton.y});
+							m_positionWhereMouseDragBegan = {event.mouseButton.x, event.mouseButton.y};
 							//TODO: Additive select.
 							m_selectedBlocks.clear();
 							m_selectedActors.clear();
@@ -340,12 +342,15 @@ void Window::drawView()
 	// Render block walls.
 	for(Block& block : m_area->getZLevel(m_z))
 		m_draw.blockWalls(block);
-	// Render block plants.
-	for(Block& block : m_area->getZLevel(m_z))
-		m_draw.nonGroundCoverPlant(block);
 	// Render block features and fluids.
 	for(Block& block : m_area->getZLevel(m_z))
 		m_draw.blockFeaturesAndFluids(block);
+	// Render block plants.
+	for(Block& block : m_area->getZLevel(m_z))
+		m_draw.nonGroundCoverPlant(block);
+	// Render items.
+	for(Block& block : m_area->getZLevel(m_z))
+		m_draw.item(block);
 	// Render block wall tops.
 	for(Block& block : m_area->getZLevel(m_z))
 		m_draw.blockWallTops(block);
@@ -474,6 +479,10 @@ void Window::selectActor(Actor& actor)
 Block& Window::getBlockUnderCursor()
 {
 	sf::Vector2i pixelPos = sf::Mouse::getPosition(m_window);
+	return getBlockAtPosition(pixelPos);
+}
+Block& Window::getBlockAtPosition(sf::Vector2i pixelPos)
+{
 	sf::Vector2f worldPos = m_window.mapPixelToCoords(pixelPos);
 	uint32_t x = std::max(0.f, worldPos.x + m_view.getCenter().x - m_view.getSize().x / 2);
 	uint32_t y = std::max(0.f, worldPos.y + m_view.getCenter().y - m_view.getSize().y / 2);

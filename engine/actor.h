@@ -43,7 +43,7 @@ public:
 	const ActorId m_id;
 	std::wstring m_name;
 	const AnimalSpecies& m_species;
-	const DateTime m_birthDate;
+	DateTime m_birthDate;
 	bool m_alive;
 	CauseOfDeath m_causeOfDeath;
 	Body m_body;

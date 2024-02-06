@@ -54,12 +54,16 @@ public:
 	}
 	uint32_t getStrength() const { return strength.value; }
 	void addStrengthBonusOrPenalty(int32_t x) { strength.bonusOrPenalty += x; generate(); }
+	void setStrengthBonusOrPenalty(int32_t x) { strength.bonusOrPenalty = x; generate(); }
 	uint32_t getDextarity() const { return dextarity.value; }
 	void addDextarityBonusOrPenalty(uint32_t x) { dextarity.bonusOrPenalty += x; generate(); }
+	void setDextarityBonusOrPenalty(uint32_t x) { dextarity.bonusOrPenalty = x; generate(); }
 	uint32_t getAgility() const { return agility.value; }
 	void addAgilityBonusOrPenalty(uint32_t x) { agility.bonusOrPenalty += x; generate(); }
+	void setAgilityBonusOrPenalty(uint32_t x) { agility.bonusOrPenalty = x; generate(); }
 	Mass getMass() const { return mass.value; }
 	void addMassBonusOrPenalty(uint32_t x) { mass.bonusOrPenalty += x; generate(); }
+	void setMassBonusOrPenalty(uint32_t x) { mass.bonusOrPenalty = x; generate(); }
 	uint32_t getUnencomberedCarryMass() const { return unencomberedCarryMass; }
 	uint32_t getMoveSpeed() const { return moveSpeed; }
 	uint32_t getBaseCombatScore() const { return baseCombatScore; }

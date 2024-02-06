@@ -2,7 +2,7 @@
 #include "window.h"
 #include <TGUI/Widgets/HorizontalLayout.hpp>
 GameOverlay::GameOverlay(Window& w) : m_window(w), 
-	m_group(tgui::Group::create()), m_menu(tgui::Panel::create()), m_detailPanel(w, m_group), m_contextMenu(w, m_group), 
+	m_group(tgui::Group::create()), m_menu(tgui::Panel::create()), m_infoPopup(w), m_contextMenu(w, m_group), 
 	m_x(tgui::Label::create()), m_y(tgui::Label::create()), m_z(tgui::Label::create()), m_paused(tgui::Label::create("paused")),
 	m_itemBeingInstalled(nullptr), m_facing(0) 
 { 
@@ -42,4 +42,11 @@ void GameOverlay::installItem(Block& block)
 	assert(m_itemBeingInstalled);
 	m_window.getArea()->m_hasInstallItemDesignations.at(*m_window.getFaction()).add(block, *m_itemBeingInstalled, m_facing, *m_window.getFaction());
 	m_itemBeingInstalled = nullptr;
+}
+void GameOverlay::unfocusUI()
+{
+	// Find whatever widget has focus and defocus it. Apperently TGUI doesn't defocus widgets when they get destroyed?
+	tgui::Widget::Ptr focused = m_window.getGui().getFocusedChild();
+	if(focused)
+		focused->setFocused(false);
 }

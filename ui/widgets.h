@@ -14,6 +14,7 @@ public:
 	tgui::Grid::Ptr m_widget;
 	DateTimeUI();
 	DateTimeUI(uint8_t hours, uint8_t days, uint8_t years);
+	DateTimeUI(DateTime& dateTime) { set(dateTime); }
 	void set(DateTime& dateTime);
 	void set(DateTime&& dateTime);
 	DateTime get() const;
@@ -41,5 +42,7 @@ namespace widgetUtil
 	tgui::ComboBox::Ptr makeAnimalSpeciesSelectUI();
 	inline const FluidType* lastSelectedFluidType = nullptr;
 	tgui::ComboBox::Ptr makeFluidTypeSelectUI();
+	inline const ItemType* lastSelectedItemType = nullptr;
+	tgui::ComboBox::Ptr makeItemTypeSelectUI();
 	void setPadding(tgui::Widget::Ptr wigdet);
 }

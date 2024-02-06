@@ -6,14 +6,14 @@ class Actor;
 class ObjectivePriorityView final
 {
 	Window& m_window;
-	tgui::Group::Ptr m_group;
+	tgui::Panel::Ptr m_panel;
+	tgui::Label::Ptr m_title;
 	tgui::Grid::Ptr m_grid;
-	tgui::Label::Ptr m_actorName;
+	std::map<ObjectiveTypeId, tgui::SpinControl::Ptr> m_spinControls;
 	Actor* m_actor;
-	std::map<ObjectiveTypeId, tgui::SpinButton::Ptr> m_spinButtons;
 public:
 	ObjectivePriorityView(Window& w);
 	void draw(Actor& actor);
-	void show() { m_group->setVisible(true); }
-	void hide() { m_group->setVisible(false); }
+	void show() { m_panel->setVisible(true); }
+	void hide() { m_panel->setVisible(false); }
 };
