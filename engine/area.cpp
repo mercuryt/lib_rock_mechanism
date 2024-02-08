@@ -24,6 +24,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_sizeX(data["sizeX"].get<uint32_t>()), m_sizeY(data["sizeY"].get<uint32_t>()), m_sizeZ(data["sizeZ"].get<uint32_t>()), 
 	m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_hasRain(*this), m_visionCuboidsActive(false)
 {
+	m_simulation.m_areasById[m_id] = this;
 	setup();
 	// Load blocks.
 	for(const Json& blockData : data["blocks"])
@@ -73,7 +74,7 @@ Json Area::toJson() const
 	Json data{
 		{"id", m_id}, {"name", m_name}, {"sizeX", m_sizeX}, {"sizeY", m_sizeY}, {"sizeZ", m_sizeZ}, 
 		{"actors", Json::array()}, {"items", Json::array()}, {"blocks", Json::array()},
-		{"plants", Json::array()}, {"fluidSources", m_fluidSources.toJson()}
+		{"plants", Json::array()}, {"fluidSources", m_fluidSources.toJson()}, {"fires", m_fires.toJson()}
 	};
 	std::unordered_set<Item*> items;
 	for(const Block& block : m_blocks)

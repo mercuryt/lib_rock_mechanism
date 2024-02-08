@@ -1,30 +1,28 @@
 #include "actorPanel.h"
 #include "window.h"
 #include "../engine/actor.h"
+#include <TGUI/Widgets/ScrollablePanel.hpp>
+#include <TGUI/Widgets/VerticalLayout.hpp>
+#include <regex>
 #include <string>
-ActorView::ActorView(Window& window) : m_window(window), m_actor(nullptr)
+ActorView::ActorView(Window& window) : m_window(window), m_panel(tgui::ScrollablePanel::create()), m_actor(nullptr)
 {
 	m_window.getGui().add(m_panel);
 	m_panel->setVisible(false);
 }
 void ActorView::draw(Actor& actor)
 {
-	m_panel->removeAllWidgets();
 	m_actor = &actor;
-	auto layout = tgui::Grid::create();
-	uint count = 0;
-	m_panel->add(layout);
-	layout->addWidget(tgui::Label::create("Actor Details"), ++count, 1);
-	auto basicInfoGrid = tgui::Grid::create();
-	layout->addWidget(basicInfoGrid, ++count, 1);
-	basicInfoGrid->addWidget(tgui::Label::create("name"), 1, 1);
-	basicInfoGrid->addWidget(tgui::Label::create(actor.m_name), 1, 2);
-	basicInfoGrid->addWidget(tgui::Label::create("age"), 2, 1);
-	basicInfoGrid->addWidget(tgui::Label::create(std::to_string(actor.getAgeInYears())), 2, 2);
+	m_panel->removeAllWidgets();
+	auto layout = tgui::VerticalLayout::create();
+	layout->setPosition("5%", "5%");
+	layout->setSize("90%", "90%");
+	layout->add(tgui::Label::create("Actor Details"));
+	layout->add(tgui::Label::create(L"name: " + actor.m_name));
+	layout->add(tgui::Label::create("age : " + std::to_string(actor.getAgeInYears())));
 	// Attributes.
-	layout->addWidget(tgui::Label::create("attributes"), ++count, 1);
+	layout->add(tgui::Label::create("attributes"));
 	auto attributesGrid = tgui::Grid::create();
-	layout->addWidget(attributesGrid, ++count, 1);
 	attributesGrid->addWidget(tgui::Label::create("strength"), 1, 1);
 	attributesGrid->addWidget(tgui::Label::create(std::to_string(m_actor->m_attributes.getStrength())), 2, 1);
 	attributesGrid->addWidget(tgui::Label::create("dextarity"), 1, 2);
@@ -37,14 +35,12 @@ void ActorView::draw(Actor& actor)
 	attributesGrid->addWidget(tgui::Label::create(std::to_string(m_actor->m_attributes.getMoveSpeed())), 2, 5);
 	attributesGrid->addWidget(tgui::Label::create("base combat score"), 1, 6);
 	attributesGrid->addWidget(tgui::Label::create(std::to_string(m_actor->m_attributes.getBaseCombatScore())), 3, 6);
+	layout->add(attributesGrid);
 	// Skills.
 	if(!m_actor->m_skillSet.m_skills.empty())
 	{
-		layout->addWidget(tgui::Label::create("skills"), ++count, 1);
+		layout->add(tgui::Label::create("skills"));
 		auto skillsGrid = tgui::Grid::create();
-		auto scrollable = tgui::ScrollablePanel::create();
-		scrollable->add(skillsGrid);
-		layout->addWidget(scrollable, ++count, 1);
 		uint32_t skillColumn = 2;
 		skillsGrid->addWidget(tgui::Label::create("name"), 1, 1);
 		skillsGrid->addWidget(tgui::Label::create("level"), 2, 1);
@@ -57,17 +53,14 @@ void ActorView::draw(Actor& actor)
 			skillsGrid->addWidget(tgui::Label::create(xpText), 3, skillColumn);
 			++skillColumn;
 		}
+		layout->add(skillsGrid);
 	}
 	// Equipment.
 	if(!m_actor->m_equipmentSet.getAll().empty())
 	{
-		layout->addWidget(tgui::Label::create("equipment"), ++count, 1);
-		auto scrollable = tgui::ScrollablePanel::create();
+		layout->add(tgui::Label::create("equipment"));
 		auto equipmentGrid = tgui::Grid::create();
-		scrollable->add(equipmentGrid);
-		layout->addWidget(scrollable, ++count,  1);
 		auto uniformUI = tgui::ComboBox::create();
-		layout->addWidget(uniformUI, ++count,  1);
 		equipmentGrid->addWidget(tgui::Label::create("no equipment"), 1, 1);
 		equipmentGrid->addWidget(tgui::Label::create("type"), 1, 1);
 		equipmentGrid->addWidget(tgui::Label::create("material"), 2, 1);
@@ -89,11 +82,13 @@ void ActorView::draw(Actor& actor)
 				equipmentGrid->addWidget(tgui::Label::create(item->m_name), 6, column);
 			++column;
 		}
+		layout->add(equipmentGrid);
+		layout->add(uniformUI);
 	}
 	if(m_actor->getFaction())
 	{
 		auto uniformUI = tgui::ComboBox::create();
-		layout->addWidget(uniformUI, ++count, 1);
+		layout->add(uniformUI);
 		for(auto& pair : m_window.getSimulation()->m_hasUniforms.at(*m_window.getFaction()).getAll())
 			uniformUI->addItem(pair.first);
 		if(actor.m_hasUniform.exists())
@@ -108,12 +103,8 @@ void ActorView::draw(Actor& actor)
 	// Wounds.
 	if(!m_actor->m_body.getAllWounds().empty())
 	{
-		layout->addWidget(tgui::Label::create("wounds"), ++count, 1);
-		auto scrollable = tgui::ScrollablePanel::create();
+		layout->add(tgui::Label::create("wounds"));
 		auto woundsGrid = tgui::Grid::create();
-		scrollable->add(woundsGrid);
-		layout->addWidget(scrollable, ++count, 1);
-		woundsGrid->setWidth("100%");
 		woundsGrid->addWidget(tgui::Label::create("body part"), 1, 1);
 		woundsGrid->addWidget(tgui::Label::create("area"), 2, 1);
 		woundsGrid->addWidget(tgui::Label::create("depth"), 3, 1);
@@ -126,14 +117,16 @@ void ActorView::draw(Actor& actor)
 			woundsGrid->addWidget(tgui::Label::create(std::to_string(wound->hit.depth)), 3, ++woundCount);
 			woundsGrid->addWidget(tgui::Label::create(std::to_string(wound->bleedVolumeRate)), 4, ++woundCount);
 		}
+		layout->add(woundsGrid);
 	}
 	// Objective priority button.
 	auto showObjectivePriority = tgui::Button::create("priorities");
-	layout->addWidget(showObjectivePriority, ++count, 1);
+	layout->add(showObjectivePriority);
 	showObjectivePriority->onClick([&]{ m_window.showObjectivePriority(*m_actor); });
 	// Close button.
 	auto close = tgui::Button::create("close");
-	layout->addWidget(close, ++count, 1);
+	layout->add(close);
 	close->onClick([&]{ m_window.showGame(); });
+	m_panel->add(layout);
 	show();
 }

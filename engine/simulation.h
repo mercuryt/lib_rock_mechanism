@@ -25,13 +25,14 @@ class HourlyEvent;
 class Simulation final
 {
 	AreaId m_nextAreaId;
-	std::unordered_map<AreaId, Area*> m_areasById;
 	std::future<void> m_stepFuture;
 public:
+	std::unordered_map<AreaId, Area*> m_areasById;
 	BS::thread_pool_light m_pool;
 	std::vector<std::future<void>> m_taskFutures;
 	std::mutex m_uiReadMutex;
 	std::wstring m_name;
+	std::filesystem::path m_path;
 	Step m_step;
 	DateTime m_now;
 	ActorId m_nextActorId;
@@ -54,7 +55,7 @@ public:
 	Json toJson() const;
 	void doStep();
 	void incrementHour();
-	void save(std::filesystem::path path);
+	void save();
 	void loadAreas(const Json& data, std::filesystem::path path);
 	//TODO: latitude, longitude, altitude.
 	Area& createArea(uint32_t x, uint32_t y, uint32_t z);
@@ -76,10 +77,11 @@ public:
 	Area& loadAreaFromJson(const Json& data);
 	Item& loadItemFromJson(const Json& data, DeserializationMemo& deserializationMemo);
 	Actor& loadActorFromJson(const Json& data, DeserializationMemo& deserializationMemo);
-	Block& getBlockForJsonQuery(const Json& data);
-	Actor& getActorById(ActorId id);
-	Item& getItemById(ItemId id);
-	Area& getAreaById(AreaId id) const {return *m_areasById.at(id); }
+	[[nodiscard]] Block& getBlockForJsonQuery(const Json& data);
+	[[nodiscard]] Actor& getActorById(ActorId id);
+	[[nodiscard]] Item& getItemById(ItemId id);
+	[[nodiscard]] Area& getAreaById(AreaId id) const {return *m_areasById.at(id); }
+	[[nodiscard]] std::filesystem::path getPath() const  { return m_path; }
 	~Simulation();
 	// For testing.
 	[[maybe_unused]] void setDateTime(DateTime now);

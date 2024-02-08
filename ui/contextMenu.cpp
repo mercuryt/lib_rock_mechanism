@@ -86,19 +86,147 @@ void ContextMenu::draw(Block& block)
 	}
 	else
 	{
+		// Actor submenu.
+		for(Actor* actor : block.m_hasActors.getAll())
+		{
+			auto label = tgui::Label::create(actor->m_name);
+			label->getRenderer()->setBackgroundColor(buttonColor);
+			m_root.add(label);
+			label->onMouseEnter([this, actor]{
+				auto& submenu = makeSubmenu(0);
+				auto actorInfoButton = tgui::Button::create("info");
+				submenu.add(actorInfoButton);
+				actorInfoButton->onClick([this, actor]{ m_window.getGameOverlay().drawInfoPopup(*actor);});
+				auto actorDetailButton = tgui::Button::create("details");
+				submenu.add(actorDetailButton);
+				actorDetailButton->onClick([this, actor]{ m_window.showActorDetail(*actor); hide(); });
+				if(m_window.m_editMode)
+				{
+					auto actorEditButton = tgui::Button::create("edit");
+					submenu.add(actorEditButton);
+					actorEditButton->onClick([this, actor]{ m_window.showEditActor(*actor); hide(); });
+				}
+				if(m_window.m_editMode || (m_window.getFaction() && m_window.getFaction() == actor->getFaction()))
+				{
+					auto priorities = tgui::Button::create("priorities");
+					priorities->getRenderer()->setBackgroundColor(buttonColor);
+					submenu.add(priorities);
+					priorities->onClick([this, actor]{
+						m_window.showObjectivePriority(*actor);
+						hide();
+					});
+				}
+				if(m_window.m_editMode)
+				{
+					auto destroy = tgui::Button::create("destroy");
+					destroy->getRenderer()->setBackgroundColor(buttonColor);
+					destroy->onClick([this, actor]{ m_window.getSimulation()->destroyActor(*actor);});
+					submenu.add(destroy);
+				}
+				auto& actors = m_window.getSelectedActors();
+				if(!actors.empty() && (m_window.m_editMode || m_window.getFaction() != actor->getFaction()))
+				{
+					tgui::Button::Ptr kill = tgui::Button::create("kill");
+					submenu.add(kill);
+					kill->onClick([this, actor, &actors]{
+						for(Actor* selectedActor : actors)
+						{
+							std::unique_ptr<Objective> objective = std::make_unique<KillObjective>(*selectedActor, *actor);
+							selectedActor->m_hasObjectives.replaceTasks(std::move(objective));
+						}
+						hide();
+					});
+				}
+			});
+		}
+		// Plant submenu.
+		if(block.m_hasPlant.exists())
+		{
+			auto label = tgui::Label::create(block.m_hasPlant.get().m_plantSpecies.name);
+			label->getRenderer()->setBackgroundColor(buttonColor);
+			m_root.add(label);
+			label->onMouseEnter([this, &block]{
+				auto& submenu = makeSubmenu(0);
+				auto infoButton = tgui::Button::create("info");
+				submenu.add(infoButton);
+				infoButton->onClick([this, &block]{ m_window.getGameOverlay().drawInfoPopup(block);});
+				auto cutDown = tgui::Button::create("cut down");
+				submenu.add(cutDown);
+				cutDown->onClick([this, &block]{ m_window.getArea()->m_hasWoodCuttingDesignations.designate(*m_window.getFaction(), block); });
+				if(m_window.m_editMode)
+				{
+					auto removePlant = tgui::Button::create("remove " + block.m_hasPlant.get().m_plantSpecies.name);
+					removePlant->onClick([this, &block]{
+						block.m_hasPlant.erase();
+						hide();
+					});
+					submenu.add(removePlant);
+				}
+			});
+		}
+		// Item submenu.
+		if(!block.m_hasItems.empty())
+			for(Item* item : block.m_hasItems.getAll())
+			{
+				auto label = tgui::Label::create(m_window.displayNameForItem(*item));
+				m_root.add(label);
+				label->onMouseEnter([this, item]{
+					auto& submenu = makeSubmenu(0);
+					auto info = tgui::Button::create("info");
+					submenu.add(info);
+					info->onClick([this, item]{ m_window.getGameOverlay().drawInfoPopup(*item); });
+					if(m_window.getFaction())
+					{
+						bool marked = item->m_canBeStockPiled.contains(*m_window.getFaction());
+						auto stockpileUI = tgui::Button::create(marked ? "do not stockpile" : "stockpile");
+						stockpileUI->onClick([item, marked, this]{ 
+							if(marked) 
+								item->m_canBeStockPiled.unset(*m_window.getFaction());
+							else
+								item->m_canBeStockPiled.set(*m_window.getFaction());
+							hide();
+						});
+					}
+					if(!m_window.getSelectedActors().empty())
+					{
+						//TODO: targeted haul, installation , stockpile
+					}
+					if(m_window.m_editMode)
+					{
+						auto destroy = tgui::Button::create("destroy");
+						submenu.add(destroy);
+						destroy->onClick([item]{ item->destroy(); });
+					}
+					auto& actors = m_window.getSelectedActors();
+					if(actors.size() == 1)
+					{
+						Actor& actor = **actors.begin();
+						// Equip.
+						if(actor.m_equipmentSet.canEquipCurrently(*item))
+						{
+							ItemQuery query(*item);
+							auto button = tgui::Button::create(m_window.displayNameForItem(*item));
+							button->getRenderer()->setBackgroundColor(buttonColor);
+							submenu.add(button);
+							button->onClick([this, &actor, query] () mutable {
+								std::unique_ptr<Objective> objective = std::make_unique<EquipItemObjective>(actor, query);
+								actor.m_hasObjectives.replaceTasks(std::move(objective));
+								hide();
+							});
+						}
+					}
+					if(m_window.getFaction())
+					{
+						auto installAt = tgui::Button::create("install at...");
+						installAt->getRenderer()->setBackgroundColor(buttonColor);
+						submenu.add(installAt);
+						installAt->onClick([this, item]{ m_window.setItemToInstall(*item); hide(); });
+					}
+				});
+			}
 		if(m_window.m_editMode)
 		{
-			if(block.m_hasPlant.exists())
-			{
-				auto removePlant = tgui::Button::create("remove " + block.m_hasPlant.get().m_plantSpecies.name);
-				removePlant->getRenderer()->setBackgroundColor(buttonColor);
-				removePlant->onClick([this, &block]{
-					block.m_hasPlant.erase();
-					hide();
-				});
-				m_root.add(removePlant);
-			}
-			else if(block.getBlockBelow() && block.getBlockBelow()->isSolid())
+			if(block.m_hasPlant.anythingCanGrowHereEver())
 			{
 				auto addPlant = tgui::Label::create("add plant");
 				addPlant->getRenderer()->setBackgroundColor(buttonColor);
@@ -239,45 +367,6 @@ void ContextMenu::draw(Block& block)
 				}
 				hide();
 			});
-			// Kill.
-			for(Actor* otherActor : block.m_hasActors.getAll())
-			{
-				const Faction* faction = m_window.getFaction();
-				const Faction* otherFaction = otherActor->getFaction();
-				if(!otherFaction || !faction || faction->enemies.contains(const_cast<Faction*>(otherFaction)))
-				{
-					tgui::Button::Ptr kill = tgui::Button::create("kill");
-					kill->getRenderer()->setBackgroundColor(buttonColor);
-					m_root.add(kill);
-					kill->onClick([this, otherActor]{
-						for(Actor* actor : m_window.getSelectedActors())
-						{
-							std::unique_ptr<Objective> objective = std::make_unique<KillObjective>(*actor, *otherActor);
-							actor->m_hasObjectives.replaceTasks(std::move(objective));
-						}
-						hide();
-					});
-				}
-				//TODO: follow objective, attack move, targeted haul.
-			}
-			if(actors.size() == 1)
-			{
-				Actor& actor = **actors.begin();
-				// Equip.
-				for(Item* item : block.m_hasItems.getAll())
-					if(actor.m_equipmentSet.canEquipCurrently(*item))
-					{
-						ItemQuery query(*item);
-						auto button = tgui::Button::create(m_window.displayNameForItem(*item));
-						button->getRenderer()->setBackgroundColor(buttonColor);
-						m_root.add(button);
-						button->onClick([this, &actor, query] () mutable {
-							std::unique_ptr<Objective> objective = std::make_unique<EquipItemObjective>(actor, query);
-							actor.m_hasObjectives.replaceTasks(std::move(objective));
-							hide();
-						});
-					}
-			}
 		}
 		// Items.
 		auto items = m_window.getSelectedItems();
@@ -304,20 +393,6 @@ void ContextMenu::draw(Block& block)
 					}
 				});
 				// TODO: targeted haul.
-			}
-		}
-		for(Item* item : block.m_hasItems.getAll())
-		{
-			auto name = m_window.displayNameForItem(*item);
-			auto button = tgui::Button::create(name + L" install at...");
-			button->getRenderer()->setBackgroundColor(buttonColor);
-			m_root.add(button);
-			button->onClick([this, item]{ m_window.setItemToInstall(*item); hide(); });
-			if(m_window.m_editMode)
-			{
-				auto destroy = tgui::Button::create(name + L" destroy");
-				destroy->onClick([item]{ item->destroy(); });
-				m_root.add(destroy);
 			}
 		}
 		if(block.m_hasPlant.exists())
@@ -434,45 +509,6 @@ void ContextMenu::draw(Block& block)
 					fieldsForFaction.setSpecies(field, PlantSpecies::byName(name.toStdString()));
 					hide();
 				});
-			});
-		}
-		// Actor details.
-		for(Actor* actor : block.m_hasActors.getAll())
-		{
-			auto label = tgui::Label::create(actor->m_name);
-			label->getRenderer()->setBackgroundColor(buttonColor);
-			m_root.add(label);
-			label->onMouseEnter([this, actor]{
-				auto& submenu = makeSubmenu(0);
-				auto actorInfoButton = tgui::Button::create("info");
-				submenu.add(actorInfoButton);
-				actorInfoButton->onClick([this, actor]{ m_window.getGameOverlay().drawInfoPopup(*actor);});
-				auto actorDetailButton = tgui::Button::create("details");
-				submenu.add(actorDetailButton);
-				actorDetailButton->onClick([this, actor]{ m_window.showActorDetail(*actor); hide(); });
-				if(m_window.m_editMode)
-				{
-					auto actorEditButton = tgui::Button::create("edit");
-					submenu.add(actorEditButton);
-					actorEditButton->onClick([this, actor]{ m_window.showEditActor(*actor); hide(); });
-				}
-				if(m_window.m_editMode || (m_window.getFaction() && m_window.getFaction() == actor->getFaction()))
-				{
-					auto priorities = tgui::Button::create("priorities");
-					priorities->getRenderer()->setBackgroundColor(buttonColor);
-					submenu.add(priorities);
-					priorities->onClick([this, actor]{
-						m_window.showObjectivePriority(*actor);
-						hide();
-					});
-				}
-				if(m_window.m_editMode)
-				{
-					auto destroy = tgui::Button::create("destroy");
-					destroy->getRenderer()->setBackgroundColor(buttonColor);
-					destroy->onClick([this, actor]{ m_window.getSimulation()->destroyActor(*actor);});
-					submenu.add(destroy);
-				}
 			});
 		}
 		if(m_window.m_editMode)

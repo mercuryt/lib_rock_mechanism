@@ -21,6 +21,6 @@ public:
 	void display(Item& item);
 	void display(Plant& plant);
 	void display(Actor& actor);
-	void hide() { m_childWindow->setVisible(false); }
-	bool isVisible() const { return m_childWindow->isVisible(); }
+	void hide();
+	bool isVisible() const;
 };

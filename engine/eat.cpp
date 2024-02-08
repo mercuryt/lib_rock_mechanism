@@ -336,8 +336,10 @@ MustEat::MustEat(Actor& a) : m_actor(a), m_massFoodRequested(0), m_hungerEvent(a
 }
 MustEat::MustEat(const Json& data, Actor& a) : 
 	m_actor(a), m_massFoodRequested(data["massFoodRequested"].get<Mass>()),
-	m_hungerEvent(a.getEventSchedule()), m_eatObjective(nullptr), m_eatingLocation(&a.getSimulation().getBlockForJsonQuery(data["eatingLocation"]))
+	m_hungerEvent(a.getEventSchedule()), m_eatObjective(nullptr)
 {
+	if(data.contains("eatingLocation"))
+		m_eatingLocation = &m_actor.getSimulation().getBlockForJsonQuery(data["eatingLocation"]);
 	if(data.contains("hungerEventStart"))
 		m_hungerEvent.schedule(m_actor.m_species.stepsEatFrequency, m_actor, data["hungerEventStart"].get<Step>());
 }
@@ -345,7 +347,8 @@ Json MustEat::toJson() const
 {
 	Json data;
 	data["massFoodRequested"] = m_massFoodRequested;
-	data["eatingLocation"] = m_eatingLocation->positionToJson();
+	if(m_eatingLocation)
+		data["eatingLocation"] = m_eatingLocation->positionToJson();
 	data["hungerEventStart"] = m_hungerEvent.getStartStep();
 	return data;
 }

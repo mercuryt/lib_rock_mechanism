@@ -22,6 +22,7 @@ DateTimeUI::DateTimeUI(uint8_t hours,uint8_t days, uint8_t years) : m_hours(tgui
 	m_years->setValue(years);
 }
 DateTimeUI::DateTimeUI() : DateTimeUI(1,1,1) { }
+DateTimeUI::DateTimeUI(DateTime& dateTime) : DateTimeUI(dateTime.hour, dateTime.day, dateTime.year) { }
 void DateTimeUI::set(DateTime& dateTime)
 {
 	m_hours->setValue(dateTime.hour);

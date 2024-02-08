@@ -73,7 +73,7 @@ void Window::hideAllPanels()
 {
 	m_mainMenuView.hide();
 	m_gameOverlay.hide();
-	m_loadView.hide();
+	m_loadView.close();
 	m_objectivePriorityView.hide();
 	m_productionView.hide();
 	m_uniformView.hide();
@@ -149,7 +149,7 @@ void Window::startLoop()
 								m_simulation->doStep();
 							break;
 						case sf::Keyboard::Space:
-							if(m_gameOverlay.isVisible())
+							if(m_gameOverlay.isVisible() && !m_gameOverlay.menuIsVisible())
 								setPaused(!m_paused);
 							break;
 						case sf::Keyboard::Escape:
@@ -411,16 +411,15 @@ void Window::drawView()
 void Window::save()
 {
 	assert(m_simulation);
-	m_simulation->save(m_path);
+	m_simulation->save();
 	const Json povData = povToJson();
-	std::ofstream file(m_path/"pov.json");
+	std::ofstream file(m_simulation->getPath()/"pov.json" );
 	file << povData;
 }
 void Window::load(std::filesystem::path path)
 {
-	m_path = path;
-	m_simulation = std::make_unique<Simulation>(m_path);
-	std::ifstream af(m_path/"pov.json");
+	m_simulation = std::make_unique<Simulation>(path);
+	std::ifstream af(m_simulation->getPath()/"pov.json");
 	Json povData = Json::parse(af);
 	povFromJson(povData);
 	showGame();
@@ -507,7 +506,7 @@ std::chrono::milliseconds Window::msSinceEpoch()
 	auto duration = std::chrono::system_clock::now().time_since_epoch();
 	return std::chrono::duration_cast<std::chrono::milliseconds>(duration);
 }
-std::wstring Window::displayNameForItem(Item& item)
+std::wstring Window::displayNameForItem(const Item& item)
 {
 	std::wstring output;
 	if(!item.m_name.empty())

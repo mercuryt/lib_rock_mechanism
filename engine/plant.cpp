@@ -33,7 +33,7 @@ Plant::Plant(Block& location, const PlantSpecies& pt, const Shape* shape, Percen
 }
 Plant::Plant(const Json& data, DeserializationMemo& deserializationMemo, Block& location) :
 	HasShape(data, deserializationMemo), 
-	m_fluidSource(&deserializationMemo.blockReference(data["fluidSource"])), m_plantSpecies(*data["species"].get<const PlantSpecies*>()),
+	m_fluidSource(nullptr), m_plantSpecies(*data["species"].get<const PlantSpecies*>()),
 	m_growthEvent(location.m_area->m_simulation.m_eventSchedule), m_shapeGrowthEvent(location.m_area->m_simulation.m_eventSchedule), 
 	m_fluidEvent(location.m_area->m_simulation.m_eventSchedule), m_temperatureEvent(location.m_area->m_simulation.m_eventSchedule),
        	m_endOfHarvestEvent(location.m_area->m_simulation.m_eventSchedule), m_foliageGrowthEvent(location.m_area->m_simulation.m_eventSchedule), 
@@ -41,6 +41,8 @@ Plant::Plant(const Json& data, DeserializationMemo& deserializationMemo, Block& 
 	m_quantityToHarvest(data["harvestableQuantity"].get<uint32_t>()), m_percentFoliage(data["percentFoliage"].get<Percent>()), 
 	m_reservable(1), m_volumeFluidRequested(data["volumeFluidRequested"].get<Volume>())
 {
+	if(data.contains("fluidSource"))
+		m_fluidSource = &deserializationMemo.blockReference(data["fluidSource"]);
 	if(data.contains("growthEventStart"))
 		m_growthEvent.schedule(data["growthEventDuration"].get<Step>(), *this, data["growthEventStart"].get<Step>());
 	if(data.contains("fluidEventStart"))
@@ -57,7 +59,8 @@ Plant::Plant(const Json& data, DeserializationMemo& deserializationMemo) : Plant
 Json Plant::toJson() const
 {
 	Json data = HasShape::toJson();
-	data["fluidSource"] = m_fluidSource;
+	if(m_fluidSource)
+		data["fluidSource"] = m_fluidSource;
 	data["species"] = m_plantSpecies;
 	data["percentGrown"] = getGrowthPercent();
 	data["harvestableQuantity"] = m_quantityToHarvest;
@@ -185,7 +188,7 @@ void Plant::setQuantityToHarvest()
 }
 void Plant::harvest(uint32_t quantity)
 {
-	assert(quantity >= m_quantityToHarvest);
+	assert(quantity <= m_quantityToHarvest);
 	m_quantityToHarvest -= quantity;
 	if(m_quantityToHarvest == 0)
 		endOfHarvest();

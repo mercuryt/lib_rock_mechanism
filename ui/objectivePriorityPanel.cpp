@@ -2,6 +2,7 @@
 #include "window.h"
 #include "../engine/actor.h"
 #include "../engine/objectiveTypeInstances.h"
+#include <TGUI/Layout.hpp>
 ObjectivePriorityView::ObjectivePriorityView(Window& w) : m_window(w), m_panel(tgui::Panel::create()), m_title(tgui::Label::create()), m_grid(tgui::Grid::create()), m_actor(nullptr)
 {
 	m_window.getGui().add(m_panel);
@@ -23,9 +24,11 @@ ObjectivePriorityView::ObjectivePriorityView(Window& w) : m_window(w), m_panel(t
 		++row;
 	}
 	auto close = tgui::Button::create("close");
+	close->setPosition(10, tgui::bindBottom(m_grid) + 10);
 	m_panel->add(close);
 	close->onClick([this]{ m_window.showGame(); });
 	auto details = tgui::Button::create("details");
+	details->setPosition(tgui::bindRight(close) + 10, tgui::bindBottom(m_grid) + 10);
 	m_panel->add(details);
 	details->onClick([this]{ m_window.showActorDetail(*m_actor); });
 }

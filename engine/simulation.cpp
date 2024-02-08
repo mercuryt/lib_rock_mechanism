@@ -9,12 +9,14 @@
 #include "util.h"
 //#include "worldforge/world.h"
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 Simulation::Simulation(std::wstring name, DateTime n, Step s) :  m_nextAreaId(1), m_name(name), m_step(s), m_now(n), m_nextActorId(1), m_nextItemId(1), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this)
 { 
 	m_hourlyEvent.schedule(*this);
+	m_path.append(L"save/"+name);
 }
-Simulation::Simulation(std::filesystem::path path) : m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this) 
+Simulation::Simulation(std::filesystem::path path) : m_path(path), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this) 
 {
 	std::ifstream simulationFile(path/"simulation.json");
 	const Json& data = Json::parse(simulationFile);
@@ -72,13 +74,15 @@ void Simulation::incrementHour()
 	}
 	m_hourlyEvent.schedule(*this);
 }
-void Simulation::save(std::filesystem::path path)
+void Simulation::save()
 {
-	std::ofstream f(path/"simulation.json");
+	std::filesystem::create_directory(m_path);
+	std::ofstream f(m_path/"simulation.json");
 	f << toJson();
+	std::filesystem::create_directory(m_path/"area");
 	for(Area& area : m_areas)
 	{
-		std::ofstream af(path/"area"/(std::to_string(area.m_id) + ".json"));
+		std::ofstream af(m_path/"area"/(std::to_string(area.m_id) + ".json"));
 		af << area.toJson();
 	}
 }
@@ -287,6 +291,10 @@ Json Simulation::toJson() const
 	output["now"] = m_now;
 	output["nextActorId"] = m_nextActorId;
 	output["nextItemId"] = m_nextItemId;
+	output["nextAreaId"] = m_nextAreaId;
+	output["areaIds"] = Json::array();
+	for(const Area& area : m_areas)
+		output["areaIds"].push_back(area.m_id);
 	return output;
 }
 Area& Simulation::loadAreaFromJson(const Json& data)
@@ -294,7 +302,6 @@ Area& Simulation::loadAreaFromJson(const Json& data)
 	//TODO: embed data in structure with factions to allow json pointer access.
 	DeserializationMemo deserializationMemo(*this);
 	m_areas.emplace_back(data, deserializationMemo, *this);
-	m_areasById[m_areas.back().m_id] = &m_areas.back();
 	return m_areas.back();
 }
 Item& Simulation::loadItemFromJson(const Json& data, DeserializationMemo& deserializationMemo)

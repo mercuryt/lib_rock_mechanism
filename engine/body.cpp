@@ -62,7 +62,7 @@ Json BodyPart::toJson() const
 		data["wounds"].push_back(wound.toJson());
 	return data;
 }
-Body::Body(Actor& a) :  m_actor(a), m_totalVolume(0), m_impairMovePercent(0), m_impairManipulationPercent(0), m_isBleeding(false), m_bleedEvent(a.getEventSchedule()), m_woundsCloseEvent(a.getEventSchedule())
+Body::Body(Actor& a) :  m_actor(a), m_materialType(&a.m_species.materialType), m_totalVolume(0), m_impairMovePercent(0), m_impairManipulationPercent(0), m_isBleeding(false), m_bleedEvent(a.getEventSchedule()), m_woundsCloseEvent(a.getEventSchedule())
 {
 	for(const BodyPartType* bodyPartType : m_actor.m_species.bodyType.bodyPartTypes)
 	{

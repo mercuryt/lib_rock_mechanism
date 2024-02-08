@@ -5,7 +5,7 @@ class Actor;
 class ActorView final
 {
 	Window& m_window;
-	tgui::Panel::Ptr m_panel;
+	tgui::ScrollablePanel::Ptr m_panel;
 	Actor* m_actor;
 public:
 	ActorView(Window& w);

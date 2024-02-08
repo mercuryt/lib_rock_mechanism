@@ -1,17 +1,33 @@
 #include "load.h"
 #include "window.h"
-class Window;
-LoadView::LoadView(Window& window) : m_window(window), m_group(tgui::Group::create())
+#include <filesystem>
+void LoadView::draw()
 {
-	m_window.getGui().add(m_group);
-	m_group->setVisible(false);
-	// File Select.
-	auto fileDialog = tgui::FileDialog::create("open file", "open");
-	fileDialog->onFileSelect([&](const std::filesystem::path path){ m_window.load(path); });
-	fileDialog->setPath("save");
-	m_group->add(fileDialog);
-	// Cancel.
-	auto cancelButton = tgui::Button::create("cancel");
-	cancelButton->onPress([&]{ m_window.showMainMenu(); });
-	m_group->add(cancelButton);
+	m_panel = tgui::Panel::create();
+	m_window.getGui().add(m_panel);
+	auto layout = tgui::VerticalLayout::create();
+	m_panel->add(layout);
+	layout->add(tgui::Label::create("load"));
+	auto cancel = tgui::Button::create("cancel");
+	layout->add(cancel);
+	cancel->onClick([this]{ m_window.showMainMenu(); });
+	std::filesystem::path save{"save"};
+	for(const auto &entry : std::filesystem::directory_iterator(save))
+	{
+		auto entryPath = entry.path();
+		std::ifstream simulationFile(entryPath/"simulation.json");
+		const Json& data = Json::parse(simulationFile);
+		std::wstring name = data["name"].get<std::wstring>();
+		auto button = tgui::Button::create(name);
+		layout->add(button);
+		button->onClick([this, entryPath]{ m_window.load(entryPath); m_window.showMainMenu(); });
+	}
+}
+void LoadView::close()
+{
+	if(m_panel)
+	{
+		m_window.getGui().remove(m_panel);
+		m_panel = nullptr;
+	}
 }

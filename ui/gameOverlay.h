@@ -24,7 +24,7 @@ public:
 	void hide() { m_group->setVisible(false); }
 	void drawContextMenu(Block& block) { m_contextMenu.draw(block); }
 	void closeContextMenu() { m_contextMenu.hide(); }
-	void drawMenu() { m_menu->setVisible(true); }
+	void drawMenu();
 	void closeMenu() { m_menu->setVisible(false); }
 	void drawInfoPopup(Block& block) { m_infoPopup.display(block); }
 	void drawInfoPopup(Item& item) { m_infoPopup.display(item); }

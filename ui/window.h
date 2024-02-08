@@ -63,19 +63,19 @@ class Window final
 	std::thread m_simulationThread;
 	sf::Vector2i m_positionWhereMouseDragBegan;
 	Block* m_firstCornerOfSelection;
-	std::filesystem::path m_path;
 	static constexpr int gameMarginSize = 400;
 	
 	void drawView();
 	void povFromJson(const Json& data);
 	void setZ(const uint32_t z);
-	void setPaused(bool paused);
 	[[nodiscard]] Json povToJson() const;
 	[[nodiscard]] static std::chrono::milliseconds msSinceEpoch();
 public:
 	InputQueue m_inputQueue;
 	bool m_editMode;
+	std::atomic<bool> m_lockInput = false;
 	Window();
+	void setPaused(bool paused);
 	void setArea(Area& area, GameView* gameView = nullptr);
 	void startLoop();
 	void centerView(const Block& block);
@@ -89,7 +89,7 @@ public:
 	void hideAllPanels();
 	void showMainMenu() { hideAllPanels(); m_mainMenuView.show(); }
 	void showGame() { hideAllPanels(); m_gameOverlay.show(); }
-	void showLoad() { hideAllPanels(); m_loadView.show(); }
+	void showLoad() { hideAllPanels(); m_loadView.draw(); }
 	void showProduction() { hideAllPanels(); m_productionView.show(); }
 	void showUniforms() { hideAllPanels(); m_uniformView.show(); }
 	void showObjectivePriority(Actor& actor) { hideAllPanels(); m_objectivePriorityView.draw(actor); }
@@ -120,7 +120,7 @@ public:
 	void setSimulation(std::unique_ptr<Simulation> simulation) { m_simulation = std::move(simulation); }
 	[[nodiscard]] Area* getArea() { return m_area; }
 	// String utilities.
-	static std::wstring displayNameForItem(Item& item);
+	static std::wstring displayNameForItem(const Item& item);
 	static std::wstring displayNameForCraftJob(CraftJob& craftJob);
 	std::string facingToString(Facing facing);
 	friend class Draw;

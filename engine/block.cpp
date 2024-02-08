@@ -725,7 +725,7 @@ void Block::loadFromJson(Json data, DeserializationMemo& deserializationMemo)
 }
 Json Block::toJson() const 
 {
-	Json data{{"exposedToSky", m_exposedToSky}, {"underground", m_underground}, {"isEdge", m_isEdge}, {"outdoors", m_outdoors}, {"visible", m_visible}};
+	Json data{{"exposedToSky", m_exposedToSky}, {"underground", m_underground}, {"isEdge", m_isEdge}, {"outdoors", m_outdoors}, {"visible", m_visible}, {"x", m_x}, {"y", m_y}, {"z", m_z}, {"area", m_area->m_id}};
 	if(m_solid != nullptr)
 		data["solid"] = m_solid->name;
 	if(!m_hasBlockFeatures.empty())
@@ -749,12 +749,4 @@ Json Block::toJson() const
 		data["hasDesignations"] = m_hasDesignations.toJson();
 	return data;
 }
-Json Block::positionToJson() const
-{
-	Json output;
-	output["x"] = m_x;
-	output["y"] = m_y;
-	output["z"] = m_z;
-	output["area"] = m_area->m_id;
-	return output;
-}
+Json Block::positionToJson() const { return {{"x", m_x}, {"y", m_y}, {"z", m_z}, {"area", m_area->m_id}}; }

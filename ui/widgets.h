@@ -14,7 +14,7 @@ public:
 	tgui::Grid::Ptr m_widget;
 	DateTimeUI();
 	DateTimeUI(uint8_t hours, uint8_t days, uint8_t years);
-	DateTimeUI(DateTime& dateTime) { set(dateTime); }
+	DateTimeUI(DateTime& dateTime);
 	void set(DateTime& dateTime);
 	void set(DateTime&& dateTime);
 	DateTime get() const;

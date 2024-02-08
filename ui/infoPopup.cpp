@@ -135,3 +135,5 @@ void InfoPopup::display(Plant& plant)
 	add(tgui::Label::create(L"percent grown: " + std::to_wstring(plant.getGrowthPercent())));
 	add(tgui::Label::create(L"percent foliage: " + std::to_wstring(plant.getPercentFoliage())));
 }
+void InfoPopup::hide() { m_childWindow->close(); }
+bool InfoPopup::isVisible() const { return m_childWindow && m_childWindow->isVisible(); }
