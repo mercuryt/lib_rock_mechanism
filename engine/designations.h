@@ -42,7 +42,7 @@ public:
 		Json data;
 		for(auto pair : m_designations)
 		{
-			Json jsonPair{pair.first->m_name, Json::array()};
+			Json jsonPair{pair.first->name, Json::array()};
 			for(BlockDesignation designation : pair.second)
 				jsonPair[1].push_back(designation);
 		}

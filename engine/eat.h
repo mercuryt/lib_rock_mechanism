@@ -42,6 +42,7 @@ public:
 	friend class EatObjective;
 	// For testing.
 	[[maybe_unused]]bool hasObjecive() const { return m_eatObjective != nullptr; }
+	[[maybe_unused]]bool hasHungerEvent() const { return m_hungerEvent.exists(); }
 	[[maybe_unused]]Step getHungerEventStep() const { return m_hungerEvent.getStep(); }
 };
 class EatEvent final : public ScheduledEvent

@@ -19,7 +19,7 @@ Json CanGrow::toJson() const
 	if(m_event.exists())
 	{
 		data["eventStart"] = m_event.getStartStep();
-		data["eventuration"] = m_event.duration();
+		data["eventDuration"] = m_event.duration();
 	}
 	if(m_updateEvent.exists())
 	{

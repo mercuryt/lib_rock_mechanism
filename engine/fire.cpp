@@ -74,12 +74,25 @@ void AreaHasFires::extinguish(Fire& fire)
 }
 void AreaHasFires::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
-	for(const Json& fireData : data)
-	{
-		Block& block = deserializationMemo.m_simulation.getBlockForJsonQuery(fireData["location"]);
-		const MaterialType& materialType = *fireData["materialType"].get<const MaterialType*>();
-		m_fires[&block].try_emplace(&materialType, block, materialType, fireData["hasPeaked"].get<bool>(), fireData["stage"].get<FireStage>(), fireData["start"].get<Step>());
-	}
+	for(const auto& pair : data)
+		for(const Json& fireData : pair[1])
+		{
+			Block& block = deserializationMemo.m_simulation.getBlockForJsonQuery(fireData["location"]);
+			const MaterialType& materialType = *fireData["materialType"].get<const MaterialType*>();
+			m_fires[&block].try_emplace(&materialType, block, materialType, fireData["hasPeaked"].get<bool>(), fireData["stage"].get<FireStage>(), fireData["start"].get<Step>());
+		}
+}
+Fire& AreaHasFires::at(Block& block, const MaterialType& materialType) 
+{
+       	assert(m_fires.contains(&block)); 
+       	assert(m_fires.at(&block).contains(&materialType)); 
+	return m_fires.at(&block).at(&materialType); 
+}
+bool AreaHasFires::contains(Block& block, const MaterialType& materialType) 
+{
+	if(!m_fires.contains(&block))
+		return false;
+	return m_fires.at(&block).contains(&materialType);
 }
 Json AreaHasFires::toJson() const
 {
@@ -89,8 +102,9 @@ Json AreaHasFires::toJson() const
 		data.push_back(Json{blockReference, Json::array()});
 		for(auto& [materialType, fire] : fires)
 		{
+			assert(materialType == &fire.m_materialType);
 			Json fireData{{"location", &fire.m_location}, {"materialType", fire.m_materialType}, {"hasPeaked", fire.m_hasPeaked}, {"stage", fire.m_stage}, {"start", fire.m_event.getStartStep()}};
-			data.back()[1].push_back(Json{materialType, fireData});
+			data.back()[1].push_back(fireData);
 		}
 	}
 	return data;

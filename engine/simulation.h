@@ -1,5 +1,6 @@
 #pragma once
 #include "../lib/BS_thread_pool_light.hpp"
+#include "deserializationMemo.h"
 #include "types.h"
 #include "area.h"
 #include "project.h"
@@ -26,6 +27,7 @@ class Simulation final
 {
 	AreaId m_nextAreaId;
 	std::future<void> m_stepFuture;
+	DeserializationMemo m_deserializationMemo;
 public:
 	std::unordered_map<AreaId, Area*> m_areasById;
 	BS::thread_pool_light m_pool;
@@ -52,11 +54,14 @@ public:
 
 	Simulation(std::wstring name = L"", DateTime n = {12, 150, 1200}, Step s = 1);
 	Simulation(std::filesystem::path path);
+	Simulation(const Json& data);
+	void loadAreas(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void doStep();
 	void incrementHour();
 	void save();
 	void loadAreas(const Json& data, std::filesystem::path path);
+	Faction& createFaction(std::wstring name);
 	//TODO: latitude, longitude, altitude.
 	Area& createArea(uint32_t x, uint32_t y, uint32_t z);
 	Area& loadArea(AreaId id, std::wstring name, uint32_t x, uint32_t y, uint32_t z);

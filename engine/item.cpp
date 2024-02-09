@@ -185,19 +185,27 @@ Item::Item(const Json& data, DeserializationMemo& deserializationMemo, ItemId id
 	m_quantity(data.contains("quantity") ? data["quantity"].get<uint32_t>() : 1u),
 	m_id(id), m_itemType(*data["itemType"].get<const ItemType*>()), m_materialType(*data["materialType"].get<const MaterialType*>()),
 	m_quality(data["quality"].get<uint32_t>()), m_percentWear(data["percentWear"].get<Percent>()), m_installed(data["installed"].get<bool>()),
-	m_craftJobForWorkPiece(deserializationMemo.m_craftJobs.at(data["craftJobForWorkPiece"])),
-	m_hasCargo(*this), m_canBeStockPiled(data["canBeStockPiled"], deserializationMemo, *this) { }
+	m_craftJobForWorkPiece(nullptr), m_hasCargo(*this), m_canBeStockPiled(data["canBeStockPiled"], deserializationMemo, *this) 
+	{
+		if(data.contains("craftJobForWorkPiece"))
+			m_craftJobForWorkPiece = deserializationMemo.m_craftJobs.at(data["craftJobForWorkPiece"]);
+
+		if(data.contains("location"))
+			setLocation(deserializationMemo.blockReference(data["location"]));
+	}
 Json Item::toJson() const
 {
 	Json data = HasShape::toJson();
 	data["id"] = m_id;
 	data["name"] = m_name;
 	data["location"] = m_location->positionToJson();
-	data["itemType"] = m_itemType.name;
-	data["materialType"] = m_materialType.name;
+	data["itemType"] = m_itemType;
+	data["materialType"] = m_materialType;
 	data["quality"] = m_quality;
 	data["quantity"] = m_quantity;
 	data["percentWear"] = m_percentWear;
+	data["installed"] = m_installed;
+	data["canBeStockPiled"] = m_canBeStockPiled.toJson();
 	if(m_itemType.internalVolume != 0)
 	{
 		if(m_hasCargo.containsAnyFluid())

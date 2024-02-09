@@ -11,31 +11,34 @@
 #include <cstdint>
 #include <filesystem>
 #include <functional>
-Simulation::Simulation(std::wstring name, DateTime n, Step s) :  m_nextAreaId(1), m_name(name), m_step(s), m_now(n), m_nextActorId(1), m_nextItemId(1), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this)
+Simulation::Simulation(std::wstring name, DateTime n, Step s) :  m_nextAreaId(1), m_deserializationMemo(*this), m_name(name), m_step(s), m_now(n), m_nextActorId(1), m_nextItemId(1), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this)
 { 
 	m_hourlyEvent.schedule(*this);
 	m_path.append(L"save/"+name);
 }
-Simulation::Simulation(std::filesystem::path path) : m_path(path), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this) 
+Simulation::Simulation(std::filesystem::path path) : Simulation(Json::parse(std::ifstream{path/"simulation.json"})) 
 {
-	std::ifstream simulationFile(path/"simulation.json");
-	const Json& data = Json::parse(simulationFile);
+       	m_path = path;
+	const Json& data = Json::parse(std::ifstream{m_path/"simulation.json"});
+	for(const Json& areaId : data["areaIds"])
+	{
+		std::ifstream af(m_path/"area"/(std::to_string(areaId.get<AreaId>()) + ".json"));
+		Json areaData = Json::parse(af);
+		m_areas.emplace_back(areaData, m_deserializationMemo, *this);
+	}
+	m_hourlyEvent.schedule(*this, data["hourlyEventStart"].get<Step>());
+}
+Simulation::Simulation(const Json& data) : m_deserializationMemo(*this), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this) 
+{
 	m_name = data["name"].get<std::wstring>();
 	m_step = data["step"].get<Step>();
 	m_now = data["now"].get<DateTime>();
 	m_nextItemId = data["nextItemId"].get<ItemId>();
 	m_nextActorId = data["nextActorId"].get<ActorId>();
 	m_nextAreaId = data["nextAreaId"].get<AreaId>();
-	DeserializationMemo deserializationMemo(*this);
 	//if(data["world"])
 		//m_world = std::make_unique<World>(data["world"], deserializationMemo);
-	for(const Json& areaId : data["areaIds"])
-	{
-		std::ifstream af(path/"area"/(std::to_string(areaId.get<AreaId>()) + ".json"));
-		Json areaData = Json::parse(af);
-		m_areas.emplace_back(areaData, deserializationMemo, *this);
-	}
-	m_hourlyEvent.schedule(*this, data["hourlyEventStart"].get<Step>());
+	m_hasFactions.load(data["factions"], m_deserializationMemo);
 }
 void Simulation::doStep()
 {
@@ -85,6 +88,10 @@ void Simulation::save()
 		std::ofstream af(m_path/"area"/(std::to_string(area.m_id) + ".json"));
 		af << area.toJson();
 	}
+}
+Faction& Simulation::createFaction(std::wstring name)
+{
+	return m_hasFactions.createFaction(name);
 }
 Area& Simulation::createArea(uint32_t x, uint32_t y, uint32_t z)
 { 
@@ -295,6 +302,7 @@ Json Simulation::toJson() const
 	output["areaIds"] = Json::array();
 	for(const Area& area : m_areas)
 		output["areaIds"].push_back(area.m_id);
+	output["factions"] = m_hasFactions.toJson();
 	return output;
 }
 Area& Simulation::loadAreaFromJson(const Json& data)
@@ -313,7 +321,7 @@ Item& Simulation::loadItemFromJson(const Json& data, DeserializationMemo& deseri
 Actor& Simulation::loadActorFromJson(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	auto id = data["id"].get<ActorId>();
-	m_items.try_emplace(id, data, deserializationMemo, id);
+	m_actors.try_emplace(id, data, deserializationMemo);
 	return m_actors.at(id);
 }
 Block& Simulation::getBlockForJsonQuery(const Json& data)

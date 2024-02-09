@@ -222,7 +222,7 @@ Step DigProject::getDuration() const
 DigLocationDishonorCallback::DigLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
 	m_faction(deserializationMemo.faction(data["faction"].get<std::wstring>())),
 	m_location(deserializationMemo.m_simulation.getBlockForJsonQuery(data["location"])) { }
-Json DigLocationDishonorCallback::toJson() const { return Json({{"type", "DigLocationDishonorCallback"}, {"faction", m_faction.m_name}, {"location", m_location.positionToJson()}}); }
+Json DigLocationDishonorCallback::toJson() const { return Json({{"type", "DigLocationDishonorCallback"}, {"faction", m_faction.name}, {"location", m_location.positionToJson()}}); }
 void DigLocationDishonorCallback::execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount)
 {
 	m_location.m_area->m_hasDigDesignations.undesignate(m_faction, m_location);
@@ -287,7 +287,7 @@ Json HasDigDesignations::toJson() const
 	for(auto& pair : m_data)
 	{
 		Json jsonPair;
-		jsonPair[0] = pair.first->m_name;
+		jsonPair[0] = pair.first->name;
 		jsonPair[1] = pair.second.toJson();
 		data.push_back(jsonPair);
 	}

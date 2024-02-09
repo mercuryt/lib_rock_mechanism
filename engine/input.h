@@ -1,3 +1,6 @@
+/*
+ * To be used for multiplayer. Not being used currently.
+ */
 #pragma once
 
 #include "types.h"

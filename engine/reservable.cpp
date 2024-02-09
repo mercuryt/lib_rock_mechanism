@@ -15,7 +15,7 @@ void CanReserve::load(const Json& data, DeserializationMemo& deserializationMemo
 Json CanReserve::toJson() const 
 {
 	Json data;
-	data["faction"] = m_faction->m_name;
+	data["faction"] = m_faction->name;
 	data["reservations"] = Json::array();
 	for(Reservable* reservable : m_reservables)
 		data["reservations"].push_back(reservable->jsonReservationFor(const_cast<CanReserve&>(*this)));

@@ -119,7 +119,7 @@ HasFarmFieldsForFaction::HasFarmFieldsForFaction(const Json& data, Deserializati
 }
 Json HasFarmFieldsForFaction::toJson() const
 {
-	Json data{{"farmFields", Json::array(), "plantsNeedingFluid", Json::array()}, {"plantsToHarvest", Json::array()}, {"blocksNeedingSeedsSewn", Json::array()}, {"plantsNeedingFluidIsSorted", m_plantsNeedingFluidIsSorted}};
+	Json data{{"farmFields", Json::array()}, {"plantsNeedingFluid", Json::array()}, {"plantsToHarvest", Json::array()}, {"blocksNeedingSeedsSewn", Json::array()}, {"plantsNeedingFluidIsSorted", m_plantsNeedingFluidIsSorted}};
 	for(const FarmField& farmField : m_farmFields)
 		data["farmFields"].push_back(farmField.toJson());
 	for(const Plant* plant : m_plantsNeedingFluid)
@@ -316,9 +316,9 @@ void HasFarmFields::load(const Json& data, DeserializationMemo& deserializationM
 }
 Json HasFarmFields::toJson() const
 {
-	Json data;
+	Json data = Json::array();
 	for(auto& [faction, hasFarmFieldsForFaction] : m_data)
-		Json pair{faction, hasFarmFieldsForFaction.toJson()};
+		data.push_back({faction, hasFarmFieldsForFaction.toJson()});
 	return data;
 }
 void HasFarmFields::registerFaction(const Faction& faction)

@@ -9,25 +9,31 @@
 #include <unordered_map>
 #include <list>
 #include <cassert>
+struct DeserializationMemo;
 struct Faction
 {
-	std::wstring m_name;
+	std::wstring name;
 	std::unordered_set<Faction*> allies;
 	std::unordered_set<Faction*> enemies;
-	Faction(std::wstring n) : m_name(n) { }
+	Faction(std::wstring n) : name(n) { }
 	[[nodiscard]] bool operator==(const Faction& faction) const { return &faction == this;}
 	Faction(const Faction& faction) = delete;
 	Faction(Faction&& faction) = delete;
+	Faction(const Json& data, DeserializationMemo& deserializationMemo);
+	void load(const Json& data, DeserializationMemo& deserializationMemo);
 };
-inline void to_json(Json& data, const Faction& faction) { data = faction.m_name; }
-inline void to_json(Json& data, const Faction* const& faction) { data = faction->m_name; }
+inline void to_json(Json& data, const Faction* const& faction) { data = faction->name; }
+inline void to_json(Json& data, Faction* const& faction) { data = faction->name; }
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_ONLY_SERIALIZE(Faction, name, allies, enemies);
 
 class SimulationHasFactions final
 {
 	std::list<Faction> m_factions;
 	std::unordered_map<std::wstring, Faction*> m_factionsByName;
 public:
-	Faction& byName(std::wstring name){ return *m_factionsByName.at(name); }
-	Faction& createFaction(std::wstring name){ m_factions.emplace_back(name); assert(!m_factionsByName.contains(name)); m_factionsByName[name] = &m_factions.back(); return m_factions.back(); }
-	void destroyFaction(Faction& faction){ assert(faction.allies.empty() && faction.enemies.empty()); m_factionsByName.erase(faction.m_name); m_factions.remove(faction); }
+	Faction& byName(std::wstring name);
+	Faction& createFaction(std::wstring name);
+	void destroyFaction(Faction& faction);
+	Json toJson() const;
+	void load(const Json& data, DeserializationMemo& deserializationMemo);
 };

@@ -335,7 +335,7 @@ Json Project::toJson() const
 {
 	Json data({
 		{"address", reinterpret_cast<uintptr_t>(this)},
-		{"faction", m_faction.m_name},
+		{"faction", m_faction.name},
 		{"maxWorkers", m_maxWorkers},
 		{"delay", m_delay},
 		{"haulRetries", m_haulRetries},

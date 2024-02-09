@@ -191,7 +191,7 @@ StockPileProject::StockPileProject(const Json& data, DeserializationMemo& deseri
 Json StockPileProject::toJson() const
 {
 	return Json({
-		{"faction", m_faction.m_name},
+		{"faction", m_faction.name},
 		{"location", m_location.positionToJson()},
 		{"item", m_item.m_id},
 		{"delivered", m_delivered->m_id},
@@ -277,7 +277,7 @@ Json StockPile::toJson() const
 	return Json{
 		{"address", reinterpret_cast<uintptr_t>(this)},
 		{"openBlocks", m_openBlocks},
-		{"faction", m_faction.m_name},
+		{"faction", m_faction.name},
 		{"enabled", m_enabled},
 		{"projectNeedingMoreWorkers", reinterpret_cast<uintptr_t>(m_projectNeedingMoreWorkers)},
 
@@ -709,7 +709,7 @@ Json AreaHasStockPiles::toJson() const
 	Json data;
 	for(auto& pair : m_data)
 	{
-		Json jsonPair{pair.first->m_name, pair.second.toJson()};
+		Json jsonPair{pair.first->name, pair.second.toJson()};
 		data.push_back(jsonPair);
 	}
 	return data;

@@ -66,6 +66,7 @@ public:
 	void setDishonorCallbackFor(CanReserve& canReserve, std::unique_ptr<DishonorCallback> dishonorCallback) { m_dishonorCallbacks[&canReserve] = std::move(dishonorCallback); }
 	void clearAll();
 	uint32_t getUnreservedCount(const Faction& faction) const;
+	uint32_t getMaxReservations() const { return m_maxReservations; }
 	Json jsonReservationFor(CanReserve& canReserve) const;
 	~Reservable();
 	Reservable(Reservable& reservable) = delete;

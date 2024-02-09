@@ -37,10 +37,11 @@ Plant::Plant(const Json& data, DeserializationMemo& deserializationMemo, Block& 
 	m_growthEvent(location.m_area->m_simulation.m_eventSchedule), m_shapeGrowthEvent(location.m_area->m_simulation.m_eventSchedule), 
 	m_fluidEvent(location.m_area->m_simulation.m_eventSchedule), m_temperatureEvent(location.m_area->m_simulation.m_eventSchedule),
        	m_endOfHarvestEvent(location.m_area->m_simulation.m_eventSchedule), m_foliageGrowthEvent(location.m_area->m_simulation.m_eventSchedule), 
-	m_percentGrown(data["precentGrown"].get<Percent>()), 
+	m_percentGrown(data["percentGrown"].get<Percent>()), 
 	m_quantityToHarvest(data["harvestableQuantity"].get<uint32_t>()), m_percentFoliage(data["percentFoliage"].get<Percent>()), 
 	m_reservable(1), m_volumeFluidRequested(data["volumeFluidRequested"].get<Volume>())
 {
+	setLocation(deserializationMemo.blockReference(data["location"]));
 	if(data.contains("fluidSource"))
 		m_fluidSource = &deserializationMemo.blockReference(data["fluidSource"]);
 	if(data.contains("growthEventStart"))
@@ -53,7 +54,6 @@ Plant::Plant(const Json& data, DeserializationMemo& deserializationMemo, Block& 
 		m_endOfHarvestEvent.schedule(data["endOfHarvestEventDuration"].get<Step>(), *this, data["endOfHarvestEventStart"].get<Step>());
 	if(data.contains("foliageGrowthEventStart"))
 		m_foliageGrowthEvent.schedule(data["foliageGrowthEventDuration"].get<Step>(), *this, data["foliageGrowthEventStart"].get<Step>());
-	setLocation(*m_location);
 }
 Plant::Plant(const Json& data, DeserializationMemo& deserializationMemo) : Plant(data, deserializationMemo, deserializationMemo.blockReference(data["location"])){ }
 Json Plant::toJson() const

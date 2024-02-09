@@ -51,6 +51,8 @@ public:
 	void ignite(Block& block, const MaterialType& materialType);
 	void extinguish(Fire& fire);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
+	Fire& at(Block& block, const MaterialType& materialType);
+	bool contains(Block& block, const MaterialType& materialType);
 	Json toJson() const;
 	// For testing.
 	[[maybe_unused, nodiscard]] bool containsFireAt(Fire& fire, Block& block) const

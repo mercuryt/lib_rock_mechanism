@@ -128,4 +128,6 @@ public:
 	bool hasHarvestDesignations(const Faction& faction) const;
 	bool hasSowSeedsDesignations(const Faction& faction) const;
 	const PlantSpecies& getPlantSpeciesFor(const Faction& faction, const Block& location) const;
+	// For testing.
+	[[maybe_unused, nodiscard]] bool contains(const Faction& faction) { return m_data.contains(&faction); }
 };

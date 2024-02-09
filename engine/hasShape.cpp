@@ -5,9 +5,11 @@
 #include <iostream>
 HasShape::HasShape(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) : 
 	m_simulation(deserializationMemo.m_simulation), m_static(data["static"].get<bool>()), m_shape(nullptr),
+	m_location(nullptr), m_facing(data["facing"].get<Facing>()),
 	m_canLead(*this), m_canFollow(*this), m_reservable(data["maxReservations"].get<uint32_t>()), 
 	m_isUnderground(data["isUnderground"].get<bool>()) 
 { 
+	// data["location"] is not read here because we want to use subclass specific setLocation methods.
 	std::string shapeName = data["shape"].get<std::string>();
 	if(Shape::hasShape(shapeName))
 		// Predefined shape.
@@ -18,12 +20,10 @@ HasShape::HasShape(const Json& data, [[maybe_unused]] DeserializationMemo& deser
 }
 Json HasShape::toJson() const
 {
-	Json data{{"static", m_static}, {"shape", m_shape}, {"canFollow", m_canFollow.toJson()}, {"isUnderground", m_isUnderground}};
+	Json data{{"static", m_static}, {"shape", m_shape}, {"canFollow", m_canFollow.toJson()}, {"facing", m_facing}, 
+		{"isUnderground", m_isUnderground}, {"maxReservations", m_reservable.getMaxReservations()}};
 	if(m_location)
-	{
 		data["location"] = m_location;
-		data["facing"] = m_facing;
-	}
 	return data;
 }
 void HasShape::setShape(const Shape& shape)

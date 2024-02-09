@@ -67,6 +67,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 			actor.m_canFollow.load(actorData["canFollow"], deserializationMemo);
 
 	}
+	// Load fluid sources.
 	m_fluidSources.load(data["fluidSources"], deserializationMemo);
 }
 Json Area::toJson() const
@@ -74,13 +75,14 @@ Json Area::toJson() const
 	Json data{
 		{"id", m_id}, {"name", m_name}, {"sizeX", m_sizeX}, {"sizeY", m_sizeY}, {"sizeZ", m_sizeZ}, 
 		{"actors", Json::array()}, {"items", Json::array()}, {"blocks", Json::array()},
-		{"plants", Json::array()}, {"fluidSources", m_fluidSources.toJson()}, {"fires", m_fires.toJson()}
+		{"plants", Json::array()}, {"fluidSources", m_fluidSources.toJson()}, {"fires", m_fires.toJson()},
+		{"sleepingSpots", m_hasSleepingSpots.toJson()}
 	};
 	std::unordered_set<Item*> items;
 	for(const Block& block : m_blocks)
 	{
 		data["blocks"].push_back(block.toJson());
-		for(Item* item : items)
+		for(Item* item : block.m_hasItems.getAll())
 			items.insert(item);
 	}
 	for(Actor* actor : m_hasActors.getAllConst())

@@ -234,7 +234,7 @@ Step ConstructProject::getDuration() const
 ConstructionLocationDishonorCallback::ConstructionLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
 	m_faction(deserializationMemo.faction(data["faction"].get<std::wstring>())),
 	m_location(deserializationMemo.m_simulation.getBlockForJsonQuery(data["location"])) { }
-Json ConstructionLocationDishonorCallback::toJson() const { return Json({{"type", "ConstructionLocationDishonorCallback"}, {"faction", m_faction.m_name}, {"location", m_location.positionToJson()}}); }
+Json ConstructionLocationDishonorCallback::toJson() const { return Json({{"type", "ConstructionLocationDishonorCallback"}, {"faction", m_faction.name}, {"location", m_location.positionToJson()}}); }
 void ConstructionLocationDishonorCallback::execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount)
 {
 	m_location.m_area->m_hasConstructionDesignations.at(m_faction).undesignate(m_location);
@@ -300,7 +300,7 @@ Json HasConstructionDesignations::toJson() const
 	for(auto& pair : m_data)
 	{
 		Json jsonPair;
-		jsonPair[0] = pair.first->m_name;
+		jsonPair[0] = pair.first->name;
 		jsonPair[1] = pair.second.toJson();
 		data.push_back(jsonPair);
 	}

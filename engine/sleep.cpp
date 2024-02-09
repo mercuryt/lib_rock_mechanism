@@ -298,8 +298,8 @@ void HasSleepingSpots::load(const Json& data, DeserializationMemo& deserializati
 }
 Json HasSleepingSpots::toJson() const
 {
-	Json data;
+	Json data{{"unassigned", Json::array()}};
 	for(Block* block : m_unassigned)
-		data.push_back(block);
+		data["unassigned"].push_back(block);
 	return data;
 }

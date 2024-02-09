@@ -27,8 +27,8 @@ Actor::Actor(const Json& data, DeserializationMemo& deserializationMemo) :
 	// Wait untill projects have been loaded before loading hasObjectives.
 	m_hasObjectives(*this), m_canReserve(m_faction), m_stamina(*this, data["stamina"].get<uint32_t>()), m_hasUniform(*this), m_visionRange(m_species.visionRange)
 { 
-	Block& block = deserializationMemo.blockReference(data["location"]);
-	setLocation(block);
+	if(data.contains("location"))
+		setLocation(deserializationMemo.blockReference(data["location"]));
 }
 Json Actor::toJson() const
 {
@@ -49,6 +49,7 @@ Json Actor::toJson() const
 	data["canMove"] = m_canMove.toJson();
 	data["canFight"] = m_canFight.toJson();
 	data["canGrow"] = m_canGrow.toJson();
+	data["needsSafeTemperature"] = m_needsSafeTemperature.toJson();
 	data["stamina"] = m_stamina.get();
 	if(m_faction != nullptr)
 		data["faction"] = m_faction;
@@ -62,7 +63,7 @@ Json Actor::toJson() const
 }
 void Actor::setLocation(Block& block)
 {
-	assert(&block != HasShape::m_location);
+	assert(&block != m_location);
 	assert(block.m_hasShapes.anythingCanEnterEver());
 	if(m_location == nullptr)
 	{
