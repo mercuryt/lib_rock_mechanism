@@ -100,6 +100,7 @@ void SupressedNeedEvent::execute() { m_supressedNeed.callback(); }
 void SupressedNeedEvent::clearReferences() { m_supressedNeed.m_event.clearPointer(); }
 // ObjectiveType.
 Json ObjectiveType::toJson() const { return Json{{"type", getObjectiveTypeId()}}; }
+// Static method.
 void ObjectiveType::load()
 {
 	objectiveTypes["wood working"] = std::make_unique<CraftObjectiveType>(SkillType::byName("wood working"));
@@ -113,14 +114,33 @@ void ObjectiveType::load()
 	objectiveTypes["sow seeds"] = std::make_unique<SowSeedsObjectiveType>();
 	objectiveTypes["give plants fluid"] = std::make_unique<GivePlantsFluidObjectiveType>();
 	objectiveTypes["harvest"] = std::make_unique<HarvestObjectiveType>();
-	for(auto& [name, objectiveType] : objectiveTypes)
-		objectiveTypeNames[objectiveType.get()] = name;
+	for(auto& pair : objectiveTypes)
+		objectiveTypeNames[pair.second.get()] = pair.first;
+}
+inline void to_json(Json& data, const ObjectiveType* const& objectiveType)
+{ 
+	assert(ObjectiveType::objectiveTypeNames.contains(objectiveType));
+	data = ObjectiveType::objectiveTypeNames.at(objectiveType); 
+}
+inline void from_json(const Json& data, const ObjectiveType*& objectiveType)
+{ 
+	std::string name = data.get<std::string>();
+	assert(ObjectiveType::objectiveTypes.contains(name));
+	assert(ObjectiveType::objectiveTypes.at(name).get());
+	objectiveType = ObjectiveType::objectiveTypes.at(name).get(); 
 }
 // Objective.
 Objective::Objective(Actor& a, uint32_t p) : m_actor(a), m_priority(p) {}
 Objective::Objective(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) :
-	m_actor(deserializationMemo.m_simulation.getActorById(data["actor"].get<ActorId>())), m_priority(data["priority"].get<uint32_t>()), m_detour(data["detour"].get<bool>()) { }
-Json Objective::toJson() const { return Json{{"type", getObjectiveTypeId()}, {"actor", m_actor}, {"priority", m_priority}, {"detour", m_detour}}; }
+	m_actor(deserializationMemo.m_simulation.getActorById(data["actor"].get<ActorId>())), m_priority(data["priority"].get<uint32_t>()), m_detour(data["detour"].get<bool>()) 
+{ 
+	deserializationMemo.m_objectives[data["address"].get<uintptr_t>()] = this;
+}
+Json Objective::toJson() const 
+{ 
+	return Json{{"type", getObjectiveTypeId()}, {"actor", m_actor}, {"priority", m_priority}, 
+		{"detour", m_detour}, {"address", reinterpret_cast<uintptr_t>(this)}}; 
+}
 // HasObjectives.
 HasObjectives::HasObjectives(Actor& a) : m_actor(a), m_currentObjective(nullptr), m_prioritySet(a) { }
 void HasObjectives::load(const Json& data, DeserializationMemo& deserializationMemo)

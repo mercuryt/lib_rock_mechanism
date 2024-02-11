@@ -2,7 +2,7 @@
 #include "../../lib/doctest.h"
 #include "../../engine/config.h"
 #include "../../engine/definitions.h"
-#include "../../engine/objectiveTypeInstances.h"
+#include "../../engine/objective.h"
 
 int main(int argc, char** argv) {
     doctest::Context context;
@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
     // Config must be loaded before definitions.
     Config::load();
     definitions::load();
-    ObjectiveTypeInstances::load();
+    ObjectiveType::load();
 
     int res = context.run(); // run
 

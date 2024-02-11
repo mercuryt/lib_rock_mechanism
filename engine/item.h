@@ -93,7 +93,7 @@ class ItemHasCargo final
 	Volume m_fluidVolume;
 public:
 	ItemHasCargo(Item& i) : m_item(i), m_volume(0), m_mass(0), m_fluidType(nullptr), m_fluidVolume(0) { }
-	void loadJson(const Json& data, DeserializationMemo& deserializationMemo);
+	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void add(HasShape& hasShape);
 	void add(const FluidType& fluidType, Volume volume);

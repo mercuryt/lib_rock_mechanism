@@ -2,6 +2,7 @@
 #include "block.h"
 #include "simulation.h"
 #include <cassert>
+#include <cstdint>
 #include <iostream>
 HasShape::HasShape(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) : 
 	m_simulation(deserializationMemo.m_simulation), m_static(data["static"].get<bool>()), m_shape(nullptr),
@@ -21,7 +22,8 @@ HasShape::HasShape(const Json& data, [[maybe_unused]] DeserializationMemo& deser
 Json HasShape::toJson() const
 {
 	Json data{{"static", m_static}, {"shape", m_shape}, {"canFollow", m_canFollow.toJson()}, {"facing", m_facing}, 
-		{"isUnderground", m_isUnderground}, {"maxReservations", m_reservable.getMaxReservations()}};
+		{"isUnderground", m_isUnderground}, {"maxReservations", m_reservable.getMaxReservations()},
+		{"address", reinterpret_cast<uintptr_t>(this)}};
 	if(m_location)
 		data["location"] = m_location;
 	return data;

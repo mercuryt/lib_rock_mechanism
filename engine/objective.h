@@ -73,11 +73,11 @@ struct ObjectiveType
 	// Infastructure
 	inline static std::map<std::string, std::unique_ptr<ObjectiveType>> objectiveTypes;
 	inline static std::map<const ObjectiveType*, std::string> objectiveTypeNames;
-	inline static void load();
+	static void load();
 	[[nodiscard]] bool operator==(const ObjectiveType& other) const { return &other == this; }
 };
-inline void to_json(Json& data, const ObjectiveType* const& objectiveType){ data = ObjectiveType::objectiveTypeNames[objectiveType]; }
-inline void from_json(const Json& data, const ObjectiveType*& objectiveType){ objectiveType = ObjectiveType::objectiveTypes[data.get<std::string>()].get(); }
+void to_json(Json& data, const ObjectiveType* const& objectiveType);
+void from_json(const Json& data, const ObjectiveType*& objectiveType);
 class Objective
 {
 public:

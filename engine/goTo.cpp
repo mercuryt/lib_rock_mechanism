@@ -8,7 +8,12 @@
 #include <unordered_set>
 GoToObjective::GoToObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo),
 	m_location(deserializationMemo.m_simulation.getBlockForJsonQuery(data["location"])) { }
-Json GoToObjective::toJson() const { return Json{{"location", m_location.positionToJson()}}; }
+Json GoToObjective::toJson() const 
+{ 
+	Json data = Objective::toJson();
+	data["location"] = m_location.positionToJson();
+	return data;
+}
 void GoToObjective::execute()
 {
 	if(m_actor.m_location != &m_location)

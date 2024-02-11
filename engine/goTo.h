@@ -19,6 +19,8 @@ public:
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::GoTo; }
 	std::string name() const { return "go to"; }
 	static void create(Actor& actor, Block& block);
+	// For testing.
+	[[maybe_unused]] const Block& getLocation() { return m_location; }
 };
 class GoToInputAction final : public InputAction
 {

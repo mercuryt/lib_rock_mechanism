@@ -23,6 +23,7 @@ struct ObjectiveType;
 class Plant;
 class Block;
 class Item;
+class Actor;
 struct Uniform;
 //struct WorldLocation;
 
@@ -43,6 +44,7 @@ struct DeserializationMemo final
 	Plant& plantReference(const Json& data);
 	Block& blockReference(const Json& data);
 	Item& itemReference(const Json& data);
+	Actor& actorReference(const Json& data);
 	HasShape& hasShapeReference(const Json& data);
 	ProjectRequirementCounts& projectRequirementCountsReference(const Json& data);
 	//WorldLocation& getLocationByNormalizedLatLng(const Json& data);

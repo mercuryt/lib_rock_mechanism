@@ -18,54 +18,76 @@ Faction& DeserializationMemo::faction(std::wstring name) { return m_simulation.m
 Plant& DeserializationMemo::plantReference(const Json& data) { return m_simulation.getBlockForJsonQuery(data).m_hasPlant.get(); }
 Block& DeserializationMemo::blockReference(const Json& data) { return m_simulation.getBlockForJsonQuery(data); }
 Item& DeserializationMemo::itemReference(const Json& data) { return m_simulation.getItemById(data.get<ItemId>()); }
+Actor& DeserializationMemo::actorReference(const Json& data) { return m_simulation.getActorById(data.get<ActorId>()); }
 HasShape& DeserializationMemo::hasShapeReference(const Json& data) { return *m_hasShapes.at(data.get<uintptr_t>()); }
 ProjectRequirementCounts& DeserializationMemo::projectRequirementCountsReference(const Json& data) { return *m_projectRequirementCounts.at(data.get<uintptr_t>()); }
 //WorldLocation& DeserializationMemo::getLocationByNormalizedLatLng(const Json& data) { return m_simulation.m_world->getLocationByNormalizedLatLng(data.get<LatLng>()); }
 std::unique_ptr<Objective> DeserializationMemo::loadObjective(const Json& data)
 {
 	ObjectiveTypeId typeId = data["type"].get<ObjectiveTypeId>();
+	std::unique_ptr<Objective> output;
 	switch(typeId)
 	{
 		case ObjectiveTypeId::Construct:
-			return std::make_unique<ConstructObjective>(data, *this);
+			output = std::make_unique<ConstructObjective>(data, *this);
+			break;
 		case ObjectiveTypeId::Craft:
-			return std::make_unique<CraftObjective>(data, *this);
+			output = std::make_unique<CraftObjective>(data, *this);
+			break;
 		case ObjectiveTypeId::Dig:
-			return std::make_unique<DigObjective>(data, *this);
+			output = std::make_unique<DigObjective>(data, *this);
+			break;
 		case ObjectiveTypeId::Drink:
-			return std::make_unique<DrinkObjective>(data, *this);
+			output =  std::make_unique<DrinkObjective>(data, *this);
+			break;
 		case ObjectiveTypeId::Eat:
-			return std::make_unique<EatObjective>(data, *this);
+			output =  std::make_unique<EatObjective>(data, *this);
+			break;
 		case ObjectiveTypeId::GetToSafeTemperature:
-			return std::make_unique<GetToSafeTemperatureObjective>(data, *this);
+			output =  std::make_unique<GetToSafeTemperatureObjective>(data, *this);
+			break;
 		case ObjectiveTypeId::GivePlantsFluid:
-			return std::make_unique<GivePlantsFluidObjective>(data, *this);
+			output =  std::make_unique<GivePlantsFluidObjective>(data, *this);
+			break;
 		case ObjectiveTypeId::GoTo:
-			return std::make_unique<GoToObjective>(data, *this);
+			output =  std::make_unique<GoToObjective>(data, *this);
+			break;
 		case ObjectiveTypeId::Harvest:
-			return std::make_unique<HarvestObjective>(data, *this);
+			output =  std::make_unique<HarvestObjective>(data, *this);
+			break;
 		case ObjectiveTypeId::Haul:
-			return std::make_unique<TargetedHaulObjective>(data, *this);
+			output =  std::make_unique<TargetedHaulObjective>(data, *this);
+			break;
 		case ObjectiveTypeId::Kill:
-			return std::make_unique<KillObjective>(data, *this);
+			output =  std::make_unique<KillObjective>(data, *this);
+			break;
 		//case ObjectiveTypeId::Medical:
-			//return std::make_unique<MedicalObjective>(data, *this);
+			//output =  std::make_unique<MedicalObjective>(data, *this);
+			//break;
 		case ObjectiveTypeId::Rest:
-			return std::make_unique<RestObjective>(data, *this);
+			output =  std::make_unique<RestObjective>(data, *this);
+			break;
 		case ObjectiveTypeId::Sleep:
-			return std::make_unique<SleepObjective>(data, *this);
+			output =  std::make_unique<SleepObjective>(data, *this);
+			break;
 		case ObjectiveTypeId::Station:
-			return std::make_unique<StationObjective>(data, *this);
+			output =  std::make_unique<StationObjective>(data, *this);
+			break;
 		case ObjectiveTypeId::SowSeeds:
-			return std::make_unique<SowSeedsObjective>(data, *this);
+			output =  std::make_unique<SowSeedsObjective>(data, *this);
+			break;
 		case ObjectiveTypeId::StockPile:
-			return std::make_unique<StockPileObjective>(data, *this);
+			output =  std::make_unique<StockPileObjective>(data, *this);
+			break;
 		case ObjectiveTypeId::Wait:
-			return std::make_unique<WaitObjective>(data, *this);
+			output =  std::make_unique<WaitObjective>(data, *this);
+			break;
 		default:
 			assert(typeId == ObjectiveTypeId::Wander);
-			return std::make_unique<WanderObjective>(data, *this);
+			output =  std::make_unique<WanderObjective>(data, *this);
 	}
+	m_objectives[data["address"].get<uintptr_t>()] = output.get();
+	return output;
 }
 std::unique_ptr<ObjectiveType> DeserializationMemo::loadObjectiveType(const Json& data)
 {

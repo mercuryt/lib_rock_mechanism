@@ -1,7 +1,6 @@
 #include "objectivePriorityPanel.h"
 #include "window.h"
 #include "../engine/actor.h"
-#include "../engine/objectiveTypeInstances.h"
 #include <TGUI/Layout.hpp>
 ObjectivePriorityView::ObjectivePriorityView(Window& w) : m_window(w), m_panel(tgui::Panel::create()), m_title(tgui::Label::create()), m_grid(tgui::Grid::create()), m_actor(nullptr)
 {
@@ -11,7 +10,7 @@ ObjectivePriorityView::ObjectivePriorityView(Window& w) : m_window(w), m_panel(t
 	m_panel->add(m_grid);
 	m_grid->setPosition(20, tgui::bindBottom(m_title) + 20);
 	size_t row = 1;
-	for(auto& [name, type] : ObjectiveTypeInstances::objectiveTypes)
+	for(auto& [name, type] : ObjectiveType::objectiveTypes)
 	{
 		auto label = tgui::Label::create(name);
 		m_grid->addWidget(label, row, 1);
@@ -37,7 +36,7 @@ void ObjectivePriorityView::draw(Actor& actor)
 {
 	m_actor = &actor;
 	m_title->setText(L"Set priorities for " + m_actor->m_name);
-	for(auto& pair : ObjectiveTypeInstances::objectiveTypes)
+	for(auto& pair : ObjectiveType::objectiveTypes)
 	{
 		ObjectiveTypeId id = pair.second->getObjectiveTypeId();
 		auto input = m_spinControls.at(id);

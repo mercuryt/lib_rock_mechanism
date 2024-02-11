@@ -3,7 +3,6 @@
 #include "../engine/config.h"
 #include "../engine/datetime.h"
 #include "../engine/types.h"
-#include "../engine/objectiveTypeInstances.h"
 #include "../engine/actor.h"
 #include "../engine/animalSpecies.h"
 #include "../engine/attributes.h"
@@ -22,7 +21,7 @@ void loadConfigAndDefinitions()
 {
 	Config::load();
 	definitions::load();
-	ObjectiveTypeInstances::load();
+	ObjectiveType::load();
 }
 
 NB_MODULE(bound, m)

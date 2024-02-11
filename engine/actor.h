@@ -50,12 +50,12 @@ public:
 	Project* m_project;
 	Attributes m_attributes;
 	SkillSet m_skillSet;
-	EquipmentSet m_equipmentSet;
 	MustEat m_mustEat;
 	MustDrink m_mustDrink;
 	MustSleep m_mustSleep;
 	ActorNeedsSafeTemperature m_needsSafeTemperature;
 	CanPickup m_canPickup;
+	EquipmentSet m_equipmentSet;
 	ActorCanMove m_canMove;
 	CanFight m_canFight;
 	CanGrow m_canGrow;

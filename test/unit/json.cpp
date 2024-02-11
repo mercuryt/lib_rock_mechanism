@@ -3,6 +3,7 @@
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/actor.h"
+#include "../../engine/goTo.h"
 TEST_CASE("json")
 {
 	Simulation simulation;
@@ -10,10 +11,16 @@ TEST_CASE("json")
 	const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	const MaterialType& dirt = MaterialType::byName("dirt");
 	const MaterialType& wood = MaterialType::byName("poplar wood");
+	const MaterialType& cotton = MaterialType::byName("cotton");
 	const MaterialType& bronze = MaterialType::byName("bronze");
+	const MaterialType& sand = MaterialType::byName("sand");
 	const PlantSpecies& sage = PlantSpecies::byName("sage brush");
 	const FluidType& water = FluidType::byName("water");
 	const ItemType& axe = ItemType::byName("axe");
+	const ItemType& saw = ItemType::byName("saw");
+	const ItemType& bucket = ItemType::byName("bucket");
+	const ItemType& pants = ItemType::byName("pants");
+	const ItemType& pile = ItemType::byName("pile");
 	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, dirt);
 	area.m_hasFarmFields.registerFaction(faction);
@@ -24,6 +31,10 @@ TEST_CASE("json")
 	Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
 	dwarf1.setFaction(&faction);
 	std::wstring name = dwarf1.m_name;
+	DigObjectiveType& digObjectiveType = static_cast<DigObjectiveType&>(*ObjectiveType::objectiveTypes.at("dig").get());
+	std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(dwarf1, area.getBlock(9,9,1));
+	dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 10);
+	dwarf1.m_hasObjectives.replaceTasks(std::move(objective));
 	area.getBlock(8, 8, 1).m_hasPlant.createPlant(sage, 99);
 	Plant& sage1 = area.getBlock(8,8,1).m_hasPlant.get();
 	sage1.setMaybeNeedsFluid();
@@ -33,6 +44,16 @@ TEST_CASE("json")
 	area.getBlock(1,8,1).m_hasBlockFeatures.construct(BlockFeatureType::stairs, wood);
 	area.getBlock(9,1,1).m_hasBlockFeatures.construct(BlockFeatureType::door, wood);
 	area.m_fires.ignite(area.getBlock(9,1,1), wood);
+	Item& pants1 = simulation.createItemNongeneric(pants, cotton, 50, 30);
+	dwarf1.m_equipmentSet.addEquipment(pants1);
+	Item& saw1 = simulation.createItemNongeneric(saw, bronze, 50, 30);
+	dwarf1.m_canPickup.pickUp(saw1);
+	Item& bucket1 = simulation.createItemNongeneric(bucket, bronze, 50, 30);
+	bucket1.setLocation(area.getBlock(0,0,1));
+	bucket1.m_hasCargo.add(water, 5);
+	Item& bucket2 = simulation.createItemNongeneric(bucket, bronze, 50, 30);
+	bucket2.setLocation(area.getBlock(0,1,1));
+	bucket2.m_hasCargo.add(pile, sand, 1);
 
 	Json areaData = area.toJson();
 	Json simulationData = simulation.toJson();
@@ -41,13 +62,13 @@ TEST_CASE("json")
 	Simulation simulation2(simulationData);
 	Area& area2 = simulation2.loadAreaFromJson(areaData);
 	Faction& faction2 = simulation2.m_hasFactions.byName(L"tower of power");
-
+	// Block.
 	REQUIRE(area2.m_sizeX == area2.m_sizeY);
       	REQUIRE(area2.m_sizeX == area2.m_sizeZ);
 	REQUIRE(area2.m_sizeX == 10);
 	REQUIRE(area2.getBlock(5,5,0).isSolid());
 	REQUIRE(area2.getBlock(5,5,0).getSolidMaterial() == dirt);
-
+	// Plant.
 	REQUIRE(area2.getBlock(8,8,1).m_hasPlant.exists());
 	Plant& sage2 = area2.getBlock(8,8,1).m_hasPlant.get();
 	REQUIRE(sage2.m_plantSpecies == sage);
@@ -55,13 +76,13 @@ TEST_CASE("json")
 	REQUIRE(sage2.getStepAtWhichPlantWillDieFromLackOfFluid());
 	REQUIRE(sage2.m_fluidEvent.exists());
 	REQUIRE(!sage2.m_growthEvent.exists());
-
+	// Fluid.
 	Block& waterLocation = area2.getBlock(3,8,1);
 	REQUIRE(waterLocation.m_totalFluidVolume == 10);
 	REQUIRE(waterLocation.volumeOfFluidTypeContains(water) == 10);
 	FluidGroup& fluidGroup = *waterLocation.getFluidGroup(water);
 	REQUIRE(area2.m_unstableFluidGroups.contains(&fluidGroup));
-
+	// Actor.
 	REQUIRE(!area2.getBlock(5,5,1).m_hasActors.empty());
 	Actor* dwarf2 = area2.getBlock(5,5,1).m_hasActors.getAll()[0];
 	REQUIRE(&dwarf2->m_species == &dwarf);
@@ -71,22 +92,47 @@ TEST_CASE("json")
 	REQUIRE(dwarf2->m_mustDrink.thirstEventExists());
 	REQUIRE(dwarf2->m_mustSleep.hasTiredEvent());
 	REQUIRE(dwarf2->getFaction() == &faction2);
-
+	// Objective.
+	REQUIRE(dwarf2->m_hasObjectives.m_prioritySet.getPriorityFor(ObjectiveTypeId::Dig) == 10);
+	REQUIRE(dwarf2->m_hasObjectives.getCurrent().getObjectiveTypeId() == ObjectiveTypeId::GoTo);
+	GoToObjective& goToObjective = static_cast<GoToObjective&>(dwarf2->m_hasObjectives.getCurrent());
+	REQUIRE(goToObjective.getLocation() == area2.getBlock(9,9,1));
+	// Equipment.
+	REQUIRE(!dwarf2->m_equipmentSet.getAll().empty());
+	Item* pants2 = *dwarf2->m_equipmentSet.getAll().begin();
+	REQUIRE(pants2->m_itemType == pants);
+	REQUIRE(pants2->m_materialType == cotton);
+	// canPickup.
+	REQUIRE(dwarf2->m_canPickup.isCarryingAnything());
+	REQUIRE(dwarf2->m_canPickup.getCarrying()->isItem());
+	Item& saw2 = dwarf2->m_canPickup.getItem();
+	REQUIRE(saw2.m_itemType == saw);
+	REQUIRE(saw2.m_materialType == bronze);
+	// Items
 	REQUIRE(!area2.getBlock(1,2,1).m_hasItems.empty());
 	Item* axe2 = area2.getBlock(1,2,1).m_hasItems.getAll()[0];
 	REQUIRE(axe2->m_materialType == bronze);
 	REQUIRE(axe2->m_quality == 10);
 	REQUIRE(axe2->m_percentWear == 10);
+	// Block features.
 	REQUIRE(area2.getBlock(1,8,1).m_hasBlockFeatures.contains(BlockFeatureType::stairs));
 	REQUIRE(area2.getBlock(1,8,1).m_hasBlockFeatures.at(BlockFeatureType::stairs)->materialType == &wood);
 	REQUIRE(area2.getBlock(9,1,1).m_hasBlockFeatures.contains(BlockFeatureType::door));
-
+	// Item cargo.
+	REQUIRE(!area2.getBlock(0,0,1).m_hasItems.empty());
+	Item* bucket3 = area2.getBlock(0,0,1).m_hasItems.getAll()[0];
+	REQUIRE(bucket3->m_hasCargo.containsAnyFluid());
+	REQUIRE(bucket3->m_hasCargo.getFluidType() == water);
+	REQUIRE(bucket3->m_hasCargo.getFluidVolume() == 5);
+	Item* bucket4 = area2.getBlock(0,1,1).m_hasItems.getAll()[0];
+	REQUIRE(bucket4->m_hasCargo.containsGeneric(pile, sand, 1));
+	// Fires.
 	REQUIRE(area2.m_fires.contains(area2.getBlock(9,1,1), wood));
 	Fire& fire = area2.m_fires.at(area2.getBlock(9,1,1), wood);
 	REQUIRE(fire.m_stage == FireStage::Smouldering);
 	REQUIRE(fire.m_hasPeaked == false);
 	REQUIRE(fire.m_event.exists());
-
+	// Farm fields.
 	REQUIRE(area2.m_hasFarmFields.contains(faction2));
 	REQUIRE(area2.getBlock(1,6,1).m_isPartOfFarmField.contains(faction2));
 	REQUIRE(area2.getBlock(1,6,1).m_isPartOfFarmField.get(faction2)->plantSpecies == &sage);

@@ -14,7 +14,7 @@ EquipmentSet::EquipmentSet(const Json& data, Actor& a) : m_actor(a), m_mass(0)
 	for(const Json& equipmentId : data["equipments"])
 	{
 		Item& equipment = m_actor.getSimulation().getItemById(equipmentId.get<ItemId>());
-		addEquipment(equipment);
+		insertEquipment(equipment);
 	}
 }
 Json EquipmentSet::toJson() const 
@@ -32,7 +32,7 @@ bool EquipmentSortByLayer::operator()(Item* const& a, Item* const& b) const
 	return a->m_itemType.wearableData->layer > b->m_itemType.wearableData->layer;
 }
 
-void EquipmentSet::addEquipment(Item& equipment)
+void EquipmentSet::insertEquipment(Item& equipment)
 {
 	assert(std::ranges::find(m_equipments, &equipment) == m_equipments.end());
 	m_mass += equipment.m_mass;
@@ -54,6 +54,10 @@ void EquipmentSet::addEquipment(Item& equipment)
 		if(equipment.m_itemType.hasMeleeAttack())
 			m_meleeWeapons.insert(&equipment);
 	}
+}
+void EquipmentSet::addEquipment(Item& equipment)
+{
+	insertEquipment(equipment);
 	m_actor.m_canFight.update();
 }
 void EquipmentSet::removeEquipment(Item& equipment)

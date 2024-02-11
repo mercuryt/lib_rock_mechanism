@@ -42,7 +42,12 @@ WanderObjective::WanderObjective(const Json& data, DeserializationMemo& deserial
 	if(data.contains("threadedTask"))
 		m_threadedTask.create(*this);
 }
-Json WanderObjective::toJson() const { return {{"routeFound", m_routeFound}}; }
+Json WanderObjective::toJson() const
+{ 
+	Json data = Objective::toJson();
+	data["routeFound"] = m_routeFound;
+	return data;
+}
 void WanderObjective::execute() 
 { 
 	if(m_routeFound)

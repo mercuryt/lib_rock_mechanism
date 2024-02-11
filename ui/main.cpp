@@ -3,12 +3,12 @@
 #include "window.h"
 #include "../engine/config.h"
 #include "../engine/definitions.h"
-#include "../engine/objectiveTypeInstances.h"
+#include "../engine/objectiveTypes.h"
 int main()
 {
 	Config::load();
 	definitions::load();
-	ObjectiveTypeInstances::load();
+	ObjectiveType::load();
 	displayData::load();
 	sprites::load();
 	tgui::Theme::setDefault("data/display/themes/Black.txt");

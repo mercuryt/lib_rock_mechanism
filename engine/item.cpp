@@ -192,13 +192,16 @@ Item::Item(const Json& data, DeserializationMemo& deserializationMemo, ItemId id
 
 		if(data.contains("location"))
 			setLocation(deserializationMemo.blockReference(data["location"]));
+		if(data.contains("cargo"))
+			m_hasCargo.load(data["cargo"], deserializationMemo);
 	}
 Json Item::toJson() const
 {
 	Json data = HasShape::toJson();
 	data["id"] = m_id;
 	data["name"] = m_name;
-	data["location"] = m_location->positionToJson();
+	if(m_location)
+		data["location"] = m_location->positionToJson();
 	data["itemType"] = m_itemType;
 	data["materialType"] = m_materialType;
 	data["quality"] = m_quality;
@@ -207,46 +210,50 @@ Json Item::toJson() const
 	data["installed"] = m_installed;
 	data["canBeStockPiled"] = m_canBeStockPiled.toJson();
 	if(m_itemType.internalVolume != 0)
-	{
-		if(m_hasCargo.containsAnyFluid())
-		{
-			data["fluidCargoType"] = m_hasCargo.getFluidType().name;
-			data["fluidCargoVolume"] = m_hasCargo.getFluidVolume();
-		}
-		else if(!m_hasCargo.empty())
-		{
-			data["itemCargo"] = Json::array();
-			data["actorCargo"] = Json::array();
-			for(HasShape* hasShape : const_cast<ItemHasCargo&>(m_hasCargo).getContents())
-				if(hasShape->isItem())
-					data["itemCargo"].push_back(static_cast<Item*>(hasShape)->m_id);
-				else
-					data["actorCargo"].push_back(static_cast<Actor*>(hasShape)->m_id);
-		}
-	}
+		data["cargo"] = m_hasCargo.toJson();
 	return data;
 }
 // HasCargo.
-void ItemHasCargo::loadJson(const Json& data, DeserializationMemo& deserializationMemo)
+void ItemHasCargo::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	m_volume = data["volume"].get<Volume>();
 	m_mass = data["mass"].get<Mass>();
-	m_fluidType = data.contains("fluidType") ? data["fluidType"].get<const FluidType*>() : nullptr;
-	m_fluidVolume = data.contains("fluidVolume") ? data["fluidVolume"].get<Volume>() : 0u;
-	if(data.contains("hasShapes"))
-		for(const Json& shapeReference : data["hasShapes"])
-			m_shapes.push_back(&deserializationMemo.hasShapeReference(shapeReference));
+	if(data.contains("fluidVolume"))
+	{
+		m_fluidType = data["fluidType"].get<const FluidType*>();
+		m_fluidVolume = data["fluidVolume"].get<Volume>();
+	}
+	if(data.contains("actors"))
+		for(const Json& actorReference : data["actors"])
+		{
+			Actor& actor = deserializationMemo.actorReference(actorReference);
+			m_shapes.push_back(static_cast<HasShape*>(&actor));
+		}
 	if(data.contains("items"))
 		for(const Json& itemReference : data["items"])
-			m_items.push_back(&deserializationMemo.itemReference(itemReference));
+		{
+			Item& item = deserializationMemo.itemReference(itemReference);
+			m_shapes.push_back(static_cast<HasShape*>(&item));
+			m_items.push_back(&item);
+		}
 }
 Json ItemHasCargo::toJson() const
 {
-	Json data{{"volume", m_volume}, {"mass", m_mass}, {"fluidType", m_fluidType}, {"fluidVolume", m_fluidVolume}, {"hasShapes", Json::array()}, {"items", Json::array()}};
-	for(const HasShape* shape : m_shapes)
-		data["hasShapes"].push_back(shape);
-	for(const Item* item : m_items)
-		data["items"].push_back(item);
+	Json data{{"volume", m_volume}, {"mass", m_mass}, {"actors", Json::array()}, {"items", Json::array()}};
+	for(HasShape* hasShape : m_shapes)
+		if(hasShape->isItem())
+			data["items"].push_back(static_cast<Item*>(hasShape)->m_id);
+		else
+		{
+			assert(hasShape->isActor());
+			data["actors"].push_back(static_cast<Actor*>(hasShape)->m_id);
+		}
+	if(m_fluidType)
+	{
+		assert(m_shapes.empty());
+		data["fluidType"] = m_fluidType;
+		data["fluidVolume"] = m_fluidVolume;
+	}
 	return data;
 }
 void ItemHasCargo::add(HasShape& hasShape)

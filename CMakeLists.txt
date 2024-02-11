@@ -17,7 +17,7 @@ if(MSVC)
 else()
     # additional warnings
     add_compile_options(-Wall -Wextra -Werror -Wunused-function -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wnull-dereference -Wdouble-promotion )
-    #add_compile_options(-D_GLIBCXX_DEBUG)
+    add_compile_options(-D_GLIBCXX_DEBUG)
 endif()
 
 # add_compile_options(-ffast-math)

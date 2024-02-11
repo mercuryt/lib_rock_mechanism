@@ -55,20 +55,23 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 		if(itemData.contains("hasCargo"))
 		{
 			Item& item = m_simulation.getItemById(itemData["id"].get<ItemId>());
-			item.m_hasCargo.loadJson(itemData["hasCargo"], deserializationMemo);
+			item.m_hasCargo.load(itemData["hasCargo"], deserializationMemo);
 		}
-	// Load Actor objectives and reservations.
+	// Load Actor objectives, following and reservations.
 	for(const Json& actorData : data["actors"])
 	{
 		Actor& actor = m_simulation.getActorById(actorData["id"].get<ActorId>());
-		if(actorData.contains("hasObjectives"))
-			actor.m_hasObjectives.load(actorData["hasObjectives"], deserializationMemo);
+		actor.m_hasObjectives.load(actorData["hasObjectives"], deserializationMemo);
+		if(actorData.contains("canReserve"))
+			actor.m_canReserve.load(data["canReserve"], deserializationMemo);
 		if(actorData.contains("canFollow"))
 			actor.m_canFollow.load(actorData["canFollow"], deserializationMemo);
-
 	}
 	// Load fluid sources.
 	m_fluidSources.load(data["fluidSources"], deserializationMemo);
+	// Load caveInCheck
+	for(const Json& blockReference : data["caveInCheck"])
+		m_caveInCheck.insert(&deserializationMemo.blockReference(blockReference));
 }
 Json Area::toJson() const
 {
@@ -76,18 +79,34 @@ Json Area::toJson() const
 		{"id", m_id}, {"name", m_name}, {"sizeX", m_sizeX}, {"sizeY", m_sizeY}, {"sizeZ", m_sizeZ}, 
 		{"actors", Json::array()}, {"items", Json::array()}, {"blocks", Json::array()},
 		{"plants", Json::array()}, {"fluidSources", m_fluidSources.toJson()}, {"fires", m_fires.toJson()},
-		{"sleepingSpots", m_hasSleepingSpots.toJson()}
+		{"sleepingSpots", m_hasSleepingSpots.toJson()}, {"caveInCheck", Json::array()}
 	};
-	std::unordered_set<Item*> items;
+	std::unordered_set<const Item*> items;
+	std::function<void(const Item&)> recordItemAndCargoItemsRecursive = [&](const Item& item){
+		items.insert(&item);
+		for(const Item* cargo : item.m_hasCargo.getItems())
+			recordItemAndCargoItemsRecursive(*cargo);
+	};
 	for(const Block& block : m_blocks)
 	{
 		data["blocks"].push_back(block.toJson());
 		for(Item* item : block.m_hasItems.getAll())
-			items.insert(item);
+			recordItemAndCargoItemsRecursive(*item);
 	}
 	for(Actor* actor : m_hasActors.getAllConst())
+	{
 		data["actors"].push_back(actor->toJson());
-	for(Item* item : items)
+		for(Item* item : actor->m_equipmentSet.getAll())
+			items.insert(item);
+		if(actor->m_canPickup.isCarryingAnything())
+		{
+			if(actor->m_canPickup.getCarrying()->isItem())
+				items.insert(&actor->m_canPickup.getItem());
+			else if(actor->m_canPickup.getCarrying()->isActor())
+				data["actors"].push_back(actor->m_canPickup.getActor().toJson());
+		}
+	}
+	for(const Item* item : items)
 		data["items"].push_back(item->toJson());
 	for(const Plant& plant : m_hasPlants.getAllConst())
 		data["plants"].push_back(plant.toJson());
@@ -98,6 +117,8 @@ Json Area::toJson() const
 	data["hasCraftingLocationsAndJobs"] = m_hasCraftingLocationsAndJobs.toJson();
 	data["hasStockPiles"] = m_hasStockPiles.toJson();
 	data["targetedHauling"] = m_targetedHauling.toJson();
+	for(const Block* block : m_caveInCheck)
+		data["caveInCheck"].push_back(block);
 	return data;
 }
 void Area::setup()

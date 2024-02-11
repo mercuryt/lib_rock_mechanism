@@ -27,6 +27,7 @@ class EquipmentSet
 	std::unordered_set<Item*> m_rangedWeapons;
 	std::unordered_set<Item*> m_rangedWeaponAmmo;
 	uint32_t m_mass;
+	void insertEquipment(Item& equipment);
 public:
 	EquipmentSet(Actor& a) : m_actor(a), m_mass(0) { }
 	EquipmentSet(const Json& data, Actor& a);

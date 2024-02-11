@@ -109,7 +109,8 @@ void CanPickup::pickUp(Item& item, uint32_t quantity)
 	if(quantity == item.getQuantity())
 	{
 		m_carrying = &item;
-		item.exit();
+		if(item.m_location)
+			item.exit();
 	}
 	else
 	{
@@ -125,7 +126,8 @@ void CanPickup::pickUp(Actor& actor, uint32_t quantity)
 	assert(!actor.m_mustSleep.isAwake() || actor.m_body.isInjured());
 	assert(m_carrying = nullptr);
 	actor.m_reservable.maybeClearReservationFor(m_actor.m_canReserve);
-	actor.exit();
+	if(actor.m_location)
+		actor.exit();
 	m_carrying = &actor;
 	m_actor.m_canMove.updateIndividualSpeed();
 }
