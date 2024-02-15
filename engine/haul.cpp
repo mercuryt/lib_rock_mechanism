@@ -325,14 +325,14 @@ HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters)
 	}
 }
 HaulSubproject::HaulSubproject(const Json& data, Project& p, DeserializationMemo& deserializationMemo) : m_project(p), 
-	m_toHaul(*deserializationMemo.m_hasShapes.at(data["toHaul"].get<uintptr_t>())), 
+	m_toHaul(data.contains("toHaulItem") ? static_cast<HasShape&>(deserializationMemo.itemReference(data["toHaulItem"])) : static_cast<HasShape&>(deserializationMemo.actorReference(data["toHaulActor"]))),
 	m_quantity(data["quantity"].get<uint32_t>()), 
 	m_strategy(haulStrategyFromName(data["haulStrategy"].get<std::string>())),
 	m_haulTool(nullptr), 
 	m_leader(nullptr), 
 	m_itemIsMoving(data["itemIsMoving"].get<bool>()), 
 	m_beastOfBurden(nullptr), 
-	m_projectRequirementCounts(deserializationMemo.projectRequirementCountsReference(data["projectRequirementCounts"])),
+	m_projectRequirementCounts(deserializationMemo.projectRequirementCountsReference(data["requirementCounts"])),
        	m_genericItemType(nullptr), 
 	m_genericMaterialType(nullptr)
 { 
@@ -363,13 +363,19 @@ HaulSubproject::HaulSubproject(const Json& data, Project& p, DeserializationMemo
 Json HaulSubproject::toJson() const
 {
 	Json data({
-		{"toHaul", reinterpret_cast<uintptr_t>(&m_toHaul)},
 		{"quantity", m_quantity},
 		{"haulStrategy", haulStrategyToName(m_strategy)},
 		{"itemIsMoving", m_itemIsMoving},
 		{"address", reinterpret_cast<uintptr_t>(this)},
 		{"requirementCounts", reinterpret_cast<uintptr_t>(&m_projectRequirementCounts)},
 	});
+	if(m_toHaul.isItem())
+		data["toHaulItem"] = static_cast<Item&>(m_toHaul).m_id;
+	else
+	{
+		assert(m_toHaul.isActor());
+		data["toHaulActor"] = static_cast<Actor&>(m_toHaul).m_id;
+	}
 	if(m_haulTool != nullptr)
 		data["haulTool"] = m_haulTool->m_id;
 	if(m_leader != nullptr)

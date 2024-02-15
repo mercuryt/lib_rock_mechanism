@@ -187,14 +187,18 @@ Item::Item(const Json& data, DeserializationMemo& deserializationMemo, ItemId id
 	m_quality(data["quality"].get<uint32_t>()), m_percentWear(data["percentWear"].get<Percent>()), m_installed(data["installed"].get<bool>()),
 	m_craftJobForWorkPiece(nullptr), m_hasCargo(*this), m_canBeStockPiled(data["canBeStockPiled"], deserializationMemo, *this) 
 	{
-		if(data.contains("craftJobForWorkPiece"))
-			m_craftJobForWorkPiece = deserializationMemo.m_craftJobs.at(data["craftJobForWorkPiece"]);
-
 		if(data.contains("location"))
 			setLocation(deserializationMemo.blockReference(data["location"]));
 		if(data.contains("cargo"))
 			m_hasCargo.load(data["cargo"], deserializationMemo);
 	}
+void Item::load(const Json& data, DeserializationMemo& deserializationMemo)
+{
+	if(data.contains("craftJobForWorkPiece"))
+		m_craftJobForWorkPiece = deserializationMemo.m_craftJobs.at(data["craftJobForWorkPiece"]);
+	if(data.contains("hasCargo"))
+		m_hasCargo.load(data["hasCargo"], deserializationMemo);
+}
 Json Item::toJson() const
 {
 	Json data = HasShape::toJson();

@@ -19,7 +19,6 @@ Plant& DeserializationMemo::plantReference(const Json& data) { return m_simulati
 Block& DeserializationMemo::blockReference(const Json& data) { return m_simulation.getBlockForJsonQuery(data); }
 Item& DeserializationMemo::itemReference(const Json& data) { return m_simulation.getItemById(data.get<ItemId>()); }
 Actor& DeserializationMemo::actorReference(const Json& data) { return m_simulation.getActorById(data.get<ActorId>()); }
-HasShape& DeserializationMemo::hasShapeReference(const Json& data) { return *m_hasShapes.at(data.get<uintptr_t>()); }
 ProjectRequirementCounts& DeserializationMemo::projectRequirementCountsReference(const Json& data) { return *m_projectRequirementCounts.at(data.get<uintptr_t>()); }
 //WorldLocation& DeserializationMemo::getLocationByNormalizedLatLng(const Json& data) { return m_simulation.m_world->getLocationByNormalizedLatLng(data.get<LatLng>()); }
 std::unique_ptr<Objective> DeserializationMemo::loadObjective(const Json& data)

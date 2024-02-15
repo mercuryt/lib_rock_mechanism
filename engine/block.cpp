@@ -701,6 +701,8 @@ void Block::loadFromJson(Json data, DeserializationMemo& deserializationMemo)
 	m_underground = data["underground"].get<bool>();
 	m_outdoors = data["outdoors"].get<bool>();
 	m_visible = data["visible"].get<bool>();
+	if(data.contains("reservable"))
+		deserializationMemo.m_reservables[data["reservable"].get<uintptr_t>()] = &m_reservable;
 	if(data.contains("solid"))
 		m_solid = &MaterialType::byName(data["solid"].get<std::string>());
 	if(data.contains("blockFeatures"))
@@ -725,7 +727,10 @@ void Block::loadFromJson(Json data, DeserializationMemo& deserializationMemo)
 }
 Json Block::toJson() const 
 {
-	Json data{{"exposedToSky", m_exposedToSky}, {"underground", m_underground}, {"isEdge", m_isEdge}, {"outdoors", m_outdoors}, {"visible", m_visible}, {"x", m_x}, {"y", m_y}, {"z", m_z}, {"area", m_area->m_id}};
+	//TODO: This format is far too verbose. Store the bools in an array, infer if possible. Infer the xyz. 
+	Json data{{"exposedToSky", m_exposedToSky}, {"underground", m_underground}, {"outdoors", m_outdoors}, {"visible", m_visible}, {"x", m_x}, {"y", m_y}, {"z", m_z}};
+	if(m_reservable.hasAnyReservations())
+		data["reservable"] = reinterpret_cast<uintptr_t>(&m_reservable);
 	if(m_solid != nullptr)
 		data["solid"] = m_solid->name;
 	if(!m_hasBlockFeatures.empty())

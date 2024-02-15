@@ -8,6 +8,7 @@
 #include "../engine/area.h"
 #include "../engine/block.h"
 #include "../engine/input.h"
+#include "../engine/atomicBool.h"
 #include "draw.h"
 #include "editRealityPanel.h"
 #include "editAreaPanel.h"
@@ -56,7 +57,8 @@ class Window final
 	std::unordered_set<Item*> m_selectedItems;
 	std::unordered_set<Plant*> m_selectedPlants;
 	Faction* m_faction;
-	std::atomic<bool> m_paused;
+	// AtomicBool used instead of std::atomic<bool> for atomic toggle.
+	AtomicBool m_paused;
 	std::chrono::milliseconds m_minimumMillisecondsPerFrame;
 	std::chrono::milliseconds m_minimumMillisecondsPerStep;
 	Draw m_draw;
@@ -76,6 +78,7 @@ public:
 	std::atomic<bool> m_lockInput = false;
 	Window();
 	void setPaused(bool paused);
+	void togglePaused();
 	void setArea(Area& area, GameView* gameView = nullptr);
 	void startLoop();
 	void centerView(const Block& block);

@@ -56,6 +56,7 @@ class Reservable final
 public:
 	Reservable(uint32_t mr) : m_maxReservations(mr) {}
 	bool isFullyReserved(const Faction* faction) const;
+	bool hasAnyReservations() const;
 	std::unordered_map<CanReserve*, uint32_t>& getReservedBy();
 	void reserveFor(CanReserve& canReserve, const uint32_t quantity = 1u, std::unique_ptr<DishonorCallback> dishonorCallback = nullptr); 
 	void clearReservationFor(CanReserve& canReserve, const uint32_t quantity = 1u);

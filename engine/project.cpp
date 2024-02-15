@@ -17,6 +17,7 @@ ProjectRequirementCounts::ProjectRequirementCounts(const Json& data, [[maybe_unu
 ProjectWorker::ProjectWorker(const Json& data, DeserializationMemo& deserializationMemo) : 
 	objective(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))
 {
+	assert(deserializationMemo.m_haulSubprojects.contains(data["haulSubproject"].get<uintptr_t>()));
 	haulSubproject = deserializationMemo.m_haulSubprojects.at(data["haulSubproject"].get<uintptr_t>());
 }
 Json ProjectWorker::toJson() const
@@ -24,6 +25,24 @@ Json ProjectWorker::toJson() const
 	return {{"haulSubproject", haulSubproject}, {"objective", &objective}};
 }
 // DishonorCallback.
+ProjectRequiredShapeDishonoredCallback::ProjectRequiredShapeDishonoredCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
+	m_project(*deserializationMemo.m_projects.at(data["project"].get<uintptr_t>())), 
+	m_hasShape(data.contains("hasShapeItem") ? static_cast<HasShape&>(deserializationMemo.itemReference(data["hasShapeItem"])) : static_cast<HasShape&>(deserializationMemo.actorReference(data["hasShapeActor"]))) { }
+Json ProjectRequiredShapeDishonoredCallback::toJson() const 
+{ 
+	Json data{
+			{"type", "ProjectRequiredShapeDishonoredCallback"}, 
+			{"project", reinterpret_cast<uintptr_t>(&m_project)}
+		};
+	if(m_hasShape.isItem())
+		data["hasShapeItem"] = static_cast<Item&>(m_hasShape).m_id;
+	else
+	{
+		assert(m_hasShape.isActor());
+		data["hasShapeActor"] = static_cast<Actor&>(m_hasShape).m_id;
+	}
+	return data;
+}
 void ProjectRequiredShapeDishonoredCallback::execute(uint32_t oldCount, uint32_t newCount)
 {
 	m_project.onHasShapeReservationDishonored(m_hasShape, oldCount, newCount);
@@ -288,6 +307,7 @@ Project::Project(const Json& data, DeserializationMemo& deserializationMemo) : m
 			ItemQuery itemQuery(pair[0], deserializationMemo);
 			ProjectRequirementCounts requirementCounts(pair[1], deserializationMemo);
 			m_requiredItems.emplace_back(std::make_pair(itemQuery, requirementCounts));
+			deserializationMemo.m_projectRequirementCounts[pair[1]["address"].get<uintptr_t>()] = &m_requiredItems.back().second;
 		}
 	if(data.contains("requiredActors"))
 		for(const Json& pair : data["requiredActors"])
@@ -295,17 +315,28 @@ Project::Project(const Json& data, DeserializationMemo& deserializationMemo) : m
 			ActorQuery actorQuery(pair[0], deserializationMemo);
 			ProjectRequirementCounts requirementCounts(pair[1], deserializationMemo);
 			m_requiredActors.emplace_back(std::make_pair(actorQuery, requirementCounts));
+			deserializationMemo.m_projectRequirementCounts[pair[1]["address"].get<uintptr_t>()] = &m_requiredActors.back().second;
 		}
 	if(data.contains("toConsume"))
 		for(const Json& itemId : data["toConsume"])
 			m_toConsume.insert(&deserializationMemo.m_simulation.getItemById(itemId.get<ItemId>()));
 	if(data.contains("toPickup"))
-		for(const Json& pair : data["toPickup"])
+		for(const Json& tuple : data["toPickup"])
 		{
-			HasShape& hasShape = *deserializationMemo.m_hasShapes.at(pair[0].get<uintptr_t>());
-			ProjectRequirementCounts& projectRequirementCounts = *deserializationMemo.m_projectRequirementCounts.at(pair[1][0].get<uintptr_t>());
-			uint32_t quantity = pair[1][1].get<uint32_t>();
-			m_toPickup[&hasShape] = std::make_pair(&projectRequirementCounts, quantity);
+			HasShape* hasShape = nullptr;
+			if(tuple[0].contains("item"))
+			{
+				Item& item = deserializationMemo.itemReference(tuple[0]["item"]);
+				hasShape = static_cast<HasShape*>(&item);
+			}
+			else
+			{
+				Actor& actor = deserializationMemo.actorReference(tuple[0]["actor"]);
+				hasShape = static_cast<HasShape*>(&actor);
+			}
+			ProjectRequirementCounts& projectRequirementCounts = *deserializationMemo.m_projectRequirementCounts.at(tuple[1].get<uintptr_t>());
+			uint32_t quantity = tuple[2].get<uint32_t>();
+			m_toPickup[hasShape] = std::make_pair(&projectRequirementCounts, quantity);
 		}
 	if(data.contains("haulSubprojects"))
 		for(const Json& haulSubprojectData : data["haulSubprojects"])
@@ -325,11 +356,22 @@ Project::Project(const Json& data, DeserializationMemo& deserializationMemo) : m
 }
 void Project::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
 {
-	for(const Json& projectWorkerData : data["workers"])
-	{
-		Actor& worker = deserializationMemo.m_simulation.getActorById(projectWorkerData["actor"].get<ActorId>());
-		m_workers.try_emplace(&worker, projectWorkerData["projectWorker"], deserializationMemo);
-	}
+	if(data.contains("workers"))
+		for(const Json& pair : data["workers"])
+		{
+			Actor& actor = deserializationMemo.actorReference(pair[0]);
+			m_workers.try_emplace(&actor, pair[1], deserializationMemo);
+			actor.m_project = this;
+		}
+	if(data.contains("candidates"))
+		for(const Json& pair : data["candidates"])
+		{
+			Actor& actor = deserializationMemo.actorReference(pair[0]);
+			assert(deserializationMemo.m_objectives.contains(pair[1].get<uintptr_t>()));
+			Objective& objective = *deserializationMemo.m_objectives.at(pair[1].get<uintptr_t>());
+			m_workerCandidatesAndTheirObjectives.emplace_back(&actor, &objective);
+			actor.m_project = this;
+		}
 }
 Json Project::toJson() const
 {
@@ -340,13 +382,27 @@ Json Project::toJson() const
 		{"delay", m_delay},
 		{"haulRetries", m_haulRetries},
 		{"location", m_location.positionToJson()},
+		{"requirementsLoaded", m_requirementsLoaded}
 	});
+	if(!m_workerCandidatesAndTheirObjectives.empty())
+	{
+		data["candidates"] = Json::array();
+		for(auto& [actor, objective] : m_workerCandidatesAndTheirObjectives)
+			data["candidates"].push_back({actor, objective});
+	}
+	if(!m_workers.empty())
+	{
+		data["workers"] = Json::array();
+		for(auto& [actor, projectWorker] : m_workers)
+			data["workers"].push_back({actor, projectWorker.toJson()});
+	}
 	if(!m_requiredItems.empty())
 	{
 		data["requiredItems"] = Json::array();
 		for(auto& [itemQuery, requiredCounts] : m_requiredItems)
 		{
 			Json pair({itemQuery.toJson(), requiredCounts});
+			pair[1]["address"] = reinterpret_cast<uintptr_t>(&requiredCounts);
 			data["requiredItems"].push_back(pair);
 		}
 	}
@@ -370,8 +426,15 @@ Json Project::toJson() const
 		data["toPickup"] = Json::array();
 		for(auto& [hasShape, pair] : m_toPickup)
 		{
-			Json jsonPair({*pair.first, pair.second});
-			data["toPickup"].emplace_back(reinterpret_cast<uintptr_t>(hasShape), jsonPair);
+			Json jsonTuple({nullptr, *pair.first, pair.second});
+			if(hasShape->isItem())
+				jsonTuple[0] = {{"item", static_cast<Item*>(hasShape)->m_id}};
+			else
+			{
+				assert(hasShape->isActor());
+				jsonTuple[0] = {{"actor",static_cast<Actor*>(hasShape)->m_id}};
+			}
+			data["toPickup"].emplace_back(jsonTuple);
 		}
 	}
 	if(!m_haulSubprojects.empty())

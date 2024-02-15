@@ -41,11 +41,12 @@ Json ActorCanMove::toJson() const
 		data["path"] = Json::array();
 		for(Block* block : m_path)
 			data["path"].push_back(block->positionToJson());
+		data["pathIterOffset"] = m_path.begin() - m_pathIter;
 	}
 	if(m_event.exists())
 	{
 		data["moveEventStart"] = m_event.getStartStep();
-		data["duration"] = m_event.duration();
+		data["moveEventDuration"] = m_event.duration();
 	}
 	if(m_threadedTask.exists())
 		data["threadedTask"] = m_threadedTask.get().toJson();
@@ -225,18 +226,31 @@ PathThreadedTask::PathThreadedTask(Actor& a, HasShape* hs, const FluidType* ft, 
 		assert(m_unreservedDestination);
 }
 PathThreadedTask::PathThreadedTask(const Json& data, DeserializationMemo& deserializationMemo, Actor& a) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), 
-	m_hasShape(data.contains("hasShape") ? deserializationMemo.m_hasShapes.at(data["hasShape"].get<uintptr_t>()) : nullptr),
 	m_huristicDestination(data.contains("huristicDestination") ? &deserializationMemo.m_simulation.getBlockForJsonQuery(data["huristicDestination"]) : nullptr),
 	m_detour(data["detour"].get<bool>()),
 	m_adjacent(data["adjacent"].get<bool>()),
 	m_unreservedDestination(data["unreservedDestination"].get<bool>()),
 	m_reserveDestination(data["reserveDestination"].get<bool>()), 
-	m_findsPath(m_actor, m_detour) { }
+	m_findsPath(m_actor, m_detour) 
+{ 
+	if(data.contains("hasShapeItem"))
+		m_hasShape = static_cast<HasShape*>(&deserializationMemo.itemReference(data["hasShapeItem"]));
+	else if(data.contains("hasShapeActor"))
+		m_hasShape = static_cast<HasShape*>(&deserializationMemo.actorReference(data["hasShapeActor"]));
+}
 Json PathThreadedTask::toJson() const
 {
 	Json data({{"detour", m_detour}, {"adjacent", m_adjacent}, {"unreservedDestination", m_unreservedDestination}, {"reserveDestination", m_reserveDestination}});
 	if(m_hasShape != nullptr)
-		data["hasShape"] = reinterpret_cast<uintptr_t>(m_hasShape);
+	{
+		if(m_hasShape->isItem())
+			data["hasShapeItem"] = static_cast<Item*>(m_hasShape)->m_id;
+		else
+		{
+			assert(m_hasShape->isActor());
+			data["hasShapeActor"] = static_cast<Actor*>(m_hasShape)->m_id;
+		}
+	}
 	if(m_huristicDestination != nullptr)
 		data["huristicDestination"] = m_huristicDestination->positionToJson();
 	return data;

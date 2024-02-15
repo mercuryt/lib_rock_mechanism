@@ -171,6 +171,7 @@ public:
 	// NonGeneric.
 	Item(Simulation& s, ItemId i, const ItemType& it, const MaterialType& mt, uint32_t qual, Percent pw, CraftJob* cj);
 	Item(const Json& data, DeserializationMemo& deserializationMemo, ItemId i);
+	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	void setName(std::wstring name) { m_name = name; }
 	void setVolume();

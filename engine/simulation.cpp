@@ -307,7 +307,6 @@ Json Simulation::toJson() const
 }
 Area& Simulation::loadAreaFromJson(const Json& data)
 {
-	//TODO: embed data in structure with factions to allow json pointer access.
 	DeserializationMemo deserializationMemo(*this);
 	m_areas.emplace_back(data, deserializationMemo, *this);
 	return m_areas.back();

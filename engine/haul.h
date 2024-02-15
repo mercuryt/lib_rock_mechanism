@@ -79,6 +79,8 @@ public:
 	[[nodiscard]] std::unordered_set<Actor*>& getWorkers() { return m_workers; }
 	// For testing.
 	[[nodiscard]] HaulStrategy getHaulStrategy() const { return m_strategy; }
+	[[nodiscard]] bool getIsMoving() const { return m_itemIsMoving; }
+	[[nodiscard]] bool getQuantity() const { return m_quantity; }
 	[[nodiscard]] bool operator==(const HaulSubproject& other) const { return &other == this; }
 	friend class Project;
 };
@@ -90,7 +92,7 @@ struct HaulSubprojectDishonorCallback final : public DishonorCallback
 	void execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { m_haulSubproject.cancel(); }
 	Json toJson() const { return {{"type", "HaulSubprojectDishonorCallback"}, {"haulSubproject", reinterpret_cast<uintptr_t>(&m_haulSubproject)}}; }
 };
-inline void to_json(Json& data, const HaulSubproject* const & haulSubproject){ data = reinterpret_cast<uintptr_t>(&haulSubproject); }
+inline void to_json(Json& data, const HaulSubproject* const& haulSubproject){ data = reinterpret_cast<uintptr_t>(haulSubproject); }
 // Used by Actor for individual haul strategy only. Other strategies use lead/follow.
 class CanPickup final
 {

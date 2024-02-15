@@ -3,6 +3,7 @@
 #include "area.h"
 #include "blockFeature.h"
 #include "deserializationMemo.h"
+#include "deserializeDishonorCallbacks.h"
 #include "random.h"
 #include "reservable.h"
 #include "util.h"
@@ -146,11 +147,12 @@ std::unique_ptr<Objective> DigObjectiveType::makeFor(Actor& actor) const
 	return objective;
 }
 DigProject::DigProject(const Json& data, DeserializationMemo& deserializationMemo) : Project(data, deserializationMemo), 
-	m_blockFeatureType(&BlockFeatureType::byName(data["blockFeatureType"].get<std::string>())) { }
+	m_blockFeatureType(data.contains("blockFeatureType") ? &BlockFeatureType::byName(data["blockFeatureType"].get<std::string>()) : nullptr) { }
 Json DigProject::toJson() const
 {
 	Json data = Project::toJson();
-	data["blockFeatureType"] = m_blockFeatureType->name;
+	if(m_blockFeatureType)
+		data["blockFeatureType"] = m_blockFeatureType->name;
 	return data;
 }
 std::vector<std::pair<ItemQuery, uint32_t>> DigProject::getConsumed() const { return {}; }
@@ -235,6 +237,14 @@ HasDigDesignationsForFaction::HasDigDesignationsForFaction(const Json& data, Des
 		m_data.try_emplace(&block, pair[1], deserializationMemo);
 	}
 }
+void HasDigDesignationsForFaction::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
+{
+	for(const Json& pair : data)
+	{
+		Block& block = deserializationMemo.m_simulation.getBlockForJsonQuery(pair[0]);
+		m_data.at(&block).loadWorkers(pair[1], deserializationMemo);
+	}
+}
 Json HasDigDesignationsForFaction::toJson() const
 {
 	Json data;
@@ -281,6 +291,15 @@ void HasDigDesignations::load(const Json& data, DeserializationMemo& deserializa
 		m_data.try_emplace(&faction, pair[1], deserializationMemo, faction);
 	}
 }
+void HasDigDesignations::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
+{
+	for(const Json& pair : data)
+	{
+		const Faction& faction = deserializationMemo.faction(pair[0]);
+		m_data.at(&faction).loadWorkers(pair[1], deserializationMemo);
+	}
+
+}
 Json HasDigDesignations::toJson() const
 {
 	Json data;
@@ -306,6 +325,7 @@ void HasDigDesignations::removeFaction(const Faction& faction)
 // If blockFeatureType is null then dig out fully rather then digging out a feature.
 void HasDigDesignations::designate(const Faction& faction, Block& block, const BlockFeatureType* blockFeatureType)
 {
+	assert(m_data.contains(&faction));
 	m_data.at(&faction).designate(block, blockFeatureType);
 }
 void HasDigDesignations::undesignate(const Faction& faction, Block& block)

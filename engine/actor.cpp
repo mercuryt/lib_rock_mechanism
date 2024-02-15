@@ -2,6 +2,7 @@
 #include "animalSpecies.h"
 #include "block.h"
 #include "area.h"
+#include "config.h"
 #include "deserializationMemo.h"
 #include "eventSchedule.hpp"
 #include "simulation.h"
@@ -247,7 +248,9 @@ void AreaHasActors::processVisionReadStep()
 	auto visionIter = m_visionRequestQueue.begin();
 	while(visionIter < m_visionRequestQueue.end())
 	{
-		auto end = std::min(m_visionRequestQueue.end(), visionIter + Config::visionThreadingBatchSize);
+		auto end = m_visionRequestQueue.size() <= (uintptr_t)(m_visionRequestQueue.begin() - visionIter) + Config::visionThreadingBatchSize ?
+			m_visionRequestQueue.end() :
+			visionIter + Config::visionThreadingBatchSize;
 		m_area.m_simulation.m_taskFutures.push_back(m_area.m_simulation.m_pool.submit([=](){ VisionRequest::readSteps(visionIter, end); }));
 		visionIter = end;
 	}

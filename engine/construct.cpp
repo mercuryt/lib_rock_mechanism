@@ -1,4 +1,5 @@
 #include "construct.h"
+#include "deserializationMemo.h"
 #include "item.h"
 #include "block.h"
 #include "area.h"
@@ -247,6 +248,14 @@ HasConstructionDesignationsForFaction::HasConstructionDesignationsForFaction(con
 		m_data.try_emplace(&block, pair[1], deserializationMemo);
 	}
 }
+void HasConstructionDesignationsForFaction::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
+{
+	for(const Json& pair : data)
+	{
+		Block& block = deserializationMemo.m_simulation.getBlockForJsonQuery(pair[0]);
+		m_data.at(&block).loadWorkers(pair[1], deserializationMemo);
+	}
+}
 Json HasConstructionDesignationsForFaction::toJson() const
 {
 	Json data;
@@ -293,6 +302,15 @@ void HasConstructionDesignations::load(const Json& data, DeserializationMemo& de
 		const Faction& faction = deserializationMemo.faction(pair[0]);
 		m_data.try_emplace(&faction, pair[1], deserializationMemo, faction);
 	}
+}
+void HasConstructionDesignations::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
+{
+	for(const Json& pair : data)
+	{
+		const Faction& faction = deserializationMemo.faction(pair[0]);
+		m_data.at(&faction).loadWorkers(pair[1], deserializationMemo);
+	}
+
 }
 Json HasConstructionDesignations::toJson() const
 {

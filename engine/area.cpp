@@ -47,26 +47,36 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_hasDigDesignations.load(data["hasDigDesignations"], deserializationMemo);
 	m_hasCraftingLocationsAndJobs.load(data["hasCraftingLocationsAndJobs"], deserializationMemo);
 	m_hasStockPiles.load(data["hasStockPiles"], deserializationMemo);
+	m_hasWoodCuttingDesignations.load(data["hasWoodCuttingDesigantions"], deserializationMemo);
 	m_targetedHauling.load(data["targetedHauling"], deserializationMemo);
 	// Load sleeping spots.
 	m_hasSleepingSpots.load(data["sleepingSpots"], deserializationMemo);
-	// Load Item cargo.
+	// Load Item cargo and projects.
 	for(const Json& itemData : data["items"])
-		if(itemData.contains("hasCargo"))
-		{
-			Item& item = m_simulation.getItemById(itemData["id"].get<ItemId>());
-			item.m_hasCargo.load(itemData["hasCargo"], deserializationMemo);
-		}
+	{
+		Item& item = m_simulation.getItemById(itemData["id"].get<ItemId>());
+		item.load(itemData, deserializationMemo);
+	}
 	// Load Actor objectives, following and reservations.
 	for(const Json& actorData : data["actors"])
 	{
 		Actor& actor = m_simulation.getActorById(actorData["id"].get<ActorId>());
 		actor.m_hasObjectives.load(actorData["hasObjectives"], deserializationMemo);
 		if(actorData.contains("canReserve"))
-			actor.m_canReserve.load(data["canReserve"], deserializationMemo);
+			actor.m_canReserve.load(actorData["canReserve"], deserializationMemo);
 		if(actorData.contains("canFollow"))
 			actor.m_canFollow.load(actorData["canFollow"], deserializationMemo);
 	}
+	// Load project workers
+	m_hasConstructionDesignations.loadWorkers(data["hasConstructionDesignations"], deserializationMemo);
+	m_hasDigDesignations.loadWorkers(data["hasDigDesignations"], deserializationMemo);
+	/*
+	m_hasCraftingLocationsAndJobs.loadWorkers(data["hasCraftingLocationsAndJobs"], deserializationMemo);
+	m_hasWoodCuttingDesigantions.loadWorkers(data["hasWoodCuttingDesigantions"], deserializationMemo);
+	m_hasStockPiles.loadWorkers(data["hasStockPiles"], deserializationMemo);
+	m_targetedHauling.loadWorkers(data["targetedHauling"], deserializationMemo);
+	*/
+
 	// Load fluid sources.
 	m_fluidSources.load(data["fluidSources"], deserializationMemo);
 	// Load caveInCheck
@@ -114,6 +124,7 @@ Json Area::toJson() const
 	data["hasSleepingSpots"] = m_hasSleepingSpots.toJson();
 	data["hasConstructionDesignations"] = m_hasConstructionDesignations.toJson();
 	data["hasDigDesignations"] = m_hasDigDesignations.toJson();
+	data["hasWoodCuttingDesigantions"] = m_hasWoodCuttingDesignations.toJson();
 	data["hasCraftingLocationsAndJobs"] = m_hasCraftingLocationsAndJobs.toJson();
 	data["hasStockPiles"] = m_hasStockPiles.toJson();
 	data["targetedHauling"] = m_targetedHauling.toJson();

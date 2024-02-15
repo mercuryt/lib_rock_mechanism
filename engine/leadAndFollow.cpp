@@ -4,8 +4,9 @@
 void CanLead::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 
-	if(data.contains("canFollow"))
-		m_canFollow = &deserializationMemo.hasShapeReference(data["canFollow"]).m_canFollow;
+	m_canFollow = data.contains("canFollowItem") ? 
+		&deserializationMemo.itemReference(data["canFollowItem"]).m_canFollow:
+		&deserializationMemo.actorReference(data["canFollowActor"]).m_canFollow;
 	if(data.contains("locationQueue"))
 		for(const Json& blockQuery : data["locationQueue"])
 			m_locationQueue.push_back(&deserializationMemo.blockReference(blockQuery));
@@ -14,7 +15,15 @@ Json CanLead::toJson() const
 {
 	Json data;
 	if(m_canFollow)
-		data["canFollow"] = &m_canFollow->m_hasShape;
+	{
+		if(m_canFollow->m_hasShape.isItem())
+			data["canFollowItem"] = static_cast<Item&>(m_canFollow->m_hasShape).m_id;
+		else
+		{
+			assert(m_canFollow->m_hasShape.isActor());
+			data["canFollowActor"] = static_cast<Actor&>(m_canFollow->m_hasShape).m_id;
+		}
+	}
 	if(!m_locationQueue.empty())
 		data["locationQueue"] = m_locationQueue;
 	return data;
@@ -98,8 +107,10 @@ std::deque<Block*>& CanLead::getLocationQueue()
 CanFollow::CanFollow(HasShape& a) : m_hasShape(a), m_canLead(nullptr), m_event(a.getEventSchedule()) { }
 void CanFollow::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
-	if(data.contains("canLead"))
-		m_canLead = &deserializationMemo.hasShapeReference(data["canLead"]).m_canLead;
+	if(data.contains("canLeadItem"))
+		m_canLead = &deserializationMemo.itemReference(data["canLeadItem"]).m_canLead;
+	else if(data.contains("canLeadActor"))
+		m_canLead = &deserializationMemo.itemReference(data["canLeadActor"]).m_canLead;
 	if(data.contains("eventStart"))
 		m_event.schedule(m_hasShape, data["eventStart"].get<Step>());
 }
@@ -107,7 +118,15 @@ Json CanFollow::toJson() const
 {
 	Json data;
 	if(m_canLead)
-		data["canLead"] = &m_canLead->m_hasShape;
+	{
+		if(m_canLead->m_hasShape.isItem())
+			data["canLeadItem"] = static_cast<Item&>(m_canLead->m_hasShape).m_id;
+		else
+		{
+			assert(m_canLead->m_hasShape.isActor());
+			data["canLeadActor"] = static_cast<Actor&>(m_canLead->m_hasShape).m_id;
+		}
+	}
 	if(m_event.exists())
 		data["eventStart"] = m_event.getStartStep();
 	return data;

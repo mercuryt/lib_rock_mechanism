@@ -434,6 +434,12 @@ void Window::setPaused(const bool paused)
 	m_paused = paused;
 	m_gameOverlay.m_paused->setVisible(paused);
 }
+void Window::togglePaused()
+{
+	// Atomic toggle.
+	m_paused.toggle();
+	m_gameOverlay.m_paused->setVisible(m_paused);
+}
 void Window::povFromJson(const Json& data)
 {
 	assert(m_simulation);

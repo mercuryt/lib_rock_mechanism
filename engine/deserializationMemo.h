@@ -34,7 +34,6 @@ struct DeserializationMemo final
 	std::unordered_map<uintptr_t, HaulSubproject*> m_haulSubprojects;
 	std::unordered_map<uintptr_t, Reservable*> m_reservables;
 	std::unordered_map<uintptr_t, CanReserve*> m_canReserves;
-	std::unordered_map<uintptr_t, HasShape*> m_hasShapes;
 	std::unordered_map<uintptr_t, ProjectRequirementCounts*> m_projectRequirementCounts;
 	std::unordered_map<uintptr_t, StockPile*> m_stockpiles;
 	std::unordered_map<uintptr_t, CraftJob*> m_craftJobs;
@@ -45,7 +44,6 @@ struct DeserializationMemo final
 	Block& blockReference(const Json& data);
 	Item& itemReference(const Json& data);
 	Actor& actorReference(const Json& data);
-	HasShape& hasShapeReference(const Json& data);
 	ProjectRequirementCounts& projectRequirementCountsReference(const Json& data);
 	//WorldLocation& getLocationByNormalizedLatLng(const Json& data);
 	std::unique_ptr<Objective> loadObjective(const Json& data);

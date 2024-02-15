@@ -60,6 +60,8 @@ public:
 	std::string name() const { return "dig"; }
 	friend class DigThreadedTask;
 	friend class DigProject;
+	//For testing.
+	Project* getProject() { return m_project; }
 };
 // Find a place to dig.
 class DigThreadedTask final : public ThreadedTask
@@ -112,6 +114,7 @@ class HasDigDesignationsForFaction final
 public:
 	HasDigDesignationsForFaction(const Faction& p) : m_faction(p) { }
 	HasDigDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const Faction& faction);
+	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void designate(Block& block, const BlockFeatureType* blockFeatureType);
 	void undesignate(Block& block);
@@ -128,6 +131,7 @@ class HasDigDesignations final
 	std::unordered_map<const Faction*, HasDigDesignationsForFaction> m_data;
 public:
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
+	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void addFaction(const Faction& faction);
 	void removeFaction(const Faction& faction);

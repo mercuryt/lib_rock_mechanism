@@ -1,11 +1,13 @@
 #include "reservable.h"
 #include "simulation.h"
 #include "deserializeDishonorCallbacks.h"
+#include <bits/ranges_algo.h>
 void CanReserve::load(const Json& data, DeserializationMemo& deserializationMemo)
 { 
 	m_faction = &deserializationMemo.faction(data["faction"].get<std::wstring>());
 	for(const Json& reservationData : data["reservations"])
 	{
+		assert(deserializationMemo.m_reservables.contains(reservationData["reservable"].get<uintptr_t>()));
 		Reservable& reservable = *deserializationMemo.m_reservables.at(reservationData["reservable"].get<uintptr_t>());
 		std::unique_ptr<DishonorCallback> dishonorCallback = data.contains("dishonorCallback") ?
 			deserializeDishonorCallback(data["dishonorCallback"], deserializationMemo) : nullptr;
@@ -14,9 +16,7 @@ void CanReserve::load(const Json& data, DeserializationMemo& deserializationMemo
 }
 Json CanReserve::toJson() const 
 {
-	Json data;
-	data["faction"] = m_faction->name;
-	data["reservations"] = Json::array();
+	Json data{{"faction", m_faction->name}, {"reservations", Json::array()}, {"address", reinterpret_cast<uintptr_t>(this)}};
 	for(Reservable* reservable : m_reservables)
 		data["reservations"].push_back(reservable->jsonReservationFor(const_cast<CanReserve&>(*this)));
 	return data;
@@ -57,6 +57,7 @@ bool Reservable::isFullyReserved(const Faction* faction) const
 		return false;
 	return m_reservedCounts.contains(faction) && m_reservedCounts.at(faction) == m_maxReservations; 
 }
+bool Reservable::hasAnyReservations() const { return !m_canReserves.empty(); }
 std::unordered_map<CanReserve*, uint32_t>& Reservable::getReservedBy() { return m_canReserves; }
 void Reservable::reserveFor(CanReserve& canReserve, const uint32_t quantity, std::unique_ptr<DishonorCallback> dishonorCallback) 
 {
@@ -177,7 +178,6 @@ uint32_t Reservable::getUnreservedCount(const Faction& faction) const
 }
 Json Reservable::jsonReservationFor(CanReserve& canReserve) const
 {
-
 	Json data({
 		{"count", m_canReserves.at(&canReserve)},
 		{"reservable", reinterpret_cast<uintptr_t>(this)}

@@ -116,6 +116,7 @@ class HasConstructionDesignationsForFaction final
 public:
 	HasConstructionDesignationsForFaction(const Faction& p) : m_faction(p) { }
 	HasConstructionDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const Faction& faction);
+	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	// If blockFeatureType is null then construct a wall rather then a feature.
 	void designate(Block& block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType);
@@ -133,6 +134,7 @@ class HasConstructionDesignations final
 	std::unordered_map<const Faction*, HasConstructionDesignationsForFaction> m_data;
 public:
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
+	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void addFaction(const Faction& faction);
 	void removeFaction(const Faction& faction);

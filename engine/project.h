@@ -48,8 +48,8 @@ struct ProjectRequiredShapeDishonoredCallback final : public DishonorCallback
 	Project& m_project;
 	HasShape& m_hasShape;
 	ProjectRequiredShapeDishonoredCallback(Project& p, HasShape& hs) : m_project(p), m_hasShape(hs) { }
-	ProjectRequiredShapeDishonoredCallback(const Json& data, DeserializationMemo& deserializationMemo) : m_project(*deserializationMemo.m_projects.at(data["project"].get<uintptr_t>())), m_hasShape(*deserializationMemo.m_hasShapes.at(data["hasShape"].get<uintptr_t>())) { }
-	Json toJson() const { return Json({{"type", "ProjectRequiredShapeDishonoredCallback"}, {"project", reinterpret_cast<uintptr_t>(&m_project)}, {"hasShape", reinterpret_cast<uintptr_t>(&m_hasShape)}}); }
+	ProjectRequiredShapeDishonoredCallback(const Json& data, DeserializationMemo& deserializationMemo);
+	Json toJson() const;
 	void execute(uint32_t oldCount, uint32_t newCount);
 };
 // Derived classes are expected to provide getDelay, getConsumedItems, getUnconsumedItems, getByproducts, and onComplete.
@@ -183,9 +183,11 @@ public:
 	friend class ProjectTryToMakeHaulSubprojectThreadedTask;
 	friend class ProjectTryToAddWorkersThreadedTask;
 	friend class HaulSubproject;
+	Project(const Project&) = delete;
+	Project(const Project&&) = delete;
 };
 inline void to_json(Json& data, const Project& project){ data = reinterpret_cast<uintptr_t>(&project); }
-inline void to_json(Json& data, const Project* const& project){ data = reinterpret_cast<uintptr_t>(&project); }
+inline void to_json(Json& data, const Project* const& project){ data = reinterpret_cast<uintptr_t>(project); }
 class ProjectFinishEvent final : public ScheduledEvent
 {
 	Project& m_project;
