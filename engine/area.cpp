@@ -70,10 +70,10 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	// Load project workers
 	m_hasConstructionDesignations.loadWorkers(data["hasConstructionDesignations"], deserializationMemo);
 	m_hasDigDesignations.loadWorkers(data["hasDigDesignations"], deserializationMemo);
+	m_hasStockPiles.loadWorkers(data["hasStockPiles"], deserializationMemo);
 	/*
 	m_hasCraftingLocationsAndJobs.loadWorkers(data["hasCraftingLocationsAndJobs"], deserializationMemo);
 	m_hasWoodCuttingDesigantions.loadWorkers(data["hasWoodCuttingDesigantions"], deserializationMemo);
-	m_hasStockPiles.loadWorkers(data["hasStockPiles"], deserializationMemo);
 	m_targetedHauling.loadWorkers(data["targetedHauling"], deserializationMemo);
 	*/
 

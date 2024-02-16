@@ -185,6 +185,10 @@ TEST_CASE("json")
 		REQUIRE(static_cast<Item*>(&haulSubproject.getToHaul()) == pick2);
 		REQUIRE(haulSubproject.getQuantity() == 1);
 		REQUIRE(!haulSubproject.getIsMoving());
+		REQUIRE(!project.hasTryToHaulEvent());
+		REQUIRE(!project.hasTryToHaulThreadedTask());
+		REQUIRE(!project.hasTryToReserveEvent());
+		REQUIRE(!project.hasTryToAddWorkersThreadedTask());
 	}
 	SUBCASE("construct project")
 	{
@@ -207,6 +211,7 @@ TEST_CASE("json")
 
 		REQUIRE(area2.m_hasConstructionDesignations.contains(faction2, projectLocation2));
 		ConstructProject& project = area2.m_hasConstructionDesignations.getProject(faction2, projectLocation2);
+		REQUIRE(project.getMaterialType() == wood);
 		// The project is not yet active and the actor is a candidate rather then a worker.
 		REQUIRE(project.getWorkersAndCandidates().size() == 1);
 		REQUIRE(project.getWorkers().size() == 0);
@@ -215,5 +220,55 @@ TEST_CASE("json")
 		REQUIRE(dwarf2.m_canMove.getPath().empty());
 		ConstructObjective& objective = static_cast<ConstructObjective&>(dwarf2.m_hasObjectives.getCurrent());
 		REQUIRE(objective.getProject() == dwarf2.m_project);
+		REQUIRE(!project.hasTryToHaulEvent());
+		REQUIRE(!project.hasTryToHaulThreadedTask());
+		REQUIRE(!project.hasTryToReserveEvent());
+		REQUIRE(project.hasTryToAddWorkersThreadedTask());
+	}
+	SUBCASE("stockpile project")
+	{
+		Block& projectLocation1 = area.getBlock(8, 4, 1);
+		Block& pileLocation1 = area.getBlock(1, 4, 1);
+		area.m_hasStockPiles.addFaction(faction);
+		std::vector<ItemQuery> queries;
+		queries.emplace_back(pile);
+		StockPile& stockPile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		stockPile.addBlock(projectLocation1);
+		Item& pile1 = simulation.createItemGeneric(pile, dirt, 10);
+		pile1.setLocation(pileLocation1);
+		REQUIRE(stockPile.accepts(pile1));
+		area.m_hasStockPiles.at(faction).addItem(pile1);
+		Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
+		dwarf1.setFaction(&faction);
+		StockPileObjectiveType& stockPileObjectiveType = static_cast<StockPileObjectiveType&>(*ObjectiveType::objectiveTypes.at("stockpile").get());
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(stockPileObjectiveType, 100);
+		// One step to find the designation.
+		simulation.doStep();
+
+		Json areaData = area.toJson();
+		Json simulationData = simulation.toJson();
+		Simulation simulation2(simulationData);
+		Area& area2 = simulation2.loadAreaFromJson(areaData);
+		Faction& faction2 = simulation2.m_hasFactions.byName(L"tower of power");
+		Block& projectLocation2 = area2.getBlock(8,4,1);
+		Block& pileLocation2 = area2.getBlock(1, 4, 1);
+		Item& pile2 = *pileLocation2.m_hasItems.getAll()[0];
+		Actor& dwarf2 = *area2.getBlock(5,5,1).m_hasActors.getAll()[0];
+
+		REQUIRE(projectLocation2.m_isPartOfStockPiles.contains(faction2));
+		StockPile& stockPile2 = *projectLocation2.m_isPartOfStockPiles.getForFaction(faction2);
+		REQUIRE(stockPile2.accepts(pile2));
+		REQUIRE(area2.m_hasStockPiles.at(faction2).getItemsWithProjectsCount() == 1);
+		StockPileObjective& objective = static_cast<StockPileObjective&>(dwarf2.m_hasObjectives.getCurrent());
+		REQUIRE(objective.m_project);
+		REQUIRE(dwarf2.m_project);
+		StockPileProject& project = *objective.m_project;
+		// The project is not yet active and the actor is a candidate rather then a worker.
+		REQUIRE(project.getWorkersAndCandidates().size() == 1);
+		REQUIRE(project.getWorkers().size() == 0);
+		REQUIRE(dwarf2.m_project == static_cast<Project*>(&project));
+		REQUIRE(dwarf2.m_canMove.getPath().empty());
+		REQUIRE(project.getItem() == pile2);
+		REQUIRE(project.getLocation() == projectLocation2);
 	}
 }

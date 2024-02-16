@@ -195,6 +195,8 @@ public:
 	Volume getVolume() const { return m_quantity * m_itemType.volume; }
 	const MoveType& getMoveType() const { return m_itemType.moveType; }
 	bool operator==(const Item& item) const { return this == &item; }
+	Item(const Item&) = delete;
+	Item(const Item&&) = delete;
 	//TODO: Items leave area.
 	// For debugging.
 	void log() const;

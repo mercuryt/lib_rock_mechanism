@@ -160,6 +160,8 @@ public:
 	Json toJson() const;
 	bool canAddWorker(const Actor& actor) const;
 	friend class AreaHasStockPilesForFaction;
+	// For testing.
+	[[nodiscard, maybe_unused]] Item& getItem() { return m_item; }
 };
 class ReenableStockPileScheduledEvent final : public ScheduledEvent
 {
@@ -221,7 +223,8 @@ class AreaHasStockPilesForFaction
 public:
 	AreaHasStockPilesForFaction(Area& a, const Faction& f) : m_area(a), m_faction(f) { }
 	AreaHasStockPilesForFaction(const Json& data, DeserializationMemo& deserializationMemo, Area& a, const Faction& f);
-	Json toJson() const;
+	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
+	[[nodiscard]] Json toJson() const;
 	StockPile& addStockPile(std::vector<ItemQuery>&& queries);
 	StockPile& addStockPile(std::vector<ItemQuery>& queries);
 	bool isValidStockPileDestinationFor(const Block& block, const Item& item) const;
@@ -234,8 +237,8 @@ public:
 	void cancelProject(StockPileProject& project);
 	void destroyProject(StockPileProject& project);
 	[[nodiscard]] bool isAnyHaulingAvalableFor(const Actor& actor) const;
-	Item* getHaulableItemForAt(const Actor& actor, Block& block);
-	StockPile* getStockPileFor(const Item& item) const;
+	[[nodiscard]] Item* getHaulableItemForAt(const Actor& actor, Block& block);
+	[[nodiscard]] StockPile* getStockPileFor(const Item& item) const;
 	friend class StockPileThreadedTask;
 	friend class StockPile;
 	// For testing.
@@ -250,11 +253,12 @@ class AreaHasStockPiles
 public:
 	AreaHasStockPiles(Area& a) : m_area(a) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
+	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
+	[[nodiscard]] Json toJson() const;
 	void addFaction(const Faction& faction) { assert(!m_data.contains(&faction)); m_data.try_emplace(&faction, m_area, faction); }
 	void removeFaction(const Faction& faction) { assert(m_data.contains(&faction)); m_data.erase(&faction); }
 	void removeItemFromAllFactions(Item& item) { for(auto& pair : m_data) { pair.second.removeItem(item); } }
 	void removeBlockFromAllFactions(Block& block) { for(auto& pair : m_data) { pair.second.removeBlock(block); }} 
-	AreaHasStockPilesForFaction& at(const Faction& faction) { assert(m_data.contains(&faction)); return m_data.at(&faction); }
+	[[nodiscard]] AreaHasStockPilesForFaction& at(const Faction& faction) { assert(m_data.contains(&faction)); return m_data.at(&faction); }
 	[[nodiscard]] bool contains(const Faction& faction) { return m_data.contains(&faction); }
 };

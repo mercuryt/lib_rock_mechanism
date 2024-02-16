@@ -348,10 +348,10 @@ Project::Project(const Json& data, DeserializationMemo& deserializationMemo) : m
 		m_tryToHaulEvent.schedule(Config::stepsFrequencyToLookForHaulSubprojects, *this, data["tryToHaulEventStart"].get<Step>());
 	if(data.contains("tryToReserveEventStart"))
 		m_tryToReserveEvent.schedule(Config::stepsToDelayBeforeTryingAgainToReserveItemsAndActorsForAProject, *this, data["tryToReserveEventStart"].get<Step>());
-	if(data.contains("tryToHaulThreadedTaskExists"))
+	if(data.contains("tryToHaulThreadedTask"))
 		m_tryToHaulThreadedTask.create(*this);
-	if(data.contains("tryToAddWorkersThreadedTaskExists"))
-		m_tryToHaulThreadedTask.create(*this);
+	if(data.contains("tryToAddWorkersThreadedTask"))
+		m_tryToAddWorkersThreadedTask.create(*this);
 	deserializationMemo.m_projects[data["address"].get<uintptr_t>()] = this;
 }
 void Project::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)

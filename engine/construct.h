@@ -97,9 +97,11 @@ public:
 	// BlockFeatureType can be null, meaning the block is to be filled with a constructed wall.
 	ConstructProject(const Faction* faction, Block& b, const BlockFeatureType* bft, const MaterialType& mt, std::unique_ptr<DishonorCallback> dishonorCallback) : Project(faction, b, Config::maxNumberOfWorkersForConstructionProject, std::move(dishonorCallback)), m_blockFeatureType(bft), m_materialType(mt) { }
 	ConstructProject(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
+	[[nodiscard]] Json toJson() const;
 	// What would the total delay time be if we started from scratch now with current workers?
 	friend class HasConstructionDesignationsForFaction;
+	// For testing.
+	[[nodiscard, maybe_unused]] const MaterialType& getMaterialType() const { return m_materialType; }
 };
 struct ConstructionLocationDishonorCallback final : public DishonorCallback
 {

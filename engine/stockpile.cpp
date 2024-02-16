@@ -179,25 +179,20 @@ void StockPileObjective::cancel()
 }
 StockPileProject::StockPileProject(const Faction* faction, Block& block, Item& item) : Project(faction, block, Config::maxWorkersForStockPileProject), m_item(item), m_delivered(nullptr), m_stockpile(*block.m_isPartOfStockPiles.getForFaction(*faction)), m_dispatched(false) { }
 StockPileProject::StockPileProject(const Json& data, DeserializationMemo& deserializationMemo) : 
-	Project(
-			&deserializationMemo.faction(data["faction"].get<std::wstring>()), 
-			deserializationMemo.m_simulation.getBlockForJsonQuery(data["location"]), 
-			Config::maxWorkersForStockPileProject
-	), 
+	Project(data, deserializationMemo),
 	m_item(deserializationMemo.m_simulation.getItemById(data["item"].get<ItemId>())), 
-	m_delivered(&deserializationMemo.m_simulation.getItemById(data["delivered"].get<ItemId>())), 
+	m_delivered(data.contains("delivered") ? &deserializationMemo.m_simulation.getItemById(data["delivered"].get<ItemId>()) : nullptr), 
 	m_stockpile(*deserializationMemo.m_stockpiles.at(data["stockpile"].get<uintptr_t>())),
 	m_dispatched(data["dispatched"].get<bool>()) { }
 Json StockPileProject::toJson() const
 {
-	return Json({
-		{"faction", m_faction.name},
-		{"location", m_location.positionToJson()},
-		{"item", m_item.m_id},
-		{"delivered", m_delivered->m_id},
-		{"stockpile", reinterpret_cast<uintptr_t>(&m_stockpile)},
-		{"dispatched", m_dispatched},
-	});
+	Json data = Project::toJson();
+	data["item"] = m_item.m_id;
+	data["stockpile"] = reinterpret_cast<uintptr_t>(&m_stockpile);
+	data["dispatched"] = m_dispatched;
+	if(m_delivered)
+		data["delivered"] = m_delivered->m_id;
+	return data;
 }
 bool StockPileProject::canAddWorker(const Actor& actor) const
 {
@@ -268,20 +263,31 @@ StockPile::StockPile(const Json& data, DeserializationMemo& deserializationMemo,
 	m_openBlocks(data["openBlocks"].get<uint32_t>()), 
 	m_area(area), m_faction(deserializationMemo.faction(data["faction"].get<std::wstring>())), 
 	m_enabled(data["enabled"].get<bool>()), m_reenableScheduledEvent(m_area.m_simulation.m_eventSchedule), 
-	m_projectNeedingMoreWorkers(&static_cast<StockPileProject&>(*deserializationMemo.m_projects.at(data["projectNeedingMoreWorkers"].get<uintptr_t>()))) 
+	m_projectNeedingMoreWorkers(data.contains("projectNeedingMoreWorkers") ? &static_cast<StockPileProject&>(*deserializationMemo.m_projects.at(data["projectNeedingMoreWorkers"].get<uintptr_t>())) : nullptr) 
 { 
 	deserializationMemo.m_stockpiles[data["address"].get<uintptr_t>()] = this;
+	for(const Json& blockData : data["blocks"])
+		addBlock(deserializationMemo.blockReference(blockData));
+	for(const Json& queryData : data["queries"])
+		m_queries.emplace_back(queryData, deserializationMemo);
 }
 Json StockPile::toJson() const
 {
-	return Json{
+	Json data{
 		{"address", reinterpret_cast<uintptr_t>(this)},
 		{"openBlocks", m_openBlocks},
 		{"faction", m_faction.name},
 		{"enabled", m_enabled},
-		{"projectNeedingMoreWorkers", reinterpret_cast<uintptr_t>(m_projectNeedingMoreWorkers)},
-
+		{"queries", Json::array()}
 	};
+	for(const ItemQuery& query : m_queries)
+		data["queries"].push_back(query.toJson());
+	if(m_projectNeedingMoreWorkers)
+		data["projectNeedingMoreWorkers"] =  reinterpret_cast<uintptr_t>(m_projectNeedingMoreWorkers);
+	data["blocks"] = Json::array();
+	for(const Block* block : m_blocks)
+		data["blocks"].push_back(block->positionToJson());
+	return data;
 }
 bool StockPile::accepts(const Item& item) const 
 {
@@ -464,8 +470,19 @@ AreaHasStockPilesForFaction::AreaHasStockPilesForFaction(const Json& data, Deser
 		{
 			Item& item = deserializationMemo.m_simulation.getItemById(pair[0].get<ItemId>());
 			for(const Json& project : pair[1])
-			{
 				m_projectsByItem[&item].emplace_back(project, deserializationMemo);
+		}
+}
+void AreaHasStockPilesForFaction::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
+{
+	if(data.contains("projectsByItem"))
+		for(const Json& pair : data["projectsByItem"])
+		{
+			for(const Json& projectData : pair[1])
+			{
+				assert(deserializationMemo.m_projects.contains(projectData["address"].get<uintptr_t>()));
+				Project& project = *deserializationMemo.m_projects.at(projectData["address"].get<uintptr_t>());
+				project.loadWorkers(projectData, deserializationMemo);
 			}
 		}
 }
@@ -524,10 +541,7 @@ Json AreaHasStockPilesForFaction::toJson() const
 		{
 			Json jsonPair{pair.first->m_id, Json::array()};
 			for(const StockPileProject& stockPileProject : pair.second)
-			{
-				const Project& project = static_cast<const Project&>(stockPileProject);
-				jsonPair[1].push_back(reinterpret_cast<uintptr_t>(&project));
-			}
+				jsonPair[1].push_back(stockPileProject.toJson());
 			data["projectsByItem"].push_back(jsonPair);
 		}
 	}
@@ -702,6 +716,14 @@ void AreaHasStockPiles::load(const Json& data, DeserializationMemo& deserializat
 	{
 		const Faction& faction = deserializationMemo.faction(pair[0].get<std::wstring>());
 		m_data.try_emplace(&faction, pair[1], deserializationMemo, m_area, faction);
+	}
+}
+void AreaHasStockPiles::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
+{
+	for(const Json& pair : data)
+	{
+		const Faction& faction = deserializationMemo.faction(pair[0]);
+		m_data.at(&faction).loadWorkers(pair[1], deserializationMemo);
 	}
 }
 Json AreaHasStockPiles::toJson() const 
