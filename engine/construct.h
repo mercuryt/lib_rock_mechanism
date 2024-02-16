@@ -52,20 +52,22 @@ class ConstructObjective final : public Objective
 public:
 	ConstructObjective(Actor& a);
 	ConstructObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
+	[[nodiscard]] Json toJson() const;
 	void execute();
 	void cancel();
 	void delay() { cancel(); }
 	void reset();
 	void joinProject(ConstructProject& project);
-	std::string name() const { return "construct"; }
-	ConstructProject* getProjectWhichActorCanJoinAdjacentTo(const Block& location, Facing facing);
-	ConstructProject* getProjectWhichActorCanJoinAt(Block& block);
-	bool joinableProjectExistsAt(const Block& block) const;
-	bool canJoinProjectAdjacentToLocationAndFacing(const Block& block, Facing facing) const;
-	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Construct; }
+	[[nodiscard]] std::string name() const { return "construct"; }
+	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAdjacentTo(const Block& location, Facing facing);
+	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAt(Block& block);
+	[[nodiscard]] bool joinableProjectExistsAt(const Block& block) const;
+	[[nodiscard]] bool canJoinProjectAdjacentToLocationAndFacing(const Block& block, Facing facing) const;
+	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Construct; }
 	friend class ConstructThreadedTask;
 	friend class ConstructProject;
+	// For Testing.
+	[[nodiscard]] Project* getProject() { return m_project; }
 };
 class ConstructThreadedTask final : public ThreadedTask
 {

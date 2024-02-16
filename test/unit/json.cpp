@@ -186,4 +186,34 @@ TEST_CASE("json")
 		REQUIRE(haulSubproject.getQuantity() == 1);
 		REQUIRE(!haulSubproject.getIsMoving());
 	}
+	SUBCASE("construct project")
+	{
+		Block& projectLocation = area.getBlock(8, 4, 1);
+		area.m_hasConstructionDesignations.addFaction(faction);
+		area.m_hasConstructionDesignations.designate(faction, projectLocation, nullptr, wood);
+		Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
+		dwarf1.setFaction(&faction);
+		ConstructObjectiveType& constructObjectiveType = static_cast<ConstructObjectiveType&>(*ObjectiveType::objectiveTypes.at("construct").get());
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);
+		// One step to find the designation.
+		simulation.doStep();
+
+		Json areaData = area.toJson();
+		Json simulationData = simulation.toJson();
+		Simulation simulation2(simulationData);
+		Area& area2 = simulation2.loadAreaFromJson(areaData);
+		Faction& faction2 = simulation2.m_hasFactions.byName(L"tower of power");
+		Block& projectLocation2 = area2.getBlock(8,4,1);
+
+		REQUIRE(area2.m_hasConstructionDesignations.contains(faction2, projectLocation2));
+		ConstructProject& project = area2.m_hasConstructionDesignations.getProject(faction2, projectLocation2);
+		// The project is not yet active and the actor is a candidate rather then a worker.
+		REQUIRE(project.getWorkersAndCandidates().size() == 1);
+		REQUIRE(project.getWorkers().size() == 0);
+		Actor& dwarf2 = *area2.getBlock(5,5,1).m_hasActors.getAll()[0];
+		REQUIRE(dwarf2.m_project == static_cast<Project*>(&project));
+		REQUIRE(dwarf2.m_canMove.getPath().empty());
+		ConstructObjective& objective = static_cast<ConstructObjective&>(dwarf2.m_hasObjectives.getCurrent());
+		REQUIRE(objective.getProject() == dwarf2.m_project);
+	}
 }

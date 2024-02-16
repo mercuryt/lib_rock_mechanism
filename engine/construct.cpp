@@ -156,12 +156,13 @@ bool ConstructObjectiveType::canBeAssigned(Actor& actor) const
 std::unique_ptr<Objective> ConstructObjectiveType::makeFor(Actor& actor) const { return std::make_unique<ConstructObjective>(actor); }
 // Project.
 ConstructProject::ConstructProject(const Json& data, DeserializationMemo& deserializationMemo) : Project(data, deserializationMemo), 
-	m_blockFeatureType(&BlockFeatureType::byName(data["blockFeatureType"].get<std::string>())),
+	m_blockFeatureType(data.contains("blockFeatureType") ? &BlockFeatureType::byName(data["blockFeatureType"].get<std::string>()) : nullptr),
 	m_materialType(MaterialType::byName(data["materialType"].get<std::string>())) { }
 Json ConstructProject::toJson() const
 {
 	Json data = Project::toJson();
-	data["blockFeatureType"] = m_blockFeatureType->name;
+	if(m_blockFeatureType)
+		data["blockFeatureType"] = m_blockFeatureType->name;
 	data["materialType"] = m_materialType.name;
 	return data;
 }
