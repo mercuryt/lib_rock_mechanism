@@ -15,7 +15,9 @@ void CraftCancelInputAction::execute()
 	m_area.m_hasCraftingLocationsAndJobs.at(m_faction).removeJob(m_job);
 }
 CraftStepProject::CraftStepProject(const Json& data, DeserializationMemo& deserializationMemo, CraftJob& cj) : 
-	Project(data, deserializationMemo), m_craftStepType(cj.craftStepProject->m_craftStepType), m_craftJob(cj) { }
+	Project(data, deserializationMemo), 
+	m_craftStepType(*cj.stepIterator),
+	m_craftJob(cj) { }
 Step CraftStepProject::getDuration() const
 {
 	uint32_t totalScore = 0;
@@ -83,7 +85,7 @@ CraftJob::CraftJob(const Json& data, DeserializationMemo& deserializationMemo, H
 	workPiece(data.contains("workPiece") ? &deserializationMemo.m_simulation.getItemById(data["workPiece"].get<ItemId>()) : nullptr),
 	materialType(data.contains("materialType") ? &MaterialType::byName(data["materialType"].get<std::string>()) : nullptr),
 	stepIterator(craftJobType.stepTypes.begin() + data["stepIndex"].get<size_t>()),
-	craftStepProject(std::make_unique<CraftStepProject>(data["craftStepProject"], deserializationMemo, *this)),
+	craftStepProject(data.contains("craftStepProject") ? std::make_unique<CraftStepProject>(data["craftStepProject"], deserializationMemo, *this) : nullptr),
 	minimumSkillLevel(data["minimumSkillLevel"].get<uint32_t>()),
 	totalSkillPoints(data["totalSkillPoints"].get<uint32_t>()), reservable(1) 
 { 
@@ -92,12 +94,14 @@ CraftJob::CraftJob(const Json& data, DeserializationMemo& deserializationMemo, H
 Json CraftJob::toJson() const
 {
 	Json data{
+		{"address", reinterpret_cast<uintptr_t>(this)},
 		{"craftJobType", craftJobType},
 		{"stepIndex", stepIterator - craftJobType.stepTypes.begin()},
-		{"craftStepProejct", craftStepProject->toJson()},
 		{"minimumSkillLevel", minimumSkillLevel},
 		{"totalSkillPoints", totalSkillPoints}
 	};
+	if(craftStepProject)
+		data["craftStepProject"] = craftStepProject->toJson();
 	if(workPiece != nullptr)
 		data["workPiece"] = workPiece->m_id;
 	if(materialType != nullptr)
@@ -228,8 +232,9 @@ HasCraftingLocationsAndJobsForFaction::HasCraftingLocationsAndJobsForFaction(con
 			m_stepTypeCategoriesByLocation[&block].insert(&category);
 		}
 	}
-	for(const Json& jobData : data["jobs"])
-		m_jobs.emplace_back(jobData, deserializationMemo, *this);
+	if(data.contains("jobs"))
+		for(const Json& jobData : data["jobs"])
+			m_jobs.emplace_back(jobData, deserializationMemo, *this);
 	for(const Json& pair : data["unassignedProjectsByStepTypeCategory"])
 	{
 		const CraftStepTypeCategory& category = CraftStepTypeCategory::byName(pair[0].get<std::string>());
@@ -243,6 +248,17 @@ HasCraftingLocationsAndJobsForFaction::HasCraftingLocationsAndJobsForFaction(con
 			m_unassignedProjectsBySkill[&skill].insert(deserializationMemo.m_craftJobs.at(jobReference.get<uintptr_t>()));
 	}
 }
+void HasCraftingLocationsAndJobsForFaction::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
+{
+	if(data.contains("jobs"))
+		for(const Json& jobData : data["jobs"])
+		{
+			assert(deserializationMemo.m_craftJobs.contains(jobData["address"].get<uintptr_t>()));
+			CraftJob& job = *deserializationMemo.m_craftJobs.at(jobData["address"].get<uintptr_t>());
+			if(job.craftStepProject)
+				job.craftStepProject->loadWorkers(jobData["craftStepProject"], deserializationMemo);
+		}
+}
 Json HasCraftingLocationsAndJobsForFaction::toJson() const
 {
 	Json data{{"faction", m_faction}, {"locationsByCategory", Json::array()}, {"stepTypeCategoriesByLocation", Json::array()}, {"unassignedProjectsByStepTypeCategory", Json::array()}, {"unassignedProjectsBySkill", Json::array()}};
@@ -253,7 +269,7 @@ Json HasCraftingLocationsAndJobsForFaction::toJson() const
 		pair[1] = Json::array();
 		for(Block* location : locations)
 			pair[1].push_back(location->positionToJson());
-		data["locationsByCagegory"].push_back(pair);
+		data["locationsByCategory"].push_back(pair);
 	}
 	for(auto& [location, categories] : m_stepTypeCategoriesByLocation)
 	{
@@ -449,6 +465,15 @@ void HasCraftingLocationsAndJobs::load(const Json& data, DeserializationMemo& de
 		const Faction& faction = deserializationMemo.faction(pair[0].get<std::wstring>());
 		m_data.try_emplace(&faction, pair[1], deserializationMemo, faction);
 	}
+}
+void HasCraftingLocationsAndJobs::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
+{
+	for(const Json& pair : data)
+	{
+		const Faction& faction = deserializationMemo.faction(pair[0]);
+		m_data.at(&faction).loadWorkers(pair[1], deserializationMemo);
+	}
+
 }
 Json HasCraftingLocationsAndJobs::toJson() const
 {

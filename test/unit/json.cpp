@@ -271,4 +271,45 @@ TEST_CASE("json")
 		REQUIRE(project.getItem() == pile2);
 		REQUIRE(project.getLocation() == projectLocation2);
 	}
+	SUBCASE("craft")
+	{
+		CraftStepTypeCategory& craftStepTypeSaw = CraftStepTypeCategory::byName("saw");
+		CraftStepTypeCategory& craftStepTypeScrape = CraftStepTypeCategory::byName("scrape");
+		area.m_hasCraftingLocationsAndJobs.addFaction(faction);
+		area.m_hasCraftingLocationsAndJobs.at(faction).addLocation(craftStepTypeSaw, area.getBlock(3,3,1));
+		area.m_hasCraftingLocationsAndJobs.at(faction).addLocation(craftStepTypeScrape, area.getBlock(3,2,1));
+		CraftJobType& jobTypeSawBoards = CraftJobType::byName("saw boards");
+		area.m_hasCraftingLocationsAndJobs.at(faction).addJob(jobTypeSawBoards, &wood, 1);
+		Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
+		dwarf1.setFaction(&faction);
+		CraftObjectiveType& woodWorkingObjectiveType = static_cast<CraftObjectiveType&>(*ObjectiveType::objectiveTypes.at("wood working").get());
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(woodWorkingObjectiveType, 100);
+		Item& saw = simulation.createItemNongeneric(ItemType::byName("saw"), bronze, 25, 0);
+		saw.setLocation(area.getBlock(3, 7, 1));
+		Item& chisel = simulation.createItemNongeneric(ItemType::byName("chisel"), bronze, 25, 0);
+		chisel.setLocation(area.getBlock(3, 6, 1));
+		Item& log = simulation.createItemGeneric(ItemType::byName("log"), wood, 1);
+		log.setLocation(area.getBlock(3, 8, 1));
+		// One step to find the designation.
+		simulation.doStep();
+
+		Json areaData = area.toJson();
+		Json simulationData = simulation.toJson();
+		Simulation simulation2(simulationData);
+		Area& area2 = simulation2.loadAreaFromJson(areaData);
+		Faction& faction2 = simulation2.m_hasFactions.byName(L"tower of power");
+		Actor& dwarf2 = *area2.getBlock(5,5,1).m_hasActors.getAll()[0];
+
+		REQUIRE(area2.m_hasCraftingLocationsAndJobs.at(faction2).hasLocationsForCategory(craftStepTypeSaw));
+		REQUIRE(area2.m_hasCraftingLocationsAndJobs.at(faction2).hasLocationsForCategory(craftStepTypeScrape));
+		REQUIRE(area2.m_hasCraftingLocationsAndJobs.at(faction2).hasJobs());
+		REQUIRE(dwarf2.m_project);
+		REQUIRE(static_cast<CraftObjective&>(dwarf2.m_hasObjectives.getCurrent()).getCraftJob());
+		CraftJob& job = *static_cast<CraftObjective&>(dwarf2.m_hasObjectives.getCurrent()).getCraftJob();
+		REQUIRE(job.craftStepProject);
+		REQUIRE(&job.craftJobType == &jobTypeSawBoards);
+		REQUIRE(job.materialType == &wood);
+		CraftStepProject& project = *job.craftStepProject.get();
+		REQUIRE(static_cast<CraftStepProject*>(dwarf2.m_project) == &project);
+	}
 }

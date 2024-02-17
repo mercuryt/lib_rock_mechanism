@@ -100,7 +100,7 @@ struct CraftStepProjectHasShapeDishonorCallback final : public DishonorCallback
 	CraftStepProjectHasShapeDishonorCallback(CraftStepProject& hs) : m_craftStepProject(hs) { } 
 	CraftStepProjectHasShapeDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
 		m_craftStepProject(*static_cast<CraftStepProject*>(deserializationMemo.m_projects.at(data["proejct"].get<uintptr_t>()))) { } 
-	Json toJson() const { return Json({{"type", "CraftStepProjectHasShapeDishonorCallback"}, {"project", reinterpret_cast<uintptr_t>(&m_craftStepProject)}}); }
+	[[nodiscard]] Json toJson() const { return Json({{"type", "CraftStepProjectHasShapeDishonorCallback"}, {"project", reinterpret_cast<uintptr_t>(&m_craftStepProject)}}); }
 	// Craft step project cannot reset so cancel instead and allow to be recreated later.
 	void execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { m_craftStepProject.cancel(); }
 };
@@ -209,6 +209,7 @@ class HasCraftingLocationsAndJobsForFaction final
 public:
 	HasCraftingLocationsAndJobsForFaction(const Faction& f) : m_faction(f) { }
 	HasCraftingLocationsAndJobsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const Faction& f);
+	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	// To be used by the player.
 	void addLocation(const CraftStepTypeCategory& craftStepTypeCategory, Block& block);
@@ -250,6 +251,7 @@ class HasCraftingLocationsAndJobs final
 	std::unordered_map<const Faction*, HasCraftingLocationsAndJobsForFaction> m_data;
 public:
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
+	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void addFaction(const Faction& faction) { m_data.try_emplace(&faction, faction); }
 	void removeFaction(const Faction& faction) { m_data.erase(&faction); }
