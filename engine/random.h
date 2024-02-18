@@ -12,64 +12,20 @@ class Random
 {
 	std::mt19937 rng;
 public:
-	inline int getInRange(int lowest, int highest)
-	{
-		assert(lowest < highest);
-		//TODO: should uniform distribution be static?
-		std::uniform_int_distribution<int> dist(lowest, highest);
-		return dist(rng);
-	}
-	inline long getInRange(long lowest, long highest)
-	{
-		assert(lowest < highest);
-		//TODO: should uniform distribution be static?
-		std::uniform_int_distribution<long> dist(lowest, highest);
-		return dist(rng);
-	}
-	inline unsigned int getInRange(unsigned int lowest, unsigned int highest)
-	{
-		assert(lowest < highest);
-		//TODO: should uniform distribution be static?
-		std::uniform_int_distribution<unsigned int> dist(lowest, highest);
-		return dist(rng);
-	}
-	inline float getInRange(float lowest, float highest)
-	{
-		assert(lowest < highest);
-		//TODO: should uniform distribution be static?
-		std::uniform_real_distribution<float> dist(lowest, highest);
-		return dist(rng);
-	}
-	inline double getInRange(double lowest, double highest)
-	{
-		assert(lowest < highest);
-		//TODO: should uniform distribution be static?
-		std::uniform_real_distribution<double> dist(lowest, highest);
-		return dist(rng);
-	}
-	inline bool percentChance(Percent percent)
-	{
-		if(percent >= 100)
-			return true;
-		if(percent <= 0)
-			return false;
-		std::uniform_int_distribution<Percent> dist(1, 100);
-		return dist(rng) <= percent;
-	}
-	inline bool chance(double chance)
-	{
-		assert(chance >= 0.0);
-		assert(chance <= 1.0);
-		std::uniform_real_distribution<double> dist(0.0, 1.0);
-		return dist(rng) <= chance;
-	}
+	int getInRange(int lowest, int highest);
+	long getInRange(long lowest, long highest);
+	unsigned int getInRange(unsigned int lowest, unsigned int highest);
+	float getInRange(float lowest, float highest);
+	double getInRange(double lowest, double highest);
+	bool percentChance(Percent percent);
+	bool chance(double chance);
 	template<typename T>
-		inline T& getInVector(std::vector<T>& vector)
+		T* getInVector(const std::vector<T*>& vector)
 		{
-			return vector[getInRange(0, vector.size() - 1)];
+			return vector.at(getInRange(0u, vector.size() - 1u));
 		}
 	template<typename T>
-		inline std::vector<T*> getMultipleInVector(std::vector<T*>& vector, uint32_t count)
+		std::vector<T*> getMultipleInVector(const std::vector<T*>& vector, uint32_t count)
 		{
 			assert(count <= vector.size());
 			auto copy = vector;
@@ -84,7 +40,7 @@ public:
 		}
 	//TODO: duplication.
 	template<typename T>
-		inline T& getInMap(std::unordered_map<T, float>&& map)
+		T& getInMap(const std::unordered_map<T, float>&& map)
 		{
 			float previous = 0;
 			// Make probabilities cumulative.
@@ -96,10 +52,5 @@ public:
 					return const_cast<T&>(pair.first);
 			assert(false);
 		}
-	inline uint32_t deterministicScramble(uint32_t seed)
-	{
-		std::mt19937 rng(seed);
-		std::uniform_int_distribution<uint32_t> dist(0, UINT32_MAX);
-		return dist(rng);
-	}
+	uint32_t deterministicScramble(uint32_t seed);
 };

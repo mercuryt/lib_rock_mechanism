@@ -337,7 +337,8 @@ void ItemHasCargo::remove(Item& item, uint32_t quantity)
 void ItemHasCargo::remove(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity)
 {
 	assert(containsGeneric(itemType, materialType, quantity));
-	for(Item* item : m_items)
+	auto copy = m_items;
+	for(Item* item : copy)
 		if(item->m_itemType == itemType && item->m_materialType == materialType)
 		{
 			assert(item->getQuantity() >= quantity);
@@ -463,11 +464,14 @@ void BlockHasItems::setTemperature(Temperature temperature)
 }
 void BlockHasItems::disperseAll()
 {
+	if(m_items.empty())
+		return;
 	std::vector<Block*> blocks;
 	for(Block* block : m_block.getAdjacentOnSameZLevelOnly())
 		if(!block->isSolid())
 			blocks.push_back(block);
-	for(Item* item : m_items)
+	auto copy = m_items;
+	for(Item* item : copy)
 	{
 		//TODO: split up stacks of generics, prefer blocks with more empty space.
 		Block* block = m_block.m_area->m_simulation.m_random.getInVector(blocks);

@@ -173,6 +173,7 @@ TEST_CASE("farmFields")
 		// Skip ahead to harvest time.
 		simulation.setDateTime({1, wheatGrass.harvestData->dayOfYearToStart, 1200});
 		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
+		REQUIRE(block.m_hasPlant.get().m_quantityToHarvest == wheatGrass.harvestData->itemQuantity);
 		const HarvestObjectiveType objectiveType;
 		actor.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 10);
 		REQUIRE(actor.m_hasObjectives.hasCurrent());
@@ -194,7 +195,7 @@ TEST_CASE("farmFields")
 		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
 		Item& item = **actor.m_location->m_hasItems.getAll().begin();
 		REQUIRE(item.m_materialType == MaterialType::byName("plant matter"));
-		REQUIRE(item.getQuantity() == wheatGrass.harvestData->itemQuantity);
+		REQUIRE(item.getQuantity() + block.m_hasPlant.get().m_quantityToHarvest == wheatGrass.harvestData->itemQuantity);
 		REQUIRE(item.m_itemType == ItemType::byName("wheat seed"));
 	}
 	SUBCASE("location no longer accessable to harvest")
