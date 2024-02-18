@@ -20,6 +20,7 @@ TEST_CASE("json")
 	const ItemType& pick = ItemType::byName("pick");
 	const ItemType& saw = ItemType::byName("saw");
 	const ItemType& bucket = ItemType::byName("bucket");
+	const ItemType& preparedMeal = ItemType::byName("prepared meal");
 	const ItemType& pants = ItemType::byName("pants");
 	const ItemType& pile = ItemType::byName("pile");
 	Area& area = simulation.createArea(10,10,10);
@@ -311,5 +312,73 @@ TEST_CASE("json")
 		REQUIRE(job.materialType == &wood);
 		CraftStepProject& project = *job.craftStepProject.get();
 		REQUIRE(static_cast<CraftStepProject*>(dwarf2.m_project) == &project);
+	}
+	SUBCASE("drink")
+	{
+		Item& bucket1 = simulation.createItemNongeneric(bucket, bronze, 25, 0);
+		bucket1.setLocation(area.getBlock(3, 7, 1));
+		bucket1.m_hasCargo.add(water, 10);
+		simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
+		simulation.fastForward(dwarf.stepsFluidDrinkFreqency);
+		// One step to find the bucket.
+		simulation.doStep();
+
+		Json areaData = area.toJson();
+		Json simulationData = simulation.toJson();
+		Simulation simulation2(simulationData);
+		Area& area2 = simulation2.loadAreaFromJson(areaData);
+		Actor& dwarf2 = *area2.getBlock(5,5,1).m_hasActors.getAll()[0];
+
+		REQUIRE(dwarf2.m_canMove.getDestination());
+		REQUIRE(dwarf2.m_canMove.getDestination()->isAdjacentToIncludingCornersAndEdges(area2.getBlock(3,7,1)));
+		REQUIRE(dwarf2.m_hasObjectives.getCurrent().getObjectiveTypeId() == ObjectiveTypeId::Drink);
+	}
+	SUBCASE("eat")
+	{
+		Item& preparedMeal1 = simulation.createItemNongeneric(preparedMeal, MaterialType::byName("fruit"), 25, 0);
+		preparedMeal1.setLocation(area.getBlock(3, 7, 1));
+		Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
+		simulation.fastForward(dwarf.stepsEatFrequency);
+		// Discard drink objective if exists.
+		if(dwarf1.m_mustDrink.getVolumeFluidRequested() != 0)
+			dwarf1.m_mustDrink.drink(dwarf1.m_mustDrink.getVolumeFluidRequested());
+		// One step to find the meal.
+		simulation.doStep();
+
+		Json areaData = area.toJson();
+		Json simulationData = simulation.toJson();
+		Simulation simulation2(simulationData);
+		Area& area2 = simulation2.loadAreaFromJson(areaData);
+		Actor& dwarf2 = *area2.getBlock(5,5,1).m_hasActors.getAll()[0];
+
+		REQUIRE(dwarf2.m_canMove.getDestination());
+		REQUIRE(dwarf2.m_canMove.getDestination()->isAdjacentToIncludingCornersAndEdges(area2.getBlock(3,7,1)));
+		REQUIRE(dwarf2.m_hasObjectives.getCurrent().getObjectiveTypeId() == ObjectiveTypeId::Eat);
+	}
+	SUBCASE("sleep")
+	{
+		Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
+		dwarf1.setFaction(&faction);
+		area.m_hasSleepingSpots.designate(faction, area.getBlock(2,2,1));
+		simulation.fastForward(dwarf.stepsSleepFrequency);
+		// Discard drink objective if exists.
+		if(dwarf1.m_mustDrink.getVolumeFluidRequested() != 0)
+			dwarf1.m_mustDrink.drink(dwarf1.m_mustDrink.getVolumeFluidRequested());
+		if(dwarf1.m_mustEat.getMassFoodRequested() != 0)
+			dwarf1.m_mustEat.eat(dwarf1.m_mustEat.getMassFoodRequested());
+		ActorId dwarf1Id = dwarf1.m_id;
+
+		// One step to find the sleeping spot.
+		simulation.doStep();
+
+		Json areaData = area.toJson();
+		Json simulationData = simulation.toJson();
+		Simulation simulation2(simulationData);
+		Area& area2 = simulation2.loadAreaFromJson(areaData);
+		Actor& dwarf2 = simulation2.getActorById(dwarf1Id);
+
+		REQUIRE(dwarf2.m_canMove.getDestination());
+		REQUIRE(dwarf2.m_canMove.getDestination()->isAdjacentToIncludingCornersAndEdges(area2.getBlock(2,2,1)));
+		REQUIRE(dwarf2.m_hasObjectives.getCurrent().getObjectiveTypeId() == ObjectiveTypeId::Sleep);
 	}
 }

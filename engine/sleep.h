@@ -113,5 +113,7 @@ class HasSleepingSpots final
 public:
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
+	void designate(const Faction& faction, Block& block);
+	void undesignate(const Faction& faction, Block& block);
 	bool containsUnassigned(const Block& block) const { return m_unassigned.contains(const_cast<Block*>(&block)); }
 };

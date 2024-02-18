@@ -1,5 +1,6 @@
 #include "sleep.h"
 #include "area.h"
+#include "designations.h"
 #include "hasShape.h"
 #include "objective.h"
 #include <cassert>
@@ -93,8 +94,8 @@ void SleepThreadedTask::writeStep()
 	{
 		if(m_findsPath.areAllBlocksAtDestinationReservable(actor.getFaction()))
 		{
-			actor.m_canMove.setPath(m_findsPath.getPath());
 			m_findsPath.reserveBlocksAtDestination(actor.m_canReserve);
+			actor.m_canMove.setPath(m_findsPath.getPath());
 		}
 		else
 			// Selected sleeping spot reserved by someone else, look again.
@@ -302,4 +303,14 @@ Json HasSleepingSpots::toJson() const
 	for(Block* block : m_unassigned)
 		data["unassigned"].push_back(block);
 	return data;
+}
+void HasSleepingSpots::designate(const Faction& faction, Block& block)
+{
+	m_unassigned.insert(&block);
+	block.m_hasDesignations.insert(faction, BlockDesignation::Sleep);
+}
+void HasSleepingSpots::undesignate(const Faction& faction, Block& block)
+{
+	m_unassigned.erase(&block);
+	block.m_hasDesignations.remove(faction, BlockDesignation::Sleep);
 }
