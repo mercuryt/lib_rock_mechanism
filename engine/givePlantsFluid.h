@@ -79,4 +79,6 @@ public:
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::GivePlantsFluid; }
 	friend class GivePlantsFluidEvent;
 	friend class GivePlantsFluidThreadedTask;
+	// For testing.
+	Block* getPlantLocation() { return m_plantLocation; }
 };

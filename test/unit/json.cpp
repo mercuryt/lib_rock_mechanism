@@ -4,6 +4,9 @@
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/actor.h"
 #include "../../engine/goTo.h"
+#include "../../engine/sowSeeds.h"
+#include "../../engine/harvest.h"
+#include "../../engine/givePlantsFluid.h"
 TEST_CASE("json")
 {
 	Simulation simulation;
@@ -15,6 +18,7 @@ TEST_CASE("json")
 	const MaterialType& bronze = MaterialType::byName("bronze");
 	const MaterialType& sand = MaterialType::byName("sand");
 	const PlantSpecies& sage = PlantSpecies::byName("sage brush");
+	const PlantSpecies& wheatGrass = PlantSpecies::byName("wheat grass");
 	const FluidType& water = FluidType::byName("water");
 	const ItemType& axe = ItemType::byName("axe");
 	const ItemType& pick = ItemType::byName("pick");
@@ -360,6 +364,7 @@ TEST_CASE("json")
 		Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
 		dwarf1.setFaction(&faction);
 		area.m_hasSleepingSpots.designate(faction, area.getBlock(2,2,1));
+		area.m_hasSleepingSpots.designate(faction, area.getBlock(1,1,1));
 		simulation.fastForward(dwarf.stepsSleepFrequency);
 		// Discard drink objective if exists.
 		if(dwarf1.m_mustDrink.getVolumeFluidRequested() != 0)
@@ -377,8 +382,107 @@ TEST_CASE("json")
 		Area& area2 = simulation2.loadAreaFromJson(areaData);
 		Actor& dwarf2 = simulation2.getActorById(dwarf1Id);
 
+		REQUIRE(dwarf2.m_mustSleep.hasTiredEvent());
+		REQUIRE(dwarf2.m_mustSleep.getSleepPercent() == 0);
+		REQUIRE(area2.m_hasSleepingSpots.containsUnassigned(area2.getBlock(1,1,1)));
 		REQUIRE(dwarf2.m_canMove.getDestination());
 		REQUIRE(dwarf2.m_canMove.getDestination()->isAdjacentToIncludingCornersAndEdges(area2.getBlock(2,2,1)));
 		REQUIRE(dwarf2.m_hasObjectives.getCurrent().getObjectiveTypeId() == ObjectiveTypeId::Sleep);
+		REQUIRE(dwarf2.m_mustSleep.getLocation() == nullptr);
+	}
+	SUBCASE("sow seed")
+	{
+
+		Cuboid farmBlocks{area.getBlock(1,7,1), area.getBlock(1,6,1)};
+		FarmField& farm = area.m_hasFarmFields.at(faction).create(farmBlocks);
+		area.m_hasFarmFields.at(faction).setSpecies(farm, sage);
+		Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
+		dwarf1.setFaction(&faction);
+		SowSeedsObjectiveType& sowObjectiveType = static_cast<SowSeedsObjectiveType&>(*ObjectiveType::objectiveTypes.at("sow seeds").get());
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(sowObjectiveType, 10);
+		ActorId dwarf1Id = dwarf1.m_id;
+		
+		// One step to find the sowing location.
+		simulation.doStep();
+
+		SowSeedsObjective& objective = static_cast<SowSeedsObjective&>(dwarf1.m_hasObjectives.getCurrent());
+		Block* block1 = objective.getBlock();
+		uint32_t x = block1->m_x;
+		uint32_t y = block1->m_y;
+		uint32_t z = block1->m_z;
+
+		Json areaData = area.toJson();
+		Json simulationData = simulation.toJson();
+		Simulation simulation2(simulationData);
+		[[maybe_unused]] Area& area2 = simulation2.loadAreaFromJson(areaData);
+		Actor& dwarf2 = simulation2.getActorById(dwarf1Id);
+		
+		Objective& objective2 = dwarf2.m_hasObjectives.getCurrent();
+		REQUIRE(objective2.getObjectiveTypeId() == ObjectiveTypeId::SowSeeds);
+		REQUIRE(dwarf2.m_canMove.getDestination());
+		Block* block2 = objective.getBlock();
+		REQUIRE(block2->m_x == x);
+		REQUIRE(block2->m_y == y);
+		REQUIRE(block2->m_z == z);
+	}
+	SUBCASE("harvest")
+	{
+		area.getBlock(1,7,1).m_hasPlant.createPlant(wheatGrass, 100);
+		Plant& plant = area.getBlock(1,7,1).m_hasPlant.get();
+		plant.setQuantityToHarvest();
+		REQUIRE(plant.m_quantityToHarvest);
+		Cuboid farmBlocks{area.getBlock(1,7,1), area.getBlock(1,6,1)};
+		FarmField& farm = area.m_hasFarmFields.at(faction).create(farmBlocks);
+		area.m_hasFarmFields.at(faction).setSpecies(farm, wheatGrass);
+		Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
+		dwarf1.setFaction(&faction);
+		HarvestObjectiveType& harvestObjectiveType = static_cast<HarvestObjectiveType&>(*ObjectiveType::objectiveTypes.at("harvest").get());
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(harvestObjectiveType, 10);
+		ActorId dwarf1Id = dwarf1.m_id;
+		
+		// One step to find the harvest location.
+		simulation.doStep();
+		Json areaData = area.toJson();
+		Json simulationData = simulation.toJson();
+		Simulation simulation2(simulationData);
+		[[maybe_unused]] Area& area2 = simulation2.loadAreaFromJson(areaData);
+		Actor& dwarf2 = simulation2.getActorById(dwarf1Id);
+		
+		Objective& objective2 = dwarf2.m_hasObjectives.getCurrent();
+		REQUIRE(objective2.getObjectiveTypeId() == ObjectiveTypeId::Harvest);
+		HarvestObjective& harvestObjective = static_cast<HarvestObjective&>(objective2);
+		REQUIRE(harvestObjective.getBlock() == &area2.getBlock(1,7,1));
+	}
+	SUBCASE("give fluid to plant")
+	{
+		Item& bucket1 = simulation.createItemNongeneric(bucket, bronze, 25, 0);
+		bucket1.setLocation(area.getBlock(3, 7, 1));
+		bucket1.m_hasCargo.add(water, 10);
+		area.getBlock(1,7,1).m_hasPlant.createPlant(wheatGrass, 100);
+		Plant& plant = area.getBlock(1,7,1).m_hasPlant.get();
+		plant.setMaybeNeedsFluid();
+		REQUIRE(plant.m_volumeFluidRequested);
+		Cuboid farmBlocks{area.getBlock(1,7,1), area.getBlock(1,6,1)};
+		FarmField& farm = area.m_hasFarmFields.at(faction).create(farmBlocks);
+		area.m_hasFarmFields.at(faction).setSpecies(farm, wheatGrass);
+		Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
+		dwarf1.setFaction(&faction);
+		GivePlantsFluidObjectiveType& harvestObjectiveType = static_cast<GivePlantsFluidObjectiveType&>(*ObjectiveType::objectiveTypes.at("give plants fluid").get());
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(harvestObjectiveType, 10);
+		ActorId dwarf1Id = dwarf1.m_id;
+		
+		// One step to find the plant needing water.
+		simulation.doStep();
+
+		Json areaData = area.toJson();
+		Json simulationData = simulation.toJson();
+		Simulation simulation2(simulationData);
+		[[maybe_unused]] Area& area2 = simulation2.loadAreaFromJson(areaData);
+		Actor& dwarf2 = simulation2.getActorById(dwarf1Id);
+		
+		Objective& objective2 = dwarf2.m_hasObjectives.getCurrent();
+		REQUIRE(objective2.getObjectiveTypeId() == ObjectiveTypeId::GivePlantsFluid);
+		GivePlantsFluidObjective& harvestObjective = static_cast<GivePlantsFluidObjective&>(objective2);
+		REQUIRE(harvestObjective.getPlantLocation() == &area2.getBlock(1,7,1));
 	}
 }

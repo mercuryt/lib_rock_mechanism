@@ -247,7 +247,10 @@ void HasFarmFieldsForFaction::setSpecies(FarmField& farmField, const PlantSpecie
 	assert(farmField.plantSpecies == nullptr);
 	farmField.plantSpecies = &plantSpecies;
 	if(m_area.m_simulation.m_now.day >= plantSpecies.dayOfYearForSowStart && m_area.m_simulation.m_now.day <= plantSpecies.dayOfYearForSowEnd)
+	{
+		farmField.timeToSow = true;
 		designateBlocks(farmField, farmField.blocks);
+	}
 }
 void HasFarmFieldsForFaction::designateBlocks(FarmField& farmField, std::unordered_set<Block*>& blocks)
 {
@@ -256,15 +259,15 @@ void HasFarmFieldsForFaction::designateBlocks(FarmField& farmField, std::unorder
 		for(Block* block : blocks)
 			addSowSeedsDesignation(*block);
 	for(Block* block : blocks)
-	{
-		// Designate plants already existing for fluid if the species is right and they need fluid.
 		if(block->m_hasPlant.exists())
 		{
 			Plant& plant = block->m_hasPlant.get();
+			// Designate plants already existing for fluid if the species is right and they need fluid.
 			if(&plant.m_plantSpecies == farmField.plantSpecies && plant.m_volumeFluidRequested)
 				addGivePlantFluidDesignation(plant);
+			if(plant.m_quantityToHarvest)
+				addHarvestDesignation(plant);
 		}
-	}
 }
 void HasFarmFieldsForFaction::clearSpecies(FarmField& farmField)
 {

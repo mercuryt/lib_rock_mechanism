@@ -42,6 +42,8 @@ public:
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::SowSeeds; }
 	friend class SowSeedsEvent;
 	friend class SowSeedsThreadedTask;
+	// For testing.
+	Block* getBlock() { return m_block; }
 };
 class SowSeedsEvent final : public ScheduledEvent
 {

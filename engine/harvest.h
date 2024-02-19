@@ -45,6 +45,8 @@ public:
 	bool blockContainsHarvestablePlant(const Block& block) const;
 	friend class HarvestEvent;
 	friend class HarvestThreadedTask;
+	// For testing.
+	Block* getBlock() { return m_block; }
 };
 class HarvestEvent final : public ScheduledEvent
 {
