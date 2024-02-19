@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS True)
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3 -ggdb -fno-inline")
-set(CMAKE_CXX_FLAGS "-fuse-ld=mold")
+# set(CMAKE_CXX_FLAGS "-fuse-ld=mold")
 set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
 # set(CMAKE_CXX_CPPCHECK "cppcheck")
 
@@ -17,13 +17,13 @@ if(MSVC)
 else()
     # additional warnings
     add_compile_options(-Wall -Wextra -Werror -Wunused-function -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wnull-dereference -Wdouble-promotion )
-    add_compile_options(-D_GLIBCXX_DEBUG)
+    # add_compile_options(-D_GLIBCXX_DEBUG)
 endif()
 
 # add_compile_options(-ffast-math)
 
 add_subdirectory(engine)
-#add_subdirectory(ui)
+add_subdirectory(ui)
 add_subdirectory(test)
 #add_subdirectory(python)
 

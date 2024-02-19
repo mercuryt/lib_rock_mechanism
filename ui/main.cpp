@@ -3,7 +3,6 @@
 #include "window.h"
 #include "../engine/config.h"
 #include "../engine/definitions.h"
-#include "../engine/objectiveTypes.h"
 int main()
 {
 	Config::load();

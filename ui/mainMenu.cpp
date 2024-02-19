@@ -14,11 +14,11 @@ MainMenuView::MainMenuView(Window& w) : m_window(w), m_panel(tgui::Panel::create
 	m_panel->add(layout);
 	layout->setSize("60%", "70%");
 	layout->setPosition("20%", "15%");
-
+	/*
 	auto quickStartButton = tgui::Button::create("quick start");
 	quickStartButton->onClick([this]{ m_window.load("campaign/default"); });
 	layout->add(quickStartButton);
-
+	*/
 	auto loadButton = tgui::Button::create("load");
 	loadButton->onClick([this]{ m_window.m_editMode = false; m_window.showLoad(); });
 	layout->add(loadButton);
