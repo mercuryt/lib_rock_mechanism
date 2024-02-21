@@ -184,6 +184,7 @@ Item::Item(const Json& data, DeserializationMemo& deserializationMemo, ItemId id
 	HasShape(data, deserializationMemo),
 	m_quantity(data.contains("quantity") ? data["quantity"].get<uint32_t>() : 1u),
 	m_id(id), m_itemType(*data["itemType"].get<const ItemType*>()), m_materialType(*data["materialType"].get<const MaterialType*>()),
+	m_mass(getMass()),
 	m_quality(data["quality"].get<uint32_t>()), m_percentWear(data["percentWear"].get<Percent>()), m_installed(data["installed"].get<bool>()),
 	m_craftJobForWorkPiece(nullptr), m_hasCargo(*this), m_canBeStockPiled(data["canBeStockPiled"], deserializationMemo, *this) 
 	{

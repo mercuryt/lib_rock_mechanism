@@ -86,6 +86,6 @@ public:
 	void writeStep();
 	void clearReferences();
 	// Testing.
-	[[maybe_unused]]bool isDetour() const { return m_detour; }
-	[[maybe_unused]]FindsPath& getFindsPath() { return m_findsPath; }
+	[[maybe_unused]] bool isDetour() const { return m_detour; }
+	[[maybe_unused]] FindsPath& getFindsPath() { return m_findsPath; }
 };

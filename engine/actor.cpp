@@ -22,7 +22,7 @@ Actor::Actor(const Json& data, DeserializationMemo& deserializationMemo) :
 	m_faction(data.contains("faction") ? &deserializationMemo.m_simulation.m_hasFactions.byName(data["faction"].get<std::wstring>()) : nullptr), 
 	m_id(data["id"].get<ActorId>()), m_name(data["name"].get<std::wstring>()), m_species(AnimalSpecies::byName(data["species"].get<std::string>())), 
 	m_birthDate(data["birthDate"]), m_alive(data["alive"].get<bool>()), m_body(data["body"], deserializationMemo, *this), m_project(nullptr), 
-	m_attributes(data["attributes"], *data["species"].get<const AnimalSpecies*>(), data["percentGrown"].get<Percent>()), 
+	m_attributes(data["attributes"], m_species, data["percentGrown"].get<Percent>()), 
 	m_mustEat(data["mustEat"], *this), m_mustDrink(data["mustDrink"], *this), m_mustSleep(data["mustSleep"], *this), 
 	m_needsSafeTemperature(data["needsSafeTemperature"], *this), m_canPickup(data["canPickup"], *this), 
 	m_equipmentSet(data["equipmentSet"], *this), m_canMove(data["canMove"], deserializationMemo, *this), m_canFight(data["canFight"], *this), 

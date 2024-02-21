@@ -280,6 +280,7 @@ void ContextMenu::draw(Block& block)
 						quantityLabel->getRenderer()->setBackgroundColor(labelColor);
 						auto quantityUI = tgui::SpinControl::create();
 						quantityUI->setMinimum(1);
+						quantityUI->setMaximum(INT16_MAX);
 						quantityUI->setValue(quantity);
 						quantityUI->onValueChange([](const float value){ quantity = value; });
 						subSubMenu.add(quantityUI);
@@ -305,6 +306,7 @@ void ContextMenu::draw(Block& block)
 						qualityLabel->getRenderer()->setBackgroundColor(labelColor);
 						auto qualityUI = tgui::SpinControl::create();
 						qualityUI->setMinimum(1);
+						qualityUI->setMaximum(100);
 						qualityUI->setValue(quality);
 						qualityUI->onValueChange([](const float value){ quality = value; });
 						subSubMenu.add(qualityUI);
@@ -313,6 +315,7 @@ void ContextMenu::draw(Block& block)
 						percentWearLabel->getRenderer()->setBackgroundColor(labelColor);
 						auto percentWearUI = tgui::SpinControl::create();
 						percentWearUI->setMinimum(1);
+						percentWearUI->setMaximum(100);
 						percentWearUI->setValue(percentWear);
 						percentWearUI->onValueChange([](const float value){ percentWear = value; });
 						subSubMenu.add(percentWearUI);
@@ -555,6 +558,7 @@ void ContextMenu::draw(Block& block)
 				submenu.add(levelLabel);
 				auto levelUI = tgui::SpinControl::create();
 				levelUI->setMinimum(1);
+				levelUI->setMaximum(Config::maxBlockVolumeHardLimit);
 				levelUI->onValueChange([&](const float value){fluidLevel = value;});
 				levelUI->setValue(fluidLevel);
 				submenu.add(levelUI);

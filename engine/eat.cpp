@@ -147,7 +147,10 @@ void EatThreadedTask::readStep()
 		return false;
 	};
 	//TODO: maxRange.
-	m_findsPath.pathToUnreservedAdjacentToPredicate(predicate, *m_eatObjective.m_actor.getFaction());
+	if(m_eatObjective.m_actor.getFaction())
+		m_findsPath.pathToUnreservedAdjacentToPredicate(predicate, *m_eatObjective.m_actor.getFaction());
+	else
+		m_findsPath.pathToAdjacentToPredicate(predicate);
 	if(m_findsPath.found())
 		m_eatObjective.m_destination = m_findsPath.getPath().back();
 	else if (m_findsPath.m_useCurrentLocation)

@@ -104,7 +104,10 @@ void DrinkThreadedTask::readStep()
 	{
 		return m_drinkObjective.containsSomethingDrinkable(block);
 	};
-	m_findsPath.pathToUnreservedAdjacentToPredicate(predicate, *m_drinkObjective.m_actor.getFaction());
+	if(m_drinkObjective.m_actor.getFaction())
+		m_findsPath.pathToUnreservedAdjacentToPredicate(predicate, *m_drinkObjective.m_actor.getFaction());
+	else
+		m_findsPath.pathToAdjacentToPredicate(predicate);
 	if(!m_findsPath.found() && !m_findsPath.m_useCurrentLocation)
 	{
 		// Nothing to drink here, try to leave.

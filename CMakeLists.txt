@@ -7,9 +7,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS True)
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3 -ggdb -fno-inline")
-# set(CMAKE_CXX_FLAGS "-fuse-ld=mold")
+#set(CMAKE_CXX_FLAGS "-fuse-ld=mold")
 set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
-# set(CMAKE_CXX_CPPCHECK "cppcheck")
+# add_compile_options(-fsanitize=undefined)
+# add_link_options(-fsanitize=undefined)
 
 if(MSVC)
     # warning level 4
@@ -17,6 +18,7 @@ if(MSVC)
 else()
     # additional warnings
     add_compile_options(-Wall -Wextra -Werror -Wunused-function -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wnull-dereference -Wdouble-promotion )
+    # Incompatable with tgui?
     # add_compile_options(-D_GLIBCXX_DEBUG)
 endif()
 

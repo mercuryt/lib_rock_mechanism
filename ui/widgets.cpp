@@ -12,14 +12,20 @@ DateTimeUI::DateTimeUI(uint8_t hours,uint8_t days, uint8_t years) : m_hours(tgui
 	m_widget->addWidget(tgui::Label::create("hours"), 1, 1);
 	m_widget->addWidget(m_hours, 1, 2);
 	m_hours->setValue(hours);
+	m_hours->setMinimum(0);
+	m_hours->setMaximum(23);
 
 	m_widget->addWidget(tgui::Label::create("days"), 2, 1);
 	m_widget->addWidget(m_days, 2, 2);
 	m_days->setValue(days);
+	m_days->setMinimum(1);
+	m_days->setMaximum(365);
 
 	m_widget->addWidget(tgui::Label::create("years"), 3, 1);
 	m_widget->addWidget(m_years, 3, 2);
 	m_years->setValue(years);
+	m_years->setMinimum(0);
+	m_years->setMaximum(2000);
 }
 DateTimeUI::DateTimeUI() : DateTimeUI(1,1,1) { }
 DateTimeUI::DateTimeUI(DateTime& dateTime) : DateTimeUI(dateTime.hour, dateTime.day, dateTime.year) { }

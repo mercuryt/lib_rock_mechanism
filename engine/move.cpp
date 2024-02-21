@@ -179,6 +179,8 @@ void ActorCanMove::setDestination(Block& destination, bool detour, bool adjacent
 	else
 		assert(!m_actor.isAdjacentTo(destination));
 	clearAllEventsAndTasks();
+	if(!m_actor.getFaction())
+		reserve = unreserved = false;
 	if(unreserved && !adjacent)
 		assert(!destination.m_reservable.isFullyReserved(m_actor.getFaction()));
 	std::function<bool(const Block&)> predicate = [&](const Block& block){ return block == destination; };
@@ -275,6 +277,7 @@ void PathThreadedTask::readStep()
 
 	if(m_unreservedDestination)
 	{
+		assert(m_actor.getFaction());
 		if(m_adjacent)
 			m_findsPath.pathToUnreservedAdjacentToPredicate(predicate, *m_actor.getFaction());
 		else

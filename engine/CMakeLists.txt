@@ -2,3 +2,4 @@ add_library (Engine actor.cpp actorQuery.cpp area.cpp attributes.cpp block.cpp b
 #worldforge/biome.cpp worldforge/lake.cpp  worldforge/locii.cpp  worldforge/makeArea.cpp  worldforge/river.cpp  worldforge/world.cpp)
 target_compile_features(Engine PUBLIC cxx_std_20)
 target_include_directories (Engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+# set(CMAKE_CXX_CPPCHECK "cppcheck")

@@ -64,7 +64,7 @@ public:
 	Mass getMass() const { return mass.value; }
 	void addMassBonusOrPenalty(uint32_t x) { mass.bonusOrPenalty += x; generate(); }
 	void setMassBonusOrPenalty(uint32_t x) { mass.bonusOrPenalty = x; generate(); }
-	uint32_t getUnencomberedCarryMass() const { return unencomberedCarryMass; }
+	Mass getUnencomberedCarryMass() const { return unencomberedCarryMass; }
 	uint32_t getMoveSpeed() const { return moveSpeed; }
 	uint32_t getBaseCombatScore() const { return baseCombatScore; }
 	Json toJson() const;

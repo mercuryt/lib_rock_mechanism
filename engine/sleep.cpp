@@ -44,7 +44,10 @@ void SleepThreadedTask::readStep()
 				outdoorCandidate = &block;	
 			return false;
 		};
-		m_findsPath.pathToUnreservedAdjacentToPredicate(condition, *actor.getFaction());
+		if(actor.getFaction())
+			m_findsPath.pathToUnreservedAdjacentToPredicate(condition, *actor.getFaction());
+		else
+			m_findsPath.pathToAdjacentToPredicate(condition);
 	}
 	if(!m_findsPath.found())
 	{

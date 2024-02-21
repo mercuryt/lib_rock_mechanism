@@ -78,7 +78,7 @@ void CanFight::attackLongRange(Actor& target, Item* weapon, Item* ammo)
 }
 uint32_t CanFight::getCurrentMeleeCombatScore()
 {
-	const Faction& faction = *m_actor.getFaction();
+	const Faction* faction = m_actor.getFaction();
 	uint32_t blocksContainingNonAllies = 0;
 	// Apply bonuses and penalties based on relative locations.
 	uint32_t output = m_combatScore;
@@ -89,7 +89,7 @@ uint32_t CanFight::getCurrentMeleeCombatScore()
 		if(hasShape->isActor())
 		{
 			Actor& actor = static_cast<Actor&>(*hasShape);
-			if(actor.getFaction() != nullptr && (actor.getFaction() == &faction || actor.getFaction()->allies.contains(const_cast<Faction*>(&faction))))
+			if(actor.getFaction() && (actor.getFaction() == faction || actor.getFaction()->allies.contains(const_cast<Faction*>(faction))))
 			{
 				if(actor.m_canFight.m_combatScore > highestAllyCombatScore)
 					highestAllyCombatScore = actor.m_canFight.m_combatScore;
