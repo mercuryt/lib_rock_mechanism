@@ -9,13 +9,14 @@ void sprites::load()
 	for(auto& [name, spriteCoords] : spriteCoordinates::data)
 	{
 		sf::Texture texture;
-		textures[name].loadFromFile(path, sf::IntRect(spriteCoords.x, spriteCoords.y, spriteCoords.w, spriteCoords.h));
+		textures[name].first.loadFromFile(path, sf::IntRect(spriteCoords.x, spriteCoords.y, spriteCoords.w, spriteCoords.h));
+		textures[name].second = {spriteCoords.pivot_x, spriteCoords.pivot_y};
 	}
 }
 void sprites::flush() { sprites.clear(); }
-sf::Sprite& sprites::make(std::string name)
+std::pair<sf::Sprite, sf::Vector2f> sprites::make(std::string name)
 {
 	sprites.emplace_back();
-	sprites.back().setTexture(textures[name]);
-	return sprites.back();
+	sprites.back().setTexture(textures[name].first);
+	return {sprites.back(), textures[name].second};
 }

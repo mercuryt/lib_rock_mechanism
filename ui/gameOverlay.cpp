@@ -12,20 +12,7 @@ GameOverlay::GameOverlay(Window& w) : m_window(w),
 	auto layout = tgui::VerticalLayout::create();
 	auto save = tgui::Button::create("save");
 	layout->add(save);
-	save->onClick([&]{
-		m_window.m_lockInput = true;
-		sf::Cursor cursor;
-		if (cursor.loadFromSystem(sf::Cursor::Wait))
-			m_window.getRenderWindow().setMouseCursor(cursor);
-		std::thread t([this]{ 
-			m_window.save();
-			m_window.m_lockInput = false;
-			sf::Cursor cursor;
-			if (cursor.loadFromSystem(sf::Cursor::Arrow))
-				m_window.getRenderWindow().setMouseCursor(cursor);
-		});
-		t.join();
-	});
+	save->onClick([&]{ m_window.save(); });
 	auto mainMenu = tgui::Button::create("main menu");
 	layout->add(mainMenu);
 	mainMenu->onClick([&]{ m_window.showMainMenu(); });

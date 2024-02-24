@@ -115,6 +115,7 @@ public:
 	[[nodiscard]] Block& getBlockUnderCursor();
 	[[nodiscard]] Block& getBlockAtPosition(sf::Vector2i pixelPos);
 	// Filesystem.
+	void threadTask(std::function<void()> task);
 	void save();
 	void load(std::filesystem::path path);
 	// Accessors.

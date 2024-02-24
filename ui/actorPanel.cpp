@@ -34,7 +34,7 @@ void ActorView::draw(Actor& actor)
 	attributesGrid->addWidget(tgui::Label::create("move speed"), 1, 5);
 	attributesGrid->addWidget(tgui::Label::create(std::to_string(m_actor->m_attributes.getMoveSpeed())), 2, 5);
 	attributesGrid->addWidget(tgui::Label::create("base combat score"), 1, 6);
-	attributesGrid->addWidget(tgui::Label::create(std::to_string(m_actor->m_attributes.getBaseCombatScore())), 3, 6);
+	attributesGrid->addWidget(tgui::Label::create(std::to_string(m_actor->m_attributes.getBaseCombatScore())), 2, 6);
 	layout->add(attributesGrid);
 	// Skills.
 	if(!m_actor->m_skillSet.m_skills.empty())

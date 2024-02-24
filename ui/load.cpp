@@ -20,7 +20,7 @@ void LoadView::draw()
 		std::wstring name = data["name"].get<std::wstring>();
 		auto button = tgui::Button::create(name);
 		layout->add(button);
-		button->onClick([this, entryPath]{ m_window.load(entryPath); m_window.showMainMenu(); });
+		button->onClick([this, entryPath]{ m_window.load(entryPath); });
 	}
 }
 void LoadView::close()

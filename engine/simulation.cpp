@@ -26,7 +26,7 @@ Simulation::Simulation(std::filesystem::path path) : Simulation(Json::parse(std:
 		Json areaData = Json::parse(af);
 		m_areas.emplace_back(areaData, m_deserializationMemo, *this);
 	}
-	m_hourlyEvent.schedule(*this, data["hourlyEventStart"].get<Step>());
+	m_hourlyEvent.schedule(*this, data.contains("hourlyEventStart") ? data["hourlyEventStart"].get<Step>() : 0);
 }
 Simulation::Simulation(const Json& data) : m_deserializationMemo(*this), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this) 
 {
@@ -106,6 +106,8 @@ Area& Simulation::loadArea(AreaId id, std::wstring name, uint32_t x, uint32_t y,
 }
 Actor& Simulation::createActor(const AnimalSpecies& species, Percent percentGrown, DateTime birthDate)
 {
+	assert(percentGrown > 0);
+	assert(percentGrown <= 100);
 	if(!birthDate)
 	{
 		// Create a plausible birth date.
@@ -117,8 +119,7 @@ Actor& Simulation::createActor(const AnimalSpecies& species, Percent percentGrow
 		birthDate = DateTime::fromPastBySteps(steps);
 	}
 	Attributes attributes(species, percentGrown);
-	std::wstring name(species.name.begin(), species.name.end());
-	name.append(std::to_wstring(m_nextActorId));
+	std::wstring name = util::stringToWideString(species.name) + std::to_wstring(m_nextActorId);
 	auto [iter, emplaced] = m_actors.try_emplace(
 		m_nextActorId,
 		*this,
@@ -145,8 +146,9 @@ Actor& Simulation::createActor(const AnimalSpecies& species, Block& block, Perce
 Actor& Simulation::createActorWithRandomAge(const AnimalSpecies& species, Block& block)
 {
 	Percent percentLifeTime = m_random.getInRange(0, 100);
-	Step ageSteps = util::scaleByPercent(species.deathAgeSteps[1], percentLifeTime);
-	Percent percentGrown = std::min(100, util::fractionToPercent(ageSteps, species.stepsTillFullyGrown));
+	// Using util::scaleByPercent and util::fractionToPercent give the wrong result here for some reason.
+	Step ageSteps = ((float)species.deathAgeSteps[1] / (float)percentLifeTime) * 100.f;
+	Percent percentGrown = std::min(100, (Percent)((float)ageSteps / (float)species.stepsTillFullyGrown * 100.f));
 	auto birthDate = DateTime::fromPastBySteps(ageSteps);
 	return createActor(species, block, percentGrown, birthDate);
 }

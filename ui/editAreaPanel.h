@@ -8,7 +8,7 @@ class EditAreaView final
 	tgui::Group::Ptr m_panel;
 	tgui::Label::Ptr m_title;
 	tgui::EditBox::Ptr m_name;
-	tgui::Container::Ptr m_dimensionsHolder;
+	tgui::Grid::Ptr m_dimensionsHolder;
 	tgui::SpinControl::Ptr m_sizeX;
 	tgui::SpinControl::Ptr m_sizeY;
 	tgui::SpinControl::Ptr m_sizeZ;

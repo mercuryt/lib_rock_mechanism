@@ -19,20 +19,18 @@ EditAreaView::EditAreaView(Window& w) : m_window(w), m_panel(tgui::Panel::create
 	widgetUtil::setPadding(layout);
 	m_panel->add(layout);
 	
-	layout->add(m_dimensionsHolder);
 
 	layout->add(tgui::Label::create("name"));
 	layout->add(m_name);
 
-	layout->add(tgui::Label::create("size"));
-	auto grid = tgui::Grid::create();
-	layout->add(grid);
-	grid->addWidget(tgui::Label::create("x"), 1, 1);
-	grid->addWidget(tgui::Label::create("y"), 2, 1);
-	grid->addWidget(tgui::Label::create("z"), 3, 1);
-	grid->addWidget(m_sizeX, 1, 2);
-	grid->addWidget(m_sizeY, 2, 2);
-	grid->addWidget(m_sizeZ, 3, 2);
+	layout->add(m_dimensionsHolder);
+	m_dimensionsHolder->addWidget(tgui::Label::create("dimensions"), 1, 1);
+	m_dimensionsHolder->addWidget(tgui::Label::create("x"), 2, 1);
+	m_dimensionsHolder->addWidget(tgui::Label::create("y"), 3, 1);
+	m_dimensionsHolder->addWidget(tgui::Label::create("z"), 4, 1);
+	m_dimensionsHolder->addWidget(m_sizeX, 1, 2);
+	m_dimensionsHolder->addWidget(m_sizeY, 2, 2);
+	m_dimensionsHolder->addWidget(m_sizeZ, 3, 2);
 	m_sizeX->setMinimum(10);
 	m_sizeX->setMaximum(2000);
 	m_sizeX->setValue(100);
@@ -73,7 +71,12 @@ void EditAreaView::draw(Area* area)
 void EditAreaView::confirm()
 {
 	if(!m_area)
-		m_area = &m_window.getSimulation()->createArea(m_sizeX->getValue(), m_sizeY->getValue(), m_sizeZ->getValue());
+	{
+		std::function<void()> task = [this]{
+			m_area = &m_window.getSimulation()->createArea(m_sizeX->getValue(), m_sizeY->getValue(), m_sizeZ->getValue());
+		};
+		m_window.threadTask(task);
+	}
 	m_area->m_name = m_name->getText().toWideString();
 	m_window.showEditReality();
 }

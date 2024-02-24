@@ -12,7 +12,8 @@
 #include "../engine/uniform.h"
 #include <TGUI/Widgets/HorizontalLayout.hpp>
 // Menu segment
-ContextMenuSegment::ContextMenuSegment(tgui::Group::Ptr overlayGroup) : m_gameOverlayGroup(overlayGroup), m_panel(tgui::Panel::create()), m_grid(tgui::Grid::create()) 
+ContextMenuSegment::ContextMenuSegment(tgui::Group::Ptr overlayGroup) : 
+	m_gameOverlayGroup(overlayGroup), m_panel(tgui::Panel::create()), m_grid(tgui::Grid::create()) 
 { 
 	m_panel->add(m_grid);
 	m_panel->setSize(tgui::bindWidth(m_grid) + 4, tgui::bindHeight(m_grid) + 4);
@@ -26,7 +27,8 @@ void ContextMenuSegment::add(tgui::Widget::Ptr widget, std::string id)
 }
 ContextMenuSegment::~ContextMenuSegment() { m_gameOverlayGroup->remove(m_panel); }
 // Menu
-ContextMenu::ContextMenu(Window& window, tgui::Group::Ptr gameOverlayGroup) : m_window(window), m_root(gameOverlayGroup), m_gameOverlayGroup(gameOverlayGroup)
+ContextMenu::ContextMenu(Window& window, tgui::Group::Ptr gameOverlayGroup) : 
+	m_window(window), m_root(gameOverlayGroup), m_gameOverlayGroup(gameOverlayGroup)
 {
 	gameOverlayGroup->add(m_root.m_panel);
 	m_root.m_panel->setVisible(false);
@@ -226,6 +228,23 @@ void ContextMenu::draw(Block& block)
 			}
 		if(m_window.m_editMode)
 		{
+			// Fluids.
+			for(auto& [fluidType, pair] : block.m_fluids)
+			{
+				auto volume = pair.first;
+				auto button = tgui::Button::create("remove " + std::to_string(volume) + " " + fluidType->name);
+				m_root.add(button);
+				button->onClick([&]{ 
+					for(auto& selectedBlock : m_window.getSelectedBlocks())
+					{
+						auto contains = selectedBlock.volumeOfFluidTypeContains(*fluidType);
+						if(!contains) return;
+						selectedBlock.removeFluid(contains, *fluidType);
+					}
+					hide();
+				});
+			}
+			// Plant.
 			if(block.m_hasPlant.anythingCanGrowHereEver())
 			{
 				auto addPlant = tgui::Label::create("add plant");
@@ -253,12 +272,14 @@ void ContextMenu::draw(Block& block)
 						{
 							const PlantSpecies& species = PlantSpecies::byName(speciesUI->getSelectedItemId().toStdString());
 							for(Block& block : m_window.getSelectedBlocks())
-								block.m_hasPlant.createPlant(species, percentGrownUI->getValue());
+								if(!block.m_hasPlant.exists() && !block.isSolid() && block.m_hasPlant.canGrowHereEver(species))
+									block.m_hasPlant.createPlant(species, percentGrownUI->getValue());
 						}
 						hide();
 					});
 				});
 			}
+			// Item.
 			auto addItem = tgui::Label::create("add item");
 			addItem->getRenderer()->setBackgroundColor(buttonColor);
 			m_root.add(addItem);
@@ -569,7 +590,8 @@ void ContextMenu::draw(Block& block)
 					if(m_window.getSelectedBlocks().empty())
 						m_window.selectBlock(block);
 					for(Block& block : m_window.getSelectedBlocks())
-						block.addFluid(fluidLevel, FluidType::byName(fluidTypeUI->getSelectedItemId().toStdString()));
+						if(!block.isSolid())
+							block.addFluid(fluidLevel, FluidType::byName(fluidTypeUI->getSelectedItemId().toStdString()));
 					hide();
 				});
 				if(!m_window.getArea()->m_fluidSources.contains(block))
@@ -611,7 +633,7 @@ ContextMenuSegment& ContextMenu::makeSubmenu(size_t index)
 	m_submenus.emplace_back(m_gameOverlayGroup);
 	auto& submenu = m_submenus.back();
 	m_gameOverlayGroup->add(submenu.m_panel);
-	ContextMenuSegment& previous = index == 0 ? m_root : m_submenus[index - 1];
+	ContextMenuSegment& previous = index == 0 ? m_root : m_submenus.at(index - 1);
 	sf::Vector2i pixelPos = sf::Mouse::getPosition();
 	submenu.m_panel->setOrigin(0, getOriginYForMousePosition());
 	submenu.m_panel->setPosition(tgui::bindRight(previous.m_panel), pixelPos.y);

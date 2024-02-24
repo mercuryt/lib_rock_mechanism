@@ -106,6 +106,10 @@ void Window::startLoop()
 							if(sf::Keyboard::isKeyPressed(sf::Keyboard::LControl))
 								m_window.close();
 							break;
+						case sf::Keyboard::S:
+							if(sf::Keyboard::isKeyPressed(sf::Keyboard::LControl))
+								save();
+							break;
 						case sf::Keyboard::PageUp:
 							if(m_gameOverlay.isVisible() && (m_z + 1) < m_area->m_sizeZ)
 								setZ(m_z + 1);
@@ -166,13 +170,16 @@ void Window::startLoop()
 								else
 									m_gameOverlay.drawMenu();
 							}
-							if(m_productionView.isVisible())
+							else if(m_productionView.isVisible())
 								if(m_productionView.createIsVisible())
 									m_productionView.closeCreate();
 								else
 									showGame();
 							else
+							{
+								assert(false);
 								showGame();
+							}
 							break;
 						case sf::Keyboard::Num1:
 							if(m_area)
@@ -407,22 +414,51 @@ void Window::drawView()
 			else
 				m_draw.validOnBlock(*block);
 	}
+	// Area Border.
+	sf::RectangleShape areaBorder(sf::Vector2f((m_scale * m_area->m_sizeX), (m_scale * m_area->m_sizeX) ));
+	areaBorder.setOutlineColor(sf::Color::White);
+	areaBorder.setFillColor(sf::Color::Transparent);
+	areaBorder.setOutlineThickness(3.f);
+	areaBorder.setPosition(sf::Vector2f(0,0));
+	m_window.draw(areaBorder);
+}
+void Window::threadTask(std::function<void()> task)
+{
+	m_lockInput = true;
+	sf::Cursor cursor;
+	if (cursor.loadFromSystem(sf::Cursor::Wait))
+		m_window.setMouseCursor(cursor);
+	std::thread t([this, task]{ 
+		task();
+		m_lockInput = false;
+		sf::Cursor cursor;
+		if (cursor.loadFromSystem(sf::Cursor::Arrow))
+			m_window.setMouseCursor(cursor);
+	});
+	t.join();
 }
 void Window::save()
 {
 	assert(m_simulation);
-	m_simulation->save();
-	const Json povData = povToJson();
-	std::ofstream file(m_simulation->getPath()/"pov.json" );
-	file << povData;
+	std::function<void()> task = [this]{
+		m_simulation->save();
+		const Json povData = povToJson();
+		std::ofstream file(m_simulation->getPath()/"pov.json" );
+		file << povData;
+	};
+	threadTask(task);
 }
 void Window::load(std::filesystem::path path)
 {
-	m_simulation = std::make_unique<Simulation>(path);
-	std::ifstream af(m_simulation->getPath()/"pov.json");
-	Json povData = Json::parse(af);
-	povFromJson(povData);
-	showGame();
+	std::function<void()> task = [this, path]{
+		deselectAll();
+		m_simulation = std::make_unique<Simulation>(path);
+		std::ifstream af(m_simulation->getPath()/"pov.json");
+		Json povData = Json::parse(af);
+		povFromJson(povData);
+		showGame();
+	};
+	threadTask(task);
 }
 void Window::setZ(const uint32_t z)
 {
@@ -445,7 +481,7 @@ void Window::povFromJson(const Json& data)
 	assert(m_simulation);
 	m_area = &m_simulation->getAreaById(data["area"].get<AreaId>());
 	m_scale = data["scale"].get<uint32_t>();
-	setZ(data["m_z"].get<uint32_t>());
+	setZ(data["z"].get<uint32_t>());
 	if(data.contains("selectedBlock"))
 	{
 		uint32_t x = data["x"].get<uint32_t>();

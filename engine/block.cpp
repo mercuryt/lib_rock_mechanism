@@ -525,6 +525,7 @@ void Block::spawnMist(const FluidType& fluidType, uint32_t maxMistSpread)
 //TODO: This code puts the fluid into an adjacent group of the correct type if it can find one, it does not add the block or merge groups, leaving these tasks to fluidGroup readStep. Is this ok?
 void Block::addFluid(uint32_t volume, const FluidType& fluidType)
 {
+	assert(!isSolid());
 	// If a suitable fluid group exists already then just add to it's excessVolume.
 	if(m_fluids.contains(&fluidType))
 	{
@@ -695,8 +696,11 @@ std::vector<Block*> Block::collectAdjacentsInRangeVector(uint32_t range)
 	std::vector<Block*> output(result.begin(), result.end());
 	return output;
 }
-void Block::loadFromJson(Json data, DeserializationMemo& deserializationMemo)
+void Block::loadFromJson(Json data, DeserializationMemo& deserializationMemo, uint32_t x, uint32_t y, uint32_t z)
 {
+	m_x = x;
+	m_y = y;
+	m_z = z;
 	m_exposedToSky = data["exposedToSky"].get<bool>();
 	m_underground = data["underground"].get<bool>();
 	m_outdoors = data["outdoors"].get<bool>();
@@ -723,12 +727,12 @@ void Block::loadFromJson(Json data, DeserializationMemo& deserializationMemo)
 			addFluid(pair[1].get<Volume>(), *pair[0].get<const FluidType*>());
 	if(data.contains("hasDesignations"))
 		m_hasDesignations.load(data["hasDesignations"], deserializationMemo);
-	m_visible = data.contains("visible");
+	m_visible = data["visible"].get<bool>();
 }
 Json Block::toJson() const 
 {
 	//TODO: This format is far too verbose. Store the bools in an array, infer if possible. Infer the xyz. 
-	Json data{{"exposedToSky", m_exposedToSky}, {"underground", m_underground}, {"outdoors", m_outdoors}, {"visible", m_visible}, {"x", m_x}, {"y", m_y}, {"z", m_z}};
+	Json data{{"exposedToSky", m_exposedToSky}, {"underground", m_underground}, {"outdoors", m_outdoors}, {"visible", m_visible}};
 	if(m_reservable.hasAnyReservations())
 		data["reservable"] = reinterpret_cast<uintptr_t>(&m_reservable);
 	if(m_solid != nullptr)

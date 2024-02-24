@@ -190,7 +190,7 @@ public:
 	}
 	std::unordered_set<Block*> collectAdjacentsInRange(uint32_t range);
 	std::vector<Block*> collectAdjacentsInRangeVector(uint32_t range);
-	void loadFromJson(Json data, DeserializationMemo& deserializationMemo);
+	void loadFromJson(Json data, DeserializationMemo& deserializationMemo, uint32_t x, uint32_t y, uint32_t z);
 	Json toJson() const;
 	Json positionToJson() const;
 };

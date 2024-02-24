@@ -27,8 +27,22 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_simulation.m_areasById[m_id] = this;
 	setup();
 	// Load blocks.
+	uint32_t x = 0;
+	uint32_t y = 0;
+	uint32_t z = 0;
 	for(const Json& blockData : data["blocks"])
-		getBlock(blockData["x"].get<uint32_t>(), blockData["y"].get<uint32_t>(), blockData["z"].get<uint32_t>()).loadFromJson(blockData, deserializationMemo);
+	{
+		getBlock(x, y, z).loadFromJson(blockData, deserializationMemo, x, y, z);
+		if(++x == m_sizeX)
+		{
+			x = 0;
+			if(++y == m_sizeY)
+			{
+				y = 0;
+				++z;
+			}
+		}
+	}
 	// Load fires.
 	m_fires.load(data["fires"], deserializationMemo);
 	// Load plants.
