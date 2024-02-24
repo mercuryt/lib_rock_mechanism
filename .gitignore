@@ -34,4 +34,3 @@ test/inconsistantErrors/*
 *\.so
 *.pyc
 UI
-save

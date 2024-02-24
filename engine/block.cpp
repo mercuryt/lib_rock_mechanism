@@ -701,10 +701,10 @@ void Block::loadFromJson(Json data, DeserializationMemo& deserializationMemo, ui
 	m_x = x;
 	m_y = y;
 	m_z = z;
-	m_exposedToSky = data["exposedToSky"].get<bool>();
-	m_underground = data["underground"].get<bool>();
-	m_outdoors = data["outdoors"].get<bool>();
-	m_visible = data["visible"].get<bool>();
+	m_exposedToSky = data.contains("e");
+	m_underground = data.contains("u");
+	m_outdoors = data.contains("o");
+	m_visible = data.contains("v");
 	if(data.contains("reservable"))
 		deserializationMemo.m_reservables[data["reservable"].get<uintptr_t>()] = &m_reservable;
 	if(data.contains("solid"))
@@ -727,12 +727,19 @@ void Block::loadFromJson(Json data, DeserializationMemo& deserializationMemo, ui
 			addFluid(pair[1].get<Volume>(), *pair[0].get<const FluidType*>());
 	if(data.contains("hasDesignations"))
 		m_hasDesignations.load(data["hasDesignations"], deserializationMemo);
-	m_visible = data["visible"].get<bool>();
 }
 Json Block::toJson() const 
 {
-	//TODO: This format is far too verbose. Store the bools in an array, infer if possible. Infer the xyz. 
-	Json data{{"exposedToSky", m_exposedToSky}, {"underground", m_underground}, {"outdoors", m_outdoors}, {"visible", m_visible}};
+	//TODO: This format is far too verbose.
+	Json data{};
+	if(m_visible)
+		data["v"] = 1;
+	if(m_exposedToSky)
+		data["e"] = 1;
+	if(m_underground)
+		data["u"] = 1;
+	if(m_outdoors)
+		data["o"] = 1;
 	if(m_reservable.hasAnyReservations())
 		data["reservable"] = reinterpret_cast<uintptr_t>(&m_reservable);
 	if(m_solid != nullptr)
