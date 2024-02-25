@@ -88,6 +88,26 @@ SimulationHasShapes::SimulationHasShapes(const Json& data, DeserializationMemo& 
 		m_namesByShape[&m_shapes.at(name)] = name;
 	}
 }
+void  SimulationHasShapes::loadFromName(std::string name)
+{
+	std::vector<int> tokens;
+	std::stringstream ss(name);
+	std::string item;
+
+	while(getline(ss, item, ' '))
+		tokens.push_back(stoi(item));
+	assert(tokens.size() % 4 == 0);
+	std::vector<std::array<int, 4>> positions;
+	for(size_t i = 0; i < tokens.size(); i+=4)
+	{
+		int x = tokens[i];
+		int y = tokens[i+1];
+		int z = tokens[i+2];
+		int v = tokens[i+3];
+		positions.push_back({x, y, z, v});
+	}
+	m_shapes.try_emplace(name, name, positions);
+}
 Json SimulationHasShapes::toJson() const
 {
 	Json data;

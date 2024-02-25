@@ -154,12 +154,23 @@ void ContextMenu::draw(Block& block)
 				infoButton->onClick([this, &block]{ m_window.getGameOverlay().drawInfoPopup(block);});
 				auto cutDown = tgui::Button::create("cut down");
 				submenu.add(cutDown);
-				cutDown->onClick([this, &block]{ m_window.getArea()->m_hasWoodCuttingDesignations.designate(*m_window.getFaction(), block); });
+				cutDown->onClick([this, &block]{ 
+					const PlantSpecies& species = block.m_hasPlant.get().m_plantSpecies;
+					//TODO: cut down non trees.
+					if(!species.isTree)
+						return;
+					for(Block& selectedBlock : m_window.getSelectedBlocks())
+						if(selectedBlock.m_hasPlant.exists() && selectedBlock.m_hasPlant.get().m_plantSpecies == species)
+							m_window.getArea()->m_hasWoodCuttingDesignations.designate(*m_window.getFaction(), selectedBlock); 
+				});
 				if(m_window.m_editMode)
 				{
 					auto removePlant = tgui::Button::create("remove " + block.m_hasPlant.get().m_plantSpecies.name);
 					removePlant->onClick([this, &block]{
-						block.m_hasPlant.erase();
+						const PlantSpecies& species = block.m_hasPlant.get().m_plantSpecies;
+						for(Block& selectedBlock : m_window.getSelectedBlocks())
+							if(selectedBlock.m_hasPlant.exists() && selectedBlock.m_hasPlant.get().m_plantSpecies == species)
+								selectedBlock.m_hasPlant.get().remove();
 						hide();
 					});
 					submenu.add(removePlant);

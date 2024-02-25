@@ -47,7 +47,13 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_fires.load(data["fires"], deserializationMemo);
 	// Load plants.
 	for(const Json& plant : data["plants"])
-		m_hasPlants.emplace(plant, deserializationMemo);
+	{
+		Block& location = deserializationMemo.blockReference(plant["location"]);
+		if(location.m_hasPlant.exists())
+			std::cout << " multiple plants found at block " << plant["location"];
+		else
+			m_hasPlants.emplace(plant, deserializationMemo);
+	}
 	// Load fields.
 	m_hasFarmFields.load(data["hasFarmFields"], deserializationMemo);
 	// Load Items.

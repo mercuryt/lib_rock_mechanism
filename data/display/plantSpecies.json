@@ -9,7 +9,10 @@
 		"groundCover": true
 	},{
 		"name": "poplar tree",
-		"image": "tree"
+		"image": "tree1"
+	},{
+		"name": "pine tree",
+		"image": "tree2"
 	},{
 		"name": "sage brush",
 		"image": "bush"

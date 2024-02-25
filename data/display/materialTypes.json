@@ -42,5 +42,9 @@
 	{
 		"name": "poplar wood",
 		"color": [222, 192, 140, 255]
+	},
+	{
+		"name": "pine wood",
+		"color": [262, 222, 180, 255]
 	}
 ]

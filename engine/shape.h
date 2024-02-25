@@ -59,9 +59,11 @@ public:
 	SimulationHasShapes(const Json& data, DeserializationMemo& deserializationMemo);
 	SimulationHasShapes() = default;
 	Json toJson() const;
+	void loadFromName(std::string name);
 	// creates a copy, adds a position to it and returns it.
 	const Shape& mutateAdd(const Shape& shape, std::array<int32_t, 4> position);
 	const Shape& byName(std::string name) const;
 	const std::string getName(const Shape& shape) const;
 	const std::string makeName(std::vector<std::array<int32_t, 4>> positions) const;
+	bool contains(std::string name) const { return m_shapes.contains(name); }
 };

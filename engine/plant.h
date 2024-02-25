@@ -101,6 +101,7 @@ public:
 	Plant(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void die();
+	void remove() { die(); } // TODO: seperate remove from die when corpse is added.
 	void setTemperature(Temperature temperature);
 	void setHasFluidForNow();
 	void setMaybeNeedsFluid();

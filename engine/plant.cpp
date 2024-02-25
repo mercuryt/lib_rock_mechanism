@@ -9,6 +9,7 @@
 #include "area.h"
 
 #include <algorithm>
+#include <ranges>
 const std::pair<const Shape*, uint8_t> PlantSpecies::shapeAndWildGrowthForPercentGrown(Percent percentGrown) const
 {
 	uint8_t totalGrowthStages = shapes.size() + maxWildGrowth;
@@ -308,10 +309,9 @@ void Plant::doWildGrowth(uint8_t count)
 		count--;
 		std::vector<Block*> candidates;
 		for(Block* block : getAdjacentBlocks())
-			if(block->m_hasShapes.anythingCanEnterEver() && block->m_hasShapes.getTotalVolume() == 0 )
+			if(block->m_hasShapes.anythingCanEnterEver() && block->m_hasShapes.getTotalVolume() == 0 && block->m_z > m_location->m_z)
 				candidates.push_back(block);
-		std::vector<Block*> vector(candidates.begin(), candidates.end());
-		Block& toGrowInto = *simulation.m_random.getInVector(vector);
+		Block& toGrowInto = *simulation.m_random.getInVector(candidates);
 		std::array<int32_t, 3> offset = m_location->relativeOffsetTo(toGrowInto);
 		// Use the volume of the location position as the volume of the new growth position.
 		std::array<int32_t, 4> position = {offset[0], offset[1], offset[2], m_shape->positions[0][3]};
