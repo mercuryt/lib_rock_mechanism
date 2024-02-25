@@ -730,7 +730,7 @@ void Block::loadFromJson(Json data, DeserializationMemo& deserializationMemo, ui
 }
 Json Block::toJson() const 
 {
-	//TODO: This format is far too verbose.
+	//TODO: This format is far too verbose, change solid to s, encode with MessagePack.
 	Json data{};
 	if(m_visible)
 		data["v"] = 1;

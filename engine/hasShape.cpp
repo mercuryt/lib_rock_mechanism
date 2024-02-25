@@ -19,8 +19,12 @@ HasShape::HasShape(const Json& data, [[maybe_unused]] DeserializationMemo& deser
 		// Predefined shape.
 		m_shape = &Shape::byName(shapeName);
 	else
+	{
 		// Custom shape.
+		if(!m_simulation.m_shapes.contains(shapeName))
+			m_simulation.m_shapes.loadFromName(shapeName);
 		m_shape = &m_simulation.m_shapes.byName(shapeName);
+	}
 }
 Json HasShape::toJson() const
 {
@@ -260,6 +264,7 @@ void BlockHasShapes::enter(HasShape& hasShape)
 	for(auto& [x, y, z, v] : hasShape.m_shape->positionsWithFacing(hasShape.m_facing))
 	{
 		Block* block = m_block.offset(x, y, z);
+		assert(block);
 		block->m_hasShapes.record(hasShape, v);
 		hasShape.m_blocks.insert(block);
 	}
