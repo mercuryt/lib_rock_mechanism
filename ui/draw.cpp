@@ -1,5 +1,6 @@
 #include "draw.h"
 #include "blockFeature.h"
+#include "config.h"
 #include "sprite.h"
 #include "util.h"
 #include "window.h"
@@ -24,6 +25,7 @@ void Draw::blockFloor(const Block& block)
 			}
 	}
 	else if(block.m_visible)
+	{
 		if(block.getBlockBelow() && block.getBlockBelow()->isSolid())
 		{
 			// Draw cliff edge below floor.
@@ -33,12 +35,21 @@ void Draw::blockFloor(const Block& block)
 				float offset = displayData::wallOffsetRatio * m_window.m_scale;
 				sf::Color color = displayData::materialColors.at(&block.getBlockBelow()->getSolidMaterial());
 				float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
-				auto pair = sprites::make(block.isConstructed() ? "blockWall" : "roughWall");
-				auto sprite = pair.first;
-				sprite.setPosition(static_cast<float>((block.m_x) * m_window.m_scale), static_cast<float>((block.m_y + 1) * m_window.m_scale) + offset);
-				sprite.setScale(scaleRatio, scaleRatio);
-				sprite.setColor(color);
-				m_window.getRenderWindow().draw(sprite);
+				sf::Sprite* sprite;
+				if(block.isConstructed())
+				{
+					static sf::Sprite blockSprite = sprites::make("blockWall").first;
+					sprite  = &blockSprite;
+				}
+				else 
+				{
+					static sf::Sprite roughSprite = sprites::make("roughWall").first;
+					sprite = &roughSprite;
+				}
+				sprite->setPosition(static_cast<float>((block.m_x) * m_window.m_scale), static_cast<float>((block.m_y + 1) * m_window.m_scale) + offset);
+				sprite->setScale(scaleRatio, scaleRatio);
+				sprite->setColor(color);
+				m_window.getRenderWindow().draw(*sprite);
 			}
 			// Draw floor.
 			if(block.m_hasPlant.exists())
@@ -49,12 +60,32 @@ void Draw::blockFloor(const Block& block)
 				{
 					//TODO: color.
 					imageOnBlock(block, display.image);
+					if(m_window.getSelectedPlants().contains(const_cast<Plant*>(&block.m_hasPlant.get())))
+						outlineOnBlock(block, displayData::selectColor);
 					return;
 				}
 			}
-			std::string name = block.getBlockBelow()->isConstructed() ? "blockFloor" : "roughFloor";
-			imageOnBlock(block, "roughFloor", &displayData::materialColors.at(&block.getBlockBelow()->getSolidMaterial()));
+			sf::Color* color = &displayData::materialColors.at(&block.getBlockBelow()->getSolidMaterial());
+			if(block.getBlockBelow()->isConstructed())
+			{
+				static sf::Sprite sprite = sprites::make("blockFloor").first;
+				spriteOnBlock(block, sprite, color);
+			}
+			else 
+			{
+				static sf::Sprite sprite = sprites::make("roughFloor").first;
+				spriteOnBlock(block, sprite, color);
+			}
 		}
+		else if(block.getBlockBelow() && block.getBlockBelow()->m_totalFluidVolume > displayData::minimumFluidVolumeToSeeFromAboveLevelRatio * Config::maxBlockVolume)
+		{
+			const FluidType& fluidType = block.getBlockBelow()->getFluidTypeWithMostVolume();
+			sf::Color color = displayData::fluidColors.at(&fluidType);
+			static sf::Sprite sprite = sprites::make("fluidSurface").first;
+			// TODO: Give the shore line some feeling of depth somehow.
+			spriteOnBlock(block, sprite, &color);
+		}
+	}
 }
 void Draw::blockWallCorners(const Block& block)
 {
@@ -184,9 +215,9 @@ void Draw::blockFeaturesAndFluids(const Block& block)
 		Volume volume = block.m_fluids.at(&fluidType).first;
 		sf::Color color = displayData::fluidColors.at(&fluidType);
 		colorOnBlock(block, color);
-		stringOnBlock(block, std::to_wstring(volume), sf::Color::Black);
+		stringOnBlock(block, std::to_wstring(volume / 10), sf::Color::Black);
 	}
-	if(m_window.getSelectedBlocks().contains(block))
+	if(m_window.getSelectedBlocks().contains(const_cast<Block*>(&block)))
 		outlineOnBlock(block, displayData::selectColor);
 }
 void Draw::validOnBlock(const Block& block)
@@ -250,11 +281,11 @@ void Draw::imageOnBlockSouthAlign(const Block& block, std::string name, sf::Colo
 }
 void Draw::outlineOnBlock(const Block& block, sf::Color color, float thickness)
 {
-	sf::RectangleShape square(sf::Vector2f(m_window.m_scale, m_window.m_scale));
+	sf::RectangleShape square(sf::Vector2f(m_window.m_scale - (thickness*2), m_window.m_scale - (thickness*2)));
 	square.setFillColor(sf::Color::Transparent);
 	square.setOutlineColor(color);
 	square.setOutlineThickness(thickness);
-	square.setPosition(static_cast<float>(block.m_x * m_window.m_scale), static_cast<float>(block.m_y * m_window.m_scale));
+	square.setPosition(static_cast<float>(block.m_x * m_window.m_scale) + thickness, static_cast<float>(block.m_y * m_window.m_scale) + thickness);
 	m_window.getRenderWindow().draw(square);
 }
 void Draw::stringOnBlock(const Block& block, std::wstring string, sf::Color color)
@@ -265,6 +296,9 @@ void Draw::stringOnBlock(const Block& block, std::wstring string, sf::Color colo
 	text.setCharacterSize(m_window.m_scale * displayData::ratioOfScaleToFontSize);
 	text.setString(string);
 	text.setPosition(static_cast<float>((block.m_x) * (float)m_window.m_scale), static_cast<float>((block.m_y) * (float)m_window.m_scale));
+	auto center = text.getGlobalBounds().width / 2;
+	auto xOrigin = std::round(center + text.getLocalBounds().left);
+	text.setOrigin(xOrigin, 0);
 	m_window.getRenderWindow().draw(text);
 }
 // Plant.
@@ -280,7 +314,10 @@ void Draw::nonGroundCoverPlant(const Block& block)
 	auto pair = sprites::make(display.image);
 	//TODO: color
 	pair.first.setOrigin(pair.second);
-	spriteOnBlockWithScale(block, pair.first, (float)plant.getGrowthPercent() / 100.f);
+	float scale = plant.m_blocks.size() == 1 ? ((float)plant.getGrowthPercent() / 100.f) : 1;
+	spriteOnBlockWithScale(block, pair.first, scale);
+	if(m_window.getSelectedPlants().contains(const_cast<Plant*>(&plant)))
+		outlineOnBlock(block, displayData::selectColor);
 }
 // Item.
 void Draw::item(const Block& block)
@@ -297,6 +334,8 @@ void Draw::item(const Block& block)
 	spriteOnBlockWithScale(block, sprite, display.scale);
 	if(block.m_hasItems.getAll().size() > 1)
 		stringOnBlock(block, std::to_wstring(block.m_hasItems.getAll().size()), sf::Color::Black);
+	if(m_window.getSelectedItems().contains(const_cast<Item*>(&item)))
+		outlineOnBlock(block, displayData::selectColor);
 }
 // Actor.
 void Draw::singleTileActor(const Actor& actor)
@@ -305,8 +344,10 @@ void Draw::singleTileActor(const Actor& actor)
 	AnimalSpeciesDisplayData& display = displayData::actorData.at(&actor.m_species);
 	auto [sprite, origin] = sprites::make(display.image);
 	sprite.setOrigin(origin);
-	//sprite.setColor(display.color);
+	sprite.setColor(display.color);
 	spriteOnBlockWithScale(block, sprite, ((float)actor.m_canGrow.growthPercent() + 10.f) / 110.f);
+	if(m_window.getSelectedActors().contains(const_cast<Actor*>(&actor)))
+		outlineOnBlock(block, displayData::selectColor);
 }
 void Draw::multiTileActor(const Actor& actor)
 {

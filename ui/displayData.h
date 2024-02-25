@@ -41,8 +41,9 @@ namespace displayData
 	inline std::unordered_map<const AnimalSpecies*, AnimalSpeciesDisplayData> actorData;
 	inline float ratioOfScaleToFontSize;
 	inline static const sf::Color selectColor = sf::Color::Yellow;
-	inline static const uint32_t defaultScale = 32u;
-	inline static const float wallTopOffsetRatio = 0.18;
-	inline static const float wallOffsetRatio = 0.00;
+	inline constexpr uint32_t defaultScale = 32;
+	inline constexpr float wallTopOffsetRatio = 0.18;
+	inline constexpr float wallOffsetRatio = 0.00;
+	inline constexpr float minimumFluidVolumeToSeeFromAboveLevelRatio = 0.75;
 	void load();
 }
