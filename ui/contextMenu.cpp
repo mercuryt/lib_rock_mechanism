@@ -54,13 +54,13 @@ void ContextMenu::draw(Block& block)
 		digButton->getRenderer()->setBackgroundColor(buttonColor);
 		m_root.add(digButton);
 		digButton->onClick([this]{
-			for(Block& selectedBlock : m_window.getSelectedBlocks())
-				if(selectedBlock.isSolid())
+			for(Block* selectedBlock : m_window.getSelectedBlocks())
+				if(selectedBlock->isSolid())
 				{
 					if (m_window.m_editMode)
-						selectedBlock.setNotSolid();
+						selectedBlock->setNotSolid();
 					else
-						m_window.getArea()->m_hasDigDesignations.designate(*m_window.getFaction(), selectedBlock, nullptr);
+						m_window.getArea()->m_hasDigDesignations.designate(*m_window.getFaction(), *selectedBlock, nullptr);
 				}
 			hide();
 		});
@@ -73,13 +73,13 @@ void ContextMenu::draw(Block& block)
 					subMenu.add(button);
 					button->getRenderer()->setBackgroundColor(buttonColor);
 					button->onClick([this, blockFeatureType]{
-						for(Block& selectedBlock : m_window.getSelectedBlocks())
-							if(selectedBlock.isSolid())
+						for(Block* selectedBlock : m_window.getSelectedBlocks())
+							if(selectedBlock->isSolid())
 							{
 								if(m_window.m_editMode)
-									selectedBlock.m_hasBlockFeatures.hew(*blockFeatureType);
+									selectedBlock->m_hasBlockFeatures.hew(*blockFeatureType);
 								else
-									m_window.getArea()->m_hasDigDesignations.designate(*m_window.getFaction(), selectedBlock, blockFeatureType);
+									m_window.getArea()->m_hasDigDesignations.designate(*m_window.getFaction(), *selectedBlock, blockFeatureType);
 							}
 						hide();
 					});
@@ -159,18 +159,21 @@ void ContextMenu::draw(Block& block)
 					//TODO: cut down non trees.
 					if(!species.isTree)
 						return;
-					for(Block& selectedBlock : m_window.getSelectedBlocks())
-						if(selectedBlock.m_hasPlant.exists() && selectedBlock.m_hasPlant.get().m_plantSpecies == species)
-							m_window.getArea()->m_hasWoodCuttingDesignations.designate(*m_window.getFaction(), selectedBlock); 
+					for(Block* selectedBlock : m_window.getSelectedBlocks())
+						if(selectedBlock->m_hasPlant.exists() && selectedBlock->m_hasPlant.get().m_plantSpecies == species)
+							m_window.getArea()->m_hasWoodCuttingDesignations.designate(*m_window.getFaction(), *selectedBlock); 
 				});
 				if(m_window.m_editMode)
 				{
 					auto removePlant = tgui::Button::create("remove " + block.m_hasPlant.get().m_plantSpecies.name);
 					removePlant->onClick([this, &block]{
 						const PlantSpecies& species = block.m_hasPlant.get().m_plantSpecies;
-						for(Block& selectedBlock : m_window.getSelectedBlocks())
-							if(selectedBlock.m_hasPlant.exists() && selectedBlock.m_hasPlant.get().m_plantSpecies == species)
-								selectedBlock.m_hasPlant.get().remove();
+						for(Block* selectedBlock : m_window.getSelectedBlocks())
+							if(selectedBlock->m_hasPlant.exists() && selectedBlock->m_hasPlant.get().m_plantSpecies == species)
+								selectedBlock->m_hasPlant.get().remove();
+						for(Plant* plant : m_window.getSelectedPlants())
+							if(plant->m_plantSpecies == species)
+								plant->remove();
 						hide();
 					});
 					submenu.add(removePlant);
@@ -248,9 +251,9 @@ void ContextMenu::draw(Block& block)
 				button->onClick([&]{ 
 					for(auto& selectedBlock : m_window.getSelectedBlocks())
 					{
-						auto contains = selectedBlock.volumeOfFluidTypeContains(*fluidType);
+						auto contains = selectedBlock->volumeOfFluidTypeContains(*fluidType);
 						if(!contains) return;
-						selectedBlock.removeFluid(contains, *fluidType);
+						selectedBlock->removeFluid(contains, *fluidType);
 					}
 					hide();
 				});
@@ -282,9 +285,9 @@ void ContextMenu::draw(Block& block)
 						if(!speciesUI->getSelectedItem().empty())
 						{
 							const PlantSpecies& species = PlantSpecies::byName(speciesUI->getSelectedItemId().toStdString());
-							for(Block& block : m_window.getSelectedBlocks())
-								if(!block.m_hasPlant.exists() && !block.isSolid() && block.m_hasPlant.canGrowHereEver(species))
-									block.m_hasPlant.createPlant(species, percentGrownUI->getValue());
+							for(Block* selectedBlock : m_window.getSelectedBlocks())
+								if(!selectedBlock->m_hasPlant.exists() && !selectedBlock->isSolid() && selectedBlock->m_hasPlant.canGrowHereEver(species))
+									selectedBlock->m_hasPlant.createPlant(species, percentGrownUI->getValue());
 						}
 						hide();
 					});
@@ -322,10 +325,10 @@ void ContextMenu::draw(Block& block)
 						confirm->onClick([this, itemTypeSelectUI, materialTypeSelectUI]{
 							const MaterialType& materialType = MaterialType::byName(materialTypeSelectUI->getSelectedItemId().toStdString());
 							const ItemType& itemType = ItemType::byName(itemTypeSelectUI->getSelectedItemId().toStdString());
-							for(Block& block : m_window.getSelectedBlocks())
+							for(Block* selectedBlock : m_window.getSelectedBlocks())
 							{
 								Item& item = m_window.getSimulation()->createItemGeneric(itemType, materialType, quantity);
-								item.setLocation(block);
+								item.setLocation(*selectedBlock);
 							}
 							hide();
 						});
@@ -357,10 +360,10 @@ void ContextMenu::draw(Block& block)
 						confirm->onClick([this, itemTypeSelectUI, materialTypeSelectUI]{
 							const MaterialType& materialType = MaterialType::byName(materialTypeSelectUI->getSelectedItemId().toStdString());
 							const ItemType& itemType = ItemType::byName(itemTypeSelectUI->getSelectedItemId().toStdString());
-							for(Block& block : m_window.getSelectedBlocks())
+							for(Block* selectedBlock : m_window.getSelectedBlocks())
 							{
 								Item& item = m_window.getSimulation()->createItemNongeneric(itemType, materialType, quality, percentWear);
-								item.setLocation(block);
+								item.setLocation(*selectedBlock);
 							}
 							hide();
 						});
@@ -472,26 +475,26 @@ void ContextMenu::draw(Block& block)
 					const MaterialType& materialType = MaterialType::byName(materialTypeSelector->getSelectedItemId().toStdString());
 					if(m_window.getSelectedBlocks().empty())
 						m_window.selectBlock(block);
-					for(Block& selectedBlock : m_window.getSelectedBlocks())
-						if(!selectedBlock.isSolid())
+					for(Block* selectedBlock : m_window.getSelectedBlocks())
+						if(!selectedBlock->isSolid())
 						{
 							if (m_window.m_editMode)
 							{
 								if(type == nullptr)
-									selectedBlock.setSolid(materialType, constructed);
+									selectedBlock->setSolid(materialType, constructed);
 								else
 									if(!constructed)
 									{
 										if(!block.isSolid())
 											block.setSolid(materialType);
-										selectedBlock.m_hasBlockFeatures.hew(*type);
+										selectedBlock->m_hasBlockFeatures.hew(*type);
 									}
 									else
-										selectedBlock.m_hasBlockFeatures.construct(*type, materialType);
+										selectedBlock->m_hasBlockFeatures.construct(*type, materialType);
 
 							}
 							else
-								m_window.getArea()->m_hasConstructionDesignations.designate(*m_window.getFaction(), selectedBlock, type, materialType);
+								m_window.getArea()->m_hasConstructionDesignations.designate(*m_window.getFaction(), *selectedBlock, type, materialType);
 						}
 					hide();
 				});
@@ -504,8 +507,8 @@ void ContextMenu::draw(Block& block)
 			shrinkButton->getRenderer()->setBackgroundColor(buttonColor);
 			m_root.add(shrinkButton);
 			shrinkButton->onClick([this]{
-				for(Block& block : m_window.getSelectedBlocks())
-					block.m_isPartOfFarmField.remove(*m_window.getFaction());
+				for(Block* selectedBlock : m_window.getSelectedBlocks())
+					selectedBlock->m_isPartOfFarmField.remove(*m_window.getFaction());
 				hide();
 			});
 			auto setFarmSpeciesButton = tgui::Button::create("set farm species");
@@ -537,8 +540,8 @@ void ContextMenu::draw(Block& block)
 				plantSpeciesUI->onItemSelect([this, &block](const tgui::String name){ 
 					if(m_window.getSelectedBlocks().empty())
 						m_window.selectBlock(block);
-					for(Block& block : m_window.getSelectedBlocks())
-						block.m_isPartOfFarmField.remove(*m_window.getFaction());
+					for(Block* selectedBlock : m_window.getSelectedBlocks())
+						selectedBlock->m_isPartOfFarmField.remove(*m_window.getFaction());
 					auto fieldsForFaction = block.m_area->m_hasFarmFields.at(*m_window.getFaction());
 					FarmField& field = fieldsForFaction.create(m_window.getSelectedBlocks());
 					fieldsForFaction.setSpecies(field, PlantSpecies::byName(name.toStdString()));
@@ -600,9 +603,9 @@ void ContextMenu::draw(Block& block)
 				createFluid->onClick([this, &block, fluidTypeUI, levelUI]{
 					if(m_window.getSelectedBlocks().empty())
 						m_window.selectBlock(block);
-					for(Block& block : m_window.getSelectedBlocks())
-						if(!block.isSolid())
-							block.addFluid(fluidLevel, FluidType::byName(fluidTypeUI->getSelectedItemId().toStdString()));
+					for(Block* selectedBlock : m_window.getSelectedBlocks())
+						if(!selectedBlock->isSolid())
+							selectedBlock->addFluid(fluidLevel, FluidType::byName(fluidTypeUI->getSelectedItemId().toStdString()));
 					hide();
 				});
 				if(!m_window.getArea()->m_fluidSources.contains(block))
@@ -613,9 +616,9 @@ void ContextMenu::draw(Block& block)
 					createSource->onClick([this, &block, fluidTypeUI, levelUI]{
 						if(m_window.getSelectedBlocks().empty())
 							m_window.selectBlock(block);
-						for(Block& selectedBlock: m_window.getSelectedBlocks())
+						for(Block* selectedBlock: m_window.getSelectedBlocks())
 							m_window.getArea()->m_fluidSources.create(
-								selectedBlock, 
+								*selectedBlock, 
 								FluidType::byName(fluidTypeUI->getSelectedItemId().toStdString()), 
 								fluidLevel
 							);

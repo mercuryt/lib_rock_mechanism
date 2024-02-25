@@ -52,7 +52,7 @@ class Window final
 	uint32_t m_z;
 	std::unordered_map<AreaId, GameView> m_lastViewedSpotInArea;
 	//TODO: multi select.
-	Cuboid m_selectedBlocks;
+	std::unordered_set<Block*> m_selectedBlocks;
 	std::unordered_set<Actor*> m_selectedActors;
 	std::unordered_set<Item*> m_selectedItems;
 	std::unordered_set<Plant*> m_selectedPlants;
@@ -108,7 +108,7 @@ public:
 	void selectItem(Item& item);
 	void selectPlant(Plant& plant);
 	void selectActor(Actor& actor);
-	Cuboid getSelectedBlocks() { return m_selectedBlocks; }
+	std::unordered_set<Block*>& getSelectedBlocks() { return m_selectedBlocks; }
 	std::unordered_set<Item*>& getSelectedItems() { return m_selectedItems; }
 	std::unordered_set<Plant*>& getSelectedPlants() { return m_selectedPlants; }
 	std::unordered_set<Actor*>& getSelectedActors() { return m_selectedActors; }

@@ -218,11 +218,8 @@ void Window::startLoop()
 							m_gameOverlay.closeContextMenu();
 							m_firstCornerOfSelection = &getBlockAtPosition({event.mouseButton.x, event.mouseButton.y});
 							m_positionWhereMouseDragBegan = {event.mouseButton.x, event.mouseButton.y};
-							//TODO: Additive select.
-							m_selectedBlocks.clear();
-							m_selectedActors.clear();
-							m_selectedItems.clear();
-							m_selectedPlants.clear();
+							if(!sf::Keyboard::isKeyPressed(sf::Keyboard::LShift))
+								deselectAll();
 						}
 					}
 					break;
@@ -234,6 +231,7 @@ void Window::startLoop()
 						Block& block = getBlockUnderCursor();
 						if(event.mouseButton.button == selectMouseButton)
 						{
+							
 							Cuboid blocks;
 							// Find the selected area.
 							if(m_firstCornerOfSelection)
@@ -241,42 +239,72 @@ void Window::startLoop()
 							else
 								blocks.setFrom(block);
 							m_firstCornerOfSelection = nullptr;
-							bool selectActors = sf::Keyboard::isKeyPressed(sf::Keyboard::LShift);
-							bool selectItems = sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && !sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt);
-							bool selectPlants = sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt);
+							bool selectActors = sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && !sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt);
+							bool selectItems = sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt);
 							bool selectBlocks = sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt);
+							bool selectPlants = false;
 							if(selectActors)
 								for(Block& block : blocks)
 									m_selectedActors.insert(block.m_hasActors.getAll().begin(), block.m_hasActors.getAll().end());
 							else if(selectItems)
 								for(Block& block : blocks)
 									m_selectedItems.insert(block.m_hasItems.getAll().begin(), block.m_hasItems.getAll().end());
-							else if(selectPlants)
-								for(Block& block : blocks)
-									m_selectedPlants.insert(&block.m_hasPlant.get());
 							else if(selectBlocks)
-								m_selectedBlocks = blocks;
+							{
+								for(Block& block : blocks)
+									m_selectedBlocks.insert(&block);
+							}
 							else
 							{
 								// No modifier key to choose what type to select, check for everything.
 								std::unordered_set<Actor*> foundActors;
 								std::unordered_set<Item*> foundItems;
 								std::unordered_set<Plant*> foundPlants;
+								// Gather all candidates, then cull based on choosen category. actors > items > plants > blocks
 								for(Block& block : blocks)
 								{
-									m_selectedActors.insert(block.m_hasActors.getAll().begin(), block.m_hasActors.getAll().end());
-									m_selectedItems.insert(block.m_hasItems.getAll().begin(), block.m_hasItems.getAll().end());
+									if(!block.m_hasActors.empty())
+									{
+										m_selectedActors.insert(block.m_hasActors.getAll().begin(), block.m_hasActors.getAll().end());
+										selectActors = true;
+									}
+									if(!block.m_hasItems.empty())
+									{
+										m_selectedItems.insert(block.m_hasItems.getAll().begin(), block.m_hasItems.getAll().end());
+										selectItems = selectActors ? false : true;
+									}
 									if(block.m_hasPlant.exists())
+									{
 										m_selectedPlants.insert(&block.m_hasPlant.get());
+										selectPlants = selectItems ? false : (selectActors ? false : true);
+									}
 								}
-								if(!foundActors.empty())
-									m_selectedActors = foundActors;
-								else if(!foundItems.empty())
-									m_selectedItems = foundItems;
-								else if(!foundPlants.empty())
-									m_selectedPlants = foundPlants;
+								if(selectActors)
+								{
+									m_selectedItems.clear();
+									m_selectedPlants.clear();
+									m_selectedBlocks.clear();
+								}
+								else if(selectItems)
+								{
+									m_selectedActors.clear();
+									m_selectedPlants.clear();
+									m_selectedBlocks.clear();
+								}
+								else if(selectPlants)
+								{
+									m_selectedActors.clear();
+									m_selectedItems.clear();
+									m_selectedBlocks.clear();
+								}
 								else
-									m_selectedBlocks = blocks;
+								{
+									m_selectedActors.clear();
+									m_selectedItems.clear();
+									m_selectedPlants.clear();
+									for(Block& block : blocks)
+										m_selectedBlocks.insert(&block);
+								}
 							}
 						}
 						else if(event.mouseButton.button == actionMouseButton)
@@ -500,7 +528,7 @@ void Window::selectBlock(Block& block)
 {
 	//TODO: additive select.
 	deselectAll();
-	m_selectedBlocks.setFrom(block);
+	m_selectedBlocks.insert(&block);
 }
 void Window::selectItem(Item& item)
 {
