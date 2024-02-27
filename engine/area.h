@@ -92,6 +92,7 @@ public:
 	//Block& getBlockForAdjacentLocation(WorldLocation& location);
 	// Create a fluid group.
 	FluidGroup* createFluidGroup(const FluidType& fluidType, std::unordered_set<Block*>& blocks, bool checkMerge = true);
+	void removeFluidGroup(FluidGroup& group);
 
 	// Assign all visible blocks to a visionCuboid, set m_visionCubioidsActive to true.
 	void visionCuboidsActivate();

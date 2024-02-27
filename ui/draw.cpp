@@ -217,8 +217,6 @@ void Draw::blockFeaturesAndFluids(const Block& block)
 		colorOnBlock(block, color);
 		stringOnBlock(block, std::to_wstring(volume / 10), sf::Color::Black);
 	}
-	if(m_window.getSelectedBlocks().contains(const_cast<Block*>(&block)))
-		outlineOnBlock(block, displayData::selectColor);
 }
 void Draw::validOnBlock(const Block& block)
 {
@@ -279,6 +277,7 @@ void Draw::imageOnBlockSouthAlign(const Block& block, std::string name, sf::Colo
 	pair.first.setRotation(180);
 	spriteOnBlock(block, pair.first, color);
 }
+void Draw::selected(Block& block) { outlineOnBlock(block, displayData::selectColor); }
 void Draw::outlineOnBlock(const Block& block, sf::Color color, float thickness)
 {
 	sf::RectangleShape square(sf::Vector2f(m_window.m_scale - (thickness*2), m_window.m_scale - (thickness*2)));
@@ -295,9 +294,9 @@ void Draw::stringOnBlock(const Block& block, std::wstring string, sf::Color colo
 	text.setFillColor(color);
 	text.setCharacterSize(m_window.m_scale * displayData::ratioOfScaleToFontSize);
 	text.setString(string);
-	text.setPosition(static_cast<float>((block.m_x) * (float)m_window.m_scale), static_cast<float>((block.m_y) * (float)m_window.m_scale));
+	text.setPosition((static_cast<float>((block.m_x) + 0.5f) * (float)m_window.m_scale), static_cast<float>((block.m_y) * (float)m_window.m_scale));
 	auto center = text.getGlobalBounds().width / 2;
-	auto xOrigin = std::round(center + text.getLocalBounds().left);
+	auto xOrigin = std::round(center);
 	text.setOrigin(xOrigin, 0);
 	m_window.getRenderWindow().draw(text);
 }

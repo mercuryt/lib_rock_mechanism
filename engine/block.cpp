@@ -560,6 +560,22 @@ void Block::removeFluid(uint32_t volume, const FluidType& fluidType)
 	assert(volume <= volumeOfFluidTypeContains(fluidType));
 	m_fluids.at(&fluidType).second->removeFluid(volume);
 }
+void Block::removeFluidSyncronus(uint32_t volume, const FluidType& fluidType)
+{
+	assert(volume <= volumeOfFluidTypeContains(fluidType));
+	m_totalFluidVolume -= volume;
+	if(volumeOfFluidTypeContains(fluidType) > volume)
+		m_fluids.at(&fluidType).first -= volume;
+	else
+	{
+		FluidGroup& group = *m_fluids.at(&fluidType).second;
+		m_fluids.erase(&fluidType);
+		if(group.getBlocks().size() == 1)
+			m_area->removeFluidGroup(group);
+		else
+			group.removeBlock(*this);
+	}
+}
 bool Block::fluidCanEnterCurrently(const FluidType& fluidType) const
 {
 	if(m_totalFluidVolume < Config::maxBlockVolume)
@@ -708,7 +724,15 @@ void Block::loadFromJson(Json data, DeserializationMemo& deserializationMemo, ui
 	if(data.contains("reservable"))
 		deserializationMemo.m_reservables[data["reservable"].get<uintptr_t>()] = &m_reservable;
 	if(data.contains("solid"))
+	{
 		m_solid = &MaterialType::byName(data["solid"].get<std::string>());
+		//TODO: repetion of code on line 377 in setSolid.
+		// Remove from fluid fill queues.
+		for(Block* adjacent : m_adjacentsVector)
+			if(adjacent->fluidCanEnterEver())
+				for(auto& [fluidType, pair] : adjacent->m_fluids)
+					pair.second->m_fillQueue.removeBlock(this);
+	}
 	if(data.contains("blockFeatures"))
 		for(Json blockFeatureData : data["blockFeatures"])
 		{

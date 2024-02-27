@@ -27,8 +27,13 @@ TEST_CASE("fluids smaller")
 		fluidGroup->afterWriteStep();
 		fluidGroup->mergeStep();
 		fluidGroup->splitStep();
-		CHECK(!area.getBlock(5, 5, 2).m_fluids.contains(&water));
-		CHECK(area.getBlock(5, 5, 1).m_fluids.contains(&water));
+		CHECK(block.m_fluids.at(&water).first == 100);
+		CHECK(!block.getBlockSouth()->m_fluids.contains(&water));
+		CHECK(!block.getBlockEast()->m_fluids.contains(&water));
+		CHECK(!block.getBlockNorth()->m_fluids.contains(&water));
+		CHECK(!block.getBlockWest()->m_fluids.contains(&water));
+		CHECK(!block.getBlockBelow()->m_fluids.contains(&water));
+		CHECK(!block.getBlockAbove()->m_fluids.contains(&water));
 		CHECK(area.m_fluidGroups.size() == 1);
 	}
 	SUBCASE("Excess volume spawns and negitive excess despawns.")
