@@ -137,6 +137,7 @@ public:
 	// Add fluid, handle falling / sinking, group membership, excessive quantity sent to fluid group.
 	void addFluid(uint32_t volume, const FluidType& fluidType);
 	void removeFluid(uint32_t volume, const FluidType& fluidType);
+	void removeFluidSyncronus(uint32_t volume, const FluidType& fluidType);
 	bool fluidCanEnterCurrently(const FluidType& fluidType) const;
 	bool isAdjacentToFluidGroup(const FluidGroup* fluidGroup) const;
 	uint32_t volumeOfFluidTypeCanEnter(const FluidType& fluidType) const;

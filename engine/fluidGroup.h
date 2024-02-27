@@ -78,7 +78,8 @@ public:
 	void addDiagonalsFor(Block& block);
 	void validate() const;
 	void validate(std::unordered_set<FluidGroup*> toErase);
-	int32_t totalVolume();
+	[[nodiscard]] int32_t totalVolume();
+	[[nodiscard]] std::unordered_set<Block*>& getBlocks() { return m_drainQueue.m_set; }
 	bool operator==(const FluidGroup& fluidGroup) const { return &fluidGroup == this; }
 	friend class Area;
 };

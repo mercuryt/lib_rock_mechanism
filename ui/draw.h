@@ -28,6 +28,7 @@ public:
 	void imageOnBlockEastAlign(const Block& block, std::string name, sf::Color* = nullptr);
 	void imageOnBlockSouthAlign(const Block& block, std::string name, sf::Color* = nullptr);
 
+	void selected(Block& block);
 	void outlineOnBlock(const Block& block, sf::Color color, float thickness = 3.f);
 	void stringOnBlock(const Block& block, std::wstring string, sf::Color color);
 

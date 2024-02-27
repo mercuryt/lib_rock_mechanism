@@ -245,17 +245,38 @@ void ContextMenu::draw(Block& block)
 			// Fluids.
 			for(auto& [fluidType, pair] : block.m_fluids)
 			{
-				auto volume = pair.first;
-				auto button = tgui::Button::create("remove " + std::to_string(volume) + " " + fluidType->name);
-				m_root.add(button);
-				button->onClick([&]{ 
-					for(auto& selectedBlock : m_window.getSelectedBlocks())
+				auto label = tgui::Label::create(fluidType->name);
+				label->getRenderer()->setBackgroundColor(labelColor);
+				m_root.add(label);
+				label->onMouseEnter([this, &block, fluidType]{
+					auto& submenu = makeSubmenu(0);
+					auto remove = tgui::Button::create("remove");
+					submenu.add(remove);
+					remove->onClick([this, fluidType]{ 
+						for(auto* selectedBlock : m_window.getSelectedBlocks())
+						{
+							Volume contains = selectedBlock->volumeOfFluidTypeContains(*fluidType);
+							if(contains)
+								selectedBlock->removeFluidSyncronus(contains, *fluidType);
+						}
+						hide();
+					});
+					FluidGroup& group = *block.m_fluids.at(fluidType).second;
+					if(group.getBlocks().size() > 1)
 					{
-						auto contains = selectedBlock->volumeOfFluidTypeContains(*fluidType);
-						if(!contains) return;
-						selectedBlock->removeFluid(contains, *fluidType);
+						auto selectGroup = tgui::Button::create("select adjacent");
+						submenu.add(selectGroup);
+						selectGroup->onClick([this, fluidType, &block]{
+							if(block.m_fluids.contains(fluidType))
+							{
+								FluidGroup& group = *block.m_fluids.at(fluidType).second;
+								m_window.deselectAll();
+								for(Block* block : group.getBlocks())
+									m_window.getSelectedBlocks().insert(block);
+							}
+							hide();
+						});
 					}
-					hide();
 				});
 			}
 			// Plant.
@@ -462,7 +483,7 @@ void ContextMenu::draw(Block& block)
 				subMenu.add(constructedUI);
 				constructedUI->setSize(10, 10);
 				constructedUI->setChecked(constructed);
-				constructedUI->onChange([&](bool value){ constructed = value; });
+				constructedUI->onChange([](bool value){ constructed = value; });
 			}
 			std::map<std::string, const BlockFeatureType*> m_buttons{{"solid", nullptr}};
 			for(const BlockFeatureType* blockFeatureType : BlockFeatureType::getAll())
@@ -594,7 +615,7 @@ void ContextMenu::draw(Block& block)
 				auto levelUI = tgui::SpinControl::create();
 				levelUI->setMinimum(1);
 				levelUI->setMaximum(Config::maxBlockVolumeHardLimit);
-				levelUI->onValueChange([&](const float value){fluidLevel = value;});
+				levelUI->onValueChange([](const float value){fluidLevel = value;});
 				levelUI->setValue(fluidLevel);
 				submenu.add(levelUI);
 				auto createFluid = tgui::Button::create("create fluid");
@@ -606,6 +627,7 @@ void ContextMenu::draw(Block& block)
 					for(Block* selectedBlock : m_window.getSelectedBlocks())
 						if(!selectedBlock->isSolid())
 							selectedBlock->addFluid(fluidLevel, FluidType::byName(fluidTypeUI->getSelectedItemId().toStdString()));
+					std::erase_if(m_window.getArea()->m_unstableFluidGroups, [](FluidGroup* fluidGroup){ return fluidGroup->m_merged; });
 					hide();
 				});
 				if(!m_window.getArea()->m_fluidSources.contains(block))

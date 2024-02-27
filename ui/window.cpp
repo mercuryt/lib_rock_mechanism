@@ -413,6 +413,32 @@ void Window::drawView()
 			m_draw.singleTileActor(*actors[index]);
 		}
 	}
+	// Selected.
+	if(!m_selectedBlocks.empty())
+	{
+		for(Block* block : m_selectedBlocks)
+			if(block->m_z == m_z)
+				m_draw.selected(*block);
+	}
+	else if(!m_selectedActors.empty())
+	{
+		for(Actor* actor: m_selectedActors)
+			for(Block* block : actor->m_blocks)
+				if(block->m_z == m_z)
+					m_draw.selected(*block);
+	}
+	else if(!m_selectedItems.empty())
+	{
+		for(Item* item: m_selectedItems)
+			for(Block* block : item->m_blocks)
+				if(block->m_z == m_z)
+					m_draw.selected(*block);
+	}
+	else if(!m_selectedPlants.empty())
+		for(Plant* plant: m_selectedPlants)
+			for(Block* block : plant->m_blocks)
+				if(block->m_z == m_z)
+					m_draw.selected(*block);
 	// Selection Box.
 	if(m_firstCornerOfSelection && sf::Mouse::isButtonPressed(selectMouseButton))
 	{
@@ -510,12 +536,9 @@ void Window::povFromJson(const Json& data)
 	m_area = &m_simulation->getAreaById(data["area"].get<AreaId>());
 	m_scale = data["scale"].get<uint32_t>();
 	setZ(data["z"].get<uint32_t>());
-	if(data.contains("selectedBlock"))
-	{
-		uint32_t x = data["x"].get<uint32_t>();
-		uint32_t y = data["y"].get<uint32_t>();
-		m_view.setCenter(x, y);
-	}
+	uint32_t x = data["x"].get<uint32_t>();
+	uint32_t y = data["y"].get<uint32_t>();
+	m_view.setCenter(x, y);
 }
 void Window::deselectAll()
 {
@@ -561,14 +584,13 @@ Block& Window::getBlockAtPosition(sf::Vector2i pixelPos)
 }
 [[nodiscard]] Json Window::povToJson() const
 {
-	Json data{
+	return{
 		{"area", m_area},
 		{"scale", m_scale},
-		{"z", m_z}
+		{"z", m_z},
+		{"x", m_view.getCenter().x},
+		{"y", m_view.getCenter().y}
 	};
-	data["x"] = m_view.getCenter().x;
-	data["y"] = m_view.getCenter().y;
-	return data;
 }
 // static method
 std::chrono::milliseconds Window::msSinceEpoch()

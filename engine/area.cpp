@@ -43,6 +43,8 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 			}
 		}
 	}
+	// Cull merged fluid groups.
+	std::erase_if(m_unstableFluidGroups, [](FluidGroup* fluidGroup){ return fluidGroup->m_merged; });
 	// Load fires.
 	m_fires.load(data["fires"], deserializationMemo);
 	// Load plants.
@@ -333,6 +335,11 @@ FluidGroup* Area::createFluidGroup(const FluidType& fluidType, std::unordered_se
 	m_unstableFluidGroups.insert(&m_fluidGroups.back());
 	//TODO:  If new group is outside register it with areaHasTemperature.
 	return &m_fluidGroups.back();
+}
+
+void Area::removeFluidGroup(FluidGroup& group)
+{
+	std::erase_if(m_fluidGroups, [&group](const FluidGroup& g) { return &g == &group; });
 }
 void Area::visionCuboidsActivate()
 {
