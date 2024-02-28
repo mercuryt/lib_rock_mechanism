@@ -34,3 +34,4 @@ test/inconsistantErrors/*
 *\.so
 *.pyc
 UI
+.ccls*

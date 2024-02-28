@@ -592,7 +592,8 @@ void ContextMenu::draw(Block& block)
 				confirm->getRenderer()->setBackgroundColor(buttonColor);
 				submenu.add(confirm);
 				confirm->onClick([this, &block, speciesUI]{
-					m_window.getSimulation()->createActorWithRandomAge(AnimalSpecies::byName(speciesUI->getSelectedItemId().toStdString()), block);
+					Actor& actor = m_window.getSimulation()->createActorWithRandomAge(AnimalSpecies::byName(speciesUI->getSelectedItemId().toStdString()), block);
+					actor.m_hasObjectives.getNext();
 					hide();
 				});
 				
@@ -627,7 +628,7 @@ void ContextMenu::draw(Block& block)
 					for(Block* selectedBlock : m_window.getSelectedBlocks())
 						if(!selectedBlock->isSolid())
 							selectedBlock->addFluid(fluidLevel, FluidType::byName(fluidTypeUI->getSelectedItemId().toStdString()));
-					std::erase_if(m_window.getArea()->m_unstableFluidGroups, [](FluidGroup* fluidGroup){ return fluidGroup->m_merged; });
+					m_window.getArea()->clearMergedFluidGroups();
 					hide();
 				});
 				if(!m_window.getArea()->m_fluidSources.contains(block))

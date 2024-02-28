@@ -12,6 +12,7 @@
 #include <cassert>
 #include <codecvt>
 #include <locale>
+#include <array>
 
 namespace util
 {

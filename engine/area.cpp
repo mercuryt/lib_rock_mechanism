@@ -5,6 +5,7 @@
 #include "area.h"
 #include "deserializationMemo.h"
 #include "fire.h"
+#include "fluidType.h"
 #include "plant.h"
 #include "simulation.h"
 //#include "worldforge/worldLocation.h"
@@ -17,7 +18,10 @@
 
 Area::Area(AreaId id, std::wstring n, Simulation& s, uint32_t x, uint32_t y, uint32_t z) :
 	m_blocks(x*y*z), m_id(id), m_name(n), m_simulation(s), m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_hasRain(*this), m_visionCuboidsActive(false)
-{ setup(); }
+{ 
+	setup(); 
+	m_hasRain.scheduleRestart();
+}
 Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& s) : 
 	m_blocks(data["sizeX"].get<uint32_t>() * data["sizeY"].get<uint32_t>() * data["sizeZ"].get<uint32_t>()),
 	m_id(data["id"].get<AreaId>()), m_name(data["name"].get<std::wstring>()), m_simulation(s),
@@ -43,8 +47,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 			}
 		}
 	}
-	// Cull merged fluid groups.
-	std::erase_if(m_unstableFluidGroups, [](FluidGroup* fluidGroup){ return fluidGroup->m_merged; });
+	clearMergedFluidGroups();
 	// Load fires.
 	m_fires.load(data["fires"], deserializationMemo);
 	// Load plants.
@@ -104,6 +107,8 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	// Load caveInCheck
 	for(const Json& blockReference : data["caveInCheck"])
 		m_caveInCheck.insert(&deserializationMemo.blockReference(blockReference));
+	// Load rain.
+	m_hasRain.load(data["rain"], deserializationMemo);
 }
 Json Area::toJson() const
 {
@@ -111,7 +116,7 @@ Json Area::toJson() const
 		{"id", m_id}, {"name", m_name}, {"sizeX", m_sizeX}, {"sizeY", m_sizeY}, {"sizeZ", m_sizeZ}, 
 		{"actors", Json::array()}, {"items", Json::array()}, {"blocks", Json::array()},
 		{"plants", Json::array()}, {"fluidSources", m_fluidSources.toJson()}, {"fires", m_fires.toJson()},
-		{"sleepingSpots", m_hasSleepingSpots.toJson()}, {"caveInCheck", Json::array()}
+		{"sleepingSpots", m_hasSleepingSpots.toJson()}, {"caveInCheck", Json::array()}, {"rain", m_hasRain.toJson()}
 	};
 	std::unordered_set<const Item*> items;
 	std::function<void(const Item&)> recordItemAndCargoItemsRecursive = [&](const Item& item){
@@ -340,6 +345,10 @@ FluidGroup* Area::createFluidGroup(const FluidType& fluidType, std::unordered_se
 void Area::removeFluidGroup(FluidGroup& group)
 {
 	std::erase_if(m_fluidGroups, [&group](const FluidGroup& g) { return &g == &group; });
+}
+void Area::clearMergedFluidGroups()
+{
+	std::erase_if(m_unstableFluidGroups, [](FluidGroup* fluidGroup){ return fluidGroup->m_merged; });
 }
 void Area::visionCuboidsActivate()
 {
