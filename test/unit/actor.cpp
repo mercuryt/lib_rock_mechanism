@@ -17,11 +17,11 @@ TEST_CASE("actor")
 	Block& block2 = area.getBlock(7, 8, 1);
 	Block& block3 = area.getBlock(6, 8, 1);
 	// Single tile.
-	REQUIRE(simulation.m_eventSchedule.count() == 1);
+	int previousEventCount = simulation.m_eventSchedule.count();
 	Actor& dwarf1 = simulation.createActor(dwarf, origin1);
 	REQUIRE(dwarf1.m_name == L"dwarf1");
 	REQUIRE(dwarf1.m_canMove.getMoveSpeed() == 7);
-	REQUIRE(simulation.m_eventSchedule.count() == 4);
+	REQUIRE(simulation.m_eventSchedule.count() - previousEventCount == 3);
 	REQUIRE(dwarf1.m_location == &origin1);
 	REQUIRE(dwarf1.m_location->m_hasShapes.contains(dwarf1));
 	REQUIRE(dwarf1.m_canFight.getCombatScore() != 0);

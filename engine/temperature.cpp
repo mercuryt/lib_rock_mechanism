@@ -164,7 +164,10 @@ void BlockHasTemperature::melt()
 {
 	assert(m_block.isSolid());
 	assert(m_block.getSolidMaterial().meltsInto != nullptr);
-	m_block.addFluid(Config::maxBlockVolume, *m_block.getSolidMaterial().meltsInto);
+	const FluidType& fluidType = *m_block.getSolidMaterial().meltsInto;
+	m_block.setNotSolid();
+	m_block.addFluid(Config::maxBlockVolume, fluidType);
+	m_block.m_area->clearMergedFluidGroups();
 }
 const Temperature& BlockHasTemperature::getAmbientTemperature() const 
 {

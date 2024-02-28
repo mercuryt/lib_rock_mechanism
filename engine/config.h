@@ -184,7 +184,12 @@ namespace Config
 	inline uint32_t lakeDepthModifier;
 	//inline uint32_t medicalPriority;
 	//inline uint32_t medicalProjectDelaySteps;
-
+	inline float minimumRainIntensityModifier;
+	inline float maximumRainIntensityModifier;
+	inline float minimumStepsRainPerPercentHumidity;
+	inline float maximumStepsRainPerPercentHumidity;
+	inline float minimumStepsBetweenRainPerPercentHumidity;
+	inline float maximumStepsBetweenRainPerPercentHumidity;
 	inline uint32_t convertBodyPartVolumeToArea(uint32_t volume){ return sqrt(volume); }
 	inline void load()
 	{
@@ -363,5 +368,11 @@ namespace Config
 		lakeDepthModifier = data["lakeDepthModifier"].get<double>();
 		//medicalPriority = data["medicalPriority"].get<uint32_t>();
 		//medicalProjectDelaySteps = data["medicalProjectDelayMinutes"].get<uint32_t>() * stepsPerMinute;
+		minimumRainIntensityModifier = data["minimumRainIntensityModifier"].get<float>();
+		maximumRainIntensityModifier = data["maximumRainIntensityModifier"].get<float>();
+		minimumStepsRainPerPercentHumidity = data["minimumSecondsRainPerPercentHumidity"].get<float>() * Config::stepsPerSecond;
+		maximumStepsRainPerPercentHumidity = data["maximumSecondsRainPerPercentHumidity"].get<float>() * Config::stepsPerSecond;
+		minimumStepsBetweenRainPerPercentHumidity = data["minimumDaysBetweenRainPerPercentHumidity"].get<float>() * Config::stepsPerDay;
+		maximumStepsBetweenRainPerPercentHumidity = data["maximumDaysBetweenRainPerPercentHumidity"].get<float>() * Config::stepsPerDay;
 	}
 }

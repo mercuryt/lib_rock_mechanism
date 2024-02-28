@@ -14,6 +14,9 @@ void AreaHasFluidSources::step()
 		int delta = source.block->m_totalFluidVolume - source.level;
 		if(delta > 0)
 			source.block->addFluid(delta, *source.fluidType);
+		else if(delta < 0)
+			//TODO: can this be changed to use the async version?
+			source.block->removeFluidSyncronus(-delta, *source.fluidType);
 	}
 }
 void AreaHasFluidSources::create(Block& block, const FluidType& fluidType, Volume level)

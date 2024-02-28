@@ -167,5 +167,11 @@
 	"averageLandHeightBlocks": 250,
 	"maxAnimalInsertLocationSearchRetries": 20,
 	"lakeRadiusModifier": 10,
-	"lakeDepthModifier": 2
+	"lakeDepthModifier": 2,
+	"minimumRainIntensityModifier": 0.5,
+	"maximumRainIntensityModifier": 1.5,
+	"minimumSecondsRainPerPercentHumidity": 72,
+	"maximumSecondsRainPerPercentHumidity": 350,
+	"minimumDaysBetweenRainPerPercentHumidity": 0.5,
+	"maximumDaysBetweenRainPerPercentHumidity": 2
 }
