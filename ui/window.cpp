@@ -12,11 +12,10 @@
 #include <unordered_set>
 constexpr sf::Mouse::Button selectMouseButton = sf::Mouse::Button::Left;
 constexpr sf::Mouse::Button actionMouseButton = sf::Mouse::Button::Right;
-sf::Color selectColor = sf::Color::Yellow;
 Window::Window() : m_window(sf::VideoMode::getDesktopMode(), "Goblin Pit", sf::Style::Fullscreen), m_gui(m_window), m_view(m_window.getDefaultView()), 
 	m_mainMenuView(*this), m_loadView(*this), m_gameOverlay(*this), m_objectivePriorityView(*this), 
 	m_productionView(*this), m_uniformView(*this), m_stocksView(*this), m_actorView(*this), //m_worldParamatersView(*this),
-	m_editRealityView(*this), m_editActorView(*this), m_editAreaView(*this), m_area(nullptr), m_scale(32), m_faction(nullptr),
+	m_editRealityView(*this), m_editActorView(*this), m_editAreaView(*this), m_area(nullptr), m_scale(32), m_z(0), m_speed(1), m_faction(nullptr),
 	m_minimumMillisecondsPerFrame(200), m_minimumMillisecondsPerStep(200), m_draw(*this),
 	m_simulationThread([&](){
 		while(true)
@@ -25,12 +24,12 @@ Window::Window() : m_window(sf::VideoMode::getDesktopMode(), "Goblin Pit", sf::S
 			if(m_simulation && !m_paused)
 				m_simulation->doStep();
 			std::chrono::milliseconds delta = msSinceEpoch() - start;
-			if(delta < m_minimumMillisecondsPerStep)
-				std::this_thread::sleep_for(m_minimumMillisecondsPerStep - delta);
+			std::chrono::milliseconds adjustedMinimum = std::chrono::milliseconds(m_minimumMillisecondsPerStep / std::chrono::milliseconds(m_speed));
+			if(delta < adjustedMinimum)
+				std::this_thread::sleep_for(adjustedMinimum - delta);
 		}
 	}), m_editMode(false)
 {
-	setZ(0);
 	setPaused(true);
 	m_font.loadFromFile("lib/fonts/UbuntuMono-R.ttf");
 	m_font.loadFromFile("lib/fonts/NotoEmoji-Regular.ttf");
@@ -55,7 +54,7 @@ void Window::setArea(Area& area, GameView* gameView)
 }
 void Window::centerView(const Block& block)
 {
-	setZ(block.m_z);
+	m_z = block.m_z;
 	sf::Vector2f globalPosition(block.m_x * m_scale, block.m_y * m_scale);
 	sf::Vector2i pixelPosition = m_window.mapCoordsToPixel(globalPosition);
 	pixelPosition.x -= m_view.getCenter().x - m_view.getSize().x / 2;
@@ -112,11 +111,11 @@ void Window::startLoop()
 							break;
 						case sf::Keyboard::PageUp:
 							if(m_gameOverlay.isVisible() && (m_z + 1) < m_area->m_sizeZ)
-								setZ(m_z + 1);
+								m_z += 1;
 							break;
 						case sf::Keyboard::PageDown:
 							if(m_gameOverlay.isVisible() && m_z > 0)
-								setZ(m_z - 1);
+								m_z -= 1;
 							break;
 						case sf::Keyboard::Up:
 							if(m_gameOverlay.isVisible() && m_view.getCenter().y > (m_view.getSize().y / 2) - gameMarginSize)
@@ -204,6 +203,30 @@ void Window::startLoop()
 						case sf::Keyboard::Num6:
 							if(m_area && m_selectedActors.size() == 1)
 								showObjectivePriority(**m_selectedActors.begin());
+							break;
+						case sf::Keyboard::F1:
+							if(m_area)
+								setSpeed(1);
+							break;
+						case sf::Keyboard::F2:
+							if(m_area)
+								setSpeed(2);
+							break;
+						case sf::Keyboard::F3:
+							if(m_area)
+								setSpeed(4);
+							break;
+						case sf::Keyboard::F4:
+							if(m_area)
+								setSpeed(8);
+							break;
+						case sf::Keyboard::F5:
+							if(m_area)
+								setSpeed(16);
+							break;
+						case sf::Keyboard::F6:
+							if(m_area)
+								setSpeed(32);
 							break;
 						default:
 							break;
@@ -325,8 +348,11 @@ void Window::startLoop()
 					if(m_area)
 					{
 						const Block& block = getBlockUnderCursor();
-						m_gameOverlay.m_x->setText(std::to_string(block.m_x));
-						m_gameOverlay.m_y->setText(std::to_string(block.m_y));
+						m_gameOverlay.m_coordinateUI->setText(
+							std::to_string(block.m_x) + "," +
+							std::to_string(block.m_y) + "," +
+							std::to_string(block.m_z)
+						);
 					}
 					break;
 			}
@@ -355,6 +381,8 @@ void Window::startLoop()
 }
 void Window::drawView()
 {
+	m_gameOverlay.drawTime();
+	//m_gameOverlay.drawWeather();
 	// Aquire Area read mutex.
 	std::lock_guard lock(m_simulation->m_uiReadMutex);
 	// Render block floors, collect actors into single and multi tile groups.
@@ -439,6 +467,10 @@ void Window::drawView()
 			for(Block* block : plant->m_blocks)
 				if(block->m_z == m_z)
 					m_draw.selected(*block);
+	// Designated.
+	for(Block& block : m_area->getZLevel(m_z))
+		if(block.m_hasDesignations.containsFaction(*m_faction))
+			m_draw.designated(block);
 	// Selection Box.
 	if(m_firstCornerOfSelection && sf::Mouse::isButtonPressed(selectMouseButton))
 	{
@@ -451,7 +483,7 @@ void Window::drawView()
 		sf::Vector2f worldPos = m_window.mapPixelToCoords({left, top});
 		sf::RectangleShape square(sf::Vector2f(xSize, ySize));
 		square.setFillColor(sf::Color::Transparent);
-		square.setOutlineColor(selectColor);
+		square.setOutlineColor(displayData::selectColor);
 		square.setOutlineThickness(3.f);
 		square.setPosition(worldPos);
 		m_window.draw(square);
@@ -514,28 +546,32 @@ void Window::load(std::filesystem::path path)
 	};
 	threadTask(task);
 }
-void Window::setZ(const uint32_t z)
-{
-	m_z = z;
-	m_gameOverlay.m_z->setText(std::to_string(z));
-}
 void Window::setPaused(const bool paused)
 {
 	m_paused = paused;
-	m_gameOverlay.m_paused->setVisible(paused);
+	setSpeedDisplay();
 }
 void Window::togglePaused()
 {
-	// Atomic toggle.
+	// Atomic toggle. probably not needed.
 	m_paused.toggle();
-	m_gameOverlay.m_paused->setVisible(m_paused);
+	setSpeedDisplay();
+}
+void Window::setSpeed(uint8_t speed)
+{
+	m_speed = speed;
+	setSpeedDisplay();
+}
+void Window::setSpeedDisplay()
+{
+	m_gameOverlay.m_speedUI->setText(m_paused ? "paused" : "speed: " + std::to_string(m_speed));
 }
 void Window::povFromJson(const Json& data)
 {
 	assert(m_simulation);
 	m_area = &m_simulation->getAreaById(data["area"].get<AreaId>());
 	m_scale = data["scale"].get<uint32_t>();
-	setZ(data["z"].get<uint32_t>());
+	m_z = data["z"].get<uint32_t>();
 	uint32_t x = data["x"].get<uint32_t>();
 	uint32_t y = data["y"].get<uint32_t>();
 	m_view.setCenter(x, y);

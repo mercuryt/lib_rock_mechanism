@@ -13,10 +13,10 @@ class GameOverlay final
 	InfoPopup m_infoPopup;
 	ContextMenu m_contextMenu;
 public:
-	tgui::Label::Ptr m_x;
-	tgui::Label::Ptr m_y;
-	tgui::Label::Ptr m_z;
-	tgui::Label::Ptr m_paused;
+	tgui::Label::Ptr m_coordinateUI;
+	tgui::Label::Ptr m_timeUI;
+	tgui::Label::Ptr m_speedUI;
+	tgui::Label::Ptr m_weatherUI;
 	Item* m_itemBeingInstalled;
 	Facing m_facing;
 	GameOverlay(Window& w);
@@ -34,6 +34,7 @@ public:
 	void closeInfoPopup() { m_infoPopup.hide(); };
 	void installItem(Block& block);
 	void unfocusUI();
+	void drawTime();
 	[[nodiscard]] bool isVisible() const { return m_group->isVisible(); }
 	[[nodiscard]] bool menuIsVisible() const { return m_menu->isVisible(); }
 	[[nodiscard]] bool contextMenuIsVisible() const { return m_contextMenu.isVisible(); }

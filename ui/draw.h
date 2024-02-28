@@ -20,6 +20,7 @@ public:
 	void validOnBlock(const Block& block);
 	void invalidOnBlock(const Block& block);
 	void colorOnBlock(const Block& block, sf::Color color);
+	void designated(const Block& block);
 
 	void spriteOnBlockWithScale(const Block& block, sf::Sprite& sprite, float scaleRatio, sf::Color* = nullptr);
 	void spriteOnBlock(const Block& block, sf::Sprite& sprite, sf::Color* = nullptr);

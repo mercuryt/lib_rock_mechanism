@@ -17,7 +17,7 @@
 #include <unordered_set>
 
 Area::Area(AreaId id, std::wstring n, Simulation& s, uint32_t x, uint32_t y, uint32_t z) :
-	m_blocks(x*y*z), m_id(id), m_name(n), m_simulation(s), m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_hasRain(*this), m_visionCuboidsActive(false)
+	m_blocks(x*y*z), m_id(id), m_name(n), m_simulation(s), m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_fluidSources(*this), m_hasRain(*this), m_visionCuboidsActive(false)
 { 
 	setup(); 
 	m_hasRain.scheduleRestart();
@@ -26,7 +26,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_blocks(data["sizeX"].get<uint32_t>() * data["sizeY"].get<uint32_t>() * data["sizeZ"].get<uint32_t>()),
 	m_id(data["id"].get<AreaId>()), m_name(data["name"].get<std::wstring>()), m_simulation(s),
 	m_sizeX(data["sizeX"].get<uint32_t>()), m_sizeY(data["sizeY"].get<uint32_t>()), m_sizeZ(data["sizeZ"].get<uint32_t>()), 
-	m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_hasRain(*this), m_visionCuboidsActive(false)
+	m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_fluidSources(*this), m_hasRain(*this), m_visionCuboidsActive(false)
 {
 	m_simulation.m_areasById[m_id] = this;
 	setup();
@@ -108,7 +108,8 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	for(const Json& blockReference : data["caveInCheck"])
 		m_caveInCheck.insert(&deserializationMemo.blockReference(blockReference));
 	// Load rain.
-	m_hasRain.load(data["rain"], deserializationMemo);
+	if(data.contains("rain"))
+		m_hasRain.load(data["rain"], deserializationMemo);
 }
 Json Area::toJson() const
 {
@@ -349,6 +350,7 @@ void Area::removeFluidGroup(FluidGroup& group)
 void Area::clearMergedFluidGroups()
 {
 	std::erase_if(m_unstableFluidGroups, [](FluidGroup* fluidGroup){ return fluidGroup->m_merged; });
+	std::erase_if(m_fluidGroups, [](FluidGroup& fluidGroup){ return fluidGroup.m_merged; });
 }
 void Area::visionCuboidsActivate()
 {

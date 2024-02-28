@@ -37,7 +37,7 @@ public:
 				m_designations[&faction].insert(designation.get<BlockDesignation>());
 		}
 	}
-	Json toJson() const
+	[[nodiscard]] Json toJson() const
 	{
 		Json data;
 		for(auto pair : m_designations)
@@ -47,16 +47,6 @@ public:
 				jsonPair[1].push_back(designation);
 		}
 		return data;
-	}
-	bool contains(const Faction& f, const BlockDesignation& bd) const 
-	{ 
-		if(!m_designations.contains(&f))
-			return false;
-		return m_designations.at(&f).contains(bd); 
-	}
-	bool empty() const 
-	{
-		return m_designations.empty();
 	}
 	void insert(const Faction& f, const BlockDesignation& bd)
 	{
@@ -72,4 +62,21 @@ public:
 	      		m_designations[&f].erase(bd);
 	}
 	void removeIfExists(const Faction& f, const BlockDesignation& bd) { m_designations[&f].erase(bd); }
+	[[nodiscard]] bool containsFaction(const Faction& faction) const { return m_designations.contains(&faction); }
+	[[nodiscard]] BlockDesignation getDisplayDesignation(const Faction& faction) const
+	{
+		assert(containsFaction(faction));
+		return *m_designations.at(&faction).begin();
+	}
+	[[nodiscard]] bool contains(const Faction& f, const BlockDesignation& bd) const 
+	{ 
+		if(!m_designations.contains(&f))
+			return false;
+		return m_designations.at(&f).contains(bd); 
+	}
+	[[nodiscard]] bool empty() const 
+	{
+		return m_designations.empty();
+	}
+	
 };

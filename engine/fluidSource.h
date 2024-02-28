@@ -4,6 +4,7 @@
 #include <vector>
 class FluidType;
 class Block;
+class Area;
 struct DeserializationMemo;
 struct FluidSource final
 {
@@ -15,12 +16,15 @@ struct FluidSource final
 };
 class AreaHasFluidSources final
 {
+	Area& m_area;
 	std::vector<FluidSource> m_data;
 public:
+	AreaHasFluidSources(Area& a) : m_area(a) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
+	[[nodiscard]] Json toJson() const;
 	void step();
 	void create(Block& block, const FluidType& fluidType, Volume level);
 	void destroy(Block&);
-	bool contains(Block& block) const;
+	[[nodiscard]] bool contains(Block& block) const;
+	[[nodiscard]] const FluidSource& at(Block& block) const;
 };

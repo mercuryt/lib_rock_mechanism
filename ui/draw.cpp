@@ -1,6 +1,7 @@
 #include "draw.h"
 #include "blockFeature.h"
 #include "config.h"
+#include "designations.h"
 #include "sprite.h"
 #include "util.h"
 #include "window.h"
@@ -65,6 +66,7 @@ void Draw::blockFloor(const Block& block)
 					return;
 				}
 			}
+			// No ground cover plant.
 			sf::Color* color = &displayData::materialColors.at(&block.getBlockBelow()->getSolidMaterial());
 			if(block.getBlockBelow()->isConstructed())
 			{
@@ -76,6 +78,12 @@ void Draw::blockFloor(const Block& block)
 				static sf::Sprite sprite = sprites::make("roughFloor").first;
 				spriteOnBlock(block, sprite, color);
 			}
+			// Draw stockpiles.
+			if(block.m_isPartOfStockPiles.contains(*m_window.getFaction()))
+				colorOnBlock(block, displayData::stockPileColor);
+			// Draw farm fields.
+			if(block.m_isPartOfFarmField.contains(*m_window.getFaction()))
+				colorOnBlock(block, displayData::farmFieldColor);
 		}
 		else if(block.getBlockBelow() && block.getBlockBelow()->m_totalFluidVolume > displayData::minimumFluidVolumeToSeeFromAboveLevelRatio * Config::maxBlockVolume)
 		{
@@ -215,7 +223,7 @@ void Draw::blockFeaturesAndFluids(const Block& block)
 		Volume volume = block.m_fluids.at(&fluidType).first;
 		sf::Color color = displayData::fluidColors.at(&fluidType);
 		colorOnBlock(block, color);
-		stringOnBlock(block, std::to_wstring(volume / 10), sf::Color::Black);
+		stringOnBlock(block, std::to_wstring(volume), sf::Color::Black);
 	}
 }
 void Draw::validOnBlock(const Block& block)
@@ -232,6 +240,24 @@ void Draw::colorOnBlock(const Block& block, sf::Color color)
 	square.setFillColor(color);
 	square.setPosition(static_cast<float>(block.m_x * m_window.m_scale), static_cast<float>(block.m_y * m_window.m_scale));
 	m_window.getRenderWindow().draw(square);
+}
+void Draw::designated(const Block& block)
+{
+	BlockDesignation designation = block.m_hasDesignations.getDisplayDesignation(*m_window.m_faction);
+	static std::unordered_map<BlockDesignation, sf::Sprite> designationSprites{
+		{BlockDesignation::Dig, sprites::make("pick").first},
+		{BlockDesignation::Construct, sprites::make("mallet").first},
+		{BlockDesignation::FluidSource, sprites::make("bucket").first},
+		{BlockDesignation::GivePlantFluid, sprites::make("bucket").first},
+		{BlockDesignation::SowSeeds, sprites::make("seed").first},
+		{BlockDesignation::Harvest, sprites::make("hand").first},
+		{BlockDesignation::Rescue, sprites::make("hand").first},
+		{BlockDesignation::Sleep, sprites::make("sleep").first},
+		{BlockDesignation::WoodCutting, sprites::make("axe").first},
+		{BlockDesignation::StockPileHaulFrom, sprites::make("hand").first},
+		{BlockDesignation::StockPileHaulTo, sprites::make("open").first},
+	};
+	spriteOnBlock(block, designationSprites.at(designation));
 }
 // Origin is assumed to already be set in sprite on block.
 void Draw::spriteOnBlockWithScale(const Block& block, sf::Sprite& sprite, float scale, sf::Color* color)
@@ -333,6 +359,8 @@ void Draw::item(const Block& block)
 	spriteOnBlockWithScale(block, sprite, display.scale);
 	if(block.m_hasItems.getAll().size() > 1)
 		stringOnBlock(block, std::to_wstring(block.m_hasItems.getAll().size()), sf::Color::Black);
+	else if(item.getQuantity() != 1)
+		stringOnBlock(block, std::to_wstring(item.getQuantity()), sf::Color::White);
 	if(m_window.getSelectedItems().contains(const_cast<Item*>(&item)))
 		outlineOnBlock(block, displayData::selectColor);
 }
