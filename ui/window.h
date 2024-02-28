@@ -50,6 +50,7 @@ class Window final
 	Area* m_area;
 	uint32_t m_scale;
 	uint32_t m_z;
+	std::atomic<uint8_t> m_speed;
 	std::unordered_map<AreaId, GameView> m_lastViewedSpotInArea;
 	//TODO: multi select.
 	std::unordered_set<Block*> m_selectedBlocks;
@@ -70,6 +71,7 @@ class Window final
 	void drawView();
 	void povFromJson(const Json& data);
 	void setZ(const uint32_t z);
+	void setSpeedDisplay();
 	[[nodiscard]] Json povToJson() const;
 	[[nodiscard]] static std::chrono::milliseconds msSinceEpoch();
 public:
@@ -79,6 +81,7 @@ public:
 	Window();
 	void setPaused(bool paused);
 	void togglePaused();
+	void setSpeed(uint8_t speed);
 	void setArea(Area& area, GameView* gameView = nullptr);
 	void startLoop();
 	void centerView(const Block& block);

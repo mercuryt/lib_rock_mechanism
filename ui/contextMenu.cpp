@@ -122,7 +122,11 @@ void ContextMenu::draw(Block& block)
 				{
 					auto destroy = tgui::Button::create("destroy");
 					destroy->getRenderer()->setBackgroundColor(buttonColor);
-					destroy->onClick([this, actor]{ m_window.getSimulation()->destroyActor(*actor);});
+					destroy->onClick([this, actor]{ 
+						m_window.deselectAll();
+						m_window.getSimulation()->destroyActor(*actor);
+						hide();
+					});
 					submenu.add(destroy);
 				}
 				auto& actors = m_window.getSelectedActors();
@@ -211,7 +215,11 @@ void ContextMenu::draw(Block& block)
 					{
 						auto destroy = tgui::Button::create("destroy");
 						submenu.add(destroy);
-						destroy->onClick([item]{ item->destroy(); });
+						destroy->onClick([this, item]{ 
+							m_window.deselectAll();
+							item->destroy(); 
+							hide();
+						});
 					}
 					auto& actors = m_window.getSelectedActors();
 					if(actors.size() == 1)
@@ -343,9 +351,11 @@ void ContextMenu::draw(Block& block)
 						auto confirm = tgui::Button::create("confirm");
 						confirm->getRenderer()->setBackgroundColor(buttonColor);
 						subSubMenu.add(confirm);
-						confirm->onClick([this, itemTypeSelectUI, materialTypeSelectUI]{
+						confirm->onClick([this, itemTypeSelectUI, materialTypeSelectUI, &block]{
 							const MaterialType& materialType = MaterialType::byName(materialTypeSelectUI->getSelectedItemId().toStdString());
 							const ItemType& itemType = ItemType::byName(itemTypeSelectUI->getSelectedItemId().toStdString());
+							if(m_window.getSelectedBlocks().empty())
+								m_window.selectBlock(block);
 							for(Block* selectedBlock : m_window.getSelectedBlocks())
 							{
 								Item& item = m_window.getSimulation()->createItemGeneric(itemType, materialType, quantity);
@@ -378,9 +388,11 @@ void ContextMenu::draw(Block& block)
 						auto confirm = tgui::Button::create("confirm");
 						confirm->getRenderer()->setBackgroundColor(buttonColor);
 						subSubMenu.add(confirm);
-						confirm->onClick([this, itemTypeSelectUI, materialTypeSelectUI]{
+						confirm->onClick([this, itemTypeSelectUI, materialTypeSelectUI, &block]{
 							const MaterialType& materialType = MaterialType::byName(materialTypeSelectUI->getSelectedItemId().toStdString());
 							const ItemType& itemType = ItemType::byName(itemTypeSelectUI->getSelectedItemId().toStdString());
+							if(m_window.getSelectedBlocks().empty())
+								m_window.selectBlock(block);
 							for(Block* selectedBlock : m_window.getSelectedBlocks())
 							{
 								Item& item = m_window.getSimulation()->createItemNongeneric(itemType, materialType, quality, percentWear);

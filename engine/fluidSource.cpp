@@ -3,6 +3,7 @@
 #include "fluidType.h"
 #include "block.h"
 #include "stockpile.h"
+#include "area.h"
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_ONLY_SERIALIZE(FluidSource, block, fluidType, level);
 FluidSource::FluidSource(const Json& data, DeserializationMemo& deserializationMemo) : block(&deserializationMemo.blockReference(data["block"])), fluidType(data["fluidType"].get<const FluidType*>()), level(data["level"].get<Volume>()) { }
@@ -11,13 +12,14 @@ void AreaHasFluidSources::step()
 {
 	for(FluidSource& source : m_data)
 	{
-		int delta = source.block->m_totalFluidVolume - source.level;
+		int delta =  source.level - source.block->m_totalFluidVolume;
 		if(delta > 0)
 			source.block->addFluid(delta, *source.fluidType);
 		else if(delta < 0)
 			//TODO: can this be changed to use the async version?
 			source.block->removeFluidSyncronus(-delta, *source.fluidType);
 	}
+	m_area.clearMergedFluidGroups();
 }
 void AreaHasFluidSources::create(Block& block, const FluidType& fluidType, Volume level)
 {
@@ -44,4 +46,9 @@ Json AreaHasFluidSources::toJson() const
 bool AreaHasFluidSources::contains(Block& block) const
 {
 	return std::ranges::find(m_data, &block, &FluidSource::block) != m_data.end();
+}
+const FluidSource& AreaHasFluidSources::at(Block& block) const
+{
+	assert(contains(block));
+	return *std::ranges::find(m_data, &block, &FluidSource::block);
 }

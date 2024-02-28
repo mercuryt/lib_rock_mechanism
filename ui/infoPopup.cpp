@@ -76,6 +76,12 @@ void InfoPopup::display(Block& block)
 			auto label = tgui::Label::create(fluidType->name + " : " + std::to_string(volume));
 			add(label);
 		}
+		if(m_window.getArea()->m_fluidSources.contains(block))
+		{
+			const FluidSource& source = m_window.getArea()->m_fluidSources.at(block);
+			auto label = tgui::Label::create(source.fluidType->name + " source : " + std::to_string(source.level));
+			add(label);
+		}
 	}
 }
 void InfoPopup::display(Item& item)

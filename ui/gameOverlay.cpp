@@ -1,8 +1,9 @@
 #include "gameOverlay.h"
 #include "window.h"
+#include <TGUI/Widgets/Panel.hpp>
 GameOverlay::GameOverlay(Window& w) : m_window(w), 
 	m_group(tgui::Group::create()), m_menu(tgui::Panel::create()), m_infoPopup(w), m_contextMenu(w, m_group), 
-	m_x(tgui::Label::create()), m_y(tgui::Label::create()), m_z(tgui::Label::create()), m_paused(tgui::Label::create("paused")),
+	m_coordinateUI(tgui::Label::create()), m_timeUI(tgui::Label::create()), m_speedUI(tgui::Label::create()), m_weatherUI(tgui::Label::create()),
 	m_itemBeingInstalled(nullptr), m_facing(0) 
 { 
 	m_window.getGui().add(m_group);
@@ -27,18 +28,17 @@ GameOverlay::GameOverlay(Window& w) : m_window(w),
 	layout->setSize(tgui::bindWidth(m_menu) - 8, tgui::bindHeight(m_menu) - 8);
 	m_menu->setPosition("50%", "50%");
 	m_menu->setOrigin(0.5, 0.5);
+
 	// Top bar.
-	auto topBar = tgui::HorizontalLayout::create();
-	auto leftSide = tgui::Group::create();
-	topBar->add(leftSide);
-	auto coordinateHolder = tgui::HorizontalLayout::create();
-	coordinateHolder->setWidth("10%");
-	leftSide->add(coordinateHolder);
-	coordinateHolder->add(m_x);
-	coordinateHolder->add(m_y);
-	coordinateHolder->add(m_z);
-	topBar->setHeight("5%");
-	topBar->add(m_paused);
+	auto topBar = tgui::Panel::create();
+	topBar->setHeight(16);
+	topBar->add(m_coordinateUI);
+	topBar->add(m_timeUI);
+	m_timeUI->setPosition("20%", 0);
+	topBar->add(m_speedUI);
+	m_speedUI->setPosition("40%", 0);
+	topBar->add(m_weatherUI);
+	m_weatherUI->setPosition("60%", 0);
 	m_group->add(topBar);
 }
 void GameOverlay::drawMenu()
@@ -58,4 +58,11 @@ void GameOverlay::unfocusUI()
 	tgui::Widget::Ptr focused = m_window.getGui().getFocusedChild();
 	if(focused)
 		focused->setFocused(false);
+}
+void GameOverlay::drawTime()
+{
+	DateTime& now = m_window.getSimulation()->m_now;
+	m_timeUI->setText(
+			"hour: " + std::to_string(now.hour) + " day: " + std::to_string(now.day) + " year: " + std::to_string(now.year)
+	);
 }

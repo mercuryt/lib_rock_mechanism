@@ -18,7 +18,12 @@ void AreaHasRain::load(const Json& data, [[maybe_unused]] DeserializationMemo& d
 }
 Json AreaHasRain::toJson() const
 {
-	Json data{{"eventStart", m_event.getStartStep()}, {"eventDuration"}, m_event.duration()};
+	Json data;
+	if(m_event.exists())
+	{
+		data["eventStart"] = m_event.getStartStep();
+		data["eventDuration"] = m_event.duration();
+	}
 	if(m_currentlyRainingFluidType)
 	{
 		data["currentFluidType"] = m_currentlyRainingFluidType;
