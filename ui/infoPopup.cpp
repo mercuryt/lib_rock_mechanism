@@ -82,6 +82,12 @@ void InfoPopup::display(Block& block)
 			auto label = tgui::Label::create(source.fluidType->name + " source : " + std::to_string(source.level));
 			add(label);
 		}
+		if(m_window.getFaction() && block.m_isPartOfFarmField.contains(*m_window.getFaction()))
+		{
+			FarmField& field = *block.m_isPartOfFarmField.get(*m_window.getFaction());
+			auto label = tgui::Label::create((field.plantSpecies ? field.plantSpecies->name + " " : "") + "field");
+			add(label);
+		}
 	}
 }
 void InfoPopup::display(Item& item)

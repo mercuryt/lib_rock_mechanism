@@ -12,6 +12,7 @@
 #include "displayData.h"
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/Sprite.hpp>
+#include <SFML/System/Vector2.hpp>
 // Block.
 void Draw::blockFloor(const Block& block)
 {
@@ -34,7 +35,7 @@ void Draw::blockFloor(const Block& block)
 			if(block.getBlockBelow()->getBlockSouth() && !block.getBlockBelow()->getBlockSouth()->isSolid())
 			{
 				float offset = displayData::wallOffsetRatio * m_window.m_scale;
-				sf::Color color = displayData::materialColors.at(&block.getBlockBelow()->getSolidMaterial());
+				const sf::Color color = displayData::materialColors.at(&block.getBlockBelow()->getSolidMaterial());
 				float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
 				sf::Sprite* sprite;
 				if(block.isConstructed())
@@ -67,7 +68,7 @@ void Draw::blockFloor(const Block& block)
 				}
 			}
 			// No ground cover plant.
-			sf::Color* color = &displayData::materialColors.at(&block.getBlockBelow()->getSolidMaterial());
+			const sf::Color* color = &displayData::materialColors.at(&block.getBlockBelow()->getSolidMaterial());
 			if(block.getBlockBelow()->isConstructed())
 			{
 				static sf::Sprite sprite = sprites::make("blockFloor").first;
@@ -88,7 +89,7 @@ void Draw::blockFloor(const Block& block)
 		else if(block.getBlockBelow() && block.getBlockBelow()->m_totalFluidVolume > displayData::minimumFluidVolumeToSeeFromAboveLevelRatio * Config::maxBlockVolume)
 		{
 			const FluidType& fluidType = block.getBlockBelow()->getFluidTypeWithMostVolume();
-			sf::Color color = displayData::fluidColors.at(&fluidType);
+			const sf::Color color = displayData::fluidColors.at(&fluidType);
 			static sf::Sprite sprite = sprites::make("fluidSurface").first;
 			// TODO: Give the shore line some feeling of depth somehow.
 			spriteOnBlock(block, sprite, &color);
@@ -100,7 +101,7 @@ void Draw::blockWallCorners(const Block& block)
 	if(block.isSolid() && block.getBlockWest() && !block.getBlockWest()->isSolid() && block.getBlockSouth() && !block.getBlockSouth()->isSolid())
 	{
 		float offset = displayData::wallOffsetRatio * m_window.m_scale;
-		sf::Color color = displayData::materialColors.at(&block.getSolidMaterial());
+		const sf::Color color = displayData::materialColors.at(&block.getSolidMaterial());
 		float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
 		auto pair = sprites::make(block.isConstructed() ? "blockWall" : "roughWall");
 		auto sprite = pair.first;
@@ -118,7 +119,7 @@ void Draw::blockWalls(const Block& block)
 		if(block.getBlockSouth() && block.getBlockSouth()->m_visible)
 		{
 			float offset = displayData::wallOffsetRatio * m_window.m_scale;
-			sf::Color color = displayData::materialColors.at(&block.getSolidMaterial());
+			const sf::Color color = displayData::materialColors.at(&block.getSolidMaterial());
 			float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
 			auto pair = sprites::make(block.isConstructed() ? "blockWall" : "roughWall");
 			auto sprite = pair.first;
@@ -130,7 +131,7 @@ void Draw::blockWalls(const Block& block)
 		if(block.getBlockWest() && block.getBlockWest()->m_visible)
 		{
 			float offset = displayData::wallOffsetRatio * m_window.m_scale;
-			sf::Color color = displayData::materialColors.at(&block.getSolidMaterial());
+			const sf::Color color = displayData::materialColors.at(&block.getSolidMaterial());
 			float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
 			auto pair = sprites::make(block.isConstructed() ? "blockWall" : "roughWall");
 			auto sprite = pair.first;
@@ -150,7 +151,7 @@ void Draw::blockWallTops(const Block& block)
 			return adjacent && adjacent->m_visible && !adjacent->isSolid() && !adjacent->m_hasBlockFeatures.contains(BlockFeatureType::stairs) && !adjacent->m_hasBlockFeatures.contains(BlockFeatureType::ramp);
 		};
 		float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
-		sf::Color color = displayData::materialColors.at(&block.getSolidMaterial());
+		const sf::Color color = displayData::materialColors.at(&block.getSolidMaterial());
 		float offset = displayData::wallTopOffsetRatio * m_window.m_scale;
 		if(adjacentPredicate(block.getBlockNorth()))
 		{
@@ -221,7 +222,7 @@ void Draw::blockFeaturesAndFluids(const Block& block)
 	{
 		const FluidType& fluidType = block.getFluidTypeWithMostVolume();
 		Volume volume = block.m_fluids.at(&fluidType).first;
-		sf::Color color = displayData::fluidColors.at(&fluidType);
+		const sf::Color color = displayData::fluidColors.at(&fluidType);
 		colorOnBlock(block, color);
 		stringOnBlock(block, std::to_wstring(volume), sf::Color::Black);
 	}
@@ -234,7 +235,7 @@ void Draw::invalidOnBlock(const Block& block)
 {
 	colorOnBlock(block, {255, 0, 0, 122});
 }
-void Draw::colorOnBlock(const Block& block, sf::Color color)
+void Draw::colorOnBlock(const Block& block, const sf::Color color)
 {
 	sf::RectangleShape square(sf::Vector2f(m_window.m_scale, m_window.m_scale));
 	square.setFillColor(color);
@@ -245,22 +246,28 @@ void Draw::designated(const Block& block)
 {
 	BlockDesignation designation = block.m_hasDesignations.getDisplayDesignation(*m_window.m_faction);
 	static std::unordered_map<BlockDesignation, sf::Sprite> designationSprites{
-		{BlockDesignation::Dig, sprites::make("pick").first},
-		{BlockDesignation::Construct, sprites::make("mallet").first},
-		{BlockDesignation::FluidSource, sprites::make("bucket").first},
-		{BlockDesignation::GivePlantFluid, sprites::make("bucket").first},
-		{BlockDesignation::SowSeeds, sprites::make("seed").first},
-		{BlockDesignation::Harvest, sprites::make("hand").first},
-		{BlockDesignation::Rescue, sprites::make("hand").first},
-		{BlockDesignation::Sleep, sprites::make("sleep").first},
-		{BlockDesignation::WoodCutting, sprites::make("axe").first},
-		{BlockDesignation::StockPileHaulFrom, sprites::make("hand").first},
-		{BlockDesignation::StockPileHaulTo, sprites::make("open").first},
+		{BlockDesignation::Dig, getCenteredSprite("pick")},
+		{BlockDesignation::Construct, getCenteredSprite("mallet")},
+		{BlockDesignation::FluidSource, getCenteredSprite("bucket")},
+		{BlockDesignation::GivePlantFluid, getCenteredSprite("bucket")},
+		{BlockDesignation::SowSeeds, getCenteredSprite("seed")},
+		{BlockDesignation::Harvest, getCenteredSprite("hand")},
+		{BlockDesignation::Rescue, getCenteredSprite("hand")},
+		{BlockDesignation::Sleep, getCenteredSprite("sleep")},
+		{BlockDesignation::WoodCutting, getCenteredSprite("axe")},
+		{BlockDesignation::StockPileHaulFrom, getCenteredSprite("hand")},
+		{BlockDesignation::StockPileHaulTo, getCenteredSprite("open")}
 	};
-	spriteOnBlock(block, designationSprites.at(designation));
+	spriteOnBlockCentered(block, designationSprites.at(designation), &displayData::selectColor);
+}
+sf::Sprite Draw::getCenteredSprite(std::string name)
+{
+	auto pair = sprites::make(name);
+	pair.first.setOrigin(pair.second);
+	return pair.first;
 }
 // Origin is assumed to already be set in sprite on block.
-void Draw::spriteOnBlockWithScale(const Block& block, sf::Sprite& sprite, float scale, sf::Color* color)
+void Draw::spriteOnBlockWithScale(const Block& block, sf::Sprite& sprite, float scale, const sf::Color* color)
 {
 	float windowScale = m_window.m_scale;
 	scale = scale * (windowScale / (float)displayData::defaultScale);
@@ -270,41 +277,51 @@ void Draw::spriteOnBlockWithScale(const Block& block, sf::Sprite& sprite, float 
 		sprite.setColor(*color);
 	m_window.getRenderWindow().draw(sprite);
 }
-void Draw::spriteOnBlock(const Block& block, sf::Sprite& sprite, sf::Color* color)
+void Draw::spriteAt(sf::Sprite& sprite, sf::Vector2f position, const sf::Color* color)
 {
-	sprite.setPosition(static_cast<float>(block.m_x * m_window.m_scale), static_cast<float>(block.m_y * m_window.m_scale));
+	sprite.setPosition(position);
 	float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
 	sprite.setScale(scaleRatio, scaleRatio);
 	if(color)
 		sprite.setColor(*color);
 	m_window.getRenderWindow().draw(sprite);
 }
-void Draw::imageOnBlock(const Block& block, std::string name, sf::Color* color)
+void Draw::spriteOnBlock(const Block& block, sf::Sprite& sprite, const sf::Color* color)
+{
+	sf::Vector2f position{(float)(block.m_x * m_window.m_scale), (float)(block.m_y * m_window.m_scale)};
+	spriteAt(sprite, position, color);
+}
+void Draw::spriteOnBlockCentered(const Block& block, sf::Sprite& sprite, const sf::Color* color)
+{
+	sf::Vector2f position{(((float)block.m_x + 0.5f) * (float)m_window.m_scale), (((float)block.m_y + 0.5f) * (float)m_window.m_scale)};
+	spriteAt(sprite, position, color);
+}
+void Draw::imageOnBlock(const Block& block, std::string name, const sf::Color* color)
 {
 	auto pair = sprites::make(name);
 	spriteOnBlock(block, pair.first, color);
 }
 // By default images are top aligned.
-void Draw::imageOnBlockWestAlign(const Block& block, std::string name, sf::Color* color)
+void Draw::imageOnBlockWestAlign(const Block& block, std::string name, const sf::Color* color)
 {
 	auto pair = sprites::make(name);
 	pair.first.setRotation(270);
 	spriteOnBlock(block, pair.first, color);
 }
-void Draw::imageOnBlockEastAlign(const Block& block, std::string name, sf::Color* color)
+void Draw::imageOnBlockEastAlign(const Block& block, std::string name, const sf::Color* color)
 {
 	auto pair = sprites::make(name);
 	pair.first.setRotation(90);
 	spriteOnBlock(block, pair.first, color);
 }
-void Draw::imageOnBlockSouthAlign(const Block& block, std::string name, sf::Color* color)
+void Draw::imageOnBlockSouthAlign(const Block& block, std::string name, const sf::Color* color)
 {
 	auto pair = sprites::make(name);
 	pair.first.setRotation(180);
 	spriteOnBlock(block, pair.first, color);
 }
 void Draw::selected(Block& block) { outlineOnBlock(block, displayData::selectColor); }
-void Draw::outlineOnBlock(const Block& block, sf::Color color, float thickness)
+void Draw::outlineOnBlock(const Block& block, const sf::Color color, float thickness)
 {
 	sf::RectangleShape square(sf::Vector2f(m_window.m_scale - (thickness*2), m_window.m_scale - (thickness*2)));
 	square.setFillColor(sf::Color::Transparent);
@@ -313,7 +330,7 @@ void Draw::outlineOnBlock(const Block& block, sf::Color color, float thickness)
 	square.setPosition(static_cast<float>(block.m_x * m_window.m_scale) + thickness, static_cast<float>(block.m_y * m_window.m_scale) + thickness);
 	m_window.getRenderWindow().draw(square);
 }
-void Draw::stringOnBlock(const Block& block, std::wstring string, sf::Color color)
+void Draw::stringOnBlock(const Block& block, std::wstring string, const sf::Color color)
 {
 	sf::Text text;
 	text.setFont(m_window.m_font);
@@ -354,7 +371,7 @@ void Draw::item(const Block& block)
 	auto [sprite, origin] = sprites::make(display.image);
 	sprite.setOrigin(origin);
 	sprite.setColor(display.color);
-	sf::Color materialColor = displayData::materialColors.at(&item.m_materialType);
+	const sf::Color materialColor = displayData::materialColors.at(&item.m_materialType);
 	sprite.setColor(materialColor);
 	spriteOnBlockWithScale(block, sprite, display.scale);
 	if(block.m_hasItems.getAll().size() > 1)

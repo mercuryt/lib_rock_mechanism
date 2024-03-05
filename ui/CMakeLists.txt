@@ -1,6 +1,6 @@
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-add_executable (UI main.cpp actorPanel.cpp contextMenu.cpp infoPopup.cpp displayData.cpp draw.cpp editActorPanel.cpp editAreaPanel.cpp editRealityPanel.cpp gameOverlay.cpp load.cpp main.cpp mainMenu.cpp objectivePriorityPanel.cpp production.cpp sprite.cpp stocksPanel.cpp uniformPanel.cpp widgets.cpp window.cpp)
+add_executable (UI main.cpp actorPanel.cpp contextMenu.cpp infoPopup.cpp displayData.cpp draw.cpp editActorPanel.cpp editAreaPanel.cpp editFactionPanel.cpp editRealityPanel.cpp gameOverlay.cpp load.cpp main.cpp mainMenu.cpp objectivePriorityPanel.cpp production.cpp sprite.cpp stocksPanel.cpp uniformPanel.cpp widgets.cpp window.cpp)
 #worldParamatersPanel.cpp)
 target_compile_features(UI PUBLIC cxx_std_20)
 #target_include_directories (UI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

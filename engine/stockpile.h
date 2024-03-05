@@ -126,6 +126,7 @@ public:
 	[[nodiscard]] bool isEnabled() const { return m_enabled; }
 	[[nodiscard]] bool hasProjectNeedingMoreWorkers() const { return m_projectNeedingMoreWorkers != nullptr; }
 	[[nodiscard]] Simulation& getSimulation();
+	[[nodiscard]] bool contains(Block& block) const { return m_blocks.contains(&block); }
 	friend class AreaHasStockPilesForFaction;
 	friend class ReenableStockPileScheduledEvent;
 	friend class StockPileProject;
@@ -255,10 +256,10 @@ public:
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
-	void addFaction(const Faction& faction) { assert(!m_data.contains(&faction)); m_data.try_emplace(&faction, m_area, faction); }
-	void removeFaction(const Faction& faction) { assert(m_data.contains(&faction)); m_data.erase(&faction); }
+	void registerFaction(const Faction& faction) { assert(!m_data.contains(&faction)); m_data.try_emplace(&faction, m_area, faction); }
+	void unregisterFaction(const Faction& faction) { assert(m_data.contains(&faction)); m_data.erase(&faction); }
 	void removeItemFromAllFactions(Item& item) { for(auto& pair : m_data) { pair.second.removeItem(item); } }
 	void removeBlockFromAllFactions(Block& block) { for(auto& pair : m_data) { pair.second.removeBlock(block); }} 
-	[[nodiscard]] AreaHasStockPilesForFaction& at(const Faction& faction) { assert(m_data.contains(&faction)); return m_data.at(&faction); }
+	[[nodiscard]] AreaHasStockPilesForFaction& at(const Faction& faction);
 	[[nodiscard]] bool contains(const Faction& faction) { return m_data.contains(&faction); }
 };

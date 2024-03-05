@@ -1,6 +1,7 @@
 #pragma once
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/Sprite.hpp>
+#include <SFML/System/Vector2.hpp>
 #include <string>
 class Window;
 class Block;
@@ -19,19 +20,22 @@ public:
 	void blockFeaturesAndFluids(const Block& block);
 	void validOnBlock(const Block& block);
 	void invalidOnBlock(const Block& block);
-	void colorOnBlock(const Block& block, sf::Color color);
+	void colorOnBlock(const Block& block, const sf::Color color);
 	void designated(const Block& block);
+	sf::Sprite getCenteredSprite(std::string name);
 
-	void spriteOnBlockWithScale(const Block& block, sf::Sprite& sprite, float scaleRatio, sf::Color* = nullptr);
-	void spriteOnBlock(const Block& block, sf::Sprite& sprite, sf::Color* = nullptr);
-	void imageOnBlock(const Block& block, std::string name, sf::Color* = nullptr);
-	void imageOnBlockWestAlign(const Block& block, std::string name, sf::Color* = nullptr);
-	void imageOnBlockEastAlign(const Block& block, std::string name, sf::Color* = nullptr);
-	void imageOnBlockSouthAlign(const Block& block, std::string name, sf::Color* = nullptr);
+	void spriteAt(sf::Sprite& sprite, sf::Vector2f position, const sf::Color* color);
+	void spriteOnBlockWithScale(const Block& block, sf::Sprite& sprite, float scaleRatio, const sf::Color* = nullptr);
+	void spriteOnBlock(const Block& block, sf::Sprite& sprite, const sf::Color* = nullptr);
+	void spriteOnBlockCentered(const Block& block, sf::Sprite& sprite, const sf::Color* = nullptr);
+	void imageOnBlock(const Block& block, std::string name, const sf::Color* = nullptr);
+	void imageOnBlockWestAlign(const Block& block, std::string name, const sf::Color* = nullptr);
+	void imageOnBlockEastAlign(const Block& block, std::string name, const sf::Color* = nullptr);
+	void imageOnBlockSouthAlign(const Block& block, std::string name, const sf::Color* = nullptr);
 
 	void selected(Block& block);
-	void outlineOnBlock(const Block& block, sf::Color color, float thickness = 3.f);
-	void stringOnBlock(const Block& block, std::wstring string, sf::Color color);
+	void outlineOnBlock(const Block& block, const sf::Color color, float thickness = 3.f);
+	void stringOnBlock(const Block& block, std::wstring string, const sf::Color color);
 
 	void nonGroundCoverPlant(const Block& block);
 	void item(const Block& block);

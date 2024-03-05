@@ -23,8 +23,10 @@
 #include "buckets.h"
 #include "locationBuckets.h"
 #include "stamina.h"
+#include "types.h"
 #include "uniform.h"
 
+#include <TGUI/Loading/DataIO.hpp>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -35,6 +37,23 @@ struct AnimalSpecies;
 struct Faction;
 
 enum class CauseOfDeath { none, thirst, hunger, bloodLoss, wound, temperature };
+
+struct ActorParamaters
+{
+	const AnimalSpecies& species;
+	Simulation* simulation = nullptr;
+	ActorId id = 0;
+	std::wstring name = L"";
+	DateTime birthDate = {0,0,0};
+	Percent percentGrown = 0;
+	Block* location = nullptr;
+	const Faction* faction = nullptr;
+
+	Percent getPercentGrown();
+	std::wstring getName();
+	DateTime getBirthDate();
+	ActorId getId();
+};
 
 class Actor final : public HasShape
 {	
@@ -67,6 +86,7 @@ public:
 	uint32_t m_visionRange;
 
 	Actor(Simulation& simulation, ActorId id, const std::wstring& name, const AnimalSpecies& species, DateTime birthDate, Percent percentGrown, Faction* faction, Attributes attributes);
+	Actor(ActorParamaters params);
 	Actor(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void setLocation(Block& block);
@@ -79,7 +99,7 @@ public:
 	void wait(Step duration);
 	void takeHit(Hit& hit, BodyPart& bodyPart);
 	// May be null.
-	void setFaction(const Faction* faction) { m_faction = faction; m_canReserve.setFaction(faction); }
+	void setFaction(const Faction* faction);
 	void reserveAllBlocksAtLocationAndFacing(const Block& location, Facing facing);
 	void unreserveAllBlocksAtLocationAndFacing(const Block& location, Facing facing);
 	bool isItem() const { return false; }

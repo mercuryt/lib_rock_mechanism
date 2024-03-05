@@ -1,4 +1,5 @@
 #include "simulation.h"
+#include "actor.h"
 #include "animalSpecies.h"
 #include "area.h"
 #include "config.h"
@@ -104,53 +105,19 @@ Area& Simulation::loadArea(AreaId id, std::wstring name, uint32_t x, uint32_t y,
 	m_areasById[id] = &area;
 	return area;
 }
-Actor& Simulation::createActor(const AnimalSpecies& species, Percent percentGrown, DateTime birthDate)
+Actor& Simulation::createActor(ActorParamaters params)
 {
-	assert(percentGrown > 0);
-	assert(percentGrown <= 100);
-	if(!birthDate)
-	{
-		// Create a plausible birth date.
-		Step steps;
-		if(percentGrown == 100)
-			steps = m_random.getInRange(species.stepsTillFullyGrown, species.deathAgeSteps[1]);
-		else
-			steps = util::scaleByPercent(species.stepsTillFullyGrown, percentGrown);
-		birthDate = DateTime::fromPastBySteps(steps);
-	}
-	Attributes attributes(species, percentGrown);
-	std::wstring name = util::stringToWideString(species.name) + std::to_wstring(m_nextActorId);
-	auto [iter, emplaced] = m_actors.try_emplace(
-		m_nextActorId,
-		*this,
-		m_nextActorId,
-		name,
-		species,
-		birthDate,
-		percentGrown,
-		nullptr,
-		attributes
-	);	
+	params.simulation = this;
+	auto [iter, emplaced] = m_actors.emplace(
+		params.getId(),
+		params
+	);
 	assert(emplaced);
-	++m_nextActorId;
-	Actor& output = iter->second;
-	return output;
+	return iter->second;
 }
-Actor& Simulation::createActor(const AnimalSpecies& species, Block& block, Percent percentGrown, DateTime birthDate)
+Actor& Simulation::createActor(const AnimalSpecies& species, Block& location, Percent percentGrown)
 {
-	Actor& output = createActor(species, percentGrown, birthDate);
-	output.setLocation(block);
-	block.m_area->m_hasActors.add(output);
-	return output;
-}
-Actor& Simulation::createActorWithRandomAge(const AnimalSpecies& species, Block& block)
-{
-	Percent percentLifeTime = m_random.getInRange(0, 100);
-	// Using util::scaleByPercent and util::fractionToPercent give the wrong result here for some reason.
-	Step ageSteps = ((float)species.deathAgeSteps[1] / (float)percentLifeTime) * 100.f;
-	Percent percentGrown = std::min(100, (Percent)((float)ageSteps / (float)species.stepsTillFullyGrown * 100.f));
-	auto birthDate = DateTime::fromPastBySteps(ageSteps);
-	return createActor(species, block, percentGrown, birthDate);
+	return createActor(ActorParamaters{.species = species, .percentGrown = percentGrown, .location = &location});
 }
 // Nongeneric
 // No name or id.
