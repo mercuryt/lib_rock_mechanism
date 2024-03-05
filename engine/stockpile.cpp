@@ -689,6 +689,7 @@ bool AreaHasStockPilesForFaction::isAnyHaulingAvalableFor(const Actor& actor) co
 }
 Item* AreaHasStockPilesForFaction::getHaulableItemForAt(const Actor& actor, Block& block)
 {
+	assert(actor.getFaction());
 	const Faction& faction = *actor.getFaction();
 	if(block.m_reservable.isFullyReserved(&faction))
 		return nullptr;
@@ -709,6 +710,12 @@ StockPile* AreaHasStockPilesForFaction::getStockPileFor(const Item& item) const
 		if(stockPile->accepts(item))
 			return stockPile;
 	return nullptr;
+}
+AreaHasStockPilesForFaction& AreaHasStockPiles::at(const Faction& faction) 
+{ 
+	if(!m_data.contains(&faction))
+		registerFaction(faction);
+	return m_data.at(&faction); 
 }
 void AreaHasStockPiles::load(const Json& data, DeserializationMemo& deserializationMemo)
 {

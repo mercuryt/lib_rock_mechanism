@@ -36,4 +36,5 @@ public:
 	void destroyFaction(Faction& faction);
 	Json toJson() const;
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
+	std::list<Faction>& getAll() { return m_factions; }
 };

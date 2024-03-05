@@ -723,9 +723,9 @@ void Block::loadFromJson(Json data, DeserializationMemo& deserializationMemo, ui
 	m_visible = data.contains("v");
 	if(data.contains("reservable"))
 		deserializationMemo.m_reservables[data["reservable"].get<uintptr_t>()] = &m_reservable;
-	if(data.contains("solid"))
+	if(data.contains("s"))
 	{
-		m_solid = &MaterialType::byName(data["solid"].get<std::string>());
+		m_solid = &MaterialType::byName(data["s"].get<std::string>());
 		//TODO: repetion of code on line 377 in setSolid.
 		// Remove from fluid fill queues.
 		for(Block* adjacent : m_adjacentsVector)
@@ -746,8 +746,8 @@ void Block::loadFromJson(Json data, DeserializationMemo& deserializationMemo, ui
 			else
 				m_hasBlockFeatures.construct(blockFeatureType, materialType);
 		}
-	if(data.contains("fluids"))
-		for(const Json& pair : data["fluids"])
+	if(data.contains("f"))
+		for(const Json& pair : data["f"])
 			addFluid(pair[1].get<Volume>(), *pair[0].get<const FluidType*>());
 	if(data.contains("hasDesignations"))
 		m_hasDesignations.load(data["hasDesignations"], deserializationMemo);
@@ -767,7 +767,7 @@ Json Block::toJson() const
 	if(m_reservable.hasAnyReservations())
 		data["reservable"] = reinterpret_cast<uintptr_t>(&m_reservable);
 	if(m_solid != nullptr)
-		data["solid"] = m_solid->name;
+		data["s"] = m_solid->name;
 	if(!m_hasBlockFeatures.empty())
 	{
 		data["blockFeatures"] = Json::array();
@@ -781,9 +781,9 @@ Json Block::toJson() const
 	}
 	if(m_totalFluidVolume != 0)
 	{
-		data["fluids"] = Json::array();
+		data["f"] = Json::array();
 		for(auto& [fluidType, pair] : m_fluids)
-			data["fluids"].push_back({fluidType, pair.first});
+			data["f"].push_back({fluidType, pair.first});
 	}
 	if(!m_hasDesignations.empty())
 		data["hasDesignations"] = m_hasDesignations.toJson();

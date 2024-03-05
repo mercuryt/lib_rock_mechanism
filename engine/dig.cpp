@@ -325,11 +325,14 @@ void HasDigDesignations::removeFaction(const Faction& faction)
 // If blockFeatureType is null then dig out fully rather then digging out a feature.
 void HasDigDesignations::designate(const Faction& faction, Block& block, const BlockFeatureType* blockFeatureType)
 {
-	assert(m_data.contains(&faction));
+	if(!m_data.contains(&faction))
+		addFaction(faction);
 	m_data.at(&faction).designate(block, blockFeatureType);
 }
 void HasDigDesignations::undesignate(const Faction& faction, Block& block)
 {
+	assert(m_data.contains(&faction));
+	assert(m_data.at(&faction).m_data.contains(&block)); 
 	m_data.at(&faction).undesignate(block);
 }
 void HasDigDesignations::remove(const Faction& faction, Block& block)

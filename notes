@@ -18,3 +18,5 @@ libc++ debug mode
 GLIBCXX_DEBUG (macro)
 
 optimizations to try : Boost::graph
+
+PerAreaPerFactionData is created on demand and never destroyed.

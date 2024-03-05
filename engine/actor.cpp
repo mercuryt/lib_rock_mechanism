@@ -6,10 +6,45 @@
 #include "deserializationMemo.h"
 #include "eventSchedule.hpp"
 #include "simulation.h"
+#include "types.h"
+#include "util.h"
 #include "wait.h"
 
 #include <algorithm>
 #include <iostream>
+Percent ActorParamaters::getPercentGrown()
+{
+	if(!percentGrown)
+	{
+		Percent percentLifeTime = simulation->m_random.getInRange(0, 100);
+		// Using util::scaleByPercent and util::fractionToPercent give the wrong result here for some reason.
+		Step ageSteps = ((float)species.deathAgeSteps[1] / (float)percentLifeTime) * 100.f;
+		percentGrown = std::min(100, (Percent)((float)ageSteps / (float)species.stepsTillFullyGrown * 100.f));
+		birthDate = DateTime::fromPastBySteps(ageSteps);
+	}
+	return percentGrown;
+}
+
+std::wstring ActorParamaters::getName()
+{
+	if(name.empty())
+		name = util::stringToWideString(species.name) + std::to_wstring(getId());
+	return name;
+}
+
+DateTime ActorParamaters::getBirthDate()
+{
+	if(!birthDate)
+		getPercentGrown();
+	return birthDate;
+}
+
+ActorId ActorParamaters::getId()
+{
+	if(!id)
+		id = simulation->m_nextItemId++;
+	return id;
+}
 
 Actor::Actor(Simulation& simulation, uint32_t id, const std::wstring& name, const AnimalSpecies& species, DateTime birthDate, Percent percentGrown, Faction* faction, Attributes attributes) :
 	HasShape(simulation, species.shapeForPercentGrown(percentGrown), false), m_faction(faction), m_id(id), m_name(name), m_species(species), m_birthDate(birthDate), m_alive(true), m_body(*this), m_project(nullptr), m_attributes(attributes), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canPickup(*this), m_equipmentSet(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_canReserve(faction), m_stamina(*this), m_hasUniform(*this), m_visionRange(species.visionRange)
@@ -17,6 +52,19 @@ Actor::Actor(Simulation& simulation, uint32_t id, const std::wstring& name, cons
 	// TODO: Having this line here requires making the existance of objectives mandatory at all times. Good idea?
 	//m_hasObjectives.getNext();
 }
+Actor::Actor(ActorParamaters params) : HasShape(*params.simulation, params.species.shapeForPercentGrown(params.getPercentGrown()), false),
+	m_faction(params.faction), m_id(params.getId()), m_name(params.getName()),
+	m_species(params.species), m_birthDate(params.getBirthDate()), m_alive(true), m_body(*this), m_project(nullptr), 
+	m_attributes(m_species, params.getPercentGrown()), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), 
+	m_canPickup(*this), m_equipmentSet(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, params.getPercentGrown()), 
+	m_hasObjectives(*this), m_canReserve(m_faction), m_stamina(*this), m_hasUniform(*this), m_visionRange(m_species.visionRange) 
+	{ 
+		if(params.location)
+		{
+			setLocation(*params.location);
+			m_location->m_area->m_hasActors.add(*this);
+		}
+	}
 Actor::Actor(const Json& data, DeserializationMemo& deserializationMemo) :
 	HasShape(data, deserializationMemo),
 	m_faction(data.contains("faction") ? &deserializationMemo.m_simulation.m_hasFactions.byName(data["faction"].get<std::wstring>()) : nullptr), 
@@ -142,6 +190,11 @@ void Actor::takeHit(Hit& hit, BodyPart& bodyPart)
 	m_body.getHitDepth(hit, bodyPart);
 	if(hit.depth != 0)
 		m_body.addWound(bodyPart, hit);
+}
+void Actor::setFaction(const Faction* faction) 
+{ 
+	m_faction = faction; 
+	m_canReserve.setFaction(faction); 
 }
 Mass Actor::getMass() const
 {

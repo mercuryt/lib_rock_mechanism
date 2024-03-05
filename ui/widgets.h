@@ -1,10 +1,17 @@
 #pragma once
 #include <TGUI/TGUI.hpp>
 #include "../engine/datetime.h"
-#include "../engine/plant.h"
-#include "animalSpecies.h"
 class Area;
 class Simulation;
+class Plant;
+class Block;
+struct BlockFeatureType;
+struct PlantSpecies;
+struct MaterialType;
+struct AnimalSpecies;
+struct FluidType;
+struct ItemType;
+struct Faction;
 class DateTimeUI final
 {
 	tgui::SpinControl::Ptr m_hours;
@@ -44,5 +51,10 @@ namespace widgetUtil
 	tgui::ComboBox::Ptr makeFluidTypeSelectUI();
 	inline const ItemType* lastSelectedItemType = nullptr;
 	tgui::ComboBox::Ptr makeItemTypeSelectUI();
+	inline const Faction* lastSelectedFaction = nullptr;
+	tgui::ComboBox::Ptr makeFactionSelectUI(Simulation& simulation, std::string nullLabel = "");
+	inline const BlockFeatureType* lastSelectedBlockFeatureType = nullptr;
+	tgui::ComboBox::Ptr makeBlockFeatureTypeSelectUI();
+
 	void setPadding(tgui::Widget::Ptr wigdet);
 }

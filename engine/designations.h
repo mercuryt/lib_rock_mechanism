@@ -61,7 +61,16 @@ public:
 		else
 	      		m_designations[&f].erase(bd);
 	}
-	void removeIfExists(const Faction& f, const BlockDesignation& bd) { m_designations[&f].erase(bd); }
+	void removeIfExists(const Faction& f, const BlockDesignation& bd) 
+	{ 
+		if(m_designations.contains(&f))
+		{
+			if(m_designations.at(&f).size() == 1)
+				m_designations.erase(&f);
+			else
+				m_designations[&f].erase(bd); 
+		}
+	}
 	[[nodiscard]] bool containsFaction(const Faction& faction) const { return m_designations.contains(&faction); }
 	[[nodiscard]] BlockDesignation getDisplayDesignation(const Faction& faction) const
 	{

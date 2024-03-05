@@ -21,7 +21,7 @@
 #include "stocksPanel.h"
 #include "uniformPanel.h"
 #include "actorPanel.h"
-#include "draw.h"
+#include "editFactionPanel.h"
 //#include "worldParamatersPanel.h"
 struct GameView final 
 {
@@ -46,6 +46,8 @@ class Window final
 	EditRealityView m_editRealityView;
 	EditActorView m_editActorView;
 	EditAreaView m_editAreaView;
+	EditFactionView m_editFactionView;
+	EditFactionsView m_editFactionsView;
 	std::unique_ptr<Simulation> m_simulation;
 	Area* m_area;
 	uint32_t m_scale;
@@ -105,6 +107,8 @@ public:
 	void showEditReality() { hideAllPanels(); m_editRealityView.draw(); }
 	void showEditActor(Actor& actor) { hideAllPanels(); m_editActorView.draw(actor); }
 	void showEditArea(Area* area = nullptr) { hideAllPanels(); m_editAreaView.draw(area); }
+	void showEditFaction(Faction* faction = nullptr) { hideAllPanels(); m_editFactionView.draw(faction); }
+	void showEditFactions() { hideAllPanels(); m_editFactionsView.draw(); }
 	// Select.
 	void deselectAll();
 	void selectBlock(Block& block);
@@ -123,6 +127,7 @@ public:
 	void load(std::filesystem::path path);
 	// Accessors.
 	[[nodiscard]] const Faction* getFaction() const { return m_faction;}
+	void setFaction(Faction& faction) { m_faction = &faction;}
 	[[nodiscard]] Simulation* getSimulation() { return m_simulation.get(); }
 	void setSimulation(std::unique_ptr<Simulation> simulation) { m_simulation = std::move(simulation); }
 	[[nodiscard]] Area* getArea() { return m_area; }

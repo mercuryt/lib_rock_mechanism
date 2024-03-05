@@ -106,6 +106,12 @@ bool IsPartOfFarmField::isSowingSeasonFor(const PlantSpecies& species) const
 {
 	return m_block.m_area->m_simulation.m_now.day >= species.dayOfYearForSowStart && m_block.m_area->m_simulation.m_now.day <= species.dayOfYearForSowEnd;
 }
+FarmField* IsPartOfFarmField::get(const Faction& faction)
+{ 
+	if(!m_farmFields.contains(&faction)) 
+		return nullptr; 
+	return m_farmFields.at(&faction); 
+}
 HasFarmFieldsForFaction::HasFarmFieldsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Area& a, const Faction& f) : m_area(a), m_faction(f), m_plantsNeedingFluidIsSorted(data["plantsNeedingFluidIsSorted"].get<bool>())
 {
 	for(const Json& farmFieldData : data["farmFields"])
@@ -224,10 +230,10 @@ void HasFarmFieldsForFaction::setDayOfYear(uint32_t dayOfYear)
 }
 FarmField& HasFarmFieldsForFaction::create(std::unordered_set<Block*>& blocks)
 {
-	m_farmFields.emplace_back(blocks);
+	FarmField& field = m_farmFields.emplace_back(blocks);
 	for(Block* block : blocks)
-		block->m_isPartOfFarmField.insert(m_faction, m_farmFields.back());
-	return m_farmFields.back();
+		block->m_isPartOfFarmField.insert(m_faction, field);
+	return field;
 }
 FarmField& HasFarmFieldsForFaction::create(Cuboid cuboid)
 {
@@ -306,6 +312,8 @@ void HasFarmFieldsForFaction::undesignateBlocks(std::unordered_set<Block*>& bloc
 }
 HasFarmFieldsForFaction& HasFarmFields::at(const Faction& faction)
 {
+	if(!m_data.contains(&faction))
+		registerFaction(faction);
 	return m_data.at(&faction);
 }
 void HasFarmFields::load(const Json& data, DeserializationMemo& deserializationMemo)
@@ -336,7 +344,8 @@ void HasFarmFields::unregisterFaction(const Faction& faction)
 }
 Plant* HasFarmFields::getHighestPriorityPlantForGiveFluid(const Faction& faction)
 {
-	assert(m_data.contains(&faction));
+	if(!m_data.contains(&faction))
+		return nullptr;
 	return m_data.at(&faction).getHighestPriorityPlantForGiveFluid();
 }
 void HasFarmFields::removeAllSowSeedsDesignations(Block& block)
@@ -352,18 +361,24 @@ void HasFarmFields::setDayOfYear(uint32_t dayOfYear)
 }
 bool HasFarmFields::hasGivePlantsFluidDesignations(const Faction& faction) const
 {
-	assert(m_data.contains(&faction));
+	if(!m_data.contains(&faction))
+		return false;
 	return m_data.at(&faction).hasGivePlantsFluidDesignations();
 }
 bool HasFarmFields::hasSowSeedsDesignations(const Faction& faction) const
 {
+	if(!m_data.contains(&faction))
+		return false;
 	return m_data.at(&faction).hasSowSeedsDesignations();
 }
 bool HasFarmFields::hasHarvestDesignations(const Faction& faction) const
 {
+	if(!m_data.contains(&faction))
+		return false;
 	return m_data.at(&faction).hasHarvestDesignations();
 }
 const PlantSpecies& HasFarmFields::getPlantSpeciesFor(const Faction& faction, const  Block& location) const
 {
+	assert(m_data.contains(&faction));
 	return m_data.at(&faction).getPlantSpeciesFor(location);
 }
