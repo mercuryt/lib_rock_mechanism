@@ -168,7 +168,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 							continue;
 						if(item->m_reservable.isFullyReserved(&m_project.m_faction))
 							continue;	
-						if(!itemQuery(*item))
+						if(!itemQuery.query(*item))
 							continue;
 						record(*item, projectRequirementCounts);
 						if(m_project.reservationsComplete())
@@ -181,7 +181,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 							continue;
 						if(actor->m_reservable.isFullyReserved(&m_project.m_faction))
 							continue;	
-						if(!actorQuery(*actor))
+						if(!actorQuery.query(*actor))
 							continue;
 						record(*actor, projectRequirementCounts);
 						if(m_project.reservationsComplete())

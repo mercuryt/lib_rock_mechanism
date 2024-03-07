@@ -21,6 +21,13 @@ void SimulationHasUniformsForFaction::destroyUniform(Uniform& uniform)
 	m_data.erase(uniform.name);
 }
 std::unordered_map<std::wstring, Uniform>& SimulationHasUniformsForFaction::getAll(){ return m_data; }
+
+SimulationHasUniformsForFaction& SimulationHasUniforms::at(const Faction& faction) 
+{ 
+	if(!m_data.contains(&faction))
+		registerFaction(faction);
+	return m_data.at(&faction); 
+}
 // Equip single item.
 EquipItemThreadedTask::EquipItemThreadedTask(EquipItemObjective& objective) : ThreadedTask(objective.m_actor.getThreadedTaskEngine()), m_objective(objective), m_findsPath(objective.m_actor, false) { }
 void EquipItemThreadedTask::readStep()
@@ -113,7 +120,7 @@ void EquipItemObjective::reset()
 Item* EquipItemObjective::getItemAtBlock(const Block& block)
 {
 	for(Item* item : block.m_hasItems.getAll())
-		if(m_itemQuery(*item))
+		if(m_itemQuery.query(*item))
 			return item;
 	return nullptr;
 }
@@ -230,7 +237,7 @@ Item* UniformObjective::getItemAtBlock(const Block& block)
 {
 	for(Item* item : block.m_hasItems.getAll())
 		for(auto& element : m_elementsCopy)
-			if(element.itemQuery(*item))
+			if(element.itemQuery.query(*item))
 				return item;
 	return nullptr;
 }
@@ -238,7 +245,7 @@ void UniformObjective::select(Item& item) { m_item = &item; }
 void UniformObjective::equip(Item& item)
 {
 	for(auto& element : m_elementsCopy)
-		if(element.itemQuery(item))
+		if(element.itemQuery.query(item))
 		{
 			if(item.getQuantity() >= element.quantity)
 				std::erase(m_elementsCopy, element);

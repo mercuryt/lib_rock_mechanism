@@ -19,7 +19,7 @@ Json ActorQuery::toJson() const
 	return data;
 }
 // ActorQuery, to be used to search for actors.
-bool ActorQuery::operator()(Actor& other) const
+bool ActorQuery::query(Actor& other) const
 {
 	if(actor != nullptr)
 		return actor == &other;

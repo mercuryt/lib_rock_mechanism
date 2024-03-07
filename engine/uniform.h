@@ -38,7 +38,7 @@ class SimulationHasUniforms final
 public:
 	void registerFaction(const Faction& faction) { m_data.try_emplace(&faction, faction); }
 	void unregisterFaction(const Faction& faction) { m_data.erase(&faction); }
-	SimulationHasUniformsForFaction& at(const Faction& faction) { assert(m_data.contains(&faction)); return m_data.at(&faction); }
+	SimulationHasUniformsForFaction& at(const Faction& faction);
 };
 class EquipItemThreadedTask final : public ThreadedTask
 {

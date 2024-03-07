@@ -5,6 +5,7 @@ ItemQuery::ItemQuery(const ItemType& m_itemType) : m_item(nullptr), m_itemType(&
 ItemQuery::ItemQuery(const ItemType& m_itemType, const MaterialTypeCategory& mtc) : m_item(nullptr), m_itemType(&m_itemType), m_materialTypeCategory(&mtc), m_materialType(nullptr) { }
 ItemQuery::ItemQuery(const ItemType& m_itemType, const MaterialType& mt) : m_item(nullptr), m_itemType(&m_itemType), m_materialTypeCategory(nullptr), m_materialType(&mt) { }
 ItemQuery::ItemQuery(const ItemType& m_itemType, const MaterialType* mt) : m_item(nullptr), m_itemType(&m_itemType), m_materialTypeCategory(nullptr), m_materialType(mt) { }
+ItemQuery::ItemQuery(const ItemType& m_itemType, const MaterialTypeCategory* mtc, const MaterialType* mt) : m_item(nullptr), m_itemType(&m_itemType), m_materialTypeCategory(mtc), m_materialType(mt) { }
 ItemQuery::ItemQuery(const Json& data, DeserializationMemo& deserializationMemo) :
 	m_item(data.contains("item") ? &deserializationMemo.m_simulation.getItemById(data["item"].get<ItemId>()) : nullptr),
 	m_itemType(data.contains("itemType") ? &ItemType::byName(data["itemType"].get<std::string>()) : nullptr),
@@ -23,7 +24,7 @@ Json ItemQuery::toJson() const
 		data["materialTypeCategory"] = m_materialTypeCategory->name;
 	return data;
 }
-bool ItemQuery::operator()(const Item& item) const
+bool ItemQuery::query(const Item& item) const
 {
 	if(m_item != nullptr)
 		return &item == m_item;
@@ -34,6 +35,11 @@ bool ItemQuery::operator()(const Item& item) const
 	if(m_materialType != nullptr)
 		return m_materialType == &item.m_materialType;
 	return true;
+}
+bool ItemQuery::operator==(const ItemQuery& itemQuery) const
+{
+	return m_item == itemQuery.m_item && m_itemType == itemQuery.m_itemType && 
+		m_materialTypeCategory == itemQuery.m_materialTypeCategory && m_materialType == itemQuery.m_materialType;
 }
 void ItemQuery::specalize(Item& item)
 {

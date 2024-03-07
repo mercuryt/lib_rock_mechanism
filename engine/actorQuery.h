@@ -15,7 +15,7 @@ struct ActorQuery
 	ActorQuery(Mass cw, bool cis, bool s) : carryWeight(cw), checkIfSentient(cis), sentient(s) { }
 	ActorQuery(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] bool operator()(Actor& actor) const;
+	[[nodiscard]] bool query(Actor& actor) const;
 	[[nodiscard]] static ActorQuery makeFor(Actor& a);
 	[[nodiscard]] static ActorQuery makeForCarryWeight(Mass cw);
 };

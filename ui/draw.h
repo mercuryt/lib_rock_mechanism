@@ -22,6 +22,7 @@ public:
 	void invalidOnBlock(const Block& block);
 	void colorOnBlock(const Block& block, const sf::Color color);
 	void designated(const Block& block);
+	void craftLocation(const Block& block);
 	sf::Sprite getCenteredSprite(std::string name);
 
 	void spriteAt(sf::Sprite& sprite, sf::Vector2f position, const sf::Color* color);

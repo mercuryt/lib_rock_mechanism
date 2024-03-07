@@ -1,4 +1,5 @@
 #include "window.h"
+#include "craft.h"
 #include "displayData.h"
 #include "sprite.h"
 #include <SFML/Window/Event.hpp>
@@ -16,7 +17,8 @@ constexpr sf::Mouse::Button actionMouseButton = sf::Mouse::Button::Right;
 Window::Window() : m_window(sf::VideoMode::getDesktopMode(), "Goblin Pit", sf::Style::Fullscreen), m_gui(m_window), m_view(m_window.getDefaultView()), 
 	m_mainMenuView(*this), m_loadView(*this), m_gameOverlay(*this), m_objectivePriorityView(*this), 
 	m_productionView(*this), m_uniformView(*this), m_stocksView(*this), m_actorView(*this), //m_worldParamatersView(*this),
-	m_editRealityView(*this), m_editActorView(*this), m_editAreaView(*this), m_editFactionView(*this), m_editFactionsView(*this), m_area(nullptr), m_scale(32), m_z(0), m_speed(1), m_faction(nullptr),
+	m_editRealityView(*this), m_editActorView(*this), m_editAreaView(*this), m_editFactionView(*this), m_editFactionsView(*this), 
+	m_editStockPileView(*this), m_area(nullptr), m_scale(32), m_z(0), m_speed(1), m_faction(nullptr),
 	m_minimumMillisecondsPerFrame(200), m_minimumMillisecondsPerStep(200), m_draw(*this),
 	m_simulationThread([&](){
 		while(true)
@@ -83,6 +85,7 @@ void Window::hideAllPanels()
 	m_editActorView.hide();
 	m_editFactionView.hide();
 	m_editFactionsView.hide();
+	m_editStockPileView.hide();
 	//m_worldParamatersView.hide();
 }
 void Window::startLoop()
@@ -473,8 +476,11 @@ void Window::drawView()
 	// Designated.
 	if(m_faction)
 		for(Block& block : m_area->getZLevel(m_z))
+		{
 			if(block.m_hasDesignations.containsFaction(*m_faction))
 				m_draw.designated(block);
+			m_draw.craftLocation(block);
+		}
 	// Selection Box.
 	if(m_firstCornerOfSelection && sf::Mouse::isButtonPressed(selectMouseButton))
 	{

@@ -16,10 +16,10 @@ GameOverlay::GameOverlay(Window& w) : m_window(w),
 	save->onClick([&]{ m_window.save(); });
 	auto mainMenu = tgui::Button::create("main menu");
 	layout->add(mainMenu);
-	mainMenu->onClick([&]{ m_window.showMainMenu(); });
+	mainMenu->onClick([&]{ closeMenu(); m_window.showMainMenu(); });
 	auto close = tgui::Button::create("close");
 	layout->add(close);
-	close->onClick([&]{ m_menu->setVisible(false); });
+	close->onClick([&]{ closeMenu(); });
 	//TODO: settings.
 	m_menu->add(layout);
 	m_menu->setSize(120, 90);

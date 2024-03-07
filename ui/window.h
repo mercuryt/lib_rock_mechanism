@@ -13,6 +13,7 @@
 #include "editRealityPanel.h"
 #include "editAreaPanel.h"
 #include "editActorPanel.h"
+#include "editStockPilePanel.h"
 #include "gameOverlay.h"
 #include "mainMenu.h"
 #include "objectivePriorityPanel.h"
@@ -48,6 +49,7 @@ class Window final
 	EditAreaView m_editAreaView;
 	EditFactionView m_editFactionView;
 	EditFactionsView m_editFactionsView;
+	EditStockPileView m_editStockPileView;
 	std::unique_ptr<Simulation> m_simulation;
 	Area* m_area;
 	uint32_t m_scale;
@@ -109,6 +111,7 @@ public:
 	void showEditArea(Area* area = nullptr) { hideAllPanels(); m_editAreaView.draw(area); }
 	void showEditFaction(Faction* faction = nullptr) { hideAllPanels(); m_editFactionView.draw(faction); }
 	void showEditFactions() { hideAllPanels(); m_editFactionsView.draw(); }
+	void showEditStockPile(StockPile* stockPile = nullptr) { hideAllPanels(); m_editStockPileView.draw(stockPile); }
 	// Select.
 	void deselectAll();
 	void selectBlock(Block& block);
