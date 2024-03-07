@@ -123,10 +123,14 @@ public:
 	void reenable() { m_enabled = true; } 
 	void addToProjectNeedingMoreWorkers(Actor& actor, StockPileObjective& objective);
 	void destroy();
+	void removeQuery(ItemQuery& query);
+	void addQuery(ItemQuery& query);
+	[[nodiscard]] bool contains(ItemQuery& query) const;
 	[[nodiscard]] bool isEnabled() const { return m_enabled; }
 	[[nodiscard]] bool hasProjectNeedingMoreWorkers() const { return m_projectNeedingMoreWorkers != nullptr; }
 	[[nodiscard]] Simulation& getSimulation();
 	[[nodiscard]] bool contains(Block& block) const { return m_blocks.contains(&block); }
+	[[nodiscard]] std::vector<ItemQuery>& getQueries() { return m_queries; }
 	friend class AreaHasStockPilesForFaction;
 	friend class ReenableStockPileScheduledEvent;
 	friend class StockPileProject;
@@ -237,6 +241,8 @@ public:
 	void makeProject(Item& item, Block& destination, StockPileObjective& objective);
 	void cancelProject(StockPileProject& project);
 	void destroyProject(StockPileProject& project);
+	void addQuery(StockPile& stockPile, ItemQuery query);
+	void removeQuery(StockPile& stockPile, ItemQuery query);
 	[[nodiscard]] bool isAnyHaulingAvalableFor(const Actor& actor) const;
 	[[nodiscard]] Item* getHaulableItemForAt(const Actor& actor, Block& block);
 	[[nodiscard]] StockPile* getStockPileFor(const Item& item) const;

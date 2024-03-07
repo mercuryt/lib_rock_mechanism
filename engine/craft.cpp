@@ -429,6 +429,21 @@ bool HasCraftingLocationsAndJobsForFaction::hasLocationsFor(const CraftJobType& 
 			return false;
 	return true;
 }
+std::unordered_set<const CraftStepTypeCategory*>& HasCraftingLocationsAndJobsForFaction::getStepTypeCategoriesForLocation(const Block& location)
+{
+	if(!m_stepTypeCategoriesByLocation.contains(const_cast<Block*>(&location)))
+	{
+		static std::unordered_set<const CraftStepTypeCategory*> emptySet;
+		return emptySet;
+	}
+	return m_stepTypeCategoriesByLocation.at(const_cast<Block*>(&location));
+}
+const CraftStepTypeCategory* HasCraftingLocationsAndJobsForFaction::getDisplayStepTypeCategoryForLocation(const Block& location)
+{
+	if(!m_stepTypeCategoriesByLocation.contains(const_cast<Block*>(&location)))
+		return nullptr;
+	return *m_stepTypeCategoriesByLocation.at(const_cast<Block*>(&location)).begin();
+}
 // May return nullptr;
 CraftJob* HasCraftingLocationsAndJobsForFaction::getJobForAtLocation(const Actor& actor, const SkillType& skillType, const Block& block, std::unordered_set<CraftJob*>& excludeJobs)
 {
@@ -486,4 +501,10 @@ Json HasCraftingLocationsAndJobs::toJson() const
 		data.push_back(pair);
 	}
 	return data;
+}
+HasCraftingLocationsAndJobsForFaction& HasCraftingLocationsAndJobs::at(const Faction& faction) 
+{ 
+	if(!m_data.contains(&faction))
+		addFaction(faction);
+	return m_data.at(&faction); 
 }

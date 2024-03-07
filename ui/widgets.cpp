@@ -86,11 +86,26 @@ tgui::ComboBox::Ptr widgetUtil::makePlantSpeciesSelectUI(Block* block)
 	return output;
 }
 // MaterialTypeSelectUI
-tgui::ComboBox::Ptr widgetUtil::makeMaterialSelectUI()
+tgui::ComboBox::Ptr widgetUtil::makeMaterialSelectUI(std::wstring nullLabel)
 {
 	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
 	bool selected = false;
-	output->onItemSelect([&](const tgui::String name){ lastSelectedMaterial = &MaterialType::byName(name.toStdString()); });
+	output->onItemSelect([nullLabel](const tgui::String name){ 
+		assert(!name.empty());
+		if(name == nullLabel)
+			lastSelectedMaterial = nullptr;
+		else
+			lastSelectedMaterial = &MaterialType::byName(name.toStdString()); 
+	});
+	if(!nullLabel.empty())
+	{
+		output->addItem(nullLabel, nullLabel);
+		if(!lastSelectedMaterial)
+		{
+			output->setSelectedItemById(nullLabel);
+			selected = true;
+		}
+	}
 	for(const MaterialType& materialType : MaterialType::data)
 	{
 		output->addItem(materialType.name, materialType.name);
@@ -107,12 +122,49 @@ tgui::ComboBox::Ptr widgetUtil::makeMaterialSelectUI()
 	}
 	return output;
 }
+// MaterialTypeCategorySelectUI
+tgui::ComboBox::Ptr widgetUtil::makeMaterialCategorySelectUI(std::wstring nullLabel)
+{
+	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
+	bool selected = false;
+	output->onItemSelect([nullLabel](const tgui::String name){ 
+		assert(!name.empty());
+		if(name == nullLabel)
+			lastSelectedMaterialCategory = nullptr;
+		else
+			lastSelectedMaterialCategory = &MaterialTypeCategory::byName(name.toStdString()); 
+	});
+	if(!nullLabel.empty())
+	{
+		output->addItem(nullLabel, nullLabel);
+		if(!lastSelectedMaterialCategory)
+		{
+			output->setSelectedItemById(nullLabel);
+			selected = true;
+		}
+	}
+	for(const MaterialTypeCategory& materialTypeCategory : MaterialTypeCategory::data)
+	{
+		output->addItem(materialTypeCategory.name, materialTypeCategory.name);
+		if(lastSelectedMaterialCategory && *lastSelectedMaterialCategory == materialTypeCategory)
+		{
+			output->setSelectedItemById(materialTypeCategory.name);
+			selected = true;
+		}
+		else if(!lastSelectedMaterialCategory && !selected)
+		{
+			output->setSelectedItemById(materialTypeCategory.name);
+			selected = true;
+		}
+	}
+	return output;
+}
 // AnimalSpeciesSelectUI
 tgui::ComboBox::Ptr widgetUtil::makeAnimalSpeciesSelectUI()
 {
 	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
 	bool selected = false;
-	output->onItemSelect([&](const tgui::String name){ lastSelectedAnimalSpecies = &AnimalSpecies::byName(name.toStdString()); });
+	output->onItemSelect([](const tgui::String name){ lastSelectedAnimalSpecies = &AnimalSpecies::byName(name.toStdString()); });
 	for(const AnimalSpecies& animalSpecies : AnimalSpecies::data)
 	{
 		output->addItem(animalSpecies.name, animalSpecies.name);
@@ -134,7 +186,7 @@ tgui::ComboBox::Ptr widgetUtil::makeFluidTypeSelectUI()
 {
 	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
 	bool selected = false;
-	output->onItemSelect([&](const tgui::String name){ lastSelectedFluidType = &FluidType::byName(name.toStdString()); });
+	output->onItemSelect([](const tgui::String name){ lastSelectedFluidType = &FluidType::byName(name.toStdString()); });
 	for(const FluidType& fluidType : FluidType::data)
 	{
 		output->addItem(fluidType.name, fluidType.name);
@@ -156,7 +208,7 @@ tgui::ComboBox::Ptr widgetUtil::makeItemTypeSelectUI()
 {
 	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
 	bool selected = false;
-	output->onItemSelect([&](const tgui::String name){ lastSelectedItemType = &ItemType::byName(name.toStdString()); });
+	output->onItemSelect([](const tgui::String name){ lastSelectedItemType = &ItemType::byName(name.toStdString()); });
 	for(const ItemType& itemType : ItemType::data)
 	{
 		output->addItem(itemType.name, itemType.name);
@@ -174,21 +226,21 @@ tgui::ComboBox::Ptr widgetUtil::makeItemTypeSelectUI()
 	return output;
 }
 // FactionSelectUI
-tgui::ComboBox::Ptr widgetUtil::makeFactionSelectUI(Simulation& simulation, std::string nullLabel)
+tgui::ComboBox::Ptr widgetUtil::makeFactionSelectUI(Simulation& simulation, std::wstring nullLabel)
 {
 	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
 	bool selected = false;
-	output->onItemSelect([&]{ 
+	output->onItemSelect([output, &simulation, nullLabel]{ 
 		auto id = output->getSelectedItemId();
-		if(id == "__null")
+		if(id == nullLabel)
 			lastSelectedFaction = nullptr;
 		else
 			lastSelectedFaction = &static_cast<const Faction&>(simulation.m_hasFactions.byName(id.toWideString())); 
 	});
 	if(!nullLabel.empty())
 	{
-		output->addItem(nullLabel, "__null");
-		output->setSelectedItemById("__null");
+		output->addItem(nullLabel, nullLabel);
+		output->setSelectedItemById(nullLabel);
 		selected = true;
 	}
 	for(const Faction& faction : simulation.m_hasFactions.getAll())
@@ -211,7 +263,7 @@ tgui::ComboBox::Ptr widgetUtil::makeFactionSelectUI(Simulation& simulation, std:
 tgui::ComboBox::Ptr widgetUtil::makeBlockFeatureTypeSelectUI()
 {
 	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
-	output->onItemSelect([&](const tgui::String name){ lastSelectedBlockFeatureType = &BlockFeatureType::byName(name.toStdString()); });
+	output->onItemSelect([](const tgui::String name){ lastSelectedBlockFeatureType = &BlockFeatureType::byName(name.toStdString()); });
 	bool selected = false;
 	for(const BlockFeatureType* itemType : BlockFeatureType::getAll())
 	{
@@ -224,6 +276,28 @@ tgui::ComboBox::Ptr widgetUtil::makeBlockFeatureTypeSelectUI()
 		else if(!lastSelectedBlockFeatureType && !selected)
 		{
 			output->setSelectedItemById(itemType->name);
+			selected = true;
+		}
+	}
+	return output;
+}
+// CraftStepTypeCategorySelectUI
+tgui::ComboBox::Ptr widgetUtil::makeCraftStepTypeCategorySelectUI()
+{
+	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
+	output->onItemSelect([](const tgui::String name){ lastSelectedCraftStepTypeCategory = &CraftStepTypeCategory::byName(name.toStdString()); });
+	bool selected = false;
+	for(const CraftStepTypeCategory& craftStepTypeCategory : CraftStepTypeCategory::data)
+	{
+		output->addItem(craftStepTypeCategory.name, craftStepTypeCategory.name);
+		if(lastSelectedCraftStepTypeCategory && lastSelectedCraftStepTypeCategory == &craftStepTypeCategory)
+		{
+			output->setSelectedItemById(craftStepTypeCategory.name);
+			selected = true;
+		}
+		else if(!lastSelectedCraftStepTypeCategory && !selected)
+		{
+			output->setSelectedItemById(craftStepTypeCategory.name);
 			selected = true;
 		}
 	}

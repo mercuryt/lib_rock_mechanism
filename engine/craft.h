@@ -237,6 +237,8 @@ public:
 	// To be used by the UI.
 	[[nodiscard]] bool hasLocationsFor(const CraftJobType& craftJobType) const;
 	[[nodiscard]] std::list<CraftJob>& getAllJobs() { return m_jobs; }
+	[[nodiscard]] std::unordered_set<const CraftStepTypeCategory*>& getStepTypeCategoriesForLocation(const Block& location);
+	[[nodiscard]] const CraftStepTypeCategory* getDisplayStepTypeCategoryForLocation(const Block& location);
 	// May return nullptr;
 	CraftJob* getJobForAtLocation(const Actor& actor, const SkillType& skillType, const Block& block, std::unordered_set<CraftJob*>& excludeJobs);
 	std::pair<CraftJob*, Block*> getJobAndLocationForWhileExcluding(const Actor& actor, const SkillType& skillType, std::unordered_set<CraftJob*>& excludeJobs);
@@ -256,5 +258,5 @@ public:
 	void addFaction(const Faction& faction) { m_data.try_emplace(&faction, faction); }
 	void removeFaction(const Faction& faction) { m_data.erase(&faction); }
 	void maybeRemoveLocation(Block& location) { for(auto& pair : m_data) pair.second.maybeRemoveLocation(location); }
-	[[nodiscard]] HasCraftingLocationsAndJobsForFaction& at(const Faction& faction) { assert(m_data.contains(&faction)); return m_data.at(&faction); }
+	[[nodiscard]] HasCraftingLocationsAndJobsForFaction& at(const Faction& faction);
 };

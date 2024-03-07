@@ -12,6 +12,8 @@ struct AnimalSpecies;
 struct FluidType;
 struct ItemType;
 struct Faction;
+struct MaterialTypeCategory;
+struct CraftStepTypeCategory;
 class DateTimeUI final
 {
 	tgui::SpinControl::Ptr m_hours;
@@ -44,7 +46,9 @@ namespace widgetUtil
 	inline const PlantSpecies* lastSelectedPlantSpecies = nullptr;
 	tgui::ComboBox::Ptr makePlantSpeciesSelectUI(Block* block);
 	inline const MaterialType* lastSelectedMaterial = nullptr;
-	tgui::ComboBox::Ptr makeMaterialSelectUI();
+	tgui::ComboBox::Ptr makeMaterialSelectUI(std::wstring nullLabel = L"");
+	inline const MaterialTypeCategory* lastSelectedMaterialCategory = nullptr;
+	tgui::ComboBox::Ptr makeMaterialCategorySelectUI(std::wstring nullLabel = L"");
 	inline const AnimalSpecies* lastSelectedAnimalSpecies = nullptr;
 	tgui::ComboBox::Ptr makeAnimalSpeciesSelectUI();
 	inline const FluidType* lastSelectedFluidType = nullptr;
@@ -52,9 +56,11 @@ namespace widgetUtil
 	inline const ItemType* lastSelectedItemType = nullptr;
 	tgui::ComboBox::Ptr makeItemTypeSelectUI();
 	inline const Faction* lastSelectedFaction = nullptr;
-	tgui::ComboBox::Ptr makeFactionSelectUI(Simulation& simulation, std::string nullLabel = "");
+	tgui::ComboBox::Ptr makeFactionSelectUI(Simulation& simulation, std::wstring nullLabel = L"");
 	inline const BlockFeatureType* lastSelectedBlockFeatureType = nullptr;
 	tgui::ComboBox::Ptr makeBlockFeatureTypeSelectUI();
+	inline const CraftStepTypeCategory* lastSelectedCraftStepTypeCategory = nullptr;
+	tgui::ComboBox::Ptr makeCraftStepTypeCategorySelectUI();
 
 	void setPadding(tgui::Widget::Ptr wigdet);
 }

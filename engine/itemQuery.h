@@ -19,9 +19,11 @@ public:
 	ItemQuery(const ItemType& m_itemType, const MaterialTypeCategory& mtc);
 	ItemQuery(const ItemType& m_itemType, const MaterialType& mt);
 	ItemQuery(const ItemType& m_itemType, const MaterialType* mt);
+	ItemQuery(const ItemType& m_itemType, const MaterialTypeCategory* mtc, const MaterialType* mt);
 	ItemQuery(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	bool operator()(const Item& item) const;
+	[[nodiscard]] Json toJson() const;
 	void specalize(Item& item);
 	void specalize(const MaterialType& materialType);
+	[[nodiscard]] bool query(const Item& item) const;
+	[[nodiscard]] bool operator==(const ItemQuery& itemQuery) const;
 };

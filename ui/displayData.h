@@ -47,5 +47,7 @@ namespace displayData
 	inline constexpr float minimumFluidVolumeToSeeFromAboveLevelRatio = 0.75;
 	inline static sf::Color stockPileColor{168, 127, 50, 128};
 	inline static sf::Color farmFieldColor{133, 82, 38, 128};
+	inline static sf::Color contextMenuHoverableColor = sf::Color::Blue;
+	inline static sf::Color contextMenuUnhoverableColor = sf::Color::Black;
 	void load();
 }

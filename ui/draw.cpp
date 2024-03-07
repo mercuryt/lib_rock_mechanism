@@ -260,6 +260,15 @@ void Draw::designated(const Block& block)
 	};
 	spriteOnBlockCentered(block, designationSprites.at(designation), &displayData::selectColor);
 }
+void Draw::craftLocation(const Block& block)
+{
+	const CraftStepTypeCategory* craftDisplay = block.m_area->m_hasCraftingLocationsAndJobs.at(*m_window.getFaction()).getDisplayStepTypeCategoryForLocation(block);
+	if(craftDisplay)
+	{
+		static sf::Sprite craftSpot = getCenteredSprite("tool");
+		spriteOnBlockCentered(block, craftSpot, &displayData::selectColor);
+	}
+}
 sf::Sprite Draw::getCenteredSprite(std::string name)
 {
 	auto pair = sprites::make(name);

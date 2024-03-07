@@ -55,7 +55,7 @@ void EditFactionView::draw(Faction* faction)
 		auto addEnemyLabel = tgui::Label::create("add enemy faction");
 		m_panel->add(addEnemyLabel);
 		addEnemyLabel->setPosition(tgui::bindRight(nameUI) + 10, tgui::bindTop(nameUI));
-		auto addEnemyUI = widgetUtil::makeFactionSelectUI(*m_window.getSimulation(), "select");
+		auto addEnemyUI = widgetUtil::makeFactionSelectUI(*m_window.getSimulation(), L"select");
 		addEnemyUI->setPosition(tgui::bindLeft(addEnemyLabel), tgui::bindBottom(addEnemyLabel) + 10);
 		addEnemyUI->onItemSelect([this, faction](tgui::String id){
 			if(id != "__null")
@@ -88,7 +88,7 @@ void EditFactionView::draw(Faction* faction)
 		auto addAllyLabel = tgui::Label::create("add ally faction");
 		m_panel->add(addAllyLabel);
 		addAllyLabel->setPosition(tgui::bindRight(addEnemyLabel) + 10, tgui::bindTop(nameUI));
-		auto addAllyUI = widgetUtil::makeFactionSelectUI(*m_window.getSimulation(), "select");
+		auto addAllyUI = widgetUtil::makeFactionSelectUI(*m_window.getSimulation(), L"select");
 		addAllyUI->setPosition(tgui::bindLeft(addAllyLabel), tgui::bindBottom(addAllyLabel) + 10);
 		addAllyUI->onItemSelect([this, faction](tgui::String id){
 			if(id != "__null")

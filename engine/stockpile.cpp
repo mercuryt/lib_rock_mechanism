@@ -4,6 +4,7 @@
 #include "config.h"
 #include "deserializationMemo.h"
 #include "item.h"
+#include "itemQuery.h"
 #include "rain.h"
 #include "reservable.h"
 #include "simulation.h"
@@ -11,6 +12,7 @@
 #include <cwchar>
 #include <functional>
 #include <memory>
+#include <string>
 //Input
 void StockPileCreateInputAction::execute()
 {
@@ -292,7 +294,7 @@ Json StockPile::toJson() const
 bool StockPile::accepts(const Item& item) const 
 {
 	for(const ItemQuery& itemQuery : m_queries)
-		if(itemQuery(item))
+		if(itemQuery.query(item))
 			return true;
 	return false;
 }
@@ -365,6 +367,20 @@ void StockPile::destroy()
 	std::vector<Block*> blocks(m_blocks.begin(), m_blocks.end());
 	for(Block* block : blocks)
 		removeBlock(*block);
+}
+bool StockPile::contains(ItemQuery& query) const
+{
+	return std::find(m_queries.begin(), m_queries.end(), query) != m_queries.end();
+}
+void StockPile::addQuery(ItemQuery& query)
+{
+	assert(!contains(query));
+	m_queries.push_back(query);
+}
+void StockPile::removeQuery(ItemQuery& query)
+{
+	assert(contains(query));
+	std::erase_if(m_queries, [&query](const ItemQuery& q){ return &q == &query; });
 }
 void BlockIsPartOfStockPiles::recordMembership(StockPile& stockPile)
 {
@@ -649,15 +665,18 @@ void AreaHasStockPilesForFaction::setUnavailable(StockPile& stockPile)
 {
 	for(ItemQuery& itemQuery : stockPile.m_queries)
 		m_availableStockPilesByItemType.at(itemQuery.m_itemType).erase(&stockPile);
-	for(Item* item : m_itemsWithDestinationsByStockPile.at(&stockPile))
+	if(m_itemsWithDestinationsByStockPile.contains(&stockPile))
 	{
-		StockPile* newStockPile = getStockPileFor(*item);
-		if(newStockPile == nullptr)
-			m_itemsWithoutDestinationsByItemType[&item->m_itemType].insert(item);
-		else
-			m_itemsWithDestinationsByStockPile[newStockPile].insert(item);
+		for(Item* item : m_itemsWithDestinationsByStockPile.at(&stockPile))
+		{
+			StockPile* newStockPile = getStockPileFor(*item);
+			if(newStockPile == nullptr)
+				m_itemsWithoutDestinationsByItemType[&item->m_itemType].insert(item);
+			else
+				m_itemsWithDestinationsByStockPile[newStockPile].insert(item);
+		}
+		m_itemsWithDestinationsByStockPile.erase(&stockPile);
 	}
-	m_itemsWithDestinationsByStockPile.erase(&stockPile);
 }
 void AreaHasStockPilesForFaction::makeProject(Item& item, Block& destination, StockPileObjective& objective)
 {
@@ -681,6 +700,23 @@ void AreaHasStockPilesForFaction::destroyProject(StockPileProject& project)
 		m_projectsByItem.erase(&project.m_item);
 	else
 		m_projectsByItem.at(&project.m_item).remove(project);
+}
+
+void AreaHasStockPilesForFaction::addQuery(StockPile& stockPile, ItemQuery query)
+{
+	stockPile.addQuery(query);
+	assert(query.m_itemType);
+	m_availableStockPilesByItemType[query.m_itemType].insert(&stockPile);
+}
+void AreaHasStockPilesForFaction::removeQuery(StockPile& stockPile, ItemQuery query)
+{
+	stockPile.removeQuery(query);
+	assert(query.m_itemType);
+	assert(m_availableStockPilesByItemType.contains(query.m_itemType));
+	if(m_availableStockPilesByItemType.at(query.m_itemType).size() == 1)
+		m_availableStockPilesByItemType.erase(query.m_itemType);
+	else
+		m_availableStockPilesByItemType[query.m_itemType].insert(&stockPile);
 }
 bool AreaHasStockPilesForFaction::isAnyHaulingAvalableFor(const Actor& actor) const
 {
