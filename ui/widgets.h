@@ -14,12 +14,11 @@ struct ItemType;
 struct Faction;
 struct MaterialTypeCategory;
 struct CraftStepTypeCategory;
-class DateTimeUI final
+struct DateTimeUI final
 {
 	tgui::SpinControl::Ptr m_hours;
 	tgui::SpinControl::Ptr m_days;
 	tgui::SpinControl::Ptr m_years;
-public:
 	tgui::Grid::Ptr m_widget;
 	DateTimeUI();
 	DateTimeUI(uint8_t hours, uint8_t days, uint8_t years);

@@ -14,6 +14,16 @@ EditActorView::EditActorView(Window& window) : m_window(window), m_panel(tgui::P
 }
 void EditActorView::draw(Actor& actor)
 {
+	auto ageUI = tgui::Label::create();
+	auto strengthUI = tgui::Label::create();
+	auto dextarityUI = tgui::Label::create();
+	auto agilityUI = tgui::Label::create();
+	std::function<void()> update = [&actor, ageUI, strengthUI, dextarityUI, agilityUI]{
+		ageUI->setText(std::to_string(actor.getAgeInYears()));
+		strengthUI->setText(std::to_string(actor.m_attributes.getStrength()));
+		dextarityUI->setText(std::to_string(actor.m_attributes.getDextarity()));
+		agilityUI->setText(std::to_string(actor.m_attributes.getAgility()));
+	};
 	m_panel->removeAllWidgets();
 	m_actor = &actor;
 	auto layoutGrid = tgui::Grid::create();
@@ -22,44 +32,98 @@ void EditActorView::draw(Actor& actor)
 
 	auto basicInfoGrid = tgui::Grid::create();
 	layoutGrid->addWidget(basicInfoGrid, ++gridCount, 1);
-	basicInfoGrid->addWidget(tgui::Label::create("name"), 1, 1);
+	basicInfoGrid->addWidget(tgui::Label::create("name"), 0, 0);
 	auto nameUI = tgui::EditBox::create();
 	nameUI->setText(actor.m_name);
 	nameUI->onTextChange([&actor](const tgui::String& value){ actor.m_name = value.toWideString(); });
-	basicInfoGrid->addWidget(nameUI, 1, 2);
-	basicInfoGrid->addWidget(tgui::Label::create("date of birth"), 2, 1);
+	basicInfoGrid->addWidget(nameUI, 0, 1);
+	basicInfoGrid->addWidget(tgui::Label::create("date of birth"), 0, 2);
 	DateTimeUI dateOfBirth(actor.m_birthDate);
-	basicInfoGrid->addWidget(dateOfBirth.m_widget, 2, 2);
+	dateOfBirth.m_hours->onValueChange([this, update](float value){ 
+		m_actor->m_birthDate.hour = value; 
+		update();
+	});
+	dateOfBirth.m_days->onValueChange([this, update](float value){ 
+		m_actor->m_birthDate.day = value; 
+		update();
+	});
+	dateOfBirth.m_years->onValueChange([this, update](float value){ 
+		m_actor->m_birthDate.year = value; 
+		update();
+	});
+	basicInfoGrid->addWidget(dateOfBirth.m_widget, 0, 3);
+	basicInfoGrid->addWidget(tgui::Label::create("age"), 0, 4);
+	basicInfoGrid->addWidget(ageUI, 0, 5);
 
 	// Attributes.
 	layoutGrid->addWidget(tgui::Label::create("attributes"), ++gridCount, 1);
 	auto attributeGrid = tgui::Grid::create();
 	layoutGrid->addWidget(attributeGrid, ++gridCount, 1);
+	attributeGrid->addWidget(tgui::Label::create("+"), 1, 0);
+	attributeGrid->addWidget(tgui::Label::create("*"), 2, 0);
 	// Strength
-	attributeGrid->addWidget(tgui::Label::create("strength"), 1, 1);
-	auto strengthModifierUI = tgui::SpinControl::create();
-	strengthModifierUI->setMaximum(INT32_MAX);
-	strengthModifierUI->setMinimum(-(float)INT32_MAX);
-	strengthModifierUI->setValue(actor.m_attributes.getStrength());
-	attributeGrid->addWidget(strengthModifierUI, 2, 1);
-	strengthModifierUI->onValueChange([&actor](const float value){ actor.m_attributes.setStrengthBonusOrPenalty(value); });
+	attributeGrid->addWidget(tgui::Label::create("strength"), 0, 1);
+	auto strengthBonusOrPenaltyUI = tgui::SpinControl::create();
+	strengthBonusOrPenaltyUI->setMaximum(1000);
+	strengthBonusOrPenaltyUI->setMinimum(-1000);
+	strengthBonusOrPenaltyUI->setValue(actor.m_attributes.getStrengthBonusOrPenalty());
+	attributeGrid->addWidget(strengthBonusOrPenaltyUI, 1, 1);
+	strengthBonusOrPenaltyUI->onValueChange([&actor, update](const float value){ 
+		actor.m_attributes.setStrengthBonusOrPenalty(value); 
+		update();
+	});
+	auto strengthMultiplierUI = tgui::SpinControl::create();
+	strengthMultiplierUI->setMaximum(1000);
+	strengthMultiplierUI->setMinimum(1);
+	strengthMultiplierUI->setValue(actor.m_attributes.getStrengthModifier());
+	attributeGrid->addWidget(strengthMultiplierUI, 2, 1);
+	strengthMultiplierUI->onValueChange([&actor, update](const float value){ 
+		actor.m_attributes.setStrengthModifier(value); 
+		update();
+	});
+	attributeGrid->addWidget(strengthUI, 4, 1);
 	// Dextarity
-	attributeGrid->addWidget(tgui::Label::create("dextarity"), 1, 2);
-	auto dextarityModifierUI = tgui::SpinControl::create();
-	dextarityModifierUI->setMaximum(UINT32_MAX);
-	dextarityModifierUI->setMinimum(1);
-	dextarityModifierUI->setValue(actor.m_attributes.getDextarity());
-	attributeGrid->addWidget(dextarityModifierUI, 2, 2);
-	dextarityModifierUI->onValueChange([&actor](const float value){ actor.m_attributes.setDextarityBonusOrPenalty(value); });
+	attributeGrid->addWidget(tgui::Label::create("dextarity"), 0, 2);
+	auto dextarityBonusOrPenaltyUI = tgui::SpinControl::create();
+	dextarityBonusOrPenaltyUI->setMaximum(1000);
+	dextarityBonusOrPenaltyUI->setMinimum(-1000);
+	dextarityBonusOrPenaltyUI->setValue(actor.m_attributes.getDextarityBonusOrPenalty());
+	attributeGrid->addWidget(dextarityBonusOrPenaltyUI, 1, 2);
+	dextarityBonusOrPenaltyUI->onValueChange([&actor, update](const float value){
+	       	actor.m_attributes.setDextarityBonusOrPenalty(value); 
+		update();
+	});
+	auto dextarityMultiplierUI = tgui::SpinControl::create();
+	dextarityMultiplierUI->setMaximum(1000);
+	dextarityMultiplierUI->setMinimum(1);
+	dextarityMultiplierUI->setValue(actor.m_attributes.getDextarityModifier());
+	attributeGrid->addWidget(dextarityMultiplierUI, 2, 2);
+	dextarityMultiplierUI->onValueChange([&actor, update](const float value){ 
+		actor.m_attributes.setDextarityModifier(value); 
+		update();
+	});
+	attributeGrid->addWidget(dextarityUI, 4, 2);
 	// Agility
-	attributeGrid->addWidget(tgui::Label::create("agility"), 1, 3);
-	auto agilityModifierUI = tgui::SpinControl::create();
-	agilityModifierUI->setMaximum(UINT32_MAX);
-	agilityModifierUI->setMinimum(1);
-	agilityModifierUI->setValue(actor.m_attributes.getAgility());
-	attributeGrid->addWidget(agilityModifierUI, 2, 3);
-	agilityModifierUI->onValueChange([&actor](const float value){ actor.m_attributes.setAgilityBonusOrPenalty(value); });
-
+	attributeGrid->addWidget(tgui::Label::create("agility"), 0, 3);
+	auto agilityBonusOrPenaltyUI = tgui::SpinControl::create();
+	agilityBonusOrPenaltyUI->setMaximum(1000);
+	agilityBonusOrPenaltyUI->setMinimum(-1000);
+	agilityBonusOrPenaltyUI->setValue(actor.m_attributes.getAgilityBonusOrPenalty());
+	attributeGrid->addWidget(agilityBonusOrPenaltyUI, 1, 3);
+	agilityBonusOrPenaltyUI->onValueChange([&actor, update](const float value){ 
+		actor.m_attributes.setAgilityBonusOrPenalty(value); 
+		update();
+	});
+	auto agilityMultiplierUI = tgui::SpinControl::create();
+	agilityMultiplierUI->setMaximum(1000);
+	agilityMultiplierUI->setMinimum(1);
+	agilityMultiplierUI->setValue(actor.m_attributes.getAgilityModifier());
+	attributeGrid->addWidget(agilityMultiplierUI, 2, 3);
+	agilityMultiplierUI->onValueChange([&actor, update](const float value){ 
+		actor.m_attributes.setAgilityModifier(value); 
+		update();
+	});
+	attributeGrid->addWidget(agilityUI, 4, 3);
 	// Skills.
 	layoutGrid->addWidget(tgui::Label::create("skills"), ++gridCount, 1);
 	auto skillsGrid = tgui::Grid::create();
@@ -170,22 +234,6 @@ void EditActorView::draw(Actor& actor)
 			draw(*m_actor);
 		});
 	});
-	// Uniform
-	auto uniformUI = tgui::ComboBox::create();
-	layoutGrid->addWidget(uniformUI, ++gridCount, 1);
-	uniformUI->onItemSelect([&](const tgui::String& uniformName){
-		if(!m_actor->getFaction())
-			return;
-		Uniform& uniform = m_window.getSimulation()->m_hasUniforms.at(*m_actor->getFaction()).at(uniformName.toWideString());
-		m_actor->m_hasUniform.set(uniform);
-	});
-	if(m_actor->getFaction())
-	{
-		for(auto& pair : m_window.getSimulation()->m_hasUniforms.at(*m_window.getFaction()).getAll())
-			uniformUI->addItem(pair.first);
-		if(actor.m_hasUniform.exists())
-			uniformUI->setSelectedItem(actor.m_hasUniform.get().name);
-	}
 	// Wounds.
 	layoutGrid->addWidget(tgui::Label::create("wounds"), ++gridCount, 1);
 	auto woundsGrid = tgui::Grid::create();
@@ -204,10 +252,29 @@ void EditActorView::draw(Actor& actor)
 		++woundCount;
 	}
 	//TODO: create / remove wound. Amputations.
-	// Objective priority button.
-	auto showObjectivePriority = tgui::Button::create("priorities");
-	layoutGrid->addWidget(showObjectivePriority, ++gridCount, 1);
-	showObjectivePriority->onClick([&]{ m_window.showObjectivePriority(*m_actor); });
+	if(m_actor->isSentient())
+	{
+		// Objective priority button.
+		auto showObjectivePriority = tgui::Button::create("priorities");
+		layoutGrid->addWidget(showObjectivePriority, ++gridCount, 1);
+		showObjectivePriority->onClick([&]{ m_window.showObjectivePriority(*m_actor); });
+		if(m_actor->getFaction())
+		{
+			// Uniform
+			auto uniformUI = tgui::ComboBox::create();
+			layoutGrid->addWidget(uniformUI, ++gridCount, 1);
+			uniformUI->onItemSelect([&](const tgui::String& uniformName){
+				if(!m_actor->getFaction())
+					return;
+				Uniform& uniform = m_window.getSimulation()->m_hasUniforms.at(*m_actor->getFaction()).at(uniformName.toWideString());
+				m_actor->m_hasUniform.set(uniform);
+			});
+			for(auto& pair : m_window.getSimulation()->m_hasUniforms.at(*m_window.getFaction()).getAll())
+				uniformUI->addItem(pair.first);
+			if(actor.m_hasUniform.exists())
+				uniformUI->setSelectedItem(actor.m_hasUniform.get().name);
+		}
+	}
 	// Close button.
 	auto close = tgui::Button::create("close");
 	layoutGrid->addWidget(close, ++gridCount, 1);
@@ -217,4 +284,5 @@ void EditActorView::draw(Actor& actor)
 	layoutGrid->setOrigin(0.5, 0);
 	layoutGrid->setPosition("50%", 0);
 	m_panel->setVisible(true);
+	update();
 }

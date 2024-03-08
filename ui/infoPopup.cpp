@@ -133,7 +133,7 @@ void InfoPopup::display(Actor& actor)
 	auto more = tgui::Button::create("more");
 	add(more);
 	more->onClick([this, &actor]{ m_window.showActorDetail(actor); });
-	if(m_window.m_editMode || (m_window.getFaction() && m_window.getFaction() == actor.getFaction()))
+	if(actor.isSentient() && (m_window.m_editMode || (m_window.getFaction() && m_window.getFaction() == actor.getFaction())))
 	{
 		auto priorities = tgui::Button::create("priorities");
 		add(priorities);
