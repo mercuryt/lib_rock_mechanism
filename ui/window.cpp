@@ -182,7 +182,6 @@ void Window::startLoop()
 									showGame();
 							else
 							{
-								assert(false);
 								showGame();
 							}
 							break;

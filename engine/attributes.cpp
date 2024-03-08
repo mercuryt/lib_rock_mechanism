@@ -22,8 +22,9 @@ Attribute::Attribute(const Json& data, const uint32_t& speciesNewbornValue, cons
 	baseModifierPercent(data["baseModifierPercent"].get<Percent>()),
 	bonusOrPenalty(data["bonusOrPenalty"].get<int32_t>())
 { setPercentGrown(percentGrown); }
-void Attributes::updatePercentGrown(Percent percentGrown)
+void Attributes::updatePercentGrown(Percent pg)
 {
+	percentGrown = pg;
 	strength.setPercentGrown(percentGrown);
 	dextarity.setPercentGrown(percentGrown);
 	agility.setPercentGrown(percentGrown);
