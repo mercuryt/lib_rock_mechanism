@@ -119,7 +119,7 @@
 	"unitsBodyMassPerUnitFluidConsumed": 10000000,
 	"baseMoveCost": 50,
 	"goUpMoveCost": 100,
-	"wanderDistanceModifier": 8,
+	"wanderDistanceModifier": 0.1,
 	"secondsToDelayBeforeTryingAgainToCompleteAnObjective": 2000,
 	"hitScaleModifier": 10,
 	"hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea": 0.2,

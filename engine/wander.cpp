@@ -13,7 +13,7 @@ void WanderThreadedTask::readStep()
 	{
 		lastBlock = &block;
 		Random& random = m_objective.m_actor.getSimulation().m_random;
-		return random.percentChance(block.taxiDistance(*m_objective.m_actor.m_location) * Config::wanderDistanceModifier);
+		return random.percentChance((float)block.taxiDistance(*m_objective.m_actor.m_location) * Config::wanderDistanceModifier);
 	};
 	m_findsPath.pathToPredicate(condition);
 	if(!m_findsPath.found() && lastBlock != nullptr)

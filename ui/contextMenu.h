@@ -36,6 +36,7 @@ public:
 	void drawFarmFieldControls(Block& block);
 	void drawStockPileControls(Block& block);
 	void drawCraftControls(Block& block);
+	void drawWoodCuttingControls(Block& block);
 	void hide();
 	ContextMenuSegment& makeSubmenu(size_t index);
 	[[nodiscard]] bool isVisible() const { return m_root.m_panel->isVisible(); }

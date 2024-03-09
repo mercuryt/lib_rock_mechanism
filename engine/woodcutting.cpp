@@ -300,7 +300,8 @@ void HasWoodCuttingDesignations::removeFaction(const Faction& faction)
 // If blockFeatureType is null then woodCutting out fully rather then woodCuttingging out a feature.
 void HasWoodCuttingDesignations::designate(const Faction& faction, Block& block)
 {
-	assert(m_data.contains(&faction));
+	if(!m_data.contains(&faction))
+		addFaction(faction);
 	m_data.at(&faction).designate(block);
 }
 void HasWoodCuttingDesignations::undesignate(const Faction& faction, Block& block)

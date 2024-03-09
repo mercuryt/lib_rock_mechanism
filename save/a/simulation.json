@@ -1,1 +1,1 @@
-{"areaIds":[1],"factions":{"factions":[{"allies":[],"enemies":[],"name":[82,101,110,101,103,97,100,101,32,71,111,98,108,105,110,115]}]},"name":[97],"nextActorId":1,"nextAreaId":2,"nextItemId":84,"now":{"day":50,"hour":12,"year":100},"step":547}
+{"areaIds":[1],"factions":{"factions":[{"allies":[],"enemies":[],"name":[82,101,110,101,103,97,100,101,32,71,111,98,108,105,110,115]}]},"name":[97],"nextActorId":1,"nextAreaId":2,"nextItemId":84,"now":{"day":50,"hour":12,"year":100},"step":547, "hourEventStart": 1}

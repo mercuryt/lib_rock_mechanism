@@ -49,5 +49,6 @@ namespace displayData
 	inline static sf::Color farmFieldColor{133, 82, 38, 128};
 	inline static sf::Color contextMenuHoverableColor = sf::Color::Blue;
 	inline static sf::Color contextMenuUnhoverableColor = sf::Color::Black;
+	inline static sf::Color actorOutlineColor = sf::Color::Blue;
 	void load();
 }

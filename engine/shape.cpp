@@ -3,7 +3,7 @@
 #include "util.h"
 #include <string>
 #include <sys/types.h>
-Shape::Shape(const std::string n, std::vector<std::array<int32_t, 4>> p) : name(n), positions(p), isMultiTile(positions.size() != 1)
+Shape::Shape(const std::string n, std::vector<std::array<int32_t, 4>> p, uint32_t ds) : name(n), positions(p), displayScale(ds), isMultiTile(positions.size() != 1)
 {
 	for(uint8_t i = 0; i < 4; ++i)
 	{
@@ -11,7 +11,8 @@ Shape::Shape(const std::string n, std::vector<std::array<int32_t, 4>> p) : name(
 		adjacentOffsetsCache[i] = makeAdjacentPositionsWithFacing(i);
 	}
 }
-Shape::Shape(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) : name(""), isMultiTile(data["positions"].size() != 1)
+// Runtime shapes never have display scale other then 1.
+Shape::Shape(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) : name(""), displayScale(1), isMultiTile(data["positions"].size() != 1)
 {
 	for(const Json& position : data["positions"])
 	{
@@ -106,7 +107,8 @@ void  SimulationHasShapes::loadFromName(std::string name)
 		int v = tokens[i+3];
 		positions.push_back({x, y, z, v});
 	}
-	m_shapes.try_emplace(name, name, positions);
+	// Runtime shapes always have display scale = 1
+	m_shapes.try_emplace(name, name, positions, 1);
 }
 Json SimulationHasShapes::toJson() const
 {
@@ -124,7 +126,8 @@ const Shape& SimulationHasShapes::mutateAdd(const Shape& shape, std::array<int32
 	std::string name = makeName(positions);
 	if(m_shapes.contains(name))
 		return m_shapes.at(name);
-	auto pair = m_shapes.try_emplace(name, name, positions);
+	// Runtime shapes always have display scale = 1
+	auto pair = m_shapes.try_emplace(name, name, positions, 1);
 	assert(pair.second);
 	const Shape& output = pair.first->second;
 	m_namesByShape[&output] = name;

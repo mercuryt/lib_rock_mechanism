@@ -276,12 +276,22 @@ sf::Sprite Draw::getCenteredSprite(std::string name)
 	return pair.first;
 }
 // Origin is assumed to already be set in sprite on block.
-void Draw::spriteOnBlockWithScale(const Block& block, sf::Sprite& sprite, float scale, const sf::Color* color)
+void Draw::spriteOnBlockWithScaleCentered(const Block& block, sf::Sprite& sprite, float scale, const sf::Color* color)
 {
 	float windowScale = m_window.m_scale;
 	scale = scale * (windowScale / (float)displayData::defaultScale);
 	sprite.setScale(scale, scale);
 	sprite.setPosition(((float)block.m_x + 0.5f) * windowScale, ((float)block.m_y + 0.5f) * windowScale);
+	if(color)
+		sprite.setColor(*color);
+	m_window.getRenderWindow().draw(sprite);
+}
+void Draw::spriteOnBlockWithScale(const Block& block, sf::Sprite& sprite, float scale, const sf::Color* color)
+{
+	float windowScale = m_window.m_scale;
+	scale = scale * (windowScale / (float)displayData::defaultScale);
+	sprite.setScale(scale, scale);
+	sprite.setPosition((float)block.m_x * windowScale, (float)block.m_y * windowScale);
 	if(color)
 		sprite.setColor(*color);
 	m_window.getRenderWindow().draw(sprite);
@@ -362,13 +372,52 @@ void Draw::nonGroundCoverPlant(const Block& block)
 	// Ground cover plants are drawn with floors.
 	if(display.groundCover)
 		return;
-	auto pair = sprites::make(display.image);
-	//TODO: color
-	pair.first.setOrigin(pair.second);
-	float scale = plant.m_blocks.size() == 1 ? ((float)plant.getGrowthPercent() / 100.f) : 1;
-	spriteOnBlockWithScale(block, pair.first, scale);
-	if(m_window.getSelectedPlants().contains(const_cast<Plant*>(&plant)))
-		outlineOnBlock(block, displayData::selectColor);
+	if(plant.m_plantSpecies.isTree && plant.m_blocks.size() != 1)
+	{
+		if(block == *plant.m_location)
+		{
+			static sf::Sprite trunk = getCenteredSprite("trunk");
+			spriteOnBlockCentered(block, trunk);
+		}
+		else 
+		{
+			if(block.m_x == plant.m_location->m_x && block.m_y == plant.m_location->m_y)
+			{
+				if(block.getBlockAbove()->m_hasPlant.exists() && block.getBlockAbove()->m_hasPlant.get() == plant)
+				{
+					static sf::Sprite trunk = getCenteredSprite("trunkWithBranches");
+					spriteOnBlockCentered(block, trunk);
+					static sf::Sprite trunkLeaves = getCenteredSprite("trunkLeaves");
+					spriteOnBlockCentered(block, trunkLeaves);
+				}
+				else 
+				{
+					static sf::Sprite treeTop = getCenteredSprite(display.image);
+					spriteOnBlockCentered(block, treeTop);
+				}
+			}
+			else
+			{
+				float angle = 45.f * block.facingToSetWhenEnteringFromIncludingDiagonal(*plant.m_location);
+				static sf::Sprite branch = getCenteredSprite("branch");
+				branch.setRotation(angle);
+				spriteOnBlockCentered(block, branch);
+				static sf::Sprite branchLeaves = getCenteredSprite("branchLeaves");
+				branchLeaves.setRotation(angle);
+				spriteOnBlockCentered(block, branchLeaves);
+			}
+		}
+	}
+	else
+	{
+		auto pair = sprites::make(display.image);
+		//TODO: color
+		pair.first.setOrigin(pair.second);
+		float scale = plant.m_blocks.size() == 1 ? ((float)plant.getGrowthPercent() / 100.f) : 1;
+		spriteOnBlockWithScaleCentered(block, pair.first, scale);
+		if(m_window.getSelectedPlants().contains(const_cast<Plant*>(&plant)))
+			outlineOnBlock(block, displayData::selectColor);
+	}
 }
 // Item.
 void Draw::item(const Block& block)
@@ -382,9 +431,9 @@ void Draw::item(const Block& block)
 	sprite.setColor(display.color);
 	const sf::Color materialColor = displayData::materialColors.at(&item.m_materialType);
 	sprite.setColor(materialColor);
-	spriteOnBlockWithScale(block, sprite, display.scale);
+	spriteOnBlockWithScaleCentered(block, sprite, display.scale);
 	if(block.m_hasItems.getAll().size() > 1)
-		stringOnBlock(block, std::to_wstring(block.m_hasItems.getAll().size()), sf::Color::Black);
+		stringOnBlock(block, std::to_wstring(block.m_hasItems.getAll().size()), sf::Color::Magenta);
 	else if(item.getQuantity() != 1)
 		stringOnBlock(block, std::to_wstring(item.getQuantity()), sf::Color::White);
 	if(m_window.getSelectedItems().contains(const_cast<Item*>(&item)))
@@ -398,13 +447,70 @@ void Draw::singleTileActor(const Actor& actor)
 	auto [sprite, origin] = sprites::make(display.image);
 	sprite.setOrigin(origin);
 	sprite.setColor(display.color);
-	spriteOnBlockWithScale(block, sprite, ((float)actor.m_canGrow.growthPercent() + 10.f) / 110.f);
+	spriteOnBlockWithScaleCentered(block, sprite, ((float)actor.m_canGrow.growthPercent() + 10.f) / 110.f);
 	if(m_window.getSelectedActors().contains(const_cast<Actor*>(&actor)))
 		outlineOnBlock(block, displayData::selectColor);
 }
 void Draw::multiTileActor(const Actor& actor)
 {
-	(void)actor;
-	assert(false);
-	//TODO
+	AnimalSpeciesDisplayData& display = displayData::actorData.at(&actor.m_species);
+	auto [sprite, origin] = sprites::make(display.image);
+	if(actor.m_shape->displayScale == 1)
+	{
+		// Multi tile actor with no display scale, draw icon on each block.
+		sprite.setOrigin(origin);
+		for(Block* block : actor.m_blocks)
+			if(block->m_z == m_window.m_z)
+			{
+				for(Block* adjacent : block->getAdjacentOnSameZLevelOnly())
+					if(!actor.m_blocks.contains(adjacent))
+					{
+						Facing facing = adjacent->facingToSetWhenEnteringFrom(*block);
+						borderSegmentOnBlock(*block, facing, displayData::actorOutlineColor, 1);
+					}
+				spriteOnBlock(*block, sprite, &display.color);
+			}
+	}
+	else
+	{
+		Block* topLeft = nullptr;
+		for(Block* block : actor.m_blocks)
+			if(block->m_z == m_window.m_z)
+				if(!topLeft || block->m_x < topLeft->m_x || block->m_y < topLeft->m_y)
+					topLeft = block;
+		spriteOnBlockWithScale(*topLeft, sprite, actor.m_shape->displayScale, &display.color);
+	}
+}
+void Draw::borderSegmentOnBlock(const Block& block, Facing facing, sf::Color color, float thickness)
+{
+	sf::RectangleShape square(sf::Vector2f(m_window.m_scale, thickness));
+	square.setFillColor(color);
+	switch(facing)
+	{
+		case 0:
+			// do nothing
+			break;
+		case 1:
+			square.setRotation(90);
+			square.setPosition(
+				static_cast<float>((block.m_x + 1 - thickness) * m_window.m_scale), 
+				static_cast<float>(block.m_y * m_window.m_scale)
+			);
+			break;
+		case 2:
+			square.setPosition(
+				static_cast<float>(block.m_x * m_window.m_scale), 
+				static_cast<float>((block.m_y + 1 - thickness) * m_window.m_scale)
+			);
+			break;
+
+		case 3:
+			square.setRotation(90);
+			square.setPosition(
+				static_cast<float>(block.m_x * m_window.m_scale), 
+				static_cast<float>(block.m_y * m_window.m_scale)
+			);
+			break;
+	}
+	m_window.getRenderWindow().draw(square);
 }

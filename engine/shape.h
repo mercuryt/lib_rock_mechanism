@@ -20,12 +20,13 @@ struct Shape
 {
 	const std::string name;
 	std::vector<std::array<int32_t, 4>> positions;
+	const uint32_t displayScale;
 	const bool isMultiTile;
 	std::array<std::vector<std::array<int32_t, 4>>,4> occupiedOffsetsCache;
 	std::array<std::vector<std::array<int32_t, 3>>,4> adjacentOffsetsCache;
 	std::vector<std::array<int32_t, 4>> positionsWithFacing(Facing facing) const { return occupiedOffsetsCache.at(facing); }
 	std::vector<std::array<int32_t, 3>> adjacentPositionsWithFacing(Facing facing) const { return adjacentOffsetsCache.at(facing); }
-	Shape(const std::string n, std::vector<std::array<int32_t, 4>> p);
+	Shape(const std::string n, std::vector<std::array<int32_t, 4>> p, uint32_t ds);
 	// For custom shapes.
 	Shape(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
