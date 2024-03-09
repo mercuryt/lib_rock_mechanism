@@ -58,6 +58,7 @@ void ContextMenu::draw(Block& block)
 		drawFarmFieldControls(block);
 		drawStockPileControls(block);
 		drawCraftControls(block);
+		drawWoodCuttingControls(block);
 		if(m_window.m_editMode)
 		{
 			drawFluidControls(block);

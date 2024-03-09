@@ -496,7 +496,7 @@ bool Block::canSeeThroughFrom(const Block& block) const
 	}
 	return true;
 }
-uint8_t Block::facingToSetWhenEnteringFrom(const Block& block) const
+Facing Block::facingToSetWhenEnteringFrom(const Block& block) const
 {
 	if(block.m_x > m_x)
 		return 3;
@@ -505,6 +505,35 @@ uint8_t Block::facingToSetWhenEnteringFrom(const Block& block) const
 	if(block.m_y < m_y)
 		return 2;
 	return 0;
+}
+Facing Block::facingToSetWhenEnteringFromIncludingDiagonal(const Block& block, Facing inital) const
+{
+	if(m_x == block.m_x)
+	{
+		if(m_y < block.m_y)
+			return 0; // North
+		if(m_y == block.m_y)
+			return inital; // Up or Down
+		if(m_y > block.m_y)
+			return 4; // South
+	}
+	else if(m_x < block.m_x)
+	{
+		if(m_y > block.m_y)
+			return 7; // North West
+		if(m_y == block.m_y)
+			return 6; // West
+		if(m_y < block.m_y)
+			return 5;// South West
+	}
+	assert(m_x > block.m_x);
+	if(m_y > block.m_y)
+		return 3; // South East
+	if(m_y == block.m_y)
+		return 2; // East
+	if(m_y < block.m_y)
+		return 1;// North East
+	assert(false);
 }
 bool Block::isSupport() const
 {

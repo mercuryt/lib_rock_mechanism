@@ -27,7 +27,6 @@ Simulation::Simulation(std::filesystem::path path) : Simulation(Json::parse(std:
 		Json areaData = Json::parse(af);
 		m_areas.emplace_back(areaData, m_deserializationMemo, *this);
 	}
-	m_hourlyEvent.schedule(*this, data.contains("hourlyEventStart") ? data["hourlyEventStart"].get<Step>() : 0);
 }
 Simulation::Simulation(const Json& data) : m_deserializationMemo(*this), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this) 
 {
@@ -40,6 +39,7 @@ Simulation::Simulation(const Json& data) : m_deserializationMemo(*this), m_event
 	//if(data["world"])
 		//m_world = std::make_unique<World>(data["world"], deserializationMemo);
 	m_hasFactions.load(data["factions"], m_deserializationMemo);
+	m_hourlyEvent.schedule(*this, data["hourEventStart"].get<Step>());
 }
 void Simulation::doStep()
 {
@@ -272,6 +272,7 @@ Json Simulation::toJson() const
 	for(const Area& area : m_areas)
 		output["areaIds"].push_back(area.m_id);
 	output["factions"] = m_hasFactions.toJson();
+	output["hourEventStart"] = m_hourlyEvent.getStartStep();
 	return output;
 }
 Area& Simulation::loadAreaFromJson(const Json& data)

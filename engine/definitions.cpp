@@ -27,7 +27,8 @@ void definitions::loadShapes()
 	{
 		Shape::data.emplace_back(
 			shapeData["name"].get<std::string>(),
-			shapeData["positions"].get<std::vector<std::array<int32_t, 4>>>()
+			shapeData["positions"].get<std::vector<std::array<int32_t, 4>>>(),
+			shapeData.contains("displayScale") ? shapeData["displayScale"].get<uint32_t>() : 1
 		);
 	}
 }

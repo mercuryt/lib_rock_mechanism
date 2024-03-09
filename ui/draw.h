@@ -1,4 +1,5 @@
 #pragma once
+#include "../engine/types.h"
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/System/Vector2.hpp>
@@ -26,6 +27,7 @@ public:
 	sf::Sprite getCenteredSprite(std::string name);
 
 	void spriteAt(sf::Sprite& sprite, sf::Vector2f position, const sf::Color* color);
+	void spriteOnBlockWithScaleCentered(const Block& block, sf::Sprite& sprite, float scaleRatio, const sf::Color* = nullptr);
 	void spriteOnBlockWithScale(const Block& block, sf::Sprite& sprite, float scaleRatio, const sf::Color* = nullptr);
 	void spriteOnBlock(const Block& block, sf::Sprite& sprite, const sf::Color* = nullptr);
 	void spriteOnBlockCentered(const Block& block, sf::Sprite& sprite, const sf::Color* = nullptr);
@@ -42,4 +44,5 @@ public:
 	void item(const Block& block);
 	void singleTileActor(const Actor& actor);
 	void multiTileActor(const Actor& actor);
+	void borderSegmentOnBlock(const Block& block, Facing facing, sf::Color color, float thickness);
 };

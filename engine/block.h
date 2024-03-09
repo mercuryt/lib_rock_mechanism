@@ -125,6 +125,7 @@ public:
 	bool canSeeThrough() const;
 	bool canSeeThroughFrom(const Block& block) const;
 	Facing facingToSetWhenEnteringFrom(const Block& block) const;
+	Facing facingToSetWhenEnteringFromIncludingDiagonal(const Block& block, Facing inital = 0) const;
 	bool isSupport() const;
 	bool hasLineOfSightTo(Block& block) const;
 
