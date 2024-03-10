@@ -35,6 +35,7 @@ bool EquipmentSortByLayer::operator()(Item* const& a, Item* const& b) const
 void EquipmentSet::insertEquipment(Item& equipment)
 {
 	assert(std::ranges::find(m_equipments, &equipment) == m_equipments.end());
+	assert(equipment.m_location == nullptr);
 	m_mass += equipment.m_mass;
 	m_equipments.insert(&equipment);
 	if(equipment.m_itemType.wearableData != nullptr)

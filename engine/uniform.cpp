@@ -99,7 +99,10 @@ void EquipItemObjective::execute()
 		else
 		{
 			if(m_actor.m_equipmentSet.canEquipCurrently(*m_item))
+			{
+				m_item->exit();
 				m_actor.m_equipmentSet.addEquipment(*m_item);
+			}
 			else
 				m_actor.m_hasObjectives.cannotFulfillObjective(*this);
 		}

@@ -9,11 +9,12 @@ WanderThreadedTask::WanderThreadedTask(WanderObjective& o) : ThreadedTask(o.m_ac
 void WanderThreadedTask::readStep()
 {
 	const Block* lastBlock = nullptr;
-	std::function<bool(const Block&, Facing)> condition = [&](const Block& block, [[maybe_unused]]Facing facing)
+	Random& random = m_objective.m_actor.getSimulation().m_random;
+	uint32_t numberOfBlocks = random.getInRange(Config::wanderMinimimNumberOfBlocks, Config::wanderMaximumNumberOfBlocks);
+	std::function<bool(const Block&, Facing)> condition = [&](const Block& block, [[maybe_unused]] Facing facing)
 	{
 		lastBlock = &block;
-		Random& random = m_objective.m_actor.getSimulation().m_random;
-		return random.percentChance((float)block.taxiDistance(*m_objective.m_actor.m_location) * Config::wanderDistanceModifier);
+		return !numberOfBlocks--;
 	};
 	m_findsPath.pathToPredicate(condition);
 	if(!m_findsPath.found() && lastBlock != nullptr)

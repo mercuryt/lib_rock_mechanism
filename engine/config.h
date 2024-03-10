@@ -135,7 +135,8 @@ namespace Config
 	inline uint32_t unitsBodyMassPerUnitFluidConsumed;
 	inline uint32_t baseMoveCost;
 	inline uint32_t goUpMoveCost;
-	inline float wanderDistanceModifier;
+	inline uint32_t wanderMinimimNumberOfBlocks;
+	inline uint32_t wanderMaximumNumberOfBlocks;
 	inline Step stepsToDelayBeforeTryingAgainToCompleteAnObjective;
 	inline uint32_t hitScaleModifier;
 	inline uint32_t hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea;
@@ -319,7 +320,8 @@ namespace Config
 		unitsBodyMassPerUnitFluidConsumed = data["unitsBodyMassPerUnitFluidConsumed"].get<uint32_t>();
 		baseMoveCost = data["baseMoveCost"].get<uint32_t>();
 		goUpMoveCost = data["goUpMoveCost"].get<uint32_t>();
-		wanderDistanceModifier = data["wanderDistanceModifier"].get<float>();
+		wanderMinimimNumberOfBlocks = data["wanderMinimumNumberOfBlocks"].get<uint32_t>();
+		wanderMaximumNumberOfBlocks = data["wanderMaximumNumberOfBlocks"].get<uint32_t>();
 		stepsToDelayBeforeTryingAgainToCompleteAnObjective = data["secondsToDelayBeforeTryingAgainToCompleteAnObjective"].get<uint32_t>() * stepsPerSecond;
 		hitScaleModifier = data["hitScaleModifier"].get<uint32_t>();
 		hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea = data["hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea"].get<float>();

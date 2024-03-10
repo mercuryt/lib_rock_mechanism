@@ -49,7 +49,7 @@ void ContextMenu::drawItemControls(Block& block)
 					if(actor.m_equipmentSet.canEquipCurrently(*item))
 					{
 						ItemQuery query(*item);
-						auto button = tgui::Button::create(m_window.displayNameForItem(*item));
+						auto button = tgui::Button::create("equip ");
 						button->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 						submenu.add(button);
 						button->onClick([this, &actor, query] () mutable {

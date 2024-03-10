@@ -325,6 +325,12 @@ bool HasWoodCuttingDesignations::areThereAnyForFaction(const Faction& faction) c
 		return false;
 	return !m_data.at(&faction).empty();
 }
+bool HasWoodCuttingDesignations::contains(const Faction& faction, const Block& block) const 
+{ 
+	if(!m_data.contains(&faction))
+		return false;
+	return m_data.at(&faction).m_data.contains(const_cast<Block*>(&block)); 
+}
 WoodCuttingProject& HasWoodCuttingDesignations::at(const Faction& faction, const Block& block) 
 { 
 	assert(m_data.contains(&faction));

@@ -335,6 +335,11 @@ void Block::setBelowNotExposedToSky()
 void Block::setSolid(const MaterialType& materialType, bool constructed)
 {
 	assert(m_hasItems.empty());
+	if(m_hasPlant.exists())
+	{
+		assert(!m_hasPlant.get().m_plantSpecies.isTree);
+		m_hasPlant.get().die();
+	}
 	if(&materialType == m_solid)
 		return;
 	bool wasEmpty = m_solid == nullptr;

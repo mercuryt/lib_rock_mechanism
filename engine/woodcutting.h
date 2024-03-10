@@ -119,12 +119,12 @@ public:
 	Json toJson() const;
 	void addFaction(const Faction& faction);
 	void removeFaction(const Faction& faction);
-	// If blockFeatureType is null then woodCutting out fully rather then woodCuttingging out a feature.
+	// TODO: designate and undesignate should probably take plants rather then blocks as arguments.
 	void designate(const Faction& faction, Block& block);
 	void undesignate(const Faction& faction, Block& block);
 	void remove(const Faction& faction, Block& block);
 	void clearAll(Block& block);
 	bool areThereAnyForFaction(const Faction& faction) const;
-	bool contains(const Faction& faction, const Block& block) const { return m_data.at(&faction).m_data.contains(const_cast<Block*>(&block)); }
+	bool contains(const Faction& faction, const Block& block) const;
 	WoodCuttingProject& at(const Faction& faction, const Block& block);
 };
