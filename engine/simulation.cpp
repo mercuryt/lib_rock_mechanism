@@ -164,6 +164,8 @@ void Simulation::destroyArea(Area& area)
 }
 void Simulation::destroyActor(Actor& actor)
 {
+	if(actor.m_location)
+		actor.leaveArea();
 	m_actors.erase(actor.m_id);
 	//TODO: Destroy hibernation json file if any.
 }

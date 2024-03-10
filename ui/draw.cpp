@@ -200,22 +200,77 @@ void Draw::blockFeaturesAndFluids(const Block& block)
 	//TODO: Draw order.
 	for(const BlockFeature& blockFeature : block.m_hasBlockFeatures.get())
 	{
+		sf::Color* color = &displayData::materialColors.at(blockFeature.materialType);
 		if(blockFeature.blockFeatureType == &BlockFeatureType::hatch)
-			imageOnBlock(block, "hatch", &displayData::materialColors.at(blockFeature.materialType));
+		{
+			static sf::Sprite hatch = getCenteredSprite("hatch");
+			spriteOnBlockCentered(block, hatch, color);
+		}
 		else if(blockFeature.blockFeatureType == &BlockFeatureType::floorGrate)
-			imageOnBlock(block, "floorGrate", &displayData::materialColors.at(blockFeature.materialType));
+		{
+			static sf::Sprite floorGrate = getCenteredSprite("floorGrate");
+			spriteOnBlockCentered(block, floorGrate, color);
+		}
 		else if(blockFeature.blockFeatureType == &BlockFeatureType::stairs)
-			imageOnBlock(block, "stairs", &displayData::materialColors.at(blockFeature.materialType));
+		{
+			static sf::Sprite stairs = getCenteredSprite("stairs");
+			// Default stairs image leads north-south, maybe rotate.
+			if(!block.getBlockNorth() || !block.getBlockSouth() || (!block.getBlockNorth()->isSolid() && !block.getBlockSouth()->isSolid()))
+				stairs.setRotation(90);
+			else
+				stairs.setRotation(0);
+			spriteOnBlockCentered(block, stairs, color);
+		}
 		else if(blockFeature.blockFeatureType == &BlockFeatureType::ramp)
-			imageOnBlock(block, "ramp", &displayData::materialColors.at(blockFeature.materialType));
+		{
+			static sf::Sprite ramp = getCenteredSprite("ramp");
+			// Default ramp image leads north-south, maybe rotate.
+			if(!block.getBlockNorth() || !block.getBlockSouth() || (!block.getBlockNorth()->isSolid() && !block.getBlockSouth()->isSolid()))
+				ramp.setRotation(90);
+			else
+				ramp.setRotation(0);
+			spriteOnBlockCentered(block, ramp, color);
+		}
 		else if(blockFeature.blockFeatureType == &BlockFeatureType::floodGate)
-			imageOnBlock(block, "floodGate", &displayData::materialColors.at(blockFeature.materialType));
+		{
+			static sf::Sprite floodGate = getCenteredSprite("floodGate");
+			// Default floodGate image leads north-south, maybe rotate.
+			if(!block.getBlockNorth() || block.getBlockNorth()->isSolid() || !block.getBlockSouth() || block.getBlockSouth()->isSolid())
+				floodGate.setRotation(90);
+			else
+				floodGate.setRotation(0);
+			spriteOnBlockCentered(block, floodGate, color);
+		}
 		else if(blockFeature.blockFeatureType == &BlockFeatureType::fortification)
-			imageOnBlock(block, "fortification", &displayData::materialColors.at(blockFeature.materialType));
+		{
+			static sf::Sprite fortification = getCenteredSprite("fortification");
+			// Default fortification image leads north-south, maybe rotate.
+			if(!block.getBlockNorth() || block.getBlockNorth()->isSolid() || !block.getBlockNorth()->m_hasShapes.canStandIn() || !block.getBlockSouth() || block.getBlockSouth()->isSolid() || !block.getBlockSouth()->m_hasShapes.canStandIn())
+				fortification.setRotation(90);
+			else
+				fortification.setRotation(0);
+			spriteOnBlockCentered(block, fortification, color);
+		}
 		else if(blockFeature.blockFeatureType == &BlockFeatureType::door)
-			imageOnBlock(block, "door", &displayData::materialColors.at(blockFeature.materialType));
+		{
+			static sf::Sprite door = getCenteredSprite("door");
+			// Default door image leads north-south, maybe rotate.
+			if(!block.getBlockNorth() || block.getBlockNorth()->isSolid() || !block.getBlockNorth()->m_hasShapes.canStandIn() || !block.getBlockSouth() || block.getBlockSouth()->isSolid() || !block.getBlockSouth()->m_hasShapes.canStandIn())
+				door.setRotation(90);
+			else
+				door.setRotation(0);
+			spriteOnBlockCentered(block, door, color);
+		}
 		else if(blockFeature.blockFeatureType == &BlockFeatureType::flap)
-			imageOnBlock(block, "flap", &displayData::materialColors.at(blockFeature.materialType));
+		{
+			static sf::Sprite flap = getCenteredSprite("flap");
+			// Default flap image leads north-south, maybe rotate.
+			if(!block.getBlockNorth() || block.getBlockNorth()->isSolid() || !block.getBlockNorth()->m_hasShapes.canStandIn() || !block.getBlockSouth() || block.getBlockSouth()->isSolid() || !block.getBlockSouth()->m_hasShapes.canStandIn())
+				flap.setRotation(90);
+			else
+				flap.setRotation(0);
+			spriteOnBlockCentered(block, flap, color);
+		}
 	}
 	// Fluids
 	if(block.m_totalFluidVolume)
@@ -374,7 +429,7 @@ void Draw::nonGroundCoverPlant(const Block& block)
 		return;
 	if(plant.m_plantSpecies.isTree && plant.m_blocks.size() != 1)
 	{
-		if(block == *plant.m_location)
+		if(block == *plant.m_location && plant.m_blocks.size() > 2)
 		{
 			static sf::Sprite trunk = getCenteredSprite("trunk");
 			spriteOnBlockCentered(block, trunk);
@@ -383,7 +438,7 @@ void Draw::nonGroundCoverPlant(const Block& block)
 		{
 			if(block.m_x == plant.m_location->m_x && block.m_y == plant.m_location->m_y)
 			{
-				if(block.getBlockAbove()->m_hasPlant.exists() && block.getBlockAbove()->m_hasPlant.get() == plant)
+				if(block.getBlockAbove() && block.getBlockAbove()->m_hasPlant.exists() && block.getBlockAbove()->m_hasPlant.get() == plant)
 				{
 					static sf::Sprite trunk = getCenteredSprite("trunkWithBranches");
 					spriteOnBlockCentered(block, trunk);
@@ -458,7 +513,6 @@ void Draw::multiTileActor(const Actor& actor)
 	if(actor.m_shape->displayScale == 1)
 	{
 		// Multi tile actor with no display scale, draw icon on each block.
-		sprite.setOrigin(origin);
 		for(Block* block : actor.m_blocks)
 			if(block->m_z == m_window.m_z)
 			{
@@ -489,18 +543,22 @@ void Draw::borderSegmentOnBlock(const Block& block, Facing facing, sf::Color col
 	{
 		case 0:
 			// do nothing
+			square.setPosition(
+				static_cast<float>((block.m_x) * m_window.m_scale), 
+				static_cast<float>(block.m_y * m_window.m_scale)
+			);
 			break;
 		case 1:
 			square.setRotation(90);
 			square.setPosition(
-				static_cast<float>((block.m_x + 1 - thickness) * m_window.m_scale), 
+				static_cast<float>((block.m_x + 1) * m_window.m_scale) - thickness, 
 				static_cast<float>(block.m_y * m_window.m_scale)
 			);
 			break;
 		case 2:
 			square.setPosition(
 				static_cast<float>(block.m_x * m_window.m_scale), 
-				static_cast<float>((block.m_y + 1 - thickness) * m_window.m_scale)
+				static_cast<float>((block.m_y + 1) * m_window.m_scale) - thickness
 			);
 			break;
 

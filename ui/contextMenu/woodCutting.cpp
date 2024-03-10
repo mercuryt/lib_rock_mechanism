@@ -2,13 +2,13 @@
 #include "../window.h"
 #include "../displayData.h"
 #include "../../engine/block.h"
-bool blockIsValid(const Block& block)
+bool plantIsValid(const Plant& plant)
 {
-	return block.m_hasPlant.exists() && block.m_hasPlant.get().m_plantSpecies.isTree && block.m_hasPlant.get().getGrowthPercent() >= Config::minimumPercentGrowthForWoodCutting;
+	return plant.m_plantSpecies.isTree && plant.getGrowthPercent() >= Config::minimumPercentGrowthForWoodCutting;
 }
 void ContextMenu::drawWoodCuttingControls(Block& block)
 {
-	if(m_window.getFaction() && blockIsValid(block))
+	if(m_window.getFaction() && block.m_hasPlant.exists() && plantIsValid(block.m_hasPlant.get()))
 	{
 		auto& hasWoodCutting = m_window.getArea()->m_hasWoodCuttingDesignations;
 		const Faction& faction = *m_window.getFaction();
@@ -16,24 +16,32 @@ void ContextMenu::drawWoodCuttingControls(Block& block)
 		{
 			auto button = tgui::Button::create("cancel fell trees");
 			m_root.add(button);
-			button->onClick([this]{
+			button->onClick([this, &block]{
+				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				auto& hasWoodCutting = m_window.getArea()->m_hasWoodCuttingDesignations;
 				const Faction& faction = *m_window.getFaction();
-				for(Block* selctedBlock : m_window.getSelectedBlocks())
-					if(hasWoodCutting.contains(faction, *selctedBlock))
-						hasWoodCutting.undesignate(faction, *selctedBlock);
+				if(m_window.getSelectedPlants().empty() && block.m_hasPlant.exists() && plantIsValid(block.m_hasPlant.get()))
+					m_window.selectPlant(block.m_hasPlant.get());
+				for(Plant* selctedPlant : m_window.getSelectedPlants())
+					if(hasWoodCutting.contains(faction, *selctedPlant->m_location))
+						hasWoodCutting.undesignate(faction, *selctedPlant->m_location);
+				hide();
 			});
 		}
 		else 
 		{
 			auto button = tgui::Button::create("fell trees");
 			m_root.add(button);
-			button->onClick([this]{
+			button->onClick([this, &block]{
+				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				auto& hasWoodCutting = m_window.getArea()->m_hasWoodCuttingDesignations;
 				const Faction& faction = *m_window.getFaction();
-				for(Block* selctedBlock : m_window.getSelectedBlocks())
-					if(blockIsValid(*selctedBlock))
-						hasWoodCutting.designate(faction, *selctedBlock);
+				if(m_window.getSelectedPlants().empty() && block.m_hasPlant.exists() && plantIsValid(block.m_hasPlant.get()))
+					m_window.selectPlant(block.m_hasPlant.get());
+				for(Plant* selctedPlant : m_window.getSelectedPlants())
+					if(plantIsValid(*selctedPlant))
+						hasWoodCutting.designate(faction, *selctedPlant->m_location);
+				hide();
 			});
 		}
 	}

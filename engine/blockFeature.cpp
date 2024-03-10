@@ -39,6 +39,11 @@ void HasBlockFeatures::remove(const BlockFeatureType& blockFeatureType)
 void HasBlockFeatures::construct(const BlockFeatureType& blockFeatureType, const MaterialType& materialType)
 {
 	assert(!m_block.isSolid());
+	if(m_block.m_hasPlant.exists())
+	{
+		assert(!m_block.m_hasPlant.get().m_plantSpecies.isTree);
+		m_block.m_hasPlant.get().die();
+	}
 	m_features.emplace_back(blockFeatureType, materialType, false);
 	m_block.m_hasShapes.clearCache();
 	if((blockFeatureType == BlockFeatureType::floor || blockFeatureType == BlockFeatureType::hatch) && !materialType.transparent)

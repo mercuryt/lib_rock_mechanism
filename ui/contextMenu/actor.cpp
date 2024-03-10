@@ -42,6 +42,7 @@ void ContextMenu::drawActorControls(Block& block)
 				auto destroy = tgui::Button::create("destroy");
 				destroy->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 				destroy->onClick([this, actor]{ 
+					std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 					m_window.deselectAll();
 					m_window.getSimulation()->destroyActor(*actor);
 					hide();
@@ -54,6 +55,7 @@ void ContextMenu::drawActorControls(Block& block)
 				tgui::Button::Ptr kill = tgui::Button::create("kill");
 				submenu.add(kill);
 				kill->onClick([this, actor, &actors]{
+					std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 					for(Actor* selectedActor : actors)
 					{
 						std::unique_ptr<Objective> objective = std::make_unique<KillObjective>(*selectedActor, *actor);
@@ -63,34 +65,36 @@ void ContextMenu::drawActorControls(Block& block)
 				});
 			}
 		});
-		auto& actors = m_window.getSelectedActors();
-		if(actors.size())
-		{
-			// Go.
-			auto goTo = tgui::Button::create("go to");
-			goTo->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
-			m_root.add(goTo);
-			goTo->onClick([this, &block]{
-				for(Actor* actor : m_window.getSelectedActors())
-				{
-					std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(*actor, block);
-					actor->m_hasObjectives.replaceTasks(std::move(objective));
-					hide();
-				}
-			});
-			// Station.
-			auto station = tgui::Button::create("station");
-			station->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
-			m_root.add(station);
-			station->onClick([this, &block]{
-				for(Actor* actor : m_window.getSelectedActors())
-				{
-					std::unique_ptr<Objective> objective = std::make_unique<StationObjective>(*actor, block);
-					actor->m_hasObjectives.replaceTasks(std::move(objective));
-				}
-				hide();
-			});
-		}
+	}
+	auto& actors = m_window.getSelectedActors();
+	if(actors.size())
+	{
+		// Go.
+		auto goTo = tgui::Button::create("go to");
+		goTo->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
+		m_root.add(goTo);
+		goTo->onClick([this, &block]{
+			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
+			for(Actor* actor : m_window.getSelectedActors())
+			{
+				std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(*actor, block);
+				actor->m_hasObjectives.replaceTasks(std::move(objective));
+			}
+			hide();
+		});
+		// Station.
+		auto station = tgui::Button::create("station");
+		station->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
+		m_root.add(station);
+		station->onClick([this, &block]{
+			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
+			for(Actor* actor : m_window.getSelectedActors())
+			{
+				std::unique_ptr<Objective> objective = std::make_unique<StationObjective>(*actor, block);
+				actor->m_hasObjectives.replaceTasks(std::move(objective));
+			}
+			hide();
+		});
 	}
 	if(m_window.m_editMode)
 	{
@@ -119,6 +123,7 @@ void ContextMenu::drawActorControls(Block& block)
 			confirm->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 			submenu.add(confirm);
 			confirm->onClick([this, &block, nameUI, speciesUI, factionUI]{
+				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				Actor& actor = m_window.getSimulation()->createActor(ActorParamaters{
 					.species = *widgetUtil::lastSelectedAnimalSpecies,
 					.name = nameUI->getText().toWideString(),
