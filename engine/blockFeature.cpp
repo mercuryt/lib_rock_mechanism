@@ -36,6 +36,12 @@ void HasBlockFeatures::remove(const BlockFeatureType& blockFeatureType)
 	std::erase_if(m_features, [&](BlockFeature& bf) { return bf.blockFeatureType == &blockFeatureType; });
 	m_block.m_hasShapes.clearCache();
 }
+void HasBlockFeatures::removeAll()
+{
+	assert(!m_block.isSolid());
+	m_features.clear();
+	m_block.m_hasShapes.clearCache();
+}
 void HasBlockFeatures::construct(const BlockFeatureType& blockFeatureType, const MaterialType& materialType)
 {
 	assert(!m_block.isSolid());
@@ -116,4 +122,10 @@ bool HasBlockFeatures::canEnterFromAbove(const Block& from) const
 		  )
 			return false;
 	return true;
+}
+const MaterialType* HasBlockFeatures::getMaterialType() const
+{
+	if(m_features.empty())
+		return nullptr;
+	return m_features[0].materialType;
 }

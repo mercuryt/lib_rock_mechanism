@@ -40,10 +40,10 @@ namespace displayData
 	inline std::unordered_map<const PlantSpecies*, PlantSpeciesDisplayData> plantData;
 	inline std::unordered_map<const AnimalSpecies*, AnimalSpeciesDisplayData> actorData;
 	inline float ratioOfScaleToFontSize;
+	inline float wallOffset;
 	inline static const sf::Color selectColor = sf::Color::Yellow;
 	inline constexpr uint32_t defaultScale = 32;
 	inline constexpr float wallTopOffsetRatio = 0.18;
-	inline constexpr float wallOffsetRatio = 0.00;
 	inline constexpr float minimumFluidVolumeToSeeFromAboveLevelRatio = 0.75;
 	inline static sf::Color stockPileColor{168, 127, 50, 128};
 	inline static sf::Color farmFieldColor{133, 82, 38, 128};

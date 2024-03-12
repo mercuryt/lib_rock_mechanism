@@ -72,6 +72,7 @@ public:
 	const std::vector<BlockFeature>& get() const { return m_features; }
 	bool empty() const { return m_features.empty(); }
 	void remove(const BlockFeatureType& blockFeatueType);
+	void removeAll();
 	void construct(const BlockFeatureType& blockFeatueType, const MaterialType& materialType);
 	void hew(const BlockFeatureType& blockFeatueType);
 	void setTemperature(Temperature temperature);
@@ -81,4 +82,5 @@ public:
 	bool isSupport() const;
 	bool canEnterFromBelow() const;
 	bool canEnterFromAbove(const Block& from) const;
+	const MaterialType* getMaterialType() const;
 };

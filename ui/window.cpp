@@ -98,6 +98,7 @@ void Window::startLoop()
 		{
 			if(m_gui.handleEvent(event))
 				continue;
+			//TODO: check if modifiers were pressed at the time the event was generated, not now.
 			uint32_t scrollSteps = sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ? 6 : 1;
 			switch(event.type)
 			{

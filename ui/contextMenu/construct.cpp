@@ -20,7 +20,6 @@ void ContextMenu::drawConstructControls(Block& block)
 	}
 	else 
 	{
-	
 		auto constructButton = tgui::Button::create("construct");
 		constructButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 		m_root.add(constructButton);

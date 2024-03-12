@@ -35,3 +35,4 @@ test/inconsistantErrors/*
 *.pyc
 UI
 .ccls*
+$XDG_DATA_HOME
