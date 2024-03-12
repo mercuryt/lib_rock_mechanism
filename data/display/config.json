@@ -1,3 +1,4 @@
 {
-	"ratioOfScaleToFontSize": 0.25
+	"ratioOfScaleToFontSize": 0.25,
+	"wallOffset" : 0.2
 }

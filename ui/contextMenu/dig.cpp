@@ -23,13 +23,17 @@ void ContextMenu::drawDigControls(Block& block)
 		m_root.add(digButton);
 		digButton->onClick([this]{
 			for(Block* selectedBlock : m_window.getSelectedBlocks())
-				if(selectedBlock->isSolid())
+			{
+				if(m_window.m_editMode)
 				{
-					if (m_window.m_editMode)
+					if(selectedBlock->isSolid())
 						selectedBlock->setNotSolid();
-					else
-						m_window.getArea()->m_hasDigDesignations.designate(*m_window.getFaction(), *selectedBlock, nullptr);
+					else if(!selectedBlock->m_hasBlockFeatures.empty())
+						selectedBlock->m_hasBlockFeatures.removeAll();
 				}
+				else if(selectedBlock->isSolid() || !selectedBlock->m_hasBlockFeatures.empty())
+					m_window.getArea()->m_hasDigDesignations.designate(*m_window.getFaction(), *selectedBlock, nullptr);
+			}
 			hide();
 		});
 		digButton->onMouseEnter([this]{

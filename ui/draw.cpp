@@ -30,29 +30,6 @@ void Draw::blockFloor(const Block& block)
 	{
 		if(block.getBlockBelow() && block.getBlockBelow()->isSolid())
 		{
-			// Draw cliff edge below floor.
-			// TODO: West side edge.
-			if(block.getBlockBelow()->getBlockSouth() && !block.getBlockBelow()->getBlockSouth()->isSolid())
-			{
-				float offset = displayData::wallOffsetRatio * m_window.m_scale;
-				const sf::Color color = displayData::materialColors.at(&block.getBlockBelow()->getSolidMaterial());
-				float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
-				sf::Sprite* sprite;
-				if(block.isConstructed())
-				{
-					static sf::Sprite blockSprite = sprites::make("blockWall").first;
-					sprite  = &blockSprite;
-				}
-				else 
-				{
-					static sf::Sprite roughSprite = sprites::make("roughWall").first;
-					sprite = &roughSprite;
-				}
-				sprite->setPosition(static_cast<float>((block.m_x) * m_window.m_scale), static_cast<float>((block.m_y + 1) * m_window.m_scale) + offset);
-				sprite->setScale(scaleRatio, scaleRatio);
-				sprite->setColor(color);
-				m_window.getRenderWindow().draw(*sprite);
-			}
 			// Draw floor.
 			if(block.m_hasPlant.exists())
 			{
@@ -85,6 +62,8 @@ void Draw::blockFloor(const Block& block)
 			// Draw farm fields.
 			if(block.m_isPartOfFarmField.contains(*m_window.getFaction()))
 				colorOnBlock(block, displayData::farmFieldColor);
+			// Draw cliff edge, ramp, or stairs below floor.
+			blockWallsFromNextLevelDown(block);
 		}
 		else if(block.getBlockBelow() && block.getBlockBelow()->m_totalFluidVolume > displayData::minimumFluidVolumeToSeeFromAboveLevelRatio * Config::maxBlockVolume)
 		{
@@ -100,12 +79,11 @@ void Draw::blockWallCorners(const Block& block)
 {
 	if(block.isSolid() && block.getBlockWest() && !block.getBlockWest()->isSolid() && block.getBlockSouth() && !block.getBlockSouth()->isSolid())
 	{
-		float offset = displayData::wallOffsetRatio * m_window.m_scale;
 		const sf::Color color = displayData::materialColors.at(&block.getSolidMaterial());
 		float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
 		auto pair = sprites::make(block.isConstructed() ? "blockWall" : "roughWall");
 		auto sprite = pair.first;
-		sprite.setPosition((static_cast<float>(block.m_x) - 0.21f) * (float)m_window.m_scale, ((static_cast<float>(block.m_y) + 0.48f) * (float)m_window.m_scale) + offset);
+		sprite.setPosition((static_cast<float>(block.m_x) - 0.21f) * (float)m_window.m_scale, ((static_cast<float>(block.m_y) + 0.48f) * (float)m_window.m_scale));
 		sprite.setScale(scaleRatio, scaleRatio);
 		sprite.setColor(color);
 		sprite.setRotation(45);
@@ -118,24 +96,22 @@ void Draw::blockWalls(const Block& block)
 	{
 		if(block.getBlockSouth() && block.getBlockSouth()->m_visible)
 		{
-			float offset = displayData::wallOffsetRatio * m_window.m_scale;
 			const sf::Color color = displayData::materialColors.at(&block.getSolidMaterial());
 			float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
 			auto pair = sprites::make(block.isConstructed() ? "blockWall" : "roughWall");
 			auto sprite = pair.first;
-			sprite.setPosition(static_cast<float>((block.m_x) * m_window.m_scale), static_cast<float>((block.m_y + 1) * m_window.m_scale) + offset);
+			sprite.setPosition(static_cast<float>((block.m_x) * m_window.m_scale), static_cast<float>((block.m_y + 1) * m_window.m_scale));
 			sprite.setScale(scaleRatio, scaleRatio);
 			sprite.setColor(color);
 			m_window.getRenderWindow().draw(sprite);
 		}
 		if(block.getBlockWest() && block.getBlockWest()->m_visible)
 		{
-			float offset = displayData::wallOffsetRatio * m_window.m_scale;
 			const sf::Color color = displayData::materialColors.at(&block.getSolidMaterial());
 			float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
 			auto pair = sprites::make(block.isConstructed() ? "blockWall" : "roughWall");
 			auto sprite = pair.first;
-			sprite.setPosition(static_cast<float>((block.m_x) * m_window.m_scale), static_cast<float>((block.m_y) * m_window.m_scale) + offset);
+			sprite.setPosition(static_cast<float>((block.m_x) * m_window.m_scale), static_cast<float>((block.m_y) * m_window.m_scale));
 			sprite.setScale(scaleRatio, scaleRatio);
 			sprite.setColor(color);
 			sprite.setRotation(90);
@@ -198,79 +174,106 @@ void Draw::blockFeaturesAndFluids(const Block& block)
 {
 	// Block Features
 	//TODO: Draw order.
-	for(const BlockFeature& blockFeature : block.m_hasBlockFeatures.get())
+	if(!block.m_hasBlockFeatures.empty())
 	{
-		sf::Color* color = &displayData::materialColors.at(blockFeature.materialType);
-		if(blockFeature.blockFeatureType == &BlockFeatureType::hatch)
+		for(const BlockFeature& blockFeature : block.m_hasBlockFeatures.get())
 		{
-			static sf::Sprite hatch = getCenteredSprite("hatch");
-			spriteOnBlockCentered(block, hatch, color);
+			sf::Color* color = &displayData::materialColors.at(blockFeature.materialType);
+			if(blockFeature.blockFeatureType == &BlockFeatureType::hatch)
+			{
+				static sf::Sprite hatch = getCenteredSprite("hatch");
+				spriteOnBlockCentered(block, hatch, color);
+			}
+			else if(blockFeature.blockFeatureType == &BlockFeatureType::floorGrate)
+			{
+				static sf::Sprite floorGrate = getCenteredSprite("floorGrate");
+				spriteOnBlockCentered(block, floorGrate, color);
+			}
+			else if(blockFeature.blockFeatureType == &BlockFeatureType::stairs)
+			{
+				static sf::Sprite stairs = getCenteredSprite("stairs");
+				Facing facing = rampOrStairsFacing(block);
+				stairs.setRotation(facing * 90);
+				stairs.setOrigin(16,19);
+				spriteOnBlockCentered(block, stairs, color);
+			}
+			else if(blockFeature.blockFeatureType == &BlockFeatureType::ramp)
+			{
+				static sf::Sprite ramp = getCenteredSprite("ramp");
+				Facing facing = rampOrStairsFacing(block);
+				ramp.setRotation(facing * 90);
+				ramp.setOrigin(16,19);
+				spriteOnBlockCentered(block, ramp, color);
+			}
+			else if(blockFeature.blockFeatureType == &BlockFeatureType::floodGate)
+			{
+				static sf::Sprite floodGate = getCenteredSprite("floodGate");
+				// Default floodGate image leads north-south, maybe rotate.
+				if(!block.getBlockNorth() || block.getBlockNorth()->isSolid() || !block.getBlockSouth() || block.getBlockSouth()->isSolid())
+					floodGate.setRotation(90);
+				else
+					floodGate.setRotation(0);
+				spriteOnBlockCentered(block, floodGate, color);
+			}
+			else if(blockFeature.blockFeatureType == &BlockFeatureType::fortification)
+			{
+				static sf::Sprite fortification = getCenteredSprite("fortification");
+				// Default fortification image leads north-south, maybe rotate.
+				if(!block.getBlockNorth() || block.getBlockNorth()->isSolid() || !block.getBlockNorth()->m_hasShapes.canStandIn() || !block.getBlockSouth() || block.getBlockSouth()->isSolid() || !block.getBlockSouth()->m_hasShapes.canStandIn())
+					fortification.setRotation(90);
+				else
+					fortification.setRotation(0);
+				spriteOnBlockCentered(block, fortification, color);
+			}
+			else if(blockFeature.blockFeatureType == &BlockFeatureType::door)
+			{
+				static sf::Sprite door = getCenteredSprite("door");
+				// Default door image leads north-south, maybe rotate.
+				if(!block.getBlockNorth() || block.getBlockNorth()->isSolid() || !block.getBlockNorth()->m_hasShapes.canStandIn() || !block.getBlockSouth() || block.getBlockSouth()->isSolid() || !block.getBlockSouth()->m_hasShapes.canStandIn())
+					door.setRotation(90);
+				else
+					door.setRotation(0);
+				spriteOnBlockCentered(block, door, color);
+			}
+			else if(blockFeature.blockFeatureType == &BlockFeatureType::flap)
+			{
+				static sf::Sprite flap = getCenteredSprite("flap");
+				// Default flap image leads north-south, maybe rotate.
+				if(!block.getBlockNorth() || block.getBlockNorth()->isSolid() || !block.getBlockNorth()->m_hasShapes.canStandIn() || !block.getBlockSouth() || block.getBlockSouth()->isSolid() || !block.getBlockSouth()->m_hasShapes.canStandIn())
+					flap.setRotation(90);
+				else
+					flap.setRotation(0);
+				spriteOnBlockCentered(block, flap, color);
+			}
 		}
-		else if(blockFeature.blockFeatureType == &BlockFeatureType::floorGrate)
+	}
+	else if(block.getBlockBelow() && !block.getBlockBelow()->isSolid())
+	{
+		// Show tops of stairs and ramps from next level down.
+		const Block& below = *block.getBlockBelow();
+		if(below.m_hasBlockFeatures.contains(BlockFeatureType::stairs))
 		{
-			static sf::Sprite floorGrate = getCenteredSprite("floorGrate");
-			spriteOnBlockCentered(block, floorGrate, color);
-		}
-		else if(blockFeature.blockFeatureType == &BlockFeatureType::stairs)
-		{
+			const BlockFeature& blockFeature = *below.m_hasBlockFeatures.at(BlockFeatureType::stairs);
+			sf::Color* color = &displayData::materialColors.at(blockFeature.materialType);
 			static sf::Sprite stairs = getCenteredSprite("stairs");
-			// Default stairs image leads north-south, maybe rotate.
-			if(!block.getBlockNorth() || !block.getBlockSouth() || (!block.getBlockNorth()->isSolid() && !block.getBlockSouth()->isSolid()))
-				stairs.setRotation(90);
-			else
-				stairs.setRotation(0);
+			Facing facing = rampOrStairsFacing(below);
+			stairs.setRotation(facing * 90);
+			stairs.setOrigin(16,19);
+			stairs.setTextureRect({0,0,32,16});
 			spriteOnBlockCentered(block, stairs, color);
 		}
-		else if(blockFeature.blockFeatureType == &BlockFeatureType::ramp)
+		else if(below.m_hasBlockFeatures.contains(BlockFeatureType::ramp))
 		{
+			const BlockFeature& blockFeature = *below.m_hasBlockFeatures.at(BlockFeatureType::ramp);
+			sf::Color* color = &displayData::materialColors.at(blockFeature.materialType);
 			static sf::Sprite ramp = getCenteredSprite("ramp");
-			// Default ramp image leads north-south, maybe rotate.
-			if(!block.getBlockNorth() || !block.getBlockSouth() || (!block.getBlockNorth()->isSolid() && !block.getBlockSouth()->isSolid()))
-				ramp.setRotation(90);
-			else
-				ramp.setRotation(0);
+			Facing facing = rampOrStairsFacing(below);
+			ramp.setRotation(facing * 90);
+			ramp.setOrigin(16,19);
+			ramp.setTextureRect({0,0,32,16});
 			spriteOnBlockCentered(block, ramp, color);
 		}
-		else if(blockFeature.blockFeatureType == &BlockFeatureType::floodGate)
-		{
-			static sf::Sprite floodGate = getCenteredSprite("floodGate");
-			// Default floodGate image leads north-south, maybe rotate.
-			if(!block.getBlockNorth() || block.getBlockNorth()->isSolid() || !block.getBlockSouth() || block.getBlockSouth()->isSolid())
-				floodGate.setRotation(90);
-			else
-				floodGate.setRotation(0);
-			spriteOnBlockCentered(block, floodGate, color);
-		}
-		else if(blockFeature.blockFeatureType == &BlockFeatureType::fortification)
-		{
-			static sf::Sprite fortification = getCenteredSprite("fortification");
-			// Default fortification image leads north-south, maybe rotate.
-			if(!block.getBlockNorth() || block.getBlockNorth()->isSolid() || !block.getBlockNorth()->m_hasShapes.canStandIn() || !block.getBlockSouth() || block.getBlockSouth()->isSolid() || !block.getBlockSouth()->m_hasShapes.canStandIn())
-				fortification.setRotation(90);
-			else
-				fortification.setRotation(0);
-			spriteOnBlockCentered(block, fortification, color);
-		}
-		else if(blockFeature.blockFeatureType == &BlockFeatureType::door)
-		{
-			static sf::Sprite door = getCenteredSprite("door");
-			// Default door image leads north-south, maybe rotate.
-			if(!block.getBlockNorth() || block.getBlockNorth()->isSolid() || !block.getBlockNorth()->m_hasShapes.canStandIn() || !block.getBlockSouth() || block.getBlockSouth()->isSolid() || !block.getBlockSouth()->m_hasShapes.canStandIn())
-				door.setRotation(90);
-			else
-				door.setRotation(0);
-			spriteOnBlockCentered(block, door, color);
-		}
-		else if(blockFeature.blockFeatureType == &BlockFeatureType::flap)
-		{
-			static sf::Sprite flap = getCenteredSprite("flap");
-			// Default flap image leads north-south, maybe rotate.
-			if(!block.getBlockNorth() || block.getBlockNorth()->isSolid() || !block.getBlockNorth()->m_hasShapes.canStandIn() || !block.getBlockSouth() || block.getBlockSouth()->isSolid() || !block.getBlockSouth()->m_hasShapes.canStandIn())
-				flap.setRotation(90);
-			else
-				flap.setRotation(0);
-			spriteOnBlockCentered(block, flap, color);
-		}
+
 	}
 	// Fluids
 	if(block.m_totalFluidVolume)
@@ -280,6 +283,61 @@ void Draw::blockFeaturesAndFluids(const Block& block)
 		const sf::Color color = displayData::fluidColors.at(&fluidType);
 		colorOnBlock(block, color);
 		stringOnBlock(block, std::to_wstring(volume), sf::Color::Black);
+	}
+}
+void Draw::blockWallsFromNextLevelDown(const Block& block)
+{
+	if(!block.getBlockBelow() || !block.getBlockBelow()->isSolid())
+		return;
+	const Block& below = *block.getBlockBelow();
+	if(below.getBlockSouth() && !below.getBlockSouth()->isSolid())
+	{
+		const Block& belowSouth = *below.getBlockSouth();
+		sf::Sprite* sprite;
+		const MaterialType* materialType;
+		if(block.isConstructed())
+		{
+			static sf::Sprite blockWall  = getCenteredSprite("blockWall");
+			sprite = &blockWall;
+			materialType = &below.getSolidMaterial();
+		}
+		else
+		{
+			static sf::Sprite roughWall  = getCenteredSprite("roughWall");
+			sprite = &roughWall;
+			materialType = &below.getSolidMaterial();
+		}
+		sprite->setTextureRect({0, 0, 32, 18});
+		assert(materialType);
+		assert(displayData::materialColors.contains(materialType));
+		sf::Color color = displayData::materialColors.at(materialType);
+		sf::Vector2f position{(((float)belowSouth.m_x + 0.5f) * (float)m_window.m_scale), (((float)belowSouth.m_y + 0.5f - displayData::wallOffset) * (float)m_window.m_scale)};
+		spriteAt(*sprite, position, &color);
+	}
+	if(below.getBlockWest() && !below.getBlockWest()->isSolid())
+	{
+		const Block& belowWest = *below.getBlockWest();
+		static sf::Sprite* sprite;
+		const MaterialType* materialType;
+		if(block.isConstructed())
+		{
+			static sf::Sprite blockWall  = getCenteredSprite("blockWall");
+			sprite = &blockWall;
+			materialType = &below.getSolidMaterial();
+		}
+		else
+		{
+			static sf::Sprite roughWall  = getCenteredSprite("roughWall");
+			sprite = &roughWall;
+			materialType = &below.getSolidMaterial();
+		}
+		sprite->setTextureRect({0, 0, 32, 18});
+		sprite->setRotation(90);
+		assert(materialType);
+		assert(displayData::materialColors.contains(materialType));
+		sf::Color color = displayData::materialColors.at(materialType);
+		sf::Vector2f position{(((float)belowWest.m_x + 0.5f + displayData::wallOffset) * (float)m_window.m_scale), (((float)belowWest.m_y + 0.5f) * (float)m_window.m_scale)};
+		spriteAt(*sprite, position, &color);
 	}
 }
 void Draw::validOnBlock(const Block& block)
@@ -406,6 +464,9 @@ void Draw::outlineOnBlock(const Block& block, const sf::Color color, float thick
 }
 void Draw::stringOnBlock(const Block& block, std::wstring string, const sf::Color color)
 {
+	// Don't draw text which would be too small to read comfortably.
+	if(m_window.m_scale < displayData::defaultScale)
+		return;
 	sf::Text text;
 	text.setFont(m_window.m_font);
 	text.setFillColor(color);
@@ -571,4 +632,40 @@ void Draw::borderSegmentOnBlock(const Block& block, Facing facing, sf::Color col
 			break;
 	}
 	m_window.getRenderWindow().draw(square);
+}
+Facing Draw::rampOrStairsFacing(const Block& block) const
+{
+	static auto canConnectToAbove = [](const Block& block) -> bool{ 
+		return block.getBlockAbove() && !block.m_hasBlockFeatures.contains(BlockFeatureType::stairs) && !block.m_hasBlockFeatures.contains(BlockFeatureType::ramp) && block.getBlockAbove()->m_hasShapes.canStandIn();
+	};
+	if(!block.getBlockAbove())
+		return 0;
+	Facing backup = 0;
+	if(block.getBlockNorth() && canConnectToAbove(*block.getBlockNorth()))
+	{
+		if(!block.getBlockSouth()->isSolid() && block.getBlockSouth()->m_hasShapes.canStandIn())
+			return 0;
+	}
+	if(block.getBlockEast() && canConnectToAbove(*block.getBlockEast()))
+	{
+		if(!block.getBlockWest()->isSolid() && block.getBlockWest()->m_hasShapes.canStandIn())
+			return 1;
+		else
+			backup = 1;
+	}
+	if(block.getBlockSouth() && canConnectToAbove(*block.getBlockSouth()))
+	{
+		if(!block.getBlockNorth()->isSolid() && block.getBlockNorth()->m_hasShapes.canStandIn())
+			return 2;
+		else
+			backup = 2;
+	}
+	if(block.getBlockWest() && canConnectToAbove(*block.getBlockWest()))
+	{
+		if(!block.getBlockEast()->isSolid() && block.getBlockEast()->m_hasShapes.canStandIn())
+			return 3;
+		else
+			backup = 3;
+	}
+	return backup;
 }

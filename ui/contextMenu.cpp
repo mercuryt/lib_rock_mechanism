@@ -47,9 +47,9 @@ void ContextMenu::draw(Block& block)
 	m_root.add(blockInfoButton);
 	blockInfoButton->onClick([this, &block]{ m_window.getGameOverlay().drawInfoPopup(block); });
 	//TODO: shift to add to end of work queue.
-	if(block.isSolid())
+	if(block.isSolid() || !block.m_hasBlockFeatures.empty())
 		drawDigControls(block);
-	else // Clicked on block is not solid.
+	if(!block.isSolid())
 	{
 		drawConstructControls(block);
 		drawActorControls(block);

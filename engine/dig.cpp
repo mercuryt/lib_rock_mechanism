@@ -166,12 +166,17 @@ std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> DigProje
 {
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> output;
 	Random& random = m_location.m_area->m_simulation.m_random;
-	for(const SpoilData& spoilData : getLocation().getSolidMaterial().spoilData)
+	const MaterialType* materialType = m_location.isSolid() ? &m_location.getSolidMaterial() : m_location.m_hasBlockFeatures.getMaterialType();
+	if(materialType)
 	{
-		if(!random.percentChance(spoilData.chance))
-			continue;
-		uint32_t quantity = random.getInRange(spoilData.min, spoilData.max);
-		output.emplace_back(&spoilData.itemType, &spoilData.materialType, quantity);
+		for(const SpoilData& spoilData : getLocation().getSolidMaterial().spoilData)
+		{
+			if(!random.percentChance(spoilData.chance))
+				continue;
+			//TODO: reduce yield for block features.
+			uint32_t quantity = random.getInRange(spoilData.min, spoilData.max);
+			output.emplace_back(&spoilData.itemType, &spoilData.materialType, quantity);
+		}
 	}
 	return output;
 }
@@ -183,10 +188,18 @@ uint32_t DigProject::getWorkerDigScore(Actor& actor)
 }
 void DigProject::onComplete()
 {
-	if(m_blockFeatureType == nullptr)
-		m_location.setNotSolid();
+	if(!m_location.isSolid())
+	{
+		assert(!m_blockFeatureType);
+		m_location.m_hasBlockFeatures.removeAll();
+	}
 	else
-		m_location.m_hasBlockFeatures.hew(*m_blockFeatureType);
+	{
+		if(m_blockFeatureType == nullptr)
+			m_location.setNotSolid();
+		else
+			m_location.m_hasBlockFeatures.hew(*m_blockFeatureType);
+	}
 	// Remove designations for other factions as well as owning faction.
 	auto workers = std::move(m_workers);
 	m_location.m_area->m_hasDigDesignations.clearAll(m_location);

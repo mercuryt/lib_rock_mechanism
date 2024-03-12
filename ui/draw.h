@@ -19,6 +19,7 @@ public:
 	void blockWalls(const Block& block);
 	void blockWallTops(const Block& block);
 	void blockFeaturesAndFluids(const Block& block);
+	void blockWallsFromNextLevelDown(const Block& block);
 	void validOnBlock(const Block& block);
 	void invalidOnBlock(const Block& block);
 	void colorOnBlock(const Block& block, const sf::Color color);
@@ -45,4 +46,7 @@ public:
 	void singleTileActor(const Actor& actor);
 	void multiTileActor(const Actor& actor);
 	void borderSegmentOnBlock(const Block& block, Facing facing, sf::Color color, float thickness);
+
+	// Connects to an open top block, tries to align with an open bottom block.
+	[[nodiscard]] Facing rampOrStairsFacing(const Block& block) const;
 };
