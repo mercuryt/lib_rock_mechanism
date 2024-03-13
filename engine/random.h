@@ -25,6 +25,11 @@ public:
 			return vector.at(getInRange(0u, vector.size() - 1u));
 		}
 	template<typename T>
+		const T* getInVector(const std::vector<const T*>& vector)
+		{
+			return vector.at(getInRange(0u, vector.size() - 1u));
+		}
+	template<typename T>
 		std::vector<T*> getMultipleInVector(const std::vector<T*>& vector, uint32_t count)
 		{
 			assert(count <= vector.size());

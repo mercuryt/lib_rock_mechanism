@@ -46,6 +46,34 @@ ActorId ActorParamaters::getId()
 	return id;
 }
 
+Percent ActorParamaters::getPercentThirst()
+{
+	if(!percentThirst)
+	{
+		percentThirst = simulation->m_random.getInRange(0, 100);
+		needsDrink = simulation->m_random.percentChance(10);
+	}
+	return percentThirst;
+}
+Percent ActorParamaters::getPercentHunger()
+{
+	if(!percentHunger)
+	{
+		percentHunger = simulation->m_random.getInRange(0, 100);
+		needsEat = simulation->m_random.percentChance(10);
+	}
+	return percentHunger;
+}
+Percent ActorParamaters::getPercentTired()
+{
+	if(!percentTired)
+	{
+		percentTired = simulation->m_random.getInRange(0, 100);
+		needsSleep = simulation->m_random.percentChance(10);
+	}
+	return percentTired;
+}
+
 Actor::Actor(Simulation& simulation, uint32_t id, const std::wstring& name, const AnimalSpecies& species, DateTime birthDate, Percent percentGrown, Faction* faction, Attributes attributes) :
 	HasShape(simulation, species.shapeForPercentGrown(percentGrown), false), m_faction(faction), m_id(id), m_name(name), m_species(species), m_birthDate(birthDate), m_alive(true), m_body(*this), m_project(nullptr), m_attributes(attributes), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canPickup(*this), m_equipmentSet(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_canReserve(faction), m_stamina(*this), m_hasUniform(*this), m_visionRange(species.visionRange)
 {
