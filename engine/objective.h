@@ -38,7 +38,7 @@ public:
 	ObjectiveTypeRemoveInputAction(InputQueue& inputQueue, Actor& actor, const ObjectiveType& objectiveType) : InputAction(inputQueue), m_actor(actor), m_objectiveType(objectiveType) { }
 	void execute();
 };
-enum class ObjectiveTypeId { Construct, Craft, Dig, Drink, Eat, Equip, GetToSafeTemperature, GivePlantsFluid, GoTo, Harvest, Haul, InstallItem, Kill, Medical, Rest, Sleep, Station, SowSeeds, StockPile, Uniform, Wait, Wander, WoodCutting };
+enum class ObjectiveTypeId { Construct, Craft, Dig, Drink, Eat, Equip, GetToSafeTemperature, GivePlantsFluid, GoTo, Harvest, Haul, InstallItem, Kill, LeaveArea, Medical, Rest, Sleep, Station, SowSeeds, StockPile, Uniform, Wait, Wander, WoodCutting };
 NLOHMANN_JSON_SERIALIZE_ENUM(ObjectiveTypeId, {
 	{ObjectiveTypeId::Construct, "Construct"}, 
 	{ObjectiveTypeId::Craft, "Craft"},
@@ -51,6 +51,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(ObjectiveTypeId, {
 	{ObjectiveTypeId::Harvest, "Harvest"}, 
 	{ObjectiveTypeId::Haul, "Haul"}, 
 	{ObjectiveTypeId::Kill, "Kill"}, 
+	{ObjectiveTypeId::LeaveArea, "LeaveArea"}, 
 	{ObjectiveTypeId::Medical, "Medical"}, 
 	{ObjectiveTypeId::Rest, "Rest"}, 
 	{ObjectiveTypeId::Sleep, "Sleep"}, 

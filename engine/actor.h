@@ -48,11 +48,20 @@ struct ActorParamaters
 	Percent percentGrown = 0;
 	Block* location = nullptr;
 	const Faction* faction = nullptr;
+	Percent percentHunger = 0;
+	bool needsEat = false;
+	Percent percentTired = 0;
+	bool needsSleep = false;
+	Percent percentThirst = 0;
+	bool needsDrink = false;
 
 	Percent getPercentGrown();
 	std::wstring getName();
 	DateTime getBirthDate();
 	ActorId getId();
+	Percent getPercentThirst();
+	Percent getPercentHunger();
+	Percent getPercentTired();
 };
 
 class Actor final : public HasShape
