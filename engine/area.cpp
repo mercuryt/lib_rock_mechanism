@@ -16,24 +16,24 @@
 #include <sys/types.h>
 #include <unordered_set>
 
-Area::Area(AreaId id, std::wstring n, Simulation& s, uint32_t x, uint32_t y, uint32_t z) :
+Area::Area(AreaId id, std::wstring n, Simulation& s, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) :
 	m_blocks(x*y*z), m_id(id), m_name(n), m_simulation(s), m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_fluidSources(*this), m_hasRain(*this), m_visionCuboidsActive(false)
 { 
 	setup(); 
 	m_hasRain.scheduleRestart();
 }
 Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& s) : 
-	m_blocks(data["sizeX"].get<uint32_t>() * data["sizeY"].get<uint32_t>() * data["sizeZ"].get<uint32_t>()),
+	m_blocks(data["sizeX"].get<DistanceInBlocks>() * data["sizeY"].get<DistanceInBlocks>() * data["sizeZ"].get<DistanceInBlocks>()),
 	m_id(data["id"].get<AreaId>()), m_name(data["name"].get<std::wstring>()), m_simulation(s),
-	m_sizeX(data["sizeX"].get<uint32_t>()), m_sizeY(data["sizeY"].get<uint32_t>()), m_sizeZ(data["sizeZ"].get<uint32_t>()), 
+	m_sizeX(data["sizeX"].get<DistanceInBlocks>()), m_sizeY(data["sizeY"].get<DistanceInBlocks>()), m_sizeZ(data["sizeZ"].get<DistanceInBlocks>()), 
 	m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_fluidSources(*this), m_hasRain(*this), m_visionCuboidsActive(false)
 {
 	m_simulation.m_areasById[m_id] = this;
 	setup();
 	// Load blocks.
-	uint32_t x = 0;
-	uint32_t y = 0;
-	uint32_t z = 0;
+	DistanceInBlocks x = 0;
+	DistanceInBlocks y = 0;
+	DistanceInBlocks z = 0;
 	for(const Json& blockData : data["blocks"])
 	{
 		getBlock(x, y, z).loadFromJson(blockData, deserializationMemo, x, y, z);
@@ -163,15 +163,15 @@ Json Area::toJson() const
 void Area::setup()
 {
 	// build m_blocks
-	for(uint32_t x = 0; x < m_sizeX; ++x)
-		for(uint32_t y = 0; y < m_sizeY; ++y)
-			for(uint32_t z = 0; z < m_sizeZ; ++z)
+	for(DistanceInBlocks x = 0; x < m_sizeX; ++x)
+		for(DistanceInBlocks y = 0; y < m_sizeY; ++y)
+			for(DistanceInBlocks z = 0; z < m_sizeZ; ++z)
 				getBlock(x, y, z).setup(*this, x, y, z);
 	//TODO: Can we decrease cache misses by sorting blocks by distance from center?
 	// record adjacent blocks
-	for(uint32_t x = 0; x < m_sizeX; ++x)
-		for(uint32_t y = 0; y < m_sizeY; ++y)
-			for(uint32_t z = 0; z < m_sizeZ; ++z)
+	for(DistanceInBlocks x = 0; x < m_sizeX; ++x)
+		for(DistanceInBlocks y = 0; y < m_sizeY; ++y)
+			for(DistanceInBlocks z = 0; z < m_sizeZ; ++z)
 				getBlock(x, y, z).recordAdjacent();
 	setDateTime(m_simulation.m_now);
 }
@@ -278,12 +278,12 @@ void Area::writeStep()
 	// Apply fluid Sources.
 	m_fluidSources.step();
 }
-Block& Area::getBlock(uint32_t x, uint32_t y, uint32_t z)
+Block& Area::getBlock(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z)
 {
 	size_t index = x + (y * m_sizeX) + (z * m_sizeY * m_sizeX); 
 	return m_blocks[index];
 }
-Block& Area::getGroundLevel(uint32_t x, uint32_t y)
+Block& Area::getGroundLevel(DistanceInBlocks x, DistanceInBlocks y)
 {
 	Block* block = &getBlock(x, y, m_sizeZ - 1);
 	while(!block->isSolid())
@@ -296,8 +296,8 @@ Block& Area::getGroundLevel(uint32_t x, uint32_t y)
 }
 Block& Area::getMiddleAtGroundLevel()
 {
-	uint32_t x = (m_sizeX - 1) / 2;
-	uint32_t y = (m_sizeY - 1) / 2;
+	DistanceInBlocks x = (m_sizeX - 1) / 2;
+	DistanceInBlocks y = (m_sizeY - 1) / 2;
 	return getGroundLevel(x, y);
 }
 /*
@@ -368,7 +368,7 @@ void Area::setDateTime(DateTime now)
 		m_hasFarmFields.setDayOfYear(now.day);
 	}
 }
-Cuboid Area::getZLevel(uint32_t z)
+Cuboid Area::getZLevel(DistanceInBlocks z)
 {
 	return Cuboid(getBlock(m_sizeX - 1, m_sizeY - 1, z), getBlock(0, 0, z));
 }

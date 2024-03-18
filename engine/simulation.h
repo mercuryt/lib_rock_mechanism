@@ -22,6 +22,7 @@
 
 //class World;
 class HourlyEvent;
+class DramaEngine;
 
 class Simulation final
 {
@@ -51,6 +52,8 @@ public:
 	SimulationHasUniforms m_hasUniforms;
 	SimulationHasShapes m_shapes;
 	SimulationHasFactions m_hasFactions;
+	// Dependency injectien.
+	std::unique_ptr<DramaEngine> m_dramaEngine;
 
 	Simulation(std::wstring name = L"", DateTime n = {12, 150, 1200}, Step s = 1);
 	Simulation(std::filesystem::path path);
@@ -63,7 +66,7 @@ public:
 	void loadAreas(const Json& data, std::filesystem::path path);
 	Faction& createFaction(std::wstring name);
 	//TODO: latitude, longitude, altitude.
-	Area& createArea(uint32_t x, uint32_t y, uint32_t z);
+	Area& createArea(uint32_t x, uint32_t y, uint32_t z, bool createDrama = false);
 	Area& loadArea(AreaId id, std::wstring name, uint32_t x, uint32_t y, uint32_t z);
 	Actor& createActor(ActorParamaters params);
 	Actor& createActor(const AnimalSpecies& species, Block& location, Percent percentGrown = 100);

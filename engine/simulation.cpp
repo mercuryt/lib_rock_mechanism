@@ -8,6 +8,7 @@
 #include "haul.h"
 #include "threadedTask.h"
 #include "util.h"
+#include "drama/engine.h"
 //#include "worldforge/world.h"
 #include <cstdint>
 #include <filesystem>
@@ -16,6 +17,7 @@ Simulation::Simulation(std::wstring name, DateTime n, Step s) :  m_nextAreaId(1)
 { 
 	m_hourlyEvent.schedule(*this);
 	m_path.append(L"save/"+name);
+	m_dramaEngine = std::make_unique<DramaEngine>();
 }
 Simulation::Simulation(std::filesystem::path path) : Simulation(Json::parse(std::ifstream{path/"simulation.json"})) 
 {
@@ -27,6 +29,7 @@ Simulation::Simulation(std::filesystem::path path) : Simulation(Json::parse(std:
 		Json areaData = Json::parse(af);
 		m_areas.emplace_back(areaData, m_deserializationMemo, *this);
 	}
+	m_dramaEngine = std::make_unique<DramaEngine>(data["drama"], m_deserializationMemo);
 }
 Simulation::Simulation(const Json& data) : m_deserializationMemo(*this), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this) 
 {
@@ -94,10 +97,13 @@ Faction& Simulation::createFaction(std::wstring name)
 {
 	return m_hasFactions.createFaction(name);
 }
-Area& Simulation::createArea(uint32_t x, uint32_t y, uint32_t z)
+Area& Simulation::createArea(uint32_t x, uint32_t y, uint32_t z, bool createDrama)
 { 
 	AreaId id = m_nextAreaId++;
-	return loadArea(id, L"unnamed area " + std::to_wstring(id), x, y, z);
+	Area& output = loadArea(id, L"unnamed area " + std::to_wstring(id), x, y, z);
+	if(createDrama)
+		m_dramaEngine->createArcsForArea(output);
+	return output;
 }
 Area& Simulation::loadArea(AreaId id, std::wstring name, uint32_t x, uint32_t y, uint32_t z)
 {
@@ -157,6 +163,7 @@ void Simulation::destroyItem(Item& item)
 }
 void Simulation::destroyArea(Area& area)
 {
+	m_dramaEngine->removeArcsForArea(area);
 	for(Actor* actor : area.m_hasActors.getAll())
 		actor->exit();
 	m_areasById.erase(area.m_id);
@@ -275,6 +282,7 @@ Json Simulation::toJson() const
 		output["areaIds"].push_back(area.m_id);
 	output["factions"] = m_hasFactions.toJson();
 	output["hourEventStart"] = m_hourlyEvent.getStartStep();
+	output["drama"] = m_dramaEngine->toJson();
 	return output;
 }
 Area& Simulation::loadAreaFromJson(const Json& data)

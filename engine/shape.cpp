@@ -1,4 +1,5 @@
 #include "shape.h"
+#include "block.h"
 #include "deserializationMemo.h"
 #include "util.h"
 #include <string>
@@ -77,6 +78,31 @@ std::vector<std::array<int32_t, 3>> Shape::positionOffsets(std::array<int32_t, 4
 	std::vector<std::array<int32_t, 3>> output;
 	for(auto& offsets : offsetsList)
 		output.push_back({position[0] + offsets[0], position[1] + offsets[1], position[2] + offsets[2]});
+	return output;
+}
+
+std::vector<Block*> Shape::getBlocksOccupiedAt(const Block& location, Facing facing) const
+{
+	std::vector<Block*> output;
+	output.reserve(positions.size());
+	for(auto& [x, y, z, v] : positionsWithFacing(facing))
+	{
+		Block* block = location.offset(x, y, z);
+		if(block != nullptr)
+			output.push_back(block);
+	}
+	return output;
+}
+std::vector<std::pair<Block*, Volume>> Shape::getBlocksOccupiedAtWithVolumes(const Block& location, Facing facing) const
+{
+	std::vector<std::pair<Block*, Volume>> output;
+	output.reserve(positions.size());
+	for(auto& [x, y, z, v] : positionsWithFacing(facing))
+	{
+		Block* block = location.offset(x, y, z);
+		if(block != nullptr)
+			output.emplace_back(block, v);
+	}
 	return output;
 }
 SimulationHasShapes::SimulationHasShapes(const Json& data, DeserializationMemo& deserializationMemo)

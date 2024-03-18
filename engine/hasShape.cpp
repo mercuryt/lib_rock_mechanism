@@ -150,15 +150,7 @@ std::unordered_set<HasShape*> HasShape::getAdjacentHasShapes()
 }
 std::vector<Block*> HasShape::getBlocksWhichWouldBeOccupiedAtLocationAndFacing(Block& location, Facing facing)
 {
-	std::vector<Block*> output;
-	output.reserve(m_shape->positions.size());
-	for(auto& [x, y, z, v] : m_shape->positionsWithFacing(facing))
-	{
-		Block* block = location.offset(x, y, z);
-		if(block != nullptr)
-			output.push_back(block);
-	}
-	return output;
+	return m_shape->getBlocksOccupiedAt(location, facing);
 }
 std::vector<Block*> HasShape::getAdjacentAtLocationWithFacing(const Block& location, Facing facing)
 {
@@ -350,6 +342,21 @@ bool BlockHasShapes::shapeAndMoveTypeCanEnterEverWithFacing(const Shape& shape, 
 		if(block == nullptr || block->isSolid() || 
 				block->m_hasShapes.m_staticVolume + v > Config::maxBlockVolumeHardLimit || 
 				!block->m_hasShapes.moveTypeCanEnter(moveType))
+			return false;
+	}
+	return true;
+}
+bool BlockHasShapes::shapeAndMoveTypeCanEnterCurrentlyWithFacing(const Shape& shape, const MoveType& moveType, const uint8_t facing) const
+{
+	assert(anythingCanEnterEver());
+	for(auto& [x, y, z, v] : shape.positionsWithFacing(facing))
+	{
+		Block* block = m_block.offset(x, y, z);
+		assert(block);
+		assert(!block->isSolid());
+		if( block->m_hasShapes.m_totalVolume + v > Config::maxBlockVolumeHardLimit || 
+			!block->m_hasShapes.moveTypeCanEnter(moveType)
+		)
 			return false;
 	}
 	return true;

@@ -59,14 +59,22 @@ void ContextMenu::draw(Block& block)
 		drawStockPileControls(block);
 		drawCraftControls(block);
 		drawWoodCuttingControls(block);
-		if(m_window.m_editMode)
-		{
-			drawFluidControls(block);
-			auto factionsButton = tgui::Button::create("factions");
-			m_root.add(factionsButton);
-			factionsButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
-			factionsButton->onClick([this]{ m_window.showEditFactions(); });
-		}
+	}
+	if(m_window.m_editMode)
+	{
+		drawFluidControls(block);
+		auto factionsButton = tgui::Button::create("factions");
+		m_root.add(factionsButton);
+		factionsButton->onClick([this]{ 
+			m_window.showEditFactions(); 
+			hide();
+		});
+		auto dramaButton = tgui::Button::create("drama");
+		m_root.add(dramaButton);
+		dramaButton->onClick([this, &block]{ 
+			m_window.showEditDrama(block.m_area); 
+			hide();
+		});
 	}
 }
 ContextMenuSegment& ContextMenu::makeSubmenu(size_t index)

@@ -47,7 +47,7 @@ class Block final
 	const MaterialType* m_solid;
 	bool m_constructed;
 public:
-	uint32_t m_x, m_y, m_z;
+	DistanceInBlocks m_x, m_y, m_z;
 	// Store area as a pointer rather then a reference to keep block default constructable.
 	// This is required inorder to create the m_blocks structure before initalizing it.
 	// TODO: emplace_back?
@@ -66,7 +66,7 @@ public:
 	const FluidType* m_mist;
 	//TODO: remove mistSource?
 	const FluidType* m_mistSource;
-	uint32_t m_mistInverseDistanceFromSource;
+	DistanceInBlocks m_mistInverseDistanceFromSource;
 	// Store the location bucket this block belongs to.
 	std::unordered_set<Actor*>* m_locationBucket;
 	// Store the visionCuboid this block belongs to.
@@ -104,8 +104,8 @@ public:
 	std::vector<Block*> getEdgeAdjacentOnlyOnNextZLevelDown() const;
 	std::vector<Block*> getEdgeAndCornerAdjacentOnlyOnNextZLevelDown() const;
 	std::vector<Block*> getEdgeAdjacentOnlyOnNextZLevelUp() const;
-	uint32_t distance(Block& block) const;
-	uint32_t taxiDistance(const Block& block) const;
+	DistanceInBlocks distance(Block& block) const;
+	DistanceInBlocks taxiDistance(const Block& block) const;
 	bool squareOfDistanceIsMoreThen(const Block& block, uint32_t distanceSquared) const;
 	bool isAdjacentToAny(std::unordered_set<Block*>& blocks) const;
 	bool isAdjacentTo(Block& block) const;
@@ -118,7 +118,7 @@ public:
 	bool isConstructed() const { return m_constructed; }
 	bool canSeeIntoFromAlways(const Block& block) const;
 	void moveContentsTo(Block& block);
-	uint32_t getMass() const;
+	Mass getMass() const;
 	// Get block at offset coordinates. Can return nullptr.
 	Block* offset(int32_t ax, int32_t ay, int32_t az) const;
 	std::array<int32_t, 3> relativeOffsetTo(const Block& block) const; 
@@ -189,6 +189,29 @@ public:
 				}
 		}
 		return output;
+	}
+	template <typename F>
+	Block* getBlockInRangeWithCondition(DistanceInBlocks range, F&& condition)
+	{
+		std::stack<Block*> open;
+		open.push(this);
+		std::unordered_set<Block*> closed;
+		while(!open.empty())
+		{
+			Block* block = open.top();
+			if(condition(*block))
+				return block;
+			open.pop();
+			for(Block* adjacent : block->m_adjacents)
+				if(adjacent && taxiDistance(*adjacent) <= range && !closed.contains(adjacent))
+				{
+					closed.insert(adjacent);
+					open.push(adjacent);
+				}
+					
+				
+		}
+		return nullptr;
 	}
 	std::unordered_set<Block*> collectAdjacentsInRange(uint32_t range);
 	std::vector<Block*> collectAdjacentsInRangeVector(uint32_t range);

@@ -24,15 +24,17 @@ struct Shape
 	const bool isMultiTile;
 	std::array<std::vector<std::array<int32_t, 4>>,4> occupiedOffsetsCache;
 	std::array<std::vector<std::array<int32_t, 3>>,4> adjacentOffsetsCache;
-	std::vector<std::array<int32_t, 4>> positionsWithFacing(Facing facing) const { return occupiedOffsetsCache.at(facing); }
-	std::vector<std::array<int32_t, 3>> adjacentPositionsWithFacing(Facing facing) const { return adjacentOffsetsCache.at(facing); }
+	[[nodiscard]] std::vector<std::array<int32_t, 4>> positionsWithFacing(Facing facing) const { return occupiedOffsetsCache.at(facing); }
+	[[nodiscard]] std::vector<std::array<int32_t, 3>> adjacentPositionsWithFacing(Facing facing) const { return adjacentOffsetsCache.at(facing); }
 	Shape(const std::string n, std::vector<std::array<int32_t, 4>> p, uint32_t ds);
 	// For custom shapes.
 	Shape(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	std::vector<std::array<int32_t, 4>> makeOccupiedPositionsWithFacing(Facing facing) const;
-	std::vector<std::array<int32_t, 3>> makeAdjacentPositionsWithFacing(Facing facing) const;
-	std::vector<std::array<int32_t, 3>> positionOffsets(std::array<int32_t, 4> position) const;
+	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] std::vector<std::array<int32_t, 4>> makeOccupiedPositionsWithFacing(Facing facing) const;
+	[[nodiscard]] std::vector<std::array<int32_t, 3>> makeAdjacentPositionsWithFacing(Facing facing) const;
+	[[nodiscard]] std::vector<std::array<int32_t, 3>> positionOffsets(std::array<int32_t, 4> position) const;
+	[[nodiscard]] std::vector<Block*> getBlocksOccupiedAt(const Block& location, Facing facing) const;
+	[[nodiscard]] std::vector<std::pair<Block*, Volume>> getBlocksOccupiedAtWithVolumes(const Block& location, Facing facing) const;
 	// Infastructure.
 	bool operator==(const Shape& x) const { return &x == this; }
 	inline static std::vector<Shape> data;

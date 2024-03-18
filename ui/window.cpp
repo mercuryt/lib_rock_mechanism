@@ -18,18 +18,23 @@ Window::Window() : m_window(sf::VideoMode::getDesktopMode(), "Goblin Pit", sf::S
 	m_mainMenuView(*this), m_loadView(*this), m_gameOverlay(*this), m_objectivePriorityView(*this), 
 	m_productionView(*this), m_uniformView(*this), m_stocksView(*this), m_actorView(*this), //m_worldParamatersView(*this),
 	m_editRealityView(*this), m_editActorView(*this), m_editAreaView(*this), m_editFactionView(*this), m_editFactionsView(*this), 
-	m_editStockPileView(*this), m_area(nullptr), m_scale(32), m_z(0), m_speed(1), m_faction(nullptr),
+	m_editStockPileView(*this), m_editDramaView(*this), m_area(nullptr), m_scale(32), m_z(0), m_speed(1), m_faction(nullptr),
 	m_minimumMillisecondsPerFrame(200), m_minimumMillisecondsPerStep(200), m_draw(*this),
 	m_simulationThread([&](){
 		while(true)
 		{
-			std::chrono::milliseconds start = msSinceEpoch();
+			std::chrono::milliseconds start;
+			if(m_speed)
+				start = msSinceEpoch();
 			if(m_simulation && !m_paused)
 				m_simulation->doStep();
-			std::chrono::milliseconds delta = msSinceEpoch() - start;
-			std::chrono::milliseconds adjustedMinimum = std::chrono::milliseconds(m_minimumMillisecondsPerStep / std::chrono::milliseconds(m_speed));
-			if(delta < adjustedMinimum)
-				std::this_thread::sleep_for(adjustedMinimum - delta);
+			if(m_speed)
+			{
+				std::chrono::milliseconds delta = msSinceEpoch() - start;
+				std::chrono::milliseconds adjustedMinimum = std::chrono::milliseconds(m_minimumMillisecondsPerStep / std::chrono::milliseconds(m_speed));
+				if(delta < adjustedMinimum)
+					std::this_thread::sleep_for(adjustedMinimum - delta);
+			}
 		}
 	}), m_editMode(false)
 {
@@ -86,6 +91,7 @@ void Window::hideAllPanels()
 	m_editFactionView.hide();
 	m_editFactionsView.hide();
 	m_editStockPileView.hide();
+	m_editDramaView.hide();
 	//m_worldParamatersView.hide();
 }
 void Window::startLoop()
@@ -234,6 +240,18 @@ void Window::startLoop()
 							if(m_area)
 								setSpeed(32);
 							break;
+						case sf::Keyboard::F7:
+							if(m_area)
+								setSpeed(64);
+							break;
+						case sf::Keyboard::F8:
+							if(m_area)
+								setSpeed(128);
+							break;
+						case sf::Keyboard::F9:
+							if(m_area)
+								setSpeed(0);
+							break;
 						default:
 							break;
 					}
@@ -381,8 +399,9 @@ void Window::startLoop()
 		m_window.display();
 		// Frame rate limit.
 		std::chrono::milliseconds delta = msSinceEpoch() - start;
-		if(m_minimumMillisecondsPerFrame > delta)
-			std::this_thread::sleep_for(m_minimumMillisecondsPerFrame - delta);
+		std::chrono::duration ms = m_speed ? m_minimumMillisecondsPerFrame : m_minimumMillisecondsPerFrame * 2;
+		if(ms > delta)
+			std::this_thread::sleep_for(ms - delta);
 	}
 }
 void Window::drawView()
@@ -574,7 +593,8 @@ void Window::setSpeed(uint8_t speed)
 }
 void Window::setSpeedDisplay()
 {
-	m_gameOverlay.m_speedUI->setText(m_paused ? "paused" : "speed: " + std::to_string(m_speed));
+	std::string display = m_paused ? "paused" : "speed: " + (m_speed ? std::to_string(m_speed) : "max");
+	m_gameOverlay.m_speedUI->setText(display);
 }
 void Window::povFromJson(const Json& data)
 {

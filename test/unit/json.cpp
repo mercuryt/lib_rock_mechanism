@@ -234,7 +234,7 @@ TEST_CASE("json")
 	{
 		Block& projectLocation1 = area.getBlock(8, 4, 1);
 		Block& pileLocation1 = area.getBlock(1, 4, 1);
-		area.m_hasStockPiles.addFaction(faction);
+		area.m_hasStockPiles.registerFaction(faction);
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(pile);
 		StockPile& stockPile = area.m_hasStockPiles.at(faction).addStockPile(queries);

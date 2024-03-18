@@ -149,7 +149,8 @@ void Actor::setLocation(Block& block)
 	if(m_location == nullptr)
 	{
 		assert(block.m_hasShapes.canEnterEverWithFacing(*this, m_facing));
-		assert(block.m_hasShapes.canEnterCurrentlyWithFacing(*this, m_facing));
+		bool can = block.m_hasShapes.canEnterCurrentlyWithFacing(*this, m_facing);
+		assert(can);
 	}
 	else
 	{

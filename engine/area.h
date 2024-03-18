@@ -42,9 +42,9 @@ public:
 	std::wstring m_name;
 	//WorldLocation* m_worldLocation;
 	Simulation& m_simulation;
-	uint32_t m_sizeX;
-	uint32_t m_sizeY;
-	uint32_t m_sizeZ;
+	DistanceInBlocks m_sizeX;
+	DistanceInBlocks m_sizeY;
+	DistanceInBlocks m_sizeZ;
 	//TODO: make into 1d vector.
 	std::unordered_set<Block*> m_caveInCheck;
 	std::vector<std::tuple<std::vector<Block*>,uint32_t,uint32_t>> m_caveInData;
@@ -77,7 +77,7 @@ public:
 	bool m_visionCuboidsActive;
 
 	// Create blocks and store adjacent
-	Area(AreaId id, std::wstring n, Simulation& s, uint32_t x, uint32_t y, uint32_t z);
+	Area(AreaId id, std::wstring n, Simulation& s, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z);
 	Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& s);
 	Area(const Area& area) = delete;
 	Area(const Area&& area) = delete;
@@ -86,9 +86,9 @@ public:
 	void readStep();
 	void writeStep();
 	
-	Block& getBlock(uint32_t x, uint32_t y, uint32_t z);
+	Block& getBlock(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z);
 	Block& getMiddleAtGroundLevel();
-	Block& getGroundLevel(uint32_t x, uint32_t y);
+	Block& getGroundLevel(DistanceInBlocks x, DistanceInBlocks y);
 	//Block& getBlockForAdjacentLocation(WorldLocation& location);
 	// Create a fluid group.
 	FluidGroup* createFluidGroup(const FluidType& fluidType, std::unordered_set<Block*>& blocks, bool checkMerge = true);
@@ -108,8 +108,9 @@ public:
 	void validateAllFluidGroups();
 	std::string toS();
 
-	Cuboid getZLevel(uint32_t z);
+	Cuboid getZLevel(DistanceInBlocks z);
 	Json toJson() const;
+	[[nodiscard]] std::vector<Block>& getBlocks() { return m_blocks; }
 	bool operator==(const Area& other) const { return this == &other; }
 	// For testing.
 	[[maybe_unused]] void logActorsAndItems() const;

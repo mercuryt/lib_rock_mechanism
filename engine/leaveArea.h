@@ -31,5 +31,5 @@ public:
 	LeaveAreaThreadedTask(LeaveAreaObjective& objective);
 	void readStep();
 	void writeStep();
-	void clearReferences();
+	void clearReferences() { m_objective.m_task.clearPointer(); }
 };
