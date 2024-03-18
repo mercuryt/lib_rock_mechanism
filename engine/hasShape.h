@@ -104,6 +104,7 @@ public:
 	std::pair<bool, Facing> canEnterCurrentlyWithAnyFacingReturnFacing(const HasShape& hasShape) const;
 	bool shapeAndMoveTypeCanEnterEverFrom(const Shape& shape, const MoveType& moveType, const Block& block) const;
 	bool shapeAndMoveTypeCanEnterEverWithFacing(const Shape& shape, const MoveType& moveType, const uint8_t facing) const;
+	bool shapeAndMoveTypeCanEnterCurrentlyWithFacing(const Shape& shape, const MoveType& moveType, const uint8_t facing) const;
 	bool moveTypeCanEnter(const MoveType& moveType) const;
 	bool moveTypeCanEnterFrom(const MoveType& moveType, const Block& from) const;
 	bool canEnterCurrentlyFrom(const HasShape& hasShape, const Block& block) const;

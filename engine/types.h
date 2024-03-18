@@ -22,3 +22,4 @@ using Meters = int32_t;
 using Latitude = double;
 using Longitude = double;
 using Bearing = double;
+using DistanceInBlocks = uint32_t;

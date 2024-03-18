@@ -20,7 +20,7 @@
 #include <cassert>
 
 Block::Block() : m_solid(nullptr), m_constructed(false), m_totalFluidVolume(0), m_mist(nullptr), m_mistSource(nullptr),  m_mistInverseDistanceFromSource(0), m_visionCuboid(nullptr), m_fires(nullptr), m_exposedToSky(true), m_underground(false), m_outdoors(true), m_visible(true), m_hasShapes(*this), m_reservable(1), m_hasPlant(*this), m_hasBlockFeatures(*this), m_hasActors(*this), m_hasItems(*this), m_isPartOfStockPiles(*this), m_isPartOfFarmField(*this), m_blockHasTemperature(*this) {}
-void Block::setup(Area& area, uint32_t ax, uint32_t ay, uint32_t az)
+void Block::setup(Area& area, DistanceInBlocks ax, DistanceInBlocks ay, DistanceInBlocks az)
 {
 	m_x=ax;
 	m_y=ay;
@@ -230,22 +230,22 @@ std::vector<Block*> Block::getAdjacentOnSameZLevelOnly() const
 	}
 	return output;
 }
-uint32_t Block::distance(Block& block) const
+DistanceInBlocks Block::distance(Block& block) const
 {
-	uint32_t dx = abs((int)m_x - (int)block.m_x);
-	uint32_t dy = abs((int)m_y - (int)block.m_y);
-	uint32_t dz = abs((int)m_z - (int)block.m_z);
+	DistanceInBlocks dx = abs((int)m_x - (int)block.m_x);
+	DistanceInBlocks dy = abs((int)m_y - (int)block.m_y);
+	DistanceInBlocks dz = abs((int)m_z - (int)block.m_z);
 	return pow((pow(dx, 2) + pow(dy, 2) + pow(dz, 2)), 0.5);
 }
-uint32_t Block::taxiDistance(const Block& block) const
+DistanceInBlocks Block::taxiDistance(const Block& block) const
 {
 	return abs((int)m_x - (int)block.m_x) + abs((int)m_y - (int)block.m_y) + abs((int)m_z - (int)block.m_z);
 }
 bool Block::squareOfDistanceIsMoreThen(const Block& block, uint32_t distanceCubed) const
 {
-	uint32_t dx = abs((int32_t)block.m_x - (int32_t)m_x);
-	uint32_t dy = abs((int32_t)block.m_y - (int32_t)m_y);
-	uint32_t dz = abs((int32_t)block.m_z - (int32_t)m_z);
+	DistanceInBlocks dx = abs((int32_t)block.m_x - (int32_t)m_x);
+	DistanceInBlocks dy = abs((int32_t)block.m_y - (int32_t)m_y);
+	DistanceInBlocks dz = abs((int32_t)block.m_z - (int32_t)m_z);
 	return (dx * dx) + (dy * dy) + (dz * dz) > distanceCubed;
 }
 bool Block::isAdjacentToAny(std::unordered_set<Block*>& blocks) const
@@ -400,7 +400,7 @@ void Block::setSolid(const MaterialType& materialType, bool constructed)
 		// Dishonor all reservations: there are no reservations which can exist on both a solid and not solid block.
 		m_reservable.clearAll();
 }
-uint32_t Block::getMass() const
+Mass Block::getMass() const
 {
 	assert(isSolid());
 	return m_solid->density * Config::maxBlockVolume;
@@ -455,7 +455,7 @@ Block* Block::offset(int32_t ax, int32_t ay, int32_t az) const
 	ax += m_x;
 	ay += m_y;
 	az += m_z;
-	if(ax < 0 || (uint32_t)ax >= m_area->m_sizeX || ay < 0 || (uint32_t)ay >= m_area->m_sizeY || az < 0 || (uint32_t)az >= m_area->m_sizeZ)
+	if(ax < 0 || (DistanceInBlocks)ax >= m_area->m_sizeX || ay < 0 || (DistanceInBlocks)ay >= m_area->m_sizeY || az < 0 || (DistanceInBlocks)az >= m_area->m_sizeZ)
 		return nullptr;
 	return &m_area->getBlock(ax, ay, az);
 }
@@ -548,7 +548,7 @@ bool Block::hasLineOfSightTo(Block& block) const
 {
 	return VisionRequest::hasLineOfSightBasic(*this, block);
 }
-void Block::spawnMist(const FluidType& fluidType, uint32_t maxMistSpread)
+void Block::spawnMist(const FluidType& fluidType, DistanceInBlocks maxMistSpread)
 {
 	if(m_mist != nullptr && (m_mist == &fluidType || m_mist->density > fluidType.density))
 		return;
@@ -720,33 +720,33 @@ std::vector<Block*> Block::selectBetweenCorners(Block* otherBlock) const
 	assert(otherBlock->m_y < m_area->m_sizeY);
 	assert(otherBlock->m_z < m_area->m_sizeZ);
 	std::vector<Block*> output;
-	uint32_t minX = std::min(m_x, otherBlock->m_x);
-	uint32_t maxX = std::max(m_x, otherBlock->m_x);
-	uint32_t minY = std::min(m_y, otherBlock->m_y);
-	uint32_t maxY = std::max(m_y, otherBlock->m_y);
-	uint32_t minZ = std::min(m_z, otherBlock->m_z);
-	uint32_t maxZ = std::max(m_z, otherBlock->m_z);
-	for(uint32_t x = minX; x <= maxX; ++x)
-		for(uint32_t y = minY; y <= maxY; ++y)
-			for(uint32_t z = minZ; z <= maxZ; ++z)
+	DistanceInBlocks minX = std::min(m_x, otherBlock->m_x);
+	DistanceInBlocks maxX = std::max(m_x, otherBlock->m_x);
+	DistanceInBlocks minY = std::min(m_y, otherBlock->m_y);
+	DistanceInBlocks maxY = std::max(m_y, otherBlock->m_y);
+	DistanceInBlocks minZ = std::min(m_z, otherBlock->m_z);
+	DistanceInBlocks maxZ = std::max(m_z, otherBlock->m_z);
+	for(DistanceInBlocks x = minX; x <= maxX; ++x)
+		for(DistanceInBlocks y = minY; y <= maxY; ++y)
+			for(DistanceInBlocks z = minZ; z <= maxZ; ++z)
 			{
 				output.push_back(&m_area->getBlock(x, y, z));
 				assert(output.back() != nullptr);
 			}
 	return output;
 }
-std::unordered_set<Block*> Block::collectAdjacentsInRange(uint32_t range)
+std::unordered_set<Block*> Block::collectAdjacentsInRange(DistanceInBlocks range)
 {
 	auto condition = [&](Block& b){ return b.taxiDistance(*this) <= range; };
 	return collectAdjacentsWithCondition(condition);
 }
-std::vector<Block*> Block::collectAdjacentsInRangeVector(uint32_t range)
+std::vector<Block*> Block::collectAdjacentsInRangeVector(DistanceInBlocks range)
 {
 	auto result = collectAdjacentsInRange(range);
 	std::vector<Block*> output(result.begin(), result.end());
 	return output;
 }
-void Block::loadFromJson(Json data, DeserializationMemo& deserializationMemo, uint32_t x, uint32_t y, uint32_t z)
+void Block::loadFromJson(Json data, DeserializationMemo& deserializationMemo, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z)
 {
 	m_x = x;
 	m_y = y;

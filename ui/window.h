@@ -10,6 +10,7 @@
 #include "../engine/input.h"
 #include "../engine/atomicBool.h"
 #include "draw.h"
+#include "editDramaPanel.h"
 #include "editRealityPanel.h"
 #include "editAreaPanel.h"
 #include "editActorPanel.h"
@@ -50,6 +51,7 @@ class Window final
 	EditFactionView m_editFactionView;
 	EditFactionsView m_editFactionsView;
 	EditStockPileView m_editStockPileView;
+	EditDramaView m_editDramaView;
 	std::unique_ptr<Simulation> m_simulation;
 	Area* m_area;
 	uint32_t m_scale;
@@ -112,6 +114,7 @@ public:
 	void showEditFaction(Faction* faction = nullptr) { hideAllPanels(); m_editFactionView.draw(faction); }
 	void showEditFactions() { hideAllPanels(); m_editFactionsView.draw(); }
 	void showEditStockPile(StockPile* stockPile = nullptr) { hideAllPanels(); m_editStockPileView.draw(stockPile); }
+	void showEditDrama(Area* area = nullptr) { hideAllPanels(); m_editDramaView.draw(area); }
 	// Select.
 	void deselectAll();
 	void selectBlock(Block& block);

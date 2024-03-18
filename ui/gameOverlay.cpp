@@ -1,4 +1,5 @@
 #include "gameOverlay.h"
+#include "config.h"
 #include "util.h"
 #include "window.h"
 #include <TGUI/Widgets/Panel.hpp>
@@ -64,8 +65,11 @@ void GameOverlay::drawTime()
 {
 	DateTime& now = m_window.getSimulation()->m_now;
 	Percent percentOfCurrentHourElapsed = m_window.getSimulation()->m_hourlyEvent.percentComplete();
-	uint8_t minutes = util::scaleByPercent(Config::minutesPerHour, percentOfCurrentHourElapsed);
+	uint16_t seconds = util::scaleByPercent(Config::minutesPerHour * Config::secondsPerMinute, percentOfCurrentHourElapsed);
+	uint16_t minutes = seconds / Config::secondsPerMinute;
+	seconds -= minutes * Config::secondsPerMinute;
 	m_timeUI->setText(
+			"seconds: " + std::to_string(seconds) + 
 			"minutes: " + std::to_string(minutes) + 
 			" hour: " + std::to_string(now.hour) + 
 			" day: " + std::to_string(now.day) + 

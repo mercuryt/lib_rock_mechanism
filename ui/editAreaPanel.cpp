@@ -73,7 +73,8 @@ void EditAreaView::confirm()
 	if(!m_area)
 	{
 		std::function<void()> task = [this]{
-			m_area = &m_window.getSimulation()->createArea(m_sizeX->getValue(), m_sizeY->getValue(), m_sizeZ->getValue());
+			static constexpr bool createDrama = true;
+			m_area = &m_window.getSimulation()->createArea(m_sizeX->getValue(), m_sizeY->getValue(), m_sizeZ->getValue(), createDrama);
 		};
 		m_window.threadTask(task);
 	}
