@@ -1,4 +1,5 @@
 #include "window.h"
+#include "config.h"
 #include "craft.h"
 #include "displayData.h"
 #include "sprite.h"
@@ -19,7 +20,7 @@ Window::Window() : m_window(sf::VideoMode::getDesktopMode(), "Goblin Pit", sf::S
 	m_productionView(*this), m_uniformView(*this), m_stocksView(*this), m_actorView(*this), //m_worldParamatersView(*this),
 	m_editRealityView(*this), m_editActorView(*this), m_editAreaView(*this), m_editFactionView(*this), m_editFactionsView(*this), 
 	m_editStockPileView(*this), m_editDramaView(*this), m_area(nullptr), m_scale(32), m_z(0), m_speed(1), m_faction(nullptr),
-	m_minimumMillisecondsPerFrame(200), m_minimumMillisecondsPerStep(200), m_draw(*this),
+	m_minimumTimePerFrame(200), m_minimumTimePerStep((int)(1000.f / (float)Config::stepsPerSecond)), m_draw(*this),
 	m_simulationThread([&](){
 		while(true)
 		{
@@ -31,7 +32,7 @@ Window::Window() : m_window(sf::VideoMode::getDesktopMode(), "Goblin Pit", sf::S
 			if(m_speed)
 			{
 				std::chrono::milliseconds delta = msSinceEpoch() - start;
-				std::chrono::milliseconds adjustedMinimum = std::chrono::milliseconds(m_minimumMillisecondsPerStep / std::chrono::milliseconds(m_speed));
+				std::chrono::milliseconds adjustedMinimum = std::chrono::milliseconds(m_minimumTimePerStep / std::chrono::milliseconds(m_speed));
 				if(delta < adjustedMinimum)
 					std::this_thread::sleep_for(adjustedMinimum - delta);
 			}
@@ -399,7 +400,7 @@ void Window::startLoop()
 		m_window.display();
 		// Frame rate limit.
 		std::chrono::milliseconds delta = msSinceEpoch() - start;
-		std::chrono::duration ms = m_speed ? m_minimumMillisecondsPerFrame : m_minimumMillisecondsPerFrame * 2;
+		std::chrono::duration ms = m_speed ? m_minimumTimePerFrame : m_minimumTimePerFrame * 2;
 		if(ms > delta)
 			std::this_thread::sleep_for(ms - delta);
 	}

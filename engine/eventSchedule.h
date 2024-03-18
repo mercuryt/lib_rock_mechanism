@@ -30,6 +30,7 @@ public:
 	virtual void onCancel() { }
 	virtual ~ScheduledEvent() = default;
 	[[nodiscard]] Percent percentComplete() const;
+	[[nodiscard]] float fractionComplete() const;
 	[[nodiscard]] Step duration() const;
 	[[nodiscard]] Step remaningSteps() const;
 	ScheduledEvent(const ScheduledEvent&) = delete;

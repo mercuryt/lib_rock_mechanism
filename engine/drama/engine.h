@@ -27,7 +27,7 @@ protected:
 	[[nodiscard]] virtual Json toJson() const;
 	void actorsLeave(std::vector<Actor*> actors);
 	[[nodiscard]] Block* getEntranceToArea(Area& area, const Shape& shape, const MoveType& moveType) const;
-	[[nodiscard]] Block* findLocationOnEdgeForNear(const Shape& shape, const MoveType& moveType, Block& origin, DistanceInBlocks distance) const;
+	[[nodiscard]] Block* findLocationOnEdgeForNear(const Shape& shape, const MoveType& moveType, Block& origin, DistanceInBlocks distance, std::unordered_set<Block*> exclude) const;
 	[[nodiscard]] bool blockIsConnectedToAtLeast(const Block& block, const Shape& shape, const MoveType& moveType, uint16_t count) const;
 	[[nodiscard]] Facing getFacingAwayFromEdge(const Block& block) const;
 	static std::unique_ptr<DramaArc> load(const Json& data, DeserializationMemo& deserializationMemo);
