@@ -14,13 +14,15 @@ void ScheduledEvent::cancel()
        	m_simulation.m_eventSchedule.unschedule(*this); 
 }
 Step ScheduledEvent::remaningSteps() const { return m_step - m_simulation.m_step; }
-
-//TODO: The same ternary is used twice here.
 Percent ScheduledEvent::percentComplete() const
+{
+	return fractionComplete() * 100u;
+}
+float ScheduledEvent::fractionComplete() const
 {
 	Step totalSteps = m_step - m_startStep;
 	Step elapsedSteps = m_simulation.m_step - m_startStep;
-	return ((float)elapsedSteps / (float)totalSteps) * 100u;
+	return (float)elapsedSteps / (float)totalSteps;
 }
 
 Step ScheduledEvent::duration() const { return m_step - m_startStep ; }

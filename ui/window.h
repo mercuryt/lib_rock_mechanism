@@ -4,6 +4,7 @@
 #include <TGUI/Backend/SFML-Graphics.hpp>
 #include <chrono>
 #include <memory>
+#include <ratio>
 #include "../engine/simulation.h"
 #include "../engine/area.h"
 #include "../engine/block.h"
@@ -56,7 +57,7 @@ class Window final
 	Area* m_area;
 	uint32_t m_scale;
 	uint32_t m_z;
-	std::atomic<uint8_t> m_speed;
+	std::atomic<uint16_t> m_speed;
 	std::unordered_map<AreaId, GameView> m_lastViewedSpotInArea;
 	//TODO: multi select.
 	std::unordered_set<Block*> m_selectedBlocks;
@@ -66,8 +67,8 @@ class Window final
 	Faction* m_faction;
 	// AtomicBool used instead of std::atomic<bool> for atomic toggle.
 	AtomicBool m_paused;
-	std::chrono::milliseconds m_minimumMillisecondsPerFrame;
-	std::chrono::milliseconds m_minimumMillisecondsPerStep;
+	std::chrono::milliseconds m_minimumTimePerFrame;
+	std::chrono::milliseconds m_minimumTimePerStep;
 	Draw m_draw;
 	std::thread m_simulationThread;
 	sf::Vector2i m_positionWhereMouseDragBegan;

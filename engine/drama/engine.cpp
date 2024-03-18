@@ -92,17 +92,19 @@ Block* DramaArc::getEntranceToArea(Area& area, const Shape& shape, const MoveTyp
 	assert(candidate);
 	return candidate;
 }
-Block* DramaArc::findLocationOnEdgeForNear(const Shape& shape, const MoveType& moveType, Block& origin, DistanceInBlocks distance) const
+Block* DramaArc::findLocationOnEdgeForNear(const Shape& shape, const MoveType& moveType, Block& origin, DistanceInBlocks distance, std::unordered_set<Block*> exclude) const
 {
 	Facing facing = getFacingAwayFromEdge(origin);
 	auto predicate = [&](Block& thisBlock) -> bool {
+		if(exclude.contains(&thisBlock))
+			return false;
 		// TODO: A single method doing both of these with one iteration would be faster.
 		if(!thisBlock.m_hasShapes.shapeAndMoveTypeCanEnterEverWithFacing(shape, moveType, facing) ||
 			!thisBlock.m_hasShapes.shapeAndMoveTypeCanEnterCurrentlyWithFacing(shape, moveType, facing)
 		)
 			return false;
-		for(Block* block : shape.getBlocksOccupiedAt(thisBlock, facing))
-			if(block->m_isEdge)
+		for(Block* occupiedBlock : shape.getBlocksOccupiedAt(thisBlock, facing))
+			if(occupiedBlock->m_isEdge)
 				return true;
 		return false;
 	};

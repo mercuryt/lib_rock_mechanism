@@ -38,6 +38,11 @@ public:
 		assert(m_event != nullptr);
 		return m_event->percentComplete();
 	}
+	[[nodiscard]] float fractionComplete() const
+	{
+		assert(m_event != nullptr);
+		return m_event->fractionComplete();
+	}
 	[[nodiscard]] bool exists() const { return m_event != nullptr; }
 	[[nodiscard]] const Step& getStep() const
 	{

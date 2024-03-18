@@ -28,14 +28,16 @@ void AnimalsArriveDramaArc::callback()
 	auto& random = m_area->m_simulation.m_random;
 	if(m_isActive)
 	{
+		std::unordered_set<Block*> exclude;
 		// Spawn.
 		while(m_quantity--)
 		{
 			Percent percentGrown = std::min(100, random.getInRange(15, 500));
 			constexpr DistanceInBlocks maxBlockDistance = 10;
-			Block* location = findLocationOnEdgeForNear(m_species->shapeForPercentGrown(percentGrown), m_species->moveType, *m_entranceBlock, maxBlockDistance);
+			Block* location = findLocationOnEdgeForNear(m_species->shapeForPercentGrown(percentGrown), m_species->moveType, *m_entranceBlock, maxBlockDistance, exclude);
 			if(location)
 			{
+				exclude.insert(location);
 				Actor& actor = m_area->m_simulation.createActor(ActorParamaters{
 					.species=*m_species, 
 					.percentGrown=percentGrown,

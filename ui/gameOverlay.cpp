@@ -64,13 +64,13 @@ void GameOverlay::unfocusUI()
 void GameOverlay::drawTime()
 {
 	DateTime& now = m_window.getSimulation()->m_now;
-	Percent percentOfCurrentHourElapsed = m_window.getSimulation()->m_hourlyEvent.percentComplete();
-	uint16_t seconds = util::scaleByPercent(Config::minutesPerHour * Config::secondsPerMinute, percentOfCurrentHourElapsed);
+	float fractionOfCurrentHourElapsed = m_window.getSimulation()->m_hourlyEvent.fractionComplete();
+	uint16_t seconds = Config::minutesPerHour * Config::secondsPerMinute * fractionOfCurrentHourElapsed;
 	uint16_t minutes = seconds / Config::secondsPerMinute;
 	seconds -= minutes * Config::secondsPerMinute;
 	m_timeUI->setText(
 			"seconds: " + std::to_string(seconds) + 
-			"minutes: " + std::to_string(minutes) + 
+			" minutes: " + std::to_string(minutes) + 
 			" hour: " + std::to_string(now.hour) + 
 			" day: " + std::to_string(now.day) + 
 			" year: " + std::to_string(now.year)
