@@ -18,8 +18,8 @@ void Draw::blockFloor(const Block& block)
 {
 	if(block.isSolid())
 	{
-		for(Block* adjacent : block.m_adjacentsVector)
-			if(m_window.m_editMode || adjacent->m_visible)
+		for(Block* adjacent : block.m_adjacents)
+			if(adjacent && (m_window.m_editMode || adjacent->m_visible))
 			{
 				assert(displayData::materialColors.contains(&block.getSolidMaterial()));
 				colorOnBlock(block, displayData::materialColors.at(&block.getSolidMaterial()));

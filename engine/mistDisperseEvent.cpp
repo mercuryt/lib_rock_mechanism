@@ -19,8 +19,8 @@ void MistDisperseEvent::execute()
 	{
 		// Possibly spread.
 		if(m_block.m_mistInverseDistanceFromSource > 0)
-			for(Block* adjacent : m_block.m_adjacentsVector)
-				if(adjacent->fluidCanEnterEver() && (adjacent->m_mist == nullptr || adjacent->m_mist->density < m_fluidType.density)
+			for(Block* adjacent : m_block.m_adjacents)
+				if(adjacent && adjacent->fluidCanEnterEver() && (adjacent->m_mist == nullptr || adjacent->m_mist->density < m_fluidType.density)
 				  )
 				{
 					adjacent->m_mist = &m_fluidType;
@@ -44,9 +44,9 @@ bool MistDisperseEvent::continuesToExist() const
 		// if adjacent to falling fluid.
 		if(adjacent->m_fluids.contains(&m_fluidType) && adjacent->getBlockBelow() && !adjacent->getBlockBelow()->isSolid())
 			return true;
-	for(Block* adjacent : m_block.m_adjacentsVector)
+	for(Block* adjacent : m_block.m_adjacents)
 		// if adjacent to block with mist with lower distance to source.
-		if(adjacent->m_mist == &m_fluidType && adjacent->m_mistInverseDistanceFromSource > m_block.m_mistInverseDistanceFromSource)
+		if(adjacent && adjacent->m_mist == &m_fluidType && adjacent->m_mistInverseDistanceFromSource > m_block.m_mistInverseDistanceFromSource)
 			return true;
 	return false;
 }

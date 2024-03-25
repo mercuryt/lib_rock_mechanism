@@ -58,13 +58,13 @@ VisionCuboid* VisionCuboid::getTargetToCombineWith(const Cuboid& cuboid)
 {
 	assert(cuboid.m_highest->canSeeThrough());
 	assert(cuboid.m_lowest->canSeeThrough());
-	for(Block* block : cuboid.m_highest->m_adjacentsVector)
-		if(!cuboid.contains(*block) && block->m_visionCuboid != nullptr && !block->m_visionCuboid->m_destroy && block->m_visionCuboid->canCombineWith(cuboid))
+	for(Block* block : cuboid.m_highest->m_adjacents)
+		if(block && !cuboid.contains(*block) && block->m_visionCuboid != nullptr && !block->m_visionCuboid->m_destroy && block->m_visionCuboid->canCombineWith(cuboid))
 			return block->m_visionCuboid;
 	//if(cuboid.m_highest == cuboid.m_lowest)
 	//return nullptr;
-	for(Block* block : cuboid.m_lowest->m_adjacentsVector)
-		if(!cuboid.contains(*block) && block->m_visionCuboid != nullptr && !block->m_visionCuboid->m_destroy && block->m_visionCuboid->canCombineWith(cuboid))
+	for(Block* block : cuboid.m_lowest->m_adjacents)
+		if(block && !cuboid.contains(*block) && block->m_visionCuboid != nullptr && !block->m_visionCuboid->m_destroy && block->m_visionCuboid->canCombineWith(cuboid))
 			return block->m_visionCuboid;
 	return nullptr;
 }

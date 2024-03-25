@@ -14,8 +14,9 @@ TEST_CASE("locationBuckets")
 		CHECK(block.m_locationBucket != nullptr);
 		Actor& a1 = simulation.createActor(dwarf, block);
 		CHECK(block.m_locationBucket->contains(&a1));
-		for(Block* adjacent : block.m_adjacentsVector)
-			CHECK(block.m_locationBucket == adjacent->m_locationBucket);
+		for(Block* adjacent : block.m_adjacents)
+			if(adjacent)
+				CHECK(block.m_locationBucket == adjacent->m_locationBucket);
 		for(Actor& a : area.m_hasActors.m_locationBuckets.inRange(block, 10))
 			CHECK(&a == &a1);
 	}

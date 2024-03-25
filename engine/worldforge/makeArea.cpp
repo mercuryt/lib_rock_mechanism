@@ -144,32 +144,33 @@ std::vector<Block*> getPathForRiver(Block& start, Block& end)
 		{
 			Candidate* candidate = openList.top();
 			openList.pop();
-			for(Block* adjacent : candidate->block->m_adjacentsVector)
-			{
-				if(adjacent == &end)
+			for(Block* adjacent : candidate->block->m_adjacents)
+				if(adjacent)
 				{
-					// Found.
-					std::vector<Block*> path{adjacent, candidate->block};
-					while(candidate->previous)
+					if(adjacent == &end)
 					{
-						candidate = candidate->previous;
-						path.push_back(candidate->block->getBlockBelow() ? candidate->block->getBlockBelow() : candidate->block);
+						// Found.
+						std::vector<Block*> path{adjacent, candidate->block};
+						while(candidate->previous)
+						{
+							candidate = candidate->previous;
+							path.push_back(candidate->block->getBlockBelow() ? candidate->block->getBlockBelow() : candidate->block);
+						}
+						std::ranges::reverse(path);
+						for(size_t i = 0; i < path.size(); ++i)
+						{
+							// Prevent flowing uphill.
+							if(i && path[i - 1]->m_z < path[i]->m_z)
+								path[i] = &start.m_area->getBlock(path[i]->m_x, path[i]->m_y, path[i - 1]->m_z);
+						}
+						return path;
 					}
-					std::ranges::reverse(path);
-					for(size_t i = 0; i < path.size(); ++i)
-					{
-						// Prevent flowing uphill.
-						if(i && path[i - 1]->m_z < path[i]->m_z)
-							path[i] = &start.m_area->getBlock(path[i]->m_x, path[i]->m_y, path[i - 1]->m_z);
-					}
-					return path;
+					if(closedList.contains(adjacent))
+						continue;
+					closedList.insert(adjacent);
+					if(adjacent->fluidCanEnterEver())
+						openList.push(&candidates.emplace_back(adjacent, candidate));
 				}
-				if(closedList.contains(adjacent))
-					continue;
-				closedList.insert(adjacent);
-				if(adjacent->fluidCanEnterEver())
-					openList.push(&candidates.emplace_back(adjacent, candidate));
-			}
 		}
 		// No path found.
 		assert(false);

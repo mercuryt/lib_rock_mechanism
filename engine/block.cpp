@@ -38,9 +38,7 @@ void Block::recordAdjacent()
 	for(uint32_t i = 0; i < 6; i++)
 	{
 		auto& offsets = offsetsList[i];
-		Block* block = m_adjacents[i] = offset(offsets[0],offsets[1],offsets[2]);
-		if(block)
-			m_adjacentsVector.push_back(block);
+		m_adjacents[i] = offset(offsets[0],offsets[1],offsets[2]);
 	}
 }
 std::vector<Block*> Block::getAdjacentWithEdgeAdjacent() const
@@ -250,15 +248,15 @@ bool Block::squareOfDistanceIsMoreThen(const Block& block, uint32_t distanceCube
 }
 bool Block::isAdjacentToAny(std::unordered_set<Block*>& blocks) const
 {
-	for(Block* adjacent : m_adjacentsVector)
-		if(blocks.contains(adjacent))
+	for(Block* adjacent : m_adjacents)
+		if(adjacent && blocks.contains(adjacent))
 			return true;
 	return false;
 }
 bool Block::isAdjacentTo(Block& block) const
 {
-	for(Block* adjacent : m_adjacentsVector)
-		if(&block == adjacent)
+	for(Block* adjacent : m_adjacents)
+		if(adjacent && &block == adjacent)
 			return true;
 	return false;
 }
@@ -279,8 +277,8 @@ void Block::setNotSolid()
 		return;
 	m_solid = nullptr;
 	m_constructed = false;
-	for(Block* adjacent : m_adjacentsVector)
-		if(adjacent->fluidCanEnterEver())
+	for(Block* adjacent : m_adjacents)
+		if(adjacent && adjacent->fluidCanEnterEver())
 			for(auto& [fluidType, pair] : adjacent->m_fluids)
 			{
 				pair.second->m_fillQueue.addBlock(this);
@@ -380,8 +378,8 @@ void Block::setSolid(const MaterialType& materialType, bool constructed)
 	}
 	m_fluids.clear();
 	// Remove from fluid fill queues.
-	for(Block* adjacent : m_adjacentsVector)
-		if(adjacent->fluidCanEnterEver())
+	for(Block* adjacent : m_adjacents)
+		if(adjacent && adjacent->fluidCanEnterEver())
 			for(auto& [fluidType, pair] : adjacent->m_fluids)
 				pair.second->m_fillQueue.removeBlock(this);
 	m_visible = false;
@@ -571,8 +569,8 @@ void Block::addFluid(uint32_t volume, const FluidType& fluidType)
 	m_totalFluidVolume += volume;
 	// Find fluid group.
 	FluidGroup* fluidGroup = nullptr;
-	for(Block* adjacent : m_adjacentsVector)
-		if(adjacent->fluidCanEnterEver() && adjacent->m_fluids.contains(&fluidType))
+	for(Block* adjacent : m_adjacents)
+		if(adjacent && adjacent->fluidCanEnterEver() && adjacent->m_fluids.contains(&fluidType))
 		{
 			assert(adjacent->m_fluids.at(&fluidType).second->m_fluidType == fluidType);
 			fluidGroup = adjacent->m_fluids.at(&fluidType).second;
@@ -625,8 +623,8 @@ bool Block::fluidCanEnterEver() const
 }
 bool Block::isAdjacentToFluidGroup(const FluidGroup* fluidGroup) const
 {
-	for(Block* block : m_adjacentsVector)
-		if(block->m_fluids.contains(&fluidGroup->m_fluidType) && block->m_fluids.at(&fluidGroup->m_fluidType).second == fluidGroup)
+	for(Block* block : m_adjacents)
+		if(block && block->m_fluids.contains(&fluidGroup->m_fluidType) && block->m_fluids.at(&fluidGroup->m_fluidType).second == fluidGroup)
 			return true;
 	return false;
 }
@@ -762,8 +760,8 @@ void Block::loadFromJson(Json data, DeserializationMemo& deserializationMemo, Di
 		m_solid = &MaterialType::byName(data["s"].get<std::string>());
 		//TODO: repetion of code on line 377 in setSolid.
 		// Remove from fluid fill queues.
-		for(Block* adjacent : m_adjacentsVector)
-			if(adjacent->fluidCanEnterEver())
+		for(Block* adjacent : m_adjacents)
+			if(adjacent && adjacent->fluidCanEnterEver())
 				for(auto& [fluidType, pair] : adjacent->m_fluids)
 					pair.second->m_fillQueue.removeBlock(this);
 	}

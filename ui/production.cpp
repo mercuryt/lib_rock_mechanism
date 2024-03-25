@@ -54,13 +54,13 @@ NewProductionView::NewProductionView(Window& window, ProductionView& productionV
 	m_group->add(title);
 	// CraftJobType
 	m_group->add(m_craftJobTypeSelector);
-	for(CraftJobType& craftJobType : CraftJobType::data)
+	for(CraftJobType& craftJobType : craftJobTypeDataStore)
 		// Prodvide name as id paramater so we can localize the display name and use the real name as id.
 		m_craftJobTypeSelector->addItem(craftJobType.name, craftJobType.name);
 	m_craftJobTypeSelector->onItemSelect([&](const tgui::String& item){ m_craftJobType = &CraftJobType::byName(item.toStdString()); });
 	// MaterialType
 	m_group->add(m_materialTypeSelector);
-	for(MaterialType& materialType : MaterialType::data)
+	for(MaterialType& materialType : materialTypeDataStore)
 		// Prodvide name as id paramater so we can localize the display name and use the real name as id.
 		m_materialTypeSelector->addItem(materialType.name, materialType.name);
 	m_materialTypeSelector->onItemSelect([&](const tgui::String& material){ m_materialType = &MaterialType::byName(material.toStdString()); });
