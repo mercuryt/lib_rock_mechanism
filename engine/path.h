@@ -111,20 +111,21 @@ namespace path
 			{
 				if(predicate(routeNode->block))
 					return &routeNode->block;
-				for(Block* adjacent : routeNode->block.m_adjacentsVector)
-				{
-					if(!adjacent->m_hasShapes.anythingCanEnterEver())
-						continue;
-					if(!closedList.contains(adjacent))
+				for(Block* adjacent : routeNode->block.m_adjacents)
+					if(adjacent)
 					{
-						closedList.insert(adjacent);
-						if(adjacent->m_hasShapes.canEnterEverFrom(actor, routeNode->block))
+						if(!adjacent->m_hasShapes.anythingCanEnterEver())
+							continue;
+						if(!closedList.contains(adjacent))
 						{
-							routeNodes.emplace_back(*adjacent, routeNode);
-							openList.push_back(&routeNodes.back());
+							closedList.insert(adjacent);
+							if(adjacent->m_hasShapes.canEnterEverFrom(actor, routeNode->block))
+							{
+								routeNodes.emplace_back(*adjacent, routeNode);
+								openList.push_back(&routeNodes.back());
+							}
 						}
 					}
-				}
 			}
 			openList.pop_front();
 		}

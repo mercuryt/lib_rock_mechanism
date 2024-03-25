@@ -211,10 +211,11 @@ void CanFight::onMoveFrom(Block& previous)
 	for(Actor* actor : m_targetedBy)
 		actor->m_canFight.onTargetMoved();
 	// Give all directly adjacent enemies a free hit against this actor.
-	for(Block* block : previous.m_adjacentsVector)
-		for(Actor* actor : block->m_hasActors.getAll())
-			if(actor->getFaction()->enemies.contains(const_cast<Faction*>(m_actor.getFaction())))
-				actor->m_canFight.freeHit(m_actor);
+	for(Block* block : previous.m_adjacents)
+		if(block)
+			for(Actor* actor : block->m_hasActors.getAll())
+				if(actor->getFaction()->enemies.contains(const_cast<Faction*>(m_actor.getFaction())))
+					actor->m_canFight.freeHit(m_actor);
 }
 void CanFight::noLongerTargetable()
 {

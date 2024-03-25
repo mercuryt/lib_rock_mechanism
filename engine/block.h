@@ -56,7 +56,6 @@ public:
 	// below = 0, < = 1, ^ = 2, > = 3, v = 4, above = 5.
 	std::array<Block*, 6> m_adjacents;
 	// Contains only those adjacents which aren't null.
-	std::vector<Block*> m_adjacentsVector;
 	// Sorted by density, low to high.
 	// TODO: Try replacing with a flatmap.
 	// TODO: HasFluids.
@@ -181,8 +180,8 @@ public:
 		{
 			Block* block = openList.top();
 			openList.pop();
-			for(Block* adjacent : block->m_adjacentsVector)
-				if(condition(*adjacent) && !output.contains(adjacent))
+			for(Block* adjacent : block->m_adjacents)
+				if(adjacent && condition(*adjacent) && !output.contains(adjacent))
 				{
 					output.insert(adjacent);
 					openList.push(adjacent);

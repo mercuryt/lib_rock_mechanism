@@ -77,8 +77,8 @@ void DrainQueue::applyDelta()
 			iter->block->m_fluids.erase(found);
 		// Record blocks to set fluid groups unstable.
 		drainedFromAndAdjacent.insert(iter->block);
-		for(Block* adjacent : iter->block->m_adjacentsVector)
-			if(adjacent->fluidCanEnterEver())
+		for(Block* adjacent : iter->block->m_adjacents)
+			if(adjacent && adjacent->fluidCanEnterEver())
 				drainedFromAndAdjacent.insert(adjacent);
 	}
 	// Set fluidGroups unstable.

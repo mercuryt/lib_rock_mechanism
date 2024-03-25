@@ -138,12 +138,13 @@ std::unordered_set<HasShape*> HasShape::getAdjacentHasShapes()
 			for(auto& pair : shapes)
 				output.insert(pair.first);
 		}
-		for(Block* adjacent : block->m_adjacentsVector)
-		{
-			auto& shapes = adjacent->m_hasShapes.getShapes();
-			for(auto& pair : shapes)
-				output.insert(pair.first);
-		}
+		for(Block* adjacent : block->m_adjacents)
+			if(adjacent)
+			{
+				auto& shapes = adjacent->m_hasShapes.getShapes();
+				for(auto& pair : shapes)
+					output.insert(pair.first);
+			}
 	}
 	output.erase(this);
 	return output;

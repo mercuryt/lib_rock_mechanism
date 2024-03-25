@@ -150,7 +150,7 @@ void EditActorView::draw(Actor& actor)
 		++skillsCount;
 	}
 	auto createSkill = tgui::ComboBox::create();
-	for(const SkillType& skillType : SkillType::data)
+	for(const SkillType& skillType : skillTypeDataStore)
 		createSkill->addItem(skillType.name, skillType.name);
 	layoutGrid->addWidget(createSkill, ++gridCount, 1);
 	createSkill->onItemSelect([this](const tgui::String& value){

@@ -197,7 +197,7 @@ void definitions::loadMedicalProjectTypes()
 		if(file.path().extension() != ".json")
 			continue;
 		Json data = tryParse(file.path());
-		auto& medicalProjectType = MedicalProjectType::data.emplace_back(
+		auto& medicalProjectType = medicalProjectTypeDataStore.emplace_back(
 			data["name"].get<std::string>(),
 			data["baseMinutesDuration"].get<uint32_t>() * Config::stepsPerMinute
 		);

@@ -67,7 +67,7 @@ tgui::ComboBox::Ptr widgetUtil::makePlantSpeciesSelectUI(Block* block)
 	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
 	bool selected = false;
 	output->onItemSelect([&](const tgui::String name){ lastSelectedPlantSpecies = &PlantSpecies::byName(name.toStdString()); });
-	for(const PlantSpecies& plantSpecies : PlantSpecies::data)
+	for(const PlantSpecies& plantSpecies : plantSpeciesDataStore)
 	{
 		if(block && !block->m_hasPlant.canGrowHereEver(plantSpecies))
 			continue;
@@ -106,7 +106,7 @@ tgui::ComboBox::Ptr widgetUtil::makeMaterialSelectUI(std::wstring nullLabel)
 			selected = true;
 		}
 	}
-	for(const MaterialType& materialType : MaterialType::data)
+	for(const MaterialType& materialType : materialTypeDataStore)
 	{
 		output->addItem(materialType.name, materialType.name);
 		if(lastSelectedMaterial && *lastSelectedMaterial == materialType)
@@ -165,7 +165,7 @@ tgui::ComboBox::Ptr widgetUtil::makeAnimalSpeciesSelectUI()
 	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
 	bool selected = false;
 	output->onItemSelect([](const tgui::String name){ lastSelectedAnimalSpecies = &AnimalSpecies::byName(name.toStdString()); });
-	for(const AnimalSpecies& animalSpecies : AnimalSpecies::data)
+	for(const AnimalSpecies& animalSpecies : animalSpeciesDataStore)
 	{
 		output->addItem(animalSpecies.name, animalSpecies.name);
 		if(lastSelectedAnimalSpecies && lastSelectedAnimalSpecies == &animalSpecies)
@@ -209,7 +209,7 @@ tgui::ComboBox::Ptr widgetUtil::makeItemTypeSelectUI()
 	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
 	bool selected = false;
 	output->onItemSelect([](const tgui::String name){ lastSelectedItemType = &ItemType::byName(name.toStdString()); });
-	for(const ItemType& itemType : ItemType::data)
+	for(const ItemType& itemType : itemTypeDataStore)
 	{
 		output->addItem(itemType.name, itemType.name);
 		if(lastSelectedItemType && lastSelectedItemType == &itemType)
@@ -287,7 +287,7 @@ tgui::ComboBox::Ptr widgetUtil::makeCraftStepTypeCategorySelectUI()
 	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
 	output->onItemSelect([](const tgui::String name){ lastSelectedCraftStepTypeCategory = &CraftStepTypeCategory::byName(name.toStdString()); });
 	bool selected = false;
-	for(const CraftStepTypeCategory& craftStepTypeCategory : CraftStepTypeCategory::data)
+	for(const CraftStepTypeCategory& craftStepTypeCategory : craftStepTypeCategoryDataStore)
 	{
 		output->addItem(craftStepTypeCategory.name, craftStepTypeCategory.name);
 		if(lastSelectedCraftStepTypeCategory && lastSelectedCraftStepTypeCategory == &craftStepTypeCategory)

@@ -7,8 +7,8 @@ void FillQueue::buildFor(std::unordered_set<Block*>& members)
 	for(Block* block : members)
 	{
 		assert(block->m_fluids.contains(&m_fluidGroup.m_fluidType));
-		for(Block* adjacent : block->m_adjacentsVector)
-			 if(adjacent->fluidCanEnterEver() && adjacent->fluidTypeCanEnterCurrently(m_fluidGroup.m_fluidType) &&
+		for(Block* adjacent : block->m_adjacents)
+			 if(adjacent && adjacent->fluidCanEnterEver() && adjacent->fluidTypeCanEnterCurrently(m_fluidGroup.m_fluidType) &&
 				adjacent->m_fluids.at(&m_fluidGroup.m_fluidType).first != Config::maxBlockVolume
 			   )
 				addBlock(adjacent);
