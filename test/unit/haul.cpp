@@ -61,7 +61,7 @@ TEST_CASE("haul")
 		Block& chunkLocation = area.getBlock(1, 5, 2);
 		Item& chunk1 = simulation.createItemGeneric(chunk, marble, 1u);
 		chunk1.setLocation(chunkLocation);
-		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1}), chunk1, destination);
+		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(std::vector<Actor*>({&dwarf1}), chunk1, destination);
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "haul");
 		REQUIRE(simulation.m_threadedTaskEngine.count() == 1);
 		// One step to activate the project and make reservations.
@@ -94,7 +94,7 @@ TEST_CASE("haul")
 		Block& cartLocation = area.getBlock(7, 7, 2);
 		cart.setLocation(cartLocation);
 		area.m_hasHaulTools.registerHaulTool(cart);
-		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1}), chunk1, destination);
+		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(std::vector<Actor*>({&dwarf1}), chunk1, destination);
 		// One step to activate the project and make reservations.
 		simulation.doStep();
 		REQUIRE(project.reservationsComplete());
@@ -132,7 +132,7 @@ TEST_CASE("haul")
 		REQUIRE(!dwarf1.m_canPickup.canPickupAny(chunk1));
 		Actor& dwarf2 = simulation.createActor(dwarf, area.getBlock(1, 2, 2));
 		dwarf2.setFaction(&faction);
-		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1, &dwarf2}), chunk1, destination);
+		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(std::vector<Actor*>({&dwarf1, &dwarf2}), chunk1, destination);
 		// One step to activate the project and make reservations.
 		simulation.doStep();
 		// Another step to select the haul strategy and create the subproject.
@@ -176,7 +176,7 @@ TEST_CASE("haul")
 		Item& panniers1 = simulation.createItemNongeneric(panniers, poplarWood, 3u, 0);
 		panniers1.setLocation(panniersLocation);
 		area.m_hasHaulTools.registerHaulTool(panniers1);
-		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1}), chunk1, destination);
+		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(std::vector<Actor*>({&dwarf1}), chunk1, destination);
 		// One step to activate the project and make reservations.
 		simulation.doStep();
 		// Another step to select the haul strategy and create the subproject.
@@ -219,7 +219,7 @@ TEST_CASE("haul")
 		Item& cart1 = simulation.createItemNongeneric(cart, poplarWood, 3u, 0);
 		cart1.setLocation(cartLocation);
 		area.m_hasHaulTools.registerHaulTool(cart1);
-		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1}), boulder1, destination);
+		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(std::vector<Actor*>({&dwarf1}), boulder1, destination);
 		// One step to activate the project and make reservations.
 		simulation.doStep();
 		// Another step to select the haul strategy and create the subproject.
@@ -261,7 +261,7 @@ TEST_CASE("haul")
 		Item& cart1 = simulation.createItemNongeneric(cart, poplarWood, 3u, 0);
 		cart1.setLocation(cartLocation);
 		area.m_hasHaulTools.registerHaulTool(cart1);
-		TargetedHaulProject& project = area.m_targetedHauling.begin(std::vector<Actor*>({&dwarf1, &dwarf2}), cargo1, destination);
+		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(std::vector<Actor*>({&dwarf1, &dwarf2}), cargo1, destination);
 		// One step to activate the project and make reservations.
 		simulation.doStep();
 		// Another step to select the haul strategy and create the subproject.

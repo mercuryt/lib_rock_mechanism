@@ -2,7 +2,9 @@
 #include "../moveType.h"
 #include "../area.h"
 #include "../leaveArea.h"
+#include "animalSpecies.h"
 #include "arcs/animalsArrive.h"
+#include "arcs/banditsArrive.h"
 #include "deserializationMemo.h"
 #include <memory>
 #include <new>
@@ -10,11 +12,13 @@ std::vector<DramaArcType> DramaArc::getTypes()
 {
 	static std::vector<DramaArcType> output{
 		DramaArcType::AnimalsArrive,
+		DramaArcType::BanditsArrive,
 	};
 	return output;
 }
 NLOHMANN_JSON_SERIALIZE_ENUM(DramaArcType, {
-	{DramaArcType::AnimalsArrive, "animals arrive"}
+	{DramaArcType::AnimalsArrive, "animals arrive"},
+	{DramaArcType::BanditsArrive, "bandits arrive"}
 });
 std::string DramaArc::typeToString(DramaArcType type)
 {
@@ -22,6 +26,8 @@ std::string DramaArc::typeToString(DramaArcType type)
 	{
 		case DramaArcType::AnimalsArrive:
 			return "animals arrive";
+		case DramaArcType::BanditsArrive:
+			return "bandits arrive";
 	}
 	assert(false);
 }
@@ -29,6 +35,8 @@ DramaArcType DramaArc::stringToType(std::string string)
 {
 	if(string == typeToString(DramaArcType::AnimalsArrive))
 		return DramaArcType::AnimalsArrive;
+	if(string == typeToString(DramaArcType::BanditsArrive))
+		return DramaArcType::BanditsArrive;
 	assert(false);
 }
 // Static method.
@@ -39,6 +47,9 @@ std::unique_ptr<DramaArc> DramaArc::load(const Json& data, DeserializationMemo& 
 	{
 		case DramaArcType::AnimalsArrive:
 			return std::make_unique<AnimalsArriveDramaArc>(data, deserializationMemo);
+			break;
+		case DramaArcType::BanditsArrive:
+			return std::make_unique<BanditsArriveDramaArc>(data, deserializationMemo);
 			break;
 	}
 	assert(false);
@@ -146,6 +157,14 @@ Facing DramaArc::getFacingAwayFromEdge(const Block& block) const
 		return 1;
 	return 0;
 }
+std::vector<const AnimalSpecies*> DramaArc::getSentientSpecies() const
+{
+	std::vector<const AnimalSpecies*> output;
+	for(const AnimalSpecies& species : animalSpeciesDataStore)
+		if(species.sentient)
+			output.push_back(&species);
+	return output;
+}
 DramaEngine::DramaEngine(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	for(const Json& arcData : data["arcs"])
@@ -192,8 +211,21 @@ void DramaEngine::createArcTypeForArea(DramaArcType type, Area& area)
 		case DramaArcType::AnimalsArrive:
 			arc = std::make_unique<AnimalsArriveDramaArc>(*this, area);
 			break;
+		case DramaArcType::BanditsArrive:
+			arc = std::make_unique<BanditsArriveDramaArc>(*this, area);
+			break;
 	}
 	add(std::move(arc));
+}
+void DramaEngine::removeArcTypeFromArea(DramaArcType type, Area& area)
+{
+	assert(m_arcsByArea.contains(&area));
+	for(DramaArc* arc : m_arcsByArea.at(&area))
+		if(arc->m_type == type)
+		{
+			remove(*arc);
+			return;
+		}
 }
 std::unordered_set<DramaArc*>& DramaEngine::getArcsForArea(Area& area)
 { 

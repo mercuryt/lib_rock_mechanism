@@ -1,0 +1,19 @@
+{
+	"name": "breast plate",
+	"shape": "oneByOneSixteenth",
+	"volume": 5000,
+	"generic": false,
+	"value": 1000,
+	"moveType": "none",
+	"materialCategories": [ "metal", "wood" ],
+	"wearableType":
+	{
+		"percentCoverage": 100,
+		"defenseScore": 5,
+		"rigid": true,
+		"layer": 4,
+		"forceAbsorbedPiercedModifier": 15,
+		"forceAbsorbedUnpiercedModifier": 15,
+		"bodyPartsCovered": [ "torso" ]
+	}
+}

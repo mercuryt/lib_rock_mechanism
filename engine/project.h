@@ -11,6 +11,7 @@
 #include "findsPath.h"
 #include "eventSchedule.hpp"
 #include "threadedTask.hpp"
+#include "onDestroy.h"
 
 #include <vector>
 #include <utility>
@@ -75,6 +76,8 @@ class Project
 	std::vector<std::pair<ActorQuery, ProjectRequirementCounts>> m_requiredActors;
 	// Required items which will be destroyed at the end of the project.
 	std::unordered_set<Item*> m_toConsume;
+	// Required items which are equiped by workers (tools).
+	std::unordered_map<Actor*, std::vector<std::pair<ProjectRequirementCounts*, Item*>>> m_reservedEquipment;
 	size_t m_maxWorkers;
 	// In order for the first worker to join a project the worker must be able to path to all the required shapes.
 	// If this is not possible delay is set to true, a scheduled event is created to end the delay, and the project's onDelay method is called.
@@ -138,6 +141,8 @@ public:
 	// To be called when the last worker is removed or when a required reservation is dishonored, resets to pre-reservations complete status.
 	void reset();
 	void resetOrCancel();
+	// Before unload when shutting down or hibernating.
+	void clearReservations();
 	// TODO: minimum speed decreses with failed attempts to generate haul subprojects.
 	[[nodiscard]] const Faction& getFaction() { return m_faction; }
 	[[nodiscard]] uint32_t getMinimumHaulSpeed() const { return Config::minimumHaulSpeed; }
@@ -177,6 +182,8 @@ public:
 	[[nodiscard, maybe_unused]] bool hasTryToHaulEvent() const { return m_tryToHaulEvent.exists(); }
 	[[nodiscard, maybe_unused]] bool hasTryToAddWorkersThreadedTask() const { return m_tryToAddWorkersThreadedTask.exists(); }
 	[[nodiscard, maybe_unused]] bool hasTryToReserveEvent() const { return m_tryToReserveEvent.exists(); }
+	[[nodiscard, maybe_unused]] bool finishEventExists() const { return m_finishEvent.exists(); }
+	[[nodiscard, maybe_unused]] Step getFinishStep() const { return m_finishEvent.getStep(); }
 	friend class ProjectFinishEvent;
 	friend class ProjectTryToHaulEvent;
 	friend class ProjectTryToReserveEvent;
@@ -228,6 +235,8 @@ class ProjectTryToAddWorkersThreadedTask final : public ThreadedTask
 	Project& m_project;
 	std::unordered_set<Actor*> m_cannotPathToJobSite;
 	std::unordered_map<HasShape*, uint32_t> m_alreadyAtSite;
+	std::unordered_map<Actor*, std::vector<std::pair<ProjectRequirementCounts*, Item*>>> m_reservedEquipment;
+	HasOnDestroySubscriptions m_hasOnDestroy;
 	void resetProjectCounts();
 public:
 	ProjectTryToAddWorkersThreadedTask(Project& p);

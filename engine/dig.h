@@ -140,6 +140,7 @@ public:
 	void undesignate(const Faction& faction, Block& block);
 	void remove(const Faction& faction, Block& block);
 	void clearAll(Block& block);
+	void clearReservations();
 	bool areThereAnyForFaction(const Faction& faction) const;
 	bool contains(const Faction& faction, const Block& block) const { return m_data.at(&faction).m_data.contains(const_cast<Block*>(&block)); }
 	DigProject& at(const Faction& faction, const Block& block);

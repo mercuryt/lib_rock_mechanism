@@ -1,10 +1,10 @@
 {
 	"name": "crossbow",
 	"shape": "oneByOneSixteenth",
-	"volume": 20000,
+	"volume": 1000,
 	"generic": false,
 	"value": 100,
-	"moveType": "none",
+	"materialCategories": [ "metal", "wood" ],
 	"weaponData":
 	{
 		"combatSkill": "crossbow",

@@ -1,0 +1,13 @@
+{
+  "name": "leather",
+  "density": 80,
+  "hardness": 30,
+  "transparent": false,
+  "burnData":
+  {
+	  "ignitionTemperature": 1244,
+	  "flameTemperature": 1601,
+	  "burnStageDuration": 5000,
+	  "flameStageDuration": 10000
+  }
+}

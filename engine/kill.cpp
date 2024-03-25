@@ -29,5 +29,5 @@ void KillObjective::execute()
 void KillObjective::reset() 
 { 
 	cancel(); 
-	m_killer.m_canReserve.clearAll(); 
+	m_killer.m_canReserve.deleteAllWithoutCallback(); 
 }

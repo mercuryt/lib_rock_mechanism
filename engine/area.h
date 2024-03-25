@@ -60,7 +60,7 @@ public:
 	AreaHasStockPiles m_hasStockPiles;
 	AreaHasStocks m_hasStocks;
 	HasCraftingLocationsAndJobs m_hasCraftingLocationsAndJobs;
-	AreaHasTargetedHauling m_targetedHauling;
+	AreaHasTargetedHauling m_hasTargetedHauling;
 	HasSleepingSpots m_hasSleepingSpots;
 	HasWoodCuttingDesignations m_hasWoodCuttingDesignations;
 	HasInstallItemDesignations m_hasInstallItemDesignations;
@@ -86,9 +86,9 @@ public:
 	void readStep();
 	void writeStep();
 	
-	Block& getBlock(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z);
-	Block& getMiddleAtGroundLevel();
-	Block& getGroundLevel(DistanceInBlocks x, DistanceInBlocks y);
+	[[nodiscard]] Block& getBlock(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z);
+	[[nodiscard]] Block& getMiddleAtGroundLevel();
+	[[nodiscard]] Block& getGroundLevel(DistanceInBlocks x, DistanceInBlocks y);
 	//Block& getBlockForAdjacentLocation(WorldLocation& location);
 	// Create a fluid group.
 	FluidGroup* createFluidGroup(const FluidType& fluidType, std::unordered_set<Block*>& blocks, bool checkMerge = true);
@@ -106,11 +106,15 @@ public:
 	void setDateTime(DateTime now);
 
 	void validateAllFluidGroups();
-	std::string toS();
+	[[nodiscard]] std::string toS();
 
-	Cuboid getZLevel(DistanceInBlocks z);
-	Json toJson() const;
+	[[nodiscard]] Cuboid getZLevel(DistanceInBlocks z);
+	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::vector<Block>& getBlocks() { return m_blocks; }
+
+	// Clear all destructor callbacks in preperation for quit or hibernate.
+	void clearReservations();
+
 	bool operator==(const Area& other) const { return this == &other; }
 	// For testing.
 	[[maybe_unused]] void logActorsAndItems() const;

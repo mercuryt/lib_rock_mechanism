@@ -178,7 +178,7 @@ uint32_t SleepObjective::desireToSleepAt(const Block& block) const
 void SleepObjective::cancel() 
 { 
 	m_threadedTask.maybeCancel();
-	m_actor.m_canReserve.clearAll(); 
+	m_actor.m_canReserve.deleteAllWithoutCallback(); 
 }
 void SleepObjective::reset() 
 { 

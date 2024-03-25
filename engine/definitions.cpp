@@ -10,6 +10,7 @@
 #include "attackType.h"
 #include "skill.h"
 #include "craft.h"
+#include "types.h"
 
 #include <fstream>
 #include <algorithm>
@@ -25,9 +26,10 @@ void definitions::loadShapes()
 	Json data = tryParse(path/"shapes.json");
 	for(const Json& shapeData : data)
 	{
-		Shape::data.emplace_back(
+		shapeDataStore.emplace_back(
 			shapeData["name"].get<std::string>(),
 			shapeData["positions"].get<std::vector<std::array<int32_t, 4>>>(),
+			// TODO: move this to ui.
 			shapeData.contains("displayScale") ? shapeData["displayScale"].get<uint32_t>() : 1
 		);
 	}
@@ -41,12 +43,13 @@ void definitions::loadFluidTypes()
 		if(file.path().extension() != ".json")
 			continue;
 		Json data = tryParse(file.path());
-		FluidType::data.emplace_back(
+		fluidTypeDataStore.emplace_back(
 			data["name"].get<std::string>(),
 			data["viscosity"].get<std::uint32_t>(),
 			data["density"].get<Density>(),
+			//TODO: store as seconds rather then steps
 			data.contains("mistDuration") ? data["mistDuration"].get<Step>() : 0,
-			data.contains("mistDuration") ? data["maxMistSpread"].get<std::uint32_t>() : 0
+			data.contains("mistDuration") ? data["maxMistSpread"].get<DistanceInBlocks>() : 0
 		);
 	}
 }
@@ -55,7 +58,7 @@ void definitions::loadMoveTypes()
 	Json data = tryParse(path/"moveTypes.json");
 	for(const Json& moveTypeData : data)
 	{
-		MoveType::data.emplace_back(
+		moveTypeDataStore.emplace_back(
 			moveTypeData["name"].get<std::string>(),
 			moveTypeData["walk"].get<bool>(),
 			moveTypeData["climb"].get<uint32_t>(),
@@ -63,19 +66,19 @@ void definitions::loadMoveTypes()
 			moveTypeData["fly"].get<bool>()
 		);
 		for(auto& pair : moveTypeData["swim"].items())
-			MoveType::data.back().swim[&FluidType::byName(pair.key())] = pair.value();
+			moveTypeDataStore.back().swim[&FluidType::byName(pair.key())] = pair.value();
 	}
 }
 void definitions::loadMaterialTypes()
 {
 	for(const Json& data : tryParse(path/"materialTypeCategories.json"))
-		MaterialTypeCategory::data.emplace_back(data["name"]);
+		materialTypeCategoryDataStore.emplace_back(data["name"]);
 	for(const auto& file : std::filesystem::directory_iterator(path/"materials"))
 	{
 		if(file.path().extension() != ".json")
 			continue;
 		Json data = tryParse(file.path());
-		auto& materialType = MaterialType::data.emplace_back(
+		auto& materialType = materialTypeDataStore.emplace_back(
 			data["name"].get<std::string>(),
 			data.contains("category") ? 
 				&MaterialTypeCategory::byName(data["category"].get<std::string>()) :
@@ -83,12 +86,13 @@ void definitions::loadMaterialTypes()
 			data["density"].get<Density>(),
 			data["hardness"].get<uint32_t>(),
 			data["transparent"].get<bool>(),
-			data.contains("meltingPoint") ? data["meltingPoint"].get<uint32_t>() : 0
+			data.contains("meltingPoint") ? data["meltingPoint"].get<Temperature>() : 0
 		);
 		if(data.contains("burnData"))
-			materialType.burnData = &BurnData::data.emplace_back(
+			materialType.burnData = &burnDataStore.emplace_back(
 					data["burnData"]["ignitionTemperature"].get<Temperature>(),
 					data["burnData"]["flameTemperature"].get<Temperature>(),
+					// TODO: store as seconds rather then steps.
 					data["burnData"]["burnStageDuration"].get<Step>(),
 					data["burnData"]["flameStageDuration"].get<Step>()
 			);
@@ -119,7 +123,7 @@ void definitions::loadSkillTypes()
 {
 	for(const Json& skillData : tryParse(path/"skills.json"))
 	{
-		SkillType::data.emplace_back(
+		skillTypeDataStore.emplace_back(
 			skillData["name"].get<std::string>(),
 			skillData["xpPerLevelModifier"].get<float>(),
 			skillData["level1Xp"].get<uint32_t>()
@@ -156,7 +160,7 @@ void definitions::loadMaterialTypeConstuctionData()
 {
 	for(const Json& data : tryParse(path/"materialConstructionData.json"))
 	{
-		MaterialConstructionData& constructionData = MaterialConstructionData::data.emplace_back
+		MaterialConstructionData& constructionData = materialConstructionDataStore.emplace_back
 		(
 			 data["name"].get<std::string>(),
 			 SkillType::byName(data["skill"]),
@@ -222,13 +226,13 @@ void definitions::loadMedicalProjectTypes()
 void definitions::loadCraftJobs()
 {
 	for(const Json& data : tryParse(path/"craftStepTypeCategory.json"))
-		CraftStepTypeCategory::data.emplace_back(data["name"]);
+		craftStepTypeCategoryDataStore.emplace_back(data["name"]);
 	for(const auto& file : std::filesystem::directory_iterator(path/"craftJobTypes"))
 	{
 		if(file.path().extension() != ".json")
 			continue;
 		Json data = tryParse(file.path());
-		auto& craftJobType = CraftJobType::data.emplace_back(
+		auto& craftJobType = craftJobTypeDataStore.emplace_back(
 			data["name"].get<std::string>(),
 			ItemType::byName(data["productType"].get<std::string>()),
 			data["productQuantity"].get<uint32_t>(),
@@ -279,7 +283,7 @@ void definitions::loadWeaponsData()
 		{
 			Json& weaponData = data["weaponData"];
 			const SkillType& skillType = SkillType::byName(weaponData["combatSkill"].get<std::string>());
-			auto& weapon = WeaponData::data.emplace_back(
+			auto& weapon = weaponDataStore.emplace_back(
 				&skillType,
 				weaponData.contains("coolDownSeconds") ? weaponData["coolDownSeconds"].get<float>() * Config::stepsPerSecond : Config::attackCoolDownDurationBaseSteps
 			);
@@ -298,7 +302,7 @@ void definitions::loadItemTypes()
 		if(file.path().extension() != ".json")
 			continue;
 		Json data = tryParse(file.path());
-		auto& itemType = ItemType::data.emplace_back(
+		auto& itemType = itemTypeDataStore.emplace_back(
 			data["name"].get<std::string>(),
 			data.contains("installable") && data["installable"].get<bool>() == true,
 			Shape::byName(data["shape"].get<std::string>()),
@@ -313,7 +317,7 @@ void definitions::loadItemTypes()
 		if(data.contains("wearableData"))
 		{
 			Json& wearable = data["wearableData"];
-			auto& wearableData = WearableData::data.emplace_back(
+			auto& wearableData = wearableDataStore.emplace_back(
 				wearable["percentCoverage"].get<Percent>(),
 				wearable["defenseScore"].get<uint32_t>(),
 				wearable["rigid"].get<bool>(),
@@ -357,7 +361,7 @@ void definitions::loadPlantSpecies()
 		if(file.path().extension() != ".json")
 			continue;
 		Json data = tryParse(file.path());
-		auto& plantSpecies = PlantSpecies::data.emplace_back(
+		auto& plantSpecies = plantSpeciesDataStore.emplace_back(
 			data["name"].get<std::string>(),
 			data["annual"].get<bool>(),
 			data["maximumGrowingTemperature"].get<Temperature>(),
@@ -369,8 +373,8 @@ void definitions::loadPlantSpecies()
 			data["daysTillFullyGrown"].get<uint16_t>() * Config::stepsPerDay,
 			data["daysTillFoliageGrowsFromZero"].get<uint16_t>() * Config::stepsPerDay,
 			data["growsInSunlight"].get<bool>(),
-			data["rootRangeMax"].get<uint32_t>(),
-			data["rootRangeMin"].get<uint32_t>(),
+			data["rootRangeMax"].get<DistanceInBlocks>(),
+			data["rootRangeMin"].get<DistanceInBlocks>(),
 			data["adultMass"].get<Mass>(),
 			data["dayOfYearForSowStart"].get<uint16_t>(),
 			data["dayOfYearForSowEnd"].get<uint16_t>(),
@@ -386,7 +390,7 @@ void definitions::loadPlantSpecies()
 			plantSpecies.shapes.push_back(&Shape::byName(shapeName.get<std::string>()));
 		if(data.contains("harvestData"))
 		{
-			auto& harvestData = HarvestData::data.emplace_back(
+			auto& harvestData = harvestDataStore.emplace_back(
 				data["harvestData"]["dayOfYearToStart"].get<uint16_t>(),
 				data["harvestData"]["daysDuration"].get<uint16_t>() * Config::stepsPerDay,
 				data["harvestData"]["quantity"].get<uint32_t>(),
@@ -405,7 +409,7 @@ void definitions::loadBodyPartTypes()
 		if(file.path().extension() != ".json")
 			continue;
 		Json data = tryParse(file.path());
-		BodyPartType& bodyPartType = BodyPartType::data.emplace_back(
+		BodyPartType& bodyPartType = bodyPartTypeDataStore.emplace_back(
 			data["name"].get<std::string>(),
 			data["volume"].get<Volume>(),
 			data["doesLocamotion"].get<bool>(),
@@ -421,7 +425,7 @@ void definitions::loadBodyTypes()
 {
 	for(const Json& bodyData : tryParse(path/"bodies.json"))
 	{
-		auto& bodyType = BodyType::data.emplace_back(
+		auto& bodyType = bodyTypeDataStore.emplace_back(
 			bodyData["name"].get<std::string>()
 		);
 		for(const Json& bodyPartTypeName : bodyData["bodyPartTypes"])
@@ -438,7 +442,7 @@ void definitions::loadAnimalSpecies()
 		auto deathAge = data["deathAgeDays"].get<std::array<uint32_t, 2>>();
 		deathAge[0] = deathAge[0] * Config::stepsPerDay;
 		deathAge[1] = deathAge[1] * Config::stepsPerDay;
-		AnimalSpecies& animalSpecies = AnimalSpecies::data.emplace_back(
+		AnimalSpecies& animalSpecies = animalSpeciesDataStore.emplace_back(
 			data["name"].get<std::string>(),
 			data["sentient"].get<bool>(),
 			data["strength"].get<std::array<uint32_t, 3>>(),
@@ -461,7 +465,7 @@ void definitions::loadAnimalSpecies()
 			data["eatsMeat"].get<bool>(),
 			data["eatsLeaves"].get<bool>(),
 			data["eatsFruit"].get<bool>(),
-			data["visionRange"].get<uint32_t>(),
+			data["visionRange"].get<DistanceInBlocks>(),
 			data["bodyScale"].get<uint32_t>(),
 			MaterialType::byName(data["materialType"].get<std::string>()),
 			MoveType::byName(data["moveType"].get<std::string>()),
@@ -475,7 +479,7 @@ void definitions::loadAnimalSpecies()
 }
 void definitions::load()
 {
-	assert(MaterialType::data.size() == 0);
+	assert(materialTypeDataStore.size() == 0);
 	assert(std::filesystem::exists(path));
 	loadShapes();
 	loadFluidTypes();

@@ -435,7 +435,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 			{
 				if(actor.isAdjacentTo(m_toHaul))
 				{
-					actor.m_canReserve.clearAll();
+					actor.m_canReserve.deleteAllWithoutCallback();
 					m_toHaul.m_reservable.clearReservationFor(m_project.m_canReserve, m_quantity);
 					actor.m_canPickup.pickUp(m_toHaul, m_quantity);
 					// From here on out we cannot use m_toHaul unless we test for generic.
@@ -483,9 +483,9 @@ void HaulSubproject::commandWorker(Actor& actor)
 							{
 								if(follower != m_leader)
 									follower->m_canFollow.follow(m_toHaul.m_canLead);
-								follower->m_canReserve.clearAll();
+								follower->m_canReserve.deleteAllWithoutCallback();
 							}
-							m_leader->m_canReserve.clearAll();
+							m_leader->m_canReserve.deleteAllWithoutCallback();
 							m_leader->m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
 							m_itemIsMoving = true;
 							m_toHaul.m_reservable.clearReservationFor(m_project.m_canReserve, m_quantity);
@@ -557,7 +557,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 						//TODO: set delay for loading.
 						m_toHaul.m_reservable.maybeClearReservationFor(m_project.m_canReserve, m_quantity);
 						m_haulTool->m_hasCargo.load(m_toHaul, m_quantity);
-						actor.m_canReserve.clearAll();
+						actor.m_canReserve.deleteAllWithoutCallback();
 						actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
 					}
 					else
@@ -572,7 +572,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 				{
 					// Cart is here.
 					m_haulTool->m_canFollow.follow(actor.m_canLead);
-					actor.m_canReserve.clearAll();
+					actor.m_canReserve.deleteAllWithoutCallback();
 					actor.m_canMove.setDestinationAdjacentTo(m_toHaul, detour);
 				}
 				else
@@ -623,7 +623,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 						// TODO: loading delay.
 						m_toHaul.m_reservable.maybeClearReservationFor(m_project.m_canReserve, m_quantity);
 						m_haulTool->m_hasCargo.load(m_toHaul, m_quantity);
-						actor.m_canReserve.clearAll();
+						actor.m_canReserve.deleteAllWithoutCallback();
 						actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
 					}
 					else
@@ -642,7 +642,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 						actor.m_canPickup.remove(*m_haulTool);
 						m_beastOfBurden->m_equipmentSet.addEquipment(*m_haulTool);
 						m_beastOfBurden->m_canFollow.follow(actor.m_canLead);
-						actor.m_canReserve.clearAll();
+						actor.m_canReserve.deleteAllWithoutCallback();
 						actor.m_canMove.setDestinationAdjacentTo(m_toHaul, detour);
 					}
 					else
@@ -655,7 +655,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 					if(actor.isAdjacentTo(*m_haulTool->m_location))
 					{
 						actor.m_canPickup.pickUp(*m_haulTool, 1u);
-						actor.m_canReserve.clearAll();
+						actor.m_canReserve.deleteAllWithoutCallback();
 						actor.m_canMove.setDestinationAdjacentTo(*m_beastOfBurden, detour);
 					}
 					else
@@ -706,7 +706,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 						// TODO: loading delay.
 						m_toHaul.m_reservable.maybeClearReservationFor(m_project.m_canReserve);
 						m_haulTool->m_hasCargo.load(m_toHaul, m_quantity);
-						actor.m_canReserve.clearAll();
+						actor.m_canReserve.deleteAllWithoutCallback();
 						actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
 					}
 					else
@@ -726,7 +726,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 						// TODO: Make not teleport.
 						m_haulTool->m_canFollow.follow(m_beastOfBurden->m_canLead, false);
 						// Skip adjacent check, potentially teleport.
-						actor.m_canReserve.clearAll();
+						actor.m_canReserve.deleteAllWithoutCallback();
 						actor.m_canMove.setDestinationAdjacentTo(m_toHaul, detour);
 					}
 					else
@@ -738,8 +738,8 @@ void HaulSubproject::commandWorker(Actor& actor)
 					if(actor.isAdjacentTo(*m_beastOfBurden))
 					{
 						m_beastOfBurden->m_canFollow.follow(actor.m_canLead);
-						actor.m_canReserve.clearAll();
-						m_beastOfBurden->m_canReserve.clearAll();
+						actor.m_canReserve.deleteAllWithoutCallback();
+						m_beastOfBurden->m_canReserve.deleteAllWithoutCallback();
 						actor.m_canMove.setDestinationAdjacentTo(*m_haulTool, detour);
 					}
 					else
@@ -786,7 +786,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 						//TODO: set delay for loading.
 						m_toHaul.m_reservable.maybeClearReservationFor(m_project.m_canReserve);
 						m_haulTool->m_hasCargo.load(m_toHaul, m_quantity);
-						actor.m_canReserve.clearAll();
+						actor.m_canReserve.deleteAllWithoutCallback();
 						actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
 					}
 					else
@@ -803,15 +803,15 @@ void HaulSubproject::commandWorker(Actor& actor)
 					{
 						if(follower != m_leader)
 							follower->m_canFollow.follow(m_haulTool->m_canLead);
-						follower->m_canReserve.clearAll();
+						follower->m_canReserve.deleteAllWithoutCallback();
 					}
-					m_leader->m_canReserve.clearAll();
+					m_leader->m_canReserve.deleteAllWithoutCallback();
 					m_leader->m_canMove.setDestinationAdjacentTo(m_toHaul, detour);
 				} 
 			}
 			else
 			{
-				actor.m_canReserve.clearAll();
+				actor.m_canReserve.deleteAllWithoutCallback();
 				actor.m_canMove.setDestinationAdjacentTo(*m_haulTool, detour);
 			}
 			break;
@@ -952,7 +952,7 @@ void HaulSubproject::complete(HasShape& delivered)
 			delivered.setLocation(m_project.m_location);
 	}
 	for(Actor* worker : m_workers)
-		worker->m_canReserve.clearAll();
+		worker->m_canReserve.deleteAllWithoutCallback();
 	delivered.m_reservable.reserveFor(m_project.m_canReserve, m_quantity);
 	std::vector<Actor*> workers(m_workers.begin(), m_workers.end());
 	Project& project = m_project;

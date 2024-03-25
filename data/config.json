@@ -174,5 +174,7 @@
 	"minimumSecondsRainPerPercentHumidity": 72,
 	"maximumSecondsRainPerPercentHumidity": 350,
 	"minimumDaysBetweenRainPerPercentHumidity": 0.5,
-	"maximumDaysBetweenRainPerPercentHumidity": 2
+	"maximumDaysBetweenRainPerPercentHumidity": 2,
+	"exterminatePriority": 900,
+	"exterminateCheckFrequencySeconds": 1
 }

@@ -190,7 +190,7 @@ void DrinkObjective::reset()
 {
 	delay();
 	m_noDrinkFound = false;
-	m_actor.m_canReserve.clearAll();
+	m_actor.m_canReserve.deleteAllWithoutCallback();
 }
 bool DrinkObjective::canDrinkAt(const Block& block, Facing facing) const
 {

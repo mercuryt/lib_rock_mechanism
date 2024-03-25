@@ -9,6 +9,20 @@
 #include "simulation.h"
 #include "woundType.h"
 #include <cstdint>
+// Static method.
+const BodyPartType& BodyPartType::byName(const std::string name)
+{
+	auto found = std::ranges::find(bodyPartTypeDataStore, name, &BodyPartType::name);
+	assert(found != bodyPartTypeDataStore.end());
+	return *found;
+}
+// Static method.
+const BodyType& BodyType::byName(const std::string name)
+{
+	auto found = std::ranges::find(bodyTypeDataStore, name, &BodyType::name);
+	assert(found != bodyTypeDataStore.end());
+	return *found;
+}
 Wound::Wound(Actor& a, const WoundType wt, BodyPart& bp, Hit h, uint32_t bvr, Percent ph) : woundType(wt), bodyPart(bp), hit(h), bleedVolumeRate(bvr), percentHealed(ph), healEvent(a.getEventSchedule()) 
 { 
 	maxPercentTemporaryImpairment = WoundCalculations::getPercentTemporaryImpairment(hit, bodyPart.bodyPartType, a.m_species.bodyScale);

@@ -25,6 +25,6 @@ void WaitObjective::execute() { m_actor.m_hasObjectives.objectiveComplete(*this)
 void WaitObjective::reset() 
 { 
 	m_event.maybeUnschedule(); 
-	m_actor.m_canReserve.clearAll(); 
+	m_actor.m_canReserve.deleteAllWithoutCallback(); 
 }
 WaitScheduledEvent::WaitScheduledEvent(Step delay, WaitObjective& wo, const Step start) : ScheduledEvent(wo.m_actor.getSimulation(), delay, start), m_objective(wo) { }

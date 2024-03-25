@@ -27,6 +27,7 @@ CTestTestfile.cmake
 _deps
 tags
 /unit
+/unit_*
 test/benchmark/*
 test/inconsistantErrors/*
 *\.vscode

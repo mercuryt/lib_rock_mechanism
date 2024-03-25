@@ -118,7 +118,7 @@ void WoodCuttingObjective::reset()
 	m_woodCuttingThreadedTask.maybeCancel();
 	m_project = nullptr; 
 	m_actor.m_project = nullptr;
-	m_actor.m_canReserve.clearAll();
+	m_actor.m_canReserve.deleteAllWithoutCallback();
 }
 void WoodCuttingObjective::joinProject(WoodCuttingProject& project)
 {
@@ -318,6 +318,12 @@ void HasWoodCuttingDesignations::clearAll(Block& block)
 {
 	for(auto& pair : m_data)
 		pair.second.removeIfExists(block);
+}
+void HasWoodCuttingDesignations::clearReservations()
+{
+	for(auto& pair : m_data)
+		for(auto& pair2 : pair.second.m_data)
+			pair2.second.clearReservations();
 }
 bool HasWoodCuttingDesignations::areThereAnyForFaction(const Faction& faction) const
 {

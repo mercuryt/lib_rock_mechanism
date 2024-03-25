@@ -181,7 +181,7 @@ bool AnimalsArriveDramaArc::isMedium(const Shape& shape)
 std::vector<const AnimalSpecies*> AnimalsArriveDramaArc::getLargeCarnivors()
 {
 	std::vector<const AnimalSpecies*> output;
-	for(const AnimalSpecies& species : AnimalSpecies::data)
+	for(const AnimalSpecies& species : animalSpeciesDataStore)
 	{
 		if(!species.sentient && species.eatsMeat && isLarge(*species.shapes.back()))
 			output.push_back(&species);
@@ -191,7 +191,7 @@ std::vector<const AnimalSpecies*> AnimalsArriveDramaArc::getLargeCarnivors()
 std::vector<const AnimalSpecies*> AnimalsArriveDramaArc::getMediumCarnivors()
 {
 	std::vector<const AnimalSpecies*> output;
-	for(const AnimalSpecies& species : AnimalSpecies::data)
+	for(const AnimalSpecies& species : animalSpeciesDataStore)
 	{
 		if(!species.sentient && species.eatsMeat && isMedium(*species.shapes.back()))
 			output.push_back(&species);
@@ -201,7 +201,7 @@ std::vector<const AnimalSpecies*> AnimalsArriveDramaArc::getMediumCarnivors()
 std::vector<const AnimalSpecies*> AnimalsArriveDramaArc::getSmallCarnivors()
 {
 	std::vector<const AnimalSpecies*> output;
-	for(const AnimalSpecies& species : AnimalSpecies::data)
+	for(const AnimalSpecies& species : animalSpeciesDataStore)
 	{
 		if(!species.sentient && species.eatsMeat && isSmall(*species.shapes.back()))
 			output.push_back(&species);
@@ -211,7 +211,7 @@ std::vector<const AnimalSpecies*> AnimalsArriveDramaArc::getSmallCarnivors()
 std::vector<const AnimalSpecies*> AnimalsArriveDramaArc::getLargeHerbivors()
 {
 	std::vector<const AnimalSpecies*> output;
-	for(const AnimalSpecies& species : AnimalSpecies::data)
+	for(const AnimalSpecies& species : animalSpeciesDataStore)
 	{
 		if(!species.sentient && !species.eatsMeat && isLarge(*species.shapes.back()))
 			output.push_back(&species);
@@ -221,7 +221,7 @@ std::vector<const AnimalSpecies*> AnimalsArriveDramaArc::getLargeHerbivors()
 std::vector<const AnimalSpecies*> AnimalsArriveDramaArc::getMediumHerbivors()
 {
 	std::vector<const AnimalSpecies*> output;
-	for(const AnimalSpecies& species : AnimalSpecies::data)
+	for(const AnimalSpecies& species : animalSpeciesDataStore)
 	{
 		if(!species.sentient && !species.eatsMeat && isMedium(*species.shapes.back()))
 			output.push_back(&species);
@@ -231,7 +231,7 @@ std::vector<const AnimalSpecies*> AnimalsArriveDramaArc::getMediumHerbivors()
 std::vector<const AnimalSpecies*> AnimalsArriveDramaArc::getSmallHerbivors()
 {
 	std::vector<const AnimalSpecies*> output;
-	for(const AnimalSpecies& species : AnimalSpecies::data)
+	for(const AnimalSpecies& species : animalSpeciesDataStore)
 	{
 		if(!species.sentient && !species.eatsMeat && isSmall(*species.shapes.back()))
 			output.push_back(&species);

@@ -191,6 +191,9 @@ namespace Config
 	inline float maximumStepsRainPerPercentHumidity;
 	inline float minimumStepsBetweenRainPerPercentHumidity;
 	inline float maximumStepsBetweenRainPerPercentHumidity;
+	inline uint32_t exterminatePriority;
+	inline Step exterminateCheckFrequency;
+
 	inline uint32_t convertBodyPartVolumeToArea(uint32_t volume){ return sqrt(volume); }
 	inline void load()
 	{
@@ -376,5 +379,7 @@ namespace Config
 		maximumStepsRainPerPercentHumidity = data["maximumSecondsRainPerPercentHumidity"].get<float>() * Config::stepsPerSecond;
 		minimumStepsBetweenRainPerPercentHumidity = data["minimumDaysBetweenRainPerPercentHumidity"].get<float>() * Config::stepsPerDay;
 		maximumStepsBetweenRainPerPercentHumidity = data["maximumDaysBetweenRainPerPercentHumidity"].get<float>() * Config::stepsPerDay;
+		exterminatePriority = data["exterminatePriority"].get<uint32_t>();
+		exterminateCheckFrequency = data["exterminateCheckFrequencySeconds"].get<float>() * Config::stepsPerSecond;
 	}
 }

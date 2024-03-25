@@ -6,7 +6,7 @@
   "burnData":
   {
 	  "ignitionTemperature": 1044,
-	  "flameTemperature": 500,
+	  "flameTemperature": 1500,
 	  "burnStageDuration": 5000,
 	  "flameStageDuration": 10000
   }

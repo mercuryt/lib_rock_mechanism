@@ -10,7 +10,6 @@ OnDestroy::~OnDestroy()
 void HasOnDestroySubscriptions::subscribe(OnDestroy& onDestroy) 
 { 
 	assert(!m_onDestroys.contains(&onDestroy));
-	assert(m_callback == nullptr);
 	m_onDestroys.insert(&onDestroy);
 	onDestroy.subscribe(*this);
 }
@@ -28,11 +27,14 @@ void HasOnDestroySubscriptions::maybeUnsubscribe(OnDestroy& onDestroy)
 void HasOnDestroySubscriptions::unsubscribeAll()
 {
 	for(OnDestroy* onDestroy : m_onDestroys)
-		unsubscribe(*onDestroy);
+		onDestroy->unsubscribe(*this);
+	m_onDestroys.clear();
 }
 void HasOnDestroySubscriptions::setCallback(std::function<void()>& callback) { m_callback = callback; }
 void HasOnDestroySubscriptions::callback()
 {
+	unsubscribeAll();
+	assert(m_callback != nullptr);
 	auto cb = std::move(m_callback);
 	m_callback = nullptr;
 	cb();

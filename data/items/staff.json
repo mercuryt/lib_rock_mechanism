@@ -1,0 +1,32 @@
+{
+	"name": "staff",
+	"shape": "oneByOneEighth",
+	"volume": 250,
+	"generic": false,
+	"value": 100,
+	"weaponData":
+	{
+		"combatSkill": "glave",
+		"coolDownSeconds": 0.70,
+		"attackTypes":
+		[
+			{
+				"name": "stab",
+				"area": 40,
+				"baseForce": 3,
+				"range": 2,
+				"combatScore": 4,
+				"woundType": "Bludgeon"
+			},
+			{
+				"name": "swing",
+				"area": 60,
+				"baseForce": 5,
+				"range": 1.5,
+				"combatScore": 2,
+				"woundType": "Bludgeon",
+				"coolDownSeconds": 1.1
+			}
+		]
+	}
+}

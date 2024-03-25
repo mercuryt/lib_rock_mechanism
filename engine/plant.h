@@ -31,8 +31,8 @@ struct HarvestData final
 	const ItemType& fruitItemType;
 	// Infastructure.
 	bool operator==(const HarvestData& harvestData) const { return this == &harvestData; }
-	inline static std::vector<HarvestData> data;
 };
+inline std::deque<HarvestData> harvestDataStore;
 struct PlantSpecies final
 {
 	const std::string name;
@@ -65,14 +65,9 @@ struct PlantSpecies final
 	uint8_t wildGrowthForPercentGrown(Percent percentGrown) const { return shapeAndWildGrowthForPercentGrown(percentGrown).second; }
 	// Infastructure.
 	bool operator==(const PlantSpecies& plantSpecies) const { return this == &plantSpecies; }
-	inline static std::vector<PlantSpecies> data;
-	static const PlantSpecies& byName(std::string name)
-	{
-		auto found = std::ranges::find(data, name, &PlantSpecies::name);
-		assert(found != data.end());
-		return *found;
-	}
+	static const PlantSpecies& byName(std::string name);
 };
+inline std::vector<PlantSpecies> plantSpeciesDataStore;
 inline void to_json(Json& data, const PlantSpecies* const& plantSpecies){ data = plantSpecies->name; }
 inline void to_json(Json& data, const PlantSpecies& plantSpecies){ data = plantSpecies.name; }
 inline void from_json(const Json& data, const PlantSpecies*& plantSpecies){ plantSpecies = &PlantSpecies::byName(data.get<std::string>()); }

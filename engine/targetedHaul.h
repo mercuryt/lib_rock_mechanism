@@ -50,4 +50,5 @@ public:
 	Json toJson() const;
 	void cancel(TargetedHaulProject& project);
 	void complete(TargetedHaulProject& project);
+	void clearReservations();
 };

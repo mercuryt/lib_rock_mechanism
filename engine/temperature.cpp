@@ -256,7 +256,7 @@ void GetToSafeTemperatureObjective::reset()
 { 
 	cancel(); 
 	m_noWhereWithSafeTemperatureFound = false; 
-	m_actor.m_canReserve.clearAll();
+	m_actor.m_canReserve.deleteAllWithoutCallback();
 }
 GetToSafeTemperatureObjective::~GetToSafeTemperatureObjective() { m_actor.m_needsSafeTemperature.m_objectiveExists = false; }
 UnsafeTemperatureEvent::UnsafeTemperatureEvent(Actor& a, const Step start) : ScheduledEvent(a.getSimulation(), a.m_species.stepsTillDieInUnsafeTemperature, start), m_actor(a) { }

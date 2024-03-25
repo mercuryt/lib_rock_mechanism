@@ -74,12 +74,18 @@ std::unique_ptr<Objective> InstallItemObjectiveType::makeFor(Actor& actor) const
 	std::unique_ptr<Objective> objective = std::make_unique<InstallItemObjective>(actor);
 	return objective;
 }
-void InstallItemObjective::reset() { m_actor.m_canReserve.clearAll(); m_project = nullptr; }
+void InstallItemObjective::reset() { m_actor.m_canReserve.deleteAllWithoutCallback(); m_project = nullptr; }
 // HasDesignations.
 void HasInstallItemDesignationsForFaction::add(Block& block, Item& item, Facing facing, const Faction& faction)
 {
 	assert(!m_designations.contains(&block));
 	m_designations.try_emplace(&block, item, block, facing, faction);
+}
+void HasInstallItemDesignations::clearReservations()
+{
+	for(auto& pair : m_data)
+		for(auto& pair2 : pair.second.m_designations)
+			pair2.second.clearReservations();
 }
 void HasInstallItemDesignationsForFaction::remove(Item& item)
 {

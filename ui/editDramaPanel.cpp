@@ -10,7 +10,7 @@ EditDramaView::EditDramaView(Window& window) : m_window(window), m_panel(tgui::P
 void EditDramaView::draw(Area* area)
 {
 	assert(area);
-	auto& dramaEngine = m_window.getSimulation()->m_dramaEngine;
+	DramaEngine* dramaEngine = m_window.getSimulation()->m_dramaEngine.get();
 	std::unordered_set<DramaArc*> arcsForArea = dramaEngine->getArcsForArea(*area);
 	auto listHolder = tgui::Grid::create();
 	m_panel->add(listHolder);
@@ -19,11 +19,17 @@ void EditDramaView::draw(Area* area)
 	for(DramaArc* arc : arcsForArea)
 	{
 		listHolder->addWidget(tgui::Label::create(arc->name()), i, 0);
-		auto button = tgui::Button::create("start");
-		listHolder->addWidget(button, i++, 1);
-		button->onClick([this, arc]{
+		auto start = tgui::Button::create("start");
+		listHolder->addWidget(start, i, 1);
+		start->onClick([this, arc]{
 			arc->begin(); 
 			m_window.showGame();
+		});
+		auto remove = tgui::Button::create("remove");
+		listHolder->addWidget(remove, i++, 2);
+		remove->onClick([this, area, arc, dramaEngine]{
+			dramaEngine->remove(*arc);
+			m_window.showEditDrama(area);
 		});
 		typesForArea.insert(arc->m_type);
 	}

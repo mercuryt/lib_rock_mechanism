@@ -34,9 +34,8 @@ public:
 	CanReserve(const Faction* f) : m_faction(f) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
-	void clearAll();
+	void deleteAllWithoutCallback();
 	void setFaction(const Faction* faction);
-	void deleteAllWithoutCallback() { m_reservables.clear(); }
 	[[nodiscard]] bool hasFaction() const;
 	[[nodiscard]] bool hasReservationWith(Reservable& reservable) const;
 	[[nodiscard]] bool hasReservations() const;
@@ -57,6 +56,7 @@ public:
 	Reservable(uint32_t mr) : m_maxReservations(mr) {}
 	bool isFullyReserved(const Faction* faction) const;
 	bool hasAnyReservations() const;
+	bool hasAnyReservationsWith(const Faction& faction) const;
 	std::unordered_map<CanReserve*, uint32_t>& getReservedBy();
 	void reserveFor(CanReserve& canReserve, const uint32_t quantity = 1u, std::unique_ptr<DishonorCallback> dishonorCallback = nullptr); 
 	void clearReservationFor(CanReserve& canReserve, const uint32_t quantity = 1u);

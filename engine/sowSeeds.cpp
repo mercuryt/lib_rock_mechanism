@@ -137,7 +137,7 @@ void SowSeedsObjective::execute()
 }
 void SowSeedsObjective::cancel()
 {
-	m_actor.m_canReserve.clearAll();
+	m_actor.m_canReserve.deleteAllWithoutCallback();
 	m_threadedTask.maybeCancel();
 	m_event.maybeUnschedule();
 	if(m_block != nullptr && m_block->m_isPartOfFarmField.contains(*m_actor.getFaction()))

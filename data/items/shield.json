@@ -1,0 +1,24 @@
+{
+	"name": "shield",
+	"shape": "oneByOneEighth",
+	"volume": 250,
+	"generic": false,
+	"value": 150,
+	"materialCategories": [ "metal", "wood" ],
+	"weaponData":
+	{
+		"combatSkill": "shield",
+		"coolDownSeconds": 2,
+		"attackTypes":
+		[
+			{
+				"name": "bash",
+				"area": 50,
+				"baseForce": 4,
+				"range": 1.5,
+				"combatScore": 15,
+				"woundType": "Bludgeon"
+			}
+		]
+	}
+}

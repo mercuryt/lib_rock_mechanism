@@ -248,6 +248,7 @@ public:
 	[[nodiscard]] StockPile* getStockPileFor(const Item& item) const;
 	friend class StockPileThreadedTask;
 	friend class StockPile;
+	friend class AreaHasStockPiles;
 	// For testing.
 	[[maybe_unused, nodiscard]] std::unordered_set<Item*>& getItemsWithDestinations() { return m_itemsWithDestinationsWithoutProjects; }
 	[[maybe_unused, nodiscard]] std::unordered_map<StockPile*, std::unordered_set<Item*>>& getItemsWithDestinationsByStockPile() { return m_itemsWithDestinationsByStockPile; }
@@ -266,6 +267,7 @@ public:
 	void unregisterFaction(const Faction& faction) { assert(m_data.contains(&faction)); m_data.erase(&faction); }
 	void removeItemFromAllFactions(Item& item) { for(auto& pair : m_data) { pair.second.removeItem(item); } }
 	void removeBlockFromAllFactions(Block& block) { for(auto& pair : m_data) { pair.second.removeBlock(block); }} 
+	void clearReservations();
 	[[nodiscard]] AreaHasStockPilesForFaction& at(const Faction& faction);
 	[[nodiscard]] bool contains(const Faction& faction) { return m_data.contains(&faction); }
 };

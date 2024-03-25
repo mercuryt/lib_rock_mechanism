@@ -29,6 +29,17 @@ Block* ItemType::getCraftLocation(const Block& location, Facing facing) const
 	auto [x, y, z] = util::rotateOffsetToFacing(craftLocationOffset, facing);
 	return location.offset(x, y, z);
 }
+// Static methods.
+const ItemType& ItemType::byName(std::string name)
+{
+	auto found = std::ranges::find(itemTypeDataStore, name, &ItemType::name);
+	assert(found != itemTypeDataStore.end());
+	return *found;
+}
+ItemType& ItemType::byNameNonConst(std::string name)
+{
+	return const_cast<ItemType&>(byName(name));
+}
 // RemarkItemForStockPilingEvent
 ReMarkItemForStockPilingEvent::ReMarkItemForStockPilingEvent(Item& i, const Faction& f, Step duration, const Step start) : ScheduledEvent(i.getSimulation(), duration, start), m_item(i), m_faction(f) { }
 void ReMarkItemForStockPilingEvent::execute() 

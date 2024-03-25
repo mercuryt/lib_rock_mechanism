@@ -220,6 +220,7 @@ public:
 	Json positionToJson() const;
 };
 inline void to_json(Json& data, const Block* const& block){ data = block->positionToJson(); }
+inline void to_json(Json& data, const Block& block){ data = block.positionToJson(); }
 inline void to_json(Json& data, const std::unordered_set<Block*>& blocks)
 {
 	for(const Block* block : blocks)

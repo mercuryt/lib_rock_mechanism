@@ -37,19 +37,10 @@ struct Shape
 	[[nodiscard]] std::vector<std::pair<Block*, Volume>> getBlocksOccupiedAtWithVolumes(const Block& location, Facing facing) const;
 	// Infastructure.
 	bool operator==(const Shape& x) const { return &x == this; }
-	inline static std::vector<Shape> data;
-	static const Shape& byName(const std::string& name)
-	{
-		auto found = std::ranges::find(data, name, &Shape::name);
-		assert(found != data.end());
-		return *found;
-	}
-	static bool hasShape(const std::string& name)
-	{
-		auto found = std::ranges::find(data, name, &Shape::name);
-		return found != data.end();
-	}
+	static const Shape& byName(const std::string& name);
+	static bool hasShape(const std::string& name);
 };
+inline std::vector<Shape> shapeDataStore;
 inline void to_json(Json& data, const Shape* const& shape){ data = shape->name; }
 inline void to_json(Json& data, const Shape& shape){ data = shape.name; }
 inline void from_json(const Json& data, const Shape*& shape){ shape = &Shape::byName(data.get<std::string>()); }

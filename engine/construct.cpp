@@ -113,7 +113,7 @@ void ConstructObjective::reset()
 	m_constructThreadedTask.maybeCancel();
 	m_project = nullptr; 
 	m_actor.m_project = nullptr;
-	m_actor.m_canReserve.clearAll();
+	m_actor.m_canReserve.deleteAllWithoutCallback();
 }
 void ConstructObjective::joinProject(ConstructProject& project)
 {
@@ -286,6 +286,12 @@ void HasConstructionDesignationsForFaction::remove(Block& block)
 	assert(contains(block));
 	m_data.erase(&block); 
 	block.m_hasDesignations.remove(m_faction, BlockDesignation::Construct);
+}
+void HasConstructionDesignations::clearReservations()
+{
+	for(auto& pair : m_data)
+		for(auto& pair2 : pair.second.m_data)
+			pair2.second.clearReservations();
 }
 void HasConstructionDesignationsForFaction::removeIfExists(Block& block)
 {

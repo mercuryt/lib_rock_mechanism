@@ -14,6 +14,19 @@ void CraftCancelInputAction::execute()
 {
 	m_area.m_hasCraftingLocationsAndJobs.at(m_faction).removeJob(m_job);
 }
+CraftStepTypeCategory& CraftStepTypeCategory::byName(const std::string name)
+{
+	auto found = std::ranges::find(craftStepTypeCategoryDataStore, name, &CraftStepTypeCategory::name);
+	assert(found != craftStepTypeCategoryDataStore.end());
+	return *found;
+}
+CraftJobType& CraftJobType::byName(const std::string name)
+{
+	auto found = std::ranges::find(craftJobTypeDataStore, name, &CraftJobType::name);
+	assert(!found->stepTypes.empty());
+	assert(found != craftJobTypeDataStore.end());
+	return *found;
+}
 CraftStepProject::CraftStepProject(const Json& data, DeserializationMemo& deserializationMemo, CraftJob& cj) : 
 	Project(data, deserializationMemo), 
 	m_craftStepType(*cj.stepIterator),
@@ -215,7 +228,7 @@ void CraftObjective::cancel()
 }
 void CraftObjective::reset()
 {
-	m_actor.m_canReserve.clearAll();
+	m_actor.m_canReserve.deleteAllWithoutCallback();
 	m_craftJob = nullptr;
 	cancel();
 }
@@ -501,6 +514,13 @@ Json HasCraftingLocationsAndJobs::toJson() const
 		data.push_back(pair);
 	}
 	return data;
+}
+void HasCraftingLocationsAndJobs::clearReservations()
+{
+	for(auto& pair : m_data)
+		for(auto& job : pair.second.m_jobs)
+			if(job.craftStepProject)
+				job.craftStepProject->clearReservations();
 }
 HasCraftingLocationsAndJobsForFaction& HasCraftingLocationsAndJobs::at(const Faction& faction) 
 { 

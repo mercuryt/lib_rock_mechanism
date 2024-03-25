@@ -28,33 +28,23 @@ struct BodyPartType final
 	std::vector<std::pair<const AttackType, const MaterialType*>> attackTypesAndMaterials;
 	// Infastructure.
 	bool operator==(const BodyPartType& bodyPartType) const { return this == &bodyPartType; }
-	inline static std::vector<BodyPartType> data;
-	static const BodyPartType& byName(const std::string name)
-	{
-		auto found = std::ranges::find(data, name, &BodyPartType::name);
-		assert(found != data.end());
-		return *found;
-	}
+	static const BodyPartType& byName(const std::string name);
 };
+inline std::vector<BodyPartType> bodyPartTypeDataStore;
 // For example biped, quadraped, bird, etc.
 struct BodyType final
 {
 	const std::string name;
 	std::vector<const BodyPartType*> bodyPartTypes;
-	// Infastructure.
-	bool operator==(const BodyType& bodyType){ return this == &bodyType; }
-	inline static std::vector<BodyType> data;
-	static const BodyType& byName(const std::string name)
-	{
-		auto found = std::ranges::find(data, name, &BodyType::name);
-		assert(found != data.end());
-		return *found;
-	}
 	bool hasBodyPart(const BodyPartType& bodyPartType) const
 	{
 		return std::ranges::find(bodyPartTypes, &bodyPartType) != bodyPartTypes.end();
 	}
+	// Infastructure.
+	bool operator==(const BodyType& bodyType){ return this == &bodyType; }
+	static const BodyType& byName(const std::string name);
 };
+inline std::vector<BodyType> bodyTypeDataStore;
 struct Wound final
 {
 	const WoundType woundType;

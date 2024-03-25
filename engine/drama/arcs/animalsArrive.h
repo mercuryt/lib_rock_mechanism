@@ -1,3 +1,4 @@
+#pragma once
 #include "../engine.h"
 #include "../../eventSchedule.hpp"
 #include "../../types.h"

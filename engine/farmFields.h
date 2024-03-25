@@ -81,7 +81,7 @@ class HasFarmFieldsForFaction
 	std::vector<Plant*> m_plantsNeedingFluid;
 	std::unordered_set<Plant*> m_plantsToHarvest;
 	std::unordered_set<Block*> m_blocksNeedingSeedsSewn;
-	bool m_plantsNeedingFluidIsSorted;
+	bool m_plantsNeedingFluidIsSorted = false;
 public:
 	HasFarmFieldsForFaction(Area& a, const Faction& f) : m_area(a), m_faction(f) { }
 	HasFarmFieldsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Area& a, const Faction& f);

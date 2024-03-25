@@ -21,20 +21,10 @@ struct FluidType
 	const MaterialType* freezesInto;
 	// Infastructure.
 	bool operator==(const FluidType& fluidType) const { return this == &fluidType; }
-	inline static std::vector<FluidType> data;
-	static const FluidType& byName(const std::string name)
-	{
-		auto found = std::ranges::find(data, name, &FluidType::name);
-		assert(found != data.end());
-		return *found;
-	}
-	static FluidType& byNameNonConst(const std::string name)
-	{
-		auto found = std::ranges::find(data, name, &FluidType::name);
-		assert(found != data.end());
-		return *found;
-	}
+	static const FluidType& byName(const std::string name);
+	static FluidType& byNameNonConst(const std::string name);
 };
+inline std::vector<FluidType> fluidTypeDataStore;
 inline void to_json(Json& data, const FluidType* const& fluidType){ data = fluidType->name; }
 inline void to_json(Json& data, const FluidType& fluidType){ data = fluidType.name; }
 inline void from_json(const Json& data, const FluidType*& fluidType){ fluidType = &FluidType::byName(data.get<std::string>()); }

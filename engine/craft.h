@@ -50,14 +50,9 @@ struct CraftStepTypeCategory final
 {
 	const std::string name;
 	// Infastructure.
-	inline static std::list<CraftStepTypeCategory> data;
-	static CraftStepTypeCategory& byName(const std::string name)
-	{
-		auto found = std::ranges::find(data, name, &CraftStepTypeCategory::name);
-		assert(found != data.end());
-		return *found;
-	}
+	static CraftStepTypeCategory& byName(const std::string name);
 };
+inline std::list<CraftStepTypeCategory> craftStepTypeCategoryDataStore;
 inline void to_json(Json& data, const CraftStepTypeCategory* const& category){ data = category->name; }
 inline void from_json(const Json& data, const CraftStepTypeCategory*& category){ category = &CraftStepTypeCategory::byName(data.get<std::string>()); }
 // Part of the definition of a particular CraftJobType which makes a specific Item.
@@ -113,15 +108,9 @@ struct CraftJobType final
 	const MaterialTypeCategory* materialtypeCategory;
 	std::vector<CraftStepType> stepTypes;
 	// Infastructure.
-	inline static std::list<CraftJobType> data;
-	static CraftJobType& byName(const std::string name)
-	{
-		auto found = std::ranges::find(data, name, &CraftJobType::name);
-		assert(!found->stepTypes.empty());
-		assert(found != data.end());
-		return *found;
-	}
+	static CraftJobType& byName(const std::string name);
 };
+inline std::list<CraftJobType> craftJobTypeDataStore;
 inline void to_json(Json& data, const CraftJobType* const& craftJobType){ data = craftJobType->name; }
 inline void to_json(Json& data, const CraftJobType& craftJobType){ data = craftJobType.name; }
 inline void from_json(const Json& data, const CraftJobType*& craftJobType){ craftJobType = &CraftJobType::byName(data.get<std::string>()); }
@@ -243,6 +232,7 @@ public:
 	CraftJob* getJobForAtLocation(const Actor& actor, const SkillType& skillType, const Block& block, std::unordered_set<CraftJob*>& excludeJobs);
 	std::pair<CraftJob*, Block*> getJobAndLocationForWhileExcluding(const Actor& actor, const SkillType& skillType, std::unordered_set<CraftJob*>& excludeJobs);
 	friend class CraftObjectiveType;
+	friend class HasCraftingLocationsAndJobs;
 	// For testing.
 	[[maybe_unused, nodiscard]] bool hasJobs() const { return !m_jobs.empty(); }
 	[[maybe_unused, nodiscard]] bool hasLocationsForCategory(const CraftStepTypeCategory& category) const { return m_locationsByCategory.contains(&category); }
@@ -258,5 +248,6 @@ public:
 	void addFaction(const Faction& faction) { m_data.try_emplace(&faction, faction); }
 	void removeFaction(const Faction& faction) { m_data.erase(&faction); }
 	void maybeRemoveLocation(Block& location) { for(auto& pair : m_data) pair.second.maybeRemoveLocation(location); }
+	void clearReservations();
 	[[nodiscard]] HasCraftingLocationsAndJobsForFaction& at(const Faction& faction);
 };

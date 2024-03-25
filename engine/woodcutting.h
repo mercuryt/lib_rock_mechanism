@@ -124,6 +124,7 @@ public:
 	void undesignate(const Faction& faction, Block& block);
 	void remove(const Faction& faction, Block& block);
 	void clearAll(Block& block);
+	void clearReservations();
 	bool areThereAnyForFaction(const Faction& faction) const;
 	bool contains(const Faction& faction, const Block& block) const;
 	WoodCuttingProject& at(const Faction& faction, const Block& block);

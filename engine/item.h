@@ -35,16 +35,16 @@ struct WearableData final
 	const uint32_t forceAbsorbedPiercedModifier;
 	std::vector<const BodyPartType*> bodyPartsCovered;
 	// Infastructure.
-	inline static std::list<WearableData> data;
 };
+inline std::deque<WearableData> wearableDataStore;
 struct WeaponData final
 {
 	const SkillType* combatSkill;
 	Step coolDown;
 	std::vector<AttackType> attackTypes;
 	// Infastructure.
-	inline static std::list<WeaponData> data;
 };
+inline std::deque<WeaponData> weaponDataStore;
 struct ItemType final
 {
 	const std::string name;
@@ -67,18 +67,10 @@ struct ItemType final
 	Block* getCraftLocation(const Block& location, Facing facing) const;
 	// Infastructure.
 	bool operator==(const ItemType& itemType) const { return this == &itemType; }
-	inline static std::vector<ItemType> data;
-	static const ItemType& byName(std::string name)
-	{
-		auto found = std::ranges::find(data, name, &ItemType::name);
-		assert(found != data.end());
-		return *found;
-	}
-	static ItemType& byNameNonConst(std::string name)
-	{
-		return const_cast<ItemType&>(byName(name));
-	}
+	static const ItemType& byName(std::string name);
+	static ItemType& byNameNonConst(std::string name);
 };
+inline std::vector<ItemType> itemTypeDataStore;
 inline void to_json(Json& data, const ItemType* const& itemType){ data = itemType->name; }
 inline void to_json(Json& data, const ItemType& itemType){ data = itemType.name; }
 inline void from_json(const Json& data, const ItemType*& itemType){ itemType = &ItemType::byName(data.get<std::string>()); }

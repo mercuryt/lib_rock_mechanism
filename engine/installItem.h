@@ -69,6 +69,7 @@ public:
 	bool empty() const { return m_designations.empty(); }
 	bool contains(const Block& block) const { return m_designations.contains(&const_cast<Block&>(block)); }
 	InstallItemProject& at(Block& block) { return m_designations.at(&block); }
+	friend class HasInstallItemDesignations;
 };
 class HasInstallItemDesignations final
 {
@@ -76,5 +77,6 @@ class HasInstallItemDesignations final
 public:
 	void registerFaction(const Faction& faction) { m_data.try_emplace(&faction, faction); }
 	void unregisterFaction(const Faction& faction) { m_data.erase(&faction); }
+	void clearReservations();
 	HasInstallItemDesignationsForFaction& at(const Faction& faction) { assert(m_data.contains(&faction)); return m_data.at(&faction);}
 };

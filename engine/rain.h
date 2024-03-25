@@ -14,7 +14,7 @@ class AreaHasRain final
 	const FluidType& m_defaultRainFluidType;
 	Percent m_intensityPercent;
 	HasScheduledEvent<RainEvent> m_event;
-	std::array<Percent, 3> m_humidityBySeason;
+	std::array<Percent, 4> m_humidityBySeason;
 public:
 	AreaHasRain(Area& a);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);

@@ -276,7 +276,7 @@ void EatObjective::execute()
 			{
 				// We are at the previously selected location but there is no  longer any food here, try again.
 				m_destination = nullptr;
-				m_actor.m_canReserve.clearAll();
+				m_actor.m_canReserve.deleteAllWithoutCallback();
 				m_threadedTask.create(*this);
 			}
 			else
@@ -303,7 +303,7 @@ void EatObjective::reset()
 	delay();
 	m_destination = nullptr;
 	m_noFoodFound = false;
-	m_actor.m_canReserve.clearAll();
+	m_actor.m_canReserve.deleteAllWithoutCallback();
 }
 void EatObjective::noFoodFound()
 {

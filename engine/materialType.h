@@ -1,8 +1,10 @@
 #pragma once
 
 #include "config.h"
+#include "itemQuery.h"
 #include "types.h"
 
+#include <deque>
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -19,14 +21,9 @@ struct MaterialTypeCategory
 	const std::string name;
 	// Infastructure.
 	bool operator==(const MaterialTypeCategory& materialTypeCategory) const { return this == &materialTypeCategory; }
-	inline static std::vector<MaterialTypeCategory> data;
-	static const MaterialTypeCategory& byName(const std::string name)
-	{
-		auto found = std::ranges::find(data, name, &MaterialTypeCategory::name);
-		assert(found != data.end());
-		return *found;
-	}
+	static const MaterialTypeCategory& byName(const std::string name);
 };
+inline std::vector<MaterialTypeCategory> materialTypeCategoryDataStore;
 
 struct SpoilData
 {
@@ -44,8 +41,8 @@ struct BurnData
 	const Step burnStageDuration; // How many steps to go from smouldering to burning and from burning to flaming.
 	const Step flameStageDuration; // How many steps to spend flaming.
 	// Infastructure.
-	inline static std::vector<BurnData> data;
 };
+inline std::deque<BurnData> burnDataStore;
 
 struct MaterialConstructionData
 {
@@ -57,10 +54,10 @@ struct MaterialConstructionData
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> byproducts;
 	// Infastructure.
 	bool operator==(const MaterialConstructionData& materialConstructionData) const { return this == &materialConstructionData; }
-	inline static std::vector<MaterialConstructionData> data;
-	inline static std::vector<MaterialConstructionData> specializedData;
 	static MaterialConstructionData& byNameSpecialized(const std::string name, const MaterialType& materialType);
 };
+inline std::deque<MaterialConstructionData> materialConstructionDataStore;
+inline std::deque<MaterialConstructionData> materialConstructionSpecializedDataStore;
 
 struct MaterialType
 {
@@ -78,20 +75,10 @@ struct MaterialType
 	MaterialConstructionData* constructionData;
 	// Infastructure.
 	bool operator==(const MaterialType& materialType) const { return this == &materialType; }
-	inline static std::vector<MaterialType> data;
-	static const MaterialType& byName(const std::string name)
-	{
-		auto found = std::ranges::find(data, name, &MaterialType::name);
-		assert(found != data.end());
-		return *found;
-	}
-	static MaterialType& byNameNonConst(const std::string name)
-	{
-		auto found = std::ranges::find(data, name, &MaterialType::name);
-		assert(found != data.end());
-		return *found;
-	}
+	static const MaterialType& byName(const std::string name);
+	static MaterialType& byNameNonConst(const std::string name);
 };
+inline std::vector<MaterialType> materialTypeDataStore;
 inline void to_json(Json& data, const MaterialType* const& materialType){ data = materialType->name; }
 inline void to_json(Json& data, const MaterialType& materialType){ data = materialType.name; }
 inline void from_json(const Json& data, const MaterialType*& materialType){ materialType = &MaterialType::byName(data.get<std::string>()); }
