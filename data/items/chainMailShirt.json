@@ -1,0 +1,18 @@
+{
+	"name": "chain mail shirt",
+	"shape": "oneByOneThirtySecond",
+	"volume": 5000,
+	"generic": false,
+	"value": 3000,
+	"moveType": "none",
+	"wearableType":
+	{
+		"percentCoverage": 100,
+		"defenseScore": 1,
+		"rigid": false,
+		"layer": 3,
+		"forceAbsorbedPiercedModifier": 10,
+		"forceAbsorbedUnpiercedModifier": 10,
+		"bodyPartsCovered": [ "right arm", "left arm", "torso" ]
+	}
+}

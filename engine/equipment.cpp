@@ -166,3 +166,11 @@ Item* EquipmentSet::getAmmoForRangedWeapon(Item& weapon)
 			return item;
 	return nullptr;
 }
+bool EquipmentSet::hasAnyEquipmentWithReservations() const
+{
+	if(m_actor.getFaction())
+		for(const Item* item : m_equipments)
+			if(item->m_reservable.hasAnyReservationsWith(*m_actor.getFaction()))
+				return true;
+	return false;
+}

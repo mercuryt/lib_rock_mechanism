@@ -119,7 +119,7 @@ void DigObjective::reset()
 	m_digThreadedTask.maybeCancel();
 	m_project = nullptr; 
 	m_actor.m_project = nullptr;
-	m_actor.m_canReserve.clearAll();
+	m_actor.m_canReserve.deleteAllWithoutCallback();
 }
 void DigObjective::joinProject(DigProject& project)
 {
@@ -357,6 +357,12 @@ void HasDigDesignations::clearAll(Block& block)
 {
 	for(auto& pair : m_data)
 		pair.second.removeIfExists(block);
+}
+void HasDigDesignations::clearReservations()
+{
+	for(auto& pair : m_data)
+		for(auto& pair : pair.second.m_data)
+			pair.second.clearReservations();
 }
 bool HasDigDesignations::areThereAnyForFaction(const Faction& faction) const
 {

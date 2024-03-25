@@ -11,8 +11,8 @@ set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3 -ggdb -fno-inline -fmax-errors=5")
 set(CMAKE_CXX_FLAGS "-fuse-ld=mold")
 set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
-# add_compile_options(-fsanitize=undefined,address)
-# add_link_options(-fsanitize=undefined,address)
+# add_compile_options(-fsanitize=memory)
+# add_link_options(-fsanitize=memory)
 
 if(MSVC)
     # warning level 4
@@ -21,14 +21,14 @@ else()
     # additional warnings
     add_compile_options(-Wall -Wextra -Werror -Wunused-function -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wnull-dereference -Wdouble-promotion )
     # Incompatable with tgui?
-    # add_compile_options(-D_GLIBCXX_DEBUG)
+    add_compile_options(-D_GLIBCXX_DEBUG)
 endif()
 
 # add_compile_options(-ffast-math)
 
 add_subdirectory(engine)
-add_subdirectory(ui)
-#add_subdirectory(test)
+#add_subdirectory(ui)
+add_subdirectory(test)
 #add_subdirectory(python)
 
 # release build by default

@@ -1,0 +1,27 @@
+{
+	"name": "shortbow",
+	"shape": "oneByOneSixteenth",
+	"volume": 600,
+	"generic": false,
+	"value": 60,
+	"materialCategories": [ "wood" ],
+	"weaponData":
+	{
+		"combatSkill": "bow",
+		"projectileItemType": "arrows",
+		"projectileSpeed": 5,
+		"coolDownSeconds": 1,
+		"attackTypes":
+		[
+			{
+				"name": "shoot",
+				"area": 2,
+				"baseForce": 20,
+				"range": 10,
+				"combatScore": 10,
+				"projectile": true,
+				"woundType": "Pierce"
+			}
+		]
+	}
+}

@@ -1,0 +1,40 @@
+{
+	"name": "short sword",
+	"shape": "oneByOneSixteenth",
+	"volume": 130,
+	"generic": false,
+	"value": 100,
+	"weaponData":
+	{
+		"combatSkill": "sword",
+		"coolDownSeconds": 0.70,
+		"attackTypes":
+		[
+			{
+				"name": "stab",
+				"area": 5,
+				"baseForce": 4,
+				"range": 1.5,
+				"combatScore": 4,
+				"woundType": "Pierce"
+			},
+			{
+				"name": "slash",
+				"area": 15,
+				"baseForce": 3,
+				"range": 1.5,
+				"combatScore": 3,
+				"woundType": "Cut"
+			},
+			{
+				"name": "pomel strike",
+				"area": 25,
+				"baseForce": 3,
+				"range": 1.5,
+				"combatScore": 1,
+				"woundType": "Bludgeon",
+				"coolDownSeconds": 0.6
+			}
+		]
+	}
+}

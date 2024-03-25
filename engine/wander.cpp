@@ -64,5 +64,5 @@ void WanderObjective::reset()
 { 
 	cancel(); 
 	m_routeFound = false; 
-	m_actor.m_canReserve.clearAll();
+	m_actor.m_canReserve.deleteAllWithoutCallback();
 }

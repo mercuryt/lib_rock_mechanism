@@ -72,8 +72,8 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_hasDigDesignations.load(data["hasDigDesignations"], deserializationMemo);
 	m_hasCraftingLocationsAndJobs.load(data["hasCraftingLocationsAndJobs"], deserializationMemo);
 	m_hasStockPiles.load(data["hasStockPiles"], deserializationMemo);
-	m_hasWoodCuttingDesignations.load(data["hasWoodCuttingDesigantions"], deserializationMemo);
-	m_targetedHauling.load(data["targetedHauling"], deserializationMemo);
+	m_hasWoodCuttingDesignations.load(data["hasWoodCuttingDesignations"], deserializationMemo);
+	m_hasTargetedHauling.load(data["targetedHauling"], deserializationMemo);
 	// Load sleeping spots.
 	m_hasSleepingSpots.load(data["sleepingSpots"], deserializationMemo);
 	// Load Item cargo and projects.
@@ -98,7 +98,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_hasStockPiles.loadWorkers(data["hasStockPiles"], deserializationMemo);
 	m_hasCraftingLocationsAndJobs.loadWorkers(data["hasCraftingLocationsAndJobs"], deserializationMemo);
 	/*
-	m_hasWoodCuttingDesigantions.loadWorkers(data["hasWoodCuttingDesigantions"], deserializationMemo);
+	hasWoodCuttingDesignations.loadWorkers(data["hasWoodCuttingDesignations"], deserializationMemo);
 	m_targetedHauling.loadWorkers(data["targetedHauling"], deserializationMemo);
 	*/
 
@@ -152,10 +152,10 @@ Json Area::toJson() const
 	data["hasSleepingSpots"] = m_hasSleepingSpots.toJson();
 	data["hasConstructionDesignations"] = m_hasConstructionDesignations.toJson();
 	data["hasDigDesignations"] = m_hasDigDesignations.toJson();
-	data["hasWoodCuttingDesigantions"] = m_hasWoodCuttingDesignations.toJson();
+	data["hasWoodCuttingDesignations"] = m_hasWoodCuttingDesignations.toJson();
 	data["hasCraftingLocationsAndJobs"] = m_hasCraftingLocationsAndJobs.toJson();
 	data["hasStockPiles"] = m_hasStockPiles.toJson();
-	data["targetedHauling"] = m_targetedHauling.toJson();
+	data["targetedHauling"] = m_hasTargetedHauling.toJson();
 	for(const Block* block : m_caveInCheck)
 		data["caveInCheck"].push_back(block);
 	return data;
@@ -418,4 +418,15 @@ uint32_t Area::getTotalCountOfItemTypeOnSurface(const ItemType& itemType) const
 		if(itemType == item->m_itemType)
 			output += item->getQuantity();
 	return output;
+}
+void Area::clearReservations()
+{
+	m_hasDigDesignations.clearReservations();
+	m_hasConstructionDesignations.clearReservations();
+	m_hasStockPiles.clearReservations();
+	m_hasCraftingLocationsAndJobs.clearReservations();
+	m_hasWoodCuttingDesignations.clearReservations();
+	m_hasTargetedHauling.clearReservations();
+	m_hasInstallItemDesignations.clearReservations();
+	//m_hasMedicalPatientsAndDoctors.clearReservations();
 }

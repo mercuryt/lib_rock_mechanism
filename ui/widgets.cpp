@@ -143,7 +143,7 @@ tgui::ComboBox::Ptr widgetUtil::makeMaterialCategorySelectUI(std::wstring nullLa
 			selected = true;
 		}
 	}
-	for(const MaterialTypeCategory& materialTypeCategory : MaterialTypeCategory::data)
+	for(const MaterialTypeCategory& materialTypeCategory : materialTypeCategoryDataStore)
 	{
 		output->addItem(materialTypeCategory.name, materialTypeCategory.name);
 		if(lastSelectedMaterialCategory && *lastSelectedMaterialCategory == materialTypeCategory)
@@ -187,7 +187,7 @@ tgui::ComboBox::Ptr widgetUtil::makeFluidTypeSelectUI()
 	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
 	bool selected = false;
 	output->onItemSelect([](const tgui::String name){ lastSelectedFluidType = &FluidType::byName(name.toStdString()); });
-	for(const FluidType& fluidType : FluidType::data)
+	for(const FluidType& fluidType : fluidTypeDataStore)
 	{
 		output->addItem(fluidType.name, fluidType.name);
 		if(lastSelectedFluidType && lastSelectedFluidType == &fluidType)

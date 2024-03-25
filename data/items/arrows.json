@@ -1,0 +1,8 @@
+{
+	"name": "arrows",
+	"shape": "oneByOneHundredth",
+	"volume": 1,
+	"generic": true,
+	"materialCategories": [ "metal", "wood", "bone", "stone" ],
+	"value": 4
+}

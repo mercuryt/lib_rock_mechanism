@@ -36,11 +36,11 @@ GameOverlay::GameOverlay(Window& w) : m_window(w),
 	topBar->setHeight(16);
 	topBar->add(m_coordinateUI);
 	topBar->add(m_timeUI);
-	m_timeUI->setPosition("20%", 0);
+	m_timeUI->setPosition("10%", 0);
 	topBar->add(m_speedUI);
 	m_speedUI->setPosition("40%", 0);
 	topBar->add(m_weatherUI);
-	m_weatherUI->setPosition("60%", 0);
+	m_weatherUI->setPosition("70%", 0);
 	m_group->add(topBar);
 }
 void GameOverlay::drawMenu()

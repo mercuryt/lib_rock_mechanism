@@ -5,6 +5,8 @@
 #include "config.h"
 #include "deserializationMemo.h"
 #include "eventSchedule.hpp"
+#include "item.h"
+#include "materialType.h"
 #include "simulation.h"
 #include "types.h"
 #include "util.h"
@@ -73,7 +75,148 @@ Percent ActorParamaters::getPercentTired()
 	}
 	return percentTired;
 }
-
+void ActorParamaters::generateEquipment(Actor& actor)
+{
+	static const MaterialType& leather = MaterialType::byName("leather");
+	static const MaterialType& cotton = MaterialType::byName("cotton");
+	static const MaterialType& iron = MaterialType::byName("iron");
+	static const MaterialType& bronze = MaterialType::byName("bronze");
+	static const MaterialType& poplarWoodType = MaterialType::byName("poplar wood");
+	if(!actor.isSentient())
+		return;
+	auto& random = simulation->m_random;
+	auto generate = [&](const ItemType& itemType, const MaterialType& materialType){
+		Percent quality = random.getInRange(10, 50);
+		Percent wear = random.getInRange(10, 60);
+		Item& item = simulation->createItemNongeneric(itemType, materialType, quality, wear);
+		actor.m_equipmentSet.addEquipment(item);
+	};
+	auto generateMetal = [&](const ItemType& itemType) {
+		const MaterialType* materialType = random.chance(0.8) ? &iron : &bronze;
+		generate(itemType, *materialType);
+	};
+	if(hasCloths)
+	{
+		//TODO: Cultural differences.
+		static const ItemType& pantsType = ItemType::byName("pants");
+		generate(pantsType, cotton);
+		static const ItemType& shirtType = ItemType::byName("shirt");
+		generate(shirtType, cotton);
+		static const ItemType& jacketType = ItemType::byName("jacket");
+		generate(jacketType, cotton);
+		static const ItemType& shoesType = ItemType::byName("shoes");
+		generate(shoesType, cotton);
+		bool hasBelt = random.chance(0.6);
+		if(hasBelt)
+		{
+			static const ItemType& beltType = ItemType::byName("belt");
+			generate(beltType, leather);
+		}
+	}
+	static const ItemType& halfHelmType = ItemType::byName("halfHelm");
+	static const ItemType& breastPlateType = ItemType::byName("breastPlate");
+	if(hasLightArmor && !hasHeavyArmor)
+	{
+		if(random.chance(0.8))
+		{
+			generateMetal(halfHelmType);
+		}
+		else if(random.chance(0.5))
+		{
+			static const ItemType& hoodType = ItemType::byName("hood");
+			generate(hoodType, leather);
+		}
+		if(random.chance(0.4))
+		{
+			generateMetal(breastPlateType);
+		}
+		else if(random.chance(0.6))
+		{
+			static const ItemType& chainMailShirtType = ItemType::byName("chainMailShirt");
+			generateMetal(chainMailShirtType);
+		}
+	}
+	if(hasHeavyArmor)
+	{
+		if(random.chance(0.75))
+		{
+			static const ItemType& fullHelmType = ItemType::byName("fullHelm");
+			generateMetal(fullHelmType);
+		}
+		else if(random.chance(0.9))
+		{
+			generateMetal(halfHelmType);
+		}
+		generateMetal(breastPlateType);
+		static const ItemType& greavesType = ItemType::byName("greaves");
+		generateMetal(greavesType);
+		static const ItemType& vambracesType = ItemType::byName("vambraces");
+		generateMetal(vambracesType);
+	}
+	static const ItemType& longSwordType = ItemType::byName("long sword");
+	if(hasSidearm)
+	{
+		auto roll = random.getInRange(0, 100);
+		if(roll > 95)
+		{
+			generateMetal(longSwordType);
+		}
+		if(roll > 70)
+		{
+			static const ItemType& shortSwordType = ItemType::byName("short sword");
+			generateMetal(shortSwordType);
+		}
+		else
+		{
+			static const ItemType& daggerType = ItemType::byName("dagger");
+			generateMetal(daggerType);
+		}
+	}
+	if(hasLongarm)
+	{
+		auto roll = random.getInRange(0, 100);
+		if(roll > 75)
+		{
+			static const ItemType& spearType = ItemType::byName("spear");
+			generateMetal(spearType);
+		}
+		if(roll > 65)
+		{
+			static const ItemType& maceType = ItemType::byName("mace");
+			generateMetal(maceType);
+		}
+		if(roll > 45)
+		{
+			static const ItemType& glaveType = ItemType::byName("glave");
+			generateMetal(glaveType);
+		}
+		if(roll > 25)
+		{
+			static const ItemType& axeType = ItemType::byName("axe");
+			generateMetal(axeType);
+		}
+		else 
+		{
+			generateMetal(longSwordType);
+			static const ItemType& shieldType = ItemType::byName("shield");
+			generate(shieldType, poplarWoodType);
+		}
+	}
+	if(hasRangedWeapon)
+	{
+		auto roll = random.getInRange(0, 100);
+		if(roll > 75)
+		{
+			static const ItemType& crossbowType = ItemType::byName("crossbow");
+			generate(crossbowType, poplarWoodType);
+		}
+		else
+		{
+			static const ItemType& shortbowType = ItemType::byName("shortbow");
+			generate(shortbowType, poplarWoodType);
+		}
+	}
+}
 Actor::Actor(Simulation& simulation, uint32_t id, const std::wstring& name, const AnimalSpecies& species, DateTime birthDate, Percent percentGrown, Faction* faction, Attributes attributes) :
 	HasShape(simulation, species.shapeForPercentGrown(percentGrown), false), m_faction(faction), m_id(id), m_name(name), m_species(species), m_birthDate(birthDate), m_alive(true), m_body(*this), m_project(nullptr), m_attributes(attributes), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canPickup(*this), m_equipmentSet(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_canReserve(faction), m_stamina(*this), m_hasUniform(*this), m_visionRange(species.visionRange)
 {
@@ -173,7 +316,7 @@ void Actor::removeMassFromCorpse(Mass mass)
 	m_attributes.removeMass(mass);
 }
 bool Actor::isEnemy(Actor& actor) const { return m_faction->enemies.contains(const_cast<Faction*>(actor.m_faction)); }
-bool Actor::isAlly(Actor& actor) const { return m_faction->allies.contains(const_cast<Faction*>(actor.m_faction)); }
+bool Actor::isAlly(Actor& actor) const { return m_faction == actor.m_faction || m_faction->allies.contains(const_cast<Faction*>(actor.m_faction)); }
 void Actor::die(CauseOfDeath causeOfDeath)
 {
 	m_causeOfDeath = causeOfDeath;

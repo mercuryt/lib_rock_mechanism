@@ -1,0 +1,40 @@
+{
+	"name": "spear",
+	"shape": "oneByOneSixteenth",
+	"volume": 250,
+	"generic": false,
+	"value": 150,
+	"weaponData":
+	{
+		"combatSkill": "spear",
+		"coolDownSeconds": 1.25,
+		"attackTypes":
+		[
+			{
+				"name": "stab",
+				"area": 3,
+				"baseForce": 6,
+				"range": 2,
+				"combatScore": 5,
+				"woundType": "Pierce"
+			},
+			{
+				"name": "slash",
+				"area": 6,
+				"baseForce": 5,
+				"range": 2,
+				"combatScore": 4,
+				"woundType": "Cut"
+			},
+			{
+				"name": "pomel strike",
+				"area": 25,
+				"baseForce": 5,
+				"range": 2,
+				"combatScore": 1,
+				"woundType": "Bludgeon",
+				"coolDownSeconds": 2
+			}
+		]
+	}
+}

@@ -27,7 +27,7 @@ struct DateTime
 		output.hour = steps / Config::stepsPerHour;
 		return output;
 	}
-	uint8_t getSeason() { return day / ((float)Config::daysPerYear / 4.f); }
+	uint8_t getSeason() { return std::floor((float)day / ((float)Config::daysPerYear / 4.f)); }
 };
 inline void from_json(const Json& data, DateTime& dateTime)
 {

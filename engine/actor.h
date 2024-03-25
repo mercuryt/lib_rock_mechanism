@@ -54,6 +54,12 @@ struct ActorParamaters
 	bool needsSleep = false;
 	Percent percentThirst = 0;
 	bool needsDrink = false;
+	bool hasCloths = true;
+	bool hasSidearm = true;
+	bool hasLongarm = false;
+	bool hasRangedWeapon = false;
+	bool hasLightArmor = false;
+	bool hasHeavyArmor = false;
 
 	Percent getPercentGrown();
 	std::wstring getName();
@@ -62,6 +68,7 @@ struct ActorParamaters
 	Percent getPercentThirst();
 	Percent getPercentHunger();
 	Percent getPercentTired();
+	void generateEquipment(Actor& actor);
 };
 
 class Actor final : public HasShape

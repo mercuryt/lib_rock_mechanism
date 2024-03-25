@@ -19,7 +19,7 @@ Json RestObjective::toJson() const
 void RestObjective::reset() 
 { 
 	cancel(); 
-	m_actor.m_canReserve.clearAll();
+	m_actor.m_canReserve.deleteAllWithoutCallback();
 }
 RestEvent::RestEvent(RestObjective& ro, const Step start) : ScheduledEvent(ro.m_actor.getSimulation(), Config::restIntervalSteps, start), m_objective(ro) { }
 void RestEvent::execute()

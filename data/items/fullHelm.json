@@ -1,0 +1,19 @@
+{
+	"name": "full helm",
+	"shape": "oneByOneEighth",
+	"volume": 8000,
+	"generic": false,
+	"value": 2000,
+	"moveType": "none",
+	"materialCategories": [ "metal", "wood" ],
+	"wearableType":
+	{
+		"percentCoverage": 100,
+		"defenseScore": 25,
+		"rigid": true,
+		"layer": 2,
+		"forceAbsorbedPiercedModifier": 15,
+		"forceAbsorbedUnpiercedModifier": 15,
+		"bodyPartsCovered": [ "head" ]
+	}
+}

@@ -5,7 +5,7 @@
 #include "config.h"
 #include "random.h"
 #include "types.h"
-AreaHasRain::AreaHasRain(Area& a) : m_area(a), m_currentlyRainingFluidType(nullptr), m_defaultRainFluidType(FluidType::byName("water")), m_intensityPercent(0), m_event(a.m_simulation.m_eventSchedule) { }
+AreaHasRain::AreaHasRain(Area& a) : m_area(a), m_currentlyRainingFluidType(nullptr), m_defaultRainFluidType(FluidType::byName("water")), m_intensityPercent(0), m_event(a.m_simulation.m_eventSchedule), m_humidityBySeason({30,15,10,20}) { }
 void AreaHasRain::load(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo)
 {
 	if(data.contains("currentFluidType"))
@@ -15,6 +15,7 @@ void AreaHasRain::load(const Json& data, [[maybe_unused]] DeserializationMemo& d
 	}
 	if(data.contains("eventStart"))
 		m_event.schedule(data["eventDuration"].get<Step>(), *this, data["eventStart"].get<Step>());
+	m_humidityBySeason = data["humdityBySeason"].get<std::array<Percent, 4>>();
 }
 Json AreaHasRain::toJson() const
 {
@@ -29,6 +30,7 @@ Json AreaHasRain::toJson() const
 		data["currentFluidType"] = m_currentlyRainingFluidType;
 		data["intensityPercent"] = m_intensityPercent;
 	}
+	data["humdityBySeason"] = m_humidityBySeason;
 	return data;
 }
 void AreaHasRain::start(const FluidType& fluidType, Percent intensityPercent, Step stepsDuration)

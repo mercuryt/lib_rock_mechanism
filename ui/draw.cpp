@@ -583,7 +583,9 @@ void Draw::multiTileActor(const Actor& actor)
 						Facing facing = adjacent->facingToSetWhenEnteringFrom(*block);
 						borderSegmentOnBlock(*block, facing, displayData::actorOutlineColor, 1);
 					}
-				spriteOnBlock(*block, sprite, &display.color);
+				// Check vs x and y rather then vs the block so we draw the sprite on z level other then m_location->m_z.
+				if(block->m_x == actor.m_location->m_x && block->m_y == actor.m_location->m_y)
+					spriteOnBlock(*block, sprite, &display.color);
 			}
 	}
 	else

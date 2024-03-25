@@ -139,9 +139,25 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 			m_cannotPathToJobSite.insert(candidate);
 			continue;
 		}
+		for(Item* item : candidate->m_equipmentSet.getAll())
+			for(auto& [itemQuery, projectRequirementCounts] : m_project.m_requiredItems)
+			{
+				if(projectRequirementCounts.required == projectRequirementCounts.reserved)
+					continue;
+				assert(!item->m_reservable.hasAnyReservationsWith(m_project.m_faction));
+				if(!itemQuery.query(*item))
+					continue;
+				uint32_t desiredQuantity = projectRequirementCounts.required - projectRequirementCounts.reserved;
+				uint32_t quantity = std::min(desiredQuantity, item->m_reservable.getUnreservedCount(m_project.m_faction));
+				assert(quantity != 0);
+				projectRequirementCounts.reserved += quantity;
+				assert(projectRequirementCounts.reserved <= projectRequirementCounts.required);
+				m_reservedEquipment[candidate].emplace_back(&projectRequirementCounts, item);
+			}
+
 		if(!m_project.reservationsComplete())
 		{
-			auto record = [&](HasShape& hasShape, ProjectRequirementCounts& counts)
+			auto recordItemOnGround = [&](HasShape& hasShape, ProjectRequirementCounts& counts)
 			{
 				uint32_t desiredQuantity = counts.required - counts.reserved;
 				uint32_t quantity = std::min(desiredQuantity, hasShape.m_reservable.getUnreservedCount(m_project.m_faction));
@@ -152,10 +168,12 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 				{
 					// Item is already at or next to project location.
 					counts.delivered += quantity;
+					assert(counts.delivered <= counts.reserved);
 					assert(!m_alreadyAtSite.contains(&hasShape));
 					m_alreadyAtSite[&hasShape] = quantity;
 				}
 				else
+					// TODO: project shoud be read only here, requires tracking reservationsComplete seperately for task.
 					m_project.addToPickup(hasShape, counts, quantity);
 			};
 			// Verfy the worker can path to the required materials. Cumulative for all candidates in this step but reset if not satisfied.
@@ -170,7 +188,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 							continue;	
 						if(!itemQuery.query(*item))
 							continue;
-						record(*item, projectRequirementCounts);
+						recordItemOnGround(*item, projectRequirementCounts);
 						if(m_project.reservationsComplete())
 							return true;
 					}
@@ -183,7 +201,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 							continue;	
 						if(!actorQuery.query(*actor))
 							continue;
-						record(*actor, projectRequirementCounts);
+						recordItemOnGround(*actor, projectRequirementCounts);
 						if(m_project.reservationsComplete())
 							return true;
 					}
@@ -203,10 +221,25 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 	{
 		// Found all materials, remove any workers which cannot path to the project location.
 		std::erase_if(m_project.m_workerCandidatesAndTheirObjectives, [&](auto& pair) { return m_cannotPathToJobSite.contains(pair.first); });
+		// Set onDestoy callbacks for all items which will be reserved, in case they are destroyed before writeStep.
+		// Actors get marked dead rather then destroyed outright so no need for callbacks on them.
+		std::function<void()> callback = [this]{ resetProjectCounts(); };
+		m_hasOnDestroy.setCallback(callback);
+		for(auto& pair : m_reservedEquipment)
+			for(std::pair<ProjectRequirementCounts*, Item*> pair2 : pair.second)
+				m_hasOnDestroy.subscribe(pair2.second->m_onDestroy);
+		for(auto& pair : m_alreadyAtSite)
+			if(pair.first->isItem())
+				m_hasOnDestroy.subscribe(pair.first->m_onDestroy);
+		// Accessing project here because we are modifing project from the readStep, probably unwisely.
+		for(auto& pair : m_project.m_toPickup)
+			if(pair.first->isItem())
+				m_hasOnDestroy.subscribe(pair.first->m_onDestroy);
 	}
 }
 void ProjectTryToAddWorkersThreadedTask::writeStep()
 {
+	m_hasOnDestroy.unsubscribeAll();
 	if(m_project.reservationsComplete() && !m_project.m_workerCandidatesAndTheirObjectives.empty())
 	{
 		// Requirements satisfied, verifiy they are all still avalible.
@@ -218,18 +251,23 @@ void ProjectTryToAddWorkersThreadedTask::writeStep()
 			return;
 		}
 		// Reserve all required.
-		// Get a pointer to project to copy into the callback since this may be destroyed before it fires.
-		Project* project = &m_project;
 		for(auto& [hasShape, pair] : m_project.m_toPickup)
 		{
-			std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<ProjectRequiredShapeDishonoredCallback>(*project, *hasShape);
+			std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<ProjectRequiredShapeDishonoredCallback>(m_project, *hasShape);
 			hasShape->m_reservable.reserveFor(m_project.m_canReserve, pair.second, std::move(dishonorCallback));
 		}
 		for(auto& [hasShape, quantity] : m_alreadyAtSite)
 		{
-			std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<ProjectRequiredShapeDishonoredCallback>(*project, *hasShape);
+			std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<ProjectRequiredShapeDishonoredCallback>(m_project, *hasShape);
 			hasShape->m_reservable.reserveFor(m_project.m_canReserve, quantity, std::move(dishonorCallback));
 		}
+		for(auto& pair : m_reservedEquipment)
+			for(std::pair<ProjectRequirementCounts*, Item*> pair2 : pair.second)
+			{
+				std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<ProjectRequiredShapeDishonoredCallback>(m_project, *pair2.second);
+				pair2.second->m_reservable.reserveFor(m_project.m_canReserve, 1, std::move(dishonorCallback));
+			}
+		m_project.m_reservedEquipment = m_reservedEquipment;
 		// Add all actors.
 		std::vector<Actor*> notAdded;
 		for(auto& [actor, objective] : m_project.m_workerCandidatesAndTheirObjectives)
@@ -273,6 +311,10 @@ bool ProjectTryToAddWorkersThreadedTask::validate()
 	for(auto& [hasShape, quantity] : m_alreadyAtSite)
 		if(hasShape->m_reservable.getUnreservedCount(m_project.m_faction) < quantity)
 			return false;
+	for(auto& pair : m_reservedEquipment)
+		for(const std::pair<ProjectRequirementCounts*, Item*>& pair2 : pair.second)
+			if(pair2.second->m_reservable.hasAnyReservationsWith(m_project.m_faction))
+				return false;
 	return true;
 }
 void ProjectTryToAddWorkersThreadedTask::resetProjectCounts()
@@ -479,6 +521,9 @@ bool Project::deliveriesComplete() const
 	for(auto& pair : m_requiredActors)
 		if(pair.second.required > pair.second.delivered)
 			return false;
+	for(auto& pair : m_reservedEquipment)
+		if(!m_waiting.contains(pair.first))
+			return false;
 	return true;
 }
 void Project::recordRequiredActorsAndItems()
@@ -554,7 +599,20 @@ void Project::commandWorker(Actor& actor)
 		{
 			// All items and actors have been reserved with other workers dispatched to fetch them, the worker waits for them.
 			if(actor.isAdjacentTo(m_location))
+			{
 				m_waiting.insert(&actor);
+				// Any tools being carried are marked delivered.
+				if(m_reservedEquipment.contains(&actor))
+				{
+					for(auto& pair : m_reservedEquipment.at(&actor))
+					{
+						++pair.first->delivered;	
+						assert(pair.first->delivered <= pair.first->reserved);
+					}
+					if(deliveriesComplete())
+						addToMaking(actor);
+				}
+			}
 			else
 				actor.m_canMove.setDestinationAdjacentTo(m_location, m_workers.at(&actor).objective.m_detour);
 			//TODO: Schedule end of waiting and cancelation of task.
@@ -582,14 +640,17 @@ void Project::removeWorker(Actor& actor)
 		m_workers.at(&actor).haulSubproject->removeWorker(actor);
 	if(m_making.contains(&actor))
 		removeFromMaking(actor);
-	m_workers.erase(&actor);
-	if(m_workers.empty())
+	// If this is the only worker or the worker has a reserved tool then reset.
+	if(m_workers.size() == 1 || actor.m_equipmentSet.hasAnyEquipmentWithReservations())
 	{
 		if(canReset())
 			reset();
 		else
 			cancel();
+		assert(!actor.m_equipmentSet.hasAnyEquipmentWithReservations());
 	}
+	else
+		m_workers.erase(&actor);
 }
 void Project::addToMaking(Actor& actor)
 {
@@ -607,7 +668,7 @@ void Project::removeFromMaking(Actor& actor)
 }
 void Project::complete()
 {
-	m_canReserve.clearAll();
+	m_canReserve.deleteAllWithoutCallback();
 	for(Item* item : m_toConsume)
 		item->destroy();
 	for(auto& [itemType, materialType, quantity] : getByproducts())
@@ -618,7 +679,7 @@ void Project::complete()
 }
 void Project::cancel()
 {
-	m_canReserve.clearAll();
+	m_canReserve.deleteAllWithoutCallback();
 	onCancel();
 }
 void Project::scheduleEvent(Step start)
@@ -647,7 +708,7 @@ void Project::haulSubprojectCancel(HaulSubproject& haulSubproject)
 		actor->m_canPickup.putDownIfAny(*actor->m_location);
 		actor->m_canFollow.unfollowIfFollowing();
 		actor->m_canMove.clearPath();
-		actor->m_canReserve.clearAll();
+		actor->m_canReserve.deleteAllWithoutCallback();
 		m_workers.at(actor).haulSubproject = nullptr;
 		commandWorker(*actor);
 	}
@@ -689,7 +750,7 @@ void Project::reset()
 		actor->m_hasObjectives.getCurrent().reset();
 		actor->m_hasObjectives.cannotCompleteTask();
 	}
-	m_canReserve.clearAll();
+	m_canReserve.deleteAllWithoutCallback();
 	m_workers.clear();
 	m_workerCandidatesAndTheirObjectives.clear();
 }
@@ -697,6 +758,10 @@ bool Project::canAddWorker(const Actor& actor) const
 {
 	assert(!m_workers.contains(&const_cast<Actor&>(actor)));
 	return m_maxWorkers > m_workers.size();
+}
+void Project::clearReservations()
+{
+	m_canReserve.deleteAllWithoutCallback();
 }
 Project::~Project()
 {

@@ -105,6 +105,18 @@ std::vector<std::pair<Block*, Volume>> Shape::getBlocksOccupiedAtWithVolumes(con
 	}
 	return output;
 }
+// Static methods.
+const Shape& Shape::byName(const std::string& name)
+{
+	auto found = std::ranges::find(shapeDataStore, name, &Shape::name);
+	assert(found != shapeDataStore.end());
+	return *found;
+}
+bool Shape::hasShape(const std::string& name)
+{
+	auto found = std::ranges::find(shapeDataStore, name, &Shape::name);
+	return found != shapeDataStore.end();
+}
 SimulationHasShapes::SimulationHasShapes(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	for(const Json& shapeData : data)

@@ -191,7 +191,7 @@ void GivePlantsFluidObjective::execute()
 				fillContainer(*fillLocation);
 				// Should clearAll be moved to before setDestination so we don't leave abandoned reservations when we repath?
 				// If so we need to re-reserve fluidHaulingItem.
-				m_actor.m_canReserve.clearAll();
+				m_actor.m_canReserve.deleteAllWithoutCallback();
 				m_detour = false;
 				execute();
 			}
@@ -206,7 +206,7 @@ void GivePlantsFluidObjective::execute()
 		{
 			// Pickup item.
 			m_actor.m_canPickup.pickUp(*m_fluidHaulingItem);
-			m_actor.m_canReserve.clearAll();
+			m_actor.m_canReserve.deleteAllWithoutCallback();
 			m_detour = false;
 			execute();
 		}
@@ -238,7 +238,7 @@ void GivePlantsFluidObjective::reset()
 	cancel();
 	m_plantLocation = nullptr;
 	m_fluidHaulingItem = nullptr;
-	m_actor.m_canReserve.clearAll();
+	m_actor.m_canReserve.deleteAllWithoutCallback();
 }
 void GivePlantsFluidObjective::fillContainer(Block& fillLocation)
 {

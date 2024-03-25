@@ -1,9 +1,11 @@
 #pragma once
-#include "visionRequest.h"
 #include <cstdint>
 #include <functional>
+#include <unordered_set>
+#include "visionRequest.h"
 class Area;
 class Block;
+class Actor;
 class LocationBuckets
 {
 	Area& m_area;

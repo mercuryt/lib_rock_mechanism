@@ -1,0 +1,23 @@
+{
+	"name": "mace",
+	"shape": "oneByOneSixteenth",
+	"volume": 200,
+	"generic": false,
+	"value": 200,
+	"weaponData":
+	{
+		"combatSkill": "mace",
+		"coolDownSeconds": 1.75,
+		"attackTypes":
+		[
+			{
+				"name": "bash",
+				"area": 25,
+				"baseForce": 35,
+				"range": 1.5,
+				"combatScore": 10,
+				"woundType": "Bludgeon"
+			}
+		]
+	}
+}

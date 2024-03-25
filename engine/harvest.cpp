@@ -129,7 +129,7 @@ void HarvestObjective::cancel()
 	if(m_block != nullptr && m_block->m_hasPlant.exists() && m_block->m_hasPlant.get().readyToHarvest())
 		m_block->m_area->m_hasFarmFields.at(*m_actor.getFaction()).addHarvestDesignation(m_block->m_hasPlant.get());
 	//TODO: This probably should be in hasObjectives instead of here, is this needed at all?
-	m_actor.m_canReserve.clearAll();
+	m_actor.m_canReserve.deleteAllWithoutCallback();
 }
 void HarvestObjective::select(Block& block)
 {

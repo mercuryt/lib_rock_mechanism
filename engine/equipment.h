@@ -46,4 +46,5 @@ public:
 	[[nodiscard]] Item* getWeaponToAttackAtRange(float range);
 	[[nodiscard]] Item* getAmmoForRangedWeapon(Item& weapon);
 	[[nodiscard]] std::unordered_set<Item*>& getAll() { return m_equipments; }
+	[[nodiscard]] bool hasAnyEquipmentWithReservations() const;
 };

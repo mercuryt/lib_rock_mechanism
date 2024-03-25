@@ -18,6 +18,13 @@ const std::pair<const Shape*, uint8_t> PlantSpecies::shapeAndWildGrowthForPercen
 	uint8_t wildGrowthSteps = shapes.size() < growthStage ? growthStage - shapes.size() : 0u;
 	return std::make_pair(shapes.at(index), wildGrowthSteps);
 }
+// Static method.
+const PlantSpecies& PlantSpecies::byName(std::string name)
+{
+	auto found = std::ranges::find(plantSpeciesDataStore, name, &PlantSpecies::name);
+	assert(found != plantSpeciesDataStore.end());
+	return *found;
+}
 Plant::Plant(Block& location, const PlantSpecies& pt, const Shape* shape, Percent pg, Volume volumeFluidRequested, Step needsFluidEventStart, bool temperatureIsUnsafe, Step unsafeTemperatureEventStart, uint32_t harvestableQuantity, Percent percentFoliage) :
 	HasShape(location.m_area->m_simulation, (shape ? *shape : pt.shapeForPercentGrown(pg)), true), m_fluidSource(nullptr), m_plantSpecies(pt), m_growthEvent(location.m_area->m_simulation.m_eventSchedule), m_shapeGrowthEvent(location.m_area->m_simulation.m_eventSchedule), m_fluidEvent(location.m_area->m_simulation.m_eventSchedule), m_temperatureEvent(location.m_area->m_simulation.m_eventSchedule), m_endOfHarvestEvent(location.m_area->m_simulation.m_eventSchedule), m_foliageGrowthEvent(location.m_area->m_simulation.m_eventSchedule), m_percentGrown(pg), m_quantityToHarvest(harvestableQuantity), m_percentFoliage(percentFoliage), m_reservable(1), m_volumeFluidRequested(volumeFluidRequested), m_wildGrowth(0)
 {

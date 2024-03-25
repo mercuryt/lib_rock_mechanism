@@ -21,7 +21,7 @@ Json CanReserve::toJson() const
 		data["reservations"].push_back(reservable->jsonReservationFor(const_cast<CanReserve&>(*this)));
 	return data;
 }
-void CanReserve::clearAll()
+void CanReserve::deleteAllWithoutCallback()
 {
 	for(Reservable* reservable : m_reservables)
 	{
@@ -39,7 +39,7 @@ void CanReserve::setFaction(const Faction* faction)
 bool CanReserve::hasFaction() const { return m_faction != nullptr; }
 bool CanReserve::hasReservationWith(Reservable& reservable) const { return m_reservables.contains(&reservable); }
 bool CanReserve::hasReservations() const { return !m_reservables.empty(); }
-CanReserve::~CanReserve() { clearAll(); }
+CanReserve::~CanReserve() { deleteAllWithoutCallback(); }
 void Reservable::eraseReservationFor(CanReserve& canReserve)
 {
 	assert(m_reservedCounts.contains(canReserve.m_faction));
@@ -58,6 +58,7 @@ bool Reservable::isFullyReserved(const Faction* faction) const
 	return m_reservedCounts.contains(faction) && m_reservedCounts.at(faction) == m_maxReservations; 
 }
 bool Reservable::hasAnyReservations() const { return !m_canReserves.empty(); }
+bool Reservable::hasAnyReservationsWith(const Faction& faction) const { return m_reservedCounts.contains(&faction); }
 std::unordered_map<CanReserve*, uint32_t>& Reservable::getReservedBy() { return m_canReserves; }
 void Reservable::reserveFor(CanReserve& canReserve, const uint32_t quantity, std::unique_ptr<DishonorCallback> dishonorCallback) 
 {

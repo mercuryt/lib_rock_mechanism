@@ -112,7 +112,7 @@ void EquipItemObjective::execute()
 }
 void EquipItemObjective::cancel()
 {
-	m_actor.m_canReserve.clearAll();
+	m_actor.m_canReserve.deleteAllWithoutCallback();
 	m_threadedTask.maybeCancel();
 }
 void EquipItemObjective::reset()
@@ -226,13 +226,13 @@ void UniformObjective::execute()
 }
 void UniformObjective::cancel()
 {
-	m_actor.m_canReserve.clearAll();
+	m_actor.m_canReserve.deleteAllWithoutCallback();
 	m_threadedTask.maybeCancel();
 	m_actor.m_hasUniform.clearObjective(*this);
 }
 void UniformObjective::reset()
 {
-	m_actor.m_canReserve.clearAll();
+	m_actor.m_canReserve.deleteAllWithoutCallback();
 	m_threadedTask.maybeCancel();
 	m_item = nullptr;
 }

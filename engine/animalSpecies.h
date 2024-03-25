@@ -36,21 +36,12 @@ struct AnimalSpecies
 	const FluidType& fluidType;
 	const BodyType& bodyType;
 	std::vector<const Shape*> shapes;
-	const Shape& shapeForPercentGrown(Percent percentGrown) const
-	{
-		size_t index = util::scaleByPercentRange(0, shapes.size() - 1, percentGrown);
-		return *shapes.at(index);
-	}
+	const Shape& shapeForPercentGrown(Percent percentGrown) const;
 	// Infastructure.
 	bool operator==(const AnimalSpecies& animalSpecies){ return this == &animalSpecies; }
-	inline static std::vector<AnimalSpecies> data;
-	static const AnimalSpecies& byName(std::string name)
-	{
-		auto found = std::ranges::find(data, name, &AnimalSpecies::name);
-		assert(found != data.end());
-		return *found;
-	}
+	static const AnimalSpecies& byName(std::string name);
 };
+inline std::vector<AnimalSpecies> animalSpeciesDataStore;
 inline void to_json(Json& data, const AnimalSpecies* const& species){ data = species->name; }
 inline void to_json(Json& data, const AnimalSpecies& species){ data = species.name; }
 inline void from_json(const Json& data, const AnimalSpecies*& species){ species = &AnimalSpecies::byName(data.get<std::string>()); }

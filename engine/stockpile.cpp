@@ -177,7 +177,7 @@ void StockPileObjective::cancel()
 	else
 		assert(m_actor.m_project == nullptr);
 	m_threadedTask.maybeCancel();
-	m_actor.m_canReserve.clearAll();
+	m_actor.m_canReserve.deleteAllWithoutCallback();
 }
 StockPileProject::StockPileProject(const Faction* faction, Block& block, Item& item) : Project(faction, block, Config::maxWorkersForStockPileProject), m_item(item), m_delivered(nullptr), m_stockpile(*block.m_isPartOfStockPiles.getForFaction(*faction)), m_dispatched(false) { }
 StockPileProject::StockPileProject(const Json& data, DeserializationMemo& deserializationMemo) : 
@@ -768,6 +768,13 @@ void AreaHasStockPiles::loadWorkers(const Json& data, DeserializationMemo& deser
 		const Faction& faction = deserializationMemo.faction(pair[0]);
 		m_data.at(&faction).loadWorkers(pair[1], deserializationMemo);
 	}
+}
+void AreaHasStockPiles::clearReservations()
+{
+	for(auto& pair : m_data)
+		for(auto& pair : pair.second.m_projectsByItem)
+			for(auto& project : pair.second)
+				project.clearReservations();
 }
 Json AreaHasStockPiles::toJson() const 
 {

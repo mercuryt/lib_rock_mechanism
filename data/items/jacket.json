@@ -1,0 +1,18 @@
+{
+	"name": "jacket",
+	"shape": "oneByOneHundredth",
+	"volume": 1500,
+	"generic": false,
+	"value": 100,
+	"moveType": "none",
+	"wearableType":
+	{
+		"percentCoverage": 100,
+		"defenseScore": 0,
+		"rigid": false,
+		"layer": 3,
+		"forceAbsorbedPiercedModifier": 2,
+		"forceAbsorbedUnpiercedModifier": 2,
+		"bodyPartsCovered": [ "right arm", "left arm", "torso" ]
+	}
+}
