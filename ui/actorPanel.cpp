@@ -1,4 +1,5 @@
 #include "actorPanel.h"
+#include "displayData.h"
 #include "window.h"
 #include "../engine/actor.h"
 #include <TGUI/Widgets/ScrollablePanel.hpp>
@@ -30,7 +31,7 @@ void ActorView::draw(Actor& actor)
 	attributesGrid->addWidget(tgui::Label::create("agility"), 1, 3);
 	attributesGrid->addWidget(tgui::Label::create(std::to_string(m_actor->m_attributes.getAgility())), 2, 3);
 	attributesGrid->addWidget(tgui::Label::create("unencombered carry mass"), 1, 4);
-	attributesGrid->addWidget(tgui::Label::create(std::to_string(m_actor->m_attributes.getUnencomberedCarryMass())), 2, 4);
+	attributesGrid->addWidget(tgui::Label::create(displayData::localizeNumber(m_actor->m_attributes.getUnencomberedCarryMass())), 2, 4);
 	attributesGrid->addWidget(tgui::Label::create("move speed"), 1, 5);
 	attributesGrid->addWidget(tgui::Label::create(std::to_string(m_actor->m_attributes.getMoveSpeed())), 2, 5);
 	attributesGrid->addWidget(tgui::Label::create("base combat score"), 1, 6);

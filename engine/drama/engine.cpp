@@ -231,4 +231,7 @@ std::unordered_set<DramaArc*>& DramaEngine::getArcsForArea(Area& area)
 { 
 	return m_arcsByArea[&area]; 
 }
-
+DramaEngine::~DramaEngine()
+{
+	m_arcs.clear();
+}

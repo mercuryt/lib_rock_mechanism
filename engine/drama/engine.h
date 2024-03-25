@@ -57,6 +57,7 @@ public:
 	void createArcTypeForArea(DramaArcType type, Area& area);
 	void removeArcTypeFromArea(DramaArcType type, Area& area);
 	[[nodiscard]] std::unordered_set<DramaArc*>& getArcsForArea(Area& area);
+	~DramaEngine();
 private:
 	std::vector<std::unique_ptr<DramaArc>> m_arcs;
 	std::unordered_map<Area*, std::unordered_set<DramaArc*>> m_arcsByArea;
