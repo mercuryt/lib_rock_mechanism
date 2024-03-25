@@ -178,6 +178,8 @@ void Simulation::destroyActor(Actor& actor)
 }
 Simulation::~Simulation()
 {
+	DramaEngine* ptr = m_dramaEngine.release();
+	assert(ptr);
 	for(Area& area : m_areas)
 		area.clearReservations();
 	for(auto& pair : m_actors)

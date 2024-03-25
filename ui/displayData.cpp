@@ -29,6 +29,14 @@ sf::Color colorFromJson(const Json& data)
 	auto a = data[3].get<uint8_t>();
 	return sf::Color(r, g, b, a);
 }
+std::string displayData::localizeNumber(double number)
+{
+	static std::locale cpploc{""};
+	static std::stringstream ss;
+	ss.imbue(cpploc);
+	ss << number;
+	return ss.str();
+}
 void displayData::load()
 {
 	std::filesystem::path path = definitions::path/"display";
