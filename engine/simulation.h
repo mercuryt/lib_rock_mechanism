@@ -37,7 +37,6 @@ public:
 	std::wstring m_name;
 	std::filesystem::path m_path;
 	Step m_step;
-	DateTime m_now;
 	ActorId m_nextActorId;
 	ItemId m_nextItemId;
 	//std::unique_ptr<World> m_world;
@@ -55,7 +54,7 @@ public:
 	// Dependency injectien.
 	std::unique_ptr<DramaEngine> m_dramaEngine;
 
-	Simulation(std::wstring name = L"", DateTime n = {12, 150, 1200}, Step s = 1);
+	Simulation(std::wstring name = L"", Step s = 10'000 * Config::stepsPerYear);
 	Simulation(std::filesystem::path path);
 	Simulation(const Json& data);
 	void loadAreas(const Json& data, DeserializationMemo& deserializationMemo);
@@ -89,9 +88,10 @@ public:
 	[[nodiscard]] Item& getItemById(ItemId id);
 	[[nodiscard]] Area& getAreaById(AreaId id) const {return *m_areasById.at(id); }
 	[[nodiscard]] std::filesystem::path getPath() const  { return m_path; }
+	[[nodiscard, maybe_unused]] DateTime getDateTime() const;
 	~Simulation();
 	// For testing.
-	[[maybe_unused]] void setDateTime(DateTime now);
+	[[maybe_unused]] void fastForwardUntill(DateTime now);
 	[[maybe_unused]] void fastForward(Step step);
 	[[maybe_unused]] void fastForwardUntillActorIsAtDestination(Actor& actor, Block& destination);
 	[[maybe_unused]] void fastForwardUntillActorIsAt(Actor& actor, Block& destination);

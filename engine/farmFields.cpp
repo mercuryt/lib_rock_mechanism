@@ -1,11 +1,13 @@
 #include "farmFields.h"
 #include "block.h"
 #include "area.h"
+#include "datetime.h"
 #include "designations.h"
 #include "simulation.h"
 #include "plant.h"
 #include <algorithm>
 //Input
+/*
 void FarmFieldCreateInputAction::execute()
 {
 	auto& hasFarmFields = (*m_cuboid.begin()).m_area->m_hasFarmFields.at(m_faction);
@@ -30,6 +32,7 @@ void FarmFieldUpdateInputAction::execute()
 	auto& hasFarmFields = (**m_farmField.blocks.begin()).m_area->m_hasFarmFields.at(m_faction);
 	hasFarmFields.setSpecies(m_farmField, m_species);
 }
+*/
 FarmField::FarmField(const Json& data, DeserializationMemo& deserializationMemo, const Faction& faction)
 {
 	for(const Json& blockReference : data["blocks"])
@@ -104,7 +107,8 @@ void IsPartOfFarmField::removeAllSowSeedsDesignations()
 }
 bool IsPartOfFarmField::isSowingSeasonFor(const PlantSpecies& species) const
 {
-	return m_block.m_area->m_simulation.m_now.day >= species.dayOfYearForSowStart && m_block.m_area->m_simulation.m_now.day <= species.dayOfYearForSowEnd;
+	uint16_t day = DateTime(m_block.m_area->m_simulation.m_step).day;
+	return day >= species.dayOfYearForSowStart && day <= species.dayOfYearForSowEnd;
 }
 FarmField* IsPartOfFarmField::get(const Faction& faction)
 { 
@@ -252,7 +256,8 @@ void HasFarmFieldsForFaction::setSpecies(FarmField& farmField, const PlantSpecie
 {
 	assert(farmField.plantSpecies == nullptr);
 	farmField.plantSpecies = &plantSpecies;
-	if(m_area.m_simulation.m_now.day >= plantSpecies.dayOfYearForSowStart && m_area.m_simulation.m_now.day <= plantSpecies.dayOfYearForSowEnd)
+	int32_t day = DateTime(m_area.m_simulation.m_step).day;
+	if(day >= plantSpecies.dayOfYearForSowStart && day <= plantSpecies.dayOfYearForSowEnd)
 	{
 		farmField.timeToSow = true;
 		designateBlocks(farmField, farmField.blocks);

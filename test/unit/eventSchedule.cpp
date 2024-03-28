@@ -23,7 +23,7 @@ public:
 };
 TEST_CASE("event schedule")
 {
-	Simulation simulation;
+	Simulation simulation{L"", 1};
 	Block b1;
 	bool fired = false;
 	std::unique_ptr<ScheduledEvent> event = std::make_unique<TestEvent>(10, fired, simulation);

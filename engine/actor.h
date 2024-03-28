@@ -45,6 +45,7 @@ struct ActorParamaters
 	ActorId id = 0;
 	std::wstring name = L"";
 	DateTime birthDate = {0,0,0};
+	Step birthStep = 0;
 	Percent percentGrown = 0;
 	Block* location = nullptr;
 	const Faction* faction = nullptr;
@@ -63,7 +64,7 @@ struct ActorParamaters
 
 	Percent getPercentGrown();
 	std::wstring getName();
-	DateTime getBirthDate();
+	Step getBirthStep();
 	ActorId getId();
 	Percent getPercentThirst();
 	Percent getPercentHunger();
@@ -78,7 +79,7 @@ public:
 	const ActorId m_id;
 	std::wstring m_name;
 	const AnimalSpecies& m_species;
-	DateTime m_birthDate;
+	Step m_birthStep;
 	bool m_alive;
 	CauseOfDeath m_causeOfDeath;
 	Body m_body;
@@ -101,7 +102,7 @@ public:
 	std::unordered_set<Actor*> m_canSee;
 	uint32_t m_visionRange;
 
-	Actor(Simulation& simulation, ActorId id, const std::wstring& name, const AnimalSpecies& species, DateTime birthDate, Percent percentGrown, Faction* faction, Attributes attributes);
+	Actor(Simulation& simulation, ActorId id, const std::wstring& name, const AnimalSpecies& species, Step birthStep, Percent percentGrown, Faction* faction, Attributes attributes);
 	Actor(ActorParamaters params);
 	Actor(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
@@ -141,6 +142,7 @@ public:
 	Actor(Actor&& actor) = delete;
 	// For debugging.
 	void log() const;
+	void satisfyNeeds();
 };
 inline void to_json(Json& data, const Actor& actor){ data = actor.m_id; }
 inline void to_json(Json& data, const Actor* const & actor){ data = actor->m_id; }

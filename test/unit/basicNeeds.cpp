@@ -262,7 +262,8 @@ TEST_CASE("death")
 {
 	static const MaterialType& dirt = MaterialType::byName("dirt");
 	static const AnimalSpecies& redDeer = AnimalSpecies::byName("red deer");
-	Simulation simulation;
+	Step step  = DateTime(12,150,1000).toSteps();
+	Simulation simulation(L"", step);
 	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	areaBuilderUtil::setSolidWalls(area, 5, MaterialType::byName("marble"));
@@ -286,9 +287,9 @@ TEST_CASE("death")
 		pondLocation.setNotSolid();
 		pondLocation.addFluid(100, FluidType::byName("water"));
 		// Generate objectives, discard drink if it exists.
-		REQUIRE(actor.m_mustEat.getHungerEventStep() == redDeer.stepsEatFrequency + 1);
+		REQUIRE(actor.m_mustEat.getHungerEventStep() == redDeer.stepsEatFrequency +  step);
 		simulation.fastForward(redDeer.stepsEatFrequency);
-		REQUIRE(actor.m_mustEat.getHungerEventStep() == redDeer.stepsEatFrequency + redDeer.stepsTillDieWithoutFood + 1);
+		REQUIRE(actor.m_mustEat.getHungerEventStep() == redDeer.stepsEatFrequency + redDeer.stepsTillDieWithoutFood + step);
 		simulation.fastForward(redDeer.stepsTillDieWithoutFood - 2);
 		REQUIRE(actor.m_alive);
 		simulation.doStep();

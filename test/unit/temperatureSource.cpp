@@ -7,7 +7,8 @@
 #include "../../engine/definitions.h"
 TEST_CASE("temperature")
 {
-	Simulation simulation;
+	DateTime now(12, 150, 1200);
+	Simulation simulation(L"", now.toSteps());
 	Area& area = simulation.createArea(10,10,10);
 	SUBCASE("solid blocks burn")
 	{

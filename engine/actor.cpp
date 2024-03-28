@@ -21,8 +21,8 @@ Percent ActorParamaters::getPercentGrown()
 		Percent percentLifeTime = simulation->m_random.getInRange(0, 100);
 		// Using util::scaleByPercent and util::fractionToPercent give the wrong result here for some reason.
 		Step ageSteps = ((float)species.deathAgeSteps[1] / (float)percentLifeTime) * 100.f;
-		percentGrown = std::min(100, (Percent)((float)ageSteps / (float)species.stepsTillFullyGrown * 100.f));
-		birthDate = DateTime::fromPastBySteps(ageSteps);
+		percentGrown = std::min(100, (Percent)(((float)ageSteps / (float)species.stepsTillFullyGrown) * 100.f));
+		birthStep = simulation->m_step - ageSteps;
 	}
 	return percentGrown;
 }
@@ -34,11 +34,11 @@ std::wstring ActorParamaters::getName()
 	return name;
 }
 
-DateTime ActorParamaters::getBirthDate()
+Step ActorParamaters::getBirthStep()
 {
-	if(!birthDate)
+	if(!birthStep)
 		getPercentGrown();
-	return birthDate;
+	return birthStep;
 }
 
 ActorId ActorParamaters::getId()
@@ -217,15 +217,15 @@ void ActorParamaters::generateEquipment(Actor& actor)
 		}
 	}
 }
-Actor::Actor(Simulation& simulation, uint32_t id, const std::wstring& name, const AnimalSpecies& species, DateTime birthDate, Percent percentGrown, Faction* faction, Attributes attributes) :
-	HasShape(simulation, species.shapeForPercentGrown(percentGrown), false), m_faction(faction), m_id(id), m_name(name), m_species(species), m_birthDate(birthDate), m_alive(true), m_body(*this), m_project(nullptr), m_attributes(attributes), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canPickup(*this), m_equipmentSet(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_canReserve(faction), m_stamina(*this), m_hasUniform(*this), m_visionRange(species.visionRange)
+Actor::Actor(Simulation& simulation, uint32_t id, const std::wstring& name, const AnimalSpecies& species, Step birthStep, Percent percentGrown, Faction* faction, Attributes attributes) :
+	HasShape(simulation, species.shapeForPercentGrown(percentGrown), false), m_faction(faction), m_id(id), m_name(name), m_species(species), m_birthStep(birthStep), m_alive(true), m_body(*this), m_project(nullptr), m_attributes(attributes), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canPickup(*this), m_equipmentSet(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_canReserve(faction), m_stamina(*this), m_hasUniform(*this), m_visionRange(species.visionRange)
 {
 	// TODO: Having this line here requires making the existance of objectives mandatory at all times. Good idea?
 	//m_hasObjectives.getNext();
 }
 Actor::Actor(ActorParamaters params) : HasShape(*params.simulation, params.species.shapeForPercentGrown(params.getPercentGrown()), false),
 	m_faction(params.faction), m_id(params.getId()), m_name(params.getName()),
-	m_species(params.species), m_birthDate(params.getBirthDate()), m_alive(true), m_body(*this), m_project(nullptr), 
+	m_species(params.species), m_birthStep(params.getBirthStep()), m_alive(true), m_body(*this), m_project(nullptr), 
 	m_attributes(m_species, params.getPercentGrown()), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), 
 	m_canPickup(*this), m_equipmentSet(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, params.getPercentGrown()), 
 	m_hasObjectives(*this), m_canReserve(m_faction), m_stamina(*this), m_hasUniform(*this), m_visionRange(m_species.visionRange) 
@@ -240,7 +240,7 @@ Actor::Actor(const Json& data, DeserializationMemo& deserializationMemo) :
 	HasShape(data, deserializationMemo),
 	m_faction(data.contains("faction") ? &deserializationMemo.m_simulation.m_hasFactions.byName(data["faction"].get<std::wstring>()) : nullptr), 
 	m_id(data["id"].get<ActorId>()), m_name(data["name"].get<std::wstring>()), m_species(AnimalSpecies::byName(data["species"].get<std::string>())), 
-	m_birthDate(data["birthDate"]), m_alive(data["alive"].get<bool>()), m_body(data["body"], deserializationMemo, *this), m_project(nullptr), 
+	m_birthStep(data["birthStep"]), m_alive(data["alive"].get<bool>()), m_body(data["body"], deserializationMemo, *this), m_project(nullptr), 
 	m_attributes(data["attributes"], m_species, data["percentGrown"].get<Percent>()), 
 	m_mustEat(data["mustEat"], *this), m_mustDrink(data["mustDrink"], *this), m_mustSleep(data["mustSleep"], *this), 
 	m_needsSafeTemperature(data["needsSafeTemperature"], *this), m_canPickup(data["canPickup"], *this), 
@@ -257,7 +257,7 @@ Json Actor::toJson() const
 {
 	Json data = HasShape::toJson();
 	data["species"] = m_species;
-	data["birthDate"] = m_birthDate;
+	data["birthStep"] = m_birthStep;
 	data["percentGrown"] = m_canGrow.growthPercent();
 	data["id"] = m_id;
 	data["name"] = m_name;
@@ -326,11 +326,10 @@ void Actor::die(CauseOfDeath causeOfDeath)
 	m_mustDrink.onDeath();
 	m_mustEat.onDeath();
 	m_mustSleep.onDeath();
-	if(m_location != nullptr)
-		m_location->m_area->m_hasActors.remove(*this);
 	if(m_project != nullptr)
 		m_project->removeWorker(*this);
-	setStatic(true);
+	if(m_location)
+		setStatic(true);
 }
 void Actor::passout(Step duration)
 {
@@ -378,9 +377,10 @@ Volume Actor::getVolume() const
 }
 uint32_t Actor::getAgeInYears() const
 {
-	DateTime now = const_cast<Actor&>(*this).getSimulation().m_now;
-	uint32_t differenceYears = now.year - m_birthDate.year;
-	if(now.day > m_birthDate.day)
+	DateTime now(const_cast<Actor&>(*this).getSimulation().m_step);
+	DateTime birthDate(m_birthStep);
+	uint32_t differenceYears = now.year - birthDate.year;
+	if(now.day > birthDate.day)
 		++differenceYears;
 	return differenceYears;
 }
@@ -412,6 +412,20 @@ void Actor::log() const
 	std::cout << "(" << m_species.name << ")";
 	HasShape::log();
 	std::cout << std::endl;
+}
+void Actor::satisfyNeeds()
+{
+	// Wake up if asleep.
+	if(!m_mustSleep.isAwake())
+		m_mustSleep.wakeUp();
+	else
+		m_mustSleep.notTired();
+	// Discard drink objective if exists.
+	if(m_mustDrink.getVolumeFluidRequested() != 0)
+		m_mustDrink.drink(m_mustDrink.getVolumeFluidRequested());
+	// Discard eat objective if exists.
+	if(m_mustEat.getMassFoodRequested() != 0)
+		m_mustEat.eat(m_mustEat.getMassFoodRequested());
 }
 // To be used by block.
 void BlockHasActors::enter(Actor& actor)

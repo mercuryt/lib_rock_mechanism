@@ -1,6 +1,7 @@
 #include "temperature.h"
 #include "block.h"
 #include "area.h"
+#include "datetime.h"
 #include "nthAdjacentOffsets.h"
 #include "config.h"
 #include "objective.h"
@@ -92,13 +93,14 @@ void AreaHasTemperature::setAmbientSurfaceTemperature(const Temperature& tempera
 		else
 			break;
 }
-void AreaHasTemperature::setAmbientSurfaceTemperatureFor(DateTime now)
+void AreaHasTemperature::updateAmbientSurfaceTemperature()
 {
 	// TODO: Latitude and altitude.
-	Temperature dailyAverage = getDailyAverageAmbientSurfaceTemperature(now);
+	Temperature dailyAverage = getDailyAverageAmbientSurfaceTemperature();
 	static Temperature maxDailySwing = 35;
 	static uint32_t hottestHourOfDay = 14;
-	uint32_t hoursFromHottestHourOfDay = std::abs((int32_t)hottestHourOfDay - (int32_t)now.hour);
+	int32_t hour = DateTime(m_area.m_simulation.m_step).hour;
+	uint32_t hoursFromHottestHourOfDay = std::abs((int32_t)hottestHourOfDay - hour);
 	uint32_t halfDay = Config::hoursPerDay / 2;
 	setAmbientSurfaceTemperature(dailyAverage + ((maxDailySwing * (std::min(0u, halfDay - hoursFromHottestHourOfDay))) / halfDay) - (maxDailySwing / 2));
 }
@@ -114,13 +116,14 @@ void AreaHasTemperature::removeMeltableSolidBlockAboveGround(Block& block)
 	assert(block.isSolid());
 	m_aboveGroundBlocksByMeltingPoint.at(block.getSolidMaterial().meltingPoint).erase(&block);
 }
-Temperature AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature(DateTime dateTime) const
+Temperature AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature() const
 {
 	// TODO: Latitude and altitude.
 	static Temperature yearlyHottestDailyAverage = 300;
 	static Temperature yearlyColdestDailyAverage = 280;
 	static uint32_t dayOfYearOfSolstice = Config::daysPerYear / 2;
-	uint32_t daysFromSolstice = std::abs((int32_t)dateTime.day - (int32_t)dayOfYearOfSolstice);
+	int32_t day = DateTime(m_area.m_simulation.m_step).day;
+	uint32_t daysFromSolstice = std::abs(day - (int32_t)dayOfYearOfSolstice);
 	return yearlyColdestDailyAverage + ((yearlyHottestDailyAverage - yearlyColdestDailyAverage) * (dayOfYearOfSolstice - daysFromSolstice)) / dayOfYearOfSolstice;
 }
 void BlockHasTemperature::updateDelta(int32_t deltaDelta)
@@ -189,7 +192,7 @@ Temperature BlockHasTemperature::getDailyAverageAmbientTemperature() const
 		else
 			return Config::undergroundAmbiantTemperature;
 	}
-	return m_block.m_area->m_hasTemperature.getDailyAverageAmbientSurfaceTemperature(m_block.m_area->m_simulation.m_now);
+	return m_block.m_area->m_hasTemperature.getDailyAverageAmbientSurfaceTemperature();
 }
 //TODO: Detour locked to true for emergency moves.
 GetToSafeTemperatureThreadedTask::GetToSafeTemperatureThreadedTask(GetToSafeTemperatureObjective& o) : ThreadedTask(o.m_actor.getThreadedTaskEngine()), m_objective(o), m_findsPath(o.m_actor, true) ,m_noWhereWithSafeTemperatureFound(false) { }

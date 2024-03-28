@@ -133,9 +133,12 @@ void Item::removeQuantity(uint32_t delta)
 {
 	if(m_quantity == delta)
 		destroy();
-	assert(delta < m_quantity);
-	m_quantity -= delta;
-	m_reservable.setMaxReservations(m_quantity);
+	else
+	{
+		assert(delta < m_quantity);
+		m_quantity -= delta;
+		m_reservable.setMaxReservations(m_quantity);
+	}
 }
 void Item::install(Block& block, Facing facing, const Faction& faction)
 {

@@ -9,7 +9,7 @@
 #include "../../engine/givePlantsFluid.h"
 TEST_CASE("json")
 {
-	Simulation simulation;
+	Simulation simulation{L"", DateTime(12, 50, 1000).toSteps()};
 	Faction& faction = simulation.createFaction(L"tower of power");
 	const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	const MaterialType& dirt = MaterialType::byName("dirt");

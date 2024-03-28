@@ -9,11 +9,10 @@ TEST_CASE("Area")
 	static const MaterialType& marble = MaterialType::byName("marble");
 	static const FluidType& water = FluidType::byName("water");
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
-	Simulation simulation;
-	Area& area = simulation.createArea(10,10,10);
+	Simulation simulation{L"", 1};
+	Area& area = simulation.createArea(10, 10, 10);
 	SUBCASE("Make Area")
 	{
-		simulation.m_step = 0;
 		CHECK(area.m_sizeX == 10);
 		CHECK(area.m_sizeY == 10);
 		CHECK(area.m_sizeZ == 10);
@@ -26,7 +25,6 @@ TEST_CASE("Area")
 	}
 	SUBCASE("Test fluid in area")
 	{
-		simulation.m_step = 0;
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
 		Block& block1 = area.getBlock(5, 5, 1);
 		Block& block2 = area.getBlock(5, 5, 2);
@@ -48,7 +46,6 @@ TEST_CASE("Area")
 	}
 	SUBCASE("Cave in falls in fluid and pistons it up with threading")
 	{
-		simulation.m_step = 0;
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
 		Block& block1 = area.getBlock(5, 5, 1);
 		Block& block2 = area.getBlock(5, 5, 2);
@@ -216,7 +213,7 @@ TEST_CASE("vision-threading")
 {
 	static const MaterialType& marble = MaterialType::byName("marble");
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
-	Simulation simulation;
+	Simulation simulation{L"", 1};
 	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	Block& block1 = area.getBlock(3, 3, 1);

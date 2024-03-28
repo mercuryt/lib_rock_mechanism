@@ -13,7 +13,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <functional>
-Simulation::Simulation(std::wstring name, DateTime n, Step s) :  m_nextAreaId(1), m_deserializationMemo(*this), m_name(name), m_step(s), m_now(n), m_nextActorId(1), m_nextItemId(1), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this)
+Simulation::Simulation(std::wstring name, Step s) :  m_nextAreaId(1), m_deserializationMemo(*this), m_name(name), m_step(s), m_nextActorId(1), m_nextItemId(1), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this)
 { 
 	m_hourlyEvent.schedule(*this);
 	m_path.append(L"save/"+name);
@@ -35,7 +35,6 @@ Simulation::Simulation(const Json& data) : m_deserializationMemo(*this), m_event
 {
 	m_name = data["name"].get<std::wstring>();
 	m_step = data["step"].get<Step>();
-	m_now = data["now"].get<DateTime>();
 	m_nextItemId = data["nextItemId"].get<ItemId>();
 	m_nextActorId = data["nextActorId"].get<ActorId>();
 	m_nextAreaId = data["nextAreaId"].get<AreaId>();
@@ -66,19 +65,8 @@ void Simulation::doStep()
 }
 void Simulation::incrementHour()
 {
-	m_now.hour++;
-	if(m_now.hour > Config::hoursPerDay)
-	{
-		m_now.hour = 1;
-		m_now.day++;
-		if(m_now.day > Config::daysPerYear)
-		{
-			m_now.day = 1;
-			m_now.year++;
-		}
-		for(Area& area : m_areas)
-			area.setDateTime(m_now);
-	}
+	for(Area& area : m_areas)
+		area.updateClimate();
 	m_hourlyEvent.schedule(*this);
 }
 void Simulation::save()
@@ -176,10 +164,10 @@ void Simulation::destroyActor(Actor& actor)
 	m_actors.erase(actor.m_id);
 	//TODO: Destroy hibernation json file if any.
 }
+DateTime Simulation::getDateTime() const { return DateTime(m_step); }
 Simulation::~Simulation()
 {
-	DramaEngine* ptr = m_dramaEngine.release();
-	assert(ptr);
+	m_dramaEngine = nullptr;
 	for(Area& area : m_areas)
 		area.clearReservations();
 	for(auto& pair : m_actors)
@@ -191,14 +179,6 @@ Simulation::~Simulation()
 	m_eventSchedule.m_data.clear();
 	m_threadedTaskEngine.clear();
 	m_pool.wait_for_tasks();
-}
-void Simulation::setDateTime(DateTime now)
-{
-	m_now = now;
-	m_hourlyEvent.unschedule();
-	m_hourlyEvent.schedule(*this);
-	for(Area& area : m_areas)
-		area.setDateTime(now);
 }
 void Simulation::fastForward(Step steps)
 {
@@ -215,6 +195,11 @@ void Simulation::fastForward(Step steps)
 			break;
 	}
 	m_step = targetStep + 1;
+}
+void Simulation::fastForwardUntill(DateTime dateTime)
+{
+	assert(dateTime.toSteps() > m_step);
+	fastForward(dateTime.toSteps() - m_step);
 }
 void Simulation::fastForwardUntillActorIsAtDestination(Actor& actor, Block& destination)
 {
@@ -279,7 +264,6 @@ Json Simulation::toJson() const
 	output["name"] = m_name;
 	//output["world"] = m_world;
 	output["step"] = m_step;
-	output["now"] = m_now;
 	output["nextActorId"] = m_nextActorId;
 	output["nextItemId"] = m_nextItemId;
 	output["nextAreaId"] = m_nextAreaId;

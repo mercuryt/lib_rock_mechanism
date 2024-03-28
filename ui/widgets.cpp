@@ -1,5 +1,6 @@
 #include "widgets.h"
 #include "../engine/simulation.h"
+#include "datetime.h"
 #include <TGUI/Widgets/ComboBox.hpp>
 #include <TGUI/Widgets/SpinControl.hpp>
 #include <cstdint>
@@ -25,7 +26,8 @@ DateTimeUI::DateTimeUI(uint8_t hours,uint8_t days, uint8_t years) : m_hours(tgui
 	m_years->setMaximum(2000);
 }
 DateTimeUI::DateTimeUI() : DateTimeUI(1,1,1) { }
-DateTimeUI::DateTimeUI(DateTime& dateTime) : DateTimeUI(dateTime.hour, dateTime.day, dateTime.year) { }
+DateTimeUI::DateTimeUI(DateTime&& dateTime) : DateTimeUI(dateTime.hour, dateTime.day, dateTime.year) { }
+DateTimeUI::DateTimeUI(Step step) : DateTimeUI(DateTime(step)) { }
 void DateTimeUI::set(DateTime& dateTime)
 {
 	m_hours->setValue(dateTime.hour);
@@ -33,9 +35,10 @@ void DateTimeUI::set(DateTime& dateTime)
 	m_years->setValue(dateTime.year);
 }
 void DateTimeUI::set(DateTime&& dateTime) { set(dateTime); }
-DateTime DateTimeUI::get() const
+Step DateTimeUI::get() const
 {
-	return {static_cast<uint8_t>(m_hours->getValue()), static_cast<uint16_t>(m_days->getValue()), static_cast<uint16_t>(m_years->getValue())};
+	DateTime dateTime{static_cast<uint8_t>(m_hours->getValue()), static_cast<uint16_t>(m_days->getValue()), static_cast<uint16_t>(m_years->getValue())};
+	return dateTime.
 }
 // Area Selector.
 AreaSelectUI::AreaSelectUI() : m_widget(tgui::ComboBox::create()) { }

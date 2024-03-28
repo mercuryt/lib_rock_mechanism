@@ -6,7 +6,7 @@
 #include "../../engine/simulation.h"
 TEST_CASE("route_10_10_10")
 {
-	Simulation simulation;
+	Simulation simulation(L"", 1);
 	static const MaterialType& marble = MaterialType::byName("marble");
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	static const AnimalSpecies& troll = AnimalSpecies::byName("troll");

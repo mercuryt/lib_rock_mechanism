@@ -18,8 +18,8 @@ class ScheduledEvent
 {
 public:
 	Simulation& m_simulation;
-	const Step m_startStep;
-	const Step m_step;
+	Step m_startStep;
+	Step m_step;
 	bool m_cancel;
 	// If the value 0 is passed then the current step is used for start
 	// Passing a differernt start is for deserializing.
