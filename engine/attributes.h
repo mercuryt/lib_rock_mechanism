@@ -40,11 +40,12 @@ public:
 		mass(species.mass[0], species.mass[1], modifierPercents[3], bonusOrPenalties[3], pg),
 		percentGrown(pg)
 	{ generate(); }
-	Attributes(const AnimalSpecies& species, Percent percentGrown) :
-		strength(species.strength[0], species.strength[1], 100, 0, percentGrown),
-		dextarity(species.dextarity[0], species.dextarity[1], 100, 0, percentGrown),
-		agility(species.agility[0], species.agility[1], 100, 0, percentGrown),
-		mass(species.mass[0], species.mass[1], 100, 0, percentGrown)
+	Attributes(const AnimalSpecies& species, Percent pg) :
+		strength(species.strength[0], species.strength[1], 100, 0, pg),
+		dextarity(species.dextarity[0], species.dextarity[1], 100, 0, pg),
+		agility(species.agility[0], species.agility[1], 100, 0, pg),
+		mass(species.mass[0], species.mass[1], 100, 0, pg),
+		percentGrown(pg)
 	{ generate(); }
 	Attributes(const Json& data, const AnimalSpecies& species, Percent percentGrown);
 	void updatePercentGrown(Percent percentGrown);

@@ -22,10 +22,11 @@ struct DateTimeUI final
 	tgui::Grid::Ptr m_widget;
 	DateTimeUI();
 	DateTimeUI(uint8_t hours, uint8_t days, uint8_t years);
-	DateTimeUI(DateTime& dateTime);
+	DateTimeUI(DateTime&& dateTime);
+	DateTimeUI(Step steps);
 	void set(DateTime& dateTime);
 	void set(DateTime&& dateTime);
-	DateTime get() const;
+	Step get() const;
 };
 
 class AreaSelectUI final

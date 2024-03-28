@@ -173,7 +173,7 @@ void Area::setup()
 		for(DistanceInBlocks y = 0; y < m_sizeY; ++y)
 			for(DistanceInBlocks z = 0; z < m_sizeZ; ++z)
 				getBlock(x, y, z).recordAdjacent();
-	setDateTime(m_simulation.m_now);
+	updateClimate();
 }
 void Area::readStep()
 { 
@@ -357,15 +357,17 @@ void Area::visionCuboidsActivate()
 	m_visionCuboidsActive = true;
 	VisionCuboid::setup(*this);
 }
-void Area::setDateTime(DateTime now)
+void Area::updateClimate()
 {
 	//TODO: daylight.
-	m_hasTemperature.setAmbientSurfaceTemperatureFor(now);
-	if(now.hour == 1)
+	m_hasTemperature.updateAmbientSurfaceTemperature();
+	// Once per day.
+	if(m_simulation.m_step % Config::stepsPerDay == 0)
 	{
+		uint16_t day = DateTime(m_simulation.m_step).day;
 		for(Plant& plant : m_hasPlants.getAll())
-			plant.setDayOfYear(now.day);
-		m_hasFarmFields.setDayOfYear(now.day);
+			plant.setDayOfYear(day);
+		m_hasFarmFields.setDayOfYear(day);
 	}
 }
 Cuboid Area::getZLevel(DistanceInBlocks z)

@@ -49,7 +49,7 @@ class AreaHasTemperature final
 public:
 	AreaHasTemperature(Area& a) : m_area(a) { }
 	void setAmbientSurfaceTemperature(const Temperature& temperature);
-	void setAmbientSurfaceTemperatureFor(DateTime now);
+	void updateAmbientSurfaceTemperature();
 	void addTemperatureSource(Block& block, const Temperature& temperature);
 	void removeTemperatureSource(TemperatureSource& temperatureSource);
 	TemperatureSource& getTemperatureSourceAt(Block& block);
@@ -60,7 +60,7 @@ public:
 	void addFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup);
 	void removeFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup);
 	const Temperature& getAmbientSurfaceTemperature() const { return m_ambiantSurfaceTemperature; }
-	Temperature getDailyAverageAmbientSurfaceTemperature(DateTime dateTime) const;
+	Temperature getDailyAverageAmbientSurfaceTemperature() const;
 };
 class BlockHasTemperature final
 {

@@ -1,4 +1,5 @@
 #include "plant.h"
+#include "config.h"
 #include "construct.h"
 #include "deserializationMemo.h"
 #include "eventSchedule.h"
@@ -38,6 +39,18 @@ Plant::Plant(Block& location, const PlantSpecies& pt, const Shape* shape, Percen
 		m_temperatureEvent.schedule(m_plantSpecies.stepsTillDieFromTemperature, *this, unsafeTemperatureEventStart);
 	updateGrowingStatus();
 	m_location->m_area->m_hasFarmFields.removeAllSowSeedsDesignations(*m_location);
+	// Fruit.
+	if(m_plantSpecies.harvestData)
+	{
+		uint16_t day = location.m_area->m_simulation.getDateTime().day;
+		uint16_t start = m_plantSpecies.harvestData->dayOfYearToStart;
+		if(day >= start)
+		{
+			uint16_t daysDuration = m_plantSpecies.harvestData->stepsDuration / Config::stepsPerDay;
+			if(day - start < daysDuration)
+				setQuantityToHarvest();
+		}
+	}
 }
 Plant::Plant(const Json& data, DeserializationMemo& deserializationMemo, Block& location) :
 	HasShape(data, deserializationMemo), 
@@ -189,8 +202,14 @@ void Plant::setDayOfYear(uint32_t dayOfYear)
 }
 void Plant::setQuantityToHarvest()
 {
-	Step delay = m_plantSpecies.harvestData->stepsDuration;
-	m_endOfHarvestEvent.schedule(delay, *this);
+	Step duration = m_plantSpecies.harvestData->stepsDuration;
+	Step now = m_location->m_area->m_simulation.m_step;
+	uint16_t year = m_location->m_area->m_simulation.getDateTime().year;
+	Step start = ((m_plantSpecies.harvestData->dayOfYearToStart - 1) * Config::stepsPerDay) + (year * Config::stepsPerYear);
+	Step end = start + duration;
+	Step remaining = end - now;
+	//TODO: use of days exploitable?
+	m_endOfHarvestEvent.schedule(remaining, *this);
 	m_quantityToHarvest = util::scaleByPercent(m_plantSpecies.harvestData->itemQuantity, getGrowthPercent());
 	m_location->m_isPartOfFarmField.designateForHarvestIfPartOfFarmField(*this);
 }

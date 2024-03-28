@@ -102,8 +102,8 @@ public:
 	void stepCaveInRead();
 	void stepCaveInWrite();
 	void registerPotentialCaveIn(Block& block);
-	// Update time.
-	void setDateTime(DateTime now);
+	// To be called periodically by Simulation.
+	void updateClimate();
 
 	void validateAllFluidGroups();
 	[[nodiscard]] std::string toS();

@@ -12,7 +12,7 @@ class Block;
 class Area;
 struct FarmField;
 
-
+/*
 class FarmFieldCreateInputAction final : public InputAction
 {
 	Cuboid m_cuboid;
@@ -44,7 +44,7 @@ class FarmFieldUpdateInputAction final : public InputAction
 	FarmFieldUpdateInputAction(InputQueue& inputQueue, const Faction& faction, FarmField& farmField, const PlantSpecies& species) : InputAction(inputQueue), m_farmField(farmField), m_species(species), m_faction(faction) { }
 	void execute();
 };
-
+*/
 struct FarmField
 {
 	std::unordered_set<Block*> blocks;

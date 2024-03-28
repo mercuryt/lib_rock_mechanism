@@ -35,6 +35,8 @@ Json AreaHasRain::toJson() const
 }
 void AreaHasRain::start(const FluidType& fluidType, Percent intensityPercent, Step stepsDuration)
 {
+	assert(intensityPercent < 100);
+	assert(intensityPercent > 0);
 	m_event.maybeUnschedule();
 	m_currentlyRainingFluidType = &fluidType;
 	m_intensityPercent = intensityPercent;
@@ -62,7 +64,7 @@ void AreaHasRain::scheduleRestart()
 	Step restartAt = (99 - humidity) * random.getInRange(Config::minimumStepsBetweenRainPerPercentHumidity, Config::maximumStepsBetweenRainPerPercentHumidity);
 	schedule(restartAt);
 }
-Percent AreaHasRain::humidityForSeason() { return m_humidityBySeason[m_area.m_simulation.m_now.getSeason()]; }
+Percent AreaHasRain::humidityForSeason() { return m_humidityBySeason[DateTime::toSeason(m_area.m_simulation.m_step)]; }
 RainEvent::RainEvent(Step delay, AreaHasRain& ahr, const Step start) : ScheduledEvent(ahr.m_area.m_simulation, delay, start), m_areaHasRain(ahr) { }
 void RainEvent::execute() 
 {
@@ -77,6 +79,7 @@ void RainEvent::execute()
 		Percent humidity = m_areaHasRain.humidityForSeason();
 		Percent intensity = humidity * random.getInRange(Config::minimumRainIntensityModifier, Config::maximumRainIntensityModifier);
 		Step duration = humidity * random.getInRange(Config::minimumStepsRainPerPercentHumidity, Config::maximumStepsRainPerPercentHumidity);
+		assert(duration < Config::stepsPerDay);
 		m_areaHasRain.start(intensity, duration);
 	}
 }
