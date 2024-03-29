@@ -1,7 +1,7 @@
 {
   "name": "pine wood",
   "category": "wood",
-  "density": 30,
+  "density": 3.0,
   "hardness": 30,
   "transparent": false,
   "constructionData": "wood",

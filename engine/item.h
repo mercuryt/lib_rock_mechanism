@@ -182,7 +182,7 @@ public:
 	[[nodiscard]] bool isActor() const { return false; }
 	[[nodiscard]] bool isPreparedMeal() const;
 	[[nodiscard]] bool isWorkPiece() const { return m_craftJobForWorkPiece != nullptr; }
-	Mass singleUnitMass() const { return m_itemType.volume * m_materialType.density; }
+	Mass singleUnitMass() const { return std::max(1.f, m_itemType.volume * m_materialType.density); }
 	Mass getMass() const { return m_quantity * singleUnitMass(); }
 	Volume getVolume() const { return m_quantity * m_itemType.volume; }
 	const MoveType& getMoveType() const { return m_itemType.moveType; }

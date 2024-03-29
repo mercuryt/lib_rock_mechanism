@@ -1,7 +1,7 @@
 {
 	"name": "hood",
 	"shape": "oneByOneHundredth",
-	"volume": 10,
+	"volume": 500,
 	"generic": false,
 	"value": 10,
 	"materialCategories": [ "fabric" ],

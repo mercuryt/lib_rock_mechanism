@@ -1,6 +1,6 @@
 {
   "name": "dirt",
-  "density": 50,
+  "density": 2.7,
   "hardness": 30,
   "transparent": false,
   "meltingPoint": 1612,

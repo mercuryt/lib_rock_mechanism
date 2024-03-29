@@ -1,6 +1,6 @@
 {
   "name": "moltenBronze",
   "viscosity": 100,
-  "density": 300,
+  "density": 9.0,
   "freezesInto": "bronze"
 }

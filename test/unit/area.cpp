@@ -301,14 +301,14 @@ inline void fourFluidsTestParallel(uint32_t scale, uint32_t steps)
 	REQUIRE(fgCO2->m_stable);
 	REQUIRE(fgCO2->m_drainQueue.m_set.size() == expectedBlocks);
 	REQUIRE(fgCO2->totalVolume() == totalVolume);
-	REQUIRE(fgLava->m_stable);
-	REQUIRE(fgLava->m_drainQueue.m_set.size() == expectedBlocks);
-	REQUIRE(fgLava->totalVolume() == totalVolume);
 	REQUIRE(fgMercury->m_stable);
+	REQUIRE(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
+	REQUIRE(fgMercury->totalVolume() == totalVolume);
+	REQUIRE(fgLava->m_stable);
 	if(scale != 3)
 		REQUIRE(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
 	REQUIRE(fgMercury->totalVolume() == totalVolume);
-	REQUIRE(area.getBlock(1, 1, 1).m_fluids.contains(&lava));
+	REQUIRE(area.getBlock(1, 1, 1).m_fluids.contains(&mercury));
 	REQUIRE(area.getBlock(1, 1, maxZ - 1).m_fluids.contains(&CO2));
 }
 TEST_CASE("four fluids scale 2 parallel")

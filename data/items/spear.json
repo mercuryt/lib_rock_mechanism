@@ -1,7 +1,7 @@
 {
 	"name": "spear",
 	"shape": "oneByOneSixteenth",
-	"volume": 250,
+	"volume": 2500,
 	"generic": false,
 	"value": 150,
 	"weaponData":

@@ -85,7 +85,7 @@ void EatEvent::eatGenericItem(Item& item)
 {
 	assert(item.m_itemType.edibleForDrinkersOf == &m_eatObjective.m_actor.m_mustDrink.getFluidType());
 	auto& eater = m_eatObjective.m_actor;
-	uint32_t quantityDesired = std::max(1u, eater.m_mustEat.getMassFoodRequested() / item.singleUnitMass());
+	uint32_t quantityDesired = std::ceil((float)eater.m_mustEat.getMassFoodRequested() / (float)item.singleUnitMass());
 	uint32_t quantityEaten = std::min(quantityDesired, item.getQuantity());
 	Mass massEaten = std::min(eater.m_mustEat.getMassFoodRequested(), quantityEaten * item.singleUnitMass());
 	assert(massEaten != 0);
@@ -390,13 +390,15 @@ void MustEat::eat(Mass mass)
 		stepsToNextHungerEvent = m_actor.m_species.stepsEatFrequency;
 		m_actor.m_hasObjectives.objectiveComplete(*m_eatObjective);
 		m_eatObjective = nullptr;
+		m_actor.m_mustEat.m_hungerEvent.schedule(stepsToNextHungerEvent, m_actor);
 	}
 	else
 	{
-		m_actor.m_hasObjectives.taskComplete();
+		//TODO: ERROR HERE!
 		stepsToNextHungerEvent = util::scaleByInverseFraction(m_actor.m_species.stepsTillDieWithoutFood, m_massFoodRequested, massFoodForBodyMass());
+		m_actor.m_mustEat.m_hungerEvent.schedule(stepsToNextHungerEvent, m_actor);
+		m_actor.m_hasObjectives.taskComplete();
 	}
-	m_actor.m_mustEat.m_hungerEvent.schedule(stepsToNextHungerEvent, m_actor);
 }
 void MustEat::setNeedsFood()
 {

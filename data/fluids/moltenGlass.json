@@ -1,7 +1,7 @@
 {
   "name": "moltenGlass",
   "viscosity": 20,
-  "density": 300,
+  "density": 2.75,
   "mistDuration": 5,
   "maxMistSpread": 1,
   "freezesInto": "glass"

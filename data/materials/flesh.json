@@ -1,6 +1,6 @@
 {
   "name": "flesh",
-  "density": 50,
+  "density": 1.05,
   "hardness": 20,
   "transparent": false,
   "burnData":

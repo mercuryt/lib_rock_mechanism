@@ -1,7 +1,7 @@
 {
 	"name": "half helm",
 	"shape": "oneByOneSixteenth",
-	"volume": 5000,
+	"volume": 3000,
 	"generic": false,
 	"value": 1000,
 	"materialCategories": [ "metal", "wood" ],

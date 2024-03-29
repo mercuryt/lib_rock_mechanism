@@ -1,7 +1,7 @@
 {
 	"name": "hammer",
 	"shape": "oneByOneThirtySecond",
-	"volume": 100,
+	"volume": 1000,
 	"generic": false,
 	"value": 40,
 	"weaponData":

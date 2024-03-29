@@ -1,6 +1,6 @@
 {
   "name": "gravel",
-  "density": 150,
+  "density": 1.35,
   "hardness": 60,
   "transparent": false,
   "meltingPoint": 1612,

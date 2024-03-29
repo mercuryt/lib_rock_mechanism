@@ -1,7 +1,7 @@
 {
   "name": "tea",
   "viscosity": 100,
-  "density": 100,
+  "density": 1.0,
   "mistDuration": 10,
   "maxMistSpread": 2,
   "drinkableForDrinkersOf": "water"

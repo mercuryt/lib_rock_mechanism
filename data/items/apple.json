@@ -1,7 +1,7 @@
 {
 	"name": "apple",
 	"shape": "oneByOneThirtySecond",
-	"volume": 200,
+	"volume": 600,
 	"generic": true,
 	"value": 50,
 	"moveType": "none",

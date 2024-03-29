@@ -69,9 +69,7 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::readStep()
 	{
 		if(projectWorker.haulSubproject != nullptr)
 			continue;
-		// Make copy becasue we can't capture from outside the enclosing scope.
-		Actor* pointerToActor = actor;
-		std::function<bool(const Block&)> condition = [&, pointerToActor](const Block& block) { return blockContainsDesiredItem(block, *pointerToActor); };
+		std::function<bool(const Block&)> condition = [this, actor](const Block& block) { return blockContainsDesiredItem(block, *actor); };
 		FindsPath findsPath(*actor, false);
 		findsPath.pathToUnreservedAdjacentToPredicate(condition, *actor->getFaction());
 		// Only make at most one per step.

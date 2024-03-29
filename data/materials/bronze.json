@@ -1,6 +1,6 @@
 {
   "name": "bronze",
-  "density": 80,
+  "density": 8.0,
   "hardness": 100,
   "transparent": false,
   "meltingPoint": 1186,

@@ -1,6 +1,6 @@
 {
   "name": "morter",
-  "density": 50,
+  "density": 2.162,
   "hardness": 30,
   "transparent": false,
   "meltingPoint": 2612,

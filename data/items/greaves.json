@@ -1,7 +1,7 @@
 {
 	"name": "greaves",
 	"shape": "oneByOneThirtySecond",
-	"volume": 200,
+	"volume": 2000,
 	"generic": false,
 	"value": 250,
 	"materialCategories": [ "metal", "wood" ],

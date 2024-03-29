@@ -7,6 +7,7 @@
 #include <TGUI/Widgets/EditBox.hpp>
 #include <TGUI/Widgets/HorizontalLayout.hpp>
 #include <TGUI/Widgets/SpinControl.hpp>
+#include <regex>
 EditActorView::EditActorView(Window& window) : m_window(window), m_panel(tgui::Panel::create()), m_actor(nullptr)
 {
 	m_window.getGui().add(m_panel);
@@ -57,6 +58,16 @@ void EditActorView::draw(Actor& actor)
 	basicInfoGrid->addWidget(dateOfBirth.m_widget, 0, 3);
 	basicInfoGrid->addWidget(tgui::Label::create("age"), 0, 4);
 	basicInfoGrid->addWidget(ageUI, 0, 5);
+	basicInfoGrid->addWidget(tgui::Label::create("percent grown"), 0, 6);
+	auto grownUI = tgui::SpinControl::create();
+	grownUI->setMaximum(100);
+	grownUI->setMinimum(1);
+	grownUI->setValue(m_actor->m_canGrow.growthPercent());
+	basicInfoGrid->addWidget(grownUI, 0, 7);
+	grownUI->onValueChange([this, update](float value){
+		m_actor->m_canGrow.setGrowthPercent(value);
+		update();
+	});
 
 	// Attributes.
 	layoutGrid->addWidget(tgui::Label::create("attributes"), ++gridCount, 1);
@@ -153,6 +164,7 @@ void EditActorView::draw(Actor& actor)
 		++skillsCount;
 	}
 	auto createSkill = tgui::ComboBox::create();
+	createSkill->setDefaultText("select new skill");
 	for(const SkillType& skillType : skillTypeDataStore)
 		createSkill->addItem(skillType.name, skillType.name);
 	layoutGrid->addWidget(createSkill, ++gridCount, 1);

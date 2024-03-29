@@ -13,7 +13,6 @@ TEST_CASE("haul")
 	static const MaterialType& gold = MaterialType::byName("gold");
 	static const MaterialType& lead = MaterialType::byName("lead");
 	static const MaterialType& poplarWood = MaterialType::byName("poplar wood");
-	static const MaterialType& peridotite = MaterialType::byName("peridotite");
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	static const AnimalSpecies& donkey = AnimalSpecies::byName("jackstock donkey");
 	static const ItemType& chunk = ItemType::byName("chunk");
@@ -166,7 +165,7 @@ TEST_CASE("haul")
 	{
 		Block& destination = area.getBlock(8, 8, 2);
 		Block& chunkLocation = area.getBlock(1, 5, 2);
-		Item& chunk1 = simulation.createItemGeneric(chunk, gold, 1u);
+		Item& chunk1 = simulation.createItemGeneric(chunk, lead, 1u);
 		chunk1.setLocation(chunkLocation);
 		REQUIRE(!dwarf1.m_canPickup.canPickupAny(chunk1));
 		Block& donkeyLocation = area.getBlock(1, 2, 2);
@@ -179,6 +178,7 @@ TEST_CASE("haul")
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(std::vector<Actor*>({&dwarf1}), chunk1, destination);
 		// One step to activate the project and make reservations.
 		simulation.doStep();
+		REQUIRE(HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(dwarf1, donkey1, panniers1, chunk1, project.getMinimumHaulSpeed()) > 0);
 		// Another step to select the haul strategy and create the subproject.
 		simulation.doStep();
 		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1);
@@ -202,7 +202,7 @@ TEST_CASE("haul")
 		REQUIRE(panniers1.m_hasCargo.contains(chunk1));
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, destination);
 		simulation.fastForward(Config::addToStockPileDelaySteps);
-		REQUIRE(destination.m_hasItems.getCount(chunk, gold) == 1);
+		REQUIRE(destination.m_hasItems.getCount(chunk, lead) == 1);
 		REQUIRE(!donkey1.m_reservable.isFullyReserved(&faction));
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "haul");
 	}
@@ -210,7 +210,7 @@ TEST_CASE("haul")
 	{
 		Block& destination = area.getBlock(5, 5, 2);
 		Block& boulderLocation = area.getBlock(1, 5, 2);
-		Item& boulder1 = simulation.createItemGeneric(boulder, peridotite, 1u);
+		Item& boulder1 = simulation.createItemGeneric(boulder, lead, 1u);
 		boulder1.setLocation(boulderLocation);
 		Block& donkeyLocation = area.getBlock(4, 3, 2);
 		Actor& donkey1 = simulation.createActor(donkey, donkeyLocation);
@@ -244,7 +244,7 @@ TEST_CASE("haul")
 		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, destination);
 		simulation.fastForward(Config::addToStockPileDelaySteps);
-		REQUIRE(destination.m_hasItems.getCount(boulder, peridotite) == 1);
+		REQUIRE(destination.m_hasItems.getCount(boulder, lead) == 1);
 		REQUIRE(!donkey1.m_reservable.isFullyReserved(&faction));
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "haul");
 	}
@@ -252,7 +252,7 @@ TEST_CASE("haul")
 	{
 		Block& destination = area.getBlock(5, 5, 2);
 		Block& cargoLocation = area.getBlock(1, 5, 2);
-		Item& cargo1 = simulation.createItemGeneric(boulder, peridotite, 1u);
+		Item& cargo1 = simulation.createItemGeneric(boulder, lead, 1u);
 		cargo1.setLocation(cargoLocation);
 		Block& origin2 = area.getBlock(4, 3, 2);
 		Actor& dwarf2 = simulation.createActor(dwarf, origin2);
@@ -297,7 +297,7 @@ TEST_CASE("haul")
 		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, destination);
 		simulation.fastForward(Config::addToStockPileDelaySteps);
-		REQUIRE(destination.m_hasItems.getCount(boulder, peridotite) == 1);
+		REQUIRE(destination.m_hasItems.getCount(boulder, lead) == 1);
 		REQUIRE(!cart1.m_reservable.isFullyReserved(&faction));
 		REQUIRE(!dwarf1.m_canLead.isLeading());
 		REQUIRE(!dwarf2.m_canFollow.isFollowing());

@@ -1,7 +1,7 @@
 {
 	"name": "axe",
 	"shape": "oneByOneSixteenth",
-	"volume": 200,
+	"volume": 2000,
 	"generic": false,
 	"value": 150,
 	"weaponData":
