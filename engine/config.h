@@ -193,6 +193,7 @@ namespace Config
 	inline float maximumStepsBetweenRainPerPercentHumidity;
 	inline uint32_t exterminatePriority;
 	inline Step exterminateCheckFrequency;
+	inline float minimumAttackCoolDownModifier;
 
 	inline uint32_t convertBodyPartVolumeToArea(uint32_t volume){ return sqrt(volume); }
 	inline void load()
@@ -381,5 +382,6 @@ namespace Config
 		maximumStepsBetweenRainPerPercentHumidity = data["maximumDaysBetweenRainPerPercentHumidity"].get<float>() * Config::stepsPerDay;
 		exterminatePriority = data["exterminatePriority"].get<uint32_t>();
 		exterminateCheckFrequency = data["exterminateCheckFrequencySeconds"].get<float>() * Config::stepsPerSecond;
+		minimumAttackCoolDownModifier = data["minimumAttackCoolDownModifier"].get<float>();
 	}
 }

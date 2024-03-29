@@ -1,7 +1,7 @@
 {
 	"name": "shortbow",
 	"shape": "oneByOneSixteenth",
-	"volume": 600,
+	"volume": 1200,
 	"generic": false,
 	"value": 60,
 	"materialCategories": [ "wood" ],

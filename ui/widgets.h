@@ -21,7 +21,7 @@ struct DateTimeUI final
 	tgui::SpinControl::Ptr m_years;
 	tgui::Grid::Ptr m_widget;
 	DateTimeUI();
-	DateTimeUI(uint8_t hours, uint8_t days, uint8_t years);
+	DateTimeUI(uint8_t hours, uint16_t days, uint16_t years);
 	DateTimeUI(DateTime&& dateTime);
 	DateTimeUI(Step steps);
 	void set(DateTime& dateTime);

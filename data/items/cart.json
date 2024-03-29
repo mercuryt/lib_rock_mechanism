@@ -1,9 +1,9 @@
 {
 	"name": "cart",
 	"shape": "oneByOneHalf",
-	"volume": 1000,
+	"volume": 20000,
 	"generic": false,
-	"internalVolume" : 10000,
+	"internalVolume" : 100000,
 	"canHoldFluids": false,
 	"value": 200,
 	"moveType": "roll"

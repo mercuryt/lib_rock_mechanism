@@ -193,6 +193,7 @@ TEST_CASE("stockpile")
 		// Set haul strategy.
 		simulation.doStep();
 		REQUIRE(project.getProjectWorkerFor(dwarf1).haulSubproject != nullptr);
+		REQUIRE(dwarf2.m_project != nullptr);
 		HaulSubproject& haulSubproject = *project.getProjectWorkerFor(dwarf1).haulSubproject;
 		REQUIRE(&haulSubproject == project.getProjectWorkerFor(dwarf2).haulSubproject);
 		REQUIRE(haulSubproject.getHaulStrategy() == HaulStrategy::Team);

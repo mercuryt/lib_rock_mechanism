@@ -56,14 +56,15 @@ void GameOverlay::installItem(Block& block)
 }
 void GameOverlay::unfocusUI()
 {
-	// Find whatever widget has focus and defocus it. Apperently TGUI doesn't defocus widgets when they get destroyed?
+	// Find whatever widget has focus and defocus it. Apperently TGUI doesn't defocus widgets when they get hidden?
 	tgui::Widget::Ptr focused = m_window.getGui().getFocusedChild();
 	if(focused)
 		focused->setFocused(false);
 }
 void GameOverlay::drawTime()
 {
-	DateTime& now = m_window.getSimulation()->m_now;
+	DateTime now = m_window.getSimulation()->getDateTime();
+	// TODO: getting seconds and minutes from hourlyEvent.percentComplete is roundabout and wierd, add them to DateTime instead?
 	float fractionOfCurrentHourElapsed = m_window.getSimulation()->m_hourlyEvent.fractionComplete();
 	uint16_t seconds = Config::minutesPerHour * Config::secondsPerMinute * fractionOfCurrentHourElapsed;
 	uint16_t minutes = seconds / Config::secondsPerMinute;

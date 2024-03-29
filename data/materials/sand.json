@@ -1,6 +1,6 @@
 {
   "name": "sand",
-  "density": 150,
+  "density": 1.63,
   "hardness": 60,
   "transparent": false,
   "meltingPoint": 1612,

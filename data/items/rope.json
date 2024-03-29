@@ -1,7 +1,7 @@
 {
 	"name": "rope",
 	"shape": "oneByOneThirtySecond",
-	"volume": 10,
+	"volume": 2000,
 	"generic": true,
 	"value": 1
 }

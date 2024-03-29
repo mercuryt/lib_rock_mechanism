@@ -50,10 +50,7 @@ EditRealityView::EditRealityView(Window& w) : m_window(w), m_panel(tgui::Panel::
 		if(!m_window.getSimulation())
 			m_window.setSimulation(std::make_unique<Simulation>(m_name->getText().toWideString(), m_dateTime.get()));	       
 		else
-		{
 			m_window.getSimulation()->m_name = m_name->getText().toWideString();
-			m_window.getSimulation()->setDateTime(m_dateTime.get());
-		}
 		draw();
 	});
 	buttonLayout->add(m_confirm);
@@ -67,7 +64,7 @@ void EditRealityView::draw()
 	Simulation* simulation = m_window.getSimulation();
 	m_title->setText(simulation ? L"Edit " + simulation->m_name : L"Create reality");
 	m_name->setText(simulation ? simulation->m_name : L"");
-	m_dateTime.set(simulation ? simulation->m_now : DateTime{12, 50, 100});
+	m_dateTime.set(simulation ? simulation->getDateTime() : DateTime{12, 150, 1200});
 	m_areaHolder->setVisible(simulation);
 	m_confirm->setText(simulation ? "save" : "create");
 	if(simulation)

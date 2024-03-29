@@ -1,7 +1,7 @@
 {
 	"name": "round bar",
 	"shape": "oneByOneThirtySecond",
-	"volume": 100,
+	"volume": 3000,
 	"generic": true,
 	"value": 3,
 	"cratable": true

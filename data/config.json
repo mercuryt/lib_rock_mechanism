@@ -176,5 +176,6 @@
 	"minimumDaysBetweenRainPerPercentHumidity": 0.5,
 	"maximumDaysBetweenRainPerPercentHumidity": 2,
 	"exterminatePriority": 900,
-	"exterminateCheckFrequencySeconds": 1
+	"exterminateCheckFrequencySeconds": 1,
+	"minimumAttackCoolDownModifier": 0.1
 }

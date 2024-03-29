@@ -1,7 +1,7 @@
 {
 	"name": "full helm",
 	"shape": "oneByOneEighth",
-	"volume": 8000,
+	"volume": 4000,
 	"generic": false,
 	"value": 2000,
 	"moveType": "none",

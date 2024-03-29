@@ -1,7 +1,7 @@
 {
 	"name": "vambraces",
 	"shape": "oneByOneThirtySecond",
-	"volume": 160,
+	"volume": 1600,
 	"generic": false,
 	"value": 200,
 	"materialCategories": [ "metal", "wood" ],

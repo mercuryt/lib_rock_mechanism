@@ -1,7 +1,7 @@
 {
 	"name": "pile",
 	"shape": "oneByOneHundredth",
-	"volume": 100,
+	"volume": 500,
 	"generic": true,
 	"value": 1,
 	"moveType": "none"

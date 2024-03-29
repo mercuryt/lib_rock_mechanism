@@ -1,6 +1,6 @@
 {
   "name": "plant matter",
-  "density": 50,
+  "density": 0.5,
   "hardness": 20,
   "transparent": false,
   "burnData":

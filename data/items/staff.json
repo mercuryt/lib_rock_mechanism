@@ -1,7 +1,7 @@
 {
 	"name": "staff",
 	"shape": "oneByOneEighth",
-	"volume": 250,
+	"volume": 2000,
 	"generic": false,
 	"value": 100,
 	"weaponData":

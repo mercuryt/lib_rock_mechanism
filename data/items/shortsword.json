@@ -1,7 +1,7 @@
 {
 	"name": "short sword",
 	"shape": "oneByOneSixteenth",
-	"volume": 130,
+	"volume": 1500,
 	"generic": false,
 	"value": 100,
 	"weaponData":

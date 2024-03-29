@@ -1,29 +1,28 @@
 #include "widgets.h"
 #include "../engine/simulation.h"
-#include "datetime.h"
 #include <TGUI/Widgets/ComboBox.hpp>
 #include <TGUI/Widgets/SpinControl.hpp>
 #include <cstdint>
 // DateTime.
-DateTimeUI::DateTimeUI(uint8_t hours,uint8_t days, uint8_t years) : m_hours(tgui::SpinControl::create()), m_days(tgui::SpinControl::create()), m_years(tgui::SpinControl::create()), m_widget(tgui::Grid::create())
+DateTimeUI::DateTimeUI(uint8_t hours,uint16_t days, uint16_t years) : m_hours(tgui::SpinControl::create()), m_days(tgui::SpinControl::create()), m_years(tgui::SpinControl::create()), m_widget(tgui::Grid::create())
 {
 	m_widget->addWidget(tgui::Label::create("hours"), 1, 1);
 	m_widget->addWidget(m_hours, 1, 2);
+	m_hours->setMinimum(1);
+	m_hours->setMaximum(24);
 	m_hours->setValue(hours);
-	m_hours->setMinimum(0);
-	m_hours->setMaximum(23);
 
 	m_widget->addWidget(tgui::Label::create("days"), 2, 1);
 	m_widget->addWidget(m_days, 2, 2);
-	m_days->setValue(days);
 	m_days->setMinimum(1);
 	m_days->setMaximum(365);
+	m_days->setValue(days);
 
 	m_widget->addWidget(tgui::Label::create("years"), 3, 1);
 	m_widget->addWidget(m_years, 3, 2);
-	m_years->setValue(years);
 	m_years->setMinimum(0);
-	m_years->setMaximum(2000);
+	m_years->setMaximum(UINT64_MAX / Config::stepsPerYear);
+	m_years->setValue(years);
 }
 DateTimeUI::DateTimeUI() : DateTimeUI(1,1,1) { }
 DateTimeUI::DateTimeUI(DateTime&& dateTime) : DateTimeUI(dateTime.hour, dateTime.day, dateTime.year) { }
@@ -37,8 +36,12 @@ void DateTimeUI::set(DateTime& dateTime)
 void DateTimeUI::set(DateTime&& dateTime) { set(dateTime); }
 Step DateTimeUI::get() const
 {
-	DateTime dateTime{static_cast<uint8_t>(m_hours->getValue()), static_cast<uint16_t>(m_days->getValue()), static_cast<uint16_t>(m_years->getValue())};
-	return dateTime.
+	DateTime dateTime{
+		static_cast<uint8_t>(m_hours->getValue()),
+	       	static_cast<uint16_t>(m_days->getValue()),
+	       	static_cast<uint16_t>(m_years->getValue())
+	};
+	return dateTime.toSteps();
 }
 // Area Selector.
 AreaSelectUI::AreaSelectUI() : m_widget(tgui::ComboBox::create()) { }

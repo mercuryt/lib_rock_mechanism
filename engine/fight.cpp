@@ -151,11 +151,16 @@ void CanFight::update()
 	m_combatScore = util::scaleByInversePercent(m_combatScore, m_actor.m_body.getImpairManipulationPercent());
 	// Update cool down duration.
 	// TODO: Manipulation impairment should apply to cooldown as well?
-	m_coolDownDurationModifier = m_actor.m_equipmentSet.empty() ? 1.f : 
-		std::max(1.f, m_actor.m_attributes.getUnencomberedCarryMass() / (float)m_actor.m_equipmentSet.getMass());
-	m_coolDownDurationModifier -= (m_actor.m_attributes.getDextarity() - Config::attackCoolDownDurationBaseDextarity) * Config::fractionAttackCoolDownReductionPerPointOfDextarity;
+	m_coolDownDurationModifier = std::max(1.f, (float)m_actor.m_equipmentSet.getMass() / (float)m_actor.m_attributes.getUnencomberedCarryMass() );
+	if(m_actor.m_attributes.getDextarity() > Config::attackCoolDownDurationBaseDextarity)
+	{
+		float reduction = (m_actor.m_attributes.getDextarity() - Config::attackCoolDownDurationBaseDextarity) * Config::fractionAttackCoolDownReductionPerPointOfDextarity;
+		m_coolDownDurationModifier = std::max(m_coolDownDurationModifier - reduction, Config::minimumAttackCoolDownModifier);
+	}
 	// Find the on miss cool down.
-	Step baseOnMissCoolDownDuration = m_actor.m_equipmentSet.hasWeapons() ? m_actor.m_equipmentSet.getLongestMeleeWeaponCoolDown() : Config::attackCoolDownDurationBaseSteps;
+	Step baseOnMissCoolDownDuration = m_actor.m_equipmentSet.hasWeapons() ?
+	       	m_actor.m_equipmentSet.getLongestMeleeWeaponCoolDown() : 
+		Config::attackCoolDownDurationBaseSteps;
 	m_onMissCoolDownMelee = m_coolDownDurationModifier * baseOnMissCoolDownDuration;
 	//Find max range.
 	m_maxRange = m_maxMeleeRange;

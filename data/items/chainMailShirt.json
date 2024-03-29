@@ -1,10 +1,9 @@
 {
 	"name": "chain mail shirt",
 	"shape": "oneByOneThirtySecond",
-	"volume": 5000,
+	"volume": 4000,
 	"generic": false,
 	"value": 3000,
-	"moveType": "none",
 	"wearableType":
 	{
 		"percentCoverage": 100,

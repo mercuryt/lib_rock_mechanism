@@ -16,6 +16,7 @@ public:
 	CanGrow(const Json& data, Actor& actor);
 	Json toJson() const;
 	void updateGrowingStatus();
+	void setGrowthPercent(Percent percent);
 	Percent growthPercent() const;
 	void update();
 	void complete();

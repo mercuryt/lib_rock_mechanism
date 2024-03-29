@@ -1,6 +1,6 @@
 {
   "name": "pig leather",
-  "density": 80,
+  "density": 0.8,
   "hardness": 40,
   "transparent": false,
   "burnData":

@@ -1,6 +1,6 @@
 {
   "name": "glass",
-  "density": 100,
+  "density": 2.7,
   "hardness": 100,
   "transparent": true,
   "meltingPoint": 1612,

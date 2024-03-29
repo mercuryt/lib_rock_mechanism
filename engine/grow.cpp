@@ -28,6 +28,12 @@ Json CanGrow::toJson() const
 	}
 	return data;
 }
+void CanGrow::setGrowthPercent(Percent percent)
+{
+	m_event.maybeUnschedule();
+	m_percentGrown = percent;
+	update();
+}
 void CanGrow::updateGrowingStatus()
 {
 	if(m_percentGrown != 100 && !m_actor.m_mustEat.needsFood() && !m_actor.m_mustDrink.needsFluid() && m_actor.m_needsSafeTemperature.isSafeAtCurrentLocation())
@@ -62,7 +68,7 @@ void CanGrow::update()
 	const Shape& shape = m_actor.m_species.shapeForPercentGrown(percent);
 	if(&shape != m_actor.m_shape)
 		m_actor.setShape(shape);
-	if(percent != 100)
+	if(percent != 100 && !m_updateEvent.exists())
 		m_updateEvent.schedule(Config::statsGrowthUpdateFrequency, *this);
 }
 void CanGrow::complete()

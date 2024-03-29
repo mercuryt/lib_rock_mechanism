@@ -1,7 +1,7 @@
 {
 	"name": "log",
 	"shape": "oneByOneFull",
-	"volume": 5000,
+	"volume": 10000,
 	"generic": true,
 	"value": 5
 }

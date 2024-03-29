@@ -1,7 +1,7 @@
 {
 	"name": "dagger",
 	"shape": "oneByOneThirtySecond",
-	"volume": 50,
+	"volume": 500,
 	"generic": false,
 	"value": 50,
 	"weaponData":

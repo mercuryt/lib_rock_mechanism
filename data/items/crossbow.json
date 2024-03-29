@@ -1,7 +1,7 @@
 {
 	"name": "crossbow",
 	"shape": "oneByOneSixteenth",
-	"volume": 1000,
+	"volume": 1500,
 	"generic": false,
 	"value": 100,
 	"materialCategories": [ "metal", "wood" ],

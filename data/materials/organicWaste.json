@@ -1,6 +1,6 @@
 {
 	"name": "organic waste",
-	"density": 20,
+	"density": 2.0,
 	"hardness": 5,
 	"transparent": false,
 	"burnData":
