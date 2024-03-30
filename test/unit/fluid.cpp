@@ -1634,8 +1634,8 @@ TEST_CASE("fluids multi scale")
 		CHECK(fgMercury->m_stable);
 		CHECK(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
 		CHECK(fgMercury->totalVolume() == totalVolume);
-		CHECK(area.getBlock(1, 1, 1).m_fluids.contains(&lava));
-		CHECK(area.getBlock(maxX - 2, 1, 1).m_fluids.contains(&lava));
+		CHECK(area.getBlock(1, 1, 1).m_fluids.contains(&mercury));
+		CHECK(area.getBlock(maxX - 2, 1, 1).m_fluids.contains(&mercury));
 		CHECK(area.getBlock(1, 1, maxZ - 1).m_fluids.contains(&CO2));
 		CHECK(area.getBlock(maxX - 2, 1, maxZ - 1).m_fluids.contains(&CO2));
 		CHECK(area.m_fluidGroups.size() == 4);
@@ -1876,7 +1876,7 @@ TEST_CASE("fluids multi scale")
 		CHECK(fgMercury->m_stable);
 		CHECK(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
 		CHECK(fgMercury->totalVolume() == totalVolume);
-		CHECK(area.getBlock(1, 1, 1).m_fluids.contains(&lava));
+		CHECK(area.getBlock(1, 1, 1).m_fluids.contains(&mercury));
 		CHECK(area.getBlock(1, 1, maxZ - 1).m_fluids.contains(&CO2));
 	};
 	SUBCASE("four fluids scale 2")

@@ -8,6 +8,7 @@
  */
 
 #include "fluidGroup.h"
+#include "fluidType.h"
 #include "util.h"
 #include "config.h"
 #include "block.h"
@@ -92,8 +93,9 @@ void FluidGroup::removeBlock(Block& block)
 			auto found = adjacent->m_fluids.find(&m_fluidType);
 			if(found != adjacent->m_fluids.end() && found->second.second == this)
 				m_potentiallySplitFromSyncronusStep.insert(adjacent);
-			//Check for empty adjacent to remove.
-			m_potentiallyNoLongerAdjacentFromSyncronusStep.insert(adjacent);
+			else
+				//Check for empty adjacent to remove.
+				m_potentiallyNoLongerAdjacentFromSyncronusStep.insert(adjacent);
 		}
 	if constexpr (Config::fluidsSeepDiagonalModifier != 0)
 	{
@@ -372,6 +374,7 @@ void FluidGroup::readStep()
 	std::unordered_set<Block*> potentialNewGroups;
 	potentialNewGroups.swap(m_potentiallySplitFromSyncronusStep);
 	std::unordered_set<Block*> possiblyNoLongerAdjacent;
+	[[maybe_unused]] bool stopHere = m_area.m_simulation.m_step == 3 && m_fluidType == FluidType::byName("CO2");
 	possiblyNoLongerAdjacent.swap(m_potentiallyNoLongerAdjacentFromSyncronusStep);
 	// Collect all adjacent to futureEmpty which fluid can enter ever.
 	std::unordered_set<Block*> adjacentToFutureEmpty;
@@ -400,7 +403,7 @@ void FluidGroup::readStep()
 		// If block won't be empty then check for forming a new group as it may be detached.
 		if(futureBlocks.contains(block))
 			potentialNewGroups.insert(block);
-	// Else check for removal from empty adjacent queue.
+		// Else check for removal from empty adjacent queue.
 		else
 			possiblyNoLongerAdjacent.insert(block);
 	// Seperate into contiguous groups. Each block in potentialNewGroups might be in a seperate group.
@@ -443,6 +446,8 @@ void FluidGroup::readStep()
 	//futureRemoveFromEmptyAdjacents.reserve(possiblyNoLongerAdjacent.size());
 	for(Block* block : possiblyNoLongerAdjacent)
 	{
+		if(futureBlocks.contains(block))
+			continue;
 		bool stillAdjacent = false;
 		for(Block* adjacent : block->m_adjacents)
 			if(adjacent && adjacent->fluidCanEnterEver() && futureBlocks.contains(adjacent))
@@ -482,9 +487,9 @@ void FluidGroup::writeStep()
 		assert(!m_futureRemoveFromFillQueue.contains(block));
 	// Don't add to drain queue if taken by another fluid group already.
 	std::erase_if(m_futureAddToDrainQueue, [&](Block* block){ 
-			auto found = block->m_fluids.find(&m_fluidType);
-			return found != block->m_fluids.end() && found->second.second != this; 
-			});
+		auto found = block->m_fluids.find(&m_fluidType);
+		return found != block->m_fluids.end() && found->second.second != this; 
+	});
 	for(Block* block : m_futureAddToDrainQueue)
 		assert(!m_futureRemoveFromDrainQueue.contains(block));
 	for(Block* block : m_futureRemoveFromFillQueue)
