@@ -16,6 +16,6 @@ void StationObjective::execute()
 {
 	if(m_actor.m_location != &m_location)
 		// Block, detour, adjacent, unreserved, reserve
-		m_actor.m_canMove.setDestination(m_location, m_detour, false, false, true);
+		m_actor.m_canMove.setDestination(m_location, m_detour, false, false, false);
 }
 void StationObjective::reset() { m_actor.m_canReserve.deleteAllWithoutCallback(); }

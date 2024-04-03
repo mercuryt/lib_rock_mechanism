@@ -50,6 +50,7 @@ namespace displayData
 	inline static sf::Color contextMenuHoverableColor = sf::Color::Blue;
 	inline static sf::Color contextMenuUnhoverableColor = sf::Color::Black;
 	inline static sf::Color actorOutlineColor = sf::Color::Blue;
+	inline static sf::Color progressBarColor = sf::Color::Black;
 	std::string localizeNumber(double number);
 	void load();
 }

@@ -1,9 +1,9 @@
 {
   "name": "goblin",
   "sentient": true,
-  "strength": [40, 45, 6],
-  "agility": [40, 45, 3],
-  "dextarity": [50, 55, 1],
+  "strength": [2, 45, 6],
+  "agility": [4, 45, 3],
+  "dextarity": [5, 55, 1],
   "mass": [45000, 80000, 20000],
   "deathAgeDays": [25550, 36500],
   "daysTillFullyGrown": 9131,

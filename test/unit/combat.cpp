@@ -15,7 +15,12 @@ TEST_CASE("combat")
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	Faction faction(L"tower of power");
 	area.m_hasStockPiles.registerFaction(faction);
-	Actor& dwarf1 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 1, 1));
+	Actor& dwarf1 = simulation.createActor(ActorParamaters{
+		.species=AnimalSpecies::byName("dwarf"),
+		.location=&area.getBlock(1, 1, 1),
+		.hasCloths=false,
+		.hasSidearm=false,
+	});
 	dwarf1.setFaction(&faction);
 	Item& pants = simulation.createItemNongeneric(ItemType::byName("pants"), MaterialType::byName("plant matter"), 50u, 10);
 	dwarf1.m_equipmentSet.addEquipment(pants);

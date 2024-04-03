@@ -102,7 +102,7 @@ namespace Config
 	inline Step stepsPerDay;
 	inline Step stepsPerYear;
 	inline uint32_t sleepObjectivePriority;
-	inline uint32_t minimumHaulSpeed;
+	inline uint32_t minimumHaulSpeedInital;
 	inline Step stepsFrequencyToLookForHaulSubprojects;
 	inline uint32_t maxZLevelForDeepAmbiantTemperature;
 	inline Temperature deepAmbiantTemperature;
@@ -194,6 +194,11 @@ namespace Config
 	inline uint32_t exterminatePriority;
 	inline Step exterminateCheckFrequency;
 	inline float minimumAttackCoolDownModifier;
+	inline CollisionVolume minimumVolumeOfFluidToBreath;
+	inline Step minimumDurationToWaitInsteadOfWander;
+	inline Step maximumDurationToWaitInsteadOfWander;
+	inline float chanceToWaitInsteadOfWander;
+	inline float minimumOverloadRatio;
 
 	inline uint32_t convertBodyPartVolumeToArea(uint32_t volume){ return sqrt(volume); }
 	inline void load()
@@ -292,7 +297,7 @@ namespace Config
 		itemWearCombatModifier = data["itemWearCombatModifier"].get<float>();
 		givePlantsFluidPriority = data["givePlantsFluidPriority"].get<uint32_t>();
 		sleepObjectivePriority = data["sleepObjectivePriority"].get<uint32_t>();
-		minimumHaulSpeed = data["minimumHaulSpeed"].get<uint32_t>();
+		minimumHaulSpeedInital = data["minimumHaulSpeedInital"].get<uint32_t>();
 		stepsFrequencyToLookForHaulSubprojects = data["secondsFrequencyToLookForHaulSubprojects"].get<float>() * stepsPerSecond;
 		maxZLevelForDeepAmbiantTemperature = data["maxZLevelForDeepAmbiantTemperature"].get<uint32_t>();
 		deepAmbiantTemperature = data["deepAmbiantTemperature"].get<uint32_t>();
@@ -383,5 +388,10 @@ namespace Config
 		exterminatePriority = data["exterminatePriority"].get<uint32_t>();
 		exterminateCheckFrequency = data["exterminateCheckFrequencySeconds"].get<float>() * Config::stepsPerSecond;
 		minimumAttackCoolDownModifier = data["minimumAttackCoolDownModifier"].get<float>();
+		minimumVolumeOfFluidToBreath = data["minimumVolumeOfFluidToBreath"].get<CollisionVolume>();
+		minimumDurationToWaitInsteadOfWander = data["minimumDurationToWaitInsteadOfWanderMinutes"].get<uint32_t>() * Config::stepsPerMinute;
+		maximumDurationToWaitInsteadOfWander = data["maximumDurationToWaitInsteadOfWanderMinutes"].get<uint32_t>() * Config::stepsPerMinute;
+		chanceToWaitInsteadOfWander = data["chanceToWaitInsteadOfWander"].get<float>();
+		minimumOverloadRatio = data["minimumOverloadRatio"].get<float>();
 	}
 }

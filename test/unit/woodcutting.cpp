@@ -14,7 +14,12 @@ TEST_CASE("woodcutting")
 	REQUIRE(treeLocation.m_hasPlant.get().m_blocks.size() == 5);
 	static const Faction faction(L"Tower of Power");
 	area.m_hasWoodCuttingDesignations.addFaction(faction);
-	Actor& dwarf = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1,1,1), 100);
+	Actor& dwarf = simulation.createActor(ActorParamaters{
+		.species=AnimalSpecies::byName("dwarf"), 
+		.percentGrown=100,
+		.location=&area.getBlock(1,1,1), 
+		.hasSidearm=false,
+	});
 	dwarf.setFaction(&faction);
 	Item& axe = simulation.createItemNongeneric(ItemType::byName("axe"), MaterialType::byName("bronze"), 25u, 10u);
 	area.m_hasWoodCuttingDesignations.designate(faction, treeLocation);

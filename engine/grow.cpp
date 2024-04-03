@@ -1,6 +1,7 @@
 #include "grow.h"
 #include "actor.h"
 #include "config.h"
+#include "simulation.h"
 CanGrow::CanGrow(Actor& a, Percent pg) : m_actor(a), m_event(a.getEventSchedule()), m_updateEvent(a.getEventSchedule()), m_percentGrown(pg)
 { 
 	// Note: CanGrow must be initalized after MustEat, MustDrink, and SafeTemperature.
@@ -31,12 +32,17 @@ Json CanGrow::toJson() const
 void CanGrow::setGrowthPercent(Percent percent)
 {
 	m_event.maybeUnschedule();
+	m_updateEvent.maybeUnschedule();
 	m_percentGrown = percent;
 	update();
 }
 void CanGrow::updateGrowingStatus()
 {
-	if(m_percentGrown != 100 && !m_actor.m_mustEat.needsFood() && !m_actor.m_mustDrink.needsFluid() && m_actor.m_needsSafeTemperature.isSafeAtCurrentLocation())
+	if(
+			m_percentGrown != 100 && m_actor.getAge() < m_actor.m_species.stepsTillFullyGrown && 
+			!m_actor.m_mustEat.needsFood() && !m_actor.m_mustDrink.needsFluid() && 
+			m_actor.m_needsSafeTemperature.isSafeAtCurrentLocation()
+	)
 	{
 		if(!m_event.exists())
 		{
@@ -68,7 +74,7 @@ void CanGrow::update()
 	const Shape& shape = m_actor.m_species.shapeForPercentGrown(percent);
 	if(&shape != m_actor.m_shape)
 		m_actor.setShape(shape);
-	if(percent != 100 && !m_updateEvent.exists())
+	if(percent != 100 && !m_updateEvent.exists() && m_actor.m_species.stepsTillFullyGrown > m_actor.getSimulation().m_step - m_actor.m_birthStep)
 		m_updateEvent.schedule(Config::statsGrowthUpdateFrequency, *this);
 }
 void CanGrow::complete()

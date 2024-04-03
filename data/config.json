@@ -35,7 +35,7 @@
 	"objectivePrioiorityKill": 1000,
 	"pathHuristicConstant": 1,
 	"impassibleItemVolume": 60,
-	"massCarryMaximimMovementRatio": 2.0,
+	"massCarryMaximimMovementRatio": 1.5,
 	"rollingMassModifier": 0.25,
 	"moveTryAttemptsBeforeDetour": 2,
 	"sowSeedsStepsDuration": 20,
@@ -86,7 +86,7 @@
 	"secondsPerMinute": 60,
 	"stepsPerSecond": 20,
 	"sleepObjectivePriority": 50,
-	"minimumHaulSpeed": 3,
+	"minimumHaulSpeedInital": 4,
 	"secondsFrequencyToLookForHaulSubprojects": 1.5,
 	"maxZLevelForDeepAmbiantTemperature": 100,
 	"deepAmbiantTemperature": 295,
@@ -177,5 +177,10 @@
 	"maximumDaysBetweenRainPerPercentHumidity": 2,
 	"exterminatePriority": 900,
 	"exterminateCheckFrequencySeconds": 1,
-	"minimumAttackCoolDownModifier": 0.1
+	"minimumAttackCoolDownModifier": 0.1,
+	"minimumVolumeOfFluidToBreath": 20,
+	"minimumDurationToWaitInsteadOfWanderMinutes": 3,
+	"maximumDurationToWaitInsteadOfWanderMinutes": 15,
+	"chanceToWaitInsteadOfWander": 0.6,
+	"minimumOverloadRatio": 0.33
 }

@@ -12,6 +12,7 @@
 #include "../../engine/harvest.h"
 #include "../../engine/givePlantsFluid.h"
 #include "../../engine/goTo.h"
+#include "actor.h"
 #include "materialType.h"
 #include <memory>
 TEST_CASE("sow")
@@ -35,7 +36,12 @@ TEST_CASE("sow")
 	area.m_hasFarmFields.registerFaction(faction);
 	Cuboid cuboid(block, block);
 	FarmField& field = area.m_hasFarmFields.at(faction).create(cuboid);
-	Actor& actor = simulation.createActor(dwarf, area.getBlock(1, 1, 2));
+	Actor& actor = simulation.createActor(ActorParamaters{
+		.species=dwarf, 
+		.location=&area.getBlock(1, 1, 2),
+		.hasCloths=false,
+		.hasSidearm=false,
+	});
 	actor.setFaction(&faction);
 	SUBCASE("success")
 	{

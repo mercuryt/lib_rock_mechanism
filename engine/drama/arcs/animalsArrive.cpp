@@ -127,19 +127,19 @@ std::pair<const AnimalSpecies*, uint32_t> AnimalsArriveDramaArc::getSpeciesAndQu
 		if(large)
 		{
 			static std::vector<const AnimalSpecies*> largeCarnivors = getLargeCarnivors();
-			species = largeCarnivors[random.getInRange(0, largeCarnivors.size() - 1)];
+			species = random.getInVector(largeCarnivors);
 			quantity = 1;
 		}
 		else if(medium)
 		{
 			static std::vector<const AnimalSpecies*> mediumCarnivors = getMediumCarnivors();
-			species = mediumCarnivors[random.getInRange(0, mediumCarnivors.size() - 1)];
+			species = random.getInVector(mediumCarnivors);
 			quantity = random.getInRange(1,5);
 		}
 		else 
 		{
 			static std::vector<const AnimalSpecies*> smallCarnivors = getSmallCarnivors();
-			species = smallCarnivors[random.getInRange(0, smallCarnivors.size() - 1)];
+			species = random.getInVector(smallCarnivors);
 			quantity = random.getInRange(5,15);
 		}
 	}
@@ -148,19 +148,19 @@ std::pair<const AnimalSpecies*, uint32_t> AnimalsArriveDramaArc::getSpeciesAndQu
 		if(large)
 		{
 			static std::vector<const AnimalSpecies*> largeHerbivors = getLargeHerbivors();
-			species = largeHerbivors[random.getInRange(0, largeHerbivors.size() - 1)];
+			species = random.getInVector(largeHerbivors);
 			quantity = random.getInRange(1,2);
 		}
 		else if(medium)
 		{
 			static std::vector<const AnimalSpecies*> mediumHerbivors = getMediumHerbivors();
-			species = mediumHerbivors[random.getInRange(0, mediumHerbivors.size() - 1)];
+			species = random.getInVector(mediumHerbivors);
 			quantity = random.getInRange(1,8);
 		}
 		else 
 		{
 			static std::vector<const AnimalSpecies*> smallHerbivors = getSmallHerbivors();
-			species = smallHerbivors[random.getInRange(0, smallHerbivors.size() - 1)];
+			species = random.getInVector(smallHerbivors);
 			quantity = random.getInRange(5,25);
 		}
 	}

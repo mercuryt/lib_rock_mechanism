@@ -1,5 +1,6 @@
 #include "leadAndFollow.h"
 #include "block.h"
+#include "config.h"
 #include "deserializationMemo.h"
 void CanLead::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
@@ -80,10 +81,10 @@ uint32_t CanLead::getMoveSpeedForGroupWithAddedMass(std::vector<const HasShape*>
 	uint32_t totalMass = deadMass + (rollingMass * Config::rollingMassModifier);
 	if(totalMass <= carryMass)
 		return lowestMoveSpeed;
-	float ratio = (float)totalMass / carryMass;
-	if(ratio > Config::massCarryMaximimMovementRatio)
+	float ratio = (float)carryMass / totalMass;
+	if(ratio < Config::minimumOverloadRatio)
 		return 0;
-	return lowestMoveSpeed / ratio;
+	return std::ceil(lowestMoveSpeed * ratio * ratio);
 }
 uint32_t CanLead::getMoveSpeed() const
 {

@@ -2,9 +2,11 @@
 #include "actor.h"
 #include "block.h"
 #include "deserializationMemo.h"
+#include "objective.h"
 #include "random.h"
 #include "config.h"
 #include "simulation.h"
+#include "wait.h"
 WanderThreadedTask::WanderThreadedTask(WanderObjective& o) : ThreadedTask(o.m_actor.getThreadedTaskEngine()), m_objective(o), m_findsPath(o.m_actor, false) { }
 void WanderThreadedTask::readStep()
 {
@@ -55,8 +57,18 @@ void WanderObjective::execute()
 		m_actor.m_hasObjectives.objectiveComplete(*this);
 	else
 	{
-		m_threadedTask.create(*this); 
-		m_routeFound = true;
+		auto& random = m_actor.getSimulation().m_random;
+		if(random.chance(Config::chanceToWaitInsteadOfWander))
+		{
+			Step duration = random.getInRange(Config::minimumDurationToWaitInsteadOfWander, Config::maximumDurationToWaitInsteadOfWander);
+			std::unique_ptr<Objective> waitObjective = std::make_unique<WaitObjective>(m_actor, duration);
+			m_actor.m_hasObjectives.addTaskToStart(std::move(waitObjective));
+		}
+		else
+		{
+			m_threadedTask.create(*this); 
+			m_routeFound = true;
+		}
 	}
 }
 

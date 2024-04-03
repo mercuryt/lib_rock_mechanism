@@ -1,0 +1,6 @@
+{
+  "name": "molten tin",
+  "viscosity": 100,
+  "density": 6.97,
+  "freezesInto": "tin"
+}

@@ -36,6 +36,7 @@ public:
 	void imageOnBlockWestAlign(const Block& block, std::string name, const sf::Color* = nullptr);
 	void imageOnBlockEastAlign(const Block& block, std::string name, const sf::Color* = nullptr);
 	void imageOnBlockSouthAlign(const Block& block, std::string name, const sf::Color* = nullptr);
+	void progressBarOnBlock(const Block& block, Percent progress);
 
 	void selected(Block& block);
 	void outlineOnBlock(const Block& block, const sf::Color color, float thickness = 3.f);

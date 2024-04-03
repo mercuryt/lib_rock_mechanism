@@ -36,7 +36,14 @@ TEST_CASE("json")
 		Cuboid farmBlocks{area.getBlock(1,7,1), area.getBlock(1,6,1)};
 		FarmField& farm = area.m_hasFarmFields.at(faction).create(farmBlocks);
 		area.m_hasFarmFields.at(faction).setSpecies(farm, sage);
-		Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
+		Actor& dwarf1 = simulation.createActor(ActorParamaters{
+			.species=dwarf, 
+			.percentGrown=90,
+			.location=&area.getBlock(5,5,1),
+			.faction=&faction,
+			.hasCloths=false,
+			.hasSidearm=false,
+		});
 		dwarf1.setFaction(&faction);
 		std::wstring name = dwarf1.m_name;
 		DigObjectiveType& digObjectiveType = static_cast<DigObjectiveType&>(*ObjectiveType::objectiveTypes.at("dig").get());

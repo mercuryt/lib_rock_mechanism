@@ -1,5 +1,6 @@
 #include "hasShape.h"
 #include "block.h"
+#include "config.h"
 #include "simulation.h"
 #include <cassert>
 #include <cstdint>
@@ -402,7 +403,16 @@ bool BlockHasShapes::moveTypeCanEnter(const MoveType& moveType) const
 	{
 		auto found = moveType.swim.find(fluidType);
 		if(found != moveType.swim.end() && found->second <= pair.first)
-			return true;
+		{
+			// Can swim in fluid, check breathing requirements
+			if(moveType.breathless)
+				return true;
+			if(moveTypeCanBreath(moveType))
+				return true;
+			Block* above = m_block.getBlockAbove();
+			if(above && !above->isSolid() && above->m_hasShapes.moveTypeCanBreath(moveType))
+				return true;
+		}
 	}
 	// Not swimming and fluid level is too high.
 	if(m_block.m_totalFluidVolume > Config::maxBlockVolume / 2)
@@ -429,6 +439,16 @@ bool BlockHasShapes::moveTypeCanEnter(const MoveType& moveType) const
 				return false;
 			}
 	}
+	return false;
+}
+bool BlockHasShapes::moveTypeCanBreath(const MoveType& moveType) const
+{
+	if(m_block.m_totalFluidVolume < Config::maxBlockVolume && !moveType.onlyBreathsFluids)
+		return true;
+	for(auto& pair : m_block.m_fluids)
+		//TODO: Minimum volume should probably be scaled by body size somehow.
+		if(moveType.breathableFluids.contains(pair.first) && pair.second.first >= Config::minimumVolumeOfFluidToBreath)
+			return true;
 	return false;
 }
 bool BlockHasShapes::hasCachedMoveCosts(const Shape& shape, const MoveType& moveType) const

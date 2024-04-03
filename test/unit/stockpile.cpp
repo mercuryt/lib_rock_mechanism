@@ -16,16 +16,25 @@ TEST_CASE("stockpile")
 {
 	const MaterialType& wood = MaterialType::byName("poplar wood");
 	const MaterialType& marble = MaterialType::byName("marble");
-	const MaterialType& lead = MaterialType::byName("lead");
+	[[maybe_unused]] const MaterialType& lead = MaterialType::byName("lead");
+	const MaterialType& gold = MaterialType::byName("gold");
+	[[maybe_unused]] const MaterialType& iron = MaterialType::byName("iron");
+	[[maybe_unused]] const MaterialType& peridotite = MaterialType::byName("peridotite");
 	const ItemType& chunk = ItemType::byName("chunk");
 	const ItemType& cart = ItemType::byName("cart");
+	[[maybe_unused]] const ItemType& boulder = ItemType::byName("boulder");
 	Simulation simulation;
 	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	Faction faction(L"tower of power");
 	area.m_hasStockPiles.registerFaction(faction);
 	area.m_hasStocks.addFaction(faction);
-	Actor& dwarf1 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 1, 1));
+	Actor& dwarf1 = simulation.createActor(ActorParamaters{
+		.species=AnimalSpecies::byName("dwarf"), 
+		.location=&area.getBlock(1, 1, 1),
+		.hasCloths=false,
+		.hasSidearm=false
+	});
 	dwarf1.setFaction(&faction);
 	StockPileObjectiveType objectiveType;
 	SUBCASE("basic")
@@ -163,16 +172,16 @@ TEST_CASE("stockpile")
 	SUBCASE("Team haul")
 	{
 		std::vector<ItemQuery> queries;
-		queries.emplace_back(chunk, lead);
+		queries.emplace_back(chunk, gold);
 		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
 		Block& stockpileLocation1 = area.getBlock(5, 5, 1);
 		Block& stockpileLocation2 = area.getBlock(5, 6, 1);
 		Block& chunkLocation = area.getBlock(1, 8, 1);
 		stockpile.addBlock(stockpileLocation1);
 		stockpile.addBlock(stockpileLocation2);
-		Item& chunk1 = simulation.createItemGeneric(chunk, lead, 1u);
+		Item& chunk1 = simulation.createItemGeneric(chunk, gold, 1u);
 		chunk1.setLocation(chunkLocation);
-		REQUIRE(!dwarf1.m_canPickup.canPickupAny(chunk1));
+		REQUIRE(!dwarf1.m_canPickup.maximumNumberWhichCanBeCarriedWithMinimumSpeed(chunk1, Config::minimumHaulSpeedInital));
 		area.m_hasStockPiles.at(faction).addItem(chunk1);
 		Actor& dwarf2 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 2, 1));
 		dwarf2.setFaction(&faction);
@@ -272,18 +281,18 @@ TEST_CASE("stockpile")
 		areaBuilderUtil::setSolidWall(area.getBlock(0, 6, 1), area.getBlock(8, 6, 1), wood);
 		Block& gateway = area.getBlock(9, 6, 1);
 		std::vector<ItemQuery> queries;
-		queries.emplace_back(chunk, lead);
+		queries.emplace_back(chunk, gold);
 		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
 		Block& stockpileLocation = area.getBlock(5, 5, 1);
 		Block& chunkLocation = area.getBlock(1, 5, 1);
 		Block& cartLocation = area.getBlock(8, 8, 1);
 		stockpile.addBlock(stockpileLocation);
-		Item& chunk1 = simulation.createItemGeneric(chunk, lead, 1u);
+		Item& chunk1 = simulation.createItemGeneric(chunk, gold, 1u);
 		chunk1.setLocation(chunkLocation);
 		Item& cart1 = simulation.createItemNongeneric(cart, wood, 30u, 0);
 		cart1.setLocation(cartLocation);
 		area.m_hasHaulTools.registerHaulTool(cart1);
-		REQUIRE(!dwarf1.m_canPickup.canPickupAny(chunk1));
+		REQUIRE(!dwarf1.m_canPickup.maximumNumberWhichCanBeCarriedWithMinimumSpeed(chunk1, Config::minimumHaulSpeedInital));
 		area.m_hasStockPiles.at(faction).addItem(chunk1);
 		StockPileObjectiveType objectiveType;
 		REQUIRE(objectiveType.canBeAssigned(dwarf1));
@@ -314,19 +323,19 @@ TEST_CASE("stockpile")
 	SUBCASE("haul tool destroyed")
 	{
 		std::vector<ItemQuery> queries;
-		queries.emplace_back(chunk, lead);
+		queries.emplace_back(boulder, peridotite);
 		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
 		Block& stockpileLocation = area.getBlock(5, 5, 1);
 		Block& chunkLocation = area.getBlock(1, 5, 1);
 		Block& cartLocation = area.getBlock(8, 8, 1);
 		stockpile.addBlock(stockpileLocation);
-		Item& chunk1 = simulation.createItemGeneric(chunk, lead, 1u);
-		chunk1.setLocation(chunkLocation);
+		Item& cargo = simulation.createItemGeneric(boulder, peridotite, 1u);
+		cargo.setLocation(chunkLocation);
 		Item& cart1 = simulation.createItemNongeneric(cart, wood, 30u, 0);
 		cart1.setLocation(cartLocation);
 		area.m_hasHaulTools.registerHaulTool(cart1);
-		REQUIRE(!dwarf1.m_canPickup.canPickupAny(chunk1));
-		area.m_hasStockPiles.at(faction).addItem(chunk1);
+		REQUIRE(!dwarf1.m_canPickup.canPickupAny(cargo));
+		area.m_hasStockPiles.at(faction).addItem(cargo);
 		StockPileObjectiveType objectiveType;
 		REQUIRE(objectiveType.canBeAssigned(dwarf1));
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 100);
@@ -360,8 +369,8 @@ TEST_CASE("stockpile")
 		simulation.doStep();
 		// Project has exhausted it's retry attempts.
 		REQUIRE(dwarf1.m_project == nullptr);
-		REQUIRE(!chunk1.m_reservable.isFullyReserved(&faction));
-		REQUIRE(!chunk1.m_canBeStockPiled.contains(faction));
+		REQUIRE(!cargo.m_reservable.isFullyReserved(&faction));
+		REQUIRE(!cargo.m_canBeStockPiled.contains(faction));
 		// Dwarf1 tries to find another stockpile job but cannot.
 		simulation.doStep();
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "stockpile");

@@ -1,4 +1,5 @@
 #include "editActorPanel.h"
+#include "displayData.h"
 #include "widgets.h"
 #include "window.h"
 #include "../engine/actor.h"
@@ -8,6 +9,7 @@
 #include <TGUI/Widgets/HorizontalLayout.hpp>
 #include <TGUI/Widgets/SpinControl.hpp>
 #include <regex>
+#include <string>
 EditActorView::EditActorView(Window& window) : m_window(window), m_panel(tgui::Panel::create()), m_actor(nullptr)
 {
 	m_window.getGui().add(m_panel);
@@ -68,7 +70,14 @@ void EditActorView::draw(Actor& actor)
 		m_actor->m_canGrow.setGrowthPercent(value);
 		update();
 	});
-
+	basicInfoGrid->addWidget(tgui::Label::create("faction"), 0, 8);
+	auto factionUI = widgetUtil::makeFactionSelectUI(*m_window.getSimulation(), L"none");
+	factionUI->setSelectedItem(m_actor->getFaction()->name);
+	factionUI->onItemSelect([this, update](const tgui::String factionName){
+		Faction& faction = m_window.getSimulation()->m_hasFactions.byName(factionName.toWideString());
+		m_actor->setFaction(&faction);
+	});
+	basicInfoGrid->addWidget(factionUI, 0, 9);
 	// Attributes.
 	layoutGrid->addWidget(tgui::Label::create("attributes"), ++gridCount, 1);
 	auto attributeGrid = tgui::Grid::create();
@@ -138,6 +147,20 @@ void EditActorView::draw(Actor& actor)
 		update();
 	});
 	attributeGrid->addWidget(agilityUI, 4, 3);
+	// Unencombered carry weight.
+	attributeGrid->addWidget(tgui::Label::create("unencombered carry weight"), 0, 4);
+	std::string localizedNumber = displayData::localizeNumber(actor.m_attributes.getUnencomberedCarryMass());
+	auto unencomberedCarryWeightUI = tgui::Label::create(localizedNumber);
+	attributeGrid->addWidget(unencomberedCarryWeightUI, 1, 4);
+	// Move speed.
+	attributeGrid->addWidget(tgui::Label::create("move speed"), 0, 5);
+	auto moveSpeedUI = tgui::Label::create(std::to_string(actor.m_attributes.getMoveSpeed()));
+	attributeGrid->addWidget(moveSpeedUI, 1, 5);
+	// Base combat score.
+	attributeGrid->addWidget(tgui::Label::create("base combat score"), 0, 6);
+	localizedNumber = displayData::localizeNumber(actor.m_attributes.getBaseCombatScore());
+	auto baseCombatScoreUI = tgui::Label::create(localizedNumber);
+	attributeGrid->addWidget(baseCombatScoreUI, 1, 6);
 	// Skills.
 	layoutGrid->addWidget(tgui::Label::create("skills"), ++gridCount, 1);
 	auto skillsGrid = tgui::Grid::create();

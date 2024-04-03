@@ -64,7 +64,7 @@ class SkillSet final
 {
 public:
 	SkillSet() = default;
-	SkillSet(const Json& data)
+	void load(const Json& data)
 	{
 		for(const Json& skillData : data["skills"])
 		{

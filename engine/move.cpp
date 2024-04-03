@@ -58,9 +58,14 @@ uint32_t ActorCanMove::getIndividualMoveSpeedWithAddedMass(Mass mass) const
 	Mass carryMass = m_actor.m_equipmentSet.getMass() + m_actor.m_canPickup.getMass() + mass;
 	Mass unencomberedCarryMass = m_actor.m_attributes.getUnencomberedCarryMass();
 	if(carryMass > unencomberedCarryMass)
-		output = util::scaleByFraction(output, unencomberedCarryMass, carryMass);
+	{
+		float ratio = (float)unencomberedCarryMass / (float)carryMass;
+		if(ratio < Config::minimumOverloadRatio)
+			return 0;
+		output = std::ceil(output * ratio * ratio);
+	}
 	output = util::scaleByInversePercent(output, m_actor.m_body.getImpairMovePercent());
-	return output;
+	return std::ceil(output);
 }
 void ActorCanMove::updateIndividualSpeed()
 {
@@ -168,6 +173,8 @@ void ActorCanMove::scheduleMove()
 }
 void ActorCanMove::setDestination(Block& destination, bool detour, bool adjacent, bool unreserved, bool reserve)
 {
+	if(reserve)
+		assert(unreserved);
 	clearPath();
 	// If adjacent path then destination isn't known until it's completed.
 	if(!adjacent)
