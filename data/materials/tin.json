@@ -1,0 +1,17 @@
+{
+  "name": "tin",
+  "density": 7.31,
+  "hardness": 20,
+  "transparent": false,
+  "meltingPoint": 505,
+  "meltsInto": "molten tin",
+  "spoilData": [
+    {
+      "materialType": "tin",
+      "itemType": "chunk",
+      "chance": 100,
+      "min": 4,
+      "max": 5
+    }
+  ]
+}

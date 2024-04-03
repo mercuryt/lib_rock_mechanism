@@ -88,8 +88,12 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep()
 			m_project.setDelayOn();
 		}
 		else
+		{
 			// Nothing haulable found, wait a bit and try again.
+			if(m_project.m_minimumMoveSpeed > 1)
+				--m_project.m_minimumMoveSpeed;
 			m_project.m_tryToHaulEvent.schedule(Config::stepsFrequencyToLookForHaulSubprojects, m_project);
+		}
 	}
 	else if(!m_haulProjectParamaters.validate() && m_project.m_toPickup.at(m_haulProjectParamaters.toHaul).second >= m_haulProjectParamaters.quantity)
 	{
@@ -330,7 +334,7 @@ void ProjectTryToAddWorkersThreadedTask::resetProjectCounts()
 	m_project.m_toPickup.clear();
 }
 // Derived classes are expected to provide getDuration, getConsumedItems, getUnconsumedItems, getByproducts, onDelay, offDelay, and onComplete.
-Project::Project(const Faction* f, Block& l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback) : m_finishEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToReserveEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_tryToAddWorkersThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_canReserve(f), m_maxWorkers(mw), m_delay(false), m_haulRetries(0), m_requirementsLoaded(false), m_location(l), m_faction(*f)
+Project::Project(const Faction* f, Block& l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback) : m_finishEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToReserveEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_tryToAddWorkersThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_canReserve(f), m_maxWorkers(mw), m_delay(false), m_haulRetries(0), m_requirementsLoaded(false), m_minimumMoveSpeed(Config::minimumHaulSpeedInital), m_location(l), m_faction(*f)
 {
 	m_location.m_reservable.reserveFor(m_canReserve, 1u, std::move(locationDishonorCallback));
 }
@@ -338,6 +342,7 @@ Project::Project(const Json& data, DeserializationMemo& deserializationMemo) : m
 	m_canReserve(&deserializationMemo.faction(data["faction"].get<std::wstring>())),
 	m_maxWorkers(data["maxWorkers"].get<uint32_t>()), m_delay(data["delay"].get<bool>()), 
 	m_haulRetries(data["haulRetries"].get<uint8_t>()), m_requirementsLoaded(data["requirementsLoaded"].get<bool>()), 
+	m_minimumMoveSpeed(data["minimumMoveSpeed"].get<uint32_t>()),
 	m_location(deserializationMemo.m_simulation.getBlockForJsonQuery(data["location"])), 
 	m_faction(deserializationMemo.faction(data["faction"].get<std::wstring>())) 
 { 
@@ -422,7 +427,8 @@ Json Project::toJson() const
 		{"delay", m_delay},
 		{"haulRetries", m_haulRetries},
 		{"location", m_location.positionToJson()},
-		{"requirementsLoaded", m_requirementsLoaded}
+		{"requirementsLoaded", m_requirementsLoaded},
+		{"minimumMoveSpeed", m_minimumMoveSpeed},
 	});
 	if(!m_workerCandidatesAndTheirObjectives.empty())
 	{

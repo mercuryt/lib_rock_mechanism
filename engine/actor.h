@@ -26,7 +26,6 @@
 #include "types.h"
 #include "uniform.h"
 
-#include <TGUI/Loading/DataIO.hpp>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -46,17 +45,17 @@ struct ActorParamaters
 	std::wstring name = L"";
 	DateTime birthDate = {0,0,0};
 	Step birthStep = 0;
-	Percent percentGrown = 0;
+	Percent percentGrown = nullPercent;
 	Block* location = nullptr;
 	const Faction* faction = nullptr;
-	Percent percentHunger = 0;
+	Percent percentHunger = nullPercent;
 	bool needsEat = false;
-	Percent percentTired = 0;
+	Percent percentTired = nullPercent;
 	bool needsSleep = false;
-	Percent percentThirst = 0;
+	Percent percentThirst = nullPercent;
 	bool needsDrink = false;
 	bool hasCloths = true;
-	bool hasSidearm = true;
+	bool hasSidearm = false;
 	bool hasLongarm = false;
 	bool hasRangedWeapon = false;
 	bool hasLightArmor = false;
@@ -134,6 +133,7 @@ public:
 	Mass singleUnitMass() const { return getMass(); }
 	const Faction* getFaction() const { return m_faction; }
 	uint32_t getAgeInYears() const;
+	Step getAge() const;
 	bool allBlocksAtLocationAndFacingAreReservable(const Block& location, Facing facing) const;
 	// May return nullptr.
 	EventSchedule& getEventSchedule();

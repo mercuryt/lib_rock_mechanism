@@ -114,11 +114,9 @@ public:
 	Item& getItem();
 	Actor& getActor();
 	[[nodiscard]] uint32_t canPickupQuantityOf(const HasShape& hasShape) const;
-	[[nodiscard]] uint32_t canPickupQuantityOf(const Item& item) const;
-	[[nodiscard]] uint32_t canPickupQuantityOf(const Actor& actor) const;
-	[[nodiscard]] uint32_t canPickupQuantityOf(const ItemType& itemType, const MaterialType& materialType) const;
-	[[nodiscard]] uint32_t canPickupQuantityWithSingeUnitMass(uint32_t unitMass) const;
-	[[nodiscard]] bool canPickupAny(const HasShape& hasShape) const { return canPickupQuantityOf(hasShape) != 0; }
+	[[nodiscard]] uint32_t canPickupQuantityOf(const ItemType& itemType, const MaterialType& materialType, uint32_t max) const;
+	[[nodiscard]] bool canPickupAny(const HasShape& hasShape) const;
+	[[nodiscard]] bool canPickupAnyUnencombered(const HasShape& hasShape) const;
 	[[nodiscard]] bool isCarryingAnything() const { return m_carrying != nullptr; }
 	[[nodiscard]] bool isCarrying(const HasShape& hasShape) const { return &hasShape == m_carrying; }
 	[[nodiscard]] bool isCarryingGeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity) const;

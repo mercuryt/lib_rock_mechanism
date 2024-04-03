@@ -452,6 +452,13 @@ void Draw::imageOnBlockSouthAlign(const Block& block, std::string name, const sf
 	pair.first.setRotation(180);
 	spriteOnBlock(block, pair.first, color);
 }
+void Draw::progressBarOnBlock(const Block& block, Percent progress)
+{
+	sf::RectangleShape rectangle(sf::Vector2f(util::scaleByPercent(m_window.m_scale, progress), (float)m_window.m_scale / (float)displayData::defaultScale));
+	square.setFillColor(displayData::progressBarColor);
+	square.setPosition(static_cast<float>(block.m_x * m_window.m_scale), static_cast<float>(block.m_y * m_window.m_scale));
+	m_window.getRenderWindow().draw(square);
+}
 void Draw::selected(Block& block) { outlineOnBlock(block, displayData::selectColor); }
 void Draw::outlineOnBlock(const Block& block, const sf::Color color, float thickness)
 {

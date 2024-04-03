@@ -13,10 +13,11 @@
 #include "wait.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <iostream>
 Percent ActorParamaters::getPercentGrown()
 {
-	if(!percentGrown)
+	if(percentGrown == nullPercent)
 	{
 		Percent percentLifeTime = simulation->m_random.getInRange(0, 100);
 		// Using util::scaleByPercent and util::fractionToPercent give the wrong result here for some reason.
@@ -33,24 +34,32 @@ std::wstring ActorParamaters::getName()
 		name = util::stringToWideString(species.name) + std::to_wstring(getId());
 	return name;
 }
-
 Step ActorParamaters::getBirthStep()
 {
 	if(!birthStep)
-		getPercentGrown();
+	{
+		if(percentGrown == nullPercent)
+			getPercentGrown();
+		else
+		{
+			// Pick an age for the given percent grown.
+			Step age =  percentGrown < 95 ?
+				util::scaleByPercent(species.stepsTillFullyGrown, percentGrown) :
+				simulation->m_random.getInRange(species.stepsTillFullyGrown, species.deathAgeSteps[1]);
+			birthStep = simulation->m_step - age;
+		}
+	}
 	return birthStep;
 }
-
 ActorId ActorParamaters::getId()
 {
 	if(!id)
-		id = simulation->m_nextItemId++;
+		id = simulation->m_nextActorId++;
 	return id;
 }
-
 Percent ActorParamaters::getPercentThirst()
 {
-	if(!percentThirst)
+	if(percentThirst == nullPercent)
 	{
 		percentThirst = simulation->m_random.getInRange(0, 100);
 		needsDrink = simulation->m_random.percentChance(10);
@@ -59,7 +68,7 @@ Percent ActorParamaters::getPercentThirst()
 }
 Percent ActorParamaters::getPercentHunger()
 {
-	if(!percentHunger)
+	if(percentHunger == nullPercent)
 	{
 		percentHunger = simulation->m_random.getInRange(0, 100);
 		needsEat = simulation->m_random.percentChance(10);
@@ -68,7 +77,7 @@ Percent ActorParamaters::getPercentHunger()
 }
 Percent ActorParamaters::getPercentTired()
 {
-	if(!percentTired)
+	if(percentTired == nullPercent)
 	{
 		percentTired = simulation->m_random.getInRange(0, 100);
 		needsSleep = simulation->m_random.percentChance(10);
@@ -113,8 +122,8 @@ void ActorParamaters::generateEquipment(Actor& actor)
 			generate(beltType, leather);
 		}
 	}
-	static const ItemType& halfHelmType = ItemType::byName("halfHelm");
-	static const ItemType& breastPlateType = ItemType::byName("breastPlate");
+	static const ItemType& halfHelmType = ItemType::byName("half helm");
+	static const ItemType& breastPlateType = ItemType::byName("breast plate");
 	if(hasLightArmor && !hasHeavyArmor)
 	{
 		if(random.chance(0.8))
@@ -132,7 +141,7 @@ void ActorParamaters::generateEquipment(Actor& actor)
 		}
 		else if(random.chance(0.6))
 		{
-			static const ItemType& chainMailShirtType = ItemType::byName("chainMailShirt");
+			static const ItemType& chainMailShirtType = ItemType::byName("chain mail shirt");
 			generateMetal(chainMailShirtType);
 		}
 	}
@@ -140,7 +149,7 @@ void ActorParamaters::generateEquipment(Actor& actor)
 	{
 		if(random.chance(0.75))
 		{
-			static const ItemType& fullHelmType = ItemType::byName("fullHelm");
+			static const ItemType& fullHelmType = ItemType::byName("full helm");
 			generateMetal(fullHelmType);
 		}
 		else if(random.chance(0.9))
@@ -235,6 +244,8 @@ Actor::Actor(ActorParamaters params) : HasShape(*params.simulation, params.speci
 			setLocation(*params.location);
 			m_location->m_area->m_hasActors.add(*this);
 		}
+		if(m_species.sentient)
+			params.generateEquipment(*this);
 	}
 Actor::Actor(const Json& data, DeserializationMemo& deserializationMemo) :
 	HasShape(data, deserializationMemo),
@@ -250,8 +261,13 @@ Actor::Actor(const Json& data, DeserializationMemo& deserializationMemo) :
 	m_hasObjectives(*this), m_canReserve(m_faction), m_stamina(*this, data["stamina"].get<uint32_t>()), m_hasUniform(*this), 
 	m_visionRange(m_species.visionRange)
 { 
+	if(data.contains("skills"))
+		m_skillSet.load(data["skills"]);
 	if(data.contains("location"))
+	{
 		setLocation(deserializationMemo.blockReference(data["location"]));
+		m_location->m_area->m_hasActors.add(*this);
+	}
 }
 Json Actor::toJson() const
 {
@@ -283,6 +299,8 @@ Json Actor::toJson() const
 		data["canReserve"] = m_canReserve.toJson();
 	if(m_hasUniform.exists())
 		data["uniform"] = &m_hasUniform.get();
+	if(!m_skillSet.m_skills.empty())
+		data["skills"] = m_skillSet.toJson();
 	return data;
 }
 void Actor::setLocation(Block& block)
@@ -383,6 +401,10 @@ uint32_t Actor::getAgeInYears() const
 	if(now.day > birthDate.day)
 		++differenceYears;
 	return differenceYears;
+}
+Step Actor::getAge() const
+{
+	return const_cast<Actor*>(this)->getSimulation().m_step - m_birthStep;
 }
 bool Actor::allBlocksAtLocationAndFacingAreReservable(const Block& location, Facing facing) const
 {

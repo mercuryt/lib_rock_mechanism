@@ -97,7 +97,7 @@ Block* DramaArc::getEntranceToArea(Area& area, const Shape& shape, const MoveTyp
 		}
 		if(blocks.empty())
 			return nullptr;
-		candidate = blocks.at(random.getInRange(0, blocks.size() - 1));
+		candidate = random.getInVector(blocks);
 	}
 	while (!blockIsConnectedToAtLeast(*candidate, shape, moveType, minimumConnectedCount));
 	assert(candidate);

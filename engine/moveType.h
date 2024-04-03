@@ -5,6 +5,7 @@
 #include <string>
 #include <list>
 #include <unordered_map>
+#include <unordered_set>
 
 struct MoveType
 {
@@ -13,7 +14,10 @@ struct MoveType
 	uint32_t climb;
 	bool jumpDown;
 	bool fly;
+	bool breathless;
+	bool onlyBreathsFluids;
 	std::unordered_map<const FluidType*, uint32_t> swim;
+	std::unordered_set<const FluidType*> breathableFluids;
 	// Infastructure.
 	bool operator==(const MoveType& moveType) const { return this == &moveType; }
 	static const MoveType& byName(std::string name);

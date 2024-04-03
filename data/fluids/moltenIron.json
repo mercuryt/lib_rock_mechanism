@@ -1,0 +1,6 @@
+{
+  "name": "molten iron",
+  "viscosity": 100,
+  "density": 7.1,
+  "freezesInto": "iron"
+}

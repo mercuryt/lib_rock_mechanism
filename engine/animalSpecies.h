@@ -1,6 +1,7 @@
 #pragma once
 #include "shape.h"
 #include "moveType.h"
+#include "types.h"
 #include "util.h"
 #include "body.h"
 #include <string>
@@ -13,7 +14,7 @@ struct AnimalSpecies
 	const std::array<uint32_t, 3> dextarity;
 	const std::array<uint32_t, 3> agility;
 	const std::array<Mass, 3> mass;
-	const std::array<uint32_t, 2> deathAgeSteps;
+	const std::array<Step, 2> deathAgeSteps;
 	const Step stepsTillFullyGrown;
 	const Step stepsTillDieWithoutFood;
 	const Step stepsEatFrequency;
@@ -29,7 +30,7 @@ struct AnimalSpecies
 	const bool eatsMeat;
 	const bool eatsLeaves;
 	const bool eatsFruit;
-	const uint32_t visionRange;
+	const DistanceInBlocks visionRange;
 	uint32_t bodyScale;
 	const MaterialType& materialType;
 	const MoveType& moveType;

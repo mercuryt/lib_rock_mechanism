@@ -4,6 +4,7 @@
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/plant.h"
+#include "actor.h"
 TEST_CASE("basicNeedsSentient")
 {
 	static const MaterialType& dirt = MaterialType::byName("dirt");
@@ -13,7 +14,14 @@ TEST_CASE("basicNeedsSentient")
 	Simulation simulation;
 	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
-	Actor& actor = simulation.createActor(dwarf, area.getBlock(1, 1, 2), 50);
+	Actor& actor = simulation.createActor(ActorParamaters{
+		.species=dwarf, 
+		.percentGrown=50,
+		.location=&area.getBlock(1, 1, 2), 
+		.percentHunger=0,
+		.percentTired=0,
+		.percentThirst=0,
+	});
 	actor.setFaction(&faction);
 	REQUIRE(actor.m_canGrow.isGrowing());
 	SUBCASE("drink from pond")

@@ -1,0 +1,17 @@
+{
+  "name": "iron",
+  "density": 7.87,
+  "hardness": 100,
+  "transparent": false,
+  "meltingPoint": 1811,
+  "meltsInto": "molten iron",
+  "spoilData": [
+    {
+      "materialType": "iron",
+      "itemType": "chunk",
+      "chance": 100,
+      "min": 4,
+      "max": 5
+    }
+  ]
+}

@@ -4,6 +4,7 @@
 #include "hasShape.h"
 #include "item.h"
 #include "area.h"
+#include "materialType.h"
 #include "project.h"
 #include "reservable.h"
 #include <memory>
@@ -213,28 +214,28 @@ Actor& CanPickup::getActor()
 }
 uint32_t CanPickup::canPickupQuantityOf(const HasShape& hasShape) const
 {
-	if(hasShape.isItem())
-		return canPickupQuantityOf(static_cast<const Item&>(hasShape));
-	else
+	return maximumNumberWhichCanBeCarriedWithMinimumSpeed(hasShape, 1);
+}
+uint32_t CanPickup::canPickupQuantityOf(const ItemType& itemType, const MaterialType& materialType, uint32_t max) const
+{
+	Mass unitMass = itemType.volume * materialType.density;
+	uint32_t output = 1;
+	while(output < max)
 	{
-		assert(hasShape.isActor());
-		return canPickupQuantityOf(static_cast<const Actor&>(hasShape));
+		if(!m_actor.m_canMove.getIndividualMoveSpeedWithAddedMass(unitMass * output))
+			return output - 1;
+		++output;
 	}
+	assert(output == max);
+	return output;
 }
-uint32_t CanPickup::canPickupQuantityOf(const Actor& actor) const
-{ 
-	return canPickupQuantityWithSingeUnitMass(actor.getMass());
-}
-uint32_t CanPickup::canPickupQuantityOf(const Item& item) const { return canPickupQuantityOf(item.m_itemType, item.m_materialType); }
-uint32_t CanPickup::canPickupQuantityOf(const ItemType& itemType, const MaterialType& materialType) const
+bool CanPickup::canPickupAny(const HasShape& hasShape) const
 {
-	return canPickupQuantityWithSingeUnitMass(itemType.volume * materialType.density);
+	return m_actor.m_canMove.getIndividualMoveSpeedWithAddedMass(hasShape.singleUnitMass()) > 0;
 }
-uint32_t CanPickup::canPickupQuantityWithSingeUnitMass(uint32_t unitMass) const
+bool CanPickup::canPickupAnyUnencombered(const HasShape& hasShape) const
 {
-	uint32_t max = m_actor.m_attributes.getUnencomberedCarryMass();
-	uint32_t current = (m_actor.m_equipmentSet.getMass() + m_actor.m_canPickup.getMass());
-	return (max - current) / unitMass;
+	return m_actor.m_canMove.getIndividualMoveSpeedWithAddedMass(hasShape.singleUnitMass()) == m_actor.m_canMove.getMoveSpeed();
 }
 bool CanPickup::isCarryingGeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity) const
 {

@@ -20,6 +20,13 @@ unsigned int Random::getInRange(unsigned int lowest, unsigned int highest)
 	std::uniform_int_distribution<unsigned int> dist(lowest, highest);
 	return dist(rng);
 }
+unsigned long Random::getInRange(unsigned long lowest, unsigned long highest)
+{
+	assert(lowest <= highest);
+	//TODO: should uniform distribution be static?
+	std::uniform_int_distribution<unsigned long> dist(lowest, highest);
+	return dist(rng);
+}
 float Random::getInRange(float lowest, float highest)
 {
 	assert(lowest <= highest);

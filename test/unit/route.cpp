@@ -4,6 +4,7 @@
 #include "../../engine/actor.h"
 #include "../../engine/materialType.h"
 #include "../../engine/simulation.h"
+#include "config.h"
 TEST_CASE("route_10_10_10")
 {
 	Simulation simulation(L"", 1);
@@ -295,6 +296,7 @@ TEST_CASE("route_5_5_5")
 	static const BlockFeatureType& ramp = BlockFeatureType::ramp;
 	static const BlockFeatureType& door = BlockFeatureType::door;
 	static const BlockFeatureType& fortification = BlockFeatureType::fortification;
+	static const FluidType& water = FluidType::byName("water");
 	SUBCASE("walking path blocked by one height cliff if not climbing")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
@@ -586,5 +588,20 @@ TEST_CASE("route_5_5_5")
 		REQUIRE(detour.isDetour());
 		detour.readStep();
 		REQUIRE(detour.getFindsPath().getPath().size() == 6);
+	}
+	SUBCASE("air breathers cannot dive")
+	{
+		areaBuilderUtil::setSolidLayers(area, 0, 3, marble);
+		Block& surface = area.getBlock(3,3,3);
+		Block& deep = area.getBlock(3,3,2);
+		surface.setNotSolid();
+		deep.setNotSolid();
+		surface.addFluid(Config::maxBlockVolume, water);
+		deep.addFluid(Config::maxBlockVolume, water);
+		Actor& actor = simulation.createActor(dwarf, area.getBlock(1,1,4));
+		actor.m_canMove.setDestination(deep);
+		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
+		pathThreadedTask.readStep();
+		REQUIRE(pathThreadedTask.getFindsPath().getPath().empty());
 	}
 }

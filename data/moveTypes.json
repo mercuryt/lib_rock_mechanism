@@ -26,6 +26,8 @@
     "swim": {
       "water": 50
     },
+    "breathableFluids": [ "water" ],
+    "onlyBreathsFluids": true,
     "climb": 0,
     "jumpDown": false,
     "fly": false
@@ -53,6 +55,7 @@
     "swim": {
       "mercury": 50
     },
+    "breathableFluids": [ "mercury" ],
     "climb": 0,
     "jumpDown": false,
     "fly": false
@@ -83,6 +86,7 @@
     "name": "roll",
     "walk": true,
     "swim": null,
+    "breathless": "true",
     "climb": 0,
     "jumpDown": false,
     "fly": false
@@ -90,6 +94,7 @@
     "name": "none",
     "walk": true,
     "swim": null,
+    "breathless": "true",
     "climb": 0,
     "jumpDown": false,
     "fly": false

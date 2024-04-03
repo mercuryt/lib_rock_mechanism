@@ -63,10 +63,15 @@ void definitions::loadMoveTypes()
 			moveTypeData["walk"].get<bool>(),
 			moveTypeData["climb"].get<uint32_t>(),
 			moveTypeData["jumpDown"].get<bool>(),
-			moveTypeData["fly"].get<bool>()
+			moveTypeData["fly"].get<bool>(),
+			moveTypeData.contains("breathless"),
+			moveTypeData.contains("onlyBreathsFluids")
 		);
 		for(auto& pair : moveTypeData["swim"].items())
 			moveTypeDataStore.back().swim[&FluidType::byName(pair.key())] = pair.value();
+		if(moveTypeData.contains("breathableFluids"))
+			for(const Json& name : moveTypeData["breathableFluids"])
+				moveTypeDataStore.back().breathableFluids.insert(&FluidType::byName(name));
 	}
 }
 void definitions::loadMaterialTypes()
@@ -439,7 +444,7 @@ void definitions::loadAnimalSpecies()
 		if(file.path().extension() != ".json")
 			continue;
 		Json data = tryParse(file.path());
-		auto deathAge = data["deathAgeDays"].get<std::array<uint32_t, 2>>();
+		auto deathAge = data["deathAgeDays"].get<std::array<Step, 2>>();
 		deathAge[0] = deathAge[0] * Config::stepsPerDay;
 		deathAge[1] = deathAge[1] * Config::stepsPerDay;
 		AnimalSpecies& animalSpecies = animalSpeciesDataStore.emplace_back(

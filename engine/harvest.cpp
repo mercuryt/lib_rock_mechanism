@@ -17,8 +17,9 @@ void HarvestEvent::execute()
 	Actor& actor = m_harvestObjective.m_actor;
 	static const MaterialType& plantMatter = MaterialType::byName("plant matter");
 	const ItemType& fruitItemType = plant.m_plantSpecies.harvestData->fruitItemType;
-	uint32_t maxHarvestItemsCanCarry = actor.m_canPickup.canPickupQuantityOf(fruitItemType, plantMatter);
-	uint32_t numberItemsHarvested = std::min(maxHarvestItemsCanCarry, plant.m_quantityToHarvest);
+	if(!plant.m_quantityToHarvest)
+		actor.m_hasObjectives.cannotCompleteTask();
+	uint32_t numberItemsHarvested = actor.m_canPickup.canPickupQuantityOf(fruitItemType, plantMatter, plant.m_quantityToHarvest);
 	assert(numberItemsHarvested != 0);
 	//TODO: apply horticulture skill.
 	plant.harvest(numberItemsHarvested);

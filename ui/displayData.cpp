@@ -32,7 +32,7 @@ sf::Color colorFromJson(const Json& data)
 std::string displayData::localizeNumber(double number)
 {
 	static std::locale cpploc{""};
-	static std::stringstream ss;
+	std::stringstream ss;
 	ss.imbue(cpploc);
 	ss << number;
 	return ss.str();

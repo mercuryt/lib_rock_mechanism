@@ -90,6 +90,8 @@ class Project
 	// Targets for haul subprojects awaiting dispatch.
 	std::unordered_map<HasShape*, std::pair<ProjectRequirementCounts*, uint32_t>> m_toPickup;
 	bool m_requirementsLoaded;
+	//TODO: start high and tick down.
+	uint32_t m_minimumMoveSpeed;
 	// To be called by addWorkerThreadedTask, after validating the worker has access to the project location.
 	void addWorker(Actor& actor, Objective& objective);
 	// Load requirements from child class.
@@ -145,7 +147,7 @@ public:
 	void clearReservations();
 	// TODO: minimum speed decreses with failed attempts to generate haul subprojects.
 	[[nodiscard]] const Faction& getFaction() { return m_faction; }
-	[[nodiscard]] uint32_t getMinimumHaulSpeed() const { return Config::minimumHaulSpeed; }
+	[[nodiscard]] uint32_t getMinimumHaulSpeed() const { return m_minimumMoveSpeed; }
 	[[nodiscard]] bool reservationsComplete() const;
 	[[nodiscard]] bool deliveriesComplete() const;
 	[[nodiscard]] bool isOnDelay() { return m_delay; }

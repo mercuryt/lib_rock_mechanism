@@ -1,7 +1,7 @@
 {
 	"name": "boulder",
 	"shape": "oneByOneHalf",
-	"volume": 28000,
+	"volume": 35000,
 	"generic": true,
 	"value": 0
 }

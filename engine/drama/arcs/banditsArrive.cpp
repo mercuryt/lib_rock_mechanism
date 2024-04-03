@@ -42,7 +42,7 @@ void BanditsArriveDramaArc::callback()
 		Block& destination = m_area->getMiddleAtGroundLevel();
 		if(!m_leader)
 		{
-			const AnimalSpecies& species = *sentientSpecies.at(random.getInRange(0, sentientSpecies.size() - 1));
+			const AnimalSpecies& species = *random.getInVector(sentientSpecies);
 			Block* location = findLocationOnEdgeForNear(*species.shapes.back(), species.moveType, *m_entranceBlock, maxBlockDistance, exclude);
 			exclude.insert(location);
 			ActorParamaters params{
@@ -65,7 +65,7 @@ void BanditsArriveDramaArc::callback()
 		// Spawn.
 		while(m_quantity--)
 		{
-			const AnimalSpecies& species = random.chance(0.5) ? m_leader->m_species : *sentientSpecies.at(random.getInRange(0, sentientSpecies.size() - 1));
+			const AnimalSpecies& species = random.chance(0.5) ? m_leader->m_species : *random.getInVector(sentientSpecies);
 			Block* location = findLocationOnEdgeForNear(*species.shapes.back(), species.moveType, *m_entranceBlock, maxBlockDistance, exclude);
 			if(location)
 			{
