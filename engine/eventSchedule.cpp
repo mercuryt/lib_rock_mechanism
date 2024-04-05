@@ -14,6 +14,7 @@ void ScheduledEvent::cancel()
        	m_simulation.m_eventSchedule.unschedule(*this); 
 }
 Step ScheduledEvent::remaningSteps() const { return m_step - m_simulation.m_step; }
+Step ScheduledEvent::elapsedSteps() const { return m_simulation.m_step - m_startStep; }
 Percent ScheduledEvent::percentComplete() const
 {
 	return fractionComplete() * 100u;
@@ -60,3 +61,4 @@ uint32_t EventSchedule::count()
 				output++;
 	return output;
 }
+Step EventSchedule::simulationStep() const { return m_simulation.m_step; }

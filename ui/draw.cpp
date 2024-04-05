@@ -10,6 +10,7 @@
 #include "../engine/item.h"
 #include "../engine/plant.h"
 #include "displayData.h"
+#include "interpolate.h"
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/System/Vector2.hpp>
@@ -455,9 +456,9 @@ void Draw::imageOnBlockSouthAlign(const Block& block, std::string name, const sf
 void Draw::progressBarOnBlock(const Block& block, Percent progress)
 {
 	sf::RectangleShape rectangle(sf::Vector2f(util::scaleByPercent(m_window.m_scale, progress), (float)m_window.m_scale / (float)displayData::defaultScale));
-	square.setFillColor(displayData::progressBarColor);
-	square.setPosition(static_cast<float>(block.m_x * m_window.m_scale), static_cast<float>(block.m_y * m_window.m_scale));
-	m_window.getRenderWindow().draw(square);
+	rectangle.setFillColor(displayData::progressBarColor);
+	rectangle.setPosition(static_cast<float>(block.m_x * m_window.m_scale), static_cast<float>(block.m_y * m_window.m_scale));
+	m_window.getRenderWindow().draw(rectangle);
 }
 void Draw::selected(Block& block) { outlineOnBlock(block, displayData::selectColor); }
 void Draw::outlineOnBlock(const Block& block, const sf::Color color, float thickness)
@@ -652,7 +653,10 @@ Facing Draw::rampOrStairsFacing(const Block& block) const
 	Facing backup = 0;
 	if(block.getBlockNorth() && canConnectToAbove(*block.getBlockNorth()))
 	{
-		if(!block.getBlockSouth()->isSolid() && block.getBlockSouth()->m_hasShapes.canStandIn())
+		if(!block.getBlockSouth()->isSolid() && block.getBlockSouth()->m_hasShapes.canStandIn() &&
+			!block.getBlockSouth()->m_hasBlockFeatures.contains(BlockFeatureType::stairs) &&
+			!block.getBlockSouth()->m_hasBlockFeatures.contains(BlockFeatureType::ramp)
+		)
 			return 0;
 	}
 	if(block.getBlockEast() && canConnectToAbove(*block.getBlockEast()))
@@ -664,7 +668,10 @@ Facing Draw::rampOrStairsFacing(const Block& block) const
 	}
 	if(block.getBlockSouth() && canConnectToAbove(*block.getBlockSouth()))
 	{
-		if(!block.getBlockNorth()->isSolid() && block.getBlockNorth()->m_hasShapes.canStandIn())
+		if(!block.getBlockNorth()->isSolid() && block.getBlockNorth()->m_hasShapes.canStandIn() &&
+			!block.getBlockNorth()->m_hasBlockFeatures.contains(BlockFeatureType::stairs) &&
+			!block.getBlockNorth()->m_hasBlockFeatures.contains(BlockFeatureType::ramp)
+		)
 			return 2;
 		else
 			backup = 2;

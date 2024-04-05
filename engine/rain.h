@@ -25,6 +25,7 @@ public:
 	void stop();
 	void writeStep();
 	void scheduleRestart();
+	void disable();
 	[[nodiscard]] bool isRaining() const { return m_intensityPercent != 0; }
 	[[nodiscard]] const FluidType& getFluidType() const { assert(m_currentlyRainingFluidType); return *m_currentlyRainingFluidType; }
 	[[nodiscard]] Percent getIntensityPercent() const { return m_intensityPercent; }

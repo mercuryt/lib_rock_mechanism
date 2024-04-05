@@ -28,11 +28,11 @@ a* A block. Contains either a single type of material in 'solid' form or arbitra
 #include "fire.h"
 #include "hasShape.h"
 #include "types.h"
+#include "project.h"
 
 class Area;
 class Item;
 class Actor;
-class BlockHasActors;
 
 // Fluid type and volume pairs are sorted by density, low to high.
 // This is useful for resolving overfill.
@@ -87,6 +87,7 @@ public:
 	BlockIsPartOfStockPiles m_isPartOfStockPiles;
 	IsPartOfFarmField m_isPartOfFarmField;
 	BlockHasTemperature m_blockHasTemperature;
+	BlockHasProjects m_hasProjects;
 
 	Block();
 	Block(const Block&) = delete;

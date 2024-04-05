@@ -337,6 +337,7 @@ void ProjectTryToAddWorkersThreadedTask::resetProjectCounts()
 Project::Project(const Faction* f, Block& l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback) : m_finishEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToReserveEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_tryToAddWorkersThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_canReserve(f), m_maxWorkers(mw), m_delay(false), m_haulRetries(0), m_requirementsLoaded(false), m_minimumMoveSpeed(Config::minimumHaulSpeedInital), m_location(l), m_faction(*f)
 {
 	m_location.m_reservable.reserveFor(m_canReserve, 1u, std::move(locationDishonorCallback));
+	m_location.m_hasProjects.add(*this);
 }
 Project::Project(const Json& data, DeserializationMemo& deserializationMemo) : m_finishEvent(deserializationMemo.m_simulation.m_eventSchedule), m_tryToHaulEvent(deserializationMemo.m_simulation.m_eventSchedule), m_tryToReserveEvent(deserializationMemo.m_simulation.m_eventSchedule), m_tryToHaulThreadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine), m_tryToAddWorkersThreadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine), 
 	m_canReserve(&deserializationMemo.faction(data["faction"].get<std::wstring>())),
@@ -398,6 +399,7 @@ Project::Project(const Json& data, DeserializationMemo& deserializationMemo) : m
 	if(data.contains("tryToAddWorkersThreadedTask"))
 		m_tryToAddWorkersThreadedTask.create(*this);
 	deserializationMemo.m_projects[data["address"].get<uintptr_t>()] = this;
+	m_location.m_hasProjects.add(*this);
 }
 void Project::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
 {
@@ -690,8 +692,14 @@ void Project::scheduleEvent(Step start)
 {
 	if(start == 0)
 		start = m_location.m_area->m_simulation.m_step;
-	m_finishEvent.maybeUnschedule();
-	uint32_t delay = util::scaleByPercent(getDuration(), 100u - m_finishEvent.percentComplete());
+	Step delay = getDuration();
+	if(m_finishEvent.exists())
+	{
+		Percent complete = m_finishEvent.percentComplete();
+		m_finishEvent.unschedule();
+		assert(complete < 100);
+		delay = util::scaleByPercent(delay, 100 - complete);
+	}
 	m_finishEvent.schedule(delay, *this, start);
 }
 void Project::haulSubprojectComplete(HaulSubproject& haulSubproject)
@@ -770,6 +778,7 @@ void Project::clearReservations()
 Project::~Project()
 {
 	//assert(m_workers.empty());
+	m_location.m_hasProjects.remove(*this);
 }
 // For testing.
 bool Project::hasCandidate(const Actor& actor) const
@@ -795,4 +804,28 @@ std::vector<std::pair<Actor*, Objective*>> Project::getWorkersAndCandidatesWithO
 	for(auto& pair : m_workerCandidatesAndTheirObjectives)
 		output.push_back(pair);
 	return output;
+}
+void BlockHasProjects::add(Project& project)
+{
+	const Faction* faction = &project.getFaction();
+	assert(!m_data.contains(faction) || !m_data.at(faction).contains(&project));
+	m_data[faction].insert(&project);
+}
+void BlockHasProjects::remove(Project& project)
+{
+	const Faction* faction = &project.getFaction();
+	assert(m_data.contains(faction) && m_data.at(faction).contains(&project));
+	if(m_data[faction].size() == 1)
+		m_data.erase(faction);
+	else
+		m_data[faction].erase(&project);
+}
+Percent BlockHasProjects::getProjectPercentComplete(Faction& faction) const
+{
+	if(!m_data.contains(&faction))
+		return 0;
+	for(Project* project : m_data.at(&faction))
+		if(project->getPercentComplete())
+			return project->getPercentComplete();
+	return 0;
 }

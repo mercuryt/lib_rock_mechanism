@@ -3,42 +3,37 @@
 #include "eventSchedule.h"
 #include "eventSchedule.hpp"
 class AnimalGrowthEvent;
-class AnimalGrowthUpdateEvent;
 class Actor;
 class CanGrow final
 {
 	Actor& m_actor;
-	HasScheduledEvent<AnimalGrowthEvent> m_event;
-	HasScheduledEvent<AnimalGrowthUpdateEvent> m_updateEvent;
+	HasScheduledEventPausable<AnimalGrowthEvent> m_event;
 	Percent m_percentGrown;
 public:
 	CanGrow(Actor& a, Percent pg);
 	CanGrow(const Json& data, Actor& actor);
-	Json toJson() const;
+	[[nodiscard]] Json toJson() const;
 	void updateGrowingStatus();
+	[[nodiscard]] bool canGrowCurrently() const;
 	void setGrowthPercent(Percent percent);
-	Percent growthPercent() const;
+	[[nodiscard]] Percent growthPercent() const;
+	void scheduleEvent();
 	void update();
-	void complete();
 	void stop();
 	void maybeStart();
-	bool isGrowing() const { return m_event.exists(); }
+	void increment();
+	[[nodiscard]] bool isGrowing() const { return !m_event.isPaused(); }
 	friend class AnimalGrowthEvent;
-	friend class AnimalGrowthUpdateEvent;
+	// For test.
+	[[maybe_unused, nodiscard]] Percent getEventPercentComplete() { return m_event.percentComplete(); }
+	[[maybe_unused, nodiscard]] HasScheduledEventPausable<AnimalGrowthEvent>& getEvent() { return m_event; }
+	[[maybe_unused, nodiscard]] bool eventEvents() { return m_event.exists(); }
 };
 class AnimalGrowthEvent final : public ScheduledEvent
 {
 	CanGrow& m_canGrow;
 public:
 	AnimalGrowthEvent(Step delay, CanGrow& cg, const Step start = 0);
-	void execute() { m_canGrow.complete(); }
+	void execute() { m_canGrow.increment(); }
 	void clearReferences(){ m_canGrow.m_event.clearPointer(); }
-};
-class AnimalGrowthUpdateEvent final : public ScheduledEvent
-{
-	CanGrow& m_canGrow;
-public:
-	AnimalGrowthUpdateEvent(Step delay, CanGrow& cg, const Step start = 0);
-	void execute() { m_canGrow.update(); }
-	void clearReferences(){ m_canGrow.m_updateEvent.clearPointer(); }
 };

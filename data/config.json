@@ -48,7 +48,6 @@
 	"digStrengthModifier": 0.1,
 	"digSkillModifier": 0.1,
 	"digObjectivePriority": 10,
-	"statsGrowthUpdateFrequency": 1000,
 	"heatFractionForSmoulder": 0.1,
 	"heatFractionForBurn": 0.4,
 	"fireRampDownPhaseDurationFraction": 0.2,

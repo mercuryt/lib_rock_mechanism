@@ -41,20 +41,20 @@ void EditActorView::draw(Actor& actor)
 	nameUI->onTextChange([&actor](const tgui::String& value){ actor.m_name = value.toWideString(); });
 	basicInfoGrid->addWidget(nameUI, 0, 1);
 	basicInfoGrid->addWidget(tgui::Label::create("date of birth"), 0, 2);
-	DateTimeUI dateOfBirth(actor.m_birthStep);
+	DateTimeUI dateOfBirth(actor.getBirthStep());
 	dateOfBirth.m_hours->onValueChange([this, update](float value){ 
-		DateTime old(m_actor->m_birthStep);
-		m_actor->m_birthStep = DateTime::toSteps(value, old.day, old.year);
+		DateTime old(m_actor->getBirthStep());
+		m_actor->setBirthStep(DateTime::toSteps(value, old.day, old.year));
 		update();
 	});
 	dateOfBirth.m_days->onValueChange([this, update](float value){ 
-		DateTime old(m_actor->m_birthStep);
-		m_actor->m_birthStep = DateTime::toSteps(old.hour, value, old.year);
+		DateTime old(m_actor->getBirthStep());
+		m_actor->setBirthStep(DateTime::toSteps(old.hour, value, old.year));
 		update();
 	});
 	dateOfBirth.m_years->onValueChange([this, update](float value){ 
-		DateTime old(m_actor->m_birthStep);
-		m_actor->m_birthStep = DateTime::toSteps(old.hour, old.day, value);
+		DateTime old(m_actor->getBirthStep());
+		m_actor->setBirthStep(DateTime::toSteps(old.hour, old.day, value));
 		update();
 	});
 	basicInfoGrid->addWidget(dateOfBirth.m_widget, 0, 3);
