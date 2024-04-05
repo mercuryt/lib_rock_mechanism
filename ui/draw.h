@@ -28,6 +28,7 @@ public:
 	sf::Sprite getCenteredSprite(std::string name);
 
 	void spriteAt(sf::Sprite& sprite, sf::Vector2f position, const sf::Color* color);
+	void spriteAtWithScale(sf::Sprite& sprite, sf::Vector2f position, float scale, const sf::Color* color);
 	void spriteOnBlockWithScaleCentered(const Block& block, sf::Sprite& sprite, float scaleRatio, const sf::Color* = nullptr);
 	void spriteOnBlockWithScale(const Block& block, sf::Sprite& sprite, float scaleRatio, const sf::Color* = nullptr);
 	void spriteOnBlock(const Block& block, sf::Sprite& sprite, const sf::Color* = nullptr);

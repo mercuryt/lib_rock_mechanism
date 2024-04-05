@@ -57,7 +57,7 @@ struct ProjectRequiredShapeDishonoredCallback final : public DishonorCallback
 class Project
 {
 	// Tracks the progress of the 'actual' work of the project, after the hauling is done.
-	HasScheduledEventPausable<ProjectFinishEvent> m_finishEvent;
+	HasScheduledEvent<ProjectFinishEvent> m_finishEvent;
 	// Schedule a delay before trying again to generate a haul subproject.
 	// Increments m_haulRetries.
 	HasScheduledEvent<ProjectTryToHaulEvent> m_tryToHaulEvent;
@@ -157,6 +157,7 @@ public:
 	[[nodiscard]] virtual bool canReset() const { return true; }
 	[[nodiscard]] std::vector<Actor*> getWorkersAndCandidates();
 	[[nodiscard]] std::vector<std::pair<Actor*, Objective*>> getWorkersAndCandidatesWithObjectives();
+	[[nodiscard]] Percent getPercentComplete() const { return m_finishEvent.exists() ? m_finishEvent.percentComplete() : 0; }
 	[[nodiscard]] virtual bool canAddWorker(const Actor& actor) const;
 	// What would the total delay time be if we started from scratch now with current workers?
 	[[nodiscard]] virtual Step getDuration() const = 0;
@@ -246,4 +247,12 @@ public:
 	void writeStep();
 	void clearReferences();
 	[[nodiscard]] bool validate();
+};
+class BlockHasProjects
+{
+	std::unordered_map<const Faction*, std::unordered_set<Project*>> m_data;
+public:
+	void add(Project& project);
+	void remove(Project& project);
+	Percent getProjectPercentComplete(Faction& faction) const;
 };

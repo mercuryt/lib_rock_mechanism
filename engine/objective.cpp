@@ -302,7 +302,7 @@ void HasObjectives::cancel(Objective& objective)
 }
 void HasObjectives::objectiveComplete(Objective& objective)
 {
-	assert(m_actor.m_mustSleep.isAwake());
+	assert(objective.getObjectiveTypeId() == ObjectiveTypeId::Wait || m_actor.m_mustSleep.isAwake());
 	m_actor.m_canMove.maybeCancelThreadedTask();
 	m_actor.m_project = nullptr;
 	destroy(objective);

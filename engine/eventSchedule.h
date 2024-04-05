@@ -33,6 +33,7 @@ public:
 	[[nodiscard]] float fractionComplete() const;
 	[[nodiscard]] Step duration() const;
 	[[nodiscard]] Step remaningSteps() const;
+	[[nodiscard]] Step elapsedSteps() const;
 	ScheduledEvent(const ScheduledEvent&) = delete;
 	ScheduledEvent(ScheduledEvent&&) = delete;
 };
@@ -46,6 +47,8 @@ public:
 	void schedule(std::unique_ptr<ScheduledEvent> scheduledEvent);
 	void unschedule(ScheduledEvent& scheduledEvent);
 	void execute(const Step stepNumber);
+	Simulation& getSimulation() { return m_simulation; }
+	[[nodiscard]] Step simulationStep() const;
 	// For testing.
 	[[maybe_unused, nodiscard]]uint32_t count();
 };

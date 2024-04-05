@@ -20,8 +20,10 @@ Percent ActorParamaters::getPercentGrown()
 	if(percentGrown == nullPercent)
 	{
 		Percent percentLifeTime = simulation->m_random.getInRange(0, 100);
+		// Don't generate actors in the last 15% of their possible life span, they don't get out much.
+		Step adjustedMax = util::scaleByPercent(species.deathAgeSteps[0], 85);
 		// Using util::scaleByPercent and util::fractionToPercent give the wrong result here for some reason.
-		Step ageSteps = ((float)species.deathAgeSteps[1] / (float)percentLifeTime) * 100.f;
+		Step ageSteps = ((float)adjustedMax / (float)percentLifeTime) * 100.f;
 		percentGrown = std::min(100, (Percent)(((float)ageSteps / (float)species.stepsTillFullyGrown) * 100.f));
 		birthStep = simulation->m_step - ageSteps;
 	}
@@ -227,14 +229,14 @@ void ActorParamaters::generateEquipment(Actor& actor)
 	}
 }
 Actor::Actor(Simulation& simulation, uint32_t id, const std::wstring& name, const AnimalSpecies& species, Step birthStep, Percent percentGrown, Faction* faction, Attributes attributes) :
-	HasShape(simulation, species.shapeForPercentGrown(percentGrown), false), m_faction(faction), m_id(id), m_name(name), m_species(species), m_birthStep(birthStep), m_alive(true), m_body(*this), m_project(nullptr), m_attributes(attributes), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canPickup(*this), m_equipmentSet(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_canReserve(faction), m_stamina(*this), m_hasUniform(*this), m_visionRange(species.visionRange)
+	HasShape(simulation, species.shapeForPercentGrown(percentGrown), false), m_faction(faction), m_birthStep(birthStep), m_id(id), m_name(name), m_species(species), m_alive(true), m_body(*this), m_project(nullptr), m_attributes(attributes), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canPickup(*this), m_equipmentSet(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_canReserve(faction), m_stamina(*this), m_hasUniform(*this), m_visionRange(species.visionRange)
 {
 	// TODO: Having this line here requires making the existance of objectives mandatory at all times. Good idea?
 	//m_hasObjectives.getNext();
 }
 Actor::Actor(ActorParamaters params) : HasShape(*params.simulation, params.species.shapeForPercentGrown(params.getPercentGrown()), false),
-	m_faction(params.faction), m_id(params.getId()), m_name(params.getName()),
-	m_species(params.species), m_birthStep(params.getBirthStep()), m_alive(true), m_body(*this), m_project(nullptr), 
+	m_faction(params.faction), m_birthStep(params.getBirthStep()), m_id(params.getId()), m_name(params.getName()),
+	m_species(params.species), m_alive(true), m_body(*this), m_project(nullptr), 
 	m_attributes(m_species, params.getPercentGrown()), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), 
 	m_canPickup(*this), m_equipmentSet(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, params.getPercentGrown()), 
 	m_hasObjectives(*this), m_canReserve(m_faction), m_stamina(*this), m_hasUniform(*this), m_visionRange(m_species.visionRange) 
@@ -250,8 +252,9 @@ Actor::Actor(ActorParamaters params) : HasShape(*params.simulation, params.speci
 Actor::Actor(const Json& data, DeserializationMemo& deserializationMemo) :
 	HasShape(data, deserializationMemo),
 	m_faction(data.contains("faction") ? &deserializationMemo.m_simulation.m_hasFactions.byName(data["faction"].get<std::wstring>()) : nullptr), 
-	m_id(data["id"].get<ActorId>()), m_name(data["name"].get<std::wstring>()), m_species(AnimalSpecies::byName(data["species"].get<std::string>())), 
-	m_birthStep(data["birthStep"]), m_alive(data["alive"].get<bool>()), m_body(data["body"], deserializationMemo, *this), m_project(nullptr), 
+	m_birthStep(data["birthStep"]), m_id(data["id"].get<ActorId>()), m_name(data["name"].get<std::wstring>()), 
+	m_species(AnimalSpecies::byName(data["species"].get<std::string>())), m_alive(data["alive"].get<bool>()), 
+	m_body(data["body"], deserializationMemo, *this), m_project(nullptr), 
 	m_attributes(data["attributes"], m_species, data["percentGrown"].get<Percent>()), 
 	m_mustEat(data["mustEat"], *this), m_mustDrink(data["mustDrink"], *this), m_mustSleep(data["mustSleep"], *this), 
 	m_needsSafeTemperature(data["needsSafeTemperature"], *this), m_canPickup(data["canPickup"], *this), 
@@ -425,6 +428,11 @@ void Actor::unreserveAllBlocksAtLocationAndFacing(const Block& location, Facing 
 		return;
 	for(Block* occupied : getBlocksWhichWouldBeOccupiedAtLocationAndFacing(const_cast<Block&>(location), facing))
 		occupied->m_reservable.clearReservationFor(m_canReserve);
+}
+void Actor::setBirthStep(Step step)
+{
+	m_birthStep = step;
+	m_canGrow.updateGrowingStatus();
 }
 EventSchedule& Actor::getEventSchedule() { return getSimulation().m_eventSchedule; }
 ThreadedTaskEngine& Actor::getThreadedTaskEngine() { return getSimulation().m_threadedTaskEngine; }

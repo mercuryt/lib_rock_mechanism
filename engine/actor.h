@@ -74,11 +74,11 @@ struct ActorParamaters
 class Actor final : public HasShape
 {	
 	const Faction* m_faction;
+	Step m_birthStep;
 public:
 	const ActorId m_id;
 	std::wstring m_name;
 	const AnimalSpecies& m_species;
-	Step m_birthStep;
 	bool m_alive;
 	CauseOfDeath m_causeOfDeath;
 	Body m_body;
@@ -118,26 +118,28 @@ public:
 	void setFaction(const Faction* faction);
 	void reserveAllBlocksAtLocationAndFacing(const Block& location, Facing facing);
 	void unreserveAllBlocksAtLocationAndFacing(const Block& location, Facing facing);
-	bool isItem() const { return false; }
-	bool isActor() const { return true; }
-	bool isGeneric() const { return false; }
-	bool isEnemy(Actor& actor) const;
-	bool isAlly(Actor& actor) const;
+	void setBirthStep(Step step);
+	[[nodiscard]] bool isItem() const { return false; }
+	[[nodiscard]] bool isActor() const { return true; }
+	[[nodiscard]] bool isGeneric() const { return false; }
+	[[nodiscard]] bool isEnemy(Actor& actor) const;
+	[[nodiscard]] bool isAlly(Actor& actor) const;
 	//TODO: Zombies are not sentient.
-	bool isSentient() const { return m_species.sentient; }
-	bool isInjured() const;
-	bool canMove() const;
-	Mass getMass() const;
-	Volume getVolume() const;
-	const MoveType& getMoveType() const { return m_canMove.getMoveType(); }
-	Mass singleUnitMass() const { return getMass(); }
-	const Faction* getFaction() const { return m_faction; }
-	uint32_t getAgeInYears() const;
-	Step getAge() const;
-	bool allBlocksAtLocationAndFacingAreReservable(const Block& location, Facing facing) const;
+	[[nodiscard]] bool isSentient() const { return m_species.sentient; }
+	[[nodiscard]] bool isInjured() const;
+	[[nodiscard]] bool canMove() const;
+	[[nodiscard]] Mass getMass() const;
+	[[nodiscard]] Volume getVolume() const;
+	[[nodiscard]] const MoveType& getMoveType() const { return m_canMove.getMoveType(); }
+	[[nodiscard]] Mass singleUnitMass() const { return getMass(); }
+	[[nodiscard]] const Faction* getFaction() const { return m_faction; }
+	[[nodiscard]] uint32_t getAgeInYears() const;
+	[[nodiscard]] Step getAge() const;
+	[[nodiscard]] Step getBirthStep() const { return m_birthStep; }
+	[[nodiscard]] bool allBlocksAtLocationAndFacingAreReservable(const Block& location, Facing facing) const;
 	// May return nullptr.
-	EventSchedule& getEventSchedule();
-	ThreadedTaskEngine& getThreadedTaskEngine();
+	[[nodiscard]] EventSchedule& getEventSchedule();
+	[[nodiscard]] ThreadedTaskEngine& getThreadedTaskEngine();
 	Actor(const Actor& actor) = delete;
 	Actor(Actor&& actor) = delete;
 	// For debugging.

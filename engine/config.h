@@ -59,7 +59,6 @@ namespace Config
 	inline float digStrengthModifier;
 	inline float digSkillModifier;
 	inline uint32_t digObjectivePriority;
-	inline Step statsGrowthUpdateFrequency;
 	inline float heatFractionForSmoulder;
 	inline float heatFractionForBurn;
 	inline float fireRampDownPhaseDurationFraction;
@@ -263,7 +262,6 @@ namespace Config
 		digStrengthModifier = data["digStrengthModifier"].get<float>();
 		digSkillModifier = data["digSkillModifier"].get<float>();
 		digObjectivePriority = data["digObjectivePriority"].get<uint32_t>();
-		statsGrowthUpdateFrequency = data["statsGrowthUpdateFrequency"].get<Step>();
 		heatFractionForSmoulder = data["heatFractionForSmoulder"].get<float>();
 		heatFractionForBurn = data["heatFractionForBurn"].get<float>();
 		fireRampDownPhaseDurationFraction = data["fireRampDownPhaseDurationFraction"].get<float>();
@@ -381,16 +379,16 @@ namespace Config
 		//medicalProjectDelaySteps = data["medicalProjectDelayMinutes"].get<uint32_t>() * stepsPerMinute;
 		minimumRainIntensityModifier = data["minimumRainIntensityModifier"].get<float>();
 		maximumRainIntensityModifier = data["maximumRainIntensityModifier"].get<float>();
-		minimumStepsRainPerPercentHumidity = data["minimumSecondsRainPerPercentHumidity"].get<float>() * Config::stepsPerSecond;
-		maximumStepsRainPerPercentHumidity = data["maximumSecondsRainPerPercentHumidity"].get<float>() * Config::stepsPerSecond;
-		minimumStepsBetweenRainPerPercentHumidity = data["minimumDaysBetweenRainPerPercentHumidity"].get<float>() * Config::stepsPerDay;
-		maximumStepsBetweenRainPerPercentHumidity = data["maximumDaysBetweenRainPerPercentHumidity"].get<float>() * Config::stepsPerDay;
+		minimumStepsRainPerPercentHumidity = data["minimumSecondsRainPerPercentHumidity"].get<float>() * stepsPerSecond;
+		maximumStepsRainPerPercentHumidity = data["maximumSecondsRainPerPercentHumidity"].get<float>() * stepsPerSecond;
+		minimumStepsBetweenRainPerPercentHumidity = data["minimumDaysBetweenRainPerPercentHumidity"].get<float>() * stepsPerDay;
+		maximumStepsBetweenRainPerPercentHumidity = data["maximumDaysBetweenRainPerPercentHumidity"].get<float>() * stepsPerDay;
 		exterminatePriority = data["exterminatePriority"].get<uint32_t>();
-		exterminateCheckFrequency = data["exterminateCheckFrequencySeconds"].get<float>() * Config::stepsPerSecond;
+		exterminateCheckFrequency = data["exterminateCheckFrequencySeconds"].get<float>() * stepsPerSecond;
 		minimumAttackCoolDownModifier = data["minimumAttackCoolDownModifier"].get<float>();
 		minimumVolumeOfFluidToBreath = data["minimumVolumeOfFluidToBreath"].get<CollisionVolume>();
-		minimumDurationToWaitInsteadOfWander = data["minimumDurationToWaitInsteadOfWanderMinutes"].get<uint32_t>() * Config::stepsPerMinute;
-		maximumDurationToWaitInsteadOfWander = data["maximumDurationToWaitInsteadOfWanderMinutes"].get<uint32_t>() * Config::stepsPerMinute;
+		minimumDurationToWaitInsteadOfWander = data["minimumDurationToWaitInsteadOfWanderMinutes"].get<uint32_t>() * stepsPerMinute;
+		maximumDurationToWaitInsteadOfWander = data["maximumDurationToWaitInsteadOfWanderMinutes"].get<uint32_t>() * stepsPerMinute;
 		chanceToWaitInsteadOfWander = data["chanceToWaitInsteadOfWander"].get<float>();
 		minimumOverloadRatio = data["minimumOverloadRatio"].get<float>();
 	}

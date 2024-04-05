@@ -51,7 +51,9 @@ public:
 	}
 	[[nodiscard]] Step getStartStep() const { return m_event->m_startStep; }
 	[[nodiscard]] Step remainingSteps() const { return m_event->remaningSteps(); }
+	[[nodiscard]] Step elapsedSteps() const { return m_event->elapsedSteps(); }
 	[[nodiscard]] Step duration() const { return m_event->duration(); }
+	[[nodiscard]] ScheduledEvent* getEvent() { return m_event; }
 	~HasScheduledEvent() 
 	{ 
 		if(m_event != nullptr)
@@ -61,36 +63,37 @@ public:
 template<class EventType>
 class HasScheduledEventPausable : public HasScheduledEvent<EventType>
 {
-	Percent m_percent;
+	Step m_elapsedSteps;
 public:
-	HasScheduledEventPausable(EventSchedule& es) : HasScheduledEvent<EventType>(es), m_percent(0) { }
+	HasScheduledEventPausable(EventSchedule& es) : HasScheduledEvent<EventType>(es), m_elapsedSteps(0) { }
 	void pause()
 	{
-		m_percent = percentComplete();
+		assert(HasScheduledEvent<EventType>::exists());
+		m_elapsedSteps += HasScheduledEvent<EventType>::elapsedSteps();
 		HasScheduledEvent<EventType>::unschedule();
 	}
 	void reset()
 	{
 		assert(HasScheduledEvent<EventType>::m_event == nullptr);
-		m_percent = 0;
+		m_elapsedSteps = 0;
 	}
 	template<typename ...Args>
-	void schedule(Step delay, Args&& ...args)
+	void resume(Step delay, Args&& ...args)
 	{
-		delay -= util::scaleByPercent(delay, m_percent);
-		HasScheduledEvent<EventType>::schedule(delay, args...);
+		Step adjustedDelay = m_elapsedSteps < delay ? delay - m_elapsedSteps : 1;
+		HasScheduledEvent<EventType>::schedule(adjustedDelay, args...);
 	}
-	[[nodiscard]]Percent percentComplete() const
+	void setElapsedSteps(Step steps) { m_elapsedSteps = steps; }
+	[[nodiscard]] Percent percentComplete() const
 	{
-		Percent output = m_percent;
-		auto* event = HasScheduledEvent<EventType>::m_event;
-		if(event != nullptr)
-		{
-			if(m_percent != 0)
-				output += (event->percentComplete() * (100u - m_percent)) / 100u;
-			else
-				output = event->percentComplete();
-		}
-		return output;
+		const ScheduledEvent* event = HasScheduledEvent<EventType>::m_event;
+		assert(event);
+		// Combine the steps from this event run with saved steps from previous ones.
+		Step fullDuration = event->duration() + m_elapsedSteps;
+		Step fullElapsed = event->elapsedSteps() + m_elapsedSteps;
+		return util::fractionToPercent(fullElapsed, fullDuration);
 	}
+	// Alias exits as isPaused.
+	[[nodiscard]] bool isPaused() const { return !HasScheduledEvent<EventType>::exists(); }
+	[[nodiscard]] Step getStoredElapsedSteps() const { return m_elapsedSteps; }
 };

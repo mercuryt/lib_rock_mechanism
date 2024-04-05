@@ -64,6 +64,10 @@ void AreaHasRain::scheduleRestart()
 	Step restartAt = (99 - humidity) * random.getInRange(Config::minimumStepsBetweenRainPerPercentHumidity, Config::maximumStepsBetweenRainPerPercentHumidity);
 	schedule(restartAt);
 }
+void AreaHasRain::disable()
+{
+	m_event.unschedule();
+}
 Percent AreaHasRain::humidityForSeason() { return m_humidityBySeason[DateTime::toSeason(m_area.m_simulation.m_step)]; }
 RainEvent::RainEvent(Step delay, AreaHasRain& ahr, const Step start) : ScheduledEvent(ahr.m_area.m_simulation, delay, start), m_areaHasRain(ahr) { }
 void RainEvent::execute() 

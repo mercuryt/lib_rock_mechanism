@@ -25,7 +25,7 @@ class MustDrink final
 	uint32_t m_volumeDrinkRequested;
 	const FluidType* m_fluidType; // Pointer because it may change, i.e. through vampirism.
 	DrinkObjective* m_objective; // Store to avoid recreating. TODO: Use a bool instead?
-	HasScheduledEventPausable<ThirstEvent> m_thirstEvent;
+	HasScheduledEvent<ThirstEvent> m_thirstEvent;
 	uint32_t volumeFluidForBodyMass() const;
 
 public:
