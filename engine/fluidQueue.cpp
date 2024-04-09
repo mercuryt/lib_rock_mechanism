@@ -63,3 +63,7 @@ uint32_t FluidQueue::groupFlowTillNextStepPerBlock() const
 	assert(m_groupEnd->capacity < m_groupStart->capacity);
 	return m_groupStart->capacity - m_groupEnd->capacity;
 }
+bool FluidQueue::groupContains(Block& block) const
+{
+	return std::ranges::find(m_groupStart, m_groupEnd, &block, &FutureFlowBlock::block) != m_groupEnd;
+}

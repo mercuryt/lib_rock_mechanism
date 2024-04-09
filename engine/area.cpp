@@ -274,12 +274,16 @@ void Area::writeStep()
 	// Apply temperature deltas.
 	m_hasTemperature.applyDeltas();
 	// Apply rain.
-	m_hasRain.writeStep();
+	if(m_simulation.m_step % Config::rainWriteStepFreqency == 0)
+		m_hasRain.writeStep();
 	// Apply fluid Sources.
 	m_fluidSources.step();
 }
 Block& Area::getBlock(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z)
 {
+	assert(x < m_sizeX);
+	assert(y < m_sizeY);
+	assert(z < m_sizeZ);
 	size_t index = x + (y * m_sizeX) + (z * m_sizeY * m_sizeX); 
 	return m_blocks[index];
 }

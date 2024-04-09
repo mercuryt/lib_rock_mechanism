@@ -68,7 +68,8 @@ public:
 	void removeBlocks(std::unordered_set<Block*>& blocks);
 	void addMistFor(Block& block);
 	// Takes a pointer to the other fluid group because we may switch them inorder to merge into the larger one.
-	void merge(FluidGroup* fluidGroup);
+	// Return the larger.
+	FluidGroup* merge(FluidGroup* fluidGroup);
 	void readStep();
 	void writeStep();
 	void afterWriteStep();
@@ -78,8 +79,9 @@ public:
 	void addDiagonalsFor(Block& block);
 	void validate() const;
 	void validate(std::unordered_set<FluidGroup*> toErase);
-	[[nodiscard]] int32_t totalVolume();
+	[[nodiscard]] int32_t totalVolume() const;
 	[[nodiscard]] std::unordered_set<Block*>& getBlocks() { return m_drainQueue.m_set; }
-	bool operator==(const FluidGroup& fluidGroup) const { return &fluidGroup == this; }
+	[[nodiscard]] bool dispositionIsStable(CollisionVolume fillVolume, CollisionVolume drainVolume) const;
+	[[nodiscard]] bool operator==(const FluidGroup& fluidGroup) const { return &fluidGroup == this; }
 	friend class Area;
 };

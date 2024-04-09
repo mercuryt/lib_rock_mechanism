@@ -180,6 +180,7 @@ Simulation::~Simulation()
 	m_threadedTaskEngine.clear();
 	m_pool.wait_for_tasks();
 }
+// Note: Does not handle fluids.
 void Simulation::fastForward(Step steps)
 {
 	Step targetStep = m_step + steps;
