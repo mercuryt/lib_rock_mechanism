@@ -5,6 +5,7 @@
 #include "config.h"
 #include "random.h"
 #include "types.h"
+#include "util.h"
 AreaHasRain::AreaHasRain(Area& a) : m_area(a), m_currentlyRainingFluidType(nullptr), m_defaultRainFluidType(FluidType::byName("water")), m_intensityPercent(0), m_event(a.m_simulation.m_eventSchedule), m_humidityBySeason({30,15,10,20}) { }
 void AreaHasRain::load(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo)
 {
@@ -35,7 +36,7 @@ Json AreaHasRain::toJson() const
 }
 void AreaHasRain::start(const FluidType& fluidType, Percent intensityPercent, Step stepsDuration)
 {
-	assert(intensityPercent < 100);
+	assert(intensityPercent <= 100);
 	assert(intensityPercent > 0);
 	m_event.maybeUnschedule();
 	m_currentlyRainingFluidType = &fluidType;
@@ -52,16 +53,28 @@ void AreaHasRain::stop()
 }
 void AreaHasRain::writeStep()
 {
-	if(m_currentlyRainingFluidType != nullptr)
-		for(Block& block : m_area.getZLevel(m_area.m_sizeZ - 1))
-			if(m_area.m_simulation.m_random.chance((double)m_intensityPercent / (double)Config::rainFrequencyModifier))
-				block.addFluid(1, *m_currentlyRainingFluidType);
+	if(m_currentlyRainingFluidType == nullptr)
+		return;
+	auto& random = m_area.m_simulation.m_random;
+	DistanceInBlocks spacing = util::scaleByInversePercent(Config::rainMaximumSpacing, m_intensityPercent);
+	DistanceInBlocks offset = random.getInRange(0u, Config::rainMaximumOffset);
+	DistanceInBlocks i = 0;
+	for(Block& block : m_area.getZLevel(m_area.m_sizeZ - 1))
+		if(offset)
+			--offset;
+		else if(i)
+			--i;
+		else
+		{
+			block.addFluid(1, *m_currentlyRainingFluidType);
+			i = spacing;
+		}
 }
 void AreaHasRain::scheduleRestart()
 {
 	auto random = m_area.m_simulation.m_random;
 	Percent humidity = humidityForSeason();
-	Step restartAt = (99 - humidity) * random.getInRange(Config::minimumStepsBetweenRainPerPercentHumidity, Config::maximumStepsBetweenRainPerPercentHumidity);
+	Step restartAt = (100 - humidity) * random.getInRange(Config::minimumStepsBetweenRainPerPercentHumidity, Config::maximumStepsBetweenRainPerPercentHumidity);
 	schedule(restartAt);
 }
 void AreaHasRain::disable()

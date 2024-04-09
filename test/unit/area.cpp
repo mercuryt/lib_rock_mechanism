@@ -3,6 +3,7 @@
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation.h"
 #include "../../engine/threadedTask.h"
+#include "config.h"
 
 TEST_CASE("Area")
 {
@@ -233,6 +234,25 @@ TEST_CASE("vision-threading")
 	simulation.m_pool.wait_for_tasks();
 	area.writeStep();
 	REQUIRE(a2.m_canSee.contains(&a1));
+}
+TEST_CASE("multiMergeOnAdd")
+{
+	static const FluidType& water = FluidType::byName("water");
+	Simulation simulation{L"", 1};
+	Area& area = simulation.createArea(2,2,1);
+	Block& block1 = area.getBlock(0, 0, 0);
+	Block& block2 = area.getBlock(0, 1, 0);
+	Block& block3 = area.getBlock(1, 0, 0);
+	Block& block4 = area.getBlock(1, 1, 0);
+	block1.addFluid(Config::maxBlockVolume, water);
+	REQUIRE(area.m_fluidGroups.size() == 1);
+	block4.addFluid(Config::maxBlockVolume, water);
+	REQUIRE(area.m_fluidGroups.size() == 2);
+	block2.addFluid(Config::maxBlockVolume, water);
+	REQUIRE(area.m_fluidGroups.size() == 1);
+	block3.addFluid(Config::maxBlockVolume, water);
+	REQUIRE(area.m_fluidGroups.size() == 1);
+	simulation.doStep();
 }
 inline void fourFluidsTestParallel(uint32_t scale, uint32_t steps)
 {

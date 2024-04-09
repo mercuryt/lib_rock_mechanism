@@ -12,6 +12,7 @@
 #include "area.h"
 
 #include <cstdint>
+#include <numbers>
 #include <unordered_map>
 #include <unordered_set>
 #include <array>
@@ -554,7 +555,6 @@ void Block::spawnMist(const FluidType& fluidType, DistanceInBlocks maxMistSpread
 	m_mistInverseDistanceFromSource = maxMistSpread != 0 ? maxMistSpread : fluidType.maxMistSpread;
 	MistDisperseEvent::emplace(fluidType.mistDuration, fluidType, *this);
 }
-//TODO: This code puts the fluid into an adjacent group of the correct type if it can find one, it does not add the block or merge groups, leaving these tasks to fluidGroup readStep. Is this ok?
 void Block::addFluid(uint32_t volume, const FluidType& fluidType)
 {
 	assert(!isSolid());
@@ -574,8 +574,8 @@ void Block::addFluid(uint32_t volume, const FluidType& fluidType)
 		{
 			assert(adjacent->m_fluids.at(&fluidType).second->m_fluidType == fluidType);
 			fluidGroup = adjacent->m_fluids.at(&fluidType).second;
-			fluidGroup->addBlock(*this);
-			continue;
+			fluidGroup->addBlock(*this, true);
+			break;
 		}
 	// Create fluid group.
 	if(fluidGroup == nullptr)
@@ -583,6 +583,8 @@ void Block::addFluid(uint32_t volume, const FluidType& fluidType)
 		std::unordered_set<Block*> blocks({this});
 		fluidGroup = m_area->createFluidGroup(fluidType, blocks);
 	}
+	else
+		m_area->clearMergedFluidGroups();
 	// Shift less dense fluids to excessVolume.
 	if(m_totalFluidVolume > Config::maxBlockVolume)
 		resolveFluidOverfull();

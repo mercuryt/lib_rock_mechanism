@@ -48,8 +48,9 @@ public:
 	void applyDelta();
 	void merge(FluidQueue& fluidQueue);
 	void noChange();
-	uint32_t groupSize() const;
-	uint32_t groupLevel() const;
-	uint32_t groupCapacityPerBlock() const;
-	uint32_t groupFlowTillNextStepPerBlock() const;
+	[[nodiscard]] uint32_t groupSize() const;
+	[[nodiscard]] uint32_t groupLevel() const;
+	[[nodiscard]] uint32_t groupCapacityPerBlock() const;
+	[[nodiscard]] uint32_t groupFlowTillNextStepPerBlock() const;
+	[[nodiscard]] bool groupContains(Block& block) const;
 };

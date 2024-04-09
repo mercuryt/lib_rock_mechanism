@@ -198,6 +198,9 @@ namespace Config
 	inline Step maximumDurationToWaitInsteadOfWander;
 	inline float chanceToWaitInsteadOfWander;
 	inline float minimumOverloadRatio;
+	inline DistanceInBlocks rainMaximumSpacing;
+	inline DistanceInBlocks rainMaximumOffset;
+	inline Step rainWriteStepFreqency;
 
 	inline uint32_t convertBodyPartVolumeToArea(uint32_t volume){ return sqrt(volume); }
 	inline void load()
@@ -391,5 +394,9 @@ namespace Config
 		maximumDurationToWaitInsteadOfWander = data["maximumDurationToWaitInsteadOfWanderMinutes"].get<uint32_t>() * stepsPerMinute;
 		chanceToWaitInsteadOfWander = data["chanceToWaitInsteadOfWander"].get<float>();
 		minimumOverloadRatio = data["minimumOverloadRatio"].get<float>();
+		rainMaximumSpacing = data["rainMaximumSpacing"].get<DistanceInBlocks>();
+		rainMaximumOffset = data["rainMaximumOffset"].get<DistanceInBlocks>();
+		rainMaximumSpacing = data["rainMaximumSpacing"].get<DistanceInBlocks>();
+		rainWriteStepFreqency = data["rainWriteStepFreqencySeconds"].get<float>() * stepsPerSecond;
 	}
 }

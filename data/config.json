@@ -181,5 +181,8 @@
 	"minimumDurationToWaitInsteadOfWanderMinutes": 3,
 	"maximumDurationToWaitInsteadOfWanderMinutes": 15,
 	"chanceToWaitInsteadOfWander": 0.6,
-	"minimumOverloadRatio": 0.33
+	"minimumOverloadRatio": 0.33,
+	"rainMaximumSpacing": 200,
+	"rainMaximumOffset": 10,
+	"rainWriteStepFreqencySeconds": 1.5
 }
