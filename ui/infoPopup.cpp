@@ -89,6 +89,7 @@ void InfoPopup::display(Block& block)
 			add(label);
 		}
 	}
+	m_update = [this, &block]{ display(block); };
 }
 void InfoPopup::display(Item& item)
 {
@@ -115,6 +116,7 @@ void InfoPopup::display(Item& item)
 		button->onClick([=, this]{ display(*actor); });
 		add(button);
 	}
+	m_update = [this, &item]{ display(item); };
 }
 void InfoPopup::display(Actor& actor)
 {
@@ -123,6 +125,7 @@ void InfoPopup::display(Actor& actor)
 	std::wstring descriptionText;
 	add(tgui::Label::create(util::stringToWideString(actor.m_species.name)));
 	add(tgui::Label::create(L"age: " + std::to_wstring(actor.getAgeInYears())));
+	add(tgui::Label::create(L"action: " + actor.getActionDescription()));
 
 	for(Item* item : actor.m_equipmentSet.getAll())
 	{
@@ -139,6 +142,8 @@ void InfoPopup::display(Actor& actor)
 		add(priorities);
 		priorities->onClick([this, &actor]{ m_window.showObjectivePriority(actor); });
 	}
+	m_update = [this, &actor]{ display(actor); };
+	m_childWindow->setFocused(false);
 }
 void InfoPopup::display(Plant& plant)
 {
@@ -146,6 +151,7 @@ void InfoPopup::display(Plant& plant)
 	m_childWindow->setTitle(plant.m_plantSpecies.name);
 	add(tgui::Label::create(L"percent grown: " + std::to_wstring(plant.getGrowthPercent())));
 	add(tgui::Label::create(L"percent foliage: " + std::to_wstring(plant.getPercentFoliage())));
+	m_update = [this, &plant]{ display(plant); };
 }
-void InfoPopup::hide() { m_childWindow->close(); }
+void InfoPopup::hide() { m_childWindow->close(); m_childWindow = nullptr; }
 bool InfoPopup::isVisible() const { return m_childWindow && m_childWindow->isVisible(); }

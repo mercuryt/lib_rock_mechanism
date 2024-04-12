@@ -12,7 +12,7 @@ class WanderThreadedTask;
 class WanderObjective final : public Objective
 {
 	HasThreadedTask<WanderThreadedTask> m_threadedTask;
-	bool m_routeFound;
+	bool m_started = false;
 public:
 	WanderObjective(Actor& a);
 	WanderObjective(const Json& data, DeserializationMemo& deserializationMemo);

@@ -2,6 +2,7 @@
 #include "block.h"
 #include "config.h"
 #include "simulation.h"
+#include "types.h"
 #include <cassert>
 #include <cstdint>
 #include <iostream>
@@ -80,7 +81,7 @@ bool HasShape::isAdjacentTo(const HasShape& other) const
 	std::function<bool(const Block&)> predicate = [&](const Block& block) { return larger->m_blocks.contains(const_cast<Block*>(&block)); };
 	return smaller->predicateForAnyAdjacentBlock(predicate);
 }
-uint32_t HasShape::distanceTo(const HasShape& other) const
+DistanceInBlocks HasShape::distanceTo(const HasShape& other) const
 {
 	// TODO: Make handle multi block creatures correctly somehow.
 	// Use line of sight?
@@ -227,7 +228,7 @@ void HasShape::log() const
 	}
 	std::cout << "[" << m_location->m_x << "," << m_location->m_y << "," << m_location->m_z << "]";
 }
-void BlockHasShapes::record(HasShape& hasShape, uint32_t volume)
+void BlockHasShapes::record(HasShape& hasShape, CollisionVolume volume)
 {
 	assert(!m_shapes.contains(&hasShape));
 	m_shapes[&hasShape] = volume;
@@ -291,7 +292,7 @@ void BlockHasShapes::removeQuantity(HasShape& hasShape, uint32_t quantity)
 	item.removeQuantity(quantity);
 	enter(hasShape);
 }
-void BlockHasShapes::tryToCacheMoveCosts(const Shape& shape, const MoveType& moveType, std::vector<std::pair<Block*, uint32_t>>& moveCosts)
+void BlockHasShapes::tryToCacheMoveCosts(const Shape& shape, const MoveType& moveType, std::vector<std::pair<Block*, Step>>& moveCosts)
 {
 	if(!m_moveCostsCache.contains(&shape) || !m_moveCostsCache.at(&shape).contains(&moveType))
 		m_moveCostsCache[&shape][&moveType] = std::move(moveCosts);
@@ -313,7 +314,7 @@ bool BlockHasShapes::canEnterEverFrom(const HasShape& hasShape, const Block& blo
 {
 	return shapeAndMoveTypeCanEnterEverFrom(*hasShape.m_shape, hasShape.getMoveType(), block);
 }
-bool BlockHasShapes::canEnterEverWithFacing(const HasShape& hasShape, const uint8_t facing) const
+bool BlockHasShapes::canEnterEverWithFacing(const HasShape& hasShape, const Facing facing) const
 {
 	return shapeAndMoveTypeCanEnterEverWithFacing(*hasShape.m_shape, hasShape.getMoveType(), facing);
 }
@@ -331,10 +332,10 @@ bool BlockHasShapes::shapeAndMoveTypeCanEnterEverFrom(const Shape& shape, const 
 		return false;
 	if(!moveTypeCanEnterFrom(moveType, from))
 		return false;
-	const uint8_t facing = m_block.facingToSetWhenEnteringFrom(from);
+	const Facing facing = m_block.facingToSetWhenEnteringFrom(from);
 	return shapeAndMoveTypeCanEnterEverWithFacing(shape, moveType, facing);
 }
-bool BlockHasShapes::shapeAndMoveTypeCanEnterEverWithFacing(const Shape& shape, const MoveType& moveType, const uint8_t facing) const
+bool BlockHasShapes::shapeAndMoveTypeCanEnterEverWithFacing(const Shape& shape, const MoveType& moveType, const Facing facing) const
 {
 	if(!anythingCanEnterEver())
 		return false;
@@ -348,7 +349,7 @@ bool BlockHasShapes::shapeAndMoveTypeCanEnterEverWithFacing(const Shape& shape, 
 	}
 	return true;
 }
-bool BlockHasShapes::shapeAndMoveTypeCanEnterCurrentlyWithFacing(const Shape& shape, const MoveType& moveType, const uint8_t facing) const
+bool BlockHasShapes::shapeAndMoveTypeCanEnterCurrentlyWithFacing(const Shape& shape, const MoveType& moveType, const Facing facing) const
 {
 	assert(anythingCanEnterEver());
 	for(auto& [x, y, z, v] : shape.positionsWithFacing(facing))
@@ -455,21 +456,21 @@ bool BlockHasShapes::hasCachedMoveCosts(const Shape& shape, const MoveType& move
 {
 	return m_moveCostsCache.contains(&shape) && m_moveCostsCache.at(&shape).contains(&moveType);
 }
-const std::vector<std::pair<Block*, uint32_t>>& BlockHasShapes::getCachedMoveCosts(const Shape& shape, const MoveType& moveType) const
+const std::vector<std::pair<Block*, Step>>& BlockHasShapes::getCachedMoveCosts(const Shape& shape, const MoveType& moveType) const
 {
 	assert(hasCachedMoveCosts(shape, moveType));
 	return m_moveCostsCache.at(&shape).at(&moveType);
 }
-const std::vector<std::pair<Block*, uint32_t>> BlockHasShapes::makeMoveCosts(const Shape& shape, const MoveType& moveType) const
+const std::vector<std::pair<Block*, Step>> BlockHasShapes::makeMoveCosts(const Shape& shape, const MoveType& moveType) const
 {
-	std::vector<std::pair<Block*, u_int32_t>> output;
+	std::vector<std::pair<Block*, Step>> output;
 	for(Block* block : m_block.getAdjacentWithEdgeAndCornerAdjacent())
 		if(block->m_hasShapes.shapeAndMoveTypeCanEnterEverFrom(shape, moveType, m_block))
 			output.emplace_back(block, block->m_hasShapes.moveCostFrom(moveType, m_block));
 	return output;
 }
 // Get a move cost for moving from a block onto this one for a given move type.
-uint32_t BlockHasShapes::moveCostFrom(const MoveType& moveType, const Block& from) const
+Step BlockHasShapes::moveCostFrom(const MoveType& moveType, const Block& from) const
 {
 	assert(!m_block.isSolid());
 	assert(!from.isSolid());
@@ -485,10 +486,10 @@ uint32_t BlockHasShapes::moveCostFrom(const MoveType& moveType, const Block& fro
 }
 bool BlockHasShapes::canEnterCurrentlyFrom(const HasShape& hasShape, const Block& block) const
 {
-	const uint8_t facing = m_block.facingToSetWhenEnteringFrom(block);
+	const Facing facing = m_block.facingToSetWhenEnteringFrom(block);
 	return canEnterCurrentlyWithFacing(hasShape, facing);
 }
-bool BlockHasShapes::canEnterCurrentlyWithFacing(const HasShape& hasShape, const uint8_t& facing) const
+bool BlockHasShapes::canEnterCurrentlyWithFacing(const HasShape& hasShape, const Facing& facing) const
 {
 	for(auto& [x, y, z, v] : hasShape.m_shape->positionsWithFacing(facing))
 	{
@@ -513,14 +514,14 @@ std::pair<bool, Facing> BlockHasShapes::canEnterCurrentlyWithAnyFacingReturnFaci
 			return {true, facing};
 	return {false, 0};
 }
-uint32_t BlockHasShapes::getVolume(const HasShape& hasShape) const
+CollisionVolume BlockHasShapes::getVolume(const HasShape& hasShape) const
 {	
 	auto found = m_shapes.find(const_cast<HasShape*>(&hasShape));
 	if(found == m_shapes.end())
 		return 0u;
 	return found->second;
 }
-uint32_t BlockHasShapes::getTotalVolume() const 
+CollisionVolume BlockHasShapes::getTotalVolume() const 
 {
 	return m_totalVolume;
 }

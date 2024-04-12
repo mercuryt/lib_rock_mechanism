@@ -168,6 +168,7 @@ void ActorCanMove::scheduleMove()
 		auto excessVolume = (volumeAtLocationBlock + moveTo.m_hasShapes.getStaticVolume()) - Config::maxBlockVolume;
 		speed = util::scaleByInversePercent(speed, excessVolume);
 	}
+	//Step delay = std::max(Step(1), moveTo.m_hasShapes.moveCostFrom(*m_moveType, *m_actor.m_location) / speed);
 	Step delay = moveTo.m_hasShapes.moveCostFrom(*m_moveType, *m_actor.m_location) / speed;
 	m_event.schedule(delay, *this);
 }

@@ -30,7 +30,7 @@ void WanderThreadedTask::writeStep()
 	if(m_findsPath.found())
 	{
 		m_objective.m_actor.m_canMove.setPath(m_findsPath.getPath()); 
-		m_objective.m_routeFound = true;
+		m_objective.m_started = true;
 	}
 	else
 		m_objective.m_actor.wait(Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective);
@@ -38,9 +38,9 @@ void WanderThreadedTask::writeStep()
 }
 void WanderThreadedTask::clearReferences() { m_objective.m_threadedTask.clearPointer(); }
 // Objective.
-WanderObjective::WanderObjective(Actor& a) : Objective(a, 0u), m_threadedTask(a.getThreadedTaskEngine()), m_routeFound(false) { }
+WanderObjective::WanderObjective(Actor& a) : Objective(a, 0u), m_threadedTask(a.getThreadedTaskEngine()) { }
 WanderObjective::WanderObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), 
-	m_threadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine), m_routeFound(false)
+	m_threadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine)
 {
 	if(data.contains("threadedTask"))
 		m_threadedTask.create(*this);
@@ -48,15 +48,16 @@ WanderObjective::WanderObjective(const Json& data, DeserializationMemo& deserial
 Json WanderObjective::toJson() const
 { 
 	Json data = Objective::toJson();
-	data["routeFound"] = m_routeFound;
+	data["routeFound"] = m_started;
 	return data;
 }
 void WanderObjective::execute() 
 { 
-	if(m_routeFound)
+	if(m_started)
 		m_actor.m_hasObjectives.objectiveComplete(*this);
 	else
 	{
+		m_started = true;
 		auto& random = m_actor.getSimulation().m_random;
 		if(random.chance(Config::chanceToWaitInsteadOfWander))
 		{
@@ -67,7 +68,6 @@ void WanderObjective::execute()
 		else
 		{
 			m_threadedTask.create(*this); 
-			m_routeFound = true;
 		}
 	}
 }
@@ -75,6 +75,6 @@ void WanderObjective::execute()
 void WanderObjective::reset() 
 { 
 	cancel(); 
-	m_routeFound = false; 
+	m_started = false; 
 	m_actor.m_canReserve.deleteAllWithoutCallback();
 }

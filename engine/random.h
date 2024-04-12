@@ -21,6 +21,7 @@ public:
 	double getInRange(double lowest, double highest);
 	bool percentChance(Percent percent);
 	bool chance(double chance);
+	bool chance(float chance);
 	template<typename T>
 		T* getInVector(const std::vector<T*>& vector)
 		{

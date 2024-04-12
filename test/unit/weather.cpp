@@ -12,10 +12,10 @@ TEST_CASE("weather")
 	static const MaterialType& marble = MaterialType::byName("marble");
 	static const FluidType& water = FluidType::byName("water");
 	Simulation simulation{L"", 1};
-	Area& area = simulation.createArea(20, 20, 11);
+	Area& area = simulation.createArea(5, 5, 5);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
-	area.m_hasRain.start(100, Config::stepsPerHour);
-	for(uint i = 0; i < Config::stepsPerHour; ++i)
+	area.m_hasRain.start(100, Config::stepsPerMinute);
+	for(uint i = 0; i < Config::stepsPerMinute; ++i)
 	{
 		simulation.doStep();
 		if(simulation.m_step % Config::stepsPerMinute == 0)
