@@ -132,12 +132,13 @@ public:
 	[[nodiscard]] Volume getVolume() const;
 	[[nodiscard]] const MoveType& getMoveType() const { return m_canMove.getMoveType(); }
 	[[nodiscard]] Mass singleUnitMass() const { return getMass(); }
+	// May return nullptr.
 	[[nodiscard]] const Faction* getFaction() const { return m_faction; }
 	[[nodiscard]] uint32_t getAgeInYears() const;
 	[[nodiscard]] Step getAge() const;
 	[[nodiscard]] Step getBirthStep() const { return m_birthStep; }
+	[[nodiscard]] std::wstring getActionDescription() const;
 	[[nodiscard]] bool allBlocksAtLocationAndFacingAreReservable(const Block& location, Facing facing) const;
-	// May return nullptr.
 	[[nodiscard]] EventSchedule& getEventSchedule();
 	[[nodiscard]] ThreadedTaskEngine& getThreadedTaskEngine();
 	Actor(const Actor& actor) = delete;

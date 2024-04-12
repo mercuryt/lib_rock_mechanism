@@ -71,6 +71,7 @@ TEST_CASE("dig")
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "dig");
 		std::function<bool()> predicate = [&]() { return !stairsLocation1.isSolid(); };
 		simulation.fastForwardUntillPredicate(predicate, 45);
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "dig");
 		REQUIRE(stairsLocation1.m_hasBlockFeatures.contains(BlockFeatureType::stairs));
 		REQUIRE(stairsLocation1.m_hasShapes.canEnterEverFrom(dwarf1, aboveStairs));
 		std::function<bool()> predicate2 = [&]() { return !stairsLocation2.isSolid(); };

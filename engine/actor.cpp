@@ -409,6 +409,12 @@ Step Actor::getAge() const
 {
 	return const_cast<Actor*>(this)->getSimulation().m_step - m_birthStep;
 }
+std::wstring Actor::getActionDescription() const
+{
+	if(m_hasObjectives.hasCurrent())
+		return util::stringToWideString(const_cast<Actor*>(this)->m_hasObjectives.getCurrent().name());
+	return L"no action";
+}
 bool Actor::allBlocksAtLocationAndFacingAreReservable(const Block& location, Facing facing) const
 {
 	if(m_faction == nullptr)

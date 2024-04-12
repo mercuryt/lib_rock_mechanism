@@ -99,8 +99,10 @@ TEST_CASE("Area")
 		REQUIRE(actor.m_canMove.getPath().size() == 7);
 		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.empty());
 		REQUIRE(actor.m_canMove.hasEvent());
-		uint32_t scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
-		REQUIRE(scheduledStep == 8);
+		Step scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
+		float seconds = (float)scheduledStep / (float)Config::stepsPerSecond;
+		REQUIRE(seconds > 0.25f);
+		REQUIRE(seconds < 0.5f);
 		while(simulation.m_step != scheduledStep)
 		{
 			area.readStep();

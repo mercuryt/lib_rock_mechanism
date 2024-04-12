@@ -35,6 +35,7 @@ public:
 	void installItem(Block& block);
 	void unfocusUI();
 	void drawTime();
+	void updateInfoPopup() { m_infoPopup.update(); }
 	[[nodiscard]] bool isVisible() const { return m_group->isVisible(); }
 	[[nodiscard]] bool menuIsVisible() const { return m_menu->isVisible(); }
 	[[nodiscard]] bool contextMenuIsVisible() const { return m_contextMenu.isVisible(); }

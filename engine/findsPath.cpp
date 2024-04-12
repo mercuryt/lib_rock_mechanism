@@ -10,7 +10,7 @@ struct ProposedRouteStep
 {
 	// Use pointer rather then reference so we can store in vector.
 	RouteNode* routeNode;
-	uint32_t totalMoveCost;
+	Step totalMoveCost;
 };
 /*
 // Only to be used when pathing with turn rate restrictions.
@@ -34,7 +34,7 @@ struct ClosedList
 FindsPath::FindsPath(const HasShape& hs, bool detour) : m_hasShape(hs), m_target(nullptr), m_detour(detour), m_useCurrentLocation(false), m_huristicDestination(nullptr), m_maxRange(UINT32_MAX) { }
 /*
 // Depth first search.
-void FindsPath::depthFirstSearch(std::function<bool(const Block&, const Block&)>& isValid, std::function<bool(const ProposedRouteStep&, const ProposedRouteStep&)>& compare, std::function<bool(const Block&)>& isDone, std::function<std::vector<std::pair<Block*, uint32_t>>(Block&)>& adjacentCosts, Block& start)
+void FindsPath::depthFirstSearch(std::function<bool(const Block&, const Block&)>& isValid, std::function<bool(const ProposedRouteStep&, const ProposedRouteStep&)>& compare, std::function<bool(const Block&)>& isDone, std::function<std::vector<std::pair<Block*, Step>>(Block&)>& adjacentCosts, Block& start)
 {
 	assert(m_route.empty());
 	std::unordered_set<const Block*> closed;
@@ -48,7 +48,7 @@ void FindsPath::depthFirstSearch(std::function<bool(const Block&, const Block&)>
 		const ProposedRouteStep& proposedRouteStep = open.top();
 		const RouteNode& routeNode = *proposedRouteStep.routeNode;
 		const Block& block = routeNode.block;
-		uint32_t totalMoveCost = proposedRouteStep.totalMoveCost;
+		Step totalMoveCost = proposedRouteStep.totalMoveCost;
 		open.pop();
 		for(auto [adjacent, moveCost] : adjacentCosts(const_cast<Block&>(block)))
 			if(isValid(*adjacent, block) && !closed.contains(adjacent))
@@ -225,7 +225,7 @@ void FindsPath::pathToPredicateWithHuristicDestination(std::function<bool(const 
 	while(!openList.empty())
 	{
 		const ProposedRouteStep& proposedRouteStep = openList.top();
-		uint32_t totalMoveCost = proposedRouteStep.totalMoveCost;
+		Step totalMoveCost = proposedRouteStep.totalMoveCost;
 		const RouteNode* routeNode = proposedRouteStep.routeNode;
 		const Block& block = routeNode->block;
 		openList.pop();
@@ -274,7 +274,7 @@ void FindsPath::pathToAreaEdge()
 	};
 	pathToPredicate(predicate);
 }
-std::vector<std::pair<Block*, uint32_t>> FindsPath::getMoveCosts(const Block& block)
+std::vector<std::pair<Block*, Step>> FindsPath::getMoveCosts(const Block& block)
 {
 	if(block.m_hasShapes.hasCachedMoveCosts(*m_hasShape.m_shape, m_hasShape.getMoveType()))
 		return block.m_hasShapes.getCachedMoveCosts(*m_hasShape.m_shape, m_hasShape.getMoveType());

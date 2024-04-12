@@ -16,15 +16,15 @@ class FindsPath
 {
 	const HasShape& m_hasShape;
 	std::vector<Block*> m_route;
-	std::unordered_map<Block*, std::vector<std::pair<Block*, uint32_t>>> m_moveCostsToCache;
+	std::unordered_map<Block*, std::vector<std::pair<Block*, Step>>> m_moveCostsToCache;
 	Block* m_target;
 	bool m_detour;
 public:
 	bool m_useCurrentLocation;
 	const Block* m_huristicDestination;
-	uint32_t m_maxRange;
+	DistanceInBlocks m_maxRange;
 	FindsPath(const HasShape& hs, bool detour);
-	void depthFirstSearch(std::function<bool(const Block&, const Block&)>& isValid, std::function<bool(const ProposedRouteStep&, const ProposedRouteStep&)>& compare, std::function<bool(const Block&)>& isDone, std::function<std::vector<std::pair<Block*, uint32_t>>(Block&)>& adjacentCosts, Block& start);
+	void depthFirstSearch(std::function<bool(const Block&, const Block&)>& isValid, std::function<bool(const ProposedRouteStep&, const ProposedRouteStep&)>& compare, std::function<bool(const Block&)>& isDone, std::function<std::vector<std::pair<Block*, Step>>(Block&)>& adjacentCosts, Block& start);
 	void pathToBlock(const Block& destination);
 	void pathAdjacentToBlock(const Block& destination);
 	void pathToPredicate(std::function<bool(const Block&, Facing facing)>& predicate);
@@ -40,7 +40,7 @@ public:
 	void reset();
 	//TODO: make return reference and assert found().
 	[[nodiscard]] Block* getBlockWhichPassedPredicate() { return m_target; }
-	[[nodiscard]] std::vector<std::pair<Block*, uint32_t>> getMoveCosts(const Block& block);
+	[[nodiscard]] std::vector<std::pair<Block*, Step>> getMoveCosts(const Block& block);
 	[[nodiscard]] Facing getFacingAtDestination() const;
 	[[nodiscard]] std::vector<Block*> getAdjacentBlocksAtEndOfPath();
 	[[nodiscard]] std::vector<Block*> getOccupiedBlocksAtEndOfPath();
@@ -48,5 +48,5 @@ public:
 	[[nodiscard]] bool found() const { return !m_route.empty(); }
 	[[nodiscard]] bool areAllBlocksAtDestinationReservable(const Faction* faction) const;
 	// For testing.
-	[[maybe_unused, nodiscard]] std::unordered_map<Block*, std::vector<std::pair<Block*, uint32_t>>>& getMoveCostsToCache() { return m_moveCostsToCache; }
+	[[maybe_unused, nodiscard]] std::unordered_map<Block*, std::vector<std::pair<Block*, Step>>>& getMoveCostsToCache() { return m_moveCostsToCache; }
 };

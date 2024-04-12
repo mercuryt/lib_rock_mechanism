@@ -57,6 +57,13 @@ bool Random::chance(double chance)
 	std::uniform_real_distribution<double> dist(0.0, 1.0);
 	return dist(rng) <= chance;
 }
+bool Random::chance(float chance)
+{
+	assert(chance >= 0.0f);
+	assert(chance <= 1.0f);
+	std::uniform_real_distribution<float> dist(0.0, 1.0);
+	return dist(rng) <= chance;
+}
 uint32_t Random::deterministicScramble(uint32_t seed)
 {
 	std::mt19937 rng(seed);

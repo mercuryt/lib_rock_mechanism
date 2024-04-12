@@ -391,7 +391,7 @@ void Window::startLoop()
 		{
 			m_window.setView(m_view);
 			drawView();
-			// What is this?
+			// What is this? Something for TGUI?
 			m_window.setView(m_window.getDefaultView());
 		}
 		// Draw UI.
@@ -540,6 +540,9 @@ void Window::drawView()
 	areaBorder.setOutlineThickness(3.f);
 	areaBorder.setPosition(sf::Vector2f(0,0));
 	m_window.draw(areaBorder);
+	// Update Info popup.
+	//if(m_gameOverlay.infoPopupIsVisible())
+		//m_gameOverlay.updateInfoPopup();
 }
 void Window::threadTask(std::function<void()> task)
 {

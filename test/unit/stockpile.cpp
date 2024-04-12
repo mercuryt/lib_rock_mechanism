@@ -213,8 +213,8 @@ TEST_CASE("stockpile")
 	}
 	SUBCASE("path to item is blocked")
 	{
-		areaBuilderUtil::setSolidWall(area.getBlock(0, 3, 2), area.getBlock(8, 3, 2), wood);
-		Block& gateway = area.getBlock(9, 3, 2);
+		areaBuilderUtil::setSolidWall(area.getBlock(0, 3, 1), area.getBlock(8, 3, 1), wood);
+		Block& gateway = area.getBlock(9, 3, 1);
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk, wood);
 		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
@@ -229,10 +229,16 @@ TEST_CASE("stockpile")
 		simulation.doStep();
 		// Reserve required.
 		simulation.doStep();
+		Project& project = *dwarf1.m_project;
 		// Set haul strategy.
 		simulation.doStep();
+		REQUIRE(project.getProjectWorkerFor(dwarf1).haulSubproject);
 		// Path to chunk.
 		simulation.doStep();
+		REQUIRE(dwarf1.m_canMove.getDestination());
+		REQUIRE(dwarf1.m_canMove.getDestination()->isAdjacentTo(chunk1));
+		auto path = dwarf1.m_canMove.getPath();
+		REQUIRE(std::ranges::find(path, &gateway) != path.end());
 		gateway.setSolid(wood);
 		simulation.fastForwardUntillActorIsAdjacentTo(dwarf1, gateway);
 		// Cannot detour or find alternative block.
@@ -258,14 +264,17 @@ TEST_CASE("stockpile")
 		simulation.doStep();
 		// Reserve required.
 		simulation.doStep();
+		Project& project = *dwarf1.m_project;
 		// Set haul strategy.
 		simulation.doStep();
+		REQUIRE(project.getProjectWorkerFor(dwarf1).haulSubproject);
 		// Path to chunk.
 		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, chunkLocation);
 		REQUIRE(dwarf1.m_canPickup.isCarrying(chunk1));
 		// Path to stockpile.
 		simulation.doStep();
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "stockpile");
 		REQUIRE(stockpileLocation.isAdjacentToIncludingCornersAndEdges(*dwarf1.m_canMove.getDestination()));
 		gateway.setSolid(wood);
 		simulation.fastForwardUntillActorIsAdjacentTo(dwarf1, gateway);

@@ -168,7 +168,7 @@ public:
 
 	HasObjectives(Actor& a);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
+	[[nodiscard]] Json toJson() const;
 	void getNext();
 	void addNeed(std::unique_ptr<Objective> objective);
 	void addTaskToEnd(std::unique_ptr<Objective> objective);
@@ -183,9 +183,9 @@ public:
 	void cannotFulfillNeed(Objective& objective);
 	void detour();
 	void restart() { m_currentObjective->reset(); m_currentObjective->execute(); }
-	Objective& getCurrent();
-	bool hasCurrent() { return m_currentObjective != nullptr; }
-	bool hasSupressedNeed(const ObjectiveTypeId objectiveTypeId) const { return m_supressedNeeds.contains(objectiveTypeId); }
+	[[nodiscard]] Objective& getCurrent();
+	[[nodiscard]] bool hasCurrent() const { return m_currentObjective != nullptr; }
+	[[nodiscard]] bool hasSupressedNeed(const ObjectiveTypeId objectiveTypeId) const { return m_supressedNeeds.contains(objectiveTypeId); }
 	friend class ObjectiveTypePrioritySet;
 	friend class SupressedNeed;
 };

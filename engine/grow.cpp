@@ -26,6 +26,8 @@ Json CanGrow::toJson() const
 void CanGrow::setGrowthPercent(Percent percent)
 {
 	m_percentGrown = percent;
+	// Restart the growth event.
+	stop();
 	m_event.reset();
 	update();
 	updateGrowingStatus();
@@ -52,7 +54,8 @@ Percent CanGrow::growthPercent() const
 }
 void CanGrow::scheduleEvent()
 {
-	m_event.resume(m_actor.m_species.stepsTillFullyGrown / Step(100), *this);
+	Step delay = std::round(m_actor.m_species.stepsTillFullyGrown / 100.f);
+	m_event.resume(delay, *this);
 }
 void CanGrow::update()
 {
@@ -60,7 +63,7 @@ void CanGrow::update()
 	const Shape& shape = m_actor.m_species.shapeForPercentGrown(m_percentGrown);
 	if(&shape != m_actor.m_shape)
 		m_actor.setShape(shape);
-	if(m_percentGrown != 100 && m_actor.m_species.stepsTillFullyGrown > m_actor.getAge())
+	if(m_percentGrown != 100 && m_actor.m_species.stepsTillFullyGrown > m_actor.getAge() && m_event.isPaused())
 		scheduleEvent();
 }
 void CanGrow::stop()
