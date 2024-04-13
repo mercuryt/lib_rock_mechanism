@@ -215,7 +215,7 @@ void DigProject::onCancel()
 		static_cast<DigObjective&>(actor->m_hasObjectives.getCurrent()).m_project = nullptr;
 		actor->m_project = nullptr;
 		actor->m_hasObjectives.getCurrent().reset();
-		actor->m_hasObjectives.cannotCompleteTask();
+		actor->m_hasObjectives.cannotCompleteSubobjective();
 	}
 }
 void DigProject::onDelay()

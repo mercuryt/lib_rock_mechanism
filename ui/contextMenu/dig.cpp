@@ -9,6 +9,7 @@ void ContextMenu::drawDigControls(Block& block)
 		auto cancelButton = tgui::Button::create("cancel dig");
 		m_root.add(cancelButton);
 		cancelButton->onClick([this]{
+			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 			for(Block* selectedBlock : m_window.getSelectedBlocks())
 				if(selectedBlock->m_hasDesignations.contains(*m_window.getFaction(), BlockDesignation::Dig))
 					m_window.getArea()->m_hasDigDesignations.undesignate(*m_window.getFaction(), *selectedBlock);
@@ -22,6 +23,7 @@ void ContextMenu::drawDigControls(Block& block)
 		digButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 		m_root.add(digButton);
 		digButton->onClick([this]{
+			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 			for(Block* selectedBlock : m_window.getSelectedBlocks())
 			{
 				if(m_window.m_editMode)
@@ -43,6 +45,7 @@ void ContextMenu::drawDigControls(Block& block)
 			auto button = tgui::Button::create("dig out feature");
 			subMenu.add(button);
 			button->onClick([this]{
+				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				assert(widgetUtil::lastSelectedBlockFeatureType);
 				const BlockFeatureType& featureType = *widgetUtil::lastSelectedBlockFeatureType;
 				for(Block* selectedBlock : m_window.getSelectedBlocks())

@@ -16,6 +16,7 @@ void ContextMenu::drawFarmFieldControls(Block& block)
 			shrinkButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 			submenu.add(shrinkButton);
 			shrinkButton->onClick([this]{
+				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				for(Block* selectedBlock : m_window.getSelectedBlocks())
 					selectedBlock->m_isPartOfFarmField.remove(*m_window.getFaction());
 				hide();
@@ -29,6 +30,7 @@ void ContextMenu::drawFarmFieldControls(Block& block)
 				submenu.add(plantSpeciesUI);
 				plantSpeciesUI->onItemSelect([this, &block](const tgui::String& string)
 				{
+					std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 					const PlantSpecies& species = PlantSpecies::byName(string.toStdString());
 					FarmField& field = *block.m_isPartOfFarmField.get(*m_window.getFaction());
 					if(&species != field.plantSpecies)
@@ -54,6 +56,7 @@ void ContextMenu::drawFarmFieldControls(Block& block)
 			auto plantSpeciesUI = widgetUtil::makePlantSpeciesSelectUI(&block);
 			submenu.add(plantSpeciesUI);
 			plantSpeciesUI->onItemSelect([this, &block](const tgui::String name){ 
+				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				if(m_window.getSelectedBlocks().empty())
 					m_window.selectBlock(block);
 				if(!m_window.getArea()->m_hasFarmFields.contains(*m_window.getFaction()))

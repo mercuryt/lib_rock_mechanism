@@ -84,4 +84,7 @@ void displayData::load()
 	const Json& data = definitions::tryParse(path/"config.json");
 	ratioOfScaleToFontSize = data["ratioOfScaleToFontSize"].get<float>();
 	wallOffset = data["wallOffset"].get<float>();
+	progressBarColor = sf::Color::Blue;
+	progressBarOutlineColor = sf::Color::Black;
+	progressBarThickness = 2.f;
 }

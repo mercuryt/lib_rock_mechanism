@@ -15,6 +15,7 @@ void ContextMenu::drawFluidControls(Block& block)
 			auto remove = tgui::Button::create("remove");
 			submenu.add(remove);
 			remove->onClick([this, fluidType]{ 
+				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				for(auto* selectedBlock : m_window.getSelectedBlocks())
 				{
 					Volume contains = selectedBlock->volumeOfFluidTypeContains(*fluidType);
@@ -29,6 +30,7 @@ void ContextMenu::drawFluidControls(Block& block)
 				auto selectGroup = tgui::Button::create("select adjacent");
 				submenu.add(selectGroup);
 				selectGroup->onClick([this, fluidType, &block]{
+					std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 					if(block.m_fluids.contains(fluidType))
 					{
 						FluidGroup& group = *block.m_fluids.at(fluidType).second;
@@ -67,6 +69,7 @@ void ContextMenu::drawFluidControls(Block& block)
 			createFluid->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 			submenu.add(createFluid);
 			createFluid->onClick([this, &block, fluidTypeUI, levelUI]{
+				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				if(m_window.getSelectedBlocks().empty())
 					m_window.selectBlock(block);
 				for(Block* selectedBlock : m_window.getSelectedBlocks())
@@ -81,6 +84,7 @@ void ContextMenu::drawFluidControls(Block& block)
 				createSource->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 				submenu.add(createSource);
 				createSource->onClick([this, &block, fluidTypeUI, levelUI]{
+					std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 					if(m_window.getSelectedBlocks().empty())
 						m_window.selectBlock(block);
 					for(Block* selectedBlock: m_window.getSelectedBlocks())
@@ -100,6 +104,7 @@ void ContextMenu::drawFluidControls(Block& block)
 		removeFluidSourceButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 		m_root.add(removeFluidSourceButton);
 		removeFluidSourceButton->onClick([this, &block]{
+			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 			m_window.getArea()->m_fluidSources.destroy(block);
 			hide();
 		});

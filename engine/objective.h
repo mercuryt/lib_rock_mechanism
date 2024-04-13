@@ -60,6 +60,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(ObjectiveTypeId, {
 	{ObjectiveTypeId::StockPile, "StockPile"}, 
 	{ObjectiveTypeId::Wait, "Wait"}, 
 	{ObjectiveTypeId::Wander, "Wander"},
+	{ObjectiveTypeId::Wander, "WoodCutting"},
 });
 struct ObjectiveType
 {
@@ -83,22 +84,34 @@ class Objective
 {
 public:
 	Actor& m_actor;
+	// Controlls usurping of current objective between the tasks currently at the top of the queue vs highest priority need.
 	uint32_t m_priority;
+	// If detour is true then pathing will account for the positions of other actors.
 	bool m_detour = false;
+	// Reentrant state machine method.
 	virtual void execute() = 0;
+	// Clean up references and destroy.
 	virtual void cancel() = 0;
+	// Clean up threaded tasks and events.
 	virtual void delay() = 0;
+	// Return to inital state and try again.
 	virtual void reset() = 0;
+	// Returns true if the noPath condition is resolved or false otherwise.
 	virtual bool onNoPath() { return false; }
 	void detour() { m_detour = true; execute(); }
 	[[nodiscard]] virtual std::string name() const = 0;
 	[[nodiscard]] virtual ObjectiveTypeId getObjectiveTypeId() const = 0;
+	// Needs are biological imperatives which overide tasks. Eat, sleep, etc.
 	[[nodiscard]] virtual bool isNeed() const { return false; }
+	// When an objective is interrputed by a higher priority objective should it be kept in the task queue for later or discarded?
+	// Should be true only for objectives like Wander or Wait which are not meant to resume after interrupt because they are idle tasks.
+	[[nodiscard]] virtual bool canResume() const { return true; }
 	Objective(Actor& a, uint32_t p);
+	// Explicit delete of copy and move constructors to ensure pointer stability.
 	Objective(const Objective&) = delete;
 	Objective(Objective&&) = delete;
 	Objective(const Json& data, DeserializationMemo& deserializationMemo);
-	virtual Json toJson() const;
+	[[nodiscard]] virtual Json toJson() const;
 	bool operator==(const Objective& other) const { return &other == this; }
 	virtual ~Objective() = default;
 };
@@ -163,24 +176,34 @@ class HasObjectives final
 
 	void maybeUsurpsPriority(Objective& objective);
 	void setCurrentObjective(Objective& objective);
+	// Erase objective.
+	void destroy(Objective& objective);
 public:
 	ObjectiveTypePrioritySet m_prioritySet;
 
 	HasObjectives(Actor& a);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
+	// Assign next objective from either task queue or needs, depending on priority.
 	void getNext();
+	// Add to need set, to be sorted into position depending on priority. May usurp.
 	void addNeed(std::unique_ptr<Objective> objective);
+	// Add task to end of queue.
 	void addTaskToEnd(std::unique_ptr<Objective> objective);
+	// Add task to start of queue. May usurp current objective.
 	void addTaskToStart(std::unique_ptr<Objective> objective);
+	// Clear task queue and then add single task.
 	void replaceTasks(std::unique_ptr<Objective> objective);
-	void destroy(Objective& objective);
 	void cancel(Objective& objective);
 	void objectiveComplete(Objective& objective);
-	void taskComplete();
 	void cannotFulfillObjective(Objective& objective);
-	void cannotCompleteTask();
 	void cannotFulfillNeed(Objective& objective);
+	// Sub unit of objective is complete, get the next sub unit if there is one or call objectiveComplete.
+	void subobjectiveComplete();
+	// Sub unit of objective cannot be completed, get an alternative or call cannotFulfill.
+	void cannotCompleteSubobjective();
+	// Repath taking into account the locations of other actors.
+	// To be used when the path is temporarily blocked.
 	void detour();
 	void restart() { m_currentObjective->reset(); m_currentObjective->execute(); }
 	[[nodiscard]] Objective& getCurrent();

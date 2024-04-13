@@ -467,6 +467,17 @@ void Window::drawView()
 			m_draw.singleTileActor(*actors[index]);
 		}
 	}
+	// Designated and project progress.
+	if(m_faction)
+		for(Block& block : m_area->getZLevel(m_z))
+		{
+			if(block.m_hasDesignations.containsFaction(*m_faction))
+				m_draw.designated(block);
+			m_draw.craftLocation(block);
+			Percent projectProgress = block.m_hasProjects.getProjectPercentComplete(*m_faction);
+			if(projectProgress)
+				m_draw.progressBarOnBlock(block, projectProgress);
+		}
 	// Selected.
 	if(!m_selectedBlocks.empty())
 	{
@@ -493,17 +504,6 @@ void Window::drawView()
 			for(Block* block : plant->m_blocks)
 				if(block->m_z == m_z)
 					m_draw.selected(*block);
-	// Designated and project progress.
-	if(m_faction)
-		for(Block& block : m_area->getZLevel(m_z))
-		{
-			if(block.m_hasDesignations.containsFaction(*m_faction))
-				m_draw.designated(block);
-			m_draw.craftLocation(block);
-			Percent projectProgress = block.m_hasProjects.getProjectPercentComplete(*m_faction);
-			if(projectProgress)
-				m_draw.progressBarOnBlock(block, projectProgress);
-		}
 	// Selection Box.
 	if(m_firstCornerOfSelection && sf::Mouse::isButtonPressed(selectMouseButton))
 	{

@@ -13,6 +13,7 @@ void ContextMenu::drawConstructControls(Block& block)
 		cancelButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 		m_root.add(cancelButton);
 		cancelButton->onClick([this]{
+			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 			for(Block* selectedBlock : m_window.getSelectedBlocks())
 				m_window.getArea()->m_hasConstructionDesignations.undesignate(*m_window.getFaction(), *selectedBlock);
 			hide();
@@ -53,6 +54,7 @@ void ContextMenu::drawConstructControls(Block& block)
 }
 void ContextMenu::construct(Block& block, bool constructed, const MaterialType& materialType, const BlockFeatureType* blockFeatureType)
 {
+	std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 	if(m_window.getSelectedBlocks().empty())
 		m_window.selectBlock(block);
 	for(Block* selectedBlock : m_window.getSelectedBlocks())

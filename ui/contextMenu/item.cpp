@@ -20,6 +20,7 @@ void ContextMenu::drawItemControls(Block& block)
 					bool marked = item->m_canBeStockPiled.contains(*m_window.getFaction());
 					auto stockpileUI = tgui::Button::create(marked ? "do not stockpile" : "stockpile");
 					stockpileUI->onClick([item, marked, this]{ 
+						std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 						if(marked) 
 							item->m_canBeStockPiled.unset(*m_window.getFaction());
 						else
@@ -36,6 +37,7 @@ void ContextMenu::drawItemControls(Block& block)
 					auto destroy = tgui::Button::create("destroy");
 					submenu.add(destroy);
 					destroy->onClick([this, item]{ 
+						std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 						m_window.deselectAll();
 						item->destroy(); 
 						hide();
@@ -53,6 +55,7 @@ void ContextMenu::drawItemControls(Block& block)
 						button->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 						submenu.add(button);
 						button->onClick([this, &actor, query] () mutable {
+							std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 							std::unique_ptr<Objective> objective = std::make_unique<EquipItemObjective>(actor, query);
 							actor.m_hasObjectives.replaceTasks(std::move(objective));
 							hide();
@@ -64,7 +67,11 @@ void ContextMenu::drawItemControls(Block& block)
 					auto installAt = tgui::Button::create("install at...");
 					installAt->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 					submenu.add(installAt);
-					installAt->onClick([this, item]{ m_window.setItemToInstall(*item); hide(); });
+					installAt->onClick([this, item]{ 
+						std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
+						m_window.setItemToInstall(*item); 
+						hide(); 
+					});
 				}
 			});
 		}
@@ -99,6 +106,7 @@ void ContextMenu::drawItemControls(Block& block)
 					confirm->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 					subSubMenu.add(confirm);
 					confirm->onClick([this, itemTypeSelectUI, materialTypeSelectUI, &block]{
+						std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 						const MaterialType& materialType = MaterialType::byName(materialTypeSelectUI->getSelectedItemId().toStdString());
 						const ItemType& itemType = ItemType::byName(itemTypeSelectUI->getSelectedItemId().toStdString());
 						if(m_window.getSelectedBlocks().empty())
@@ -136,6 +144,7 @@ void ContextMenu::drawItemControls(Block& block)
 					confirm->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 					subSubMenu.add(confirm);
 					confirm->onClick([this, itemTypeSelectUI, materialTypeSelectUI, &block]{
+						std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 						const MaterialType& materialType = MaterialType::byName(materialTypeSelectUI->getSelectedItemId().toStdString());
 						const ItemType& itemType = ItemType::byName(itemTypeSelectUI->getSelectedItemId().toStdString());
 						if(m_window.getSelectedBlocks().empty())
@@ -176,6 +185,7 @@ void ContextMenu::drawItemControls(Block& block)
 					button->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 					submenu.add(button);
 					button->onClick([this, &block, &item, facing]{ 
+						std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 						m_window.getArea()->m_hasInstallItemDesignations.at(*m_window.getFaction()).add(block, item, facing, *m_window.getFaction()); 
 						hide(); 
 					});

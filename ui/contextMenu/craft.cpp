@@ -21,6 +21,7 @@ void ContextMenu::drawCraftControls(Block& block)
 			auto button = tgui::Button::create("undesignate " + category->name);
 			subMenu.add(button);
 			button->onClick([this, category, &block]{
+				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				auto& locationsAndJobsForFaction = m_window.getArea()->m_hasCraftingLocationsAndJobs.at(*m_window.getFaction());
 				if(m_window.getSelectedBlocks().empty())
 					m_window.selectBlock(block);
@@ -31,6 +32,7 @@ void ContextMenu::drawCraftControls(Block& block)
 		}
 	});
 	craftButton->onClick([this, &block]{
+		std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 		auto& locationsAndJobsForFaction = m_window.getArea()->m_hasCraftingLocationsAndJobs.at(*m_window.getFaction());
 		if(m_window.getSelectedBlocks().empty())
 			m_window.selectBlock(block);

@@ -16,7 +16,7 @@ void EatEvent::execute()
 	auto& actor = m_eatObjective.m_actor;
 	if(blockContainingFood == nullptr)
 	{
-		actor.m_hasObjectives.cannotCompleteTask();
+		actor.m_hasObjectives.cannotCompleteSubobjective();
 		return;
 	}
 	for(Item* item : blockContainingFood->m_hasItems.getAll())
@@ -397,7 +397,7 @@ void MustEat::eat(Mass mass)
 		//TODO: ERROR HERE!
 		stepsToNextHungerEvent = util::scaleByInverseFraction(m_actor.m_species.stepsTillDieWithoutFood, m_massFoodRequested, massFoodForBodyMass());
 		m_actor.m_mustEat.m_hungerEvent.schedule(stepsToNextHungerEvent, m_actor);
-		m_actor.m_hasObjectives.taskComplete();
+		m_actor.m_hasObjectives.subobjectiveComplete();
 	}
 }
 void MustEat::setNeedsFood()

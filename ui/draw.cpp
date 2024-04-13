@@ -455,9 +455,15 @@ void Draw::imageOnBlockSouthAlign(const Block& block, std::string name, const sf
 }
 void Draw::progressBarOnBlock(const Block& block, Percent progress)
 {
-	sf::RectangleShape rectangle(sf::Vector2f(util::scaleByPercent(m_window.m_scale, progress), (float)m_window.m_scale / (float)displayData::defaultScale));
+	float scaledUnit = float(m_window.m_scale) / float(displayData::defaultScale);
+	sf::RectangleShape outline(sf::Vector2f(m_window.m_scale, scaledUnit * (2 + displayData::progressBarThickness)));
+	outline.setFillColor(displayData::progressBarOutlineColor);
+	outline.setPosition(static_cast<float>(block.m_x * m_window.m_scale), static_cast<float>(block.m_y * m_window.m_scale));
+	m_window.getRenderWindow().draw(outline);
+	float progressWidth = util::scaleByPercent(m_window.m_scale, progress) - (scaledUnit * 2);
+	sf::RectangleShape rectangle(sf::Vector2f(progressWidth, scaledUnit * displayData::progressBarThickness));
 	rectangle.setFillColor(displayData::progressBarColor);
-	rectangle.setPosition(static_cast<float>(block.m_x * m_window.m_scale), static_cast<float>(block.m_y * m_window.m_scale));
+	rectangle.setPosition(static_cast<float>(block.m_x * m_window.m_scale) + scaledUnit, static_cast<float>(block.m_y * m_window.m_scale) + scaledUnit);
 	m_window.getRenderWindow().draw(rectangle);
 }
 void Draw::selected(Block& block) { outlineOnBlock(block, displayData::selectColor); }

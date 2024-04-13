@@ -17,6 +17,7 @@ void ContextMenu::drawPlantControls(Block& block)
 			auto cutDown = tgui::Button::create("cut down");
 			submenu.add(cutDown);
 			cutDown->onClick([this, &block]{ 
+				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				const PlantSpecies& species = block.m_hasPlant.get().m_plantSpecies;
 				//TODO: cut down non trees.
 				if(!species.isTree)
@@ -24,11 +25,13 @@ void ContextMenu::drawPlantControls(Block& block)
 				for(Block* selectedBlock : m_window.getSelectedBlocks())
 					if(selectedBlock->m_hasPlant.exists() && selectedBlock->m_hasPlant.get().m_plantSpecies == species)
 						m_window.getArea()->m_hasWoodCuttingDesignations.designate(*m_window.getFaction(), *selectedBlock); 
+				hide();
 			});
 			if(m_window.m_editMode)
 			{
 				auto removePlant = tgui::Button::create("remove " + block.m_hasPlant.get().m_plantSpecies.name);
-				removePlant->onClick([this, &block]{
+					removePlant->onClick([this, &block]{
+					std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 					const PlantSpecies& species = block.m_hasPlant.get().m_plantSpecies;
 					for(Block* selectedBlock : m_window.getSelectedBlocks())
 						if(selectedBlock->m_hasPlant.exists() && selectedBlock->m_hasPlant.get().m_plantSpecies == species)
@@ -65,6 +68,7 @@ void ContextMenu::drawPlantControls(Block& block)
 			confirm->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 			submenu.add(confirm);
 			confirm->onClick([this, speciesUI, percentGrownUI]{
+				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				if(!speciesUI->getSelectedItem().empty())
 				{
 					const PlantSpecies& species = PlantSpecies::byName(speciesUI->getSelectedItemId().toStdString());

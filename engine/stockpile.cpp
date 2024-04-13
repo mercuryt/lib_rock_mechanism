@@ -248,7 +248,7 @@ void StockPileProject::onCancel()
 		static_cast<StockPileObjective&>(actor->m_hasObjectives.getCurrent()).m_project = nullptr;
 		actor->m_project = nullptr;
 		actor->m_hasObjectives.getCurrent().reset();
-		actor->m_hasObjectives.cannotCompleteTask();
+		actor->m_hasObjectives.cannotCompleteSubobjective();
 	}
 }
 void StockPileProject::onHasShapeReservationDishonored([[maybe_unused]] const HasShape& hasShape, [[maybe_unused]] uint32_t oldCount, uint32_t newCount)
