@@ -151,9 +151,12 @@ public:
 	[[nodiscard]] bool reservationsComplete() const;
 	[[nodiscard]] bool deliveriesComplete() const;
 	[[nodiscard]] bool isOnDelay() { return m_delay; }
+	// Block where the work will be done.
 	[[nodiscard]] Block& getLocation() { return m_location; }
 	[[nodiscard]] const Block& getLocation() const { return m_location; }
 	[[nodiscard]] bool hasCandidate(const Actor& actor) const;
+	// When we cannotCompleteSubobjective is called do we reset and try again or do we call cannotCompleteObjective?
+	// Should be false for objectives like targeted hauling, where if the specific target is inaccessable there is no fallback possible.
 	[[nodiscard]] virtual bool canReset() const { return true; }
 	[[nodiscard]] std::vector<Actor*> getWorkersAndCandidates();
 	[[nodiscard]] std::vector<std::pair<Actor*, Objective*>> getWorkersAndCandidatesWithObjectives();

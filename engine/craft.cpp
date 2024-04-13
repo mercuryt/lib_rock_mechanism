@@ -63,7 +63,7 @@ void CraftStepProject::onCancel()
 		//TODO: This records this fail job for this actor regardless of if it might still be possible via another location or subsitute required hasShape.
 		objective.recordFailedJob(craftJob);
 		objective.reset();
-		actor->m_hasObjectives.cannotCompleteTask();
+		actor->m_hasObjectives.cannotCompleteSubobjective();
 	}
 }
 std::vector<std::pair<ItemQuery, uint32_t>> CraftStepProject::getConsumed() const

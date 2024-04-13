@@ -228,7 +228,7 @@ void CanFight::noLongerTargetable()
 	{
 		assert(actor->m_canFight.m_target == &m_actor);
 		actor->m_canFight.targetNoLongerTargetable();
-		actor->m_hasObjectives.taskComplete();
+		actor->m_hasObjectives.subobjectiveComplete();
 	}
 	m_targetedBy.clear();
 }
@@ -244,7 +244,7 @@ void CanFight::targetNoLongerTargetable()
 {
 	assert(m_target != nullptr);
 	m_target = nullptr;
-	m_actor.m_hasObjectives.taskComplete();
+	m_actor.m_hasObjectives.subobjectiveComplete();
 }
 void CanFight::onTargetMoved()
 {
@@ -341,7 +341,7 @@ void GetIntoAttackPositionThreadedTask::writeStep()
 			}
 		}
 		else
-			m_actor.m_hasObjectives.cannotCompleteTask();
+			m_actor.m_hasObjectives.cannotCompleteSubobjective();
 	}
 	else
 		m_actor.m_canMove.setPath(m_findsPath.getPath());

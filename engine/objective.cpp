@@ -209,7 +209,10 @@ void HasObjectives::maybeUsurpsPriority(Objective& objective)
 	{
 		if(m_currentObjective->m_priority < objective.m_priority)
 		{
-			m_currentObjective->delay();
+			if(m_currentObjective->canResume())
+				m_currentObjective->delay();
+			else
+				m_currentObjective->cancel();
 			setCurrentObjective(objective);
 		}
 	}
@@ -307,7 +310,7 @@ void HasObjectives::objectiveComplete(Objective& objective)
 	m_actor.m_project = nullptr;
 	destroy(objective);
 }
-void HasObjectives::taskComplete()
+void HasObjectives::subobjectiveComplete()
 {
 	assert(m_actor.m_mustSleep.isAwake());
 	if(m_currentObjective == nullptr)
@@ -315,7 +318,7 @@ void HasObjectives::taskComplete()
 	else
 		m_currentObjective->execute();
 }
-void HasObjectives::cannotCompleteTask()
+void HasObjectives::cannotCompleteSubobjective()
 {
 	m_actor.m_canMove.clearPath();
 	//TODO: generate cancelaton message?

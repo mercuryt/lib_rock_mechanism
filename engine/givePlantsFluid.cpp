@@ -296,4 +296,4 @@ Json GivePlantsFluidItemDishonorCallback::toJson() const
 {
 	return {{"actor", m_actor}};
 }
-void GivePlantsFluidItemDishonorCallback::execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { m_actor.m_hasObjectives.cannotCompleteTask(); }
+void GivePlantsFluidItemDishonorCallback::execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { m_actor.m_hasObjectives.cannotCompleteSubobjective(); }

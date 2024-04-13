@@ -22,6 +22,7 @@ public:
 	void delay() { cancel(); }
 	void reset();
 	std::string name() const { return "wander"; }
+	[[nodiscard]] bool canResume() const { return false; }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Wander; }
 	friend class WanderThreadedTask;
 };

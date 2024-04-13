@@ -41,7 +41,7 @@ void MustDrink::drink(uint32_t volume)
 	}
 	else
 	{
-		m_actor.m_hasObjectives.taskComplete();
+		m_actor.m_hasObjectives.subobjectiveComplete();
 		stepsToNextThirstEvent = util::scaleByFraction(m_actor.m_species.stepsTillDieWithoutFluid, m_volumeDrinkRequested, m_actor.m_species.stepsTillDieWithoutFluid);
 	}
 	m_thirstEvent.schedule(stepsToNextThirstEvent, m_actor);
@@ -120,7 +120,7 @@ void DrinkThreadedTask::writeStep()
 	if(!m_findsPath.found())
 	{
 		if(m_findsPath.m_useCurrentLocation)
-			m_drinkObjective.m_actor.m_hasObjectives.taskComplete();
+			m_drinkObjective.m_actor.m_hasObjectives.subobjectiveComplete();
 		else
 			m_drinkObjective.m_actor.m_hasObjectives.cannotFulfillNeed(m_drinkObjective);
 	}

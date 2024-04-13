@@ -124,7 +124,7 @@ void ActorCanMove::callback()
 		{
 			m_destination = nullptr;
 			m_path.clear();
-			m_actor.m_hasObjectives.taskComplete();
+			m_actor.m_hasObjectives.subobjectiveComplete();
 		}
 		else
 		{
@@ -134,7 +134,7 @@ void ActorCanMove::callback()
 			if(nextBlock.m_hasShapes.anythingCanEnterEver() && block.m_hasShapes.canEnterEverFrom(m_actor, *m_actor.m_location))
 				scheduleMove();
 			else
-				m_actor.m_hasObjectives.cannotCompleteTask();
+				m_actor.m_hasObjectives.cannotCompleteSubobjective();
 		}
 	}
 	else
@@ -305,13 +305,13 @@ void PathThreadedTask::writeStep()
 		if(m_findsPath.m_useCurrentLocation && (!m_unreservedDestination || m_actor.allOccupiedBlocksAreReservable(*m_actor.getFaction())))
 		{
 			// The actor's current location is already acceptable.
-			m_actor.m_hasObjectives.taskComplete();
+			m_actor.m_hasObjectives.subobjectiveComplete();
 			return;
 		}
 		// TODO:
-		// Should this be restart, or even cannotCompleteTask?
+		// Should this be restart, or even cannotCompleteSubobjective?
 		// cannotFulfill will cause a delay to be appiled before this objective can be added to the list again.
-		// restart or cannotCompleteTask might cause an infinite loop.
+		// restart or cannotCompleteSubobjective might cause an infinite loop.
 		// To prevent this we would have to know if we may reroute or not.
 		// cannotFulfillObjective is the most pessamistic choice.
 		// This is probably best solved by callback.

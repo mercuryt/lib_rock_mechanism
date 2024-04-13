@@ -18,7 +18,7 @@ void HarvestEvent::execute()
 	static const MaterialType& plantMatter = MaterialType::byName("plant matter");
 	const ItemType& fruitItemType = plant.m_plantSpecies.harvestData->fruitItemType;
 	if(!plant.m_quantityToHarvest)
-		actor.m_hasObjectives.cannotCompleteTask();
+		actor.m_hasObjectives.cannotCompleteSubobjective();
 	uint32_t numberItemsHarvested = actor.m_canPickup.canPickupQuantityOf(fruitItemType, plantMatter, plant.m_quantityToHarvest);
 	assert(numberItemsHarvested != 0);
 	//TODO: apply horticulture skill.

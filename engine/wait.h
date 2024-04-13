@@ -20,6 +20,7 @@ public:
 	void cancel() { reset(); }
 	void reset();
 	std::string name() const { return "wait"; }
+	[[nodiscard]] bool canResume() const { return false; }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Wait; }
 	friend class WaitScheduledEvent;
 };

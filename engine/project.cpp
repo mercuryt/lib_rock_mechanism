@@ -285,7 +285,7 @@ void ProjectTryToAddWorkersThreadedTask::writeStep()
 		{
 			actor->m_hasObjectives.getCurrent().reset();
 			actor->m_project = nullptr;
-			actor->m_hasObjectives.cannotCompleteTask();
+			actor->m_hasObjectives.cannotCompleteSubobjective();
 		}
 	}
 	else
@@ -301,7 +301,7 @@ void ProjectTryToAddWorkersThreadedTask::writeStep()
 			m_project.cancel();
 	}
 	for(Actor* actor : m_cannotPathToJobSite)
-		actor->m_hasObjectives.cannotCompleteTask();
+		actor->m_hasObjectives.cannotCompleteSubobjective();
 }
 void ProjectTryToAddWorkersThreadedTask::clearReferences() { m_project.m_tryToAddWorkersThreadedTask.clearPointer(); }
 bool ProjectTryToAddWorkersThreadedTask::validate()
@@ -760,7 +760,7 @@ void Project::reset()
 	for(Actor* actor : getWorkersAndCandidates())
 	{
 		actor->m_hasObjectives.getCurrent().reset();
-		actor->m_hasObjectives.cannotCompleteTask();
+		actor->m_hasObjectives.cannotCompleteSubobjective();
 	}
 	m_canReserve.deleteAllWithoutCallback();
 	m_workers.clear();

@@ -214,7 +214,7 @@ void ConstructProject::onCancel()
 		static_cast<ConstructObjective&>(actor->m_hasObjectives.getCurrent()).m_project = nullptr;
 		actor->m_project = nullptr;
 		actor->m_hasObjectives.getCurrent().reset();
-		actor->m_hasObjectives.cannotCompleteTask();
+		actor->m_hasObjectives.cannotCompleteSubobjective();
 	}
 }
 void ConstructProject::onDelay()

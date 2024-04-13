@@ -16,6 +16,7 @@ void ContextMenu::drawStockPileControls(Block& block)
 			shrinkButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 			submenu.add(shrinkButton);
 			shrinkButton->onClick([this, &block]{
+				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				StockPile* stockpile = block.m_isPartOfStockPiles.getForFaction(*m_window.getFaction());
 				if(stockpile)
 					for(Block* selectedBlock : m_window.getSelectedBlocks())
@@ -27,10 +28,10 @@ void ContextMenu::drawStockPileControls(Block& block)
 			editButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 			submenu.add(editButton);
 			editButton->onClick([this, &block]{
-				hide();
 				StockPile* stockpile = block.m_isPartOfStockPiles.getForFaction(*m_window.getFaction());
 				if(stockpile)
 					m_window.showEditStockPile(stockpile);
+				hide();
 			});
 		});
 	}
