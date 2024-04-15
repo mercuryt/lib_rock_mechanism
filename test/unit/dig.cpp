@@ -6,6 +6,7 @@
 #include "../../engine/dig.h"
 #include "../../engine/cuboid.h"
 #include "../../engine/goTo.h"
+#include "haul.h"
 TEST_CASE("dig")
 {
 	static const MaterialType& dirt = MaterialType::byName("dirt");
@@ -57,9 +58,9 @@ TEST_CASE("dig")
 	}
 	SUBCASE("dig stairs and tunnel")
 	{
+		Block& aboveStairs = area.getBlock(8, 4, 4);
 		Block& stairsLocation1 = area.getBlock(8, 4, 3);
 		Block& stairsLocation2 = area.getBlock(8, 4, 2);
-		Block& aboveStairs = area.getBlock(8, 4, 4);
 		Block& tunnelStart = area.getBlock(8, 5, 2);
 		Block& tunnelEnd = area.getBlock(8, 6, 2);
 		Cuboid tunnel(tunnelEnd, tunnelStart);
@@ -71,13 +72,86 @@ TEST_CASE("dig")
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "dig");
 		std::function<bool()> predicate = [&]() { return !stairsLocation1.isSolid(); };
 		simulation.fastForwardUntillPredicate(predicate, 45);
-		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "dig");
+		DigObjective& objective = static_cast<DigObjective&>(dwarf1.m_hasObjectives.getCurrent());
+		REQUIRE(objective.name() == "dig");
+		REQUIRE(objective.getProject() == nullptr);
 		REQUIRE(stairsLocation1.m_hasBlockFeatures.contains(BlockFeatureType::stairs));
 		REQUIRE(stairsLocation1.m_hasShapes.canEnterEverFrom(dwarf1, aboveStairs));
+		REQUIRE(objective.hasThreadedTask());
+		// Find next project.
+		simulation.doStep();
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent() == objective);
+		REQUIRE(objective.getProject() != nullptr);
+		REQUIRE(objective.getProject()->getLocation() == stairsLocation2);
+		REQUIRE(dwarf1.m_canMove.getDestination() == nullptr);
+		REQUIRE(!pick.m_reservable.hasAnyReservations());
+		// Make reservations and activate.
+		simulation.doStep();
+		REQUIRE(objective.getProject() != nullptr);
+		REQUIRE(pick.m_reservable.hasAnyReservations());
+		// Select haul type to get pick to location.
+		simulation.doStep();
+		REQUIRE(objective.getProject() != nullptr);
+		REQUIRE(objective.getProject()->getProjectWorkerFor(dwarf1).haulSubproject);
+		// Path to locaton.
+		simulation.doStep();
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent() == objective);
 		std::function<bool()> predicate2 = [&]() { return !stairsLocation2.isSolid(); };
 		simulation.fastForwardUntillPredicate(predicate2, 45);
 		std::function<bool()> predicate3 = [&]() { return !tunnelEnd.isSolid(); };
 		simulation.fastForwardUntillPredicate(predicate3, 100);
+	}
+	SUBCASE("tunnel into cliff face with equipmentSet pick")
+	{
+		Block& cliffLowest = area.getBlock(7, 0, 4);
+		Block& cliffHighest = area.getBlock(9, 9, 5);
+		areaBuilderUtil::setSolidWall(cliffLowest, cliffHighest, dirt);
+		Block& tunnelStart = area.getBlock(7, 5, 4);
+		Block& tunnelEnd = area.getBlock(9, 5, 4);
+		Block& tunnelSecond = area.getBlock(8, 5, 4);
+		for(Block& block : Cuboid(tunnelEnd, tunnelStart))
+			area.m_hasDigDesignations.designate(faction, block, nullptr);
+		pick.exit();
+		dwarf1.m_equipmentSet.addEquipment(pick);
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "dig");
+		std::function<bool()> predicate = [&]() { return !tunnelStart.isSolid(); };
+		simulation.fastForwardUntillPredicate(predicate, 45);
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent() == dwarf1.m_hasObjectives.getCurrent());
+		REQUIRE(!static_cast<DigObjective&>(dwarf1.m_hasObjectives.getCurrent()).getProject());
+		REQUIRE(!tunnelStart.m_reservable.hasAnyReservations());
+		// Find next project.
+		simulation.doStep();
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent() == dwarf1.m_hasObjectives.getCurrent());
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "dig");
+		Project* project = static_cast<DigObjective&>(dwarf1.m_hasObjectives.getCurrent()).getProject();
+		REQUIRE(project);
+		REQUIRE(project->getLocation() == tunnelSecond);
+		REQUIRE(!dwarf1.m_canMove.getDestination());
+		REQUIRE(!tunnelStart.m_reservable.hasAnyReservations());
+		// Make reservations and activate.
+		simulation.doStep();
+		REQUIRE(!tunnelStart.m_reservable.hasAnyReservations());
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "dig");
+		project = static_cast<DigObjective&>(dwarf1.m_hasObjectives.getCurrent()).getProject();
+		REQUIRE(project);
+		REQUIRE(project->reservationsComplete());
+		REQUIRE(pick.m_reservable.hasAnyReservations());
+		REQUIRE(dwarf1.m_canMove.hasThreadedTask());
+		// Path to location.
+		simulation.doStep();
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "dig");
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent() == dwarf1.m_hasObjectives.getCurrent());
+		project = static_cast<DigObjective&>(dwarf1.m_hasObjectives.getCurrent()).getProject();
+		REQUIRE(project);
+		simulation.fastForwardUntillActorIsAdjacentTo(dwarf1, tunnelSecond);
+		project = static_cast<DigObjective&>(dwarf1.m_hasObjectives.getCurrent()).getProject();
+		REQUIRE(project);
+		REQUIRE(project->getLocation() == tunnelSecond);
+		std::function<bool()> predicate2 = [&]() { return !tunnelSecond.isSolid(); };
+		simulation.fastForwardUntillPredicate(predicate2, 45);
+		std::function<bool()> predicate3 = [&]() { return !tunnelEnd.isSolid(); };
+		simulation.fastForwardUntillPredicate(predicate3, 45);
 	}
 	SUBCASE("two workers")
 	{
@@ -90,7 +164,7 @@ TEST_CASE("dig")
 		dwarf2.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
 		REQUIRE(dwarf2.m_hasObjectives.getCurrent().name() == "dig");
 		std::function<bool()> predicate = [&]() { return !holeLocation.isSolid(); };
-		simulation.fastForwardUntillPredicate(predicate, Step(22));
+		simulation.fastForwardUntillPredicate(predicate, 22);
 	}
 	SUBCASE("two workers two holes")
 	{

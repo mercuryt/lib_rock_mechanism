@@ -51,11 +51,7 @@ void DigThreadedTask::writeStep()
 		Block& target = *m_findsPath.getBlockWhichPassedPredicate();
 		DigProject& project = target.m_area->m_hasDigDesignations.at(*m_digObjective.m_actor.getFaction(), target);
 		if(project.canAddWorker(m_digObjective.m_actor))
-		{
-			// Join project and reserve standing room.
 			m_digObjective.joinProject(project);
-			m_findsPath.reserveBlocksAtDestination(m_digObjective.m_actor.m_canReserve);
-		}
 		else
 			// Project can no longer accept this worker, try again.
 			m_digObjective.m_digThreadedTask.create(m_digObjective);
@@ -86,7 +82,7 @@ void DigObjective::execute()
 {
 	if(m_project != nullptr)
 		m_project->commandWorker(m_actor);
-	else
+	else if(!m_digThreadedTask.exists())
 	{
 		DigProject* project = nullptr;
 		std::function<bool(const Block&)> predicate = [&](const Block& block) 

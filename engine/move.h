@@ -54,8 +54,9 @@ public:
 	[[maybe_unused, nodiscard]] PathThreadedTask& getPathThreadedTask() { return m_threadedTask.get(); }
 	[[maybe_unused, nodiscard]] std::vector<Block*>& getPath() { return m_path; }
 	[[maybe_unused, nodiscard]] Block* getDestination() { return m_destination; }
-	[[maybe_unused, nodiscard]] bool hasEvent() { return m_event.exists(); }
-	[[maybe_unused, nodiscard]] bool hasThreadedTask() { return m_threadedTask.exists(); }
+	[[maybe_unused, nodiscard]] bool hasEvent() const { return m_event.exists(); }
+	[[maybe_unused, nodiscard]] bool hasThreadedTask() const { return m_threadedTask.exists(); }
+	[[maybe_unused, nodiscard]] Step stepsTillNextMoveEvent() const;
 	friend class MoveEvent;
 	friend class PathThreadedTask;
 };
