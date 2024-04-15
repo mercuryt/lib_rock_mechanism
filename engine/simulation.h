@@ -101,6 +101,7 @@ public:
 	[[maybe_unused]] void fastForwardUntillActorHasNoDestination(Actor& actor);
 	[[maybe_unused]] void fastForwardUntillActorHasEquipment(Actor& actor, Item& item);
 	[[maybe_unused]] void fastForwardUntillPredicate(std::function<bool()> predicate, uint32_t minutes = 10);
+	[[maybe_unused]] void fastForwardUntillNextEvent();
 };
 
 class HourlyEvent final : public ScheduledEvent

@@ -11,7 +11,7 @@
 #include "../../engine/threadedTask.h"
 #include "../../engine/harvest.h"
 #include "../../engine/givePlantsFluid.h"
-#include "../../engine/goTo.h"
+#include "../../engine/objectives/goTo.h"
 #include "actor.h"
 #include "materialType.h"
 #include <memory>

@@ -9,7 +9,7 @@
 #include "../../engine/project.h"
 #include "../../engine/config.h"
 #include "../../engine/haul.h"
-#include "../../engine/goTo.h"
+#include "../../engine/objectives/goTo.h"
 #include <functional>
 #include <memory>
 TEST_CASE("stockpile")

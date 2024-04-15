@@ -19,8 +19,8 @@ class ActorCanMove final
 {
 	Actor& m_actor;
 	const MoveType* m_moveType;
-	uint32_t m_speedIndividual;
-	uint32_t m_speedActual;
+	Speed m_speedIndividual;
+	Speed m_speedActual;
 	Block* m_destination;
 	std::vector<Block*> m_path;
 	std::vector<Block*>::iterator m_pathIter;
@@ -47,8 +47,8 @@ public:
 	void maybeCancelThreadedTask() { m_threadedTask.maybeCancel(); }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] const MoveType& getMoveType() const { return *m_moveType; }
-	[[nodiscard]] uint32_t getIndividualMoveSpeedWithAddedMass(Mass mass) const;
-	[[nodiscard]] uint32_t getMoveSpeed() const { return m_speedActual; }
+	[[nodiscard]] Speed getIndividualMoveSpeedWithAddedMass(Mass mass) const;
+	[[nodiscard]] Speed getMoveSpeed() const { return m_speedActual; }
 	[[nodiscard]] bool canMove() const;
 	// For testing.
 	[[maybe_unused, nodiscard]] PathThreadedTask& getPathThreadedTask() { return m_threadedTask.get(); }

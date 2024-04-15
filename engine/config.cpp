@@ -111,7 +111,7 @@ void Config::load()
 	minimumAltitudeForHeadwaterFormation = data["minimumAltitudeForHeadwaterFormation"].get<Meters>();
 	minimumAttackCoolDownModifier = data["minimumAttackCoolDownModifier"].get<float>();
 	minimumDurationToWaitInsteadOfWander = data["minimumDurationToWaitInsteadOfWanderMinutes"].get<float>() * stepsPerMinute;
-	minimumHaulSpeedInital = data["minimumHaulSpeedInital"].get<uint32_t>();
+	minimumHaulSpeedInital = data["minimumHaulSpeedInital"].get<Speed>();
 	minimumOverloadRatio = data["minimumOverloadRatio"].get<float>();
 	minimumPercentFoliageForGrow = data["minimumPercentFoliageForGrow"].get<Percent>();
 	minimumPercentGrowthForWoodCutting = data["minimumPercentGrowthForWoodCutting"].get<Percent>();

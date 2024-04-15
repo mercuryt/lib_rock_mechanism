@@ -292,7 +292,7 @@ void BlockHasShapes::removeQuantity(HasShape& hasShape, uint32_t quantity)
 	item.removeQuantity(quantity);
 	enter(hasShape);
 }
-void BlockHasShapes::tryToCacheMoveCosts(const Shape& shape, const MoveType& moveType, std::vector<std::pair<Block*, Step>>& moveCosts)
+void BlockHasShapes::tryToCacheMoveCosts(const Shape& shape, const MoveType& moveType, std::vector<std::pair<Block*, MoveCost>>& moveCosts)
 {
 	if(!m_moveCostsCache.contains(&shape) || !m_moveCostsCache.at(&shape).contains(&moveType))
 		m_moveCostsCache[&shape][&moveType] = std::move(moveCosts);
@@ -456,21 +456,20 @@ bool BlockHasShapes::hasCachedMoveCosts(const Shape& shape, const MoveType& move
 {
 	return m_moveCostsCache.contains(&shape) && m_moveCostsCache.at(&shape).contains(&moveType);
 }
-const std::vector<std::pair<Block*, Step>>& BlockHasShapes::getCachedMoveCosts(const Shape& shape, const MoveType& moveType) const
+const std::vector<std::pair<Block*, MoveCost>>& BlockHasShapes::getCachedMoveCosts(const Shape& shape, const MoveType& moveType) const
 {
 	assert(hasCachedMoveCosts(shape, moveType));
 	return m_moveCostsCache.at(&shape).at(&moveType);
 }
-const std::vector<std::pair<Block*, Step>> BlockHasShapes::makeMoveCosts(const Shape& shape, const MoveType& moveType) const
+const std::vector<std::pair<Block*, MoveCost>> BlockHasShapes::makeMoveCosts(const Shape& shape, const MoveType& moveType) const
 {
-	std::vector<std::pair<Block*, Step>> output;
+	std::vector<std::pair<Block*, MoveCost>> output;
 	for(Block* block : m_block.getAdjacentWithEdgeAndCornerAdjacent())
 		if(block->m_hasShapes.shapeAndMoveTypeCanEnterEverFrom(shape, moveType, m_block))
 			output.emplace_back(block, block->m_hasShapes.moveCostFrom(moveType, m_block));
 	return output;
 }
-// Get a move cost for moving from a block onto this one for a given move type.
-Step BlockHasShapes::moveCostFrom(const MoveType& moveType, const Block& from) const
+MoveCost BlockHasShapes::moveCostFrom(const MoveType& moveType, const Block& from) const
 {
 	assert(!m_block.isSolid());
 	assert(!from.isSolid());

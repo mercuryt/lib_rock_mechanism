@@ -24,3 +24,5 @@ using Latitude = double;
 using Longitude = double;
 using Bearing = double;
 using DistanceInBlocks = uint32_t;
+using Speed = uint32_t;
+using MoveCost = Speed;
