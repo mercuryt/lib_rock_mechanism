@@ -52,9 +52,9 @@ Json ActorCanMove::toJson() const
 		data["threadedTask"] = m_threadedTask.get().toJson();
 	return data;
 }
-uint32_t ActorCanMove::getIndividualMoveSpeedWithAddedMass(Mass mass) const
+Speed ActorCanMove::getIndividualMoveSpeedWithAddedMass(Mass mass) const
 {
-	uint32_t output = m_actor.m_attributes.getMoveSpeed();
+	Speed output = m_actor.m_attributes.getMoveSpeed();
 	Mass carryMass = m_actor.m_equipmentSet.getMass() + m_actor.m_canPickup.getMass() + mass;
 	Mass unencomberedCarryMass = m_actor.m_attributes.getUnencomberedCarryMass();
 	if(carryMass > unencomberedCarryMass)
@@ -168,8 +168,8 @@ void ActorCanMove::scheduleMove()
 		auto excessVolume = (volumeAtLocationBlock + moveTo.m_hasShapes.getStaticVolume()) - Config::maxBlockVolume;
 		speed = util::scaleByInversePercent(speed, excessVolume);
 	}
-	//Step delay = std::max(Step(1), moveTo.m_hasShapes.moveCostFrom(*m_moveType, *m_actor.m_location) / speed);
-	Step delay = moveTo.m_hasShapes.moveCostFrom(*m_moveType, *m_actor.m_location) / speed;
+	static const MoveCost stepsPerSecond = Config::stepsPerSecond;
+	Step delay = std::max(MoveCost(1), (stepsPerSecond * moveTo.m_hasShapes.moveCostFrom(*m_moveType, *m_actor.m_location)) / speed);
 	m_event.schedule(delay, *this);
 }
 void ActorCanMove::setDestination(Block& destination, bool detour, bool adjacent, bool unreserved, bool reserve)

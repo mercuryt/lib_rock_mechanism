@@ -2,7 +2,6 @@
 #include "construct.h"
 #include "simulation.h"
 #include "objective.h"
-#include "goTo.h"
 #include "harvest.h"
 #include "givePlantsFluid.h"
 #include "kill.h"
@@ -11,7 +10,7 @@
 #include "station.h"
 #include "wait.h"
 #include "wander.h"
-#include "goTo.h"
+#include "objectives/goTo.h"
 //#include "worldforge/world.h"
 #include <cstdint>
 Faction& DeserializationMemo::faction(std::wstring name) { return m_simulation.m_hasFactions.byName(name); }

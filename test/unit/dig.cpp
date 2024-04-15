@@ -5,7 +5,7 @@
 #include "../../engine/simulation.h"
 #include "../../engine/dig.h"
 #include "../../engine/cuboid.h"
-#include "../../engine/goTo.h"
+#include "../../engine/objectives/goTo.h"
 #include "haul.h"
 TEST_CASE("dig")
 {

@@ -7,7 +7,6 @@
 #include "widgets.h"
 #include "window.h"
 #include "../engine/actor.h"
-#include "../engine/goTo.h"
 #include "../engine/station.h"
 #include "../engine/installItem.h"
 #include "../engine/kill.h"

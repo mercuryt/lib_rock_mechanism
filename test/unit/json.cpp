@@ -3,10 +3,10 @@
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/actor.h"
-#include "../../engine/goTo.h"
 #include "../../engine/sowSeeds.h"
 #include "../../engine/harvest.h"
 #include "../../engine/givePlantsFluid.h"
+#include "../../engine/objectives/goTo.h"
 TEST_CASE("json")
 {
 	Simulation simulation{L"", DateTime(12, 50, 1000).toSteps()};

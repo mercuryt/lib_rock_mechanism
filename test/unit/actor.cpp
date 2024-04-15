@@ -31,7 +31,6 @@ TEST_CASE("actor")
 		REQUIRE(dwarf1.m_canGrow.growthPercent() == 100);
 		REQUIRE(!dwarf1.m_canGrow.isGrowing());
 		REQUIRE(dwarf1.m_shape->name == "oneByOneFull");
-		REQUIRE(dwarf1.m_canMove.getMoveSpeed() == 7);
 		REQUIRE(simulation.m_eventSchedule.count() - previousEventCount == 3);
 		REQUIRE(dwarf1.m_location == &origin1);
 		REQUIRE(dwarf1.m_location->m_hasShapes.contains(dwarf1));

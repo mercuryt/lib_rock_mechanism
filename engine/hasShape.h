@@ -85,7 +85,7 @@ class BlockHasShapes
 	CollisionVolume m_staticVolume;
 	// Move costs cache is a structure made up of shape, moveType, and a vector of blocks which can be moved to from here, along with their move cost.
 	// TODO: Store a pointer to the relevent section of move cost cache for adjacent blocks.
-	std::unordered_map<const Shape*, std::unordered_map<const MoveType*, std::vector<std::pair<Block*, Step>>>> m_moveCostsCache;
+	std::unordered_map<const Shape*, std::unordered_map<const MoveType*, std::vector<std::pair<Block*, MoveCost>>>> m_moveCostsCache;
 	void record(HasShape& hasShape, CollisionVolume volume);
 	void remove(HasShape& hasShape);
 	CollisionVolume getVolume(const HasShape& hasShape) const;
@@ -97,7 +97,7 @@ public:
 	void exit(HasShape& hasShape);
 	void addQuantity(HasShape& hasShape, uint32_t quantity);
 	void removeQuantity(HasShape& hasShape, uint32_t quantity);
-	void tryToCacheMoveCosts(const Shape& shape, const MoveType& moveType, std::vector<std::pair<Block*, Step>>& moveCosts);
+	void tryToCacheMoveCosts(const Shape& shape, const MoveType& moveType, std::vector<std::pair<Block*, MoveCost>>& moveCosts);
 	bool anythingCanEnterEver() const;
 	bool canEnterEverFrom(const HasShape& shape, const Block& block) const;
 	bool canEnterEverWithFacing(const HasShape& hasShape, const Facing facing) const;
@@ -116,13 +116,14 @@ public:
 	// If not it will make a new set of costs and store them within it's self.
 	// During the next write phase the newly made costs will be added to the cache via ::tryToCacheMoveCosts.
 	bool hasCachedMoveCosts(const Shape& shape, const MoveType& moveType) const;
-	const std::vector<std::pair<Block*, Step>>& getCachedMoveCosts(const Shape& shape, const MoveType& moveType) const;
-	const std::vector<std::pair<Block*, Step>> makeMoveCosts(const Shape& shape, const MoveType& moveType) const;
-	Step moveCostFrom(const MoveType& moveType, const Block& from) const;
+	const std::vector<std::pair<Block*, MoveCost>>& getCachedMoveCosts(const Shape& shape, const MoveType& moveType) const;
+	const std::vector<std::pair<Block*, MoveCost>> makeMoveCosts(const Shape& shape, const MoveType& moveType) const;
+	// Get a move cost for moving from a block onto this one for a given move type.
+	MoveCost moveCostFrom(const MoveType& moveType, const Block& from) const;
 	bool canStandIn() const;
 	CollisionVolume getTotalVolume() const;
 	bool contains(HasShape& hasShape) const { return m_shapes.contains(&hasShape); }
-	const CollisionVolume& getStaticVolume() const { return m_staticVolume; }
+	CollisionVolume getStaticVolume() const { return m_staticVolume; }
 	std::unordered_map<HasShape*, CollisionVolume>& getShapes() { return m_shapes; }
 	friend class HasShape;
 	// For testing.

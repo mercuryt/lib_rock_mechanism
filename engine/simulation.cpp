@@ -259,6 +259,11 @@ void Simulation::fastForwardUntillPredicate(std::function<bool()> predicate, uin
 			break;
 	}
 }
+void Simulation::fastForwardUntillNextEvent()
+{
+	auto& pair = *m_eventSchedule.m_data.begin();
+	fastForward(pair.first - m_step);
+}
 Json Simulation::toJson() const
 {
 	Json output;

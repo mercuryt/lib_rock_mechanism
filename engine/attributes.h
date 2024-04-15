@@ -29,7 +29,7 @@ class Attributes
 	Attribute agility;
 	Attribute mass;
 	Mass unencomberedCarryMass;
-	uint32_t moveSpeed;
+	Speed moveSpeed;
 	uint32_t baseCombatScore;
 	Percent percentGrown;
 public:
@@ -80,7 +80,7 @@ public:
 	void setMassModifier(Percent x) { mass.baseModifierPercent = x; updateMass(); generate(); }
 	void updateMass() { mass.setPercentGrown(percentGrown); }
 	Mass getUnencomberedCarryMass() const { return unencomberedCarryMass; }
-	uint32_t getMoveSpeed() const { return moveSpeed; }
+	Speed getMoveSpeed() const { return moveSpeed; }
 	uint32_t getBaseCombatScore() const { return baseCombatScore; }
 	Json toJson() const;
 };

@@ -5,7 +5,7 @@
 #include "../../engine/simulation.h"
 #include "../../engine/construct.h"
 #include "../../engine/cuboid.h"
-#include "../../engine/goTo.h"
+#include "../../engine/objectives/goTo.h"
 TEST_CASE("construct")
 {
 	static const MaterialType& wood = MaterialType::byName("poplar wood");

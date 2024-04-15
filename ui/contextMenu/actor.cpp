@@ -3,7 +3,7 @@
 #include "../displayData.h"
 #include "../../engine/actor.h"
 #include "../../engine/kill.h"
-#include "../../engine/goTo.h"
+#include "../../engine/objectives/goTo.h"
 #include "../../engine/station.h"
 void ContextMenu::drawActorControls(Block& block)
 {
