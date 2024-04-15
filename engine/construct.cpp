@@ -47,11 +47,7 @@ void ConstructThreadedTask::writeStep()
 		Block& target = *m_findsPath.getBlockWhichPassedPredicate();
 		ConstructProject& project = target.m_area->m_hasConstructionDesignations.getProject(*m_constructObjective.m_actor.getFaction(), target);
 		if(project.canAddWorker(m_constructObjective.m_actor))
-		{
-			// Join project and reserve standing room.
 			m_constructObjective.joinProject(project);
-			m_findsPath.reserveBlocksAtDestination(m_constructObjective.m_actor.m_canReserve);
-		}
 		else
 			// Project can no longer accept this worker, try again.
 			m_constructObjective.m_constructThreadedTask.create(m_constructObjective);
@@ -80,7 +76,7 @@ void ConstructObjective::execute()
 {
 	if(m_project != nullptr)
 		m_project->commandWorker(m_actor);
-	else
+	else if(!m_constructThreadedTask.exists())
 	{
 		ConstructProject* project = nullptr;
 		std::function<bool(const Block&)> predicate = [&](const Block& block) 

@@ -19,6 +19,7 @@ void WanderThreadedTask::readStep()
 		return !numberOfBlocks--;
 	};
 	m_findsPath.pathToPredicate(condition);
+	// If we do not have access to the number of blocks needed to pick a destination via numberOfBlocks then just path to the last block checked.
 	if(!m_findsPath.found() && lastBlock != nullptr)
 	{
 		assert(m_objective.m_actor.m_location != lastBlock);
@@ -58,17 +59,16 @@ void WanderObjective::execute()
 	else
 	{
 		m_started = true;
+		/*
 		auto& random = m_actor.getSimulation().m_random;
 		if(random.chance(Config::chanceToWaitInsteadOfWander))
 		{
 			Step duration = random.getInRange(Config::minimumDurationToWaitInsteadOfWander, Config::maximumDurationToWaitInsteadOfWander);
-			std::unique_ptr<Objective> waitObjective = std::make_unique<WaitObjective>(m_actor, duration);
-			m_actor.m_hasObjectives.addTaskToStart(std::move(waitObjective));
+			m_actor.wait(duration);
 		}
 		else
-		{
-			m_threadedTask.create(*this); 
-		}
+		*/
+		m_threadedTask.create(*this); 
 	}
 }
 

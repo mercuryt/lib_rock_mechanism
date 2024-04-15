@@ -274,6 +274,7 @@ void ProjectTryToAddWorkersThreadedTask::writeStep()
 		std::vector<Actor*> notAdded;
 		for(auto& [actor, objective] : m_project.m_workerCandidatesAndTheirObjectives)
 		{
+			// TODO: Reserve a work location for the actor, prevent deadlocks due to lack of access by a tool holder.
 			if(m_project.canAddWorker(*actor))
 				m_project.addWorker(*actor, *objective);
 			else
@@ -686,6 +687,8 @@ void Project::complete()
 void Project::cancel()
 {
 	m_canReserve.deleteAllWithoutCallback();
+	//for(auto& [actor, projectWorker] : m_workers)
+		//actor->m_project = nullptr;
 	onCancel();
 }
 void Project::scheduleEvent(Step start)
