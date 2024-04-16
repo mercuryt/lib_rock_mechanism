@@ -476,7 +476,7 @@ void Draw::outlineOnBlock(const Block& block, const sf::Color color, float thick
 	square.setPosition(static_cast<float>(block.m_x * m_window.m_scale) + thickness, static_cast<float>(block.m_y * m_window.m_scale) + thickness);
 	m_window.getRenderWindow().draw(square);
 }
-void Draw::stringOnBlock(const Block& block, std::wstring string, const sf::Color color)
+void Draw::stringOnBlock(const Block& block, std::wstring string, const sf::Color color, float offsetX, float offsetY )
 {
 	// Don't draw text which would be too small to read comfortably.
 	if(m_window.m_scale < displayData::defaultScale)
@@ -486,7 +486,10 @@ void Draw::stringOnBlock(const Block& block, std::wstring string, const sf::Colo
 	text.setFillColor(color);
 	text.setCharacterSize(m_window.m_scale * displayData::ratioOfScaleToFontSize);
 	text.setString(string);
-	text.setPosition((static_cast<float>((block.m_x) + 0.5f) * (float)m_window.m_scale), static_cast<float>((block.m_y) * (float)m_window.m_scale));
+	text.setPosition(
+		static_cast<float>(block.m_x + offsetX) * (float)m_window.m_scale,
+	       	static_cast<float>(block.m_y + offsetY) * (float)m_window.m_scale
+	);
 	auto center = text.getGlobalBounds().width / 2;
 	auto xOrigin = std::round(center);
 	text.setOrigin(xOrigin, 0);
@@ -568,6 +571,8 @@ void Draw::item(const Block& block)
 		stringOnBlock(block, std::to_wstring(item.getQuantity()), sf::Color::White);
 	if(m_window.getSelectedItems().contains(const_cast<Item*>(&item)))
 		outlineOnBlock(block, displayData::selectColor);
+	if(m_window.getFaction() && !item.m_canBeStockPiled.contains(*m_window.getFaction()))
+		inaccessableSymbol(block);
 }
 // Actor.
 void Draw::singleTileActor(const Actor& actor)
@@ -631,7 +636,7 @@ void Draw::borderSegmentOnBlock(const Block& block, Facing facing, sf::Color col
 				static_cast<float>((block.m_x + 1) * m_window.m_scale) - thickness, 
 				static_cast<float>(block.m_y * m_window.m_scale)
 			);
-			break;
+		break;
 		case 2:
 			square.setPosition(
 				static_cast<float>(block.m_x * m_window.m_scale), 
@@ -690,4 +695,12 @@ Facing Draw::rampOrStairsFacing(const Block& block) const
 			backup = 3;
 	}
 	return backup;
+}
+void Draw::accessableSymbol(const Block& block)
+{
+	stringOnBlock(block, L"o", sf::Color::Green, 0.1, 0.6);
+}
+void Draw::inaccessableSymbol(const Block& block)
+{
+	stringOnBlock(block, L"x", sf::Color::Red, 0.1, 0.6);
 }
