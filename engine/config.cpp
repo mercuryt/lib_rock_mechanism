@@ -23,7 +23,7 @@ void Config::load()
 	averageLandHeightBlocks = data["averageLandHeightBlocks"].get<float>();
 	averageNumberOfRiversPerCandidate = data["averageNumberOfRiversPerCandidate"].get<float>();
 	baseHealDelaySteps = data["baseHealDelaySeconds"].get<float>() * stepsPerSecond;
-	baseMoveCost = data["baseMoveCostSeconds"].get<float>() * stepsPerSecond;
+	baseMoveCost = data["baseMoveCost"].get<MoveCost>();
 	bleedEventBaseFrequency = data["bleedEventBaseFrequencySeconds"].get<float>() * stepsPerSecond;
 	bleedPassOutDuration = data["bleedPassOutDurationSeconds"].get<float>() * stepsPerSecond;
 	bleedToDeathRatio = data["bleedToDeathRatio"].get<float>();
@@ -64,13 +64,13 @@ void Config::load()
 	givePlantsFluidDelaySteps = data["givePlantsFluidDelaySeconds"].get<float>() * stepsPerSecond;
 	givePlantsFluidPriority = data["givePlantsFluidPriority"].get<uint32_t>();
 	goToPriority = data["goToPriority"].get<uint32_t>();
-	goUpMoveCost = data["goUpMoveCostSeconds"].get<float>() * stepsPerSecond;
+	goUpMoveCost = data["goUpMoveCost"].get<MoveCost>();
 	harvestEventDuration = data["harvestEventDurationSeconds"].get<float>() * stepsPerSecond;
 	harvestPriority = data["harvestPriority"].get<uint32_t>();
 	heatDisipatesAtDistanceExponent = data["heatDisipatesAtDistanceExponent"].get<float>();
 	heatFractionForBurn = data["heatFractionForBurn"].get<float>();
 	heatFractionForSmoulder = data["heatFractionForSmoulder"].get<float>();
-	heatRadianceMinimum = data["heatRadianceMinimum"].get<uint32_t>();
+	heatRadianceMinimum = data["heatRadianceMinimum"].get<Temperature>();
 	hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea = data["hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea"].get<float>();
 	hitScaleModifier = data["hitScaleModifier"].get<uint32_t>();
 	impassibleItemVolume = data["impassibleItemVolume"].get<Volume>();
@@ -169,7 +169,7 @@ void Config::load()
 	stepsFrequencyToLookForHaulSubprojects = data["secondsFrequencyToLookForHaulSubprojects"].get<float>() * stepsPerSecond;
 	stepsTillDiePlantPriorityOveride = data["hoursTillDiePlantPriorityOveride"].get<uint32_t>() * stepsPerHour;
 	stepsToDelayBeforeTryingAgainToCompleteAnObjective = data["secondsToDelayBeforeTryingAgainToCompleteAnObjective"].get<float>() * stepsPerSecond;
-	stepsToDelayBeforeTryingAgainToFollowLeader = data["secondsToDelayBeforeTryingAgainToFollowLeader"].get<uint32_t>() * stepsPerSecond;
+	stepsToDelayBeforeTryingAgainToFollowLeader = data["secondsToDelayBeforeTryingAgainToFollowLeader"].get<float>() * stepsPerSecond;
 	stepsToDelayBeforeTryingAgainToReserveItemsAndActorsForAProject = data["minutesToDelayBeforeTryingAgaintoReserveItemsAndActorsForAProject"].get<uint32_t>() * stepsPerMinute;
 	stepsToDisableStockPile = data["minutesToDisableStockPile"].get<float>() * stepsPerMinute;
 	stepsToDrink = data["secondsToDrink"].get<float>() * stepsPerSecond;

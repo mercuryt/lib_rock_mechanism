@@ -114,10 +114,10 @@ TEST_CASE("stockpile")
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk);
 		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
-		Block& stockpileLocation1 = area.getBlock(5, 5, 1);
-		Block& stockpileLocation2 = area.getBlock(5, 6, 1);
+		Block& stockpileLocation1 = area.getBlock(3, 3, 1);
+		Block& stockpileLocation2 = area.getBlock(3, 4, 1);
 		Block& chunkLocation1 = area.getBlock(1, 8, 1);
-		Block& chunkLocation2 = area.getBlock(9, 8, 1);
+		Block& chunkLocation2 = area.getBlock(9, 9, 1);
 		stockpile.addBlock(stockpileLocation1);
 		stockpile.addBlock(stockpileLocation2);
 		Item& chunk1 = simulation.createItemGeneric(chunk, marble, 1u);

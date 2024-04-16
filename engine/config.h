@@ -61,6 +61,7 @@ namespace Config
 	inline Step woodCuttingMaxSteps;
 	inline Step yokeDelaySteps;
 	inline Temperature deepAmbiantTemperature;
+	inline Temperature heatRadianceMinimum;
 	inline Temperature undergroundAmbiantTemperature;
 	inline Volume impassibleItemVolume;
 	inline Volume maxBlockVolume;
@@ -159,7 +160,6 @@ namespace Config
 	inline uint32_t givePlantsFluidPriority;
 	inline uint32_t goToPriority;
 	inline uint32_t harvestPriority;
-	inline uint32_t heatRadianceMinimum;
 	inline uint32_t hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea;
 	inline uint32_t hitScaleModifier;
 	inline uint32_t hoursPerDay;

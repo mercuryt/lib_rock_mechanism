@@ -100,13 +100,16 @@ TEST_CASE("leadAndFollow")
 		REQUIRE(dwarf1.m_canMove.getPath().size() == 7);
 		while(dwarf1.m_location == &origin1)
 			simulation.doStep();
-		Block* dwarf1FirstStep = dwarf1.m_location;
+		// Troll has not moved yet.
 		REQUIRE(troll1.m_location == &origin2);
 		REQUIRE(!origin1.m_hasShapes.canEnterCurrentlyFrom(troll1, *troll1.m_location));
 		dwarf2.setLocation(area.getBlock(9, 1, 1));
 		REQUIRE(origin1.m_hasShapes.canEnterCurrentlyFrom(troll1, *troll1.m_location));
-		simulation.fastForwardUntillActorIsAt(troll1, origin1);
-		REQUIRE(dwarf1.m_location == dwarf1FirstStep);
+		REQUIRE(troll1.m_canFollow.hasEvent());
+		Step delay = troll1.m_canFollow.getEventStep() - simulation.m_step;
+		simulation.fastForward(delay);
+		REQUIRE(troll1.m_location != &origin2);
+		REQUIRE(troll1.isAdjacentTo(dwarf1));
 		while(dwarf1.m_location != &destination1)
 			simulation.doStep();
 		REQUIRE(troll1.m_location == &destination2);

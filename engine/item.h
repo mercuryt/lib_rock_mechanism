@@ -152,6 +152,7 @@ public:
 	Volume m_volume;
 	std::wstring m_name;
 	uint32_t m_quality;
+	//TODO: Percent doesn't allow fine enough detail for tools wearing out over time?
 	Percent m_percentWear;
 	bool m_installed;
 	CraftJob* m_craftJobForWorkPiece; // Used only for work in progress items.

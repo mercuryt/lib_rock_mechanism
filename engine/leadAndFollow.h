@@ -29,9 +29,12 @@ public:
 	void tryToMove();
 	HasShape& getLineLeader();
 	HasShape& getLeader();
-	bool isFollowing() const { return m_canLead != nullptr; }
+	[[nodiscard]] bool isFollowing() const { return m_canLead != nullptr; }
 	friend class CanLead;
 	friend class CanFollowEvent;
+	// For testing.
+	[[maybe_unused, nodiscard]] bool hasEvent() const { return m_event.exists(); }
+	[[maybe_unused, nodiscard]] Step getEventStep() const { return m_event.getStep(); }
 };
 class CanLead final
 {
@@ -50,11 +53,11 @@ public:
 	bool isLeading(HasShape& hasShape) const;
 	HasShape& getFollower();
 	const HasShape& getFollower() const;
-	uint32_t getMoveSpeed() const;
+	Speed getMoveSpeed() const;
 	std::deque<Block*>& getLocationQueue();
 	friend class CanFollow;
-	static uint32_t getMoveSpeedForGroupWithAddedMass(std::vector<const HasShape*>& actorsAndItems, uint32_t addedRollingMass = 0, uint32_t addedDeadMass = 0);
-	static uint32_t getMoveSpeedForGroup(std::vector<const HasShape*>& actorsAndItems) { return getMoveSpeedForGroupWithAddedMass(actorsAndItems); }
+	static Speed getMoveSpeedForGroupWithAddedMass(std::vector<const HasShape*>& actorsAndItems, Mass addedRollingMass = 0, Mass addedDeadMass = 0);
+	static Speed getMoveSpeedForGroup(std::vector<const HasShape*>& actorsAndItems) { return getMoveSpeedForGroupWithAddedMass(actorsAndItems); }
 };
 class CanFollowEvent final : public ScheduledEvent
 {
