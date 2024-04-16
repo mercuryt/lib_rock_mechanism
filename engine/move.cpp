@@ -160,16 +160,19 @@ void ActorCanMove::scheduleMove()
 	assert(m_pathIter >= m_path.begin());
 	assert(m_pathIter != m_path.end());
 	Block& moveTo = **m_pathIter;
-	auto speed = m_speedActual;
-	auto volumeAtLocationBlock = m_actor.m_shape->positions[0][3];
+	Speed speed = m_speedActual;
+	CollisionVolume volumeAtLocationBlock = m_actor.m_shape->positions[0][3];
 	assert(moveTo != *m_actor.m_location);
 	if(volumeAtLocationBlock + moveTo.m_hasShapes.getTotalVolume() > Config::maxBlockVolume)
 	{
-		auto excessVolume = (volumeAtLocationBlock + moveTo.m_hasShapes.getStaticVolume()) - Config::maxBlockVolume;
+		CollisionVolume excessVolume = (volumeAtLocationBlock + moveTo.m_hasShapes.getStaticVolume()) - Config::maxBlockVolume;
 		speed = util::scaleByInversePercent(speed, excessVolume);
 	}
+	assert(speed);
 	static const MoveCost stepsPerSecond = Config::stepsPerSecond;
-	Step delay = std::max(MoveCost(1), (stepsPerSecond * moveTo.m_hasShapes.moveCostFrom(*m_moveType, *m_actor.m_location)) / speed);
+	MoveCost cost = moveTo.m_hasShapes.moveCostFrom(*m_moveType, *m_actor.m_location);
+	assert(cost);
+	Step delay = std::max(MoveCost(1), ((stepsPerSecond * cost) / speed));
 	m_event.schedule(delay, *this);
 }
 void ActorCanMove::setDestination(Block& destination, bool detour, bool adjacent, bool unreserved, bool reserve)
@@ -228,7 +231,11 @@ bool ActorCanMove::canMove() const
 		return false;
 	return true;
 }
-Step ActorCanMove::stepsTillNextMoveEvent() const { return m_event.getStep() - m_actor.m_location->m_area->m_simulation.m_step; }
+Step ActorCanMove::stepsTillNextMoveEvent() const 
+{
+	// Add 1 because we increment step number at the end of the step.
+       	return 1 + m_event.getStep() - m_actor.m_location->m_area->m_simulation.m_step; 
+}
 MoveEvent::MoveEvent(Step delay, ActorCanMove& cm, const Step start) : ScheduledEvent(cm.m_actor.getSimulation(), delay, start), m_canMove(cm) { }
 // Path Threaded Task.
 PathThreadedTask::PathThreadedTask(Actor& a, HasShape* hs, const FluidType* ft, const Block* hd, bool d, bool ad, bool ur, bool r) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_hasShape(hs), m_fluidType(ft), m_huristicDestination(hd), m_detour(d), m_adjacent(ad), m_unreservedDestination(ur), m_reserveDestination(r), m_findsPath(a, d) 

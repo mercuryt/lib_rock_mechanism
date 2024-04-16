@@ -40,18 +40,21 @@ void CanLead::onMove()
 	HasShape* nextInLine = &m_canFollow->m_hasShape;
 	nextInLine->m_canFollow.tryToMove();
 }
-bool CanLead::isFollowerKeepingUp() const { return m_hasShape.isAdjacentTo(m_canFollow->m_hasShape); }
+bool CanLead::isFollowerKeepingUp() const 
+{ 
+	return m_hasShape.isAdjacentTo(m_canFollow->m_hasShape); 
+}
 bool CanLead::isLeading() const { return m_canFollow != nullptr; }
 bool CanLead::isLeading(HasShape& hasShape) const  { return m_canFollow != nullptr && &hasShape.m_canFollow == m_canFollow; }
 HasShape& CanLead::getFollower() { return m_canFollow->m_hasShape; }
 const HasShape& CanLead::getFollower() const { return m_canFollow->m_hasShape; }
 // Class method.
-uint32_t CanLead::getMoveSpeedForGroupWithAddedMass(std::vector<const HasShape*>& actorsAndItems, uint32_t addedRollingMass, uint32_t addedDeadMass)
+Speed CanLead::getMoveSpeedForGroupWithAddedMass(std::vector<const HasShape*>& actorsAndItems, Mass addedRollingMass, Mass addedDeadMass)
 {
-	uint32_t rollingMass = addedRollingMass;
-	uint32_t deadMass = addedDeadMass;
-	uint32_t carryMass = 0;
-	uint32_t lowestMoveSpeed = 0;
+	Mass rollingMass = addedRollingMass;
+	Mass deadMass = addedDeadMass;
+	Mass carryMass = 0;
+	Speed lowestMoveSpeed = 0;
 	for(const HasShape* hasShape : actorsAndItems)
 	{
 		if(hasShape->isItem())
@@ -70,7 +73,7 @@ uint32_t CanLead::getMoveSpeedForGroupWithAddedMass(std::vector<const HasShape*>
 			if(actor.m_canMove.canMove())
 			{
 				carryMass += actor.m_attributes.getUnencomberedCarryMass();
-				uint32_t moveSpeed = actor.m_attributes.getMoveSpeed();
+				Speed moveSpeed = actor.m_attributes.getMoveSpeed();
 				lowestMoveSpeed = lowestMoveSpeed == 0 ? moveSpeed : std::min(lowestMoveSpeed, moveSpeed);
 			}
 			else
@@ -78,15 +81,15 @@ uint32_t CanLead::getMoveSpeedForGroupWithAddedMass(std::vector<const HasShape*>
 		}
 	}
 	assert(lowestMoveSpeed != 0);
-	uint32_t totalMass = deadMass + (rollingMass * Config::rollingMassModifier);
+	Mass totalMass = deadMass + (rollingMass * Config::rollingMassModifier);
 	if(totalMass <= carryMass)
 		return lowestMoveSpeed;
-	float ratio = (float)carryMass / totalMass;
+	float ratio = (float)carryMass / (float)totalMass;
 	if(ratio < Config::minimumOverloadRatio)
 		return 0;
 	return std::ceil(lowestMoveSpeed * ratio * ratio);
 }
-uint32_t CanLead::getMoveSpeed() const
+Speed CanLead::getMoveSpeed() const
 {
 	assert(!m_hasShape.m_canFollow.isFollowing());
 	assert(m_hasShape.m_canLead.isLeading());

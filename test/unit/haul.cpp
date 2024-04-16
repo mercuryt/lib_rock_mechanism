@@ -258,14 +258,14 @@ TEST_CASE("haul")
 	}
 	SUBCASE("team hand cart haul strategy")
 	{
-		Block& destination = area.getBlock(5, 5, 2);
-		Block& cargoLocation = area.getBlock(1, 5, 2);
+		Block& destination = area.getBlock(9, 9, 2);
+		Block& cargoLocation = area.getBlock(1, 7, 2);
 		Item& cargo1 = simulation.createItemGeneric(boulder, iron, 1u);
 		cargo1.setLocation(cargoLocation);
 		Block& origin2 = area.getBlock(4, 3, 2);
 		Actor& dwarf2 = simulation.createActor(dwarf, origin2);
 		dwarf2.setFaction(&faction);
-		Block& cartLocation = area.getBlock(5, 1, 2);
+		Block& cartLocation = area.getBlock(7, 1, 2);
 		Item& cart1 = simulation.createItemNongeneric(cart, poplarWood, 3u, 0);
 		cart1.setLocation(cartLocation);
 		area.m_hasHaulTools.registerHaulTool(cart1);
@@ -286,14 +286,16 @@ TEST_CASE("haul")
 		if(dwarf1.m_canMove.getPath().empty() || dwarf2.m_canMove.getPath().empty())
 			// The two dwarves pathed to the same place, one needs to repath.
 			simulation.doStep();
-		Block& destination1 = *dwarf1.m_canMove.getDestination();
-		Block& destination2 = *dwarf2.m_canMove.getDestination();
-		REQUIRE(cart1.isAdjacentTo(destination1));
-		REQUIRE(cart1.isAdjacentTo(destination2));
+		Block* destination1 = dwarf1.m_canMove.getDestination();
+		Block* destination2 = dwarf2.m_canMove.getDestination();
+		REQUIRE(destination1);
+		REQUIRE(destination2);
+		REQUIRE(cart1.isAdjacentTo(*destination1));
+		REQUIRE(cart1.isAdjacentTo(*destination2));
 		REQUIRE(destination1 != destination2);
-		simulation.fastForwardUntillActorIsAtDestination(dwarf1, destination1);
-		if(dwarf2.m_location != &destination2)
-			simulation.fastForwardUntillActorIsAtDestination(dwarf2, destination2);
+		simulation.fastForwardUntillActorIsAtDestination(dwarf1, *destination1);
+		if(dwarf2.m_location != destination2)
+			simulation.fastForwardUntillActorIsAtDestination(dwarf2, *destination2);
 		REQUIRE(dwarf1.m_canLead.isLeading(cart1));
 		REQUIRE(cart1.m_canLead.isLeading(dwarf2));
 		REQUIRE(dwarf2.m_canFollow.isFollowing());
