@@ -41,7 +41,7 @@ Window::Window() : m_window(sf::VideoMode::getDesktopMode(), "Goblin Pit", sf::S
 {
 	setPaused(true);
 	m_font.loadFromFile("lib/fonts/UbuntuMono-R.ttf");
-	m_font.loadFromFile("lib/fonts/NotoEmoji-Regular.ttf");
+	//m_font.loadFromFile("lib/fonts/NotoEmoji-Regular.ttf");
 	showMainMenu();
 }
 void Window::setArea(Area& area, GameView* gameView)

@@ -41,13 +41,15 @@ public:
 
 	void selected(Block& block);
 	void outlineOnBlock(const Block& block, const sf::Color color, float thickness = 3.f);
-	void stringOnBlock(const Block& block, std::wstring string, const sf::Color color);
+	void stringOnBlock(const Block& block, std::wstring string, const sf::Color color, float offsetX = 0.5, float offsetY = 0.0);
 
 	void nonGroundCoverPlant(const Block& block);
 	void item(const Block& block);
 	void singleTileActor(const Actor& actor);
 	void multiTileActor(const Actor& actor);
 	void borderSegmentOnBlock(const Block& block, Facing facing, sf::Color color, float thickness);
+	void accessableSymbol(const Block& block);
+	void inaccessableSymbol(const Block& block);
 
 	// Connects to an open top block, tries to align with an open bottom block.
 	[[nodiscard]] Facing rampOrStairsFacing(const Block& block) const;

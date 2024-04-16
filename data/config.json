@@ -174,7 +174,7 @@
 	"unitsBodyMassPerUnitFoodConsumed": 100,
 	"unitsOfAttackForcePerUnitOfStrength": 1,
 	"unitsOfCarryMassPerUnitOfStrength": 500,
-	"unitsOfMoveSpeedPerUnitOfAgility": 4.0,
+	"unitsOfMoveSpeedPerUnitOfAgility": 2.0,
 	"unitsOfWoundAreaPerUnitItemScaleFactor": 100,
 	"visionThreadingBatchSize": 30,
 	"wanderMaximumNumberOfBlocks": 1000,

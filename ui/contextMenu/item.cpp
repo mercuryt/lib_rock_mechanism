@@ -17,14 +17,24 @@ void ContextMenu::drawItemControls(Block& block)
 				info->onClick([this, item]{ m_window.getGameOverlay().drawInfoPopup(*item); });
 				if(m_window.getFaction())
 				{
-					bool marked = item->m_canBeStockPiled.contains(*m_window.getFaction());
-					auto stockpileUI = tgui::Button::create(marked ? "do not stockpile" : "stockpile");
-					stockpileUI->onClick([item, marked, this]{ 
+					bool itemAtClickedLocationMarked = item->m_canBeStockPiled.contains(*m_window.getFaction());
+					auto stockpileUI = tgui::Button::create(itemAtClickedLocationMarked ? "do not stockpile" : "stockpile");
+					submenu.add(stockpileUI);
+					stockpileUI->onClick([item, itemAtClickedLocationMarked, this]{ 
 						std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-						if(marked) 
-							item->m_canBeStockPiled.unset(*m_window.getFaction());
-						else
-							item->m_canBeStockPiled.set(*m_window.getFaction());
+						if(m_window.getSelectedItems().empty())
+							m_window.selectItem(*item);
+						for(Item* selectedItem : m_window.getSelectedItems())
+						{
+							bool selectedItemMarked = selectedItem->m_canBeStockPiled.contains(*m_window.getFaction());
+							if(!itemAtClickedLocationMarked) 
+							{
+								if(!selectedItemMarked)
+									m_window.getArea()->m_hasStockPiles.at(*m_window.getFaction()).addItem(*selectedItem);
+							}
+							else if(selectedItemMarked)
+								m_window.getArea()->m_hasStockPiles.at(*m_window.getFaction()).removeItem(*selectedItem);
+						}
 						hide();
 					});
 				}
