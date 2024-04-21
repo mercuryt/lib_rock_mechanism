@@ -50,6 +50,7 @@ public:
 	[[nodiscard]] Speed getIndividualMoveSpeedWithAddedMass(Mass mass) const;
 	[[nodiscard]] Speed getMoveSpeed() const { return m_speedActual; }
 	[[nodiscard]] bool canMove() const;
+	[[nodiscard]] Step delayToMoveInto(const Block& block) const;
 	// For testing.
 	[[maybe_unused, nodiscard]] PathThreadedTask& getPathThreadedTask() { return m_threadedTask.get(); }
 	[[maybe_unused, nodiscard]] std::vector<Block*>& getPath() { return m_path; }

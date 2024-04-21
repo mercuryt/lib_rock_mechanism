@@ -11,7 +11,8 @@
 
 TEST_CASE("attributes")
 {
-		const AnimalSpecies& goblin = AnimalSpecies::byName("goblin");
+	const AnimalSpecies& goblin = AnimalSpecies::byName("goblin");
+	const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	SUBCASE("basic")
 	{
 		Attributes attributes(goblin, 100);
@@ -22,18 +23,21 @@ TEST_CASE("attributes")
 		Simulation simulation;
 		Area& area = simulation.createArea(10,10,10);
 		areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName("marble"));
-		Actor& actor = simulation.createActor(ActorParamaters{
+
+		Actor& goblin1 = simulation.createActor(ActorParamaters{
 			.species = goblin,
 			.location = &area.getBlock(5,5,1),
 		});
-		Block& adjacent = area.getBlock(5,6,1);
-		actor.m_canMove.setDestination(adjacent);
-		REQUIRE(actor.m_canMove.hasThreadedTask());
-		simulation.doStep();
-		REQUIRE(actor.m_canMove.hasEvent());
-		float seconds = (float)actor.m_canMove.stepsTillNextMoveEvent() / (float)Config::stepsPerSecond;
-		REQUIRE(seconds >= 0.2f);
-		REQUIRE(seconds <= 0.3f);
 
+		Actor& dwarf1 = simulation.createActor(ActorParamaters{
+			.species = dwarf,
+			.location = &area.getBlock(5,7,1),
+		});
+		REQUIRE(goblin1.m_attributes.getAgility() > dwarf1.m_attributes.getAgility());
+		REQUIRE(goblin1.m_attributes.getMoveSpeed() > dwarf1.m_attributes.getMoveSpeed());
+		Block& adjacent = area.getBlock(5,6,1);
+		Step delayGoblin = goblin1.m_canMove.delayToMoveInto(adjacent);
+		Step delayDwarf = dwarf1.m_canMove.delayToMoveInto(adjacent);
+		REQUIRE(delayGoblin < delayDwarf);
 	}
 }

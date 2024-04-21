@@ -177,7 +177,7 @@ public:
 	void addQuantity(uint32_t delta);
 	void removeQuantity(uint32_t delta);
 	void install(Block& block, Facing facing, const Faction& faction);
-	[[nodiscard]] uint32_t getQuantity() const { return m_quantity; }
+	[[nodiscard]] Quantity getQuantity() const { return m_quantity; }
 	[[nodiscard]] bool isItem() const { return true; }
 	[[nodiscard]] bool isGeneric() const { return m_itemType.generic; }
 	[[nodiscard]] bool isActor() const { return false; }
@@ -211,6 +211,7 @@ public:
 	void disperseAll();
 	//Item* get(ItemType& itemType) const;
 	[[nodiscard]] uint32_t getCount(const ItemType& itemType, const MaterialType& materialType) const;
+	[[nodiscard]] Item& getGeneric(const ItemType& itemType, const MaterialType& materialType) const;
 	[[nodiscard]] std::vector<Item*>& getAll() { return m_items; }
 	const std::vector<Item*>& getAll() const { return m_items; }
 	[[nodiscard]] bool hasInstalledItemType(const ItemType& itemType) const;

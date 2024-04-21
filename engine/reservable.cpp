@@ -171,6 +171,12 @@ void Reservable::clearAll()
 	assert(m_reservedCounts.empty());
 	assert(m_canReserves.empty());
 }
+void Reservable::updateReservedCount(const Faction& faction, uint32_t count)
+{
+	assert(m_reservedCounts.contains(&faction));
+	assert(count <= m_maxReservations);
+	m_reservedCounts[&faction] = count;
+}
 uint32_t Reservable::getUnreservedCount(const Faction& faction) const
 {
 	if(!m_reservedCounts.contains(&faction))

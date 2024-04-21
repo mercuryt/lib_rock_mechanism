@@ -23,4 +23,5 @@ public:
 	AreaHasStocksForFaction& at(const Faction& faction) { assert(m_data.contains(&faction)); return m_data.at(&faction); }
 	void addFaction(const Faction& faction) { m_data.try_emplace(&faction); }
 	void removeFaction(const Faction& faction) { assert(m_data.contains(&faction)); m_data.erase(&faction); }
+	[[nodiscard]] bool contains(const Faction& faction) const { return m_data.contains(&faction); }
 };

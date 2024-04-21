@@ -381,6 +381,7 @@ void HasCraftingLocationsAndJobsForFaction::stepComplete(CraftJob& craftJob, Act
 			// ItemType, MaterialType, quality, wear, craftJob.
 			Item& item = location->m_area->m_simulation.createItemNongeneric(craftJob.craftJobType.productType, *craftJob.materialType, 0, 0, &craftJob);
 			//TODO: Should the item be reserved?
+			// add might destroy an item if it is generic but we know this one isn't.
 			location->m_hasItems.add(item);
 			craftJob.workPiece = &item;
 		}

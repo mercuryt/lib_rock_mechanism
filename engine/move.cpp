@@ -160,20 +160,7 @@ void ActorCanMove::scheduleMove()
 	assert(m_pathIter >= m_path.begin());
 	assert(m_pathIter != m_path.end());
 	Block& moveTo = **m_pathIter;
-	Speed speed = m_speedActual;
-	CollisionVolume volumeAtLocationBlock = m_actor.m_shape->positions[0][3];
-	assert(moveTo != *m_actor.m_location);
-	if(volumeAtLocationBlock + moveTo.m_hasShapes.getTotalVolume() > Config::maxBlockVolume)
-	{
-		CollisionVolume excessVolume = (volumeAtLocationBlock + moveTo.m_hasShapes.getStaticVolume()) - Config::maxBlockVolume;
-		speed = util::scaleByInversePercent(speed, excessVolume);
-	}
-	assert(speed);
-	static const MoveCost stepsPerSecond = Config::stepsPerSecond;
-	MoveCost cost = moveTo.m_hasShapes.moveCostFrom(*m_moveType, *m_actor.m_location);
-	assert(cost);
-	Step delay = std::max(MoveCost(1), ((stepsPerSecond * cost) / speed));
-	m_event.schedule(delay, *this);
+	m_event.schedule(delayToMoveInto(moveTo), *this);
 }
 void ActorCanMove::setDestination(Block& destination, bool detour, bool adjacent, bool unreserved, bool reserve)
 {
@@ -230,6 +217,22 @@ bool ActorCanMove::canMove() const
 	if(!m_actor.m_alive || !m_actor.isActor() || m_speedIndividual == 0)
 		return false;
 	return true;
+}
+Step ActorCanMove::delayToMoveInto(const Block& block) const
+{
+	Speed speed = m_speedActual;
+	CollisionVolume volumeAtLocationBlock = m_actor.m_shape->getCollisionVolumeAtLocationBlock();
+	assert(block != *m_actor.m_location);
+	if(volumeAtLocationBlock + block.m_hasShapes.getTotalVolume() > Config::maxBlockVolume)
+	{
+		CollisionVolume excessVolume = (volumeAtLocationBlock + block.m_hasShapes.getStaticVolume()) - Config::maxBlockVolume;
+		speed = util::scaleByInversePercent(speed, excessVolume);
+	}
+	assert(speed);
+	static const MoveCost stepsPerSecond = Config::stepsPerSecond;
+	MoveCost cost = block.m_hasShapes.moveCostFrom(*m_moveType, *m_actor.m_location);
+	assert(cost);
+	return std::max(1u, uint(std::round(float(stepsPerSecond * cost) / float(speed))));
 }
 Step ActorCanMove::stepsTillNextMoveEvent() const 
 {

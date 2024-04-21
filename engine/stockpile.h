@@ -15,6 +15,7 @@
 #include "item.h"
 #include "actor.h"
 #include "findsPath.h"
+#include "types.h"
 
 #include <memory>
 #include <sys/types.h>
@@ -97,12 +98,14 @@ public:
 	void readStep();
 	void writeStep();
 	void clearReferences();
+	// destinationCondition is not const because it assigns to m_destination on success.
+	[[nodiscard]] bool destinationCondition(const Block& block, const Item& item);
 };
 class StockPile
 {
 	std::vector<ItemQuery> m_queries;
 	std::unordered_set<Block*> m_blocks;
-	uint32_t m_openBlocks;
+	Quantity m_openBlocks;
 	Area& m_area;
 	const Faction& m_faction;
 	bool m_enabled;
@@ -111,8 +114,7 @@ class StockPile
 public:
 	StockPile(std::vector<ItemQuery>& q, Area& a, const Faction& f);
 	StockPile(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
-	Json toJson() const;
-	bool accepts(const Item& item) const;
+	[[nodiscard]] Json toJson() const;
 	void addBlock(Block& block);
 	void removeBlock(Block& block);
 	void updateQueries(std::vector<ItemQuery>& queries);
@@ -125,6 +127,7 @@ public:
 	void destroy();
 	void removeQuery(ItemQuery& query);
 	void addQuery(ItemQuery& query);
+	[[nodiscard]] bool accepts(const Item& item) const;
 	[[nodiscard]] bool contains(ItemQuery& query) const;
 	[[nodiscard]] bool isEnabled() const { return m_enabled; }
 	[[nodiscard]] bool hasProjectNeedingMoreWorkers() const { return m_projectNeedingMoreWorkers != nullptr; }
@@ -140,30 +143,32 @@ public:
 class StockPileProject final : public Project
 {
 	Item& m_item;
-	Item* m_delivered;
+	// Needed for generic items where the original item may no longer exist.
+	Quantity m_quantity;
+	const ItemType& m_itemType;
+	const MaterialType& m_materialType;
 	StockPile& m_stockpile;
-	bool m_dispatched;
-	Step getDuration() const;
 	void onComplete();
 	void onReserve();
-	void onDelivered(HasShape& delivered) { assert(delivered.isItem()); m_delivered = &static_cast<Item&>(delivered); }
 	// Mark dispatched as true and dismiss any unassigned workers and candidates.
-	void onSubprojectCreated(HaulSubproject& subproject);
 	void onCancel();
 	// TODO: geometric progresson of disable duration.
 	void onDelay() { m_item.m_canBeStockPiled.maybeUnsetAndScheduleReset(m_faction, Config::stepsToDisableStockPile); cancel(); }
 	void offDelay() { assert(false); }
-	void onHasShapeReservationDishonored(const HasShape& hasShape, uint32_t oldCount, uint32_t newCount);
+	void onHasShapeReservationDishonored(const HasShape& hasShape, Quantity oldCount, Quantity newCount);
 	[[nodiscard]] bool canReset() const { return false; }
-	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
-	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
-	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
-	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
+	[[nodiscard]] Step getDuration() const { return Config::addToStockPileDelaySteps; }
+	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
+	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const;
+	std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> getByproducts() const;
+	std::vector<std::pair<ActorQuery, Quantity>> getActors() const;
 public:
-	StockPileProject(const Faction* faction, Block& block, Item& item);
+	StockPileProject(const Faction* faction, Block& block, Item& item, Quantity quantity, Quantity maxWorkers);
 	StockPileProject(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	bool canAddWorker(const Actor& actor) const;
+	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] bool canAddWorker(const Actor& actor) const;
+	// Don't recruit more workers then are needed for hauling.
+	[[nodiscard]] bool canRecruitHaulingWorkersOnly() const { return true; }
 	friend class AreaHasStockPilesForFaction;
 	// For testing.
 	[[nodiscard, maybe_unused]] Item& getItem() { return m_item; }
@@ -202,10 +207,10 @@ struct StockPileHasShapeDishonorCallback final : public DishonorCallback
 	StockPileHasShapeDishonorCallback(StockPileProject& hs) : m_stockPileProject(hs) { } 
 	StockPileHasShapeDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
 		m_stockPileProject(static_cast<StockPileProject&>(*deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()))) { }
-	Json toJson() const { return Json({{"type", "StockPileHasShapeDishonorCallback"}, {"project", reinterpret_cast<uintptr_t>(&m_stockPileProject)}}); }
+	[[nodiscard]] Json toJson() const { return Json({{"type", "StockPileHasShapeDishonorCallback"}, {"project", reinterpret_cast<uintptr_t>(&m_stockPileProject)}}); }
 	// Craft step project cannot reset so cancel instead and allow to be recreated later.
 	// TODO: Why?
-	void execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { m_stockPileProject.cancel(); }
+	void execute([[maybe_unused]] Quantity oldCount, [[maybe_unused]] Quantity newCount) { m_stockPileProject.cancel(); }
 };
 class AreaHasStockPilesForFaction
 {
@@ -232,7 +237,6 @@ public:
 	[[nodiscard]] Json toJson() const;
 	StockPile& addStockPile(std::vector<ItemQuery>&& queries);
 	StockPile& addStockPile(std::vector<ItemQuery>& queries);
-	bool isValidStockPileDestinationFor(const Block& block, const Item& item) const;
 	void addItem(Item& item);
 	void removeItem(Item& item);
 	void removeBlock(Block& block);
@@ -243,7 +247,9 @@ public:
 	void destroyProject(StockPileProject& project);
 	void addQuery(StockPile& stockPile, ItemQuery query);
 	void removeQuery(StockPile& stockPile, ItemQuery query);
-	[[nodiscard]] bool isAnyHaulingAvalableFor(const Actor& actor) const;
+	void removeFromItemsWithDestinationByStockPile(const StockPile& stockpile, const Item& item);
+	[[nodiscard]] bool isValidStockPileDestinationFor(const Block& block, const Item& item) const;
+	[[nodiscard]] bool isAnyHaulingAvailableFor(const Actor& actor) const;
 	[[nodiscard]] Item* getHaulableItemForAt(const Actor& actor, Block& block);
 	[[nodiscard]] StockPile* getStockPileFor(const Item& item) const;
 	friend class StockPileThreadedTask;
@@ -252,7 +258,7 @@ public:
 	// For testing.
 	[[maybe_unused, nodiscard]] std::unordered_set<Item*>& getItemsWithDestinations() { return m_itemsWithDestinationsWithoutProjects; }
 	[[maybe_unused, nodiscard]] std::unordered_map<StockPile*, std::unordered_set<Item*>>& getItemsWithDestinationsByStockPile() { return m_itemsWithDestinationsByStockPile; }
-	[[maybe_unused, nodiscard]] uint32_t getItemsWithProjectsCount() { return m_projectsByItem.size(); }
+	[[maybe_unused, nodiscard]] Quantity getItemsWithProjectsCount() { return m_projectsByItem.size(); }
 };
 class AreaHasStockPiles
 {

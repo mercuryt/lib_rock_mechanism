@@ -3,6 +3,7 @@
 #include "deserializationMemo.h"
 #include "hasShape.h"
 #include "reservable.h"
+#include "types.h"
 #include <unordered_set>
 
 class Item;
@@ -26,7 +27,7 @@ struct HaulSubprojectParamaters final
 {
 	HasShape* toHaul;
 	FluidType* fluidType;
-	uint32_t quantity;
+	Quantity quantity;
 	HaulStrategy strategy;
 	std::vector<Actor*> workers;
 	Item* haulTool;
@@ -44,7 +45,7 @@ class HaulSubproject final
 	Project& m_project;
 	std::unordered_set<Actor*> m_workers;
 	HasShape& m_toHaul;
-	uint32_t m_quantity;
+	Quantity m_quantity;
 	HaulStrategy m_strategy;
 	std::unordered_set<Actor*> m_nonsentients;
 	Item* m_haulTool;
@@ -69,13 +70,13 @@ public:
 	[[nodiscard]] bool allWorkersAreAdjacentTo(HasShape& hasShape);
 	static HaulSubprojectParamaters tryToSetHaulStrategy(const Project& project, HasShape& hasShape, Actor& worker);
 	static std::vector<Actor*> actorsNeededToHaulAtMinimumSpeed(const Project& project, Actor& leader, const HasShape& toHaul);
-	[[nodiscard]] static uint32_t maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(const Actor& leader, const Item& haulTool, const HasShape& toHaul, uint32_t minimumSpeed);
-	[[nodiscard]] static uint32_t getSpeedWithHaulToolAndCargo(const Actor& leader, const Item& haulTool, const HasShape& toHaul, uint32_t quantity);
-	[[nodiscard]] static uint32_t maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(const Actor& leader, Actor& yoked, const Item& haulTool, const HasShape& toHaul, uint32_t minimumSpeed);
-	[[nodiscard]] static uint32_t maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniersAndAnimal(const Actor& leader, const Actor& pannierBearer, const Item& panniers, const HasShape& toHaul, uint32_t minimumSpeed);
-	[[nodiscard]] static uint32_t getSpeedWithHaulToolAndAnimal(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul, uint32_t quantity);
+	[[nodiscard]] static Quantity maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(const Actor& leader, const Item& haulTool, const HasShape& toHaul, Speed minimumSpeed);
+	[[nodiscard]] static Speed getSpeedWithHaulToolAndCargo(const Actor& leader, const Item& haulTool, const HasShape& toHaul, Quantity quantity);
+	[[nodiscard]] static Quantity maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(const Actor& leader, Actor& yoked, const Item& haulTool, const HasShape& toHaul, Speed minimumSpeed);
+	[[nodiscard]] static Quantity maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniersAndAnimal(const Actor& leader, const Actor& pannierBearer, const Item& panniers, const HasShape& toHaul, Speed minimumSpeed);
+	[[nodiscard]] static Speed getSpeedWithHaulToolAndAnimal(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul, Quantity quantity);
 	[[nodiscard]] static std::vector<Actor*> actorsNeededToHaulAtMinimumSpeedWithTool(const Project& project, Actor& leader, const HasShape& toHaul, const Item& haulTool);
-	[[nodiscard]] static uint32_t getSpeedWithPannierBearerAndPanniers(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul, uint32_t quantity);
+	[[nodiscard]] static Speed getSpeedWithPannierBearerAndPanniers(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul, Quantity quantity);
 	[[nodiscard]] std::unordered_set<Actor*>& getWorkers() { return m_workers; }
 	// For testing.
 	[[nodiscard]] HaulStrategy getHaulStrategy() const { return m_strategy; }
@@ -89,7 +90,7 @@ struct HaulSubprojectDishonorCallback final : public DishonorCallback
 	HaulSubproject& m_haulSubproject;
 	HaulSubprojectDishonorCallback(HaulSubproject& hs) : m_haulSubproject(hs) { } 
 	HaulSubprojectDishonorCallback(const Json data, DeserializationMemo& deserializationMemo) : m_haulSubproject(*deserializationMemo.m_haulSubprojects.at(data["haulSubproject"])) { }
-	void execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { m_haulSubproject.cancel(); }
+	void execute([[maybe_unused]] Quantity oldCount, [[maybe_unused]] Quantity newCount) { m_haulSubproject.cancel(); }
 	Json toJson() const { return {{"type", "HaulSubprojectDishonorCallback"}, {"haulSubproject", reinterpret_cast<uintptr_t>(&m_haulSubproject)}}; }
 };
 inline void to_json(Json& data, const HaulSubproject* const& haulSubproject){ data = reinterpret_cast<uintptr_t>(haulSubproject); }
@@ -102,32 +103,32 @@ public:
 	CanPickup(Actor& a) : m_actor(a), m_carrying(nullptr) { }
 	CanPickup(const Json& data, Actor& a);
 	Json toJson() const;
-	void pickUp(HasShape& hasShape, uint32_t quantity = 1u);
-	void pickUp(Item& item, uint32_t quantity = 1u);
-	void pickUp(Actor& actor, uint32_t quantity = 1u);
+	void pickUp(HasShape& hasShape, Quantity quantity = 1u);
+	void pickUp(Item& item, Quantity quantity = 1u);
+	void pickUp(Actor& actor, Quantity quantity = 1u);
 	// Returns a reference to has shape, which may be newly created or pre-existing due to generic items.
-	HasShape& putDown(Block& location, uint32_t quantity = 0u);
+	HasShape& putDown(Block& location, Quantity quantity = 0u);
 	HasShape* putDownIfAny(Block& location);
-	void removeFluidVolume(uint32_t volume);
-	void add(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity);
+	void removeFluidVolume(CollisionVolume volume);
+	void add(const ItemType& itemType, const MaterialType& materialType, Quantity quantity);
 	void remove(Item& item);
 	Item& getItem();
 	Actor& getActor();
-	[[nodiscard]] uint32_t canPickupQuantityOf(const HasShape& hasShape) const;
-	[[nodiscard]] uint32_t canPickupQuantityOf(const ItemType& itemType, const MaterialType& materialType, uint32_t max) const;
+	[[nodiscard]] Quantity canPickupQuantityOf(const HasShape& hasShape) const;
+	[[nodiscard]] Quantity canPickupQuantityOf(const ItemType& itemType, const MaterialType& materialType, Quantity max) const;
 	[[nodiscard]] bool canPickupAny(const HasShape& hasShape) const;
 	[[nodiscard]] bool canPickupAnyUnencombered(const HasShape& hasShape) const;
 	[[nodiscard]] bool isCarryingAnything() const { return m_carrying != nullptr; }
 	[[nodiscard]] bool isCarrying(const HasShape& hasShape) const { return &hasShape == m_carrying; }
-	[[nodiscard]] bool isCarryingGeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity) const;
+	[[nodiscard]] bool isCarryingGeneric(const ItemType& itemType, const MaterialType& materialType, Quantity quantity) const;
 	[[nodiscard]] bool isCarryingFluidType(const FluidType& fluidType) const;
-	[[nodiscard]] const uint32_t& getFluidVolume() const;
+	[[nodiscard]] const CollisionVolume& getFluidVolume() const;
 	[[nodiscard]] const FluidType& getFluidType() const;
 	[[nodiscard]] bool isCarryingEmptyContainerWhichCanHoldFluid() const;
-	[[nodiscard]] uint32_t getMass() const;
+	[[nodiscard]] Mass getMass() const;
 	[[nodiscard]] bool exists() const { return m_carrying != nullptr; }
-	[[nodiscard]] uint32_t speedIfCarryingQuantity(const HasShape& hasShape, uint32_t quantity) const;
-	[[nodiscard]] uint32_t maximumNumberWhichCanBeCarriedWithMinimumSpeed(const HasShape& hasShape, uint32_t minimumSpeed) const;
+	[[nodiscard]] Speed speedIfCarryingQuantity(const HasShape& hasShape, Quantity quantity) const;
+	[[nodiscard]] Quantity maximumNumberWhichCanBeCarriedWithMinimumSpeed(const HasShape& hasShape, Speed minimumSpeed) const;
 	// For UI.
 	[[nodiscard]] HasShape* getCarrying(){ return m_carrying; }
 };
@@ -142,8 +143,8 @@ public:
 	[[nodiscard]] Item* getToolToHaulFluid(const Faction& faction) const;
 	[[nodiscard]] bool hasToolToHaul(const Faction& faction, const HasShape& hasShape) const;
 	[[nodiscard]] Item* getToolToHaul(const Faction& faction, const HasShape& hasShape) const;
-	[[nodiscard]] Actor* getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(const Faction& faction, const Item& haulTool, const uint32_t cargoMass, const uint32_t minimumHaulSpeed) const;
-	[[nodiscard]] Actor* getPannierBearerToHaulCargoWithMassWithMinimumSpeed(const Faction& faction, const HasShape& hasShape, const uint32_t minimumHaulSpeed) const;
+	[[nodiscard]] Actor* getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(const Faction& faction, const Item& haulTool, const Mass cargoMass, const Speed minimumHaulSpeed) const;
+	[[nodiscard]] Actor* getPannierBearerToHaulCargoWithMassWithMinimumSpeed(const Faction& faction, const HasShape& hasShape, const Speed minimumHaulSpeed) const;
 	[[nodiscard]] Item* getPanniersForActorToHaul(const Faction& faction, const Actor& actor, const HasShape& toHaul) const;
 	void registerHaulTool(Item& item);
 	void registerYokeableActor(Actor& actor);

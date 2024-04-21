@@ -101,8 +101,8 @@ TEST_CASE("Area")
 		REQUIRE(actor.m_canMove.hasEvent());
 		Step scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
 		float seconds = (float)scheduledStep / (float)Config::stepsPerSecond;
-		REQUIRE(seconds > 0.25f);
-		REQUIRE(seconds < 0.5f);
+		REQUIRE(seconds > 0.6f);
+		REQUIRE(seconds < 0.9f);
 		while(simulation.m_step != scheduledStep)
 		{
 			area.readStep();

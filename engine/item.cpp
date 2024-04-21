@@ -109,8 +109,10 @@ void Item::setLocation(Block& block)
 {
 	if(m_location != nullptr)
 		exit();
+	bool willCombine = isGeneric() && block.m_hasItems.getCount(m_itemType, m_materialType);
 	block.m_hasItems.add(*this);
-	m_canLead.onMove();
+	if(!willCombine)
+		m_canLead.onMove();
 }
 void Item::exit()
 {
@@ -415,6 +417,17 @@ BlockHasItems::BlockHasItems(Block& b): m_block(b) { }
 void BlockHasItems::add(Item& item)
 {
 	assert(std::ranges::find(m_items, &item) == m_items.end());
+	if(item.m_itemType.generic)
+	{
+		auto found = std::ranges::find_if(m_items, [&](Item* otherItem) { return otherItem->m_itemType == item.m_itemType && otherItem->m_materialType == item.m_materialType; });
+		// Add to.
+		if(found != m_items.end())
+		{
+			m_block.m_hasShapes.addQuantity(**found, item.getQuantity());
+			item.destroy();
+			return;
+		}
+	}
 	m_items.push_back(&item);
 	m_block.m_hasShapes.enter(item);
 	//TODO: optimize by storing underground status in item or shape to prevent repeted set insertions / removals.
@@ -503,6 +516,12 @@ uint32_t BlockHasItems::getCount(const ItemType& itemType, const MaterialType& m
 		return 0;
 	else
 		return (*found)->getQuantity();
+}
+Item& BlockHasItems::getGeneric(const ItemType& itemType, const MaterialType& materialType) const
+{
+	auto found = std::ranges::find_if(m_items, [&](Item* item) { return item->m_itemType == itemType && item->m_materialType == materialType; });
+	assert(found != m_items.end());
+	return **found;
 }
 // TODO: buggy
 bool BlockHasItems::hasInstalledItemType(const ItemType& itemType) const

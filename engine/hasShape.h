@@ -21,6 +21,7 @@ class Item;
 struct Faction;
 class CanReserve;
 class Simulation;
+struct ItemType;
 class HasShape
 {
 	Simulation& m_simulation;
@@ -73,6 +74,7 @@ public:
 	virtual void exit() = 0;
 	virtual const MoveType& getMoveType() const = 0;
 	virtual Mass singleUnitMass() const = 0;
+	virtual Quantity getQuantity() const { return 1; }
 	friend class BlockHasShapes;
 	// For debugging.
 	virtual void log() const;
@@ -98,33 +100,34 @@ public:
 	void addQuantity(HasShape& hasShape, uint32_t quantity);
 	void removeQuantity(HasShape& hasShape, uint32_t quantity);
 	void tryToCacheMoveCosts(const Shape& shape, const MoveType& moveType, std::vector<std::pair<Block*, MoveCost>>& moveCosts);
-	bool anythingCanEnterEver() const;
-	bool canEnterEverFrom(const HasShape& shape, const Block& block) const;
-	bool canEnterEverWithFacing(const HasShape& hasShape, const Facing facing) const;
-	bool canEnterEverWithAnyFacing(const HasShape& hasShape) const;
-	std::pair<bool, Facing> canEnterCurrentlyWithAnyFacingReturnFacing(const HasShape& hasShape) const;
-	bool shapeAndMoveTypeCanEnterEverFrom(const Shape& shape, const MoveType& moveType, const Block& block) const;
-	bool shapeAndMoveTypeCanEnterEverWithFacing(const Shape& shape, const MoveType& moveType, const Facing facing) const;
-	bool shapeAndMoveTypeCanEnterCurrentlyWithFacing(const Shape& shape, const MoveType& moveType, const Facing facing) const;
-	bool moveTypeCanEnter(const MoveType& moveType) const;
-	bool moveTypeCanBreath(const MoveType& moveType) const;
-	bool moveTypeCanEnterFrom(const MoveType& moveType, const Block& from) const;
-	bool canEnterCurrentlyFrom(const HasShape& hasShape, const Block& block) const;
-	bool canEnterCurrentlyWithFacing(const HasShape& hasShape, const Facing& facing) const;
-	bool canEnterCurrentlyWithAnyFacing(const HasShape& hasShape) const;
+	[[nodiscard]] bool anythingCanEnterEver() const;
+	[[nodiscard]] bool canEnterEverFrom(const HasShape& shape, const Block& block) const;
+	[[nodiscard]] bool canEnterEverWithFacing(const HasShape& hasShape, const Facing facing) const;
+	[[nodiscard]] bool canEnterEverWithAnyFacing(const HasShape& hasShape) const;
+	[[nodiscard]] std::pair<bool, Facing> canEnterCurrentlyWithAnyFacingReturnFacing(const HasShape& hasShape) const;
+	[[nodiscard]] bool shapeAndMoveTypeCanEnterEverFrom(const Shape& shape, const MoveType& moveType, const Block& block) const;
+	[[nodiscard]] bool shapeAndMoveTypeCanEnterEverWithFacing(const Shape& shape, const MoveType& moveType, const Facing facing) const;
+	[[nodiscard]] bool shapeAndMoveTypeCanEnterCurrentlyWithFacing(const Shape& shape, const MoveType& moveType, const Facing facing) const;
+	[[nodiscard]] bool moveTypeCanEnter(const MoveType& moveType) const;
+	[[nodiscard]] bool moveTypeCanBreath(const MoveType& moveType) const;
+	[[nodiscard]] bool moveTypeCanEnterFrom(const MoveType& moveType, const Block& from) const;
+	[[nodiscard]] bool canEnterCurrentlyFrom(const HasShape& hasShape, const Block& block) const;
+	[[nodiscard]] bool canEnterCurrentlyWithFacing(const HasShape& hasShape, const Facing& facing) const;
+	[[nodiscard]] bool canEnterCurrentlyWithAnyFacing(const HasShape& hasShape) const;
 	// Durring pathing the algorithm will first check if cached move costs exist, if so it will use them.
 	// If not it will make a new set of costs and store them within it's self.
 	// During the next write phase the newly made costs will be added to the cache via ::tryToCacheMoveCosts.
-	bool hasCachedMoveCosts(const Shape& shape, const MoveType& moveType) const;
-	const std::vector<std::pair<Block*, MoveCost>>& getCachedMoveCosts(const Shape& shape, const MoveType& moveType) const;
-	const std::vector<std::pair<Block*, MoveCost>> makeMoveCosts(const Shape& shape, const MoveType& moveType) const;
+	[[nodiscard]] bool hasCachedMoveCosts(const Shape& shape, const MoveType& moveType) const;
+	[[nodiscard]] const std::vector<std::pair<Block*, MoveCost>>& getCachedMoveCosts(const Shape& shape, const MoveType& moveType) const;
+	[[nodiscard]] const std::vector<std::pair<Block*, MoveCost>> makeMoveCosts(const Shape& shape, const MoveType& moveType) const;
 	// Get a move cost for moving from a block onto this one for a given move type.
-	MoveCost moveCostFrom(const MoveType& moveType, const Block& from) const;
-	bool canStandIn() const;
-	CollisionVolume getTotalVolume() const;
-	bool contains(HasShape& hasShape) const { return m_shapes.contains(&hasShape); }
-	CollisionVolume getStaticVolume() const { return m_staticVolume; }
-	std::unordered_map<HasShape*, CollisionVolume>& getShapes() { return m_shapes; }
+	[[nodiscard]] MoveCost moveCostFrom(const MoveType& moveType, const Block& from) const;
+	[[nodiscard]] bool canStandIn() const;
+	[[nodiscard]] CollisionVolume getTotalVolume() const;
+	[[nodiscard]] bool contains(HasShape& hasShape) const { return m_shapes.contains(&hasShape); }
+	[[nodiscard]] CollisionVolume getStaticVolume() const { return m_staticVolume; }
+	[[nodiscard]] std::unordered_map<HasShape*, CollisionVolume>& getShapes() { return m_shapes; }
+	[[nodiscard]] uint32_t getQuantityOfItemWhichCouldFit(const ItemType& itemType) const;
 	friend class HasShape;
 	// For testing.
 	[[maybe_unused, nodiscard]] bool moveCostCacheIsEmpty() const { return m_moveCostsCache.empty(); }

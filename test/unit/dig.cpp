@@ -115,6 +115,17 @@ TEST_CASE("dig")
 		dwarf1.m_equipmentSet.addEquipment(pick);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "dig");
+		// Find project.
+		simulation.doStep();
+		// Reserve.
+		simulation.doStep();
+		REQUIRE(pick.m_reservable.isFullyReserved(&faction));
+		REQUIRE(dwarf1.m_project->reservationsComplete());
+		// Path to location.
+		simulation.doStep();
+		REQUIRE(dwarf1.m_canMove.getDestination());
+		simulation.fastForwardUntillActorIsAdjacentTo(dwarf1, tunnelStart);
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "dig");
 		std::function<bool()> predicate = [&]() { return !tunnelStart.isSolid(); };
 		simulation.fastForwardUntillPredicate(predicate, 45);
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent() == dwarf1.m_hasObjectives.getCurrent());
