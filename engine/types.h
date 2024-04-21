@@ -26,3 +26,4 @@ using Bearing = double;
 using DistanceInBlocks = uint32_t;
 using Speed = uint32_t;
 using MoveCost = Speed;
+using Quantity = uint32_t;

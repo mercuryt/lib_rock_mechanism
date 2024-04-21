@@ -105,6 +105,7 @@ std::vector<std::pair<Block*, Volume>> Shape::getBlocksOccupiedAtWithVolumes(con
 	}
 	return output;
 }
+CollisionVolume Shape::getCollisionVolumeAtLocationBlock() const { return positions[0][3]; }
 // Static methods.
 const Shape& Shape::byName(const std::string& name)
 {

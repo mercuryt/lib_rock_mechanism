@@ -41,6 +41,8 @@ void ContextMenu::drawStockPileControls(Block& block)
 		createButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 		m_root.add(createButton);
 		createButton->onClick([this]{
+			if(!m_window.getArea()->m_hasStocks.contains(*m_window.getFaction()))
+				m_window.getArea()->m_hasStocks.addFaction(*m_window.getFaction());
 			m_window.showEditStockPile();
 			hide();
 		});

@@ -115,6 +115,8 @@ protected:
 	// Single hauling operations are managed by haul subprojects.
 	// They have one or more workers plus optional haul tool and beast of burden.
 	std::list<HaulSubproject> m_haulSubprojects;
+	// Delivered items.
+	std::vector<Item*> m_deliveredItems;
 	Project(const Faction* f, Block& l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr);
 	Project(const Json& data, DeserializationMemo& deserializationMemo);
 public:
@@ -164,6 +166,8 @@ public:
 	[[nodiscard]] virtual bool canAddWorker(const Actor& actor) const;
 	// What would the total delay time be if we started from scratch now with current workers?
 	[[nodiscard]] virtual Step getDuration() const = 0;
+	// True for stockpile because there is no 'work' to do after the hauling is done.
+	[[nodiscard]] virtual bool canRecruitHaulingWorkersOnly() const { return false; }
 	virtual void onComplete() = 0;
 	virtual void onReserve() { }
 	virtual void onCancel() { }

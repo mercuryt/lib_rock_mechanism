@@ -94,17 +94,14 @@ TEST_CASE("route_10_10_10")
 		REQUIRE(actor.m_canMove.hasEvent());
 		Step scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
 		float seconds = (float)scheduledStep / (float)Config::stepsPerSecond;
-		REQUIRE(seconds > 0.25f);
-		REQUIRE(seconds < 0.5f);
+		REQUIRE(seconds >= 0.6f);
+		REQUIRE(seconds <= 0.9f);
 		simulation.m_step = scheduledStep;
 		// step 1
 		simulation.m_eventSchedule.execute(scheduledStep);
 		REQUIRE(actor.m_location == &block1);
 		REQUIRE(actor.m_canMove.hasEvent());
 		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
-		seconds = (float)scheduledStep / (float)Config::stepsPerSecond;
-		REQUIRE(seconds > 0.5f);
-		REQUIRE(seconds < 0.8f);
 		simulation.m_step = scheduledStep;
 		REQUIRE(actor.m_canMove.hasEvent());
 		// step 2

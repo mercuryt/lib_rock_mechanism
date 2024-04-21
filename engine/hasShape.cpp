@@ -524,6 +524,13 @@ CollisionVolume BlockHasShapes::getTotalVolume() const
 {
 	return m_totalVolume;
 }
+uint32_t BlockHasShapes::getQuantityOfItemWhichCouldFit(const ItemType& itemType) const
+{
+	if(m_totalVolume > Config::maxBlockVolume)
+		return 0;
+	CollisionVolume freeVolume = Config::maxBlockVolume - m_staticVolume;
+	return freeVolume / itemType.shape.getCollisionVolumeAtLocationBlock();
+}
 bool BlockHasShapes::canStandIn() const
 {
 	return (m_block.m_adjacents[0] != nullptr && (m_block.m_adjacents[0]->isSolid() || 

@@ -35,6 +35,7 @@ struct Shape
 	[[nodiscard]] std::vector<std::array<int32_t, 3>> positionOffsets(std::array<int32_t, 4> position) const;
 	[[nodiscard]] std::vector<Block*> getBlocksOccupiedAt(const Block& location, Facing facing) const;
 	[[nodiscard]] std::vector<std::pair<Block*, Volume>> getBlocksOccupiedAtWithVolumes(const Block& location, Facing facing) const;
+	[[nodiscard]] CollisionVolume getCollisionVolumeAtLocationBlock() const;
 	// Infastructure.
 	bool operator==(const Shape& x) const { return &x == this; }
 	static const Shape& byName(const std::string& name);

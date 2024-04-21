@@ -73,6 +73,7 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::readStep()
 		FindsPath findsPath(*actor, false);
 		findsPath.pathToUnreservedAdjacentToPredicate(condition, *actor->getFaction());
 		// Only make at most one per step.
+		// TODO: this is counterproductive performancewise, can it be removed?
 		if(m_haulProjectParamaters.strategy != HaulStrategy::None)
 			return;
 	}
@@ -242,6 +243,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 void ProjectTryToAddWorkersThreadedTask::writeStep()
 {
 	m_hasOnDestroy.unsubscribeAll();
+	std::unordered_set<Actor*> toRelease = m_cannotPathToJobSite;
 	if(m_project.reservationsComplete() && !m_project.m_workerCandidatesAndTheirObjectives.empty())
 	{
 		// Requirements satisfied, verifiy they are all still avalible.
@@ -271,23 +273,16 @@ void ProjectTryToAddWorkersThreadedTask::writeStep()
 			}
 		m_project.m_reservedEquipment = m_reservedEquipment;
 		// Add all actors.
-		std::vector<Actor*> notAdded;
 		for(auto& [actor, objective] : m_project.m_workerCandidatesAndTheirObjectives)
 		{
 			// TODO: Reserve a work location for the actor, prevent deadlocks due to lack of access by a tool holder.
 			if(m_project.canAddWorker(*actor))
 				m_project.addWorker(*actor, *objective);
 			else
-				notAdded.push_back(actor);
+				toRelease.insert(actor);
 		}
 		m_project.m_workerCandidatesAndTheirObjectives.clear();
 		m_project.onReserve();
-		for(Actor* actor : notAdded)
-		{
-			actor->m_hasObjectives.getCurrent().reset();
-			actor->m_project = nullptr;
-			actor->m_hasObjectives.cannotCompleteSubobjective();
-		}
 	}
 	else
 	{
@@ -301,8 +296,14 @@ void ProjectTryToAddWorkersThreadedTask::writeStep()
 		else
 			m_project.cancel();
 	}
-	for(Actor* actor : m_cannotPathToJobSite)
+	for(Actor* actor : toRelease)
+	{
+		StockPileObjective& objective = static_cast<StockPileObjective&>(actor->m_hasObjectives.getCurrent());
+		objective.m_project = nullptr;
+		actor->m_project = nullptr;
+		objective.reset();
 		actor->m_hasObjectives.cannotCompleteSubobjective();
+	}
 }
 void ProjectTryToAddWorkersThreadedTask::clearReferences() { m_project.m_tryToAddWorkersThreadedTask.clearPointer(); }
 bool ProjectTryToAddWorkersThreadedTask::validate()
@@ -528,9 +529,6 @@ bool Project::deliveriesComplete() const
 	for(auto& pair : m_requiredActors)
 		if(pair.second.required > pair.second.delivered)
 			return false;
-	for(auto& pair : m_reservedEquipment)
-		if(!m_waiting.contains(pair.first))
-			return false;
 	return true;
 }
 void Project::recordRequiredActorsAndItems()
@@ -604,20 +602,32 @@ void Project::commandWorker(Actor& actor)
 		}
 		else if(m_toPickup.empty())
 		{
-			// All items and actors have been reserved with other workers dispatched to fetch them, the worker waits for them.
 			if(actor.isAdjacentTo(m_location))
 			{
-				m_waiting.insert(&actor);
-				// Any tools being carried are marked delivered.
-				if(m_reservedEquipment.contains(&actor))
+				if(canRecruitHaulingWorkersOnly())
 				{
-					for(auto& pair : m_reservedEquipment.at(&actor))
+					assert(!m_reservedEquipment.contains(&actor));
+					// We have no use for this worker so release them.
+					actor.m_hasObjectives.cannotFulfillObjective(m_workers.at(&actor).objective);
+				}
+				else
+				{
+					// Any tools being carried are marked delivered.
+					if(m_reservedEquipment.contains(&actor))
 					{
-						++pair.first->delivered;	
-						assert(pair.first->delivered <= pair.first->reserved);
+						for(auto& pair : m_reservedEquipment.at(&actor))
+						{
+							++pair.first->delivered;	
+							assert(pair.first->delivered <= pair.first->reserved);
+						}
+						if(deliveriesComplete())
+						{
+							addToMaking(actor);
+							return;
+						}
 					}
-					if(deliveriesComplete())
-						addToMaking(actor);
+					// All items and actors have been reserved with other workers dispatched to fetch them, the worker waits for them.
+					m_waiting.insert(&actor);
 				}
 			}
 			else
