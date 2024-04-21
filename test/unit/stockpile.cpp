@@ -297,6 +297,56 @@ TEST_CASE("stockpile")
 		simulation.doStep();
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "stockpile");
 	}
+	SUBCASE("haul generic two workers")
+	{
+		std::vector<ItemQuery> queries;
+		queries.emplace_back(pile, sand);
+		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		Block& stockpileLocation = area.getBlock(5, 5, 1);
+		Block& cargoOrigin = area.getBlock(1, 8, 1);
+		stockpile.addBlock(stockpileLocation);
+		Item& cargo = simulation.createItemGeneric(pile, sand, 100u);
+		cargo.setLocation(cargoOrigin);
+		area.m_hasStockPiles.at(faction).addItem(cargo);
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 100);
+		Actor& dwarf2 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 2, 1));
+		dwarf2.setFaction(&faction);
+		dwarf2.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 100);
+		// Both workers find hauling task.
+		simulation.doStep();
+		REQUIRE(dwarf1.m_project);
+		REQUIRE(dwarf2.m_project);
+		// One worker is selected when the project makes reservations. This is the first worker.
+		simulation.doStep();
+		// The second worker finds the task again, the first selects a haul strategy.
+		simulation.doStep();
+		// The second worker's project makes reservations, the first paths to cargoOrigin.
+		simulation.doStep();
+		// The second worker selects a haul strategy.
+		simulation.doStep();
+		// the second worker paths to cargoOrigin.
+		simulation.doStep();
+		simulation.fastForwardUntillActorIsAdjacentTo(dwarf2, cargoOrigin);
+		REQUIRE(dwarf2.m_canPickup.exists());
+		auto predicate1 = [&]{ return stockpileLocation.m_hasItems.getCount(pile, sand); };
+		REQUIRE(dwarf2.m_hasObjectives.getCurrent().name() == "stockpile");
+		simulation.fastForwardUntillPredicate(predicate1);
+		Quantity firstDeliveryQuantity = stockpileLocation.m_hasItems.getCount(pile, sand);
+		REQUIRE(dwarf2.m_hasObjectives.getCurrent().name() == "stockpile");
+		auto predicate2 = [&]{ return stockpileLocation.m_hasItems.getCount(pile, sand) > firstDeliveryQuantity; };
+		simulation.fastForwardUntillPredicate(predicate2);
+		if(dwarf2.getActionDescription() != L"stockpile")
+			REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "stockpile");
+		else
+			REQUIRE(dwarf2.m_hasObjectives.getCurrent().name() == "stockpile");
+		auto predicate3 = [&]{ return stockpileLocation.m_hasItems.getCount(pile, sand) == 100; };
+		simulation.fastForwardUntillPredicate(predicate3);
+		REQUIRE(!dwarf1.m_project);
+		REQUIRE(!dwarf2.m_project);
+		simulation.doStep();
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "stockpile");
+		REQUIRE(dwarf2.m_hasObjectives.getCurrent().name() != "stockpile");
+	}
 	SUBCASE("path to item is blocked")
 	{
 		areaBuilderUtil::setSolidWall(area.getBlock(0, 3, 1), area.getBlock(8, 3, 1), wood);
