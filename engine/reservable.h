@@ -63,6 +63,7 @@ public:
 	void setDishonorCallbackFor(CanReserve& canReserve, std::unique_ptr<DishonorCallback> dishonorCallback) { m_dishonorCallbacks[&canReserve] = std::move(dishonorCallback); }
 	void clearAll();
 	void updateReservedCount(const Faction& faction, uint32_t count);
+	void merge(Reservable& reservable);
 	[[nodiscard]] bool isFullyReserved(const Faction* faction) const;
 	[[nodiscard]] bool hasAnyReservations() const;
 	[[nodiscard]] bool hasAnyReservationsWith(const Faction& faction) const;

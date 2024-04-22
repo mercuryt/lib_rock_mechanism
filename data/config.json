@@ -154,7 +154,7 @@
 	"scaleOfHumanBody": 100,
 	"secondsFrequencyToLookForHaulSubprojects": 1.5,
 	"secondsPerMinute": 60,
-	"secondsToDelayBeforeTryingAgainToCompleteAnObjective": 2000,
+	"secondsToDelayBeforeTryingAgainToCompleteAnObjective": 20,
 	"secondsToDelayBeforeTryingAgainToFollowLeader": 1.0,
 	"secondsToDrink": 5,
 	"secondsToEat": 200,

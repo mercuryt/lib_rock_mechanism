@@ -90,11 +90,15 @@ public:
 	bool m_detour = false;
 	// Reentrant state machine method.
 	virtual void execute() = 0;
-	// Clean up references and destroy.
+	// Clean up references.
+	// Called when the player replaces the current objective queue with a new task.
+	// Objective will be destroyed after this call.
 	virtual void cancel() = 0;
 	// Clean up threaded tasks and events.
+	// Called when an objective usurps the current objective.
 	virtual void delay() = 0;
 	// Return to inital state and try again.
+	// Called on cannotCompleteSubobjective
 	virtual void reset() = 0;
 	// Returns true if the noPath condition is resolved or false otherwise.
 	virtual bool onNoPath() { return false; }
@@ -127,6 +131,8 @@ class ObjectiveTypePrioritySet final
 {
 	Actor& m_actor;
 	std::vector<ObjectivePriority> m_data;
+	ObjectivePriority& getById(ObjectiveTypeId objectiveTypeId);
+	const ObjectivePriority& getById(ObjectiveTypeId objectiveTypeId) const;
 public:
 	ObjectiveTypePrioritySet(Actor& a) : m_actor(a) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
@@ -137,7 +143,7 @@ public:
 	void setDelay(ObjectiveTypeId objectiveTypeId);
 	[[nodiscard]] uint8_t getPriorityFor(ObjectiveTypeId objectiveTypeId) const;
 	// For testing.
-	[[nodiscard, maybe_unused]] bool isOnDelay(ObjectiveTypeId);
+	[[nodiscard, maybe_unused]] bool isOnDelay(ObjectiveTypeId) const;
 };
 class SupressedNeed final
 {

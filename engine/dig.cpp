@@ -110,11 +110,22 @@ void DigObjective::cancel()
 		m_project->removeWorker(m_actor);
 	m_digThreadedTask.maybeCancel();
 }
+void DigObjective::delay() 
+{ 
+	cancel(); 
+	m_project = nullptr;
+	m_actor.m_project = nullptr;
+}
 void DigObjective::reset() 
 { 
+	if(m_project)
+	{
+		assert(!m_project->getWorkers().contains(&m_actor));
+		m_cannotJoinWhileReservationsAreNotComplete.insert(m_project);
+		m_project = nullptr; 
+		m_actor.m_project = nullptr;
+	}
 	m_digThreadedTask.maybeCancel();
-	m_project = nullptr; 
-	m_actor.m_project = nullptr;
 	m_actor.m_canReserve.deleteAllWithoutCallback();
 }
 void DigObjective::joinProject(DigProject& project)
@@ -128,6 +139,8 @@ DigProject* DigObjective::getJoinableProjectAt(const Block& block)
 	if(!block.m_hasDesignations.contains(*m_actor.getFaction(), BlockDesignation::Dig))
 		return nullptr;
 	DigProject& output = block.m_area->m_hasDigDesignations.at(*m_actor.getFaction(), block);
+	if(!output.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&output))
+		return nullptr;
 	if(!output.canAddWorker(m_actor))
 		return nullptr;
 	return &output;

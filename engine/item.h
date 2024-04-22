@@ -177,6 +177,7 @@ public:
 	void addQuantity(uint32_t delta);
 	void removeQuantity(uint32_t delta);
 	void install(Block& block, Facing facing, const Faction& faction);
+	void merge(Item& item);
 	[[nodiscard]] Quantity getQuantity() const { return m_quantity; }
 	[[nodiscard]] bool isItem() const { return true; }
 	[[nodiscard]] bool isGeneric() const { return m_itemType.generic; }

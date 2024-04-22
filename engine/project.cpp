@@ -87,6 +87,7 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep()
 			// Enough retries, delay.
 			m_project.m_haulRetries = 0;
 			m_project.setDelayOn();
+			// TODO: Schdedule setting delay off again.
 		}
 		else
 		{
@@ -275,7 +276,8 @@ void ProjectTryToAddWorkersThreadedTask::writeStep()
 		// Add all actors.
 		for(auto& [actor, objective] : m_project.m_workerCandidatesAndTheirObjectives)
 		{
-			// TODO: Reserve a work location for the actor, prevent deadlocks due to lack of access by a tool holder.
+			// TODO: Reserve a work location for the actor in order to prevent deadlocks due to lack of access by a tool holder.
+			// 	Alternatively, allow workers to swap positions if one is waiting.
 			if(m_project.canAddWorker(*actor))
 				m_project.addWorker(*actor, *objective);
 			else
@@ -299,8 +301,6 @@ void ProjectTryToAddWorkersThreadedTask::writeStep()
 	for(Actor* actor : toRelease)
 	{
 		StockPileObjective& objective = static_cast<StockPileObjective&>(actor->m_hasObjectives.getCurrent());
-		objective.m_project = nullptr;
-		actor->m_project = nullptr;
 		objective.reset();
 		actor->m_hasObjectives.cannotCompleteSubobjective();
 	}
@@ -657,17 +657,19 @@ void Project::removeWorker(Actor& actor)
 		m_workers.at(&actor).haulSubproject->removeWorker(actor);
 	if(m_making.contains(&actor))
 		removeFromMaking(actor);
-	// If this is the only worker or the worker has a reserved tool then reset.
-	if(m_workers.size() == 1 || actor.m_equipmentSet.hasAnyEquipmentWithReservations())
+	m_workers.erase(&actor);
+	if(m_reservedEquipment.contains(&actor))
+	{
+		Item& item = *m_reservedEquipment.at(&actor).front().second;
+		item.m_reservable.clearAll();
+	}
+	else if(m_workers.empty())
 	{
 		if(canReset())
 			reset();
 		else
 			cancel();
-		assert(!actor.m_equipmentSet.hasAnyEquipmentWithReservations());
 	}
-	else
-		m_workers.erase(&actor);
 }
 void Project::addToMaking(Actor& actor)
 {
@@ -743,6 +745,17 @@ void Project::setLocationDishonorCallback(std::unique_ptr<DishonorCallback> dish
 {
 	m_location.m_reservable.setDishonorCallbackFor(m_canReserve, std::move(dishonorCallback));
 }
+void Project::setDelayOn() 
+{ 
+	m_delay = true; 
+	onDelay(); 
+	//dismissWorkers(); 
+}
+void Project::setDelayOff() 
+{
+       	m_delay = false; 
+	offDelay(); 
+}
 void Project::addToPickup(HasShape& hasShape, ProjectRequirementCounts& counts, uint32_t quantity)
 {
 	if(m_toPickup.contains(&hasShape))
@@ -770,14 +783,15 @@ void Project::reset()
 	m_toPickup.clear();
 	// I guess we are doing this in case requirements change. Probably not needed.
 	m_requirementsLoaded = false;
-	for(Actor* actor : getWorkersAndCandidates())
+	std::vector<Actor*> workersAndCandidates = getWorkersAndCandidates();
+	m_canReserve.deleteAllWithoutCallback();
+	m_workers.clear();
+	m_workerCandidatesAndTheirObjectives.clear();
+	for(Actor* actor : workersAndCandidates)
 	{
 		actor->m_hasObjectives.getCurrent().reset();
 		actor->m_hasObjectives.cannotCompleteSubobjective();
 	}
-	m_canReserve.deleteAllWithoutCallback();
-	m_workers.clear();
-	m_workerCandidatesAndTheirObjectives.clear();
 }
 bool Project::canAddWorker(const Actor& actor) const
 {

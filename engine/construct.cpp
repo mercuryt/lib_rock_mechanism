@@ -104,6 +104,10 @@ void ConstructObjective::cancel()
 		m_project->removeWorker(m_actor);
 	m_constructThreadedTask.maybeCancel();
 }
+void ConstructObjective::delay()
+{
+	cancel();
+}
 void ConstructObjective::reset() 
 { 
 	m_constructThreadedTask.maybeCancel();

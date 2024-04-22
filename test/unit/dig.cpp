@@ -6,7 +6,7 @@
 #include "../../engine/dig.h"
 #include "../../engine/cuboid.h"
 #include "../../engine/objectives/goTo.h"
-#include "haul.h"
+#include "../../engine/wander.h"
 TEST_CASE("dig")
 {
 	static const MaterialType& dirt = MaterialType::byName("dirt");
@@ -282,6 +282,7 @@ TEST_CASE("dig")
 	SUBCASE("player interrupts")
 	{
 		Block& holeLocation = area.getBlock(8, 8, 3);
+		Block& goToLocation = area.getBlock(1, 8, 4);
 		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
 		// One step to find the designation.
@@ -292,13 +293,85 @@ TEST_CASE("dig")
 		simulation.doStep();
 		// Another step to path to the pick.
 		simulation.doStep();
-		// Setting holeLocation as not solid immideatly triggers the project locationDishonorCallback, which cancels the project.
-		std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(dwarf1, area.getBlock(1, 8, 4));
+		REQUIRE(dwarf1.m_project);
+		Project& project = *dwarf1.m_project;
+		// Usurp the current objective, delaying the project.
+		std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(dwarf1, goToLocation);
 		dwarf1.m_hasObjectives.addTaskToStart(std::move(objective));
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "dig");
 		REQUIRE(!dwarf1.m_canPickup.isCarrying(pick));
 		REQUIRE(dwarf1.m_project == nullptr);
 		REQUIRE(!pick.m_reservable.isFullyReserved(&faction));
+		REQUIRE(project.getWorkersAndCandidates().empty());
 		REQUIRE(area.m_hasDigDesignations.areThereAnyForFaction(faction));
+		simulation.fastForwardUntillActorIsAt(dwarf1, goToLocation);
+		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "dig");
+		// One step to find the designation.
+		simulation.doStep();
+		REQUIRE(dwarf1.m_project == &project);
+		// One step to activate the project and reserve the pick.
+		simulation.doStep();
+		REQUIRE(project.reservationsComplete());
+		REQUIRE(pick.m_reservable.isFullyReserved(&faction));
+		// One step to select haul type.
+		simulation.doStep();
+		REQUIRE(project.getProjectWorkerFor(dwarf1).haulSubproject);
+		// Another step to path to the pick.
+		simulation.doStep();
+		REQUIRE(dwarf1.m_canMove.getDestination()->isAdjacentTo(pick));
+		simulation.fastForwardUntillActorIsAdjacentTo(dwarf1, *pick.m_location);
+		REQUIRE(dwarf1.m_canPickup.isCarrying(pick));
+		auto holeDug = [&]{ return !holeLocation.isSolid(); };
+		simulation.fastForwardUntillPredicate(holeDug, 45);
+	}
+	SUBCASE("player interrupts worker with equiped tool, project resets")
+	{
+		pick.exit();
+		dwarf1.m_equipmentSet.addEquipment(pick);
+		Actor& dwarf2 = simulation.createActor(dwarf, area.getBlock(1, 2, 4));
+		dwarf2.setFaction(&faction);
+		Block& holeLocation = area.getBlock(8, 8, 3);
+		Block& goToLocation = area.getBlock(1, 8, 4);
+		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
+		dwarf2.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
+		// One step to find the designation.
+		simulation.doStep();
+		// One step to activate the project and reserve the pick.
+		simulation.doStep();
+		// One step to path to the project.
+		simulation.doStep();
+		REQUIRE(dwarf1.m_project);
+		Project& project = *dwarf1.m_project;
+		REQUIRE(dwarf2.m_project == &project);
+		simulation.fastForwardUntillActorIsAdjacentTo(dwarf1, holeLocation);
+		REQUIRE(project.finishEventExists());
+		// Usurp the current objective, reseting the project.
+		std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(dwarf1, goToLocation);
+		dwarf1.m_hasObjectives.addTaskToStart(std::move(objective));
+		REQUIRE(!project.reservationsComplete());
+		REQUIRE(dwarf2.m_project == &project);
+		// Project is unable to reserve.
+		simulation.doStep();
+		REQUIRE(!project.reservationsComplete());
+		REQUIRE(!dwarf2.m_project);
+		REQUIRE(project.isOnDelay());
+		// dwarf2 is unable to find another dig project, turns on delay.
+		simulation.doStep();
+		REQUIRE(dwarf2.m_hasObjectives.m_prioritySet.isOnDelay(ObjectiveTypeId::Dig));
+		simulation.fastForwardUntillActorIsAt(dwarf1, goToLocation);
+		REQUIRE(!dwarf2.m_project);
+		// One step to find the designation.
+		simulation.doStep();
+		REQUIRE(dwarf1.m_project);
+		// One step to activate the project and reserve the pick.
+		simulation.doStep();
+		REQUIRE(project.reservationsComplete());
+		// One step to path to the project.
+		simulation.doStep();
+		simulation.fastForwardUntillActorIsAdjacentTo(dwarf1, holeLocation);
+		auto holeDug = [&]{ return !holeLocation.isSolid(); };
+		simulation.fastForwardUntillPredicate(holeDug, 45);
+		REQUIRE(dwarf2.getActionDescription() == L"dig");
 	}
 }

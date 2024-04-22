@@ -1,7 +1,7 @@
 [
 	{
 		"name": "wood",
-		"minutesDuration": 1000,
+		"minutesDuration": 500,
 		"consumed":
 		[
 			{
@@ -35,7 +35,7 @@
 	},{
 
 		"name": "stone",
-		"minutesDuration": 2000,
+		"minutesDuration": 1000,
 		"consumed":
 		[
 			{
@@ -68,7 +68,7 @@
 		"skill": "masonry"
 	},{
 		"name": "metal",
-		"minutesDuration": 1300,
+		"minutesDuration": 750,
 		"consumed":
 		[
 			{
@@ -101,5 +101,19 @@
 			}
 		],
 		"skill": "metal working"
+	},{
+		"name": "adobe",
+		"minutesDuration": 750,
+		"consumed":
+		[
+			{
+				"itemType": "pile",
+				"materialType": "dirt",
+				"quantity": 150
+			}
+		],
+		"unconsumed" : [],
+		"byproducts" : [],
+		"skill": "adobe"
 	}
 ]

@@ -177,6 +177,18 @@ void Reservable::updateReservedCount(const Faction& faction, uint32_t count)
 	assert(count <= m_maxReservations);
 	m_reservedCounts[&faction] = count;
 }
+void Reservable::merge(Reservable& reservable)
+{
+	for(auto [canReserve, quantity] : reservable.m_canReserves)
+	{
+		m_canReserves[canReserve] += quantity;
+		m_reservedCounts[canReserve->m_faction] += quantity;
+		assert(m_reservedCounts[canReserve->m_faction] <= m_maxReservations);
+		m_dishonorCallbacks[canReserve] = std::move(reservable.m_dishonorCallbacks[canReserve]);
+	}
+	reservable.m_canReserves.clear();
+	reservable.m_dishonorCallbacks.clear();
+}
 uint32_t Reservable::getUnreservedCount(const Faction& faction) const
 {
 	if(!m_reservedCounts.contains(&faction))

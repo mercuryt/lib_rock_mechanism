@@ -64,6 +64,10 @@
 		"xpPerLevelModifier": 2.0,
 		"level1Xp": 100
 	},{
+		"name": "adobe",
+		"xpPerLevelModifier": 2.0,
+		"level1Xp": 100
+	},{
 		"name": "horticulture",
 		"xpPerLevelModifier": 2.0,
 		"level1Xp": 100

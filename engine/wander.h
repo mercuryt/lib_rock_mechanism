@@ -25,6 +25,8 @@ public:
 	[[nodiscard]] bool canResume() const { return false; }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Wander; }
 	friend class WanderThreadedTask;
+	// For testing.
+	[[nodiscard]] bool hasThreadedTask() const { return m_threadedTask.exists(); }
 };
 class WanderThreadedTask final : public ThreadedTask
 {

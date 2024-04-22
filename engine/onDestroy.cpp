@@ -1,6 +1,10 @@
 #include "onDestroy.h"
 void OnDestroy::subscribe(HasOnDestroySubscriptions& hasSubscription) { m_subscriptions.insert(&hasSubscription); }
 void OnDestroy::unsubscribe(HasOnDestroySubscriptions& hasSubscription) { m_subscriptions.erase(&hasSubscription); }
+void OnDestroy::merge(OnDestroy& onDestroy)
+{
+	m_subscriptions.insert(onDestroy.m_subscriptions.begin(), onDestroy.m_subscriptions.end());
+}
 OnDestroy::~OnDestroy()
 {
 	for(HasOnDestroySubscriptions* hasSubscription : m_subscriptions)
