@@ -27,6 +27,16 @@ Json ObjectiveTypePrioritySet::toJson() const
 {
 	return Json{{"data", m_data}};
 }
+ObjectivePriority& ObjectiveTypePrioritySet::getById(ObjectiveTypeId objectiveTypeId)
+{
+	auto found = std::ranges::find_if(m_data, [&](const ObjectivePriority& objectivePriority){ return objectivePriority.objectiveType->getObjectiveTypeId() == objectiveTypeId; });
+	assert(found != m_data.end());
+	return *found;
+}
+const ObjectivePriority& ObjectiveTypePrioritySet::getById(ObjectiveTypeId objectiveTypeId) const
+{
+	return const_cast<ObjectiveTypePrioritySet*>(this)->getById(objectiveTypeId);
+}
 void ObjectiveTypePrioritySet::setPriority(const ObjectiveType& objectiveType, uint8_t priority)
 {
 	auto found = std::ranges::find_if(m_data, [&](ObjectivePriority& x) { return x.objectiveType == &objectiveType; });
@@ -69,10 +79,13 @@ void ObjectiveTypePrioritySet::setDelay(ObjectiveTypeId objectiveTypeId)
 }
 uint8_t ObjectiveTypePrioritySet::getPriorityFor(ObjectiveTypeId objectiveTypeId) const
 {
-	auto found = std::ranges::find_if(m_data, [&](const ObjectivePriority& objectivePriority){ return objectivePriority.objectiveType->getObjectiveTypeId() == objectiveTypeId; });
-	if(found == m_data.end())
-		return 0;
-	return found->priority;
+	const ObjectivePriority& objectivePriority = getById(objectiveTypeId);
+	return objectivePriority.priority;
+}
+bool ObjectiveTypePrioritySet::isOnDelay(ObjectiveTypeId objectiveTypeId) const
+{
+	const ObjectivePriority& objectivePriority = getById(objectiveTypeId);
+	return objectivePriority.doNotAssignAgainUntil != 0;
 }
 // SupressedNeed
 SupressedNeed::SupressedNeed(std::unique_ptr<Objective> o, Actor& a) : m_actor(a), m_objective(std::move(o)), m_event(a.getSimulation().m_eventSchedule) { }

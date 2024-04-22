@@ -80,7 +80,7 @@ class Project
 	std::unordered_map<Actor*, std::vector<std::pair<ProjectRequirementCounts*, Item*>>> m_reservedEquipment;
 	size_t m_maxWorkers;
 	// In order for the first worker to join a project the worker must be able to path to all the required shapes.
-	// If this is not possible delay is set to true, a scheduled event is created to end the delay, and the project's onDelay method is called.
+	// If this is not possible delay is set to true, a tryToReserveEvent is created to end the delay, and the project's onDelay method is called.
 	// The onDelay method is expected to remove the project from listings, remove block designations, etc.
 	// The scheduled event sets delay to false and calls the offDelay method.
 	bool m_delay;
@@ -138,11 +138,11 @@ public:
 	void haulSubprojectComplete(HaulSubproject& haulSubproject);
 	void haulSubprojectCancel(HaulSubproject& haulSubproject);
 	void setLocationDishonorCallback(std::unique_ptr<DishonorCallback> dishonorCallback);
-	void setDelayOn() { m_delay = true; onDelay(); }
-	void setDelayOff() { m_delay = false; offDelay(); }
+	void setDelayOn();
+	void setDelayOff();
 	void addToPickup(HasShape& hasShape, ProjectRequirementCounts& counts, uint32_t quantity);
 	void removeToPickup(HasShape& hasShape, uint32_t quantity);
-	// To be called when the last worker is removed or when a required reservation is dishonored, resets to pre-reservations complete status.
+	// To be called when the last worker is removed or when a required reservation is dishonored, resets to pre-reservations status.
 	void reset();
 	void resetOrCancel();
 	// Before unload when shutting down or hibernating.
@@ -157,7 +157,7 @@ public:
 	[[nodiscard]] Block& getLocation() { return m_location; }
 	[[nodiscard]] const Block& getLocation() const { return m_location; }
 	[[nodiscard]] bool hasCandidate(const Actor& actor) const;
-	// When we cannotCompleteSubobjective is called do we reset and try again or do we call cannotCompleteObjective?
+	// When cannotCompleteSubobjective is called do we reset and try again or do we call cannotCompleteObjective?
 	// Should be false for objectives like targeted hauling, where if the specific target is inaccessable there is no fallback possible.
 	[[nodiscard]] virtual bool canReset() const { return true; }
 	[[nodiscard]] std::vector<Actor*> getWorkersAndCandidates();

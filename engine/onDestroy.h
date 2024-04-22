@@ -12,6 +12,7 @@ class OnDestroy
 public:
 	void subscribe(HasOnDestroySubscriptions& hasSubscription);
 	void unsubscribe(HasOnDestroySubscriptions& hasSubscription);
+	void merge(OnDestroy& onDestroy);
 	~OnDestroy();
 };
 

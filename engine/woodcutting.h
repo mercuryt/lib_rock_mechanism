@@ -43,7 +43,7 @@ public:
 	void execute();
 	void cancel();
 	void reset();
-	void delay() { cancel(); }
+	void delay();
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::WoodCutting; }
 	[[nodiscard]] std::string name() const { return "woodcutting"; }
 	void joinProject(WoodCuttingProject& project);

@@ -13,6 +13,7 @@
 #include "findsPath.h"
 
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 struct Faction;
@@ -46,13 +47,14 @@ class DigObjective final : public Objective
 {
 	HasThreadedTask<DigThreadedTask> m_digThreadedTask;
 	Project* m_project;
+	std::unordered_set<Project*> m_cannotJoinWhileReservationsAreNotComplete;
 public:
 	DigObjective(Actor& a);
 	DigObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	void execute();
 	void cancel();
-	void delay() { cancel(); }
+	void delay();
 	void reset();
 	void joinProject(DigProject& project);
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Dig; }

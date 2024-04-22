@@ -113,6 +113,10 @@ void WoodCuttingObjective::cancel()
 		m_project->removeWorker(m_actor);
 	m_woodCuttingThreadedTask.maybeCancel();
 }
+void WoodCuttingObjective::delay()
+{
+	cancel();
+}
 void WoodCuttingObjective::reset() 
 { 
 	m_woodCuttingThreadedTask.maybeCancel();

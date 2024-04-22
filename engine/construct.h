@@ -45,6 +45,7 @@ public:
 	ConstructObjectiveType() = default;
 	ConstructObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo){ }
 };
+// TODO: specalize construct objective into carpentry, masonry, etc.
 class ConstructObjective final : public Objective
 {
 	HasThreadedTask<ConstructThreadedTask> m_constructThreadedTask;
@@ -55,7 +56,7 @@ public:
 	[[nodiscard]] Json toJson() const;
 	void execute();
 	void cancel();
-	void delay() { cancel(); }
+	void delay();
 	void reset();
 	void joinProject(ConstructProject& project);
 	[[nodiscard]] std::string name() const { return "construct"; }

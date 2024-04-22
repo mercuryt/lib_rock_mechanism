@@ -154,6 +154,15 @@ void Item::install(Block& block, Facing facing, const Faction& faction)
 			craftLocation->m_area->m_hasCraftingLocationsAndJobs.at(faction).addLocation(*m_itemType.craftLocationStepTypeCategory, *craftLocation);
 	}
 }
+void Item::merge(Item& item)
+{
+	assert(m_itemType == item.m_itemType);
+	assert(m_materialType == item.m_materialType);
+	m_quantity += item.getQuantity();
+	m_reservable.merge(item.m_reservable);
+	m_onDestroy.merge(item.m_onDestroy);
+	item.destroy();
+}
 void Item::destroy()
 {
 	if(m_location != nullptr)
@@ -423,8 +432,7 @@ void BlockHasItems::add(Item& item)
 		// Add to.
 		if(found != m_items.end())
 		{
-			m_block.m_hasShapes.addQuantity(**found, item.getQuantity());
-			item.destroy();
+			(*found)->merge(item);
 			return;
 		}
 	}

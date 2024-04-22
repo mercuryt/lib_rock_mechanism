@@ -92,7 +92,7 @@ tgui::ComboBox::Ptr widgetUtil::makePlantSpeciesSelectUI(Block* block)
 	return output;
 }
 // MaterialTypeSelectUI
-tgui::ComboBox::Ptr widgetUtil::makeMaterialSelectUI(std::wstring nullLabel)
+tgui::ComboBox::Ptr widgetUtil::makeMaterialSelectUI(std::wstring nullLabel, std::function<bool(const MaterialType&)> predicate)
 {
 	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
 	bool selected = false;
@@ -114,6 +114,8 @@ tgui::ComboBox::Ptr widgetUtil::makeMaterialSelectUI(std::wstring nullLabel)
 	}
 	for(const MaterialType& materialType : materialTypeDataStore)
 	{
+		if(predicate && !predicate(materialType))
+			continue;
 		output->addItem(materialType.name, materialType.name);
 		if(lastSelectedMaterial && *lastSelectedMaterial == materialType)
 		{

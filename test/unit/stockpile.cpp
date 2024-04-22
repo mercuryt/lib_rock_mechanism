@@ -347,6 +347,31 @@ TEST_CASE("stockpile")
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "stockpile");
 		REQUIRE(dwarf2.m_hasObjectives.getCurrent().name() != "stockpile");
 	}
+	SUBCASE("haul generic two stockpile blocks")
+	{
+		std::vector<ItemQuery> queries;
+		queries.emplace_back(pile, sand);
+		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		Block& stockpileLocation1 = area.getBlock(5, 5, 1);
+		Block& stockpileLocation2 = area.getBlock(6, 5, 1);
+		Block& cargoOrigin1 = area.getBlock(1, 8, 1);
+		Block& cargoOrigin2 = area.getBlock(2, 8, 1);
+		stockpile.addBlock(stockpileLocation1);
+		stockpile.addBlock(stockpileLocation2);
+		Item& cargo1 = simulation.createItemGeneric(pile, sand, 100u);
+		Item& cargo2 = simulation.createItemGeneric(pile, sand, 100u);
+		cargo1.setLocation(cargoOrigin1);
+		cargo2.setLocation(cargoOrigin2);
+		area.m_hasStockPiles.at(faction).addItem(cargo1);
+		area.m_hasStockPiles.at(faction).addItem(cargo2);
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 100);
+		simulation.fastForwardUntillActorIsAdjacentTo(dwarf1, cargoOrigin1);
+		REQUIRE(cargoOrigin1.m_hasItems.getCount(pile, sand) < 100);
+		simulation.fastForwardUntillActorIsAdjacentTo(dwarf1, stockpileLocation1);
+		simulation.fastForwardUntillActorIsAdjacentTo(dwarf1, cargoOrigin1);
+		REQUIRE(dwarf1.m_project);
+		REQUIRE(dwarf1.m_project->getLocation() == stockpileLocation1);
+	}
 	SUBCASE("path to item is blocked")
 	{
 		areaBuilderUtil::setSolidWall(area.getBlock(0, 3, 1), area.getBlock(8, 3, 1), wood);

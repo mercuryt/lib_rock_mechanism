@@ -27,7 +27,11 @@ void ContextMenu::drawConstructControls(Block& block)
 		static bool constructed = false;
 		constructButton->onMouseEnter([this, &block]{
 			auto& subMenu = makeSubmenu(0);
-			auto materialTypeSelector = widgetUtil::makeMaterialSelectUI();
+			// Only list material types which have construction data, unless in edit mode.
+			std::function<bool(const MaterialType&)> predicate = nullptr; 
+			if(!m_window.m_editMode)
+				predicate = [&](const MaterialType& materialType){ return materialType.constructionData; };
+			auto materialTypeSelector = widgetUtil::makeMaterialSelectUI(L"", predicate);
 			subMenu.add(materialTypeSelector);
 			if(m_window.m_editMode)
 			{
