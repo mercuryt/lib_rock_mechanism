@@ -30,8 +30,8 @@ TEST_CASE("wound")
 		REQUIRE(wound.bleedVolumeRate != 0);
 		REQUIRE(actor.m_body.getStepsTillWoundsClose() > actor.m_body.getStepsTillBleedToDeath());
 		simulation.fastForward(actor.m_body.getStepsTillBleedToDeath());
-		REQUIRE(!actor.m_alive);
-		REQUIRE(actor.m_causeOfDeath == CauseOfDeath::bloodLoss);
+		REQUIRE(!actor.isAlive());
+		REQUIRE(actor.getCauseOfDeath() == CauseOfDeath::bloodLoss);
 	}
 	SUBCASE("heal")
 	{
@@ -46,7 +46,7 @@ TEST_CASE("wound")
 		REQUIRE(wound.bleedVolumeRate != 0);
 		REQUIRE(actor.m_body.getStepsTillWoundsClose() < actor.m_body.getStepsTillBleedToDeath());
 		simulation.fastForward(actor.m_body.getStepsTillWoundsClose());
-		REQUIRE(actor.m_alive);
+		REQUIRE(actor.isAlive());
 		REQUIRE(!actor.m_body.hasBleedEvent());
 		REQUIRE(wound.bleedVolumeRate == 0);
 		simulation.fastForward(wound.healEvent.remainingSteps());
@@ -85,7 +85,7 @@ TEST_CASE("wound")
 		Hit hit(10,400, MaterialType::byName("bronze"), WoundType::Cut);
 		BodyPart& head = actor.m_body.pickABodyPartByType(BodyPartType::byName("head"));
 		actor.takeHit(hit, head);
-		REQUIRE(!actor.m_alive);
-		REQUIRE(actor.m_causeOfDeath == CauseOfDeath::wound);
+		REQUIRE(!actor.isAlive());
+		REQUIRE(actor.getCauseOfDeath() == CauseOfDeath::wound);
 	}
 }

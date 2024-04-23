@@ -214,7 +214,7 @@ void ActorCanMove::onLeaveArea() { clearAllEventsAndTasks(); }
 void ActorCanMove::onDeath() { clearAllEventsAndTasks(); }
 bool ActorCanMove::canMove() const
 {
-	if(!m_actor.m_alive || !m_actor.isActor() || m_speedIndividual == 0)
+	if(!m_actor.isAlive() || !m_actor.isActor() || m_speedIndividual == 0)
 		return false;
 	return true;
 }

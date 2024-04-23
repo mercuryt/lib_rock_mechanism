@@ -75,12 +75,11 @@ class Actor final : public HasShape
 {	
 	const Faction* m_faction;
 	Step m_birthStep;
+	CauseOfDeath m_causeOfDeath;
 public:
 	const ActorId m_id;
 	std::wstring m_name;
 	const AnimalSpecies& m_species;
-	bool m_alive;
-	CauseOfDeath m_causeOfDeath;
 	Body m_body;
 	Project* m_project;
 	Attributes m_attributes;
@@ -122,6 +121,8 @@ public:
 	[[nodiscard]] bool isItem() const { return false; }
 	[[nodiscard]] bool isActor() const { return true; }
 	[[nodiscard]] bool isGeneric() const { return false; }
+	[[nodiscard]] bool isAlive() const { return m_causeOfDeath == CauseOfDeath::none; }
+	[[nodiscard]] CauseOfDeath getCauseOfDeath() const { assert(!isAlive()); return m_causeOfDeath; }
 	[[nodiscard]] bool isEnemy(Actor& actor) const;
 	[[nodiscard]] bool isAlly(Actor& actor) const;
 	//TODO: Zombies are not sentient.

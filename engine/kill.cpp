@@ -10,7 +10,7 @@ void KillInputAction::execute()
 }
 void KillObjective::execute()
 {
-	if(!m_target.m_alive)
+	if(!m_target.isAlive())
 		//TODO: Do we need to cancel the threaded task here?
 		m_killer.m_hasObjectives.objectiveComplete(*this);
 	m_killer.m_canFight.setTarget(m_target);

@@ -240,7 +240,7 @@ TEST_CASE("basicNeedsNonsentient")
 		Actor& deer = actor;
 		uint32_t deerMass = deer.getMass();
 		deer.die(CauseOfDeath::thirst);
-		REQUIRE(!deer.m_alive);
+		REQUIRE(!deer.isAlive());
 		simulation.fastForward(blackBear.stepsEatFrequency);
 		// Bear is hungry.
 		REQUIRE(bear.m_mustEat.getMassFoodRequested() != 0);
@@ -284,10 +284,10 @@ TEST_CASE("death")
 			actor.m_mustEat.eat(actor.m_mustEat.getMassFoodRequested());
 		// Subtract 2 rather then 1 because the event was scheduled on the previous step.
 		simulation.fastForward(redDeer.stepsTillDieWithoutFluid - 2);
-		REQUIRE(actor.m_alive);
+		REQUIRE(actor.isAlive());
 		simulation.doStep();
-		REQUIRE(!actor.m_alive);
-		REQUIRE(actor.m_causeOfDeath == CauseOfDeath::thirst);
+		REQUIRE(!actor.isAlive());
+		REQUIRE(actor.getCauseOfDeath() == CauseOfDeath::thirst);
 	}
 	SUBCASE("hunger")
 	{
@@ -299,10 +299,10 @@ TEST_CASE("death")
 		simulation.fastForward(redDeer.stepsEatFrequency);
 		REQUIRE(actor.m_mustEat.getHungerEventStep() == redDeer.stepsEatFrequency + redDeer.stepsTillDieWithoutFood + step);
 		simulation.fastForward(redDeer.stepsTillDieWithoutFood - 2);
-		REQUIRE(actor.m_alive);
+		REQUIRE(actor.isAlive());
 		simulation.doStep();
-		REQUIRE(!actor.m_alive);
-		REQUIRE(actor.m_causeOfDeath == CauseOfDeath::hunger);
+		REQUIRE(!actor.isAlive());
+		REQUIRE(actor.getCauseOfDeath() == CauseOfDeath::hunger);
 	}
 	SUBCASE("temperature")
 	{
@@ -311,9 +311,9 @@ TEST_CASE("death")
 		simulation.doStep();
 		REQUIRE(!actor.m_needsSafeTemperature.isSafeAtCurrentLocation());
 		simulation.fastForward(actor.m_species.stepsTillDieInUnsafeTemperature - 2);
-		REQUIRE(actor.m_alive);
+		REQUIRE(actor.isAlive());
 		simulation.doStep();
-		REQUIRE(!actor.m_alive);
-		REQUIRE(actor.m_causeOfDeath == CauseOfDeath::temperature);
+		REQUIRE(!actor.isAlive());
+		REQUIRE(actor.getCauseOfDeath() == CauseOfDeath::temperature);
 	}
 }

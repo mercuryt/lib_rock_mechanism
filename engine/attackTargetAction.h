@@ -13,5 +13,5 @@ class AttackTargetAction : QueuedAction<Actor>
 		else
 			m_actor.m_location->m_area->registerGetInRangeRequest(m_actor, m_target);
 	}
-	bool isComplete() const { return !m_target.m_alive || m_target.m_incapacitated; }
+	bool isComplete() const { return !m_target.isAlive() || m_target.m_incapacitated; }
 }
