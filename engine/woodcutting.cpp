@@ -116,13 +116,26 @@ void WoodCuttingObjective::cancel()
 void WoodCuttingObjective::delay()
 {
 	cancel();
+	m_project = nullptr;
+	m_actor.m_project = nullptr;
 }
 void WoodCuttingObjective::reset() 
 { 
+	if(m_project)
+	{
+		assert(!m_project->getWorkers().contains(&m_actor));
+		m_project = nullptr; 
+		m_actor.m_project = nullptr;
+	}
+	else 
+		assert(!m_actor.m_project);
 	m_woodCuttingThreadedTask.maybeCancel();
-	m_project = nullptr; 
-	m_actor.m_project = nullptr;
 	m_actor.m_canReserve.deleteAllWithoutCallback();
+}
+void WoodCuttingObjective::onProjectCannotReserve()
+{
+	assert(m_project);
+	m_cannotJoinWhileReservationsAreNotComplete.insert(m_project);
 }
 void WoodCuttingObjective::joinProject(WoodCuttingProject& project)
 {
@@ -135,6 +148,8 @@ WoodCuttingProject* WoodCuttingObjective::getJoinableProjectAt(const Block& bloc
 	if(!block.m_hasDesignations.contains(*m_actor.getFaction(), BlockDesignation::WoodCutting))
 		return nullptr;
 	WoodCuttingProject& output = block.m_area->m_hasWoodCuttingDesignations.at(*m_actor.getFaction(), block);
+	if(!output.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&output))
+		return nullptr;
 	if(!output.canAddWorker(m_actor))
 		return nullptr;
 	return &output;

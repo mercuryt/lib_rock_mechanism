@@ -56,6 +56,7 @@ public:
 	void cancel();
 	void delay();
 	void reset();
+	void onProjectCannotReserve();
 	void joinProject(DigProject& project);
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Dig; }
 	[[nodiscard]] DigProject* getJoinableProjectAt(const Block& block);

@@ -141,6 +141,7 @@ void Config::load()
 	pointsOfCombatScorePerUnitOfDextarity = data["pointsOfCombatScorePerUnitOfDextarity"].get<float>();
 	pointsOfCombatScorePerUnitOfStrength = data["pointsOfCombatScorePerUnitOfStrength"].get<float>();
 	projectTryToMakeSubprojectRetriesBeforeProjectDelay = data["projectTryToMakeSubprojectRetriesBeforeProjectDelay"].get<uint32_t>();
+	projectDelayAfterExauhstingSubprojectRetries = data["projectDelayAfterExauhstingSubprojectRetriesSeconds"] .get<uint32_t>() * stepsPerSecond;
 	projectileHitChanceFallsOffWithRangeExponent = data["projectileHitChanceFallsOffWithRangeExponent"].get<uint32_t>();
 	projectileHitPercentPerPointAttackTypeCombatScore = data["projectileHitPercentPerPointAttackTypeCombatScore"].get<float>();
 	projectileHitPercentPerPointDextarity = data["projectileHitPercentPerPointDextarity"].get<float>();

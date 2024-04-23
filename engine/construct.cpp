@@ -107,13 +107,26 @@ void ConstructObjective::cancel()
 void ConstructObjective::delay()
 {
 	cancel();
+	m_project = nullptr;
+	m_actor.m_project = nullptr;
 }
 void ConstructObjective::reset() 
 { 
+	if(m_project)
+	{
+		assert(!m_project->getWorkers().contains(&m_actor));
+		m_project = nullptr; 
+		m_actor.m_project = nullptr;
+	}
+	else
+		assert(!m_actor.m_project);
 	m_constructThreadedTask.maybeCancel();
-	m_project = nullptr; 
-	m_actor.m_project = nullptr;
 	m_actor.m_canReserve.deleteAllWithoutCallback();
+}
+void ConstructObjective::onProjectCannotReserve()
+{
+	assert(m_project);
+	m_cannotJoinWhileReservationsAreNotComplete.insert(m_project);
 }
 void ConstructObjective::joinProject(ConstructProject& project)
 {
@@ -133,12 +146,13 @@ ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAdjacentTo(cons
 }
 ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAt(Block& block)
 {
-	if(block.m_hasDesignations.contains(*m_actor.getFaction(), BlockDesignation::Construct))
-	{
-		ConstructProject& project = block.m_area->m_hasConstructionDesignations.getProject(*m_actor.getFaction(), block);
-		if(project.canAddWorker(m_actor))
-			return &project;
-	}
+	if(!block.m_hasDesignations.contains(*m_actor.getFaction(), BlockDesignation::Construct))
+		return nullptr;
+	ConstructProject& project = block.m_area->m_hasConstructionDesignations.getProject(*m_actor.getFaction(), block);
+	if(!project.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&project))
+		return nullptr;
+	if(project.canAddWorker(m_actor))
+		return &project;
 	return nullptr;
 }
 bool ConstructObjective::joinableProjectExistsAt(const Block& block) const

@@ -121,16 +121,22 @@ void DigObjective::reset()
 	if(m_project)
 	{
 		assert(!m_project->getWorkers().contains(&m_actor));
-		m_cannotJoinWhileReservationsAreNotComplete.insert(m_project);
 		m_project = nullptr; 
 		m_actor.m_project = nullptr;
 	}
+	else
+		assert(!m_actor.m_project);
 	m_digThreadedTask.maybeCancel();
 	m_actor.m_canReserve.deleteAllWithoutCallback();
 }
+void DigObjective::onProjectCannotReserve()
+{
+	assert(m_project);
+	m_cannotJoinWhileReservationsAreNotComplete.insert(m_project);
+}
 void DigObjective::joinProject(DigProject& project)
 {
-	assert(m_project == nullptr);
+	assert(!m_project);
 	m_project = &project;
 	project.addWorkerCandidate(m_actor, *this);
 }

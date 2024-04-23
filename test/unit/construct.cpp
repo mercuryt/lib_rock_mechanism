@@ -113,7 +113,9 @@ TEST_CASE("construct")
 		simulation.doStep();
 		REQUIRE(project1.hasCandidate(dwarf1));
 		REQUIRE(project2.hasCandidate(dwarf2));
+		REQUIRE(static_cast<ConstructObjective&>(dwarf2.m_hasObjectives.getCurrent()).getProjectWhichActorCanJoinAt(wallLocation2));
 		// Activate project1 with dwarf1 and reserve all required, dwarf2 fails to validate project2 due to tools being reserved for project1.
+		// Project2 schedules another attempt next step.
 		simulation.doStep();
 		REQUIRE(dwarf1.m_project == &project1);
 		REQUIRE(dwarf2.m_project == &project2);
@@ -123,12 +125,11 @@ TEST_CASE("construct")
 		REQUIRE(project2.getWorkers().empty());
 		REQUIRE(!project1.hasCandidate(dwarf1));
 		REQUIRE(project2.hasCandidate(dwarf2));
-		// Select a haul strategy and create a subproject for dwarf1, dwarf2 tries again to activate project2, this time failing to find required unreserved items and activating delay.
+		// Select a haul strategy and create a subproject for dwarf1, dwarf2 tries again to activate project2, this time failing to find required unreserved items and activating prohibition on the project at the objective instance.
 		simulation.doStep();
+		REQUIRE(!static_cast<ConstructObjective&>(dwarf2.m_hasObjectives.getCurrent()).getProjectWhichActorCanJoinAt(wallLocation2));
 		ProjectWorker& projectWorker1 = project1.getProjectWorkerFor(dwarf1);
 		REQUIRE(projectWorker1.haulSubproject != nullptr);
-		REQUIRE(project2.isOnDelay());
-		REQUIRE(!project2.getLocation().m_hasDesignations.contains(faction, BlockDesignation::Construct));
 		REQUIRE(project1.getWorkers().size() == 1);
 		REQUIRE(!project2.hasCandidate(dwarf2));
 		REQUIRE(dwarf2.m_project == nullptr);

@@ -50,6 +50,7 @@ class ConstructObjective final : public Objective
 {
 	HasThreadedTask<ConstructThreadedTask> m_constructThreadedTask;
 	Project* m_project;
+	std::unordered_set<Project*> m_cannotJoinWhileReservationsAreNotComplete;
 public:
 	ConstructObjective(Actor& a);
 	ConstructObjective(const Json& data, DeserializationMemo& deserializationMemo);
@@ -59,6 +60,7 @@ public:
 	void delay();
 	void reset();
 	void joinProject(ConstructProject& project);
+	void onProjectCannotReserve();
 	[[nodiscard]] std::string name() const { return "construct"; }
 	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAdjacentTo(const Block& location, Facing facing);
 	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAt(Block& block);
