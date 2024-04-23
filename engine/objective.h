@@ -102,6 +102,10 @@ public:
 	virtual void reset() = 0;
 	// Returns true if the noPath condition is resolved or false otherwise.
 	virtual bool onNoPath() { return false; }
+	// To be used by objectives with projects which cannot be auto destroyed.
+	// Records projects which have failed to reserve requirements so as not to retry them with this objective instance.
+	// Will be 'flushed' when this instance is destroyed and then another objective of this type is created later, after objectivePrioritySet delay ends.
+	virtual void onProjectCannotReserve() { }
 	void detour() { m_detour = true; execute(); }
 	[[nodiscard]] virtual std::string name() const = 0;
 	[[nodiscard]] virtual ObjectiveTypeId getObjectiveTypeId() const = 0;
@@ -143,7 +147,8 @@ public:
 	void setDelay(ObjectiveTypeId objectiveTypeId);
 	[[nodiscard]] uint8_t getPriorityFor(ObjectiveTypeId objectiveTypeId) const;
 	// For testing.
-	[[nodiscard, maybe_unused]] bool isOnDelay(ObjectiveTypeId) const;
+	[[nodiscard, maybe_unused]] bool isOnDelay(ObjectiveTypeId objectiveTypeId) const;
+	[[nodiscard, maybe_unused]] Step getDelayEndFor(ObjectiveTypeId objectiveTypeId) const;
 };
 class SupressedNeed final
 {

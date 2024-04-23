@@ -11,8 +11,8 @@
 #include <memory>
 // ProjectRequirementCounts
 ProjectRequirementCounts::ProjectRequirementCounts(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) :
-	required(data["required"].get<const uint8_t>()), delivered(data["delivered"].get<uint8_t>()), 
-	reserved(data["reserved"].get<uint8_t>()), consumed(data["consumed"].get<uint8_t>()) { }
+	required(data["required"].get<const Quantity>()), delivered(data["delivered"].get<Quantity>()), 
+	reserved(data["reserved"].get<Quantity>()), consumed(data["consumed"].get<Quantity>()) { }
 // Project worker.
 ProjectWorker::ProjectWorker(const Json& data, DeserializationMemo& deserializationMemo) : 
 	objective(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))
@@ -43,7 +43,7 @@ Json ProjectRequiredShapeDishonoredCallback::toJson() const
 	}
 	return data;
 }
-void ProjectRequiredShapeDishonoredCallback::execute(uint32_t oldCount, uint32_t newCount)
+void ProjectRequiredShapeDishonoredCallback::execute(Quantity oldCount, Quantity newCount)
 {
 	m_project.onHasShapeReservationDishonored(m_hasShape, oldCount, newCount);
 }
@@ -85,9 +85,11 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep()
 		if(++m_project.m_haulRetries == Config::projectTryToMakeSubprojectRetriesBeforeProjectDelay)
 		{
 			// Enough retries, delay.
-			m_project.m_haulRetries = 0;
+			// setDelayOn might destroy the project, so store canReset first.
+			bool canReset = m_project.canReset();
 			m_project.setDelayOn();
-			// TODO: Schdedule setting delay off again.
+			if(canReset)
+				m_project.reset();
 		}
 		else
 		{
@@ -107,8 +109,9 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep()
 	{
 		// All guards passed, create subproject.
 		assert(!m_haulProjectParamaters.workers.empty());
+		//TODO: move this logic into Project::createSubproject.
 		HaulSubproject& subproject = m_project.m_haulSubprojects.emplace_back(m_project, m_haulProjectParamaters);
-		// Remove the target of the new haulSubproject from m_toPickup;
+		// Remove the target of the new haulSubproject from m_toPickup.
 		m_project.removeToPickup(*m_haulProjectParamaters.toHaul, m_haulProjectParamaters.quantity);
 		m_project.onSubprojectCreated(subproject);
 	}
@@ -151,8 +154,8 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 				assert(!item->m_reservable.hasAnyReservationsWith(m_project.m_faction));
 				if(!itemQuery.query(*item))
 					continue;
-				uint32_t desiredQuantity = projectRequirementCounts.required - projectRequirementCounts.reserved;
-				uint32_t quantity = std::min(desiredQuantity, item->m_reservable.getUnreservedCount(m_project.m_faction));
+				Quantity desiredQuantity = projectRequirementCounts.required - projectRequirementCounts.reserved;
+				Quantity quantity = std::min(desiredQuantity, item->m_reservable.getUnreservedCount(m_project.m_faction));
 				assert(quantity != 0);
 				projectRequirementCounts.reserved += quantity;
 				assert(projectRequirementCounts.reserved <= projectRequirementCounts.required);
@@ -163,8 +166,8 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 		{
 			auto recordItemOnGround = [&](HasShape& hasShape, ProjectRequirementCounts& counts)
 			{
-				uint32_t desiredQuantity = counts.required - counts.reserved;
-				uint32_t quantity = std::min(desiredQuantity, hasShape.m_reservable.getUnreservedCount(m_project.m_faction));
+				Quantity desiredQuantity = counts.required - counts.reserved;
+				Quantity quantity = std::min(desiredQuantity, hasShape.m_reservable.getUnreservedCount(m_project.m_faction));
 				assert(quantity != 0);
 				counts.reserved += quantity;
 				assert(counts.reserved <= counts.required);
@@ -244,8 +247,8 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 void ProjectTryToAddWorkersThreadedTask::writeStep()
 {
 	m_hasOnDestroy.unsubscribeAll();
-	std::unordered_set<Actor*> toRelease = m_cannotPathToJobSite;
-	if(m_project.reservationsComplete() && !m_project.m_workerCandidatesAndTheirObjectives.empty())
+	std::unordered_set<Actor*> toReleaseWithProjectDelay = m_cannotPathToJobSite;
+	if(m_project.reservationsComplete())
 	{
 		// Requirements satisfied, verifiy they are all still avalible.
 		if(!validate())
@@ -281,26 +284,35 @@ void ProjectTryToAddWorkersThreadedTask::writeStep()
 			if(m_project.canAddWorker(*actor))
 				m_project.addWorker(*actor, *objective);
 			else
-				toRelease.insert(actor);
+			{
+				// Release without project delay: allow to rejoin as soon as the number of workers is less then max.
+				Objective& objective = actor->m_hasObjectives.getCurrent();
+				objective.reset();
+				actor->m_hasObjectives.cannotCompleteSubobjective();
+			}
 		}
 		m_project.m_workerCandidatesAndTheirObjectives.clear();
 		m_project.onReserve();
 	}
 	else
 	{
-		// Could not find required items / actors, activate delay and reset.
+		// Could not find required items / actors, reset
 		if(m_project.canReset())
 		{
-			m_project.setDelayOn();
+			// Remove workers here rather then allowing them to be dispatched by reset so we can call onProjectCannotReserve with toRelase.
+			auto workers = m_project.getWorkersAndCandidates();
+			toReleaseWithProjectDelay.insert(workers.begin(), workers.end());
+			m_project.m_workers.clear();
+			m_project.m_workerCandidatesAndTheirObjectives.clear();
 			m_project.reset();
-			m_project.m_tryToReserveEvent.schedule(Config::stepsToDelayBeforeTryingAgainToReserveItemsAndActorsForAProject, m_project);
 		}
 		else
 			m_project.cancel();
 	}
-	for(Actor* actor : toRelease)
+	for(Actor* actor : toReleaseWithProjectDelay)
 	{
-		StockPileObjective& objective = static_cast<StockPileObjective&>(actor->m_hasObjectives.getCurrent());
+		Objective& objective = actor->m_hasObjectives.getCurrent();
+		objective.onProjectCannotReserve();
 		objective.reset();
 		actor->m_hasObjectives.cannotCompleteSubobjective();
 	}
@@ -308,6 +320,9 @@ void ProjectTryToAddWorkersThreadedTask::writeStep()
 void ProjectTryToAddWorkersThreadedTask::clearReferences() { m_project.m_tryToAddWorkersThreadedTask.clearPointer(); }
 bool ProjectTryToAddWorkersThreadedTask::validate()
 {
+	// Require some workers can reach the job site.
+	if(m_project.m_workerCandidatesAndTheirObjectives.empty())
+		return false;
 	// Ensure all items selected to be reserved are still reservable.
 	for(auto& [hasShape, pair] : m_project.m_toPickup)
 		if(hasShape->m_reservable.getUnreservedCount(m_project.m_faction) < pair.second)
@@ -343,9 +358,9 @@ Project::Project(const Faction* f, Block& l, size_t mw, std::unique_ptr<Dishonor
 }
 Project::Project(const Json& data, DeserializationMemo& deserializationMemo) : m_finishEvent(deserializationMemo.m_simulation.m_eventSchedule), m_tryToHaulEvent(deserializationMemo.m_simulation.m_eventSchedule), m_tryToReserveEvent(deserializationMemo.m_simulation.m_eventSchedule), m_tryToHaulThreadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine), m_tryToAddWorkersThreadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine), 
 	m_canReserve(&deserializationMemo.faction(data["faction"].get<std::wstring>())),
-	m_maxWorkers(data["maxWorkers"].get<uint32_t>()), m_delay(data["delay"].get<bool>()), 
-	m_haulRetries(data["haulRetries"].get<uint8_t>()), m_requirementsLoaded(data["requirementsLoaded"].get<bool>()), 
-	m_minimumMoveSpeed(data["minimumMoveSpeed"].get<uint32_t>()),
+	m_maxWorkers(data["maxWorkers"].get<Quantity>()), m_delay(data["delay"].get<bool>()), 
+	m_haulRetries(data["haulRetries"].get<Quantity>()), m_requirementsLoaded(data["requirementsLoaded"].get<bool>()), 
+	m_minimumMoveSpeed(data["minimumMoveSpeed"].get<Speed>()),
 	m_location(deserializationMemo.m_simulation.getBlockForJsonQuery(data["location"])), 
 	m_faction(deserializationMemo.faction(data["faction"].get<std::wstring>())) 
 { 
@@ -383,7 +398,7 @@ Project::Project(const Json& data, DeserializationMemo& deserializationMemo) : m
 				hasShape = static_cast<HasShape*>(&actor);
 			}
 			ProjectRequirementCounts& projectRequirementCounts = *deserializationMemo.m_projectRequirementCounts.at(tuple[1].get<uintptr_t>());
-			uint32_t quantity = tuple[2].get<uint32_t>();
+			Quantity quantity = tuple[2].get<Quantity>();
 			m_toPickup[hasShape] = std::make_pair(&projectRequirementCounts, quantity);
 		}
 	if(data.contains("haulSubprojects"))
@@ -676,14 +691,14 @@ void Project::addToMaking(Actor& actor)
 	assert(m_workers.contains(&actor));
 	assert(!m_making.contains(&actor));
 	m_making.insert(&actor);
-	scheduleEvent();
+	scheduleFinishEvent();
 }
 void Project::removeFromMaking(Actor& actor)
 {
 	assert(m_workers.contains(&actor));
 	assert(m_making.contains(&actor));
 	m_making.erase(&actor);
-	scheduleEvent();
+	scheduleFinishEvent();
 }
 void Project::complete()
 {
@@ -703,7 +718,7 @@ void Project::cancel()
 		//actor->m_project = nullptr;
 	onCancel();
 }
-void Project::scheduleEvent(Step start)
+void Project::scheduleFinishEvent(Step start)
 {
 	if(start == 0)
 		start = m_location.m_area->m_simulation.m_step;
@@ -749,21 +764,21 @@ void Project::setDelayOn()
 { 
 	m_delay = true; 
 	onDelay(); 
-	//dismissWorkers(); 
+	m_tryToReserveEvent.schedule(Config::projectDelayAfterExauhstingSubprojectRetries, *this);
 }
 void Project::setDelayOff() 
 {
        	m_delay = false; 
 	offDelay(); 
 }
-void Project::addToPickup(HasShape& hasShape, ProjectRequirementCounts& counts, uint32_t quantity)
+void Project::addToPickup(HasShape& hasShape, ProjectRequirementCounts& counts, Quantity quantity)
 {
 	if(m_toPickup.contains(&hasShape))
 		m_toPickup[&hasShape].second += quantity;
 	else
 		m_toPickup.try_emplace(&hasShape, &counts, quantity);
 }
-void Project::removeToPickup(HasShape& hasShape, uint32_t quantity)
+void Project::removeToPickup(HasShape& hasShape, Quantity quantity)
 {
 	if(m_toPickup.at(&hasShape).second == quantity)
 		m_toPickup.erase(&hasShape);
@@ -772,10 +787,12 @@ void Project::removeToPickup(HasShape& hasShape, uint32_t quantity)
 }
 void Project::reset()
 {
+	assert(canReset());
 	m_finishEvent.maybeUnschedule();
 	m_tryToHaulEvent.maybeUnschedule();
 	m_tryToReserveEvent.maybeUnschedule();
 	m_tryToHaulThreadedTask.maybeCancel();
+	m_tryToAddWorkersThreadedTask.maybeCancel();
 	m_toConsume.clear();
 	m_haulRetries = 0;
 	m_requiredItems.clear();
@@ -787,6 +804,7 @@ void Project::reset()
 	m_canReserve.deleteAllWithoutCallback();
 	m_workers.clear();
 	m_workerCandidatesAndTheirObjectives.clear();
+	m_making.clear();
 	for(Actor* actor : workersAndCandidates)
 	{
 		actor->m_hasObjectives.getCurrent().reset();

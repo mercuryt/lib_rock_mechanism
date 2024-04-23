@@ -134,6 +134,7 @@
 	"pointsOfCombatScorePerUnitOfDextarity": 0.1,
 	"pointsOfCombatScorePerUnitOfStrength": 0.2,
 	"projectTryToMakeSubprojectRetriesBeforeProjectDelay": 5,
+	"projectDelayAfterExauhstingSubprojectRetriesSeconds": 30,
 	"projectileHitChanceFallsOffWithRangeExponent": 1.1,
 	"projectileHitPercentPerPointAttackTypeCombatScore": 0.4,
 	"projectileHitPercentPerPointDextarity": 1.0,

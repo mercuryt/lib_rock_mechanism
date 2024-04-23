@@ -36,6 +36,7 @@ class WoodCuttingObjective final : public Objective
 {
 	HasThreadedTask<WoodCuttingThreadedTask> m_woodCuttingThreadedTask;
 	WoodCuttingProject* m_project;
+	std::unordered_set<Project*> m_cannotJoinWhileReservationsAreNotComplete;
 public:
 	WoodCuttingObjective(Actor& a);
 	WoodCuttingObjective(const Json& data, DeserializationMemo& deserializationMemo);
@@ -44,6 +45,7 @@ public:
 	void cancel();
 	void reset();
 	void delay();
+	void onProjectCannotReserve();
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::WoodCutting; }
 	[[nodiscard]] std::string name() const { return "woodcutting"; }
 	void joinProject(WoodCuttingProject& project);

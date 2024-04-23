@@ -85,7 +85,13 @@ uint8_t ObjectiveTypePrioritySet::getPriorityFor(ObjectiveTypeId objectiveTypeId
 bool ObjectiveTypePrioritySet::isOnDelay(ObjectiveTypeId objectiveTypeId) const
 {
 	const ObjectivePriority& objectivePriority = getById(objectiveTypeId);
-	return objectivePriority.doNotAssignAgainUntil != 0;
+	return objectivePriority.doNotAssignAgainUntil > m_actor.getSimulation().m_step;
+}
+
+Step ObjectiveTypePrioritySet::getDelayEndFor(ObjectiveTypeId objectiveTypeId) const
+{
+	const ObjectivePriority& objectivePriority = getById(objectiveTypeId);
+	return objectivePriority.doNotAssignAgainUntil;
 }
 // SupressedNeed
 SupressedNeed::SupressedNeed(std::unique_ptr<Objective> o, Actor& a) : m_actor(a), m_objective(std::move(o)), m_event(a.getSimulation().m_eventSchedule) { }
