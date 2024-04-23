@@ -34,7 +34,7 @@ void EatEvent::execute()
 	}
 	if(actor.m_species.eatsMeat)
 		for(Actor* actor : blockContainingFood->m_hasActors.getAll())
-			if(!actor->m_alive && m_eatObjective.m_actor.m_mustEat.canEat(*actor))
+			if(!actor->isAlive() && m_eatObjective.m_actor.m_mustEat.canEat(*actor))
 			{
 				eatActor(*actor);
 				return;
@@ -96,7 +96,7 @@ void EatEvent::eatGenericItem(Item& item)
 }
 void EatEvent::eatActor(Actor& actor)
 {
-	assert(!actor.m_alive);
+	assert(!actor.isAlive());
 	assert(actor.getMass() != 0);
 	auto& eater = m_eatObjective.m_actor;
 	Mass massEaten = std::min(actor.getMass(), eater.m_mustEat.getMassFoodRequested());
@@ -322,7 +322,7 @@ bool EatObjective::canEatAt(const Block& block) const
 	}
 	if(m_actor.m_species.eatsMeat)
 		for(const Actor* actor : block.m_hasActors.getAll())
-			if(!actor->m_alive && m_actor.m_species.fluidType == actor->m_species.fluidType)
+			if(!actor->isAlive() && m_actor.m_species.fluidType == actor->m_species.fluidType)
 				return true;
 	if(block.m_hasPlant.exists())
 	{
@@ -357,7 +357,7 @@ Json MustEat::toJson() const
 }
 bool MustEat::canEat(const Actor& actor) const
 {
-	if(actor.m_alive)
+	if(actor.isAlive())
 		return false;
 	if(!m_actor.m_species.eatsMeat)
 		return false;
@@ -447,7 +447,7 @@ uint32_t MustEat::getDesireToEatSomethingAt(const Block& block) const
 	}
 	if(m_actor.m_species.eatsMeat)
 		for(Actor* actor : block.m_hasActors.getAll())
-			if(&m_actor != actor && !actor->m_alive && actor->m_species.fluidType == m_actor.m_species.fluidType)
+			if(&m_actor != actor && !actor->isAlive() && actor->m_species.fluidType == m_actor.m_species.fluidType)
 				return 1;
 	if(m_actor.m_species.eatsLeaves && block.m_hasPlant.exists())
 		if(block.m_hasPlant.get().m_percentFoliage != 0)

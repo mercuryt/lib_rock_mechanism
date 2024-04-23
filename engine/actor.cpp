@@ -229,14 +229,14 @@ void ActorParamaters::generateEquipment(Actor& actor)
 	}
 }
 Actor::Actor(Simulation& simulation, uint32_t id, const std::wstring& name, const AnimalSpecies& species, Step birthStep, Percent percentGrown, Faction* faction, Attributes attributes) :
-	HasShape(simulation, species.shapeForPercentGrown(percentGrown), false), m_faction(faction), m_birthStep(birthStep), m_id(id), m_name(name), m_species(species), m_alive(true), m_body(*this), m_project(nullptr), m_attributes(attributes), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canPickup(*this), m_equipmentSet(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_canReserve(faction), m_stamina(*this), m_hasUniform(*this), m_visionRange(species.visionRange)
+	HasShape(simulation, species.shapeForPercentGrown(percentGrown), false), m_faction(faction), m_birthStep(birthStep), m_causeOfDeath(CauseOfDeath::none), m_id(id), m_name(name), m_species(species), m_body(*this), m_project(nullptr), m_attributes(attributes), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canPickup(*this), m_equipmentSet(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_canReserve(faction), m_stamina(*this), m_hasUniform(*this), m_visionRange(species.visionRange)
 {
 	// TODO: Having this line here requires making the existance of objectives mandatory at all times. Good idea?
 	//m_hasObjectives.getNext();
 }
 Actor::Actor(ActorParamaters params) : HasShape(*params.simulation, params.species.shapeForPercentGrown(params.getPercentGrown()), false),
-	m_faction(params.faction), m_birthStep(params.getBirthStep()), m_id(params.getId()), m_name(params.getName()),
-	m_species(params.species), m_alive(true), m_body(*this), m_project(nullptr), 
+	m_faction(params.faction), m_birthStep(params.getBirthStep()), m_causeOfDeath(CauseOfDeath::none), m_id(params.getId()), m_name(params.getName()),
+	m_species(params.species), m_body(*this), m_project(nullptr), 
 	m_attributes(m_species, params.getPercentGrown()), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), 
 	m_canPickup(*this), m_equipmentSet(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, params.getPercentGrown()), 
 	m_hasObjectives(*this), m_canReserve(m_faction), m_stamina(*this), m_hasUniform(*this), m_visionRange(m_species.visionRange) 
@@ -252,8 +252,11 @@ Actor::Actor(ActorParamaters params) : HasShape(*params.simulation, params.speci
 Actor::Actor(const Json& data, DeserializationMemo& deserializationMemo) :
 	HasShape(data, deserializationMemo),
 	m_faction(data.contains("faction") ? &deserializationMemo.m_simulation.m_hasFactions.byName(data["faction"].get<std::wstring>()) : nullptr), 
-	m_birthStep(data["birthStep"]), m_id(data["id"].get<ActorId>()), m_name(data["name"].get<std::wstring>()), 
-	m_species(AnimalSpecies::byName(data["species"].get<std::string>())), m_alive(data["alive"].get<bool>()), 
+	m_birthStep(data["birthStep"]), 
+	m_causeOfDeath(data.contains("causeOfDeath") ? data["causeOfDeath"].get<CauseOfDeath>() : CauseOfDeath::none), 
+	m_id(data["id"].get<ActorId>()),
+	m_name(data["name"].get<std::wstring>()), 
+	m_species(AnimalSpecies::byName(data["species"].get<std::string>())),
 	m_body(data["body"], deserializationMemo, *this), m_project(nullptr), 
 	m_attributes(data["attributes"], m_species, data["percentGrown"].get<Percent>()), 
 	m_mustEat(data["mustEat"], *this), m_mustDrink(data["mustDrink"], *this), m_mustSleep(data["mustSleep"], *this), 
@@ -280,7 +283,7 @@ Json Actor::toJson() const
 	data["percentGrown"] = m_canGrow.growthPercent();
 	data["id"] = m_id;
 	data["name"] = m_name;
-	data["alive"] = m_alive;
+	data["causeOfDeath"] = m_causeOfDeath;
 	data["body"] = m_body.toJson();
 	data["attributes"] = m_attributes.toJson();
 	data["equipmentSet"] = m_equipmentSet.toJson();
@@ -332,7 +335,7 @@ void Actor::exit()
 
 void Actor::removeMassFromCorpse(Mass mass)
 {
-	assert(!m_alive);
+	assert(!isAlive());
 	assert(mass <= m_attributes.getMass());
 	m_attributes.removeMass(mass);
 }
@@ -341,7 +344,6 @@ bool Actor::isAlly(Actor& actor) const { return m_faction == actor.m_faction || 
 void Actor::die(CauseOfDeath causeOfDeath)
 {
 	m_causeOfDeath = causeOfDeath;
-	m_alive = false;
 	m_canFight.onDeath();
 	m_canMove.onDeath();
 	m_mustDrink.onDeath();

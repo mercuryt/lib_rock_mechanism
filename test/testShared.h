@@ -796,7 +796,7 @@ bool Animal::canEat(const Plant& plant) const
 } 
 bool Animal::canEat(const Actor& actor) const
 {
-	if(!actor.m_alive && s_step - actor.m_diedAt >= Const::stepTillDecay && !m_animalType.scavenger)
+	if(!actor.isAlive() && s_step - actor.m_diedAt >= Const::stepTillDecay && !m_animalType.scavenger)
 		return false;
 	return actor.m_plantType.fluidType == m_animalType.fluidType && m_animalType.carnivore;
 }

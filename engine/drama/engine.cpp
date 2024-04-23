@@ -72,7 +72,7 @@ void DramaArc::actorsLeave(std::vector<Actor*> actors)
 	constexpr uint8_t priority = 100;
 	for(Actor* actor : actors)
 	{
-		if(actor->m_alive)
+		if(actor->isAlive())
 		{
 			std::unique_ptr<Objective> objective = std::make_unique<LeaveAreaObjective>(*actor, priority);
 			actor->m_hasObjectives.addTaskToStart(std::move(objective));
