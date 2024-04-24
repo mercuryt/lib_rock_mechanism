@@ -6,7 +6,7 @@
 #include "../../engine/dig.h"
 #include "../../engine/cuboid.h"
 #include "../../engine/objectives/goTo.h"
-#include "../../engine/wander.h"
+#include "../../engine/objectives/wander.h"
 TEST_CASE("dig")
 {
 	static const MaterialType& dirt = MaterialType::byName("dirt");

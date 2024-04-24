@@ -3,7 +3,6 @@
 #include "../../area.h"
 #include "../../animalSpecies.h"
 #include "../../config.h"
-#include "../../leaveArea.h"
 #include "../../simulation.h"
 AnimalsArriveDramaArc::AnimalsArriveDramaArc(DramaEngine& engine, Area& area) : 
 	DramaArc(engine, DramaArcType::AnimalsArrive, &area), m_scheduledEvent(area.m_simulation.m_eventSchedule)

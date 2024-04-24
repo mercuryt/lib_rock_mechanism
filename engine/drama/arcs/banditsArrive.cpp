@@ -2,7 +2,6 @@
 #include "../engine.h"
 #include "../../area.h"
 #include "../../config.h"
-#include "../../leaveArea.h"
 #include "../../simulation.h"
 #include "../../objectives/exterminate.h"
 #include "actor.h"

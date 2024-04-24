@@ -1,7 +1,6 @@
 #pragma once
 
-#include "deserializationMemo.h"
-#include "givePlantsFluid.h"
+#include "objectives/givePlantsFluid.h"
 #include "reservable.h"
 #include "haul.h"
 #include "stockpile.h"
@@ -10,6 +9,8 @@
 #include "construct.h"
 #include "project.h"
 #include <memory>
+
+struct DeserializationMemo;
 
 inline std::unique_ptr<DishonorCallback> deserializeDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo)
 {

@@ -3,7 +3,7 @@
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/actor.h"
-#include "../../engine/station.h"
+#include "../../engine/objectives/station.h"
 TEST_CASE("leadAndFollow")
 {
 	Simulation simulation;

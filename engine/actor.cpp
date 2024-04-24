@@ -11,7 +11,7 @@
 #include "types.h"
 #include "util.h"
 #include "visionRequest.h"
-#include "wait.h"
+#include "objectives/wait.h"
 
 #include <algorithm>
 #include <cstddef>
