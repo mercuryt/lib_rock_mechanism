@@ -13,6 +13,7 @@
 #include "config.h"
 #include "block.h"
 #include "area.h"
+#include "simulation.h"
 
 #include <queue>
 #include <cassert>

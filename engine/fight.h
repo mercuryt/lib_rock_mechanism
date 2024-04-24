@@ -2,13 +2,10 @@
 
 #include "config.h"
 #include "eventSchedule.h"
-#include "item.h"
-#include "hit.h"
-#include "attackType.h"
-#include "materialType.h"
 #include "threadedTask.h"
 #include "eventSchedule.hpp"
 #include "findsPath.h"
+#include "threadedTask.hpp"
 
 #include <cstdint>
 #include <string>
@@ -18,8 +15,11 @@
 
 class Actor;
 class Block;
+class Item;
 class AttackCoolDown;
 class GetIntoAttackPositionThreadedTask;
+struct MaterialType;
+struct AttackType;
 
 struct Attack final
 {

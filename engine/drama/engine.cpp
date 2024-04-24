@@ -2,6 +2,7 @@
 #include "../moveType.h"
 #include "../area.h"
 #include "../leaveArea.h"
+#include "../simulation.h"
 #include "animalSpecies.h"
 #include "arcs/animalsArrive.h"
 #include "arcs/banditsArrive.h"

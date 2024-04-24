@@ -1,7 +1,6 @@
 #pragma once
 
 #include "cuboid.h"
-#include "deserializationMemo.h"
 #include "input.h"
 #include "reservable.h"
 #include "types.h"
@@ -21,6 +20,7 @@ class DigThreadedTask;
 struct BlockFeatureType;
 class DigProject;
 class HasDigDesignationsForFaction;
+struct DeserializationMemo;
 class DesignateDigInputAction final : public InputAction
 {
 	Cuboid m_cuboid;

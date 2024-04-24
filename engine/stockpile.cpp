@@ -10,6 +10,7 @@
 #include "simulation.h"
 #include "stocks.h"
 #include "types.h"
+#include "actor.h"
 #include <cwchar>
 #include <functional>
 #include <memory>
@@ -38,6 +39,8 @@ void StockPileUpdateInputAction::execute()
 	m_stockpile.updateQueries(m_queries);
 }
 // Searches for an Item and destination to make a hauling project for m_objective.m_actor.
+StockPileThreadedTask::StockPileThreadedTask(StockPileObjective& spo) : ThreadedTask(spo.m_actor.getThreadedTaskEngine()), m_objective(spo), m_item(nullptr), m_destination(nullptr), m_findsPath(spo.m_actor, spo.m_detour) { }
+	
 void StockPileThreadedTask::readStep()
 {
 	assert(m_objective.m_project == nullptr);
@@ -143,6 +146,7 @@ std::unique_ptr<Objective> StockPileObjectiveType::makeFor(Actor& actor) const
 {
 	return std::make_unique<StockPileObjective>(actor);
 }
+StockPileObjective::StockPileObjective(Actor& a) : Objective(a, Config::stockPilePriority), m_threadedTask(a.getThreadedTaskEngine()), m_project(nullptr) { }
 StockPileObjective::StockPileObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo),
 	m_threadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine), 
 	m_project(data.contains("project") ? static_cast<StockPileProject*>(deserializationMemo.m_projects.at(data["project"].get<uintptr_t>())) : nullptr)
@@ -236,6 +240,11 @@ void StockPileProject::onCancel()
 		actor->m_hasObjectives.getCurrent().reset();
 		actor->m_hasObjectives.cannotCompleteSubobjective();
 	}
+}
+void StockPileProject::onDelay() 
+{ 
+	m_item.m_canBeStockPiled.maybeUnsetAndScheduleReset(m_faction, Config::stepsToDisableStockPile); 
+	cancel(); 
 }
 void StockPileProject::onHasShapeReservationDishonored([[maybe_unused]] const HasShape& hasShape, [[maybe_unused]] Quantity oldCount, Quantity newCount)
 {

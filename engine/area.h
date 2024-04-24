@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include "deserializationMemo.h"
 #include "installItem.h"
 #include "types.h"
 #include "block.h"
@@ -16,8 +15,6 @@
 #include "construct.h"
 #include "craft.h"
 #include "rain.h"
-#include "datetime.h"
-#include "simulation.h"	
 #include "targetedHaul.h"	
 #include "fire.h"
 #include "woodcutting.h"
@@ -33,6 +30,9 @@
 #include <list>
 
 //struct WorldLocation;
+
+class Simulation;
+struct DeserializationMemo;
 
 class Area final
 {

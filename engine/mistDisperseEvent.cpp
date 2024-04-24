@@ -3,6 +3,8 @@
 #include "block.h"
 #include "area.h"
 #include "eventSchedule.h"
+#include "simulation.h"
+
 #include <memory>
 MistDisperseEvent::MistDisperseEvent(uint32_t delay, const FluidType& ft, Block& b) : ScheduledEvent(b.m_area->m_simulation, delay), m_fluidType(ft), m_block(b) {}
 void MistDisperseEvent::execute()

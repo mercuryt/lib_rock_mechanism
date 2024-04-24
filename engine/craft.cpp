@@ -3,6 +3,8 @@
 #include "deserializationMemo.h"
 #include "materialType.h"
 #include "util.h"
+#include "simulation.h"
+
 #include <chrono>
 #include <cstdint>
 #include <memory>

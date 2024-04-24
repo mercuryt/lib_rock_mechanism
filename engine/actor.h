@@ -4,7 +4,7 @@
  */
 #pragma once
 
-#include "deserializationMemo.h"
+#include "visionRequest.h"
 #include "hasShape.h"
 #include "objective.h"
 #include "eat.h"
@@ -12,7 +12,6 @@
 #include "sleep.h"
 #include "grow.h"
 #include "move.h"
-//#include "item.h"
 #include "equipment.h"
 #include "fight.h"
 #include "attributes.h"
@@ -25,6 +24,7 @@
 #include "stamina.h"
 #include "types.h"
 #include "uniform.h"
+#include "actor/canSee.h"
 
 #include <string>
 #include <vector>
@@ -34,6 +34,7 @@
 struct MoveType;
 struct AnimalSpecies;
 struct Faction;
+struct DeserializationMemo;
 
 enum class CauseOfDeath { none, thirst, hunger, bloodLoss, wound, temperature };
 
@@ -82,6 +83,7 @@ public:
 	const AnimalSpecies& m_species;
 	Body m_body;
 	Project* m_project;
+	ActorCanSee m_canSee;
 	Attributes m_attributes;
 	SkillSet m_skillSet;
 	MustEat m_mustEat;
@@ -97,8 +99,6 @@ public:
 	CanReserve m_canReserve;
 	ActorHasStamina m_stamina;
 	ActorHasUniform m_hasUniform;
-	std::unordered_set<Actor*> m_canSee;
-	uint32_t m_visionRange;
 
 	Actor(Simulation& simulation, ActorId id, const std::wstring& name, const AnimalSpecies& species, Step birthStep, Percent percentGrown, Faction* faction, Attributes attributes);
 	Actor(ActorParamaters params);
@@ -109,7 +109,6 @@ public:
 	void removeMassFromCorpse(Mass mass);
 	void die(CauseOfDeath causeOfDeath);
 	void passout(Step duration);
-	void doVision(std::unordered_set<Actor*>& actors);
 	void leaveArea();
 	void wait(Step duration);
 	void takeHit(Hit& hit, BodyPart& bodyPart);
@@ -135,7 +134,7 @@ public:
 	[[nodiscard]] Mass singleUnitMass() const { return getMass(); }
 	// May return nullptr.
 	[[nodiscard]] const Faction* getFaction() const { return m_faction; }
-	[[nodiscard]] uint32_t getAgeInYears() const;
+	[[nodiscard]] Quantity getAgeInYears() const;
 	[[nodiscard]] Step getAge() const;
 	[[nodiscard]] Step getBirthStep() const { return m_birthStep; }
 	[[nodiscard]] std::wstring getActionDescription() const;

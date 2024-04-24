@@ -2,7 +2,7 @@
 
 #include "woundType.h"
 #include "types.h"
-class SkillType;
+struct SkillType;
 struct ItemType;
 
 #include <string>

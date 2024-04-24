@@ -3,6 +3,7 @@
 #include "actor.h"
 #include "deserializationMemo.h"
 #include "farmFields.h"
+#include "simulation.h"
 SowSeedsEvent::SowSeedsEvent(Step delay, SowSeedsObjective& o, const Step start) : ScheduledEvent(o.m_actor.getSimulation(), delay, start), m_objective(o) { }
 void SowSeedsEvent::execute()
 {

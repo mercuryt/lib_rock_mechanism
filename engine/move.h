@@ -1,6 +1,5 @@
 #pragma once
 #include "config.h"
-#include "deserializationMemo.h"
 #include "fluidType.h"
 #include "threadedTask.hpp"
 #include "eventSchedule.hpp"
@@ -15,6 +14,8 @@ class Actor;
 class MoveType;
 class Item;
 class HasShape;
+struct DeserializationMemo;
+
 class ActorCanMove final
 {
 	Actor& m_actor;

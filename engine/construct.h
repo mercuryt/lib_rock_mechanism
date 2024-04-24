@@ -2,9 +2,7 @@
 
 #include "config.h"
 #include "cuboid.h"
-#include "deserializationMemo.h"
 #include "input.h"
-#include "materialType.h"
 #include "objective.h"
 #include "reservable.h"
 #include "threadedTask.h"
@@ -22,6 +20,8 @@ struct BlockFeatureType;
 class ConstructObjective;
 class ConstructProject;
 class HasConstructionDesignationsForFaction;
+struct DeserializationMemo;
+struct MaterialType;
 class DesignateConstructInputAction final : public InputAction
 {
 	Cuboid m_cuboid;

@@ -2,11 +2,25 @@
 #include "block.h"
 #include "objective.h"
 #include "visionRequest.h"
+#include "simulation.h"
 #include <memory>
+KillInputAction::KillInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, Actor& killer, Actor& target) : InputAction(actors, emplacementType, inputQueue), m_killer(killer), m_target(target) 
+{
+       	m_onDestroySubscriptions.subscribe(m_target.m_onDestroy); 
+}
 void KillInputAction::execute()
 {
 	std::unique_ptr<Objective> objective = std::make_unique<KillObjective>(m_killer, m_target);
 	insertObjective(std::move(objective), m_killer);
+}
+KillObjective::KillObjective(Actor& k, Actor& t) : Objective(k, Config::killPriority), m_killer(k), m_target(t), m_getIntoRangeAndLineOfSightThreadedTask(k.getThreadedTaskEngine()) { }
+KillObjective::KillObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), 
+	m_killer(deserializationMemo.m_simulation.getActorById(data["killer"].get<ActorId>())), 
+	m_target(deserializationMemo.m_simulation.getActorById(data["target"].get<ActorId>())), 
+	m_getIntoRangeAndLineOfSightThreadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine)
+{ 
+	if(data["threadedTask"])
+		m_getIntoRangeAndLineOfSightThreadedTask.create(m_killer, m_target, m_killer.m_canFight.getMaxRange());
 }
 void KillObjective::execute()
 {

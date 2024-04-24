@@ -1,7 +1,6 @@
 #pragma once
 
 #include "config.h"
-#include "deserializationMemo.h"
 #include "objective.h"
 #include "threadedTask.hpp"
 #include "eventSchedule.hpp"
@@ -18,6 +17,7 @@ class DrinkEvent;
 class ThirstEvent;
 class DrinkObjective;
 struct FluidType;
+struct DeserializationMemo;
 
 class MustDrink final
 {

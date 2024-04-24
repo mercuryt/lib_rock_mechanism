@@ -1,6 +1,5 @@
 #pragma once
 
-#include "deserializationMemo.h"
 #include "objective.h"
 #include "threadedTask.hpp"
 #include "findsPath.h"
@@ -8,6 +7,7 @@
 class Actor;
 class Block;
 class WanderThreadedTask;
+struct DeserializationMemo;
 
 class WanderObjective final : public Objective
 {

@@ -1,13 +1,11 @@
 #pragma once
 
 #include "config.h"
-#include "deserializationMemo.h"
 #include "input.h"
-#include "item.h"
-#include "materialType.h"
 #include "project.h"
 #include "reservable.h"
 #include "objective.h"
+#include "itemQuery.h"
 
 #include <vector>
 #include <utility>
@@ -20,10 +18,13 @@ struct CraftJob;
 struct CraftJobType;
 class HasCraftingLocationsAndJobsForFaction;
 class CraftThreadedTask;
-struct skillType;
 class CraftStepProject;
 class Block;
 class Area;
+struct DeserializationMemo;
+struct MaterialType;
+struct SkillType;
+class Item;
 class CraftInputAction final : public InputAction
 {
 	Area& m_area;

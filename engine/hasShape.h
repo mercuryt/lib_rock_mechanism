@@ -3,8 +3,6 @@
  */
 #pragma once
 
-#include "deserializationMemo.h"
-#include "faction.h"
 #include "shape.h"
 #include "leadAndFollow.h"
 #include "onDestroy.h"
@@ -18,10 +16,12 @@ struct MoveType;
 class BlockHasShapes;
 class Actor;
 class Item;
-struct Faction;
+class Faction;
 class CanReserve;
 class Simulation;
 struct ItemType;
+struct DeserializationMemo;
+
 class HasShape
 {
 	Simulation& m_simulation;

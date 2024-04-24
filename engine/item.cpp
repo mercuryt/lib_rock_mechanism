@@ -7,6 +7,8 @@
 #include "item.h"
 #include "block.h"
 #include "area.h"
+#include "simulation.h"
+
 #include <iostream>
 AttackType* ItemType::getRangedAttackType() const
 {

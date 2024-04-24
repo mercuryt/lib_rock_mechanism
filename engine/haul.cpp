@@ -8,6 +8,8 @@
 #include "project.h"
 #include "reservable.h"
 #include "types.h"
+#include "simulation.h"
+
 #include <memory>
 #include <sys/types.h>
 #include <unordered_set>

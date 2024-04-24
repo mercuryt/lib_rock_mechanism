@@ -5,6 +5,7 @@
 #include "area.h"
 #include "reservable.h"
 #include "util.h"
+#include "simulation.h"
 // Input.
 void DesignateConstructInputAction::execute()
 {

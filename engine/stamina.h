@@ -1,12 +1,12 @@
 #pragma once
 
-#include "deserializationMemo.h"
 #include "objective.h"
 #include "eventSchedule.h"
 #include "config.h"
 
 class RestEvent;
 class Actor;
+struct DeserializationMemo;
 
 class RestObjective final : public Objective
 {

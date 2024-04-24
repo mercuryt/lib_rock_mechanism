@@ -3,6 +3,7 @@
 #include "designations.h"
 #include "hasShape.h"
 #include "objective.h"
+#include "simulation.h"
 #include <cassert>
 // Sleep Event.
 SleepEvent::SleepEvent(Step step, MustSleep& ns, bool f, const Step start) : ScheduledEvent(ns.m_actor.getSimulation(), step, start), m_needsSleep(ns), m_force(f) { }

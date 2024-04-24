@@ -29,10 +29,12 @@ a* A block. Contains either a single type of material in 'solid' form or arbitra
 #include "hasShape.h"
 #include "types.h"
 #include "project.h"
+#include "actor.h"
+#include "item.h"
 
 class Area;
-class Item;
-class Actor;
+//class Item;
+//class Actor;
 
 // Fluid type and volume pairs are sorted by density, low to high.
 // This is useful for resolving overfill.
