@@ -3,7 +3,7 @@
 #include "deserializationMemo.h"
 #include "hasShape.h"
 #include "reservable.h"
-#include "actorQuery.h"
+#include "actor/actorQuery.h"
 #include "itemQuery.h"
 #include "eventSchedule.h"
 #include "threadedTask.h"

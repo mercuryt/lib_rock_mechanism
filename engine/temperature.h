@@ -1,12 +1,9 @@
 #pragma once
 
-#include "deserializationMemo.h"
-#include "nthAdjacentOffsets.h"
-#include "eventSchedule.hpp"
 #include "config.h"
+#include "eventSchedule.hpp"
 #include "threadedTask.hpp"
 #include "objective.h"
-#include "datetime.h"
 #include "findsPath.h"
 
 #include <unordered_set>
@@ -20,6 +17,7 @@ class FluidGroup;
 class Actor;
 struct FluidType;
 class GetToSafeTemperatureThreadedTask;
+struct DeserializationMemo;
 
 // Raises and lowers nearby temperature.
 class TemperatureSource final

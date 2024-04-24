@@ -10,6 +10,7 @@
 #include "objectives/station.h"
 #include "objectives/wait.h"
 #include "objectives/wander.h"
+#include "objectives/rest.h"
 //#include "worldforge/world.h"
 #include <cstdint>
 Faction& DeserializationMemo::faction(std::wstring name) { return m_simulation.m_hasFactions.byName(name); }
