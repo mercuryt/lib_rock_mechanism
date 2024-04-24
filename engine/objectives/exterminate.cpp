@@ -24,7 +24,7 @@ Json ExterminateObjective::toJson() const
 void ExterminateObjective::execute()
 {
 	Actor* closest = nullptr;
-	for(Actor* actor : m_actor.m_canSee)
+	for(Actor* actor : m_actor.m_canSee.getCurrentlyVisibleActors())
 	{
 		if(
 			actor->isSentient() &&

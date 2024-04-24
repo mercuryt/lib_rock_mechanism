@@ -4,6 +4,7 @@
 #include "farmFields.h"
 #include "objective.h"
 #include "plant.h"
+#include "simulation.h"
 // Event.
 HarvestEvent::HarvestEvent(Step delay, HarvestObjective& ho, const Step start) : ScheduledEvent(ho.m_actor.getSimulation(), delay, start), m_harvestObjective(ho) {}
 void HarvestEvent::execute()

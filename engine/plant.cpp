@@ -8,6 +8,7 @@
 #include "plant.h"
 #include "block.h"
 #include "area.h"
+#include "simulation.h"
 
 #include <algorithm>
 #include <ranges>

@@ -1,6 +1,7 @@
 #include "fire.h"
 #include "block.h"
 #include "area.h"
+#include "simulation.h"
 FireEvent::FireEvent(Step delay, Fire& f, Step start) : ScheduledEvent(f.m_location.m_area->m_simulation, delay, start), m_fire(f) {}
 void FireEvent::execute()
 {

@@ -7,6 +7,7 @@
 #include "area.h"
 #include "kill.h"
 #include "util.h"
+#include "simulation.h"
 
 EatEvent::EatEvent(const Step delay, EatObjective& eo, const Step start) : ScheduledEvent(eo.m_actor.getSimulation(), delay, start), m_eatObjective(eo) { }
 

@@ -6,6 +6,7 @@
 #include "random.h"
 #include "types.h"
 #include "util.h"
+#include "simulation.h"
 AreaHasRain::AreaHasRain(Area& a) : m_area(a), m_currentlyRainingFluidType(nullptr), m_defaultRainFluidType(FluidType::byName("water")), m_intensityPercent(0), m_event(a.m_simulation.m_eventSchedule), m_humidityBySeason({30,15,10,20}) { }
 void AreaHasRain::load(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo)
 {

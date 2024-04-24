@@ -1,11 +1,11 @@
 #pragma once
-#include "deserializationMemo.h"
 #include "eventSchedule.hpp"
 #include "objective.h"
 #include <string>
 
 class WaitScheduledEvent;
 class Actor;
+struct DeserializationMemo;
 
 class WaitObjective final : public Objective
 {

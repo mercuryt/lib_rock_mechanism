@@ -5,6 +5,8 @@
 #include "eventSchedule.h"
 #include "objective.h"
 #include "reservable.h"
+#include "simulation.h"
+
 #include <memory>
 GivePlantsFluidEvent::GivePlantsFluidEvent(Step delay, GivePlantsFluidObjective& gpfo, const Step start) : ScheduledEvent(gpfo.m_actor.getSimulation(), delay, start), m_objective(gpfo) { }
 void GivePlantsFluidEvent::execute()

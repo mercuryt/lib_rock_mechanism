@@ -44,8 +44,8 @@ void LocationBuckets::processVisionRequest(VisionRequest& visionRequest) const
 {
 	Block* from = visionRequest.m_actor.m_location;
 	assert(from != nullptr);
-	assert((float)visionRequest.m_actor.m_visionRange * Config::maxDistanceVisionModifier > 0.f);
-	int32_t range = visionRequest.m_actor.m_visionRange * Config::maxDistanceVisionModifier;
+	assert((float)visionRequest.m_actor.m_canSee.getRange() * Config::maxDistanceVisionModifier > 0.f);
+	int32_t range = visionRequest.m_actor.m_canSee.getRange() * Config::maxDistanceVisionModifier;
 	uint32_t endX = std::min(((from->m_x + range) / Config::locationBucketSize + 1), m_maxX);
 	uint32_t beginX = std::max(0, (int32_t)from->m_x - range) / Config::locationBucketSize;
 	uint32_t endY = std::min(((from->m_y + range) / Config::locationBucketSize + 1), m_maxY);

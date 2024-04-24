@@ -6,6 +6,7 @@
 #include "random.h"
 #include "reservable.h"
 #include "util.h"
+#include "simulation.h"
 #include <memory>
 #include <sys/types.h>
 // Input.

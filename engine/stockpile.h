@@ -1,19 +1,12 @@
 #pragma once
 //TODO: Move implimentations into cpp file and replace includes with forward declarations it imporove compile time.
 #include "cuboid.h"
-#include "deserializationMemo.h"
 #include "eventSchedule.h"
-#include "faction.h"
-#include "hasShape.h"
-#include "haul.h"
 #include "input.h"
-#include "materialType.h"
 #include "objective.h"
 #include "reservable.h"
 #include "threadedTask.hpp"
 #include "project.h"
-#include "item.h"
-#include "actor.h"
 #include "findsPath.h"
 #include "types.h"
 
@@ -33,6 +26,12 @@ class Simulation;
 class ReenableStockPileScheduledEvent;
 class StockPile;
 class BlockIsPartOfStockPiles;
+struct DeserializationMemo;
+struct MaterialType;
+class Actor;
+class Item;
+class Area;
+
 class StockPileCreateInputAction final : public InputAction
 {
 	Cuboid m_cuboid;
@@ -76,7 +75,7 @@ class StockPileObjective final : public Objective
 public:
 	HasThreadedTask<StockPileThreadedTask> m_threadedTask;
 	StockPileProject* m_project;
-	StockPileObjective(Actor& a) : Objective(a, Config::stockPilePriority), m_threadedTask(a.getThreadedTaskEngine()), m_project(nullptr) { }
+	StockPileObjective(Actor& a);
 	StockPileObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void execute();
@@ -94,7 +93,7 @@ class StockPileThreadedTask final : public ThreadedTask
 	Block* m_destination;
 	FindsPath m_findsPath;
 public:
-	StockPileThreadedTask(StockPileObjective& spo) : ThreadedTask(spo.m_actor.getThreadedTaskEngine()), m_objective(spo), m_item(nullptr), m_destination(nullptr), m_findsPath(spo.m_actor, spo.m_detour) { }
+	StockPileThreadedTask(StockPileObjective& spo);
 	void readStep();
 	void writeStep();
 	void clearReferences();
@@ -153,7 +152,7 @@ class StockPileProject final : public Project
 	// Mark dispatched as true and dismiss any unassigned workers and candidates.
 	void onCancel();
 	// TODO: geometric progresson of disable duration.
-	void onDelay() { m_item.m_canBeStockPiled.maybeUnsetAndScheduleReset(m_faction, Config::stepsToDisableStockPile); cancel(); }
+	void onDelay();
 	void offDelay() { assert(false); }
 	void onHasShapeReservationDishonored(const HasShape& hasShape, Quantity oldCount, Quantity newCount);
 	[[nodiscard]] bool canReset() const { return false; }

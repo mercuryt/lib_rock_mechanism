@@ -230,12 +230,12 @@ TEST_CASE("vision-threading")
 	area.readStep();
 	simulation.m_pool.wait_for_tasks();
 	area.writeStep();
-	REQUIRE(a1.m_canSee.contains(&a2));
+	REQUIRE(a1.m_canSee.isCurrentlyVisible(a2));
 	simulation.m_step++;
 	area.readStep();
 	simulation.m_pool.wait_for_tasks();
 	area.writeStep();
-	REQUIRE(a2.m_canSee.contains(&a1));
+	REQUIRE(a2.m_canSee.isCurrentlyVisible(a1));
 }
 TEST_CASE("multiMergeOnAdd")
 {

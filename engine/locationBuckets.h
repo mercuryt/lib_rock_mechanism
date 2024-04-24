@@ -2,10 +2,11 @@
 #include <cstdint>
 #include <functional>
 #include <unordered_set>
-#include "visionRequest.h"
 class Area;
 class Block;
 class Actor;
+class VisionRequest;
+
 class LocationBuckets
 {
 	Area& m_area;

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "deserializationMemo.h"
-#include "hasShape.h"
 #include "objective.h"
 #include "config.h"
 #include "findsPath.h"
@@ -17,6 +15,8 @@ class Item;
 class SleepEvent;
 class TiredEvent;
 class SleepObjective;
+struct DeserializationMemo;
+
 class MustSleep final 
 {
 	Actor& m_actor;

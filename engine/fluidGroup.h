@@ -11,13 +11,15 @@
 
 #include <vector>
 #include <unordered_set>
+#include <unordered_map>
 
 #include "drainQueue.h"
 #include "fillQueue.h"
-#include "fluidType.h"
+#include "types.h"
 
 class Area;
 class Block;
+struct FluidType;
 
 struct FluidGroupSplitData final
 {
