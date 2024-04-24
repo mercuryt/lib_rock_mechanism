@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <unordered_set>
 #include <vector>
 #include <cassert>
@@ -25,9 +26,9 @@ struct XYZHash
 {
 	size_t operator()(const XYZ& xyz) const
 	{
-		assert(abs(xyz.x) < 100);
-		assert(abs(xyz.y) < 100);
-		assert(abs(xyz.z) < 100);
+		assert(std::abs(xyz.x) < 100);
+		assert(std::abs(xyz.y) < 100);
+		assert(std::abs(xyz.z) < 100);
 		return xyz.x * 10000 + xyz.y * 100 + xyz.z;
 	}
 };

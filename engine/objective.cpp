@@ -3,13 +3,15 @@
 #include "deserializationMemo.h"
 #include "simulation.h"
 #include "actor.h"
-#include "stamina.h"
-#include "objectives/sowSeeds.h"
 #include "objectives/givePlantsFluid.h"
 #include "objectives/harvest.h"
+#include "objectives/rest.h"
+#include "objectives/sowSeeds.h"
 #include "objectives/wander.h"
+
 #include <cstdio>
 #include <numbers>
+
 // Input.
 void ObjectiveTypeSetPriorityInputAction::execute()
 {

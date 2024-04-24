@@ -1,16 +1,15 @@
 /*
  * Represents and actor which has a shape, location, visual range, destination, and response to exposure to fluids.
- * To be inherited from in DerivedActor declaration, not to be instanced directly.
  */
 #pragma once
 
+#include "datetime.h"
 #include "visionRequest.h"
 #include "hasShape.h"
 #include "objective.h"
 #include "eat.h"
 #include "drink.h"
 #include "sleep.h"
-#include "grow.h"
 #include "move.h"
 #include "equipment.h"
 #include "fight.h"
@@ -21,10 +20,11 @@
 #include "temperature.h"
 #include "buckets.h"
 #include "locationBuckets.h"
-#include "stamina.h"
 #include "types.h"
 #include "uniform.h"
 #include "actor/canSee.h"
+#include "actor/grow.h"
+#include "actor/stamina.h"
 
 #include <string>
 #include <vector>
@@ -35,6 +35,7 @@ struct MoveType;
 struct AnimalSpecies;
 struct Faction;
 struct DeserializationMemo;
+class Area;
 
 enum class CauseOfDeath { none, thirst, hunger, bloodLoss, wound, temperature };
 
@@ -103,7 +104,6 @@ public:
 	Actor(Simulation& simulation, ActorId id, const std::wstring& name, const AnimalSpecies& species, Step birthStep, Percent percentGrown, Faction* faction, Attributes attributes);
 	Actor(ActorParamaters params);
 	Actor(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
 	void setLocation(Block& block);
 	void exit();
 	void removeMassFromCorpse(Mass mass);
@@ -117,6 +117,7 @@ public:
 	void reserveAllBlocksAtLocationAndFacing(const Block& location, Facing facing);
 	void unreserveAllBlocksAtLocationAndFacing(const Block& location, Facing facing);
 	void setBirthStep(Step step);
+	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool isItem() const { return false; }
 	[[nodiscard]] bool isActor() const { return true; }
 	[[nodiscard]] bool isGeneric() const { return false; }
