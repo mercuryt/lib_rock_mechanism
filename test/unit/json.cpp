@@ -3,9 +3,9 @@
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/actor.h"
-#include "../../engine/sowSeeds.h"
-#include "../../engine/harvest.h"
-#include "../../engine/givePlantsFluid.h"
+#include "../../engine/objectives/sowSeeds.h"
+#include "../../engine/objectives/harvest.h"
+#include "../../engine/objectives/givePlantsFluid.h"
 #include "../../engine/objectives/goTo.h"
 TEST_CASE("json")
 {

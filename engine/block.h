@@ -14,7 +14,6 @@ a* A block. Contains either a single type of material in 'solid' form or arbitra
 #include <vector>
 #include <string>
 
-#include "deserializationMemo.h"
 #include "moveType.h"
 #include "shape.h"
 #include "visionCuboid.h"
@@ -33,6 +32,7 @@ a* A block. Contains either a single type of material in 'solid' form or arbitra
 #include "item.h"
 
 class Area;
+struct DeserializationMemo;
 //class Item;
 //class Actor;
 

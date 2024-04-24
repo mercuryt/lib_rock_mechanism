@@ -4,10 +4,10 @@
 #include "simulation.h"
 #include "actor.h"
 #include "stamina.h"
-#include "sowSeeds.h"
-#include "givePlantsFluid.h"
-#include "harvest.h"
-#include "wander.h"
+#include "objectives/sowSeeds.h"
+#include "objectives/givePlantsFluid.h"
+#include "objectives/harvest.h"
+#include "objectives/wander.h"
 #include <cstdio>
 #include <numbers>
 // Input.

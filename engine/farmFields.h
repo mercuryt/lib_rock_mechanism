@@ -1,8 +1,6 @@
 #pragma once
-#include "deserializationMemo.h"
 #include "input.h"
 #include "plant.h"
-#include "faction.h"
 #include "cuboid.h"
 
 #include <list>
@@ -11,6 +9,8 @@
 class Block;
 class Area;
 struct FarmField;
+struct DeserializationMemo;
+class Faction;
 
 /*
 class FarmFieldCreateInputAction final : public InputAction

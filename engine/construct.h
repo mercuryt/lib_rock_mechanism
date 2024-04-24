@@ -15,7 +15,7 @@
 
 class ConstructThreadedTask;
 class Block;
-struct Faction;
+class Faction;
 struct BlockFeatureType;
 class ConstructObjective;
 class ConstructProject;
