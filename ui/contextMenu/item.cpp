@@ -123,6 +123,9 @@ void ContextMenu::drawItemControls(Block& block)
 							m_window.selectBlock(block);
 						for(Block* selectedBlock : m_window.getSelectedBlocks())
 						{
+							static const MoveType& none = MoveType::byName("none");
+							if(!selectedBlock->m_hasShapes.shapeAndMoveTypeCanEnterEverWithAnyFacing(itemType.shape, none))
+								continue;
 							Item& item = m_window.getSimulation()->createItemGeneric(itemType, materialType, quantity);
 							item.setLocation(*selectedBlock);
 						}

@@ -9,6 +9,7 @@
 #include "simulation.h"
 #include <algorithm>
 #include <memory>
+#include <unordered_map>
 // ProjectRequirementCounts
 ProjectRequirementCounts::ProjectRequirementCounts(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) :
 	required(data["required"].get<const Quantity>()), delivered(data["delivered"].get<Quantity>()), 
@@ -136,8 +137,10 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 	// are complete.
 	// If reservations are not complete flush the data from project.
 	// TODO: Unwisely modifing data out side the object durring read step.
+	std::unordered_set<HasShape*> recordedShapes;
 	for(auto& [candidate, objective] : m_project.m_workerCandidatesAndTheirObjectives)
 	{
+		assert(!m_project.getWorkers().contains(candidate));
 		FindsPath findsPath(*candidate, false);
 		// Verify the worker can path to the job site.
 		findsPath.pathAdjacentToBlock(m_project.m_location);
@@ -166,6 +169,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 		{
 			auto recordItemOnGround = [&](HasShape& hasShape, ProjectRequirementCounts& counts)
 			{
+				recordedShapes.insert(&hasShape);
 				Quantity desiredQuantity = counts.required - counts.reserved;
 				Quantity quantity = std::min(desiredQuantity, hasShape.m_reservable.getUnreservedCount(m_project.m_faction));
 				assert(quantity != 0);
@@ -195,6 +199,8 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 							continue;	
 						if(!itemQuery.query(*item))
 							continue;
+						if(recordedShapes.contains(item))
+							continue;
 						recordItemOnGround(*item, projectRequirementCounts);
 						if(m_project.reservationsComplete())
 							return true;
@@ -208,6 +214,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 							continue;	
 						if(!actorQuery.query(*actor))
 							continue;
+						// TODO: Shoud this be record actor on ground?
 						recordItemOnGround(*actor, projectRequirementCounts);
 						if(m_project.reservationsComplete())
 							return true;

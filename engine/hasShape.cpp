@@ -364,6 +364,13 @@ bool BlockHasShapes::shapeAndMoveTypeCanEnterCurrentlyWithFacing(const Shape& sh
 	}
 	return true;
 }
+bool BlockHasShapes::shapeAndMoveTypeCanEnterEverWithAnyFacing(const Shape& shape, const MoveType& moveType) const
+{
+	for(Facing facing = 0; facing < 4; ++facing)
+		if(shapeAndMoveTypeCanEnterCurrentlyWithFacing(shape, moveType, facing))
+			return true;
+	return false;
+}
 bool BlockHasShapes::moveTypeCanEnterFrom(const MoveType& moveType, const Block& from) const
 {
 	for(auto& [fluidType, volume] : moveType.swim)

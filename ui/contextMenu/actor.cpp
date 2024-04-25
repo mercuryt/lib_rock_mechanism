@@ -2,9 +2,9 @@
 #include "../window.h"
 #include "../displayData.h"
 #include "../../engine/actor.h"
-#include "../../engine/kill.h"
+#include "../../engine/objectives/kill.h"
 #include "../../engine/objectives/goTo.h"
-#include "../../engine/station.h"
+#include "../../engine/objectives/station.h"
 void ContextMenu::drawActorControls(Block& block)
 {
 	// Actor submenu.
