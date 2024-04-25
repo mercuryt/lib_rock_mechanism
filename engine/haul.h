@@ -15,7 +15,7 @@ struct ItemType;
 struct MaterialType;
 class Project;
 struct ProjectRequirementCounts;
-struct Faction;
+class Faction;
 class HaulSubproject;
 
 enum class HaulStrategy { None, Individual, Team, Cart, TeamCart, Panniers, AnimalCart, StrongSentient };

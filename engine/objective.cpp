@@ -74,15 +74,17 @@ void ObjectiveTypePrioritySet::setObjectiveFor(Actor& actor)
 }
 void ObjectiveTypePrioritySet::setDelay(ObjectiveTypeId objectiveTypeId)
 {
-	auto found = std::ranges::find_if(m_data, [&](ObjectivePriority& objectivePriority){ return objectivePriority.objectiveType->getObjectiveTypeId() == objectiveTypeId; });
+	auto found = std::ranges::find_if(m_data, [&](const ObjectivePriority& objectivePriority){ return objectivePriority.objectiveType->getObjectiveTypeId() == objectiveTypeId; });
 	// If found is not in data it was assigned by some other means (such as player interaction) so we don't need a delay.
 	if(found != m_data.end())
 		found->doNotAssignAgainUntil = m_actor.getSimulation().m_step + Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective;
 }
 uint8_t ObjectiveTypePrioritySet::getPriorityFor(ObjectiveTypeId objectiveTypeId) const
 {
-	const ObjectivePriority& objectivePriority = getById(objectiveTypeId);
-	return objectivePriority.priority;
+	const auto found = std::ranges::find_if(m_data, [&](const ObjectivePriority& objectivePriority){ return objectivePriority.objectiveType->getObjectiveTypeId() == objectiveTypeId; });
+	if(found == m_data.end())
+		return 0;
+	return found->priority;
 }
 bool ObjectiveTypePrioritySet::isOnDelay(ObjectiveTypeId objectiveTypeId) const
 {

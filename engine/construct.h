@@ -70,7 +70,8 @@ public:
 	friend class ConstructThreadedTask;
 	friend class ConstructProject;
 	// For Testing.
-	[[nodiscard]] Project* getProject() { return m_project; }
+	[[nodiscard, maybe_unused]] Project* getProject() { return m_project; }
+	[[nodiscard, maybe_unused]] bool hasThreadedTask() const { return m_constructThreadedTask.exists(); }
 };
 class ConstructThreadedTask final : public ThreadedTask
 {

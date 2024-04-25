@@ -427,6 +427,7 @@ bool ItemHasCargo::containsGeneric(const ItemType& itemType, const MaterialType&
 BlockHasItems::BlockHasItems(Block& b): m_block(b) { }
 void BlockHasItems::add(Item& item)
 {
+	//assert(m_block.m_hasShapes.canEnterEverWithAnyFacing(item));
 	assert(std::ranges::find(m_items, &item) == m_items.end());
 	if(item.m_itemType.generic)
 	{

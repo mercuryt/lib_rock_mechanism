@@ -6,11 +6,6 @@
 #include "plant.h"
 #include "widgets.h"
 #include "window.h"
-#include "../engine/actor.h"
-#include "../engine/station.h"
-#include "../engine/installItem.h"
-#include "../engine/kill.h"
-#include "../engine/uniform.h"
 #include <TGUI/Widgets/HorizontalLayout.hpp>
 // Menu segment
 ContextMenuSegment::ContextMenuSegment(tgui::Group::Ptr overlayGroup) : 

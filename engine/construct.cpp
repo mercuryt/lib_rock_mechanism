@@ -376,7 +376,12 @@ void HasConstructionDesignations::clearAll(Block& block)
 	for(auto& pair : m_data)
 		pair.second.removeIfExists(block);
 }
-bool HasConstructionDesignations::areThereAnyForFaction(const Faction& faction) const { return !m_data.at(&faction).empty(); }
+bool HasConstructionDesignations::areThereAnyForFaction(const Faction& faction) const 
+{ 
+	if(!m_data.contains(&faction))
+		return false;
+	return !m_data.at(&faction).empty(); 
+}
 bool HasConstructionDesignations::contains(const Faction& faction, const Block& block) const
 {
 	if(!m_data.contains(&faction))
