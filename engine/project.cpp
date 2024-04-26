@@ -705,7 +705,10 @@ void Project::removeFromMaking(Actor& actor)
 	assert(m_workers.contains(&actor));
 	assert(m_making.contains(&actor));
 	m_making.erase(&actor);
-	scheduleFinishEvent();
+	if(m_making.empty())
+		m_finishEvent.unschedule();
+	else
+		scheduleFinishEvent();
 }
 void Project::complete()
 {
@@ -727,6 +730,7 @@ void Project::cancel()
 }
 void Project::scheduleFinishEvent(Step start)
 {
+	assert(!m_making.empty());
 	if(start == 0)
 		start = m_location.m_area->m_simulation.m_step;
 	Step delay = getDuration();

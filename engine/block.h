@@ -28,8 +28,8 @@ a* A block. Contains either a single type of material in 'solid' form or arbitra
 #include "hasShape.h"
 #include "types.h"
 #include "project.h"
-#include "actor.h"
 #include "item.h"
+#include "block/hasActors.h"
 
 class Area;
 struct DeserializationMemo;

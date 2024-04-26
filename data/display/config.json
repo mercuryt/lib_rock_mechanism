@@ -1,4 +1,6 @@
 {
 	"ratioOfScaleToFontSize": 0.25,
-	"wallOffset" : 0.2
+	"wallOffset" : 0.2,
+	"maximumNumberOfItemsToDisplayInComboBox": 30,
+	"dummy": true
 }

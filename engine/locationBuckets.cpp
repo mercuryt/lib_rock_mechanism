@@ -1,4 +1,5 @@
 #include "locationBuckets.h"
+#include "actor.h"
 #include "area.h"
 #include <algorithm>
 LocationBuckets::LocationBuckets(Area& area) : m_area(area)

@@ -53,6 +53,8 @@ namespace displayData
 	inline sf::Color progressBarColor;
 	inline sf::Color progressBarOutlineColor;
 	inline float progressBarThickness;
+	inline std::size_t maximumNumberOfItemsToDisplayInComboBox;
+
 	std::string localizeNumber(double number);
 	void load();
 }

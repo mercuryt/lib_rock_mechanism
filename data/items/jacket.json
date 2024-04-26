@@ -1,7 +1,7 @@
 {
 	"name": "jacket",
 	"shape": "oneByOneHundredth",
-	"volume": 1500,
+	"volume": 750,
 	"generic": false,
 	"value": 100,
 	"moveType": "none",

@@ -4,7 +4,6 @@
 #pragma once
 
 #include "datetime.h"
-#include "visionRequest.h"
 #include "hasShape.h"
 #include "objective.h"
 #include "eat.h"
@@ -18,8 +17,6 @@
 #include "haul.h"
 #include "body.h"
 #include "temperature.h"
-#include "buckets.h"
-#include "locationBuckets.h"
 #include "types.h"
 #include "uniform.h"
 #include "actor/canSee.h"
@@ -33,7 +30,7 @@
 
 struct MoveType;
 struct AnimalSpecies;
-struct Faction;
+class Faction;
 struct DeserializationMemo;
 class Area;
 
@@ -150,45 +147,3 @@ public:
 };
 inline void to_json(Json& data, const Actor& actor){ data = actor.m_id; }
 inline void to_json(Json& data, const Actor* const & actor){ data = actor->m_id; }
-class BlockHasActors
-{
-	Block& m_block;
-	std::vector<Actor*> m_actors;
-public:
-	BlockHasActors(Block& b) : m_block(b) { }
-	void enter(Actor& actor);
-	void exit(Actor& actor);
-	void setTemperature(Temperature temperature);
-	[[nodiscard]] bool canStandIn() const;
-	[[nodiscard]] bool contains(Actor& actor) const;
-	[[nodiscard]] bool empty() const { return m_actors.empty(); }
-	[[nodiscard]] Volume volumeOf(Actor& actor) const;
-	[[nodiscard]] std::vector<Actor*>& getAll() { return m_actors; }
-	[[nodiscard]] const std::vector<Actor*>& getAll() const { return m_actors; }
-	[[nodiscard]] const std::vector<Actor*>& getAllConst() const { return m_actors; }
-};
-class AreaHasActors
-{
-	Area& m_area;
-	std::unordered_set<Actor*> m_actors;
-	std::unordered_set<Actor*> m_onSurface;
-	std::vector<VisionRequest> m_visionRequestQueue;
-public:
-	LocationBuckets m_locationBuckets;
-	Buckets<Actor, Config::actorDoVisionInterval> m_visionBuckets;
-	AreaHasActors(Area& a) : m_area(a), m_locationBuckets(a) { }
-	// Add to m_actors, m_locationBuckets, m_visionBuckets and possibly m_onSurface.
-	// Run after initial location has been assigned.
-	void add(Actor& actor);
-	void remove(Actor& actor);
-	// Update temperatures for all actors on surface.
-	void onChangeAmbiantSurfaceTemperature();
-	// Generate vision request queue and dispatch tasks.
-	void processVisionReadStep();
-	void processVisionWriteStep();
-	void setUnderground(Actor& actor);
-	void setNotUnderground(Actor& actor);
-	~AreaHasActors() { m_visionRequestQueue.clear(); }
-	[[nodiscard]] std::unordered_set<Actor*>& getAll() { return m_actors; }
-	[[nodiscard]] const std::unordered_set<Actor*>& getAllConst() const { return m_actors; }
-};

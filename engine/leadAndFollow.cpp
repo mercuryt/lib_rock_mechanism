@@ -1,5 +1,6 @@
 #include "leadAndFollow.h"
 #include "block.h"
+#include "actor.h"
 #include "config.h"
 #include "deserializationMemo.h"
 void CanLead::load(const Json& data, DeserializationMemo& deserializationMemo)

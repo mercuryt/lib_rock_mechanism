@@ -1,7 +1,7 @@
 {
 	"name": "shield",
 	"shape": "oneByOneEighth",
-	"volume": 5500,
+	"volume": 2000,
 	"generic": false,
 	"value": 150,
 	"materialCategories": [ "metal", "wood" ],

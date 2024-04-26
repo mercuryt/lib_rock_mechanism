@@ -20,14 +20,15 @@
 #include "woodcutting.h"
 #include "stocks.h"
 #include "fluidSource.h"
+#include "sleep.h"
+#include "area/hasActors.h"
 //#include "medical.h"
 
-#include <sys/types.h>
 #include <vector>
-#include <unordered_map>
 #include <unordered_set>
 #include <tuple>
 #include <list>
+#include <string>
 
 //struct WorldLocation;
 
