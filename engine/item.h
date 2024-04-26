@@ -1,14 +1,9 @@
 #pragma once
 
-#include "craft.h"
-#include "deserializationMemo.h"
 #include "eventSchedule.h"
 #include "eventSchedule.hpp"
-#include "materialType.h"
 #include "hasShape.h"
 #include "attackType.h"
-#include "fluidType.h"
-#include "move.h"
 
 #include <ratio>
 #include <string>
@@ -23,6 +18,9 @@ class Area;
 class Actor;
 struct CraftJob;
 struct CraftStepTypeCategory;
+struct FluidType;
+struct MaterialType;
+struct DeserializationMemo;
 
 struct WearableData final
 {
@@ -184,7 +182,7 @@ public:
 	[[nodiscard]] bool isActor() const { return false; }
 	[[nodiscard]] bool isPreparedMeal() const;
 	[[nodiscard]] bool isWorkPiece() const { return m_craftJobForWorkPiece != nullptr; }
-	Mass singleUnitMass() const { return std::max(1.f, m_itemType.volume * m_materialType.density); }
+	Mass singleUnitMass() const;
 	Mass getMass() const { return m_quantity * singleUnitMass(); }
 	Volume getVolume() const { return m_quantity * m_itemType.volume; }
 	const MoveType& getMoveType() const { return m_itemType.moveType; }
@@ -197,40 +195,3 @@ public:
 };
 inline void to_json(Json& data, Item* const& item){ data = item->m_id; }
 inline void to_json(Json& data, const Item& item){ data = item.m_id; }
-class BlockHasItems final
-{
-	Block& m_block;
-	std::vector<Item*> m_items;
-public:
-	BlockHasItems(Block& b);
-	// Non generic types have Shape.
-	void add(Item& item);
-	void remove(Item& item);
-	Item& addGeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity);
-	void remove(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity);
-	void setTemperature(Temperature temperature);
-	void disperseAll();
-	//Item* get(ItemType& itemType) const;
-	[[nodiscard]] uint32_t getCount(const ItemType& itemType, const MaterialType& materialType) const;
-	[[nodiscard]] Item& getGeneric(const ItemType& itemType, const MaterialType& materialType) const;
-	[[nodiscard]] std::vector<Item*>& getAll() { return m_items; }
-	const std::vector<Item*>& getAll() const { return m_items; }
-	[[nodiscard]] bool hasInstalledItemType(const ItemType& itemType) const;
-	[[nodiscard]] bool hasEmptyContainerWhichCanHoldFluidsCarryableBy(const Actor& actor) const;
-	[[nodiscard]] bool hasContainerContainingFluidTypeCarryableBy(const Actor& actor, const FluidType& fluidType) const;
-	[[nodiscard]] bool empty() const { return m_items.empty(); }
-};
-class AreaHasItems final
-{
-	Area& m_area;
-	std::unordered_set<Item*> m_onSurface;
-public:
-	AreaHasItems(Area& a) : m_area(a) { }
-	void setItemIsOnSurface(Item& item);
-	void setItemIsNotOnSurface(Item& item);
-	void onChangeAmbiantSurfaceTemperature();
-	void remove(Item& item);
-	friend class Item;
-	// For testing.
-	[[nodiscard, maybe_unused]] const std::unordered_set<Item*>& getOnSurfaceConst() const { return m_onSurface; }
-};

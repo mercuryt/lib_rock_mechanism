@@ -1,8 +1,11 @@
 #pragma once
 #include "config.h"
+#include "findsPath.h"
 #include "item.h"
 #include "objective.h"
 #include "threadedTask.h"
+#include "itemQuery.h"
+#include "threadedTask.hpp"
 #include <string>
 #include <unordered_set>
 class EquipItemObjective;

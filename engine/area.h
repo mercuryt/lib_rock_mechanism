@@ -22,6 +22,7 @@
 #include "fluidSource.h"
 #include "sleep.h"
 #include "area/hasActors.h"
+#include "area/hasItems.h"
 //#include "medical.h"
 
 #include <vector>
