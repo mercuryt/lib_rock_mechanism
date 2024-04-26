@@ -1,5 +1,6 @@
 #include "givePlantsFluid.h"
 #include "area.h"
+#include "actor.h"
 #include "config.h"
 #include "deserializationMemo.h"
 #include "eventSchedule.h"
@@ -296,6 +297,7 @@ GivePlantsFluidItemDishonorCallback::GivePlantsFluidItemDishonorCallback(const J
 	m_actor(deserializationMemo.m_simulation.getActorById(data["actor"].get<ActorId>())) { }
 Json GivePlantsFluidItemDishonorCallback::toJson() const
 {
-	return {{"actor", m_actor}};
+	//TODO: We should not have to specify actor id.
+	return {{"actor", m_actor.m_id}};
 }
 void GivePlantsFluidItemDishonorCallback::execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { m_actor.m_hasObjectives.cannotCompleteSubobjective(); }

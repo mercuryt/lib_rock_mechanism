@@ -87,4 +87,5 @@ void displayData::load()
 	progressBarColor = sf::Color::Blue;
 	progressBarOutlineColor = sf::Color::Black;
 	progressBarThickness = 2.f;
+	maximumNumberOfItemsToDisplayInComboBox = data["maximumNumberOfItemsToDisplayInComboBox"].get<std::size_t>();
 }

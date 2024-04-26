@@ -1,7 +1,7 @@
 {
 	"name": "breast plate",
 	"shape": "oneByOneSixteenth",
-	"volume": 4000,
+	"volume": 2000,
 	"generic": false,
 	"value": 1000,
 	"materialCategories": [ "metal", "wood" ],

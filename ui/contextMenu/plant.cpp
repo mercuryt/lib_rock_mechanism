@@ -14,25 +14,14 @@ void ContextMenu::drawPlantControls(Block& block)
 			auto infoButton = tgui::Button::create("info");
 			submenu.add(infoButton);
 			infoButton->onClick([this, &block]{ m_window.getGameOverlay().drawInfoPopup(block);});
-			auto cutDown = tgui::Button::create("cut down");
-			submenu.add(cutDown);
-			cutDown->onClick([this, &block]{ 
-				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-				const PlantSpecies& species = block.m_hasPlant.get().m_plantSpecies;
-				//TODO: cut down non trees.
-				if(!species.isTree)
-					return;
-				for(Block* selectedBlock : m_window.getSelectedBlocks())
-					if(selectedBlock->m_hasPlant.exists() && selectedBlock->m_hasPlant.get().m_plantSpecies == species)
-						m_window.getArea()->m_hasWoodCuttingDesignations.designate(*m_window.getFaction(), *selectedBlock); 
-				hide();
-			});
 			if(m_window.m_editMode)
 			{
 				auto removePlant = tgui::Button::create("remove " + block.m_hasPlant.get().m_plantSpecies.name);
-					removePlant->onClick([this, &block]{
+				removePlant->onClick([this, &block]{
 					std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 					const PlantSpecies& species = block.m_hasPlant.get().m_plantSpecies;
+					if(m_window.getSelectedBlocks().empty())
+						m_window.selectBlock(block);
 					for(Block* selectedBlock : m_window.getSelectedBlocks())
 						if(selectedBlock->m_hasPlant.exists() && selectedBlock->m_hasPlant.get().m_plantSpecies == species)
 							selectedBlock->m_hasPlant.get().remove();
@@ -67,11 +56,13 @@ void ContextMenu::drawPlantControls(Block& block)
 			auto confirm = tgui::Button::create("confirm");
 			confirm->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 			submenu.add(confirm);
-			confirm->onClick([this, speciesUI, percentGrownUI]{
+			confirm->onClick([this, speciesUI, percentGrownUI, &block]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				if(!speciesUI->getSelectedItem().empty())
 				{
 					const PlantSpecies& species = PlantSpecies::byName(speciesUI->getSelectedItemId().toStdString());
+					if(m_window.getSelectedBlocks().empty())
+						m_window.selectBlock(block);
 					for(Block* selectedBlock : m_window.getSelectedBlocks())
 						if(!selectedBlock->m_hasPlant.exists() && !selectedBlock->isSolid() && selectedBlock->m_hasPlant.canGrowHereEver(species))
 							selectedBlock->m_hasPlant.createPlant(species, percentGrownUI->getValue());

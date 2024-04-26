@@ -1,5 +1,6 @@
 #include "installItem.h"
 #include "block.h"
+#include "actor.h"
 #include "area.h"
 #include "deserializationMemo.h"
 #include "threadedTask.h"

@@ -1,7 +1,7 @@
 {
 	"name": "shirt",
 	"shape": "oneByOneHundredth",
-	"volume": 1000,
+	"volume": 400,
 	"generic": false,
 	"value": 100,
 	"moveType": "none",

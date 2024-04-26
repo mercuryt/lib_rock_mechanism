@@ -8,6 +8,7 @@
 #include "objectives/rest.h"
 #include "objectives/sowSeeds.h"
 #include "objectives/wander.h"
+#include "woodcutting.h"
 
 #include <cstdio>
 #include <numbers>
@@ -132,11 +133,13 @@ void ObjectiveType::load()
 	objectiveTypes["bone carving"] = std::make_unique<CraftObjectiveType>(SkillType::byName("bone carving"));
 	objectiveTypes["assembling"] = std::make_unique<CraftObjectiveType>(SkillType::byName("assembling"));
 	objectiveTypes["dig"] = std::make_unique<DigObjectiveType>();
+	//  TODO: specalize construct into Earthworks, Masonry, Metal Construction, and Carpentry.
 	objectiveTypes["construct"] = std::make_unique<ConstructObjectiveType>();
 	objectiveTypes["stockpile"] = std::make_unique<StockPileObjectiveType>();
 	objectiveTypes["sow seeds"] = std::make_unique<SowSeedsObjectiveType>();
 	objectiveTypes["give plants fluid"] = std::make_unique<GivePlantsFluidObjectiveType>();
 	objectiveTypes["harvest"] = std::make_unique<HarvestObjectiveType>();
+	objectiveTypes["wood cutting"] = std::make_unique<WoodCuttingObjectiveType>();
 	for(auto& pair : objectiveTypes)
 		objectiveTypeNames[pair.second.get()] = pair.first;
 }
@@ -161,7 +164,8 @@ Objective::Objective(const Json& data, [[maybe_unused]] DeserializationMemo& des
 }
 Json Objective::toJson() const 
 { 
-	return Json{{"type", getObjectiveTypeId()}, {"actor", m_actor}, {"priority", m_priority}, 
+	// TODO: Why do we have to specify actor id here?
+	return Json{{"type", getObjectiveTypeId()}, {"actor", m_actor.m_id}, {"priority", m_priority}, 
 		{"detour", m_detour}, {"address", reinterpret_cast<uintptr_t>(this)}}; 
 }
 // HasObjectives.
