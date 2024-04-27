@@ -2,6 +2,8 @@
 #include "../window.h"
 #include "../displayData.h"
 #include "../../engine/block.h"
+#include "../../engine/objectives/equipItem.h"
+#include "../../engine/objectives/unequipItem.h"
 void ContextMenu::drawItemControls(Block& block)
 {
 	// Item submenu.
@@ -38,10 +40,7 @@ void ContextMenu::drawItemControls(Block& block)
 						hide();
 					});
 				}
-				if(!m_window.getSelectedActors().empty())
-				{
-					//TODO: targeted haul, installation , stockpile
-				}
+				//TODO: targeted haul, installation , stockpile
 				if(m_window.m_editMode)
 				{
 					auto destroy = tgui::Button::create("destroy");
@@ -60,13 +59,12 @@ void ContextMenu::drawItemControls(Block& block)
 					// Equip.
 					if(actor.m_equipmentSet.canEquipCurrently(*item))
 					{
-						ItemQuery query(*item);
-						auto button = tgui::Button::create("equip ");
+						auto button = tgui::Button::create("equip");
 						button->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 						submenu.add(button);
-						button->onClick([this, &actor, query] () mutable {
+						button->onClick([this, &actor, item] () mutable {
 							std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-							std::unique_ptr<Objective> objective = std::make_unique<EquipItemObjective>(actor, query);
+							std::unique_ptr<Objective> objective = std::make_unique<EquipItemObjective>(actor, *item);
 							actor.m_hasObjectives.replaceTasks(std::move(objective));
 							hide();
 						});
@@ -85,6 +83,30 @@ void ContextMenu::drawItemControls(Block& block)
 				}
 			});
 		}
+	auto& actors = m_window.getSelectedActors();
+	if(actors.size() == 1)
+	{
+		Actor& actor = **actors.begin();
+		if(!actor.m_equipmentSet.empty())
+		{
+			auto unequip = tgui::Label::create("unequip");
+			m_root.add(unequip);
+			unequip->onMouseEnter([this, &block, &actor]{
+				auto& submenu = makeSubmenu(0);
+				for(Item* item : actor.m_equipmentSet.getAll())
+				{
+					auto button = tgui::Label::create(UIUtil::describeItem(*item));
+					submenu.add(button);
+					button->onClick([this, &block, &actor, item]{
+						std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
+						std::unique_ptr<Objective> objective = std::make_unique<UnequipItemObjective>(actor, *item, block);
+						actor.m_hasObjectives.replaceTasks(std::move(objective));
+						hide();
+					});
+				}
+			});
+		}
+	}
 	if(m_window.m_editMode)
 	{
 		auto addItem = tgui::Label::create("add item");

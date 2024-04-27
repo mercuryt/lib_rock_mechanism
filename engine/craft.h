@@ -94,8 +94,7 @@ struct CraftStepProjectHasShapeDishonorCallback final : public DishonorCallback
 {
 	CraftStepProject& m_craftStepProject;
 	CraftStepProjectHasShapeDishonorCallback(CraftStepProject& hs) : m_craftStepProject(hs) { } 
-	CraftStepProjectHasShapeDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
-		m_craftStepProject(*static_cast<CraftStepProject*>(deserializationMemo.m_projects.at(data["proejct"].get<uintptr_t>()))) { } 
+	CraftStepProjectHasShapeDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const { return Json({{"type", "CraftStepProjectHasShapeDishonorCallback"}, {"project", reinterpret_cast<uintptr_t>(&m_craftStepProject)}}); }
 	// Craft step project cannot reset so cancel instead and allow to be recreated later.
 	void execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { m_craftStepProject.cancel(); }

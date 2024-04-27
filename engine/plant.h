@@ -1,6 +1,5 @@
 #pragma once
 
-#include "deserializationMemo.h"
 #include "reservable.h"
 #include "eventSchedule.hpp"
 #include "hasShape.h"
@@ -9,6 +8,7 @@
 #include <iostream>
 
 class Block;
+struct DeserializationMemo;
 
 #include <algorithm>
 

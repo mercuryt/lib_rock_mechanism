@@ -1,11 +1,11 @@
 #pragma once
-#include "deserializationMemo.h"
 #include "findsPath.h"
 #include "project.h"
 #include "threadedTask.h"
 #include "objective.h"
 
 #include <cstdio>
+struct DeserializationMemo;
 class InstallItemObjective;
 class InstallItemProject final : public Project
 {

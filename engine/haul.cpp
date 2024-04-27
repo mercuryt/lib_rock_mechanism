@@ -76,6 +76,8 @@ bool HaulSubprojectParamaters::validate() const
 		return false;
 	return true;
 }
+HaulSubprojectDishonorCallback::HaulSubprojectDishonorCallback(const Json data, DeserializationMemo& deserializationMemo) : 
+	m_haulSubproject(*deserializationMemo.m_haulSubprojects.at(data["haulSubproject"])) { }
 CanPickup::CanPickup(const Json& data, Actor& a) : m_actor(a), m_carrying(nullptr)
 {
 	if(data.contains("carryingItem"))

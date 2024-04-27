@@ -22,6 +22,8 @@ CraftStepTypeCategory& CraftStepTypeCategory::byName(const std::string name)
 	assert(found != craftStepTypeCategoryDataStore.end());
 	return *found;
 }
+CraftStepProjectHasShapeDishonorCallback::CraftStepProjectHasShapeDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
+	m_craftStepProject(*static_cast<CraftStepProject*>(deserializationMemo.m_projects.at(data["proejct"].get<uintptr_t>()))) { } 
 CraftJobType& CraftJobType::byName(const std::string name)
 {
 	auto found = std::ranges::find(craftJobTypeDataStore, name, &CraftJobType::name);

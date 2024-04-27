@@ -12,6 +12,9 @@
 		"name": "block",
 		"image": "block"
 	},{
+		"name": "branch",
+		"image": "branch"
+	},{
 		"name": "board",
 		"image": "board"
 	},{

@@ -4,6 +4,7 @@
 #include "input.h"
 #include "objective.h"
 #include "project.h"
+#include "findsPath.h"
 #include <memory>
 
 class WoodCuttingProject;

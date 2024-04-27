@@ -1,7 +1,5 @@
 #pragma once
-#include "deserializationMemo.h"
 #include "objective.h"
-#include "plant.h"
 #include "eventSchedule.hpp"
 #include "threadedTask.hpp"
 #include "config.h"
@@ -12,6 +10,7 @@
 
 class SowSeedsEvent;
 class SowSeedsThreadedTask;
+struct DeserializationMemo;
 class SowSeedsObjectiveType final : public ObjectiveType
 {
 public:

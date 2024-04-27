@@ -5,7 +5,6 @@
 #pragma once
 
 #include "config.h"
-#include "deserializationMemo.h"
 #include "types.h"
 
 #include <cassert>
@@ -15,6 +14,9 @@
 #include <string>
 #include <algorithm>
 #include <set>
+
+struct DeserializationMemo;
+class Block;
 
 struct Shape
 {

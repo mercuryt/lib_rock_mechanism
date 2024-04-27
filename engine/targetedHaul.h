@@ -15,7 +15,7 @@ class TargetedHaulProject final : public Project
 	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const { return {}; }
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const { return {}; }
 	void onComplete();
-	void onDelivered(HasShape& delivered) { delivered.setLocation(m_location); }
+	void onDelivered(HasShape& delivered);
 	// Most projects which are directly created by the user ( dig, construct ) wait a while and then retry if they fail.
 	// Despite being directly created it doesn't make sense to retry targeted hauling, so instead we cancel it with a log message.
 	// TODO: log message.

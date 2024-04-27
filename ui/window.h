@@ -75,7 +75,6 @@ class Window final
 	Block* m_firstCornerOfSelection;
 	static constexpr int gameMarginSize = 400;
 	
-	void drawView();
 	void povFromJson(const Json& data);
 	void setZ(const uint32_t z);
 	void setSpeedDisplay();

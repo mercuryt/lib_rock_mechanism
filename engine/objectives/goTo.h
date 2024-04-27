@@ -1,10 +1,12 @@
 #pragma once
-#include "deserializationMemo.h"
 #include "objective.h"
 #include "config.h"
 #include "input.h"
+
 class Block;
 class Actor;
+struct DeserializationMemo;
+
 class GoToObjective final : public Objective
 {
 	Block& m_location;

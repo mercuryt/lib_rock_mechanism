@@ -6,6 +6,8 @@
 #include <new>
 TEST_CASE("woodcutting")
 {
+	const ItemType& branch = ItemType::byName("branch");
+	const ItemType& log = ItemType::byName("log");
 	Simulation simulation;
 	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName("dirt"));
@@ -55,11 +57,18 @@ TEST_CASE("woodcutting")
 		REQUIRE(!treeLocation.m_hasPlant.exists());
 		REQUIRE(dwarf.m_hasObjectives.getCurrent().getObjectiveTypeId() != ObjectiveTypeId::WoodCutting);
 		REQUIRE(!dwarf.m_canPickup.isCarrying(axe));
-		REQUIRE(area.getTotalCountOfItemTypeOnSurface(ItemType::byName("log")) == 10);
-		REQUIRE(area.getTotalCountOfItemTypeOnSurface(ItemType::byName("branch")) == 20);
+		REQUIRE(area.getTotalCountOfItemTypeOnSurface(log) == 10);
+		REQUIRE(area.getTotalCountOfItemTypeOnSurface(branch) == 20);
 	}
-	SUBCASE("axe equiped")
+	SUBCASE("axe equiped, collect in stockpile")
 	{
+		Block& branchStockpileLocation = area.getBlock(8,8,1);
+		area.m_hasStockPiles.registerFaction(faction);
+		area.m_hasStocks.addFaction(faction);
+		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile({{branch, nullptr}});
+		stockpile.addBlock(branchStockpileLocation);
+		StockPileObjectiveType stockPileObjectiveType;
+		dwarf.m_hasObjectives.m_prioritySet.setPriority(stockPileObjectiveType, 10);
 		dwarf.m_equipmentSet.addEquipment(axe);
 		// One step to find the designation.
 		simulation.doStep();
@@ -73,16 +82,30 @@ TEST_CASE("woodcutting")
 		// One step to path to the project
 		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf, treeLocation);
-		/*
-		REQUIRE(project->finishEventExists());
 		Step stepsDuration = project->getDuration();
-		REQUIRE(project->getFinishStep() == simulation.m_step + stepsDuration);
-		simulation.fastForward(stepsDuration);
+		// TODO: why plus 2?
+		simulation.fastForward(stepsDuration + 2);
 		REQUIRE(!treeLocation.m_hasPlant.exists());
+		REQUIRE(area.getTotalCountOfItemTypeOnSurface(log) == 10);
+		REQUIRE(area.getTotalCountOfItemTypeOnSurface(branch) == 20);
+		REQUIRE(!objectiveType.canBeAssigned(dwarf));
 		REQUIRE(dwarf.m_hasObjectives.getCurrent().getObjectiveTypeId() != ObjectiveTypeId::WoodCutting);
-		REQUIRE(!dwarf.m_canPickup.isCarrying(axe));
-		REQUIRE(area.getTotalCountOfItemTypeOnSurface(ItemType::byName("log")) == 10);
-		REQUIRE(area.getTotalCountOfItemTypeOnSurface(ItemType::byName("branch")) == 20);
-		*/
+		REQUIRE(!dwarf.m_project);
+		REQUIRE(dwarf.getActionDescription() == L"stockpile");
+		// One step to create a stockpile project.
+		simulation.doStep();
+		REQUIRE(dwarf.m_project);
+		// Reserve.
+		simulation.doStep();
+		REQUIRE(dwarf.m_project->reservationsComplete());
+		// Select haul strategy.
+		simulation.doStep();
+		REQUIRE(dwarf.m_project->getProjectWorkerFor(dwarf).haulSubproject);
+		// Pickup and path.
+		simulation.doStep();
+		REQUIRE(dwarf.m_canMove.getDestination());
+		REQUIRE(dwarf.m_canPickup.exists());
+		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf, branchStockpileLocation);
+		REQUIRE(!dwarf.m_canPickup.exists());
 	}
 }

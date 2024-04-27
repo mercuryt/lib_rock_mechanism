@@ -14,6 +14,7 @@
 #include <numbers>
 
 // Input.
+/*
 void ObjectiveTypeSetPriorityInputAction::execute()
 {
 	m_actor.m_hasObjectives.m_prioritySet.setPriority(m_objectiveType, m_priority);
@@ -22,6 +23,7 @@ void ObjectiveTypeRemoveInputAction::execute()
 {
 	m_actor.m_hasObjectives.m_prioritySet.remove(m_objectiveType);
 }
+*/
 void ObjectiveTypePrioritySet::load(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo)
 {
 	m_data = data["data"].get<std::vector<ObjectivePriority>>();
@@ -168,6 +170,14 @@ Json Objective::toJson() const
 	return Json{{"type", getObjectiveTypeId()}, {"actor", m_actor.m_id}, {"priority", m_priority}, 
 		{"detour", m_detour}, {"address", reinterpret_cast<uintptr_t>(this)}}; 
 }
+CannotCompleteObjectiveDishonorCallback::CannotCompleteObjectiveDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
+	m_actor(deserializationMemo.m_simulation.getActorById(data["actor"].get<ActorId>())) { }
+Json CannotCompleteObjectiveDishonorCallback::toJson() const
+{
+	//TODO: We should not have to specify actor id.
+	return {{"actor", m_actor.m_id}};
+}
+void CannotCompleteObjectiveDishonorCallback::execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { m_actor.m_hasObjectives.cannotCompleteSubobjective(); }
 // HasObjectives.
 HasObjectives::HasObjectives(Actor& a) : m_actor(a), m_currentObjective(nullptr), m_prioritySet(a) { }
 void HasObjectives::load(const Json& data, DeserializationMemo& deserializationMemo)

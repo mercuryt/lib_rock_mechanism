@@ -171,7 +171,12 @@ Simulation::~Simulation()
 	for(Area& area : m_areas)
 		area.clearReservations();
 	for(auto& pair : m_actors)
+	{
 		pair.second.m_canReserve.deleteAllWithoutCallback();
+		pair.second.m_onDestroy.unsubscribeAll();
+	}
+	for(auto& pair : m_items)
+		pair.second.m_onDestroy.unsubscribeAll();
 	m_items.clear();
 	m_actors.clear();
 	m_areas.clear();

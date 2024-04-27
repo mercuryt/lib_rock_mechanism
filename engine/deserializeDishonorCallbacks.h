@@ -1,6 +1,7 @@
 #pragma once
 
-#include "objectives/givePlantsFluid.h"
+#include "faction.h"
+#include "objective.h"
 #include "reservable.h"
 #include "haul.h"
 #include "stockpile.h"
@@ -24,8 +25,8 @@ inline std::unique_ptr<DishonorCallback> deserializeDishonorCallback(const Json&
 		return std::make_unique<CraftStepProjectHasShapeDishonorCallback>(data, deserializationMemo);
 	if(data["type"] == "ConstructionLocationDishonorCallback")
 		return std::make_unique<ConstructionLocationDishonorCallback>(data, deserializationMemo);
-	if(data["type"] == "GivePlantsFluidItemDishonorCallback")
-		return std::make_unique<GivePlantsFluidItemDishonorCallback>(data, deserializationMemo);
+	if(data["type"] == "CannotCompleteObjectiveDishonorCallback")
+		return std::make_unique<CannotCompleteObjectiveDishonorCallback>(data, deserializationMemo);
 	assert(data["type"] == "DigLocationDishonorCallback");
 	return std::make_unique<DigLocationDishonorCallback>(data, deserializationMemo);
 }

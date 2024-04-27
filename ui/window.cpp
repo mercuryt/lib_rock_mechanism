@@ -13,8 +13,6 @@
 #include <mutex>
 #include <string>
 #include <unordered_set>
-constexpr sf::Mouse::Button selectMouseButton = sf::Mouse::Button::Left;
-constexpr sf::Mouse::Button actionMouseButton = sf::Mouse::Button::Right;
 Window::Window() : m_window(sf::VideoMode::getDesktopMode(), "Goblin Pit", sf::Style::Fullscreen), m_gui(m_window), m_view(m_window.getDefaultView()), 
 	m_mainMenuView(*this), m_loadView(*this), m_gameOverlay(*this), m_objectivePriorityView(*this), 
 	m_productionView(*this), m_uniformView(*this), m_stocksView(*this), m_actorView(*this), //m_worldParamatersView(*this),
@@ -261,7 +259,7 @@ void Window::startLoop()
 				{
 					if(m_area)
 					{
-						if(event.mouseButton.button == selectMouseButton)
+						if(event.mouseButton.button == displayData::selectMouseButton)
 						{
 							m_gameOverlay.closeContextMenu();
 							m_firstCornerOfSelection = &getBlockAtPosition({event.mouseButton.x, event.mouseButton.y});
@@ -277,7 +275,7 @@ void Window::startLoop()
 					if(m_area)
 					{
 						Block& block = getBlockUnderCursor();
-						if(event.mouseButton.button == selectMouseButton)
+						if(event.mouseButton.button == displayData::selectMouseButton)
 						{
 							
 							Cuboid blocks;
@@ -355,7 +353,7 @@ void Window::startLoop()
 								}
 							}
 						}
-						else if(event.mouseButton.button == actionMouseButton)
+						else if(event.mouseButton.button == displayData::actionMouseButton)
 						{
 							// Display context menu.
 							//TODO: Left click and drag shortcut for select and open context.
@@ -390,7 +388,7 @@ void Window::startLoop()
 		if(m_simulation && m_area)
 		{
 			m_window.setView(m_view);
-			drawView();
+			m_draw.view();
 			// What is this? Something for TGUI?
 			m_window.setView(m_window.getDefaultView());
 		}
@@ -404,145 +402,6 @@ void Window::startLoop()
 		if(ms > delta)
 			std::this_thread::sleep_for(ms - delta);
 	}
-}
-void Window::drawView()
-{
-	m_gameOverlay.drawTime();
-	//m_gameOverlay.drawWeather();
-	// Aquire Area read mutex.
-	std::lock_guard lock(m_simulation->m_uiReadMutex);
-	// Render block floors, collect actors into single and multi tile groups.
-	std::unordered_set<const Block*> singleTileActorBlocks;
-	std::unordered_set<const Actor*> multiTileActors;
-	for(Block& block : m_area->getZLevel(m_z))
-	{
-		m_draw.blockFloor(block);
-		for(const Actor* actor : block.m_hasActors.getAllConst())
-		{
-			if(actor->m_shape->isMultiTile)
-				multiTileActors.insert(actor);
-			else
-				singleTileActorBlocks.insert(&block);
-		}
-	}
-	// Render block wall corners.
-	for(Block& block : m_area->getZLevel(m_z))
-		m_draw.blockWallCorners(block);
-	// Render block walls.
-	for(Block& block : m_area->getZLevel(m_z))
-		m_draw.blockWalls(block);
-	// Render block features and fluids.
-	for(Block& block : m_area->getZLevel(m_z))
-		m_draw.blockFeaturesAndFluids(block);
-	// Render block plants.
-	for(Block& block : m_area->getZLevel(m_z))
-		m_draw.nonGroundCoverPlant(block);
-	// Render items.
-	for(Block& block : m_area->getZLevel(m_z))
-		m_draw.item(block);
-	// Render block wall tops.
-	for(Block& block : m_area->getZLevel(m_z))
-		m_draw.blockWallTops(block);
-	// Render Actors.
-	// Do multi tile actors first.
-	//TODO: what if multitile actors overlap?
-	for(const Actor* actor : multiTileActors)
-		m_draw.multiTileActor(*actor);
-	// Do single tile actors.
-	auto duration = std::chrono::system_clock::now().time_since_epoch();
-	auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration).count();
-	for(const Block* block : singleTileActorBlocks)
-	{
-		assert(!block->m_hasActors.empty());
-		// Multiple actors, cycle through them over time.
-		// Use real time rather then m_step to continue cycling while paused.
-		uint32_t count = block->m_hasActors.getAllConst().size();
-		if(count == 1)
-			m_draw.singleTileActor(*block->m_hasActors.getAllConst().front());
-		else
-		{
-			uint8_t index = (seconds % count);
-			//TODO: hide some actors from player?
-			const std::vector<Actor*> actors = block->m_hasActors.getAllConst();
-			m_draw.singleTileActor(*actors[index]);
-		}
-	}
-	// Designated and project progress.
-	if(m_faction)
-		for(Block& block : m_area->getZLevel(m_z))
-		{
-			if(block.m_hasDesignations.containsFaction(*m_faction))
-				m_draw.designated(block);
-			m_draw.craftLocation(block);
-			Percent projectProgress = block.m_hasProjects.getProjectPercentComplete(*m_faction);
-			if(projectProgress)
-				m_draw.progressBarOnBlock(block, projectProgress);
-		}
-	// Selected.
-	if(!m_selectedBlocks.empty())
-	{
-		for(Block* block : m_selectedBlocks)
-			if(block->m_z == m_z)
-				m_draw.selected(*block);
-	}
-	else if(!m_selectedActors.empty())
-	{
-		for(Actor* actor: m_selectedActors)
-			for(Block* block : actor->m_blocks)
-				if(block->m_z == m_z)
-					m_draw.selected(*block);
-	}
-	else if(!m_selectedItems.empty())
-	{
-		for(Item* item: m_selectedItems)
-			for(Block* block : item->m_blocks)
-				if(block->m_z == m_z)
-					m_draw.selected(*block);
-	}
-	else if(!m_selectedPlants.empty())
-		for(Plant* plant: m_selectedPlants)
-			for(Block* block : plant->m_blocks)
-				if(block->m_z == m_z)
-					m_draw.selected(*block);
-	// Selection Box.
-	if(m_firstCornerOfSelection && sf::Mouse::isButtonPressed(selectMouseButton))
-	{
-		auto end = sf::Mouse::getPosition();
-		auto start = m_positionWhereMouseDragBegan;
-		uint32_t xSize = std::abs((int32_t)start.x - (int32_t)end.x);
-		uint32_t ySize = std::abs((int32_t)start.y - (int32_t)end.y);
-		int32_t left = std::min(start.x, end.x);
-		int32_t top = std::min(start.y, end.y);
-		sf::Vector2f worldPos = m_window.mapPixelToCoords({left, top});
-		sf::RectangleShape square(sf::Vector2f(xSize, ySize));
-		square.setFillColor(sf::Color::Transparent);
-		square.setOutlineColor(displayData::selectColor);
-		square.setOutlineThickness(3.f);
-		square.setPosition(worldPos);
-		m_window.draw(square);
-	}
-	// Install item.
-	if(m_gameOverlay.m_itemBeingInstalled)
-	{
-		Block& hoverBlock = getBlockUnderCursor();
-		auto blocks = m_gameOverlay.m_itemBeingInstalled->getBlocksWhichWouldBeOccupiedAtLocationAndFacing(hoverBlock, m_gameOverlay.m_facing);
-		bool valid = hoverBlock.m_hasShapes.canEnterEverWithFacing(*m_gameOverlay.m_itemBeingInstalled, m_gameOverlay.m_facing);
-		for(Block* block : blocks)
-			if(!valid)
-				m_draw.invalidOnBlock(*block);
-			else
-				m_draw.validOnBlock(*block);
-	}
-	// Area Border.
-	sf::RectangleShape areaBorder(sf::Vector2f((m_scale * m_area->m_sizeX), (m_scale * m_area->m_sizeX) ));
-	areaBorder.setOutlineColor(sf::Color::White);
-	areaBorder.setFillColor(sf::Color::Transparent);
-	areaBorder.setOutlineThickness(3.f);
-	areaBorder.setPosition(sf::Vector2f(0,0));
-	m_window.draw(areaBorder);
-	// Update Info popup.
-	//if(m_gameOverlay.infoPopupIsVisible())
-		//m_gameOverlay.updateInfoPopup();
 }
 void Window::threadTask(std::function<void()> task)
 {

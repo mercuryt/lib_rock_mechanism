@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SFML/Graphics/Color.hpp>
+#include <SFML/Window/Event.hpp>
 #include <string>
 #include <unordered_map>
 struct MaterialType;
@@ -54,6 +55,8 @@ namespace displayData
 	inline sf::Color progressBarOutlineColor;
 	inline float progressBarThickness;
 	inline std::size_t maximumNumberOfItemsToDisplayInComboBox;
+	inline sf::Mouse::Button selectMouseButton = sf::Mouse::Button::Left;
+	inline sf::Mouse::Button actionMouseButton = sf::Mouse::Button::Right;
 
 	std::string localizeNumber(double number);
 	void load();

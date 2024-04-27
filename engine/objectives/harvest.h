@@ -1,6 +1,5 @@
 #pragma once
 
-#include "deserializationMemo.h"
 #include "objective.h"
 #include "config.h"
 #include "eventSchedule.hpp"
@@ -8,6 +7,7 @@
 #include "findsPath.h"
 #include "types.h"
 
+struct DeserializationMemo;
 class HarvestThreadedTask;
 class HarvestEvent;
 class Block;

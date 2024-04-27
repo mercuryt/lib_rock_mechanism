@@ -432,6 +432,8 @@ bool BlockIsPartOfStockPiles::isAvalible(const Faction& faction) const
 	CollisionVolume volume = item.m_shape->getCollisionVolumeAtLocationBlock();
 	return m_block.m_hasShapes.getStaticVolume() + volume <= Config::maxBlockVolume;
 }
+StockPileHasShapeDishonorCallback::StockPileHasShapeDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
+	m_stockPileProject(static_cast<StockPileProject&>(*deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()))) { }
 StockPile& AreaHasStockPilesForFaction::addStockPile(std::vector<ItemQuery>&& queries) { return addStockPile(queries); }
 StockPile& AreaHasStockPilesForFaction::addStockPile(std::vector<ItemQuery>& queries)
 {
