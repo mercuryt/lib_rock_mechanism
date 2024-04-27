@@ -1,7 +1,5 @@
 #pragma once
 
-#include "deserializationMemo.h"
-#include "hasShape.h"
 #include "reservable.h"
 #include "types.h"
 #include <unordered_set>
@@ -17,6 +15,7 @@ class Project;
 struct ProjectRequirementCounts;
 class Faction;
 class HaulSubproject;
+struct DeserializationMemo;
 
 enum class HaulStrategy { None, Individual, Team, Cart, TeamCart, Panniers, AnimalCart, StrongSentient };
 
@@ -89,7 +88,7 @@ struct HaulSubprojectDishonorCallback final : public DishonorCallback
 {
 	HaulSubproject& m_haulSubproject;
 	HaulSubprojectDishonorCallback(HaulSubproject& hs) : m_haulSubproject(hs) { } 
-	HaulSubprojectDishonorCallback(const Json data, DeserializationMemo& deserializationMemo) : m_haulSubproject(*deserializationMemo.m_haulSubprojects.at(data["haulSubproject"])) { }
+	HaulSubprojectDishonorCallback(const Json data, DeserializationMemo& deserializationMemo);
 	void execute([[maybe_unused]] Quantity oldCount, [[maybe_unused]] Quantity newCount) { m_haulSubproject.cancel(); }
 	Json toJson() const { return {{"type", "HaulSubprojectDishonorCallback"}, {"haulSubproject", reinterpret_cast<uintptr_t>(&m_haulSubproject)}}; }
 };

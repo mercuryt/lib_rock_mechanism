@@ -233,7 +233,7 @@ void GivePlantsFluidObjective::select(Block& block)
 void GivePlantsFluidObjective::select(Item& item)
 {
 	m_fluidHaulingItem = &item;
-	std::unique_ptr<DishonorCallback> callback = std::make_unique<GivePlantsFluidItemDishonorCallback>(m_actor);
+	std::unique_ptr<DishonorCallback> callback = std::make_unique<CannotCompleteObjectiveDishonorCallback>(m_actor);
 	item.m_reservable.reserveFor(m_actor.m_canReserve, 1u, std::move(callback));
 }
 void GivePlantsFluidObjective::reset()
@@ -293,11 +293,3 @@ Item* GivePlantsFluidObjective::getFluidHaulingItemAt(Block& block)
 			return item;
 	return nullptr;
 }
-GivePlantsFluidItemDishonorCallback::GivePlantsFluidItemDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
-	m_actor(deserializationMemo.m_simulation.getActorById(data["actor"].get<ActorId>())) { }
-Json GivePlantsFluidItemDishonorCallback::toJson() const
-{
-	//TODO: We should not have to specify actor id.
-	return {{"actor", m_actor.m_id}};
-}
-void GivePlantsFluidItemDishonorCallback::execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { m_actor.m_hasObjectives.cannotCompleteSubobjective(); }

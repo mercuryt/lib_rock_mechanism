@@ -1,18 +1,13 @@
 #pragma once
 
-#include "deserializationMemo.h"
-#include "hasShape.h"
+#include "types.h"
 #include "reservable.h"
-#include "actor/actorQuery.h"
 #include "itemQuery.h"
-#include "eventSchedule.h"
-#include "threadedTask.h"
-#include "haul.h"
-#include "findsPath.h"
 #include "eventSchedule.hpp"
 #include "threadedTask.hpp"
 #include "onDestroy.h"
-#include "types.h"
+#include "actor/actorQuery.h"
+#include "haul.h"
 
 #include <vector>
 #include <utility>
@@ -26,6 +21,9 @@ class ProjectTryToAddWorkersThreadedTask;
 class Block;
 class Actor;
 class Item;
+struct DeserializationMemo;
+class HasShape;
+class Objective;
 
 struct ProjectWorker final
 {
@@ -266,4 +264,5 @@ public:
 	void add(Project& project);
 	void remove(Project& project);
 	Percent getProjectPercentComplete(Faction& faction) const;
+	[[nodiscard]] Project* get(Faction& faction) const;
 };

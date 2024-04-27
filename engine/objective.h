@@ -2,10 +2,9 @@
 #pragma once
 
 #include "config.h"
-#include "deserializationMemo.h"
-#include "eventSchedule.h"
 #include "eventSchedule.hpp"
-#include "input.h"
+#include "reservable.h"
+//#include "input.h"
 
 #include <map>
 #include <memory>
@@ -18,9 +17,10 @@ class Actor;
 class WaitEvent;
 class Objective;
 class SupressedNeedEvent;
+struct DeserializationMemo;
 
 //Action.
-
+/*
 class ObjectiveTypeSetPriorityInputAction final : public InputAction
 {
 	Actor& m_actor;
@@ -38,7 +38,8 @@ public:
 	ObjectiveTypeRemoveInputAction(InputQueue& inputQueue, Actor& actor, const ObjectiveType& objectiveType) : InputAction(inputQueue), m_actor(actor), m_objectiveType(objectiveType) { }
 	void execute();
 };
-enum class ObjectiveTypeId { Construct, Craft, Dig, Drink, Eat, Equip, Exterminate, GetToSafeTemperature, GivePlantsFluid, GoTo, Harvest, Haul, InstallItem, Kill, LeaveArea, Medical, Rest, Sleep, Station, SowSeeds, StockPile, Uniform, Wait, Wander, WoodCutting };
+*/
+enum class ObjectiveTypeId { Construct, Craft, Dig, Drink, Eat, Equip, Exterminate, GetToSafeTemperature, GiveItem, GivePlantsFluid, GoTo, Harvest, Haul, InstallItem, Kill, LeaveArea, Medical, Rest, Sleep, Station, SowSeeds, StockPile, Unequip, Uniform, Wait, Wander, WoodCutting };
 NLOHMANN_JSON_SERIALIZE_ENUM(ObjectiveTypeId, {
 	{ObjectiveTypeId::Construct, "Construct"}, 
 	{ObjectiveTypeId::Craft, "Craft"},
@@ -46,6 +47,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(ObjectiveTypeId, {
 	{ObjectiveTypeId::Drink, "Drink"}, 
 	{ObjectiveTypeId::Eat, "Eat"}, 
 	{ObjectiveTypeId::GetToSafeTemperature, "GetToSafeTemperature"}, 
+	{ObjectiveTypeId::GiveItem, "GiveItem"}, 
 	{ObjectiveTypeId::GivePlantsFluid, "GivePlantsFluid"}, 
 	{ObjectiveTypeId::GoTo, "GoTo"}, 
 	{ObjectiveTypeId::Harvest, "Harvest"}, 
@@ -59,6 +61,8 @@ NLOHMANN_JSON_SERIALIZE_ENUM(ObjectiveTypeId, {
 	{ObjectiveTypeId::SowSeeds, "SowSeeds"}, 
 	{ObjectiveTypeId::StockPile, "StockPile"}, 
 	{ObjectiveTypeId::Wait, "Wait"}, 
+	{ObjectiveTypeId::Uniform, "Uniform"}, 
+	{ObjectiveTypeId::Unequip, "Unequip"}, 
 	{ObjectiveTypeId::Wander, "Wander"},
 	{ObjectiveTypeId::Wander, "WoodCutting"},
 });
@@ -170,6 +174,16 @@ public:
 	SupressedNeedEvent(SupressedNeed& sn, const Step start = 0);
 	void execute();
 	void clearReferences();
+};
+// Some objectives without projects may need to reserve items, they can use this callback to call cannot complete.
+class CannotCompleteObjectiveDishonorCallback final : public DishonorCallback
+{
+	Actor& m_actor;
+public:
+	CannotCompleteObjectiveDishonorCallback(Actor& a) : m_actor(a) { }
+	CannotCompleteObjectiveDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo);
+	Json toJson() const;
+	void execute(uint32_t oldCount, uint32_t newCount);
 };
 class HasObjectives final
 {

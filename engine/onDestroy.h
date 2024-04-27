@@ -13,6 +13,7 @@ public:
 	void subscribe(HasOnDestroySubscriptions& hasSubscription);
 	void unsubscribe(HasOnDestroySubscriptions& hasSubscription);
 	void merge(OnDestroy& onDestroy);
+	void unsubscribeAll();
 	~OnDestroy();
 };
 

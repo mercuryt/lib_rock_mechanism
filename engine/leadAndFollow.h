@@ -1,6 +1,5 @@
 #pragma once
 
-#include "deserializationMemo.h"
 #include "eventSchedule.hpp"
 #include "config.h"
 
@@ -8,6 +7,7 @@
 #include <cstdint>
 
 class Block;
+struct DeserializationMemo;
 
 //TODO: Multiple followers.
 class HasShape;

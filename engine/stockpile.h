@@ -204,8 +204,7 @@ struct StockPileHasShapeDishonorCallback final : public DishonorCallback
 {
 	StockPileProject& m_stockPileProject;
 	StockPileHasShapeDishonorCallback(StockPileProject& hs) : m_stockPileProject(hs) { } 
-	StockPileHasShapeDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
-		m_stockPileProject(static_cast<StockPileProject&>(*deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()))) { }
+	StockPileHasShapeDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const { return Json({{"type", "StockPileHasShapeDishonorCallback"}, {"project", reinterpret_cast<uintptr_t>(&m_stockPileProject)}}); }
 	// Craft step project cannot reset so cancel instead and allow to be recreated later.
 	// TODO: Why?

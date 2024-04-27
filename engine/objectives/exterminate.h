@@ -3,6 +3,7 @@
 #include "../config.h"
 #include "eventSchedule.hpp"
 class Actor;
+class Block;
 struct DeserializationMemo;
 class ExterminateObjectiveScheduledEvent;
 class ExterminateObjective final : public Objective

@@ -46,7 +46,7 @@ namespace spriteCoordinates
 		data.try_emplace("equine", 108, 64, 32, 31, 16.0, 15.5 );
 		data.try_emplace("raptor", 169, 64, 28, 31, 14.0, 15.5 );
 		data.try_emplace("rabbit", 0, 64, 31, 32, 15.5, 16.0 );
-		data.try_emplace("fox", 0, 125, 28, 26, 14.0, 13.0 );
+		data.try_emplace("fox", 0, 125, 29, 26, 14.5, 13.0 );
 		data.try_emplace("goblin", 31, 64, 23, 32, 11.5, 16.0 );
 		data.try_emplace("dwarf", 140, 64, 29, 31, 14.5, 15.5 );
 		data.try_emplace("troll", 136, 95, 28, 30, 14.0, 15.0 );

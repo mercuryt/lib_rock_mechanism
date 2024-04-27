@@ -3,7 +3,7 @@
 #include "config.h"
 class Block;
 class Actor;
-class DeserializationMemo;
+struct DeserializationMemo;
 class StationObjective final : public Objective
 {
 	Block& m_location;
@@ -17,6 +17,7 @@ public:
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Station; }
 	std::string name() const { return "station"; }
 };
+/*
 class StationInputAction final : public InputAction
 {
 public:
@@ -24,3 +25,4 @@ public:
 	StationInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, Block& b);
 	void execute();
 };
+*/

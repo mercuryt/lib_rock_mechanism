@@ -1,6 +1,5 @@
 #pragma once
 // To be used to find actors fitting criteria.
-#include "deserializationMemo.h"
 #include "types.h"
 #include "config.h"
 class Actor;

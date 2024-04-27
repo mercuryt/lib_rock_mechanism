@@ -1,9 +1,8 @@
 #pragma once
-#include "deserializationMemo.h"
-#include "eventSchedule.h"
 #include "temperature.h"
 #include "eventSchedule.hpp"
 #include "types.h"
+
 #include <unordered_map>
 #include <list>
 #include <algorithm>
@@ -17,6 +16,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(FireStage, {
 });
 class Fire;
 class Block;
+struct DeserializationMemo;
 struct MaterialType;
 /*
  * Progress through the stages of fire with scheduled events.

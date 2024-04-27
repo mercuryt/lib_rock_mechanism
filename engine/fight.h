@@ -1,8 +1,6 @@
 #pragma once
 
 #include "config.h"
-#include "eventSchedule.h"
-#include "threadedTask.h"
 #include "eventSchedule.hpp"
 #include "findsPath.h"
 #include "threadedTask.hpp"

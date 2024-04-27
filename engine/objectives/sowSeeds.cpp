@@ -1,9 +1,11 @@
 #include "sowSeeds.h"
 #include "area.h"
 #include "actor.h"
-#include "deserializationMemo.h"
 #include "farmFields.h"
 #include "simulation.h"
+
+struct DeserializationMemo;
+
 SowSeedsEvent::SowSeedsEvent(Step delay, SowSeedsObjective& o, const Step start) : ScheduledEvent(o.m_actor.getSimulation(), delay, start), m_objective(o) { }
 void SowSeedsEvent::execute()
 {

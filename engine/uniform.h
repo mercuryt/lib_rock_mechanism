@@ -1,16 +1,15 @@
 #pragma once
 #include "config.h"
 #include "findsPath.h"
-#include "item.h"
 #include "objective.h"
 #include "threadedTask.h"
 #include "itemQuery.h"
 #include "threadedTask.hpp"
 #include <string>
 #include <unordered_set>
-class EquipItemObjective;
 class UniformObjective;
 class Actor;
+class Item;
 struct UniformElement final 
 {
 	ItemQuery itemQuery;
@@ -42,37 +41,6 @@ public:
 	void registerFaction(const Faction& faction) { m_data.try_emplace(&faction, faction); }
 	void unregisterFaction(const Faction& faction) { m_data.erase(&faction); }
 	SimulationHasUniformsForFaction& at(const Faction& faction);
-};
-class EquipItemThreadedTask final : public ThreadedTask
-{
-	EquipItemObjective& m_objective;
-	FindsPath m_findsPath;
-public:
-	EquipItemThreadedTask(EquipItemObjective& objective);
-	void readStep();
-	void writeStep();
-	void clearReferences();
-};
-class EquipItemObjective final : public Objective
-{
-	ItemQuery m_itemQuery;
-	Item* m_item;
-	HasThreadedTask<EquipItemThreadedTask> m_threadedTask;
-public:
-	EquipItemObjective(Actor& actor, ItemQuery& itemQuery);
-	EquipItemObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute();
-	void cancel();
-	void delay() { cancel(); }
-	void reset();
-	[[nodiscard]] std::string name() const { return "equip"; }
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Equip; }
-	Json toJson() const;
-	// non virtual methods.
-	bool blockContainsItem(const Block& block) const { return const_cast<EquipItemObjective*>(this)->getItemAtBlock(block) != nullptr; }
-	Item* getItemAtBlock(const Block& block);
-	void select(Item& item);
-	friend class EquipItemThreadedTask;
 };
 class UniformThreadedTask final : public ThreadedTask
 {

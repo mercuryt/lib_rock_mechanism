@@ -6,7 +6,6 @@
 #pragma once
 //TODO: Use vector instead of unordered set.
 #include "config.h"
-#include "deserializationMemo.h"
 #include <algorithm>
 #include <sys/types.h>
 #include <unordered_set>
@@ -19,6 +18,7 @@
 
 class Faction;
 class Reservable;
+struct DeserializationMemo;
 struct DishonorCallback
 {
 	virtual void execute(uint32_t oldCount, uint32_t newCount) = 0;

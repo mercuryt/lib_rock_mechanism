@@ -2,6 +2,7 @@
 #include "simulation.h"
 #include "block.h"
 // Input
+/*
 StationInputAction::StationInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, Block& b) : 
 	InputAction(actors, emplacementType, inputQueue), m_block(b) { }
 void StationInputAction::execute()
@@ -12,6 +13,7 @@ void StationInputAction::execute()
 		insertObjective(std::move(objective), *actor);
 	}
 }
+*/
 // Objective
 StationObjective::StationObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), 
 	m_location(deserializationMemo.m_simulation.getBlockForJsonQuery(data["block"])) { }

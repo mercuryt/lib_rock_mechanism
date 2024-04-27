@@ -715,8 +715,15 @@ void Project::complete()
 	m_canReserve.deleteAllWithoutCallback();
 	for(Item* item : m_toConsume)
 		item->destroy();
+	if(!m_location.m_area->m_hasStockPiles.contains(m_faction))
+		m_location.m_area->m_hasStockPiles.registerFaction(m_faction);
 	for(auto& [itemType, materialType, quantity] : getByproducts())
-		m_location.m_hasItems.addGeneric(*itemType, *materialType, quantity);
+	{
+		Item& item = m_location.m_hasItems.addGeneric(*itemType, *materialType, quantity);
+		// Item may be newly created or it may be prexisting, and thus already designated for stockpileing.
+		if(!item.m_canBeStockPiled.contains(m_faction))
+			m_location.m_area->m_hasStockPiles.at(m_faction).addItem(item);
+	}
 	for(auto& [actor, projectWorker] : m_workers)
 		actor->m_project = nullptr;
 	onComplete();
@@ -775,7 +782,8 @@ void Project::setDelayOn()
 { 
 	m_delay = true; 
 	onDelay(); 
-	m_tryToReserveEvent.schedule(Config::projectDelayAfterExauhstingSubprojectRetries, *this);
+	if(canReset())
+		m_tryToReserveEvent.schedule(Config::projectDelayAfterExauhstingSubprojectRetries, *this);
 }
 void Project::setDelayOff() 
 {
@@ -884,4 +892,13 @@ Percent BlockHasProjects::getProjectPercentComplete(Faction& faction) const
 		if(project->getPercentComplete())
 			return project->getPercentComplete();
 	return 0;
+}
+Project* BlockHasProjects::get(Faction& faction) const
+{
+	if(!m_data.contains(&faction))
+		return nullptr;
+	for(Project* project : m_data.at(&faction))
+		if(project->finishEventExists())
+			return project;
+	return nullptr;
 }

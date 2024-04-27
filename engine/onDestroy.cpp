@@ -5,6 +5,12 @@ void OnDestroy::merge(OnDestroy& onDestroy)
 {
 	m_subscriptions.insert(onDestroy.m_subscriptions.begin(), onDestroy.m_subscriptions.end());
 }
+void OnDestroy::unsubscribeAll()
+{
+	auto subscriptions = m_subscriptions;
+	for(HasOnDestroySubscriptions* hasSubscription : subscriptions)
+		unsubscribe(*hasSubscription);
+}
 OnDestroy::~OnDestroy()
 {
 	for(HasOnDestroySubscriptions* hasSubscription : m_subscriptions)

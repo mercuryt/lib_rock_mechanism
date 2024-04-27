@@ -1,11 +1,9 @@
 #pragma once
 
 #include "attackType.h"
-#include "deserializationMemo.h"
 #include "woundType.h"
 #include "hit.h"
 #include "eventSchedule.hpp"
-#include "fight.h"
 
 #include <vector>
 #include <utility>
@@ -16,6 +14,8 @@ class BleedEvent;
 class WoundsCloseEvent;
 struct MaterialType;
 class Actor;
+struct DeserializationMemo;
+struct Attack;
 
 // For example: 'left arm', 'head', etc.
 struct BodyPartType final

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "deserializationMemo.h"
 #include "objective.h"
 #include "eventSchedule.hpp"
 #include "reservable.h"
@@ -15,6 +14,8 @@ class Plant;
 class Block;
 class Item;
 class GivePlantsFluidObjective;
+struct DeserializationMemo;
+
 class GivePlantsFluidEvent final : public ScheduledEvent
 {
 	GivePlantsFluidObjective& m_objective;
@@ -44,15 +45,6 @@ public:
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::GivePlantsFluid; }
 	GivePlantsFluidObjectiveType() = default;
 	GivePlantsFluidObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo){ }
-};
-class GivePlantsFluidItemDishonorCallback final : public DishonorCallback
-{
-	Actor& m_actor;
-public:
-	GivePlantsFluidItemDishonorCallback(Actor& a) : m_actor(a) { }
-	GivePlantsFluidItemDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	void execute(uint32_t oldCount, uint32_t newCount);
 };
 class GivePlantsFluidObjective final : public Objective
 {
