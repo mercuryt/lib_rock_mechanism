@@ -1,6 +1,7 @@
 #include "giveItem.h"
 #include "../actor.h"
 #include "../block.h"
+#include "../item.h"
 GiveItemObjective::GiveItemObjective(Actor& actor, Item& item, Actor& recipient) : Objective(actor, Config::equipPriority), m_item(item), m_recipient(recipient) 
 { 
 	createOnDestroyCallbacks();

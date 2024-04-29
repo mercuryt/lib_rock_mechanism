@@ -59,5 +59,6 @@ public:
 	// Connects to an open top block, tries to align with an open bottom block.
 	[[nodiscard]] Facing rampOrStairsFacing(const Block& block) const;
 	[[nodiscard]] sf::Vector2f blockToPosition(const Block& block) const;
+	[[nodiscard]] sf::Vector2f blockToPositionCentered(const Block& block) const;
 	[[nodiscard]] float getScaledUnit() const;
 };

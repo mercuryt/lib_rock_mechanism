@@ -4,7 +4,8 @@
 #include "util.h"
 #include <string>
 #include <sys/types.h>
-Shape::Shape(const std::string n, std::vector<std::array<int32_t, 4>> p, uint32_t ds) : name(n), positions(p), displayScale(ds), isMultiTile(positions.size() != 1)
+//TODO: radial symetry for 2x2 and 3x3, etc.
+Shape::Shape(const std::string n, std::vector<std::array<int32_t, 4>> p, uint32_t ds) : name(n), positions(p), displayScale(ds), isMultiTile(positions.size() != 1), isRadiallySymetrical(!isMultiTile)
 {
 	for(uint8_t i = 0; i < 4; ++i)
 	{
@@ -13,7 +14,7 @@ Shape::Shape(const std::string n, std::vector<std::array<int32_t, 4>> p, uint32_
 	}
 }
 // Runtime shapes never have display scale other then 1.
-Shape::Shape(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) : name(""), displayScale(1), isMultiTile(data["positions"].size() != 1)
+Shape::Shape(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) : name(""), displayScale(1), isMultiTile(data["positions"].size() != 1), isRadiallySymetrical(!isMultiTile)
 {
 	for(const Json& position : data["positions"])
 	{

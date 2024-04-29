@@ -1,6 +1,8 @@
 #include "unequipItem.h"
 #include "../actor.h"
 #include "../block.h"
+#include "item.h"
+
 UnequipItemObjective::UnequipItemObjective(Actor& actor, Item& item, Block& block) : Objective(actor, Config::equipPriority), m_item(item), m_block(block) { }
 
 UnequipItemObjective::UnequipItemObjective(const Json& data, DeserializationMemo& deserializationMemo) :

@@ -2,6 +2,7 @@
 #include "block.h"
 #include "area.h"
 #include "actor.h"
+#include "item.h"
 #include "deserializationMemo.h"
 #include "objective.h"
 #include "project.h"

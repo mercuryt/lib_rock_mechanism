@@ -24,6 +24,7 @@ struct Shape
 	std::vector<std::array<int32_t, 4>> positions;
 	const uint32_t displayScale;
 	const bool isMultiTile;
+	const bool isRadiallySymetrical;
 	std::array<std::vector<std::array<int32_t, 4>>,4> occupiedOffsetsCache;
 	std::array<std::vector<std::array<int32_t, 3>>,4> adjacentOffsetsCache;
 	[[nodiscard]] std::vector<std::array<int32_t, 4>> positionsWithFacing(Facing facing) const { return occupiedOffsetsCache.at(facing); }

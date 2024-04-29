@@ -2,6 +2,7 @@
 #include "block.h"
 #include "actor.h"
 #include "config.h"
+#include "item.h"
 #include "deserializationMemo.h"
 void CanLead::load(const Json& data, DeserializationMemo& deserializationMemo)
 {

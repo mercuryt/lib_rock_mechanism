@@ -1,6 +1,7 @@
 #include "givePlantsFluid.h"
 #include "area.h"
 #include "actor.h"
+#include "item.h"
 #include "config.h"
 #include "deserializationMemo.h"
 #include "eventSchedule.h"

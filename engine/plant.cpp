@@ -336,7 +336,7 @@ void Plant::doWildGrowth(uint8_t count)
 		count--;
 		std::vector<Block*> candidates;
 		for(Block* block : getAdjacentBlocks())
-			if(block->m_hasShapes.anythingCanEnterEver() && block->m_hasShapes.getTotalVolume() == 0 && block->m_z > m_location->m_z)
+			if(block->m_hasShapes.anythingCanEnterEver() && block->m_hasShapes.getDynamicVolume() == 0 && block->m_z > m_location->m_z)
 				candidates.push_back(block);
 		Block& toGrowInto = *simulation.m_random.getInVector(candidates);
 		std::array<int32_t, 3> offset = m_location->relativeOffsetTo(toGrowInto);

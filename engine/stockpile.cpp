@@ -121,7 +121,7 @@ void StockPileThreadedTask::clearReferences() { m_objective.m_threadedTask.clear
 bool StockPileThreadedTask::destinationCondition(const Block& block, const Item& item)
 {
 	assert(!m_destination);
-	if(!block.m_hasShapes.canEnterCurrentlyWithAnyFacing(item))
+	if(!block.m_hasShapes.staticCanEnterCurrentlyWithAnyFacing(item))
 		return false;
 	if(!block.m_hasItems.empty())
 		// Don't put multiple items in the same block unless they are generic and share item type and material type.
@@ -209,6 +209,8 @@ void StockPileProject::onComplete()
 {
 	for(Item* item : m_deliveredItems)
 		item->setLocation(m_location);
+	for(auto& pair : m_alreadyAtSite)
+		pair.first->setLocation(m_location);
 	Item& delivered = m_location.m_hasItems.getGeneric(m_itemType, m_materialType);
 	auto workers = std::move(m_workers);
 	auto& hasStockPiles = m_location.m_area->m_hasStockPiles.at(m_stockpile.m_faction);
@@ -309,7 +311,11 @@ void StockPile::addBlock(Block& block)
 	m_blocks.insert(&block);
 	for(Item* item : block.m_hasItems.getAll())
 		if(accepts(*item))
+		{
 			m_area.m_hasStocks.at(m_faction).record(*item);
+			if(item->m_canBeStockPiled.contains(m_faction))
+				m_area.m_hasStockPiles.at(m_faction).removeItem(*item);
+		}
 }
 void StockPile::removeBlock(Block& block)
 {

@@ -4,18 +4,7 @@ a* A block. Contains either a single type of material in 'solid' form or arbitra
  */
 #pragma once
 
-#include <sys/types.h>
-#include <unordered_map>
-#include <unordered_set>
-#include <map>
-#include <array>
-#include <stack>
-#include <memory>
-#include <vector>
-#include <string>
-
-#include "moveType.h"
-#include "shape.h"
+#include "fluidType.h"
 #include "visionCuboid.h"
 #include "fluidGroup.h"
 #include "plant.h"
@@ -25,15 +14,23 @@ a* A block. Contains either a single type of material in 'solid' form or arbitra
 #include "farmFields.h"
 #include "temperature.h"
 #include "fire.h"
-#include "hasShape.h"
 #include "types.h"
-#include "project.h"
-#include "item.h"
 #include "block/hasActors.h"
 #include "block/hasItems.h"
+#include "block/hasShapes.h"
+
+#include <sys/types.h>
+#include <unordered_map>
+#include <unordered_set>
+#include <map>
+#include <array>
+#include <stack>
+#include <vector>
+#include <string>
 
 class Area;
 struct DeserializationMemo;
+struct MoveType;
 //class Item;
 //class Actor;
 
