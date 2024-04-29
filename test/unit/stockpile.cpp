@@ -372,6 +372,88 @@ TEST_CASE("stockpile")
 		REQUIRE(dwarf1.m_project);
 		REQUIRE(dwarf1.m_project->getLocation() == stockpileLocation1);
 	}
+	SUBCASE("haul generic stockpile is adjacent to cargo")
+	{
+		Block& pileLocation = area.getBlock(5, 5, 1);
+		Block& stockpileLocation = area.getBlock(6, 5, 1);
+		Item& cargo = simulation.createItemGeneric(pile, sand, 15);
+		cargo.setLocation(pileLocation);
+		area.m_hasStockPiles.at(faction).addItem(cargo);
+		std::vector<ItemQuery> queries;
+		queries.emplace_back(pile, sand);
+		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		stockpile.addBlock(stockpileLocation);
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 100);
+		// One step to generate project.
+		simulation.doStep();
+		REQUIRE(dwarf1.m_project);
+		// One step to reserve.
+		simulation.doStep();
+		REQUIRE(dwarf1.m_project->reservationsComplete());
+		// Since the only required item is already adjacent to the project site deleveries are also complete.
+		REQUIRE(dwarf1.m_project->deliveriesComplete());
+		// Path to location.
+		simulation.doStep();
+		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf1, stockpileLocation);
+		REQUIRE(dwarf1.m_project->finishEventExists());
+		auto condition = [&]{ return stockpileLocation.m_hasItems.getCount(pile, sand) == 15; };
+		simulation.fastForwardUntillPredicate(condition);
+	}
+	SUBCASE("haul generic stockpile is adjacent to two cargo piles")
+	{
+		Block& pileLocation1 = area.getBlock(5, 5, 1);
+		Block& stockpileLocation = area.getBlock(6, 5, 1);
+		Block& pileLocation2 = area.getBlock(7, 5, 1);
+		Item& cargo1 = simulation.createItemGeneric(pile, sand, 15);
+		cargo1.setLocation(pileLocation1);
+		area.m_hasStockPiles.at(faction).addItem(cargo1);
+		Item& cargo2 = simulation.createItemGeneric(pile, sand, 15);
+		cargo2.setLocation(pileLocation2);
+		area.m_hasStockPiles.at(faction).addItem(cargo2);
+		std::vector<ItemQuery> queries;
+		queries.emplace_back(pile, sand);
+		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		stockpile.addBlock(stockpileLocation);
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 100);
+		auto condition = [&]{ return stockpileLocation.m_hasItems.getCount(pile, sand) == 30; };
+		simulation.fastForwardUntillPredicate(condition);
+	}
+	SUBCASE("haul generic consolidate adjacent")
+	{
+		Block& pileLocation1 = area.getBlock(5, 5, 1);
+		Block& stockpileLocation = area.getBlock(6, 5, 1);
+		Block& pileLocation2 = area.getBlock(7, 5, 1);
+		Item& cargo1 = simulation.createItemGeneric(pile, sand, 15);
+		cargo1.setLocation(pileLocation1);
+		area.m_hasStockPiles.at(faction).addItem(cargo1);
+		Item& cargo2 = simulation.createItemGeneric(pile, sand, 15);
+		cargo2.setLocation(pileLocation2);
+		area.m_hasStockPiles.at(faction).addItem(cargo2);
+		Item& cargo3 = simulation.createItemGeneric(pile, sand, 15);
+		cargo3.setLocation(stockpileLocation);
+		area.m_hasStockPiles.at(faction).addItem(cargo3);
+		std::vector<ItemQuery> queries;
+		queries.emplace_back(pile, sand);
+		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		stockpile.addBlock(stockpileLocation);
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 100);
+		auto condition = [&]{ return stockpileLocation.m_hasItems.getCount(pile, sand) == 30; };
+		simulation.fastForwardUntillPredicate(condition);
+		REQUIRE(dwarf1.getActionDescription() == L"stockpile");
+		REQUIRE(!dwarf1.m_project);
+		REQUIRE(static_cast<StockPileObjective&>(dwarf1.m_hasObjectives.getCurrent()).m_threadedTask.exists());
+		// Step to create project.
+		simulation.doStep();
+		REQUIRE(dwarf1.m_project);
+		// Step to reserve.
+		simulation.doStep();
+		REQUIRE(dwarf1.m_project);
+		REQUIRE(dwarf1.m_project->reservationsComplete());
+		REQUIRE(dwarf1.m_project->deliveriesComplete());
+		REQUIRE(dwarf1.m_project->finishEventExists());
+		auto condition2 = [&]{ return stockpileLocation.m_hasItems.getCount(pile, sand) == 45; };
+		simulation.fastForwardUntillPredicate(condition2);
+	}
 	SUBCASE("path to item is blocked")
 	{
 		areaBuilderUtil::setSolidWall(area.getBlock(0, 3, 1), area.getBlock(8, 3, 1), wood);

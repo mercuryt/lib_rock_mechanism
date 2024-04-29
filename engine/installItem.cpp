@@ -4,6 +4,7 @@
 #include "area.h"
 #include "deserializationMemo.h"
 #include "threadedTask.h"
+#include "item.h"
 
 // Project.
 void InstallItemProject::onComplete()

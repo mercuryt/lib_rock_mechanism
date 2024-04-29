@@ -223,7 +223,7 @@ Step ActorCanMove::delayToMoveInto(const Block& block) const
 	Speed speed = m_speedActual;
 	CollisionVolume volumeAtLocationBlock = m_actor.m_shape->getCollisionVolumeAtLocationBlock();
 	assert(block != *m_actor.m_location);
-	if(volumeAtLocationBlock + block.m_hasShapes.getTotalVolume() > Config::maxBlockVolume)
+	if(volumeAtLocationBlock + block.m_hasShapes.getDynamicVolume() > Config::maxBlockVolume)
 	{
 		CollisionVolume excessVolume = (volumeAtLocationBlock + block.m_hasShapes.getStaticVolume()) - Config::maxBlockVolume;
 		speed = util::scaleByInversePercent(speed, excessVolume);

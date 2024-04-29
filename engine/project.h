@@ -114,6 +114,9 @@ protected:
 	std::list<HaulSubproject> m_haulSubprojects;
 	// Delivered items.
 	std::vector<Item*> m_deliveredItems;
+	// Required shapes which don't need to be hauled because they are already at or adjacent to m_location.
+	// To be used by StockpileProject::onComplete.
+	std::unordered_map<HasShape*, Quantity> m_alreadyAtSite;
 	Project(const Faction* f, Block& l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr);
 	Project(const Json& data, DeserializationMemo& deserializationMemo);
 public:

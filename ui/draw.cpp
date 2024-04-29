@@ -702,7 +702,7 @@ void Draw::item(const Block& block)
 	if(block.m_hasItems.empty())
 		return;
 	Item& itemToDraw = *block.m_hasItems.getAll().front();
-	item(itemToDraw, blockToPosition(block));
+	item(itemToDraw, blockToPositionCentered(block));
 }
 void Draw::item(const Item& item, sf::Vector2f position)
 {
@@ -747,7 +747,7 @@ void Draw::singleTileActor(const Actor& actor)
 		HasShape& isCarrying = *const_cast<Actor&>(actor).m_canPickup.getCarrying();
 		if(isCarrying.isItem())
 		{
-			sf::Vector2f position = blockToPosition(block);
+			sf::Vector2f position = blockToPositionCentered(block);
 			position.y += getScaledUnit() * 4;
 			Item& itemToDraw = static_cast<Item&>(isCarrying);
 			item(itemToDraw, position);
@@ -874,6 +874,10 @@ Facing Draw::rampOrStairsFacing(const Block& block) const
 sf::Vector2f Draw::blockToPosition(const Block& block) const
 {
 	return {static_cast<float>(block.m_x * m_window.m_scale), static_cast<float>(block.m_y * m_window.m_scale)};
+}
+sf::Vector2f Draw::blockToPositionCentered(const Block& block) const
+{
+	return {static_cast<float>((block.m_x + 0.5) * m_window.m_scale), static_cast<float>((block.m_y + 0.5) * m_window.m_scale)};
 }
 void Draw::accessableSymbol(const Block& block)
 {

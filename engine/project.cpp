@@ -276,6 +276,7 @@ void ProjectTryToAddWorkersThreadedTask::writeStep()
 			std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<ProjectRequiredShapeDishonoredCallback>(m_project, *hasShape);
 			hasShape->m_reservable.reserveFor(m_project.m_canReserve, quantity, std::move(dishonorCallback));
 		}
+		m_project.m_alreadyAtSite = m_alreadyAtSite;
 		for(auto& pair : m_reservedEquipment)
 			for(std::pair<ProjectRequirementCounts*, Item*> pair2 : pair.second)
 			{
