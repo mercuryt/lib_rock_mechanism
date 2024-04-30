@@ -16,7 +16,7 @@
 #include <functional>
 #include <memory>
 
-class Faction;
+struct Faction;
 class Reservable;
 struct DeserializationMemo;
 struct DishonorCallback

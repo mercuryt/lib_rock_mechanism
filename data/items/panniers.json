@@ -7,6 +7,7 @@
 	"canHoldFluids": false,
 	"value": 100,
 	"moveType": "none",
+	"materialTypeCategories": ["leather", "cloth", "wood"],
 	"wearableType":
 	{
 		"percentCoverage": 50,

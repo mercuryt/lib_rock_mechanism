@@ -9,6 +9,12 @@
 		"name": "metal"
 	},
 	{
-		"name": "fabric"
+		"name": "cloth"
+	},
+	{
+		"name": "leather"
+	},
+	{
+		"name": "bone"
 	}
 ]

@@ -3,5 +3,6 @@
 	"shape": "oneByOneHalf",
 	"volume": 35000,
 	"generic": true,
-	"value": 0
+	"value": 0,
+	"materialTypeCategories": ["stone"]
 }

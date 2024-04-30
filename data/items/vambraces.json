@@ -4,7 +4,7 @@
 	"volume": 1600,
 	"generic": false,
 	"value": 200,
-	"materialCategories": [ "metal", "wood" ],
+	"materialTypeCategories": [ "metal", "wood" ],
 	"wearableType":
 	{
 		"percentCoverage": 100,

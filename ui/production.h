@@ -1,4 +1,5 @@
 #pragma once
+# include "../engine/types.h"
 #include <TGUI/TGUI.hpp>
 class Window;
 class Area;
@@ -6,37 +7,32 @@ struct Faction;
 struct CraftJobType;
 struct MaterialType;
 class ProductionView;
+struct ItemType;
+struct MaterialType;
+struct CraftJob;
 class NewProductionView final
 {
 	Window& m_window;
+	tgui::Panel::Ptr m_panel;
 	ProductionView& m_productionView;
-	tgui::Group::Ptr m_group;
-	tgui::ComboBox::Ptr m_craftJobTypeSelector;
-	tgui::ComboBox::Ptr m_materialTypeSelector;
-	tgui::SpinControl::Ptr m_quantitySelector;
-	const CraftJobType* m_craftJobType;
-	const MaterialType* m_materialType;
-	uint32_t m_quantity;
+	Quantity m_quantity = 1;
 public:
-	NewProductionView(Window& w, ProductionView& productionView);
-	void show() { m_group->setVisible(true); }
-	void hide() { m_group->setVisible(false); }
-	void display();
-	[[nodiscard]] bool isVisible(){ return m_group->isVisible(); }
+	NewProductionView(Window& w, ProductionView& pv);
+	void draw();
+	void hide();
+	friend class ProductionView;
 };
 class ProductionView final
 {
 	Window& m_window;
-	tgui::Group::Ptr m_group;
-	tgui::Grid::Ptr m_list;
+	tgui::Panel::Ptr m_panel;
 	NewProductionView m_newProductionView;
-	Area* m_area;
 public:
 	ProductionView(Window& w);
-	void show() { m_group->setVisible(true); }
-	void hide() { m_group->setVisible(false); }
-	void display();
-	void closeCreate(){ m_newProductionView.hide(); show(); }
-	[[nodiscard]] bool isVisible(){ return m_group->isVisible(); }
-	[[nodiscard]] bool createIsVisible(){ return m_newProductionView.isVisible(); }
+	void draw();
+	void hide();
+	void closeCreate() { m_newProductionView.hide(); }
+	[[nodiscard]] bool createIsVisible() const { return m_newProductionView.m_panel != nullptr; }
+	[[nodiscard]] bool isVisible() const { return m_panel != nullptr; }
+	[[nodiscard]] std::vector<std::tuple<const CraftJobType*, const MaterialType*, Quantity, CraftJob*>> collate();
 };

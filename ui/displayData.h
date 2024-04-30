@@ -46,8 +46,8 @@ namespace displayData
 	inline constexpr uint32_t defaultScale = 32;
 	inline constexpr float wallTopOffsetRatio = 0.18;
 	inline constexpr float minimumFluidVolumeToSeeFromAboveLevelRatio = 0.75;
-	inline sf::Color stockPileColor{168, 127, 50, 128};
-	inline sf::Color farmFieldColor{133, 82, 38, 128};
+	inline sf::Color stockPileColor{168, 127, 50, 64};
+	inline sf::Color farmFieldColor{133, 82, 38, 64};
 	inline sf::Color contextMenuHoverableColor = sf::Color::Blue;
 	inline sf::Color contextMenuUnhoverableColor = sf::Color::Black;
 	inline sf::Color actorOutlineColor = sf::Color::Blue;

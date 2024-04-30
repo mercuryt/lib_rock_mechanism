@@ -4,6 +4,7 @@
 	"volume": 4000,
 	"generic": false,
 	"value": 3000,
+	"materialTypeCategories": ["metal"],
 	"wearableType":
 	{
 		"percentCoverage": 100,

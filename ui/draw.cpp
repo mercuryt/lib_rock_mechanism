@@ -551,8 +551,12 @@ void Draw::spriteOnBlockWithScale(const Block& block, sf::Sprite& sprite, float 
 }
 void Draw::spriteAt(sf::Sprite& sprite, sf::Vector2f position, const sf::Color* color)
 {
+	spriteAtWithScale(sprite, position, 1, color);
+}
+void Draw::spriteAtWithScale(sf::Sprite& sprite, sf::Vector2f position, float scale, const sf::Color* color)
+{
 	sprite.setPosition(position);
-	float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
+	float scaleRatio = scale * (float)m_window.m_scale / (float)displayData::defaultScale;
 	sprite.setScale(scaleRatio, scaleRatio);
 	if(color)
 		sprite.setColor(*color);
@@ -767,20 +771,9 @@ void Draw::multiTileActor(const Actor& actor)
 	auto [sprite, origin] = sprites::make(display.image);
 	if(actor.m_shape->displayScale == 1)
 	{
-		// Multi tile actor with no display scale, draw icon on each block.
-		for(Block* block : actor.m_blocks)
-			if(block->m_z == m_window.m_z)
-			{
-				for(Block* adjacent : block->getAdjacentOnSameZLevelOnly())
-					if(!actor.m_blocks.contains(adjacent))
-					{
-						Facing facing = adjacent->facingToSetWhenEnteringFrom(*block);
-						borderSegmentOnBlock(*block, facing, displayData::actorOutlineColor, 1);
-					}
-				// Check vs x and y rather then vs the block so we draw the sprite on z level other then m_location->m_z.
-				if(block->m_x == actor.m_location->m_x && block->m_y == actor.m_location->m_y)
-					spriteOnBlock(*block, sprite, &display.color);
-			}
+		Block& location = m_window.m_area->getBlock(actor.m_location->m_x, actor.m_location->m_y, m_window.m_z);
+		spriteOnBlock(location, sprite, &display.color);
+		multiTileBorder(actor.m_blocks, displayData::actorOutlineColor, 1);
 	}
 	else
 	{
@@ -791,6 +784,19 @@ void Draw::multiTileActor(const Actor& actor)
 					topLeft = block;
 		spriteOnBlockWithScale(*topLeft, sprite, actor.m_shape->displayScale, &display.color);
 	}
+}
+void Draw::multiTileBorder(std::unordered_set<Block*> blocks, sf::Color color, float thickness)
+{
+	for(Block* block : blocks)
+		if(block->m_z == m_window.m_z)
+		{
+			for(Block* adjacent : block->getAdjacentOnSameZLevelOnly())
+				if(!blocks.contains(adjacent))
+				{
+					Facing facing = adjacent->facingToSetWhenEnteringFrom(*block);
+					borderSegmentOnBlock(*block, facing, color, thickness);
+				}
+		}
 }
 void Draw::borderSegmentOnBlock(const Block& block, Facing facing, sf::Color color, float thickness)
 {

@@ -3,5 +3,6 @@
 	"shape": "oneByOneThirtySecond",
 	"volume": 1500,
 	"generic": false,
-	"value": 70
+	"value": 70,
+	"materialTypeCategories": ["metal"]
 }

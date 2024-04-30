@@ -40,24 +40,10 @@ void EditStockPileView::draw(StockPile* stockpile)
 	auto createGrid = tgui::Grid::create();
 	m_panel->add(createGrid);
 	createGrid->setPosition(10, tgui::bindBottom(list) + 10);
-	auto itemTypeUI = widgetUtil::makeItemTypeSelectUI();
+	auto [itemTypeUI, materialTypeUI, materialTypeCategoryUI] = widgetUtil::makeItemTypeAndMaterialTypeOrMaterialTypeCategoryUI();
 	createGrid->addWidget(itemTypeUI, 0, 0);
-	std::wstring emptyLabel = L"none";
-	auto materialTypeUI = widgetUtil::makeMaterialSelectUI(emptyLabel);
 	createGrid->addWidget(materialTypeUI, 1, 0);
-	auto materialTypeCategoryUI = widgetUtil::makeMaterialCategorySelectUI(emptyLabel);
 	createGrid->addWidget(materialTypeCategoryUI, 2, 0);
-	//TODO: Why does this cause a hang?
-	/*
-	materialTypeUI->onItemSelect([materialTypeCategoryUI, emptyLabel]{
-		if(widgetUtil::lastSelectedMaterial)
-			materialTypeCategoryUI->setSelectedItemById(emptyLabel);
-	});
-	materialTypeCategoryUI->onItemSelect([materialTypeUI, emptyLabel](const tgui::String id){
-		if(id != emptyLabel)
-			materialTypeUI->setSelectedItemById(emptyLabel);
-	});
-	*/
 	auto create = tgui::Button::create("create");
 	m_panel->add(create);
 	create->setPosition(10, tgui::bindBottom(createGrid) + 10);

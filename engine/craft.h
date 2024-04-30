@@ -31,9 +31,9 @@ class CraftInputAction final : public InputAction
 	const Faction& m_faction;
 	const CraftJobType& m_craftJobType;
 	const MaterialType* m_materialType;
-	uint32_t m_quantity;
+	Quantity m_quantity;
 	uint32_t m_quality;
-	CraftInputAction(Area& area, const Faction& faction, InputQueue& inputQueue, const CraftJobType& craftJobType, const MaterialType* materialType, uint32_t quantity) : 
+	CraftInputAction(Area& area, const Faction& faction, InputQueue& inputQueue, const CraftJobType& craftJobType, const MaterialType* materialType, Quantity quantity) : 
 		InputAction(inputQueue), m_area(area), m_faction(faction), m_craftJobType(craftJobType), m_materialType(materialType), m_quantity(quantity) { }
 	void execute();
 };
@@ -63,9 +63,9 @@ struct CraftStepType final
 	const CraftStepTypeCategory& craftStepTypeCategory;
 	const SkillType& skillType;
 	const Step stepsDuration;
-	std::vector<std::pair<ItemQuery, uint32_t>> consumed;
-	std::vector<std::pair<ItemQuery, uint32_t>> unconsumed;
-	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> byproducts;
+	std::vector<std::pair<ItemQuery, Quantity>> consumed;
+	std::vector<std::pair<ItemQuery, Quantity>> unconsumed;
+	std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> byproducts;
 };
 // A specific step of a specific CraftJob.
 class CraftStepProject final : public Project
@@ -78,12 +78,12 @@ class CraftStepProject final : public Project
 	void onDelay() { cancel(); }
 	void offDelay() { assert(false); }
 	bool canReset() const  { return false; }
-	virtual void onHasShapeReservationDishonored([[maybe_unused]] const HasShape& hasShape, [[maybe_unused]]uint32_t oldCount, [[maybe_unused]]uint32_t newCount) { cancel(); }
+	virtual void onHasShapeReservationDishonored([[maybe_unused]] const HasShape& hasShape, [[maybe_unused]]Quantity oldCount, [[maybe_unused]]Quantity newCount) { cancel(); }
 	// Use copies rather then references for return types to allow specalization of Queries as well as byproduct material type.
-	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
-	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
-	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
-	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const { return {}; }
+	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
+	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const;
+	std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> getByproducts() const;
+	std::vector<std::pair<ActorQuery, Quantity>> getActors() const { return {}; }
 public:
 	CraftStepProject(const Faction* faction, Block& location, const CraftStepType& cst, CraftJob& cj) : Project(faction, location, 1), m_craftStepType(cst), m_craftJob(cj) { }
 	CraftStepProject(const Json& data, DeserializationMemo& deserializationMemo, CraftJob& cj);
@@ -97,15 +97,15 @@ struct CraftStepProjectHasShapeDishonorCallback final : public DishonorCallback
 	CraftStepProjectHasShapeDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const { return Json({{"type", "CraftStepProjectHasShapeDishonorCallback"}, {"project", reinterpret_cast<uintptr_t>(&m_craftStepProject)}}); }
 	// Craft step project cannot reset so cancel instead and allow to be recreated later.
-	void execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { m_craftStepProject.cancel(); }
+	void execute([[maybe_unused]] Quantity oldCount, [[maybe_unused]] Quantity newCount) { m_craftStepProject.cancel(); }
 };
 // Data about making a specific product type.
 struct CraftJobType final
 {
 	const std::string name;
 	const ItemType& productType;
-	const uint32_t productQuantity;
-	const MaterialTypeCategory* materialtypeCategory;
+	const Quantity productQuantity;
+	const MaterialTypeCategory* materialTypeCategory;
 	std::vector<CraftStepType> stepTypes;
 	// Infastructure.
 	static CraftJobType& byName(const std::string name);
@@ -135,7 +135,7 @@ struct CraftJob final
 	CraftJob(const Json& data, DeserializationMemo& deserializationMemo, HasCraftingLocationsAndJobsForFaction& hclaj);
 	Json toJson() const;
 	uint32_t getQuality() const;
-	uint32_t getStep() const;
+	Step getStep() const;
 	bool operator==(const CraftJob& other){ return &other == this; }
 };
 inline void to_json(Json& data, const CraftJob* const& craftJob){ data = reinterpret_cast<uintptr_t>(craftJob); }
@@ -207,7 +207,7 @@ public:
 	// To be used by invalidating events such as set solid.
 	void maybeRemoveLocation(Block& block);
 	// designate something to be crafted.
-	void addJob(const CraftJobType& craftJobType, const MaterialType* materialType, uint32_t quantity, uint32_t minimumSkillLevel = 0);
+	void addJob(const CraftJobType& craftJobType, const MaterialType* materialType, Quantity quantity, uint32_t minimumSkillLevel = 0);
 	void cloneJob(CraftJob& craftJob);
 	// Undo an addJob order.
 	void removeJob(CraftJob& craftJob);

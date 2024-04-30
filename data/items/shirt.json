@@ -5,6 +5,7 @@
 	"generic": false,
 	"value": 100,
 	"moveType": "none",
+	"materialTypeCategories": ["leather", "cloth"],
 	"wearableType":
 	{
 		"percentCoverage": 100,

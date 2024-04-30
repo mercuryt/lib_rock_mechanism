@@ -5,6 +5,8 @@
   "transparent": false,
   "meltingPoint": 505,
   "meltsInto": "molten tin",
+  "constructionData": "metal",
+  "category": "metal",
   "spoilData": [
     {
       "materialType": "tin",

@@ -4,6 +4,7 @@
 	"volume": 2000,
 	"generic": false,
 	"value": 100,
+	"materialTypeCategories": "wood",
 	"weaponData":
 	{
 		"combatSkill": "glave",

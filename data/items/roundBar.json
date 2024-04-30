@@ -4,5 +4,6 @@
 	"volume": 3000,
 	"generic": true,
 	"value": 3,
-	"cratable": true
+	"cratable": true,
+	"materialTypeCategory": ["metal"]
 }

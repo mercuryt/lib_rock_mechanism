@@ -4,6 +4,7 @@
 	"volume": 1000,
 	"generic": false,
 	"value": 200,
+	"materialTypeCategories": ["metal", "stone"],
 	"weaponData":
 	{
 		"combatSkill": "mace",

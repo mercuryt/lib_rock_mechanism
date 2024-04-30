@@ -4,7 +4,6 @@
 #include "../engine/actor.h"
 #include <TGUI/Widgets/ScrollablePanel.hpp>
 #include <TGUI/Widgets/VerticalLayout.hpp>
-#include <regex>
 #include <string>
 ActorView::ActorView(Window& window) : m_window(window), m_panel(tgui::ScrollablePanel::create()), m_actor(nullptr)
 {

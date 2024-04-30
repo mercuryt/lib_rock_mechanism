@@ -6,5 +6,6 @@
 	"internalVolume" : 100000,
 	"canHoldFluids": false,
 	"value": 200,
-	"moveType": "roll"
+	"moveType": "roll",
+	"materialTypeCategories": ["wood", "metal"]
 }

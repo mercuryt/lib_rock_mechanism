@@ -22,13 +22,15 @@ else()
     add_compile_options(-Wall -Wextra -Werror -Wunused-function -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wnull-dereference -Wdouble-promotion)
     # Incompatable with tgui?
     #add_compile_options(-D_GLIBCXX_DEBUG)
+    # Incompatable with BSPool?
+    # -Wsystem-headers
 endif()
 
 # add_compile_options(-ffast-math)
 
 add_subdirectory(engine)
-#add_subdirectory(ui)
-add_subdirectory(test)
+add_subdirectory(ui)
+#add_subdirectory(test)
 #add_subdirectory(python)
 
 # release build by default

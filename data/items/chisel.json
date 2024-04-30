@@ -4,6 +4,7 @@
 	"volume": 50,
 	"generic": false,
 	"value": 50,
+	"materialTypeCategories": ["metal"],
 	"weaponData":
 	{
 		"combatSkill": "dagger",

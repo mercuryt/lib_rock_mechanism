@@ -1,6 +1,7 @@
 #include "../contextMenu.h"
 #include "../window.h"
 #include "../displayData.h"
+#include "../uiUtil.h"
 #include "../../engine/block.h"
 #include "../../engine/objectives/equipItem.h"
 #include "../../engine/objectives/unequipItem.h"

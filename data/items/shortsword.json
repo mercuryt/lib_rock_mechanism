@@ -4,6 +4,7 @@
 	"volume": 1500,
 	"generic": false,
 	"value": 100,
+	"materialTypeCategories": ["metal"],
 	"weaponData":
 	{
 		"combatSkill": "sword",

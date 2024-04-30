@@ -5,6 +5,8 @@
   "transparent": false,
   "meltingPoint": 1811,
   "meltsInto": "molten iron",
+  "constructionData": "metal",
+  "category": "metal",
   "spoilData": [
     {
       "materialType": "iron",

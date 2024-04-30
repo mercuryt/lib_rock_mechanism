@@ -454,6 +454,26 @@ TEST_CASE("stockpile")
 		auto condition2 = [&]{ return stockpileLocation.m_hasItems.getCount(pile, sand) == 45; };
 		simulation.fastForwardUntillPredicate(condition2);
 	}
+	SUBCASE("tile which worker stands on for work phase of project contains item of the same generic type")
+	{
+		areaBuilderUtil::setSolidWall(area.getBlock(8, 1, 1), area.getBlock(9, 1, 1), marble);
+		Block& stockpileLocation = area.getBlock(9, 0, 1);
+		Block& pileLocation1 = area.getBlock(8, 0, 1);
+		Block& pileLocation2 = area.getBlock(7, 0, 1);
+		Item& cargo1 = simulation.createItemGeneric(pile, sand, 15);
+		cargo1.setLocation(pileLocation1);
+		area.m_hasStockPiles.at(faction).addItem(cargo1);
+		Item& cargo2 = simulation.createItemGeneric(pile, sand, 15);
+		cargo2.setLocation(pileLocation2);
+		area.m_hasStockPiles.at(faction).addItem(cargo2);
+		std::vector<ItemQuery> queries;
+		queries.emplace_back(pile, sand);
+		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		stockpile.addBlock(stockpileLocation);
+		dwarf1.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 100);
+		auto condition = [&]{ return stockpileLocation.m_hasItems.getCount(pile, sand) == 30; };
+		simulation.fastForwardUntillPredicate(condition);
+	}
 	SUBCASE("path to item is blocked")
 	{
 		areaBuilderUtil::setSolidWall(area.getBlock(0, 3, 1), area.getBlock(8, 3, 1), wood);

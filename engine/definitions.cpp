@@ -337,6 +337,9 @@ void definitions::loadItemTypes()
 		}
 		else
 			itemType.wearableData = nullptr;
+		if(data.contains("materialTypeCategories"))
+			for(const Json& materialTypeCategoryName : data["materialTypeCategories"])
+				itemType.materialTypeCategories.push_back(&MaterialTypeCategory::byName(materialTypeCategoryName.get<std::string>()));
 	}
 	// Now that item types are loaded we can load material type spoil and construction data.
 	loadMaterialTypeConstuctionData();

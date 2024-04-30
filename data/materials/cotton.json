@@ -3,6 +3,7 @@
   "density": 1.55,
   "hardness": 10,
   "transparent": false,
+  "category": "cloth",
   "burnData":
   {
 	  "ignitionTemperature": 1044,

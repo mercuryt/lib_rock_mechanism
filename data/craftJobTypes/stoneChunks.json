@@ -1,0 +1,41 @@
+{
+	"name": "stone chunks from boulder",
+	"productType": "chunk",
+	"productQuantity": 8,
+	"materialTypeCategory": "stone",
+	"steps":
+	[
+		{
+			"name": "chisel",
+			"category": "carve",
+			"skillType": "stone carving",
+			"minutesDuration": 150,
+			"consumed":
+			[
+				{
+					"itemType": "chunk",
+					"quantity": 1
+				}
+			],
+			"unconsumed":
+			[
+				{
+					"itemType": "chisel",
+					"quantity": 1
+				},
+				{
+					"itemType": "mallet",
+					"quantity": 1
+				}
+			],
+			"byproducts":
+			[
+				{
+					"itemType": "pile",
+					"materialType": "gravel",
+					"quantity": 30
+				}
+			]
+		}
+	]
+}

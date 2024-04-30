@@ -3,5 +3,6 @@
 	"shape": "oneByOneFull",
 	"volume": 10000,
 	"generic": true,
-	"value": 5
+	"value": 5,
+	"materialTypeCategories": ["wood"]
 }

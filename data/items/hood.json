@@ -4,7 +4,7 @@
 	"volume": 500,
 	"generic": false,
 	"value": 10,
-	"materialCategories": [ "fabric" ],
+	"materialTypeCategories": [ "leather", "cloth" ],
 	"wearableType":
 	{
 		"percentCoverage": 70,

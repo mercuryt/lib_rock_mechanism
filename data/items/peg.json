@@ -3,5 +3,6 @@
 	"shape": "oneByOneHundredth",
 	"volume": 1,
 	"generic": true,
+	"materialTypeCategories": ["wood"],
 	"value": 1
 }

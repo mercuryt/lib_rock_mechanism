@@ -4,6 +4,7 @@
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <string>
+#include <unordered_set>
 class Window;
 class Block;
 class Item;
@@ -52,6 +53,7 @@ public:
 	void itemOverlay(const Item& item, sf::Vector2f position);
 	void singleTileActor(const Actor& actor);
 	void multiTileActor(const Actor& actor);
+	void multiTileBorder(std::unordered_set<Block*> blocks, sf::Color color, float thickness);
 	void borderSegmentOnBlock(const Block& block, Facing facing, sf::Color color, float thickness);
 	void accessableSymbol(const Block& block);
 	void inaccessableSymbol(const Block& block);

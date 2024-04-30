@@ -4,5 +4,6 @@
 	"volume": 2000,
 	"generic": true,
 	"value": 5,
-	"cratable": true
+	"cratable": true,
+	"materialTypeCategories": ["stone", "metal"]
 }

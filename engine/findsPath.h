@@ -9,7 +9,7 @@ class HasShape;
 class Shape;
 class MoveType;
 struct ProposedRouteStep;
-class Faction;
+struct Faction;
 class CanReserve;
 //TODO: Preseed closed list with currently unenterable tiles which are occupied by followers.
 class FindsPath
