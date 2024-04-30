@@ -16,7 +16,7 @@ class Simulation;
 class HasShape;
 struct ProjectRequirementCounts;
 class StockPile;
-class Faction;
+struct Faction;
 struct CraftJob;
 class Objective;
 struct ObjectiveType;

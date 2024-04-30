@@ -102,7 +102,7 @@ public:
 	void showMainMenu() { hideAllPanels(); m_mainMenuView.show(); }
 	void showGame() { hideAllPanels(); m_gameOverlay.show(); }
 	void showLoad() { hideAllPanels(); m_loadView.draw(); }
-	void showProduction() { hideAllPanels(); m_productionView.show(); }
+	void showProduction() { hideAllPanels(); m_productionView.draw(); }
 	void showUniforms() { hideAllPanels(); m_uniformView.show(); }
 	void showObjectivePriority(Actor& actor) { hideAllPanels(); m_objectivePriorityView.draw(actor); }
 	void showStocks() { hideAllPanels(); m_stocksView.show(); }

@@ -5,5 +5,6 @@
 	"generic": true,
 	"value": 50,
 	"moveType": "none",
+	"materialType": "plant matter",
 	"edibleForDrinkersOf" : "water"
 }

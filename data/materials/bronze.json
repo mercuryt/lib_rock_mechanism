@@ -5,6 +5,8 @@
   "transparent": false,
   "meltingPoint": 1186,
   "meltsInto": "moltenBronze",
+  "constructionData": "metal",
+  "category": "metal",
   "spoilData": [
     {
       "materialType": "bronze",

@@ -4,7 +4,7 @@
 	"volume": 1500,
 	"generic": false,
 	"value": 100,
-	"materialCategories": [ "metal", "wood" ],
+	"materialTypeCategories": [ "metal", "wood" ],
 	"weaponData":
 	{
 		"combatSkill": "crossbow",

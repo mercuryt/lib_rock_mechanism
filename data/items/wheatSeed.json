@@ -4,5 +4,7 @@
 	"volume": 10,
 	"generic": true,
 	"value": 1,
-	"moveType": "none"
+	"moveType": "none",
+	"materialType": "plant matter",
+	"edibleForDrinkersOf" : "water"
 }

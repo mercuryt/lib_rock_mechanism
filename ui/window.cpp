@@ -551,9 +551,12 @@ std::wstring Window::displayNameForItem(const Item& item)
 std::wstring Window::displayNameForCraftJob(CraftJob& craftJob)
 {
 	std::wstring output;
-	output.append(util::stringToWideString(craftJob.materialType->name));
-	output.append(L" ");
 	output.append(util::stringToWideString(craftJob.craftJobType.name));
+	if(craftJob.materialType)
+	{
+		output.append(L" ");
+		output.append(util::stringToWideString(craftJob.materialType->name));
+	}
 	return output;
 }
 std::string Window::facingToString(Facing facing)

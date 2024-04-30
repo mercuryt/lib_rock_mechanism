@@ -13,7 +13,7 @@ struct ItemType;
 struct MaterialType;
 class Project;
 struct ProjectRequirementCounts;
-class Faction;
+struct Faction;
 class HaulSubproject;
 struct DeserializationMemo;
 

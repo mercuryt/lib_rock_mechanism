@@ -1,6 +1,6 @@
 #pragma once
+#include "../engine/types.h"
 #include <TGUI/TGUI.hpp>
-#include "../engine/datetime.h"
 class Area;
 class Simulation;
 class Plant;
@@ -14,6 +14,8 @@ struct ItemType;
 struct Faction;
 struct MaterialTypeCategory;
 struct CraftStepTypeCategory;
+struct CraftJobType;
+struct DateTime;
 struct DateTimeUI final
 {
 	tgui::SpinControl::Ptr m_hours;
@@ -61,6 +63,10 @@ namespace widgetUtil
 	tgui::ComboBox::Ptr makeBlockFeatureTypeSelectUI();
 	inline const CraftStepTypeCategory* lastSelectedCraftStepTypeCategory = nullptr;
 	tgui::ComboBox::Ptr makeCraftStepTypeCategorySelectUI();
+	inline const CraftJobType* lastSelectedCraftJobType = nullptr;
+	tgui::ComboBox::Ptr makeCraftJobTypeSelectUI();
+	std::pair<tgui::ComboBox::Ptr, tgui::ComboBox::Ptr> makeCraftJobTypeAndMaterialTypeUI();
+	std::tuple<tgui::ComboBox::Ptr, tgui::ComboBox::Ptr, tgui::ComboBox::Ptr> makeItemTypeAndMaterialTypeOrMaterialTypeCategoryUI();
 
 	void setPadding(tgui::Widget::Ptr wigdet);
 }

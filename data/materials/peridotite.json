@@ -6,6 +6,7 @@
   "meltingPoint": 1773,
   "meltsInto": "lava",
   "constructionData": "stone",
+  "category": "stone",
   "spoilData": [
     {
       "materialType": "gravel",

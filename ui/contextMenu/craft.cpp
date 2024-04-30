@@ -40,4 +40,10 @@ void ContextMenu::drawCraftControls(Block& block)
 			locationsAndJobsForFaction.addLocation(*widgetUtil::lastSelectedCraftStepTypeCategory, *selectedBlock);
 		hide();
 	});
+	auto productionButton = tgui::Button::create("production");
+	m_root.add(productionButton);
+	productionButton->onClick([this]{
+		m_window.showProduction();
+		hide();
+	});
 }

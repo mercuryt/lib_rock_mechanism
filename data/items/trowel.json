@@ -3,5 +3,6 @@
 	"shape": "oneByOneThirtySecond",
 	"volume": 1000,
 	"generic": false,
-	"value": 10
+	"value": 10,
+	"materialTypeCategories": [ "metal", "wood", "bone", "stone" ]
 }

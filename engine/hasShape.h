@@ -3,7 +3,6 @@
  */
 #pragma once
 
-#include "shape.h"
 #include "leadAndFollow.h"
 #include "onDestroy.h"
 #include "reservable.h"
@@ -12,14 +11,15 @@
 #include <unordered_set>
 
 class Block;
-struct MoveType;
 class BlockHasShapes;
 class Actor;
 class Item;
-class Faction;
+struct Faction;
 class CanReserve;
 class Simulation;
+struct MoveType;
 struct ItemType;
+struct Shape;
 struct DeserializationMemo;
 
 class HasShape

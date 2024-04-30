@@ -19,9 +19,9 @@ TEST_CASE("uniform")
 	pants.setLocation(area.getBlock(8,1,1));
 	Item& shirt = simulation.createItemNongeneric(ItemType::byName("shirt"), MaterialType::byName("cotton"), 10, 10);
 	shirt.setLocation(area.getBlock(1,6,1));
-	Item& belt = simulation.createItemNongeneric(ItemType::byName("belt"), MaterialType::byName("pig leather"), 10, 10);
+	Item& belt = simulation.createItemNongeneric(ItemType::byName("belt"), MaterialType::byName("leather"), 10, 10);
 	belt.setLocation(area.getBlock(9,2,1));
-	Item& belt2 = simulation.createItemNongeneric(ItemType::byName("belt"), MaterialType::byName("pig leather"), 10, 10);
+	Item& belt2 = simulation.createItemNongeneric(ItemType::byName("belt"), MaterialType::byName("leather"), 10, 10);
 	belt2.setLocation(area.getBlock(9,3,1));
 	simulation.doStep();
 	Block* destination = actor.m_canMove.getDestination();

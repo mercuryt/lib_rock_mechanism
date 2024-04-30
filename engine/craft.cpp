@@ -2,6 +2,7 @@
 #include "area.h"
 #include "deserializationMemo.h"
 #include "materialType.h"
+#include "types.h"
 #include "util.h"
 #include "simulation.h"
 
@@ -23,7 +24,7 @@ CraftStepTypeCategory& CraftStepTypeCategory::byName(const std::string name)
 	return *found;
 }
 CraftStepProjectHasShapeDishonorCallback::CraftStepProjectHasShapeDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
-	m_craftStepProject(*static_cast<CraftStepProject*>(deserializationMemo.m_projects.at(data["proejct"].get<uintptr_t>()))) { } 
+	m_craftStepProject(*static_cast<CraftStepProject*>(deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()))) { } 
 CraftJobType& CraftJobType::byName(const std::string name)
 {
 	auto found = std::ranges::find(craftJobTypeDataStore, name, &CraftJobType::name);
@@ -70,7 +71,7 @@ void CraftStepProject::onCancel()
 		actor->m_hasObjectives.cannotCompleteSubobjective();
 	}
 }
-std::vector<std::pair<ItemQuery, uint32_t>> CraftStepProject::getConsumed() const
+std::vector<std::pair<ItemQuery, Quantity>> CraftStepProject::getConsumed() const
 { 
 	// Make a copy so we can edit itemQueries.
 	auto output = m_craftStepType.consumed;
@@ -82,14 +83,14 @@ std::vector<std::pair<ItemQuery, uint32_t>> CraftStepProject::getConsumed() cons
 		}
 	return output;
 }
-std::vector<std::pair<ItemQuery, uint32_t>> CraftStepProject::getUnconsumed() const 
+std::vector<std::pair<ItemQuery, Quantity>> CraftStepProject::getUnconsumed() const 
 { 
 	auto output = m_craftStepType.unconsumed; 
 	if(m_craftJob.workPiece != nullptr)
 		output.emplace_back(*m_craftJob.workPiece, 1);
 	return output; 
 }
-std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> CraftStepProject::getByproducts() const {
+std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> CraftStepProject::getByproducts() const {
 	auto output =  m_craftStepType.byproducts; 
 	for(auto& tuple : output)
 		if(std::get<1>(tuple) == nullptr)
@@ -130,7 +131,7 @@ uint32_t CraftJob::getQuality() const
 	float pointsPerStep = (float)totalSkillPoints / craftJobType.stepTypes.size();
 	return (pointsPerStep / Config::maxSkillLevel) * 100;
 }
-uint32_t CraftJob::getStep() const
+Step CraftJob::getStep() const
 {
 	return 1 + (stepIterator - craftJobType.stepTypes.begin());
 } 
@@ -349,11 +350,11 @@ void HasCraftingLocationsAndJobsForFaction::maybeRemoveLocation(Block& block)
 			removeLocation(*category, block);
 	}
 }
-void HasCraftingLocationsAndJobsForFaction::addJob(const CraftJobType& craftJobType, const MaterialType* materialType, uint32_t quantity, uint32_t minimumSkillLevel)
+void HasCraftingLocationsAndJobsForFaction::addJob(const CraftJobType& craftJobType, const MaterialType* materialType, Quantity quantity, uint32_t minimumSkillLevel)
 {
-	if(craftJobType.materialtypeCategory != nullptr)
-		assert(materialType->materialTypeCategory == craftJobType.materialtypeCategory);
-	for(uint32_t i = 0; i < quantity; i++)
+	if(craftJobType.materialTypeCategory && materialType)
+		assert(materialType->materialTypeCategory == craftJobType.materialTypeCategory);
+	for(Quantity i = 0; i < quantity; i++)
 	{
 		CraftJob& craftJob = m_jobs.emplace_back(craftJobType, *this, materialType, minimumSkillLevel);
 		indexUnassigned(craftJob);

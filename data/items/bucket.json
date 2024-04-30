@@ -5,5 +5,6 @@
 	"generic": false,
 	"internalVolume" : 8000,
 	"canHoldFluids": true,
-	"value": 20
+	"value": 20,
+	"materialTypeCategories": ["wood", "metal"]
 }

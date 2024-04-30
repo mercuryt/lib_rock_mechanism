@@ -21,6 +21,7 @@ struct CraftStepTypeCategory;
 struct FluidType;
 struct MaterialType;
 struct DeserializationMemo;
+struct MaterialTypeCategory;
 
 struct WearableData final
 {
@@ -59,6 +60,7 @@ struct ItemType final
        	const WeaponData* weaponData;
 	const std::array<int32_t, 3> craftLocationOffset;
 	const CraftStepTypeCategory* craftLocationStepTypeCategory;
+	std::vector<const MaterialTypeCategory*> materialTypeCategories;
 	AttackType* getRangedAttackType() const;
 	bool hasRangedAttack() const;
 	bool hasMeleeAttack() const;

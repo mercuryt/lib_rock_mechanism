@@ -5,6 +5,7 @@
 	"generic": false,
 	"value": 200,
 	"moveType": "none",
+	"materialTypeCategories": ["metal"],
 	"weaponData":
 	{
 		"combatSkill": "pick",

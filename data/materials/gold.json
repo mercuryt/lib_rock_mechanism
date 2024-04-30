@@ -6,6 +6,7 @@
   "meltingPoint": 1186,
   "meltsInto": "moltenGold",
   "constructionData": "metal",
+  "category": "metal",
   "spoilData": [
     {
       "materialType": "gold",

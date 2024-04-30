@@ -1,0 +1,41 @@
+{
+	"name": "stone blocks from chunk",
+	"productType": "block",
+	"productQuantity": 10,
+	"materialTypeCategory": "stone",
+	"steps":
+	[
+		{
+			"name": "chisel",
+			"category": "carve",
+			"skillType": "stone carving",
+			"minutesDuration": 50,
+			"consumed":
+			[
+				{
+					"itemType": "chunk",
+					"quantity": 1
+				}
+			],
+			"unconsumed":
+			[
+				{
+					"itemType": "chisel",
+					"quantity": 1
+				},
+				{
+					"itemType": "mallet",
+					"quantity": 1
+				}
+			],
+			"byproducts":
+			[
+				{
+					"itemType": "pile",
+					"materialType": "gravel",
+					"quantity": 10
+				}
+			]
+		}
+	]
+}

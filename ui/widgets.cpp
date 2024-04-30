@@ -2,12 +2,22 @@
 #include "blockFeature.h"
 #include "displayData.h"
 #include "../engine/simulation.h"
+#include "item.h"
 #include "plant.h"
 #include <TGUI/Widgets/ComboBox.hpp>
 #include <TGUI/Widgets/SpinControl.hpp>
 #include <cstdint>
 template<typename T>
 	std::vector<T*> sortByName(std::vector<T*>& input)
+	{
+		std::vector<T*> output;
+		for(auto& item : input)
+			output.push_back(item);
+		std::ranges::sort(output, std::less{}, &T::name);
+		return output;
+	}
+template<typename T>
+	std::vector<const T*> sortByName(std::vector<const T*>& input)
 	{
 		std::vector<T*> output;
 		for(auto& item : input)
@@ -26,6 +36,15 @@ template<typename T>
 	}
 template<typename T>
 	std::vector<T*> sortByName(std::list<T>& input)
+	{
+		std::vector<T*> output;
+		for(auto& item : input)
+			output.push_back(&item);
+		std::ranges::sort(output, std::less{}, &T::name);
+		return output;
+	}
+template<typename T>
+	std::vector<T*> sortByName(std::unordered_set<T>& input)
 	{
 		std::vector<T*> output;
 		for(auto& item : input)
@@ -280,6 +299,150 @@ tgui::ComboBox::Ptr widgetUtil::makeItemTypeSelectUI()
 	}
 	return output;
 }
+// ItemType and MaterialType or MaterialTypeCategory
+std::tuple<tgui::ComboBox::Ptr, tgui::ComboBox::Ptr, tgui::ComboBox::Ptr> widgetUtil::makeItemTypeAndMaterialTypeOrMaterialTypeCategoryUI()
+{
+	// ItemType.
+	auto itemTypeSelectUI = tgui::ComboBox::create();
+	for(const ItemType* itemType : sortByName(itemTypeDataStore))
+	{
+		assert(!itemType->name.empty());
+		itemTypeSelectUI->addItem(itemType->name, itemType->name);
+	}
+	if(lastSelectedItemType)
+		itemTypeSelectUI->setSelectedItem(lastSelectedItemType->name);
+	else
+		itemTypeSelectUI->setSelectedItemByIndex(0);
+	lastSelectedItemType = &ItemType::byName(itemTypeSelectUI->getSelectedItem().toStdString());
+	// MaterialType.
+	auto materialTypeSelectUI = tgui::ComboBox::create();
+	materialTypeSelectUI->setItemsToDisplay(displayData::maximumNumberOfItemsToDisplayInComboBox);
+	materialTypeSelectUI->setExpandDirection(tgui::ComboBox::ExpandDirection::Automatic);
+	auto materialTypeCategorySelectUI = tgui::ComboBox::create();
+	materialTypeCategorySelectUI->setItemsToDisplay(displayData::maximumNumberOfItemsToDisplayInComboBox);
+	materialTypeCategorySelectUI->setExpandDirection(tgui::ComboBox::ExpandDirection::Automatic);
+	auto populateMaterialTypeAndMaterialTypeCategory = [materialTypeSelectUI, materialTypeCategorySelectUI] () {
+		const ItemType& itemType = *lastSelectedItemType;
+		// MaterialType.
+		materialTypeSelectUI->removeAllItems();
+		materialTypeSelectUI->addItem("any", "");
+		for(const MaterialType* materialType : sortByName(materialTypeDataStore))
+		{
+			for(const MaterialTypeCategory* materialTypeCategory : itemType.materialTypeCategories)
+				if(materialTypeCategory  == materialType->materialTypeCategory)
+				{
+					materialTypeSelectUI->addItem(materialType->name, materialType->name);
+					break;
+				}
+		}
+		if(lastSelectedMaterial && materialTypeSelectUI->contains(lastSelectedMaterial->name))
+			materialTypeSelectUI->setSelectedItem(lastSelectedMaterial->name);
+		else
+		{
+			materialTypeSelectUI->setSelectedItemByIndex(0);
+			lastSelectedMaterial = nullptr;
+		}
+		// Category.
+		materialTypeCategorySelectUI->removeAllItems();
+		materialTypeCategorySelectUI->addItem("any", "");
+		if(!itemType.materialTypeCategories.empty())
+		{
+			for(const MaterialTypeCategory* materialTypeCategory : itemType.materialTypeCategories)
+				materialTypeCategorySelectUI->addItem(materialTypeCategory->name, materialTypeCategory->name);
+			if(lastSelectedMaterialCategory && materialTypeCategorySelectUI->contains(lastSelectedMaterialCategory->name))
+				materialTypeCategorySelectUI->setSelectedItem(lastSelectedMaterialCategory->name);
+			else
+			{
+				materialTypeCategorySelectUI->setSelectedItemByIndex(0);
+				lastSelectedMaterialCategory = nullptr;
+			}
+		}
+	};
+	populateMaterialTypeAndMaterialTypeCategory();
+	itemTypeSelectUI->onItemSelect([itemTypeSelectUI, populateMaterialTypeAndMaterialTypeCategory]{
+		const std::string selectedId = itemTypeSelectUI->getSelectedItemId().toStdString();
+		if(selectedId.empty())
+			return;
+		const ItemType& itemType = ItemType::byName(selectedId);
+		lastSelectedItemType = &itemType;
+		populateMaterialTypeAndMaterialTypeCategory();
+	});
+	materialTypeSelectUI->onItemSelect([materialTypeCategorySelectUI](const tgui::String selected){
+		if(selected == "any")
+			lastSelectedMaterial = nullptr;
+		else
+		{;
+			const MaterialType& materialType = MaterialType::byName(selected.toStdString());
+			lastSelectedMaterial = &materialType;
+			materialTypeCategorySelectUI->setSelectedItemByIndex(0);
+		}
+	});
+	materialTypeCategorySelectUI->onItemSelect([materialTypeSelectUI](const tgui::String selected){
+		if(selected == "any")
+			lastSelectedMaterialCategory = nullptr;
+		else
+		{;
+			const MaterialTypeCategory& materialTypeCategory = MaterialTypeCategory::byName(selected.toStdString());
+			lastSelectedMaterialCategory = &materialTypeCategory;
+			materialTypeSelectUI->setSelectedItemByIndex(0);
+		}
+	});
+	return {itemTypeSelectUI, materialTypeSelectUI, materialTypeCategorySelectUI};
+}
+// CraftJobType and MaterialType
+std::pair<tgui::ComboBox::Ptr, tgui::ComboBox::Ptr> widgetUtil::makeCraftJobTypeAndMaterialTypeUI()
+{
+	auto craftJobTypeSelectUI = tgui::ComboBox::create();
+	for(const CraftJobType* craftJobType : sortByName(craftJobTypeDataStore))
+	{
+		assert(!craftJobType->name.empty());
+		craftJobTypeSelectUI->addItem(craftJobType->name, craftJobType->name);
+	}
+	if(lastSelectedCraftJobType)
+		craftJobTypeSelectUI->setSelectedItem(lastSelectedCraftJobType->name);
+	else
+		craftJobTypeSelectUI->setSelectedItemByIndex(0);
+	lastSelectedCraftJobType = &CraftJobType::byName(craftJobTypeSelectUI->getSelectedItem().toStdString());
+	auto materialTypeSelectUI = tgui::ComboBox::create();
+	materialTypeSelectUI->setItemsToDisplay(displayData::maximumNumberOfItemsToDisplayInComboBox);
+	materialTypeSelectUI->setExpandDirection(tgui::ComboBox::ExpandDirection::Automatic);
+	auto populateMaterialType = [materialTypeSelectUI]{
+		materialTypeSelectUI->removeAllItems();
+		materialTypeSelectUI->addItem("any", "");
+		const CraftJobType& craftJobType = *lastSelectedCraftJobType;
+		for(const MaterialType* materialType : sortByName(materialTypeDataStore))
+		{
+			if(craftJobType.materialTypeCategory  == materialType->materialTypeCategory)
+				materialTypeSelectUI->addItem(materialType->name, materialType->name);
+		}
+		if(lastSelectedMaterial && materialTypeSelectUI->contains(lastSelectedMaterial->name))
+			materialTypeSelectUI->setSelectedItem(lastSelectedMaterial->name);
+		else
+		{
+			materialTypeSelectUI->setSelectedItemByIndex(0);
+			lastSelectedMaterial = nullptr;
+		}
+	};
+	populateMaterialType();
+	craftJobTypeSelectUI->onItemSelect([craftJobTypeSelectUI, populateMaterialType]{
+		const std::string selectedId = craftJobTypeSelectUI->getSelectedItemId().toStdString();
+		if(selectedId.empty())
+			return;
+		const CraftJobType& craftJobType = CraftJobType::byName(selectedId);
+		lastSelectedCraftJobType = &craftJobType;
+		populateMaterialType();
+	});
+	materialTypeSelectUI->onItemSelect([](const tgui::String selected){
+		if(selected == "any")
+			lastSelectedMaterial = nullptr;
+		else
+		{;
+			const MaterialType& materialType = MaterialType::byName(selected.toStdString());
+			lastSelectedMaterial = &materialType;
+		}
+	});
+	return {craftJobTypeSelectUI, materialTypeSelectUI};
+}
 // FactionSelectUI
 tgui::ComboBox::Ptr widgetUtil::makeFactionSelectUI(Simulation& simulation, std::wstring nullLabel)
 {
@@ -361,6 +524,34 @@ tgui::ComboBox::Ptr widgetUtil::makeCraftStepTypeCategorySelectUI()
 		else if(!lastSelectedCraftStepTypeCategory && !selected)
 		{
 			output->setSelectedItemById(craftStepTypeCategory->name);
+			selected = true;
+		}
+	}
+	return output;
+}
+// CraftJobTypeSelectUI
+tgui::ComboBox::Ptr widgetUtil::makeCraftJobTypeSelectUI()
+{
+	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
+	output->setItemsToDisplay(displayData::maximumNumberOfItemsToDisplayInComboBox);
+	output->setExpandDirection(tgui::ComboBox::ExpandDirection::Automatic);
+	output->onItemSelect([](const tgui::String name){ 
+		if(!name.empty())
+			lastSelectedCraftJobType = &CraftJobType::byName(name.toStdString()); 
+	});
+	bool selected = false;
+	for(const CraftJobType* craftJobType : sortByName(craftJobTypeDataStore))
+	{
+		assert(!craftJobType->name.empty());
+		output->addItem(craftJobType->name, craftJobType->name);
+		if(lastSelectedCraftJobType && lastSelectedCraftJobType == craftJobType)
+		{
+			output->setSelectedItemById(craftJobType->name);
+			selected = true;
+		}
+		else if(!lastSelectedCraftJobType && !selected)
+		{
+			output->setSelectedItemById(craftJobType->name);
 			selected = true;
 		}
 	}

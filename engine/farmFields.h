@@ -10,7 +10,7 @@ class Block;
 class Area;
 struct FarmField;
 struct DeserializationMemo;
-class Faction;
+struct Faction;
 
 /*
 class FarmFieldCreateInputAction final : public InputAction

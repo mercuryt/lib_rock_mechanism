@@ -30,7 +30,7 @@
 
 struct MoveType;
 struct AnimalSpecies;
-class Faction;
+struct Faction;
 struct DeserializationMemo;
 class Area;
 

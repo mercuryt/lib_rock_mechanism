@@ -2,6 +2,7 @@
 	"name": "saw boards",
 	"productType": "board",
 	"productQuantity": 20,
+	"materialTypeCategory": "wood",
 	"steps":
 	[
 		{

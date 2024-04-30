@@ -4,6 +4,7 @@
 	"volume": 1500,
 	"generic": false,
 	"value": 20,
+	"materialTypeCategories": ["wood"],
 	"weaponData":
 	{
 		"combatSkill": "mace",

@@ -4,5 +4,6 @@
 	"volume": 500,
 	"generic": true,
 	"value": 1,
-	"moveType": "none"
+	"moveType": "none",
+	"materialTypeCategories": "wood"
 }
