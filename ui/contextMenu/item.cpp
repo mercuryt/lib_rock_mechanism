@@ -110,19 +110,39 @@ void ContextMenu::drawItemControls(Block& block)
 	}
 	if(m_window.m_editMode)
 	{
-		auto addItem = tgui::Label::create("add item");
+		auto addItem = tgui::Button::create("add item");
 		addItem->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 		m_root.add(addItem);
 		static uint32_t quantity = 1;
 		static uint32_t quality = 0;
 		static uint32_t percentWear = 0;
-		addItem->onMouseEnter([this, &block]{
+		auto confirm = [this, &block]{
+			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
+			const MaterialType& materialType = *widgetUtil::lastSelectedMaterial;
+			const ItemType& itemType = *widgetUtil::lastSelectedItemType;
+			if(m_window.getSelectedBlocks().empty())
+				m_window.selectBlock(block);
+			for(Block* selectedBlock : m_window.getSelectedBlocks())
+			{
+				static const MoveType& none = MoveType::byName("none");
+				if(!selectedBlock->m_hasShapes.shapeAndMoveTypeCanEnterEverWithAnyFacing(itemType.shape, none))
+					continue;
+				Item& item = m_window.getSimulation()->createItemGeneric(itemType, materialType, quantity);
+				item.setLocation(*selectedBlock);
+			}
+			hide();
+		};
+		addItem->onClick([confirm]{
+			if(widgetUtil::lastSelectedItemType && widgetUtil::lastSelectedMaterial)
+				confirm();
+		});
+		addItem->onMouseEnter([this, confirm]{
 			auto& submenu = makeSubmenu(0);
 			auto itemTypeSelectUI = widgetUtil::makeItemTypeSelectUI();
 			submenu.add(itemTypeSelectUI);
 			auto materialTypeSelectUI = widgetUtil::makeMaterialSelectUI();
 			submenu.add(materialTypeSelectUI);
-			std::function<void(const ItemType&)> onSelect = [this, itemTypeSelectUI, materialTypeSelectUI, &block](const ItemType& itemType){
+			std::function<void(const ItemType&)> onSelect = [this, itemTypeSelectUI, materialTypeSelectUI, confirm](const ItemType& itemType){
 				if(itemType.generic)
 				{
 					auto& subSubMenu = makeSubmenu(1);
@@ -135,25 +155,10 @@ void ContextMenu::drawItemControls(Block& block)
 					quantityUI->setValue(quantity);
 					quantityUI->onValueChange([](const float value){ quantity = value; });
 					subSubMenu.add(quantityUI);
-					auto confirm = tgui::Button::create("confirm");
-					confirm->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
-					subSubMenu.add(confirm);
-					confirm->onClick([this, itemTypeSelectUI, materialTypeSelectUI, &block]{
-						std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-						const MaterialType& materialType = MaterialType::byName(materialTypeSelectUI->getSelectedItemId().toStdString());
-						const ItemType& itemType = ItemType::byName(itemTypeSelectUI->getSelectedItemId().toStdString());
-						if(m_window.getSelectedBlocks().empty())
-							m_window.selectBlock(block);
-						for(Block* selectedBlock : m_window.getSelectedBlocks())
-						{
-							static const MoveType& none = MoveType::byName("none");
-							if(!selectedBlock->m_hasShapes.shapeAndMoveTypeCanEnterEverWithAnyFacing(itemType.shape, none))
-								continue;
-							Item& item = m_window.getSimulation()->createItemGeneric(itemType, materialType, quantity);
-							item.setLocation(*selectedBlock);
-						}
-						hide();
-					});
+					auto confirmButton = tgui::Button::create("confirm");
+					confirmButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
+					subSubMenu.add(confirmButton);
+					confirmButton->onClick([=]{ confirm(); });
 				}
 				else
 				{
@@ -176,22 +181,10 @@ void ContextMenu::drawItemControls(Block& block)
 					percentWearUI->setValue(percentWear);
 					percentWearUI->onValueChange([](const float value){ percentWear = value; });
 					subSubMenu.add(percentWearUI);
-					auto confirm = tgui::Button::create("confirm");
-					confirm->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
-					subSubMenu.add(confirm);
-					confirm->onClick([this, itemTypeSelectUI, materialTypeSelectUI, &block]{
-						std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-						const MaterialType& materialType = MaterialType::byName(materialTypeSelectUI->getSelectedItemId().toStdString());
-						const ItemType& itemType = ItemType::byName(itemTypeSelectUI->getSelectedItemId().toStdString());
-						if(m_window.getSelectedBlocks().empty())
-							m_window.selectBlock(block);
-						for(Block* selectedBlock : m_window.getSelectedBlocks())
-						{
-							Item& item = m_window.getSimulation()->createItemNongeneric(itemType, materialType, quality, percentWear);
-							item.setLocation(*selectedBlock);
-						}
-						hide();
-					});
+					auto confirmButton = tgui::Button::create("confirm");
+					confirmButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
+					subSubMenu.add(confirmButton);
+					confirmButton->onClick([=]{ confirm(); });
 				}
 			};
 			itemTypeSelectUI->onItemSelect([onSelect](const tgui::String& value){
