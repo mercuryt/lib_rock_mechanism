@@ -6,6 +6,8 @@ void LoadView::draw()
 	m_panel = tgui::Panel::create();
 	m_window.getGui().add(m_panel);
 	auto layout = tgui::VerticalLayout::create();
+	layout->setPosition("20%", "10%");
+	layout->setSize("60%", "80%");
 	m_panel->add(layout);
 	layout->add(tgui::Label::create("load"));
 	auto cancel = tgui::Button::create("cancel");

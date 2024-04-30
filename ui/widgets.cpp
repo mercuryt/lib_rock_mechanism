@@ -7,51 +7,6 @@
 #include <TGUI/Widgets/ComboBox.hpp>
 #include <TGUI/Widgets/SpinControl.hpp>
 #include <cstdint>
-template<typename T>
-	std::vector<T*> sortByName(std::vector<T*>& input)
-	{
-		std::vector<T*> output;
-		for(auto& item : input)
-			output.push_back(item);
-		std::ranges::sort(output, std::less{}, &T::name);
-		return output;
-	}
-template<typename T>
-	std::vector<const T*> sortByName(std::vector<const T*>& input)
-	{
-		std::vector<T*> output;
-		for(auto& item : input)
-			output.push_back(item);
-		std::ranges::sort(output, std::less{}, &T::name);
-		return output;
-	}
-template<typename T>
-	std::vector<T*> sortByName(std::vector<T>& input)
-	{
-		std::vector<T*> output;
-		for(auto& item : input)
-			output.push_back(&item);
-		std::ranges::sort(output, std::less{}, &T::name);
-		return output;
-	}
-template<typename T>
-	std::vector<T*> sortByName(std::list<T>& input)
-	{
-		std::vector<T*> output;
-		for(auto& item : input)
-			output.push_back(&item);
-		std::ranges::sort(output, std::less{}, &T::name);
-		return output;
-	}
-template<typename T>
-	std::vector<T*> sortByName(std::unordered_set<T>& input)
-	{
-		std::vector<T*> output;
-		for(auto& item : input)
-			output.push_back(&item);
-		std::ranges::sort(output, std::less{}, &T::name);
-		return output;
-	}
 // DateTime.
 DateTimeUI::DateTimeUI(uint8_t hours,uint16_t days, uint16_t years) : m_hours(tgui::SpinControl::create()), m_days(tgui::SpinControl::create()), m_years(tgui::SpinControl::create()), m_widget(tgui::Grid::create())
 {

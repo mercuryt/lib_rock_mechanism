@@ -67,6 +67,53 @@ namespace widgetUtil
 	tgui::ComboBox::Ptr makeCraftJobTypeSelectUI();
 	std::pair<tgui::ComboBox::Ptr, tgui::ComboBox::Ptr> makeCraftJobTypeAndMaterialTypeUI();
 	std::tuple<tgui::ComboBox::Ptr, tgui::ComboBox::Ptr, tgui::ComboBox::Ptr> makeItemTypeAndMaterialTypeOrMaterialTypeCategoryUI();
+	// In file widgets/item.cpp
+	tgui::Grid::Ptr makeCreateItemUI(std::function<void(const ItemType&, const MaterialType&, uint32_t, uint32_t)> callback);
 
 	void setPadding(tgui::Widget::Ptr wigdet);
 }
+template<typename T>
+	std::vector<T*> sortByName(std::vector<T*>& input)
+	{
+		std::vector<T*> output;
+		for(auto& item : input)
+			output.push_back(item);
+		std::ranges::sort(output, std::less{}, &T::name);
+		return output;
+	}
+template<typename T>
+	std::vector<const T*> sortByName(std::vector<const T*>& input)
+	{
+		std::vector<T*> output;
+		for(auto& item : input)
+			output.push_back(item);
+		std::ranges::sort(output, std::less{}, &T::name);
+		return output;
+	}
+template<typename T>
+	std::vector<T*> sortByName(std::vector<T>& input)
+	{
+		std::vector<T*> output;
+		for(auto& item : input)
+			output.push_back(&item);
+		std::ranges::sort(output, std::less{}, &T::name);
+		return output;
+	}
+template<typename T>
+	std::vector<T*> sortByName(std::list<T>& input)
+	{
+		std::vector<T*> output;
+		for(auto& item : input)
+			output.push_back(&item);
+		std::ranges::sort(output, std::less{}, &T::name);
+		return output;
+	}
+template<typename T>
+	std::vector<T*> sortByName(std::unordered_set<T>& input)
+	{
+		std::vector<T*> output;
+		for(auto& item : input)
+			output.push_back(&item);
+		std::ranges::sort(output, std::less{}, &T::name);
+		return output;
+	}

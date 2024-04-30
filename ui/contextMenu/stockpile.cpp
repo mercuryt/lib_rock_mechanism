@@ -37,7 +37,7 @@ void ContextMenu::drawStockPileControls(Block& block)
 	}
 	else if(m_window.getFaction() && block.m_hasShapes.canStandIn())
 	{
-		auto createButton = tgui::Label::create("create stockpile");	
+		auto createButton = tgui::Button::create("create stockpile");	
 		createButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 		m_root.add(createButton);
 		createButton->onClick([this]{

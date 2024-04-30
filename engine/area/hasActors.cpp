@@ -24,7 +24,8 @@ void AreaHasActors::processVisionReadStep()
 {
 	m_visionRequestQueue.clear();
 	for(Actor* actor : m_visionBuckets.get(m_area.m_simulation.m_step))
-		m_visionRequestQueue.emplace_back(*actor);
+		if(actor->m_mustSleep.isAwake())
+			m_visionRequestQueue.emplace_back(*actor);
 	auto visionIter = m_visionRequestQueue.begin();
 	while(visionIter < m_visionRequestQueue.end())
 	{
