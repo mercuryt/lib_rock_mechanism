@@ -31,6 +31,7 @@ void ConstructThreadedTask::readStep()
 	{
 		return m_constructObjective.joinableProjectExistsAt(block);
 	};
+	m_findsPath.m_maxRange = Config::maxRangeToSearchForConstructionDesignations;
 	m_findsPath.pathToUnreservedAdjacentToPredicate(constructCondition, *m_constructObjective.m_actor.getFaction());
 }
 void ConstructThreadedTask::writeStep()

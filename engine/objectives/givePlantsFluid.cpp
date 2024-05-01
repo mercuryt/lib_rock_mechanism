@@ -30,6 +30,7 @@ GivePlantsFluidThreadedTask::GivePlantsFluidThreadedTask(GivePlantsFluidObjectiv
 void GivePlantsFluidThreadedTask::readStep()
 {
 	const Faction* faction = m_objective.m_actor.getFaction();
+	m_findsPath.m_maxRange = Config::maxRangeToSearchForHorticultureDesignations;
 	if(m_objective.m_plantLocation == nullptr)
 	{
 		std::function<bool(const Block&)> predicate = [&](const Block& block)

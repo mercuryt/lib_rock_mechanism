@@ -5,7 +5,6 @@
 #include "deserializationMemo.h"
 #include "item.h"
 #include "itemQuery.h"
-#include "rain.h"
 #include "reservable.h"
 #include "simulation.h"
 #include "stocks.h"
@@ -45,6 +44,7 @@ void StockPileThreadedTask::readStep()
 {
 	assert(m_objective.m_project == nullptr);
 	assert(m_objective.m_actor.m_project == nullptr);
+	m_findsPath.m_maxRange = Config::maxRangeToSearchForStockPileItems;
 	if(m_item == nullptr)
 	{
 		std::function<Item*(const Block&)> getItem = [&](const Block& block)
@@ -63,6 +63,7 @@ void StockPileThreadedTask::readStep()
 			// TODO: Path from item location rather then from actor location, requires adding a setStart method to FindsPath.
 			std::function<bool(const Block&)> predicate = [&](const Block& block) { return destinationCondition(block, *item); };
 			FindsPath findAnotherPath(m_objective.m_actor, false);
+			findAnotherPath.m_maxRange = Config::maxRangeToSearchForStockPiles;
 			findAnotherPath.pathToUnreservedAdjacentToPredicate(predicate, *m_objective.m_actor.getFaction());
 			return findAnotherPath.found() || findAnotherPath.m_useCurrentLocation;
 		};
@@ -625,6 +626,16 @@ void AreaHasStockPilesForFaction::addItem(Item& item)
 		m_itemsWithDestinationsByStockPile[stockPile].insert(&item);
 		m_itemsWithDestinationsWithoutProjects.insert(&item);
 	}
+}
+void AreaHasStockPilesForFaction::maybeAddItem(Item& item)
+{
+	if(!m_projectsByItem.contains(&item) &&
+		(
+			!m_itemsWithoutDestinationsByItemType.contains(&item.m_itemType) || 
+			!m_itemsWithoutDestinationsByItemType.at(&item.m_itemType).contains(&item)
+		)
+	) 
+		addItem(item);
 }
 void AreaHasStockPilesForFaction::removeItem(Item& item)
 {

@@ -65,6 +65,9 @@ void ContextMenu::drawFarmFieldControls(Block& block)
 		m_root.add(createButton);
 		createButton->onMouseEnter([this, &block, create]{
 			auto& submenu = makeSubmenu(0);
+			auto speciesLabel = tgui::Label::create("species");
+			speciesLabel->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
+			submenu.add(speciesLabel);
 			auto plantSpeciesUI = widgetUtil::makePlantSpeciesSelectUI(&block);
 			submenu.add(plantSpeciesUI);
 			plantSpeciesUI->onItemSelect([create](const tgui::String name){ 

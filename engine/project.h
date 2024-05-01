@@ -176,6 +176,7 @@ public:
 	virtual void onComplete() = 0;
 	virtual void onReserve() { }
 	virtual void onCancel() { }
+	virtual void onAddToMaking([[maybe_unused]] Actor& actor) { }
 	virtual void onDelivered(HasShape& hasShape) { (void)hasShape; }
 	virtual void onSubprojectCreated(HaulSubproject& subproject) { (void)subproject; }
 	virtual void onHasShapeReservationDishonored([[maybe_unused]] const HasShape& hasShape, [[maybe_unused]]Quantity oldCount, [[maybe_unused]]Quantity newCount) { reset(); }

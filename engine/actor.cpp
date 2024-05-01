@@ -329,6 +329,12 @@ void Actor::setLocation(Block& block)
 	block.m_hasActors.enter(*this);
 	m_canLead.onMove();
 }
+void Actor::setLocationAndFacing(Block& block, Facing facing)
+{
+	exit();
+	m_facing = facing;
+	setLocation(block);
+}
 void Actor::exit()
 {
 	assert(m_location != nullptr);

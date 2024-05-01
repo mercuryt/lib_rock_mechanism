@@ -14,13 +14,13 @@
 #include "dig.h"
 #include "construct.h"
 #include "craft.h"
-#include "rain.h"
 #include "targetedHaul.h"	
 #include "fire.h"
 #include "woodcutting.h"
 #include "stocks.h"
 #include "fluidSource.h"
-#include "sleep.h"
+#include "area/rain.h"
+#include "area/hasSleepingSpots.h"
 #include "area/hasActors.h"
 #include "area/hasItems.h"
 //#include "medical.h"
@@ -63,7 +63,7 @@ public:
 	AreaHasStocks m_hasStocks;
 	HasCraftingLocationsAndJobs m_hasCraftingLocationsAndJobs;
 	AreaHasTargetedHauling m_hasTargetedHauling;
-	HasSleepingSpots m_hasSleepingSpots;
+	AreaHasSleepingSpots m_hasSleepingSpots;
 	HasWoodCuttingDesignations m_hasWoodCuttingDesignations;
 	HasInstallItemDesignations m_hasInstallItemDesignations;
 	//AreaHasMedicalPatients m_hasMedicalPatients;

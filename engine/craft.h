@@ -77,18 +77,19 @@ class CraftStepProject final : public Project
 	void onCancel();
 	void onDelay() { cancel(); }
 	void offDelay() { assert(false); }
-	bool canReset() const  { return false; }
-	virtual void onHasShapeReservationDishonored([[maybe_unused]] const HasShape& hasShape, [[maybe_unused]]Quantity oldCount, [[maybe_unused]]Quantity newCount) { cancel(); }
+	void onAddToMaking(Actor& actor);
+	[[nodiscard]] bool canReset() const  { return false; }
+	void onHasShapeReservationDishonored([[maybe_unused]] const HasShape& hasShape, [[maybe_unused]]Quantity oldCount, [[maybe_unused]]Quantity newCount) { cancel(); }
 	// Use copies rather then references for return types to allow specalization of Queries as well as byproduct material type.
-	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
-	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const;
-	std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> getByproducts() const;
-	std::vector<std::pair<ActorQuery, Quantity>> getActors() const { return {}; }
+	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
+	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const;
+	[[nodiscard]] std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> getByproducts() const;
+	[[nodiscard]] std::vector<std::pair<ActorQuery, Quantity>> getActors() const { return {}; }
 public:
 	CraftStepProject(const Faction* faction, Block& location, const CraftStepType& cst, CraftJob& cj) : Project(faction, location, 1), m_craftStepType(cst), m_craftJob(cj) { }
 	CraftStepProject(const Json& data, DeserializationMemo& deserializationMemo, CraftJob& cj);
 	// No toJson needed here, the base class one has everything.
-	uint32_t getWorkerCraftScore(const Actor& actor) const;
+	[[nodiscard]] uint32_t getWorkerCraftScore(const Actor& actor) const;
 };
 struct CraftStepProjectHasShapeDishonorCallback final : public DishonorCallback
 {
@@ -133,10 +134,10 @@ struct CraftJob final
 	CraftJob(const CraftJobType& cjt, HasCraftingLocationsAndJobsForFaction& hclaj, const MaterialType* mt, uint32_t msl) :
 	       	craftJobType(cjt), hasCraftingLocationsAndJobs(hclaj), workPiece(nullptr), materialType(mt), stepIterator(craftJobType.stepTypes.begin()), minimumSkillLevel(msl), totalSkillPoints(0), reservable(1) { }
 	CraftJob(const Json& data, DeserializationMemo& deserializationMemo, HasCraftingLocationsAndJobsForFaction& hclaj);
-	Json toJson() const;
-	uint32_t getQuality() const;
-	Step getStep() const;
-	bool operator==(const CraftJob& other){ return &other == this; }
+	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] uint32_t getQuality() const;
+	[[nodiscard]] Step getStep() const;
+	[[nodiscard]] bool operator==(const CraftJob& other){ return &other == this; }
 };
 inline void to_json(Json& data, const CraftJob* const& craftJob){ data = reinterpret_cast<uintptr_t>(craftJob); }
 class CraftObjectiveType final : public ObjectiveType
@@ -145,10 +146,10 @@ class CraftObjectiveType final : public ObjectiveType
 public:
 	CraftObjectiveType(const SkillType& skillType) : ObjectiveType(), m_skillType(skillType) { }
 	CraftObjectiveType(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	bool canBeAssigned(Actor& actor) const;
-	std::unique_ptr<Objective> makeFor(Actor& actor) const;
-	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Craft; }
+	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] bool canBeAssigned(Actor& actor) const;
+	[[nodiscard]] std::unique_ptr<Objective> makeFor(Actor& actor) const;
+	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Craft; }
 };
 class CraftObjective final : public Objective
 {
@@ -165,9 +166,9 @@ public:
 	void delay() { cancel(); }
 	void reset();
 	void recordFailedJob(CraftJob& craftJob) { assert(!m_failedJobs.contains(&craftJob)); m_failedJobs.insert(&craftJob); }
-	std::unordered_set<CraftJob*>& getFailedJobs() { return m_failedJobs; }
-	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Craft; }
-	std::string name() const { return "craft"; }
+	[[nodiscard]] std::unordered_set<CraftJob*>& getFailedJobs() { return m_failedJobs; }
+	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Craft; }
+	[[nodiscard]] std::string name() const { return "craft"; }
 	friend class CraftThreadedTask;
 	friend class HasCraftingLocationsAndJobsForFaction;
 	// For testing.
@@ -199,7 +200,7 @@ public:
 	HasCraftingLocationsAndJobsForFaction(const Faction& f) : m_faction(f) { }
 	HasCraftingLocationsAndJobsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const Faction& f);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
+	[[nodiscard]] Json toJson() const;
 	// To be used by the player.
 	void addLocation(const CraftStepTypeCategory& craftStepTypeCategory, Block& block);
 	// To be used by the player.
@@ -220,7 +221,7 @@ public:
 	// Unlist a project.
 	void unindexAssigned(CraftJob& craftJob);
 	// To be called when all steps are complete.
-	void jobComplete(CraftJob& craftJob);
+	void jobComplete(CraftJob& craftJob, Block& location);
 	// Generate a project step for craftJob and dispatch the worker from objective.
 	void makeAndAssignStepProject(CraftJob& craftJob, Block& location, CraftObjective& objective);
 	// To be used by the UI.
@@ -229,8 +230,8 @@ public:
 	[[nodiscard]] std::unordered_set<const CraftStepTypeCategory*>& getStepTypeCategoriesForLocation(const Block& location);
 	[[nodiscard]] const CraftStepTypeCategory* getDisplayStepTypeCategoryForLocation(const Block& location);
 	// May return nullptr;
-	CraftJob* getJobForAtLocation(const Actor& actor, const SkillType& skillType, const Block& block, std::unordered_set<CraftJob*>& excludeJobs);
-	std::pair<CraftJob*, Block*> getJobAndLocationForWhileExcluding(const Actor& actor, const SkillType& skillType, std::unordered_set<CraftJob*>& excludeJobs);
+	[[nodiscard]] CraftJob* getJobForAtLocation(const Actor& actor, const SkillType& skillType, const Block& block, std::unordered_set<CraftJob*>& excludeJobs);
+	[[nodiscard]] std::pair<CraftJob*, Block*> getJobAndLocationForWhileExcluding(const Actor& actor, const SkillType& skillType, std::unordered_set<CraftJob*>& excludeJobs);
 	friend class CraftObjectiveType;
 	friend class HasCraftingLocationsAndJobs;
 	// For testing.
@@ -244,7 +245,7 @@ class HasCraftingLocationsAndJobs final
 public:
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
+	[[nodiscard]] Json toJson() const;
 	void addFaction(const Faction& faction) { m_data.try_emplace(&faction, faction); }
 	void removeFaction(const Faction& faction) { m_data.erase(&faction); }
 	void maybeRemoveLocation(Block& location) { for(auto& pair : m_data) pair.second.maybeRemoveLocation(location); }

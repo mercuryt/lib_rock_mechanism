@@ -6,8 +6,6 @@
 #include "threadedTask.hpp"
 #include "eventSchedule.hpp"
 
-#include <vector>
-
 class Area;
 class Actor;
 class Block;
@@ -106,14 +104,4 @@ public:
 	friend class MustSleep;
 	// For testing.
 	[[maybe_unused, nodiscard]] bool threadedTaskExists() const { return m_threadedTask.exists(); }
-};
-class HasSleepingSpots final
-{
-	std::unordered_set<Block*> m_unassigned;
-public:
-	void load(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	void designate(const Faction& faction, Block& block);
-	void undesignate(const Faction& faction, Block& block);
-	bool containsUnassigned(const Block& block) const { return m_unassigned.contains(const_cast<Block*>(&block)); }
 };

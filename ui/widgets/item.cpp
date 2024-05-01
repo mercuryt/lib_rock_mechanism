@@ -1,33 +1,28 @@
 #include "../widgets.h"
-#include "item.h"
-#include "materialType.h"
-#include <TGUI/Renderers/ComboBoxRenderer.hpp>
-#include <TGUI/Widgets/SpinButton.hpp>
-#include <TGUI/Widgets/SpinControl.hpp>
-#include <chrono>
+#include "../engine/item.h"
+#include "../engine/materialType.h"
 
-tgui::Grid::Ptr widgetUtil::makeCreateItemUI(std::function<void(const ItemType&, const MaterialType&, uint32_t, uint32_t)> callback)
+std::array<tgui::Widget::Ptr, 7> widgetUtil::makeCreateItemUI(std::function<void(const ItemType&, const MaterialType&, uint32_t, uint32_t)> callback)
 {
-	tgui::Grid::Ptr output = tgui::Grid::create();
+	static uint32_t quantityOrQuality = 0; 
+	static uint32_t wear = 0;
 	tgui::ComboBox::Ptr itemTypeUI = tgui::ComboBox::create();
 	tgui::ComboBox::Ptr materialTypeUI = tgui::ComboBox::create();
 	tgui::Label::Ptr quantityOrQualityLabel = tgui::Label::create();
 	tgui::SpinControl::Ptr quantityOrQualityUI = tgui::SpinControl::create();
 	quantityOrQualityUI->setMinimum(0);
 	quantityOrQualityUI->setMaximum(UINT32_MAX);
-	tgui::Label::Ptr wearLabel = tgui::Label::create();
+	quantityOrQualityUI->setValue(quantityOrQuality);
+	quantityOrQualityUI->onValueChange([](const float value){ quantityOrQuality = value; });
+	tgui::Label::Ptr wearLabel = tgui::Label::create("wear");
 	tgui::SpinControl::Ptr wearUI = tgui::SpinControl::create();
 	wearUI->setMinimum(0);
 	wearUI->setMaximum(UINT32_MAX);
+	wearUI->setValue(wear);
+	wearUI->onValueChange([](const float value){ wear = value; });
 	tgui::Button::Ptr confirmUI = tgui::Button::create("confirm");
-	output->addWidget(itemTypeUI, 0, 0);
-	output->addWidget(materialTypeUI, 1, 0);
-	output->addWidget(quantityOrQualityLabel, 2, 0);
-	output->addWidget(quantityOrQualityUI, 2, 1);
-	output->addWidget(wearLabel, 3, 0);
-	output->addWidget(wearUI, 3, 1);
-	output->addWidget(confirmUI, 3, 0);
-	auto populate = [materialTypeUI, quantityOrQualityUI, quantityOrQualityLabel, wearUI, wearLabel]{
+	auto populate = [materialTypeUI, quantityOrQualityLabel, wearUI, wearLabel]{
+		materialTypeUI->removeAllItems();
 		const ItemType& itemType = *lastSelectedItemType;
 		for(const MaterialType* materialType : sortByName(materialTypeDataStore))
 		{
@@ -39,18 +34,42 @@ tgui::Grid::Ptr widgetUtil::makeCreateItemUI(std::function<void(const ItemType&,
 						materialTypeUI->addItem(materialType->name, materialType->name);
 						break;
 					}
-				break;
+				continue;
 			}
 			materialTypeUI->addItem(materialType->name, materialType->name);
 		}
-		wearUI->setVisible(itemType.generic);
-		wearLabel->setVisible(itemType.generic);
+		if(lastSelectedMaterial && materialTypeUI->contains(lastSelectedMaterial->name))
+			materialTypeUI->setSelectedItem(lastSelectedMaterial->name);
+		else
+			materialTypeUI->setSelectedItemByIndex(0);
+		wearUI->setVisible(!itemType.generic);
+		wearLabel->setVisible(!itemType.generic);
 		quantityOrQualityLabel->setText(itemType.generic ? "quantity" : "quality");
+		if(itemType.generic && !quantityOrQuality)
+			quantityOrQuality = 1;
 	};
+	itemTypeUI->onItemSelect([populate](const tgui::String itemType){ 
+		if(itemType.empty())
+			return;
+		lastSelectedItemType = &ItemType::byName(itemType.toStdString());
+		populate();
+	});
+	materialTypeUI->onItemSelect([](const tgui::String name){ 
+		if(name.empty())
+			return;
+		lastSelectedMaterial = &MaterialType::byName(name.toStdString());
+	});
+	for(const ItemType* itemType : sortByName(itemTypeDataStore))
+		itemTypeUI->addItem(itemType->name, itemType->name);
+	// Populate is called when item type is set.
+	if(lastSelectedItemType)
+		itemTypeUI->setSelectedItemById(lastSelectedItemType->name);
+	else
+		itemTypeUI->setSelectedItemByIndex(0);
 	confirmUI->onClick([quantityOrQualityUI, wearUI, callback]{
 		const ItemType& itemType = *lastSelectedItemType;
 		const MaterialType& materialType = *lastSelectedMaterial;
 		callback(itemType, materialType, quantityOrQualityUI->getValue(), wearUI->getValue());
 	});
-	return output;
+	return {itemTypeUI, materialTypeUI, quantityOrQualityLabel, quantityOrQualityUI, wearLabel, wearUI, confirmUI};
 }

@@ -42,6 +42,9 @@ void ContextMenu::drawPlantControls(Block& block)
 		static Percent percentGrown = 100;
 		addPlant->onMouseEnter([this, &block]{
 			auto& submenu = makeSubmenu(0);
+			auto speciesLabel = tgui::Label::create("species");
+			speciesLabel->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
+			submenu.add(speciesLabel);
 			auto speciesUI = widgetUtil::makePlantSpeciesSelectUI(&block);
 			submenu.add(speciesUI);
 			auto percentGrownUI = tgui::SpinControl::create();

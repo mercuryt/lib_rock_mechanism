@@ -33,6 +33,7 @@ HarvestThreadedTask::HarvestThreadedTask(HarvestObjective& ho) : ThreadedTask(ho
 void HarvestThreadedTask::readStep()
 {
 	std::function<bool(const Block&)> predicate = [&](const Block& block) { return m_harvestObjective.blockContainsHarvestablePlant(block); };
+	m_findsPath.m_maxRange = Config::maxRangeToSearchForHorticultureDesignations;
 	m_findsPath.pathToUnreservedAdjacentToPredicate(predicate, *m_harvestObjective.m_actor.getFaction());
 }
 void HarvestThreadedTask::writeStep()

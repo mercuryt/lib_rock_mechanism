@@ -1,4 +1,5 @@
 #include "config.h"
+#include "types.h"
 void Config::load()
 {
 	std::ifstream f("data/config.json");
@@ -92,15 +93,22 @@ void Config::load()
 	maxAnimalInsertLocationSearchRetries = data["maxAnimalInsertLocationSearchRetries"].get<uint32_t>();
 	maxBlockVolume = data["maxBlockVolume"].get<Volume>();
 	maxBlockVolumeHardLimit = data["maxBlockVolumeHardLimit"].get<Volume>();
-	maxBlocksToLookForBetterFood = data["maxBlocksToLookForBetterFood"].get<uint32_t>();
-	maxDistanceToLookForEatingLocation = data["maxDistanceToLookForEatingLocation"].get<uint32_t>();
+	maxBlocksToLookForBetterFood = data["maxBlocksToLookForBetterFood"].get<DistanceInBlocks>();
+	maxDistanceToLookForEatingLocation = data["maxDistanceToLookForEatingLocation"].get<DistanceInBlocks>();
 	maxDistanceVisionModifier = data["maxDistanceVisionModifier"].get<float>();
-	maxNumberOfWorkersForConstructionProject = data["maxNumberOfWorkersForConstructionProject"].get<uint32_t>();
-	maxNumberOfWorkersForDigProject = data["maxNumberOfWorkersForDigProject"].get<uint32_t>();
-	maxNumberOfWorkersForWoodCuttingProject = data["maxNumberOfWorkersForWoodCuttingProject"].get<uint32_t>();
+	maxNumberOfWorkersForConstructionProject = data["maxNumberOfWorkersForConstructionProject"].get<Quantity>();
+	maxNumberOfWorkersForDigProject = data["maxNumberOfWorkersForDigProject"].get<Quantity>();
+	maxNumberOfWorkersForWoodCuttingProject = data["maxNumberOfWorkersForWoodCuttingProject"].get<Quantity>();
+	maxRangeToSearchForCraftingRequirements = data["maxRangeToSearchForCraftingRequirements"].get<DistanceInBlocks>();
+	maxRangeToSearchForStockPileItems = data["maxRangeToSearchForStockPileItems"].get<DistanceInBlocks>();
+	maxRangeToSearchForStockPiles = data["maxRangeToSearchForStockPiles"].get<DistanceInBlocks>();
+	maxRangeToSearchForDigDesignations = data["maxRangeToSearchForDigDesignations"].get<DistanceInBlocks>();
+	maxRangeToSearchForConstructionDesignations = data["maxRangeToSearchForConstructionDesignations"].get<DistanceInBlocks>();
+	maxRangeToSearchForWoodCuttingDesignations = data["maxRangeToSearchForWoodCuttingDesignations"].get<DistanceInBlocks>();
+	maxRangeToSearchForHorticultureDesignations = data["maxRangeToSearchForHorticultureDesignations"].get<DistanceInBlocks>();
 	maxSkillLevel = data["maxSkillLevel"].get<uint32_t>();
 	maxStaminaPointsBase = data["maxStaminaPointsBase"].get<uint32_t>();
-	maxWorkersForStockPileProject = data["maxWorkersForStockPileProject"].get<uint32_t>();
+	maxWorkersForStockPileProject = data["maxWorkersForStockPileProject"].get<Quantity>();
 	maxZLevelForDeepAmbiantTemperature = data["maxZLevelForDeepAmbiantTemperature"].get<DistanceInBlocks>();
 	maximumDurationToWaitInsteadOfWander = data["maximumDurationToWaitInsteadOfWanderMinutes"].get<float>() * stepsPerMinute;
 	maximumRainIntensityModifier = data["maximumRainIntensityModifier"].get<float>();
