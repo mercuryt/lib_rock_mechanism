@@ -1,9 +1,9 @@
 #include "../contextMenu.h"
 #include "../window.h"
 #include "../../engine/block.h"
+#include "../engine/types.h"
 #include "craft.h"
-#include "designations.h"
-#include "types.h"
+#include "../displayData.h"
 void ContextMenu::drawCraftControls(Block& block)
 {
 	if(!m_window.getFaction() || block.isSolid() || !block.m_hasShapes.canStandIn())
@@ -14,6 +14,9 @@ void ContextMenu::drawCraftControls(Block& block)
 		auto& locationsAndJobsForFaction = m_window.getArea()->m_hasCraftingLocationsAndJobs.at(*m_window.getFaction());
 		auto categories = locationsAndJobsForFaction.getStepTypeCategoriesForLocation(block);
 		auto& subMenu = makeSubmenu(0);
+		auto speciesLabel = tgui::Label::create("craft job");
+		speciesLabel->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
+		subMenu.add(speciesLabel);
 		auto stepTypeCategoryUI = widgetUtil::makeCraftStepTypeCategorySelectUI();
 		subMenu.add(stepTypeCategoryUI);
 		for(const CraftStepTypeCategory* category : categories)

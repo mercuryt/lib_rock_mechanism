@@ -208,7 +208,7 @@ bool DrinkObjective::canDrinkItemAt(const Block& block) const
 Item* DrinkObjective::getItemToDrinkFromAt(Block& block) const
 {
 	for(Item* item : block.m_hasItems.getAll())
-		if(item->m_hasCargo.getFluidType() == m_actor.m_mustDrink.getFluidType())
+		if(item->m_hasCargo.containsAnyFluid() && item->m_hasCargo.getFluidType() == m_actor.m_mustDrink.getFluidType())
 			return item;
 	return nullptr;
 }

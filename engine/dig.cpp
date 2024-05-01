@@ -34,6 +34,7 @@ void DigThreadedTask::readStep()
 	{
 		return m_digObjective.getJoinableProjectAt(block) != nullptr;
 	};
+	m_findsPath.m_maxRange = Config::maxRangeToSearchForDigDesignations;
 	//TODO: We don't need the whole path here, just the destination and facing.
 	m_findsPath.pathToUnreservedAdjacentToPredicate(predicate, *m_digObjective.m_actor.getFaction());
 }

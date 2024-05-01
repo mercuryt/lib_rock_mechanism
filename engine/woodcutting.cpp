@@ -33,6 +33,7 @@ void WoodCuttingThreadedTask::readStep()
 	{
 		return m_woodCuttingObjective.getJoinableProjectAt(block) != nullptr;
 	};
+	m_findsPath.m_maxRange = Config::maxRangeToSearchForWoodCuttingDesignations;
 	//TODO: We don't need the whole path here, just the destination and facing.
 	m_findsPath.pathToUnreservedAdjacentToPredicate(predicate, *m_woodCuttingObjective.m_actor.getFaction());
 }

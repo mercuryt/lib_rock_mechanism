@@ -236,6 +236,7 @@ public:
 	StockPile& addStockPile(std::vector<ItemQuery>&& queries);
 	StockPile& addStockPile(std::vector<ItemQuery>& queries);
 	void addItem(Item& item);
+	void maybeAddItem(Item& item);
 	void removeItem(Item& item);
 	void removeBlock(Block& block);
 	void setAvailable(StockPile& stockPile);

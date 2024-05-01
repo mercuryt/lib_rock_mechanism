@@ -96,6 +96,7 @@ TEST_CASE("craft")
 			simulation.fastForwardUntillActorIsAdjacentToHasShape(dwarf1, board);
 			std::function<bool()> predicate = [&](){ return sawingLocation.m_hasItems.getCount(ItemType::byName("bucket"), wood) == 1; };
 			simulation.fastForwardUntillPredicate(predicate, 11);
+			REQUIRE(dwarf1.m_location == &sawingLocation);
 			REQUIRE(job->getStep() == 2);
 			REQUIRE(job->workPiece != nullptr);
 			Item& bucket = *job->workPiece;

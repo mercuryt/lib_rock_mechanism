@@ -68,7 +68,7 @@ namespace widgetUtil
 	std::pair<tgui::ComboBox::Ptr, tgui::ComboBox::Ptr> makeCraftJobTypeAndMaterialTypeUI();
 	std::tuple<tgui::ComboBox::Ptr, tgui::ComboBox::Ptr, tgui::ComboBox::Ptr> makeItemTypeAndMaterialTypeOrMaterialTypeCategoryUI();
 	// In file widgets/item.cpp
-	tgui::Grid::Ptr makeCreateItemUI(std::function<void(const ItemType&, const MaterialType&, uint32_t, uint32_t)> callback);
+	std::array<tgui::Widget::Ptr, 7> makeCreateItemUI(std::function<void(const ItemType&, const MaterialType&, uint32_t, uint32_t)> callback);
 
 	void setPadding(tgui::Widget::Ptr wigdet);
 }

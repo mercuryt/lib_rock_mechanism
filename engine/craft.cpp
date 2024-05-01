@@ -71,6 +71,14 @@ void CraftStepProject::onCancel()
 		actor->m_hasObjectives.cannotCompleteSubobjective();
 	}
 }
+void CraftStepProject::onAddToMaking(Actor& actor)
+{
+	auto [canEnter, facing] = m_location.m_hasShapes.canEnterCurrentlyWithAnyFacingReturnFacing(actor);
+	if(canEnter)
+		actor.setLocationAndFacing(m_location, facing);
+	else
+		setDelayOn();
+}
 std::vector<std::pair<ItemQuery, Quantity>> CraftStepProject::getConsumed() const
 { 
 	// Make a copy so we can edit itemQueries.
@@ -378,7 +386,7 @@ void HasCraftingLocationsAndJobsForFaction::stepComplete(CraftJob& craftJob, Act
 	unindexAssigned(craftJob);
 	++craftJob.stepIterator;
 	if(craftJob.stepIterator == craftJob.craftJobType.stepTypes.end())
-		jobComplete(craftJob);
+		jobComplete(craftJob, *location);
 	else
 	{
 		if(craftJob.workPiece == nullptr)
@@ -417,20 +425,35 @@ void HasCraftingLocationsAndJobsForFaction::unindexAssigned(CraftJob& craftJob)
 	else
 		m_unassignedProjectsBySkill[&craftStepType.skillType].erase(&craftJob);
 }
-void HasCraftingLocationsAndJobsForFaction::jobComplete(CraftJob& craftJob)
+void HasCraftingLocationsAndJobsForFaction::jobComplete(CraftJob& craftJob, Block& location)
 {
-	assert(craftJob.workPiece != nullptr);
+	Item* product = nullptr;
 	if(craftJob.craftJobType.productType.generic)
 	{
-		craftJob.workPiece->m_location->m_hasItems.addGeneric(craftJob.craftJobType.productType, *craftJob.materialType, craftJob.craftJobType.productQuantity);
-		craftJob.workPiece->destroy();
+		product = &location.m_hasItems.addGeneric(craftJob.craftJobType.productType, *craftJob.materialType, craftJob.craftJobType.productQuantity);
+		if(craftJob.workPiece)
+			craftJob.workPiece->destroy();
 	}
 	else
 	{
 		assert(craftJob.craftJobType.productQuantity == 1);
-		craftJob.workPiece->m_quality = craftJob.getQuality();
-		craftJob.workPiece->m_craftJobForWorkPiece = nullptr;
+		if(craftJob.workPiece)
+		{
+			// Not generic and workpiece exists, use it as product.
+			craftJob.workPiece->m_quality = craftJob.getQuality();
+			craftJob.workPiece->m_craftJobForWorkPiece = nullptr;
+			product = craftJob.workPiece;
+		}
+		else
+		{
+			Simulation& simulation = location.m_area->m_simulation;
+			product = &simulation.createItemNongeneric(craftJob.craftJobType.productType, *craftJob.materialType, craftJob.getQuality(), 0);
+			product->setLocation(location);
+		}
 	}
+	if(!location.m_area->m_hasStockPiles.contains(m_faction))
+		location.m_area->m_hasStockPiles.registerFaction(m_faction);
+	location.m_area->m_hasStockPiles.at(m_faction).maybeAddItem(*product);
 	m_jobs.remove(craftJob);
 }
 void HasCraftingLocationsAndJobsForFaction::makeAndAssignStepProject(CraftJob& craftJob, Block& location, CraftObjective& objective)
@@ -483,6 +506,7 @@ std::pair<CraftJob*, Block*> HasCraftingLocationsAndJobsForFaction::getJobAndLoc
 		return !block.m_reservable.isFullyReserved(actor.getFaction()) && getJobForAtLocation(actor, skillType, block, excludeJobs) != nullptr;
 	};
 	FindsPath findsPath(actor, false);
+	findsPath.m_maxRange = Config::maxRangeToSearchForCraftingRequirements;
 	findsPath.pathToUnreservedAdjacentToPredicate(predicate, *actor.getFaction());
 	if(!findsPath.found() && !findsPath.m_useCurrentLocation)
 		return std::make_pair(nullptr, nullptr);

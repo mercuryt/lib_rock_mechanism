@@ -105,7 +105,7 @@ public:
 	bool canAdd(HasShape& hasShape) const;
 	bool canAdd(FluidType& fluidType) const;
 	const Volume& getFluidVolume() const { return m_fluidVolume; }
-	const FluidType& getFluidType() const { return *m_fluidType; }
+	const FluidType& getFluidType() const { assert(m_fluidType); return *m_fluidType; }
 	bool containsAnyFluid() const { return m_fluidType != nullptr; }
 	bool contains(HasShape& hasShape) const { return std::ranges::find(m_shapes, &hasShape) != m_shapes.end(); }
 	bool containsGeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity) const;

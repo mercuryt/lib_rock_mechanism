@@ -102,6 +102,7 @@ public:
 	Actor(ActorParamaters params);
 	Actor(const Json& data, DeserializationMemo& deserializationMemo);
 	void setLocation(Block& block);
+	void setLocationAndFacing(Block& block, Facing facing);
 	void exit();
 	void removeMassFromCorpse(Mass mass);
 	void die(CauseOfDeath causeOfDeath);

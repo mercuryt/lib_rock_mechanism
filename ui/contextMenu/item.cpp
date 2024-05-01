@@ -5,6 +5,8 @@
 #include "../../engine/block.h"
 #include "../../engine/objectives/equipItem.h"
 #include "../../engine/objectives/unequipItem.h"
+#include <cmath>
+#include <regex>
 void ContextMenu::drawItemControls(Block& block)
 {
 	// Item submenu.
@@ -110,16 +112,9 @@ void ContextMenu::drawItemControls(Block& block)
 	}
 	if(m_window.m_editMode)
 	{
-		auto addItem = tgui::Button::create("add item");
-		addItem->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
-		m_root.add(addItem);
-		static uint32_t quantity = 1;
-		static uint32_t quality = 0;
-		static uint32_t percentWear = 0;
-		auto confirm = [this, &block]{
+		std::function<void(const ItemType&, const MaterialType&, uint32_t, uint32_t)> 
+		callback = [this, &block](const ItemType& itemType, const MaterialType& materialType, uint32_t quantityOrQuality, uint32_t wear){
 			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-			const MaterialType& materialType = *widgetUtil::lastSelectedMaterial;
-			const ItemType& itemType = *widgetUtil::lastSelectedItemType;
 			if(m_window.getSelectedBlocks().empty())
 				m_window.selectBlock(block);
 			for(Block* selectedBlock : m_window.getSelectedBlocks())
@@ -127,72 +122,35 @@ void ContextMenu::drawItemControls(Block& block)
 				static const MoveType& none = MoveType::byName("none");
 				if(!selectedBlock->m_hasShapes.shapeAndMoveTypeCanEnterEverWithAnyFacing(itemType.shape, none))
 					continue;
-				Item& item = m_window.getSimulation()->createItemGeneric(itemType, materialType, quantity);
+				Item& item = itemType.generic ? 
+					m_window.getSimulation()->createItemGeneric(itemType, materialType, quantityOrQuality) :
+					m_window.getSimulation()->createItemNongeneric(itemType, materialType, quantityOrQuality, wear);
 				item.setLocation(*selectedBlock);
 			}
 			hide();
 		};
-		addItem->onClick([confirm]{
-			if(widgetUtil::lastSelectedItemType && widgetUtil::lastSelectedMaterial)
-				confirm();
-		});
-		addItem->onMouseEnter([this, confirm]{
+		auto addItem = tgui::Label::create("add item");
+		addItem->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
+		m_root.add(addItem);
+		addItem->onMouseEnter([this, callback]{
 			auto& submenu = makeSubmenu(0);
-			auto itemTypeSelectUI = widgetUtil::makeItemTypeSelectUI();
-			submenu.add(itemTypeSelectUI);
-			auto materialTypeSelectUI = widgetUtil::makeMaterialSelectUI();
-			submenu.add(materialTypeSelectUI);
-			std::function<void(const ItemType&)> onSelect = [this, itemTypeSelectUI, materialTypeSelectUI, confirm](const ItemType& itemType){
-				if(itemType.generic)
-				{
-					auto& subSubMenu = makeSubmenu(1);
-					auto quantityLabel = tgui::Label::create("quantity");
-					subSubMenu.add(quantityLabel);
-					quantityLabel->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
-					auto quantityUI = tgui::SpinControl::create();
-					quantityUI->setMinimum(1);
-					quantityUI->setMaximum(INT16_MAX);
-					quantityUI->setValue(quantity);
-					quantityUI->onValueChange([](const float value){ quantity = value; });
-					subSubMenu.add(quantityUI);
-					auto confirmButton = tgui::Button::create("confirm");
-					confirmButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
-					subSubMenu.add(confirmButton);
-					confirmButton->onClick([=]{ confirm(); });
-				}
-				else
-				{
-					auto& subSubMenu = makeSubmenu(1);
-					auto qualityLabel = tgui::Label::create("quality");
-					subSubMenu.add(qualityLabel);
-					qualityLabel->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
-					auto qualityUI = tgui::SpinControl::create();
-					qualityUI->setMinimum(1);
-					qualityUI->setMaximum(100);
-					qualityUI->setValue(quality);
-					qualityUI->onValueChange([](const float value){ quality = value; });
-					subSubMenu.add(qualityUI);
-					auto percentWearLabel = tgui::Label::create("percentWear");
-					subSubMenu.add(percentWearLabel);
-					percentWearLabel->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
-					auto percentWearUI = tgui::SpinControl::create();
-					percentWearUI->setMinimum(1);
-					percentWearUI->setMaximum(100);
-					percentWearUI->setValue(percentWear);
-					percentWearUI->onValueChange([](const float value){ percentWear = value; });
-					subSubMenu.add(percentWearUI);
-					auto confirmButton = tgui::Button::create("confirm");
-					confirmButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
-					subSubMenu.add(confirmButton);
-					confirmButton->onClick([=]{ confirm(); });
-				}
-			};
-			itemTypeSelectUI->onItemSelect([onSelect](const tgui::String& value){
-				const ItemType& itemType = ItemType::byName(value.toStdString());
-				onSelect(itemType);
-			});
-			const ItemType& itemType = ItemType::byName(itemTypeSelectUI->getSelectedItemId().toStdString());
-			onSelect(itemType);
+			auto [itemTypeUI, materialTypeUI, quantityOrQualityLabel, quantityOrQualityUI, wearLabel, wearUI, confirmUI] = widgetUtil::makeCreateItemUI(callback);
+			auto itemTypeLabel = tgui::Label::create("item type");
+			itemTypeLabel->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
+			submenu.add(itemTypeLabel);
+			submenu.add(itemTypeUI);
+			auto materialTypeLabel = tgui::Label::create("material type");
+			materialTypeLabel->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
+			submenu.add(materialTypeLabel);
+			submenu.add(materialTypeUI);
+
+			quantityOrQualityLabel->cast<tgui::Label>()->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
+			submenu.add(quantityOrQualityLabel);
+			submenu.add(quantityOrQualityUI);
+			wearLabel->cast<tgui::Label>()->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
+			submenu.add(wearLabel);
+			submenu.add(wearUI);
+			submenu.add(confirmUI);
 		});
 	}
 	// Items.

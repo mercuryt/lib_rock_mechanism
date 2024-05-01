@@ -699,6 +699,7 @@ void Project::addToMaking(Actor& actor)
 	assert(m_workers.contains(&actor));
 	assert(!m_making.contains(&actor));
 	m_making.insert(&actor);
+	onAddToMaking(actor);
 	scheduleFinishEvent();
 }
 void Project::removeFromMaking(Actor& actor)
@@ -782,8 +783,9 @@ void Project::setLocationDishonorCallback(std::unique_ptr<DishonorCallback> dish
 void Project::setDelayOn() 
 { 
 	m_delay = true; 
+	bool reset = canReset();
 	onDelay(); 
-	if(canReset())
+	if(reset)
 		m_tryToReserveEvent.schedule(Config::projectDelayAfterExauhstingSubprojectRetries, *this);
 }
 void Project::setDelayOff() 

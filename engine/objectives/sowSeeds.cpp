@@ -1,6 +1,7 @@
 #include "sowSeeds.h"
 #include "area.h"
 #include "actor.h"
+#include "config.h"
 #include "farmFields.h"
 #include "simulation.h"
 
@@ -35,6 +36,7 @@ void SowSeedsThreadedTask::readStep()
 {
 	const Faction* faction = m_objective.m_actor.getFaction();
 	std::function<bool(const Block&)> predicate = [&](const Block& block) { return m_objective.canSowAt(block); };
+	m_findsPath.m_maxRange = Config::maxRangeToSearchForHorticultureDesignations;
 	m_findsPath.pathToUnreservedAdjacentToPredicate(predicate, *faction);
 }
 void SowSeedsThreadedTask::writeStep()
