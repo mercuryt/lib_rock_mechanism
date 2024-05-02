@@ -53,7 +53,7 @@ TEST_CASE("json")
 		area.getBlock(8, 8, 1).m_hasPlant.createPlant(sage, 99);
 		Plant& sage1 = area.getBlock(8,8,1).m_hasPlant.get();
 		sage1.setMaybeNeedsFluid();
-		area.getBlock(3, 8, 1).addFluid(10, water);
+		area.getBlock(3, 8, 1).m_hasFluids.addFluid(10, water);
 		Item& axe1 = simulation.createItemNongeneric(axe, bronze, 10, 10);
 		axe1.setLocation(area.getBlock(1,2,1));
 		area.getBlock(1,8,1).m_hasBlockFeatures.construct(BlockFeatureType::stairs, wood);
@@ -91,9 +91,9 @@ TEST_CASE("json")
 		REQUIRE(!sage2.m_growthEvent.exists());
 		// Fluid.
 		Block& waterLocation = area2.getBlock(3,8,1);
-		REQUIRE(waterLocation.m_totalFluidVolume == 10);
-		REQUIRE(waterLocation.volumeOfFluidTypeContains(water) == 10);
-		FluidGroup& fluidGroup = *waterLocation.getFluidGroup(water);
+		REQUIRE(waterLocation.m_hasFluids.getTotalVolume() == 10);
+		REQUIRE(waterLocation.m_hasFluids.volumeOfFluidTypeContains(water) == 10);
+		FluidGroup& fluidGroup = *waterLocation.m_hasFluids.getFluidGroup(water);
 		REQUIRE(area2.m_unstableFluidGroups.contains(&fluidGroup));
 		// Actor.
 		REQUIRE(!area2.getBlock(5,5,1).m_hasActors.empty());

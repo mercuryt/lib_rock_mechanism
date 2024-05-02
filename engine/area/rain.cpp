@@ -67,7 +67,7 @@ void AreaHasRain::writeStep()
 			--i;
 		else
 		{
-			block.addFluid(1, *m_currentlyRainingFluidType);
+			block.m_hasFluids.addFluid(1, *m_currentlyRainingFluidType);
 			i = spacing;
 		}
 }

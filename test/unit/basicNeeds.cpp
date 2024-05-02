@@ -28,7 +28,7 @@ TEST_CASE("basicNeedsSentient")
 	{
 		Block& pondLocation = area.getBlock(3, 3, 1);
 		pondLocation.setNotSolid();
-		pondLocation.addFluid(100, water);
+		pondLocation.m_hasFluids.addFluid(100, water);
 		simulation.fastForward(dwarf.stepsFluidDrinkFreqency);
 		REQUIRE(!actor.m_canGrow.isGrowing());
 		REQUIRE(actor.m_mustDrink.needsFluid());
@@ -43,7 +43,7 @@ TEST_CASE("basicNeedsSentient")
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "drink");
 		uint32_t drinkVolume = MustDrink::drinkVolumeFor(actor);
 		simulation.doStep(); // Give a step for the fluid removal to take effect.
-		REQUIRE(pondLocation.volumeOfFluidTypeContains(water) == Config::maxBlockVolume - drinkVolume);
+		REQUIRE(pondLocation.m_hasFluids.volumeOfFluidTypeContains(water) == Config::maxBlockVolume - drinkVolume);
 	}
 	SUBCASE("drink from bucket")
 	{
@@ -136,7 +136,7 @@ TEST_CASE("basicNeedsNonsentient")
 	REQUIRE(actor.m_mustDrink.thirstEventExists());
 	Block& pondLocation = area.getBlock(3, 3, 1);
 	pondLocation.setNotSolid();
-	pondLocation.addFluid(100, water);
+	pondLocation.m_hasFluids.addFluid(100, water);
 	SUBCASE("sleep outside at current location")
 	{
 		// Generate objectives, discard eat if it exists.
@@ -293,7 +293,7 @@ TEST_CASE("death")
 	{
 		Block& pondLocation = area.getBlock(3, 3, 1);
 		pondLocation.setNotSolid();
-		pondLocation.addFluid(100, FluidType::byName("water"));
+		pondLocation.m_hasFluids.addFluid(100, FluidType::byName("water"));
 		// Generate objectives, discard drink if it exists.
 		REQUIRE(actor.m_mustEat.getHungerEventStep() == redDeer.stepsEatFrequency +  step);
 		simulation.fastForward(redDeer.stepsEatFrequency);

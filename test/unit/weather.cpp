@@ -24,5 +24,5 @@ TEST_CASE("weather")
 		}
 
 	}
-	REQUIRE(area.getBlock(1,1,1).volumeOfFluidTypeContains(water));
+	REQUIRE(area.getBlock(1,1,1).m_hasFluids.volumeOfFluidTypeContains(water));
 }

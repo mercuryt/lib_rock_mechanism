@@ -12,12 +12,12 @@ void AreaHasFluidSources::step()
 {
 	for(FluidSource& source : m_data)
 	{
-		int delta =  source.level - source.block->m_totalFluidVolume;
+		int delta =  source.level - source.block->m_hasFluids.getTotalVolume();
 		if(delta > 0)
-			source.block->addFluid(delta, *source.fluidType);
+			source.block->m_hasFluids.addFluid(delta, *source.fluidType);
 		else if(delta < 0)
 			//TODO: can this be changed to use the async version?
-			source.block->removeFluidSyncronus(-delta, *source.fluidType);
+			source.block->m_hasFluids.removeFluidSyncronus(-delta, *source.fluidType);
 	}
 	m_area.clearMergedFluidGroups();
 }

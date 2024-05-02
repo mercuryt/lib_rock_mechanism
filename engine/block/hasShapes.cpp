@@ -156,10 +156,10 @@ bool BlockHasShapes::moveTypeCanEnterFrom(const MoveType& moveType, const Block&
 	for(auto& [fluidType, volume] : moveType.swim)
 	{
 		// Can travel within and enter liquid from any angle.
-		if(m_block.volumeOfFluidTypeContains(*fluidType) >= volume)
+		if(m_block.m_hasFluids.volumeOfFluidTypeContains(*fluidType) >= volume)
 			return true;
 		// Can leave liquid at any angle.
-		if(from.volumeOfFluidTypeContains(*fluidType) >= volume)
+		if(from.m_hasFluids.volumeOfFluidTypeContains(*fluidType) >= volume)
 			return true;
 	}
 	// Can always enter on same z level.
@@ -187,7 +187,7 @@ bool BlockHasShapes::moveTypeCanEnterFrom(const MoveType& moveType, const Block&
 bool BlockHasShapes::moveTypeCanEnter(const MoveType& moveType) const
 {
 	// Swiming.
-	for(auto& [fluidType, pair] : m_block.m_fluids)
+	for(auto& [fluidType, pair] : m_block.m_hasFluids.getAll())
 	{
 		auto found = moveType.swim.find(fluidType);
 		if(found != moveType.swim.end() && found->second <= pair.first)
@@ -203,7 +203,7 @@ bool BlockHasShapes::moveTypeCanEnter(const MoveType& moveType) const
 		}
 	}
 	// Not swimming and fluid level is too high.
-	if(m_block.m_totalFluidVolume > Config::maxBlockVolume / 2)
+	if(m_block.m_hasFluids.getTotalVolume() > Config::maxBlockVolume / 2)
 		return false;
 	// Fly can always enter if fluid level isn't preventing it.
 	if(moveType.fly)
@@ -231,9 +231,9 @@ bool BlockHasShapes::moveTypeCanEnter(const MoveType& moveType) const
 }
 bool BlockHasShapes::moveTypeCanBreath(const MoveType& moveType) const
 {
-	if(m_block.m_totalFluidVolume < Config::maxBlockVolume && !moveType.onlyBreathsFluids)
+	if(m_block.m_hasFluids.getTotalVolume() < Config::maxBlockVolume && !moveType.onlyBreathsFluids)
 		return true;
-	for(auto& pair : m_block.m_fluids)
+	for(auto& pair : m_block.m_hasFluids.getAll())
 		//TODO: Minimum volume should probably be scaled by body size somehow.
 		if(moveType.breathableFluids.contains(pair.first) && pair.second.first >= Config::minimumVolumeOfFluidToBreath)
 			return true;
@@ -263,7 +263,7 @@ MoveCost BlockHasShapes::moveCostFrom(const MoveType& moveType, const Block& fro
 	if(moveType.fly)
 		return Config::baseMoveCost;
 	for(auto& [fluidType, volume] : moveType.swim)
-		if(m_block.volumeOfFluidTypeContains(*fluidType) >= volume)
+		if(m_block.m_hasFluids.volumeOfFluidTypeContains(*fluidType) >= volume)
 			return Config::baseMoveCost;
 	// Double cost to go up if not fly, swim, or ramp (if climb).
 	if(m_block.m_z > from.m_z && !from.m_hasBlockFeatures.contains(BlockFeatureType::ramp))

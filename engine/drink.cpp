@@ -87,8 +87,8 @@ void DrinkEvent::execute()
 	}
 	else
 	{
-		volume = std::min(volume, drinkBlock->volumeOfFluidTypeContains(actor.m_mustDrink.getFluidType()));
-		drinkBlock->removeFluid(volume, actor.m_mustDrink.getFluidType());
+		volume = std::min(volume, drinkBlock->m_hasFluids.volumeOfFluidTypeContains(actor.m_mustDrink.getFluidType()));
+		drinkBlock->m_hasFluids.removeFluid(volume, actor.m_mustDrink.getFluidType());
 	}
 	actor.m_mustDrink.drink(volume);
 }
@@ -214,5 +214,5 @@ Item* DrinkObjective::getItemToDrinkFromAt(Block& block) const
 }
 bool DrinkObjective::containsSomethingDrinkable(const Block& block) const
 {
-	return block.m_fluids.contains(&m_actor.m_mustDrink.getFluidType()) || canDrinkItemAt(block);
+	return block.m_hasFluids.contains(m_actor.m_mustDrink.getFluidType()) || canDrinkItemAt(block);
 }
