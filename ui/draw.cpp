@@ -205,9 +205,9 @@ void Draw::blockFloor(const Block& block)
 			// Draw cliff edge, ramp, or stairs below floor.
 			blockWallsFromNextLevelDown(block);
 		}
-		else if(block.getBlockBelow() && block.getBlockBelow()->m_totalFluidVolume > displayData::minimumFluidVolumeToSeeFromAboveLevelRatio * Config::maxBlockVolume)
+		else if(block.getBlockBelow() && block.getBlockBelow()->m_hasFluids.getTotalVolume() > displayData::minimumFluidVolumeToSeeFromAboveLevelRatio * Config::maxBlockVolume)
 		{
-			const FluidType& fluidType = block.getBlockBelow()->getFluidTypeWithMostVolume();
+			const FluidType& fluidType = block.getBlockBelow()->m_hasFluids.getFluidTypeWithMostVolume();
 			const sf::Color color = displayData::fluidColors.at(&fluidType);
 			static sf::Sprite sprite = sprites::make("fluidSurface").first;
 			// TODO: Give the shore line some feeling of depth somehow.
@@ -416,10 +416,10 @@ void Draw::blockFeaturesAndFluids(const Block& block)
 
 	}
 	// Fluids
-	if(block.m_totalFluidVolume)
+	if(block.m_hasFluids.getTotalVolume())
 	{
-		const FluidType& fluidType = block.getFluidTypeWithMostVolume();
-		Volume volume = block.m_fluids.at(&fluidType).first;
+		const FluidType& fluidType = block.m_hasFluids.getFluidTypeWithMostVolume();
+		CollisionVolume volume = block.m_hasFluids.volumeOfFluidTypeContains(fluidType);
 		const sf::Color color = displayData::fluidColors.at(&fluidType);
 		colorOnBlock(block, color);
 		stringOnBlock(block, std::to_wstring(volume), sf::Color::Black);

@@ -5,7 +5,7 @@
 void ContextMenu::drawFluidControls(Block& block)
 {
 	// Fluids.
-	for(auto& [fluidType, pair] : block.m_fluids)
+	for(auto& [fluidType, pair] : block.m_hasFluids.getAll())
 	{
 		auto label = tgui::Label::create(fluidType->name);
 		label->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
@@ -18,22 +18,22 @@ void ContextMenu::drawFluidControls(Block& block)
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				for(auto* selectedBlock : m_window.getSelectedBlocks())
 				{
-					Volume contains = selectedBlock->volumeOfFluidTypeContains(*fluidType);
+					Volume contains = selectedBlock->m_hasFluids.volumeOfFluidTypeContains(*fluidType);
 					if(contains)
-						selectedBlock->removeFluidSyncronus(contains, *fluidType);
+						selectedBlock->m_hasFluids.removeFluidSyncronus(contains, *fluidType);
 				}
 				hide();
 			});
-			FluidGroup& group = *block.m_fluids.at(fluidType).second;
+			FluidGroup& group = *block.m_hasFluids.getFluidGroup(*fluidType);
 			if(group.getBlocks().size() > 1)
 			{
 				auto selectGroup = tgui::Button::create("select adjacent");
 				submenu.add(selectGroup);
 				selectGroup->onClick([this, fluidType, &block]{
 					std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-					if(block.m_fluids.contains(fluidType))
+					if(block.m_hasFluids.volumeOfFluidTypeContains(*fluidType))
 					{
-						FluidGroup& group = *block.m_fluids.at(fluidType).second;
+						FluidGroup& group = *block.m_hasFluids.getFluidGroup(*fluidType);
 						m_window.deselectAll();
 						for(Block* block : group.getBlocks())
 							m_window.getSelectedBlocks().insert(block);
@@ -74,8 +74,8 @@ void ContextMenu::drawFluidControls(Block& block)
 					m_window.selectBlock(block);
 				for(Block* selectedBlock : m_window.getSelectedBlocks())
 					if(!selectedBlock->isSolid())
-						selectedBlock->addFluid(fluidLevel, FluidType::byName(fluidTypeUI->getSelectedItemId().toStdString()));
-				m_window.getArea()->clearMergedFluidGroups();
+						selectedBlock->m_hasFluids.addFluid(fluidLevel, FluidType::byName(fluidTypeUI->getSelectedItemId().toStdString()));
+				m_window.getArea()->m_hasFluidGroups.clearMergedFluidGroups();
 				hide();
 			});
 			if(!m_window.getArea()->m_fluidSources.contains(block))
