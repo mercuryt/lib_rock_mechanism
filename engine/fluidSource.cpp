@@ -19,7 +19,7 @@ void AreaHasFluidSources::step()
 			//TODO: can this be changed to use the async version?
 			source.block->m_hasFluids.removeFluidSyncronus(-delta, *source.fluidType);
 	}
-	m_area.clearMergedFluidGroups();
+	m_area.m_hasFluidGroups.clearMergedFluidGroups();
 }
 void AreaHasFluidSources::create(Block& block, const FluidType& fluidType, Volume level)
 {

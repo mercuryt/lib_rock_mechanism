@@ -7,7 +7,6 @@
 #include "installItem.h"
 #include "types.h"
 #include "block.h"
-#include "fluidGroup.h"
 #include "mistDisperseEvent.h"
 #include "cuboid.h"
 #include "visionCuboid.h"
@@ -20,9 +19,10 @@
 #include "stocks.h"
 #include "fluidSource.h"
 #include "area/rain.h"
-#include "area/hasSleepingSpots.h"
 #include "area/hasActors.h"
+#include "area/hasFluidGroups.h"
 #include "area/hasItems.h"
+#include "area/hasSleepingSpots.h"
 //#include "medical.h"
 
 #include <vector>
@@ -69,11 +69,7 @@ public:
 	//AreaHasMedicalPatients m_hasMedicalPatients;
 	AreaHasItems m_hasItems;
 	AreaHasFluidSources m_fluidSources;
-	//TODO: HasFluidGroups.
-	std::list<FluidGroup> m_fluidGroups;
-	std::unordered_set<FluidGroup*> m_unstableFluidGroups;
-	std::unordered_set<FluidGroup*> m_setStable;
-	std::unordered_set<FluidGroup*> m_toDestroy;
+	AreaHasFluidGroups m_hasFluidGroups;
 	AreaHasRain m_hasRain;
 	std::list<VisionCuboid> m_visionCuboids;
 	bool m_visionCuboidsActive;
@@ -92,10 +88,6 @@ public:
 	[[nodiscard]] Block& getMiddleAtGroundLevel();
 	[[nodiscard]] Block& getGroundLevel(DistanceInBlocks x, DistanceInBlocks y);
 	//Block& getBlockForAdjacentLocation(WorldLocation& location);
-	// Create a fluid group.
-	FluidGroup* createFluidGroup(const FluidType& fluidType, std::unordered_set<Block*>& blocks, bool checkMerge = true);
-	void removeFluidGroup(FluidGroup& group);
-	void clearMergedFluidGroups();
 
 	// Assign all visible blocks to a visionCuboid, set m_visionCubioidsActive to true.
 	void visionCuboidsActivate();
@@ -107,8 +99,7 @@ public:
 	// To be called periodically by Simulation.
 	void updateClimate();
 
-	void validateAllFluidGroups();
-	[[nodiscard]] std::string toS();
+	[[nodiscard]] std::string toS() const;
 
 	[[nodiscard]] Cuboid getZLevel(DistanceInBlocks z);
 	[[nodiscard]] Json toJson() const;

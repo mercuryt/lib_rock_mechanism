@@ -170,7 +170,7 @@ void BlockHasTemperature::melt()
 	const FluidType& fluidType = *m_block.getSolidMaterial().meltsInto;
 	m_block.setNotSolid();
 	m_block.m_hasFluids.addFluid(Config::maxBlockVolume, fluidType);
-	m_block.m_area->clearMergedFluidGroups();
+	m_block.m_area->m_hasFluidGroups.clearMergedFluidGroups();
 }
 const Temperature& BlockHasTemperature::getAmbientTemperature() const 
 {

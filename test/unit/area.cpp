@@ -36,14 +36,14 @@ TEST_CASE("Area")
 		simulation.m_pool.wait_for_tasks();
 		area.writeStep();
 		simulation.m_step++;
-		REQUIRE(area.m_unstableFluidGroups.size() == 1);
+		REQUIRE(area.m_hasFluidGroups.getUnstable().size() == 1);
 		REQUIRE(block1.m_hasFluids.getTotalVolume() == 100);
 		REQUIRE(block2.m_hasFluids.getTotalVolume() == 0);
 		area.readStep();
 		simulation.m_pool.wait_for_tasks();
 		area.writeStep();
 		REQUIRE(fluidGroup->m_stable);
-		REQUIRE(!area.m_unstableFluidGroups.contains(fluidGroup));
+		REQUIRE(!area.m_hasFluidGroups.getUnstable().contains(fluidGroup));
 	}
 	SUBCASE("Cave in falls in fluid and pistons it up with threading")
 	{
@@ -59,8 +59,8 @@ TEST_CASE("Area")
 		simulation.m_pool.wait_for_tasks();
 		area.writeStep();
 		simulation.m_step++;
-		REQUIRE(area.m_unstableFluidGroups.size() == 1);
-		REQUIRE(area.m_unstableFluidGroups.contains(fluidGroup));
+		REQUIRE(area.m_hasFluidGroups.getUnstable().size() == 1);
+		REQUIRE(area.m_hasFluidGroups.getUnstable().contains(fluidGroup));
 		REQUIRE(!fluidGroup->m_stable);
 		REQUIRE(block1.m_hasFluids.getTotalVolume() == 0);
 		REQUIRE(block1.getSolidMaterial() == marble);
@@ -81,7 +81,7 @@ TEST_CASE("Area")
 		REQUIRE(block2.m_hasFluids.getTotalVolume() == 100);
 		REQUIRE(fluidGroup->m_excessVolume == 0);
 		REQUIRE(!fluidGroup->m_stable);
-		REQUIRE(area.m_fluidGroups.size() == 1);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
 	}
 	SUBCASE("Test move with threading")
 	{
@@ -247,13 +247,13 @@ TEST_CASE("multiMergeOnAdd")
 	Block& block3 = area.getBlock(1, 0, 0);
 	Block& block4 = area.getBlock(1, 1, 0);
 	block1.m_hasFluids.addFluid(Config::maxBlockVolume, water);
-	REQUIRE(area.m_fluidGroups.size() == 1);
+	REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
 	block4.m_hasFluids.addFluid(Config::maxBlockVolume, water);
-	REQUIRE(area.m_fluidGroups.size() == 2);
+	REQUIRE(area.m_hasFluidGroups.getAll().size() == 2);
 	block2.m_hasFluids.addFluid(Config::maxBlockVolume, water);
-	REQUIRE(area.m_fluidGroups.size() == 1);
+	REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
 	block3.m_hasFluids.addFluid(Config::maxBlockVolume, water);
-	REQUIRE(area.m_fluidGroups.size() == 1);
+	REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
 	simulation.doStep();
 }
 inline void fourFluidsTestParallel(uint32_t scale, uint32_t steps)
@@ -290,7 +290,7 @@ inline void fourFluidsTestParallel(uint32_t scale, uint32_t steps)
 	Block& mercury1 = area.getBlock(halfMaxX, halfMaxY, 1);
 	Block& mercury2 = area.getBlock(maxX - 2, maxY - 2, maxZ - 1);
 	areaBuilderUtil::setFullFluidCuboid(mercury1, mercury2, mercury);
-	REQUIRE(area.m_fluidGroups.size() == 4);
+	REQUIRE(area.m_hasFluidGroups.getAll().size() == 4);
 	FluidGroup* fgWater = water1.m_hasFluids.getFluidGroup(water);
 	FluidGroup* fgCO2 = CO2_1.m_hasFluids.getFluidGroup(CO2);
 	FluidGroup* fgLava = lava1.m_hasFluids.getFluidGroup(lava);
@@ -315,7 +315,7 @@ inline void fourFluidsTestParallel(uint32_t scale, uint32_t steps)
 	fgWater = areaBuilderUtil::getFluidGroup(area, water);
 	fgLava = areaBuilderUtil::getFluidGroup(area, lava);
 	fgCO2 = areaBuilderUtil::getFluidGroup(area, CO2);
-	REQUIRE(area.m_fluidGroups.size() == 4);
+	REQUIRE(area.m_hasFluidGroups.getAll().size() == 4);
 	REQUIRE(fgWater->m_stable);
 	if(scale != 3)
 		REQUIRE(fgWater->m_drainQueue.m_set.size() == expectedBlocks);
