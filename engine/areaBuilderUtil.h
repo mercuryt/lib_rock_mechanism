@@ -89,7 +89,7 @@ namespace areaBuilderUtil
 	inline FluidGroup* getFluidGroup(Area& area, const FluidType& fluidType)
 	{
 		FluidGroup* output = nullptr;
-		for(FluidGroup& fluidGroup : area.m_fluidGroups)
+		for(FluidGroup& fluidGroup : area.m_hasFluidGroups.getAll())
 			if(fluidGroup.m_fluidType == fluidType)
 			{
 				if(output != nullptr)

@@ -94,7 +94,7 @@ TEST_CASE("json")
 		REQUIRE(waterLocation.m_hasFluids.getTotalVolume() == 10);
 		REQUIRE(waterLocation.m_hasFluids.volumeOfFluidTypeContains(water) == 10);
 		FluidGroup& fluidGroup = *waterLocation.m_hasFluids.getFluidGroup(water);
-		REQUIRE(area2.m_unstableFluidGroups.contains(&fluidGroup));
+		REQUIRE(area2.m_hasFluidGroups.getUnstable().contains(&fluidGroup));
 		// Actor.
 		REQUIRE(!area2.getBlock(5,5,1).m_hasActors.empty());
 		Actor* dwarf2 = area2.getBlock(5,5,1).m_hasActors.getAll()[0];

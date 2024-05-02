@@ -19,7 +19,7 @@ TEST_CASE("fluids smaller")
 		block.setNotSolid();
 		block.m_hasFluids.addFluid(100, water);
 		REQUIRE(area.getBlock(5, 5, 1).m_hasFluids.contains(water));
-		FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
+		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
 		REQUIRE(fluidGroup->m_fillQueue.m_set.size() == 1);
 		fluidGroup->readStep();
 		REQUIRE(fluidGroup->m_stable);
@@ -34,7 +34,7 @@ TEST_CASE("fluids smaller")
 		REQUIRE(!block.getBlockWest()->m_hasFluids.contains(water));
 		REQUIRE(!block.getBlockBelow()->m_hasFluids.contains(water));
 		REQUIRE(!block.getBlockAbove()->m_hasFluids.contains(water));
-		REQUIRE(area.m_fluidGroups.size() == 1);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
 	}
 	/*
 	SUBCASE("Create Fluid 2")
@@ -49,7 +49,7 @@ TEST_CASE("fluids smaller")
 		simulation.doStep();
 		simulation.doStep();
 		REQUIRE(block.m_hasFluids.contains(&water));
-		REQUIRE(area.m_unstableFluidGroups.empty());
+		REQUIRE(area.m_hasFluidGroups.getUnstable().empty());
 		FluidGroup& fluidGroup = *block.m_fluids.at(&water).second;
 		REQUIRE(fluidGroup.getBlocks().size() == 1);
 		REQUIRE(fluidGroup.getBlocks().contains(&block));
@@ -67,7 +67,7 @@ TEST_CASE("fluids smaller")
 		block.setNotSolid();
 		block2.setNotSolid();
 		block.m_hasFluids.addFluid(Config::maxBlockVolume * 2, water);
-		FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
+		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
 		REQUIRE(!fluidGroup->m_stable);
 		REQUIRE(fluidGroup->m_drainQueue.m_set.size() == 1);
 		REQUIRE(fluidGroup->m_fillQueue.m_set.size() == 1);
@@ -79,7 +79,7 @@ TEST_CASE("fluids smaller")
 		fluidGroup->afterWriteStep();
 		fluidGroup->splitStep();
 		fluidGroup->mergeStep();
-		REQUIRE(area.m_fluidGroups.size() == 1);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
 		REQUIRE(fluidGroup->m_drainQueue.m_set.size() == 2);
 		REQUIRE(fluidGroup->m_fillQueue.m_set.size() == 1);
 		REQUIRE(fluidGroup->m_fillQueue.m_queue[0].block == &block3);
@@ -104,7 +104,7 @@ TEST_CASE("fluids smaller")
 		fluidGroup->afterWriteStep();
 		fluidGroup->splitStep();
 		fluidGroup->mergeStep();
-		REQUIRE(area.m_fluidGroups.size() == 1);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
 		REQUIRE(block.m_hasFluids.contains(water));
 		REQUIRE(block.m_hasFluids.volumeOfFluidTypeContains(water) == Config::maxBlockVolume);
 		REQUIRE(!block2.m_hasFluids.contains(water));
@@ -115,14 +115,14 @@ TEST_CASE("fluids smaller")
 		Block& block = area.getBlock(5, 5, 1);
 		block.setNotSolid();
 		block.m_hasFluids.addFluid(100, water);
-		FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
+		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
 		fluidGroup->readStep();
 		REQUIRE(fluidGroup->m_stable);
 		fluidGroup->writeStep();
 		fluidGroup->afterWriteStep();
 		fluidGroup->splitStep();
 		fluidGroup->mergeStep();
-		REQUIRE(area.m_fluidGroups.size() == 1);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
 		block.m_hasFluids.removeFluid(100, water);
 		REQUIRE(fluidGroup->m_destroy == false);
 		// Step 1.
@@ -143,7 +143,7 @@ TEST_CASE("fluids smaller")
 		block2.setNotSolid();
 		origin.setNotSolid();
 		origin.m_hasFluids.addFluid(Config::maxBlockVolume, water);
-		FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
+		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
 		REQUIRE(!fluidGroup->m_stable);
 		REQUIRE(fluidGroup->m_drainQueue.m_set.size() == 1);
 		REQUIRE(fluidGroup->m_fillQueue.m_set.size() == 2);
@@ -159,7 +159,7 @@ TEST_CASE("fluids smaller")
 		fluidGroup->afterWriteStep();
 		fluidGroup->splitStep();
 		fluidGroup->mergeStep();
-		REQUIRE(area.m_fluidGroups.size() == 1);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
 		REQUIRE(fluidGroup->m_drainQueue.m_set.size() == 2);
 		REQUIRE(!destination.m_hasFluids.contains(water));
 		REQUIRE(block2.m_hasFluids.contains(water));
@@ -196,7 +196,7 @@ TEST_CASE("fluids smaller")
 		fluidGroup->afterWriteStep();
 		fluidGroup->splitStep();
 		fluidGroup->mergeStep();
-		REQUIRE(area.m_fluidGroups.size() == 1);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
 		REQUIRE(fluidGroup->m_stable);
 	}
 	SUBCASE("Flow across area and then fill hole")
@@ -213,13 +213,13 @@ TEST_CASE("fluids smaller")
 		Block& block6 = area.getBlock(5, 8, 2);
 		block.m_hasFluids.addFluid(Config::maxBlockVolume, water);
 		block5.setNotSolid();
-		FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
+		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
 		fluidGroup->readStep();
 		fluidGroup->writeStep();
 		fluidGroup->afterWriteStep();
 		fluidGroup->splitStep();
 		fluidGroup->mergeStep();
-		REQUIRE(area.m_fluidGroups.size() == 1);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
 		REQUIRE(fluidGroup->m_drainQueue.m_set.size() == 5);
 		REQUIRE(block.m_hasFluids.volumeOfFluidTypeContains(water) == 20);
 		REQUIRE(block2a.m_hasFluids.volumeOfFluidTypeContains(water) == 20);
@@ -250,7 +250,7 @@ TEST_CASE("fluids smaller")
 		fluidGroup->afterWriteStep();
 		fluidGroup->splitStep();
 		fluidGroup->mergeStep();
-		REQUIRE(area.m_fluidGroups.size() == 1);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
 		REQUIRE(fluidGroup->m_drainQueue.m_set.size() == 1);
 		REQUIRE(block.m_hasFluids.volumeOfFluidTypeContains(water) == 0);
 		REQUIRE(block2a.m_hasFluids.volumeOfFluidTypeContains(water) == 0);
@@ -281,8 +281,8 @@ TEST_CASE("fluids smaller")
 		origin1.m_hasFluids.addFluid(100, water);
 		origin2.m_hasFluids.addFluid(100, water);
 		REQUIRE(origin1.m_hasFluids.getFluidGroup(water) == origin2.m_hasFluids.getFluidGroup(water));
-		REQUIRE(area.m_fluidGroups.size() == 1);
-		FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
+		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
 		REQUIRE(fluidGroup->m_drainQueue.m_set.size() == 2);
 		fluidGroup->readStep();
 		fluidGroup->writeStep();
@@ -303,7 +303,7 @@ TEST_CASE("fluids smaller")
 		REQUIRE(destination2.m_adjacents[5]->m_hasFluids.volumeOfFluidTypeContains(water) == 0);
 		REQUIRE(destination1.m_hasFluids.volumeOfFluidTypeContains(water) == 100);
 		REQUIRE(destination2.m_hasFluids.volumeOfFluidTypeContains(water) == 100);
-		REQUIRE(area.m_fluidGroups.size() == 2);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 2);
 		REQUIRE(destination1.m_hasFluids.getFluidGroup(water) != destination2.m_hasFluids.getFluidGroup(water));
 	}
 	SUBCASE("Fluid Groups merge")
@@ -317,7 +317,7 @@ TEST_CASE("fluids smaller")
 		origin2.setNotSolid();
 		origin1.m_hasFluids.addFluid(100, water);
 		origin2.m_hasFluids.addFluid(100, water);
-		REQUIRE(area.m_fluidGroups.size() == 2);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 2);
 		FluidGroup* fg1 = origin1.m_hasFluids.getFluidGroup(water);
 		FluidGroup* fg2 = origin2.m_hasFluids.getFluidGroup(water);
 		REQUIRE(fg1 != fg2);
@@ -372,7 +372,7 @@ TEST_CASE("fluids smaller")
 		block4.setNotSolid();
 		block1.m_hasFluids.addFluid(100, water);
 		block4.m_hasFluids.addFluid(100, water);
-		REQUIRE(area.m_fluidGroups.size() == 2);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 2);
 		FluidGroup* fg1 = block1.m_hasFluids.getFluidGroup(water);
 		FluidGroup* fg2 = block4.m_hasFluids.getFluidGroup(water);
 		REQUIRE(fg1 != fg2);
@@ -414,7 +414,7 @@ TEST_CASE("fluids smaller")
 		block2.setNotSolid();
 		block1.m_hasFluids.addFluid(100, water);
 		block2.m_hasFluids.addFluid(100, mercury);
-		REQUIRE(area.m_fluidGroups.size() == 2);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 2);
 		FluidGroup* fgWater = block1.m_hasFluids.getFluidGroup(water);
 		FluidGroup* fgMercury = block2.m_hasFluids.getFluidGroup(mercury);
 		REQUIRE(fgWater != nullptr);
@@ -521,7 +521,7 @@ TEST_CASE("fluids smaller")
 		block1.m_hasFluids.addFluid(100, water);
 		block4.m_hasFluids.addFluid(100, water);
 		block7.m_hasFluids.addFluid(100, water);
-		REQUIRE(area.m_fluidGroups.size() == 3);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 3);
 		FluidGroup* fg1 = block1.m_hasFluids.getFluidGroup(water);
 		FluidGroup* fg2 = block4.m_hasFluids.getFluidGroup(water);
 		FluidGroup* fg3 = block7.m_hasFluids.getFluidGroup(water);
@@ -593,7 +593,7 @@ TEST_CASE("fluids smaller")
 		FluidGroup* fg1 = origin1.m_hasFluids.getFluidGroup(water);
 		origin2.m_hasFluids.addFluid(20, water);
 		origin3.m_hasFluids.addFluid(20, water);
-		REQUIRE(area.m_fluidGroups.size() == 1);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
 		REQUIRE(fg1->m_drainQueue.m_set.size() == 3);
 		// Step 1.
 		fg1->readStep();
@@ -610,7 +610,7 @@ TEST_CASE("fluids smaller")
 		REQUIRE(fg1 != fg2);
 		REQUIRE(fg1->m_fillQueue.m_set.size() == 3);
 		REQUIRE(fg2->m_fillQueue.m_set.size() == 2);
-		REQUIRE(area.m_fluidGroups.size() == 2);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 2);
 		REQUIRE(origin1.m_hasFluids.volumeOfFluidTypeContains(water) == 0);
 		REQUIRE(origin2.m_hasFluids.volumeOfFluidTypeContains(water) == 0);
 		REQUIRE(origin3.m_hasFluids.volumeOfFluidTypeContains(water) == 0);
@@ -677,7 +677,7 @@ TEST_CASE("fluids smaller")
 		FluidGroup* fg2 = origin2.m_hasFluids.getFluidGroup(water);
 		origin3.m_hasFluids.addFluid(20, water);
 		origin4.m_hasFluids.addFluid(20, water);
-		REQUIRE(area.m_fluidGroups.size() == 2);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 2);
 		REQUIRE(fg1->m_drainQueue.m_set.size() == 1);
 		REQUIRE(fg2->m_drainQueue.m_set.size() == 3);
 		REQUIRE(fg1 != fg2);
@@ -751,7 +751,7 @@ TEST_CASE("fluids smaller")
 		origin4.m_hasFluids.addFluid(20, water);
 		origin5.m_hasFluids.addFluid(100, water);
 		FluidGroup* fg3 = origin5.m_hasFluids.getFluidGroup(water);
-		REQUIRE(area.m_fluidGroups.size() == 3);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 3);
 		REQUIRE(fg1 != fg2);
 		REQUIRE(fg1 != fg3);
 		REQUIRE(fg2 != fg3);
@@ -1108,8 +1108,8 @@ TEST_CASE("fluids smaller")
 		REQUIRE(block1.m_hasFluids.volumeOfFluidTypeContains(water) == 50);
 		REQUIRE(block2.m_hasFluids.volumeOfFluidTypeContains(water) == 50);
 		fg1->splitStep();
-		REQUIRE(area.m_fluidGroups.size() == 2);
-		FluidGroup* fg2 = &area.m_fluidGroups.back();
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 2);
+		FluidGroup* fg2 = &area.m_hasFluidGroups.getAll().back();
 		fg1->mergeStep();
 		fg2->mergeStep();
 		//Step 3.
@@ -1127,13 +1127,13 @@ TEST_CASE("fluids smaller")
 		block1.m_hasFluids.addFluid(100, water);
 		block2.setSolid(marble);
 		area.m_caveInCheck.insert(&block2);
-		FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
+		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
 		area.stepCaveInRead();
 		fluidGroup->readStep();
 		fluidGroup->writeStep();
 		fluidGroup->afterWriteStep();
 		area.stepCaveInWrite();
-		REQUIRE(area.m_unstableFluidGroups.size() == 1);
+		REQUIRE(area.m_hasFluidGroups.getUnstable().size() == 1);
 		REQUIRE(block1.m_hasFluids.getTotalVolume() == 0);
 		REQUIRE(block1.getSolidMaterial() == marble);
 		REQUIRE(!block2.isSolid());
@@ -1150,7 +1150,7 @@ TEST_CASE("fluids smaller")
 		REQUIRE(block2.m_hasFluids.getTotalVolume() == 100);
 		REQUIRE(fluidGroup->m_excessVolume == 0);
 		REQUIRE(fluidGroup->m_stable == false);
-		REQUIRE(area.m_fluidGroups.size() == 1);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
 	}
 	SUBCASE("Test diagonal seep")
 	{
@@ -1163,7 +1163,7 @@ TEST_CASE("fluids smaller")
 		block1.setNotSolid();
 		block2.setNotSolid();
 		block1.m_hasFluids.addFluid(10, water);
-		FluidGroup* fg1 = *area.m_unstableFluidGroups.begin();
+		FluidGroup* fg1 = *area.m_hasFluidGroups.getUnstable().begin();
 		fg1->readStep();
 		fg1->writeStep();
 		REQUIRE(block2.m_hasFluids.volumeOfFluidTypeContains(water) == 0);
@@ -1208,7 +1208,7 @@ TEST_CASE("fluids smaller")
 		block2.setNotSolid();
 		block3.m_hasFluids.addFluid(100, water);
 		block4.m_hasFluids.addFluid(100, water);
-		FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
+		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
 		// Step 1.
 		fluidGroup->readStep();
 		fluidGroup->writeStep();
@@ -1253,15 +1253,15 @@ TEST_CASE("area larger")
 		Block& block7 = area.getBlock(16, 10, 1);
 		origin1.m_hasFluids.addFluid(100, water);
 		origin2.m_hasFluids.addFluid(100, water);
-		FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
-		REQUIRE(area.m_fluidGroups.size() == 1);
+		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
 		REQUIRE(fluidGroup->m_drainQueue.m_set.size() == 2);
 		fluidGroup->readStep();
 		fluidGroup->writeStep();
 		fluidGroup->afterWriteStep();
 		fluidGroup->splitStep();
 		fluidGroup->mergeStep();
-		REQUIRE(area.m_fluidGroups.size() == 1);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
 		REQUIRE(fluidGroup->m_drainQueue.m_set.size() == 5);
 		REQUIRE(origin1.m_hasFluids.volumeOfFluidTypeContains(water) == 40);
 		REQUIRE(origin2.m_hasFluids.volumeOfFluidTypeContains(water) == 0);
@@ -1300,7 +1300,7 @@ TEST_CASE("area larger")
 		fluidGroup->afterWriteStep();
 		fluidGroup->splitStep();
 		fluidGroup->mergeStep();
-		REQUIRE(area.m_fluidGroups.size() == 1);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
 		REQUIRE(fluidGroup->m_drainQueue.m_set.size() == 41);
 		REQUIRE(origin1.m_hasFluids.volumeOfFluidTypeContains(water) == 4);
 		REQUIRE(block2.m_hasFluids.volumeOfFluidTypeContains(water) == 4);
@@ -1353,7 +1353,7 @@ TEST_CASE("area larger")
 		Block& block7 = area.getBlock(16, 10, 1);
 		Block& block8 = area.getBlock(17, 10, 1);
 		block.m_hasFluids.addFluid(Config::maxBlockVolume, water);
-		FluidGroup* fluidGroup = *area.m_unstableFluidGroups.begin();
+		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
 		//Step 1.
 		fluidGroup->readStep();
 		fluidGroup->writeStep();
@@ -1375,7 +1375,7 @@ TEST_CASE("area larger")
 		fluidGroup->afterWriteStep();
 		fluidGroup->splitStep();
 		fluidGroup->mergeStep();
-		REQUIRE(area.m_fluidGroups.size() == 1);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
 		REQUIRE(fluidGroup->m_drainQueue.m_set.size() == 13);
 		REQUIRE(block.m_hasFluids.volumeOfFluidTypeContains(water) == 7);
 		REQUIRE(block2.m_hasFluids.volumeOfFluidTypeContains(water) == 7);
@@ -1435,7 +1435,7 @@ TEST_CASE("area larger")
 		fluidGroup->afterWriteStep();
 		fluidGroup->splitStep();
 		fluidGroup->mergeStep();
-		REQUIRE(area.m_fluidGroups.size() == 1);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
 		REQUIRE(fluidGroup->m_drainQueue.m_set.size() == 85);
 		REQUIRE(block.m_hasFluids.volumeOfFluidTypeContains(water) == 1);
 		REQUIRE(block2.m_hasFluids.volumeOfFluidTypeContains(water) == 1);
@@ -1478,7 +1478,7 @@ TEST_CASE("fluids multi scale")
 		Block& CO2_1 = area.getBlock(halfMaxX, 1, 1);
 		Block& CO2_2 = area.getBlock(maxX - 2, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(CO2_1, CO2_2, CO2);
-		REQUIRE(area.m_fluidGroups.size() == 2);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 2);
 		FluidGroup* fgWater = water1.m_hasFluids.getFluidGroup(water);
 		FluidGroup* fgCO2 = CO2_1.m_hasFluids.getFluidGroup(CO2);
 		REQUIRE(!fgWater->m_merged);
@@ -1487,7 +1487,7 @@ TEST_CASE("fluids multi scale")
 		simulation.m_step = 1;
 		while(simulation.m_step < steps)
 		{
-			for(FluidGroup* fluidGroup : area.m_unstableFluidGroups)
+			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
 				fluidGroup->readStep();
 			area.writeStep();
 			simulation.m_step++;
@@ -1544,7 +1544,7 @@ TEST_CASE("fluids multi scale")
 		Block& lava1 = area.getBlock((thirdMaxX * 2) + 1, 1, 1);
 		Block& lava2 = area.getBlock(maxX - 2, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(lava1, lava2, lava);
-		REQUIRE(area.m_fluidGroups.size() == 3);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 3);
 		FluidGroup* fgWater = water1.m_hasFluids.getFluidGroup(water);
 		FluidGroup* fgCO2 = CO2_1.m_hasFluids.getFluidGroup(CO2);
 		FluidGroup* fgLava = lava1.m_hasFluids.getFluidGroup(lava);
@@ -1552,7 +1552,7 @@ TEST_CASE("fluids multi scale")
 		uint32_t totalVolume = fgWater->totalVolume();
 		while(simulation.m_step < steps)
 		{
-			for(FluidGroup* fluidGroup : area.m_unstableFluidGroups)
+			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
 				fluidGroup->readStep();
 			area.writeStep();
 			simulation.m_step++;
@@ -1616,7 +1616,7 @@ TEST_CASE("fluids multi scale")
 		Block& mercury1 = area.getBlock((quarterMaxX * 3) + 1, 1, 1);
 		Block& mercury2 = area.getBlock(maxX - 2, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(mercury1, mercury2, mercury);
-		REQUIRE(area.m_fluidGroups.size() == 4);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 4);
 		FluidGroup* fgWater = water1.m_hasFluids.getFluidGroup(water);
 		FluidGroup* fgCO2 = CO2_1.m_hasFluids.getFluidGroup(CO2);
 		FluidGroup* fgLava = lava1.m_hasFluids.getFluidGroup(lava);
@@ -1625,7 +1625,7 @@ TEST_CASE("fluids multi scale")
 		simulation.m_step = 1;
 		while(simulation.m_step < steps)
 		{
-			for(FluidGroup* fluidGroup : area.m_unstableFluidGroups)
+			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
 				fluidGroup->readStep();
 			area.writeStep();
 			fgMercury = areaBuilderUtil::getFluidGroup(area, mercury);
@@ -1660,8 +1660,8 @@ TEST_CASE("fluids multi scale")
 		REQUIRE(area.getBlock(maxX - 2, 1, 1).m_hasFluids.contains(mercury));
 		REQUIRE(area.getBlock(1, 1, maxZ - 1).m_hasFluids.contains(CO2));
 		REQUIRE(area.getBlock(maxX - 2, 1, maxZ - 1).m_hasFluids.contains(CO2));
-		REQUIRE(area.m_fluidGroups.size() == 4);
-		REQUIRE(area.m_unstableFluidGroups.empty());
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 4);
+		REQUIRE(area.m_hasFluidGroups.getUnstable().empty());
 	};
 	SUBCASE("trench test 4 fluids scale 4-1")
 	{
@@ -1713,13 +1713,13 @@ TEST_CASE("fluids multi scale")
 		Block& CO2_3 = area.getBlock((quarterMaxX * 3) + 1, 1, 1);
 		Block& CO2_4 = area.getBlock(maxX - 2, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(CO2_3, CO2_4, CO2);
-		REQUIRE(area.m_fluidGroups.size() == 4);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 4);
 		FluidGroup* fgWater = water1.m_hasFluids.getFluidGroup(water);
 		uint32_t totalVolume = fgWater->totalVolume() * 2;
 		simulation.m_step = 1;
 		while(simulation.m_step < steps)
 		{
-			for(FluidGroup* fluidGroup : area.m_unstableFluidGroups)
+			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
 				fluidGroup->readStep();
 			area.writeStep();
 			simulation.m_step++;
@@ -1727,14 +1727,14 @@ TEST_CASE("fluids multi scale")
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
 		uint32_t expectedHeight = std::max(1u, maxZ / 2);
 		uint32_t expectedBlocks = totalBlocks2D * expectedHeight;
-		REQUIRE(area.m_unstableFluidGroups.empty());
+		REQUIRE(area.m_hasFluidGroups.getUnstable().empty());
 		fgWater = water1.m_hasFluids.getFluidGroup(water);
 		FluidGroup* fgCO2 = water2.m_hasFluids.getFluidGroup(CO2);
 		REQUIRE(fgWater->totalVolume() == totalVolume);
 		REQUIRE(fgCO2->totalVolume() == totalVolume);
 		REQUIRE(fgWater->m_drainQueue.m_set.size() == expectedBlocks);
 		REQUIRE(fgCO2->m_drainQueue.m_set.size() == expectedBlocks);
-		REQUIRE(area.m_fluidGroups.size() == 2);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 2);
 	};
 	SUBCASE("trench test 2 fluids merge scale 4-1")
 	{
@@ -1778,7 +1778,7 @@ TEST_CASE("fluids multi scale")
 		Block& CO2_3 = area.getBlock((quarterMaxX * 3) + 1, 1, 1);
 		Block& CO2_4 = area.getBlock(maxX - 2, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(CO2_3, CO2_4, CO2);
-		REQUIRE(area.m_fluidGroups.size() == 4);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 4);
 		FluidGroup* fgWater = water1.m_hasFluids.getFluidGroup(water);
 		uint32_t totalVolumeWater = fgWater->totalVolume();
 		uint32_t totalVolumeMercury = totalVolumeWater;
@@ -1786,7 +1786,7 @@ TEST_CASE("fluids multi scale")
 		simulation.m_step = 1;
 		while(simulation.m_step < steps)
 		{
-			for(FluidGroup* fluidGroup : area.m_unstableFluidGroups)
+			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
 				fluidGroup->readStep();
 			area.writeStep();
 			simulation.m_step++;
@@ -1794,7 +1794,7 @@ TEST_CASE("fluids multi scale")
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
 		uint32_t expectedHeight = std::max(1u, maxZ / 4);
 		uint32_t expectedBlocks = totalBlocks2D * expectedHeight;
-		REQUIRE(area.m_unstableFluidGroups.empty());
+		REQUIRE(area.m_hasFluidGroups.getUnstable().empty());
 		fgWater = areaBuilderUtil::getFluidGroup(area, water);
 		FluidGroup* fgCO2 = areaBuilderUtil::getFluidGroup(area, CO2);
 		FluidGroup* fgMercury = areaBuilderUtil::getFluidGroup(area, mercury);
@@ -1810,7 +1810,7 @@ TEST_CASE("fluids multi scale")
 		REQUIRE(fgWater->m_stable);
 		REQUIRE(fgCO2->m_stable);
 		REQUIRE(fgMercury->m_stable);
-		REQUIRE(area.m_fluidGroups.size() == 3);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 3);
 	};
 	SUBCASE("trench test 3 fluids merge scale 4-1")
 	{
@@ -1856,7 +1856,7 @@ TEST_CASE("fluids multi scale")
 		Block& mercury1 = area.getBlock(halfMaxX, halfMaxY, 1);
 		Block& mercury2 = area.getBlock(maxX - 2, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(mercury1, mercury2, mercury);
-		REQUIRE(area.m_fluidGroups.size() == 4);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 4);
 		FluidGroup* fgWater = water1.m_hasFluids.getFluidGroup(water);
 		FluidGroup* fgCO2 = CO2_1.m_hasFluids.getFluidGroup(CO2);
 		FluidGroup* fgLava = lava1.m_hasFluids.getFluidGroup(lava);
@@ -1869,7 +1869,7 @@ TEST_CASE("fluids multi scale")
 		simulation.m_step = 1;
 		while(simulation.m_step < steps)
 		{
-			for(FluidGroup* fluidGroup : area.m_unstableFluidGroups)
+			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
 				fluidGroup->readStep();
 			area.writeStep();
 			simulation.m_step++;
@@ -1877,7 +1877,7 @@ TEST_CASE("fluids multi scale")
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
 		uint32_t expectedHeight = ((maxZ - 2) / 4) + 1;
 		uint32_t expectedBlocks = totalBlocks2D * expectedHeight;
-		REQUIRE(area.m_fluidGroups.size() == 4);
+		REQUIRE(area.m_hasFluidGroups.getAll().size() == 4);
 		fgMercury = areaBuilderUtil::getFluidGroup(area, mercury);
 		fgWater = areaBuilderUtil::getFluidGroup(area, water);
 		fgLava = areaBuilderUtil::getFluidGroup(area, lava);

@@ -126,7 +126,7 @@ void FluidGroup::removeBlock(Block& block)
 void FluidGroup::setUnstable()
 {
 	m_stable = false;
-	m_area.m_unstableFluidGroups.insert(this);
+	m_area.m_hasFluidGroups.markUnstable(*this);
 }
 void FluidGroup::addDiagonalsFor(Block& block)
 {
@@ -492,7 +492,7 @@ void FluidGroup::writeStep()
 	assert(!m_merged);
 	assert(!m_disolved);
 	assert(!m_destroy);
-	m_area.validateAllFluidGroups();
+	m_area.m_hasFluidGroups.validateAllFluidGroups();
 	m_drainQueue.applyDelta();
 	m_fillQueue.applyDelta();
 	// Update queues.
@@ -543,7 +543,7 @@ void FluidGroup::writeStep()
 	m_drainQueue.removeBlocks(m_futureRemoveFromDrainQueue);
 	m_drainQueue.addBlocks(m_futureAddToDrainQueue);
 	validate();
-	m_area.validateAllFluidGroups();
+	m_area.m_hasFluidGroups.validateAllFluidGroups();
 }
 void FluidGroup::afterWriteStep()
 {
@@ -662,7 +662,7 @@ void FluidGroup::splitStep()
 	m_futureGroups.pop_back();
 	for(auto& [members, newAdjacent] : m_futureGroups)
 	{
-		FluidGroup* fluidGroup = m_area.createFluidGroup(m_fluidType, members, false);
+		FluidGroup* fluidGroup = m_area.m_hasFluidGroups.createFluidGroup(m_fluidType, members, false);
 		fluidGroup->m_futureNewEmptyAdjacents.swap(newAdjacent);
 	}
 	validate();

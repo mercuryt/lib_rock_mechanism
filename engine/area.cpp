@@ -17,7 +17,7 @@
 #include <unordered_set>
 
 Area::Area(AreaId id, std::wstring n, Simulation& s, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) :
-	m_blocks(x*y*z), m_id(id), m_name(n), m_simulation(s), m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_fluidSources(*this), m_hasRain(*this), m_visionCuboidsActive(false)
+	m_blocks(x*y*z), m_id(id), m_name(n), m_simulation(s), m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_fluidSources(*this), m_hasFluidGroups(*this), m_hasRain(*this), m_visionCuboidsActive(false)
 { 
 	setup(); 
 	m_hasRain.scheduleRestart();
@@ -26,7 +26,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_blocks(data["sizeX"].get<DistanceInBlocks>() * data["sizeY"].get<DistanceInBlocks>() * data["sizeZ"].get<DistanceInBlocks>()),
 	m_id(data["id"].get<AreaId>()), m_name(data["name"].get<std::wstring>()), m_simulation(s),
 	m_sizeX(data["sizeX"].get<DistanceInBlocks>()), m_sizeY(data["sizeY"].get<DistanceInBlocks>()), m_sizeZ(data["sizeZ"].get<DistanceInBlocks>()), 
-	m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_fluidSources(*this), m_hasRain(*this), m_visionCuboidsActive(false)
+	m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_fluidSources(*this), m_hasFluidGroups(*this), m_hasRain(*this), m_visionCuboidsActive(false)
 {
 	m_simulation.m_areasById[m_id] = this;
 	setup();
@@ -47,7 +47,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 			}
 		}
 	}
-	clearMergedFluidGroups();
+	m_hasFluidGroups.clearMergedFluidGroups();
 	// Load fires.
 	m_fires.load(data["fires"], deserializationMemo);
 	// Load plants.
@@ -183,89 +183,14 @@ void Area::readStep()
 	m_hasActors.processVisionReadStep();
 	// Calculate cave in.
 	m_simulation.m_taskFutures.push_back(m_simulation.m_pool.submit([&](){ stepCaveInRead(); }));
-	// Calculate flow.
-	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
-	{
-		assert(!fluidGroup->m_destroy);
-		m_simulation.m_taskFutures.push_back(m_simulation.m_pool.submit([=](){ fluidGroup->readStep(); }));
-	}
+	m_hasFluidGroups.readStep();
 }
 void Area::writeStep()
 { 
-	// Remove destroyed.
-	for(FluidGroup& fluidGroup : m_fluidGroups)
-		if(fluidGroup.m_destroy)
-			m_unstableFluidGroups.erase(&fluidGroup);
-	std::erase_if(m_fluidGroups, [](FluidGroup& fluidGroup){ return fluidGroup.m_destroy; });
-	// Apply flow.
-	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
-	{
-		fluidGroup->writeStep();
-		validateAllFluidGroups();
-	}
-	// Resolve overfull, diagonal seep, and mist.
-	// Make vector of unstable so we can iterate it while modifing the original.
-	std::vector<FluidGroup*> unstable(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
-	for(FluidGroup* fluidGroup : unstable)
-	{
-		fluidGroup->afterWriteStep();
-		fluidGroup->validate();
-	}
-	std::erase_if(m_unstableFluidGroups, [](FluidGroup* fluidGroup){ return fluidGroup->m_merged || fluidGroup->m_disolved; });
-	std::vector<FluidGroup*> unstable2(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
-	for(FluidGroup* fluidGroup : unstable2)
-		fluidGroup->mergeStep();
-	std::erase_if(m_unstableFluidGroups, [](FluidGroup* fluidGroup){ return fluidGroup->m_merged; });
-	// Apply fluid split.
-	std::vector<FluidGroup*> unstable3(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
-	for(FluidGroup* fluidGroup : unstable3)
-		fluidGroup->splitStep();
-	for(FluidGroup& fluidGroup : m_fluidGroups)
-		fluidGroup.validate();
-	std::unordered_set<FluidGroup*> toErase;
-	for(FluidGroup& fluidGroup : m_fluidGroups)
-	{
-		if(fluidGroup.m_excessVolume <= 0 && fluidGroup.m_drainQueue.m_set.size() == 0)
-		{
-			fluidGroup.m_destroy = true;
-			assert(!fluidGroup.m_disolved);
-		}
-		if(fluidGroup.m_destroy || fluidGroup.m_merged || fluidGroup.m_disolved || fluidGroup.m_stable)
-			m_unstableFluidGroups.erase(&fluidGroup);
-		else if(!fluidGroup.m_stable) // This seems avoidable.
-			m_unstableFluidGroups.insert(&fluidGroup);
-		if(fluidGroup.m_destroy || fluidGroup.m_merged)
-		{
-			toErase.insert(&fluidGroup);
-			if(fluidGroup.m_destroy)
-				assert(fluidGroup.m_drainQueue.m_set.empty());
-		}
-	}
-	for(FluidGroup& fluidGroup : m_fluidGroups)
-		fluidGroup.validate(toErase);
-	m_fluidGroups.remove_if([&](FluidGroup& fluidGroup){ return toErase.contains(&fluidGroup); });
-	for(FluidGroup& fluidGroup : m_fluidGroups)
-		fluidGroup.validate();
-	for(const FluidGroup* fluidGroup : m_unstableFluidGroups)
-	{
-		[[maybe_unused]] bool found = false;
-		for(FluidGroup& fg : m_fluidGroups)
-			if(&fg == fluidGroup)
-			{
-				found = true;
-				continue;
-			}
-		assert(found);
-	}
+	m_hasFluidGroups.writeStep();
 	// Apply cave in.
 	if(!m_caveInData.empty())
 		stepCaveInWrite();
-	for(FluidGroup& fluidGroup : m_fluidGroups)
-		fluidGroup.validate();
-	// If there is any unstable groups expire route caches.
-	// TODO: Be more selective?
-	for(FluidGroup& fluidGroup : m_fluidGroups)
-		fluidGroup.validate();
 	// Clean up old vision cuboids.
 	if(m_visionCuboidsActive)
 		std::erase_if(m_visionCuboids, [](VisionCuboid& visionCuboid){ return visionCuboid.m_destroy; });
@@ -339,23 +264,6 @@ Block& Area::getBlockForAdjacentLocation(WorldLocation& location)
 	return getGroundLevel(0, (m_sizeY - 1) / 2);
 }
 */
-FluidGroup* Area::createFluidGroup(const FluidType& fluidType, std::unordered_set<Block*>& blocks, bool checkMerge)
-{
-	m_fluidGroups.emplace_back(fluidType, blocks, *this, checkMerge);
-	m_unstableFluidGroups.insert(&m_fluidGroups.back());
-	//TODO:  If new group is outside register it with areaHasTemperature.
-	return &m_fluidGroups.back();
-}
-
-void Area::removeFluidGroup(FluidGroup& group)
-{
-	std::erase_if(m_fluidGroups, [&group](const FluidGroup& g) { return &g == &group; });
-}
-void Area::clearMergedFluidGroups()
-{
-	std::erase_if(m_unstableFluidGroups, [](FluidGroup* fluidGroup){ return fluidGroup->m_merged; });
-	std::erase_if(m_fluidGroups, [](FluidGroup& fluidGroup){ return fluidGroup.m_merged; });
-}
 void Area::visionCuboidsActivate()
 {
 	m_visionCuboidsActive = true;
@@ -378,37 +286,9 @@ Cuboid Area::getZLevel(DistanceInBlocks z)
 {
 	return Cuboid(getBlock(m_sizeX - 1, m_sizeY - 1, z), getBlock(0, 0, z));
 }
-void Area::validateAllFluidGroups()
+std::string Area::toS() const
 {
-	for(FluidGroup& fluidGroup : m_fluidGroups)
-		if(!fluidGroup.m_merged && !fluidGroup.m_destroy)
-			fluidGroup.validate();
-}
-std::string Area::toS()
-{
-	std::string output = std::to_string(m_fluidGroups.size()) + " fluid groups########";
-	for(FluidGroup& fluidGroup : m_fluidGroups)
-	{
-		output += "type:" + fluidGroup.m_fluidType.name;
-		output += "-total:" + std::to_string(fluidGroup.totalVolume());
-		output += "-blocks:" + std::to_string(fluidGroup.m_drainQueue.m_set.size());
-		output += "-status:";
-		if(fluidGroup.m_merged)
-			output += "-merged";
-		if(fluidGroup.m_stable)
-			output += "-stable";
-		if(fluidGroup.m_disolved)
-		{
-			output += "-disolved";
-			for(FluidGroup& fg : m_fluidGroups)
-				if(fg.m_disolvedInThisGroup.contains(&fluidGroup.m_fluidType) && fg.m_disolvedInThisGroup.at(&fluidGroup.m_fluidType) == &fluidGroup)
-					output += " in " + fg.m_fluidType.name;
-		}
-		if(fluidGroup.m_destroy)
-			output += "-destroy";
-		output += "###";
-	}
-	return output;
+	return m_hasFluidGroups.toS();
 }
 void Area::logActorsAndItems() const
 {

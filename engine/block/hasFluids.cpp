@@ -61,10 +61,10 @@ void BlockHasFluids::addFluid(uint32_t volume, const FluidType& fluidType)
 	if(fluidGroup == nullptr)
 	{
 		std::unordered_set<Block*> blocks({&m_block});
-		fluidGroup = m_block.m_area->createFluidGroup(fluidType, blocks);
+		fluidGroup = m_block.m_area->m_hasFluidGroups.createFluidGroup(fluidType, blocks);
 	}
 	else
-		m_block.m_area->clearMergedFluidGroups();
+		m_block.m_area->m_hasFluidGroups.clearMergedFluidGroups();
 	// Shift less dense fluids to excessVolume.
 	if(m_totalFluidVolume > Config::maxBlockVolume)
 		resolveFluidOverfull();
@@ -85,7 +85,7 @@ void BlockHasFluids::removeFluidSyncronus(uint32_t volume, const FluidType& flui
 		FluidGroup& group = *m_fluids.at(&fluidType).second;
 		m_fluids.erase(&fluidType);
 		if(group.getBlocks().size() == 1)
-			m_block.m_area->removeFluidGroup(group);
+			m_block.m_area->m_hasFluidGroups.removeFluidGroup(group);
 		else
 			group.removeBlock(m_block);
 	}
@@ -212,11 +212,8 @@ void BlockHasFluids::onBlockSetSolid()
 				assert(above != nullptr);
 			}
 			else
-			{
 				// Otherwise destroy the group.
-				m_block.m_area->m_fluidGroups.remove(*pair.second);
-				m_block.m_area->m_unstableFluidGroups.erase(pair.second);
-			}
+				m_block.m_area->m_hasFluidGroups.removeFluidGroup(*pair.second);
 		}
 	}
 	m_fluids.clear();
