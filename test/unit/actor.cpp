@@ -57,7 +57,7 @@ TEST_CASE("actor")
 			.location=&origin1,
 		});
 		area.getBlock(7, 7, 0).setNotSolid();
-		area.getBlock(7, 7, 0).addFluid(100, FluidType::byName("water"));
+		area.getBlock(7, 7, 0).m_hasFluids.addFluid(100, FluidType::byName("water"));
 		Item& food = simulation.createItemGeneric(ItemType::byName("apple"), MaterialType::byName("fruit"), 1000);
 		food.setLocation(block1);
 		REQUIRE(dwarf1.m_canGrow.getEventPercentComplete() == 0);

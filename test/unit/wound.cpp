@@ -13,7 +13,7 @@ TEST_CASE("wound")
 	Actor& actor = simulation.createActor(dwarf, area.getBlock(1, 1, 2));
 	Block& pondLocation = area.getBlock(3, 7, 1);
 	pondLocation.setNotSolid();
-	pondLocation.addFluid(Config::maxBlockVolume, FluidType::byName("water"));
+	pondLocation.m_hasFluids.addFluid(Config::maxBlockVolume, FluidType::byName("water"));
 	Item& fruit = simulation.createItemGeneric(ItemType::byName("apple"), MaterialType::byName("fruit"), 50u);
 	Block& fruitLocation = area.getBlock(6, 5, 2);
 	fruit.setLocation(fruitLocation);

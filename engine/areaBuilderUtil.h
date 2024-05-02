@@ -65,16 +65,16 @@ namespace areaBuilderUtil
 	}
 	inline void setFullFluidCuboid(Block& low, Block& high, const FluidType& fluidType)
 	{
-		assert(low.m_totalFluidVolume == 0);
-		assert(low.fluidCanEnterEver());
-		assert(high.m_totalFluidVolume == 0);
-		assert(high.fluidCanEnterEver());
+		assert(low.m_hasFluids.getTotalVolume() == 0);
+		assert(low.m_hasFluids.fluidCanEnterEver());
+		assert(high.m_hasFluids.getTotalVolume() == 0);
+		assert(high.m_hasFluids.fluidCanEnterEver());
 		Cuboid cuboid(high, low);
 		for(Block& block : cuboid)
 		{
-			assert(block.m_totalFluidVolume == 0);
-			assert(block.fluidCanEnterEver());
-			block.addFluid(100, fluidType);
+			assert(block.m_hasFluids.getTotalVolume() == 0);
+			assert(block.m_hasFluids.fluidCanEnterEver());
+			block.m_hasFluids.addFluid(100, fluidType);
 		}
 	}
 	inline void validateAllBlockFluids(Area& area)
@@ -82,7 +82,7 @@ namespace areaBuilderUtil
 		for(uint32_t x = 0; x < area.m_sizeX; ++x)
 			for(uint32_t y = 0; y < area.m_sizeY; ++y)
 				for(uint32_t z = 0; z < area.m_sizeZ; ++z)
-					for(auto& [fluidType, pair] : area.getBlock(x, y, z).m_fluids)
+					for(auto& [fluidType, pair] : area.getBlock(x, y, z).m_hasFluids.getAll())
 						assert(pair.second->m_fluidType == *fluidType);
 	}
 	// Get one fluid group with the specified type. Return null if there is more then one.

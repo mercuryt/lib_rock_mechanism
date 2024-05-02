@@ -10,23 +10,23 @@ MistDisperseEvent::MistDisperseEvent(uint32_t delay, const FluidType& ft, Block&
 void MistDisperseEvent::execute()
 {
 	// Mist does not or cannont exist here anymore, clear and return.
-	if(m_block.m_mist == nullptr || m_block.isSolid() || m_block.m_totalFluidVolume == Config::maxBlockVolume)
+	if(!m_block.m_hasFluids.m_mist || m_block.isSolid() || m_block.m_hasFluids.getTotalVolume() == Config::maxBlockVolume)
 	{
-		m_block.m_mist = nullptr;
-		m_block.m_mistInverseDistanceFromSource = 0;
+		m_block.m_hasFluids.m_mist = nullptr;
+		m_block.m_hasFluids.m_mistInverseDistanceFromSource = 0;
 		return;
 	}
 	// Check if mist continues to exist here.
 	if(continuesToExist())
 	{
 		// Possibly spread.
-		if(m_block.m_mistInverseDistanceFromSource > 0)
+		if(m_block.m_hasFluids.m_mistInverseDistanceFromSource > 0)
 			for(Block* adjacent : m_block.m_adjacents)
-				if(adjacent && adjacent->fluidCanEnterEver() && (adjacent->m_mist == nullptr || adjacent->m_mist->density < m_fluidType.density)
+				if(adjacent && adjacent->m_hasFluids.fluidCanEnterEver() && (adjacent->m_hasFluids.m_mist == nullptr || adjacent->m_hasFluids.m_mist->density < m_fluidType.density)
 				  )
 				{
-					adjacent->m_mist = &m_fluidType;
-					adjacent->m_mistInverseDistanceFromSource = m_block.m_mistInverseDistanceFromSource - 1;
+					adjacent->m_hasFluids.m_mist = &m_fluidType;
+					adjacent->m_hasFluids.m_mistInverseDistanceFromSource = m_block.m_hasFluids.m_mistInverseDistanceFromSource - 1;
 					m_simulation.m_eventSchedule.schedule(std::make_unique<MistDisperseEvent>(m_fluidType.mistDuration, m_fluidType, *adjacent));
 				}
 		// Schedule next check.
@@ -34,21 +34,21 @@ void MistDisperseEvent::execute()
 		return;
 	}
 	// Mist does not continue to exist here.
-	m_block.m_mist = nullptr;
-	m_block.m_mistInverseDistanceFromSource = UINT32_MAX;
+	m_block.m_hasFluids.m_mist = nullptr;
+	m_block.m_hasFluids.m_mistInverseDistanceFromSource = UINT32_MAX;
 }
 bool MistDisperseEvent::continuesToExist() const
 {
-	if(m_block.m_mistSource == &m_fluidType)
+	if(m_block.m_hasFluids.m_mistSource == &m_fluidType)
 		return true;
 	// if adjacent to falling fluid on same z level
 	for(Block* adjacent : m_block.getAdjacentOnSameZLevelOnly())
 		// if adjacent to falling fluid.
-		if(adjacent->m_fluids.contains(&m_fluidType) && adjacent->getBlockBelow() && !adjacent->getBlockBelow()->isSolid())
+		if(adjacent->m_hasFluids.m_fluids.contains(&m_fluidType) && adjacent->getBlockBelow() && !adjacent->getBlockBelow()->isSolid())
 			return true;
 	for(Block* adjacent : m_block.m_adjacents)
 		// if adjacent to block with mist with lower distance to source.
-		if(adjacent && adjacent->m_mist == &m_fluidType && adjacent->m_mistInverseDistanceFromSource > m_block.m_mistInverseDistanceFromSource)
+		if(adjacent && adjacent->m_hasFluids.m_mist == &m_fluidType && adjacent->m_hasFluids.m_mistInverseDistanceFromSource > m_block.m_hasFluids.m_mistInverseDistanceFromSource)
 			return true;
 	return false;
 }

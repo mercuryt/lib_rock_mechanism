@@ -288,7 +288,7 @@ void PathThreadedTask::readStep()
 	}
 	else if(m_fluidType != nullptr)
 	{
-		predicate = [&](const Block& block){ return block.m_fluids.contains(m_fluidType); };
+		predicate = [&](const Block& block){ return block.m_hasFluids.contains(*m_fluidType); };
 		assert(m_adjacent);
 	}
 	else

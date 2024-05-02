@@ -1,12 +1,10 @@
 /*
-a* A block. Contains either a single type of material in 'solid' form or arbitrary objects with volume, generic solids and liquids.
+ * A block. Contains either a single type of material in 'solid' form or arbitrary objects with volume, generic solids and liquids.
  * Should only be used as inheritance target by Block, not intended to ever be instanced.
  */
 #pragma once
 
-#include "fluidType.h"
-#include "visionCuboid.h"
-#include "fluidGroup.h"
+#include "types.h"
 #include "plant.h"
 #include "blockFeature.h"
 #include "designations.h"
@@ -14,8 +12,8 @@ a* A block. Contains either a single type of material in 'solid' form or arbitra
 #include "farmFields.h"
 #include "temperature.h"
 #include "fire.h"
-#include "types.h"
 #include "block/hasActors.h"
+#include "block/hasFluids.h"
 #include "block/hasItems.h"
 #include "block/hasShapes.h"
 
@@ -31,16 +29,10 @@ a* A block. Contains either a single type of material in 'solid' form or arbitra
 class Area;
 struct DeserializationMemo;
 struct MoveType;
+struct VisionCuboid;
 //class Item;
 //class Actor;
 
-// Fluid type and volume pairs are sorted by density, low to high.
-// This is useful for resolving overfill.
-// TODO: Maybe a vector of pairs would be better performance?
-struct SortByDensity final
-{
-	bool operator()(const FluidType* a, const FluidType* b) const { return a->density < b->density; }
-};
 class Block final
 {
 	// If this block is solid stone, solid dirt, etc. then store it here. Otherwise nullptr.
@@ -55,17 +47,6 @@ public:
 	// Store adjacent in an array, with index determined by relative position.
 	// below = 0, < = 1, ^ = 2, > = 3, v = 4, above = 5.
 	std::array<Block*, 6> m_adjacents;
-	// Contains only those adjacents which aren't null.
-	// Sorted by density, low to high.
-	// TODO: Try replacing with a flatmap.
-	// TODO: HasFluids.
-	std::map<const FluidType*, std::pair<uint32_t, FluidGroup*>, SortByDensity> m_fluids;
-	uint32_t m_totalFluidVolume;
-	// For mist.
-	const FluidType* m_mist;
-	//TODO: remove mistSource?
-	const FluidType* m_mistSource;
-	DistanceInBlocks m_mistInverseDistanceFromSource;
 	// Store the location bucket this block belongs to.
 	std::unordered_set<Actor*>* m_locationBucket;
 	// Store the visionCuboid this block belongs to.
@@ -78,6 +59,7 @@ public:
 	bool m_visible;
 	uint32_t m_seed;
 	BlockHasShapes m_hasShapes;
+	BlockHasFluids m_hasFluids;
 	Reservable m_reservable;
 	HasPlant m_hasPlant;
 	HasBlockFeatures m_hasBlockFeatures;
@@ -129,25 +111,9 @@ public:
 	bool isSupport() const;
 	bool hasLineOfSightTo(Block& block) const;
 
-	void spawnMist(const FluidType& fluidType, uint32_t maxMistSpread = 0);
 	// Validate the nongeneric object can enter this block and also any other blocks required by it's Shape comparing to m_totalStaticVolume.
 	// TODO: Is this being used?
 	bool shapeAndMoveTypeCanEnterEver(const Shape& shape, const MoveType& moveType) const;
-	// Get the FluidGroup for this fluid type in this block.
-	FluidGroup* getFluidGroup(const FluidType& fluidType) const;
-	// Add fluid, handle falling / sinking, group membership, excessive quantity sent to fluid group.
-	void addFluid(uint32_t volume, const FluidType& fluidType);
-	void removeFluid(uint32_t volume, const FluidType& fluidType);
-	void removeFluidSyncronus(uint32_t volume, const FluidType& fluidType);
-	bool fluidCanEnterCurrently(const FluidType& fluidType) const;
-	bool isAdjacentToFluidGroup(const FluidGroup* fluidGroup) const;
-	uint32_t volumeOfFluidTypeCanEnter(const FluidType& fluidType) const;
-	uint32_t volumeOfFluidTypeContains(const FluidType& fluidType) const;
-	const FluidType& getFluidTypeWithMostVolume() const;
-	bool fluidCanEnterEver() const;
-	bool fluidTypeCanEnterCurrently(const FluidType& fluidType) const { return volumeOfFluidTypeCanEnter(fluidType) != 0; }
-	// Move less dense fluids to their group's excessVolume until Config::maxBlockVolume is achieved.
-	void resolveFluidOverfull();
 	Block* getBlockBelow() { return m_adjacents[0]; }
 	const Block* getBlockBelow() const { return m_adjacents[0]; }
 	Block* getBlockAbove() { return m_adjacents[5]; }

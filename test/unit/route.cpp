@@ -597,8 +597,8 @@ TEST_CASE("route_5_5_5")
 		Block& deep = area.getBlock(3,3,2);
 		surface.setNotSolid();
 		deep.setNotSolid();
-		surface.addFluid(Config::maxBlockVolume, water);
-		deep.addFluid(Config::maxBlockVolume, water);
+		surface.m_hasFluids.addFluid(Config::maxBlockVolume, water);
+		deep.m_hasFluids.addFluid(Config::maxBlockVolume, water);
 		Actor& actor = simulation.createActor(dwarf, area.getBlock(1,1,4));
 		actor.m_canMove.setDestination(deep);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();

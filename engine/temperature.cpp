@@ -152,7 +152,7 @@ void BlockHasTemperature::freeze(const FluidType& fluidType)
 	assert(fluidType.freezesInto != nullptr);
 	static const ItemType& chunk = ItemType::byName("chunk");
 	uint32_t chunkVolume = m_block.m_hasItems.getCount(chunk, *fluidType.freezesInto);
-	uint32_t fluidVolume = m_block.m_fluids.at(&fluidType).first;
+	uint32_t fluidVolume = m_block.m_hasFluids.volumeOfFluidTypeContains(fluidType);
 	if(chunkVolume + fluidVolume >= Config::maxBlockVolume)
 	{
 		m_block.setSolid(*fluidType.freezesInto);
@@ -169,7 +169,7 @@ void BlockHasTemperature::melt()
 	assert(m_block.getSolidMaterial().meltsInto != nullptr);
 	const FluidType& fluidType = *m_block.getSolidMaterial().meltsInto;
 	m_block.setNotSolid();
-	m_block.addFluid(Config::maxBlockVolume, fluidType);
+	m_block.m_hasFluids.addFluid(Config::maxBlockVolume, fluidType);
 	m_block.m_area->clearMergedFluidGroups();
 }
 const Temperature& BlockHasTemperature::getAmbientTemperature() const 

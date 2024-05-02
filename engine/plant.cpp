@@ -185,11 +185,11 @@ void Plant::addFluid(Volume volume, const FluidType& fluidType)
 }
 bool Plant::hasFluidSource()
 {
-	if(m_fluidSource != nullptr && m_fluidSource->m_fluids.contains(&m_plantSpecies.fluidType))
+	if(m_fluidSource != nullptr && m_fluidSource->m_hasFluids.contains(m_plantSpecies.fluidType))
 		return true;
 	m_fluidSource = nullptr;
 	for(Block* block : m_location->collectAdjacentsInRange(getRootRange()))
-		if(block->m_fluids.contains(&m_plantSpecies.fluidType))
+		if(block->m_hasFluids.contains(m_plantSpecies.fluidType))
 		{
 			m_fluidSource = block;
 			return true;

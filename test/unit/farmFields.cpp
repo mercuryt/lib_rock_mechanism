@@ -28,7 +28,7 @@ TEST_CASE("sow")
 	Block& block = area.getBlock(4, 4, 2);
 	Block& pondLocation = area.getBlock(8,8,2);
 	pondLocation.setNotSolid();
-	pondLocation.addFluid(Config::maxBlockVolume, FluidType::byName("water"));
+	pondLocation.m_hasFluids.addFluid(Config::maxBlockVolume, FluidType::byName("water"));
 	Block& foodLocation = area.getBlock(8,9,2);
 	Item& food = simulation.createItemGeneric(ItemType::byName("apple"), MaterialType::byName("plant matter"), 50);
 	food.setLocation(foodLocation);
@@ -330,7 +330,7 @@ TEST_CASE("harvest")
 		bucket.setLocation(bucketLocation);
 		Block& pondLocation = area.getBlock(3, 9, 1);
 		pondLocation.setNotSolid();
-		pondLocation.addFluid(100, water);
+		pondLocation.m_hasFluids.addFluid(100, water);
 		REQUIRE(actor.m_canPickup.canPickupAny(bucket));
 		plant.setMaybeNeedsFluid();
 		REQUIRE(block.m_hasPlant.exists());

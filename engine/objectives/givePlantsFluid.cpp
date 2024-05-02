@@ -261,8 +261,8 @@ void GivePlantsFluidObjective::fillContainer(Block& fillLocation)
 	}
 	else
 	{
-		volume = std::min(volume, fillLocation.volumeOfFluidTypeContains(fluidType));
-		fillLocation.removeFluid(volume, fluidType);
+		volume = std::min(volume, fillLocation.m_hasFluids.volumeOfFluidTypeContains(fluidType));
+		fillLocation.m_hasFluids.removeFluid(volume, fluidType);
 	}
 	assert(volume != 0);
 	haulTool.m_hasCargo.add(fluidType, volume);
@@ -270,7 +270,7 @@ void GivePlantsFluidObjective::fillContainer(Block& fillLocation)
 bool GivePlantsFluidObjective::canFillAt(const Block& block) const
 {
 	assert(m_plantLocation != nullptr);
-	return block.volumeOfFluidTypeContains(m_plantLocation->m_hasPlant.get().m_plantSpecies.fluidType) != 0 || 
+	return block.m_hasFluids.volumeOfFluidTypeContains(m_plantLocation->m_hasPlant.get().m_plantSpecies.fluidType) != 0 || 
 		const_cast<GivePlantsFluidObjective*>(this)->getItemToFillFromAt(const_cast<Block&>(block)) != nullptr;
 }
 Item* GivePlantsFluidObjective::getItemToFillFromAt(Block& block)
