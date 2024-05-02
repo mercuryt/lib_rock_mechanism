@@ -13,8 +13,8 @@
 #include <unordered_set>
 #include <unordered_map>
 
-#include "drainQueue.h"
-#include "fillQueue.h"
+#include "fluidGroups/drainQueue.h"
+#include "fluidGroups/fillQueue.h"
 #include "types.h"
 
 class Area;
