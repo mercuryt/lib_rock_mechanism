@@ -4,3 +4,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 target_link_libraries(unit LINK_PUBLIC Engine)
+add_custom_command(
+	TARGET unit POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy
+	${CMAKE_SOURCE_DIR}/build/test/unit/unit
+	${CMAKE_SOURCE_DIR}/unit
+)

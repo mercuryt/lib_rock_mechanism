@@ -29,7 +29,7 @@ endif()
 # add_compile_options(-ffast-math)
 
 add_subdirectory(engine)
-#add_subdirectory(ui)
+add_subdirectory(ui)
 add_subdirectory(test)
 #add_subdirectory(python)
 
@@ -38,3 +38,4 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
+

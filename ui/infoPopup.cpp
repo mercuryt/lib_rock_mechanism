@@ -70,7 +70,7 @@ void InfoPopup::display(Block& block)
 			button->onClick([&]{ display(plant); });
 			add(button);
 		}
-		for(auto [fluidType, pair] : block.m_fluids)
+		for(auto [fluidType, pair] : block.m_hasFluids.getAll())
 		{
 			Volume volume = pair.first;
 			auto label = tgui::Label::create(fluidType->name + " : " + std::to_string(volume));
