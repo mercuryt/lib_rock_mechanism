@@ -5,7 +5,6 @@
 #pragma once
 
 #include "types.h"
-#include "plant.h"
 #include "blockFeature.h"
 #include "designations.h"
 #include "stockpile.h"
@@ -15,6 +14,7 @@
 #include "block/hasActors.h"
 #include "block/hasFluids.h"
 #include "block/hasItems.h"
+#include "block/hasPlant.h"
 #include "block/hasShapes.h"
 
 #include <sys/types.h>
