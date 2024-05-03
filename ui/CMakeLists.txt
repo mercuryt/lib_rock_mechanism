@@ -9,7 +9,7 @@ find_package(TGUI 1 REQUIRED)
 target_link_libraries(UI PRIVATE TGUI::TGUI)
 add_custom_command(
 	TARGET UI POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy
+	COMMAND ${CMAKE_COMMAND} -E rename
 	${CMAKE_SOURCE_DIR}/build/ui/UI
 	${CMAKE_SOURCE_DIR}/UI
 )

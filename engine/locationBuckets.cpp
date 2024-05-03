@@ -2,6 +2,7 @@
 #include "actor.h"
 #include "area.h"
 #include "item.h"
+#include "types.h"
 #include <algorithm>
 LocationBuckets::LocationBuckets(Area& area) : m_area(area)
 {
@@ -9,18 +10,18 @@ LocationBuckets::LocationBuckets(Area& area) : m_area(area)
 	m_maxY = ((m_area.m_sizeY - 1) / Config::locationBucketSize) + 1;
 	m_maxZ = ((m_area.m_sizeZ - 1) / Config::locationBucketSize) + 1;
 	m_buckets.resize(m_maxX);
-	for(uint32_t x = 0; x != m_maxX; ++x)
+	for(DistanceInBuckets x = 0; x != m_maxX; ++x)
 	{
 		m_buckets[x].resize(m_maxY);
-		for(uint32_t y = 0; y != m_maxY; ++y)
+		for(DistanceInBuckets y = 0; y != m_maxY; ++y)
 			m_buckets[x][y].resize(m_maxZ);
 	}
 }
 std::unordered_set<Actor*>* LocationBuckets::getBucketFor(const Block& block)
 {
-	uint32_t bucketX = block.m_x / Config::locationBucketSize;
-	uint32_t bucketY = block.m_y / Config::locationBucketSize;
-	uint32_t bucketZ = block.m_z / Config::locationBucketSize;
+	DistanceInBuckets bucketX = block.m_x / Config::locationBucketSize;
+	DistanceInBuckets bucketY = block.m_y / Config::locationBucketSize;
+	DistanceInBuckets bucketZ = block.m_z / Config::locationBucketSize;
 	assert(m_buckets.size() > bucketX);
 	assert(m_buckets.at(bucketX).size() > bucketY);
 	assert(m_buckets.at(bucketX).at(bucketY).size() > bucketZ);
@@ -48,15 +49,15 @@ void LocationBuckets::processVisionRequest(VisionRequest& visionRequest) const
 	assert(from != nullptr);
 	assert((float)visionRequest.m_actor.m_canSee.getRange() * Config::maxDistanceVisionModifier > 0.f);
 	int32_t range = visionRequest.m_actor.m_canSee.getRange() * Config::maxDistanceVisionModifier;
-	uint32_t endX = std::min(((from->m_x + range) / Config::locationBucketSize + 1), m_maxX);
-	uint32_t beginX = std::max(0, (int32_t)from->m_x - range) / Config::locationBucketSize;
-	uint32_t endY = std::min(((from->m_y + range) / Config::locationBucketSize + 1), m_maxY);
-	uint32_t beginY = std::max(0, (int32_t)from->m_y - range) / Config::locationBucketSize;
-	uint32_t endZ = std::min(((from->m_z + range) / Config::locationBucketSize + 1), m_maxZ);
-	uint32_t beginZ = std::max(0, (int32_t)from->m_z - range) / Config::locationBucketSize;
-	for(uint32_t x = beginX; x != endX; ++x)
-		for(uint32_t y = beginY; y != endY; ++y)
-			for(uint32_t z = beginZ; z != endZ; ++z)
+	DistanceInBuckets endX = std::min(((from->m_x + range) / Config::locationBucketSize + 1), m_maxX);
+	DistanceInBuckets beginX = std::max(0, (int32_t)from->m_x - range) / Config::locationBucketSize;
+	DistanceInBuckets endY = std::min(((from->m_y + range) / Config::locationBucketSize + 1), m_maxY);
+	DistanceInBuckets beginY = std::max(0, (int32_t)from->m_y - range) / Config::locationBucketSize;
+	DistanceInBuckets endZ = std::min(((from->m_z + range) / Config::locationBucketSize + 1), m_maxZ);
+	DistanceInBuckets beginZ = std::max(0, (int32_t)from->m_z - range) / Config::locationBucketSize;
+	for(DistanceInBuckets x = beginX; x != endX; ++x)
+		for(DistanceInBuckets y = beginY; y != endY; ++y)
+			for(DistanceInBuckets z = beginZ; z != endZ; ++z)
 			{
 				assert(x < m_buckets.size());
 				assert(y < m_buckets.at(x).size());
@@ -65,7 +66,7 @@ void LocationBuckets::processVisionRequest(VisionRequest& visionRequest) const
 				{
 					assert(!actor->m_blocks.empty());
 					for(const Block* to : actor->m_blocks)
-						if(to->taxiDistance(*from) <= (uint32_t)range)
+						if(to->taxiDistance(*from) <= (DistanceInBlocks)range)
 						{
 							if(visionRequest.hasLineOfSight(*to, *from))
 								visionRequest.m_actors.insert(actor);
@@ -77,7 +78,7 @@ void LocationBuckets::processVisionRequest(VisionRequest& visionRequest) const
 }
 void LocationBuckets::getByConditionSortedByTaxiDistanceFrom(const Block& origin, std::function<bool(const Actor&)> condition, std::function<bool(const Actor&)> yield)
 {
-	uint32_t beginX, endX, beginY, endY, beginZ, endZ;
+	DistanceInBuckets beginX, endX, beginY, endY, beginZ, endZ;
 	beginX = endX = origin.m_x / Config::locationBucketSize;
 	beginY = endY = origin.m_y / Config::locationBucketSize;
 	beginZ = endZ = origin.m_z / Config::locationBucketSize;
@@ -91,9 +92,9 @@ void LocationBuckets::getByConditionSortedByTaxiDistanceFrom(const Block& origin
 		if(beginZ != 0) beginZ--;
 		if(endZ != m_maxZ) endZ++;
 		std::unordered_set<Actor*> candidates;
-		for(uint32_t x = beginX; x != endX; ++x)
-			for(uint32_t y = beginY; y != endY; ++y)
-				for(uint32_t z = beginZ; z != endZ; ++z)
+		for(DistanceInBuckets x = beginX; x != endX; ++x)
+			for(DistanceInBuckets y = beginY; y != endY; ++y)
+				for(DistanceInBuckets z = beginZ; z != endZ; ++z)
 				{
 					if(closedList.contains(&m_buckets[x][y][z]))
 						continue;
@@ -112,7 +113,7 @@ void LocationBuckets::getByConditionSortedByTaxiDistanceFrom(const Block& origin
 			return;
 	}
 }
-LocationBuckets::InRange LocationBuckets::inRange(const Block& origin, uint32_t range) const
+LocationBuckets::InRange LocationBuckets::inRange(const Block& origin, DistanceInBlocks range) const
 {
 	return LocationBuckets::InRange(*this, origin, range);
 }
