@@ -101,6 +101,7 @@ public:
 	Actor(Simulation& simulation, ActorId id, const std::wstring& name, const AnimalSpecies& species, Step birthStep, Percent percentGrown, Faction* faction, Attributes attributes);
 	Actor(ActorParamaters params);
 	Actor(const Json& data, DeserializationMemo& deserializationMemo);
+	void resetNeeds();
 	void setLocation(Block& block);
 	void setLocationAndFacing(Block& block, Facing facing);
 	void exit();

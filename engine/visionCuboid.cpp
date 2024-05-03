@@ -123,7 +123,6 @@ void VisionCuboid::splitAt(Block& split)
 		else
 			toCombine->extend(cuboid);
 	}
-	clearDestroyed(*split.m_area);
 }
 // Used when a floor is no longer always transparent.
 void VisionCuboid::splitBelow(Block& split)
@@ -150,7 +149,6 @@ void VisionCuboid::splitBelow(Block& split)
 			toCombine->extend(newCuboid);
 		}
 	}
-	clearDestroyed(*split.m_area);
 }
 // Combine and recursively search for further combinations which form cuboids.
 void VisionCuboid::extend(Cuboid& cuboid)

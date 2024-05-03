@@ -329,6 +329,12 @@ void Actor::setLocation(Block& block)
 	block.m_hasActors.enter(*this);
 	m_canLead.onMove();
 }
+void Actor::resetNeeds()
+{
+	m_mustSleep.notTired();
+	m_mustDrink.notThirsty();
+	m_mustEat.notHungry();
+}
 void Actor::setLocationAndFacing(Block& block, Facing facing)
 {
 	exit();

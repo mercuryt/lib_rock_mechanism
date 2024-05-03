@@ -9,7 +9,10 @@ void LoadView::draw()
 	layout->setPosition("20%", "10%");
 	layout->setSize("60%", "80%");
 	m_panel->add(layout);
-	layout->add(tgui::Label::create("load"));
+	auto title = tgui::Label::create("Load");
+	title->setPosition("50%", "5%");
+	title->setOrigin(0.5, 0);
+	layout->add(title);
 	auto cancel = tgui::Button::create("cancel");
 	layout->add(cancel);
 	cancel->onClick([this]{ m_window.showMainMenu(); });

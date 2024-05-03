@@ -72,7 +72,8 @@ void EditActorView::draw(Actor& actor)
 	});
 	basicInfoGrid->addWidget(tgui::Label::create("faction"), 0, 8);
 	auto factionUI = widgetUtil::makeFactionSelectUI(*m_window.getSimulation(), L"none");
-	factionUI->setSelectedItem(m_actor->getFaction()->name);
+	if(m_actor->getFaction())
+		factionUI->setSelectedItem(m_actor->getFaction()->name);
 	factionUI->onItemSelect([this, update](const tgui::String factionName){
 		Faction& faction = m_window.getSimulation()->m_hasFactions.byName(factionName.toWideString());
 		m_actor->setFaction(&faction);
@@ -313,6 +314,10 @@ void EditActorView::draw(Actor& actor)
 				uniformUI->setSelectedItem(actor.m_hasUniform.get().name);
 		}
 	}
+	// Reset needs button.
+	auto resetNeeds = tgui::Button::create("reset needs");
+	layoutGrid->addWidget(resetNeeds, ++gridCount, 1);
+	resetNeeds->onClick([this]{ m_actor->resetNeeds(); });
 	// Close button.
 	auto close = tgui::Button::create("close");
 	layoutGrid->addWidget(close, ++gridCount, 1);

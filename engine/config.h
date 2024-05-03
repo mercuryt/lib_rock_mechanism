@@ -13,7 +13,7 @@ namespace Config
 	//
 	// sort command for vim:
 	// 	sort /\t/w* /w* /w* /
-	inline constexpr Step actorDoVisionInterval = 10;
+	inline constexpr Step actorDoVisionInterval = 3;
 	inline constexpr bool fluidPiston = false;
 	inline constexpr uint32_t fluidsSeepDiagonalModifier = 100;
 
