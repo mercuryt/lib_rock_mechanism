@@ -184,6 +184,7 @@
 	"unitsOfCarryMassPerUnitOfStrength": 500,
 	"unitsOfMoveSpeedPerUnitOfAgility": 2.5,
 	"unitsOfWoundAreaPerUnitItemScaleFactor": 100,
+	"visionCuboidsActive": true,
 	"visionThreadingBatchSize": 30,
 	"wanderMaximumNumberOfBlocks": 1000,
 	"wanderMinimumNumberOfBlocks": 100,

@@ -75,6 +75,8 @@ void EditAreaView::confirm()
 		std::function<void()> task = [this]{
 			static constexpr bool createDrama = true;
 			m_area = &m_window.getSimulation()->createArea(m_sizeX->getValue(), m_sizeY->getValue(), m_sizeZ->getValue(), createDrama);
+			if(Config::visionCuboidsActive)
+				m_area->visionCuboidsActivate();
 		};
 		m_window.threadTask(task);
 	}

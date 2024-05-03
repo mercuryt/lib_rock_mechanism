@@ -334,8 +334,11 @@ void Block::setSolid(const MaterialType& materialType, bool constructed)
 	// Clear move cost caches for this and adjacent
 	m_hasShapes.clearCache();
 	// Opacity.
-	if(m_area->m_visionCuboidsActive && !materialType.transparent)
+	if(m_area->m_visionCuboidsActive && !materialType.transparent && wasEmpty)
+	{
+		assert(m_visionCuboid);
 		VisionCuboid::BlockIsSometimesOpaque(*this);
+	}
 	// Set blocks below as not exposed to sky.
 	setExposedToSky(false);
 	setBelowNotExposedToSky();

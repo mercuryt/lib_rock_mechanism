@@ -38,7 +38,8 @@ TEST_CASE("vision cuboid basic")
 	}
 	SUBCASE("setup area")
 	{
-		VisionCuboid::setup(area);
+		if(!area.m_visionCuboidsActive)
+			VisionCuboid::setup(area);
 		CHECK(area.m_visionCuboids.size() == 1);
 		VisionCuboid& visionCuboid = *area.getBlock(0, 0, 0).m_visionCuboid;
 		CHECK(visionCuboid.m_cuboid.size() == 8);
@@ -54,7 +55,8 @@ TEST_CASE("split at")
 	Block& b2 = area.getBlock(1, 0, 0);
 	Block& b3 = area.getBlock(0, 1, 0);
 	Block& b4 = area.getBlock(1, 1, 0);
-	area.visionCuboidsActivate();
+	if(!area.m_visionCuboidsActive)
+		area.visionCuboidsActivate();
 	VisionCuboid& vc0 = *b1.m_visionCuboid;
 	vc0.splitAt(b4);
 	CHECK(vc0.m_destroy);
@@ -75,7 +77,8 @@ TEST_CASE("split below")
 	Block& middle = area.getBlock(1, 1, 1);
 	Block& high = area.getBlock(2, 2, 2);
 	Block& low = area.getBlock(0, 0, 0);
-	area.visionCuboidsActivate();
+	if(!area.m_visionCuboidsActive)
+		area.visionCuboidsActivate();
 	middle.m_hasBlockFeatures.construct(BlockFeatureType::floor, MaterialType::byName("marble"));
 	VisionCuboid::clearDestroyed(area);
 	CHECK(area.m_visionCuboids.size() == 2);

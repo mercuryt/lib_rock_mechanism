@@ -203,13 +203,29 @@ TEST_CASE("vision")
 	SUBCASE("VisionCuboid setup")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		area.visionCuboidsActivate();
+		if(!area.m_visionCuboidsActive)
+			area.visionCuboidsActivate();
+		CHECK(area.m_visionCuboids.size() == 1);
+	}
+	SUBCASE("build ground after activating")
+	{
+		if(!area.m_visionCuboidsActive)
+			area.visionCuboidsActivate();
+		CHECK(area.m_visionCuboids.size() == 1);
+		area.getBlock(0,0,0).setSolid(marble);
+		CHECK(area.m_visionCuboids.size() == 3);
+		area.getBlock(1,0,0).setSolid(marble);
+		CHECK(area.m_visionCuboids.size() == 3);
+		areaBuilderUtil::setSolidWall(area.getBlock(2, 0, 0), area.getBlock(9, 0, 0), marble);
+		CHECK(area.m_visionCuboids.size() == 2);
+		areaBuilderUtil::setSolidWall(area.getBlock(0, 1, 0), area.getBlock(9, 9, 0), marble);
 		CHECK(area.m_visionCuboids.size() == 1);
 	}
 	SUBCASE("VisionCuboid divide and join")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		area.visionCuboidsActivate();
+		if(!area.m_visionCuboidsActive)
+			area.visionCuboidsActivate();
 		Block& block1 = area.getBlock(1, 1, 1);
 		Block& block2 = area.getBlock(5, 5, 2);
 		Block& block3 = area.getBlock(5, 5, 5);
@@ -254,7 +270,8 @@ TEST_CASE("vision")
 	SUBCASE("VisionCuboid can see")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		area.visionCuboidsActivate();
+		if(!area.m_visionCuboidsActive)
+			area.visionCuboidsActivate();
 		Block& block1 = area.getBlock(3, 3, 1);
 		Block& block2 = area.getBlock(7, 7, 1);
 		Actor& a1 = simulation.createActor(dwarf, block1);
