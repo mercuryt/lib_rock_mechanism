@@ -33,6 +33,7 @@ public:
 	MustDrink(const Json& data, Actor& a);
 	Json toJson() const;
 	void drink(const uint32_t volume);
+	void notThirsty();
 	void setNeedsFluid();
 	void onDeath();
 	const uint32_t& getVolumeFluidRequested() const { return m_volumeDrinkRequested; }

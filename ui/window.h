@@ -87,7 +87,7 @@ public:
 	Window();
 	void setPaused(bool paused);
 	void togglePaused();
-	void setSpeed(uint8_t speed);
+	void setSpeed(uint16_t speed);
 	void setArea(Area& area, GameView* gameView = nullptr);
 	void startLoop();
 	void centerView(const Block& block);

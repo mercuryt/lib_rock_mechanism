@@ -46,6 +46,11 @@ void MustDrink::drink(uint32_t volume)
 	}
 	m_thirstEvent.schedule(stepsToNextThirstEvent, m_actor);
 }
+void MustDrink::notThirsty()
+{
+	if(m_volumeDrinkRequested)
+		drink(m_volumeDrinkRequested);
+}
 void MustDrink::setNeedsFluid()
 {
 	if(m_volumeDrinkRequested == 0)

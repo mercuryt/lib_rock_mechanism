@@ -213,12 +213,16 @@ TEST_CASE("vision")
 			area.visionCuboidsActivate();
 		CHECK(area.m_visionCuboids.size() == 1);
 		area.getBlock(0,0,0).setSolid(marble);
+		VisionCuboid::clearDestroyed(area);
 		CHECK(area.m_visionCuboids.size() == 3);
 		area.getBlock(1,0,0).setSolid(marble);
+		VisionCuboid::clearDestroyed(area);
 		CHECK(area.m_visionCuboids.size() == 3);
 		areaBuilderUtil::setSolidWall(area.getBlock(2, 0, 0), area.getBlock(9, 0, 0), marble);
+		VisionCuboid::clearDestroyed(area);
 		CHECK(area.m_visionCuboids.size() == 2);
 		areaBuilderUtil::setSolidWall(area.getBlock(0, 1, 0), area.getBlock(9, 9, 0), marble);
+		VisionCuboid::clearDestroyed(area);
 		CHECK(area.m_visionCuboids.size() == 1);
 	}
 	SUBCASE("VisionCuboid divide and join")

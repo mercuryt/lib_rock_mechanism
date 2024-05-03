@@ -395,11 +395,15 @@ void MustEat::eat(Mass mass)
 	}
 	else
 	{
-		//TODO: ERROR HERE!
 		stepsToNextHungerEvent = util::scaleByInverseFraction(m_actor.m_species.stepsTillDieWithoutFood, m_massFoodRequested, massFoodForBodyMass());
 		m_actor.m_mustEat.m_hungerEvent.schedule(stepsToNextHungerEvent, m_actor);
 		m_actor.m_hasObjectives.subobjectiveComplete();
 	}
+}
+void MustEat::notHungry()
+{
+	if(m_massFoodRequested)
+		eat(m_massFoodRequested);
 }
 void MustEat::setNeedsFood()
 {

@@ -23,17 +23,12 @@ Window::Window() : m_window(sf::VideoMode::getDesktopMode(), "Goblin Pit", sf::S
 		while(true)
 		{
 			std::chrono::milliseconds start;
-			if(m_speed)
-				start = msSinceEpoch();
+			start = msSinceEpoch();
 			if(m_simulation && !m_paused)
-				m_simulation->doStep();
-			if(m_speed)
-			{
-				std::chrono::milliseconds delta = msSinceEpoch() - start;
-				std::chrono::milliseconds adjustedMinimum = std::chrono::milliseconds(m_minimumTimePerStep / std::chrono::milliseconds(m_speed));
-				if(delta < adjustedMinimum)
-					std::this_thread::sleep_for(adjustedMinimum - delta);
-			}
+				m_simulation->doStep(m_speed);
+			std::chrono::milliseconds delta = msSinceEpoch() - start;
+			if(delta < m_minimumTimePerStep)
+				std::this_thread::sleep_for(m_minimumTimePerStep - delta);
 		}
 	}), m_editMode(false)
 {
@@ -221,35 +216,35 @@ void Window::startLoop()
 							break;
 						case sf::Keyboard::F2:
 							if(m_area)
-								setSpeed(2);
+								setSpeed(4);
 							break;
 						case sf::Keyboard::F3:
 							if(m_area)
-								setSpeed(4);
+								setSpeed(8);
 							break;
 						case sf::Keyboard::F4:
 							if(m_area)
-								setSpeed(8);
+								setSpeed(16);
 							break;
 						case sf::Keyboard::F5:
 							if(m_area)
-								setSpeed(16);
+								setSpeed(64);
 							break;
 						case sf::Keyboard::F6:
 							if(m_area)
-								setSpeed(32);
+								setSpeed(128);
 							break;
 						case sf::Keyboard::F7:
 							if(m_area)
-								setSpeed(64);
+								setSpeed(256);
 							break;
 						case sf::Keyboard::F8:
 							if(m_area)
-								setSpeed(128);
+								setSpeed(512);
 							break;
 						case sf::Keyboard::F9:
 							if(m_area)
-								setSpeed(0);
+								setSpeed(1024);
 							break;
 						default:
 							break;
@@ -398,9 +393,9 @@ void Window::startLoop()
 		m_window.display();
 		// Frame rate limit.
 		std::chrono::milliseconds delta = msSinceEpoch() - start;
-		std::chrono::duration ms = m_speed ? m_minimumTimePerFrame : m_minimumTimePerFrame * 2;
-		if(ms > delta)
-			std::this_thread::sleep_for(ms - delta);
+		std::chrono::milliseconds minimum = m_speed < 200 ? m_minimumTimePerFrame : m_minimumTimePerFrame * 3;
+		if(minimum > delta)
+			std::this_thread::sleep_for(minimum - delta);
 	}
 }
 void Window::threadTask(std::function<void()> task)
@@ -452,7 +447,7 @@ void Window::togglePaused()
 	m_paused.toggle();
 	setSpeedDisplay();
 }
-void Window::setSpeed(uint8_t speed)
+void Window::setSpeed(uint16_t speed)
 {
 	m_speed = speed;
 	setSpeedDisplay();

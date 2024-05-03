@@ -26,6 +26,7 @@ public:
 	Json toJson() const;
 	Block* m_eatingLocation;
 	void eat(Mass mass);
+	void notHungry();
 	void setNeedsFood();
 	void onDeath();
 	[[nodiscard]] bool needsFood() const;
