@@ -97,10 +97,10 @@ void VisionCuboid::splitAt(Block& split)
 	split.m_visionCuboid = nullptr;
 	std::vector<Cuboid> newCuboids;
 	newCuboids.reserve(6);
-	// Blocks with a lower X then splt.
+	// Blocks with a lower X splt.
 	if(split.m_x != m_cuboid.m_lowest->m_x)
 		newCuboids.emplace_back(&split.m_area->getBlock(split.m_x - 1, m_cuboid.m_highest->m_y, m_cuboid.m_highest->m_z), m_cuboid.m_lowest);
-	// Blocks with a higher X then split.
+	// Blocks with a higher X split.
 	if(split.m_x != m_cuboid.m_highest->m_x)
 		newCuboids.emplace_back(m_cuboid.m_highest, &split.m_area->getBlock(split.m_x + 1, m_cuboid.m_lowest->m_y, m_cuboid.m_lowest->m_z));
 	// Remaining blocks with a lower Y, only blocks on the same x plane as split are left avalible.
@@ -123,6 +123,7 @@ void VisionCuboid::splitAt(Block& split)
 		else
 			toCombine->extend(cuboid);
 	}
+	clearDestroyed(*split.m_area);
 }
 // Used when a floor is no longer always transparent.
 void VisionCuboid::splitBelow(Block& split)
@@ -149,6 +150,7 @@ void VisionCuboid::splitBelow(Block& split)
 			toCombine->extend(newCuboid);
 		}
 	}
+	clearDestroyed(*split.m_area);
 }
 // Combine and recursively search for further combinations which form cuboids.
 void VisionCuboid::extend(Cuboid& cuboid)

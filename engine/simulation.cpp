@@ -43,25 +43,35 @@ Simulation::Simulation(const Json& data) : m_deserializationMemo(*this), m_event
 	m_hasFactions.load(data["factions"], m_deserializationMemo);
 	m_hourlyEvent.schedule(*this, data["hourEventStart"].get<Step>());
 }
-void Simulation::doStep()
+void Simulation::doStep(uint16_t count)
 {
-	m_taskFutures.clear();
-	m_threadedTaskEngine.readStep();
-	for(Area& area : m_areas)
-		area.readStep();
-	// Wait for all the tasks to complete.
-	for(auto& future : m_taskFutures)
-		future.wait();
-	// Aquire UI read mutex.
-	std::scoped_lock lock(m_uiReadMutex);
-	for(Area& area : m_areas)
-		area.writeStep();
-	m_threadedTaskEngine.writeStep();
-	// Do scheduled events last to avoid unexpected state changes in threaded task data between read and write.
-	m_eventSchedule.execute(m_step);
-	// Apply user input.
-	m_inputQueue.flush();
-	++m_step;
+	assert(count);
+	bool locked = false;
+	for(uint i = 0; i < count; ++i)
+	{
+		m_taskFutures.clear();
+		m_threadedTaskEngine.readStep();
+		for(Area& area : m_areas)
+			area.readStep();
+		// Wait for all the tasks to complete.
+		for(auto& future : m_taskFutures)
+			future.wait();
+		// Aquire UI read mutex on first iteration, 
+		if(!locked)
+		{
+			m_uiReadMutex.lock();
+			locked = true;
+		}
+		for(Area& area : m_areas)
+			area.writeStep();
+		m_threadedTaskEngine.writeStep();
+		// Do scheduled events last to avoid unexpected state changes in threaded task data between read and write.
+		m_eventSchedule.execute(m_step);
+		// Apply user input.
+		m_inputQueue.flush();
+		++m_step;
+	}
+	m_uiReadMutex.unlock();
 }
 void Simulation::incrementHour()
 {

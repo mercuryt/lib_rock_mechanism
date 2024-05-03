@@ -110,6 +110,9 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	// Load rain.
 	if(data.contains("rain"))
 		m_hasRain.load(data["rain"], deserializationMemo);
+	// Active vision cuboids.
+	if(data.contains("visionCuboidsActive"))
+		visionCuboidsActivate();
 }
 Json Area::toJson() const
 {
@@ -156,6 +159,8 @@ Json Area::toJson() const
 	data["hasCraftingLocationsAndJobs"] = m_hasCraftingLocationsAndJobs.toJson();
 	data["hasStockPiles"] = m_hasStockPiles.toJson();
 	data["targetedHauling"] = m_hasTargetedHauling.toJson();
+	if(m_visionCuboidsActive)
+		data["visionCuboidsActive"] = true;
 	for(const Block* block : m_caveInCheck)
 		data["caveInCheck"].push_back(block);
 	return data;
@@ -266,6 +271,7 @@ Block& Area::getBlockForAdjacentLocation(WorldLocation& location)
 */
 void Area::visionCuboidsActivate()
 {
+	assert(!m_visionCuboidsActive);
 	m_visionCuboidsActive = true;
 	VisionCuboid::setup(*this);
 }

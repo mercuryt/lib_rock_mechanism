@@ -59,7 +59,7 @@ public:
 	Simulation(const Json& data);
 	void loadAreas(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
-	void doStep();
+	void doStep(uint16_t count = 1);
 	void incrementHour();
 	void save();
 	void loadAreas(const Json& data, std::filesystem::path path);

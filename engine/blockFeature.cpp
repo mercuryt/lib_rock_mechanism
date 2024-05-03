@@ -2,15 +2,15 @@
 #include "block.h"
 #include "area.h"
 // Name, hewn, blocks entrance, lockable, stand in, stand above
-BlockFeatureType BlockFeatureType::floor = {"floor", false, false, false, true, false, false};
-BlockFeatureType BlockFeatureType::door = {"door", false, false, true, false, false, false};
-BlockFeatureType BlockFeatureType::flap = {"flap", false, false, false, false, false, false};
-BlockFeatureType BlockFeatureType::hatch = {"hatch", false, false, true, true, false, false};
-BlockFeatureType BlockFeatureType::stairs = {"stairs", true,  false, false, true, true, false};
-BlockFeatureType BlockFeatureType::floodGate = {"floodGate", true, true, false, false, true, false};
-BlockFeatureType BlockFeatureType::floorGrate = {"floorGrate", false, false, false, true, false, false};
-BlockFeatureType BlockFeatureType::ramp = {"ramp", true, false, false, true, true, false};
-BlockFeatureType BlockFeatureType::fortification = {"fortification", true, true, false, false, true, true};
+BlockFeatureType BlockFeatureType::floor{"floor", false, false, false, true, false, false};
+BlockFeatureType BlockFeatureType::door{"door", false, false, true, false, false, false};
+BlockFeatureType BlockFeatureType::flap{"flap", false, false, false, false, false, false};
+BlockFeatureType BlockFeatureType::hatch{"hatch", false, false, true, true, false, false};
+BlockFeatureType BlockFeatureType::stairs{"stairs", true,  false, false, true, true, false};
+BlockFeatureType BlockFeatureType::floodGate{"floodGate", true, true, false, false, true, false};
+BlockFeatureType BlockFeatureType::floorGrate{"floorGrate", false, false, false, true, false, false};
+BlockFeatureType BlockFeatureType::ramp{"ramp", true, false, false, true, true, false};
+BlockFeatureType BlockFeatureType::fortification{"fortification", true, true, false, false, true, true};
 bool HasBlockFeatures::contains(const BlockFeatureType& blockFeatureType) const
 {
 	for(const BlockFeature& blockFeature : m_features)
@@ -56,6 +56,12 @@ void HasBlockFeatures::construct(const BlockFeatureType& blockFeatureType, const
 	{
 		if(m_block.m_area->m_visionCuboidsActive)
 			VisionCuboid::BlockFloorIsSometimesOpaque(m_block);
+		m_block.setBelowNotExposedToSky();
+	}
+	else if(blockFeatureType == BlockFeatureType::door && !materialType.transparent)
+	{
+		if(m_block.m_area->m_visionCuboidsActive)
+			VisionCuboid::BlockIsSometimesOpaque(m_block);
 		m_block.setBelowNotExposedToSky();
 	}
 }

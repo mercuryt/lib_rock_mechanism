@@ -206,6 +206,7 @@ namespace Config
 	inline float unitsOfCarryMassPerUnitOfStrength;
 	inline float unitsOfMoveSpeedPerUnitOfAgility;
 	inline uint32_t unitsOfWoundAreaPerUnitItemScaleFactor;
+	inline bool visionCuboidsActive;
 	inline uint32_t visionThreadingBatchSize;
 	inline uint32_t wanderMaximumNumberOfBlocks;
 	inline uint32_t wanderMinimimNumberOfBlocks;
