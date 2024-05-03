@@ -405,6 +405,13 @@ Block* Block::offset(int32_t ax, int32_t ay, int32_t az) const
 		return nullptr;
 	return &m_area->getBlock(ax, ay, az);
 }
+Block& Block::offsetNotNull(int32_t ax, int32_t ay, int32_t az) const
+{
+	ax += m_x;
+	ay += m_y;
+	az += m_z;
+	return m_area->getBlock(ax, ay, az);
+}
 std::array<int32_t, 3> Block::relativeOffsetTo(const Block& block) const
 {
 	return {(int)block.m_x - (int)m_x, (int)block.m_y - (int)m_y, (int)block.m_z - (int)m_z};

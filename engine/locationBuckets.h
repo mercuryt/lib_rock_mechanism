@@ -1,4 +1,5 @@
 #pragma once
+#include "types.h"
 #include <cstdint>
 #include <functional>
 #include <unordered_set>
@@ -7,15 +8,17 @@ class Block;
 class Actor;
 class VisionRequest;
 
+using DistanceInBuckets = uint32_t;
+
 class LocationBuckets
 {
 	Area& m_area;
 	std::vector<std::vector<std::vector<
 		std::unordered_set<Actor*>
 		>>> m_buckets;
-	uint32_t m_maxX;
-	uint32_t m_maxY;
-	uint32_t m_maxZ;
+	DistanceInBuckets m_maxX;
+	DistanceInBuckets m_maxY;
+	DistanceInBuckets m_maxZ;
 public:
 	LocationBuckets(Area& area);
 	void insert(Actor& actor, Block& block);
@@ -29,20 +32,20 @@ public:
 	{
 		const LocationBuckets& locationBuckets;
 		const Block& origin;
-		uint32_t range;
-		InRange(const LocationBuckets& lb, const Block& o, uint32_t r) : locationBuckets(lb), origin(o), range(r) { }
+		DistanceInBlocks range;
+		InRange(const LocationBuckets& lb, const Block& o, DistanceInBlocks r) : locationBuckets(lb), origin(o), range(r) { }
 		struct iterator
 		{
 			InRange* inRange;
-			uint32_t x;
-			uint32_t y;
-			uint32_t z;
-			uint32_t maxX;
-			uint32_t maxY;
-			uint32_t maxZ;
-			uint32_t minX;
-			uint32_t minY;
-			uint32_t minZ;
+			DistanceInBuckets x;
+			DistanceInBuckets y;
+			DistanceInBuckets z;
+			DistanceInBuckets maxX;
+			DistanceInBuckets maxY;
+			DistanceInBuckets maxZ;
+			DistanceInBuckets minX;
+			DistanceInBuckets minY;
+			DistanceInBuckets minZ;
 			const std::unordered_set<Actor*>* bucket;
 			std::unordered_set<Actor*>::const_iterator bucketIterator;
 
@@ -67,5 +70,5 @@ public:
 		iterator end();
 		static_assert(std::forward_iterator<iterator>);
 	};
-	InRange inRange(const Block& origin, uint32_t range) const;
+	InRange inRange(const Block& origin, DistanceInBlocks range) const;
 };
