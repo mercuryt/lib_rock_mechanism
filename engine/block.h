@@ -30,6 +30,7 @@ class Area;
 struct DeserializationMemo;
 struct MoveType;
 struct VisionCuboid;
+struct LocationBucket;
 //class Item;
 //class Actor;
 
@@ -48,7 +49,7 @@ public:
 	// below = 0, < = 1, ^ = 2, > = 3, v = 4, above = 5.
 	std::array<Block*, 6> m_adjacents;
 	// Store the location bucket this block belongs to.
-	std::unordered_set<Actor*>* m_locationBucket;
+	LocationBucket* m_locationBucket;
 	// Store the visionCuboid this block belongs to.
 	VisionCuboid* m_visionCuboid;
 	std::unordered_map<const MaterialType* , Fire>* m_fires;

@@ -11,8 +11,8 @@ set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3 -ggdb -fno-inline -fmax-errors=5")
 set(CMAKE_CXX_FLAGS "-fuse-ld=mold")
 set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
-add_compile_options(-fsanitize=undefined)
-add_link_options(-fsanitize=undefined)
+#add_compile_options(-fsanitize=address)
+#add_link_options(-fsanitize=address)
 
 if(MSVC)
     # warning level 4

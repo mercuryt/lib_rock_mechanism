@@ -11,20 +11,36 @@ class VisionFacade;
 
 using DistanceInBuckets = uint32_t;
 
+class LocationBucket final
+{
+	std::vector<Actor*> m_actors;
+	std::vector<std::vector<Block*>> m_blocks;
+	[[nodiscard]] size_t indexFor(Actor& actor) const;
+public:
+	void insert(Actor& actor, std::vector<Block*>&& blocks);
+	void erase(Actor& actor);
+	void update(Actor& actor, std::vector<Block*>&& blocks);
+	[[nodiscard]] size_t size() const { return m_actors.size(); }
+	[[nodiscard]] Actor* getActor(size_t index);
+	[[nodiscard]] std::vector<Block*>& getBlocks(size_t index);
+	[[nodiscard]] const Actor* getActor(size_t index) const;
+	[[nodiscard]] const std::vector<Block*>& getBlocks(size_t index) const;
+};
+
 class LocationBuckets
 {
 	Area& m_area;
-	std::vector<std::unordered_set<Actor*>> m_buckets;
+	std::vector<LocationBucket> m_buckets;
 	DistanceInBuckets m_maxX;
 	DistanceInBuckets m_maxY;
 	DistanceInBuckets m_maxZ;
-	std::unordered_set<Actor*>& get(DistanceInBuckets x, DistanceInBuckets y, DistanceInBuckets z);
-	const std::unordered_set<Actor*>& get(DistanceInBuckets x, DistanceInBuckets y, DistanceInBuckets z) const;
+	[[nodiscard]] LocationBucket& get(DistanceInBuckets x, DistanceInBuckets y, DistanceInBuckets z);
+	[[nodiscard]] const LocationBucket& get(DistanceInBuckets x, DistanceInBuckets y, DistanceInBuckets z) const;
 public:
 	LocationBuckets(Area& area);
 	void add(Actor& actor);
 	void remove(Actor& actor);
 	void update(Actor& actor, std::unordered_set<Block*>& oldBlocks);
-	std::unordered_set<Actor*>& getBucketFor(const Block& block);
+	[[nodiscard]] LocationBucket& getBucketFor(const Block& block);
 	friend class VisionFacade;
 };

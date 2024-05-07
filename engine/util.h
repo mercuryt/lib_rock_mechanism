@@ -91,4 +91,10 @@ namespace util
 	{
 		return radians * (180.0/3.141592653589793238463);
 	}
+	template<typename T>
+	inline void removeFromVectorByIndexUnordered(std::vector<T>& vector, size_t index)
+	{
+		std::swap(vector[index], vector.back());
+		vector.pop_back();
+	}
 };
