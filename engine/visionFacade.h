@@ -31,8 +31,8 @@ public:
 	void readStep();
 	void writeStep();
 	void clear();
-	[[nodiscard]] const Actor& getActor(size_t index) const ;
-	[[nodiscard]] const Block& getLocation(size_t index) const;
+	[[nodiscard]] Actor& getActor(size_t index);
+	[[nodiscard]] Block& getLocation(size_t index);
 	[[nodiscard]] DistanceInBlocks getRange(size_t index) const;
 	[[nodiscard]] std::unordered_set<Actor*>& getResults(size_t index);
 	[[nodiscard]] size_t size() const { return m_actors.size(); }

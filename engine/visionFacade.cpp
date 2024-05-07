@@ -52,12 +52,12 @@ void VisionFacade::remove(size_t index)
 	if(m_actors.size() > index)
 		m_actors.at(index)->m_canSee.m_hasVisionFacade.m_index = index;
 }
-const Actor& VisionFacade::getActor(size_t index) const 
+Actor& VisionFacade::getActor(size_t index)  
 { 
 	assert(m_actors.size() > index); 
 	return *m_actors.at(index); 
 }
-const Block& VisionFacade::getLocation(size_t index) const 
+Block& VisionFacade::getLocation(size_t index)  
 {
        	assert(m_actors.size() > index); 
 	assert(m_actors.at(index)->m_location == m_locations.at(index));
@@ -90,9 +90,9 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 	for(size_t index = begin; index < end; ++index)
 	{
 		DistanceInBlocks range = getRange(index);
-		const Block& from = getLocation(index);
+		Block& from = getLocation(index);
 		Actor& actor = const_cast<Actor&>(getActor(index));
-		const LocationBuckets& locationBuckets = m_area->m_hasActors.m_locationBuckets;
+		LocationBuckets& locationBuckets = m_area->m_hasActors.m_locationBuckets;
 		std::unordered_set<Actor*>& result = actor.m_canSee.m_currently;
 		result.clear();
 		// Define a cube of locationBuckets around the watcher.
@@ -109,10 +109,10 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 				{
 					assert(x * y * z < locationBuckets.m_buckets.size());
 					// Iterate actors in the defined cube.
-					const LocationBucket& locationBucket = locationBuckets.get(x, y, z);
-					for(size_t i = 0; i < locationBucket.size(); ++i)
+					LocationBucket& locationBucket = locationBuckets.get(x, y, z);
+					for(size_t i = 0; i != locationBucket.size(); ++i)
 					{
-						for(const Block* to : locationBucket.getBlocks(i))
+						for(Block* to : locationBucket.getBlocks(i))
 						{
 							// Refine bucket cube actors into sphere with radius == range.
 							if(to->taxiDistance(from) <= range)
@@ -123,13 +123,13 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 								{
 									if(visionUtil::hasLineOfSightUsingVisionCuboid(*to, from))
 									{
-										result.insert(const_cast<Actor*>(locationBucket.getActor(i)));
+										result.insert(locationBucket.getActor(i));
 										break;
 									}
 								}
 								else if(visionUtil::hasLineOfSightBasic(*to, from))
 								{
-									result.insert(const_cast<Actor*>(locationBucket.getActor(i)));
+									result.insert(locationBucket.getActor(i));
 									break;
 								}
 							}
