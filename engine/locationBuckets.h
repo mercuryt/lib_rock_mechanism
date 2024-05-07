@@ -17,14 +17,12 @@ class LocationBucket final
 	std::vector<std::vector<Block*>> m_blocks;
 	[[nodiscard]] size_t indexFor(Actor& actor) const;
 public:
-	void insert(Actor& actor, std::vector<Block*>&& blocks);
+	void insert(Actor& actor, std::vector<Block*>& blocks);
 	void erase(Actor& actor);
-	void update(Actor& actor, std::vector<Block*>&& blocks);
+	void update(Actor& actor, std::vector<Block*>& blocks);
 	[[nodiscard]] size_t size() const { return m_actors.size(); }
 	[[nodiscard]] Actor* getActor(size_t index);
 	[[nodiscard]] std::vector<Block*>& getBlocks(size_t index);
-	[[nodiscard]] const Actor* getActor(size_t index) const;
-	[[nodiscard]] const std::vector<Block*>& getBlocks(size_t index) const;
 };
 
 class LocationBuckets
