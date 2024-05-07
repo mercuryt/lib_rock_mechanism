@@ -2,6 +2,7 @@
 #include "actor.h"
 #include "block.h"
 #include "deserializationMemo.h"
+#include "fluidType.h"
 #include "moveType.h"
 #include "types.h"
 #include "simulation.h"
@@ -33,7 +34,7 @@ Json ActorCanMove::toJson() const
 {
 	Json data;
 	data["moveType"] = m_moveType->name;
-	if(m_destination != nullptr)
+	if(m_destination)
 		data["destination"] = m_destination->positionToJson();
 	data["retries"] = m_retries;
 	if(!m_path.empty())
@@ -95,7 +96,7 @@ void ActorCanMove::clearPath()
 void ActorCanMove::callback()
 {
 	assert(!m_path.empty());
-	assert(m_destination != nullptr);
+	assert(m_destination);
 	assert(m_pathIter >= m_path.begin());
 	assert(m_pathIter != m_path.end());
 	Block& block = **m_pathIter;
@@ -246,7 +247,9 @@ PathThreadedTask::PathThreadedTask(Actor& a, HasShape* hs, const FluidType* ft, 
 	if(m_reserveDestination)
 		assert(m_unreservedDestination);
 }
-PathThreadedTask::PathThreadedTask(const Json& data, DeserializationMemo& deserializationMemo, Actor& a) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), 
+PathThreadedTask::PathThreadedTask(const Json& data, DeserializationMemo& deserializationMemo, Actor& a) : 
+	ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), 
+	m_fluidType(data.contains("fluidType") ? &FluidType::byName(data["fluidType"].get<std::string>()) : nullptr),
 	m_huristicDestination(data.contains("huristicDestination") ? &deserializationMemo.m_simulation.getBlockForJsonQuery(data["huristicDestination"]) : nullptr),
 	m_detour(data["detour"].get<bool>()),
 	m_adjacent(data["adjacent"].get<bool>()),
@@ -258,11 +261,12 @@ PathThreadedTask::PathThreadedTask(const Json& data, DeserializationMemo& deseri
 		m_hasShape = static_cast<HasShape*>(&deserializationMemo.itemReference(data["hasShapeItem"]));
 	else if(data.contains("hasShapeActor"))
 		m_hasShape = static_cast<HasShape*>(&deserializationMemo.actorReference(data["hasShapeActor"]));
+	else m_hasShape = nullptr;
 }
 Json PathThreadedTask::toJson() const
 {
 	Json data({{"detour", m_detour}, {"adjacent", m_adjacent}, {"unreservedDestination", m_unreservedDestination}, {"reserveDestination", m_reserveDestination}});
-	if(m_hasShape != nullptr)
+	if(m_hasShape)
 	{
 		if(m_hasShape->isItem())
 			data["hasShapeItem"] = static_cast<Item*>(m_hasShape)->m_id;
@@ -272,21 +276,23 @@ Json PathThreadedTask::toJson() const
 			data["hasShapeActor"] = static_cast<Actor*>(m_hasShape)->m_id;
 		}
 	}
-	if(m_huristicDestination != nullptr)
+	if(m_huristicDestination)
 		data["huristicDestination"] = m_huristicDestination->positionToJson();
+	if(m_fluidType)
+		data["fluidType"] = m_fluidType->name;
 	return data;
 }
 void PathThreadedTask::readStep()
 {
 	m_findsPath.m_huristicDestination = m_huristicDestination;
 	std::function<bool(const Block& block)> predicate;
-	assert(m_huristicDestination != nullptr || m_hasShape != nullptr || m_fluidType != nullptr);
-	if(m_hasShape != nullptr)
+	assert(m_huristicDestination || m_hasShape || m_fluidType );
+	if(m_hasShape )
 	{
 		predicate = [&](const Block& block){ return m_hasShape->m_blocks.contains(const_cast<Block*>(&block)); };
 		assert(m_adjacent);
 	}
-	else if(m_fluidType != nullptr)
+	else if(m_fluidType )
 	{
 		predicate = [&](const Block& block){ return block.m_hasFluids.contains(*m_fluidType); };
 		assert(m_adjacent);

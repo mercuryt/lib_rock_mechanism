@@ -148,7 +148,7 @@ void VisionFacade::readStep()
 		m_area->m_simulation.m_taskFutures.push_back(m_area->m_simulation.m_pool.submit([this, index, end]{ 
 			readStepSegment(index, end);
 		}));
-		++index;
+		index = end;
 	}
 }
 void VisionFacade::writeStep()
