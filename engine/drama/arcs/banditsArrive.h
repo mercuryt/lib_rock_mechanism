@@ -16,7 +16,7 @@ struct BanditsArriveDramaArc final : public DramaArc
 	bool m_isActive = false;
 	uint32_t m_quantity = 0;
 	BanditsArriveDramaArc(DramaEngine& engine, Area& area);
-	BanditsArriveDramaArc(const Json& data, DeserializationMemo& deserializationMemo);
+	BanditsArriveDramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& engine);
 	[[nodiscard]] Json toJson() const;
 	void callback();
 	HasScheduledEvent<BanditsLeaveScheduledEvent> m_scheduledEvent;

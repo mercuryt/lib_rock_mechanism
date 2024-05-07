@@ -17,7 +17,7 @@ Simulation::Simulation(std::wstring name, Step s) :  m_nextAreaId(1), m_deserial
 { 
 	m_hourlyEvent.schedule(*this);
 	m_path.append(L"save/"+name);
-	m_dramaEngine = std::make_unique<DramaEngine>();
+	m_dramaEngine = std::make_unique<DramaEngine>(*this);
 }
 Simulation::Simulation(std::filesystem::path path) : Simulation(Json::parse(std::ifstream{path/"simulation.json"})) 
 {
@@ -29,7 +29,7 @@ Simulation::Simulation(std::filesystem::path path) : Simulation(Json::parse(std:
 		Json areaData = Json::parse(af);
 		m_areas.emplace_back(areaData, m_deserializationMemo, *this);
 	}
-	m_dramaEngine = std::make_unique<DramaEngine>(data["drama"], m_deserializationMemo);
+	m_dramaEngine = std::make_unique<DramaEngine>(data["drama"], m_deserializationMemo, *this);
 }
 Simulation::Simulation(const Json& data) : m_deserializationMemo(*this), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this) 
 {

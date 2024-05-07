@@ -5,7 +5,7 @@
 #include <vector>
 class Area;
 class Actor;
-class AnimalSpecies;
+struct AnimalSpecies;
 class AnimalsLeaveScheduledEvent;
 struct DeserializationMemo;
 class Block;
@@ -21,7 +21,7 @@ struct AnimalsArriveDramaArc final : public DramaArc
 	Percent m_thristPercent = 0;
 	Percent m_tiredPercent = 0;
 	AnimalsArriveDramaArc(DramaEngine& engine, Area& area);
-	AnimalsArriveDramaArc(const Json& data, DeserializationMemo& deserializationMemo);
+	AnimalsArriveDramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine);
 	[[nodiscard]] Json toJson() const;
 	void callback();
 	HasScheduledEvent<AnimalsLeaveScheduledEvent> m_scheduledEvent;

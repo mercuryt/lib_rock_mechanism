@@ -10,7 +10,6 @@
 #include "simulation.h"
 #include "types.h"
 #include "util.h"
-#include "visionRequest.h"
 #include "objectives/wait.h"
 
 #include <algorithm>
@@ -242,13 +241,13 @@ Actor::Actor(ActorParamaters params) : HasShape(*params.simulation, params.speci
 	m_canPickup(*this), m_equipmentSet(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, params.getPercentGrown()), 
 	m_hasObjectives(*this), m_canReserve(m_faction), m_stamina(*this), m_hasUniform(*this)
 	{ 
+		if(m_species.sentient)
+			params.generateEquipment(*this);
 		if(params.location)
 		{
 			setLocation(*params.location);
 			m_location->m_area->m_hasActors.add(*this);
 		}
-		if(m_species.sentient)
-			params.generateEquipment(*this);
 	}
 Actor::Actor(const Json& data, DeserializationMemo& deserializationMemo) :
 	HasShape(data, deserializationMemo),
@@ -328,6 +327,9 @@ void Actor::setLocation(Block& block)
 	}
 	block.m_hasActors.enter(*this);
 	m_canLead.onMove();
+	//TODO: use a head block rather then the location block so tall creaters can see over obsticles.
+	if(!m_canSee.m_hasVisionFacade.empty())
+		m_canSee.m_hasVisionFacade.updateLocation(block);
 }
 void Actor::resetNeeds()
 {
@@ -367,6 +369,7 @@ void Actor::die(CauseOfDeath causeOfDeath)
 		m_project->removeWorker(*this);
 	if(m_location)
 		setStatic(true);
+	m_location->m_area->m_hasActors.m_visionFacadeBuckets.remove(*this);
 }
 void Actor::passout(Step duration)
 {

@@ -8,13 +8,15 @@ void BlockHasActors::enter(Actor& actor)
 	if(actor.m_location != nullptr)
 	{
 		actor.m_facing = m_block.facingToSetWhenEnteringFrom(*actor.m_location);
-		m_block.m_area->m_hasActors.m_locationBuckets.update(actor, *actor.m_location, m_block);
 		actor.m_location->m_hasActors.exit(actor);
 	}
-	else
-		m_block.m_area->m_hasActors.m_locationBuckets.insert(actor, m_block);
 	m_actors.push_back(&actor);
+	std::unordered_set<Block*> oldBlocks = actor.m_blocks;
 	m_block.m_hasShapes.enter(actor);
+	if(oldBlocks.empty())
+		m_block.m_area->m_hasActors.m_locationBuckets.add(actor);
+	else
+		m_block.m_area->m_hasActors.m_locationBuckets.update(actor, oldBlocks);
 	if(m_block.m_underground)
 		m_block.m_area->m_hasActors.setUnderground(actor);
 	else

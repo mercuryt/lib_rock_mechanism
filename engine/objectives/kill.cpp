@@ -1,7 +1,7 @@
 #include "kill.h"
 #include "block.h"
 #include "objective.h"
-#include "visionRequest.h"
+#include "visionUtil.h"
 #include "simulation.h"
 #include <memory>
 KillInputAction::KillInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, Actor& killer, Actor& target) : InputAction(actors, emplacementType, inputQueue), m_killer(killer), m_target(target) 
@@ -32,7 +32,7 @@ void KillObjective::execute()
 	if(!m_getIntoRangeAndLineOfSightThreadedTask.exists() && 
 			(m_killer.m_location->taxiDistance(*m_target.m_location) > m_killer.m_canFight.getMaxRange() ||
 			 // TODO: hasLineOfSightIncludingActors
-			 VisionRequest::hasLineOfSightBasic(*m_killer.m_location, *m_target.m_location))
+			 visionUtil::hasLineOfSightBasic(*m_killer.m_location, *m_target.m_location))
 	)
 		m_getIntoRangeAndLineOfSightThreadedTask.create(m_killer, m_target, m_killer.m_canFight.getMaxRange());
 	else

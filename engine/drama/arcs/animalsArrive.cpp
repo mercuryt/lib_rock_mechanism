@@ -4,11 +4,13 @@
 #include "../../animalSpecies.h"
 #include "../../config.h"
 #include "../../simulation.h"
+#include "util.h"
+#include <string>
 AnimalsArriveDramaArc::AnimalsArriveDramaArc(DramaEngine& engine, Area& area) : 
 	DramaArc(engine, DramaArcType::AnimalsArrive, &area), m_scheduledEvent(area.m_simulation.m_eventSchedule)
 { scheduleArrive(); }
-AnimalsArriveDramaArc::AnimalsArriveDramaArc(const Json& data, DeserializationMemo& deserializationMemo) : 
-	DramaArc(data, deserializationMemo),
+AnimalsArriveDramaArc::AnimalsArriveDramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine) : 
+	DramaArc(data, deserializationMemo, dramaEngine),
 	m_isActive(data["isActive"].get<bool>()),
 	m_scheduledEvent(m_area->m_simulation.m_eventSchedule)
 {
@@ -68,6 +70,7 @@ void AnimalsArriveDramaArc::callback()
 	else
 	{
 		//TODO: Difficulty scaling.
+		// Pick a species and quantity.
 		auto [species, quantity] = getSpeciesAndQuantity();
 		m_species = species;
 		m_quantity = quantity;
@@ -77,11 +80,13 @@ void AnimalsArriveDramaArc::callback()
 			scheduleArrive();
 		else
 		{
-			// Pick a species and quantity.
-			m_hungerPercent = std::max(0, random.getInRange(-500, 190));
+			m_hungerPercent = std::max(0, random.getInRange(-300, 190));
 			m_thristPercent = std::max(0, random.getInRange(-500, 190));
 			m_tiredPercent = std::max(0, random.getInRange(-500, 90));
 			m_isActive = true;
+			// Anounce.
+			std::wstring message = std::to_wstring(m_quantity) + L" " + util::stringToWideString(m_species->name) + L" spotted nearby.";
+			m_engine.getSimulation().m_hasDialogues.createMessageBox(message, m_entranceBlock);
 			// Reenter.
 			callback();
 		}

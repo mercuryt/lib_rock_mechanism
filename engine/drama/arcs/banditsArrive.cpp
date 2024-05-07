@@ -11,8 +11,8 @@
 BanditsArriveDramaArc::BanditsArriveDramaArc(DramaEngine& engine, Area& area) : 
 	DramaArc(engine, DramaArcType::BanditsArrive, &area), m_scheduledEvent(area.m_simulation.m_eventSchedule)
 { scheduleArrive(); }
-BanditsArriveDramaArc::BanditsArriveDramaArc(const Json& data, DeserializationMemo& deserializationMemo) : 
-	DramaArc(data, deserializationMemo),
+BanditsArriveDramaArc::BanditsArriveDramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& engine) : 
+	DramaArc(data, deserializationMemo, engine),
 	m_isActive(data["isActive"].get<bool>()),
 	m_quantity(data["quantity"].get<uint32_t>()),
 	m_scheduledEvent(m_area->m_simulation.m_eventSchedule),
@@ -110,6 +110,9 @@ void BanditsArriveDramaArc::callback()
 			//TODO: Difficulty scaling.
 			m_quantity = random.getInRange(3, 10);
 			m_isActive = true;
+			// Anounce.
+			std::wstring message = std::to_wstring(m_quantity) + L" bandits spotted nearby.";
+			m_engine.getSimulation().m_hasDialogues.createMessageBox(message, m_entranceBlock);
 			// Reenter.
 			callback();
 		}
