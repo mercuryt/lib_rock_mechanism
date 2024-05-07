@@ -11,18 +11,13 @@ class VisionFacade;
 
 using DistanceInBuckets = uint32_t;
 
-class LocationBucket final
+struct LocationBucket final
 {
-	std::vector<Actor*> m_actors;
-	std::vector<std::vector<Block*>> m_blocks;
-	[[nodiscard]] size_t indexFor(Actor& actor) const;
-public:
+	std::vector<std::pair<Actor*, std::vector<Block*>>> data;
 	void insert(Actor& actor, std::vector<Block*>& blocks);
 	void erase(Actor& actor);
 	void update(Actor& actor, std::vector<Block*>& blocks);
-	[[nodiscard]] size_t size() const { return m_actors.size(); }
-	[[nodiscard]] Actor* getActor(size_t index);
-	[[nodiscard]] std::vector<Block*>& getBlocks(size_t index);
+	[[nodiscard]] size_t size() const { return data.size(); }
 };
 
 class LocationBuckets
@@ -33,7 +28,6 @@ class LocationBuckets
 	DistanceInBuckets m_maxY;
 	DistanceInBuckets m_maxZ;
 	[[nodiscard]] LocationBucket& get(DistanceInBuckets x, DistanceInBuckets y, DistanceInBuckets z);
-	[[nodiscard]] const LocationBucket& get(DistanceInBuckets x, DistanceInBuckets y, DistanceInBuckets z) const;
 public:
 	LocationBuckets(Area& area);
 	void add(Actor& actor);

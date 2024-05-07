@@ -5,27 +5,24 @@
 #include "types.h"
 #include "util.h"
 #include <algorithm>
-size_t LocationBucket::indexFor(Actor& actor) const
-{
-	auto iter = std::ranges::find(m_actors, &actor);
-	assert(iter != m_actors.end());
-	return iter - m_actors.begin();
-}
 void LocationBucket::insert(Actor& actor, std::vector<Block*>& blocks)
 {
-	m_actors.push_back(&actor);
-	m_blocks.push_back(blocks);
+	auto iter = std::ranges::find(data, &actor, &std::pair<Actor*, std::vector<Block*>>::first);
+	assert(iter == data.end());
+	data.emplace_back(&actor, blocks);
 }
 void LocationBucket::erase(Actor& actor)
 {
-	size_t index = indexFor(actor);
-	util::removeFromVectorByIndexUnordered(m_actors, index);
-	util::removeFromVectorByIndexUnordered(m_blocks, index);
+	auto iter = std::ranges::find(data, &actor, &std::pair<Actor*, std::vector<Block*>>::first);
+	assert(iter != data.end());
+	std::swap(*iter, data.back());
+	data.pop_back();
 }
 void LocationBucket::update(Actor& actor, std::vector<Block*>& blocks)
 {
-	size_t index = indexFor(actor);
-	m_blocks.at(index) = blocks;
+	auto iter = std::ranges::find(data, &actor, &std::pair<Actor*, std::vector<Block*>>::first);
+	assert(iter != data.end());
+	iter->second = blocks;
 }
 LocationBuckets::LocationBuckets(Area& area) : m_area(area)
 {
@@ -38,28 +35,12 @@ LocationBucket& LocationBuckets::get(DistanceInBuckets x, DistanceInBuckets y, D
 {
 	return m_buckets[x + (y * m_maxX) + (z * m_maxX * m_maxY)];
 }
-const LocationBucket& LocationBuckets::get(DistanceInBuckets x, DistanceInBuckets y, DistanceInBuckets z) const
-{
-	return m_buckets[x + (y * m_maxX) + (z * m_maxX * m_maxY)];
-}
 LocationBucket& LocationBuckets::getBucketFor(const Block& block)
 {
 	DistanceInBuckets x = block.m_x / Config::locationBucketSize;
 	DistanceInBuckets y = block.m_y / Config::locationBucketSize;
 	DistanceInBuckets z = block.m_z / Config::locationBucketSize;
 	return get(x, y, z);
-}
-Actor* LocationBucket::getActor(size_t index)
-{
-	assert(m_actors.size() > index);
-	assert(m_blocks.size() == m_actors.size());
-	return m_actors.at(index);
-}
-std::vector<Block*>& LocationBucket::getBlocks(size_t index)
-{
-	assert(m_blocks.size() > index);
-	assert(m_blocks.size() == m_actors.size());
-	return m_blocks.at(index);
 }
 void LocationBuckets::add(Actor& actor)
 {

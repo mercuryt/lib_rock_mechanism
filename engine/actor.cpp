@@ -339,7 +339,6 @@ void Actor::resetNeeds()
 }
 void Actor::setLocationAndFacing(Block& block, Facing facing)
 {
-	exit();
 	m_facing = facing;
 	setLocation(block);
 }

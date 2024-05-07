@@ -8,7 +8,6 @@ void AreaHasActors::add(Actor& actor)
 	assert(actor.m_location != nullptr);
 	assert(!m_actors.contains(&actor));
 	m_actors.insert(&actor);
-	m_locationBuckets.add(actor);
 	if(!actor.m_location->m_underground)
 		m_onSurface.insert(&actor);
 	actor.m_canSee.createFacadeIfCanSee();
