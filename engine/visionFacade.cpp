@@ -95,26 +95,25 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 		LocationBuckets& locationBuckets = m_area->m_hasActors.m_locationBuckets;
 		std::unordered_set<Actor*>& result = actor.m_canSee.m_currently;
 		result.clear();
-		// Define a cube of locationBuckets around the watcher.
+		// Define a cuboid of locationBuckets around the watcher.
 		DistanceInBuckets endX = std::min(((from.m_x + range) / Config::locationBucketSize + 1), locationBuckets.m_maxX);
 		DistanceInBuckets beginX = std::max(0, int32_t(from.m_x - range)) / Config::locationBucketSize;
 		DistanceInBuckets endY = std::min(((from.m_y + range) / Config::locationBucketSize + 1), locationBuckets.m_maxY);
 		DistanceInBuckets beginY = std::max(0, int32_t(from.m_y - range)) / Config::locationBucketSize;
 		DistanceInBuckets endZ = std::min(((from.m_z + range) / Config::locationBucketSize + 1), locationBuckets.m_maxZ);
 		DistanceInBuckets beginZ = std::max(0, int32_t(from.m_z - range)) / Config::locationBucketSize;
-		// Iterate defined cube of buckets.
+		// Iterate defined cuboid of buckets.
 		for(DistanceInBuckets x = beginX; x != endX; ++x)
 			for(DistanceInBuckets y = beginY; y != endY; ++y)
 				for(DistanceInBuckets z = beginZ; z != endZ; ++z)
 				{
 					assert(x * y * z < locationBuckets.m_buckets.size());
-					// Iterate actors in the defined cube.
-					LocationBucket& locationBucket = locationBuckets.get(x, y, z);
-					for(size_t i = 0; i != locationBucket.size(); ++i)
+					// Iterate actors in the defined cuboid.
+					for(auto& [actor, blocks] : locationBuckets.get(x, y, z).data)
 					{
-						for(Block* to : locationBucket.getBlocks(i))
+						for(Block* to : blocks)
 						{
-							// Refine bucket cube actors into sphere with radius == range.
+							// Refine bucket cuboid actors into sphere with radius == range.
 							if(to->taxiDistance(from) <= range)
 							{
 								// Check sightlines.
@@ -123,13 +122,13 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 								{
 									if(visionUtil::hasLineOfSightUsingVisionCuboid(*to, from))
 									{
-										result.insert(locationBucket.getActor(i));
+										result.insert(actor);
 										break;
 									}
 								}
 								else if(visionUtil::hasLineOfSightBasic(*to, from))
 								{
-									result.insert(locationBucket.getActor(i));
+									result.insert(actor);
 									break;
 								}
 							}

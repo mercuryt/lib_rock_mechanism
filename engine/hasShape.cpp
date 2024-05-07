@@ -43,7 +43,11 @@ void HasShape::setShape(const Shape& shape)
 {
 	Block* location = m_location;
 	if(m_location)
+	{
 		exit();
+		if(isActor())
+			location->m_locationBucket->erase(static_cast<Actor&>(*this));
+	}
 	m_shape = &shape;
 	if(location)
 		setLocation(*location);
