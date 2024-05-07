@@ -259,6 +259,7 @@ void MustSleep::sleep(Step duration, bool force)
 	m_sleepEvent.schedule(duration, *this, force);
 	if(m_objective != nullptr)
 		m_objective->m_threadedTask.maybeCancel();
+	m_actor.m_canSee.m_hasVisionFacade.clear();
 }
 void MustSleep::wakeUp()
 {
@@ -270,6 +271,7 @@ void MustSleep::wakeUp()
 	// Objective complete releases all reservations.
 	if(m_objective != nullptr)
 		m_actor.m_hasObjectives.objectiveComplete(*m_objective);
+	m_actor.m_canSee.createFacadeIfCanSee();
 }
 void MustSleep::makeSleepObjective()
 {

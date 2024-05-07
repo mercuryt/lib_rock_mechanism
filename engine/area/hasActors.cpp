@@ -8,38 +8,28 @@ void AreaHasActors::add(Actor& actor)
 	assert(actor.m_location != nullptr);
 	assert(!m_actors.contains(&actor));
 	m_actors.insert(&actor);
-	m_locationBuckets.insert(actor, *actor.m_location);
-	m_visionBuckets.add(actor);
+	m_locationBuckets.add(actor);
 	if(!actor.m_location->m_underground)
 		m_onSurface.insert(&actor);
+	actor.m_canSee.createFacadeIfCanSee();
 }
 void AreaHasActors::remove(Actor& actor)
 {
 	m_actors.erase(&actor);
-	m_locationBuckets.erase(actor);
-	m_visionBuckets.remove(actor);
+	m_locationBuckets.remove(actor);
+	m_visionFacadeBuckets.remove(actor);
 	m_onSurface.erase(&actor);
+	actor.m_canSee.m_hasVisionFacade.clear();
 }
 void AreaHasActors::processVisionReadStep()
 {
-	m_visionRequestQueue.clear();
-	for(Actor* actor : m_visionBuckets.get(m_area.m_simulation.m_step))
-		if(actor->m_mustSleep.isAwake())
-			m_visionRequestQueue.emplace_back(*actor);
-	auto visionIter = m_visionRequestQueue.begin();
-	while(visionIter < m_visionRequestQueue.end())
-	{
-		auto end = m_visionRequestQueue.size() <= (uintptr_t)(m_visionRequestQueue.begin() - visionIter) + Config::visionThreadingBatchSize ?
-			m_visionRequestQueue.end() :
-			visionIter + Config::visionThreadingBatchSize;
-		m_area.m_simulation.m_taskFutures.push_back(m_area.m_simulation.m_pool.submit([=](){ VisionRequest::readSteps(visionIter, end); }));
-		visionIter = end;
-	}
+	VisionFacade& visionFacade = m_visionFacadeBuckets.getForStep(m_area.m_simulation.m_step);
+	visionFacade.readStep();
 }
 void AreaHasActors::processVisionWriteStep()
 {
-	for(VisionRequest& visionRequest : m_visionRequestQueue)
-		visionRequest.writeStep();
+	VisionFacade& visionFacade = m_visionFacadeBuckets.getForStep(m_area.m_simulation.m_step);
+	visionFacade.writeStep();
 }
 void AreaHasActors::onChangeAmbiantSurfaceTemperature()
 {
@@ -56,4 +46,3 @@ void AreaHasActors::setNotUnderground(Actor& actor)
 	m_onSurface.insert(&actor);
 	actor.m_needsSafeTemperature.onChange();
 }
-

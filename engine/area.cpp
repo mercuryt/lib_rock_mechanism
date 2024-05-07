@@ -3,6 +3,7 @@
 */
 
 #include "area.h"
+#include "config.h"
 #include "deserializationMemo.h"
 #include "fire.h"
 #include "fluidType.h"
@@ -111,7 +112,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	if(data.contains("rain"))
 		m_hasRain.load(data["rain"], deserializationMemo);
 	// Active vision cuboids.
-	if(data.contains("visionCuboidsActive"))
+	if(Config::visionCuboidsActive && data.contains("visionCuboidsActive"))
 		visionCuboidsActivate();
 }
 Json Area::toJson() const

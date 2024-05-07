@@ -41,22 +41,22 @@ DramaArcType DramaArc::stringToType(std::string string)
 	assert(false);
 }
 // Static method.
-std::unique_ptr<DramaArc> DramaArc::load(const Json& data, DeserializationMemo& deserializationMemo)
+std::unique_ptr<DramaArc> DramaArc::load(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine)
 {
 	DramaArcType type = data["type"].get<DramaArcType>();
 	switch(type)
 	{
 		case DramaArcType::AnimalsArrive:
-			return std::make_unique<AnimalsArriveDramaArc>(data, deserializationMemo);
+			return std::make_unique<AnimalsArriveDramaArc>(data, deserializationMemo, dramaEngine);
 			break;
 		case DramaArcType::BanditsArrive:
-			return std::make_unique<BanditsArriveDramaArc>(data, deserializationMemo);
+			return std::make_unique<BanditsArriveDramaArc>(data, deserializationMemo, dramaEngine);
 			break;
 	}
 	assert(false);
 }
-DramaArc::DramaArc(const Json& data, DeserializationMemo& deserializationMemo) : 
-	m_engine(*deserializationMemo.m_simulation.m_dramaEngine), m_type(DramaArc::stringToType(data["type"].get<std::string>()))
+DramaArc::DramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine) : 
+	m_engine(dramaEngine), m_type(DramaArc::stringToType(data["type"].get<std::string>()))
 {
 	if(data.contains("area"))
 		m_area = &deserializationMemo.m_simulation.getAreaById(data["area"].get<AreaId>());
@@ -166,11 +166,11 @@ std::vector<const AnimalSpecies*> DramaArc::getSentientSpecies() const
 			output.push_back(&species);
 	return output;
 }
-DramaEngine::DramaEngine(const Json& data, DeserializationMemo& deserializationMemo)
+DramaEngine::DramaEngine(const Json& data, DeserializationMemo& deserializationMemo, Simulation& simulation) : m_simulation(simulation)
 {
 	for(const Json& arcData : data["arcs"])
 	{
-		std::unique_ptr<DramaArc> arc = DramaArc::load(arcData, deserializationMemo);
+		std::unique_ptr<DramaArc> arc = DramaArc::load(arcData, deserializationMemo, *this);
 		add(std::move(arc));
 	}
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include "../lib/BS_thread_pool_light.hpp"
 #include "deserializationMemo.h"
+#include "dialogueBox.h"
 #include "types.h"
 #include "area.h"
 #include "project.h"
@@ -51,6 +52,7 @@ public:
 	SimulationHasUniforms m_hasUniforms;
 	SimulationHasShapes m_shapes;
 	SimulationHasFactions m_hasFactions;
+	DialogueBoxQueue m_hasDialogues;
 	// Dependency injectien.
 	std::unique_ptr<DramaEngine> m_dramaEngine;
 

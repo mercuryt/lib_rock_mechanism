@@ -3,6 +3,8 @@
 #include "../config.h"
 #include "../deserializationMemo.h"
 #include "animalSpecies.h"
+#include "simulation.h"
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <unordered_map>
@@ -24,7 +26,7 @@ protected:
 	// Optional
 	Area* m_area;
 	DramaArc(DramaEngine& engine, DramaArcType type, Area* area = nullptr) : m_engine(engine), m_area(area), m_type(type) { }
-	DramaArc(const Json& data, DeserializationMemo& deserializationMemo);
+	DramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine);
 	[[nodiscard]] virtual Json toJson() const;
 	void actorsLeave(std::vector<Actor*> actors);
 	[[nodiscard]] Block* getEntranceToArea(Area& area, const Shape& shape, const MoveType& moveType) const;
@@ -32,7 +34,7 @@ protected:
 	[[nodiscard]] bool blockIsConnectedToAtLeast(const Block& block, const Shape& shape, const MoveType& moveType, uint16_t count) const;
 	[[nodiscard]] Facing getFacingAwayFromEdge(const Block& block) const;
 	[[nodiscard]] std::vector<const AnimalSpecies*> getSentientSpecies() const;
-	static std::unique_ptr<DramaArc> load(const Json& data, DeserializationMemo& deserializationMemo);
+	static std::unique_ptr<DramaArc> load(const Json& data, DeserializationMemo& deserializationMemo,DramaEngine& dramaEngine);
 	friend class DramaEngine;
 public:
 	DramaArcType m_type;
@@ -47,8 +49,8 @@ public:
 class DramaEngine final
 {
 public:
-	DramaEngine(const Json& data, DeserializationMemo& deserializationMemo);
-	DramaEngine() = default;
+	DramaEngine(const Json& data, DeserializationMemo& deserializationMemo, Simulation& simulation);
+	DramaEngine(Simulation& simulation) : m_simulation(simulation) { }
 	[[nodiscard]] Json toJson() const;
 	void add(std::unique_ptr<DramaArc> event);
 	void remove(DramaArc& event);
@@ -57,8 +59,10 @@ public:
 	void createArcTypeForArea(DramaArcType type, Area& area);
 	void removeArcTypeFromArea(DramaArcType type, Area& area);
 	[[nodiscard]] std::unordered_set<DramaArc*>& getArcsForArea(Area& area);
+	[[nodiscard]] Simulation& getSimulation() { return m_simulation; }
 	~DramaEngine();
 private:
+	Simulation& m_simulation;
 	std::vector<std::unique_ptr<DramaArc>> m_arcs;
 	std::unordered_map<Area*, std::unordered_set<DramaArc*>> m_arcsByArea;
 };

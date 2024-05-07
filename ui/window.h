@@ -25,6 +25,7 @@
 #include "uniformPanel.h"
 #include "actorPanel.h"
 #include "editFactionPanel.h"
+#include "dialogueBox.h"
 //#include "worldParamatersPanel.h"
 struct GameView final 
 {
@@ -40,6 +41,7 @@ class Window final
 	MainMenuView m_mainMenuView;
 	LoadView m_loadView;
 	GameOverlay m_gameOverlay;
+	DialogueBoxUI m_dialogueBoxUI;
 	ObjectivePriorityView m_objectivePriorityView;
 	ProductionView m_productionView;
 	UniformListView m_uniformView;

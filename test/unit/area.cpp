@@ -222,11 +222,12 @@ TEST_CASE("vision-threading")
 	Block& block1 = area.getBlock(3, 3, 1);
 	Block& block2 = area.getBlock(7, 7, 1);
 	Actor& a1 = simulation.createActor(dwarf, block1);
-	REQUIRE(area.m_hasActors.m_visionBuckets.get(a1.m_id).size() == 1);
-	REQUIRE(area.m_hasActors.m_visionBuckets.get(a1.m_id)[0] == &a1);
+	REQUIRE(area.m_hasActors.m_visionFacadeBuckets.getForStep(a1.m_id).size() == 1);
+	REQUIRE(&a1.m_canSee.m_hasVisionFacade.getVisionFacade() == &area.m_hasActors.m_visionFacadeBuckets.getForStep(a1.m_id));
 	Actor& a2 = simulation.createActor(dwarf, block2);
-	REQUIRE(area.m_hasActors.m_visionBuckets.get(a2.m_id).size() == 1);
-	REQUIRE(area.m_hasActors.m_visionBuckets.get(a2.m_id)[0] == &a2);
+	REQUIRE(area.m_hasActors.m_visionFacadeBuckets.getForStep(a2.m_id).size() == 1);
+	REQUIRE(!a2.m_canSee.m_hasVisionFacade.empty());
+	REQUIRE(&a2.m_canSee.m_hasVisionFacade.getVisionFacade() == &area.m_hasActors.m_visionFacadeBuckets.getForStep(a2.m_id));
 	area.readStep();
 	simulation.m_pool.wait_for_tasks();
 	area.writeStep();

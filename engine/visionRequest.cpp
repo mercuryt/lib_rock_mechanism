@@ -8,7 +8,9 @@
 void VisionRequest::readSteps(std::vector<VisionRequest>::iterator begin, std::vector<VisionRequest>::iterator end)
 {
 	for(; begin != end; ++begin)
+	{
 		begin->readStep();
+	}
 }
 VisionRequest::VisionRequest(Actor& a) : m_actor(a) {}
 void VisionRequest::readStep()

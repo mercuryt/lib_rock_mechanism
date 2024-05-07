@@ -14,7 +14,7 @@
 #include <string>
 #include <unordered_set>
 Window::Window() : m_window(sf::VideoMode::getDesktopMode(), "Goblin Pit", sf::Style::Fullscreen), m_gui(m_window), m_view(m_window.getDefaultView()), 
-	m_mainMenuView(*this), m_loadView(*this), m_gameOverlay(*this), m_objectivePriorityView(*this), 
+	m_mainMenuView(*this), m_loadView(*this), m_gameOverlay(*this), m_dialogueBoxUI(*this), m_objectivePriorityView(*this), 
 	m_productionView(*this), m_uniformView(*this), m_stocksView(*this), m_actorView(*this), //m_worldParamatersView(*this),
 	m_editRealityView(*this), m_editActorView(*this), m_editAreaView(*this), m_editFactionView(*this), m_editFactionsView(*this), 
 	m_editStockPileView(*this), m_editDramaView(*this), m_area(nullptr), m_scale(32), m_z(0), m_speed(1), m_faction(nullptr),
@@ -59,16 +59,7 @@ void Window::centerView(const Block& block)
 	m_z = block.m_z;
 	sf::Vector2f globalPosition(block.m_x * m_scale, block.m_y * m_scale);
 	sf::Vector2i pixelPosition = m_window.mapCoordsToPixel(globalPosition);
-	pixelPosition.x -= m_view.getCenter().x - m_view.getSize().x / 2;
-	pixelPosition.y -= m_view.getCenter().y - m_view.getSize().y / 2;
-	if(pixelPosition.x < 50 && m_view.getCenter().x > (m_view.getSize().x / 2) - 10)
-		m_view.move(-20.f, 0.f);
-	else if (pixelPosition.x > m_view.getSize().x - 50 && m_view.getCenter().x < m_area->m_sizeX * m_scale - (m_view.getSize().x / 2) + 10)
-		m_view.move(20.f, 0.f);
-	else if(pixelPosition.y < 50 && m_view.getCenter().y > (m_view.getSize().y / 2) - 10)
-		m_view.move(0.f, -20.f);
-	else if (pixelPosition.y > m_view.getSize().y - 50 && m_view.getCenter().y < m_area->m_sizeY * m_scale - (m_view.getSize().y / 2) + 10)
-		m_view.move(0.f, 20.f);
+	m_view.setCenter(pixelPosition.x, pixelPosition.y);
 }
 void Window::hideAllPanels()
 {
@@ -386,6 +377,12 @@ void Window::startLoop()
 			m_draw.view();
 			// What is this? Something for TGUI?
 			m_window.setView(m_window.getDefaultView());
+			// Draw dialogueBox.
+			if(!m_dialogueBoxUI.empty() && !m_dialogueBoxUI.isVisible())
+			{
+				m_paused = true;
+				m_dialogueBoxUI.draw();
+			}
 		}
 		// Draw UI.
 		m_gui.draw();
