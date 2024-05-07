@@ -45,10 +45,10 @@ void VisionFacade::remove(size_t index)
 	assert(m_actors.size() > index);
 	m_actors.at(index)->m_canSee.m_hasVisionFacade.m_index = SIZE_MAX;
 	m_actors.at(index)->m_canSee.m_hasVisionFacade.m_visionFacade = nullptr;
-	m_actors.erase(m_actors.begin() + index);
-	m_ranges.erase(m_ranges.begin() + index);
-	m_locations.erase(m_locations.begin() + index);
-	m_results.erase(m_results.begin() + index);
+	util::removeFromVectorByIndexUnordered(m_actors, index);
+	util::removeFromVectorByIndexUnordered(m_ranges, index);
+	util::removeFromVectorByIndexUnordered(m_locations, index);
+	util::removeFromVectorByIndexUnordered(m_results, index);
 	if(m_actors.size() > index)
 		m_actors.at(index)->m_canSee.m_hasVisionFacade.m_index = index;
 }
@@ -109,10 +109,10 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 				{
 					assert(x * y * z < locationBuckets.m_buckets.size());
 					// Iterate actors in the defined cube.
-					for(Actor* otherActor : locationBuckets.get(x, y, z))
+					const LocationBucket& locationBucket = locationBuckets.get(x, y, z);
+					for(size_t i = 0; i < locationBucket.size(); ++i)
 					{
-						assert(!otherActor->m_blocks.empty());
-						for(const Block* to : otherActor->m_blocks)
+						for(const Block* to : locationBucket.getBlocks(i))
 						{
 							// Refine bucket cube actors into sphere with radius == range.
 							if(to->taxiDistance(from) <= range)
@@ -123,13 +123,13 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 								{
 									if(visionUtil::hasLineOfSightUsingVisionCuboid(*to, from))
 									{
-										result.insert(otherActor);
+										result.insert(const_cast<Actor*>(locationBucket.getActor(i)));
 										break;
 									}
 								}
 								else if(visionUtil::hasLineOfSightBasic(*to, from))
 								{
-									result.insert(otherActor);
+									result.insert(const_cast<Actor*>(locationBucket.getActor(i)));
 									break;
 								}
 							}
