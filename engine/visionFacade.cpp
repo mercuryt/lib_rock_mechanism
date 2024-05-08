@@ -93,7 +93,7 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 		Block& from = getLocation(index);
 		Actor& actor = const_cast<Actor&>(getActor(index));
 		LocationBuckets& locationBuckets = m_area->m_hasActors.m_locationBuckets;
-		std::unordered_set<Actor*>& result = actor.m_canSee.m_currently;
+		std::unordered_set<Actor*>& result = getResults(index);
 		result.clear();
 		// Define a cuboid of locationBuckets around the watcher.
 		DistanceInBuckets endX = std::min(((from.m_x + range) / Config::locationBucketSize + 1), locationBuckets.m_maxX);
@@ -109,9 +109,10 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 				{
 					assert(x * y * z < locationBuckets.m_buckets.size());
 					// Iterate actors in the defined cuboid.
-					for(auto& [actor, blocks] : locationBuckets.get(x, y, z).data)
+					LocationBucket& bucket = locationBuckets.get(x, y, z);
+					for(size_t i = 0; i < bucket.m_actors.size(); i++)
 					{
-						for(Block* to : blocks)
+						for(Block* to : bucket.m_blocks.at(i))
 						{
 							// Refine bucket cuboid actors into sphere with radius == range.
 							if(to->taxiDistance(from) <= range)
@@ -122,13 +123,13 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 								{
 									if(visionUtil::hasLineOfSightUsingVisionCuboid(*to, from))
 									{
-										result.insert(actor);
+										result.insert(bucket.m_actors.at(i));
 										break;
 									}
 								}
 								else if(visionUtil::hasLineOfSightBasic(*to, from))
 								{
-									result.insert(actor);
+									result.insert(bucket.m_actors.at(i));
 									break;
 								}
 							}
@@ -152,7 +153,8 @@ void VisionFacade::readStep()
 }
 void VisionFacade::writeStep()
 {
-	// Do something?
+	for(size_t index = 0; index < m_actors.size(); ++index)
+		getActor(index).m_canSee.m_currently.swap(getResults(index));
 }
 void VisionFacade::clear()
 {

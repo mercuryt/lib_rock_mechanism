@@ -7,22 +7,25 @@
 #include <algorithm>
 void LocationBucket::insert(Actor& actor, std::vector<Block*>& blocks)
 {
-	auto iter = std::ranges::find(data, &actor, &std::pair<Actor*, std::vector<Block*>>::first);
-	assert(iter == data.end());
-	data.emplace_back(&actor, blocks);
+	auto iter = std::ranges::find(m_actors, &actor);
+	assert(iter == m_actors.end());
+	m_actors.push_back(&actor);
+	m_blocks.push_back(blocks);
 }
 void LocationBucket::erase(Actor& actor)
 {
-	auto iter = std::ranges::find(data, &actor, &std::pair<Actor*, std::vector<Block*>>::first);
-	assert(iter != data.end());
-	std::swap(*iter, data.back());
-	data.pop_back();
+	auto iter = std::ranges::find(m_actors, &actor);
+	assert(iter != m_actors.end());
+	size_t index = iter - m_actors.begin();
+	util::removeFromVectorByIndexUnordered(m_actors, index);
+	util::removeFromVectorByIndexUnordered(m_blocks, index);
 }
 void LocationBucket::update(Actor& actor, std::vector<Block*>& blocks)
 {
-	auto iter = std::ranges::find(data, &actor, &std::pair<Actor*, std::vector<Block*>>::first);
-	assert(iter != data.end());
-	iter->second = blocks;
+	auto iter = std::ranges::find(m_actors, &actor);
+	assert(iter != m_actors.end());
+	size_t index = iter - m_actors.begin();
+	m_blocks.at(index) = blocks;
 }
 LocationBuckets::LocationBuckets(Area& area) : m_area(area)
 {
