@@ -140,6 +140,7 @@ BodyPart& Body::pickABodyPartByVolume()
 			roll -= bodyPart.bodyPartType.volume;
 	}
 	assert(false);
+	return m_bodyParts.front();
 }
 BodyPart& Body::pickABodyPartByType(const BodyPartType& bodyPartType)
 {
@@ -147,6 +148,7 @@ BodyPart& Body::pickABodyPartByType(const BodyPartType& bodyPartType)
 		if(bodyPart.bodyPartType == bodyPartType)
 				return bodyPart;
 	assert(false);
+	return m_bodyParts.front();
 }
 // Armor has already been applied, calculate hit depth.
 void Body::getHitDepth(Hit& hit, const BodyPart& bodyPart)

@@ -91,7 +91,6 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 	{
 		DistanceInBlocks range = getRange(index);
 		Block& from = getLocation(index);
-		Actor& actor = const_cast<Actor&>(getActor(index));
 		LocationBuckets& locationBuckets = m_area->m_hasActors.m_locationBuckets;
 		std::unordered_set<Actor*>& result = getResults(index);
 		result.clear();
@@ -136,7 +135,7 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 						}
 					}
 				}
-		result.erase(&const_cast<Actor&>(actor));
+		result.erase(&getActor(index));
 	}
 }
 void VisionFacade::readStep()

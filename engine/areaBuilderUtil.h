@@ -82,7 +82,7 @@ namespace areaBuilderUtil
 		for(uint32_t x = 0; x < area.m_sizeX; ++x)
 			for(uint32_t y = 0; y < area.m_sizeY; ++y)
 				for(uint32_t z = 0; z < area.m_sizeZ; ++z)
-					for(auto& [fluidType, pair] : area.getBlock(x, y, z).m_hasFluids.getAll())
+					for([[maybe_unused]] auto& [fluidType, pair] : area.getBlock(x, y, z).m_hasFluids.getAll())
 						assert(pair.second->m_fluidType == *fluidType);
 	}
 	// Get one fluid group with the specified type. Return null if there is more then one.

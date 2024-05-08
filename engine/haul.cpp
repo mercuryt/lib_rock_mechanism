@@ -126,7 +126,7 @@ void CanPickup::pickUp(Item& item, Quantity quantity)
 	}
 	m_actor.m_canMove.updateIndividualSpeed();
 }
-void CanPickup::pickUp(Actor& actor, Quantity quantity)
+void CanPickup::pickUp(Actor& actor, [[maybe_unused]] Quantity quantity)
 {
 	assert(quantity == 1);
 	assert(!actor.m_mustSleep.isAwake() || actor.m_body.isInjured());
@@ -202,7 +202,7 @@ void CanPickup::add(const ItemType& itemType, const MaterialType& materialType, 
 		item.addQuantity(quantity);
 	}
 }
-void CanPickup::remove(Item& item)
+void CanPickup::remove([[maybe_unused]] Item& item)
 {
 	assert(m_carrying == &item);
 	m_carrying = nullptr;
@@ -834,7 +834,7 @@ void HaulSubproject::addWorker(Actor& actor)
 	m_workers.insert(&actor);
 	commandWorker(actor);
 }
-void HaulSubproject::removeWorker(Actor& actor)
+void HaulSubproject::removeWorker([[maybe_unused]] Actor& actor)
 {
 	assert(m_workers.contains(&actor));
 	cancel();
@@ -1105,7 +1105,7 @@ Item* HasHaulTools::getToolToHaulFluid(const Faction& faction) const
 }
 Actor* HasHaulTools::getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(const Faction& faction, const Item& haulTool, Mass cargoMass, Speed minimumHaulSpeed) const
 {
-	static const MoveType& rollingType = MoveType::byName("roll");
+	[[maybe_unused]] static const MoveType& rollingType = MoveType::byName("roll");
 	assert(haulTool.m_itemType.moveType == rollingType);
 	for(Actor* actor : m_yolkableActors)
 	{

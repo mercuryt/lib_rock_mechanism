@@ -129,10 +129,10 @@ public:
 	void exit();
 	bool isItem() const { return false; }
 	bool isActor() const { return false; }
-	bool isGeneric() const { assert(false); }
-	uint32_t getMass() const { assert(false); }
-	uint32_t getVolume() const { assert(false); }
-	const MoveType& getMoveType() const { assert(false); }
+	bool isGeneric() const { assert(false); return false;}
+	uint32_t getMass() const { assert(false); return 0;}
+	uint32_t getVolume() const { assert(false); return 0; }
+	const MoveType& getMoveType() const;
 	uint32_t singleUnitMass() const { return getMass(); }
 	void log() const { std::cout << m_plantSpecies.name << std::to_string(getGrowthPercent()); }
 };

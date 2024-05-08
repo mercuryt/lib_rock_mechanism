@@ -171,6 +171,7 @@ const PlantSpecies& HasFarmFieldsForFaction::getPlantSpeciesFor(const Block& blo
 		if(farmField.blocks.contains(const_cast<Block*>(&block)))
 			return *farmField.plantSpecies;
 	assert(false);
+	return PlantSpecies::byName("poplar tree");
 }
 void HasFarmFieldsForFaction::addGivePlantFluidDesignation(Plant& plant)
 {

@@ -129,7 +129,7 @@ public:
 	[[nodiscard]] bool accepts(const Item& item) const;
 	[[nodiscard]] bool contains(ItemQuery& query) const;
 	[[nodiscard]] bool isEnabled() const { return m_enabled; }
-	[[nodiscard]] bool hasProjectNeedingMoreWorkers() const { return m_projectNeedingMoreWorkers != nullptr; }
+	[[nodiscard]] bool hasProjectNeedingMoreWorkers() const;
 	[[nodiscard]] Simulation& getSimulation();
 	[[nodiscard]] bool contains(Block& block) const { return m_blocks.contains(&block); }
 	[[nodiscard]] std::vector<ItemQuery>& getQueries() { return m_queries; }

@@ -69,7 +69,7 @@ public:
 		for(const Json& skillData : data["skills"])
 		{
 			const SkillType& skillType = SkillType::byName(skillData["skillType"].get<std::string>());
-			auto pair = m_skills.try_emplace(&skillType, skillData);
+			[[maybe_unused]]auto pair = m_skills.try_emplace(&skillType, skillData);
 			assert(pair.second);
 		}
 	}

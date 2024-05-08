@@ -51,6 +51,7 @@ std::vector<std::array<int32_t, 4>> Shape::makeOccupiedPositionsWithFacing(Facin
 			return output;
 	}
 	assert(false);
+	return output;
 }
 std::vector<std::array<int32_t, 3>> Shape::makeAdjacentPositionsWithFacing(Facing facing) const
 {
