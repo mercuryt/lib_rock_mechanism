@@ -230,7 +230,7 @@ void Simulation::fastForwardUntillActorIsAt(Actor& actor, Block& destination)
 void Simulation::fastForwardUntillActorIsAdjacentToDestination(Actor& actor, Block& destination)
 {
 	assert(!actor.m_canMove.getPath().empty());
-	Block* adjacentDestination = actor.m_canMove.getPath().back();
+	[[maybe_unused]] Block* adjacentDestination = actor.m_canMove.getPath().back();
 	assert(adjacentDestination != nullptr);
 	if(actor.m_blocks.size() == 1)
 		assert(adjacentDestination->isAdjacentToIncludingCornersAndEdges(destination));
@@ -260,7 +260,7 @@ void Simulation::fastForwardUntillActorHasEquipment(Actor& actor, Item& item)
 void Simulation::fastForwardUntillPredicate(std::function<bool()> predicate, uint32_t minutes)
 {
 	assert(!predicate());
-	Step lastStep = m_step + (minutes * Config::stepsPerMinute);
+	[[maybe_unused]] Step lastStep = m_step + (minutes * Config::stepsPerMinute);
 	while(!m_eventSchedule.m_data.empty())
 	{
 		if(m_threadedTaskEngine.count() == 0)
@@ -333,6 +333,7 @@ Actor& Simulation::getActorById(ActorId id)
 	}
 	else
 		return m_actors.at(id); 
+	return m_actors.begin()->second;
 } 
 Item& Simulation::getItemById(ItemId id) 
 {
@@ -343,4 +344,5 @@ Item& Simulation::getItemById(ItemId id)
 	}
 	else
 		return m_items.at(id); 
+	return m_items.begin()->second;
 } 

@@ -1,6 +1,9 @@
 #pragma once
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
 #include "../lib/json.hpp"
+#pragma GCC diagnostic pop
 #include "types.h"
 #include <cmath>
 #include <cstdint>

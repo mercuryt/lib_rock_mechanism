@@ -833,7 +833,7 @@ void Project::reset()
 		actor->m_hasObjectives.cannotCompleteSubobjective();
 	}
 }
-bool Project::canAddWorker(const Actor& actor) const
+bool Project::canAddWorker([[maybe_unused]] const Actor& actor) const
 {
 	assert(!m_workers.contains(&const_cast<Actor&>(actor)));
 	return m_maxWorkers > m_workers.size();

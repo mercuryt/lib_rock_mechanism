@@ -13,8 +13,8 @@ using DistanceInBuckets = uint32_t;
 
 struct LocationBucket final
 {
-	std::vector<Actor*> m_actors;
 	std::vector<std::vector<Block*>> m_blocks;
+	std::vector<Actor*> m_actors;
 	void insert(Actor& actor, std::vector<Block*>& blocks);
 	void erase(Actor& actor);
 	void update(Actor& actor, std::vector<Block*>& blocks);

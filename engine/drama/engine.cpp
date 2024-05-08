@@ -31,6 +31,7 @@ std::string DramaArc::typeToString(DramaArcType type)
 			return "bandits arrive";
 	}
 	assert(false);
+	return "";
 }
 DramaArcType DramaArc::stringToType(std::string string)
 {
@@ -39,6 +40,7 @@ DramaArcType DramaArc::stringToType(std::string string)
 	if(string == typeToString(DramaArcType::BanditsArrive))
 		return DramaArcType::BanditsArrive;
 	assert(false);
+	return DramaArcType::AnimalsArrive;
 }
 // Static method.
 std::unique_ptr<DramaArc> DramaArc::load(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine)
@@ -54,6 +56,7 @@ std::unique_ptr<DramaArc> DramaArc::load(const Json& data, DeserializationMemo& 
 			break;
 	}
 	assert(false);
+	return std::make_unique<AnimalsArriveDramaArc>(data, deserializationMemo, dramaEngine);
 }
 DramaArc::DramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine) : 
 	m_engine(dramaEngine), m_type(DramaArc::stringToType(data["type"].get<std::string>()))

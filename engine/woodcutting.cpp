@@ -99,7 +99,7 @@ void WoodCuttingObjective::execute()
 				return true;
 			return false;
 		};
-		Block* adjacent = m_actor.getBlockWhichIsAdjacentWithPredicate(predicate);
+		[[maybe_unused]] Block* adjacent = m_actor.getBlockWhichIsAdjacentWithPredicate(predicate);
 		if(project != nullptr)
 		{
 			assert(adjacent != nullptr);

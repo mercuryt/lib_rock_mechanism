@@ -335,7 +335,7 @@ Item& ItemHasCargo::add(const ItemType& itemType, const MaterialType& materialTy
 	add(newItem);
 	return newItem;
 }
-void ItemHasCargo::remove(const FluidType& fluidType, Volume volume)
+void ItemHasCargo::remove([[maybe_unused]] const FluidType& fluidType, Volume volume)
 {
 	assert(m_fluidType == &fluidType);
 	assert(m_fluidVolume >= volume);

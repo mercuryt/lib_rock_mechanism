@@ -496,6 +496,7 @@ Facing Block::facingToSetWhenEnteringFromIncludingDiagonal(const Block& block, F
 	if(m_y < block.m_y)
 		return 1;// North East
 	assert(false);
+	return UINT8_MAX;
 }
 bool Block::isSupport() const
 {

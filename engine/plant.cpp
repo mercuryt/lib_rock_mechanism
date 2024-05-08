@@ -174,7 +174,7 @@ void Plant::setMaybeNeedsFluid()
 	m_fluidEvent.schedule(stepsTillNextFluidEvent, *this);
 	updateGrowingStatus();
 }
-void Plant::addFluid(Volume volume, const FluidType& fluidType)
+void Plant::addFluid(Volume volume, [[maybe_unused]] const FluidType& fluidType)
 {
 	assert(volume != 0);
 	assert(fluidType == m_plantSpecies.fluidType);
@@ -314,6 +314,7 @@ void Plant::exit()
 		block->m_hasPlant.erase();
 	m_location->m_hasShapes.exit(*this);
 }
+const MoveType& Plant::getMoveType() const { assert(false); return MoveType::byName("fly"); }
 void Plant::removeFoliageMass(Mass mass)
 {
 	Mass maxFoliageForType = util::scaleByPercent(m_plantSpecies.adultMass, Config::percentOfPlantMassWhichIsFoliage);

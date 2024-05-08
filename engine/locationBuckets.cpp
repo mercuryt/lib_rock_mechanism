@@ -7,7 +7,7 @@
 #include <algorithm>
 void LocationBucket::insert(Actor& actor, std::vector<Block*>& blocks)
 {
-	auto iter = std::ranges::find(m_actors, &actor);
+	[[maybe_unused]] auto iter = std::ranges::find(m_actors, &actor);
 	assert(iter == m_actors.end());
 	m_actors.push_back(&actor);
 	m_blocks.push_back(blocks);

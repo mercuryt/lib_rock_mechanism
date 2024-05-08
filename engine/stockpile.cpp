@@ -96,6 +96,7 @@ void StockPileThreadedTask::writeStep()
 			return;
 		}
 		// StockPile candidate found, create a new project or add to an existing one.
+		assert(m_destination->m_isPartOfStockPiles.getForFaction(faction));
 		StockPile& stockpile = *m_destination->m_isPartOfStockPiles.getForFaction(faction);
 		if(stockpile.hasProjectNeedingMoreWorkers())
 			stockpile.addToProjectNeedingMoreWorkers(m_objective.m_actor, m_objective);
@@ -379,6 +380,11 @@ void StockPile::destroy()
 bool StockPile::contains(ItemQuery& query) const
 {
 	return std::find(m_queries.begin(), m_queries.end(), query) != m_queries.end();
+}
+bool StockPile::hasProjectNeedingMoreWorkers() const 
+{ 
+	assert(this);
+	return m_projectNeedingMoreWorkers != nullptr;
 }
 void StockPile::addQuery(ItemQuery& query)
 {
@@ -748,7 +754,7 @@ void AreaHasStockPilesForFaction::removeQuery(StockPile& stockPile, ItemQuery qu
 	else
 		m_availableStockPilesByItemType[query.m_itemType].insert(&stockPile);
 }
-bool AreaHasStockPilesForFaction::isAnyHaulingAvailableFor(const Actor& actor) const
+bool AreaHasStockPilesForFaction::isAnyHaulingAvailableFor([[maybe_unused]] const Actor& actor) const
 {
 	assert(&m_faction == actor.getFaction());
 	return !m_itemsWithDestinationsByStockPile.empty();

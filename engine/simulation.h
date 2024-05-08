@@ -1,5 +1,8 @@
 #pragma once
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsystem-headers"
 #include "../lib/BS_thread_pool_light.hpp"
+#pragma GCC diagnostic pop
 #include "deserializationMemo.h"
 #include "dialogueBox.h"
 #include "types.h"

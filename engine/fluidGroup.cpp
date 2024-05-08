@@ -497,14 +497,14 @@ void FluidGroup::writeStep()
 	m_fillQueue.applyDelta();
 	// Update queues.
 	validate();
-	for(Block* block : m_futureAddToFillQueue)
+	for([[maybe_unused]] Block* block : m_futureAddToFillQueue)
 		assert(!m_futureRemoveFromFillQueue.contains(block));
 	// Don't add to drain queue if taken by another fluid group already.
 	std::erase_if(m_futureAddToDrainQueue, [&](Block* block){ 
 		auto found = block->m_hasFluids.m_fluids.find(&m_fluidType);
 		return found != block->m_hasFluids.m_fluids.end() && found->second.second != this; 
 	});
-	for(Block* block : m_futureAddToDrainQueue)
+	for([[maybe_unused]] Block* block : m_futureAddToDrainQueue)
 		assert(!m_futureRemoveFromDrainQueue.contains(block));
 	for(Block* block : m_futureRemoveFromFillQueue)
 	{
@@ -512,7 +512,7 @@ void FluidGroup::writeStep()
 		assert(tests || !m_futureGroups.empty());
 		if(!tests && !m_futureGroups.empty())
 		{
-			bool found = false;
+			[[maybe_unused]] bool found = false;
 			for(FluidGroupSplitData& fluidGroupSplitData : m_futureGroups)
 				if(fluidGroupSplitData.members.contains(block))
 				{
@@ -528,7 +528,7 @@ void FluidGroup::writeStep()
 		assert(tests || !m_futureGroups.empty());
 		if(!tests && !m_futureGroups.empty())
 		{
-			bool found = false;
+			[[maybe_unused]] bool found = false;
 			for(FluidGroupSplitData& fluidGroupSplitData : m_futureGroups)
 				if(fluidGroupSplitData.members.contains(block))
 				{
@@ -737,10 +737,10 @@ void FluidGroup::validate() const
 }
 void FluidGroup::validate(std::unordered_set<FluidGroup*> toErase)
 {
-	for(FluidGroup* fluidGroup : toErase)
+	for([[maybe_unused]] FluidGroup* fluidGroup : toErase)
 		assert(fluidGroup->m_merged || fluidGroup->m_drainQueue.m_set.empty());
 	for(Block* block : m_drainQueue.m_set)
-		for(auto [fluidType, pair] : block->m_hasFluids.m_fluids)
+		for([[maybe_unused]] auto [fluidType, pair] : block->m_hasFluids.m_fluids)
 		{
 			assert(&pair.second->m_fluidType == fluidType);
 			assert(pair.second->m_drainQueue.m_set.contains(block));

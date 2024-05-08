@@ -47,7 +47,7 @@ void TemperatureSource::setTemperature(const int32_t& t)
 }
 void AreaHasTemperature::addTemperatureSource(Block& block, const Temperature& temperature)
 {
-	auto pair = m_sources.try_emplace(&block, temperature, block);
+	[[maybe_unused]] auto pair = m_sources.try_emplace(&block, temperature, block);
 	assert(pair.second);
 }
 void AreaHasTemperature::removeTemperatureSource(TemperatureSource& temperatureSource)

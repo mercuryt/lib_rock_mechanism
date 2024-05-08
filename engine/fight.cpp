@@ -1,5 +1,6 @@
 #include "fight.h"
 
+#include "attackType.h"
 #include "simulation.h"
 #include "skill.h"
 #include "util.h"
@@ -199,7 +200,7 @@ void CanFight::setTarget(Actor& actor)
 	actor.m_canFight.recordTargetedBy(m_actor);
 	m_getIntoAttackPositionThreadedTask.create(m_actor, *m_target, m_maxRange);
 }
-void CanFight::recordTargetedBy(Actor& actor)
+void CanFight::recordTargetedBy([[maybe_unused]] Actor& actor)
 {
 	assert(actor.m_canFight.m_target == &m_actor);
 	assert(!m_targetedBy.contains(&actor));
@@ -304,6 +305,7 @@ AttackType& CanFight::getRangedAttackType(Item& weapon)
 		if(attackType.projectile)
 			return const_cast<AttackType&>(attackType);
 	assert(false);
+	return const_cast<AttackType&>(weapon.m_itemType.weaponData->attackTypes.front());
 }
 
 AttackCoolDown::AttackCoolDown(CanFight& cf, Step duration, const Step start) : ScheduledEvent(cf.m_actor.getSimulation(), duration, start), m_canFight(cf) { }
