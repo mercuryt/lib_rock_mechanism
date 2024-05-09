@@ -109,9 +109,9 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 					assert(x * y * z < locationBuckets.m_buckets.size());
 					// Iterate actors in the defined cuboid.
 					LocationBucket& bucket = locationBuckets.get(x, y, z);
-					for(size_t i = 0; i < bucket.m_actors.size(); i++)
+					for(size_t i = 0; i < bucket.m_actorsMultiTile.size(); i++)
 					{
-						for(Block* to : bucket.m_blocks.at(i))
+						for(Block* to : bucket.m_blocksMultiTileActors.at(i))
 						{
 							// Refine bucket cuboid actors into sphere with radius == range.
 							if(to->taxiDistance(from) <= range)
@@ -122,19 +122,37 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 								{
 									if(visionUtil::hasLineOfSightUsingVisionCuboid(*to, from))
 									{
-										result.insert(bucket.m_actors.at(i));
+										result.insert(bucket.m_actorsMultiTile.at(i));
 										break;
 									}
 								}
 								else if(visionUtil::hasLineOfSightBasic(*to, from))
 								{
-									result.insert(bucket.m_actors.at(i));
+									result.insert(bucket.m_actorsMultiTile.at(i));
 									break;
 								}
 							}
 						}
 					}
+					for(size_t i = 0; i < bucket.m_actorsSingleTile.size(); i++)
+					{
+						Block* to = bucket.m_blocksSingleTileActors.at(i);
+						// Refine bucket cuboid actors into sphere with radius == range.
+						if(to->taxiDistance(from) <= range)
+						{
+							// Check sightlines.
+							// TODO: this if should not be here. Use a template?
+							if(from.m_area->m_visionCuboidsActive)
+							{
+								if(visionUtil::hasLineOfSightUsingVisionCuboid(*to, from))
+									result.insert(bucket.m_actorsSingleTile.at(i));
+							}
+							else if(visionUtil::hasLineOfSightBasic(*to, from))
+								result.insert(bucket.m_actorsSingleTile.at(i));
+						}
+					}
 				}
+		// Actors don't see themselves.
 		result.erase(&getActor(index));
 	}
 }

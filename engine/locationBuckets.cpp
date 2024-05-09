@@ -7,25 +7,59 @@
 #include <algorithm>
 void LocationBucket::insert(Actor& actor, std::vector<Block*>& blocks)
 {
-	[[maybe_unused]] auto iter = std::ranges::find(m_actors, &actor);
-	assert(iter == m_actors.end());
-	m_actors.push_back(&actor);
-	m_blocks.push_back(blocks);
+	if(actor.m_shape->isMultiTile)
+	{
+		[[maybe_unused]] auto iter = std::ranges::find(m_actorsMultiTile, &actor);
+		assert(iter == m_actorsMultiTile.end());
+		m_actorsMultiTile.push_back(&actor);
+		m_blocksMultiTileActors.push_back(blocks);
+	}
+	else 
+	{
+		assert(blocks.size() == 1);
+		[[maybe_unused]] auto iter = std::ranges::find(m_actorsSingleTile, &actor);
+		assert(iter == m_actorsSingleTile.end());
+		m_actorsSingleTile.push_back(&actor);
+		m_blocksSingleTileActors.push_back(blocks.front());
+	}
 }
 void LocationBucket::erase(Actor& actor)
 {
-	auto iter = std::ranges::find(m_actors, &actor);
-	assert(iter != m_actors.end());
-	size_t index = iter - m_actors.begin();
-	util::removeFromVectorByIndexUnordered(m_actors, index);
-	util::removeFromVectorByIndexUnordered(m_blocks, index);
+	if(actor.m_shape->isMultiTile)
+	{
+		auto iter = std::ranges::find(m_actorsMultiTile, &actor);
+		assert(iter != m_actorsMultiTile.end());
+		size_t index = iter - m_actorsMultiTile.begin();
+		util::removeFromVectorByIndexUnordered(m_actorsMultiTile, index);
+		util::removeFromVectorByIndexUnordered(m_blocksMultiTileActors, index);
+	}
+	else 
+	{
+		auto iter = std::ranges::find(m_actorsSingleTile, &actor);
+		assert(iter != m_actorsSingleTile.end());
+		size_t index = iter - m_actorsSingleTile.begin();
+		util::removeFromVectorByIndexUnordered(m_actorsSingleTile, index);
+		util::removeFromVectorByIndexUnordered(m_blocksSingleTileActors, index);
+	}
 }
 void LocationBucket::update(Actor& actor, std::vector<Block*>& blocks)
 {
-	auto iter = std::ranges::find(m_actors, &actor);
-	assert(iter != m_actors.end());
-	size_t index = iter - m_actors.begin();
-	m_blocks.at(index) = blocks;
+
+	if(actor.m_shape->isMultiTile)
+	{
+		auto iter = std::ranges::find(m_actorsMultiTile, &actor);
+		assert(iter != m_actorsMultiTile.end());
+		size_t index = iter - m_actorsMultiTile.begin();
+		m_blocksMultiTileActors.at(index) = blocks;
+	}
+	else 
+	{
+		assert(blocks.size() == 1);
+		auto iter = std::ranges::find(m_actorsSingleTile, &actor);
+		assert(iter != m_actorsSingleTile.end());
+		size_t index = iter - m_actorsSingleTile.begin();
+		m_blocksSingleTileActors.at(index) = blocks.front();
+	}
 }
 LocationBuckets::LocationBuckets(Area& area) : m_area(area)
 {

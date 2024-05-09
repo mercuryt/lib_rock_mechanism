@@ -3,10 +3,7 @@ To run tests:
 	Run tests with 'reset && make -j2 && mv build/test/unit/unit . && gdb --args ./unit'
 
 compiler flags to try for optimization:
--ffinite-math-only -fno-signed-zeros -ffast-math
--Ofast
--fno-exceptions -fno-rtti -flto(or unity build)
--fimplicit-constexpr
+-fopt-info-missed
 
 profile guided optimization (build technique)
 LLVM bolt

@@ -53,7 +53,7 @@ void displayData::load()
 	for(const Json& data : definitions::tryParse(path/"itemTypes.json"))
 	{
 		const ItemType& itemType = ItemType::byName(data["name"].get<std::string>());
-		auto pair = itemData.try_emplace( &itemType,
+		[[maybe_unused]] auto pair = itemData.try_emplace( &itemType,
 			data["image"].get<std::string>(),
 			data.contains("color") ? colorFromJson(data["color"]) : sf::Color::White,
 			data.contains("scale") ? data["scale"].get<float>() : 1.0f
@@ -63,7 +63,7 @@ void displayData::load()
 	for(const Json& data : definitions::tryParse(path/"plantSpecies.json"))
 	{
 		const PlantSpecies& plantSpecies = PlantSpecies::byName(data["name"].get<std::string>());
-		auto pair = plantData.try_emplace( &plantSpecies,
+		[[maybe_unused]] auto pair = plantData.try_emplace( &plantSpecies,
 			data["image"].get<std::string>(),
 			data.contains("color") ? colorFromJson(data["color"]) : sf::Color::White,
 			data.contains("scale") ? data["scale"].get<float>() : 1.0f,
@@ -74,7 +74,7 @@ void displayData::load()
 	for(const Json& data : definitions::tryParse(path/"animalSpecies.json"))
 	{
 		const AnimalSpecies& animalSpecies = AnimalSpecies::byName(data["name"].get<std::string>());
-		auto pair = actorData.try_emplace( &animalSpecies,
+		[[maybe_unused]] auto pair = actorData.try_emplace( &animalSpecies,
 			data["image"].get<std::string>(),
 			data.contains("color") ? colorFromJson(data["color"]) : sf::Color::White,
 			data.contains("scale") ? data["scale"].get<float>() : 1.0f
