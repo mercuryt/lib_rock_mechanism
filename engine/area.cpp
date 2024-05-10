@@ -212,11 +212,14 @@ void Area::writeStep()
 }
 Block& Area::getBlock(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z)
 {
+	return m_blocks[getBlockIndex(x, y, z)];
+}
+size_t Area::getBlockIndex(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z)
+{
 	assert(x < m_sizeX);
 	assert(y < m_sizeY);
 	assert(z < m_sizeZ);
-	size_t index = x + (y * m_sizeX) + (z * m_sizeY * m_sizeX); 
-	return m_blocks[index];
+	return x + (y * m_sizeX) + (z * m_sizeY * m_sizeX); 
 }
 Block& Area::getGroundLevel(DistanceInBlocks x, DistanceInBlocks y)
 {

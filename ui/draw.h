@@ -53,6 +53,7 @@ public:
 	void itemOverlay(const Item& item, sf::Vector2f position);
 	void singleTileActor(const Actor& actor);
 	void multiTileActor(const Actor& actor);
+	void actorOverlay(const Actor& block);
 	void multiTileBorder(std::unordered_set<Block*> blocks, sf::Color color, float thickness);
 	void borderSegmentOnBlock(const Block& block, Facing facing, sf::Color color, float thickness);
 	void accessableSymbol(const Block& block);

@@ -77,14 +77,14 @@ inline void from_json(const Json& data, const ItemType*& itemType){ itemType = &
 class ItemHasCargo final
 {
 	Item& m_item;
-	Volume m_volume;
-	Mass m_mass;
+	Volume m_volume = 0;
+	Mass m_mass = 0;
 	std::vector<HasShape*> m_shapes;
 	std::vector<Item*> m_items;
-	const FluidType* m_fluidType;
-	Volume m_fluidVolume;
+	const FluidType* m_fluidType = nullptr;
+	Volume m_fluidVolume = 0;
 public:
-	ItemHasCargo(Item& i) : m_item(i), m_volume(0), m_mass(0), m_fluidType(nullptr), m_fluidVolume(0) { }
+	ItemHasCargo(Item& i) : m_item(i) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void add(HasShape& hasShape);

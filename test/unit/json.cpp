@@ -133,10 +133,12 @@ TEST_CASE("json")
 		REQUIRE(area2.getBlock(9,1,1).m_hasBlockFeatures.contains(BlockFeatureType::door));
 		// Item cargo.
 		REQUIRE(!area2.getBlock(0,0,1).m_hasItems.empty());
+		REQUIRE(area2.getBlock(0,0,1).m_hasItems.getAll().size() == 1);
 		Item* bucket3 = area2.getBlock(0,0,1).m_hasItems.getAll()[0];
 		REQUIRE(bucket3->m_hasCargo.containsAnyFluid());
 		REQUIRE(bucket3->m_hasCargo.getFluidType() == water);
 		REQUIRE(bucket3->m_hasCargo.getFluidVolume() == 5);
+		REQUIRE(area2.getBlock(0,1,1).m_hasItems.getAll().size() == 1);
 		Item* bucket4 = area2.getBlock(0,1,1).m_hasItems.getAll()[0];
 		REQUIRE(bucket4->m_hasCargo.containsGeneric(pile, sand, 1));
 		// Fires.

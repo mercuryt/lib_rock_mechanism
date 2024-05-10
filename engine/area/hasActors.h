@@ -3,6 +3,7 @@
 #include "../config.h"
 #include "../locationBuckets.h"
 #include "../visionFacade.h"
+#include "../opacityFacade.h"
 
 #include <unordered_set>
 #include <vector>
@@ -17,7 +18,8 @@ class AreaHasActors
 public:
 	LocationBuckets m_locationBuckets;
 	VisionFacadeBuckets m_visionFacadeBuckets;
-	AreaHasActors(Area& a) : m_area(a), m_locationBuckets(a), m_visionFacadeBuckets(a) { }
+	OpacityFacade m_opacityFacade;
+	AreaHasActors(Area& a) : m_area(a), m_locationBuckets(a), m_visionFacadeBuckets(a), m_opacityFacade(a) { }
 	// Add to m_actors, m_locationBuckets, m_visionFacadeBuckets and possibly m_onSurface.
 	// Run after initial location has been assigned.
 	void add(Actor& actor);
