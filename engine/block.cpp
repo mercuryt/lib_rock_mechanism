@@ -34,6 +34,10 @@ void Block::recordAdjacent()
 		m_adjacents[i] = offset(offsets[0],offsets[1],offsets[2]);
 	}
 }
+size_t Block::getIndex() const
+{
+	return this - &m_area->getBlocks().front();
+}
 std::vector<Block*> Block::getAdjacentWithEdgeAdjacent() const
 {
 	std::vector<Block*> output;
@@ -232,7 +236,7 @@ DistanceInBlocks Block::taxiDistance(const Block& block) const
 {
 	return abs((int)m_x - (int)block.m_x) + abs((int)m_y - (int)block.m_y) + abs((int)m_z - (int)block.m_z);
 }
-bool Block::squareOfDistanceIsMoreThen(const Block& block, uint32_t distanceCubed) const
+bool Block::squareOfDistanceIsMoreThen(const Block& block, DistanceInBlocks distanceCubed) const
 {
 	DistanceInBlocks dx = abs((int32_t)block.m_x - (int32_t)m_x);
 	DistanceInBlocks dy = abs((int32_t)block.m_y - (int32_t)m_y);
@@ -274,6 +278,7 @@ void Block::setNotSolid()
 	m_hasShapes.clearCache();
 	if(m_area->m_visionCuboidsActive)
 		VisionCuboid::BlockIsNeverOpaque(*this);
+	m_area->m_hasActors.m_opacityFacade.update(*this);
 	if(m_adjacents[5] == nullptr || m_adjacents[5]->m_exposedToSky)
 	{
 		setExposedToSky(true);
@@ -340,6 +345,7 @@ void Block::setSolid(const MaterialType& materialType, bool constructed)
 		assert(m_visionCuboid);
 		VisionCuboid::BlockIsSometimesOpaque(*this);
 	}
+	m_area->m_hasActors.m_opacityFacade.update(*this);
 	// Set blocks below as not exposed to sky.
 	setExposedToSky(false);
 	setBelowNotExposedToSky();

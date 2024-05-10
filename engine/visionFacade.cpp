@@ -8,7 +8,7 @@
 #include "visionUtil.h"
 #include <cstddef>
 
-VisionFacade::VisionFacade()
+VisionFacade::VisionFacade( )
 {
 	size_t reserve = Config::visionFacadeReservationSize;
 	m_actors.reserve(reserve);
@@ -120,7 +120,7 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 								// TODO: this if should not be here. Use a template?
 								if(from.m_area->m_visionCuboidsActive)
 								{
-									if(visionUtil::hasLineOfSightUsingVisionCuboid(*to, from))
+									if(to->m_visionCuboid == from.m_visionCuboid || visionUtil::hasLineOfSightBasic(*to, from))
 									{
 										result.insert(bucket.m_actorsMultiTile.at(i));
 										break;
@@ -144,7 +144,7 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 							// TODO: this if should not be here. Use a template?
 							if(from.m_area->m_visionCuboidsActive)
 							{
-								if(visionUtil::hasLineOfSightUsingVisionCuboid(*to, from))
+								if(to->m_visionCuboid == from.m_visionCuboid || visionUtil::hasLineOfSightBasic(*to, from))
 									result.insert(bucket.m_actorsSingleTile.at(i));
 							}
 							else if(visionUtil::hasLineOfSightBasic(*to, from))

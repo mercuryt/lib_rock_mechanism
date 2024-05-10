@@ -283,6 +283,11 @@ std::tuple<tgui::ComboBox::Ptr, tgui::ComboBox::Ptr, tgui::ComboBox::Ptr> widget
 		materialTypeSelectUI->addItem("any", "");
 		for(const MaterialType* materialType : sortByName(materialTypeDataStore))
 		{
+			if(itemType.materialTypeCategories.empty())
+			{
+				materialTypeSelectUI->addItem(materialType->name, materialType->name);
+				continue;
+			}
 			for(const MaterialTypeCategory* materialTypeCategory : itemType.materialTypeCategories)
 				if(materialTypeCategory  == materialType->materialTypeCategory)
 				{

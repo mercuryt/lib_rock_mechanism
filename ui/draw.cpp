@@ -87,6 +87,10 @@ void Draw::view()
 	// Render item overlays.
 	for(Block& block : m_window.m_area->getZLevel(m_window.m_z))
 		itemOverlay(block);
+	// Render actor overlays.
+	for(const Block* block : singleTileActorBlocks)
+		actorOverlay(*block->m_hasActors.getAllConst().front());
+	
 	// Selected.
 	if(!m_window.m_selectedBlocks.empty())
 	{
@@ -722,6 +726,17 @@ void Draw::itemOverlay(const Item& item, sf::Vector2f position)
 {
 	if(item.getQuantity() != 1)
 		stringAtPosition(std::to_wstring(item.getQuantity()), position, sf::Color::White);
+}
+void Draw::actorOverlay(const Actor& actor)
+{
+	sf::Vector2f location = blockToPosition(*actor.m_location);
+	location.y -= (float)m_window.m_scale / 3.5f;
+	if(!actor.m_mustSleep.isAwake())
+	{
+		sf::Vector2f sleepTextLocation = location;
+		sleepTextLocation.y += m_window.m_scale / 3.5f;
+		stringAtPosition(L"zzz", sleepTextLocation, sf::Color::Cyan);
+	}
 }
 void Draw::itemOverlay(const Block& block)
 {

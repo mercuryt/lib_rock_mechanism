@@ -104,6 +104,7 @@ public:
 	[[nodiscard]] Cuboid getZLevel(DistanceInBlocks z);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::vector<Block>& getBlocks() { return m_blocks; }
+	[[nodiscard]] size_t getBlockIndex(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z);
 
 	// Clear all destructor callbacks in preperation for quit or hibernate.
 	void clearReservations();

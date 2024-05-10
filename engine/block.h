@@ -76,70 +76,69 @@ public:
 	Block(const Block&) = delete;
 	Block(Block&&) = delete;
 	Block& operator=(const Block&) = delete;
-	void setup(Area& area, uint32_t ax, uint32_t ay, uint32_t az);
+	void setup(Area& area, DistanceInBlocks ax, DistanceInBlocks ay, DistanceInBlocks az);
 	void recordAdjacent();
-	std::vector<Block*> getAdjacentWithEdgeAdjacent() const;
-	std::vector<Block*> getAdjacentWithEdgeAndCornerAdjacent() const;
-	std::vector<Block*> getEdgeAndCornerAdjacentOnly() const;
-	std::vector<Block*> getEdgeAdjacentOnly() const;
-	std::vector<Block*> getEdgeAdjacentOnSameZLevelOnly() const;
-	std::vector<Block*> getAdjacentOnSameZLevelOnly() const;
-	std::vector<Block*> getEdgeAdjacentOnlyOnNextZLevelDown() const;
-	std::vector<Block*> getEdgeAndCornerAdjacentOnlyOnNextZLevelDown() const;
-	std::vector<Block*> getEdgeAdjacentOnlyOnNextZLevelUp() const;
-	DistanceInBlocks distance(Block& block) const;
-	DistanceInBlocks taxiDistance(const Block& block) const;
-	bool squareOfDistanceIsMoreThen(const Block& block, uint32_t distanceSquared) const;
-	bool isAdjacentToAny(std::unordered_set<Block*>& blocks) const;
-	bool isAdjacentTo(Block& block) const;
-	bool isAdjacentToIncludingCornersAndEdges(Block& block) const;
-	bool isAdjacentTo(HasShape& hasShape) const;
+	[[nodiscard]] size_t getIndex() const;
+	[[nodiscard]] std::vector<Block*> getAdjacentWithEdgeAdjacent() const;
+	[[nodiscard]] std::vector<Block*> getAdjacentWithEdgeAndCornerAdjacent() const;
+	[[nodiscard]] std::vector<Block*> getEdgeAndCornerAdjacentOnly() const;
+	[[nodiscard]] std::vector<Block*> getEdgeAdjacentOnly() const;
+	[[nodiscard]] std::vector<Block*> getEdgeAdjacentOnSameZLevelOnly() const;
+	[[nodiscard]] std::vector<Block*> getAdjacentOnSameZLevelOnly() const;
+	[[nodiscard]] std::vector<Block*> getEdgeAdjacentOnlyOnNextZLevelDown() const;
+	[[nodiscard]] std::vector<Block*> getEdgeAndCornerAdjacentOnlyOnNextZLevelDown() const;
+	[[nodiscard]] std::vector<Block*> getEdgeAdjacentOnlyOnNextZLevelUp() const;
+	[[nodiscard]] DistanceInBlocks distance(Block& block) const;
+	[[nodiscard]] DistanceInBlocks taxiDistance(const Block& block) const;
+	[[nodiscard]] bool squareOfDistanceIsMoreThen(const Block& block, DistanceInBlocks distanceSquared) const;
+	[[nodiscard]] bool isAdjacentToAny(std::unordered_set<Block*>& blocks) const;
+	[[nodiscard]] bool isAdjacentTo(Block& block) const;
+	[[nodiscard]] bool isAdjacentToIncludingCornersAndEdges(Block& block) const;
+	[[nodiscard]] bool isAdjacentTo(HasShape& hasShape) const;
 	void setNotSolid();
 	void setSolid(const MaterialType& materialType, bool contructed = false);
-	bool isSolid() const;
-	const MaterialType& getSolidMaterial() const;
-	bool isConstructed() const { return m_constructed; }
-	bool canSeeIntoFromAlways(const Block& block) const;
+	[[nodiscard]] bool isSolid() const;
+	[[nodiscard]] const MaterialType& getSolidMaterial() const;
+	[[nodiscard]] bool isConstructed() const { return m_constructed; }
+	[[nodiscard]] bool canSeeIntoFromAlways(const Block& block) const;
 	void moveContentsTo(Block& block);
-	Mass getMass() const;
+	[[nodiscard]] Mass getMass() const;
 	// Get block at offset coordinates. Can return nullptr.
-	Block* offset(int32_t ax, int32_t ay, int32_t az) const;
-	Block& offsetNotNull(int32_t ax, int32_t ay, int32_t az) const;
-	std::array<int32_t, 3> relativeOffsetTo(const Block& block) const; 
-	bool canSeeThrough() const;
-	bool canSeeThroughFrom(const Block& block) const;
-	Facing facingToSetWhenEnteringFrom(const Block& block) const;
-	Facing facingToSetWhenEnteringFromIncludingDiagonal(const Block& block, Facing inital = 0) const;
-	bool isSupport() const;
-	bool hasLineOfSightTo(Block& block) const;
-
+	[[nodiscard]] Block* offset(int32_t ax, int32_t ay, int32_t az) const;
+	[[nodiscard]] Block& offsetNotNull(int32_t ax, int32_t ay, int32_t az) const;
+	[[nodiscard]] std::array<int32_t, 3> relativeOffsetTo(const Block& block) const; 
+	[[nodiscard]] bool canSeeThrough() const;
+	[[nodiscard]] bool canSeeThroughFloor() const;
+	[[nodiscard]] bool canSeeThroughFrom(const Block& block) const;
+	[[nodiscard]] Facing facingToSetWhenEnteringFrom(const Block& block) const;
+	[[nodiscard]] Facing facingToSetWhenEnteringFromIncludingDiagonal(const Block& block, Facing inital = 0) const;
+	[[nodiscard]] bool isSupport() const;
+	[[nodiscard]] bool hasLineOfSightTo(Block& block) const;
 	// Validate the nongeneric object can enter this block and also any other blocks required by it's Shape comparing to m_totalStaticVolume.
 	// TODO: Is this being used?
-	bool shapeAndMoveTypeCanEnterEver(const Shape& shape, const MoveType& moveType) const;
-	Block* getBlockBelow() { return m_adjacents[0]; }
-	const Block* getBlockBelow() const { return m_adjacents[0]; }
-	Block* getBlockAbove() { return m_adjacents[5]; }
-	const Block* getBlockAbove() const { return m_adjacents[5]; }
-	Block* getBlockNorth() { return m_adjacents[1]; }
-	const Block* getBlockNorth() const { return m_adjacents[1]; }
-	Block* getBlockWest() { return m_adjacents[2]; }
-	const Block* getBlockWest() const { return m_adjacents[2]; }
-	Block* getBlockSouth() { return m_adjacents[3]; }
-	const Block* getBlockSouth() const { return m_adjacents[3]; }
-	Block* getBlockEast() { return m_adjacents[4]; }
-	const Block* getBlockEast() const { return m_adjacents[4]; }
+	[[nodiscard]] bool shapeAndMoveTypeCanEnterEver(const Shape& shape, const MoveType& moveType) const;
+	[[nodiscard]] Block* getBlockBelow() { return m_adjacents[0]; }
+	[[nodiscard]] const Block* getBlockBelow() const { return m_adjacents[0]; }
+	[[nodiscard]] Block* getBlockAbove() { return m_adjacents[5]; }
+	[[nodiscard]] const Block* getBlockAbove() const { return m_adjacents[5]; }
+	[[nodiscard]] Block* getBlockNorth() { return m_adjacents[1]; }
+	[[nodiscard]] const Block* getBlockNorth() const { return m_adjacents[1]; }
+	[[nodiscard]] Block* getBlockWest() { return m_adjacents[2]; }
+	[[nodiscard]] const Block* getBlockWest() const { return m_adjacents[2]; }
+	[[nodiscard]] Block* getBlockSouth() { return m_adjacents[3]; }
+	[[nodiscard]] const Block* getBlockSouth() const { return m_adjacents[3]; }
+	[[nodiscard]] Block* getBlockEast() { return m_adjacents[4]; }
+	[[nodiscard]] const Block* getBlockEast() const { return m_adjacents[4]; }
 	// Called from setSolid / setNotSolid as well as from user code such as construct / remove floor.
 	void setExposedToSky(bool exposed);
 	void setBelowExposedToSky();
 	void setBelowNotExposedToSky();
 	void setBelowVisible();
-
-	std::vector<Block*> selectBetweenCorners(Block* otherBlock) const;
-
-	bool operator==(const Block& block) const;
+	[[nodiscard]] std::vector<Block*> selectBetweenCorners(Block* otherBlock) const;
+	[[nodiscard]] bool operator==(const Block& block) const;
 	//TODO: Use std::function instead of template.
 	template <typename F>
-	std::unordered_set<Block*> collectAdjacentsWithCondition(F&& condition)
+	[[nodiscard]] std::unordered_set<Block*> collectAdjacentsWithCondition(F&& condition)
 	{
 		std::unordered_set<Block*> output;
 		std::stack<Block*> openList;
@@ -159,7 +158,7 @@ public:
 		return output;
 	}
 	template <typename F>
-	Block* getBlockInRangeWithCondition(DistanceInBlocks range, F&& condition)
+	[[nodiscard]] Block* getBlockInRangeWithCondition(DistanceInBlocks range, F&& condition)
 	{
 		std::stack<Block*> open;
 		open.push(this);
@@ -181,11 +180,11 @@ public:
 		}
 		return nullptr;
 	}
-	std::unordered_set<Block*> collectAdjacentsInRange(uint32_t range);
-	std::vector<Block*> collectAdjacentsInRangeVector(uint32_t range);
-	void loadFromJson(Json data, DeserializationMemo& deserializationMemo, uint32_t x, uint32_t y, uint32_t z);
-	Json toJson() const;
-	Json positionToJson() const;
+	[[nodiscard]] std::unordered_set<Block*> collectAdjacentsInRange(DistanceInBlocks range);
+	[[nodiscard]] std::vector<Block*> collectAdjacentsInRangeVector(DistanceInBlocks range);
+	void loadFromJson(Json data, DeserializationMemo& deserializationMemo, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z);
+	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] Json positionToJson() const;
 };
 inline void to_json(Json& data, const Block* const& block){ data = block->positionToJson(); }
 inline void to_json(Json& data, const Block& block){ data = block.positionToJson(); }

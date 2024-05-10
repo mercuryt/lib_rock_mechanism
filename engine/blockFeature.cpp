@@ -56,12 +56,14 @@ void HasBlockFeatures::construct(const BlockFeatureType& blockFeatureType, const
 	{
 		if(m_block.m_area->m_visionCuboidsActive)
 			VisionCuboid::BlockFloorIsSometimesOpaque(m_block);
+		m_block.m_area->m_hasActors.m_opacityFacade.update(m_block);
 		m_block.setBelowNotExposedToSky();
 	}
 	else if(blockFeatureType == BlockFeatureType::door && !materialType.transparent)
 	{
 		if(m_block.m_area->m_visionCuboidsActive)
 			VisionCuboid::BlockIsSometimesOpaque(m_block);
+		m_block.m_area->m_hasActors.m_opacityFacade.update(m_block);
 		m_block.setBelowNotExposedToSky();
 	}
 }
@@ -71,6 +73,7 @@ void HasBlockFeatures::hew(const BlockFeatureType& blockFeatureType)
 	m_features.emplace_back(blockFeatureType, m_block.getSolidMaterial(), true);
 	m_block.setNotSolid();
 	m_block.m_hasShapes.clearCache();
+	m_block.m_area->m_hasActors.m_opacityFacade.update(m_block);
 }
 void HasBlockFeatures::setTemperature(Temperature temperature)
 {
