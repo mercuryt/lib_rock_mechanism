@@ -6,7 +6,6 @@
 #include "../../engine/project.h"
 #include "../../engine/haul.h"
 #include "../../engine/targetedHaul.h"
-#include "config.h"
 TEST_CASE("haul")
 {
 	static const MaterialType& dirt = MaterialType::byName("dirt");

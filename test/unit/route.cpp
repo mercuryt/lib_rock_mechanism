@@ -377,7 +377,7 @@ TEST_CASE("route_5_5_5")
 		PathThreadedTask& pathThreadedTask2 = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask2.readStep();
 		REQUIRE(!pathThreadedTask2.getFindsPath().getPath().empty());
-		area.getBlock(3, 2, 1).m_hasBlockFeatures.at(door)->locked = true;
+		area.getBlock(3, 2, 1).m_hasBlockFeatures.lock(door);
 		actor.m_canMove.setDestination(area.getBlock(4, 3, 1));
 		PathThreadedTask& pathThreadedTask3 = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask3.readStep();
@@ -523,7 +523,7 @@ TEST_CASE("route_5_5_5")
 		PathThreadedTask& pathThreadedTask2 = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask2.readStep();
 		REQUIRE(!pathThreadedTask2.getFindsPath().getPath().empty());
-		area.getBlock(3, 3, 3).m_hasBlockFeatures.at(BlockFeatureType::hatch)->locked = true;
+		area.getBlock(3, 3, 3).m_hasBlockFeatures.lock(BlockFeatureType::hatch);
 		actor.m_canMove.setDestination(area.getBlock(3, 3, 3));
 		PathThreadedTask& pathThreadedTask3 = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask3.readStep();

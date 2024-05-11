@@ -120,13 +120,13 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 								// TODO: this if should not be here. Use a template?
 								if(from.m_area->m_visionCuboidsActive)
 								{
-									if(to->m_visionCuboid == from.m_visionCuboid || visionUtil::hasLineOfSightBasic(*to, from))
+									if(to->m_visionCuboid == from.m_visionCuboid || m_area->m_hasActors.m_opacityFacade.hasLineOfSight(*to, from))
 									{
 										result.insert(bucket.m_actorsMultiTile.at(i));
 										break;
 									}
 								}
-								else if(visionUtil::hasLineOfSightBasic(*to, from))
+								else if(m_area->m_hasActors.m_opacityFacade.hasLineOfSight(*to, from))
 								{
 									result.insert(bucket.m_actorsMultiTile.at(i));
 									break;
@@ -144,10 +144,10 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 							// TODO: this if should not be here. Use a template?
 							if(from.m_area->m_visionCuboidsActive)
 							{
-								if(to->m_visionCuboid == from.m_visionCuboid || visionUtil::hasLineOfSightBasic(*to, from))
+								if(to->m_visionCuboid == from.m_visionCuboid || m_area->m_hasActors.m_opacityFacade.hasLineOfSight(*to, from))
 									result.insert(bucket.m_actorsSingleTile.at(i));
 							}
-							else if(visionUtil::hasLineOfSightBasic(*to, from))
+							else if(m_area->m_hasActors.m_opacityFacade.hasLineOfSight(*to, from))
 								result.insert(bucket.m_actorsSingleTile.at(i));
 						}
 					}
