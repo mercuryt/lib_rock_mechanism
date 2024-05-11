@@ -26,7 +26,7 @@ TEST_CASE("vision")
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
-		CHECK(actor.m_canSee.getCurrentlyVisibleActors().empty());
+		REQUIRE(actor.m_canSee.getCurrentlyVisibleActors().empty());
 	}
 	SUBCASE("See someone nearby")
 	{
@@ -39,8 +39,8 @@ TEST_CASE("vision")
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
 		auto result = a1.m_canSee.getCurrentlyVisibleActors();
-		CHECK(result.size() == 1);
-		CHECK(result.contains(&a2));
+		REQUIRE(result.size() == 1);
+		REQUIRE(result.contains(&a2));
 	}
 	SUBCASE("Vision blocked by wall")
 	{
@@ -55,7 +55,7 @@ TEST_CASE("vision")
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
 		auto result = a1.m_canSee.getCurrentlyVisibleActors();
-		CHECK(result.size() == 0);
+		REQUIRE(result.size() == 0);
 	}
 	SUBCASE("Vision not blocked by wall not directly in the line of sight")
 	{
@@ -70,22 +70,25 @@ TEST_CASE("vision")
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
 		auto result = a1.m_canSee.getCurrentlyVisibleActors();
-		CHECK(result.size() == 1);
+		REQUIRE(result.size() == 1);
 	}
 	SUBCASE("Vision not blocked by one by one wall for two by two shape")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		Block& block1 = area.getBlock(5, 3, 1);
+		Block& block1 = area.getBlock(5, 2, 1);
 		Block& block2 = area.getBlock(5, 5, 1);
 		Block& block3 = area.getBlock(5, 7, 1);
+		Block& block4 = area.getBlock(4, 7, 1);
 		block2.setSolid(marble);
 		Actor& a1 = simulation.createActor(dwarf, block1);
-		simulation.createActor(troll, block3);
+		Actor& a2 = simulation.createActor(troll, block3);
+		REQUIRE(a2.m_blocks.contains(&block4));
+		REQUIRE(area.m_hasActors.m_opacityFacade.hasLineOfSight(block1, block4));
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
 		auto result = a1.m_canSee.getCurrentlyVisibleActors();
-		CHECK(result.size() == 1);
+		REQUIRE(result.size() == 1);
 	}
 	SUBCASE("Vision not blocked by glass wall")
 	{
@@ -100,7 +103,7 @@ TEST_CASE("vision")
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
 		auto result = a1.m_canSee.getCurrentlyVisibleActors();
-		CHECK(result.size() == 1);
+		REQUIRE(result.size() == 1);
 	}
 	SUBCASE("Vision blocked by closed door")
 	{
@@ -115,13 +118,13 @@ TEST_CASE("vision")
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
 		auto result = a1.m_canSee.getCurrentlyVisibleActors();
-		CHECK(result.size() == 0);
-		block2.m_hasBlockFeatures.at(door)->closed = false;
+		REQUIRE(result.size() == 0);
+		block2.m_hasBlockFeatures.open(door);
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
 		auto result2 = a1.m_canSee.getCurrentlyVisibleActors();
-		CHECK(result2.size() == 1);
+		REQUIRE(result2.size() == 1);
 	}
 	SUBCASE("Vision from above and below blocked by closed hatch")
 	{
@@ -134,23 +137,25 @@ TEST_CASE("vision")
 		block3.setNotSolid();
 		block3.m_hasBlockFeatures.construct(hatch, marble);
 		Actor& a1 = simulation.createActor(dwarf, block1);
-		simulation.createActor(dwarf, block3);
+		Actor& a2 = simulation.createActor(dwarf, block3);
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
 		auto result = a1.m_canSee.getCurrentlyVisibleActors();
-		CHECK(result.size() == 0);
-		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
+		REQUIRE(result.size() == 0);
+		area.m_hasActors.m_visionFacadeBuckets.getForStep(2).readStep();
 		simulation.m_pool.wait_for_tasks();
-		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
-		auto result2 = a1.m_canSee.getCurrentlyVisibleActors();
-		CHECK(result2.size() == 0);
-		block3.m_hasBlockFeatures.at(hatch)->closed = false;
+		area.m_hasActors.m_visionFacadeBuckets.getForStep(2).writeStep();
+		auto result2 = a2.m_canSee.getCurrentlyVisibleActors();
+		REQUIRE(result2.size() == 0);
+		block3.m_hasBlockFeatures.open(hatch);
+		bool canSee = area.m_hasActors.m_opacityFacade.hasLineOfSight(block1, block3);
+		REQUIRE(canSee);
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
 		auto result3 = a1.m_canSee.getCurrentlyVisibleActors();
-		CHECK(result3.size() == 1);
+		REQUIRE(result3.size() == 1);
 	}
 	SUBCASE("Vision not blocked by closed hatch on the same z level")
 	{
@@ -165,7 +170,7 @@ TEST_CASE("vision")
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
 		auto result = a1.m_canSee.getCurrentlyVisibleActors();
-		CHECK(result.size() == 1);
+		REQUIRE(result.size() == 1);
 	}
 	SUBCASE("Vision from above and below blocked by floor")
 	{
@@ -183,18 +188,18 @@ TEST_CASE("vision")
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
 		auto result = a1.m_canSee.getCurrentlyVisibleActors();
-		CHECK(result.size() == 1);
+		REQUIRE(result.size() == 1);
 		block3.m_hasBlockFeatures.construct(floor, marble);
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
 		auto result2 = a1.m_canSee.getCurrentlyVisibleActors();
-		CHECK(result2.size() == 0);
+		REQUIRE(result2.size() == 0);
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
 		auto result3 = a2.m_canSee.getCurrentlyVisibleActors();
-		CHECK(result3.size() == 0);
+		REQUIRE(result3.size() == 0);
 	}
 	SUBCASE("Vision from below not blocked by glass floor")
 	{
@@ -212,13 +217,13 @@ TEST_CASE("vision")
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
 		auto result = a1.m_canSee.getCurrentlyVisibleActors();
-		CHECK(result.size() == 1);
+		REQUIRE(result.size() == 1);
 		block3.m_hasBlockFeatures.construct(floor, glass);
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
 		auto result2 = a1.m_canSee.getCurrentlyVisibleActors();
-		CHECK(result2.size() == 1);
+		REQUIRE(result2.size() == 1);
 	}
 	SUBCASE("Vision not blocked by floor on the same z level")
 	{
@@ -233,32 +238,32 @@ TEST_CASE("vision")
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
 		auto result = a1.m_canSee.getCurrentlyVisibleActors();
-		CHECK(result.size() == 1);
+		REQUIRE(result.size() == 1);
 	}
 	SUBCASE("VisionCuboid setup")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		if(!area.m_visionCuboidsActive)
 			area.visionCuboidsActivate();
-		CHECK(area.m_visionCuboids.size() == 1);
+		REQUIRE(area.m_visionCuboids.size() == 1);
 	}
 	SUBCASE("build ground after activating")
 	{
 		if(!area.m_visionCuboidsActive)
 			area.visionCuboidsActivate();
-		CHECK(area.m_visionCuboids.size() == 1);
+		REQUIRE(area.m_visionCuboids.size() == 1);
 		area.getBlock(0,0,0).setSolid(marble);
 		VisionCuboid::clearDestroyed(area);
-		CHECK(area.m_visionCuboids.size() == 3);
+		REQUIRE(area.m_visionCuboids.size() == 3);
 		area.getBlock(1,0,0).setSolid(marble);
 		VisionCuboid::clearDestroyed(area);
-		CHECK(area.m_visionCuboids.size() == 3);
+		REQUIRE(area.m_visionCuboids.size() == 3);
 		areaBuilderUtil::setSolidWall(area.getBlock(2, 0, 0), area.getBlock(9, 0, 0), marble);
 		VisionCuboid::clearDestroyed(area);
-		CHECK(area.m_visionCuboids.size() == 2);
+		REQUIRE(area.m_visionCuboids.size() == 2);
 		areaBuilderUtil::setSolidWall(area.getBlock(0, 1, 0), area.getBlock(9, 9, 0), marble);
 		VisionCuboid::clearDestroyed(area);
-		CHECK(area.m_visionCuboids.size() == 1);
+		REQUIRE(area.m_visionCuboids.size() == 1);
 	}
 	SUBCASE("VisionCuboid divide and join")
 	{
@@ -270,41 +275,41 @@ TEST_CASE("vision")
 		Block& block3 = area.getBlock(5, 5, 5);
 		Block& block4 = area.getBlock(1, 1, 7);
 		Block& block5 = area.getBlock(9, 9, 1);
-		CHECK(area.m_visionCuboids.size() == 1);
-		CHECK(block1.m_visionCuboid->m_cuboid.size() == 900);
-		CHECK(block1.m_visionCuboid == block2.m_visionCuboid);
-		CHECK(block1.m_visionCuboid == block3.m_visionCuboid);
-		CHECK(block1.m_visionCuboid == block4.m_visionCuboid);
-		CHECK(block1.m_visionCuboid == block5.m_visionCuboid);
+		REQUIRE(area.m_visionCuboids.size() == 1);
+		REQUIRE(block1.m_visionCuboid->m_cuboid.size() == 900);
+		REQUIRE(block1.m_visionCuboid == block2.m_visionCuboid);
+		REQUIRE(block1.m_visionCuboid == block3.m_visionCuboid);
+		REQUIRE(block1.m_visionCuboid == block4.m_visionCuboid);
+		REQUIRE(block1.m_visionCuboid == block5.m_visionCuboid);
 		block3.m_hasBlockFeatures.construct(floor, marble);
 		VisionCuboid::clearDestroyed(area);
-		CHECK(area.m_visionCuboids.size() == 2);
-		CHECK(block1.m_visionCuboid->m_cuboid.size() == 400);
-		CHECK(block4.m_visionCuboid->m_cuboid.size() == 500);
-		CHECK(block1.m_visionCuboid == block2.m_visionCuboid);
-		CHECK(block1.m_visionCuboid != block3.m_visionCuboid);
-		CHECK(block1.m_visionCuboid != block4.m_visionCuboid);
-		CHECK(block1.m_visionCuboid == block5.m_visionCuboid);
+		REQUIRE(area.m_visionCuboids.size() == 2);
+		REQUIRE(block1.m_visionCuboid->m_cuboid.size() == 400);
+		REQUIRE(block4.m_visionCuboid->m_cuboid.size() == 500);
+		REQUIRE(block1.m_visionCuboid == block2.m_visionCuboid);
+		REQUIRE(block1.m_visionCuboid != block3.m_visionCuboid);
+		REQUIRE(block1.m_visionCuboid != block4.m_visionCuboid);
+		REQUIRE(block1.m_visionCuboid == block5.m_visionCuboid);
 		block2.setSolid(marble);
 		VisionCuboid::clearDestroyed(area);
-		CHECK(area.m_visionCuboids.size() == 7);
-		CHECK(block2.m_visionCuboid == nullptr);
-		CHECK(block1.m_visionCuboid != block3.m_visionCuboid);
-		CHECK(block1.m_visionCuboid != block4.m_visionCuboid);
-		CHECK(block1.m_visionCuboid != block5.m_visionCuboid);
+		REQUIRE(area.m_visionCuboids.size() == 7);
+		REQUIRE(block2.m_visionCuboid == nullptr);
+		REQUIRE(block1.m_visionCuboid != block3.m_visionCuboid);
+		REQUIRE(block1.m_visionCuboid != block4.m_visionCuboid);
+		REQUIRE(block1.m_visionCuboid != block5.m_visionCuboid);
 		block3.m_hasBlockFeatures.remove(floor);
 		VisionCuboid::clearDestroyed(area);
-		CHECK(area.m_visionCuboids.size() == 7);
-		CHECK(block3.m_visionCuboid == block4.m_visionCuboid);
-		CHECK(block4.m_visionCuboid->m_cuboid.size() == 500);
+		REQUIRE(area.m_visionCuboids.size() == 7);
+		REQUIRE(block3.m_visionCuboid == block4.m_visionCuboid);
+		REQUIRE(block4.m_visionCuboid->m_cuboid.size() == 500);
 		block2.setNotSolid();
 		VisionCuboid::clearDestroyed(area);
-		CHECK(area.m_visionCuboids.size() == 1);
-		CHECK(block2.m_visionCuboid != nullptr);
-		CHECK(block1.m_visionCuboid == block2.m_visionCuboid);
-		CHECK(block1.m_visionCuboid == block3.m_visionCuboid);
-		CHECK(block1.m_visionCuboid == block4.m_visionCuboid);
-		CHECK(block1.m_visionCuboid == block5.m_visionCuboid);
+		REQUIRE(area.m_visionCuboids.size() == 1);
+		REQUIRE(block2.m_visionCuboid != nullptr);
+		REQUIRE(block1.m_visionCuboid == block2.m_visionCuboid);
+		REQUIRE(block1.m_visionCuboid == block3.m_visionCuboid);
+		REQUIRE(block1.m_visionCuboid == block4.m_visionCuboid);
+		REQUIRE(block1.m_visionCuboid == block5.m_visionCuboid);
 	}
 	SUBCASE("VisionCuboid can see")
 	{
@@ -319,8 +324,8 @@ TEST_CASE("vision")
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
 		auto result = a1.m_canSee.getCurrentlyVisibleActors();
-		CHECK(result.size() == 1);
-		CHECK(result.contains(&a2));
+		REQUIRE(result.size() == 1);
+		REQUIRE(result.contains(&a2));
 	}
 }
 TEST_CASE("Too far to see")
@@ -338,5 +343,5 @@ TEST_CASE("Too far to see")
 		simulation.m_pool.wait_for_tasks();
 	area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
 	auto result = a1.m_canSee.getCurrentlyVisibleActors();
-	CHECK(result.size() == 0);
+	REQUIRE(result.size() == 0);
 }

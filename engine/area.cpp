@@ -180,6 +180,7 @@ void Area::setup()
 			for(DistanceInBlocks z = 0; z < m_sizeZ; ++z)
 				getBlock(x, y, z).recordAdjacent();
 	updateClimate();
+	m_hasActors.m_opacityFacade.initalize();
 }
 void Area::readStep()
 { 

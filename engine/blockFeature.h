@@ -63,24 +63,29 @@ class HasBlockFeatures
 {
 	Block& m_block;
 	std::vector<BlockFeature> m_features;
+	[[nodiscard]] BlockFeature* at(const BlockFeatureType& blockFeatueType);
 public:
 	HasBlockFeatures(Block& b) : m_block(b) { }
-	bool contains(const BlockFeatureType& blockFeatureType) const;
+
 	// Can return nullptr.
-	BlockFeature* at(const BlockFeatureType& blockFeatueType);
-	const BlockFeature* at(const BlockFeatureType& blockFeatueType) const;
-	const std::vector<BlockFeature>& get() const { return m_features; }
-	bool empty() const { return m_features.empty(); }
 	void remove(const BlockFeatureType& blockFeatueType);
 	void removeAll();
 	void construct(const BlockFeatureType& blockFeatueType, const MaterialType& materialType);
 	void hew(const BlockFeatureType& blockFeatueType);
 	void setTemperature(Temperature temperature);
-	bool blocksEntrance() const;
-	bool canStandAbove() const;
-	bool canStandIn() const;
-	bool isSupport() const;
-	bool canEnterFromBelow() const;
-	bool canEnterFromAbove(const Block& from) const;
-	const MaterialType* getMaterialType() const;
+	void lock(const BlockFeatureType& blockFeatueType);
+	void unlock(const BlockFeatureType& blockFeatueType);
+	void close(const BlockFeatureType& blockFeatueType);
+	void open(const BlockFeatureType& blockFeatueType);
+	[[nodiscard]] const BlockFeature* atConst(const BlockFeatureType& blockFeatueType) const;
+	[[nodiscard]] const std::vector<BlockFeature>& get() const { return m_features; }
+	[[nodiscard]] bool empty() const { return m_features.empty(); }
+	[[nodiscard]] bool blocksEntrance() const;
+	[[nodiscard]] bool canStandAbove() const;
+	[[nodiscard]] bool canStandIn() const;
+	[[nodiscard]] bool isSupport() const;
+	[[nodiscard]] bool canEnterFromBelow() const;
+	[[nodiscard]] bool canEnterFromAbove(const Block& from) const;
+	[[nodiscard]] const MaterialType* getMaterialType() const;
+	[[nodiscard]] bool contains(const BlockFeatureType& blockFeatureType) const;
 };

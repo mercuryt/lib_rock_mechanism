@@ -378,7 +378,7 @@ bool Block::canSeeIntoFromAlways(const Block& block) const
 	// looking up.
 	if(m_z > block.m_z)
 	{
-		const BlockFeature* floor = m_hasBlockFeatures.at(BlockFeatureType::floor);
+		const BlockFeature* floor = m_hasBlockFeatures.atConst(BlockFeatureType::floor);
 		if(floor != nullptr && !floor->materialType->transparent)
 			return false;
 		if(m_hasBlockFeatures.contains(BlockFeatureType::hatch))
@@ -387,10 +387,10 @@ bool Block::canSeeIntoFromAlways(const Block& block) const
 	// looking down.
 	if(m_z < block.m_z)
 	{
-		const BlockFeature* floor = block.m_hasBlockFeatures.at(BlockFeatureType::floor);
+		const BlockFeature* floor = block.m_hasBlockFeatures.atConst(BlockFeatureType::floor);
 		if(floor != nullptr && !floor->materialType->transparent)
 			return false;
-		const BlockFeature* hatch = block.m_hasBlockFeatures.at(BlockFeatureType::hatch);
+		const BlockFeature* hatch = block.m_hasBlockFeatures.atConst(BlockFeatureType::hatch);
 		if(hatch != nullptr && !hatch->materialType->transparent)
 			return false;
 	}
@@ -430,8 +430,18 @@ bool Block::canSeeThrough() const
 {
 	if(isSolid() && !getSolidMaterial().transparent)
 		return false;
-	const BlockFeature* door = m_hasBlockFeatures.at(BlockFeatureType::door);
+	const BlockFeature* door = m_hasBlockFeatures.atConst(BlockFeatureType::door);
 	if(door != nullptr && !door->materialType->transparent && door->closed)
+		return false;
+	return true;
+}
+bool Block::canSeeThroughFloor() const
+{
+	const BlockFeature* floor = m_hasBlockFeatures.atConst(BlockFeatureType::floor);
+	if(floor != nullptr && !floor->materialType->transparent)
+		return false;
+	const BlockFeature* hatch = m_hasBlockFeatures.atConst(BlockFeatureType::hatch);
+	if(hatch != nullptr && !hatch->materialType->transparent && hatch->closed)
 		return false;
 	return true;
 }
@@ -445,21 +455,13 @@ bool Block::canSeeThroughFrom(const Block& block) const
 	// looking up.
 	if(m_z > block.m_z)
 	{
-		const BlockFeature* floor = m_hasBlockFeatures.at(BlockFeatureType::floor);
-		if(floor != nullptr && !floor->materialType->transparent)
-			return false;
-		const BlockFeature* hatch = m_hasBlockFeatures.at(BlockFeatureType::hatch);
-		if(hatch != nullptr && !hatch->materialType->transparent && hatch->closed)
+		if(!canSeeThroughFloor())
 			return false;
 	}
 	// looking down.
 	if(m_z < block.m_z)
 	{
-		const BlockFeature* floor = block.m_hasBlockFeatures.at(BlockFeatureType::floor);
-		if(floor != nullptr && !floor->materialType->transparent)
-			return false;
-		const BlockFeature* hatch = block.m_hasBlockFeatures.at(BlockFeatureType::hatch);
-		if(hatch != nullptr && !hatch->materialType->transparent && hatch->closed)
+		if(!block.canSeeThroughFloor())
 			return false;
 	}
 	return true;

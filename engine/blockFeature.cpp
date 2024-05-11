@@ -26,7 +26,7 @@ BlockFeature* HasBlockFeatures::at(const BlockFeatureType& blockFeatureType)
 			return &blockFeature;
 	return nullptr;
 }
-const BlockFeature* HasBlockFeatures::at(const BlockFeatureType& blockFeatureType) const
+const BlockFeature* HasBlockFeatures::atConst(const BlockFeatureType& blockFeatureType) const
 {
 	return const_cast<HasBlockFeatures&>(*this).at(blockFeatureType);
 }
@@ -35,12 +35,14 @@ void HasBlockFeatures::remove(const BlockFeatureType& blockFeatureType)
 	assert(!m_block.isSolid());
 	std::erase_if(m_features, [&](BlockFeature& bf) { return bf.blockFeatureType == &blockFeatureType; });
 	m_block.m_hasShapes.clearCache();
+	m_block.m_area->m_hasActors.m_opacityFacade.update(m_block);
 }
 void HasBlockFeatures::removeAll()
 {
 	assert(!m_block.isSolid());
 	m_features.clear();
 	m_block.m_hasShapes.clearCache();
+	m_block.m_area->m_hasActors.m_opacityFacade.update(m_block);
 }
 void HasBlockFeatures::construct(const BlockFeatureType& blockFeatureType, const MaterialType& materialType)
 {
@@ -56,16 +58,15 @@ void HasBlockFeatures::construct(const BlockFeatureType& blockFeatureType, const
 	{
 		if(m_block.m_area->m_visionCuboidsActive)
 			VisionCuboid::BlockFloorIsSometimesOpaque(m_block);
-		m_block.m_area->m_hasActors.m_opacityFacade.update(m_block);
 		m_block.setBelowNotExposedToSky();
 	}
 	else if(blockFeatureType == BlockFeatureType::door && !materialType.transparent)
 	{
 		if(m_block.m_area->m_visionCuboidsActive)
 			VisionCuboid::BlockIsSometimesOpaque(m_block);
-		m_block.m_area->m_hasActors.m_opacityFacade.update(m_block);
 		m_block.setBelowNotExposedToSky();
 	}
+	m_block.m_area->m_hasActors.m_opacityFacade.update(m_block);
 }
 void HasBlockFeatures::hew(const BlockFeatureType& blockFeatureType)
 {
@@ -80,6 +81,32 @@ void HasBlockFeatures::setTemperature(Temperature temperature)
 	for(BlockFeature& feature : m_features)
 		if(feature.materialType->burnData != nullptr && temperature > feature.materialType->burnData->ignitionTemperature)
 			m_block.m_area->m_fires.ignite(m_block, *feature.materialType);
+}
+void HasBlockFeatures::lock(const BlockFeatureType& blockFeatueType)
+{
+	assert(at(blockFeatueType));
+	BlockFeature& blockFeature = *at(blockFeatueType);
+	blockFeature.locked = true;
+}
+void HasBlockFeatures::unlock(const BlockFeatureType& blockFeatueType)
+{
+	assert(at(blockFeatueType));
+	BlockFeature& blockFeature = *at(blockFeatueType);
+	blockFeature.locked = false;
+}
+void HasBlockFeatures::close(const BlockFeatureType& blockFeatueType)
+{
+	assert(at(blockFeatueType));
+	BlockFeature& blockFeature = *at(blockFeatueType);
+	blockFeature.closed = true;
+	m_block.m_area->m_hasActors.m_opacityFacade.update(m_block);
+}
+void HasBlockFeatures::open(const BlockFeatureType& blockFeatueType)
+{
+	assert(at(blockFeatueType));
+	BlockFeature& blockFeature = *at(blockFeatueType);
+	blockFeature.closed = false;
+	m_block.m_area->m_hasActors.m_opacityFacade.update(m_block);
 }
 // Blocks entrance from all angles, does not include floor and hatch which only block from below.
 bool HasBlockFeatures::blocksEntrance() const
