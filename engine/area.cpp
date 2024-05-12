@@ -224,7 +224,7 @@ size_t Area::getBlockIndex(Point3D coordinates) const
 {
 	// TODO: Profile using a space filling curve such as Gilbert.
 	// https://github.com/jakubcerveny/gilbert/blob/master/ports/gilbert.c
-	// Ideally we would use Z-index ( Morton ) ordering but would require areas are cubes and edges are powers of 2.
+	// Ideally we would use Z-order ( Morton ) ordering but would require areas are cubes and edges are powers of 2.
 	// Maybe reconsider after optimizing blocks for memory size.
 	assert(coordinates.x < m_sizeX);
 	assert(coordinates.y < m_sizeY);

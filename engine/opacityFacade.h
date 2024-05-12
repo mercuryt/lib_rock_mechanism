@@ -11,8 +11,8 @@ class Block;
 class OpacityFacade final
 {
 	Area& m_area;
-	sul::dynamic_bitset<> m_fullOpacity;
-	sul::dynamic_bitset<> m_floorOpacity;
+	std::vector<bool> m_fullOpacity;
+	std::vector<bool> m_floorOpacity;
 public:
 	OpacityFacade(Area& area);
 	void initalize();
