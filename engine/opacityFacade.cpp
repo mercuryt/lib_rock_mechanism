@@ -35,20 +35,27 @@ bool OpacityFacade::floorIsOpaque(size_t index) const
 }
 bool  OpacityFacade::hasLineOfSight(const Block& from, const Block& to) const
 {
-	assert(!isOpaque(to.getIndex()));
-	assert(!isOpaque(from.getIndex()));
-	if(&from == &to)
+	size_t fromIndex = m_area.getBlockIndex(from);
+	auto [fromX, fromY, fromZ] = m_area.getCoordinatesForIndex(fromIndex);
+	size_t toIndex = m_area.getBlockIndex(to);
+	auto [toX, toY, toZ] = m_area.getCoordinatesForIndex(toIndex);
+	return hasLineOfSight(fromIndex, fromX, fromY, fromZ, toIndex, toX, toY, toZ);
+}
+bool  OpacityFacade::hasLineOfSight(size_t fromIndex, DistanceInBlocks fromX, DistanceInBlocks fromY, DistanceInBlocks fromZ, size_t toIndex, DistanceInBlocks toX, DistanceInBlocks toY, DistanceInBlocks toZ) const
+{
+	assert(!isOpaque(toIndex));
+	assert(!isOpaque(fromIndex));
+	if(fromIndex == toIndex)
 		return true;
-	size_t toIndex = to.getIndex();
-	size_t currentIndex = from.getIndex();
+	size_t currentIndex = fromIndex;
 	//TODO: Would it be faster to calculate x, y, and z from indices and indices from pointer math rather then dereferenceing from and to?
-	float x = from.m_x;
-	float y = from.m_y;
-	float z = from.m_z;
+	float x = fromX;
+	float y = fromY;
+	float z = fromZ;
 	// Use unsigned types here instead of DistanceInBlocks because delta could be negitive.
-	int32_t xDelta = (int32_t)to.m_x - (int32_t)from.m_x;
-	int32_t yDelta = (int32_t)to.m_y - (int32_t)from.m_y;
-	int32_t zDelta = (int32_t)to.m_z - (int32_t)from.m_z;
+	int32_t xDelta = (int32_t)toX - (int32_t)fromX;
+	int32_t yDelta = (int32_t)toY - (int32_t)fromY;
+	int32_t zDelta = (int32_t)toZ - (int32_t)fromZ;
 	float denominator = std::max({abs(xDelta), abs(yDelta), abs(zDelta)});
 	// Normalize delta to a unit vector.
 	float xDeltaNormalized = xDelta / denominator;
@@ -57,7 +64,7 @@ bool  OpacityFacade::hasLineOfSight(const Block& from, const Block& to) const
 	// Iterate through the line of sight one block at a time untill we hit 'to' or an opaque block.
 	// Works by generating coordinates and turning those into vector indices which can be checked in the facade data.
 	// Does not load the blocks into memory.
-	DistanceInBlocks zInt = from.m_z;
+	DistanceInBlocks zInt = fromZ;
 	while(true)
 	{
 		size_t previousIndex = currentIndex;

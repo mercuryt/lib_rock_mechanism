@@ -9,6 +9,7 @@
 #include "fluidType.h"
 #include "plant.h"
 #include "simulation.h"
+#include "types.h"
 //#include "worldforge/worldLocation.h"
 #include <algorithm>
 #include <iostream>
@@ -215,12 +216,26 @@ Block& Area::getBlock(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z
 {
 	return m_blocks[getBlockIndex(x, y, z)];
 }
-size_t Area::getBlockIndex(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z)
+size_t Area::getBlockIndex(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) const
 {
 	assert(x < m_sizeX);
 	assert(y < m_sizeY);
 	assert(z < m_sizeZ);
 	return x + (y * m_sizeX) + (z * m_sizeY * m_sizeX); 
+}
+size_t Area::getBlockIndex(const Block& block) const
+{
+	assert(!m_blocks.empty());
+	return &block - &m_blocks.front();
+}
+std::array<DistanceInBlocks, 3> Area::getCoordinatesForIndex(size_t index) const
+{
+	DistanceInBlocks z = index / (m_sizeX * m_sizeY);
+	index -= z * m_sizeX * m_sizeY;
+	DistanceInBlocks y = index / m_sizeX;
+	index -= y * m_sizeX;
+	DistanceInBlocks x = index;
+	return {x, y, z};
 }
 Block& Area::getGroundLevel(DistanceInBlocks x, DistanceInBlocks y)
 {
