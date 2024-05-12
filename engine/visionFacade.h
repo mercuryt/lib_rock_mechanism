@@ -36,6 +36,7 @@ public:
 	[[nodiscard]] DistanceInBlocks getRange(size_t index) const;
 	[[nodiscard]] std::unordered_set<Actor*>& getResults(size_t index);
 	[[nodiscard]] size_t size() const { return m_actors.size(); }
+	[[nodiscard]] static DistanceInBlocks taxiDistance(DistanceInBlocks x1, DistanceInBlocks y1, DistanceInBlocks z1, DistanceInBlocks x2, DistanceInBlocks y2, DistanceInBlocks z2);
 };
 // Divide actors into buckets by id.
 // Read step is called for only one bucket per simulaiton step, cycling through them.

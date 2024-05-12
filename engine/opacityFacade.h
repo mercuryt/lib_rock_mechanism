@@ -20,5 +20,6 @@ public:
 	[[nodiscard]] bool isOpaque(size_t index) const;
 	[[nodiscard]] bool floorIsOpaque(size_t index) const;
 	[[nodiscard]] bool hasLineOfSight(const Block& from, const Block& to) const;
+	[[nodiscard]] bool hasLineOfSight(size_t fromIndex, DistanceInBlocks fromX, DistanceInBlocks fromY, DistanceInBlocks fromZ, size_t toIndex, DistanceInBlocks toX, DistanceInBlocks toY, DistanceInBlocks toZ) const;
 	[[nodiscard]] bool canSeeIntoFrom(size_t previousIndex, size_t currentIndex, DistanceInBlocks oldZ, DistanceInBlocks z) const;
 };
