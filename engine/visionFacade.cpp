@@ -70,12 +70,12 @@ DistanceInBlocks VisionFacade::getRange(size_t index) const
 	return m_ranges.at(index); 
 }
 // Static.
-DistanceInBlocks VisionFacade::taxiDistance(DistanceInBlocks x1, DistanceInBlocks y1, DistanceInBlocks z1, DistanceInBlocks x2, DistanceInBlocks y2, DistanceInBlocks z2)
+DistanceInBlocks VisionFacade::taxiDistance(Point3D a, Point3D b)
 {
 	return 
-		std::abs((int)x1 - (int)x2) + 
-		std::abs((int)y1 - (int)y2) +
-		std::abs((int)z1 - (int)z2);
+		std::abs((int)a.x - (int)b.x) + 
+		std::abs((int)a.y - (int)b.y) +
+		std::abs((int)a.z - (int)b.z);
 }
 std::unordered_set<Actor*>& VisionFacade::getResults(size_t index)
 { 
@@ -100,7 +100,7 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 		DistanceInBlocks range = getRange(viewerIndex);
 		Block& from = getLocation(viewerIndex);
 		size_t fromIndex = m_area->getBlockIndex(from);
-		auto [fromX, fromY, fromZ] = m_area->getCoordinatesForIndex(fromIndex);
+		Point3D fromCoords = m_area->getCoordinatesForIndex(fromIndex);
 		LocationBuckets& locationBuckets = m_area->m_hasActors.m_locationBuckets;
 		std::unordered_set<Actor*>& result = getResults(viewerIndex);
 		result.clear();
@@ -124,21 +124,21 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 						for(Block* to : bucket.m_blocksMultiTileActors.at(i))
 						{
 							size_t toIndex = m_area->getBlockIndex(*to);
-							auto [toX, toY, toZ] = m_area->getCoordinatesForIndex(toIndex);
+							Point3D toCoords = m_area->getCoordinatesForIndex(toIndex);
 							// Refine bucket cuboid actors into sphere with radius == range.
-							if(taxiDistance(fromX, fromY, fromZ, toX, toY, toZ) <= range)
+							if(taxiDistance(fromCoords, toCoords) <= range)
 							{
 								// Check sightlines.
 								// TODO: this if should not be here. Use a template?
 								if(from.m_area->m_visionCuboidsActive)
 								{
-									if(to->m_visionCuboid == from.m_visionCuboid || m_area->m_hasActors.m_opacityFacade.hasLineOfSight(fromIndex, fromX, fromY, fromZ, toIndex, toX, toY, toZ))
+									if(to->m_visionCuboid == from.m_visionCuboid || m_area->m_hasActors.m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toIndex, toCoords))
 									{
 										result.insert(bucket.m_actorsMultiTile.at(i));
 										break;
 									}
 								}
-								else if(m_area->m_hasActors.m_opacityFacade.hasLineOfSight(fromIndex, fromX, fromY, fromZ, toIndex, toX, toY, toZ))
+								else if(m_area->m_hasActors.m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toIndex, toCoords))
 								{
 									result.insert(bucket.m_actorsMultiTile.at(i));
 									break;
@@ -150,7 +150,7 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 					{
 						Block* to = bucket.m_blocksSingleTileActors.at(i);
 						size_t toIndex = m_area->getBlockIndex(*to);
-						auto [toX, toY, toZ] = m_area->getCoordinatesForIndex(toIndex);
+						Point3D toCoords = m_area->getCoordinatesForIndex(toIndex);
 						// Refine bucket cuboid actors into sphere with radius == range.
 						if(to->taxiDistance(from) <= range)
 						{
@@ -158,10 +158,10 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 							// TODO: this if should not be here. Use a template?
 							if(from.m_area->m_visionCuboidsActive)
 							{
-								if(to->m_visionCuboid == from.m_visionCuboid || m_area->m_hasActors.m_opacityFacade.hasLineOfSight(fromIndex, fromX, fromY, fromZ, toIndex, toX, toY, toZ))
+								if(to->m_visionCuboid == from.m_visionCuboid || m_area->m_hasActors.m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toIndex, toCoords))
 									result.insert(bucket.m_actorsSingleTile.at(i));
 							}
-							else if(m_area->m_hasActors.m_opacityFacade.hasLineOfSight(fromIndex, fromX, fromY, fromZ, toIndex, toX, toY, toZ))
+							else if(m_area->m_hasActors.m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toIndex, toCoords))
 								result.insert(bucket.m_actorsSingleTile.at(i));
 						}
 					}

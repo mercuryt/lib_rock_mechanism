@@ -15,6 +15,8 @@
 Block::Block() : m_solid(nullptr), m_constructed(false), m_visionCuboid(nullptr), m_fires(nullptr), m_exposedToSky(true), m_underground(false), m_outdoors(true), m_visible(true), m_hasShapes(*this), m_hasFluids(*this), m_reservable(1), m_hasPlant(*this), m_hasBlockFeatures(*this), m_hasActors(*this), m_hasItems(*this), m_isPartOfStockPiles(*this), m_isPartOfFarmField(*this), m_blockHasTemperature(*this) {}
 void Block::setup(Area& area, DistanceInBlocks ax, DistanceInBlocks ay, DistanceInBlocks az)
 {
+	assert(this >= &area.getBlocks().front());
+	assert(area.getBlockIndex(*this) < area.getBlocks().size());
 	m_x=ax;
 	m_y=ay;
 	m_z=az;

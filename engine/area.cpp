@@ -214,21 +214,29 @@ void Area::writeStep()
 }
 Block& Area::getBlock(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z)
 {
-	return m_blocks[getBlockIndex(x, y, z)];
+	return getBlock({x,y,z});
 }
-size_t Area::getBlockIndex(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) const
+Block& Area::getBlock(Point3D coordinates)
 {
-	assert(x < m_sizeX);
-	assert(y < m_sizeY);
-	assert(z < m_sizeZ);
-	return x + (y * m_sizeX) + (z * m_sizeY * m_sizeX); 
+	return m_blocks[getBlockIndex(coordinates)];
+}
+size_t Area::getBlockIndex(Point3D coordinates) const
+{
+	// TODO: Profile using a space filling curve such as Gilbert.
+	// https://github.com/jakubcerveny/gilbert/blob/master/ports/gilbert.c
+	// Ideally we would use Z-index ( Morton ) ordering but would require areas are cubes and edges are powers of 2.
+	// Maybe reconsider after optimizing blocks for memory size.
+	assert(coordinates.x < m_sizeX);
+	assert(coordinates.y < m_sizeY);
+	assert(coordinates.z < m_sizeZ);
+	return coordinates.x + (coordinates.y * m_sizeX) + (coordinates.z * m_sizeY * m_sizeX); 
 }
 size_t Area::getBlockIndex(const Block& block) const
 {
 	assert(!m_blocks.empty());
 	return &block - &m_blocks.front();
 }
-std::array<DistanceInBlocks, 3> Area::getCoordinatesForIndex(size_t index) const
+Point3D Area::getCoordinatesForIndex(size_t index) const
 {
 	DistanceInBlocks z = index / (m_sizeX * m_sizeY);
 	index -= z * m_sizeX * m_sizeY;
