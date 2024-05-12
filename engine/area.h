@@ -84,6 +84,7 @@ public:
 	void readStep();
 	void writeStep();
 	
+	[[nodiscard]] Block& getBlock(Point3D coordinates);
 	[[nodiscard]] Block& getBlock(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z);
 	[[nodiscard]] Block& getMiddleAtGroundLevel();
 	[[nodiscard]] Block& getGroundLevel(DistanceInBlocks x, DistanceInBlocks y);
@@ -104,9 +105,9 @@ public:
 	[[nodiscard]] Cuboid getZLevel(DistanceInBlocks z);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::vector<Block>& getBlocks() { return m_blocks; }
-	[[nodiscard]] size_t getBlockIndex(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) const;
+	[[nodiscard]] size_t getBlockIndex(Point3D coordinates) const;
 	[[nodiscard]] size_t getBlockIndex(const Block& block) const;
-	[[nodiscard]] std::array<DistanceInBlocks, 3> getCoordinatesForIndex(size_t index) const;
+	[[nodiscard]] Point3D getCoordinatesForIndex(size_t index) const;
 
 	// Clear all destructor callbacks in preperation for quit or hibernate.
 	void clearReservations();
