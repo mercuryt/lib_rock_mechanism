@@ -397,7 +397,7 @@ void Draw::blockFeaturesAndFluids(const Block& block)
 		const Block& below = *block.getBlockBelow();
 		if(below.m_hasBlockFeatures.contains(BlockFeatureType::stairs))
 		{
-			const BlockFeature& blockFeature = *below.m_hasBlockFeatures.at(BlockFeatureType::stairs);
+			const BlockFeature& blockFeature = *below.m_hasBlockFeatures.atConst(BlockFeatureType::stairs);
 			sf::Color* color = &displayData::materialColors.at(blockFeature.materialType);
 			static sf::Sprite stairs = getCenteredSprite("stairs");
 			Facing facing = rampOrStairsFacing(below);
@@ -408,7 +408,7 @@ void Draw::blockFeaturesAndFluids(const Block& block)
 		}
 		else if(below.m_hasBlockFeatures.contains(BlockFeatureType::ramp))
 		{
-			const BlockFeature& blockFeature = *below.m_hasBlockFeatures.at(BlockFeatureType::ramp);
+			const BlockFeature& blockFeature = *below.m_hasBlockFeatures.atConst(BlockFeatureType::ramp);
 			sf::Color* color = &displayData::materialColors.at(blockFeature.materialType);
 			static sf::Sprite ramp = getCenteredSprite("ramp");
 			Facing facing = rampOrStairsFacing(below);

@@ -36,10 +36,6 @@ void Block::recordAdjacent()
 		m_adjacents[i] = offset(offsets[0],offsets[1],offsets[2]);
 	}
 }
-size_t Block::getIndex() const
-{
-	return this - &m_area->getBlocks().front();
-}
 std::vector<Block*> Block::getAdjacentWithEdgeAdjacent() const
 {
 	std::vector<Block*> output;

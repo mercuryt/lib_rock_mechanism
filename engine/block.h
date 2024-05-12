@@ -78,7 +78,6 @@ public:
 	Block& operator=(const Block&) = delete;
 	void setup(Area& area, DistanceInBlocks ax, DistanceInBlocks ay, DistanceInBlocks az);
 	void recordAdjacent();
-	[[nodiscard]] size_t getIndex() const;
 	[[nodiscard]] std::vector<Block*> getAdjacentWithEdgeAdjacent() const;
 	[[nodiscard]] std::vector<Block*> getAdjacentWithEdgeAndCornerAdjacent() const;
 	[[nodiscard]] std::vector<Block*> getEdgeAndCornerAdjacentOnly() const;
