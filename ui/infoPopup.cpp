@@ -142,6 +142,23 @@ void InfoPopup::display(Actor& actor)
 		add(priorities);
 		priorities->onClick([this, &actor]{ m_window.showObjectivePriority(actor); });
 	}
+	if(!actor.m_mustSleep.isAwake())
+		add(tgui::Label::create("sleeping"));
+	else
+	{
+		Percent tiredPercent = actor.m_mustSleep.getTiredPercent();
+		if(actor.m_mustSleep.getNeedsSleep())
+			tiredPercent += 100;
+		add(tgui::Label::create(std::to_string(tiredPercent) + " % tired"));
+	}
+	Percent hungerPercent = actor.m_mustEat.getPercentStarved();
+	if(actor.m_mustEat.needsFood())
+		hungerPercent += 100;
+	add(tgui::Label::create(std::to_string(hungerPercent) + " % hunger"));
+	Percent thirstPercent = actor.m_mustEat.getPercentStarved();
+	if(actor.m_mustEat.needsFood())
+		thirstPercent += 100;
+	add(tgui::Label::create(std::to_string(thirstPercent) + " % thirst"));
 	m_update = [this, &actor]{ display(actor); };
 	m_childWindow->setFocused(false);
 }

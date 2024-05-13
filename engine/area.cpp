@@ -50,6 +50,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 		}
 	}
 	m_hasFluidGroups.clearMergedFluidGroups();
+	m_hasActors.m_opacityFacade.initalize();
 	// Load fires.
 	m_fires.load(data["fires"], deserializationMemo);
 	// Load plants.
@@ -165,6 +166,7 @@ Json Area::toJson() const
 		data["visionCuboidsActive"] = true;
 	for(const Block* block : m_caveInCheck)
 		data["caveInCheck"].push_back(block);
+	m_hasActors.m_opacityFacade.validate();
 	return data;
 }
 void Area::setup()

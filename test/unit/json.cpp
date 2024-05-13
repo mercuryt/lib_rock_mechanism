@@ -154,6 +154,8 @@ TEST_CASE("json")
 		REQUIRE(area2.getBlock(1,6,1).m_isPartOfFarmField.contains(faction2));
 		REQUIRE(area2.getBlock(1,6,1).m_isPartOfFarmField.get(faction2)->plantSpecies == &sage);
 		REQUIRE(area2.getBlock(1,7,1).m_isPartOfFarmField.contains(faction2));
+		// OpacityFacade.
+		area2.m_hasActors.m_opacityFacade.validate();
 	}
 	SUBCASE("dig project")
 	{

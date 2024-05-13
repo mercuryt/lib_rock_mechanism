@@ -17,6 +17,7 @@ public:
 	OpacityFacade(Area& area);
 	void initalize();
 	void update(const Block& block);
+	void validate() const;
 	[[nodiscard]] bool isOpaque(size_t index) const;
 	[[nodiscard]] bool floorIsOpaque(size_t index) const;
 	[[nodiscard]] bool hasLineOfSight(const Block& from, const Block& to) const;
