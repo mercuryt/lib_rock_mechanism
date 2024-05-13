@@ -3,12 +3,14 @@
 #include "area.h"
 #include "types.h"
 
-OpacityFacade::OpacityFacade(Area& area) : m_area(area) { }
-void OpacityFacade::initalize()
+OpacityFacade::OpacityFacade(Area& area) : m_area(area) 
 {
 	assert(m_area.getBlocks().size());
 	m_fullOpacity.resize(m_area.getBlocks().size());
 	m_floorOpacity.resize(m_area.getBlocks().size());
+}
+void OpacityFacade::initalize()
+{
 	for(const Block& block : m_area.getBlocks())
 		update(block);
 }
@@ -19,6 +21,14 @@ void OpacityFacade::update(const Block& block)
 	assert(m_floorOpacity.size() == m_fullOpacity.size());
 	m_fullOpacity.at(index) = !block.canSeeThrough();
 	m_floorOpacity.at(index) = !block.canSeeThroughFloor();
+}
+void OpacityFacade::validate() const
+{
+	for(const Block& block : m_area.getBlocks())
+	{
+		assert(block.canSeeThrough() != m_fullOpacity.at(m_area.getBlockIndex(block)));
+		assert(block.canSeeThroughFloor() != m_floorOpacity.at(m_area.getBlockIndex(block)));
+	}
 }
 bool OpacityFacade::isOpaque(size_t index) const
 {
@@ -48,7 +58,7 @@ bool  OpacityFacade::hasLineOfSight(size_t fromIndex, Point3D fromCoords, size_t
 	if(fromIndex == toIndex)
 		return true;
 	size_t currentIndex = fromIndex;
-	//TODO: Would it be faster to calculate x, y, and z from indices and indices from pointer math rather then dereferenceing from and to?
+	//TODO: Would it be faster to use fixed percision number types? create low percision fixed via bitshift?
 	float x = fromCoords.x;
 	float y = fromCoords.y;
 	float z = fromCoords.z;
