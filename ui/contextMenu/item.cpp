@@ -73,7 +73,7 @@ void ContextMenu::drawItemControls(Block& block)
 						});
 					}
 				}
-				if(m_window.getFaction())
+				if(m_window.getFaction() && item->m_itemType.installable)
 				{
 					auto installAt = tgui::Button::create("install at...");
 					installAt->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);

@@ -24,18 +24,18 @@ public:
 	void setArea(Area& area);
 	void add(Actor& actor);
 	void remove(Actor& actor);
-	void remove(size_t index);
-	void updateRange(size_t index, DistanceInBlocks range);
-	void updateLocation(size_t index, Block& location);
-	void readStepSegment(size_t begin, size_t end);
+	void remove(VisionFacadeIndex index);
+	void updateRange(VisionFacadeIndex index, DistanceInBlocks range);
+	void updateLocation(VisionFacadeIndex index, Block& location);
+	void readStepSegment(VisionFacadeIndex begin, VisionFacadeIndex end);
 	void readStep();
 	void writeStep();
 	void clear();
-	[[nodiscard]] Actor& getActor(size_t index);
-	[[nodiscard]] Block& getLocation(size_t index);
-	[[nodiscard]] DistanceInBlocks getRange(size_t index) const;
-	[[nodiscard]] std::unordered_set<Actor*>& getResults(size_t index);
-	[[nodiscard]] size_t size() const { return m_actors.size(); }
+	[[nodiscard]] Actor& getActor(VisionFacadeIndex index);
+	[[nodiscard]] Block& getLocation(VisionFacadeIndex index);
+	[[nodiscard]] DistanceInBlocks getRange(VisionFacadeIndex index) const;
+	[[nodiscard]] std::unordered_set<Actor*>& getResults(VisionFacadeIndex index);
+	[[nodiscard]] VisionFacadeIndex size() const { return m_actors.size(); }
 	[[nodiscard]] static DistanceInBlocks taxiDistance(Point3D a, Point3D b);
 };
 // Divide actors into buckets by id.
@@ -57,7 +57,7 @@ public:
 class HasVisionFacade final
 {
 	VisionFacade* m_visionFacade = nullptr;
-	size_t m_index = SIZE_MAX;
+	VisionFacadeIndex m_index = VISION_FACADE_INDEX_MAX;
 public:
 	// To be called when leaving an area. Also calls clear if !empty().
 	void clearVisionFacade();
@@ -69,7 +69,7 @@ public:
 	void updateRange(DistanceInBlocks range);
 	// Call when move.
 	void updateLocation(Block& location);
-	[[nodiscard]] bool empty() const { return m_index == SIZE_MAX; }
+	[[nodiscard]] bool empty() const { return m_index == VISION_FACADE_INDEX_MAX; }
 	friend class VisionFacade;
 	VisionFacade& getVisionFacade() const { return *m_visionFacade; }
 };

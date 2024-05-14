@@ -211,7 +211,7 @@ namespace Config
 	inline uint32_t unitsOfWoundAreaPerUnitItemScaleFactor;
 	inline bool visionCuboidsActive;
 	inline size_t visionFacadeReservationSize;
-	inline uint32_t visionThreadingBatchSize;
+	inline VisionFacadeIndex visionThreadingBatchSize;
 	inline uint32_t wanderMaximumNumberOfBlocks;
 	inline uint32_t wanderMinimimNumberOfBlocks;
 	inline Step woodCuttingMaxSteps;

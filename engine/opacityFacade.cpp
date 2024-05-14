@@ -16,7 +16,7 @@ void OpacityFacade::initalize()
 }
 void OpacityFacade::update(const Block& block)
 {
-	size_t index = m_area.getBlockIndex(block);
+	BlockIndex index = m_area.getBlockIndex(block);
 	assert(index < m_fullOpacity.size());
 	assert(m_floorOpacity.size() == m_fullOpacity.size());
 	m_fullOpacity.at(index) = !block.canSeeThrough();
@@ -30,13 +30,13 @@ void OpacityFacade::validate() const
 		assert(block.canSeeThroughFloor() != m_floorOpacity.at(m_area.getBlockIndex(block)));
 	}
 }
-bool OpacityFacade::isOpaque(size_t index) const
+bool OpacityFacade::isOpaque(BlockIndex index) const
 {
 	assert(index < m_fullOpacity.size());
 	assert(m_fullOpacity.at(index) != m_area.getBlocks().at(index).canSeeThrough());
 	return m_fullOpacity.at(index);
 }
-bool OpacityFacade::floorIsOpaque(size_t index) const
+bool OpacityFacade::floorIsOpaque(BlockIndex index) const
 {
 	assert(index < m_fullOpacity.size());
 	assert(m_floorOpacity.size() == m_fullOpacity.size());
@@ -45,19 +45,19 @@ bool OpacityFacade::floorIsOpaque(size_t index) const
 }
 bool  OpacityFacade::hasLineOfSight(const Block& from, const Block& to) const
 {
-	size_t fromIndex = m_area.getBlockIndex(from);
+	BlockIndex fromIndex = m_area.getBlockIndex(from);
 	Point3D fromCoords = m_area.getCoordinatesForIndex(fromIndex);
-	size_t toIndex = m_area.getBlockIndex(to);
+	BlockIndex toIndex = m_area.getBlockIndex(to);
 	Point3D toCoords = m_area.getCoordinatesForIndex(toIndex);
 	return hasLineOfSight(fromIndex, fromCoords, toIndex, toCoords);
 }
-bool  OpacityFacade::hasLineOfSight(size_t fromIndex, Point3D fromCoords, size_t toIndex, Point3D toCoords) const
+bool  OpacityFacade::hasLineOfSight(BlockIndex fromIndex, Point3D fromCoords, BlockIndex toIndex, Point3D toCoords) const
 {
 	assert(!isOpaque(toIndex));
 	assert(!isOpaque(fromIndex));
 	if(fromIndex == toIndex)
 		return true;
-	size_t currentIndex = fromIndex;
+	BlockIndex currentIndex = fromIndex;
 	//TODO: Would it be faster to use fixed percision number types? create low percision fixed via bitshift?
 	float x = fromCoords.x;
 	float y = fromCoords.y;
@@ -76,7 +76,7 @@ bool  OpacityFacade::hasLineOfSight(size_t fromIndex, Point3D fromCoords, size_t
 	DistanceInBlocks zInt = fromCoords.z;
 	while(true)
 	{
-		size_t previousIndex = currentIndex;
+		BlockIndex previousIndex = currentIndex;
 		DistanceInBlocks oldZ = zInt;
 		// Add deltas to coordinates to get next set.
 		x += xDeltaNormalized;
@@ -94,7 +94,7 @@ bool  OpacityFacade::hasLineOfSight(size_t fromIndex, Point3D fromCoords, size_t
 			return true;
 	}
 }
-bool OpacityFacade::canSeeIntoFrom(size_t previousIndex, size_t currentIndex, DistanceInBlocks oldZ, DistanceInBlocks z) const
+bool OpacityFacade::canSeeIntoFrom(BlockIndex previousIndex, BlockIndex currentIndex, DistanceInBlocks oldZ, DistanceInBlocks z) const
 {
 	assert(!isOpaque(previousIndex));
 	if(isOpaque(currentIndex))

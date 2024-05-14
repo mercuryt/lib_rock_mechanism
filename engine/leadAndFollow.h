@@ -27,8 +27,8 @@ public:
 	void unfollowIfFollowing();
 	void disband();
 	void tryToMove();
-	HasShape& getLineLeader();
-	HasShape& getLeader();
+	[[nodiscard]] HasShape& getLineLeader();
+	[[nodiscard]] HasShape& getLeader();
 	[[nodiscard]] bool isFollowing() const { return m_canLead != nullptr; }
 	friend class CanLead;
 	friend class CanFollowEvent;
@@ -48,16 +48,16 @@ public:
 	// Call from BlockHasShapes::enter.
 	void onMove();
 	// Use in canEnterCurrently to prevent leader from moving too far ahead.
-	bool isFollowerKeepingUp() const;
-	bool isLeading() const;
-	bool isLeading(HasShape& hasShape) const;
+	[[nodiscard]] bool isFollowerKeepingUp() const;
+	[[nodiscard]] bool isLeading() const;
+	[[nodiscard]] bool isLeading(HasShape& hasShape) const;
 	HasShape& getFollower();
-	const HasShape& getFollower() const;
-	Speed getMoveSpeed() const;
-	std::deque<Block*>& getLocationQueue();
+	[[nodiscard]] const HasShape& getFollower() const;
+	[[nodiscard]] Speed getMoveSpeed() const;
+	[[nodiscard]] std::deque<Block*>& getLocationQueue();
 	friend class CanFollow;
-	static Speed getMoveSpeedForGroupWithAddedMass(std::vector<const HasShape*>& actorsAndItems, Mass addedRollingMass = 0, Mass addedDeadMass = 0);
-	static Speed getMoveSpeedForGroup(std::vector<const HasShape*>& actorsAndItems) { return getMoveSpeedForGroupWithAddedMass(actorsAndItems); }
+	[[nodiscard]] static Speed getMoveSpeedForGroupWithAddedMass(std::vector<const HasShape*>& actorsAndItems, Mass addedRollingMass = 0, Mass addedDeadMass = 0);
+	[[nodiscard]] static Speed getMoveSpeedForGroup(std::vector<const HasShape*>& actorsAndItems) { return getMoveSpeedForGroupWithAddedMass(actorsAndItems); }
 };
 class CanFollowEvent final : public ScheduledEvent
 {

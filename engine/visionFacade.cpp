@@ -10,7 +10,7 @@
 
 VisionFacade::VisionFacade( )
 {
-	size_t reserve = Config::visionFacadeReservationSize;
+	VisionFacadeIndex reserve = Config::visionFacadeReservationSize;
 	m_actors.reserve(reserve);
 	m_ranges.reserve(reserve);
 	m_locations.reserve(reserve);
@@ -22,9 +22,9 @@ void VisionFacade::setArea(Area& area)
 }
 void VisionFacade::add(Actor& actor)
 {
-	assert(actor.m_canSee.m_hasVisionFacade.m_index == SIZE_MAX);
+	assert(actor.m_canSee.m_hasVisionFacade.m_index == VISION_FACADE_INDEX_MAX);
 	assert(actor.m_canSee.m_hasVisionFacade.m_visionFacade == nullptr);
-	size_t index = m_actors.size();
+	VisionFacadeIndex index = m_actors.size();
 	actor.m_canSee.m_hasVisionFacade.m_index = index;
 	actor.m_canSee.m_hasVisionFacade.m_visionFacade = this;
 	assert(m_results.size() == m_actors.size() && m_ranges.size() == m_actors.size() && m_locations.size() == m_actors.size());
@@ -35,15 +35,15 @@ void VisionFacade::add(Actor& actor)
 }
 void VisionFacade::remove(Actor& actor)
 {
-	assert(actor.m_canSee.m_hasVisionFacade.m_index != SIZE_MAX);
+	assert(actor.m_canSee.m_hasVisionFacade.m_index != VISION_FACADE_INDEX_MAX);
 	assert(actor.m_canSee.m_hasVisionFacade.m_visionFacade == this);
-	size_t index = actor.m_canSee.m_hasVisionFacade.m_index;
+	VisionFacadeIndex index = actor.m_canSee.m_hasVisionFacade.m_index;
 	remove(index);
 }
-void VisionFacade::remove(size_t index)
+void VisionFacade::remove(VisionFacadeIndex index)
 {
 	assert(m_actors.size() > index);
-	m_actors.at(index)->m_canSee.m_hasVisionFacade.m_index = SIZE_MAX;
+	m_actors.at(index)->m_canSee.m_hasVisionFacade.m_index = VISION_FACADE_INDEX_MAX;
 	m_actors.at(index)->m_canSee.m_hasVisionFacade.m_visionFacade = nullptr;
 	util::removeFromVectorByIndexUnordered(m_actors, index);
 	util::removeFromVectorByIndexUnordered(m_ranges, index);
@@ -52,18 +52,18 @@ void VisionFacade::remove(size_t index)
 	if(m_actors.size() > index)
 		m_actors.at(index)->m_canSee.m_hasVisionFacade.m_index = index;
 }
-Actor& VisionFacade::getActor(size_t index)  
+Actor& VisionFacade::getActor(VisionFacadeIndex index)  
 { 
 	assert(m_actors.size() > index); 
 	return *m_actors.at(index); 
 }
-Block& VisionFacade::getLocation(size_t index)  
+Block& VisionFacade::getLocation(VisionFacadeIndex index)  
 {
        	assert(m_actors.size() > index); 
 	assert(m_actors.at(index)->m_location == m_locations.at(index));
 	return *m_locations.at(index); 
 }
-DistanceInBlocks VisionFacade::getRange(size_t index) const 
+DistanceInBlocks VisionFacade::getRange(VisionFacadeIndex index) const 
 { 
 	assert(m_actors.size() > index); 
 	assert(m_actors.at(index)->m_canSee.getRange() == m_ranges.at(index));
@@ -77,29 +77,29 @@ DistanceInBlocks VisionFacade::taxiDistance(Point3D a, Point3D b)
 		std::abs((int)a.y - (int)b.y) +
 		std::abs((int)a.z - (int)b.z);
 }
-std::unordered_set<Actor*>& VisionFacade::getResults(size_t index)
+std::unordered_set<Actor*>& VisionFacade::getResults(VisionFacadeIndex index)
 { 
 	assert(m_actors.size() > index); 
 	assert(m_results.size() == m_actors.size()); 
 	return m_results.at(index); 
 }
-void VisionFacade::updateLocation(size_t index, Block& location)
+void VisionFacade::updateLocation(VisionFacadeIndex index, Block& location)
 {
 	assert(m_actors.at(index)->m_location == &location);
 	m_locations.at(index) = &location;
 }
-void VisionFacade::updateRange(size_t index, DistanceInBlocks range)
+void VisionFacade::updateRange(VisionFacadeIndex index, DistanceInBlocks range)
 {
 	assert(m_actors.at(index)->m_canSee.getRange() == range);
 	m_ranges.at(index) = range;
 }
-void VisionFacade::readStepSegment(size_t begin, size_t end)
+void VisionFacade::readStepSegment(VisionFacadeIndex begin, VisionFacadeIndex end)
 {
-	for(size_t viewerIndex = begin; viewerIndex < end; ++viewerIndex)
+	for(VisionFacadeIndex viewerIndex = begin; viewerIndex < end; ++viewerIndex)
 	{
 		DistanceInBlocks range = getRange(viewerIndex);
 		Block& from = getLocation(viewerIndex);
-		size_t fromIndex = m_area->getBlockIndex(from);
+		BlockIndex fromIndex = m_area->getBlockIndex(from);
 		Point3D fromCoords = m_area->getCoordinatesForIndex(fromIndex);
 		LocationBuckets& locationBuckets = m_area->m_hasActors.m_locationBuckets;
 		std::unordered_set<Actor*>& result = getResults(viewerIndex);
@@ -119,11 +119,11 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 					assert(x * y * z < locationBuckets.m_buckets.size());
 					// Iterate actors in the defined cuboid.
 					LocationBucket& bucket = locationBuckets.get(x, y, z);
-					for(size_t i = 0; i < bucket.m_actorsMultiTile.size(); i++)
+					for(uint16_t i = 0; i < bucket.m_actorsMultiTile.size(); i++)
 					{
 						for(Block* to : bucket.m_blocksMultiTileActors.at(i))
 						{
-							size_t toIndex = m_area->getBlockIndex(*to);
+							BlockIndex toIndex = m_area->getBlockIndex(*to);
 							Point3D toCoords = m_area->getCoordinatesForIndex(toIndex);
 							// Refine bucket cuboid actors into sphere with radius == range.
 							if(taxiDistance(fromCoords, toCoords) <= range)
@@ -146,10 +146,10 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 							}
 						}
 					}
-					for(size_t i = 0; i < bucket.m_actorsSingleTile.size(); i++)
+					for(uint16_t i = 0; i < bucket.m_actorsSingleTile.size(); i++)
 					{
 						Block* to = bucket.m_blocksSingleTileActors.at(i);
-						size_t toIndex = m_area->getBlockIndex(*to);
+						BlockIndex toIndex = m_area->getBlockIndex(*to);
 						Point3D toCoords = m_area->getCoordinatesForIndex(toIndex);
 						// Refine bucket cuboid actors into sphere with radius == range.
 						if(to->taxiDistance(from) <= range)
@@ -172,10 +172,11 @@ void VisionFacade::readStepSegment(size_t begin, size_t end)
 }
 void VisionFacade::readStep()
 {
-	size_t index = 0;
+	VisionFacadeIndex index = 0;
 	while(index != m_actors.size())
 	{
-		size_t end = std::min(m_actors.size(), index + Config::visionThreadingBatchSize);
+		VisionFacadeIndex actorsSize = m_actors.size();
+		VisionFacadeIndex end = std::min(actorsSize, index + Config::visionThreadingBatchSize);
 		m_area->m_simulation.m_taskFutures.push_back(m_area->m_simulation.m_pool.submit([this, index, end]{ 
 			readStepSegment(index, end);
 		}));
@@ -184,7 +185,7 @@ void VisionFacade::readStep()
 }
 void VisionFacade::writeStep()
 {
-	for(size_t index = 0; index < m_actors.size(); ++index)
+	for(VisionFacadeIndex index = 0; index < m_actors.size(); ++index)
 		getActor(index).m_canSee.m_currently.swap(getResults(index));
 }
 void VisionFacade::clear()
