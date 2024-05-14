@@ -345,7 +345,13 @@ MustEat::MustEat(const Json& data, Actor& a) :
 	if(data.contains("eatingLocation"))
 		m_eatingLocation = &m_actor.getSimulation().getBlockForJsonQuery(data["eatingLocation"]);
 	if(data.contains("hungerEventStart"))
-		m_hungerEvent.schedule(m_actor.m_species.stepsEatFrequency, m_actor, data["hungerEventStart"].get<Step>());
+	{
+		// Temporary shim.
+		Step start = data["hungerEventStart"].get<Step>();
+		if(start < a.getSimulation().m_step)
+			start = a.getSimulation().m_step + 1;
+		m_hungerEvent.schedule(m_actor.m_species.stepsEatFrequency, m_actor, start);
+	}
 }
 Json MustEat::toJson() const
 {

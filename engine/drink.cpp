@@ -14,7 +14,13 @@ MustDrink::MustDrink(Actor& a) : m_actor(a), m_volumeDrinkRequested(0), m_fluidT
 MustDrink::MustDrink(const Json& data, Actor& a) : m_actor(a), m_volumeDrinkRequested(data["volumeDrinkRequested"].get<Volume>()), m_fluidType(&m_actor.m_species.fluidType), m_objective(nullptr), m_thirstEvent(a.getEventSchedule())
 {
 	if(data.contains("thirstEventStart"))
-		m_thirstEvent.schedule(m_actor.m_species.stepsFluidDrinkFreqency, m_actor, data["thirstEventStart"].get<Step>());
+	{
+		// Temporary shim.
+		Step start = data["thirstEventStart"].get<Step>();
+		if(start < a.getSimulation().m_step)
+			start = a.getSimulation().m_step + 1;
+		m_thirstEvent.schedule(m_actor.m_species.stepsFluidDrinkFreqency, m_actor, start);
+	}
 }
 Json MustDrink::toJson() const
 {
