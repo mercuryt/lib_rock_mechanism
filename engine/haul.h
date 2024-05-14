@@ -17,7 +17,7 @@ struct Faction;
 class HaulSubproject;
 struct DeserializationMemo;
 
-enum class HaulStrategy { None, Individual, Team, Cart, TeamCart, Panniers, AnimalCart, StrongSentient };
+enum class HaulStrategy { None, Individual, IndividualCargoIsCart, Team, Cart, TeamCart, Panniers, AnimalCart, StrongSentient };
 
 HaulStrategy haulStrategyFromName(std::string);
 std::string haulStrategyToName(HaulStrategy);

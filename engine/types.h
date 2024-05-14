@@ -24,9 +24,12 @@ using Latitude = double;
 using Longitude = double;
 using Bearing = double;
 using DistanceInBlocks = uint32_t;
+using BlockIndex = uint32_t;
 using Speed = uint32_t;
 using MoveCost = Speed;
 using Quantity = uint32_t;
+using VisionFacadeIndex = uint32_t;
+inline VisionFacadeIndex VISION_FACADE_INDEX_MAX = UINT32_MAX;
 struct Point3D
 {
 	DistanceInBlocks x;

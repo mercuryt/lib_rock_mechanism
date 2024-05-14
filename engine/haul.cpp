@@ -21,6 +21,8 @@ HaulStrategy haulStrategyFromName(std::string name)
 		return HaulStrategy::Individual;
 	if(name == "Team")
 		return HaulStrategy::Team;
+	if(name == "IndividualCargoIsCart")
+		return HaulStrategy::IndividualCargoIsCart;
 	if(name == "Cart")
 		return HaulStrategy::Cart;
 	if(name == "TeamCart")
@@ -38,6 +40,8 @@ std::string haulStrategyToName(HaulStrategy strategy)
 		return "Individual";
 	if(strategy == HaulStrategy::Team)
 		return "Team";
+	if(strategy == HaulStrategy::IndividualCargoIsCart)
+		return "IndividualCargoIsCart";
 	if(strategy == HaulStrategy::Cart)
 		return "Cart";
 	if(strategy == HaulStrategy::TeamCart)
@@ -445,6 +449,32 @@ void HaulSubproject::commandWorker(Actor& actor)
 					m_toHaul.m_reservable.clearReservationFor(m_project.m_canReserve, m_quantity);
 					actor.m_canPickup.pickUp(m_toHaul, m_quantity);
 					// From here on out we cannot use m_toHaul unless we test for generic.
+					commandWorker(actor);
+				}
+				else
+					actor.m_canMove.setDestinationAdjacentTo(m_toHaul, detour);
+			}
+			break;
+		case HaulStrategy::IndividualCargoIsCart:
+			assert(m_workers.size() == 1);
+			if(actor.m_canLead.isLeading(m_toHaul))
+			{
+				if(actor.isAdjacentTo(m_project.m_location))
+				{
+					// Unload
+					m_toHaul.m_canFollow.unfollow();
+					complete(m_toHaul);
+				}
+				else
+					actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
+			}
+			else
+			{
+				if(actor.isAdjacentTo(m_toHaul))
+				{
+					actor.m_canReserve.deleteAllWithoutCallback();
+					m_toHaul.m_reservable.clearReservationFor(m_project.m_canReserve, m_quantity);
+					m_toHaul.m_canFollow.follow(actor.m_canLead, true);
 					commandWorker(actor);
 				}
 				else
@@ -860,6 +890,32 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 	for(auto& pair : project.m_workers)
 		workers.push_back(pair.first);
 	assert(maxQuantityRequested != 0);
+	// toHaul is wheeled.
+	static const MoveType& wheeled = MoveType::byName("roll");
+	if(toHaul.getMoveType() == wheeled)
+	{
+		assert(toHaul.isItem());
+		Item& haulableItem = static_cast<Item&>(toHaul);
+		std::vector<const HasShape*> list{&worker, &toHaul};
+		if(CanLead::getMoveSpeedForGroup(list) >= minimumSpeed)
+		{
+			output.strategy = HaulStrategy::IndividualCargoIsCart;
+			output.quantity = 1;
+			output.workers.push_back(&worker);
+			return output;
+		}
+		else
+		{
+			output.workers = actorsNeededToHaulAtMinimumSpeedWithTool(project, worker, toHaul, haulableItem);
+			if(!output.workers.empty())
+			{
+				assert(output.workers.size() > 1);
+				output.strategy = HaulStrategy::Team;
+				output.quantity = 1;
+				return output;
+			}
+		}
+	}
 	// Individual
 	// TODO:: Prioritize cart if a large number of items are requested.
 	Quantity maxQuantityCanCarry = worker.m_canPickup.maximumNumberWhichCanBeCarriedWithMinimumSpeed(toHaul, minimumSpeed);
@@ -1052,7 +1108,9 @@ std::vector<Actor*> HaulSubproject::actorsNeededToHaulAtMinimumSpeedWithTool(con
 		if(output.size() > 2) //TODO: More then two requires multiple followers for one leader.
 			break;
 		actorsAndItems.push_back(actor);
-		Speed speed = CanLead::getMoveSpeedForGroupWithAddedMass(actorsAndItems, toHaul.singleUnitMass());
+		// If to haul is also haul tool then there is no cargo, we are hauling the haulTool itself.
+		Mass mass = &toHaul == &static_cast<const HasShape&>(haulTool) ? 0 : toHaul.singleUnitMass();
+		Speed speed = CanLead::getMoveSpeedForGroupWithAddedMass(actorsAndItems, mass);
 		if(speed >= project.getMinimumHaulSpeed())
 			return output;
 	}

@@ -107,7 +107,7 @@ public:
 	[[nodiscard]] std::vector<Block>& getBlocks() { return m_blocks; }
 	[[nodiscard]] size_t getBlockIndex(Point3D coordinates) const;
 	[[nodiscard]] size_t getBlockIndex(const Block& block) const;
-	[[nodiscard]] Point3D getCoordinatesForIndex(size_t index) const;
+	[[nodiscard]] Point3D getCoordinatesForIndex(BlockIndex index) const;
 
 	// Clear all destructor callbacks in preperation for quit or hibernate.
 	void clearReservations();

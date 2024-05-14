@@ -141,11 +141,11 @@ Json Area::toJson() const
 	{
 		data["actors"].push_back(actor->toJson());
 		for(Item* item : actor->m_equipmentSet.getAll())
-			items.insert(item);
+			recordItemAndCargoItemsRecursive(*item);
 		if(actor->m_canPickup.isCarryingAnything())
 		{
 			if(actor->m_canPickup.getCarrying()->isItem())
-				items.insert(&actor->m_canPickup.getItem());
+				recordItemAndCargoItemsRecursive(actor->m_canPickup.getItem());
 			else if(actor->m_canPickup.getCarrying()->isActor())
 				data["actors"].push_back(actor->m_canPickup.getActor().toJson());
 		}
@@ -238,7 +238,7 @@ size_t Area::getBlockIndex(const Block& block) const
 	assert(!m_blocks.empty());
 	return &block - &m_blocks.front();
 }
-Point3D Area::getCoordinatesForIndex(size_t index) const
+Point3D Area::getCoordinatesForIndex(BlockIndex index) const
 {
 	DistanceInBlocks z = index / (m_sizeX * m_sizeY);
 	index -= z * m_sizeX * m_sizeY;

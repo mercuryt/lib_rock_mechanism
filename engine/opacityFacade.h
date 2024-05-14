@@ -18,9 +18,9 @@ public:
 	void initalize();
 	void update(const Block& block);
 	void validate() const;
-	[[nodiscard]] bool isOpaque(size_t index) const;
-	[[nodiscard]] bool floorIsOpaque(size_t index) const;
+	[[nodiscard]] bool isOpaque(BlockIndex index) const;
+	[[nodiscard]] bool floorIsOpaque(BlockIndex index) const;
 	[[nodiscard]] bool hasLineOfSight(const Block& from, const Block& to) const;
-	[[nodiscard]] bool hasLineOfSight(size_t fromIndex, Point3D fromCoords, size_t toIndex, Point3D toCoords) const;
-	[[nodiscard]] bool canSeeIntoFrom(size_t previousIndex, size_t currentIndex, DistanceInBlocks oldZ, DistanceInBlocks z) const;
+	[[nodiscard]] bool hasLineOfSight(BlockIndex fromIndex, Point3D fromCoords, BlockIndex toIndex, Point3D toCoords) const;
+	[[nodiscard]] bool canSeeIntoFrom(BlockIndex previousIndex, BlockIndex currentIndex, DistanceInBlocks oldZ, DistanceInBlocks z) const;
 };
