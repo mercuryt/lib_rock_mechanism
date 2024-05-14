@@ -373,16 +373,18 @@ void Window::startLoop()
 		// Draw main m_view.
 		if(m_simulation && m_area)
 		{
-			m_window.setView(m_view);
-			m_draw.view();
-			// What is this? Something for TGUI?
-			m_window.setView(m_window.getDefaultView());
 			// Draw dialogueBox.
 			if(!m_dialogueBoxUI.empty() && !m_dialogueBoxUI.isVisible())
 			{
 				m_paused = true;
 				m_dialogueBoxUI.draw();
 			}
+			if(!m_paused && m_gameOverlay.infoPopupIsVisible())
+				m_gameOverlay.updateInfoPopup();
+			m_window.setView(m_view);
+			m_draw.view();
+			// What is this? Something for TGUI?
+			m_window.setView(m_window.getDefaultView());
 		}
 		// Draw UI.
 		m_gui.draw();

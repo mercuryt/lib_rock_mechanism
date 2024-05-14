@@ -13,7 +13,11 @@ void ScheduledEvent::cancel()
 	onCancel();
        	m_simulation.m_eventSchedule.unschedule(*this); 
 }
-Step ScheduledEvent::remaningSteps() const { return m_step - m_simulation.m_step; }
+Step ScheduledEvent::remaningSteps() const 
+{ 
+	assert(m_step > m_simulation.m_step);
+	return m_step - m_simulation.m_step;
+}
 Step ScheduledEvent::elapsedSteps() const { return m_simulation.m_step - m_startStep; }
 Percent ScheduledEvent::percentComplete() const
 {
@@ -21,6 +25,7 @@ Percent ScheduledEvent::percentComplete() const
 }
 float ScheduledEvent::fractionComplete() const
 {
+	assert(m_step >= m_startStep);
 	Step totalSteps = m_step - m_startStep;
 	Step elapsedSteps = m_simulation.m_step - m_startStep;
 	return (float)elapsedSteps / (float)totalSteps;
