@@ -18,6 +18,7 @@ public:
 	tgui::Label::Ptr m_speedUI;
 	tgui::Label::Ptr m_weatherUI;
 	Item* m_itemBeingInstalled;
+	Item* m_itemBeingMoved;
 	Facing m_facing;
 	GameOverlay(Window& w);
 	void show() { m_group->setVisible(true); }
@@ -32,7 +33,8 @@ public:
 	void drawInfoPopup(const Plant& plant) { drawInfoPopup(const_cast<Plant&>(plant)); }
 	void drawInfoPopup(Actor& actor) { m_infoPopup.display(actor); }
 	void closeInfoPopup() { m_infoPopup.hide(); };
-	void installItem(Block& block);
+	void assignLocationToInstallItem(Block& block);
+	void assignLocationToMoveItemTo(Block& block);
 	void unfocusUI();
 	void drawTime();
 	void updateInfoPopup() { m_infoPopup.update(); }

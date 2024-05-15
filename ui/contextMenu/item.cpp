@@ -60,7 +60,10 @@ void ContextMenu::drawItemControls(Block& block)
 				{
 					Actor& actor = **actors.begin();
 					// Equip.
-					if(actor.m_equipmentSet.canEquipCurrently(*item))
+					if(
+							(m_window.m_editMode || m_window.getFaction() == actor.getFaction()) && 
+							actor.m_equipmentSet.canEquipCurrently(*item)
+					  )
 					{
 						auto button = tgui::Button::create("equip");
 						button->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
@@ -73,16 +76,19 @@ void ContextMenu::drawItemControls(Block& block)
 						});
 					}
 				}
-				if(m_window.getFaction() && item->m_itemType.installable)
+				if(!actors.empty() && m_window.getFaction())
 				{
-					auto installAt = tgui::Button::create("install at...");
-					installAt->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
-					submenu.add(installAt);
-					installAt->onClick([this, item]{ 
-						std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-						m_window.setItemToInstall(*item); 
-						hide(); 
-					});
+					std::vector<const HasShape*> vector(actors.begin(), actors.end());
+					if(vector.front()->m_canLead.getMoveSpeedForGroupWithAddedMass(vector, item->singleUnitMass()))
+					{
+						auto moveTo = tgui::Button::create("move to...");
+						moveTo->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
+						submenu.add(moveTo);
+						moveTo->onClick([this, item]{ 
+							m_window.getGameOverlay().m_itemBeingMoved = item;
+							hide(); 
+						});
+					}
 				}
 			});
 		}

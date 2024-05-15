@@ -89,15 +89,15 @@ public:
 	Json toJson() const;
 	void add(HasShape& hasShape);
 	void add(const FluidType& fluidType, Volume volume);
-	Item& add(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity);
+	Item& add(const ItemType& itemType, const MaterialType& materialType, Quantity quantity);
 	void remove(const FluidType& fluidType, Volume volume);
 	void removeFluidVolume(Volume volume);
 	void remove(HasShape& hasShape);
-	void remove(Item& item, uint32_t quantity);
-	void remove(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity);
-	void load(HasShape& hasShape, uint32_t quantity = 0);
+	void remove(Item& item, Quantity quantity);
+	void remove(const ItemType& itemType, const MaterialType& materialType, Quantity quantity);
+	void load(HasShape& hasShape, Quantity quantity = 0);
 	void unloadTo(HasShape& hasShape, Block& location);
-	Item& unloadGenericTo(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity, Block& location);
+	Item& unloadGenericTo(const ItemType& itemType, const MaterialType& materialType, Quantity quantity, Block& location);
 	std::vector<HasShape*>& getContents() { return m_shapes; }
 	std::vector<Item*>& getItems() { return m_items; }
 	std::vector<Actor*> getActors();
@@ -108,7 +108,7 @@ public:
 	const FluidType& getFluidType() const { assert(m_fluidType); return *m_fluidType; }
 	bool containsAnyFluid() const { return m_fluidType != nullptr; }
 	bool contains(HasShape& hasShape) const { return std::ranges::find(m_shapes, &hasShape) != m_shapes.end(); }
-	bool containsGeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity) const;
+	bool containsGeneric(const ItemType& itemType, const MaterialType& materialType, Quantity quantity) const;
 	bool empty() const { return m_fluidType == nullptr && m_shapes.empty(); }
 };
 class ReMarkItemForStockPilingEvent final : public ScheduledEvent
@@ -143,7 +143,7 @@ public:
 };
 class Item final : public HasShape
 {
-	uint32_t m_quantity; // Always set to 1 for nongeneric types.
+	Quantity m_quantity; // Always set to 1 for nongeneric types.
 public:
 	const ItemId m_id;
 	const ItemType& m_itemType;
@@ -160,7 +160,7 @@ public:
 	ItemCanBeStockPiled m_canBeStockPiled;
 	//TODO: ItemHasOwners
 	// Generic.
-	Item(Simulation& s, ItemId i, const ItemType& it, const MaterialType& mt, uint32_t q, CraftJob* cj);
+	Item(Simulation& s, ItemId i, const ItemType& it, const MaterialType& mt, Quantity q, CraftJob* cj);
 	// NonGeneric.
 	Item(Simulation& s, ItemId i, const ItemType& it, const MaterialType& mt, uint32_t qual, Percent pw, CraftJob* cj);
 	Item(const Json& data, DeserializationMemo& deserializationMemo, ItemId i);
@@ -174,8 +174,8 @@ public:
 	void exit();
 	void pierced(Area area);
 	void setTemperature(Temperature temperature);
-	void addQuantity(uint32_t delta);
-	void removeQuantity(uint32_t delta);
+	void addQuantity(Quantity delta);
+	void removeQuantity(Quantity delta);
 	void install(Block& block, Facing facing, const Faction& faction);
 	void merge(Item& item);
 	[[nodiscard]] Quantity getQuantity() const { return m_quantity; }

@@ -164,6 +164,8 @@ void Window::startLoop()
 									m_gameOverlay.closeInfoPopup();
 								else if(m_gameOverlay.m_itemBeingInstalled)
 									m_gameOverlay.m_itemBeingInstalled = nullptr;
+								else if(m_gameOverlay.m_itemBeingMoved)
+									m_gameOverlay.m_itemBeingMoved = nullptr;
 								else
 									m_gameOverlay.drawMenu();
 							}
@@ -344,7 +346,14 @@ void Window::startLoop()
 							// Display context menu.
 							//TODO: Left click and drag shortcut for select and open context.
 							if(m_gameOverlay.m_itemBeingInstalled)
-								m_gameOverlay.installItem(block);
+								m_gameOverlay.assignLocationToInstallItem(block);
+							if(m_gameOverlay.m_itemBeingMoved)
+							{
+								if(!getSelectedActors().empty())
+									m_gameOverlay.assignLocationToMoveItemTo(block);
+								else
+									m_gameOverlay.m_itemBeingMoved = nullptr;
+							}
 							else
 								m_gameOverlay.drawContextMenu(block);
 						}

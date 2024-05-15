@@ -134,12 +134,16 @@ void Draw::view()
 		square.setPosition(worldPos);
 		m_window.m_window.draw(square);
 	}
-	// Install item.
-	if(m_window.m_gameOverlay.m_itemBeingInstalled)
+	// Install or move item.
+	if(m_window.m_gameOverlay.m_itemBeingInstalled || m_window.m_gameOverlay.m_itemBeingMoved)
 	{
 		Block& hoverBlock = m_window.getBlockUnderCursor();
-		auto blocks = m_window.m_gameOverlay.m_itemBeingInstalled->getBlocksWhichWouldBeOccupiedAtLocationAndFacing(hoverBlock, m_window.m_gameOverlay.m_facing);
-		bool valid = hoverBlock.m_hasShapes.canEnterEverWithFacing(*m_window.m_gameOverlay.m_itemBeingInstalled, m_window.m_gameOverlay.m_facing);
+		Item& item = *(m_window.m_gameOverlay.m_itemBeingInstalled ? 
+			m_window.m_gameOverlay.m_itemBeingInstalled : 
+			m_window.m_gameOverlay.m_itemBeingMoved
+		);
+		auto blocks = item.getBlocksWhichWouldBeOccupiedAtLocationAndFacing(hoverBlock, m_window.m_gameOverlay.m_facing);
+		bool valid = hoverBlock.m_hasShapes.canEnterEverWithFacing(item, m_window.m_gameOverlay.m_facing);
 		for(Block* block : blocks)
 			if(!valid)
 				invalidOnBlock(*block);
