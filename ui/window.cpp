@@ -17,8 +17,8 @@ Window::Window() : m_window(sf::VideoMode::getDesktopMode(), "Goblin Pit", sf::S
 	m_mainMenuView(*this), m_loadView(*this), m_gameOverlay(*this), m_dialogueBoxUI(*this), m_objectivePriorityView(*this), 
 	m_productionView(*this), m_uniformView(*this), m_stocksView(*this), m_actorView(*this), //m_worldParamatersView(*this),
 	m_editRealityView(*this), m_editActorView(*this), m_editAreaView(*this), m_editFactionView(*this), m_editFactionsView(*this), 
-	m_editStockPileView(*this), m_editDramaView(*this), m_area(nullptr), m_scale(32), m_z(0), m_speed(1), m_faction(nullptr),
-	m_minimumTimePerFrame(200), m_minimumTimePerStep((int)(1000.f / (float)Config::stepsPerSecond)), m_draw(*this),
+	m_editStockPileView(*this), m_editDramaView(*this), m_minimumTimePerFrame(200), 
+	m_minimumTimePerStep((int)(1000.f / (float)Config::stepsPerSecond)), m_draw(*this),
 	m_simulationThread([&](){
 		while(true)
 		{
@@ -91,6 +91,8 @@ void Window::startLoop()
 				continue;
 			//TODO: check if modifiers were pressed at the time the event was generated, not now.
 			uint32_t scrollSteps = sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ? 6 : 1;
+			if(m_area)
+				m_blockUnderCursor = &getBlockUnderCursor();
 			switch(event.type)
 			{
 				case sf::Event::Closed:
@@ -134,14 +136,14 @@ void Window::startLoop()
 						case sf::Keyboard::Delete:
 							{
 								m_scale = std::max(1u, (int)m_scale - scrollSteps);
-								Block& center = getBlockUnderCursor();
+								Block& center = *m_blockUnderCursor;
 								m_view.move(-1.f *center.m_x * scrollSteps, -1.f * center.m_y * scrollSteps);
 							}
 							break;
 						case sf::Keyboard::Insert:
 							{
 								m_scale += 1 * scrollSteps;
-								Block& center = getBlockUnderCursor();
+								Block& center = *m_blockUnderCursor;
 								m_view.move(center.m_x * scrollSteps, center.m_y * scrollSteps);
 							}
 							break;
@@ -262,7 +264,7 @@ void Window::startLoop()
 				{
 					if(m_area)
 					{
-						Block& block = getBlockUnderCursor();
+						Block& block = *m_blockUnderCursor;
 						if(event.mouseButton.button == displayData::selectMouseButton)
 						{
 							
@@ -365,7 +367,7 @@ void Window::startLoop()
 				default:
 					if(m_area)
 					{
-						const Block& block = getBlockUnderCursor();
+						const Block& block = *m_blockUnderCursor;
 						m_gameOverlay.m_coordinateUI->setText(
 							std::to_string(block.m_x) + "," +
 							std::to_string(block.m_y) + "," +

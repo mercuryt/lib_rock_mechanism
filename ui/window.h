@@ -10,6 +10,7 @@
 #include "../engine/block.h"
 #include "../engine/input.h"
 #include "../engine/atomicBool.h"
+#include "displayData.h"
 #include "draw.h"
 #include "editDramaPanel.h"
 #include "editRealityPanel.h"
@@ -56,25 +57,26 @@ class Window final
 	EditStockPileView m_editStockPileView;
 	EditDramaView m_editDramaView;
 	std::unique_ptr<Simulation> m_simulation;
-	Area* m_area;
-	uint32_t m_scale;
-	uint32_t m_z;
-	std::atomic<uint16_t> m_speed;
+	Area* m_area = nullptr;
+	uint32_t m_scale = displayData::defaultScale;
+	uint32_t m_z = 0;
+	std::atomic<uint16_t> m_speed = 1;
 	std::unordered_map<AreaId, GameView> m_lastViewedSpotInArea;
 	//TODO: multi select.
 	std::unordered_set<Block*> m_selectedBlocks;
 	std::unordered_set<Actor*> m_selectedActors;
 	std::unordered_set<Item*> m_selectedItems;
 	std::unordered_set<Plant*> m_selectedPlants;
-	Faction* m_faction;
+	Faction* m_faction = nullptr;
 	// AtomicBool used instead of std::atomic<bool> for atomic toggle.
-	AtomicBool m_paused;
+	AtomicBool m_paused = true;
 	std::chrono::milliseconds m_minimumTimePerFrame;
 	std::chrono::milliseconds m_minimumTimePerStep;
 	Draw m_draw;
 	std::thread m_simulationThread;
-	sf::Vector2i m_positionWhereMouseDragBegan;
-	Block* m_firstCornerOfSelection;
+	sf::Vector2i m_positionWhereMouseDragBegan = {0,0};
+	Block* m_firstCornerOfSelection = nullptr;
+	Block* m_blockUnderCursor = nullptr;
 	static constexpr int gameMarginSize = 400;
 	
 	void povFromJson(const Json& data);

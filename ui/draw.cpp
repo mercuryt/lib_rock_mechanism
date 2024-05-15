@@ -50,11 +50,11 @@ void Draw::view()
 	for(Block& block : zLevelBlocks)
 		blockWallTops(block);
 	// Render Actors.
-	// Do multi tile actors first.
+	// Multi tile actors first.
 	//TODO: what if multitile actors overlap?
 	for(const Actor* actor : multiTileActors)
 		multiTileActor(*actor);
-	// Do single tile actors.
+	// Single tile actors.
 	auto duration = std::chrono::system_clock::now().time_since_epoch();
 	auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration).count();
 	for(const Block* block : singleTileActorBlocks)
@@ -94,7 +94,7 @@ void Draw::view()
 	// Selected.
 	if(!m_window.m_selectedBlocks.empty())
 	{
-		for(Block* block :m_window. m_selectedBlocks)
+		for(Block* block : m_window.m_selectedBlocks)
 			if(block->m_z == m_window.m_z)
 				selected(*block);
 	}
@@ -137,7 +137,8 @@ void Draw::view()
 	// Install or move item.
 	if(m_window.m_gameOverlay.m_itemBeingInstalled || m_window.m_gameOverlay.m_itemBeingMoved)
 	{
-		Block& hoverBlock = m_window.getBlockUnderCursor();
+		assert(m_window.m_blockUnderCursor);
+		Block& hoverBlock = *m_window.m_blockUnderCursor;
 		Item& item = *(m_window.m_gameOverlay.m_itemBeingInstalled ? 
 			m_window.m_gameOverlay.m_itemBeingInstalled : 
 			m_window.m_gameOverlay.m_itemBeingMoved
