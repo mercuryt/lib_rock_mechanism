@@ -14,6 +14,7 @@ public:
 	void setItemIsOnSurface(Item& item);
 	void setItemIsNotOnSurface(Item& item);
 	void onChangeAmbiantSurfaceTemperature();
+	void add(Item& item);
 	void remove(Item& item);
 	friend class Item;
 	// For testing.

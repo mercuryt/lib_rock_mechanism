@@ -5,6 +5,7 @@
 #include "../../engine/block.h"
 #include "../../engine/objectives/equipItem.h"
 #include "../../engine/objectives/unequipItem.h"
+#include "item.h"
 #include <cmath>
 #include <regex>
 void ContextMenu::drawItemControls(Block& block)
@@ -128,10 +129,20 @@ void ContextMenu::drawItemControls(Block& block)
 				static const MoveType& none = MoveType::byName("none");
 				if(!selectedBlock->m_hasShapes.shapeAndMoveTypeCanEnterEverWithAnyFacing(itemType.shape, none))
 					continue;
-				Item& item = itemType.generic ? 
-					m_window.getSimulation()->createItemGeneric(itemType, materialType, quantityOrQuality) :
-					m_window.getSimulation()->createItemNongeneric(itemType, materialType, quantityOrQuality, wear);
-				item.setLocation(*selectedBlock);
+				ItemParamaters params
+				{
+					.itemType=itemType,
+					.materialType=materialType,
+					.location=&block,
+				};
+				if(itemType.generic)
+					params.quantity = quantityOrQuality;
+				else
+				{
+					params.quality = quantityOrQuality;
+					params.percentWear = wear;
+				}
+				m_window.getSimulation()->createItem(params);
 			}
 			hide();
 		};

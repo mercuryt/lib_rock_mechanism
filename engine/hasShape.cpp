@@ -16,6 +16,8 @@ HasShape::HasShape(const Json& data, [[maybe_unused]] DeserializationMemo& deser
 	// data["location"] is not read here because we want to use subclass specific setLocation methods.
 	if(data.contains("reservable"))
 		deserializationMemo.m_reservables[data["reservable"].get<uintptr_t>()] = &m_reservable;
+	if(data.contains("faction"))
+		m_faction = &deserializationMemo.faction(data["faction"].get<std::wstring>());
 	std::string shapeName = data["shape"].get<std::string>();
 	if(Shape::hasShape(shapeName))
 		// Predefined shape.
@@ -37,6 +39,8 @@ Json HasShape::toJson() const
 		data["reservable"] = reinterpret_cast<uintptr_t>(&m_reservable);
 	if(m_location)
 		data["location"] = m_location;
+	if(m_faction)
+		data["faction"] = m_faction;
 	return data;
 }
 void HasShape::setShape(const Shape& shape)

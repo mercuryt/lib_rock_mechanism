@@ -21,11 +21,16 @@ void AreaHasItems::onChangeAmbiantSurfaceTemperature()
 		item->setTemperature(item->m_location->m_blockHasTemperature.get());
 	}
 }
+void AreaHasItems::add(Item& item)
+{
+	if(item.m_itemType.internalVolume)
+		m_area.m_hasHaulTools.registerHaulTool(item);
+}
 void AreaHasItems::remove(Item& item)
 {
 	m_onSurface.erase(&item);
 	m_area.m_hasStockPiles.removeItemFromAllFactions(item);
-	if(item.m_itemType.internalVolume != 0)
+	if(item.m_itemType.internalVolume)
 		m_area.m_hasHaulTools.unregisterHaulTool(item);
 	item.m_reservable.clearAll();
 }

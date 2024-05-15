@@ -20,7 +20,7 @@ TEST_CASE("sow")
 	static const PlantSpecies& wheatGrass = PlantSpecies::byName("wheat grass");
 	static const MaterialType& dirt = MaterialType::byName("dirt");
 	static const MaterialType& marble = MaterialType::byName("marble");
-	static const Faction faction(L"Tower of Power");
+	static Faction faction(L"Tower of Power");
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	uint16_t dayBeforeSowingStarts = wheatGrass.dayOfYearForSowStart - 1u;
 	Simulation simulation(L"", DateTime(10, dayBeforeSowingStarts, 1200).toSteps());
@@ -176,7 +176,7 @@ TEST_CASE("harvest")
 	static const PlantSpecies& wheatGrass = PlantSpecies::byName("wheat grass");
 	static const MaterialType& dirt = MaterialType::byName("dirt");
 	static const MaterialType& marble = MaterialType::byName("marble");
-	static const Faction faction(L"Tower of Power");
+	static Faction faction(L"Tower of Power");
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	uint16_t dayBeforeHarvest = wheatGrass.harvestData->dayOfYearToStart - 1u;
 	Simulation simulation(L"", DateTime(1, dayBeforeHarvest, 1200).toSteps());

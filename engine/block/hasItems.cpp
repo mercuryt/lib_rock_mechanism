@@ -44,14 +44,12 @@ Item& BlockHasItems::addGeneric(const ItemType& itemType, const MaterialType& ma
 	}
 	// Create.
 	else
-	{
-		Item& item = m_block.m_area->m_simulation.createItemGeneric(itemType, materialType, quantity);
-		m_items.push_back(&item);
-		m_block.m_hasShapes.enter(item);
-		if(m_block.m_outdoors)
-			m_block.m_area->m_hasItems.setItemIsOnSurface(item);
-		return item;
-	}
+		return m_block.m_area->m_simulation.createItem({
+			.itemType=itemType,
+			.materialType=materialType,
+			.quantity=quantity,
+			.location=&m_block
+		});
 }
 void BlockHasItems::remove(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity)
 {
