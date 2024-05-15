@@ -128,12 +128,12 @@ void Item::setTemperature(Temperature temperature)
 	//TODO
 	(void)temperature;
 }
-void Item::addQuantity(uint32_t delta)
+void Item::addQuantity(Quantity delta)
 {
 	m_quantity += delta;
 	m_reservable.setMaxReservations(m_quantity);
 }
-void Item::removeQuantity(uint32_t delta)
+void Item::removeQuantity(Quantity delta)
 {
 	if(m_quantity == delta)
 		destroy();
@@ -195,7 +195,7 @@ void Item::log() const
 	std::cout << std::endl;
 }
 // Generic.
-Item::Item(Simulation& s, ItemId i, const ItemType& it, const MaterialType& mt, uint32_t q, CraftJob* cj):
+Item::Item(Simulation& s, ItemId i, const ItemType& it, const MaterialType& mt, Quantity q, CraftJob* cj):
 	HasShape(s, it.shape, true, 0, q), m_quantity(q), m_id(i), m_itemType(it), m_materialType(mt), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this), m_canBeStockPiled(*this)
 {
 	assert(m_itemType.generic);
@@ -213,7 +213,7 @@ Item::Item(Simulation& s, ItemId i, const ItemType& it, const MaterialType& mt, 
 }
 Item::Item(const Json& data, DeserializationMemo& deserializationMemo, ItemId id) : 
 	HasShape(data, deserializationMemo),
-	m_quantity(data.contains("quantity") ? data["quantity"].get<uint32_t>() : 1u),
+	m_quantity(data.contains("quantity") ? data["quantity"].get<Quantity>() : 1u),
 	m_id(id), m_itemType(*data["itemType"].get<const ItemType*>()), m_materialType(*data["materialType"].get<const MaterialType*>()),
 	m_mass(getMass()),
 	m_quality(data["quality"].get<uint32_t>()), m_percentWear(data["percentWear"].get<Percent>()), m_installed(data["installed"].get<bool>()),
@@ -317,7 +317,7 @@ void ItemHasCargo::add(const FluidType& fluidType, Volume volume)
 	}
 	m_mass += volume *= fluidType.density;
 }
-Item& ItemHasCargo::add(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity)
+Item& ItemHasCargo::add(const ItemType& itemType, const MaterialType& materialType, Quantity quantity)
 {
 	assert(itemType.generic);
 	for(Item* item : m_items)
@@ -351,7 +351,7 @@ void ItemHasCargo::remove(HasShape& hasShape)
 	if(hasShape.isItem())
 		std::erase(m_items, &hasShape);
 }
-void ItemHasCargo::remove(Item& item, uint32_t quantity)
+void ItemHasCargo::remove(Item& item, Quantity quantity)
 {
 	assert(contains(item));
 	if(item.getQuantity() == quantity)
@@ -364,7 +364,7 @@ void ItemHasCargo::remove(Item& item, uint32_t quantity)
 		m_mass -= item.singleUnitMass() * quantity;
 	}
 }
-void ItemHasCargo::remove(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity)
+void ItemHasCargo::remove(const ItemType& itemType, const MaterialType& materialType, Quantity quantity)
 {
 	assert(containsGeneric(itemType, materialType, quantity));
 	auto copy = m_items;
@@ -381,7 +381,7 @@ void ItemHasCargo::remove(const ItemType& itemType, const MaterialType& material
 			}
 		}
 }
-void ItemHasCargo::load(HasShape& hasShape, uint32_t quantity)
+void ItemHasCargo::load(HasShape& hasShape, Quantity quantity)
 {
 	if(hasShape.isGeneric())
 	{
@@ -402,7 +402,7 @@ void ItemHasCargo::unloadTo(HasShape& hasShape, Block& location)
 	remove(hasShape);
 	hasShape.setLocation(location);
 }
-Item& ItemHasCargo::unloadGenericTo(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity, Block& location)
+Item& ItemHasCargo::unloadGenericTo(const ItemType& itemType, const MaterialType& materialType, Quantity quantity, Block& location)
 {
 	remove(itemType, materialType, quantity);
 	return location.m_hasItems.addGeneric(itemType, materialType, quantity);
@@ -417,7 +417,7 @@ std::vector<Actor*> ItemHasCargo::getActors()
 }
 bool ItemHasCargo::canAdd(HasShape& hasShape) const { return m_volume + hasShape.getVolume() <= m_item.m_itemType.internalVolume; }
 bool ItemHasCargo::canAdd(FluidType& fluidType) const { return m_fluidType == nullptr || m_fluidType == &fluidType; }
-bool ItemHasCargo::containsGeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity) const
+bool ItemHasCargo::containsGeneric(const ItemType& itemType, const MaterialType& materialType, Quantity quantity) const
 {
 	assert(itemType.generic);
 	for(Item* item : m_items)

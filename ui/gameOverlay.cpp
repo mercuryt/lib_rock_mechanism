@@ -48,11 +48,22 @@ void GameOverlay::drawMenu()
 	m_window.setPaused(true); 
 	m_menu->setVisible(true);
 }
-void GameOverlay::installItem(Block& block)
+void GameOverlay::assignLocationToInstallItem(Block& block)
 {
 	assert(m_itemBeingInstalled);
 	m_window.getArea()->m_hasInstallItemDesignations.at(*m_window.getFaction()).add(block, *m_itemBeingInstalled, m_facing, *m_window.getFaction());
 	m_itemBeingInstalled = nullptr;
+}
+void GameOverlay::assignLocationToMoveItemTo(Block& block)
+{
+	assert(m_itemBeingMoved);
+	assert(!m_window.getSelectedActors().empty());
+	m_window.getArea()->m_hasTargetedHauling.begin(
+		{ m_window.getSelectedActors().begin(), m_window.getSelectedActors().end() }, 
+		*m_itemBeingMoved, 
+		block
+	);
+	m_itemBeingMoved = nullptr;
 }
 void GameOverlay::unfocusUI()
 {

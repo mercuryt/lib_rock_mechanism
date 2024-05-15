@@ -95,6 +95,7 @@ public:
 	void centerView(const Block& block);
 	void setFrameRate(uint32_t);
 	void setItemToInstall(Item& item) { m_gameOverlay.m_itemBeingInstalled = &item; }
+	void setItemToMove(Item& item) { m_gameOverlay.m_itemBeingMoved = &item; }
 	void close() { m_window.close(); }
 	[[nodiscard]] tgui::Gui& getGui() { return m_gui; }
 	[[nodiscard]] sf::RenderWindow& getRenderWindow() { return m_window; }
