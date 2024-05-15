@@ -1,6 +1,7 @@
 #include "craft.h"
 #include "area.h"
 #include "deserializationMemo.h"
+#include "item.h"
 #include "materialType.h"
 #include "types.h"
 #include "util.h"
@@ -391,12 +392,16 @@ void HasCraftingLocationsAndJobsForFaction::stepComplete(CraftJob& craftJob, Act
 	{
 		if(craftJob.workPiece == nullptr)
 		{
-			// ItemType, MaterialType, quality, wear, craftJob.
-			Item& item = location->m_area->m_simulation.createItemNongeneric(craftJob.craftJobType.productType, *craftJob.materialType, 0, 0, &craftJob);
+			ItemParamaters params{
+				.itemType=craftJob.craftJobType.productType,
+				.materialType=*craftJob.materialType,
+				.quality=0,
+				.percentWear=0,
+				.craftJob=&craftJob,
+				.location = location
+			};
+			craftJob.workPiece = &location->m_area->m_simulation.createItem(params);
 			//TODO: Should the item be reserved?
-			// add might destroy an item if it is generic but we know this one isn't.
-			location->m_hasItems.add(item);
-			craftJob.workPiece = &item;
 		}
 		indexUnassigned(craftJob);
 	}
@@ -446,9 +451,14 @@ void HasCraftingLocationsAndJobsForFaction::jobComplete(CraftJob& craftJob, Bloc
 		}
 		else
 		{
-			Simulation& simulation = location.m_area->m_simulation;
-			product = &simulation.createItemNongeneric(craftJob.craftJobType.productType, *craftJob.materialType, craftJob.getQuality(), 0);
-			product->setLocation(location);
+			ItemParamaters params{
+				.itemType=craftJob.craftJobType.productType,
+				.materialType=*craftJob.materialType,
+				.quality=craftJob.getQuality(),
+				.percentWear=0,
+				.location=&location
+			};
+			location.m_area->m_simulation.createItem(params);
 		}
 	}
 	if(!location.m_area->m_hasStockPiles.contains(m_faction))

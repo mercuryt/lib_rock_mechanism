@@ -6,6 +6,7 @@
 #include "definitions.h"
 #include "deserializationMemo.h"
 #include "haul.h"
+#include "item.h"
 #include "threadedTask.h"
 #include "util.h"
 #include "drama/engine.h"
@@ -122,6 +123,16 @@ Actor& Simulation::createActor(ActorParamaters params)
 Actor& Simulation::createActor(const AnimalSpecies& species, Block& location, Percent percentGrown)
 {
 	return createActor(ActorParamaters{.species = species, .percentGrown = percentGrown, .location = &location});
+}
+Item& Simulation::createItem(ItemParamaters params)
+{
+	params.simulation = this;
+	auto [iter, emplaced] = m_items.emplace(
+		params.getId(),
+		params
+	);
+	assert(emplaced);
+	return iter->second;
 }
 // Nongeneric
 // No name or id.

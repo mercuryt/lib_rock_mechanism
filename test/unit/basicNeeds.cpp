@@ -8,7 +8,7 @@
 TEST_CASE("basicNeedsSentient")
 {
 	static const MaterialType& dirt = MaterialType::byName("dirt");
-	static const Faction faction(L"Tower of Power");
+	static Faction faction(L"Tower of Power");
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	static const FluidType& water = FluidType::byName("water");
 	Simulation simulation;

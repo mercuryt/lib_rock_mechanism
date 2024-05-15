@@ -128,7 +128,7 @@ void ContextMenu::drawActorControls(Block& block)
 					.species = *widgetUtil::lastSelectedAnimalSpecies,
 					.name = nameUI->getText().toWideString(),
 					.location = &block,
-					.faction = widgetUtil::lastSelectedFaction
+					.faction = const_cast<Faction*>(widgetUtil::lastSelectedFaction)
 				});
 				actor.m_hasObjectives.getNext();
 				hide();

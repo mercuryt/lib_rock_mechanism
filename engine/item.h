@@ -74,6 +74,21 @@ inline std::vector<ItemType> itemTypeDataStore;
 inline void to_json(Json& data, const ItemType* const& itemType){ data = itemType->name; }
 inline void to_json(Json& data, const ItemType& itemType){ data = itemType.name; }
 inline void from_json(const Json& data, const ItemType*& itemType){ itemType = &ItemType::byName(data.get<std::string>()); }
+struct ItemParamaters final
+{
+	Simulation* simulation = nullptr;
+	ItemId id = 0;
+	const ItemType& itemType;
+	const MaterialType& materialType;
+	Quantity quantity = 1;
+	uint32_t quality = 0;
+	Percent percentWear = 0;
+	CraftJob* craftJob = nullptr;
+	Block* location = nullptr;
+	Faction* faction = nullptr;
+	bool installed = false;
+	ItemId getId();
+};
 class ItemHasCargo final
 {
 	Item& m_item;
@@ -159,6 +174,7 @@ public:
 	ItemHasCargo m_hasCargo; //TODO: Change to reference to save some RAM?
 	ItemCanBeStockPiled m_canBeStockPiled;
 	//TODO: ItemHasOwners
+	Item(ItemParamaters itemParamaters);
 	// Generic.
 	Item(Simulation& s, ItemId i, const ItemType& it, const MaterialType& mt, Quantity q, CraftJob* cj);
 	// NonGeneric.

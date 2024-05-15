@@ -229,13 +229,14 @@ void ActorParamaters::generateEquipment(Actor& actor)
 	}
 }
 Actor::Actor(Simulation& simulation, ActorId id, const std::wstring& name, const AnimalSpecies& species, Step birthStep, Percent percentGrown, Faction* faction, Attributes attributes) :
-	HasShape(simulation, species.shapeForPercentGrown(percentGrown), false), m_faction(faction), m_birthStep(birthStep), m_causeOfDeath(CauseOfDeath::none), m_id(id), m_name(name), m_species(species), m_body(*this), m_project(nullptr), m_canSee(*this, species.visionRange), m_attributes(attributes), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canPickup(*this), m_equipmentSet(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_canReserve(faction), m_stamina(*this), m_hasUniform(*this)
+	HasShape(simulation, species.shapeForPercentGrown(percentGrown), false, 0, 1, faction), m_birthStep(birthStep), m_causeOfDeath(CauseOfDeath::none), m_id(id), m_name(name), m_species(species), m_body(*this), m_project(nullptr), m_canSee(*this, species.visionRange), m_attributes(attributes), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canPickup(*this), m_equipmentSet(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_canReserve(faction), m_stamina(*this), m_hasUniform(*this)
 {
 	// TODO: Having this line here requires making the existance of objectives mandatory at all times. Good idea?
 	//m_hasObjectives.getNext();
 }
-Actor::Actor(ActorParamaters params) : HasShape(*params.simulation, params.species.shapeForPercentGrown(params.getPercentGrown()), false),
-	m_faction(params.faction), m_birthStep(params.getBirthStep()), m_causeOfDeath(CauseOfDeath::none), m_id(params.getId()), m_name(params.getName()),
+Actor::Actor(ActorParamaters params) : 
+	HasShape(*params.simulation, params.species.shapeForPercentGrown(params.getPercentGrown()), false, 0, 1, params.faction),
+	m_birthStep(params.getBirthStep()), m_causeOfDeath(CauseOfDeath::none), m_id(params.getId()), m_name(params.getName()),
 	m_species(params.species), m_body(*this), m_project(nullptr), m_canSee(*this, params.species.visionRange), 
 	m_attributes(m_species, params.getPercentGrown()), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), 
 	m_canPickup(*this), m_equipmentSet(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, params.getPercentGrown()), 
@@ -251,7 +252,6 @@ Actor::Actor(ActorParamaters params) : HasShape(*params.simulation, params.speci
 	}
 Actor::Actor(const Json& data, DeserializationMemo& deserializationMemo) :
 	HasShape(data, deserializationMemo),
-	m_faction(data.contains("faction") ? &deserializationMemo.m_simulation.m_hasFactions.byName(data["faction"].get<std::wstring>()) : nullptr), 
 	m_birthStep(data["birthStep"]), 
 	m_causeOfDeath(data.contains("causeOfDeath") ? data["causeOfDeath"].get<CauseOfDeath>() : CauseOfDeath::none), 
 	m_id(data["id"].get<ActorId>()),
@@ -395,7 +395,7 @@ void Actor::takeHit(Hit& hit, BodyPart& bodyPart)
 	if(hit.depth != 0)
 		m_body.addWound(bodyPart, hit);
 }
-void Actor::setFaction(const Faction* faction) 
+void Actor::setFaction(Faction* faction) 
 { 
 	m_faction = faction; 
 	m_canReserve.setFaction(faction); 

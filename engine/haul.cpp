@@ -125,7 +125,11 @@ void CanPickup::pickUp(Item& item, Quantity quantity)
 	else
 	{
 		item.removeQuantity(quantity);
-		Item& newItem = m_actor.getSimulation().createItemGeneric(item.m_itemType, item.m_materialType, quantity);
+		Item& newItem = m_actor.getSimulation().createItem({
+			.itemType=item.m_itemType, 
+			.materialType=item.m_materialType, 
+			.quantity=quantity
+		});
 		m_carrying = &newItem;
 	}
 	m_actor.m_canMove.updateIndividualSpeed();
@@ -197,7 +201,11 @@ void CanPickup::removeFluidVolume(CollisionVolume volume)
 void CanPickup::add(const ItemType& itemType, const MaterialType& materialType, Quantity quantity)
 {
 	if(m_carrying == nullptr)
-		m_carrying = &m_actor.getSimulation().createItemGeneric(itemType, materialType, quantity);
+		m_carrying = &m_actor.getSimulation().createItem({
+			.itemType=itemType, 
+			.materialType=materialType, 
+			.quantity=quantity
+		});
 	else
 	{
 		assert(m_carrying->isItem());	

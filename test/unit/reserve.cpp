@@ -29,8 +29,8 @@ struct TestReservationDishonorCallback2 final : public DishonorCallback
 };
 TEST_CASE("reservations")
 {
-	const Faction faction1(L"test faction1");
-	const Faction faction2(L"test faction2");
+	Faction faction1(L"test faction1");
+	Faction faction2(L"test faction2");
 	SUBCASE("basic")
 	{
 		Reservable reservable(1);

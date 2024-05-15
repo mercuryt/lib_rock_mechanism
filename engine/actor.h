@@ -38,15 +38,15 @@ enum class CauseOfDeath { none, thirst, hunger, bloodLoss, wound, temperature };
 
 struct ActorParamaters
 {
-	const AnimalSpecies& species;
 	Simulation* simulation = nullptr;
 	ActorId id = 0;
+	const AnimalSpecies& species;
 	std::wstring name = L"";
 	DateTime birthDate = {0,0,0};
 	Step birthStep = 0;
 	Percent percentGrown = nullPercent;
 	Block* location = nullptr;
-	const Faction* faction = nullptr;
+	Faction* faction = nullptr;
 	Percent percentHunger = nullPercent;
 	bool needsEat = false;
 	Percent percentTired = nullPercent;
@@ -72,7 +72,6 @@ struct ActorParamaters
 
 class Actor final : public HasShape
 {	
-	const Faction* m_faction;
 	Step m_birthStep;
 	CauseOfDeath m_causeOfDeath;
 public:
@@ -112,7 +111,7 @@ public:
 	void wait(Step duration);
 	void takeHit(Hit& hit, BodyPart& bodyPart);
 	// May be null.
-	void setFaction(const Faction* faction);
+	void setFaction(Faction* faction);
 	void reserveAllBlocksAtLocationAndFacing(const Block& location, Facing facing);
 	void unreserveAllBlocksAtLocationAndFacing(const Block& location, Facing facing);
 	void setBirthStep(Step step);
@@ -132,8 +131,6 @@ public:
 	[[nodiscard]] Volume getVolume() const;
 	[[nodiscard]] const MoveType& getMoveType() const { return m_canMove.getMoveType(); }
 	[[nodiscard]] Mass singleUnitMass() const { return getMass(); }
-	// May return nullptr.
-	[[nodiscard]] const Faction* getFaction() const { return m_faction; }
 	[[nodiscard]] Quantity getAgeInYears() const;
 	[[nodiscard]] Step getAge() const;
 	[[nodiscard]] Step getBirthStep() const { return m_birthStep; }

@@ -74,6 +74,7 @@ public:
 	Area& loadArea(AreaId id, std::wstring name, uint32_t x, uint32_t y, uint32_t z);
 	Actor& createActor(ActorParamaters params);
 	Actor& createActor(const AnimalSpecies& species, Block& location, Percent percentGrown = 100);
+	Item& createItem(ItemParamaters itemParamaters);
 	// Non generic, no id
 	Item& createItemNongeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quality, Percent percentWear, CraftJob* cj = nullptr);
 	// Generic, no id.

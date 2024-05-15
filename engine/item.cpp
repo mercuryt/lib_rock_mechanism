@@ -98,7 +98,28 @@ void ItemCanBeStockPiled::scheduleReset(const Faction& faction, Step duration, S
 	HasScheduledEvent<ReMarkItemForStockPilingEvent>& eventHandle = iter->second;
 	eventHandle.schedule(m_item, faction, duration, start);
 }
+ItemId ItemParamaters::getId()
+{
+	if(!id)
+		id = simulation->m_nextItemId++;
+	return id;
+}
 // Item
+Item::Item(ItemParamaters itemParamaters) : HasShape(*itemParamaters.simulation, itemParamaters.itemType.shape, true, 0, itemParamaters.quantity, itemParamaters.faction), m_quantity(itemParamaters.quantity), m_id(itemParamaters.getId()), m_itemType(itemParamaters.itemType), m_materialType(itemParamaters.materialType), m_quality(itemParamaters.quality), m_percentWear(itemParamaters.percentWear), m_installed(itemParamaters.installed), m_craftJobForWorkPiece(itemParamaters.craftJob), m_hasCargo(*this), m_canBeStockPiled(*this)
+{
+	if(m_itemType.generic)
+	{
+		assert(!m_quality);
+		assert(!m_percentWear);
+	}
+	else
+		assert(m_quantity == 1);
+	if(itemParamaters.location)
+	{
+		setLocation(*itemParamaters.location);
+		m_location->m_area->m_hasItems.add(*this);
+	}
+}
 void Item::setVolume() { m_volume = m_quantity * m_itemType.volume; }
 void Item::setMass()
 { 
@@ -220,7 +241,10 @@ Item::Item(const Json& data, DeserializationMemo& deserializationMemo, ItemId id
 	m_craftJobForWorkPiece(nullptr), m_hasCargo(*this), m_canBeStockPiled(data["canBeStockPiled"], deserializationMemo, *this) 
 	{
 		if(data.contains("location"))
+		{
 			setLocation(deserializationMemo.blockReference(data["location"]));
+			m_location->m_area->m_hasItems.add(*this);
+		}
 	}
 void Item::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
