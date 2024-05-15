@@ -18,6 +18,7 @@ public:
 	tgui::Label::Ptr m_speedUI;
 	tgui::Label::Ptr m_weatherUI;
 	Item* m_itemBeingInstalled;
+	// TODO: Change to shape being moved for targeted hauling of downed actors.
 	Item* m_itemBeingMoved;
 	Facing m_facing;
 	GameOverlay(Window& w);

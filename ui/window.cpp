@@ -347,14 +347,17 @@ void Window::startLoop()
 						{
 							// Display context menu.
 							//TODO: Left click and drag shortcut for select and open context.
-							if(m_gameOverlay.m_itemBeingInstalled)
+							if(
+									m_gameOverlay.m_itemBeingInstalled &&
+									block.m_hasShapes.canEnterEverWithFacing(*m_gameOverlay.m_itemBeingInstalled, m_gameOverlay.m_facing)
+							)
 								m_gameOverlay.assignLocationToInstallItem(block);
-							if(m_gameOverlay.m_itemBeingMoved)
+							else if(m_gameOverlay.m_itemBeingMoved)
 							{
-								if(!getSelectedActors().empty())
-									m_gameOverlay.assignLocationToMoveItemTo(block);
-								else
+								if(getSelectedActors().empty())
 									m_gameOverlay.m_itemBeingMoved = nullptr;
+								else if(block.m_hasShapes.canEnterEverWithFacing(*m_gameOverlay.m_itemBeingMoved, m_gameOverlay.m_facing))
+									m_gameOverlay.assignLocationToMoveItemTo(block);
 							}
 							else
 								m_gameOverlay.drawContextMenu(block);
