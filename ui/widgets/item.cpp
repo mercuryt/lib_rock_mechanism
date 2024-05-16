@@ -1,13 +1,16 @@
 #include "../widgets.h"
 #include "../engine/item.h"
 #include "../engine/materialType.h"
+#include "../displayData.h"
 
-std::array<tgui::Widget::Ptr, 7> widgetUtil::makeCreateItemUI(std::function<void(const ItemType&, const MaterialType&, uint32_t, uint32_t)> callback)
+std::array<tgui::Widget::Ptr, 7> widgetUtil::makeCreateItemUI(std::function<void(ItemParamaters)> callback)
 {
 	static uint32_t quantityOrQuality = 0; 
 	static uint32_t wear = 0;
 	tgui::ComboBox::Ptr itemTypeUI = tgui::ComboBox::create();
+	itemTypeUI->setItemsToDisplay(displayData::maximumNumberOfItemsToDisplayInComboBox);
 	tgui::ComboBox::Ptr materialTypeUI = tgui::ComboBox::create();
+	materialTypeUI->setItemsToDisplay(displayData::maximumNumberOfItemsToDisplayInComboBox);
 	tgui::Label::Ptr quantityOrQualityLabel = tgui::Label::create();
 	tgui::SpinControl::Ptr quantityOrQualityUI = tgui::SpinControl::create();
 	quantityOrQualityUI->setMinimum(0);
@@ -67,9 +70,18 @@ std::array<tgui::Widget::Ptr, 7> widgetUtil::makeCreateItemUI(std::function<void
 	else
 		itemTypeUI->setSelectedItemByIndex(0);
 	confirmUI->onClick([quantityOrQualityUI, wearUI, callback]{
-		const ItemType& itemType = *lastSelectedItemType;
-		const MaterialType& materialType = *lastSelectedMaterial;
-		callback(itemType, materialType, quantityOrQualityUI->getValue(), wearUI->getValue());
+		ItemParamaters params{
+			.itemType=*lastSelectedItemType,
+			.materialType=*lastSelectedMaterial
+		};
+		if(params.itemType.generic)
+			params.quantity=quantityOrQualityUI->getValue();
+		else
+		{
+			params.quality=quantityOrQualityUI->getValue();
+			params.percentWear=wearUI->getValue();
+		}
+		callback(params);
 	});
 	return {itemTypeUI, materialTypeUI, quantityOrQualityLabel, quantityOrQualityUI, wearLabel, wearUI, confirmUI};
 }

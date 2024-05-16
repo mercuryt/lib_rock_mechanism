@@ -74,6 +74,12 @@ void MustDrink::onDeath()
 {
 	m_thirstEvent.maybeUnschedule();
 }
+Percent MustDrink::getPercentDeadFromThirst() const
+{
+	if(!m_thirstEvent.exists())
+		return 0;
+	return m_thirstEvent.percentComplete();
+}
 uint32_t MustDrink::drinkVolumeFor(Actor& actor) { return std::max(1u, actor.getMass() / Config::unitsBodyMassPerUnitFluidConsumed); }
 // Drink Event.
 DrinkEvent::DrinkEvent(const Step delay, DrinkObjective& drob, const Step start) : ScheduledEvent(drob.m_actor.getSimulation(), delay, start), m_drinkObjective(drob), m_item(nullptr) {}

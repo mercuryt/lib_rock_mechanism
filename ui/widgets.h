@@ -16,6 +16,7 @@ struct MaterialTypeCategory;
 struct CraftStepTypeCategory;
 struct CraftJobType;
 struct DateTime;
+struct ItemParamaters;
 struct DateTimeUI final
 {
 	tgui::SpinControl::Ptr m_hours;
@@ -42,7 +43,6 @@ public:
 	Area& get() const;
 	bool hasSelection() const;
 };
-
 namespace widgetUtil
 {
 	inline const PlantSpecies* lastSelectedPlantSpecies = nullptr;
@@ -68,7 +68,7 @@ namespace widgetUtil
 	std::pair<tgui::ComboBox::Ptr, tgui::ComboBox::Ptr> makeCraftJobTypeAndMaterialTypeUI();
 	std::tuple<tgui::ComboBox::Ptr, tgui::ComboBox::Ptr, tgui::ComboBox::Ptr> makeItemTypeAndMaterialTypeOrMaterialTypeCategoryUI();
 	// In file widgets/item.cpp
-	std::array<tgui::Widget::Ptr, 7> makeCreateItemUI(std::function<void(const ItemType&, const MaterialType&, uint32_t, uint32_t)> callback);
+	std::array<tgui::Widget::Ptr, 7> makeCreateItemUI(std::function<void(ItemParamaters)> callback);
 
 	void setPadding(tgui::Widget::Ptr wigdet);
 }

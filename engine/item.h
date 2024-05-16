@@ -113,18 +113,19 @@ public:
 	void load(HasShape& hasShape, Quantity quantity = 0);
 	void unloadTo(HasShape& hasShape, Block& location);
 	Item& unloadGenericTo(const ItemType& itemType, const MaterialType& materialType, Quantity quantity, Block& location);
-	std::vector<HasShape*>& getContents() { return m_shapes; }
-	std::vector<Item*>& getItems() { return m_items; }
-	std::vector<Actor*> getActors();
-	const std::vector<Item*>& getItems() const { return m_items; }
-	bool canAdd(HasShape& hasShape) const;
-	bool canAdd(FluidType& fluidType) const;
-	const Volume& getFluidVolume() const { return m_fluidVolume; }
-	const FluidType& getFluidType() const { assert(m_fluidType); return *m_fluidType; }
-	bool containsAnyFluid() const { return m_fluidType != nullptr; }
-	bool contains(HasShape& hasShape) const { return std::ranges::find(m_shapes, &hasShape) != m_shapes.end(); }
-	bool containsGeneric(const ItemType& itemType, const MaterialType& materialType, Quantity quantity) const;
-	bool empty() const { return m_fluidType == nullptr && m_shapes.empty(); }
+	void destroyCargo(Item& item);
+	[[nodiscard]] std::vector<HasShape*>& getContents() { return m_shapes; }
+	[[nodiscard]] std::vector<Item*>& getItems() { return m_items; }
+	[[nodiscard]] std::vector<Actor*> getActors();
+	[[nodiscard]] const std::vector<Item*>& getItems() const { return m_items; }
+	[[nodiscard]] bool canAdd(HasShape& hasShape) const;
+	[[nodiscard]] bool canAdd(FluidType& fluidType) const;
+	[[nodiscard]] const Volume& getFluidVolume() const { return m_fluidVolume; }
+	[[nodiscard]] const FluidType& getFluidType() const { assert(m_fluidType); return *m_fluidType; }
+	[[nodiscard]] bool containsAnyFluid() const { return m_fluidType != nullptr; }
+	[[nodiscard]] bool contains(HasShape& hasShape) const { return std::ranges::find(m_shapes, &hasShape) != m_shapes.end(); }
+	[[nodiscard]] bool containsGeneric(const ItemType& itemType, const MaterialType& materialType, Quantity quantity) const;
+	[[nodiscard]] bool empty() const { return m_fluidType == nullptr && m_shapes.empty(); }
 };
 class ReMarkItemForStockPilingEvent final : public ScheduledEvent
 {

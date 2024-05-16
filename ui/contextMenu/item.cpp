@@ -91,6 +91,36 @@ void ContextMenu::drawItemControls(Block& block)
 						});
 					}
 				}
+				if(item->m_itemType.internalVolume)
+				{
+					auto addCargo = tgui::Label::create("add cargo");
+					addCargo->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
+					submenu.add(addCargo);
+					std::function<void(ItemParamaters params)> callback = [this, &item](ItemParamaters params){
+						std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
+						Item& newItem = m_window.getSimulation()->createItem(params);
+						item->m_hasCargo.add(newItem);
+						hide();
+					};
+					auto [itemTypeUI, materialTypeUI, quantityOrQualityLabel, quantityOrQualityUI, wearLabel, wearUI, confirmUI] = widgetUtil::makeCreateItemUI(callback);
+					auto itemTypeLabel = tgui::Label::create("item type");
+					itemTypeLabel->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
+					submenu.add(itemTypeLabel);
+					submenu.add(itemTypeUI);
+					auto materialTypeLabel = tgui::Label::create("material type");
+					materialTypeLabel->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
+					submenu.add(materialTypeLabel);
+					submenu.add(materialTypeUI);
+
+					quantityOrQualityLabel->cast<tgui::Label>()->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
+					submenu.add(quantityOrQualityLabel);
+					submenu.add(quantityOrQualityUI);
+					wearLabel->cast<tgui::Label>()->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
+					submenu.add(wearLabel);
+					submenu.add(wearUI);
+					submenu.add(confirmUI);
+
+				}
 			});
 		}
 	auto& actors = m_window.getSelectedActors();
@@ -119,29 +149,16 @@ void ContextMenu::drawItemControls(Block& block)
 	}
 	if(m_window.m_editMode)
 	{
-		std::function<void(const ItemType&, const MaterialType&, uint32_t, uint32_t)> 
-		callback = [this, &block](const ItemType& itemType, const MaterialType& materialType, uint32_t quantityOrQuality, uint32_t wear){
+		std::function<void(ItemParamaters params)> callback = [this, &block](ItemParamaters params){
 			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 			if(m_window.getSelectedBlocks().empty())
 				m_window.selectBlock(block);
 			for(Block* selectedBlock : m_window.getSelectedBlocks())
 			{
 				static const MoveType& none = MoveType::byName("none");
-				if(!selectedBlock->m_hasShapes.shapeAndMoveTypeCanEnterEverWithAnyFacing(itemType.shape, none))
+				if(!selectedBlock->m_hasShapes.shapeAndMoveTypeCanEnterEverWithAnyFacing(params.itemType.shape, none))
 					continue;
-				ItemParamaters params
-				{
-					.itemType=itemType,
-					.materialType=materialType,
-					.location=&block,
-				};
-				if(itemType.generic)
-					params.quantity = quantityOrQuality;
-				else
-				{
-					params.quality = quantityOrQuality;
-					params.percentWear = wear;
-				}
+				params.location = selectedBlock;
 				m_window.getSimulation()->createItem(params);
 			}
 			hide();
