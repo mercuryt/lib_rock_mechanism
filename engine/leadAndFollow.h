@@ -25,6 +25,7 @@ public:
 	void follow(CanLead& canLead, bool doAdjacentCheck = true);
 	void unfollow();
 	void unfollowIfFollowing();
+	void maybeDisband();
 	void disband();
 	void tryToMove();
 	[[nodiscard]] HasShape& getLineLeader();

@@ -3,6 +3,7 @@
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation.h"
+#include "../../engine/simulation/hasItems.h"
 #include "../../engine/construct.h"
 #include "../../engine/cuboid.h"
 #include "../../engine/objectives/goTo.h"
@@ -22,13 +23,13 @@ TEST_CASE("construct")
 	Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(1, 1, 2));
 	dwarf1.setFaction(&faction);
 	area.m_hasConstructionDesignations.addFaction(faction);
-	Item& boards = simulation.createItemGeneric(ItemType::byName("board"), wood, 50u);
+	Item& boards = simulation.m_hasItems->createItemGeneric(ItemType::byName("board"), wood, 50u);
 	boards.setLocation(area.getBlock(8, 7, 2));
-	Item& pegs = simulation.createItemGeneric(ItemType::byName("peg"), wood, 50u);
+	Item& pegs = simulation.m_hasItems->createItemGeneric(ItemType::byName("peg"), wood, 50u);
 	pegs.setLocation(area.getBlock(3, 8, 2));
-	Item& saw = simulation.createItemNongeneric(ItemType::byName("saw"), MaterialType::byName("bronze"), 25u, 0);
+	Item& saw = simulation.m_hasItems->createItemNongeneric(ItemType::byName("saw"), MaterialType::byName("bronze"), 25u, 0);
 	saw.setLocation(area.getBlock(5, 7, 2));
-	Item& mallet = simulation.createItemNongeneric(ItemType::byName("mallet"), wood, 25u, 0);
+	Item& mallet = simulation.m_hasItems->createItemNongeneric(ItemType::byName("mallet"), wood, 25u, 0);
 	mallet.setLocation(area.getBlock(9, 5, 2));
 	SUBCASE("make wall")
 	{
@@ -297,7 +298,7 @@ TEST_CASE("construct")
 	{
 		const ItemType& pile = ItemType::byName("pile");
 		const MaterialType& dirt = MaterialType::byName("dirt");
-		Item& dirtPile = simulation.createItemGeneric(pile, dirt, 150u);
+		Item& dirtPile = simulation.m_hasItems->createItemGeneric(pile, dirt, 150u);
 		dirtPile.setLocation(area.getBlock(9, 9, 2));
 		Block& wallLocation = area.getBlock(3, 3, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, dirt);
@@ -345,11 +346,11 @@ TEST_CASE("construct")
 		Block& pileLocation1 = area.getBlock(9, 9, 2);
 		Block& pileLocation2 = area.getBlock(9, 8, 2);
 		Block& pileLocation3 = area.getBlock(9, 7, 2);
-		Item& dirtPile1 = simulation.createItemGeneric(pile, dirt, 50u);
+		Item& dirtPile1 = simulation.m_hasItems->createItemGeneric(pile, dirt, 50u);
 		dirtPile1.setLocation(pileLocation1);
-		Item& dirtPile2 = simulation.createItemGeneric(pile, dirt, 50u);
+		Item& dirtPile2 = simulation.m_hasItems->createItemGeneric(pile, dirt, 50u);
 		dirtPile2.setLocation(pileLocation2);
-		Item& dirtPile3 = simulation.createItemGeneric(pile, dirt, 50u);
+		Item& dirtPile3 = simulation.m_hasItems->createItemGeneric(pile, dirt, 50u);
 		dirtPile3.setLocation(pileLocation3);
 		Block& wallLocation = area.getBlock(9, 0, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, dirt);
@@ -396,7 +397,7 @@ TEST_CASE("construct")
 	{
 		const ItemType& pile = ItemType::byName("pile");
 		const MaterialType& dirt = MaterialType::byName("dirt");
-		Item& dirtPile = simulation.createItemGeneric(pile, dirt, 140u);
+		Item& dirtPile = simulation.m_hasItems->createItemGeneric(pile, dirt, 140u);
 		dirtPile.setLocation(area.getBlock(9, 9, 2));
 		Block& wallLocation = area.getBlock(3, 3, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, dirt);
@@ -429,7 +430,7 @@ TEST_CASE("construct")
 		Cuboid pileLocation(area.getBlock(9, 9, 2), area.getBlock(0, 9, 2));
 		for(Block& block : pileLocation)
 		{
-			Item& dirtPile = simulation.createItemGeneric(pile, dirt, 15);
+			Item& dirtPile = simulation.m_hasItems->createItemGeneric(pile, dirt, 15);
 			dirtPile.setLocation(block);
 		}
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, dirt);

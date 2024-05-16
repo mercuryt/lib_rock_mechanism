@@ -19,29 +19,29 @@ void OpacityFacade::update(const Block& block)
 	BlockIndex index = m_area.getBlockIndex(block);
 	assert(index < m_fullOpacity.size());
 	assert(m_floorOpacity.size() == m_fullOpacity.size());
-	m_fullOpacity.at(index) = !block.canSeeThrough();
-	m_floorOpacity.at(index) = !block.canSeeThroughFloor();
+	m_fullOpacity[index] = !block.canSeeThrough();
+	m_floorOpacity[index] = !block.canSeeThroughFloor();
 }
 void OpacityFacade::validate() const
 {
 	for(const Block& block : m_area.getBlocks())
 	{
-		assert(block.canSeeThrough() != m_fullOpacity.at(m_area.getBlockIndex(block)));
-		assert(block.canSeeThroughFloor() != m_floorOpacity.at(m_area.getBlockIndex(block)));
+		assert(block.canSeeThrough() != m_fullOpacity[m_area.getBlockIndex(block)]);
+		assert(block.canSeeThroughFloor() != m_floorOpacity[m_area.getBlockIndex(block)]);
 	}
 }
 bool OpacityFacade::isOpaque(BlockIndex index) const
 {
 	assert(index < m_fullOpacity.size());
-	assert(m_fullOpacity.at(index) != m_area.getBlocks().at(index).canSeeThrough());
-	return m_fullOpacity.at(index);
+	assert(m_fullOpacity[index] != m_area.getBlocks().at(index).canSeeThrough());
+	return m_fullOpacity[index];
 }
 bool OpacityFacade::floorIsOpaque(BlockIndex index) const
 {
 	assert(index < m_fullOpacity.size());
 	assert(m_floorOpacity.size() == m_fullOpacity.size());
-	assert(m_floorOpacity.at(index) != m_area.getBlocks().at(index).canSeeThroughFloor());
-	return m_floorOpacity.at(index);
+	assert(m_floorOpacity[index] != m_area.getBlocks().at(index).canSeeThroughFloor());
+	return m_floorOpacity[index];
 }
 bool  OpacityFacade::hasLineOfSight(const Block& from, const Block& to) const
 {

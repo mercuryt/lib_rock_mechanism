@@ -1,5 +1,6 @@
 #include "../../lib/doctest.h"
 #include "../../engine/simulation.h"
+#include "../../engine/simulation/hasItems.h"
 #include "../../engine/animalSpecies.h"
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
@@ -30,7 +31,7 @@ TEST_CASE("sow")
 	pondLocation.setNotSolid();
 	pondLocation.m_hasFluids.addFluid(Config::maxBlockVolume, FluidType::byName("water"));
 	Block& foodLocation = area.getBlock(8,9,2);
-	Item& food = simulation.createItemGeneric(ItemType::byName("apple"), MaterialType::byName("plant matter"), 50);
+	Item& food = simulation.m_hasItems->createItemGeneric(ItemType::byName("apple"), MaterialType::byName("plant matter"), 50);
 	food.setLocation(foodLocation);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	area.m_hasFarmFields.registerFaction(faction);
@@ -325,7 +326,7 @@ TEST_CASE("harvest")
 		Plant& plant = block.m_hasPlant.get();
 		REQUIRE(!area.m_hasFarmFields.hasGivePlantsFluidDesignations(faction));
 		REQUIRE(plant.m_growthEvent.exists());
-		Item& bucket = simulation.createItemNongeneric(ItemType::byName("bucket"), MaterialType::byName("poplar wood"), 50u, 0);
+		Item& bucket = simulation.m_hasItems->createItemNongeneric(ItemType::byName("bucket"), MaterialType::byName("poplar wood"), 50u, 0);
 		Block& bucketLocation = area.getBlock(7, 7, 2);
 		bucket.setLocation(bucketLocation);
 		Block& pondLocation = area.getBlock(3, 9, 1);

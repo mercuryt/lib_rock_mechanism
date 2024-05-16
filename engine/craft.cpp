@@ -3,6 +3,7 @@
 #include "deserializationMemo.h"
 #include "item.h"
 #include "materialType.h"
+#include "simulation/hasItems.h"
 #include "types.h"
 #include "util.h"
 #include "simulation.h"
@@ -109,7 +110,7 @@ std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> CraftSte
 CraftJob::CraftJob(const Json& data, DeserializationMemo& deserializationMemo, HasCraftingLocationsAndJobsForFaction& hclaj) :
 	craftJobType(*data["craftJobType"].get<const CraftJobType*>()),
 	hasCraftingLocationsAndJobs(hclaj),
-	workPiece(data.contains("workPiece") ? &deserializationMemo.m_simulation.getItemById(data["workPiece"].get<ItemId>()) : nullptr),
+	workPiece(data.contains("workPiece") ? &deserializationMemo.m_simulation.m_hasItems->getById(data["workPiece"].get<ItemId>()) : nullptr),
 	materialType(data.contains("materialType") ? &MaterialType::byName(data["materialType"].get<std::string>()) : nullptr),
 	stepIterator(craftJobType.stepTypes.begin() + data["stepIndex"].get<size_t>()),
 	craftStepProject(data.contains("craftStepProject") ? std::make_unique<CraftStepProject>(data["craftStepProject"], deserializationMemo, *this) : nullptr),
@@ -400,7 +401,7 @@ void HasCraftingLocationsAndJobsForFaction::stepComplete(CraftJob& craftJob, Act
 				.craftJob=&craftJob,
 				.location = location
 			};
-			craftJob.workPiece = &location->m_area->m_simulation.createItem(params);
+			craftJob.workPiece = &location->m_area->m_simulation.m_hasItems->createItem(params);
 			//TODO: Should the item be reserved?
 		}
 		indexUnassigned(craftJob);
@@ -458,7 +459,7 @@ void HasCraftingLocationsAndJobsForFaction::jobComplete(CraftJob& craftJob, Bloc
 				.percentWear=0,
 				.location=&location
 			};
-			location.m_area->m_simulation.createItem(params);
+			location.m_area->m_simulation.m_hasItems->createItem(params);
 		}
 	}
 	if(!location.m_area->m_hasStockPiles.contains(m_faction))

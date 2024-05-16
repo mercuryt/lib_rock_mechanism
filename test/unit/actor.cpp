@@ -1,5 +1,6 @@
 #include "../../lib/doctest.h"
 #include "../../engine/simulation.h"
+#include "../../engine/simulation/hasItems.h"
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/actor.h"
@@ -58,7 +59,7 @@ TEST_CASE("actor")
 		});
 		area.getBlock(7, 7, 0).setNotSolid();
 		area.getBlock(7, 7, 0).m_hasFluids.addFluid(100, FluidType::byName("water"));
-		Item& food = simulation.createItemGeneric(ItemType::byName("apple"), MaterialType::byName("fruit"), 1000);
+		Item& food = simulation.m_hasItems->createItemGeneric(ItemType::byName("apple"), MaterialType::byName("fruit"), 1000);
 		food.setLocation(block1);
 		REQUIRE(dwarf1.m_canGrow.getEventPercentComplete() == 0);
 		REQUIRE(dwarf1.m_canGrow.growthPercent() == 45);

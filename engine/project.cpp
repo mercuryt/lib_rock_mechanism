@@ -1,5 +1,6 @@
 #include "project.h"
 #include "block.h"
+#include "item.h"
 #include "area.h"
 #include "config.h"
 #include "deserializationMemo.h"
@@ -7,6 +8,7 @@
 #include "haul.h"
 #include "reservable.h"
 #include "simulation.h"
+#include "simulation/hasItems.h"
 #include <algorithm>
 #include <memory>
 #include <unordered_map>
@@ -390,7 +392,7 @@ Project::Project(const Json& data, DeserializationMemo& deserializationMemo) : m
 		}
 	if(data.contains("toConsume"))
 		for(const Json& itemId : data["toConsume"])
-			m_toConsume.insert(&deserializationMemo.m_simulation.getItemById(itemId.get<ItemId>()));
+			m_toConsume.insert(&deserializationMemo.m_simulation.m_hasItems->getById(itemId.get<ItemId>()));
 	if(data.contains("toPickup"))
 		for(const Json& tuple : data["toPickup"])
 		{

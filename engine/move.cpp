@@ -1,6 +1,7 @@
 #include "move.h"
 #include "actor.h"
 #include "block.h"
+#include "item.h"
 #include "deserializationMemo.h"
 #include "fluidType.h"
 #include "moveType.h"

@@ -3,6 +3,8 @@
 #include "widgets.h"
 #include "window.h"
 #include "../engine/actor.h"
+#include "../engine/item.h"
+#include "../engine/simulation/hasItems.h"
 #include <TGUI/Widgets/ChildWindow.hpp>
 #include <TGUI/Widgets/ComboBox.hpp>
 #include <TGUI/Widgets/EditBox.hpp>
@@ -234,7 +236,7 @@ void EditActorView::draw(Actor& actor)
 		childWindow->add(childLayout);
 		std::function<void(ItemParamaters params)> callback = [this](ItemParamaters params){
 			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-			Item& newItem = m_window.getSimulation()->createItem(params);
+			Item& newItem = m_window.getSimulation()->m_hasItems->createItem(params);
 			m_actor->m_equipmentSet.addEquipment(newItem);
 			hide();
 		};

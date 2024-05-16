@@ -1,5 +1,6 @@
 #include "../../lib/doctest.h"
 #include "../../engine/simulation.h"
+#include "../../engine/simulation/hasItems.h"
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/actor.h"
@@ -54,19 +55,19 @@ TEST_CASE("json")
 		Plant& sage1 = area.getBlock(8,8,1).m_hasPlant.get();
 		sage1.setMaybeNeedsFluid();
 		area.getBlock(3, 8, 1).m_hasFluids.addFluid(10, water);
-		Item& axe1 = simulation.createItemNongeneric(axe, bronze, 10, 10);
+		Item& axe1 = simulation.m_hasItems->createItemNongeneric(axe, bronze, 10, 10);
 		axe1.setLocation(area.getBlock(1,2,1));
 		area.getBlock(1,8,1).m_hasBlockFeatures.construct(BlockFeatureType::stairs, wood);
 		area.getBlock(9,1,1).m_hasBlockFeatures.construct(BlockFeatureType::door, wood);
 		area.m_fires.ignite(area.getBlock(9,1,1), wood);
-		Item& pants1 = simulation.createItemNongeneric(pants, cotton, 50, 30);
+		Item& pants1 = simulation.m_hasItems->createItemNongeneric(pants, cotton, 50, 30);
 		dwarf1.m_equipmentSet.addEquipment(pants1);
-		Item& saw1 = simulation.createItemNongeneric(saw, bronze, 50, 30);
+		Item& saw1 = simulation.m_hasItems->createItemNongeneric(saw, bronze, 50, 30);
 		dwarf1.m_canPickup.pickUp(saw1);
-		Item& bucket1 = simulation.createItemNongeneric(bucket, bronze, 50, 30);
+		Item& bucket1 = simulation.m_hasItems->createItemNongeneric(bucket, bronze, 50, 30);
 		bucket1.setLocation(area.getBlock(0,0,1));
 		bucket1.m_hasCargo.add(water, 5);
-		Item& bucket2 = simulation.createItemNongeneric(bucket, bronze, 50, 30);
+		Item& bucket2 = simulation.m_hasItems->createItemNongeneric(bucket, bronze, 50, 30);
 		bucket2.setLocation(area.getBlock(0,1,1));
 		bucket2.m_hasCargo.add(pile, sand, 1);
 
@@ -162,7 +163,7 @@ TEST_CASE("json")
 		Block& holeLocation = area.getBlock(8, 4, 0);
 		area.m_hasDigDesignations.addFaction(faction);
 		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
-		Item& pick1 = simulation.createItemNongeneric(pick, bronze, 10, 10);
+		Item& pick1 = simulation.m_hasItems->createItemNongeneric(pick, bronze, 10, 10);
 		pick1.setLocation(area.getBlock(1,2,1));
 		Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
 		dwarf1.setFaction(&faction);
@@ -252,7 +253,7 @@ TEST_CASE("json")
 		queries.emplace_back(pile);
 		StockPile& stockPile = area.m_hasStockPiles.at(faction).addStockPile(queries);
 		stockPile.addBlock(projectLocation1);
-		Item& pile1 = simulation.createItemGeneric(pile, dirt, 10);
+		Item& pile1 = simulation.m_hasItems->createItemGeneric(pile, dirt, 10);
 		pile1.setLocation(pileLocation1);
 		REQUIRE(stockPile.accepts(pile1));
 		area.m_hasStockPiles.at(faction).addItem(pile1);
@@ -302,11 +303,11 @@ TEST_CASE("json")
 		dwarf1.setFaction(&faction);
 		CraftObjectiveType& woodWorkingObjectiveType = static_cast<CraftObjectiveType&>(*ObjectiveType::objectiveTypes.at("wood working").get());
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(woodWorkingObjectiveType, 100);
-		Item& saw = simulation.createItemNongeneric(ItemType::byName("saw"), bronze, 25, 0);
+		Item& saw = simulation.m_hasItems->createItemNongeneric(ItemType::byName("saw"), bronze, 25, 0);
 		saw.setLocation(area.getBlock(3, 7, 1));
-		Item& chisel = simulation.createItemNongeneric(ItemType::byName("chisel"), bronze, 25, 0);
+		Item& chisel = simulation.m_hasItems->createItemNongeneric(ItemType::byName("chisel"), bronze, 25, 0);
 		chisel.setLocation(area.getBlock(3, 6, 1));
-		Item& log = simulation.createItemGeneric(ItemType::byName("log"), wood, 1);
+		Item& log = simulation.m_hasItems->createItemGeneric(ItemType::byName("log"), wood, 1);
 		log.setLocation(area.getBlock(3, 8, 1));
 		// One step to find the designation.
 		simulation.doStep();
@@ -332,7 +333,7 @@ TEST_CASE("json")
 	}
 	SUBCASE("drink")
 	{
-		Item& bucket1 = simulation.createItemNongeneric(bucket, bronze, 25, 0);
+		Item& bucket1 = simulation.m_hasItems->createItemNongeneric(bucket, bronze, 25, 0);
 		bucket1.setLocation(area.getBlock(3, 7, 1));
 		bucket1.m_hasCargo.add(water, 10);
 		simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
@@ -352,7 +353,7 @@ TEST_CASE("json")
 	}
 	SUBCASE("eat")
 	{
-		Item& preparedMeal1 = simulation.createItemNongeneric(preparedMeal, MaterialType::byName("fruit"), 25, 0);
+		Item& preparedMeal1 = simulation.m_hasItems->createItemNongeneric(preparedMeal, MaterialType::byName("fruit"), 25, 0);
 		preparedMeal1.setLocation(area.getBlock(3, 7, 1));
 		Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
 		simulation.fastForward(dwarf.stepsEatFrequency);
@@ -468,7 +469,7 @@ TEST_CASE("json")
 	}
 	SUBCASE("give fluid to plant")
 	{
-		Item& bucket1 = simulation.createItemNongeneric(bucket, bronze, 25, 0);
+		Item& bucket1 = simulation.m_hasItems->createItemNongeneric(bucket, bronze, 25, 0);
 		bucket1.setLocation(area.getBlock(3, 7, 1));
 		bucket1.m_hasCargo.add(water, 10);
 		area.getBlock(1,7,1).m_hasPlant.createPlant(wheatGrass, 100);

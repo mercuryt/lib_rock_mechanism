@@ -9,6 +9,7 @@
 #include "fluidType.h"
 #include "plant.h"
 #include "simulation.h"
+#include "simulation/hasItems.h"
 #include "types.h"
 //#include "worldforge/worldLocation.h"
 #include <algorithm>
@@ -66,7 +67,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_hasFarmFields.load(data["hasFarmFields"], deserializationMemo);
 	// Load Items.
 	for(const Json& item : data["items"])
-		m_simulation.loadItemFromJson(item, deserializationMemo);
+		m_simulation.m_hasItems->loadItemFromJson(item, deserializationMemo);
 	// Load Actors.
 	for(const Json& actor : data["actors"])
 		m_simulation.loadActorFromJson(actor, deserializationMemo);
@@ -82,7 +83,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	// Load Item cargo and projects.
 	for(const Json& itemData : data["items"])
 	{
-		Item& item = m_simulation.getItemById(itemData["id"].get<ItemId>());
+		Item& item = m_simulation.m_hasItems->getById(itemData["id"].get<ItemId>());
 		item.load(itemData, deserializationMemo);
 	}
 	// Load Actor objectives, following and reservations.
@@ -246,6 +247,46 @@ Point3D Area::getCoordinatesForIndex(BlockIndex index) const
 	index -= y * m_sizeX;
 	DistanceInBlocks x = index;
 	return {x, y, z};
+}
+int Area::indexOffsetForAdjacentOffset(uint8_t adjacentOffset) const
+{
+	auto coords = Block::offsetsListAllAdjacent[adjacentOffset];
+	return indexOffsetForCoordinateOffset(coords[0], coords[1], coords[2]);
+}
+int Area::indexOffsetForCoordinateOffset(int x, int y, int z) const
+{
+	return x + (m_sizeX * y) + (m_sizeX * m_sizeY * z);
+}
+Facing Area::getFacingForAdjacentOffset(uint8_t adjacentOffset) const
+{
+	switch(adjacentOffset)
+	{
+		case 6:
+		case 7:
+		case 8:
+		case 12:
+		case 14:
+		case 15:
+		case 23:
+		case 24:
+		case 25:
+			return 3;
+		case 0:
+		case 1:
+		case 2:
+		case 9:
+		case 10:
+		case 16:
+			return 1;
+		case 5:
+		case 11:
+		case 19:
+		case 22:
+			return 2;
+		default:
+			return 0;
+
+	}
 }
 Block& Area::getGroundLevel(DistanceInBlocks x, DistanceInBlocks y)
 {

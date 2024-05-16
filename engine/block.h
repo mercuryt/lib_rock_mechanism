@@ -184,6 +184,19 @@ public:
 	void loadFromJson(Json data, DeserializationMemo& deserializationMemo, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] Json positionToJson() const;
+	static inline const int32_t offsetsListAllAdjacent[26][3] = {
+		{-1,1,-1}, {-1,0,-1}, {-1,-1,-1},
+		{0,1,-1}, {0,0,-1}, {0,-1,-1},
+		{1,1,-1}, {1,0,-1}, {1,-1,-1},
+
+		{-1,-1,0}, {-1,0,0}, {0,-1,0},
+		{1,1,0}, {0,1,0},
+		{1,-1,0}, {1,0,0}, {-1,1,0},
+
+		{-1,1,1}, {-1,0,1}, {-1,-1,1},
+		{0,1,1}, {0,0,1}, {0,-1,1},
+		{1,1,1}, {1,0,1}, {1,-1,1}
+	};
 };
 inline void to_json(Json& data, const Block* const& block){ data = block->positionToJson(); }
 inline void to_json(Json& data, const Block& block){ data = block.positionToJson(); }

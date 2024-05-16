@@ -1,5 +1,6 @@
 #include "../../lib/doctest.h"
 #include "../../engine/simulation.h"
+#include "../../engine/simulation/hasItems.h"
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/actor.h"
@@ -23,7 +24,7 @@ TEST_CASE("woodcutting")
 		.hasSidearm=false,
 	});
 	dwarf.setFaction(&faction);
-	Item& axe = simulation.createItemNongeneric(ItemType::byName("axe"), MaterialType::byName("bronze"), 25u, 10u);
+	Item& axe = simulation.m_hasItems->createItemNongeneric(ItemType::byName("axe"), MaterialType::byName("bronze"), 25u, 10u);
 	area.m_hasWoodCuttingDesignations.designate(faction, treeLocation);
 	const WoodCuttingObjectiveType objectiveType;
 	REQUIRE(objectiveType.canBeAssigned(dwarf));

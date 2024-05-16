@@ -3,6 +3,7 @@
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation.h"
+#include "../../engine/simulation/hasItems.h"
 #include "../../engine/dig.h"
 #include "../../engine/cuboid.h"
 #include "../../engine/objectives/goTo.h"
@@ -22,7 +23,7 @@ TEST_CASE("dig")
 	Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(1, 1, 4));
 	dwarf1.setFaction(&faction);
 	Block& pickLocation = area.getBlock(5, 5, 4);
-	Item& pick = simulation.createItemNongeneric(ItemType::byName("pick"), bronze, 50u, 0);
+	Item& pick = simulation.m_hasItems->createItemNongeneric(ItemType::byName("pick"), bronze, 50u, 0);
 	pick.setLocation(pickLocation);
 	area.m_hasDigDesignations.addFaction(faction);
 	SUBCASE("dig hole")

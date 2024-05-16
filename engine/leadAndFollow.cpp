@@ -169,6 +169,11 @@ void CanFollow::unfollowIfFollowing()
 	if(m_canLead != nullptr)
 		unfollow();
 }
+void CanFollow::maybeDisband()
+{
+	if(isFollowing() || m_hasShape.m_canLead.isLeading())
+		disband();
+}
 void CanFollow::disband()
 {
 	HasShape* leader = &getLineLeader();

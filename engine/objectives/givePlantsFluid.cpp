@@ -1,13 +1,15 @@
 #include "givePlantsFluid.h"
-#include "area.h"
-#include "actor.h"
-#include "item.h"
-#include "config.h"
-#include "deserializationMemo.h"
-#include "eventSchedule.h"
-#include "objective.h"
-#include "reservable.h"
-#include "simulation.h"
+#include "../item.h"
+#include "../area.h"
+#include "../actor.h"
+#include "../item.h"
+#include "../config.h"
+#include "../deserializationMemo.h"
+#include "../eventSchedule.h"
+#include "../objective.h"
+#include "../reservable.h"
+#include "../simulation.h"
+#include "../simulation/hasItems.h"
 
 #include <memory>
 GivePlantsFluidEvent::GivePlantsFluidEvent(Step delay, GivePlantsFluidObjective& gpfo, const Step start) : ScheduledEvent(gpfo.m_actor.getSimulation(), delay, start), m_objective(gpfo) { }
@@ -119,7 +121,7 @@ std::unique_ptr<Objective> GivePlantsFluidObjectiveType::makeFor(Actor& actor) c
 GivePlantsFluidObjective::GivePlantsFluidObjective(Actor& a ) : Objective(a, Config::givePlantsFluidPriority), m_plantLocation(nullptr), m_fluidHaulingItem(nullptr), m_event(m_actor.getEventSchedule()), m_threadedTask(m_actor.getThreadedTaskEngine()) { }
 GivePlantsFluidObjective::GivePlantsFluidObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo),
 	m_plantLocation(data.contains("plantLocation") ? &deserializationMemo.m_simulation.getBlockForJsonQuery(data["plantLocation"]) : nullptr),
-	m_fluidHaulingItem(data.contains("fluidHaulingItem") ? &deserializationMemo.m_simulation.m_items.at(data["fluidHaulingItem"].get<ItemId>()) : nullptr),
+	m_fluidHaulingItem(data.contains("fluidHaulingItem") ? &deserializationMemo.m_simulation.m_hasItems->getById(data["fluidHaulingItem"].get<ItemId>()) : nullptr),
 	m_event(m_actor.getEventSchedule()), m_threadedTask(m_actor.getThreadedTaskEngine())
 {
 	if(data.contains("eventStart"))

@@ -7,6 +7,7 @@
 #include "util.h"
 #include "plant.h"
 #include "block.h"
+#include "item.h"
 #include "area.h"
 #include "simulation.h"
 

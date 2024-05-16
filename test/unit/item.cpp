@@ -4,6 +4,7 @@
 #include "../../engine/item.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation.h"
+#include "../../engine/simulation/hasItems.h"
 #include "../../engine/materialType.h"
 #include "../../engine/project.h"
 #include "../../engine/config.h"
@@ -26,7 +27,7 @@ TEST_CASE("equip and unequip")
 		.hasCloths=false,
 		.hasSidearm=false
 	});
-	Item& longsword = simulation.createItemNongeneric(ItemType::byName("long sword"), MaterialType::byName("bronze"), 20, 10);
+	Item& longsword = simulation.m_hasItems->createItemNongeneric(ItemType::byName("long sword"), MaterialType::byName("bronze"), 20, 10);
 	Block& swordLocation = area.getBlock(8,8,1);
 	longsword.setLocation(swordLocation);
 	std::unique_ptr<Objective> objective = std::make_unique<EquipItemObjective>(dwarf1, longsword);
@@ -63,7 +64,7 @@ TEST_CASE("give item")
 		.hasCloths=false,
 		.hasSidearm=false
 	});
-	Item& longsword = simulation.createItemNongeneric(ItemType::byName("long sword"), MaterialType::byName("bronze"), 20, 10);
+	Item& longsword = simulation.m_hasItems->createItemNongeneric(ItemType::byName("long sword"), MaterialType::byName("bronze"), 20, 10);
 	dwarf1.m_equipmentSet.addEquipment(longsword);
 	std::unique_ptr<Objective> objective = std::make_unique<GiveItemObjective>(dwarf1, longsword, dwarf2);
 	dwarf1.m_hasObjectives.addTaskToStart(std::move(objective));

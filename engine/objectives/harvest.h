@@ -1,11 +1,11 @@
 #pragma once
 
-#include "objective.h"
-#include "config.h"
-#include "eventSchedule.hpp"
-#include "threadedTask.hpp"
-#include "findsPath.h"
-#include "types.h"
+#include "../objective.h"
+#include "../config.h"
+#include "../eventSchedule.hpp"
+#include "../threadedTask.hpp"
+#include "../findsPath.h"
+#include "../types.h"
 
 struct DeserializationMemo;
 class HarvestThreadedTask;

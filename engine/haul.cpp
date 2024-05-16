@@ -7,6 +7,7 @@
 #include "materialType.h"
 #include "project.h"
 #include "reservable.h"
+#include "simulation/hasItems.h"
 #include "types.h"
 #include "simulation.h"
 
@@ -85,7 +86,7 @@ HaulSubprojectDishonorCallback::HaulSubprojectDishonorCallback(const Json data, 
 CanPickup::CanPickup(const Json& data, Actor& a) : m_actor(a), m_carrying(nullptr)
 {
 	if(data.contains("carryingItem"))
-		m_carrying = &m_actor.getSimulation().getItemById(data["carryingItem"].get<ItemId>());
+		m_carrying = &m_actor.getSimulation().m_hasItems->getById(data["carryingItem"].get<ItemId>());
 	else if(data.contains("carryingActor"))
 		m_carrying = &m_actor.getSimulation().getActorById(data["carryingActor"].get<ActorId>());
 }
@@ -125,7 +126,7 @@ void CanPickup::pickUp(Item& item, Quantity quantity)
 	else
 	{
 		item.removeQuantity(quantity);
-		Item& newItem = m_actor.getSimulation().createItem({
+		Item& newItem = m_actor.getSimulation().m_hasItems->createItem({
 			.itemType=item.m_itemType, 
 			.materialType=item.m_materialType, 
 			.quantity=quantity
@@ -201,7 +202,7 @@ void CanPickup::removeFluidVolume(CollisionVolume volume)
 void CanPickup::add(const ItemType& itemType, const MaterialType& materialType, Quantity quantity)
 {
 	if(m_carrying == nullptr)
-		m_carrying = &m_actor.getSimulation().createItem({
+		m_carrying = &m_actor.getSimulation().m_hasItems->createItem({
 			.itemType=itemType, 
 			.materialType=materialType, 
 			.quantity=quantity
@@ -355,7 +356,7 @@ HaulSubproject::HaulSubproject(const Json& data, Project& p, DeserializationMemo
 	m_genericMaterialType(nullptr)
 { 
 	if(data.contains("haulTool"))
-		m_haulTool = &deserializationMemo.m_simulation.getItemById(data["haulTool"].get<ItemId>());
+		m_haulTool = &deserializationMemo.m_simulation.m_hasItems->getById(data["haulTool"].get<ItemId>());
 	if(data.contains("leader"))
 		m_leader = &deserializationMemo.m_simulation.getActorById(data["leader"].get<ActorId>());
 	if(data.contains("beastOfBurden"))

@@ -1,5 +1,6 @@
 #include "../../lib/doctest.h"
 #include "../../engine/simulation.h"
+#include "../../engine/simulation/hasItems.h"
 #include "../../engine/areaBuilderUtil.h"
 TEST_CASE("uniform")
 {
@@ -15,13 +16,13 @@ TEST_CASE("uniform")
 	REQUIRE(actor.m_hasObjectives.hasCurrent());
 	REQUIRE(actor.m_hasObjectives.getCurrent().getObjectiveTypeId() == ObjectiveTypeId::Uniform);
 	UniformObjective& objective = static_cast<UniformObjective&>(actor.m_hasObjectives.getCurrent());
-	Item& pants = simulation.createItemNongeneric(ItemType::byName("pants"), MaterialType::byName("cotton"), 10, 10);
+	Item& pants = simulation.m_hasItems->createItemNongeneric(ItemType::byName("pants"), MaterialType::byName("cotton"), 10, 10);
 	pants.setLocation(area.getBlock(8,1,1));
-	Item& shirt = simulation.createItemNongeneric(ItemType::byName("shirt"), MaterialType::byName("cotton"), 10, 10);
+	Item& shirt = simulation.m_hasItems->createItemNongeneric(ItemType::byName("shirt"), MaterialType::byName("cotton"), 10, 10);
 	shirt.setLocation(area.getBlock(1,6,1));
-	Item& belt = simulation.createItemNongeneric(ItemType::byName("belt"), MaterialType::byName("leather"), 10, 10);
+	Item& belt = simulation.m_hasItems->createItemNongeneric(ItemType::byName("belt"), MaterialType::byName("leather"), 10, 10);
 	belt.setLocation(area.getBlock(9,2,1));
-	Item& belt2 = simulation.createItemNongeneric(ItemType::byName("belt"), MaterialType::byName("leather"), 10, 10);
+	Item& belt2 = simulation.m_hasItems->createItemNongeneric(ItemType::byName("belt"), MaterialType::byName("leather"), 10, 10);
 	belt2.setLocation(area.getBlock(9,3,1));
 	simulation.doStep();
 	Block* destination = actor.m_canMove.getDestination();

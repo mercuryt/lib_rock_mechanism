@@ -1,5 +1,6 @@
 #include "temperature.h"
 #include "block.h"
+#include "item.h"
 #include "area.h"
 #include "datetime.h"
 #include "nthAdjacentOffsets.h"

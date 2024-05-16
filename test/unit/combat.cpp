@@ -4,6 +4,7 @@
 #include "../../engine/item.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation.h"
+#include "../../engine/simulation/hasItems.h"
 #include "../../engine/materialType.h"
 #include "../../engine/animalSpecies.h"
 #include <functional>
@@ -22,7 +23,7 @@ TEST_CASE("combat")
 		.hasSidearm=false,
 	});
 	dwarf1.setFaction(&faction);
-	Item& pants = simulation.createItemNongeneric(ItemType::byName("pants"), MaterialType::byName("plant matter"), 50u, 10);
+	Item& pants = simulation.m_hasItems->createItemNongeneric(ItemType::byName("pants"), MaterialType::byName("plant matter"), 50u, 10);
 	dwarf1.m_equipmentSet.addEquipment(pants);
 	SUBCASE("attack table")
 	{
@@ -36,9 +37,9 @@ TEST_CASE("combat")
 	SUBCASE("strike rabbit")
 	{
 		uint32_t initalScore = dwarf1.m_canFight.getCombatScore();
-		Item& longsword = simulation.createItemNongeneric(ItemType::byName("long sword"), MaterialType::byName("bronze"), 50u, 10);
+		Item& longsword = simulation.m_hasItems->createItemNongeneric(ItemType::byName("long sword"), MaterialType::byName("bronze"), 50u, 10);
 		dwarf1.m_equipmentSet.addEquipment(longsword);
-		Item& pants = simulation.createItemNongeneric(ItemType::byName("pants"), MaterialType::byName("plant matter"), 50u, 10);
+		Item& pants = simulation.m_hasItems->createItemNongeneric(ItemType::byName("pants"), MaterialType::byName("plant matter"), 50u, 10);
 		dwarf1.m_equipmentSet.addEquipment(pants);
 		REQUIRE(dwarf1.m_canFight.getCombatScore() > initalScore);
 		Actor& rabbit = simulation.createActor(AnimalSpecies::byName("dwarf rabbit"), area.getBlock(2, 2, 1));
@@ -74,9 +75,9 @@ TEST_CASE("combat")
 	}
 	SUBCASE("shoot rabbit")
 	{
-		Item& crossbow = simulation.createItemNongeneric(ItemType::byName("crossbow"), MaterialType::byName("poplar wood"), 50u, 10u);
+		Item& crossbow = simulation.m_hasItems->createItemNongeneric(ItemType::byName("crossbow"), MaterialType::byName("poplar wood"), 50u, 10u);
 		dwarf1.m_equipmentSet.addEquipment(crossbow);
-		Item& ammo = simulation.createItemGeneric(ItemType::byName("crossbow bolt"), MaterialType::byName("bronze"), 1u);
+		Item& ammo = simulation.m_hasItems->createItemGeneric(ItemType::byName("crossbow bolt"), MaterialType::byName("bronze"), 1u);
 		dwarf1.m_equipmentSet.addEquipment(ammo);
 		Actor& rabbit = simulation.createActor(AnimalSpecies::byName("dwarf rabbit"), area.getBlock(3, 3, 1));
 		dwarf1.m_canFight.setTarget(rabbit);

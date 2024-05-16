@@ -6,7 +6,7 @@
 #include "definitions.h"
 #include "deserializationMemo.h"
 #include "haul.h"
-#include "item.h"
+#include "simulation/hasItems.h"
 #include "threadedTask.h"
 #include "util.h"
 #include "drama/engine.h"
@@ -14,11 +14,12 @@
 #include <cstdint>
 #include <filesystem>
 #include <functional>
-Simulation::Simulation(std::wstring name, Step s) :  m_nextAreaId(1), m_deserializationMemo(*this), m_name(name), m_step(s), m_nextActorId(1), m_nextItemId(1), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this)
+Simulation::Simulation(std::wstring name, Step s) :  m_nextAreaId(1), m_deserializationMemo(*this), m_name(name), m_step(s), m_nextActorId(1), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this)
 { 
 	m_hourlyEvent.schedule(*this);
 	m_path.append(L"save/"+name);
 	m_dramaEngine = std::make_unique<DramaEngine>(*this);
+	m_hasItems = std::make_unique<SimulationHasItems>(*this);
 }
 Simulation::Simulation(std::filesystem::path path) : Simulation(Json::parse(std::ifstream{path/"simulation.json"})) 
 {
@@ -36,13 +37,12 @@ Simulation::Simulation(const Json& data) : m_deserializationMemo(*this), m_event
 {
 	m_name = data["name"].get<std::wstring>();
 	m_step = data["step"].get<Step>();
-	m_nextItemId = data["nextItemId"].get<ItemId>();
-	m_nextActorId = data["nextActorId"].get<ActorId>();
 	m_nextAreaId = data["nextAreaId"].get<AreaId>();
 	//if(data["world"])
 		//m_world = std::make_unique<World>(data["world"], deserializationMemo);
 	m_hasFactions.load(data["factions"], m_deserializationMemo);
 	m_hourlyEvent.schedule(*this, data["hourEventStart"].get<Step>());
+	m_hasItems = std::make_unique<SimulationHasItems>(data["hasItems"], m_deserializationMemo, *this);
 }
 void Simulation::doStep(uint16_t count)
 {
@@ -124,52 +124,6 @@ Actor& Simulation::createActor(const AnimalSpecies& species, Block& location, Pe
 {
 	return createActor(ActorParamaters{.species = species, .percentGrown = percentGrown, .location = &location});
 }
-Item& Simulation::createItem(ItemParamaters params)
-{
-	params.simulation = this;
-	auto [iter, emplaced] = m_items.emplace(
-		params.getId(),
-		params
-	);
-	assert(emplaced);
-	return iter->second;
-}
-// Nongeneric
-// No name or id.
-Item& Simulation::createItemNongeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quality, Percent percentWear, CraftJob* cj)
-{
-	const uint32_t id = ++ m_nextItemId;
-	return loadItemNongeneric(id, itemType, materialType, quality, percentWear, L"", cj);
-}
-// Generic
-// No id.
-Item& Simulation::createItemGeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity, CraftJob* cj)
-{
-
-	const uint32_t id = ++ m_nextItemId;
-	return loadItemGeneric(id, itemType, materialType, quantity, cj);
-}
-// Id.
-Item& Simulation::loadItemGeneric(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, uint32_t quantity, CraftJob* cj)
-{
-	if(m_nextItemId <= id) m_nextItemId = id + 1;
-	auto [iter, emplaced] = m_items.try_emplace(id, *this, id, itemType, materialType, quantity, cj);
-	assert(emplaced);
-	return iter->second;
-}
-Item& Simulation::loadItemNongeneric(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, uint32_t quality, Percent percentWear, std::wstring name, CraftJob* cj)
-{
-	if(m_nextItemId <= id) m_nextItemId = id + 1;
-	auto [iter, emplaced] = m_items.try_emplace(id, *this, id, itemType, materialType, quality, percentWear, cj);
-	assert(emplaced);
-	Item& item = iter->second;
-	item.m_name = name;
-	return item;
-}
-void Simulation::destroyItem(Item& item)
-{
-	m_items.erase(item.m_id);
-}
 void Simulation::destroyArea(Area& area)
 {
 	m_dramaEngine->removeArcsForArea(area);
@@ -196,9 +150,7 @@ Simulation::~Simulation()
 		pair.second.m_canReserve.deleteAllWithoutCallback();
 		pair.second.m_onDestroy.unsubscribeAll();
 	}
-	for(auto& pair : m_items)
-		pair.second.m_onDestroy.unsubscribeAll();
-	m_items.clear();
+	m_hasItems->clearAll();
 	m_actors.clear();
 	m_areas.clear();
 	m_hourlyEvent.maybeUnschedule();
@@ -297,7 +249,7 @@ Json Simulation::toJson() const
 	//output["world"] = m_world;
 	output["step"] = m_step;
 	output["nextActorId"] = m_nextActorId;
-	output["nextItemId"] = m_nextItemId;
+	output["hasItems"] = m_hasItems->toJson();
 	output["nextAreaId"] = m_nextAreaId;
 	output["areaIds"] = Json::array();
 	for(const Area& area : m_areas)
@@ -312,12 +264,6 @@ Area& Simulation::loadAreaFromJson(const Json& data)
 	DeserializationMemo deserializationMemo(*this);
 	m_areas.emplace_back(data, deserializationMemo, *this);
 	return m_areas.back();
-}
-Item& Simulation::loadItemFromJson(const Json& data, DeserializationMemo& deserializationMemo)
-{
-	auto id = data["id"].get<ItemId>();
-	m_items.try_emplace(id, data, deserializationMemo, id);
-	return m_items.at(id);
 }
 Actor& Simulation::loadActorFromJson(const Json& data, DeserializationMemo& deserializationMemo)
 {
@@ -345,15 +291,4 @@ Actor& Simulation::getActorById(ActorId id)
 	else
 		return m_actors.at(id); 
 	return m_actors.begin()->second;
-} 
-Item& Simulation::getItemById(ItemId id) 
-{
-	if(!m_items.contains(id))
-	{
-		//TODO: Load from world DB.
-		assert(false);
-	}
-	else
-		return m_items.at(id); 
-	return m_items.begin()->second;
 } 

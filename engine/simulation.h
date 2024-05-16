@@ -1,8 +1,5 @@
 #pragma once
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsystem-headers"
 #include "../lib/BS_thread_pool_light.hpp"
-#pragma GCC diagnostic pop
 #include "deserializationMemo.h"
 #include "dialogueBox.h"
 #include "types.h"
@@ -15,7 +12,6 @@
 #include "config.h"
 #include "threadedTask.h"
 #include "actor.h"
-#include "item.h"
 #include "random.h"
 #include "input.h"
 #include "uniform.h"
@@ -27,6 +23,7 @@
 //class World;
 class HourlyEvent;
 class DramaEngine;
+class SimulationHasItems;
 
 class Simulation final
 {
@@ -42,11 +39,9 @@ public:
 	std::filesystem::path m_path;
 	Step m_step;
 	ActorId m_nextActorId;
-	ItemId m_nextItemId;
 	//std::unique_ptr<World> m_world;
 	std::list<Area> m_areas;
 	std::unordered_map<ActorId, Actor> m_actors;
-	std::unordered_map<ItemId, Item> m_items;
 	EventSchedule m_eventSchedule;
 	HasScheduledEvent<HourlyEvent> m_hourlyEvent;
 	ThreadedTaskEngine m_threadedTaskEngine;
@@ -58,6 +53,7 @@ public:
 	DialogueBoxQueue m_hasDialogues;
 	// Dependency injectien.
 	std::unique_ptr<DramaEngine> m_dramaEngine;
+	std::unique_ptr<SimulationHasItems> m_hasItems;
 
 	Simulation(std::wstring name = L"", Step s = 10'000 * Config::stepsPerYear);
 	Simulation(std::filesystem::path path);
@@ -74,24 +70,12 @@ public:
 	Area& loadArea(AreaId id, std::wstring name, uint32_t x, uint32_t y, uint32_t z);
 	Actor& createActor(ActorParamaters params);
 	Actor& createActor(const AnimalSpecies& species, Block& location, Percent percentGrown = 100);
-	Item& createItem(ItemParamaters itemParamaters);
-	// Non generic, no id
-	Item& createItemNongeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quality, Percent percentWear, CraftJob* cj = nullptr);
-	// Generic, no id.
-	Item& createItemGeneric(const ItemType& itemType, const MaterialType& materialType, uint32_t quantity, CraftJob* cj = nullptr);
-	// Non generic with id.
-	Item& loadItemNongeneric(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, uint32_t quality, Percent percentWear, std::wstring name, CraftJob* cj = nullptr);
-	// Generic, with id.
-	Item& loadItemGeneric(const uint32_t id, const ItemType& itemType, const MaterialType& materialType, uint32_t quantity, CraftJob* cj = nullptr);
-	void destroyItem(Item& item);
 	void destroyArea(Area& area);
 	void destroyActor(Actor& actor);
 	Area& loadAreaFromJson(const Json& data);
-	Item& loadItemFromJson(const Json& data, DeserializationMemo& deserializationMemo);
 	Actor& loadActorFromJson(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Block& getBlockForJsonQuery(const Json& data);
 	[[nodiscard]] Actor& getActorById(ActorId id);
-	[[nodiscard]] Item& getItemById(ItemId id);
 	[[nodiscard]] Area& getAreaById(AreaId id) const {return *m_areasById.at(id); }
 	[[nodiscard]] std::filesystem::path getPath() const  { return m_path; }
 	[[nodiscard, maybe_unused]] DateTime getDateTime() const;

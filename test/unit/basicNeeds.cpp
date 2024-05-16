@@ -1,5 +1,6 @@
 #include "../../lib/doctest.h"
 #include "../../engine/simulation.h"
+#include "../../engine/simulation/hasItems.h"
 #include "../../engine/animalSpecies.h"
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
@@ -47,7 +48,7 @@ TEST_CASE("basicNeedsSentient")
 	}
 	SUBCASE("drink from bucket")
 	{
-		Item& bucket = simulation.createItemNongeneric(ItemType::byName("bucket"), MaterialType::byName("poplar wood"), 50u, 0u, nullptr);
+		Item& bucket = simulation.m_hasItems->createItemNongeneric(ItemType::byName("bucket"), MaterialType::byName("poplar wood"), 50u, 0u, nullptr);
 		Block& bucketLocation = area.getBlock(7, 7, 2);
 		bucket.setLocation(bucketLocation);
 		bucket.m_hasCargo.add(water, 10);
@@ -72,7 +73,7 @@ TEST_CASE("basicNeedsSentient")
 	}
 	SUBCASE("eat prepared meal")
 	{
-		Item& meal = simulation.createItemNongeneric(ItemType::byName("prepared meal"), MaterialType::byName("fruit"), 50u, 0u, nullptr);
+		Item& meal = simulation.m_hasItems->createItemNongeneric(ItemType::byName("prepared meal"), MaterialType::byName("fruit"), 50u, 0u, nullptr);
 		Block& mealLocation = area.getBlock(5, 5, 2);
 		meal.setLocation(mealLocation);
 		REQUIRE(actor.m_mustEat.getDesireToEatSomethingAt(mealLocation) == UINT32_MAX);
@@ -98,7 +99,7 @@ TEST_CASE("basicNeedsSentient")
 	}
 	SUBCASE("eat fruit")
 	{
-		Item& fruit = simulation.createItemGeneric(ItemType::byName("apple"), MaterialType::byName("fruit"), 50u);
+		Item& fruit = simulation.m_hasItems->createItemGeneric(ItemType::byName("apple"), MaterialType::byName("fruit"), 50u);
 		Block& fruitLocation = area.getBlock(6, 5, 2);
 		fruit.setLocation(fruitLocation);
 		REQUIRE(actor.m_mustEat.getDesireToEatSomethingAt(fruitLocation) == 2);
