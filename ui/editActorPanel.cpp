@@ -232,46 +232,29 @@ void EditActorView::draw(Actor& actor)
 		m_panel->add(childWindow);
 		auto childLayout = tgui::VerticalLayout::create();
 		childWindow->add(childLayout);
-		auto itemTypeUI = widgetUtil::makeItemTypeSelectUI();
-		childLayout->add(itemTypeUI);
-		auto materialTypeUI = widgetUtil::makeMaterialSelectUI();
-		childLayout->add(materialTypeUI);
-		childLayout->add(tgui::Label::create("quality"));
-		auto qualityUI = tgui::SpinControl::create();
-		qualityUI->setMinimum(0);
-		qualityUI->setMaximum(UINT32_MAX);
-		childLayout->add(qualityUI);
-		childLayout->add(tgui::Label::create("wear"));
-		auto wearUI = tgui::SpinControl::create();
-		wearUI->setMinimum(0);
-		wearUI->setMaximum(100);
-		childLayout->add(wearUI);
-		childLayout->add(tgui::Label::create("quantity"));
-		auto quantityUI = tgui::SpinControl::create();
-		quantityUI->setMinimum(1);
-		quantityUI->setMaximum(UINT32_MAX);
-		childLayout->add(quantityUI);
-		auto confirm = tgui::Button::create("confirm");
-		childLayout->add(confirm);
-		confirm->onClick([this, itemTypeUI, materialTypeUI, quantityUI, qualityUI, wearUI, childWindow]{
-			const ItemType& itemType = ItemType::byName(itemTypeUI->getSelectedItemId().toStdString());
-			const MaterialType& materialType = MaterialType::byName(materialTypeUI->getSelectedItemId().toStdString());
-			if(itemType.generic)
-			{
-				uint32_t quantity = quantityUI->getValue();
-				Item& item = m_window.getSimulation()->createItemGeneric(itemType, materialType, quantity);
-				m_actor->m_equipmentSet.addEquipment(item);
-			}
-			else
-			{
-				uint32_t quality = qualityUI->getValue();
-				uint32_t wear = wearUI->getValue();
-				Item& item = m_window.getSimulation()->createItemNongeneric(itemType, materialType, quality, wear);
-				m_actor->m_equipmentSet.addEquipment(item);
-			}
-			childWindow->close();
-			draw(*m_actor);
-		});
+		std::function<void(ItemParamaters params)> callback = [this](ItemParamaters params){
+			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
+			Item& newItem = m_window.getSimulation()->createItem(params);
+			m_actor->m_equipmentSet.addEquipment(newItem);
+			hide();
+		};
+		auto [itemTypeUI, materialTypeUI, quantityOrQualityLabel, quantityOrQualityUI, wearLabel, wearUI, confirmUI] = widgetUtil::makeCreateItemUI(callback);
+		auto itemTypeLabel = tgui::Label::create("item type");
+		itemTypeLabel->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
+		childWindow->add(itemTypeLabel);
+		childWindow->add(itemTypeUI);
+		auto materialTypeLabel = tgui::Label::create("material type");
+		materialTypeLabel->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
+		childWindow->add(materialTypeLabel);
+		childWindow->add(materialTypeUI);
+
+		quantityOrQualityLabel->cast<tgui::Label>()->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
+		childWindow->add(quantityOrQualityLabel);
+		childWindow->add(quantityOrQualityUI);
+		wearLabel->cast<tgui::Label>()->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
+		childWindow->add(wearLabel);
+		childWindow->add(wearUI);
+		childWindow->add(confirmUI);
 	});
 	// Wounds.
 	layoutGrid->addWidget(tgui::Label::create("wounds"), ++gridCount, 1);

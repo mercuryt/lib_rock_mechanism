@@ -36,8 +36,8 @@ public:
 	void notThirsty();
 	void setNeedsFluid();
 	void onDeath();
-	const uint32_t& getVolumeFluidRequested() const { return m_volumeDrinkRequested; }
-	const uint32_t& getPercentDeadFromThirst() const;
+	Volume getVolumeFluidRequested() const { return m_volumeDrinkRequested; }
+	Percent getPercentDeadFromThirst() const;
 	const FluidType& getFluidType() const { return *m_fluidType; }
 	bool needsFluid() const { return m_volumeDrinkRequested != 0; }
 	static uint32_t drinkVolumeFor(Actor& actor);

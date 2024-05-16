@@ -10,6 +10,7 @@
 #include "simulation.h"
 
 #include <iostream>
+#include <numbers>
 AttackType* ItemType::getRangedAttackType() const
 {
 	for(const AttackType& attackType : weaponData->attackTypes)
@@ -430,6 +431,15 @@ Item& ItemHasCargo::unloadGenericTo(const ItemType& itemType, const MaterialType
 {
 	remove(itemType, materialType, quantity);
 	return location.m_hasItems.addGeneric(itemType, materialType, quantity);
+}
+void ItemHasCargo::destroyCargo(Item& item)
+{
+	remove(item);
+	// Normal destroy only removes from area if location is set, cargo is removed explicitly.
+	// TODO: prevent cargo from having destroy called on it directly.
+	if(m_item.m_location)
+		m_item.m_location->m_area->m_hasItems.remove(static_cast<Item&>(item));
+	static_cast<Item&>(item).destroy();
 }
 std::vector<Actor*> ItemHasCargo::getActors()
 {

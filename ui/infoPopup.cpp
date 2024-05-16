@@ -50,6 +50,7 @@ void InfoPopup::display(Block& block)
 		m_childWindow->setTitle(std::move(title));
 		for(const BlockFeature& blockFeature : block.m_hasBlockFeatures.get())
 			add(tgui::Label::create(blockFeature.blockFeatureType->name + " " + blockFeature.materialType->name));
+		add(tgui::Label::create("temperature: " + std::to_string(block.m_blockHasTemperature.get())));
 		for(Actor* actor : block.m_hasActors.getAll())
 		{
 			auto button = tgui::Button::create(actor->m_name);
@@ -104,11 +105,21 @@ void InfoPopup::display(Item& item)
 		add(tgui::Label::create(L"quality: " + std::to_wstring(item.m_quality)));
 		add(tgui::Label::create(L"wear: " + std::to_wstring(item.m_percentWear) + L"%"));
 	}
-	for(Item* item : item.m_hasCargo.getItems())
+	for(Item* cargoItem : item.m_hasCargo.getItems())
 	{
-		auto button = tgui::Button::create(m_window.displayNameForItem(*item));
-		button->onClick([=, this]{ display(*item); });
+		auto button = tgui::Button::create(m_window.displayNameForItem(*cargoItem));
+		button->onClick([=, this]{ display(*cargoItem); });
 		add(button);
+		if(m_window.m_editMode)
+		{
+			auto destroy = tgui::Button::create("destory");
+			add(destroy);
+			destroy->onClick([this, cargoItem, &item]{
+				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
+				item.m_hasCargo.destroyCargo(*cargoItem);
+				m_update();
+			});
+		}
 	}
 	for(Actor* actor : item.m_hasCargo.getActors())
 	{
@@ -155,8 +166,8 @@ void InfoPopup::display(Actor& actor)
 	if(actor.m_mustEat.needsFood())
 		hungerPercent += 100;
 	add(tgui::Label::create(std::to_string(hungerPercent) + " % hunger"));
-	Percent thirstPercent = actor.m_mustEat.getPercentStarved();
-	if(actor.m_mustEat.needsFood())
+	Percent thirstPercent = actor.m_mustDrink.getPercentDeadFromThirst();
+	if(actor.m_mustDrink.needsFluid())
 		thirstPercent += 100;
 	add(tgui::Label::create(std::to_string(thirstPercent) + " % thirst"));
 	m_update = [this, &actor]{ display(actor); };
@@ -168,6 +179,11 @@ void InfoPopup::display(Plant& plant)
 	m_childWindow->setTitle(plant.m_plantSpecies.name);
 	add(tgui::Label::create(L"percent grown: " + std::to_wstring(plant.getGrowthPercent())));
 	add(tgui::Label::create(L"percent foliage: " + std::to_wstring(plant.getPercentFoliage())));
+	if(plant.m_volumeFluidRequested)
+	{
+		Percent thirstPercent = plant.m_fluidEvent.percentComplete();
+		add(tgui::Label::create(std::to_string(thirstPercent) + " % thirst"));
+	}
 	m_update = [this, &plant]{ display(plant); };
 }
 void InfoPopup::hide() { m_childWindow->close(); m_childWindow = nullptr; }
