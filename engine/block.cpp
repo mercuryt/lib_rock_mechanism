@@ -67,22 +67,9 @@ std::vector<Block*> Block::getAdjacentWithEdgeAndCornerAdjacent() const
 {
 	std::vector<Block*> output;
 	output.reserve(26);
-	static const int32_t offsetsList[26][3] = {
-		{-1,1,-1}, {-1,0,-1}, {-1,-1,-1},
-		{0,1,-1}, {0,0,-1}, {0,-1,-1},
-		{1,1,-1}, {1,0,-1}, {1,-1,-1},
-
-		{-1,-1,0}, {-1,0,0}, {0,-1,0},
-		{1,1,0}, {0,1,0},
-		{1,-1,0}, {1,0,0}, {-1,1,0},
-
-		{-1,1,1}, {-1,0,1}, {-1,-1,1},
-		{0,1,1}, {0,0,1}, {0,-1,1},
-		{1,1,1}, {1,0,1}, {1,-1,1}
-	};
 	for(uint32_t i = 0; i < 26; i++)
 	{
-		auto& offsets = offsetsList[i];
+		auto& offsets = offsetsListAllAdjacent[i];
 		Block* block = offset(offsets[0],offsets[1],offsets[2]);
 		if(block)
 			output.push_back(block);

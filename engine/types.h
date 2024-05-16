@@ -25,6 +25,7 @@ using Longitude = double;
 using Bearing = double;
 using DistanceInBlocks = uint32_t;
 using BlockIndex = uint32_t;
+inline BlockIndex BLOCK_INDEX_MAX = UINT32_MAX;
 using Speed = uint32_t;
 using MoveCost = Speed;
 using Quantity = uint32_t;

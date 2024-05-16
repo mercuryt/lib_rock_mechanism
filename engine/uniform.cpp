@@ -1,5 +1,6 @@
 #include "uniform.h"
 #include "block.h"
+#include "item.h"
 #include "deserializationMemo.h"
 #include "objective.h"
 #include "simulation.h"

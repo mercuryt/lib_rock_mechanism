@@ -1,5 +1,6 @@
 #include "itemQuery.h"
 #include "simulation.h"
+#include "simulation/hasItems.h"
 ItemQuery::ItemQuery(Item& item) : m_item(&item), m_itemType(nullptr), m_materialTypeCategory(nullptr), m_materialType(nullptr) { }
 ItemQuery::ItemQuery(const ItemType& m_itemType) : m_item(nullptr), m_itemType(&m_itemType), m_materialTypeCategory(nullptr), m_materialType(nullptr) { }
 ItemQuery::ItemQuery(const ItemType& m_itemType, const MaterialTypeCategory& mtc) : m_item(nullptr), m_itemType(&m_itemType), m_materialTypeCategory(&mtc), m_materialType(nullptr) { }
@@ -7,7 +8,7 @@ ItemQuery::ItemQuery(const ItemType& m_itemType, const MaterialType& mt) : m_ite
 ItemQuery::ItemQuery(const ItemType& m_itemType, const MaterialType* mt) : m_item(nullptr), m_itemType(&m_itemType), m_materialTypeCategory(nullptr), m_materialType(mt) { }
 ItemQuery::ItemQuery(const ItemType& m_itemType, const MaterialTypeCategory* mtc, const MaterialType* mt) : m_item(nullptr), m_itemType(&m_itemType), m_materialTypeCategory(mtc), m_materialType(mt) { }
 ItemQuery::ItemQuery(const Json& data, DeserializationMemo& deserializationMemo) :
-	m_item(data.contains("item") ? &deserializationMemo.m_simulation.getItemById(data["item"].get<ItemId>()) : nullptr),
+	m_item(data.contains("item") ? &deserializationMemo.m_simulation.m_hasItems->getById(data["item"].get<ItemId>()) : nullptr),
 	m_itemType(data.contains("itemType") ? &ItemType::byName(data["itemType"].get<std::string>()) : nullptr),
 	m_materialTypeCategory(data.contains("materialTypeCategory") ? &MaterialTypeCategory::byName(data["materialTypeCategory"].get<std::string>()) : nullptr),
 	m_materialType(data.contains("materialType") ? &MaterialType::byName(data["materialType"].get<std::string>()) : nullptr) { }

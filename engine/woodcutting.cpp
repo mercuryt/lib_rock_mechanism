@@ -1,5 +1,6 @@
 #include "woodcutting.h"
 #include "block.h"
+#include "item.h"
 #include "area.h"
 #include "blockFeature.h"
 #include "deserializationMemo.h"

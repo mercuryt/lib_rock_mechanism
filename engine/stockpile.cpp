@@ -7,6 +7,7 @@
 #include "itemQuery.h"
 #include "reservable.h"
 #include "simulation.h"
+#include "simulation/hasItems.h"
 #include "stocks.h"
 #include "types.h"
 #include "actor.h"
@@ -192,7 +193,7 @@ void StockPileObjective::cancel()
 StockPileProject::StockPileProject(const Faction* faction, Block& block, Item& item, Quantity quantity, Quantity maxWorkers) : Project(faction, block, maxWorkers), m_item(item), m_quantity(quantity), m_itemType(item.m_itemType), m_materialType(item.m_materialType), m_stockpile(*block.m_isPartOfStockPiles.getForFaction(*faction)) { }
 StockPileProject::StockPileProject(const Json& data, DeserializationMemo& deserializationMemo) : 
 	Project(data, deserializationMemo),
-	m_item(deserializationMemo.m_simulation.getItemById(data["item"].get<ItemId>())), 
+	m_item(deserializationMemo.m_simulation.m_hasItems->getById(data["item"].get<ItemId>())), 
 	m_quantity(data["quantity"].get<Quantity>()),
 	m_itemType(ItemType::byName(data["itemType"].get<std::string>())), 
 	m_materialType(MaterialType::byName(data["materialType"].get<std::string>())), 
@@ -477,14 +478,14 @@ AreaHasStockPilesForFaction::AreaHasStockPilesForFaction(const Json& data, Deser
 			const ItemType& itemType = ItemType::byName(pair[0].get<std::string>());
 			for(const Json& itemId : pair[1])
 			{
-				Item& item = deserializationMemo.m_simulation.getItemById(itemId.get<ItemId>());
+				Item& item = deserializationMemo.m_simulation.m_hasItems->getById(itemId.get<ItemId>());
 				m_itemsWithoutDestinationsByItemType[&itemType].insert(&item);
 			}
 		}
 	if(data.contains("itemsWithDestinationsWithoutProjects"))
 		for(const Json& itemId : data["itemsWithDestinationsWithoutProjects"])
 		{
-			Item& item = deserializationMemo.m_simulation.getItemById(itemId.get<ItemId>());
+			Item& item = deserializationMemo.m_simulation.m_hasItems->getById(itemId.get<ItemId>());
 			m_itemsWithDestinationsWithoutProjects.insert(&item);
 		}
 	if(data.contains("itemsWithDestinationsByStockPile"))
@@ -493,14 +494,14 @@ AreaHasStockPilesForFaction::AreaHasStockPilesForFaction(const Json& data, Deser
 			StockPile& stockPile = *deserializationMemo.m_stockpiles.at(pair[0].get<uintptr_t>());
 			for(const Json& itemId : pair[1])
 			{
-				Item& item = deserializationMemo.m_simulation.getItemById(itemId.get<ItemId>());
+				Item& item = deserializationMemo.m_simulation.m_hasItems->getById(itemId.get<ItemId>());
 				m_itemsWithDestinationsByStockPile[&stockPile].insert(&item);
 			}
 		}
 	if(data.contains("projectsByItem"))
 		for(const Json& pair : data["projectsByItem"])
 		{
-			Item& item = deserializationMemo.m_simulation.getItemById(pair[0].get<ItemId>());
+			Item& item = deserializationMemo.m_simulation.m_hasItems->getById(pair[0].get<ItemId>());
 			for(const Json& project : pair[1])
 				m_projectsByItem[&item].emplace_back(project, deserializationMemo);
 		}

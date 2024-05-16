@@ -1,4 +1,5 @@
 #include "drink.h"
+#include "item.h"
 #include "actor.h"
 #include "deserializationMemo.h"
 #include "objective.h"

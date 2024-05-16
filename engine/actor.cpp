@@ -8,6 +8,7 @@
 #include "item.h"
 #include "materialType.h"
 #include "simulation.h"
+#include "simulation/hasItems.h"
 #include "types.h"
 #include "util.h"
 #include "objectives/wait.h"
@@ -99,7 +100,7 @@ void ActorParamaters::generateEquipment(Actor& actor)
 	auto generate = [&](const ItemType& itemType, const MaterialType& materialType){
 		Percent quality = random.getInRange(10, 50);
 		Percent wear = random.getInRange(10, 60);
-		Item& item = simulation->createItemNongeneric(itemType, materialType, quality, wear);
+		Item& item = simulation->m_hasItems->createItemNongeneric(itemType, materialType, quality, wear);
 		actor.m_equipmentSet.addEquipment(item);
 	};
 	auto generateMetal = [&](const ItemType& itemType) {

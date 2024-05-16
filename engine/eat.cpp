@@ -1,4 +1,5 @@
 #include "eat.h"
+#include "item.h"
 #include "actor.h"
 #include "block.h"
 #include "config.h"

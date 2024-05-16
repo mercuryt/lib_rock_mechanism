@@ -3,6 +3,7 @@
 #include "../block.h"
 #include "../area.h"
 #include "../simulation.h"
+#include "../simulation/hasItems.h"
 BlockHasItems::BlockHasItems(Block& b): m_block(b) { }
 void BlockHasItems::add(Item& item)
 {
@@ -44,7 +45,7 @@ Item& BlockHasItems::addGeneric(const ItemType& itemType, const MaterialType& ma
 	}
 	// Create.
 	else
-		return m_block.m_area->m_simulation.createItem({
+		return m_block.m_area->m_simulation.m_hasItems->createItem({
 			.itemType=itemType,
 			.materialType=materialType,
 			.quantity=quantity,

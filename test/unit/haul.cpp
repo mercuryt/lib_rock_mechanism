@@ -3,6 +3,7 @@
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation.h"
+#include "../../engine/simulation/hasItems.h"
 #include "../../engine/project.h"
 #include "../../engine/haul.h"
 #include "../../engine/targetedHaul.h"
@@ -35,9 +36,9 @@ TEST_CASE("haul")
 	SUBCASE("canPickup")
 	{
 		Block& chunkLocation = area.getBlock(1, 2, 2);
-		Item& boulder1 = simulation.createItemGeneric(boulder, marble, 1);
+		Item& boulder1 = simulation.m_hasItems->createItemGeneric(boulder, marble, 1);
 		boulder1.setLocation(chunkLocation);
-		Item& boulder2 = simulation.createItemGeneric(boulder, lead, 1);
+		Item& boulder2 = simulation.m_hasItems->createItemGeneric(boulder, lead, 1);
 		boulder2.setLocation(area.getBlock(6, 2, 2));
 		REQUIRE(dwarf1.m_canPickup.canPickupAny(boulder1));
 		REQUIRE(!dwarf1.m_canPickup.canPickupAny(boulder2));
@@ -54,8 +55,8 @@ TEST_CASE("haul")
 	SUBCASE("has haul tools")
 	{
 		Block& cartLocation = area.getBlock(1, 2, 2);
-		Item& cart1 = simulation.createItemNongeneric(cart, poplarWood, 3u, 0);
-		Item& chunk1 = simulation.createItemGeneric(chunk, gold, 1u);
+		Item& cart1 = simulation.m_hasItems->createItemNongeneric(cart, poplarWood, 3u, 0);
+		Item& chunk1 = simulation.m_hasItems->createItemGeneric(chunk, gold, 1u);
 		cart1.setLocation(cartLocation);
 		area.m_hasHaulTools.registerHaulTool(cart1);
 		REQUIRE(area.m_hasHaulTools.hasToolToHaul(faction, chunk1));
@@ -64,7 +65,7 @@ TEST_CASE("haul")
 	{
 		Block& destination = area.getBlock(5, 5, 2);
 		Block& chunkLocation = area.getBlock(1, 5, 2);
-		Item& chunk1 = simulation.createItemGeneric(chunk, marble, 1u);
+		Item& chunk1 = simulation.m_hasItems->createItemGeneric(chunk, marble, 1u);
 		chunk1.setLocation(chunkLocation);
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(std::vector<Actor*>({&dwarf1}), chunk1, destination);
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "haul");
@@ -92,10 +93,10 @@ TEST_CASE("haul")
 	{
 		Block& destination = area.getBlock(5, 5, 2);
 		Block& chunkLocation = area.getBlock(1, 5, 2);
-		Item& chunk1 = simulation.createItemGeneric(chunk, gold, 1u);
+		Item& chunk1 = simulation.m_hasItems->createItemGeneric(chunk, gold, 1u);
 		chunk1.setLocation(chunkLocation);
 		REQUIRE(!dwarf1.m_canPickup.maximumNumberWhichCanBeCarriedWithMinimumSpeed(chunk1, Config::minimumHaulSpeedInital));
-		Item& cart = simulation.createItemNongeneric(ItemType::byName("cart"), MaterialType::byName("poplar wood"), 50u, 0);
+		Item& cart = simulation.m_hasItems->createItemNongeneric(ItemType::byName("cart"), MaterialType::byName("poplar wood"), 50u, 0);
 		REQUIRE(HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(dwarf1, cart, chunk1, Config::minimumHaulSpeedInital) > 0);
 		Block& cartLocation = area.getBlock(7, 7, 2);
 		cart.setLocation(cartLocation);
@@ -133,7 +134,7 @@ TEST_CASE("haul")
 	{
 		Block& destination = area.getBlock(8, 8, 2);
 		Block& chunkLocation = area.getBlock(1, 5, 2);
-		Item& chunk1 = simulation.createItemGeneric(chunk, gold, 1u);
+		Item& chunk1 = simulation.m_hasItems->createItemGeneric(chunk, gold, 1u);
 		chunk1.setLocation(chunkLocation);
 		REQUIRE(!dwarf1.m_canPickup.maximumNumberWhichCanBeCarriedWithMinimumSpeed(chunk1, Config::minimumHaulSpeedInital));
 		Actor& dwarf2 = simulation.createActor(dwarf, area.getBlock(1, 2, 2));
@@ -172,14 +173,14 @@ TEST_CASE("haul")
 	{
 		Block& destination = area.getBlock(8, 8, 2);
 		Block& chunkLocation = area.getBlock(1, 5, 2);
-		Item& chunk1 = simulation.createItemGeneric(chunk, gold, 1u);
+		Item& chunk1 = simulation.m_hasItems->createItemGeneric(chunk, gold, 1u);
 		chunk1.setLocation(chunkLocation);
 		REQUIRE(!dwarf1.m_canPickup.maximumNumberWhichCanBeCarriedWithMinimumSpeed(chunk1, Config::minimumHaulSpeedInital));
 		Block& donkeyLocation = area.getBlock(1, 2, 2);
 		Actor& donkey1 = simulation.createActor(donkey, donkeyLocation);
 		area.m_hasHaulTools.registerYokeableActor(donkey1);
 		Block& panniersLocation = area.getBlock(5, 1, 2);
-		Item& panniers1 = simulation.createItemNongeneric(panniers, poplarWood, 3u, 0);
+		Item& panniers1 = simulation.m_hasItems->createItemNongeneric(panniers, poplarWood, 3u, 0);
 		panniers1.setLocation(panniersLocation);
 		area.m_hasHaulTools.registerHaulTool(panniers1);
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(std::vector<Actor*>({&dwarf1}), chunk1, destination);
@@ -217,13 +218,13 @@ TEST_CASE("haul")
 	{
 		Block& destination = area.getBlock(5, 5, 2);
 		Block& boulderLocation = area.getBlock(1, 5, 2);
-		Item& boulder1 = simulation.createItemGeneric(boulder, lead, 1u);
+		Item& boulder1 = simulation.m_hasItems->createItemGeneric(boulder, lead, 1u);
 		boulder1.setLocation(boulderLocation);
 		Block& donkeyLocation = area.getBlock(4, 3, 2);
 		Actor& donkey1 = simulation.createActor(donkey, donkeyLocation);
 		area.m_hasHaulTools.registerYokeableActor(donkey1);
 		Block& cartLocation = area.getBlock(5, 1, 2);
-		Item& cart1 = simulation.createItemNongeneric(cart, poplarWood, 3u, 0);
+		Item& cart1 = simulation.m_hasItems->createItemNongeneric(cart, poplarWood, 3u, 0);
 		cart1.setLocation(cartLocation);
 		area.m_hasHaulTools.registerHaulTool(cart1);
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(std::vector<Actor*>({&dwarf1}), boulder1, destination);
@@ -259,13 +260,13 @@ TEST_CASE("haul")
 	{
 		Block& destination = area.getBlock(9, 9, 2);
 		Block& cargoLocation = area.getBlock(1, 7, 2);
-		Item& cargo1 = simulation.createItemGeneric(boulder, iron, 1u);
+		Item& cargo1 = simulation.m_hasItems->createItemGeneric(boulder, iron, 1u);
 		cargo1.setLocation(cargoLocation);
 		Block& origin2 = area.getBlock(4, 3, 2);
 		Actor& dwarf2 = simulation.createActor(dwarf, origin2);
 		dwarf2.setFaction(&faction);
 		Block& cartLocation = area.getBlock(7, 1, 2);
-		Item& cart1 = simulation.createItemNongeneric(cart, poplarWood, 3u, 0);
+		Item& cart1 = simulation.m_hasItems->createItemNongeneric(cart, poplarWood, 3u, 0);
 		cart1.setLocation(cartLocation);
 		area.m_hasHaulTools.registerHaulTool(cart1);
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(std::vector<Actor*>({&dwarf1, &dwarf2}), cargo1, destination);

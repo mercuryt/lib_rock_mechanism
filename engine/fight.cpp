@@ -7,6 +7,7 @@
 #include "actor.h"
 #include "weaponType.h"
 #include "block.h"
+#include "item.h"
 #include "config.h"
 #include "random.h"
 

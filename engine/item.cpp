@@ -3,6 +3,7 @@
 #include "eventSchedule.hpp"
 #include "hasShape.h"
 #include "materialType.h"
+#include "simulation/hasItems.h"
 #include "util.h"
 #include "item.h"
 #include "block.h"
@@ -102,7 +103,7 @@ void ItemCanBeStockPiled::scheduleReset(const Faction& faction, Step duration, S
 ItemId ItemParamaters::getId()
 {
 	if(!id)
-		id = simulation->m_nextItemId++;
+		id = simulation->m_hasItems->nextId();
 	return id;
 }
 // Item
@@ -195,7 +196,7 @@ void Item::destroy()
 		exit();
 		area->m_hasItems.remove(*this);
 	}
-	getSimulation().destroyItem(*this);
+	getSimulation().m_hasItems->destroyItem(*this);
 }
 bool Item::isPreparedMeal() const
 {
@@ -354,7 +355,7 @@ Item& ItemHasCargo::add(const ItemType& itemType, const MaterialType& materialTy
 			return *item;
 		}
 	// Create new stack.
-	Item& newItem = m_item.getSimulation().createItemGeneric(itemType, materialType, quantity);
+	Item& newItem = m_item.getSimulation().m_hasItems->createItemGeneric(itemType, materialType, quantity);
 	add(newItem);
 	return newItem;
 }

@@ -44,9 +44,9 @@ public:
 	std::wstring m_name;
 	//WorldLocation* m_worldLocation;
 	Simulation& m_simulation;
-	DistanceInBlocks m_sizeX;
-	DistanceInBlocks m_sizeY;
-	DistanceInBlocks m_sizeZ;
+	const DistanceInBlocks m_sizeX;
+	const DistanceInBlocks m_sizeY;
+	const DistanceInBlocks m_sizeZ;
 	//TODO: make into 1d vector.
 	std::unordered_set<Block*> m_caveInCheck;
 	std::vector<std::tuple<std::vector<Block*>,uint32_t,uint32_t>> m_caveInData;
@@ -105,9 +105,13 @@ public:
 	[[nodiscard]] Cuboid getZLevel(DistanceInBlocks z);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::vector<Block>& getBlocks() { return m_blocks; }
+	[[nodiscard]] const std::vector<Block>& getBlocks() const { return m_blocks; }
 	[[nodiscard]] size_t getBlockIndex(Point3D coordinates) const;
 	[[nodiscard]] size_t getBlockIndex(const Block& block) const;
 	[[nodiscard]] Point3D getCoordinatesForIndex(BlockIndex index) const;
+	[[nodiscard]] int indexOffsetForAdjacentOffset(uint8_t adjacentOffset) const;
+	[[nodiscard]] int indexOffsetForCoordinateOffset(int x, int y, int z) const;
+	[[nodiscard]] Facing getFacingForAdjacentOffset(uint8_t adjacentOffset) const;
 
 	// Clear all destructor callbacks in preperation for quit or hibernate.
 	void clearReservations();

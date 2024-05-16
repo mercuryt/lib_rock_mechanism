@@ -3,7 +3,7 @@
 #include "random.h"
 #include "hit.h"
 #include "materialType.h"
-#include "item.h"
+#include "simulation/hasItems.h"
 #include "weaponType.h"
 #include "actor.h"
 #include "simulation.h"
@@ -13,7 +13,7 @@ EquipmentSet::EquipmentSet(const Json& data, Actor& a) : m_actor(a), m_mass(0)
 {
 	for(const Json& equipmentId : data["equipments"])
 	{
-		Item& equipment = m_actor.getSimulation().getItemById(equipmentId.get<ItemId>());
+		Item& equipment = m_actor.getSimulation().m_hasItems->getById(equipmentId.get<ItemId>());
 		insertEquipment(equipment);
 	}
 }

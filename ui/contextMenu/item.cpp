@@ -5,7 +5,7 @@
 #include "../../engine/block.h"
 #include "../../engine/objectives/equipItem.h"
 #include "../../engine/objectives/unequipItem.h"
-#include "item.h"
+#include "../../engine/simulation/hasItems.h"
 #include <cmath>
 #include <regex>
 void ContextMenu::drawItemControls(Block& block)
@@ -98,7 +98,7 @@ void ContextMenu::drawItemControls(Block& block)
 					submenu.add(addCargo);
 					std::function<void(ItemParamaters params)> callback = [this, &item](ItemParamaters params){
 						std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-						Item& newItem = m_window.getSimulation()->createItem(params);
+						Item& newItem = m_window.getSimulation()->m_hasItems->createItem(params);
 						item->m_hasCargo.add(newItem);
 						hide();
 					};
@@ -159,7 +159,7 @@ void ContextMenu::drawItemControls(Block& block)
 				if(!selectedBlock->m_hasShapes.shapeAndMoveTypeCanEnterEverWithAnyFacing(params.itemType.shape, none))
 					continue;
 				params.location = selectedBlock;
-				m_window.getSimulation()->createItem(params);
+				m_window.getSimulation()->m_hasItems->createItem(params);
 			}
 			hide();
 		};

@@ -3,6 +3,7 @@
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation.h"
+#include "../../engine/simulation/hasItems.h"
 TEST_CASE("wound")
 {
 	static const MaterialType& dirt = MaterialType::byName("dirt");
@@ -14,7 +15,7 @@ TEST_CASE("wound")
 	Block& pondLocation = area.getBlock(3, 7, 1);
 	pondLocation.setNotSolid();
 	pondLocation.m_hasFluids.addFluid(Config::maxBlockVolume, FluidType::byName("water"));
-	Item& fruit = simulation.createItemGeneric(ItemType::byName("apple"), MaterialType::byName("fruit"), 50u);
+	Item& fruit = simulation.m_hasItems->createItemGeneric(ItemType::byName("apple"), MaterialType::byName("fruit"), 50u);
 	Block& fruitLocation = area.getBlock(6, 5, 2);
 	fruit.setLocation(fruitLocation);
 	SUBCASE("bleed to death")

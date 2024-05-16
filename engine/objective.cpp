@@ -3,6 +3,7 @@
 #include "deserializationMemo.h"
 #include "simulation.h"
 #include "actor.h"
+#include "item.h"
 #include "objectives/givePlantsFluid.h"
 #include "objectives/harvest.h"
 #include "objectives/rest.h"
@@ -314,6 +315,7 @@ void HasObjectives::destroy(Objective& objective)
 		std::erase_if(m_tasksQueue, [&](auto& o){ return &objective == o.get(); });
 	}
 	m_actor.m_canReserve.deleteAllWithoutCallback();
+	m_actor.m_canFollow.maybeDisband();
 	HasShape* wasCarrying = m_actor.m_canPickup.putDownIfAny(*m_actor.m_location);
 	if(wasCarrying != nullptr && m_actor.getFaction() != nullptr)
 	{
@@ -385,7 +387,7 @@ void HasObjectives::cannotFulfillNeed(Objective& objective)
 	// Remove from needs queue.
 	m_idsOfObjectivesInNeedsQueue.erase(objectiveTypeId);
 	m_needsQueue.erase(found);
-	m_actor.m_canReserve.deleteAllWithoutCallback();
+	// No need to disband leadAndFollow here, needs don't use it.
 	m_actor.m_canMove.maybeCancelThreadedTask();
 	if(isCurrent)
 		getNext();
@@ -394,6 +396,7 @@ void HasObjectives::cannotFulfillObjective(Objective& objective)
 {
 	m_actor.m_canMove.clearPath();
 	m_actor.m_canReserve.deleteAllWithoutCallback();
+	m_actor.m_canFollow.maybeDisband();
 	// Store delay to wait before trying again.
 	m_prioritySet.setDelay(objective.getObjectiveTypeId());
 	cancel(objective);
