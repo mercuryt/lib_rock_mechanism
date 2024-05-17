@@ -1,6 +1,7 @@
 #include "../../lib/doctest.h"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
+#include "../../engine/simulation/hasActors.h"
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/actor.h"
@@ -37,7 +38,7 @@ TEST_CASE("json")
 		Cuboid farmBlocks{area.getBlock(1,7,1), area.getBlock(1,6,1)};
 		FarmField& farm = area.m_hasFarmFields.at(faction).create(farmBlocks);
 		area.m_hasFarmFields.at(faction).setSpecies(farm, sage);
-		Actor& dwarf1 = simulation.createActor(ActorParamaters{
+		Actor& dwarf1 = simulation.m_hasActors->createActor(ActorParamaters{
 			.species=dwarf, 
 			.percentGrown=90,
 			.location=&area.getBlock(5,5,1),
@@ -165,7 +166,7 @@ TEST_CASE("json")
 		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
 		Item& pick1 = simulation.m_hasItems->createItemNongeneric(pick, bronze, 10, 10);
 		pick1.setLocation(area.getBlock(1,2,1));
-		Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
+		Actor& dwarf1 = simulation.m_hasActors->createActor(dwarf, area.getBlock(5,5,1), 90);
 		dwarf1.setFaction(&faction);
 		DigObjectiveType& digObjectiveType = static_cast<DigObjectiveType&>(*ObjectiveType::objectiveTypes.at("dig").get());
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
@@ -214,7 +215,7 @@ TEST_CASE("json")
 		Block& projectLocation = area.getBlock(8, 4, 1);
 		area.m_hasConstructionDesignations.addFaction(faction);
 		area.m_hasConstructionDesignations.designate(faction, projectLocation, nullptr, wood);
-		Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
+		Actor& dwarf1 = simulation.m_hasActors->createActor(dwarf, area.getBlock(5,5,1), 90);
 		dwarf1.setFaction(&faction);
 		ConstructObjectiveType& constructObjectiveType = static_cast<ConstructObjectiveType&>(*ObjectiveType::objectiveTypes.at("construct").get());
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);
@@ -257,7 +258,7 @@ TEST_CASE("json")
 		pile1.setLocation(pileLocation1);
 		REQUIRE(stockPile.accepts(pile1));
 		area.m_hasStockPiles.at(faction).addItem(pile1);
-		Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
+		Actor& dwarf1 = simulation.m_hasActors->createActor(dwarf, area.getBlock(5,5,1), 90);
 		dwarf1.setFaction(&faction);
 		StockPileObjectiveType& stockPileObjectiveType = static_cast<StockPileObjectiveType&>(*ObjectiveType::objectiveTypes.at("stockpile").get());
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(stockPileObjectiveType, 100);
@@ -299,7 +300,7 @@ TEST_CASE("json")
 		area.m_hasCraftingLocationsAndJobs.at(faction).addLocation(craftStepTypeScrape, area.getBlock(3,2,1));
 		CraftJobType& jobTypeSawBoards = CraftJobType::byName("saw boards");
 		area.m_hasCraftingLocationsAndJobs.at(faction).addJob(jobTypeSawBoards, &wood, 1);
-		Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
+		Actor& dwarf1 = simulation.m_hasActors->createActor(dwarf, area.getBlock(5,5,1), 90);
 		dwarf1.setFaction(&faction);
 		CraftObjectiveType& woodWorkingObjectiveType = static_cast<CraftObjectiveType&>(*ObjectiveType::objectiveTypes.at("wood working").get());
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(woodWorkingObjectiveType, 100);
@@ -336,7 +337,7 @@ TEST_CASE("json")
 		Item& bucket1 = simulation.m_hasItems->createItemNongeneric(bucket, bronze, 25, 0);
 		bucket1.setLocation(area.getBlock(3, 7, 1));
 		bucket1.m_hasCargo.add(water, 10);
-		simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
+		simulation.m_hasActors->createActor(dwarf, area.getBlock(5,5,1), 90);
 		simulation.fastForward(dwarf.stepsFluidDrinkFreqency);
 		// One step to find the bucket.
 		simulation.doStep();
@@ -355,7 +356,7 @@ TEST_CASE("json")
 	{
 		Item& preparedMeal1 = simulation.m_hasItems->createItemNongeneric(preparedMeal, MaterialType::byName("fruit"), 25, 0);
 		preparedMeal1.setLocation(area.getBlock(3, 7, 1));
-		Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
+		Actor& dwarf1 = simulation.m_hasActors->createActor(dwarf, area.getBlock(5,5,1), 90);
 		simulation.fastForward(dwarf.stepsEatFrequency);
 		// Discard drink objective if exists.
 		if(dwarf1.m_mustDrink.getVolumeFluidRequested() != 0)
@@ -375,7 +376,7 @@ TEST_CASE("json")
 	}
 	SUBCASE("sleep")
 	{
-		Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
+		Actor& dwarf1 = simulation.m_hasActors->createActor(dwarf, area.getBlock(5,5,1), 90);
 		dwarf1.setFaction(&faction);
 		area.m_hasSleepingSpots.designate(faction, area.getBlock(2,2,1));
 		area.m_hasSleepingSpots.designate(faction, area.getBlock(1,1,1));
@@ -394,7 +395,7 @@ TEST_CASE("json")
 		Json simulationData = simulation.toJson();
 		Simulation simulation2(simulationData);
 		Area& area2 = simulation2.loadAreaFromJson(areaData);
-		Actor& dwarf2 = simulation2.getActorById(dwarf1Id);
+		Actor& dwarf2 = simulation2.m_hasActors->getById(dwarf1Id);
 
 		REQUIRE(dwarf2.m_mustSleep.hasTiredEvent());
 		REQUIRE(dwarf2.m_mustSleep.getSleepPercent() == 0);
@@ -410,7 +411,7 @@ TEST_CASE("json")
 		Cuboid farmBlocks{area.getBlock(1,7,1), area.getBlock(1,6,1)};
 		FarmField& farm = area.m_hasFarmFields.at(faction).create(farmBlocks);
 		area.m_hasFarmFields.at(faction).setSpecies(farm, sage);
-		Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
+		Actor& dwarf1 = simulation.m_hasActors->createActor(dwarf, area.getBlock(5,5,1), 90);
 		dwarf1.setFaction(&faction);
 		SowSeedsObjectiveType& sowObjectiveType = static_cast<SowSeedsObjectiveType&>(*ObjectiveType::objectiveTypes.at("sow seeds").get());
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(sowObjectiveType, 10);
@@ -429,7 +430,7 @@ TEST_CASE("json")
 		Json simulationData = simulation.toJson();
 		Simulation simulation2(simulationData);
 		[[maybe_unused]] Area& area2 = simulation2.loadAreaFromJson(areaData);
-		Actor& dwarf2 = simulation2.getActorById(dwarf1Id);
+		Actor& dwarf2 = simulation2.m_hasActors->getById(dwarf1Id);
 		
 		Objective& objective2 = dwarf2.m_hasObjectives.getCurrent();
 		REQUIRE(objective2.getObjectiveTypeId() == ObjectiveTypeId::SowSeeds);
@@ -448,7 +449,7 @@ TEST_CASE("json")
 		Cuboid farmBlocks{area.getBlock(1,7,1), area.getBlock(1,6,1)};
 		FarmField& farm = area.m_hasFarmFields.at(faction).create(farmBlocks);
 		area.m_hasFarmFields.at(faction).setSpecies(farm, wheatGrass);
-		Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
+		Actor& dwarf1 = simulation.m_hasActors->createActor(dwarf, area.getBlock(5,5,1), 90);
 		dwarf1.setFaction(&faction);
 		HarvestObjectiveType& harvestObjectiveType = static_cast<HarvestObjectiveType&>(*ObjectiveType::objectiveTypes.at("harvest").get());
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(harvestObjectiveType, 10);
@@ -460,7 +461,7 @@ TEST_CASE("json")
 		Json simulationData = simulation.toJson();
 		Simulation simulation2(simulationData);
 		[[maybe_unused]] Area& area2 = simulation2.loadAreaFromJson(areaData);
-		Actor& dwarf2 = simulation2.getActorById(dwarf1Id);
+		Actor& dwarf2 = simulation2.m_hasActors->getById(dwarf1Id);
 		
 		Objective& objective2 = dwarf2.m_hasObjectives.getCurrent();
 		REQUIRE(objective2.getObjectiveTypeId() == ObjectiveTypeId::Harvest);
@@ -479,7 +480,7 @@ TEST_CASE("json")
 		Cuboid farmBlocks{area.getBlock(1,7,1), area.getBlock(1,6,1)};
 		FarmField& farm = area.m_hasFarmFields.at(faction).create(farmBlocks);
 		area.m_hasFarmFields.at(faction).setSpecies(farm, wheatGrass);
-		Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(5,5,1), 90);
+		Actor& dwarf1 = simulation.m_hasActors->createActor(dwarf, area.getBlock(5,5,1), 90);
 		dwarf1.setFaction(&faction);
 		GivePlantsFluidObjectiveType& harvestObjectiveType = static_cast<GivePlantsFluidObjectiveType&>(*ObjectiveType::objectiveTypes.at("give plants fluid").get());
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(harvestObjectiveType, 10);
@@ -492,7 +493,7 @@ TEST_CASE("json")
 		Json simulationData = simulation.toJson();
 		Simulation simulation2(simulationData);
 		[[maybe_unused]] Area& area2 = simulation2.loadAreaFromJson(areaData);
-		Actor& dwarf2 = simulation2.getActorById(dwarf1Id);
+		Actor& dwarf2 = simulation2.m_hasActors->getById(dwarf1Id);
 		
 		Objective& objective2 = dwarf2.m_hasObjectives.getCurrent();
 		REQUIRE(objective2.getObjectiveTypeId() == ObjectiveTypeId::GivePlantsFluid);

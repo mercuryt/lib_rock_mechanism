@@ -2,6 +2,7 @@
 #include "deserializationMemo.h"
 #include "item.h"
 #include "block.h"
+#include "actor.h"
 #include "area.h"
 #include "reservable.h"
 #include "util.h"

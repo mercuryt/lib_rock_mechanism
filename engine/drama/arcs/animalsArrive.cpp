@@ -1,9 +1,11 @@
 #include "animalsArrive.h"
 #include "../engine.h"
 #include "../../area.h"
+#include "../../actor.h"
 #include "../../animalSpecies.h"
 #include "../../config.h"
 #include "../../simulation.h"
+#include "simulation/hasActors.h"
 #include "util.h"
 #include <string>
 AnimalsArriveDramaArc::AnimalsArriveDramaArc(DramaEngine& engine, Area& area) : 
@@ -39,7 +41,7 @@ void AnimalsArriveDramaArc::callback()
 			if(location)
 			{
 				exclude.insert(location);
-				Actor& actor = m_area->m_simulation.createActor(ActorParamaters{
+				Actor& actor = m_area->m_simulation.m_hasActors->createActor(ActorParamaters{
 					.species=*m_species, 
 					.percentGrown=percentGrown,
 					.location=location,

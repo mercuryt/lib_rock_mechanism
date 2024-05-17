@@ -2,6 +2,7 @@
 #include "objective.h"
 #include "deserializationMemo.h"
 #include "simulation.h"
+#include "simulation/hasActors.h"
 #include "actor.h"
 #include "item.h"
 #include "objectives/givePlantsFluid.h"
@@ -161,7 +162,7 @@ inline void from_json(const Json& data, const ObjectiveType*& objectiveType)
 // Objective.
 Objective::Objective(Actor& a, uint32_t p) : m_actor(a), m_priority(p) {}
 Objective::Objective(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) :
-	m_actor(deserializationMemo.m_simulation.getActorById(data["actor"].get<ActorId>())), m_priority(data["priority"].get<uint32_t>()), m_detour(data["detour"].get<bool>()) 
+	m_actor(deserializationMemo.m_simulation.m_hasActors->getById(data["actor"].get<ActorId>())), m_priority(data["priority"].get<uint32_t>()), m_detour(data["detour"].get<bool>()) 
 { 
 	deserializationMemo.m_objectives[data["address"].get<uintptr_t>()] = this;
 }
@@ -172,7 +173,7 @@ Json Objective::toJson() const
 		{"detour", m_detour}, {"address", reinterpret_cast<uintptr_t>(this)}}; 
 }
 CannotCompleteObjectiveDishonorCallback::CannotCompleteObjectiveDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
-	m_actor(deserializationMemo.m_simulation.getActorById(data["actor"].get<ActorId>())) { }
+	m_actor(deserializationMemo.m_simulation.m_hasActors->getById(data["actor"].get<ActorId>())) { }
 Json CannotCompleteObjectiveDishonorCallback::toJson() const
 {
 	//TODO: We should not have to specify actor id.

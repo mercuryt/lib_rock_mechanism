@@ -1,6 +1,7 @@
 #include "../../lib/doctest.h"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
+#include "../../engine/simulation/hasActors.h"
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/actor.h"
@@ -23,7 +24,7 @@ TEST_CASE("actor")
 	SUBCASE("single tile")
 	{
 		int previousEventCount = simulation.m_eventSchedule.count();
-		Actor& dwarf1 = simulation.createActor(ActorParamaters{
+		Actor& dwarf1 = simulation.m_hasActors->createActor(ActorParamaters{
 			.species=dwarf, 
 			.percentGrown=100,
 			.location=&origin1
@@ -40,7 +41,7 @@ TEST_CASE("actor")
 	SUBCASE("multi tile")
 	{
 		// Multi tile.
-		Actor& troll1 = simulation.createActor(ActorParamaters{
+		Actor& troll1 = simulation.m_hasActors->createActor(ActorParamaters{
 			.species=troll, 
 			.percentGrown=100,
 			.location=&origin2
@@ -52,7 +53,7 @@ TEST_CASE("actor")
 	}
 	SUBCASE("growth")
 	{
-		Actor& dwarf1 = simulation.createActor(ActorParamaters{
+		Actor& dwarf1 = simulation.m_hasActors->createActor(ActorParamaters{
 			.species=dwarf, 
 			.percentGrown=45,
 			.location=&origin1,

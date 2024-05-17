@@ -1,9 +1,10 @@
-#include "config.h"
 #include "goTo.h"
-#include "block.h"
-#include "input.h"
-#include "objective.h"
-#include "simulation.h"
+#include "../config.h"
+#include "../block.h"
+#include "../actor.h"
+#include "../input.h"
+#include "../objective.h"
+#include "../simulation.h"
 #include <memory>
 #include <unordered_set>
 GoToObjective::GoToObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo),

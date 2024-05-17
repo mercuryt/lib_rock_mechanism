@@ -5,6 +5,7 @@
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation.h"
+#include "../../engine/simulation/hasActors.h"
 
 #include <memory>
 
@@ -41,7 +42,7 @@ TEST_CASE("objective")
 	Simulation simulation;
 	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
-	Actor& actor = simulation.createActor(dwarf, area.getBlock(5, 5, 1));
+	Actor& actor = simulation.m_hasActors->createActor(dwarf, area.getBlock(5, 5, 1));
 	bool x = false;
 	std::unique_ptr<Objective> objective = std::make_unique<TestTaskObjective>(actor, 1, x);
 	Objective* ptr = objective.get();

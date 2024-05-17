@@ -1,6 +1,7 @@
 #include "engine.h"
 #include "../moveType.h"
 #include "../area.h"
+#include "../actor.h"
 #include "../objectives/leaveArea.h"
 #include "../simulation.h"
 #include "animalSpecies.h"

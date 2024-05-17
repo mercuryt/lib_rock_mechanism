@@ -1,5 +1,6 @@
 #include "../../lib/doctest.h"
 #include "../../engine/simulation.h"
+#include "../../engine/simulation/hasActors.h"
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/actor.h"
@@ -18,8 +19,8 @@ TEST_CASE("leadAndFollow")
 		Block& origin2 = area.getBlock(1, 1, 1);
 		Block& destination1 = area.getBlock(9, 9, 1);
 		Block& destination2 = area.getBlock(8, 8, 1);
-		Actor& dwarf1 = simulation.createActor(dwarf, origin1);
-		Actor& dwarf2 = simulation.createActor(dwarf, origin2);
+		Actor& dwarf1 = simulation.m_hasActors->createActor(dwarf, origin1);
+		Actor& dwarf2 = simulation.m_hasActors->createActor(dwarf, origin2);
 		dwarf2.m_canFollow.follow(dwarf1.m_canLead);
 		REQUIRE(dwarf1.m_canLead.getMoveSpeed() == dwarf1.m_canMove.getMoveSpeed());
 		dwarf1.m_canMove.setDestination(destination1);
@@ -36,8 +37,8 @@ TEST_CASE("leadAndFollow")
 		Block& origin2 = area.getBlock(2, 2, 1);
 		Block& destination1 = area.getBlock(9, 9, 1);
 		Block& destination2 = area.getBlock(8, 8, 1);
-		Actor& dwarf1 = simulation.createActor(dwarf, origin1);
-		Actor& troll1 = simulation.createActor(troll, origin2);
+		Actor& dwarf1 = simulation.m_hasActors->createActor(dwarf, origin1);
+		Actor& troll1 = simulation.m_hasActors->createActor(troll, origin2);
 		troll1.m_canFollow.follow(dwarf1.m_canLead);
 		REQUIRE(dwarf1.m_canLead.getMoveSpeed() == dwarf1.m_canMove.getMoveSpeed());
 		dwarf1.m_canMove.setDestination(destination1);
@@ -54,8 +55,8 @@ TEST_CASE("leadAndFollow")
 		Block& origin2 = area.getBlock(1, 1, 1);
 		Block& destination1 = area.getBlock(8, 8, 1);
 		Block& destination2 = area.getBlock(7, 6, 1);
-		Actor& troll1 = simulation.createActor(troll, origin1);
-		Actor& dwarf1 = simulation.createActor(dwarf, origin2);
+		Actor& troll1 = simulation.m_hasActors->createActor(troll, origin1);
+		Actor& dwarf1 = simulation.m_hasActors->createActor(dwarf, origin2);
 		dwarf1.m_canFollow.follow(troll1.m_canLead);
 		REQUIRE(troll1.m_canLead.getMoveSpeed() == troll1.m_canMove.getMoveSpeed());
 		troll1.m_canMove.setDestination(destination1);
@@ -75,8 +76,8 @@ TEST_CASE("leadAndFollow")
 		area.getBlock(5, 3, 1).setSolid(marble);
 		area.getBlock(5, 5, 1).setSolid(marble);
 		area.getBlock(5, 7, 1).setSolid(marble);
-		Actor& dwarf1 = simulation.createActor(AnimalSpecies::byName("dwarf"), origin1);
-		Actor& troll1 = simulation.createActor(troll, origin2);
+		Actor& dwarf1 = simulation.m_hasActors->createActor(AnimalSpecies::byName("dwarf"), origin1);
+		Actor& troll1 = simulation.m_hasActors->createActor(troll, origin2);
 		troll1.m_canFollow.follow(dwarf1.m_canLead);
 		dwarf1.m_canMove.setDestination(destination1);
 		simulation.doStep();
@@ -89,9 +90,9 @@ TEST_CASE("leadAndFollow")
 		Block& origin3 = area.getBlock(3, 2, 1);
 		Block& destination1 = area.getBlock(9, 9, 1);
 		Block& destination2 = area.getBlock(8, 8, 1);
-		Actor& dwarf1 = simulation.createActor(dwarf, origin1);
-		Actor& troll1 = simulation.createActor(troll, origin2);
-		Actor& dwarf2 = simulation.createActor(dwarf, origin3);
+		Actor& dwarf1 = simulation.m_hasActors->createActor(dwarf, origin1);
+		Actor& troll1 = simulation.m_hasActors->createActor(troll, origin2);
+		Actor& dwarf2 = simulation.m_hasActors->createActor(dwarf, origin3);
 		std::unique_ptr<Objective> stationObjective = std::make_unique<StationObjective>(dwarf2, origin3);
 		dwarf2.m_hasObjectives.addTaskToStart(std::move(stationObjective));
 		troll1.m_canFollow.follow(dwarf1.m_canLead);
@@ -119,8 +120,8 @@ TEST_CASE("leadAndFollow")
 		Block& origin1 = area.getBlock(2, 2, 1);
 		Block& origin2 = area.getBlock(1, 1, 1);
 		Block& destination1 = area.getBlock(9, 9, 1);
-		Actor& dwarf1 = simulation.createActor(dwarf, origin1);
-		Actor& troll1 = simulation.createActor(troll, origin2);
+		Actor& dwarf1 = simulation.m_hasActors->createActor(dwarf, origin1);
+		Actor& troll1 = simulation.m_hasActors->createActor(troll, origin2);
 		troll1.m_canFollow.follow(dwarf1.m_canLead);
 		dwarf1.m_canMove.setDestination(destination1);
 		simulation.doStep();

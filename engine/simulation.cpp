@@ -6,6 +6,7 @@
 #include "definitions.h"
 #include "deserializationMemo.h"
 #include "haul.h"
+#include "simulation/hasActors.h"
 #include "simulation/hasItems.h"
 #include "threadedTask.h"
 #include "util.h"
@@ -14,12 +15,13 @@
 #include <cstdint>
 #include <filesystem>
 #include <functional>
-Simulation::Simulation(std::wstring name, Step s) :  m_nextAreaId(1), m_deserializationMemo(*this), m_name(name), m_step(s), m_nextActorId(1), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this)
+Simulation::Simulation(std::wstring name, Step s) :  m_nextAreaId(1), m_deserializationMemo(*this), m_name(name), m_step(s), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this)
 { 
 	m_hourlyEvent.schedule(*this);
 	m_path.append(L"save/"+name);
 	m_dramaEngine = std::make_unique<DramaEngine>(*this);
 	m_hasItems = std::make_unique<SimulationHasItems>(*this);
+	m_hasActors = std::make_unique<SimulationHasActors>(*this);
 }
 Simulation::Simulation(std::filesystem::path path) : Simulation(Json::parse(std::ifstream{path/"simulation.json"})) 
 {
@@ -43,6 +45,7 @@ Simulation::Simulation(const Json& data) : m_deserializationMemo(*this), m_event
 	m_hasFactions.load(data["factions"], m_deserializationMemo);
 	m_hourlyEvent.schedule(*this, data["hourEventStart"].get<Step>());
 	m_hasItems = std::make_unique<SimulationHasItems>(data["hasItems"], m_deserializationMemo, *this);
+	m_hasActors = std::make_unique<SimulationHasActors>(data["hasActors"], m_deserializationMemo, *this);
 }
 void Simulation::doStep(uint16_t count)
 {
@@ -110,20 +113,6 @@ Area& Simulation::loadArea(AreaId id, std::wstring name, uint32_t x, uint32_t y,
 	m_areasById[id] = &area;
 	return area;
 }
-Actor& Simulation::createActor(ActorParamaters params)
-{
-	params.simulation = this;
-	auto [iter, emplaced] = m_actors.emplace(
-		params.getId(),
-		params
-	);
-	assert(emplaced);
-	return iter->second;
-}
-Actor& Simulation::createActor(const AnimalSpecies& species, Block& location, Percent percentGrown)
-{
-	return createActor(ActorParamaters{.species = species, .percentGrown = percentGrown, .location = &location});
-}
 void Simulation::destroyArea(Area& area)
 {
 	m_dramaEngine->removeArcsForArea(area);
@@ -132,26 +121,14 @@ void Simulation::destroyArea(Area& area)
 	m_areasById.erase(area.m_id);
 	m_areas.remove(area);
 }
-void Simulation::destroyActor(Actor& actor)
-{
-	if(actor.m_location)
-		actor.leaveArea();
-	m_actors.erase(actor.m_id);
-	//TODO: Destroy hibernation json file if any.
-}
 DateTime Simulation::getDateTime() const { return DateTime(m_step); }
 Simulation::~Simulation()
 {
 	m_dramaEngine = nullptr;
 	for(Area& area : m_areas)
 		area.clearReservations();
-	for(auto& pair : m_actors)
-	{
-		pair.second.m_canReserve.deleteAllWithoutCallback();
-		pair.second.m_onDestroy.unsubscribeAll();
-	}
 	m_hasItems->clearAll();
-	m_actors.clear();
+	m_hasActors->clearAll();
 	m_areas.clear();
 	m_hourlyEvent.maybeUnschedule();
 	m_eventSchedule.m_data.clear();
@@ -248,7 +225,7 @@ Json Simulation::toJson() const
 	output["name"] = m_name;
 	//output["world"] = m_world;
 	output["step"] = m_step;
-	output["nextActorId"] = m_nextActorId;
+	output["hasActors"] = m_hasActors->toJson();
 	output["hasItems"] = m_hasItems->toJson();
 	output["nextAreaId"] = m_nextAreaId;
 	output["areaIds"] = Json::array();
@@ -265,12 +242,6 @@ Area& Simulation::loadAreaFromJson(const Json& data)
 	m_areas.emplace_back(data, deserializationMemo, *this);
 	return m_areas.back();
 }
-Actor& Simulation::loadActorFromJson(const Json& data, DeserializationMemo& deserializationMemo)
-{
-	auto id = data["id"].get<ActorId>();
-	m_actors.try_emplace(id, data, deserializationMemo);
-	return m_actors.at(id);
-}
 Block& Simulation::getBlockForJsonQuery(const Json& data)
 {
 	auto x = data["x"].get<uint32_t>();
@@ -281,14 +252,3 @@ Block& Simulation::getBlockForJsonQuery(const Json& data)
 	Area& area = *m_areasById.at(id);
 	return area.getBlock(x, y, z);
 }
-Actor& Simulation::getActorById(ActorId id) 
-{ 
-	if(!m_actors.contains(id))
-	{
-		//TODO: Load from world DB.
-		assert(false);
-	}
-	else
-		return m_actors.at(id); 
-	return m_actors.begin()->second;
-} 

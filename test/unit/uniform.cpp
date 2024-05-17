@@ -1,6 +1,7 @@
 #include "../../lib/doctest.h"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
+#include "../../engine/simulation/hasActors.h"
 #include "../../engine/areaBuilderUtil.h"
 TEST_CASE("uniform")
 {
@@ -11,7 +12,7 @@ TEST_CASE("uniform")
 	UniformElement shirtElement(ItemType::byName("shirt"));
 	UniformElement twoBeltsElement(ItemType::byName("belt"), 2u);
 	Uniform basic = Uniform(L"basic", {pantsElement, shirtElement, twoBeltsElement});
-	Actor& actor = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(5,5,1));
+	Actor& actor = simulation.m_hasActors->createActor(AnimalSpecies::byName("dwarf"), area.getBlock(5,5,1));
 	actor.m_hasUniform.set(basic);
 	REQUIRE(actor.m_hasObjectives.hasCurrent());
 	REQUIRE(actor.m_hasObjectives.getCurrent().getObjectiveTypeId() == ObjectiveTypeId::Uniform);

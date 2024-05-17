@@ -10,6 +10,7 @@
 #include "plant.h"
 #include "simulation.h"
 #include "simulation/hasItems.h"
+#include "simulation/hasActors.h"
 #include "types.h"
 //#include "worldforge/worldLocation.h"
 #include <algorithm>
@@ -70,7 +71,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 		m_simulation.m_hasItems->loadItemFromJson(item, deserializationMemo);
 	// Load Actors.
 	for(const Json& actor : data["actors"])
-		m_simulation.loadActorFromJson(actor, deserializationMemo);
+		m_simulation.m_hasActors->loadActorFromJson(actor, deserializationMemo);
 	// Load Projects
 	m_hasConstructionDesignations.load(data["hasConstructionDesignations"], deserializationMemo);
 	m_hasDigDesignations.load(data["hasDigDesignations"], deserializationMemo);
@@ -89,7 +90,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	// Load Actor objectives, following and reservations.
 	for(const Json& actorData : data["actors"])
 	{
-		Actor& actor = m_simulation.getActorById(actorData["id"].get<ActorId>());
+		Actor& actor = m_simulation.m_hasActors->getById(actorData["id"].get<ActorId>());
 		actor.m_hasObjectives.load(actorData["hasObjectives"], deserializationMemo);
 		if(actorData.contains("canReserve"))
 			actor.m_canReserve.load(actorData["canReserve"], deserializationMemo);

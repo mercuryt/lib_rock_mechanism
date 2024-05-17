@@ -5,6 +5,7 @@
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
+#include "../../engine/simulation/hasActors.h"
 #include "../../engine/craft.h"
 #include "../../engine/materialType.h"
 #include <functional>
@@ -30,7 +31,7 @@ TEST_CASE("craft")
 	REQUIRE(area.m_hasCraftingLocationsAndJobs.at(faction).hasLocationsFor(woodBucket));
 	CraftObjectiveType craftObjectiveTypeWoodWorking(woodWorking);
 	CraftObjectiveType craftObjectiveTypeAssembling(assembling);
-	Actor& dwarf1 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 1, 1));
+	Actor& dwarf1 = simulation.m_hasActors->createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 1, 1));
 	dwarf1.setFaction(&faction);
 	std::unordered_set<CraftJob*> emptyJobSet;
 	SUBCASE("infastructure")
@@ -189,7 +190,7 @@ TEST_CASE("craft")
 		SUBCASE("worker dies")
 		{
 			dwarf1.die(CauseOfDeath::thirst);
-			Actor& dwarf2 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 5, 1));
+			Actor& dwarf2 = simulation.m_hasActors->createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 5, 1));
 			dwarf2.setFaction(&faction);
 			REQUIRE(craftObjectiveTypeWoodWorking.canBeAssigned(dwarf2));
 		}

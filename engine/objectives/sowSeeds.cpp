@@ -1,9 +1,9 @@
 #include "sowSeeds.h"
-#include "area.h"
-#include "actor.h"
-#include "config.h"
-#include "farmFields.h"
-#include "simulation.h"
+#include "../area.h"
+#include "../actor.h"
+#include "../config.h"
+#include "../farmFields.h"
+#include "../simulation.h"
 
 struct DeserializationMemo;
 

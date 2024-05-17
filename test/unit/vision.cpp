@@ -5,6 +5,7 @@
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/animalSpecies.h"
 #include "../../engine/simulation.h"
+#include "../../engine/simulation/hasActors.h"
 #include "../../engine/visionUtil.h"
 TEST_CASE("vision")
 {
@@ -22,7 +23,7 @@ TEST_CASE("vision")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		Block& block = area.getBlock(5, 5, 1);
-		Actor& actor = simulation.createActor(dwarf, block);
+		Actor& actor = simulation.m_hasActors->createActor(dwarf, block);
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
@@ -33,8 +34,8 @@ TEST_CASE("vision")
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		Block& block1 = area.getBlock(3, 3, 1);
 		Block& block2 = area.getBlock(7, 7, 1);
-		Actor& a1 = simulation.createActor(dwarf, block1);
-		Actor& a2 = simulation.createActor(dwarf, block2);
+		Actor& a1 = simulation.m_hasActors->createActor(dwarf, block1);
+		Actor& a2 = simulation.m_hasActors->createActor(dwarf, block2);
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
@@ -49,8 +50,8 @@ TEST_CASE("vision")
 		Block& block2 = area.getBlock(5, 5, 1);
 		Block& block3 = area.getBlock(5, 7, 1);
 		block2.setSolid(marble);
-		Actor& a1 = simulation.createActor(dwarf, block1);
-		simulation.createActor(dwarf, block3);
+		Actor& a1 = simulation.m_hasActors->createActor(dwarf, block1);
+		simulation.m_hasActors->createActor(dwarf, block3);
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
@@ -64,8 +65,8 @@ TEST_CASE("vision")
 		Block& block2 = area.getBlock(5, 5, 1);
 		Block& block3 = area.getBlock(6, 6, 1);
 		block2.setSolid(marble);
-		Actor& a1 = simulation.createActor(dwarf, block1);
-		simulation.createActor(dwarf, block3);
+		Actor& a1 = simulation.m_hasActors->createActor(dwarf, block1);
+		simulation.m_hasActors->createActor(dwarf, block3);
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
@@ -80,8 +81,8 @@ TEST_CASE("vision")
 		Block& block3 = area.getBlock(5, 7, 1);
 		Block& block4 = area.getBlock(4, 7, 1);
 		block2.setSolid(marble);
-		Actor& a1 = simulation.createActor(dwarf, block1);
-		Actor& a2 = simulation.createActor(troll, block3);
+		Actor& a1 = simulation.m_hasActors->createActor(dwarf, block1);
+		Actor& a2 = simulation.m_hasActors->createActor(troll, block3);
 		REQUIRE(a2.m_blocks.contains(&block4));
 		REQUIRE(area.m_hasActors.m_opacityFacade.hasLineOfSight(block1, block4));
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
@@ -97,8 +98,8 @@ TEST_CASE("vision")
 		Block& block2 = area.getBlock(5, 5, 1);
 		Block& block3 = area.getBlock(5, 7, 1);
 		block2.setSolid(glass);
-		Actor& a1 = simulation.createActor(dwarf, block1);
-		simulation.createActor(dwarf, block3);
+		Actor& a1 = simulation.m_hasActors->createActor(dwarf, block1);
+		simulation.m_hasActors->createActor(dwarf, block3);
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
@@ -112,8 +113,8 @@ TEST_CASE("vision")
 		Block& block2 = area.getBlock(5, 5, 1);
 		Block& block3 = area.getBlock(5, 7, 1);
 		block2.m_hasBlockFeatures.construct(door, marble);
-		Actor& a1 = simulation.createActor(dwarf, block1);
-		simulation.createActor(dwarf, block3);
+		Actor& a1 = simulation.m_hasActors->createActor(dwarf, block1);
+		simulation.m_hasActors->createActor(dwarf, block3);
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
@@ -136,8 +137,8 @@ TEST_CASE("vision")
 		block2.setNotSolid();
 		block3.setNotSolid();
 		block3.m_hasBlockFeatures.construct(hatch, marble);
-		Actor& a1 = simulation.createActor(dwarf, block1);
-		Actor& a2 = simulation.createActor(dwarf, block3);
+		Actor& a1 = simulation.m_hasActors->createActor(dwarf, block1);
+		Actor& a2 = simulation.m_hasActors->createActor(dwarf, block3);
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
@@ -164,8 +165,8 @@ TEST_CASE("vision")
 		Block& block2 = area.getBlock(5, 5, 1);
 		Block& block3 = area.getBlock(5, 7, 1);
 		block2.m_hasBlockFeatures.construct(hatch, marble);
-		Actor& a1 = simulation.createActor(dwarf, block1);
-		simulation.createActor(dwarf, block3);
+		Actor& a1 = simulation.m_hasActors->createActor(dwarf, block1);
+		simulation.m_hasActors->createActor(dwarf, block3);
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
@@ -182,8 +183,8 @@ TEST_CASE("vision")
 		block2.setNotSolid();
 		block3.setNotSolid();
 		block2.m_hasBlockFeatures.construct(stairs, marble);
-		Actor& a1 = simulation.createActor(dwarf, block1);
-		Actor& a2 = simulation.createActor(dwarf, block3);
+		Actor& a1 = simulation.m_hasActors->createActor(dwarf, block1);
+		Actor& a2 = simulation.m_hasActors->createActor(dwarf, block3);
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
@@ -211,8 +212,8 @@ TEST_CASE("vision")
 		block2.setNotSolid();
 		block3.setNotSolid();
 		block2.m_hasBlockFeatures.construct(stairs, marble);
-		Actor& a1 = simulation.createActor(dwarf, block1);
-		simulation.createActor(dwarf, block3);
+		Actor& a1 = simulation.m_hasActors->createActor(dwarf, block1);
+		simulation.m_hasActors->createActor(dwarf, block3);
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
@@ -232,8 +233,8 @@ TEST_CASE("vision")
 		Block& block2 = area.getBlock(5, 5, 1);
 		Block& block3 = area.getBlock(5, 7, 1);
 		block2.m_hasBlockFeatures.construct(floor, marble);
-		Actor& a1 = simulation.createActor(dwarf, block1);
-		simulation.createActor(dwarf, block3);
+		Actor& a1 = simulation.m_hasActors->createActor(dwarf, block1);
+		simulation.m_hasActors->createActor(dwarf, block3);
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
@@ -318,8 +319,8 @@ TEST_CASE("vision")
 			area.visionCuboidsActivate();
 		Block& block1 = area.getBlock(3, 3, 1);
 		Block& block2 = area.getBlock(7, 7, 1);
-		Actor& a1 = simulation.createActor(dwarf, block1);
-		Actor& a2 = simulation.createActor(dwarf, block2);
+		Actor& a1 = simulation.m_hasActors->createActor(dwarf, block1);
+		Actor& a2 = simulation.m_hasActors->createActor(dwarf, block2);
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
 		simulation.m_pool.wait_for_tasks();
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
@@ -337,8 +338,8 @@ TEST_CASE("Too far to see")
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	Block& block1 = area.getBlock(0, 0, 1);
 	Block& block2 = area.getBlock(19, 19, 1);
-	Actor& a1 = simulation.createActor(dwarf, block1);
-	simulation.createActor(dwarf, block2);
+	Actor& a1 = simulation.m_hasActors->createActor(dwarf, block1);
+	simulation.m_hasActors->createActor(dwarf, block2);
 	area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
 		simulation.m_pool.wait_for_tasks();
 	area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();

@@ -4,6 +4,7 @@
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
+#include "../../engine/simulation/hasActors.h"
 #include "../../engine/dig.h"
 #include "../../engine/cuboid.h"
 #include "../../engine/objectives/goTo.h"
@@ -20,7 +21,7 @@ TEST_CASE("dig")
 	areaBuilderUtil::setSolidLayers(area, 2, 3, dirt);
 	Faction faction(L"tower of power");
 	DigObjectiveType digObjectiveType;
-	Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(1, 1, 4));
+	Actor& dwarf1 = simulation.m_hasActors->createActor(dwarf, area.getBlock(1, 1, 4));
 	dwarf1.setFaction(&faction);
 	Block& pickLocation = area.getBlock(5, 5, 4);
 	Item& pick = simulation.m_hasItems->createItemNongeneric(ItemType::byName("pick"), bronze, 50u, 0);
@@ -167,7 +168,7 @@ TEST_CASE("dig")
 	}
 	SUBCASE("two workers")
 	{
-		Actor& dwarf2 = simulation.createActor(dwarf, area.getBlock(1, 2, 4));
+		Actor& dwarf2 = simulation.m_hasActors->createActor(dwarf, area.getBlock(1, 2, 4));
 		dwarf2.setFaction(&faction);
 		Block& holeLocation = area.getBlock(8, 4, 3);
 		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
@@ -180,7 +181,7 @@ TEST_CASE("dig")
 	}
 	SUBCASE("two workers two holes")
 	{
-		Actor& dwarf2 = simulation.createActor(dwarf, area.getBlock(1, 2, 4));
+		Actor& dwarf2 = simulation.m_hasActors->createActor(dwarf, area.getBlock(1, 2, 4));
 		dwarf2.setFaction(&faction);
 		Block& holeLocation1 = area.getBlock(6, 2, 3);
 		Block& holeLocation2 = area.getBlock(9, 8, 3);
@@ -357,7 +358,7 @@ TEST_CASE("dig")
 	{
 		pick.exit();
 		dwarf1.m_equipmentSet.addEquipment(pick);
-		Actor& dwarf2 = simulation.createActor(dwarf, area.getBlock(1, 2, 4));
+		Actor& dwarf2 = simulation.m_hasActors->createActor(dwarf, area.getBlock(1, 2, 4));
 		dwarf2.setFaction(&faction);
 		Block& holeLocation = area.getBlock(8, 8, 3);
 		Block& goToLocation = area.getBlock(1, 8, 4);

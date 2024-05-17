@@ -4,6 +4,7 @@
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
+#include "../../engine/simulation/hasActors.h"
 #include "../../engine/construct.h"
 #include "../../engine/cuboid.h"
 #include "../../engine/objectives/goTo.h"
@@ -20,7 +21,7 @@ TEST_CASE("construct")
 	areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
 	Faction faction(L"tower of power");
 	ConstructObjectiveType constructObjectiveType;
-	Actor& dwarf1 = simulation.createActor(dwarf, area.getBlock(1, 1, 2));
+	Actor& dwarf1 = simulation.m_hasActors->createActor(dwarf, area.getBlock(1, 1, 2));
 	dwarf1.setFaction(&faction);
 	area.m_hasConstructionDesignations.addFaction(faction);
 	Item& boards = simulation.m_hasItems->createItemGeneric(ItemType::byName("board"), wood, 50u);
@@ -83,7 +84,7 @@ TEST_CASE("construct")
 	}
 	SUBCASE("make wall with two workers")
 	{
-		Actor& dwarf2 = simulation.createActor(dwarf, area.getBlock(1, 4, 2));
+		Actor& dwarf2 = simulation.m_hasActors->createActor(dwarf, area.getBlock(1, 4, 2));
 		dwarf2.setFaction(&faction);
 		Block& wallLocation = area.getBlock(8, 4, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
@@ -100,7 +101,7 @@ TEST_CASE("construct")
 	}
 	SUBCASE("make two walls with two workers")
 	{
-		Actor& dwarf2 = simulation.createActor(dwarf, area.getBlock(1, 4, 2));
+		Actor& dwarf2 = simulation.m_hasActors->createActor(dwarf, area.getBlock(1, 4, 2));
 		dwarf2.setFaction(&faction);
 		Block& wallLocation1 = area.getBlock(8, 4, 2);
 		Block& wallLocation2 = area.getBlock(8, 5, 2);

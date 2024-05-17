@@ -10,6 +10,8 @@
 #include "item.h"
 #include "area.h"
 #include "simulation.h"
+#include "fluidType.h"
+#include "moveType.h"
 
 #include <algorithm>
 #include <ranges>

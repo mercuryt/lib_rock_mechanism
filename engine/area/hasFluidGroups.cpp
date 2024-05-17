@@ -1,5 +1,6 @@
 #include "hasFluidGroups.h"
 #include "../simulation.h"
+#include "../fluidType.h"
 void AreaHasFluidGroups::readStep()
 {
 	// Calculate flow.

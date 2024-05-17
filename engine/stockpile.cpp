@@ -1,6 +1,7 @@
 #include "stockpile.h"
 #include "block.h"
 #include "area.h"
+#include "actor.h"
 #include "config.h"
 #include "deserializationMemo.h"
 #include "item.h"

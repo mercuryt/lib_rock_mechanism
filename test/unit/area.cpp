@@ -1,7 +1,9 @@
 #include "../../lib/doctest.h"
 #include "../../engine/area.h"
+#include "../../engine/actor.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation.h"
+#include "../../engine/simulation/hasActors.h"
 #include "../../engine/threadedTask.h"
 #include "config.h"
 
@@ -88,7 +90,7 @@ TEST_CASE("Area")
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		Block& origin = area.getBlock(1, 1, 1);
 		Block& destination = area.getBlock(8, 8, 1);
-		Actor& actor = simulation.createActor(dwarf, origin);
+		Actor& actor = simulation.m_hasActors->createActor(dwarf, origin);
 		actor.m_canMove.setDestination(destination);
 		area.readStep();
 		simulation.m_threadedTaskEngine.readStep();
@@ -221,10 +223,10 @@ TEST_CASE("vision-threading")
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	Block& block1 = area.getBlock(3, 3, 1);
 	Block& block2 = area.getBlock(7, 7, 1);
-	Actor& a1 = simulation.createActor(dwarf, block1);
+	Actor& a1 = simulation.m_hasActors->createActor(dwarf, block1);
 	REQUIRE(area.m_hasActors.m_visionFacadeBuckets.getForStep(a1.m_id).size() == 1);
 	REQUIRE(&a1.m_canSee.m_hasVisionFacade.getVisionFacade() == &area.m_hasActors.m_visionFacadeBuckets.getForStep(a1.m_id));
-	Actor& a2 = simulation.createActor(dwarf, block2);
+	Actor& a2 = simulation.m_hasActors->createActor(dwarf, block2);
 	REQUIRE(area.m_hasActors.m_visionFacadeBuckets.getForStep(a2.m_id).size() == 1);
 	REQUIRE(!a2.m_canSee.m_hasVisionFacade.empty());
 	REQUIRE(&a2.m_canSee.m_hasVisionFacade.getVisionFacade() == &area.m_hasActors.m_visionFacadeBuckets.getForStep(a2.m_id));

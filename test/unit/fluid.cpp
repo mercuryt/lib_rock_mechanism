@@ -4,6 +4,7 @@
 #include "../../engine/materialType.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation.h"
+#include "../../engine/simulation/hasActors.h"
 TEST_CASE("fluids smaller")
 {
 	static const MaterialType& marble = MaterialType::byName("marble");

@@ -1,6 +1,7 @@
 #include "../../lib/doctest.h"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
+#include "../../engine/simulation/hasActors.h"
 #include "../../engine/animalSpecies.h"
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
@@ -15,7 +16,7 @@ TEST_CASE("basicNeedsSentient")
 	Simulation simulation;
 	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
-	Actor& actor = simulation.createActor(ActorParamaters{
+	Actor& actor = simulation.m_hasActors->createActor(ActorParamaters{
 		.species=dwarf, 
 		.percentGrown=50,
 		.location=&area.getBlock(1, 1, 2), 
@@ -132,7 +133,7 @@ TEST_CASE("basicNeedsNonsentient")
 	Simulation simulation;
 	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
-	Actor& actor = simulation.createActor(redDeer, area.getBlock(1, 1, 2), 50);
+	Actor& actor = simulation.m_hasActors->createActor(redDeer, area.getBlock(1, 1, 2), 50);
 	REQUIRE(actor.m_canGrow.isGrowing());
 	REQUIRE(actor.m_mustDrink.thirstEventExists());
 	Block& pondLocation = area.getBlock(3, 3, 1);
@@ -237,7 +238,7 @@ TEST_CASE("basicNeedsNonsentient")
 	SUBCASE("scavenge corpse")
 	{
 		const AnimalSpecies& blackBear = AnimalSpecies::byName("black bear");
-		Actor& bear = simulation.createActor(blackBear, area.getBlock(5, 1, 2));
+		Actor& bear = simulation.m_hasActors->createActor(blackBear, area.getBlock(5, 1, 2));
 		Actor& deer = actor;
 		uint32_t deerMass = deer.getMass();
 		deer.die(CauseOfDeath::thirst);
@@ -276,7 +277,7 @@ TEST_CASE("death")
 	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	areaBuilderUtil::setSolidWalls(area, 5, MaterialType::byName("marble"));
-	Actor& actor = simulation.createActor(redDeer, area.getBlock(1, 1, 2), 50);
+	Actor& actor = simulation.m_hasActors->createActor(redDeer, area.getBlock(1, 1, 2), 50);
 	SUBCASE("thirst")
 	{
 		// Generate objectives, discard eat if it exists.

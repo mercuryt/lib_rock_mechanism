@@ -1,6 +1,7 @@
 #include "../../lib/doctest.h"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
+#include "../../engine/simulation/hasActors.h"
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/actor.h"
@@ -17,7 +18,7 @@ TEST_CASE("woodcutting")
 	REQUIRE(treeLocation.m_hasPlant.get().m_blocks.size() == 5);
 	static Faction faction(L"Tower of Power");
 	area.m_hasWoodCuttingDesignations.addFaction(faction);
-	Actor& dwarf = simulation.createActor(ActorParamaters{
+	Actor& dwarf = simulation.m_hasActors->createActor(ActorParamaters{
 		.species=AnimalSpecies::byName("dwarf"), 
 		.percentGrown=100,
 		.location=&area.getBlock(1,1,1), 
