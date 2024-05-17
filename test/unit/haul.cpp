@@ -5,6 +5,7 @@
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
 #include "../../engine/simulation/hasActors.h"
+#include "../../engine/simulation/hasAreas.h"
 #include "../../engine/project.h"
 #include "../../engine/haul.h"
 #include "../../engine/targetedHaul.h"
@@ -23,7 +24,7 @@ TEST_CASE("haul")
 	static const ItemType& cart = ItemType::byName("cart");
 	static const ItemType& panniers = ItemType::byName("panniers");
 	Simulation simulation;
-	Area& area = simulation.createArea(10,10,10);
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	Actor& dwarf1 = simulation.m_hasActors->createActor(ActorParamaters{
 		.species=dwarf, 

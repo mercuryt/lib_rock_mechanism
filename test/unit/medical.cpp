@@ -10,7 +10,7 @@ TEST_CASE("medical")
 {
 	const MaterialType& marble = MaterialType::byName("marble");
 	Simulation simulation;
-	Area& area = simulation.createArea(10,10,10);
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	Faction faction(L"tower of power");
 	area.m_hasStockPiles.addFaction(faction);

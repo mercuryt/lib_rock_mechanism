@@ -6,6 +6,7 @@
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
 #include "../../engine/simulation/hasActors.h"
+#include "../../engine/simulation/hasAreas.h"
 #include "../../engine/stockpile.h"
 #include "../../engine/materialType.h"
 #include "../../engine/project.h"
@@ -26,7 +27,7 @@ TEST_CASE("stockpile")
 	const ItemType& boulder = ItemType::byName("boulder");
 	const ItemType& pile = ItemType::byName("pile");
 	Simulation simulation;
-	Area& area = simulation.createArea(10,10,10);
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	Faction faction(L"tower of power");
 	area.m_hasStockPiles.registerFaction(faction);

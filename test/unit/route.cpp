@@ -5,6 +5,7 @@
 #include "../../engine/materialType.h"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasActors.h"
+#include "../../engine/simulation/hasAreas.h"
 #include "config.h"
 TEST_CASE("route_10_10_10")
 {
@@ -15,7 +16,7 @@ TEST_CASE("route_10_10_10")
 	static const AnimalSpecies& eagle = AnimalSpecies::byName("golden eagle");
 	static const AnimalSpecies& carp = AnimalSpecies::byName("carp");
 	static const FluidType& water = FluidType::byName("water");
-	Area& area = simulation.createArea(10,10,10);
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	SUBCASE("Route through open space")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
@@ -233,7 +234,7 @@ TEST_CASE("route_10_10_10")
 TEST_CASE("route_5_5_3")
 {
 	Simulation simulation;
-	Area& area = simulation.createArea(5,5,3);
+	Area& area = simulation.m_hasAreas->createArea(5,5,3);
 	static const MaterialType& marble = MaterialType::byName("marble");
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	static const AnimalSpecies& carp = AnimalSpecies::byName("carp");
@@ -289,7 +290,7 @@ TEST_CASE("route_5_5_3")
 TEST_CASE("route_5_5_5")
 {
 	Simulation simulation;
-	Area& area = simulation.createArea(5,5,5);
+	Area& area = simulation.m_hasAreas->createArea(5,5,5);
 	static const MaterialType& marble = MaterialType::byName("marble");
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	static const MoveType& twoLegsAndClimb1 = MoveType::byName("two legs and climb 1");

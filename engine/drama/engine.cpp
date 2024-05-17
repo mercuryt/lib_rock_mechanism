@@ -8,6 +8,7 @@
 #include "arcs/animalsArrive.h"
 #include "arcs/banditsArrive.h"
 #include "deserializationMemo.h"
+#include "../simulation/hasAreas.h"
 #include <memory>
 #include <new>
 std::vector<DramaArcType> DramaArc::getTypes()
@@ -63,7 +64,7 @@ DramaArc::DramaArc(const Json& data, DeserializationMemo& deserializationMemo, D
 	m_engine(dramaEngine), m_type(DramaArc::stringToType(data["type"].get<std::string>()))
 {
 	if(data.contains("area"))
-		m_area = &deserializationMemo.m_simulation.getAreaById(data["area"].get<AreaId>());
+		m_area = &deserializationMemo.m_simulation.m_hasAreas->getById(data["area"].get<AreaId>());
 }
 Json DramaArc::toJson() const
 {

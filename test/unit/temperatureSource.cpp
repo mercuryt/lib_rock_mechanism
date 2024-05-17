@@ -3,13 +3,14 @@
 #include "../../engine/area.h"
 #include "../../engine/materialType.h"
 #include "../../engine/simulation.h"
+#include "../../engine/simulation/hasAreas.h"
 #include "../../engine/block.h"
 #include "../../engine/definitions.h"
 TEST_CASE("temperature")
 {
 	DateTime now(12, 150, 1200);
 	Simulation simulation(L"", now.toSteps());
-	Area& area = simulation.createArea(10,10,10);
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	SUBCASE("solid blocks burn")
 	{
 		Block& origin = area.getBlock(5, 5, 5);

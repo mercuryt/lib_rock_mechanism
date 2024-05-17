@@ -2,6 +2,7 @@
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
 #include "../../engine/simulation/hasActors.h"
+#include "../../engine/simulation/hasAreas.h"
 #include "../../engine/animalSpecies.h"
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
@@ -26,7 +27,7 @@ TEST_CASE("sow")
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	uint16_t dayBeforeSowingStarts = wheatGrass.dayOfYearForSowStart - 1u;
 	Simulation simulation(L"", DateTime(10, dayBeforeSowingStarts, 1200).toSteps());
-	Area& area = simulation.createArea(10,10,10);
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Block& block = area.getBlock(4, 4, 2);
 	Block& pondLocation = area.getBlock(8,8,2);
 	pondLocation.setNotSolid();
@@ -182,7 +183,7 @@ TEST_CASE("harvest")
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	uint16_t dayBeforeHarvest = wheatGrass.harvestData->dayOfYearToStart - 1u;
 	Simulation simulation(L"", DateTime(1, dayBeforeHarvest, 1200).toSteps());
-	Area& area = simulation.createArea(10,10,10);
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Block& block = area.getBlock(4, 4, 2);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	area.m_hasFarmFields.registerFaction(faction);

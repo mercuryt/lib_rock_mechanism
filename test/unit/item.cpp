@@ -6,6 +6,7 @@
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
 #include "../../engine/simulation/hasActors.h"
+#include "../../engine/simulation/hasAreas.h"
 #include "../../engine/materialType.h"
 #include "../../engine/project.h"
 #include "../../engine/config.h"
@@ -19,7 +20,7 @@ TEST_CASE("equip and unequip")
 {
 	const MaterialType& marble = MaterialType::byName("marble");
 	Simulation simulation;
-	Area& area = simulation.createArea(10,10,10);
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	Block& destination = area.getBlock(8,2,1);
 	Actor& dwarf1 = simulation.m_hasActors->createActor(ActorParamaters{
@@ -51,7 +52,7 @@ TEST_CASE("give item")
 {
 	const MaterialType& marble = MaterialType::byName("marble");
 	Simulation simulation;
-	Area& area = simulation.createArea(10,10,10);
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	Actor& dwarf1 = simulation.m_hasActors->createActor(ActorParamaters{
 		.species=AnimalSpecies::byName("dwarf"), 

@@ -1,5 +1,6 @@
 #include "../../lib/doctest.h"
 #include "../../engine/buckets.h"
+#include <algorithm>
 struct Mock
 {
 	uint32_t m_id;

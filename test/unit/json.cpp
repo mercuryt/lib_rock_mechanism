@@ -2,6 +2,7 @@
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
 #include "../../engine/simulation/hasActors.h"
+#include "../../engine/simulation/hasAreas.h"
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/actor.h"
@@ -29,7 +30,7 @@ TEST_CASE("json")
 	const ItemType& preparedMeal = ItemType::byName("prepared meal");
 	const ItemType& pants = ItemType::byName("pants");
 	const ItemType& pile = ItemType::byName("pile");
-	Area& area = simulation.createArea(10,10,10);
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, dirt);
 	area.m_hasFarmFields.registerFaction(faction);
 
@@ -75,7 +76,7 @@ TEST_CASE("json")
 		Json areaData = area.toJson();
 		Json simulationData = simulation.toJson();
 		Simulation simulation2(simulationData);
-		Area& area2 = simulation2.loadAreaFromJson(areaData);
+		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Faction& faction2 = simulation2.m_hasFactions.byName(L"tower of power");
 		// Block.
 		REQUIRE(area2.m_sizeX == area2.m_sizeY);
@@ -182,7 +183,7 @@ TEST_CASE("json")
 		Json areaData = area.toJson();
 		Json simulationData = simulation.toJson();
 		Simulation simulation2(simulationData);
-		Area& area2 = simulation2.loadAreaFromJson(areaData);
+		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Faction& faction2 = simulation2.m_hasFactions.byName(L"tower of power");
 		Block& holeLocation2 = area2.getBlock(8,4,0);
 		REQUIRE(area2.m_hasDigDesignations.contains(faction2, holeLocation2));
@@ -225,7 +226,7 @@ TEST_CASE("json")
 		Json areaData = area.toJson();
 		Json simulationData = simulation.toJson();
 		Simulation simulation2(simulationData);
-		Area& area2 = simulation2.loadAreaFromJson(areaData);
+		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Faction& faction2 = simulation2.m_hasFactions.byName(L"tower of power");
 		Block& projectLocation2 = area2.getBlock(8,4,1);
 
@@ -268,7 +269,7 @@ TEST_CASE("json")
 		Json areaData = area.toJson();
 		Json simulationData = simulation.toJson();
 		Simulation simulation2(simulationData);
-		Area& area2 = simulation2.loadAreaFromJson(areaData);
+		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Faction& faction2 = simulation2.m_hasFactions.byName(L"tower of power");
 		Block& projectLocation2 = area2.getBlock(8,4,1);
 		Block& pileLocation2 = area2.getBlock(1, 4, 1);
@@ -316,7 +317,7 @@ TEST_CASE("json")
 		Json areaData = area.toJson();
 		Json simulationData = simulation.toJson();
 		Simulation simulation2(simulationData);
-		Area& area2 = simulation2.loadAreaFromJson(areaData);
+		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Faction& faction2 = simulation2.m_hasFactions.byName(L"tower of power");
 		Actor& dwarf2 = *area2.getBlock(5,5,1).m_hasActors.getAll()[0];
 
@@ -345,7 +346,7 @@ TEST_CASE("json")
 		Json areaData = area.toJson();
 		Json simulationData = simulation.toJson();
 		Simulation simulation2(simulationData);
-		Area& area2 = simulation2.loadAreaFromJson(areaData);
+		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Actor& dwarf2 = *area2.getBlock(5,5,1).m_hasActors.getAll()[0];
 
 		REQUIRE(dwarf2.m_canMove.getDestination());
@@ -367,7 +368,7 @@ TEST_CASE("json")
 		Json areaData = area.toJson();
 		Json simulationData = simulation.toJson();
 		Simulation simulation2(simulationData);
-		Area& area2 = simulation2.loadAreaFromJson(areaData);
+		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Actor& dwarf2 = *area2.getBlock(5,5,1).m_hasActors.getAll()[0];
 
 		REQUIRE(dwarf2.m_canMove.getDestination());
@@ -394,7 +395,7 @@ TEST_CASE("json")
 		Json areaData = area.toJson();
 		Json simulationData = simulation.toJson();
 		Simulation simulation2(simulationData);
-		Area& area2 = simulation2.loadAreaFromJson(areaData);
+		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Actor& dwarf2 = simulation2.m_hasActors->getById(dwarf1Id);
 
 		REQUIRE(dwarf2.m_mustSleep.hasTiredEvent());
@@ -429,7 +430,7 @@ TEST_CASE("json")
 		Json areaData = area.toJson();
 		Json simulationData = simulation.toJson();
 		Simulation simulation2(simulationData);
-		[[maybe_unused]] Area& area2 = simulation2.loadAreaFromJson(areaData);
+		[[maybe_unused]] Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Actor& dwarf2 = simulation2.m_hasActors->getById(dwarf1Id);
 		
 		Objective& objective2 = dwarf2.m_hasObjectives.getCurrent();
@@ -460,7 +461,7 @@ TEST_CASE("json")
 		Json areaData = area.toJson();
 		Json simulationData = simulation.toJson();
 		Simulation simulation2(simulationData);
-		[[maybe_unused]] Area& area2 = simulation2.loadAreaFromJson(areaData);
+		[[maybe_unused]] Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Actor& dwarf2 = simulation2.m_hasActors->getById(dwarf1Id);
 		
 		Objective& objective2 = dwarf2.m_hasObjectives.getCurrent();
@@ -492,7 +493,7 @@ TEST_CASE("json")
 		Json areaData = area.toJson();
 		Json simulationData = simulation.toJson();
 		Simulation simulation2(simulationData);
-		[[maybe_unused]] Area& area2 = simulation2.loadAreaFromJson(areaData);
+		[[maybe_unused]] Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Actor& dwarf2 = simulation2.m_hasActors->getById(dwarf1Id);
 		
 		Objective& objective2 = dwarf2.m_hasObjectives.getCurrent();

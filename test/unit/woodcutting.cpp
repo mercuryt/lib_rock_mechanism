@@ -2,6 +2,7 @@
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
 #include "../../engine/simulation/hasActors.h"
+#include "../../engine/simulation/hasAreas.h"
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/actor.h"
@@ -11,7 +12,7 @@ TEST_CASE("woodcutting")
 	const ItemType& branch = ItemType::byName("branch");
 	const ItemType& log = ItemType::byName("log");
 	Simulation simulation;
-	Area& area = simulation.createArea(10,10,10);
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName("dirt"));
 	Block& treeLocation = area.getBlock(5, 5, 1);
 	treeLocation.m_hasPlant.createPlant(PlantSpecies::byName("poplar tree"), 100);

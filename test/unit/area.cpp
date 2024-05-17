@@ -4,6 +4,7 @@
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasActors.h"
+#include "../../engine/simulation/hasAreas.h"
 #include "../../engine/threadedTask.h"
 #include "config.h"
 
@@ -13,7 +14,7 @@ TEST_CASE("Area")
 	static const FluidType& water = FluidType::byName("water");
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	Simulation simulation{L"", 1};
-	Area& area = simulation.createArea(10, 10, 10);
+	Area& area = simulation.m_hasAreas->createArea(10, 10, 10);
 	SUBCASE("Make Area")
 	{
 		CHECK(area.m_sizeX == 10);
@@ -219,7 +220,7 @@ TEST_CASE("vision-threading")
 	static const MaterialType& marble = MaterialType::byName("marble");
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	Simulation simulation{L"", 1};
-	Area& area = simulation.createArea(10,10,10);
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	Block& block1 = area.getBlock(3, 3, 1);
 	Block& block2 = area.getBlock(7, 7, 1);
@@ -244,7 +245,7 @@ TEST_CASE("multiMergeOnAdd")
 {
 	static const FluidType& water = FluidType::byName("water");
 	Simulation simulation{L"", 1};
-	Area& area = simulation.createArea(2,2,1);
+	Area& area = simulation.m_hasAreas->createArea(2,2,1);
 	Block& block1 = area.getBlock(0, 0, 0);
 	Block& block2 = area.getBlock(0, 1, 0);
 	Block& block3 = area.getBlock(1, 0, 0);
@@ -272,7 +273,7 @@ inline void fourFluidsTestParallel(uint32_t scale, uint32_t steps)
 	static const FluidType& mercury = FluidType::byName("mercury");
 	static const FluidType& lava = FluidType::byName("lava");
 	Simulation simulation;
-	Area& area = simulation.createArea(maxX, maxY, maxZ);
+	Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
 	simulation.m_step = 0;
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);

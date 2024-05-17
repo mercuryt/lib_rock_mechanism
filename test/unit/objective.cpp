@@ -6,6 +6,7 @@
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasActors.h"
+#include "../../engine/simulation/hasAreas.h"
 
 #include <memory>
 
@@ -40,7 +41,7 @@ TEST_CASE("objective")
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	static const MaterialType& marble = MaterialType::byName("marble");
 	Simulation simulation;
-	Area& area = simulation.createArea(10,10,10);
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	Actor& actor = simulation.m_hasActors->createActor(dwarf, area.getBlock(5, 5, 1));
 	bool x = false;

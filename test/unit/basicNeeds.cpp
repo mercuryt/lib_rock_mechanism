@@ -2,6 +2,7 @@
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
 #include "../../engine/simulation/hasActors.h"
+#include "../../engine/simulation/hasAreas.h"
 #include "../../engine/animalSpecies.h"
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
@@ -14,7 +15,7 @@ TEST_CASE("basicNeedsSentient")
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	static const FluidType& water = FluidType::byName("water");
 	Simulation simulation;
-	Area& area = simulation.createArea(10,10,10);
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	Actor& actor = simulation.m_hasActors->createActor(ActorParamaters{
 		.species=dwarf, 
@@ -131,7 +132,7 @@ TEST_CASE("basicNeedsNonsentient")
 	static const AnimalSpecies& redDeer = AnimalSpecies::byName("red deer");
 	static const FluidType& water = FluidType::byName("water");
 	Simulation simulation;
-	Area& area = simulation.createArea(10,10,10);
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	Actor& actor = simulation.m_hasActors->createActor(redDeer, area.getBlock(1, 1, 2), 50);
 	REQUIRE(actor.m_canGrow.isGrowing());
@@ -274,7 +275,7 @@ TEST_CASE("death")
 	static const AnimalSpecies& redDeer = AnimalSpecies::byName("red deer");
 	Step step  = DateTime(12,150,1000).toSteps();
 	Simulation simulation(L"", step);
-	Area& area = simulation.createArea(10,10,10);
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	areaBuilderUtil::setSolidWalls(area, 5, MaterialType::byName("marble"));
 	Actor& actor = simulation.m_hasActors->createActor(redDeer, area.getBlock(1, 1, 2), 50);

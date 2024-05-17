@@ -5,6 +5,7 @@
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
 #include "../../engine/simulation/hasActors.h"
+#include "../../engine/simulation/hasAreas.h"
 #include "../../engine/dig.h"
 #include "../../engine/cuboid.h"
 #include "../../engine/objectives/goTo.h"
@@ -16,7 +17,7 @@ TEST_CASE("dig")
 	static const MaterialType& bronze = MaterialType::byName("bronze");
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	Simulation simulation;
-	Area& area = simulation.createArea(10,10,10);
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
 	areaBuilderUtil::setSolidLayers(area, 2, 3, dirt);
 	Faction faction(L"tower of power");

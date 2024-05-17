@@ -3,10 +3,11 @@
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/definitions.h"
 #include "../../engine/simulation.h"
+#include "../../engine/simulation/hasAreas.h"
 TEST_CASE("Cave In")
 {
 	Simulation simulation;
-	Area& area = simulation.createArea(10,10,10);
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	static const MaterialType& marble = MaterialType::byName("marble");
 	SUBCASE("Cave In doesn't happen when block is supported.")
 	{

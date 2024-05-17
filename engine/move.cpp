@@ -1,5 +1,6 @@
 #include "move.h"
 #include "actor.h"
+#include "area.h"
 #include "block.h"
 #include "item.h"
 #include "deserializationMemo.h"
