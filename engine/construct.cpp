@@ -304,7 +304,7 @@ void HasConstructionDesignationsForFaction::remove(Block& block)
 	m_data.erase(&block); 
 	block.m_hasDesignations.remove(m_faction, BlockDesignation::Construct);
 }
-void HasConstructionDesignations::clearReservations()
+void AreaHasConstructionDesignations::clearReservations()
 {
 	for(auto& pair : m_data)
 		for(auto& pair2 : pair.second.m_data)
@@ -319,7 +319,7 @@ bool HasConstructionDesignationsForFaction::contains(const Block& block) const {
 const BlockFeatureType* HasConstructionDesignationsForFaction::at(const Block& block) const { return m_data.at(const_cast<Block*>(&block)).m_blockFeatureType; }
 bool HasConstructionDesignationsForFaction::empty() const { return m_data.empty(); }
 // To be used by Area.
-void HasConstructionDesignations::load(const Json& data, DeserializationMemo& deserializationMemo)
+void AreaHasConstructionDesignations::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	for(const Json& pair : data)
 	{
@@ -327,7 +327,7 @@ void HasConstructionDesignations::load(const Json& data, DeserializationMemo& de
 		m_data.try_emplace(&faction, pair[1], deserializationMemo, faction);
 	}
 }
-void HasConstructionDesignations::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
+void AreaHasConstructionDesignations::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	for(const Json& pair : data)
 	{
@@ -336,7 +336,7 @@ void HasConstructionDesignations::loadWorkers(const Json& data, DeserializationM
 	}
 
 }
-Json HasConstructionDesignations::toJson() const
+Json AreaHasConstructionDesignations::toJson() const
 {
 	Json data;
 	for(auto& pair : m_data)
@@ -348,46 +348,46 @@ Json HasConstructionDesignations::toJson() const
 	}
 	return data;
 }
-void HasConstructionDesignations::addFaction(const Faction& faction)
+void AreaHasConstructionDesignations::addFaction(const Faction& faction)
 {
 	assert(!m_data.contains(&faction));
 	m_data.emplace(&faction, faction);
 }
-void HasConstructionDesignations::removeFaction(const Faction& faction)
+void AreaHasConstructionDesignations::removeFaction(const Faction& faction)
 {
 	assert(m_data.contains(&faction));
 	m_data.erase(&faction);
 }
-void HasConstructionDesignations::designate(const Faction& faction, Block& block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType)
+void AreaHasConstructionDesignations::designate(const Faction& faction, Block& block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType)
 {
 	if(!m_data.contains(&faction))
 		addFaction(faction);
 	m_data.at(&faction).designate(block, blockFeatureType, materialType);
 }
-void HasConstructionDesignations::undesignate(const Faction& faction, Block& block)
+void AreaHasConstructionDesignations::undesignate(const Faction& faction, Block& block)
 {
 	m_data.at(&faction).undesignate(block);
 }
-void HasConstructionDesignations::remove(const Faction& faction, Block& block)
+void AreaHasConstructionDesignations::remove(const Faction& faction, Block& block)
 {
 	assert(m_data.contains(&faction));
 	m_data.at(&faction).remove(block);
 }
-void HasConstructionDesignations::clearAll(Block& block)
+void AreaHasConstructionDesignations::clearAll(Block& block)
 {
 	for(auto& pair : m_data)
 		pair.second.removeIfExists(block);
 }
-bool HasConstructionDesignations::areThereAnyForFaction(const Faction& faction) const 
+bool AreaHasConstructionDesignations::areThereAnyForFaction(const Faction& faction) const 
 { 
 	if(!m_data.contains(&faction))
 		return false;
 	return !m_data.at(&faction).empty(); 
 }
-bool HasConstructionDesignations::contains(const Faction& faction, const Block& block) const
+bool AreaHasConstructionDesignations::contains(const Faction& faction, const Block& block) const
 {
 	if(!m_data.contains(&faction))
 		return false;
 	return m_data.at(&faction).contains(block);
 }
-ConstructProject& HasConstructionDesignations::getProject(const Faction& faction, Block& block) { return m_data.at(&faction).m_data.at(&block); }
+ConstructProject& AreaHasConstructionDesignations::getProject(const Faction& faction, Block& block) { return m_data.at(&faction).m_data.at(&block); }

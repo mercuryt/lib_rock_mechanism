@@ -3,33 +3,32 @@
 #include "../area.h"
 #include "../materialType.h"
 #include "../plant.h"
-// HasPlant.
-void HasPlant::createPlant(const PlantSpecies& plantSpecies, Percent growthPercent)
+void BlockHasPlant::createPlant(const PlantSpecies& plantSpecies, Percent growthPercent)
 {
 	assert(m_plant == nullptr);
 	m_plant = &m_block.m_area->m_hasPlants.emplace(m_block, plantSpecies, nullptr, growthPercent);
 }
-void HasPlant::updateGrowingStatus()
+void BlockHasPlant::updateGrowingStatus()
 {
 	if(m_plant != nullptr)
 		m_plant->updateGrowingStatus();
 }
-void HasPlant::clearPointer()
+void BlockHasPlant::clearPointer()
 {
 	assert(m_plant != nullptr);
 	m_plant = nullptr;
 }
-void HasPlant::setTemperature(Temperature temperature)
+void BlockHasPlant::setTemperature(Temperature temperature)
 {
 	if(m_plant != nullptr)
 		m_plant->setTemperature(temperature);
 }
-void HasPlant::erase()
+void BlockHasPlant::erase()
 {
 	assert(m_plant != nullptr);
 	m_plant = nullptr;
 }
-bool HasPlant::canGrowHereCurrently(const PlantSpecies& plantSpecies) const
+bool BlockHasPlant::canGrowHereCurrently(const PlantSpecies& plantSpecies) const
 {
 	Temperature temperature = m_block.m_blockHasTemperature.get();
 	if(plantSpecies.maximumGrowingTemperature < temperature || plantSpecies.minimumGrowingTemperature > temperature)
@@ -41,7 +40,7 @@ bool HasPlant::canGrowHereCurrently(const PlantSpecies& plantSpecies) const
 		return false;
 	return true;
 }
-bool HasPlant::canGrowHereAtSomePointToday(const PlantSpecies& plantSpecies) const
+bool BlockHasPlant::canGrowHereAtSomePointToday(const PlantSpecies& plantSpecies) const
 {
 	Temperature temperature = m_block.m_blockHasTemperature.getDailyAverageAmbientTemperature();
 	if(plantSpecies.maximumGrowingTemperature < temperature || plantSpecies.minimumGrowingTemperature > temperature)
@@ -51,13 +50,13 @@ bool HasPlant::canGrowHereAtSomePointToday(const PlantSpecies& plantSpecies) con
 	return true;
 
 }
-bool HasPlant::canGrowHereEver(const PlantSpecies& plantSpecies) const
+bool BlockHasPlant::canGrowHereEver(const PlantSpecies& plantSpecies) const
 {
 	if(plantSpecies.growsInSunLight != m_block.m_outdoors)
 		return false;
 	return anythingCanGrowHereEver();
 }
-bool HasPlant::anythingCanGrowHereEver() const
+bool BlockHasPlant::anythingCanGrowHereEver() const
 {
 	static const MaterialType& dirtType = MaterialType::byName("dirt");
 	if(m_block.m_adjacents[0] == nullptr || !m_block.m_adjacents[0]->isSolid() || m_block.m_adjacents[0]->getSolidMaterial() != dirtType)

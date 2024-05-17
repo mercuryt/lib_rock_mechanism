@@ -195,8 +195,7 @@ public:
 	void execute() { m_plant.die(); }
 	void clearReferences() { m_plant.m_temperatureEvent.clearPointer(); }
 };
-// To be used by Area.
-class HasPlants final
+class AreaHasPlants final
 {
 	std::list<Plant> m_plants;
 	std::unordered_set<Plant*> m_plantsOnSurface;

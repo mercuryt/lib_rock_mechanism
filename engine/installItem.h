@@ -69,9 +69,9 @@ public:
 	bool empty() const { return m_designations.empty(); }
 	bool contains(const Block& block) const { return m_designations.contains(&const_cast<Block&>(block)); }
 	InstallItemProject& at(Block& block) { return m_designations.at(&block); }
-	friend class HasInstallItemDesignations;
+	friend class AreaHasInstallItemDesignations;
 };
-class HasInstallItemDesignations final
+class AreaHasInstallItemDesignations final
 {
 	std::unordered_map<const Faction*, HasInstallItemDesignationsForFaction> m_data;
 public:

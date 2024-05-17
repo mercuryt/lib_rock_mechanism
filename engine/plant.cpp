@@ -401,7 +401,7 @@ PlantFluidEvent::PlantFluidEvent(const Step delay, Plant& p, Step start) :
 	ScheduledEvent(p.m_location->m_area->m_simulation, delay, start), m_plant(p) {}
 PlantTemperatureEvent::PlantTemperatureEvent(const Step delay, Plant& p, Step start) :
 	ScheduledEvent(p.m_location->m_area->m_simulation, delay, start), m_plant(p) {}
-Plant& HasPlants::emplace(Block& location, const PlantSpecies& species, const Shape* shape, Percent percentGrowth, Volume volumeFluidRequested, Step needsFluidEventStart, bool temperatureIsUnsafe, Step unsafeTemperatureEventStart, uint32_t harvestableQuantity, Percent percentFoliage)
+Plant& AreaHasPlants::emplace(Block& location, const PlantSpecies& species, const Shape* shape, Percent percentGrowth, Volume volumeFluidRequested, Step needsFluidEventStart, bool temperatureIsUnsafe, Step unsafeTemperatureEventStart, uint32_t harvestableQuantity, Percent percentFoliage)
 {
 	assert(location.m_hasPlant.canGrowHereEver(species));
 	assert(!location.m_hasPlant.exists());
@@ -411,14 +411,14 @@ Plant& HasPlants::emplace(Block& location, const PlantSpecies& species, const Sh
 		m_plantsOnSurface.insert(&plant);
 	return plant;
 }
-Plant& HasPlants::emplace(const Json& data, DeserializationMemo& deserializationMemo)
+Plant& AreaHasPlants::emplace(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	Plant& plant = m_plants.emplace_back(data, deserializationMemo);
 	if(!plant.m_location->m_underground)
 		m_plantsOnSurface.insert(&plant);
 	return plant;
 }
-void HasPlants::erase(Plant& plant)
+void AreaHasPlants::erase(Plant& plant)
 {
 	assert(plant.m_location->m_hasPlant.get() == plant);
 	plant.exit();
@@ -428,7 +428,7 @@ void HasPlants::erase(Plant& plant)
 	m_plants.erase(found);
 	m_plantsOnSurface.erase(&plant);
 }
-void HasPlants::onChangeAmbiantSurfaceTemperature()
+void AreaHasPlants::onChangeAmbiantSurfaceTemperature()
 {
 	for(Plant* plant : m_plantsOnSurface)
 		plant->setTemperature(plant->m_location->m_blockHasTemperature.get());

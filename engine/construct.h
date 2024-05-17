@@ -134,10 +134,10 @@ public:
 	bool contains(const Block& block) const;
 	const BlockFeatureType* at(const Block& block) const;
 	bool empty() const;
-	friend class HasConstructionDesignations;
+	friend class AreaHasConstructionDesignations;
 };
 // To be used by Area.
-class HasConstructionDesignations final
+class AreaHasConstructionDesignations final
 {
 	std::unordered_map<const Faction*, HasConstructionDesignationsForFaction> m_data;
 public:

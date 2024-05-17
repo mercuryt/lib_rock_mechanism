@@ -62,13 +62,13 @@ public:
 	BlockHasShapes m_hasShapes;
 	BlockHasFluids m_hasFluids;
 	Reservable m_reservable;
-	HasPlant m_hasPlant;
+	BlockHasPlant m_hasPlant;
 	HasBlockFeatures m_hasBlockFeatures;
 	BlockHasActors m_hasActors;
 	BlockHasItems m_hasItems;
 	HasDesignations m_hasDesignations;
 	BlockIsPartOfStockPiles m_isPartOfStockPiles;
-	IsPartOfFarmField m_isPartOfFarmField;
+	BlockIsPartOfFarmField m_isPartOfFarmField;
 	BlockHasTemperature m_blockHasTemperature;
 	BlockHasProjects m_hasProjects;
 
