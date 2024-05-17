@@ -127,10 +127,10 @@ public:
 	void removeIfExists(Block& block);
 	[[nodiscard]] const BlockFeatureType* at(const Block& block) const;
 	[[nodiscard]] bool empty() const;
-	friend class HasDigDesignations;
+	friend class AreaHasDigDesignations;
 };
 // To be used by Area.
-class HasDigDesignations final
+class AreaHasDigDesignations final
 {
 	std::unordered_map<const Faction*, HasDigDesignationsForFaction> m_data;
 public:

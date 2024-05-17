@@ -4,12 +4,12 @@
 class Block;
 class Plant;
 struct PlantSpecies;
-class HasPlant final 
+class BlockHasPlant final 
 {
 	Block& m_block;
 	Plant* m_plant;
 public:
-	HasPlant(Block& b) : m_block(b), m_plant(nullptr) { }
+	BlockHasPlant(Block& b) : m_block(b), m_plant(nullptr) { }
 	void createPlant(const PlantSpecies& plantSpecies, Percent growthPercent = 0);
 	void updateGrowingStatus();
 	void clearPointer();

@@ -53,19 +53,19 @@ public:
 
 	AreaHasTemperature m_hasTemperature;
 	AreaHasActors m_hasActors;
-	HasPlants m_hasPlants;
+	AreaHasPlants m_hasPlants;
 	AreaHasFires m_fires;
-	HasFarmFields m_hasFarmFields;
-	HasHaulTools m_hasHaulTools;
-	HasDigDesignations m_hasDigDesignations;
-	HasConstructionDesignations m_hasConstructionDesignations;
+	AreaHasFarmFields m_hasFarmFields;
+	AreaHasHaulTools m_hasHaulTools;
+	AreaHasDigDesignations m_hasDigDesignations;
+	AreaHasConstructionDesignations m_hasConstructionDesignations;
 	AreaHasStockPiles m_hasStockPiles;
 	AreaHasStocks m_hasStocks;
-	HasCraftingLocationsAndJobs m_hasCraftingLocationsAndJobs;
+	AreaHasCraftingLocationsAndJobs m_hasCraftingLocationsAndJobs;
 	AreaHasTargetedHauling m_hasTargetedHauling;
 	AreaHasSleepingSpots m_hasSleepingSpots;
-	HasWoodCuttingDesignations m_hasWoodCuttingDesignations;
-	HasInstallItemDesignations m_hasInstallItemDesignations;
+	AreaHasWoodCuttingDesignations m_hasWoodCuttingDesignations;
+	AreaHasInstallItemDesignations m_hasInstallItemDesignations;
 	//AreaHasMedicalPatients m_hasMedicalPatients;
 	AreaHasItems m_hasItems;
 	AreaHasFluidSources m_fluidSources;

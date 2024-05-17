@@ -111,10 +111,10 @@ public:
 	void remove(Block& block);
 	void removeIfExists(Block& block);
 	bool empty() const;
-	friend class HasWoodCuttingDesignations;
+	friend class AreaHasWoodCuttingDesignations;
 };
 // To be used by Area.
-class HasWoodCuttingDesignations final
+class AreaHasWoodCuttingDesignations final
 {
 	std::unordered_map<const Faction*, HasWoodCuttingDesignationsForFaction> m_data;
 public:

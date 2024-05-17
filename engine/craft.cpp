@@ -528,7 +528,7 @@ std::pair<CraftJob*, Block*> HasCraftingLocationsAndJobsForFaction::getJobAndLoc
 		return std::make_pair(getJobForAtLocation(actor, skillType, block, excludeJobs), &block);
 	}
 }
-void HasCraftingLocationsAndJobs::load(const Json& data, DeserializationMemo& deserializationMemo)
+void AreaHasCraftingLocationsAndJobs::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	for(const Json& pair : data)
 	{
@@ -536,7 +536,7 @@ void HasCraftingLocationsAndJobs::load(const Json& data, DeserializationMemo& de
 		m_data.try_emplace(&faction, pair[1], deserializationMemo, faction);
 	}
 }
-void HasCraftingLocationsAndJobs::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
+void AreaHasCraftingLocationsAndJobs::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	for(const Json& pair : data)
 	{
@@ -545,7 +545,7 @@ void HasCraftingLocationsAndJobs::loadWorkers(const Json& data, DeserializationM
 	}
 
 }
-Json HasCraftingLocationsAndJobs::toJson() const
+Json AreaHasCraftingLocationsAndJobs::toJson() const
 {
 	Json data = Json::array();
 	for(auto& [faction, hasCraftingLocationsAndJobsForFaction] : m_data)
@@ -557,14 +557,14 @@ Json HasCraftingLocationsAndJobs::toJson() const
 	}
 	return data;
 }
-void HasCraftingLocationsAndJobs::clearReservations()
+void AreaHasCraftingLocationsAndJobs::clearReservations()
 {
 	for(auto& pair : m_data)
 		for(auto& job : pair.second.m_jobs)
 			if(job.craftStepProject)
 				job.craftStepProject->clearReservations();
 }
-HasCraftingLocationsAndJobsForFaction& HasCraftingLocationsAndJobs::at(const Faction& faction) 
+HasCraftingLocationsAndJobsForFaction& AreaHasCraftingLocationsAndJobs::at(const Faction& faction) 
 { 
 	if(!m_data.contains(&faction))
 		addFaction(faction);

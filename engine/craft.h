@@ -233,13 +233,13 @@ public:
 	[[nodiscard]] CraftJob* getJobForAtLocation(const Actor& actor, const SkillType& skillType, const Block& block, std::unordered_set<CraftJob*>& excludeJobs);
 	[[nodiscard]] std::pair<CraftJob*, Block*> getJobAndLocationForWhileExcluding(const Actor& actor, const SkillType& skillType, std::unordered_set<CraftJob*>& excludeJobs);
 	friend class CraftObjectiveType;
-	friend class HasCraftingLocationsAndJobs;
+	friend class AreaHasCraftingLocationsAndJobs;
 	// For testing.
 	[[maybe_unused, nodiscard]] bool hasJobs() const { return !m_jobs.empty(); }
 	[[maybe_unused, nodiscard]] bool hasLocationsForCategory(const CraftStepTypeCategory& category) const { return m_locationsByCategory.contains(&category); }
 	[[maybe_unused, nodiscard]] bool hasUnassignedProjectsForCategory(const CraftStepTypeCategory& category) const { return m_unassignedProjectsByStepTypeCategory.contains(&category); }
 };
-class HasCraftingLocationsAndJobs final
+class AreaHasCraftingLocationsAndJobs final
 {
 	std::unordered_map<const Faction*, HasCraftingLocationsAndJobsForFaction> m_data;
 public:

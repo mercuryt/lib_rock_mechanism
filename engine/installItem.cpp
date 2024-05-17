@@ -83,7 +83,7 @@ void HasInstallItemDesignationsForFaction::add(Block& block, Item& item, Facing 
 	assert(!m_designations.contains(&block));
 	m_designations.try_emplace(&block, item, block, facing, faction);
 }
-void HasInstallItemDesignations::clearReservations()
+void AreaHasInstallItemDesignations::clearReservations()
 {
 	for(auto& pair : m_data)
 		for(auto& pair2 : pair.second.m_designations)

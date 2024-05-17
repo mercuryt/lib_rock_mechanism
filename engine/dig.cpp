@@ -315,7 +315,7 @@ void HasDigDesignationsForFaction::removeIfExists(Block& block)
 const BlockFeatureType* HasDigDesignationsForFaction::at(const Block& block) const { return m_data.at(const_cast<Block*>(&block)).m_blockFeatureType; }
 bool HasDigDesignationsForFaction::empty() const { return m_data.empty(); }
 // To be used by Area.
-void HasDigDesignations::load(const Json& data, DeserializationMemo& deserializationMemo)
+void AreaHasDigDesignations::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	for(const Json& pair : data)
 	{
@@ -323,7 +323,7 @@ void HasDigDesignations::load(const Json& data, DeserializationMemo& deserializa
 		m_data.try_emplace(&faction, pair[1], deserializationMemo, faction);
 	}
 }
-void HasDigDesignations::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
+void AreaHasDigDesignations::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	for(const Json& pair : data)
 	{
@@ -332,7 +332,7 @@ void HasDigDesignations::loadWorkers(const Json& data, DeserializationMemo& dese
 	}
 
 }
-Json HasDigDesignations::toJson() const
+Json AreaHasDigDesignations::toJson() const
 {
 	Json data;
 	for(auto& pair : m_data)
@@ -344,52 +344,52 @@ Json HasDigDesignations::toJson() const
 	}
 	return data;
 }
-void HasDigDesignations::addFaction(const Faction& faction)
+void AreaHasDigDesignations::addFaction(const Faction& faction)
 {
 	assert(!m_data.contains(&faction));
 	m_data.emplace(&faction, faction);
 }
-void HasDigDesignations::removeFaction(const Faction& faction)
+void AreaHasDigDesignations::removeFaction(const Faction& faction)
 {
 	assert(m_data.contains(&faction));
 	m_data.erase(&faction);
 }
 // If blockFeatureType is null then dig out fully rather then digging out a feature.
-void HasDigDesignations::designate(const Faction& faction, Block& block, const BlockFeatureType* blockFeatureType)
+void AreaHasDigDesignations::designate(const Faction& faction, Block& block, const BlockFeatureType* blockFeatureType)
 {
 	if(!m_data.contains(&faction))
 		addFaction(faction);
 	m_data.at(&faction).designate(block, blockFeatureType);
 }
-void HasDigDesignations::undesignate(const Faction& faction, Block& block)
+void AreaHasDigDesignations::undesignate(const Faction& faction, Block& block)
 {
 	assert(m_data.contains(&faction));
 	assert(m_data.at(&faction).m_data.contains(&block)); 
 	m_data.at(&faction).undesignate(block);
 }
-void HasDigDesignations::remove(const Faction& faction, Block& block)
+void AreaHasDigDesignations::remove(const Faction& faction, Block& block)
 {
 	assert(m_data.contains(&faction));
 	m_data.at(&faction).remove(block);
 }
-void HasDigDesignations::clearAll(Block& block)
+void AreaHasDigDesignations::clearAll(Block& block)
 {
 	for(auto& pair : m_data)
 		pair.second.removeIfExists(block);
 }
-void HasDigDesignations::clearReservations()
+void AreaHasDigDesignations::clearReservations()
 {
 	for(auto& pair : m_data)
 		for(auto& pair : pair.second.m_data)
 			pair.second.clearReservations();
 }
-bool HasDigDesignations::areThereAnyForFaction(const Faction& faction) const
+bool AreaHasDigDesignations::areThereAnyForFaction(const Faction& faction) const
 {
 	if(!m_data.contains(&faction))
 		return false;
 	return !m_data.at(&faction).empty();
 }
-DigProject& HasDigDesignations::at(const Faction& faction, const Block& block) 
+DigProject& AreaHasDigDesignations::at(const Faction& faction, const Block& block) 
 { 
 	assert(m_data.contains(&faction));
 	assert(m_data.at(&faction).m_data.contains(const_cast<Block*>(&block))); 

@@ -132,7 +132,7 @@ public:
 	[[nodiscard]] HasShape* getCarrying(){ return m_carrying; }
 };
 // For Area.
-class HasHaulTools final
+class AreaHasHaulTools final
 {
 	//TODO: optimize with m_unreservedHaulToos and m_unreservedYolkableActors.
 	std::unordered_set<Item*> m_haulTools;

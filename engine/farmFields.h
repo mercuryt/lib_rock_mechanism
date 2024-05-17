@@ -54,12 +54,12 @@ struct FarmField
 	FarmField(const Json& data, DeserializationMemo& deserializationMemo, const Faction& faction);
 	[[nodiscard]] Json toJson() const;
 };
-class IsPartOfFarmField
+class BlockIsPartOfFarmField
 {
 	Block& m_block;
 	std::unordered_map<const Faction*, FarmField*> m_farmFields;
 public:
-	IsPartOfFarmField(Block& b) : m_block(b) { }
+	BlockIsPartOfFarmField(Block& b) : m_block(b) { }
 	void insert(const Faction& faction, FarmField& farmField);
 	void remove(const Faction& faction);
 	void designateForHarvestIfPartOfFarmField(Plant& plant);
@@ -109,12 +109,12 @@ public:
 	[[nodiscard]] const PlantSpecies& getPlantSpeciesFor(const Block& block) const;
 };
 // To be used by Area.
-class HasFarmFields
+class AreaHasFarmFields
 {
 	Area& m_area;
 	std::unordered_map<const Faction*, HasFarmFieldsForFaction> m_data;
 public:
-	HasFarmFields(Area& a) : m_area(a) { } 
+	AreaHasFarmFields(Area& a) : m_area(a) { } 
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] HasFarmFieldsForFaction& at(const Faction& faction);
