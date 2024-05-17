@@ -2,6 +2,7 @@
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
 #include "../../engine/simulation/hasActors.h"
+#include "../../engine/simulation/hasAreas.h"
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/actor.h"
@@ -14,7 +15,7 @@ TEST_CASE("actor")
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	static const AnimalSpecies& troll = AnimalSpecies::byName("troll");
 	static const MaterialType& marble = MaterialType::byName("marble");
-	Area& area = simulation.createArea(10,10,10);
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	Block& origin1 = area.getBlock(5, 5, 1);
 	Block& origin2 = area.getBlock(7, 7, 1);

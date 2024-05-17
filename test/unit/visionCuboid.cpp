@@ -2,10 +2,11 @@
 #include "../../engine/visionCuboid.h"
 #include "../../engine/area.h"
 #include "../../engine/simulation.h"
+#include "../../engine/simulation/hasAreas.h"
 TEST_CASE("vision cuboid basic")
 {
 	Simulation simulation;
-	Area& area = simulation.createArea(2,2,2);
+	Area& area = simulation.m_hasAreas->createArea(2,2,2);
 	SUBCASE("create")
 	{
 		Cuboid cuboid(area.getBlock(1, 1, 1), area.getBlock(0, 0, 0));
@@ -50,7 +51,7 @@ TEST_CASE("vision cuboid basic")
 TEST_CASE("split at")
 {
 	Simulation simulation;
-	Area& area = simulation.createArea(2,2,1);
+	Area& area = simulation.m_hasAreas->createArea(2,2,1);
 	Block& b1 = area.getBlock(0, 0, 0);
 	Block& b2 = area.getBlock(1, 0, 0);
 	Block& b3 = area.getBlock(0, 1, 0);
@@ -73,7 +74,7 @@ TEST_CASE("split at")
 TEST_CASE("split below")
 {
 	Simulation simulation;
-	Area& area = simulation.createArea(3,3,3);
+	Area& area = simulation.m_hasAreas->createArea(3,3,3);
 	Block& middle = area.getBlock(1, 1, 1);
 	Block& high = area.getBlock(2, 2, 2);
 	Block& low = area.getBlock(0, 0, 0);

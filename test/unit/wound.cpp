@@ -5,12 +5,13 @@
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
 #include "../../engine/simulation/hasActors.h"
+#include "../../engine/simulation/hasAreas.h"
 TEST_CASE("wound")
 {
 	static const MaterialType& dirt = MaterialType::byName("dirt");
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	Simulation simulation;
-	Area& area = simulation.createArea(10,10,10);
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	Actor& actor = simulation.m_hasActors->createActor(dwarf, area.getBlock(1, 1, 2));
 	Block& pondLocation = area.getBlock(3, 7, 1);

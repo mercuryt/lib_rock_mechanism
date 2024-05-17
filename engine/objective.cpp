@@ -1,5 +1,7 @@
 //ObjectiveTypePrioritySet
 #include "objective.h"
+#include "area.h"
+#include "block.h"
 #include "deserializationMemo.h"
 #include "simulation.h"
 #include "simulation/hasActors.h"
@@ -11,6 +13,10 @@
 #include "objectives/sowSeeds.h"
 #include "objectives/wander.h"
 #include "woodcutting.h"
+#include "craft.h"
+#include "dig.h"
+#include "construct.h"
+#include "stockpile.h"
 
 #include <cstdio>
 #include <numbers>

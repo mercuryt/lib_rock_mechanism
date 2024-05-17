@@ -1,6 +1,7 @@
 #include "../../lib/doctest.h"
 #include "../../engine/threadedTask.hpp"
 #include "../../engine/simulation.h"
+#include "../../engine/simulation/hasAreas.h"
 class TestThreadedTask final : public ThreadedTask
 {
 	bool& fired;

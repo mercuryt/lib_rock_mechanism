@@ -6,6 +6,7 @@
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
 #include "../../engine/simulation/hasActors.h"
+#include "../../engine/simulation/hasAreas.h"
 #include "../../engine/materialType.h"
 #include "../../engine/animalSpecies.h"
 #include <functional>
@@ -13,7 +14,7 @@ TEST_CASE("combat")
 {
 	const MaterialType& marble = MaterialType::byName("marble");
 	Simulation simulation;
-	Area& area = simulation.createArea(10,10,10);
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	Faction faction(L"tower of power");
 	area.m_hasStockPiles.registerFaction(faction);

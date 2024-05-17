@@ -6,11 +6,12 @@
 #include "../../engine/animalSpecies.h"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasActors.h"
+#include "../../engine/simulation/hasAreas.h"
 #include "../../engine/visionUtil.h"
 TEST_CASE("vision")
 {
 	Simulation simulation;
-	Area& area = simulation.createArea(10,10,10);
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	auto& marble = MaterialType::byName("marble");
 	auto& glass = MaterialType::byName("glass");
 	auto& door = BlockFeatureType::door;
@@ -334,7 +335,7 @@ TEST_CASE("Too far to see")
 	auto& marble = MaterialType::byName("marble");
 	auto& dwarf = AnimalSpecies::byName("dwarf");
 	Simulation simulation;
-	Area& area = simulation.createArea(20,20,20);
+	Area& area = simulation.m_hasAreas->createArea(20,20,20);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	Block& block1 = area.getBlock(0, 0, 1);
 	Block& block2 = area.getBlock(19, 19, 1);

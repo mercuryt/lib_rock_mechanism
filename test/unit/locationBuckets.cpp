@@ -1,6 +1,7 @@
 #include "../../lib/doctest.h"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasActors.h"
+#include "../../engine/simulation/hasAreas.h"
 #include "../../engine/locationBuckets.h"
 #include "../../engine/area.h"
 #include "../../engine/block.h"
@@ -11,7 +12,7 @@ TEST_CASE("locationBuckets")
 	SUBCASE("basic")
 	{
 		assert(Config::locationBucketSize >= 6);
-		Area& area = simulation.createArea(10,10,10);
+		Area& area = simulation.m_hasAreas->createArea(10,10,10);
 		Block& block = area.getBlock(5, 5, 5);
 		CHECK(block.m_locationBucket != nullptr);
 		Actor& a1 = simulation.m_hasActors->createActor(dwarf, block);
@@ -26,7 +27,7 @@ TEST_CASE("locationBuckets")
 	{
 		assert(Config::locationBucketSize <= 25);
 		Simulation simulation;
-		Area& area = simulation.createArea(30,30,30);
+		Area& area = simulation.m_hasAreas->createArea(30,30,30);
 		Block& b1 = area.getBlock(0, 0, 1);
 		simulation.m_hasActors->createActor(dwarf, b1);
 		Block& b2 = area.getBlock(15, 1, 1);

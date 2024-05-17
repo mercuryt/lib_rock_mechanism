@@ -4,9 +4,6 @@
 #include "dialogueBox.h"
 #include "shape.h"
 #include "types.h"
-#include "area.h"
-#include "project.h"
-#include "types.h"
 #include "config.h"
 #include "datetime.h"
 #include "eventSchedule.hpp"
@@ -15,6 +12,7 @@
 #include "random.h"
 #include "input.h"
 #include "uniform.h"
+#include "faction.h"
 #include <list>
 #include <memory>
 #include <unordered_map>
@@ -25,16 +23,15 @@ class HourlyEvent;
 class DramaEngine;
 class SimulationHasItems;
 class SimulationHasActors;
+class SimulationHasAreas;
 class Actor;
 class Item;
 
 class Simulation final
 {
-	AreaId m_nextAreaId;
 	std::future<void> m_stepFuture;
 	DeserializationMemo m_deserializationMemo;
 public:
-	std::unordered_map<AreaId, Area*> m_areasById;
 	BS::thread_pool_light m_pool;
 	std::vector<std::future<void>> m_taskFutures;
 	std::mutex m_uiReadMutex;
@@ -42,7 +39,6 @@ public:
 	std::filesystem::path m_path;
 	Step m_step;
 	//std::unique_ptr<World> m_world;
-	std::list<Area> m_areas;
 	EventSchedule m_eventSchedule;
 	HasScheduledEvent<HourlyEvent> m_hourlyEvent;
 	ThreadedTaskEngine m_threadedTaskEngine;
@@ -56,24 +52,18 @@ public:
 	std::unique_ptr<DramaEngine> m_dramaEngine;
 	std::unique_ptr<SimulationHasItems> m_hasItems;
 	std::unique_ptr<SimulationHasActors> m_hasActors;
+	std::unique_ptr<SimulationHasAreas> m_hasAreas;
 
 	Simulation(std::wstring name = L"", Step s = 10'000 * Config::stepsPerYear);
 	Simulation(std::filesystem::path path);
 	Simulation(const Json& data);
-	void loadAreas(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void doStep(uint16_t count = 1);
 	void incrementHour();
 	void save();
-	void loadAreas(const Json& data, std::filesystem::path path);
 	Faction& createFaction(std::wstring name);
 	//TODO: latitude, longitude, altitude.
-	Area& createArea(uint32_t x, uint32_t y, uint32_t z, bool createDrama = false);
-	Area& loadArea(AreaId id, std::wstring name, uint32_t x, uint32_t y, uint32_t z);
-	void destroyArea(Area& area);
-	Area& loadAreaFromJson(const Json& data);
 	[[nodiscard]] Block& getBlockForJsonQuery(const Json& data);
-	[[nodiscard]] Area& getAreaById(AreaId id) const {return *m_areasById.at(id); }
 	[[nodiscard]] std::filesystem::path getPath() const  { return m_path; }
 	[[nodiscard, maybe_unused]] DateTime getDateTime() const;
 	~Simulation();
@@ -89,6 +79,7 @@ public:
 	[[maybe_unused]] void fastForwardUntillActorHasEquipment(Actor& actor, Item& item);
 	[[maybe_unused]] void fastForwardUntillPredicate(std::function<bool()> predicate, uint32_t minutes = 10);
 	[[maybe_unused]] void fastForwardUntillNextEvent();
+	[[nodiscard, maybe_unused]] DeserializationMemo& getDeserializationMemo() { return m_deserializationMemo; }
 };
 
 class HourlyEvent final : public ScheduledEvent

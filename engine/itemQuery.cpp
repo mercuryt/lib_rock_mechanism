@@ -1,6 +1,7 @@
 #include "itemQuery.h"
 #include "simulation.h"
 #include "simulation/hasItems.h"
+#include "materialType.h"
 ItemQuery::ItemQuery(Item& item) : m_item(&item), m_itemType(nullptr), m_materialTypeCategory(nullptr), m_materialType(nullptr) { }
 ItemQuery::ItemQuery(const ItemType& m_itemType) : m_item(nullptr), m_itemType(&m_itemType), m_materialTypeCategory(nullptr), m_materialType(nullptr) { }
 ItemQuery::ItemQuery(const ItemType& m_itemType, const MaterialTypeCategory& mtc) : m_item(nullptr), m_itemType(&m_itemType), m_materialTypeCategory(&mtc), m_materialType(nullptr) { }

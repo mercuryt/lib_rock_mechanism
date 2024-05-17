@@ -6,6 +6,7 @@
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
 #include "../../engine/simulation/hasActors.h"
+#include "../../engine/simulation/hasAreas.h"
 #include "../../engine/craft.h"
 #include "../../engine/materialType.h"
 #include <functional>
@@ -18,7 +19,7 @@ TEST_CASE("craft")
 	const CraftStepTypeCategory& sawCategory = CraftStepTypeCategory::byName("saw");
 	const CraftJobType& woodBucket = CraftJobType::byName("wood bucket");
 	Simulation simulation;
-	Area& area = simulation.createArea(10,10,10);
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName("marble"));
 	Block& chiselLocation = area.getBlock(3, 5, 1);
 	Block& sawingLocation = area.getBlock(9, 9, 1);

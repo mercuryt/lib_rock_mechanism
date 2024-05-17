@@ -2,6 +2,7 @@
 #include "block.h"
 #include "actor.h"
 #include "config.h"
+#include "locationBuckets.h"
 #include "simulation.h"
 #include "types.h"
 #include <cassert>

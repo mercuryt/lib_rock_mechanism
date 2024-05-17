@@ -9,6 +9,7 @@
 #include "fluidType.h"
 #include "plant.h"
 #include "simulation.h"
+#include "simulation/hasAreas.h"
 #include "simulation/hasItems.h"
 #include "simulation/hasActors.h"
 #include "types.h"
@@ -32,7 +33,8 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_sizeX(data["sizeX"].get<DistanceInBlocks>()), m_sizeY(data["sizeY"].get<DistanceInBlocks>()), m_sizeZ(data["sizeZ"].get<DistanceInBlocks>()), 
 	m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_fluidSources(*this), m_hasFluidGroups(*this), m_hasRain(*this), m_visionCuboidsActive(false)
 {
-	m_simulation.m_areasById[m_id] = this;
+	// Record id now so json block references will function later in this method.
+	m_simulation.m_hasAreas->recordId(*this);
 	setup();
 	// Load blocks.
 	DistanceInBlocks x = 0;

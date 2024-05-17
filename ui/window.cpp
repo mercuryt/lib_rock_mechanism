@@ -475,7 +475,7 @@ void Window::povFromJson(const Json& data)
 	assert(m_simulation);
 	if(data.contains("faction"))
 		m_faction = &m_simulation->m_hasFactions.byName(data["faction"].get<std::wstring>());
-	m_area = &m_simulation->getAreaById(data["area"].get<AreaId>());
+	m_area = &m_simulation->m_hasAreas->getById(data["area"].get<AreaId>());
 	m_scale = data["scale"].get<uint32_t>();
 	m_z = data["z"].get<uint32_t>();
 	uint32_t x = data["x"].get<uint32_t>();

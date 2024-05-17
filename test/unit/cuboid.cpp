@@ -2,10 +2,11 @@
 #include "../../engine/cuboid.h"
 #include "../../engine/area.h"
 #include "../../engine/simulation.h"
+#include "../../engine/simulation/hasAreas.h"
 TEST_CASE("cuboid")
 {
 	Simulation simulation;
-	Area& area = simulation.createArea(2,2,2);
+	Area& area = simulation.m_hasAreas->createArea(2,2,2);
 	SUBCASE("create")
 	{
 		Cuboid cuboid(&area.getBlock(1, 1, 1), &area.getBlock(0, 0, 0));

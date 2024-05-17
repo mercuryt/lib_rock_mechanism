@@ -2,6 +2,7 @@
 #include "../simulation.h"
 #include "../block.h"
 #include "../actor.h"
+#include "../area.h"
 #include "../deserializationMemo.h"
 #include "eventSchedule.h"
 ExterminateObjective::ExterminateObjective(Actor& a, Block& destination) : Objective(a, Config::exterminatePriority), m_destination(destination), m_event(a.getEventSchedule()) { }

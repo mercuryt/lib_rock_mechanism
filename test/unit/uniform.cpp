@@ -2,11 +2,12 @@
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
 #include "../../engine/simulation/hasActors.h"
+#include "../../engine/simulation/hasAreas.h"
 #include "../../engine/areaBuilderUtil.h"
 TEST_CASE("uniform")
 {
 	Simulation simulation;
-	Area& area = simulation.createArea(10,10,10);
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName("marble"));
 	UniformElement pantsElement(ItemType::byName("pants"));
 	UniformElement shirtElement(ItemType::byName("shirt"));
