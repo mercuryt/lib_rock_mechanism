@@ -5,6 +5,7 @@
 #include "../../engine/objectives/kill.h"
 #include "../../engine/objectives/goTo.h"
 #include "../../engine/objectives/station.h"
+#include "simulation/hasActors.h"
 void ContextMenu::drawActorControls(Block& block)
 {
 	// Actor submenu.
@@ -44,7 +45,7 @@ void ContextMenu::drawActorControls(Block& block)
 				destroy->onClick([this, actor]{ 
 					std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 					m_window.deselectAll();
-					m_window.getSimulation()->destroyActor(*actor);
+					m_window.getSimulation()->m_hasActors->destroyActor(*actor);
 					hide();
 				});
 				submenu.add(destroy);
@@ -124,7 +125,7 @@ void ContextMenu::drawActorControls(Block& block)
 			submenu.add(confirm);
 			confirm->onClick([this, &block, nameUI, speciesUI, factionUI]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-				Actor& actor = m_window.getSimulation()->createActor(ActorParamaters{
+				Actor& actor = m_window.getSimulation()->m_hasActors->createActor(ActorParamaters{
 					.species = *widgetUtil::lastSelectedAnimalSpecies,
 					.name = nameUI->getText().toWideString(),
 					.location = &block,

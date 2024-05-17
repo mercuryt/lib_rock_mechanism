@@ -5,6 +5,7 @@
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
+#include "../../engine/simulation/hasActors.h"
 #include "../../engine/materialType.h"
 #include "../../engine/project.h"
 #include "../../engine/config.h"
@@ -21,7 +22,7 @@ TEST_CASE("equip and unequip")
 	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	Block& destination = area.getBlock(8,2,1);
-	Actor& dwarf1 = simulation.createActor(ActorParamaters{
+	Actor& dwarf1 = simulation.m_hasActors->createActor(ActorParamaters{
 		.species=AnimalSpecies::byName("dwarf"), 
 		.location=&area.getBlock(1, 1, 1),
 		.hasCloths=false,
@@ -52,13 +53,13 @@ TEST_CASE("give item")
 	Simulation simulation;
 	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
-	Actor& dwarf1 = simulation.createActor(ActorParamaters{
+	Actor& dwarf1 = simulation.m_hasActors->createActor(ActorParamaters{
 		.species=AnimalSpecies::byName("dwarf"), 
 		.location=&area.getBlock(1, 1, 1),
 		.hasCloths=false,
 		.hasSidearm=false
 	});
-	Actor& dwarf2 = simulation.createActor(ActorParamaters{
+	Actor& dwarf2 = simulation.m_hasActors->createActor(ActorParamaters{
 		.species=AnimalSpecies::byName("dwarf"), 
 		.location=&area.getBlock(6, 6, 1),
 		.hasCloths=false,

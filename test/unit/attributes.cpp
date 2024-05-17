@@ -1,13 +1,13 @@
 #include "../../lib/doctest.h"
 #include "../../engine/simulation.h"
+#include "../../engine/simulation/hasActors.h"
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/attributes.h"
 #include "../../engine/animalSpecies.h"
-#include "actor.h"
-#include "areaBuilderUtil.h"
-#include "config.h"
-#include "simulation.h"
+#include "../../engine/actor.h"
+#include "../../engine/areaBuilderUtil.h"
+#include "../../engine/config.h"
 
 TEST_CASE("attributes")
 {
@@ -24,12 +24,12 @@ TEST_CASE("attributes")
 		Area& area = simulation.createArea(10,10,10);
 		areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName("marble"));
 
-		Actor& goblin1 = simulation.createActor(ActorParamaters{
+		Actor& goblin1 = simulation.m_hasActors->createActor(ActorParamaters{
 			.species = goblin,
 			.location = &area.getBlock(5,5,1),
 		});
 
-		Actor& dwarf1 = simulation.createActor(ActorParamaters{
+		Actor& dwarf1 = simulation.m_hasActors->createActor(ActorParamaters{
 			.species = dwarf,
 			.location = &area.getBlock(5,7,1),
 		});

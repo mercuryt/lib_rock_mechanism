@@ -1,9 +1,8 @@
 #pragma once
 
-#include "eventSchedule.h"
+#include "attackType.h"
 #include "eventSchedule.hpp"
 #include "hasShape.h"
-#include "attackType.h"
 
 #include <ratio>
 #include <string>

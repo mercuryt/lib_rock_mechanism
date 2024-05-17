@@ -4,6 +4,7 @@
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
+#include "../../engine/simulation/hasActors.h"
 #include "../../engine/project.h"
 #include "../../engine/haul.h"
 #include "../../engine/targetedHaul.h"
@@ -24,7 +25,7 @@ TEST_CASE("haul")
 	Simulation simulation;
 	Area& area = simulation.createArea(10,10,10);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
-	Actor& dwarf1 = simulation.createActor(ActorParamaters{
+	Actor& dwarf1 = simulation.m_hasActors->createActor(ActorParamaters{
 		.species=dwarf, 
 		.location=&area.getBlock(1, 1, 2),
 		.hasCloths=false,
@@ -137,7 +138,7 @@ TEST_CASE("haul")
 		Item& chunk1 = simulation.m_hasItems->createItemGeneric(chunk, gold, 1u);
 		chunk1.setLocation(chunkLocation);
 		REQUIRE(!dwarf1.m_canPickup.maximumNumberWhichCanBeCarriedWithMinimumSpeed(chunk1, Config::minimumHaulSpeedInital));
-		Actor& dwarf2 = simulation.createActor(dwarf, area.getBlock(1, 2, 2));
+		Actor& dwarf2 = simulation.m_hasActors->createActor(dwarf, area.getBlock(1, 2, 2));
 		dwarf2.setFaction(&faction);
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(std::vector<Actor*>({&dwarf1, &dwarf2}), chunk1, destination);
 		// One step to activate the project and make reservations.
@@ -177,7 +178,7 @@ TEST_CASE("haul")
 		chunk1.setLocation(chunkLocation);
 		REQUIRE(!dwarf1.m_canPickup.maximumNumberWhichCanBeCarriedWithMinimumSpeed(chunk1, Config::minimumHaulSpeedInital));
 		Block& donkeyLocation = area.getBlock(1, 2, 2);
-		Actor& donkey1 = simulation.createActor(donkey, donkeyLocation);
+		Actor& donkey1 = simulation.m_hasActors->createActor(donkey, donkeyLocation);
 		area.m_hasHaulTools.registerYokeableActor(donkey1);
 		Block& panniersLocation = area.getBlock(5, 1, 2);
 		Item& panniers1 = simulation.m_hasItems->createItemNongeneric(panniers, poplarWood, 3u, 0);
@@ -221,7 +222,7 @@ TEST_CASE("haul")
 		Item& boulder1 = simulation.m_hasItems->createItemGeneric(boulder, lead, 1u);
 		boulder1.setLocation(boulderLocation);
 		Block& donkeyLocation = area.getBlock(4, 3, 2);
-		Actor& donkey1 = simulation.createActor(donkey, donkeyLocation);
+		Actor& donkey1 = simulation.m_hasActors->createActor(donkey, donkeyLocation);
 		area.m_hasHaulTools.registerYokeableActor(donkey1);
 		Block& cartLocation = area.getBlock(5, 1, 2);
 		Item& cart1 = simulation.m_hasItems->createItemNongeneric(cart, poplarWood, 3u, 0);
@@ -263,7 +264,7 @@ TEST_CASE("haul")
 		Item& cargo1 = simulation.m_hasItems->createItemGeneric(boulder, iron, 1u);
 		cargo1.setLocation(cargoLocation);
 		Block& origin2 = area.getBlock(4, 3, 2);
-		Actor& dwarf2 = simulation.createActor(dwarf, origin2);
+		Actor& dwarf2 = simulation.m_hasActors->createActor(dwarf, origin2);
 		dwarf2.setFaction(&faction);
 		Block& cartLocation = area.getBlock(7, 1, 2);
 		Item& cart1 = simulation.m_hasItems->createItemNongeneric(cart, poplarWood, 3u, 0);

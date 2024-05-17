@@ -1,5 +1,6 @@
 #include "sleep.h"
 #include "area.h"
+#include "actor.h"
 #include "designations.h"
 #include "hasShape.h"
 #include "objective.h"

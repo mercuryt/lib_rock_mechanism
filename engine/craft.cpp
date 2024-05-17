@@ -1,5 +1,6 @@
 #include "craft.h"
 #include "area.h"
+#include "actor.h"
 #include "deserializationMemo.h"
 #include "item.h"
 #include "materialType.h"

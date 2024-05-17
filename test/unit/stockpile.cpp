@@ -5,6 +5,7 @@
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
+#include "../../engine/simulation/hasActors.h"
 #include "../../engine/stockpile.h"
 #include "../../engine/materialType.h"
 #include "../../engine/project.h"
@@ -30,7 +31,7 @@ TEST_CASE("stockpile")
 	Faction faction(L"tower of power");
 	area.m_hasStockPiles.registerFaction(faction);
 	area.m_hasStocks.addFaction(faction);
-	Actor& dwarf1 = simulation.createActor(ActorParamaters{
+	Actor& dwarf1 = simulation.m_hasActors->createActor(ActorParamaters{
 		.species=AnimalSpecies::byName("dwarf"), 
 		.location=&area.getBlock(1, 1, 1),
 		.hasCloths=false,
@@ -127,7 +128,7 @@ TEST_CASE("stockpile")
 		chunk2.setLocation(chunkLocation2);
 		area.m_hasStockPiles.at(faction).addItem(chunk1);
 		area.m_hasStockPiles.at(faction).addItem(chunk2);
-		Actor& dwarf2 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 2, 1));
+		Actor& dwarf2 = simulation.m_hasActors->createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 2, 1));
 		dwarf2.setFaction(&faction);
 		StockPileObjectiveType objectiveType;
 		REQUIRE(objectiveType.canBeAssigned(dwarf2));
@@ -206,7 +207,7 @@ TEST_CASE("stockpile")
 		chunk1.setLocation(chunkLocation);
 		REQUIRE(!dwarf1.m_canPickup.maximumNumberWhichCanBeCarriedWithMinimumSpeed(chunk1, Config::minimumHaulSpeedInital));
 		area.m_hasStockPiles.at(faction).addItem(chunk1);
-		Actor& dwarf2 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 2, 1));
+		Actor& dwarf2 = simulation.m_hasActors->createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 2, 1));
 		dwarf2.setFaction(&faction);
 		StockPileObjectiveType objectiveType;
 		REQUIRE(objectiveType.canBeAssigned(dwarf1));
@@ -310,7 +311,7 @@ TEST_CASE("stockpile")
 		cargo.setLocation(cargoOrigin);
 		area.m_hasStockPiles.at(faction).addItem(cargo);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 100);
-		Actor& dwarf2 = simulation.createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 2, 1));
+		Actor& dwarf2 = simulation.m_hasActors->createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 2, 1));
 		dwarf2.setFaction(&faction);
 		dwarf2.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 100);
 		// Both workers find hauling task.

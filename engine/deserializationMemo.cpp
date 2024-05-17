@@ -1,5 +1,6 @@
 #include "deserializationMemo.h"
 #include "simulation.h"
+#include "simulation/hasActors.h"
 #include "simulation/hasItems.h"
 #include "targetedHaul.h"
 #include "objective.h"
@@ -18,7 +19,7 @@ Faction& DeserializationMemo::faction(std::wstring name) { return m_simulation.m
 Plant& DeserializationMemo::plantReference(const Json& data) { return m_simulation.getBlockForJsonQuery(data).m_hasPlant.get(); }
 Block& DeserializationMemo::blockReference(const Json& data) { return m_simulation.getBlockForJsonQuery(data); }
 Item& DeserializationMemo::itemReference(const Json& data) { return m_simulation.m_hasItems->getById(data.get<ItemId>()); }
-Actor& DeserializationMemo::actorReference(const Json& data) { return m_simulation.getActorById(data.get<ActorId>()); }
+Actor& DeserializationMemo::actorReference(const Json& data) { return m_simulation.m_hasActors->getById(data.get<ActorId>()); }
 ProjectRequirementCounts& DeserializationMemo::projectRequirementCountsReference(const Json& data) { return *m_projectRequirementCounts.at(data.get<uintptr_t>()); }
 //WorldLocation& DeserializationMemo::getLocationByNormalizedLatLng(const Json& data) { return m_simulation.m_world->getLocationByNormalizedLatLng(data.get<LatLng>()); }
 std::unique_ptr<Objective> DeserializationMemo::loadObjective(const Json& data)

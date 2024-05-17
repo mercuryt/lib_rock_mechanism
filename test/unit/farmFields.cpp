@@ -1,6 +1,7 @@
 #include "../../lib/doctest.h"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
+#include "../../engine/simulation/hasActors.h"
 #include "../../engine/animalSpecies.h"
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
@@ -37,7 +38,7 @@ TEST_CASE("sow")
 	area.m_hasFarmFields.registerFaction(faction);
 	Cuboid cuboid(block, block);
 	FarmField& field = area.m_hasFarmFields.at(faction).create(cuboid);
-	Actor& actor = simulation.createActor(ActorParamaters{
+	Actor& actor = simulation.m_hasActors->createActor(ActorParamaters{
 		.species=dwarf, 
 		.location=&area.getBlock(1, 1, 2),
 		.hasCloths=false,
@@ -187,7 +188,7 @@ TEST_CASE("harvest")
 	area.m_hasFarmFields.registerFaction(faction);
 	Cuboid cuboid(block, block);
 	FarmField& field = area.m_hasFarmFields.at(faction).create(cuboid);
-	Actor& actor = simulation.createActor(dwarf, area.getBlock(1, 1, 2));
+	Actor& actor = simulation.m_hasActors->createActor(dwarf, area.getBlock(1, 1, 2));
 	actor.setFaction(&faction);
 	SUBCASE("harvest")
 	{

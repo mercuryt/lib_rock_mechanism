@@ -8,6 +8,7 @@
 #include "item.h"
 #include "materialType.h"
 #include "simulation.h"
+#include "simulation/hasActors.h"
 #include "simulation/hasItems.h"
 #include "types.h"
 #include "util.h"
@@ -57,7 +58,7 @@ Step ActorParamaters::getBirthStep()
 ActorId ActorParamaters::getId()
 {
 	if(!id)
-		id = simulation->m_nextActorId++;
+		id = simulation->m_hasActors->getNextId();
 	return id;
 }
 Percent ActorParamaters::getPercentThirst()

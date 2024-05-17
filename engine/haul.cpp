@@ -8,6 +8,7 @@
 #include "project.h"
 #include "reservable.h"
 #include "simulation/hasItems.h"
+#include "simulation/hasActors.h"
 #include "types.h"
 #include "simulation.h"
 
@@ -88,7 +89,7 @@ CanPickup::CanPickup(const Json& data, Actor& a) : m_actor(a), m_carrying(nullpt
 	if(data.contains("carryingItem"))
 		m_carrying = &m_actor.getSimulation().m_hasItems->getById(data["carryingItem"].get<ItemId>());
 	else if(data.contains("carryingActor"))
-		m_carrying = &m_actor.getSimulation().getActorById(data["carryingActor"].get<ActorId>());
+		m_carrying = &m_actor.getSimulation().m_hasActors->getById(data["carryingActor"].get<ActorId>());
 }
 Json CanPickup::toJson() const 
 {
@@ -358,23 +359,23 @@ HaulSubproject::HaulSubproject(const Json& data, Project& p, DeserializationMemo
 	if(data.contains("haulTool"))
 		m_haulTool = &deserializationMemo.m_simulation.m_hasItems->getById(data["haulTool"].get<ItemId>());
 	if(data.contains("leader"))
-		m_leader = &deserializationMemo.m_simulation.getActorById(data["leader"].get<ActorId>());
+		m_leader = &deserializationMemo.m_simulation.m_hasActors->getById(data["leader"].get<ActorId>());
 	if(data.contains("beastOfBurden"))
-		m_beastOfBurden = &deserializationMemo.m_simulation.getActorById(data["beastOfBurden"].get<ActorId>());
+		m_beastOfBurden = &deserializationMemo.m_simulation.m_hasActors->getById(data["beastOfBurden"].get<ActorId>());
 	if(data.contains("genericItemType"))
 		m_genericItemType = &ItemType::byName(data["genericItemType"].get<std::string>());
 	if(data.contains("genericMaterialType"))
 		m_genericMaterialType = &MaterialType::byName(data["genericMaterialType"].get<std::string>());
 	if(data.contains("workers"))
 		for(const Json& workerId : data["workers"])
-			m_workers.insert(&deserializationMemo.m_simulation.getActorById(workerId.get<ActorId>()));
+			m_workers.insert(&deserializationMemo.m_simulation.m_hasActors->getById(workerId.get<ActorId>()));
 	if(data.contains("nonsentients"))
 		for(const Json& actorId : data["nonsentients"])
-			m_nonsentients.insert(&deserializationMemo.m_simulation.getActorById(actorId.get<ActorId>()));
+			m_nonsentients.insert(&deserializationMemo.m_simulation.m_hasActors->getById(actorId.get<ActorId>()));
 	if(data.contains("liftPoints"))
 		for(const Json& liftPointData : data["liftPoints"])
 		{
-			Actor& actor = deserializationMemo.m_simulation.getActorById(liftPointData[0].get<ActorId>());
+			Actor& actor = deserializationMemo.m_simulation.m_hasActors->getById(liftPointData[0].get<ActorId>());
 			m_liftPoints[&actor] = &deserializationMemo.m_simulation.getBlockForJsonQuery(liftPointData[1]);
 		}
 	deserializationMemo.m_haulSubprojects[data["address"].get<uintptr_t>()] = this;

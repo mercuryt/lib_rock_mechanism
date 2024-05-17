@@ -1,6 +1,7 @@
 #include "station.h"
-#include "simulation.h"
-#include "block.h"
+#include "../simulation.h"
+#include "../block.h"
+#include "../actor.h"
 // Input
 /*
 StationInputAction::StationInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, Block& b) : 

@@ -1,12 +1,14 @@
 #include "banditsArrive.h"
 #include "../engine.h"
 #include "../../area.h"
+#include "../../actor.h"
 #include "../../config.h"
 #include "../../simulation.h"
 #include "../../objectives/exterminate.h"
 #include "actor.h"
 #include "animalSpecies.h"
 #include "moveType.h"
+#include "simulation/hasActors.h"
 #include <utility>
 BanditsArriveDramaArc::BanditsArriveDramaArc(DramaEngine& engine, Area& area) : 
 	DramaArc(engine, DramaArcType::BanditsArrive, &area), m_scheduledEvent(area.m_simulation.m_eventSchedule)
@@ -53,7 +55,7 @@ void BanditsArriveDramaArc::callback()
 				.hasLightArmor=random.chance(0.9),
 				.hasHeavyArmor=random.chance(0.3),
 			};
-			m_leader = &m_area->m_simulation.createActor(params);
+			m_leader = &m_area->m_simulation.m_hasActors->createActor(params);
 			m_quantity--;
 			Faction& faction = m_area->m_simulation.createFaction(m_leader->m_name + L" bandits");
 			m_leader->setFaction(&faction);
@@ -69,7 +71,7 @@ void BanditsArriveDramaArc::callback()
 			if(location)
 			{
 				exclude.insert(location);
-				Actor& actor = m_area->m_simulation.createActor(ActorParamaters{
+				Actor& actor = m_area->m_simulation.m_hasActors->createActor(ActorParamaters{
 					.species=m_leader->m_species, 
 					.percentGrown=random.getInRange(70,100),
 					.location=location,

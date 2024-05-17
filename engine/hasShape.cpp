@@ -1,5 +1,6 @@
 #include "hasShape.h"
 #include "block.h"
+#include "actor.h"
 #include "config.h"
 #include "simulation.h"
 #include "types.h"

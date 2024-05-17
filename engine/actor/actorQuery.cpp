@@ -1,7 +1,9 @@
 #include "actorQuery.h"
+#include "actor.h"
 #include "simulation.h"
+#include "simulation/hasActors.h"
 ActorQuery::ActorQuery(const Json& data, DeserializationMemo& deserializationMemo) :
-	actor(data.contains("actor") ? &deserializationMemo.m_simulation.getActorById(data["actor"].get<ActorId>()) : nullptr),
+	actor(data.contains("actor") ? &deserializationMemo.m_simulation.m_hasActors->getById(data["actor"].get<ActorId>()) : nullptr),
 	carryWeight(data.contains("carryWeight") ? data["carryWeight"].get<Mass>() : 0),
 	checkIfSentient(data.contains("checkIfSentient")),
 	sentient(data.contains("sentient")) { }

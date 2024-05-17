@@ -1,7 +1,9 @@
 #include "fight.h"
 
+#include "actor.h"
 #include "attackType.h"
 #include "simulation.h"
+#include "simulation/hasActors.h"
 #include "skill.h"
 #include "util.h"
 #include "actor.h"
@@ -26,7 +28,7 @@ CanFight::CanFight(const Json& data, Actor& a) : m_actor(a), m_maxMeleeRange(0),
 	if(data.contains("coolDownStart"))
 		m_coolDown.schedule(*this, data["coolDownDuration"].get<Step>(), data["coolDownStart"].get<Step>());
 	if(data.contains("target"))
-		setTarget(m_actor.getSimulation().getActorById(data["target"].get<ActorId>()));
+		setTarget(m_actor.getSimulation().m_hasActors->getById(data["target"].get<ActorId>()));
 }
 Json CanFight::toJson() const
 {

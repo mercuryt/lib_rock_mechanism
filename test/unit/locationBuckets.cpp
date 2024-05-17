@@ -1,4 +1,6 @@
 #include "../../lib/doctest.h"
+#include "../../engine/simulation.h"
+#include "../../engine/simulation/hasActors.h"
 #include "../../engine/locationBuckets.h"
 #include "../../engine/area.h"
 #include "../../engine/block.h"
@@ -12,7 +14,7 @@ TEST_CASE("locationBuckets")
 		Area& area = simulation.createArea(10,10,10);
 		Block& block = area.getBlock(5, 5, 5);
 		CHECK(block.m_locationBucket != nullptr);
-		Actor& a1 = simulation.createActor(dwarf, block);
+		Actor& a1 = simulation.m_hasActors->createActor(dwarf, block);
 		CHECK(block.m_locationBucket->contains(&a1));
 		for(Block* adjacent : block.m_adjacents)
 			if(adjacent)
@@ -26,7 +28,7 @@ TEST_CASE("locationBuckets")
 		Simulation simulation;
 		Area& area = simulation.createArea(30,30,30);
 		Block& b1 = area.getBlock(0, 0, 1);
-		simulation.createActor(dwarf, b1);
+		simulation.m_hasActors->createActor(dwarf, b1);
 		Block& b2 = area.getBlock(15, 1, 1);
 		uint32_t actors = 0;
 		for(Actor& actor : area.m_hasActors.m_locationBuckets.inRange(b2, 15))

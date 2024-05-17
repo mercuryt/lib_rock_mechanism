@@ -1,8 +1,10 @@
 #include "kill.h"
-#include "block.h"
-#include "objective.h"
-#include "visionUtil.h"
-#include "simulation.h"
+#include "../block.h"
+#include "../actor.h"
+#include "../objective.h"
+#include "../visionUtil.h"
+#include "../simulation.h"
+#include "../simulation/hasActors.h"
 #include <memory>
 KillInputAction::KillInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, Actor& killer, Actor& target) : InputAction(actors, emplacementType, inputQueue), m_killer(killer), m_target(target) 
 {
@@ -15,8 +17,8 @@ void KillInputAction::execute()
 }
 KillObjective::KillObjective(Actor& k, Actor& t) : Objective(k, Config::killPriority), m_killer(k), m_target(t), m_getIntoRangeAndLineOfSightThreadedTask(k.getThreadedTaskEngine()) { }
 KillObjective::KillObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), 
-	m_killer(deserializationMemo.m_simulation.getActorById(data["killer"].get<ActorId>())), 
-	m_target(deserializationMemo.m_simulation.getActorById(data["target"].get<ActorId>())), 
+	m_killer(deserializationMemo.m_simulation.m_hasActors->getById(data["killer"].get<ActorId>())), 
+	m_target(deserializationMemo.m_simulation.m_hasActors->getById(data["target"].get<ActorId>())), 
 	m_getIntoRangeAndLineOfSightThreadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine)
 { 
 	if(data["threadedTask"])

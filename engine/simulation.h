@@ -2,6 +2,7 @@
 #include "../lib/BS_thread_pool_light.hpp"
 #include "deserializationMemo.h"
 #include "dialogueBox.h"
+#include "shape.h"
 #include "types.h"
 #include "area.h"
 #include "project.h"
@@ -11,7 +12,6 @@
 #include "eventSchedule.hpp"
 #include "config.h"
 #include "threadedTask.h"
-#include "actor.h"
 #include "random.h"
 #include "input.h"
 #include "uniform.h"
@@ -24,6 +24,9 @@
 class HourlyEvent;
 class DramaEngine;
 class SimulationHasItems;
+class SimulationHasActors;
+class Actor;
+class Item;
 
 class Simulation final
 {
@@ -38,10 +41,8 @@ public:
 	std::wstring m_name;
 	std::filesystem::path m_path;
 	Step m_step;
-	ActorId m_nextActorId;
 	//std::unique_ptr<World> m_world;
 	std::list<Area> m_areas;
-	std::unordered_map<ActorId, Actor> m_actors;
 	EventSchedule m_eventSchedule;
 	HasScheduledEvent<HourlyEvent> m_hourlyEvent;
 	ThreadedTaskEngine m_threadedTaskEngine;
@@ -54,6 +55,7 @@ public:
 	// Dependency injectien.
 	std::unique_ptr<DramaEngine> m_dramaEngine;
 	std::unique_ptr<SimulationHasItems> m_hasItems;
+	std::unique_ptr<SimulationHasActors> m_hasActors;
 
 	Simulation(std::wstring name = L"", Step s = 10'000 * Config::stepsPerYear);
 	Simulation(std::filesystem::path path);
@@ -68,14 +70,9 @@ public:
 	//TODO: latitude, longitude, altitude.
 	Area& createArea(uint32_t x, uint32_t y, uint32_t z, bool createDrama = false);
 	Area& loadArea(AreaId id, std::wstring name, uint32_t x, uint32_t y, uint32_t z);
-	Actor& createActor(ActorParamaters params);
-	Actor& createActor(const AnimalSpecies& species, Block& location, Percent percentGrown = 100);
 	void destroyArea(Area& area);
-	void destroyActor(Actor& actor);
 	Area& loadAreaFromJson(const Json& data);
-	Actor& loadActorFromJson(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Block& getBlockForJsonQuery(const Json& data);
-	[[nodiscard]] Actor& getActorById(ActorId id);
 	[[nodiscard]] Area& getAreaById(AreaId id) const {return *m_areasById.at(id); }
 	[[nodiscard]] std::filesystem::path getPath() const  { return m_path; }
 	[[nodiscard, maybe_unused]] DateTime getDateTime() const;
