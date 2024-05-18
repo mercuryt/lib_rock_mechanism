@@ -22,7 +22,7 @@
 #include <unordered_set>
 
 Area::Area(AreaId id, std::wstring n, Simulation& s, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) :
-	m_blocks(x*y*z), m_id(id), m_name(n), m_simulation(s), m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_fluidSources(*this), m_hasFluidGroups(*this), m_hasRain(*this), m_visionCuboidsActive(false)
+	m_blocks(x*y*z), m_id(id), m_name(n), m_simulation(s), m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_fluidSources(*this), m_hasFluidGroups(*this), m_hasRain(*this), m_blockDesignations(*this), m_visionCuboidsActive(false)
 { 
 	setup(); 
 	m_hasRain.scheduleRestart();
@@ -31,7 +31,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_blocks(data["sizeX"].get<DistanceInBlocks>() * data["sizeY"].get<DistanceInBlocks>() * data["sizeZ"].get<DistanceInBlocks>()),
 	m_id(data["id"].get<AreaId>()), m_name(data["name"].get<std::wstring>()), m_simulation(s),
 	m_sizeX(data["sizeX"].get<DistanceInBlocks>()), m_sizeY(data["sizeY"].get<DistanceInBlocks>()), m_sizeZ(data["sizeZ"].get<DistanceInBlocks>()), 
-	m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_fluidSources(*this), m_hasFluidGroups(*this), m_hasRain(*this), m_visionCuboidsActive(false)
+	m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_fluidSources(*this), m_hasFluidGroups(*this), m_hasRain(*this), m_blockDesignations(*this), m_visionCuboidsActive(false)
 {
 	// Record id now so json block references will function later in this method.
 	m_simulation.m_hasAreas->recordId(*this);
@@ -74,6 +74,8 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	// Load Actors.
 	for(const Json& actor : data["actors"])
 		m_simulation.m_hasActors->loadActorFromJson(actor, deserializationMemo);
+	// Load designations.
+	m_blockDesignations.load(data["designations"], deserializationMemo);
 	// Load Projects
 	m_hasConstructionDesignations.load(data["hasConstructionDesignations"], deserializationMemo);
 	m_hasDigDesignations.load(data["hasDigDesignations"], deserializationMemo);
@@ -127,7 +129,8 @@ Json Area::toJson() const
 		{"id", m_id}, {"name", m_name}, {"sizeX", m_sizeX}, {"sizeY", m_sizeY}, {"sizeZ", m_sizeZ}, 
 		{"actors", Json::array()}, {"items", Json::array()}, {"blocks", Json::array()},
 		{"plants", Json::array()}, {"fluidSources", m_fluidSources.toJson()}, {"fires", m_fires.toJson()},
-		{"sleepingSpots", m_hasSleepingSpots.toJson()}, {"caveInCheck", Json::array()}, {"rain", m_hasRain.toJson()}
+		{"sleepingSpots", m_hasSleepingSpots.toJson()}, {"caveInCheck", Json::array()}, {"rain", m_hasRain.toJson()},
+		{"designations", m_blockDesignations.toJson()}
 	};
 	std::unordered_set<const Item*> items;
 	std::function<void(const Item&)> recordItemAndCargoItemsRecursive = [&](const Item& item){

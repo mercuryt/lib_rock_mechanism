@@ -7,7 +7,7 @@
 #include "materialType.h"
 void ContextMenu::drawConstructControls(Block& block)
 {
-	if(m_window.getFaction() && block.m_hasDesignations.contains(*m_window.getFaction(), BlockDesignation::Construct))
+	if(m_window.getFaction() && block.hasDesignation(*m_window.getFaction(), BlockDesignation::Construct))
 	{
 		auto cancelButton = tgui::Button::create("cancel");
 		cancelButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);

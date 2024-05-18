@@ -21,6 +21,7 @@ TEST_CASE("construct")
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
 	Faction faction(L"tower of power");
+	area.m_blockDesignations.registerFaction(faction);
 	ConstructObjectiveType constructObjectiveType;
 	Actor& dwarf1 = simulation.m_hasActors->createActor(dwarf, area.getBlock(1, 1, 2));
 	dwarf1.setFaction(&faction);
@@ -38,7 +39,7 @@ TEST_CASE("construct")
 		Block& wallLocation = area.getBlock(8, 4, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
 		ConstructProject& project = area.m_hasConstructionDesignations.getProject(faction, wallLocation);
-		REQUIRE(wallLocation.m_hasDesignations.contains(faction, BlockDesignation::Construct));
+		REQUIRE(wallLocation.hasDesignation(faction, BlockDesignation::Construct));
 		REQUIRE(area.m_hasConstructionDesignations.contains(faction, wallLocation));
 		REQUIRE(constructObjectiveType.canBeAssigned(dwarf1));
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);
@@ -60,7 +61,7 @@ TEST_CASE("construct")
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() != "construct");
 		REQUIRE(!area.m_hasConstructionDesignations.contains(faction, wallLocation));
 		REQUIRE(!constructObjectiveType.canBeAssigned(dwarf1));
-		REQUIRE(!wallLocation.m_hasDesignations.contains(faction, BlockDesignation::Construct));
+		REQUIRE(!wallLocation.hasDesignation(faction, BlockDesignation::Construct));
 		REQUIRE(boards.m_reservable.getUnreservedCount(faction) == boards.getQuantity());
 		REQUIRE(pegs.m_reservable.getUnreservedCount(faction) == pegs.getQuantity());
 		REQUIRE(!saw.m_reservable.isFullyReserved(&faction));
@@ -149,7 +150,7 @@ TEST_CASE("construct")
 		REQUIRE(!area.m_hasConstructionDesignations.contains(faction, wallLocation1));
 		REQUIRE(area.m_hasConstructionDesignations.contains(faction, wallLocation2));
 		REQUIRE(!project2.isOnDelay());
-		REQUIRE(project2.getLocation().m_hasDesignations.contains(faction, BlockDesignation::Construct));
+		REQUIRE(project2.getLocation().hasDesignation(faction, BlockDesignation::Construct));
 		// Both dwarves seek a project to join and find project2. This does not require a step if they are already adjacent but does if they are not.
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "construct");
 		REQUIRE(dwarf2.m_hasObjectives.getCurrent().name() == "construct");
@@ -172,7 +173,7 @@ TEST_CASE("construct")
 	{
 		Block& stairsLocation = area.getBlock(8, 4, 2);
 		area.m_hasConstructionDesignations.designate(faction, stairsLocation, &BlockFeatureType::stairs, wood);
-		REQUIRE(stairsLocation.m_hasDesignations.contains(faction, BlockDesignation::Construct));
+		REQUIRE(stairsLocation.hasDesignation(faction, BlockDesignation::Construct));
 		REQUIRE(area.m_hasConstructionDesignations.contains(faction, stairsLocation));
 		REQUIRE(constructObjectiveType.canBeAssigned(dwarf1));
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);

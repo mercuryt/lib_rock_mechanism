@@ -30,7 +30,7 @@ void CanReserve::deleteAllWithoutCallback()
 	}
 	m_reservables.clear();
 }
-void CanReserve::setFaction(const Faction* faction)
+void CanReserve::setFaction(Faction* faction)
 {
 	for(Reservable* reservable : m_reservables)
 		reservable->updateFactionFor(*this, m_faction, faction);
@@ -51,14 +51,14 @@ void Reservable::eraseReservationFor(CanReserve& canReserve)
 		m_reservedCounts.at(canReserve.m_faction) -= m_canReserves.at(&canReserve);
 	m_canReserves.erase(&canReserve);
 }
-bool Reservable::isFullyReserved(const Faction* faction) const 
+bool Reservable::isFullyReserved(Faction* faction) const 
 { 
 	if(faction == nullptr)
 		return false;
 	return m_reservedCounts.contains(faction) && m_reservedCounts.at(faction) == m_maxReservations; 
 }
 bool Reservable::hasAnyReservations() const { return !m_canReserves.empty(); }
-bool Reservable::hasAnyReservationsWith(const Faction& faction) const { return m_reservedCounts.contains(&faction); }
+bool Reservable::hasAnyReservationsWith(Faction& faction) const { return m_reservedCounts.contains(&faction); }
 std::unordered_map<CanReserve*, uint32_t>& Reservable::getReservedBy() { return m_canReserves; }
 void Reservable::reserveFor(CanReserve& canReserve, const uint32_t quantity, std::unique_ptr<DishonorCallback> dishonorCallback) 
 {
@@ -95,7 +95,7 @@ void Reservable::clearReservationFor(CanReserve& canReserve, const uint32_t quan
 		m_reservedCounts.at(canReserve.m_faction) -= quantity;
 	}
 }
-void Reservable::clearReservationsFor(const Faction& faction)
+void Reservable::clearReservationsFor(Faction& faction)
 {
 	std::vector<std::pair<CanReserve*, uint32_t>> toErase;
 	for(auto& pair : m_canReserves)
@@ -136,7 +136,7 @@ void Reservable::setMaxReservations(const uint32_t mr)
 		}
 	m_maxReservations = mr; 
 }
-void Reservable::updateFactionFor(CanReserve& canReserve, const Faction* oldFaction, const Faction* newFaction)
+void Reservable::updateFactionFor(CanReserve& canReserve, Faction* oldFaction, Faction* newFaction)
 {
 	assert(m_canReserves.contains(&canReserve));
 	if(oldFaction != nullptr)
@@ -171,7 +171,7 @@ void Reservable::clearAll()
 	assert(m_reservedCounts.empty());
 	assert(m_canReserves.empty());
 }
-void Reservable::updateReservedCount(const Faction& faction, uint32_t count)
+void Reservable::updateReservedCount(Faction& faction, uint32_t count)
 {
 	assert(m_reservedCounts.contains(&faction));
 	assert(count <= m_maxReservations);
@@ -189,7 +189,7 @@ void Reservable::merge(Reservable& reservable)
 	reservable.m_canReserves.clear();
 	reservable.m_dishonorCallbacks.clear();
 }
-uint32_t Reservable::getUnreservedCount(const Faction& faction) const
+uint32_t Reservable::getUnreservedCount(Faction& faction) const
 {
 	if(!m_reservedCounts.contains(&faction))
 		return m_maxReservations;

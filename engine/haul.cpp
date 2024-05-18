@@ -72,7 +72,7 @@ bool HaulSubprojectParamaters::validate() const
 	assert(quantity != 0);
 	assert(strategy != HaulStrategy::None);
 	assert(projectRequirementCounts != nullptr);
-	const Faction& faction = *(*workers.begin())->getFaction();
+	Faction& faction = *(*workers.begin())->getFaction();
 	for(Actor* worker : workers)
 		if(worker->m_reservable.isFullyReserved(&faction))
 			return false;
@@ -1147,11 +1147,11 @@ Quantity HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniers
 	return quantity;
 }
 //TODO: optimize?
-bool AreaHasHaulTools::hasToolToHaul(const Faction& faction, const HasShape& hasShape) const
+bool AreaHasHaulTools::hasToolToHaul(Faction& faction, const HasShape& hasShape) const
 {
 	return getToolToHaul(faction, hasShape) != nullptr;
 }
-Item* AreaHasHaulTools::getToolToHaul(const Faction& faction, const HasShape& hasShape) const
+Item* AreaHasHaulTools::getToolToHaul(Faction& faction, const HasShape& hasShape) const
 {
 	// Items like panniers also have internal volume but aren't relevent for this method.
 	static const MoveType& none = MoveType::byName("none");
@@ -1160,18 +1160,18 @@ Item* AreaHasHaulTools::getToolToHaul(const Faction& faction, const HasShape& ha
 			return item;
 	return nullptr;
 }
-bool AreaHasHaulTools::hasToolToHaulFluid(const Faction& faction) const
+bool AreaHasHaulTools::hasToolToHaulFluid(Faction& faction) const
 {
 	return getToolToHaulFluid(faction) != nullptr;
 }
-Item* AreaHasHaulTools::getToolToHaulFluid(const Faction& faction) const
+Item* AreaHasHaulTools::getToolToHaulFluid(Faction& faction) const
 {
 	for(Item* item : m_haulTools)
 		if(!item->m_reservable.isFullyReserved(&faction) && item->m_itemType.canHoldFluids)
 			return item;
 	return nullptr;
 }
-Actor* AreaHasHaulTools::getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(const Faction& faction, const Item& haulTool, Mass cargoMass, Speed minimumHaulSpeed) const
+Actor* AreaHasHaulTools::getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(Faction& faction, const Item& haulTool, Mass cargoMass, Speed minimumHaulSpeed) const
 {
 	[[maybe_unused]] static const MoveType& rollingType = MoveType::byName("roll");
 	assert(haulTool.m_itemType.moveType == rollingType);
@@ -1183,7 +1183,7 @@ Actor* AreaHasHaulTools::getActorToYokeForHaulToolToMoveCargoWithMassWithMinimum
 	}
 	return nullptr;
 }
-Actor* AreaHasHaulTools::getPannierBearerToHaulCargoWithMassWithMinimumSpeed(const Faction& faction, const HasShape& hasShape, Speed minimumHaulSpeed) const
+Actor* AreaHasHaulTools::getPannierBearerToHaulCargoWithMassWithMinimumSpeed(Faction& faction, const HasShape& hasShape, Speed minimumHaulSpeed) const
 {
 	//TODO: Account for pannier mass?
 	for(Actor* actor : m_yolkableActors)
@@ -1191,7 +1191,7 @@ Actor* AreaHasHaulTools::getPannierBearerToHaulCargoWithMassWithMinimumSpeed(con
 			return actor;
 	return nullptr;
 }
-Item* AreaHasHaulTools::getPanniersForActorToHaul(const Faction& faction, const Actor& actor, const HasShape& toHaul) const
+Item* AreaHasHaulTools::getPanniersForActorToHaul(Faction& faction, const Actor& actor, const HasShape& toHaul) const
 {
 	for(Item* item : m_haulTools)
 		if(!item->m_reservable.isFullyReserved(&faction) && item->m_itemType.internalVolume >= toHaul.getVolume() && actor.m_equipmentSet.canEquipCurrently(*item))

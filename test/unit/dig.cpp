@@ -21,6 +21,7 @@ TEST_CASE("dig")
 	areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
 	areaBuilderUtil::setSolidLayers(area, 2, 3, dirt);
 	Faction faction(L"tower of power");
+	area.m_blockDesignations.registerFaction(faction);
 	DigObjectiveType digObjectiveType;
 	Actor& dwarf1 = simulation.m_hasActors->createActor(dwarf, area.getBlock(1, 1, 4));
 	dwarf1.setFaction(&faction);
@@ -33,7 +34,7 @@ TEST_CASE("dig")
 		Block& holeLocation = area.getBlock(8, 4, 3);
 		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
 		DigProject& project = area.m_hasDigDesignations.at(faction, holeLocation);
-		REQUIRE(holeLocation.m_hasDesignations.contains(faction, BlockDesignation::Dig));
+		REQUIRE(holeLocation.hasDesignation(faction, BlockDesignation::Dig));
 		REQUIRE(area.m_hasDigDesignations.contains(faction, holeLocation));
 		REQUIRE(digObjectiveType.canBeAssigned(dwarf1));
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);

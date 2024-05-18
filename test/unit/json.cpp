@@ -31,6 +31,7 @@ TEST_CASE("json")
 	const ItemType& pants = ItemType::byName("pants");
 	const ItemType& pile = ItemType::byName("pile");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	area.m_blockDesignations.registerFaction(faction);
 	areaBuilderUtil::setSolidLayer(area, 0, dirt);
 	area.m_hasFarmFields.registerFaction(faction);
 

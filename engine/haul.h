@@ -138,13 +138,13 @@ class AreaHasHaulTools final
 	std::unordered_set<Item*> m_haulTools;
 	std::unordered_set<Actor*> m_yolkableActors;
 public:
-	[[nodiscard]] bool hasToolToHaulFluid(const Faction& faction) const;
-	[[nodiscard]] Item* getToolToHaulFluid(const Faction& faction) const;
-	[[nodiscard]] bool hasToolToHaul(const Faction& faction, const HasShape& hasShape) const;
-	[[nodiscard]] Item* getToolToHaul(const Faction& faction, const HasShape& hasShape) const;
-	[[nodiscard]] Actor* getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(const Faction& faction, const Item& haulTool, const Mass cargoMass, const Speed minimumHaulSpeed) const;
-	[[nodiscard]] Actor* getPannierBearerToHaulCargoWithMassWithMinimumSpeed(const Faction& faction, const HasShape& hasShape, const Speed minimumHaulSpeed) const;
-	[[nodiscard]] Item* getPanniersForActorToHaul(const Faction& faction, const Actor& actor, const HasShape& toHaul) const;
+	[[nodiscard]] bool hasToolToHaulFluid(Faction& faction) const;
+	[[nodiscard]] Item* getToolToHaulFluid(Faction& faction) const;
+	[[nodiscard]] bool hasToolToHaul(Faction& faction, const HasShape& hasShape) const;
+	[[nodiscard]] Item* getToolToHaul(Faction& faction, const HasShape& hasShape) const;
+	[[nodiscard]] Actor* getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(Faction& faction, const Item& haulTool, const Mass cargoMass, const Speed minimumHaulSpeed) const;
+	[[nodiscard]] Actor* getPannierBearerToHaulCargoWithMassWithMinimumSpeed(Faction& faction, const HasShape& hasShape, const Speed minimumHaulSpeed) const;
+	[[nodiscard]] Item* getPanniersForActorToHaul(Faction& faction, const Actor& actor, const HasShape& toHaul) const;
 	void registerHaulTool(Item& item);
 	void registerYokeableActor(Actor& actor);
 	void unregisterHaulTool(Item& item);

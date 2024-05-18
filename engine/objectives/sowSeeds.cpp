@@ -11,7 +11,7 @@ SowSeedsEvent::SowSeedsEvent(Step delay, SowSeedsObjective& o, const Step start)
 void SowSeedsEvent::execute()
 {
 	Block& block = *m_objective.m_block;
-	const Faction& faction = *m_objective.m_actor.getFaction();
+	Faction& faction = *m_objective.m_actor.getFaction();
 	if(!block.m_isPartOfFarmField.contains(faction))
 	{
 		// Block is no longer part of a field. It may have been undesignated or it may no longer be a suitable place to grow the selected plant.
@@ -34,7 +34,7 @@ std::unique_ptr<Objective> SowSeedsObjectiveType::makeFor(Actor& actor) const
 SowSeedsThreadedTask::SowSeedsThreadedTask(SowSeedsObjective& sso): ThreadedTask(sso.m_actor.getThreadedTaskEngine()), m_objective(sso), m_findsPath(sso.m_actor, sso.m_detour) { }
 void SowSeedsThreadedTask::readStep()
 {
-	const Faction* faction = m_objective.m_actor.getFaction();
+	Faction* faction = m_objective.m_actor.getFaction();
 	std::function<bool(const Block&)> predicate = [&](const Block& block) { return m_objective.canSowAt(block); };
 	m_findsPath.m_maxRange = Config::maxRangeToSearchForHorticultureDesignations;
 	m_findsPath.pathToUnreservedAdjacentToPredicate(predicate, *faction);
@@ -98,10 +98,10 @@ Json SowSeedsObjective::toJson() const
 }
 Block* SowSeedsObjective::getBlockToSowAt(Block& location, Facing facing)
 {
-	const Faction* faction = m_actor.getFaction();
+	Faction* faction = m_actor.getFaction();
 	std::function<bool(const Block&)> predicate = [&](const Block& block)
 	{
-		return block.m_hasDesignations.contains(*faction, BlockDesignation::SowSeeds) && !block.m_reservable.isFullyReserved(faction);
+		return block.hasDesignation(*faction, BlockDesignation::SowSeeds) && !block.m_reservable.isFullyReserved(faction);
 	};
 	return m_actor.getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(location, facing, predicate);
 }
@@ -177,6 +177,6 @@ void SowSeedsObjective::reset()
 }
 bool SowSeedsObjective::canSowAt(const Block& block) const
 {
-	const Faction* faction = m_actor.getFaction();
-	return block.m_hasDesignations.contains(*faction, BlockDesignation::SowSeeds) && !block.m_reservable.isFullyReserved(faction);
+	Faction* faction = m_actor.getFaction();
+	return block.hasDesignation(*faction, BlockDesignation::SowSeeds) && !block.m_reservable.isFullyReserved(faction);
 }

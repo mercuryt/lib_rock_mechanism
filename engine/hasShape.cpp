@@ -97,7 +97,7 @@ DistanceInBlocks HasShape::distanceTo(const HasShape& other) const
 	// Use line of sight?
 	return m_location->distance(*other.m_location);
 }
-bool HasShape::allOccupiedBlocksAreReservable(const Faction& faction) const
+bool HasShape::allOccupiedBlocksAreReservable(Faction& faction) const
 {
 	return allBlocksAtLocationAndFacingAreReservable(*m_location, m_facing, faction);
 }
@@ -221,7 +221,7 @@ Item* HasShape::getItemWhichIsAdjacentWithPredicate(std::function<bool(const Ite
 {
 	return getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(*m_location, m_facing, predicate);
 }
-bool HasShape::allBlocksAtLocationAndFacingAreReservable(const Block& location, Facing facing, const Faction& faction) const
+bool HasShape::allBlocksAtLocationAndFacingAreReservable(const Block& location, Facing facing, Faction& faction) const
 {
 	for(Block* occupied : const_cast<HasShape&>(*this).getBlocksWhichWouldBeOccupiedAtLocationAndFacing(const_cast<Block&>(location), facing))
 		if(occupied->m_reservable.isFullyReserved(&faction))

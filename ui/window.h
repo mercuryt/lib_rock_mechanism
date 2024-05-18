@@ -137,7 +137,7 @@ public:
 	void save();
 	void load(std::filesystem::path path);
 	// Accessors.
-	[[nodiscard]] const Faction* getFaction() const { return m_faction;}
+	[[nodiscard]] Faction* getFaction() const { return m_faction;}
 	void setFaction(Faction& faction) { m_faction = &faction;}
 	[[nodiscard]] Simulation* getSimulation() { return m_simulation.get(); }
 	void setSimulation(std::unique_ptr<Simulation> simulation) { m_simulation = std::move(simulation); }

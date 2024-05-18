@@ -98,7 +98,7 @@ class Project
 protected:
 	// Where the materials are delivered to and where the work gets done.
 	Block& m_location;
-	const Faction& m_faction;
+	Faction& m_faction;
 	// Workers who have passed the candidate screening and ProjectWorker, which holds a reference to the worker's objective and a pointer to it's haul subproject.
 	std::unordered_map<Actor*, ProjectWorker> m_workers;
 	// Workers present at the job site, waiting for haulers to deliver required materiels.
@@ -117,7 +117,7 @@ protected:
 	// Required shapes which don't need to be hauled because they are already at or adjacent to m_location.
 	// To be used by StockpileProject::onComplete.
 	std::unordered_map<HasShape*, Quantity> m_alreadyAtSite;
-	Project(const Faction* f, Block& l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr);
+	Project(Faction* f, Block& l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr);
 	Project(const Json& data, DeserializationMemo& deserializationMemo);
 public:
 	[[nodiscard]] Json toJson() const;
@@ -153,7 +153,7 @@ public:
 	void resetOrCancel();
 	// Before unload when shutting down or hibernating.
 	void clearReservations();
-	[[nodiscard]] const Faction& getFaction() { return m_faction; }
+	[[nodiscard]] Faction& getFaction() { return m_faction; }
 	[[nodiscard]] Speed getMinimumHaulSpeed() const { return m_minimumMoveSpeed; }
 	[[nodiscard]] bool reservationsComplete() const;
 	[[nodiscard]] bool deliveriesComplete() const;
@@ -263,7 +263,7 @@ public:
 };
 class BlockHasProjects
 {
-	std::unordered_map<const Faction*, std::unordered_set<Project*>> m_data;
+	std::unordered_map<Faction*, std::unordered_set<Project*>> m_data;
 public:
 	void add(Project& project);
 	void remove(Project& project);

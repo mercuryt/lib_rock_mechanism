@@ -35,16 +35,16 @@ class Area;
 class StockPileCreateInputAction final : public InputAction
 {
 	Cuboid m_cuboid;
-	const Faction& m_faction;
+	Faction& m_faction;
 	std::vector<ItemQuery> m_queries;
-	StockPileCreateInputAction(InputQueue& inputQueue, Cuboid& cuboid, const Faction& faction, std::vector<ItemQuery>& queries) : InputAction(inputQueue), m_cuboid(cuboid), m_faction(faction), m_queries(queries) { }
+	StockPileCreateInputAction(InputQueue& inputQueue, Cuboid& cuboid, Faction& faction, std::vector<ItemQuery>& queries) : InputAction(inputQueue), m_cuboid(cuboid), m_faction(faction), m_queries(queries) { }
 	void execute();
 };
 class StockPileRemoveInputAction final : public InputAction
 {
 	Cuboid m_cuboid;
-	const Faction& m_faction;
-	StockPileRemoveInputAction(InputQueue& inputQueue, Cuboid& cuboid, const Faction& faction ) : InputAction(inputQueue), m_cuboid(cuboid), m_faction(faction) { }
+	Faction& m_faction;
+	StockPileRemoveInputAction(InputQueue& inputQueue, Cuboid& cuboid, Faction& faction ) : InputAction(inputQueue), m_cuboid(cuboid), m_faction(faction) { }
 	void execute();
 };
 class StockPileExpandInputAction final : public InputAction
@@ -106,12 +106,12 @@ class StockPile
 	std::unordered_set<Block*> m_blocks;
 	Quantity m_openBlocks;
 	Area& m_area;
-	const Faction& m_faction;
+	Faction& m_faction;
 	bool m_enabled;
 	HasScheduledEvent<ReenableStockPileScheduledEvent> m_reenableScheduledEvent;
 	StockPileProject* m_projectNeedingMoreWorkers;
 public:
-	StockPile(std::vector<ItemQuery>& q, Area& a, const Faction& f);
+	StockPile(std::vector<ItemQuery>& q, Area& a, Faction& f);
 	StockPile(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	[[nodiscard]] Json toJson() const;
 	void addBlock(Block& block);
@@ -162,7 +162,7 @@ class StockPileProject final : public Project
 	std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> getByproducts() const;
 	std::vector<std::pair<ActorQuery, Quantity>> getActors() const;
 public:
-	StockPileProject(const Faction* faction, Block& block, Item& item, Quantity quantity, Quantity maxWorkers);
+	StockPileProject(Faction* faction, Block& block, Item& item, Quantity quantity, Quantity maxWorkers);
 	StockPileProject(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool canAddWorker(const Actor& actor) const;
@@ -188,16 +188,16 @@ struct BlockIsPartOfStockPile
 class BlockIsPartOfStockPiles
 {
 	Block& m_block;
-	std::unordered_map<const Faction*, BlockIsPartOfStockPile> m_stockPiles;
+	std::unordered_map<Faction*, BlockIsPartOfStockPile> m_stockPiles;
 public:
 	BlockIsPartOfStockPiles(Block& b): m_block(b) { }
 	void recordMembership(StockPile& stockPile);
 	void recordNoLongerMember(StockPile& stockPile);
 	// When an item is added or removed update avalibility for all stockpiles.
 	void updateActive();
-	[[nodiscard]] StockPile* getForFaction(const Faction& faction) { if(!m_stockPiles.contains(&faction)) return nullptr; return &m_stockPiles.at(&faction).stockPile; }
-	[[nodiscard]] bool contains(const Faction& faction) const { return m_stockPiles.contains(const_cast<Faction*>(&faction)); }
-	[[nodiscard]] bool isAvalible(const Faction& faction) const;
+	[[nodiscard]] StockPile* getForFaction(Faction& faction) { if(!m_stockPiles.contains(&faction)) return nullptr; return &m_stockPiles.at(&faction).stockPile; }
+	[[nodiscard]] bool contains(Faction& faction) const { return m_stockPiles.contains(const_cast<Faction*>(&faction)); }
+	[[nodiscard]] bool isAvalible(Faction& faction) const;
 	friend class AreaHasStockPilesForFaction;
 };
 struct StockPileHasShapeDishonorCallback final : public DishonorCallback
@@ -214,7 +214,7 @@ class AreaHasStockPilesForFaction
 {
 	Area& m_area;
 	std::list<StockPile> m_stockPiles;
-	const Faction& m_faction;
+	Faction& m_faction;
 	// Stockpiles may accept multiple item types and thus may appear here more then once.
 	std::unordered_map<const ItemType*, std::unordered_set<StockPile*>> m_availableStockPilesByItemType;
 	// These items are checked whenever a new stockpile is created to see if they should be move to items with destinations.
@@ -229,8 +229,8 @@ class AreaHasStockPilesForFaction
 	// To remove all blocks call StockPile::destroy.
 	void destroyStockPile(StockPile& stockPile);
 public:
-	AreaHasStockPilesForFaction(Area& a, const Faction& f) : m_area(a), m_faction(f) { }
-	AreaHasStockPilesForFaction(const Json& data, DeserializationMemo& deserializationMemo, Area& a, const Faction& f);
+	AreaHasStockPilesForFaction(Area& a, Faction& f) : m_area(a), m_faction(f) { }
+	AreaHasStockPilesForFaction(const Json& data, DeserializationMemo& deserializationMemo, Area& a, Faction& f);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	StockPile& addStockPile(std::vector<ItemQuery>&& queries);
@@ -262,17 +262,17 @@ public:
 class AreaHasStockPiles
 {
 	Area& m_area;
-	std::unordered_map<const Faction*, AreaHasStockPilesForFaction> m_data;
+	std::unordered_map<Faction*, AreaHasStockPilesForFaction> m_data;
 public:
 	AreaHasStockPiles(Area& a) : m_area(a) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
-	void registerFaction(const Faction& faction) { assert(!m_data.contains(&faction)); m_data.try_emplace(&faction, m_area, faction); }
-	void unregisterFaction(const Faction& faction) { assert(m_data.contains(&faction)); m_data.erase(&faction); }
+	void registerFaction(Faction& faction) { assert(!m_data.contains(&faction)); m_data.try_emplace(&faction, m_area, faction); }
+	void unregisterFaction(Faction& faction) { assert(m_data.contains(&faction)); m_data.erase(&faction); }
 	void removeItemFromAllFactions(Item& item) { for(auto& pair : m_data) { pair.second.removeItem(item); } }
 	void removeBlockFromAllFactions(Block& block) { for(auto& pair : m_data) { pair.second.removeBlock(block); }} 
 	void clearReservations();
-	[[nodiscard]] AreaHasStockPilesForFaction& at(const Faction& faction);
-	[[nodiscard]] bool contains(const Faction& faction) { return m_data.contains(&faction); }
+	[[nodiscard]] AreaHasStockPilesForFaction& at(Faction& faction);
+	[[nodiscard]] bool contains(Faction& faction) { return m_data.contains(&faction); }
 };

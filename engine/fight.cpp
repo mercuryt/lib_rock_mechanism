@@ -82,7 +82,7 @@ void CanFight::attackLongRange(Actor& target, Item* weapon, Item* ammo)
 }
 uint32_t CanFight::getCurrentMeleeCombatScore()
 {
-	const Faction* faction = m_actor.getFaction();
+	Faction* faction = m_actor.getFaction();
 	uint32_t blocksContainingNonAllies = 0;
 	// Apply bonuses and penalties based on relative locations.
 	uint32_t output = m_combatScore;

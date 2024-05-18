@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <cassert>
 
-enum class BlockDesignation { Dig, Construct, SowSeeds, GivePlantFluid, Harvest, StockPileHaulFrom, StockPileHaulTo, Sleep, Rescue, FluidSource, WoodCutting };
+enum class BlockDesignation { Dig, Construct, SowSeeds, GivePlantFluid, Harvest, StockPileHaulFrom, StockPileHaulTo, Sleep, Rescue, FluidSource, WoodCutting, BLOCK_DESIGNATION_MAX };
 NLOHMANN_JSON_SERIALIZE_ENUM(BlockDesignation, {
 		{BlockDesignation::Dig, "Dig"},
 		{BlockDesignation::Construct, "Construct"},
@@ -24,68 +24,3 @@ NLOHMANN_JSON_SERIALIZE_ENUM(BlockDesignation, {
 		{BlockDesignation::FluidSource, "FluidSource"},
 		{BlockDesignation::WoodCutting, "WoodCutting"},
 });
-class HasDesignations
-{
-	std::unordered_map<const Faction*, std::unordered_set<BlockDesignation>> m_designations;
-public:
-	void load(const Json& data, DeserializationMemo& deserializationMemo)
-	{
-		for(const Json& pair : data)
-		{
-			const Faction& faction = deserializationMemo.faction(pair[0].get<std::wstring>());
-			for(const Json& designation : pair[1])
-				m_designations[&faction].insert(designation.get<BlockDesignation>());
-		}
-	}
-	[[nodiscard]] Json toJson() const
-	{
-		Json data;
-		for(auto pair : m_designations)
-		{
-			Json jsonPair{pair.first->name, Json::array()};
-			for(BlockDesignation designation : pair.second)
-				jsonPair[1].push_back(designation);
-		}
-		return data;
-	}
-	void insert(const Faction& f, const BlockDesignation& bd)
-	{
-		assert(!m_designations[&f].contains(bd));
-	       	m_designations[&f].insert(bd);
-       	}
-	void remove(const Faction& f, const BlockDesignation& bd)
-	{
-		assert(m_designations[&f].contains(bd));
-		if(m_designations[&f].size() == 1)
-			m_designations.erase(&f);
-		else
-	      		m_designations[&f].erase(bd);
-	}
-	void removeIfExists(const Faction& f, const BlockDesignation& bd) 
-	{ 
-		if(m_designations.contains(&f))
-		{
-			if(m_designations.at(&f).size() == 1)
-				m_designations.erase(&f);
-			else
-				m_designations[&f].erase(bd); 
-		}
-	}
-	[[nodiscard]] bool containsFaction(const Faction& faction) const { return m_designations.contains(&faction); }
-	[[nodiscard]] BlockDesignation getDisplayDesignation(const Faction& faction) const
-	{
-		assert(containsFaction(faction));
-		return *m_designations.at(&faction).begin();
-	}
-	[[nodiscard]] bool contains(const Faction& f, const BlockDesignation& bd) const 
-	{ 
-		if(!m_designations.contains(&f))
-			return false;
-		return m_designations.at(&f).contains(bd); 
-	}
-	[[nodiscard]] bool empty() const 
-	{
-		return m_designations.empty();
-	}
-	
-};

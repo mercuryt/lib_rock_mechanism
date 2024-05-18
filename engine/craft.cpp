@@ -150,7 +150,7 @@ CraftThreadedTask::CraftThreadedTask(CraftObjective& co): ThreadedTask(co.m_acto
 void CraftThreadedTask::readStep()
 {
 	assert(m_craftObjective.m_craftJob == nullptr);
-	const Faction& faction = *m_craftObjective.m_actor.getFaction();
+	Faction& faction = *m_craftObjective.m_actor.getFaction();
 	HasCraftingLocationsAndJobsForFaction& hasCrafting = m_craftObjective.m_actor.m_location->m_area->m_hasCraftingLocationsAndJobs.at(faction);
 	auto pair = hasCrafting.getJobAndLocationForWhileExcluding(m_craftObjective.m_actor, m_craftObjective.m_skillType, m_craftObjective.getFailedJobs());
 	m_craftJob = pair.first;
@@ -166,7 +166,7 @@ void CraftThreadedTask::writeStep()
 			m_craftObjective.m_threadedTask.create(m_craftObjective);
 		else
 		{
-			const Faction& faction = *m_craftObjective.m_actor.getFaction();
+			Faction& faction = *m_craftObjective.m_actor.getFaction();
 			HasCraftingLocationsAndJobsForFaction& hasCrafting = m_craftObjective.m_actor.m_location->m_area->m_hasCraftingLocationsAndJobs.at(faction);
 			hasCrafting.makeAndAssignStepProject(*m_craftJob, *m_location, m_craftObjective);
 			m_craftObjective.m_craftJob = m_craftJob;
@@ -249,7 +249,7 @@ void CraftObjective::reset()
 	cancel();
 }
 // HasCraftingLocationsAndJobs
-HasCraftingLocationsAndJobsForFaction::HasCraftingLocationsAndJobsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const Faction& f) : m_faction(f)
+HasCraftingLocationsAndJobsForFaction::HasCraftingLocationsAndJobsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Faction& f) : m_faction(f)
 {
 	for(const Json& pair : data["locationsByCategory"])
 	{
@@ -532,7 +532,7 @@ void AreaHasCraftingLocationsAndJobs::load(const Json& data, DeserializationMemo
 {
 	for(const Json& pair : data)
 	{
-		const Faction& faction = deserializationMemo.faction(pair[0].get<std::wstring>());
+		Faction& faction = deserializationMemo.faction(pair[0].get<std::wstring>());
 		m_data.try_emplace(&faction, pair[1], deserializationMemo, faction);
 	}
 }
@@ -540,7 +540,7 @@ void AreaHasCraftingLocationsAndJobs::loadWorkers(const Json& data, Deserializat
 {
 	for(const Json& pair : data)
 	{
-		const Faction& faction = deserializationMemo.faction(pair[0]);
+		Faction& faction = deserializationMemo.faction(pair[0]);
 		m_data.at(&faction).loadWorkers(pair[1], deserializationMemo);
 	}
 
@@ -564,7 +564,7 @@ void AreaHasCraftingLocationsAndJobs::clearReservations()
 			if(job.craftStepProject)
 				job.craftStepProject->clearReservations();
 }
-HasCraftingLocationsAndJobsForFaction& AreaHasCraftingLocationsAndJobs::at(const Faction& faction) 
+HasCraftingLocationsAndJobsForFaction& AreaHasCraftingLocationsAndJobs::at(Faction& faction) 
 { 
 	if(!m_data.contains(&faction))
 		addFaction(faction);

@@ -362,7 +362,7 @@ void ProjectTryToAddWorkersThreadedTask::resetProjectCounts()
 	m_project.m_toPickup.clear();
 }
 // Derived classes are expected to provide getDuration, getConsumedItems, getUnconsumedItems, getByproducts, onDelay, offDelay, and onComplete.
-Project::Project(const Faction* f, Block& l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback) : m_finishEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToReserveEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_tryToAddWorkersThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_canReserve(f), m_maxWorkers(mw), m_delay(false), m_haulRetries(0), m_requirementsLoaded(false), m_minimumMoveSpeed(Config::minimumHaulSpeedInital), m_location(l), m_faction(*f)
+Project::Project(Faction* f, Block& l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback) : m_finishEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToReserveEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_tryToAddWorkersThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_canReserve(f), m_maxWorkers(mw), m_delay(false), m_haulRetries(0), m_requirementsLoaded(false), m_minimumMoveSpeed(Config::minimumHaulSpeedInital), m_location(l), m_faction(*f)
 {
 	m_location.m_reservable.reserveFor(m_canReserve, 1u, std::move(locationDishonorCallback));
 	m_location.m_hasProjects.add(*this);
@@ -877,13 +877,13 @@ std::vector<std::pair<Actor*, Objective*>> Project::getWorkersAndCandidatesWithO
 }
 void BlockHasProjects::add(Project& project)
 {
-	const Faction* faction = &project.getFaction();
+	Faction* faction = &project.getFaction();
 	assert(!m_data.contains(faction) || !m_data.at(faction).contains(&project));
 	m_data[faction].insert(&project);
 }
 void BlockHasProjects::remove(Project& project)
 {
-	const Faction* faction = &project.getFaction();
+	Faction* faction = &project.getFaction();
 	assert(m_data.contains(faction) && m_data.at(faction).contains(&project));
 	if(m_data[faction].size() == 1)
 		m_data.erase(faction);

@@ -27,15 +27,15 @@ struct DishonorCallback
 };
 class CanReserve final
 {
-	const Faction* m_faction;
+	Faction* m_faction;
 	std::unordered_set<Reservable*> m_reservables;
 	friend class Reservable;
 public:
-	CanReserve(const Faction* f) : m_faction(f) { }
+	CanReserve(Faction* f) : m_faction(f) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void deleteAllWithoutCallback();
-	void setFaction(const Faction* faction);
+	void setFaction(Faction* faction);
 	[[nodiscard]] bool hasFaction() const;
 	[[nodiscard]] bool hasReservationWith(Reservable& reservable) const;
 	[[nodiscard]] bool hasReservations() const;
@@ -49,26 +49,26 @@ class Reservable final
 	friend class CanReserve;
 	std::unordered_map<CanReserve*, uint32_t> m_canReserves;
 	uint32_t m_maxReservations;
-	std::unordered_map<const Faction*, uint32_t> m_reservedCounts;
+	std::unordered_map<Faction*, uint32_t> m_reservedCounts;
 	std::unordered_map<CanReserve*, std::unique_ptr<DishonorCallback>> m_dishonorCallbacks;
 	void eraseReservationFor(CanReserve& canReserve);
 public:
 	Reservable(uint32_t mr) : m_maxReservations(mr) {}
 	void reserveFor(CanReserve& canReserve, const uint32_t quantity = 1u, std::unique_ptr<DishonorCallback> dishonorCallback = nullptr); 
 	void clearReservationFor(CanReserve& canReserve, const uint32_t quantity = 1u);
-	void clearReservationsFor(const Faction& faction);
+	void clearReservationsFor(Faction& faction);
 	void maybeClearReservationFor(CanReserve& canReserve, const uint32_t quantity = 1u);
 	void setMaxReservations(const uint32_t mr);
-	void updateFactionFor(CanReserve& canReserve, const Faction* oldFaction, const Faction* newFaction);
+	void updateFactionFor(CanReserve& canReserve, Faction* oldFaction, Faction* newFaction);
 	void setDishonorCallbackFor(CanReserve& canReserve, std::unique_ptr<DishonorCallback> dishonorCallback) { m_dishonorCallbacks[&canReserve] = std::move(dishonorCallback); }
 	void clearAll();
-	void updateReservedCount(const Faction& faction, uint32_t count);
+	void updateReservedCount(Faction& faction, uint32_t count);
 	void merge(Reservable& reservable);
-	[[nodiscard]] bool isFullyReserved(const Faction* faction) const;
+	[[nodiscard]] bool isFullyReserved(Faction* faction) const;
 	[[nodiscard]] bool hasAnyReservations() const;
-	[[nodiscard]] bool hasAnyReservationsWith(const Faction& faction) const;
+	[[nodiscard]] bool hasAnyReservationsWith(Faction& faction) const;
 	[[nodiscard]] std::unordered_map<CanReserve*, uint32_t>& getReservedBy();
-	[[nodiscard]] uint32_t getUnreservedCount(const Faction& faction) const;
+	[[nodiscard]] uint32_t getUnreservedCount(Faction& faction) const;
 	[[nodiscard]] uint32_t getMaxReservations() const { return m_maxReservations; }
 	[[nodiscard]] Json jsonReservationFor(CanReserve& canReserve) const;
 	~Reservable();

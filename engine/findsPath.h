@@ -30,9 +30,9 @@ public:
 	void pathToPredicate(std::function<bool(const Block&, Facing facing)>& predicate);
 	void pathToAdjacentToPredicate(std::function<bool(const Block&)>& predicate);
 	void pathToOccupiedPredicate(std::function<bool(const Block&)>& predicate);
-	void pathToUnreservedAdjacentToPredicate(std::function<bool(const Block&)>& predicate, const Faction& faction);
-	void pathToUnreservedPredicate(std::function<bool(const Block&)>& predicate, const Faction& faction);
-	void pathToUnreservedAdjacentToHasShape(const HasShape& hasShape, const Faction& faction);
+	void pathToUnreservedAdjacentToPredicate(std::function<bool(const Block&)>& predicate, Faction& faction);
+	void pathToUnreservedPredicate(std::function<bool(const Block&)>& predicate, Faction& faction);
+	void pathToUnreservedAdjacentToHasShape(const HasShape& hasShape, Faction& faction);
 	void pathToPredicateWithHuristicDestination(std::function<bool(const Block&, Facing facing)>& predicate, const Block& huristicDestination);
 	void pathToAreaEdge();
 	void cacheMoveCosts();
@@ -46,7 +46,7 @@ public:
 	[[nodiscard]] std::vector<Block*> getOccupiedBlocksAtEndOfPath();
 	[[nodiscard]] std::vector<Block*>& getPath() { return m_route; }
 	[[nodiscard]] bool found() const { return !m_route.empty(); }
-	[[nodiscard]] bool areAllBlocksAtDestinationReservable(const Faction* faction) const;
+	[[nodiscard]] bool areAllBlocksAtDestinationReservable(Faction* faction) const;
 	// For testing.
 	[[maybe_unused, nodiscard]] std::unordered_map<Block*, std::vector<std::pair<Block*, MoveCost>>>& getMoveCostsToCache() { return m_moveCostsToCache; }
 };

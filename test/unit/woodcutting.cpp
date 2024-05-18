@@ -18,6 +18,7 @@ TEST_CASE("woodcutting")
 	treeLocation.m_hasPlant.createPlant(PlantSpecies::byName("poplar tree"), 100);
 	REQUIRE(treeLocation.m_hasPlant.get().m_blocks.size() == 5);
 	static Faction faction(L"Tower of Power");
+	area.m_blockDesignations.registerFaction(faction);
 	area.m_hasWoodCuttingDesignations.addFaction(faction);
 	Actor& dwarf = simulation.m_hasActors->createActor(ActorParamaters{
 		.species=AnimalSpecies::byName("dwarf"), 

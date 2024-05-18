@@ -99,7 +99,7 @@ class ConstructProject final : public Project
 	void offDelay();
 public:
 	// BlockFeatureType can be null, meaning the block is to be filled with a constructed wall.
-	ConstructProject(const Faction* faction, Block& b, const BlockFeatureType* bft, const MaterialType& mt, std::unique_ptr<DishonorCallback> dishonorCallback) : Project(faction, b, Config::maxNumberOfWorkersForConstructionProject, std::move(dishonorCallback)), m_blockFeatureType(bft), m_materialType(mt) { }
+	ConstructProject(Faction* faction, Block& b, const BlockFeatureType* bft, const MaterialType& mt, std::unique_ptr<DishonorCallback> dishonorCallback) : Project(faction, b, Config::maxNumberOfWorkersForConstructionProject, std::move(dishonorCallback)), m_blockFeatureType(bft), m_materialType(mt) { }
 	ConstructProject(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	// What would the total delay time be if we started from scratch now with current workers?
@@ -109,21 +109,21 @@ public:
 };
 struct ConstructionLocationDishonorCallback final : public DishonorCallback
 {
-	const Faction& m_faction;
+	Faction& m_faction;
 	Block& m_location;
-	ConstructionLocationDishonorCallback(const Faction& f, Block& l) : m_faction(f), m_location(l) { }
+	ConstructionLocationDishonorCallback(Faction& f, Block& l) : m_faction(f), m_location(l) { }
 	ConstructionLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount);
 };
 class HasConstructionDesignationsForFaction final
 {
-	const Faction& m_faction;
+	Faction& m_faction;
 	//TODO: More then one construct project targeting a given block should be able to exist simultaniously.
 	std::unordered_map<Block*, ConstructProject> m_data;
 public:
-	HasConstructionDesignationsForFaction(const Faction& p) : m_faction(p) { }
-	HasConstructionDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const Faction& faction);
+	HasConstructionDesignationsForFaction(Faction& p) : m_faction(p) { }
+	HasConstructionDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Faction& faction);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	// If blockFeatureType is null then construct a wall rather then a feature.
@@ -139,21 +139,21 @@ public:
 // To be used by Area.
 class AreaHasConstructionDesignations final
 {
-	std::unordered_map<const Faction*, HasConstructionDesignationsForFaction> m_data;
+	std::unordered_map<Faction*, HasConstructionDesignationsForFaction> m_data;
 public:
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
-	void addFaction(const Faction& faction);
-	void removeFaction(const Faction& faction);
+	void addFaction(Faction& faction);
+	void removeFaction(Faction& faction);
 	// If blockFeatureType is null then dig out fully rather then digging out a feature.
-	void designate(const Faction& faction, Block& block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType);
-	void undesignate(const Faction& faction, Block& block);
-	void remove(const Faction& faction, Block& block);
+	void designate(Faction& faction, Block& block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType);
+	void undesignate(Faction& faction, Block& block);
+	void remove(Faction& faction, Block& block);
 	void clearAll(Block& block);
 	void clearReservations();
-	bool areThereAnyForFaction(const Faction& faction) const;
-	bool contains(const Faction& faction, const Block& block) const;
-	ConstructProject& getProject(const Faction& faction, Block& block);
-	HasConstructionDesignationsForFaction& at(const Faction& faction) { return m_data.at(&faction); }
+	bool areThereAnyForFaction(Faction& faction) const;
+	bool contains(Faction& faction, const Block& block) const;
+	ConstructProject& getProject(Faction& faction, Block& block);
+	HasConstructionDesignationsForFaction& at(Faction& faction) { return m_data.at(&faction); }
 };

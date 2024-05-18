@@ -16,7 +16,7 @@ void DesignateWoodCuttingInputAction::execute()
 {
 	Block& block = *m_blocks.begin();
 	auto& woodCuttingDesginations = block.m_area->m_hasWoodCuttingDesignations;
-	const Faction& faction = *(**m_actors.begin()).getFaction();
+	Faction& faction = *(**m_actors.begin()).getFaction();
 	for(Block& block : m_blocks)
 		woodCuttingDesginations.designate(faction, block);
 };
@@ -24,7 +24,7 @@ void UndesignateWoodCuttingInputAction::execute()
 {
 	Block& block = *m_blocks.begin();
 	auto& woodCuttingDesginations = block.m_area->m_hasWoodCuttingDesignations;
-	const Faction& faction = *(**m_actors.begin()).getFaction();
+	Faction& faction = *(**m_actors.begin()).getFaction();
 	for(Block& block : m_blocks)
 		woodCuttingDesginations.undesignate(faction, block);
 }
@@ -149,7 +149,7 @@ void WoodCuttingObjective::joinProject(WoodCuttingProject& project)
 }
 WoodCuttingProject* WoodCuttingObjective::getJoinableProjectAt(const Block& block)
 {
-	if(!block.m_hasDesignations.contains(*m_actor.getFaction(), BlockDesignation::WoodCutting))
+	if(!block.hasDesignation(*m_actor.getFaction(), BlockDesignation::WoodCutting))
 		return nullptr;
 	WoodCuttingProject& output = block.m_area->m_hasWoodCuttingDesignations.at(*m_actor.getFaction(), block);
 	if(!output.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&output))
@@ -220,11 +220,11 @@ void WoodCuttingProject::onCancel()
 }
 void WoodCuttingProject::onDelay()
 {
-	m_location.m_hasDesignations.removeIfExists(m_faction, BlockDesignation::WoodCutting);
+	m_location.maybeUnsetDesignation(m_faction, BlockDesignation::WoodCutting);
 }
 void WoodCuttingProject::offDelay()
 {
-	m_location.m_hasDesignations.insert(m_faction, BlockDesignation::WoodCutting);
+	m_location.setDesignation(m_faction, BlockDesignation::WoodCutting);
 }
 // What would the total delay time be if we started from scratch now with current workers?
 Step WoodCuttingProject::getDuration() const
@@ -242,7 +242,7 @@ void WoodCuttingLocationDishonorCallback::execute([[maybe_unused]] uint32_t oldC
 {
 	m_location.m_area->m_hasWoodCuttingDesignations.undesignate(m_faction, m_location);
 }
-HasWoodCuttingDesignationsForFaction::HasWoodCuttingDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const Faction& faction) : m_faction(faction)
+HasWoodCuttingDesignationsForFaction::HasWoodCuttingDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Faction& faction) : m_faction(faction)
 {
 	for(const Json& pair : data)
 	{
@@ -266,7 +266,7 @@ void HasWoodCuttingDesignationsForFaction::designate(Block& block)
 	assert(block.m_hasPlant.exists());
 	assert(block.m_hasPlant.get().m_plantSpecies.isTree);
 	assert(block.m_hasPlant.get().getGrowthPercent() >= Config::minimumPercentGrowthForWoodCutting);
-	block.m_hasDesignations.insert(m_faction, BlockDesignation::WoodCutting);
+	block.setDesignation(m_faction, BlockDesignation::WoodCutting);
 	// To be called when block is no longer a suitable location, for example if it got crushed by a collapse.
 	std::unique_ptr<DishonorCallback> locationDishonorCallback = std::make_unique<WoodCuttingLocationDishonorCallback>(m_faction, block);
 	m_data.try_emplace(&block, &m_faction, block, std::move(locationDishonorCallback));
@@ -280,7 +280,7 @@ void HasWoodCuttingDesignationsForFaction::undesignate(Block& block)
 void HasWoodCuttingDesignationsForFaction::remove(Block& block)
 {
 	assert(m_data.contains(&block));
-	block.m_hasDesignations.remove(m_faction, BlockDesignation::WoodCutting);
+	block.unsetDesignation(m_faction, BlockDesignation::WoodCutting);
 	m_data.erase(&block); 
 }
 void HasWoodCuttingDesignationsForFaction::removeIfExists(Block& block)
@@ -294,7 +294,7 @@ void AreaHasWoodCuttingDesignations::load(const Json& data, DeserializationMemo&
 {
 	for(const Json& pair : data)
 	{
-		const Faction& faction = deserializationMemo.faction(pair[0]);
+		Faction& faction = deserializationMemo.faction(pair[0]);
 		m_data.try_emplace(&faction, pair[1], deserializationMemo, faction);
 	}
 }
@@ -310,29 +310,29 @@ Json AreaHasWoodCuttingDesignations::toJson() const
 	}
 	return data;
 }
-void AreaHasWoodCuttingDesignations::addFaction(const Faction& faction)
+void AreaHasWoodCuttingDesignations::addFaction(Faction& faction)
 {
 	assert(!m_data.contains(&faction));
 	m_data.emplace(&faction, faction);
 }
-void AreaHasWoodCuttingDesignations::removeFaction(const Faction& faction)
+void AreaHasWoodCuttingDesignations::removeFaction(Faction& faction)
 {
 	assert(m_data.contains(&faction));
 	m_data.erase(&faction);
 }
 // If blockFeatureType is null then woodCutting out fully rather then woodCuttingging out a feature.
-void AreaHasWoodCuttingDesignations::designate(const Faction& faction, Block& block)
+void AreaHasWoodCuttingDesignations::designate(Faction& faction, Block& block)
 {
 	if(!m_data.contains(&faction))
 		addFaction(faction);
 	m_data.at(&faction).designate(block);
 }
-void AreaHasWoodCuttingDesignations::undesignate(const Faction& faction, Block& block)
+void AreaHasWoodCuttingDesignations::undesignate(Faction& faction, Block& block)
 {
 	assert(m_data.contains(&faction));
 	m_data.at(&faction).undesignate(block);
 }
-void AreaHasWoodCuttingDesignations::remove(const Faction& faction, Block& block)
+void AreaHasWoodCuttingDesignations::remove(Faction& faction, Block& block)
 {
 	assert(m_data.contains(&faction));
 	m_data.at(&faction).remove(block);
@@ -348,19 +348,19 @@ void AreaHasWoodCuttingDesignations::clearReservations()
 		for(auto& pair2 : pair.second.m_data)
 			pair2.second.clearReservations();
 }
-bool AreaHasWoodCuttingDesignations::areThereAnyForFaction(const Faction& faction) const
+bool AreaHasWoodCuttingDesignations::areThereAnyForFaction(Faction& faction) const
 {
 	if(!m_data.contains(&faction))
 		return false;
 	return !m_data.at(&faction).empty();
 }
-bool AreaHasWoodCuttingDesignations::contains(const Faction& faction, const Block& block) const 
+bool AreaHasWoodCuttingDesignations::contains(Faction& faction, const Block& block) const 
 { 
 	if(!m_data.contains(&faction))
 		return false;
 	return m_data.at(&faction).m_data.contains(const_cast<Block*>(&block)); 
 }
-WoodCuttingProject& AreaHasWoodCuttingDesignations::at(const Faction& faction, const Block& block) 
+WoodCuttingProject& AreaHasWoodCuttingDesignations::at(Faction& faction, const Block& block) 
 { 
 	assert(m_data.contains(&faction));
 	assert(m_data.at(&faction).m_data.contains(const_cast<Block*>(&block))); 

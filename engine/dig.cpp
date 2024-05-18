@@ -17,7 +17,7 @@ void DesignateDigInputAction::execute()
 {
 	Block& block = *m_cuboid.begin();
 	auto& digDesginations = block.m_area->m_hasDigDesignations;
-	const Faction& faction = *(**m_actors.begin()).getFaction();
+	Faction& faction = *(**m_actors.begin()).getFaction();
 	for(Block& block : m_cuboid)
 		digDesginations.designate(faction, block, m_blockFeatureType);
 };
@@ -25,7 +25,7 @@ void UndesignateDigInputAction::execute()
 {
 	Block& block = *m_cuboid.begin();
 	auto& digDesginations = block.m_area->m_hasDigDesignations;
-	const Faction& faction = *(**m_actors.begin()).getFaction();
+	Faction& faction = *(**m_actors.begin()).getFaction();
 	for(Block& block : m_cuboid)
 		digDesginations.undesignate(faction, block);
 }
@@ -146,7 +146,7 @@ void DigObjective::joinProject(DigProject& project)
 }
 DigProject* DigObjective::getJoinableProjectAt(const Block& block)
 {
-	if(!block.m_hasDesignations.contains(*m_actor.getFaction(), BlockDesignation::Dig))
+	if(!block.hasDesignation(*m_actor.getFaction(), BlockDesignation::Dig))
 		return nullptr;
 	DigProject& output = block.m_area->m_hasDigDesignations.at(*m_actor.getFaction(), block);
 	if(!output.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&output))
@@ -239,11 +239,11 @@ void DigProject::onCancel()
 }
 void DigProject::onDelay()
 {
-	m_location.m_hasDesignations.removeIfExists(m_faction, BlockDesignation::Dig);
+	m_location.m_area->m_blockDesignations.at(m_faction).maybeUnset(m_location.getIndex(), BlockDesignation::Dig);
 }
 void DigProject::offDelay()
 {
-	m_location.m_hasDesignations.insert(m_faction, BlockDesignation::Dig);
+	m_location.setDesignation(m_faction, BlockDesignation::Dig);
 }
 // What would the total delay time be if we started from scratch now with current workers?
 Step DigProject::getDuration() const
@@ -261,7 +261,7 @@ void DigLocationDishonorCallback::execute([[maybe_unused]] uint32_t oldCount, [[
 {
 	m_location.m_area->m_hasDigDesignations.undesignate(m_faction, m_location);
 }
-HasDigDesignationsForFaction::HasDigDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const Faction& faction) : m_faction(faction)
+HasDigDesignationsForFaction::HasDigDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Faction& faction) : m_faction(faction)
 {
 	for(const Json& pair : data)
 	{
@@ -290,7 +290,7 @@ Json HasDigDesignationsForFaction::toJson() const
 void HasDigDesignationsForFaction::designate(Block& block, const BlockFeatureType* blockFeatureType)
 {
 	assert(!m_data.contains(&block));
-	block.m_hasDesignations.insert(m_faction, BlockDesignation::Dig);
+	block.setDesignation(m_faction, BlockDesignation::Dig);
 	// To be called when block is no longer a suitable location, for example if it got dug out already.
 	std::unique_ptr<DishonorCallback> locationDishonorCallback = std::make_unique<DigLocationDishonorCallback>(m_faction, block);
 	m_data.try_emplace(&block, &m_faction, block, blockFeatureType, std::move(locationDishonorCallback));
@@ -304,7 +304,7 @@ void HasDigDesignationsForFaction::undesignate(Block& block)
 void HasDigDesignationsForFaction::remove(Block& block)
 {
 	assert(m_data.contains(&block));
-	block.m_hasDesignations.remove(m_faction, BlockDesignation::Dig);
+	block.unsetDesignation(m_faction, BlockDesignation::Dig);
 	m_data.erase(&block); 
 }
 void HasDigDesignationsForFaction::removeIfExists(Block& block)
@@ -319,7 +319,7 @@ void AreaHasDigDesignations::load(const Json& data, DeserializationMemo& deseria
 {
 	for(const Json& pair : data)
 	{
-		const Faction& faction = deserializationMemo.faction(pair[0]);
+		Faction& faction = deserializationMemo.faction(pair[0]);
 		m_data.try_emplace(&faction, pair[1], deserializationMemo, faction);
 	}
 }
@@ -327,7 +327,7 @@ void AreaHasDigDesignations::loadWorkers(const Json& data, DeserializationMemo& 
 {
 	for(const Json& pair : data)
 	{
-		const Faction& faction = deserializationMemo.faction(pair[0]);
+		Faction& faction = deserializationMemo.faction(pair[0]);
 		m_data.at(&faction).loadWorkers(pair[1], deserializationMemo);
 	}
 
@@ -344,30 +344,30 @@ Json AreaHasDigDesignations::toJson() const
 	}
 	return data;
 }
-void AreaHasDigDesignations::addFaction(const Faction& faction)
+void AreaHasDigDesignations::addFaction(Faction& faction)
 {
 	assert(!m_data.contains(&faction));
 	m_data.emplace(&faction, faction);
 }
-void AreaHasDigDesignations::removeFaction(const Faction& faction)
+void AreaHasDigDesignations::removeFaction(Faction& faction)
 {
 	assert(m_data.contains(&faction));
 	m_data.erase(&faction);
 }
 // If blockFeatureType is null then dig out fully rather then digging out a feature.
-void AreaHasDigDesignations::designate(const Faction& faction, Block& block, const BlockFeatureType* blockFeatureType)
+void AreaHasDigDesignations::designate(Faction& faction, Block& block, const BlockFeatureType* blockFeatureType)
 {
 	if(!m_data.contains(&faction))
 		addFaction(faction);
 	m_data.at(&faction).designate(block, blockFeatureType);
 }
-void AreaHasDigDesignations::undesignate(const Faction& faction, Block& block)
+void AreaHasDigDesignations::undesignate(Faction& faction, Block& block)
 {
 	assert(m_data.contains(&faction));
 	assert(m_data.at(&faction).m_data.contains(&block)); 
 	m_data.at(&faction).undesignate(block);
 }
-void AreaHasDigDesignations::remove(const Faction& faction, Block& block)
+void AreaHasDigDesignations::remove(Faction& faction, Block& block)
 {
 	assert(m_data.contains(&faction));
 	m_data.at(&faction).remove(block);
@@ -383,13 +383,13 @@ void AreaHasDigDesignations::clearReservations()
 		for(auto& pair : pair.second.m_data)
 			pair.second.clearReservations();
 }
-bool AreaHasDigDesignations::areThereAnyForFaction(const Faction& faction) const
+bool AreaHasDigDesignations::areThereAnyForFaction(Faction& faction) const
 {
 	if(!m_data.contains(&faction))
 		return false;
 	return !m_data.at(&faction).empty();
 }
-DigProject& AreaHasDigDesignations::at(const Faction& faction, const Block& block) 
+DigProject& AreaHasDigDesignations::at(Faction& faction, const Block& block) 
 { 
 	assert(m_data.contains(&faction));
 	assert(m_data.at(&faction).m_data.contains(const_cast<Block*>(&block))); 

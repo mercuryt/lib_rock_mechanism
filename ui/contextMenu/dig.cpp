@@ -4,14 +4,14 @@
 #include "../../engine/block.h"
 void ContextMenu::drawDigControls(Block& block)
 {
-	if(m_window.getFaction() && block.m_hasDesignations.contains(*m_window.getFaction(), BlockDesignation::Dig))
+	if(m_window.getFaction() && block.hasDesignation(*m_window.getFaction(), BlockDesignation::Dig))
 	{
 		auto cancelButton = tgui::Button::create("cancel dig");
 		m_root.add(cancelButton);
 		cancelButton->onClick([this]{
 			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 			for(Block* selectedBlock : m_window.getSelectedBlocks())
-				if(selectedBlock->m_hasDesignations.contains(*m_window.getFaction(), BlockDesignation::Dig))
+				if(selectedBlock->hasDesignation(*m_window.getFaction(), BlockDesignation::Dig))
 					m_window.getArea()->m_hasDigDesignations.undesignate(*m_window.getFaction(), *selectedBlock);
 			hide();
 		});

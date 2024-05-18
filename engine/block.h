@@ -6,7 +6,6 @@
 
 #include "types.h"
 #include "blockFeature.h"
-#include "designations.h"
 #include "stockpile.h"
 #include "farmFields.h"
 #include "temperature.h"
@@ -31,6 +30,7 @@ struct DeserializationMemo;
 struct MoveType;
 struct VisionCuboid;
 struct LocationBucket;
+enum class BlockDesignation;
 //class Item;
 //class Actor;
 
@@ -66,7 +66,6 @@ public:
 	HasBlockFeatures m_hasBlockFeatures;
 	BlockHasActors m_hasActors;
 	BlockHasItems m_hasItems;
-	HasDesignations m_hasDesignations;
 	BlockIsPartOfStockPiles m_isPartOfStockPiles;
 	BlockIsPartOfFarmField m_isPartOfFarmField;
 	BlockHasTemperature m_blockHasTemperature;
@@ -78,6 +77,11 @@ public:
 	Block& operator=(const Block&) = delete;
 	void setup(Area& area, DistanceInBlocks ax, DistanceInBlocks ay, DistanceInBlocks az);
 	void recordAdjacent();
+	void setDesignation(Faction& faction, BlockDesignation designation);
+	void unsetDesignation(Faction& faction, BlockDesignation designation);
+	void maybeUnsetDesignation(Faction& faction, BlockDesignation designation);
+	[[nodiscard]] BlockIndex getIndex() const;
+	[[nodiscard]] bool hasDesignation(Faction& faction, BlockDesignation designation) const;
 	[[nodiscard]] std::vector<Block*> getAdjacentWithEdgeAdjacent() const;
 	[[nodiscard]] std::vector<Block*> getAdjacentWithEdgeAndCornerAdjacent() const;
 	[[nodiscard]] std::vector<Block*> getEdgeAndCornerAdjacentOnly() const;

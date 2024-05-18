@@ -56,8 +56,8 @@ public:
 	[[nodiscard]] std::unordered_set<HasShape*> getAdjacentHasShapes();
 	[[nodiscard]] std::vector<Block*> getAdjacentAtLocationWithFacing(const Block& block, Facing facing);
 	[[nodiscard]] std::vector<Block*> getBlocksWhichWouldBeOccupiedAtLocationAndFacing(Block& location, Facing facing);
-	[[nodiscard]] bool allBlocksAtLocationAndFacingAreReservable(const Block& location, Facing facing, const Faction& faction) const;
-	[[nodiscard]] bool allOccupiedBlocksAreReservable(const Faction& faction) const;
+	[[nodiscard]] bool allBlocksAtLocationAndFacingAreReservable(const Block& location, Facing facing, Faction& faction) const;
+	[[nodiscard]] bool allOccupiedBlocksAreReservable(Faction& faction) const;
 	[[nodiscard]] bool isAdjacentToAt(const Block& location, Facing facing, const HasShape& hasShape) const;
 	[[nodiscard]] DistanceInBlocks distanceTo(const HasShape& other) const;
 	[[nodiscard]] Block* getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(const Block& location, Facing facing, std::function<bool(const Block&)>& predicate);

@@ -94,7 +94,7 @@ class DigProject final : public Project
 	// What would the total delay time be if we started from scratch now with current workers?
 public:
 	// BlockFeatureType can be null, meaning the block is to be fully excavated.
-	DigProject(const Faction* faction, Block& block, const BlockFeatureType* bft, std::unique_ptr<DishonorCallback> locationDishonorCallback) : 
+	DigProject(Faction* faction, Block& block, const BlockFeatureType* bft, std::unique_ptr<DishonorCallback> locationDishonorCallback) : 
 		Project(faction, block, Config::maxNumberOfWorkersForDigProject, std::move(locationDishonorCallback)), m_blockFeatureType(bft) { }
 	DigProject(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
@@ -103,9 +103,9 @@ public:
 };
 struct DigLocationDishonorCallback final : public DishonorCallback
 {
-	const Faction& m_faction;
+	Faction& m_faction;
 	Block& m_location;
-	DigLocationDishonorCallback(const Faction& f, Block& l) : m_faction(f), m_location(l) { }
+	DigLocationDishonorCallback(Faction& f, Block& l) : m_faction(f), m_location(l) { }
 	DigLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	void execute(uint32_t oldCount, uint32_t newCount);
@@ -113,11 +113,11 @@ struct DigLocationDishonorCallback final : public DishonorCallback
 // Part of HasDigDesignations.
 class HasDigDesignationsForFaction final
 {
-	const Faction& m_faction;
+	Faction& m_faction;
 	std::unordered_map<Block*, DigProject> m_data;
 public:
-	HasDigDesignationsForFaction(const Faction& p) : m_faction(p) { }
-	HasDigDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const Faction& faction);
+	HasDigDesignationsForFaction(Faction& p) : m_faction(p) { }
+	HasDigDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Faction& faction);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	void designate(Block& block, const BlockFeatureType* blockFeatureType);
@@ -132,20 +132,20 @@ public:
 // To be used by Area.
 class AreaHasDigDesignations final
 {
-	std::unordered_map<const Faction*, HasDigDesignationsForFaction> m_data;
+	std::unordered_map<Faction*, HasDigDesignationsForFaction> m_data;
 public:
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
-	void addFaction(const Faction& faction);
-	void removeFaction(const Faction& faction);
+	void addFaction(Faction& faction);
+	void removeFaction(Faction& faction);
 	// If blockFeatureType is null then dig out fully rather then digging out a feature.
-	void designate(const Faction& faction, Block& block, const BlockFeatureType* blockFeatureType);
-	void undesignate(const Faction& faction, Block& block);
-	void remove(const Faction& faction, Block& block);
+	void designate(Faction& faction, Block& block, const BlockFeatureType* blockFeatureType);
+	void undesignate(Faction& faction, Block& block);
+	void remove(Faction& faction, Block& block);
 	void clearAll(Block& block);
 	void clearReservations();
-	[[nodiscard]] bool areThereAnyForFaction(const Faction& faction) const;
-	[[nodiscard]] bool contains(const Faction& faction, const Block& block) const { return m_data.at(&faction).m_data.contains(const_cast<Block*>(&block)); }
-	[[nodiscard]] DigProject& at(const Faction& faction, const Block& block);
+	[[nodiscard]] bool areThereAnyForFaction(Faction& faction) const;
+	[[nodiscard]] bool contains(Faction& faction, const Block& block) const { return m_data.at(&faction).m_data.contains(const_cast<Block*>(&block)); }
+	[[nodiscard]] DigProject& at(Faction& faction, const Block& block);
 };
