@@ -2,6 +2,7 @@
 #include "displayData.h"
 #include "window.h"
 #include "../engine/actor.h"
+#include "../engine/item.h"
 #include <TGUI/Widgets/ScrollablePanel.hpp>
 #include <TGUI/Widgets/VerticalLayout.hpp>
 #include <string>

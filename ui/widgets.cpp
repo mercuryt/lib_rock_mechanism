@@ -2,6 +2,9 @@
 #include "blockFeature.h"
 #include "displayData.h"
 #include "../engine/simulation.h"
+#include "../engine/simulation/hasAreas.h"
+#include "../engine/area.h"
+#include "../engine/animalSpecies.h"
 #include "item.h"
 #include "plant.h"
 #include <TGUI/Widgets/ComboBox.hpp>
@@ -57,7 +60,7 @@ void AreaSelectUI::populate(Simulation& simulation)
 {
 	m_widget->removeAllItems();
 	std::wstring firstAreaName;
-	for(Area& area : simulation.m_areas)
+	for(Area& area : simulation.m_hasAreas->getAll())
 	{
 		if(firstAreaName.empty())
 			firstAreaName = area.m_name;
@@ -70,8 +73,8 @@ void AreaSelectUI::populate(Simulation& simulation)
 void AreaSelectUI::set(Area& area) { m_widget->setSelectedItem(area.m_name); }
 Area& AreaSelectUI::get() const
 {
-	auto found = std::ranges::find(m_simulation->m_areas, m_widget->getSelectedItemId().toWideString(), &Area::m_name);
-	assert(found != m_simulation->m_areas.end());
+	auto found = std::ranges::find(m_simulation->m_hasAreas->getAll(), m_widget->getSelectedItemId().toWideString(), &Area::m_name);
+	assert(found != m_simulation->m_hasAreas->getAll().end());
 	return *found;
 }
 bool AreaSelectUI::hasSelection() const { return !m_widget->getSelectedItemId().empty(); }

@@ -3,6 +3,7 @@
 #include "widgets.h"
 #include "window.h"
 #include "../engine/stockpile.h"
+#include "../engine/item.h"
 
 EditStockPileView::EditStockPileView(Window& window) : m_window(window), m_panel(tgui::Panel::create())
 {

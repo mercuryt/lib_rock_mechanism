@@ -1,4 +1,5 @@
 #include "editAreaPanel.h"
+#include "../engine/simulation/hasAreas.h"
 #include "window.h"
 #include <TGUI/Widgets/Group.hpp>
 #include <TGUI/Widgets/HorizontalLayout.hpp>
@@ -74,7 +75,7 @@ void EditAreaView::confirm()
 	{
 		std::function<void()> task = [this]{
 			static constexpr bool createDrama = true;
-			m_area = &m_window.getSimulation()->createArea(m_sizeX->getValue(), m_sizeY->getValue(), m_sizeZ->getValue(), createDrama);
+			m_area = &m_window.getSimulation()->m_hasAreas->createArea(m_sizeX->getValue(), m_sizeY->getValue(), m_sizeZ->getValue(), createDrama);
 			if(Config::visionCuboidsActive)
 				m_area->visionCuboidsActivate();
 		};

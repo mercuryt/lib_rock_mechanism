@@ -1,5 +1,6 @@
 #include "uniformPanel.h"
 #include "window.h"
+#include "../engine/item.h"
 #include <TGUI/Widgets/ScrollablePanel.hpp>
 #include <TGUI/Widgets/SpinControl.hpp>
 #include <unordered_set>
