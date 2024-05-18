@@ -3,6 +3,8 @@
 #include "craft.h"
 #include "displayData.h"
 #include "sprite.h"
+#include "item.h"
+#include "../engine/simulation/hasAreas.h"
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include <TGUI/Widgets/FileDialog.hpp>

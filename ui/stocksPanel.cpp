@@ -1,5 +1,6 @@
 #include "stocksPanel.h"
 #include "window.h"
+#include "../engine/item.h"
 #include <string>
 struct MaterialType;
 StocksView::StocksView(Window& window) : m_window(window), m_group(tgui::Group::create()), m_list(tgui::ScrollablePanel::create())

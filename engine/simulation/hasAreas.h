@@ -32,4 +32,5 @@ public:
 	void recordId(Area& area);
 	[[nodiscard]] Area& getById(AreaId id) const {return *m_areasById.at(id); }
 	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] std::list<Area>& getAll() { return m_areas; }
 };

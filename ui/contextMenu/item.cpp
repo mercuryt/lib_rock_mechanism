@@ -3,6 +3,7 @@
 #include "../displayData.h"
 #include "../uiUtil.h"
 #include "../../engine/block.h"
+#include "../../engine/actor.h"
 #include "../../engine/objectives/equipItem.h"
 #include "../../engine/objectives/unequipItem.h"
 #include "../../engine/simulation/hasItems.h"

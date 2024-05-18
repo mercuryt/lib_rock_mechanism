@@ -2,6 +2,7 @@
 #include "../window.h"
 #include "../displayData.h"
 #include "../../engine/block.h"
+#include "../../engine/fluidType.h"
 void ContextMenu::drawFluidControls(Block& block)
 {
 	// Fluids.
