@@ -2,6 +2,7 @@
 #include "../actor.h"
 #include "../block.h"
 #include "item.h"
+#include "../deserializationMemo.h"
 
 UnequipItemObjective::UnequipItemObjective(Actor& actor, Item& item, Block& block) : Objective(actor, Config::equipPriority), m_item(item), m_block(block) { }
 

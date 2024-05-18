@@ -45,7 +45,7 @@ ItemType& ItemType::byNameNonConst(std::string name)
 	return const_cast<ItemType&>(byName(name));
 }
 // RemarkItemForStockPilingEvent
-ReMarkItemForStockPilingEvent::ReMarkItemForStockPilingEvent(Item& i, const Faction& f, Step duration, const Step start) : ScheduledEvent(i.getSimulation(), duration, start), m_item(i), m_faction(f) { }
+ReMarkItemForStockPilingEvent::ReMarkItemForStockPilingEvent(Item& i, Faction& f, Step duration, const Step start) : ScheduledEvent(i.getSimulation(), duration, start), m_item(i), m_faction(f) { }
 void ReMarkItemForStockPilingEvent::execute() 
 { 
 	m_item.m_canBeStockPiled.maybeSet(m_faction); 
@@ -61,7 +61,7 @@ ItemCanBeStockPiled::ItemCanBeStockPiled(const Json& data, DeserializationMemo& 
 	if(data.contains("scheduledEvents"))
 		for(const Json& eventData : data["scheduledEvents"])
 		{
-			const Faction& faction = deserializationMemo.faction(eventData[0]);
+			Faction& faction = deserializationMemo.faction(eventData[0]);
 			Step start = eventData[1]["start"].get<Step>();
 			Step duration = eventData[1]["duration"].get<Step>();
 			scheduleReset(faction, duration, start);
@@ -74,7 +74,7 @@ Json ItemCanBeStockPiled::toJson() const
 	if(!m_data.empty())
 	{
 		data["data"] = Json::array();
-		for(const Faction* faction : m_data)
+		for(Faction* faction : m_data)
 			data["data"].push_back(faction);
 		if(!m_scheduledEvents.empty())
 		{
@@ -92,7 +92,7 @@ Json ItemCanBeStockPiled::toJson() const
 	}
 	return data;
 }
-void ItemCanBeStockPiled::scheduleReset(const Faction& faction, Step duration, Step start)
+void ItemCanBeStockPiled::scheduleReset(Faction& faction, Step duration, Step start)
 {
 	assert(!m_scheduledEvents.contains(&faction));
 	auto [iter, created] = m_scheduledEvents.emplace(&faction, m_item.getEventSchedule());
@@ -167,7 +167,7 @@ void Item::removeQuantity(Quantity delta)
 		m_reservable.setMaxReservations(m_quantity);
 	}
 }
-void Item::install(Block& block, Facing facing, const Faction& faction)
+void Item::install(Block& block, Facing facing, Faction& faction)
 {
 	m_facing = facing;
 	setLocation(block);

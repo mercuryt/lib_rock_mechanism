@@ -129,9 +129,9 @@ public:
 class ReMarkItemForStockPilingEvent final : public ScheduledEvent
 {
 	Item& m_item;
-	const Faction& m_faction;
+	Faction& m_faction;
 public:
-	ReMarkItemForStockPilingEvent(Item& i, const Faction& f, Step duration, const Step start = 0);
+	ReMarkItemForStockPilingEvent(Item& i, Faction& f, Step duration, const Step start = 0);
 	void execute();
 	void clearReferences();
 };
@@ -140,20 +140,20 @@ public:
 class ItemCanBeStockPiled
 {
 	Item& m_item;
-	std::unordered_set<const Faction*> m_data;
-	std::unordered_map<const Faction*, HasScheduledEvent<ReMarkItemForStockPilingEvent>> m_scheduledEvents;
-	void scheduleReset(const Faction& faction, Step duration, Step start = 0);
+	std::unordered_set<Faction*> m_data;
+	std::unordered_map<Faction*, HasScheduledEvent<ReMarkItemForStockPilingEvent>> m_scheduledEvents;
+	void scheduleReset(Faction& faction, Step duration, Step start = 0);
 public:
 	ItemCanBeStockPiled(Item& i) : m_item(i) { }
 	ItemCanBeStockPiled(const Json& data, DeserializationMemo& deserializationMemo, Item& item);
 	Json toJson() const;
-	void set(const Faction& faction) { assert(!m_data.contains(&faction)); m_data.insert(&faction); }
-	void maybeSet(const Faction& faction) { m_data.insert(&faction); }
-	void unset(const Faction& faction) { assert(m_data.contains(&faction)); m_data.erase(&faction); }
-	void maybeUnset(const Faction& faction) { m_data.erase(&faction); }
-	void unsetAndScheduleReset(const Faction& faction, Step duration) { unset(faction); scheduleReset(faction, duration); }
-	void maybeUnsetAndScheduleReset(const Faction& faction, Step duration)  { maybeUnset(faction); scheduleReset(faction, duration); }
-	[[nodiscard]] bool contains(const Faction& faction) { return m_data.contains(&faction); }
+	void set(Faction& faction) { assert(!m_data.contains(&faction)); m_data.insert(&faction); }
+	void maybeSet(Faction& faction) { m_data.insert(&faction); }
+	void unset(Faction& faction) { assert(m_data.contains(&faction)); m_data.erase(&faction); }
+	void maybeUnset(Faction& faction) { m_data.erase(&faction); }
+	void unsetAndScheduleReset(Faction& faction, Step duration) { unset(faction); scheduleReset(faction, duration); }
+	void maybeUnsetAndScheduleReset(Faction& faction, Step duration)  { maybeUnset(faction); scheduleReset(faction, duration); }
+	[[nodiscard]] bool contains(Faction& faction) { return m_data.contains(&faction); }
 	friend class ReMarkItemForStockPilingEvent;
 };
 class Item final : public HasShape
@@ -192,7 +192,7 @@ public:
 	void setTemperature(Temperature temperature);
 	void addQuantity(Quantity delta);
 	void removeQuantity(Quantity delta);
-	void install(Block& block, Facing facing, const Faction& faction);
+	void install(Block& block, Facing facing, Faction& faction);
 	void merge(Item& item);
 	[[nodiscard]] Quantity getQuantity() const { return m_quantity; }
 	[[nodiscard]] bool isItem() const { return true; }

@@ -77,7 +77,7 @@ void Draw::view()
 	if(m_window.m_faction)
 		for(Block& block : m_window.m_area->getZLevel(m_window.m_z))
 		{
-			if(block.m_hasDesignations.containsFaction(*m_window.m_faction))
+			if(block.m_area->m_blockDesignations.contains(*m_window.m_faction))
 				designated(block);
 			craftLocation(block);
 			Percent projectProgress = block.m_hasProjects.getProjectPercentComplete(*m_window.m_faction);
@@ -506,7 +506,7 @@ void Draw::colorOnBlock(const Block& block, const sf::Color color)
 }
 void Draw::designated(const Block& block)
 {
-	BlockDesignation designation = block.m_hasDesignations.getDisplayDesignation(*m_window.m_faction);
+	BlockDesignation designation = m_window.m_area->m_blockDesignations.at(*m_window.m_faction).getDisplayDesignation(block.getIndex());
 	static std::unordered_map<BlockDesignation, sf::Sprite> designationSprites{
 		{BlockDesignation::Dig, getCenteredSprite("pick")},
 		{BlockDesignation::Construct, getCenteredSprite("mallet")},

@@ -169,7 +169,7 @@ void FindsPath::pathToOccupiedPredicate(std::function<bool(const Block&)>& predi
 	else
 		pathToPredicateWithHuristicDestination(condition, *m_huristicDestination);
 }
-void FindsPath::pathToUnreservedAdjacentToPredicate(std::function<bool(const Block&)>& predicate, const Faction& faction)
+void FindsPath::pathToUnreservedAdjacentToPredicate(std::function<bool(const Block&)>& predicate, Faction& faction)
 {
 	std::function<bool(const Block&, Facing)> condition = [&](const Block& location, Facing facing)
 	{
@@ -186,7 +186,7 @@ void FindsPath::pathToUnreservedAdjacentToPredicate(std::function<bool(const Blo
 	else
 		pathToPredicateWithHuristicDestination(condition, *m_huristicDestination);
 }
-void FindsPath::pathToUnreservedPredicate(std::function<bool(const Block&)>& predicate, const Faction& faction)
+void FindsPath::pathToUnreservedPredicate(std::function<bool(const Block&)>& predicate, Faction& faction)
 {
 	std::function<bool(const Block&, Facing)> condition = [&](const Block& location, Facing facing)
 	{
@@ -200,7 +200,7 @@ void FindsPath::pathToUnreservedPredicate(std::function<bool(const Block&)>& pre
 	else
 		pathToPredicateWithHuristicDestination(condition, *m_huristicDestination);
 }
-void FindsPath::pathToUnreservedAdjacentToHasShape(const HasShape& hasShape, const Faction& faction)
+void FindsPath::pathToUnreservedAdjacentToHasShape(const HasShape& hasShape, Faction& faction)
 {
 	std::function<bool(const Block&)> predicate = [&](const Block& block) { return hasShape.m_blocks.contains(const_cast<Block*>(&block)); };
 	pathToUnreservedAdjacentToPredicate(predicate, faction);
@@ -302,7 +302,7 @@ Facing FindsPath::getFacingAtDestination() const
 	assert(!m_route.empty());
 	return m_route.back()->facingToSetWhenEnteringFrom(m_route.size() == 1 ? *m_hasShape.m_location : *m_route.at(m_route.size() - 1));
 }
-bool FindsPath::areAllBlocksAtDestinationReservable(const Faction* faction) const
+bool FindsPath::areAllBlocksAtDestinationReservable(Faction* faction) const
 {
 	if(faction ==  nullptr)
 		return true;

@@ -23,7 +23,7 @@ void SimulationHasUniformsForFaction::destroyUniform(Uniform& uniform)
 }
 std::unordered_map<std::wstring, Uniform>& SimulationHasUniformsForFaction::getAll(){ return m_data; }
 
-SimulationHasUniformsForFaction& SimulationHasUniforms::at(const Faction& faction) 
+SimulationHasUniformsForFaction& SimulationHasUniforms::at(Faction& faction) 
 { 
 	if(!m_data.contains(&faction))
 		registerFaction(faction);

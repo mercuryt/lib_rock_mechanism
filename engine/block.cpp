@@ -16,11 +16,11 @@ Block::Block() : m_solid(nullptr), m_constructed(false), m_visionCuboid(nullptr)
 void Block::setup(Area& area, DistanceInBlocks ax, DistanceInBlocks ay, DistanceInBlocks az)
 {
 	assert(this >= &area.getBlocks().front());
-	assert(area.getBlockIndex(*this) < area.getBlocks().size());
 	m_x=ax;
 	m_y=ay;
 	m_z=az;
 	m_area = &area;
+	assert(getIndex() < area.getBlocks().size());
 	m_locationBucket = &m_area->m_hasActors.m_locationBuckets.getBucketFor(*this);
 	m_isEdge = (m_x == 0 || m_x == (m_area->m_sizeX - 1) ||  m_y == 0 || m_y == (m_area->m_sizeY - 1) || m_z == 0 || m_z == (m_area->m_sizeZ - 1) );
 	// This is too slow to do on init.
@@ -36,6 +36,23 @@ void Block::recordAdjacent()
 		m_adjacents[i] = offset(offsets[0],offsets[1],offsets[2]);
 	}
 }
+void Block::setDesignation(Faction& faction, BlockDesignation designation)
+{
+	m_area->m_blockDesignations.at(faction).set(getIndex(), designation);
+}
+void Block::unsetDesignation(Faction& faction, BlockDesignation designation)
+{
+	m_area->m_blockDesignations.at(faction).unset(getIndex(), designation);
+}
+void Block::maybeUnsetDesignation(Faction& faction, BlockDesignation designation)
+{
+	m_area->m_blockDesignations.at(faction).maybeUnset(getIndex(), designation);
+}
+bool Block::hasDesignation(Faction& faction, BlockDesignation designation) const
+{
+	return m_area->m_blockDesignations.at(faction).check(getIndex(), designation);
+}
+BlockIndex Block::getIndex() const { return m_area->getBlockIndex(*this); }
 std::vector<Block*> Block::getAdjacentWithEdgeAdjacent() const
 {
 	std::vector<Block*> output;
@@ -564,8 +581,6 @@ void Block::loadFromJson(Json data, DeserializationMemo& deserializationMemo, Di
 		}
 	if(data.contains("f"))
 		m_hasFluids.load(data["f"], deserializationMemo);
-	if(data.contains("hasDesignations"))
-		m_hasDesignations.load(data["hasDesignations"], deserializationMemo);
 }
 Json Block::toJson() const 
 {
@@ -596,8 +611,6 @@ Json Block::toJson() const
 	}
 	if(m_hasFluids.any())
 		data["f"] = m_hasFluids.toJson();
-	if(!m_hasDesignations.empty())
-		data["hasDesignations"] = m_hasDesignations.toJson();
 	return data;
 }
 Json Block::positionToJson() const { return {{"x", m_x}, {"y", m_y}, {"z", m_z}, {"area", m_area->m_id}}; }

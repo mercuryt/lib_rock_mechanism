@@ -415,7 +415,7 @@ tgui::ComboBox::Ptr widgetUtil::makeFactionSelectUI(Simulation& simulation, std:
 		if(id == nullLabel)
 			lastSelectedFaction = nullptr;
 		else
-			lastSelectedFaction = &static_cast<const Faction&>(simulation.m_hasFactions.byName(id.toWideString())); 
+			lastSelectedFaction = &static_cast<Faction&>(simulation.m_hasFactions.byName(id.toWideString())); 
 	});
 	if(!nullLabel.empty())
 	{
@@ -424,7 +424,7 @@ tgui::ComboBox::Ptr widgetUtil::makeFactionSelectUI(Simulation& simulation, std:
 		selected = true;
 	}
 	auto factions = sortByName(simulation.m_hasFactions.getAll());
-	for(const Faction* faction : factions)
+	for(Faction* faction : factions)
 	{
 		output->addItem(faction->name, faction->name);
 		if(lastSelectedFaction && lastSelectedFaction == faction)

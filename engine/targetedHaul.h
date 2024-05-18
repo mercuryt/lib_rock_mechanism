@@ -23,7 +23,7 @@ class TargetedHaulProject final : public Project
 	void offDelay() { assert(false); }
 	Step getDuration() const { return Config::addToStockPileDelaySteps; }
 public:
-	TargetedHaulProject(const Faction* f, Block& l, Item& i) : Project(f, l, 4), m_item(i) { }
+	TargetedHaulProject(Faction* f, Block& l, Item& i) : Project(f, l, 4), m_item(i) { }
 	TargetedHaulProject(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 };

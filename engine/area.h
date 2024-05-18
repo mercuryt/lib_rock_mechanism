@@ -23,6 +23,7 @@
 #include "area/hasFluidGroups.h"
 #include "area/hasItems.h"
 #include "area/hasSleepingSpots.h"
+#include "area/hasBlockDesignations.h"
 //#include "medical.h"
 
 #include <vector>
@@ -71,6 +72,7 @@ public:
 	AreaHasFluidSources m_fluidSources;
 	AreaHasFluidGroups m_hasFluidGroups;
 	AreaHasRain m_hasRain;
+	AreaHasBlockDesignations m_blockDesignations;
 	std::list<VisionCuboid> m_visionCuboids;
 	bool m_visionCuboidsActive;
 

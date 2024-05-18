@@ -15,13 +15,13 @@ Json AreaHasSleepingSpots::toJson() const
 		data["unassigned"].push_back(block);
 	return data;
 }
-void AreaHasSleepingSpots::designate(const Faction& faction, Block& block)
+void AreaHasSleepingSpots::designate(Faction& faction, Block& block)
 {
 	m_unassigned.insert(&block);
-	block.m_hasDesignations.insert(faction, BlockDesignation::Sleep);
+	block.setDesignation(faction, BlockDesignation::Sleep);
 }
-void AreaHasSleepingSpots::undesignate(const Faction& faction, Block& block)
+void AreaHasSleepingSpots::undesignate(Faction& faction, Block& block)
 {
 	m_unassigned.erase(&block);
-	block.m_hasDesignations.remove(faction, BlockDesignation::Sleep);
+	block.unsetDesignation(faction, BlockDesignation::Sleep);
 }

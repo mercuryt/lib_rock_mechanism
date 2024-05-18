@@ -78,7 +78,7 @@ std::unique_ptr<Objective> InstallItemObjectiveType::makeFor(Actor& actor) const
 }
 void InstallItemObjective::reset() { m_actor.m_canReserve.deleteAllWithoutCallback(); m_project = nullptr; }
 // HasDesignations.
-void HasInstallItemDesignationsForFaction::add(Block& block, Item& item, Facing facing, const Faction& faction)
+void HasInstallItemDesignationsForFaction::add(Block& block, Item& item, Facing facing, Faction& faction)
 {
 	assert(!m_designations.contains(&block));
 	m_designations.try_emplace(&block, item, block, facing, faction);

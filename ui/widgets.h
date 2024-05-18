@@ -57,7 +57,7 @@ namespace widgetUtil
 	tgui::ComboBox::Ptr makeFluidTypeSelectUI();
 	inline const ItemType* lastSelectedItemType = nullptr;
 	tgui::ComboBox::Ptr makeItemTypeSelectUI();
-	inline const Faction* lastSelectedFaction = nullptr;
+	inline Faction* lastSelectedFaction = nullptr;
 	tgui::ComboBox::Ptr makeFactionSelectUI(Simulation& simulation, std::wstring nullLabel = L"");
 	inline const BlockFeatureType* lastSelectedBlockFeatureType = nullptr;
 	tgui::ComboBox::Ptr makeBlockFeatureTypeSelectUI();

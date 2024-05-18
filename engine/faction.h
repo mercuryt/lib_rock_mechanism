@@ -16,14 +16,14 @@ struct Faction
 	std::unordered_set<Faction*> allies;
 	std::unordered_set<Faction*> enemies;
 	Faction(std::wstring n) : name(n) { }
-	[[nodiscard]] bool operator==(const Faction& faction) const { return &faction == this;}
-	Faction(const Faction& faction) = delete;
+	[[nodiscard]] bool operator==(Faction& faction) const { return &faction == this;}
+	Faction(Faction& faction) = delete;
 	Faction(Faction&& faction) = delete;
 	Faction(const Json& data, DeserializationMemo& deserializationMemo);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 };
-inline void to_json(Json& data, const Faction* const& faction) { data = faction->name; }
 inline void to_json(Json& data, Faction* const& faction) { data = faction->name; }
+inline void to_json(Json& data, const Faction* const& faction) { data = faction->name; }
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_ONLY_SERIALIZE(Faction, name, allies, enemies);
 
 class SimulationHasFactions final

@@ -1,12 +1,12 @@
 #include "wander.h"
-#include "actor.h"
-#include "block.h"
-#include "deserializationMemo.h"
-#include "objective.h"
-#include "random.h"
-#include "config.h"
-#include "simulation.h"
 #include "wait.h"
+#include "../actor.h"
+#include "../block.h"
+#include "../deserializationMemo.h"
+#include "../objective.h"
+#include "../random.h"
+#include "../config.h"
+#include "../simulation.h"
 WanderThreadedTask::WanderThreadedTask(WanderObjective& o) : ThreadedTask(o.m_actor.getThreadedTaskEngine()), m_objective(o), m_findsPath(o.m_actor, false) { }
 void WanderThreadedTask::readStep()
 {

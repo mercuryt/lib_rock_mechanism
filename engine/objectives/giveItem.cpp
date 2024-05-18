@@ -2,6 +2,7 @@
 #include "../actor.h"
 #include "../block.h"
 #include "../item.h"
+#include "../deserializationMemo.h"
 GiveItemObjective::GiveItemObjective(Actor& actor, Item& item, Actor& recipient) : Objective(actor, Config::equipPriority), m_item(item), m_recipient(recipient) 
 { 
 	createOnDestroyCallbacks();

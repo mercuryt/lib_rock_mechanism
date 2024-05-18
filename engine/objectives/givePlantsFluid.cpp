@@ -31,13 +31,13 @@ void GivePlantsFluidEvent::onCancel()
 GivePlantsFluidThreadedTask::GivePlantsFluidThreadedTask(GivePlantsFluidObjective& gpfo) : ThreadedTask(gpfo.m_actor.getThreadedTaskEngine()), m_objective(gpfo), m_plantLocation(nullptr), m_findsPath(gpfo.m_actor, gpfo.m_detour) { }
 void GivePlantsFluidThreadedTask::readStep()
 {
-	const Faction* faction = m_objective.m_actor.getFaction();
+	Faction* faction = m_objective.m_actor.getFaction();
 	m_findsPath.m_maxRange = Config::maxRangeToSearchForHorticultureDesignations;
 	if(m_objective.m_plantLocation == nullptr)
 	{
 		std::function<bool(const Block&)> predicate = [&](const Block& block)
 		{
-			if(block.m_hasDesignations.contains(*faction, BlockDesignation::GivePlantFluid))
+			if(block.hasDesignation(*faction, BlockDesignation::GivePlantFluid))
 			{
 				m_plantLocation = const_cast<Block*>(&block);
 				return true;
@@ -60,7 +60,7 @@ void GivePlantsFluidThreadedTask::readStep()
 }
 void GivePlantsFluidThreadedTask::writeStep()
 {
-	const Faction* faction = m_objective.m_actor.getFaction();
+	Faction* faction = m_objective.m_actor.getFaction();
 	if(m_objective.m_plantLocation == nullptr)
 	{
 		m_findsPath.cacheMoveCosts();

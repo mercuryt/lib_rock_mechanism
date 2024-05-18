@@ -101,14 +101,14 @@ struct SortDoctorsBySkill
 };
 class AreaHasMedicalPatientsForFaction final
 {
-	const Faction& m_faction;
+	Faction& m_faction;
 	std::set<Actor*, SortPatientsByPriority> m_waitingPatients;
 	std::set<Actor*, SortDoctorsBySkill> m_waitingDoctors;
 	std::unordered_set<Block*> m_medicalLocations;
 	std::unordered_map<Actor*, MedicalProject> m_medicalProjects;
 	std::unordered_map<Actor*, HasScheduledEvent<MedicalPatientRelistEvent>> m_relistEvents;
 public:
-	AreaHasMedicalPatientsForFaction(const Faction& f) : m_faction(f) { }
+	AreaHasMedicalPatientsForFaction(Faction& f) : m_faction(f) { }
 	void addPatient(Actor& patient);
 	void removePatient(Actor& patient);
 	void removePatientTemporarily(Actor& patient);
@@ -135,9 +135,9 @@ public:
 };
 class AreaHasMedicalPatients final
 {
-	std::unordered_map<const Faction*, AreaHasMedicalPatientsForFaction> m_data;
+	std::unordered_map<Faction*, AreaHasMedicalPatientsForFaction> m_data;
 public:
-	void addFaction(const Faction& faction) { assert(!m_data.contains(&faction)); m_data.emplace(&faction, faction); }
-	void removeFaction(const Faction& faction) { assert(m_data.contains(&faction)); m_data.erase(&faction); }
-	AreaHasMedicalPatientsForFaction& at(const Faction& faction) { assert(m_data.contains(&faction)); return m_data.at(&faction); }
+	void addFaction(Faction& faction) { assert(!m_data.contains(&faction)); m_data.emplace(&faction, faction); }
+	void removeFaction(Faction& faction) { assert(m_data.contains(&faction)); m_data.erase(&faction); }
+	AreaHasMedicalPatientsForFaction& at(Faction& faction) { assert(m_data.contains(&faction)); return m_data.at(&faction); }
 };

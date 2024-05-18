@@ -28,6 +28,7 @@ TEST_CASE("sow")
 	uint16_t dayBeforeSowingStarts = wheatGrass.dayOfYearForSowStart - 1u;
 	Simulation simulation(L"", DateTime(10, dayBeforeSowingStarts, 1200).toSteps());
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	area.m_blockDesignations.registerFaction(faction);
 	Block& block = area.getBlock(4, 4, 2);
 	Block& pondLocation = area.getBlock(8,8,2);
 	pondLocation.setNotSolid();
@@ -53,7 +54,7 @@ TEST_CASE("sow")
 		REQUIRE(field.plantSpecies == &wheatGrass);
 		REQUIRE(block.m_isPartOfFarmField.contains(faction));
 		REQUIRE(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
-		REQUIRE(!block.m_hasDesignations.contains(faction, BlockDesignation::SowSeeds));
+		REQUIRE(!block.hasDesignation(faction, BlockDesignation::SowSeeds));
 		const SowSeedsObjectiveType objectiveType;
 		// Skip ahead to planting time.
 		simulation.fastForward(Config::stepsPerDay);
@@ -61,7 +62,7 @@ TEST_CASE("sow")
 		actor.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 10);
 		actor.satisfyNeeds();
 		REQUIRE(area.m_hasFarmFields.hasSowSeedsDesignations(faction));
-		REQUIRE(block.m_hasDesignations.contains(faction, BlockDesignation::SowSeeds));
+		REQUIRE(block.hasDesignation(faction, BlockDesignation::SowSeeds));
 		REQUIRE(!block.m_reservable.isFullyReserved(&faction));
 		REQUIRE(actor.m_hasObjectives.hasCurrent());
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "sow seeds");
@@ -74,7 +75,7 @@ TEST_CASE("sow")
 		REQUIRE(actor.m_canMove.getPath().empty());
 		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.empty());
 		REQUIRE(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
-		REQUIRE(!block.m_hasDesignations.contains(faction, BlockDesignation::SowSeeds));
+		REQUIRE(!block.hasDesignation(faction, BlockDesignation::SowSeeds));
 		simulation.fastForward(Config::sowSeedsStepsDuration);
 		REQUIRE(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
 		REQUIRE(!area.m_hasPlants.getAll().empty());
@@ -153,9 +154,9 @@ TEST_CASE("sow")
 		actor.satisfyNeeds();
 		simulation.doStep();
 		REQUIRE(!actor.m_canMove.getPath().empty());
-		REQUIRE(!block.m_hasDesignations.contains(faction, BlockDesignation::SowSeeds));
+		REQUIRE(!block.hasDesignation(faction, BlockDesignation::SowSeeds));
 		actor.m_hasObjectives.cancel(actor.m_hasObjectives.getCurrent());
-		REQUIRE(block.m_hasDesignations.contains(faction, BlockDesignation::SowSeeds));
+		REQUIRE(block.hasDesignation(faction, BlockDesignation::SowSeeds));
 		REQUIRE(!block.m_reservable.isFullyReserved(&faction));
 	}
 	SUBCASE("player delays sowing objective")
@@ -167,10 +168,10 @@ TEST_CASE("sow")
 		actor.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 10);
 		simulation.doStep();
 		REQUIRE(!actor.m_canMove.getPath().empty());
-		REQUIRE(!block.m_hasDesignations.contains(faction, BlockDesignation::SowSeeds));
+		REQUIRE(!block.hasDesignation(faction, BlockDesignation::SowSeeds));
 		std::unique_ptr<GoToObjective> goToObjective = std::make_unique<GoToObjective>(actor, block);
 		actor.m_hasObjectives.addTaskToStart(std::move(goToObjective));
-		REQUIRE(block.m_hasDesignations.contains(faction, BlockDesignation::SowSeeds));
+		REQUIRE(block.hasDesignation(faction, BlockDesignation::SowSeeds));
 		REQUIRE(!block.m_reservable.isFullyReserved(&faction));
 	}
 }
@@ -184,6 +185,7 @@ TEST_CASE("harvest")
 	uint16_t dayBeforeHarvest = wheatGrass.harvestData->dayOfYearToStart - 1u;
 	Simulation simulation(L"", DateTime(1, dayBeforeHarvest, 1200).toSteps());
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	area.m_blockDesignations.registerFaction(faction);
 	Block& block = area.getBlock(4, 4, 2);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	area.m_hasFarmFields.registerFaction(faction);
@@ -214,7 +216,7 @@ TEST_CASE("harvest")
 		REQUIRE(actor.m_canMove.getPath().empty());
 		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.empty());
 		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
-		REQUIRE(!block.m_hasDesignations.contains(faction, BlockDesignation::Harvest));
+		REQUIRE(!block.hasDesignation(faction, BlockDesignation::Harvest));
 		simulation.fastForward(Config::harvestEventDuration);
 		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
 		REQUIRE(!objectiveType.canBeAssigned(actor));
@@ -299,9 +301,9 @@ TEST_CASE("harvest")
 		actor.satisfyNeeds();
 		simulation.doStep();
 		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
-		REQUIRE(!block.m_hasDesignations.contains(faction, BlockDesignation::Harvest));
+		REQUIRE(!block.hasDesignation(faction, BlockDesignation::Harvest));
 		actor.m_hasObjectives.cancel(actor.m_hasObjectives.getCurrent());
-		REQUIRE(block.m_hasDesignations.contains(faction, BlockDesignation::Harvest));
+		REQUIRE(block.hasDesignation(faction, BlockDesignation::Harvest));
 	}
 	SUBCASE("player delays harvest")
 	{
@@ -315,10 +317,10 @@ TEST_CASE("harvest")
 		actor.satisfyNeeds();
 		simulation.doStep();
 		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
-		REQUIRE(!block.m_hasDesignations.contains(faction, BlockDesignation::Harvest));
+		REQUIRE(!block.hasDesignation(faction, BlockDesignation::Harvest));
 		std::unique_ptr<GoToObjective> goToObjective = std::make_unique<GoToObjective>(actor, block);
 		actor.m_hasObjectives.addTaskToStart(std::move(goToObjective));
-		REQUIRE(block.m_hasDesignations.contains(faction, BlockDesignation::Harvest));
+		REQUIRE(block.hasDesignation(faction, BlockDesignation::Harvest));
 	}
 	SUBCASE("give plants fluid")
 	{

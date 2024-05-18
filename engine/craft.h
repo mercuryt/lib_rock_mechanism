@@ -28,12 +28,12 @@ class Item;
 class CraftInputAction final : public InputAction
 {
 	Area& m_area;
-	const Faction& m_faction;
+	Faction& m_faction;
 	const CraftJobType& m_craftJobType;
 	const MaterialType* m_materialType;
 	Quantity m_quantity;
 	uint32_t m_quality;
-	CraftInputAction(Area& area, const Faction& faction, InputQueue& inputQueue, const CraftJobType& craftJobType, const MaterialType* materialType, Quantity quantity) : 
+	CraftInputAction(Area& area, Faction& faction, InputQueue& inputQueue, const CraftJobType& craftJobType, const MaterialType* materialType, Quantity quantity) : 
 		InputAction(inputQueue), m_area(area), m_faction(faction), m_craftJobType(craftJobType), m_materialType(materialType), m_quantity(quantity) { }
 	void execute();
 };
@@ -41,8 +41,8 @@ class CraftCancelInputAction final : public InputAction
 {
 	Area& m_area;
 	CraftJob& m_job;
-	const Faction& m_faction;
-	CraftCancelInputAction(Area& area, const Faction& faction, InputQueue& inputQueue, CraftJob& job) : 
+	Faction& m_faction;
+	CraftCancelInputAction(Area& area, Faction& faction, InputQueue& inputQueue, CraftJob& job) : 
 		InputAction(inputQueue), m_area(area), m_job(job), m_faction(faction) { }
 	void execute();
 };
@@ -86,7 +86,7 @@ class CraftStepProject final : public Project
 	[[nodiscard]] std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> getByproducts() const;
 	[[nodiscard]] std::vector<std::pair<ActorQuery, Quantity>> getActors() const { return {}; }
 public:
-	CraftStepProject(const Faction* faction, Block& location, const CraftStepType& cst, CraftJob& cj) : Project(faction, location, 1), m_craftStepType(cst), m_craftJob(cj) { }
+	CraftStepProject(Faction* faction, Block& location, const CraftStepType& cst, CraftJob& cj) : Project(faction, location, 1), m_craftStepType(cst), m_craftJob(cj) { }
 	CraftStepProject(const Json& data, DeserializationMemo& deserializationMemo, CraftJob& cj);
 	// No toJson needed here, the base class one has everything.
 	[[nodiscard]] uint32_t getWorkerCraftScore(const Actor& actor) const;
@@ -190,15 +190,15 @@ public:
 // To be used by Area.
 class HasCraftingLocationsAndJobsForFaction final
 {
-	const Faction& m_faction;
+	Faction& m_faction;
 	std::unordered_map<const CraftStepTypeCategory*, std::unordered_set<Block*>> m_locationsByCategory;
 	std::unordered_map<Block*, std::unordered_set<const CraftStepTypeCategory*>> m_stepTypeCategoriesByLocation;
 	std::unordered_map<const CraftStepTypeCategory*, std::unordered_set<CraftJob*>> m_unassignedProjectsByStepTypeCategory;
 	std::unordered_map<const SkillType*, std::unordered_set<CraftJob*>> m_unassignedProjectsBySkill;
 	std::list<CraftJob> m_jobs;
 public:
-	HasCraftingLocationsAndJobsForFaction(const Faction& f) : m_faction(f) { }
-	HasCraftingLocationsAndJobsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const Faction& f);
+	HasCraftingLocationsAndJobsForFaction(Faction& f) : m_faction(f) { }
+	HasCraftingLocationsAndJobsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Faction& f);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	// To be used by the player.
@@ -241,14 +241,14 @@ public:
 };
 class AreaHasCraftingLocationsAndJobs final
 {
-	std::unordered_map<const Faction*, HasCraftingLocationsAndJobsForFaction> m_data;
+	std::unordered_map<Faction*, HasCraftingLocationsAndJobsForFaction> m_data;
 public:
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
-	void addFaction(const Faction& faction) { m_data.try_emplace(&faction, faction); }
-	void removeFaction(const Faction& faction) { m_data.erase(&faction); }
+	void addFaction(Faction& faction) { m_data.try_emplace(&faction, faction); }
+	void removeFaction(Faction& faction) { m_data.erase(&faction); }
 	void maybeRemoveLocation(Block& location) { for(auto& pair : m_data) pair.second.maybeRemoveLocation(location); }
 	void clearReservations();
-	[[nodiscard]] HasCraftingLocationsAndJobsForFaction& at(const Faction& faction);
+	[[nodiscard]] HasCraftingLocationsAndJobsForFaction& at(Faction& faction);
 };

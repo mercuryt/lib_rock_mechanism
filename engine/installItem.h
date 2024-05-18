@@ -13,7 +13,7 @@ class InstallItemProject final : public Project
 	Facing m_facing;
 public:
 	// Max one worker.
-	InstallItemProject(Item& i, Block& l, Facing facing, const Faction& faction) : Project(&faction, l, 1), m_item(i), m_facing(facing) { }
+	InstallItemProject(Item& i, Block& l, Facing facing, Faction& faction) : Project(&faction, l, 1), m_item(i), m_facing(facing) { }
 	void onComplete();
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const { return {}; }
 	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const { return {{m_item,1}}; }
@@ -61,10 +61,10 @@ public:
 class HasInstallItemDesignationsForFaction final
 {
 	std::unordered_map<Block*, InstallItemProject> m_designations;
-	const Faction& m_faction;
+	Faction& m_faction;
 public:
-	HasInstallItemDesignationsForFaction(const Faction& faction) : m_faction(faction) { }
-	void add(Block& block, Item& item, Facing facing, const Faction& faction);
+	HasInstallItemDesignationsForFaction(Faction& faction) : m_faction(faction) { }
+	void add(Block& block, Item& item, Facing facing, Faction& faction);
 	void remove(Item& item);
 	bool empty() const { return m_designations.empty(); }
 	bool contains(const Block& block) const { return m_designations.contains(&const_cast<Block&>(block)); }
@@ -73,10 +73,10 @@ public:
 };
 class AreaHasInstallItemDesignations final
 {
-	std::unordered_map<const Faction*, HasInstallItemDesignationsForFaction> m_data;
+	std::unordered_map<Faction*, HasInstallItemDesignationsForFaction> m_data;
 public:
-	void registerFaction(const Faction& faction) { m_data.try_emplace(&faction, faction); }
-	void unregisterFaction(const Faction& faction) { m_data.erase(&faction); }
+	void registerFaction(Faction& faction) { m_data.try_emplace(&faction, faction); }
+	void unregisterFaction(Faction& faction) { m_data.erase(&faction); }
 	void clearReservations();
-	HasInstallItemDesignationsForFaction& at(const Faction& faction) { assert(m_data.contains(&faction)); return m_data.at(&faction);}
+	HasInstallItemDesignationsForFaction& at(Faction& faction) { assert(m_data.contains(&faction)); return m_data.at(&faction);}
 };
