@@ -5,10 +5,13 @@ template<class EventType>
 class HasScheduledEvent
 {
 protected:
-	ScheduledEvent* m_event;
 	EventSchedule& m_schedule;
+	ScheduledEvent* m_event = nullptr;
 public:
-	HasScheduledEvent(EventSchedule& s) : m_event(nullptr), m_schedule(s) {}
+	HasScheduledEvent(EventSchedule& s) : m_schedule(s) 
+	{ 
+		assert(&s);
+	}
 	template<typename ...Args>
 	void schedule(Args&& ...args)
 	{

@@ -15,11 +15,11 @@ class CanLead;
 class CanFollowEvent;
 class CanFollow final
 {
-	HasShape& m_hasShape;
-	CanLead* m_canLead;
 	HasScheduledEvent<CanFollowEvent> m_event;
+	HasShape& m_hasShape;
+	CanLead* m_canLead = nullptr;
 public:
-	CanFollow(HasShape& a);
+	CanFollow(HasShape& a, Simulation& s);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	void follow(CanLead& canLead, bool doAdjacentCheck = true);
@@ -39,11 +39,11 @@ public:
 };
 class CanLead final
 {
-	HasShape& m_hasShape;
-	CanFollow* m_canFollow;
 	std::deque<Block*> m_locationQueue;
+	HasShape& m_hasShape;
+	CanFollow* m_canFollow = nullptr;
 public:
-	CanLead(HasShape& a) : m_hasShape(a), m_canFollow(nullptr) { }
+	CanLead(HasShape& a) : m_hasShape(a) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	// Call from BlockHasShapes::enter.

@@ -24,28 +24,33 @@ struct DeserializationMemo;
 
 class HasShape
 {
+public:
+	Reservable m_reservable; // 6.5
+	CanLead m_canLead; // 4
+	CanFollow m_canFollow; // 4
+	OnDestroy m_onDestroy; // 2
+	std::unordered_set<Block*> m_blocks;
+private:
 	Simulation& m_simulation;
 protected:
-	HasShape(Simulation& simulation, const Shape& shape, bool isStatic, Facing f = 0u, uint32_t maxReservations = 1u, Faction* faction = nullptr) : m_simulation(simulation), m_static(isStatic), m_faction(faction), m_shape(&shape), m_location(nullptr), m_facing(f), m_canLead(*this), m_canFollow(*this), m_reservable(maxReservations), m_isUnderground(false)  {}
-	HasShape(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	bool m_static = false;
 	Faction* m_faction = nullptr;
 public:
 	const Shape* m_shape = nullptr;
 	Block* m_location = nullptr;
 	Facing m_facing= 0; 
-	std::unordered_set<Block*> m_blocks;
-	//TODO: Adjacent blocks cache.
-	CanLead m_canLead;
-	CanFollow m_canFollow;
-	OnDestroy m_onDestroy;
-	Reservable m_reservable;
+	//TODO: Adjacent blocks offset cache?
 	bool m_isUnderground = false;
-
+protected:
+	bool m_static = false;
+	HasShape(Simulation& simulation, const Shape& shape, bool isStatic, Facing f = 0u, uint32_t maxReservations = 1u, Faction* faction = nullptr) :
+	       	m_reservable(maxReservations), m_canLead(*this), m_canFollow(*this, simulation), m_simulation(simulation), m_faction(faction), 
+		m_shape(&shape), m_location(nullptr), m_facing(f), m_isUnderground(false), m_static(isStatic) { }
+	HasShape(const Json& data, DeserializationMemo& deserializationMemo);
+public:
 	void setShape(const Shape& shape);
 	void setStatic(bool isTrue);
 	void reserveOccupied(CanReserve& canReserve);
+	[[nodiscard]] Json toJson() const;
 	// May return nullptr.
 	[[nodiscard]] Faction* getFaction() const { return m_faction; }
 	[[nodiscard]] bool isAdjacentTo(const HasShape& other) const;

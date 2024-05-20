@@ -2,16 +2,17 @@
 #include "config.h"
 #include "eventSchedule.h"
 #include "eventSchedule.hpp"
+class Simulation;
 class AnimalGrowthEvent;
 class Actor;
 class CanGrow final
 {
-	Actor& m_actor;
 	HasScheduledEventPausable<AnimalGrowthEvent> m_event;
+	Actor& m_actor;
 	Percent m_percentGrown;
 public:
-	CanGrow(Actor& a, Percent pg);
-	CanGrow(const Json& data, Actor& actor);
+	CanGrow(Actor& a, Percent pg, Simulation& s);
+	CanGrow(const Json& data, Actor& actor, Simulation& s);
 	[[nodiscard]] Json toJson() const;
 	void updateGrowingStatus();
 	[[nodiscard]] bool canGrowCurrently() const;

@@ -9,17 +9,17 @@
 #include "types.h"
 #include "simulation.h"
 #include "util.h"
-ActorCanMove::ActorCanMove(Actor& a) : m_actor(a), m_moveType(&m_actor.m_species.moveType), m_destination(nullptr), m_pathIter(m_path.end()),  m_retries(0), m_event(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()) 
-{
-	updateIndividualSpeed();
-}
+ActorCanMove::ActorCanMove(Actor& a, Simulation& s) : 
+	m_pathIter(m_path.end()), m_event(s.m_eventSchedule), m_threadedTask(s.m_threadedTaskEngine), m_actor(a) { }
 ActorCanMove::ActorCanMove(const Json& data, DeserializationMemo& deserializationMemo, Actor& a) :
-	m_actor(a),
-	m_moveType(&MoveType::byName(data["moveType"].get<std::string>())),
-	m_destination(data.contains("destination") ? &a.getSimulation().getBlockForJsonQuery(data["destination"]) : nullptr),
-	m_pathIter(m_path.begin()), m_retries(data["retries"].get<uint8_t>()), m_event(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine())
+	m_pathIter(m_path.begin()),
+	m_event(deserializationMemo.m_simulation.m_eventSchedule),
+	m_threadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine),
+	m_actor(a), 
+	m_moveType(&MoveType::byName(data["moveType"].get<std::string>())), 
+	m_destination(data.contains("destination") ? &deserializationMemo.m_simulation.getBlockForJsonQuery(data["destination"]) : nullptr), 
+	m_retries(data["retries"].get<uint8_t>())
 {
-	updateIndividualSpeed();
 	if(data.contains("path"))
 	{
 		assert(!data["path"].empty());

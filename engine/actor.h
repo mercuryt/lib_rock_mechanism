@@ -72,34 +72,39 @@ struct ActorParamaters
 
 class Actor final : public HasShape
 {	
+public:
+	Attributes m_attributes; // 16 size in pointer equivalents
+	EquipmentSet m_equipmentSet; // 13.5
+	CanFight m_canFight; // 13
+	ActorCanMove m_canMove; // 11.25
+	HasObjectives m_hasObjectives; // 10
+	Body m_body; // 8.125
+	CanReserve m_canReserve; // 7
+	MustSleep m_mustSleep; // 7
+	//TODO: actors should be reservable.
+	MustDrink m_mustDrink; // 6
+	MustEat m_mustEat;  // 4.5
+	ActorCanSee m_canSee; // 3.5
+	CanGrow m_canGrow; // 3.5
+	ActorNeedsSafeTemperature m_needsSafeTemperature; // 3.125
+	ActorHasUniform m_hasUniform; // 3
+	SkillSet m_skillSet; // 2
+	CanPickup m_canPickup; // 2
+	ActorHasStamina m_stamina; // 1.5
+	const AnimalSpecies& m_species;
+	Project* m_project;
+	std::wstring m_name;
+private:
 	Step m_birthStep;
 	CauseOfDeath m_causeOfDeath;
 public:
 	const ActorId m_id;
-	std::wstring m_name;
-	const AnimalSpecies& m_species;
-	Body m_body;
-	Project* m_project;
-	ActorCanSee m_canSee;
-	Attributes m_attributes;
-	SkillSet m_skillSet;
-	MustEat m_mustEat;
-	MustDrink m_mustDrink;
-	MustSleep m_mustSleep;
-	ActorNeedsSafeTemperature m_needsSafeTemperature;
-	CanPickup m_canPickup;
-	EquipmentSet m_equipmentSet;
-	ActorCanMove m_canMove;
-	CanFight m_canFight;
-	CanGrow m_canGrow;
-	HasObjectives m_hasObjectives;
-	CanReserve m_canReserve;
-	ActorHasStamina m_stamina;
-	ActorHasUniform m_hasUniform;
 
 	Actor(Simulation& simulation, ActorId id, const std::wstring& name, const AnimalSpecies& species, Step birthStep, Percent percentGrown, Faction* faction, Attributes attributes);
 	Actor(ActorParamaters params);
 	Actor(const Json& data, DeserializationMemo& deserializationMemo);
+	void sharedConstructor();
+	void scheduleNeeds();
 	void resetNeeds();
 	void setLocation(Block& block);
 	void setLocationAndFacing(Block& block, Facing facing);

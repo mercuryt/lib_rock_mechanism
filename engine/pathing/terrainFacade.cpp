@@ -20,7 +20,10 @@ void TerrainFacade::update(const Block& block)
 	BlockIndex index = m_area.getBlockIndex(block);
 	std::vector<Block*> adjacent = block.getAdjacentWithEdgeAndCornerAdjacent();
 	for(int adjacentIndex = 0; adjacentIndex < maxAdjacent; ++adjacentIndex)
-		m_enterable[index + adjacentIndex] = adjacent[adjacentIndex]->m_hasShapes.moveTypeCanEnterFrom(m_moveType, block);
+		// Check for adjacent blocks which do not exist ( edge case ).
+		m_enterable[index + adjacentIndex] = adjacent[adjacentIndex] ?
+			adjacent[adjacentIndex]->m_hasShapes.moveTypeCanEnterFrom(m_moveType, block) :
+			false;
 }
 std::vector<Block*> TerrainFacade::findPath(BlockIndex current, const DestinationCondition destinationCondition, const AccessCondition accessCondition)
 {

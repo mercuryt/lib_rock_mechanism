@@ -9,7 +9,7 @@
 #include "simulation.h"
 #include <cstddef>
 
-EquipmentSet::EquipmentSet(const Json& data, Actor& a) : m_actor(a), m_mass(0)
+EquipmentSet::EquipmentSet(const Json& data, Actor& a) : m_actor(a)
 {
 	for(const Json& equipmentId : data["equipments"])
 	{

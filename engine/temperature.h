@@ -34,8 +34,6 @@ public:
 };
 class AreaHasTemperature final
 {
-	Area& m_area;
-	Temperature m_ambiantSurfaceTemperature;
 	std::unordered_map<Block*, TemperatureSource> m_sources;
 	// To possibly thaw.
 	std::map<Temperature, std::unordered_set<Block*>> m_aboveGroundBlocksByMeltingPoint;
@@ -43,6 +41,8 @@ class AreaHasTemperature final
 	std::map<Temperature, std::unordered_set<FluidGroup*>> m_aboveGroundFluidGroupsByMeltingPoint;
 	// Collect deltas to apply sum.
 	std::unordered_map<Block*, int32_t> m_blockDeltaDeltas;
+	Area& m_area;
+	Temperature m_ambiantSurfaceTemperature;
 
 public:
 	AreaHasTemperature(Area& a) : m_area(a) { }
@@ -64,9 +64,9 @@ class BlockHasTemperature final
 {
 	Block& m_block;
 	// Store to display to user and for pathing to safe temperature.
-	Temperature m_delta;
+	Temperature m_delta = 0;
 public:
-	BlockHasTemperature(Block& b) : m_block(b), m_delta(0) { }
+	BlockHasTemperature(Block& b) : m_block(b) { }
 	void freeze(const FluidType& fluidType);
 	void melt();
 	void apply(Temperature temperature, const int32_t& delta);
@@ -113,12 +113,12 @@ public:
 };
 class ActorNeedsSafeTemperature
 {
+	HasScheduledEvent<UnsafeTemperatureEvent> m_event; // 2
 	Actor& m_actor;
-	HasScheduledEvent<UnsafeTemperatureEvent> m_event;
-	bool m_objectiveExists;
+	bool m_objectiveExists = false;
 public:
-	ActorNeedsSafeTemperature(Actor& a);
-	ActorNeedsSafeTemperature(const Json& data, Actor& a);
+	ActorNeedsSafeTemperature(Actor& a, Simulation& s);
+	ActorNeedsSafeTemperature(const Json& data, Actor& a, Simulation& s);
 	Json toJson() const;
 	void onChange();
 	bool isSafe(Temperature temperature) const;

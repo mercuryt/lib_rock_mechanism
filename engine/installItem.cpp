@@ -14,7 +14,8 @@ void InstallItemProject::onComplete()
 	m_item.m_installed = true;
 }
 // ThreadedTask.
-InstallItemThreadedTask::InstallItemThreadedTask(InstallItemObjective& iio) : ThreadedTask(iio.m_actor.getThreadedTaskEngine()), m_installItemObjective(iio), m_findsPath(iio.m_actor, iio.m_detour) { }
+InstallItemThreadedTask::InstallItemThreadedTask(InstallItemObjective& iio) : 
+	ThreadedTask(iio.m_actor.getThreadedTaskEngine()), m_installItemObjective(iio), m_findsPath(iio.m_actor, iio.m_detour) { }
 void InstallItemThreadedTask::readStep()
 {
 	std::function<bool(const Block&)> predicate = [&](const Block& block)

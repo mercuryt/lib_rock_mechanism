@@ -1,4 +1,5 @@
 #include "eat.h"
+#include "animalSpecies.h"
 #include "item.h"
 #include "actor.h"
 #include "block.h"
@@ -335,23 +336,24 @@ bool EatObjective::canEatAt(const Block& block) const
 	}
 	return false;
 }
-MustEat::MustEat(Actor& a) : m_actor(a), m_massFoodRequested(0), m_hungerEvent(a.getEventSchedule()), m_eatObjective(nullptr), m_eatingLocation(nullptr)
+MustEat::MustEat(Actor& a, Simulation& s) : 
+	m_hungerEvent(s.m_eventSchedule), m_actor(a) {}
+void MustEat::scheduleEatEvent()
 {
 	m_hungerEvent.schedule(m_actor.m_species.stepsEatFrequency, m_actor);
 }
-MustEat::MustEat(const Json& data, Actor& a) : 
-	m_actor(a), m_massFoodRequested(data["massFoodRequested"].get<Mass>()),
-	m_hungerEvent(a.getEventSchedule()), m_eatObjective(nullptr)
+MustEat::MustEat(const Json& data, Actor& a, Simulation& s, const AnimalSpecies& species) : 
+	m_hungerEvent(s.m_eventSchedule), m_actor(a), m_massFoodRequested(data["massFoodRequested"].get<Mass>())
 {
 	if(data.contains("eatingLocation"))
-		m_eatingLocation = &m_actor.getSimulation().getBlockForJsonQuery(data["eatingLocation"]);
+		m_eatingLocation = &s.getBlockForJsonQuery(data["eatingLocation"]);
 	if(data.contains("hungerEventStart"))
 	{
 		// Temporary shim.
 		Step start = data["hungerEventStart"].get<Step>();
-		if(start < a.getSimulation().m_step)
-			start = a.getSimulation().m_step + 1;
-		m_hungerEvent.schedule(m_actor.m_species.stepsEatFrequency, m_actor, start);
+		if(start < s.m_step)
+			start = s.m_step + 1;
+		m_hungerEvent.schedule(species.stepsEatFrequency, m_actor, start);
 	}
 }
 Json MustEat::toJson() const

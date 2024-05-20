@@ -187,7 +187,6 @@ public:
 };
 class HasObjectives final
 {
-	Actor& m_actor;
 	// Two objective queues, objectives are choosen from which ever has the higher priority.
 	// Biological needs like eat, drink, go to safe temperature, and sleep go into needs queue, possibly overiding the current objective in either queue.
 	std::list<std::unique_ptr<Objective>> m_needsQueue;
@@ -196,8 +195,9 @@ class HasObjectives final
 	// Voluntary tasks like harvest, dig, build, craft, guard, station, and kill go into task queue. Station and kill both have higher priority then baseline needs like eat but lower then needs like flee.
 	// findNewTask only adds one task at a time so there usually is only once objective in the queue. More then one task objective can be added by the user manually.
 	std::list<std::unique_ptr<Objective>> m_tasksQueue;
-	Objective* m_currentObjective;
 	std::unordered_map<ObjectiveTypeId, SupressedNeed> m_supressedNeeds;
+	Objective* m_currentObjective = nullptr;
+	Actor& m_actor;
 
 	void maybeUsurpsPriority(Objective& objective);
 	void setCurrentObjective(Objective& objective);

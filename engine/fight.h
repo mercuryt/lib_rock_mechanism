@@ -28,25 +28,23 @@ struct Attack final
 };
 class CanFight final
 {
-	Actor& m_actor;
-	float m_maxMeleeRange;
-	float m_maxRange;
-	float m_coolDownDurationModifier;
-	Step m_onMissCoolDownMelee;
-	uint32_t m_combatScore;
 	HasScheduledEvent<AttackCoolDown> m_coolDown;
 	HasThreadedTask<GetIntoAttackPositionThreadedTask> m_getIntoAttackPositionThreadedTask;
 	std::vector<std::pair<uint32_t, Attack>> m_meleeAttackTable;
-	Actor* m_target;
 	//TODO: Should be a flat set.
 	std::unordered_set<Actor*> m_targetedBy;
+	Actor& m_actor;
+	Actor* m_target = nullptr;
+	Step m_onMissCoolDownMelee = 0;
+	float m_maxMeleeRange = 0;
+	float m_maxRange = 0;
+	float m_coolDownDurationModifier = 0;
+	uint32_t m_combatScore = 0;
 public:
-	CanFight(Actor& a);
-	CanFight(const Json& data, Actor& a);
-	Json toJson() const;
+	CanFight(Actor& a, Simulation& s);
+	CanFight(const Json& data, Actor& a, Simulation& s);
 	void attackMeleeRange(Actor& target);
 	void attackLongRange(Actor& target, Item* weapon, Item* ammo);
-	uint32_t getCurrentMeleeCombatScore();
 	void coolDownCompleted();
 	void update();
 	void setTarget(Actor& actor);
@@ -59,6 +57,8 @@ public:
 	void targetNoLongerTargetable();
 	void onTargetMoved();
 	void freeHit(Actor& actor);
+	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] uint32_t getCurrentMeleeCombatScore();
 	[[nodiscard]] bool isOnCoolDown() const;
 	[[nodiscard]] bool inRange(const Actor& target) const;
 	[[nodiscard]] bool doesProjectileHit(Attack& attack, const Actor& target) const;

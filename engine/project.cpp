@@ -718,6 +718,7 @@ void Project::removeFromMaking(Actor& actor)
 void Project::complete()
 {
 	m_canReserve.deleteAllWithoutCallback();
+	m_location.m_hasProjects.remove(*this);
 	for(Item* item : m_toConsume)
 		item->destroy();
 	if(!m_location.m_area->m_hasStockPiles.contains(m_faction))
@@ -736,6 +737,7 @@ void Project::complete()
 void Project::cancel()
 {
 	m_canReserve.deleteAllWithoutCallback();
+	m_location.m_hasProjects.remove(*this);
 	//for(auto& [actor, projectWorker] : m_workers)
 		//actor->m_project = nullptr;
 	onCancel();
@@ -844,11 +846,6 @@ bool Project::canAddWorker([[maybe_unused]] const Actor& actor) const
 void Project::clearReservations()
 {
 	m_canReserve.deleteAllWithoutCallback();
-}
-Project::~Project()
-{
-	//assert(m_workers.empty());
-	m_location.m_hasProjects.remove(*this);
 }
 // For testing.
 bool Project::hasCandidate(const Actor& actor) const

@@ -29,16 +29,8 @@ class Item;
 
 class Simulation final
 {
-	std::future<void> m_stepFuture;
-	DeserializationMemo m_deserializationMemo;
 public:
 	BS::thread_pool_light m_pool;
-	std::vector<std::future<void>> m_taskFutures;
-	std::mutex m_uiReadMutex;
-	std::wstring m_name;
-	std::filesystem::path m_path;
-	Step m_step;
-	//std::unique_ptr<World> m_world;
 	EventSchedule m_eventSchedule;
 	HasScheduledEvent<HourlyEvent> m_hourlyEvent;
 	ThreadedTaskEngine m_threadedTaskEngine;
@@ -48,11 +40,21 @@ public:
 	SimulationHasShapes m_shapes;
 	SimulationHasFactions m_hasFactions;
 	DialogueBoxQueue m_hasDialogues;
+private:
+	DeserializationMemo m_deserializationMemo;
+	std::future<void> m_stepFuture;
+public:
+	std::vector<std::future<void>> m_taskFutures;
+	std::wstring m_name;
+	std::filesystem::path m_path;
+	Step m_step;
+	//std::unique_ptr<World> m_world;
 	// Dependency injectien.
 	std::unique_ptr<DramaEngine> m_dramaEngine;
 	std::unique_ptr<SimulationHasItems> m_hasItems;
 	std::unique_ptr<SimulationHasActors> m_hasActors;
 	std::unique_ptr<SimulationHasAreas> m_hasAreas;
+	std::mutex m_uiReadMutex;
 
 	Simulation(std::wstring name = L"", Step s = 10'000 * Config::stepsPerYear);
 	Simulation(std::filesystem::path path);

@@ -61,7 +61,7 @@ void LocationBucket::update(Actor& actor, std::vector<Block*>& blocks)
 		m_blocksSingleTileActors.at(index) = blocks.front();
 	}
 }
-LocationBuckets::LocationBuckets(Area& area) : m_area(area)
+void LocationBuckets::initalize()
 {
 	m_maxX = ((m_area.m_sizeX - 1) / Config::locationBucketSize) + 1;
 	m_maxY = ((m_area.m_sizeY - 1) / Config::locationBucketSize) + 1;

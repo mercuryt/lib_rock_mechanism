@@ -13,18 +13,22 @@ class HungerEvent;
 class Block;
 class Plant;
 struct DeserializationMemo;
+struct AnimalSpecies;
 
 class MustEat final
 {
+	HasScheduledEvent<HungerEvent> m_hungerEvent; // 2
 	Actor& m_actor;
-	Mass m_massFoodRequested;
-	HasScheduledEvent<HungerEvent> m_hungerEvent;
-	EatObjective* m_eatObjective;
+	EatObjective* m_eatObjective = nullptr;
 public:
-	MustEat(Actor& a);
-	MustEat(const Json& data, Actor& a);
-	Json toJson() const;
-	Block* m_eatingLocation;
+	Block* m_eatingLocation = nullptr;
+private:
+	Mass m_massFoodRequested = 0;
+public:
+	MustEat(Actor& a, Simulation& s);
+	MustEat(const Json& data, Actor& a, Simulation& s, const AnimalSpecies& species);
+	[[nodiscard]]Json toJson() const;
+	void scheduleEatEvent();
 	void eat(Mass mass);
 	void notHungry();
 	void setNeedsFood();

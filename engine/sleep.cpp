@@ -198,19 +198,21 @@ bool SleepObjective::onNoPath()
 }
 SleepObjective::~SleepObjective() { m_actor.m_mustSleep.m_objective = nullptr; }
 // Needs Sleep.
-MustSleep::MustSleep(Actor& a) : m_actor(a), m_location(nullptr), m_sleepEvent(a.getEventSchedule()), m_tiredEvent(a.getEventSchedule()), m_objective(nullptr), m_needsSleep(false), m_isAwake(true)
+MustSleep::MustSleep(Actor& a, Simulation& s) : 
+	m_sleepEvent(s.m_eventSchedule), m_tiredEvent(s.m_eventSchedule), m_actor(a) { }
+void MustSleep::scheduleTiredEvent()
 {
 	m_tiredEvent.schedule(m_actor.m_species.stepsSleepFrequency, *this);
 }
-MustSleep::MustSleep(const Json data, Actor& a) : 
-	m_actor(a), m_location(data.contains("location") ? &a.getSimulation().getBlockForJsonQuery(data["location"]) : nullptr), 
-	m_sleepEvent(a.getEventSchedule()), m_tiredEvent(a.getEventSchedule()), m_objective(nullptr), 
+MustSleep::MustSleep(const Json data, Actor& a, Simulation& s, const AnimalSpecies& species) : 
+	m_sleepEvent(s.m_eventSchedule), m_tiredEvent(s.m_eventSchedule), 
+	m_actor(a), m_location(data.contains("location") ? &s.getBlockForJsonQuery(data["location"]) : nullptr), 
 	m_needsSleep(data["needsSleep"].get<bool>()), m_isAwake(data["isAwake"].get<bool>())
 {
 	if(data.contains("sleepEventStart"))
-		m_sleepEvent.schedule(m_actor.m_species.stepsSleepDuration, *this, data["sleepEventStart"].get<Step>());
+		m_sleepEvent.schedule(species.stepsSleepDuration, *this, data["sleepEventStart"].get<Step>());
 	if(data.contains("tiredEventStart"))
-		m_tiredEvent.schedule(m_actor.m_species.stepsSleepFrequency, *this, data["tiredEventStart"].get<Step>());
+		m_tiredEvent.schedule(species.stepsSleepFrequency, *this, data["tiredEventStart"].get<Step>());
 }
 Json MustSleep::toJson() const
 {

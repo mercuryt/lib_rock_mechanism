@@ -21,8 +21,7 @@
 
 //TODO: reuse blocks as m_fillQueue.m_set.
 FluidGroup::FluidGroup(const FluidType& ft, std::unordered_set<Block*>& blocks, Area& area, bool checkMerge) :
-	m_stable(false), m_destroy(false), m_merged(false), m_disolved(false), m_fluidType(ft), m_excessVolume(0),
-	m_fillQueue(*this), m_drainQueue(*this), m_area(area)
+	m_fillQueue(*this), m_drainQueue(*this), m_area(area), m_fluidType(ft)
 {
 	for(Block* block : blocks)
 		if(block->m_hasFluids.contains(m_fluidType))

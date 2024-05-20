@@ -46,11 +46,10 @@ public:
 // TODO: A specalized reservable for block without count ( to save RAM ).
 class Reservable final
 {
-	friend class CanReserve;
 	std::unordered_map<CanReserve*, uint32_t> m_canReserves;
-	uint32_t m_maxReservations;
 	std::unordered_map<Faction*, uint32_t> m_reservedCounts;
 	std::unordered_map<CanReserve*, std::unique_ptr<DishonorCallback>> m_dishonorCallbacks;
+	uint32_t m_maxReservations;
 	void eraseReservationFor(CanReserve& canReserve);
 public:
 	Reservable(uint32_t mr) : m_maxReservations(mr) {}
@@ -74,4 +73,5 @@ public:
 	~Reservable();
 	Reservable(Reservable& reservable) = delete;
 	Reservable(Reservable&& reservable) = delete;
+	friend class CanReserve;
 };

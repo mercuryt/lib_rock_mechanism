@@ -105,12 +105,12 @@ void VisionFacade::readStepSegment(VisionFacadeIndex begin, VisionFacadeIndex en
 		std::unordered_set<Actor*>& result = getResults(viewerIndex);
 		result.clear();
 		// Define a cuboid of locationBuckets around the watcher.
-		DistanceInBuckets endX = std::min(((from.m_x + range) / Config::locationBucketSize + 1), locationBuckets.m_maxX);
-		DistanceInBuckets beginX = std::max(0, int32_t(from.m_x - range)) / Config::locationBucketSize;
-		DistanceInBuckets endY = std::min(((from.m_y + range) / Config::locationBucketSize + 1), locationBuckets.m_maxY);
-		DistanceInBuckets beginY = std::max(0, int32_t(from.m_y - range)) / Config::locationBucketSize;
-		DistanceInBuckets endZ = std::min(((from.m_z + range) / Config::locationBucketSize + 1), locationBuckets.m_maxZ);
-		DistanceInBuckets beginZ = std::max(0, int32_t(from.m_z - range)) / Config::locationBucketSize;
+		DistanceInBuckets endX = std::min(((fromCoords.x + range) / Config::locationBucketSize + 1), locationBuckets.m_maxX);
+		DistanceInBuckets beginX = std::max(0, int32_t(fromCoords.x - range)) / Config::locationBucketSize;
+		DistanceInBuckets endY = std::min(((fromCoords.y + range) / Config::locationBucketSize + 1), locationBuckets.m_maxY);
+		DistanceInBuckets beginY = std::max(0, int32_t(fromCoords.y - range)) / Config::locationBucketSize;
+		DistanceInBuckets endZ = std::min(((fromCoords.z + range) / Config::locationBucketSize + 1), locationBuckets.m_maxZ);
+		DistanceInBuckets beginZ = std::max(0, int32_t(fromCoords.z - range)) / Config::locationBucketSize;
 		// Iterate defined cuboid of buckets.
 		for(DistanceInBuckets x = beginX; x != endX; ++x)
 			for(DistanceInBuckets y = beginY; y != endY; ++y)

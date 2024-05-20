@@ -15,7 +15,8 @@
 #include <cstdint>
 #include <filesystem>
 #include <functional>
-Simulation::Simulation(std::wstring name, Step s) :  m_deserializationMemo(*this), m_name(name), m_step(s), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this)
+Simulation::Simulation(std::wstring name, Step s) : 
+       	m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this), m_deserializationMemo(*this), m_name(name), m_step(s)
 { 
 	m_hourlyEvent.schedule(*this);
 	m_path.append(L"save/"+name);
@@ -31,7 +32,8 @@ Simulation::Simulation(std::filesystem::path path) : Simulation(Json::parse(std:
 	m_hasAreas = std::make_unique<SimulationHasAreas>(data["hasAreas"], m_deserializationMemo, *this);
 	m_dramaEngine = std::make_unique<DramaEngine>(data["drama"], m_deserializationMemo, *this);
 }
-Simulation::Simulation(const Json& data) : m_deserializationMemo(*this), m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this) 
+Simulation::Simulation(const Json& data) : 
+	m_eventSchedule(*this), m_hourlyEvent(m_eventSchedule), m_threadedTaskEngine(*this), m_deserializationMemo(*this) 
 {
 	m_name = data["name"].get<std::wstring>();
 	m_step = data["step"].get<Step>();

@@ -7,7 +7,7 @@ class Actor;
 class ActorHasStamina final
 {
 	Actor& m_actor;
-	uint32_t m_stamina;
+	uint32_t m_stamina = 0;
 public:
 	ActorHasStamina(Actor& a) : m_actor(a), m_stamina(getMax()) { }
 	ActorHasStamina(Actor& a, uint32_t stamina) : m_actor(a), m_stamina(stamina) { }

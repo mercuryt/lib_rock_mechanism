@@ -16,9 +16,9 @@ Json Attribute::toJson() const
 	return data;
 }
 Attribute::Attribute(const Json& data, const uint32_t& speciesNewbornValue, const uint32_t& speciesAdultValue, Percent percentGrown) :
-	value(data["value"].get<uint32_t>()),
 	speciesNewbornValue(speciesNewbornValue),
 	speciesAdultValue(speciesAdultValue),
+	value(data["value"].get<uint32_t>()),
 	baseModifierPercent(data["baseModifierPercent"].get<Percent>()),
 	bonusOrPenalty(data["bonusOrPenalty"].get<int32_t>())
 { setPercentGrown(percentGrown); }

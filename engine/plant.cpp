@@ -31,7 +31,7 @@ const PlantSpecies& PlantSpecies::byName(std::string name)
 	return *found;
 }
 Plant::Plant(Block& location, const PlantSpecies& pt, const Shape* shape, Percent pg, Volume volumeFluidRequested, Step needsFluidEventStart, bool temperatureIsUnsafe, Step unsafeTemperatureEventStart, uint32_t harvestableQuantity, Percent percentFoliage) :
-	HasShape(location.m_area->m_simulation, (shape ? *shape : pt.shapeForPercentGrown(pg)), true), m_fluidSource(nullptr), m_plantSpecies(pt), m_growthEvent(location.m_area->m_simulation.m_eventSchedule), m_shapeGrowthEvent(location.m_area->m_simulation.m_eventSchedule), m_fluidEvent(location.m_area->m_simulation.m_eventSchedule), m_temperatureEvent(location.m_area->m_simulation.m_eventSchedule), m_endOfHarvestEvent(location.m_area->m_simulation.m_eventSchedule), m_foliageGrowthEvent(location.m_area->m_simulation.m_eventSchedule), m_percentGrown(pg), m_quantityToHarvest(harvestableQuantity), m_percentFoliage(percentFoliage), m_reservable(1), m_volumeFluidRequested(volumeFluidRequested), m_wildGrowth(0)
+	HasShape(location.m_area->m_simulation, (shape ? *shape : pt.shapeForPercentGrown(pg)), true), m_reservable(1), m_growthEvent(location.m_area->m_simulation.m_eventSchedule), m_shapeGrowthEvent(location.m_area->m_simulation.m_eventSchedule), m_fluidEvent(location.m_area->m_simulation.m_eventSchedule), m_temperatureEvent(location.m_area->m_simulation.m_eventSchedule), m_endOfHarvestEvent(location.m_area->m_simulation.m_eventSchedule), m_foliageGrowthEvent(location.m_area->m_simulation.m_eventSchedule), m_fluidSource(nullptr), m_plantSpecies(pt), m_quantityToHarvest(harvestableQuantity), m_percentGrown(pg), m_percentFoliage(percentFoliage), m_volumeFluidRequested(volumeFluidRequested), m_wildGrowth(0)
 {
 	setLocation(location);
 	assert(m_location->m_hasPlant.canGrowHereEver(m_plantSpecies));
@@ -58,13 +58,13 @@ Plant::Plant(Block& location, const PlantSpecies& pt, const Shape* shape, Percen
 }
 Plant::Plant(const Json& data, DeserializationMemo& deserializationMemo, Block& location) :
 	HasShape(data, deserializationMemo), 
-	m_fluidSource(nullptr), m_plantSpecies(*data["species"].get<const PlantSpecies*>()),
-	m_growthEvent(location.m_area->m_simulation.m_eventSchedule), m_shapeGrowthEvent(location.m_area->m_simulation.m_eventSchedule), 
-	m_fluidEvent(location.m_area->m_simulation.m_eventSchedule), m_temperatureEvent(location.m_area->m_simulation.m_eventSchedule),
-       	m_endOfHarvestEvent(location.m_area->m_simulation.m_eventSchedule), m_foliageGrowthEvent(location.m_area->m_simulation.m_eventSchedule), 
-	m_percentGrown(data["percentGrown"].get<Percent>()), 
-	m_quantityToHarvest(data["harvestableQuantity"].get<uint32_t>()), m_percentFoliage(data["percentFoliage"].get<Percent>()), 
-	m_reservable(1), m_volumeFluidRequested(data["volumeFluidRequested"].get<Volume>())
+	m_reservable(1), m_growthEvent(location.m_area->m_simulation.m_eventSchedule),
+	m_shapeGrowthEvent(location.m_area->m_simulation.m_eventSchedule), m_fluidEvent(location.m_area->m_simulation.m_eventSchedule), 
+	m_temperatureEvent(location.m_area->m_simulation.m_eventSchedule), m_endOfHarvestEvent(location.m_area->m_simulation.m_eventSchedule),
+       	m_foliageGrowthEvent(location.m_area->m_simulation.m_eventSchedule), m_fluidSource(nullptr), 
+	m_plantSpecies(*data["species"].get<const PlantSpecies*>()), 
+	m_quantityToHarvest(data["harvestableQuantity"].get<uint32_t>()), m_percentGrown(data["percentGrown"].get<Percent>()), 
+	m_percentFoliage(data["percentFoliage"].get<Percent>()), m_volumeFluidRequested(data["volumeFluidRequested"].get<Volume>())
 {
 	setLocation(deserializationMemo.blockReference(data["location"]));
 	if(data.contains("fluidSource"))

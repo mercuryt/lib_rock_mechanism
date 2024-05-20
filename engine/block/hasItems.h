@@ -13,8 +13,8 @@ struct FluidType;
 
 class BlockHasItems final
 {
-	Block& m_block;
 	std::vector<Item*> m_items;
+	Block& m_block;
 public:
 	BlockHasItems(Block& b);
 	// Non generic types have Shape.

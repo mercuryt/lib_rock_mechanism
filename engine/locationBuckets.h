@@ -32,7 +32,8 @@ class LocationBuckets
 	DistanceInBuckets m_maxZ;
 	[[nodiscard]] LocationBucket& get(DistanceInBuckets x, DistanceInBuckets y, DistanceInBuckets z);
 public:
-	LocationBuckets(Area& area);
+	LocationBuckets(Area& area) : m_area(area) { }
+	void initalize();
 	void add(Actor& actor);
 	void remove(Actor& actor);
 	void update(Actor& actor, std::unordered_set<Block*>& oldBlocks);

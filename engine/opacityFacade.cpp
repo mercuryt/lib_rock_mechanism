@@ -3,14 +3,12 @@
 #include "area.h"
 #include "types.h"
 
-OpacityFacade::OpacityFacade(Area& area) : m_area(area) 
+OpacityFacade::OpacityFacade(Area& area) : m_area(area) { }
+void OpacityFacade::initalize()
 {
 	assert(m_area.getBlocks().size());
 	m_fullOpacity.resize(m_area.getBlocks().size());
 	m_floorOpacity.resize(m_area.getBlocks().size());
-}
-void OpacityFacade::initalize()
-{
 	for(const Block& block : m_area.getBlocks())
 		update(block);
 }

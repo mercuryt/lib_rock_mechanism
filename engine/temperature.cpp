@@ -267,8 +267,10 @@ GetToSafeTemperatureObjective::~GetToSafeTemperatureObjective() { m_actor.m_need
 UnsafeTemperatureEvent::UnsafeTemperatureEvent(Actor& a, const Step start) : ScheduledEvent(a.getSimulation(), a.m_species.stepsTillDieInUnsafeTemperature, start), m_actor(a) { }
 void UnsafeTemperatureEvent::execute() { m_actor.die(CauseOfDeath::temperature); }
 void UnsafeTemperatureEvent::clearReferences() { m_actor.m_needsSafeTemperature.m_event.clearPointer(); }
-ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(Actor& a) : m_actor(a), m_event(a.getEventSchedule()), m_objectiveExists(false) { }
-ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(const Json& data, Actor& a) : m_actor(a), m_event(a.getEventSchedule()), m_objectiveExists(data["objectiveExists"].get<bool>())
+ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(Actor& a, Simulation& s) : 
+	m_event(s.m_eventSchedule), m_actor(a) { }
+ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(const Json& data, Actor& a, Simulation& s) : 
+	m_event(s.m_eventSchedule), m_actor(a), m_objectiveExists(data["objectiveExists"].get<bool>())
 {
 	if(data.contains("eventStart"))
 		m_event.schedule(m_actor, data["eventStart"].get<Step>());

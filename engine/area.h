@@ -39,19 +39,7 @@ struct DeserializationMemo;
 
 class Area final
 {
-	std::vector<Block> m_blocks;
 public:
-	AreaId m_id;
-	std::wstring m_name;
-	//WorldLocation* m_worldLocation;
-	Simulation& m_simulation;
-	const DistanceInBlocks m_sizeX;
-	const DistanceInBlocks m_sizeY;
-	const DistanceInBlocks m_sizeZ;
-	//TODO: make into 1d vector.
-	std::unordered_set<Block*> m_caveInCheck;
-	std::vector<std::tuple<std::vector<Block*>,uint32_t,uint32_t>> m_caveInData;
-
 	AreaHasTemperature m_hasTemperature;
 	AreaHasActors m_hasActors;
 	AreaHasPlants m_hasPlants;
@@ -73,7 +61,21 @@ public:
 	AreaHasFluidGroups m_hasFluidGroups;
 	AreaHasRain m_hasRain;
 	AreaHasBlockDesignations m_blockDesignations;
+	//TODO: make into 1d vector.
+	std::unordered_set<Block*> m_caveInCheck;
+	std::vector<std::tuple<std::vector<Block*>,uint32_t,uint32_t>> m_caveInData;
+
 	std::list<VisionCuboid> m_visionCuboids;
+private:
+	std::vector<Block> m_blocks;
+public:
+	std::wstring m_name;
+	Simulation& m_simulation;
+	AreaId m_id;
+	//WorldLocation* m_worldLocation;
+	const DistanceInBlocks m_sizeX;
+	const DistanceInBlocks m_sizeY;
+	const DistanceInBlocks m_sizeZ;
 	bool m_visionCuboidsActive;
 
 	// Create blocks and store adjacent

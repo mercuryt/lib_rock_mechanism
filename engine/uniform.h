@@ -80,10 +80,10 @@ public:
 class ActorHasUniform final
 {
 	Actor& m_actor;
-	Uniform* m_uniform;
-	UniformObjective* m_objective;
+	Uniform* m_uniform = nullptr;
+	UniformObjective* m_objective = nullptr;
 public:
-	ActorHasUniform(Actor& actor) : m_actor(actor), m_uniform(nullptr), m_objective(nullptr) { }
+	ActorHasUniform(Actor& actor) : m_actor(actor) { }
 	void set(Uniform& uniform);
 	void unset();
 	void recordObjective(UniformObjective& objective);

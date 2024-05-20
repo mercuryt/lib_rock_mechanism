@@ -14,19 +14,20 @@ class SleepEvent;
 class TiredEvent;
 class SleepObjective;
 struct DeserializationMemo;
+struct AnimalSpecies;
 
 class MustSleep final 
 {
+	HasScheduledEventPausable<SleepEvent> m_sleepEvent; // 2
+	HasScheduledEvent<TiredEvent> m_tiredEvent; // 2
 	Actor& m_actor;
-	Block* m_location;
-	HasScheduledEventPausable<SleepEvent> m_sleepEvent;
-	HasScheduledEvent<TiredEvent> m_tiredEvent;
-	SleepObjective* m_objective;
-	bool m_needsSleep;
-	bool m_isAwake;
+	Block* m_location = nullptr;
+	SleepObjective* m_objective = nullptr;
+	bool m_needsSleep = false;
+	bool m_isAwake = true;
 public:
-	MustSleep(Actor& a);
-	MustSleep(const Json data, Actor& a);
+	MustSleep(Actor& a, Simulation& s);
+	MustSleep(const Json data, Actor& a, Simulation& s, const AnimalSpecies& species);
 	Json toJson() const;
 	void tired();
 	void sleep();
@@ -38,6 +39,7 @@ public:
 	void setLocation(Block& block);
 	void onDeath();
 	void notTired();
+	void scheduleTiredEvent();
 	[[nodiscard]] bool isAwake() const { return m_isAwake; }
 	[[nodiscard]] bool getNeedsSleep() const { return m_needsSleep; }
 	[[nodiscard]] Block* getLocation() { return m_location; }

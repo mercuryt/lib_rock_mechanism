@@ -2,14 +2,13 @@
 #include "../types.h"
 #include "../config.h"
 #include "../deserializationMemo.h"
-#include "animalSpecies.h"
-#include "simulation.h"
 #include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+class Simulation;
 class Area;
 class Block;
 class Actor;
@@ -17,6 +16,7 @@ struct Shape;
 class HasShape;
 struct MoveType;
 struct FluidType;
+struct AnimalSpecies;
 class DramaEngine;
 enum class DramaArcType{AnimalsArrive, BanditsArrive};
 class DramaArc

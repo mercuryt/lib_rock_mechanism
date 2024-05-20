@@ -16,6 +16,7 @@ struct MaterialType;
 class Actor;
 struct DeserializationMemo;
 struct Attack;
+class Simulation;
 
 // For example: 'left arm', 'head', etc.
 struct BodyPartType final
@@ -78,19 +79,20 @@ struct BodyPart final
  */
 class Body final
 {
-	Actor& m_actor;
-	const MaterialType* m_materialType;
-	uint32_t m_totalVolume;
-	Percent m_impairMovePercent;
-	Percent m_impairManipulationPercent;
-	Volume m_volumeOfBlood;
-	bool m_isBleeding;
 	HasScheduledEvent<BleedEvent> m_bleedEvent;
 	HasScheduledEvent<WoundsCloseEvent> m_woundsCloseEvent;
+	Actor& m_actor;
+	const MaterialType* m_materialType = nullptr;
+	uint32_t m_totalVolume = 0;
+	Percent m_impairMovePercent = 0;
+	Percent m_impairManipulationPercent = 0;
+	Volume m_volumeOfBlood = 0;
+	bool m_isBleeding = false;
 public:
 	std::list<BodyPart> m_bodyParts;
-	Body(Actor& a);
+	Body(Actor& a, Simulation& s);
 	Body(const Json& data, DeserializationMemo& deserializationMemo, Actor& a);
+	void initalize();
 	[[nodiscard]] Json toJson() const;
 	BodyPart& pickABodyPartByVolume();
 	BodyPart& pickABodyPartByType(const BodyPartType& bodyPartType);
@@ -105,6 +107,7 @@ public:
 	// TODO: periodicly update impairment as wounds heal.
 	void recalculateBleedAndImpairment();
 	Wound& getWoundWhichIsBleedingTheMost();
+	void setMaterialType(const MaterialType& materialType) { m_materialType = &materialType; }
 	[[nodiscard]] bool piercesSkin(Hit hit, const BodyPart& bodyPart) const;
 	[[nodiscard]] bool piercesFat(Hit hit, const BodyPart& bodyPart) const;
 	[[nodiscard]] bool piercesMuscle(Hit hit, const BodyPart& bodyPart) const;

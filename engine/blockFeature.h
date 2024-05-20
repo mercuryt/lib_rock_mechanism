@@ -61,8 +61,8 @@ struct BlockFeature
 };
 class HasBlockFeatures
 {
-	Block& m_block;
 	std::vector<BlockFeature> m_features;
+	Block& m_block;
 	[[nodiscard]] BlockFeature* at(const BlockFeatureType& blockFeatueType);
 public:
 	HasBlockFeatures(Block& b) : m_block(b) { }

@@ -9,14 +9,14 @@ struct FluidType;
 struct DeserializationMemo;
 class AreaHasRain final
 {
-	Area& m_area;
-	const FluidType* m_currentlyRainingFluidType;
-	const FluidType& m_defaultRainFluidType;
-	Percent m_intensityPercent;
 	HasScheduledEvent<RainEvent> m_event;
+	Area& m_area;
+	const FluidType* m_currentlyRainingFluidType = nullptr;
+	const FluidType& m_defaultRainFluidType;
 	std::array<Percent, 4> m_humidityBySeason;
+	Percent m_intensityPercent = 0;
 public:
-	AreaHasRain(Area& a);
+	AreaHasRain(Area& a, Simulation& s);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void start(const FluidType& fluidType, Percent intensityPercent, Step stepsDuration);

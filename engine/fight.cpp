@@ -18,13 +18,11 @@
 #include <utility>
 #include <algorithm>
 // CanFight.
-CanFight::CanFight(Actor& a) : m_actor(a), m_maxMeleeRange(0), m_coolDownDurationModifier(1.f), m_coolDown(m_actor.getEventSchedule()), m_getIntoAttackPositionThreadedTask(m_actor.getThreadedTaskEngine()), m_target(nullptr)
-{ 
-	update();
-}
-CanFight::CanFight(const Json& data, Actor& a) : m_actor(a), m_maxMeleeRange(0), m_coolDownDurationModifier(1.f), m_coolDown(m_actor.getEventSchedule()), m_getIntoAttackPositionThreadedTask(m_actor.getThreadedTaskEngine()), m_target(nullptr)
+CanFight::CanFight(Actor& a, Simulation& s) : 
+	m_coolDown(s.m_eventSchedule), m_getIntoAttackPositionThreadedTask(s.m_threadedTaskEngine), m_actor(a) { }
+CanFight::CanFight(const Json& data, Actor& a, Simulation& s) : 
+	m_coolDown(s.m_eventSchedule), m_getIntoAttackPositionThreadedTask(s.m_threadedTaskEngine), m_actor(a)
 {
-	update();
 	if(data.contains("coolDownStart"))
 		m_coolDown.schedule(*this, data["coolDownDuration"].get<Step>(), data["coolDownStart"].get<Step>());
 	if(data.contains("target"))

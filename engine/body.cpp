@@ -76,23 +76,26 @@ Json BodyPart::toJson() const
 		data["wounds"].push_back(wound.toJson());
 	return data;
 }
-Body::Body(Actor& a) :  m_actor(a), m_materialType(&a.m_species.materialType), m_totalVolume(0), m_impairMovePercent(0), m_impairManipulationPercent(0), m_isBleeding(false), m_bleedEvent(a.getEventSchedule()), m_woundsCloseEvent(a.getEventSchedule())
+Body::Body(Actor& a, Simulation& s) :  m_bleedEvent(s.m_eventSchedule), m_woundsCloseEvent(s.m_eventSchedule), m_actor(a) { }
+void Body::initalize()
 {
+	setMaterialType(m_actor.m_species.materialType);
 	for(const BodyPartType* bodyPartType : m_actor.m_species.bodyType.bodyPartTypes)
 	{
-		m_bodyParts.emplace_back(*bodyPartType, m_actor.m_species.materialType);
+		m_bodyParts.emplace_back(*bodyPartType, *m_materialType);
 		m_totalVolume += bodyPartType->volume;
 	}
 	m_volumeOfBlood = healthyBloodVolume();
 }
-Body::Body(const Json& data, DeserializationMemo& deserializationMemo, Actor& a) : m_actor(a), 
+Body::Body(const Json& data, DeserializationMemo& deserializationMemo, Actor& a) :
+       	m_bleedEvent(deserializationMemo.m_simulation.m_eventSchedule), 
+	m_woundsCloseEvent(deserializationMemo.m_simulation.m_eventSchedule),
+	m_actor(a), 
 	m_materialType(&MaterialType::byName(data["materialType"].get<std::string>())),
-	m_totalVolume(data["totalVolume"].get<Volume>()), 
+	m_totalVolume(data["totalVolume"].get<Volume>()),
 	m_impairMovePercent(data.contains("impairMovePercent") ? data["impairMovePercent"].get<Percent>() : 0),
 	m_impairManipulationPercent(data.contains("impairManipulationPercent") ? data["impairManipulationPercent"].get<Percent>() : 0),
-	m_volumeOfBlood(data["volumeOfBlood"].get<Volume>()),
-	m_isBleeding(data["isBleeding"].get<bool>()),
-	m_bleedEvent(a.getEventSchedule()), m_woundsCloseEvent(a.getEventSchedule())
+	m_volumeOfBlood(data["volumeOfBlood"].get<Volume>()), m_isBleeding(data["isBleeding"].get<bool>())
 {
 	for(const Json& bodyPart : data["bodyParts"])
 		m_bodyParts.emplace_back(bodyPart, deserializationMemo);

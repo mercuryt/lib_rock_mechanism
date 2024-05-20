@@ -3,12 +3,8 @@
 #include "config.h"
 #include "simulation.h"
 #include "util.h"
-CanGrow::CanGrow(Actor& a, Percent pg) : m_actor(a), m_event(a.getEventSchedule()), m_percentGrown(pg)
-{ 
-	// Note: CanGrow must be initalized after MustEat, MustDrink, and SafeTemperature.
-	updateGrowingStatus();
-}
-CanGrow::CanGrow(const Json& data, Actor& a) : m_actor(a), m_event(a.getEventSchedule()), m_percentGrown(data["percentGrown"].get<Percent>())
+CanGrow::CanGrow(Actor& a, Percent pg, Simulation& s) : m_event(s.m_eventSchedule), m_actor(a), m_percentGrown(pg) { }
+CanGrow::CanGrow(const Json& data, Actor& a, Simulation& s) : m_event(s.m_eventSchedule), m_actor(a), m_percentGrown(data["percentGrown"].get<Percent>())
 {
 	if(data.contains("eventStart"))
 		m_event.schedule(data["eventDuration"].get<Step>(), *this, data["eventStart"].get<Step>());

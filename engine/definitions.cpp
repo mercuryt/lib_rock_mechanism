@@ -85,32 +85,26 @@ void definitions::loadMaterialTypes()
 		Json data = tryParse(file.path());
 		auto& materialType = materialTypeDataStore.emplace_back(
 			data["name"].get<std::string>(),
-			data.contains("category") ? 
-				&MaterialTypeCategory::byName(data["category"].get<std::string>()) :
-				nullptr,
 			data["density"].get<Density>(),
 			data["hardness"].get<uint32_t>(),
-			data["transparent"].get<bool>(),
-			data.contains("meltingPoint") ? data["meltingPoint"].get<Temperature>() : 0
+			data["transparent"].get<bool>()
 		);
-		if(data.contains("burnData"))
-			materialType.burnData = &burnDataStore.emplace_back(
-					data["burnData"]["ignitionTemperature"].get<Temperature>(),
-					data["burnData"]["flameTemperature"].get<Temperature>(),
-					// TODO: store as seconds rather then steps.
-					data["burnData"]["burnStageDuration"].get<Step>(),
-					data["burnData"]["flameStageDuration"].get<Step>()
-			);
-		if(data.contains("meltsInto"))
+		if(data.contains("category"))
+			materialType.materialTypeCategory = &MaterialTypeCategory::byName(data["category"].get<std::string>());
+		if(data.contains("meltingPoint"))
 		{
-			assert(materialType.meltingPoint != 0);
+		       	materialType.meltingPoint = data["meltingPoint"].get<Temperature>();
+			assert(data.contains("meltsInto"));
 			materialType.meltsInto = &FluidType::byName(data["meltsInto"].get<std::string>());
 		}
-		else
-		{
-			assert(materialType.meltingPoint == 0);
-			materialType.meltsInto = nullptr;
-		}
+		if(data.contains("burnData"))
+			materialType.burnData = &burnDataStore.emplace_back(
+					// TODO: store as seconds rather then steps.
+					data["burnData"]["burnStageDuration"].get<Step>(),
+					data["burnData"]["flameStageDuration"].get<Step>(),
+					data["burnData"]["ignitionTemperature"].get<Temperature>(),
+					data["burnData"]["flameTemperature"].get<Temperature>()
+			);
 	}
 	// Load FluidType freeze into here, now that solid material types are loaded.
 	for(const auto& file : std::filesystem::directory_iterator(path/"fluids"))
@@ -309,27 +303,28 @@ void definitions::loadItemTypes()
 		Json data = tryParse(file.path());
 		auto& itemType = itemTypeDataStore.emplace_back(
 			data["name"].get<std::string>(),
-			data.contains("installable") && data["installable"].get<bool>() == true,
 			Shape::byName(data["shape"].get<std::string>()),
+			MoveType::byName(data.contains("moveType") ? data["moveType"].get<std::string>() : "none"),
 			data["volume"].get<Volume>(),
-			data["generic"].get<bool>(),
 			data.contains("internalVolume") ? data["internalVolume"].get<Volume>() : 0 ,
-			data.contains("canHoldFluids") ? data["canHoldFluids"].get<bool>() : false,
 			data["value"].get<uint32_t>(),
-			data.contains("edibleForDrinkersOf") ? &FluidType::byName(data["edibleForDrinkersOf"].get<std::string>()) : nullptr,
-			MoveType::byName(data.contains("moveType") ? data["moveType"].get<std::string>() : "none")
+			data.contains("installable"),
+			data.contains("generic") && data["generic"].get<bool>(),
+			data.contains("canHoldFluids")
 		);
+		if(data.contains("edibleForDrinkersOf"))
+			itemType.edibleForDrinkersOf = &FluidType::byName(data["edibleForDrinkersOf"].get<std::string>());
 		if(data.contains("wearableData"))
 		{
 			Json& wearable = data["wearableData"];
 			auto& wearableData = wearableDataStore.emplace_back(
-				wearable["percentCoverage"].get<Percent>(),
 				wearable["defenseScore"].get<uint32_t>(),
-				wearable["rigid"].get<bool>(),
 				wearable["layer"].get<uint32_t>(),
+				Config::scaleOfHumanBody,
 				wearable["forceAbsorbedUnpiercedModifier"].get<uint32_t>(),
 				wearable["forceAbsorbedPiercedModifier"].get<uint32_t>(),
-				Config::scaleOfHumanBody
+				wearable["percentCoverage"].get<Percent>(),
+				wearable["rigid"].get<bool>()
 			);
 			for(const auto& bodyPartName : data["bodyPartsCovered"])
 				wearableData.bodyPartsCovered.push_back(&BodyPartType::byName(bodyPartName.get<std::string>()));
