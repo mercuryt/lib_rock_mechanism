@@ -7,7 +7,9 @@
 #include "types.h"
 #include "util.h"
 #include "simulation.h"
-AreaHasRain::AreaHasRain(Area& a) : m_area(a), m_currentlyRainingFluidType(nullptr), m_defaultRainFluidType(FluidType::byName("water")), m_intensityPercent(0), m_event(a.m_simulation.m_eventSchedule), m_humidityBySeason({30,15,10,20}) { }
+AreaHasRain::AreaHasRain(Area& a, Simulation& s) : 
+	m_event(s.m_eventSchedule), m_area(a), m_defaultRainFluidType(FluidType::byName("water")), 
+	m_humidityBySeason({30,15,10,20}) { }
 void AreaHasRain::load(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo)
 {
 	if(data.contains("currentFluidType"))
@@ -54,6 +56,8 @@ void AreaHasRain::stop()
 }
 void AreaHasRain::writeStep()
 {
+	assert(m_intensityPercent <= 100);
+	assert(m_intensityPercent > 0);
 	if(m_currentlyRainingFluidType == nullptr)
 		return;
 	auto& random = m_area.m_simulation.m_random;
@@ -67,7 +71,8 @@ void AreaHasRain::writeStep()
 			--i;
 		else
 		{
-			block.m_hasFluids.addFluid(1, *m_currentlyRainingFluidType);
+			if(!block.isSolid() && block.m_hasFluids.fluidCanEnterCurrently(*m_currentlyRainingFluidType))
+				block.m_hasFluids.addFluid(1, *m_currentlyRainingFluidType);
 			i = spacing;
 		}
 }

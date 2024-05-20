@@ -6,9 +6,9 @@
 class Actor;
 class ActorCanSee final
 {
-	Actor& m_actor;
 	std::unordered_set<Actor*> m_currently;
-	DistanceInBlocks m_range;
+	Actor& m_actor;
+	DistanceInBlocks m_range = 0;
 public:
 	HasVisionFacade m_hasVisionFacade;
 	ActorCanSee(Actor& actor, DistanceInBlocks range) : m_actor(actor), m_range(range) { }

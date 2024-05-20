@@ -12,6 +12,8 @@
 
 #include <iostream>
 #include <numbers>
+ItemType::ItemType(std::string n, const Shape& s, const MoveType& mt, Volume vol, Volume ivol, uint32_t val, bool i, bool g, bool chf) : 
+	name(n), shape(s), moveType(mt), volume(vol), internalVolume(ivol), value(val), installable(i), generic(g), canHoldFluids(chf) { }
 AttackType* ItemType::getRangedAttackType() const
 {
 	for(const AttackType& attackType : weaponData->attackTypes)
@@ -107,7 +109,7 @@ ItemId ItemParamaters::getId()
 	return id;
 }
 // Item
-Item::Item(ItemParamaters itemParamaters) : HasShape(*itemParamaters.simulation, itemParamaters.itemType.shape, true, 0, itemParamaters.quantity, itemParamaters.faction), m_quantity(itemParamaters.quantity), m_id(itemParamaters.getId()), m_itemType(itemParamaters.itemType), m_materialType(itemParamaters.materialType), m_quality(itemParamaters.quality), m_percentWear(itemParamaters.percentWear), m_installed(itemParamaters.installed), m_craftJobForWorkPiece(itemParamaters.craftJob), m_hasCargo(*this), m_canBeStockPiled(*this)
+Item::Item(ItemParamaters itemParamaters) : HasShape(*itemParamaters.simulation, itemParamaters.itemType.shape, true, 0, itemParamaters.quantity, itemParamaters.faction), m_hasCargo(*this), m_canBeStockPiled(*this), m_craftJobForWorkPiece(itemParamaters.craftJob), m_itemType(itemParamaters.itemType), m_materialType(itemParamaters.materialType), m_id(itemParamaters.getId()), m_quality(itemParamaters.quality), m_percentWear(itemParamaters.percentWear), m_quantity(itemParamaters.quantity), m_installed(itemParamaters.installed)
 {
 	if(m_itemType.generic)
 	{
@@ -219,7 +221,7 @@ void Item::log() const
 }
 // Generic.
 Item::Item(Simulation& s, ItemId i, const ItemType& it, const MaterialType& mt, Quantity q, CraftJob* cj):
-	HasShape(s, it.shape, true, 0, q), m_quantity(q), m_id(i), m_itemType(it), m_materialType(mt), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this), m_canBeStockPiled(*this)
+	HasShape(s, it.shape, true, 0, q), m_hasCargo(*this), m_canBeStockPiled(*this), m_craftJobForWorkPiece(cj), m_itemType(it), m_materialType(mt), m_id(i), m_quantity(q), m_installed(false)
 {
 	assert(m_itemType.generic);
 	assert(m_quantity);
@@ -228,7 +230,7 @@ Item::Item(Simulation& s, ItemId i, const ItemType& it, const MaterialType& mt, 
 }
 // NonGeneric.
 Item::Item(Simulation& s, ItemId i, const ItemType& it, const MaterialType& mt, uint32_t qual, Percent pw, CraftJob* cj):
-	HasShape(s, it.shape, true), m_quantity(1u), m_id(i), m_itemType(it), m_materialType(mt), m_quality(qual), m_percentWear(pw), m_installed(false), m_craftJobForWorkPiece(cj), m_hasCargo(*this), m_canBeStockPiled(*this)
+	HasShape(s, it.shape, true), m_hasCargo(*this), m_canBeStockPiled(*this), m_craftJobForWorkPiece(cj), m_itemType(it), m_materialType(mt), m_id(i), m_quality(qual), m_percentWear(pw), m_quantity(1u), m_installed(false)
 {
 	assert(!m_itemType.generic);
 	m_mass = m_itemType.volume * m_materialType.density;
@@ -236,11 +238,11 @@ Item::Item(Simulation& s, ItemId i, const ItemType& it, const MaterialType& mt, 
 }
 Item::Item(const Json& data, DeserializationMemo& deserializationMemo, ItemId id) : 
 	HasShape(data, deserializationMemo),
-	m_quantity(data.contains("quantity") ? data["quantity"].get<Quantity>() : 1u),
-	m_id(id), m_itemType(*data["itemType"].get<const ItemType*>()), m_materialType(*data["materialType"].get<const MaterialType*>()),
-	m_mass(getMass()),
-	m_quality(data["quality"].get<uint32_t>()), m_percentWear(data["percentWear"].get<Percent>()), m_installed(data["installed"].get<bool>()),
-	m_craftJobForWorkPiece(nullptr), m_hasCargo(*this), m_canBeStockPiled(data["canBeStockPiled"], deserializationMemo, *this) 
+	m_hasCargo(*this),
+	m_canBeStockPiled(data["canBeStockPiled"], deserializationMemo, *this), m_craftJobForWorkPiece(nullptr), m_itemType(*data["itemType"].get<const ItemType*>()),
+	m_materialType(*data["materialType"].get<const MaterialType*>()),
+	m_id(id), m_mass(getMass()), m_quality(data["quality"].get<uint32_t>()),
+	m_percentWear(data["percentWear"].get<Percent>()), m_quantity(data.contains("quantity") ? data["quantity"].get<Quantity>() : 1u), m_installed(data["installed"].get<bool>()) 
 	{
 		if(data.contains("location"))
 		{

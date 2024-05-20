@@ -24,46 +24,51 @@ struct MaterialTypeCategory;
 
 struct WearableData final
 {
-	const Percent percentCoverage;
-	const uint32_t defenseScore;
-	const bool rigid;
-	const uint32_t layer;
-	const uint32_t bodyTypeScale;
-	const uint32_t forceAbsorbedUnpiercedModifier;
-	const uint32_t forceAbsorbedPiercedModifier;
 	std::vector<const BodyPartType*> bodyPartsCovered;
-	// Infastructure.
+	const uint32_t defenseScore = 0;
+	const uint32_t layer = 0;
+	const uint32_t bodyTypeScale = 0;
+	const uint32_t forceAbsorbedUnpiercedModifier = 0;
+	const uint32_t forceAbsorbedPiercedModifier = 0;
+	const Percent percentCoverage = 0;
+	const bool rigid = false;
+	WearableData(uint32_t ds, uint32_t l, uint32_t bts, uint32_t faum, uint32_t fapm, Percent pc, bool r) : 
+		defenseScore(ds), layer(l), bodyTypeScale(bts), forceAbsorbedUnpiercedModifier(faum), forceAbsorbedPiercedModifier(fapm), 
+		percentCoverage(pc), rigid(r) { }
 };
 inline std::deque<WearableData> wearableDataStore;
 struct WeaponData final
 {
+	std::vector<AttackType> attackTypes;
 	const SkillType* combatSkill;
 	Step coolDown;
-	std::vector<AttackType> attackTypes;
+	WeaponData(const SkillType* cs, Step cd) : combatSkill(cs), coolDown(cd)  { }
 	// Infastructure.
 };
 inline std::deque<WeaponData> weaponDataStore;
 struct ItemType final
 {
-	const std::string name;
-	const bool installable;
-	const Shape& shape;
-	const Volume volume;
-	const bool generic;
-	const Volume internalVolume;
-	const bool canHoldFluids;
-	const uint32_t value;
-	const FluidType* edibleForDrinkersOf;
-	const MoveType& moveType;
-       	const WearableData* wearableData;
-       	const WeaponData* weaponData;
-	const std::array<int32_t, 3> craftLocationOffset;
-	const CraftStepTypeCategory* craftLocationStepTypeCategory;
 	std::vector<const MaterialTypeCategory*> materialTypeCategories;
+	const std::string name;
+	//TODO: remove craftLocationOffset?
+	const std::array<int32_t, 3> craftLocationOffset = {0,0,0};
+	const Shape& shape;
+	const MoveType& moveType;
+	const FluidType* edibleForDrinkersOf = nullptr;
+       	const WearableData* wearableData = nullptr;
+       	const WeaponData* weaponData = nullptr;
+	const CraftStepTypeCategory* craftLocationStepTypeCategory = nullptr;
+	const Volume volume = 0;
+	const Volume internalVolume = 0;
+	const uint32_t value = 0;
+	const bool installable = false;
+	const bool generic = false;
+	const bool canHoldFluids = false;
+	ItemType(std::string name, const Shape& shape, const MoveType& moveType, Volume volume, Volume internalVolume, uint32_t value, bool installable, bool generic, bool canHoldFluids);
 	AttackType* getRangedAttackType() const;
+	Block* getCraftLocation(const Block& location, Facing facing) const;
 	bool hasRangedAttack() const;
 	bool hasMeleeAttack() const;
-	Block* getCraftLocation(const Block& location, Facing facing) const;
 	// Infastructure.
 	bool operator==(const ItemType& itemType) const { return this == &itemType; }
 	static const ItemType& byName(std::string name);
@@ -90,12 +95,12 @@ struct ItemParamaters final
 };
 class ItemHasCargo final
 {
-	Item& m_item;
-	Volume m_volume = 0;
-	Mass m_mass = 0;
 	std::vector<HasShape*> m_shapes;
 	std::vector<Item*> m_items;
+	Item& m_item;
 	const FluidType* m_fluidType = nullptr;
+	Volume m_volume = 0;
+	Mass m_mass = 0;
 	Volume m_fluidVolume = 0;
 public:
 	ItemHasCargo(Item& i) : m_item(i) { }
@@ -139,9 +144,9 @@ public:
 //TODO: Change from linear to geometric delay duration.
 class ItemCanBeStockPiled
 {
-	Item& m_item;
 	std::unordered_set<Faction*> m_data;
 	std::unordered_map<Faction*, HasScheduledEvent<ReMarkItemForStockPilingEvent>> m_scheduledEvents;
+	Item& m_item;
 	void scheduleReset(Faction& faction, Step duration, Step start = 0);
 public:
 	ItemCanBeStockPiled(Item& i) : m_item(i) { }
@@ -158,21 +163,23 @@ public:
 };
 class Item final : public HasShape
 {
-	Quantity m_quantity; // Always set to 1 for nongeneric types.
 public:
-	const ItemId m_id;
+	ItemHasCargo m_hasCargo; // 7.5
+	ItemCanBeStockPiled m_canBeStockPiled; // 5
+	std::wstring m_name;
+	CraftJob* m_craftJobForWorkPiece; // Used only for work in progress items.
 	const ItemType& m_itemType;
 	const MaterialType& m_materialType;
+	const ItemId m_id;
 	Mass m_mass;
 	Volume m_volume;
-	std::wstring m_name;
 	uint32_t m_quality;
 	//TODO: Percent doesn't allow fine enough detail for tools wearing out over time?
 	Percent m_percentWear;
+private:
+	Quantity m_quantity; // Always set to 1 for nongeneric types.
+public:
 	bool m_installed;
-	CraftJob* m_craftJobForWorkPiece; // Used only for work in progress items.
-	ItemHasCargo m_hasCargo; //TODO: Change to reference to save some RAM?
-	ItemCanBeStockPiled m_canBeStockPiled;
 	//TODO: ItemHasOwners
 	Item(ItemParamaters itemParamaters);
 	// Generic.

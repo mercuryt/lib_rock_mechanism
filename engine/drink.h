@@ -9,6 +9,7 @@
 
 #include <vector>
 
+class Simulation;
 class Item;
 class Block;
 class Actor;
@@ -18,29 +19,32 @@ class ThirstEvent;
 class DrinkObjective;
 struct FluidType;
 struct DeserializationMemo;
+struct AnimalSpecies;
 
 class MustDrink final
 {
+	HasScheduledEvent<ThirstEvent> m_thirstEvent; // 2
 	Actor& m_actor;
-	uint32_t m_volumeDrinkRequested;
-	const FluidType* m_fluidType; // Pointer because it may change, i.e. through vampirism.
-	DrinkObjective* m_objective; // Store to avoid recreating. TODO: Use a bool instead?
-	HasScheduledEvent<ThirstEvent> m_thirstEvent;
-	uint32_t volumeFluidForBodyMass() const;
+	const FluidType* m_fluidType = nullptr; // Pointer because it may change, i.e. through vampirism.
+	DrinkObjective* m_objective = nullptr; // Store to avoid recreating. TODO: Use a bool instead?
+	uint32_t m_volumeDrinkRequested = 0;
+	[[nodiscard]] uint32_t volumeFluidForBodyMass() const;
 
 public:
-	MustDrink(Actor& a);
-	MustDrink(const Json& data, Actor& a);
-	Json toJson() const;
+	MustDrink(Actor& a, Simulation& s);
+	MustDrink(const Json& data, Actor& a, Simulation& s, const AnimalSpecies& species);
+	[[nodiscard]] Json toJson() const;
 	void drink(const uint32_t volume);
 	void notThirsty();
 	void setNeedsFluid();
 	void onDeath();
-	Volume getVolumeFluidRequested() const { return m_volumeDrinkRequested; }
-	Percent getPercentDeadFromThirst() const;
-	const FluidType& getFluidType() const { return *m_fluidType; }
-	bool needsFluid() const { return m_volumeDrinkRequested != 0; }
-	static uint32_t drinkVolumeFor(Actor& actor);
+	void scheduleDrinkEvent();
+	void setFluidType(const FluidType& fluidType);
+	[[nodiscard]] Volume getVolumeFluidRequested() const { return m_volumeDrinkRequested; }
+	[[nodiscard]] Percent getPercentDeadFromThirst() const;
+	[[nodiscard]] const FluidType& getFluidType() const { return *m_fluidType; }
+	[[nodiscard]] bool needsFluid() const { return m_volumeDrinkRequested != 0; }
+	[[nodiscard]] static uint32_t drinkVolumeFor(Actor& actor);
 	friend class ThirstEvent;
 	friend class DrinkEvent;
 	friend class DrinkObjective;
@@ -56,14 +60,14 @@ class DrinkObjective final : public Objective
 public:
 	DrinkObjective(Actor& a);
 	DrinkObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
+	[[nodiscard]] Json toJson() const;
 	void execute();
 	void cancel();
 	void delay();
 	void reset();
 	[[nodiscard]] std::string name() const { return "drink"; }
 	[[nodiscard]] bool canDrinkAt(const Block& block, Facing facing) const;
-	Block* getAdjacentBlockToDrinkAt(const Block& block, Facing facing) const;
+	[[nodiscard]] Block* getAdjacentBlockToDrinkAt(const Block& block, Facing facing) const;
 	[[nodiscard]] bool canDrinkItemAt(const Block& block) const;
 	[[nodiscard]] Item* getItemToDrinkFromAt(Block& block) const;
 	[[nodiscard]] bool containsSomethingDrinkable(const Block& block) const;

@@ -11,13 +11,13 @@ struct MoveType;
 struct ItemType;
 class BlockHasShapes
 {
-	Block& m_block;
 	std::unordered_map<HasShape*, CollisionVolume> m_shapes;
+	// Move costs cache is a structure made up of shape, moveType, and a vector of blocks which can be moved to from here, along with their move cost.
+	// TODO: replace with monolithic bitset
+	std::unordered_map<const Shape*, std::unordered_map<const MoveType*, std::vector<std::pair<Block*, MoveCost>>>> m_moveCostsCache;
+	Block& m_block;
 	CollisionVolume m_dynamicVolume;
 	CollisionVolume m_staticVolume;
-	// Move costs cache is a structure made up of shape, moveType, and a vector of blocks which can be moved to from here, along with their move cost.
-	// TODO: Store a pointer to the relevent section of move cost cache for adjacent blocks.
-	std::unordered_map<const Shape*, std::unordered_map<const MoveType*, std::vector<std::pair<Block*, MoveCost>>>> m_moveCostsCache;
 	void record(HasShape& hasShape, CollisionVolume volume);
 	void remove(HasShape& hasShape);
 	CollisionVolume getVolume(const HasShape& hasShape) const;

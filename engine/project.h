@@ -188,7 +188,7 @@ public:
 	[[nodiscard]] virtual std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const = 0;
 	[[nodiscard]] virtual std::vector<std::pair<ActorQuery, Quantity>> getActors() const = 0;
 	[[nodiscard]] virtual std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> getByproducts() const = 0;
-	virtual ~Project();
+	virtual ~Project() = default;
 	[[nodiscard]] bool operator==(const Project& other) const { return &other == this; }
 	// For testing.
 	[[nodiscard]] ProjectWorker& getProjectWorkerFor(Actor& actor) { return m_workers.at(&actor); }

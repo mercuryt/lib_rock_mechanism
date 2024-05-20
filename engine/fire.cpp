@@ -52,7 +52,8 @@ void FireEvent::execute()
 }
 void FireEvent::clearReferences() { m_fire.m_event.clearPointer(); }
 // Fire.
-Fire::Fire(Block& l, const MaterialType& mt, bool hasPeaked, FireStage stage, Step start) : m_location(l), m_materialType(mt), m_event(l.m_area->m_simulation.m_eventSchedule), m_stage(stage), m_hasPeaked(hasPeaked), m_temperatureSource(m_materialType.burnData->flameTemperature * Config::heatFractionForSmoulder, l)
+Fire::Fire(Block& l, const MaterialType& mt, bool hasPeaked, FireStage stage, Step start) : 
+	m_temperatureSource(mt.burnData->flameTemperature * Config::heatFractionForSmoulder, l), m_event(l.m_area->m_simulation.m_eventSchedule), m_location(l), m_materialType(mt), m_stage(stage), m_hasPeaked(hasPeaked)
 {
 	m_event.schedule(m_materialType.burnData->burnStageDuration, *this, start);
 }

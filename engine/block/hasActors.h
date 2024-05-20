@@ -6,8 +6,8 @@ class Block;
 class Actor;
 class BlockHasActors
 {
-	Block& m_block;
 	std::vector<Actor*> m_actors;
+	Block& m_block;
 public:
 	BlockHasActors(Block& b) : m_block(b) { }
 	void enter(Actor& actor);

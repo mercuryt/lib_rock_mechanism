@@ -5,7 +5,8 @@
 #include <string>
 #include <sys/types.h>
 //TODO: radial symetry for 2x2 and 3x3, etc.
-Shape::Shape(const std::string n, std::vector<std::array<int32_t, 4>> p, uint32_t ds) : name(n), positions(p), displayScale(ds), isMultiTile(positions.size() != 1), isRadiallySymetrical(!isMultiTile)
+Shape::Shape(const std::string n, std::vector<std::array<int32_t, 4>> p, uint32_t ds) : 
+	positions(p), name(n), displayScale(ds), isMultiTile(positions.size() != 1), isRadiallySymetrical(!isMultiTile)
 {
 	for(uint8_t i = 0; i < 4; ++i)
 	{

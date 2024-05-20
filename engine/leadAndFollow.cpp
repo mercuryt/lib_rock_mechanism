@@ -4,6 +4,7 @@
 #include "config.h"
 #include "item.h"
 #include "deserializationMemo.h"
+#include "simulation.h"
 void CanLead::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 
@@ -110,7 +111,7 @@ std::deque<Block*>& CanLead::getLocationQueue()
 {
 	return m_hasShape.m_canFollow.getLineLeader().m_canLead.m_locationQueue;
 }
-CanFollow::CanFollow(HasShape& a) : m_hasShape(a), m_canLead(nullptr), m_event(a.getEventSchedule()) { }
+CanFollow::CanFollow(HasShape& a, Simulation& s) : m_event(s.m_eventSchedule), m_hasShape(a) { }
 void CanFollow::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	if(data.contains("canLeadItem"))

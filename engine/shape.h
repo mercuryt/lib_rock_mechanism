@@ -20,19 +20,19 @@ class Block;
 
 struct Shape
 {
-	const std::string name;
+	std::array<std::vector<std::array<int32_t, 4>>,4> occupiedOffsetsCache;
+	std::array<std::vector<std::array<int32_t, 3>>,4> adjacentOffsetsCache;
 	std::vector<std::array<int32_t, 4>> positions;
+	const std::string name;
 	const uint32_t displayScale;
 	const bool isMultiTile;
 	const bool isRadiallySymetrical;
-	std::array<std::vector<std::array<int32_t, 4>>,4> occupiedOffsetsCache;
-	std::array<std::vector<std::array<int32_t, 3>>,4> adjacentOffsetsCache;
-	[[nodiscard]] std::vector<std::array<int32_t, 4>> positionsWithFacing(Facing facing) const { return occupiedOffsetsCache.at(facing); }
-	[[nodiscard]] std::vector<std::array<int32_t, 3>> adjacentPositionsWithFacing(Facing facing) const { return adjacentOffsetsCache.at(facing); }
 	Shape(const std::string n, std::vector<std::array<int32_t, 4>> p, uint32_t ds);
 	// For custom shapes.
 	Shape(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] std::vector<std::array<int32_t, 4>> positionsWithFacing(Facing facing) const { return occupiedOffsetsCache.at(facing); }
+	[[nodiscard]] std::vector<std::array<int32_t, 3>> adjacentPositionsWithFacing(Facing facing) const { return adjacentOffsetsCache.at(facing); }
 	[[nodiscard]] std::vector<std::array<int32_t, 4>> makeOccupiedPositionsWithFacing(Facing facing) const;
 	[[nodiscard]] std::vector<std::array<int32_t, 3>> makeAdjacentPositionsWithFacing(Facing facing) const;
 	[[nodiscard]] std::vector<std::array<int32_t, 3>> positionOffsets(std::array<int32_t, 4> position) const;
@@ -40,9 +40,9 @@ struct Shape
 	[[nodiscard]] std::vector<std::pair<Block*, Volume>> getBlocksOccupiedAtWithVolumes(const Block& location, Facing facing) const;
 	[[nodiscard]] CollisionVolume getCollisionVolumeAtLocationBlock() const;
 	// Infastructure.
-	bool operator==(const Shape& x) const { return &x == this; }
-	static const Shape& byName(const std::string& name);
-	static bool hasShape(const std::string& name);
+	[[nodiscard]] 	bool operator==(const Shape& x) const { return &x == this; }
+	[[nodiscard]] static const Shape& byName(const std::string& name);
+	[[nodiscard]] 	static bool hasShape(const std::string& name);
 };
 inline std::vector<Shape> shapeDataStore;
 inline void to_json(Json& data, const Shape* const& shape){ data = shape->name; }

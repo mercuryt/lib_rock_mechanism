@@ -19,17 +19,17 @@ struct EquipmentSortByLayer
 };
 class EquipmentSet
 {
-	Actor& m_actor;
 	std::unordered_set<Item*> m_equipments;
 	std::set<Item*, EquipmentSortByLayer> m_wearable;
 	std::unordered_set<const BodyPartType*> m_bodyPartTypesWithRigidArmor;
 	std::unordered_set<Item*> m_meleeWeapons;
 	std::unordered_set<Item*> m_rangedWeapons;
 	std::unordered_set<Item*> m_rangedWeaponAmmo;
-	uint32_t m_mass;
+	Actor& m_actor;
+	uint32_t m_mass = 0;
 	void insertEquipment(Item& equipment);
 public:
-	EquipmentSet(Actor& a) : m_actor(a), m_mass(0) { }
+	EquipmentSet(Actor& a) : m_actor(a) { }
 	EquipmentSet(const Json& data, Actor& a);
 	Json toJson() const;
 	void addEquipment(Item& equipment);

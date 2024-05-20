@@ -22,16 +22,18 @@
 #include <unordered_set>
 
 Area::Area(AreaId id, std::wstring n, Simulation& s, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) :
-	m_blocks(x*y*z), m_id(id), m_name(n), m_simulation(s), m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_fluidSources(*this), m_hasFluidGroups(*this), m_hasRain(*this), m_blockDesignations(*this), m_visionCuboidsActive(false)
+	m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_fluidSources(*this), 
+	m_hasFluidGroups(*this), m_hasRain(*this, s), m_blockDesignations(*this), m_blocks(x*y*z), m_name(n), m_simulation(s), m_id(id), 
+	m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_visionCuboidsActive(false)
 { 
 	setup(); 
 	m_hasRain.scheduleRestart();
 }
 Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& s) : 
-	m_blocks(data["sizeX"].get<DistanceInBlocks>() * data["sizeY"].get<DistanceInBlocks>() * data["sizeZ"].get<DistanceInBlocks>()),
-	m_id(data["id"].get<AreaId>()), m_name(data["name"].get<std::wstring>()), m_simulation(s),
-	m_sizeX(data["sizeX"].get<DistanceInBlocks>()), m_sizeY(data["sizeY"].get<DistanceInBlocks>()), m_sizeZ(data["sizeZ"].get<DistanceInBlocks>()), 
-	m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_fluidSources(*this), m_hasFluidGroups(*this), m_hasRain(*this), m_blockDesignations(*this), m_visionCuboidsActive(false)
+	m_hasTemperature(*this),
+	m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this),
+	m_hasItems(*this), m_fluidSources(*this), m_hasFluidGroups(*this), 
+	m_hasRain(*this, s), m_blockDesignations(*this), m_blocks(data["sizeX"].get<DistanceInBlocks>() * data["sizeY"].get<DistanceInBlocks>() * data["sizeZ"].get<DistanceInBlocks>()), m_name(data["name"].get<std::wstring>()), m_simulation(s), m_id(data["id"].get<AreaId>()), m_sizeX(data["sizeX"].get<DistanceInBlocks>()), m_sizeY(data["sizeY"].get<DistanceInBlocks>()), m_sizeZ(data["sizeZ"].get<DistanceInBlocks>()), m_visionCuboidsActive(false)
 {
 	// Record id now so json block references will function later in this method.
 	m_simulation.m_hasAreas->recordId(*this);
@@ -75,7 +77,9 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	for(const Json& actor : data["actors"])
 		m_simulation.m_hasActors->loadActorFromJson(actor, deserializationMemo);
 	// Load designations.
-	m_blockDesignations.load(data["designations"], deserializationMemo);
+	// Temporary shim.
+	if(data.contains("designations"))
+		m_blockDesignations.load(data["designations"], deserializationMemo);
 	// Load Projects
 	m_hasConstructionDesignations.load(data["hasConstructionDesignations"], deserializationMemo);
 	m_hasDigDesignations.load(data["hasDigDesignations"], deserializationMemo);
@@ -178,6 +182,7 @@ Json Area::toJson() const
 }
 void Area::setup()
 {
+	m_hasActors.m_locationBuckets.initalize();
 	// build m_blocks
 	for(DistanceInBlocks x = 0; x < m_sizeX; ++x)
 		for(DistanceInBlocks y = 0; y < m_sizeY; ++y)
@@ -216,7 +221,7 @@ void Area::writeStep()
 	// Apply temperature deltas.
 	m_hasTemperature.applyDeltas();
 	// Apply rain.
-	if(m_simulation.m_step % Config::rainWriteStepFreqency == 0)
+	if(m_hasRain.isRaining() && m_simulation.m_step % Config::rainWriteStepFreqency == 0)
 		m_hasRain.writeStep();
 	// Apply fluid Sources.
 	m_fluidSources.step();

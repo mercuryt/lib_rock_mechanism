@@ -187,8 +187,8 @@ struct BlockIsPartOfStockPile
 };
 class BlockIsPartOfStockPiles
 {
-	Block& m_block;
 	std::unordered_map<Faction*, BlockIsPartOfStockPile> m_stockPiles;
+	Block& m_block;
 public:
 	BlockIsPartOfStockPiles(Block& b): m_block(b) { }
 	void recordMembership(StockPile& stockPile);

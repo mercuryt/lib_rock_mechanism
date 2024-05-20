@@ -187,7 +187,7 @@ Json CannotCompleteObjectiveDishonorCallback::toJson() const
 }
 void CannotCompleteObjectiveDishonorCallback::execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount) { m_actor.m_hasObjectives.cannotCompleteSubobjective(); }
 // HasObjectives.
-HasObjectives::HasObjectives(Actor& a) : m_actor(a), m_currentObjective(nullptr), m_prioritySet(a) { }
+HasObjectives::HasObjectives(Actor& a) : m_actor(a), m_prioritySet(a) { }
 void HasObjectives::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	for(const Json& objective : data["needsQueue"])

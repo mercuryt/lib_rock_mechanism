@@ -56,8 +56,8 @@ struct FarmField
 };
 class BlockIsPartOfFarmField
 {
-	Block& m_block;
 	std::unordered_map<Faction*, FarmField*> m_farmFields;
+	Block& m_block;
 public:
 	BlockIsPartOfFarmField(Block& b) : m_block(b) { }
 	void insert(Faction& faction, FarmField& farmField);
@@ -111,8 +111,8 @@ public:
 // To be used by Area.
 class AreaHasFarmFields
 {
-	Area& m_area;
 	std::unordered_map<Faction*, HasFarmFieldsForFaction> m_data;
+	Area& m_area;
 public:
 	AreaHasFarmFields(Area& a) : m_area(a) { } 
 	void load(const Json& data, DeserializationMemo& deserializationMemo);

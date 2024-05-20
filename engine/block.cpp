@@ -12,7 +12,7 @@
 #include "area.h"
 #include "visionUtil.h"
 
-Block::Block() : m_solid(nullptr), m_constructed(false), m_visionCuboid(nullptr), m_fires(nullptr), m_exposedToSky(true), m_underground(false), m_outdoors(true), m_visible(true), m_hasShapes(*this), m_hasFluids(*this), m_reservable(1), m_hasPlant(*this), m_hasBlockFeatures(*this), m_hasActors(*this), m_hasItems(*this), m_isPartOfStockPiles(*this), m_isPartOfFarmField(*this), m_blockHasTemperature(*this) {}
+Block::Block() : m_reservable(1), m_hasFluids(*this), m_hasShapes(*this), m_hasActors(*this), m_hasItems(*this), m_isPartOfStockPiles(*this), m_isPartOfFarmField(*this), m_hasBlockFeatures(*this), m_hasPlant(*this), m_blockHasTemperature(*this) {}
 void Block::setup(Area& area, DistanceInBlocks ax, DistanceInBlocks ay, DistanceInBlocks az)
 {
 	assert(this >= &area.getBlocks().front());
@@ -23,9 +23,6 @@ void Block::setup(Area& area, DistanceInBlocks ax, DistanceInBlocks ay, Distance
 	assert(getIndex() < area.getBlocks().size());
 	m_locationBucket = &m_area->m_hasActors.m_locationBuckets.getBucketFor(*this);
 	m_isEdge = (m_x == 0 || m_x == (m_area->m_sizeX - 1) ||  m_y == 0 || m_y == (m_area->m_sizeY - 1) || m_z == 0 || m_z == (m_area->m_sizeZ - 1) );
-	// This is too slow to do on init.
-	//uint32_t seed = (m_x * 1'000'000) + (m_y * 1'000) + m_z;
-	//m_seed = m_area->m_simulation.m_random.deterministicScramble(seed);
 }
 void Block::recordAdjacent()
 {

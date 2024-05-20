@@ -36,41 +36,45 @@ enum class BlockDesignation;
 
 class Block final
 {
-	// If this block is solid stone, solid dirt, etc. then store it here. Otherwise nullptr.
-	const MaterialType* m_solid;
-	bool m_constructed;
 public:
-	DistanceInBlocks m_x, m_y, m_z;
+	Reservable m_reservable; // 6.5 sets of 64 bits
+	// Store adjacent in an array, with index determined by relative position.
+	// below = 0, < = 1, ^ = 2, > = 3, v = 4, above = 5.
+	std::array<Block*, 6> m_adjacents; // 6
+	BlockHasFluids m_hasFluids; // 6
+	BlockHasShapes m_hasShapes; // 6
+	BlockHasActors m_hasActors; // 3
+	BlockHasItems m_hasItems; // 3
+	BlockIsPartOfStockPiles m_isPartOfStockPiles; // 3
+	BlockIsPartOfFarmField m_isPartOfFarmField; // 3
+	HasBlockFeatures m_hasBlockFeatures; // 2
+	BlockHasProjects m_hasProjects; // 2
+	BlockHasPlant m_hasPlant; //2
+	std::unordered_map<const MaterialType* , Fire>* m_fires = nullptr;
+	BlockHasTemperature m_blockHasTemperature; // 1.5
 	// Store area as a pointer rather then a reference to keep block default constructable.
 	// This is required inorder to create the m_blocks structure before initalizing it.
 	// TODO: emplace_back?
-	Area* m_area;
-	// Store adjacent in an array, with index determined by relative position.
-	// below = 0, < = 1, ^ = 2, > = 3, v = 4, above = 5.
-	std::array<Block*, 6> m_adjacents;
+	Area* m_area = nullptr;
+private:
+	// If this block is solid stone, solid dirt, etc. then store it here. Otherwise nullptr.
+	const MaterialType* m_solid = nullptr;
+public:
 	// Store the location bucket this block belongs to.
-	LocationBucket* m_locationBucket;
+	LocationBucket* m_locationBucket = nullptr;
 	// Store the visionCuboid this block belongs to.
-	VisionCuboid* m_visionCuboid;
-	std::unordered_map<const MaterialType* , Fire>* m_fires;
-	bool m_exposedToSky;
-	bool m_underground;
-	bool m_isEdge;
-	bool m_outdoors;
-	bool m_visible;
-	uint32_t m_seed;
-	BlockHasShapes m_hasShapes;
-	BlockHasFluids m_hasFluids;
-	Reservable m_reservable;
-	BlockHasPlant m_hasPlant;
-	HasBlockFeatures m_hasBlockFeatures;
-	BlockHasActors m_hasActors;
-	BlockHasItems m_hasItems;
-	BlockIsPartOfStockPiles m_isPartOfStockPiles;
-	BlockIsPartOfFarmField m_isPartOfFarmField;
-	BlockHasTemperature m_blockHasTemperature;
-	BlockHasProjects m_hasProjects;
-
+	VisionCuboid* m_visionCuboid = nullptr;
+	DistanceInBlocks m_x = 0;
+	DistanceInBlocks m_y = 0;
+	DistanceInBlocks m_z = 0;
+	bool m_exposedToSky = true;
+	bool m_underground = false;
+	bool m_isEdge = false;
+	bool m_outdoors = true;
+	bool m_visible = true;
+private:
+	bool m_constructed = false;
+public:
 	Block();
 	Block(const Block&) = delete;
 	Block(Block&&) = delete;

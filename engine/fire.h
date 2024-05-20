@@ -33,12 +33,12 @@ public:
 class Fire final
 {
 public:
+	TemperatureSource m_temperatureSource;
+	HasScheduledEvent<FireEvent> m_event;
 	Block& m_location;
 	const MaterialType& m_materialType;
-	HasScheduledEvent<FireEvent> m_event;
 	FireStage m_stage;
 	bool m_hasPeaked;
-	TemperatureSource m_temperatureSource;
 
 	// Default arguments are used when creating a fire normally, custom values are for deserializing or dramatic use.
 	Fire(Block& l, const MaterialType& mt, bool hasPeaked = false, FireStage stage = FireStage::Smouldering, Step start = 0);
@@ -51,9 +51,9 @@ public:
 	void ignite(Block& block, const MaterialType& materialType);
 	void extinguish(Fire& fire);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
-	Fire& at(Block& block, const MaterialType& materialType);
-	bool contains(Block& block, const MaterialType& materialType);
-	Json toJson() const;
+	[[nodiscard]] Fire& at(Block& block, const MaterialType& materialType);
+	[[nodiscard]] bool contains(Block& block, const MaterialType& materialType);
+	[[nodiscard]] Json toJson() const;
 	// For testing.
 	[[maybe_unused, nodiscard]] bool containsFireAt(Fire& fire, Block& block) const
 	{ 

@@ -17,9 +17,9 @@ class Block;
  */
 struct FutureFlowBlock
 {
-	Block* block;
-	uint32_t capacity;
-	uint32_t delta;
+	Block* block = nullptr;
+	uint32_t capacity = 0;
+	uint32_t delta = 0;
 	// No need to initalize capacity and delta here, they will be set at the begining of read step.
 	FutureFlowBlock(Block* b) : block(b) {}
 };

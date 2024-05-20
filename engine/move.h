@@ -15,21 +15,22 @@ class MoveType;
 class Item;
 class HasShape;
 struct DeserializationMemo;
+class Simulation;
 
 class ActorCanMove final
 {
-	Actor& m_actor;
-	const MoveType* m_moveType;
-	Speed m_speedIndividual;
-	Speed m_speedActual;
-	Block* m_destination;
 	std::vector<Block*> m_path;
 	std::vector<Block*>::iterator m_pathIter;
-	uint8_t m_retries;
 	HasScheduledEvent<MoveEvent> m_event;
 	HasThreadedTask<PathThreadedTask> m_threadedTask;
+	Actor& m_actor;
+	const MoveType* m_moveType = nullptr;
+	Block* m_destination = nullptr;
+	Speed m_speedIndividual = 0;
+	Speed m_speedActual = 0;
+	uint8_t m_retries = 0;
 public:
-	ActorCanMove(Actor& a);
+	ActorCanMove(Actor& a, Simulation& s);
 	ActorCanMove(const Json& data, DeserializationMemo& deserializationMemo, Actor& a);
 	void updateIndividualSpeed();
 	void updateActualSpeed();

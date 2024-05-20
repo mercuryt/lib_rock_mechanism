@@ -9,11 +9,11 @@
 #include <cstdint>
 #include <iostream>
 HasShape::HasShape(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) : 
-	m_simulation(deserializationMemo.m_simulation), m_static(data["static"].get<bool>()), m_shape(nullptr),
-	m_location(nullptr), m_facing(data["facing"].get<Facing>()),
-	m_canLead(*this), m_canFollow(*this), 
-	m_reservable(data.contains("quantity") ? data["quantity"].get<uint32_t>() : 1), 
-	m_isUnderground(data["isUnderground"].get<bool>()) 
+	m_reservable(data.contains("quantity") ? data["quantity"].get<uint32_t>() : 1), m_canLead(*this), m_canFollow(*this, deserializationMemo.m_simulation),
+	m_simulation(deserializationMemo.m_simulation), m_shape(nullptr),
+	m_location(nullptr), m_facing(data["facing"].get<Facing>()), 
+	m_isUnderground(data["isUnderground"].get<bool>()), 
+	m_static(data["static"].get<bool>()) 
 { 
 	// data["location"] is not read here because we want to use subclass specific setLocation methods.
 	if(data.contains("reservable"))

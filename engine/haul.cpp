@@ -84,12 +84,12 @@ bool HaulSubprojectParamaters::validate() const
 }
 HaulSubprojectDishonorCallback::HaulSubprojectDishonorCallback(const Json data, DeserializationMemo& deserializationMemo) : 
 	m_haulSubproject(*deserializationMemo.m_haulSubprojects.at(data["haulSubproject"])) { }
-CanPickup::CanPickup(const Json& data, Actor& a) : m_actor(a), m_carrying(nullptr)
+CanPickup::CanPickup(const Json& data, Actor& a, Simulation& s) : m_actor(a)
 {
 	if(data.contains("carryingItem"))
-		m_carrying = &m_actor.getSimulation().m_hasItems->getById(data["carryingItem"].get<ItemId>());
+		m_carrying = &s.m_hasItems->getById(data["carryingItem"].get<ItemId>());
 	else if(data.contains("carryingActor"))
-		m_carrying = &m_actor.getSimulation().m_hasActors->getById(data["carryingActor"].get<ActorId>());
+		m_carrying = &s.m_hasActors->getById(data["carryingActor"].get<ActorId>());
 }
 Json CanPickup::toJson() const 
 {

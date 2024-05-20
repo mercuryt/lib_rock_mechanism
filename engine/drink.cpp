@@ -8,19 +8,15 @@
 #include "block.h"
 #include <algorithm>
 // Must Drink.
-MustDrink::MustDrink(Actor& a) : m_actor(a), m_volumeDrinkRequested(0), m_fluidType(&m_actor.m_species.fluidType), m_objective(nullptr), m_thirstEvent(a.getEventSchedule())
-{ 
-	m_thirstEvent.schedule(m_actor.m_species.stepsFluidDrinkFreqency, m_actor);
-}
-MustDrink::MustDrink(const Json& data, Actor& a) : m_actor(a), m_volumeDrinkRequested(data["volumeDrinkRequested"].get<Volume>()), m_fluidType(&m_actor.m_species.fluidType), m_objective(nullptr), m_thirstEvent(a.getEventSchedule())
+MustDrink::MustDrink(Actor& a, Simulation& s) : m_thirstEvent(s.m_eventSchedule), m_actor(a) { }
+MustDrink::MustDrink(const Json& data, Actor& a, Simulation& s, const AnimalSpecies& species) : 
+	m_thirstEvent(s.m_eventSchedule), m_actor(a), m_fluidType(&species.fluidType),
+       	m_volumeDrinkRequested(data["volumeDrinkRequested"].get<Volume>())
 {
 	if(data.contains("thirstEventStart"))
 	{
-		// Temporary shim.
 		Step start = data["thirstEventStart"].get<Step>();
-		if(start < a.getSimulation().m_step)
-			start = a.getSimulation().m_step + 1;
-		m_thirstEvent.schedule(m_actor.m_species.stepsFluidDrinkFreqency, m_actor, start);
+		m_thirstEvent.schedule(species.stepsFluidDrinkFreqency, m_actor, start);
 	}
 }
 Json MustDrink::toJson() const
@@ -75,6 +71,11 @@ void MustDrink::onDeath()
 {
 	m_thirstEvent.maybeUnschedule();
 }
+void MustDrink::scheduleDrinkEvent()
+{
+	m_thirstEvent.schedule(m_actor.m_species.stepsFluidDrinkFreqency, m_actor);
+}
+void MustDrink::setFluidType(const FluidType& fluidType) { m_fluidType = &fluidType; }
 Percent MustDrink::getPercentDeadFromThirst() const
 {
 	if(!m_thirstEvent.exists())

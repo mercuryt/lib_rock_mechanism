@@ -31,19 +31,8 @@ struct FluidGroupSplitData final
 class FluidGroup final
 {
 public:
-	// Currently at rest?
-	bool m_stable;
-	bool m_destroy;
-	bool m_merged;
-	bool m_disolved;
-	const FluidType& m_fluidType;
-	int32_t m_excessVolume;
-	uint32_t m_viscosity;
 	FillQueue m_fillQueue;
 	DrainQueue m_drainQueue;
-	std::unordered_map<const FluidType*, FluidGroup*> m_disolvedInThisGroup;
-	Area& m_area;
-
 	// For spitting into multiple fluidGroups.
 	std::vector<FluidGroupSplitData> m_futureGroups;
 	// For notifing groups with different fluids of unfull status. Groups with the same fluid are merged instead.
@@ -60,6 +49,18 @@ public:
 	std::unordered_set<Block*> m_futureRemoveFromDrainQueue;
 	std::unordered_set<Block*> m_futureAddToFillQueue;
 	std::unordered_set<Block*> m_futureRemoveFromFillQueue;
+	std::unordered_map<const FluidType*, FluidGroup*> m_disolvedInThisGroup;
+	Area& m_area;
+	const FluidType& m_fluidType;
+	int32_t m_excessVolume = 0;
+	uint32_t m_viscosity = 0;
+	// Currently at rest?
+	bool m_stable = false;
+	// Will be destroyed.
+	bool m_destroy = false;
+	// Has been merged.
+	bool m_merged = false;
+	bool m_disolved = false;
 
 	FluidGroup(const FluidType& ft, std::unordered_set<Block*>& blocks, Area& area, bool checkMerge = true);
 	FluidGroup(const FluidGroup&) = delete;

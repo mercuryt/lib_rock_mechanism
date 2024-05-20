@@ -15,16 +15,15 @@ struct SortByDensity final
 };
 class BlockHasFluids final
 {
-	Block& m_block;
 	// Sorted by density, low to high.
 	// TODO: Try replacing with a flatmap.
 	// TODO: HasFluids.
 	std::map<const FluidType*, std::pair<CollisionVolume, FluidGroup*>, SortByDensity> m_fluids;
-	CollisionVolume m_totalFluidVolume = 0;
-	// For mist.
+	Block& m_block;
 	const FluidType* m_mist = nullptr;
 	//TODO: remove mistSource?
 	const FluidType* m_mistSource = nullptr;
+	CollisionVolume m_totalFluidVolume = 0;
 	DistanceInBlocks m_mistInverseDistanceFromSource = 0;
 public:
 	BlockHasFluids(Block& block) : m_block(block) { }

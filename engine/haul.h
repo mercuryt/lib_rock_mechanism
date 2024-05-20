@@ -4,6 +4,7 @@
 #include "types.h"
 #include <unordered_set>
 
+class Simulation;
 class Item;
 class Actor;
 class Block;
@@ -97,10 +98,10 @@ inline void to_json(Json& data, const HaulSubproject* const& haulSubproject){ da
 class CanPickup final
 {
 	Actor& m_actor;
-	HasShape* m_carrying;
+	HasShape* m_carrying = nullptr;
 public:
-	CanPickup(Actor& a) : m_actor(a), m_carrying(nullptr) { }
-	CanPickup(const Json& data, Actor& a);
+	CanPickup(Actor& a) : m_actor(a) { }
+	CanPickup(const Json& data, Actor& a, Simulation& s);
 	Json toJson() const;
 	void pickUp(HasShape& hasShape, Quantity quantity = 1u);
 	void pickUp(Item& item, Quantity quantity = 1u);

@@ -186,7 +186,7 @@
 	"unitsOfWoundAreaPerUnitItemScaleFactor": 100,
 	"visionCuboidsActive": true,
 	"visionFacadeReservationSize": 256,
-	"visionThreadingBatchSize": 30,
+	"visionThreadingBatchSize": 128,
 	"wanderMaximumNumberOfBlocks": 1000,
 	"wanderMinimumNumberOfBlocks": 100,
 	"woodCuttingMaxMinutes": 300,

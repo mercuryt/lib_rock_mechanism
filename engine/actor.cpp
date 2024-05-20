@@ -231,44 +231,61 @@ void ActorParamaters::generateEquipment(Actor& actor)
 	}
 }
 Actor::Actor(Simulation& simulation, ActorId id, const std::wstring& name, const AnimalSpecies& species, Step birthStep, Percent percentGrown, Faction* faction, Attributes attributes) :
-	HasShape(simulation, species.shapeForPercentGrown(percentGrown), false, 0, 1, faction), m_birthStep(birthStep), m_causeOfDeath(CauseOfDeath::none), m_id(id), m_name(name), m_species(species), m_body(*this), m_project(nullptr), m_canSee(*this, species.visionRange), m_attributes(attributes), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), m_canPickup(*this), m_equipmentSet(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, percentGrown), m_hasObjectives(*this), m_canReserve(faction), m_stamina(*this), m_hasUniform(*this)
+	HasShape(simulation, species.shapeForPercentGrown(percentGrown), false, 0, 1, faction), m_attributes(attributes), m_equipmentSet(*this), m_canFight(*this, simulation), m_canMove(*this, simulation), m_hasObjectives(*this), m_body(*this, simulation), m_canReserve(faction), m_mustSleep(*this, simulation), m_mustDrink(*this, simulation), m_mustEat(*this, simulation), m_canSee(*this, species.visionRange), m_canGrow(*this, percentGrown, simulation), m_needsSafeTemperature(*this, simulation), m_hasUniform(*this), m_canPickup(*this), m_stamina(*this), m_species(species), m_project(nullptr), m_name(name), m_birthStep(birthStep), m_causeOfDeath(CauseOfDeath::none), m_id(id)
 {
+	m_canMove.setMoveType(m_species.moveType); 
+	sharedConstructor();
+	scheduleNeeds();
 	// TODO: Having this line here requires making the existance of objectives mandatory at all times. Good idea?
 	//m_hasObjectives.getNext();
 }
 Actor::Actor(ActorParamaters params) : 
 	HasShape(*params.simulation, params.species.shapeForPercentGrown(params.getPercentGrown()), false, 0, 1, params.faction),
-	m_birthStep(params.getBirthStep()), m_causeOfDeath(CauseOfDeath::none), m_id(params.getId()), m_name(params.getName()),
-	m_species(params.species), m_body(*this), m_project(nullptr), m_canSee(*this, params.species.visionRange), 
-	m_attributes(m_species, params.getPercentGrown()), m_mustEat(*this), m_mustDrink(*this), m_mustSleep(*this), m_needsSafeTemperature(*this), 
-	m_canPickup(*this), m_equipmentSet(*this), m_canMove(*this), m_canFight(*this), m_canGrow(*this, params.getPercentGrown()), 
-	m_hasObjectives(*this), m_canReserve(m_faction), m_stamina(*this), m_hasUniform(*this)
-	{ 
-		if(m_species.sentient)
-			params.generateEquipment(*this);
-		if(params.location)
-		{
-			setLocation(*params.location);
-			m_location->m_area->m_hasActors.add(*this);
-		}
+	m_attributes(params.species, params.getPercentGrown()), m_equipmentSet(*this), m_canFight(*this, *params.simulation), m_canMove(*this, *params.simulation),
+	m_hasObjectives(*this), m_body(*this, *params.simulation), m_canReserve(m_faction), m_mustSleep(*this, *params.simulation), 
+	m_mustDrink(*this, *params.simulation), m_mustEat(*this, *params.simulation), m_canSee(*this, params.species.visionRange), 
+	m_canGrow(*this, params.getPercentGrown(), *params.simulation), m_needsSafeTemperature(*this, *params.simulation), 
+	m_hasUniform(*this), m_canPickup(*this), m_stamina(*this), m_species(params.species), m_project(nullptr), 
+	m_name(params.getName()), m_birthStep(params.getBirthStep()), m_causeOfDeath(CauseOfDeath::none), m_id(params.getId())
+{ 
+	m_canMove.setMoveType(m_species.moveType); 
+	sharedConstructor();
+	scheduleNeeds();
+	if(m_species.sentient)
+		params.generateEquipment(*this);
+	if(params.location)
+	{
+		setLocation(*params.location);
+		m_location->m_area->m_hasActors.add(*this);
 	}
+}
 Actor::Actor(const Json& data, DeserializationMemo& deserializationMemo) :
 	HasShape(data, deserializationMemo),
+	m_attributes(data["attributes"], AnimalSpecies::byName(data["species"].get<std::string>()), data["percentGrown"].get<Percent>()), 
+	m_equipmentSet(data["equipmentSet"], *this), 
+	m_canFight(data["canFight"], *this, deserializationMemo.m_simulation),
+	m_canMove(data["canMove"], deserializationMemo, *this), 
+	m_hasObjectives(*this),
+	m_body(data["body"], deserializationMemo, *this), 
+	m_canReserve(m_faction), 
+	m_mustSleep(data["mustSleep"], *this, deserializationMemo.m_simulation, AnimalSpecies::byName(data["species"].get<std::string>())),
+	m_mustDrink(data["mustDrink"], *this, deserializationMemo.m_simulation, AnimalSpecies::byName(data["species"].get<std::string>())), 
+	m_mustEat(data["mustEat"], *this, deserializationMemo.m_simulation, AnimalSpecies::byName(data["species"].get<std::string>())), 
+	m_canSee(data["canSee"], *this), 
+	m_canGrow(data["canGrow"], *this, deserializationMemo.m_simulation), 
+	m_needsSafeTemperature(data["needsSafeTemperature"], *this, deserializationMemo.m_simulation), 
+	m_hasUniform(*this), 
+	m_canPickup(data["canPickup"], *this, deserializationMemo.m_simulation), 
+	m_stamina(*this, data["stamina"].get<uint32_t>()), 
+	m_species(AnimalSpecies::byName(data["species"].get<std::string>())), 
+	m_project(nullptr), 
+	// Wait untill projects have been loaded before loading hasObjectives.
+	m_name(data["name"].get<std::wstring>()), 
 	m_birthStep(data["birthStep"]), 
 	m_causeOfDeath(data.contains("causeOfDeath") ? data["causeOfDeath"].get<CauseOfDeath>() : CauseOfDeath::none), 
-	m_id(data["id"].get<ActorId>()),
-	m_name(data["name"].get<std::wstring>()), 
-	m_species(AnimalSpecies::byName(data["species"].get<std::string>())),
-	m_body(data["body"], deserializationMemo, *this), m_project(nullptr), 
-	m_canSee(data["canSee"], *this),
-	m_attributes(data["attributes"], m_species, data["percentGrown"].get<Percent>()), 
-	m_mustEat(data["mustEat"], *this), m_mustDrink(data["mustDrink"], *this), m_mustSleep(data["mustSleep"], *this), 
-	m_needsSafeTemperature(data["needsSafeTemperature"], *this), m_canPickup(data["canPickup"], *this), 
-	m_equipmentSet(data["equipmentSet"], *this), m_canMove(data["canMove"], deserializationMemo, *this), m_canFight(data["canFight"], *this), 
-	m_canGrow(data["canGrow"], *this), 
-	// Wait untill projects have been loaded before loading hasObjectives.
-	m_hasObjectives(*this), m_canReserve(m_faction), m_stamina(*this, data["stamina"].get<uint32_t>()), m_hasUniform(*this)
+	m_id(data["id"].get<ActorId>())
 { 
+	sharedConstructor();
 	if(data.contains("skills"))
 		m_skillSet.load(data["skills"]);
 	if(data.contains("location"))
@@ -276,6 +293,21 @@ Actor::Actor(const Json& data, DeserializationMemo& deserializationMemo) :
 		setLocation(deserializationMemo.blockReference(data["location"]));
 		m_location->m_area->m_hasActors.add(*this);
 	}
+	m_canGrow.updateGrowingStatus();
+}
+void Actor::sharedConstructor()
+{
+	m_canFight.update();
+	m_canMove.updateIndividualSpeed();
+	m_body.initalize();
+	m_mustDrink.setFluidType(m_species.fluidType);
+}
+void Actor::scheduleNeeds()
+{
+	m_mustSleep.scheduleTiredEvent();
+	m_mustDrink.scheduleDrinkEvent();
+	m_mustEat.scheduleEatEvent();
+	m_canGrow.updateGrowingStatus();
 }
 Json Actor::toJson() const
 {

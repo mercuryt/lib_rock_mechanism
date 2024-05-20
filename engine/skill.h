@@ -63,6 +63,7 @@ public:
 class SkillSet final
 {
 public:
+	std::unordered_map<const SkillType*, Skill> m_skills;
 	SkillSet() = default;
 	void load(const Json& data)
 	{
@@ -81,7 +82,6 @@ public:
 			data["skills"].push_back(pair.second.toJson());
 		return data;
 	}
-	std::unordered_map<const SkillType*, Skill> m_skills;
 	void addXp(const SkillType& skillType, uint32_t xp)
 	{
 		const auto& found = m_skills.find(&skillType);
