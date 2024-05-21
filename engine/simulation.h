@@ -50,10 +50,12 @@ public:
 	Step m_step;
 	//std::unique_ptr<World> m_world;
 	// Dependency injectien.
-	std::unique_ptr<DramaEngine> m_dramaEngine;
+	// Items and actors are stored inside area json, so the hasItems / hasActors need to be created before hasAreas.
 	std::unique_ptr<SimulationHasItems> m_hasItems;
 	std::unique_ptr<SimulationHasActors> m_hasActors;
 	std::unique_ptr<SimulationHasAreas> m_hasAreas;
+	// Drama engine must be created after hasAreas.
+	std::unique_ptr<DramaEngine> m_dramaEngine;
 	std::mutex m_uiReadMutex;
 
 	Simulation(std::wstring name = L"", Step s = 10'000 * Config::stepsPerYear);
