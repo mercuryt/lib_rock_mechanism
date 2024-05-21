@@ -194,7 +194,6 @@ void Config::load()
 	unitsOfCarryMassPerUnitOfStrength = data["unitsOfCarryMassPerUnitOfStrength"].get<float>();
 	unitsOfMoveSpeedPerUnitOfAgility = data["unitsOfMoveSpeedPerUnitOfAgility"].get<float>();
 	unitsOfWoundAreaPerUnitItemScaleFactor = data["unitsOfWoundAreaPerUnitItemScaleFactor"].get<uint32_t>();
-	visionCuboidsActive = data["visionCuboidsActive"].get<bool>();
 	visionFacadeReservationSize = data["visionFacadeReservationSize"].get<size_t>();
 	visionThreadingBatchSize = data["visionThreadingBatchSize"].get<VisionFacadeIndex>();
 	wanderMaximumNumberOfBlocks = data["wanderMaximumNumberOfBlocks"].get<uint32_t>();

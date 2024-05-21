@@ -4,28 +4,47 @@
  * Stored in Area::m_visionCuboids. Deleted durring DerivedArea::writeStep if m_destroy is true.
  */
 #pragma once
-#include <cstdint>
+#include <list>
+#include <vector>
 #include "cuboid.h"
+#include "types.h"
 
 class Area;
+class VisionCuboid;
 
-class VisionCuboid
+class AreaHasVisionCuboids final
+{
+	std::list<VisionCuboid> m_visionCuboids;
+	std::vector<VisionCuboid*> m_blockVisionCuboids;
+	std::vector<VisionCuboidId> m_blockVisionCuboidIds;
+	VisionCuboidId m_nextId = 1;
+public:
+	void initalize(Area& area);
+	void clearDestroyed();
+	void blockIsNeverOpaque(Block& block);
+	void blockIsSometimesOpaque(Block& block);
+	void blockFloorIsNeverOpaque(Block& block);
+	void blockFloorIsSometimesOpaque(Block& block);
+	void set(Block& block, VisionCuboid& visionCuboid);
+	void unset(Block& block);
+	VisionCuboid& emplace(Cuboid& cuboid);
+	[[nodiscard]] VisionCuboid* getTargetToCombineWith(const Cuboid& cuboid);
+	[[nodiscard]] VisionCuboidId getIdFor(BlockIndex index) const { return m_blockVisionCuboidIds[index]; }
+	// For testing.
+	[[nodiscard]] size_t size() { return m_visionCuboids.size(); }
+	[[nodiscard]] VisionCuboid* getVisionCuboidFor(const Block& block);
+};
+
+class VisionCuboid final
 {
 public:
-	static void setup(Area& area);
-	static void clearDestroyed(Area& area);
-	static void BlockIsNeverOpaque(Block& block);
-	static void BlockIsSometimesOpaque(Block& block);
-	static void BlockFloorIsNeverOpaque(Block& block);
-	static void BlockFloorIsSometimesOpaque(Block& block);
-	static VisionCuboid* getTargetToCombineWith(const Cuboid& cuboid);
-
 	Cuboid m_cuboid;
-	bool m_destroy;
+	const VisionCuboidId m_id = 0;
+	bool m_destroy = false;
 
-	VisionCuboid(Cuboid& cuboid);
-	bool canSeeInto(const Cuboid& cuboid) const;
-	bool canCombineWith(const Cuboid& cuboid) const;
+	VisionCuboid(Cuboid& cuboid, VisionCuboidId id);
+	[[nodiscard]] bool canSeeInto(const Cuboid& cuboid) const;
+	[[nodiscard]] bool canCombineWith(const Cuboid& cuboid) const;
 	void splitAt(Block& split);
 	void splitBelow(Block& split);
 	void extend(Cuboid& cuboid);

@@ -9,15 +9,16 @@
 class Area;
 class Block;
 class Actor;
+struct VisionCuboid;
 // Holds Actor pointers along with their vision range and location for high speed iteration during vision read step.
 // Also holds result.
 class VisionFacade final
 {
 	Area* m_area;
 	std::vector<Actor*> m_actors;
-	std::vector<Block*> m_locations;
+	std::vector<BlockIndex> m_locations;
 	std::vector<DistanceInBlocks> m_ranges;
-	std::vector<std::unordered_set<Actor*>> m_results;
+	std::vector<std::vector<Actor*>> m_results;
 public:
 	VisionFacade();
 	// Used as part of initalizaton.
@@ -32,9 +33,9 @@ public:
 	void writeStep();
 	void clear();
 	[[nodiscard]] Actor& getActor(VisionFacadeIndex index);
-	[[nodiscard]] Block& getLocation(VisionFacadeIndex index);
+	[[nodiscard]] BlockIndex getLocation(VisionFacadeIndex index);
 	[[nodiscard]] DistanceInBlocks getRange(VisionFacadeIndex index) const;
-	[[nodiscard]] std::unordered_set<Actor*>& getResults(VisionFacadeIndex index);
+	[[nodiscard]] std::vector<Actor*>& getResults(VisionFacadeIndex index);
 	[[nodiscard]] VisionFacadeIndex size() const { return m_actors.size(); }
 	[[nodiscard]] static DistanceInBlocks taxiDistance(Point3D a, Point3D b);
 };

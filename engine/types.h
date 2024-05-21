@@ -31,6 +31,7 @@ using MoveCost = Speed;
 using Quantity = uint32_t;
 using VisionFacadeIndex = uint32_t;
 inline VisionFacadeIndex VISION_FACADE_INDEX_MAX = UINT32_MAX;
+using VisionCuboidId = uint32_t;
 struct Point3D
 {
 	DistanceInBlocks x;

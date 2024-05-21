@@ -1,7 +1,7 @@
 #include "canSee.h"
 #include "../actor.h"
 Json ActorCanSee::toJson() const { return {{"range", m_range}}; }
-void ActorCanSee::doVision(std::unordered_set<Actor*>& actors)
+void ActorCanSee::doVision(std::vector<Actor*>& actors)
 {
 	m_currently.swap(actors);
 	//TODO: psycology.
@@ -21,4 +21,8 @@ void ActorCanSee::setVisionRange(DistanceInBlocks range)
 bool ActorCanSee::canCurrentlySee() const
 {
 	return m_actor.isAlive() && m_actor.m_mustSleep.isAwake() && m_actor.m_location;
+}
+bool ActorCanSee::isCurrentlyVisible(Actor& actor) const 
+{ 
+	return std::ranges::find(m_currently, &actor) != m_currently.end(); 
 }

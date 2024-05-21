@@ -1,5 +1,5 @@
 /*
-* A game map.
+* A game map made up of Blocks arranged in a cuboid with dimensions x, y, z.
 */
 
 #include "area.h"
@@ -24,16 +24,18 @@
 Area::Area(AreaId id, std::wstring n, Simulation& s, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) :
 	m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_fluidSources(*this), 
 	m_hasFluidGroups(*this), m_hasRain(*this, s), m_blockDesignations(*this), m_blocks(x*y*z), m_name(n), m_simulation(s), m_id(id), 
-	m_sizeX(x), m_sizeY(y), m_sizeZ(z), m_visionCuboidsActive(false)
+	m_sizeX(x), m_sizeY(y), m_sizeZ(z)
 { 
 	setup(); 
+	if constexpr(Config::visionCuboidsActive)
+		m_hasActors.m_visionCuboids.initalize(*this);
 	m_hasRain.scheduleRestart();
 }
 Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& s) : 
 	m_hasTemperature(*this),
 	m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this),
 	m_hasItems(*this), m_fluidSources(*this), m_hasFluidGroups(*this), 
-	m_hasRain(*this, s), m_blockDesignations(*this), m_blocks(data["sizeX"].get<DistanceInBlocks>() * data["sizeY"].get<DistanceInBlocks>() * data["sizeZ"].get<DistanceInBlocks>()), m_name(data["name"].get<std::wstring>()), m_simulation(s), m_id(data["id"].get<AreaId>()), m_sizeX(data["sizeX"].get<DistanceInBlocks>()), m_sizeY(data["sizeY"].get<DistanceInBlocks>()), m_sizeZ(data["sizeZ"].get<DistanceInBlocks>()), m_visionCuboidsActive(false)
+	m_hasRain(*this, s), m_blockDesignations(*this), m_blocks(data["sizeX"].get<DistanceInBlocks>() * data["sizeY"].get<DistanceInBlocks>() * data["sizeZ"].get<DistanceInBlocks>()), m_name(data["name"].get<std::wstring>()), m_simulation(s), m_id(data["id"].get<AreaId>()), m_sizeX(data["sizeX"].get<DistanceInBlocks>()), m_sizeY(data["sizeY"].get<DistanceInBlocks>()), m_sizeZ(data["sizeZ"].get<DistanceInBlocks>())
 {
 	// Record id now so json block references will function later in this method.
 	m_simulation.m_hasAreas->recordId(*this);
@@ -56,7 +58,8 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 		}
 	}
 	m_hasFluidGroups.clearMergedFluidGroups();
-	m_hasActors.m_opacityFacade.initalize();
+	if constexpr(Config::visionCuboidsActive)
+		m_hasActors.m_visionCuboids.initalize(*this);
 	// Load fires.
 	m_fires.load(data["fires"], deserializationMemo);
 	// Load plants.
@@ -123,9 +126,6 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	// Load rain.
 	if(data.contains("rain"))
 		m_hasRain.load(data["rain"], deserializationMemo);
-	// Active vision cuboids.
-	if(Config::visionCuboidsActive && data.contains("visionCuboidsActive"))
-		visionCuboidsActivate();
 }
 Json Area::toJson() const
 {
@@ -173,7 +173,7 @@ Json Area::toJson() const
 	data["hasCraftingLocationsAndJobs"] = m_hasCraftingLocationsAndJobs.toJson();
 	data["hasStockPiles"] = m_hasStockPiles.toJson();
 	data["targetedHauling"] = m_hasTargetedHauling.toJson();
-	if(m_visionCuboidsActive)
+	if(Config::visionCuboidsActive)
 		data["visionCuboidsActive"] = true;
 	for(const Block* block : m_caveInCheck)
 		data["caveInCheck"].push_back(block);
@@ -214,8 +214,8 @@ void Area::writeStep()
 	if(!m_caveInData.empty())
 		stepCaveInWrite();
 	// Clean up old vision cuboids.
-	if(m_visionCuboidsActive)
-		std::erase_if(m_visionCuboids, [](VisionCuboid& visionCuboid){ return visionCuboid.m_destroy; });
+	if(Config::visionCuboidsActive)
+		m_hasActors.m_visionCuboids.clearDestroyed();
 	// Apply vision.
 	m_hasActors.processVisionWriteStep();
 	// Apply temperature deltas.
@@ -351,12 +351,6 @@ Block& Area::getBlockForAdjacentLocation(WorldLocation& location)
 	return getGroundLevel(0, (m_sizeY - 1) / 2);
 }
 */
-void Area::visionCuboidsActivate()
-{
-	assert(!m_visionCuboidsActive);
-	m_visionCuboidsActive = true;
-	VisionCuboid::setup(*this);
-}
 void Area::updateClimate()
 {
 	//TODO: daylight.

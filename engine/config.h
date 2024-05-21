@@ -19,6 +19,7 @@ namespace Config
 	inline constexpr Step actorDoVisionInterval = 3;
 	inline constexpr bool fluidPiston = false;
 	inline constexpr uint32_t fluidsSeepDiagonalModifier = 100;
+	inline constexpr bool visionCuboidsActive = true;
 
 	// sort command for vim:
 	// 	sort /\t/w* /w* /
@@ -209,7 +210,6 @@ namespace Config
 	inline float unitsOfCarryMassPerUnitOfStrength;
 	inline float unitsOfMoveSpeedPerUnitOfAgility;
 	inline uint32_t unitsOfWoundAreaPerUnitItemScaleFactor;
-	inline bool visionCuboidsActive;
 	inline size_t visionFacadeReservationSize;
 	inline VisionFacadeIndex visionThreadingBatchSize;
 	inline uint32_t wanderMaximumNumberOfBlocks;
