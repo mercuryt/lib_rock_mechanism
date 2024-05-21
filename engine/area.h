@@ -61,7 +61,7 @@ public:
 	AreaHasFluidGroups m_hasFluidGroups;
 	AreaHasRain m_hasRain;
 	AreaHasBlockDesignations m_blockDesignations;
-	//TODO: make into 1d vector.
+	//TODO: make into vector?
 	std::unordered_set<Block*> m_caveInCheck;
 	std::vector<std::tuple<std::vector<Block*>,uint32_t,uint32_t>> m_caveInData;
 

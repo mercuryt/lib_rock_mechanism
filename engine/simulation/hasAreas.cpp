@@ -5,15 +5,9 @@
 #include "../deserializationMemo.h"
 #include "../drama/engine.h"
 
-SimulationHasAreas::SimulationHasAreas(const Json& data, DeserializationMemo& deserializationMemo, Simulation& simulation) : m_simulation(simulation)
+SimulationHasAreas::SimulationHasAreas(const Json& data, DeserializationMemo&, Simulation& simulation) : m_simulation(simulation)
 {
 	m_nextId = data["nextId"].get<AreaId>();
-	for(const Json& areaId : data["areaIds"])
-	{
-		std::ifstream af(m_simulation.m_path/"area"/(std::to_string(areaId.get<AreaId>()) + ".json"));
-		Json areaData = Json::parse(af);
-		loadAreaFromJson(areaData, deserializationMemo);
-	}
 }
 void SimulationHasAreas::readStep()
 {
@@ -63,6 +57,12 @@ void SimulationHasAreas::destroyArea(Area& area)
 Area& SimulationHasAreas::loadAreaFromJson(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	return m_areas.emplace_back(data, deserializationMemo, m_simulation);
+}
+Area& SimulationHasAreas::loadAreaFromPath(AreaId id, DeserializationMemo& deserializationMemo)
+{
+	std::ifstream af(m_simulation.m_path/"area"/(std::to_string(id) + ".json"));
+	Json areaData = Json::parse(af);
+	return loadAreaFromJson(areaData, deserializationMemo);
 }
 void SimulationHasAreas::clearAll()
 {

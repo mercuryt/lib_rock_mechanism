@@ -20,8 +20,9 @@ public:
 	SimulationHasAreas(const Json& data, DeserializationMemo& deserializationMemo, Simulation& simulation);
 	Area& createArea(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z, bool createDrama = false);
 	Area& loadArea(AreaId id, std::wstring name, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z);
-	void destroyArea(Area& area);
 	Area& loadAreaFromJson(const Json& data, DeserializationMemo& deserializationMemo);
+	Area& loadAreaFromPath(AreaId id, DeserializationMemo& deserializationMemo);
+	void destroyArea(Area& area);
 	void loadAreas(const Json& data, DeserializationMemo& deserializationMemo);
 	void loadAreas(const Json& data, std::filesystem::path path);
 	void readStep();
