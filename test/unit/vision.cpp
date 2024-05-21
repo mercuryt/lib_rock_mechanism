@@ -8,6 +8,7 @@
 #include "../../engine/simulation/hasActors.h"
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/visionUtil.h"
+#include "../../engine/config.h"
 TEST_CASE("vision")
 {
 	Simulation simulation;
@@ -42,7 +43,7 @@ TEST_CASE("vision")
 		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
 		auto result = a1.m_canSee.getCurrentlyVisibleActors();
 		REQUIRE(result.size() == 1);
-		REQUIRE(result.contains(&a2));
+		REQUIRE(util::vectorContains(result, &a2));
 	}
 	SUBCASE("Vision blocked by wall")
 	{
@@ -244,90 +245,94 @@ TEST_CASE("vision")
 	}
 	SUBCASE("VisionCuboid setup")
 	{
-		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		if(!area.m_visionCuboidsActive)
-			area.visionCuboidsActivate();
-		REQUIRE(area.m_visionCuboids.size() == 1);
+		if constexpr(Config::visionCuboidsActive)
+		{
+			areaBuilderUtil::setSolidLayer(area, 0, marble);
+			REQUIRE(area.m_hasActors.m_visionCuboids.size() == 1);
+		}
 	}
 	SUBCASE("build ground after activating")
 	{
-		if(!area.m_visionCuboidsActive)
-			area.visionCuboidsActivate();
-		REQUIRE(area.m_visionCuboids.size() == 1);
-		area.getBlock(0,0,0).setSolid(marble);
-		VisionCuboid::clearDestroyed(area);
-		REQUIRE(area.m_visionCuboids.size() == 3);
-		area.getBlock(1,0,0).setSolid(marble);
-		VisionCuboid::clearDestroyed(area);
-		REQUIRE(area.m_visionCuboids.size() == 3);
-		areaBuilderUtil::setSolidWall(area.getBlock(2, 0, 0), area.getBlock(9, 0, 0), marble);
-		VisionCuboid::clearDestroyed(area);
-		REQUIRE(area.m_visionCuboids.size() == 2);
-		areaBuilderUtil::setSolidWall(area.getBlock(0, 1, 0), area.getBlock(9, 9, 0), marble);
-		VisionCuboid::clearDestroyed(area);
-		REQUIRE(area.m_visionCuboids.size() == 1);
+		if constexpr(Config::visionCuboidsActive)
+		{
+			REQUIRE(area.m_hasActors.m_visionCuboids.size() == 1);
+			area.getBlock(0,0,0).setSolid(marble);
+			area.m_hasActors.m_visionCuboids.clearDestroyed();
+			REQUIRE(area.m_hasActors.m_visionCuboids.size() == 3);
+			area.getBlock(1,0,0).setSolid(marble);
+			area.m_hasActors.m_visionCuboids.clearDestroyed();
+			REQUIRE(area.m_hasActors.m_visionCuboids.size() == 3);
+			areaBuilderUtil::setSolidWall(area.getBlock(2, 0, 0), area.getBlock(9, 0, 0), marble);
+			area.m_hasActors.m_visionCuboids.clearDestroyed();
+			REQUIRE(area.m_hasActors.m_visionCuboids.size() == 2);
+			areaBuilderUtil::setSolidWall(area.getBlock(0, 1, 0), area.getBlock(9, 9, 0), marble);
+			area.m_hasActors.m_visionCuboids.clearDestroyed();
+			REQUIRE(area.m_hasActors.m_visionCuboids.size() == 1);
+		}
 	}
 	SUBCASE("VisionCuboid divide and join")
 	{
-		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		if(!area.m_visionCuboidsActive)
-			area.visionCuboidsActivate();
-		Block& block1 = area.getBlock(1, 1, 1);
-		Block& block2 = area.getBlock(5, 5, 2);
-		Block& block3 = area.getBlock(5, 5, 5);
-		Block& block4 = area.getBlock(1, 1, 7);
-		Block& block5 = area.getBlock(9, 9, 1);
-		REQUIRE(area.m_visionCuboids.size() == 1);
-		REQUIRE(block1.m_visionCuboid->m_cuboid.size() == 900);
-		REQUIRE(block1.m_visionCuboid == block2.m_visionCuboid);
-		REQUIRE(block1.m_visionCuboid == block3.m_visionCuboid);
-		REQUIRE(block1.m_visionCuboid == block4.m_visionCuboid);
-		REQUIRE(block1.m_visionCuboid == block5.m_visionCuboid);
-		block3.m_hasBlockFeatures.construct(floor, marble);
-		VisionCuboid::clearDestroyed(area);
-		REQUIRE(area.m_visionCuboids.size() == 2);
-		REQUIRE(block1.m_visionCuboid->m_cuboid.size() == 400);
-		REQUIRE(block4.m_visionCuboid->m_cuboid.size() == 500);
-		REQUIRE(block1.m_visionCuboid == block2.m_visionCuboid);
-		REQUIRE(block1.m_visionCuboid != block3.m_visionCuboid);
-		REQUIRE(block1.m_visionCuboid != block4.m_visionCuboid);
-		REQUIRE(block1.m_visionCuboid == block5.m_visionCuboid);
-		block2.setSolid(marble);
-		VisionCuboid::clearDestroyed(area);
-		REQUIRE(area.m_visionCuboids.size() == 7);
-		REQUIRE(block2.m_visionCuboid == nullptr);
-		REQUIRE(block1.m_visionCuboid != block3.m_visionCuboid);
-		REQUIRE(block1.m_visionCuboid != block4.m_visionCuboid);
-		REQUIRE(block1.m_visionCuboid != block5.m_visionCuboid);
-		block3.m_hasBlockFeatures.remove(floor);
-		VisionCuboid::clearDestroyed(area);
-		REQUIRE(area.m_visionCuboids.size() == 7);
-		REQUIRE(block3.m_visionCuboid == block4.m_visionCuboid);
-		REQUIRE(block4.m_visionCuboid->m_cuboid.size() == 500);
-		block2.setNotSolid();
-		VisionCuboid::clearDestroyed(area);
-		REQUIRE(area.m_visionCuboids.size() == 1);
-		REQUIRE(block2.m_visionCuboid != nullptr);
-		REQUIRE(block1.m_visionCuboid == block2.m_visionCuboid);
-		REQUIRE(block1.m_visionCuboid == block3.m_visionCuboid);
-		REQUIRE(block1.m_visionCuboid == block4.m_visionCuboid);
-		REQUIRE(block1.m_visionCuboid == block5.m_visionCuboid);
+		if constexpr(Config::visionCuboidsActive)
+		{
+			areaBuilderUtil::setSolidLayer(area, 0, marble);
+			Block& block1 = area.getBlock(1, 1, 1);
+			Block& block2 = area.getBlock(5, 5, 2);
+			Block& block3 = area.getBlock(5, 5, 5);
+			Block& block4 = area.getBlock(1, 1, 7);
+			Block& block5 = area.getBlock(9, 9, 1);
+			REQUIRE(area.m_hasActors.m_visionCuboids.size() == 1);
+			REQUIRE(area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block1)->m_cuboid.size() == 900);
+			REQUIRE(area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block1) == area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block2));
+			REQUIRE(area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block1) == area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block3));
+			REQUIRE(area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block1) == area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block4));
+			REQUIRE(area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block1) == area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block5));
+			block3.m_hasBlockFeatures.construct(floor, marble);
+			area.m_hasActors.m_visionCuboids.clearDestroyed();
+			REQUIRE(area.m_hasActors.m_visionCuboids.size() == 2);
+			REQUIRE(area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block1)->m_cuboid.size() == 400);
+			REQUIRE(area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block4)->m_cuboid.size() == 500);
+			REQUIRE(area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block1) == area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block2));
+			REQUIRE(area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block1) != area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block3));
+			REQUIRE(area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block1) != area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block4));
+			REQUIRE(area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block1) == area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block5));
+			block2.setSolid(marble);
+			area.m_hasActors.m_visionCuboids.clearDestroyed();
+			REQUIRE(area.m_hasActors.m_visionCuboids.size() == 7);
+			REQUIRE(area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block2) == nullptr);
+			REQUIRE(area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block1) != area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block3));
+			REQUIRE(area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block1) != area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block4));
+			REQUIRE(area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block1) != area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block5));
+			block3.m_hasBlockFeatures.remove(floor);
+			area.m_hasActors.m_visionCuboids.clearDestroyed();
+			REQUIRE(area.m_hasActors.m_visionCuboids.size() == 7);
+			REQUIRE(area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block3) == area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block4));
+			REQUIRE(area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block4)->m_cuboid.size() == 500);
+			block2.setNotSolid();
+			area.m_hasActors.m_visionCuboids.clearDestroyed();
+			REQUIRE(area.m_hasActors.m_visionCuboids.size() == 1);
+			REQUIRE(area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block2) != nullptr);
+			REQUIRE(area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block1) == area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block2));
+			REQUIRE(area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block1) == area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block3));
+			REQUIRE(area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block1) == area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block4));
+			REQUIRE(area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block1) == area.m_hasActors.m_visionCuboids.getVisionCuboidFor(block5));
+		}
 	}
 	SUBCASE("VisionCuboid can see")
 	{
-		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		if(!area.m_visionCuboidsActive)
-			area.visionCuboidsActivate();
-		Block& block1 = area.getBlock(3, 3, 1);
-		Block& block2 = area.getBlock(7, 7, 1);
-		Actor& a1 = simulation.m_hasActors->createActor(dwarf, block1);
-		Actor& a2 = simulation.m_hasActors->createActor(dwarf, block2);
-		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
-		simulation.m_pool.wait_for_tasks();
-		area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
-		auto result = a1.m_canSee.getCurrentlyVisibleActors();
-		REQUIRE(result.size() == 1);
-		REQUIRE(result.contains(&a2));
+		if constexpr(Config::visionCuboidsActive)
+		{
+			areaBuilderUtil::setSolidLayer(area, 0, marble);
+			Block& block1 = area.getBlock(3, 3, 1);
+			Block& block2 = area.getBlock(7, 7, 1);
+			Actor& a1 = simulation.m_hasActors->createActor(dwarf, block1);
+			Actor& a2 = simulation.m_hasActors->createActor(dwarf, block2);
+			area.m_hasActors.m_visionFacadeBuckets.getForStep(1).readStep();
+			simulation.m_pool.wait_for_tasks();
+			area.m_hasActors.m_visionFacadeBuckets.getForStep(1).writeStep();
+			auto result = a1.m_canSee.getCurrentlyVisibleActors();
+			REQUIRE(result.size() == 1);
+			REQUIRE(util::vectorContains(result, &a2));
+		}
 	}
 }
 TEST_CASE("Too far to see")

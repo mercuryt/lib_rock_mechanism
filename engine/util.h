@@ -97,4 +97,27 @@ namespace util
 		std::swap(vector[index], vector.back());
 		vector.pop_back();
 	}
-};
+	template<typename T>
+	void removeDuplicates(std::vector<T>& input)
+       	{
+		std::sort(input.begin(), input.end());
+		input.erase(std::unique(input.begin(), input.end()), input.end());
+	}
+	template<typename T>
+	bool vectorContains(const std::vector<T>& vector,const  T& value) 
+	{
+		return std::ranges::find(vector, value) != vector.end();
+	}
+	template<typename T>
+	void removeDuplicatesAndValue(std::vector<T>& vec, const T& valueToRemove) 
+	{
+		std::vector<T> seen = {valueToRemove};
+		vec.erase(std::remove_if(vec.begin(), vec.end(), [&](const T& elem) 
+		{
+			if (vectorContains(seen, elem))
+				return true;
+			seen.push_back(elem);
+			return false;
+		}), vec.end());
+	};
+}

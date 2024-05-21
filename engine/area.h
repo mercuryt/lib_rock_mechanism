@@ -65,7 +65,6 @@ public:
 	std::unordered_set<Block*> m_caveInCheck;
 	std::vector<std::tuple<std::vector<Block*>,uint32_t,uint32_t>> m_caveInData;
 
-	std::list<VisionCuboid> m_visionCuboids;
 private:
 	std::vector<Block> m_blocks;
 public:
@@ -76,7 +75,6 @@ public:
 	const DistanceInBlocks m_sizeX;
 	const DistanceInBlocks m_sizeY;
 	const DistanceInBlocks m_sizeZ;
-	bool m_visionCuboidsActive;
 
 	// Create blocks and store adjacent
 	Area(AreaId id, std::wstring n, Simulation& s, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z);
@@ -93,9 +91,6 @@ public:
 	[[nodiscard]] Block& getMiddleAtGroundLevel();
 	[[nodiscard]] Block& getGroundLevel(DistanceInBlocks x, DistanceInBlocks y);
 	//Block& getBlockForAdjacentLocation(WorldLocation& location);
-
-	// Assign all visible blocks to a visionCuboid, set m_visionCubioidsActive to true.
-	void visionCuboidsActivate();
 
 	// Cavein read/write
 	void stepCaveInRead();

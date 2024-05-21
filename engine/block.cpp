@@ -10,7 +10,6 @@
 #include "hasShape.h"
 #include "block.h"
 #include "area.h"
-#include "visionUtil.h"
 
 Block::Block() : m_reservable(1), m_hasFluids(*this), m_hasShapes(*this), m_hasActors(*this), m_hasItems(*this), m_isPartOfStockPiles(*this), m_isPartOfFarmField(*this), m_hasBlockFeatures(*this), m_hasPlant(*this), m_blockHasTemperature(*this) {}
 void Block::setup(Area& area, DistanceInBlocks ax, DistanceInBlocks ay, DistanceInBlocks az)
@@ -275,8 +274,8 @@ void Block::setNotSolid()
 	m_constructed = false;
 	m_hasFluids.onBlockSetNotSolid();
 	m_hasShapes.clearCache();
-	if(m_area->m_visionCuboidsActive)
-		VisionCuboid::BlockIsNeverOpaque(*this);
+	if constexpr(Config::visionCuboidsActive)
+		m_area->m_hasActors.m_visionCuboids.blockIsNeverOpaque(*this);
 	m_area->m_hasActors.m_opacityFacade.update(*this);
 	if(m_adjacents[5] == nullptr || m_adjacents[5]->m_exposedToSky)
 	{
@@ -339,11 +338,9 @@ void Block::setSolid(const MaterialType& materialType, bool constructed)
 	// Clear move cost caches for this and adjacent
 	m_hasShapes.clearCache();
 	// Opacity.
-	if(m_area->m_visionCuboidsActive && !materialType.transparent && wasEmpty)
-	{
-		assert(m_visionCuboid);
-		VisionCuboid::BlockIsSometimesOpaque(*this);
-	}
+	if constexpr(Config::visionCuboidsActive)
+	       if(!materialType.transparent && wasEmpty)
+		       m_area->m_hasActors.m_visionCuboids.blockIsSometimesOpaque(*this);
 	m_area->m_hasActors.m_opacityFacade.update(*this);
 	// Set blocks below as not exposed to sky.
 	setExposedToSky(false);
@@ -511,7 +508,7 @@ bool Block::isSupport() const
 }
 bool Block::hasLineOfSightTo(Block& block) const
 {
-	return visionUtil::hasLineOfSightBasic(*this, block);
+	return m_area->m_hasActors.m_opacityFacade.hasLineOfSight(*this, block);
 }
 bool Block::operator==(const Block& block) const { return &block == this; };
 //TODO: Replace with cuboid.
@@ -560,8 +557,8 @@ void Block::loadFromJson(Json data, DeserializationMemo& deserializationMemo, Di
 		deserializationMemo.m_reservables[data["reservable"].get<uintptr_t>()] = &m_reservable;
 	if(data.contains("s"))
 	{
-		m_solid = &MaterialType::byName(data["s"].get<std::string>());
-		m_hasFluids.onBlockSetSolid();
+		const MaterialType& materialType = MaterialType::byName(data["s"].get<std::string>());
+		setSolid(materialType);
 	}
 	if(data.contains("blockFeatures"))
 		for(Json blockFeatureData : data["blockFeatures"])

@@ -1,6 +1,7 @@
 #include "blockFeature.h"
 #include "block.h"
 #include "area.h"
+#include "config.h"
 // Name, hewn, blocks entrance, lockable, stand in, stand above
 BlockFeatureType BlockFeatureType::floor{"floor", false, false, false, true, false, false};
 BlockFeatureType BlockFeatureType::door{"door", false, false, true, false, false, false};
@@ -56,14 +57,14 @@ void HasBlockFeatures::construct(const BlockFeatureType& blockFeatureType, const
 	m_block.m_hasShapes.clearCache();
 	if((blockFeatureType == BlockFeatureType::floor || blockFeatureType == BlockFeatureType::hatch) && !materialType.transparent)
 	{
-		if(m_block.m_area->m_visionCuboidsActive)
-			VisionCuboid::BlockFloorIsSometimesOpaque(m_block);
+		if constexpr(Config::visionCuboidsActive)
+			m_block.m_area->m_hasActors.m_visionCuboids.blockFloorIsSometimesOpaque(m_block);
 		m_block.setBelowNotExposedToSky();
 	}
 	else if(blockFeatureType == BlockFeatureType::door && !materialType.transparent)
 	{
-		if(m_block.m_area->m_visionCuboidsActive)
-			VisionCuboid::BlockIsSometimesOpaque(m_block);
+		if constexpr(Config::visionCuboidsActive)
+			m_block.m_area->m_hasActors.m_visionCuboids.blockIsSometimesOpaque(m_block);
 		m_block.setBelowNotExposedToSky();
 	}
 	m_block.m_area->m_hasActors.m_opacityFacade.update(m_block);

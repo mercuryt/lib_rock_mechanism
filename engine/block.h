@@ -62,8 +62,6 @@ private:
 public:
 	// Store the location bucket this block belongs to.
 	LocationBucket* m_locationBucket = nullptr;
-	// Store the visionCuboid this block belongs to.
-	VisionCuboid* m_visionCuboid = nullptr;
 	DistanceInBlocks m_x = 0;
 	DistanceInBlocks m_y = 0;
 	DistanceInBlocks m_z = 0;

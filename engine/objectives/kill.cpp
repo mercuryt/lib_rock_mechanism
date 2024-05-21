@@ -1,4 +1,5 @@
 #include "kill.h"
+#include "../area.h"
 #include "../block.h"
 #include "../actor.h"
 #include "../objective.h"
@@ -34,7 +35,7 @@ void KillObjective::execute()
 	if(!m_getIntoRangeAndLineOfSightThreadedTask.exists() && 
 			(m_killer.m_location->taxiDistance(*m_target.m_location) > m_killer.m_canFight.getMaxRange() ||
 			 // TODO: hasLineOfSightIncludingActors
-			 visionUtil::hasLineOfSightBasic(*m_killer.m_location, *m_target.m_location))
+			 m_killer.m_location->m_area->m_hasActors.m_opacityFacade.hasLineOfSight(*m_killer.m_location, *m_target.m_location))
 	)
 		m_getIntoRangeAndLineOfSightThreadedTask.create(m_killer, m_target, m_killer.m_canFight.getMaxRange());
 	else
