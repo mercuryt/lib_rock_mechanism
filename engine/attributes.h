@@ -12,13 +12,13 @@ enum class AttributeType { Strength, Dextarity, Agility, Mass };
 
 struct Attribute
 {
-	const uint32_t& speciesNewbornValue;
-	const uint32_t& speciesAdultValue;
+	uint32_t speciesNewbornValue;
+	uint32_t speciesAdultValue;
 	uint32_t value;
 	Percent baseModifierPercent;
 	int32_t bonusOrPenalty;
-	Attribute(const uint32_t& snv, const uint32_t& sav, uint32_t bmp, int32_t bop, Percent percentGrown) : speciesNewbornValue(snv), speciesAdultValue(sav), baseModifierPercent(bmp), bonusOrPenalty(bop) { setPercentGrown(percentGrown); }
-	Attribute(const Json& data, const uint32_t& speciesNewbornValue, const uint32_t& speciesAdultValue, Percent percentGrown);
+	Attribute(uint32_t snv, uint32_t sav, uint32_t bmp, int32_t bop, Percent percentGrown) : speciesNewbornValue(snv), speciesAdultValue(sav), baseModifierPercent(bmp), bonusOrPenalty(bop) { setPercentGrown(percentGrown); }
+	Attribute(const Json& data, uint32_t speciesNewbornValue, uint32_t speciesAdultValue, Percent percentGrown);
 	void setPercentGrown(Percent percentGrown);
 	Json toJson() const;
 };

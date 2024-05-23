@@ -124,14 +124,6 @@ Item::Item(ItemParamaters itemParamaters) : HasShape(*itemParamaters.simulation,
 		m_location->m_area->m_hasItems.add(*this);
 	}
 }
-void Item::setVolume() { m_volume = m_quantity * m_itemType.volume; }
-void Item::setMass()
-{ 
-	m_mass = m_quantity * singleUnitMass();
-	if(m_itemType.internalVolume)
-		for(Item* item : m_hasCargo.getItems())
-			m_mass += item->getMass();
-}
 void Item::setLocation(Block& block)
 {
 	if(m_location != nullptr)
@@ -225,23 +217,19 @@ Item::Item(Simulation& s, ItemId i, const ItemType& it, const MaterialType& mt, 
 {
 	assert(m_itemType.generic);
 	assert(m_quantity);
-	m_volume = m_itemType.volume * m_quantity;
-	m_mass = m_volume * m_materialType.density;
 }
 // NonGeneric.
 Item::Item(Simulation& s, ItemId i, const ItemType& it, const MaterialType& mt, uint32_t qual, Percent pw, CraftJob* cj):
 	HasShape(s, it.shape, true), m_hasCargo(*this), m_canBeStockPiled(*this), m_craftJobForWorkPiece(cj), m_itemType(it), m_materialType(mt), m_id(i), m_quality(qual), m_percentWear(pw), m_quantity(1u), m_installed(false)
 {
 	assert(!m_itemType.generic);
-	m_mass = m_itemType.volume * m_materialType.density;
-	m_volume = m_itemType.volume;
 }
 Item::Item(const Json& data, DeserializationMemo& deserializationMemo, ItemId id) : 
 	HasShape(data, deserializationMemo),
 	m_hasCargo(*this),
 	m_canBeStockPiled(data["canBeStockPiled"], deserializationMemo, *this), m_craftJobForWorkPiece(nullptr), m_itemType(*data["itemType"].get<const ItemType*>()),
 	m_materialType(*data["materialType"].get<const MaterialType*>()),
-	m_id(id), m_mass(getMass()), m_quality(data["quality"].get<uint32_t>()),
+	m_id(id), m_quality(data["quality"].get<uint32_t>()),
 	m_percentWear(data["percentWear"].get<Percent>()), m_quantity(data.contains("quantity") ? data["quantity"].get<Quantity>() : 1u), m_installed(data["installed"].get<bool>()) 
 	{
 		if(data.contains("location"))

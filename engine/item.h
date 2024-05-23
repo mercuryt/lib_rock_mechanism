@@ -171,8 +171,6 @@ public:
 	const ItemType& m_itemType;
 	const MaterialType& m_materialType;
 	const ItemId m_id;
-	Mass m_mass;
-	Volume m_volume;
 	uint32_t m_quality;
 	//TODO: Percent doesn't allow fine enough detail for tools wearing out over time?
 	Percent m_percentWear;
@@ -190,8 +188,6 @@ public:
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	void setName(std::wstring name) { m_name = name; }
-	void setVolume();
-	void setMass();
 	void destroy();
 	void setLocation(Block& block);
 	void exit();

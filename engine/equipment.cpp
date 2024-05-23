@@ -36,7 +36,7 @@ void EquipmentSet::insertEquipment(Item& equipment)
 {
 	assert(std::ranges::find(m_equipments, &equipment) == m_equipments.end());
 	assert(equipment.m_location == nullptr);
-	m_mass += equipment.m_mass;
+	m_mass += equipment.getMass();
 	m_equipments.insert(&equipment);
 	if(equipment.m_itemType.wearableData != nullptr)
 	{
@@ -64,8 +64,8 @@ void EquipmentSet::addEquipment(Item& equipment)
 void EquipmentSet::removeEquipment(Item& equipment)
 {
 	assert(std::ranges::find(m_equipments, &equipment) != m_equipments.end());
-	assert(m_mass >= equipment.m_mass);
-	m_mass -= equipment.m_mass;
+	assert(m_mass >= equipment.getMass());
+	m_mass -= equipment.getMass();
 	m_equipments.erase(&equipment);
 	if(equipment.m_itemType.wearableData != nullptr)
 		m_wearable.erase(&equipment);

@@ -15,7 +15,7 @@ Json Attribute::toJson() const
 	data["bonusOrPenalty"] = bonusOrPenalty;
 	return data;
 }
-Attribute::Attribute(const Json& data, const uint32_t& speciesNewbornValue, const uint32_t& speciesAdultValue, Percent percentGrown) :
+Attribute::Attribute(const Json& data, uint32_t speciesNewbornValue, uint32_t speciesAdultValue, Percent percentGrown) :
 	speciesNewbornValue(speciesNewbornValue),
 	speciesAdultValue(speciesAdultValue),
 	value(data["value"].get<uint32_t>()),
