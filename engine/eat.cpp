@@ -79,7 +79,7 @@ void EatEvent::eatPreparedMeal(Item& item)
 	assert(m_eatObjective.m_actor.m_mustEat.canEat(item));
 	assert(item.isPreparedMeal());
 	auto& eater = m_eatObjective.m_actor;
-	Mass massEaten = std::min(eater.m_mustEat.getMassFoodRequested(), item.m_mass);
+	Mass massEaten = std::min(eater.m_mustEat.getMassFoodRequested(), item.getMass());
 	assert(massEaten != 0);
 	eater.m_mustEat.eat(massEaten);
 	item.destroy();
