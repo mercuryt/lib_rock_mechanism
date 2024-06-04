@@ -4,7 +4,6 @@
 #include "../types.h"
 
 class Simulation;
-class Block;
 struct DeserializationMemo;
 
 class SimulationHasActors final
@@ -16,7 +15,7 @@ public:
 	SimulationHasActors(Simulation& simulation) : m_simulation(simulation) { }
 	SimulationHasActors(const Json& data, DeserializationMemo& deserializationMemo, Simulation& simulation);
 	Actor& createActor(ActorParamaters params);
-	Actor& createActor(const AnimalSpecies& species, Block& location, Percent percentGrown = 100);
+	Actor& createActor(const AnimalSpecies& species, BlockIndex location, Percent percentGrown = 100);
 	void destroyActor(Actor& actor);
 	void clearAll();
 	Actor& loadActorFromJson(const Json& data, DeserializationMemo& deserializationMemo);

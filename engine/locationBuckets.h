@@ -4,7 +4,6 @@
 #include <functional>
 #include <unordered_set>
 class Area;
-class Block;
 class Actor;
 class VisionRequest;
 class VisionFacade;
@@ -36,7 +35,7 @@ public:
 	void initalize();
 	void add(Actor& actor);
 	void remove(Actor& actor);
-	void update(Actor& actor, std::unordered_set<Block*>& oldBlocks);
-	[[nodiscard]] LocationBucket& getBucketFor(const Block& block);
+	void update(Actor& actor, std::unordered_set<BlockIndex>& oldBlocks);
+	[[nodiscard]] LocationBucket& getBucketFor(const BlockIndex block);
 	friend class VisionFacade;
 };

@@ -30,7 +30,7 @@
 //#include "worldParamatersPanel.h"
 struct GameView final 
 {
-	Block* center;
+	BlockIndex* center;
 	uint32_t scale;
 };
 class Window final
@@ -63,7 +63,7 @@ class Window final
 	std::atomic<uint16_t> m_speed = 1;
 	std::unordered_map<AreaId, GameView> m_lastViewedSpotInArea;
 	//TODO: multi select.
-	std::unordered_set<Block*> m_selectedBlocks;
+	std::unordered_set<BlockIndex*> m_selectedBlocks;
 	std::unordered_set<Actor*> m_selectedActors;
 	std::unordered_set<Item*> m_selectedItems;
 	std::unordered_set<Plant*> m_selectedPlants;
@@ -75,8 +75,8 @@ class Window final
 	Draw m_draw;
 	std::thread m_simulationThread;
 	sf::Vector2i m_positionWhereMouseDragBegan = {0,0};
-	Block* m_firstCornerOfSelection = nullptr;
-	Block* m_blockUnderCursor = nullptr;
+	BlockIndex* m_firstCornerOfSelection = nullptr;
+	BlockIndex* m_blockUnderCursor = nullptr;
 	static constexpr int gameMarginSize = 400;
 	
 	void povFromJson(const Json& data);
@@ -94,7 +94,7 @@ public:
 	void setSpeed(uint16_t speed);
 	void setArea(Area& area, GameView* gameView = nullptr);
 	void startLoop();
-	void centerView(const Block& block);
+	void centerView(const BlockIndex& block);
 	void setFrameRate(uint32_t);
 	void setItemToInstall(Item& item) { m_gameOverlay.m_itemBeingInstalled = &item; }
 	void setItemToMove(Item& item) { m_gameOverlay.m_itemBeingMoved = &item; }
@@ -122,16 +122,16 @@ public:
 	void showEditDrama(Area* area = nullptr) { hideAllPanels(); m_editDramaView.draw(area); }
 	// Select.
 	void deselectAll();
-	void selectBlock(Block& block);
+	void selectBlock(BlockIndex& block);
 	void selectItem(Item& item);
 	void selectPlant(Plant& plant);
 	void selectActor(Actor& actor);
-	std::unordered_set<Block*>& getSelectedBlocks() { return m_selectedBlocks; }
+	std::unordered_set<BlockIndex*>& getSelectedBlocks() { return m_selectedBlocks; }
 	std::unordered_set<Item*>& getSelectedItems() { return m_selectedItems; }
 	std::unordered_set<Plant*>& getSelectedPlants() { return m_selectedPlants; }
 	std::unordered_set<Actor*>& getSelectedActors() { return m_selectedActors; }
-	[[nodiscard]] Block& getBlockUnderCursor();
-	[[nodiscard]] Block& getBlockAtPosition(sf::Vector2i pixelPos);
+	[[nodiscard]] BlockIndex& getBlockUnderCursor();
+	[[nodiscard]] BlockIndex& getBlockAtPosition(sf::Vector2i pixelPos);
 	// Filesystem.
 	void threadTask(std::function<void()> task);
 	void save();

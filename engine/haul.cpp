@@ -147,9 +147,10 @@ void CanPickup::pickUp(Actor& actor, [[maybe_unused]] Quantity quantity)
 	m_carrying = &actor;
 	m_actor.m_canMove.updateIndividualSpeed();
 }
-HasShape& CanPickup::putDown(Block& location, Quantity quantity)
+HasShape& CanPickup::putDown(BlockIndex location, Quantity quantity)
 {
 	assert(m_carrying != nullptr);
+	auto& blocks = m_actor.m_area->getBlocks();
 	if(quantity == 0)
 		quantity = m_carrying->isItem() ? getItem().getQuantity() : 1u;
 	if(m_carrying->isItem())
@@ -161,31 +162,30 @@ HasShape& CanPickup::putDown(Block& location, Quantity quantity)
 		if(item.getQuantity() == quantity)
 		{
 			m_carrying = nullptr;
-			if(location.m_hasItems.getCount(item.m_itemType, item.m_materialType) == 0)
+			if(blocks.item_getCount(location, item.m_itemType, item.m_materialType) == 0)
 			{
 				item.setLocation(location);
 				output = &item;
 			}
 			else
-				output = &location.m_hasItems.addGeneric(item.m_itemType, item.m_materialType, quantity);
-				
+				output = &blocks.item_addGeneric(location, item.m_itemType, item.m_materialType, quantity);
 		}
 		else
 		{
 			item.removeQuantity(quantity);
-			output = &location.m_hasItems.addGeneric(item.m_itemType, item.m_materialType, quantity);
+			output = &blocks.item_addGeneric(location, item.m_itemType, item.m_materialType, quantity);
 		}
 	}
 	else
 	{
-		m_carrying->setLocation(location);
+		m_carrying->setLocation(location, m_actor.m_area);
 		output = m_carrying;
 		m_carrying = nullptr;
 	}
 	m_actor.m_canMove.updateIndividualSpeed();
 	return *output;
 }
-HasShape* CanPickup::putDownIfAny(Block& location)
+HasShape* CanPickup::putDownIfAny(BlockIndex location)
 {
 	if(m_carrying != nullptr)
 		return &putDown(location);
@@ -376,7 +376,7 @@ HaulSubproject::HaulSubproject(const Json& data, Project& p, DeserializationMemo
 		for(const Json& liftPointData : data["liftPoints"])
 		{
 			Actor& actor = deserializationMemo.m_simulation.m_hasActors->getById(liftPointData[0].get<ActorId>());
-			m_liftPoints[&actor] = &deserializationMemo.m_simulation.getBlockForJsonQuery(liftPointData[1]);
+			m_liftPoints[&actor] = deserializationMemo.m_simulation.getBlockForJsonQuery(liftPointData[1]);
 		}
 	deserializationMemo.m_haulSubprojects[data["address"].get<uintptr_t>()] = this;
 }
@@ -422,7 +422,7 @@ Json HaulSubproject::toJson() const
 	{
 		data["liftPoints"] = Json::array();
 		for(auto& [actor, block] : m_liftPoints)
-			data["liftPoints"].push_back(Json::array({actor->m_id, block->positionToJson()}));
+			data["liftPoints"].push_back(Json::array({actor->m_id, block}));
 	}
 	return data;
 }
@@ -430,6 +430,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 {
 	assert(m_workers.contains(&actor));
 	assert(actor.m_hasObjectives.hasCurrent());
+	auto& blocks = actor.m_area->getBlocks();
 	Objective& objective = m_project.m_workers.at(&actor).objective;
 	bool detour = objective.m_detour;
 	bool hasCargo = false;
@@ -445,7 +446,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 				if(actor.isAdjacentTo(m_project.m_location))
 				{
 					// Unload
-					HasShape& cargo = actor.m_canPickup.putDown(*actor.m_location, m_quantity);
+					HasShape& cargo = actor.m_canPickup.putDown(actor.m_location, m_quantity);
 					complete(cargo);
 				}
 				else
@@ -506,7 +507,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 					for(Actor* actor : m_workers)
 						if(actor != m_leader)
 							actor->m_canFollow.unfollow();
-					m_toHaul.setLocation(*actor.m_location);
+					m_toHaul.setLocation(actor.m_location, actor.m_area);
 					complete(m_toHaul);
 				}
 				else
@@ -540,21 +541,21 @@ void HaulSubproject::commandWorker(Actor& actor)
 					else
 						// Actor is not at lift point.
 						// destination, detour, adjacent, unreserved, reserve
-						actor.m_canMove.setDestination(*m_liftPoints.at(&actor), detour, false, false, false);
+						actor.m_canMove.setDestination(m_liftPoints.at(&actor), detour, false, false, false);
 				}
 				else
 				{
 					// No lift point exists for this actor, find one.
 					// TODO: move this logic to tryToSetHaulStrategy?
-					for(Block* block : m_toHaul.getAdjacentBlocks())
+					for(BlockIndex block : m_toHaul.getAdjacentBlocks())
 					{
-						Facing facing = m_project.m_location.facingToSetWhenEnteringFrom(*block);
-						if(block->m_hasShapes.canEnterEverWithFacing(actor, facing) && !block->m_reservable.isFullyReserved(actor.getFaction()))
+						Facing facing = blocks.facingToSetWhenEnteringFrom(m_project.m_location, block);
+						if(blocks.shape_canEnterEverWithFacing(block, actor, facing) && !blocks.isReserved(block, *actor.getFaction()))
 						{
 							m_liftPoints[&actor] = block;
-							block->m_reservable.reserveFor(actor.m_canReserve, 1);
+							blocks.reserve(block, actor.m_canReserve);
 							// Destination, detour, adjacent, unreserved, reserve
-							actor.m_canMove.setDestination(*block, detour, false, false, false);
+							actor.m_canMove.setDestination(block, detour, false, false, false);
 							return;
 						}
 					}
@@ -585,7 +586,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 							delivered = &m_toHaul;
 						}
 						else
-							delivered = &m_haulTool->m_hasCargo.unloadGenericTo(*m_genericItemType, *m_genericMaterialType, m_quantity, *actor.m_location);
+							delivered = &m_haulTool->m_hasCargo.unloadGenericTo(*m_genericItemType, *m_genericMaterialType, m_quantity, actor.m_location);
 						// TODO: set rotation?
 						assert(delivered != nullptr);
 						complete(*delivered);
@@ -646,12 +647,12 @@ void HaulSubproject::commandWorker(Actor& actor)
 						//TODO: unloading delay.
 						if(m_genericItemType == nullptr)
 						{
-							m_haulTool->m_hasCargo.unloadTo(m_toHaul, *actor.m_location);
+							m_haulTool->m_hasCargo.unloadTo(m_toHaul, actor.m_location);
 							delivered = &m_toHaul;
 						}
 						else
 						{
-							delivered = &m_haulTool->m_hasCargo.unloadGenericTo(*m_genericItemType, *m_genericMaterialType, m_quantity, *actor.m_location);
+							delivered = &m_haulTool->m_hasCargo.unloadGenericTo(*m_genericItemType, *m_genericMaterialType, m_quantity, actor.m_location);
 						}
 						// TODO: set rotation?
 						m_beastOfBurden->m_canFollow.unfollow();
@@ -698,7 +699,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 				{
 					// Bring panniers to beast.
 					// TODO: move to adjacent to panniers.
-					if(actor.isAdjacentTo(*m_haulTool->m_location))
+					if(actor.isAdjacentTo(m_haulTool->m_location))
 					{
 						actor.m_canPickup.pickUp(*m_haulTool, 1u);
 						actor.m_canReserve.deleteAllWithoutCallback();
@@ -731,11 +732,11 @@ void HaulSubproject::commandWorker(Actor& actor)
 						HasShape* delivered = nullptr;
 						if(m_genericItemType == nullptr)
 						{
-							m_haulTool->m_hasCargo.unloadTo(m_toHaul, *actor.m_location);
+							m_haulTool->m_hasCargo.unloadTo(m_toHaul, actor.m_location);
 							delivered = &m_toHaul;
 						}
 						else
-							delivered = &m_haulTool->m_hasCargo.unloadGenericTo(*m_genericItemType, *m_genericMaterialType, m_quantity, *actor.m_location);
+							delivered = &m_haulTool->m_hasCargo.unloadGenericTo(*m_genericItemType, *m_genericMaterialType, m_quantity, actor.m_location);
 						// TODO: set rotation?
 						m_beastOfBurden->m_canFollow.unfollow();
 						complete(*delivered);
@@ -813,11 +814,11 @@ void HaulSubproject::commandWorker(Actor& actor)
 						HasShape* delivered = nullptr;
 						if(m_genericItemType == nullptr)
 						{
-							m_haulTool->m_hasCargo.unloadTo(m_toHaul, *actor.m_location);
+							m_haulTool->m_hasCargo.unloadTo(m_toHaul, actor.m_location);
 							delivered = &m_toHaul;
 						}
 						else
-							delivered = &m_haulTool->m_hasCargo.unloadGenericTo(*m_genericItemType, *m_genericMaterialType, m_quantity, *actor.m_location);
+							delivered = &m_haulTool->m_hasCargo.unloadGenericTo(*m_genericItemType, *m_genericMaterialType, m_quantity, actor.m_location);
 						// TODO: set rotation?
 						m_leader->m_canFollow.disband();
 						complete(*delivered);
@@ -945,7 +946,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 		output.quantity = 1;
 		return output;
 	}
-	Item* haulTool = toHaul.m_location->m_area->m_hasHaulTools.getToolToHaul(*worker.getFaction(), toHaul);
+	Item* haulTool = worker.m_area->m_hasHaulTools.getToolToHaul(*worker.getFaction(), toHaul);
 	// Cart
 	if(haulTool != nullptr)
 	{
@@ -960,7 +961,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 			return output;
 		}
 		// Animal Cart
-		Actor* yoked = toHaul.m_location->m_area->m_hasHaulTools.getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(*worker.getFaction(), *haulTool, toHaul.getMass(), minimumSpeed);
+		Actor* yoked = worker.m_area->m_hasHaulTools.getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(*worker.getFaction(), *haulTool, toHaul.getMass(), minimumSpeed);
 		if(yoked != nullptr)
 		{
 			maxQuantityCanCarry = maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(worker, *yoked, *haulTool, toHaul, minimumSpeed);
@@ -986,11 +987,11 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 		}
 	}
 	// Panniers
-	Actor* pannierBearer = toHaul.m_location->m_area->m_hasHaulTools.getPannierBearerToHaulCargoWithMassWithMinimumSpeed(*worker.getFaction(), toHaul, minimumSpeed);
+	Actor* pannierBearer = worker.m_area->m_hasHaulTools.getPannierBearerToHaulCargoWithMassWithMinimumSpeed(*worker.getFaction(), toHaul, minimumSpeed);
 	if(pannierBearer != nullptr)
 	{
 		//TODO: If pannierBearer already has panniers equiped then use those, otherwise find ones to use. Same for animalCart.
-		Item* panniers = toHaul.m_location->m_area->m_hasHaulTools.getPanniersForActorToHaul(*worker.getFaction(), *pannierBearer, toHaul);
+		Item* panniers = worker.m_area->m_hasHaulTools.getPanniersForActorToHaul(*worker.getFaction(), *pannierBearer, toHaul);
 		if(panniers != nullptr)
 		{
 			maxQuantityCanCarry = maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniersAndAnimal(worker, *pannierBearer, *panniers, toHaul, minimumSpeed);
@@ -1021,7 +1022,7 @@ void HaulSubproject::complete(HasShape& delivered)
 		if(m_projectRequirementCounts.consumed)
 			m_project.m_toConsume.insert(static_cast<Item*>(&delivered));
 		if(static_cast<Item&>(delivered).isWorkPiece())
-			delivered.setLocation(m_project.m_location);
+			delivered.setLocation(m_project.m_location, &m_project.m_area);
 	}
 	for(Actor* worker : m_workers)
 		worker->m_canReserve.deleteAllWithoutCallback();

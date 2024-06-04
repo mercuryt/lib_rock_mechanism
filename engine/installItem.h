@@ -13,7 +13,7 @@ class InstallItemProject final : public Project
 	Facing m_facing;
 public:
 	// Max one worker.
-	InstallItemProject(Item& i, Block& l, Facing facing, Faction& faction) : Project(&faction, l, 1), m_item(i), m_facing(facing) { }
+	InstallItemProject(Item& i, BlockIndex l, Facing facing, Faction& faction);
 	void onComplete();
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const { return {}; }
 	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const { return {{m_item,1}}; }
@@ -60,15 +60,15 @@ public:
 };
 class HasInstallItemDesignationsForFaction final
 {
-	std::unordered_map<Block*, InstallItemProject> m_designations;
+	std::unordered_map<BlockIndex, InstallItemProject> m_designations;
 	Faction& m_faction;
 public:
 	HasInstallItemDesignationsForFaction(Faction& faction) : m_faction(faction) { }
-	void add(Block& block, Item& item, Facing facing, Faction& faction);
+	void add(BlockIndex block, Item& item, Facing facing, Faction& faction);
 	void remove(Item& item);
 	bool empty() const { return m_designations.empty(); }
-	bool contains(const Block& block) const { return m_designations.contains(&const_cast<Block&>(block)); }
-	InstallItemProject& at(Block& block) { return m_designations.at(&block); }
+	bool contains(const BlockIndex block) const { return m_designations.contains(block); }
+	InstallItemProject& at(BlockIndex block) { return m_designations.at(block); }
 	friend class AreaHasInstallItemDesignations;
 };
 class AreaHasInstallItemDesignations final

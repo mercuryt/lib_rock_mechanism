@@ -5,45 +5,49 @@
 #include "hasShape.h"
 #include "objective.h"
 #include "simulation.h"
+#include "types.h"
 #include <cassert>
 // Sleep Event.
-SleepEvent::SleepEvent(Step step, MustSleep& ns, bool f, const Step start) : ScheduledEvent(ns.m_actor.getSimulation(), step, start), m_needsSleep(ns), m_force(f) { }
+SleepEvent::SleepEvent(Step step, MustSleep& ns, bool f, const Step start) : 
+	ScheduledEvent(ns.m_actor.getSimulation(), step, start), m_needsSleep(ns), m_force(f) { }
 void SleepEvent::execute(){ m_needsSleep.wakeUp(); }
 void SleepEvent::clearReferences(){ m_needsSleep.m_sleepEvent.clearPointer(); }
 // Tired Event.
-TiredEvent::TiredEvent(Step step, MustSleep& ns, const Step start) : ScheduledEvent(ns.m_actor.getSimulation(), step, start), m_needsSleep(ns) { }
+TiredEvent::TiredEvent(Step step, MustSleep& ns, const Step start) : 
+	ScheduledEvent(ns.m_actor.getSimulation(), step, start), m_needsSleep(ns) { }
 void TiredEvent::execute(){ m_needsSleep.tired(); }
 void TiredEvent::clearReferences(){ m_needsSleep.m_tiredEvent.clearPointer(); }
 // Threaded Task.
-SleepThreadedTask::SleepThreadedTask(SleepObjective& so) : ThreadedTask(so.m_actor.getThreadedTaskEngine()), m_sleepObjective(so), m_findsPath(so.m_actor, so.m_detour), m_sleepAtCurrentLocation(false), m_noWhereToSleepFound(false) { }
+SleepThreadedTask::SleepThreadedTask(SleepObjective& so) : 
+	ThreadedTask(so.m_actor.getThreadedTaskEngine()), m_sleepObjective(so), m_findsPath(so.m_actor, so.m_detour) { }
 void SleepThreadedTask::readStep()
 {
 	auto& actor = m_sleepObjective.m_actor;
-	assert(m_sleepObjective.m_actor.m_mustSleep.m_location == nullptr);
-	const Block* maxDesireCandidate = nullptr;
-	const Block* outdoorCandidate = nullptr;
-	const Block* indoorCandidate = nullptr;
-	uint32_t desireToSleepAtCurrentLocation = m_sleepObjective.desireToSleepAt(*m_sleepObjective.m_actor.m_location);
+	assert(m_sleepObjective.m_actor.m_mustSleep.m_location == BLOCK_INDEX_MAX);
+	BlockIndex maxDesireCandidate = BLOCK_INDEX_MAX;
+	BlockIndex outdoorCandidate = BLOCK_INDEX_MAX;
+	BlockIndex indoorCandidate = BLOCK_INDEX_MAX;
+	uint32_t desireToSleepAtCurrentLocation = m_sleepObjective.desireToSleepAt(m_sleepObjective.m_actor.m_location);
 	if(desireToSleepAtCurrentLocation == 1)
 		outdoorCandidate = m_sleepObjective.m_actor.m_location;
 	else if(desireToSleepAtCurrentLocation == 2)
 		indoorCandidate = m_sleepObjective.m_actor.m_location;
 	else if(desireToSleepAtCurrentLocation == 3)
 		maxDesireCandidate = m_sleepObjective.m_actor.m_location;
-	if(maxDesireCandidate == nullptr)
+	if(maxDesireCandidate == BLOCK_INDEX_MAX)
 	{
-		std::function<bool(const Block&)> condition = [&](const Block& block)
+		std::function<bool(BlockIndex)> condition = [&](BlockIndex block)
 		{
 			uint32_t desire = m_sleepObjective.desireToSleepAt(block);
 			if(desire == 3)
 			{
-				maxDesireCandidate = &block;
+				maxDesireCandidate = block;
 				return true;
 			}
-			else if(indoorCandidate == nullptr && desire == 2)
-				indoorCandidate = &block;	
-			else if(outdoorCandidate == nullptr && desire == 1)
-				outdoorCandidate = &block;	
+			else if(indoorCandidate == BLOCK_INDEX_MAX && desire == 2)
+				indoorCandidate = block;	
+			else if(outdoorCandidate == BLOCK_INDEX_MAX && desire == 1)
+				outdoorCandidate = block;	
 			return false;
 		};
 		if(actor.getFaction())
@@ -56,25 +60,25 @@ void SleepThreadedTask::readStep()
 		// If the current location is the max desired then set sleep at current to true.
 		if(maxDesireCandidate == actor.m_location)
 		{
-			assert(maxDesireCandidate != nullptr);
+			assert(maxDesireCandidate != BLOCK_INDEX_MAX);
 			m_sleepAtCurrentLocation = true;
 		}
 		// No max desire target found, try to at least get to a safe temperature
 		// TODO: paths which have already been previously calculated are being caluclated again here.
-		else if(indoorCandidate != nullptr)
+		else if(indoorCandidate != BLOCK_INDEX_MAX)
 		{
 			if(indoorCandidate == actor.m_location)
 				m_sleepAtCurrentLocation = true;
 			else
-				m_findsPath.pathToBlock(*indoorCandidate);
+				m_findsPath.pathToBlock(indoorCandidate);
 		}
-		else if(outdoorCandidate != nullptr)
+		else if(outdoorCandidate != BLOCK_INDEX_MAX)
 		{
 			// sleep outdoors.
 			if(outdoorCandidate == actor.m_location)
 				m_sleepAtCurrentLocation = true;
 			else
-				m_findsPath.pathToBlock(*outdoorCandidate);
+				m_findsPath.pathToBlock(outdoorCandidate);
 		}
 		else
 		{
@@ -87,7 +91,6 @@ void SleepThreadedTask::readStep()
 void SleepThreadedTask::writeStep()
 {
 	auto& actor = m_sleepObjective.m_actor;
-	m_findsPath.cacheMoveCosts();
 	if(!m_findsPath.found())
 	{
 		if(m_sleepAtCurrentLocation)
@@ -129,11 +132,11 @@ Json SleepObjective::toJson() const
 void SleepObjective::execute()
 {
 	assert(m_actor.m_mustSleep.m_isAwake);
-	if(m_actor.m_mustSleep.m_location == nullptr)
+	if(m_actor.m_mustSleep.m_location == BLOCK_INDEX_MAX)
 	{
 		if(m_noWhereToSleepFound)
 		{
-			if(m_actor.predicateForAnyOccupiedBlock([](const Block& block){ return block.m_isEdge; }))
+			if(m_actor.predicateForAnyOccupiedBlock([this](BlockIndex block){ return m_actor.m_area->getBlocks().isEdge(block); }))
 				// We are at the edge and can leave.
 				m_actor.leaveArea();
 			else
@@ -146,10 +149,10 @@ void SleepObjective::execute()
 	}
 	else if(m_actor.m_location == m_actor.m_mustSleep.m_location)
 	{
-		if(desireToSleepAt(*m_actor.m_location) == 0)
+		if(desireToSleepAt(m_actor.m_location) == 0)
 		{
 			// Can not sleep here any more, look for another spot.
-			m_actor.m_mustSleep.m_location = nullptr;
+			m_actor.m_mustSleep.m_location = BLOCK_INDEX_MAX;
 			execute();
 		}
 		else
@@ -157,22 +160,23 @@ void SleepObjective::execute()
 			m_actor.m_mustSleep.sleep(); 
 	}
 	else
-		if(m_actor.m_mustSleep.m_location->m_hasShapes.canEnterEverWithAnyFacing(m_actor))
-			m_actor.m_canMove.setDestination(*m_actor.m_mustSleep.m_location, m_detour);
+		if(m_actor.m_area->getBlocks().shape_canEnterEverWithAnyFacing(m_actor.m_mustSleep.m_location, m_actor))
+			m_actor.m_canMove.setDestination(m_actor.m_mustSleep.m_location, m_detour);
 		else
 		{
 			// Location no longer can be entered. 
-			m_actor.m_mustSleep.m_location = nullptr;
+			m_actor.m_mustSleep.m_location = BLOCK_INDEX_MAX;
 			execute();
 		}
 }
-uint32_t SleepObjective::desireToSleepAt(const Block& block) const
+uint32_t SleepObjective::desireToSleepAt(BlockIndex block) const
 {
-	if(block.m_reservable.isFullyReserved(m_actor.getFaction()) || !m_actor.m_needsSafeTemperature.isSafe(block.m_blockHasTemperature.get()))
+	auto& blocks = m_actor.m_area->getBlocks();
+	if(blocks.isReserved(block, *m_actor.getFaction()) || !m_actor.m_needsSafeTemperature.isSafe(blocks.temperature_get(block)))
 		return 0;
-	if(block.m_area->m_hasSleepingSpots.containsUnassigned(block))
+	if(m_actor.m_area->m_hasSleepingSpots.containsUnassigned(block))
 		return 3;
-	if(block.m_outdoors)
+	if(blocks.isOutdoors(block))
 		return 1;
 	else
 		return 2;
@@ -190,9 +194,9 @@ void SleepObjective::reset()
 
 bool SleepObjective::onNoPath() 
 { 
-	if(m_actor.m_mustSleep.m_location == nullptr)
+	if(m_actor.m_mustSleep.m_location == BLOCK_INDEX_MAX)
 		return false;
-	m_actor.m_mustSleep.m_location = nullptr; 
+	m_actor.m_mustSleep.m_location = BLOCK_INDEX_MAX; 
 	execute(); 
 	return true;
 }
@@ -206,7 +210,7 @@ void MustSleep::scheduleTiredEvent()
 }
 MustSleep::MustSleep(const Json data, Actor& a, Simulation& s, const AnimalSpecies& species) : 
 	m_sleepEvent(s.m_eventSchedule), m_tiredEvent(s.m_eventSchedule), 
-	m_actor(a), m_location(data.contains("location") ? &s.getBlockForJsonQuery(data["location"]) : nullptr), 
+	m_actor(a), m_location(data.contains("location") ? s.getBlockForJsonQuery(data["location"]) : BLOCK_INDEX_MAX), 
 	m_needsSleep(data["needsSleep"].get<bool>()), m_isAwake(data["isAwake"].get<bool>())
 {
 	if(data.contains("sleepEventStart"))
@@ -217,8 +221,8 @@ MustSleep::MustSleep(const Json data, Actor& a, Simulation& s, const AnimalSpeci
 Json MustSleep::toJson() const
 {
 	Json data;
-	if(m_location != nullptr)
-		data["location"] = m_location->positionToJson();
+	if(m_location != BLOCK_INDEX_MAX)
+		data["location"] = m_location;
 	data["needsSleep"] = m_needsSleep;
 	data["isAwake"] = m_isAwake;
 	if(m_sleepEvent.exists())
@@ -293,9 +297,9 @@ void MustSleep::wakeUpEarly()
 	m_tiredEvent.schedule(m_actor.m_species.stepsTillSleepOveride, *this);
 	//TODO: partial stamina recovery.
 }
-void MustSleep::setLocation(Block& block)
+void MustSleep::setLocation(BlockIndex block)
 {
-	m_location = &block;
+	m_location = block;
 }
 void MustSleep::onDeath()
 {

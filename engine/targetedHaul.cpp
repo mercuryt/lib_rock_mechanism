@@ -1,5 +1,4 @@
 #include "targetedHaul.h"
-#include "block.h"
 #include "area.h"
 #include "actor.h"
 #include "item.h"
@@ -23,11 +22,11 @@ Json TargetedHaulProject::toJson() const
 void TargetedHaulProject::onComplete()
 {
 	auto workers = std::move(m_workers);
-	m_location.m_area->m_hasTargetedHauling.complete(*this);
+	m_area.m_hasTargetedHauling.complete(*this);
 	for(auto& [actor, projectWorker] : workers)
 		actor->m_hasObjectives.objectiveComplete(projectWorker.objective);
 }
-void TargetedHaulProject::onDelivered(HasShape& delivered) { delivered.setLocation(m_location); }
+void TargetedHaulProject::onDelivered(HasShape& delivered) { delivered.setLocation(m_location, &m_area); }
 // Objective.
 TargetedHaulObjective::TargetedHaulObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), m_project(*static_cast<TargetedHaulProject*>(deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()))) { }
 void Objective::reset() { m_actor.m_canReserve.deleteAllWithoutCallback(); }
@@ -44,9 +43,9 @@ Json AreaHasTargetedHauling::toJson() const
 		data["projects"].push_back(project);
 	return data;
 }
-TargetedHaulProject& AreaHasTargetedHauling::begin(std::vector<Actor*> actors, Item& item, Block& destination)
+TargetedHaulProject& AreaHasTargetedHauling::begin(std::vector<Actor*> actors, Item& item, BlockIndex destination)
 {
-	TargetedHaulProject& project = m_projects.emplace_back(actors.front()->getFaction(), destination, item);
+	TargetedHaulProject& project = m_projects.emplace_back(actors.front()->getFaction(), m_area, destination, item);
 	for(Actor* actor : actors)
 	{
 		std::unique_ptr<Objective> objective = std::make_unique<TargetedHaulObjective>(*actor, project);

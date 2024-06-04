@@ -9,7 +9,7 @@
 #include "../../engine/simulation/hasItems.h"
 #include <cmath>
 #include <regex>
-void ContextMenu::drawItemControls(Block& block)
+void ContextMenu::drawItemControls(BlockIndex& block)
 {
 	// Item submenu.
 	if(!block.m_hasItems.empty())
@@ -154,7 +154,7 @@ void ContextMenu::drawItemControls(Block& block)
 			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 			if(m_window.getSelectedBlocks().empty())
 				m_window.selectBlock(block);
-			for(Block* selectedBlock : m_window.getSelectedBlocks())
+			for(BlockIndex* selectedBlock : m_window.getSelectedBlocks())
 			{
 				static const MoveType& none = MoveType::byName("none");
 				if(!selectedBlock->m_hasShapes.shapeAndMoveTypeCanEnterEverWithAnyFacing(params.itemType.shape, none))

@@ -3,7 +3,7 @@
 #include "../displayData.h"
 #include "../../engine/block.h"
 #include <mutex>
-void ContextMenu::drawFarmFieldControls(Block& block)
+void ContextMenu::drawFarmFieldControls(BlockIndex& block)
 {
 	// Farm
 	if(m_window.getFaction() && block.m_isPartOfFarmField.contains(*m_window.getFaction()))
@@ -18,7 +18,7 @@ void ContextMenu::drawFarmFieldControls(Block& block)
 			submenu.add(shrinkButton);
 			shrinkButton->onClick([this]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-				for(Block* selectedBlock : m_window.getSelectedBlocks())
+				for(BlockIndex* selectedBlock : m_window.getSelectedBlocks())
 					selectedBlock->m_isPartOfFarmField.remove(*m_window.getFaction());
 				hide();
 			});

@@ -6,7 +6,7 @@
 #include "../../engine/objectives/goTo.h"
 #include "../../engine/objectives/station.h"
 #include "simulation/hasActors.h"
-void ContextMenu::drawActorControls(Block& block)
+void ContextMenu::drawActorControls(BlockIndex& block)
 {
 	// Actor submenu.
 	for(Actor* actor : block.m_hasActors.getAll())

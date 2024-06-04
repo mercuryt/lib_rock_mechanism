@@ -1,29 +1,29 @@
 #include "wander.h"
 #include "wait.h"
 #include "../actor.h"
-#include "../block.h"
 #include "../deserializationMemo.h"
 #include "../objective.h"
 #include "../random.h"
 #include "../config.h"
 #include "../simulation.h"
-WanderThreadedTask::WanderThreadedTask(WanderObjective& o) : ThreadedTask(o.m_actor.getThreadedTaskEngine()), m_objective(o), m_findsPath(o.m_actor, false) { }
+WanderThreadedTask::WanderThreadedTask(WanderObjective& o) : 
+	ThreadedTask(o.m_actor.getThreadedTaskEngine()), m_objective(o), m_findsPath(o.m_actor, false) { }
 void WanderThreadedTask::readStep()
 {
-	const Block* lastBlock = nullptr;
+	BlockIndex lastBlock = BLOCK_INDEX_MAX;
 	Random& random = m_objective.m_actor.getSimulation().m_random;
 	uint32_t numberOfBlocks = random.getInRange(Config::wanderMinimimNumberOfBlocks, Config::wanderMaximumNumberOfBlocks);
-	std::function<bool(const Block&, Facing)> condition = [&](const Block& block, [[maybe_unused]] Facing facing)
+	std::function<bool(BlockIndex, Facing)> condition = [&](BlockIndex block, [[maybe_unused]] Facing facing)
 	{
-		lastBlock = &block;
+		lastBlock = block;
 		return !numberOfBlocks--;
 	};
 	m_findsPath.pathToPredicate(condition);
 	// If we do not have access to the number of blocks needed to pick a destination via numberOfBlocks then just path to the last block checked.
-	if(!m_findsPath.found() && lastBlock != nullptr)
+	if(!m_findsPath.found() && lastBlock != BLOCK_INDEX_MAX)
 	{
 		assert(m_objective.m_actor.m_location != lastBlock);
-		m_findsPath.pathToBlock(*lastBlock);
+		m_findsPath.pathToBlock(lastBlock);
 	}
 }
 void WanderThreadedTask::writeStep() 
@@ -35,7 +35,6 @@ void WanderThreadedTask::writeStep()
 	}
 	else
 		m_objective.m_actor.wait(Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective);
-	m_findsPath.cacheMoveCosts();
 }
 void WanderThreadedTask::clearReferences() { m_objective.m_threadedTask.clearPointer(); }
 // Objective.

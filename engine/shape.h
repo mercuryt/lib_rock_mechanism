@@ -15,8 +15,8 @@
 #include <algorithm>
 #include <set>
 
+class Blocks;
 struct DeserializationMemo;
-class Block;
 
 struct Shape
 {
@@ -36,13 +36,14 @@ struct Shape
 	[[nodiscard]] std::vector<std::array<int32_t, 4>> makeOccupiedPositionsWithFacing(Facing facing) const;
 	[[nodiscard]] std::vector<std::array<int32_t, 3>> makeAdjacentPositionsWithFacing(Facing facing) const;
 	[[nodiscard]] std::vector<std::array<int32_t, 3>> positionOffsets(std::array<int32_t, 4> position) const;
-	[[nodiscard]] std::vector<Block*> getBlocksOccupiedAt(const Block& location, Facing facing) const;
-	[[nodiscard]] std::vector<std::pair<Block*, Volume>> getBlocksOccupiedAtWithVolumes(const Block& location, Facing facing) const;
+	[[nodiscard]] std::vector<BlockIndex> getBlocksOccupiedAt(const Blocks& blocks, BlockIndex location, Facing facing) const;
+	[[nodiscard]] std::vector<std::pair<BlockIndex, Volume>> getBlocksOccupiedAtWithVolumes(const Blocks& blocks, BlockIndex location, Facing facing) const;
+	[[nodiscard]] std::vector<BlockIndex> getBlocksWhichWouldBeAdjacentAt(const Blocks& blocks, BlockIndex location, Facing facing) const;
 	[[nodiscard]] CollisionVolume getCollisionVolumeAtLocationBlock() const;
 	// Infastructure.
-	[[nodiscard]] 	bool operator==(const Shape& x) const { return &x == this; }
+	[[nodiscard]] bool operator==(const Shape& x) const { return &x == this; }
 	[[nodiscard]] static const Shape& byName(const std::string& name);
-	[[nodiscard]] 	static bool hasShape(const std::string& name);
+	[[nodiscard]] static bool hasShape(const std::string& name);
 };
 inline std::vector<Shape> shapeDataStore;
 inline void to_json(Json& data, const Shape* const& shape){ data = shape->name; }

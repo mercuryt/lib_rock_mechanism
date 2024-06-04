@@ -6,7 +6,7 @@
 #include <string>
 #include <unordered_set>
 class Window;
-class Block;
+class BlockIndex;
 class Item;
 class Actor;
 class Plant;
@@ -16,52 +16,52 @@ class Draw final
 public:
 	Draw(Window& w) : m_window(w) { }
 	void view();
-	void blockFloor(const Block& block);
-	void blockWallCorners(const Block& block);
-	void blockWalls(const Block& block);
-	void blockWallTops(const Block& block);
-	void blockFeaturesAndFluids(const Block& block);
-	void blockWallsFromNextLevelDown(const Block& block);
-	void validOnBlock(const Block& block);
-	void invalidOnBlock(const Block& block);
-	void colorOnBlock(const Block& block, const sf::Color color);
-	void designated(const Block& block);
-	void craftLocation(const Block& block);
+	void blockFloor(const BlockIndex& block);
+	void blockWallCorners(const BlockIndex& block);
+	void blockWalls(const BlockIndex& block);
+	void blockWallTops(const BlockIndex& block);
+	void blockFeaturesAndFluids(const BlockIndex& block);
+	void blockWallsFromNextLevelDown(const BlockIndex& block);
+	void validOnBlock(const BlockIndex& block);
+	void invalidOnBlock(const BlockIndex& block);
+	void colorOnBlock(const BlockIndex& block, const sf::Color color);
+	void designated(const BlockIndex& block);
+	void craftLocation(const BlockIndex& block);
 	sf::Sprite getCenteredSprite(std::string name);
 
 	void spriteAt(sf::Sprite& sprite, sf::Vector2f position, const sf::Color* color = nullptr);
 	void spriteAtWithScale(sf::Sprite& sprite, sf::Vector2f position, float scale, const sf::Color* color = nullptr);
-	void spriteOnBlockWithScaleCentered(const Block& block, sf::Sprite& sprite, float scaleRatio, const sf::Color* = nullptr);
-	void spriteOnBlockWithScale(const Block& block, sf::Sprite& sprite, float scaleRatio, const sf::Color* = nullptr);
-	void spriteOnBlock(const Block& block, sf::Sprite& sprite, const sf::Color* = nullptr);
-	void spriteOnBlockCentered(const Block& block, sf::Sprite& sprite, const sf::Color* = nullptr);
-	void imageOnBlock(const Block& block, std::string name, const sf::Color* = nullptr);
-	void imageOnBlockWestAlign(const Block& block, std::string name, const sf::Color* = nullptr);
-	void imageOnBlockEastAlign(const Block& block, std::string name, const sf::Color* = nullptr);
-	void imageOnBlockSouthAlign(const Block& block, std::string name, const sf::Color* = nullptr);
-	void progressBarOnBlock(const Block& block, Percent progress);
+	void spriteOnBlockWithScaleCentered(const BlockIndex& block, sf::Sprite& sprite, float scaleRatio, const sf::Color* = nullptr);
+	void spriteOnBlockWithScale(const BlockIndex& block, sf::Sprite& sprite, float scaleRatio, const sf::Color* = nullptr);
+	void spriteOnBlock(const BlockIndex& block, sf::Sprite& sprite, const sf::Color* = nullptr);
+	void spriteOnBlockCentered(const BlockIndex& block, sf::Sprite& sprite, const sf::Color* = nullptr);
+	void imageOnBlock(const BlockIndex& block, std::string name, const sf::Color* = nullptr);
+	void imageOnBlockWestAlign(const BlockIndex& block, std::string name, const sf::Color* = nullptr);
+	void imageOnBlockEastAlign(const BlockIndex& block, std::string name, const sf::Color* = nullptr);
+	void imageOnBlockSouthAlign(const BlockIndex& block, std::string name, const sf::Color* = nullptr);
+	void progressBarOnBlock(const BlockIndex& block, Percent progress);
 
-	void selected(Block& block);
-	void outlineOnBlock(const Block& block, const sf::Color color, float thickness = 3.f);
+	void selected(BlockIndex& block);
+	void outlineOnBlock(const BlockIndex& block, const sf::Color color, float thickness = 3.f);
 	void stringAtPosition(const std::wstring string, const sf::Vector2f position, const sf::Color color, float offsetX = 0.5, float offsetY = 0.0);
-	void stringOnBlock(const Block& block,const  std::wstring string, const sf::Color color, float offsetX = 0.5, float offsetY = 0.0);
+	void stringOnBlock(const BlockIndex& block,const  std::wstring string, const sf::Color color, float offsetX = 0.5, float offsetY = 0.0);
 
-	void nonGroundCoverPlant(const Block& block);
-	void item(const Block& block);
-	void itemOverlay(const Block& block);
+	void nonGroundCoverPlant(const BlockIndex& block);
+	void item(const BlockIndex& block);
+	void itemOverlay(const BlockIndex& block);
 	void item(const Item& item, sf::Vector2f position);
 	void itemOverlay(const Item& item, sf::Vector2f position);
 	void singleTileActor(const Actor& actor);
 	void multiTileActor(const Actor& actor);
 	void actorOverlay(const Actor& block);
-	void multiTileBorder(std::unordered_set<Block*> blocks, sf::Color color, float thickness);
-	void borderSegmentOnBlock(const Block& block, Facing facing, sf::Color color, float thickness);
-	void accessableSymbol(const Block& block);
-	void inaccessableSymbol(const Block& block);
+	void multiTileBorder(std::unordered_set<BlockIndex*> blocks, sf::Color color, float thickness);
+	void borderSegmentOnBlock(const BlockIndex& block, Facing facing, sf::Color color, float thickness);
+	void accessableSymbol(const BlockIndex& block);
+	void inaccessableSymbol(const BlockIndex& block);
 
 	// Connects to an open top block, tries to align with an open bottom block.
-	[[nodiscard]] Facing rampOrStairsFacing(const Block& block) const;
-	[[nodiscard]] sf::Vector2f blockToPosition(const Block& block) const;
-	[[nodiscard]] sf::Vector2f blockToPositionCentered(const Block& block) const;
+	[[nodiscard]] Facing rampOrStairsFacing(const BlockIndex& block) const;
+	[[nodiscard]] sf::Vector2f blockToPosition(const BlockIndex& block) const;
+	[[nodiscard]] sf::Vector2f blockToPositionCentered(const BlockIndex& block) const;
 	[[nodiscard]] float getScaledUnit() const;
 };

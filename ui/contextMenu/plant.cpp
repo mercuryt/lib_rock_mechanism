@@ -3,7 +3,7 @@
 #include "../displayData.h"
 #include "../../engine/block.h"
 #include "../../engine/fluidType.h"
-void ContextMenu::drawPlantControls(Block& block)
+void ContextMenu::drawPlantControls(BlockIndex& block)
 {
 	if(block.m_hasPlant.exists())
 	{
@@ -23,7 +23,7 @@ void ContextMenu::drawPlantControls(Block& block)
 					const PlantSpecies& species = block.m_hasPlant.get().m_plantSpecies;
 					if(m_window.getSelectedBlocks().empty())
 						m_window.selectBlock(block);
-					for(Block* selectedBlock : m_window.getSelectedBlocks())
+					for(BlockIndex* selectedBlock : m_window.getSelectedBlocks())
 						if(selectedBlock->m_hasPlant.exists() && selectedBlock->m_hasPlant.get().m_plantSpecies == species)
 							selectedBlock->m_hasPlant.get().remove();
 					for(Plant* plant : m_window.getSelectedPlants())
@@ -67,7 +67,7 @@ void ContextMenu::drawPlantControls(Block& block)
 					const PlantSpecies& species = PlantSpecies::byName(speciesUI->getSelectedItemId().toStdString());
 					if(m_window.getSelectedBlocks().empty())
 						m_window.selectBlock(block);
-					for(Block* selectedBlock : m_window.getSelectedBlocks())
+					for(BlockIndex* selectedBlock : m_window.getSelectedBlocks())
 						if(!selectedBlock->m_hasPlant.exists() && !selectedBlock->isSolid() && selectedBlock->m_hasPlant.canGrowHereEver(species))
 							selectedBlock->m_hasPlant.createPlant(species, percentGrownUI->getValue());
 				}

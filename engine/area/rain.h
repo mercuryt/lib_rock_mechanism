@@ -9,11 +9,11 @@ struct FluidType;
 struct DeserializationMemo;
 class AreaHasRain final
 {
+	std::array<Percent, 4> m_humidityBySeason;
 	HasScheduledEvent<RainEvent> m_event;
 	Area& m_area;
 	const FluidType* m_currentlyRainingFluidType = nullptr;
 	const FluidType& m_defaultRainFluidType;
-	std::array<Percent, 4> m_humidityBySeason;
 	Percent m_intensityPercent = 0;
 public:
 	AreaHasRain(Area& a, Simulation& s);

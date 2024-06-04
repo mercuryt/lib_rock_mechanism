@@ -1,6 +1,5 @@
 #include "kill.h"
 #include "../area.h"
-#include "../block.h"
 #include "../actor.h"
 #include "../objective.h"
 #include "../visionUtil.h"
@@ -32,10 +31,11 @@ void KillObjective::execute()
 		m_killer.m_hasObjectives.objectiveComplete(*this);
 	m_killer.m_canFight.setTarget(m_target);
 	// If not in range create GetIntoRangeThreadedTask.
+	Blocks& blocks = m_killer.m_area->getBlocks();
 	if(!m_getIntoRangeAndLineOfSightThreadedTask.exists() && 
-			(m_killer.m_location->taxiDistance(*m_target.m_location) > m_killer.m_canFight.getMaxRange() ||
+			(blocks.taxiDistance(m_killer.m_location, m_target.m_location) > m_killer.m_canFight.getMaxRange() ||
 			 // TODO: hasLineOfSightIncludingActors
-			 m_killer.m_location->m_area->m_hasActors.m_opacityFacade.hasLineOfSight(*m_killer.m_location, *m_target.m_location))
+			 m_killer.m_area->m_hasActors.m_opacityFacade.hasLineOfSight(m_killer.m_location, m_target.m_location))
 	)
 		m_getIntoRangeAndLineOfSightThreadedTask.create(m_killer, m_target, m_killer.m_canFight.getMaxRange());
 	else

@@ -19,7 +19,6 @@ namespace Config
 	inline constexpr Step actorDoVisionInterval = 3;
 	inline constexpr bool fluidPiston = false;
 	inline constexpr uint32_t fluidsSeepDiagonalModifier = 100;
-	inline constexpr bool visionCuboidsActive = true;
 
 	// sort command for vim:
 	// 	sort /\t/w* /w* /

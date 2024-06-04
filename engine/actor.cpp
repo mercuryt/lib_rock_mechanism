@@ -1,6 +1,5 @@
 #include "actor.h"
 #include "animalSpecies.h"
-#include "block.h"
 #include "area.h"
 #include "config.h"
 #include "deserializationMemo.h"
@@ -255,8 +254,8 @@ Actor::Actor(ActorParamaters params) :
 		params.generateEquipment(*this);
 	if(params.location)
 	{
-		setLocation(*params.location);
-		m_location->m_area->m_hasActors.add(*this);
+		assert(params.area);
+		setLocation(params.location, params.area);
 	}
 }
 Actor::Actor(const Json& data, DeserializationMemo& deserializationMemo) :
@@ -290,23 +289,9 @@ Actor::Actor(const Json& data, DeserializationMemo& deserializationMemo) :
 		m_skillSet.load(data["skills"]);
 	if(data.contains("location"))
 	{
-		setLocation(deserializationMemo.blockReference(data["location"]));
-		m_location->m_area->m_hasActors.add(*this);
+		setLocation(data["location"].get<BlockIndex>());
+		m_area->m_hasActors.add(*this);
 	}
-	m_canGrow.updateGrowingStatus();
-}
-void Actor::sharedConstructor()
-{
-	m_canFight.update();
-	m_canMove.updateIndividualSpeed();
-	m_body.initalize();
-	m_mustDrink.setFluidType(m_species.fluidType);
-}
-void Actor::scheduleNeeds()
-{
-	m_mustSleep.scheduleTiredEvent();
-	m_mustDrink.scheduleDrinkEvent();
-	m_mustEat.scheduleEatEvent();
 	m_canGrow.updateGrowingStatus();
 }
 Json Actor::toJson() const
@@ -334,7 +319,7 @@ Json Actor::toJson() const
 	data["hasObjectives"] = m_hasObjectives.toJson();
 	if(m_faction != nullptr)
 		data["faction"] = m_faction;
-	if(m_location != nullptr)
+	if(m_location != BLOCK_INDEX_MAX)
 		data["location"] = m_location;
 	if(m_canReserve.hasReservations())
 		data["canReserve"] = m_canReserve.toJson();
@@ -344,22 +329,42 @@ Json Actor::toJson() const
 		data["skills"] = m_skillSet.toJson();
 	return data;
 }
-void Actor::setLocation(Block& block)
+void Actor::sharedConstructor()
 {
-	assert(&block != m_location);
-	assert(block.m_hasShapes.anythingCanEnterEver());
-	if(m_location == nullptr)
+	m_canFight.update();
+	m_canMove.updateIndividualSpeed();
+	m_body.initalize();
+	m_mustDrink.setFluidType(m_species.fluidType);
+}
+void Actor::scheduleNeeds()
+{
+	m_mustSleep.scheduleTiredEvent();
+	m_mustDrink.scheduleDrinkEvent();
+	m_mustEat.scheduleEatEvent();
+	m_canGrow.updateGrowingStatus();
+}
+void Actor::setLocation(BlockIndex block, Area* area)
+{
+	if(area && area != m_area)
 	{
-		assert(block.m_hasShapes.canEnterEverWithFacing(*this, m_facing));
-		[[maybe_unused]] bool can = block.m_hasShapes.canEnterCurrentlyWithFacing(*this, m_facing);
+		m_area = area;
+		m_area->m_hasActors.add(*this);
+	}
+	auto& blocks = m_area->getBlocks();
+	assert(block != m_location);
+	assert(blocks.shape_anythingCanEnterEver(block));
+	if(m_location == BLOCK_INDEX_MAX)
+	{
+		assert(blocks.shape_canEnterEverWithFacing(block, *this, m_facing));
+		[[maybe_unused]] bool can = blocks.shape_canEnterCurrentlyWithFacing(block, *this, m_facing);
 		assert(can);
 	}
 	else
 	{
-		assert(block.m_hasShapes.canEnterEverFrom(*this, *m_location));
-		assert(block.m_hasShapes.canEnterCurrentlyFrom(*this, *m_location));
+		assert(blocks.shape_canEnterEverFrom(block, *this, m_location));
+		assert(blocks.shape_canEnterCurrentlyFrom(block, *this, m_location));
 	}
-	block.m_hasActors.enter(*this);
+	blocks.actor_enter(block, *this);
 	m_canLead.onMove();
 	//TODO: use a head block rather then the location block so tall creaters can see over obsticles.
 	if(!m_canSee.m_hasVisionFacade.empty())
@@ -371,17 +376,16 @@ void Actor::resetNeeds()
 	m_mustDrink.notThirsty();
 	m_mustEat.notHungry();
 }
-void Actor::setLocationAndFacing(Block& block, Facing facing)
+void Actor::setLocationAndFacing(BlockIndex block, Facing facing, Area* area)
 {
 	m_facing = facing;
-	setLocation(block);
+	setLocation(block, area);
 }
 void Actor::exit()
 {
-	assert(m_location != nullptr);
-	m_location->m_hasActors.exit(*this);
+	assert(m_location != BLOCK_INDEX_MAX);
+	m_area->getBlocks().actor_exit(m_location, *this);
 }
-
 void Actor::removeMassFromCorpse(Mass mass)
 {
 	assert(!isAlive());
@@ -402,7 +406,7 @@ void Actor::die(CauseOfDeath causeOfDeath)
 		m_project->removeWorker(*this);
 	if(m_location)
 		setStatic(true);
-	m_location->m_area->m_hasActors.m_visionFacadeBuckets.remove(*this);
+	m_area->m_hasActors.m_visionFacadeBuckets.remove(*this);
 }
 void Actor::passout(Step duration)
 {
@@ -413,10 +417,10 @@ void Actor::leaveArea()
 {
 	m_canFight.onLeaveArea();
 	m_canMove.onLeaveArea();
-	Area& area = *m_location->m_area;
 	// Run remove before exit becuse we need to use location to know which bucket to remove from.
-	area.m_hasActors.remove(*this);
+	m_area->m_hasActors.remove(*this);
 	exit();
+	m_area = nullptr;
 }
 void Actor::wait(Step duration)
 {
@@ -461,25 +465,25 @@ std::wstring Actor::getActionDescription() const
 		return util::stringToWideString(const_cast<Actor*>(this)->m_hasObjectives.getCurrent().name());
 	return L"no action";
 }
-bool Actor::allBlocksAtLocationAndFacingAreReservable(const Block& location, Facing facing) const
+bool Actor::allBlocksAtLocationAndFacingAreReservable(const BlockIndex location, Facing facing) const
 {
 	if(m_faction == nullptr)
 		return true;
 	return HasShape::allBlocksAtLocationAndFacingAreReservable(location, facing, *m_faction);
 }
-void Actor::reserveAllBlocksAtLocationAndFacing(const Block& location, Facing facing)
+void Actor::reserveAllBlocksAtLocationAndFacing(const BlockIndex location, Facing facing)
 {
 	if(m_faction == nullptr)
 		return;
-	for(Block* occupied : getBlocksWhichWouldBeOccupiedAtLocationAndFacing(const_cast<Block&>(location), facing))
-		occupied->m_reservable.reserveFor(m_canReserve, 1u);
+	for(BlockIndex occupied : getBlocksWhichWouldBeOccupiedAtLocationAndFacing(location, facing))
+		m_area->getBlocks().reserve(occupied, m_canReserve);
 }
-void Actor::unreserveAllBlocksAtLocationAndFacing(const Block& location, Facing facing)
+void Actor::unreserveAllBlocksAtLocationAndFacing(const BlockIndex location, Facing facing)
 {
 	if(m_faction == nullptr)
 		return;
-	for(Block* occupied : getBlocksWhichWouldBeOccupiedAtLocationAndFacing(const_cast<Block&>(location), facing))
-		occupied->m_reservable.clearReservationFor(m_canReserve);
+	for(BlockIndex occupied : getBlocksWhichWouldBeOccupiedAtLocationAndFacing(location, facing))
+		m_area->getBlocks().unreserve(occupied, m_canReserve);
 }
 void Actor::setBirthStep(Step step)
 {

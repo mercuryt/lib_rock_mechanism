@@ -1,6 +1,6 @@
 /*
  * A block. Contains either a single type of material in 'solid' form or arbitrary objects with volume, generic solids and liquids.
- * Should only be used as inheritance target by Block, not intended to ever be instanced.
+ * Should only be used as inheritance target by BlockIndex, not intended to ever be instanced.
  */
 #pragma once
 
@@ -34,13 +34,13 @@ enum class BlockDesignation;
 //class Item;
 //class Actor;
 
-class Block final
+class BlockIndex final
 {
 public:
 	Reservable m_reservable; // 6.5 sets of 64 bits
 	// Store adjacent in an array, with index determined by relative position.
 	// below = 0, < = 1, ^ = 2, > = 3, v = 4, above = 5.
-	std::array<Block*, 6> m_adjacents; // 6
+	std::array<BlockIndex*, 6> m_adjacents; // 6
 	BlockHasFluids m_hasFluids; // 6
 	BlockHasShapes m_hasShapes; // 6
 	BlockHasActors m_hasActors; // 3
@@ -73,10 +73,10 @@ public:
 private:
 	bool m_constructed = false;
 public:
-	Block();
-	Block(const Block&) = delete;
-	Block(Block&&) = delete;
-	Block& operator=(const Block&) = delete;
+	BlockIndex();
+	BlockIndex(const BlockIndex&) = delete;
+	BlockIndex(BlockIndex&&) = delete;
+	BlockIndex& operator=(const BlockIndex&) = delete;
 	void setup(Area& area, DistanceInBlocks ax, DistanceInBlocks ay, DistanceInBlocks az);
 	void recordAdjacent();
 	void setDesignation(Faction& faction, BlockDesignation designation);
@@ -84,76 +84,76 @@ public:
 	void maybeUnsetDesignation(Faction& faction, BlockDesignation designation);
 	[[nodiscard]] BlockIndex getIndex() const;
 	[[nodiscard]] bool hasDesignation(Faction& faction, BlockDesignation designation) const;
-	[[nodiscard]] std::vector<Block*> getAdjacentWithEdgeAdjacent() const;
-	[[nodiscard]] std::vector<Block*> getAdjacentWithEdgeAndCornerAdjacent() const;
-	[[nodiscard]] std::vector<Block*> getEdgeAndCornerAdjacentOnly() const;
-	[[nodiscard]] std::vector<Block*> getEdgeAdjacentOnly() const;
-	[[nodiscard]] std::vector<Block*> getEdgeAdjacentOnSameZLevelOnly() const;
-	[[nodiscard]] std::vector<Block*> getAdjacentOnSameZLevelOnly() const;
-	[[nodiscard]] std::vector<Block*> getEdgeAdjacentOnlyOnNextZLevelDown() const;
-	[[nodiscard]] std::vector<Block*> getEdgeAndCornerAdjacentOnlyOnNextZLevelDown() const;
-	[[nodiscard]] std::vector<Block*> getEdgeAdjacentOnlyOnNextZLevelUp() const;
-	[[nodiscard]] DistanceInBlocks distance(Block& block) const;
-	[[nodiscard]] DistanceInBlocks taxiDistance(const Block& block) const;
-	[[nodiscard]] bool squareOfDistanceIsMoreThen(const Block& block, DistanceInBlocks distanceSquared) const;
-	[[nodiscard]] bool isAdjacentToAny(std::unordered_set<Block*>& blocks) const;
-	[[nodiscard]] bool isAdjacentTo(Block& block) const;
-	[[nodiscard]] bool isAdjacentToIncludingCornersAndEdges(Block& block) const;
+	[[nodiscard]] std::vector<BlockIndex*> getAdjacentWithEdgeAdjacent() const;
+	[[nodiscard]] std::vector<BlockIndex*> getAdjacentWithEdgeAndCornerAdjacent() const;
+	[[nodiscard]] std::vector<BlockIndex*> getEdgeAndCornerAdjacentOnly() const;
+	[[nodiscard]] std::vector<BlockIndex*> getEdgeAdjacentOnly() const;
+	[[nodiscard]] std::vector<BlockIndex*> getEdgeAdjacentOnSameZLevelOnly() const;
+	[[nodiscard]] std::vector<BlockIndex*> getAdjacentOnSameZLevelOnly() const;
+	[[nodiscard]] std::vector<BlockIndex*> getEdgeAdjacentOnlyOnNextZLevelDown() const;
+	[[nodiscard]] std::vector<BlockIndex*> getEdgeAndCornerAdjacentOnlyOnNextZLevelDown() const;
+	[[nodiscard]] std::vector<BlockIndex*> getEdgeAdjacentOnlyOnNextZLevelUp() const;
+	[[nodiscard]] DistanceInBlocks distance(BlockIndex& block) const;
+	[[nodiscard]] DistanceInBlocks taxiDistance(const BlockIndex& block) const;
+	[[nodiscard]] bool squareOfDistanceIsMoreThen(const BlockIndex& block, DistanceInBlocks distanceSquared) const;
+	[[nodiscard]] bool isAdjacentToAny(std::unordered_set<BlockIndex*>& blocks) const;
+	[[nodiscard]] bool isAdjacentTo(BlockIndex& block) const;
+	[[nodiscard]] bool isAdjacentToIncludingCornersAndEdges(BlockIndex& block) const;
 	[[nodiscard]] bool isAdjacentTo(HasShape& hasShape) const;
 	void setNotSolid();
 	void setSolid(const MaterialType& materialType, bool contructed = false);
 	[[nodiscard]] bool isSolid() const;
 	[[nodiscard]] const MaterialType& getSolidMaterial() const;
 	[[nodiscard]] bool isConstructed() const { return m_constructed; }
-	[[nodiscard]] bool canSeeIntoFromAlways(const Block& block) const;
-	void moveContentsTo(Block& block);
+	[[nodiscard]] bool canSeeIntoFromAlways(const BlockIndex& block) const;
+	void moveContentsTo(BlockIndex& block);
 	[[nodiscard]] Mass getMass() const;
 	// Get block at offset coordinates. Can return nullptr.
-	[[nodiscard]] Block* offset(int32_t ax, int32_t ay, int32_t az) const;
-	[[nodiscard]] Block& offsetNotNull(int32_t ax, int32_t ay, int32_t az) const;
-	[[nodiscard]] std::array<int32_t, 3> relativeOffsetTo(const Block& block) const; 
+	[[nodiscard]] BlockIndex* offset(int32_t ax, int32_t ay, int32_t az) const;
+	[[nodiscard]] BlockIndex& offsetNotNull(int32_t ax, int32_t ay, int32_t az) const;
+	[[nodiscard]] std::array<int32_t, 3> relativeOffsetTo(const BlockIndex& block) const; 
 	[[nodiscard]] bool canSeeThrough() const;
 	[[nodiscard]] bool canSeeThroughFloor() const;
-	[[nodiscard]] bool canSeeThroughFrom(const Block& block) const;
-	[[nodiscard]] Facing facingToSetWhenEnteringFrom(const Block& block) const;
-	[[nodiscard]] Facing facingToSetWhenEnteringFromIncludingDiagonal(const Block& block, Facing inital = 0) const;
+	[[nodiscard]] bool canSeeThroughFrom(const BlockIndex& block) const;
+	[[nodiscard]] Facing facingToSetWhenEnteringFrom(const BlockIndex& block) const;
+	[[nodiscard]] Facing facingToSetWhenEnteringFromIncludingDiagonal(const BlockIndex& block, Facing inital = 0) const;
 	[[nodiscard]] bool isSupport() const;
-	[[nodiscard]] bool hasLineOfSightTo(Block& block) const;
+	[[nodiscard]] bool hasLineOfSightTo(BlockIndex& block) const;
 	// Validate the nongeneric object can enter this block and also any other blocks required by it's Shape comparing to m_totalStaticVolume.
 	// TODO: Is this being used?
 	[[nodiscard]] bool shapeAndMoveTypeCanEnterEver(const Shape& shape, const MoveType& moveType) const;
-	[[nodiscard]] Block* getBlockBelow() { return m_adjacents[0]; }
-	[[nodiscard]] const Block* getBlockBelow() const { return m_adjacents[0]; }
-	[[nodiscard]] Block* getBlockAbove() { return m_adjacents[5]; }
-	[[nodiscard]] const Block* getBlockAbove() const { return m_adjacents[5]; }
-	[[nodiscard]] Block* getBlockNorth() { return m_adjacents[1]; }
-	[[nodiscard]] const Block* getBlockNorth() const { return m_adjacents[1]; }
-	[[nodiscard]] Block* getBlockWest() { return m_adjacents[2]; }
-	[[nodiscard]] const Block* getBlockWest() const { return m_adjacents[2]; }
-	[[nodiscard]] Block* getBlockSouth() { return m_adjacents[3]; }
-	[[nodiscard]] const Block* getBlockSouth() const { return m_adjacents[3]; }
-	[[nodiscard]] Block* getBlockEast() { return m_adjacents[4]; }
-	[[nodiscard]] const Block* getBlockEast() const { return m_adjacents[4]; }
+	[[nodiscard]] BlockIndex* getBlockBelow() { return m_adjacents[0]; }
+	[[nodiscard]] const BlockIndex* getBlockBelow() const { return m_adjacents[0]; }
+	[[nodiscard]] BlockIndex* getBlockAbove() { return m_adjacents[5]; }
+	[[nodiscard]] const BlockIndex* getBlockAbove() const { return m_adjacents[5]; }
+	[[nodiscard]] BlockIndex* getBlockNorth() { return m_adjacents[1]; }
+	[[nodiscard]] const BlockIndex* getBlockNorth() const { return m_adjacents[1]; }
+	[[nodiscard]] BlockIndex* getBlockWest() { return m_adjacents[2]; }
+	[[nodiscard]] const BlockIndex* getBlockWest() const { return m_adjacents[2]; }
+	[[nodiscard]] BlockIndex* getBlockSouth() { return m_adjacents[3]; }
+	[[nodiscard]] const BlockIndex* getBlockSouth() const { return m_adjacents[3]; }
+	[[nodiscard]] BlockIndex* getBlockEast() { return m_adjacents[4]; }
+	[[nodiscard]] const BlockIndex* getBlockEast() const { return m_adjacents[4]; }
 	// Called from setSolid / setNotSolid as well as from user code such as construct / remove floor.
 	void setExposedToSky(bool exposed);
 	void setBelowExposedToSky();
 	void setBelowNotExposedToSky();
 	void setBelowVisible();
-	[[nodiscard]] std::vector<Block*> selectBetweenCorners(Block* otherBlock) const;
-	[[nodiscard]] bool operator==(const Block& block) const;
+	[[nodiscard]] std::vector<BlockIndex*> selectBetweenCorners(BlockIndex* otherBlock) const;
+	[[nodiscard]] bool operator==(const BlockIndex& block) const;
 	//TODO: Use std::function instead of template.
 	template <typename F>
-	[[nodiscard]] std::unordered_set<Block*> collectAdjacentsWithCondition(F&& condition)
+	[[nodiscard]] std::unordered_set<BlockIndex*> collectAdjacentsWithCondition(F&& condition)
 	{
-		std::unordered_set<Block*> output;
-		std::stack<Block*> openList;
+		std::unordered_set<BlockIndex*> output;
+		std::stack<BlockIndex*> openList;
 		openList.push(this);
 		output.insert(this);
 		while(!openList.empty())
 		{
-			Block* block = openList.top();
+			BlockIndex* block = openList.top();
 			openList.pop();
-			for(Block* adjacent : block->m_adjacents)
+			for(BlockIndex* adjacent : block->m_adjacents)
 				if(adjacent && condition(*adjacent) && !output.contains(adjacent))
 				{
 					output.insert(adjacent);
@@ -163,18 +163,18 @@ public:
 		return output;
 	}
 	template <typename F>
-	[[nodiscard]] Block* getBlockInRangeWithCondition(DistanceInBlocks range, F&& condition)
+	[[nodiscard]] BlockIndex* getBlockInRangeWithCondition(DistanceInBlocks range, F&& condition)
 	{
-		std::stack<Block*> open;
+		std::stack<BlockIndex*> open;
 		open.push(this);
-		std::unordered_set<Block*> closed;
+		std::unordered_set<BlockIndex*> closed;
 		while(!open.empty())
 		{
-			Block* block = open.top();
+			BlockIndex* block = open.top();
 			if(condition(*block))
 				return block;
 			open.pop();
-			for(Block* adjacent : block->m_adjacents)
+			for(BlockIndex* adjacent : block->m_adjacents)
 				if(adjacent && taxiDistance(*adjacent) <= range && !closed.contains(adjacent))
 				{
 					closed.insert(adjacent);
@@ -185,8 +185,8 @@ public:
 		}
 		return nullptr;
 	}
-	[[nodiscard]] std::unordered_set<Block*> collectAdjacentsInRange(DistanceInBlocks range);
-	[[nodiscard]] std::vector<Block*> collectAdjacentsInRangeVector(DistanceInBlocks range);
+	[[nodiscard]] std::unordered_set<BlockIndex*> collectAdjacentsInRange(DistanceInBlocks range);
+	[[nodiscard]] std::vector<BlockIndex*> collectAdjacentsInRangeVector(DistanceInBlocks range);
 	void loadFromJson(Json data, DeserializationMemo& deserializationMemo, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] Json positionToJson() const;
@@ -204,10 +204,10 @@ public:
 		{1,1,1}, {1,0,1}, {1,-1,1}
 	};
 };
-inline void to_json(Json& data, const Block* const& block){ data = block->positionToJson(); }
-inline void to_json(Json& data, const Block& block){ data = block.positionToJson(); }
-inline void to_json(Json& data, const std::unordered_set<Block*>& blocks)
+inline void to_json(Json& data, const BlockIndex* const& block){ data = block->positionToJson(); }
+inline void to_json(Json& data, const BlockIndex& block){ data = block.positionToJson(); }
+inline void to_json(Json& data, const std::unordered_set<BlockIndex*>& blocks)
 {
-	for(const Block* block : blocks)
+	for(const BlockIndex* block : blocks)
 		data.push_back(block);
 }

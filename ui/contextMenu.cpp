@@ -29,7 +29,7 @@ ContextMenu::ContextMenu(Window& window, tgui::Group::Ptr gameOverlayGroup) :
 	gameOverlayGroup->add(m_root.m_panel);
 	m_root.m_panel->setVisible(false);
 }
-void ContextMenu::draw(Block& block)
+void ContextMenu::draw(BlockIndex& block)
 {
 	m_root.m_panel->setVisible(true);
 	m_root.m_panel->setOrigin(1, getOriginYForMousePosition());

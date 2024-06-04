@@ -5,7 +5,6 @@
 #include "findsPath.h"
 
 class Actor;
-class Block;
 class WanderThreadedTask;
 struct DeserializationMemo;
 

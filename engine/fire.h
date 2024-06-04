@@ -15,7 +15,6 @@ NLOHMANN_JSON_SERIALIZE_ENUM(FireStage, {
 		{FireStage::Flaming, "Flaming"}
 });
 class Fire;
-class Block;
 struct DeserializationMemo;
 struct MaterialType;
 /*
@@ -23,41 +22,44 @@ struct MaterialType;
  */
 class FireEvent final : public ScheduledEvent
 {
+	Area& m_area;
 public:
 	Fire& m_fire;
 
-	FireEvent(Step delay, Fire& f, Step start = 0);
+	FireEvent(Area& area, Step delay, Fire& f, Step start = 0);
 	void execute();
 	void clearReferences();
 };
 class Fire final
 {
+	Area& m_area;
 public:
 	TemperatureSource m_temperatureSource;
 	HasScheduledEvent<FireEvent> m_event;
-	Block& m_location;
+	BlockIndex m_location;
 	const MaterialType& m_materialType;
 	FireStage m_stage;
 	bool m_hasPeaked;
 
 	// Default arguments are used when creating a fire normally, custom values are for deserializing or dramatic use.
-	Fire(Block& l, const MaterialType& mt, bool hasPeaked = false, FireStage stage = FireStage::Smouldering, Step start = 0);
+	Fire(Area& a, BlockIndex l, const MaterialType& mt, bool hasPeaked = false, FireStage stage = FireStage::Smouldering, Step start = 0);
 	[[nodiscard]] bool operator==(const Fire& fire) const { return &fire == this; }
 };
 class AreaHasFires final
 {
-	std::unordered_map<Block*, std::unordered_map<const MaterialType*, Fire>> m_fires;
+	Area& m_area;
+	std::unordered_map<BlockIndex, std::unordered_map<const MaterialType*, Fire>> m_fires;
 public:
-	void ignite(Block& block, const MaterialType& materialType);
+	AreaHasFires(Area& a) : m_area(a) { }
+	void ignite(BlockIndex block, const MaterialType& materialType);
 	void extinguish(Fire& fire);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
-	[[nodiscard]] Fire& at(Block& block, const MaterialType& materialType);
-	[[nodiscard]] bool contains(Block& block, const MaterialType& materialType);
+	[[nodiscard]] Fire& at(BlockIndex block, const MaterialType& materialType);
+	[[nodiscard]] bool contains(BlockIndex block, const MaterialType& materialType);
 	[[nodiscard]] Json toJson() const;
 	// For testing.
-	[[maybe_unused, nodiscard]] bool containsFireAt(Fire& fire, Block& block) const
+	[[maybe_unused, nodiscard]] bool containsFireAt(Fire& fire, BlockIndex block) const
 	{ 
-		assert(m_fires.contains(&block));
-		return m_fires.at(&block).contains(&fire.m_materialType);
+		return m_fires.at(block).contains(&fire.m_materialType);
 	}
 };

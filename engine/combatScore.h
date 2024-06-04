@@ -4,9 +4,9 @@ uint32_t getCombatScore(const Actor& actor)
 {
 	uint32_t output = actor.m_individualCombatScore;
 	// Find adjacent enemies and allies.
-	std::vector<Block*> adjacentBlocksContainingAllies;
-	std::vector<Block*> adjacentBlocksContainingEnemies;
-	for(Block* block : actor.getAdjacentOnSameZLevelOnly())
+	std::vector<BlockIndex*> adjacentBlocksContainingAllies;
+	std::vector<BlockIndex*> adjacentBlocksContainingEnemies;
+	for(BlockIndex* block : actor.getAdjacentOnSameZLevelOnly())
 	{
 		bool containsEnemy = false;
 		bool containsAlly = false;
@@ -24,7 +24,7 @@ uint32_t getCombatScore(const Actor& actor)
 			adjacentBlocksContainingEnemies.push_back(block);
 	}
 	// Find the strongest ally in each adjacent block and add their individual combat score modified by config to output.
-	for(Block* block : adjacentBlocksContainingAllies)
+	for(BlockIndex* block : adjacentBlocksContainingAllies)
 	{
 		uint32_t strongestAllyCombatScore = 0;
 		bool diagonalToAdjacentEnemy = block->isDiagonalToAny(adjacentBlocksContainingEnemies);

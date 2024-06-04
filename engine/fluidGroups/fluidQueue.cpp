@@ -1,45 +1,47 @@
 #include "fluidQueue.h"
-#include "block.h"
+#include "../fluidGroup.h"
+#include "../area.h"
+#include "../blocks/blocks.h"
 #include <unordered_set>
 #include <assert.h>
 FluidQueue::FluidQueue(FluidGroup& fluidGroup) : m_fluidGroup(fluidGroup) {}
-void FluidQueue::setBlocks(std::unordered_set<Block*>& blocks)
+void FluidQueue::setBlocks(std::unordered_set<BlockIndex>& blocks)
 {
 	std::erase_if(m_queue, [&](FutureFlowBlock& futureFlowBlock){ return !blocks.contains(futureFlowBlock.block); });
-	for(Block* block : blocks)
+	for(BlockIndex block : blocks)
 		if(!m_set.contains(block))
 			m_queue.emplace_back(block);
 	m_set.swap(blocks);
 }
-void FluidQueue::addBlock(Block* block)
+void FluidQueue::addBlock(BlockIndex block)
 {
 	if(m_set.contains(block))
 		return;
 	m_set.insert(block);
 	m_queue.emplace_back(block);
 }
-void FluidQueue::addBlocks(std::unordered_set<Block*>& blocks)
+void FluidQueue::addBlocks(std::unordered_set<BlockIndex>& blocks)
 {
 	//m_queue.reserve(m_queue.size() + blocks.size());
-	for(Block* block : blocks)
+	for(BlockIndex block : blocks)
 		if(!m_set.contains(block))
 			m_queue.emplace_back(block);
 	m_set.insert(blocks.begin(), blocks.end());
 }
-void FluidQueue::removeBlock(Block* block)
+void FluidQueue::removeBlock(BlockIndex block)
 {
 	m_set.erase(block);
 	std::erase_if(m_queue, [&](FutureFlowBlock& futureFlowBlock){ return futureFlowBlock.block == block; });
 }
-void FluidQueue::removeBlocks(std::unordered_set<Block*>& blocks)
+void FluidQueue::removeBlocks(std::unordered_set<BlockIndex>& blocks)
 {
-	std::erase_if(m_set, [&](Block* block){ return blocks.contains(block); });
+	std::erase_if(m_set, [&](BlockIndex block){ return blocks.contains(block); });
 	std::erase_if(m_queue, [&](FutureFlowBlock& futureFlowBlock){ return blocks.contains(futureFlowBlock.block); });
 }
 void FluidQueue::merge(FluidQueue& fluidQueue)
 {
 	//m_queue.reserve(m_queue.size() + fluidQueue.m_set.size());
-	for(Block* block : fluidQueue.m_set)
+	for(BlockIndex block : fluidQueue.m_set)
 		addBlock(block);
 }
 void FluidQueue::noChange()
@@ -58,12 +60,13 @@ uint32_t FluidQueue::groupCapacityPerBlock() const
 uint32_t FluidQueue::groupFlowTillNextStepPerBlock() const
 {
 	assert(m_groupStart != m_groupEnd);
-	if(m_groupEnd == m_queue.end() || m_groupEnd->block->m_z != m_groupStart->block->m_z)
-		return UINT32_MAX;
+	auto& blocks = m_fluidGroup.m_area.getBlocks();
+	if(m_groupEnd == m_queue.end() || blocks.getZ(m_groupEnd->block) != blocks.getZ(m_groupStart->block))
+		return COLLISION_VOLUME_MAX;
 	assert(m_groupEnd->capacity < m_groupStart->capacity);
 	return m_groupStart->capacity - m_groupEnd->capacity;
 }
-bool FluidQueue::groupContains(Block& block) const
+bool FluidQueue::groupContains(BlockIndex block) const
 {
-	return std::ranges::find(m_groupStart, m_groupEnd, &block, &FutureFlowBlock::block) != m_groupEnd;
+	return std::ranges::find(m_groupStart, m_groupEnd, block, &FutureFlowBlock::block) != m_groupEnd;
 }

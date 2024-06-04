@@ -5,7 +5,7 @@
 #include <vector>
 
 class Actor;
-class Block;
+class BlockIndex;
 class Item;
 struct MaterialType;
 struct ItemType;
@@ -14,9 +14,9 @@ struct FluidType;
 class BlockHasItems final
 {
 	std::vector<Item*> m_items;
-	Block& m_block;
+	BlockIndex& m_block;
 public:
-	BlockHasItems(Block& b);
+	BlockHasItems(BlockIndex& b);
 	// Non generic types have Shape.
 	void add(Item& item);
 	void remove(Item& item);

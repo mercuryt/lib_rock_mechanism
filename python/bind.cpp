@@ -121,7 +121,7 @@ NB_MODULE(bound, m)
 		.def_rw("year", &DateTime::year);
 	// Cuboid
 	nb::class_<Cuboid>(m, "Cuboid")
-		.def(nb::init<Block&, Block&>());
+		.def(nb::init<BlockIndex&, BlockIndex&>());
 	// Simulation
 	nb::class_<Simulation>(m, "Simulation")
 		.def(nb::init<DateTime, Step>())
@@ -141,22 +141,22 @@ NB_MODULE(bound, m)
 		.def("isRaining", [](Area& area){ return area.m_hasRain.isRaining(); })
 		.def("rainFluidType", [](Area& area){ return area.m_hasRain.getFluidType(); })
 		.def("rainIntensityPercent", [](Area& area){ return area.m_hasRain.getIntensityPercent(); });
-	// Block
-	nb::class_<Block>(m, "Block")
-		.def("isSolid", &Block::isSolid)
-		.def("getSolidMaterial", &Block::getSolidMaterial, nb::rv_policy::reference)
-		.def_ro("x", &Block::m_x)
-		.def_ro("y", &Block::m_y)
-		.def_ro("z", &Block::m_z)
-		.def_ro("exposedToSky", &Block::m_exposedToSky)
-		.def_ro("underground", &Block::m_underground)
-		.def_ro("outdoors", &Block::m_outdoors)
-		.def_ro("totalFluidVolume", &Block::m_totalFluidVolume)
-		.def("getActors", [](Block& block){ return block.m_hasActors.getAll(); }, nb::rv_policy::reference)
-		.def("getItems", [](Block& block){ return block.m_hasItems.getAll(); }, nb::rv_policy::reference)
-		.def("getPlant", [](Block& block) -> Plant& { return block.m_hasPlant.get(); }, nb::rv_policy::reference)
-		.def_ro("getFluids", &Block::m_fluids, nb::rv_policy::reference)
-		.def("addFluid", &Block::addFluid);
+	// BlockIndex
+	nb::class_<BlockIndex>(m, "BlockIndex")
+		.def("isSolid", &BlockIndex::isSolid)
+		.def("getSolidMaterial", &BlockIndex::getSolidMaterial, nb::rv_policy::reference)
+		.def_ro("x", &BlockIndex::m_x)
+		.def_ro("y", &BlockIndex::m_y)
+		.def_ro("z", &BlockIndex::m_z)
+		.def_ro("exposedToSky", &BlockIndex::m_exposedToSky)
+		.def_ro("underground", &BlockIndex::m_underground)
+		.def_ro("outdoors", &BlockIndex::m_outdoors)
+		.def_ro("totalFluidVolume", &BlockIndex::m_totalFluidVolume)
+		.def("getActors", [](BlockIndex& block){ return block.m_hasActors.getAll(); }, nb::rv_policy::reference)
+		.def("getItems", [](BlockIndex& block){ return block.m_hasItems.getAll(); }, nb::rv_policy::reference)
+		.def("getPlant", [](BlockIndex& block) -> Plant& { return block.m_hasPlant.get(); }, nb::rv_policy::reference)
+		.def_ro("getFluids", &BlockIndex::m_fluids, nb::rv_policy::reference)
+		.def("addFluid", &BlockIndex::addFluid);
 	// CauseOfDeath
 	nb::enum_<CauseOfDeath>(m, "CauseOfDeath")
 		.value("none", CauseOfDeath::none)
@@ -213,8 +213,8 @@ NB_MODULE(bound, m)
 		.def("getCarrying", [](Actor& actor){ return actor.m_canPickup.getCarrying(); }, nb::rv_policy::reference)
 		.def("isCarrying", [](const Actor& actor){ return actor.m_canPickup.exists(); })
 		.def("canMove", [](const Actor& actor){ return actor.m_canMove.canMove(); })
-		.def("setDestination",[](Actor& actor, Block& destination){ actor.m_canMove.setDestination(destination); })
-		.def("setDestinationAdjacentTo",[](Actor& actor, Block& destination){ actor.m_canMove.setDestinationAdjacentTo(destination); })
+		.def("setDestination",[](Actor& actor, BlockIndex& destination){ actor.m_canMove.setDestination(destination); })
+		.def("setDestinationAdjacentTo",[](Actor& actor, BlockIndex& destination){ actor.m_canMove.setDestinationAdjacentTo(destination); })
 		.def("setDestinationAdjacentToHasShape",[](Actor& actor, HasShape& hs){ actor.m_canMove.setDestinationAdjacentTo(hs); })
 		.def("setTarget", [](Actor& actor, Actor& target){ actor.m_canFight.setTarget(target); })
 		.def("isGrowing", [](const Actor& actor){ return actor.m_canGrow.isGrowing(); })

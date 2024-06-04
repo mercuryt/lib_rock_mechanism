@@ -6,7 +6,6 @@
 #include <list>
 #include <unordered_set>
 
-class Block;
 class Area;
 struct FarmField;
 struct DeserializationMemo;
@@ -47,30 +46,13 @@ class FarmFieldUpdateInputAction final : public InputAction
 */
 struct FarmField
 {
-	std::unordered_set<Block*> blocks;
+	std::unordered_set<BlockIndex> blocks;
+	Area& area;
 	const PlantSpecies* plantSpecies;
 	bool timeToSow;
-	FarmField(std::unordered_set<Block*> b) : blocks(b), plantSpecies(nullptr), timeToSow(false) { }
+	FarmField(Area& a, std::unordered_set<BlockIndex> b) : blocks(b), area(a), plantSpecies(nullptr), timeToSow(false) { }
 	FarmField(const Json& data, DeserializationMemo& deserializationMemo, Faction& faction);
 	[[nodiscard]] Json toJson() const;
-};
-class BlockIsPartOfFarmField
-{
-	std::unordered_map<Faction*, FarmField*> m_farmFields;
-	Block& m_block;
-public:
-	BlockIsPartOfFarmField(Block& b) : m_block(b) { }
-	void insert(Faction& faction, FarmField& farmField);
-	void remove(Faction& faction);
-	void designateForHarvestIfPartOfFarmField(Plant& plant);
-	void designateForGiveFluidIfPartOfFarmField(Plant& plant);
-	void maybeDesignateForSowingIfPartOfFarmField();
-	void removeAllHarvestDesignations();
-	void removeAllGiveFluidDesignations();
-	void removeAllSowSeedsDesignations();
-	[[nodiscard]] bool isSowingSeasonFor(const PlantSpecies& species) const;
-	[[nodiscard]] bool contains(Faction& faction) const { return m_farmFields.contains(&faction); }
-	[[nodiscard]] FarmField* get(Faction& faction);
 };
 // To be used by HasFarmFields, which is used by Area.
 class HasFarmFieldsForFaction
@@ -80,7 +62,7 @@ class HasFarmFieldsForFaction
 	std::list<FarmField> m_farmFields;
 	std::vector<Plant*> m_plantsNeedingFluid;
 	std::unordered_set<Plant*> m_plantsToHarvest;
-	std::unordered_set<Block*> m_blocksNeedingSeedsSewn;
+	std::unordered_set<BlockIndex> m_blocksNeedingSeedsSewn;
 	bool m_plantsNeedingFluidIsSorted = false;
 public:
 	HasFarmFieldsForFaction(Area& a, Faction& f) : m_area(a), m_faction(f) { }
@@ -88,25 +70,25 @@ public:
 	[[nodiscard]] Json toJson() const;
 	void addGivePlantFluidDesignation(Plant& plant);
 	void removeGivePlantFluidDesignation(Plant& plant);
-	void addSowSeedsDesignation(Block& block);
-	void removeSowSeedsDesignation(Block& block);
+	void addSowSeedsDesignation(BlockIndex block);
+	void removeSowSeedsDesignation(BlockIndex block);
 	void addHarvestDesignation(Plant& plant);
 	void removeHarvestDesignation(Plant& plant);
 	void setDayOfYear(uint32_t dayOfYear);
-	[[nodiscard]] FarmField& create(std::unordered_set<Block*>& blocks);
+	[[nodiscard]] FarmField& create(std::unordered_set<BlockIndex>& blocks);
 	[[nodiscard]] FarmField& create(Cuboid cuboid);
-	void extend(FarmField& farmField, std::unordered_set<Block*>& blocks);
+	void extend(FarmField& farmField, std::unordered_set<BlockIndex>& blocks);
 	void setSpecies(FarmField& farmField, const PlantSpecies& plantSpecies);
 	void clearSpecies(FarmField& farmField);
-	void designateBlocks(FarmField& farmField, std::unordered_set<Block*>& blocks);
-	void shrink(FarmField& farmField, std::unordered_set<Block*>& blocks);
+	void designateBlocks(FarmField& farmField, std::unordered_set<BlockIndex>& blocks);
+	void shrink(FarmField& farmField, std::unordered_set<BlockIndex>& blocks);
 	void remove(FarmField& farmField);
-	void undesignateBlocks(std::unordered_set<Block*>& blocks);
+	void undesignateBlocks(std::unordered_set<BlockIndex>& blocks);
 	[[nodiscard]] Plant* getHighestPriorityPlantForGiveFluid();
 	[[nodiscard]] bool hasHarvestDesignations() const;
 	[[nodiscard]] bool hasGivePlantsFluidDesignations() const;
 	[[nodiscard]] bool hasSowSeedsDesignations() const;
-	[[nodiscard]] const PlantSpecies& getPlantSpeciesFor(const Block& block) const;
+	[[nodiscard]] const PlantSpecies& getPlantSpeciesFor(BlockIndex block) const;
 };
 // To be used by Area.
 class AreaHasFarmFields
@@ -121,12 +103,12 @@ public:
 	void registerFaction(Faction& faction);
 	void unregisterFaction(Faction& faction);
 	[[nodiscard]] Plant* getHighestPriorityPlantForGiveFluid(Faction& faction);
-	void removeAllSowSeedsDesignations(Block& block);
+	void removeAllSowSeedsDesignations(BlockIndex block);
 	void setDayOfYear(uint32_t dayOfYear);
 	[[nodiscard]] bool hasGivePlantsFluidDesignations(Faction& faction) const;
 	[[nodiscard]] bool hasHarvestDesignations(Faction& faction) const;
 	[[nodiscard]] bool hasSowSeedsDesignations(Faction& faction) const;
-	[[nodiscard]] const PlantSpecies& getPlantSpeciesFor(Faction& faction, const Block& location) const;
+	[[nodiscard]] const PlantSpecies& getPlantSpeciesFor(Faction& faction, BlockIndex location) const;
 	// For testing.
 	[[maybe_unused, nodiscard]] bool contains(Faction& faction) { return m_data.contains(&faction); }
 };

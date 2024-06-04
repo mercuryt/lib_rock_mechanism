@@ -23,20 +23,23 @@ TEST_CASE("attributes")
 	{
 		Simulation simulation;
 		Area& area = simulation.m_hasAreas->createArea(10,10,10);
+		Blocks& blocks = area.getBlocks();
 		areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName("marble"));
 
 		Actor& goblin1 = simulation.m_hasActors->createActor(ActorParamaters{
 			.species = goblin,
-			.location = &area.getBlock(5,5,1),
+			.location = blocks.getIndex({5,5,1}),
+			.area=&area,
 		});
 
 		Actor& dwarf1 = simulation.m_hasActors->createActor(ActorParamaters{
 			.species = dwarf,
-			.location = &area.getBlock(5,7,1),
+			.location = blocks.getIndex({5,7,1}),
+			.area=&area,
 		});
 		REQUIRE(goblin1.m_attributes.getAgility() > dwarf1.m_attributes.getAgility());
 		REQUIRE(goblin1.m_attributes.getMoveSpeed() > dwarf1.m_attributes.getMoveSpeed());
-		Block& adjacent = area.getBlock(5,6,1);
+		BlockIndex adjacent = blocks.getIndex({5,6,1});
 		Step delayGoblin = goblin1.m_canMove.delayToMoveInto(adjacent);
 		Step delayDwarf = dwarf1.m_canMove.delayToMoveInto(adjacent);
 		REQUIRE(delayGoblin < delayDwarf);

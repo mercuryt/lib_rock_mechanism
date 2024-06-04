@@ -2,26 +2,26 @@
 #include "../deserializationMemo.h"
 #include "../designations.h"
 #include "../simulation.h"
-#include "../block.h"
-void AreaHasSleepingSpots::load(const Json& data, DeserializationMemo& deserializationMemo)
+#include "../area.h"
+void AreaHasSleepingSpots::load(const Json& data, DeserializationMemo&)
 {
 	for(const Json& block : data["unassigned"])
-		m_unassigned.insert(&deserializationMemo.m_simulation.getBlockForJsonQuery(block));
+		m_unassigned.insert(block.get<BlockIndex>());
 }
 Json AreaHasSleepingSpots::toJson() const
 {
 	Json data{{"unassigned", Json::array()}};
-	for(Block* block : m_unassigned)
+	for(BlockIndex block : m_unassigned)
 		data["unassigned"].push_back(block);
 	return data;
 }
-void AreaHasSleepingSpots::designate(Faction& faction, Block& block)
+void AreaHasSleepingSpots::designate(Faction& faction, BlockIndex block)
 {
-	m_unassigned.insert(&block);
-	block.setDesignation(faction, BlockDesignation::Sleep);
+	m_unassigned.insert(block);
+	m_area.getBlocks().designation_set(block, faction, BlockDesignation::Sleep);
 }
-void AreaHasSleepingSpots::undesignate(Faction& faction, Block& block)
+void AreaHasSleepingSpots::undesignate(Faction& faction, BlockIndex block)
 {
-	m_unassigned.erase(&block);
-	block.unsetDesignation(faction, BlockDesignation::Sleep);
+	m_unassigned.erase(block);
+	m_area.getBlocks().designation_unset(block, faction, BlockDesignation::Sleep);
 }

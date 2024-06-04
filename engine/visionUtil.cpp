@@ -1,7 +1,7 @@
 #include "visionUtil.h"
 #include "block.h"
 #include "area.h"
-bool visionUtil::hasLineOfSightUsingVisionCuboid(const Block& from, const Block& to)
+bool visionUtil::hasLineOfSightUsingVisionCuboid(const BlockIndex& from, const BlockIndex& to)
 {
 	assert(from.m_area->m_visionCuboidsActive);
 	if(from.m_visionCuboid == to.m_visionCuboid)
@@ -23,13 +23,13 @@ bool visionUtil::hasLineOfSightUsingVisionCuboid(const Block& from, const Block&
 	float xCumulative = 0;
 	float yCumulative = 0;
 	float zCumulative = 0;
-	const Block* previous = &to;
+	const BlockIndex* previous = &to;
 	while(true)
 	{
 		xCumulative += xDiffNormalized;
 		yCumulative += yDiffNormalized;
 		zCumulative += zDiffNormalized;
-		Block* block = to.offset(std::round(xCumulative), std::round(yCumulative), std::round(zCumulative));
+		BlockIndex* block = to.offset(std::round(xCumulative), std::round(yCumulative), std::round(zCumulative));
 		if(!block->canSeeThroughFrom(*previous))
 			return false;
 		if(block == &from)
@@ -37,7 +37,7 @@ bool visionUtil::hasLineOfSightUsingVisionCuboid(const Block& from, const Block&
 		previous = block;
 	}
 }
-bool visionUtil::hasLineOfSightBasic(const Block& from, const Block& to)
+bool visionUtil::hasLineOfSightBasic(const BlockIndex& from, const BlockIndex& to)
 {
 	//TODO: Can we reduce repetition here?
 	if(from == to)
@@ -53,14 +53,14 @@ bool visionUtil::hasLineOfSightBasic(const Block& from, const Block& to)
 	float xCumulative = 0;
 	float yCumulative = 0;
 	float zCumulative = 0;
-	const Block* previous = &to;
+	const BlockIndex* previous = &to;
 	while(true)
 	{
 		xCumulative += xDiffNormalized;
 		yCumulative += yDiffNormalized;
 		zCumulative += zDiffNormalized;
 		// TODO: create an offsetNotNull to prevent an unnessesary branch.
-		Block* block = to.offset(std::round(xCumulative), std::round(yCumulative), std::round(zCumulative));
+		BlockIndex* block = to.offset(std::round(xCumulative), std::round(yCumulative), std::round(zCumulative));
 		if(!block->canSeeThroughFrom(*previous))
 			return false;
 		if(block == &from)

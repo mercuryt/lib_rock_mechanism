@@ -58,7 +58,7 @@ bool Reservable::isFullyReserved(Faction* faction) const
 	return m_reservedCounts.contains(faction) && m_reservedCounts.at(faction) == m_maxReservations; 
 }
 bool Reservable::hasAnyReservations() const { return !m_canReserves.empty(); }
-bool Reservable::hasAnyReservationsWith(Faction& faction) const { return m_reservedCounts.contains(&faction); }
+bool Reservable::hasAnyReservationsWith(const Faction& faction) const { return m_reservedCounts.contains(const_cast<Faction*>(&faction)); }
 std::unordered_map<CanReserve*, uint32_t>& Reservable::getReservedBy() { return m_canReserves; }
 void Reservable::reserveFor(CanReserve& canReserve, const uint32_t quantity, std::unique_ptr<DishonorCallback> dishonorCallback) 
 {

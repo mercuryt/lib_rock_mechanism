@@ -5,7 +5,7 @@
 #include "blockFeature.h"
 #include "designations.h"
 #include "materialType.h"
-void ContextMenu::drawConstructControls(Block& block)
+void ContextMenu::drawConstructControls(BlockIndex& block)
 {
 	if(m_window.getFaction() && block.hasDesignation(*m_window.getFaction(), BlockDesignation::Construct))
 	{
@@ -14,7 +14,7 @@ void ContextMenu::drawConstructControls(Block& block)
 		m_root.add(cancelButton);
 		cancelButton->onClick([this]{
 			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-			for(Block* selectedBlock : m_window.getSelectedBlocks())
+			for(BlockIndex* selectedBlock : m_window.getSelectedBlocks())
 				m_window.getArea()->m_hasConstructionDesignations.undesignate(*m_window.getFaction(), *selectedBlock);
 			hide();
 		});
@@ -56,12 +56,12 @@ void ContextMenu::drawConstructControls(Block& block)
 		});
 	}
 }
-void ContextMenu::construct(Block& block, bool constructed, const MaterialType& materialType, const BlockFeatureType* blockFeatureType)
+void ContextMenu::construct(BlockIndex& block, bool constructed, const MaterialType& materialType, const BlockFeatureType* blockFeatureType)
 {
 	std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 	if(m_window.getSelectedBlocks().empty())
 		m_window.selectBlock(block);
-	for(Block* selectedBlock : m_window.getSelectedBlocks())
+	for(BlockIndex* selectedBlock : m_window.getSelectedBlocks())
 		if(!selectedBlock->isSolid())
 		{
 			if (m_window.m_editMode)

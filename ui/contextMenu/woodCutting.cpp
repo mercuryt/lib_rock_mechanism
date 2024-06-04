@@ -6,7 +6,7 @@ bool plantIsValid(const Plant& plant)
 {
 	return plant.m_plantSpecies.isTree && plant.getGrowthPercent() >= Config::minimumPercentGrowthForWoodCutting;
 }
-void ContextMenu::drawWoodCuttingControls(Block& block)
+void ContextMenu::drawWoodCuttingControls(BlockIndex& block)
 {
 	if(m_window.getFaction() && block.m_hasPlant.exists() && plantIsValid(block.m_hasPlant.get()))
 	{

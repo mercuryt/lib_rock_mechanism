@@ -10,9 +10,9 @@
 
 #include <unordered_set>
 
-class Block;
 class BlockHasShapes;
 class Actor;
+class Area;
 class Item;
 struct Faction;
 class CanReserve;
@@ -29,14 +29,15 @@ public:
 	CanLead m_canLead; // 4
 	CanFollow m_canFollow; // 4
 	OnDestroy m_onDestroy; // 2
-	std::unordered_set<Block*> m_blocks;
+	std::unordered_set<BlockIndex> m_blocks;
 private:
 	Simulation& m_simulation;
 protected:
 	Faction* m_faction = nullptr;
 public:
 	const Shape* m_shape = nullptr;
-	Block* m_location = nullptr;
+	BlockIndex m_location = BLOCK_INDEX_MAX;
+	Area* m_area = nullptr;
 	Facing m_facing= 0; 
 	//TODO: Adjacent blocks offset cache?
 	bool m_isUnderground = false;
@@ -44,7 +45,7 @@ protected:
 	bool m_static = false;
 	HasShape(Simulation& simulation, const Shape& shape, bool isStatic, Facing f = 0u, uint32_t maxReservations = 1u, Faction* faction = nullptr) :
 	       	m_reservable(maxReservations), m_canLead(*this), m_canFollow(*this, simulation), m_simulation(simulation), m_faction(faction), 
-		m_shape(&shape), m_location(nullptr), m_facing(f), m_isUnderground(false), m_static(isStatic) { }
+		m_shape(&shape), m_location(BLOCK_INDEX_MAX), m_facing(f), m_isUnderground(false), m_static(isStatic) { }
 	HasShape(const Json& data, DeserializationMemo& deserializationMemo);
 public:
 	void setShape(const Shape& shape);
@@ -54,22 +55,24 @@ public:
 	// May return nullptr.
 	[[nodiscard]] Faction* getFaction() const { return m_faction; }
 	[[nodiscard]] bool isAdjacentTo(const HasShape& other) const;
-	[[nodiscard]] bool isAdjacentTo(Block& block) const;
-	[[nodiscard]] bool predicateForAnyOccupiedBlock(std::function<bool(const Block&)> predicate) const;
-	[[nodiscard]] bool predicateForAnyAdjacentBlock(std::function<bool(const Block&)> predicate) const;
-	[[nodiscard]] std::unordered_set<Block*> getAdjacentBlocks();
+	[[nodiscard]] bool isStatic() const { return m_static; }
+	[[nodiscard]] bool isAdjacentTo(BlockIndex block) const;
+	[[nodiscard]] bool predicateForAnyOccupiedBlock(std::function<bool(BlockIndex)> predicate) const;
+	[[nodiscard]] bool predicateForAnyAdjacentBlock(std::function<bool(BlockIndex)> predicate) const;
+	[[nodiscard]] std::unordered_set<BlockIndex> getAdjacentBlocks();
+	[[nodiscard]] const std::unordered_set<BlockIndex> getAdjacentBlocks() const;
 	[[nodiscard]] std::unordered_set<HasShape*> getAdjacentHasShapes();
-	[[nodiscard]] std::vector<Block*> getAdjacentAtLocationWithFacing(const Block& block, Facing facing);
-	[[nodiscard]] std::vector<Block*> getBlocksWhichWouldBeOccupiedAtLocationAndFacing(Block& location, Facing facing);
-	[[nodiscard]] bool allBlocksAtLocationAndFacingAreReservable(const Block& location, Facing facing, Faction& faction) const;
+	[[nodiscard]] std::vector<BlockIndex> getAdjacentAtLocationWithFacing(BlockIndex block, Facing facing);
+	[[nodiscard]] std::vector<BlockIndex> getBlocksWhichWouldBeOccupiedAtLocationAndFacing(BlockIndex location, Facing facing);
+	[[nodiscard]] bool allBlocksAtLocationAndFacingAreReservable(BlockIndex location, Facing facing, Faction& faction) const;
 	[[nodiscard]] bool allOccupiedBlocksAreReservable(Faction& faction) const;
-	[[nodiscard]] bool isAdjacentToAt(const Block& location, Facing facing, const HasShape& hasShape) const;
+	[[nodiscard]] bool isAdjacentToAt(BlockIndex location, Facing facing, const HasShape& hasShape) const;
 	[[nodiscard]] DistanceInBlocks distanceTo(const HasShape& other) const;
-	[[nodiscard]] Block* getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(const Block& location, Facing facing, std::function<bool(const Block&)>& predicate);
-	[[nodiscard]] Block* getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(const Block& location, Facing facing, std::function<bool(const Block&)>& predicate);
-	[[nodiscard]] Block* getBlockWhichIsAdjacentWithPredicate(std::function<bool(const Block&)>& predicate);
-	[[nodiscard]] Block* getBlockWhichIsOccupiedWithPredicate(std::function<bool(const Block&)>& predicate);
-	[[nodiscard]] Item* getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(const Block& location, Facing facing, std::function<bool(const Item&)>& predicate);
+	[[nodiscard]] BlockIndex getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(BlockIndex location, Facing facing, std::function<bool(BlockIndex)>& predicate);
+	[[nodiscard]] BlockIndex getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(BlockIndex location, Facing facing, std::function<bool(BlockIndex)>& predicate);
+	[[nodiscard]] BlockIndex getBlockWhichIsAdjacentWithPredicate(std::function<bool(BlockIndex)>& predicate);
+	[[nodiscard]] BlockIndex getBlockWhichIsOccupiedWithPredicate(std::function<bool(BlockIndex)>& predicate);
+	[[nodiscard]] Item* getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(BlockIndex location, Facing facing, std::function<bool(const Item&)>& predicate);
 	[[nodiscard]] Item* getItemWhichIsAdjacentWithPredicate(std::function<bool(const Item&)>& predicate);
 	[[nodiscard]] Simulation& getSimulation() { return m_simulation; }
 	[[nodiscard]] EventSchedule& getEventSchedule();
@@ -78,7 +81,7 @@ public:
 	virtual bool isGeneric() const = 0;
 	virtual Mass getMass() const = 0;
 	virtual Volume getVolume() const = 0;
-	virtual void setLocation(Block& block) = 0;
+	virtual void setLocation(BlockIndex block, Area* area) = 0;
 	virtual void exit() = 0;
 	virtual const MoveType& getMoveType() const = 0;
 	virtual Mass singleUnitMass() const = 0;

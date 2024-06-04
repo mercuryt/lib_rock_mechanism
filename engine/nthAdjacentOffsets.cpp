@@ -1,5 +1,6 @@
 #include "nthAdjacentOffsets.h"
-#include "block.h"
+#include "area.h"
+#include "types.h"
 std::vector<XYZ> getNthAdjacentOffsets(uint32_t n)
 {
 	assert(n != 0);
@@ -26,14 +27,13 @@ std::vector<XYZ> getNthAdjacentOffsets(uint32_t n)
 	}
 	return cache.at(n);
 }
-
-std::vector<Block*> getNthAdjacentBlocks(Block& center, uint32_t i)
+std::vector<BlockIndex> getNthAdjacentBlocks(Area& area, BlockIndex center, uint32_t i)
 {
-	std::vector<Block*> output;
+	std::vector<BlockIndex> output;
 	for(XYZ& offset : getNthAdjacentOffsets(i))
 	{
-		Block* block = center.offset(offset.x, offset.y, offset.z);
-		if(block != nullptr)
+		BlockIndex block = area.getBlocks().offset(center, offset.x, offset.y, offset.z);
+		if(block != BLOCK_INDEX_MAX)
 			output.push_back(block);
 	}
 	return output;

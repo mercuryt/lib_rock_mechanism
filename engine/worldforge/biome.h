@@ -6,7 +6,7 @@
 #include <string>
 #include <unordered_map>
 #include <algorithm>
-class Block;
+class BlockIndex;
 class Random;
 class Simulation;
 class Area;
@@ -20,7 +20,7 @@ public:
 	virtual BiomeId getType() const = 0;
 	virtual double getChanceOfAnimals(WorldLocation& location) const = 0;
 	virtual std::pair<uint32_t, uint32_t> getBaseAnimalCountRange(WorldLocation& location) const = 0;
-	virtual void createPlantsAndRocks(Block& block, Simulation& simulation, Random& random) const = 0;
+	virtual void createPlantsAndRocks(BlockIndex& block, Simulation& simulation, Random& random) const = 0;
 	virtual std::unordered_map<std::string, float> getAnimalProbabilities(WorldLocation& location) const = 0;
 	virtual ~Biome() = default;
 	// Infastructure
@@ -49,7 +49,7 @@ public:
 			{"golden eagle", 0.1},
 		};
 	}
-	void createPlantsAndRocks(Block& block, Simulation& simulation, Random& random) const;
+	void createPlantsAndRocks(BlockIndex& block, Simulation& simulation, Random& random) const;
 };
 
 class ForestBiome final : public Biome
@@ -69,7 +69,7 @@ public:
 			{"golden eagle", 0.1},
 		};
 	}
-	void createPlantsAndRocks(Block& block, Simulation& simulation, Random& random) const;
+	void createPlantsAndRocks(BlockIndex& block, Simulation& simulation, Random& random) const;
 };
 
 class DesertBiome final : public Biome
@@ -86,7 +86,7 @@ public:
 			{"golden eagle", 0.1},
 		};
 	}
-	void createPlantsAndRocks(Block& block, Simulation& simulation, Random& random) const;
+	void createPlantsAndRocks(BlockIndex& block, Simulation& simulation, Random& random) const;
 };
 
 class SwampBiome final : public Biome
@@ -103,5 +103,5 @@ public:
 			{"golden eagle", 0.1},
 		};
 	}
-	void createPlantsAndRocks(Block& block, Simulation& simulation, Random& random) const;
+	void createPlantsAndRocks(BlockIndex& block, Simulation& simulation, Random& random) const;
 };

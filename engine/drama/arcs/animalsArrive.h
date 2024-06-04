@@ -8,14 +8,13 @@ class Actor;
 struct AnimalSpecies;
 class AnimalsLeaveScheduledEvent;
 struct DeserializationMemo;
-class Block;
 
 struct AnimalsArriveDramaArc final : public DramaArc
 {
-	Block* m_entranceBlock = nullptr;;
+	BlockIndex m_entranceBlock = BLOCK_INDEX_MAX;
 	std::vector<Actor*> m_actors;
 	bool m_isActive = false;
-	const AnimalSpecies* m_species = nullptr;;
+	const AnimalSpecies* m_species = nullptr;
 	uint32_t m_quantity = 0;
 	Percent m_hungerPercent = 0;
 	Percent m_thristPercent = 0;
@@ -29,16 +28,16 @@ private:
 	void scheduleArrive();
 	void scheduleDepart();
 	void scheduleContinue();
-	std::pair<const AnimalSpecies*, uint32_t> getSpeciesAndQuantity() const;
-	static std::vector<const AnimalSpecies*> getLargeCarnivors();
-	static std::vector<const AnimalSpecies*> getMediumCarnivors();
-	static std::vector<const AnimalSpecies*> getSmallCarnivors();
-	static std::vector<const AnimalSpecies*> getLargeHerbivors();
-	static std::vector<const AnimalSpecies*> getMediumHerbivors();
-	static std::vector<const AnimalSpecies*> getSmallHerbivors();
-	static bool isSmall(const Shape& shape);
-	static bool isMedium(const Shape& shape);
-	static bool isLarge(const Shape& shape);
+	[[nodiscard]] std::pair<const AnimalSpecies*, uint32_t> getSpeciesAndQuantity() const;
+	[[nodiscard]] static std::vector<const AnimalSpecies*> getLargeCarnivors();
+	[[nodiscard]] static std::vector<const AnimalSpecies*> getMediumCarnivors();
+	[[nodiscard]] static std::vector<const AnimalSpecies*> getSmallCarnivors();
+	[[nodiscard]] static std::vector<const AnimalSpecies*> getLargeHerbivors();
+	[[nodiscard]] static std::vector<const AnimalSpecies*> getMediumHerbivors();
+	[[nodiscard]] static std::vector<const AnimalSpecies*> getSmallHerbivors();
+	[[nodiscard]] static bool isSmall(const Shape& shape);
+	[[nodiscard]] static bool isMedium(const Shape& shape);
+	[[nodiscard]] static bool isLarge(const Shape& shape);
 	//For debug.
 	void begin();
 };

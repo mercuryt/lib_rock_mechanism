@@ -56,7 +56,7 @@ void Window::setArea(Area& area, GameView* gameView)
 	m_scale = gameView->scale;
 	centerView(*gameView->center);
 }
-void Window::centerView(const Block& block)
+void Window::centerView(const BlockIndex& block)
 {
 	m_z = block.m_z;
 	sf::Vector2f globalPosition(block.m_x * m_scale, block.m_y * m_scale);
@@ -138,14 +138,14 @@ void Window::startLoop()
 						case sf::Keyboard::Delete:
 							{
 								m_scale = std::max(1u, (int)m_scale - scrollSteps);
-								Block& center = *m_blockUnderCursor;
+								BlockIndex& center = *m_blockUnderCursor;
 								m_view.move(-1.f *center.m_x * scrollSteps, -1.f * center.m_y * scrollSteps);
 							}
 							break;
 						case sf::Keyboard::Insert:
 							{
 								m_scale += 1 * scrollSteps;
-								Block& center = *m_blockUnderCursor;
+								BlockIndex& center = *m_blockUnderCursor;
 								m_view.move(center.m_x * scrollSteps, center.m_y * scrollSteps);
 							}
 							break;
@@ -266,7 +266,7 @@ void Window::startLoop()
 				{
 					if(m_area)
 					{
-						Block& block = *m_blockUnderCursor;
+						BlockIndex& block = *m_blockUnderCursor;
 						if(event.mouseButton.button == displayData::selectMouseButton)
 						{
 							
@@ -282,14 +282,14 @@ void Window::startLoop()
 							bool selectBlocks = sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt);
 							bool selectPlants = false;
 							if(selectActors)
-								for(Block& block : blocks)
+								for(BlockIndex& block : blocks)
 									m_selectedActors.insert(block.m_hasActors.getAll().begin(), block.m_hasActors.getAll().end());
 							else if(selectItems)
-								for(Block& block : blocks)
+								for(BlockIndex& block : blocks)
 									m_selectedItems.insert(block.m_hasItems.getAll().begin(), block.m_hasItems.getAll().end());
 							else if(selectBlocks)
 							{
-								for(Block& block : blocks)
+								for(BlockIndex& block : blocks)
 									m_selectedBlocks.insert(&block);
 							}
 							else
@@ -299,7 +299,7 @@ void Window::startLoop()
 								std::unordered_set<Item*> foundItems;
 								std::unordered_set<Plant*> foundPlants;
 								// Gather all candidates, then cull based on choosen category. actors > items > plants > blocks
-								for(Block& block : blocks)
+								for(BlockIndex& block : blocks)
 								{
 									if(!block.m_hasActors.empty())
 									{
@@ -340,7 +340,7 @@ void Window::startLoop()
 									m_selectedActors.clear();
 									m_selectedItems.clear();
 									m_selectedPlants.clear();
-									for(Block& block : blocks)
+									for(BlockIndex& block : blocks)
 										m_selectedBlocks.insert(&block);
 								}
 							}
@@ -372,7 +372,7 @@ void Window::startLoop()
 				default:
 					if(m_area)
 					{
-						const Block& block = *m_blockUnderCursor;
+						const BlockIndex& block = *m_blockUnderCursor;
 						m_gameOverlay.m_coordinateUI->setText(
 							std::to_string(block.m_x) + "," +
 							std::to_string(block.m_y) + "," +
@@ -491,7 +491,7 @@ void Window::deselectAll()
 	m_selectedActors.clear();
 	m_selectedPlants.clear();
 }
-void Window::selectBlock(Block& block)
+void Window::selectBlock(BlockIndex& block)
 {
 	//TODO: additive select.
 	deselectAll();
@@ -512,12 +512,12 @@ void Window::selectActor(Actor& actor)
 	deselectAll();
 	m_selectedActors.insert(&actor);
 }
-Block& Window::getBlockUnderCursor()
+BlockIndex& Window::getBlockUnderCursor()
 {
 	sf::Vector2i pixelPos = sf::Mouse::getPosition(m_window);
 	return getBlockAtPosition(pixelPos);
 }
-Block& Window::getBlockAtPosition(sf::Vector2i pixelPos)
+BlockIndex& Window::getBlockAtPosition(sf::Vector2i pixelPos)
 {
 	sf::Vector2f worldPos = m_window.mapPixelToCoords(pixelPos);
 	uint32_t x = std::max(0.f, worldPos.x + m_view.getCenter().x - m_view.getSize().x / 2);

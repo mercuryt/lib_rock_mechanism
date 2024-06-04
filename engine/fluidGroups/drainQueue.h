@@ -7,22 +7,21 @@
 
 class FluidGroup;
 struct FutureFlowBlock;
-class Block;
 
 class DrainQueue final : public FluidQueue
 {
 public:
-	std::unordered_set<Block*> m_futureEmpty;
-	std::unordered_set<Block*> m_futureNoLongerFull;
-	std::unordered_set<Block*> m_futurePotentialNoLongerAdjacent;
+	std::unordered_set<BlockIndex> m_futureEmpty;
+	std::unordered_set<BlockIndex> m_futureNoLongerFull;
+	std::unordered_set<BlockIndex> m_futurePotentialNoLongerAdjacent;
 private:
 	[[nodiscard]] uint32_t getPriority(FutureFlowBlock& futureFlowBlock) const;
 public:
 	DrainQueue(FluidGroup& fluidGroup);
-	void buildFor(std::unordered_set<Block*>& members);
+	void buildFor(std::unordered_set<BlockIndex>& members);
 	void initalizeForStep();
-	void recordDelta(uint32_t volume, uint32_t flowCapacity, uint32_t flowTillNextStep);
+	void recordDelta(CollisionVolume volume, CollisionVolume flowCapacity, CollisionVolume flowTillNextStep);
 	void applyDelta();
-	[[nodiscard]] uint32_t groupLevel() const;
+	[[nodiscard]] CollisionVolume groupLevel() const;
 	void findGroupEnd();
 };

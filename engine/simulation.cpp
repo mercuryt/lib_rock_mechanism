@@ -9,6 +9,7 @@
 #include "simulation/hasAreas.h"
 #include "simulation/hasItems.h"
 #include "threadedTask.h"
+#include "types.h"
 #include "util.h"
 #include "drama/engine.h"
 //#include "worldforge/world.h"
@@ -123,27 +124,27 @@ void Simulation::fastForwardUntill(DateTime dateTime)
 	assert(dateTime.toSteps() > m_step);
 	fastForward(dateTime.toSteps() - m_step);
 }
-void Simulation::fastForwardUntillActorIsAtDestination(Actor& actor, Block& destination)
+void Simulation::fastForwardUntillActorIsAtDestination(Actor& actor, BlockIndex destination)
 {
-	assert(*actor.m_canMove.getDestination() == destination);
+	assert(actor.m_canMove.getDestination() == destination);
 	fastForwardUntillActorIsAt(actor, destination);
 }
-void Simulation::fastForwardUntillActorIsAt(Actor& actor, Block& destination)
+void Simulation::fastForwardUntillActorIsAt(Actor& actor, BlockIndex destination)
 {
-	std::function<bool()> predicate = [&](){ return actor.m_location == &destination; };
+	std::function<bool()> predicate = [&](){ return actor.m_location == destination; };
 	fastForwardUntillPredicate(predicate);
 }
-void Simulation::fastForwardUntillActorIsAdjacentToDestination(Actor& actor, Block& destination)
+void Simulation::fastForwardUntillActorIsAdjacentToDestination(Actor& actor, BlockIndex destination)
 {
 	assert(!actor.m_canMove.getPath().empty());
-	[[maybe_unused]] Block* adjacentDestination = actor.m_canMove.getPath().back();
-	assert(adjacentDestination != nullptr);
+	[[maybe_unused]] BlockIndex adjacentDestination = actor.m_canMove.getPath().back();
+	assert(adjacentDestination != BLOCK_INDEX_MAX);
 	if(actor.m_blocks.size() == 1)
-		assert(adjacentDestination->isAdjacentToIncludingCornersAndEdges(destination));
+		assert(actor.m_area->getBlocks().isAdjacentToIncludingCornersAndEdges(adjacentDestination, destination));
 	std::function<bool()> predicate = [&](){ return actor.isAdjacentTo(destination); };
 	fastForwardUntillPredicate(predicate);
 }
-void Simulation::fastForwardUntillActorIsAdjacentTo(Actor& actor, Block& block)
+void Simulation::fastForwardUntillActorIsAdjacentTo(Actor& actor, BlockIndex block)
 {
 	std::function<bool()> predicate = [&](){ return actor.isAdjacentTo(block); };
 	fastForwardUntillPredicate(predicate);
@@ -155,7 +156,7 @@ void Simulation::fastForwardUntillActorIsAdjacentToHasShape(Actor& actor, HasSha
 }
 void Simulation::fastForwardUntillActorHasNoDestination(Actor& actor)
 {
-	std::function<bool()> predicate = [&](){ return actor.m_canMove.getDestination() == nullptr; };
+	std::function<bool()> predicate = [&](){ return actor.m_canMove.getDestination() == BLOCK_INDEX_MAX; };
 	fastForwardUntillPredicate(predicate);
 }
 void Simulation::fastForwardUntillActorHasEquipment(Actor& actor, Item& item)
@@ -199,12 +200,12 @@ Json Simulation::toJson() const
 	output["drama"] = m_dramaEngine->toJson();
 	return output;
 }
-Block& Simulation::getBlockForJsonQuery(const Json& data)
+BlockIndex Simulation::getBlockForJsonQuery(const Json& data)
 {
 	auto x = data["x"].get<uint32_t>();
 	auto y = data["y"].get<uint32_t>();
 	auto z = data["z"].get<uint32_t>();
 	auto id = data["area"].get<AreaId>();
 	Area& area = m_hasAreas->getById(id);
-	return area.getBlock(x, y, z);
+	return area.getBlocks().getIndex({x, y, z});
 }

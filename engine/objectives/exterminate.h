@@ -3,15 +3,14 @@
 #include "../config.h"
 #include "eventSchedule.hpp"
 class Actor;
-class Block;
 struct DeserializationMemo;
 class ExterminateObjectiveScheduledEvent;
 class ExterminateObjective final : public Objective
 {
-	Block& m_destination;
+	BlockIndex m_destination;
 	HasScheduledEvent<ExterminateObjectiveScheduledEvent> m_event;
 public:
-	ExterminateObjective(Actor& a, Block& destination);
+	ExterminateObjective(Actor& a, BlockIndex destination);
 	ExterminateObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void execute();

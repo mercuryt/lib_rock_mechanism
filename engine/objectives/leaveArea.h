@@ -4,7 +4,6 @@
 #include "config.h"
 #include "threadedTask.hpp"
 struct DeserializationMemo;
-class Block;
 class Actor;
 class LeaveAreaThreadedTask;
 class LeaveAreaObjective final : public Objective

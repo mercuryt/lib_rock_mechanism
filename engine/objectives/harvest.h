@@ -10,7 +10,6 @@
 struct DeserializationMemo;
 class HarvestThreadedTask;
 class HarvestEvent;
-class Block;
 class Plant;
 class Actor;
 
@@ -25,7 +24,7 @@ public:
 };
 class HarvestObjective final : public Objective
 {
-	Block* m_block;
+	BlockIndex m_block = BLOCK_INDEX_MAX;
 public:
 	HarvestObjective(Actor& a);
 	HarvestObjective(const Json& data, DeserializationMemo& deserializationMemo);
@@ -35,18 +34,18 @@ public:
 	void execute();
 	void cancel();
 	void delay() { cancel(); }
-	void select(Block& block);
+	void select(BlockIndex block);
 	void begin();
 	void reset();
-	bool canHarvestAt(const Block& block) const;
+	bool canHarvestAt(BlockIndex block) const;
 	std::string name() const { return "harvest"; }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Harvest; }
-	Block* getBlockContainingPlantToHarvestAtLocationAndFacing(const Block& location, Facing facing);
-	bool blockContainsHarvestablePlant(const Block& block) const;
+	BlockIndex getBlockContainingPlantToHarvestAtLocationAndFacing(BlockIndex location, Facing facing);
+	bool blockContainsHarvestablePlant(BlockIndex block) const;
 	friend class HarvestEvent;
 	friend class HarvestThreadedTask;
 	// For testing.
-	Block* getBlock() { return m_block; }
+	BlockIndex getBlock() { return m_block; }
 };
 class HarvestEvent final : public ScheduledEvent
 {

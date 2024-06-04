@@ -1,60 +1,71 @@
 #include "mistDisperseEvent.h"
 #include "config.h"
-#include "block.h"
 #include "area.h"
 #include "eventSchedule.h"
 #include "simulation.h"
 #include "fluidType.h"
+#include "types.h"
 
 #include <memory>
-MistDisperseEvent::MistDisperseEvent(uint32_t delay, const FluidType& ft, Block& b) : ScheduledEvent(b.m_area->m_simulation, delay), m_fluidType(ft), m_block(b) {}
+MistDisperseEvent::MistDisperseEvent(uint32_t delay, Area& a, const FluidType& ft, BlockIndex b) :
+       	ScheduledEvent(a.m_simulation, delay), m_area(a), m_fluidType(ft), m_block(b) {}
 void MistDisperseEvent::execute()
 {
+	Blocks& blocks = m_area.getBlocks();
 	// Mist does not or cannont exist here anymore, clear and return.
-	if(!m_block.m_hasFluids.m_mist || m_block.isSolid() || m_block.m_hasFluids.getTotalVolume() == Config::maxBlockVolume)
+	if(!blocks.fluid_getMist(m_block) || blocks.solid_is(m_block) || blocks.fluid_getTotalVolume(m_block) == Config::maxBlockVolume)
 	{
-		m_block.m_hasFluids.m_mist = nullptr;
-		m_block.m_hasFluids.m_mistInverseDistanceFromSource = 0;
+		blocks.fluid_clearMist(m_block);
 		return;
 	}
 	// Check if mist continues to exist here.
 	if(continuesToExist())
 	{
 		// Possibly spread.
-		if(m_block.m_hasFluids.m_mistInverseDistanceFromSource > 0)
-			for(Block* adjacent : m_block.m_adjacents)
-				if(adjacent && adjacent->m_hasFluids.fluidCanEnterEver() && (adjacent->m_hasFluids.m_mist == nullptr || adjacent->m_hasFluids.m_mist->density < m_fluidType.density)
-				  )
+		if(blocks.fluid_getMistInverseDistanceToSource(m_block) > 0)
+			for(BlockIndex adjacent : blocks.getDirectlyAdjacent(m_block))
+				if(adjacent != BLOCK_INDEX_MAX && blocks.fluid_canEnterEver(adjacent) && 
+						(
+							!blocks.fluid_getMist(adjacent) || 
+							blocks.fluid_getMist(adjacent)->density < m_fluidType.density
+						)
+				)
 				{
-					adjacent->m_hasFluids.m_mist = &m_fluidType;
-					adjacent->m_hasFluids.m_mistInverseDistanceFromSource = m_block.m_hasFluids.m_mistInverseDistanceFromSource - 1;
-					m_simulation.m_eventSchedule.schedule(std::make_unique<MistDisperseEvent>(m_fluidType.mistDuration, m_fluidType, *adjacent));
+					blocks.fluid_mistSetFluidTypeAndInverseDistance(adjacent, m_fluidType, blocks.fluid_getMistInverseDistanceToSource(m_block) - 1);
+					m_simulation.m_eventSchedule.schedule(std::make_unique<MistDisperseEvent>(m_fluidType.mistDuration, m_area, m_fluidType, adjacent));
 				}
 		// Schedule next check.
-		m_simulation.m_eventSchedule.schedule(std::make_unique<MistDisperseEvent>(m_fluidType.mistDuration, m_fluidType, m_block));	
+		m_simulation.m_eventSchedule.schedule(std::make_unique<MistDisperseEvent>(m_fluidType.mistDuration, m_area, m_fluidType, m_block));	
 		return;
 	}
 	// Mist does not continue to exist here.
-	m_block.m_hasFluids.m_mist = nullptr;
-	m_block.m_hasFluids.m_mistInverseDistanceFromSource = UINT32_MAX;
+	blocks.fluid_clearMist(m_block);
 }
 bool MistDisperseEvent::continuesToExist() const
 {
-	if(m_block.m_hasFluids.m_mistSource == &m_fluidType)
+	Blocks& blocks = m_area.getBlocks();
+	if(blocks.fluid_getMist(m_block) == &m_fluidType)
 		return true;
 	// if adjacent to falling fluid on same z level
-	for(Block* adjacent : m_block.getAdjacentOnSameZLevelOnly())
+	for(BlockIndex adjacent : blocks.getAdjacentOnSameZLevelOnly(m_block))
 		// if adjacent to falling fluid.
-		if(adjacent->m_hasFluids.m_fluids.contains(&m_fluidType) && adjacent->getBlockBelow() && !adjacent->getBlockBelow()->isSolid())
-			return true;
-	for(Block* adjacent : m_block.m_adjacents)
+		if(blocks.fluid_contains(adjacent, m_fluidType))
+		{	
+			BlockIndex belowAdjacent = blocks.getBlockBelow(adjacent);
+			if(belowAdjacent != BLOCK_INDEX_MAX && !blocks.solid_is(belowAdjacent))
+				return true;
+		}
+	for(BlockIndex adjacent : blocks.getDirectlyAdjacent(m_block))
 		// if adjacent to block with mist with lower distance to source.
-		if(adjacent && adjacent->m_hasFluids.m_mist == &m_fluidType && adjacent->m_hasFluids.m_mistInverseDistanceFromSource > m_block.m_hasFluids.m_mistInverseDistanceFromSource)
+		if(adjacent != BLOCK_INDEX_MAX && 
+			blocks.fluid_getMist(adjacent) &&
+			blocks.fluid_getMistInverseDistanceToSource(adjacent) > blocks.fluid_getMistInverseDistanceToSource(adjacent) 
+		)
 			return true;
 	return false;
 }
-void MistDisperseEvent::emplace(uint32_t delay, const FluidType& fluidType, Block& block)
+void MistDisperseEvent::emplace(uint32_t delay, Area& area, const FluidType& fluidType, BlockIndex block)
 {
-	std::unique_ptr<ScheduledEvent> event = std::make_unique<MistDisperseEvent>(delay, fluidType, block);
-	block.m_area->m_simulation.m_eventSchedule.schedule(std::move(event));
+	std::unique_ptr<ScheduledEvent> event = std::make_unique<MistDisperseEvent>(delay, area, fluidType, block);
+	area.m_simulation.m_eventSchedule.schedule(std::move(event));
 }

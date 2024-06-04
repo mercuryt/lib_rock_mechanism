@@ -21,23 +21,24 @@ TEST_CASE("equip and unequip")
 	const MaterialType& marble = MaterialType::byName("marble");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	Blocks& blocks = area.getBlocks();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
-	Block& destination = area.getBlock(8,2,1);
+	BlockIndex destination = blocks.getIndex({8,2,1});
 	Actor& dwarf1 = simulation.m_hasActors->createActor(ActorParamaters{
 		.species=AnimalSpecies::byName("dwarf"), 
-		.location=&area.getBlock(1, 1, 1),
+		.location=blocks.getIndex({1, 1, 1}),
 		.hasCloths=false,
 		.hasSidearm=false
 	});
 	Item& longsword = simulation.m_hasItems->createItemNongeneric(ItemType::byName("long sword"), MaterialType::byName("bronze"), 20, 10);
-	Block& swordLocation = area.getBlock(8,8,1);
+	BlockIndex swordLocation = blocks.getIndex({8,8,1});
 	longsword.setLocation(swordLocation);
 	std::unique_ptr<Objective> objective = std::make_unique<EquipItemObjective>(dwarf1, longsword);
 	dwarf1.m_hasObjectives.addTaskToStart(std::move(objective));
 	REQUIRE(dwarf1.m_canMove.hasThreadedTask());
 	simulation.doStep();
 	simulation.fastForwardUntillActorIsAdjacentTo(dwarf1, swordLocation);
-	REQUIRE(swordLocation.m_hasItems.empty());
+	REQUIRE(blocks.item_empty(swordLocation));
 	REQUIRE(dwarf1.m_equipmentSet.contains(longsword));
 	REQUIRE(dwarf1.getActionDescription() != L"equip");
 	std::unique_ptr<Objective> objective2 = std::make_unique<UnequipItemObjective>(dwarf1, longsword, destination);
@@ -45,7 +46,7 @@ TEST_CASE("equip and unequip")
 	simulation.doStep();
 	simulation.fastForwardUntillActorIsAdjacentTo(dwarf1, destination);
 	REQUIRE(dwarf1.m_equipmentSet.empty());
-	REQUIRE(longsword.m_location == &destination);
+	REQUIRE(longsword.m_location == destination);
 	REQUIRE(dwarf1.getActionDescription() != L"equip");
 }
 TEST_CASE("give item")
@@ -53,16 +54,17 @@ TEST_CASE("give item")
 	const MaterialType& marble = MaterialType::byName("marble");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	Blocks& blocks = area.getBlocks();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	Actor& dwarf1 = simulation.m_hasActors->createActor(ActorParamaters{
 		.species=AnimalSpecies::byName("dwarf"), 
-		.location=&area.getBlock(1, 1, 1),
+		.location=blocks.getIndex({1, 1, 1}),
 		.hasCloths=false,
 		.hasSidearm=false
 	});
 	Actor& dwarf2 = simulation.m_hasActors->createActor(ActorParamaters{
 		.species=AnimalSpecies::byName("dwarf"), 
-		.location=&area.getBlock(6, 6, 1),
+		.location=blocks.getIndex({6, 6, 1}),
 		.hasCloths=false,
 		.hasSidearm=false
 	});

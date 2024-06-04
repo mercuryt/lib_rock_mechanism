@@ -5,78 +5,54 @@
 #include <iterator>
 #include <unordered_set>
 
-class Block;
-
+#include "designations.h"
+#include "types.h"
+class Blocks;
 class Cuboid
 {
+	Blocks* m_blocks;
 public:
-	Block* m_highest;
-	Block* m_lowest;
+	BlockIndex m_highest = BLOCK_INDEX_MAX;
+	BlockIndex m_lowest = BLOCK_INDEX_MAX;
 
-	Cuboid(Block* h, Block* l);
-	Cuboid(Block& h, Block& l);
-	Cuboid() : m_highest(nullptr), m_lowest(nullptr) {}
+	Cuboid(Blocks& blocks, BlockIndex h, BlockIndex l);
+	Cuboid() = default;
 	void merge(const Cuboid& cuboid);
-	void setFrom(Block& block);
-	void setFrom(Block& a, Block& b);
+	void setFrom(BlockIndex block);
+	void setFrom(Blocks& blocks, BlockIndex a, BlockIndex b);
 	void clear();
-	[[nodiscard]] std::unordered_set<Block*> toSet();
-	[[nodiscard]] bool contains(const Block& block) const;
+	[[nodiscard]] std::unordered_set<BlockIndex> toSet();
+	[[nodiscard]] bool contains(const BlockIndex block) const;
 	[[nodiscard]] bool canMerge(const Cuboid& cuboid) const;
 	[[nodiscard]] Cuboid sum(const Cuboid& cuboid) const;
-	[[nodiscard]] Cuboid getFace(uint32_t faceing) const;
+	[[nodiscard]] Cuboid getFace(Facing faceing) const;
 	[[nodiscard]] bool overlapsWith(const Cuboid& cuboid) const;
 	[[nodiscard]] size_t size() const;
 	[[nodiscard]] bool empty() const { return size() == 0; }
 	[[nodiscard]] bool operator==(const Cuboid& cuboid) const;
-	[[nodiscard]] static Cuboid fromBlock(Block& block);
-	[[nodiscard]] static Cuboid fromBlockPair(Block& a, Block& b);
-	struct iterator
+	[[nodiscard]] static Cuboid fromBlock(Blocks& blocks, BlockIndex block);
+	[[nodiscard]] static Cuboid fromBlockPair(Blocks& blocks, BlockIndex a, BlockIndex b);
+	class iterator 
 	{
-		Cuboid* cuboid;
-		uint32_t x;
-		uint32_t y;
-		uint32_t z;
-
-		using difference_type = std::ptrdiff_t;
-		using value_type = Block;
-		using pointer = Block*;
-		using reference = Block&;
-
-		iterator(Cuboid& c, const Block& block);
-		iterator();
+	private:
+		Point3D m_start;
+		Point3D m_end;
+		Point3D m_current;
+		Blocks& m_blocks;
+		void setToEnd();
+	public:
+		iterator(Blocks& blocks, Point3D low, Point3D high) : m_start(low), m_end(high), m_current(low), m_blocks(blocks)  { }
+		iterator(Blocks& blocks, BlockIndex lowest, BlockIndex highest);
 		iterator& operator++();
-		iterator operator++(int) const;
-		bool operator==(const iterator other) const;
-		bool operator!=(const iterator other) const;
-		reference operator*() const;
-		pointer operator->() const;
+		iterator operator++(int);
+		bool operator==(const iterator& other) const { return m_current == other.m_current; }
+		bool operator!=(const iterator& other) const { return !(*this == other); }
+		BlockIndex operator*();
 	};
-	iterator begin();
-	iterator end();
-	static_assert(std::forward_iterator<iterator>);
-	struct const_iterator
-	{
-		const Cuboid* cuboid;
-		uint32_t x;
-		uint32_t y;
-		uint32_t z;
-
-		using difference_type = std::ptrdiff_t;
-		using value_type = Block;
-		using pointer = const Block*;
-		using reference = const Block&;
-
-		const_iterator(const Cuboid& c, const Block& block);
-		const_iterator();
-		const_iterator& operator++();
-		const_iterator operator++(int) const;
-		bool operator==(const const_iterator other) const;
-		bool operator!=(const const_iterator other) const;
-		reference operator*() const;
-		pointer operator->() const;
-	};
-	const_iterator begin() const;
-	const_iterator end() const;
-	static_assert(std::forward_iterator<const_iterator>);
+	iterator begin() { return iterator(*m_blocks, m_lowest, m_highest); }
+	iterator end() { return iterator(*m_blocks, BLOCK_INDEX_MAX, BLOCK_INDEX_MAX); }
+	const iterator begin() const { return iterator(*m_blocks, m_lowest, m_highest); }
+	const iterator end() const { return iterator(*m_blocks, BLOCK_INDEX_MAX, BLOCK_INDEX_MAX); }
+	//TODO:
+	//static_assert(std::forward_iterator<iterator>);
 };

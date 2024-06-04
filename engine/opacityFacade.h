@@ -5,7 +5,6 @@
 #include "visionCuboid.h"
 
 class Area;
-class Block;
 
 class OpacityFacade final
 {
@@ -15,11 +14,11 @@ class OpacityFacade final
 public:
 	OpacityFacade(Area& area);
 	void initalize();
-	void update(const Block& block);
+	void update(const BlockIndex block);
 	void validate() const;
 	[[nodiscard]] bool isOpaque(BlockIndex index) const;
 	[[nodiscard]] bool floorIsOpaque(BlockIndex index) const;
-	[[nodiscard]] bool hasLineOfSight(const Block& from, const Block& to) const;
+	[[nodiscard]] bool hasLineOfSight(BlockIndex from, BlockIndex to) const;
 	[[nodiscard]] bool hasLineOfSight(BlockIndex fromIndex, Point3D fromCoords, BlockIndex toIndex, Point3D toCoords) const;
 	[[nodiscard]] bool canSeeIntoFrom(BlockIndex previousIndex, BlockIndex currentIndex, DistanceInBlocks oldZ, DistanceInBlocks z) const;
 };

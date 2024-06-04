@@ -18,12 +18,12 @@ class ProjectTryToHaulEvent;
 class ProjectTryToReserveEvent;
 class ProjectTryToMakeHaulSubprojectThreadedTask;
 class ProjectTryToAddWorkersThreadedTask;
-class Block;
 class Actor;
 class Item;
 struct DeserializationMemo;
 class HasShape;
 class Objective;
+class Area;
 
 struct ProjectWorker final
 {
@@ -76,19 +76,8 @@ class Project
 	std::unordered_set<Item*> m_toConsume;
 	// Required items which are equiped by workers (tools).
 	std::unordered_map<Actor*, std::vector<std::pair<ProjectRequirementCounts*, Item*>>> m_reservedEquipment;
-	size_t m_maxWorkers;
-	// If a project fails multiple times to create a haul subproject it resets and calls onDelay
-	// The onDelay method is expected to remove the project from listings, remove block designations, etc.
-	// The scheduled event sets delay to false and calls the offDelay method.
-	bool m_delay;
-	// Count how many times we have attempted to create a haul subproject.
-	// Once we hit the limit, defined as projectTryToMakeSubprojectRetriesBeforeProjectDelay in config.json, the project calls setDelayOn.
-	Quantity m_haulRetries;
 	// Targets for haul subprojects awaiting dispatch.
 	std::unordered_map<HasShape*, std::pair<ProjectRequirementCounts*, Quantity>> m_toPickup;
-	bool m_requirementsLoaded;
-	//TODO: Decrement by a config value instead of 1.
-	Speed m_minimumMoveSpeed;
 	// To be called by addWorkerThreadedTask, after validating the worker has access to the project location.
 	void addWorker(Actor& actor, Objective& objective);
 	// Load requirements from child class.
@@ -96,12 +85,12 @@ class Project
 	// After create.
 	void setup();
 protected:
-	// Where the materials are delivered to and where the work gets done.
-	Block& m_location;
-	Faction& m_faction;
 	// Workers who have passed the candidate screening and ProjectWorker, which holds a reference to the worker's objective and a pointer to it's haul subproject.
 	std::unordered_map<Actor*, ProjectWorker> m_workers;
 	// Workers present at the job site, waiting for haulers to deliver required materiels.
+	// Required shapes which don't need to be hauled because they are already at or adjacent to m_location.
+	// To be used by StockpileProject::onComplete.
+	std::unordered_map<HasShape*, Quantity> m_alreadyAtSite;
 	std::unordered_set<Actor*> m_waiting;
 	// Workers currently doing the 'actual' work.
 	std::unordered_set<Actor*> m_making;
@@ -114,11 +103,24 @@ protected:
 	std::list<HaulSubproject> m_haulSubprojects;
 	// Delivered items.
 	std::vector<Item*> m_deliveredItems;
-	// Required shapes which don't need to be hauled because they are already at or adjacent to m_location.
-	// To be used by StockpileProject::onComplete.
-	std::unordered_map<HasShape*, Quantity> m_alreadyAtSite;
-	Project(Faction* f, Block& l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr);
+	// Where the materials are delivered to and where the work gets done.
+	Area& m_area;
+	Faction& m_faction;
+	BlockIndex m_location;
+	Project(Faction* f, Area& a, BlockIndex l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr);
 	Project(const Json& data, DeserializationMemo& deserializationMemo);
+private:
+	// Count how many times we have attempted to create a haul subproject.
+	// Once we hit the limit, defined as projectTryToMakeSubprojectRetriesBeforeProjectDelay in config.json, the project calls setDelayOn.
+	Quantity m_haulRetries = 0;
+	//TODO: Decrement by a config value instead of 1.
+	Speed m_minimumMoveSpeed = 0;
+	uint8_t m_maxWorkers = 0;
+	bool m_requirementsLoaded = false;
+	// If a project fails multiple times to create a haul subproject it resets and calls onDelay
+	// The onDelay method is expected to remove the project from listings, remove block designations, etc.
+	// The scheduled event sets delay to false and calls the offDelay method.
+	bool m_delay = false;
 public:
 	[[nodiscard]] Json toJson() const;
 	// Seperated from primary Json constructor because must be run after objectives are created.
@@ -158,9 +160,8 @@ public:
 	[[nodiscard]] bool reservationsComplete() const;
 	[[nodiscard]] bool deliveriesComplete() const;
 	[[nodiscard]] bool isOnDelay() { return m_delay; }
-	// Block where the work will be done.
-	[[nodiscard]] Block& getLocation() { return m_location; }
-	[[nodiscard]] const Block& getLocation() const { return m_location; }
+	// BlockIndex where the work will be done.
+	[[nodiscard]] BlockIndex getLocation() const { return m_location; }
 	[[nodiscard]] bool hasCandidate(const Actor& actor) const;
 	// When cannotCompleteSubobjective is called do we reset and try again or do we call cannotCompleteObjective?
 	// Should be false for objectives like targeted hauling, where if the specific target is inaccessable there is no fallback possible.
@@ -244,7 +245,7 @@ public:
 	void readStep();
 	void writeStep();
 	void clearReferences();
-	[[nodiscard]] bool blockContainsDesiredItem(const Block& block, Actor& hauler);
+	[[nodiscard]] bool blockContainsDesiredItem(const BlockIndex block, Actor& hauler);
 };
 class ProjectTryToAddWorkersThreadedTask final : public ThreadedTask
 {

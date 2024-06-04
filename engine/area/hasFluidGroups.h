@@ -13,7 +13,7 @@ class AreaHasFluidGroups final
 	Area& m_area;
 public:
 	AreaHasFluidGroups(Area& area) : m_area(area) { }
-	FluidGroup* createFluidGroup(const FluidType& fluidType, std::unordered_set<Block*>& blocks, bool checkMerge = true);
+	FluidGroup* createFluidGroup(const FluidType& fluidType, std::unordered_set<BlockIndex>& blocks, bool checkMerge = true);
 	void readStep();
 	void writeStep();
 	void removeFluidGroup(FluidGroup& group);

@@ -1,7 +1,7 @@
 #include "farmFields.h"
-#include "block.h"
 #include "area.h"
 #include "datetime.h"
+#include "deserializeDishonorCallbacks.h"
 #include "designations.h"
 #include "simulation.h"
 #include "plant.h"
@@ -18,13 +18,13 @@ void FarmFieldCreateInputAction::execute()
 void FarmFieldRemoveInputAction::execute()
 {
 	auto& hasFarmFields = (*m_cuboid.begin()).m_area->m_hasFarmFields.at(m_faction);
-	std::unordered_set<Block*> blocks = m_cuboid.toSet();
+	std::unordered_set<BlockIndex> blocks = m_cuboid.toSet();
 	hasFarmFields.undesignateBlocks(blocks);
 }
 void FarmFieldExpandInputAction::execute()
 {
 	auto& hasFarmFields = (*m_cuboid.begin()).m_area->m_hasFarmFields.at(m_faction);
-	std::unordered_set<Block*> blocks = m_cuboid.toSet();
+	std::unordered_set<BlockIndex> blocks = m_cuboid.toSet();
 	hasFarmFields.designateBlocks(m_farmField, blocks);
 }
 void FarmFieldUpdateInputAction::execute()
@@ -33,13 +33,14 @@ void FarmFieldUpdateInputAction::execute()
 	hasFarmFields.setSpecies(m_farmField, m_species);
 }
 */
-FarmField::FarmField(const Json& data, DeserializationMemo& deserializationMemo, Faction& faction)
+FarmField::FarmField(const Json& data, DeserializationMemo& deserializationMemo, Faction& faction) :
+	area(deserializationMemo.area(data["area"]))
 {
 	for(const Json& blockReference : data["blocks"])
 	{
-		Block& block = deserializationMemo.blockReference(blockReference);
-		blocks.insert(&block);
-		block.m_isPartOfFarmField.insert(faction, *this);
+		BlockIndex block = blockReference.get<BlockIndex>();
+		blocks.insert(block);
+		area.getBlocks().farm_insert(block, faction, *this);
 	}
 	plantSpecies = data["plantSpecies"].get<const PlantSpecies*>();
 	timeToSow = data["timeToSow"];
@@ -47,76 +48,9 @@ FarmField::FarmField(const Json& data, DeserializationMemo& deserializationMemo,
 Json FarmField::toJson() const 
 {
 	Json data{{"blocks", Json::array()}, {"plantSpecies", plantSpecies}, {"timeToSow", timeToSow}};
-	for(Block* block : blocks)
+	for(BlockIndex block : blocks)
 		data["blocks"].push_back(block);
 	return data;
-}
-void BlockIsPartOfFarmField::insert(Faction& faction, FarmField& farmField)
-{
-	assert(!m_farmFields.contains(&faction));
-	m_farmFields[&faction] = &farmField;
-}
-void BlockIsPartOfFarmField::remove(Faction& faction)
-{
-	assert(m_farmFields.contains(&faction));
-	m_farmFields.erase(&faction);
-	auto& designations = m_block.m_area->m_blockDesignations.at(faction);
-	BlockIndex index = m_block.getIndex();
-	designations.maybeUnset(index, BlockDesignation::SowSeeds);
-	designations.maybeUnset(index, BlockDesignation::GivePlantFluid);
-	designations.maybeUnset(index, BlockDesignation::Harvest);
-}
-void BlockIsPartOfFarmField::designateForHarvestIfPartOfFarmField(Plant& plant)
-{
-	for(auto& [faction, farmField] : m_farmFields)
-		if(farmField->plantSpecies == &plant.m_plantSpecies)
-			plant.m_location->m_area->m_hasFarmFields.at(*faction).addHarvestDesignation(plant);
-}
-void BlockIsPartOfFarmField::designateForGiveFluidIfPartOfFarmField(Plant& plant)
-{
-	for(auto& [faction, farmField] : m_farmFields)
-		if(farmField->plantSpecies == &plant.m_plantSpecies)
-			plant.m_location->m_area->m_hasFarmFields.at(*faction).addGivePlantFluidDesignation(plant);
-}
-void BlockIsPartOfFarmField::maybeDesignateForSowingIfPartOfFarmField()
-{
-	assert(!m_block.m_hasPlant.exists());
-	for(auto& [faction, farmField] : m_farmFields)
-		if(isSowingSeasonFor(*farmField->plantSpecies))
-			m_block.m_area->m_hasFarmFields.at(*faction).addSowSeedsDesignation(m_block);
-}
-void BlockIsPartOfFarmField::removeAllHarvestDesignations()
-{
-	Plant& plant = m_block.m_hasPlant.get();	
-	for(auto& [faction, farmField] : m_farmFields)
-		if(farmField->plantSpecies == &plant.m_plantSpecies)
-			if(m_block.hasDesignation(*faction, BlockDesignation::Harvest))
-				m_block.m_area->m_hasFarmFields.at(*faction).removeHarvestDesignation(plant);
-}
-void BlockIsPartOfFarmField::removeAllGiveFluidDesignations()
-{
-	Plant& plant = m_block.m_hasPlant.get();	
-	for(auto& [faction, farmField] : m_farmFields)
-		if(farmField->plantSpecies == &plant.m_plantSpecies)
-			if(m_block.hasDesignation(*faction, BlockDesignation::GivePlantFluid))
-				m_block.m_area->m_hasFarmFields.at(*faction).removeGivePlantFluidDesignation(plant);
-}
-void BlockIsPartOfFarmField::removeAllSowSeedsDesignations()
-{
-	for(auto& [faction, farmField] : m_farmFields)
-		if(m_block.hasDesignation(*faction, BlockDesignation::SowSeeds))
-			m_block.m_area->m_hasFarmFields.at(*faction).removeSowSeedsDesignation(m_block);
-}
-bool BlockIsPartOfFarmField::isSowingSeasonFor(const PlantSpecies& species) const
-{
-	uint16_t day = DateTime(m_block.m_area->m_simulation.m_step).day;
-	return day >= species.dayOfYearForSowStart && day <= species.dayOfYearForSowEnd;
-}
-FarmField* BlockIsPartOfFarmField::get(Faction& faction)
-{ 
-	if(!m_farmFields.contains(&faction)) 
-		return nullptr; 
-	return m_farmFields.at(&faction); 
 }
 HasFarmFieldsForFaction::HasFarmFieldsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Area& a, Faction& f) : m_area(a), m_faction(f), m_plantsNeedingFluidIsSorted(data["plantsNeedingFluidIsSorted"].get<bool>())
 {
@@ -127,7 +61,7 @@ HasFarmFieldsForFaction::HasFarmFieldsForFaction(const Json& data, Deserializati
 	for(const Json& plantReference : data["plantsToHarvest"])
 		m_plantsToHarvest.insert(&deserializationMemo.plantReference(plantReference));
 	for(const Json& blockReference : data["blocksNeedingSeedsSewn"])
-		m_blocksNeedingSeedsSewn.insert(&deserializationMemo.blockReference(blockReference));
+		m_blocksNeedingSeedsSewn.insert(blockReference.get<BlockIndex>());
 }
 Json HasFarmFieldsForFaction::toJson() const
 {
@@ -138,7 +72,7 @@ Json HasFarmFieldsForFaction::toJson() const
 		data["plantsNeedingFluid"].push_back(plant);
 	for(const Plant* plant : m_plantsToHarvest)
 		data["plantsToHarvest"].push_back(plant);
-	for(const Block* block : m_blocksNeedingSeedsSewn)
+	for(BlockIndex block : m_blocksNeedingSeedsSewn)
 		data["blocksNeedingSeedsSewn"].push_back(block);
 	return data;
 }
@@ -167,10 +101,10 @@ bool HasFarmFieldsForFaction::hasHarvestDesignations() const
 {
 	return !m_plantsToHarvest.empty();
 }
-const PlantSpecies& HasFarmFieldsForFaction::getPlantSpeciesFor(const Block& block) const
+const PlantSpecies& HasFarmFieldsForFaction::getPlantSpeciesFor(BlockIndex block) const
 {
 	for(const FarmField& farmField : m_farmFields)
-		if(farmField.blocks.contains(const_cast<Block*>(&block)))
+		if(farmField.blocks.contains(block))
 			return *farmField.plantSpecies;
 	assert(false);
 	return PlantSpecies::byName("poplar tree");
@@ -180,37 +114,37 @@ void HasFarmFieldsForFaction::addGivePlantFluidDesignation(Plant& plant)
 	assert(std::ranges::find(m_plantsNeedingFluid, &plant) == m_plantsNeedingFluid.end());
 	m_plantsNeedingFluidIsSorted = false;
 	m_plantsNeedingFluid.push_back(&plant);
-	plant.m_location->setDesignation(m_faction, BlockDesignation::GivePlantFluid);
+	m_area.getBlocks().designation_set(plant.m_location, m_faction, BlockDesignation::GivePlantFluid);
 }
 void HasFarmFieldsForFaction::removeGivePlantFluidDesignation(Plant& plant)
 {
 	assert(std::ranges::find(m_plantsNeedingFluid, &plant) != m_plantsNeedingFluid.end());
 	std::erase(m_plantsNeedingFluid, &plant);
-	plant.m_location->unsetDesignation(m_faction, BlockDesignation::GivePlantFluid);
+	m_area.getBlocks().designation_unset(plant.m_location, m_faction, BlockDesignation::GivePlantFluid);
 }
-void HasFarmFieldsForFaction::addSowSeedsDesignation(Block& block)
+void HasFarmFieldsForFaction::addSowSeedsDesignation(BlockIndex block)
 {
-	assert(!m_blocksNeedingSeedsSewn.contains(&block));
-	m_blocksNeedingSeedsSewn.insert(&block);
-	block.setDesignation(m_faction, BlockDesignation::SowSeeds);
+	assert(!m_blocksNeedingSeedsSewn.contains(block));
+	m_blocksNeedingSeedsSewn.insert(block);
+	m_area.getBlocks().designation_set(block, m_faction, BlockDesignation::SowSeeds);
 }
-void HasFarmFieldsForFaction::removeSowSeedsDesignation(Block& block)
+void HasFarmFieldsForFaction::removeSowSeedsDesignation(BlockIndex block)
 {
-	assert(m_blocksNeedingSeedsSewn.contains(&block));
-	m_blocksNeedingSeedsSewn.erase(&block);
-	block.unsetDesignation(m_faction, BlockDesignation::SowSeeds);
+	assert(m_blocksNeedingSeedsSewn.contains(block));
+	m_blocksNeedingSeedsSewn.erase(block);
+	m_area.getBlocks().designation_unset(block, m_faction, BlockDesignation::SowSeeds);
 }
 void HasFarmFieldsForFaction::addHarvestDesignation(Plant& plant)
 {
 	assert(!m_plantsToHarvest.contains(&plant));
 	m_plantsToHarvest.insert(&plant);
-	plant.m_location->setDesignation(m_faction, BlockDesignation::Harvest);
+	m_area.getBlocks().designation_set(plant.m_location, m_faction, BlockDesignation::Harvest);
 }
 void HasFarmFieldsForFaction::removeHarvestDesignation(Plant& plant)
 {
 	assert(m_plantsToHarvest.contains(&plant));
 	m_plantsToHarvest.erase(&plant);
-	plant.m_location->unsetDesignation(m_faction, BlockDesignation::Harvest);
+	m_area.getBlocks().designation_unset(plant.m_location, m_faction, BlockDesignation::Harvest);
 }
 void HasFarmFieldsForFaction::setDayOfYear(uint32_t dayOfYear)
 {
@@ -220,26 +154,27 @@ void HasFarmFieldsForFaction::setDayOfYear(uint32_t dayOfYear)
 		{
 			if(farmField.plantSpecies->dayOfYearForSowStart == dayOfYear)
 			{
-				for(Block* block : farmField.blocks)
-					if(block->m_hasPlant.canGrowHereAtSomePointToday(*farmField.plantSpecies))
-						addSowSeedsDesignation(*block);
+				Blocks& blocks = m_area.getBlocks();
+				for(BlockIndex block : farmField.blocks)
+					if(blocks.plant_canGrowHereAtSomePointToday(block, *farmField.plantSpecies))
+						addSowSeedsDesignation(block);
 				farmField.timeToSow = true;
 			}
 			if(farmField.plantSpecies->dayOfYearForSowEnd == dayOfYear)
 			{
 				assert(farmField.timeToSow);
 				farmField.timeToSow = false;
-				for(Block* block : farmField.blocks)
+				for(BlockIndex block : farmField.blocks)
 					if(m_blocksNeedingSeedsSewn.contains(block))
-						removeSowSeedsDesignation(*block);
+						removeSowSeedsDesignation(block);
 			}
 		}
 }
-FarmField& HasFarmFieldsForFaction::create(std::unordered_set<Block*>& blocks)
+FarmField& HasFarmFieldsForFaction::create(std::unordered_set<BlockIndex>& blocks)
 {
-	FarmField& field = m_farmFields.emplace_back(blocks);
-	for(Block* block : blocks)
-		block->m_isPartOfFarmField.insert(m_faction, field);
+	FarmField& field = m_farmFields.emplace_back(m_area, blocks);
+	for(BlockIndex block : blocks)
+		m_area.getBlocks().farm_insert(block, m_faction, field);
 	return field;
 }
 FarmField& HasFarmFieldsForFaction::create(Cuboid cuboid)
@@ -247,13 +182,13 @@ FarmField& HasFarmFieldsForFaction::create(Cuboid cuboid)
 	auto set = cuboid.toSet();
 	return create(set);
 }
-void HasFarmFieldsForFaction::extend(FarmField& farmField, std::unordered_set<Block*>& blocks)
+void HasFarmFieldsForFaction::extend(FarmField& farmField, std::unordered_set<BlockIndex>& blocks)
 {
 	farmField.blocks.insert(blocks.begin(), blocks.end());
 	if(farmField.plantSpecies != nullptr)
 		designateBlocks(farmField, blocks);
-	for(Block* block : blocks)
-		block->m_isPartOfFarmField.insert(m_faction, farmField);
+	for(BlockIndex block : blocks)
+		m_area.getBlocks().farm_insert(block, m_faction, farmField);
 }
 void HasFarmFieldsForFaction::setSpecies(FarmField& farmField, const PlantSpecies& plantSpecies)
 {
@@ -266,16 +201,17 @@ void HasFarmFieldsForFaction::setSpecies(FarmField& farmField, const PlantSpecie
 		designateBlocks(farmField, farmField.blocks);
 	}
 }
-void HasFarmFieldsForFaction::designateBlocks(FarmField& farmField, std::unordered_set<Block*>& blocks)
+void HasFarmFieldsForFaction::designateBlocks(FarmField& farmField, std::unordered_set<BlockIndex>& designated)
 {
 	// Designate for sow if the season is right.
 	if(farmField.timeToSow)
-		for(Block* block : blocks)
-			addSowSeedsDesignation(*block);
-	for(Block* block : blocks)
-		if(block->m_hasPlant.exists())
+		for(BlockIndex block : designated)
+			addSowSeedsDesignation(block);
+	Blocks& blocks = m_area.getBlocks();
+	for(BlockIndex block : designated)
+		if(blocks.plant_exists(block))
 		{
-			Plant& plant = block->m_hasPlant.get();
+			Plant& plant = blocks.plant_get(block);
 			// Designate plants already existing for fluid if the species is right and they need fluid.
 			if(&plant.m_plantSpecies == farmField.plantSpecies && plant.m_volumeFluidRequested)
 				addGivePlantFluidDesignation(plant);
@@ -289,12 +225,13 @@ void HasFarmFieldsForFaction::clearSpecies(FarmField& farmField)
 	farmField.plantSpecies = nullptr;
 	undesignateBlocks(farmField.blocks);
 }
-void HasFarmFieldsForFaction::shrink(FarmField& farmField, std::unordered_set<Block*>& blocks)
+void HasFarmFieldsForFaction::shrink(FarmField& farmField, std::unordered_set<BlockIndex>& undesignated)
 {
-	undesignateBlocks(blocks);
-	for(Block* block : blocks)
-		block->m_isPartOfFarmField.remove(m_faction);
-	std::erase_if(farmField.blocks, [&](Block* block){ return blocks.contains(block); });
+	undesignateBlocks(undesignated);
+	Blocks& blocks = m_area.getBlocks();
+	for(BlockIndex block : undesignated)
+		blocks.farm_remove(block, m_faction);
+	std::erase_if(farmField.blocks, [&](BlockIndex block){ return undesignated.contains(block); });
 	if(farmField.blocks.empty())
 		m_farmFields.remove_if([&](FarmField& other){ return &other == &farmField; });
 }
@@ -302,20 +239,21 @@ void HasFarmFieldsForFaction::remove(FarmField& farmField)
 {
 	shrink(farmField, farmField.blocks);
 }
-void HasFarmFieldsForFaction::undesignateBlocks(std::unordered_set<Block*>& blocks)
+void HasFarmFieldsForFaction::undesignateBlocks(std::unordered_set<BlockIndex>& undesignated)
 {
-	for(Block* block : blocks)
+	Blocks& blocks = m_area.getBlocks();
+	for(BlockIndex block : undesignated)
 	{
-		if(block->m_hasPlant.exists())
+		if(blocks.plant_exists(block))
 		{
-			Plant& plant = block->m_hasPlant.get();
-			if(block->hasDesignation(m_faction, BlockDesignation::GivePlantFluid))
-				block->m_area->m_hasFarmFields.at(m_faction).removeGivePlantFluidDesignation(plant);
-			if(block->hasDesignation(m_faction, BlockDesignation::Harvest))
-				block->m_area->m_hasFarmFields.at(m_faction).removeHarvestDesignation(plant);
+			Plant& plant = blocks.plant_get(block);
+			if(blocks.designation_has(block, m_faction, BlockDesignation::GivePlantFluid))
+				m_area.m_hasFarmFields.at(m_faction).removeGivePlantFluidDesignation(plant);
+			if(blocks.designation_has(block, m_faction, BlockDesignation::Harvest))
+				m_area.m_hasFarmFields.at(m_faction).removeHarvestDesignation(plant);
 		}
-		else if(block->hasDesignation(m_faction, BlockDesignation::SowSeeds))
-				block->m_area->m_hasFarmFields.at(m_faction).removeSowSeedsDesignation(*block);
+		else if(blocks.designation_has(block, m_faction, BlockDesignation::SowSeeds))
+				m_area.m_hasFarmFields.at(m_faction).removeSowSeedsDesignation(block);
 	}
 }
 HasFarmFieldsForFaction& AreaHasFarmFields::at(Faction& faction)
@@ -356,10 +294,11 @@ Plant* AreaHasFarmFields::getHighestPriorityPlantForGiveFluid(Faction& faction)
 		return nullptr;
 	return m_data.at(&faction).getHighestPriorityPlantForGiveFluid();
 }
-void AreaHasFarmFields::removeAllSowSeedsDesignations(Block& block)
+void AreaHasFarmFields::removeAllSowSeedsDesignations(BlockIndex block)
 {
+	Blocks& blocks = m_area.getBlocks();
 	for(auto& pair : m_data)
-		if(block.hasDesignation(*pair.first, BlockDesignation::SowSeeds))
+		if(blocks.designation_has(block, *pair.first, BlockDesignation::SowSeeds))
 			pair.second.removeSowSeedsDesignation(block);
 }
 void AreaHasFarmFields::setDayOfYear(uint32_t dayOfYear)
@@ -385,7 +324,7 @@ bool AreaHasFarmFields::hasHarvestDesignations(Faction& faction) const
 		return false;
 	return m_data.at(&faction).hasHarvestDesignations();
 }
-const PlantSpecies& AreaHasFarmFields::getPlantSpeciesFor(Faction& faction, const  Block& location) const
+const PlantSpecies& AreaHasFarmFields::getPlantSpeciesFor(Faction& faction, const  BlockIndex location) const
 {
 	assert(m_data.contains(&faction));
 	return m_data.at(&faction).getPlantSpeciesFor(location);

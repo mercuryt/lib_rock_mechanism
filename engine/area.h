@@ -6,7 +6,7 @@
 
 #include "installItem.h"
 #include "types.h"
-#include "block.h"
+#include "blocks/blocks.h"
 #include "mistDisperseEvent.h"
 #include "cuboid.h"
 #include "visionCuboid.h"
@@ -18,6 +18,7 @@
 #include "woodcutting.h"
 #include "stocks.h"
 #include "fluidSource.h"
+#include "terrainFacade.h"
 #include "area/rain.h"
 #include "area/hasActors.h"
 #include "area/hasFluidGroups.h"
@@ -39,8 +40,10 @@ struct DeserializationMemo;
 
 class Area final
 {
+	Blocks m_blocks;
 public:
 	AreaHasTemperature m_hasTemperature;
+	AreaHasTerrainFacades m_hasTerrainFacades;
 	AreaHasActors m_hasActors;
 	AreaHasPlants m_hasPlants;
 	AreaHasFires m_fires;
@@ -62,19 +65,12 @@ public:
 	AreaHasRain m_hasRain;
 	AreaHasBlockDesignations m_blockDesignations;
 	//TODO: make into vector?
-	std::unordered_set<Block*> m_caveInCheck;
-	std::vector<std::tuple<std::vector<Block*>,uint32_t,uint32_t>> m_caveInData;
-
-private:
-	std::vector<Block> m_blocks;
-public:
+	std::unordered_set<BlockIndex> m_caveInCheck;
+	std::vector<std::tuple<std::vector<BlockIndex>,uint32_t,uint32_t>> m_caveInData;
 	std::wstring m_name;
 	Simulation& m_simulation;
 	AreaId m_id;
 	//WorldLocation* m_worldLocation;
-	const DistanceInBlocks m_sizeX;
-	const DistanceInBlocks m_sizeY;
-	const DistanceInBlocks m_sizeZ;
 
 	// Create blocks and store adjacent
 	Area(AreaId id, std::wstring n, Simulation& s, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z);
@@ -86,38 +82,29 @@ public:
 	void readStep();
 	void writeStep();
 	
-	[[nodiscard]] Block& getBlock(Point3D coordinates);
-	[[nodiscard]] Block& getBlock(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z);
-	[[nodiscard]] Block& getMiddleAtGroundLevel();
-	[[nodiscard]] Block& getGroundLevel(DistanceInBlocks x, DistanceInBlocks y);
-	//Block& getBlockForAdjacentLocation(WorldLocation& location);
+	//BlockIndex getBlockForAdjacentLocation(WorldLocation& location);
 
 	// Cavein read/write
 	void stepCaveInRead();
 	void stepCaveInWrite();
-	void registerPotentialCaveIn(Block& block);
+	void registerPotentialCaveIn(BlockIndex block);
 	// To be called periodically by Simulation.
 	void updateClimate();
 
 	[[nodiscard]] std::string toS() const;
 
-	[[nodiscard]] Cuboid getZLevel(DistanceInBlocks z);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::vector<Block>& getBlocks() { return m_blocks; }
-	[[nodiscard]] const std::vector<Block>& getBlocks() const { return m_blocks; }
-	[[nodiscard]] size_t getBlockIndex(Point3D coordinates) const;
-	[[nodiscard]] size_t getBlockIndex(const Block& block) const;
-	[[nodiscard]] Point3D getCoordinatesForIndex(BlockIndex index) const;
-	[[nodiscard]] int indexOffsetForAdjacentOffset(uint8_t adjacentOffset) const;
-	[[nodiscard]] int indexOffsetForCoordinateOffset(int x, int y, int z) const;
+	[[nodiscard]] Blocks& getBlocks() { return m_blocks; }
+	[[nodiscard]] const Blocks& getBlocks() const { return m_blocks; }
+	//TODO: Move this somewhere else.
 	[[nodiscard]] Facing getFacingForAdjacentOffset(uint8_t adjacentOffset) const;
 
 	// Clear all destructor callbacks in preperation for quit or hibernate.
 	void clearReservations();
 
-	bool operator==(const Area& other) const { return this == &other; }
+	[[nodiscard]] bool operator==(const Area& other) const { return this == &other; }
 	// For testing.
 	[[maybe_unused]] void logActorsAndItems() const;
-	uint32_t getTotalCountOfItemTypeOnSurface(const ItemType& itemType) const;
+	[[nodiscard]] Quantity getTotalCountOfItemTypeOnSurface(const ItemType& itemType) const;
 };
 inline void to_json(Json& data, const Area* const& area){ data = area->m_id; }

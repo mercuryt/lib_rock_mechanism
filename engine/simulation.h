@@ -67,17 +67,17 @@ public:
 	void save();
 	Faction& createFaction(std::wstring name);
 	//TODO: latitude, longitude, altitude.
-	[[nodiscard]] Block& getBlockForJsonQuery(const Json& data);
+	[[nodiscard]] BlockIndex getBlockForJsonQuery(const Json& data);
 	[[nodiscard]] std::filesystem::path getPath() const  { return m_path; }
 	[[nodiscard, maybe_unused]] DateTime getDateTime() const;
 	~Simulation();
 	// For testing.
 	[[maybe_unused]] void fastForwardUntill(DateTime now);
 	[[maybe_unused]] void fastForward(Step step);
-	[[maybe_unused]] void fastForwardUntillActorIsAtDestination(Actor& actor, Block& destination);
-	[[maybe_unused]] void fastForwardUntillActorIsAt(Actor& actor, Block& destination);
-	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToDestination(Actor& actor, Block& destination);
-	[[maybe_unused]] void fastForwardUntillActorIsAdjacentTo(Actor& actor, Block& block);
+	[[maybe_unused]] void fastForwardUntillActorIsAtDestination(Actor& actor, BlockIndex destination);
+	[[maybe_unused]] void fastForwardUntillActorIsAt(Actor& actor, BlockIndex destination);
+	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToDestination(Actor& actor, BlockIndex destination);
+	[[maybe_unused]] void fastForwardUntillActorIsAdjacentTo(Actor& actor, BlockIndex block);
 	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToHasShape(Actor& actor, HasShape& other);
 	[[maybe_unused]] void fastForwardUntillActorHasNoDestination(Actor& actor);
 	[[maybe_unused]] void fastForwardUntillActorHasEquipment(Actor& actor, Item& item);

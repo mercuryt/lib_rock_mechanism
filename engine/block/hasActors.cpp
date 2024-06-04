@@ -5,7 +5,7 @@
 void BlockHasActors::enter(Actor& actor)
 {
 	assert(!contains(actor));
-	std::unordered_set<Block*> oldBlocks = actor.m_blocks;
+	std::unordered_set<BlockIndex*> oldBlocks = actor.m_blocks;
 	if(actor.m_location != nullptr)
 	{
 		actor.m_facing = m_block.facingToSetWhenEnteringFrom(*actor.m_location);

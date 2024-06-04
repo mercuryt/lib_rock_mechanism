@@ -1,7 +1,7 @@
 #pragma once
-class Block;
+#include "types.h"
 namespace visionUtil
 {
-	bool hasLineOfSightUsingVisionCuboid(const Block& from, const Block& to);
-	bool hasLineOfSightBasic(const Block& from, const Block& to);
+	bool hasLineOfSightUsingVisionCuboid(const BlockIndex from, const BlockIndex to);
+	bool hasLineOfSightBasic(const BlockIndex from, const BlockIndex to);
 }

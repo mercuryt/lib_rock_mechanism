@@ -11,7 +11,6 @@
 
 class Simulation;
 class Item;
-class Block;
 class Actor;
 class DrinkThreadedTask;
 class DrinkEvent;
@@ -66,11 +65,11 @@ public:
 	void delay();
 	void reset();
 	[[nodiscard]] std::string name() const { return "drink"; }
-	[[nodiscard]] bool canDrinkAt(const Block& block, Facing facing) const;
-	[[nodiscard]] Block* getAdjacentBlockToDrinkAt(const Block& block, Facing facing) const;
-	[[nodiscard]] bool canDrinkItemAt(const Block& block) const;
-	[[nodiscard]] Item* getItemToDrinkFromAt(Block& block) const;
-	[[nodiscard]] bool containsSomethingDrinkable(const Block& block) const;
+	[[nodiscard]] bool canDrinkAt(const BlockIndex block, Facing facing) const;
+	[[nodiscard]] BlockIndex getAdjacentBlockToDrinkAt(BlockIndex block, Facing facing) const;
+	[[nodiscard]] bool canDrinkItemAt(BlockIndex block) const;
+	[[nodiscard]] Item* getItemToDrinkFromAt(BlockIndex block) const;
+	[[nodiscard]] bool containsSomethingDrinkable(BlockIndex block) const;
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Drink; }
 	[[nodiscard]] bool isNeed() const { return true; }
 	friend class DrinkEvent;

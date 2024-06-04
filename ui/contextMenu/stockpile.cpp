@@ -2,7 +2,7 @@
 #include "../window.h"
 #include "../displayData.h"
 #include "../../engine/block.h"
-void ContextMenu::drawStockPileControls(Block& block)
+void ContextMenu::drawStockPileControls(BlockIndex& block)
 {
 	// Stockpile
 	if(m_window.getFaction() && block.m_isPartOfStockPiles.contains(*m_window.getFaction()))
@@ -19,7 +19,7 @@ void ContextMenu::drawStockPileControls(Block& block)
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				StockPile* stockpile = block.m_isPartOfStockPiles.getForFaction(*m_window.getFaction());
 				if(stockpile)
-					for(Block* selectedBlock : m_window.getSelectedBlocks())
+					for(BlockIndex* selectedBlock : m_window.getSelectedBlocks())
 						if(stockpile->contains(*selectedBlock))
 							stockpile->removeBlock(*selectedBlock);
 				hide();

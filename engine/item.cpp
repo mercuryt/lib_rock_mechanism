@@ -1,13 +1,13 @@
 #include "item.h"
 #include "actor.h"
 #include "area.h"
-#include "block.h"
 #include "craft.h"
 #include "deserializationMemo.h"
 #include "fluidType.h"
 #include "materialType.h"
 #include "simulation.h"
 #include "simulation/hasItems.h"
+#include "types.h"
 #include "util.h"
 
 #include <iostream>
@@ -29,11 +29,11 @@ bool ItemType::hasMeleeAttack() const
 			return true;
 	return false;
 }
-Block* ItemType::getCraftLocation(const Block& location, Facing facing) const
+BlockIndex ItemType::getCraftLocation(Blocks& blocks, const BlockIndex location, Facing facing) const
 {
 	assert(craftLocationStepTypeCategory);
 	auto [x, y, z] = util::rotateOffsetToFacing(craftLocationOffset, facing);
-	return location.offset(x, y, z);
+	return blocks.offset(location, x, y, z);
 }
 // Static methods.
 const ItemType& ItemType::byName(std::string name)
@@ -120,25 +120,36 @@ Item::Item(ItemParamaters itemParamaters) : HasShape(*itemParamaters.simulation,
 		assert(m_quantity == 1);
 	if(itemParamaters.location)
 	{
-		setLocation(*itemParamaters.location);
-		m_location->m_area->m_hasItems.add(*this);
+		setLocation(itemParamaters.location, itemParamaters.area);
+		m_area->m_hasItems.add(*this);
 	}
 }
-void Item::setLocation(Block& block)
+void Item::setLocation(BlockIndex block, Area* area)
 {
-	if(m_location != nullptr)
+	Blocks& blocks = area->getBlocks();
+	if(area)
+	{
+		assert(m_location == BLOCK_INDEX_MAX);
+		assert(!m_area);
+		m_area = area;
+		blocks.item_add(block, *this);
+	}
+	if(!area)
+		assert(m_area);
+	if(m_location != BLOCK_INDEX_MAX)
 		exit();
-	bool willCombine = isGeneric() && block.m_hasItems.getCount(m_itemType, m_materialType);
-	block.m_hasItems.add(*this);
+	bool willCombine = isGeneric() && m_area->getBlocks().item_getCount(block, m_itemType, m_materialType);
+	blocks.item_add(block, *this);
 	if(!willCombine)
 		m_canLead.onMove();
 }
 void Item::exit()
 {
-	assert(m_location != nullptr);
-	if(m_location->m_outdoors)
-		m_location->m_area->m_hasItems.setItemIsNotOnSurface(*this);
-	m_location->m_hasItems.remove(*this);
+	assert(m_location != BLOCK_INDEX_MAX);
+	auto& blocks = m_area->getBlocks();
+	if(blocks.isOutdoors(m_location))
+		m_area->m_hasItems.setItemIsNotOnSurface(*this);
+	blocks.item_remove(m_location, *this);
 }
 void Item::setTemperature(Temperature temperature)
 {
@@ -161,16 +172,16 @@ void Item::removeQuantity(Quantity delta)
 		m_reservable.setMaxReservations(m_quantity);
 	}
 }
-void Item::install(Block& block, Facing facing, Faction& faction)
+void Item::install(BlockIndex block, Facing facing, Faction& faction)
 {
 	m_facing = facing;
 	setLocation(block);
 	m_installed = true;
 	if(m_itemType.craftLocationStepTypeCategory)
 	{
-		Block* craftLocation = m_itemType.getCraftLocation(block, facing);
+		BlockIndex craftLocation = m_itemType.getCraftLocation(m_area->getBlocks(), block, facing);
 		if(craftLocation)
-			craftLocation->m_area->m_hasCraftingLocationsAndJobs.at(faction).addLocation(*m_itemType.craftLocationStepTypeCategory, *craftLocation);
+			m_area->m_hasCraftingLocationsAndJobs.at(faction).addLocation(*m_itemType.craftLocationStepTypeCategory, craftLocation);
 	}
 }
 void Item::merge(Item& item)
@@ -184,9 +195,9 @@ void Item::merge(Item& item)
 }
 void Item::destroy()
 {
-	if(m_location != nullptr)
+	if(m_location != BLOCK_INDEX_MAX)
 	{
-		Area* area = m_location->m_area;
+		Area* area = m_area;
 		exit();
 		area->m_hasItems.remove(*this);
 	}
@@ -234,8 +245,8 @@ Item::Item(const Json& data, DeserializationMemo& deserializationMemo, ItemId id
 	{
 		if(data.contains("location"))
 		{
-			setLocation(deserializationMemo.blockReference(data["location"]));
-			m_location->m_area->m_hasItems.add(*this);
+			setLocation(data["location"].get<BlockIndex>(), m_area);
+			m_area->m_hasItems.add(*this);
 		}
 	}
 void Item::load(const Json& data, DeserializationMemo& deserializationMemo)
@@ -251,7 +262,7 @@ Json Item::toJson() const
 	data["id"] = m_id;
 	data["name"] = m_name;
 	if(m_location)
-		data["location"] = m_location->positionToJson();
+		data["location"] = m_location;
 	data["itemType"] = m_itemType;
 	data["materialType"] = m_materialType;
 	data["quality"] = m_quality;
@@ -413,15 +424,15 @@ void ItemHasCargo::load(HasShape& hasShape, Quantity quantity)
 	hasShape.exit();
 	add(hasShape);
 }
-void ItemHasCargo::unloadTo(HasShape& hasShape, Block& location)
+void ItemHasCargo::unloadTo(HasShape& hasShape, BlockIndex location)
 {
 	remove(hasShape);
-	hasShape.setLocation(location);
+	hasShape.setLocation(location, m_item.m_area);
 }
-Item& ItemHasCargo::unloadGenericTo(const ItemType& itemType, const MaterialType& materialType, Quantity quantity, Block& location)
+Item& ItemHasCargo::unloadGenericTo(const ItemType& itemType, const MaterialType& materialType, Quantity quantity, BlockIndex location)
 {
 	remove(itemType, materialType, quantity);
-	return location.m_hasItems.addGeneric(itemType, materialType, quantity);
+	return m_item.m_area->getBlocks().item_addGeneric(location, itemType, materialType, quantity);
 }
 void ItemHasCargo::destroyCargo(Item& item)
 {
@@ -429,7 +440,7 @@ void ItemHasCargo::destroyCargo(Item& item)
 	// Normal destroy only removes from area if location is set, cargo is removed explicitly.
 	// TODO: prevent cargo from having destroy called on it directly.
 	if(m_item.m_location)
-		m_item.m_location->m_area->m_hasItems.remove(static_cast<Item&>(item));
+		m_item.m_area->m_hasItems.remove(static_cast<Item&>(item));
 	static_cast<Item&>(item).destroy();
 }
 std::vector<Actor*> ItemHasCargo::getActors()

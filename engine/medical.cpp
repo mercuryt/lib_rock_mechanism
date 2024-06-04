@@ -15,7 +15,7 @@ MedicalThreadedTask::MedicalThreadedTask(MedicalObjective& objective) : Threaded
 void MedicalThreadedTask::readStep()
 {
 	assert(!m_objective.m_project);
-	std::function<bool(const Block&)> predicate = [&](const Block& block){ return m_objective.blockContainsPatientForThisWorker(block); };
+	std::function<bool(const BlockIndex&)> predicate = [&](const BlockIndex& block){ return m_objective.blockContainsPatientForThisWorker(block); };
 	m_findsPath.pathToAdjacentToPredicate(predicate);
 }
 void MedicalThreadedTask::writeStep()
@@ -23,7 +23,7 @@ void MedicalThreadedTask::writeStep()
 	assert(!m_objective.m_project);
 	if(m_findsPath.found() || m_findsPath.m_useCurrentLocation)
 	{
-		Block& location = *m_findsPath.getBlockWhichPassedPredicate();
+		BlockIndex& location = *m_findsPath.getBlockWhichPassedPredicate();
 		if(!m_objective.blockContainsPatientForThisWorker(location))
 			// Selected location is no longer valid.
 			m_objective.m_threadedTask.create(m_objective);
@@ -64,11 +64,11 @@ void MedicalObjective::cancel()
 	m_threadedTask.maybeCancel();
 	m_actor.m_canReserve.clearAll();
 }
-bool MedicalObjective::blockContainsPatientForThisWorker(const Block& block) const
+bool MedicalObjective::blockContainsPatientForThisWorker(const BlockIndex& block) const
 {
-	return const_cast<MedicalObjective*>(this)->getProjectForActorAtLocation(const_cast<Block&>(block)) != nullptr;
+	return const_cast<MedicalObjective*>(this)->getProjectForActorAtLocation(const_cast<BlockIndex&>(block)) != nullptr;
 }
-void MedicalObjective::setLocation(Block& block)
+void MedicalObjective::setLocation(BlockIndex& block)
 {
 	MedicalProject* project = getProjectForActorAtLocation(block);
 	assert(project != nullptr);
@@ -76,7 +76,7 @@ void MedicalObjective::setLocation(Block& block)
 	m_project = project;
 	project->addWorkerCandidate(m_actor, *this);
 }
-MedicalProject* MedicalObjective::getProjectForActorAtLocation(Block& block)
+MedicalProject* MedicalObjective::getProjectForActorAtLocation(BlockIndex& block)
 {
 	AreaHasMedicalPatientsForFaction& areaHasPatientsForFaction = block.m_area->m_hasMedicalPatients.at(*m_actor.getFaction());
 	for(const Actor* actor : block.m_hasActors.getAllConst())
@@ -169,20 +169,20 @@ void AreaHasMedicalPatientsForFaction::removeDoctor(Actor& doctor)
 	//TODO: Erase any medical projects the doctor is assigned to.
 	triage();
 }
-void AreaHasMedicalPatientsForFaction::addLocation(Block& block)
+void AreaHasMedicalPatientsForFaction::addLocation(BlockIndex& block)
 {
 	assert(!m_medicalLocations.contains(&block));
 	m_medicalLocations.insert(&block);
 	triage();
 }
-void AreaHasMedicalPatientsForFaction::removeLocation(Block& block)
+void AreaHasMedicalPatientsForFaction::removeLocation(BlockIndex& block)
 {
 	assert(m_medicalLocations.contains(&block));
 	m_medicalLocations.erase(&block);
 	//TODO: Cancel any medical projects the location is assigned to.
 	triage();
 }
-void AreaHasMedicalPatientsForFaction::createProject(Actor& patient, Block& location, Actor& doctor, Wound& wound, const MedicalProjectType& medicalProjectType)
+void AreaHasMedicalPatientsForFaction::createProject(Actor& patient, BlockIndex& location, Actor& doctor, Wound& wound, const MedicalProjectType& medicalProjectType)
 {
 	assert(m_waitingPatients.contains(&patient));
 	assert(m_waitingDoctors.contains(&doctor));

@@ -8,6 +8,7 @@
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/plant.h"
 #include "actor.h"
+#include "types.h"
 TEST_CASE("basicNeedsSentient")
 {
 	static const MaterialType& dirt = MaterialType::byName("dirt");
@@ -16,11 +17,13 @@ TEST_CASE("basicNeedsSentient")
 	static const FluidType& water = FluidType::byName("water");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	Blocks& blocks = area.getBlocks();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	Actor& actor = simulation.m_hasActors->createActor(ActorParamaters{
 		.species=dwarf, 
 		.percentGrown=50,
-		.location=&area.getBlock(1, 1, 2), 
+		.location=blocks.getIndex({1, 1, 2}), 
+		.area=&area,
 		.percentHunger=0,
 		.percentTired=0,
 		.percentThirst=0,
@@ -29,29 +32,29 @@ TEST_CASE("basicNeedsSentient")
 	REQUIRE(actor.m_canGrow.isGrowing());
 	SUBCASE("drink from pond")
 	{
-		Block& pondLocation = area.getBlock(3, 3, 1);
-		pondLocation.setNotSolid();
-		pondLocation.m_hasFluids.addFluid(100, water);
+		BlockIndex pondLocation = blocks.getIndex({3, 3, 1});
+		blocks.solid_setNot(pondLocation);
+		blocks.fluid_add(pondLocation, 100, water);
 		simulation.fastForward(dwarf.stepsFluidDrinkFreqency);
 		REQUIRE(!actor.m_canGrow.isGrowing());
 		REQUIRE(actor.m_mustDrink.needsFluid());
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "drink");
 		simulation.doStep();
-		Block* destination = actor.m_canMove.getDestination();
-		REQUIRE(destination != nullptr);
-		REQUIRE(destination->isAdjacentToIncludingCornersAndEdges(pondLocation));
+		BlockIndex destination = actor.m_canMove.getDestination();
+		REQUIRE(destination != BLOCK_INDEX_MAX);
+		REQUIRE(blocks.isAdjacentToIncludingCornersAndEdges(destination, pondLocation));
 		simulation.fastForwardUntillActorIsAdjacentToDestination(actor, pondLocation);
 		simulation.fastForward(Config::stepsToDrink);
 		REQUIRE(!actor.m_mustDrink.needsFluid());
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "drink");
 		uint32_t drinkVolume = MustDrink::drinkVolumeFor(actor);
 		simulation.doStep(); // Give a step for the fluid removal to take effect.
-		REQUIRE(pondLocation.m_hasFluids.volumeOfFluidTypeContains(water) == Config::maxBlockVolume - drinkVolume);
+		REQUIRE(blocks.fluid_volumeOfTypeContains(pondLocation, water) == Config::maxBlockVolume - drinkVolume);
 	}
 	SUBCASE("drink from bucket")
 	{
 		Item& bucket = simulation.m_hasItems->createItemNongeneric(ItemType::byName("bucket"), MaterialType::byName("poplar wood"), 50u, 0u, nullptr);
-		Block& bucketLocation = area.getBlock(7, 7, 2);
+		BlockIndex bucketLocation = blocks.getIndex({7, 7, 2});
 		bucket.setLocation(bucketLocation);
 		bucket.m_hasCargo.add(water, 10);
 		simulation.fastForward(dwarf.stepsFluidDrinkFreqency);
@@ -59,9 +62,9 @@ TEST_CASE("basicNeedsSentient")
 		REQUIRE(actor.m_mustDrink.needsFluid());
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "drink");
 		simulation.doStep();
-		Block* destination = actor.m_canMove.getDestination();
-		REQUIRE(destination != nullptr);
-		REQUIRE(destination->isAdjacentToIncludingCornersAndEdges(bucketLocation));
+		BlockIndex destination = actor.m_canMove.getDestination();
+		REQUIRE(destination != BLOCK_INDEX_MAX);
+		REQUIRE(blocks.isAdjacentToIncludingCornersAndEdges(destination, bucketLocation));
 		simulation.fastForwardUntillActorIsAdjacentToHasShape(actor, bucket);
 		simulation.fastForward(Config::stepsToDrink);
 		REQUIRE(!actor.m_mustDrink.needsFluid());
@@ -76,7 +79,7 @@ TEST_CASE("basicNeedsSentient")
 	SUBCASE("eat prepared meal")
 	{
 		Item& meal = simulation.m_hasItems->createItemNongeneric(ItemType::byName("prepared meal"), MaterialType::byName("fruit"), 50u, 0u, nullptr);
-		Block& mealLocation = area.getBlock(5, 5, 2);
+		BlockIndex mealLocation = blocks.getIndex({5, 5, 2});
 		meal.setLocation(mealLocation);
 		REQUIRE(actor.m_mustEat.getDesireToEatSomethingAt(mealLocation) == UINT32_MAX);
 		simulation.fastForward(dwarf.stepsEatFrequency);
@@ -88,21 +91,21 @@ TEST_CASE("basicNeedsSentient")
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "eat");
 		REQUIRE(actor.m_mustEat.needsFood());
 		simulation.doStep();
-		Block* destination = actor.m_canMove.getDestination();
-		REQUIRE(destination != nullptr);
-		REQUIRE(destination->isAdjacentToIncludingCornersAndEdges(mealLocation));
+		BlockIndex destination = actor.m_canMove.getDestination();
+		REQUIRE(destination != BLOCK_INDEX_MAX);
+		REQUIRE(blocks.isAdjacentToIncludingCornersAndEdges(destination, mealLocation));
 		simulation.fastForwardUntillActorIsAdjacentToHasShape(actor, meal);
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "eat");
 		REQUIRE(static_cast<EatObjective&>(actor.m_hasObjectives.getCurrent()).hasEvent());
 		simulation.fastForward(Config::stepsToEat);
 		REQUIRE(!actor.m_mustEat.needsFood());
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "eat");
-		REQUIRE(mealLocation.m_hasItems.empty());
+		REQUIRE(blocks.item_empty(mealLocation));
 	}
 	SUBCASE("eat fruit")
 	{
 		Item& fruit = simulation.m_hasItems->createItemGeneric(ItemType::byName("apple"), MaterialType::byName("fruit"), 50u);
-		Block& fruitLocation = area.getBlock(6, 5, 2);
+		BlockIndex fruitLocation = blocks.getIndex({6, 5, 2});
 		fruit.setLocation(fruitLocation);
 		REQUIRE(actor.m_mustEat.getDesireToEatSomethingAt(fruitLocation) == 2);
 		simulation.fastForward(dwarf.stepsEatFrequency);
@@ -114,14 +117,14 @@ TEST_CASE("basicNeedsSentient")
 		REQUIRE(actor.m_mustEat.needsFood());
 		simulation.doStep();
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "eat");
-		REQUIRE(fruit.isAdjacentTo(*actor.m_canMove.getDestination()));
+		REQUIRE(fruit.isAdjacentTo(actor.m_canMove.getDestination()));
 		simulation.fastForwardUntillActorIsAdjacentToHasShape(actor, fruit);
 		REQUIRE(actor.isAdjacentTo(fruit));
 		REQUIRE(static_cast<EatObjective&>(actor.m_hasObjectives.getCurrent()).hasEvent());
 		simulation.fastForward(Config::stepsToEat);
 		REQUIRE(!actor.m_mustEat.needsFood());
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "eat");
-		REQUIRE(!fruitLocation.m_hasItems.empty());
+		REQUIRE(!blocks.item_empty(fruitLocation));
 		REQUIRE(fruit.getQuantity() < 50u);
 	}
 }
@@ -133,13 +136,19 @@ TEST_CASE("basicNeedsNonsentient")
 	static const FluidType& water = FluidType::byName("water");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	Blocks& blocks = area.getBlocks();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
-	Actor& actor = simulation.m_hasActors->createActor(redDeer, area.getBlock(1, 1, 2), 50);
+	Actor& actor = simulation.m_hasActors->createActor(ActorParamaters{
+		.species=redDeer, 
+		.percentGrown=50,
+		.location=blocks.getIndex({1, 1, 2}),
+		.area=&area,
+	});
 	REQUIRE(actor.m_canGrow.isGrowing());
 	REQUIRE(actor.m_mustDrink.thirstEventExists());
-	Block& pondLocation = area.getBlock(3, 3, 1);
-	pondLocation.setNotSolid();
-	pondLocation.m_hasFluids.addFluid(100, water);
+	BlockIndex pondLocation = blocks.getIndex({3, 3, 1});
+	blocks.solid_setNot(pondLocation);
+	blocks.fluid_add(pondLocation, 100, water);
 	SUBCASE("sleep outside at current location")
 	{
 		// Generate objectives, discard eat if it exists.
@@ -156,7 +165,7 @@ TEST_CASE("basicNeedsNonsentient")
 		// Look for sleeping spot.
 		simulation.doStep();
 		// No spot found better then current one.
-		REQUIRE(actor.m_canMove.getDestination() == nullptr);
+		REQUIRE(actor.m_canMove.getDestination() == BLOCK_INDEX_MAX);
 		REQUIRE(!actor.m_mustSleep.isAwake());
 		// Wait for wake up.
 		simulation.fastForward(redDeer.stepsSleepDuration);
@@ -166,9 +175,9 @@ TEST_CASE("basicNeedsNonsentient")
 	}
 	SUBCASE("eat leaves")
 	{
-		Block& grassLocation = area.getBlock(5, 5, 2);
-		grassLocation.m_hasPlant.createPlant(wheatGrass, 100);
-		Plant& grass = grassLocation.m_hasPlant.get();
+		BlockIndex grassLocation = blocks.getIndex({5, 5, 2});
+		blocks.plant_create(grassLocation, wheatGrass, 100);
+		Plant& grass = blocks.plant_get(grassLocation);
 		// Generate objectives.
 		simulation.fastForward(redDeer.stepsEatFrequency);
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "eat");
@@ -180,9 +189,9 @@ TEST_CASE("basicNeedsNonsentient")
 			// Find grass.
 			simulation.doStep();
 			REQUIRE(actor.m_hasObjectives.getCurrent().name() == "eat");
-			Block* destination = actor.m_canMove.getDestination();
-			REQUIRE(destination != nullptr);
-			REQUIRE(destination->isAdjacentToIncludingCornersAndEdges(grassLocation));
+			BlockIndex destination = actor.m_canMove.getDestination();
+			REQUIRE(destination != BLOCK_INDEX_MAX);
+			REQUIRE(blocks.isAdjacentToIncludingCornersAndEdges(destination, grassLocation));
 			// Go to grass.
 			simulation.fastForwardUntillActorIsAdjacentToDestination(actor, grassLocation);
 		}
@@ -194,15 +203,15 @@ TEST_CASE("basicNeedsNonsentient")
 	}
 	SUBCASE("sleep at assigned spot")
 	{
-		areaBuilderUtil::setSolidWall(area.getBlock(0, 2, 2), area.getBlock(8, 2, 2), dirt);
-		Block& gateway = area.getBlock(9, 2, 2);
-		Block& spot = area.getBlock(5, 5, 2);
+		areaBuilderUtil::setSolidWall(area, blocks.getIndex({0, 2, 2}), blocks.getIndex({8, 2, 2}), dirt);
+		BlockIndex gateway = blocks.getIndex({9, 2, 2});
+		BlockIndex spot = blocks.getIndex({5, 5, 2});
 		actor.m_mustSleep.setLocation(spot);
 		actor.m_mustSleep.tired();
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "sleep");
 		// Path to spot.
 		simulation.doStep();
-		REQUIRE(actor.m_canMove.getDestination() == &spot);
+		REQUIRE(actor.m_canMove.getDestination() == spot);
 		SUBCASE("success")
 		{
 			simulation.fastForwardUntillActorIsAtDestination(actor, spot);
@@ -213,21 +222,21 @@ TEST_CASE("basicNeedsNonsentient")
 		}
 		SUBCASE("spot no longer suitable")
 		{
-			spot.setSolid(dirt);
+			blocks.solid_set(spot, dirt, false);
 			simulation.fastForwardUntillActorIsAdjacentTo(actor, spot);
-			REQUIRE(actor.m_canMove.getDestination() == nullptr);
+			REQUIRE(actor.m_canMove.getDestination() == BLOCK_INDEX_MAX);
 			REQUIRE(actor.m_hasObjectives.getCurrent().name() == "sleep");
-			REQUIRE(actor.m_mustSleep.getLocation() == nullptr);
+			REQUIRE(actor.m_mustSleep.getLocation() == BLOCK_INDEX_MAX);
 			REQUIRE(actor.m_mustSleep.getObjective()->threadedTaskExists());
 		}
 		SUBCASE("cannot path to spot")
 		{
-			gateway.setSolid(dirt);
+			blocks.solid_set(gateway, dirt, false);
 			simulation.fastForwardUntillActorIsAdjacentTo(actor, gateway);
 			REQUIRE(actor.m_canMove.hasThreadedTask());
 			// Path to designated spot blocked, try to repath, no path found, clear designated spot.
 			simulation.doStep();
-			REQUIRE(actor.m_mustSleep.getLocation() == nullptr);
+			REQUIRE(actor.m_mustSleep.getLocation() == BLOCK_INDEX_MAX);
 			REQUIRE(actor.m_hasObjectives.getCurrent().name() == "sleep");
 			REQUIRE(actor.m_mustSleep.getObjective()->threadedTaskExists());
 		}
@@ -239,7 +248,11 @@ TEST_CASE("basicNeedsNonsentient")
 	SUBCASE("scavenge corpse")
 	{
 		const AnimalSpecies& blackBear = AnimalSpecies::byName("black bear");
-		Actor& bear = simulation.m_hasActors->createActor(blackBear, area.getBlock(5, 1, 2));
+		Actor& bear = simulation.m_hasActors->createActor(ActorParamaters{
+			.species=blackBear, 
+			.location=blocks.getIndex({5, 1, 2}),
+			.area=&area
+		});
 		Actor& deer = actor;
 		uint32_t deerMass = deer.getMass();
 		deer.die(CauseOfDeath::thirst);
@@ -260,11 +273,11 @@ TEST_CASE("basicNeedsNonsentient")
 	SUBCASE("leave location with unsafe temperature")
 	{
 		REQUIRE(actor.m_canGrow.isGrowing());
-		Block& temperatureSourceLocation = area.getBlock(1, 1, 3);
+		BlockIndex temperatureSourceLocation = blocks.getIndex({1, 1, 3});
 		area.m_hasTemperature.addTemperatureSource(temperatureSourceLocation, 200);
 		simulation.doStep();
 		REQUIRE(!actor.m_needsSafeTemperature.isSafeAtCurrentLocation());
-		REQUIRE(actor.m_location->m_blockHasTemperature.get() > actor.m_species.maximumSafeTemperature);
+		REQUIRE(blocks.temperature_get(actor.m_location) > actor.m_species.maximumSafeTemperature);
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "get to safe temperature");
 		REQUIRE(!actor.m_canGrow.isGrowing());
 	}
@@ -276,9 +289,15 @@ TEST_CASE("death")
 	Step step  = DateTime(12,150,1000).toSteps();
 	Simulation simulation(L"", step);
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	Blocks& blocks = area.getBlocks();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	areaBuilderUtil::setSolidWalls(area, 5, MaterialType::byName("marble"));
-	Actor& actor = simulation.m_hasActors->createActor(redDeer, area.getBlock(1, 1, 2), 50);
+	Actor& actor = simulation.m_hasActors->createActor(ActorParamaters{
+		.species=redDeer, 
+		.percentGrown=50,
+		.location=blocks.getIndex({1, 1, 2}), 
+		.area=&area,
+	});
 	SUBCASE("thirst")
 	{
 		// Generate objectives, discard eat if it exists.
@@ -294,9 +313,9 @@ TEST_CASE("death")
 	}
 	SUBCASE("hunger")
 	{
-		Block& pondLocation = area.getBlock(3, 3, 1);
-		pondLocation.setNotSolid();
-		pondLocation.m_hasFluids.addFluid(100, FluidType::byName("water"));
+		BlockIndex pondLocation = blocks.getIndex({3, 3, 1});
+		blocks.solid_setNot(pondLocation);
+		blocks.fluid_add(pondLocation, 100, FluidType::byName("water"));
 		// Generate objectives, discard drink if it exists.
 		REQUIRE(actor.m_mustEat.getHungerEventStep() == redDeer.stepsEatFrequency +  step);
 		simulation.fastForward(redDeer.stepsEatFrequency);
@@ -309,7 +328,7 @@ TEST_CASE("death")
 	}
 	SUBCASE("temperature")
 	{
-		Block& temperatureSourceLocation = area.getBlock(5, 5, 2);
+		BlockIndex temperatureSourceLocation = blocks.getIndex({5, 5, 2});
 		area.m_hasTemperature.addTemperatureSource(temperatureSourceLocation, 60000);
 		simulation.doStep();
 		REQUIRE(!actor.m_needsSafeTemperature.isSafeAtCurrentLocation());

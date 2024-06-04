@@ -7,11 +7,10 @@ class Area;
 class Actor;
 class BanditsLeaveScheduledEvent;
 struct DeserializationMemo;
-class Block;
 
 struct BanditsArriveDramaArc final : public DramaArc
 {
-	Block* m_entranceBlock = nullptr;;
+	BlockIndex m_entranceBlock = BLOCK_INDEX_MAX;
 	std::vector<Actor*> m_actors;
 	bool m_isActive = false;
 	uint32_t m_quantity = 0;

@@ -2,14 +2,14 @@
 #include "../types.h"
 #include <vector>
 
-class Block;
+class BlockIndex;
 class Actor;
 class BlockHasActors
 {
 	std::vector<Actor*> m_actors;
-	Block& m_block;
+	BlockIndex& m_block;
 public:
-	BlockHasActors(Block& b) : m_block(b) { }
+	BlockHasActors(BlockIndex& b) : m_block(b) { }
 	void enter(Actor& actor);
 	void exit(Actor& actor);
 	void setTemperature(Temperature temperature);

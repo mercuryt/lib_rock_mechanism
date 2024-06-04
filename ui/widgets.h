@@ -4,7 +4,7 @@
 class Area;
 class Simulation;
 class Plant;
-class Block;
+class BlockIndex;
 struct BlockFeatureType;
 struct PlantSpecies;
 struct MaterialType;
@@ -46,7 +46,7 @@ public:
 namespace widgetUtil
 {
 	inline const PlantSpecies* lastSelectedPlantSpecies = nullptr;
-	tgui::ComboBox::Ptr makePlantSpeciesSelectUI(Block* block);
+	tgui::ComboBox::Ptr makePlantSpeciesSelectUI(BlockIndex* block);
 	inline const MaterialType* lastSelectedMaterial = nullptr;
 	tgui::ComboBox::Ptr makeMaterialSelectUI(std::wstring nullLabel = L"", std::function<bool(const MaterialType&)> predicate = nullptr);
 	inline const MaterialTypeCategory* lastSelectedMaterialCategory = nullptr;

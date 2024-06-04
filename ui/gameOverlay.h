@@ -24,18 +24,18 @@ public:
 	GameOverlay(Window& w);
 	void show() { m_group->setVisible(true); }
 	void hide() { m_group->setVisible(false); }
-	void drawContextMenu(Block& block) { m_contextMenu.draw(block); }
+	void drawContextMenu(BlockIndex& block) { m_contextMenu.draw(block); }
 	void closeContextMenu() { m_contextMenu.hide(); }
 	void drawMenu();
 	void closeMenu() { m_menu->setVisible(false); }
-	void drawInfoPopup(Block& block) { m_infoPopup.display(block); }
+	void drawInfoPopup(BlockIndex& block) { m_infoPopup.display(block); }
 	void drawInfoPopup(Item& item) { m_infoPopup.display(item); }
 	void drawInfoPopup(Plant& plant) { m_infoPopup.display(plant); }
 	void drawInfoPopup(const Plant& plant) { drawInfoPopup(const_cast<Plant&>(plant)); }
 	void drawInfoPopup(Actor& actor) { m_infoPopup.display(actor); }
 	void closeInfoPopup() { m_infoPopup.hide(); };
-	void assignLocationToInstallItem(Block& block);
-	void assignLocationToMoveItemTo(Block& block);
+	void assignLocationToInstallItem(BlockIndex& block);
+	void assignLocationToMoveItemTo(BlockIndex& block);
 	void unfocusUI();
 	void drawTime();
 	void updateInfoPopup() { m_infoPopup.update(); }

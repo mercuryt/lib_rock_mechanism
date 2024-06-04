@@ -4,6 +4,7 @@
 #include "hit.h"
 #include "materialType.h"
 #include "simulation/hasItems.h"
+#include "types.h"
 #include "weaponType.h"
 #include "actor.h"
 #include "simulation.h"
@@ -35,7 +36,7 @@ bool EquipmentSortByLayer::operator()(Item* const& a, Item* const& b) const
 void EquipmentSet::insertEquipment(Item& equipment)
 {
 	assert(std::ranges::find(m_equipments, &equipment) == m_equipments.end());
-	assert(equipment.m_location == nullptr);
+	assert(equipment.m_location == BLOCK_INDEX_MAX);
 	m_mass += equipment.getMass();
 	m_equipments.insert(&equipment);
 	if(equipment.m_itemType.wearableData != nullptr)

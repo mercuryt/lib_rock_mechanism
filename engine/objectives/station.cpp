@@ -1,10 +1,9 @@
 #include "station.h"
 #include "../simulation.h"
-#include "../block.h"
 #include "../actor.h"
 // Input
 /*
-StationInputAction::StationInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, Block& b) : 
+StationInputAction::StationInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, BlockIndex& b) : 
 	InputAction(actors, emplacementType, inputQueue), m_block(b) { }
 void StationInputAction::execute()
 {
@@ -20,8 +19,8 @@ StationObjective::StationObjective(const Json& data, DeserializationMemo& deseri
 	m_location(deserializationMemo.m_simulation.getBlockForJsonQuery(data["block"])) { }
 void StationObjective::execute()
 {
-	if(m_actor.m_location != &m_location)
-		// Block, detour, adjacent, unreserved, reserve
+	if(m_actor.m_location != m_location)
+		// BlockIndex, detour, adjacent, unreserved, reserve
 		m_actor.m_canMove.setDestination(m_location, m_detour, false, false, false);
 }
 void StationObjective::reset() { m_actor.m_canReserve.deleteAllWithoutCallback(); }

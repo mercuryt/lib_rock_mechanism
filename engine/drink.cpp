@@ -1,11 +1,12 @@
 #include "drink.h"
 #include "item.h"
+#include "area.h"
 #include "actor.h"
 #include "deserializationMemo.h"
 #include "objective.h"
 #include "simulation.h"
+#include "types.h"
 #include "util.h"
-#include "block.h"
 #include <algorithm>
 // Must Drink.
 MustDrink::MustDrink(Actor& a, Simulation& s) : m_thirstEvent(s.m_eventSchedule), m_actor(a) { }
@@ -90,14 +91,14 @@ void DrinkEvent::execute()
 {
 	auto& actor = m_drinkObjective.m_actor;
 	uint32_t volume = actor.m_mustDrink.m_volumeDrinkRequested;
-	Block* drinkBlock = m_drinkObjective.getAdjacentBlockToDrinkAt(*actor.m_location, actor.m_facing);
-	if(drinkBlock == nullptr)
+	BlockIndex drinkBlock = m_drinkObjective.getAdjacentBlockToDrinkAt(actor.m_location, actor.m_facing);
+	if(drinkBlock == BLOCK_INDEX_MAX)
 	{
 		// There isn't anything to drink here anymore, try again.
 		m_drinkObjective.m_threadedTask.create(m_drinkObjective);
 		return;
 	}
-	Item* item = m_drinkObjective.getItemToDrinkFromAt(*drinkBlock);
+	Item* item = m_drinkObjective.getItemToDrinkFromAt(drinkBlock);
 	if(item != nullptr)
 	{
 		assert(item->m_hasCargo.getFluidType() == actor.m_mustDrink.getFluidType());
@@ -106,8 +107,9 @@ void DrinkEvent::execute()
 	}
 	else
 	{
-		volume = std::min(volume, drinkBlock->m_hasFluids.volumeOfFluidTypeContains(actor.m_mustDrink.getFluidType()));
-		drinkBlock->m_hasFluids.removeFluid(volume, actor.m_mustDrink.getFluidType());
+		auto& blocks = actor.m_area->getBlocks();
+		volume = std::min(volume, blocks.fluid_volumeOfTypeContains(drinkBlock, actor.m_mustDrink.getFluidType()));
+		blocks.fluid_remove(drinkBlock, volume, actor.m_mustDrink.getFluidType());
 	}
 	actor.m_mustDrink.drink(volume);
 }
@@ -119,7 +121,7 @@ void ThirstEvent::clearReferences() { m_actor.m_mustDrink.m_thirstEvent.clearPoi
 DrinkThreadedTask::DrinkThreadedTask(DrinkObjective& drob) : ThreadedTask(drob.m_actor.getThreadedTaskEngine()), m_drinkObjective(drob), m_findsPath(drob.m_actor, drob.m_detour), m_noDrinkFound(false) {}
 void DrinkThreadedTask::readStep()
 {
-	std::function<bool(const Block&)> predicate = [&](const Block& block)
+	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block)
 	{
 		return m_drinkObjective.containsSomethingDrinkable(block);
 	};
@@ -181,7 +183,7 @@ void DrinkObjective::execute()
 	if(m_noDrinkFound)
 	{
 		// We have determined that there is no drink here and have attempted to path to the edge of the area so we can leave.
-		if(m_actor.predicateForAnyOccupiedBlock([](const Block& block){ return block.m_isEdge; }))
+		if(m_actor.predicateForAnyOccupiedBlock([this](BlockIndex block){ return m_actor.m_area->getBlocks().isEdge(block); }))
 			// We are at the edge and can leave.
 			m_actor.leaveArea();
 		else
@@ -189,7 +191,7 @@ void DrinkObjective::execute()
 			m_actor.m_hasObjectives.cannotFulfillNeed(*this);
 		return;
 	}
-	if(!canDrinkAt(*m_actor.m_location, m_actor.m_facing))
+	if(!canDrinkAt(m_actor.m_location, m_actor.m_facing))
 		m_threadedTask.create(*this);
 	else
 		m_drinkEvent.schedule(Config::stepsToDrink, *this);
@@ -211,27 +213,27 @@ void DrinkObjective::reset()
 	m_noDrinkFound = false;
 	m_actor.m_canReserve.deleteAllWithoutCallback();
 }
-bool DrinkObjective::canDrinkAt(const Block& block, Facing facing) const
+bool DrinkObjective::canDrinkAt(BlockIndex block, Facing facing) const
 {
-	return getAdjacentBlockToDrinkAt(block, facing) != nullptr;
+	return getAdjacentBlockToDrinkAt(block, facing) != BLOCK_INDEX_MAX;
 }
-Block* DrinkObjective::getAdjacentBlockToDrinkAt(const Block& location, Facing facing) const
+BlockIndex DrinkObjective::getAdjacentBlockToDrinkAt(BlockIndex location, Facing facing) const
 {
-	std::function<bool(const Block&)> predicate = [&](const Block& block) { return containsSomethingDrinkable(block); };
+	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return containsSomethingDrinkable(block); };
 	return m_actor.getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(location, facing, predicate);
 }
-bool DrinkObjective::canDrinkItemAt(const Block& block) const
+bool DrinkObjective::canDrinkItemAt(BlockIndex block) const
 {
-	return getItemToDrinkFromAt(const_cast<Block&>(block)) != nullptr;
+	return getItemToDrinkFromAt(block) != nullptr;
 }
-Item* DrinkObjective::getItemToDrinkFromAt(Block& block) const
+Item* DrinkObjective::getItemToDrinkFromAt(BlockIndex block) const
 {
-	for(Item* item : block.m_hasItems.getAll())
+	for(Item* item : m_actor.m_area->getBlocks().item_getAll(block))
 		if(item->m_hasCargo.containsAnyFluid() && item->m_hasCargo.getFluidType() == m_actor.m_mustDrink.getFluidType())
 			return item;
 	return nullptr;
 }
-bool DrinkObjective::containsSomethingDrinkable(const Block& block) const
+bool DrinkObjective::containsSomethingDrinkable(BlockIndex block) const
 {
-	return block.m_hasFluids.contains(m_actor.m_mustDrink.getFluidType()) || canDrinkItemAt(block);
+	return m_actor.m_area->getBlocks().fluid_contains(block, m_actor.m_mustDrink.getFluidType()) || canDrinkItemAt(block);
 }

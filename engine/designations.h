@@ -1,5 +1,5 @@
 /*
- * Block designations indicate what action a block is suposed to be involved in.
+ * BlockIndex designations indicate what action a block is suposed to be involved in.
  */
 #pragma once
 

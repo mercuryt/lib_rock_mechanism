@@ -1,5 +1,4 @@
 #include "installItem.h"
-#include "block.h"
 #include "actor.h"
 #include "area.h"
 #include "deserializationMemo.h"
@@ -7,10 +6,11 @@
 #include "item.h"
 
 // Project.
+InstallItemProject::InstallItemProject(Item& i, BlockIndex l, Facing facing, Faction& faction) : Project(&faction, *i.m_area, l, 1), m_item(i), m_facing(facing) { }
 void InstallItemProject::onComplete()
 {
 	m_item.m_facing = m_facing;
-	m_location.m_hasItems.add(m_item);
+	m_area.getBlocks().item_add(m_location, m_item);
 	m_item.m_installed = true;
 }
 // ThreadedTask.
@@ -18,9 +18,9 @@ InstallItemThreadedTask::InstallItemThreadedTask(InstallItemObjective& iio) :
 	ThreadedTask(iio.m_actor.getThreadedTaskEngine()), m_installItemObjective(iio), m_findsPath(iio.m_actor, iio.m_detour) { }
 void InstallItemThreadedTask::readStep()
 {
-	std::function<bool(const Block&)> predicate = [&](const Block& block)
+	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block)
 	{
-		return block.m_area->m_hasInstallItemDesignations.at(*m_installItemObjective.m_actor.getFaction()).contains(block);
+		return m_installItemObjective.m_actor.m_area->m_hasInstallItemDesignations.at(*m_installItemObjective.m_actor.getFaction()).contains(block);
 	};
 	m_findsPath.pathToAdjacentToPredicate(predicate);
 }
@@ -31,8 +31,8 @@ void InstallItemThreadedTask::writeStep()
 		actor.m_hasObjectives.cannotFulfillObjective(m_installItemObjective);
 	else
 	{
-		Block& block = *m_findsPath.getBlockWhichPassedPredicate();
-		auto& hasInstallItemDesignations = actor.m_location->m_area->m_hasInstallItemDesignations.at(*actor.getFaction());
+		BlockIndex block = m_findsPath.getBlockWhichPassedPredicate();
+		auto& hasInstallItemDesignations = actor.m_area->m_hasInstallItemDesignations.at(*actor.getFaction());
 		if(!hasInstallItemDesignations.contains(block) || !hasInstallItemDesignations.at(block).canAddWorker(actor))
 			// Canceled or reserved, try again.
 			m_installItemObjective.m_threadedTask.create(m_installItemObjective);
@@ -70,7 +70,7 @@ void InstallItemObjective::execute()
 }
 bool InstallItemObjectiveType::canBeAssigned(Actor& actor) const
 {
-	return !actor.m_location->m_area->m_hasInstallItemDesignations.at(*actor.getFaction()).empty();
+	return !actor.m_area->m_hasInstallItemDesignations.at(*actor.getFaction()).empty();
 }
 std::unique_ptr<Objective> InstallItemObjectiveType::makeFor(Actor& actor) const
 {
@@ -79,10 +79,10 @@ std::unique_ptr<Objective> InstallItemObjectiveType::makeFor(Actor& actor) const
 }
 void InstallItemObjective::reset() { m_actor.m_canReserve.deleteAllWithoutCallback(); m_project = nullptr; }
 // HasDesignations.
-void HasInstallItemDesignationsForFaction::add(Block& block, Item& item, Facing facing, Faction& faction)
+void HasInstallItemDesignationsForFaction::add(BlockIndex block, Item& item, Facing facing, Faction& faction)
 {
-	assert(!m_designations.contains(&block));
-	m_designations.try_emplace(&block, item, block, facing, faction);
+	assert(!m_designations.contains(block));
+	m_designations.try_emplace(block, item, block, facing, faction);
 }
 void AreaHasInstallItemDesignations::clearReservations()
 {

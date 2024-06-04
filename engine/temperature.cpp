@@ -1,5 +1,4 @@
 #include "temperature.h"
-#include "block.h"
 #include "actor.h"
 #include "item.h"
 #include "area.h"
@@ -8,6 +7,7 @@
 #include "config.h"
 #include "objective.h"
 #include "simulation.h"
+#include "types.h"
 #include <cmath>
 enum class TemperatureZone { Surface, Underground, LavaSea };
 Temperature TemperatureSource::getTemperatureDeltaForRange(Temperature range)
@@ -21,23 +21,23 @@ Temperature TemperatureSource::getTemperatureDeltaForRange(Temperature range)
 }
 void TemperatureSource::apply()
 {
-	m_block.m_area->m_hasTemperature.addDelta(m_block, m_temperature);
+	m_area.m_hasTemperature.addDelta(m_block, m_temperature);
 	int range = 1;
 	while(int delta = getTemperatureDeltaForRange(range))
 	{
-		for(Block* block : getNthAdjacentBlocks(m_block, range))
-			block->m_area->m_hasTemperature.addDelta(*block, delta);
+		for(BlockIndex block : getNthAdjacentBlocks(m_area, m_block, range))
+			m_area.m_hasTemperature.addDelta(block, delta);
 		++range;
 	}
 }
 void TemperatureSource::unapply()
 {
-	m_block.m_area->m_hasTemperature.addDelta(m_block, m_temperature * -1);
+	m_area.m_hasTemperature.addDelta(m_block, m_temperature * -1);
 	int range = 1;
 	while(int delta = getTemperatureDeltaForRange(range))
 	{
-		for(Block* block : getNthAdjacentBlocks(m_block, range))
-			block->m_area->m_hasTemperature.addDelta(*block, delta * -1);
+		for(BlockIndex block : getNthAdjacentBlocks(m_area, m_block, range))
+			m_area.m_hasTemperature.addDelta(block, delta * -1);
 		++range;
 	}
 }
@@ -47,33 +47,33 @@ void TemperatureSource::setTemperature(const int32_t& t)
 	m_temperature = t;
 	apply();
 }
-void AreaHasTemperature::addTemperatureSource(Block& block, const Temperature& temperature)
+void AreaHasTemperature::addTemperatureSource(BlockIndex block, const Temperature& temperature)
 {
-	[[maybe_unused]] auto pair = m_sources.try_emplace(&block, temperature, block);
+	[[maybe_unused]] auto pair = m_sources.try_emplace(block, m_area, temperature, block);
 	assert(pair.second);
 }
 void AreaHasTemperature::removeTemperatureSource(TemperatureSource& temperatureSource)
 {
-	assert(m_sources.contains(&temperatureSource.m_block));
+	assert(m_sources.contains(temperatureSource.m_block));
 	//TODO: Optimize with iterator.
-	m_sources.at(&temperatureSource.m_block).unapply();
-	m_sources.erase(&temperatureSource.m_block);
+	m_sources.at(temperatureSource.m_block).unapply();
+	m_sources.erase(temperatureSource.m_block);
 }
-TemperatureSource& AreaHasTemperature::getTemperatureSourceAt(Block& block)
+TemperatureSource& AreaHasTemperature::getTemperatureSourceAt(BlockIndex block)
 {
-	return m_sources.at(&block);
+	return m_sources.at(block);
 }
-void AreaHasTemperature::addDelta(Block& block, int32_t delta)
+void AreaHasTemperature::addDelta(BlockIndex block, int32_t delta)
 {
-	m_blockDeltaDeltas[&block] += delta;
+	m_blockDeltaDeltas[block] += delta;
 }
 // TODO: optimize by splitting block deltas into different structures for different temperature zones, to avoid having to rerun getAmbientTemperature?
 void AreaHasTemperature::applyDeltas()
 {
-	std::unordered_map<Block*, int32_t> oldDeltaDeltas;
+	std::unordered_map<BlockIndex, int32_t> oldDeltaDeltas;
 	oldDeltaDeltas.swap(m_blockDeltaDeltas);
 	for(auto& [block, deltaDelta] : oldDeltaDeltas)
-		block->m_blockHasTemperature.updateDelta(deltaDelta);
+		m_area.getBlocks().temperature_updateDelta(block, deltaDelta);
 }
 void AreaHasTemperature::setAmbientSurfaceTemperature(const Temperature& temperature)
 {
@@ -81,17 +81,18 @@ void AreaHasTemperature::setAmbientSurfaceTemperature(const Temperature& tempera
 	m_area.m_hasPlants.onChangeAmbiantSurfaceTemperature();
 	m_area.m_hasActors.onChangeAmbiantSurfaceTemperature();
 	m_area.m_hasItems.onChangeAmbiantSurfaceTemperature();
-	for(auto& [meltingPoint, blocks] : m_aboveGroundBlocksByMeltingPoint)
+	Blocks& blocks = m_area.getBlocks();
+	for(auto& [meltingPoint, toMelt] : m_aboveGroundBlocksByMeltingPoint)
 		if(meltingPoint <= temperature)
-			for(Block* block : blocks)
-				block->m_blockHasTemperature.melt();
+			for(BlockIndex block : toMelt)
+				blocks.temperature_melt(block);
 		else
 			break;
 	for(auto& [meltingPoint, fluidGroups] : m_aboveGroundFluidGroupsByMeltingPoint)
 		if(meltingPoint > temperature)
 			for(FluidGroup* fluidGroup : fluidGroups)
 				for(FutureFlowBlock& futureFlowBlock : fluidGroup->m_drainQueue.m_queue)
-					futureFlowBlock.block->m_blockHasTemperature.freeze(fluidGroup->m_fluidType);
+					blocks.temperature_freeze(futureFlowBlock.block, fluidGroup->m_fluidType);
 		else
 			break;
 }
@@ -106,17 +107,19 @@ void AreaHasTemperature::updateAmbientSurfaceTemperature()
 	uint32_t halfDay = Config::hoursPerDay / 2;
 	setAmbientSurfaceTemperature(dailyAverage + ((maxDailySwing * (std::min(0u, halfDay - hoursFromHottestHourOfDay))) / halfDay) - (maxDailySwing / 2));
 }
-void AreaHasTemperature::addMeltableSolidBlockAboveGround(Block& block)
+void AreaHasTemperature::addMeltableSolidBlockAboveGround(BlockIndex block)
 {
-	assert(!block.m_underground);
-	assert(block.isSolid());
-	m_aboveGroundBlocksByMeltingPoint.at(block.getSolidMaterial().meltingPoint).insert(&block);
+	Blocks& blocks = m_area.getBlocks();
+	assert(!blocks.isUnderground(block));
+	assert(blocks.solid_is(block));
+	m_aboveGroundBlocksByMeltingPoint.at(blocks.solid_get(block).meltingPoint).insert(block);
 }
 // Must be run before block is set no longer solid if above ground.
-void AreaHasTemperature::removeMeltableSolidBlockAboveGround(Block& block)
+void AreaHasTemperature::removeMeltableSolidBlockAboveGround(BlockIndex block)
 {
-	assert(block.isSolid());
-	m_aboveGroundBlocksByMeltingPoint.at(block.getSolidMaterial().meltingPoint).erase(&block);
+	Blocks& blocks = m_area.getBlocks();
+	assert(blocks.solid_is(block));
+	m_aboveGroundBlocksByMeltingPoint.at(blocks.solid_get(block).meltingPoint).erase(block);
 }
 Temperature AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature() const
 {
@@ -128,82 +131,14 @@ Temperature AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature() const
 	uint32_t daysFromSolstice = std::abs(day - (int32_t)dayOfYearOfSolstice);
 	return yearlyColdestDailyAverage + ((yearlyHottestDailyAverage - yearlyColdestDailyAverage) * (dayOfYearOfSolstice - daysFromSolstice)) / dayOfYearOfSolstice;
 }
-void BlockHasTemperature::updateDelta(int32_t deltaDelta)
-{
-	m_delta += deltaDelta;
-	Temperature temperature = m_delta + getAmbientTemperature();
-	if(m_block.isSolid())
-	{
-		auto& material = m_block.getSolidMaterial();
-		if(material.burnData != nullptr && material.burnData->ignitionTemperature <= temperature && (m_block.m_fires == nullptr || !m_block.m_fires->contains(&material)))
-			m_block.m_area->m_fires.ignite(m_block, material);
-		else if(material.meltingPoint != 0 && material.meltingPoint <= temperature)
-			m_block.m_blockHasTemperature.melt();
-	}
-	else
-	{
-		m_block.m_hasPlant.setTemperature(temperature);
-		m_block.m_hasBlockFeatures.setTemperature(temperature);
-		m_block.m_hasActors.setTemperature(temperature);
-		m_block.m_hasItems.setTemperature(temperature);
-		//TODO: FluidGroups.
-	}
-}
-void BlockHasTemperature::freeze(const FluidType& fluidType)
-{
-	assert(fluidType.freezesInto != nullptr);
-	static const ItemType& chunk = ItemType::byName("chunk");
-	uint32_t chunkVolume = m_block.m_hasItems.getCount(chunk, *fluidType.freezesInto);
-	uint32_t fluidVolume = m_block.m_hasFluids.volumeOfFluidTypeContains(fluidType);
-	if(chunkVolume + fluidVolume >= Config::maxBlockVolume)
-	{
-		m_block.setSolid(*fluidType.freezesInto);
-		uint32_t remainder = chunkVolume + fluidVolume - Config::maxBlockVolume;
-		(void)remainder;
-		//TODO: add remainder to fluid group or above block.
-	}
-	else
-		m_block.m_hasItems.addGeneric(chunk, *fluidType.freezesInto,  fluidVolume);
-}
-void BlockHasTemperature::melt()
-{
-	assert(m_block.isSolid());
-	assert(m_block.getSolidMaterial().meltsInto != nullptr);
-	const FluidType& fluidType = *m_block.getSolidMaterial().meltsInto;
-	m_block.setNotSolid();
-	m_block.m_hasFluids.addFluid(Config::maxBlockVolume, fluidType);
-	m_block.m_area->m_hasFluidGroups.clearMergedFluidGroups();
-}
-const Temperature& BlockHasTemperature::getAmbientTemperature() const 
-{
-	if(m_block.m_underground)
-	{
-		if(m_block.m_z <= Config::maxZLevelForDeepAmbiantTemperature)
-			return Config::deepAmbiantTemperature;
-		else
-			return Config::undergroundAmbiantTemperature;
-	}
-	return m_block.m_area->m_hasTemperature.getAmbientSurfaceTemperature();
-}
-Temperature BlockHasTemperature::getDailyAverageAmbientTemperature() const 
-{
-	if(m_block.m_underground)
-	{
-		if(m_block.m_z <= Config::maxZLevelForDeepAmbiantTemperature)
-			return Config::deepAmbiantTemperature;
-		else
-			return Config::undergroundAmbiantTemperature;
-	}
-	return m_block.m_area->m_hasTemperature.getDailyAverageAmbientSurfaceTemperature();
-}
 //TODO: Detour locked to true for emergency moves.
 GetToSafeTemperatureThreadedTask::GetToSafeTemperatureThreadedTask(GetToSafeTemperatureObjective& o) : ThreadedTask(o.m_actor.getThreadedTaskEngine()), m_objective(o), m_findsPath(o.m_actor, true) ,m_noWhereWithSafeTemperatureFound(false) { }
 void GetToSafeTemperatureThreadedTask::readStep()
 {
-	std::function<bool(const Block&, Facing facing)> condition = [&](const Block& location, Facing facing)
+	std::function<bool(BlockIndex, Facing facing)> condition = [&](BlockIndex location, Facing facing)
 	{
-		for(Block* adjacent : m_objective.m_actor.getBlocksWhichWouldBeOccupiedAtLocationAndFacing(const_cast<Block&>(location), facing))
-			if(m_objective.m_actor.m_needsSafeTemperature.isSafe(adjacent->m_blockHasTemperature.get()))
+		for(BlockIndex adjacent : m_objective.m_actor.getBlocksWhichWouldBeOccupiedAtLocationAndFacing(location, facing))
+			if(m_objective.m_actor.m_needsSafeTemperature.isSafe(m_objective.m_actor.m_area->getBlocks().temperature_get(adjacent)))
 				return true;
 		return false;
 	};
@@ -244,7 +179,8 @@ void GetToSafeTemperatureObjective::execute()
 {
 	if(m_noWhereWithSafeTemperatureFound)
 	{
-		if(m_actor.predicateForAnyOccupiedBlock([](const Block& block){ return block.m_isEdge; }))
+		Blocks& blocks = m_actor.m_area->getBlocks();
+		if(m_actor.predicateForAnyOccupiedBlock([blocks](BlockIndex block){ return blocks.isEdge(block); }))
 			// We are at the edge and can leave.
 			m_actor.leaveArea();
 		else
@@ -306,7 +242,7 @@ bool ActorNeedsSafeTemperature::isSafe(Temperature temperature) const
 }
 bool ActorNeedsSafeTemperature::isSafeAtCurrentLocation() const
 {
-	if(m_actor.m_location == nullptr)
+	if(m_actor.m_location == BLOCK_INDEX_MAX)
 		return true;
-	return isSafe(m_actor.m_location->m_blockHasTemperature.get());
+	return isSafe(m_actor.m_area->getBlocks().temperature_get(m_actor.m_location));
 }

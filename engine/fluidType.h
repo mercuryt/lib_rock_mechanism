@@ -28,5 +28,6 @@ struct FluidType
 };
 inline std::vector<FluidType> fluidTypeDataStore;
 inline void to_json(Json& data, const FluidType* const& fluidType){ data = fluidType->name; }
+inline void to_json(Json& data, const FluidType*& fluidType){ data = fluidType->name; }
 inline void to_json(Json& data, const FluidType& fluidType){ data = fluidType.name; }
 inline void from_json(const Json& data, const FluidType*& fluidType){ fluidType = &FluidType::byName(data.get<std::string>()); }

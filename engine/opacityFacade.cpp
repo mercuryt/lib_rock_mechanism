@@ -1,5 +1,4 @@
 #include "opacityFacade.h"
-#include "block.h"
 #include "area.h"
 #include "types.h"
 
@@ -9,45 +8,44 @@ void OpacityFacade::initalize()
 	assert(m_area.getBlocks().size());
 	m_fullOpacity.resize(m_area.getBlocks().size());
 	m_floorOpacity.resize(m_area.getBlocks().size());
-	for(const Block& block : m_area.getBlocks())
+	for(BlockIndex block : m_area.getBlocks().getAll())
 		update(block);
 }
-void OpacityFacade::update(const Block& block)
+void OpacityFacade::update(BlockIndex index)
 {
-	BlockIndex index = m_area.getBlockIndex(block);
+	Blocks& blocks = m_area.getBlocks();
 	assert(index < m_fullOpacity.size());
 	assert(m_floorOpacity.size() == m_fullOpacity.size());
-	m_fullOpacity[index] = !block.canSeeThrough();
-	m_floorOpacity[index] = !block.canSeeThroughFloor();
+	m_fullOpacity[index] = !blocks.canSeeThrough(index);
+	m_floorOpacity[index] = !blocks.canSeeThroughFloor(index);
 }
 void OpacityFacade::validate() const
 {
-	for(const Block& block : m_area.getBlocks())
+	Blocks& blocks = m_area.getBlocks();
+	for(BlockIndex block : m_area.getBlocks().getAll())
 	{
-		assert(block.canSeeThrough() != m_fullOpacity[m_area.getBlockIndex(block)]);
-		assert(block.canSeeThroughFloor() != m_floorOpacity[m_area.getBlockIndex(block)]);
+		assert(blocks.canSeeThrough(block) != m_fullOpacity[block]);
+		assert(blocks.canSeeThroughFloor(block) != m_floorOpacity[block]);
 	}
 }
 bool OpacityFacade::isOpaque(BlockIndex index) const
 {
 	assert(index < m_fullOpacity.size());
-	assert(m_fullOpacity[index] != m_area.getBlocks().at(index).canSeeThrough());
+	assert(m_fullOpacity[index] != m_area.getBlocks().canSeeThrough(index));
 	return m_fullOpacity[index];
 }
 bool OpacityFacade::floorIsOpaque(BlockIndex index) const
 {
 	assert(index < m_fullOpacity.size());
 	assert(m_floorOpacity.size() == m_fullOpacity.size());
-	assert(m_floorOpacity[index] != m_area.getBlocks().at(index).canSeeThroughFloor());
+	assert(m_floorOpacity[index] != m_area.getBlocks().canSeeThroughFloor(index));
 	return m_floorOpacity[index];
 }
-bool  OpacityFacade::hasLineOfSight(const Block& from, const Block& to) const
+bool  OpacityFacade::hasLineOfSight(BlockIndex from, BlockIndex to) const
 {
-	BlockIndex fromIndex = m_area.getBlockIndex(from);
-	Point3D fromCoords = m_area.getCoordinatesForIndex(fromIndex);
-	BlockIndex toIndex = m_area.getBlockIndex(to);
-	Point3D toCoords = m_area.getCoordinatesForIndex(toIndex);
-	return hasLineOfSight(fromIndex, fromCoords, toIndex, toCoords);
+	Point3D fromCoords = m_area.getBlocks().getCoordinates(from);
+	Point3D toCoords = m_area.getBlocks().getCoordinates(to);
+	return hasLineOfSight(from, fromCoords, to, toCoords);
 }
 bool  OpacityFacade::hasLineOfSight(BlockIndex fromIndex, Point3D fromCoords, BlockIndex toIndex, Point3D toCoords) const
 {
@@ -83,7 +81,7 @@ bool  OpacityFacade::hasLineOfSight(BlockIndex fromIndex, Point3D fromCoords, Bl
 		// Round to integer and store for use as oldZ next iteration.
 		zInt = std::round(z);
 		// Convert coordintates into index.
-		currentIndex = m_area.getBlockIndex({(DistanceInBlocks)std::round(x), (DistanceInBlocks)std::round(y), zInt});
+		currentIndex = m_area.getBlocks().getIndex({(DistanceInBlocks)std::round(x), (DistanceInBlocks)std::round(y), zInt});
 		// Check for opaque blocks and block features.
 		if(!canSeeIntoFrom(previousIndex, currentIndex, oldZ, zInt))
 			return false;

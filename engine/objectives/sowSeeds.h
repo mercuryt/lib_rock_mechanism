@@ -4,6 +4,7 @@
 #include "threadedTask.hpp"
 #include "config.h"
 #include "findsPath.h"
+#include "types.h"
 
 #include <memory>
 #include <vector>
@@ -24,9 +25,9 @@ class SowSeedsObjective final : public Objective
 {
 	HasScheduledEvent<SowSeedsEvent> m_event;
 	HasThreadedTask<SowSeedsThreadedTask> m_threadedTask;
-	Block* m_block;
-	Block* getBlockToSowAt(Block& location, Facing facing);
-	bool canSowAt(const Block& block) const;
+	BlockIndex m_block = BLOCK_INDEX_MAX;
+	BlockIndex getBlockToSowAt(BlockIndex location, Facing facing);
+	bool canSowAt(BlockIndex block) const;
 public:
 	SowSeedsObjective(Actor& a);
 	SowSeedsObjective(const Json& data, DeserializationMemo& deserializationMemo);
@@ -34,7 +35,7 @@ public:
 	void execute();
 	void cancel();
 	void delay() { cancel(); }
-	void select(Block& block);
+	void select(BlockIndex block);
 	void begin();
 	void reset();
 	std::string name() const { return "sow seeds"; }
@@ -42,7 +43,7 @@ public:
 	friend class SowSeedsEvent;
 	friend class SowSeedsThreadedTask;
 	// For testing.
-	Block* getBlock() { return m_block; }
+	BlockIndex getBlock() { return m_block; }
 };
 class SowSeedsEvent final : public ScheduledEvent
 {

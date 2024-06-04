@@ -5,7 +5,7 @@
 #include "../area.h"
 #include "../simulation.h"
 #include "../simulation/hasItems.h"
-BlockHasItems::BlockHasItems(Block& b): m_block(b) { }
+BlockHasItems::BlockHasItems(BlockIndex& b): m_block(b) { }
 void BlockHasItems::add(Item& item)
 {
 	//assert(m_block.m_hasShapes.canEnterEverWithAnyFacing(item));
@@ -84,15 +84,15 @@ void BlockHasItems::disperseAll()
 {
 	if(m_items.empty())
 		return;
-	std::vector<Block*> blocks;
-	for(Block* block : m_block.getAdjacentOnSameZLevelOnly())
+	std::vector<BlockIndex*> blocks;
+	for(BlockIndex* block : m_block.getAdjacentOnSameZLevelOnly())
 		if(!block->isSolid())
 			blocks.push_back(block);
 	auto copy = m_items;
 	for(Item* item : copy)
 	{
 		//TODO: split up stacks of generics, prefer blocks with more empty space.
-		Block* block = m_block.m_area->m_simulation.m_random.getInVector(blocks);
+		BlockIndex* block = m_block.m_area->m_simulation.m_random.getInVector(blocks);
 		item->setLocation(*block);
 	}
 }

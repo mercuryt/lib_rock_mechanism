@@ -27,7 +27,7 @@ void InfoPopup::makeWindow()
 	m_childWindow->add(m_grid);
 }
 void InfoPopup::add(tgui::Widget::Ptr widget) { m_grid->addWidget(widget, ++m_count, 1); }
-void InfoPopup::display(Block& block)
+void InfoPopup::display(BlockIndex& block)
 {
 	makeWindow();
 	if(block.isSolid())

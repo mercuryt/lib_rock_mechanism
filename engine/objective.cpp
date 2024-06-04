@@ -1,7 +1,6 @@
 //ObjectiveTypePrioritySet
 #include "objective.h"
 #include "area.h"
-#include "block.h"
 #include "deserializationMemo.h"
 #include "simulation.h"
 #include "simulation/hasActors.h"
@@ -323,15 +322,15 @@ void HasObjectives::destroy(Objective& objective)
 	}
 	m_actor.m_canReserve.deleteAllWithoutCallback();
 	m_actor.m_canFollow.maybeDisband();
-	HasShape* wasCarrying = m_actor.m_canPickup.putDownIfAny(*m_actor.m_location);
+	HasShape* wasCarrying = m_actor.m_canPickup.putDownIfAny(m_actor.m_location);
 	if(wasCarrying != nullptr && m_actor.getFaction() != nullptr)
 	{
 		if(wasCarrying->isItem())
 		{
 			Item& item = static_cast<Item&>(*wasCarrying);
 			Faction& faction = *m_actor.getFaction();
-			if(m_actor.m_location->m_area->m_hasStockPiles.contains(faction))
-				m_actor.m_location->m_area->m_hasStockPiles.at(faction).addItem(item);
+			if(m_actor.m_area->m_hasStockPiles.contains(faction))
+				m_actor.m_area->m_hasStockPiles.at(faction).addItem(item);
 		}
 		else
 		{

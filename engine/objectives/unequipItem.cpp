@@ -1,15 +1,16 @@
 #include "unequipItem.h"
 #include "../actor.h"
-#include "../block.h"
-#include "item.h"
+#include "../area.h"
+#include "../item.h"
 #include "../deserializationMemo.h"
 
-UnequipItemObjective::UnequipItemObjective(Actor& actor, Item& item, Block& block) : Objective(actor, Config::equipPriority), m_item(item), m_block(block) { }
+UnequipItemObjective::UnequipItemObjective(Actor& actor, Item& item, BlockIndex block) : 
+	Objective(actor, Config::equipPriority), m_item(item), m_block(block) { }
 
 UnequipItemObjective::UnequipItemObjective(const Json& data, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo), 
 	m_item(deserializationMemo.itemReference(data["item"])),
-	m_block(deserializationMemo.blockReference(data["block"])) { }
+	m_block(data["block"].get<BlockIndex>()) { }
 Json UnequipItemObjective::toJson() const
 {
 	Json data = Objective::toJson();
@@ -25,7 +26,8 @@ void UnequipItemObjective::execute()
 		m_actor.m_canMove.setDestinationAdjacentTo(m_block, false, false, false);
 	else
 	{
-		if(m_block.m_hasShapes.canEnterCurrentlyWithAnyFacing(m_item))
+		Blocks& blocks = m_actor.m_area->getBlocks();
+		if(blocks.shape_canEnterCurrentlyWithAnyFacing(m_block, m_item))
 		{
 			m_actor.m_equipmentSet.removeEquipment(m_item);
 			m_item.setLocation(m_block);

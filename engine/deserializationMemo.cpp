@@ -1,8 +1,8 @@
 #include "deserializationMemo.h"
 #include "simulation.h"
 #include "simulation/hasActors.h"
+#include "simulation/hasAreas.h"
 #include "simulation/hasItems.h"
-#include "block.h"
 #include "targetedHaul.h"
 #include "construct.h"
 #include "dig.h"
@@ -23,10 +23,14 @@
 //#include "worldforge/world.h"
 #include <cstdint>
 Faction& DeserializationMemo::faction(std::wstring name) { return m_simulation.m_hasFactions.byName(name); }
-Plant& DeserializationMemo::plantReference(const Json& data) { return m_simulation.getBlockForJsonQuery(data).m_hasPlant.get(); }
-Block& DeserializationMemo::blockReference(const Json& data) { return m_simulation.getBlockForJsonQuery(data); }
+Plant& DeserializationMemo::plantReference(const Json& data) 
+{ 
+	Area& area = m_simulation.m_hasAreas->getById(data["area"].get<AreaId>());
+	return area.getBlocks().plant_get(data["block"].get<BlockIndex>());
+}
 Item& DeserializationMemo::itemReference(const Json& data) { return m_simulation.m_hasItems->getById(data.get<ItemId>()); }
 Actor& DeserializationMemo::actorReference(const Json& data) { return m_simulation.m_hasActors->getById(data.get<ActorId>()); }
+Area& DeserializationMemo::area(const Json& data) { return m_simulation.m_hasAreas->getById(data.get<AreaId>()); }
 ProjectRequirementCounts& DeserializationMemo::projectRequirementCountsReference(const Json& data) { return *m_projectRequirementCounts.at(data.get<uintptr_t>()); }
 //WorldLocation& DeserializationMemo::getLocationByNormalizedLatLng(const Json& data) { return m_simulation.m_world->getLocationByNormalizedLatLng(data.get<LatLng>()); }
 std::unique_ptr<Objective> DeserializationMemo::loadObjective(const Json& data)
