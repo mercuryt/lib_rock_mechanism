@@ -1,14 +1,14 @@
 #pragma once
 #include "objective.h"
 #include "config.h"
-class Block;
+#include "types.h"
 class Actor;
 struct DeserializationMemo;
 class StationObjective final : public Objective
 {
-	Block& m_location;
+	BlockIndex m_location = BLOCK_INDEX_MAX;
 public:
-	StationObjective(Actor& a, Block& l) : Objective(a, Config::stationPriority), m_location(l) { }
+	StationObjective(Actor& a, BlockIndex l) : Objective(a, Config::stationPriority), m_location(l) { }
 	StationObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	void execute();
 	void cancel() { }
@@ -21,8 +21,8 @@ public:
 class StationInputAction final : public InputAction
 {
 public:
-	Block& m_block;
-	StationInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, Block& b);
+	BlockIndex& m_block;
+	StationInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, BlockIndex& b);
 	void execute();
 };
 */

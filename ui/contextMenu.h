@@ -1,7 +1,7 @@
 #pragma once
 #include <TGUI/TGUI.hpp>
 class Window;
-class Block;
+class BlockIndex;
 struct MaterialType;
 struct BlockFeatureType;
 struct ContextMenuSegment final
@@ -25,18 +25,18 @@ class ContextMenu final
 	std::vector<ContextMenuSegment> m_submenus;
 public:
 	ContextMenu(Window& window, tgui::Group::Ptr gameOverlayGroup);
-	void draw(Block& block);
-	void drawDigControls(Block& block);
-	void drawConstructControls(Block& block);
-	void construct(Block& block, bool constructed, const MaterialType& materialType, const BlockFeatureType* blockFeatureType);
-	void drawActorControls(Block& block);
-	void drawPlantControls(Block& block);
-	void drawItemControls(Block& block);
-	void drawFluidControls(Block& block);
-	void drawFarmFieldControls(Block& block);
-	void drawStockPileControls(Block& block);
-	void drawCraftControls(Block& block);
-	void drawWoodCuttingControls(Block& block);
+	void draw(BlockIndex& block);
+	void drawDigControls(BlockIndex& block);
+	void drawConstructControls(BlockIndex& block);
+	void construct(BlockIndex& block, bool constructed, const MaterialType& materialType, const BlockFeatureType* blockFeatureType);
+	void drawActorControls(BlockIndex& block);
+	void drawPlantControls(BlockIndex& block);
+	void drawItemControls(BlockIndex& block);
+	void drawFluidControls(BlockIndex& block);
+	void drawFarmFieldControls(BlockIndex& block);
+	void drawStockPileControls(BlockIndex& block);
+	void drawCraftControls(BlockIndex& block);
+	void drawWoodCuttingControls(BlockIndex& block);
 	void hide();
 	ContextMenuSegment& makeSubmenu(size_t index);
 	[[nodiscard]] bool isVisible() const { return m_root.m_panel->isVisible(); }

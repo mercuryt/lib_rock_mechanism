@@ -1,5 +1,5 @@
 #include "uniform.h"
-#include "block.h"
+#include "area.h"
 #include "item.h"
 #include "deserializationMemo.h"
 #include "objective.h"
@@ -38,13 +38,13 @@ void UniformThreadedTask::writeStep()
 			m_objective.m_threadedTask.create(m_objective);
 		else
 		{
-			Block* block = m_findsPath.getBlockWhichPassedPredicate();
-			if(!m_objective.blockContainsItem(*block))
+			BlockIndex block = m_findsPath.getBlockWhichPassedPredicate();
+			if(!m_objective.blockContainsItem(block))
 				// Destination no longer suitable.
 				m_objective.m_threadedTask.create(m_objective);
 			else
 			{
-				Item* item = m_objective.getItemAtBlock(*block);
+				Item* item = m_objective.getItemAtBlock(block);
 				if(!item)
 					m_objective.m_threadedTask.create(m_objective);
 				else
@@ -60,7 +60,7 @@ void UniformThreadedTask::writeStep()
 	{
 		if(m_findsPath.m_useCurrentLocation)
 		{
-			Item* item = m_objective.getItemAtBlock(*m_findsPath.getBlockWhichPassedPredicate());
+			Item* item = m_objective.getItemAtBlock(m_findsPath.getBlockWhichPassedPredicate());
 			if(!item)
 				m_objective.m_threadedTask.create(m_objective);
 			else
@@ -108,10 +108,10 @@ void UniformObjective::execute()
 	}		
 	else
 	{
-		std::function<bool(const Block&)> predicate = [&](const Block& block){ return blockContainsItem(block); };
-		Block* adjacent = m_actor.getBlockWhichIsAdjacentWithPredicate(predicate);
-		if(adjacent)
-			equip(*getItemAtBlock(*adjacent));
+		std::function<bool(BlockIndex)> predicate = [&](BlockIndex block){ return blockContainsItem(block); };
+		BlockIndex adjacent = m_actor.getBlockWhichIsAdjacentWithPredicate(predicate);
+		if(adjacent != BLOCK_INDEX_MAX)
+			equip(*getItemAtBlock(adjacent));
 		else
 			m_threadedTask.create(*this);
 	}
@@ -128,9 +128,9 @@ void UniformObjective::reset()
 	m_threadedTask.maybeCancel();
 	m_item = nullptr;
 }
-Item* UniformObjective::getItemAtBlock(const Block& block)
+Item* UniformObjective::getItemAtBlock(BlockIndex block)
 {
-	for(Item* item : block.m_hasItems.getAll())
+	for(Item* item : m_actor.m_area->getBlocks().item_getAll(block))
 		for(auto& element : m_elementsCopy)
 			if(element.itemQuery.query(*item))
 				return item;
@@ -188,7 +188,7 @@ void ActorHasUniform::clearObjective([[maybe_unused]] UniformObjective& objectiv
 UniformThreadedTask::UniformThreadedTask(UniformObjective& objective) : ThreadedTask(objective.m_actor.getThreadedTaskEngine()), m_objective(objective), m_findsPath(objective.m_actor, false) { }
 void UniformThreadedTask::readStep()
 {
-	std::function<bool(const Block&)> predicate = [&](const Block& block){
+	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block){
 		return m_objective.blockContainsItem(block);
 	};
 	m_findsPath.pathToAdjacentToPredicate(predicate);

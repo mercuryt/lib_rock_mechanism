@@ -4,7 +4,7 @@
 #include "mistDisperseEvent.h"
 struct FluidType;
 class FluidGroup;
-class Block;
+class BlockIndex;
 struct DeserializationMemo;
 // Fluid type and volume pairs are sorted by density, low to high.
 // This is useful for resolving overfill.
@@ -19,14 +19,14 @@ class BlockHasFluids final
 	// TODO: Try replacing with a flatmap.
 	// TODO: HasFluids.
 	std::map<const FluidType*, std::pair<CollisionVolume, FluidGroup*>, SortByDensity> m_fluids;
-	Block& m_block;
+	BlockIndex& m_block;
 	const FluidType* m_mist = nullptr;
 	//TODO: remove mistSource?
 	const FluidType* m_mistSource = nullptr;
 	CollisionVolume m_totalFluidVolume = 0;
 	DistanceInBlocks m_mistInverseDistanceFromSource = 0;
 public:
-	BlockHasFluids(Block& block) : m_block(block) { }
+	BlockHasFluids(BlockIndex& block) : m_block(block) { }
 	void load(const Json& data, const DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	void spawnMist(const FluidType& fluidType, DistanceInBlocks maxMistSpread = 0);

@@ -14,9 +14,9 @@ Actor& SimulationHasActors::createActor(ActorParamaters params)
 	assert(emplaced);
 	return iter->second;
 }
-Actor& SimulationHasActors::createActor(const AnimalSpecies& species, Block& location, Percent percentGrown)
+Actor& SimulationHasActors::createActor(const AnimalSpecies& species, BlockIndex location, Percent percentGrown)
 {
-	return createActor(ActorParamaters{.species = species, .percentGrown = percentGrown, .location = &location});
+	return createActor(ActorParamaters{.species = species, .percentGrown = percentGrown, .location = location});
 }
 void SimulationHasActors::destroyActor(Actor& actor)
 {

@@ -12,13 +12,14 @@ TEST_CASE("wound")
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	Blocks& blocks = area.getBlocks();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
-	Actor& actor = simulation.m_hasActors->createActor(dwarf, area.getBlock(1, 1, 2));
-	Block& pondLocation = area.getBlock(3, 7, 1);
-	pondLocation.setNotSolid();
-	pondLocation.m_hasFluids.addFluid(Config::maxBlockVolume, FluidType::byName("water"));
+	Actor& actor = simulation.m_hasActors->createActor(dwarf, blocks.getIndex({1, 1, 2}));
+	BlockIndex pondLocation = blocks.getIndex({3, 7, 1});
+	blocks.solid_setNot(pondLocation);
+	blocks.fluid_add(pondLocation, Config::maxBlockVolume, FluidType::byName("water"));
 	Item& fruit = simulation.m_hasItems->createItemGeneric(ItemType::byName("apple"), MaterialType::byName("fruit"), 50u);
-	Block& fruitLocation = area.getBlock(6, 5, 2);
+	BlockIndex fruitLocation = blocks.getIndex({6, 5, 2});
 	fruit.setLocation(fruitLocation);
 	SUBCASE("bleed to death")
 	{

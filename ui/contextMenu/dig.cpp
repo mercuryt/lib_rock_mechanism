@@ -2,7 +2,7 @@
 #include "../window.h"
 #include "../displayData.h"
 #include "../../engine/block.h"
-void ContextMenu::drawDigControls(Block& block)
+void ContextMenu::drawDigControls(BlockIndex& block)
 {
 	if(m_window.getFaction() && block.hasDesignation(*m_window.getFaction(), BlockDesignation::Dig))
 	{
@@ -10,7 +10,7 @@ void ContextMenu::drawDigControls(Block& block)
 		m_root.add(cancelButton);
 		cancelButton->onClick([this]{
 			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-			for(Block* selectedBlock : m_window.getSelectedBlocks())
+			for(BlockIndex* selectedBlock : m_window.getSelectedBlocks())
 				if(selectedBlock->hasDesignation(*m_window.getFaction(), BlockDesignation::Dig))
 					m_window.getArea()->m_hasDigDesignations.undesignate(*m_window.getFaction(), *selectedBlock);
 			hide();
@@ -24,7 +24,7 @@ void ContextMenu::drawDigControls(Block& block)
 		m_root.add(digButton);
 		digButton->onClick([this]{
 			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-			for(Block* selectedBlock : m_window.getSelectedBlocks())
+			for(BlockIndex* selectedBlock : m_window.getSelectedBlocks())
 			{
 				if(m_window.m_editMode)
 				{
@@ -48,7 +48,7 @@ void ContextMenu::drawDigControls(Block& block)
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				assert(widgetUtil::lastSelectedBlockFeatureType);
 				const BlockFeatureType& featureType = *widgetUtil::lastSelectedBlockFeatureType;
-				for(Block* selectedBlock : m_window.getSelectedBlocks())
+				for(BlockIndex* selectedBlock : m_window.getSelectedBlocks())
 					if(selectedBlock->isSolid())
 					{
 						if(m_window.m_editMode)

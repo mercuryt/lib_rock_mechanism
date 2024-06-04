@@ -1,14 +1,15 @@
 #include "fight.h"
 
 #include "actor.h"
+#include "area.h"
 #include "attackType.h"
 #include "simulation.h"
 #include "simulation/hasActors.h"
 #include "skill.h"
+#include "types.h"
 #include "util.h"
 #include "actor.h"
 #include "weaponType.h"
-#include "block.h"
 #include "item.h"
 #include "config.h"
 #include "random.h"
@@ -120,8 +121,9 @@ void CanFight::coolDownCompleted()
 {
 	if(m_target == nullptr)
 		return;
+	Blocks& blocks = m_actor.m_area->getBlocks();
 	//TODO: Move line of sight check to threaded task?
-	if(m_actor.m_location->taxiDistance(*m_target->m_location) <= m_maxMeleeRange && m_actor.m_location->hasLineOfSightTo(*m_target->m_location))
+	if(blocks.taxiDistance(m_actor.m_location, m_target->m_location) <= m_maxMeleeRange && blocks.hasLineOfSightTo(m_actor.m_location, m_target->m_location))
 		attackMeleeRange(*m_target);
 }
 void CanFight::update()
@@ -212,15 +214,16 @@ void CanFight::removeTargetedBy(Actor& actor)
 	assert(m_targetedBy.contains(&m_actor));
 	m_targetedBy.erase(&actor);
 }
-void CanFight::onMoveFrom(Block& previous)
+void CanFight::onMoveFrom(BlockIndex previous)
 {
 	// Notify all targeting actors of move so they may reroute.
 	for(Actor* actor : m_targetedBy)
 		actor->m_canFight.onTargetMoved();
 	// Give all directly adjacent enemies a free hit against this actor.
-	for(Block* block : previous.m_adjacents)
-		if(block)
-			for(Actor* actor : block->m_hasActors.getAll())
+	Blocks& blocks = m_actor.m_area->getBlocks();
+	for(BlockIndex block : blocks.getDirectlyAdjacent(previous))
+		if(block != BLOCK_INDEX_MAX)
+			for(Actor* actor : blocks.actor_getAll(block))
 				if(actor->getFaction()->enemies.contains(const_cast<Faction*>(m_actor.getFaction())))
 					actor->m_canFight.freeHit(m_actor);
 }
@@ -259,7 +262,11 @@ void CanFight::freeHit(Actor& actor)
 	attackMeleeRange(actor);
 }
 bool CanFight::isOnCoolDown() const { return m_coolDown.exists(); }
-bool CanFight::inRange(const Actor& target) const { return m_actor.m_location->distance(*target.m_location) <= m_maxRange; }
+bool CanFight::inRange(const Actor& target) const 
+{
+	Blocks& blocks = m_actor.m_area->getBlocks();
+       	return blocks.distance(m_actor.m_location, target.m_location) <= m_maxRange;
+}
 Percent CanFight::projectileHitPercent(const Attack& attack, const Actor& target) const
 {
 	Percent chance = 100 - pow(m_actor.distanceTo(target), Config::projectileHitChanceFallsOffWithRangeExponent);
@@ -285,18 +292,19 @@ float CanFight::getQualityModifier(uint32_t quality) const
 	int32_t adjusted = (int32_t)quality - (int32_t)Config::averageItemQuality;
 	return 1.f + (adjusted * Config::itemQualityCombatModifier);
 }
-bool CanFight::blockIsValidPosition(const Block& block, uint32_t attackRangeSquared) const
+bool CanFight::blockIsValidPosition(BlockIndex block, uint32_t attackRangeSquared) const
 {
-	if(m_target->m_blocks.contains(const_cast<Block*>(&block)))
+	if(m_target->m_blocks.contains(block))
 		return true;
-	if(block.squareOfDistanceIsMoreThen(*m_target->m_location, attackRangeSquared))
+	Blocks& blocks = m_actor.m_area->getBlocks();
+	if(blocks.squareOfDistanceIsMoreThen(block, m_target->m_location, attackRangeSquared))
 		return false;
-	return block.hasLineOfSightTo(*m_target->m_location);
+	return blocks.hasLineOfSightTo(block, m_target->m_location);
 }
-bool CanFight::predicate(const Block& block, Facing facing, uint32_t attackRangeSquared) const
+bool CanFight::predicate(BlockIndex block, Facing facing, uint32_t attackRangeSquared) const
 {
-	std::function<bool(const Block&)> occupiedCondition = [&](const Block& block) { return blockIsValidPosition(block, attackRangeSquared); };
-	return m_actor.getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(block, facing, occupiedCondition) != nullptr;
+	std::function<bool(BlockIndex)> occupiedCondition = [&](BlockIndex block) { return blockIsValidPosition(block, attackRangeSquared); };
+	return m_actor.getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(block, facing, occupiedCondition) != BLOCK_INDEX_MAX;
 }
 AttackType& CanFight::getRangedAttackType(Item& weapon)
 {
@@ -314,12 +322,12 @@ AttackCoolDown::AttackCoolDown(CanFight& cf, Step duration, const Step start) : 
 GetIntoAttackPositionThreadedTask::GetIntoAttackPositionThreadedTask(Actor& a, Actor& t, float ar) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_target(t), m_attackRangeSquared(ar * ar), m_findsPath(a, true) {}
 void GetIntoAttackPositionThreadedTask::readStep()
 {
-	std::function<bool(const Block&, Facing)> destinationCondition = [&](const Block& location, Facing facing)
+	std::function<bool(BlockIndex, Facing)> destinationCondition = [&](BlockIndex location, Facing facing)
 	{
 		return m_actor.m_canFight.predicate(location, facing, m_attackRangeSquared);
 	};
 	// TODO: Range attack actors should use a different path priority condition to avoid getting too close.
-	m_findsPath.pathToPredicateWithHuristicDestination(destinationCondition, *m_target.m_location);
+	m_findsPath.pathToPredicateWithHuristicDestination(destinationCondition, m_target.m_location);
 }
 void GetIntoAttackPositionThreadedTask::writeStep()
 {

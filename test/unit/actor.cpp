@@ -16,27 +16,29 @@ TEST_CASE("actor")
 	static const AnimalSpecies& troll = AnimalSpecies::byName("troll");
 	static const MaterialType& marble = MaterialType::byName("marble");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	Blocks& blocks = area.getBlocks();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
-	Block& origin1 = area.getBlock(5, 5, 1);
-	Block& origin2 = area.getBlock(7, 7, 1);
-	Block& block1 = area.getBlock(6, 7, 1);
-	Block& block2 = area.getBlock(7, 8, 1);
-	Block& block3 = area.getBlock(6, 8, 1);
+	BlockIndex origin1 = blocks.getIndex({5, 5, 1});
+	BlockIndex origin2 = blocks.getIndex({7, 7, 1});
+	BlockIndex block1 = blocks.getIndex({6, 7, 1});
+	BlockIndex block2 = blocks.getIndex({7, 8, 1});
+	BlockIndex block3 = blocks.getIndex({6, 8, 1});
 	SUBCASE("single tile")
 	{
 		int previousEventCount = simulation.m_eventSchedule.count();
 		Actor& dwarf1 = simulation.m_hasActors->createActor(ActorParamaters{
 			.species=dwarf, 
 			.percentGrown=100,
-			.location=&origin1
+			.location=origin1,
+			.area=&area,
 		});
 		REQUIRE(dwarf1.m_name == L"dwarf1");
 		REQUIRE(dwarf1.m_canGrow.growthPercent() == 100);
 		REQUIRE(!dwarf1.m_canGrow.isGrowing());
 		REQUIRE(dwarf1.m_shape->name == "oneByOneFull");
 		REQUIRE(simulation.m_eventSchedule.count() - previousEventCount == 3);
-		REQUIRE(dwarf1.m_location == &origin1);
-		REQUIRE(dwarf1.m_location->m_hasShapes.contains(dwarf1));
+		REQUIRE(dwarf1.m_location == origin1);
+		REQUIRE(blocks.shape_contains(dwarf1.m_location, dwarf1));
 		REQUIRE(dwarf1.m_canFight.getCombatScore() != 0);
 	}
 	SUBCASE("multi tile")
@@ -45,24 +47,26 @@ TEST_CASE("actor")
 		Actor& troll1 = simulation.m_hasActors->createActor(ActorParamaters{
 			.species=troll, 
 			.percentGrown=100,
-			.location=&origin2
+			.location=origin2,
+			.area=&area,
 		});
-		REQUIRE(origin2.m_hasShapes.contains(troll1));
-		REQUIRE(block1.m_hasShapes.contains(troll1));
-		REQUIRE(block2.m_hasShapes.contains(troll1));
-		REQUIRE(block3.m_hasShapes.contains(troll1));
+		REQUIRE(blocks.shape_contains(origin2, troll1));
+		REQUIRE(blocks.shape_contains(block1, troll1));
+		REQUIRE(blocks.shape_contains(block2, troll1));
+		REQUIRE(blocks.shape_contains(block3, troll1));
 	}
 	SUBCASE("growth")
 	{
 		Actor& dwarf1 = simulation.m_hasActors->createActor(ActorParamaters{
 			.species=dwarf, 
 			.percentGrown=45,
-			.location=&origin1,
+			.location=origin1,
+			.area=&area,
 		});
-		area.getBlock(7, 7, 0).setNotSolid();
-		area.getBlock(7, 7, 0).m_hasFluids.addFluid(100, FluidType::byName("water"));
+		blocks.solid_setNot(blocks.getIndex({7, 7, 0}));
+		blocks.fluid_add(blocks.getIndex({7, 7, 0}), 100, FluidType::byName("water"));
 		Item& food = simulation.m_hasItems->createItemGeneric(ItemType::byName("apple"), MaterialType::byName("fruit"), 1000);
-		food.setLocation(block1);
+		food.setLocation(block1, &area);
 		REQUIRE(dwarf1.m_canGrow.getEventPercentComplete() == 0);
 		REQUIRE(dwarf1.m_canGrow.growthPercent() == 45);
 		REQUIRE(dwarf1.m_canGrow.isGrowing());

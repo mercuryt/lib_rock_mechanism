@@ -4,7 +4,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <functional>
-class Block;
 class HasShape;
 class Shape;
 class MoveType;
@@ -15,38 +14,37 @@ class CanReserve;
 class FindsPath
 {
 	const HasShape& m_hasShape;
-	std::vector<Block*> m_route;
-	std::unordered_map<Block*, std::vector<std::pair<Block*, MoveCost>>> m_moveCostsToCache;
-	Block* m_target;
-	bool m_detour;
+	std::vector<BlockIndex> m_route;
+	std::unordered_map<BlockIndex, std::vector<std::pair<BlockIndex, MoveCost>>> m_moveCostsToCache;
+	BlockIndex m_target = BLOCK_INDEX_MAX;
+	bool m_detour = false;
 public:
-	bool m_useCurrentLocation;
-	const Block* m_huristicDestination;
-	DistanceInBlocks m_maxRange;
+	bool m_useCurrentLocation = false;
+	BlockIndex m_huristicDestination = BLOCK_INDEX_MAX;
+	DistanceInBlocks m_maxRange = BLOCK_DISTANCE_MAX;
 	FindsPath(const HasShape& hs, bool detour);
-	void depthFirstSearch(std::function<bool(const Block&, const Block&)>& isValid, std::function<bool(const ProposedRouteStep&, const ProposedRouteStep&)>& compare, std::function<bool(const Block&)>& isDone, std::function<std::vector<std::pair<Block*, MoveCost>>(Block&)>& adjacentCosts, Block& start);
-	void pathToBlock(const Block& destination);
-	void pathAdjacentToBlock(const Block& destination);
-	void pathToPredicate(std::function<bool(const Block&, Facing facing)>& predicate);
-	void pathToAdjacentToPredicate(std::function<bool(const Block&)>& predicate);
-	void pathToOccupiedPredicate(std::function<bool(const Block&)>& predicate);
-	void pathToUnreservedAdjacentToPredicate(std::function<bool(const Block&)>& predicate, Faction& faction);
-	void pathToUnreservedPredicate(std::function<bool(const Block&)>& predicate, Faction& faction);
+	void depthFirstSearch(std::function<bool(BlockIndex, BlockIndex)>& isValid, std::function<bool(const ProposedRouteStep&, const ProposedRouteStep&)>& compare, std::function<bool(BlockIndex)>& isDone, std::function<std::vector<std::pair<BlockIndex, MoveCost>>(BlockIndex)>& adjacentCosts, BlockIndex start);
+	void pathToBlock(BlockIndex destination);
+	void pathAdjacentToBlock(BlockIndex destination);
+	void pathToPredicate(DestinationCondition& predicate);
+	void pathToAdjacentToPredicate(std::function<bool(BlockIndex)>& predicate);
+	void pathToOccupiedPredicate(std::function<bool(BlockIndex)>& predicate);
+	void pathToUnreservedAdjacentToPredicate(std::function<bool(BlockIndex)>& predicate, Faction& faction);
+	void pathToUnreservedPredicate(std::function<bool(BlockIndex)>& predicate, Faction& faction);
 	void pathToUnreservedAdjacentToHasShape(const HasShape& hasShape, Faction& faction);
-	void pathToPredicateWithHuristicDestination(std::function<bool(const Block&, Facing facing)>& predicate, const Block& huristicDestination);
+	void pathToPredicateWithHuristicDestination(DestinationCondition& predicate, BlockIndex huristicDestination);
 	void pathToAreaEdge();
-	void cacheMoveCosts();
 	void reserveBlocksAtDestination(CanReserve& canReserve);
 	void reset();
 	//TODO: make return reference and assert found().
-	[[nodiscard]] Block* getBlockWhichPassedPredicate() { return m_target; }
-	[[nodiscard]] std::vector<std::pair<Block*, MoveCost>> getMoveCosts(const Block& block);
+	[[nodiscard]] BlockIndex getBlockWhichPassedPredicate() { return m_target; }
+	[[nodiscard]] std::vector<std::pair<BlockIndex, MoveCost>> getMoveCosts(BlockIndex block);
 	[[nodiscard]] Facing getFacingAtDestination() const;
-	[[nodiscard]] std::vector<Block*> getAdjacentBlocksAtEndOfPath();
-	[[nodiscard]] std::vector<Block*> getOccupiedBlocksAtEndOfPath();
-	[[nodiscard]] std::vector<Block*>& getPath() { return m_route; }
+	[[nodiscard]] std::vector<BlockIndex> getAdjacentBlocksAtEndOfPath();
+	[[nodiscard]] std::vector<BlockIndex> getOccupiedBlocksAtEndOfPath();
+	[[nodiscard]] std::vector<BlockIndex>& getPath() { return m_route; }
 	[[nodiscard]] bool found() const { return !m_route.empty(); }
 	[[nodiscard]] bool areAllBlocksAtDestinationReservable(Faction* faction) const;
 	// For testing.
-	[[maybe_unused, nodiscard]] std::unordered_map<Block*, std::vector<std::pair<Block*, MoveCost>>>& getMoveCostsToCache() { return m_moveCostsToCache; }
+	[[maybe_unused, nodiscard]] std::unordered_map<BlockIndex, std::vector<std::pair<BlockIndex, MoveCost>>>& getMoveCostsToCache() { return m_moveCostsToCache; }
 };

@@ -12,7 +12,6 @@
 #include <utility>
 
 class Actor;
-class Block;
 class Item;
 class AttackCoolDown;
 class GetIntoAttackPositionThreadedTask;
@@ -50,7 +49,7 @@ public:
 	void setTarget(Actor& actor);
 	void recordTargetedBy(Actor& actor);
 	void removeTargetedBy(Actor& actor);
-	void onMoveFrom(Block& previous);
+	void onMoveFrom(BlockIndex previous);
 	void onDeath();
 	void onLeaveArea();
 	void noLongerTargetable();
@@ -67,8 +66,8 @@ public:
 	[[nodiscard]] uint32_t getCombatScoreForAttack(const Attack& attack) const;
 	[[nodiscard]] const Attack& getAttackForCombatScoreDifference(const uint32_t scoreDifference) const;
 	[[nodiscard]] float getQualityModifier(uint32_t quality) const;
-	[[nodiscard]] bool blockIsValidPosition(const Block& block, uint32_t attackRangeSquared) const;
-	[[nodiscard]] bool predicate(const Block& block, Facing facing, uint32_t attackRangeSquared) const;
+	[[nodiscard]] bool blockIsValidPosition(BlockIndex block, uint32_t attackRangeSquared) const;
+	[[nodiscard]] bool predicate(BlockIndex block, Facing facing, uint32_t attackRangeSquared) const;
 	AttackType& getRangedAttackType(Item& weapon);
 	friend class AttackCoolDown;
 	friend class GetIntoAttackPositionThreadedTask;

@@ -5,8 +5,9 @@
 #include "../../animalSpecies.h"
 #include "../../config.h"
 #include "../../simulation.h"
-#include "simulation/hasActors.h"
-#include "util.h"
+#include "../../simulation/hasActors.h"
+#include "../../types.h"
+#include "../../util.h"
 #include <string>
 AnimalsArriveDramaArc::AnimalsArriveDramaArc(DramaEngine& engine, Area& area) : 
 	DramaArc(engine, DramaArcType::AnimalsArrive, &area), m_scheduledEvent(area.m_simulation.m_eventSchedule)
@@ -31,13 +32,13 @@ void AnimalsArriveDramaArc::callback()
 	auto& random = m_area->m_simulation.m_random;
 	if(m_isActive)
 	{
-		std::unordered_set<Block*> exclude;
+		std::unordered_set<BlockIndex> exclude;
 		// Spawn.
 		while(m_quantity--)
 		{
 			Percent percentGrown = std::min(100, random.getInRange(15, 500));
 			constexpr DistanceInBlocks maxBlockDistance = 10;
-			Block* location = findLocationOnEdgeForNear(m_species->shapeForPercentGrown(percentGrown), m_species->moveType, *m_entranceBlock, maxBlockDistance, exclude);
+			BlockIndex location = findLocationOnEdgeForNear(m_species->shapeForPercentGrown(percentGrown), m_species->moveType, m_entranceBlock, maxBlockDistance, exclude);
 			if(location)
 			{
 				exclude.insert(location);
@@ -62,7 +63,7 @@ void AnimalsArriveDramaArc::callback()
 		{
 			scheduleDepart();
 			m_isActive = false;
-			m_entranceBlock = nullptr;
+			m_entranceBlock = BLOCK_INDEX_MAX;
 			m_species = nullptr;
 			m_hungerPercent = 0;
 			m_thristPercent = 0;
@@ -78,7 +79,7 @@ void AnimalsArriveDramaArc::callback()
 		m_quantity = quantity;
 		// Find entry point.
 		m_entranceBlock = getEntranceToArea(*m_area, species->shapeForPercentGrown(100), species->moveType);
-		if(!m_entranceBlock)
+		if(m_entranceBlock == BLOCK_INDEX_MAX)
 			scheduleArrive();
 		else
 		{

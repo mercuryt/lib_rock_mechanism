@@ -1,6 +1,8 @@
 #include "shape.h"
-#include "block.h"
+#include "blocks/blocks.h"
+#include "cuboid.h"
 #include "deserializationMemo.h"
+#include "types.h"
 #include "util.h"
 #include <string>
 #include <sys/types.h>
@@ -84,27 +86,39 @@ std::vector<std::array<int32_t, 3>> Shape::positionOffsets(std::array<int32_t, 4
 	return output;
 }
 
-std::vector<Block*> Shape::getBlocksOccupiedAt(const Block& location, Facing facing) const
+std::vector<BlockIndex> Shape::getBlocksOccupiedAt(const Blocks& blocks, BlockIndex location, Facing facing) const
 {
-	std::vector<Block*> output;
+	std::vector<BlockIndex> output;
 	output.reserve(positions.size());
-	for(auto& [x, y, z, v] : positionsWithFacing(facing))
+	for(auto [x, y, z, v] : occupiedOffsetsCache.at(facing))
 	{
-		Block* block = location.offset(x, y, z);
-		if(block != nullptr)
-			output.push_back(block);
+		BlockIndex block = blocks.offset(location, x, y, z);
+		assert(block != BLOCK_INDEX_MAX);
+		output.push_back(block);
 	}
 	return output;
 }
-std::vector<std::pair<Block*, Volume>> Shape::getBlocksOccupiedAtWithVolumes(const Block& location, Facing facing) const
+std::vector<std::pair<BlockIndex, Volume>> Shape::getBlocksOccupiedAtWithVolumes(const Blocks& blocks, BlockIndex location, Facing facing) const
 {
-	std::vector<std::pair<Block*, Volume>> output;
+	std::vector<std::pair<BlockIndex, Volume>> output;
 	output.reserve(positions.size());
 	for(auto& [x, y, z, v] : positionsWithFacing(facing))
 	{
-		Block* block = location.offset(x, y, z);
-		if(block != nullptr)
+		BlockIndex block = blocks.offset(location, x, y, z);
+		if(block != BLOCK_INDEX_MAX)
 			output.emplace_back(block, v);
+	}
+	return output;
+}
+std::vector<BlockIndex> Shape::getBlocksWhichWouldBeAdjacentAt(const Blocks& blocks, BlockIndex location, Facing facing) const
+{
+	std::vector<BlockIndex> output;
+	output.reserve(positions.size());
+	for(auto [x, y, z] : adjacentOffsetsCache.at(facing))
+	{
+		BlockIndex block = blocks.offset(location, x, y, z);
+		assert(block != BLOCK_INDEX_MAX);
+		output.push_back(block);
 	}
 	return output;
 }

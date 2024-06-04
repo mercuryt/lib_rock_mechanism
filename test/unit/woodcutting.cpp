@@ -13,17 +13,18 @@ TEST_CASE("woodcutting")
 	const ItemType& log = ItemType::byName("log");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	Blocks& blocks = area.getBlocks();
 	areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName("dirt"));
-	Block& treeLocation = area.getBlock(5, 5, 1);
-	treeLocation.m_hasPlant.createPlant(PlantSpecies::byName("poplar tree"), 100);
-	REQUIRE(treeLocation.m_hasPlant.get().m_blocks.size() == 5);
+	BlockIndex treeLocation = blocks.getIndex({5, 5, 1});
+	blocks.plant_create(treeLocation, PlantSpecies::byName("poplar tree"), 100);
+	REQUIRE(blocks.plant_get(treeLocation).m_blocks.size() == 5);
 	static Faction faction(L"Tower of Power");
 	area.m_blockDesignations.registerFaction(faction);
 	area.m_hasWoodCuttingDesignations.addFaction(faction);
 	Actor& dwarf = simulation.m_hasActors->createActor(ActorParamaters{
 		.species=AnimalSpecies::byName("dwarf"), 
 		.percentGrown=100,
-		.location=&area.getBlock(1,1,1), 
+		.location=blocks.getIndex({1,1,1}), 
 		.hasSidearm=false,
 	});
 	dwarf.setFaction(&faction);
@@ -35,7 +36,7 @@ TEST_CASE("woodcutting")
 	Project* project = nullptr;
 	SUBCASE("axe on ground")
 	{
-		axe.setLocation(area.getBlock(3,8,1));
+		axe.setLocation(blocks.getIndex({3,8,1}));
 		// One step to find the designation.
 		simulation.doStep();
 		REQUIRE(dwarf.m_project);
@@ -51,14 +52,14 @@ TEST_CASE("woodcutting")
 		// Another step to path to the axe.
 		simulation.doStep();
 		REQUIRE(!dwarf.m_canMove.getPath().empty());
-		REQUIRE(axe.isAdjacentTo(*dwarf.m_canMove.getDestination()));
-		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf, *axe.m_location);
+		REQUIRE(axe.isAdjacentTo(dwarf.m_canMove.getDestination()));
+		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf, axe.m_location);
 		REQUIRE(dwarf.m_canPickup.isCarrying(axe));
 		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf, treeLocation);
 		Step stepsDuration = project->getDuration();
 		simulation.fastForward(stepsDuration);
-		REQUIRE(!treeLocation.m_hasPlant.exists());
+		REQUIRE(!blocks.plant_exists(treeLocation));
 		REQUIRE(dwarf.m_hasObjectives.getCurrent().getObjectiveTypeId() != ObjectiveTypeId::WoodCutting);
 		REQUIRE(!dwarf.m_canPickup.isCarrying(axe));
 		REQUIRE(area.getTotalCountOfItemTypeOnSurface(log) == 10);
@@ -66,7 +67,7 @@ TEST_CASE("woodcutting")
 	}
 	SUBCASE("axe equiped, collect in stockpile")
 	{
-		Block& branchStockpileLocation = area.getBlock(8,8,1);
+		BlockIndex branchStockpileLocation = blocks.getIndex({8,8,1});
 		area.m_hasStockPiles.registerFaction(faction);
 		area.m_hasStocks.addFaction(faction);
 		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile({{branch, nullptr}});
@@ -89,7 +90,7 @@ TEST_CASE("woodcutting")
 		Step stepsDuration = project->getDuration();
 		// TODO: why plus 2?
 		simulation.fastForward(stepsDuration + 2);
-		REQUIRE(!treeLocation.m_hasPlant.exists());
+		REQUIRE(!blocks.plant_exists(treeLocation));
 		REQUIRE(area.getTotalCountOfItemTypeOnSurface(log) == 10);
 		REQUIRE(area.getTotalCountOfItemTypeOnSurface(branch) == 20);
 		REQUIRE(!objectiveType.canBeAssigned(dwarf));

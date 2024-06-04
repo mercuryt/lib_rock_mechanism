@@ -28,6 +28,11 @@ public:
 			return vector.at(getInRange((size_t)0, vector.size() - (size_t)1));
 		}
 	template<typename T>
+		T getInVector(const std::vector<T>& vector)
+		{
+			return vector.at(getInRange((size_t)0, vector.size() - (size_t)1));
+		}
+	template<typename T>
 		const T* getInVector(const std::vector<const T*>& vector)
 		{
 			return vector.at(getInRange((size_t)0, vector.size() - (size_t)1));

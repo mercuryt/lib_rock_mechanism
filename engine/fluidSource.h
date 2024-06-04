@@ -3,15 +3,14 @@
 #include "config.h"
 #include <vector>
 class FluidType;
-class Block;
 class Area;
 struct DeserializationMemo;
 struct FluidSource final
 {
-	Block* block;
+	BlockIndex block;
 	const FluidType* fluidType;
 	Volume level;
-	FluidSource(Block* b, const FluidType* ft, Volume l) : block(b), fluidType(ft), level(l) { }
+	FluidSource(BlockIndex b, const FluidType* ft, Volume l) : block(b), fluidType(ft), level(l) { }
 	FluidSource(const Json& data, DeserializationMemo& deserializationMemo);
 };
 class AreaHasFluidSources final
@@ -23,8 +22,8 @@ public:
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	void step();
-	void create(Block& block, const FluidType& fluidType, Volume level);
-	void destroy(Block&);
-	[[nodiscard]] bool contains(Block& block) const;
-	[[nodiscard]] const FluidSource& at(Block& block) const;
+	void create(BlockIndex block, const FluidType& fluidType, Volume level);
+	void destroy(BlockIndex);
+	[[nodiscard]] bool contains(BlockIndex block) const;
+	[[nodiscard]] const FluidSource& at(BlockIndex block) const;
 };

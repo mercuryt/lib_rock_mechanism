@@ -6,7 +6,6 @@
 #include "types.h"
 #include "util.h"
 #include "plant.h"
-#include "block.h"
 #include "item.h"
 #include "area.h"
 #include "simulation.h"
@@ -30,11 +29,25 @@ const PlantSpecies& PlantSpecies::byName(std::string name)
 	assert(found != plantSpeciesDataStore.end());
 	return *found;
 }
-Plant::Plant(Block& location, const PlantSpecies& pt, const Shape* shape, Percent pg, Volume volumeFluidRequested, Step needsFluidEventStart, bool temperatureIsUnsafe, Step unsafeTemperatureEventStart, uint32_t harvestableQuantity, Percent percentFoliage) :
-	HasShape(location.m_area->m_simulation, (shape ? *shape : pt.shapeForPercentGrown(pg)), true), m_reservable(1), m_growthEvent(location.m_area->m_simulation.m_eventSchedule), m_shapeGrowthEvent(location.m_area->m_simulation.m_eventSchedule), m_fluidEvent(location.m_area->m_simulation.m_eventSchedule), m_temperatureEvent(location.m_area->m_simulation.m_eventSchedule), m_endOfHarvestEvent(location.m_area->m_simulation.m_eventSchedule), m_foliageGrowthEvent(location.m_area->m_simulation.m_eventSchedule), m_fluidSource(nullptr), m_plantSpecies(pt), m_quantityToHarvest(harvestableQuantity), m_percentGrown(pg), m_percentFoliage(percentFoliage), m_volumeFluidRequested(volumeFluidRequested), m_wildGrowth(0)
+Plant::Plant(Area& area, BlockIndex location, const PlantSpecies& pt, const Shape* shape, Percent pg, Volume volumeFluidRequested, Step needsFluidEventStart, bool temperatureIsUnsafe, Step unsafeTemperatureEventStart, uint32_t harvestableQuantity, Percent percentFoliage) :
+	HasShape(area.m_simulation, (shape ? *shape : pt.shapeForPercentGrown(pg)), true), 
+	m_reservable(1), 
+	m_growthEvent(area.m_simulation.m_eventSchedule), 
+	m_shapeGrowthEvent(area.m_simulation.m_eventSchedule), 
+	m_fluidEvent(area.m_simulation.m_eventSchedule), 
+	m_temperatureEvent(area.m_simulation.m_eventSchedule), 
+	m_endOfHarvestEvent(area.m_simulation.m_eventSchedule), 
+	m_foliageGrowthEvent(area.m_simulation.m_eventSchedule), 
+	m_plantSpecies(pt), 
+	m_quantityToHarvest(harvestableQuantity), 
+	m_percentGrown(pg), 
+	m_percentFoliage(percentFoliage), 
+	m_volumeFluidRequested(volumeFluidRequested), 
+	m_wildGrowth(0)
 {
-	setLocation(location);
-	assert(m_location->m_hasPlant.canGrowHereEver(m_plantSpecies));
+	setLocation(location, &area);
+	auto& blocks = area.getBlocks();
+	assert(blocks.plant_canGrowHereEver(location, m_plantSpecies));
 	uint8_t wildGrowth = pt.wildGrowthForPercentGrown(m_percentGrown);
 	if(wildGrowth)
 		doWildGrowth(wildGrowth);
@@ -42,11 +55,11 @@ Plant::Plant(Block& location, const PlantSpecies& pt, const Shape* shape, Percen
 	if(temperatureIsUnsafe)
 		m_temperatureEvent.schedule(m_plantSpecies.stepsTillDieFromTemperature, *this, unsafeTemperatureEventStart);
 	updateGrowingStatus();
-	m_location->m_area->m_hasFarmFields.removeAllSowSeedsDesignations(*m_location);
+	area.m_hasFarmFields.removeAllSowSeedsDesignations(m_location);
 	// Fruit.
 	if(m_plantSpecies.harvestData)
 	{
-		uint16_t day = location.m_area->m_simulation.getDateTime().day;
+		uint16_t day = area.m_simulation.getDateTime().day;
 		uint16_t start = m_plantSpecies.harvestData->dayOfYearToStart;
 		if(day >= start)
 		{
@@ -56,19 +69,19 @@ Plant::Plant(Block& location, const PlantSpecies& pt, const Shape* shape, Percen
 		}
 	}
 }
-Plant::Plant(const Json& data, DeserializationMemo& deserializationMemo, Block& location) :
+Plant::Plant(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :
 	HasShape(data, deserializationMemo), 
-	m_reservable(1), m_growthEvent(location.m_area->m_simulation.m_eventSchedule),
-	m_shapeGrowthEvent(location.m_area->m_simulation.m_eventSchedule), m_fluidEvent(location.m_area->m_simulation.m_eventSchedule), 
-	m_temperatureEvent(location.m_area->m_simulation.m_eventSchedule), m_endOfHarvestEvent(location.m_area->m_simulation.m_eventSchedule),
-       	m_foliageGrowthEvent(location.m_area->m_simulation.m_eventSchedule), m_fluidSource(nullptr), 
+	m_reservable(1), m_growthEvent(area.m_simulation.m_eventSchedule),
+	m_shapeGrowthEvent(area.m_simulation.m_eventSchedule), m_fluidEvent(area.m_simulation.m_eventSchedule), 
+	m_temperatureEvent(area.m_simulation.m_eventSchedule), m_endOfHarvestEvent(area.m_simulation.m_eventSchedule),
+       	m_foliageGrowthEvent(area.m_simulation.m_eventSchedule),
 	m_plantSpecies(*data["species"].get<const PlantSpecies*>()), 
 	m_quantityToHarvest(data["harvestableQuantity"].get<uint32_t>()), m_percentGrown(data["percentGrown"].get<Percent>()), 
 	m_percentFoliage(data["percentFoliage"].get<Percent>()), m_volumeFluidRequested(data["volumeFluidRequested"].get<Volume>())
 {
-	setLocation(deserializationMemo.blockReference(data["location"]));
+	setLocation(data["location"].get<BlockIndex>(), &area);
 	if(data.contains("fluidSource"))
-		m_fluidSource = &deserializationMemo.blockReference(data["fluidSource"]);
+		m_fluidSource = data["fluidSource"].get<BlockIndex>();
 	if(data.contains("growthEventStart"))
 		m_growthEvent.schedule(data["growthEventDuration"].get<Step>(), *this, data["growthEventStart"].get<Step>());
 	if(data.contains("fluidEventStart"))
@@ -80,7 +93,6 @@ Plant::Plant(const Json& data, DeserializationMemo& deserializationMemo, Block& 
 	if(data.contains("foliageGrowthEventStart"))
 		m_foliageGrowthEvent.schedule(data["foliageGrowthEventDuration"].get<Step>(), *this, data["foliageGrowthEventStart"].get<Step>());
 }
-Plant::Plant(const Json& data, DeserializationMemo& deserializationMemo) : Plant(data, deserializationMemo, deserializationMemo.blockReference(data["location"])){ }
 Json Plant::toJson() const
 {
 	Json data = HasShape::toJson();
@@ -118,19 +130,20 @@ Json Plant::toJson() const
 	}
 	return data;
 }
-void to_json(Json& data, const Plant* const& plant){ data = plant->m_location->positionToJson(); }
+void to_json(Json& data, const Plant* const& plant){ data = plant->m_location; }
 void Plant::die()
 {
+	auto& blocks = m_area->getBlocks();
 	m_growthEvent.maybeUnschedule();
 	m_fluidEvent.maybeUnschedule();
 	m_temperatureEvent.maybeUnschedule();
 	m_endOfHarvestEvent.maybeUnschedule();
 	m_foliageGrowthEvent.maybeUnschedule();
-	m_location->m_isPartOfFarmField.removeAllHarvestDesignations();
-	m_location->m_isPartOfFarmField.removeAllGiveFluidDesignations();
-	Block& location = *m_location;
-	location.m_area->m_hasPlants.erase(*this);
-	location.m_isPartOfFarmField.maybeDesignateForSowingIfPartOfFarmField();
+	blocks.farm_removeAllHarvestDesignations(m_location);
+	blocks.farm_removeAllGiveFluidDesignations(m_location);
+	BlockIndex location = m_location;
+	m_area->m_hasPlants.erase(*this);
+	blocks.farm_maybeDesignateForSowingIfPartOfFarmField(location);
 	//TODO: Create rot away event.
 }
 void Plant::setTemperature(Temperature temperature)
@@ -152,7 +165,7 @@ void Plant::setHasFluidForNow()
 		m_fluidEvent.unschedule();
 	m_fluidEvent.schedule(m_plantSpecies.stepsNeedsFluidFrequency, *this);
 	updateGrowingStatus();
-	m_location->m_isPartOfFarmField.removeAllGiveFluidDesignations();
+	m_area->getBlocks().farm_removeAllGiveFluidDesignations(m_location);
 }
 void Plant::setMaybeNeedsFluid()
 {
@@ -171,7 +184,7 @@ void Plant::setMaybeNeedsFluid()
 	{
 		m_volumeFluidRequested = std::max(1u, util::scaleByPercent(m_plantSpecies.volumeFluidConsumed, getGrowthPercent()));
 		stepsTillNextFluidEvent = m_plantSpecies.stepsTillDieWithoutFluid;
-		m_location->m_isPartOfFarmField.designateForGiveFluidIfPartOfFarmField(*this);
+		m_area->getBlocks().farm_designateForGiveFluidIfPartOfFarmField(m_location, *this);
 	}
 	m_fluidEvent.maybeUnschedule();
 	m_fluidEvent.schedule(stepsTillNextFluidEvent, *this);
@@ -188,11 +201,12 @@ void Plant::addFluid(Volume volume, [[maybe_unused]] const FluidType& fluidType)
 }
 bool Plant::hasFluidSource()
 {
-	if(m_fluidSource != nullptr && m_fluidSource->m_hasFluids.contains(m_plantSpecies.fluidType))
+	auto& blocks = m_area->getBlocks();
+	if(m_fluidSource != BLOCK_INDEX_MAX && blocks.fluid_contains(m_fluidSource, m_plantSpecies.fluidType))
 		return true;
-	m_fluidSource = nullptr;
-	for(Block* block : m_location->collectAdjacentsInRange(getRootRange()))
-		if(block->m_hasFluids.contains(m_plantSpecies.fluidType))
+	m_fluidSource = BLOCK_INDEX_MAX;
+	for(BlockIndex block : blocks.collectAdjacentsInRange(m_location, getRootRange()))
+		if(blocks.fluid_contains(block, m_plantSpecies.fluidType))
 		{
 			m_fluidSource = block;
 			return true;
@@ -207,15 +221,15 @@ void Plant::setDayOfYear(uint32_t dayOfYear)
 void Plant::setQuantityToHarvest()
 {
 	Step duration = m_plantSpecies.harvestData->stepsDuration;
-	Step now = m_location->m_area->m_simulation.m_step;
-	uint16_t year = m_location->m_area->m_simulation.getDateTime().year;
+	Step now = m_area->m_simulation.m_step;
+	uint16_t year = m_area->m_simulation.getDateTime().year;
 	Step start = ((m_plantSpecies.harvestData->dayOfYearToStart - 1) * Config::stepsPerDay) + (year * Config::stepsPerYear);
 	Step end = start + duration;
 	Step remaining = end - now;
 	//TODO: use of days exploitable?
 	m_endOfHarvestEvent.schedule(remaining, *this);
 	m_quantityToHarvest = util::scaleByPercent(m_plantSpecies.harvestData->itemQuantity, getGrowthPercent());
-	m_location->m_isPartOfFarmField.designateForHarvestIfPartOfFarmField(*this);
+	m_area->getBlocks().farm_designateForHarvestIfPartOfFarmField(m_location, *this);
 }
 void Plant::harvest(uint32_t quantity)
 {
@@ -226,7 +240,7 @@ void Plant::harvest(uint32_t quantity)
 }
 void Plant::endOfHarvest()
 {
-	m_location->m_isPartOfFarmField.removeAllHarvestDesignations();
+	m_area->getBlocks().farm_removeAllHarvestDesignations(m_location);
 	if(m_plantSpecies.annual)
 		die();
 	else
@@ -236,7 +250,13 @@ void Plant::updateGrowingStatus()
 {
 	if(m_percentGrown == 100)
 		return;
-	if(m_volumeFluidRequested == 0 && m_location->m_exposedToSky == m_plantSpecies.growsInSunLight && !m_temperatureEvent.exists() && getPercentFoliage() >= Config::minimumPercentFoliageForGrow)
+	auto& blocks = m_area->getBlocks();
+	if(
+			m_volumeFluidRequested == 0 && 
+			blocks.isExposedToSky(m_location) == m_plantSpecies.growsInSunLight && 
+			!m_temperatureEvent.exists() && 
+			getPercentFoliage() >= Config::minimumPercentFoliageForGrow
+	)
 	{
 		if(!m_growthEvent.exists())
 		{
@@ -305,17 +325,20 @@ Step Plant::stepsPerShapeChange() const
 	uint32_t shapesCount = m_plantSpecies.shapes.size() + m_plantSpecies.maxWildGrowth;
 	return m_plantSpecies.stepsTillFullyGrown / shapesCount;
 }
-void Plant::setLocation(Block& block)
+void Plant::setLocation(BlockIndex block, Area* area)
 {
-	block.m_hasShapes.enter(*this);
-	for(Block* b: m_blocks)
-		b->m_hasPlant.set(*this);
+	if(area && area != m_area)
+		m_area = area;
+	m_area->getBlocks().shape_enter(block, *this);
+	for(BlockIndex b: m_blocks)
+		area->getBlocks().plant_set(b, *this);
 }
 void Plant::exit()
 {
-	for(Block* block : m_blocks)
-		block->m_hasPlant.erase();
-	m_location->m_hasShapes.exit(*this);
+	auto& blocks = m_area->getBlocks();
+	for(BlockIndex block : m_blocks)
+		blocks.plant_erase(block);
+	blocks.shape_exit(m_location, *this);
 }
 const MoveType& Plant::getMoveType() const { assert(false); return MoveType::byName("fly"); }
 void Plant::removeFoliageMass(Mass mass)
@@ -332,21 +355,27 @@ void Plant::removeFoliageMass(Mass mass)
 }
 void Plant::doWildGrowth(uint8_t count)
 {
+	auto& blocks = m_area->getBlocks();
 	m_wildGrowth += count;
 	assert(m_wildGrowth <= m_plantSpecies.maxWildGrowth);
-	Simulation& simulation = m_location->m_area->m_simulation;
+	Simulation& simulation = m_area->m_simulation;
 	while(count)
 	{
 		count--;
-		std::vector<Block*> candidates;
-		for(Block* block : getAdjacentBlocks())
-			if(block->m_hasShapes.anythingCanEnterEver() && block->m_hasShapes.getDynamicVolume() == 0 && block->m_z > m_location->m_z)
+		std::vector<BlockIndex> candidates;
+		for(BlockIndex block : getAdjacentBlocks())
+			if(blocks.shape_anythingCanEnterEver(block) && blocks.shape_getDynamicVolume(block) == 0 && blocks.getZ(block) > blocks.getZ(m_location))
 				candidates.push_back(block);
-		Block& toGrowInto = *simulation.m_random.getInVector(candidates);
-		std::array<int32_t, 3> offset = m_location->relativeOffsetTo(toGrowInto);
-		// Use the volume of the location position as the volume of the new growth position.
-		std::array<int32_t, 4> position = {offset[0], offset[1], offset[2], (int)m_shape->getCollisionVolumeAtLocationBlock()};
-		setShape(simulation.m_shapes.mutateAdd(*m_shape, position));
+		if(candidates.empty())
+			m_wildGrowth = m_plantSpecies.maxWildGrowth;
+		else
+		{
+			BlockIndex toGrowInto = candidates[simulation.m_random.getInRange(0u, (uint)candidates.size() - 1u)];
+			std::array<int32_t, 3> offset = blocks.relativeOffsetTo(m_location, toGrowInto);
+			// Use the volume of the location position as the volume of the new growth position.
+			std::array<int32_t, 4> position = {offset[0], offset[1], offset[2], (int)m_shape->getCollisionVolumeAtLocationBlock()};
+			setShape(simulation.m_shapes.mutateAdd(*m_shape, position));
+		}
 	}
 }
 void Plant::removeFruitQuantity(uint32_t quantity)
@@ -390,37 +419,40 @@ Step Plant::getStepAtWhichPlantWillDieFromLackOfFluid() const
 }
 // Events.
 PlantGrowthEvent::PlantGrowthEvent(const Step delay, Plant& p, Step start) : 
-	ScheduledEvent(p.m_location->m_area->m_simulation, delay, start), m_plant(p) {}
+	ScheduledEvent(p.m_area->m_simulation, delay, start), m_plant(p) {}
 PlantShapeGrowthEvent::PlantShapeGrowthEvent(const Step delay, Plant& p, Step start) : 
-	ScheduledEvent(p.m_location->m_area->m_simulation, delay, start), m_plant(p) {}
+	ScheduledEvent(p.m_area->m_simulation, delay, start), m_plant(p) {}
 PlantFoliageGrowthEvent::PlantFoliageGrowthEvent(const Step delay, Plant& p, Step start) : 
-	ScheduledEvent(p.m_location->m_area->m_simulation, delay, start), m_plant(p) {}
+	ScheduledEvent(p.m_area->m_simulation, delay, start), m_plant(p) {}
 PlantEndOfHarvestEvent::PlantEndOfHarvestEvent(const Step delay, Plant& p, Step start) :
-	ScheduledEvent(p.m_location->m_area->m_simulation, delay, start), m_plant(p) {}
+	ScheduledEvent(p.m_area->m_simulation, delay, start), m_plant(p) {}
 PlantFluidEvent::PlantFluidEvent(const Step delay, Plant& p, Step start) :
-	ScheduledEvent(p.m_location->m_area->m_simulation, delay, start), m_plant(p) {}
+	ScheduledEvent(p.m_area->m_simulation, delay, start), m_plant(p) {}
 PlantTemperatureEvent::PlantTemperatureEvent(const Step delay, Plant& p, Step start) :
-	ScheduledEvent(p.m_location->m_area->m_simulation, delay, start), m_plant(p) {}
-Plant& AreaHasPlants::emplace(Block& location, const PlantSpecies& species, const Shape* shape, Percent percentGrowth, Volume volumeFluidRequested, Step needsFluidEventStart, bool temperatureIsUnsafe, Step unsafeTemperatureEventStart, uint32_t harvestableQuantity, Percent percentFoliage)
+	ScheduledEvent(p.m_area->m_simulation, delay, start), m_plant(p) {}
+Plant& AreaHasPlants::emplace(BlockIndex location, const PlantSpecies& species, const Shape* shape, Percent percentGrowth, Volume volumeFluidRequested, Step needsFluidEventStart, bool temperatureIsUnsafe, Step unsafeTemperatureEventStart, uint32_t harvestableQuantity, Percent percentFoliage)
 {
-	assert(location.m_hasPlant.canGrowHereEver(species));
-	assert(!location.m_hasPlant.exists());
-	Plant& plant = m_plants.emplace_back(location, species, shape, percentGrowth, volumeFluidRequested, needsFluidEventStart, temperatureIsUnsafe, unsafeTemperatureEventStart, harvestableQuantity, percentFoliage);
+	auto& blocks = m_area.getBlocks();
+	assert(blocks.plant_canGrowHereEver(location, species));
+	assert(!blocks.plant_exists(location));
+	Plant& plant = m_plants.emplace_back(m_area, location, species, shape, percentGrowth, volumeFluidRequested, needsFluidEventStart, temperatureIsUnsafe, unsafeTemperatureEventStart, harvestableQuantity, percentFoliage);
 	// TODO: plants above ground but under roof?
-	if(!location.m_underground)
+	if(!blocks.isUnderground(location))
 		m_plantsOnSurface.insert(&plant);
 	return plant;
 }
 Plant& AreaHasPlants::emplace(const Json& data, DeserializationMemo& deserializationMemo)
 {
-	Plant& plant = m_plants.emplace_back(data, deserializationMemo);
-	if(!plant.m_location->m_underground)
+	Plant& plant = m_plants.emplace_back(data, deserializationMemo, m_area);
+	auto& blocks = m_area.getBlocks();
+	if(!blocks.isUnderground(plant.m_location))
 		m_plantsOnSurface.insert(&plant);
 	return plant;
 }
 void AreaHasPlants::erase(Plant& plant)
 {
-	assert(plant.m_location->m_hasPlant.get() == plant);
+	auto& blocks = m_area.getBlocks();
+	assert(blocks.plant_get(plant.m_location) == plant);
 	plant.exit();
 	//TODO: store iterator in plant.
 	auto found = std::ranges::find(m_plants, plant);
@@ -430,6 +462,7 @@ void AreaHasPlants::erase(Plant& plant)
 }
 void AreaHasPlants::onChangeAmbiantSurfaceTemperature()
 {
+	auto& blocks = m_area.getBlocks();
 	for(Plant* plant : m_plantsOnSurface)
-		plant->setTemperature(plant->m_location->m_blockHasTemperature.get());
+		plant->setTemperature(blocks.temperature_get(plant->m_location));
 }

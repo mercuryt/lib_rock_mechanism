@@ -65,13 +65,13 @@ public:
 	void merge(Reservable& reservable);
 	[[nodiscard]] bool isFullyReserved(Faction* faction) const;
 	[[nodiscard]] bool hasAnyReservations() const;
-	[[nodiscard]] bool hasAnyReservationsWith(Faction& faction) const;
+	[[nodiscard]] bool hasAnyReservationsWith(const Faction& faction) const;
 	[[nodiscard]] std::unordered_map<CanReserve*, uint32_t>& getReservedBy();
 	[[nodiscard]] uint32_t getUnreservedCount(Faction& faction) const;
 	[[nodiscard]] uint32_t getMaxReservations() const { return m_maxReservations; }
 	[[nodiscard]] Json jsonReservationFor(CanReserve& canReserve) const;
 	~Reservable();
-	Reservable(Reservable& reservable) = delete;
-	Reservable(Reservable&& reservable) = delete;
+	Reservable(const Reservable&) { assert(false); }
+	Reservable(Reservable&&) { assert(false); }
 	friend class CanReserve;
 };

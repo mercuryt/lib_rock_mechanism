@@ -7,7 +7,6 @@
 class Simulation;
 class Item;
 class Actor;
-class Block;
 class HasShape;
 struct FluidType;
 struct ItemType;
@@ -49,7 +48,7 @@ class HaulSubproject final
 	HaulStrategy m_strategy;
 	std::unordered_set<Actor*> m_nonsentients;
 	Item* m_haulTool;
-	std::unordered_map<Actor*, Block*> m_liftPoints; // Used by Team strategy.
+	std::unordered_map<Actor*, BlockIndex> m_liftPoints; // Used by Team strategy.
 	Actor* m_leader;
 	bool m_itemIsMoving;
 	Actor* m_beastOfBurden;
@@ -107,8 +106,8 @@ public:
 	void pickUp(Item& item, Quantity quantity = 1u);
 	void pickUp(Actor& actor, Quantity quantity = 1u);
 	// Returns a reference to has shape, which may be newly created or pre-existing due to generic items.
-	HasShape& putDown(Block& location, Quantity quantity = 0u);
-	HasShape* putDownIfAny(Block& location);
+	HasShape& putDown(BlockIndex location, Quantity quantity = 0u);
+	HasShape* putDownIfAny(BlockIndex location);
 	void removeFluidVolume(CollisionVolume volume);
 	void add(const ItemType& itemType, const MaterialType& materialType, Quantity quantity);
 	void remove(Item& item);

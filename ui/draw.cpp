@@ -17,9 +17,9 @@ void Draw::view()
 	// Aquire Area read mutex.
 	std::lock_guard lock(m_window.m_simulation->m_uiReadMutex);
 	// Render block floors, collect actors into single and multi tile groups.
-	std::unordered_set<const Block*> singleTileActorBlocks;
+	std::unordered_set<const BlockIndex*> singleTileActorBlocks;
 	std::unordered_set<const Actor*> multiTileActors;
-	for(Block& block : m_window.m_area->getZLevel(m_window.m_z))
+	for(BlockIndex& block : m_window.m_area->getZLevel(m_window.m_z))
 	{
 		blockFloor(block);
 		for(const Actor* actor : block.m_hasActors.getAllConst())
@@ -32,22 +32,22 @@ void Draw::view()
 	}
 	// Render block wall corners.
 	auto zLevelBlocks = m_window.m_area->getZLevel(m_window.m_z);
-	for(Block& block : zLevelBlocks)
+	for(BlockIndex& block : zLevelBlocks)
 		blockWallCorners(block);
 	// Render block walls.
-	for(Block& block : zLevelBlocks)
+	for(BlockIndex& block : zLevelBlocks)
 		blockWalls(block);
 	// Render block features and fluids.
-	for(Block& block : zLevelBlocks)
+	for(BlockIndex& block : zLevelBlocks)
 		blockFeaturesAndFluids(block);
 	// Render block plants.
-	for(Block& block : zLevelBlocks)
+	for(BlockIndex& block : zLevelBlocks)
 		nonGroundCoverPlant(block);
 	// Render items.
-	for(Block& block : zLevelBlocks)
+	for(BlockIndex& block : zLevelBlocks)
 		item(block);
 	// Render block wall tops.
-	for(Block& block : zLevelBlocks)
+	for(BlockIndex& block : zLevelBlocks)
 		blockWallTops(block);
 	// Render Actors.
 	// Multi tile actors first.
@@ -57,7 +57,7 @@ void Draw::view()
 	// Single tile actors.
 	auto duration = std::chrono::system_clock::now().time_since_epoch();
 	auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration).count();
-	for(const Block* block : singleTileActorBlocks)
+	for(const BlockIndex* block : singleTileActorBlocks)
 	{
 		assert(!block->m_hasActors.empty());
 		// Multiple actors, cycle through them over time.
@@ -75,7 +75,7 @@ void Draw::view()
 	}
 	// Designated and project progress.
 	if(m_window.m_faction)
-		for(Block& block : m_window.m_area->getZLevel(m_window.m_z))
+		for(BlockIndex& block : m_window.m_area->getZLevel(m_window.m_z))
 		{
 			if(block.m_area->m_blockDesignations.contains(*m_window.m_faction))
 				designated(block);
@@ -85,36 +85,36 @@ void Draw::view()
 				progressBarOnBlock(block, projectProgress);
 		}
 	// Render item overlays.
-	for(Block& block : m_window.m_area->getZLevel(m_window.m_z))
+	for(BlockIndex& block : m_window.m_area->getZLevel(m_window.m_z))
 		itemOverlay(block);
 	// Render actor overlays.
-	for(const Block* block : singleTileActorBlocks)
+	for(const BlockIndex* block : singleTileActorBlocks)
 		actorOverlay(*block->m_hasActors.getAllConst().front());
 	
 	// Selected.
 	if(!m_window.m_selectedBlocks.empty())
 	{
-		for(Block* block : m_window.m_selectedBlocks)
+		for(BlockIndex* block : m_window.m_selectedBlocks)
 			if(block->m_z == m_window.m_z)
 				selected(*block);
 	}
 	else if(!m_window.m_selectedActors.empty())
 	{
 		for(Actor* actor: m_window.m_selectedActors)
-			for(Block* block : actor->m_blocks)
+			for(BlockIndex* block : actor->m_blocks)
 				if(block->m_z == m_window.m_z)
 					selected(*block);
 	}
 	else if(!m_window.m_selectedItems.empty())
 	{
 		for(Item* item: m_window.m_selectedItems)
-			for(Block* block : item->m_blocks)
+			for(BlockIndex* block : item->m_blocks)
 				if(block->m_z == m_window.m_z)
 					selected(*block);
 	}
 	else if(!m_window.m_selectedPlants.empty())
 		for(Plant* plant: m_window.m_selectedPlants)
-			for(Block* block : plant->m_blocks)
+			for(BlockIndex* block : plant->m_blocks)
 				if(block->m_z == m_window.m_z)
 					selected(*block);
 	// Selection Box.
@@ -138,14 +138,14 @@ void Draw::view()
 	if(m_window.m_gameOverlay.m_itemBeingInstalled || m_window.m_gameOverlay.m_itemBeingMoved)
 	{
 		assert(m_window.m_blockUnderCursor);
-		Block& hoverBlock = *m_window.m_blockUnderCursor;
+		BlockIndex& hoverBlock = *m_window.m_blockUnderCursor;
 		Item& item = *(m_window.m_gameOverlay.m_itemBeingInstalled ? 
 			m_window.m_gameOverlay.m_itemBeingInstalled : 
 			m_window.m_gameOverlay.m_itemBeingMoved
 		);
 		auto blocks = item.getBlocksWhichWouldBeOccupiedAtLocationAndFacing(hoverBlock, m_window.m_gameOverlay.m_facing);
 		bool valid = hoverBlock.m_hasShapes.canEnterEverWithFacing(item, m_window.m_gameOverlay.m_facing);
-		for(Block* block : blocks)
+		for(BlockIndex* block : blocks)
 			if(!valid)
 				invalidOnBlock(*block);
 			else
@@ -162,13 +162,13 @@ void Draw::view()
 	//if(m_gameOverlay.infoPopupIsVisible())
 		//m_gameOverlay.updateInfoPopup();
 }
-// Block.
-void Draw::blockFloor(const Block& block)
+// BlockIndex.
+void Draw::blockFloor(const BlockIndex& block)
 {
 	if(block.isSolid())
 	{
-		for(Block* adjacent : block.m_adjacents)
-			if(adjacent && (m_window.m_editMode || adjacent->m_visible))
+		for(BlockIndex* adjacent : block.m_adjacents)
+			if(adjacent != BLOCK_INDEX_MAX && (m_window.m_editMode || adjacent->m_visible))
 			{
 				assert(displayData::materialColors.contains(&block.getSolidMaterial()));
 				colorOnBlock(block, displayData::materialColors.at(&block.getSolidMaterial()));
@@ -224,7 +224,7 @@ void Draw::blockFloor(const Block& block)
 		}
 	}
 }
-void Draw::blockWallCorners(const Block& block)
+void Draw::blockWallCorners(const BlockIndex& block)
 {
 	if(block.isSolid() && block.getBlockWest() && !block.getBlockWest()->isSolid() && block.getBlockSouth() && !block.getBlockSouth()->isSolid())
 	{
@@ -239,7 +239,7 @@ void Draw::blockWallCorners(const Block& block)
 		m_window.getRenderWindow().draw(sprite);
 	}
 }
-void Draw::blockWalls(const Block& block)
+void Draw::blockWalls(const BlockIndex& block)
 {
 	if(block.isSolid())
 	{
@@ -268,11 +268,11 @@ void Draw::blockWalls(const Block& block)
 		}
 	}
 }
-void Draw::blockWallTops(const Block& block)
+void Draw::blockWallTops(const BlockIndex& block)
 {
 	if(block.isSolid())
 	{
-		auto adjacentPredicate = [](const Block* adjacent){ 
+		auto adjacentPredicate = [](const BlockIndex* adjacent){ 
 			return adjacent && adjacent->m_visible && !adjacent->isSolid() && !adjacent->m_hasBlockFeatures.contains(BlockFeatureType::stairs) && !adjacent->m_hasBlockFeatures.contains(BlockFeatureType::ramp);
 		};
 		float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
@@ -319,9 +319,9 @@ void Draw::blockWallTops(const Block& block)
 		}
 	}
 }
-void Draw::blockFeaturesAndFluids(const Block& block)
+void Draw::blockFeaturesAndFluids(const BlockIndex& block)
 {
-	// Block Features
+	// BlockIndex Features
 	//TODO: Draw order.
 	if(!block.m_hasBlockFeatures.empty())
 	{
@@ -399,7 +399,7 @@ void Draw::blockFeaturesAndFluids(const Block& block)
 	else if(block.getBlockBelow() && !block.getBlockBelow()->isSolid())
 	{
 		// Show tops of stairs and ramps from next level down.
-		const Block& below = *block.getBlockBelow();
+		const BlockIndex& below = *block.getBlockBelow();
 		if(below.m_hasBlockFeatures.contains(BlockFeatureType::stairs))
 		{
 			const BlockFeature& blockFeature = *below.m_hasBlockFeatures.atConst(BlockFeatureType::stairs);
@@ -434,14 +434,14 @@ void Draw::blockFeaturesAndFluids(const Block& block)
 		stringOnBlock(block, std::to_wstring(volume), sf::Color::Black);
 	}
 }
-void Draw::blockWallsFromNextLevelDown(const Block& block)
+void Draw::blockWallsFromNextLevelDown(const BlockIndex& block)
 {
 	if(!block.getBlockBelow() || !block.getBlockBelow()->isSolid())
 		return;
-	const Block& below = *block.getBlockBelow();
+	const BlockIndex& below = *block.getBlockBelow();
 	if(below.getBlockSouth() && !below.getBlockSouth()->isSolid())
 	{
-		const Block& belowSouth = *below.getBlockSouth();
+		const BlockIndex& belowSouth = *below.getBlockSouth();
 		sf::Sprite* sprite;
 		const MaterialType* materialType;
 		if(block.isConstructed())
@@ -465,7 +465,7 @@ void Draw::blockWallsFromNextLevelDown(const Block& block)
 	}
 	if(below.getBlockWest() && !below.getBlockWest()->isSolid())
 	{
-		const Block& belowWest = *below.getBlockWest();
+		const BlockIndex& belowWest = *below.getBlockWest();
 		static sf::Sprite* sprite;
 		const MaterialType* materialType;
 		if(block.isConstructed())
@@ -489,22 +489,22 @@ void Draw::blockWallsFromNextLevelDown(const Block& block)
 		spriteAt(*sprite, position, &color);
 	}
 }
-void Draw::validOnBlock(const Block& block)
+void Draw::validOnBlock(const BlockIndex& block)
 {
 	colorOnBlock(block, {0, 255, 0, 122});
 }
-void Draw::invalidOnBlock(const Block& block)
+void Draw::invalidOnBlock(const BlockIndex& block)
 {
 	colorOnBlock(block, {255, 0, 0, 122});
 }
-void Draw::colorOnBlock(const Block& block, const sf::Color color)
+void Draw::colorOnBlock(const BlockIndex& block, const sf::Color color)
 {
 	sf::RectangleShape square(sf::Vector2f(m_window.m_scale, m_window.m_scale));
 	square.setFillColor(color);
 	square.setPosition(static_cast<float>(block.m_x * m_window.m_scale), static_cast<float>(block.m_y * m_window.m_scale));
 	m_window.getRenderWindow().draw(square);
 }
-void Draw::designated(const Block& block)
+void Draw::designated(const BlockIndex& block)
 {
 	BlockDesignation designation = m_window.m_area->m_blockDesignations.at(*m_window.m_faction).getDisplayDesignation(block.getIndex());
 	static std::unordered_map<BlockDesignation, sf::Sprite> designationSprites{
@@ -522,7 +522,7 @@ void Draw::designated(const Block& block)
 	};
 	spriteOnBlockCentered(block, designationSprites.at(designation), &displayData::selectColor);
 }
-void Draw::craftLocation(const Block& block)
+void Draw::craftLocation(const BlockIndex& block)
 {
 	const CraftStepTypeCategory* craftDisplay = block.m_area->m_hasCraftingLocationsAndJobs.at(*m_window.getFaction()).getDisplayStepTypeCategoryForLocation(block);
 	if(craftDisplay)
@@ -538,7 +538,7 @@ sf::Sprite Draw::getCenteredSprite(std::string name)
 	return pair.first;
 }
 // Origin is assumed to already be set in sprite on block.
-void Draw::spriteOnBlockWithScaleCentered(const Block& block, sf::Sprite& sprite, float scale, const sf::Color* color)
+void Draw::spriteOnBlockWithScaleCentered(const BlockIndex& block, sf::Sprite& sprite, float scale, const sf::Color* color)
 {
 	float windowScale = m_window.m_scale;
 	scale = scale * (windowScale / (float)displayData::defaultScale);
@@ -548,7 +548,7 @@ void Draw::spriteOnBlockWithScaleCentered(const Block& block, sf::Sprite& sprite
 		sprite.setColor(*color);
 	m_window.getRenderWindow().draw(sprite);
 }
-void Draw::spriteOnBlockWithScale(const Block& block, sf::Sprite& sprite, float scale, const sf::Color* color)
+void Draw::spriteOnBlockWithScale(const BlockIndex& block, sf::Sprite& sprite, float scale, const sf::Color* color)
 {
 	float windowScale = m_window.m_scale;
 	scale = scale * (windowScale / (float)displayData::defaultScale);
@@ -571,41 +571,41 @@ void Draw::spriteAtWithScale(sf::Sprite& sprite, sf::Vector2f position, float sc
 		sprite.setColor(*color);
 	m_window.getRenderWindow().draw(sprite);
 }
-void Draw::spriteOnBlock(const Block& block, sf::Sprite& sprite, const sf::Color* color)
+void Draw::spriteOnBlock(const BlockIndex& block, sf::Sprite& sprite, const sf::Color* color)
 {
 	sf::Vector2f position{(float)(block.m_x * m_window.m_scale), (float)(block.m_y * m_window.m_scale)};
 	spriteAt(sprite, position, color);
 }
-void Draw::spriteOnBlockCentered(const Block& block, sf::Sprite& sprite, const sf::Color* color)
+void Draw::spriteOnBlockCentered(const BlockIndex& block, sf::Sprite& sprite, const sf::Color* color)
 {
 	sf::Vector2f position{(((float)block.m_x + 0.5f) * (float)m_window.m_scale), (((float)block.m_y + 0.5f) * (float)m_window.m_scale)};
 	spriteAt(sprite, position, color);
 }
-void Draw::imageOnBlock(const Block& block, std::string name, const sf::Color* color)
+void Draw::imageOnBlock(const BlockIndex& block, std::string name, const sf::Color* color)
 {
 	auto pair = sprites::make(name);
 	spriteOnBlock(block, pair.first, color);
 }
 // By default images are top aligned.
-void Draw::imageOnBlockWestAlign(const Block& block, std::string name, const sf::Color* color)
+void Draw::imageOnBlockWestAlign(const BlockIndex& block, std::string name, const sf::Color* color)
 {
 	auto pair = sprites::make(name);
 	pair.first.setRotation(270);
 	spriteOnBlock(block, pair.first, color);
 }
-void Draw::imageOnBlockEastAlign(const Block& block, std::string name, const sf::Color* color)
+void Draw::imageOnBlockEastAlign(const BlockIndex& block, std::string name, const sf::Color* color)
 {
 	auto pair = sprites::make(name);
 	pair.first.setRotation(90);
 	spriteOnBlock(block, pair.first, color);
 }
-void Draw::imageOnBlockSouthAlign(const Block& block, std::string name, const sf::Color* color)
+void Draw::imageOnBlockSouthAlign(const BlockIndex& block, std::string name, const sf::Color* color)
 {
 	auto pair = sprites::make(name);
 	pair.first.setRotation(180);
 	spriteOnBlock(block, pair.first, color);
 }
-void Draw::progressBarOnBlock(const Block& block, Percent progress)
+void Draw::progressBarOnBlock(const BlockIndex& block, Percent progress)
 {
 	float scaledUnit = getScaledUnit();
 	sf::RectangleShape outline(sf::Vector2f(m_window.m_scale, scaledUnit * (2 + displayData::progressBarThickness)));
@@ -618,8 +618,8 @@ void Draw::progressBarOnBlock(const Block& block, Percent progress)
 	rectangle.setPosition(static_cast<float>(block.m_x * m_window.m_scale) + scaledUnit, static_cast<float>(block.m_y * m_window.m_scale) + scaledUnit);
 	m_window.getRenderWindow().draw(rectangle);
 }
-void Draw::selected(Block& block) { outlineOnBlock(block, displayData::selectColor); }
-void Draw::outlineOnBlock(const Block& block, const sf::Color color, float thickness)
+void Draw::selected(BlockIndex& block) { outlineOnBlock(block, displayData::selectColor); }
+void Draw::outlineOnBlock(const BlockIndex& block, const sf::Color color, float thickness)
 {
 	sf::RectangleShape square(sf::Vector2f(m_window.m_scale - (thickness*2), m_window.m_scale - (thickness*2)));
 	square.setFillColor(sf::Color::Transparent);
@@ -628,7 +628,7 @@ void Draw::outlineOnBlock(const Block& block, const sf::Color color, float thick
 	square.setPosition(static_cast<float>(block.m_x * m_window.m_scale) + thickness, static_cast<float>(block.m_y * m_window.m_scale) + thickness);
 	m_window.getRenderWindow().draw(square);
 }
-void Draw::stringOnBlock(const Block& block, std::wstring string, const sf::Color color, float offsetX, float offsetY )
+void Draw::stringOnBlock(const BlockIndex& block, std::wstring string, const sf::Color color, float offsetX, float offsetY )
 {
 	return stringAtPosition(string, {
 		static_cast<float>(block.m_x + offsetX) * (float)m_window.m_scale,
@@ -653,7 +653,7 @@ void Draw::stringAtPosition(const std::wstring string, const sf::Vector2f positi
 	m_window.getRenderWindow().draw(text);
 }
 // Plant.
-void Draw::nonGroundCoverPlant(const Block& block)
+void Draw::nonGroundCoverPlant(const BlockIndex& block)
 {
 	if(!block.m_hasPlant.exists())
 		return;
@@ -710,7 +710,7 @@ void Draw::nonGroundCoverPlant(const Block& block)
 	}
 }
 // Item.
-void Draw::item(const Block& block)
+void Draw::item(const BlockIndex& block)
 {
 	if(block.m_hasItems.empty())
 		return;
@@ -743,7 +743,7 @@ void Draw::actorOverlay(const Actor& actor)
 		stringAtPosition(L"zzz", sleepTextLocation, sf::Color::Cyan);
 	}
 }
-void Draw::itemOverlay(const Block& block)
+void Draw::itemOverlay(const BlockIndex& block)
 {
 	if(block.m_hasItems.empty())
 		return;
@@ -760,7 +760,7 @@ void Draw::itemOverlay(const Block& block)
 // Actor.
 void Draw::singleTileActor(const Actor& actor)
 {
-	Block& block = *actor.m_location;
+	BlockIndex& block = *actor.m_location;
 	AnimalSpeciesDisplayData& display = displayData::actorData.at(&actor.m_species);
 	auto [sprite, origin] = sprites::make(display.image);
 	sprite.setOrigin(origin);
@@ -791,26 +791,26 @@ void Draw::multiTileActor(const Actor& actor)
 	auto [sprite, origin] = sprites::make(display.image);
 	if(actor.m_shape->displayScale == 1)
 	{
-		Block& location = m_window.m_area->getBlock(actor.m_location->m_x, actor.m_location->m_y, m_window.m_z);
+		BlockIndex& location = m_window.m_area->getBlock(actor.m_location->m_x, actor.m_location->m_y, m_window.m_z);
 		spriteOnBlock(location, sprite, &display.color);
 		multiTileBorder(actor.m_blocks, displayData::actorOutlineColor, 1);
 	}
 	else
 	{
-		Block* topLeft = nullptr;
-		for(Block* block : actor.m_blocks)
+		BlockIndex* topLeft = nullptr;
+		for(BlockIndex* block : actor.m_blocks)
 			if(block->m_z == m_window.m_z)
 				if(!topLeft || block->m_x < topLeft->m_x || block->m_y < topLeft->m_y)
 					topLeft = block;
 		spriteOnBlockWithScale(*topLeft, sprite, actor.m_shape->displayScale, &display.color);
 	}
 }
-void Draw::multiTileBorder(std::unordered_set<Block*> blocks, sf::Color color, float thickness)
+void Draw::multiTileBorder(std::unordered_set<BlockIndex*> blocks, sf::Color color, float thickness)
 {
-	for(Block* block : blocks)
+	for(BlockIndex* block : blocks)
 		if(block->m_z == m_window.m_z)
 		{
-			for(Block* adjacent : block->getAdjacentOnSameZLevelOnly())
+			for(BlockIndex* adjacent : block->getAdjacentOnSameZLevelOnly())
 				if(!blocks.contains(adjacent))
 				{
 					Facing facing = adjacent->facingToSetWhenEnteringFrom(*block);
@@ -818,7 +818,7 @@ void Draw::multiTileBorder(std::unordered_set<Block*> blocks, sf::Color color, f
 				}
 		}
 }
-void Draw::borderSegmentOnBlock(const Block& block, Facing facing, sf::Color color, float thickness)
+void Draw::borderSegmentOnBlock(const BlockIndex& block, Facing facing, sf::Color color, float thickness)
 {
 	sf::RectangleShape square(sf::Vector2f(m_window.m_scale, thickness));
 	square.setFillColor(color);
@@ -855,9 +855,9 @@ void Draw::borderSegmentOnBlock(const Block& block, Facing facing, sf::Color col
 	}
 	m_window.getRenderWindow().draw(square);
 }
-Facing Draw::rampOrStairsFacing(const Block& block) const
+Facing Draw::rampOrStairsFacing(const BlockIndex& block) const
 {
-	static auto canConnectToAbove = [](const Block& block) -> bool{ 
+	static auto canConnectToAbove = [](const BlockIndex& block) -> bool{ 
 		return block.getBlockAbove() && !block.m_hasBlockFeatures.contains(BlockFeatureType::stairs) && !block.m_hasBlockFeatures.contains(BlockFeatureType::ramp) && block.getBlockAbove()->m_hasShapes.canStandIn();
 	};
 	if(!block.getBlockAbove())
@@ -897,19 +897,19 @@ Facing Draw::rampOrStairsFacing(const Block& block) const
 	}
 	return backup;
 }
-sf::Vector2f Draw::blockToPosition(const Block& block) const
+sf::Vector2f Draw::blockToPosition(const BlockIndex& block) const
 {
 	return {static_cast<float>(block.m_x * m_window.m_scale), static_cast<float>(block.m_y * m_window.m_scale)};
 }
-sf::Vector2f Draw::blockToPositionCentered(const Block& block) const
+sf::Vector2f Draw::blockToPositionCentered(const BlockIndex& block) const
 {
 	return {static_cast<float>((block.m_x + 0.5) * m_window.m_scale), static_cast<float>((block.m_y + 0.5) * m_window.m_scale)};
 }
-void Draw::accessableSymbol(const Block& block)
+void Draw::accessableSymbol(const BlockIndex& block)
 {
 	stringOnBlock(block, L"o", sf::Color::Green, 0.1, 0.6);
 }
-void Draw::inaccessableSymbol(const Block& block)
+void Draw::inaccessableSymbol(const BlockIndex& block)
 {
 	stringOnBlock(block, L"x", sf::Color::Red, 0.1, 0.6);
 }

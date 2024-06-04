@@ -1,14 +1,12 @@
 #include "exterminate.h"
 #include "../simulation.h"
-#include "../block.h"
 #include "../actor.h"
 #include "../area.h"
 #include "../deserializationMemo.h"
-#include "eventSchedule.h"
-ExterminateObjective::ExterminateObjective(Actor& a, Block& destination) : Objective(a, Config::exterminatePriority), m_destination(destination), m_event(a.getEventSchedule()) { }
+ExterminateObjective::ExterminateObjective(Actor& a, BlockIndex destination) : Objective(a, Config::exterminatePriority), m_destination(destination), m_event(a.getEventSchedule()) { }
 ExterminateObjective::ExterminateObjective(const Json& data, DeserializationMemo& deserializationMemo) : 
 	Objective(data, deserializationMemo),
-	m_destination(deserializationMemo.blockReference(data["destination"])),
+	m_destination(data["destination"].get<BlockIndex>()),
 	m_event(deserializationMemo.m_simulation.m_eventSchedule)
 {
 	if(data.contains("eventStart"))
@@ -25,11 +23,12 @@ Json ExterminateObjective::toJson() const
 void ExterminateObjective::execute()
 {
 	Actor* closest = nullptr;
+	Blocks& blocks = m_actor.m_area->getBlocks();
 	for(Actor* actor : m_actor.m_canSee.getCurrentlyVisibleActors())
 	{
 		if(
 			actor->isSentient() &&
-			(!closest || closest->m_location->taxiDistance(*m_actor.m_location) < actor->m_location->taxiDistance(*m_actor.m_location)) && 
+			(!closest || blocks.taxiDistance(closest->m_location, m_actor.m_location) < blocks.taxiDistance(actor->m_location, m_actor.m_location)) && 
 			!actor->isAlly(m_actor)
 		)
 			closest = actor;
@@ -39,11 +38,11 @@ void ExterminateObjective::execute()
 	else
 	{
 		static constexpr DistanceInBlocks distanceToRallyPoint = 10;
-		if(m_actor.m_location->taxiDistance(m_destination) > distanceToRallyPoint)
+		if(blocks.taxiDistance(m_actor.m_location, m_destination) > distanceToRallyPoint)
 			m_actor.m_canMove.setDestination(m_destination);
 		m_event.schedule(*this);
 	}
 }
 ExterminateObjectiveScheduledEvent::ExterminateObjectiveScheduledEvent(ExterminateObjective& o, Step start) : 
-	ScheduledEvent(o.m_destination.m_area->m_simulation, Config::exterminateCheckFrequency, start),
+	ScheduledEvent(o.m_actor.m_area->m_simulation, Config::exterminateCheckFrequency, start),
 	m_objective(o) { }

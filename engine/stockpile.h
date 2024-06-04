@@ -19,7 +19,6 @@
 #include <unordered_map>
 #include <list>
 
-class Block;
 class StockPileThreadedTask;
 class StockPileProject;
 class Simulation;
@@ -31,7 +30,7 @@ struct MaterialType;
 class Actor;
 class Item;
 class Area;
-
+/*
 class StockPileCreateInputAction final : public InputAction
 {
 	Cuboid m_cuboid;
@@ -61,6 +60,7 @@ class StockPileUpdateInputAction final : public InputAction
 	StockPileUpdateInputAction(InputQueue& inputQueue, StockPile& stockpile, std::vector<ItemQuery>& queries) : InputAction(inputQueue), m_stockpile(stockpile), m_queries(queries) { }
 	void execute();
 };
+*/
 class StockPileObjectiveType final : public ObjectiveType
 {
 public:
@@ -89,8 +89,8 @@ public:
 class StockPileThreadedTask final : public ThreadedTask
 {
 	StockPileObjective& m_objective;
-	Item* m_item;
-	Block* m_destination;
+	Item* m_item = nullptr;
+	BlockIndex m_destination = BLOCK_INDEX_MAX;
 	FindsPath m_findsPath;
 public:
 	StockPileThreadedTask(StockPileObjective& spo);
@@ -98,24 +98,24 @@ public:
 	void writeStep();
 	void clearReferences();
 	// destinationCondition is not const because it assigns to m_destination on success.
-	[[nodiscard]] bool destinationCondition(const Block& block, const Item& item);
+	[[nodiscard]] bool destinationCondition(BlockIndex block, const Item& item);
 };
 class StockPile
 {
 	std::vector<ItemQuery> m_queries;
-	std::unordered_set<Block*> m_blocks;
-	Quantity m_openBlocks;
+	std::unordered_set<BlockIndex> m_blocks;
+	Quantity m_openBlocks = 0;
 	Area& m_area;
 	Faction& m_faction;
-	bool m_enabled;
+	bool m_enabled = false;
 	HasScheduledEvent<ReenableStockPileScheduledEvent> m_reenableScheduledEvent;
-	StockPileProject* m_projectNeedingMoreWorkers;
+	StockPileProject* m_projectNeedingMoreWorkers = nullptr;
 public:
 	StockPile(std::vector<ItemQuery>& q, Area& a, Faction& f);
 	StockPile(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	[[nodiscard]] Json toJson() const;
-	void addBlock(Block& block);
-	void removeBlock(Block& block);
+	void addBlock(BlockIndex block);
+	void removeBlock(BlockIndex block);
 	void updateQueries(std::vector<ItemQuery>& queries);
 	void incrementOpenBlocks();
 	void decrementOpenBlocks();
@@ -131,19 +131,19 @@ public:
 	[[nodiscard]] bool isEnabled() const { return m_enabled; }
 	[[nodiscard]] bool hasProjectNeedingMoreWorkers() const;
 	[[nodiscard]] Simulation& getSimulation();
-	[[nodiscard]] bool contains(Block& block) const { return m_blocks.contains(&block); }
+	[[nodiscard]] bool contains(BlockIndex block) const { return m_blocks.contains(block); }
 	[[nodiscard]] std::vector<ItemQuery>& getQueries() { return m_queries; }
+	[[nodiscard]] Faction& getFaction() { return m_faction; }
 	friend class AreaHasStockPilesForFaction;
 	friend class ReenableStockPileScheduledEvent;
 	friend class StockPileProject;
-	friend class BlockIsPartOfStockPiles;
 	[[nodiscard]] bool operator==(const StockPile& other) const { return &other == this; }
 };
 class StockPileProject final : public Project
 {
 	Item& m_item;
 	// Needed for generic items where the original item may no longer exist.
-	Quantity m_quantity;
+	Quantity m_quantity = 0;
 	const ItemType& m_itemType;
 	const MaterialType& m_materialType;
 	StockPile& m_stockpile;
@@ -162,7 +162,7 @@ class StockPileProject final : public Project
 	std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> getByproducts() const;
 	std::vector<std::pair<ActorQuery, Quantity>> getActors() const;
 public:
-	StockPileProject(Faction* faction, Block& block, Item& item, Quantity quantity, Quantity maxWorkers);
+	StockPileProject(Faction* faction, Area& area, BlockIndex block, Item& item, Quantity quantity, Quantity maxWorkers);
 	StockPileProject(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool canAddWorker(const Actor& actor) const;
@@ -183,14 +183,14 @@ public:
 struct BlockIsPartOfStockPile
 {
 	StockPile& stockPile;
-	bool active;
+	bool active = false;
 };
 class BlockIsPartOfStockPiles
 {
 	std::unordered_map<Faction*, BlockIsPartOfStockPile> m_stockPiles;
-	Block& m_block;
+	BlockIndex m_block = BLOCK_INDEX_MAX;
 public:
-	BlockIsPartOfStockPiles(Block& b): m_block(b) { }
+	BlockIsPartOfStockPiles(BlockIndex b): m_block(b) { }
 	void recordMembership(StockPile& stockPile);
 	void recordNoLongerMember(StockPile& stockPile);
 	// When an item is added or removed update avalibility for all stockpiles.
@@ -212,9 +212,6 @@ struct StockPileHasShapeDishonorCallback final : public DishonorCallback
 };
 class AreaHasStockPilesForFaction
 {
-	Area& m_area;
-	std::list<StockPile> m_stockPiles;
-	Faction& m_faction;
 	// Stockpiles may accept multiple item types and thus may appear here more then once.
 	std::unordered_map<const ItemType*, std::unordered_set<StockPile*>> m_availableStockPilesByItemType;
 	// These items are checked whenever a new stockpile is created to see if they should be move to items with destinations.
@@ -225,6 +222,9 @@ class AreaHasStockPilesForFaction
 	std::unordered_map<StockPile*, std::unordered_set<Item*>> m_itemsWithDestinationsByStockPile;
 	// Multiple projects per item due to generic item stacking.
 	std::unordered_map<Item*, std::list<StockPileProject>> m_projectsByItem;
+	std::list<StockPile> m_stockPiles;
+	Area& m_area;
+	Faction& m_faction;
 	// To be called when the last block is removed from the stockpile.
 	// To remove all blocks call StockPile::destroy.
 	void destroyStockPile(StockPile& stockPile);
@@ -238,18 +238,18 @@ public:
 	void addItem(Item& item);
 	void maybeAddItem(Item& item);
 	void removeItem(Item& item);
-	void removeBlock(Block& block);
+	void removeBlock(BlockIndex block);
 	void setAvailable(StockPile& stockPile);
 	void setUnavailable(StockPile& stockPile);
-	void makeProject(Item& item, Block& destination, StockPileObjective& objective);
+	void makeProject(Item& item, BlockIndex destination, StockPileObjective& objective);
 	void cancelProject(StockPileProject& project);
 	void destroyProject(StockPileProject& project);
 	void addQuery(StockPile& stockPile, ItemQuery query);
 	void removeQuery(StockPile& stockPile, ItemQuery query);
 	void removeFromItemsWithDestinationByStockPile(const StockPile& stockpile, const Item& item);
-	[[nodiscard]] bool isValidStockPileDestinationFor(const Block& block, const Item& item) const;
+	[[nodiscard]] bool isValidStockPileDestinationFor(BlockIndex block, const Item& item) const;
 	[[nodiscard]] bool isAnyHaulingAvailableFor(const Actor& actor) const;
-	[[nodiscard]] Item* getHaulableItemForAt(const Actor& actor, Block& block);
+	[[nodiscard]] Item* getHaulableItemForAt(const Actor& actor, BlockIndex block);
 	[[nodiscard]] StockPile* getStockPileFor(const Item& item) const;
 	friend class StockPileThreadedTask;
 	friend class StockPile;
@@ -271,7 +271,7 @@ public:
 	void registerFaction(Faction& faction) { assert(!m_data.contains(&faction)); m_data.try_emplace(&faction, m_area, faction); }
 	void unregisterFaction(Faction& faction) { assert(m_data.contains(&faction)); m_data.erase(&faction); }
 	void removeItemFromAllFactions(Item& item) { for(auto& pair : m_data) { pair.second.removeItem(item); } }
-	void removeBlockFromAllFactions(Block& block) { for(auto& pair : m_data) { pair.second.removeBlock(block); }} 
+	void removeBlockFromAllFactions(BlockIndex block) { for(auto& pair : m_data) { pair.second.removeBlock(block); }} 
 	void clearReservations();
 	[[nodiscard]] AreaHasStockPilesForFaction& at(Faction& faction);
 	[[nodiscard]] bool contains(Faction& faction) { return m_data.contains(&faction); }

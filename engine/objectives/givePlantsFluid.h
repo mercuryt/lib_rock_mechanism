@@ -5,13 +5,13 @@
 #include "reservable.h"
 #include "threadedTask.hpp"
 #include "findsPath.h"
+#include "types.h"
 
 #include <memory>
 #include <vector>
 
 struct FluidType;
 class Plant;
-class Block;
 class Item;
 class GivePlantsFluidObjective;
 struct DeserializationMemo;
@@ -29,7 +29,7 @@ public:
 class GivePlantsFluidThreadedTask final : public ThreadedTask
 {
 	GivePlantsFluidObjective& m_objective;
-	Block* m_plantLocation;
+	BlockIndex m_plantLocation = BLOCK_INDEX_MAX;
 	FindsPath m_findsPath;
 public:
 	GivePlantsFluidThreadedTask(GivePlantsFluidObjective& gpfo);
@@ -48,8 +48,8 @@ public:
 };
 class GivePlantsFluidObjective final : public Objective
 {
-	Block* m_plantLocation;
-	Item* m_fluidHaulingItem;
+	BlockIndex m_plantLocation = BLOCK_INDEX_MAX;
+	Item* m_fluidHaulingItem = nullptr;
 	HasScheduledEvent<GivePlantsFluidEvent> m_event;
 	HasThreadedTask<GivePlantsFluidThreadedTask> m_threadedTask;
 public:
@@ -58,19 +58,19 @@ public:
 	Json toJson() const;
 	void execute();
 	void cancel();
-	void fillContainer(Block& fillLocation);
+	void fillContainer(BlockIndex fillLocation);
 	void delay() { cancel(); }
-	void select(Block& block);
+	void select(BlockIndex block);
 	void select(Item& item);
 	void reset();
 	std::string name() const { return "give plants fluid"; }
-	bool canFillAt(const Block& block) const;
-	Item* getItemToFillFromAt(Block& block);
-	bool canGetFluidHaulingItemAt(const Block& location) const;
-	Item* getFluidHaulingItemAt(Block& location);
+	bool canFillAt(BlockIndex block) const;
+	Item* getItemToFillFromAt(BlockIndex block);
+	bool canGetFluidHaulingItemAt(BlockIndex location) const;
+	Item* getFluidHaulingItemAt(BlockIndex location);
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::GivePlantsFluid; }
 	friend class GivePlantsFluidEvent;
 	friend class GivePlantsFluidThreadedTask;
 	// For testing.
-	Block* getPlantLocation() { return m_plantLocation; }
+	BlockIndex getPlantLocation() { return m_plantLocation; }
 };

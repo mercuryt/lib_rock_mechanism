@@ -23,7 +23,7 @@ class TargetedHaulProject final : public Project
 	void offDelay() { assert(false); }
 	Step getDuration() const { return Config::addToStockPileDelaySteps; }
 public:
-	TargetedHaulProject(Faction* f, Block& l, Item& i) : Project(f, l, 4), m_item(i) { }
+	TargetedHaulProject(Faction* f, Area& a, BlockIndex l, Item& i) : Project(f, a, l, 4), m_item(i) { }
 	TargetedHaulProject(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 };
@@ -44,9 +44,11 @@ public:
 
 class AreaHasTargetedHauling
 {
+	Area& m_area;
 	std::list<TargetedHaulProject> m_projects;
 public:
-	TargetedHaulProject& begin(std::vector<Actor*> actors, Item& item, Block& destination);
+	AreaHasTargetedHauling(Area& a) : m_area(a) { }
+	TargetedHaulProject& begin(std::vector<Actor*> actors, Item& item, BlockIndex destination);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void cancel(TargetedHaulProject& project);

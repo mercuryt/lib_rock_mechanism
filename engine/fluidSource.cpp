@@ -1,35 +1,36 @@
 #include "fluidSource.h"
 #include "deserializationMemo.h"
 #include "fluidType.h"
-#include "block.h"
 #include "stockpile.h"
 #include "area.h"
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_ONLY_SERIALIZE(FluidSource, block, fluidType, level);
-FluidSource::FluidSource(const Json& data, DeserializationMemo& deserializationMemo) : block(&deserializationMemo.blockReference(data["block"])), fluidType(data["fluidType"].get<const FluidType*>()), level(data["level"].get<Volume>()) { }
+FluidSource::FluidSource(const Json& data, DeserializationMemo&) : 
+	block(data["block"].get<BlockIndex>()), fluidType(data["fluidType"].get<const FluidType*>()), level(data["level"].get<Volume>()) { }
 
 void AreaHasFluidSources::step()
 {
+	Blocks& blocks = m_area.getBlocks();
 	for(FluidSource& source : m_data)
 	{
-		int delta =  source.level - source.block->m_hasFluids.getTotalVolume();
+		int delta =  source.level - blocks.fluid_getTotalVolume(source.block);
 		if(delta > 0)
-			source.block->m_hasFluids.addFluid(delta, *source.fluidType);
+			blocks.fluid_add(source.block, delta, *source.fluidType);
 		else if(delta < 0)
 			//TODO: can this be changed to use the async version?
-			source.block->m_hasFluids.removeFluidSyncronus(-delta, *source.fluidType);
+			blocks.fluid_removeSyncronus(source.block, -delta, *source.fluidType);
 	}
 	m_area.m_hasFluidGroups.clearMergedFluidGroups();
 }
-void AreaHasFluidSources::create(Block& block, const FluidType& fluidType, Volume level)
+void AreaHasFluidSources::create(BlockIndex block, const FluidType& fluidType, Volume level)
 {
 	assert(!contains(block));
-	m_data.emplace_back(&block, &fluidType, level);
+	m_data.emplace_back(block, &fluidType, level);
 }
-void AreaHasFluidSources::destroy(Block& block)
+void AreaHasFluidSources::destroy(BlockIndex block)
 {
-	assert(std::ranges::find(m_data, &block, &FluidSource::block) != m_data.end());
-	std::ranges::remove(m_data, &block, &FluidSource::block);
+	assert(std::ranges::find(m_data, block, &FluidSource::block) != m_data.end());
+	std::ranges::remove(m_data, block, &FluidSource::block);
 }
 void AreaHasFluidSources::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
@@ -43,12 +44,12 @@ Json AreaHasFluidSources::toJson() const
 		data.push_back(source);
 	return data;
 }
-bool AreaHasFluidSources::contains(Block& block) const
+bool AreaHasFluidSources::contains(BlockIndex block) const
 {
-	return std::ranges::find(m_data, &block, &FluidSource::block) != m_data.end();
+	return std::ranges::find(m_data, block, &FluidSource::block) != m_data.end();
 }
-const FluidSource& AreaHasFluidSources::at(Block& block) const
+const FluidSource& AreaHasFluidSources::at(BlockIndex block) const
 {
 	assert(contains(block));
-	return *std::ranges::find(m_data, &block, &FluidSource::block);
+	return *std::ranges::find(m_data, block, &FluidSource::block);
 }

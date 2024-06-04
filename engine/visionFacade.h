@@ -7,7 +7,6 @@
 #include <vector>
 #include <unordered_set>
 class Area;
-class Block;
 class Actor;
 struct VisionCuboid;
 // Holds Actor pointers along with their vision range and location for high speed iteration during vision read step.
@@ -27,7 +26,7 @@ public:
 	void remove(Actor& actor);
 	void remove(VisionFacadeIndex index);
 	void updateRange(VisionFacadeIndex index, DistanceInBlocks range);
-	void updateLocation(VisionFacadeIndex index, Block& location);
+	void updateLocation(VisionFacadeIndex index, BlockIndex& location);
 	void readStepSegment(VisionFacadeIndex begin, VisionFacadeIndex end);
 	void readStep();
 	void writeStep();
@@ -69,7 +68,7 @@ public:
 	// Call when vision range changes.
 	void updateRange(DistanceInBlocks range);
 	// Call when move.
-	void updateLocation(Block& location);
+	void updateLocation(BlockIndex& location);
 	[[nodiscard]] bool empty() const { return m_index == VISION_FACADE_INDEX_MAX; }
 	friend class VisionFacade;
 	VisionFacade& getVisionFacade() const { return *m_visionFacade; }

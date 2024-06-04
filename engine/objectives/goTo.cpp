@@ -1,6 +1,5 @@
 #include "goTo.h"
 #include "../config.h"
-#include "../block.h"
 #include "../actor.h"
 #include "../input.h"
 #include "../objective.h"
@@ -12,18 +11,19 @@ GoToObjective::GoToObjective(const Json& data, DeserializationMemo& deserializat
 Json GoToObjective::toJson() const 
 { 
 	Json data = Objective::toJson();
-	data["location"] = m_location.positionToJson();
+	data["location"] = m_location;
 	return data;
 }
 void GoToObjective::execute()
 {
-	if(m_actor.m_location != &m_location)
-		// Block, detour, adjacent, unreserved, reserve
+	if(m_actor.m_location != m_location)
+		// BlockIndex, detour, adjacent, unreserved, reserve
 		m_actor.m_canMove.setDestination(m_location, m_detour, false, false, false);
 	else
 		m_actor.m_hasObjectives.objectiveComplete(*this);
 }
-GoToInputAction::GoToInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, Block& b) : 
+/*
+GoToInputAction::GoToInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, BlockIndex& b) : 
 	InputAction(actors, emplacementType, inputQueue), m_block(b) { }
 void GoToInputAction::execute()
 {
@@ -33,3 +33,4 @@ void GoToInputAction::execute()
 		insertObjective(std::move(objective), *actor);
 	}
 }
+*/

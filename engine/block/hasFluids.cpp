@@ -49,7 +49,7 @@ void BlockHasFluids::addFluid(uint32_t volume, const FluidType& fluidType)
 	m_totalFluidVolume += volume;
 	// Find fluid group.
 	FluidGroup* fluidGroup = nullptr;
-	for(Block* adjacent : m_block.m_adjacents)
+	for(BlockIndex* adjacent : m_block.m_adjacents)
 		if(adjacent && adjacent->m_hasFluids.fluidCanEnterEver() && adjacent->m_hasFluids.m_fluids.contains(&fluidType))
 		{
 			assert(adjacent->m_hasFluids.m_fluids.at(&fluidType).second->m_fluidType == fluidType);
@@ -60,7 +60,7 @@ void BlockHasFluids::addFluid(uint32_t volume, const FluidType& fluidType)
 	// Create fluid group.
 	if(fluidGroup == nullptr)
 	{
-		std::unordered_set<Block*> blocks({&m_block});
+		std::unordered_set<BlockIndex*> blocks({&m_block});
 		fluidGroup = m_block.m_area->m_hasFluidGroups.createFluidGroup(fluidType, blocks);
 	}
 	else
@@ -105,7 +105,7 @@ bool BlockHasFluids::fluidCanEnterEver() const
 }
 bool BlockHasFluids::isAdjacentToFluidGroup(const FluidGroup* fluidGroup) const
 {
-	for(Block* block : m_block.m_adjacents)
+	for(BlockIndex* block : m_block.m_adjacents)
 		if(block && block->m_hasFluids.m_fluids.contains(&fluidGroup->m_fluidType) && block->m_hasFluids.m_fluids.at(&fluidGroup->m_fluidType).second == fluidGroup)
 			return true;
 	return false;
@@ -198,7 +198,7 @@ void BlockHasFluids::onBlockSetSolid()
 			// If fluid piston is enabled then find a place above to add to potential.
 			if constexpr (Config::fluidPiston)
 			{
-				Block* above = m_block.getBlockAbove();
+				BlockIndex* above = m_block.getBlockAbove();
 				while(above != nullptr)
 				{
 					if(above->m_hasFluids.fluidCanEnterEver() && above->m_hasFluids.fluidCanEnterCurrently(*fluidType))
@@ -218,14 +218,14 @@ void BlockHasFluids::onBlockSetSolid()
 	}
 	m_fluids.clear();
 	// Remove from fluid fill queues.
-	for(Block* adjacent : m_block.m_adjacents)
+	for(BlockIndex* adjacent : m_block.m_adjacents)
 		if(adjacent && adjacent->m_hasFluids.fluidCanEnterEver())
 			for(auto& [fluidType, pair] : adjacent->m_hasFluids.m_fluids)
 				pair.second->m_fillQueue.removeBlock(&m_block);
 }
 void BlockHasFluids::onBlockSetNotSolid()
 {
-	for(Block* adjacent : m_block.m_adjacents)
+	for(BlockIndex* adjacent : m_block.m_adjacents)
 		if(adjacent && adjacent->m_hasFluids.fluidCanEnterEver())
 			for(auto& [fluidType, pair] : adjacent->m_hasFluids.m_fluids)
 			{

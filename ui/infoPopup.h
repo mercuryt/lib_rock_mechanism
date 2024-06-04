@@ -1,7 +1,7 @@
 #pragma once
 #include <TGUI/TGUI.hpp>
 #include <TGUI/Widgets/Panel.hpp>
-class Block;
+class BlockIndex;
 class Item;
 class Actor;
 class Window;
@@ -18,7 +18,7 @@ public:
 	InfoPopup(Window& window);
 	void makeWindow();
 	void add(tgui::Widget::Ptr widget);
-	void display(Block& block);
+	void display(BlockIndex& block);
 	void display(Item& item);
 	void display(Plant& plant);
 	void display(Actor& actor);

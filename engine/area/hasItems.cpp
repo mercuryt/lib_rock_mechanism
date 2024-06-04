@@ -1,6 +1,7 @@
 #include "hasItems.h"
 #include "../item.h"
 #include "../area.h"
+#include "types.h"
 void AreaHasItems::setItemIsOnSurface(Item& item)
 {
 	//assert(!m_onSurface.contains(&item));
@@ -14,11 +15,12 @@ void AreaHasItems::setItemIsNotOnSurface(Item& item)
 void AreaHasItems::onChangeAmbiantSurfaceTemperature()
 {
 	//TODO: Optimize by not repetedly fetching ambiant.
+	Blocks& blocks = m_area.getBlocks();
 	for(Item* item : m_onSurface)
 	{
-		assert(item->m_location != nullptr);
-		assert(item->m_location->m_outdoors);
-		item->setTemperature(item->m_location->m_blockHasTemperature.get());
+		assert(item->m_location != BLOCK_INDEX_MAX);
+		assert(blocks.isOutdoors(item->m_location));
+		item->setTemperature(blocks.temperature_get(item->m_location));
 	}
 }
 void AreaHasItems::add(Item& item)

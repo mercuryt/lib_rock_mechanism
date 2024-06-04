@@ -1,7 +1,6 @@
 #include "../../lib/doctest.h"
 #include "../../engine/eventSchedule.h"
 #include "../../engine/mistDisperseEvent.h"
-#include "../../engine/block.h"
 #include "../../engine/simulation.h"
 #include "eventSchedule.hpp"
 #include "reservable.h"
@@ -18,7 +17,6 @@ public:
 TEST_CASE("eventSchedule")
 {
 	Simulation simulation{L"", 1};
-	Block b1;
 	bool fired = false;
 	SUBCASE("normal")
 	{

@@ -5,14 +5,13 @@
 
 class Actor;
 class Item;
-class Block;
 
 class UnequipItemObjective final : public Objective
 {
 	Item& m_item;
-	Block& m_block;
+	BlockIndex m_block;
 public:
-	UnequipItemObjective(Actor& actor, Item& item, Block& block);
+	UnequipItemObjective(Actor& actor, Item& item, BlockIndex block);
 	UnequipItemObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	void execute();
 	void cancel();
@@ -20,5 +19,5 @@ public:
 	void reset();
 	[[nodiscard]] std::string name() const { return "equip"; }
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Unequip; }
-	Json toJson() const;
+	[[nodiscard]] Json toJson() const;
 };

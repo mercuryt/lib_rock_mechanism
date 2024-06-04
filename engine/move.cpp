@@ -1,7 +1,6 @@
 #include "move.h"
 #include "actor.h"
 #include "area.h"
-#include "block.h"
 #include "item.h"
 #include "deserializationMemo.h"
 #include "fluidType.h"
@@ -17,14 +16,14 @@ ActorCanMove::ActorCanMove(const Json& data, DeserializationMemo& deserializatio
 	m_threadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine),
 	m_actor(a), 
 	m_moveType(&MoveType::byName(data["moveType"].get<std::string>())), 
-	m_destination(data.contains("destination") ? &deserializationMemo.m_simulation.getBlockForJsonQuery(data["destination"]) : nullptr), 
+	m_destination(data.contains("destination") ? data["destination"].get<BlockIndex>() : BLOCK_INDEX_MAX), 
 	m_retries(data["retries"].get<uint8_t>())
 {
 	if(data.contains("path"))
 	{
 		assert(!data["path"].empty());
 		for(const Json& blockQuery : data["path"])
-			m_path.push_back(&a.getSimulation().getBlockForJsonQuery(blockQuery));
+			m_path.push_back(a.getSimulation().getBlockForJsonQuery(blockQuery));
 		m_pathIter = m_path.begin() + data["pathIterOffset"].get<size_t>();
 		if(data.contains("moveEventStart"))
 			m_event.schedule(data["moveEventDuration"].get<Step>(), *this, data["moveEventStart"].get<Step>());
@@ -37,13 +36,13 @@ Json ActorCanMove::toJson() const
 	Json data;
 	data["moveType"] = m_moveType->name;
 	if(m_destination)
-		data["destination"] = m_destination->positionToJson();
+		data["destination"] = m_destination;
 	data["retries"] = m_retries;
 	if(!m_path.empty())
 	{
 		data["path"] = Json::array();
-		for(Block* block : m_path)
-			data["path"].push_back(block->positionToJson());
+		for(BlockIndex block : m_path)
+			data["path"].push_back(block);
 		data["pathIterOffset"] = m_path.begin() - m_pathIter;
 	}
 	if(m_event.exists())
@@ -79,7 +78,7 @@ void ActorCanMove::updateActualSpeed()
 {
 	m_speedActual = m_actor.m_canLead.isLeading() ? m_actor.m_canLead.getMoveSpeed() : m_speedIndividual;
 }
-void ActorCanMove::setPath(std::vector<Block*>& path)
+void ActorCanMove::setPath(std::vector<BlockIndex>& path)
 {
 	assert(!path.empty());
 	m_path = std::move(path);
@@ -92,7 +91,7 @@ void ActorCanMove::clearPath()
 {
 	m_path.clear();
 	m_pathIter = m_path.end();
-	m_destination = nullptr;
+	m_destination = BLOCK_INDEX_MAX;
 	clearAllEventsAndTasks();
 }
 void ActorCanMove::callback()
@@ -101,7 +100,7 @@ void ActorCanMove::callback()
 	assert(m_destination);
 	assert(m_pathIter >= m_path.begin());
 	assert(m_pathIter != m_path.end());
-	Block& block = **m_pathIter;
+	BlockIndex block = *m_pathIter;
 	// Follower is not adjacent, presumably due to being blocked, wait for them.
 	if(m_actor.m_canLead.isLeading())
 	{
@@ -112,20 +111,21 @@ void ActorCanMove::callback()
 			return;
 		}
 	}
+	Blocks& blocks = m_actor.m_area->getBlocks();
 	// Path has become permanantly blocked since being generated, repath.
-	if(!block.m_hasShapes.anythingCanEnterEver() || !block.m_hasShapes.canEnterEverFrom(m_actor, *m_actor.m_location))
+	if(!blocks.shape_anythingCanEnterEver(block) || !blocks.shape_canEnterEverFrom(block, m_actor, m_actor.m_location))
 	{
-		setDestination(*m_destination, false);
+		setDestination(m_destination, false);
 		return;
 	}
-	if(block.m_hasShapes.canEnterCurrentlyFrom(m_actor, *m_actor.m_location))
+	if(blocks.shape_canEnterCurrentlyFrom(block, m_actor, m_actor.m_location))
 	{
 		// Path is not permanantly or temporarily blocked.
 		m_retries = 0;
 		m_actor.setLocation(block);
-		if(&block == m_destination)
+		if(block == m_destination)
 		{
-			m_destination = nullptr;
+			m_destination = BLOCK_INDEX_MAX;
 			m_path.clear();
 			m_actor.m_hasObjectives.subobjectiveComplete();
 		}
@@ -133,8 +133,8 @@ void ActorCanMove::callback()
 		{
 			++m_pathIter;
 			assert(m_pathIter != m_path.end());
-			Block& nextBlock = **m_pathIter;
-			if(nextBlock.m_hasShapes.anythingCanEnterEver() && block.m_hasShapes.canEnterEverFrom(m_actor, *m_actor.m_location))
+			BlockIndex nextBlock = *m_pathIter;
+			if(blocks.shape_anythingCanEnterEver(nextBlock) && blocks.shape_canEnterEverFrom(block, m_actor, m_actor.m_location))
 				scheduleMove();
 			else
 				m_actor.m_hasObjectives.cannotCompleteSubobjective();
@@ -148,7 +148,7 @@ void ActorCanMove::callback()
 			if(m_actor.m_hasObjectives.hasCurrent())
 				m_actor.m_hasObjectives.detour();
 			else
-				setDestination(*m_destination, true);
+				setDestination(m_destination, true);
 		}
 		else
 		{
@@ -162,19 +162,20 @@ void ActorCanMove::scheduleMove()
 	assert(m_actor.m_location != m_actor.m_canMove.m_destination);
 	assert(m_pathIter >= m_path.begin());
 	assert(m_pathIter != m_path.end());
-	Block& moveTo = **m_pathIter;
+	BlockIndex moveTo = *m_pathIter;
 	m_event.schedule(delayToMoveInto(moveTo), *this);
 }
-void ActorCanMove::setDestination(Block& destination, bool detour, bool adjacent, bool unreserved, bool reserve)
+void ActorCanMove::setDestination(BlockIndex destination, bool detour, bool adjacent, bool unreserved, bool reserve)
 {
 	if(reserve)
 		assert(unreserved);
 	clearPath();
+	Blocks& blocks = m_actor.m_area->getBlocks();
 	// If adjacent path then destination isn't known until it's completed.
 	if(!adjacent)
 	{
-		m_destination = &destination;
-		assert(destination.m_hasShapes.anythingCanEnterEver());
+		m_destination = destination;
+		assert(blocks.shape_anythingCanEnterEver(destination));
 		assert(m_actor.m_location != m_destination);
 	}
 	else
@@ -183,12 +184,12 @@ void ActorCanMove::setDestination(Block& destination, bool detour, bool adjacent
 	if(!m_actor.getFaction())
 		reserve = unreserved = false;
 	if(unreserved && !adjacent)
-		assert(!destination.m_reservable.isFullyReserved(m_actor.getFaction()));
-	std::function<bool(const Block&)> predicate = [&](const Block& block){ return block == destination; };
+		assert(!blocks.isReserved(destination, *m_actor.getFaction()));
+	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block){ return block == destination; };
 	// Actor, hasShape, fluidType, destinationHuristic, detour, adjacent, unreserved.
-	m_threadedTask.create(m_actor, nullptr, nullptr, &destination, detour, adjacent, unreserved, reserve);
+	m_threadedTask.create(m_actor, nullptr, nullptr, destination, detour, adjacent, unreserved, reserve);
 }
-void ActorCanMove::setDestinationAdjacentTo(Block& destination, bool detour, bool unreserved, bool reserve)
+void ActorCanMove::setDestinationAdjacentTo(BlockIndex destination, bool detour, bool unreserved, bool reserve)
 {
 	setDestination(destination, detour, true, unreserved, reserve);
 }
@@ -200,7 +201,7 @@ void ActorCanMove::setDestinationAdjacentTo(HasShape& hasShape, bool detour, boo
 }
 void ActorCanMove::setDestinationAdjacentTo(const FluidType& fluidType, bool detour, bool unreserved, bool reserve) 
 {
-	m_threadedTask.create(m_actor, nullptr, &fluidType, nullptr, detour, true, unreserved, reserve);
+	m_threadedTask.create(m_actor, nullptr, &fluidType, BLOCK_INDEX_MAX, detour, true, unreserved, reserve);
 }
 void ActorCanMove::setMoveType(const MoveType& moveType)
 {
@@ -221,30 +222,31 @@ bool ActorCanMove::canMove() const
 		return false;
 	return true;
 }
-Step ActorCanMove::delayToMoveInto(const Block& block) const
+Step ActorCanMove::delayToMoveInto(BlockIndex block) const
 {
 	Speed speed = m_speedActual;
 	CollisionVolume volumeAtLocationBlock = m_actor.m_shape->getCollisionVolumeAtLocationBlock();
-	assert(block != *m_actor.m_location);
-	if(volumeAtLocationBlock + block.m_hasShapes.getDynamicVolume() > Config::maxBlockVolume)
+	assert(block != m_actor.m_location);
+	Blocks& blocks = m_actor.m_area->getBlocks();
+	if(volumeAtLocationBlock + blocks.shape_getDynamicVolume(block) > Config::maxBlockVolume)
 	{
-		CollisionVolume excessVolume = (volumeAtLocationBlock + block.m_hasShapes.getStaticVolume()) - Config::maxBlockVolume;
+		CollisionVolume excessVolume = (volumeAtLocationBlock + blocks.shape_getStaticVolume(block)) - Config::maxBlockVolume;
 		speed = util::scaleByInversePercent(speed, excessVolume);
 	}
 	assert(speed);
 	static const MoveCost stepsPerSecond = Config::stepsPerSecond;
-	MoveCost cost = block.m_hasShapes.moveCostFrom(*m_moveType, *m_actor.m_location);
+	MoveCost cost = blocks.shape_moveCostFrom(block, *m_moveType, m_actor.m_location);
 	assert(cost);
 	return std::max(1u, uint(std::round(float(stepsPerSecond * cost) / float(speed))));
 }
 Step ActorCanMove::stepsTillNextMoveEvent() const 
 {
 	// Add 1 because we increment step number at the end of the step.
-       	return 1 + m_event.getStep() - m_actor.m_location->m_area->m_simulation.m_step; 
+       	return 1 + m_event.getStep() - m_actor.m_area->m_simulation.m_step; 
 }
 MoveEvent::MoveEvent(Step delay, ActorCanMove& cm, const Step start) : ScheduledEvent(cm.m_actor.getSimulation(), delay, start), m_canMove(cm) { }
 // Path Threaded Task.
-PathThreadedTask::PathThreadedTask(Actor& a, HasShape* hs, const FluidType* ft, const Block* hd, bool d, bool ad, bool ur, bool r) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_hasShape(hs), m_fluidType(ft), m_huristicDestination(hd), m_detour(d), m_adjacent(ad), m_unreservedDestination(ur), m_reserveDestination(r), m_findsPath(a, d) 
+PathThreadedTask::PathThreadedTask(Actor& a, HasShape* hs, const FluidType* ft, BlockIndex hd, bool d, bool ad, bool ur, bool r) : ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), m_hasShape(hs), m_fluidType(ft), m_huristicDestination(hd), m_detour(d), m_adjacent(ad), m_unreservedDestination(ur), m_reserveDestination(r), m_findsPath(a, d) 
 { 
 	if(m_reserveDestination)
 		assert(m_unreservedDestination);
@@ -252,7 +254,7 @@ PathThreadedTask::PathThreadedTask(Actor& a, HasShape* hs, const FluidType* ft, 
 PathThreadedTask::PathThreadedTask(const Json& data, DeserializationMemo& deserializationMemo, Actor& a) : 
 	ThreadedTask(a.getThreadedTaskEngine()), m_actor(a), 
 	m_fluidType(data.contains("fluidType") ? &FluidType::byName(data["fluidType"].get<std::string>()) : nullptr),
-	m_huristicDestination(data.contains("huristicDestination") ? &deserializationMemo.m_simulation.getBlockForJsonQuery(data["huristicDestination"]) : nullptr),
+	m_huristicDestination(data.contains("huristicDestination") ? data["huristicDestination"].get<BlockIndex>() : BLOCK_INDEX_MAX),
 	m_detour(data["detour"].get<bool>()),
 	m_adjacent(data["adjacent"].get<bool>()),
 	m_unreservedDestination(data["unreservedDestination"].get<bool>()),
@@ -279,7 +281,7 @@ Json PathThreadedTask::toJson() const
 		}
 	}
 	if(m_huristicDestination)
-		data["huristicDestination"] = m_huristicDestination->positionToJson();
+		data["huristicDestination"] = m_huristicDestination;
 	if(m_fluidType)
 		data["fluidType"] = m_fluidType->name;
 	return data;
@@ -287,20 +289,21 @@ Json PathThreadedTask::toJson() const
 void PathThreadedTask::readStep()
 {
 	m_findsPath.m_huristicDestination = m_huristicDestination;
-	std::function<bool(const Block& block)> predicate;
+	std::function<bool(BlockIndex block)> predicate;
 	assert(m_huristicDestination || m_hasShape || m_fluidType );
 	if(m_hasShape )
 	{
-		predicate = [&](const Block& block){ return m_hasShape->m_blocks.contains(const_cast<Block*>(&block)); };
+		predicate = [&](BlockIndex block){ return m_hasShape->m_blocks.contains(block); };
 		assert(m_adjacent);
 	}
 	else if(m_fluidType )
 	{
-		predicate = [&](const Block& block){ return block.m_hasFluids.contains(*m_fluidType); };
+		Blocks& blocks = m_actor.m_area->getBlocks();
+		predicate = [&](BlockIndex block){ return blocks.fluid_contains(block, *m_fluidType); };
 		assert(m_adjacent);
 	}
 	else
-		predicate = [&](const Block& block){ return block == *m_huristicDestination; };
+		predicate = [&](BlockIndex block){ return block == m_huristicDestination; };
 
 	if(m_unreservedDestination)
 	{
@@ -318,7 +321,6 @@ void PathThreadedTask::readStep()
 }
 void PathThreadedTask::writeStep()
 {
-	m_findsPath.cacheMoveCosts();
 	if(!m_findsPath.found())
 	{
 		if(m_findsPath.m_useCurrentLocation && (!m_unreservedDestination || m_actor.allOccupiedBlocksAreReservable(*m_actor.getFaction())))

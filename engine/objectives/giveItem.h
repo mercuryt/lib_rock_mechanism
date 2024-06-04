@@ -7,7 +7,6 @@
 
 class Actor;
 class Item;
-class Block;
 
 class GiveItemObjective final : public Objective
 {

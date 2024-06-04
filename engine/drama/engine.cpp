@@ -9,6 +9,7 @@
 #include "arcs/banditsArrive.h"
 #include "deserializationMemo.h"
 #include "../simulation/hasAreas.h"
+#include "types.h"
 #include <memory>
 #include <new>
 std::vector<DramaArcType> DramaArc::getTypes()
@@ -85,81 +86,85 @@ void DramaArc::actorsLeave(std::vector<Actor*> actors)
 		}
 	}
 }
-Block* DramaArc::getEntranceToArea(Area& area, const Shape& shape, const MoveType& moveType) const
+BlockIndex DramaArc::getEntranceToArea(Area& area, const Shape& shape, const MoveType& moveType) const
 {
-	std::vector<Block*> blocks;
-	for(Block& block : area.getBlocks())
-		if(block.m_hasShapes.moveTypeCanEnter(moveType) && block.m_isEdge && !block.m_underground)
-			blocks.push_back(&block);
-	Block* candidate = nullptr;
+	std::vector<BlockIndex> candidates;
+	Blocks& blocks = area.getBlocks();
+	for(BlockIndex block : blocks.getAll())
+		if(blocks.shape_moveTypeCanEnter(block, moveType) && blocks.isEdge(block) && !blocks.isUnderground(block))
+			candidates.push_back(block);
+	BlockIndex candidate = BLOCK_INDEX_MAX;
 	auto& random = area.m_simulation.m_random;
 	static uint16_t minimumConnectedCount = 200;
 	do {
 		if(candidate)
 		{
-			auto iterator = std::ranges::find(blocks, candidate);
-			assert(iterator != blocks.end());
-			blocks.erase(iterator);
+			auto iterator = std::ranges::find(candidates, candidate);
+			assert(iterator != candidates.end());
+			candidates.erase(iterator);
 		}
-		if(blocks.empty())
-			return nullptr;
-		candidate = random.getInVector(blocks);
+		if(candidates.empty())
+			return BLOCK_INDEX_MAX;
+		candidate = random.getInVector(candidates);
 	}
-	while (!blockIsConnectedToAtLeast(*candidate, shape, moveType, minimumConnectedCount));
+	while (!blockIsConnectedToAtLeast(candidate, shape, moveType, minimumConnectedCount));
 	assert(candidate);
 	return candidate;
 }
-Block* DramaArc::findLocationOnEdgeForNear(const Shape& shape, const MoveType& moveType, Block& origin, DistanceInBlocks distance, std::unordered_set<Block*> exclude) const
+BlockIndex DramaArc::findLocationOnEdgeForNear(const Shape& shape, const MoveType& moveType, BlockIndex origin, DistanceInBlocks distance, std::unordered_set<BlockIndex> exclude) const
 {
 	Facing facing = getFacingAwayFromEdge(origin);
-	auto predicate = [&](Block& thisBlock) -> bool {
-		if(exclude.contains(&thisBlock))
+	Blocks& blocks = m_area->getBlocks();
+	auto predicate = [&](BlockIndex thisBlock) -> bool {
+		if(exclude.contains(thisBlock))
 			return false;
 		// TODO: A single method doing both of these with one iteration would be faster.
-		if(!thisBlock.m_hasShapes.shapeAndMoveTypeCanEnterEverWithFacing(shape, moveType, facing) ||
-			!thisBlock.m_hasShapes.shapeAndMoveTypeCanEnterCurrentlyWithFacing(shape, moveType, facing)
+		if(!blocks.shape_shapeAndMoveTypeCanEnterEverWithFacing(thisBlock, shape, moveType, facing) ||
+			!blocks.shape_shapeAndMoveTypeCanEnterCurrentlyWithFacing(thisBlock, shape, moveType, facing)
 		)
 			return false;
-		for(Block* occupiedBlock : shape.getBlocksOccupiedAt(thisBlock, facing))
-			if(occupiedBlock->m_isEdge)
+		for(BlockIndex occupiedBlock : shape.getBlocksOccupiedAt(blocks, thisBlock, facing))
+			if(blocks.isEdge(occupiedBlock))
 				return true;
 		return false;
 	};
 	// Get block in range of origin which satisifies predicate.
-	return origin.getBlockInRangeWithCondition(distance, predicate);
+	return blocks.getBlockInRangeWithCondition(origin, distance, predicate);
 }
-bool DramaArc::blockIsConnectedToAtLeast(const Block& origin, [[maybe_unused]] const Shape& shape, const MoveType& moveType, uint16_t count) const
+bool DramaArc::blockIsConnectedToAtLeast(BlockIndex origin, [[maybe_unused]] const Shape& shape, const MoveType& moveType, uint16_t count) const
 {
-	std::unordered_set<const Block*> accumulated;
-	std::stack<const Block*> open;
-	open.push(&origin);
+	std::unordered_set<BlockIndex> accumulated;
+	std::stack<BlockIndex> open;
+	open.push(origin);
+	Blocks& blocks = m_area->getBlocks();
 	while(!open.empty())
 	{
-		const Block* candidate = open.top();
+		BlockIndex candidate = open.top();
 		open.pop();
 		if(!accumulated.contains(candidate))
 		{
 			accumulated.insert(candidate);
 			if(accumulated.size() == count)
 				return true;
-			for(const Block* adjacent : candidate->m_adjacents)
+			for(BlockIndex adjacent : blocks.getDirectlyAdjacent(candidate))
 				//TODO: check if shape can fit into block with any facing.
-				if(adjacent && !adjacent->isSolid() && adjacent->m_hasShapes.moveTypeCanEnter(moveType))
+				if(adjacent != BLOCK_INDEX_MAX && !blocks.solid_is(adjacent) && blocks.shape_moveTypeCanEnter(adjacent, moveType))
 					open.push(adjacent);
 		}
 	}
 	return false;
 }
-Facing DramaArc::getFacingAwayFromEdge(const Block& block) const
+Facing DramaArc::getFacingAwayFromEdge(BlockIndex block) const
 {
-	assert(block.m_isEdge);
-	if(!block.getBlockNorth())
+	Blocks& blocks = m_area->getBlocks();
+	assert(blocks.isEdge(block));
+	if(!blocks.getBlockNorth(block))
 		return 2;
-	if(!block.getBlockSouth())
+	if(!blocks.getBlockSouth(block))
 		return 0;
-	if(!block.getBlockEast())
+	if(!blocks.getBlockEast(block))
 		return 3;
-	if(!block.getBlockWest())
+	if(!blocks.getBlockWest(block))
 		return 1;
 	return 0;
 }

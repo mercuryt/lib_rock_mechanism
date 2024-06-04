@@ -1,8 +1,10 @@
 #pragma once
 
 #include "attackType.h"
+#include "blocks/blocks.h"
 #include "eventSchedule.hpp"
 #include "hasShape.h"
+#include "types.h"
 
 #include <ratio>
 #include <string>
@@ -66,7 +68,7 @@ struct ItemType final
 	const bool canHoldFluids = false;
 	ItemType(std::string name, const Shape& shape, const MoveType& moveType, Volume volume, Volume internalVolume, uint32_t value, bool installable, bool generic, bool canHoldFluids);
 	AttackType* getRangedAttackType() const;
-	Block* getCraftLocation(const Block& location, Facing facing) const;
+	BlockIndex getCraftLocation(Blocks& blocks, BlockIndex location, Facing facing) const;
 	bool hasRangedAttack() const;
 	bool hasMeleeAttack() const;
 	// Infastructure.
@@ -88,7 +90,8 @@ struct ItemParamaters final
 	uint32_t quality = 0;
 	Percent percentWear = 0;
 	CraftJob* craftJob = nullptr;
-	Block* location = nullptr;
+	BlockIndex location = BLOCK_INDEX_MAX;
+	Area* area = nullptr;
 	Faction* faction = nullptr;
 	bool installed = false;
 	ItemId getId();
@@ -115,8 +118,8 @@ public:
 	void remove(Item& item, Quantity quantity);
 	void remove(const ItemType& itemType, const MaterialType& materialType, Quantity quantity);
 	void load(HasShape& hasShape, Quantity quantity = 0);
-	void unloadTo(HasShape& hasShape, Block& location);
-	Item& unloadGenericTo(const ItemType& itemType, const MaterialType& materialType, Quantity quantity, Block& location);
+	void unloadTo(HasShape& hasShape, BlockIndex location);
+	Item& unloadGenericTo(const ItemType& itemType, const MaterialType& materialType, Quantity quantity, BlockIndex location);
 	void destroyCargo(Item& item);
 	[[nodiscard]] std::vector<HasShape*>& getContents() { return m_shapes; }
 	[[nodiscard]] std::vector<Item*>& getItems() { return m_items; }
@@ -189,13 +192,13 @@ public:
 	[[nodiscard]] Json toJson() const;
 	void setName(std::wstring name) { m_name = name; }
 	void destroy();
-	void setLocation(Block& block);
+	void setLocation(BlockIndex block, Area* area = nullptr);
 	void exit();
-	void pierced(Area area);
+	void pierced(Volume volume);
 	void setTemperature(Temperature temperature);
 	void addQuantity(Quantity delta);
 	void removeQuantity(Quantity delta);
-	void install(Block& block, Facing facing, Faction& faction);
+	void install(BlockIndex block, Facing facing, Faction& faction);
 	void merge(Item& item);
 	[[nodiscard]] Quantity getQuantity() const { return m_quantity; }
 	[[nodiscard]] bool isItem() const { return true; }

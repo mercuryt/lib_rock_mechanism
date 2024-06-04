@@ -1,12 +1,15 @@
 #pragma once
 
+#include "types.h"
+
 #include <cmath>
 #include <unordered_set>
 #include <vector>
+#include <array>
 #include <cassert>
 #include <cstdint>
 
-class Block;
+class Area;
 
 struct XYZ { 
 	int32_t x; 
@@ -37,4 +40,4 @@ inline std::vector<std::vector<XYZ>> cache;
 inline std::array<XYZ, 6> offsets = { XYZ(0,0,-1), XYZ(0,0,1), XYZ(0,-1,0), XYZ(0,1,0), XYZ(-1,0,0), XYZ(1,0,0) };
 
 std::vector<XYZ> getNthAdjacentOffsets(uint32_t n);
-std::vector<Block*> getNthAdjacentBlocks(Block& center, uint32_t i);
+std::vector<BlockIndex> getNthAdjacentBlocks(Area& area, BlockIndex center, uint32_t i);

@@ -10,18 +10,18 @@ class FluidGroup;
 class FillQueue final : public FluidQueue
 {
 public:
-	std::unordered_set<Block*> m_futureFull;
-	std::unordered_set<Block*> m_futureNoLongerEmpty;
-	std::unordered_set<Block*> m_overfull;
+	std::unordered_set<BlockIndex> m_futureFull;
+	std::unordered_set<BlockIndex> m_futureNoLongerEmpty;
+	std::unordered_set<BlockIndex> m_overfull;
 private:
 	[[nodiscard]] uint32_t getPriority(FutureFlowBlock& futureFlowBlock) const;
 public:
 	FillQueue(FluidGroup& fluidGroup);
-	void buildFor(std::unordered_set<Block*>& members);
+	void buildFor(std::unordered_set<BlockIndex>& members);
 	void initalizeForStep();
-	void recordDelta(uint32_t volume, uint32_t flowCapacity, uint32_t flowTillNextStep);
+	void recordDelta(CollisionVolume volume, CollisionVolume flowCapacity, CollisionVolume flowTillNextStep);
 	void applyDelta();
-	[[nodiscard]] uint32_t groupLevel() const;
+	[[nodiscard]] CollisionVolume groupLevel() const;
 	void findGroupEnd();
 	void validate() const;
 };

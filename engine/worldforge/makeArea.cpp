@@ -88,12 +88,12 @@ void World::assignAreaHeights(WorldLocation& location, Area& area)
 		for(size_t y = 0; y < area.m_sizeY; ++y)
 		{
 			// For each block get the sum of values from adjacentHeights and scale by distance.
-			Block& block = area.getBlock(x, y, 0);
+			BlockIndex& block = area.getBlock(x, y, 0);
 			uint32_t totalInfluence = 0;
 			std::vector<size_t> heightTimesInfluence;
 			for(AdjacentHeight& height : adjacentHeights)
 			{
-				Block& adjacentBlock = area.getBlock(height.x, height.y, 0);
+				BlockIndex& adjacentBlock = area.getBlock(height.x, height.y, 0);
 				uint32_t distance = block.distance(adjacentBlock);
 				uint32_t influence = util::scaleByInverseFraction(1000, distance, maxDistance);
 				totalInfluence += influence;
@@ -130,27 +130,27 @@ void World::assignAreaBiome(WorldLocation& location, Area& area)
 }
 struct Candidate
 {
-	Block* block;
+	BlockIndex* block;
 	Candidate* previous;
 	bool operator<(const Candidate& other) { return block->m_z < other.block->m_z; }
 };
-std::vector<Block*> getPathForRiver(Block& start, Block& end)
+std::vector<BlockIndex*> getPathForRiver(BlockIndex& start, BlockIndex& end)
 {
 		std::list<Candidate> candidates{{&start, nullptr}};
-		std::unordered_set<const Block*> closedList{&start};
+		std::unordered_set<const BlockIndex*> closedList{&start};
 		std::priority_queue<Candidate*> openList;
 		openList.push(&candidates.front());
 		while(!openList.empty())
 		{
 			Candidate* candidate = openList.top();
 			openList.pop();
-			for(Block* adjacent : candidate->block->m_adjacents)
-				if(adjacent)
+			for(BlockIndex* adjacent : candidate->block->m_adjacents)
+				if(adjacent != BLOCK_INDEX_MAX)
 				{
 					if(adjacent == &end)
 					{
 						// Found.
-						std::vector<Block*> path{adjacent, candidate->block};
+						std::vector<BlockIndex*> path{adjacent, candidate->block};
 						while(candidate->previous)
 						{
 							candidate = candidate->previous;
@@ -182,22 +182,22 @@ void World::makeAreaRiversAndLakes(WorldLocation& location, Area& area)
 	{
 		WorldLocation* upStream = const_cast<River*>(river)->getUpStream(location);
 		WorldLocation* downStream = const_cast<River*>(river)->getDownStream(location);
-		Block& start = upStream ? area.getBlockForAdjacentLocation(*upStream) : area.getMiddleAtGroundLevel();
-		Block& end = downStream ? area.getBlockForAdjacentLocation(*downStream) : area.getMiddleAtGroundLevel();
+		BlockIndex& start = upStream ? area.getBlockForAdjacentLocation(*upStream) : area.getMiddleAtGroundLevel();
+		BlockIndex& end = downStream ? area.getBlockForAdjacentLocation(*downStream) : area.getMiddleAtGroundLevel();
 		assert(start != end);
 		auto path = getPathForRiver(start, end);
-		std::unordered_set<Block*> blocksForRiver;
-		for(Block* block : path)
+		std::unordered_set<BlockIndex*> blocksForRiver;
+		for(BlockIndex* block : path)
 		{
 			// expand
-			for(Block* adjacent : getNthAdjacentBlocks(*block, river->m_rate))
+			for(BlockIndex* adjacent : getNthAdjacentBlocks(*block, river->m_rate))
 				if(adjacent->m_z <= block->m_z)
 					blocksForRiver.insert(adjacent);
 		}
-		for(Block* block : blocksForRiver)
+		for(BlockIndex* block : blocksForRiver)
 		{
 			// Set not solid.
-			Block* b = block;
+			BlockIndex* b = block;
 			while(b->isSolid())
 			{
 				b->setNotSolid();
@@ -213,7 +213,7 @@ void World::makeAreaRiversAndLakes(WorldLocation& location, Area& area)
 	// TODO: lakes that extend over more then one location.
 	if(location.lake)
 	{
-		std::unordered_set<Block*> blocks;
+		std::unordered_set<BlockIndex*> blocks;
 		for(uint8_t i = 0; i < location.lake->size; ++i)
 		{
 			uint32_t radius = location.lake->size * Config::lakeRadiusModifier;
@@ -222,15 +222,15 @@ void World::makeAreaRiversAndLakes(WorldLocation& location, Area& area)
 			uint32_t centerY = (area.m_sizeY - 1) / 2;
 			uint32_t x = m_random.getInRange(centerX - radius, centerX + radius);
 			uint32_t y = m_random.getInRange(centerY - radius, centerY + radius);
-			for(Block* block : getNthAdjacentBlocks(area.getGroundLevel(x, y), radius))
+			for(BlockIndex* block : getNthAdjacentBlocks(area.getGroundLevel(x, y), radius))
 				if(block->m_z <= depth)
 					blocks.insert(block);
 
 		}
-		for(Block* block : blocks)
+		for(BlockIndex* block : blocks)
 		{
 			// Set not solid.
-			Block* b = block;
+			BlockIndex* b = block;
 			while(b->isSolid())
 			{
 				b->setNotSolid();

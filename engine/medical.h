@@ -41,12 +41,12 @@ public:
 	void cancel();
 	void delay() { cancel(); }
 	void reset() { cancel(); }
-	void setLocation(Block& block);
+	void setLocation(BlockIndex& block);
 	bool isNeed() const { return false; }
 	std::string name() const { return "medical"; }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Medical; }
-	bool blockContainsPatientForThisWorker(const Block& block) const;
-	MedicalProject* getProjectForActorAtLocation(Block& block);
+	bool blockContainsPatientForThisWorker(const BlockIndex& block) const;
+	MedicalProject* getProjectForActorAtLocation(BlockIndex& block);
 	friend class MedicalThreadedTask;
 };
 struct MedicalProjectType final
@@ -84,7 +84,7 @@ public:
 	void offDelay() { assert(false); }
 	Step getDuration() const;
 	uint32_t getItemScaleFactor() const;
-	MedicalProject(Actor& p, Block& location, Actor& doctor, Wound& wound, MedicalProjectType& medicalProjectType) : Project(doctor.getFaction(), location, 0), m_patient(p), m_doctor(doctor), m_wound(wound), m_medicalProjectType(medicalProjectType) { }
+	MedicalProject(Actor& p, BlockIndex& location, Actor& doctor, Wound& wound, MedicalProjectType& medicalProjectType) : Project(doctor.getFaction(), location, 0), m_patient(p), m_doctor(doctor), m_wound(wound), m_medicalProjectType(medicalProjectType) { }
 	friend class AreaHasMedicalPatientsForFaction;
 };
 struct SortPatientsByPriority
@@ -104,7 +104,7 @@ class AreaHasMedicalPatientsForFaction final
 	Faction& m_faction;
 	std::set<Actor*, SortPatientsByPriority> m_waitingPatients;
 	std::set<Actor*, SortDoctorsBySkill> m_waitingDoctors;
-	std::unordered_set<Block*> m_medicalLocations;
+	std::unordered_set<BlockIndex*> m_medicalLocations;
 	std::unordered_map<Actor*, MedicalProject> m_medicalProjects;
 	std::unordered_map<Actor*, HasScheduledEvent<MedicalPatientRelistEvent>> m_relistEvents;
 public:
@@ -114,9 +114,9 @@ public:
 	void removePatientTemporarily(Actor& patient);
 	void addDoctor(Actor& doctor);
 	void removeDoctor(Actor& doctor);
-	void addLocation(Block& block);
-	void removeLocation(Block& block);
-	void createProject(Actor& patient, Block& location, Actor& doctor, Wound& wound, const MedicalProjectType& medicalProjectType);
+	void addLocation(BlockIndex& block);
+	void removeLocation(BlockIndex& block);
+	void createProject(Actor& patient, BlockIndex& location, Actor& doctor, Wound& wound, const MedicalProjectType& medicalProjectType);
 	void cancelProject(MedicalProject& project);
 	void destroyProject(MedicalProject& project);
 	void triage();

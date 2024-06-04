@@ -1,5 +1,4 @@
 #include "project.h"
-#include "block.h"
 #include "actor.h"
 #include "item.h"
 #include "area.h"
@@ -51,29 +50,31 @@ void ProjectRequiredShapeDishonoredCallback::execute(Quantity oldCount, Quantity
 {
 	m_project.onHasShapeReservationDishonored(m_hasShape, oldCount, newCount);
 }
-ProjectFinishEvent::ProjectFinishEvent(const Step delay, Project& p, const Step start) : ScheduledEvent(p.m_location.m_area->m_simulation, delay, start), m_project(p) {}
+ProjectFinishEvent::ProjectFinishEvent(const Step delay, Project& p, const Step start) : 
+	ScheduledEvent(p.m_area.m_simulation, delay, start), m_project(p) { }
 void ProjectFinishEvent::execute() { m_project.complete(); }
 void ProjectFinishEvent::clearReferences() { m_project.m_finishEvent.clearPointer(); }
-
-ProjectTryToHaulEvent::ProjectTryToHaulEvent(const Step delay, Project& p, const Step start) : ScheduledEvent(p.m_location.m_area->m_simulation, delay, start), m_project(p) { }
+ProjectTryToHaulEvent::ProjectTryToHaulEvent(const Step delay, Project& p, const Step start) : 
+	ScheduledEvent(p.m_area.m_simulation, delay, start), m_project(p) { }
 void ProjectTryToHaulEvent::execute() { m_project.m_tryToHaulThreadedTask.create(m_project); }
 void ProjectTryToHaulEvent::clearReferences() { m_project.m_tryToHaulEvent.clearPointer(); }
-
-ProjectTryToReserveEvent::ProjectTryToReserveEvent(const Step delay, Project& p, const Step start) : ScheduledEvent(p.m_location.m_area->m_simulation, delay, start), m_project(p) { }
+ProjectTryToReserveEvent::ProjectTryToReserveEvent(const Step delay, Project& p, const Step start) : 
+	ScheduledEvent(p.m_area.m_simulation, delay, start), m_project(p) { }
 void ProjectTryToReserveEvent::execute() 
 { 
 	m_project.setDelayOff();
 }
 void ProjectTryToReserveEvent::clearReferences() { m_project.m_tryToReserveEvent.clearPointer(); }
 
-ProjectTryToMakeHaulSubprojectThreadedTask::ProjectTryToMakeHaulSubprojectThreadedTask(Project& p) : ThreadedTask(p.m_location.m_area->m_simulation.m_threadedTaskEngine), m_project(p) { }
+ProjectTryToMakeHaulSubprojectThreadedTask::ProjectTryToMakeHaulSubprojectThreadedTask(Project& p) : 
+	ThreadedTask(p.m_area.m_simulation.m_threadedTaskEngine), m_project(p) { }
 void ProjectTryToMakeHaulSubprojectThreadedTask::readStep()
 {
 	for(auto& [actor, projectWorker] : m_project.m_workers)
 	{
 		if(projectWorker.haulSubproject != nullptr)
 			continue;
-		std::function<bool(const Block&)> condition = [this, actor](const Block& block) { return blockContainsDesiredItem(block, *actor); };
+		std::function<bool(BlockIndex)> condition = [this, actor](BlockIndex block) { return blockContainsDesiredItem(block, *actor); };
 		FindsPath findsPath(*actor, false);
 		findsPath.pathToUnreservedAdjacentToPredicate(condition, *actor->getFaction());
 		// Only make at most one per step.
@@ -121,9 +122,10 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep()
 	}
 }
 void ProjectTryToMakeHaulSubprojectThreadedTask::clearReferences() { m_project.m_tryToHaulThreadedTask.clearPointer(); }
-bool ProjectTryToMakeHaulSubprojectThreadedTask::blockContainsDesiredItem(const Block& block, Actor& actor)
+bool ProjectTryToMakeHaulSubprojectThreadedTask::blockContainsDesiredItem(const BlockIndex block, Actor& actor)
 {
-	for(Item* item : block.m_hasItems.getAll())
+	auto& blocks = m_project.m_area.getBlocks();
+	for(Item* item : blocks.item_getAll(block))
 		if(m_project.m_toPickup.contains(item))
 		{
 			m_haulProjectParamaters = HaulSubproject::tryToSetHaulStrategy(m_project, *item, actor);
@@ -132,7 +134,8 @@ bool ProjectTryToMakeHaulSubprojectThreadedTask::blockContainsDesiredItem(const 
 		}
 	return false;
 };
-ProjectTryToAddWorkersThreadedTask::ProjectTryToAddWorkersThreadedTask(Project& p) : ThreadedTask(p.m_location.m_area->m_simulation.m_threadedTaskEngine), m_project(p) { }
+ProjectTryToAddWorkersThreadedTask::ProjectTryToAddWorkersThreadedTask(Project& p) :
+       	ThreadedTask(p.m_area.m_simulation.m_threadedTaskEngine), m_project(p) { }
 void ProjectTryToAddWorkersThreadedTask::readStep()
 {
 	// Iterate candidate workers, verify that they can path to the project
@@ -178,7 +181,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 				assert(quantity != 0);
 				counts.reserved += quantity;
 				assert(counts.reserved <= counts.required);
-				if(*hasShape.m_location == m_project.m_location || hasShape.isAdjacentTo(m_project.m_location))
+				if(hasShape.m_location == m_project.m_location || hasShape.isAdjacentTo(m_project.m_location))
 				{
 					// Item is already at or next to project location.
 					counts.delivered += quantity;
@@ -191,9 +194,10 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 					m_project.addToPickup(hasShape, counts, quantity);
 			};
 			// Verfy the worker can path to the required materials. Cumulative for all candidates in this step but reset if not satisfied.
-			std::function<bool(const Block&)> predicate = [&](const Block& block)
+			std::function<bool(BlockIndex)> predicate = [&](BlockIndex block)
 			{
-				for(Item* item : block.m_hasItems.getAll())
+				auto& blocks = m_project.m_area.getBlocks();
+				for(Item* item : blocks.item_getAll(block))
 					for(auto& [itemQuery, projectRequirementCounts] : m_project.m_requiredItems)
 					{
 						if(projectRequirementCounts.required == projectRequirementCounts.reserved)
@@ -208,7 +212,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 						if(m_project.reservationsComplete())
 							return true;
 					}
-				for(Actor* actor : block.m_hasActors.getAll())
+				for(Actor* actor : blocks.actor_getAll(block))
 					for(auto& [actorQuery, projectRequirementCounts] : m_project.m_requiredActors)
 					{
 						if(projectRequirementCounts.required == projectRequirementCounts.reserved)
@@ -362,18 +366,35 @@ void ProjectTryToAddWorkersThreadedTask::resetProjectCounts()
 	m_project.m_toPickup.clear();
 }
 // Derived classes are expected to provide getDuration, getConsumedItems, getUnconsumedItems, getByproducts, onDelay, offDelay, and onComplete.
-Project::Project(Faction* f, Block& l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback) : m_finishEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToReserveEvent(l.m_area->m_simulation.m_eventSchedule), m_tryToHaulThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_tryToAddWorkersThreadedTask(l.m_area->m_simulation.m_threadedTaskEngine), m_canReserve(f), m_maxWorkers(mw), m_delay(false), m_haulRetries(0), m_requirementsLoaded(false), m_minimumMoveSpeed(Config::minimumHaulSpeedInital), m_location(l), m_faction(*f)
+Project::Project(Faction* f, Area& a, BlockIndex l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback) : 
+	m_finishEvent(a.m_simulation.m_eventSchedule), 
+	m_tryToHaulEvent(a.m_simulation.m_eventSchedule), 
+	m_tryToReserveEvent(a.m_simulation.m_eventSchedule),
+       	m_tryToHaulThreadedTask(a.m_simulation.m_threadedTaskEngine), 
+	m_tryToAddWorkersThreadedTask(a.m_simulation.m_threadedTaskEngine), 
+	m_canReserve(f), 
+	m_area(a), 
+	m_faction(*f), 
+	m_location(l),
+	m_minimumMoveSpeed(Config::minimumHaulSpeedInital), 
+	m_maxWorkers(mw)
 {
-	m_location.m_reservable.reserveFor(m_canReserve, 1u, std::move(locationDishonorCallback));
-	m_location.m_hasProjects.add(*this);
+	m_area.getBlocks().reserve(m_location, m_canReserve, std::move(locationDishonorCallback));
+	m_area.getBlocks().project_add(m_location, *this);
 }
-Project::Project(const Json& data, DeserializationMemo& deserializationMemo) : m_finishEvent(deserializationMemo.m_simulation.m_eventSchedule), m_tryToHaulEvent(deserializationMemo.m_simulation.m_eventSchedule), m_tryToReserveEvent(deserializationMemo.m_simulation.m_eventSchedule), m_tryToHaulThreadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine), m_tryToAddWorkersThreadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine), 
+Project::Project(const Json& data, DeserializationMemo& deserializationMemo) : 
+	m_finishEvent(deserializationMemo.m_simulation.m_eventSchedule), 
+	m_tryToHaulEvent(deserializationMemo.m_simulation.m_eventSchedule), 
+	m_tryToReserveEvent(deserializationMemo.m_simulation.m_eventSchedule), 
+	m_tryToHaulThreadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine), 
+	m_tryToAddWorkersThreadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine), 
 	m_canReserve(&deserializationMemo.faction(data["faction"].get<std::wstring>())),
-	m_maxWorkers(data["maxWorkers"].get<Quantity>()), m_delay(data["delay"].get<bool>()), 
-	m_haulRetries(data["haulRetries"].get<Quantity>()), m_requirementsLoaded(data["requirementsLoaded"].get<bool>()), 
+	m_area(deserializationMemo.area(data["area"])), m_faction(deserializationMemo.faction(data["faction"].get<std::wstring>())), 
+	m_location(deserializationMemo.m_simulation.getBlockForJsonQuery(data["location"])), m_haulRetries(data["haulRetries"].get<Quantity>()), 
 	m_minimumMoveSpeed(data["minimumMoveSpeed"].get<Speed>()),
-	m_location(deserializationMemo.m_simulation.getBlockForJsonQuery(data["location"])), 
-	m_faction(deserializationMemo.faction(data["faction"].get<std::wstring>())) 
+	m_maxWorkers(data["maxWorkers"].get<Quantity>()), 
+	m_requirementsLoaded(data["requirementsLoaded"].get<bool>()),
+	m_delay(data["delay"].get<bool>()) 
 { 
 	if(data.contains("requiredItems"))
 		for(const Json& pair : data["requiredItems"])
@@ -427,7 +448,7 @@ Project::Project(const Json& data, DeserializationMemo& deserializationMemo) : m
 	if(data.contains("tryToAddWorkersThreadedTask"))
 		m_tryToAddWorkersThreadedTask.create(*this);
 	deserializationMemo.m_projects[data["address"].get<uintptr_t>()] = this;
-	m_location.m_hasProjects.add(*this);
+	m_area.getBlocks().project_add(m_location, *this);
 }
 void Project::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
 {
@@ -456,7 +477,7 @@ Json Project::toJson() const
 		{"maxWorkers", m_maxWorkers},
 		{"delay", m_delay},
 		{"haulRetries", m_haulRetries},
-		{"location", m_location.positionToJson()},
+		{"location", m_location},
 		{"requirementsLoaded", m_requirementsLoaded},
 		{"minimumMoveSpeed", m_minimumMoveSpeed},
 	});
@@ -718,17 +739,18 @@ void Project::removeFromMaking(Actor& actor)
 void Project::complete()
 {
 	m_canReserve.deleteAllWithoutCallback();
-	m_location.m_hasProjects.remove(*this);
+	auto& blocks = m_area.getBlocks();
+	blocks.project_remove(m_location, *this);
 	for(Item* item : m_toConsume)
 		item->destroy();
-	if(!m_location.m_area->m_hasStockPiles.contains(m_faction))
-		m_location.m_area->m_hasStockPiles.registerFaction(m_faction);
+	if(!m_area.m_hasStockPiles.contains(m_faction))
+		m_area.m_hasStockPiles.registerFaction(m_faction);
 	for(auto& [itemType, materialType, quantity] : getByproducts())
 	{
-		Item& item = m_location.m_hasItems.addGeneric(*itemType, *materialType, quantity);
+		Item& item = blocks.item_addGeneric(m_location, *itemType, *materialType, quantity);
 		// Item may be newly created or it may be prexisting, and thus already designated for stockpileing.
 		if(!item.m_canBeStockPiled.contains(m_faction))
-			m_location.m_area->m_hasStockPiles.at(m_faction).addItem(item);
+			m_area.m_hasStockPiles.at(m_faction).addItem(item);
 	}
 	for(auto& [actor, projectWorker] : m_workers)
 		actor->m_project = nullptr;
@@ -737,7 +759,7 @@ void Project::complete()
 void Project::cancel()
 {
 	m_canReserve.deleteAllWithoutCallback();
-	m_location.m_hasProjects.remove(*this);
+	m_area.getBlocks().project_remove(m_location, *this);
 	//for(auto& [actor, projectWorker] : m_workers)
 		//actor->m_project = nullptr;
 	onCancel();
@@ -746,7 +768,7 @@ void Project::scheduleFinishEvent(Step start)
 {
 	assert(!m_making.empty());
 	if(start == 0)
-		start = m_location.m_area->m_simulation.m_step;
+		start = m_area.m_simulation.m_step;
 	Step delay = getDuration();
 	if(m_finishEvent.exists())
 	{
@@ -772,7 +794,7 @@ void Project::haulSubprojectCancel(HaulSubproject& haulSubproject)
 	addToPickup(haulSubproject.m_toHaul, haulSubproject.m_projectRequirementCounts, haulSubproject.m_quantity);
 	for(Actor* actor : haulSubproject.m_workers)
 	{
-		actor->m_canPickup.putDownIfAny(*actor->m_location);
+		actor->m_canPickup.putDownIfAny(actor->m_location);
 		actor->m_canFollow.unfollowIfFollowing();
 		actor->m_canMove.clearPath();
 		actor->m_canReserve.deleteAllWithoutCallback();
@@ -783,7 +805,7 @@ void Project::haulSubprojectCancel(HaulSubproject& haulSubproject)
 }
 void Project::setLocationDishonorCallback(std::unique_ptr<DishonorCallback> dishonorCallback)
 {
-	m_location.m_reservable.setDishonorCallbackFor(m_canReserve, std::move(dishonorCallback));
+	m_area.getBlocks().setReservationDishonorCallback(m_location, m_canReserve, std::move(dishonorCallback));
 }
 void Project::setDelayOn() 
 { 

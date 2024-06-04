@@ -39,12 +39,12 @@ void BanditsArriveDramaArc::callback()
 	constexpr DistanceInBlocks maxBlockDistance = 10;
 	if(m_isActive)
 	{
-		std::unordered_set<Block*> exclude;
-		Block& destination = m_area->getMiddleAtGroundLevel();
+		std::unordered_set<BlockIndex> exclude;
+		BlockIndex destination = m_area->getBlocks().getCenterAtGroundLevel();
 		if(!m_leader)
 		{
 			const AnimalSpecies& species = *random.getInVector(sentientSpecies);
-			Block* location = findLocationOnEdgeForNear(*species.shapes.back(), species.moveType, *m_entranceBlock, maxBlockDistance, exclude);
+			BlockIndex location = findLocationOnEdgeForNear(*species.shapes.back(), species.moveType, m_entranceBlock, maxBlockDistance, exclude);
 			exclude.insert(location);
 			ActorParamaters params{
 				.species=species,
@@ -67,7 +67,7 @@ void BanditsArriveDramaArc::callback()
 		while(m_quantity--)
 		{
 			const AnimalSpecies& species = random.chance(0.5) ? m_leader->m_species : *random.getInVector(sentientSpecies);
-			Block* location = findLocationOnEdgeForNear(*species.shapes.back(), species.moveType, *m_entranceBlock, maxBlockDistance, exclude);
+			BlockIndex location = findLocationOnEdgeForNear(*species.shapes.back(), species.moveType, m_entranceBlock, maxBlockDistance, exclude);
 			if(location)
 			{
 				exclude.insert(location);
@@ -95,7 +95,7 @@ void BanditsArriveDramaArc::callback()
 		{
 			scheduleDepart();
 			m_isActive = false;
-			m_entranceBlock = nullptr;
+			m_entranceBlock = BLOCK_INDEX_MAX;
 			m_leader = nullptr;
 		}
 	}
@@ -105,7 +105,7 @@ void BanditsArriveDramaArc::callback()
 		static const Shape& shape = Shape::byName("oneByOneFull");
 		static const MoveType moveType = MoveType::byName("two legs and swim in water");
 		m_entranceBlock = getEntranceToArea(*m_area, shape, moveType);
-		if(!m_entranceBlock)
+		if(m_entranceBlock == BLOCK_INDEX_MAX)
 			scheduleArrive();
 		else
 		{

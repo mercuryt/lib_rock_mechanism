@@ -3,7 +3,7 @@
 #include "../displayData.h"
 #include "../../engine/block.h"
 #include "../../engine/fluidType.h"
-void ContextMenu::drawFluidControls(Block& block)
+void ContextMenu::drawFluidControls(BlockIndex& block)
 {
 	// Fluids.
 	for(auto& [fluidType, pair] : block.m_hasFluids.getAll())
@@ -36,7 +36,7 @@ void ContextMenu::drawFluidControls(Block& block)
 					{
 						FluidGroup& group = *block.m_hasFluids.getFluidGroup(*fluidType);
 						m_window.deselectAll();
-						for(Block* block : group.getBlocks())
+						for(BlockIndex* block : group.getBlocks())
 							m_window.getSelectedBlocks().insert(block);
 					}
 					hide();
@@ -73,7 +73,7 @@ void ContextMenu::drawFluidControls(Block& block)
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				if(m_window.getSelectedBlocks().empty())
 					m_window.selectBlock(block);
-				for(Block* selectedBlock : m_window.getSelectedBlocks())
+				for(BlockIndex* selectedBlock : m_window.getSelectedBlocks())
 					if(!selectedBlock->isSolid())
 						selectedBlock->m_hasFluids.addFluid(fluidLevel, FluidType::byName(fluidTypeUI->getSelectedItemId().toStdString()));
 				m_window.getArea()->m_hasFluidGroups.clearMergedFluidGroups();
@@ -88,7 +88,7 @@ void ContextMenu::drawFluidControls(Block& block)
 					std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 					if(m_window.getSelectedBlocks().empty())
 						m_window.selectBlock(block);
-					for(Block* selectedBlock: m_window.getSelectedBlocks())
+					for(BlockIndex* selectedBlock: m_window.getSelectedBlocks())
 						m_window.getArea()->m_fluidSources.create(
 							*selectedBlock, 
 							FluidType::byName(fluidTypeUI->getSelectedItemId().toStdString()), 

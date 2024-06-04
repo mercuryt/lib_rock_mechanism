@@ -6,7 +6,6 @@
 #include <queue>
 #include <cstdint>
 
-class Block;
 struct DeserializationMemo;
 
 //TODO: Multiple followers.
@@ -39,7 +38,7 @@ public:
 };
 class CanLead final
 {
-	std::deque<Block*> m_locationQueue;
+	std::deque<BlockIndex> m_locationQueue;
 	HasShape& m_hasShape;
 	CanFollow* m_canFollow = nullptr;
 public:
@@ -55,7 +54,7 @@ public:
 	HasShape& getFollower();
 	[[nodiscard]] const HasShape& getFollower() const;
 	[[nodiscard]] Speed getMoveSpeed() const;
-	[[nodiscard]] std::deque<Block*>& getLocationQueue();
+	[[nodiscard]] std::deque<BlockIndex>& getLocationQueue();
 	friend class CanFollow;
 	[[nodiscard]] static Speed getMoveSpeedForGroupWithAddedMass(std::vector<const HasShape*>& actorsAndItems, Mass addedRollingMass = 0, Mass addedDeadMass = 0);
 	[[nodiscard]] static Speed getMoveSpeedForGroup(std::vector<const HasShape*>& actorsAndItems) { return getMoveSpeedForGroupWithAddedMass(actorsAndItems); }

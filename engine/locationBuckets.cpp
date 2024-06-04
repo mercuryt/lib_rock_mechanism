@@ -63,54 +63,61 @@ void LocationBucket::update(Actor& actor, std::vector<BlockIndex>& blockIndices)
 }
 void LocationBuckets::initalize()
 {
-	m_maxX = ((m_area.m_sizeX - 1) / Config::locationBucketSize) + 1;
-	m_maxY = ((m_area.m_sizeY - 1) / Config::locationBucketSize) + 1;
-	m_maxZ = ((m_area.m_sizeZ - 1) / Config::locationBucketSize) + 1;
+	m_maxX = ((m_area.getBlocks().m_sizeX - 1) / Config::locationBucketSize) + 1;
+	m_maxY = ((m_area.getBlocks().m_sizeY - 1) / Config::locationBucketSize) + 1;
+	m_maxZ = ((m_area.getBlocks().m_sizeZ - 1) / Config::locationBucketSize) + 1;
 	m_buckets.resize(m_maxX * m_maxY * m_maxZ);
 }
 LocationBucket& LocationBuckets::get(DistanceInBuckets x, DistanceInBuckets y, DistanceInBuckets z)
 {
 	return m_buckets[x + (y * m_maxX) + (z * m_maxX * m_maxY)];
 }
-LocationBucket& LocationBuckets::getBucketFor(const Block& block)
+LocationBucket& LocationBuckets::getBucketFor(const BlockIndex block)
 {
-	DistanceInBuckets x = block.m_x / Config::locationBucketSize;
-	DistanceInBuckets y = block.m_y / Config::locationBucketSize;
-	DistanceInBuckets z = block.m_z / Config::locationBucketSize;
+	Point3D coordinates = m_area.getBlocks().getCoordinates(block);
+	DistanceInBuckets x = coordinates.x / Config::locationBucketSize;
+	DistanceInBuckets y = coordinates.y / Config::locationBucketSize;
+	DistanceInBuckets z = coordinates.z / Config::locationBucketSize;
 	return get(x, y, z);
 }
 void LocationBuckets::add(Actor& actor)
 {
 	assert(!actor.m_blocks.empty());
 	std::unordered_map<LocationBucket*, std::vector<BlockIndex>> blocksCollatedByBucket;
-	for(Block* block : actor.m_blocks)
-		blocksCollatedByBucket[block->m_locationBucket].push_back(block->getIndex());
+	Blocks& blocks = m_area.getBlocks();
+	for(BlockIndex block : actor.m_blocks)
+		blocksCollatedByBucket[&blocks.getLocationBucket(block)].push_back(block);
 	for(auto& [bucket, blocks] : blocksCollatedByBucket)
+	{
+		assert(bucket);
 		bucket->insert(actor, blocks);
+	}
 }
 void LocationBuckets::remove(Actor& actor)
 {
 	assert(!actor.m_blocks.empty());
 	std::unordered_set<LocationBucket*> buckets;
-	for(Block* block : actor.m_blocks)
-		buckets.insert(block->m_locationBucket);
+	Blocks& blocks = m_area.getBlocks();
+	for(BlockIndex block : actor.m_blocks)
+		buckets.insert(&blocks.getLocationBucket(block));
 	for(LocationBucket* bucket : buckets)
 		bucket->erase(actor);
 }
-void LocationBuckets::update(Actor& actor, std::unordered_set<Block*>& oldBlocks)
+void LocationBuckets::update(Actor& actor, std::unordered_set<BlockIndex>& oldBlocks)
 {
 	std::unordered_set<LocationBucket*> oldSets;
 	std::unordered_map<LocationBucket*, std::vector<BlockIndex>> continuedSets;
 	std::unordered_map<LocationBucket*, std::vector<BlockIndex>> newSets;
-	for(Block* block : oldBlocks)
-		oldSets.insert(block->m_locationBucket);
-	for(Block* block : actor.m_blocks)
+	Blocks& blocks = m_area.getBlocks();
+	for(BlockIndex block : oldBlocks)
+		oldSets.insert(&blocks.getLocationBucket(block));
+	for(BlockIndex block : actor.m_blocks)
 	{
-		auto set = block->m_locationBucket;
+		auto set = &blocks.getLocationBucket(block);
 		if(oldSets.contains(set))
-			continuedSets[set].push_back(block->getIndex());
+			continuedSets[set].push_back(block);
 		else
-			newSets[set].push_back(block->getIndex());
+			newSets[set].push_back(block);
 	}
 	for(auto& set : oldSets)
 		if(!continuedSets.contains(set))

@@ -11,7 +11,6 @@
 #include <vector>
 #include <map>
 
-class Block;
 class Area;
 class FluidGroup;
 class Actor;
@@ -22,25 +21,27 @@ struct DeserializationMemo;
 // Raises and lowers nearby temperature.
 class TemperatureSource final
 {
-	Block& m_block;
+	//TODO: reuse reference for fire?
+	Area& m_area;
+	BlockIndex m_block;
 	int32_t m_temperature;
 	Temperature getTemperatureDeltaForRange(uint32_t range);
 	void apply();
 public:
-	TemperatureSource(const int32_t& t, Block& b) : m_block(b), m_temperature(t) { apply(); }
+	TemperatureSource(Area& a, const int32_t& t, BlockIndex b) : m_area(a), m_block(b), m_temperature(t) { apply(); }
 	void setTemperature(const int32_t& t);
 	void unapply();
 	friend class AreaHasTemperature;
 };
 class AreaHasTemperature final
 {
-	std::unordered_map<Block*, TemperatureSource> m_sources;
+	std::unordered_map<BlockIndex, TemperatureSource> m_sources;
 	// To possibly thaw.
-	std::map<Temperature, std::unordered_set<Block*>> m_aboveGroundBlocksByMeltingPoint;
+	std::map<Temperature, std::unordered_set<BlockIndex>> m_aboveGroundBlocksByMeltingPoint;
 	// To possibly freeze.
 	std::map<Temperature, std::unordered_set<FluidGroup*>> m_aboveGroundFluidGroupsByMeltingPoint;
 	// Collect deltas to apply sum.
-	std::unordered_map<Block*, int32_t> m_blockDeltaDeltas;
+	std::unordered_map<BlockIndex, int32_t> m_blockDeltaDeltas;
 	Area& m_area;
 	Temperature m_ambiantSurfaceTemperature;
 
@@ -48,32 +49,17 @@ public:
 	AreaHasTemperature(Area& a) : m_area(a) { }
 	void setAmbientSurfaceTemperature(const Temperature& temperature);
 	void updateAmbientSurfaceTemperature();
-	void addTemperatureSource(Block& block, const Temperature& temperature);
+	void addTemperatureSource(BlockIndex block, const Temperature& temperature);
 	void removeTemperatureSource(TemperatureSource& temperatureSource);
-	TemperatureSource& getTemperatureSourceAt(Block& block);
-	void addDelta(Block& block, int32_t delta);
+	TemperatureSource& getTemperatureSourceAt(BlockIndex block);
+	void addDelta(BlockIndex block, int32_t delta);
 	void applyDeltas();
-	void addMeltableSolidBlockAboveGround(Block& block);
-	void removeMeltableSolidBlockAboveGround(Block& block);
+	void addMeltableSolidBlockAboveGround(BlockIndex block);
+	void removeMeltableSolidBlockAboveGround(BlockIndex block);
 	void addFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup);
 	void removeFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup);
 	const Temperature& getAmbientSurfaceTemperature() const { return m_ambiantSurfaceTemperature; }
 	Temperature getDailyAverageAmbientSurfaceTemperature() const;
-};
-class BlockHasTemperature final
-{
-	Block& m_block;
-	// Store to display to user and for pathing to safe temperature.
-	Temperature m_delta = 0;
-public:
-	BlockHasTemperature(Block& b) : m_block(b) { }
-	void freeze(const FluidType& fluidType);
-	void melt();
-	void apply(Temperature temperature, const int32_t& delta);
-	void updateDelta(int32_t delta);
-	const Temperature& getAmbientTemperature() const;
-	Temperature getDailyAverageAmbientTemperature() const;
-	Temperature get() const { return m_delta + getAmbientTemperature(); }
 };
 class GetToSafeTemperatureObjective final : public Objective
 {

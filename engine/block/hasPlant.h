@@ -1,15 +1,15 @@
 #pragma once
 #include "../types.h"
 #include <cassert>
-class Block;
+class BlockIndex;
 class Plant;
 struct PlantSpecies;
 class BlockHasPlant final 
 {
-	Block& m_block;
+	BlockIndex& m_block;
 	Plant* m_plant;
 public:
-	BlockHasPlant(Block& b) : m_block(b), m_plant(nullptr) { }
+	BlockHasPlant(BlockIndex& b) : m_block(b), m_plant(nullptr) { }
 	void createPlant(const PlantSpecies& plantSpecies, Percent growthPercent = 0);
 	void updateGrowingStatus();
 	void clearPointer();

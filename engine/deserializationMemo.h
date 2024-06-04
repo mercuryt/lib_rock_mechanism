@@ -21,9 +21,9 @@ struct CraftJob;
 class Objective;
 struct ObjectiveType;
 class Plant;
-class Block;
 class Item;
 class Actor;
+class Area;
 struct Uniform;
 //struct WorldLocation;
 
@@ -41,9 +41,9 @@ struct DeserializationMemo final
 	std::unordered_map<uintptr_t, Uniform*> m_uniform;
 	Faction& faction(std::wstring name);
 	Plant& plantReference(const Json& data);
-	Block& blockReference(const Json& data);
 	Item& itemReference(const Json& data);
 	Actor& actorReference(const Json& data);
+	Area& area(const Json& data);
 	ProjectRequirementCounts& projectRequirementCountsReference(const Json& data);
 	//WorldLocation& getLocationByNormalizedLatLng(const Json& data);
 	std::unique_ptr<Objective> loadObjective(const Json& data);

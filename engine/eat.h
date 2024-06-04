@@ -5,12 +5,12 @@
 #include "threadedTask.hpp"
 #include "eventSchedule.hpp"
 #include "findsPath.h"
+#include "types.h"
 
 class Item;
 class Actor;
 class EatObjective;
 class HungerEvent;
-class Block;
 class Plant;
 struct DeserializationMemo;
 struct AnimalSpecies;
@@ -21,7 +21,7 @@ class MustEat final
 	Actor& m_actor;
 	EatObjective* m_eatObjective = nullptr;
 public:
-	Block* m_eatingLocation = nullptr;
+	BlockIndex m_eatingLocation = BLOCK_INDEX_MAX;
 private:
 	Mass m_massFoodRequested = 0;
 public:
@@ -37,9 +37,9 @@ public:
 	[[nodiscard]] Mass massFoodForBodyMass() const;
 	[[nodiscard]] const Mass& getMassFoodRequested() const;
 	[[nodiscard]] Percent getPercentStarved() const;
-	[[nodiscard]] uint32_t getDesireToEatSomethingAt(const Block& block) const;
+	[[nodiscard]] uint32_t getDesireToEatSomethingAt(BlockIndex block) const;
 	[[nodiscard]] uint32_t getMinimumAcceptableDesire() const;
-	[[nodiscard]] Block* getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireability();
+	[[nodiscard]] BlockIndex getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireability();
 	[[nodiscard]] bool canEat(const Actor& actor) const;
 	[[nodiscard]] bool canEat(const Plant& plant) const;
 	[[nodiscard]] bool canEat(const Item& item) const;
@@ -62,8 +62,8 @@ public:
 	void eatActor(Actor& actor);
 	void eatPlantLeaves(Plant& plant);
 	void eatFruitFromPlant(Plant& plant);
-	[[nodiscard]] Block* getBlockWithMostDesiredFoodInReach() const;
-	[[nodiscard]] uint32_t getDesireToEatSomethingAt(const Block& block) const;
+	[[nodiscard]] BlockIndex getBlockWithMostDesiredFoodInReach() const;
+	[[nodiscard]] uint32_t getDesireToEatSomethingAt(BlockIndex block) const;
 	[[nodiscard]] uint32_t getMinimumAcceptableDesire() const;
 };
 class HungerEvent final : public ScheduledEvent
@@ -90,7 +90,7 @@ class EatObjective final : public Objective
 {
 	HasThreadedTask<EatThreadedTask> m_threadedTask;
 	HasScheduledEvent<EatEvent> m_eatEvent;
-	Block* m_destination;
+	BlockIndex m_destination = BLOCK_INDEX_MAX;
 	bool m_noFoodFound;
 public:
 	EatObjective(Actor& a);
@@ -102,7 +102,7 @@ public:
 	void reset();
 	void noFoodFound();
 	[[nodiscard]] std::string name() const { return "eat"; }
-	[[nodiscard]] bool canEatAt(const Block& block) const;
+	[[nodiscard]] bool canEatAt(BlockIndex block) const;
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Eat; }
 	[[nodiscard]] bool isNeed() const { return true; }
 	friend class EatEvent;

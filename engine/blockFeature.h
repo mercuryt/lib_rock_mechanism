@@ -1,8 +1,7 @@
 #pragma once
 
 #include "materialType.h"
-
-class Block;
+#include "types.h"
 
 struct BlockFeatureType
 {
@@ -47,45 +46,16 @@ struct BlockFeatureType
 		return fortification;
 	}
 };
-inline void to_json(Json& data, const BlockFeatureType* const & blockFeatueType){ data = blockFeatueType->name; }
+inline void to_json(Json& data, const BlockFeatureType* const& blockFeatureType){ data = blockFeatureType->name; }
+inline void from_json(const Json& data, const BlockFeatureType*& blockFeatureType){ blockFeatureType = &BlockFeatureType::byName(data.get<std::string>()); }
 struct BlockFeature
 {
 	// Use pointers rather then references so we can store in vector and be able to erase at arbirtary index.
 	const BlockFeatureType* blockFeatureType;
 	const MaterialType* materialType;
 	// TODO: Replace hewn with ItemType* to differentiate between walls made of carved blocks from those made from uncut stone or between wood planks and logs.
-	bool hewn;
-	bool closed;
-	bool locked;
-	BlockFeature(const BlockFeatureType& bft, const MaterialType& mt, bool h) : blockFeatureType(&bft), materialType(&mt), hewn(h), closed(true), locked(false) {}
+	bool hewn = false;
+	bool closed = false;
+	bool locked = false;
 };
-class HasBlockFeatures
-{
-	std::vector<BlockFeature> m_features;
-	Block& m_block;
-	[[nodiscard]] BlockFeature* at(const BlockFeatureType& blockFeatueType);
-public:
-	HasBlockFeatures(Block& b) : m_block(b) { }
-
-	// Can return nullptr.
-	void remove(const BlockFeatureType& blockFeatueType);
-	void removeAll();
-	void construct(const BlockFeatureType& blockFeatueType, const MaterialType& materialType);
-	void hew(const BlockFeatureType& blockFeatueType);
-	void setTemperature(Temperature temperature);
-	void lock(const BlockFeatureType& blockFeatueType);
-	void unlock(const BlockFeatureType& blockFeatueType);
-	void close(const BlockFeatureType& blockFeatueType);
-	void open(const BlockFeatureType& blockFeatueType);
-	[[nodiscard]] const BlockFeature* atConst(const BlockFeatureType& blockFeatueType) const;
-	[[nodiscard]] const std::vector<BlockFeature>& get() const { return m_features; }
-	[[nodiscard]] bool empty() const { return m_features.empty(); }
-	[[nodiscard]] bool blocksEntrance() const;
-	[[nodiscard]] bool canStandAbove() const;
-	[[nodiscard]] bool canStandIn() const;
-	[[nodiscard]] bool isSupport() const;
-	[[nodiscard]] bool canEnterFromBelow() const;
-	[[nodiscard]] bool canEnterFromAbove(const Block& from) const;
-	[[nodiscard]] const MaterialType* getMaterialType() const;
-	[[nodiscard]] bool contains(const BlockFeatureType& blockFeatureType) const;
-};
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BlockFeature, blockFeatureType, materialType, hewn, closed, locked);

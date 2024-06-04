@@ -7,17 +7,18 @@ TEST_CASE("cuboid")
 {
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(2,2,2);
+	Blocks& blocks = area.getBlocks();
 	SUBCASE("create")
 	{
-		Cuboid cuboid(&area.getBlock(1, 1, 1), &area.getBlock(0, 0, 0));
+		Cuboid cuboid(blocks, blocks.getIndex({1, 1, 1}), blocks.getIndex({0, 0, 0}));
 		REQUIRE(cuboid.size() == 8);
-		REQUIRE(cuboid.contains(area.getBlock(1, 1, 0)));
+		REQUIRE(cuboid.contains(blocks.getIndex({1, 1, 0})));
 	}
 	SUBCASE("merge")
 	{
-		Cuboid c1(&area.getBlock(0, 1, 1), &area.getBlock(0, 0, 0));
+		Cuboid c1(blocks, blocks.getIndex({0, 1, 1}), blocks.getIndex({0, 0, 0}));
 		REQUIRE(c1.size() == 4);
-		Cuboid c2(&area.getBlock(1, 1, 1), &area.getBlock(1, 0, 0));
+		Cuboid c2(blocks, blocks.getIndex({1, 1, 1}), blocks.getIndex({1, 0, 0}));
 		REQUIRE(c1.canMerge(c2));
 		Cuboid sum = c1.sum(c2);
 		REQUIRE(sum.size() == 8);
@@ -27,10 +28,10 @@ TEST_CASE("cuboid")
 	}
 	SUBCASE("get face")
 	{
-		Cuboid c1(&area.getBlock(1, 1, 1), &area.getBlock(0, 0, 0));
+		Cuboid c1(blocks, blocks.getIndex({1, 1, 1}), blocks.getIndex({0, 0, 0}));
 		Cuboid face = c1.getFace(4);
 		REQUIRE(face.size() == 4);
-		REQUIRE(face.contains(area.getBlock(1, 0, 0)));
-		REQUIRE(!face.contains(area.getBlock(0, 0, 0)));
+		REQUIRE(face.contains(blocks.getIndex({1, 0, 0})));
+		REQUIRE(!face.contains(blocks.getIndex({0, 0, 0})));
 	}
 }

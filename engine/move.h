@@ -4,12 +4,12 @@
 #include "threadedTask.hpp"
 #include "eventSchedule.hpp"
 #include "findsPath.h"
+#include "types.h"
 
 #include <vector>
 
 class MoveEvent;
 class PathThreadedTask;
-class Block;
 class Actor;
 class MoveType;
 class Item;
@@ -19,13 +19,13 @@ class Simulation;
 
 class ActorCanMove final
 {
-	std::vector<Block*> m_path;
-	std::vector<Block*>::iterator m_pathIter;
+	std::vector<BlockIndex> m_path;
+	std::vector<BlockIndex>::iterator m_pathIter;
 	HasScheduledEvent<MoveEvent> m_event;
 	HasThreadedTask<PathThreadedTask> m_threadedTask;
 	Actor& m_actor;
 	const MoveType* m_moveType = nullptr;
-	Block* m_destination = nullptr;
+	BlockIndex m_destination = BLOCK_INDEX_MAX;
 	Speed m_speedIndividual = 0;
 	Speed m_speedActual = 0;
 	uint8_t m_retries = 0;
@@ -35,12 +35,12 @@ public:
 	void updateIndividualSpeed();
 	void updateActualSpeed();
 	void setMoveType(const MoveType& moveType);
-	void setPath(std::vector<Block*>& path);
+	void setPath(std::vector<BlockIndex>& path);
 	void clearPath();
 	void callback();
 	void scheduleMove();
-	void setDestination(Block& destination, bool detour = false, bool adjacent = false, bool unreserved = true, bool reserve = true);
-	void setDestinationAdjacentTo(Block& destination, bool detour = false, bool unreserved = true, bool reserve = true);
+	void setDestination(BlockIndex destination, bool detour = false, bool adjacent = false, bool unreserved = true, bool reserve = true);
+	void setDestinationAdjacentTo(BlockIndex destination, bool detour = false, bool unreserved = true, bool reserve = true);
 	void setDestinationAdjacentTo(HasShape& hasShape, bool detour = false, bool unreserved = true, bool reserve = true);
 	void setDestinationAdjacentTo(const FluidType& fluidType, bool detour = false, bool unreserved = true, bool reserve = true);
 	void clearAllEventsAndTasks();
@@ -52,11 +52,11 @@ public:
 	[[nodiscard]] Speed getIndividualMoveSpeedWithAddedMass(Mass mass) const;
 	[[nodiscard]] Speed getMoveSpeed() const { return m_speedActual; }
 	[[nodiscard]] bool canMove() const;
-	[[nodiscard]] Step delayToMoveInto(const Block& block) const;
+	[[nodiscard]] Step delayToMoveInto(const BlockIndex block) const;
 	// For testing.
 	[[maybe_unused, nodiscard]] PathThreadedTask& getPathThreadedTask() { return m_threadedTask.get(); }
-	[[maybe_unused, nodiscard]] std::vector<Block*>& getPath() { return m_path; }
-	[[maybe_unused, nodiscard]] Block* getDestination() { return m_destination; }
+	[[maybe_unused, nodiscard]] std::vector<BlockIndex>& getPath() { return m_path; }
+	[[maybe_unused, nodiscard]] BlockIndex getDestination() { return m_destination; }
 	[[maybe_unused, nodiscard]] bool hasEvent() const { return m_event.exists(); }
 	[[maybe_unused, nodiscard]] bool hasThreadedTask() const { return m_threadedTask.exists(); }
 	[[maybe_unused, nodiscard]] Step stepsTillNextMoveEvent() const;
@@ -76,14 +76,14 @@ class PathThreadedTask final : public ThreadedTask
 	Actor& m_actor;
 	HasShape* m_hasShape;
 	const FluidType* m_fluidType;
-	const Block* m_huristicDestination;
+	const BlockIndex m_huristicDestination;
 	bool m_detour;
 	bool m_adjacent;
 	bool m_unreservedDestination;
 	bool m_reserveDestination;
 	FindsPath m_findsPath;
 public:
-	PathThreadedTask(Actor& a, HasShape* hasShape = nullptr, const FluidType* fluidType = nullptr, const Block* huristicDestination = nullptr, bool detour = false, bool adjacent = false, bool m_unreservedDestination = true, bool m_reserveDestination = true);
+	PathThreadedTask(Actor& a, HasShape* hasShape = nullptr, const FluidType* fluidType = nullptr, const BlockIndex huristicDestination = BLOCK_INDEX_MAX, bool detour = false, bool adjacent = false, bool m_unreservedDestination = true, bool m_reserveDestination = true);
 	PathThreadedTask(const Json& data, DeserializationMemo& deserializationMemo, Actor& a);
 	Json toJson() const;
 	void readStep();

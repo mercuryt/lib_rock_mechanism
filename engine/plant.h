@@ -8,12 +8,10 @@
 #include <algorithm>
 #include <iostream>
 
-class Block;
 struct DeserializationMemo;
 
 #include <algorithm>
 
-class Block;
 class PlantGrowthEvent;
 class PlantShapeGrowthEvent;
 class PlantFluidEvent;
@@ -91,7 +89,7 @@ public:
 	HasScheduledEvent<PlantTemperatureEvent> m_temperatureEvent;
 	HasScheduledEvent<PlantEndOfHarvestEvent> m_endOfHarvestEvent;
 	HasScheduledEvent<PlantFoliageGrowthEvent> m_foliageGrowthEvent;
-	Block* m_fluidSource = nullptr;
+	BlockIndex m_fluidSource = BLOCK_INDEX_MAX;
 	const PlantSpecies& m_plantSpecies;
 	Quantity m_quantityToHarvest = 0;
 	Percent m_percentGrown = 0;
@@ -101,9 +99,8 @@ public:
 	uint8_t m_wildGrowth = 0;
 
 	// Shape is passed as a pointer because it may be null, in which case the shape from the species for the given percentGrowth should be used.
-	Plant(Block& location, const PlantSpecies& ps, const Shape* shape = nullptr, Percent pg = 0, Volume volumeFluidRequested = 0, Step needsFluidEventStart = 0, bool temperatureIsUnsafe = 0, Step unsafeTemperatureEventStart = 0, uint32_t harvestableQuantity = 0, Percent percentFoliage = 100);
-	Plant(const Json& data, DeserializationMemo& deserializationMemo, Block& location);
-	Plant(const Json& data, DeserializationMemo& deserializationMemo);
+	Plant(Area& area, BlockIndex location, const PlantSpecies& ps, const Shape* shape = nullptr, Percent pg = 0, Volume volumeFluidRequested = 0, Step needsFluidEventStart = 0, bool temperatureIsUnsafe = 0, Step unsafeTemperatureEventStart = 0, uint32_t harvestableQuantity = 0, Percent percentFoliage = 100);
+	Plant(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	[[nodiscard]] Json toJson() const;
 	void die();
 	void remove() { die(); } // TODO: seperate remove from die when corpse is added.
@@ -122,7 +119,7 @@ public:
 	void makeFoliageGrowthEvent();
 	void foliageGrowth();
 	void updateShape();
-	void setLocation(Block& block);
+	void setLocation(BlockIndex block, Area* area);
 	void exit();
 	[[nodiscard]] Mass getFruitMass() const;
 	[[nodiscard]] bool hasFluidSource();
@@ -207,10 +204,12 @@ public:
 };
 class AreaHasPlants final
 {
+	Area& m_area;
 	std::list<Plant> m_plants;
 	std::unordered_set<Plant*> m_plantsOnSurface;
 public:
-	Plant& emplace(Block& location, const PlantSpecies& species, const Shape* shape = nullptr, Percent percentGrowth = 0, Volume volumeFluidRequested = 0, Step needsFluidEventStart = 0, bool temperatureIsUnsafe = 0, Step unsafeTemperatureEventStart = 0, uint32_t harvestableQuantity = 0, Percent percentFoliage = 100);
+	AreaHasPlants(Area& area) : m_area(area) { }
+	Plant& emplace(BlockIndex location, const PlantSpecies& species, const Shape* shape = nullptr, Percent percentGrowth = 0, Volume volumeFluidRequested = 0, Step needsFluidEventStart = 0, bool temperatureIsUnsafe = 0, Step unsafeTemperatureEventStart = 0, uint32_t harvestableQuantity = 0, Percent percentFoliage = 100);
 	Plant& emplace(const Json& data, DeserializationMemo& deserializationMemo);
 	void erase(Plant& plant);
 	void onChangeAmbiantSurfaceTemperature();

@@ -4,9 +4,9 @@
 #include "../simulation.h"
 
 // May return nullptr if the ground level is the top of the area.
-Block* getAboveGroundLevel(Block& block)
+BlockIndex* getAboveGroundLevel(BlockIndex& block)
 {
-	Block* groundLevel = &block;
+	BlockIndex* groundLevel = &block;
 	while(!groundLevel->isSolid())
 		groundLevel = groundLevel->getBlockBelow();
 	return groundLevel->getBlockAbove();
@@ -22,7 +22,7 @@ void Biome::createAnimals(Simulation& simulation, WorldLocation& location, Area&
 		auto name = random.getInMap(getAnimalProbabilities(location));
 		const AnimalSpecies& species = AnimalSpecies::byName(name);
 		Actor& animal = simulation.createActor(species);
-		Block* location = nullptr;
+		BlockIndex* location = nullptr;
 		for(uint i = 0; i < Config::maxAnimalInsertLocationSearchRetries; ++i)
 		{
 			auto x = random.getInRange(0u, area.m_sizeX - 1);
@@ -44,9 +44,9 @@ void Biome::createAnimals(Simulation& simulation, WorldLocation& location, Area&
 // TODO: Plants for latitude, rock types for geology.
 enum class GrasslandOptions { Grass, Shrub, Tree, Rocks, Gravel, Boulder, Nothing };
 
-void GrasslandBiome::createPlantsAndRocks(Block& block, Simulation& simulation, Random& random) const
+void GrasslandBiome::createPlantsAndRocks(BlockIndex& block, Simulation& simulation, Random& random) const
 {
-	Block* aboveGroundLevel = getAboveGroundLevel(block);
+	BlockIndex* aboveGroundLevel = getAboveGroundLevel(block);
 	if(!aboveGroundLevel)
 		return;
 	std::unordered_map<GrasslandOptions, float> probabilities{
@@ -105,9 +105,9 @@ void GrasslandBiome::createPlantsAndRocks(Block& block, Simulation& simulation, 
 }
 enum class ForestOptions { Grass, Shrub, Tree, Rocks, Gravel, Boulder, Nothing };
 
-void ForestBiome::createPlantsAndRocks(Block& block, Simulation& simulation, Random& random) const
+void ForestBiome::createPlantsAndRocks(BlockIndex& block, Simulation& simulation, Random& random) const
 {
-	Block* aboveGroundLevel = getAboveGroundLevel(block);
+	BlockIndex* aboveGroundLevel = getAboveGroundLevel(block);
 	if(!aboveGroundLevel)
 		return;
 	std::unordered_map<ForestOptions, float> probabilities{
@@ -166,9 +166,9 @@ void ForestBiome::createPlantsAndRocks(Block& block, Simulation& simulation, Ran
 }
 enum class DesertOptions { Grass, Shrub, Tree, Rocks, Gravel, Boulder, Nothing };
 
-void DesertBiome::createPlantsAndRocks(Block& block, Simulation& simulation, Random& random) const
+void DesertBiome::createPlantsAndRocks(BlockIndex& block, Simulation& simulation, Random& random) const
 {
-	Block* aboveGroundLevel = getAboveGroundLevel(block);
+	BlockIndex* aboveGroundLevel = getAboveGroundLevel(block);
 	if(!aboveGroundLevel)
 		return;
 	std::unordered_map<DesertOptions, float> probabilities{
@@ -227,9 +227,9 @@ void DesertBiome::createPlantsAndRocks(Block& block, Simulation& simulation, Ran
 }
 enum class SwampOptions { Grass, Shrub, Tree, Rocks, Gravel, Boulder, Water, Nothing };
 
-void SwampBiome::createPlantsAndRocks(Block& block, Simulation& simulation, Random& random) const
+void SwampBiome::createPlantsAndRocks(BlockIndex& block, Simulation& simulation, Random& random) const
 {
-	Block* aboveGroundLevel = getAboveGroundLevel(block);
+	BlockIndex* aboveGroundLevel = getAboveGroundLevel(block);
 	if(!aboveGroundLevel)
 		return;
 	std::unordered_map<SwampOptions, float> probabilities{

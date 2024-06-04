@@ -52,7 +52,7 @@ void EditStockPileView::draw(StockPile* stockpile)
 		if(!m_stockPile)
 		{
 			m_stockPile = &m_window.getArea()->m_hasStockPiles.at(*m_window.getFaction()).addStockPile({});
-			for(Block* block : m_window.getSelectedBlocks())
+			for(BlockIndex* block : m_window.getSelectedBlocks())
 				m_stockPile->addBlock(*block);
 		}
 		const MaterialType* materialType = widgetUtil::lastSelectedMaterial;

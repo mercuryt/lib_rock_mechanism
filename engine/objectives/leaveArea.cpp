@@ -1,8 +1,8 @@
 #include "leaveArea.h"
-#include "actor.h"
-#include "block.h"
-#include "simulation.h"
-#include "threadedTask.h"
+#include "../actor.h"
+#include "../area.h"
+#include "../simulation.h"
+#include "../threadedTask.h"
 
 LeaveAreaObjective::LeaveAreaObjective(Actor& a, uint8_t priority) : Objective(a, priority), m_task(a.getSimulation().m_threadedTaskEngine) { }
 void LeaveAreaObjective::execute()
@@ -16,7 +16,8 @@ void LeaveAreaObjective::execute()
 }
 bool LeaveAreaObjective::actorIsAdjacentToEdge() const
 {
-	return m_actor.predicateForAnyOccupiedBlock([](const Block& block){ return block.m_isEdge; });
+	Blocks& blocks = m_actor.m_area->getBlocks();
+	return m_actor.predicateForAnyOccupiedBlock([&blocks](BlockIndex block){ return blocks.isEdge(block); });
 }
 LeaveAreaThreadedTask::LeaveAreaThreadedTask(LeaveAreaObjective& objective) : 
 	ThreadedTask(objective.m_actor.getSimulation().m_threadedTaskEngine),

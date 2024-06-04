@@ -22,54 +22,38 @@
 #include <unordered_set>
 
 Area::Area(AreaId id, std::wstring n, Simulation& s, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) :
-	m_hasTemperature(*this), m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this), m_hasItems(*this), m_fluidSources(*this), 
-	m_hasFluidGroups(*this), m_hasRain(*this, s), m_blockDesignations(*this), m_blocks(x*y*z), m_name(n), m_simulation(s), m_id(id), 
-	m_sizeX(x), m_sizeY(y), m_sizeZ(z)
+	m_blocks(*this, x, y, z), m_hasTemperature(*this), m_hasTerrainFacades(*this), m_hasActors(*this), m_hasPlants(*this), 
+	m_fires(*this), m_hasFarmFields(*this), m_hasDigDesignations(*this), m_hasConstructionDesignations(*this), 
+	m_hasStockPiles(*this), m_hasCraftingLocationsAndJobs(*this), m_hasTargetedHauling(*this), m_hasSleepingSpots(*this), 
+	m_hasWoodCuttingDesignations(*this), m_hasItems(*this), m_fluidSources(*this), m_hasFluidGroups(*this), 
+	m_hasRain(*this, s), m_blockDesignations(*this), m_name(n), m_simulation(s), m_id(id)
 { 
 	setup(); 
-	if constexpr(Config::visionCuboidsActive)
-		m_hasActors.m_visionCuboids.initalize(*this);
+	m_hasActors.m_visionCuboids.initalize(*this);
 	m_hasRain.scheduleRestart();
 }
 Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& s) : 
-	m_hasTemperature(*this),
-	m_hasActors(*this), m_hasFarmFields(*this), m_hasStockPiles(*this),
-	m_hasItems(*this), m_fluidSources(*this), m_hasFluidGroups(*this), 
-	m_hasRain(*this, s), m_blockDesignations(*this), m_blocks(data["sizeX"].get<DistanceInBlocks>() * data["sizeY"].get<DistanceInBlocks>() * data["sizeZ"].get<DistanceInBlocks>()), m_name(data["name"].get<std::wstring>()), m_simulation(s), m_id(data["id"].get<AreaId>()), m_sizeX(data["sizeX"].get<DistanceInBlocks>()), m_sizeY(data["sizeY"].get<DistanceInBlocks>()), m_sizeZ(data["sizeZ"].get<DistanceInBlocks>())
+	m_blocks(*this, data["sizeX"].get<DistanceInBlocks>(), data["sizeY"].get<DistanceInBlocks>(), data["sizeZ"].get<DistanceInBlocks>()), 
+	m_hasTemperature(*this), m_hasTerrainFacades(*this), m_hasActors(*this), m_hasPlants(*this), m_fires(*this), 
+	m_hasFarmFields(*this), m_hasDigDesignations(*this), m_hasConstructionDesignations(*this), m_hasStockPiles(*this), 
+	m_hasCraftingLocationsAndJobs(*this), m_hasTargetedHauling(*this), m_hasSleepingSpots(*this), m_hasWoodCuttingDesignations(*this), 
+	m_hasItems(*this), m_fluidSources(*this), m_hasFluidGroups(*this), m_hasRain(*this, s), m_blockDesignations(*this), 
+	m_name(data["name"].get<std::wstring>()), m_simulation(s), m_id(data["id"].get<AreaId>())
 {
 	// Record id now so json block references will function later in this method.
 	m_simulation.m_hasAreas->recordId(*this);
 	setup();
-	// Load blocks.
-	DistanceInBlocks x = 0;
-	DistanceInBlocks y = 0;
-	DistanceInBlocks z = 0;
-	for(const Json& blockData : data["blocks"])
-	{
-		getBlock(x, y, z).loadFromJson(blockData, deserializationMemo, x, y, z);
-		if(++x == m_sizeX)
-		{
-			x = 0;
-			if(++y == m_sizeY)
-			{
-				y = 0;
-				++z;
-			}
-		}
-	}
+	m_blocks.load(data["blocks"], deserializationMemo);
 	m_hasFluidGroups.clearMergedFluidGroups();
-	if constexpr(Config::visionCuboidsActive)
-		m_hasActors.m_visionCuboids.initalize(*this);
+	m_hasActors.m_visionCuboids.initalize(*this);
 	// Load fires.
 	m_fires.load(data["fires"], deserializationMemo);
 	// Load plants.
 	for(const Json& plant : data["plants"])
 	{
-		Block& location = deserializationMemo.blockReference(plant["location"]);
-		if(location.m_hasPlant.exists())
-			std::cout << " multiple plants found at block " << plant["location"];
-		else
-			m_hasPlants.emplace(plant, deserializationMemo);
+		BlockIndex location = plant["location"].get<BlockIndex>();
+		assert(!m_blocks.plant_exists(location));
+		m_hasPlants.emplace(plant, deserializationMemo);
 	}
 	// Load fields.
 	m_hasFarmFields.load(data["hasFarmFields"], deserializationMemo);
@@ -113,16 +97,15 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_hasDigDesignations.loadWorkers(data["hasDigDesignations"], deserializationMemo);
 	m_hasStockPiles.loadWorkers(data["hasStockPiles"], deserializationMemo);
 	m_hasCraftingLocationsAndJobs.loadWorkers(data["hasCraftingLocationsAndJobs"], deserializationMemo);
-	/*
-	hasWoodCuttingDesignations.loadWorkers(data["hasWoodCuttingDesignations"], deserializationMemo);
-	m_targetedHauling.loadWorkers(data["targetedHauling"], deserializationMemo);
-	*/
+	
+	//hasWoodCuttingDesignations.loadWorkers(data["hasWoodCuttingDesignations"], deserializationMemo);
+	//m_targetedHauling.loadWorkers(data["targetedHauling"], deserializationMemo);
 
 	// Load fluid sources.
 	m_fluidSources.load(data["fluidSources"], deserializationMemo);
 	// Load caveInCheck
 	for(const Json& blockReference : data["caveInCheck"])
-		m_caveInCheck.insert(&deserializationMemo.blockReference(blockReference));
+		m_caveInCheck.insert(blockReference.get<BlockIndex>());
 	// Load rain.
 	if(data.contains("rain"))
 		m_hasRain.load(data["rain"], deserializationMemo);
@@ -130,8 +113,8 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 Json Area::toJson() const
 {
 	Json data{
-		{"id", m_id}, {"name", m_name}, {"sizeX", m_sizeX}, {"sizeY", m_sizeY}, {"sizeZ", m_sizeZ}, 
-		{"actors", Json::array()}, {"items", Json::array()}, {"blocks", Json::array()},
+		{"id", m_id}, {"name", m_name}, 
+		{"actors", Json::array()}, {"items", Json::array()}, {"blocks", m_blocks.toJson()},
 		{"plants", Json::array()}, {"fluidSources", m_fluidSources.toJson()}, {"fires", m_fires.toJson()},
 		{"sleepingSpots", m_hasSleepingSpots.toJson()}, {"caveInCheck", Json::array()}, {"rain", m_hasRain.toJson()},
 		{"designations", m_blockDesignations.toJson()}
@@ -142,10 +125,9 @@ Json Area::toJson() const
 		for(const Item* cargo : item.m_hasCargo.getItems())
 			recordItemAndCargoItemsRecursive(*cargo);
 	};
-	for(const Block& block : m_blocks)
+	for(BlockIndex block : m_blocks.getAll())
 	{
-		data["blocks"].push_back(block.toJson());
-		for(Item* item : block.m_hasItems.getAll())
+		for(Item* item : m_blocks.item_getAll(block))
 			recordItemAndCargoItemsRecursive(*item);
 	}
 	for(Actor* actor : m_hasActors.getAllConst())
@@ -173,9 +155,7 @@ Json Area::toJson() const
 	data["hasCraftingLocationsAndJobs"] = m_hasCraftingLocationsAndJobs.toJson();
 	data["hasStockPiles"] = m_hasStockPiles.toJson();
 	data["targetedHauling"] = m_hasTargetedHauling.toJson();
-	if(Config::visionCuboidsActive)
-		data["visionCuboidsActive"] = true;
-	for(const Block* block : m_caveInCheck)
+	for(BlockIndex block : m_caveInCheck)
 		data["caveInCheck"].push_back(block);
 	m_hasActors.m_opacityFacade.validate();
 	return data;
@@ -183,19 +163,9 @@ Json Area::toJson() const
 void Area::setup()
 {
 	m_hasActors.m_locationBuckets.initalize();
-	// build m_blocks
-	for(DistanceInBlocks x = 0; x < m_sizeX; ++x)
-		for(DistanceInBlocks y = 0; y < m_sizeY; ++y)
-			for(DistanceInBlocks z = 0; z < m_sizeZ; ++z)
-				getBlock(x, y, z).setup(*this, x, y, z);
-	//TODO: Can we decrease cache misses by sorting blocks by distance from center?
-	// record adjacent blocks
-	for(DistanceInBlocks x = 0; x < m_sizeX; ++x)
-		for(DistanceInBlocks y = 0; y < m_sizeY; ++y)
-			for(DistanceInBlocks z = 0; z < m_sizeZ; ++z)
-				getBlock(x, y, z).recordAdjacent();
-	updateClimate();
+	m_blocks.assignLocationBuckets();
 	m_hasActors.m_opacityFacade.initalize();
+	updateClimate();
 }
 void Area::readStep()
 { 
@@ -214,8 +184,7 @@ void Area::writeStep()
 	if(!m_caveInData.empty())
 		stepCaveInWrite();
 	// Clean up old vision cuboids.
-	if(Config::visionCuboidsActive)
-		m_hasActors.m_visionCuboids.clearDestroyed();
+	m_hasActors.m_visionCuboids.clearDestroyed();
 	// Apply vision.
 	m_hasActors.processVisionWriteStep();
 	// Apply temperature deltas.
@@ -226,98 +195,8 @@ void Area::writeStep()
 	// Apply fluid Sources.
 	m_fluidSources.step();
 }
-Block& Area::getBlock(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z)
-{
-	return getBlock({x,y,z});
-}
-Block& Area::getBlock(Point3D coordinates)
-{
-	return m_blocks[getBlockIndex(coordinates)];
-}
-size_t Area::getBlockIndex(Point3D coordinates) const
-{
-	// TODO: Profile using a space filling curve such as Gilbert.
-	// https://github.com/jakubcerveny/gilbert/blob/master/ports/gilbert.c
-	// Ideally we would use Z-order ( Morton ) ordering but would require areas are cubes and edges are powers of 2.
-	// Maybe reconsider after optimizing blocks for memory size.
-	assert(coordinates.x < m_sizeX);
-	assert(coordinates.y < m_sizeY);
-	assert(coordinates.z < m_sizeZ);
-	return coordinates.x + (coordinates.y * m_sizeX) + (coordinates.z * m_sizeY * m_sizeX); 
-}
-size_t Area::getBlockIndex(const Block& block) const
-{
-	assert(!m_blocks.empty());
-	return &block - &m_blocks.front();
-}
-Point3D Area::getCoordinatesForIndex(BlockIndex index) const
-{
-	DistanceInBlocks z = index / (m_sizeX * m_sizeY);
-	index -= z * m_sizeX * m_sizeY;
-	DistanceInBlocks y = index / m_sizeX;
-	index -= y * m_sizeX;
-	DistanceInBlocks x = index;
-	return {x, y, z};
-}
-int Area::indexOffsetForAdjacentOffset(uint8_t adjacentOffset) const
-{
-	auto coords = Block::offsetsListAllAdjacent[adjacentOffset];
-	return indexOffsetForCoordinateOffset(coords[0], coords[1], coords[2]);
-}
-int Area::indexOffsetForCoordinateOffset(int x, int y, int z) const
-{
-	return x + (m_sizeX * y) + (m_sizeX * m_sizeY * z);
-}
-Facing Area::getFacingForAdjacentOffset(uint8_t adjacentOffset) const
-{
-	switch(adjacentOffset)
-	{
-		case 6:
-		case 7:
-		case 8:
-		case 12:
-		case 14:
-		case 15:
-		case 23:
-		case 24:
-		case 25:
-			return 3;
-		case 0:
-		case 1:
-		case 2:
-		case 9:
-		case 10:
-		case 16:
-			return 1;
-		case 5:
-		case 11:
-		case 19:
-		case 22:
-			return 2;
-		default:
-			return 0;
-
-	}
-}
-Block& Area::getGroundLevel(DistanceInBlocks x, DistanceInBlocks y)
-{
-	Block* block = &getBlock(x, y, m_sizeZ - 1);
-	while(!block->isSolid())
-	{
-		if(!block->getBlockBelow())
-			return *block;
-		block = block->getBlockBelow();
-	}
-	return block->getBlockAbove() ? *block->getBlockAbove() : *block;
-}
-Block& Area::getMiddleAtGroundLevel()
-{
-	DistanceInBlocks x = (m_sizeX - 1) / 2;
-	DistanceInBlocks y = (m_sizeY - 1) / 2;
-	return getGroundLevel(x, y);
-}
 /*
-Block& Area::getBlockForAdjacentLocation(WorldLocation& location)
+BlockIndex Area::getBlockForAdjacentLocation(WorldLocation& location)
 {
 	if(&location == m_worldLocation->west)
 		// West
@@ -363,10 +242,6 @@ void Area::updateClimate()
 			plant.setDayOfYear(day);
 		m_hasFarmFields.setDayOfYear(day);
 	}
-}
-Cuboid Area::getZLevel(DistanceInBlocks z)
-{
-	return Cuboid(getBlock(m_sizeX - 1, m_sizeY - 1, z), getBlock(0, 0, z));
 }
 std::string Area::toS() const
 {

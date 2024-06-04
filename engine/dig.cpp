@@ -1,5 +1,5 @@
 #include "dig.h"
-#include "block.h"
+#include "designations.h"
 #include "item.h"
 #include "actor.h"
 #include "area.h"
@@ -8,31 +8,37 @@
 #include "deserializeDishonorCallbacks.h"
 #include "random.h"
 #include "reservable.h"
+#include "types.h"
 #include "util.h"
 #include "simulation.h"
 #include <memory>
 #include <sys/types.h>
+/*
 // Input.
 void DesignateDigInputAction::execute()
 {
-	Block& block = *m_cuboid.begin();
+	BlockIndex block = *m_cuboid.begin();
 	auto& digDesginations = block.m_area->m_hasDigDesignations;
 	Faction& faction = *(**m_actors.begin()).getFaction();
-	for(Block& block : m_cuboid)
+	for(BlockIndex block : m_cuboid)
 		digDesginations.designate(faction, block, m_blockFeatureType);
 };
 void UndesignateDigInputAction::execute()
 {
-	Block& block = *m_cuboid.begin();
+	BlockIndex block = *m_cuboid.begin();
 	auto& digDesginations = block.m_area->m_hasDigDesignations;
 	Faction& faction = *(**m_actors.begin()).getFaction();
-	for(Block& block : m_cuboid)
+	for(BlockIndex block : m_cuboid)
 		digDesginations.undesignate(faction, block);
 }
-DigThreadedTask::DigThreadedTask(DigObjective& digObjective) : ThreadedTask(digObjective.m_actor.m_location->m_area->m_simulation.m_threadedTaskEngine), m_digObjective(digObjective), m_findsPath(digObjective.m_actor, digObjective.m_detour) { }
+*/
+DigThreadedTask::DigThreadedTask(DigObjective& digObjective) : 
+	ThreadedTask(digObjective.m_actor.m_area->m_simulation.m_threadedTaskEngine), 
+	m_digObjective(digObjective), 
+	m_findsPath(digObjective.m_actor, digObjective.m_detour) { }
 void DigThreadedTask::readStep()
 {
-	std::function<bool(const Block&)> predicate = [&](const Block& block)
+	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block)
 	{
 		return m_digObjective.getJoinableProjectAt(block) != nullptr;
 	};
@@ -52,8 +58,8 @@ void DigThreadedTask::writeStep()
 			m_digObjective.m_digThreadedTask.create(m_digObjective);
 			return;
 		}
-		Block& target = *m_findsPath.getBlockWhichPassedPredicate();
-		DigProject& project = target.m_area->m_hasDigDesignations.at(*m_digObjective.m_actor.getFaction(), target);
+		BlockIndex target = m_findsPath.getBlockWhichPassedPredicate();
+		DigProject& project = m_digObjective.m_actor.m_area->m_hasDigDesignations.at(*m_digObjective.m_actor.getFaction(), target);
 		if(project.canAddWorker(m_digObjective.m_actor))
 			m_digObjective.joinProject(project);
 		else
@@ -62,12 +68,13 @@ void DigThreadedTask::writeStep()
 	}
 }
 void DigThreadedTask::clearReferences() { m_digObjective.m_digThreadedTask.clearPointer(); }
-DigObjective::DigObjective(Actor& a) : Objective(a, Config::digObjectivePriority), m_digThreadedTask(m_actor.m_location->m_area->m_simulation.m_threadedTaskEngine) , m_project(nullptr) 
+DigObjective::DigObjective(Actor& a) : 
+	Objective(a, Config::digObjectivePriority), m_digThreadedTask(m_actor.m_area->m_simulation.m_threadedTaskEngine)
 { 
 	assert(m_actor.getFaction() != nullptr);
 }
 DigObjective::DigObjective(const Json& data, DeserializationMemo& deserializationMemo) :
-	Objective(data, deserializationMemo), m_digThreadedTask(m_actor.m_location->m_area->m_simulation.m_threadedTaskEngine), 
+	Objective(data, deserializationMemo), m_digThreadedTask(m_actor.m_area->m_simulation.m_threadedTaskEngine), 
 	m_project(data.contains("project") ? deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()) : nullptr)
 {
 	if(data.contains("threadedTask"))
@@ -89,19 +96,19 @@ void DigObjective::execute()
 	else if(!m_digThreadedTask.exists())
 	{
 		DigProject* project = nullptr;
-		std::function<bool(const Block&)> predicate = [&](const Block& block) 
+		std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) 
 		{ 
 			if(!getJoinableProjectAt(block))
 				return false;
-			project = &block.m_area->m_hasDigDesignations.at(*m_actor.getFaction(), block);
+			project = &m_actor.m_area->m_hasDigDesignations.at(*m_actor.getFaction(), block);
 			if(project->canAddWorker(m_actor))
 				return true;
 			return false;
 		};
-		[[maybe_unused]] Block* adjacent = m_actor.getBlockWhichIsAdjacentWithPredicate(predicate);
+		[[maybe_unused]] BlockIndex adjacent = m_actor.getBlockWhichIsAdjacentWithPredicate(predicate);
 		if(project != nullptr)
 		{
-			assert(adjacent != nullptr);
+			assert(adjacent != BLOCK_INDEX_MAX);
 			joinProject(*project);
 			return;
 		}
@@ -144,11 +151,12 @@ void DigObjective::joinProject(DigProject& project)
 	m_project = &project;
 	project.addWorkerCandidate(m_actor, *this);
 }
-DigProject* DigObjective::getJoinableProjectAt(const Block& block)
+DigProject* DigObjective::getJoinableProjectAt(BlockIndex block)
 {
-	if(!block.hasDesignation(*m_actor.getFaction(), BlockDesignation::Dig))
+	auto& blocks = m_actor.m_area->getBlocks();
+	if(!blocks.designation_has(block, *m_actor.getFaction(), BlockDesignation::Dig))
 		return nullptr;
-	DigProject& output = block.m_area->m_hasDigDesignations.at(*m_actor.getFaction(), block);
+	DigProject& output = m_actor.m_area->m_hasDigDesignations.at(*m_actor.getFaction(), block);
 	if(!output.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&output))
 		return nullptr;
 	if(!output.canAddWorker(m_actor))
@@ -158,7 +166,7 @@ DigProject* DigObjective::getJoinableProjectAt(const Block& block)
 bool DigObjectiveType::canBeAssigned(Actor& actor) const
 {
 	//TODO: check for any picks?
-	return actor.m_location->m_area->m_hasDigDesignations.areThereAnyForFaction(*actor.getFaction());
+	return actor.m_area->m_hasDigDesignations.areThereAnyForFaction(*actor.getFaction());
 }
 std::unique_ptr<Objective> DigObjectiveType::makeFor(Actor& actor) const
 {
@@ -184,11 +192,12 @@ std::vector<std::pair<ActorQuery, uint32_t>> DigProject::getActors() const { ret
 std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> DigProject::getByproducts() const
 {
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> output;
-	Random& random = m_location.m_area->m_simulation.m_random;
-	const MaterialType* materialType = m_location.isSolid() ? &m_location.getSolidMaterial() : m_location.m_hasBlockFeatures.getMaterialType();
+	Random& random = m_area.m_simulation.m_random;
+	auto& blocks = m_area.getBlocks();
+	const MaterialType* materialType = blocks.solid_is(m_location) ? &blocks.solid_get(m_location) : blocks.blockFeature_getMaterialType(m_location);
 	if(materialType)
 	{
-		for(const SpoilData& spoilData : getLocation().getSolidMaterial().spoilData)
+		for(const SpoilData& spoilData : materialType->spoilData)
 		{
 			if(!random.percentChance(spoilData.chance))
 				continue;
@@ -207,28 +216,29 @@ uint32_t DigProject::getWorkerDigScore(Actor& actor)
 }
 void DigProject::onComplete()
 {
-	if(!m_location.isSolid())
+	auto& blocks = m_area.getBlocks();
+	if(!blocks.solid_is(m_location))
 	{
 		assert(!m_blockFeatureType);
-		m_location.m_hasBlockFeatures.removeAll();
+		blocks.blockFeature_removeAll(m_location);
 	}
 	else
 	{
 		if(m_blockFeatureType == nullptr)
-			m_location.setNotSolid();
+			blocks.solid_setNot(m_location);
 		else
-			m_location.m_hasBlockFeatures.hew(*m_blockFeatureType);
+			blocks.blockFeature_hew(m_location, *m_blockFeatureType);
 	}
 	// Remove designations for other factions as well as owning faction.
 	auto workers = std::move(m_workers);
-	m_location.m_area->m_hasDigDesignations.clearAll(m_location);
+	m_area.m_hasDigDesignations.clearAll(m_location);
 	for(auto& [actor, projectWorker] : workers)
 		actor->m_hasObjectives.objectiveComplete(projectWorker.objective);
 }
 void DigProject::onCancel()
 {
 	std::vector<Actor*> actors = getWorkersAndCandidates();
-	m_location.m_area->m_hasDigDesignations.remove(m_faction, m_location);
+	m_area.m_hasDigDesignations.remove(m_faction, m_location);
 	for(Actor* actor : actors)
 	{
 		static_cast<DigObjective&>(actor->m_hasObjectives.getCurrent()).m_project = nullptr;
@@ -239,11 +249,11 @@ void DigProject::onCancel()
 }
 void DigProject::onDelay()
 {
-	m_location.m_area->m_blockDesignations.at(m_faction).maybeUnset(m_location.getIndex(), BlockDesignation::Dig);
+	m_area.m_blockDesignations.at(m_faction).maybeUnset(m_location, BlockDesignation::Dig);
 }
 void DigProject::offDelay()
 {
-	m_location.setDesignation(m_faction, BlockDesignation::Dig);
+	m_area.m_blockDesignations.at(m_faction).set(m_location, BlockDesignation::Dig);
 }
 // What would the total delay time be if we started from scratch now with current workers?
 Step DigProject::getDuration() const
@@ -255,26 +265,29 @@ Step DigProject::getDuration() const
 }
 DigLocationDishonorCallback::DigLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
 	m_faction(deserializationMemo.faction(data["faction"].get<std::wstring>())),
+	m_area(deserializationMemo.area(data["area"])),
 	m_location(deserializationMemo.m_simulation.getBlockForJsonQuery(data["location"])) { }
-Json DigLocationDishonorCallback::toJson() const { return Json({{"type", "DigLocationDishonorCallback"}, {"faction", m_faction.name}, {"location", m_location.positionToJson()}}); }
+Json DigLocationDishonorCallback::toJson() const { return Json({{"type", "DigLocationDishonorCallback"}, {"faction", m_faction.name}, {"location", m_location}}); }
 void DigLocationDishonorCallback::execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount)
 {
-	m_location.m_area->m_hasDigDesignations.undesignate(m_faction, m_location);
+	m_area.m_hasDigDesignations.undesignate(m_faction, m_location);
 }
-HasDigDesignationsForFaction::HasDigDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Faction& faction) : m_faction(faction)
+HasDigDesignationsForFaction::HasDigDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Faction& faction) : 
+	m_area(deserializationMemo.area(data["area"])),
+	m_faction(faction)
 {
 	for(const Json& pair : data)
 	{
-		Block& block = deserializationMemo.m_simulation.getBlockForJsonQuery(pair[0]);
-		m_data.try_emplace(&block, pair[1], deserializationMemo);
+		BlockIndex block = deserializationMemo.m_simulation.getBlockForJsonQuery(pair[0]);
+		m_data.try_emplace(block, pair[1], deserializationMemo);
 	}
 }
 void HasDigDesignationsForFaction::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	for(const Json& pair : data)
 	{
-		Block& block = deserializationMemo.m_simulation.getBlockForJsonQuery(pair[0]);
-		m_data.at(&block).loadWorkers(pair[1], deserializationMemo);
+		BlockIndex block = deserializationMemo.m_simulation.getBlockForJsonQuery(pair[0]);
+		m_data.at(block).loadWorkers(pair[1], deserializationMemo);
 	}
 }
 Json HasDigDesignationsForFaction::toJson() const
@@ -282,37 +295,37 @@ Json HasDigDesignationsForFaction::toJson() const
 	Json data;
 	for(auto& pair : m_data)
 	{
-		Json jsonPair{pair.first->positionToJson(), pair.second.toJson()};
+		Json jsonPair{pair.first, pair.second.toJson()};
 		data.push_back(jsonPair);
 	}
 	return data;
 }
-void HasDigDesignationsForFaction::designate(Block& block, const BlockFeatureType* blockFeatureType)
+void HasDigDesignationsForFaction::designate(BlockIndex block, const BlockFeatureType* blockFeatureType)
 {
-	assert(!m_data.contains(&block));
-	block.setDesignation(m_faction, BlockDesignation::Dig);
+	assert(!m_data.contains(block));
+	m_area.getBlocks().designation_set(block, m_faction, BlockDesignation::Dig);
 	// To be called when block is no longer a suitable location, for example if it got dug out already.
-	std::unique_ptr<DishonorCallback> locationDishonorCallback = std::make_unique<DigLocationDishonorCallback>(m_faction, block);
-	m_data.try_emplace(&block, &m_faction, block, blockFeatureType, std::move(locationDishonorCallback));
+	std::unique_ptr<DishonorCallback> locationDishonorCallback = std::make_unique<DigLocationDishonorCallback>(m_faction, m_area, block);
+	m_data.try_emplace(block, &m_faction, m_area, block, blockFeatureType, std::move(locationDishonorCallback));
 }
-void HasDigDesignationsForFaction::undesignate(Block& block)
+void HasDigDesignationsForFaction::undesignate(BlockIndex block)
 {
-	assert(m_data.contains(&block));
-	DigProject& project = m_data.at(&block);
+	assert(m_data.contains(block));
+	DigProject& project = m_data.at(block);
 	project.cancel();
 }
-void HasDigDesignationsForFaction::remove(Block& block)
+void HasDigDesignationsForFaction::remove(BlockIndex block)
 {
-	assert(m_data.contains(&block));
-	block.unsetDesignation(m_faction, BlockDesignation::Dig);
-	m_data.erase(&block); 
+	assert(m_data.contains(block));
+	m_area.getBlocks().designation_unset(block, m_faction, BlockDesignation::Dig);
+	m_data.erase(block); 
 }
-void HasDigDesignationsForFaction::removeIfExists(Block& block)
+void HasDigDesignationsForFaction::removeIfExists(BlockIndex block)
 {
-	if(m_data.contains(&block))
+	if(m_data.contains(block))
 		remove(block);
 }
-const BlockFeatureType* HasDigDesignationsForFaction::at(const Block& block) const { return m_data.at(const_cast<Block*>(&block)).m_blockFeatureType; }
+const BlockFeatureType* HasDigDesignationsForFaction::at(BlockIndex block) const { return m_data.at(block).m_blockFeatureType; }
 bool HasDigDesignationsForFaction::empty() const { return m_data.empty(); }
 // To be used by Area.
 void AreaHasDigDesignations::load(const Json& data, DeserializationMemo& deserializationMemo)
@@ -347,7 +360,7 @@ Json AreaHasDigDesignations::toJson() const
 void AreaHasDigDesignations::addFaction(Faction& faction)
 {
 	assert(!m_data.contains(&faction));
-	m_data.emplace(&faction, faction);
+	m_data.try_emplace(&faction, faction, m_area);
 }
 void AreaHasDigDesignations::removeFaction(Faction& faction)
 {
@@ -355,24 +368,24 @@ void AreaHasDigDesignations::removeFaction(Faction& faction)
 	m_data.erase(&faction);
 }
 // If blockFeatureType is null then dig out fully rather then digging out a feature.
-void AreaHasDigDesignations::designate(Faction& faction, Block& block, const BlockFeatureType* blockFeatureType)
+void AreaHasDigDesignations::designate(Faction& faction, BlockIndex block, const BlockFeatureType* blockFeatureType)
 {
 	if(!m_data.contains(&faction))
 		addFaction(faction);
 	m_data.at(&faction).designate(block, blockFeatureType);
 }
-void AreaHasDigDesignations::undesignate(Faction& faction, Block& block)
+void AreaHasDigDesignations::undesignate(Faction& faction, BlockIndex block)
 {
 	assert(m_data.contains(&faction));
-	assert(m_data.at(&faction).m_data.contains(&block)); 
+	assert(m_data.at(&faction).m_data.contains(block)); 
 	m_data.at(&faction).undesignate(block);
 }
-void AreaHasDigDesignations::remove(Faction& faction, Block& block)
+void AreaHasDigDesignations::remove(Faction& faction, BlockIndex block)
 {
 	assert(m_data.contains(&faction));
 	m_data.at(&faction).remove(block);
 }
-void AreaHasDigDesignations::clearAll(Block& block)
+void AreaHasDigDesignations::clearAll(BlockIndex block)
 {
 	for(auto& pair : m_data)
 		pair.second.removeIfExists(block);
@@ -389,9 +402,9 @@ bool AreaHasDigDesignations::areThereAnyForFaction(Faction& faction) const
 		return false;
 	return !m_data.at(&faction).empty();
 }
-DigProject& AreaHasDigDesignations::at(Faction& faction, const Block& block) 
+DigProject& AreaHasDigDesignations::at(Faction& faction, BlockIndex block) 
 { 
 	assert(m_data.contains(&faction));
-	assert(m_data.at(&faction).m_data.contains(const_cast<Block*>(&block))); 
-	return m_data.at(&faction).m_data.at(const_cast<Block*>(&block)); 
+	assert(m_data.at(&faction).m_data.contains(block)); 
+	return m_data.at(&faction).m_data.at(block); 
 }

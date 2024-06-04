@@ -1,6 +1,5 @@
 #include "equipItem.h"
 #include "../actor.h"
-#include "../block.h"
 #include "../item.h"
 #include "../deserializationMemo.h"
 EquipItemObjective::EquipItemObjective(Actor& actor, Item& item) : Objective(actor, Config::equipPriority), m_item(item) { }

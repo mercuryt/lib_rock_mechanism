@@ -5,10 +5,10 @@
 #include "findsPath.h"
 #include "threadedTask.hpp"
 #include "eventSchedule.hpp"
+#include "types.h"
 
 class Area;
 class Actor;
-class Block;
 class Item;
 class SleepEvent;
 class TiredEvent;
@@ -21,7 +21,7 @@ class MustSleep final
 	HasScheduledEventPausable<SleepEvent> m_sleepEvent; // 2
 	HasScheduledEvent<TiredEvent> m_tiredEvent; // 2
 	Actor& m_actor;
-	Block* m_location = nullptr;
+	BlockIndex m_location = BLOCK_INDEX_MAX;
 	SleepObjective* m_objective = nullptr;
 	bool m_needsSleep = false;
 	bool m_isAwake = true;
@@ -36,13 +36,13 @@ public:
 	void wakeUp();
 	void makeSleepObjective();
 	void wakeUpEarly();
-	void setLocation(Block& block);
+	void setLocation(BlockIndex block);
 	void onDeath();
 	void notTired();
 	void scheduleTiredEvent();
 	[[nodiscard]] bool isAwake() const { return m_isAwake; }
 	[[nodiscard]] bool getNeedsSleep() const { return m_needsSleep; }
-	[[nodiscard]] Block* getLocation() { return m_location; }
+	[[nodiscard]] BlockIndex getLocation() { return m_location; }
 	friend class SleepEvent;
 	friend class TiredEvent;
 	friend class SleepThreadedTask;
@@ -57,7 +57,7 @@ public:
 class SleepEvent final : public ScheduledEvent
 {
 	MustSleep& m_needsSleep;
-	bool m_force;
+	bool m_force = false;
 public:
 	SleepEvent(const Step delay, MustSleep& ns, bool force, const Step start = 0);
 	void execute();
@@ -76,8 +76,8 @@ class SleepThreadedTask final : public ThreadedTask
 {
 	SleepObjective& m_sleepObjective;
 	FindsPath m_findsPath;
-	bool m_sleepAtCurrentLocation;
-	bool m_noWhereToSleepFound;
+	bool m_sleepAtCurrentLocation = false;
+	bool m_noWhereToSleepFound = false;
 public:
 	SleepThreadedTask(SleepObjective& so);
 	void readStep();
@@ -87,7 +87,7 @@ public:
 class SleepObjective final : public Objective
 {
 	HasThreadedTask<SleepThreadedTask> m_threadedTask;
-	bool m_noWhereToSleepFound;
+	bool m_noWhereToSleepFound = false;
 public:
 	SleepObjective(Actor& a);
 	SleepObjective(const Json& data, DeserializationMemo& deserializationMemo);
@@ -97,7 +97,7 @@ public:
 	void delay() { cancel(); }
 	void reset();
 	bool onNoPath();
-	[[nodiscard]] uint32_t desireToSleepAt(const Block& block) const;
+	[[nodiscard]] uint32_t desireToSleepAt(BlockIndex block) const;
 	[[nodiscard]] std::string name() const { return "sleep"; }
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Sleep; }
 	[[nodiscard]] bool isNeed() const { return true; }

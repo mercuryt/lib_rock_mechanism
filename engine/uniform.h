@@ -70,8 +70,8 @@ public:
 	// non virtual.
 	void equip(Item& item);
 	void select(Item& item);
-	bool blockContainsItem(const Block& block) const { return const_cast<UniformObjective*>(this)->getItemAtBlock(block) != nullptr; }
-	Item* getItemAtBlock(const Block& block);
+	bool blockContainsItem(BlockIndex block) const { return const_cast<UniformObjective*>(this)->getItemAtBlock(block) != nullptr; }
+	Item* getItemAtBlock(BlockIndex block);
 	// For testing.
 	[[nodiscard]] Item* getItem() { return m_item; }
 	friend class UniformThreadedTask;

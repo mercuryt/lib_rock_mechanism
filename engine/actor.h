@@ -45,7 +45,8 @@ struct ActorParamaters
 	DateTime birthDate = {0,0,0};
 	Step birthStep = 0;
 	Percent percentGrown = nullPercent;
-	Block* location = nullptr;
+	BlockIndex location = BLOCK_INDEX_MAX;
+	Area* area = nullptr;
 	Faction* faction = nullptr;
 	Percent percentHunger = nullPercent;
 	bool needsEat = false;
@@ -106,8 +107,8 @@ public:
 	void sharedConstructor();
 	void scheduleNeeds();
 	void resetNeeds();
-	void setLocation(Block& block);
-	void setLocationAndFacing(Block& block, Facing facing);
+	void setLocation(BlockIndex block, Area* area = nullptr);
+	void setLocationAndFacing(BlockIndex block, Facing facing, Area* area = nullptr);
 	void exit();
 	void removeMassFromCorpse(Mass mass);
 	void die(CauseOfDeath causeOfDeath);
@@ -117,8 +118,8 @@ public:
 	void takeHit(Hit& hit, BodyPart& bodyPart);
 	// May be null.
 	void setFaction(Faction* faction);
-	void reserveAllBlocksAtLocationAndFacing(const Block& location, Facing facing);
-	void unreserveAllBlocksAtLocationAndFacing(const Block& location, Facing facing);
+	void reserveAllBlocksAtLocationAndFacing(BlockIndex location, Facing facing);
+	void unreserveAllBlocksAtLocationAndFacing(BlockIndex location, Facing facing);
 	void setBirthStep(Step step);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool isItem() const { return false; }
@@ -140,7 +141,7 @@ public:
 	[[nodiscard]] Step getAge() const;
 	[[nodiscard]] Step getBirthStep() const { return m_birthStep; }
 	[[nodiscard]] std::wstring getActionDescription() const;
-	[[nodiscard]] bool allBlocksAtLocationAndFacingAreReservable(const Block& location, Facing facing) const;
+	[[nodiscard]] bool allBlocksAtLocationAndFacingAreReservable(BlockIndex location, Facing facing) const;
 	[[nodiscard]] EventSchedule& getEventSchedule();
 	[[nodiscard]] ThreadedTaskEngine& getThreadedTaskEngine();
 	Actor(const Actor& actor) = delete;

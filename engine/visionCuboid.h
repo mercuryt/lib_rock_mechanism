@@ -17,35 +17,37 @@ class AreaHasVisionCuboids final
 	std::list<VisionCuboid> m_visionCuboids;
 	std::vector<VisionCuboid*> m_blockVisionCuboids;
 	std::vector<VisionCuboidId> m_blockVisionCuboidIds;
+	Area* m_area;
 	VisionCuboidId m_nextId = 1;
 public:
 	void initalize(Area& area);
 	void clearDestroyed();
-	void blockIsNeverOpaque(Block& block);
-	void blockIsSometimesOpaque(Block& block);
-	void blockFloorIsNeverOpaque(Block& block);
-	void blockFloorIsSometimesOpaque(Block& block);
-	void set(Block& block, VisionCuboid& visionCuboid);
-	void unset(Block& block);
+	void blockIsNeverOpaque(BlockIndex block);
+	void blockIsSometimesOpaque(BlockIndex block);
+	void blockFloorIsNeverOpaque(BlockIndex block);
+	void blockFloorIsSometimesOpaque(BlockIndex block);
+	void set(BlockIndex block, VisionCuboid& visionCuboid);
+	void unset(BlockIndex block);
 	VisionCuboid& emplace(Cuboid& cuboid);
 	[[nodiscard]] VisionCuboid* getTargetToCombineWith(const Cuboid& cuboid);
 	[[nodiscard]] VisionCuboidId getIdFor(BlockIndex index) const { return m_blockVisionCuboidIds[index]; }
 	// For testing.
 	[[nodiscard]] size_t size() { return m_visionCuboids.size(); }
-	[[nodiscard]] VisionCuboid* getVisionCuboidFor(const Block& block);
+	[[nodiscard]] VisionCuboid* getVisionCuboidFor(BlockIndex block);
 };
 
 class VisionCuboid final
 {
+	Area& m_area;
 public:
 	Cuboid m_cuboid;
 	const VisionCuboidId m_id = 0;
 	bool m_destroy = false;
 
-	VisionCuboid(Cuboid& cuboid, VisionCuboidId id);
+	VisionCuboid(Area& area, Cuboid& cuboid, VisionCuboidId id);
 	[[nodiscard]] bool canSeeInto(const Cuboid& cuboid) const;
 	[[nodiscard]] bool canCombineWith(const Cuboid& cuboid) const;
-	void splitAt(Block& split);
-	void splitBelow(Block& split);
+	void splitAt(BlockIndex split);
+	void splitBelow(BlockIndex split);
 	void extend(Cuboid& cuboid);
 };

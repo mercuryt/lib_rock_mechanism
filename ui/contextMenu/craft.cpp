@@ -4,7 +4,7 @@
 #include "../engine/types.h"
 #include "craft.h"
 #include "../displayData.h"
-void ContextMenu::drawCraftControls(Block& block)
+void ContextMenu::drawCraftControls(BlockIndex& block)
 {
 	if(!m_window.getFaction() || block.isSolid() || !block.m_hasShapes.canStandIn())
 		return;
@@ -28,7 +28,7 @@ void ContextMenu::drawCraftControls(Block& block)
 				auto& locationsAndJobsForFaction = m_window.getArea()->m_hasCraftingLocationsAndJobs.at(*m_window.getFaction());
 				if(m_window.getSelectedBlocks().empty())
 					m_window.selectBlock(block);
-				for(Block* selectedBlock : m_window.getSelectedBlocks())
+				for(BlockIndex* selectedBlock : m_window.getSelectedBlocks())
 					locationsAndJobsForFaction.removeLocation(*category, *selectedBlock);
 				hide();
 			});
@@ -39,7 +39,7 @@ void ContextMenu::drawCraftControls(Block& block)
 		auto& locationsAndJobsForFaction = m_window.getArea()->m_hasCraftingLocationsAndJobs.at(*m_window.getFaction());
 		if(m_window.getSelectedBlocks().empty())
 			m_window.selectBlock(block);
-		for(Block* selectedBlock : m_window.getSelectedBlocks())
+		for(BlockIndex* selectedBlock : m_window.getSelectedBlocks())
 			locationsAndJobsForFaction.addLocation(*widgetUtil::lastSelectedCraftStepTypeCategory, *selectedBlock);
 		hide();
 	});

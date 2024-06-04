@@ -8,8 +8,10 @@
 #include "util.h"
 #include "simulation.h"
 AreaHasRain::AreaHasRain(Area& a, Simulation& s) : 
-	m_event(s.m_eventSchedule), m_area(a), m_defaultRainFluidType(FluidType::byName("water")), 
-	m_humidityBySeason({30,15,10,20}) { }
+	m_humidityBySeason({30,15,10,20}),
+	m_event(s.m_eventSchedule), 
+	m_area(a), 
+	m_defaultRainFluidType(FluidType::byName("water")) { }
 void AreaHasRain::load(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo)
 {
 	if(data.contains("currentFluidType"))
@@ -44,8 +46,9 @@ void AreaHasRain::start(const FluidType& fluidType, Percent intensityPercent, St
 	m_event.maybeUnschedule();
 	m_currentlyRainingFluidType = &fluidType;
 	m_intensityPercent = intensityPercent;
+	Blocks& blocks = m_area.getBlocks();
 	for(Plant* plant : m_area.m_hasPlants.getPlantsOnSurface())
-		if(plant->m_plantSpecies.fluidType == fluidType && plant->m_location->m_exposedToSky)
+		if(plant->m_plantSpecies.fluidType == fluidType && blocks.isExposedToSky(plant->m_location))
 			plant->setHasFluidForNow();
 	m_event.schedule(stepsDuration, *this);
 }
@@ -64,15 +67,16 @@ void AreaHasRain::writeStep()
 	DistanceInBlocks spacing = util::scaleByInversePercent(Config::rainMaximumSpacing, m_intensityPercent);
 	DistanceInBlocks offset = random.getInRange(0u, Config::rainMaximumOffset);
 	DistanceInBlocks i = 0;
-	for(Block& block : m_area.getZLevel(m_area.m_sizeZ - 1))
+	Blocks& blocks = m_area.getBlocks();
+	for(BlockIndex block : blocks.getZLevel(blocks.m_sizeZ - 1))
 		if(offset)
 			--offset;
 		else if(i)
 			--i;
 		else
 		{
-			if(!block.isSolid() && block.m_hasFluids.fluidCanEnterCurrently(*m_currentlyRainingFluidType))
-				block.m_hasFluids.addFluid(1, *m_currentlyRainingFluidType);
+			if(!blocks.solid_is(block) && blocks.fluid_canEnterCurrently(block, *m_currentlyRainingFluidType))
+				blocks.fluid_add(block, 1, *m_currentlyRainingFluidType);
 			i = spacing;
 		}
 }

@@ -14,7 +14,6 @@
 #include <vector>
 
 class ConstructThreadedTask;
-class Block;
 struct Faction;
 struct BlockFeatureType;
 class ConstructObjective;
@@ -62,10 +61,10 @@ public:
 	void joinProject(ConstructProject& project);
 	void onProjectCannotReserve();
 	[[nodiscard]] std::string name() const { return "construct"; }
-	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAdjacentTo(const Block& location, Facing facing);
-	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAt(Block& block);
-	[[nodiscard]] bool joinableProjectExistsAt(const Block& block) const;
-	[[nodiscard]] bool canJoinProjectAdjacentToLocationAndFacing(const Block& block, Facing facing) const;
+	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAdjacentTo(BlockIndex location, Facing facing);
+	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAt(BlockIndex block);
+	[[nodiscard]] bool joinableProjectExistsAt(BlockIndex block) const;
+	[[nodiscard]] bool canJoinProjectAdjacentToLocationAndFacing(BlockIndex block, Facing facing) const;
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Construct; }
 	friend class ConstructThreadedTask;
 	friend class ConstructProject;
@@ -99,7 +98,8 @@ class ConstructProject final : public Project
 	void offDelay();
 public:
 	// BlockFeatureType can be null, meaning the block is to be filled with a constructed wall.
-	ConstructProject(Faction* faction, Block& b, const BlockFeatureType* bft, const MaterialType& mt, std::unique_ptr<DishonorCallback> dishonorCallback) : Project(faction, b, Config::maxNumberOfWorkersForConstructionProject, std::move(dishonorCallback)), m_blockFeatureType(bft), m_materialType(mt) { }
+	ConstructProject(Faction* faction, Area& a, BlockIndex b, const BlockFeatureType* bft, const MaterialType& mt, std::unique_ptr<DishonorCallback> dishonorCallback) : 
+		Project(faction, a, b, Config::maxNumberOfWorkersForConstructionProject, std::move(dishonorCallback)), m_blockFeatureType(bft), m_materialType(mt) { }
 	ConstructProject(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	// What would the total delay time be if we started from scratch now with current workers?
@@ -110,50 +110,54 @@ public:
 struct ConstructionLocationDishonorCallback final : public DishonorCallback
 {
 	Faction& m_faction;
-	Block& m_location;
-	ConstructionLocationDishonorCallback(Faction& f, Block& l) : m_faction(f), m_location(l) { }
+	Area& m_area;
+	BlockIndex m_location;
+	ConstructionLocationDishonorCallback(Faction& f, Area& a, BlockIndex l) : m_faction(f), m_area(a), m_location(l) { }
 	ConstructionLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount);
 };
 class HasConstructionDesignationsForFaction final
 {
+	Area& m_area;
 	Faction& m_faction;
 	//TODO: More then one construct project targeting a given block should be able to exist simultaniously.
-	std::unordered_map<Block*, ConstructProject> m_data;
+	std::unordered_map<BlockIndex, ConstructProject> m_data;
 public:
-	HasConstructionDesignationsForFaction(Faction& p) : m_faction(p) { }
+	HasConstructionDesignationsForFaction(Faction& p, Area& a) : m_area(a), m_faction(p) { }
 	HasConstructionDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Faction& faction);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	// If blockFeatureType is null then construct a wall rather then a feature.
-	void designate(Block& block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType);
-	void undesignate(Block& block);
-	void remove(Block& block);
-	void removeIfExists(Block& block);
-	bool contains(const Block& block) const;
-	const BlockFeatureType* at(const Block& block) const;
+	void designate(BlockIndex block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType);
+	void undesignate(BlockIndex block);
+	void remove(BlockIndex block);
+	void removeIfExists(BlockIndex block);
+	bool contains(BlockIndex block) const;
+	const BlockFeatureType* at(BlockIndex block) const;
 	bool empty() const;
 	friend class AreaHasConstructionDesignations;
 };
 // To be used by Area.
 class AreaHasConstructionDesignations final
 {
+	Area& m_area;
 	std::unordered_map<Faction*, HasConstructionDesignationsForFaction> m_data;
 public:
+	AreaHasConstructionDesignations(Area& a) : m_area(a) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void addFaction(Faction& faction);
 	void removeFaction(Faction& faction);
 	// If blockFeatureType is null then dig out fully rather then digging out a feature.
-	void designate(Faction& faction, Block& block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType);
-	void undesignate(Faction& faction, Block& block);
-	void remove(Faction& faction, Block& block);
-	void clearAll(Block& block);
+	void designate(Faction& faction, BlockIndex block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType);
+	void undesignate(Faction& faction, BlockIndex block);
+	void remove(Faction& faction, BlockIndex block);
+	void clearAll(BlockIndex block);
 	void clearReservations();
 	bool areThereAnyForFaction(Faction& faction) const;
-	bool contains(Faction& faction, const Block& block) const;
-	ConstructProject& getProject(Faction& faction, Block& block);
+	bool contains(Faction& faction, BlockIndex block) const;
+	ConstructProject& getProject(Faction& faction, BlockIndex block);
 	HasConstructionDesignationsForFaction& at(Faction& faction) { return m_data.at(&faction); }
 };

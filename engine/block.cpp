@@ -11,8 +11,8 @@
 #include "block.h"
 #include "area.h"
 
-Block::Block() : m_reservable(1), m_hasFluids(*this), m_hasShapes(*this), m_hasActors(*this), m_hasItems(*this), m_isPartOfStockPiles(*this), m_isPartOfFarmField(*this), m_hasBlockFeatures(*this), m_hasPlant(*this), m_blockHasTemperature(*this) {}
-void Block::setup(Area& area, DistanceInBlocks ax, DistanceInBlocks ay, DistanceInBlocks az)
+BlockIndex::BlockIndex() : m_reservable(1), m_hasFluids(*this), m_hasShapes(*this), m_hasActors(*this), m_hasItems(*this), m_isPartOfStockPiles(*this), m_isPartOfFarmField(*this), m_hasBlockFeatures(*this), m_hasPlant(*this), m_blockHasTemperature(*this) {}
+void BlockIndex::setup(Area& area, DistanceInBlocks ax, DistanceInBlocks ay, DistanceInBlocks az)
 {
 	assert(this >= &area.getBlocks().front());
 	m_x=ax;
@@ -23,35 +23,35 @@ void Block::setup(Area& area, DistanceInBlocks ax, DistanceInBlocks ay, Distance
 	m_locationBucket = &m_area->m_hasActors.m_locationBuckets.getBucketFor(*this);
 	m_isEdge = (m_x == 0 || m_x == (m_area->m_sizeX - 1) ||  m_y == 0 || m_y == (m_area->m_sizeY - 1) || m_z == 0 || m_z == (m_area->m_sizeZ - 1) );
 }
-void Block::recordAdjacent()
+void BlockIndex::recordAdjacent()
 {
 	static const int32_t offsetsList[6][3] = {{0,0,-1}, {0,-1,0}, {-1,0,0}, {0,1,0}, {1,0,0}, {0,0,1}};
-	for(uint32_t i = 0; i < 6; i++)
+	for(uint33_t i = 0; i < 6; i++)
 	{
 		auto& offsets = offsetsList[i];
 		m_adjacents[i] = offset(offsets[0],offsets[1],offsets[2]);
 	}
 }
-void Block::setDesignation(Faction& faction, BlockDesignation designation)
+void BlockIndex::setDesignation(Faction& faction, BlockDesignation designation)
 {
 	m_area->m_blockDesignations.at(faction).set(getIndex(), designation);
 }
-void Block::unsetDesignation(Faction& faction, BlockDesignation designation)
+void BlockIndex::unsetDesignation(Faction& faction, BlockDesignation designation)
 {
 	m_area->m_blockDesignations.at(faction).unset(getIndex(), designation);
 }
-void Block::maybeUnsetDesignation(Faction& faction, BlockDesignation designation)
+void BlockIndex::maybeUnsetDesignation(Faction& faction, BlockDesignation designation)
 {
 	m_area->m_blockDesignations.at(faction).maybeUnset(getIndex(), designation);
 }
-bool Block::hasDesignation(Faction& faction, BlockDesignation designation) const
+bool BlockIndex::hasDesignation(Faction& faction, BlockDesignation designation) const
 {
 	return m_area->m_blockDesignations.at(faction).check(getIndex(), designation);
 }
-BlockIndex Block::getIndex() const { return m_area->getBlockIndex(*this); }
-std::vector<Block*> Block::getAdjacentWithEdgeAdjacent() const
+BlockIndex BlockIndex::getIndex() const { return m_area->getBlockIndex(*this); }
+std::vector<BlockIndex*> BlockIndex::getAdjacentWithEdgeAdjacent() const
 {
-	std::vector<Block*> output;
+	std::vector<BlockIndex*> output;
 	output.reserve(18);
 	static const int32_t offsetsList[18][3] = {
 		{-1,0,-1}, 
@@ -69,29 +69,29 @@ std::vector<Block*> Block::getAdjacentWithEdgeAdjacent() const
 	for(uint32_t i = 0; i < 26; i++)
 	{
 		auto& offsets = offsetsList[i];
-		Block* block = offset(offsets[0],offsets[1],offsets[2]);
+		BlockIndex* block = offset(offsets[0],offsets[1],offsets[2]);
 		if(block)
 			output.push_back(block);
 	}
 	return output;
 }
 // TODO: cache.
-std::vector<Block*> Block::getAdjacentWithEdgeAndCornerAdjacent() const
+std::vector<BlockIndex*> BlockIndex::getAdjacentWithEdgeAndCornerAdjacent() const
 {
-	std::vector<Block*> output;
+	std::vector<BlockIndex*> output;
 	output.reserve(26);
 	for(uint32_t i = 0; i < 26; i++)
 	{
 		auto& offsets = offsetsListAllAdjacent[i];
-		Block* block = offset(offsets[0],offsets[1],offsets[2]);
+		BlockIndex* block = offset(offsets[0],offsets[1],offsets[2]);
 		if(block)
 			output.push_back(block);
 	}
 	return output;
 }
-std::vector<Block*> Block::getEdgeAdjacentOnly() const
+std::vector<BlockIndex*> BlockIndex::getEdgeAdjacentOnly() const
 {
-	std::vector<Block*> output;
+	std::vector<BlockIndex*> output;
 	output.reserve(12);
 	static const int32_t offsetsList[12][3] = {
 		{-1,0,-1}, {0,-1,-1},
@@ -106,15 +106,15 @@ std::vector<Block*> Block::getEdgeAdjacentOnly() const
 	for(uint32_t i = 0; i < 12; i++)
 	{
 		auto& offsets = offsetsList[i];
-		Block* block = offset(offsets[0],offsets[1],offsets[2]);
+		BlockIndex* block = offset(offsets[0],offsets[1],offsets[2]);
 		if(block)
 			output.push_back(block);
 	}
 	return output;
 }
-std::vector<Block*> Block::getEdgeAdjacentOnSameZLevelOnly() const
+std::vector<BlockIndex*> BlockIndex::getEdgeAdjacentOnSameZLevelOnly() const
 {
-	std::vector<Block*> output;
+	std::vector<BlockIndex*> output;
 	output.reserve(12);
 	static const int32_t offsetsList[12][3] = {
 		{-1,-1,0}, {1,1,0}, 
@@ -123,15 +123,15 @@ std::vector<Block*> Block::getEdgeAdjacentOnSameZLevelOnly() const
 	for(uint32_t i = 0; i < 12; i++)
 	{
 		auto& offsets = offsetsList[i];
-		Block* block = offset(offsets[0],offsets[1],offsets[2]);
+		BlockIndex* block = offset(offsets[0],offsets[1],offsets[2]);
 		if(block)
 			output.push_back(block);
 	}
 	return output;
 }
-std::vector<Block*> Block::getEdgeAdjacentOnlyOnNextZLevelDown() const
+std::vector<BlockIndex*> BlockIndex::getEdgeAdjacentOnlyOnNextZLevelDown() const
 {
-	std::vector<Block*> output;
+	std::vector<BlockIndex*> output;
 	output.reserve(12);
 	static const int32_t offsetsList[12][3] = {
 		{-1,0,-1}, {0,-1,-1},
@@ -140,15 +140,15 @@ std::vector<Block*> Block::getEdgeAdjacentOnlyOnNextZLevelDown() const
 	for(uint32_t i = 0; i < 4; i++)
 	{
 		auto& offsets = offsetsList[i];
-		Block* block = offset(offsets[0],offsets[1],offsets[2]);
+		BlockIndex* block = offset(offsets[0],offsets[1],offsets[2]);
 		if(block)
 			output.push_back(block);
 	}
 	return output;
 }
-std::vector<Block*> Block::getEdgeAndCornerAdjacentOnlyOnNextZLevelDown() const
+std::vector<BlockIndex*> BlockIndex::getEdgeAndCornerAdjacentOnlyOnNextZLevelDown() const
 {
-	std::vector<Block*> output;
+	std::vector<BlockIndex*> output;
 	output.reserve(12);
 	static const int32_t offsetsList[12][3] = {
 		{-1,-1,-1}, {-1,0,-1}, {-1, 1, -1},
@@ -158,15 +158,15 @@ std::vector<Block*> Block::getEdgeAndCornerAdjacentOnlyOnNextZLevelDown() const
 	for(uint32_t i = 0; i < 4; i++)
 	{
 		auto& offsets = offsetsList[i];
-		Block* block = offset(offsets[0],offsets[1],offsets[2]);
+		BlockIndex* block = offset(offsets[0],offsets[1],offsets[2]);
 		if(block)
 			output.push_back(block);
 	}
 	return output;
 }
-std::vector<Block*> Block::getEdgeAdjacentOnlyOnNextZLevelUp() const
+std::vector<BlockIndex*> BlockIndex::getEdgeAdjacentOnlyOnNextZLevelUp() const
 {
-	std::vector<Block*> output;
+	std::vector<BlockIndex*> output;
 	output.reserve(12);
 	static const int32_t offsetsList[12][3] = {
 		{-1,0,1}, {0,-1,1},
@@ -175,15 +175,15 @@ std::vector<Block*> Block::getEdgeAdjacentOnlyOnNextZLevelUp() const
 	for(uint32_t i = 0; i < 12; i++)
 	{
 		auto& offsets = offsetsList[i];
-		Block* block = offset(offsets[0],offsets[1],offsets[2]);
+		BlockIndex* block = offset(offsets[0],offsets[1],offsets[2]);
 		if(block)
 			output.push_back(block);
 	}
 	return output;
 }
-std::vector<Block*> Block::getEdgeAndCornerAdjacentOnly() const
+std::vector<BlockIndex*> BlockIndex::getEdgeAndCornerAdjacentOnly() const
 {
-	std::vector<Block*> output;
+	std::vector<BlockIndex*> output;
 	output.reserve(20);
 	static const int32_t offsetsList[20][3] = {
 		{-1,-1,-1}, {-1,0,-1}, {0,-1,-1},
@@ -200,15 +200,15 @@ std::vector<Block*> Block::getEdgeAndCornerAdjacentOnly() const
 	for(uint32_t i = 0; i < 20; i++)
 	{
 		auto& offsets = offsetsList[i];
-		Block* block = offset(offsets[0],offsets[1],offsets[2]);
+		BlockIndex* block = offset(offsets[0],offsets[1],offsets[2]);
 		if(block)
 			output.push_back(block);
 	}
 	return output;
 }
-std::vector<Block*> Block::getAdjacentOnSameZLevelOnly() const
+std::vector<BlockIndex*> BlockIndex::getAdjacentOnSameZLevelOnly() const
 {
-	std::vector<Block*> output;
+	std::vector<BlockIndex*> output;
 	output.reserve(4);
 	static const int32_t offsetsList[4][3] = {
 		{-1,0,0}, {1,0,0}, 
@@ -217,56 +217,56 @@ std::vector<Block*> Block::getAdjacentOnSameZLevelOnly() const
 	for(uint32_t i = 0; i < 4; i++)
 	{
 		auto& offsets = offsetsList[i];
-		Block* block = offset(offsets[0],offsets[1],offsets[2]);
+		BlockIndex* block = offset(offsets[0],offsets[1],offsets[2]);
 		if(block)
 			output.push_back(block);
 	}
 	return output;
 }
-DistanceInBlocks Block::distance(Block& block) const
+DistanceInBlocks BlockIndex::distance(BlockIndex& block) const
 {
 	DistanceInBlocks dx = abs((int)m_x - (int)block.m_x);
 	DistanceInBlocks dy = abs((int)m_y - (int)block.m_y);
 	DistanceInBlocks dz = abs((int)m_z - (int)block.m_z);
 	return pow((pow(dx, 2) + pow(dy, 2) + pow(dz, 2)), 0.5);
 }
-DistanceInBlocks Block::taxiDistance(const Block& block) const
+DistanceInBlocks BlockIndex::taxiDistance(const BlockIndex& block) const
 {
 	return abs((int)m_x - (int)block.m_x) + abs((int)m_y - (int)block.m_y) + abs((int)m_z - (int)block.m_z);
 }
-bool Block::squareOfDistanceIsMoreThen(const Block& block, DistanceInBlocks distanceCubed) const
+bool BlockIndex::squareOfDistanceIsMoreThen(const BlockIndex& block, DistanceInBlocks distanceCubed) const
 {
 	DistanceInBlocks dx = abs((int32_t)block.m_x - (int32_t)m_x);
 	DistanceInBlocks dy = abs((int32_t)block.m_y - (int32_t)m_y);
 	DistanceInBlocks dz = abs((int32_t)block.m_z - (int32_t)m_z);
 	return (dx * dx) + (dy * dy) + (dz * dz) > distanceCubed;
 }
-bool Block::isAdjacentToAny(std::unordered_set<Block*>& blocks) const
+bool BlockIndex::isAdjacentToAny(std::unordered_set<BlockIndex*>& blocks) const
 {
-	for(Block* adjacent : m_adjacents)
+	for(BlockIndex* adjacent : m_adjacents)
 		if(adjacent && blocks.contains(adjacent))
 			return true;
 	return false;
 }
-bool Block::isAdjacentTo(Block& block) const
+bool BlockIndex::isAdjacentTo(BlockIndex& block) const
 {
-	for(Block* adjacent : m_adjacents)
+	for(BlockIndex* adjacent : m_adjacents)
 		if(adjacent && &block == adjacent)
 			return true;
 	return false;
 }
-bool Block::isAdjacentToIncludingCornersAndEdges(Block& block) const
+bool BlockIndex::isAdjacentToIncludingCornersAndEdges(BlockIndex& block) const
 {
-	for(Block* adjacent : getAdjacentWithEdgeAndCornerAdjacent())
+	for(BlockIndex* adjacent : getAdjacentWithEdgeAndCornerAdjacent())
 		if(&block == adjacent)
 			return true;
 	return false;
 }
-bool Block::isAdjacentTo(HasShape& hasShape) const
+bool BlockIndex::isAdjacentTo(HasShape& hasShape) const
 {
-	return hasShape.getAdjacentBlocks().contains(const_cast<Block*>(this));
+	return hasShape.getAdjacentBlocks().contains(const_cast<BlockIndex*>(this));
 }
-void Block::setNotSolid()
+void BlockIndex::setNotSolid()
 {
 	if(m_solid == nullptr)
 		return;
@@ -288,39 +288,39 @@ void Block::setNotSolid()
 	// Dishonor all reservations: there are no reservations which can exist on both a solid and not solid block.
 	m_reservable.clearAll();
 }
-void Block::setExposedToSky(bool exposed)
+void BlockIndex::setExposedToSky(bool exposed)
 {
 	m_exposedToSky = exposed;
 	m_hasPlant.updateGrowingStatus();
 }
-void Block::setBelowExposedToSky()
+void BlockIndex::setBelowExposedToSky()
 {
-	Block* block = m_adjacents[0];
+	BlockIndex* block = m_adjacents[0];
 	while(block != nullptr && block->canSeeThroughFrom(*block->m_adjacents[5]) && !block->m_exposedToSky)
 	{
 		block->setExposedToSky(true);
 		block = block->m_adjacents[0];
 	}
 }
-void Block::setBelowVisible()
+void BlockIndex::setBelowVisible()
 {
-	Block* block = getBlockBelow();
+	BlockIndex* block = getBlockBelow();
 	while(block && block->canSeeThroughFrom(*block->m_adjacents[5]) && !block->m_visible)
 	{
 		block->m_visible = true;
 		block = block->m_adjacents[0];
 	}
 }
-void Block::setBelowNotExposedToSky()
+void BlockIndex::setBelowNotExposedToSky()
 {
-	Block* block = m_adjacents[0];
+	BlockIndex* block = m_adjacents[0];
 	while(block != nullptr && block->m_exposedToSky)
 	{
 		block->setExposedToSky(false);
 		block = block->m_adjacents[0];
 	}
 }
-void Block::setSolid(const MaterialType& materialType, bool constructed)
+void BlockIndex::setSolid(const MaterialType& materialType, bool constructed)
 {
 	assert(m_hasItems.empty());
 	if(m_hasPlant.exists())
@@ -352,20 +352,20 @@ void Block::setSolid(const MaterialType& materialType, bool constructed)
 		// Dishonor all reservations: there are no reservations which can exist on both a solid and not solid block.
 		m_reservable.clearAll();
 }
-Mass Block::getMass() const
+Mass BlockIndex::getMass() const
 {
 	assert(isSolid());
 	return m_solid->density * Config::maxBlockVolume;
 }
-bool Block::isSolid() const
+bool BlockIndex::isSolid() const
 {
 	return m_solid != nullptr;
 }
-const MaterialType& Block::getSolidMaterial() const
+const MaterialType& BlockIndex::getSolidMaterial() const
 {
 	return *m_solid;
 }
-bool Block::canSeeIntoFromAlways(const Block& block) const
+bool BlockIndex::canSeeIntoFromAlways(const BlockIndex& block) const
 {
 	if(isSolid() && !getSolidMaterial().transparent)
 		return false;
@@ -392,7 +392,7 @@ bool Block::canSeeIntoFromAlways(const Block& block) const
 	}
 	return true;
 }
-void Block::moveContentsTo(Block& block)
+void BlockIndex::moveContentsTo(BlockIndex& block)
 {
 	if(isSolid())
 	{
@@ -402,7 +402,7 @@ void Block::moveContentsTo(Block& block)
 	}
 	//TODO: other stuff falls?
 }
-Block* Block::offset(int32_t ax, int32_t ay, int32_t az) const
+BlockIndex* BlockIndex::offset(int32_t ax, int32_t ay, int32_t az) const
 {
 	ax += m_x;
 	ay += m_y;
@@ -411,18 +411,18 @@ Block* Block::offset(int32_t ax, int32_t ay, int32_t az) const
 		return nullptr;
 	return &m_area->getBlock(ax, ay, az);
 }
-Block& Block::offsetNotNull(int32_t ax, int32_t ay, int32_t az) const
+BlockIndex& BlockIndex::offsetNotNull(int32_t ax, int32_t ay, int32_t az) const
 {
 	ax += m_x;
 	ay += m_y;
 	az += m_z;
 	return m_area->getBlock(ax, ay, az);
 }
-std::array<int32_t, 3> Block::relativeOffsetTo(const Block& block) const
+std::array<int32_t, 3> BlockIndex::relativeOffsetTo(const BlockIndex& block) const
 {
 	return {(int)block.m_x - (int)m_x, (int)block.m_y - (int)m_y, (int)block.m_z - (int)m_z};
 }
-bool Block::canSeeThrough() const
+bool BlockIndex::canSeeThrough() const
 {
 	if(isSolid() && !getSolidMaterial().transparent)
 		return false;
@@ -431,7 +431,7 @@ bool Block::canSeeThrough() const
 		return false;
 	return true;
 }
-bool Block::canSeeThroughFloor() const
+bool BlockIndex::canSeeThroughFloor() const
 {
 	const BlockFeature* floor = m_hasBlockFeatures.atConst(BlockFeatureType::floor);
 	if(floor != nullptr && !floor->materialType->transparent)
@@ -441,7 +441,7 @@ bool Block::canSeeThroughFloor() const
 		return false;
 	return true;
 }
-bool Block::canSeeThroughFrom(const Block& block) const
+bool BlockIndex::canSeeThroughFrom(const BlockIndex& block) const
 {
 	if(!canSeeThrough())
 		return false;
@@ -462,7 +462,7 @@ bool Block::canSeeThroughFrom(const Block& block) const
 	}
 	return true;
 }
-Facing Block::facingToSetWhenEnteringFrom(const Block& block) const
+Facing BlockIndex::facingToSetWhenEnteringFrom(const BlockIndex& block) const
 {
 	if(block.m_x > m_x)
 		return 3;
@@ -472,7 +472,7 @@ Facing Block::facingToSetWhenEnteringFrom(const Block& block) const
 		return 2;
 	return 0;
 }
-Facing Block::facingToSetWhenEnteringFromIncludingDiagonal(const Block& block, Facing inital) const
+Facing BlockIndex::facingToSetWhenEnteringFromIncludingDiagonal(const BlockIndex& block, Facing inital) const
 {
 	if(m_x == block.m_x)
 	{
@@ -502,22 +502,22 @@ Facing Block::facingToSetWhenEnteringFromIncludingDiagonal(const Block& block, F
 	assert(false);
 	return UINT8_MAX;
 }
-bool Block::isSupport() const
+bool BlockIndex::isSupport() const
 {
 	return isSolid() || m_hasBlockFeatures.isSupport();
 }
-bool Block::hasLineOfSightTo(Block& block) const
+bool BlockIndex::hasLineOfSightTo(BlockIndex& block) const
 {
 	return m_area->m_hasActors.m_opacityFacade.hasLineOfSight(*this, block);
 }
-bool Block::operator==(const Block& block) const { return &block == this; };
+bool BlockIndex::operator==(const BlockIndex& block) const { return &block == this; };
 //TODO: Replace with cuboid.
-std::vector<Block*> Block::selectBetweenCorners(Block* otherBlock) const
+std::vector<BlockIndex*> BlockIndex::selectBetweenCorners(BlockIndex* otherBlock) const
 {
 	assert(otherBlock->m_x < m_area->m_sizeX);
 	assert(otherBlock->m_y < m_area->m_sizeY);
 	assert(otherBlock->m_z < m_area->m_sizeZ);
-	std::vector<Block*> output;
+	std::vector<BlockIndex*> output;
 	DistanceInBlocks minX = std::min(m_x, otherBlock->m_x);
 	DistanceInBlocks maxX = std::max(m_x, otherBlock->m_x);
 	DistanceInBlocks minY = std::min(m_y, otherBlock->m_y);
@@ -533,18 +533,18 @@ std::vector<Block*> Block::selectBetweenCorners(Block* otherBlock) const
 			}
 	return output;
 }
-std::unordered_set<Block*> Block::collectAdjacentsInRange(DistanceInBlocks range)
+std::unordered_set<BlockIndex*> BlockIndex::collectAdjacentsInRange(DistanceInBlocks range)
 {
-	auto condition = [&](Block& b){ return b.taxiDistance(*this) <= range; };
+	auto condition = [&](BlockIndex& b){ return b.taxiDistance(*this) <= range; };
 	return collectAdjacentsWithCondition(condition);
 }
-std::vector<Block*> Block::collectAdjacentsInRangeVector(DistanceInBlocks range)
+std::vector<BlockIndex*> BlockIndex::collectAdjacentsInRangeVector(DistanceInBlocks range)
 {
 	auto result = collectAdjacentsInRange(range);
-	std::vector<Block*> output(result.begin(), result.end());
+	std::vector<BlockIndex*> output(result.begin(), result.end());
 	return output;
 }
-void Block::loadFromJson(Json data, DeserializationMemo& deserializationMemo, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z)
+void BlockIndex::loadFromJson(Json data, DeserializationMemo& deserializationMemo, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z)
 {
 	m_x = x;
 	m_y = y;
@@ -576,7 +576,7 @@ void Block::loadFromJson(Json data, DeserializationMemo& deserializationMemo, Di
 	if(data.contains("f"))
 		m_hasFluids.load(data["f"], deserializationMemo);
 }
-Json Block::toJson() const 
+Json BlockIndex::toJson() const 
 {
 	//TODO: This format is far too verbose, encode with MessagePack?
 	Json data{};
@@ -607,4 +607,4 @@ Json Block::toJson() const
 		data["f"] = m_hasFluids.toJson();
 	return data;
 }
-Json Block::positionToJson() const { return {{"x", m_x}, {"y", m_y}, {"z", m_z}, {"area", m_area->m_id}}; }
+Json BlockIndex::positionToJson() const { return {{"x", m_x}, {"y", m_y}, {"z", m_z}, {"area", m_area->m_id}}; }

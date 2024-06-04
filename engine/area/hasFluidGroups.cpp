@@ -81,7 +81,7 @@ void AreaHasFluidGroups::writeStep()
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 		fluidGroup.validate();
 }
-FluidGroup* AreaHasFluidGroups::createFluidGroup(const FluidType& fluidType, std::unordered_set<Block*>& blocks, bool checkMerge)
+FluidGroup* AreaHasFluidGroups::createFluidGroup(const FluidType& fluidType, std::unordered_set<BlockIndex>& blocks, bool checkMerge)
 {
 	m_fluidGroups.emplace_back(fluidType, blocks, m_area, checkMerge);
 	m_unstableFluidGroups.insert(&m_fluidGroups.back());

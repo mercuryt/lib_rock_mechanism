@@ -1,6 +1,6 @@
 #include "leadAndFollow.h"
-#include "block.h"
 #include "actor.h"
+#include "area.h"
 #include "config.h"
 #include "item.h"
 #include "deserializationMemo.h"
@@ -12,8 +12,8 @@ void CanLead::load(const Json& data, DeserializationMemo& deserializationMemo)
 		&deserializationMemo.itemReference(data["canFollowItem"]).m_canFollow:
 		&deserializationMemo.actorReference(data["canFollowActor"]).m_canFollow;
 	if(data.contains("locationQueue"))
-		for(const Json& blockQuery : data["locationQueue"])
-			m_locationQueue.push_back(&deserializationMemo.blockReference(blockQuery));
+		for(const Json& block: data["locationQueue"])
+			m_locationQueue.push_back(block.get<BlockIndex>());
 }
 Json CanLead::toJson() const
 {
@@ -107,7 +107,7 @@ Speed CanLead::getMoveSpeed() const
 	}
 	return getMoveSpeedForGroupWithAddedMass(actorsAndItems, 0);
 }
-std::deque<Block*>& CanLead::getLocationQueue()
+std::deque<BlockIndex>& CanLead::getLocationQueue()
 {
 	return m_hasShape.m_canFollow.getLineLeader().m_canLead.m_locationQueue;
 }
@@ -148,7 +148,7 @@ void CanFollow::follow(CanLead& canLead, bool doAdjacentCheck)
 	m_canLead = &canLead;
 	if(m_hasShape.isItem())
 		m_hasShape.setStatic(false);
-	std::deque<Block*>& locationQueue = canLead.getLocationQueue();
+	std::deque<BlockIndex>& locationQueue = canLead.getLocationQueue();
 	if(locationQueue.empty())
 	{
 		assert(!canLead.m_hasShape.m_canFollow.isFollowing());
@@ -189,21 +189,22 @@ void CanFollow::disband()
 void CanFollow::tryToMove()
 {
 	assert(isFollowing());
-	std::deque<Block*>& locationQueue = m_hasShape.m_canLead.getLocationQueue();
+	std::deque<BlockIndex>& locationQueue = m_hasShape.m_canLead.getLocationQueue();
 	// Find the position in the location queue where the next shape in the line currently is.
 	auto found = std::ranges::find(locationQueue, m_hasShape.m_location);
 	// If this position is in the front of location queue do nothing, wait for leader to cross over.
 	if(found == locationQueue.begin())
 		return;
 	// Find the next position after that one and try to move follower into it.
-	Block& block = **(--found);
-	if(!block.m_hasShapes.anythingCanEnterEver() || !block.m_hasShapes.canEnterEverFrom(m_hasShape, *m_hasShape.m_location))
+	BlockIndex block = *(--found);
+	Blocks& blocks = m_hasShape.m_area->getBlocks();
+	if(!blocks.shape_anythingCanEnterEver(block) || !blocks.shape_canEnterEverFrom(block, m_hasShape, m_hasShape.m_location))
 		// Shape can no longer enter this location, following path is imposible, disband.
 		disband();
-	else if(block.m_hasShapes.canEnterCurrentlyFrom(m_hasShape, *m_hasShape.m_location))
+	else if(blocks.shape_canEnterCurrentlyFrom(block, m_hasShape, m_hasShape.m_location))
 	{
 		// setLocation calls CanLead::onMove which calls this method on it's follower, so this call is recursive down the line.
-		m_hasShape.setLocation(block);
+		m_hasShape.setLocation(block, m_hasShape.m_area);
 		// Remove from the end of the location queue if this is the last shape in line.
 		if(!m_hasShape.m_canLead.isLeading())
 			locationQueue.pop_back();

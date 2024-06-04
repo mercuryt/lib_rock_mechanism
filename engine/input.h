@@ -10,7 +10,6 @@
 #include <unordered_set>
 #include <mutex>
 
-class Block;
 class Actor;
 class InputQueue;
 class InputAction;
