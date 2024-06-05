@@ -120,19 +120,51 @@ void Blocks::fluid_drainInternal(BlockIndex index, CollisionVolume volume, const
 	auto iter = fluid_getDataIterator(index, fluidType);
 	assert(iter != m_fluid.at(index).end());
 	if(iter->volume == volume)
+		// use Vector::erase rather then util::removeFromVectorByValueUnordered despite being slower to preserve sort order.
 		m_fluid.at(index).erase(iter);
 	else
 		iter->volume -= volume;
 	assert(m_totalFluidVolume.at(index) >= volume);
 	m_totalFluidVolume.at(index) -= volume;
 }
-void Blocks::fluid_emplace(BlockIndex index, const FluidType& fluidType, FluidGroup& group, CollisionVolume volume)
+void Blocks::fluid_fillInternal(BlockIndex index, CollisionVolume volume, FluidGroup& fluidGroup)
 {
-	m_fluid.at(index).emplace_back(&fluidType, &group, volume);
-}
-void Blocks::fluid_addToTotalVolume(BlockIndex index, CollisionVolume volume)
-{
+	FluidData* found = fluid_getData(index, fluidGroup.m_fluidType);
+	if(!found)
+		m_fluid.at(index).emplace_back(&fluidGroup.m_fluidType, &fluidGroup, volume);
+	else
+	{
+		found->volume += volume;
+		assert(*found->group == fluidGroup);
+	}
 	m_totalFluidVolume.at(index) += volume;
+}
+bool Blocks::fluid_undisolveInternal(BlockIndex index, FluidGroup& fluidGroup)
+{
+	FluidData* found = fluid_getData(index, fluidGroup.m_fluidType);
+	if(found || fluid_canEnterCurrently(index, fluidGroup.m_fluidType))
+	{
+		uint32_t capacity = fluid_volumeOfTypeCanEnter(index, fluidGroup.m_fluidType);
+		uint32_t flow = std::min(capacity, (uint32_t)fluidGroup.m_excessVolume);
+		m_totalFluidVolume[index] += flow;
+		fluidGroup.m_excessVolume -= flow;
+		if(found )
+		{
+			// Merge disolved group into found group.
+			found->volume += flow;
+			found->group->m_excessVolume += fluidGroup.m_excessVolume;
+			fluidGroup.m_destroy = true;
+		}
+		else
+		{
+			// Undisolve group.
+			m_fluid.at(index).emplace_back(&fluidGroup.m_fluidType, &fluidGroup, flow);
+			fluidGroup.addBlock(index, false);
+			fluidGroup.m_disolved = false;
+		}
+		return true;
+	}
+	return false;
 }
 void Blocks::fluid_remove(BlockIndex index, CollisionVolume volume, const FluidType& fluidType)
 {
@@ -210,7 +242,7 @@ void Blocks::fluid_resolveOverfull(BlockIndex index)
 {
 	std::vector<const FluidType*> toErase;
 	// Fluid types are sorted by density.
-	for(FluidData& fluidData : m_fluid.at(index))
+	for(FluidData& fluidData : fluid_getAllSortedByDensityAscending(index))
 	{
 
 		assert(*fluidData.type == fluidData.group->m_fluidType);
@@ -316,5 +348,10 @@ CollisionVolume Blocks::fluid_getTotalVolume(BlockIndex index) const
 }
 std::vector<FluidData>& Blocks::fluid_getAll(BlockIndex index)
 {
+	return m_fluid.at(index);
+}
+std::vector<FluidData>& Blocks::fluid_getAllSortedByDensityAscending(BlockIndex index)
+{
+	std::ranges::sort(m_fluid.at(index), std::less<Density>(), [](const auto& data) { return data.type->density; });
 	return m_fluid.at(index);
 }

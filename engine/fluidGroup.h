@@ -81,6 +81,8 @@ public:
 	void addDiagonalsFor(BlockIndex block);
 	void validate() const;
 	void validate(std::unordered_set<FluidGroup*> toErase);
+	void log() const;
+	void logFill() const;
 	[[nodiscard]] int32_t totalVolume() const;
 	[[nodiscard]] std::unordered_set<BlockIndex>& getBlocks() { return m_drainQueue.m_set; }
 	[[nodiscard]] bool dispositionIsStable(CollisionVolume fillVolume, CollisionVolume drainVolume) const;

@@ -111,6 +111,10 @@ BlockIndex Blocks::getIndex(Point3D coordinates) const
 {
 	return coordinates.x + (coordinates.y * m_sizeX) + (coordinates.z * m_sizeY * m_sizeX);
 }
+BlockIndex Blocks::getIndex(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) const
+{
+	return getIndex({x,y,z});
+}
 Point3D Blocks::getCoordinates(BlockIndex index) const
 {
 	Point3D output;
