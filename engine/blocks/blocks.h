@@ -88,6 +88,7 @@ public:
 	[[nodiscard]] const Cuboid getAll() const;
 	[[nodiscard]] size_t size() const;
 	[[nodiscard]] BlockIndex getIndex(Point3D coordinates) const;
+	[[nodiscard]] BlockIndex getIndex(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) const;
 	[[nodiscard]] Point3D getCoordinates(BlockIndex index) const;
 	[[nodiscard]] DistanceInBlocks getZ(BlockIndex index) const;
 	[[nodiscard]] BlockIndex getAtFacing(BlockIndex index, Facing facing) const;
@@ -256,11 +257,11 @@ public:
 	void fluid_mistSetFluidTypeAndInverseDistance(BlockIndex index, const FluidType& fluidType, DistanceInBlocks inverseDistance);
 	// TODO: This could probably be resolved in a better way.
 	// Exposing these two methods breaks encapusalition a bit but allows better performance from fluidGroup.
-	void fluid_emplace(BlockIndex index, const FluidType& fluidType, FluidGroup& group, CollisionVolume volume);
-	void fluid_addToTotalVolume(BlockIndex index, CollisionVolume volume);
 	void fluid_setAllUnstableExcept(BlockIndex index, const FluidType& fluidType);
-	// To be used by DrainQueue.
+	// To be used by DrainQueue / FillQueue.
 	void fluid_drainInternal(BlockIndex index, CollisionVolume volume, const FluidType& fluidType);
+	void fluid_fillInternal(BlockIndex index, CollisionVolume volume, FluidGroup& fluidGroup);
+	[[nodiscard]] bool fluid_undisolveInternal(BlockIndex index, FluidGroup& fluidGroup);
 private:void fluid_destroyData(BlockIndex index, const FluidType& fluidType);
 public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, const FluidType& fluidType) const;
 	[[nodiscard]] bool fluid_isAdjacentToGroup(BlockIndex index, const FluidGroup* fluidGroup) const;
@@ -272,6 +273,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, const Fluid
 	[[nodiscard]] bool fluid_any(BlockIndex index) const;
 	[[nodiscard]] bool fluid_contains(BlockIndex index, const FluidType& fluidType) const;
 	[[nodiscard]] std::vector<FluidData>& fluid_getAll(BlockIndex index);
+	[[nodiscard]] std::vector<FluidData>& fluid_getAllSortedByDensityAscending(BlockIndex index);
 	[[nodiscard]] CollisionVolume fluid_getTotalVolume(BlockIndex index) const;
 	[[nodiscard]] const FluidType* fluid_getMist(BlockIndex index) const;
 	[[nodiscard]] std::vector<FluidData>::iterator fluid_getDataIterator(BlockIndex index, const FluidType& fluidType);

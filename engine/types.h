@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
+#include <iostream>
 using Step = uint64_t;
 using Temperature = uint32_t; // degrees kelvin.
 using CollisionVolume = uint32_t; // 20 liters, onehundredth of a block.
@@ -61,6 +62,10 @@ struct Point3D
 			return z <=> other.z;
 	}
 	void operator+=(const Vector3D& other);
+	void log()
+	{
+		std::cout << "(" << x << "," << y << "," << z << ")";
+	}
 };
 struct Vector3D
 {

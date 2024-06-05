@@ -75,25 +75,16 @@ void FillQueue::applyDelta()
 	auto& blocks = m_fluidGroup.m_area.getBlocks();
 	for(auto iter = m_queue.begin(); iter != m_groupEnd; ++iter)
 	{
-		// TODO: This seems hackey, should try gather instead, also for drain.
 		if(iter->delta == 0)
 			continue;
 		assert(
 				!blocks.fluid_contains(iter->block, m_fluidGroup.m_fluidType) || 
 				blocks.fluid_getGroup(iter->block, m_fluidGroup.m_fluidType) != nullptr);
-		auto found = blocks.fluid_getData(iter->block, m_fluidGroup.m_fluidType);
-		if(!found)
-			blocks.fluid_emplace(iter->block, m_fluidGroup.m_fluidType, m_fluidGroup, iter->delta);
-		else
-		{
-			found->volume += iter->delta;
-			assert(&found->group->m_fluidType == &m_fluidGroup.m_fluidType);
-		}
-		blocks.fluid_addToTotalVolume(iter->block,  iter->delta);
+		blocks.fluid_fillInternal(iter->block, iter->delta, m_fluidGroup);
 		/*assert(iter->block->m_hasFluids.m_fluids.at(m_fluidGroup.m_fluidType).second != &m_fluidGroup ||
-				(iter->block->m_hasFluids.m_fluids.at(m_fluidGroup.m_fluidType).first < Config::maxBlockVolume && !m_futureFull.contains(iter->block)) ||
-				(iter->block->m_hasFluids.m_fluids.at(m_fluidGroup.m_fluidType).first == Config::maxBlockVolume && m_futureFull.contains(iter->block)));
-				*/
+			(iter->block->m_hasFluids.m_fluids.at(m_fluidGroup.m_fluidType).first < Config::maxBlockVolume && !m_futureFull.contains(iter->block)) ||
+			(iter->block->m_hasFluids.m_fluids.at(m_fluidGroup.m_fluidType).first == Config::maxBlockVolume && m_futureFull.contains(iter->block)));
+		*/
 		if(blocks.fluid_getTotalVolume(iter->block) > Config::maxBlockVolume)
 			m_overfull.insert(iter->block);
 	}
