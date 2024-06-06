@@ -86,7 +86,7 @@ void FindsPath::pathToUnreservedPredicate(std::function<bool(BlockIndex)>& predi
 }
 void FindsPath::pathToUnreservedAdjacentToHasShape(const HasShape& otherShape, Faction& faction)
 {
-	m_route = m_hasShape.m_area->m_hasTerrainFacades.at(m_hasShape.getMoveType()).findPathAdjacentToAndUnreserved(m_hasShape.m_location, *m_hasShape.m_shape, otherShape, faction);
+	m_route = m_hasShape.m_area->m_hasTerrainFacades.at(m_hasShape.getMoveType()).findPathAdjacentToAndUnreserved(m_hasShape.m_location, *m_hasShape.m_shape, otherShape, faction, m_detour);
 }
 void FindsPath::pathToAreaEdge()
 {
@@ -102,11 +102,11 @@ void FindsPath::pathToAreaEdge()
 }
 void FindsPath::pathToPredicate(DestinationCondition& predicate)
 {
-	m_route = m_hasShape.m_area->m_hasTerrainFacades.at(m_hasShape.getMoveType()).findPathToCondition(m_hasShape.m_location, *m_hasShape.m_shape, predicate);
+	m_route = m_hasShape.m_area->m_hasTerrainFacades.at(m_hasShape.getMoveType()).findPathToCondition(m_hasShape.m_location, *m_hasShape.m_shape, predicate, m_detour);
 }
 void FindsPath::pathToPredicateWithHuristicDestination(DestinationCondition& predicate, BlockIndex huristicDestination)
 {
-	m_route = m_hasShape.m_area->m_hasTerrainFacades.at(m_hasShape.getMoveType()).findPathToCondition(m_hasShape.m_location, *m_hasShape.m_shape, predicate, huristicDestination);
+	m_route = m_hasShape.m_area->m_hasTerrainFacades.at(m_hasShape.getMoveType()).findPathToCondition(m_hasShape.m_location, *m_hasShape.m_shape, predicate, huristicDestination, m_detour);
 }
 std::vector<BlockIndex> FindsPath::getOccupiedBlocksAtEndOfPath()
 {

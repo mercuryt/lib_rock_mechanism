@@ -235,6 +235,18 @@ std::vector<BlockIndex> Blocks::getAdjacentWithEdgeAndCornerAdjacent(BlockIndex 
 	}
 	return output;
 }
+std::vector<BlockIndex> Blocks::getAdjacentWithEdgeAndCornerAdjacentUnfiltered(BlockIndex index) const
+{
+	std::vector<BlockIndex> output;
+	output.reserve(26);
+	for(uint32_t i = 0; i < 26; i++)
+	{
+		auto& offsets = offsetsListAllAdjacent[i];
+		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
+		output.push_back(block);
+	}
+	return output;
+}
 std::vector<BlockIndex> Blocks::getEdgeAdjacentOnly(BlockIndex index) const
 {
 	std::vector<BlockIndex> output;
@@ -479,6 +491,7 @@ void Blocks::solid_set(BlockIndex index, const MaterialType& materialType, bool 
 	if(wasEmpty && m_reservables.contains(index))
 		// Dishonor all reservations: there are no reservations which can exist on both a solid and not solid block.
 		m_reservables.at(index).clearAll();
+	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 }
 void Blocks::solid_setNot(BlockIndex index)
 {
@@ -499,6 +512,7 @@ void Blocks::solid_setNot(BlockIndex index)
 	setBelowVisible(index);
 	// Dishonor all reservations: there are no reservations which can exist on both a solid and not solid block.
 	m_reservables.erase(index);
+	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 }
 const MaterialType& Blocks::solid_get(BlockIndex index) const
 {
@@ -561,13 +575,13 @@ BlockIndex Blocks::offsetNotNull(BlockIndex index, int32_t ax, int32_t ay, int32
 	coordinates.z += az;
 	return getIndex(coordinates);
 }
-BlockIndex Blocks::offsetForAdjacentCount(BlockIndex index, uint8_t adjacent_count) const
+BlockIndex Blocks::indexAdjacentToAtCount(BlockIndex index, uint8_t adjacentCount) const
 {
 	// If block is on edge check for the offset being beyond the area. If so return BLOCK_INDEX_MAX.
 	if(m_isEdge[index])
 	{
 		Point3D coordinates = getCoordinates(index);
-		auto [x, y, z] = Blocks::offsetsListAllAdjacent[adjacent_count];
+		auto [x, y, z] = Blocks::offsetsListAllAdjacent[adjacentCount];
 		Vector3D vector(x, y, z);
 		if((vector.x == -1 && coordinates.x == 0) || (vector.x == 1 && coordinates.x == m_sizeX - 1))
 			return BLOCK_INDEX_MAX;
@@ -576,7 +590,7 @@ BlockIndex Blocks::offsetForAdjacentCount(BlockIndex index, uint8_t adjacent_cou
 		if((vector.z == -1 && coordinates.z == 0) || (vector.z == 1 && coordinates.z == m_sizeZ - 1))
 			return BLOCK_INDEX_MAX;
 	}
-	return m_offsetsForAdjacentCountTable[adjacent_count];
+	return index + m_offsetsForAdjacentCountTable[adjacentCount];
 }
 std::array<int, 26> Blocks::makeOffsetsForAdjacentCountTable() const
 {

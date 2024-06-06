@@ -135,6 +135,8 @@ bool Blocks::shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(BlockIndex index, c
 }
 bool Blocks::shape_moveTypeCanEnterFrom(BlockIndex index, const MoveType& moveType, BlockIndex from) const
 {
+	assert(shape_anythingCanEnterEver(index));
+	assert(shape_moveTypeCanEnter(index, moveType));
 	for(auto& [fluidType, volume] : moveType.swim)
 	{
 		// Can travel within and enter liquid from any angle.
@@ -168,6 +170,7 @@ bool Blocks::shape_moveTypeCanEnterFrom(BlockIndex index, const MoveType& moveTy
 }
 bool Blocks::shape_moveTypeCanEnter(BlockIndex index, const MoveType& moveType) const
 {
+	assert(shape_anythingCanEnterEver(index));
 	// Swiming.
 	for(const FluidData& fluidData : m_fluid.at(index))
 	{
@@ -180,7 +183,7 @@ bool Blocks::shape_moveTypeCanEnter(BlockIndex index, const MoveType& moveType) 
 			if(shape_moveTypeCanBreath(index, moveType))
 				return true;
 			BlockIndex above = getBlockAbove(index);
-			if(above != BLOCK_INDEX_MAX && !solid_is(above) && shape_moveTypeCanBreath(index, moveType))
+			if(above != BLOCK_INDEX_MAX && !solid_is(above) && shape_moveTypeCanBreath(above, moveType))
 				return true;
 		}
 	}

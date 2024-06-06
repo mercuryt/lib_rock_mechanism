@@ -45,7 +45,7 @@ struct BlockIsPartOfStockPile
 */
 class Blocks
 {
-	std::array<int, 26> m_offsetsForAdjacentCountTable;
+	std::array<int32_t, 26> m_offsetsForAdjacentCountTable;
 	std::unordered_map<BlockIndex, Reservable> m_reservables;
 	std::unordered_map<BlockIndex, std::unordered_map<Faction*, FarmField*>> m_farmFields;
 	std::unordered_map<BlockIndex, std::unordered_map<Faction*, BlockIsPartOfStockPile>> m_stockPiles;
@@ -98,6 +98,7 @@ public:
 	//TODO: change to return array?
 	[[nodiscard]] std::vector<BlockIndex> getAdjacentWithEdgeAdjacent(BlockIndex index) const;
 	[[nodiscard]] std::vector<BlockIndex> getAdjacentWithEdgeAndCornerAdjacent(BlockIndex index) const;
+	[[nodiscard]] std::vector<BlockIndex> getAdjacentWithEdgeAndCornerAdjacentUnfiltered(BlockIndex index) const;
 	[[nodiscard]] std::vector<BlockIndex> getEdgeAndCornerAdjacentOnly(BlockIndex index) const;
 	[[nodiscard]] std::vector<BlockIndex> getEdgeAdjacentOnly(BlockIndex index) const;
 	[[nodiscard]] std::vector<BlockIndex> getEdgeAdjacentOnSameZLevelOnly(BlockIndex index) const;
@@ -119,7 +120,7 @@ public:
 	// Get block at offset coordinates. Can return nullptr.
 	[[nodiscard]] BlockIndex offset(BlockIndex index, int32_t ax, int32_t ay, int32_t az) const;
 	[[nodiscard]] BlockIndex offsetNotNull(BlockIndex index, int32_t ax, int32_t ay, int32_t az) const;
-	[[nodiscard]] BlockIndex offsetForAdjacentCount(BlockIndex index, uint8_t adjacent_count) const;
+	[[nodiscard]] BlockIndex indexAdjacentToAtCount(BlockIndex index, uint8_t adjacentCount) const;
 	[[nodiscard]] std::array<int32_t, 3> relativeOffsetTo(BlockIndex index, BlockIndex other) const; 
 	[[nodiscard]] std::array<int, 26> makeOffsetsForAdjacentCountTable() const;
 	[[nodiscard]] bool canSeeThrough(BlockIndex index) const;
