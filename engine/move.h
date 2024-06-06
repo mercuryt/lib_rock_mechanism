@@ -74,13 +74,13 @@ public:
 class PathThreadedTask final : public ThreadedTask
 {
 	Actor& m_actor;
-	HasShape* m_hasShape;
-	const FluidType* m_fluidType;
+	HasShape* m_hasShape = nullptr;
+	const FluidType* m_fluidType = nullptr;
 	const BlockIndex m_huristicDestination;
-	bool m_detour;
-	bool m_adjacent;
-	bool m_unreservedDestination;
-	bool m_reserveDestination;
+	bool m_detour = false;
+	bool m_adjacent = false;
+	bool m_unreservedDestination = false;
+	bool m_reserveDestination = false;
 	FindsPath m_findsPath;
 public:
 	PathThreadedTask(Actor& a, HasShape* hasShape = nullptr, const FluidType* fluidType = nullptr, const BlockIndex huristicDestination = BLOCK_INDEX_MAX, bool detour = false, bool adjacent = false, bool m_unreservedDestination = true, bool m_reserveDestination = true);

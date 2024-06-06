@@ -207,6 +207,9 @@ void ActorCanMove::setMoveType(const MoveType& moveType)
 {
 	assert(m_moveType != &moveType);
 	m_moveType = &moveType;
+	// TODO: unregister move type: decrement count of actors using a given facade and maybe clear when 0.
+	if(m_actor.m_area != nullptr)
+		m_actor.m_area->m_hasTerrainFacades.maybeRegisterMoveType(moveType);
 	//TODO: repath if destination.
 }
 void ActorCanMove::clearAllEventsAndTasks()

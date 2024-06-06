@@ -9,6 +9,7 @@ void AreaHasActors::add(Actor& actor)
 	assert(!m_actors.contains(&actor));
 	m_actors.insert(&actor);
 	actor.m_canSee.createFacadeIfCanSee();
+	m_area.m_hasTerrainFacades.maybeRegisterMoveType(actor.getMoveType());
 }
 void AreaHasActors::remove(Actor& actor)
 {
@@ -17,6 +18,7 @@ void AreaHasActors::remove(Actor& actor)
 	m_visionFacadeBuckets.remove(actor);
 	m_onSurface.erase(&actor);
 	actor.m_canSee.m_hasVisionFacade.clear();
+	// TODO: unregister move type: decrement count of actors using a given facade and maybe clear when 0.
 }
 void AreaHasActors::processVisionReadStep()
 {

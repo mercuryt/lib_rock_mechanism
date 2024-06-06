@@ -24,7 +24,11 @@ TEST_CASE("route_10_10_10")
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		BlockIndex origin = blocks.getIndex({3, 3, 1});
 		BlockIndex destination = blocks.getIndex({7, 7, 1});
-		Actor& actor = simulation.m_hasActors->createActor(dwarf, origin);
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=origin,
+			.area=&area,
+		});
 		actor.m_canMove.setDestination(destination);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -47,7 +51,11 @@ TEST_CASE("route_10_10_10")
 		blocks.solid_set(block3, marble, false);
 		blocks.solid_set(block4, marble, false);
 		blocks.solid_set(block5, marble, false);
-		Actor& actor = simulation.m_hasActors->createActor(dwarf, origin);
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=origin,
+			.area=&area,
+		});
 		actor.m_canMove.setDestination(destination);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -70,7 +78,11 @@ TEST_CASE("route_10_10_10")
 		blocks.solid_set(block3, marble, false);
 		blocks.solid_set(block4, marble, false);
 		blocks.solid_set(block5, marble, false);
-		Actor& actor = simulation.m_hasActors->createActor(dwarf, origin);
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=origin,
+			.area=&area,
+		});
 		actor.m_canMove.setDestination(destination);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -84,7 +96,11 @@ TEST_CASE("route_10_10_10")
 		BlockIndex origin = blocks.getIndex({3, 3, 1});
 		BlockIndex block1 = blocks.getIndex({4, 4, 1});
 		BlockIndex destination = blocks.getIndex({5, 5, 1});
-		Actor& actor = simulation.m_hasActors->createActor(dwarf, origin);
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=origin,
+			.area=&area,
+		});
 		actor.m_canMove.setDestination(destination);
 		REQUIRE(!actor.m_canMove.hasEvent());
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
@@ -118,7 +134,13 @@ TEST_CASE("route_10_10_10")
 		BlockIndex block2 = blocks.getIndex({3, 5, 1});
 		BlockIndex block3 = blocks.getIndex({4, 5, 1});
 		BlockIndex destination = blocks.getIndex({3, 6, 1});
-		Actor& actor = simulation.m_hasActors->createActor(dwarf, origin);
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=origin,
+			.area=&area,
+		});
+		// Set solid to make choice of route deterministic.
+		blocks.solid_set(blocks.getIndex(2,5,1), marble, false);
 		actor.m_canMove.setDestination(destination);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -160,7 +182,11 @@ TEST_CASE("route_10_10_10")
 		BlockIndex wallEnd = blocks.getIndex({9, 4, 2});
 		BlockIndex destination = blocks.getIndex({3, 6, 1});
 		areaBuilderUtil::setSolidWall(area, wallStart, wallEnd, marble);
-		Actor& actor = simulation.m_hasActors->createActor(dwarf, origin);
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=origin,
+			.area=&area,
+		});
 		actor.m_canMove.setDestination(destination);
 		simulation.doStep();
 		REQUIRE(actor.m_canMove.getPath().empty());
@@ -179,7 +205,11 @@ TEST_CASE("route_10_10_10")
 		blocks.solid_set(blocks.getIndex({5, 5, 1}), marble, false);
 		blocks.solid_set(blocks.getIndex({7, 5, 1}), marble, false);
 		blocks.solid_set(blocks.getIndex({9, 5, 1}), marble, false);
-		Actor& actor = simulation.m_hasActors->createActor(troll, origin);
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=troll,
+			.location=origin,
+			.area=&area,
+		});
 		actor.m_canMove.setDestination(destination);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -193,7 +223,11 @@ TEST_CASE("route_10_10_10")
 		BlockIndex destination = blocks.getIndex({8, 8, 8});		
 		BlockIndex ledge = blocks.getIndex({8, 8, 7});
 		blocks.solid_set(ledge, marble, false);
-		Actor& actor = simulation.m_hasActors->createActor(dwarf, origin);
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=origin,
+			.area=&area,
+		});
 		actor.m_canMove.setDestination(destination);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -205,7 +239,11 @@ TEST_CASE("route_10_10_10")
 		areaBuilderUtil::setSolidWalls(area, 9, marble);
 		BlockIndex origin = blocks.getIndex({1, 1, 1});
 		BlockIndex destination = blocks.getIndex({8, 8, 8});		
-		Actor& actor = simulation.m_hasActors->createActor(eagle, origin);
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=eagle,
+			.location=origin,
+			.area=&area,
+		});
 		actor.m_canMove.setDestination(destination);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -218,7 +256,11 @@ TEST_CASE("route_10_10_10")
 		BlockIndex water1 = blocks.getIndex({1, 1, 1});
 		BlockIndex water2 = blocks.getIndex({8, 8, 8});		
 		areaBuilderUtil::setFullFluidCuboid(area, water1, water2, water);
-		Actor& actor = simulation.m_hasActors->createActor(carp, water1);
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=carp,
+			.location=water1,
+			.area=&area,
+		});
 		actor.m_canMove.setDestination(water2);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -251,7 +293,11 @@ TEST_CASE("route_5_5_3")
 		BlockIndex water3 = blocks.getIndex({1, 3, 1});
 		BlockIndex water4 = blocks.getIndex({3, 3, 1});
 		areaBuilderUtil::setFullFluidCuboid(area, water3, water4, water);
-		Actor& actor = simulation.m_hasActors->createActor(carp, origin);
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=carp,
+			.location=origin,
+			.area=&area,
+		});
 		actor.m_canMove.setDestination(destination);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -263,20 +309,27 @@ TEST_CASE("route_5_5_3")
 		areaBuilderUtil::setSolidWalls(area, 2, marble);
 		BlockIndex origin = blocks.getIndex({2, 1, 2});
 		BlockIndex destination = blocks.getIndex({2, 3, 2});		
+		BlockIndex midpoint = blocks.getIndex(2, 2, 1);
 		blocks.solid_setNot(blocks.getIndex({1, 2, 1}));
-		blocks.solid_setNot(blocks.getIndex({2, 2, 1}));
+		blocks.solid_setNot(midpoint);
 		blocks.solid_setNot(blocks.getIndex({3, 2, 1}));
 		BlockIndex water1 = blocks.getIndex({1, 2, 1});
 		BlockIndex water2 = blocks.getIndex({3, 2, 1});
 		areaBuilderUtil::setFullFluidCuboid(area, water1, water2, water);
-		Actor& actor = simulation.m_hasActors->createActor(dwarf, origin);
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=origin,
+			.area=&area,
+		});
 		actor.m_canMove.setMoveType(twoLegs);
 		actor.m_canMove.setDestination(destination);
+		REQUIRE(!blocks.shape_moveTypeCanEnter(midpoint, actor.m_canMove.getMoveType()));
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
 		REQUIRE(pathThreadedTask.getFindsPath().getPath().empty());
 		actor.m_canMove.setMoveType(twoLegsAndSwimInWater);
 		actor.m_canMove.setDestination(destination);
+		REQUIRE(blocks.shape_moveTypeCanEnter(midpoint, actor.m_canMove.getMoveType()));
 		PathThreadedTask& pathThreadedTask2 = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask2.readStep();
 		REQUIRE(!pathThreadedTask2.getFindsPath().getPath().empty());
@@ -299,14 +352,18 @@ TEST_CASE("route_5_5_5")
 	SUBCASE("walking path blocked by one height cliff if not climbing")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		Actor& actor = simulation.m_hasActors->createActor(dwarf, blocks.getIndex({1, 1, 1}));
-		blocks.solid_set(blocks.getIndex({4, 4, 1}), marble, false);
-		actor.m_canMove.setDestination(blocks.getIndex({4, 4, 2}));
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=blocks.getIndex(1,1,1),
+			.area=&area,
+		});
+		blocks.solid_set(blocks.getIndex(4, 4, 1), marble, false);
+		actor.m_canMove.setDestination(blocks.getIndex(4, 4, 2));
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
 		REQUIRE(pathThreadedTask.getFindsPath().getPath().empty());
 		actor.m_canMove.setMoveType(twoLegsAndClimb1);
-		actor.m_canMove.setDestination(blocks.getIndex({4, 4, 2}));
+		actor.m_canMove.setDestination(blocks.getIndex(4, 4, 2));
 		PathThreadedTask& pathThreadedTask2 = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask2.readStep();
 		REQUIRE(!pathThreadedTask2.getFindsPath().getPath().empty());
@@ -315,9 +372,14 @@ TEST_CASE("route_5_5_5")
 	SUBCASE("walking path blocked by two height cliff if not climbing 2")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		Actor& actor = simulation.m_hasActors->createActor(dwarf, blocks.getIndex({1, 1, 1}));
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=blocks.getIndex(1,1,1),
+			.area=&area,
+		});
 		actor.m_canMove.setMoveType(twoLegsAndClimb1);
 		blocks.solid_set(blocks.getIndex({4, 4, 1}), marble, false);
+		blocks.solid_set(blocks.getIndex({4, 4, 2}), marble, false);
 		actor.m_canMove.setDestination(blocks.getIndex({4, 4, 3}));
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -336,7 +398,11 @@ TEST_CASE("route_5_5_5")
 		blocks.blockFeature_construct(blocks.getIndex({2, 2, 1}), stairs, marble);
 		blocks.blockFeature_construct(blocks.getIndex({3, 3, 2}), stairs, marble);
 		blocks.blockFeature_construct(blocks.getIndex({2, 2, 3}), stairs, marble);
-		Actor& actor = simulation.m_hasActors->createActor(dwarf, origin);
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=origin,
+			.area=&area,
+		});
 		actor.m_canMove.setDestination(blocks.getIndex({2, 2, 4}));
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -345,7 +411,11 @@ TEST_CASE("route_5_5_5")
 	SUBCASE("ramp")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		Actor& actor = simulation.m_hasActors->createActor(dwarf, blocks.getIndex({1, 1, 1}));
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=blocks.getIndex(1,1,1),
+			.area=&area,
+		});
 		blocks.solid_set(blocks.getIndex({4, 4, 1}), marble, false);
 		actor.m_canMove.setDestination(blocks.getIndex({4, 4, 2}));
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
@@ -364,7 +434,11 @@ TEST_CASE("route_5_5_5")
 		blocks.solid_set(blocks.getIndex({3, 1, 1}), marble, false);
 		blocks.solid_set(blocks.getIndex({3, 3, 1}), marble, false);
 		blocks.solid_set(blocks.getIndex({3, 4, 1}), marble, false);
-		Actor& actor = simulation.m_hasActors->createActor(dwarf, blocks.getIndex({1, 1, 1}));
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=blocks.getIndex(1,1,1),
+			.area=&area,
+		});
 		actor.m_canMove.setDestination(blocks.getIndex({4, 3, 1}));
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -387,7 +461,11 @@ TEST_CASE("route_5_5_5")
 		blocks.solid_set(blocks.getIndex({3, 1, 1}), marble, false);
 		blocks.solid_set(blocks.getIndex({3, 3, 1}), marble, false);
 		blocks.solid_set(blocks.getIndex({3, 4, 1}), marble, false);
-		Actor& actor = simulation.m_hasActors->createActor(dwarf, blocks.getIndex({1, 1, 1}));
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=blocks.getIndex(1,1,1),
+			.area=&area,
+		});
 		actor.m_canMove.setDestination(blocks.getIndex({4, 3, 1}));
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -405,7 +483,11 @@ TEST_CASE("route_5_5_5")
 		blocks.solid_set(blocks.getIndex({3, 1, 1}), marble, false);
 		blocks.solid_set(blocks.getIndex({3, 3, 1}), marble, false);
 		blocks.solid_set(blocks.getIndex({3, 4, 1}), marble, false);
-		Actor& actor = simulation.m_hasActors->createActor(dwarf, blocks.getIndex({1, 1, 1}));
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=blocks.getIndex(1,1,1),
+			.area=&area,
+		});
 		actor.m_canMove.setDestination(blocks.getIndex({4, 3, 1}));
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -421,7 +503,11 @@ TEST_CASE("route_5_5_5")
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		blocks.solid_set(blocks.getIndex({1, 1, 1}), marble, false);
 		blocks.solid_set(blocks.getIndex({1, 3, 1}), marble, false);
-		Actor& actor = simulation.m_hasActors->createActor(dwarf, blocks.getIndex({1, 1, 2}));
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=blocks.getIndex(1,1,2),
+			.area=&area,
+		});
 		actor.m_canMove.setDestination(blocks.getIndex({1, 3, 2}));
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -440,7 +526,11 @@ TEST_CASE("route_5_5_5")
 		blocks.solid_setNot(blocks.getIndex({3, 3, 3}));
 		blocks.blockFeature_construct(blocks.getIndex({3, 3, 1}), BlockFeatureType::stairs, marble);
 		blocks.blockFeature_construct(blocks.getIndex({3, 3, 2}), BlockFeatureType::stairs, marble);
-		Actor& actor = simulation.m_hasActors->createActor(dwarf, blocks.getIndex({3, 3, 1}));
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=blocks.getIndex(3,3,1),
+			.area=&area,
+		});
 		actor.m_canMove.setDestination(blocks.getIndex({3, 3, 3}));
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -456,7 +546,11 @@ TEST_CASE("route_5_5_5")
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		blocks.solid_set(blocks.getIndex({1, 1, 1}), marble, false);
 		blocks.solid_set(blocks.getIndex({1, 3, 1}), marble, false);
-		Actor& actor = simulation.m_hasActors->createActor(dwarf, blocks.getIndex({1, 1, 2}));
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=blocks.getIndex(1,1,2),
+			.area=&area,
+		});
 		actor.m_canMove.setDestination(blocks.getIndex({1, 3, 2}));
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -475,7 +569,11 @@ TEST_CASE("route_5_5_5")
 		blocks.solid_setNot(blocks.getIndex({3, 3, 3}));
 		blocks.blockFeature_construct(blocks.getIndex({3, 3, 1}), BlockFeatureType::stairs, marble);
 		blocks.blockFeature_construct(blocks.getIndex({3, 3, 2}), BlockFeatureType::stairs, marble);
-		Actor& actor = simulation.m_hasActors->createActor(dwarf, blocks.getIndex({3, 3, 1}));
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=blocks.getIndex(3,3,1),
+			.area=&area,
+		});
 		actor.m_canMove.setDestination(blocks.getIndex({3, 3, 3}));
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -491,7 +589,11 @@ TEST_CASE("route_5_5_5")
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		blocks.solid_set(blocks.getIndex({1, 1, 1}), marble, false);
 		blocks.solid_set(blocks.getIndex({1, 3, 1}), marble, false);
-		Actor& actor = simulation.m_hasActors->createActor(dwarf, blocks.getIndex({1, 1, 2}));
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=blocks.getIndex(1,1,2),
+			.area=&area,
+		});
 		actor.m_canMove.setDestination(blocks.getIndex({1, 3, 2}));
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -510,7 +612,11 @@ TEST_CASE("route_5_5_5")
 		blocks.solid_setNot(blocks.getIndex({3, 3, 3}));
 		blocks.blockFeature_construct(blocks.getIndex({3, 3, 1}), BlockFeatureType::stairs, marble);
 		blocks.blockFeature_construct(blocks.getIndex({3, 3, 2}), BlockFeatureType::stairs, marble);
-		Actor& actor = simulation.m_hasActors->createActor(dwarf, blocks.getIndex({3, 3, 1}));
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=blocks.getIndex(3,3,1),
+			.area=&area,
+		});
 		actor.m_canMove.setDestination(blocks.getIndex({3, 3, 3}));
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -533,7 +639,11 @@ TEST_CASE("route_5_5_5")
 		blocks.solid_set(blocks.getIndex({4, 3, 1}), marble, false);
 		blocks.solid_set(blocks.getIndex({3, 4, 1}), marble, false);
 		blocks.solid_set(blocks.getIndex({3, 3, 1}), marble, false);
-		Actor& actor = simulation.m_hasActors->createActor(dwarf, blocks.getIndex({1, 1, 1}));
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=blocks.getIndex(1,1,1),
+			.area=&area,
+		});
 		actor.m_canMove.setDestination(blocks.getIndex({3, 3, 2}));
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -554,8 +664,16 @@ TEST_CASE("route_5_5_5")
 		blocks.solid_set(blocks.getIndex({3, 1, 1}), marble, false);
 		blocks.solid_set(blocks.getIndex({3, 2, 1}), marble, false);
 		blocks.solid_set(blocks.getIndex({3, 4, 1}), marble, false);
-		Actor& a1 = simulation.m_hasActors->createActor(dwarf, origin);
-		simulation.m_hasActors->createActor(dwarf, blocks.getIndex({3, 3, 1}));
+		Actor& a1 = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=origin,
+			.area=&area,
+		});
+		simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=blocks.getIndex(3,3,1),
+			.area=&area,
+		});
 		a1.m_canMove.setDestination(blocks.getIndex({4, 3, 1}));
 		PathThreadedTask& pathThreadedTask = a1.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();
@@ -565,7 +683,7 @@ TEST_CASE("route_5_5_5")
 		//pathThreadedTask.clearReferences();
 		//simulation.m_threadedTaskEngine.remove(pathThreadedTask);
 		REQUIRE(blocks.shape_canEnterEverFrom(blocks.getIndex({3, 3, 1}), a1, a1.m_location));
-		REQUIRE(!blocks.shape_canEnterEverFrom(blocks.getIndex({3, 3, 1}), a1, a1.m_location));
+		REQUIRE(!blocks.shape_canEnterCurrentlyFrom(blocks.getIndex({3, 3, 1}), a1, a1.m_location));
 		REQUIRE(a1.m_canMove.hasEvent());
 		// Move attempt 1.
 		simulation.m_step = simulation.m_eventSchedule.m_data.begin()->first;
@@ -596,7 +714,11 @@ TEST_CASE("route_5_5_5")
 		blocks.solid_setNot(deep);
 		blocks.fluid_add(surface, Config::maxBlockVolume, water);
 		blocks.fluid_add(deep, Config::maxBlockVolume, water);
-		Actor& actor = simulation.m_hasActors->createActor(dwarf, blocks.getIndex({1,1,4}));
+		Actor& actor = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=blocks.getIndex(1,1,4),
+			.area=&area,
+		});
 		actor.m_canMove.setDestination(deep);
 		PathThreadedTask& pathThreadedTask = actor.m_canMove.getPathThreadedTask();
 		pathThreadedTask.readStep();

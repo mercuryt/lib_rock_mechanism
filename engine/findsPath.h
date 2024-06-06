@@ -23,7 +23,6 @@ public:
 	BlockIndex m_huristicDestination = BLOCK_INDEX_MAX;
 	DistanceInBlocks m_maxRange = BLOCK_DISTANCE_MAX;
 	FindsPath(const HasShape& hs, bool detour);
-	void depthFirstSearch(std::function<bool(BlockIndex, BlockIndex)>& isValid, std::function<bool(const ProposedRouteStep&, const ProposedRouteStep&)>& compare, std::function<bool(BlockIndex)>& isDone, std::function<std::vector<std::pair<BlockIndex, MoveCost>>(BlockIndex)>& adjacentCosts, BlockIndex start);
 	void pathToBlock(BlockIndex destination);
 	void pathAdjacentToBlock(BlockIndex destination);
 	void pathToPredicate(DestinationCondition& predicate);

@@ -24,15 +24,15 @@ void Blocks::blockFeature_remove(BlockIndex block, const BlockFeatureType& block
 {
 	assert(!solid_is(block));
 	std::erase_if(m_features.at(block), [&](BlockFeature& bf) { return bf.blockFeatureType == &blockFeatureType; });
-	m_area.m_hasTerrainFacades.update(block);
 	m_area.m_hasActors.m_opacityFacade.update(block);
+	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 }
 void Blocks::blockFeature_removeAll(BlockIndex block)
 {
 	assert(!solid_is(block));
 	m_features.at(block).clear();
-	m_area.m_hasTerrainFacades.update(block);
 	m_area.m_hasActors.m_opacityFacade.update(block);
+	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 }
 void Blocks::blockFeature_construct(BlockIndex block, const BlockFeatureType& blockFeatureType, const MaterialType& materialType)
 {
@@ -53,8 +53,8 @@ void Blocks::blockFeature_construct(BlockIndex block, const BlockFeatureType& bl
 		m_area.m_hasActors.m_visionCuboids.blockIsSometimesOpaque(block);
 		setBelowNotExposedToSky(block);
 	}
-	m_area.m_hasTerrainFacades.update(block);
 	m_area.m_hasActors.m_opacityFacade.update(block);
+	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 }
 void Blocks::blockFeature_hew(BlockIndex block, const BlockFeatureType& blockFeatureType)
 {
@@ -62,6 +62,7 @@ void Blocks::blockFeature_hew(BlockIndex block, const BlockFeatureType& blockFea
 	m_features.at(block).emplace_back(&blockFeatureType, &solid_get(block), true);
 	solid_setNot(block);
 	m_area.m_hasActors.m_opacityFacade.update(block);
+	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 }
 void Blocks::blockFeature_setTemperature(BlockIndex block, Temperature temperature)
 {
@@ -74,14 +75,14 @@ void Blocks::blockFeature_lock(BlockIndex block, const BlockFeatureType& blockFe
 	assert(blockFeature_contains(block, blockFeatueType));
 	BlockFeature& blockFeature = *blockFeature_at(block, blockFeatueType);
 	blockFeature.locked = true;
-	m_area.m_hasTerrainFacades.update(block);
+	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 }
 void Blocks::blockFeature_unlock(BlockIndex block, const BlockFeatureType& blockFeatueType)
 {
 	assert(blockFeature_contains(block, blockFeatueType));
 	BlockFeature& blockFeature = *blockFeature_at(block, blockFeatueType);
 	blockFeature.locked = false;
-	m_area.m_hasTerrainFacades.update(block);
+	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 }
 void Blocks::blockFeature_close(BlockIndex block, const BlockFeatureType& blockFeatueType)
 {
