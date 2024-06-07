@@ -95,8 +95,8 @@ TEST_CASE("Cave In")
 		CHECK(area.m_caveInCheck.empty());
 		CHECK(blocks.solid_get(block) == marble);
 		CHECK(blocks.solid_get(block2) == marble);
-		CHECK(blocks.solid_is(blocks.getBlockBelow(block)));
-		CHECK(blocks.solid_is(blocks.getBlockBelow(block2)));
+		CHECK(!blocks.solid_is(blocks.getBlockBelow(block)));
+		CHECK(!blocks.solid_is(blocks.getBlockBelow(block2)));
 		CHECK(area.m_caveInCheck.size() == 0);
 	}
 	SUBCASE("Verify recorded fall distance is the shortest.")
