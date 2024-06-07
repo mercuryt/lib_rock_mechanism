@@ -132,7 +132,7 @@ void Area::stepCaveInRead()
 		if(!anchoredChunks.contains(&chunk))
 		{
 			std::unordered_set<BlockIndex> blocksAbsorbingImpact;
-			DistanceInBlocks smallestFallDistance = 0;
+			DistanceInBlocks smallestFallDistance = BLOCK_DISTANCE_MAX;
 			for(BlockIndex block : chunk)
 			{
 				DistanceInBlocks verticalFallDistance = 0;
@@ -186,6 +186,9 @@ void Area::stepCaveInWrite()
 	// Make chunks fall.
 	for(auto& [chunk, fallDistance, fallEnergy] : m_caveInData)
 	{
+		assert(fallDistance);
+		assert(chunk.size());
+		assert(fallEnergy);
 		uint32_t zDiff;
 		// Move blocks down.
 		BlockIndex below;
