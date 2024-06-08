@@ -37,7 +37,7 @@ TEST_CASE("sow")
 	blocks.fluid_add(pondLocation, Config::maxBlockVolume, FluidType::byName("water"));
 	BlockIndex foodLocation = blocks.getIndex({8,9,2});
 	Item& food = simulation.m_hasItems->createItemGeneric(ItemType::byName("apple"), MaterialType::byName("plant matter"), 50);
-	food.setLocation(foodLocation);
+	food.setLocation(foodLocation, &area);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	area.m_hasFarmFields.registerFaction(faction);
 	Cuboid cuboid(blocks, block, block);
@@ -45,6 +45,7 @@ TEST_CASE("sow")
 	Actor& actor = simulation.m_hasActors->createActor({
 		.species=dwarf, 
 		.location=blocks.getIndex({1, 1, 2}),
+		.area=&area,
 		.hasCloths=false,
 		.hasSidearm=false,
 	});
@@ -339,7 +340,7 @@ TEST_CASE("harvest")
 		REQUIRE(plant.m_growthEvent.exists());
 		Item& bucket = simulation.m_hasItems->createItemNongeneric(ItemType::byName("bucket"), MaterialType::byName("poplar wood"), 50u, 0);
 		BlockIndex bucketLocation = blocks.getIndex({7, 7, 2});
-		bucket.setLocation(bucketLocation);
+		bucket.setLocation(bucketLocation, &area);
 		BlockIndex pondLocation = blocks.getIndex({3, 9, 1});
 		blocks.solid_setNot(pondLocation);
 		blocks.fluid_add(pondLocation, 100, water);

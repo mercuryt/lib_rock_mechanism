@@ -14,8 +14,10 @@ perf stat exe
 libc++ debug mode
 GLIBCXX_DEBUG (macro)
 
-optimizations to try : Boost::graph, eigen
-
+optimizations to try :
+	Boost::graph, eigen
+	Folly::FBvector
+	jemalloc
 PerAreaPerFactionData is created on demand and never destroyed.
 
 PerAreaPerMoveTypeData is created on demand and never destroyed.

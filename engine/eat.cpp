@@ -140,16 +140,17 @@ void EatThreadedTask::readStep()
 	assert(m_eatObjective.m_destination == BLOCK_INDEX_MAX);
 	constexpr uint32_t maxRankedEatDesire = 3;
 	// initalize candidates with null values.
-	std::array<BlockIndex, maxRankedEatDesire> candidates({BLOCK_INDEX_MAX, BLOCK_INDEX_MAX, BLOCK_INDEX_MAX});
+	std::array<BlockIndex, maxRankedEatDesire> candidates;
+	candidates.fill(BLOCK_INDEX_MAX);
 	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block)
 	{
-			uint32_t eatDesire = m_eatObjective.m_actor.m_mustEat.getDesireToEatSomethingAt(block);
-			if(eatDesire == UINT32_MAX)
-				return true;
-			if(eatDesire < m_eatObjective.m_actor.m_mustEat.getMinimumAcceptableDesire())
-				return false;
-			if(eatDesire != 0 && candidates[eatDesire - 1u] == BLOCK_INDEX_MAX)
-				candidates[eatDesire - 1u] = block;
+		uint32_t eatDesire = m_eatObjective.m_actor.m_mustEat.getDesireToEatSomethingAt(block);
+		if(eatDesire == UINT32_MAX)
+			return true;
+		if(eatDesire < m_eatObjective.m_actor.m_mustEat.getMinimumAcceptableDesire())
+			return false;
+		if(eatDesire != 0 && candidates[eatDesire - 1u] == BLOCK_INDEX_MAX)
+			candidates[eatDesire - 1u] = block;
 		return false;
 	};
 	//TODO: maxRange.
@@ -264,7 +265,7 @@ void EatObjective::execute()
 			m_actor.m_hasObjectives.cannotFulfillNeed(*this);
 		return;
 	}
-	// TODO: getAdjacentDoesn't need no run quite so often, only at start and end of path, not when stopped/detoured in the middle.
+	// TODO: getAdjacent doesn't need no run quite so often, only at start and end of path, not when stopped/detoured in the middle.
 	BlockIndex adjacent = m_actor.m_mustEat.getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireability();
 	if(m_destination == BLOCK_INDEX_MAX)
 	{
@@ -357,10 +358,7 @@ MustEat::MustEat(const Json& data, Actor& a, Simulation& s, const AnimalSpecies&
 		m_eatingLocation = s.getBlockForJsonQuery(data["eatingLocation"]);
 	if(data.contains("hungerEventStart"))
 	{
-		// Temporary shim.
 		Step start = data["hungerEventStart"].get<Step>();
-		if(start < s.m_step)
-			start = s.m_step + 1;
 		m_hungerEvent.schedule(species.stepsEatFrequency, m_actor, start);
 	}
 }
@@ -488,7 +486,8 @@ uint32_t MustEat::getMinimumAcceptableDesire() const
 BlockIndex MustEat::getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireability()
 {
 	constexpr uint32_t maxRankedEatDesire = 3;
-	std::array<BlockIndex, maxRankedEatDesire> candidates = {};
+	std::array<BlockIndex, maxRankedEatDesire> candidates;
+	candidates.fill(BLOCK_INDEX_MAX);
 	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block)
 	{
 		uint32_t eatDesire = getDesireToEatSomethingAt(block);

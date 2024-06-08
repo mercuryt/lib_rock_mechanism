@@ -351,6 +351,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, const Fluid
 	[[nodiscard]] bool shape_canEnterCurrentlyFrom(BlockIndex index, const HasShape& hasShape, const BlockIndex block) const;
 	[[nodiscard]] bool shape_canEnterCurrentlyWithFacing(BlockIndex index, const HasShape& hasShape, const Facing& facing) const;
 	[[nodiscard]] bool shape_canEnterCurrentlyWithAnyFacing(BlockIndex index, const HasShape& hasShape) const;
+	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(BlockIndex index, const Shape& shape, const MoveType& moveType, const Facing facing) const;
 	[[nodiscard]] std::pair<bool, Facing> shape_canEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, const HasShape& hasShape) const;
 	// Shape and move type can enter methods are used by leadAndFollow chains to combine the worst movetype with the largest shape for pathing.
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverFrom(BlockIndex index, const Shape& shape, const MoveType& moveType, const BlockIndex block) const;

@@ -55,7 +55,7 @@ TEST_CASE("basicNeedsSentient")
 	{
 		Item& bucket = simulation.m_hasItems->createItemNongeneric(ItemType::byName("bucket"), MaterialType::byName("poplar wood"), 50u, 0u, nullptr);
 		BlockIndex bucketLocation = blocks.getIndex({7, 7, 2});
-		bucket.setLocation(bucketLocation);
+		bucket.setLocation(bucketLocation, &area);
 		bucket.m_hasCargo.add(water, 10);
 		simulation.fastForward(dwarf.stepsFluidDrinkFreqency);
 		REQUIRE(!actor.m_canGrow.isGrowing());
@@ -80,7 +80,7 @@ TEST_CASE("basicNeedsSentient")
 	{
 		Item& meal = simulation.m_hasItems->createItemNongeneric(ItemType::byName("prepared meal"), MaterialType::byName("fruit"), 50u, 0u, nullptr);
 		BlockIndex mealLocation = blocks.getIndex({5, 5, 2});
-		meal.setLocation(mealLocation);
+		meal.setLocation(mealLocation, &area);
 		REQUIRE(actor.m_mustEat.getDesireToEatSomethingAt(mealLocation) == UINT32_MAX);
 		simulation.fastForward(dwarf.stepsEatFrequency);
 		REQUIRE(actor.m_mustEat.hasObjecive());
@@ -106,7 +106,7 @@ TEST_CASE("basicNeedsSentient")
 	{
 		Item& fruit = simulation.m_hasItems->createItemGeneric(ItemType::byName("apple"), MaterialType::byName("fruit"), 50u);
 		BlockIndex fruitLocation = blocks.getIndex({6, 5, 2});
-		fruit.setLocation(fruitLocation);
+		fruit.setLocation(fruitLocation, &area);
 		REQUIRE(actor.m_mustEat.getDesireToEatSomethingAt(fruitLocation) == 2);
 		simulation.fastForward(dwarf.stepsEatFrequency);
 		// Discard drink objective if exists.
@@ -257,13 +257,23 @@ TEST_CASE("basicNeedsNonsentient")
 		uint32_t deerMass = deer.getMass();
 		deer.die(CauseOfDeath::thirst);
 		REQUIRE(!deer.isAlive());
+		REQUIRE(bear.m_mustEat.getDesireToEatSomethingAt(deer.m_location));
 		simulation.fastForward(blackBear.stepsEatFrequency);
 		// Bear is hungry.
 		REQUIRE(bear.m_mustEat.getMassFoodRequested() != 0);
+		REQUIRE(bear.m_mustEat.hasObjecive());
+		REQUIRE(bear.m_hasObjectives.getCurrent().name() == "eat");
+		EatObjective& eatObjective = static_cast<EatObjective&>(bear.m_hasObjectives.getCurrent());
+		REQUIRE(eatObjective.hasThreadedTask());
+		auto path = area.m_hasTerrainFacades.at(bear.getMoveType()).findPathTo(bear.m_location, *bear.m_shape, deer.m_location);
+		REQUIRE(!path.empty());
 		// Bear goes to deer corpse.
 		simulation.doStep();
 		if(!bear.isAdjacentTo(deer))
+		{
+			REQUIRE(!bear.m_canMove.getPath().empty());
 			simulation.fastForwardUntillActorIsAdjacentToHasShape(bear, deer);
+		}
 		// Bear eats.
 		simulation.fastForward(Config::stepsToEat);
 		REQUIRE(!bear.m_mustEat.needsFood());
