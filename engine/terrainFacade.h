@@ -25,8 +25,6 @@ class TerrainFacade final
 	[[nodiscard]] std::vector<BlockIndex> findPathBreathFirst(BlockIndex from, const DestinationCondition destinationCondition, AccessCondition accessCondition) const;
 	[[nodiscard]] std::vector<BlockIndex> findPathDepthFirst(BlockIndex from, const DestinationCondition destinationCondition, AccessCondition accessCondition, BlockIndex huristicDestination) const;
 	[[nodiscard]] bool canEnterFrom(BlockIndex blockIndex, uint8_t adjacentIndex) const;
-	[[nodiscard]] bool shapeCanFitWithFacing(BlockIndex blockIndex, const Shape& shape, Facing facing) const;
-	[[nodiscard]] bool shapeCanFitWithAnyFacing(BlockIndex blockIndex, const Shape& shape) const;
 	[[nodiscard]] std::vector<BlockIndex> findPathToForSingleBlockShape(BlockIndex start, BlockIndex target, bool detour = false, CollisionVolume volume = 0) const;
 	[[nodiscard]] std::vector<BlockIndex> findPathToForMultiBlockShape(BlockIndex start, const Shape& shape, BlockIndex target, bool detour = false) const;
 	[[nodiscard]] std::vector<BlockIndex> findPathToAnyOfForSingleBlockShape(BlockIndex start, std::vector<BlockIndex> indecies, BlockIndex huristincDestination, bool detour = false, CollisionVolume volume = 0) const;

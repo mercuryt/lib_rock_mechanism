@@ -46,10 +46,15 @@ std::vector<BlockIndex> TerrainFacade::findPath(BlockIndex start, const Destinat
 			{
 				BlockIndex adjacentIndex = blocks.indexAdjacentToAtCount(current, adjacentCount);
 				assert(adjacentIndex != BLOCK_INDEX_MAX);
+				if(closed.contains(adjacentIndex))
+					continue;
 				//TODO: Make variant for radially semetric shapes which ignores facing.
 				Facing facing = blocks.facingToSetWhenEnteringFrom(adjacentIndex, current);
-				if(closed.contains(adjacentIndex) || !accessCondition(adjacentIndex, facing))
+				if(!accessCondition(adjacentIndex, facing))
+				{
+					closed[adjacentIndex] = BLOCK_INDEX_MAX;
 					continue;
+				}
 				if(destinationCondition(adjacentIndex, facing))
 				{
 					std::vector<BlockIndex> output;
@@ -96,24 +101,6 @@ bool TerrainFacade::canEnterFrom(BlockIndex block, uint8_t adjacentCount) const
 	assert(m_enterable[(block * maxAdjacent) + adjacentCount] == getValueForBit(block, other));
 	return m_enterable[(block * maxAdjacent) + adjacentCount];
 }
-bool TerrainFacade::shapeCanFitWithAnyFacing(BlockIndex blockIndex, const Shape& shape) const
-{
-	for(Facing facing = 0; facing < FACING_MAX; ++ facing)
-		if(shapeCanFitWithFacing(blockIndex, shape, facing))
-			return true;
-	return false;
-}
-bool TerrainFacade::shapeCanFitWithFacing(BlockIndex blockIndex, const Shape& shape, Facing facing) const
-{
-	Blocks& blocks = m_area.getBlocks();
-	for(auto[x, y, z, v] : shape.positionsWithFacing(facing))
-	{
-		BlockIndex wouldBeOccupiedIndex = blocks.offset(blockIndex, x, y, z);
-		if(!m_enterable[wouldBeOccupiedIndex])
-			return false;
-	}
-	return true;
-}
 std::vector<BlockIndex> TerrainFacade::findPathToForSingleBlockShape(BlockIndex start, BlockIndex target, bool detour, CollisionVolume volume) const
 {
 	DestinationCondition destinationCondition = [target](BlockIndex index, Facing){ return index == target; };
@@ -135,12 +122,12 @@ std::vector<BlockIndex> TerrainFacade::findPathToForMultiBlockShape(BlockIndex s
 	Blocks& blocks = m_area.getBlocks();
 	AccessCondition accessCondition;
 	if(detour)
-		accessCondition = [this, &shape, &blocks](BlockIndex index, Facing){
-			return blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(index, shape, m_moveType);
+		accessCondition = [this, &shape, &blocks](BlockIndex index, Facing facing){
+			return blocks.shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(index, shape, m_moveType, facing);
 		};
 	else
-		accessCondition = [this, &shape](BlockIndex index, Facing){
-			return shapeCanFitWithAnyFacing(index, shape);
+		accessCondition = [this, &shape, &blocks](BlockIndex index, Facing facing){
+			return blocks.shape_shapeAndMoveTypeCanEnterEverWithFacing(index, shape, m_moveType, facing);
 		};
 	DestinationCondition destinationCondition = [&shape, &blocks, target](BlockIndex index, Facing facing)
 	{ 
@@ -174,12 +161,12 @@ std::vector<BlockIndex> TerrainFacade::findPathToAnyOfForMultiBlockShape(BlockIn
 	Blocks& blocks = m_area.getBlocks();
 	AccessCondition accessCondition;
 	if(detour)
-		accessCondition = [this, &shape, &blocks](BlockIndex index, Facing){
-			return blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(index, shape, m_moveType);
+		accessCondition = [this, &shape, &blocks](BlockIndex index, Facing facing){
+			return blocks.shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(index, shape, m_moveType, facing);
 		};
 	else
-		accessCondition = [this, &shape](BlockIndex index, Facing){
-			return shapeCanFitWithAnyFacing(index, shape);
+		accessCondition = [this, &shape, &blocks](BlockIndex index, Facing facing){
+			return blocks.shape_shapeAndMoveTypeCanEnterEverWithFacing(index, shape, m_moveType, facing);
 		};
 	if(huristicDestination == BLOCK_INDEX_MAX)
 		return findPathBreathFirst(start, destinationCondition, accessCondition);
@@ -209,13 +196,12 @@ std::vector<BlockIndex> TerrainFacade::findPathToConditionForMultiBlockShape(Blo
 	AccessCondition accessCondition;
 	Blocks& blocks = m_area.getBlocks();
 	if(detour)
-		accessCondition = [this, &shape, &blocks]([[maybe_unused]] BlockIndex index, Facing){
-			//TODO: The move type check could be done more efficently with the facade data.
-			return blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(index, shape, m_moveType);
+		accessCondition = [this, &shape, &blocks]([[maybe_unused]] BlockIndex index, Facing facing){
+			return blocks.shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(index, shape, m_moveType, facing);
 		};
 	else
-		accessCondition = [this, &shape]([[maybe_unused]] BlockIndex index, Facing){
-			return shapeCanFitWithAnyFacing(index, shape);
+		accessCondition = [this, &shape, &blocks]([[maybe_unused]] BlockIndex index, Facing facing){
+			return blocks.shape_shapeAndMoveTypeCanEnterEverWithFacing(index, shape, m_moveType, facing);
 		};
 	if(huristicDestination == BLOCK_INDEX_MAX)
 		return findPathBreathFirst(start, destinationCondition, accessCondition);

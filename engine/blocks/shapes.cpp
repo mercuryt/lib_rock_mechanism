@@ -67,9 +67,9 @@ void Blocks::shape_removeQuantity(BlockIndex index, HasShape& hasShape, uint32_t
 }
 bool Blocks::shape_anythingCanEnterEver(BlockIndex index) const
 {
+	// TODO: cache this in a bitset.
 	if(solid_is(index))
 		return false;
-	// TODO: cache this.
 	return !blockFeature_blocksEntrance(index);
 }
 bool Blocks::shape_canEnterEverFrom(BlockIndex index, const HasShape& hasShape, BlockIndex from) const
@@ -99,12 +99,12 @@ bool Blocks::shape_shapeAndMoveTypeCanEnterEverFrom(BlockIndex index, const Shap
 }
 bool Blocks::shape_shapeAndMoveTypeCanEnterEverWithFacing(BlockIndex index, const Shape& shape, const MoveType& moveType, const Facing facing) const
 {
-	if(!shape_anythingCanEnterEver(index))
+	if(!shape_anythingCanEnterEver(index) || !shape_moveTypeCanEnter(index, moveType))
 		return false;
 	for(auto& [x, y, z, v] : shape.positionsWithFacing(facing))
 	{
 		BlockIndex otherIndex = offset(index, x, y, z);
-		if(otherIndex == BLOCK_INDEX_MAX || solid_is(otherIndex) || !shape_moveTypeCanEnter(otherIndex, moveType))
+		if(otherIndex == BLOCK_INDEX_MAX || !shape_anythingCanEnterEver(otherIndex) || !shape_moveTypeCanEnter(otherIndex, moveType))
 			return false;
 	}
 	return true;
@@ -116,8 +116,22 @@ bool Blocks::shape_shapeAndMoveTypeCanEnterCurrentlyWithFacing(BlockIndex index,
 	{
 		BlockIndex otherIndex = offset(index,x, y, z);
 		assert(otherIndex != BLOCK_INDEX_MAX);
-		assert(!solid_is(otherIndex));
+		assert(shape_anythingCanEnterEver(otherIndex));
 		if( m_dynamicVolume.at(otherIndex) + v > Config::maxBlockVolume || 
+			!shape_moveTypeCanEnter(otherIndex, moveType)
+		)
+			return false;
+	}
+	return true;
+}
+bool Blocks::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(BlockIndex index, const Shape& shape, const MoveType& moveType, const Facing facing) const
+{
+	assert(shape_anythingCanEnterEver(index));
+	for(auto& [x, y, z, v] : shape.positionsWithFacing(facing))
+	{
+		BlockIndex otherIndex = offset(index,x, y, z);
+		if(otherIndex == BLOCK_INDEX_MAX || !shape_anythingCanEnterEver(otherIndex) ||
+			m_dynamicVolume.at(otherIndex) + v > Config::maxBlockVolume || 
 			!shape_moveTypeCanEnter(otherIndex, moveType)
 		)
 			return false;
@@ -183,7 +197,7 @@ bool Blocks::shape_moveTypeCanEnter(BlockIndex index, const MoveType& moveType) 
 			if(shape_moveTypeCanBreath(index, moveType))
 				return true;
 			BlockIndex above = getBlockAbove(index);
-			if(above != BLOCK_INDEX_MAX && !solid_is(above) && shape_moveTypeCanBreath(above, moveType))
+			if(above != BLOCK_INDEX_MAX && shape_anythingCanEnterEver(above) && shape_moveTypeCanBreath(above, moveType))
 				return true;
 		}
 	}
@@ -234,8 +248,8 @@ const std::vector<std::pair<BlockIndex, MoveCost>> Blocks::shape_makeMoveCosts(B
 }
 MoveCost Blocks::shape_moveCostFrom(BlockIndex index, const MoveType& moveType, BlockIndex from) const
 {
-	assert(!solid_is(index));
-	assert(!solid_is(from));
+	assert(shape_anythingCanEnterEver(index));
+	assert(shape_anythingCanEnterEver(from));
 	if(moveType.fly)
 		return Config::baseMoveCost;
 	for(auto& [fluidType, volume] : moveType.swim)

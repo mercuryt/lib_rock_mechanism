@@ -108,6 +108,7 @@ void Blocks::fluid_add(BlockIndex index, CollisionVolume volume, const FluidType
 	// Shift less dense fluids to excessVolume.
 	if(m_totalFluidVolume.at(index) > Config::maxBlockVolume)
 		fluid_resolveOverfull(index);
+	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 }
 void Blocks::fluid_setAllUnstableExcept(BlockIndex index, const FluidType& fluidType)
 {
@@ -126,6 +127,8 @@ void Blocks::fluid_drainInternal(BlockIndex index, CollisionVolume volume, const
 		iter->volume -= volume;
 	assert(m_totalFluidVolume.at(index) >= volume);
 	m_totalFluidVolume.at(index) -= volume;
+	//TODO: this could be run mulitple times per step where two fluid groups of different types are mixing, move to FluidGroup writeStep.
+	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 }
 void Blocks::fluid_fillInternal(BlockIndex index, CollisionVolume volume, FluidGroup& fluidGroup)
 {
@@ -138,6 +141,8 @@ void Blocks::fluid_fillInternal(BlockIndex index, CollisionVolume volume, FluidG
 		assert(*found->group == fluidGroup);
 	}
 	m_totalFluidVolume.at(index) += volume;
+	//TODO: this could be run mulitple times per step where two fluid groups of different types are mixing, move to FluidGroup writeStep.
+	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 }
 bool Blocks::fluid_undisolveInternal(BlockIndex index, FluidGroup& fluidGroup)
 {
@@ -162,6 +167,8 @@ bool Blocks::fluid_undisolveInternal(BlockIndex index, FluidGroup& fluidGroup)
 			fluidGroup.addBlock(index, false);
 			fluidGroup.m_disolved = false;
 		}
+		//TODO: this could be run mulitple times per step where two fluid groups of different types are mixing, move to FluidGroup writeStep.
+		m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 		return true;
 	}
 	return false;
@@ -187,6 +194,7 @@ void Blocks::fluid_removeSyncronus(BlockIndex index, CollisionVolume volume, con
 		else
 			group.removeBlock(index);
 	}
+	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 }
 bool Blocks::fluid_canEnterCurrently(BlockIndex index, const FluidType& fluidType) const
 {
@@ -287,6 +295,7 @@ void Blocks::fluid_resolveOverfull(BlockIndex index)
 		}
 		fluid_destroyData(index, *fluidType);
 	}
+	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 }
 void Blocks::fluid_onBlockSetSolid(BlockIndex index)
 {
