@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <queue>
 #include <unordered_map>
+#include <iterator>
 
 TerrainFacade::TerrainFacade(Area& area, const MoveType& moveType) : m_area(area), m_moveType(moveType)
 {
@@ -233,8 +234,10 @@ std::vector<BlockIndex> TerrainFacade::findPathAdjacentTo(BlockIndex start, cons
 {
 	std::vector<BlockIndex> targets;
 	Blocks& blocks = m_area.getBlocks();
-	std::ranges::copy_if(blocks.getAdjacentWithEdgeAndCornerAdjacent(target), targets.begin(), 
-		[&](BlockIndex block){ return blocks.shape_moveTypeCanEnter(block, m_moveType); 
+	auto source = blocks.getAdjacentWithEdgeAndCornerAdjacent(target);
+	std::ranges::copy_if(source, std::back_inserter(targets),
+		[&](const BlockIndex block) { 
+			return blocks.shape_anythingCanEnterEver(block) && blocks.shape_moveTypeCanEnter(block, m_moveType) && blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(block, shape, m_moveType); 
 	});
 	if(targets.empty())
 		return { };
@@ -244,8 +247,10 @@ std::vector<BlockIndex> TerrainFacade::findPathAdjacentTo(BlockIndex start, cons
 {
 	std::vector<BlockIndex> targets;
 	Blocks& blocks = m_area.getBlocks();
-	std::ranges::copy_if(hasShape.getAdjacentBlocks(), targets.begin(), 
-		[&](BlockIndex block){ return blocks.shape_moveTypeCanEnter(block, m_moveType); 
+	auto source = hasShape.getAdjacentBlocks();
+	std::ranges::copy_if(source, std::back_inserter(targets),
+		[&](const BlockIndex block) { 
+			return blocks.shape_anythingCanEnterEver(block) && blocks.shape_moveTypeCanEnter(block, m_moveType) && blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(block, shape, m_moveType); 
 	});
 	if(targets.empty())
 		return { };
@@ -267,8 +272,11 @@ std::vector<BlockIndex> TerrainFacade::findPathAdjacentToAndUnreserved(BlockInde
 {
 	std::vector<BlockIndex> targets;
 	Blocks& blocks = m_area.getBlocks();
-	std::ranges::copy_if(blocks.getAdjacentWithEdgeAndCornerAdjacent(target), targets.begin(), 
-		[&](BlockIndex block){ return !blocks.isReserved(block, faction) && blocks.shape_moveTypeCanEnter(block, m_moveType); 
+	auto source = blocks.getAdjacentWithEdgeAndCornerAdjacent(target);
+	std::ranges::copy_if(source, std::back_inserter(targets), 
+		[&](BlockIndex block){
+	       		return blocks.shape_anythingCanEnterEver(block) && !blocks.isReserved(block, faction) && 
+			blocks.shape_moveTypeCanEnter(block, m_moveType) && blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(block, shape, m_moveType); 
 	});
 	if(targets.empty())
 		return { };

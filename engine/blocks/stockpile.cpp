@@ -6,7 +6,8 @@
 void Blocks::stockpile_recordMembership(BlockIndex index, StockPile& stockPile)
 {
 	assert(!stockpile_contains(index, stockPile.getFaction()));
-	m_stockPiles.at(index).try_emplace(&stockPile.getFaction(), stockPile, false);
+	auto result = m_stockPiles[index].try_emplace(&stockPile.getFaction(), stockPile, false);
+	assert(result.second);
 	if(stockpile_isAvalible(index, stockPile.getFaction()))
 	{
 		m_stockPiles.at(index).at(&stockPile.getFaction()).active = true;
@@ -18,7 +19,10 @@ void Blocks::stockpile_recordNoLongerMember(BlockIndex index, StockPile& stockPi
 	assert(stockpile_contains(index, stockPile.getFaction()));
 	if(stockpile_isAvalible(index, stockPile.getFaction()))
 		stockPile.decrementOpenBlocks();
-	m_stockPiles.at(index).erase(&stockPile.getFaction());
+	if(m_stockPiles.at(index).size() == 1)
+		m_stockPiles.erase(index);
+	else
+		m_stockPiles.at(index).erase(&stockPile.getFaction());
 }
 void Blocks::stockpile_updateActive(BlockIndex index)
 {
@@ -39,6 +43,7 @@ void Blocks::stockpile_updateActive(BlockIndex index)
 }
 bool Blocks::stockpile_isAvalible(BlockIndex index, Faction& faction) const 
 { 
+	assert(stockpile_contains(index, faction));
 	if(item_empty(index))
 		return true;
 	if(item_getAll(index).size() > 1)
@@ -54,13 +59,18 @@ bool Blocks::stockpile_isAvalible(BlockIndex index, Faction& faction) const
 }
 bool Blocks::stockpile_contains(BlockIndex index, Faction& faction) const
 {
-	return m_stockPiles.at(index).contains(&faction);
+	auto found = m_stockPiles.find(index);
+	if(found == m_stockPiles.end())
+		return false;
+	return found->second.contains(&faction);
 }
-
 StockPile* Blocks::stockpile_getForFaction(BlockIndex index, Faction& faction)
 {
-	auto find = m_stockPiles.at(index).find(&faction);
-	if(find == m_stockPiles.at(index).end())
+	auto indexIter = m_stockPiles.find(index);
+	if(indexIter == m_stockPiles.end())
 		return nullptr;
-	return &find->second.stockPile;
+	auto factionIter = indexIter->second.find(&faction);
+	if(factionIter == m_stockPiles.at(index).end())
+		return nullptr;
+	return &factionIter->second.stockPile;
 }

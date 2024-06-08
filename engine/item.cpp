@@ -118,28 +118,32 @@ Item::Item(ItemParamaters itemParamaters) : HasShape(*itemParamaters.simulation,
 	}
 	else
 		assert(m_quantity == 1);
-	if(itemParamaters.location)
+	if(itemParamaters.location != BLOCK_INDEX_MAX)
 	{
+		assert(itemParamaters.area);
 		setLocation(itemParamaters.location, itemParamaters.area);
-		m_area->m_hasItems.add(*this);
 	}
+	// We might be setting area but not location for a carried or cargo item.
+	else if(itemParamaters.area)
+		m_area = itemParamaters.area;
+	if(m_area)
+		m_area->m_hasItems.add(*this);
 }
 void Item::setLocation(BlockIndex block, Area* area)
 {
-	Blocks& blocks = area->getBlocks();
 	if(area)
 	{
 		assert(m_location == BLOCK_INDEX_MAX);
 		assert(!m_area);
 		m_area = area;
-		blocks.item_add(block, *this);
+		m_area->getBlocks().item_add(block, *this);
 	}
 	if(!area)
 		assert(m_area);
 	if(m_location != BLOCK_INDEX_MAX)
 		exit();
 	bool willCombine = isGeneric() && m_area->getBlocks().item_getCount(block, m_itemType, m_materialType);
-	blocks.item_add(block, *this);
+	m_area->getBlocks().item_add(block, *this);
 	if(!willCombine)
 		m_canLead.onMove();
 }
@@ -180,7 +184,7 @@ void Item::install(BlockIndex block, Facing facing, Faction& faction)
 	if(m_itemType.craftLocationStepTypeCategory)
 	{
 		BlockIndex craftLocation = m_itemType.getCraftLocation(m_area->getBlocks(), block, facing);
-		if(craftLocation)
+		if(craftLocation != BLOCK_INDEX_MAX)
 			m_area->m_hasCraftingLocationsAndJobs.at(faction).addLocation(*m_itemType.craftLocationStepTypeCategory, craftLocation);
 	}
 }
@@ -261,7 +265,7 @@ Json Item::toJson() const
 	Json data = HasShape::toJson();
 	data["id"] = m_id;
 	data["name"] = m_name;
-	if(m_location)
+	if(m_location != BLOCK_INDEX_MAX)
 		data["location"] = m_location;
 	data["itemType"] = m_itemType;
 	data["materialType"] = m_materialType;
@@ -439,7 +443,7 @@ void ItemHasCargo::destroyCargo(Item& item)
 	remove(item);
 	// Normal destroy only removes from area if location is set, cargo is removed explicitly.
 	// TODO: prevent cargo from having destroy called on it directly.
-	if(m_item.m_location)
+	if(m_item.m_location != BLOCK_INDEX_MAX)
 		m_item.m_area->m_hasItems.remove(static_cast<Item&>(item));
 	static_cast<Item&>(item).destroy();
 }

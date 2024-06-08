@@ -8,7 +8,8 @@
 
 struct DeserializationMemo;
 
-SowSeedsEvent::SowSeedsEvent(Step delay, SowSeedsObjective& o, const Step start) : ScheduledEvent(o.m_actor.getSimulation(), delay, start), m_objective(o) { }
+SowSeedsEvent::SowSeedsEvent(Step delay, SowSeedsObjective& o, const Step start) : 
+	ScheduledEvent(o.m_actor.getSimulation(), delay, start), m_objective(o) { }
 void SowSeedsEvent::execute()
 {
 	BlockIndex block = m_objective.m_block;
@@ -34,7 +35,8 @@ std::unique_ptr<Objective> SowSeedsObjectiveType::makeFor(Actor& actor) const
 {
 	return std::make_unique<SowSeedsObjective>(actor);
 }
-SowSeedsThreadedTask::SowSeedsThreadedTask(SowSeedsObjective& sso): ThreadedTask(sso.m_actor.getThreadedTaskEngine()), m_objective(sso), m_findsPath(sso.m_actor, sso.m_detour) { }
+SowSeedsThreadedTask::SowSeedsThreadedTask(SowSeedsObjective& sso): 
+	ThreadedTask(sso.m_actor.getThreadedTaskEngine()), m_objective(sso), m_findsPath(sso.m_actor, sso.m_detour) { }
 void SowSeedsThreadedTask::readStep()
 {
 	Faction* faction = m_objective.m_actor.getFaction();
@@ -72,6 +74,7 @@ void SowSeedsThreadedTask::writeStep()
 				// Found a field to sow.
 				m_objective.select(block);
 				m_findsPath.reserveBlocksAtDestination(m_objective.m_actor.m_canReserve);
+				m_objective.m_actor.m_area->getBlocks().reserve(m_findsPath.getBlockWhichPassedPredicate(), m_objective.m_actor.m_canReserve);
 				m_objective.m_actor.m_canMove.setPath(m_findsPath.getPath());
 			}
 		}

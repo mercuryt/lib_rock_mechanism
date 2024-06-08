@@ -39,7 +39,7 @@ Json HasShape::toJson() const
 		{"address", reinterpret_cast<uintptr_t>(this)}};
 	if(m_reservable.hasAnyReservations())
 		data["reservable"] = reinterpret_cast<uintptr_t>(&m_reservable);
-	if(m_location)
+	if(m_location != BLOCK_INDEX_MAX)
 		data["location"] = m_location;
 	if(m_faction)
 		data["faction"] = m_faction;
@@ -48,14 +48,14 @@ Json HasShape::toJson() const
 void HasShape::setShape(const Shape& shape)
 {
 	BlockIndex location = m_location;
-	if(m_location)
+	if(m_location != BLOCK_INDEX_MAX)
 	{
 		exit();
 		if(isActor())
 			m_area->getBlocks().getLocationBucket(location).erase(static_cast<Actor&>(*this));
 	}
 	m_shape = &shape;
-	if(location)
+	if(location != BLOCK_INDEX_MAX)
 		setLocation(location, m_area);
 }
 void HasShape::setStatic(bool isTrue)
@@ -82,8 +82,8 @@ void HasShape::reserveOccupied(CanReserve& canReserve)
 }
 bool HasShape::isAdjacentTo(const HasShape& other) const
 {
-	assert(m_location);
-	assert(other.m_location);
+	assert(m_location != BLOCK_INDEX_MAX);
+	assert(other.m_location != BLOCK_INDEX_MAX);
 	const HasShape* smaller = this;
 	const HasShape* larger = &other;
 	if(smaller->m_blocks.size () > larger->m_blocks.size())

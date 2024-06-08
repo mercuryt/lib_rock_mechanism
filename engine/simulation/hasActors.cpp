@@ -20,7 +20,7 @@ Actor& SimulationHasActors::createActor(const AnimalSpecies& species, BlockIndex
 }
 void SimulationHasActors::destroyActor(Actor& actor)
 {
-	if(actor.m_location)
+	if(actor.m_location != BLOCK_INDEX_MAX)
 		actor.leaveArea();
 	m_actors.erase(actor.m_id);
 	//TODO: Destroy hibernation json file if any.

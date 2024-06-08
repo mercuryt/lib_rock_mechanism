@@ -68,7 +68,7 @@ void BanditsArriveDramaArc::callback()
 		{
 			const AnimalSpecies& species = random.chance(0.5) ? m_leader->m_species : *random.getInVector(sentientSpecies);
 			BlockIndex location = findLocationOnEdgeForNear(*species.shapes.back(), species.moveType, m_entranceBlock, maxBlockDistance, exclude);
-			if(location)
+			if(location != BLOCK_INDEX_MAX)
 			{
 				exclude.insert(location);
 				Actor& actor = m_area->m_simulation.m_hasActors->createActor(ActorParamaters{

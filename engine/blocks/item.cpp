@@ -51,7 +51,8 @@ Item& Blocks::item_addGeneric(BlockIndex index, const ItemType& itemType, const 
 		.itemType=itemType,
 		.materialType=materialType,
 		.quantity=quantity,
-		.location=index
+		.location=index,
+		.area=&m_area,
 	});
 	return item;
 }
