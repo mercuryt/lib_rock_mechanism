@@ -47,7 +47,11 @@ TEST_CASE("combat")
 		Item& pants = simulation.m_hasItems->createItemNongeneric(ItemType::byName("pants"), MaterialType::byName("plant matter"), 50u, 10);
 		dwarf1.m_equipmentSet.addEquipment(pants);
 		REQUIRE(dwarf1.m_canFight.getCombatScore() > initalScore);
-		Actor& rabbit = simulation.m_hasActors->createActor(AnimalSpecies::byName("dwarf rabbit"), blocks.getIndex({2, 2, 1}));
+		Actor& rabbit = simulation.m_hasActors->createActor({
+			.species=AnimalSpecies::byName("dwarf rabbit"),
+			.location=blocks.getIndex({2, 2, 1}),
+			.area=&area,
+		});
 		REQUIRE(rabbit.m_canFight.getCombatScore() < dwarf1.m_canFight.getCombatScore());
 		dwarf1.m_canFight.setTarget(rabbit);
 		REQUIRE(dwarf1.m_canFight.inRange(rabbit));
@@ -57,7 +61,11 @@ TEST_CASE("combat")
 	}
 	SUBCASE("path to rabbit")
 	{
-		Actor& rabbit = simulation.m_hasActors->createActor(AnimalSpecies::byName("dwarf rabbit"), blocks.getIndex({5, 5, 1}));
+		Actor& rabbit = simulation.m_hasActors->createActor({
+			.species=AnimalSpecies::byName("dwarf rabbit"),
+			.location=blocks.getIndex({5, 5, 1}),
+			.area=&area,
+		});
 		dwarf1.m_canFight.setTarget(rabbit);
 		REQUIRE(dwarf1.m_canFight.hasThreadedTask());
 		simulation.doStep();
@@ -67,15 +75,27 @@ TEST_CASE("combat")
 	SUBCASE("adjacent allies boost combat score")
 	{
 		uint32_t initalScore = dwarf1.m_canFight.getCurrentMeleeCombatScore();
-		Actor& dwarf2 = simulation.m_hasActors->createActor(AnimalSpecies::byName("dwarf"), blocks.getIndex({2, 1, 1}));
+		Actor& dwarf2 = simulation.m_hasActors->createActor({
+			.species=AnimalSpecies::byName("dwarf"),
+			.location=blocks.getIndex({2, 1, 1}),
+			.area=&area,
+		});
 		dwarf2.setFaction(&faction);
 		REQUIRE(dwarf1.m_canFight.getCurrentMeleeCombatScore() > initalScore);
 	}
 	SUBCASE("flanking enemies reduce combat score")
 	{
 		uint32_t initalScore = dwarf1.m_canFight.getCurrentMeleeCombatScore();
-		simulation.m_hasActors->createActor(AnimalSpecies::byName("dwarf rabbit"), blocks.getIndex({2, 1, 1}));
-		simulation.m_hasActors->createActor(AnimalSpecies::byName("dwarf rabbit"), blocks.getIndex({1, 2, 1}));
+		simulation.m_hasActors->createActor({
+			.species=AnimalSpecies::byName("dwarf rabbit"),
+			.location=blocks.getIndex({2, 1, 1}),
+			.area=&area,
+		});
+		simulation.m_hasActors->createActor({
+			.species=AnimalSpecies::byName("dwarf rabbit"),
+			.location=blocks.getIndex({1, 2, 1}),
+			.area=&area,
+		});
 		REQUIRE(dwarf1.m_canFight.getCurrentMeleeCombatScore() < initalScore);
 	}
 	SUBCASE("shoot rabbit")
@@ -84,7 +104,11 @@ TEST_CASE("combat")
 		dwarf1.m_equipmentSet.addEquipment(crossbow);
 		Item& ammo = simulation.m_hasItems->createItemGeneric(ItemType::byName("crossbow bolt"), MaterialType::byName("bronze"), 1u);
 		dwarf1.m_equipmentSet.addEquipment(ammo);
-		Actor& rabbit = simulation.m_hasActors->createActor(AnimalSpecies::byName("dwarf rabbit"), blocks.getIndex({3, 3, 1}));
+		Actor& rabbit = simulation.m_hasActors->createActor({
+			.species=AnimalSpecies::byName("dwarf rabbit"),
+			.location=blocks.getIndex({3, 3, 1}),
+			.area=&area,
+		});
 		dwarf1.m_canFight.setTarget(rabbit);
 		REQUIRE(dwarf1.m_canFight.inRange(rabbit));
 		AttackType& attackType = dwarf1.m_canFight.getRangedAttackType(crossbow);

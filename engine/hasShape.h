@@ -81,7 +81,7 @@ public:
 	virtual bool isGeneric() const = 0;
 	virtual Mass getMass() const = 0;
 	virtual Volume getVolume() const = 0;
-	virtual void setLocation(BlockIndex block, Area* area) = 0;
+	virtual void setLocation(BlockIndex block, Area* area = nullptr) = 0;
 	virtual void exit() = 0;
 	virtual const MoveType& getMoveType() const = 0;
 	virtual Mass singleUnitMass() const = 0;

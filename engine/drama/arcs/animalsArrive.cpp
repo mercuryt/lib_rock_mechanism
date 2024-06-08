@@ -39,7 +39,7 @@ void AnimalsArriveDramaArc::callback()
 			Percent percentGrown = std::min(100, random.getInRange(15, 500));
 			constexpr DistanceInBlocks maxBlockDistance = 10;
 			BlockIndex location = findLocationOnEdgeForNear(m_species->shapeForPercentGrown(percentGrown), m_species->moveType, m_entranceBlock, maxBlockDistance, exclude);
-			if(location)
+			if(location != BLOCK_INDEX_MAX)
 			{
 				exclude.insert(location);
 				Actor& actor = m_area->m_simulation.m_hasActors->createActor(ActorParamaters{

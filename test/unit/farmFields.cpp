@@ -31,7 +31,7 @@ TEST_CASE("sow")
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	area.m_blockDesignations.registerFaction(faction);
-	BlockIndex block = blocks.getIndex({4, 4, 2});
+	BlockIndex fieldLocation = blocks.getIndex({4, 4, 2});
 	BlockIndex pondLocation = blocks.getIndex({8,8,2});
 	blocks.solid_setNot(pondLocation);
 	blocks.fluid_add(pondLocation, Config::maxBlockVolume, FluidType::byName("water"));
@@ -40,7 +40,7 @@ TEST_CASE("sow")
 	food.setLocation(foodLocation, &area);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	area.m_hasFarmFields.registerFaction(faction);
-	Cuboid cuboid(blocks, block, block);
+	Cuboid cuboid(blocks, fieldLocation, fieldLocation);
 	FarmField& field = area.m_hasFarmFields.at(faction).create(cuboid);
 	Actor& actor = simulation.m_hasActors->createActor({
 		.species=dwarf, 
@@ -55,9 +55,9 @@ TEST_CASE("sow")
 		REQUIRE(field.plantSpecies == nullptr);
 		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
 		REQUIRE(field.plantSpecies == &wheatGrass);
-		REQUIRE(blocks.farm_contains(block, faction));
+		REQUIRE(blocks.farm_contains(fieldLocation, faction));
 		REQUIRE(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
-		REQUIRE(!blocks.designation_has(block, faction, BlockDesignation::SowSeeds));
+		REQUIRE(!blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
 		const SowSeedsObjectiveType objectiveType;
 		// Skip ahead to planting time.
 		simulation.fastForward(Config::stepsPerDay);
@@ -65,20 +65,22 @@ TEST_CASE("sow")
 		actor.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 10);
 		actor.satisfyNeeds();
 		REQUIRE(area.m_hasFarmFields.hasSowSeedsDesignations(faction));
-		REQUIRE(blocks.designation_has(block, faction, BlockDesignation::SowSeeds));
-		REQUIRE(!blocks.isReserved(block, faction));
+		REQUIRE(blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
+		REQUIRE(!blocks.isReserved(fieldLocation, faction));
 		REQUIRE(actor.m_hasObjectives.hasCurrent());
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() == "sow seeds");
 		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.size() == 1);
+		REQUIRE(static_cast<SowSeedsObjective&>(actor.m_hasObjectives.getCurrent()).canSowAt(fieldLocation));
+		REQUIRE(!area.m_hasTerrainFacades.at(actor.getMoveType()).findPathAdjacentToAndUnreserved(actor.m_location, *actor.m_shape, fieldLocation, faction).empty());
 		simulation.doStep();
-		REQUIRE(blocks.isReserved(block, faction));
+		REQUIRE(blocks.isReserved(fieldLocation, faction));
 		REQUIRE(!actor.m_canMove.getPath().empty());
 		BlockIndex destination = actor.m_canMove.getDestination();
 		simulation.fastForwardUntillActorIsAtDestination(actor, destination);
 		REQUIRE(actor.m_canMove.getPath().empty());
 		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.empty());
 		REQUIRE(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
-		REQUIRE(!blocks.designation_has(block, faction, BlockDesignation::SowSeeds));
+		REQUIRE(!blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
 		simulation.fastForward(Config::sowSeedsStepsDuration);
 		REQUIRE(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
 		REQUIRE(!area.m_hasPlants.getAll().empty());
@@ -123,9 +125,9 @@ TEST_CASE("sow")
 		actor.satisfyNeeds();
 		simulation.doStep();
 		REQUIRE(!actor.m_canMove.getPath().empty());
-		blocks.solid_set(blocks.getBlockBelow(block), marble, false);
-		REQUIRE(!blocks. plant_canGrowHereAtSomePointToday(block, wheatGrass));
-		simulation.fastForwardUntillActorIsAdjacentTo(actor, block);
+		blocks.solid_set(blocks.getBlockBelow(fieldLocation), marble, false);
+		REQUIRE(!blocks. plant_canGrowHereAtSomePointToday(fieldLocation, wheatGrass));
+		simulation.fastForwardUntillActorIsAdjacentTo(actor, fieldLocation);
 		// No alternative route or location found, cannot complete objective.
 		REQUIRE(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
 		simulation.doStep();
@@ -142,7 +144,7 @@ TEST_CASE("sow")
 		simulation.doStep();
 		REQUIRE(!actor.m_canMove.getPath().empty());
 		area.m_hasFarmFields.at(faction).remove(field);
-		simulation.fastForwardUntillActorIsAdjacentTo(actor, block);
+		simulation.fastForwardUntillActorIsAdjacentTo(actor, fieldLocation);
 		// BlockIndex is not select to grow anymore, cannot complete task, search for another route / another location to sow.
 		simulation.doStep();
 		REQUIRE(actor.m_hasObjectives.getCurrent().name() != "sow seeds");
@@ -157,10 +159,10 @@ TEST_CASE("sow")
 		actor.satisfyNeeds();
 		simulation.doStep();
 		REQUIRE(!actor.m_canMove.getPath().empty());
-		REQUIRE(!blocks.designation_has(block, faction, BlockDesignation::SowSeeds));
+		REQUIRE(!blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
 		actor.m_hasObjectives.cancel(actor.m_hasObjectives.getCurrent());
-		REQUIRE(blocks.designation_has(block, faction, BlockDesignation::SowSeeds));
-		REQUIRE(!blocks.isReserved(block, faction));
+		REQUIRE(blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
+		REQUIRE(!blocks.isReserved(fieldLocation, faction));
 	}
 	SUBCASE("player delays sowing objective")
 	{
@@ -171,11 +173,11 @@ TEST_CASE("sow")
 		actor.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 10);
 		simulation.doStep();
 		REQUIRE(!actor.m_canMove.getPath().empty());
-		REQUIRE(!blocks.designation_has(block, faction, BlockDesignation::SowSeeds));
-		std::unique_ptr<GoToObjective> goToObjective = std::make_unique<GoToObjective>(actor, block);
+		REQUIRE(!blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
+		std::unique_ptr<GoToObjective> goToObjective = std::make_unique<GoToObjective>(actor, fieldLocation);
 		actor.m_hasObjectives.addTaskToStart(std::move(goToObjective));
-		REQUIRE(blocks.designation_has(block, faction, BlockDesignation::SowSeeds));
-		REQUIRE(!blocks.isReserved(block, faction));
+		REQUIRE(blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
+		REQUIRE(!blocks.isReserved(fieldLocation, faction));
 	}
 }
 TEST_CASE("harvest")

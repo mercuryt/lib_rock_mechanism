@@ -121,7 +121,7 @@ void CanPickup::pickUp(Item& item, Quantity quantity)
 	if(quantity == item.getQuantity())
 	{
 		m_carrying = &item;
-		if(item.m_location)
+		if(item.m_location != BLOCK_INDEX_MAX)
 			item.exit();
 	}
 	else
@@ -130,7 +130,8 @@ void CanPickup::pickUp(Item& item, Quantity quantity)
 		Item& newItem = m_actor.getSimulation().m_hasItems->createItem({
 			.itemType=item.m_itemType, 
 			.materialType=item.m_materialType, 
-			.quantity=quantity
+			.quantity=quantity,
+			.area=m_actor.m_area,
 		});
 		m_carrying = &newItem;
 	}
@@ -142,7 +143,7 @@ void CanPickup::pickUp(Actor& actor, [[maybe_unused]] Quantity quantity)
 	assert(!actor.m_mustSleep.isAwake() || actor.m_body.isInjured());
 	assert(m_carrying = nullptr);
 	actor.m_reservable.maybeClearReservationFor(m_actor.m_canReserve);
-	if(actor.m_location)
+	if(actor.m_location != BLOCK_INDEX_MAX)
 		actor.exit();
 	m_carrying = &actor;
 	m_actor.m_canMove.updateIndividualSpeed();
@@ -164,6 +165,7 @@ HasShape& CanPickup::putDown(BlockIndex location, Quantity quantity)
 			m_carrying = nullptr;
 			if(blocks.item_getCount(location, item.m_itemType, item.m_materialType) == 0)
 			{
+				assert(item.m_area);
 				item.setLocation(location);
 				output = &item;
 			}
@@ -178,7 +180,8 @@ HasShape& CanPickup::putDown(BlockIndex location, Quantity quantity)
 	}
 	else
 	{
-		m_carrying->setLocation(location, m_actor.m_area);
+		assert(m_carrying->m_area);
+		m_carrying->setLocation(location);
 		output = m_carrying;
 		m_carrying = nullptr;
 	}

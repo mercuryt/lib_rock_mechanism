@@ -145,7 +145,7 @@ GivePlantsFluidObjective::GivePlantsFluidObjective(const Json& data, Deserializa
 Json GivePlantsFluidObjective::toJson() const
 {
 	Json data = Objective::toJson();
-	if(m_plantLocation)
+	if(m_plantLocation != BLOCK_INDEX_MAX)
 		data["plantLocation"] = m_plantLocation;
 	if(m_fluidHaulingItem)
 		data["fluidHaulingItem"] = m_fluidHaulingItem;

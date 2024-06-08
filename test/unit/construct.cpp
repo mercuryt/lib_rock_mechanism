@@ -25,20 +25,20 @@ TEST_CASE("construct")
 	area.m_blockDesignations.registerFaction(faction);
 	ConstructObjectiveType constructObjectiveType;
 	Actor& dwarf1 = simulation.m_hasActors->createActor(ActorParamaters{
-		.species=dwarf, 
+		.species=dwarf,
 		.location=blocks.getIndex({1, 1, 2}),
 		.area=&area
 	});
 	dwarf1.setFaction(&faction);
 	area.m_hasConstructionDesignations.addFaction(faction);
 	Item& boards = simulation.m_hasItems->createItemGeneric(ItemType::byName("board"), wood, 50u);
-	boards.setLocation(blocks.getIndex({8, 7, 2}));
+	boards.setLocation(blocks.getIndex({8, 7, 2}), &area);
 	Item& pegs = simulation.m_hasItems->createItemGeneric(ItemType::byName("peg"), wood, 50u);
-	pegs.setLocation(blocks.getIndex({3, 8, 2}));
+	pegs.setLocation(blocks.getIndex({3, 8, 2}), &area);
 	Item& saw = simulation.m_hasItems->createItemNongeneric(ItemType::byName("saw"), MaterialType::byName("bronze"), 25u, 0);
-	saw.setLocation(blocks.getIndex({5, 7, 2}));
+	saw.setLocation(blocks.getIndex({5, 7, 2}), &area);
 	Item& mallet = simulation.m_hasItems->createItemNongeneric(ItemType::byName("mallet"), wood, 25u, 0);
-	mallet.setLocation(blocks.getIndex({9, 5, 2}));
+	mallet.setLocation(blocks.getIndex({9, 5, 2}), &area);
 	SUBCASE("make wall")
 	{
 		BlockIndex wallLocation = blocks.getIndex({8, 4, 2});
@@ -92,7 +92,7 @@ TEST_CASE("construct")
 	SUBCASE("make wall with two workers")
 	{
 		Actor& dwarf2 = simulation.m_hasActors->createActor(ActorParamaters{
-			.species=dwarf, 
+			.species=dwarf,
 			.location=blocks.getIndex({1, 4, 2}),
 			.area=&area,
 		});
@@ -113,7 +113,7 @@ TEST_CASE("construct")
 	SUBCASE("make two walls with two workers")
 	{
 		Actor& dwarf2 = simulation.m_hasActors->createActor({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=blocks.getIndex({1, 4, 2}),
 			.area=&area,
 		});
@@ -315,7 +315,7 @@ TEST_CASE("construct")
 		const ItemType& pile = ItemType::byName("pile");
 		const MaterialType& dirt = MaterialType::byName("dirt");
 		Item& dirtPile = simulation.m_hasItems->createItemGeneric(pile, dirt, 150u);
-		dirtPile.setLocation(blocks.getIndex({9, 9, 2}));
+		dirtPile.setLocation(blocks.getIndex({9, 9, 2}), &area);
 		BlockIndex wallLocation = blocks.getIndex({3, 3, 2});
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, dirt);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);
@@ -363,11 +363,11 @@ TEST_CASE("construct")
 		BlockIndex pileLocation2 = blocks.getIndex({9, 8, 2});
 		BlockIndex pileLocation3 = blocks.getIndex({9, 7, 2});
 		Item& dirtPile1 = simulation.m_hasItems->createItemGeneric(pile, dirt, 50u);
-		dirtPile1.setLocation(pileLocation1);
+		dirtPile1.setLocation(pileLocation1, &area);
 		Item& dirtPile2 = simulation.m_hasItems->createItemGeneric(pile, dirt, 50u);
-		dirtPile2.setLocation(pileLocation2);
+		dirtPile2.setLocation(pileLocation2, &area);
 		Item& dirtPile3 = simulation.m_hasItems->createItemGeneric(pile, dirt, 50u);
-		dirtPile3.setLocation(pileLocation3);
+		dirtPile3.setLocation(pileLocation3, &area);
 		BlockIndex wallLocation = blocks.getIndex({9, 0, 2});
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, dirt);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);
@@ -414,7 +414,7 @@ TEST_CASE("construct")
 		const ItemType& pile = ItemType::byName("pile");
 		const MaterialType& dirt = MaterialType::byName("dirt");
 		Item& dirtPile = simulation.m_hasItems->createItemGeneric(pile, dirt, 140u);
-		dirtPile.setLocation(blocks.getIndex({9, 9, 2}));
+		dirtPile.setLocation(blocks.getIndex({9, 9, 2}), &area);
 		BlockIndex wallLocation = blocks.getIndex({3, 3, 2});
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, dirt);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);
@@ -447,7 +447,7 @@ TEST_CASE("construct")
 		for(BlockIndex block : pileLocation)
 		{
 			Item& dirtPile = simulation.m_hasItems->createItemGeneric(pile, dirt, 15);
-			dirtPile.setLocation(block);
+			dirtPile.setLocation(block, &area);
 		}
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, dirt);
 		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);

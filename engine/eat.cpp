@@ -366,7 +366,7 @@ Json MustEat::toJson() const
 {
 	Json data;
 	data["massFoodRequested"] = m_massFoodRequested;
-	if(m_eatingLocation)
+	if(m_eatingLocation != BLOCK_INDEX_MAX)
 	{
 		assert(m_actor.m_area);
 		data["eatingLocation"] = m_eatingLocation;

@@ -252,7 +252,7 @@ Actor::Actor(ActorParamaters params) :
 	scheduleNeeds();
 	if(m_species.sentient)
 		params.generateEquipment(*this);
-	if(params.location)
+	if(params.location != BLOCK_INDEX_MAX)
 	{
 		assert(params.area);
 		setLocation(params.location, params.area);
@@ -404,7 +404,7 @@ void Actor::die(CauseOfDeath causeOfDeath)
 	m_mustSleep.onDeath();
 	if(m_project != nullptr)
 		m_project->removeWorker(*this);
-	if(m_location)
+	if(m_location != BLOCK_INDEX_MAX)
 		setStatic(true);
 	m_area->m_hasActors.m_visionFacadeBuckets.remove(*this);
 }
