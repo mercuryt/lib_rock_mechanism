@@ -27,7 +27,17 @@ struct FluidType
 	name(n), mistDuration(md), viscosity(v), maxMistSpread(mms), density(d) { }
 };
 inline std::vector<FluidType> fluidTypeDataStore;
-inline void to_json(Json& data, const FluidType* const& fluidType){ data = fluidType->name; }
-inline void to_json(Json& data, const FluidType*& fluidType){ data = fluidType->name; }
+inline void to_json(Json& data, const FluidType* const& fluidType)
+{
+       	data = fluidType == nullptr ? "0" : fluidType->name;
+}
+inline void to_json(Json& data, const FluidType*& fluidType)
+{
+       	data = fluidType == nullptr ? "0" : fluidType->name;
+}
 inline void to_json(Json& data, const FluidType& fluidType){ data = fluidType.name; }
-inline void from_json(const Json& data, const FluidType*& fluidType){ fluidType = &FluidType::byName(data.get<std::string>()); }
+inline void from_json(const Json& data, const FluidType*& fluidType)
+{ 
+	std::string name = data.get<std::string>();
+	fluidType = name == "0" ? nullptr : &FluidType::byName(name);
+}

@@ -29,11 +29,12 @@ Area::Area(AreaId id, std::wstring n, Simulation& s, DistanceInBlocks x, Distanc
 	m_hasRain(*this, s), m_blockDesignations(*this), m_name(n), m_simulation(s), m_id(id)
 { 
 	setup(); 
+	m_hasActors.m_opacityFacade.initalize();
 	m_hasActors.m_visionCuboids.initalize(*this);
 	m_hasRain.scheduleRestart();
 }
 Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& s) : 
-	m_blocks(*this, data["sizeX"].get<DistanceInBlocks>(), data["sizeY"].get<DistanceInBlocks>(), data["sizeZ"].get<DistanceInBlocks>()), 
+	m_blocks(*this, data["blocks"]["x"].get<DistanceInBlocks>(), data["blocks"]["y"].get<DistanceInBlocks>(), data["blocks"]["z"].get<DistanceInBlocks>()), 
 	m_hasTemperature(*this), m_hasTerrainFacades(*this), m_hasActors(*this), m_hasPlants(*this), m_fires(*this), 
 	m_hasFarmFields(*this), m_hasDigDesignations(*this), m_hasConstructionDesignations(*this), m_hasStockPiles(*this), 
 	m_hasCraftingLocationsAndJobs(*this), m_hasTargetedHauling(*this), m_hasSleepingSpots(*this), m_hasWoodCuttingDesignations(*this), 
@@ -44,6 +45,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_simulation.m_hasAreas->recordId(*this);
 	setup();
 	m_blocks.load(data["blocks"], deserializationMemo);
+	m_hasActors.m_opacityFacade.initalize();
 	m_hasFluidGroups.clearMergedFluidGroups();
 	m_hasActors.m_visionCuboids.initalize(*this);
 	// Load fires.
@@ -164,7 +166,6 @@ void Area::setup()
 {
 	m_hasActors.m_locationBuckets.initalize();
 	m_blocks.assignLocationBuckets();
-	m_hasActors.m_opacityFacade.initalize();
 	updateClimate();
 }
 void Area::readStep()

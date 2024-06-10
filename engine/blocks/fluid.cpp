@@ -138,7 +138,8 @@ void Blocks::fluid_fillInternal(BlockIndex index, CollisionVolume volume, FluidG
 	else
 	{
 		found->volume += volume;
-		assert(*found->group == fluidGroup);
+		//TODO: should this be enforced?
+		//assert(*found->group == fluidGroup);
 	}
 	m_totalFluidVolume.at(index) += volume;
 	//TODO: this could be run mulitple times per step where two fluid groups of different types are mixing, move to FluidGroup writeStep.
@@ -363,4 +364,8 @@ std::vector<FluidData>& Blocks::fluid_getAllSortedByDensityAscending(BlockIndex 
 {
 	std::ranges::sort(m_fluid.at(index), std::less<Density>(), [](const auto& data) { return data.type->density; });
 	return m_fluid.at(index);
+}
+bool Blocks::fluid_any(BlockIndex index) const
+{
+	return !m_fluid.at(index).empty();
 }

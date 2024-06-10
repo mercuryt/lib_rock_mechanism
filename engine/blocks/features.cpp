@@ -58,7 +58,7 @@ void Blocks::blockFeature_construct(BlockIndex block, const BlockFeatureType& bl
 }
 void Blocks::blockFeature_hew(BlockIndex block, const BlockFeatureType& blockFeatureType)
 {
-	assert(!solid_is(block));
+	assert(solid_is(block));
 	m_features.at(block).emplace_back(&blockFeatureType, &solid_get(block), true);
 	solid_setNot(block);
 	m_area.m_hasActors.m_opacityFacade.update(block);

@@ -5,7 +5,6 @@
 #include "types.h"
 void AreaHasActors::add(Actor& actor)
 {
-	assert(actor.m_location == BLOCK_INDEX_MAX);
 	assert(!m_actors.contains(&actor));
 	m_actors.insert(&actor);
 	actor.m_canSee.createFacadeIfCanSee();

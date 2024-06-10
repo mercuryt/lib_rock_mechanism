@@ -293,7 +293,7 @@ void HasCraftingLocationsAndJobsForFaction::loadWorkers(const Json& data, Deseri
 }
 Json HasCraftingLocationsAndJobsForFaction::toJson() const
 {
-	Json data{{"faction", m_faction}, {"locationsByCategory", Json::array()}, {"stepTypeCategoriesByLocation", Json::array()}, {"unassignedProjectsByStepTypeCategory", Json::array()}, {"unassignedProjectsBySkill", Json::array()}};
+	Json data{{"faction", m_faction}, {"locationsByCategory", Json::array()}, {"stepTypeCategoriesByLocation", Json::array()}, {"unassignedProjectsByStepTypeCategory", Json::array()}, {"unassignedProjectsBySkill", Json::array()}, {"area", m_area}};
 	for(auto& [category, locations] : m_locationsByCategory)
 	{
 		Json pair = Json::array();
@@ -403,7 +403,8 @@ void HasCraftingLocationsAndJobsForFaction::stepComplete(CraftJob& craftJob, Act
 				.quality=0,
 				.percentWear=0,
 				.craftJob=&craftJob,
-				.location = location
+				.location=location,
+				.area=actor.m_area,
 			};
 			craftJob.workPiece = &actor.m_area->m_simulation.m_hasItems->createItem(params);
 			//TODO: Should the item be reserved?
@@ -535,7 +536,7 @@ std::pair<CraftJob*, BlockIndex> HasCraftingLocationsAndJobsForFaction::getJobAn
 }
 void AreaHasCraftingLocationsAndJobs::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
-	for(const Json& pair : data)
+	for(const Json& pair : data["projects"])
 	{
 		Faction& faction = deserializationMemo.faction(pair[0].get<std::wstring>());
 		m_data.try_emplace(&faction, pair[1], deserializationMemo, faction);
@@ -543,7 +544,7 @@ void AreaHasCraftingLocationsAndJobs::load(const Json& data, DeserializationMemo
 }
 void AreaHasCraftingLocationsAndJobs::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
 {
-	for(const Json& pair : data)
+	for(const Json& pair : data["projects"])
 	{
 		Faction& faction = deserializationMemo.faction(pair[0]);
 		m_data.at(&faction).loadWorkers(pair[1], deserializationMemo);
@@ -552,15 +553,15 @@ void AreaHasCraftingLocationsAndJobs::loadWorkers(const Json& data, Deserializat
 }
 Json AreaHasCraftingLocationsAndJobs::toJson() const
 {
-	Json data = Json::array();
+	Json projects = Json::array();
 	for(auto& [faction, hasCraftingLocationsAndJobsForFaction] : m_data)
 	{
 		auto pair = Json::array();
 		pair[0] = faction;
 		pair[1] = hasCraftingLocationsAndJobsForFaction.toJson();
-		data.push_back(pair);
+		projects.push_back(pair);
 	}
-	return data;
+	return {{"area", m_area}, {"projects", projects}};
 }
 void AreaHasCraftingLocationsAndJobs::clearReservations()
 {

@@ -22,8 +22,8 @@ ActorCanMove::ActorCanMove(const Json& data, DeserializationMemo& deserializatio
 	if(data.contains("path"))
 	{
 		assert(!data["path"].empty());
-		for(const Json& blockQuery : data["path"])
-			m_path.push_back(a.getSimulation().getBlockForJsonQuery(blockQuery));
+		for(const Json& block : data["path"])
+			m_path.push_back(block.get<BlockIndex>());
 		m_pathIter = m_path.begin() + data["pathIterOffset"].get<size_t>();
 		if(data.contains("moveEventStart"))
 			m_event.schedule(data["moveEventDuration"].get<Step>(), *this, data["moveEventStart"].get<Step>());
@@ -35,7 +35,7 @@ Json ActorCanMove::toJson() const
 {
 	Json data;
 	data["moveType"] = m_moveType->name;
-	if(m_destination)
+	if(m_destination != BLOCK_INDEX_MAX)
 		data["destination"] = m_destination;
 	data["retries"] = m_retries;
 	if(!m_path.empty())
@@ -97,7 +97,7 @@ void ActorCanMove::clearPath()
 void ActorCanMove::callback()
 {
 	assert(!m_path.empty());
-	assert(m_destination);
+	assert(m_destination != BLOCK_INDEX_MAX);
 	assert(m_pathIter >= m_path.begin());
 	assert(m_pathIter != m_path.end());
 	BlockIndex block = *m_pathIter;

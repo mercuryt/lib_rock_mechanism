@@ -43,7 +43,11 @@ TEST_CASE("objective")
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
-	Actor& actor = simulation.m_hasActors->createActor(dwarf, area.getBlocks().getIndex({5, 5, 1}));
+	Actor& actor = simulation.m_hasActors->createActor({
+		.species=dwarf,
+		.location=area.getBlocks().getIndex({5, 5, 1}),
+		.area=&area,
+	});
 	bool x = false;
 	std::unique_ptr<Objective> objective = std::make_unique<TestTaskObjective>(actor, 1, x);
 	Objective* ptr = objective.get();

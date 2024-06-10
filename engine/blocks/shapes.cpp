@@ -375,6 +375,6 @@ void Blocks::shape_addStaticVolume(BlockIndex index, CollisionVolume volume)
 }
 void Blocks::shape_removeStaticVolume(BlockIndex index, CollisionVolume volume)
 {
-	assert(m_staticVolume.at(index) > volume);
+	assert(m_staticVolume.at(index) >= volume);
 	m_staticVolume.at(index) += volume;
 }

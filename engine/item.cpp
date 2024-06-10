@@ -126,24 +126,23 @@ Item::Item(ItemParamaters itemParamaters) : HasShape(*itemParamaters.simulation,
 	// We might be setting area but not location for a carried or cargo item.
 	else if(itemParamaters.area)
 		m_area = itemParamaters.area;
-	if(m_area)
-		m_area->m_hasItems.add(*this);
 }
 void Item::setLocation(BlockIndex block, Area* area)
 {
+	if(m_location != BLOCK_INDEX_MAX)
+		exit();
 	if(area)
 	{
 		assert(m_location == BLOCK_INDEX_MAX);
 		assert(!m_area);
 		m_area = area;
-		m_area->getBlocks().item_add(block, *this);
+		m_area->m_hasItems.add(*this);
 	}
 	if(!area)
 		assert(m_area);
-	if(m_location != BLOCK_INDEX_MAX)
-		exit();
-	bool willCombine = isGeneric() && m_area->getBlocks().item_getCount(block, m_itemType, m_materialType);
-	m_area->getBlocks().item_add(block, *this);
+	Blocks& blocks = m_area->getBlocks();
+	bool willCombine = isGeneric() && blocks.item_getCount(block, m_itemType, m_materialType);
+	blocks.item_add(block, *this);
 	if(!willCombine)
 		m_canLead.onMove();
 }
@@ -249,8 +248,7 @@ Item::Item(const Json& data, DeserializationMemo& deserializationMemo, ItemId id
 	{
 		if(data.contains("location"))
 		{
-			setLocation(data["location"].get<BlockIndex>(), m_area);
-			m_area->m_hasItems.add(*this);
+			setLocation(data["location"].get<BlockIndex>(), &deserializationMemo.area(data["area"].get<AreaId>()));
 		}
 	}
 void Item::load(const Json& data, DeserializationMemo& deserializationMemo)
@@ -266,7 +264,10 @@ Json Item::toJson() const
 	data["id"] = m_id;
 	data["name"] = m_name;
 	if(m_location != BLOCK_INDEX_MAX)
+	{
 		data["location"] = m_location;
+		data["area"] = m_area;
+	}
 	data["itemType"] = m_itemType;
 	data["materialType"] = m_materialType;
 	data["quality"] = m_quality;

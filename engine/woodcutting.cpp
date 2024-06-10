@@ -238,7 +238,7 @@ Step WoodCuttingProject::getDuration() const
 WoodCuttingLocationDishonorCallback::WoodCuttingLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
 	m_faction(deserializationMemo.faction(data["faction"].get<std::wstring>())),
 	m_area(deserializationMemo.area(data["area"])),
-	m_location(deserializationMemo.m_simulation.getBlockForJsonQuery(data["location"])) { }
+	m_location(data["location"].get<BlockIndex>()) { }
 Json WoodCuttingLocationDishonorCallback::toJson() const { return Json({{"type", "WoodCuttingLocationDishonorCallback"}, {"faction", m_faction.name}, {"location", m_location}}); }
 void WoodCuttingLocationDishonorCallback::execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount)
 {
@@ -250,7 +250,7 @@ HasWoodCuttingDesignationsForFaction::HasWoodCuttingDesignationsForFaction(const
 {
 	for(const Json& pair : data)
 	{
-		BlockIndex block = deserializationMemo.m_simulation.getBlockForJsonQuery(pair[0]);
+		BlockIndex block = pair[0].get<BlockIndex>();
 		m_data.try_emplace(block, pair[1], deserializationMemo);
 	}
 }

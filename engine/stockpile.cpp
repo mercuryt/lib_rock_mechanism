@@ -128,7 +128,7 @@ void StockPileThreadedTask::clearReferences() { m_objective.m_threadedTask.clear
 bool StockPileThreadedTask::destinationCondition(BlockIndex block, const Item& item)
 {
 	Blocks& blocks = m_objective.m_actor.m_area->getBlocks();
-	assert(!m_destination);
+	assert(m_destination == BLOCK_INDEX_MAX);
 	if(!blocks.shape_staticCanEnterCurrentlyWithAnyFacing(block, item))
 		return false;
 	if(!blocks.item_empty(block))
@@ -223,7 +223,7 @@ void StockPileProject::onComplete()
 	for(Item* item : m_deliveredItems)
 		item->setLocation(m_location);
 	for(auto& pair : m_alreadyAtSite)
-		pair.first->setLocation(m_location, &m_area);
+		pair.first->setLocation(m_location);
 	Blocks& blocks = m_area.getBlocks();
 	Item& delivered = blocks.item_getGeneric(m_location, m_itemType, m_materialType);
 	auto workers = std::move(m_workers);
@@ -345,9 +345,9 @@ void StockPile::removeBlock(BlockIndex block)
 		for(Project& project : pair.second)
 			if(project.getLocation() == block)
 				projectsToCancel.push_back(&project);
-	blocks.stockpile_recordNoLongerMember(block, *this);
 	if(blocks.stockpile_isAvalible(block, m_faction))
 		decrementOpenBlocks();
+	blocks.stockpile_recordNoLongerMember(block, *this);
 	m_blocks.erase(block);
 	if(m_blocks.empty())
 		m_area.m_hasStockPiles.at(m_faction).destroyStockPile(*this);

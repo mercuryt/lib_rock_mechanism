@@ -33,7 +33,7 @@ TEST_CASE("craft")
 	REQUIRE(area.m_hasCraftingLocationsAndJobs.at(faction).hasLocationsFor(woodBucket));
 	CraftObjectiveType craftObjectiveTypeWoodWorking(woodWorking);
 	CraftObjectiveType craftObjectiveTypeAssembling(assembling);
-	Actor& dwarf1 = simulation.m_hasActors->createActor(ActorParamaters{
+	Actor& dwarf1 = simulation.m_hasActors->createActor({
 		.species=AnimalSpecies::byName("dwarf"), 
 		.location=blocks.getIndex({1, 1, 1}),
 		.area=&area,
@@ -61,17 +61,17 @@ TEST_CASE("craft")
 	}
 	SUBCASE("craft bucket")
 	{
-		BlockIndex boardLocation = blocks.getIndex({6, 6, 1});
+		BlockIndex boardLocation = blocks.getIndex({3, 4, 1});
 		Item& board = simulation.m_hasItems->createItemGeneric(ItemType::byName("board"), wood, 10u);
-		board.setLocation(boardLocation);
+		board.setLocation(boardLocation, &area);
 		Item& rope = simulation.m_hasItems->createItemGeneric(ItemType::byName("rope"), MaterialType::byName("plant matter"), 10u);
-		rope.setLocation(blocks.getIndex({8, 6, 1}));
+		rope.setLocation(blocks.getIndex({8, 6, 1}), &area);
 		Item& saw = simulation.m_hasItems->createItemNongeneric(ItemType::byName("saw"), bronze, 25u, 0);
-		saw.setLocation(blocks.getIndex({3, 7, 1}));
+		saw.setLocation(blocks.getIndex({3, 7, 1}), &area);
 		Item& mallet = simulation.m_hasItems->createItemNongeneric(ItemType::byName("mallet"), bronze, 25u, 0);
-		mallet.setLocation(blocks.getIndex({4, 9, 1}));
+		mallet.setLocation(blocks.getIndex({4, 9, 1}), &area);
 		Item& chisel = simulation.m_hasItems->createItemNongeneric(ItemType::byName("chisel"), bronze, 25u, 0);
-		chisel.setLocation(blocks.getIndex({4, 9, 1}));
+		chisel.setLocation(blocks.getIndex({4, 9, 1}), &area);
 		REQUIRE(!craftObjectiveTypeWoodWorking.canBeAssigned(dwarf1));
 		area.m_hasCraftingLocationsAndJobs.at(faction).addJob(woodBucket, &wood, 1);
 		// There is wood working to be done.
@@ -196,7 +196,7 @@ TEST_CASE("craft")
 		SUBCASE("worker dies")
 		{
 			dwarf1.die(CauseOfDeath::thirst);
-			Actor& dwarf2 = simulation.m_hasActors->createActor(ActorParamaters{
+			Actor& dwarf2 = simulation.m_hasActors->createActor({
 				.species=AnimalSpecies::byName("dwarf"), 
 				.location=blocks.getIndex({1, 5, 1}),
 				.area=&area,

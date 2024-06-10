@@ -33,8 +33,8 @@ void FarmFieldUpdateInputAction::execute()
 	hasFarmFields.setSpecies(m_farmField, m_species);
 }
 */
-FarmField::FarmField(const Json& data, DeserializationMemo& deserializationMemo, Faction& faction) :
-	area(deserializationMemo.area(data["area"]))
+FarmField::FarmField(const Json& data, DeserializationMemo&, Faction& faction, Area& a) :
+	area(a)
 {
 	for(const Json& blockReference : data["blocks"])
 	{
@@ -55,11 +55,11 @@ Json FarmField::toJson() const
 HasFarmFieldsForFaction::HasFarmFieldsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Area& a, Faction& f) : m_area(a), m_faction(f), m_plantsNeedingFluidIsSorted(data["plantsNeedingFluidIsSorted"].get<bool>())
 {
 	for(const Json& farmFieldData : data["farmFields"])
-		m_farmFields.emplace_back(farmFieldData, deserializationMemo, m_faction);
+		m_farmFields.emplace_back(farmFieldData, deserializationMemo, m_faction, m_area);
 	for(const Json& plantReference : data["plantsNeedingFluid"])
-		m_plantsNeedingFluid.push_back(&deserializationMemo.plantReference(plantReference));
+		m_plantsNeedingFluid.push_back(&m_area.getBlocks().plant_get(plantReference.get<BlockIndex>()));
 	for(const Json& plantReference : data["plantsToHarvest"])
-		m_plantsToHarvest.insert(&deserializationMemo.plantReference(plantReference));
+		m_plantsToHarvest.insert(&m_area.getBlocks().plant_get(plantReference.get<BlockIndex>()));
 	for(const Json& blockReference : data["blocksNeedingSeedsSewn"])
 		m_blocksNeedingSeedsSewn.insert(blockReference.get<BlockIndex>());
 }
@@ -69,9 +69,9 @@ Json HasFarmFieldsForFaction::toJson() const
 	for(const FarmField& farmField : m_farmFields)
 		data["farmFields"].push_back(farmField.toJson());
 	for(const Plant* plant : m_plantsNeedingFluid)
-		data["plantsNeedingFluid"].push_back(plant);
+		data["plantsNeedingFluid"].push_back(plant->m_location);
 	for(const Plant* plant : m_plantsToHarvest)
-		data["plantsToHarvest"].push_back(plant);
+		data["plantsToHarvest"].push_back(plant->m_location);
 	for(BlockIndex block : m_blocksNeedingSeedsSewn)
 		data["blocksNeedingSeedsSewn"].push_back(block);
 	return data;

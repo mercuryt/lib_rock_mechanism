@@ -266,8 +266,8 @@ Step DigProject::getDuration() const
 DigLocationDishonorCallback::DigLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
 	m_faction(deserializationMemo.faction(data["faction"].get<std::wstring>())),
 	m_area(deserializationMemo.area(data["area"])),
-	m_location(deserializationMemo.m_simulation.getBlockForJsonQuery(data["location"])) { }
-Json DigLocationDishonorCallback::toJson() const { return Json({{"type", "DigLocationDishonorCallback"}, {"faction", m_faction.name}, {"location", m_location}}); }
+	m_location(data["location"].get<BlockIndex>()) { }
+Json DigLocationDishonorCallback::toJson() const { return Json({{"type", "DigLocationDishonorCallback"}, {"faction", m_faction.name}, {"location", m_location}, {"area", m_area}}); }
 void DigLocationDishonorCallback::execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount)
 {
 	m_area.m_hasDigDesignations.undesignate(m_faction, m_location);
@@ -276,29 +276,29 @@ HasDigDesignationsForFaction::HasDigDesignationsForFaction(const Json& data, Des
 	m_area(deserializationMemo.area(data["area"])),
 	m_faction(faction)
 {
-	for(const Json& pair : data)
+	for(const Json& pair : data["projects"])
 	{
-		BlockIndex block = deserializationMemo.m_simulation.getBlockForJsonQuery(pair[0]);
+		BlockIndex block = pair[0].get<BlockIndex>();
 		m_data.try_emplace(block, pair[1], deserializationMemo);
 	}
 }
 void HasDigDesignationsForFaction::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
 {
-	for(const Json& pair : data)
+	for(const Json& pair : data["projects"])
 	{
-		BlockIndex block = deserializationMemo.m_simulation.getBlockForJsonQuery(pair[0]);
+		BlockIndex block = pair[0].get<BlockIndex>();
 		m_data.at(block).loadWorkers(pair[1], deserializationMemo);
 	}
 }
 Json HasDigDesignationsForFaction::toJson() const
 {
-	Json data;
+	Json projects;
 	for(auto& pair : m_data)
 	{
 		Json jsonPair{pair.first, pair.second.toJson()};
-		data.push_back(jsonPair);
+		projects.push_back(jsonPair);
 	}
-	return data;
+	return {{"area", m_area}, {"projects", projects}};
 }
 void HasDigDesignationsForFaction::designate(BlockIndex block, const BlockFeatureType* blockFeatureType)
 {

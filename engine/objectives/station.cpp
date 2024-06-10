@@ -16,7 +16,7 @@ void StationInputAction::execute()
 */
 // Objective
 StationObjective::StationObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), 
-	m_location(deserializationMemo.m_simulation.getBlockForJsonQuery(data["block"])) { }
+	m_location(data["block"].get<BlockIndex>()) { }
 void StationObjective::execute()
 {
 	if(m_actor.m_location != m_location)

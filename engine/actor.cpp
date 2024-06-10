@@ -288,10 +288,7 @@ Actor::Actor(const Json& data, DeserializationMemo& deserializationMemo) :
 	if(data.contains("skills"))
 		m_skillSet.load(data["skills"]);
 	if(data.contains("location"))
-	{
-		setLocation(data["location"].get<BlockIndex>());
-		m_area->m_hasActors.add(*this);
-	}
+		setLocation(data["location"].get<BlockIndex>(), &deserializationMemo.area(data["area"].get<AreaId>()));
 	m_canGrow.updateGrowingStatus();
 }
 Json Actor::toJson() const
@@ -320,7 +317,10 @@ Json Actor::toJson() const
 	if(m_faction != nullptr)
 		data["faction"] = m_faction;
 	if(m_location != BLOCK_INDEX_MAX)
+	{
 		data["location"] = m_location;
+		data["area"] = m_area;
+	}
 	if(m_canReserve.hasReservations())
 		data["canReserve"] = m_canReserve.toJson();
 	if(m_hasUniform.exists())
@@ -350,6 +350,8 @@ void Actor::setLocation(BlockIndex block, Area* area)
 		m_area = area;
 		m_area->m_hasActors.add(*this);
 	}
+	if(!area)
+		assert(m_area);
 	auto& blocks = m_area->getBlocks();
 	assert(block != m_location);
 	assert(blocks.shape_anythingCanEnterEver(block));

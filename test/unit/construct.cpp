@@ -26,22 +26,22 @@ TEST_CASE("construct")
 	ConstructObjectiveType constructObjectiveType;
 	Actor& dwarf1 = simulation.m_hasActors->createActor(ActorParamaters{
 		.species=dwarf,
-		.location=blocks.getIndex({1, 1, 2}),
+		.location=blocks.getIndex(1, 1, 2),
 		.area=&area
 	});
 	dwarf1.setFaction(&faction);
 	area.m_hasConstructionDesignations.addFaction(faction);
 	Item& boards = simulation.m_hasItems->createItemGeneric(ItemType::byName("board"), wood, 50u);
-	boards.setLocation(blocks.getIndex({8, 7, 2}), &area);
+	boards.setLocation(blocks.getIndex(8, 7, 2), &area);
 	Item& pegs = simulation.m_hasItems->createItemGeneric(ItemType::byName("peg"), wood, 50u);
-	pegs.setLocation(blocks.getIndex({3, 8, 2}), &area);
+	pegs.setLocation(blocks.getIndex(3, 8, 2), &area);
 	Item& saw = simulation.m_hasItems->createItemNongeneric(ItemType::byName("saw"), MaterialType::byName("bronze"), 25u, 0);
-	saw.setLocation(blocks.getIndex({5, 7, 2}), &area);
+	saw.setLocation(blocks.getIndex(5, 7, 2), &area);
 	Item& mallet = simulation.m_hasItems->createItemNongeneric(ItemType::byName("mallet"), wood, 25u, 0);
-	mallet.setLocation(blocks.getIndex({9, 5, 2}), &area);
+	mallet.setLocation(blocks.getIndex(9, 5, 2), &area);
 	SUBCASE("make wall")
 	{
-		BlockIndex wallLocation = blocks.getIndex({8, 4, 2});
+		BlockIndex wallLocation = blocks.getIndex(8, 4, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
 		ConstructProject& project = area.m_hasConstructionDesignations.getProject(faction, wallLocation);
 		REQUIRE(blocks.designation_has(wallLocation, faction, BlockDesignation::Construct));
@@ -75,8 +75,8 @@ TEST_CASE("construct")
 	}
 	SUBCASE("make two walls")
 	{
-		BlockIndex wallLocation1 = blocks.getIndex({8, 4, 2});
-		BlockIndex wallLocation2 = blocks.getIndex({8, 5, 2});
+		BlockIndex wallLocation1 = blocks.getIndex(8, 4, 2);
+		BlockIndex wallLocation2 = blocks.getIndex(8, 5, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation1, nullptr, wood);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation2, nullptr, wood);
 		REQUIRE(constructObjectiveType.canBeAssigned(dwarf1));
@@ -114,12 +114,12 @@ TEST_CASE("construct")
 	{
 		Actor& dwarf2 = simulation.m_hasActors->createActor({
 			.species=dwarf,
-			.location=blocks.getIndex({1, 4, 2}),
+			.location=blocks.getIndex(1, 8, 2),
 			.area=&area,
 		});
 		dwarf2.setFaction(&faction);
-		BlockIndex wallLocation1 = blocks.getIndex({8, 4, 2});
-		BlockIndex wallLocation2 = blocks.getIndex({8, 5, 2});
+		BlockIndex wallLocation1 = blocks.getIndex(2, 4, 2);
+		BlockIndex wallLocation2 = blocks.getIndex(3, 8, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation1, nullptr, wood);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation2, nullptr, wood);
 		REQUIRE(constructObjectiveType.canBeAssigned(dwarf1));
@@ -129,6 +129,8 @@ TEST_CASE("construct")
 		REQUIRE(dwarf2.m_hasObjectives.getCurrent().name() == "construct");
 		ConstructProject& project1 = area.m_hasConstructionDesignations.getProject(faction, wallLocation1);
 		ConstructProject& project2 = area.m_hasConstructionDesignations.getProject(faction, wallLocation2);
+		REQUIRE(static_cast<ConstructObjective&>(dwarf2.m_hasObjectives.getCurrent()).getProjectWhichActorCanJoinAt(wallLocation2));
+		REQUIRE(static_cast<ConstructObjective&>(dwarf2.m_hasObjectives.getCurrent()).hasThreadedTask());
 		// Find projects to join.
 		simulation.doStep();
 		REQUIRE(project1.hasCandidate(dwarf1));
@@ -159,6 +161,11 @@ TEST_CASE("construct")
 		REQUIRE(project1.hasCandidate(dwarf2));
 		REQUIRE(area.m_hasConstructionDesignations.contains(faction, wallLocation1));
 		std::function<bool()> predicate = [&]() { return blocks.solid_is(wallLocation1); };
+		REQUIRE(area.m_hasConstructionDesignations.contains(faction, wallLocation2));
+		REQUIRE(project1.hasTryToAddWorkersThreadedTask());
+		simulation.doStep();
+		// dwarf2 joins project1.
+		REQUIRE(project1.getWorkers().contains(&dwarf2));
 		simulation.fastForwardUntillPredicate(predicate, 90);
 		REQUIRE(!area.m_hasConstructionDesignations.contains(faction, wallLocation1));
 		REQUIRE(area.m_hasConstructionDesignations.contains(faction, wallLocation2));
@@ -465,7 +472,7 @@ TEST_CASE("construct")
 		REQUIRE(project.getProjectWorkerFor(dwarf1).haulSubproject);
 		// One step to path.
 		simulation.doStep();
-		REQUIRE(dwarf1.m_canMove.getDestination());
+		REQUIRE(dwarf1.m_canMove.getDestination() != BLOCK_INDEX_MAX);
 		auto predicate = [&]{ return blocks.solid_is(wallLocation); };
 		simulation.fastForwardUntillPredicate(predicate, 130);
 	}

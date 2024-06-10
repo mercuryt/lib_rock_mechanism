@@ -51,7 +51,7 @@ struct FarmField
 	const PlantSpecies* plantSpecies;
 	bool timeToSow;
 	FarmField(Area& a, std::unordered_set<BlockIndex> b) : blocks(b), area(a), plantSpecies(nullptr), timeToSow(false) { }
-	FarmField(const Json& data, DeserializationMemo& deserializationMemo, Faction& faction);
+	FarmField(const Json& data, DeserializationMemo& deserializationMemo, Faction& faction, Area& area);
 	[[nodiscard]] Json toJson() const;
 };
 // To be used by HasFarmFields, which is used by Area.

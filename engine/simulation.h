@@ -67,7 +67,6 @@ public:
 	void save();
 	Faction& createFaction(std::wstring name);
 	//TODO: latitude, longitude, altitude.
-	[[nodiscard]] BlockIndex getBlockForJsonQuery(const Json& data);
 	[[nodiscard]] std::filesystem::path getPath() const  { return m_path; }
 	[[nodiscard, maybe_unused]] DateTime getDateTime() const;
 	~Simulation();

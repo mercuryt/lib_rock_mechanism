@@ -85,6 +85,13 @@ struct MaterialType
 	[[nodiscard]] static MaterialType& byNameNonConst(const std::string name);
 };
 inline std::vector<MaterialType> materialTypeDataStore;
-inline void to_json(Json& data, const MaterialType* const& materialType){ data = materialType->name; }
+inline void to_json(Json& data, const MaterialType* const& materialType)
+{
+	data = materialType == nullptr ? "0" : materialType->name;
+}
 inline void to_json(Json& data, const MaterialType& materialType){ data = materialType.name; }
-inline void from_json(const Json& data, const MaterialType*& materialType){ materialType = &MaterialType::byName(data.get<std::string>()); }
+inline void from_json(const Json& data, const MaterialType*& materialType)
+{
+	std::string name = data.get<std::string>();
+	materialType = name == "0" ? nullptr : &MaterialType::byName(name);
+}

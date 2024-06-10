@@ -14,13 +14,17 @@ TEST_CASE("wound")
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
-	Actor& actor = simulation.m_hasActors->createActor(dwarf, blocks.getIndex({1, 1, 2}));
+	Actor& actor = simulation.m_hasActors->createActor({
+		.species=dwarf,
+		.location=blocks.getIndex({1, 1, 2}),
+		.area=&area,
+	});
 	BlockIndex pondLocation = blocks.getIndex({3, 7, 1});
 	blocks.solid_setNot(pondLocation);
 	blocks.fluid_add(pondLocation, Config::maxBlockVolume, FluidType::byName("water"));
 	Item& fruit = simulation.m_hasItems->createItemGeneric(ItemType::byName("apple"), MaterialType::byName("fruit"), 50u);
 	BlockIndex fruitLocation = blocks.getIndex({6, 5, 2});
-	fruit.setLocation(fruitLocation);
+	fruit.setLocation(fruitLocation, &area);
 	SUBCASE("bleed to death")
 	{
 		// Area, force, material type, wound type
