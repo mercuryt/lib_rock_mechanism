@@ -77,12 +77,12 @@ void AreaHasFires::extinguish(Fire& fire)
 	if(m_fires.at(block).empty())
 		m_area.getBlocks().fire_clearPointer(block);
 }
-void AreaHasFires::load(const Json& data, DeserializationMemo& deserializationMemo)
+void AreaHasFires::load(const Json& data, DeserializationMemo&)
 {
 	for(const auto& pair : data)
 		for(const Json& fireData : pair[1])
 		{
-			BlockIndex block = deserializationMemo.m_simulation.getBlockForJsonQuery(fireData["location"]);
+			BlockIndex block = fireData["location"].get<BlockIndex>();
 			const MaterialType& materialType = *fireData["materialType"].get<const MaterialType*>();
 			m_fires[block].try_emplace(&materialType, m_area, block, materialType, fireData["hasPeaked"].get<bool>(), fireData["stage"].get<FireStage>(), fireData["start"].get<Step>());
 		}

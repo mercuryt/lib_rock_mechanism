@@ -21,10 +21,11 @@ TEST_CASE("woodcutting")
 	static Faction faction(L"Tower of Power");
 	area.m_blockDesignations.registerFaction(faction);
 	area.m_hasWoodCuttingDesignations.addFaction(faction);
-	Actor& dwarf = simulation.m_hasActors->createActor(ActorParamaters{
+	Actor& dwarf = simulation.m_hasActors->createActor({
 		.species=AnimalSpecies::byName("dwarf"), 
 		.percentGrown=100,
 		.location=blocks.getIndex({1,1,1}), 
+		.area=&area,
 		.hasSidearm=false,
 	});
 	dwarf.setFaction(&faction);
@@ -36,7 +37,7 @@ TEST_CASE("woodcutting")
 	Project* project = nullptr;
 	SUBCASE("axe on ground")
 	{
-		axe.setLocation(blocks.getIndex({3,8,1}));
+		axe.setLocation(blocks.getIndex({3,8,1}), &area);
 		// One step to find the designation.
 		simulation.doStep();
 		REQUIRE(dwarf.m_project);
@@ -108,7 +109,7 @@ TEST_CASE("woodcutting")
 		REQUIRE(dwarf.m_project->getProjectWorkerFor(dwarf).haulSubproject);
 		// Pickup and path.
 		simulation.doStep();
-		REQUIRE(dwarf.m_canMove.getDestination());
+		REQUIRE(dwarf.m_canMove.getDestination() != BLOCK_INDEX_MAX);
 		REQUIRE(dwarf.m_canPickup.exists());
 		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf, branchStockpileLocation);
 		REQUIRE(!dwarf.m_canPickup.exists());

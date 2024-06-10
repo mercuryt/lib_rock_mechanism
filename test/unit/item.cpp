@@ -24,15 +24,16 @@ TEST_CASE("equip and unequip")
 	Blocks& blocks = area.getBlocks();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	BlockIndex destination = blocks.getIndex({8,2,1});
-	Actor& dwarf1 = simulation.m_hasActors->createActor(ActorParamaters{
+	Actor& dwarf1 = simulation.m_hasActors->createActor({
 		.species=AnimalSpecies::byName("dwarf"), 
 		.location=blocks.getIndex({1, 1, 1}),
+		.area=&area,
 		.hasCloths=false,
 		.hasSidearm=false
 	});
 	Item& longsword = simulation.m_hasItems->createItemNongeneric(ItemType::byName("long sword"), MaterialType::byName("bronze"), 20, 10);
 	BlockIndex swordLocation = blocks.getIndex({8,8,1});
-	longsword.setLocation(swordLocation);
+	longsword.setLocation(swordLocation, &area);
 	std::unique_ptr<Objective> objective = std::make_unique<EquipItemObjective>(dwarf1, longsword);
 	dwarf1.m_hasObjectives.addTaskToStart(std::move(objective));
 	REQUIRE(dwarf1.m_canMove.hasThreadedTask());
@@ -56,15 +57,17 @@ TEST_CASE("give item")
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
-	Actor& dwarf1 = simulation.m_hasActors->createActor(ActorParamaters{
+	Actor& dwarf1 = simulation.m_hasActors->createActor({
 		.species=AnimalSpecies::byName("dwarf"), 
 		.location=blocks.getIndex({1, 1, 1}),
+		.area=&area,
 		.hasCloths=false,
 		.hasSidearm=false
 	});
-	Actor& dwarf2 = simulation.m_hasActors->createActor(ActorParamaters{
+	Actor& dwarf2 = simulation.m_hasActors->createActor({
 		.species=AnimalSpecies::byName("dwarf"), 
 		.location=blocks.getIndex({6, 6, 1}),
+		.area=&area,
 		.hasCloths=false,
 		.hasSidearm=false
 	});

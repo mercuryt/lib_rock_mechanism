@@ -155,24 +155,23 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 			m_cannotPathToJobSite.insert(candidate);
 			continue;
 		}
-		for(Item* item : candidate->m_equipmentSet.getAll())
-			for(auto& [itemQuery, projectRequirementCounts] : m_project.m_requiredItems)
-			{
-				if(projectRequirementCounts.required == projectRequirementCounts.reserved)
-					continue;
-				assert(!item->m_reservable.hasAnyReservationsWith(m_project.m_faction));
-				if(!itemQuery.query(*item))
-					continue;
-				Quantity desiredQuantity = projectRequirementCounts.required - projectRequirementCounts.reserved;
-				Quantity quantity = std::min(desiredQuantity, item->m_reservable.getUnreservedCount(m_project.m_faction));
-				assert(quantity != 0);
-				projectRequirementCounts.reserved += quantity;
-				assert(projectRequirementCounts.reserved <= projectRequirementCounts.required);
-				m_reservedEquipment[candidate].emplace_back(&projectRequirementCounts, item);
-			}
-
 		if(!m_project.reservationsComplete())
 		{
+			for(Item* item : candidate->m_equipmentSet.getAll())
+				for(auto& [itemQuery, projectRequirementCounts] : m_project.m_requiredItems)
+				{
+					if(projectRequirementCounts.required == projectRequirementCounts.reserved)
+						continue;
+					assert(!item->m_reservable.hasAnyReservationsWith(m_project.m_faction));
+					if(!itemQuery.query(*item))
+						continue;
+					Quantity desiredQuantity = projectRequirementCounts.required - projectRequirementCounts.reserved;
+					Quantity quantity = std::min(desiredQuantity, item->m_reservable.getUnreservedCount(m_project.m_faction));
+					assert(quantity != 0);
+					projectRequirementCounts.reserved += quantity;
+					assert(projectRequirementCounts.reserved <= projectRequirementCounts.required);
+					m_reservedEquipment[candidate].emplace_back(&projectRequirementCounts, item);
+				}
 			auto recordItemOnGround = [&](HasShape& hasShape, ProjectRequirementCounts& counts)
 			{
 				recordedShapes.insert(&hasShape);
@@ -264,33 +263,37 @@ void ProjectTryToAddWorkersThreadedTask::writeStep()
 	std::unordered_set<Actor*> toReleaseWithProjectDelay = m_cannotPathToJobSite;
 	if(m_project.reservationsComplete())
 	{
-		// Requirements satisfied, verifiy they are all still avalible.
-		if(!validate())
+		// If workers exist already then required are already reserved.
+		if(m_project.m_workers.empty())
 		{
-			// Some selected hasShape was probably reserved or destroyed, try again.
-			resetProjectCounts();
-			m_project.m_tryToAddWorkersThreadedTask.create(m_project);
-			return;
-		}
-		// Reserve all required.
-		for(auto& [hasShape, pair] : m_project.m_toPickup)
-		{
-			std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<ProjectRequiredShapeDishonoredCallback>(m_project, *hasShape);
-			hasShape->m_reservable.reserveFor(m_project.m_canReserve, pair.second, std::move(dishonorCallback));
-		}
-		for(auto& [hasShape, quantity] : m_alreadyAtSite)
-		{
-			std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<ProjectRequiredShapeDishonoredCallback>(m_project, *hasShape);
-			hasShape->m_reservable.reserveFor(m_project.m_canReserve, quantity, std::move(dishonorCallback));
-		}
-		m_project.m_alreadyAtSite = m_alreadyAtSite;
-		for(auto& pair : m_reservedEquipment)
-			for(std::pair<ProjectRequirementCounts*, Item*> pair2 : pair.second)
+			// Requirements satisfied, verifiy they are all still avalible.
+			if(!validate())
 			{
-				std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<ProjectRequiredShapeDishonoredCallback>(m_project, *pair2.second);
-				pair2.second->m_reservable.reserveFor(m_project.m_canReserve, 1, std::move(dishonorCallback));
+				// Some selected hasShape was probably reserved or destroyed, try again.
+				resetProjectCounts();
+				m_project.m_tryToAddWorkersThreadedTask.create(m_project);
+				return;
 			}
-		m_project.m_reservedEquipment = m_reservedEquipment;
+			// Reserve all required.
+			for(auto& [hasShape, pair] : m_project.m_toPickup)
+			{
+				std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<ProjectRequiredShapeDishonoredCallback>(m_project, *hasShape);
+				hasShape->m_reservable.reserveFor(m_project.m_canReserve, pair.second, std::move(dishonorCallback));
+			}
+			for(auto& [hasShape, quantity] : m_alreadyAtSite)
+			{
+				std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<ProjectRequiredShapeDishonoredCallback>(m_project, *hasShape);
+				hasShape->m_reservable.reserveFor(m_project.m_canReserve, quantity, std::move(dishonorCallback));
+			}
+			m_project.m_alreadyAtSite = m_alreadyAtSite;
+			for(auto& pair : m_reservedEquipment)
+				for(std::pair<ProjectRequirementCounts*, Item*> pair2 : pair.second)
+				{
+					std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<ProjectRequiredShapeDishonoredCallback>(m_project, *pair2.second);
+					pair2.second->m_reservable.reserveFor(m_project.m_canReserve, 1, std::move(dishonorCallback));
+				}
+			m_project.m_reservedEquipment = m_reservedEquipment;
+		}
 		// Add all actors.
 		for(auto& [actor, objective] : m_project.m_workerCandidatesAndTheirObjectives)
 		{
@@ -324,6 +327,7 @@ void ProjectTryToAddWorkersThreadedTask::writeStep()
 		else
 			m_project.cancel();
 	}
+	// These workers are not allowed to attempt to rejoin this project for a period, they may not be able to path to it or reserved required items.
 	for(Actor* actor : toReleaseWithProjectDelay)
 	{
 		Objective& objective = actor->m_hasObjectives.getCurrent();
@@ -390,7 +394,7 @@ Project::Project(const Json& data, DeserializationMemo& deserializationMemo) :
 	m_tryToAddWorkersThreadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine), 
 	m_canReserve(&deserializationMemo.faction(data["faction"].get<std::wstring>())),
 	m_area(deserializationMemo.area(data["area"])), m_faction(deserializationMemo.faction(data["faction"].get<std::wstring>())), 
-	m_location(deserializationMemo.m_simulation.getBlockForJsonQuery(data["location"])), m_haulRetries(data["haulRetries"].get<Quantity>()), 
+	m_location(data["location"].get<BlockIndex>()), m_haulRetries(data["haulRetries"].get<Quantity>()), 
 	m_minimumMoveSpeed(data["minimumMoveSpeed"].get<Speed>()),
 	m_maxWorkers(data["maxWorkers"].get<Quantity>()), 
 	m_requirementsLoaded(data["requirementsLoaded"].get<bool>()),
@@ -478,6 +482,7 @@ Json Project::toJson() const
 		{"delay", m_delay},
 		{"haulRetries", m_haulRetries},
 		{"location", m_location},
+		{"area", m_area},
 		{"requirementsLoaded", m_requirementsLoaded},
 		{"minimumMoveSpeed", m_minimumMoveSpeed},
 	});

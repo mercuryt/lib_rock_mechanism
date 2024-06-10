@@ -5,6 +5,7 @@
 #include "../blockFeature.h"
 #include "../locationBuckets.h"
 #include "../fluidType.h"
+#include <string>
 
 Blocks::Blocks(Area& area, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) : m_area(area), m_sizeX(x), m_sizeY(y), m_sizeZ(z)
 {
@@ -64,34 +65,50 @@ BlockIndex Blocks::offset(BlockIndex index, int32_t ax, int32_t ay, int32_t az) 
 		return BLOCK_INDEX_MAX;
 	return getIndex({(DistanceInBlocks)ax, (DistanceInBlocks)ay, (DistanceInBlocks)az});
 }
-void Blocks::load(const Json& data, DeserializationMemo&)
+void Blocks::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	m_materialType = data["solid"];
-	for(const Json& pair : data["features"])
-		m_features[pair[0]] = pair[1].get<std::vector<BlockFeature>>();
-	for(const Json& pair : data["fluid"])
-		fluid_add(pair[0].get<BlockIndex>(), pair[1]["volume"], FluidType::byName(pair[1]["fluidType"].get<std::string>()));
-	for(const Json& pair : data["mist"])
-		m_mist[pair[0]] = &FluidType::byName(pair[1].get<std::string>());
-	for(const Json& pair : data["mistInverseDistanceFromSource"])
-		m_mistInverseDistanceFromSource[pair[0]] = pair[1].get<DistanceInBlocks>();
-
+	for(auto& [key, value] : data["features"].items())
+		m_features[std::stoi(key)] = value.get<std::vector<BlockFeature>>();
+	for(auto& [key, value] : data["fluid"].items())
+		for(const Json& fluidData : value)
+			fluid_add(std::stoi(key), fluidData["volume"].get<CollisionVolume>(), *fluidData["type"].get<const FluidType*>());
+	for(auto& [key, value] : data["mist"].items())
+		m_mist[std::stoi(key)] = &FluidType::byName(value.get<std::string>());
+	for(auto& [key, value] : data["mistInverseDistanceFromSource"].items())
+		m_mistInverseDistanceFromSource[std::stoi(key)] = value.get<DistanceInBlocks>();
+	for(auto& [key, value] : data["reservables"].items())
+	{
+		auto pair = m_reservables.emplace(std::stoi(key), 1);
+		assert(pair.second);
+		deserializationMemo.m_reservables[value.get<uintptr_t>()] = &pair.first->second;
+	}
 }
 Json Blocks::toJson() const
 {
 	Json output{
+		{"x", m_sizeX},
+		{"y", m_sizeY},
+		{"z", m_sizeZ},
 		{"solid", m_materialType},
-		{"features", Json()},
-		{"fluid", Json()},
-		{"mist", Json()},
-		{"mistInverseDistanceFromSource", Json()}
+		{"features", Json::object()},
+		{"fluid", Json::object()},
+		{"mist", Json::object()},
+		{"mistInverseDistanceFromSource", Json::object()},
+		{"reservables", Json::object()},
 	};
 	for(size_t i = 0; i < m_materialType.size(); ++i)
 	{
-		output["features"][i] = m_features.at(i);
-		output["fluid"][i] = m_fluid.at(i);
-		output["mist"][i] = m_mist.at(i);
-		output["mistInverseDistanceFromSource"][i] = m_mistInverseDistanceFromSource.at(i);
+		if(!blockFeature_empty(i))
+			output["features"][std::to_string(i)] = m_features.at(i);
+		if(fluid_any(i))
+			output["fluid"][std::to_string(i)] = m_fluid.at(i);
+		if(m_mist.at(i) != nullptr)
+			output["mist"][std::to_string(i)] = m_mist.at(i);
+		if(m_mistInverseDistanceFromSource.at(i) != 0)
+			output["mistInverseDistanceFromSource"][std::to_string(i)] = m_mistInverseDistanceFromSource.at(i);
+		if(auto found = m_reservables.find(i); found != m_reservables.end())
+			output["reservables"][std::to_string(i)] = reinterpret_cast<uintptr_t>(&found->second);
 	}
 	return output;
 }
@@ -442,6 +459,7 @@ void Blocks::setBelowExposedToSky(BlockIndex index)
 	while(block != BLOCK_INDEX_MAX && canSeeThroughFrom(block, getBlockAbove(block)) && !m_exposedToSky[block])
 	{
 		setExposedToSky(block, true);
+		plant_updateGrowingStatus(block);
 		block = getBlockBelow(block);
 	}
 }
@@ -460,6 +478,7 @@ void Blocks::setBelowNotExposedToSky(BlockIndex index)
 	while(block != BLOCK_INDEX_MAX && m_exposedToSky[block])
 	{
 		m_exposedToSky[block] = false;
+		plant_updateGrowingStatus(block);
 		block = getBlockBelow(block);
 	}
 }

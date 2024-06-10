@@ -234,7 +234,7 @@ EatObjective::EatObjective(const Json& data, DeserializationMemo& deserializatio
 	m_noFoodFound(data["noFoodFound"].get<bool>())
 {
 	if(data.contains("destination"))
-		m_destination = deserializationMemo.m_simulation.getBlockForJsonQuery(data["destination"]);
+		m_destination = data["destination"].get<BlockIndex>();
 	if(data.contains("threadedTask"))
 		m_threadedTask.create(*this);
 	if(data.contains("eventStart"))
@@ -244,7 +244,7 @@ Json EatObjective::toJson() const
 {
 	Json data = Objective::toJson();
 	data["noFoodFound"] = m_noFoodFound;
-	if(m_destination)
+	if(m_destination != BLOCK_INDEX_MAX)
 		data["destination"] = m_destination;
 	if(m_threadedTask.exists())
 		data["threadedTask"] = true;
@@ -355,7 +355,7 @@ MustEat::MustEat(const Json& data, Actor& a, Simulation& s, const AnimalSpecies&
 	m_hungerEvent(s.m_eventSchedule), m_actor(a), m_massFoodRequested(data["massFoodRequested"].get<Mass>())
 {
 	if(data.contains("eatingLocation"))
-		m_eatingLocation = s.getBlockForJsonQuery(data["eatingLocation"]);
+		m_eatingLocation = data["eatingLocation"].get<BlockIndex>();
 	if(data.contains("hungerEventStart"))
 	{
 		Step start = data["hungerEventStart"].get<Step>();

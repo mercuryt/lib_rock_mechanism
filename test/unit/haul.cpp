@@ -28,9 +28,10 @@ TEST_CASE("haul")
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
-	Actor& dwarf1 = simulation.m_hasActors->createActor(ActorParamaters{
+	Actor& dwarf1 = simulation.m_hasActors->createActor({
 		.species=dwarf, 
 		.location=blocks.getIndex({1, 1, 2}),
+		.area=&area,
 		.hasCloths=false,
 		.hasSidearm=false
 	});
@@ -41,9 +42,9 @@ TEST_CASE("haul")
 	{
 		BlockIndex chunkLocation = blocks.getIndex({1, 2, 2});
 		Item& boulder1 = simulation.m_hasItems->createItemGeneric(boulder, marble, 1);
-		boulder1.setLocation(chunkLocation);
+		boulder1.setLocation(chunkLocation, &area);
 		Item& boulder2 = simulation.m_hasItems->createItemGeneric(boulder, lead, 1);
-		boulder2.setLocation(blocks.getIndex({6, 2, 2}));
+		boulder2.setLocation(blocks.getIndex({6, 2, 2}), &area);
 		REQUIRE(dwarf1.m_canPickup.canPickupAny(boulder1));
 		REQUIRE(!dwarf1.m_canPickup.canPickupAny(boulder2));
 		dwarf1.m_canPickup.pickUp(boulder1, 1);
@@ -61,8 +62,7 @@ TEST_CASE("haul")
 		BlockIndex cartLocation = blocks.getIndex({1, 2, 2});
 		Item& cart1 = simulation.m_hasItems->createItemNongeneric(cart, poplarWood, 3u, 0);
 		Item& chunk1 = simulation.m_hasItems->createItemGeneric(chunk, gold, 1u);
-		cart1.setLocation(cartLocation);
-		area.m_hasHaulTools.registerHaulTool(cart1);
+		cart1.setLocation(cartLocation, &area);
 		REQUIRE(area.m_hasHaulTools.hasToolToHaul(faction, chunk1));
 	}
 	SUBCASE("individual haul strategy")
@@ -70,7 +70,7 @@ TEST_CASE("haul")
 		BlockIndex destination = blocks.getIndex({5, 5, 2});
 		BlockIndex chunkLocation = blocks.getIndex({1, 5, 2});
 		Item& chunk1 = simulation.m_hasItems->createItemGeneric(chunk, marble, 1u);
-		chunk1.setLocation(chunkLocation);
+		chunk1.setLocation(chunkLocation, &area);
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(std::vector<Actor*>({&dwarf1}), chunk1, destination);
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "haul");
 		REQUIRE(simulation.m_threadedTaskEngine.count() == 1);
@@ -98,13 +98,12 @@ TEST_CASE("haul")
 		BlockIndex destination = blocks.getIndex({5, 5, 2});
 		BlockIndex chunkLocation = blocks.getIndex({1, 5, 2});
 		Item& chunk1 = simulation.m_hasItems->createItemGeneric(chunk, gold, 1u);
-		chunk1.setLocation(chunkLocation);
+		chunk1.setLocation(chunkLocation, &area);
 		REQUIRE(!dwarf1.m_canPickup.maximumNumberWhichCanBeCarriedWithMinimumSpeed(chunk1, Config::minimumHaulSpeedInital));
 		Item& cart = simulation.m_hasItems->createItemNongeneric(ItemType::byName("cart"), MaterialType::byName("poplar wood"), 50u, 0);
 		REQUIRE(HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(dwarf1, cart, chunk1, Config::minimumHaulSpeedInital) > 0);
 		BlockIndex cartLocation = blocks.getIndex({7, 7, 2});
-		cart.setLocation(cartLocation);
-		area.m_hasHaulTools.registerHaulTool(cart);
+		cart.setLocation(cartLocation, &area);
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(std::vector<Actor*>({&dwarf1}), chunk1, destination);
 		// One step to activate the project and make reservations.
 		simulation.doStep();
@@ -139,9 +138,13 @@ TEST_CASE("haul")
 		BlockIndex destination = blocks.getIndex({8, 8, 2});
 		BlockIndex chunkLocation = blocks.getIndex({1, 5, 2});
 		Item& chunk1 = simulation.m_hasItems->createItemGeneric(chunk, gold, 1u);
-		chunk1.setLocation(chunkLocation);
+		chunk1.setLocation(chunkLocation, &area);
 		REQUIRE(!dwarf1.m_canPickup.maximumNumberWhichCanBeCarriedWithMinimumSpeed(chunk1, Config::minimumHaulSpeedInital));
-		Actor& dwarf2 = simulation.m_hasActors->createActor(dwarf, blocks.getIndex({1, 2, 2}));
+		Actor& dwarf2 = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=blocks.getIndex({1, 2, 2}),
+			.area=&area,
+		});
 		dwarf2.setFaction(&faction);
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(std::vector<Actor*>({&dwarf1, &dwarf2}), chunk1, destination);
 		// One step to activate the project and make reservations.
@@ -178,15 +181,18 @@ TEST_CASE("haul")
 		BlockIndex destination = blocks.getIndex({8, 8, 2});
 		BlockIndex chunkLocation = blocks.getIndex({1, 5, 2});
 		Item& chunk1 = simulation.m_hasItems->createItemGeneric(chunk, gold, 1u);
-		chunk1.setLocation(chunkLocation);
+		chunk1.setLocation(chunkLocation, &area);
 		REQUIRE(!dwarf1.m_canPickup.maximumNumberWhichCanBeCarriedWithMinimumSpeed(chunk1, Config::minimumHaulSpeedInital));
 		BlockIndex donkeyLocation = blocks.getIndex({1, 2, 2});
-		Actor& donkey1 = simulation.m_hasActors->createActor(donkey, donkeyLocation);
+		Actor& donkey1 = simulation.m_hasActors->createActor({
+			.species=donkey,
+			.location=donkeyLocation,
+			.area=&area,
+		});
 		area.m_hasHaulTools.registerYokeableActor(donkey1);
 		BlockIndex panniersLocation = blocks.getIndex({5, 1, 2});
 		Item& panniers1 = simulation.m_hasItems->createItemNongeneric(panniers, poplarWood, 3u, 0);
-		panniers1.setLocation(panniersLocation);
-		area.m_hasHaulTools.registerHaulTool(panniers1);
+		panniers1.setLocation(panniersLocation, &area);
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(std::vector<Actor*>({&dwarf1}), chunk1, destination);
 		// One step to activate the project and make reservations.
 		simulation.doStep();
@@ -223,14 +229,17 @@ TEST_CASE("haul")
 		BlockIndex destination = blocks.getIndex({5, 5, 2});
 		BlockIndex boulderLocation = blocks.getIndex({1, 5, 2});
 		Item& boulder1 = simulation.m_hasItems->createItemGeneric(boulder, lead, 1u);
-		boulder1.setLocation(boulderLocation);
+		boulder1.setLocation(boulderLocation, &area);
 		BlockIndex donkeyLocation = blocks.getIndex({4, 3, 2});
-		Actor& donkey1 = simulation.m_hasActors->createActor(donkey, donkeyLocation);
+		Actor& donkey1 = simulation.m_hasActors->createActor({
+			.species=donkey,
+			.location=donkeyLocation,
+			.area=&area
+		});
 		area.m_hasHaulTools.registerYokeableActor(donkey1);
 		BlockIndex cartLocation = blocks.getIndex({5, 1, 2});
 		Item& cart1 = simulation.m_hasItems->createItemNongeneric(cart, poplarWood, 3u, 0);
-		cart1.setLocation(cartLocation);
-		area.m_hasHaulTools.registerHaulTool(cart1);
+		cart1.setLocation(cartLocation, &area);
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(std::vector<Actor*>({&dwarf1}), boulder1, destination);
 		// One step to activate the project and make reservations.
 		simulation.doStep();
@@ -265,14 +274,17 @@ TEST_CASE("haul")
 		BlockIndex destination = blocks.getIndex({9, 9, 2});
 		BlockIndex cargoLocation = blocks.getIndex({1, 7, 2});
 		Item& cargo1 = simulation.m_hasItems->createItemGeneric(boulder, iron, 1u);
-		cargo1.setLocation(cargoLocation);
+		cargo1.setLocation(cargoLocation, &area);
 		BlockIndex origin2 = blocks.getIndex({4, 3, 2});
-		Actor& dwarf2 = simulation.m_hasActors->createActor(dwarf, origin2);
+		Actor& dwarf2 = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=origin2,
+			.area=&area,
+		});
 		dwarf2.setFaction(&faction);
 		BlockIndex cartLocation = blocks.getIndex({7, 1, 2});
 		Item& cart1 = simulation.m_hasItems->createItemNongeneric(cart, poplarWood, 3u, 0);
-		cart1.setLocation(cartLocation);
-		area.m_hasHaulTools.registerHaulTool(cart1);
+		cart1.setLocation(cartLocation, &area);
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(std::vector<Actor*>({&dwarf1, &dwarf2}), cargo1, destination);
 		// One step to activate the project and make reservations.
 		simulation.doStep();

@@ -4,6 +4,7 @@
 #include "../../engine/simulation/hasActors.h"
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/areaBuilderUtil.h"
+#include "types.h"
 TEST_CASE("uniform")
 {
 	Simulation simulation;
@@ -14,19 +15,23 @@ TEST_CASE("uniform")
 	UniformElement shirtElement(ItemType::byName("shirt"));
 	UniformElement twoBeltsElement(ItemType::byName("belt"), 2u);
 	Uniform basic = Uniform(L"basic", {pantsElement, shirtElement, twoBeltsElement});
-	Actor& actor = simulation.m_hasActors->createActor(AnimalSpecies::byName("dwarf"), blocks.getIndex({5,5,1}));
+	Actor& actor = simulation.m_hasActors->createActor({
+		.species=AnimalSpecies::byName("dwarf"),
+		.location=blocks.getIndex({5,5,1}),
+		.area=&area,
+	});
 	actor.m_hasUniform.set(basic);
 	REQUIRE(actor.m_hasObjectives.hasCurrent());
 	REQUIRE(actor.m_hasObjectives.getCurrent().getObjectiveTypeId() == ObjectiveTypeId::Uniform);
 	UniformObjective& objective = static_cast<UniformObjective&>(actor.m_hasObjectives.getCurrent());
 	Item& pants = simulation.m_hasItems->createItemNongeneric(ItemType::byName("pants"), MaterialType::byName("cotton"), 10, 10);
-	pants.setLocation(blocks.getIndex({8,1,1}));
+	pants.setLocation(blocks.getIndex({8,1,1}), &area);
 	Item& shirt = simulation.m_hasItems->createItemNongeneric(ItemType::byName("shirt"), MaterialType::byName("cotton"), 10, 10);
-	shirt.setLocation(blocks.getIndex({1,6,1}));
+	shirt.setLocation(blocks.getIndex({1,6,1}), &area);
 	Item& belt = simulation.m_hasItems->createItemNongeneric(ItemType::byName("belt"), MaterialType::byName("leather"), 10, 10);
-	belt.setLocation(blocks.getIndex({9,2,1}));
+	belt.setLocation(blocks.getIndex({9,2,1}), &area);
 	Item& belt2 = simulation.m_hasItems->createItemNongeneric(ItemType::byName("belt"), MaterialType::byName("leather"), 10, 10);
-	belt2.setLocation(blocks.getIndex({9,3,1}));
+	belt2.setLocation(blocks.getIndex({9,3,1}), &area);
 	simulation.doStep();
 	BlockIndex destination = actor.m_canMove.getDestination();
 	REQUIRE(shirt.isAdjacentTo(destination));
@@ -34,7 +39,7 @@ TEST_CASE("uniform")
 	simulation.fastForwardUntillActorHasEquipment(actor, shirt);
 	simulation.doStep();
 	REQUIRE(actor.m_equipmentSet.contains(shirt));
-	REQUIRE(!shirt.m_location);
+	REQUIRE(shirt.m_location == BLOCK_INDEX_MAX);
 	REQUIRE(pants.isAdjacentTo(actor.m_canMove.getDestination()));
 	simulation.fastForwardUntillActorHasEquipment(actor, pants);
 	simulation.doStep();

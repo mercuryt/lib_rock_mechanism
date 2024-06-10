@@ -62,7 +62,7 @@ void ConstructThreadedTask::clearReferences() { m_constructObjective.m_construct
 // Objective.
 ConstructObjective::ConstructObjective(Actor& a) : Objective(a, Config::constructObjectivePriority), m_constructThreadedTask(a.getThreadedTaskEngine()), m_project(nullptr) { }
 ConstructObjective::ConstructObjective(const Json& data, DeserializationMemo& deserializationMemo) :
-	Objective(data, deserializationMemo), m_constructThreadedTask(m_actor.m_area->m_simulation.m_threadedTaskEngine), 
+	Objective(data, deserializationMemo), m_constructThreadedTask(m_actor.m_area->m_simulation.m_threadedTaskEngine),
 	m_project(data.contains("project") ? deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()) : nullptr)
 {
 	if(data.contains("threadedTask"))
@@ -84,8 +84,8 @@ void ConstructObjective::execute()
 	else if(!m_constructThreadedTask.exists())
 	{
 		ConstructProject* project = nullptr;
-		std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) 
-		{ 
+		std::function<bool(BlockIndex)> predicate = [&](BlockIndex block)
+		{
 			if(joinableProjectExistsAt(block))
 			{
 				project = &m_actor.m_area->m_hasConstructionDesignations.getProject(*m_actor.getFaction(), block);
@@ -115,12 +115,12 @@ void ConstructObjective::delay()
 	m_project = nullptr;
 	m_actor.m_project = nullptr;
 }
-void ConstructObjective::reset() 
-{ 
+void ConstructObjective::reset()
+{
 	if(m_project)
 	{
 		assert(!m_project->getWorkers().contains(&m_actor));
-		m_project = nullptr; 
+		m_project = nullptr;
 		m_actor.m_project = nullptr;
 	}
 	else
@@ -175,7 +175,7 @@ bool ConstructObjectiveType::canBeAssigned(Actor& actor) const
 }
 std::unique_ptr<Objective> ConstructObjectiveType::makeFor(Actor& actor) const { return std::make_unique<ConstructObjective>(actor); }
 // Project.
-ConstructProject::ConstructProject(const Json& data, DeserializationMemo& deserializationMemo) : Project(data, deserializationMemo), 
+ConstructProject::ConstructProject(const Json& data, DeserializationMemo& deserializationMemo) : Project(data, deserializationMemo),
 	m_blockFeatureType(data.contains("blockFeatureType") ? &BlockFeatureType::byName(data["blockFeatureType"].get<std::string>()) : nullptr),
 	m_materialType(MaterialType::byName(data["materialType"].get<std::string>())) { }
 Json ConstructProject::toJson() const
@@ -254,7 +254,7 @@ Step ConstructProject::getDuration() const
 		totalScore += getWorkerConstructScore(*pair.first);
 	return m_materialType.constructionData->duration / totalScore;
 }
-ConstructionLocationDishonorCallback::ConstructionLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
+ConstructionLocationDishonorCallback::ConstructionLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) :
 	m_faction(deserializationMemo.faction(data["faction"].get<std::wstring>())),
 	m_area(deserializationMemo.area(data["area"])),
 	m_location(data["location"].get<BlockIndex>()) { }
@@ -263,32 +263,32 @@ void ConstructionLocationDishonorCallback::execute([[maybe_unused]] uint32_t old
 {
 	m_area.m_hasConstructionDesignations.at(m_faction).undesignate(m_location);
 }
-HasConstructionDesignationsForFaction::HasConstructionDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Faction& faction) : 
+HasConstructionDesignationsForFaction::HasConstructionDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Faction& faction) :
 	m_area(deserializationMemo.area(data["area"])), m_faction(faction)
 {
-	for(const Json& pair : data)
+	for(const Json& pair : data["projects"])
 	{
-		BlockIndex block = deserializationMemo.m_simulation.getBlockForJsonQuery(pair[0]);
+		BlockIndex block = pair[0].get<BlockIndex>();
 		m_data.try_emplace(block, pair[1], deserializationMemo);
 	}
 }
 void HasConstructionDesignationsForFaction::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
 {
-	for(const Json& pair : data)
+	for(const Json& pair : data["projects"])
 	{
-		BlockIndex block = deserializationMemo.m_simulation.getBlockForJsonQuery(pair[0]);
+		BlockIndex block = pair[0].get<BlockIndex>();
 		m_data.at(block).loadWorkers(pair[1], deserializationMemo);
 	}
 }
 Json HasConstructionDesignationsForFaction::toJson() const
 {
-	Json data;
+	Json projects;
 	for(auto& pair : m_data)
 	{
 		Json jsonPair{pair.first, pair.second.toJson()};
-		data.push_back(jsonPair);
+		projects.push_back(jsonPair);
 	}
-	return data;
+	return {{"area", m_area}, {"projects", projects}};
 }
 // If blockFeatureType is null then construct a wall rather then a feature.
 void HasConstructionDesignationsForFaction::designate(BlockIndex block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType)
@@ -308,7 +308,7 @@ void HasConstructionDesignationsForFaction::undesignate(BlockIndex block)
 void HasConstructionDesignationsForFaction::remove(BlockIndex block)
 {
 	assert(contains(block));
-	m_data.erase(block); 
+	m_data.erase(block);
 	m_area.getBlocks().designation_unset(block, m_faction, BlockDesignation::Construct);
 }
 void AreaHasConstructionDesignations::clearReservations()
@@ -385,11 +385,11 @@ void AreaHasConstructionDesignations::clearAll(BlockIndex block)
 	for(auto& pair : m_data)
 		pair.second.removeIfExists(block);
 }
-bool AreaHasConstructionDesignations::areThereAnyForFaction(Faction& faction) const 
-{ 
+bool AreaHasConstructionDesignations::areThereAnyForFaction(Faction& faction) const
+{
 	if(!m_data.contains(&faction))
 		return false;
-	return !m_data.at(&faction).empty(); 
+	return !m_data.at(&faction).empty();
 }
 bool AreaHasConstructionDesignations::contains(Faction& faction, BlockIndex block) const
 {

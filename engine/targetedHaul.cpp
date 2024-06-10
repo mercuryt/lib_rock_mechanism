@@ -26,7 +26,7 @@ void TargetedHaulProject::onComplete()
 	for(auto& [actor, projectWorker] : workers)
 		actor->m_hasObjectives.objectiveComplete(projectWorker.objective);
 }
-void TargetedHaulProject::onDelivered(HasShape& delivered) { delivered.setLocation(m_location, &m_area); }
+void TargetedHaulProject::onDelivered(HasShape& delivered) { delivered.setLocation(m_location); }
 // Objective.
 TargetedHaulObjective::TargetedHaulObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), m_project(*static_cast<TargetedHaulProject*>(deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()))) { }
 void Objective::reset() { m_actor.m_canReserve.deleteAllWithoutCallback(); }

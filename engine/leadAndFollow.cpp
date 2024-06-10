@@ -204,7 +204,7 @@ void CanFollow::tryToMove()
 	else if(blocks.shape_canEnterCurrentlyFrom(block, m_hasShape, m_hasShape.m_location))
 	{
 		// setLocation calls CanLead::onMove which calls this method on it's follower, so this call is recursive down the line.
-		m_hasShape.setLocation(block, m_hasShape.m_area);
+		m_hasShape.setLocation(block);
 		// Remove from the end of the location queue if this is the last shape in line.
 		if(!m_hasShape.m_canLead.isLeading())
 			locationQueue.pop_back();

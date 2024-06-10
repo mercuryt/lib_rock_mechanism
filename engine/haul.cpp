@@ -379,7 +379,7 @@ HaulSubproject::HaulSubproject(const Json& data, Project& p, DeserializationMemo
 		for(const Json& liftPointData : data["liftPoints"])
 		{
 			Actor& actor = deserializationMemo.m_simulation.m_hasActors->getById(liftPointData[0].get<ActorId>());
-			m_liftPoints[&actor] = deserializationMemo.m_simulation.getBlockForJsonQuery(liftPointData[1]);
+			m_liftPoints[&actor] = liftPointData[1].get<BlockIndex>();
 		}
 	deserializationMemo.m_haulSubprojects[data["address"].get<uintptr_t>()] = this;
 }
@@ -510,7 +510,7 @@ void HaulSubproject::commandWorker(Actor& actor)
 					for(Actor* actor : m_workers)
 						if(actor != m_leader)
 							actor->m_canFollow.unfollow();
-					m_toHaul.setLocation(actor.m_location, actor.m_area);
+					m_toHaul.setLocation(actor.m_location);
 					complete(m_toHaul);
 				}
 				else
@@ -1025,7 +1025,7 @@ void HaulSubproject::complete(HasShape& delivered)
 		if(m_projectRequirementCounts.consumed)
 			m_project.m_toConsume.insert(static_cast<Item*>(&delivered));
 		if(static_cast<Item&>(delivered).isWorkPiece())
-			delivered.setLocation(m_project.m_location, &m_project.m_area);
+			delivered.setLocation(m_project.m_location);
 	}
 	for(Actor* worker : m_workers)
 		worker->m_canReserve.deleteAllWithoutCallback();

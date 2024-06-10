@@ -108,3 +108,4 @@ public:
 	[[nodiscard]] Quantity getTotalCountOfItemTypeOnSurface(const ItemType& itemType) const;
 };
 inline void to_json(Json& data, const Area* const& area){ data = area->m_id; }
+inline void to_json(Json& data, const Area& area){ data = area.m_id; }

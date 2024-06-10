@@ -25,11 +25,15 @@ TEST_CASE("dig")
 	Faction faction(L"tower of power");
 	area.m_blockDesignations.registerFaction(faction);
 	DigObjectiveType digObjectiveType;
-	Actor& dwarf1 = simulation.m_hasActors->createActor(dwarf, blocks.getIndex({1, 1, 4}));
+	Actor& dwarf1 = simulation.m_hasActors->createActor({
+		.species=dwarf,
+		.location=blocks.getIndex({1, 1, 4}),
+		.area=&area,
+	});
 	dwarf1.setFaction(&faction);
 	BlockIndex pickLocation = blocks.getIndex({5, 5, 4});
 	Item& pick = simulation.m_hasItems->createItemNongeneric(ItemType::byName("pick"), bronze, 50u, 0);
-	pick.setLocation(pickLocation);
+	pick.setLocation(pickLocation, &area);
 	area.m_hasDigDesignations.addFaction(faction);
 	SUBCASE("dig hole")
 	{
@@ -129,7 +133,7 @@ TEST_CASE("dig")
 		REQUIRE(dwarf1.m_project->reservationsComplete());
 		// Path to location.
 		simulation.doStep();
-		REQUIRE(dwarf1.m_canMove.getDestination());
+		REQUIRE(dwarf1.m_canMove.getDestination() != BLOCK_INDEX_MAX);
 		simulation.fastForwardUntillActorIsAdjacentTo(dwarf1, tunnelStart);
 		REQUIRE(dwarf1.m_hasObjectives.getCurrent().name() == "dig");
 		std::function<bool()> predicate = [&]() { return !blocks.solid_is(tunnelStart); };
@@ -144,7 +148,7 @@ TEST_CASE("dig")
 		Project* project = static_cast<DigObjective&>(dwarf1.m_hasObjectives.getCurrent()).getProject();
 		REQUIRE(project);
 		REQUIRE(project->getLocation() == tunnelSecond);
-		REQUIRE(!dwarf1.m_canMove.getDestination());
+		REQUIRE(!dwarf1.m_canMove.getDestination() != BLOCK_INDEX_MAX);
 		REQUIRE(!blocks.isReserved(tunnelStart, faction));
 		// Make reservations and activate.
 		simulation.doStep();
@@ -172,7 +176,11 @@ TEST_CASE("dig")
 	}
 	SUBCASE("two workers")
 	{
-		Actor& dwarf2 = simulation.m_hasActors->createActor(dwarf, blocks.getIndex({1, 2, 4}));
+		Actor& dwarf2 = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=blocks.getIndex({1, 2, 4}),
+			.area=&area,
+		});
 		dwarf2.setFaction(&faction);
 		BlockIndex holeLocation = blocks.getIndex({8, 4, 3});
 		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
@@ -185,7 +193,11 @@ TEST_CASE("dig")
 	}
 	SUBCASE("two workers two holes")
 	{
-		Actor& dwarf2 = simulation.m_hasActors->createActor(dwarf, blocks.getIndex({1, 2, 4}));
+		Actor& dwarf2 = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=blocks.getIndex({1, 2, 4}),
+			.area=&area,
+		});
 		dwarf2.setFaction(&faction);
 		BlockIndex holeLocation1 = blocks.getIndex({6, 2, 3});
 		BlockIndex holeLocation2 = blocks.getIndex({9, 8, 3});
@@ -362,7 +374,11 @@ TEST_CASE("dig")
 	{
 		pick.exit();
 		dwarf1.m_equipmentSet.addEquipment(pick);
-		Actor& dwarf2 = simulation.m_hasActors->createActor(dwarf, blocks.getIndex({1, 2, 4}));
+		Actor& dwarf2 = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=blocks.getIndex({1, 2, 4}),
+			.area=&area,
+		});
 		dwarf2.setFaction(&faction);
 		BlockIndex holeLocation = blocks.getIndex({8, 8, 3});
 		BlockIndex goToLocation = blocks.getIndex({1, 8, 4});

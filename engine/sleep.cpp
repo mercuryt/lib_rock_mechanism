@@ -210,7 +210,7 @@ void MustSleep::scheduleTiredEvent()
 }
 MustSleep::MustSleep(const Json data, Actor& a, Simulation& s, const AnimalSpecies& species) : 
 	m_sleepEvent(s.m_eventSchedule), m_tiredEvent(s.m_eventSchedule), 
-	m_actor(a), m_location(data.contains("location") ? s.getBlockForJsonQuery(data["location"]) : BLOCK_INDEX_MAX), 
+	m_actor(a), m_location(data.contains("location") ? data["location"].get<BlockIndex>() : BLOCK_INDEX_MAX), 
 	m_needsSleep(data["needsSleep"].get<bool>()), m_isAwake(data["isAwake"].get<bool>())
 {
 	if(data.contains("sleepEventStart"))

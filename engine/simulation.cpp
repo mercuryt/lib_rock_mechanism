@@ -200,12 +200,3 @@ Json Simulation::toJson() const
 	output["drama"] = m_dramaEngine->toJson();
 	return output;
 }
-BlockIndex Simulation::getBlockForJsonQuery(const Json& data)
-{
-	auto x = data["x"].get<uint32_t>();
-	auto y = data["y"].get<uint32_t>();
-	auto z = data["z"].get<uint32_t>();
-	auto id = data["area"].get<AreaId>();
-	Area& area = m_hasAreas->getById(id);
-	return area.getBlocks().getIndex({x, y, z});
-}

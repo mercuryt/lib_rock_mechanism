@@ -89,7 +89,7 @@ SowSeedsObjective::SowSeedsObjective(const Json& data, DeserializationMemo& dese
 	Objective(data, deserializationMemo), 
 	m_event(deserializationMemo.m_simulation.m_eventSchedule), 
 	m_threadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine), 
-	m_block(data.contains("block") ? deserializationMemo.m_simulation.getBlockForJsonQuery(data["block"]) : BLOCK_INDEX_MAX)
+	m_block(data.contains("block") ? data["block"].get<BlockIndex>() : BLOCK_INDEX_MAX)
 {
 	if(data.contains("threadedTask"))
 		m_threadedTask.create(*this);

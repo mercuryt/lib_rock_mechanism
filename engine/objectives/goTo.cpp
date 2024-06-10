@@ -6,8 +6,9 @@
 #include "../simulation.h"
 #include <memory>
 #include <unordered_set>
-GoToObjective::GoToObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo),
-	m_location(deserializationMemo.m_simulation.getBlockForJsonQuery(data["location"])) { }
+GoToObjective::GoToObjective(const Json& data, DeserializationMemo& deserializationMemo) : 
+	Objective(data, deserializationMemo),
+	m_location(data["location"].get<BlockIndex>()) { }
 Json GoToObjective::toJson() const 
 { 
 	Json data = Objective::toJson();

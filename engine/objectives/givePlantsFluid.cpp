@@ -133,7 +133,7 @@ GivePlantsFluidObjective::GivePlantsFluidObjective(Actor& a ) :
 	Objective(a, Config::givePlantsFluidPriority), m_event(m_actor.getEventSchedule()), m_threadedTask(m_actor.getThreadedTaskEngine()) { }
 GivePlantsFluidObjective::GivePlantsFluidObjective(const Json& data, DeserializationMemo& deserializationMemo) : 
 	Objective(data, deserializationMemo),
-	m_plantLocation(data.contains("plantLocation") ? deserializationMemo.m_simulation.getBlockForJsonQuery(data["plantLocation"]) : BLOCK_INDEX_MAX),
+	m_plantLocation(data.contains("plantLocation") ? data["plantLocation"].get<BlockIndex>() : BLOCK_INDEX_MAX),
 	m_fluidHaulingItem(data.contains("fluidHaulingItem") ? &deserializationMemo.m_simulation.m_hasItems->getById(data["fluidHaulingItem"].get<ItemId>()) : nullptr),
 	m_event(m_actor.getEventSchedule()), m_threadedTask(m_actor.getThreadedTaskEngine())
 {

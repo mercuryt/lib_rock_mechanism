@@ -21,8 +21,16 @@ TEST_CASE("leadAndFollow")
 		BlockIndex origin2 = blocks.getIndex({1, 1, 1});
 		BlockIndex destination1 = blocks.getIndex({9, 9, 1});
 		BlockIndex destination2 = blocks.getIndex({8, 8, 1});
-		Actor& dwarf1 = simulation.m_hasActors->createActor(dwarf, origin1);
-		Actor& dwarf2 = simulation.m_hasActors->createActor(dwarf, origin2);
+		Actor& dwarf1 = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=origin1,
+			.area=&area,
+		});
+		Actor& dwarf2 = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=origin2,
+			.area=&area,
+		});
 		dwarf2.m_canFollow.follow(dwarf1.m_canLead);
 		REQUIRE(dwarf1.m_canLead.getMoveSpeed() == dwarf1.m_canMove.getMoveSpeed());
 		dwarf1.m_canMove.setDestination(destination1);
@@ -39,8 +47,16 @@ TEST_CASE("leadAndFollow")
 		BlockIndex origin2 = blocks.getIndex({2, 2, 1});
 		BlockIndex destination1 = blocks.getIndex({9, 9, 1});
 		BlockIndex destination2 = blocks.getIndex({8, 8, 1});
-		Actor& dwarf1 = simulation.m_hasActors->createActor(dwarf, origin1);
-		Actor& troll1 = simulation.m_hasActors->createActor(troll, origin2);
+		Actor& dwarf1 = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=origin1,
+			.area=&area,
+		});
+		Actor& troll1 = simulation.m_hasActors->createActor({
+			.species=troll,
+			.location=origin2,
+			.area=&area,
+		});
 		troll1.m_canFollow.follow(dwarf1.m_canLead);
 		REQUIRE(dwarf1.m_canLead.getMoveSpeed() == dwarf1.m_canMove.getMoveSpeed());
 		dwarf1.m_canMove.setDestination(destination1);
@@ -57,8 +73,16 @@ TEST_CASE("leadAndFollow")
 		BlockIndex origin2 = blocks.getIndex({1, 1, 1});
 		BlockIndex destination1 = blocks.getIndex({8, 8, 1});
 		BlockIndex destination2 = blocks.getIndex({7, 6, 1});
-		Actor& troll1 = simulation.m_hasActors->createActor(troll, origin1);
-		Actor& dwarf1 = simulation.m_hasActors->createActor(dwarf, origin2);
+		Actor& troll1 = simulation.m_hasActors->createActor({
+			.species=troll,
+			.location=origin1,
+			.area=&area,
+		});
+		Actor& dwarf1 = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=origin2,
+			.area=&area,
+		});
 		dwarf1.m_canFollow.follow(troll1.m_canLead);
 		REQUIRE(troll1.m_canLead.getMoveSpeed() == troll1.m_canMove.getMoveSpeed());
 		troll1.m_canMove.setDestination(destination1);
@@ -78,8 +102,16 @@ TEST_CASE("leadAndFollow")
 		blocks.solid_set(blocks.getIndex({5, 3, 1}), marble, false);
 		blocks.solid_set(blocks.getIndex({5, 5, 1}), marble, false);
 		blocks.solid_set(blocks.getIndex({5, 7, 1}), marble, false);
-		Actor& dwarf1 = simulation.m_hasActors->createActor(AnimalSpecies::byName("dwarf"), origin1);
-		Actor& troll1 = simulation.m_hasActors->createActor(troll, origin2);
+		Actor& dwarf1 = simulation.m_hasActors->createActor({
+			.species=AnimalSpecies::byName("dwarf"),
+			.location=origin1,
+			.area=&area,
+		});
+		Actor& troll1 = simulation.m_hasActors->createActor({
+			.species=troll,
+			.location=origin2,
+			.area=&area,
+		});
 		troll1.m_canFollow.follow(dwarf1.m_canLead);
 		dwarf1.m_canMove.setDestination(destination1);
 		simulation.doStep();
@@ -92,9 +124,21 @@ TEST_CASE("leadAndFollow")
 		BlockIndex origin3 = blocks.getIndex({3, 2, 1});
 		BlockIndex destination1 = blocks.getIndex({9, 9, 1});
 		BlockIndex destination2 = blocks.getIndex({8, 8, 1});
-		Actor& dwarf1 = simulation.m_hasActors->createActor(dwarf, origin1);
-		Actor& troll1 = simulation.m_hasActors->createActor(troll, origin2);
-		Actor& dwarf2 = simulation.m_hasActors->createActor(dwarf, origin3);
+		Actor& dwarf1 = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=origin1,
+			.area=&area,
+		});
+		Actor& troll1 = simulation.m_hasActors->createActor({
+			.species=troll,
+			.location=origin2,
+			.area=&area,
+		});
+		Actor& dwarf2 = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=origin3,
+			.area=&area,
+		});
 		std::unique_ptr<Objective> stationObjective = std::make_unique<StationObjective>(dwarf2, origin3);
 		dwarf2.m_hasObjectives.addTaskToStart(std::move(stationObjective));
 		troll1.m_canFollow.follow(dwarf1.m_canLead);
@@ -122,8 +166,16 @@ TEST_CASE("leadAndFollow")
 		BlockIndex origin1 = blocks.getIndex({2, 2, 1});
 		BlockIndex origin2 = blocks.getIndex({1, 1, 1});
 		BlockIndex destination1 = blocks.getIndex({9, 9, 1});
-		Actor& dwarf1 = simulation.m_hasActors->createActor(dwarf, origin1);
-		Actor& troll1 = simulation.m_hasActors->createActor(troll, origin2);
+		Actor& dwarf1 = simulation.m_hasActors->createActor({
+			.species=dwarf,
+			.location=origin1,
+			.area=&area,
+		});
+		Actor& troll1 = simulation.m_hasActors->createActor({
+			.species=troll,
+			.location=origin2,
+			.area=&area,
+		});
 		troll1.m_canFollow.follow(dwarf1.m_canLead);
 		dwarf1.m_canMove.setDestination(destination1);
 		simulation.doStep();

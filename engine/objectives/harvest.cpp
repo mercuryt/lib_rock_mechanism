@@ -89,12 +89,12 @@ HarvestObjective::HarvestObjective(const Json& data, DeserializationMemo& deseri
 	if(data.contains("eventStart"))
 		m_harvestEvent.schedule(Config::harvestEventDuration, *this, data["eventStart"].get<Step>());
 	if(data.contains("block"))
-		m_block = deserializationMemo.m_simulation.getBlockForJsonQuery(data["block"]);
+		m_block = data["block"].get<BlockIndex>();
 }
 Json HarvestObjective::toJson() const
 {
 	Json data = Objective::toJson();
-	if(m_block == BLOCK_INDEX_MAX)
+	if(m_block != BLOCK_INDEX_MAX)
 		data["block"] = m_block;
 	if(m_harvestEvent.exists())
 		data["eventStart"] = m_harvestEvent.getStartStep();
