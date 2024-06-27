@@ -2,9 +2,9 @@
 
 #include "config.h"
 #include "eventSchedule.hpp"
-#include "threadedTask.hpp"
+#include "simulation.h"
 #include "objective.h"
-#include "findsPath.h"
+#include "pathRequest.h"
 
 #include <unordered_set>
 #include <unordered_map>
@@ -13,9 +13,8 @@
 
 class Area;
 class FluidGroup;
-class Actor;
 struct FluidType;
-class GetToSafeTemperatureThreadedTask;
+class GetToSafeTemperaturePathRequest;
 struct DeserializationMemo;
 
 // Raises and lowers nearby temperature.
@@ -54,6 +53,7 @@ public:
 	TemperatureSource& getTemperatureSourceAt(BlockIndex block);
 	void addDelta(BlockIndex block, int32_t delta);
 	void applyDeltas();
+	void doStep() { applyDeltas(); }
 	void addMeltableSolidBlockAboveGround(BlockIndex block);
 	void removeMeltableSolidBlockAboveGround(BlockIndex block);
 	void addFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup);
@@ -61,56 +61,28 @@ public:
 	const Temperature& getAmbientSurfaceTemperature() const { return m_ambiantSurfaceTemperature; }
 	Temperature getDailyAverageAmbientSurfaceTemperature() const;
 };
-class GetToSafeTemperatureObjective final : public Objective
-{
-	HasThreadedTask<GetToSafeTemperatureThreadedTask> m_getToSafeTemperatureThreadedTask;
-	bool m_noWhereWithSafeTemperatureFound;
-public:
-	GetToSafeTemperatureObjective(Actor& a);
-	GetToSafeTemperatureObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	void execute();
-	void cancel() { m_getToSafeTemperatureThreadedTask.maybeCancel(); }
-	void delay() { cancel(); }
-	void reset();
-	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::GetToSafeTemperature; }
-	std::string name() const { return "get to safe temperature"; }
-	~GetToSafeTemperatureObjective();
-	friend class GetToSafeTemperatureThreadedTask;
-};
-class GetToSafeTemperatureThreadedTask final : public ThreadedTask
-{
-	GetToSafeTemperatureObjective& m_objective;
-	FindsPath m_findsPath;
-	bool m_noWhereWithSafeTemperatureFound;
-public:
-	GetToSafeTemperatureThreadedTask(GetToSafeTemperatureObjective& o);
-	void readStep();
-	void writeStep();
-	void clearReferences();
-};
 class UnsafeTemperatureEvent final : public ScheduledEvent
 {
-	Actor& m_actor;
+	ActorIndex m_actor;
 public:
-	UnsafeTemperatureEvent(Actor& a, const Step start = 0);
-	void execute();
-	void clearReferences();
+	UnsafeTemperatureEvent(Area& area, ActorIndex a, const Step start = 0);
+	void execute(Simulation& simulation, Area* area);
+	void clearReferences(Simulation& simulation, Area* area);
 };
 class ActorNeedsSafeTemperature
 {
 	HasScheduledEvent<UnsafeTemperatureEvent> m_event; // 2
-	Actor& m_actor;
+	ActorIndex m_actor;
 	bool m_objectiveExists = false;
 public:
-	ActorNeedsSafeTemperature(Actor& a, Simulation& s);
-	ActorNeedsSafeTemperature(const Json& data, Actor& a, Simulation& s);
+	ActorNeedsSafeTemperature(Area& area, ActorIndex a);
+	ActorNeedsSafeTemperature(const Json& data, ActorIndex a);
 	Json toJson() const;
-	void onChange();
-	bool isSafe(Temperature temperature) const;
-	bool isSafeAtCurrentLocation() const;
+	void onChange(Area& area);
+	bool isSafe(Area& area, Temperature temperature) const;
+	bool isSafeAtCurrentLocation(Area& area) const;
 	friend class GetToSafeTemperatureObjective;
 	friend class UnsafeTemperatureEvent;
 	// For UI.
-	[[nodiscard]] Percent dieFromTemperaturePercent() const { return isSafeAtCurrentLocation() ? 0 : m_event.percentComplete(); }
+	[[nodiscard]] Percent dieFromTemperaturePercent(Area& area) const { return isSafeAtCurrentLocation(area) ? 0 : m_event.percentComplete(); }
 };

@@ -1,25 +1,27 @@
 #pragma once
 
-#include "../actor.h"
 #include "../types.h"
+#include "../config.h"
 
-class Simulation;
+class Actors;
 struct DeserializationMemo;
+
+struct ActorDataLocation
+{
+	Actors& store;
+	ActorIndex index;
+};
 
 class SimulationHasActors final
 {
-	Simulation& m_simulation;
 	ActorId m_nextId = 0;
-	std::unordered_map<ActorId, Actor> m_actors;
+	std::unordered_map<ActorId, ActorDataLocation> m_actors;
 public:
-	SimulationHasActors(Simulation& simulation) : m_simulation(simulation) { }
-	SimulationHasActors(const Json& data, DeserializationMemo& deserializationMemo, Simulation& simulation);
-	Actor& createActor(ActorParamaters params);
-	Actor& createActor(const AnimalSpecies& species, BlockIndex location, Percent percentGrown = 100);
-	void destroyActor(Actor& actor);
-	void clearAll();
-	Actor& loadActorFromJson(const Json& data, DeserializationMemo& deserializationMemo);
-	[[nodiscard]] Actor& getById(ActorId id);
+	SimulationHasActors() = default;
+	SimulationHasActors(const Json& data, DeserializationMemo& deserializationMemo);
+	Json toJson() const;
 	[[nodiscard]] ActorId getNextId() { return ++m_nextId; }
-	[[nodiscard]] Json toJson() const;
+	void registerActor(ActorId id, Actors& store, ActorIndex index);
+	void moveActor(ActorId id, Actors& store, ActorIndex index);
+	void removeActor(ActorId id);
 };

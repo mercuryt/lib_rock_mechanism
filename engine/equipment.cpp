@@ -1,21 +1,23 @@
 #include "equipment.h"
+#include "animalSpecies.h"
+#include "area.h"
 #include "config.h"
+#include "items/items.h"
 #include "random.h"
 #include "hit.h"
 #include "materialType.h"
-#include "simulation/hasItems.h"
 #include "types.h"
 #include "weaponType.h"
-#include "actor.h"
 #include "simulation.h"
+#include "itemType.h"
 #include <cstddef>
-
+/*
 EquipmentSet::EquipmentSet(const Json& data, Actor& a) : m_actor(a)
 {
 	for(const Json& equipmentId : data["equipments"])
 	{
 		Item& equipment = m_actor.getSimulation().m_hasItems->getById(equipmentId.get<ItemId>());
-		insertEquipment(equipment);
+		addEquipment(equipment);
 	}
 }
 Json EquipmentSet::toJson() const 
@@ -26,152 +28,153 @@ Json EquipmentSet::toJson() const
 		data["equipments"].push_back(equipment->m_id);
 	return data;
 }
-bool EquipmentSortByLayer::operator()(Item* const& a, Item* const& b) const
+*/
+bool EquipmentSortByLayer::operator()(ItemIndex const& a, ItemIndex const& b) const
 {
-	assert(a->m_itemType.wearableData != nullptr);
-	assert(b->m_itemType.wearableData != nullptr);
-	return a->m_itemType.wearableData->layer > b->m_itemType.wearableData->layer;
+	const ItemType& aType = items.getItemType(a);
+	const ItemType& bType = items.getItemType(b);
+	assert(aType.wearableData != nullptr);
+	assert(bType.wearableData != nullptr);
+	return aType.wearableData->layer > bType.wearableData->layer;
 }
-
-void EquipmentSet::insertEquipment(Item& equipment)
+void EquipmentSet::addEquipment(Area& area, ItemIndex equipment)
 {
-	assert(std::ranges::find(m_equipments, &equipment) == m_equipments.end());
-	assert(equipment.m_location == BLOCK_INDEX_MAX);
-	m_mass += equipment.getMass();
-	m_equipments.insert(&equipment);
-	if(equipment.m_itemType.wearableData != nullptr)
+	assert(!m_equipments.contains(equipment));
+	Items& items = area.m_items;
+	assert(items.getLocation(equipment) == BLOCK_INDEX_MAX);
+	m_mass += items.getMass(equipment);
+	m_equipments.insert(equipment);
+	const ItemType& itemType = items.getItemType(equipment);
+	if(itemType.wearableData != nullptr)
 	{
-		m_wearable.insert(&equipment);
-		if(equipment.m_itemType.wearableData->rigid)
-			for(const BodyPartType* bodyPartType : equipment.m_itemType.wearableData->bodyPartsCovered)
+		m_wearable.insert(equipment);
+		if(itemType.wearableData->rigid)
+			for(const BodyPartType* bodyPartType : itemType.wearableData->bodyPartsCovered)
 			{
 				assert(!m_bodyPartTypesWithRigidArmor.contains(bodyPartType));
 				m_bodyPartTypesWithRigidArmor.insert(bodyPartType);
 			}
 	}
-	if(equipment.m_itemType.weaponData != nullptr)
+	if(itemType.weaponData != nullptr)
 	{
-		if(equipment.m_itemType.hasRangedAttack())
-			m_rangedWeapons.insert(&equipment);
-		if(equipment.m_itemType.hasMeleeAttack())
-			m_meleeWeapons.insert(&equipment);
+		if(itemType.hasRangedAttack())
+			m_rangedWeapons.insert(equipment);
+		if(itemType.hasMeleeAttack())
+			m_meleeWeapons.insert(equipment);
 	}
 }
-void EquipmentSet::addEquipment(Item& equipment)
+void EquipmentSet::removeEquipment(Area& area, ItemIndex equipment)
 {
-	insertEquipment(equipment);
-	m_actor.m_canFight.update();
+	assert(m_equipments.contains(equipment));
+	assert(m_mass >= area.m_items.getMass(equipment));
+	m_mass -= area.m_items.getMass(equipment);
+	m_equipments.erase(equipment);
+	if(area.m_items.getItemType(equipment).wearableData != nullptr)
+		m_wearable.erase(equipment);
 }
-void EquipmentSet::removeEquipment(Item& equipment)
-{
-	assert(std::ranges::find(m_equipments, &equipment) != m_equipments.end());
-	assert(m_mass >= equipment.getMass());
-	m_mass -= equipment.getMass();
-	m_equipments.erase(&equipment);
-	if(equipment.m_itemType.wearableData != nullptr)
-		m_wearable.erase(&equipment);
-}
-void EquipmentSet::modifyImpact(Hit& hit, const BodyPartType& bodyPartType)
+void EquipmentSet::modifyImpact(Area& area, Hit& hit, const BodyPartType& bodyPartType)
 {
 	// Wearable priority queue is sorted by layers so we start at the outside and pierce inwards.
-	for(Item* equipment : m_wearable)
+	for(ItemIndex equipment : m_wearable)
 	{
-		auto& wearableData = *equipment->m_itemType.wearableData;
-		Random& random = m_actor.getSimulation().m_random;
+		const ItemType& itemType = area.m_items.getItemType(equipment);
+		const MaterialType& materialType = area.m_items.getMaterialType(equipment);
+		auto& wearableData = *itemType.wearableData;
+		Random& random = area.m_simulation.m_random;
 		if(std::ranges::find(wearableData.bodyPartsCovered, &bodyPartType) != wearableData.bodyPartsCovered.end() && random.percentChance(wearableData.percentCoverage))
 		{
 			uint32_t pierceScore = ((float)hit.force / hit.area) * hit.materialType.hardness * Config::pierceModifier;
-			uint32_t defenseScore = wearableData.defenseScore * equipment->m_materialType.hardness;
+			uint32_t defenseScore = wearableData.defenseScore * materialType.hardness;
 			if(pierceScore < defenseScore)
 			{
 				if(wearableData.rigid)
 					hit.area = Config::convertBodyPartVolumeToArea(bodyPartType.volume);
-				hit.force -= wearableData.forceAbsorbedUnpiercedModifier * equipment->m_materialType.hardness * Config::forceAbsorbedUnpiercedModifier;
+				hit.force -= wearableData.forceAbsorbedUnpiercedModifier * materialType.hardness * Config::forceAbsorbedUnpiercedModifier;
 			}
 			else
 			{
 				//TODO: Add wear to equipment.
-				hit.force -= wearableData.forceAbsorbedPiercedModifier * equipment->m_materialType.hardness * Config::forceAbsorbedPiercedModifier;
+				hit.force -= wearableData.forceAbsorbedPiercedModifier * materialType.hardness * Config::forceAbsorbedPiercedModifier;
 			}
 
 		}
 	}
-	std::erase_if(m_equipments, [](Item* equipment){ return equipment->m_percentWear == 100; });
+	std::erase_if(m_equipments, [&](ItemIndex equipment){ return area.m_items.getWear(equipment) == 100; });
 }
-std::vector<Attack> EquipmentSet::getMeleeAttacks()
+std::vector<Attack> EquipmentSet::getMeleeAttacks(Area& area)
 {
 	std::vector<Attack> output;
-	for(Item* equipment : m_meleeWeapons)
-		if(equipment->m_itemType.weaponData != nullptr)
-			for(const AttackType& attackType : equipment->m_itemType.weaponData->attackTypes)
-				output.emplace_back(&attackType, &equipment->m_materialType, equipment);
+	for(ItemIndex equipment : m_meleeWeapons)
+	{
+		const ItemType& itemType = area.m_items.getItemType(equipment);
+		if(itemType.weaponData != nullptr)
+			for(const AttackType& attackType : itemType.weaponData->attackTypes)
+				output.emplace_back(&attackType, area.m_items.getMaterialType(equipment), equipment);
+	}
 	return output;
 }
-bool EquipmentSet::hasWeapons() const
-{
-	for(Item* equipment : m_equipments)
-		if(equipment->m_itemType.weaponData != nullptr)
-			return true;
-	return false;
-}
-Step EquipmentSet::getLongestMeleeWeaponCoolDown() const
+Step EquipmentSet::getLongestMeleeWeaponCoolDown(Area& area) const
 {
 	assert(!m_meleeWeapons.empty());
 	Step output = 0;
-	for(Item* equipment : m_meleeWeapons)
-		if(equipment->m_itemType.weaponData != nullptr)
-			output = std::max(output, equipment->m_itemType.weaponData->coolDown);
+	for(ItemIndex equipment : m_meleeWeapons)
+	{
+		const ItemType& itemType = area.m_items.getItemType(equipment);
+		if(itemType.weaponData != nullptr)
+			output = std::max(output, itemType.weaponData->coolDown);
+	}
 	assert(output != 0);
 	return output;
 }
-const uint32_t& EquipmentSet::getMass() const
+bool EquipmentSet::canEquipCurrently(Area& area, ActorIndex actor, ItemIndex equipment) const
 {
-	return m_mass;
-}
-bool EquipmentSet::canEquipCurrently(Item& item) const
-{
-	assert(!m_equipments.contains(&item));
-	if(item.m_itemType.wearableData != nullptr)
+	assert(!m_equipments.contains(equipment));
+	const ItemType& itemType = area.m_items.getItemType(equipment);
+	const AnimalSpecies& species = area.m_actors.getSpecies(actor);
+	if(itemType.wearableData != nullptr)
 	{
-		for(const BodyPartType* bodyPartType : item.m_itemType.wearableData->bodyPartsCovered)
-			if(!m_actor.m_species.bodyType.hasBodyPart(*bodyPartType))
+		for(const BodyPartType* bodyPartType : itemType.wearableData->bodyPartsCovered)
+			if(!species.bodyType.hasBodyPart(*bodyPartType))
 				return false;
-		if(&item.m_itemType.wearableData->bodyTypeScale != &m_actor.m_species.bodyScale)
+		if(&itemType.wearableData->bodyTypeScale != &species.bodyScale)
 			return false;
-		if(item.m_itemType.wearableData->rigid)
-			for(const BodyPartType* bodyPartType : item.m_itemType.wearableData->bodyPartsCovered)
+		if(itemType.wearableData->rigid)
+			for(const BodyPartType* bodyPartType : itemType.wearableData->bodyPartsCovered)
 				if(m_bodyPartTypesWithRigidArmor.contains(bodyPartType))
 					return false;
 	}
 	return true;
 }
-Item* EquipmentSet::getWeaponToAttackAtRange(float range)
+ItemIndex EquipmentSet::getWeaponToAttackAtRange(Area& area, float range)
 {
-	for(Item* item : m_rangedWeapons)
+	for(ItemIndex item : m_rangedWeapons)
 	{
-		assert(item->m_itemType.weaponData != nullptr);
-		for(const AttackType& attackType : item->m_itemType.weaponData->attackTypes)
+		const ItemType& itemType = area.m_items.getItemType(item);
+		assert(itemType.weaponData != nullptr);
+		for(const AttackType& attackType : itemType.weaponData->attackTypes)
 			if(attackType.range >= range)
 				return item;
 	}
-	return nullptr;
+	return ITEM_INDEX_MAX;
 }
-Item* EquipmentSet::getAmmoForRangedWeapon(Item& weapon)
+ItemIndex EquipmentSet::getAmmoForRangedWeapon(Area& area, ItemIndex weapon)
 {
-	assert(weapon.m_itemType.weaponData != nullptr);
-	const AttackType* attackType = weapon.m_itemType.getRangedAttackType();
+	const ItemType& weaponType = area.m_items.getItemType(weapon);
+	assert(weaponType.weaponData != nullptr);
+	const AttackType* attackType = weaponType.getRangedAttackType();
 	assert(attackType->projectileItemType != nullptr);
 	const ItemType& ammoItemType = *attackType->projectileItemType;
-	for(Item* item : m_equipments)
-		if(item->m_itemType == ammoItemType)
+	for(ItemIndex item : m_equipments)
+		if(area.m_items.getItemType(item) == ammoItemType)
 			return item;
-	return nullptr;
+	return ITEM_INDEX_MAX;
 }
-bool EquipmentSet::hasAnyEquipmentWithReservations() const
+bool EquipmentSet::hasAnyEquipmentWithReservations(Area& area, ActorIndex actor) const
 {
-	if(m_actor.getFaction())
-		for(const Item* item : m_equipments)
-			if(item->m_reservable.hasAnyReservationsWith(*m_actor.getFaction()))
+	const Faction* faction = area.m_actors.getFaction(actor);
+	if(faction != nullptr)
+		for(const ItemIndex item : m_equipments)
+			if(area.m_items.isReserved(item, *faction))
 				return true;
 	return false;
 }

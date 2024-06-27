@@ -1,9 +1,10 @@
 #include "equipItem.h"
-#include "../actor.h"
-#include "../item.h"
+#include "../actors/actors.h"
+#include "../items/items.h"
 #include "../deserializationMemo.h"
-EquipItemObjective::EquipItemObjective(Actor& actor, Item& item) : Objective(actor, Config::equipPriority), m_item(item) { }
-
+#include "../area.h"
+EquipItemObjective::EquipItemObjective(ActorIndex actor, ItemIndex item) : Objective(actor, Config::equipPriority), m_item(item) { }
+/*
 EquipItemObjective::EquipItemObjective(const Json& data, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo), m_item(deserializationMemo.itemReference(data["item"])) { }
 Json EquipItemObjective::toJson() const
@@ -12,23 +13,25 @@ Json EquipItemObjective::toJson() const
 	data["item"] = m_item;
 	return data;
 }
-void EquipItemObjective::execute()
+*/
+void EquipItemObjective::execute(Area& area)
 {
-	if(!m_actor.isAdjacentTo(m_item))
+	Actors& actors = area.getActors();
+	if(!actors.isAdjacentToItem(m_actor, m_item))
 		// detour, unresered, reserve.
 		// TODO: detour.
-		m_actor.m_canMove.setDestinationAdjacentTo(m_item, false, false, false);
+		actors.move_setDestinationAdjacentToItem(m_actor, m_item, false, false, false);
 	else
 	{
-		if(m_actor.m_equipmentSet.canEquipCurrently(m_item))
+		if(actors.getEquipmentSet(m_actor).canEquipCurrently(area, m_actor, m_item))
 		{
-			m_item.exit();
-			m_actor.m_equipmentSet.addEquipment(m_item);
-			m_actor.m_hasObjectives.objectiveComplete(*this);
+			area.m_items.exit(m_item);
+			actors.getEquipmentSet(m_actor).addEquipment(area, m_item);
+			actors.objective_complete(m_actor, *this);
 		}
 		else
-			m_actor.m_hasObjectives.cannotFulfillObjective(*this);
+			actors.objective_canNotCompleteObjective(m_actor, *this);
 	}
 }
-void EquipItemObjective::cancel() { m_actor.m_canReserve.deleteAllWithoutCallback(); }
-void EquipItemObjective::reset() { cancel(); }
+void EquipItemObjective::cancel(Area& area) { area.m_actors.canReserve_clearAll(m_actor); }
+void EquipItemObjective::reset(Area& area) { cancel(area); }

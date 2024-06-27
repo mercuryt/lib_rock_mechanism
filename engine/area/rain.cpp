@@ -1,15 +1,14 @@
 #include "rain.h"
 #include "fluidType.h"
-#include "plant.h"
 #include "area.h"
 #include "config.h"
 #include "random.h"
 #include "types.h"
 #include "util.h"
 #include "simulation.h"
-AreaHasRain::AreaHasRain(Area& a, Simulation& s) : 
+AreaHasRain::AreaHasRain(Area& a, Simulation&) : 
 	m_humidityBySeason({30,15,10,20}),
-	m_event(s.m_eventSchedule), 
+	m_event(a.m_eventSchedule), 
 	m_area(a), 
 	m_defaultRainFluidType(FluidType::byName("water")) { }
 void AreaHasRain::load(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo)
@@ -47,17 +46,19 @@ void AreaHasRain::start(const FluidType& fluidType, Percent intensityPercent, St
 	m_currentlyRainingFluidType = &fluidType;
 	m_intensityPercent = intensityPercent;
 	Blocks& blocks = m_area.getBlocks();
-	for(Plant* plant : m_area.m_hasPlants.getPlantsOnSurface())
-		if(plant->m_plantSpecies.fluidType == fluidType && blocks.isExposedToSky(plant->m_location))
-			plant->setHasFluidForNow();
+	Plants& plants = m_area.m_plants;
+	for(PlantIndex plant : plants.getPlantsOnSurface())
+		if(plants.getSpecies(plant).fluidType == fluidType && blocks.isExposedToSky(plants.getLocation(plant)))
+			plants.setHasFluidForNow(plant);
 	m_event.schedule(stepsDuration, *this);
 }
+void AreaHasRain::schedule(Step restartAt) { m_event.schedule(restartAt, m_area.m_simulation, *this); }
 void AreaHasRain::stop()
 {
 	m_currentlyRainingFluidType = nullptr;
 	m_intensityPercent = 0;
 }
-void AreaHasRain::writeStep()
+void AreaHasRain::doStep()
 {
 	assert(m_intensityPercent <= 100);
 	assert(m_intensityPercent > 0);
@@ -92,21 +93,22 @@ void AreaHasRain::disable()
 	m_event.unschedule();
 }
 Percent AreaHasRain::humidityForSeason() { return m_humidityBySeason[DateTime::toSeason(m_area.m_simulation.m_step)]; }
-RainEvent::RainEvent(Step delay, AreaHasRain& ahr, const Step start) : ScheduledEvent(ahr.m_area.m_simulation, delay, start), m_areaHasRain(ahr) { }
-void RainEvent::execute() 
+RainEvent::RainEvent(Simulation& simulation, Step delay, const Step start) : ScheduledEvent(simulation, delay, start) { }
+void RainEvent::execute(Simulation&, Area* area) 
 {
-	if(m_areaHasRain.isRaining())
+	if(area->m_hasRain.isRaining())
 	{
-		m_areaHasRain.stop(); 
-		m_areaHasRain.scheduleRestart();
+		area->m_hasRain.stop(); 
+		area->m_hasRain.scheduleRestart();
 	}
 	else
 	{
-		auto random = m_areaHasRain.m_area.m_simulation.m_random;
-		Percent humidity = m_areaHasRain.humidityForSeason();
+		auto random = area->m_hasRain.m_area.m_simulation.m_random;
+		Percent humidity = area->m_hasRain.humidityForSeason();
 		Percent intensity = humidity * random.getInRange(Config::minimumRainIntensityModifier, Config::maximumRainIntensityModifier);
 		Step duration = humidity * random.getInRange(Config::minimumStepsRainPerPercentHumidity, Config::maximumStepsRainPerPercentHumidity);
 		assert(duration < Config::stepsPerDay);
-		m_areaHasRain.start(intensity, duration);
+		area->m_hasRain.start(intensity, duration);
 	}
-}
+} 
+void RainEvent::clearReferences(Simulation&, Area* area) { area->m_hasRain.m_event.clearPointer(); }

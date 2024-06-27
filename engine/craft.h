@@ -2,10 +2,12 @@
 
 #include "config.h"
 #include "input.h"
+#include "pathRequest.h"
 #include "project.h"
 #include "reservable.h"
 #include "objective.h"
-#include "itemQuery.h"
+#include "items/itemQuery.h"
+#include "terrainFacade.h"
 #include "types.h"
 
 #include <vector>
@@ -18,13 +20,13 @@
 struct CraftJob;
 struct CraftJobType;
 class HasCraftingLocationsAndJobsForFaction;
-class CraftThreadedTask;
+class CraftPathRequest;
 class CraftStepProject;
 class Area;
 struct DeserializationMemo;
 struct MaterialType;
 struct SkillType;
-class Item;
+class ActorOrItemIndex;
 class CraftInputAction final : public InputAction
 {
 	Area& m_area;
@@ -77,9 +79,9 @@ class CraftStepProject final : public Project
 	void onCancel();
 	void onDelay() { cancel(); }
 	void offDelay() { assert(false); }
-	void onAddToMaking(Actor& actor);
+	void onAddToMaking(ActorIndex actor);
 	[[nodiscard]] bool canReset() const  { return false; }
-	void onHasShapeReservationDishonored([[maybe_unused]] const HasShape& hasShape, [[maybe_unused]]Quantity oldCount, [[maybe_unused]]Quantity newCount) { cancel(); }
+	void onHasShapeReservationDishonored(ActorOrItemIndex, Quantity, Quantity) { cancel(); }
 	// Use copies rather then references for return types to allow specalization of Queries as well as byproduct material type.
 	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
 	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const;
@@ -90,7 +92,7 @@ public:
 		Project(faction, area, location, 1), m_craftStepType(cst), m_craftJob(cj) { }
 	CraftStepProject(const Json& data, DeserializationMemo& deserializationMemo, CraftJob& cj);
 	// No toJson needed here, the base class one has everything.
-	[[nodiscard]] uint32_t getWorkerCraftScore(const Actor& actor) const;
+	[[nodiscard]] uint32_t getWorkerCraftScore(const ActorIndex actor) const;
 };
 struct CraftStepProjectHasShapeDishonorCallback final : public DishonorCallback
 {
@@ -121,7 +123,7 @@ struct CraftJob final
 {
 	const CraftJobType& craftJobType;
 	HasCraftingLocationsAndJobsForFaction& hasCraftingLocationsAndJobs;
-	Item* workPiece = nullptr;
+	ItemIndex workPiece = ITEM_INDEX_MAX;
 	const MaterialType* materialType;
 	std::vector<CraftStepType>::const_iterator stepIterator;
 	std::unique_ptr<CraftStepProject> craftStepProject;
@@ -129,11 +131,11 @@ struct CraftJob final
 	uint32_t totalSkillPoints = 0;
 	Reservable reservable;
 	// If work piece is provided then this is an upgrade job.
-	CraftJob(const CraftJobType& cjt, HasCraftingLocationsAndJobsForFaction& hclaj, Item& wp, const MaterialType* mt, uint32_t msl) : 
-		craftJobType(cjt), hasCraftingLocationsAndJobs(hclaj), workPiece(&wp), materialType(mt), stepIterator(craftJobType.stepTypes.begin()), minimumSkillLevel(msl), totalSkillPoints(0), reservable(1) { }
+	CraftJob(const CraftJobType& cjt, HasCraftingLocationsAndJobsForFaction& hclaj, ItemIndex wp, const MaterialType* mt, uint32_t msl) : 
+		craftJobType(cjt), hasCraftingLocationsAndJobs(hclaj), workPiece(wp), materialType(mt), stepIterator(craftJobType.stepTypes.begin()), minimumSkillLevel(msl), totalSkillPoints(0), reservable(1) { }
 	// No work piece provided is a create job.
 	CraftJob(const CraftJobType& cjt, HasCraftingLocationsAndJobsForFaction& hclaj, const MaterialType* mt, uint32_t msl) :
-	       	craftJobType(cjt), hasCraftingLocationsAndJobs(hclaj), workPiece(nullptr), materialType(mt), stepIterator(craftJobType.stepTypes.begin()), minimumSkillLevel(msl), totalSkillPoints(0), reservable(1) { }
+	       	craftJobType(cjt), hasCraftingLocationsAndJobs(hclaj), workPiece(ITEM_INDEX_MAX), materialType(mt), stepIterator(craftJobType.stepTypes.begin()), minimumSkillLevel(msl), totalSkillPoints(0), reservable(1) { }
 	CraftJob(const Json& data, DeserializationMemo& deserializationMemo, HasCraftingLocationsAndJobsForFaction& hclaj);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] uint32_t getQuality() const;
@@ -141,53 +143,6 @@ struct CraftJob final
 	[[nodiscard]] bool operator==(const CraftJob& other){ return &other == this; }
 };
 inline void to_json(Json& data, const CraftJob* const& craftJob){ data = reinterpret_cast<uintptr_t>(craftJob); }
-class CraftObjectiveType final : public ObjectiveType
-{
-	const SkillType& m_skillType; // Multiple skills are represented by CraftObjective and CraftObjectiveType, such as Leatherworking, Woodworking, Metalworking, etc.
-public:
-	CraftObjectiveType(const SkillType& skillType) : ObjectiveType(), m_skillType(skillType) { }
-	CraftObjectiveType(const Json& data, DeserializationMemo& deserializationMemo);
-	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] bool canBeAssigned(Actor& actor) const;
-	[[nodiscard]] std::unique_ptr<Objective> makeFor(Actor& actor) const;
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Craft; }
-};
-class CraftObjective final : public Objective
-{
-	const SkillType& m_skillType;
-	CraftJob* m_craftJob = nullptr;
-	HasThreadedTask<CraftThreadedTask> m_threadedTask;
-	std::unordered_set<CraftJob*> m_failedJobs;
-public:
-	CraftObjective(Actor& a, const SkillType& st);
-	CraftObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	void execute();
-	void cancel();
-	void delay() { cancel(); }
-	void reset();
-	void recordFailedJob(CraftJob& craftJob) { assert(!m_failedJobs.contains(&craftJob)); m_failedJobs.insert(&craftJob); }
-	[[nodiscard]] std::unordered_set<CraftJob*>& getFailedJobs() { return m_failedJobs; }
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Craft; }
-	[[nodiscard]] std::string name() const { return "craft"; }
-	friend class CraftThreadedTask;
-	friend class HasCraftingLocationsAndJobsForFaction;
-	// For testing.
-	[[maybe_unused, nodiscard]] CraftJob* getCraftJob() { return m_craftJob; }
-	[[maybe_unused, nodiscard]] bool hasThreadedTask() { return m_threadedTask.exists(); }
-
-};
-class CraftThreadedTask final : public ThreadedTask
-{
-	CraftObjective& m_craftObjective;
-	CraftJob* m_craftJob = nullptr;
-	BlockIndex m_location = BLOCK_INDEX_MAX;
-public:
-	CraftThreadedTask(CraftObjective& co);
-	void readStep();
-	void writeStep();
-	void clearReferences();
-};
 // To be used by Area.
 class HasCraftingLocationsAndJobsForFaction final
 {
@@ -215,7 +170,7 @@ public:
 	// Undo an addJob order.
 	void removeJob(CraftJob& craftJob);
 	// To be called by CraftStepProject::onComplete.
-	void stepComplete(CraftJob& craftJob, Actor& actor);
+	void stepComplete(CraftJob& craftJob, ActorIndex actor);
 	// To be called by CraftStepProject::onCancel.
 	void stepDestroy(CraftJob& craftJob);
 	// List a project as being in need of workers.
@@ -232,8 +187,7 @@ public:
 	[[nodiscard]] std::unordered_set<const CraftStepTypeCategory*>& getStepTypeCategoriesForLocation(BlockIndex location);
 	[[nodiscard]] const CraftStepTypeCategory* getDisplayStepTypeCategoryForLocation(BlockIndex location);
 	// May return nullptr;
-	[[nodiscard]] CraftJob* getJobForAtLocation(const Actor& actor, const SkillType& skillType, BlockIndex block, std::unordered_set<CraftJob*>& excludeJobs);
-	[[nodiscard]] std::pair<CraftJob*, BlockIndex> getJobAndLocationForWhileExcluding(const Actor& actor, const SkillType& skillType, std::unordered_set<CraftJob*>& excludeJobs);
+	[[nodiscard]] CraftJob* getJobForAtLocation(const ActorIndex actor, const SkillType& skillType, BlockIndex block, std::unordered_set<CraftJob*>& excludeJobs);
 	friend class CraftObjectiveType;
 	friend class AreaHasCraftingLocationsAndJobs;
 	// For testing.

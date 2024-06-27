@@ -5,6 +5,9 @@
 #pragma once
 
 #include "installItem.h"
+#include "plants.h"
+#include "items/items.h"
+#include "actors/actors.h"
 #include "types.h"
 #include "blocks/blocks.h"
 #include "mistDisperseEvent.h"
@@ -19,10 +22,14 @@
 #include "stocks.h"
 #include "fluidSource.h"
 #include "terrainFacade.h"
+#include "locationBuckets.h"
+#include "opacityFacade.h"
+#include "visionFacade.h"
+#include "sleep.h"
+#include "drink.h"
+#include "eat.h"
 #include "area/rain.h"
-#include "area/hasActors.h"
 #include "area/hasFluidGroups.h"
-#include "area/hasItems.h"
 #include "area/hasSleepingSpots.h"
 #include "area/hasBlockDesignations.h"
 //#include "medical.h"
@@ -41,11 +48,14 @@ struct DeserializationMemo;
 class Area final
 {
 	Blocks m_blocks;
+	Actors m_actors;
+	Plants m_plants;
+	Items m_items;
 public:
+	EventSchedule m_eventSchedule;
+	ThreadedTaskEngine m_threadedTaskEngine;
 	AreaHasTemperature m_hasTemperature;
 	AreaHasTerrainFacades m_hasTerrainFacades;
-	AreaHasActors m_hasActors;
-	AreaHasPlants m_hasPlants;
 	AreaHasFires m_fires;
 	AreaHasFarmFields m_hasFarmFields;
 	AreaHasHaulTools m_hasHaulTools;
@@ -59,14 +69,19 @@ public:
 	AreaHasWoodCuttingDesignations m_hasWoodCuttingDesignations;
 	AreaHasInstallItemDesignations m_hasInstallItemDesignations;
 	//AreaHasMedicalPatients m_hasMedicalPatients;
-	AreaHasItems m_hasItems;
 	AreaHasFluidSources m_fluidSources;
 	AreaHasFluidGroups m_hasFluidGroups;
 	AreaHasRain m_hasRain;
 	AreaHasBlockDesignations m_blockDesignations;
+	LocationBuckets m_locationBuckets;
+	VisionFacadeBuckets m_visionFacadeBuckets;
+	OpacityFacade m_opacityFacade;
+	AreaHasVisionCuboids m_visionCuboids;
+	VisionFacade m_visionFacade;
 	//TODO: make into vector?
 	std::unordered_set<BlockIndex> m_caveInCheck;
-	std::vector<std::tuple<std::vector<BlockIndex>,uint32_t,uint32_t>> m_caveInData;
+	// uint32_t is fall energy.
+	std::vector<std::tuple<std::vector<BlockIndex>, DistanceInBlocks, uint32_t>> m_caveInData;
 	std::wstring m_name;
 	Simulation& m_simulation;
 	AreaId m_id;
@@ -79,12 +94,12 @@ public:
 	Area(const Area&& area) = delete;
 	void setup();
 
-	void readStep();
-	void writeStep();
+	void doStep();
 	
 	//BlockIndex getBlockForAdjacentLocation(WorldLocation& location);
 
 	// Cavein read/write
+	void doStepCaveIn();
 	void stepCaveInRead();
 	void stepCaveInWrite();
 	void registerPotentialCaveIn(BlockIndex block);
@@ -95,6 +110,9 @@ public:
 
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] Blocks& getBlocks() { return m_blocks; }
+	[[nodiscard]] Plants& getPlants() { return m_plants; }
+	[[nodiscard]] Actors& getActors() { return m_actors; }
+	[[nodiscard]] Items& getItems() { return m_items; }
 	[[nodiscard]] const Blocks& getBlocks() const { return m_blocks; }
 	//TODO: Move this somewhere else.
 	[[nodiscard]] Facing getFacingForAdjacentOffset(uint8_t adjacentOffset) const;

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "config.h"
-#include "itemQuery.h"
+#include "items/itemQuery.h"
 #include "types.h"
 
 #include <deque>
@@ -13,7 +13,6 @@
 
 struct MaterialType;
 struct ItemType;
-class ItemQuery;
 struct FluidType;
 struct SkillType;
 

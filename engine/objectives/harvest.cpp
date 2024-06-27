@@ -1,85 +1,54 @@
 #include "harvest.h"
-#include "../item.h"
 #include "../area.h"
-#include "../actor.h"
 #include "../config.h"
 #include "../farmFields.h"
 #include "../objective.h"
-#include "../plant.h"
 #include "../simulation.h"
-#include "types.h"
+#include <memory>
 // Event.
-HarvestEvent::HarvestEvent(Step delay, HarvestObjective& ho, const Step start) : ScheduledEvent(ho.m_actor.getSimulation(), delay, start), m_harvestObjective(ho) {}
-void HarvestEvent::execute()
+HarvestEvent::HarvestEvent(Area& area, Step delay, HarvestObjective& ho, const Step start) :
+	ScheduledEvent(area.m_simulation, delay, start), m_harvestObjective(ho) {}
+void HarvestEvent::execute(Simulation&, Area* area)
 {
+	Actors& actors = area->m_actors;
 	assert(m_harvestObjective.m_block != BLOCK_INDEX_MAX);
-	assert(m_harvestObjective.m_actor.isAdjacentTo(m_harvestObjective.m_block));
-	auto& blocks = m_harvestObjective.m_actor.m_area->getBlocks();
+	assert(actors.isAdjacentToLocation(m_harvestObjective.m_actor, m_harvestObjective.m_block));
+	Blocks& blocks = area->getBlocks();
 	if(!blocks.plant_exists(m_harvestObjective.m_block))
 		// Plant no longer exsits, try again.
-		m_harvestObjective.m_threadedTask.create(m_harvestObjective);
-	Plant& plant = blocks.plant_get(m_harvestObjective.m_block);
-	Actor& actor = m_harvestObjective.m_actor;
+		m_harvestObjective.makePathRequest(*area);
+	Plants& plants = area->m_plants;
+	PlantIndex plant = blocks.plant_get(m_harvestObjective.m_block);
+	ActorIndex actor = m_harvestObjective.m_actor;
 	static const MaterialType& plantMatter = MaterialType::byName("plant matter");
-	const ItemType& fruitItemType = plant.m_plantSpecies.harvestData->fruitItemType;
-	if(!plant.m_quantityToHarvest)
-		actor.m_hasObjectives.cannotCompleteSubobjective();
-	uint32_t numberItemsHarvested = actor.m_canPickup.canPickupQuantityOf(fruitItemType, plantMatter, plant.m_quantityToHarvest);
-	assert(numberItemsHarvested != 0);
-	//TODO: apply horticulture skill.
-	plant.harvest(numberItemsHarvested);
-	blocks.item_addGeneric(actor.m_location, fruitItemType, plantMatter, numberItemsHarvested);
-	actor.m_hasObjectives.objectiveComplete(m_harvestObjective);
-}	
-void HarvestEvent::clearReferences() { m_harvestObjective.m_harvestEvent.clearPointer(); } 
-// Threaded task.
-HarvestThreadedTask::HarvestThreadedTask(HarvestObjective& ho) : ThreadedTask(ho.m_actor.getThreadedTaskEngine()), m_harvestObjective(ho), m_findsPath(ho.m_actor, ho.m_detour) {}
-void HarvestThreadedTask::readStep()
-{
-	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return m_harvestObjective.blockContainsHarvestablePlant(block); };
-	m_findsPath.m_maxRange = Config::maxRangeToSearchForHorticultureDesignations;
-	m_findsPath.pathToUnreservedAdjacentToPredicate(predicate, *m_harvestObjective.m_actor.getFaction());
-}
-void HarvestThreadedTask::writeStep()
-{
-	assert(m_harvestObjective.m_block == BLOCK_INDEX_MAX);
-	if(!m_findsPath.found())
-	{
-		if(m_findsPath.m_useCurrentLocation)
-		{
-			m_harvestObjective.select(m_findsPath.getBlockWhichPassedPredicate());
-			m_findsPath.reserveBlocksAtDestination(m_harvestObjective.m_actor.m_canReserve);
-			m_harvestObjective.execute();
-		}
-		else
-			m_harvestObjective.m_actor.m_hasObjectives.cannotFulfillObjective(m_harvestObjective);
-	}
+	const ItemType& fruitItemType = plants.getSpecies(plant).harvestData->fruitItemType;
+	Quantity quantityToHarvest = plants.getQuantityToHarvest(plant);
+	if(quantityToHarvest == 0)
+		actors.objective_canNotCompleteSubobjective(actor);
 	else
 	{
-		if(!m_findsPath.areAllBlocksAtDestinationReservable(m_harvestObjective.m_actor.getFaction()))
-			// There is no longer harvesting to be done at this destination or the desired place to stand has been reserved, try again.
-			m_harvestObjective.m_threadedTask.create(m_harvestObjective);
-		else
-		{
-			m_findsPath.reserveBlocksAtDestination(m_harvestObjective.m_actor.m_canReserve);
-			m_harvestObjective.m_actor.m_canMove.setPath(m_findsPath.getPath());
-			m_harvestObjective.select(m_findsPath.getBlockWhichPassedPredicate());
-		}
+		uint32_t numberItemsHarvested = std::min(quantityToHarvest, actors.canPickUp_quantityWhichCanBePickedUpUnencombered(actor, fruitItemType, plantMatter));
+		assert(numberItemsHarvested != 0);
+		//TODO: apply horticulture skill.
+		plants.harvest(plant, numberItemsHarvested);
+		blocks.item_addGeneric(actors.getLocation(actor), fruitItemType, plantMatter, numberItemsHarvested);
+		actors.objective_complete(actor, m_harvestObjective);
 	}
-}
-void HarvestThreadedTask::clearReferences() { m_harvestObjective.m_threadedTask.clearPointer(); }
+}	
+void HarvestEvent::clearReferences(Simulation&, Area*) { m_harvestObjective.m_harvestEvent.clearPointer(); } 
 // Objective type.
-bool HarvestObjectiveType::canBeAssigned(Actor& actor) const
+bool HarvestObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
 {
-	return actor.m_area->m_hasFarmFields.hasHarvestDesignations(*actor.getFaction());
+	return area.m_hasFarmFields.hasHarvestDesignations(*area.m_actors.getFaction(actor));
 }
-std::unique_ptr<Objective> HarvestObjectiveType::makeFor(Actor& actor) const
+std::unique_ptr<Objective> HarvestObjectiveType::makeFor(Area& area, ActorIndex actor) const
 {
-	return std::make_unique<HarvestObjective>(actor);
+	return std::make_unique<HarvestObjective>(area, actor);
 }
 // Objective.
-HarvestObjective::HarvestObjective(Actor& a) :
-       	Objective(a, Config::harvestPriority), m_harvestEvent(a.getEventSchedule()), m_threadedTask(a.getThreadedTaskEngine()) {}
+HarvestObjective::HarvestObjective(Area& area, ActorIndex a) :
+       	Objective(a, Config::harvestPriority), m_harvestEvent(area.m_eventSchedule) { }
+/*
 HarvestObjective::HarvestObjective(const Json& data, DeserializationMemo& deserializationMemo) : 
 	Objective(data, deserializationMemo), m_harvestEvent(deserializationMemo.m_simulation.m_eventSchedule), 
 	m_threadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine)
@@ -102,74 +71,95 @@ Json HarvestObjective::toJson() const
 		data["threadedTask"] = true;
 	return data;
 }
-void HarvestObjective::execute()
+*/
+void HarvestObjective::execute(Area& area)
 {
-	auto& blocks = m_actor.m_area->getBlocks();
+	Blocks& blocks = area.getBlocks();
+	Actors& actors = area.getActors();
+	Plants& plants = area.getPlants();
 	if(m_block != BLOCK_INDEX_MAX)
 	{
 		//TODO: Area level listing of plant species to not harvest.
-		if(m_actor.isAdjacentTo(m_block) && blocks.plant_exists(m_block) && blocks.plant_get(m_block).readyToHarvest())
-			begin();
+		if(actors.isAdjacentToLocation(m_actor, m_block) && blocks.plant_exists(m_block) && plants.readyToHarvest(blocks.plant_get(m_block)))
+			begin(area);
 		else
 		{
 			// Previously found block or route is no longer valid, redo from start.
-			reset();
-			execute();
+			reset(area);
+			execute(area);
 		}
 	}
 	else
 	{
-		if(m_actor.allOccupiedBlocksAreReservable(*m_actor.getFaction()))
+		BlockIndex block = getBlockContainingPlantToHarvestAtLocationAndFacing(area, actors.getLocation(m_actor), actors.getFacing(m_actor));
+		if(block != BLOCK_INDEX_MAX && blocks.plant_exists(m_block) && plants.readyToHarvest(blocks.plant_get(m_block)) && actors.move_tryToReserveOccupied(m_actor))
 		{
-			BlockIndex block = getBlockContainingPlantToHarvestAtLocationAndFacing(m_actor.m_location, m_actor.m_facing);
-			if(block != BLOCK_INDEX_MAX && blocks.plant_exists(m_block) && blocks.plant_get(m_block).readyToHarvest())
-			{
-				m_actor.reserveOccupied(m_actor.m_canReserve);
-				select(block);
-				begin();
-				return;
-			}
+			select(area, block);
+			begin(area);
+			return;
 		}
-		m_threadedTask.create(*this);
+		makePathRequest(area);
 	}
 }
-void HarvestObjective::cancel()
+void HarvestObjective::cancel(Area& area)
 {
-	m_threadedTask.maybeCancel();
+	
+	Actors& actors = area.getActors();
+	Blocks& blocks = area.getBlocks();
+	Plants& plants = area.getPlants();
+	actors.move_pathRequestMaybeCancel(m_actor);
 	m_harvestEvent.maybeUnschedule();
-	auto& blocks = m_actor.m_area->getBlocks();
-	if(m_block != BLOCK_INDEX_MAX && blocks.plant_exists(m_block) && blocks.plant_get(m_block).readyToHarvest())
-		m_actor.m_area->m_hasFarmFields.at(*m_actor.getFaction()).addHarvestDesignation(blocks.plant_get(m_block));
-	//TODO: This probably should be in hasObjectives instead of here, is this needed at all?
-	m_actor.m_canReserve.deleteAllWithoutCallback();
+	if(m_block != BLOCK_INDEX_MAX && blocks.plant_exists(m_block) && plants.readyToHarvest(blocks.plant_get(m_block)))
+		area.m_hasFarmFields.at(*actors.getFaction(m_actor)).addHarvestDesignation(blocks.plant_get(m_block));
 }
-void HarvestObjective::select(BlockIndex block)
+void HarvestObjective::select(Area& area, BlockIndex block)
 {
-	auto& blocks = m_actor.m_area->getBlocks();
+	Blocks& blocks = area.getBlocks();
+	Plants& plants = area.getPlants();
+	Actors& actors = area.getActors();
 	assert(blocks.plant_exists(block));
-	assert(blocks.plant_get(block).readyToHarvest());
+	assert(plants.readyToHarvest(blocks.plant_get(block)));
 	m_block = block;
-	blocks.reserve(block, m_actor.m_canReserve);
-	m_actor.m_area->m_hasFarmFields.at(*m_actor.getFaction()).removeHarvestDesignation(blocks.plant_get(block));
+	bool result = actors.canReserve_tryToReserveLocation(m_actor, block);
+	assert(result);
+	area.m_hasFarmFields.at(*actors.getFaction(m_actor)).removeHarvestDesignation(blocks.plant_get(block));
 }
-void HarvestObjective::begin()
+void HarvestObjective::begin(Area& area)
 {
+	Plants& plants = area.getPlants();
 	assert(m_block != BLOCK_INDEX_MAX);
-	assert(m_actor.m_area->getBlocks().plant_get(m_block).readyToHarvest());
+	assert(plants.readyToHarvest(area.getBlocks().plant_get(m_block)));
 	m_harvestEvent.schedule(Config::harvestEventDuration, *this);
 }
-void HarvestObjective::reset()
+void HarvestObjective::reset(Area& area)
 {
-	cancel();
+	cancel(area);
 	m_block = BLOCK_INDEX_MAX;
 }
-BlockIndex HarvestObjective::getBlockContainingPlantToHarvestAtLocationAndFacing(BlockIndex location, Facing facing)
+void HarvestObjective::makePathRequest(Area& area)
 {
-	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return blockContainsHarvestablePlant(block); };
-	return m_actor.getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(location, facing, predicate);
+	std::unique_ptr<PathRequest> pathRequest = std::make_unique<HarvestPathRequest>(area, *this);
+	area.m_actors.move_pathRequestRecord(m_actor, std::move(pathRequest));
 }
-bool HarvestObjective::blockContainsHarvestablePlant(BlockIndex block) const
+BlockIndex HarvestObjective::getBlockContainingPlantToHarvestAtLocationAndFacing(Area& area, BlockIndex location, Facing facing)
 {
-	auto& blocks = m_actor.m_area->getBlocks();
-	return blocks.plant_exists(block) && blocks.plant_get(block).readyToHarvest() && !blocks.isReserved(block, *m_actor.getFaction());
+	Actors& actors = area.getActors();
+	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return blockContainsHarvestablePlant(area, block); };
+	return actors.getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(m_actor, location, facing, predicate);
+}
+bool HarvestObjective::blockContainsHarvestablePlant(Area& area, BlockIndex block) const
+{
+	Actors& actors = area.getActors();
+	Blocks& blocks = area.getBlocks();
+	Plants& plants = area.getPlants();
+	return blocks.plant_exists(block) && plants.readyToHarvest(blocks.plant_get(block)) && !blocks.isReserved(block, *actors.getFaction(m_actor));
+}
+HarvestPathRequest::HarvestPathRequest(Area& area, HarvestObjective& objective) : ObjectivePathRequest(objective, true) // reserve block which passed predicate.
+{
+	bool unreserved = true;
+	createGoAdjacentToDesignation(area, objective.m_actor, BlockDesignation::Harvest, objective.m_detour, unreserved, Config::maxRangeToSearchForHorticultureDesignations);
+}
+void HarvestPathRequest::onSuccess(Area& area, BlockIndex blockWhichPassedPredicate)
+{
+	static_cast<HarvestObjective&>(m_objective).select(area, blockWhichPassedPredicate);
 }

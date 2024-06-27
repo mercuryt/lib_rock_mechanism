@@ -1,7 +1,8 @@
 #pragma once
-#include "input.h"
-#include "plant.h"
+//#include "input.h"
+#include "plantSpecies.h"
 #include "cuboid.h"
+#include "config.h"
 
 #include <list>
 #include <unordered_set>
@@ -60,20 +61,20 @@ class HasFarmFieldsForFaction
 	Area& m_area;
 	Faction& m_faction;
 	std::list<FarmField> m_farmFields;
-	std::vector<Plant*> m_plantsNeedingFluid;
-	std::unordered_set<Plant*> m_plantsToHarvest;
+	std::vector<PlantIndex> m_plantsNeedingFluid;
+	std::unordered_set<PlantIndex> m_plantsToHarvest;
 	std::unordered_set<BlockIndex> m_blocksNeedingSeedsSewn;
 	bool m_plantsNeedingFluidIsSorted = false;
 public:
 	HasFarmFieldsForFaction(Area& a, Faction& f) : m_area(a), m_faction(f) { }
 	HasFarmFieldsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Area& a, Faction& f);
 	[[nodiscard]] Json toJson() const;
-	void addGivePlantFluidDesignation(Plant& plant);
-	void removeGivePlantFluidDesignation(Plant& plant);
+	void addGivePlantFluidDesignation(PlantIndex plant);
+	void removeGivePlantFluidDesignation(PlantIndex plant);
 	void addSowSeedsDesignation(BlockIndex block);
 	void removeSowSeedsDesignation(BlockIndex block);
-	void addHarvestDesignation(Plant& plant);
-	void removeHarvestDesignation(Plant& plant);
+	void addHarvestDesignation(PlantIndex plant);
+	void removeHarvestDesignation(PlantIndex plant);
 	void setDayOfYear(uint32_t dayOfYear);
 	[[nodiscard]] FarmField& create(std::unordered_set<BlockIndex>& blocks);
 	[[nodiscard]] FarmField& create(Cuboid cuboid);
@@ -84,7 +85,7 @@ public:
 	void shrink(FarmField& farmField, std::unordered_set<BlockIndex>& blocks);
 	void remove(FarmField& farmField);
 	void undesignateBlocks(std::unordered_set<BlockIndex>& blocks);
-	[[nodiscard]] Plant* getHighestPriorityPlantForGiveFluid();
+	[[nodiscard]] PlantIndex getHighestPriorityPlantForGiveFluid();
 	[[nodiscard]] bool hasHarvestDesignations() const;
 	[[nodiscard]] bool hasGivePlantsFluidDesignations() const;
 	[[nodiscard]] bool hasSowSeedsDesignations() const;
@@ -102,7 +103,7 @@ public:
 	[[nodiscard]] HasFarmFieldsForFaction& at(Faction& faction);
 	void registerFaction(Faction& faction);
 	void unregisterFaction(Faction& faction);
-	[[nodiscard]] Plant* getHighestPriorityPlantForGiveFluid(Faction& faction);
+	[[nodiscard]] PlantIndex getHighestPriorityPlantForGiveFluid(Faction& faction);
 	void removeAllSowSeedsDesignations(BlockIndex block);
 	void setDayOfYear(uint32_t dayOfYear);
 	[[nodiscard]] bool hasGivePlantsFluidDesignations(Faction& faction) const;

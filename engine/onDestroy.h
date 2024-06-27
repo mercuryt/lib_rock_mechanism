@@ -14,6 +14,7 @@ public:
 	void unsubscribe(HasOnDestroySubscriptions& hasSubscription);
 	void merge(OnDestroy& onDestroy);
 	void unsubscribeAll();
+	[[nodiscard]] bool empty() { return m_subscriptions.empty(); }
 	~OnDestroy();
 };
 

@@ -3,12 +3,10 @@
 #include "../objective.h"
 #include "../config.h"
 #include "../eventSchedule.hpp"
-#include "../threadedTask.hpp"
-#include "../findsPath.h"
+#include "../pathRequest.h"
 #include "../types.h"
 
 struct DeserializationMemo;
-class HarvestThreadedTask;
 class HarvestEvent;
 class Plant;
 class Actor;
@@ -16,34 +14,33 @@ class Actor;
 class HarvestObjectiveType final : public ObjectiveType
 {
 public:
-	bool canBeAssigned(Actor& actor) const;
-	std::unique_ptr<Objective> makeFor(Actor& actor) const;
+	bool canBeAssigned(Area& area, ActorIndex actor) const;
+	std::unique_ptr<Objective> makeFor(Area& area, ActorIndex actor) const;
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Harvest; }
 	HarvestObjectiveType() = default;
-	HarvestObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo){ }
+	HarvestObjectiveType(const Json&, DeserializationMemo&);
 };
 class HarvestObjective final : public Objective
 {
 	BlockIndex m_block = BLOCK_INDEX_MAX;
 public:
-	HarvestObjective(Actor& a);
+	HarvestObjective(Area& area, ActorIndex a);
 	HarvestObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	HasScheduledEvent<HarvestEvent> m_harvestEvent;
-	HasThreadedTask<HarvestThreadedTask> m_threadedTask;
-	void execute();
-	void cancel();
-	void delay() { cancel(); }
-	void select(BlockIndex block);
-	void begin();
-	void reset();
-	bool canHarvestAt(BlockIndex block) const;
+	void execute(Area& area);
+	void cancel(Area& area);
+	void delay(Area& area) { cancel(area); }
+	void select(Area& area, BlockIndex block);
+	void begin(Area& area);
+	void reset(Area& area);
+	void makePathRequest(Area& area);
+	bool canHarvestAt(Area& area, BlockIndex block) const;
 	std::string name() const { return "harvest"; }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Harvest; }
-	BlockIndex getBlockContainingPlantToHarvestAtLocationAndFacing(BlockIndex location, Facing facing);
-	bool blockContainsHarvestablePlant(BlockIndex block) const;
+	BlockIndex getBlockContainingPlantToHarvestAtLocationAndFacing(Area& area, BlockIndex location, Facing facing);
+	bool blockContainsHarvestablePlant(Area& area, BlockIndex block) const;
 	friend class HarvestEvent;
-	friend class HarvestThreadedTask;
 	// For testing.
 	BlockIndex getBlock() { return m_block; }
 };
@@ -51,18 +48,14 @@ class HarvestEvent final : public ScheduledEvent
 {
 	HarvestObjective& m_harvestObjective;
 public:
-	HarvestEvent(Step delay, HarvestObjective& ho, const Step start = 0);
-	void execute();
-	void clearReferences();
+	HarvestEvent(Area& area, Step delay, HarvestObjective& ho, const Step start = 0);
+	void execute(Simulation& simulation, Area* area);
+	void clearReferences(Simulation& simulation, Area* area);
 	Plant* getPlant();
 };
-class HarvestThreadedTask final : public ThreadedTask
+class HarvestPathRequest final : public ObjectivePathRequest
 {
-	HarvestObjective& m_harvestObjective;
-	FindsPath m_findsPath;
 public:
-	HarvestThreadedTask(HarvestObjective& ho);
-	void readStep();
-	void writeStep();
-	void clearReferences();
+	HarvestPathRequest(Area& area, HarvestObjective& objective);
+	void onSuccess(Area& area, BlockIndex blockWhichPassedPredicate);
 };

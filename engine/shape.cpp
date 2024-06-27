@@ -117,10 +117,20 @@ std::vector<BlockIndex> Shape::getBlocksWhichWouldBeAdjacentAt(const Blocks& blo
 	for(auto [x, y, z] : adjacentOffsetsCache.at(facing))
 	{
 		BlockIndex block = blocks.offset(location, x, y, z);
-		assert(block != BLOCK_INDEX_MAX);
-		output.push_back(block);
+		if(block != BLOCK_INDEX_MAX)
+			output.push_back(block);
 	}
 	return output;
+}
+BlockIndex Shape::getBlockWhichWouldBeAdjacentAtWithPredicate(const Blocks& blocks, BlockIndex location, Facing facing, std::function<bool(BlockIndex)> predicate) const
+{
+	for(auto [x, y, z] : adjacentOffsetsCache.at(facing))
+	{
+		BlockIndex block = blocks.offset(location, x, y, z);
+		if(block != BLOCK_INDEX_MAX && predicate(block))
+			return block;
+	}
+	return BLOCK_INDEX_MAX;
 }
 CollisionVolume Shape::getCollisionVolumeAtLocationBlock() const { return positions[0][3]; }
 // Static methods.

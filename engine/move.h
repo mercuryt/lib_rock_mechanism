@@ -11,7 +11,7 @@
 class MoveEvent;
 class PathThreadedTask;
 class Actor;
-class MoveType;
+struct MoveType;
 class Item;
 class HasShape;
 struct DeserializationMemo;

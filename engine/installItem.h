@@ -9,11 +9,11 @@ struct DeserializationMemo;
 class InstallItemObjective;
 class InstallItemProject final : public Project
 {
-	Item& m_item;
+	ItemIndex m_item;
 	Facing m_facing;
 public:
 	// Max one worker.
-	InstallItemProject(Item& i, BlockIndex l, Facing facing, Faction& faction);
+	InstallItemProject(Area& area, ItemIndex i, BlockIndex l, Facing facing, Faction& faction);
 	void onComplete();
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const { return {}; }
 	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const { return {{m_item,1}}; }
@@ -29,24 +29,24 @@ class InstallItemThreadedTask final : public ThreadedTask
 	InstallItemObjective& m_installItemObjective;
 	FindsPath m_findsPath;
 public:
-	InstallItemThreadedTask(InstallItemObjective& iio);
+	InstallItemThreadedTask(Area& area, InstallItemObjective& iio);
 	// Search for nearby item that needs installing.
-	void readStep();
-	void writeStep();
-	void clearReferences();
+	void readStep(Simulation& simulation, Area* area);
+	void writeStep(Simulation& simulation, Area* area);
+	void clearReferences(Simulation& simulation, Area* area);
 };
 class InstallItemObjective final : public Objective
 {
 	HasThreadedTask<InstallItemThreadedTask> m_threadedTask;
 	InstallItemProject* m_project;
 public:
-	InstallItemObjective(Actor& a);
+	InstallItemObjective(Area& area, ActorIndex a);
 	InstallItemObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
-	void execute(); 
-	void cancel() { m_threadedTask.maybeCancel(); m_project->removeWorker(m_actor); }
-	void delay() { }
-	void reset();
+	void execute(Area& area); 
+	void cancel(Area& area);
+	void delay(Area&) { }
+	void reset(Area& area);
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::InstallItem; }
 	std::string name() const { return "install item"; }
 	friend class InstallItemThreadedTask;
@@ -54,8 +54,8 @@ public:
 class InstallItemObjectiveType final : public ObjectiveType
 {
 public:
-	bool canBeAssigned(Actor& actor) const;
-	std::unique_ptr<Objective> makeFor(Actor& actor) const;
+	bool canBeAssigned(Area& area, ActorIndex actor) const;
+	std::unique_ptr<Objective> makeFor(Area& area, ActorIndex actor) const;
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::InstallItem; }
 };
 class HasInstallItemDesignationsForFaction final
@@ -64,8 +64,8 @@ class HasInstallItemDesignationsForFaction final
 	Faction& m_faction;
 public:
 	HasInstallItemDesignationsForFaction(Faction& faction) : m_faction(faction) { }
-	void add(BlockIndex block, Item& item, Facing facing, Faction& faction);
-	void remove(Item& item);
+	void add(BlockIndex block, ItemIndex item, Facing facing, Faction& faction);
+	void remove(Area& area, ItemIndex item);
 	bool empty() const { return m_designations.empty(); }
 	bool contains(const BlockIndex block) const { return m_designations.contains(block); }
 	InstallItemProject& at(BlockIndex block) { return m_designations.at(block); }

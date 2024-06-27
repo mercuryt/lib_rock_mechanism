@@ -25,8 +25,7 @@ public:
 	void destroyArea(Area& area);
 	void loadAreas(const Json& data, DeserializationMemo& deserializationMemo);
 	void loadAreas(const Json& data, std::filesystem::path path);
-	void readStep();
-	void writeStep();
+	void doStep();
 	void incrementHour();
 	void save();
 	void clearAll();

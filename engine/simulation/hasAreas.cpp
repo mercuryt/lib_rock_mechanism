@@ -9,15 +9,10 @@ SimulationHasAreas::SimulationHasAreas(const Json& data, DeserializationMemo&, S
 {
 	m_nextId = data["nextId"].get<AreaId>();
 }
-void SimulationHasAreas::readStep()
+void SimulationHasAreas::doStep()
 {
 	for(Area& area : m_areas)
-		area.readStep();
-}
-void SimulationHasAreas::writeStep()
-{
-	for(Area& area : m_areas)
-		area.writeStep();
+		area.doStep();
 }
 void SimulationHasAreas::incrementHour()
 {
@@ -49,7 +44,7 @@ Area& SimulationHasAreas::loadArea(AreaId id, std::wstring name, uint32_t x, uin
 void SimulationHasAreas::destroyArea(Area& area)
 {
 	m_simulation.m_dramaEngine->removeArcsForArea(area);
-	for(Actor* actor : area.m_hasActors.getAll())
+	for(Actor* actor : area.m_actors.getAll())
 		actor->exit();
 	m_areasById.erase(area.m_id);
 	m_areas.remove(area);

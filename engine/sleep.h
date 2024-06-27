@@ -3,16 +3,16 @@
 #include "objective.h"
 #include "config.h"
 #include "findsPath.h"
-#include "threadedTask.hpp"
 #include "eventSchedule.hpp"
+#include "pathRequest.h"
+#include "terrainFacade.h"
 #include "types.h"
 
 class Area;
-class Actor;
-class Item;
 class SleepEvent;
 class TiredEvent;
 class SleepObjective;
+class Simulation;
 struct DeserializationMemo;
 struct AnimalSpecies;
 
@@ -20,32 +20,32 @@ class MustSleep final
 {
 	HasScheduledEventPausable<SleepEvent> m_sleepEvent; // 2
 	HasScheduledEvent<TiredEvent> m_tiredEvent; // 2
-	Actor& m_actor;
+	ActorIndex m_actor;
 	BlockIndex m_location = BLOCK_INDEX_MAX;
 	SleepObjective* m_objective = nullptr;
 	bool m_needsSleep = false;
 	bool m_isAwake = true;
 public:
-	MustSleep(Actor& a, Simulation& s);
-	MustSleep(const Json data, Actor& a, Simulation& s, const AnimalSpecies& species);
+	MustSleep(Area& area, ActorIndex a);
+	MustSleep(const Json data, ActorIndex a, Simulation& s, const AnimalSpecies& species);
 	Json toJson() const;
-	void tired();
-	void sleep();
-	void passout(Step duration);
-	void sleep(Step duration, bool force = false);
-	void wakeUp();
-	void makeSleepObjective();
-	void wakeUpEarly();
+	void tired(Area& area);
+	void sleep(Area& area);
+	void passout(Area& area, Step duration);
+	void sleep(Area& area, Step duration, bool force = false);
+	void wakeUp(Area& area);
+	void makeSleepObjective(Area& area);
+	void wakeUpEarly(Area& area);
 	void setLocation(BlockIndex block);
 	void onDeath();
-	void notTired();
-	void scheduleTiredEvent();
+	void notTired(Area& area);
+	void scheduleTiredEvent(Area& area);
 	[[nodiscard]] bool isAwake() const { return m_isAwake; }
 	[[nodiscard]] bool getNeedsSleep() const { return m_needsSleep; }
 	[[nodiscard]] BlockIndex getLocation() { return m_location; }
 	friend class SleepEvent;
 	friend class TiredEvent;
-	friend class SleepThreadedTask;
+	friend class SleepPathRequest;
 	friend class SleepObjective;
 	// For UI.
 	[[nodiscard]] Percent getSleepPercent() const { return m_isAwake ? 0 : m_sleepEvent.percentComplete(); }
@@ -59,51 +59,15 @@ class SleepEvent final : public ScheduledEvent
 	MustSleep& m_needsSleep;
 	bool m_force = false;
 public:
-	SleepEvent(const Step delay, MustSleep& ns, bool force, const Step start = 0);
-	void execute();
-	void clearReferences();
+	SleepEvent(Simulation& simulation, const Step delay, MustSleep& ns, bool force, const Step start = 0);
+	void execute(Simulation&, Area*);
+	void clearReferences(Simulation&, Area*);
 };
 class TiredEvent final : public ScheduledEvent
 {
 	MustSleep& m_needsSleep;
 public:
-	TiredEvent(const Step delay, MustSleep& ns, const Step start = 0);
-	void execute();
-	void clearReferences();
-};
-// Find a place to sleep.
-class SleepThreadedTask final : public ThreadedTask
-{
-	SleepObjective& m_sleepObjective;
-	FindsPath m_findsPath;
-	bool m_sleepAtCurrentLocation = false;
-	bool m_noWhereToSleepFound = false;
-public:
-	SleepThreadedTask(SleepObjective& so);
-	void readStep();
-	void writeStep();
-	void clearReferences();
-};
-class SleepObjective final : public Objective
-{
-	HasThreadedTask<SleepThreadedTask> m_threadedTask;
-	bool m_noWhereToSleepFound = false;
-public:
-	SleepObjective(Actor& a);
-	SleepObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	void execute();
-	void cancel();
-	void delay() { cancel(); }
-	void reset();
-	bool onNoPath();
-	[[nodiscard]] uint32_t desireToSleepAt(BlockIndex block) const;
-	[[nodiscard]] std::string name() const { return "sleep"; }
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Sleep; }
-	[[nodiscard]] bool isNeed() const { return true; }
-	~SleepObjective();
-	friend class SleepThreadedTask;
-	friend class MustSleep;
-	// For testing.
-	[[maybe_unused, nodiscard]] bool threadedTaskExists() const { return m_threadedTask.exists(); }
+	TiredEvent(Simulation& simulation, const Step delay, MustSleep& ns, const Step start = 0);
+	void execute(Simulation&, Area*);
+	void clearReferences(Simulation&, Area*);
 };

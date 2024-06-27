@@ -1,12 +1,12 @@
 #include "construct.h"
 #include "deserializationMemo.h"
-#include "item.h"
-#include "actor.h"
 #include "area.h"
 #include "reservable.h"
+#include "terrainFacade.h"
 #include "types.h"
 #include "util.h"
 #include "simulation.h"
+#include <memory>
 /*
 // Input.
 void DesignateConstructInputAction::execute()
@@ -26,154 +26,6 @@ void UndesignateConstructInputAction::execute()
 		constructDesginations.undesignate(faction, block);
 }
 */
-// ThreadedTask.
-ConstructThreadedTask::ConstructThreadedTask(ConstructObjective& co) : ThreadedTask(co.m_actor.getThreadedTaskEngine()), m_constructObjective(co), m_findsPath(co.m_actor, co.m_detour) { }
-void ConstructThreadedTask::readStep()
-{
-	std::function<bool(BlockIndex)> constructCondition = [&](BlockIndex block)
-	{
-		return m_constructObjective.joinableProjectExistsAt(block);
-	};
-	m_findsPath.m_maxRange = Config::maxRangeToSearchForConstructionDesignations;
-	m_findsPath.pathToUnreservedAdjacentToPredicate(constructCondition, *m_constructObjective.m_actor.getFaction());
-}
-void ConstructThreadedTask::writeStep()
-{
-	if(!m_findsPath.found() && !m_findsPath.m_useCurrentLocation)
-		m_constructObjective.m_actor.m_hasObjectives.cannotFulfillObjective(m_constructObjective);
-	else
-	{
-		if(!m_findsPath.areAllBlocksAtDestinationReservable(m_constructObjective.m_actor.getFaction()))
-		{
-			// Proposed location while constructing has been reserved already, try to find another.
-			m_constructObjective.m_constructThreadedTask.create(m_constructObjective);
-			return;
-		}
-		BlockIndex target = m_findsPath.getBlockWhichPassedPredicate();
-		ConstructProject& project = m_constructObjective.m_actor.m_area->m_hasConstructionDesignations.getProject(*m_constructObjective.m_actor.getFaction(), target);
-		if(project.canAddWorker(m_constructObjective.m_actor))
-			m_constructObjective.joinProject(project);
-		else
-			// Project can no longer accept this worker, try again.
-			m_constructObjective.m_constructThreadedTask.create(m_constructObjective);
-	}
-}
-void ConstructThreadedTask::clearReferences() { m_constructObjective.m_constructThreadedTask.clearPointer(); }
-// Objective.
-ConstructObjective::ConstructObjective(Actor& a) : Objective(a, Config::constructObjectivePriority), m_constructThreadedTask(a.getThreadedTaskEngine()), m_project(nullptr) { }
-ConstructObjective::ConstructObjective(const Json& data, DeserializationMemo& deserializationMemo) :
-	Objective(data, deserializationMemo), m_constructThreadedTask(m_actor.m_area->m_simulation.m_threadedTaskEngine),
-	m_project(data.contains("project") ? deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()) : nullptr)
-{
-	if(data.contains("threadedTask"))
-		m_constructThreadedTask.create(*this);
-}
-Json ConstructObjective::toJson() const
-{
-	Json data = Objective::toJson();
-	if(m_project != nullptr)
-		data["project"] = m_project;
-	if(m_constructThreadedTask.exists())
-		data["threadedTask"] = true;
-	return data;
-}
-void ConstructObjective::execute()
-{
-	if(m_project != nullptr)
-		m_project->commandWorker(m_actor);
-	else if(!m_constructThreadedTask.exists())
-	{
-		ConstructProject* project = nullptr;
-		std::function<bool(BlockIndex)> predicate = [&](BlockIndex block)
-		{
-			if(joinableProjectExistsAt(block))
-			{
-				project = &m_actor.m_area->m_hasConstructionDesignations.getProject(*m_actor.getFaction(), block);
-				return project->canAddWorker(m_actor);
-			}
-			return false;
-		};
-		[[maybe_unused]] BlockIndex adjacent = m_actor.getBlockWhichIsAdjacentWithPredicate(predicate);
-		if(project != nullptr)
-		{
-			assert(adjacent != BLOCK_INDEX_MAX);
-			joinProject(*project);
-			return;
-		}
-		m_constructThreadedTask.create(*this);
-	}
-}
-void ConstructObjective::cancel()
-{
-	if(m_project != nullptr)
-		m_project->removeWorker(m_actor);
-	m_constructThreadedTask.maybeCancel();
-}
-void ConstructObjective::delay()
-{
-	cancel();
-	m_project = nullptr;
-	m_actor.m_project = nullptr;
-}
-void ConstructObjective::reset()
-{
-	if(m_project)
-	{
-		assert(!m_project->getWorkers().contains(&m_actor));
-		m_project = nullptr;
-		m_actor.m_project = nullptr;
-	}
-	else
-		assert(!m_actor.m_project);
-	m_constructThreadedTask.maybeCancel();
-	m_actor.m_canReserve.deleteAllWithoutCallback();
-}
-void ConstructObjective::onProjectCannotReserve()
-{
-	assert(m_project);
-	m_cannotJoinWhileReservationsAreNotComplete.insert(m_project);
-}
-void ConstructObjective::joinProject(ConstructProject& project)
-{
-	assert(m_project == nullptr);
-	m_project = &project;
-	project.addWorkerCandidate(m_actor, *this);
-}
-ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAdjacentTo(BlockIndex location, Facing facing)
-{
-	for(BlockIndex adjacent : m_actor.getAdjacentAtLocationWithFacing(location, facing))
-	{
-		ConstructProject* project = getProjectWhichActorCanJoinAt(adjacent);
-		if(project != nullptr)
-			return project;
-	}
-	return nullptr;
-}
-ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAt(BlockIndex block)
-{
-	Blocks& blocks = m_actor.m_area->getBlocks();
-	if(!blocks.designation_has(block, *m_actor.getFaction(), BlockDesignation::Construct))
-		return nullptr;
-	ConstructProject& project = m_actor.m_area->m_hasConstructionDesignations.getProject(*m_actor.getFaction(), block);
-	if(!project.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&project))
-		return nullptr;
-	if(project.canAddWorker(m_actor))
-		return &project;
-	return nullptr;
-}
-bool ConstructObjective::joinableProjectExistsAt(BlockIndex block) const
-{
-	return const_cast<ConstructObjective*>(this)->getProjectWhichActorCanJoinAt(block) != nullptr;
-}
-bool ConstructObjective::canJoinProjectAdjacentToLocationAndFacing(BlockIndex location, Facing facing) const
-{
-	return const_cast<ConstructObjective*>(this)->getProjectWhichActorCanJoinAdjacentTo(location, facing) != nullptr;
-}
-bool ConstructObjectiveType::canBeAssigned(Actor& actor) const
-{
-	return actor.m_area->m_hasConstructionDesignations.areThereAnyForFaction(*actor.getFaction());
-}
-std::unique_ptr<Objective> ConstructObjectiveType::makeFor(Actor& actor) const { return std::make_unique<ConstructObjective>(actor); }
 // Project.
 ConstructProject::ConstructProject(const Json& data, DeserializationMemo& deserializationMemo) : Project(data, deserializationMemo),
 	m_blockFeatureType(data.contains("blockFeatureType") ? &BlockFeatureType::byName(data["blockFeatureType"].get<std::string>()) : nullptr),
@@ -202,14 +54,17 @@ std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> Construc
 	assert(m_materialType.constructionData != nullptr);
 	return m_materialType.constructionData->byproducts;
 }
-uint32_t ConstructProject::getWorkerConstructScore(Actor& actor) const
+uint32_t ConstructProject::getWorkerConstructScore(ActorIndex actor) const
 {
+	Actors& actors = m_area.getActors();
 	const SkillType& constructSkill = m_materialType.constructionData->skill;
-	return (actor.m_attributes.getStrength() * Config::constructStrengthModifier) + (actor.m_skillSet.get(constructSkill) * Config::constructSkillModifier);
+	return (actors.getStrength(actor) * Config::constructStrengthModifier) + 
+		(actors.skill_getLevel(actor, constructSkill) * Config::constructSkillModifier);
 }
 void ConstructProject::onComplete()
 {
 	Blocks& blocks = m_area.getBlocks();
+	Actors& actors = m_area.getActors();
 	assert(!blocks.solid_is(m_location));
 	if(m_blockFeatureType == nullptr)
 	{
@@ -223,19 +78,19 @@ void ConstructProject::onComplete()
 	auto workers = std::move(m_workers);
 	m_area.m_hasConstructionDesignations.clearAll(m_location);
 	for(auto& [actor, projectWorker] : workers)
-		actor->m_hasObjectives.objectiveComplete(projectWorker.objective);
+		actors.objective_complete(actor, projectWorker.objective);
 }
 void ConstructProject::onCancel()
 {
-	//TODO: use std::copy with a projection.
-	std::vector<Actor*> actors = getWorkersAndCandidates();
+	std::vector<ActorIndex> copy = getWorkersAndCandidates();
 	m_area.m_hasConstructionDesignations.remove(m_faction, m_location);
-	for(Actor* actor : actors)
+	Actors& actors = m_area.getActors();
+	for(ActorIndex actor : copy)
 	{
-		static_cast<ConstructObjective&>(actor->m_hasObjectives.getCurrent()).m_project = nullptr;
-		actor->m_project = nullptr;
-		actor->m_hasObjectives.getCurrent().reset();
-		actor->m_hasObjectives.cannotCompleteSubobjective();
+		actors.objective_getCurrent<ConstructObjective>(actor).m_project = nullptr;
+		actors.project_unset(actor);
+		actors.objective_reset(actor);
+		actors.objective_canNotCompleteSubobjective(actor);
 	}
 }
 void ConstructProject::onDelay()
@@ -251,7 +106,7 @@ Step ConstructProject::getDuration() const
 {
 	uint32_t totalScore = 0;
 	for(auto& pair : m_workers)
-		totalScore += getWorkerConstructScore(*pair.first);
+		totalScore += getWorkerConstructScore(pair.first);
 	return m_materialType.constructionData->duration / totalScore;
 }
 ConstructionLocationDishonorCallback::ConstructionLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) :

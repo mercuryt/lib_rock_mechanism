@@ -1,16 +1,14 @@
 #include "stockpile.h"
 #include "area.h"
-#include "actor.h"
 #include "config.h"
 #include "deserializationMemo.h"
-#include "item.h"
-#include "itemQuery.h"
+#include "items/itemQuery.h"
 #include "reservable.h"
 #include "simulation.h"
-#include "simulation/hasItems.h"
 #include "stocks.h"
+#include "terrainFacade.h"
 #include "types.h"
-#include "actor.h"
+#include "itemType.h"
 #include <cwchar>
 #include <functional>
 #include <memory>
@@ -41,120 +39,110 @@ void StockPileUpdateInputAction::execute()
 }
 */
 // Searches for an Item and destination to make a hauling project for m_objective.m_actor.
-StockPileThreadedTask::StockPileThreadedTask(StockPileObjective& spo) : 
-	ThreadedTask(spo.m_actor.getThreadedTaskEngine()), m_objective(spo), m_findsPath(spo.m_actor, spo.m_detour) { }
-	
-void StockPileThreadedTask::readStep()
+StockPilePathRequest::StockPilePathRequest(Area& area, StockPileObjective& spo) : m_objective(spo)
 {
 	assert(m_objective.m_project == nullptr);
-	assert(m_objective.m_actor.m_project == nullptr);
-	m_findsPath.m_maxRange = Config::maxRangeToSearchForStockPileItems;
-	if(m_item == nullptr)
+	assert(m_objective.m_destination == BLOCK_INDEX_MAX);
+	Actors& actors = area.getActors();
+	Items& items = area.getItems();
+	assert(!actors.project_exists(m_objective.m_actor));
+	Faction& faction = *actors.getFaction(spo.m_actor);
+	if(m_objective.m_item == BLOCK_INDEX_MAX)
 	{
-		std::function<Item*(BlockIndex)> getItem = [&](BlockIndex block)
+		auto& hasStockPiles = area.m_hasStockPiles.at(faction);
+		std::function<bool(BlockIndex)> blocksContainsItemCondition = [this, &hasStockPiles, &items](BlockIndex block)
 		{
-			return m_objective.m_actor.m_area->m_hasStockPiles.at(*m_objective.m_actor.getFaction()).getHaulableItemForAt(m_objective.m_actor, block);
-		};
-		std::function<bool(BlockIndex)> blocksContainsItemCondition = [&](BlockIndex block)
-		{
-			// This is a nested path condition. Is there a faster way?
-			// Find a path to a stockpileable item and then find a path to an appropriate stock pile.
-			// Would it be better to collect a list of stockpiles reach and if we can reach them and then check each item against that prior to resorting to repeated nested paths?
-			Item* item = getItem(block);
-			if(item == nullptr)
+			ItemIndex item = hasStockPiles.getHaulableItemForAt(m_objective.m_actor, block);
+			if(item == ITEM_INDEX_MAX)
 				return false;
-			// Item and path to it found, now check for path to destinaiton.
-			// TODO: Path from item location rather then from actor location, requires adding a setStart method to FindsPath.
-			std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return destinationCondition(block, *item); };
-			FindsPath findAnotherPath(m_objective.m_actor, false);
-			findAnotherPath.m_maxRange = Config::maxRangeToSearchForStockPiles;
-			findAnotherPath.pathToUnreservedAdjacentToPredicate(predicate, *m_objective.m_actor.getFaction());
-			return findAnotherPath.found() || findAnotherPath.m_useCurrentLocation;
+			std::tuple<const ItemType*, const MaterialType*> tuple = {&items.getItemType(item), &items.getMaterialType(item)};
+			return std::ranges::find(m_objective.m_closedList, tuple) == m_objective.m_closedList.end();
 		};
-		m_findsPath.pathToUnreservedAdjacentToPredicate(blocksContainsItemCondition, *m_objective.m_actor.getFaction());
-		if(m_findsPath.found())
-			m_item = getItem(m_findsPath.getBlockWhichPassedPredicate());
+		bool unreserved = false;
+		DistanceInBlocks maxRange = Config::maxRangeToSearchForStockPileItems;
+		createGoAdjacentToCondition(area, m_objective.m_actor, blocksContainsItemCondition, m_objective.m_detour, unreserved, maxRange, BLOCK_INDEX_MAX);
 	}
 	else
 	{
-		assert(m_destination != BLOCK_INDEX_MAX);
-		if(m_objective.m_actor.m_canPickup.isCarrying(*m_item))
-			m_findsPath.pathAdjacentToBlock(m_destination);
-		else
-			m_findsPath.pathToUnreservedAdjacentToHasShape(*m_item, *m_objective.m_actor.getFaction());
+		std::function<bool(BlockIndex)> condition = [this, &area](BlockIndex block) { return m_objective.destinationCondition(area, block, m_objective.m_item); };
+		bool unreserved = false;
+		DistanceInBlocks maxRange = Config::maxRangeToSearchForStockPiles;
+		createGoAdjacentToCondition(area, m_objective.m_actor, condition, m_objective.m_detour, unreserved, maxRange, BLOCK_INDEX_MAX);
 	}
 }
-void StockPileThreadedTask::writeStep()
+void StockPilePathRequest::callback(Area& area, FindPathResult result)
 {
-	if(m_item == nullptr)
-		m_objective.m_actor.m_hasObjectives.cannotFulfillObjective(m_objective);
-	else
+	Actors& actors = area.getActors();
+	Faction& faction = *actors.getFaction(m_objective.m_actor);
+	auto& hasStockPiles = area.m_hasStockPiles.at(faction);
+	if(m_objective.m_item == ITEM_INDEX_MAX)
 	{
-		Blocks& blocks = m_objective.m_actor.m_area->getBlocks();
-		Faction& faction = *m_objective.m_actor.getFaction();
-		if(!blocks.stockpile_contains(m_destination, faction) || 
-			!blocks.stockpile_getForFaction(m_destination, faction)->accepts(*m_item)
-		)
-		{
-			// Conditions have changed since read step, create a new task.
-			m_objective.m_threadedTask.create(m_objective);
-			return;
-		}
-		// StockPile candidate found, create a new project or add to an existing one.
-		assert(blocks.stockpile_getForFaction(m_destination, faction));
-		StockPile& stockpile = *blocks.stockpile_getForFaction(m_destination, faction);
-		if(stockpile.hasProjectNeedingMoreWorkers())
-			stockpile.addToProjectNeedingMoreWorkers(m_objective.m_actor, m_objective);
+		if(result.path.empty() && !result.useCurrentPosition)
+			// No haulable item found.
+			actors.objective_canNotCompleteObjective(m_objective.m_actor, m_objective);
 		else
 		{
-			auto& hasStockPiles = m_objective.m_actor.m_area->m_hasStockPiles.at(faction);
-			if(hasStockPiles.m_projectsByItem.contains(m_item))
-			{
-				// Projects found, select one to join.
-				for(StockPileProject& stockPileProject : hasStockPiles.m_projectsByItem.at(m_item))
-					if(stockPileProject.canAddWorker(m_objective.m_actor))
-					{
-						m_objective.m_project = &stockPileProject;
-						stockPileProject.addWorkerCandidate(m_objective.m_actor, m_objective);
-					}
-			}
+			ItemIndex item = hasStockPiles.getHaulableItemForAt(m_objective.m_actor, result.blockThatPassedPredicate);
+			if(item != ITEM_INDEX_MAX)
+				m_objective.m_item = item;
+			m_objective.execute(area);
+		}
+	}
+	else
+	{
+		if(result.path.empty() && !result.useCurrentPosition)
+		{
+			// No stockpile found.
+			Items& items = area.getItems();
+			m_objective.m_closedList.emplace_back(&items.getItemType(m_objective.m_item), &items.getMaterialType(m_objective.m_item));
+			m_objective.execute(area);
+		}
+		else
+		{
+			if(!m_objective.destinationCondition(area, result.blockThatPassedPredicate, m_objective.m_item))
+				// Found destination is no longer valid.
+				m_objective.execute(area);
 			else
-				// No projects found, make one.
-				hasStockPiles.makeProject(*m_item, m_destination, m_objective);
+			{
+				// Destination found, join or create a project.
+				Faction& faction = *actors.getFaction(m_objective.m_actor);
+				Blocks& blocks = area.getBlocks();
+				assert(blocks.stockpile_getForFaction(m_objective.m_destination, faction));
+				StockPile& stockpile = *blocks.stockpile_getForFaction(m_objective.m_destination, faction);
+				if(stockpile.hasProjectNeedingMoreWorkers())
+					stockpile.addToProjectNeedingMoreWorkers(m_objective.m_actor, m_objective);
+				else
+				{
+					auto& hasStockPiles = area.m_hasStockPiles.at(faction);
+					if(hasStockPiles.m_projectsByItem.contains(m_objective.m_item))
+					{
+						// Projects found, select one to join.
+						for(StockPileProject& stockPileProject : hasStockPiles.m_projectsByItem.at(m_objective.m_item))
+							if(stockPileProject.canAddWorker(m_objective.m_actor))
+							{
+								m_objective.m_project = &stockPileProject;
+								stockPileProject.addWorkerCandidate(m_objective.m_actor, m_objective);
+							}
+					}
+					else
+						// No projects found, make one.
+						hasStockPiles.makeProject(m_objective.m_item, m_objective.m_destination, m_objective);
+				}
+			}
 		}
 	}
 }
-void StockPileThreadedTask::clearReferences() { m_objective.m_threadedTask.clearPointer(); }
-bool StockPileThreadedTask::destinationCondition(BlockIndex block, const Item& item)
+bool StockPileObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
 {
-	Blocks& blocks = m_objective.m_actor.m_area->getBlocks();
-	assert(m_destination == BLOCK_INDEX_MAX);
-	if(!blocks.shape_staticCanEnterCurrentlyWithAnyFacing(block, item))
-		return false;
-	if(!blocks.item_empty(block))
-		// Don't put multiple items in the same block unless they are generic and share item type and material type.
-		if(!item.isGeneric() || !blocks.item_getCount(block, item.m_itemType, item.m_materialType))
-			return false;
-	Faction& faction = *m_objective.m_actor.getFaction();
-	const StockPile* stockpile = blocks.stockpile_getForFaction(block, faction);
-	if(stockpile == nullptr || !stockpile->isEnabled() || !blocks.stockpile_isAvalible(block, faction))
-		return false;
-	if(blocks.isReserved(block, faction))
-		return false;
-	if(!stockpile->accepts(item))
-		return false;
-	m_destination = block;
-	return true;
-};
-bool StockPileObjectiveType::canBeAssigned(Actor& actor) const
-{
-	return actor.m_area->m_hasStockPiles.at(*actor.getFaction()).isAnyHaulingAvailableFor(actor);
+	return area.m_hasStockPiles.at(*area.getActors().getFaction(actor)).isAnyHaulingAvailableFor(actor);
 }
-std::unique_ptr<Objective> StockPileObjectiveType::makeFor(Actor& actor) const
+std::unique_ptr<Objective> StockPileObjectiveType::makeFor(Area&, ActorIndex actor) const
 {
 	return std::make_unique<StockPileObjective>(actor);
 }
-StockPileObjective::StockPileObjective(Actor& a) : Objective(a, Config::stockPilePriority), m_threadedTask(a.getThreadedTaskEngine()), m_project(nullptr) { }
+StockPileObjective::StockPileObjective(ActorIndex a) :
+	Objective(a, Config::stockPilePriority) { }
+/*
 StockPileObjective::StockPileObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo),
 	m_threadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine), 
 	m_project(data.contains("project") ? static_cast<StockPileProject*>(deserializationMemo.m_projects.at(data["project"].get<uintptr_t>())) : nullptr)
@@ -171,36 +159,63 @@ Json StockPileObjective::toJson() const
 		data["project"] = *m_project;
 	return data;
 }
-void StockPileObjective::execute() 
+*/
+void StockPileObjective::execute(Area& area) 
 { 
 	// If there is no project to work on dispatch a threaded task to either find one or call cannotFulfillObjective.
 	if(m_project == nullptr)
 	{
-		assert(m_actor.m_project == nullptr);
-		m_threadedTask.create(*this); 
+		Actors& actors = area.getActors();
+		assert(!actors.project_exists(m_actor));
+		actors.move_pathRequestRecord(m_actor, std::make_unique<StockPilePathRequest>(area, *this));
 	}
 	else
 		m_project->commandWorker(m_actor);
 }
-void StockPileObjective::cancel()
+void StockPileObjective::cancel(Area& area)
 {
+	Actors& actors = area.getActors();
 	if(m_project != nullptr)
 	{
 		m_project->removeWorker(m_actor);
 		m_project = nullptr;
-		m_actor.m_project = nullptr;
+		actors.project_unset(m_actor);
 	}
 	else
-		assert(m_actor.m_project == nullptr);
-	m_threadedTask.maybeCancel();
-	m_actor.m_canReserve.deleteAllWithoutCallback();
+		assert(!actors.project_exists(m_actor));
+	actors.move_pathRequestMaybeCancel(m_actor);
+	actors.canReserve_clearAll(m_actor);
 }
-StockPileProject::StockPileProject(Faction* faction, Area& area, BlockIndex block, Item& item, Quantity quantity, Quantity maxWorkers) : 
+bool StockPileObjective::destinationCondition(Area& area, BlockIndex block, const ItemIndex item)
+{
+	Blocks& blocks = area.getBlocks();
+	Items& items = area.getItems();
+	Actors& actors = area.getActors();
+	assert(m_destination == BLOCK_INDEX_MAX);
+	if(!blocks.shape_staticCanEnterCurrentlyWithAnyFacing(block, items.getShape(item), items.getBlocks(item)))
+		return false;
+	if(!blocks.item_empty(block))
+		// Don't put multiple items in the same block unless they are generic and share item type and material type.
+		if(!items.isGeneric(item) || !blocks.item_getCount(block, items.getItemType(item), items.getMaterialType(item)))
+			return false;
+	Faction& faction = *actors.getFaction(m_actor);
+	const StockPile* stockpile = blocks.stockpile_getForFaction(block, faction);
+	if(stockpile == nullptr || !stockpile->isEnabled() || !blocks.stockpile_isAvalible(block, faction))
+		return false;
+	if(blocks.isReserved(block, faction))
+		return false;
+	if(!stockpile->accepts(item))
+		return false;
+	m_destination = block;
+	return true;
+};
+StockPileProject::StockPileProject(Faction* faction, Area& area, BlockIndex block, ItemIndex item, Quantity quantity, Quantity maxWorkers) : 
 	Project(faction, area, block, maxWorkers), 
 	m_item(item), m_quantity(quantity),
-       	m_itemType(item.m_itemType), 
-	m_materialType(item.m_materialType), 
+       	m_itemType(area.getItems().getItemType(item)), 
+	m_materialType(area.getItems().getMaterialType(item)), 
 	m_stockpile(*area.getBlocks().stockpile_getForFaction(block, *faction)) { }
+/*
 StockPileProject::StockPileProject(const Json& data, DeserializationMemo& deserializationMemo) : 
 	Project(data, deserializationMemo),
 	m_item(deserializationMemo.m_simulation.m_hasItems->getById(data["item"].get<ItemId>())), 
@@ -218,14 +233,16 @@ Json StockPileProject::toJson() const
 	data["materialType"] = m_materialType;
 	return data;
 }
+*/
 void StockPileProject::onComplete()
 {
-	for(Item* item : m_deliveredItems)
-		item->setLocation(m_location);
+	Items& items = m_area.getItems();
+	for(ItemIndex item : m_deliveredItems)
+		items.setLocation(item, m_location);
 	for(auto& pair : m_alreadyAtSite)
-		pair.first->setLocation(m_location);
+		pair.first.setLocationAndFacing(m_area, m_location, 0);
 	Blocks& blocks = m_area.getBlocks();
-	Item& delivered = blocks.item_getGeneric(m_location, m_itemType, m_materialType);
+	ItemIndex delivered = blocks.item_getGeneric(m_location, m_itemType, m_materialType);
 	auto workers = std::move(m_workers);
 	auto& hasStockPiles = m_area.m_hasStockPiles.at(m_stockpile.m_faction);
 	m_area.m_hasStocks.at(m_faction).record(delivered);
@@ -235,8 +252,9 @@ void StockPileProject::onComplete()
 	else
 		// Partial stack of generic.
 		hasStockPiles.destroyProject(*this);
+	Actors& actors = m_area.getActors();
 	for(auto& [actor, projectWorker] : workers)
-		actor->m_hasObjectives.objectiveComplete(projectWorker.objective);
+		actors.objective_complete(actor, projectWorker.objective);
 }
 void StockPileProject::onReserve()
 {
@@ -247,27 +265,28 @@ void StockPileProject::onReserve()
 }
 void StockPileProject::onCancel()
 {
-	std::vector<Actor*> actors = getWorkersAndCandidates();
+	std::vector<ActorIndex> workersAndCandidates = getWorkersAndCandidates();
 	m_area.m_hasStockPiles.at(m_faction).destroyProject(*this);
-	for(Actor* actor : actors)
+	Actors& actors = m_area.getActors();
+	for(ActorIndex actor : workersAndCandidates)
 	{
-		static_cast<StockPileObjective&>(actor->m_hasObjectives.getCurrent()).m_project = nullptr;
-		actor->m_project = nullptr;
-		actor->m_hasObjectives.getCurrent().reset();
-		actor->m_hasObjectives.cannotCompleteSubobjective();
+		StockPileObjective& objective = actors.objective_getCurrent<StockPileObjective>(actor);
+		actors.project_unset(actor);
+		objective.m_project = nullptr;
+		actors.objective_canNotCompleteSubobjective(actor);
 	}
 }
 void StockPileProject::onDelay() 
 { 
-	m_item.m_canBeStockPiled.maybeUnsetAndScheduleReset(m_faction, Config::stepsToDisableStockPile); 
+	m_area.getItems().stockpile_maybeUnsetAndScheduleReset(m_item, m_faction, Config::stepsToDisableStockPile); 
 	cancel(); 
 }
-void StockPileProject::onHasShapeReservationDishonored([[maybe_unused]] const HasShape& hasShape, [[maybe_unused]] Quantity oldCount, Quantity newCount)
+void StockPileProject::onHasShapeReservationDishonored(ActorOrItemIndex, Quantity, Quantity newCount)
 {
 	if(newCount == 0)
 		cancel();
 }
-bool StockPileProject::canAddWorker(const Actor& actor) const
+bool StockPileProject::canAddWorker(const ActorIndex actor) const
 {
 	if(!Project::canAddWorker(actor))
 		return false;
@@ -277,7 +296,9 @@ std::vector<std::pair<ItemQuery, Quantity>> StockPileProject::getConsumed() cons
 std::vector<std::pair<ItemQuery, Quantity>> StockPileProject::getUnconsumed() const { return {{m_item, m_quantity}}; }
 std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> StockPileProject::getByproducts() const {return {}; }
 std::vector<std::pair<ActorQuery, Quantity>> StockPileProject::getActors() const { return {}; }
-StockPile::StockPile(std::vector<ItemQuery>& q, Area& a, Faction& f) : m_queries(q), m_openBlocks(0), m_area(a), m_faction(f), m_enabled(true), m_reenableScheduledEvent(m_area.m_simulation.m_eventSchedule), m_projectNeedingMoreWorkers(nullptr) { }
+StockPile::StockPile(std::vector<ItemQuery>& q, Area& a, Faction& f) :
+	m_queries(q), m_area(a), m_faction(f), m_reenableScheduledEvent(m_area.m_eventSchedule) { }
+/*
 StockPile::StockPile(const Json& data, DeserializationMemo& deserializationMemo, Area& area) : 
 	m_openBlocks(data["openBlocks"].get<Quantity>()), 
 	m_area(area), m_faction(deserializationMemo.faction(data["faction"].get<std::wstring>())), 
@@ -308,10 +329,11 @@ Json StockPile::toJson() const
 		data["blocks"].push_back(block);
 	return data;
 }
-bool StockPile::accepts(const Item& item) const 
+*/
+bool StockPile::accepts(const ItemIndex item) const 
 {
 	for(const ItemQuery& itemQuery : m_queries)
-		if(itemQuery.query(item))
+		if(itemQuery.query(m_area, item))
 			return true;
 	return false;
 }
@@ -324,12 +346,13 @@ void StockPile::addBlock(BlockIndex block)
 	if(blocks.stockpile_contains(block, m_faction))
 		incrementOpenBlocks();
 	m_blocks.insert(block);
-	for(Item* item : blocks.item_getAll(block))
-		if(accepts(*item))
+	Items& items = m_area.getItems();
+	for(ItemIndex item : blocks.item_getAll(block))
+		if(accepts(item))
 		{
-			m_area.m_hasStocks.at(m_faction).record(*item);
-			if(item->m_canBeStockPiled.contains(m_faction))
-				m_area.m_hasStockPiles.at(m_faction).removeItem(*item);
+			m_area.m_hasStocks.at(m_faction).record(item);
+			if(items.stockpile_canBeStockPiled(item, m_faction))
+				m_area.m_hasStockPiles.at(m_faction).removeItem(item);
 		}
 }
 void StockPile::removeBlock(BlockIndex block)
@@ -354,9 +377,9 @@ void StockPile::removeBlock(BlockIndex block)
 	// Cancel collected projects.
 	for(Project* project : projectsToCancel)
 		project->cancel();
-	for(Item* item : blocks.item_getAll(block))
-		if(accepts(*item))
-			m_area.m_hasStocks.at(m_faction).unrecord(*item);
+	for(ItemIndex item : blocks.item_getAll(block))
+		if(accepts(item))
+			m_area.m_hasStocks.at(m_faction).unrecord(item);
 }
 void StockPile::updateQueries(std::vector<ItemQuery>& queries)
 {
@@ -380,7 +403,7 @@ Simulation& StockPile::getSimulation()
 	assert(!m_blocks.empty());
 	return m_area.m_simulation;
 }
-void StockPile::addToProjectNeedingMoreWorkers(Actor& actor, StockPileObjective& objective)
+void StockPile::addToProjectNeedingMoreWorkers(ActorIndex actor, StockPileObjective& objective)
 {
 	assert(m_projectNeedingMoreWorkers != nullptr);
 	m_projectNeedingMoreWorkers->addWorkerCandidate(actor, objective);
@@ -420,6 +443,7 @@ StockPile& AreaHasStockPilesForFaction::addStockPile(std::vector<ItemQuery>& que
 		m_availableStockPilesByItemType[itemQuery.m_itemType].insert(&stockPile);
 	return stockPile;
 }
+/*
 AreaHasStockPilesForFaction::AreaHasStockPilesForFaction(const Json& data, DeserializationMemo& deserializationMemo, Area& a, Faction& f) :
 	m_area(a), m_faction(f)
 {
@@ -442,15 +466,15 @@ AreaHasStockPilesForFaction::AreaHasStockPilesForFaction(const Json& data, Deser
 			const ItemType& itemType = ItemType::byName(pair[0].get<std::string>());
 			for(const Json& itemId : pair[1])
 			{
-				Item& item = deserializationMemo.m_simulation.m_hasItems->getById(itemId.get<ItemId>());
-				m_itemsWithoutDestinationsByItemType[&itemType].insert(&item);
+				ItemIndex item = deserializationMemo.m_simulation.m_hasItems->getById(itemId.get<ItemId>());
+				m_itemsWithoutDestinationsByItemType[&itemType].insert(item);
 			}
 		}
 	if(data.contains("itemsWithDestinationsWithoutProjects"))
 		for(const Json& itemId : data["itemsWithDestinationsWithoutProjects"])
 		{
-			Item& item = deserializationMemo.m_simulation.m_hasItems->getById(itemId.get<ItemId>());
-			m_itemsWithDestinationsWithoutProjects.insert(&item);
+			ItemIndex item = deserializationMemo.m_simulation.m_hasItems->getById(itemId.get<ItemId>());
+			m_itemsWithDestinationsWithoutProjects.insert(item);
 		}
 	if(data.contains("itemsWithDestinationsByStockPile"))
 		for(const Json& pair : data["itemsWithDestinationsByStockPile"])
@@ -458,14 +482,14 @@ AreaHasStockPilesForFaction::AreaHasStockPilesForFaction(const Json& data, Deser
 			StockPile& stockPile = *deserializationMemo.m_stockpiles.at(pair[0].get<uintptr_t>());
 			for(const Json& itemId : pair[1])
 			{
-				Item& item = deserializationMemo.m_simulation.m_hasItems->getById(itemId.get<ItemId>());
-				m_itemsWithDestinationsByStockPile[&stockPile].insert(&item);
+				ItemIndex item = deserializationMemo.m_simulation.m_hasItems->getById(itemId.get<ItemId>());
+				m_itemsWithDestinationsByStockPile[&stockPile].insert(item);
 			}
 		}
 	if(data.contains("projectsByItem"))
 		for(const Json& pair : data["projectsByItem"])
 		{
-			Item& item = deserializationMemo.m_simulation.m_hasItems->getById(pair[0].get<ItemId>());
+			ItemIndex item = deserializationMemo.m_simulation.m_hasItems->getById(pair[0].get<ItemId>());
 			for(const Json& project : pair[1])
 				m_projectsByItem[&item].emplace_back(project, deserializationMemo);
 		}
@@ -509,7 +533,7 @@ Json AreaHasStockPilesForFaction::toJson() const
 		for(auto& pair : m_itemsWithoutDestinationsByItemType)
 		{
 			Json jsonPair{pair.first->name, Json::array()};
-			for(Item* item : pair.second)
+			for(ItemIndex item : pair.second)
 				jsonPair[1].push_back(item->m_id);
 			data["itemsWithoutDestinationsByItemType"].push_back(jsonPair);
 		}
@@ -517,7 +541,7 @@ Json AreaHasStockPilesForFaction::toJson() const
 	if(!m_itemsWithDestinationsWithoutProjects.empty())
 	{
 		data["itemsWithDestinationsWithoutProjects"] = Json::array();
-		for(Item* item : m_itemsWithDestinationsWithoutProjects)
+		for(ItemIndex item : m_itemsWithDestinationsWithoutProjects)
 			data["itemsWithDestinationsWithoutProjects"].push_back(item->m_id);
 	}
 	if(!m_itemsWithDestinationsByStockPile.empty())
@@ -526,7 +550,7 @@ Json AreaHasStockPilesForFaction::toJson() const
 		for(auto& pair : m_itemsWithDestinationsByStockPile)
 		{
 			Json jsonPair{reinterpret_cast<uintptr_t>(pair.first), Json::array()};
-			for(Item* item : pair.second)
+			for(ItemIndex item : pair.second)
 				jsonPair[1].push_back(item->m_id);
 			data["itemsWithDestinationsByStockPile"].push_back(jsonPair);
 		}
@@ -545,18 +569,20 @@ Json AreaHasStockPilesForFaction::toJson() const
 
 	return data;
 }
+*/
 void AreaHasStockPilesForFaction::destroyStockPile(StockPile& stockPile)
 {
 	assert(stockPile.m_blocks.empty());
 	// Erase pointers from avalible stockpiles by item type.
 	for(ItemQuery& itemQuery : stockPile.m_queries)
 		m_availableStockPilesByItemType[itemQuery.m_itemType].erase(&stockPile);
+	Items& items = m_area.getItems();
 	// Potentially transfer items from withDestination to withoutDestination, also cancel any associated projects and remove from items with destinations without projects.
 	// Sort items which no longer have a potential destination from ones which have a new one.
 	if(m_itemsWithDestinationsByStockPile.contains(&stockPile))
-		for(Item* item : m_itemsWithDestinationsByStockPile.at(&stockPile))
+		for(ItemIndex item : m_itemsWithDestinationsByStockPile.at(&stockPile))
 		{
-			StockPile* newStockPile = getStockPileFor(*item);
+			StockPile* newStockPile = getStockPileFor(item);
 			assert(newStockPile != &stockPile);
 			if(newStockPile == nullptr)
 			{
@@ -565,7 +591,7 @@ void AreaHasStockPilesForFaction::destroyStockPile(StockPile& stockPile)
 				if(m_itemsWithDestinationsWithoutProjects.contains(item))
 				{
 					m_itemsWithDestinationsWithoutProjects.erase(item);
-					m_itemsWithoutDestinationsByItemType[&item->m_itemType].insert(item);
+					m_itemsWithoutDestinationsByItemType[&items.getItemType(item)].insert(item);
 				}
 			}
 			else
@@ -577,7 +603,7 @@ void AreaHasStockPilesForFaction::destroyStockPile(StockPile& stockPile)
 	// Destruct.
 	m_stockPiles.remove(stockPile);
 }
-bool AreaHasStockPilesForFaction::isValidStockPileDestinationFor(BlockIndex block, const Item& item) const
+bool AreaHasStockPilesForFaction::isValidStockPileDestinationFor(BlockIndex block, const ItemIndex item) const
 {
 	Blocks& blocks = m_area.getBlocks();
 	if(blocks.isReserved(block, m_faction))
@@ -586,50 +612,54 @@ bool AreaHasStockPilesForFaction::isValidStockPileDestinationFor(BlockIndex bloc
 		return false;
 	return blocks.stockpile_getForFaction(block, m_faction)->accepts(item);
 }
-void AreaHasStockPilesForFaction::addItem(Item& item)
+void AreaHasStockPilesForFaction::addItem(ItemIndex item)
 {
-	item.m_canBeStockPiled.set(m_faction);
+	Items& items = m_area.getItems();
+	items.stockpile_set(item, m_faction);
 	// This isn't neccessarily the stockpile that the item is going to, it is only the one that proved that there exists a stockpile somewhere which accepts this item.
 	StockPile* stockPile = getStockPileFor(item);
 	if(stockPile == nullptr)
-		m_itemsWithoutDestinationsByItemType[&item.m_itemType].insert(&item);
+		m_itemsWithoutDestinationsByItemType[&items.getItemType(item)].insert(item);
 	else
 	{
-		m_itemsWithDestinationsByStockPile[stockPile].insert(&item);
-		m_itemsWithDestinationsWithoutProjects.insert(&item);
+		m_itemsWithDestinationsByStockPile[stockPile].insert(item);
+		m_itemsWithDestinationsWithoutProjects.insert(item);
 	}
 }
-void AreaHasStockPilesForFaction::maybeAddItem(Item& item)
+void AreaHasStockPilesForFaction::maybeAddItem(ItemIndex item)
 {
-	if(!m_projectsByItem.contains(&item) &&
+	const ItemType& itemType = m_area.getItems().getItemType(item);
+	if(!m_projectsByItem.contains(item) &&
 		(
-			!m_itemsWithoutDestinationsByItemType.contains(&item.m_itemType) || 
-			!m_itemsWithoutDestinationsByItemType.at(&item.m_itemType).contains(&item)
+			!m_itemsWithoutDestinationsByItemType.contains(&itemType) || 
+			!m_itemsWithoutDestinationsByItemType.at(&itemType).contains(item)
 		)
 	) 
 		addItem(item);
 }
-void AreaHasStockPilesForFaction::removeItem(Item& item)
+void AreaHasStockPilesForFaction::removeItem(ItemIndex item)
 {
-	item.m_canBeStockPiled.maybeUnset(m_faction);
-	if(m_itemsWithoutDestinationsByItemType.contains(&item.m_itemType) && m_itemsWithoutDestinationsByItemType.at(&item.m_itemType).contains(&item))
-		m_itemsWithoutDestinationsByItemType.at(&item.m_itemType).erase(&item);
+	Items& items = m_area.getItems();
+	const ItemType& itemType = m_area.getItems().getItemType(item);
+	items.stockpile_maybeUnset(item, m_faction);
+	if(m_itemsWithoutDestinationsByItemType.contains(&itemType) && m_itemsWithoutDestinationsByItemType.at(&itemType).contains(item))
+		m_itemsWithoutDestinationsByItemType.at(&itemType).erase(item);
 	else
 	{
-		m_itemsWithDestinationsWithoutProjects.erase(&item);
-		if(m_projectsByItem.contains(&item))
-			for(StockPileProject& stockPileProject : m_projectsByItem.at(&item))
+		m_itemsWithDestinationsWithoutProjects.erase(item);
+		if(m_projectsByItem.contains(item))
+			for(StockPileProject& stockPileProject : m_projectsByItem.at(item))
 				removeFromItemsWithDestinationByStockPile(stockPileProject.m_stockpile, item);
 			// We don't need to cancel the stockpile projects here because they will be canceled by dishonorCallback anyway.
 	}
 }
-void AreaHasStockPilesForFaction::removeFromItemsWithDestinationByStockPile(const StockPile& stockPile, const Item& item)
+void AreaHasStockPilesForFaction::removeFromItemsWithDestinationByStockPile(const StockPile& stockPile, const ItemIndex item)
 {
 	StockPile* nonConst = const_cast<StockPile*>(&stockPile);
 	if(m_itemsWithDestinationsByStockPile.at(nonConst).size() == 1)
 		m_itemsWithDestinationsByStockPile.erase(nonConst);
 	else
-		m_itemsWithDestinationsByStockPile.at(nonConst).erase(const_cast<Item*>(&item));
+		m_itemsWithDestinationsByStockPile.at(nonConst).erase(item);
 }
 void AreaHasStockPilesForFaction::removeBlock(BlockIndex block)
 {
@@ -645,8 +675,8 @@ void AreaHasStockPilesForFaction::setAvailable(StockPile& stockPile)
 		assert(itemQuery.m_itemType != nullptr);
 		m_availableStockPilesByItemType[itemQuery.m_itemType].insert(&stockPile);
 		if(m_itemsWithoutDestinationsByItemType.contains(itemQuery.m_itemType))
-			for(Item* item : m_itemsWithoutDestinationsByItemType.at(itemQuery.m_itemType))
-				if(stockPile.accepts(*item))
+			for(ItemIndex item : m_itemsWithoutDestinationsByItemType.at(itemQuery.m_itemType))
+				if(stockPile.accepts(item))
 				{
 					m_itemsWithDestinationsByStockPile[&stockPile].insert(item);
 					//TODO: remove item from items without destinations by item type.
@@ -659,50 +689,52 @@ void AreaHasStockPilesForFaction::setUnavailable(StockPile& stockPile)
 		m_availableStockPilesByItemType.at(itemQuery.m_itemType).erase(&stockPile);
 	if(m_itemsWithDestinationsByStockPile.contains(&stockPile))
 	{
-		for(Item* item : m_itemsWithDestinationsByStockPile.at(&stockPile))
+		for(ItemIndex item : m_itemsWithDestinationsByStockPile.at(&stockPile))
 		{
-			StockPile* newStockPile = getStockPileFor(*item);
+			StockPile* newStockPile = getStockPileFor(item);
 			if(newStockPile == nullptr)
-				m_itemsWithoutDestinationsByItemType[&item->m_itemType].insert(item);
+				m_itemsWithoutDestinationsByItemType[&m_area.getItems().getItemType(item)].insert(item);
 			else
 				m_itemsWithDestinationsByStockPile[newStockPile].insert(item);
 		}
 		m_itemsWithDestinationsByStockPile.erase(&stockPile);
 	}
 }
-void AreaHasStockPilesForFaction::makeProject(Item& item, BlockIndex destination, StockPileObjective& objective)
+void AreaHasStockPilesForFaction::makeProject(ItemIndex item, BlockIndex destination, StockPileObjective& objective)
 {
 	Blocks& blocks = m_area.getBlocks();
-	assert(blocks.stockpile_contains(destination, *objective.m_actor.getFaction()));
+	Actors& actors = m_area.getActors();
+	Faction& faction = *actors.getFaction(objective.m_actor);
+	assert(blocks.stockpile_contains(destination, faction));
 	// Quantity per project is the ammount that can be hauled by hand, if any, or one.
 	// TODO: Hauling a load of generics with tools.
-	Quantity quantity = objective.m_actor.m_canPickup.maximumNumberWhichCanBeCarriedWithMinimumSpeed(item, Config::minimumHaulSpeedInital);
+	Quantity quantity = actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(objective.m_actor, item, Config::minimumHaulSpeedInital);
 	Quantity maxWorkers = 1;
 	if(!quantity)
 	{
 		quantity = 1;
 		maxWorkers = 2;
 	}
-	StockPileProject& project = m_projectsByItem[&item].emplace_back(objective.m_actor.getFaction(), m_area, destination, item, quantity, maxWorkers);
+	StockPileProject& project = m_projectsByItem[item].emplace_back(faction, m_area, destination, item, quantity, maxWorkers);
 	std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<StockPileHasShapeDishonorCallback>(project);
 	project.setLocationDishonorCallback(std::move(dishonorCallback));
 	project.addWorkerCandidate(objective.m_actor, objective);
 	objective.m_project = &project;
-	objective.m_actor.m_project = &project;
-	m_itemsWithDestinationsWithoutProjects.erase(&item);
+	actors.project_set(objective.m_actor, project);
+	m_itemsWithDestinationsWithoutProjects.erase(item);
 }
 void AreaHasStockPilesForFaction::cancelProject(StockPileProject& project)
 {
-	Item& item = project.m_item;
+	ItemIndex item = project.m_item;
 	destroyProject(project);
 	addItem(item);
 }
 void AreaHasStockPilesForFaction::destroyProject(StockPileProject& project)
 {
-	if(m_projectsByItem.at(&project.m_item).size() == 1)
-		m_projectsByItem.erase(&project.m_item);
+	if(m_projectsByItem.at(project.m_item).size() == 1)
+		m_projectsByItem.erase(project.m_item);
 	else
-		m_projectsByItem.at(&project.m_item).remove(project);
+		m_projectsByItem.at(project.m_item).remove(project);
 }
 
 void AreaHasStockPilesForFaction::addQuery(StockPile& stockPile, ItemQuery query)
@@ -721,32 +753,34 @@ void AreaHasStockPilesForFaction::removeQuery(StockPile& stockPile, ItemQuery qu
 	else
 		m_availableStockPilesByItemType[query.m_itemType].insert(&stockPile);
 }
-bool AreaHasStockPilesForFaction::isAnyHaulingAvailableFor([[maybe_unused]] const Actor& actor) const
+bool AreaHasStockPilesForFaction::isAnyHaulingAvailableFor(const ActorIndex actor) const
 {
-	assert(&m_faction == actor.getFaction());
+	assert(&m_faction == m_area.getActors().getFaction(actor));
 	return !m_itemsWithDestinationsByStockPile.empty();
 }
-Item* AreaHasStockPilesForFaction::getHaulableItemForAt(const Actor& actor, BlockIndex block)
+ItemIndex AreaHasStockPilesForFaction::getHaulableItemForAt(const ActorIndex actor, BlockIndex block)
 {
-	assert(actor.getFaction());
+	assert(m_area.getActors().getFaction(actor) != nullptr);
 	Blocks& blocks = m_area.getBlocks();
-	Faction& faction = *actor.getFaction();
+	Faction& faction = *m_area.getActors().getFaction(actor);
+	Items& items = m_area.getItems();
 	if(blocks.isReserved(block, faction))
-		return nullptr;
-	for(Item* item : blocks.item_getAll(block))
+		return ITEM_INDEX_MAX;
+	for(ItemIndex item : blocks.item_getAll(block))
 	{
-		if(item->m_reservable.isFullyReserved(&faction))
+		if(items.reservable_isFullyReserved(item, faction))
 			continue;
-		if(item->m_canBeStockPiled.contains(faction))
+		if(items.stockpile_canBeStockPiled(item, faction))
 			return item;
 	}
-	return nullptr;
+	return ITEM_INDEX_MAX;
 }
-StockPile* AreaHasStockPilesForFaction::getStockPileFor(const Item& item) const
+StockPile* AreaHasStockPilesForFaction::getStockPileFor(const ItemIndex item) const
 {
-	if(!m_availableStockPilesByItemType.contains(&item.m_itemType))
+	const ItemType& itemType = m_area.getItems().getItemType(item);
+	if(!m_availableStockPilesByItemType.contains(&itemType))
 		return nullptr;
-	for(StockPile* stockPile : m_availableStockPilesByItemType.at(&item.m_itemType))
+	for(StockPile* stockPile : m_availableStockPilesByItemType.at(&itemType))
 		if(stockPile->accepts(item))
 			return stockPile;
 	return nullptr;

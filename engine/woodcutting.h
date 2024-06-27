@@ -4,12 +4,14 @@
 #include "input.h"
 #include "objective.h"
 #include "project.h"
-#include "findsPath.h"
+#include "pathRequest.h"
+#include "terrainFacade.h"
 #include "types.h"
 #include <memory>
 
 class WoodCuttingProject;
-class WoodCuttingThreadedTask;
+class WoodCuttingPathRequest;
+/*
 // InputAction
 class DesignateWoodCuttingInputAction final : public InputAction
 {
@@ -25,47 +27,44 @@ public:
 	UndesignateWoodCuttingInputAction(InputQueue& inputQueue, Cuboid& blocks) : InputAction(inputQueue), m_blocks(blocks) { }
 	void execute();
 };
+*/
 // ObjectiveType
 class WoodCuttingObjectiveType final : public ObjectiveType
 {
 public:
-	[[nodiscard]] bool canBeAssigned(Actor& actor) const;
-	[[nodiscard]] std::unique_ptr<Objective> makeFor(Actor& actor) const;
+	[[nodiscard]] bool canBeAssigned(Area& area, ActorIndex actor) const;
+	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area& area, ActorIndex actor) const;
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::WoodCutting; }
 };
 // Objective
 class WoodCuttingObjective final : public Objective
 {
-	HasThreadedTask<WoodCuttingThreadedTask> m_woodCuttingThreadedTask;
 	WoodCuttingProject* m_project;
 	std::unordered_set<Project*> m_cannotJoinWhileReservationsAreNotComplete;
 public:
-	WoodCuttingObjective(Actor& a);
+	WoodCuttingObjective(ActorIndex a);
 	WoodCuttingObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
-	void execute();
-	void cancel();
-	void reset();
-	void delay();
-	void onProjectCannotReserve();
+	void execute(Area& area);
+	void cancel(Area& area);
+	void reset(Area& area);
+	void delay(Area& area);
+	void onProjectCannotReserve(Area& area);
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::WoodCutting; }
 	[[nodiscard]] std::string name() const { return "woodcutting"; }
 	void joinProject(WoodCuttingProject& project);
-	WoodCuttingProject* getJoinableProjectAt(BlockIndex block);
-	friend class WoodCuttingThreadedTask;
+	WoodCuttingProject* getJoinableProjectAt(Area& area, BlockIndex block);
+	friend class WoodCuttingPathRequest;
 	friend class WoodCuttingProject;
 };
 // Find a place to woodCutting.
-class WoodCuttingThreadedTask final : public ThreadedTask
+class WoodCuttingPathRequest final : public PathRequest
 {
 	WoodCuttingObjective& m_woodCuttingObjective;
 	// Result is the block which will be the actors location while doing the woodCuttingging.
-	FindsPath m_findsPath;
 public:
-	WoodCuttingThreadedTask(WoodCuttingObjective& woodCuttingObjective);
-	void readStep();
-	void writeStep();
-	void clearReferences();
+	WoodCuttingPathRequest(Area& area, WoodCuttingObjective& woodCuttingObjective);
+	void callback(Area& area, FindPathResult& result);
 };
 class WoodCuttingProject final : public Project
 {
@@ -77,7 +76,7 @@ class WoodCuttingProject final : public Project
 	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
 	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
-	static uint32_t getWorkerWoodCuttingScore(Actor& actor);
+	static uint32_t getWorkerWoodCuttingScore(Area& area, ActorIndex actor);
 	// What would the total delay time be if we started from scratch now with current workers?
 public:
 	// BlockFeatureType can be null, meaning the block is to be fully excavated.

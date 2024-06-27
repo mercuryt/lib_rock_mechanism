@@ -3,19 +3,18 @@
 #include "project.h"
 #include "objective.h"
 
-class Item;
-class Actor;
 struct DeserializationMemo;
 
 class TargetedHaulProject final : public Project
 {
-	Item& m_item;
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const { return {}; }
-	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const { return {{m_item, 1}}; }
+	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const { return {{m_item, 1u}}; }
 	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const { return {}; }
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const { return {}; }
+	ItemIndex m_item;
+	//TODO: facing.
 	void onComplete();
-	void onDelivered(HasShape& delivered);
+	void onDelivered(ActorOrItemIndex delivered);
 	// Most projects which are directly created by the user ( dig, construct ) wait a while and then retry if they fail.
 	// Despite being directly created it doesn't make sense to retry targeted hauling, so instead we cancel it with a log message.
 	// TODO: log message.
@@ -23,7 +22,7 @@ class TargetedHaulProject final : public Project
 	void offDelay() { assert(false); }
 	Step getDuration() const { return Config::addToStockPileDelaySteps; }
 public:
-	TargetedHaulProject(Faction* f, Area& a, BlockIndex l, Item& i) : Project(f, a, l, 4), m_item(i) { }
+	TargetedHaulProject(Faction* f, Area& a, BlockIndex l, ItemIndex i) : Project(f, a, l, 4), m_item(i) { }
 	TargetedHaulProject(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 };
@@ -31,13 +30,13 @@ class TargetedHaulObjective final : public Objective
 {
 	TargetedHaulProject& m_project;
 public:
-	TargetedHaulObjective(Actor& a, TargetedHaulProject& p) : Objective(a, Config::targetedHaulPriority), m_project(p) { m_project.addWorkerCandidate(m_actor, *this); }
+	TargetedHaulObjective(ActorIndex a, TargetedHaulProject& p) : Objective(a, Config::targetedHaulPriority), m_project(p) { m_project.addWorkerCandidate(m_actor, *this); }
 	TargetedHaulObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
-	void execute() { m_project.commandWorker(m_actor); }
-	void cancel() { m_project.removeWorker(m_actor); }
-	void delay() { }
-	void reset() { cancel(); }
+	void execute(Area&) { m_project.commandWorker(m_actor); }
+	void cancel(Area&) { m_project.removeWorker(m_actor); }
+	void delay(Area&) { }
+	void reset(Area& area) { cancel(area); }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Haul; }
 	std::string name() const { return "haul"; }
 };
@@ -48,7 +47,7 @@ class AreaHasTargetedHauling
 	std::list<TargetedHaulProject> m_projects;
 public:
 	AreaHasTargetedHauling(Area& a) : m_area(a) { }
-	TargetedHaulProject& begin(std::vector<Actor*> actors, Item& item, BlockIndex destination);
+	TargetedHaulProject& begin(std::vector<ActorIndex> actors, ItemIndex item, BlockIndex destination);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void cancel(TargetedHaulProject& project);

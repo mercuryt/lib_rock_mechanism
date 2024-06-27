@@ -1,29 +1,29 @@
 #pragma once
 
+#include "actorOrItemIndex.h"
 #include "types.h"
 #include "reservable.h"
-#include "itemQuery.h"
+#include "items/itemQuery.h"
 #include "eventSchedule.hpp"
 #include "threadedTask.hpp"
 #include "onDestroy.h"
-#include "actor/actorQuery.h"
 #include "haul.h"
+#include "actors/actorQuery.h"
 
 #include <vector>
 #include <utility>
 #include <unordered_set>
 #include <unordered_map>
+
 class ProjectFinishEvent;
 class ProjectTryToHaulEvent;
 class ProjectTryToReserveEvent;
 class ProjectTryToMakeHaulSubprojectThreadedTask;
 class ProjectTryToAddWorkersThreadedTask;
-class Actor;
-class Item;
-struct DeserializationMemo;
-class HasShape;
 class Objective;
 class Area;
+class ActorOrItemIndex;
+struct DeserializationMemo;
 
 struct ProjectWorker final
 {
@@ -46,8 +46,8 @@ struct ProjectRequirementCounts final
 struct ProjectRequiredShapeDishonoredCallback final : public DishonorCallback
 {
 	Project& m_project;
-	HasShape& m_hasShape;
-	ProjectRequiredShapeDishonoredCallback(Project& p, HasShape& hs) : m_project(p), m_hasShape(hs) { }
+	ActorOrItemIndex m_actorOrItem;
+	ProjectRequiredShapeDishonoredCallback(Project& p, ActorOrItemIndex actorOrItem) : m_project(p), m_actorOrItem(actorOrItem) { }
 	ProjectRequiredShapeDishonoredCallback(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void execute(Quantity oldCount, Quantity newCount);
@@ -73,36 +73,36 @@ class Project
 	//TODO: required actors are not suported in several places.
 	std::vector<std::pair<ActorQuery, ProjectRequirementCounts>> m_requiredActors;
 	// Required items which will be destroyed at the end of the project.
-	std::unordered_set<Item*> m_toConsume;
+	std::unordered_set<ItemIndex> m_toConsume;
 	// Required items which are equiped by workers (tools).
-	std::unordered_map<Actor*, std::vector<std::pair<ProjectRequirementCounts*, Item*>>> m_reservedEquipment;
+	std::unordered_map<ActorIndex, std::vector<std::pair<ProjectRequirementCounts*, ItemIndex>>> m_reservedEquipment;
 	// Targets for haul subprojects awaiting dispatch.
-	std::unordered_map<HasShape*, std::pair<ProjectRequirementCounts*, Quantity>> m_toPickup;
+	std::unordered_map<ActorOrItemIndex, std::pair<ProjectRequirementCounts*, Quantity>, ActorOrItemIndex::Hash> m_toPickup;
 	// To be called by addWorkerThreadedTask, after validating the worker has access to the project location.
-	void addWorker(Actor& actor, Objective& objective);
+	void addWorker(ActorIndex actor, Objective& objective);
 	// Load requirements from child class.
 	void recordRequiredActorsAndItems();
 	// After create.
 	void setup();
 protected:
 	// Workers who have passed the candidate screening and ProjectWorker, which holds a reference to the worker's objective and a pointer to it's haul subproject.
-	std::unordered_map<Actor*, ProjectWorker> m_workers;
-	// Workers present at the job site, waiting for haulers to deliver required materiels.
+	std::unordered_map<ActorIndex, ProjectWorker> m_workers;
 	// Required shapes which don't need to be hauled because they are already at or adjacent to m_location.
 	// To be used by StockpileProject::onComplete.
-	std::unordered_map<HasShape*, Quantity> m_alreadyAtSite;
-	std::unordered_set<Actor*> m_waiting;
+	std::unordered_map<ActorOrItemIndex, Quantity, ActorOrItemIndex::Hash> m_alreadyAtSite;
+	// Workers present at the job site, waiting for haulers to deliver required materiels.
+	std::unordered_set<ActorIndex> m_waiting;
 	// Workers currently doing the 'actual' work.
-	std::unordered_set<Actor*> m_making;
+	std::unordered_set<ActorIndex> m_making;
 	// Worker candidates are evaluated in a read step task.
 	// For the first we need to reserve all items and actors, as wel as verify access.
 	// For subsequent candidates we just need to verify that they can path to the construction site.
-	std::vector<std::pair<Actor*, Objective*>> m_workerCandidatesAndTheirObjectives;
+	std::vector<std::pair<ActorIndex, Objective*>> m_workerCandidatesAndTheirObjectives;
 	// Single hauling operations are managed by haul subprojects.
 	// They have one or more workers plus optional haul tool and beast of burden.
 	std::list<HaulSubproject> m_haulSubprojects;
 	// Delivered items.
-	std::vector<Item*> m_deliveredItems;
+	std::vector<ItemIndex> m_deliveredItems;
 	// Where the materials are delivered to and where the work gets done.
 	Area& m_area;
 	Faction& m_faction;
@@ -125,14 +125,14 @@ public:
 	[[nodiscard]] Json toJson() const;
 	// Seperated from primary Json constructor because must be run after objectives are created.
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
-	void addWorkerCandidate(Actor& actor, Objective& objective);
-	void removeWorkerCandidate(Actor& actor);
+	void addWorkerCandidate(ActorIndex actor, Objective& objective);
+	void removeWorkerCandidate(ActorIndex actor);
 	// To be called by Objective::execute.
-	void commandWorker(Actor& actor);
+	void commandWorker(ActorIndex actor);
 	// To be called by Objective::interupt.
-	void removeWorker(Actor& actor);
-	void addToMaking(Actor& actor);
-	void removeFromMaking(Actor& actor);
+	void removeWorker(ActorIndex actor);
+	void addToMaking(ActorIndex actor);
+	void removeFromMaking(ActorIndex actor);
 	void complete();
 	// To be called by the player for manually created project types or in place of reset otherwise.
 	void cancel();
@@ -147,8 +147,8 @@ public:
 	// Calls offDelay.
 	void setDelayOff();
 	// Record reserved shapes which need haul subprojects dispatched for them.
-	void addToPickup(HasShape& hasShape, ProjectRequirementCounts& counts, Quantity quantity);
-	void removeToPickup(HasShape& hasShape, Quantity quantity);
+	void addToPickup(ActorOrItemIndex actor, ProjectRequirementCounts& counts, Quantity quantity);
+	void removeToPickup(ActorOrItemIndex actor, Quantity quantity);
 	// To be called when the last worker is removed, when a haul subproject repetidly fails, or when a required reservation is dishonored, resets to pre-reservations status.
 	void reset();
 	// TODO: Implimentation of this.
@@ -162,14 +162,14 @@ public:
 	[[nodiscard]] bool isOnDelay() { return m_delay; }
 	// BlockIndex where the work will be done.
 	[[nodiscard]] BlockIndex getLocation() const { return m_location; }
-	[[nodiscard]] bool hasCandidate(const Actor& actor) const;
+	[[nodiscard]] bool hasCandidate(const ActorIndex actor) const;
 	// When cannotCompleteSubobjective is called do we reset and try again or do we call cannotCompleteObjective?
 	// Should be false for objectives like targeted hauling, where if the specific target is inaccessable there is no fallback possible.
 	[[nodiscard]] virtual bool canReset() const { return true; }
-	[[nodiscard]] std::vector<Actor*> getWorkersAndCandidates();
-	[[nodiscard]] std::vector<std::pair<Actor*, Objective*>> getWorkersAndCandidatesWithObjectives();
+	[[nodiscard]] std::vector<ActorIndex> getWorkersAndCandidates();
+	[[nodiscard]] std::vector<std::pair<ActorIndex, Objective*>> getWorkersAndCandidatesWithObjectives();
 	[[nodiscard]] Percent getPercentComplete() const { return m_finishEvent.exists() ? m_finishEvent.percentComplete() : 0; }
-	[[nodiscard]] virtual bool canAddWorker(const Actor& actor) const;
+	[[nodiscard]] virtual bool canAddWorker(const ActorIndex actor) const;
 	// What would the total delay time be if we started from scratch now with current workers?
 	[[nodiscard]] virtual Step getDuration() const = 0;
 	// True for stockpile because there is no 'work' to do after the hauling is done.
@@ -177,10 +177,10 @@ public:
 	virtual void onComplete() = 0;
 	virtual void onReserve() { }
 	virtual void onCancel() { }
-	virtual void onAddToMaking([[maybe_unused]] Actor& actor) { }
-	virtual void onDelivered(HasShape& hasShape) { (void)hasShape; }
+	virtual void onAddToMaking(ActorIndex) { }
+	virtual void onDelivered(ActorOrItemIndex) { }
 	virtual void onSubprojectCreated(HaulSubproject& subproject) { (void)subproject; }
-	virtual void onHasShapeReservationDishonored([[maybe_unused]] const HasShape& hasShape, [[maybe_unused]]Quantity oldCount, [[maybe_unused]]Quantity newCount) { reset(); }
+	virtual void onActorOrItemReservationDishonored(ActorOrItemIndex, Quantity, Quantity) { reset(); }
 	// Projects which are initiated by the users, such as dig or construct, must be delayed when they cannot be completed. Projectes which are initiated automatically, such as Stockpile or Craft, can be canceled.
 	virtual void onDelay() = 0;
 	virtual void offDelay() = 0;
@@ -192,8 +192,8 @@ public:
 	virtual ~Project() = default;
 	[[nodiscard]] bool operator==(const Project& other) const { return &other == this; }
 	// For testing.
-	[[nodiscard]] ProjectWorker& getProjectWorkerFor(Actor& actor) { return m_workers.at(&actor); }
-	[[nodiscard, maybe_unused]] std::unordered_map<Actor*, ProjectWorker> getWorkers() { return m_workers; }
+	[[nodiscard]] ProjectWorker& getProjectWorkerFor(ActorIndex actor) { return m_workers.at(actor); }
+	[[nodiscard, maybe_unused]] std::unordered_map<ActorIndex, ProjectWorker> getWorkers() { return m_workers; }
 	[[nodiscard, maybe_unused]] Quantity getHaulRetries() const { return m_haulRetries; }
 	[[nodiscard, maybe_unused]] bool hasTryToHaulThreadedTask() const { return m_tryToHaulThreadedTask.exists(); }
 	[[nodiscard, maybe_unused]] bool hasTryToHaulEvent() const { return m_tryToHaulEvent.exists(); }
@@ -217,24 +217,24 @@ class ProjectFinishEvent final : public ScheduledEvent
 	Project& m_project;
 public:
 	ProjectFinishEvent(const Step delay, Project& p, const Step start = 0);
-	void execute();
-	void clearReferences();
+	void execute(Simulation& simulation, Area* area);
+	void clearReferences(Simulation& simulation, Area* area);
 };
 class ProjectTryToHaulEvent final : public ScheduledEvent
 {
 	Project& m_project;
 public:
 	ProjectTryToHaulEvent(const Step delay, Project& p, const Step start = 0);
-	void execute();
-	void clearReferences();
+	void execute(Simulation& simulation, Area* area);
+	void clearReferences(Simulation& simulation, Area* area);
 };
 class ProjectTryToReserveEvent final : public ScheduledEvent
 {
 	Project& m_project;
 public:
 	ProjectTryToReserveEvent(const Step delay, Project& p, const Step start = 0);
-	void execute();
-	void clearReferences();
+	void execute(Simulation& simulation, Area* area);
+	void clearReferences(Simulation& simulation, Area* area);
 };
 class ProjectTryToMakeHaulSubprojectThreadedTask final : public ThreadedTask
 {
@@ -242,24 +242,24 @@ class ProjectTryToMakeHaulSubprojectThreadedTask final : public ThreadedTask
 	HaulSubprojectParamaters m_haulProjectParamaters;
 public:
 	ProjectTryToMakeHaulSubprojectThreadedTask(Project& p);
-	void readStep();
-	void writeStep();
-	void clearReferences();
-	[[nodiscard]] bool blockContainsDesiredItem(const BlockIndex block, Actor& hauler);
+	void readStep(Simulation& simulation, Area* area);
+	void writeStep(Simulation& simulation, Area* area);
+	void clearReferences(Simulation& simulation, Area* area);
+	[[nodiscard]] bool blockContainsDesiredItem(const BlockIndex block, ActorIndex hauler);
 };
 class ProjectTryToAddWorkersThreadedTask final : public ThreadedTask
 {
 	Project& m_project;
-	std::unordered_set<Actor*> m_cannotPathToJobSite;
-	std::unordered_map<HasShape*, Quantity> m_alreadyAtSite;
-	std::unordered_map<Actor*, std::vector<std::pair<ProjectRequirementCounts*, Item*>>> m_reservedEquipment;
+	std::unordered_set<ActorIndex> m_cannotPathToJobSite;
+	std::unordered_map<ActorOrItemIndex, Quantity, ActorOrItemIndex::Hash> m_alreadyAtSite;
+	std::unordered_map<ActorIndex, std::vector<std::pair<ProjectRequirementCounts*, ItemIndex>>> m_reservedEquipment;
 	HasOnDestroySubscriptions m_hasOnDestroy;
 	void resetProjectCounts();
 public:
 	ProjectTryToAddWorkersThreadedTask(Project& p);
-	void readStep();
-	void writeStep();
-	void clearReferences();
+	void readStep(Simulation& simulation, Area* area);
+	void writeStep(Simulation& simulation, Area* area);
+	void clearReferences(Simulation& simulation, Area* area);
 	[[nodiscard]] bool validate();
 };
 class BlockHasProjects

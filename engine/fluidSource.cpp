@@ -8,7 +8,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_ONLY_SERIALIZE(FluidSource, block, fluidType,
 FluidSource::FluidSource(const Json& data, DeserializationMemo&) : 
 	block(data["block"].get<BlockIndex>()), fluidType(data["fluidType"].get<const FluidType*>()), level(data["level"].get<Volume>()) { }
 
-void AreaHasFluidSources::step()
+void AreaHasFluidSources::doStep()
 {
 	Blocks& blocks = m_area.getBlocks();
 	for(FluidSource& source : m_data)

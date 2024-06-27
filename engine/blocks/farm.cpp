@@ -17,19 +17,25 @@ void Blocks::farm_remove(BlockIndex index, Faction& faction)
 	designations.maybeUnset(index, BlockDesignation::GivePlantFluid);
 	designations.maybeUnset(index, BlockDesignation::Harvest);
 }
-void Blocks::farm_designateForHarvestIfPartOfFarmField(BlockIndex index, Plant& plant)
+void Blocks::farm_designateForHarvestIfPartOfFarmField(BlockIndex index, PlantIndex plant)
 {
 	if(m_farmFields.contains(index))
+	{
+		Plants& plants = m_area.m_plants;
 		for(auto& [faction, farmField] : m_farmFields.at(index))
-			if(farmField->plantSpecies == &plant.m_plantSpecies)
+			if(farmField->plantSpecies == &plants.getSpecies(plant))
 				m_area.m_hasFarmFields.at(*faction).addHarvestDesignation(plant);
+	}
 }
-void Blocks::farm_designateForGiveFluidIfPartOfFarmField(BlockIndex index, Plant& plant)
+void Blocks::farm_designateForGiveFluidIfPartOfFarmField(BlockIndex index, PlantIndex plant)
 {
 	if(m_farmFields.contains(index))
+	{
+		Plants& plants = m_area.m_plants;
 		for(auto& [faction, farmField] : m_farmFields.at(index))
-			if(farmField->plantSpecies == &plant.m_plantSpecies)
+			if(farmField->plantSpecies == &plants.getSpecies(plant))
 				m_area.m_hasFarmFields.at(*faction).addGivePlantFluidDesignation(plant);
+	}
 }
 void Blocks::farm_maybeDesignateForSowingIfPartOfFarmField(BlockIndex index)
 {
@@ -43,23 +49,23 @@ void Blocks::farm_maybeDesignateForSowingIfPartOfFarmField(BlockIndex index)
 }
 void Blocks::farm_removeAllHarvestDesignations(BlockIndex index)
 {
-	Plant* plant = m_plants.at(index);	
+	PlantIndex plant = m_plants.at(index);	
 	if(!plant)
 		return;
 	if(m_farmFields.contains(index))
 		for(auto& [faction, farmField] : m_farmFields.at(index))
 			if(designation_has(index, *faction, BlockDesignation::Harvest))
-				m_area.m_hasFarmFields.at(*faction).removeHarvestDesignation(*plant);
+				m_area.m_hasFarmFields.at(*faction).removeHarvestDesignation(plant);
 }
 void Blocks::farm_removeAllGiveFluidDesignations(BlockIndex index)
 {
-	Plant* plant = m_plants.at(index);	
+	PlantIndex plant = m_plants.at(index);	
 	if(!plant)
 		return;
 	if(m_farmFields.contains(index))
 		for(auto& [faction, farmField] : m_farmFields.at(index))
 			if(designation_has(index, *faction, BlockDesignation::GivePlantFluid))
-				m_area.m_hasFarmFields.at(*faction).removeGivePlantFluidDesignation(*plant);
+				m_area.m_hasFarmFields.at(*faction).removeGivePlantFluidDesignation(plant);
 }
 void Blocks::farm_removeAllSowSeedsDesignations(BlockIndex index)
 {

@@ -27,8 +27,8 @@ public:
 	Fire& m_fire;
 
 	FireEvent(Area& area, Step delay, Fire& f, Step start = 0);
-	void execute();
-	void clearReferences();
+	void execute(Simulation& simulation, Area* area);
+	void clearReferences(Simulation& simulation, Area* area);
 };
 class Fire final
 {

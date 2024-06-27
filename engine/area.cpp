@@ -7,11 +7,8 @@
 #include "deserializationMemo.h"
 #include "fire.h"
 #include "fluidType.h"
-#include "plant.h"
 #include "simulation.h"
 #include "simulation/hasAreas.h"
-#include "simulation/hasItems.h"
-#include "simulation/hasActors.h"
 #include "types.h"
 //#include "worldforge/worldLocation.h"
 #include <algorithm>
@@ -22,53 +19,66 @@
 #include <unordered_set>
 
 Area::Area(AreaId id, std::wstring n, Simulation& s, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) :
-	m_blocks(*this, x, y, z), m_hasTemperature(*this), m_hasTerrainFacades(*this), m_hasActors(*this), m_hasPlants(*this), 
-	m_fires(*this), m_hasFarmFields(*this), m_hasDigDesignations(*this), m_hasConstructionDesignations(*this), 
-	m_hasStockPiles(*this), m_hasCraftingLocationsAndJobs(*this), m_hasTargetedHauling(*this), m_hasSleepingSpots(*this), 
-	m_hasWoodCuttingDesignations(*this), m_hasItems(*this), m_fluidSources(*this), m_hasFluidGroups(*this), 
-	m_hasRain(*this, s), m_blockDesignations(*this), m_name(n), m_simulation(s), m_id(id)
-{ 
-	setup(); 
-	m_hasActors.m_opacityFacade.initalize();
-	m_hasActors.m_visionCuboids.initalize(*this);
+	m_blocks(*this, x, y, z),
+	m_eventSchedule(s, this),
+	m_actors(*this),
+	m_plants(*this),
+	m_items(*this),
+	m_hasTemperature(*this),
+	m_hasTerrainFacades(*this),
+	m_fires(*this),
+	m_hasFarmFields(*this),
+	m_hasDigDesignations(*this),
+	m_hasConstructionDesignations(*this),
+	m_hasStockPiles(*this),
+	m_hasCraftingLocationsAndJobs(*this),
+	m_hasTargetedHauling(*this),
+	m_hasSleepingSpots(*this),
+	m_hasWoodCuttingDesignations(*this),
+	m_fluidSources(*this),
+	m_hasFluidGroups(*this),
+	m_hasRain(*this, s),
+	m_blockDesignations(*this),
+	m_locationBuckets(*this),
+	m_visionFacadeBuckets(*this),
+	m_opacityFacade(*this),
+	m_name(n),
+	m_simulation(s),
+	m_id(id)
+{
+	setup();
+	m_opacityFacade.initalize();
+	m_visionCuboids.initalize(*this);
 	m_hasRain.scheduleRestart();
 }
-Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& s) : 
-	m_blocks(*this, data["blocks"]["x"].get<DistanceInBlocks>(), data["blocks"]["y"].get<DistanceInBlocks>(), data["blocks"]["z"].get<DistanceInBlocks>()), 
-	m_hasTemperature(*this), m_hasTerrainFacades(*this), m_hasActors(*this), m_hasPlants(*this), m_fires(*this), 
-	m_hasFarmFields(*this), m_hasDigDesignations(*this), m_hasConstructionDesignations(*this), m_hasStockPiles(*this), 
-	m_hasCraftingLocationsAndJobs(*this), m_hasTargetedHauling(*this), m_hasSleepingSpots(*this), m_hasWoodCuttingDesignations(*this), 
-	m_hasItems(*this), m_fluidSources(*this), m_hasFluidGroups(*this), m_hasRain(*this, s), m_blockDesignations(*this), 
+/*
+Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& s) :
+	m_blocks(*this, data["blocks"]["x"].get<DistanceInBlocks>(), data["blocks"]["y"].get<DistanceInBlocks>(), data["blocks"]["z"].get<DistanceInBlocks>()),
+	m_hasTemperature(*this), m_hasTerrainFacades(*this), m_actors(*this), m_plants(*this), m_fires(*this),
+	m_hasFarmFields(*this), m_hasDigDesignations(*this), m_hasConstructionDesignations(*this), m_hasStockPiles(*this),
+	m_hasCraftingLocationsAndJobs(*this), m_hasTargetedHauling(*this), m_hasSleepingSpots(*this), m_hasWoodCuttingDesignations(*this),
+	m_items(*this), m_fluidSources(*this), m_hasFluidGroups(*this), m_hasRain(*this, s), m_blockDesignations(*this),
 	m_name(data["name"].get<std::wstring>()), m_simulation(s), m_id(data["id"].get<AreaId>())
 {
 	// Record id now so json block references will function later in this method.
 	m_simulation.m_hasAreas->recordId(*this);
 	setup();
 	m_blocks.load(data["blocks"], deserializationMemo);
-	m_hasActors.m_opacityFacade.initalize();
+	m_actors.m_opacityFacade.initalize();
 	m_hasFluidGroups.clearMergedFluidGroups();
-	m_hasActors.m_visionCuboids.initalize(*this);
+	m_actors.m_visionCuboids.initalize(*this);
 	// Load fires.
 	m_fires.load(data["fires"], deserializationMemo);
 	// Load plants.
-	for(const Json& plant : data["plants"])
-	{
-		BlockIndex location = plant["location"].get<BlockIndex>();
-		assert(!m_blocks.plant_exists(location));
-		m_hasPlants.emplace(plant, deserializationMemo);
-	}
+	m_plants.load(data["plants"], deserializationMemo);
 	// Load fields.
 	m_hasFarmFields.load(data["hasFarmFields"], deserializationMemo);
 	// Load Items.
-	for(const Json& item : data["items"])
-		m_simulation.m_hasItems->loadItemFromJson(item, deserializationMemo);
+	m_items.load(data["items"], deserializationMemo);
 	// Load Actors.
-	for(const Json& actor : data["actors"])
-		m_simulation.m_hasActors->loadActorFromJson(actor, deserializationMemo);
+	m_actors.load(data["actors"], deserializationMemo);
 	// Load designations.
-	// Temporary shim.
-	if(data.contains("designations"))
-		m_blockDesignations.load(data["designations"], deserializationMemo);
+	m_blockDesignations.load(data["designations"], deserializationMemo);
 	// Load Projects
 	m_hasConstructionDesignations.load(data["hasConstructionDesignations"], deserializationMemo);
 	m_hasDigDesignations.load(data["hasDigDesignations"], deserializationMemo);
@@ -81,13 +91,13 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	// Load Item cargo and projects.
 	for(const Json& itemData : data["items"])
 	{
-		Item& item = m_simulation.m_hasItems->getById(itemData["id"].get<ItemId>());
+		ItemIndex item = m_simulation.m_items.getById(itemData["id"].get<ItemId>());
 		item.load(itemData, deserializationMemo);
 	}
 	// Load Actor objectives, following and reservations.
 	for(const Json& actorData : data["actors"])
 	{
-		Actor& actor = m_simulation.m_hasActors->getById(actorData["id"].get<ActorId>());
+		ActorIndex actor = m_simulation.m_actors->getById(actorData["id"].get<ActorId>());
 		actor.m_hasObjectives.load(actorData["hasObjectives"], deserializationMemo);
 		if(actorData.contains("canReserve"))
 			actor.m_canReserve.load(actorData["canReserve"], deserializationMemo);
@@ -115,27 +125,27 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 Json Area::toJson() const
 {
 	Json data{
-		{"id", m_id}, {"name", m_name}, 
+		{"id", m_id}, {"name", m_name},
 		{"actors", Json::array()}, {"items", Json::array()}, {"blocks", m_blocks.toJson()},
 		{"plants", Json::array()}, {"fluidSources", m_fluidSources.toJson()}, {"fires", m_fires.toJson()},
 		{"sleepingSpots", m_hasSleepingSpots.toJson()}, {"caveInCheck", Json::array()}, {"rain", m_hasRain.toJson()},
 		{"designations", m_blockDesignations.toJson()}
 	};
-	std::unordered_set<const Item*> items;
-	std::function<void(const Item&)> recordItemAndCargoItemsRecursive = [&](const Item& item){
+	std::unordered_set<const ItemIndex> items;
+	std::function<void(const ItemIndex)> recordItemAndCargoItemsRecursive = [&](const ItemIndex item){
 		items.insert(&item);
-		for(const Item* cargo : item.m_hasCargo.getItems())
+		for(const ItemIndex cargo : item.m_hasCargo.getItems())
 			recordItemAndCargoItemsRecursive(*cargo);
 	};
 	for(BlockIndex block : m_blocks.getAll())
 	{
-		for(Item* item : m_blocks.item_getAll(block))
+		for(ItemIndex item : m_blocks.item_getAll(block))
 			recordItemAndCargoItemsRecursive(*item);
 	}
-	for(Actor* actor : m_hasActors.getAllConst())
+	for(ActorIndex actor : m_actors.getAllConst())
 	{
 		data["actors"].push_back(actor->toJson());
-		for(Item* item : actor->m_equipmentSet.getAll())
+		for(ItemIndex item : actor->m_equipmentSet.getAll())
 			recordItemAndCargoItemsRecursive(*item);
 		if(actor->m_canPickup.isCarryingAnything())
 		{
@@ -145,9 +155,9 @@ Json Area::toJson() const
 				data["actors"].push_back(actor->m_canPickup.getActor().toJson());
 		}
 	}
-	for(const Item* item : items)
+	for(const ItemIndex item : items)
 		data["items"].push_back(item->toJson());
-	for(const Plant& plant : m_hasPlants.getAllConst())
+	for(const PlantIndex plant : m_hasPlants.getAllConst())
 		data["plants"].push_back(plant.toJson());
 	data["hasFarmFields"] = m_hasFarmFields.toJson();
 	data["hasSleepingSpots"] = m_hasSleepingSpots.toJson();
@@ -159,42 +169,28 @@ Json Area::toJson() const
 	data["targetedHauling"] = m_hasTargetedHauling.toJson();
 	for(BlockIndex block : m_caveInCheck)
 		data["caveInCheck"].push_back(block);
-	m_hasActors.m_opacityFacade.validate();
+	m_actors.m_opacityFacade.validate();
 	return data;
 }
+*/
 void Area::setup()
 {
-	m_hasActors.m_locationBuckets.initalize();
+	m_locationBuckets.initalize();
 	m_blocks.assignLocationBuckets();
 	updateClimate();
 }
-void Area::readStep()
-{ 
-	//TODO: Count tasks dispatched and finished instead of pool.wait_for_tasks so we can do multiple areas simultaniously in one pool.
-	// Process vision, emplace requests for every actor in current bucket.
-	// It seems like having the vision requests permanantly embeded in the actors and iterating the vision bucket directly rather then using the visionRequestQueue should be faster but limited testing shows otherwise.
-	m_hasActors.processVisionReadStep();
-	// Calculate cave in.
-	m_simulation.m_taskFutures.push_back(m_simulation.m_pool.submit([&](){ stepCaveInRead(); }));
-	m_hasFluidGroups.readStep();
-}
-void Area::writeStep()
-{ 
-	m_hasFluidGroups.writeStep();
-	// Apply cave in.
-	if(!m_caveInData.empty())
-		stepCaveInWrite();
-	// Clean up old vision cuboids.
-	m_hasActors.m_visionCuboids.clearDestroyed();
-	// Apply vision.
-	m_hasActors.processVisionWriteStep();
-	// Apply temperature deltas.
-	m_hasTemperature.applyDeltas();
-	// Apply rain.
+void Area::doStep()
+{
+	m_hasFluidGroups.doStep();
+	doStepCaveIn();
+	m_visionCuboids.clearDestroyed();
+	m_hasTemperature.doStep();
 	if(m_hasRain.isRaining() && m_simulation.m_step % Config::rainWriteStepFreqency == 0)
-		m_hasRain.writeStep();
-	// Apply fluid Sources.
-	m_fluidSources.step();
+		m_hasRain.doStep();
+	m_fluidSources.doStep();
+	m_visionFacade.doStep();
+	m_threadedTaskEngine.doStep(m_simulation, this);
+	m_eventSchedule.doStep(m_simulation.m_step);
 }
 /*
 BlockIndex Area::getBlockForAdjacentLocation(WorldLocation& location)
@@ -239,8 +235,8 @@ void Area::updateClimate()
 	if(m_simulation.m_step % Config::stepsPerDay == 0)
 	{
 		uint16_t day = DateTime(m_simulation.m_step).day;
-		for(Plant& plant : m_hasPlants.getAll())
-			plant.setDayOfYear(day);
+		for(PlantIndex plant : m_plants.getAll())
+			m_plants.setDayOfYear(plant, day);
 		m_hasFarmFields.setDayOfYear(day);
 	}
 }
@@ -250,17 +246,17 @@ std::string Area::toS() const
 }
 void Area::logActorsAndItems() const
 {
-	for(Actor* actor : m_hasActors.getAllConst())
-		actor->log();
-	for(Item* item : m_hasItems.getOnSurfaceConst())
-		item->log();
+	for(ActorIndex actor : m_actors.getAll())
+		m_actors.log(actor);
+	for(ItemIndex item : m_items.getOnSurface())
+		m_items.log(item);
 }
 uint32_t Area::getTotalCountOfItemTypeOnSurface(const ItemType& itemType) const
 {
 	uint32_t output = 0;
-	for(Item* item : m_hasItems.getOnSurfaceConst())
-		if(itemType == item->m_itemType)
-			output += item->getQuantity();
+	for(ItemIndex item : m_items.getOnSurface())
+		if(&itemType == &m_items.getItemType(item))
+			output += m_items.getQuantity(item);
 	return output;
 }
 void Area::clearReservations()

@@ -1,6 +1,7 @@
 #include "station.h"
 #include "../simulation.h"
-#include "../actor.h"
+#include "../area.h"
+#include "../actors/actors.h"
 // Input
 /*
 StationInputAction::StationInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, BlockIndex& b) : 
@@ -17,10 +18,11 @@ void StationInputAction::execute()
 // Objective
 StationObjective::StationObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), 
 	m_location(data["block"].get<BlockIndex>()) { }
-void StationObjective::execute()
+void StationObjective::execute(Area& area)
 {
-	if(m_actor.m_location != m_location)
+	Actors& actors = area.m_actors;
+	if(actors.getLocation(m_actor) != m_location)
 		// BlockIndex, detour, adjacent, unreserved, reserve
-		m_actor.m_canMove.setDestination(m_location, m_detour, false, false, false);
+		actors.move_setDestination(m_location, m_detour, false, false, false);
 }
-void StationObjective::reset() { m_actor.m_canReserve.deleteAllWithoutCallback(); }
+void StationObjective::reset(Area& area) { area.getActors().canReserve_clearAll(m_actor); }

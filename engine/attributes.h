@@ -17,6 +17,7 @@ struct Attribute
 	uint32_t value;
 	Percent baseModifierPercent;
 	int32_t bonusOrPenalty;
+	Attribute() = default; // default constructor needed to allow vector resize.
 	Attribute(uint32_t snv, uint32_t sav, uint32_t bmp, int32_t bop, Percent percentGrown) : speciesNewbornValue(snv), speciesAdultValue(sav), baseModifierPercent(bmp), bonusOrPenalty(bop) { setPercentGrown(percentGrown); }
 	Attribute(const Json& data, uint32_t speciesNewbornValue, uint32_t speciesAdultValue, Percent percentGrown);
 	void setPercentGrown(Percent percentGrown);
@@ -33,6 +34,7 @@ class Attributes
 	uint32_t baseCombatScore;
 	Percent percentGrown;
 public:
+	Attributes() = default; // default constructor needed to allow vector resize.
 	Attributes(const AnimalSpecies& species, std::array<uint32_t, 4> modifierPercents, std::array<int32_t, 4> bonusOrPenalties, Percent pg) :
 		strength(species.strength[0], species.strength[1], modifierPercents[1], bonusOrPenalties[1], pg),
 		dextarity(species.dextarity[0], species.dextarity[1], modifierPercents[1], bonusOrPenalties[1], pg),

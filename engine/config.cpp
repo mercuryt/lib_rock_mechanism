@@ -57,6 +57,7 @@ void Config::load()
 	fatPierceForceCost = data["fatPierceForceCost"].get<float>();
 	fireRampDownPhaseDurationFraction = data["fireRampDownPhaseDurationFraction"].get<float>();
 	flankingModifier = data["flankingModifier"].get<float>();
+	fluidGroupsPerThread = data["fluidGroupsPerThread"].get<uint8_t>();
 	forceAbsorbedPiercedModifier = data["forceAbsorbedPiercedModifier"].get<float>();
 	forceAbsorbedUnpiercedModifier = data["forceAbsorbedUnpiercedModifier"].get<float>();
 	fractionAttackCoolDownReductionPerPointOfDextarity = data["fractionAttackCoolDownReductionPerPointOfDextarity"].get<float>() * stepsPerSecond;
@@ -132,6 +133,7 @@ void Config::load()
 	objectivePrioiorityKill = data["objectivePrioiorityKill"].get<uint32_t>();
 	objectivePrioritySleep = data["objectivePrioritySleep"].get<uint32_t>();
 	pathHuristicConstant = data["pathHuristicConstant"].get<float>();
+	pathRequestsPerThread = data["pathRequestsPerThread"].get<uint8_t>();
 	percentHeightCarvedByRivers = data["percentHeightCarvedByRivers"].get<Percent>();
 	percentHungerAcceptableDesireModifier = data["percentHungerAcceptableDesireModifier"].get<Percent>();
 	percentOfPlantMassWhichIsFoliage = data["percentOfPlantMassWhichIsFoliage"].get<Percent>();
@@ -185,6 +187,7 @@ void Config::load()
 	stepsToEat = data["secondsToEat"].get<float>() * stepsPerSecond;
 	stockPilePriority = data["stockPilePriority"].get<uint32_t>();
 	targetedHaulPriority = data["targetedHaulPriority"].get<uint32_t>();
+	threadedTaskBatchSize = data["threadedTaskBatchSize"].get<uint8_t>();
 	unarmedCombatScoreBase = data["unarmedCombatScoreBase"].get<uint32_t>();
 	unarmedCombatSkillModifier = data["unarmedCombatSkillModifier"].get<float>();
 	undergroundAmbiantTemperature = data["undergroundAmbiantTemperature"].get<uint32_t>();

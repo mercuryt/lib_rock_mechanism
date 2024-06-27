@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <functional>
 #include <iostream>
+#include <variant>
 using Step = uint64_t;
 using Temperature = uint32_t; // degrees kelvin.
 using CollisionVolume = uint32_t; // 20 liters, onehundredth of a block.
@@ -38,6 +39,16 @@ using VisionFacadeIndex = uint32_t;
 inline VisionFacadeIndex VISION_FACADE_INDEX_MAX = UINT32_MAX;
 using VisionCuboidId = uint32_t;
 inline VisionCuboidId VISION_CUBOID_ID_MAX = UINT32_MAX;
+using HasShapeIndex = uint32_t;
+inline HasShapeIndex HAS_SHAPE_INDEX_MAX = UINT32_MAX;
+using ItemIndex = HasShapeIndex;
+inline ItemIndex ITEM_INDEX_MAX = UINT32_MAX;
+using PlantIndex = uint32_t;
+inline PlantIndex PLANT_INDEX_MAX = UINT32_MAX;
+using ActorIndex = uint32_t;
+inline ActorIndex ACTOR_INDEX_MAX = UINT32_MAX;
+using PathRequestIndex = uint32_t;
+inline PathRequestIndex PATH_REQUEST_INDEX_MAX = UINT32_MAX;
 struct Vector3D;
 struct Point3D
 {

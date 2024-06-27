@@ -2,13 +2,12 @@
 
 #include "config.h"
 #include "objective.h"
-#include "threadedTask.hpp"
+#include "simulation.h"
 #include "eventSchedule.hpp"
-#include "findsPath.h"
+#include "pathRequest.h"
+#include "terrainFacade.h"
 #include "types.h"
 
-class Item;
-class Actor;
 class EatObjective;
 class HungerEvent;
 class Plant;
@@ -18,31 +17,31 @@ struct AnimalSpecies;
 class MustEat final
 {
 	HasScheduledEvent<HungerEvent> m_hungerEvent; // 2
-	Actor& m_actor;
+	ActorIndex m_actor = ACTOR_INDEX_MAX;
 	EatObjective* m_eatObjective = nullptr;
 public:
 	BlockIndex m_eatingLocation = BLOCK_INDEX_MAX;
 private:
 	Mass m_massFoodRequested = 0;
 public:
-	MustEat(Actor& a, Simulation& s);
-	MustEat(const Json& data, Actor& a, Simulation& s, const AnimalSpecies& species);
+	MustEat(Area& area, ActorIndex a);
+	MustEat(const Json& data, ActorIndex a, Simulation& s, const AnimalSpecies& species);
 	[[nodiscard]]Json toJson() const;
-	void scheduleEatEvent();
-	void eat(Mass mass);
-	void notHungry();
-	void setNeedsFood();
+	void scheduleHungerEvent(Area& area);
+	void eat(Area& area, Mass mass);
+	void notHungry(Area& area);
+	void setNeedsFood(Area& area);
 	void onDeath();
 	[[nodiscard]] bool needsFood() const;
-	[[nodiscard]] Mass massFoodForBodyMass() const;
+	[[nodiscard]] Mass massFoodForBodyMass(Area& area) const;
 	[[nodiscard]] const Mass& getMassFoodRequested() const;
 	[[nodiscard]] Percent getPercentStarved() const;
-	[[nodiscard]] uint32_t getDesireToEatSomethingAt(BlockIndex block) const;
+	[[nodiscard]] uint32_t getDesireToEatSomethingAt(Area& area, BlockIndex block) const;
 	[[nodiscard]] uint32_t getMinimumAcceptableDesire() const;
-	[[nodiscard]] BlockIndex getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireability();
-	[[nodiscard]] bool canEat(const Actor& actor) const;
-	[[nodiscard]] bool canEat(const Plant& plant) const;
-	[[nodiscard]] bool canEat(const Item& item) const;
+	[[nodiscard]] BlockIndex getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireability(Area& area);
+	[[nodiscard]] bool canEatActor(Area& area, const ActorIndex actor) const;
+	[[nodiscard]] bool canEatPlant(Area& area, const PlantIndex plant) const;
+	[[nodiscard]] bool canEatItem(Area& area, const ItemIndex item) const;
 	friend class HungerEvent;
 	friend class EatObjective;
 	// For testing.
@@ -50,64 +49,11 @@ public:
 	[[maybe_unused]]bool hasHungerEvent() const { return m_hungerEvent.exists(); }
 	[[maybe_unused]]Step getHungerEventStep() const { return m_hungerEvent.getStep(); }
 };
-class EatEvent final : public ScheduledEvent
-{
-	EatObjective& m_eatObjective;
-public:
-	EatEvent(const Step delay, EatObjective& eo, const Step start = 0);
-	void execute();
-	void clearReferences();
-	void eatPreparedMeal(Item& item);
-	void eatGenericItem(Item& item);
-	void eatActor(Actor& actor);
-	void eatPlantLeaves(Plant& plant);
-	void eatFruitFromPlant(Plant& plant);
-	[[nodiscard]] BlockIndex getBlockWithMostDesiredFoodInReach() const;
-	[[nodiscard]] uint32_t getDesireToEatSomethingAt(BlockIndex block) const;
-	[[nodiscard]] uint32_t getMinimumAcceptableDesire() const;
-};
 class HungerEvent final : public ScheduledEvent
 {
-	Actor& m_actor;
+	ActorIndex m_actor = ACTOR_INDEX_MAX;
 public:
-	HungerEvent(const Step delay, Actor& a, const Step start = 0);
-	void execute();
-	void clearReferences();
-};
-class EatThreadedTask final : public ThreadedTask
-{
-	EatObjective& m_eatObjective;
-	Actor* m_huntResult;
-	FindsPath m_findsPath;
-	bool m_noFoodFound;
-public:
-	EatThreadedTask(EatObjective& eo);
-	void readStep();
-	void writeStep();
-	void clearReferences();
-};
-class EatObjective final : public Objective
-{
-	HasThreadedTask<EatThreadedTask> m_threadedTask;
-	HasScheduledEvent<EatEvent> m_eatEvent;
-	BlockIndex m_destination = BLOCK_INDEX_MAX;
-	bool m_noFoodFound;
-public:
-	EatObjective(Actor& a);
-	EatObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	void execute();
-	void cancel();
-	void delay();
-	void reset();
-	void noFoodFound();
-	[[nodiscard]] std::string name() const { return "eat"; }
-	[[nodiscard]] bool canEatAt(BlockIndex block) const;
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Eat; }
-	[[nodiscard]] bool isNeed() const { return true; }
-	friend class EatEvent;
-	friend class EatThreadedTask;
-	// For testing.
-	[[maybe_unused, nodiscard]]bool hasEvent() const { return m_eatEvent.exists(); }
-	[[maybe_unused, nodiscard]]bool hasThreadedTask() const { return m_threadedTask.exists(); }
+	HungerEvent(Area& area, const Step delay, ActorIndex a, const Step start = 0);
+	void execute(Simulation&, Area*);
+	void clearReferences(Simulation&, Area*);
 };

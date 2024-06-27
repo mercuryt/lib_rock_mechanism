@@ -1,10 +1,10 @@
 #include "leadAndFollow.h"
-#include "actor.h"
 #include "area.h"
 #include "config.h"
-#include "item.h"
 #include "deserializationMemo.h"
 #include "simulation.h"
+#include "actorOrItemIndex.h"
+/*
 void CanLead::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 
@@ -20,67 +20,72 @@ Json CanLead::toJson() const
 	Json data;
 	if(m_canFollow)
 	{
-		if(m_canFollow->m_hasShape.isItem())
-			data["canFollowItem"] = static_cast<Item&>(m_canFollow->m_hasShape).m_id;
+		if(m_canFollow->m_index.isItem())
+			data["canFollowItem"] = static_cast<Item&>(m_canFollow->m_index).m_id;
 		else
 		{
-			assert(m_canFollow->m_hasShape.isActor());
-			data["canFollowActor"] = static_cast<Actor&>(m_canFollow->m_hasShape).m_id;
+			assert(m_canFollow->m_index.isActor());
+			data["canFollowActor"] = static_cast<Actor&>(m_canFollow->m_index).m_id;
 		}
 	}
 	if(!m_locationQueue.empty())
 		data["locationQueue"] = m_locationQueue;
 	return data;
 }
-void CanLead::onMove()
+*/
+bool CanLead::canMove(Area& area)
 {
-	if(!isLeading())
-		return;
-	assert(getLocationQueue().size() > 1);
-	// When leader moves add its new location to the front of the location queue.
-	if(!m_hasShape.m_canFollow.isFollowing())
-		m_locationQueue.push_front(m_hasShape.m_location);
-	HasShape* nextInLine = &m_canFollow->m_hasShape;
-	nextInLine->m_canFollow.tryToMove();
-}
-bool CanLead::isFollowerKeepingUp() const 
-{ 
-	return m_hasShape.isAdjacentTo(m_canFollow->m_hasShape); 
+	assert(m_actorOrItemIndex.getCanFollow(area) == nullptr);
+	auto occuiped = getOccuiped(area);
+	auto path = getLocationQueue(area);
+	auto pathIter = path.begin();
+	ActorOrItemIndex follower = m_canFollow->m_actorOrItemIndex;
+	while(true)
+	{
+		if(!area.getBlocks().shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(*pathIter, follower.getShape(area), follower.getMoveType(area), follower.getFacing(area), occuiped))
+			return false;
+		CanLead* canLead = follower.getCanLead(area);
+		if(canLead == nullptr)
+			return true;
+		follower = canLead->m_canFollow->m_actorOrItemIndex;
+	}
 }
 bool CanLead::isLeading() const { return m_canFollow != nullptr; }
-bool CanLead::isLeading(HasShape& hasShape) const  { return m_canFollow != nullptr && &hasShape.m_canFollow == m_canFollow; }
-HasShape& CanLead::getFollower() { return m_canFollow->m_hasShape; }
-const HasShape& CanLead::getFollower() const { return m_canFollow->m_hasShape; }
+bool CanLead::isLeading(ActorOrItemIndex index) const  { return m_canFollow != nullptr && m_canFollow->m_actorOrItemIndex == index; }
+ActorOrItemIndex CanLead::getFollower() { return m_canFollow->m_actorOrItemIndex; }
+const ActorOrItemIndex& CanLead::getFollower() const { return m_canFollow->m_actorOrItemIndex; }
 // Class method.
-Speed CanLead::getMoveSpeedForGroupWithAddedMass(std::vector<const HasShape*>& actorsAndItems, Mass addedRollingMass, Mass addedDeadMass)
+Speed CanLead::getMoveSpeedForGroupWithAddedMass(Area& area, std::vector<ActorOrItemIndex>& actorsAndItems, Mass addedRollingMass, Mass addedDeadMass)
 {
 	Mass rollingMass = addedRollingMass;
 	Mass deadMass = addedDeadMass;
 	Mass carryMass = 0;
 	Speed lowestMoveSpeed = 0;
-	for(const HasShape* hasShape : actorsAndItems)
+	for(ActorOrItemIndex index : actorsAndItems)
 	{
-		if(hasShape->isItem())
+		if(index.isItem())
 		{
-			Mass mass = static_cast<const Item&>(*hasShape).getMass();
+			ItemIndex itemIndex = index.get();
+			Mass mass = area.m_items.getMass(itemIndex);
 			static const MoveType& roll = MoveType::byName("roll");
-			if(hasShape->getMoveType() == roll)
+			if(area.m_items.getMoveType(itemIndex) == roll)
 				rollingMass += mass;
 			else
 				deadMass += mass;
 		}
 		else
 		{
-			assert(hasShape->isActor());
-			const Actor& actor = static_cast<const Actor&>(*hasShape);
-			if(actor.m_canMove.canMove())
+			assert(index.isActor());
+			ActorIndex actorIndex = index.get();
+			Actors& actors = area.m_actors;
+			if(actors.move_canMove(actorIndex))
 			{
-				carryMass += actor.m_attributes.getUnencomberedCarryMass();
-				Speed moveSpeed = actor.m_attributes.getMoveSpeed();
+				carryMass += actors.getUnencomberedCarryMass(actorIndex);
+				Speed moveSpeed = actors.move_getSpeed(actorIndex);
 				lowestMoveSpeed = lowestMoveSpeed == 0 ? moveSpeed : std::min(lowestMoveSpeed, moveSpeed);
 			}
 			else
-				deadMass += actor.getMass();
+				deadMass += actors.getMass(actorIndex);
 		}
 	}
 	assert(lowestMoveSpeed != 0);
@@ -92,26 +97,30 @@ Speed CanLead::getMoveSpeedForGroupWithAddedMass(std::vector<const HasShape*>& a
 		return 0;
 	return std::ceil(lowestMoveSpeed * ratio * ratio);
 }
-Speed CanLead::getMoveSpeed() const
+Speed CanLead::getMoveSpeed(Area& area) const
 {
-	assert(!m_hasShape.m_canFollow.isFollowing());
-	assert(m_hasShape.m_canLead.isLeading());
-	HasShape* hasShape = &m_hasShape;
-	std::vector<const HasShape*> actorsAndItems;
+	assert(m_actorOrItemIndex.isActor());
+	ActorIndex actorIndex = m_actorOrItemIndex.get();
+	assert(!area.m_actors.isFollowing(actorIndex));
+	assert(area.m_actors.isLeading(actorIndex));
+	ActorOrItemIndex index = m_actorOrItemIndex;
+	std::vector<ActorOrItemIndex> actorsAndItems;
 	while(true)
 	{
-		actorsAndItems.push_back(hasShape);
-		if(!hasShape->m_canLead.isLeading())
+		actorsAndItems.push_back(index);
+		CanLead& canLead = *index.getCanLead(area);
+		if(!canLead.isLeading())
 			break;
-		hasShape = &hasShape->m_canLead.getFollower();
+		index = canLead.getFollower();
 	}
-	return getMoveSpeedForGroupWithAddedMass(actorsAndItems, 0);
+	return getMoveSpeedForGroupWithAddedMass(area, actorsAndItems, 0);
 }
-std::deque<BlockIndex>& CanLead::getLocationQueue()
+std::deque<BlockIndex>& CanLead::getLocationQueue(Area& area)
 {
-	return m_hasShape.m_canFollow.getLineLeader().m_canLead.m_locationQueue;
+	return m_actorOrItemIndex.getCanFollow(area)->getLineLeader(area).getCanLead(area)->m_locationQueue;
 }
-CanFollow::CanFollow(HasShape& a, Simulation& s) : m_event(s.m_eventSchedule), m_hasShape(a) { }
+CanFollow::CanFollow(ActorOrItemIndex a) : m_actorOrItemIndex(a) { }
+/*
 void CanFollow::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	if(data.contains("canLeadItem"))
@@ -119,107 +128,76 @@ void CanFollow::load(const Json& data, DeserializationMemo& deserializationMemo)
 	else if(data.contains("canLeadActor"))
 		m_canLead = &deserializationMemo.itemReference(data["canLeadActor"]).m_canLead;
 	if(data.contains("eventStart"))
-		m_event.schedule(m_hasShape, data["eventStart"].get<Step>());
+		m_event.schedule(m_index, data["eventStart"].get<Step>());
 }
 Json CanFollow::toJson() const
 {
 	Json data;
 	if(m_canLead)
 	{
-		if(m_canLead->m_hasShape.isItem())
-			data["canLeadItem"] = static_cast<Item&>(m_canLead->m_hasShape).m_id;
+		if(m_canLead->m_index.isItem())
+			data["canLeadItem"] = static_cast<Item&>(m_canLead->m_index).m_id;
 		else
 		{
-			assert(m_canLead->m_hasShape.isActor());
-			data["canLeadActor"] = static_cast<Actor&>(m_canLead->m_hasShape).m_id;
+			assert(m_canLead->m_index.isActor());
+			data["canLeadActor"] = static_cast<Actor&>(m_canLead->m_index).m_id;
 		}
 	}
 	if(m_event.exists())
 		data["eventStart"] = m_event.getStartStep();
 	return data;
 }
-void CanFollow::follow(CanLead& canLead, bool doAdjacentCheck)
+*/
+void CanFollow::follow(Area& area, CanLead& canLead, bool doAdjacentCheck)
 {
 	assert(m_canLead == nullptr);
 	assert(canLead.m_canFollow == nullptr);
 	if(doAdjacentCheck)
-		assert(m_hasShape.isAdjacentTo(canLead.m_hasShape));
+		assert(m_actorOrItemIndex.isAdjacent(area, canLead.m_actorOrItemIndex));
 	canLead.m_canFollow = this;
 	m_canLead = &canLead;
-	if(m_hasShape.isItem())
-		m_hasShape.setStatic(false);
-	std::deque<BlockIndex>& locationQueue = canLead.getLocationQueue();
+	std::deque<BlockIndex>& locationQueue = canLead.getLocationQueue(area);
 	if(locationQueue.empty())
 	{
-		assert(!canLead.m_hasShape.m_canFollow.isFollowing());
-		locationQueue.push_back(canLead.m_hasShape.m_location);
+		assert(!canLead.m_actorOrItemIndex.getCanFollow(area)->isFollowing());
+		locationQueue.push_back(canLead.m_actorOrItemIndex.getLocation(area));
 	}
-	locationQueue.push_back(m_hasShape.m_location);
+	locationQueue.push_back(m_actorOrItemIndex.getLocation(area));
 }
-void CanFollow::unfollow()
+void CanFollow::unfollow(Area& area)
 {
 	assert(m_canLead != nullptr);
 	m_canLead->m_canFollow = nullptr;
 	m_canLead->m_locationQueue.clear();
 	m_canLead = nullptr;
-	if(m_hasShape.isItem())
-		m_hasShape.setStatic(true);
+	if(m_actorOrItemIndex.isItem())
+		area.m_items.setStatic(m_actorOrItemIndex.get(), true);
 }
-void CanFollow::unfollowIfFollowing()
+void CanFollow::unfollowIfFollowing(Area& area)
 {
 	if(m_canLead != nullptr)
-		unfollow();
+		unfollow(area);
 }
-void CanFollow::maybeDisband()
+void CanFollow::maybeDisband(Area& area)
 {
-	if(isFollowing() || m_hasShape.m_canLead.isLeading())
-		disband();
+	if(isFollowing() || m_actorOrItemIndex.getCanLead(area)->isLeading())
+		disband(area);
 }
-void CanFollow::disband()
+void CanFollow::disband(Area& area)
 {
-	HasShape* leader = &getLineLeader();
-	leader->m_canLead.m_locationQueue.clear();
-	while(leader->m_canLead.isLeading())
+	ActorOrItemIndex leader = getLineLeader(area);
+	leader.getCanLead(area)->m_locationQueue.clear();
+	while(leader.getCanLead(area)->isLeading())
 	{
-		leader = &leader->m_canLead.m_canFollow->m_hasShape;
-		assert(leader->m_canLead.m_locationQueue.empty());
-		leader->m_canFollow.unfollow();
+		leader = leader.getCanLead(area)->m_canFollow->m_actorOrItemIndex;
+		assert(leader.getCanLead(area)->m_locationQueue.empty());
+		leader.getCanFollow(area)->unfollow(area);
 	}
 }
-void CanFollow::tryToMove()
-{
-	assert(isFollowing());
-	std::deque<BlockIndex>& locationQueue = m_hasShape.m_canLead.getLocationQueue();
-	// Find the position in the location queue where the next shape in the line currently is.
-	auto found = std::ranges::find(locationQueue, m_hasShape.m_location);
-	// If this position is in the front of location queue do nothing, wait for leader to cross over.
-	if(found == locationQueue.begin())
-		return;
-	// Find the next position after that one and try to move follower into it.
-	BlockIndex block = *(--found);
-	Blocks& blocks = m_hasShape.m_area->getBlocks();
-	if(!blocks.shape_anythingCanEnterEver(block) || !blocks.shape_canEnterEverFrom(block, m_hasShape, m_hasShape.m_location))
-		// Shape can no longer enter this location, following path is imposible, disband.
-		disband();
-	else if(blocks.shape_canEnterCurrentlyFrom(block, m_hasShape, m_hasShape.m_location))
-	{
-		// setLocation calls CanLead::onMove which calls this method on it's follower, so this call is recursive down the line.
-		m_hasShape.setLocation(block);
-		// Remove from the end of the location queue if this is the last shape in line.
-		if(!m_hasShape.m_canLead.isLeading())
-			locationQueue.pop_back();
-	}
-	else
-		//Cannot follow currently, schedule a retry.
-		m_event.schedule(m_hasShape);
-}
-HasShape& CanFollow::getLineLeader()
+ActorOrItemIndex CanFollow::getLineLeader(Area& area)
 {
 	if(!isFollowing())
-		return m_hasShape;
+		return m_actorOrItemIndex;
 	else
-		return m_canLead->m_hasShape.m_canFollow.getLineLeader();
+		return m_canLead->m_actorOrItemIndex.getCanFollow(area)->getLineLeader(area);
 }
-CanFollowEvent::CanFollowEvent(HasShape& hasShape, const Step start) : ScheduledEvent(hasShape.getSimulation(), Config::stepsToDelayBeforeTryingAgainToFollowLeader, start), m_hasShape(hasShape) { }
-void CanFollowEvent::execute() { m_hasShape.m_canFollow.tryToMove(); }
-void CanFollowEvent::clearReferences() { m_hasShape.m_canFollow.m_event.clearPointer(); }

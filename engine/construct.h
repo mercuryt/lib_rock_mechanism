@@ -5,15 +5,14 @@
 #include "input.h"
 #include "objective.h"
 #include "reservable.h"
-#include "threadedTask.h"
 #include "eventSchedule.h"
 #include "project.h"
-#include "findsPath.h"
+#include "pathRequest.h"
 
 #include <unordered_map>
 #include <vector>
 
-class ConstructThreadedTask;
+class ConstructPathRequest;
 struct Faction;
 struct BlockFeatureType;
 class ConstructObjective;
@@ -21,6 +20,7 @@ class ConstructProject;
 class HasConstructionDesignationsForFaction;
 struct DeserializationMemo;
 struct MaterialType;
+struct FindPathResult;
 class DesignateConstructInputAction final : public InputAction
 {
 	Cuboid m_cuboid;
@@ -35,53 +35,6 @@ class UndesignateConstructInputAction final : public InputAction
 	UndesignateConstructInputAction(InputQueue& inputQueue, Cuboid& cuboid) : InputAction(inputQueue), m_cuboid(cuboid) { }
 	void execute();
 };
-class ConstructObjectiveType final : public ObjectiveType
-{
-public:
-	bool canBeAssigned(Actor& actor) const;
-	std::unique_ptr<Objective> makeFor(Actor& actor) const;
-	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Construct; }
-	ConstructObjectiveType() = default;
-	ConstructObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo){ }
-};
-// TODO: specalize construct objective into carpentry, masonry, etc.
-class ConstructObjective final : public Objective
-{
-	HasThreadedTask<ConstructThreadedTask> m_constructThreadedTask;
-	Project* m_project;
-	std::unordered_set<Project*> m_cannotJoinWhileReservationsAreNotComplete;
-public:
-	ConstructObjective(Actor& a);
-	ConstructObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	[[nodiscard]] Json toJson() const;
-	void execute();
-	void cancel();
-	void delay();
-	void reset();
-	void joinProject(ConstructProject& project);
-	void onProjectCannotReserve();
-	[[nodiscard]] std::string name() const { return "construct"; }
-	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAdjacentTo(BlockIndex location, Facing facing);
-	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAt(BlockIndex block);
-	[[nodiscard]] bool joinableProjectExistsAt(BlockIndex block) const;
-	[[nodiscard]] bool canJoinProjectAdjacentToLocationAndFacing(BlockIndex block, Facing facing) const;
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Construct; }
-	friend class ConstructThreadedTask;
-	friend class ConstructProject;
-	// For Testing.
-	[[nodiscard, maybe_unused]] Project* getProject() { return m_project; }
-	[[nodiscard, maybe_unused]] bool hasThreadedTask() const { return m_constructThreadedTask.exists(); }
-};
-class ConstructThreadedTask final : public ThreadedTask
-{
-	ConstructObjective& m_constructObjective;
-	FindsPath m_findsPath;
-public:
-	ConstructThreadedTask(ConstructObjective& co);
-	void readStep();
-	void writeStep();
-	void clearReferences();
-};
 class ConstructProject final : public Project
 {
 	const BlockFeatureType* m_blockFeatureType;
@@ -90,7 +43,7 @@ class ConstructProject final : public Project
 	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
 	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
-	uint32_t getWorkerConstructScore(Actor& actor) const;
+	uint32_t getWorkerConstructScore(ActorIndex actor) const;
 	Step getDuration() const;
 	void onComplete();
 	void onCancel();

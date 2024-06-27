@@ -1,5 +1,4 @@
 #include "visionFacade.h"
-#include "actor.h"
 #include "area.h"
 #include "config.h"
 #include "locationBuckets.h"
@@ -19,56 +18,59 @@ VisionFacade::VisionFacade( )
 }
 void VisionFacade::setArea(Area& area)
 {
+	//TODO: why is this not set in initalizer list?
 	m_area = &area;
 }
-void VisionFacade::add(Actor& actor)
+void VisionFacade::addActor(ActorIndex actor)
 {
-	assert(actor.m_canSee.m_hasVisionFacade.m_index == VISION_FACADE_INDEX_MAX);
-	assert(actor.m_canSee.m_hasVisionFacade.m_visionFacade == nullptr);
+	Actors& actorData = m_area->m_actors;
+	assert(!actorData.vision_hasFacade(actor));
 	VisionFacadeIndex index = m_actors.size();
-	actor.m_canSee.m_hasVisionFacade.m_index = index;
-	actor.m_canSee.m_hasVisionFacade.m_visionFacade = this;
+	actorData.vision_recordFacade(actor, *this, index);
 	assert(m_results.size() == m_actors.size() && m_ranges.size() == m_actors.size() && m_locations.size() == m_actors.size());
-	m_actors.push_back(&actor);
-	m_ranges.push_back(actor.m_canSee.getRange());
-	m_locations.push_back(actor.m_location);
+	m_actors.push_back(actor);
+	m_ranges.push_back(actorData.vision_getRange(actor));
+	m_locations.push_back(actorData.getLocation(actor));
 	m_results.push_back({});
 	m_results.back().reserve(32);
 }
-void VisionFacade::remove(Actor& actor)
+void VisionFacade::removeActor(ActorIndex actor)
 {
-	assert(actor.m_canSee.m_hasVisionFacade.m_index != VISION_FACADE_INDEX_MAX);
-	assert(actor.m_canSee.m_hasVisionFacade.m_visionFacade == this);
-	VisionFacadeIndex index = actor.m_canSee.m_hasVisionFacade.m_index;
+	Actors& actorData = m_area->m_actors;
+	auto [visionFacade, index] = actorData.vision_getFacadeWithIndex(actor);
+	assert(index != VISION_FACADE_INDEX_MAX);
+	assert(visionFacade == this);
 	remove(index);
 }
 void VisionFacade::remove(VisionFacadeIndex index)
 {
 	assert(m_actors.size() > index);
-	m_actors.at(index)->m_canSee.m_hasVisionFacade.m_index = VISION_FACADE_INDEX_MAX;
-	m_actors.at(index)->m_canSee.m_hasVisionFacade.m_visionFacade = nullptr;
+	Actors& actorData = m_area->m_actors;
+	actorData.vision_clearVisionFacade(m_actors.at(index));
 	util::removeFromVectorByIndexUnordered(m_actors, index);
 	util::removeFromVectorByIndexUnordered(m_ranges, index);
 	util::removeFromVectorByIndexUnordered(m_locations, index);
 	util::removeFromVectorByIndexUnordered(m_results, index);
 	if(m_actors.size() > index)
-		m_actors.at(index)->m_canSee.m_hasVisionFacade.m_index = index;
+		actorData.vision_updateFacadeIndex(m_actors.at(index), index);
 }
-Actor& VisionFacade::getActor(VisionFacadeIndex index)  
+ActorIndex VisionFacade::getActor(VisionFacadeIndex index)  
 { 
 	assert(m_actors.size() > index); 
-	return *m_actors.at(index); 
+	return m_actors.at(index); 
 }
 BlockIndex VisionFacade::getLocation(VisionFacadeIndex index)  
 {
        	assert(m_actors.size() > index); 
-	assert(m_actors.at(index)->m_location == m_locations.at(index));
+	Actors& actorData = m_area->m_actors;
+	assert(actorData.getLocation(index) == m_locations.at(index));
 	return m_locations.at(index); 
 }
 DistanceInBlocks VisionFacade::getRange(VisionFacadeIndex index) const 
 { 
 	assert(m_actors.size() > index); 
-	assert(m_actors.at(index)->m_canSee.getRange() == m_ranges.at(index));
+	Actors& actorData = m_area->m_actors;
+	assert(actorData.vision_getRange(m_actors.at(index)) == m_ranges.at(index));
 	return m_ranges.at(index); 
 }
 // Static.
@@ -79,7 +81,7 @@ DistanceInBlocks VisionFacade::taxiDistance(Point3D a, Point3D b)
 		std::abs((int)a.y - (int)b.y) +
 		std::abs((int)a.z - (int)b.z);
 }
-std::vector<Actor*>& VisionFacade::getResults(VisionFacadeIndex index)
+std::vector<ActorIndex>& VisionFacade::getResults(VisionFacadeIndex index)
 { 
 	assert(m_actors.size() > index); 
 	assert(m_results.size() == m_actors.size()); 
@@ -87,12 +89,12 @@ std::vector<Actor*>& VisionFacade::getResults(VisionFacadeIndex index)
 }
 void VisionFacade::updateLocation(VisionFacadeIndex index, BlockIndex& location)
 {
-	assert(m_actors.at(index)->m_location == location);
+	assert(m_area->m_actors.getLocation(index) == location);
 	m_locations.at(index) = location;
 }
 void VisionFacade::updateRange(VisionFacadeIndex index, DistanceInBlocks range)
 {
-	assert(m_actors.at(index)->m_canSee.getRange() == range);
+	assert(m_area->m_actors.vision_getRange(index) == range);
 	m_ranges.at(index) = range;
 }
 void VisionFacade::readStepSegment(VisionFacadeIndex begin, VisionFacadeIndex end)
@@ -102,12 +104,12 @@ void VisionFacade::readStepSegment(VisionFacadeIndex begin, VisionFacadeIndex en
 	{
 		DistanceInBlocks range = getRange(viewerIndex);
 		BlockIndex fromIndex = getLocation(viewerIndex);
-		std::vector<Actor*>& result = getResults(viewerIndex);
+		std::vector<ActorIndex>& result = getResults(viewerIndex);
 		result.clear();
 		// Collect results in a vector rather then a set to prevent cache thrashing.
 		Point3D fromCoords = blocks.getCoordinates(fromIndex);
-		LocationBuckets& locationBuckets = m_area->m_hasActors.m_locationBuckets;
-		VisionCuboidId fromVisionCuboidId = m_area->m_hasActors.m_visionCuboids.getIdFor(fromIndex);
+		LocationBuckets& locationBuckets = m_area->m_locationBuckets;
+		VisionCuboidId fromVisionCuboidId = m_area->m_visionCuboids.getIdFor(fromIndex);
 		assert(fromVisionCuboidId);
 		// Define a cuboid of locationBuckets around the watcher.
 		DistanceInBuckets endX = std::min(((fromCoords.x + range) / Config::locationBucketSize + 1), locationBuckets.m_maxX);
@@ -133,11 +135,11 @@ void VisionFacade::readStepSegment(VisionFacadeIndex begin, VisionFacadeIndex en
 							if(taxiDistance(fromCoords, toCoords) <= range)
 							{
 								// Check sightlines.
-								VisionCuboidId toVisionCuboidId = m_area->m_hasActors.m_visionCuboids.getIdFor(fromIndex);
+								VisionCuboidId toVisionCuboidId = m_area->m_visionCuboids.getIdFor(fromIndex);
 								assert(toVisionCuboidId);
 								if(
 									fromVisionCuboidId == toVisionCuboidId ||
-									m_area->m_hasActors.m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toIndex, toCoords)
+									m_area->m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toIndex, toCoords)
 								  )
 								{
 									result.push_back(bucket.m_actorsMultiTile.at(i));
@@ -154,11 +156,11 @@ void VisionFacade::readStepSegment(VisionFacadeIndex begin, VisionFacadeIndex en
 						if(taxiDistance(toCoords, fromCoords) <= range)
 						{
 							// Check sightlines.
-							VisionCuboidId toVisionCuboidId = m_area->m_hasActors.m_visionCuboids.getIdFor(toIndex);
+							VisionCuboidId toVisionCuboidId = m_area->m_visionCuboids.getIdFor(toIndex);
 							assert(toVisionCuboidId);
 							if(
 								fromVisionCuboidId == toVisionCuboidId ||
-								m_area->m_hasActors.m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toIndex, toCoords)
+								m_area->m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toIndex, toCoords)
 							  )
 								result.push_back(bucket.m_actorsSingleTile.at(i));
 						}
@@ -167,48 +169,48 @@ void VisionFacade::readStepSegment(VisionFacadeIndex begin, VisionFacadeIndex en
 	}
 	// Finalize result.
 	for(VisionFacadeIndex viewerIndex = begin; viewerIndex < end; ++viewerIndex)
-		util::removeDuplicatesAndValue(getResults(viewerIndex), &getActor(viewerIndex));
+		util::removeDuplicatesAndValue(getResults(viewerIndex), getActor(viewerIndex));
 }
-void VisionFacade::readStep()
+void VisionFacade::doStep()
 {
 	VisionFacadeIndex index = 0;
 	while(index != m_actors.size())
 	{
 		VisionFacadeIndex actorsSize = m_actors.size();
 		VisionFacadeIndex end = std::min(actorsSize, index + Config::visionThreadingBatchSize);
-		m_area->m_simulation.m_taskFutures.push_back(m_area->m_simulation.m_pool.submit([this, index, end]{ 
+		// TODO: make a variant of parallelizeTask suitable for multiple vectors of primitives.
+		m_area->m_simulation.m_pool.push_task([this, index, end]{ 
 			readStepSegment(index, end);
-		}));
+		});
 		index = end;
 	}
-}
-void VisionFacade::writeStep()
-{
+	m_area->m_simulation.m_pool.wait_for_tasks();
 	for(VisionFacadeIndex index = 0; index < m_actors.size(); ++index)
-		getActor(index).m_canSee.m_currently.swap(getResults(index));
+		m_area->m_actors.vision_swap(getActor(index), getResults(index));
 }
 void VisionFacade::clear()
 {
 	while(m_actors.size())
-		remove(m_actors.size() - 1);
+		removeActor(m_actors.size() - 1);
 }
 // Buckets.
-VisionFacadeBuckets::VisionFacadeBuckets(Area& area)
+VisionFacadeBuckets::VisionFacadeBuckets(Area& area) : m_area(area)
 {
 	for(VisionFacade& visionFacade : m_data)
 		visionFacade.setArea(area);
 }
-VisionFacade& VisionFacadeBuckets::facadeForActor(Actor& actor)
+VisionFacade& VisionFacadeBuckets::facadeForActor(ActorIndex actor)
 {
-	return m_data[actor.m_id % Config::actorDoVisionInterval];
+	ActorId id = m_area.m_actors.getId(actor);
+	return m_data[id % Config::actorDoVisionInterval];
 }
-void VisionFacadeBuckets::add(Actor& actor)
+void VisionFacadeBuckets::add(ActorIndex actor)
 {
-	facadeForActor(actor).add(actor);
+	facadeForActor(actor).addActor(actor);
 }
-void VisionFacadeBuckets::remove(Actor& actor)
+void VisionFacadeBuckets::remove(ActorIndex actor)
 {
-	facadeForActor(actor).remove(actor);
+	facadeForActor(actor).removeActor(actor);
 }
 void VisionFacadeBuckets::clear()
 {
@@ -227,11 +229,11 @@ void HasVisionFacade::clearVisionFacade()
 		clear();
 	m_visionFacade = nullptr;
 }
-void HasVisionFacade::create(Actor& actor)
+void HasVisionFacade::create(Area& area, ActorIndex actor)
 {
 	assert(empty());
 	assert(!m_visionFacade);
-	actor.m_area->m_hasActors.m_visionFacadeBuckets.add(actor);
+	area.m_visionFacadeBuckets.add(actor);
 	assert(!empty());
 	assert(m_visionFacade);
 }

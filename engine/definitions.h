@@ -1,6 +1,6 @@
 #pragma once
 
-#include "itemQuery.h"
+#include "items/itemQuery.h"
 
 #include <filesystem>
 #include <string>

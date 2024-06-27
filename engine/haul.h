@@ -1,13 +1,12 @@
 #pragma once
 
+#include "actorOrItemIndex.h"
 #include "reservable.h"
 #include "types.h"
 #include <unordered_set>
 
 class Simulation;
-class Item;
-class Actor;
-class HasShape;
+class ActorOrItemIndex;
 struct FluidType;
 struct ItemType;
 struct MaterialType;
@@ -24,17 +23,17 @@ std::string haulStrategyToName(HaulStrategy);
 
 struct HaulSubprojectParamaters final
 {
-	HasShape* toHaul;
-	FluidType* fluidType;
-	Quantity quantity;
-	HaulStrategy strategy;
-	std::vector<Actor*> workers;
-	Item* haulTool;
-	Actor* beastOfBurden;
-	ProjectRequirementCounts* projectRequirementCounts;
+	ActorOrItemIndex toHaul;
+	FluidType* fluidType = nullptr;
+	Quantity quantity = 0;
+	HaulStrategy strategy = HaulStrategy::None;
+	std::vector<ActorIndex> workers;
+	ItemIndex haulTool = ITEM_INDEX_MAX;
+	ActorIndex beastOfBurden = ACTOR_INDEX_MAX;
+	ProjectRequirementCounts* projectRequirementCounts = nullptr;
 	HaulSubprojectParamaters() { reset(); }
 	void reset();
-	[[nodiscard, maybe_unused]] bool validate() const;
+	[[nodiscard, maybe_unused]] bool validate(Area& area) const;
 };
 
 // Dispatch one or more actors from a project to haul an item or actor to the project location.
@@ -42,41 +41,41 @@ struct HaulSubprojectParamaters final
 class HaulSubproject final
 {
 	Project& m_project;
-	std::unordered_set<Actor*> m_workers;
-	HasShape& m_toHaul;
-	Quantity m_quantity;
-	HaulStrategy m_strategy;
-	std::unordered_set<Actor*> m_nonsentients;
-	Item* m_haulTool;
-	std::unordered_map<Actor*, BlockIndex> m_liftPoints; // Used by Team strategy.
-	Actor* m_leader;
-	bool m_itemIsMoving;
-	Actor* m_beastOfBurden;
+	std::unordered_set<ActorIndex> m_workers;
+	ActorOrItemIndex m_toHaul;
+	Quantity m_quantity = 0;
+	HaulStrategy m_strategy = HaulStrategy::None;
+	std::unordered_set<ActorIndex> m_nonsentients;
+	ItemIndex m_haulTool = ITEM_INDEX_MAX;
+	std::unordered_map<ActorIndex, BlockIndex> m_liftPoints; // Used by Team strategy.
+	ActorIndex m_leader = ACTOR_INDEX_MAX;
+	bool m_itemIsMoving = false;
+	ActorIndex m_beastOfBurden = ACTOR_INDEX_MAX;
 	ProjectRequirementCounts& m_projectRequirementCounts;
 	const ItemType* m_genericItemType;
 	const MaterialType* m_genericMaterialType;
-	void complete(HasShape& delivered);
+	void complete(ActorOrItemIndex delivered);
+	[[nodiscard]] bool allWorkersAreAdjacentTo(ItemIndex item);
+	[[nodiscard]] bool allWorkersAreAdjacentTo(ActorOrItemIndex actorOrItem);
 public:
 	HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters);
 	HaulSubproject(const Json& json, Project& m_project, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void setup();
-	void commandWorker(Actor& actor);
-	void addWorker(Actor& actor);
-	void removeWorker(Actor& actor);
+	void commandWorker(ActorIndex actor);
+	void addWorker(ActorIndex actor);
+	void removeWorker(ItemIndex item);
 	void cancel();
-	HasShape& getToHaul() { return m_toHaul; }
-	[[nodiscard]] bool allWorkersAreAdjacentTo(HasShape& hasShape);
-	static HaulSubprojectParamaters tryToSetHaulStrategy(const Project& project, HasShape& hasShape, Actor& worker);
-	static std::vector<Actor*> actorsNeededToHaulAtMinimumSpeed(const Project& project, Actor& leader, const HasShape& toHaul);
-	[[nodiscard]] static Quantity maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(const Actor& leader, const Item& haulTool, const HasShape& toHaul, Speed minimumSpeed);
-	[[nodiscard]] static Speed getSpeedWithHaulToolAndCargo(const Actor& leader, const Item& haulTool, const HasShape& toHaul, Quantity quantity);
-	[[nodiscard]] static Quantity maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(const Actor& leader, Actor& yoked, const Item& haulTool, const HasShape& toHaul, Speed minimumSpeed);
-	[[nodiscard]] static Quantity maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniersAndAnimal(const Actor& leader, const Actor& pannierBearer, const Item& panniers, const HasShape& toHaul, Speed minimumSpeed);
-	[[nodiscard]] static Speed getSpeedWithHaulToolAndAnimal(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul, Quantity quantity);
-	[[nodiscard]] static std::vector<Actor*> actorsNeededToHaulAtMinimumSpeedWithTool(const Project& project, Actor& leader, const HasShape& toHaul, const Item& haulTool);
-	[[nodiscard]] static Speed getSpeedWithPannierBearerAndPanniers(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul, Quantity quantity);
-	[[nodiscard]] std::unordered_set<Actor*>& getWorkers() { return m_workers; }
+	static HaulSubprojectParamaters tryToSetHaulStrategy(const Project& project, ActorOrItemIndex hasShape, ActorIndex worker);
+	static std::vector<ActorIndex> actorsNeededToHaulAtMinimumSpeed(const Project& project, ActorIndex leader, const ActorOrItemIndex toHaul);
+	[[nodiscard]] static Quantity maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(const ActorIndex leader, const ItemIndex haulTool, const ActorOrItemIndex toHaul, Speed minimumSpeed);
+	[[nodiscard]] static Speed getSpeedWithHaulToolAndCargo(const ActorIndex leader, const ItemIndex haulTool, const ActorOrItemIndex toHaul, Quantity quantity);
+	[[nodiscard]] static Quantity maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(const ActorIndex leader, ActorIndex yoked, const ItemIndex haulTool, const ActorOrItemIndex toHaul, Speed minimumSpeed);
+	[[nodiscard]] static Quantity maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniersAndAnimal(const ActorIndex leader, const ActorIndex pannierBearer, const ItemIndex panniers, const ActorOrItemIndex toHaul, Speed minimumSpeed);
+	[[nodiscard]] static Speed getSpeedWithHaulToolAndAnimal(const ActorIndex leader, const ActorIndex yoked, const ItemIndex haulTool, const ActorOrItemIndex toHaul, Quantity quantity);
+	[[nodiscard]] static std::vector<ActorIndex> actorsNeededToHaulAtMinimumSpeedWithTool(const Project& project, ActorIndex leader, const ActorOrItemIndex toHaul, const ItemIndex haulTool);
+	[[nodiscard]] static Speed getSpeedWithPannierBearerAndPanniers(const ActorIndex leader, const ActorIndex yoked, const ItemIndex haulTool, const ActorOrItemIndex toHaul, Quantity quantity);
+	[[nodiscard]] std::unordered_set<ActorIndex>& getWorkers() { return m_workers; }
 	// For testing.
 	[[nodiscard]] HaulStrategy getHaulStrategy() const { return m_strategy; }
 	[[nodiscard]] bool getIsMoving() const { return m_itemIsMoving; }
@@ -93,60 +92,22 @@ struct HaulSubprojectDishonorCallback final : public DishonorCallback
 	Json toJson() const { return {{"type", "HaulSubprojectDishonorCallback"}, {"haulSubproject", reinterpret_cast<uintptr_t>(&m_haulSubproject)}}; }
 };
 inline void to_json(Json& data, const HaulSubproject* const& haulSubproject){ data = reinterpret_cast<uintptr_t>(haulSubproject); }
-// Used by Actor for individual haul strategy only. Other strategies use lead/follow.
-class CanPickup final
-{
-	Actor& m_actor;
-	HasShape* m_carrying = nullptr;
-public:
-	CanPickup(Actor& a) : m_actor(a) { }
-	CanPickup(const Json& data, Actor& a, Simulation& s);
-	Json toJson() const;
-	void pickUp(HasShape& hasShape, Quantity quantity = 1u);
-	void pickUp(Item& item, Quantity quantity = 1u);
-	void pickUp(Actor& actor, Quantity quantity = 1u);
-	// Returns a reference to has shape, which may be newly created or pre-existing due to generic items.
-	HasShape& putDown(BlockIndex location, Quantity quantity = 0u);
-	HasShape* putDownIfAny(BlockIndex location);
-	void removeFluidVolume(CollisionVolume volume);
-	void add(const ItemType& itemType, const MaterialType& materialType, Quantity quantity);
-	void remove(Item& item);
-	Item& getItem();
-	Actor& getActor();
-	[[nodiscard]] Quantity canPickupQuantityOf(const HasShape& hasShape) const;
-	[[nodiscard]] Quantity canPickupQuantityOf(const ItemType& itemType, const MaterialType& materialType, Quantity max) const;
-	[[nodiscard]] bool canPickupAny(const HasShape& hasShape) const;
-	[[nodiscard]] bool canPickupAnyUnencombered(const HasShape& hasShape) const;
-	[[nodiscard]] bool isCarryingAnything() const { return m_carrying != nullptr; }
-	[[nodiscard]] bool isCarrying(const HasShape& hasShape) const { return &hasShape == m_carrying; }
-	[[nodiscard]] bool isCarryingGeneric(const ItemType& itemType, const MaterialType& materialType, Quantity quantity) const;
-	[[nodiscard]] bool isCarryingFluidType(const FluidType& fluidType) const;
-	[[nodiscard]] const CollisionVolume& getFluidVolume() const;
-	[[nodiscard]] const FluidType& getFluidType() const;
-	[[nodiscard]] bool isCarryingEmptyContainerWhichCanHoldFluid() const;
-	[[nodiscard]] Mass getMass() const;
-	[[nodiscard]] bool exists() const { return m_carrying != nullptr; }
-	[[nodiscard]] Speed speedIfCarryingQuantity(const HasShape& hasShape, Quantity quantity) const;
-	[[nodiscard]] Quantity maximumNumberWhichCanBeCarriedWithMinimumSpeed(const HasShape& hasShape, Speed minimumSpeed) const;
-	// For UI.
-	[[nodiscard]] HasShape* getCarrying(){ return m_carrying; }
-};
 // For Area.
 class AreaHasHaulTools final
 {
 	//TODO: optimize with m_unreservedHaulToos and m_unreservedYolkableActors.
-	std::unordered_set<Item*> m_haulTools;
-	std::unordered_set<Actor*> m_yolkableActors;
+	std::unordered_set<ItemIndex> m_haulTools;
+	std::unordered_set<ActorIndex> m_yolkableActors;
 public:
 	[[nodiscard]] bool hasToolToHaulFluid(Faction& faction) const;
-	[[nodiscard]] Item* getToolToHaulFluid(Faction& faction) const;
-	[[nodiscard]] bool hasToolToHaul(Faction& faction, const HasShape& hasShape) const;
-	[[nodiscard]] Item* getToolToHaul(Faction& faction, const HasShape& hasShape) const;
-	[[nodiscard]] Actor* getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(Faction& faction, const Item& haulTool, const Mass cargoMass, const Speed minimumHaulSpeed) const;
-	[[nodiscard]] Actor* getPannierBearerToHaulCargoWithMassWithMinimumSpeed(Faction& faction, const HasShape& hasShape, const Speed minimumHaulSpeed) const;
-	[[nodiscard]] Item* getPanniersForActorToHaul(Faction& faction, const Actor& actor, const HasShape& toHaul) const;
-	void registerHaulTool(Item& item);
-	void registerYokeableActor(Actor& actor);
-	void unregisterHaulTool(Item& item);
-	void unregisterYokeableActor(Actor& actor);
+	[[nodiscard]] ItemIndex getToolToHaulFluid(Faction& faction) const;
+	[[nodiscard]] bool hasToolToHaul(Faction& faction, const ActorOrItemIndex hasShape) const;
+	[[nodiscard]] ItemIndex getToolToHaul(Faction& faction, const ActorOrItemIndex hasShape) const;
+	[[nodiscard]] ActorIndex getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(Faction& faction, const ItemIndex haulTool, const Mass cargoMass, const Speed minimumHaulSpeed) const;
+	[[nodiscard]] ActorIndex getPannierBearerToHaulCargoWithMassWithMinimumSpeed(Faction& faction, const ActorOrItemIndex hasShape, const Speed minimumHaulSpeed) const;
+	[[nodiscard]] ItemIndex getPanniersForActorToHaul(Faction& faction, const ActorIndex actor, const ActorOrItemIndex toHaul) const;
+	void registerHaulTool(ItemIndex item);
+	void registerYokeableActor(ActorIndex actor);
+	void unregisterHaulTool(ItemIndex item);
+	void unregisterYokeableActor(ActorIndex actor);
 };

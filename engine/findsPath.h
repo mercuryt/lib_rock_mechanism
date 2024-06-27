@@ -4,16 +4,20 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <functional>
-class HasShape;
 class Shape;
-class MoveType;
+struct MoveType;
 struct ProposedRouteStep;
 struct Faction;
 class CanReserve;
+class Area;
 //TODO: Preseed closed list with currently unenterable tiles which are occupied by followers.
 class FindsPath
 {
-	const HasShape& m_hasShape;
+	Area& m_area;
+	const Shape& m_shape;
+	const MoveType& m_moveType;
+	BlockIndex m_start;
+	Facing m_startFacing;
 	std::vector<BlockIndex> m_route;
 	std::unordered_map<BlockIndex, std::vector<std::pair<BlockIndex, MoveCost>>> m_moveCostsToCache;
 	BlockIndex m_target = BLOCK_INDEX_MAX;
@@ -22,7 +26,7 @@ public:
 	bool m_useCurrentLocation = false;
 	BlockIndex m_huristicDestination = BLOCK_INDEX_MAX;
 	DistanceInBlocks m_maxRange = BLOCK_DISTANCE_MAX;
-	FindsPath(const HasShape& hs, bool detour);
+	FindsPath(Area& area, const Shape& shape, const MoveType& moveType, BlockIndex start, Facing facing, bool detour);
 	void pathToBlock(BlockIndex destination);
 	void pathAdjacentToBlock(BlockIndex destination);
 	void pathToPredicate(DestinationCondition& predicate);
@@ -30,7 +34,8 @@ public:
 	void pathToOccupiedPredicate(std::function<bool(BlockIndex)>& predicate);
 	void pathToUnreservedAdjacentToPredicate(std::function<bool(BlockIndex)>& predicate, Faction& faction);
 	void pathToUnreservedPredicate(std::function<bool(BlockIndex)>& predicate, Faction& faction);
-	void pathToUnreservedAdjacentToHasShape(const HasShape& hasShape, Faction& faction);
+	void pathToUnreservedAdjacentToActor(ActorIndex actor, Faction& faction);
+	void pathToUnreservedAdjacentToItem(ItemIndex item, Faction& faction);
 	void pathToPredicateWithHuristicDestination(DestinationCondition& predicate, BlockIndex huristicDestination);
 	void pathToAreaEdge();
 	void reserveBlocksAtDestination(CanReserve& canReserve);
@@ -44,6 +49,8 @@ public:
 	[[nodiscard]] std::vector<BlockIndex>& getPath() { return m_route; }
 	[[nodiscard]] bool found() const { return !m_route.empty(); }
 	[[nodiscard]] bool areAllBlocksAtDestinationReservable(Faction* faction) const;
+	static FindsPath buildForActor(Area& area, ActorIndex index);
+	static FindsPath buildForItem(Area& area, ItemIndex index);
 	// For testing.
 	[[maybe_unused, nodiscard]] std::unordered_map<BlockIndex, std::vector<std::pair<BlockIndex, MoveCost>>>& getMoveCostsToCache() { return m_moveCostsToCache; }
 };

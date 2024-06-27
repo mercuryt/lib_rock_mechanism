@@ -7,11 +7,11 @@
 #include "types.h"
 
 #include <memory>
-MistDisperseEvent::MistDisperseEvent(uint32_t delay, Area& a, const FluidType& ft, BlockIndex b) :
-       	ScheduledEvent(a.m_simulation, delay), m_area(a), m_fluidType(ft), m_block(b) {}
-void MistDisperseEvent::execute()
+MistDisperseEvent::MistDisperseEvent(Simulation& simulation, uint32_t delay, const FluidType& ft, BlockIndex b) :
+       	ScheduledEvent(simulation, delay), m_fluidType(ft), m_block(b) {}
+void MistDisperseEvent::execute(Simulation& simulation, Area* area)
 {
-	Blocks& blocks = m_area.getBlocks();
+	Blocks& blocks = area->getBlocks();
 	// Mist does not or cannont exist here anymore, clear and return.
 	if(!blocks.fluid_getMist(m_block) || blocks.solid_is(m_block) || blocks.fluid_getTotalVolume(m_block) == Config::maxBlockVolume)
 	{
@@ -19,7 +19,7 @@ void MistDisperseEvent::execute()
 		return;
 	}
 	// Check if mist continues to exist here.
-	if(continuesToExist())
+	if(continuesToExist(*area))
 	{
 		// Possibly spread.
 		if(blocks.fluid_getMistInverseDistanceToSource(m_block) > 0)
@@ -32,18 +32,18 @@ void MistDisperseEvent::execute()
 				)
 				{
 					blocks.fluid_mistSetFluidTypeAndInverseDistance(adjacent, m_fluidType, blocks.fluid_getMistInverseDistanceToSource(m_block) - 1);
-					m_simulation.m_eventSchedule.schedule(std::make_unique<MistDisperseEvent>(m_fluidType.mistDuration, m_area, m_fluidType, adjacent));
+					area->m_eventSchedule.schedule(std::make_unique<MistDisperseEvent>(simulation, m_fluidType.mistDuration, m_fluidType, adjacent));
 				}
 		// Schedule next check.
-		m_simulation.m_eventSchedule.schedule(std::make_unique<MistDisperseEvent>(m_fluidType.mistDuration, m_area, m_fluidType, m_block));	
+		area->m_eventSchedule.schedule(std::make_unique<MistDisperseEvent>(simulation, m_fluidType.mistDuration, m_fluidType, m_block));	
 		return;
 	}
 	// Mist does not continue to exist here.
 	blocks.fluid_clearMist(m_block);
 }
-bool MistDisperseEvent::continuesToExist() const
+bool MistDisperseEvent::continuesToExist(Area& area) const
 {
-	Blocks& blocks = m_area.getBlocks();
+	Blocks& blocks = area.getBlocks();
 	if(blocks.fluid_getMist(m_block) == &m_fluidType)
 		return true;
 	// if adjacent to falling fluid on same z level
@@ -64,8 +64,8 @@ bool MistDisperseEvent::continuesToExist() const
 			return true;
 	return false;
 }
-void MistDisperseEvent::emplace(uint32_t delay, Area& area, const FluidType& fluidType, BlockIndex block)
+void MistDisperseEvent::emplace(Area& area, uint32_t delay, const FluidType& fluidType, BlockIndex block)
 {
-	std::unique_ptr<ScheduledEvent> event = std::make_unique<MistDisperseEvent>(delay, area, fluidType, block);
-	area.m_simulation.m_eventSchedule.schedule(std::move(event));
+	std::unique_ptr<ScheduledEvent> event = std::make_unique<MistDisperseEvent>(area.m_simulation, delay, fluidType, block);
+	area.m_eventSchedule.schedule(std::move(event));
 }
