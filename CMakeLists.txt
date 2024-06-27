@@ -4,7 +4,7 @@ set(CMAKE_CXX_COMPILER g++)
 
 project(LibRockMechanism)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS True)
 set(CMAKE_CXX_FLAGS "-fuse-ld=mold")
@@ -32,8 +32,12 @@ if(CMAKE_BUILD_TYPE EQUAL "RELEASE")
 	add_link_options(-flto)
 endif()
 
+#find_package(OpenMP)
+#if(OpenMP_CXX_FOUND)
+#    target_link_libraries(MyTarget PUBLIC OpenMP::OpenMP_CXX)
+#endif()
+
 add_subdirectory(engine)
 #add_subdirectory(ui)
 add_subdirectory(test)
 #add_subdirectory(python)
-

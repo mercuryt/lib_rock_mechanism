@@ -79,9 +79,9 @@ void Blocks::load(const Json& data, DeserializationMemo& deserializationMemo)
 		m_mistInverseDistanceFromSource[std::stoi(key)] = value.get<DistanceInBlocks>();
 	for(auto& [key, value] : data["reservables"].items())
 	{
-		auto pair = m_reservables.emplace(std::stoi(key), 1);
-		assert(pair.second);
-		deserializationMemo.m_reservables[value.get<uintptr_t>()] = &pair.first->second;
+		auto [iter, result] = m_reservables.insert(std::stoi(key), 1u);
+		assert(result);
+		deserializationMemo.m_reservables[value.get<uintptr_t>()] = &iter->second;
 	}
 }
 Json Blocks::toJson() const
@@ -181,7 +181,7 @@ void Blocks::recordAdjacent(BlockIndex index)
 void Blocks::assignLocationBuckets()
 {
 	for(BlockIndex index : getAll())
-		m_locationBucket[index] = &m_area.m_hasActors.m_locationBuckets.getBucketFor(index);
+		m_locationBucket[index] = &m_area.m_actors.m_locationBuckets.getBucketFor(index);
 }
 const std::array<BlockIndex, 6>& Blocks::getDirectlyAdjacent(BlockIndex index) const
 {
@@ -487,8 +487,8 @@ void Blocks::solid_set(BlockIndex index, const MaterialType& materialType, bool 
 	assert(m_items[index].empty());
 	if(m_plants.at(index))
 	{
-		assert(!m_plants.at(index)->m_plantSpecies.isTree);
-		m_plants.at(index)->die();
+		assert(!m_area.m_plants.getSpecies(index).isTree);
+		m_area.m_plants.die(index);
 	}
 	if(&materialType == m_materialType[index])
 		return;
@@ -499,8 +499,8 @@ void Blocks::solid_set(BlockIndex index, const MaterialType& materialType, bool 
 	m_visible[index] = false;
 	// Opacity.
 	if(!materialType.transparent && wasEmpty)
-		m_area.m_hasActors.m_visionCuboids.blockIsSometimesOpaque(index);
-	m_area.m_hasActors.m_opacityFacade.update(index);
+		m_area.m_actors.m_visionCuboids.blockIsSometimesOpaque(index);
+	m_area.m_actors.m_opacityFacade.update(index);
 	// Set blocks below as not exposed to sky.
 	setExposedToSky(index, false);
 	setBelowNotExposedToSky(index);
@@ -519,8 +519,8 @@ void Blocks::solid_setNot(BlockIndex index)
 	m_materialType[index] = nullptr;
 	m_constructed[index] = false;
 	fluid_onBlockSetNotSolid(index);
-	m_area.m_hasActors.m_visionCuboids.blockIsNeverOpaque(index);
-	m_area.m_hasActors.m_opacityFacade.update(index);
+	m_area.m_actors.m_visionCuboids.blockIsNeverOpaque(index);
+	m_area.m_actors.m_opacityFacade.update(index);
 	if(getBlockAbove(index) == BLOCK_INDEX_MAX || m_exposedToSky[getBlockAbove(index)])
 	{
 		setExposedToSky(index, true);
@@ -737,7 +737,7 @@ bool Blocks::isEdge(BlockIndex index) const
 }
 bool Blocks::hasLineOfSightTo(BlockIndex index, BlockIndex other) const
 {
-	return m_area.m_hasActors.m_opacityFacade.hasLineOfSight(index, other);
+	return m_area.m_actors.m_opacityFacade.hasLineOfSight(index, other);
 }
 std::unordered_set<BlockIndex> Blocks::collectAdjacentsInRange(BlockIndex index, DistanceInBlocks range)
 {

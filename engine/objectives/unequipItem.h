@@ -8,15 +8,15 @@ class Item;
 
 class UnequipItemObjective final : public Objective
 {
-	Item& m_item;
+	ItemIndex m_item;
 	BlockIndex m_block;
 public:
-	UnequipItemObjective(Actor& actor, Item& item, BlockIndex block);
+	UnequipItemObjective(ActorIndex actor, ItemIndex item, BlockIndex block);
 	UnequipItemObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	void execute();
 	void cancel();
 	void delay() { cancel(); }
-	void reset();
+	void reset(Area& area);
 	[[nodiscard]] std::string name() const { return "equip"; }
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Unequip; }
 	[[nodiscard]] Json toJson() const;

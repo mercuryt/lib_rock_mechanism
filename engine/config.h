@@ -19,6 +19,8 @@ namespace Config
 	inline constexpr Step actorDoVisionInterval = 3;
 	inline constexpr bool fluidPiston = false;
 	inline constexpr uint32_t fluidsSeepDiagonalModifier = 100;
+	inline constexpr float dataStoreVectorResizeFactor = 1.5;
+	inline constexpr float dataStoreVectorInitalSize = 10;
 
 	// sort command for vim:
 	// 	sort /\t/w* /w* /
@@ -65,6 +67,7 @@ namespace Config
 	inline float fatPierceForceCost;
 	inline float fireRampDownPhaseDurationFraction;
 	inline float flankingModifier;
+	inline uint16_t fluidGroupsPerThread;
 	inline float forceAbsorbedPiercedModifier;
 	inline float forceAbsorbedUnpiercedModifier;
 	inline float fractionAttackCoolDownReductionPerPointOfDextarity;
@@ -141,6 +144,7 @@ namespace Config
 	inline float musclePierceForceCost;
 	inline uint32_t objectivePrioiorityKill;
 	inline uint32_t objectivePrioritySleep;
+	inline uint8_t pathRequestsPerThread;
 	inline float pathHuristicConstant;
 	inline Percent percentHeightCarvedByRivers;
 	inline Percent percentHungerAcceptableDesireModifier;
@@ -200,6 +204,7 @@ namespace Config
 	inline Step stepsToEat;
 	inline uint32_t stockPilePriority;
 	inline uint32_t targetedHaulPriority;
+	inline uint8_t threadedTaskBatchSize;
 	inline uint32_t unarmedCombatScoreBase;
 	inline float unarmedCombatSkillModifier;
 	inline Temperature undergroundAmbiantTemperature;

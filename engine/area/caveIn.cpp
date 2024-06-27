@@ -9,6 +9,12 @@
 #include <unordered_map>
 #include <list>
 
+void Area::doStepCaveIn()
+{
+	// Don't bother with parallizing this with anything else for now, maybe run simultaniously with something else which isn't too cache hungry at some point.
+	stepCaveInRead();
+	stepCaveInWrite();
+}
 void Area::stepCaveInRead()
 {
 	std::list<std::unordered_set<BlockIndex>> chunks;
@@ -173,7 +179,9 @@ void Area::stepCaveInRead()
 	}
 
 	// Sort by z low to high so blocks don't overwrite eachother when moved down.
-	auto compare = [&](BlockIndex a, BlockIndex b) { return m_blocks.getZ(a) < m_blocks.getZ(b); };
+	// TODO: why is it necessary to alias m_blocks like this? Clangd throws a compile error.
+	Blocks& blocks = m_blocks;
+	auto compare = [&blocks](BlockIndex a, BlockIndex b) { return blocks.getZ(a) < blocks.getZ(b); };
 	for(auto& [chunk, fallDistance, fallEnergy] : fallingChunksWithDistanceAndEnergy)
 	{
 		std::vector<BlockIndex> blocks(chunk.begin(), chunk.end());

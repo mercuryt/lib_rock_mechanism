@@ -39,6 +39,7 @@ struct Shape
 	[[nodiscard]] std::vector<BlockIndex> getBlocksOccupiedAt(const Blocks& blocks, BlockIndex location, Facing facing) const;
 	[[nodiscard]] std::vector<std::pair<BlockIndex, Volume>> getBlocksOccupiedAtWithVolumes(const Blocks& blocks, BlockIndex location, Facing facing) const;
 	[[nodiscard]] std::vector<BlockIndex> getBlocksWhichWouldBeAdjacentAt(const Blocks& blocks, BlockIndex location, Facing facing) const;
+	[[nodiscard]] BlockIndex getBlockWhichWouldBeAdjacentAtWithPredicate(const Blocks& blocks, BlockIndex location, Facing facing, std::function<bool(BlockIndex)> predicate) const;
 	[[nodiscard]] CollisionVolume getCollisionVolumeAtLocationBlock() const;
 	// Infastructure.
 	[[nodiscard]] bool operator==(const Shape& x) const { return &x == this; }

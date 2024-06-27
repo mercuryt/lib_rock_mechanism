@@ -1,3 +1,5 @@
+TODO:
+	check for safe temperature when detour pathing.
 To run tests:
 	Set up testing by running 'cmake ..' in /build.
 	Run tests with 'reset && make -j2 && mv build/test/unit/unit . && gdb --args ./unit'
@@ -23,3 +25,5 @@ PerAreaPerFactionData is created on demand and never destroyed.
 PerAreaPerMoveTypeData is created on demand and never destroyed.
 
 upgrade glibc version.
+
+make vision cuboids disableable for unit test speed.

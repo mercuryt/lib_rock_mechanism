@@ -2,31 +2,25 @@
 #include "../actor.h"
 #include "../area.h"
 #include "types.h"
-void Blocks::actor_enter(BlockIndex index, Actor& actor)
+void Blocks::actor_record(BlockIndex index, ActorIndex actor, CollisionVolume volume)
 {
-	assert(!actor_contains(index, actor));
-	std::unordered_set<BlockIndex> oldBlocks = actor.m_blocks;
-	if(actor.m_location != BLOCK_INDEX_MAX)
-	{
-		actor.m_facing = facingToSetWhenEnteringFrom(index, actor.m_location);
-		actor_exit(actor.m_location, actor);
-	}
-	m_actors.at(index).push_back(&actor);
-	shape_enter(index, actor);
-	if(oldBlocks.empty())
-		m_area.m_hasActors.m_locationBuckets.add(actor);
+	m_actors.at(index).emplace_back(actor, volume);
+	if(m_area.m_actors.isStatic(actor))
+		m_staticVolume.at(index) += volume;
 	else
-		m_area.m_hasActors.m_locationBuckets.update(actor, oldBlocks);
-	if(m_underground[index])
-		m_area.m_hasActors.setUnderground(actor);
-	else
-		m_area.m_hasActors.setNotUnderground(actor);
+		m_dynamicVolume.at(index) += volume;
 }
-void Blocks::actor_exit(BlockIndex index, Actor& actor)
+void Blocks::actor_erase(BlockIndex index, ActorIndex actor)
 {
-	assert(actor_contains(index, actor));
-	std::erase(m_actors.at(index), &actor);
-	shape_exit(index, actor);
+	assert(m_area.m_actors.getLocation(actor) == index);
+	auto& actors = m_actors.at(index);
+	auto found = std::ranges::find(actors, actor, &std::pair<ActorIndex, CollisionVolume>::first);
+	assert(found != actors.end());
+	if(m_area.m_actors.isStatic(actor))
+		m_staticVolume -= found->second;
+	else
+		m_dynamicVolume -= found->second;
+	actors.erase(found);
 }
 void Blocks::actor_setTemperature(BlockIndex index, Temperature temperature)
 {

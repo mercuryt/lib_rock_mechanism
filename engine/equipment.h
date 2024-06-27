@@ -1,12 +1,13 @@
 #pragma once
 
 #include "config.h"
+#include "types.h"
 
-class Actor;
-class Item;
-class BodyPartType;
 struct Attack;
 struct Hit;
+class BodyPartType;
+class Area;
+class Items;
 
 #include <vector>
 #include <queue>
@@ -15,36 +16,34 @@ struct Hit;
 
 struct EquipmentSortByLayer
 {
-	bool operator()(Item* const& a, Item* const& b) const;
+	Items& items;
+	bool operator()(ItemIndex const& a, ItemIndex const& b) const;
 };
 class EquipmentSet
 {
-	std::unordered_set<Item*> m_equipments;
-	std::set<Item*, EquipmentSortByLayer> m_wearable;
+	std::unordered_set<ItemIndex> m_equipments;
+	std::set<ItemIndex, EquipmentSortByLayer> m_wearable;
 	std::unordered_set<const BodyPartType*> m_bodyPartTypesWithRigidArmor;
-	std::unordered_set<Item*> m_meleeWeapons;
-	std::unordered_set<Item*> m_rangedWeapons;
-	std::unordered_set<Item*> m_rangedWeaponAmmo;
-	Actor& m_actor;
+	std::unordered_set<ItemIndex> m_meleeWeapons;
+	std::unordered_set<ItemIndex> m_rangedWeapons;
+	std::unordered_set<ItemIndex> m_rangedWeaponAmmo;
 	uint32_t m_mass = 0;
-	void insertEquipment(Item& equipment);
 public:
-	EquipmentSet(Actor& a) : m_actor(a) { }
-	EquipmentSet(const Json& data, Actor& a);
+	EquipmentSet(const Json& data);
 	Json toJson() const;
-	void addEquipment(Item& equipment);
-	void removeEquipment(Item& equipment);
-	void modifyImpact(Hit& hit, const BodyPartType& bodyPartType);
-	std::vector<Attack> getMeleeAttacks();
-	std::unordered_set<Item*>& getRangedWeapons() { return m_rangedWeapons; }
-	[[nodiscard]] bool contains(Item& item) const { return m_equipments.contains(&item); }
-	[[nodiscard]] bool hasWeapons() const;
-	[[nodiscard]] Step getLongestMeleeWeaponCoolDown() const;
-	[[nodiscard]] const uint32_t& getMass() const;
-	[[nodiscard]] bool canEquipCurrently(Item& item) const;
+	void addEquipment(Area& area, ItemIndex equipment);
+	void removeEquipment(Area& area, ItemIndex equipment);
+	void modifyImpact(Area& area, Hit& hit, const BodyPartType& bodyPartType);
+	std::vector<Attack> getMeleeAttacks(Area& area);
+	std::unordered_set<ItemIndex>& getRangedWeapons() { return m_rangedWeapons; }
+	[[nodiscard]] bool contains(ItemIndex item) const { return m_equipments.contains(item); }
+	[[nodiscard]] bool hasWeapons() const { return !m_meleeWeapons.empty() || !m_rangedWeapons.empty(); }
+	[[nodiscard]] Step getLongestMeleeWeaponCoolDown(Area& area) const;
+	[[nodiscard]] const uint32_t& getMass() const { return m_mass; }
+	[[nodiscard]] bool canEquipCurrently(Area& area, ActorIndex actor, ItemIndex item) const;
 	[[nodiscard]] bool empty() const { return m_equipments.empty(); }
-	[[nodiscard]] Item* getWeaponToAttackAtRange(float range);
-	[[nodiscard]] Item* getAmmoForRangedWeapon(Item& weapon);
-	[[nodiscard]] std::unordered_set<Item*>& getAll() { return m_equipments; }
-	[[nodiscard]] bool hasAnyEquipmentWithReservations() const;
+	[[nodiscard]] ItemIndex getWeaponToAttackAtRange(Area& area, float range);
+	[[nodiscard]] ItemIndex getAmmoForRangedWeapon(Area& area, ItemIndex weapon);
+	[[nodiscard]] std::unordered_set<ItemIndex>& getAll() { return m_equipments; }
+	[[nodiscard]] bool hasAnyEquipmentWithReservations(Area& area, ActorIndex actor) const;
 };

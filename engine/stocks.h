@@ -1,20 +1,21 @@
 #pragma once
+
+#include "types.h"
 #include <unordered_map>
 #include <unordered_set>
 #include <cassert>
 
 struct ItemType;
 struct MaterialType;
-class Item;
 struct Faction;
 
 class AreaHasStocksForFaction final
 {
-	std::unordered_map<const ItemType*, std::unordered_map<const MaterialType*, std::unordered_set<Item*>>> m_data;
+	std::unordered_map<const ItemType*, std::unordered_map<const MaterialType*, std::unordered_set<ItemIndex>>> m_data;
 public:
-	void record(Item& item);
-	void unrecord(Item& item);
-	const std::unordered_map<const ItemType*, std::unordered_map<const MaterialType*, std::unordered_set<Item*>>>& get() const { return m_data; }
+	void record(ItemIndex item);
+	void unrecord(ItemIndex item);
+	const std::unordered_map<const ItemType*, std::unordered_map<const MaterialType*, std::unordered_set<ItemIndex>>>& get() const { return m_data; }
 };
 class AreaHasStocks final
 {

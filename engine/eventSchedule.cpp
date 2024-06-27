@@ -3,31 +3,35 @@
 #include "util.h"
 #include "area.h"
 #include <cassert>
-ScheduledEvent::ScheduledEvent(Simulation& simulation, const Step delay, const Step start) : m_simulation(simulation), m_startStep(start == 0 ? simulation.m_step : start), m_step(m_startStep + delay), m_cancel(false) 
+ScheduledEvent::ScheduledEvent(Simulation& simulation, area, const Step delay, const Step start) :
+	m_startStep(start == 0 ? simulation.m_step : start), m_step(m_startStep + delay)
 {
 	assert(delay != 0);
-	assert(m_simulation.m_step <= m_step);
+	assert(simulation.m_step <= m_step);
 }
-void ScheduledEvent::cancel() 
+void ScheduledEvent::cancel(Simulation& simulation, Area* area) 
 {
-	onCancel();
-       	m_simulation.m_eventSchedule.unschedule(*this); 
+	onCancel(simulation, area);
+	if(area == nullptr)
+		simulation.m_eventSchedule.unschedule(*this); 
+	else
+		area->m_eventSchedule.unschedule(*this);
 }
-Step ScheduledEvent::remaningSteps() const 
+Step ScheduledEvent::remaningSteps(Simulation& simulation) const 
 { 
-	assert(m_step > m_simulation.m_step);
-	return m_step - m_simulation.m_step;
+	assert(m_step > simulation.m_step);
+	return m_step - simulation.m_step;
 }
-Step ScheduledEvent::elapsedSteps() const { return m_simulation.m_step - m_startStep; }
-Percent ScheduledEvent::percentComplete() const
+Step ScheduledEvent::elapsedSteps(Simulation& simulation) const { return simulation.m_step - m_startStep; }
+Percent ScheduledEvent::percentComplete(Simulation& simulation) const
 {
-	return fractionComplete() * 100u;
+	return fractionComplete(simulation) * 100u;
 }
-float ScheduledEvent::fractionComplete() const
+float ScheduledEvent::fractionComplete(Simulation& simulation) const
 {
 	assert(m_step >= m_startStep);
 	Step totalSteps = m_step - m_startStep;
-	Step elapsedSteps = m_simulation.m_step - m_startStep;
+	Step elapsedSteps = simulation.m_step - m_startStep;
 	return (float)elapsedSteps / (float)totalSteps;
 }
 
@@ -40,9 +44,9 @@ void EventSchedule::unschedule(ScheduledEvent& scheduledEvent)
 {
 	assert(m_data.contains(scheduledEvent.m_step));
 	scheduledEvent.m_cancel = true;
-	scheduledEvent.clearReferences();
+	scheduledEvent.clearReferences(m_simulation, m_area);
 }
-void EventSchedule::execute(Step stepNumber)
+void EventSchedule::doStep(Step stepNumber)
 {
 	assert(m_data.begin()->first >= stepNumber);
 	auto found = m_data.find(stepNumber);
@@ -52,8 +56,8 @@ void EventSchedule::execute(Step stepNumber)
 		if(!scheduledEvent->m_cancel)
 		{
 			// Clear references first so events can reschedule themselves in the same slots.
-			scheduledEvent->clearReferences();
-			scheduledEvent->execute();
+			scheduledEvent->clearReferences(m_simulation, m_area);
+			scheduledEvent->execute(m_simulation, m_area);
 		}
 	m_data.erase(stepNumber);
 }

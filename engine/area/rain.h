@@ -21,9 +21,9 @@ public:
 	Json toJson() const;
 	void start(const FluidType& fluidType, Percent intensityPercent, Step stepsDuration);
 	void start(Percent intensityPercent, Step stepsDuration) { start(m_defaultRainFluidType, intensityPercent, stepsDuration); }
-	void schedule(Step restartAt) { m_event.schedule(restartAt, *this); }
+	void schedule(Step restartAt);
 	void stop();
-	void writeStep();
+	void doStep();
 	void scheduleRestart();
 	void disable();
 	[[nodiscard]] bool isRaining() const { return m_intensityPercent != 0; }
@@ -34,9 +34,8 @@ public:
 };
 class RainEvent final : public ScheduledEvent
 {
-	AreaHasRain& m_areaHasRain;
 public:
-	RainEvent(Step delay, AreaHasRain& ahr, const Step start = 0);
-	void execute();
-	void clearReferences() { m_areaHasRain.m_event.clearPointer(); }
+	RainEvent(Simulation& simulation, Step delay, const Step start = 0);
+	void execute(Simulation& simulation, Area* area);
+	void clearReferences(Simulation& simulation, Area* area);
 };

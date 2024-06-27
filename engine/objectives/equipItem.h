@@ -7,14 +7,14 @@ class Actor;
 class Item;
 class EquipItemObjective final : public Objective
 {
-	Item& m_item;
+	ItemIndex m_item;
 public:
-	EquipItemObjective(Actor& actor, Item& item);
+	EquipItemObjective(ActorIndex actor, ItemIndex item);
 	EquipItemObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute();
-	void cancel();
-	void delay() { cancel(); }
-	void reset();
+	void execute(Area& area);
+	void cancel(Area& area);
+	void delay(Area& area) { cancel(area); }
+	void reset(Area& area);
 	[[nodiscard]] std::string name() const { return "equip"; }
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Equip; }
 	Json toJson() const;

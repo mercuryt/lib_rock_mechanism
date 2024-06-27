@@ -1,44 +1,28 @@
 #include "wander.h"
-#include "wait.h"
-#include "../actor.h"
+#include "../area.h"
 #include "../deserializationMemo.h"
-#include "../objective.h"
 #include "../random.h"
 #include "../config.h"
 #include "../simulation.h"
-WanderThreadedTask::WanderThreadedTask(WanderObjective& o) : 
-	ThreadedTask(o.m_actor.getThreadedTaskEngine()), m_objective(o), m_findsPath(o.m_actor, false) { }
-void WanderThreadedTask::readStep()
+#include <memory>
+// PathRequest
+WanderPathRequest::WanderPathRequest(Area& area, WanderObjective& objective) : m_objective(objective)
 {
-	BlockIndex lastBlock = BLOCK_INDEX_MAX;
-	Random& random = m_objective.m_actor.getSimulation().m_random;
-	uint32_t numberOfBlocks = random.getInRange(Config::wanderMinimimNumberOfBlocks, Config::wanderMaximumNumberOfBlocks);
-	std::function<bool(BlockIndex, Facing)> condition = [&](BlockIndex block, [[maybe_unused]] Facing facing)
-	{
-		lastBlock = block;
-		return !numberOfBlocks--;
-	};
-	m_findsPath.pathToPredicate(condition);
-	// If we do not have access to the number of blocks needed to pick a destination via numberOfBlocks then just path to the last block checked.
-	if(!m_findsPath.found() && lastBlock != BLOCK_INDEX_MAX)
-	{
-		assert(m_objective.m_actor.m_location != lastBlock);
-		m_findsPath.pathToBlock(lastBlock);
-	}
+	Random& random = area.m_simulation.m_random;
+	m_blockCounter = random.getInRange(Config::wanderMinimimNumberOfBlocks, Config::wanderMaximumNumberOfBlocks);
+	std::function<bool(BlockIndex)> condition = [this](BlockIndex) { return !m_blockCounter--; };
+	createGoToCondition(area, m_objective.m_actor, condition, false, false, BLOCK_DISTANCE_MAX);
 }
-void WanderThreadedTask::writeStep() 
-{ 
-	if(m_findsPath.found())
-	{
-		m_objective.m_actor.m_canMove.setPath(m_findsPath.getPath()); 
-		m_objective.m_started = true;
-	}
+void WanderPathRequest::callback(Area& area, FindPathResult result)
+{
+	if(result.path.empty())
+		area.m_actors.wait(m_objective.m_actor, Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective);
 	else
-		m_objective.m_actor.wait(Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective);
+		area.m_actors.move_setPath(m_objective.m_actor, result.path);
 }
-void WanderThreadedTask::clearReferences() { m_objective.m_threadedTask.clearPointer(); }
 // Objective.
-WanderObjective::WanderObjective(Actor& a) : Objective(a, 0u), m_threadedTask(a.getThreadedTaskEngine()) { }
+WanderObjective::WanderObjective(ActorIndex a) : Objective(a, 0u) { }
+/*
 WanderObjective::WanderObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), 
 	m_threadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine)
 {
@@ -48,32 +32,16 @@ WanderObjective::WanderObjective(const Json& data, DeserializationMemo& deserial
 Json WanderObjective::toJson() const
 { 
 	Json data = Objective::toJson();
-	data["routeFound"] = m_started;
 	return data;
 }
-void WanderObjective::execute() 
+*/
+void WanderObjective::execute(Area& area) 
 { 
-	if(m_started)
-		m_actor.m_hasObjectives.objectiveComplete(*this);
-	else
-	{
-		m_started = true;
-		/*
-		auto& random = m_actor.getSimulation().m_random;
-		if(random.chance(Config::chanceToWaitInsteadOfWander))
-		{
-			Step duration = random.getInRange(Config::minimumDurationToWaitInsteadOfWander, Config::maximumDurationToWaitInsteadOfWander);
-			m_actor.wait(duration);
-		}
-		else
-		*/
-		m_threadedTask.create(*this); 
-	}
+	std::unique_ptr<PathRequest> m_pathRequest = std::make_unique<WanderPathRequest>(area, *this);
+	area.m_actors.move_setDestinationWithPathRequest(std::move(m_pathRequest));
 }
-
-void WanderObjective::reset() 
+void WanderObjective::reset(Area& area) 
 { 
-	cancel(); 
-	m_started = false; 
-	m_actor.m_canReserve.deleteAllWithoutCallback();
+	cancel(area); 
+	area.m_actors.canReserve_clearAll(m_actor);
 }

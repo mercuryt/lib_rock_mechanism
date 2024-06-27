@@ -1,25 +1,25 @@
 #pragma once
 
 #include "cuboid.h"
-#include "input.h"
+//#include "input.h"
 #include "reservable.h"
 #include "types.h"
 #include "objective.h"
-#include "threadedTask.hpp"
 #include "eventSchedule.hpp"
 #include "project.h"
 #include "config.h"
-#include "findsPath.h"
+#include "pathRequest.h"
 
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
 struct Faction;
-class DigThreadedTask;
+class DigPathRequest;
 struct BlockFeatureType;
 class DigProject;
 class HasDigDesignationsForFaction;
+struct FindPathResult;
 struct DeserializationMemo;
 /*
 class DesignateDigInputAction final : public InputAction
@@ -36,51 +36,6 @@ class UndesignateDigInputAction final : public InputAction
 	void execute();
 };
 */
-class DigObjectiveType final : public ObjectiveType
-{
-public:
-	[[nodiscard]] bool canBeAssigned(Actor& actor) const;
-	[[nodiscard]] std::unique_ptr<Objective> makeFor(Actor& actor) const;
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Dig; }
-	DigObjectiveType() = default;
-	DigObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo){ }
-};
-class DigObjective final : public Objective
-{
-	HasThreadedTask<DigThreadedTask> m_digThreadedTask;
-	Project* m_project = nullptr;
-	std::unordered_set<Project*> m_cannotJoinWhileReservationsAreNotComplete;
-public:
-	DigObjective(Actor& a);
-	DigObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	[[nodiscard]] Json toJson() const;
-	void execute();
-	void cancel();
-	void delay();
-	void reset();
-	void onProjectCannotReserve();
-	void joinProject(DigProject& project);
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Dig; }
-	[[nodiscard]] DigProject* getJoinableProjectAt(BlockIndex block);
-	[[nodiscard]] std::string name() const { return "dig"; }
-	friend class DigThreadedTask;
-	friend class DigProject;
-	//For testing.
-	[[nodiscard]] Project* getProject() { return m_project; }
-	[[nodiscard]] bool hasThreadedTask() const { return m_digThreadedTask.exists(); }
-};
-// Find a place to dig.
-class DigThreadedTask final : public ThreadedTask
-{
-	DigObjective& m_digObjective;
-	// Result is the block which will be the actors location while doing the digging.
-	FindsPath m_findsPath;
-public:
-	DigThreadedTask(DigObjective& digObjective);
-	void readStep();
-	void writeStep();
-	void clearReferences();
-};
 class DigProject final : public Project
 {
 	const BlockFeatureType* m_blockFeatureType;
@@ -92,7 +47,7 @@ class DigProject final : public Project
 	[[nodiscard]] std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
 	[[nodiscard]] std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
 	[[nodiscard]] std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
-	[[nodiscard]] static uint32_t getWorkerDigScore(Actor& actor);
+	[[nodiscard]] static uint32_t getWorkerDigScore(Area& area, ActorIndex actor);
 	// What would the total delay time be if we started from scratch now with current workers?
 public:
 	// BlockFeatureType can be null, meaning the block is to be fully excavated.

@@ -1,12 +1,15 @@
 #include "simulation.h"
 #include "wait.h"
-#include "actor.h"
 #include "objective.h"
-WaitObjective::WaitObjective(Actor& a, Step duration) : Objective(a, 0), m_event(a.getEventSchedule())
+#include "area.h"
+WaitObjective::WaitObjective(Area& area, ActorIndex a, Step duration) :
+	Objective(a, 0), m_event(area.m_eventSchedule)
 {
 	m_event.schedule(duration, *this);
 }
-WaitObjective::WaitObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), m_event(deserializationMemo.m_simulation.m_eventSchedule)
+/*
+WaitObjective::WaitObjective(const Json& data, DeserializationMemo& deserializationMemo) :
+	Objective(data, deserializationMemo), m_event(deserializationMemo.m_simulation.m_eventSchedule)
 {
 	if(data.contains("eventStart"))
 		m_event.schedule(data["duration"].get<Step>(), *this, data["eventStart"].get<Step>());
@@ -21,10 +24,12 @@ Json WaitObjective::toJson() const
 	}
 	return data;
 }
-void WaitObjective::execute() { m_actor.m_hasObjectives.objectiveComplete(*this); }
-void WaitObjective::reset() 
+*/
+void WaitObjective::execute(Area& area) { area.m_actors.objective_complete(m_actor, *this); }
+void WaitObjective::reset(Area& area) 
 { 
 	m_event.maybeUnschedule(); 
-	m_actor.m_canReserve.deleteAllWithoutCallback(); 
+	area.m_actors.canReserve_clearAll(m_actor); 
 }
-WaitScheduledEvent::WaitScheduledEvent(Step delay, WaitObjective& wo, const Step start) : ScheduledEvent(wo.m_actor.getSimulation(), delay, start), m_objective(wo) { }
+WaitScheduledEvent::WaitScheduledEvent(Area& area, Step delay, WaitObjective& wo, const Step start) :
+	ScheduledEvent(area.m_simulation, delay, start), m_objective(wo) { }

@@ -1,13 +1,14 @@
 #include "craft.h"
 #include "area.h"
-#include "actor.h"
 #include "deserializationMemo.h"
-#include "item.h"
 #include "materialType.h"
-#include "simulation/hasItems.h"
+#include "pathRequest.h"
+#include "simulation/hass.h"
+#include "terrainFacade.h"
 #include "types.h"
 #include "util.h"
 #include "simulation.h"
+#include "itemType.h"
 
 #include <chrono>
 #include <cstdint>
@@ -43,42 +44,42 @@ Step CraftStepProject::getDuration() const
 {
 	uint32_t totalScore = 0;
 	for(auto& pair : m_workers)
-		totalScore += getWorkerCraftScore(*pair.first);
+		totalScore += getWorkerCraftScore(pair.first);
 	return m_craftStepType.stepsDuration / totalScore;
 }
 // Static method.
-uint32_t CraftStepProject::getWorkerCraftScore(const Actor& actor) const
+uint32_t CraftStepProject::getWorkerCraftScore(const ActorIndex actor) const
 {
-	return 1 + actor.m_skillSet.get(m_craftStepType.skillType);
+	return 1 + m_area.getActors().skill_getLevel(actor, m_craftStepType.skillType);
 }
 void CraftStepProject::onComplete()
 {
 	auto& [actor, projectWorker] = *m_workers.begin();
 	Objective& objective = projectWorker.objective;
-	Actor* actorPtr = actor;
-	m_craftJob.hasCraftingLocationsAndJobs.stepComplete(m_craftJob, *actor);
-	actorPtr->m_hasObjectives.objectiveComplete(objective);
+	m_craftJob.hasCraftingLocationsAndJobs.stepComplete(m_craftJob, actor);
+	m_area.getActors().objective_complete(actor, objective);
 }
 void CraftStepProject::onCancel()
 {
-	std::vector<Actor*> actors = getWorkersAndCandidates();
+	std::vector<ActorIndex> workersAndCandidates = getWorkersAndCandidates();
 	CraftJob& craftJob = m_craftJob;
 	m_area.m_hasCraftingLocationsAndJobs.at(m_faction).stepDestroy(craftJob);
-	for(Actor* actor : actors)
+	Actors& actors = m_area.getActors();
+	for(ActorIndex actor : workersAndCandidates)
 	{
-		actor->m_project = nullptr;
-		CraftObjective& objective = static_cast<CraftObjective&>(actor->m_hasObjectives.getCurrent());
+		actors.project_unset(actor);
+		CraftObjective& objective = actors.objective_getCurrent<CraftObjective>(actor);
 		//TODO: This records this fail job for this actor regardless of if it might still be possible via another location or subsitute required hasShape.
 		objective.recordFailedJob(craftJob);
-		objective.reset();
-		actor->m_hasObjectives.cannotCompleteSubobjective();
+		objective.reset(m_area);
+		actors.objective_canNotCompleteSubobjective(actor);
 	}
 }
-void CraftStepProject::onAddToMaking(Actor& actor)
+void CraftStepProject::onAddToMaking(ActorIndex actor)
 {
-	auto [canEnter, facing] = actor.m_area->getBlocks().shape_canEnterCurrentlyWithAnyFacingReturnFacing(m_location, actor);
+	auto [canEnter, facing] = m_area.getBlocks().shape_canEnterCurrentlyWithAnyFacingReturnFacing(m_location, actor);
 	if(canEnter)
-		actor.setLocationAndFacing(m_location, facing);
+		m_area.getActors().setLocationAndFacing(actor, m_location, facing);
 	else
 		setDelayOn();
 }
@@ -89,7 +90,7 @@ std::vector<std::pair<ItemQuery, Quantity>> CraftStepProject::getConsumed() cons
 	for(auto& pair : output)
 		if(pair.first.m_materialType == nullptr)
 		{
-			assert(pair.first.m_item == nullptr && (pair.first.m_materialTypeCategory == nullptr || pair.first.m_materialTypeCategory == m_craftJob.materialType->materialTypeCategory));
+			assert(pair.first.m_item == ITEM_INDEX_MAX && (pair.first.m_materialTypeCategory == nullptr || pair.first.m_materialTypeCategory == m_craftJob.materialType->materialTypeCategory));
 			pair.first.specalize(*m_craftJob.materialType);
 		}
 	return output;
@@ -97,8 +98,8 @@ std::vector<std::pair<ItemQuery, Quantity>> CraftStepProject::getConsumed() cons
 std::vector<std::pair<ItemQuery, Quantity>> CraftStepProject::getUnconsumed() const 
 { 
 	auto output = m_craftStepType.unconsumed; 
-	if(m_craftJob.workPiece != nullptr)
-		output.emplace_back(*m_craftJob.workPiece, 1);
+	if(m_craftJob.workPiece != ITEM_INDEX_MAX)
+		output.emplace_back(m_craftJob.workPiece, 1);
 	return output; 
 }
 std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> CraftStepProject::getByproducts() const {
@@ -108,10 +109,11 @@ std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> CraftSte
 			std::get<1>(tuple) = m_craftJob.materialType;
 	return output; 
 }
+/*
 CraftJob::CraftJob(const Json& data, DeserializationMemo& deserializationMemo, HasCraftingLocationsAndJobsForFaction& hclaj) :
 	craftJobType(*data["craftJobType"].get<const CraftJobType*>()),
 	hasCraftingLocationsAndJobs(hclaj),
-	workPiece(data.contains("workPiece") ? &deserializationMemo.m_simulation.m_hasItems->getById(data["workPiece"].get<ItemId>()) : nullptr),
+	workPiece(data.contains("workPiece") ? &deserializationMemo.m_simulation.m_hass->getById(data["workPiece"].get<ItemId>()) : nullptr),
 	materialType(data.contains("materialType") ? &MaterialType::byName(data["materialType"].get<std::string>()) : nullptr),
 	stepIterator(craftJobType.stepTypes.begin() + data["stepIndex"].get<size_t>()),
 	craftStepProject(data.contains("craftStepProject") ? std::make_unique<CraftStepProject>(data["craftStepProject"], deserializationMemo, *this) : nullptr),
@@ -137,6 +139,7 @@ Json CraftJob::toJson() const
 		data["materialType"] = materialType->name;
 	return data;
 }
+*/
 uint32_t CraftJob::getQuality() const
 {
 	float pointsPerStep = (float)totalSkillPoints / craftJobType.stepTypes.size();
@@ -145,111 +148,9 @@ uint32_t CraftJob::getQuality() const
 Step CraftJob::getStep() const
 {
 	return 1 + (stepIterator - craftJobType.stepTypes.begin());
-} 
-CraftThreadedTask::CraftThreadedTask(CraftObjective& co) : 
-	ThreadedTask(co.m_actor.getThreadedTaskEngine()), m_craftObjective(co) { }
-void CraftThreadedTask::readStep()
-{
-	assert(m_craftObjective.m_craftJob == nullptr);
-	Faction& faction = *m_craftObjective.m_actor.getFaction();
-	HasCraftingLocationsAndJobsForFaction& hasCrafting = m_craftObjective.m_actor.m_area->m_hasCraftingLocationsAndJobs.at(faction);
-	auto pair = hasCrafting.getJobAndLocationForWhileExcluding(m_craftObjective.m_actor, m_craftObjective.m_skillType, m_craftObjective.getFailedJobs());
-	m_craftJob = pair.first;
-	m_location = pair.second;
-}
-void CraftThreadedTask::writeStep()
-{
-	if(m_craftJob  == nullptr)
-		m_craftObjective.m_actor.m_hasObjectives.cannotFulfillObjective(m_craftObjective);
-	else
-		// Selected work loctaion has been reserved, try again.
-		if(m_craftObjective.m_actor.m_area->getBlocks().isReserved(m_location, *m_craftObjective.m_actor.getFaction()))
-			m_craftObjective.m_threadedTask.create(m_craftObjective);
-		else
-		{
-			Faction& faction = *m_craftObjective.m_actor.getFaction();
-			HasCraftingLocationsAndJobsForFaction& hasCrafting = m_craftObjective.m_actor.m_area->m_hasCraftingLocationsAndJobs.at(faction);
-			hasCrafting.makeAndAssignStepProject(*m_craftJob, m_location, m_craftObjective);
-			m_craftObjective.m_craftJob = m_craftJob;
-		}
-}
-void CraftThreadedTask::clearReferences(){ m_craftObjective.m_threadedTask.clearPointer(); }
-// ObjectiveType.
-CraftObjectiveType::CraftObjectiveType(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) : m_skillType(*data["skillType"].get<const SkillType*>()) { }
-bool CraftObjectiveType::canBeAssigned(Actor& actor) const
-{
-	auto& hasCrafting = actor.m_area->m_hasCraftingLocationsAndJobs.at(*actor.getFaction());
-	if(!hasCrafting.m_unassignedProjectsBySkill.contains(&m_skillType))
-	{
-		// No jobs needing this skill.
-		return false;
-	}
-	// Check if there are any locations designated for this step category.
-	for(CraftJob* craftJob : hasCrafting.m_unassignedProjectsBySkill.at(&m_skillType))
-	{
-		const CraftStepTypeCategory& category = craftJob->stepIterator->craftStepTypeCategory;
-		if(hasCrafting.m_locationsByCategory.contains(&category))
-			return true;
-	}
-	return false;
-}
-std::unique_ptr<Objective> CraftObjectiveType::makeFor(Actor& actor) const
-{
-	return std::make_unique<CraftObjective>(actor, m_skillType);
-}
-Json CraftObjectiveType::toJson() const 
-{
-	Json data = ObjectiveType::toJson();
-	data["skillType"] = m_skillType;
-	return data;
-}
-// Objective.
-CraftObjective::CraftObjective(Actor& a, const SkillType& st) : Objective(a, Config::craftObjectivePriority), m_skillType(st), m_craftJob(nullptr), m_threadedTask(a.getThreadedTaskEngine()) { }
-CraftObjective::CraftObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), 
-	m_skillType(*data["skillType"].get<const SkillType*>()), m_craftJob(deserializationMemo.m_craftJobs.at(data["craftJob"].get<uintptr_t>())), 
-	m_threadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine) 
-{ 
-	if(data.contains("failedJobs"))
-		for(const Json& job : data["failedJobs"])
-			m_failedJobs.insert(deserializationMemo.m_craftJobs.at(job.get<uintptr_t>()));
-	if(data.contains("threadedTask"))
-		m_threadedTask.create(*this);
-}
-Json CraftObjective::toJson() const 
-{
-	Json data = Objective::toJson();
-	data["skillType"] = m_skillType;
-	data["craftJob"] = m_craftJob;
-	if(m_threadedTask.exists())
-		data["threadedTask"] = true;
-	if(!m_failedJobs.empty())
-	{
-		data["failedJobs"] = Json::array();
-		for(CraftJob* job : m_failedJobs)
-			data["failedJobs"].push_back(job);
-	}
-	return data;
-}
-void CraftObjective::execute()
-{
-	if(m_craftJob)
-		m_craftJob->craftStepProject->commandWorker(m_actor);
-	else
-		m_threadedTask.create(*this);
-}
-void CraftObjective::cancel()
-{
-	m_threadedTask.maybeCancel();
-	if(m_craftJob && m_craftJob->craftStepProject)
-		m_craftJob->craftStepProject->cancel();
-}
-void CraftObjective::reset()
-{
-	m_actor.m_canReserve.deleteAllWithoutCallback();
-	m_craftJob = nullptr;
-	cancel();
 }
 // HasCraftingLocationsAndJobs
+/*
 HasCraftingLocationsAndJobsForFaction::HasCraftingLocationsAndJobsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Faction& f) :
 	m_area(deserializationMemo.area(data["area"])),
        	m_faction(f)
@@ -334,6 +235,7 @@ Json HasCraftingLocationsAndJobsForFaction::toJson() const
 		data["jobs"].push_back(job.toJson());
 	return data;
 }
+*/
 void HasCraftingLocationsAndJobsForFaction::addLocation(const CraftStepTypeCategory& category, BlockIndex block)
 {
 	m_locationsByCategory[&category].insert(block);
@@ -385,7 +287,7 @@ void HasCraftingLocationsAndJobsForFaction::removeJob(CraftJob& job)
 		job.craftStepProject->cancel();
 	m_jobs.remove(job);
 }
-void HasCraftingLocationsAndJobsForFaction::stepComplete(CraftJob& craftJob, Actor& actor)
+void HasCraftingLocationsAndJobsForFaction::stepComplete(CraftJob& craftJob, ActorIndex actor)
 {
 	craftJob.totalSkillPoints += craftJob.craftStepProject->getWorkerCraftScore(actor);
 	BlockIndex location = craftJob.craftStepProject->getLocation();
@@ -395,18 +297,18 @@ void HasCraftingLocationsAndJobsForFaction::stepComplete(CraftJob& craftJob, Act
 		jobComplete(craftJob, location);
 	else
 	{
-		if(craftJob.workPiece == nullptr)
+		if(craftJob.workPiece == ITEM_INDEX_MAX)
 		{
 			ItemParamaters params{
+				.simulation=m_area.m_simulation,
 				.itemType=craftJob.craftJobType.productType,
 				.materialType=*craftJob.materialType,
-				.quality=0,
-				.percentWear=0,
 				.craftJob=&craftJob,
 				.location=location,
-				.area=actor.m_area,
+				.quality=0,
+				.percentWear=0,
 			};
-			craftJob.workPiece = &actor.m_area->m_simulation.m_hasItems->createItem(params);
+			craftJob.workPiece = m_area.getItems().create(params);
 			//TODO: Should the item be reserved?
 		}
 		indexUnassigned(craftJob);
@@ -438,13 +340,14 @@ void HasCraftingLocationsAndJobsForFaction::unindexAssigned(CraftJob& craftJob)
 }
 void HasCraftingLocationsAndJobsForFaction::jobComplete(CraftJob& craftJob, BlockIndex location)
 {
-	Item* product = nullptr;
+	ItemIndex product = ITEM_INDEX_MAX;
 	Blocks& blocks = m_area.getBlocks();
+	Items& items = m_area.getItems();
 	if(craftJob.craftJobType.productType.generic)
 	{
-		product = &blocks.item_addGeneric(location, craftJob.craftJobType.productType, *craftJob.materialType, craftJob.craftJobType.productQuantity);
+		product = blocks.item_addGeneric(location, craftJob.craftJobType.productType, *craftJob.materialType, craftJob.craftJobType.productQuantity);
 		if(craftJob.workPiece)
-			craftJob.workPiece->destroy();
+			items.destroy(craftJob.workPiece);
 	}
 	else
 	{
@@ -452,30 +355,32 @@ void HasCraftingLocationsAndJobsForFaction::jobComplete(CraftJob& craftJob, Bloc
 		if(craftJob.workPiece)
 		{
 			// Not generic and workpiece exists, use it as product.
-			craftJob.workPiece->m_quality = craftJob.getQuality();
-			craftJob.workPiece->m_craftJobForWorkPiece = nullptr;
+			items.setQuality(craftJob.workPiece, craftJob.getQuality());
+			items.unsetCraftJobForWorkPiece(craftJob.workPiece);
 			product = craftJob.workPiece;
 		}
 		else
 		{
 			ItemParamaters params{
+				.simulation=m_area.m_simulation,
 				.itemType=craftJob.craftJobType.productType,
 				.materialType=*craftJob.materialType,
+				.location=location,
 				.quality=craftJob.getQuality(),
 				.percentWear=0,
-				.location=location
 			};
-			m_area.m_simulation.m_hasItems->createItem(params);
+			items.create(params);
 		}
 	}
 	if(!m_area.m_hasStockPiles.contains(m_faction))
 		m_area.m_hasStockPiles.registerFaction(m_faction);
-	m_area.m_hasStockPiles.at(m_faction).maybeAddItem(*product);
+	m_area.m_hasStockPiles.at(m_faction).maybeAdd(product);
 	m_jobs.remove(craftJob);
 }
 void HasCraftingLocationsAndJobsForFaction::makeAndAssignStepProject(CraftJob& craftJob, BlockIndex location, CraftObjective& objective)
 {
-	craftJob.craftStepProject = std::make_unique<CraftStepProject>(objective.m_actor.getFaction(), m_area, location, *craftJob.stepIterator, craftJob);
+	Actors& actors = m_area.getActors();
+	craftJob.craftStepProject = std::make_unique<CraftStepProject>(actors.getFaction(objective.m_actor), m_area, location, *craftJob.stepIterator, craftJob);
 	std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<CraftStepProjectHasShapeDishonorCallback>(*craftJob.craftStepProject.get());
 	craftJob.craftStepProject->setLocationDishonorCallback(std::move(dishonorCallback));
 	craftJob.craftStepProject->addWorkerCandidate(objective.m_actor, objective);
@@ -504,35 +409,18 @@ const CraftStepTypeCategory* HasCraftingLocationsAndJobsForFaction::getDisplaySt
 	return *m_stepTypeCategoriesByLocation.at(location).begin();
 }
 // May return nullptr;
-CraftJob* HasCraftingLocationsAndJobsForFaction::getJobForAtLocation(const Actor& actor, const SkillType& skillType, BlockIndex block, std::unordered_set<CraftJob*>& excludeJobs)
+CraftJob* HasCraftingLocationsAndJobsForFaction::getJobForAtLocation(const ActorIndex actor, const SkillType& skillType, BlockIndex block, std::unordered_set<CraftJob*>& excludeJobs)
 {
-	assert(!m_area.getBlocks().isReserved(block, *actor.getFaction()));
+	Actors& actors = m_area.getActors();
+	assert(!m_area.getBlocks().isReserved(block, *actors.getFaction(actor)));
 	if(!m_stepTypeCategoriesByLocation.contains(block))
 		return nullptr;
 	for(const CraftStepTypeCategory* category : m_stepTypeCategoriesByLocation.at(block))
 		if(m_unassignedProjectsByStepTypeCategory.contains(category))
 			for(CraftJob* craftJob : m_unassignedProjectsByStepTypeCategory.at(category))
-				if(!excludeJobs.contains(craftJob) && craftJob->stepIterator->skillType == skillType && actor.m_skillSet.get(skillType) >= craftJob->minimumSkillLevel)
+				if(!excludeJobs.contains(craftJob) && craftJob->stepIterator->skillType == skillType && actors.skill_getLevel(actor, skillType) >= craftJob->minimumSkillLevel)
 					return craftJob;
 	return nullptr;
-}
-std::pair<CraftJob*, BlockIndex> HasCraftingLocationsAndJobsForFaction::getJobAndLocationForWhileExcluding(const Actor& actor, const SkillType& skillType, std::unordered_set<CraftJob*>& excludeJobs)
-{
-	Blocks& blocks = m_area.getBlocks();
-	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block)
-	{
-		return !blocks.isReserved(block, *actor.getFaction()) && getJobForAtLocation(actor, skillType, block, excludeJobs) != nullptr;
-	};
-	FindsPath findsPath(actor, false);
-	findsPath.m_maxRange = Config::maxRangeToSearchForCraftingRequirements;
-	findsPath.pathToUnreservedAdjacentToPredicate(predicate, *actor.getFaction());
-	if(!findsPath.found() && !findsPath.m_useCurrentLocation)
-		return std::make_pair(nullptr, BLOCK_INDEX_MAX);
-	else
-	{
-		BlockIndex block = findsPath.getBlockWhichPassedPredicate();
-		return std::make_pair(getJobForAtLocation(actor, skillType, block, excludeJobs), block);
-	}
 }
 void AreaHasCraftingLocationsAndJobs::load(const Json& data, DeserializationMemo& deserializationMemo)
 {

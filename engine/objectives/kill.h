@@ -14,31 +14,28 @@
 #include "objective.h"
 #include "eventSchedule.h"
 #include "threadedTask.h"
-#include "fight.h"
 
-class Actor;
 struct DeserializationMemo;
 
 class KillInputAction final : public InputAction
 {
-	Actor& m_killer;
-	Actor& m_target;
-	KillInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, Actor& killer, Actor& target);
+	ActorIndex m_killer;
+	ActorIndex m_target;
+	KillInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, ActorIndex killer, ActorIndex target);
 	void execute();
 };
 
 class KillObjective final : public Objective
 {
-	Actor& m_killer;
-	Actor& m_target;
-	HasThreadedTask<GetIntoAttackPositionThreadedTask> m_getIntoRangeAndLineOfSightThreadedTask;
+	ActorIndex m_killer;
+	ActorIndex m_target;
 public:
-	KillObjective(Actor& k, Actor& t);
+	KillObjective(ActorIndex k, ActorIndex t);
 	KillObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute();
-	void cancel() { m_getIntoRangeAndLineOfSightThreadedTask.maybeCancel(); }
-	void delay() { cancel(); }
-	void reset();
+	void execute(Area& area);
+	void cancel(Area& area);
+	void delay(Area& area) { cancel(area); }
+	void reset(Area& area);
 	std::string name() const { return "kill"; }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Kill; }
 };

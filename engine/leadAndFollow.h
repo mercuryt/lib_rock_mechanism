@@ -2,6 +2,8 @@
 
 #include "eventSchedule.hpp"
 #include "config.h"
+#include "types.h"
+#include "actorOrItemIndex.h"
 
 #include <queue>
 #include <cstdint>
@@ -9,62 +11,45 @@
 struct DeserializationMemo;
 
 //TODO: Multiple followers.
-class HasShape;
 class CanLead;
-class CanFollowEvent;
+class Area;
 class CanFollow final
 {
-	HasScheduledEvent<CanFollowEvent> m_event;
-	HasShape& m_hasShape;
+	ActorOrItemIndex m_actorOrItemIndex;
 	CanLead* m_canLead = nullptr;
 public:
-	CanFollow(HasShape& a, Simulation& s);
+	CanFollow(ActorOrItemIndex index);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
-	void follow(CanLead& canLead, bool doAdjacentCheck = true);
-	void unfollow();
-	void unfollowIfFollowing();
-	void maybeDisband();
-	void disband();
-	void tryToMove();
-	[[nodiscard]] HasShape& getLineLeader();
-	[[nodiscard]] HasShape& getLeader();
+	void follow(Area& area, CanLead& canLead, bool doAdjacentCheck = true);
+	void unfollow(Area& area);
+	void unfollowIfFollowing(Area& area);
+	void maybeDisband(Area& area);
+	void disband(Area& area);
+	[[nodiscard]] ActorOrItemIndex getLineLeader(Area& area);
+	[[nodiscard]] ActorOrItemIndex getLeader();
 	[[nodiscard]] bool isFollowing() const { return m_canLead != nullptr; }
 	friend class CanLead;
-	friend class CanFollowEvent;
-	// For testing.
-	[[maybe_unused, nodiscard]] bool hasEvent() const { return m_event.exists(); }
-	[[maybe_unused, nodiscard]] Step getEventStep() const { return m_event.getStep(); }
 };
 class CanLead final
 {
 	std::deque<BlockIndex> m_locationQueue;
-	HasShape& m_hasShape;
+	ActorOrItemIndex m_actorOrItemIndex;
 	CanFollow* m_canFollow = nullptr;
 public:
-	CanLead(HasShape& a) : m_hasShape(a) { }
+	CanLead(ActorOrItemIndex index) : m_actorOrItemIndex(index) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
-	// Call from BlockHasShapes::enter.
-	void onMove();
-	// Use in canEnterCurrently to prevent leader from moving too far ahead.
-	[[nodiscard]] bool isFollowerKeepingUp() const;
+	// Use in Actors::move_callback to prevent the line leader from moving if a follower can't.
+	[[nodiscard]] bool canMove(Area& area);
 	[[nodiscard]] bool isLeading() const;
-	[[nodiscard]] bool isLeading(HasShape& hasShape) const;
-	HasShape& getFollower();
-	[[nodiscard]] const HasShape& getFollower() const;
-	[[nodiscard]] Speed getMoveSpeed() const;
-	[[nodiscard]] std::deque<BlockIndex>& getLocationQueue();
+	[[nodiscard]] bool isLeading(ActorOrItemIndex hasShape) const;
+	[[nodiscard]] ActorOrItemIndex getFollower();
+	[[nodiscard]] const ActorOrItemIndex& getFollower() const;
+	[[nodiscard]] Speed getMoveSpeed(Area& area) const;
+	[[nodiscard]] std::deque<BlockIndex>& getLocationQueue(Area& area);
+	[[nodiscard]] std::unordered_set<BlockIndex> getOccuiped(Area& area); 
 	friend class CanFollow;
-	[[nodiscard]] static Speed getMoveSpeedForGroupWithAddedMass(std::vector<const HasShape*>& actorsAndItems, Mass addedRollingMass = 0, Mass addedDeadMass = 0);
-	[[nodiscard]] static Speed getMoveSpeedForGroup(std::vector<const HasShape*>& actorsAndItems) { return getMoveSpeedForGroupWithAddedMass(actorsAndItems); }
-};
-class CanFollowEvent final : public ScheduledEvent
-{
-	//TODO: Cache moveTo.
-	HasShape& m_hasShape;
-public:
-	CanFollowEvent(HasShape& hasShape, const Step start = 0);
-	void execute();
-	void clearReferences();
+	[[nodiscard]] static Speed getMoveSpeedForGroupWithAddedMass(Area& area, std::vector<ActorOrItemIndex>& actorsAndItems, Mass addedRollingMass = 0, Mass addedDeadMass = 0);
+	[[nodiscard]] static Speed getMoveSpeedForGroup(Area& area, std::vector<ActorOrItemIndex>& actorsAndItems) { return getMoveSpeedForGroupWithAddedMass(area, actorsAndItems); }
 };

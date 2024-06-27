@@ -1,6 +1,7 @@
 #pragma once
 
 #include "attackType.h"
+#include "types.h"
 #include "woundType.h"
 #include "hit.h"
 #include "eventSchedule.hpp"
@@ -56,7 +57,7 @@ struct Wound final
 	Percent maxPercentTemporaryImpairment;
 	Percent maxPercentPermanantImpairment;
 	HasScheduledEvent<WoundHealEvent> healEvent;
-	Wound(Actor& a, const WoundType wt, BodyPart& bp, Hit h, uint32_t bvr, Percent ph = 0);
+	Wound(Area& area, ActorIndex a, const WoundType wt, BodyPart& bp, Hit h, uint32_t bvr, Percent ph = 0);
 	Wound(const Json& data, DeserializationMemo& deserializationMemo, BodyPart& bp);
 	bool operator==(const Wound& other) const { return &other == this; }
 	Percent getPercentHealed() const;
@@ -81,7 +82,7 @@ class Body final
 {
 	HasScheduledEvent<BleedEvent> m_bleedEvent;
 	HasScheduledEvent<WoundsCloseEvent> m_woundsCloseEvent;
-	Actor& m_actor;
+	ActorIndex m_actor = ACTOR_INDEX_MAX;
 	const MaterialType* m_materialType = nullptr;
 	uint32_t m_totalVolume = 0;
 	Percent m_impairMovePercent = 0;
@@ -90,22 +91,22 @@ class Body final
 	bool m_isBleeding = false;
 public:
 	std::list<BodyPart> m_bodyParts;
-	Body(Actor& a, Simulation& s);
-	Body(const Json& data, DeserializationMemo& deserializationMemo, Actor& a);
-	void initalize();
+	Body(Area& area, ActorIndex a);
+	Body(const Json& data, DeserializationMemo& deserializationMemo, ActorIndex a);
+	void initalize(Area& area);
 	[[nodiscard]] Json toJson() const;
-	BodyPart& pickABodyPartByVolume();
+	BodyPart& pickABodyPartByVolume(Simulation& simulation);
 	BodyPart& pickABodyPartByType(const BodyPartType& bodyPartType);
 	// Armor has already been applied, calculate hit depth.
 	void getHitDepth(Hit& hit, const BodyPart& bodyPart);
-	Wound& addWound(BodyPart& bodyPart, Hit& hit);
-	void healWound(Wound& wound);
-	void doctorWound(Wound& wound, Percent healSpeedPercentageChange);
-	void woundsClose();
-	void bleed();
+	Wound& addWound(Area& area, BodyPart& bodyPart, Hit& hit);
+	void healWound(Area& area, Wound& wound);
+	void doctorWound(Area& area, Wound& wound, Percent healSpeedPercentageChange);
+	void woundsClose(Area& area);
+	void bleed(Area& area);
 	void sever(BodyPart& bodyPart, Wound& wound);
 	// TODO: periodicly update impairment as wounds heal.
-	void recalculateBleedAndImpairment();
+	void recalculateBleedAndImpairment(Area& area);
 	Wound& getWoundWhichIsBleedingTheMost();
 	void setMaterialType(const MaterialType& materialType) { m_materialType = &materialType; }
 	[[nodiscard]] bool piercesSkin(Hit hit, const BodyPart& bodyPart) const;
@@ -114,13 +115,13 @@ public:
 	[[nodiscard]] bool piercesBone(Hit hit, const BodyPart& bodyPart) const;
 	[[nodiscard]] Volume healthyBloodVolume() const;
 	[[nodiscard]] std::vector<Attack> getMeleeAttacks() const;
-	[[nodiscard]] Volume getVolume() const;
+	[[nodiscard]] Volume getVolume(Area& area) const;
 	[[nodiscard]] bool isInjured() const;
 	[[nodiscard]] Step getStepsTillBleedToDeath() const;
 	[[nodiscard]] bool hasBodyPart(const BodyPartType& bodyPartType) const;
 	[[nodiscard]] Step getStepsTillWoundsClose() const { return m_woundsCloseEvent.remainingSteps(); }
-	[[nodiscard]] Percent getImpairMovePercent() { return m_impairMovePercent; }
-	[[nodiscard]] Percent getImpairManipulationPercent() { return m_impairManipulationPercent; }
+	[[nodiscard]] Percent getImpairMovePercent() const { return m_impairMovePercent; }
+	[[nodiscard]] Percent getImpairManipulationPercent() const { return m_impairManipulationPercent; }
 	[[nodiscard]] std::vector<Wound*> getAllWounds();
 	// For testing.
 	[[maybe_unused, nodiscard]] bool hasBleedEvent() const { return m_bleedEvent.exists(); }
@@ -135,23 +136,23 @@ class WoundHealEvent : public ScheduledEvent
 	Wound& m_wound;
 	Body& m_body;
 public:
-	WoundHealEvent(const Step delay, Wound& w, Body& b, const Step start = 0);
-	void execute() { m_body.healWound(m_wound); }
-	void clearReferences() { m_wound.healEvent.clearPointer(); }
+	WoundHealEvent(Simulation& simulation, const Step delay, Wound& w, Body& b, const Step start = 0);
+	void execute(Simulation&, Area* area) { m_body.healWound(*area, m_wound); }
+	void clearReferences(Simulation&, Area*) { m_wound.healEvent.clearPointer(); }
 };
 class BleedEvent : public ScheduledEvent
 {
 	Body& m_body;
 public:
-	BleedEvent(const Step delay, Body& b, const Step start = 0);
-	void execute() { m_body.bleed(); }
-	void clearReferences() { m_body.m_bleedEvent.clearPointer(); }
+	BleedEvent(Simulation& simulation, const Step delay, Body& b, const Step start = 0);
+	void execute(Simulation&, Area* area) { m_body.bleed(*area); }
+	void clearReferences(Simulation&, Area*) { m_body.m_bleedEvent.clearPointer(); }
 };
 class WoundsCloseEvent : public ScheduledEvent
 {
 	Body& m_body;
 public:
-	WoundsCloseEvent(const Step delay, Body& b, const Step start = 0);
-	void execute() { m_body.woundsClose(); }
-	void clearReferences() { m_body.m_woundsCloseEvent.clearPointer(); }
+	WoundsCloseEvent(Simulation& simulation, const Step delay, Body& b, const Step start = 0);
+	void execute(Simulation&, Area* area) { m_body.woundsClose(*area); }
+	void clearReferences(Simulation&, Area*) { m_body.m_woundsCloseEvent.clearPointer(); }
 };

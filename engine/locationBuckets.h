@@ -13,15 +13,14 @@ using DistanceInBuckets = uint32_t;
 struct LocationBucket final
 {
 	std::vector<std::vector<BlockIndex>> m_blocksMultiTileActors;
-	std::vector<Actor*> m_actorsMultiTile;
+	std::vector<ActorIndex> m_actorsMultiTile;
 	std::vector<BlockIndex> m_blocksSingleTileActors;
-	std::vector<Actor*> m_actorsSingleTile;
-	void insert(Actor& actor, std::vector<BlockIndex>& blocks);
-	void erase(Actor& actor);
-	void update(Actor& actor, std::vector<BlockIndex>& blocks);
+	std::vector<ActorIndex> m_actorsSingleTile;
+	void insert(Area& area, ActorIndex actor, std::vector<BlockIndex>& blocks);
+	void erase(Area& area, ActorIndex actor);
+	void update(Area& area, ActorIndex actor, std::vector<BlockIndex>& blocks);
 	[[nodiscard]] size_t size() const { return m_actorsMultiTile.size() + m_actorsSingleTile.size(); }
 };
-
 class LocationBuckets
 {
 	Area& m_area;
@@ -33,9 +32,9 @@ class LocationBuckets
 public:
 	LocationBuckets(Area& area) : m_area(area) { }
 	void initalize();
-	void add(Actor& actor);
-	void remove(Actor& actor);
-	void update(Actor& actor, std::unordered_set<BlockIndex>& oldBlocks);
+	void add(ActorIndex actor);
+	void remove(ActorIndex actor);
+	void update(ActorIndex actor, std::unordered_set<BlockIndex>& oldBlocks);
 	[[nodiscard]] LocationBucket& getBucketFor(const BlockIndex block);
 	friend class VisionFacade;
 };

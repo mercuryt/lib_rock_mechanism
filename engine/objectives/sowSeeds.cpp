@@ -8,83 +8,38 @@
 
 struct DeserializationMemo;
 
-SowSeedsEvent::SowSeedsEvent(Step delay, SowSeedsObjective& o, const Step start) : 
-	ScheduledEvent(o.m_actor.getSimulation(), delay, start), m_objective(o) { }
-void SowSeedsEvent::execute()
+SowSeedsEvent::SowSeedsEvent(Area& area, Step delay, SowSeedsObjective& o, const Step start) : 
+	ScheduledEvent(area.m_simulation, delay, start), m_objective(o) { }
+void SowSeedsEvent::execute(Simulation&, Area* area)
 {
+	Actors& actors = area->m_actors;
+	Blocks& blocks = area->getBlocks();
 	BlockIndex block = m_objective.m_block;
-	Faction& faction = *m_objective.m_actor.getFaction();
-	auto& blocks = m_objective.m_actor.m_area->getBlocks();
+	Faction& faction = *actors.getFaction(m_objective.m_actor);
 	if(!blocks.farm_contains(block, faction))
 	{
 		// BlockIndex is no longer part of a field. It may have been undesignated or it may no longer be a suitable place to grow the selected plant.
-		m_objective.reset();
-		m_objective.execute();
+		m_objective.reset(*area);
+		m_objective.execute(*area);
 	}
 	assert(blocks.farm_get(block, faction));
 	const PlantSpecies& plantSpecies = *blocks.farm_get(block, faction)->plantSpecies;
 	blocks.plant_create(block, plantSpecies);
-	m_objective.m_actor.m_hasObjectives.objectiveComplete(m_objective);
+	actors.objective_complete(m_objective.m_actor, m_objective);
 }
-void SowSeedsEvent::clearReferences(){ m_objective.m_event.clearPointer(); }
-bool SowSeedsObjectiveType::canBeAssigned(Actor& actor) const
+void SowSeedsEvent::clearReferences(Simulation&, Area*){ m_objective.m_event.clearPointer(); }
+bool SowSeedsObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
 {
-	return actor.m_area->m_hasFarmFields.hasSowSeedsDesignations(*actor.getFaction());
+	return area.m_hasFarmFields.hasSowSeedsDesignations(*area.m_actors.getFaction(actor));
 }
-std::unique_ptr<Objective> SowSeedsObjectiveType::makeFor(Actor& actor) const
+std::unique_ptr<Objective> SowSeedsObjectiveType::makeFor(Area& area, ActorIndex actor) const
 {
-	return std::make_unique<SowSeedsObjective>(actor);
+	return std::make_unique<SowSeedsObjective>(area, actor);
 }
-SowSeedsThreadedTask::SowSeedsThreadedTask(SowSeedsObjective& sso): 
-	ThreadedTask(sso.m_actor.getThreadedTaskEngine()), m_objective(sso), m_findsPath(sso.m_actor, sso.m_detour) { }
-void SowSeedsThreadedTask::readStep()
-{
-	Faction* faction = m_objective.m_actor.getFaction();
-	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return m_objective.canSowAt(block); };
-	m_findsPath.m_maxRange = Config::maxRangeToSearchForHorticultureDesignations;
-	m_findsPath.pathToUnreservedAdjacentToPredicate(predicate, *faction);
-}
-void SowSeedsThreadedTask::writeStep()
-{
-	assert(m_objective.m_block == BLOCK_INDEX_MAX);
-	if(!m_findsPath.found())
-	{
-		if(m_findsPath.m_useCurrentLocation)
-		{
-			m_objective.select(m_findsPath.getBlockWhichPassedPredicate());
-			m_objective.execute();
-		}
-		else
-			// Cannot find any accessable field to sow.
-			m_objective.m_actor.m_hasObjectives.cannotFulfillObjective(m_objective);
-	}
-	else
-	{
-		if(!m_findsPath.areAllBlocksAtDestinationReservable(m_objective.m_actor.getFaction()))
-			// Cannot reserve location, try again.
-			m_objective.m_threadedTask.create(m_objective);
-		else
-		{
-			BlockIndex block = m_findsPath.getBlockWhichPassedPredicate();
-			if(!m_objective.canSowAt(block))
-				// Selected destination is no longer adjacent to a block where we can sow, try again.
-				m_objective.m_threadedTask.create(m_objective);
-			else
-			{
-				// Found a field to sow.
-				m_objective.select(block);
-				m_findsPath.reserveBlocksAtDestination(m_objective.m_actor.m_canReserve);
-				m_objective.m_actor.m_area->getBlocks().reserve(m_findsPath.getBlockWhichPassedPredicate(), m_objective.m_actor.m_canReserve);
-				m_objective.m_actor.m_canMove.setPath(m_findsPath.getPath());
-			}
-		}
-	}
-}
-void SowSeedsThreadedTask::clearReferences() { m_objective.m_threadedTask.clearPointer(); }
-SowSeedsObjective::SowSeedsObjective(Actor& a) : 
+SowSeedsObjective::SowSeedsObjective(Area& area, ActorIndex a) : 
 	Objective(a, Config::sowSeedsPriority), 
-	m_event(a.getEventSchedule()), 
-	m_threadedTask(a.getThreadedTaskEngine()) { }
+	m_event(area.m_eventSchedule) { }
+/*
 SowSeedsObjective::SowSeedsObjective(const Json& data, DeserializationMemo& deserializationMemo) : 
 	Objective(data, deserializationMemo), 
 	m_event(deserializationMemo.m_simulation.m_eventSchedule), 
@@ -107,92 +62,105 @@ Json SowSeedsObjective::toJson() const
 		data["eventStart"] = m_event.getStartStep();
 	return data;
 }
-BlockIndex SowSeedsObjective::getBlockToSowAt(BlockIndex location, Facing facing)
+*/
+BlockIndex SowSeedsObjective::getBlockToSowAt(Area& area, BlockIndex location, Facing facing)
 {
-	Faction* faction = m_actor.getFaction();
-	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block)
+	Faction* faction = area.m_actors.getFaction(m_actor);
+	std::function<bool(BlockIndex)> predicate = [&area, faction](BlockIndex block)
 	{
-		auto& blocks = m_actor.m_area->getBlocks();
+		auto& blocks = area.getBlocks();
 		return blocks.designation_has(block, *faction, BlockDesignation::SowSeeds) && !blocks.isReserved(block, *faction);
 	};
-	return m_actor.getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(location, facing, predicate);
+	return area.m_actors.getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(m_actor, location, facing, predicate);
 }
-void SowSeedsObjective::execute()
+void SowSeedsObjective::execute(Area& area)
 {
+	Actors& actors = area.m_actors;
+	Blocks& blocks = area.getBlocks();
 	if(m_block != BLOCK_INDEX_MAX)
 	{
-		if(m_actor.isAdjacentTo(m_block))
+		if(actors.isAdjacentToLocation(m_actor, m_block))
 		{
-			auto& blocks = m_actor.m_area->getBlocks();
-			FarmField* field = blocks.farm_get(m_block, *m_actor.getFaction());
+			FarmField* field = blocks.farm_get(m_block, *actors.getFaction(m_actor));
 			if(field != nullptr && blocks.plant_canGrowHereAtSomePointToday(m_block, *field->plantSpecies))
 			{
-				begin();
+				begin(area);
 				return;
 			}
 		}
 		// Previously found m_block or path no longer valid, redo from start.
-		reset();
-		execute();
+		reset(area);
+		execute(area);
 	}
 	else
 	{
 		// Check if we can use an adjacent as m_block.
-		if(m_actor.allOccupiedBlocksAreReservable(*m_actor.getFaction()))
+		if(actors.allOccupiedBlocksAreReservable(m_actor, *actors.getFaction(m_actor)))
 		{
-			BlockIndex block = getBlockToSowAt(m_actor.m_location, m_actor.m_facing);
+			BlockIndex block = getBlockToSowAt(area, actors.getLocation(m_actor), actors.getFacing(m_actor));
 			if(block != BLOCK_INDEX_MAX)
 			{
-				select(block);
-				m_actor.reserveOccupied(m_actor.m_canReserve);
-				begin();
+				select(area, block);
+				bool result = actors.move_tryToReserveOccupied(m_actor);
+				assert(result);
+				begin(area);
 				return;
 			}
 		}
-		// Try to find m_block and path.
-		m_threadedTask.create(*this);
 	}
+	std::unique_ptr<PathRequest> pathRequest = std::make_unique<SowSeedsPathRequest>(area, *this);
+	actors.move_pathRequestRecord(m_actor, std::move(pathRequest));
 }
-void SowSeedsObjective::cancel()
+void SowSeedsObjective::cancel(Area& area)
 {
-	m_actor.m_canReserve.deleteAllWithoutCallback();
-	m_threadedTask.maybeCancel();
+	Actors& actors = area.m_actors;
+	actors.canReserve_clearAll(m_actor);
+	actors.move_pathRequestMaybeCancel(m_actor);
 	m_event.maybeUnschedule();
-	auto& blocks = m_actor.m_area->getBlocks();
-	if(m_block != BLOCK_INDEX_MAX && blocks.farm_contains(m_block, *m_actor.getFaction()))
+	auto& blocks = area.getBlocks();
+	Faction& faction = *area.m_actors.getFaction(m_actor);
+	if(m_block != BLOCK_INDEX_MAX && blocks.farm_contains(m_block, faction))
 	{
-		FarmField* field = blocks.farm_get(m_block, *m_actor.getFaction());
+		FarmField* field = blocks.farm_get(m_block, faction);
 		if(field == nullptr)
 			return;
 		//TODO: check it is still planting season.
 		if(blocks.plant_canGrowHereAtSomePointToday(m_block, *field->plantSpecies))
-			m_actor.m_area->m_hasFarmFields.at(*m_actor.getFaction()).addSowSeedsDesignation(m_block);
+			area.m_hasFarmFields.at(faction).addSowSeedsDesignation(m_block);
 	}
 }
-void SowSeedsObjective::select(BlockIndex block)
+void SowSeedsObjective::select(Area& area, BlockIndex block)
 {
-	auto& blocks = m_actor.m_area->getBlocks();
+	auto& blocks = area.getBlocks();
 	assert(!blocks.plant_exists(block));
-	assert(blocks.farm_contains(block, *m_actor.getFaction()));
+	assert(blocks.farm_contains(block, *area.m_actors.getFaction(m_actor)));
 	assert(m_block == BLOCK_INDEX_MAX);
 	m_block = block;
-	m_actor.m_area->m_hasFarmFields.at(*m_actor.getFaction()).removeSowSeedsDesignation(block);
-	m_actor.m_reservable.reserveFor(m_actor.m_canReserve, 1u);
+	area.m_hasFarmFields.at(*area.m_actors.getFaction(m_actor)).removeSowSeedsDesignation(block);
 }
-void SowSeedsObjective::begin()
+void SowSeedsObjective::begin(Area& area)
 {
 	assert(m_block != BLOCK_INDEX_MAX);
-	assert(m_actor.isAdjacentTo(m_block));
+	assert(area.m_actors.isAdjacentToLocation(m_actor, m_block));
 	m_event.schedule(Config::sowSeedsStepsDuration, *this);
 }
-void SowSeedsObjective::reset()
+void SowSeedsObjective::reset(Area& area)
 {
-	cancel();
+	cancel(area);
 	m_block = BLOCK_INDEX_MAX;
 }
-bool SowSeedsObjective::canSowAt(BlockIndex block) const
+bool SowSeedsObjective::canSowAt(Area& area, BlockIndex block) const
 {
-	Faction* faction = m_actor.getFaction();
-	auto& blocks = m_actor.m_area->getBlocks();
+	Faction* faction = area.m_actors.getFaction(m_actor);
+	auto& blocks = area.getBlocks();
 	return blocks.designation_has(block, *faction, BlockDesignation::SowSeeds) && !blocks.isReserved(block, *faction);
+}
+SowSeedsPathRequest::SowSeedsPathRequest(Area& area, SowSeedsObjective& objective) : ObjectivePathRequest(objective, true) // reserve block which passed predicate.
+{
+	bool unreserved = true;
+	createGoAdjacentToDesignation(area, objective.m_actor, BlockDesignation::SowSeeds, objective.m_detour, unreserved, Config::maxRangeToSearchForHorticultureDesignations);
+}
+void SowSeedsPathRequest::onSuccess(Area& area, BlockIndex blockWhichPassedPredicate)
+{
+	static_cast<SowSeedsObjective&>(m_objective).select(area, blockWhichPassedPredicate);
 }

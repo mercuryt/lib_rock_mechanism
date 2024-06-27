@@ -1,13 +1,14 @@
 #include "woodcutting.h"
-#include "actor.h"
-#include "item.h"
 #include "area.h"
 #include "blockFeature.h"
 #include "deserializationMemo.h"
 #include "random.h"
 #include "reservable.h"
+#include "terrainFacade.h"
+#include "types.h"
 #include "util.h"
 #include "simulation.h"
+#include "itemType.h"
 #include <memory>
 #include <sys/types.h>
 /*
@@ -29,115 +30,123 @@ void UndesignateWoodCuttingInputAction::execute()
 		woodCuttingDesginations.undesignate(faction, block);
 }
 */
-WoodCuttingThreadedTask::WoodCuttingThreadedTask(WoodCuttingObjective& woodCuttingObjective) : ThreadedTask(woodCuttingObjective.m_actor.m_area->m_simulation.m_threadedTaskEngine), m_woodCuttingObjective(woodCuttingObjective), m_findsPath(woodCuttingObjective.m_actor, woodCuttingObjective.m_detour) { }
-void WoodCuttingThreadedTask::readStep()
+WoodCuttingPathRequest::WoodCuttingPathRequest(Area& area, WoodCuttingObjective& woodCuttingObjective) :
+	m_woodCuttingObjective(woodCuttingObjective)
 {
-	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block)
+	std::function<bool(BlockIndex)> predicate = [this, &area](BlockIndex block)
 	{
-		return m_woodCuttingObjective.getJoinableProjectAt(block) != nullptr;
+		return m_woodCuttingObjective.getJoinableProjectAt(area, block) != nullptr;
 	};
-	m_findsPath.m_maxRange = Config::maxRangeToSearchForWoodCuttingDesignations;
-	//TODO: We don't need the whole path here, just the destination and facing.
-	m_findsPath.pathToUnreservedAdjacentToPredicate(predicate, *m_woodCuttingObjective.m_actor.getFaction());
+	DistanceInBlocks maxRange = Config::maxRangeToSearchForWoodCuttingDesignations;
+	bool unreserved = true;
+	createGoAdjacentToCondition(area, m_woodCuttingObjective.m_actor, predicate, m_woodCuttingObjective.m_detour, unreserved, maxRange, BLOCK_INDEX_MAX);
 }
-void WoodCuttingThreadedTask::writeStep()
+void WoodCuttingPathRequest::callback(Area& area, FindPathResult& result)
 {
-	if(!m_findsPath.found() && !m_findsPath.m_useCurrentLocation)
-		m_woodCuttingObjective.m_actor.m_hasObjectives.cannotFulfillObjective(m_woodCuttingObjective);
+	Actors& actors = area.getActors();
+	if(result.path.empty() && !result.useCurrentPosition)
+		actors.objective_canNotCompleteObjective(m_woodCuttingObjective.m_actor, m_woodCuttingObjective);
 	else
 	{
-		if(!m_findsPath.areAllBlocksAtDestinationReservable(m_woodCuttingObjective.m_actor.getFaction()))
+		if(result.useCurrentPosition)
 		{
-			// Proposed location while woodCuttingging has been reserved already, try to find another.
-			m_woodCuttingObjective.m_woodCuttingThreadedTask.create(m_woodCuttingObjective);
+			if(!actors.move_tryToReserveOccupied(m_woodCuttingObjective.m_actor))
+			{
+				actors.objective_canNotCompleteSubobjective(m_woodCuttingObjective.m_actor);
+				return;
+			}
+		}
+		else if(!actors.move_tryToReserveProposedDestination(m_woodCuttingObjective.m_actor, result.path))
+		{
+			actors.objective_canNotCompleteSubobjective(m_woodCuttingObjective.m_actor);
 			return;
 		}
-		BlockIndex target = m_findsPath.getBlockWhichPassedPredicate();
-		WoodCuttingProject& project = m_woodCuttingObjective.m_actor.m_area->m_hasWoodCuttingDesignations.at(*m_woodCuttingObjective.m_actor.getFaction(), target);
+		BlockIndex target = result.blockThatPassedPredicate;
+		WoodCuttingProject& project = area.m_hasWoodCuttingDesignations.at(*actors.getFaction(m_woodCuttingObjective.m_actor), target);
 		if(project.canAddWorker(m_woodCuttingObjective.m_actor))
-		{
-			// Join project and reserve standing room.
 			m_woodCuttingObjective.joinProject(project);
-			m_findsPath.reserveBlocksAtDestination(m_woodCuttingObjective.m_actor.m_canReserve);
-		}
 		else
+		{
 			// Project can no longer accept this worker, try again.
-			m_woodCuttingObjective.m_woodCuttingThreadedTask.create(m_woodCuttingObjective);
+			actors.objective_canNotCompleteSubobjective(m_woodCuttingObjective.m_actor);
+			return;
+		}
 	}
 }
-void WoodCuttingThreadedTask::clearReferences() { m_woodCuttingObjective.m_woodCuttingThreadedTask.clearPointer(); }
-WoodCuttingObjective::WoodCuttingObjective(Actor& a) : Objective(a, Config::woodCuttingObjectivePriority), m_woodCuttingThreadedTask(m_actor.m_area->m_simulation.m_threadedTaskEngine) , m_project(nullptr) 
-{ 
-	assert(m_actor.getFaction() != nullptr);
-}
+WoodCuttingObjective::WoodCuttingObjective(ActorIndex a) :
+	Objective(a, Config::woodCuttingObjectivePriority) { }
+/*
 WoodCuttingObjective::WoodCuttingObjective(const Json& data, DeserializationMemo& deserializationMemo) :
-	Objective(data, deserializationMemo), m_woodCuttingThreadedTask(m_actor.m_area->m_simulation.m_threadedTaskEngine), 
+	Objective(data, deserializationMemo), m_woodCuttingPathRequest(m_actor.m_area->m_simulation.m_threadedTaskEngine), 
 	m_project(data.contains("project") ? static_cast<WoodCuttingProject*>(deserializationMemo.m_projects.at(data["project"].get<uintptr_t>())) : nullptr)
 {
 	if(data.contains("threadedTask"))
-		m_woodCuttingThreadedTask.create(*this);
+		m_woodCuttingPathRequest.create(*this);
 }
 Json WoodCuttingObjective::toJson() const
 {
 	Json data = Objective::toJson();
 	if(m_project != nullptr)
 		data["project"] = m_project;
-	if(m_woodCuttingThreadedTask.exists())
+	if(m_woodCuttingPathRequest.exists())
 		data["threadedTask"] = true;
 	return data;
 }
-void WoodCuttingObjective::execute()
+*/
+void WoodCuttingObjective::execute(Area& area)
 {
 	if(m_project != nullptr)
 		m_project->commandWorker(m_actor);
 	else
 	{
+		Actors& actors = area.getActors();
 		WoodCuttingProject* project = nullptr;
 		std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) 
 		{ 
-			if(!getJoinableProjectAt(block))
+			if(!getJoinableProjectAt(area, block))
 				return false;
-			project = &m_actor.m_area->m_hasWoodCuttingDesignations.at(*m_actor.getFaction(), block);
+			project = &area.m_hasWoodCuttingDesignations.at(*actors.getFaction(m_actor), block);
 			if(project->canAddWorker(m_actor))
 				return true;
 			return false;
 		};
-		[[maybe_unused]] BlockIndex adjacent = m_actor.getBlockWhichIsAdjacentWithPredicate(predicate);
+		[[maybe_unused]] BlockIndex adjacent = actors.getBlockWhichIsAdjacentWithPredicate(m_actor, predicate);
 		if(project != nullptr)
 		{
 			assert(adjacent != BLOCK_INDEX_MAX);
 			joinProject(*project);
 			return;
 		}
-		m_woodCuttingThreadedTask.create(*this);
+		actors.move_pathRequestRecord(m_actor, std::make_unique<WoodCuttingPathRequest>(area, *this));
 	}
 }
-void WoodCuttingObjective::cancel()
+void WoodCuttingObjective::cancel(Area& area)
 {
 	if(m_project != nullptr)
 		m_project->removeWorker(m_actor);
-	m_woodCuttingThreadedTask.maybeCancel();
+	area.getActors().move_pathRequestMaybeCancel(m_actor);
 }
-void WoodCuttingObjective::delay()
+void WoodCuttingObjective::delay(Area& area)
 {
-	cancel();
+	cancel(area);
 	m_project = nullptr;
-	m_actor.m_project = nullptr;
+	area.getActors().project_unset(m_actor);
 }
-void WoodCuttingObjective::reset() 
+void WoodCuttingObjective::reset(Area& area) 
 { 
+	Actors& actors = area.getActors();
 	if(m_project)
 	{
-		assert(!m_project->getWorkers().contains(&m_actor));
+		assert(!m_project->getWorkers().contains(m_actor));
 		m_project = nullptr; 
-		m_actor.m_project = nullptr;
+		area.getActors().project_unset(m_actor);
 	}
 	else 
-		assert(!m_actor.m_project);
-	m_woodCuttingThreadedTask.maybeCancel();
-	m_actor.m_canReserve.deleteAllWithoutCallback();
+		assert(!actors.project_exists(m_actor));
+	actors.move_pathRequestMaybeCancel(m_actor);
+	actors.canReserve_clearAll(m_actor);
 }
-void WoodCuttingObjective::onProjectCannotReserve()
+void WoodCuttingObjective::onProjectCannotReserve(Area&)
 {
 	assert(m_project);
 	m_cannotJoinWhileReservationsAreNotComplete.insert(m_project);
@@ -148,23 +157,25 @@ void WoodCuttingObjective::joinProject(WoodCuttingProject& project)
 	m_project = &project;
 	project.addWorkerCandidate(m_actor, *this);
 }
-WoodCuttingProject* WoodCuttingObjective::getJoinableProjectAt(BlockIndex block)
+WoodCuttingProject* WoodCuttingObjective::getJoinableProjectAt(Area& area, BlockIndex block)
 {
-	if(!m_actor.m_area->getBlocks().designation_has(block, *m_actor.getFaction(), BlockDesignation::WoodCutting))
+	Actors& actors = area.getActors();
+	Faction& faction = *actors.getFaction(m_actor);
+	if(!area.getBlocks().designation_has(block, faction, BlockDesignation::WoodCutting))
 		return nullptr;
-	WoodCuttingProject& output = m_actor.m_area->m_hasWoodCuttingDesignations.at(*m_actor.getFaction(), block);
+	WoodCuttingProject& output = area.m_hasWoodCuttingDesignations.at(faction, block);
 	if(!output.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&output))
 		return nullptr;
 	if(!output.canAddWorker(m_actor))
 		return nullptr;
 	return &output;
 }
-bool WoodCuttingObjectiveType::canBeAssigned(Actor& actor) const
+bool WoodCuttingObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
 {
 	//TODO: check for any axes?
-	return actor.m_area->m_hasWoodCuttingDesignations.areThereAnyForFaction(*actor.getFaction());
+	return area.m_hasWoodCuttingDesignations.areThereAnyForFaction(*area.getActors().getFaction(actor));
 }
-std::unique_ptr<Objective> WoodCuttingObjectiveType::makeFor(Actor& actor) const
+std::unique_ptr<Objective> WoodCuttingObjectiveType::makeFor(Area&, ActorIndex actor) const
 {
 	std::unique_ptr<Objective> objective = std::make_unique<WoodCuttingObjective>(actor);
 	return objective;
@@ -175,12 +186,15 @@ std::vector<std::pair<ItemQuery, uint32_t>> WoodCuttingProject::getUnconsumed() 
 std::vector<std::pair<ActorQuery, uint32_t>> WoodCuttingProject::getActors() const { return {}; }
 std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> WoodCuttingProject::getByproducts() const
 {
-	Plant& plant = m_area.getBlocks().plant_get(m_location);
-	uint32_t unitsLogsGenerated = util::scaleByPercent(plant.m_plantSpecies.logsGeneratedByFellingWhenFullGrown, plant.getGrowthPercent());
-	uint32_t unitsBranchesGenerated = util::scaleByPercent(plant.m_plantSpecies.branchesGeneratedByFellingWhenFullGrown, plant.getGrowthPercent());
+	PlantIndex plant = m_area.getBlocks().plant_get(m_location);
+	Plants& plants = m_area.getPlants();
+	Percent percentGrown = plants.getPercentGrown(plant);
+	const PlantSpecies& species = plants.getSpecies(plant);
+	uint32_t unitsLogsGenerated = util::scaleByPercent(species.logsGeneratedByFellingWhenFullGrown, percentGrown);
+	uint32_t unitsBranchesGenerated = util::scaleByPercent(species.branchesGeneratedByFellingWhenFullGrown, percentGrown);
 	assert(unitsLogsGenerated);
 	assert(unitsBranchesGenerated);
-	auto& woodType = plant.m_plantSpecies.woodType;
+	auto& woodType = species.woodType;
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> output{
 		
 		{&ItemType::byName("branch"), woodType, unitsBranchesGenerated},
@@ -189,34 +203,38 @@ std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> WoodCutt
 	return output;
 }
 // Static.
-uint32_t WoodCuttingProject::getWorkerWoodCuttingScore(Actor& actor)
+uint32_t WoodCuttingProject::getWorkerWoodCuttingScore(Area& area, ActorIndex actor)
 {
 	static const SkillType& woodCuttingType = SkillType::byName("wood cutting");
-	return (actor.m_attributes.getStrength() * Config::woodCuttingStrengthModifier) + (actor.m_skillSet.get(woodCuttingType) * Config::woodCuttingSkillModifier);
+	Actors& actors = area.getActors();
+	uint32_t strength = actors.getStrength(actor);
+	uint32_t skill = actors.skill_getLevel(actor, woodCuttingType);
+	return (strength * Config::woodCuttingStrengthModifier) + (skill * Config::woodCuttingSkillModifier);
 }
 void WoodCuttingProject::onComplete()
 {
 	if(m_area.getBlocks().plant_exists(m_location))
 	{
-		Plant& plant = m_area.getBlocks().plant_get(m_location);
-		plant.die();
+		PlantIndex plant = m_area.getBlocks().plant_get(m_location);
+		m_area.getPlants().die(plant);
 	}
 	// Remove designations for other factions as well as owning faction.
 	auto workers = std::move(m_workers);
 	m_area.m_hasWoodCuttingDesignations.clearAll(m_location);
+	Actors& actors = m_area.getActors();
 	for(auto& [actor, projectWorker] : workers)
-		actor->m_hasObjectives.objectiveComplete(projectWorker.objective);
+		actors.objective_complete(actor, projectWorker.objective);
 }
 void WoodCuttingProject::onCancel()
 {
-	std::vector<Actor*> actors = getWorkersAndCandidates();
 	m_area.m_hasWoodCuttingDesignations.remove(m_faction, m_location);
-	for(Actor* actor : actors)
+	Actors& actors = m_area.getActors();
+	for(ActorIndex actor : getWorkersAndCandidates())
 	{
-		static_cast<WoodCuttingObjective&>(actor->m_hasObjectives.getCurrent()).m_project = nullptr;
-		actor->m_project = nullptr;
-		actor->m_hasObjectives.getCurrent().reset();
-		actor->m_hasObjectives.cannotCompleteSubobjective();
+		// TODO: These two lines seem redundant with the third.
+		actors.project_unset(actor);
+		actors.objective_getCurrent<WoodCuttingObjective>(actor).reset(m_area);
+		actors.objective_canNotCompleteSubobjective(actor);
 	}
 }
 void WoodCuttingProject::onDelay()
@@ -232,7 +250,7 @@ Step WoodCuttingProject::getDuration() const
 {
 	uint32_t totalScore = 0u;
 	for(auto& pair : m_workers)
-		totalScore += getWorkerWoodCuttingScore(*pair.first);
+		totalScore += getWorkerWoodCuttingScore(m_area, pair.first);
 	return std::max(Step(1u), Config::woodCuttingMaxSteps / totalScore);
 }
 WoodCuttingLocationDishonorCallback::WoodCuttingLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
@@ -267,10 +285,11 @@ Json HasWoodCuttingDesignationsForFaction::toJson() const
 void HasWoodCuttingDesignationsForFaction::designate(BlockIndex block)
 {
 	Blocks& blocks = m_area.getBlocks();
+	Plants& plants = m_area.getPlants();
 	assert(!m_data.contains(block));
 	assert(blocks.plant_exists(block));
-	assert(blocks.plant_get(block).m_plantSpecies.isTree);
-	assert(blocks.plant_get(block).getGrowthPercent() >= Config::minimumPercentGrowthForWoodCutting);
+	assert(plants.getSpecies(blocks.plant_get(block)).isTree);
+	assert(plants.getPercentGrown(blocks.plant_get(block)) >= Config::minimumPercentGrowthForWoodCutting);
 	blocks.designation_set(block, m_faction, BlockDesignation::WoodCutting);
 	// To be called when block is no longer a suitable location, for example if it got crushed by a collapse.
 	std::unique_ptr<DishonorCallback> locationDishonorCallback = std::make_unique<WoodCuttingLocationDishonorCallback>(m_faction, m_area, block);

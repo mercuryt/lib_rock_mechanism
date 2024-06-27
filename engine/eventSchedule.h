@@ -13,41 +13,43 @@
 #include <cassert>
 
 class Simulation;
+class Area;
 
 class ScheduledEvent
 {
 public:
-	Simulation& m_simulation;
-	Step m_startStep;
-	Step m_step;
-	bool m_cancel;
+	Step m_startStep = 0;
+	Step m_step = 0;
+	bool m_cancel = false;
 	// If the value 0 is passed then the current step is used for start
 	// Passing a differernt start is for deserializing.
 	ScheduledEvent(Simulation& simulation, const Step delay, const Step start = 0);
-	void cancel();
-	virtual void execute() = 0;
-	virtual void clearReferences() = 0;
-	virtual void onCancel() { }
+	void cancel(Simulation& simulation, Area* area);
+	virtual void execute(Simulation& simulation, Area* area) = 0;
+	virtual void clearReferences(Simulation& simulation, Area* area) = 0;
+	virtual void onCancel(Simulation&, Area*) { }
 	virtual ~ScheduledEvent() = default;
-	[[nodiscard]] Percent percentComplete() const;
-	[[nodiscard]] float fractionComplete() const;
+	[[nodiscard]] Percent percentComplete(Simulation& simulation) const;
+	[[nodiscard]] float fractionComplete(Simulation& simulation) const;
 	[[nodiscard]] Step duration() const;
-	[[nodiscard]] Step remaningSteps() const;
-	[[nodiscard]] Step elapsedSteps() const;
+	[[nodiscard]] Step remaningSteps(Simulation& simulation) const;
+	[[nodiscard]] Step elapsedSteps(Simulation& simulation) const;
 	ScheduledEvent(const ScheduledEvent&) = delete;
 	ScheduledEvent(ScheduledEvent&&) = delete;
 };
 class EventSchedule
 {
 	Simulation& m_simulation;
-	Step m_lowestStepWithEventsScheduled;
+	Area* m_area;
+	Step m_lowestStepWithEventsScheduled = 0;
 public:
-	EventSchedule(Simulation& s) : m_simulation(s), m_lowestStepWithEventsScheduled(0) { }
+	EventSchedule(Simulation& s, Area* area) : m_simulation(s), m_area(area) { }
 	std::map<Step, std::list<std::unique_ptr<ScheduledEvent>>> m_data;
 	void schedule(std::unique_ptr<ScheduledEvent> scheduledEvent);
 	void unschedule(ScheduledEvent& scheduledEvent);
-	void execute(const Step stepNumber);
+	void doStep(const Step stepNumber);
 	Simulation& getSimulation() { return m_simulation; }
+	Area* getArea() { return m_area; }
 	[[nodiscard]] Step simulationStep() const;
 	// For testing.
 	[[maybe_unused, nodiscard]]uint32_t count();

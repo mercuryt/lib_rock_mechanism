@@ -1,88 +1,35 @@
 #include "blocks.h"
-#include "../item.h"
-#include "../actor.h"
+#include "../items/items.h"
 #include "../area.h"
 #include "../simulation.h"
 #include "../simulation/hasItems.h"
 #include "../types.h"
-void Blocks::item_add(BlockIndex index, Item& item)
+#include "../itemType.h"
+#include <iterator>
+void Blocks::item_record(BlockIndex index, ItemIndex item, CollisionVolume volume)
 {
-	//assert(m_block.m_hasShapes.canEnterEverWithAnyFacing(item));
-	auto& items = m_items.at(index);
-	assert(std::ranges::find(items, &item) == items.end());
-	if(item.m_itemType.generic)
-	{
-		auto found = std::ranges::find_if(items, [&](Item* otherItem) { return otherItem->m_itemType == item.m_itemType && otherItem->m_materialType == item.m_materialType; });
-		// Add to.
-		if(found != items.end())
-		{
-			(*found)->merge(item);
-			return;
-		}
-	}
-	items.push_back(&item);
-	shape_enter(index, item);
-	//TODO: optimize by storing underground status in item or shape to prevent repeted set insertions / removals.
-	if(m_underground[index])
-		m_area.m_hasItems.setItemIsNotOnSurface(item);
+	m_items.at(index).emplace_back(item, volume);
+	if(m_area.m_items.isStatic(item))
+		m_staticVolume.at(index) += volume;
 	else
-		m_area.m_hasItems.setItemIsOnSurface(item);
+		m_dynamicVolume.at(index) += volume;
 }
-void Blocks::item_remove(BlockIndex index, Item& item)
+void Blocks::item_erase(BlockIndex index, ItemIndex item)
 {
+	assert(m_area.m_items.getLocation(item) == index);
 	auto& items = m_items.at(index);
-	assert(std::ranges::find(items, &item) != items.end());
-	std::erase(items, &item);
-	shape_exit(index, item);
-}
-Item& Blocks::item_addGeneric(BlockIndex index, const ItemType& itemType, const MaterialType& materialType, Quantity quantity)
-{
-	assert(itemType.generic);
-	auto& items = m_items.at(index);
-	auto found = std::ranges::find_if(items, [&](Item* item) { return item->m_itemType == itemType && item->m_materialType == materialType; });
-	// Add to.
-	if(found != items.end())
-	{
-		shape_addQuantity(index, **found, quantity);
-		return **found;
-	}
-	// Create.
-	Item& item = m_area.m_simulation.m_hasItems->createItem({
-		.itemType=itemType,
-		.materialType=materialType,
-		.quantity=quantity,
-		.location=index,
-		.area=&m_area,
-	});
-	return item;
-}
-void Blocks::item_remove(BlockIndex index, const ItemType& itemType, const MaterialType& materialType, Quantity quantity)
-{
-	assert(itemType.generic);
-	auto& items = m_items.at(index);
-	auto found = std::ranges::find_if(items, [&](Item* item) { return item->m_itemType == itemType && item->m_materialType == materialType; });
+	auto found = std::ranges::find(items, item, &std::pair<ItemIndex, CollisionVolume>::first);
 	assert(found != items.end());
-	assert((*found)->getQuantity() >= quantity);
-	// Remove all.
-	if((*found)->getQuantity() == quantity)
-	{
-		item_remove(index, **found);
-		// TODO: don't remove if it's about to be readded, requires knowing destination / origin.
-		if(m_outdoors[index])
-			m_area.m_hasItems.setItemIsNotOnSurface(**found);
-	}
+	if(m_area.m_items.isStatic(item))
+		m_staticVolume.at(index) -= found->second;
 	else
-	{
-		// Remove some.
-		(*found)->removeQuantity(quantity);
-		(*found)->m_reservable.setMaxReservations((*found)->getQuantity());
-		shape_removeQuantity(index, **found, quantity);
-	}
+		m_dynamicVolume.at(index) -= found->second;
+	items.erase(found);
 }
 void Blocks::item_setTemperature(BlockIndex index, Temperature temperature)
 {
-	for(Item* item : m_items.at(index))
-		item->setTemperature(temperature);
+	for(auto [item, volume] : m_items.at(index))
+		m_area.m_items.setTemperature(item, temperature);
 }
 void Blocks::item_disperseAll(BlockIndex index)
 {
@@ -94,63 +41,90 @@ void Blocks::item_disperseAll(BlockIndex index)
 		if(!solid_is(otherIndex))
 			blocks.push_back(otherIndex);
 	auto copy = items;
-	for(Item* item : copy)
+	for(auto [item, volume] : copy)
 	{
 		//TODO: split up stacks of generics, prefer blocks with more empty space.
-		BlockIndex block = m_area.m_simulation.m_random.getInVector(blocks);
-		item->setLocation(block);
+		Random& random = m_area.m_simulation.m_random;
+		BlockIndex block = blocks.at(random.getInRange(0u, (uint)(blocks.size() - 1)));
+		m_area.m_items.setLocation(item, block);
 	}
 }
 uint32_t Blocks::item_getCount(BlockIndex index, const ItemType& itemType, const MaterialType& materialType) const
 {
-	auto& items = m_items.at(index);
-	auto found = std::ranges::find_if(items, [&](Item* item)
+	auto& itemsInBlock = m_items.at(index);
+	Items& items = m_area.m_items;
+	auto found = std::ranges::find_if(itemsInBlock, [&](auto pair)
 	{
-		return item->m_itemType == itemType && item->m_materialType == materialType;
+		ItemIndex item = pair.first;
+		return items.getItemType(item) == itemType && items.getMaterialType(item) == materialType;
 	});
-	if(found == items.end())
+	if(found == itemsInBlock.end())
 		return 0;
 	else
-		return (*found)->getQuantity();
+		return items.getQuantity(found->first);
 }
-Item& Blocks::item_getGeneric(BlockIndex index, const ItemType& itemType, const MaterialType& materialType) const
+ItemIndex Blocks::item_getGeneric(BlockIndex index, const ItemType& itemType, const MaterialType& materialType) const
 {
-	auto& items = m_items.at(index);
-	auto found = std::ranges::find_if(items, [&](Item* item) { return item->m_itemType == itemType && item->m_materialType == materialType; });
-	assert(found != items.end());
-	return **found;
+	auto& itemsInBlock = m_items.at(index);
+	Items& items = m_area.m_items;
+	auto found = std::ranges::find_if(itemsInBlock, [&](auto pair) { 
+		ItemIndex item = pair.first;
+		return items.getItemType(item) == itemType && items.getMaterialType(item) == materialType;
+	});
+	assert(found != itemsInBlock.end());
+	return found->first;
 }
 // TODO: buggy
 bool Blocks::item_hasInstalledType(BlockIndex index, const ItemType& itemType) const
 {
-	auto& items = m_items.at(index);
-	auto found = std::ranges::find_if(items, [&](Item* item) { return item->m_itemType == itemType; });
-	return found != items.end() && (*found)->m_installed;
+	auto& itemsInBlock = m_items.at(index);
+	Items& items = m_area.m_items;
+	auto found = std::ranges::find_if(itemsInBlock, [&](auto pair) { 
+		ItemIndex item = pair.first;
+		return items.getItemType(item) == itemType;
+	});
+	return found != itemsInBlock.end() && items.isInstalled(found->first);
 }
-bool Blocks::item_hasEmptyContainerWhichCanHoldFluidsCarryableBy(BlockIndex index, const Actor& actor) const
+bool Blocks::item_hasEmptyContainerWhichCanHoldFluidsCarryableBy(BlockIndex index, const ActorIndex actor) const
 {
-	for(const Item* item : m_items.at(index))
+	Items& items = m_area.m_items;
+	Actors& actors = m_area.m_actors;
+	for(auto [item, volume] : m_items.at(index))
+	{
+		const ItemType& itemType = items.getItemType(item);
 		//TODO: account for container weight when full, needs to have fluid type passed in.
-		if(item->m_itemType.internalVolume != 0 && item->m_itemType.canHoldFluids && actor.m_canPickup.canPickupAny(*item))
+		if(itemType.internalVolume != 0 && itemType.canHoldFluids && actors.canPickUp_anyWithMass(actor, items.getMass(item)))
 			return true;
+	}
 	return false;
 }
-bool Blocks::item_hasContainerContainingFluidTypeCarryableBy(BlockIndex index, const Actor& actor, const FluidType& fluidType) const
+bool Blocks::item_hasContainerContainingFluidTypeCarryableBy(BlockIndex index, const ActorIndex actor, const FluidType& fluidType) const
 {
-	for(const Item* item : m_items.at(index))
-		if(item->m_itemType.internalVolume != 0 && item->m_itemType.canHoldFluids && actor.m_canPickup.canPickupAny(*item) && item->m_hasCargo.getFluidType() == fluidType)
+	Items& items = m_area.m_items;
+	Actors& actors = m_area.m_actors;
+	for(auto [item, volume]  : m_items.at(index))
+	{
+		const ItemType& itemType = items.getItemType(item);
+		if(itemType.internalVolume != 0 && itemType.canHoldFluids &&
+			actors.canPickUp_anyWithMass(actor, items.getMass(item)) &&
+			items.cargo_getFluidType(item) == fluidType
+		)
 			return true;
+	}
 	return false;
 }
 bool Blocks::item_empty(BlockIndex index) const
 {
 	return m_items.at(index).empty();
 }
-std::vector<Item*>& Blocks::item_getAll(BlockIndex index)
+std::vector<ItemIndex> Blocks::item_getAll(BlockIndex index)
 {
-	return m_items[index];
+	std::vector<ItemIndex> output;
+	output.reserve(m_items.at(index).size());
+	std::ranges::transform(m_items.at(index), std::back_inserter(output), [](const auto& pair) -> ItemIndex { return pair.first; });
+	return output;
 }
-const std::vector<Item*>& Blocks::item_getAll(BlockIndex index) const
+const std::vector<ItemIndex> Blocks::item_getAll(BlockIndex index) const
 {
-	return m_items[index];
+	return const_cast<Blocks*>(this)->item_getAll(index);
 }

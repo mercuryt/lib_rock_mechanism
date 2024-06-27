@@ -1,136 +1,104 @@
 #include "givePlantsFluid.h"
-#include "../item.h"
 #include "../area.h"
-#include "../actor.h"
-#include "../item.h"
 #include "../config.h"
+#include "../itemType.h"
 #include "../deserializationMemo.h"
 #include "../eventSchedule.h"
 #include "../objective.h"
 #include "../reservable.h"
 #include "../simulation.h"
 #include "../simulation/hasItems.h"
+#include "actors/actors.h"
+#include "designations.h"
 #include "types.h"
 
 #include <memory>
-GivePlantsFluidEvent::GivePlantsFluidEvent(Step delay, GivePlantsFluidObjective& gpfo, const Step start) : 
-	ScheduledEvent(gpfo.m_actor.getSimulation(), delay, start), m_objective(gpfo) { }
-void GivePlantsFluidEvent::execute()
+GivePlantsFluidEvent::GivePlantsFluidEvent(Area& area, Step delay, GivePlantsFluidObjective& gpfo, const Step start) : 
+	ScheduledEvent(area.m_simulation, delay, start), m_objective(gpfo) { }
+void GivePlantsFluidEvent::execute(Simulation&, Area* area)
 {
-	auto& blocks = m_objective.m_actor.m_area->getBlocks();
+	Blocks& blocks = area->getBlocks();
 	if(!blocks.plant_exists(m_objective.m_plantLocation))
-			m_objective.cancel();
-	Plant& plant = blocks.plant_get(m_objective.m_plantLocation);
-	assert(m_objective.m_actor.m_canPickup.isCarryingFluidType(plant.m_plantSpecies.fluidType));
-	uint32_t quantity = std::min(plant.getVolumeFluidRequested(), m_objective.m_actor.m_canPickup.getFluidVolume());
-	plant.addFluid(quantity, m_objective.m_actor.m_canPickup.getFluidType());
-	m_objective.m_actor.m_canPickup.removeFluidVolume(quantity);
-	m_objective.m_actor.m_hasObjectives.objectiveComplete(m_objective);
+			m_objective.cancel(*area);
+	PlantIndex plant = blocks.plant_get(m_objective.m_plantLocation);
+	Actors& actors = area->getActors();
+	Plants& plants = area->getPlants();
+	assert(actors.canPickUp_isCarryingFluidType(m_objective.m_actor, plants.getSpecies(plant).fluidType));
+	uint32_t quantity = std::min(plants.getVolumeFluidRequested(plant), actors.canPickUp_getFluidVolume(m_objective.m_actor));
+	plants.addFluid(plant, quantity, actors.canPickUp_getFluidType(m_objective.m_actor));
+	actors.canPickUp_removeFluidVolume(m_objective.m_actor, quantity);
+	actors.objective_complete(m_objective.m_actor, m_objective);
 }
-void GivePlantsFluidEvent::clearReferences() { m_objective.m_event.clearPointer(); }
-void GivePlantsFluidEvent::onCancel()
+void GivePlantsFluidEvent::clearReferences(Simulation&, Area*) { m_objective.m_event.clearPointer(); }
+void GivePlantsFluidEvent::onCancel(Simulation&, Area* area)
 {
-	BlockIndex location = m_objective.m_actor.m_location;
-	auto& blocks = m_objective.m_actor.m_area->getBlocks();
-	if(blocks.plant_exists(location))
+	Blocks& blocks = area->getBlocks();
+	Actors& actors = area->getActors();
+	BlockIndex location = m_objective.m_plantLocation;
+	if(location != BLOCK_INDEX_MAX && blocks.plant_exists(location))
 	{
-		Plant& plant = blocks.plant_get(location);
-		m_objective.m_actor.m_area->m_hasFarmFields.at(*m_objective.m_actor.getFaction()).addGivePlantFluidDesignation(plant);
+		PlantIndex plant = blocks.plant_get(location);
+		area->m_hasFarmFields.at(*actors.getFaction(m_objective.m_actor)).addGivePlantFluidDesignation(plant);
 	}
 }
-GivePlantsFluidThreadedTask::GivePlantsFluidThreadedTask(GivePlantsFluidObjective& gpfo) : 
-	ThreadedTask(gpfo.m_actor.getThreadedTaskEngine()), m_objective(gpfo), m_findsPath(gpfo.m_actor, gpfo.m_detour) { }
-void GivePlantsFluidThreadedTask::readStep()
+GivePlantsFluidPathRequest::GivePlantsFluidPathRequest(Area& area, GivePlantsFluidObjective& objective) : m_objective(objective)
 {
-	Faction* faction = m_objective.m_actor.getFaction();
-	m_findsPath.m_maxRange = Config::maxRangeToSearchForHorticultureDesignations;
+	DistanceInBlocks maxRange = Config::maxRangeToSearchForHorticultureDesignations;
 	if(m_objective.m_plantLocation == BLOCK_INDEX_MAX)
 	{
-		auto& blocks = m_objective.m_actor.m_area->getBlocks();
-		std::function<bool(BlockIndex)> predicate = [&](BlockIndex block)
-		{
-			if(blocks.designation_has(block, *faction, BlockDesignation::GivePlantFluid))
-			{
-				m_plantLocation = block;
-				return true;
-			}
-			return false;
-		};
-		// TODO: Found path is not ever used.
-		m_findsPath.pathToUnreservedAdjacentToPredicate(predicate, *faction);
-		if(!m_findsPath.found())
-			return;
-		assert(m_plantLocation != BLOCK_INDEX_MAX);
-		assert(blocks.plant_exists(m_plantLocation));
+		bool unreserved = false;
+		createGoAdjacentToDesignation(area, m_objective.m_actor, BlockDesignation::GivePlantFluid, m_objective.m_detour, unreserved, maxRange);
 	}
-	else if(m_objective.m_fluidHaulingItem == nullptr)
+	else if(m_objective.m_fluidHaulingItem == ITEM_INDEX_MAX)
 	{
 		
-		std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return m_objective.canGetFluidHaulingItemAt(block); };
-		m_findsPath.pathToUnreservedAdjacentToPredicate(predicate, *faction);
+		std::function<bool(BlockIndex)> predicate = [this, &area](BlockIndex block) { return m_objective.canGetFluidHaulingItemAt(area, block); };
+		bool unreserved = false;
+		createGoAdjacentToCondition(area, m_objective.m_actor, predicate, m_objective.m_detour, unreserved, maxRange, BLOCK_DISTANCE_MAX);
 	}
 }
-void GivePlantsFluidThreadedTask::writeStep()
+void GivePlantsFluidPathRequest::callback(Area& area, FindPathResult result)
 {
-	Faction* faction = m_objective.m_actor.getFaction();
+	Actors& actors = area.getActors();
+	if(result.path.empty() && !result.useCurrentPosition)
+	{
+		actors.objective_canNotCompleteObjective(m_objective.m_actor, m_objective);
+		return;
+	}
+	Blocks& blocks = area.getBlocks();
+	Faction* faction = actors.getFaction(m_objective.m_actor);
 	if(m_objective.m_plantLocation == BLOCK_INDEX_MAX)
 	{
-		if(m_plantLocation == BLOCK_INDEX_MAX)
-			// No plant accessable.
-			m_objective.m_actor.m_hasObjectives.cannotFulfillObjective(m_objective);
+		if(blocks.designation_has(result.blockThatPassedPredicate, *faction, BlockDesignation::GivePlantFluid))
+			m_objective.selectPlantLocation(area, result.blockThatPassedPredicate);
 		else
-		{
-			m_objective.m_plantLocation = m_plantLocation;
-			m_objective.execute();
-		}
+			// Block which was to be selected is no longer avaliable, try again.
+			m_objective.makePathRequest(area);
 	}
-	else if(m_objective.m_fluidHaulingItem == nullptr)
+	else
 	{
-		if(!m_findsPath.found() && !m_findsPath.m_useCurrentLocation)
-		{
-			// No container avaliable.
-			m_objective.m_actor.m_hasObjectives.cannotFulfillObjective(m_objective);
-			return;
-		}
-		if(!m_findsPath.areAllBlocksAtDestinationReservable(faction))
-		{
-			// Selected location reserved already, try again.
-			m_objective.m_threadedTask.create(m_objective);
-			return;
-		}
-		Item* item = m_objective.getFluidHaulingItemAt(m_findsPath.getBlockWhichPassedPredicate());
-		if(item == nullptr || item->m_reservable.isFullyReserved(faction))
-		{
-			// Selected Item moved, destroyed or reserved, try again.
-			m_objective.m_threadedTask.create(m_objective);
-			return;
-		}
-		m_objective.select(*item);
-		if(m_findsPath.found())
-		{
-			m_findsPath.reserveBlocksAtDestination(m_objective.m_actor.m_canReserve);
-			m_objective.m_actor.m_canMove.setPath(m_findsPath.getPath());
-		}
+		assert(m_objective.m_fluidHaulingItem == ITEM_INDEX_MAX);
+		if(m_objective.canGetFluidHaulingItemAt(area, result.blockThatPassedPredicate))
+			m_objective.selectItem(area, m_objective.getFluidHaulingItemAt(area, result.blockThatPassedPredicate));
 		else
-		{
-			m_objective.m_actor.reserveOccupied(m_objective.m_actor.m_canReserve);
-			m_objective.execute();
-		}
+			// Item which was to be selected is no longer avaliable, try again.
+			m_objective.makePathRequest(area);
 	}
 }
-void GivePlantsFluidThreadedTask::clearReferences() { m_objective.m_threadedTask.clearPointer(); }
-bool GivePlantsFluidObjectiveType::canBeAssigned(Actor& actor) const
+bool GivePlantsFluidObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
 {
-	assert(actor.m_location != BLOCK_INDEX_MAX);
-	return actor.m_area->m_hasFarmFields.hasGivePlantsFluidDesignations(*actor.getFaction());
+	Actors& actors = area.m_actors;
+	assert(actors.getLocation(actor) != BLOCK_INDEX_MAX);
+	return area.m_hasFarmFields.hasGivePlantsFluidDesignations(*actors.getFaction(actor));
 }
-std::unique_ptr<Objective> GivePlantsFluidObjectiveType::makeFor(Actor& actor) const
+std::unique_ptr<Objective> GivePlantsFluidObjectiveType::makeFor(Area& area, ActorIndex actor) const
 {
-	return std::make_unique<GivePlantsFluidObjective>(actor);
+	return std::make_unique<GivePlantsFluidObjective>(area, actor);
 }
 // Objective
-GivePlantsFluidObjective::GivePlantsFluidObjective(Actor& a ) : 
-	Objective(a, Config::givePlantsFluidPriority), m_event(m_actor.getEventSchedule()), m_threadedTask(m_actor.getThreadedTaskEngine()) { }
+GivePlantsFluidObjective::GivePlantsFluidObjective(Area& area, ActorIndex a ) : 
+	Objective(a, Config::givePlantsFluidPriority), m_event(area.m_eventSchedule) { }
+/*
 GivePlantsFluidObjective::GivePlantsFluidObjective(const Json& data, DeserializationMemo& deserializationMemo) : 
 	Objective(data, deserializationMemo),
 	m_plantLocation(data.contains("plantLocation") ? data["plantLocation"].get<BlockIndex>() : BLOCK_INDEX_MAX),
@@ -155,135 +123,150 @@ Json GivePlantsFluidObjective::toJson() const
 		data["eventStart"] = m_event.getStartStep();
 	return data;
 }
+*/
 // Either get plant from Area::m_hasFarmFields or get the the nearest candidate.
 // This method and GivePlantsFluidThreadedTask are complimentary state machines, with this one handling syncronus tasks.
 // TODO: multi block actors.
-void GivePlantsFluidObjective::execute()
+void GivePlantsFluidObjective::execute(Area& area)
 {
-	auto& blocks = m_actor.m_area->getBlocks();
-	if(m_plantLocation == BLOCK_INDEX_MAX || !blocks.plant_exists(m_plantLocation) || blocks.plant_get(m_plantLocation).m_volumeFluidRequested == 0)
+	Blocks& blocks = area.getBlocks();
+	Actors& actors = area.getActors();
+	Plants& plants = area.getPlants();
+	Items& items = area.getItems();
+	if(m_plantLocation == BLOCK_INDEX_MAX || !blocks.plant_exists(m_plantLocation) || plants.getVolumeFluidRequested(blocks.plant_get(m_plantLocation)) == 0)
 	{
 		m_plantLocation = BLOCK_INDEX_MAX;
 		// Get high priority job from area.
-		Plant* plant = m_actor.m_area->m_hasFarmFields.getHighestPriorityPlantForGiveFluid(*m_actor.getFaction());
-		if(plant != nullptr)
+		PlantIndex plant = area.m_hasFarmFields.getHighestPriorityPlantForGiveFluid(*actors.getFaction(m_actor));
+		if(plant != PLANT_INDEX_MAX)
 		{
-			select(plant->m_location);
-			execute();
+			selectPlantLocation(area, plants.getLocation(plant));
+			execute(area);
 		}
 		else
 			// No high priority job found, find a suitable plant nearby.
-			m_threadedTask.create(*this);
+			makePathRequest(area);
 	}
-	else if(m_fluidHaulingItem == nullptr)
+	else if(m_fluidHaulingItem == ITEM_INDEX_MAX)
 	{
-		std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return canGetFluidHaulingItemAt(block); };
-		BlockIndex containerLocation = m_actor.getBlockWhichIsAdjacentWithPredicate(predicate);
+		std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return canGetFluidHaulingItemAt(area, block); };
+		BlockIndex containerLocation = actors.getBlockWhichIsAdjacentWithPredicate(m_actor, predicate);
 		if(containerLocation != BLOCK_INDEX_MAX)
 		{
-			select(*getFluidHaulingItemAt(containerLocation));
-			execute();
+			selectItem(area, getFluidHaulingItemAt(area, containerLocation));
+			execute(area);
 		}
 		else
 			// Find fluid hauling item.
-			m_threadedTask.create(*this);
+			makePathRequest(area);
 	}
-	else if(m_actor.m_canPickup.isCarrying(*m_fluidHaulingItem))
+	else if(actors.canPickUp_isCarryingItem(m_actor, m_fluidHaulingItem))
 	{
-		Plant& plant = blocks.plant_get(m_plantLocation);
+		PlantIndex plant = blocks.plant_get(m_plantLocation);
 		// Has fluid item.
-		if(m_actor.m_canPickup.getFluidVolume() != 0)
+		if(actors.canPickUp_getFluidVolume(m_actor) != 0)
 		{
-			assert(m_fluidHaulingItem->m_hasCargo.getFluidType() == plant.m_plantSpecies.fluidType);
+			assert(items.cargo_getFluidType(m_fluidHaulingItem) == plants.getSpecies(plant).fluidType);
 			// Has fluid.
-			if(m_actor.isAdjacentTo(plant))
+			if(actors.isAdjacentToPlant(m_actor, plant))
 				// At plant, begin giving.
 				m_event.schedule(Config::givePlantsFluidDelaySteps, *this);
 			else
 				// Go to plant.
-				m_actor.m_canMove.setDestinationAdjacentTo(plant, m_detour);
+				actors.move_setDestinationAdjacentToPlant(plant, m_detour);
 		}
 		else
 		{
-			std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return canFillAt(block); };
-			BlockIndex fillLocation = m_actor.getBlockWhichIsAdjacentWithPredicate(predicate);
+			std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return canFillAt(area, block); };
+			BlockIndex fillLocation = actors.getBlockWhichIsAdjacentWithPredicate(m_actor, predicate);
 			if(fillLocation != BLOCK_INDEX_MAX)
 			{
-				fillContainer(fillLocation);
+				fillContainer(area, fillLocation);
 				// Should clearAll be moved to before setDestination so we don't leave abandoned reservations when we repath?
 				// If so we need to re-reserve fluidHaulingItem.
-				m_actor.m_canReserve.deleteAllWithoutCallback();
+				actors.canReserve_clearAll(m_actor);
 				m_detour = false;
-				execute();
+				execute(area);
 			}
 			else
-				m_actor.m_canMove.setDestinationAdjacentTo(plant.m_plantSpecies.fluidType, m_detour);
+				actors.move_setDestinationAdjacentToFluidType(m_actor, plants.getSpecies(plant).fluidType, m_detour);
 		}
 	}
 	else
 	{
 		// Does not have fluid hauling item.
-		if(m_actor.isAdjacentTo(*m_fluidHaulingItem))
+		if(actors.isAdjacentToItem(m_actor, m_fluidHaulingItem))
 		{
 			// Pickup item.
-			m_actor.m_canPickup.pickUp(*m_fluidHaulingItem);
-			m_actor.m_canReserve.deleteAllWithoutCallback();
+			actors.canPickUp_pickUpItem(m_actor, m_fluidHaulingItem);
+			actors.canReserve_clearAll(m_actor);
 			m_detour = false;
-			execute();
+			execute(area);
 		}
 		else
-			m_actor.m_canMove.setDestinationAdjacentTo(*m_fluidHaulingItem, m_detour);
+			actors.move_setDestinationAdjacentToItem(m_actor, m_fluidHaulingItem, m_detour);
 	}
 }
-void GivePlantsFluidObjective::cancel()
+void GivePlantsFluidObjective::cancel(Area& area)
 {
 	m_event.maybeUnschedule();
-	m_threadedTask.maybeCancel();
+	Actors& actors = area.getActors();
+	actors.move_pathRequestMaybeCancel(m_actor);
 	if(m_plantLocation != BLOCK_INDEX_MAX)
 	{
-		auto& blocks = m_actor.m_area->getBlocks();
+		Blocks& blocks = area.getBlocks();
 		if(blocks.plant_exists(m_plantLocation))
 		{
-			Plant& plant = blocks.plant_get(m_plantLocation);
-			m_actor.m_area->m_hasFarmFields.at(*m_actor.getFaction()).addGivePlantFluidDesignation(plant);
+			PlantIndex plant = blocks.plant_get(m_plantLocation);
+			area.m_hasFarmFields.at(*actors.getFaction(m_actor)).addGivePlantFluidDesignation(plant);
 		}
 	}
 }
-void GivePlantsFluidObjective::select(BlockIndex block)
+void GivePlantsFluidObjective::selectPlantLocation(Area& area, BlockIndex block)
 {
-	auto& blocks = m_actor.m_area->getBlocks();
+	Blocks& blocks = area.getBlocks();
+	Actors& actors = area.getActors();
 	m_plantLocation = block;
-	blocks.reserve(m_plantLocation, m_actor.m_canReserve);
-	Plant& plant = blocks.plant_get(m_plantLocation);
-	m_actor.m_area->m_hasFarmFields.at(*m_actor.getFaction()).removeGivePlantFluidDesignation(plant);
+	actors.canReserve_reserveLocation(m_plantLocation, m_actor);
+	PlantIndex plant = blocks.plant_get(m_plantLocation);
+	area.m_hasFarmFields.at(*actors.getFaction(m_actor)).removeGivePlantFluidDesignation(plant);
 }
-void GivePlantsFluidObjective::select(Item& item)
+void GivePlantsFluidObjective::selectItem(Area& area, ItemIndex item)
 {
-	m_fluidHaulingItem = &item;
-	std::unique_ptr<DishonorCallback> callback = std::make_unique<CannotCompleteObjectiveDishonorCallback>(m_actor);
-	item.m_reservable.reserveFor(m_actor.m_canReserve, 1u, std::move(callback));
+	Actors& actors = area.getActors();
+	m_fluidHaulingItem = item;
+	std::unique_ptr<DishonorCallback> callback = std::make_unique<CannotCompleteObjectiveDishonorCallback>(area, m_actor);
+	actors.canReserve_reserveItem(m_fluidHaulingItem, m_actor);
 }
-void GivePlantsFluidObjective::reset()
+void GivePlantsFluidObjective::reset(Area& area)
 {
-	cancel();
+	cancel(area);
 	m_plantLocation = BLOCK_INDEX_MAX;
-	m_fluidHaulingItem = nullptr;
-	m_actor.m_canReserve.deleteAllWithoutCallback();
+	m_fluidHaulingItem = ITEM_INDEX_MAX;
+	Actors& actors = area.getActors();
+	actors.canReserve_clearAll(m_actor);
 }
-void GivePlantsFluidObjective::fillContainer(BlockIndex fillLocation)
+void GivePlantsFluidObjective::makePathRequest(Area& area)
+{
+	area.getActors().move_pathRequestRecord(m_actor, std::make_unique<GivePlantsFluidPathRequest>(area, *this));
+}
+void GivePlantsFluidObjective::fillContainer(Area& area, BlockIndex fillLocation)
 {
 	// TODO: delay.
-	auto& blocks = m_actor.m_area->getBlocks();
-	Plant& plant = blocks.plant_get(m_plantLocation);
-	Item& haulTool = m_actor.m_canPickup.getItem();
-	const FluidType& fluidType = plant.m_plantSpecies.fluidType;
-	Item* fillFromItem = getItemToFillFromAt(fillLocation);
-	Volume volume = haulTool.m_itemType.internalVolume;
-	if(fillFromItem != nullptr)
+	Actors& actors = area.getActors();
+	Blocks& blocks = area.getBlocks();
+	Plants& plants = area.getPlants();
+	Items& items = area.getItems();
+	PlantIndex plant = blocks.plant_get(m_plantLocation);
+	ItemIndex haulTool = actors.canPickUp_getItem(m_actor);
+	const FluidType& fluidType = plants.getSpecies(plant).fluidType;
+	ItemIndex fillFromItem = getItemToFillFromAt(area, fillLocation);
+	Volume volume = items.getItemType(haulTool).internalVolume;
+	if(fillFromItem != ITEM_INDEX_MAX)
 	{
-		assert(fillFromItem->m_hasCargo.getFluidType() == fluidType);
-		volume = std::min(volume, fillFromItem->m_hasCargo.getFluidVolume());
-		fillFromItem->m_hasCargo.removeFluidVolume(volume);
+		assert(items.cargo_getFluidType(fillFromItem) == fluidType);
+		volume = std::min(volume, items.cargo_getFluidVolume(fillFromItem));
+		items.cargo_removeFluid(fillFromItem, volume);
 	}
 	else
 	{
@@ -291,38 +274,43 @@ void GivePlantsFluidObjective::fillContainer(BlockIndex fillLocation)
 		blocks.fluid_remove(fillLocation, volume, fluidType);
 	}
 	assert(volume != 0);
-	haulTool.m_hasCargo.add(fluidType, volume);
+	items.cargo_addFluid(haulTool, fluidType, volume);
 }
-bool GivePlantsFluidObjective::canFillAt(BlockIndex block) const
+bool GivePlantsFluidObjective::canFillAt(Area& area, BlockIndex block) const
 {
 	assert(m_plantLocation != BLOCK_INDEX_MAX);
-	auto& blocks = m_actor.m_area->getBlocks();
-	const FluidType& fluidType = blocks.plant_get(m_plantLocation).m_plantSpecies.fluidType;
+	Blocks& blocks = area.getBlocks();
+	Plants& plants = area.getPlants();
+	const FluidType& fluidType = plants.getSpecies(blocks.plant_get(m_plantLocation)).fluidType;
 	return blocks.fluid_volumeOfTypeContains(block, fluidType) != 0 || 
-		const_cast<GivePlantsFluidObjective*>(this)->getItemToFillFromAt(block) != nullptr;
+		const_cast<GivePlantsFluidObjective*>(this)->getItemToFillFromAt(area, block) != ITEM_INDEX_MAX;
 }
-Item* GivePlantsFluidObjective::getItemToFillFromAt(BlockIndex block)
+ItemIndex GivePlantsFluidObjective::getItemToFillFromAt(Area& area, BlockIndex block)
 {
 	assert(m_plantLocation != BLOCK_INDEX_MAX);
-	assert(m_fluidHaulingItem != nullptr);
-	auto& blocks = m_actor.m_area->getBlocks();
-	const FluidType& fluidType = blocks.plant_get(m_plantLocation).m_plantSpecies.fluidType;
-	for(Item* item : blocks.item_getAll(block))
-		if(item->m_hasCargo.getFluidType() == fluidType)
+	assert(m_fluidHaulingItem != ITEM_INDEX_MAX);
+	Blocks& blocks = area.getBlocks();
+	Plants& plants = area.getPlants();
+	Items& items = area.getItems();
+	const FluidType& fluidType = plants.getSpecies(blocks.plant_get(m_plantLocation)).fluidType;
+	for(ItemIndex item : blocks.item_getAll(block))
+		if(items.cargo_getFluidType(item) == fluidType)
 				return item;
-	return nullptr;
+	return ITEM_INDEX_MAX;
 }
-bool GivePlantsFluidObjective::canGetFluidHaulingItemAt(BlockIndex block) const
+bool GivePlantsFluidObjective::canGetFluidHaulingItemAt(Area& area, BlockIndex block) const
 {
-	return const_cast<GivePlantsFluidObjective*>(this)->getFluidHaulingItemAt(block) != nullptr;
+	return const_cast<GivePlantsFluidObjective*>(this)->getFluidHaulingItemAt(area, block) != ITEM_INDEX_MAX;
 }
-Item* GivePlantsFluidObjective::getFluidHaulingItemAt(BlockIndex block)
+ItemIndex GivePlantsFluidObjective::getFluidHaulingItemAt(Area& area, BlockIndex block)
 {
 	assert(m_plantLocation != BLOCK_INDEX_MAX);
-	assert(m_fluidHaulingItem == nullptr);
-	auto& blocks = m_actor.m_area->getBlocks();
-	for(Item* item : blocks.item_getAll(block))
-		if(item->m_itemType.canHoldFluids && m_actor.m_canPickup.canPickupAny(*item) && !item->isWorkPiece())
+	assert(m_fluidHaulingItem == ITEM_INDEX_MAX);
+	Blocks& blocks = area.getBlocks();
+	Actors& actors = area.getActors();
+	Items& items = area.getItems();
+	for(ItemIndex item : blocks.item_getAll(block))
+		if(items.getItemType(item).canHoldFluids && actors.canPickUp_anyUnencomberedItem(m_actor, item) && !items.isWorkPiece(item))
 			return item;
-	return nullptr;
+	return ITEM_INDEX_MAX;
 }

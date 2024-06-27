@@ -21,7 +21,7 @@ public:
 	AreaHasFluidSources(Area& a) : m_area(a) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
-	void step();
+	void doStep();
 	void create(BlockIndex block, const FluidType& fluidType, Volume level);
 	void destroy(BlockIndex);
 	[[nodiscard]] bool contains(BlockIndex block) const;

@@ -1,5 +1,4 @@
 #include "haul.h"
-#include "actor.h"
 #include "config.h"
 #include "hasShape.h"
 #include "item.h"
@@ -57,308 +56,76 @@ std::string haulStrategyToName(HaulStrategy strategy)
 }
 void HaulSubprojectParamaters::reset()
 {
-	toHaul = nullptr;
+	toHaul.clear();
 	fluidType = nullptr;
 	quantity = 0;
 	strategy = HaulStrategy::None;
-	haulTool = nullptr;
-	beastOfBurden = nullptr;
+	haulTool = ITEM_INDEX_MAX;
+	beastOfBurden = ACTOR_INDEX_MAX;
 	projectRequirementCounts = nullptr;	
 }
 // Check that the haul strategy selected in read step is still valid in write step.
-bool HaulSubprojectParamaters::validate() const
+bool HaulSubprojectParamaters::validate(Area& area) const
 {
-	assert(toHaul != nullptr);
+	assert(toHaul.exists());
 	assert(quantity != 0);
 	assert(strategy != HaulStrategy::None);
 	assert(projectRequirementCounts != nullptr);
-	Faction& faction = *(*workers.begin())->getFaction();
-	for(Actor* worker : workers)
-		if(worker->m_reservable.isFullyReserved(&faction))
+	Faction& faction = *area.m_actors.getFaction(*workers.begin());
+	for(ActorIndex worker : workers)
+		if(area.m_actors.isFullyReserved(worker, &faction))
 			return false;
-	if(haulTool != nullptr && haulTool->m_reservable.isFullyReserved(&faction))
+	if(haulTool != ITEM_INDEX_MAX && area.m_items.isFullyReserved(haulTool, &faction))
 		return false;
-	if(beastOfBurden != nullptr && beastOfBurden->m_reservable.isFullyReserved(&faction))
+	if(beastOfBurden != ACTOR_INDEX_MAX && area.m_actors.isFullyReserved(beastOfBurden, &faction))
 		return false;
 	return true;
 }
-HaulSubprojectDishonorCallback::HaulSubprojectDishonorCallback(const Json data, DeserializationMemo& deserializationMemo) : 
+HaulSubprojectDishonorCallback::HaulSubprojectDishonorCallback(const Json data, DeserializationMemo& deserializationMemo) :
 	m_haulSubproject(*deserializationMemo.m_haulSubprojects.at(data["haulSubproject"])) { }
-CanPickup::CanPickup(const Json& data, Actor& a, Simulation& s) : m_actor(a)
+HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters) :
+	m_project(p), m_workers(paramaters.workers.begin(), paramaters.workers.end()), m_toHaul(paramaters.toHaul),
+       	m_quantity(paramaters.quantity), m_strategy(paramaters.strategy), m_haulTool(paramaters.haulTool),
+	m_beastOfBurden(paramaters.beastOfBurden), m_projectRequirementCounts(*paramaters.projectRequirementCounts)
 {
-	if(data.contains("carryingItem"))
-		m_carrying = &s.m_hasItems->getById(data["carryingItem"].get<ItemId>());
-	else if(data.contains("carryingActor"))
-		m_carrying = &s.m_hasActors->getById(data["carryingActor"].get<ActorId>());
-}
-Json CanPickup::toJson() const 
-{
-	Json data;
-	if(m_carrying != nullptr)
-	{
-		if(m_carrying->isItem())
-			data["carryingItem"] = static_cast<Item&>(*m_carrying).m_id;
-		else
-			data["carryingActor"] = static_cast<Actor&>(*m_carrying).m_id;
-	}
-	return data;
-}
-void CanPickup::pickUp(HasShape& hasShape, Quantity quantity)
-{
-	if(hasShape.isItem())
-		pickUp(static_cast<Item&>(hasShape), quantity);
-	else
-	{
-		assert(hasShape.isActor());
-		pickUp(static_cast<Actor&>(hasShape), quantity);
-	}
-}
-void CanPickup::pickUp(Item& item, Quantity quantity)
-{
-	assert(quantity <= item.getQuantity());
-	assert(quantity == 1 || item.m_itemType.generic);
-	item.m_reservable.maybeClearReservationFor(m_actor.m_canReserve);
-	if(quantity == item.getQuantity())
-	{
-		m_carrying = &item;
-		if(item.m_location != BLOCK_INDEX_MAX)
-			item.exit();
-	}
-	else
-	{
-		item.removeQuantity(quantity);
-		Item& newItem = m_actor.getSimulation().m_hasItems->createItem({
-			.itemType=item.m_itemType, 
-			.materialType=item.m_materialType, 
-			.quantity=quantity,
-			.area=m_actor.m_area,
-		});
-		m_carrying = &newItem;
-	}
-	m_actor.m_canMove.updateIndividualSpeed();
-}
-void CanPickup::pickUp(Actor& actor, [[maybe_unused]] Quantity quantity)
-{
-	assert(quantity == 1);
-	assert(!actor.m_mustSleep.isAwake() || actor.m_body.isInjured());
-	assert(m_carrying = nullptr);
-	actor.m_reservable.maybeClearReservationFor(m_actor.m_canReserve);
-	if(actor.m_location != BLOCK_INDEX_MAX)
-		actor.exit();
-	m_carrying = &actor;
-	m_actor.m_canMove.updateIndividualSpeed();
-}
-HasShape& CanPickup::putDown(BlockIndex location, Quantity quantity)
-{
-	assert(m_carrying != nullptr);
-	auto& blocks = m_actor.m_area->getBlocks();
-	if(quantity == 0)
-		quantity = m_carrying->isItem() ? getItem().getQuantity() : 1u;
-	if(m_carrying->isItem())
-		assert(quantity <= getItem().getQuantity());
-	HasShape* output = nullptr;
-	if(m_carrying->isGeneric())
-	{
-		Item& item = getItem();
-		if(item.getQuantity() == quantity)
-		{
-			m_carrying = nullptr;
-			if(blocks.item_getCount(location, item.m_itemType, item.m_materialType) == 0)
-			{
-				assert(item.m_area);
-				item.setLocation(location);
-				output = &item;
-			}
-			else
-				output = &blocks.item_addGeneric(location, item.m_itemType, item.m_materialType, quantity);
-		}
-		else
-		{
-			item.removeQuantity(quantity);
-			output = &blocks.item_addGeneric(location, item.m_itemType, item.m_materialType, quantity);
-		}
-	}
-	else
-	{
-		assert(m_carrying->m_area);
-		m_carrying->setLocation(location);
-		output = m_carrying;
-		m_carrying = nullptr;
-	}
-	m_actor.m_canMove.updateIndividualSpeed();
-	return *output;
-}
-HasShape* CanPickup::putDownIfAny(BlockIndex location)
-{
-	if(m_carrying != nullptr)
-		return &putDown(location);
-	return nullptr;
-}
-void CanPickup::removeFluidVolume(CollisionVolume volume)
-{
-	assert(m_carrying != nullptr);
-	assert(m_carrying->isItem());
-	Item& item = getItem();
-	assert(item.m_hasCargo.containsAnyFluid());
-	assert(item.m_hasCargo.getFluidVolume() >= volume);
-	item.m_hasCargo.removeFluidVolume(volume);
-}
-void CanPickup::add(const ItemType& itemType, const MaterialType& materialType, Quantity quantity)
-{
-	if(m_carrying == nullptr)
-		m_carrying = &m_actor.getSimulation().m_hasItems->createItem({
-			.itemType=itemType, 
-			.materialType=materialType, 
-			.quantity=quantity
-		});
-	else
-	{
-		assert(m_carrying->isItem());	
-		Item& item = static_cast<Item&>(*m_carrying);
-		assert(item.m_itemType.generic && item.m_itemType == itemType && item.m_materialType == materialType);
-		item.addQuantity(quantity);
-	}
-}
-void CanPickup::remove([[maybe_unused]] Item& item)
-{
-	assert(m_carrying == &item);
-	m_carrying = nullptr;
-}
-Item& CanPickup::getItem()
-{
-	assert(m_carrying != nullptr);
-	return static_cast<Item&>(*m_carrying);
-}
-Actor& CanPickup::getActor()
-{
-	assert(m_carrying != nullptr);
-	return static_cast<Actor&>(*m_carrying);
-}
-Quantity CanPickup::canPickupQuantityOf(const HasShape& hasShape) const
-{
-	return maximumNumberWhichCanBeCarriedWithMinimumSpeed(hasShape, 1);
-}
-Quantity CanPickup::canPickupQuantityOf(const ItemType& itemType, const MaterialType& materialType, Quantity max) const
-{
-	Mass unitMass = itemType.volume * materialType.density;
-	Quantity output = 1;
-	while(output < max)
-	{
-		if(!m_actor.m_canMove.getIndividualMoveSpeedWithAddedMass(unitMass * output))
-			return output - 1;
-		++output;
-	}
-	assert(output == max);
-	return output;
-}
-bool CanPickup::canPickupAny(const HasShape& hasShape) const
-{
-	return m_actor.m_canMove.getIndividualMoveSpeedWithAddedMass(hasShape.singleUnitMass()) > 0;
-}
-bool CanPickup::canPickupAnyUnencombered(const HasShape& hasShape) const
-{
-	return m_actor.m_canMove.getIndividualMoveSpeedWithAddedMass(hasShape.singleUnitMass()) == m_actor.m_canMove.getMoveSpeed();
-}
-bool CanPickup::isCarryingGeneric(const ItemType& itemType, const MaterialType& materialType, Quantity quantity) const
-{
-	if(m_carrying == nullptr || !m_carrying->isItem())
-		return false;
-	Item& item = const_cast<CanPickup&>(*this).getItem();
-	if(item.m_itemType != itemType)
-		return false;
-	if(item.m_materialType != materialType)
-		return false;
-	return item.getQuantity() >= quantity;
-}
-bool CanPickup::isCarryingFluidType(const FluidType& fluidType) const 
-{
-	if(m_carrying == nullptr)
-		return false;
-	Item& item = static_cast<Item&>(*m_carrying);
-	if(!item.m_hasCargo.containsAnyFluid())
-		return false;
-       	return item.m_hasCargo.getFluidType() == fluidType; 
-}
-const CollisionVolume& CanPickup::getFluidVolume() const 
-{ 
-	assert(m_carrying != nullptr);
-	Item& item = static_cast<Item&>(*m_carrying);
-	return item.m_hasCargo.getFluidVolume(); 
-}
-const FluidType& CanPickup::getFluidType() const 
-{ 
-	assert(m_carrying != nullptr);
-	Item& item = static_cast<Item&>(*m_carrying);
-	assert(item.m_hasCargo.containsAnyFluid());
-	return item.m_hasCargo.getFluidType(); 
-}
-bool CanPickup::isCarryingEmptyContainerWhichCanHoldFluid() const 
-{ 
-	if(m_carrying == nullptr)
-		return false;
-	assert(m_carrying->isItem());
-	Item& item = static_cast<Item&>(*m_carrying);
-	return item.m_itemType.canHoldFluids && item.m_hasCargo.empty(); 
-}
-Mass CanPickup::getMass() const
-{
-	if(m_carrying == nullptr)
-	{
-		constexpr static Mass zero = 0;
-		return zero;
-	}
-	return m_carrying->getMass();
-}
-Speed CanPickup::speedIfCarryingQuantity(const HasShape& hasShape, Quantity quantity) const
-{
-	assert(m_carrying == nullptr);
-	return m_actor.m_canMove.getIndividualMoveSpeedWithAddedMass(quantity * hasShape.singleUnitMass());
-}
-Quantity CanPickup::maximumNumberWhichCanBeCarriedWithMinimumSpeed(const HasShape& hasShape, Speed minimumSpeed) const
-{
-	assert(minimumSpeed != 0);
-	//TODO: replace iteration with calculation?
-	Quantity quantity = 0;
-	while(speedIfCarryingQuantity(hasShape, quantity + 1) >= minimumSpeed && quantity < hasShape.getQuantity())
-		quantity++;
-	return quantity;
-}
-HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters) : m_project(p), m_workers(paramaters.workers.begin(), paramaters.workers.end()), m_toHaul(*paramaters.toHaul), m_quantity(paramaters.quantity), m_strategy(paramaters.strategy), m_haulTool(paramaters.haulTool), m_leader(nullptr), m_itemIsMoving(false), m_beastOfBurden(paramaters.beastOfBurden), m_projectRequirementCounts(*paramaters.projectRequirementCounts), m_genericItemType(nullptr), m_genericMaterialType(nullptr)
-{ 
 	assert(!m_workers.empty());
-	if(m_haulTool != nullptr)
+	Area& area = m_project.m_area;
+	Items& items = area.m_items;
+	if(m_haulTool != ITEM_INDEX_MAX)
 	{
 		std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<HaulSubprojectDishonorCallback>(*this);
-		m_haulTool->m_reservable.reserveFor(m_project.m_canReserve, 1u, std::move(dishonorCallback));
+		items.reservable_reserve(m_haulTool, m_project.m_canReserve, 1u, std::move(dishonorCallback));
 	}
-	if(m_beastOfBurden != nullptr)
+	if(m_beastOfBurden != ACTOR_INDEX_MAX)
 	{
 		std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<HaulSubprojectDishonorCallback>(*this);
-		m_beastOfBurden->m_reservable.reserveFor(m_project.m_canReserve, 1u, std::move(dishonorCallback));
+		items.reservable_reserve(m_beastOfBurden, m_project.m_canReserve, 1u, std::move(dishonorCallback));
 	}
-	if(m_toHaul.isGeneric())
+	if(m_toHaul.isGeneric(area))
 	{
-		m_genericItemType = &static_cast<Item&>(m_toHaul).m_itemType;
-		m_genericMaterialType = &static_cast<Item&>(m_toHaul).m_materialType;
+		m_genericItemType = area.m_items.getItemType(m_toHaul.get());
+		m_genericMaterialType = area.m_items.getMaterialType(m_toHaul.get());
 	}
-	for(Actor* actor : m_workers)
+	for(ActorIndex actor : m_workers)
 	{
 		m_project.m_workers.at(actor).haulSubproject = this;
-		commandWorker(*actor);
+		commandWorker(actor);
 	}
 }
-HaulSubproject::HaulSubproject(const Json& data, Project& p, DeserializationMemo& deserializationMemo) : m_project(p), 
-	m_toHaul(data.contains("toHaulItem") ? static_cast<HasShape&>(deserializationMemo.itemReference(data["toHaulItem"])) : static_cast<HasShape&>(deserializationMemo.actorReference(data["toHaulActor"]))),
-	m_quantity(data["quantity"].get<Quantity>()), 
+/*
+HaulSubproject::HaulSubproject(const Json& data, Project& p, DeserializationMemo& deserializationMemo) :
+	m_project(p),
+	m_toHaul(data.contains("toHaulItem") ? static_cast<ActorOrItemIndex>(deserializationMemo.itemReference(data["toHaulItem"])) : static_cast<ActorOrItemIndex>(deserializationMemo.actorReference(data["toHaulActor"]))),
+	m_quantity(data["quantity"].get<Quantity>()),
 	m_strategy(haulStrategyFromName(data["haulStrategy"].get<std::string>())),
-	m_haulTool(nullptr), 
-	m_leader(nullptr), 
-	m_itemIsMoving(data["itemIsMoving"].get<bool>()), 
-	m_beastOfBurden(nullptr), 
+	m_haulTool(nullptr),
+	m_leader(nullptr),
+	m_itemIsMoving(data["itemIsMoving"].get<bool>()),
+	m_beastOfBurden(nullptr),
 	m_projectRequirementCounts(deserializationMemo.projectRequirementCountsReference(data["requirementCounts"])),
-       	m_genericItemType(nullptr), 
+       	m_genericItemType(nullptr),
 	m_genericMaterialType(nullptr)
-{ 
+{
 	if(data.contains("haulTool"))
 		m_haulTool = &deserializationMemo.m_simulation.m_hasItems->getById(data["haulTool"].get<ItemId>());
 	if(data.contains("leader"))
@@ -378,8 +145,8 @@ HaulSubproject::HaulSubproject(const Json& data, Project& p, DeserializationMemo
 	if(data.contains("liftPoints"))
 		for(const Json& liftPointData : data["liftPoints"])
 		{
-			Actor& actor = deserializationMemo.m_simulation.m_hasActors->getById(liftPointData[0].get<ActorId>());
-			m_liftPoints[&actor] = liftPointData[1].get<BlockIndex>();
+			ActorIndex actor = deserializationMemo.m_simulation.m_hasActors->getById(liftPointData[0].get<ActorId>());
+			m_liftPoints[actor] = liftPointData[1].get<BlockIndex>();
 		}
 	deserializationMemo.m_haulSubprojects[data["address"].get<uintptr_t>()] = this;
 }
@@ -393,11 +160,11 @@ Json HaulSubproject::toJson() const
 		{"requirementCounts", reinterpret_cast<uintptr_t>(&m_projectRequirementCounts)},
 	});
 	if(m_toHaul.isItem())
-		data["toHaulItem"] = static_cast<Item&>(m_toHaul).m_id;
+		data["toHaulItem"] = static_cast<ItemIndex>(m_toHaul).m_id;
 	else
 	{
 		assert(m_toHaul.isActor());
-		data["toHaulActor"] = static_cast<Actor&>(m_toHaul).m_id;
+		data["toHaulActor"] = static_cast<ActorIndex>(m_toHaul).m_id;
 	}
 	if(m_haulTool != nullptr)
 		data["haulTool"] = m_haulTool->m_id;
@@ -412,13 +179,13 @@ Json HaulSubproject::toJson() const
 	if(!m_workers.empty())
 	{
 		data["workers"] = Json::array();
-		for(Actor* worker : m_workers)
+		for(ActorIndex worker : m_workers)
 			data["workers"].push_back(worker->m_id);
 	}
 	if(!m_nonsentients.empty())
 	{
 		data["nonsentients"] = Json::array();
-		for(Actor* nonsentient : m_nonsentients)
+		for(ActorIndex nonsentient : m_nonsentients)
 			data["nonsentients"].push_back(nonsentient->m_id);
 	}
 	if(!m_liftPoints.empty())
@@ -429,136 +196,142 @@ Json HaulSubproject::toJson() const
 	}
 	return data;
 }
-void HaulSubproject::commandWorker(Actor& actor)
+*/
+void HaulSubproject::commandWorker(ActorIndex actor)
 {
-	assert(m_workers.contains(&actor));
-	assert(actor.m_hasObjectives.hasCurrent());
-	auto& blocks = actor.m_area->getBlocks();
-	Objective& objective = m_project.m_workers.at(&actor).objective;
+	assert(m_workers.contains(actor));
+	Objective& objective = m_project.m_workers.at(actor).objective;
 	bool detour = objective.m_detour;
 	bool hasCargo = false;
+	Area& area = m_project.m_area;
+	Actors& actors = area.m_actors;
+	Items& items = area.m_items;
+	assert(actors.objective_exists(actor));
+	auto& blocks = actors.getBlocks(actor);
+	BlockIndex actorLocation = actors.getLocation(actor);
+	Faction& faction = m_project.getFaction();
 	switch(m_strategy)
 	{
 		case HaulStrategy::Individual:
 			assert(m_workers.size() == 1);
-			hasCargo = m_genericItemType != nullptr ? 
-				actor.m_canPickup.isCarryingGeneric(*m_genericItemType, *m_genericMaterialType, m_quantity) :
-				actor.m_canPickup.isCarrying(m_toHaul);
+			hasCargo = m_genericItemType != nullptr ?
+				actors.canPickUp_isCarryingItemGeneric(actor, *m_genericItemType, *m_genericMaterialType, m_quantity) :
+				actors.canPickUp_isCarryingPolymorphic(actor, m_toHaul);
 			if(hasCargo)
 			{
-				if(actor.isAdjacentTo(m_project.m_location))
+				if(actors.isAdjacentToLocation(actor, m_project.m_location))
 				{
 					// Unload
-					HasShape& cargo = actor.m_canPickup.putDown(actor.m_location, m_quantity);
+					ActorOrItemIndex cargo = actors.canPickUp_putDownItem(actor, actorLocation, m_quantity);
 					complete(cargo);
 				}
 				else
-					actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
+					actors.move_setDestinationAdjacentToLocation(actor, m_project.m_location, detour);
 			}
 			else
 			{
-				if(actor.isAdjacentTo(m_toHaul))
+				if(m_toHaul.isAdjacentToActor(actor))
 				{
-					actor.m_canReserve.deleteAllWithoutCallback();
-					m_toHaul.m_reservable.clearReservationFor(m_project.m_canReserve, m_quantity);
-					actor.m_canPickup.pickUp(m_toHaul, m_quantity);
-					// From here on out we cannot use m_toHaul unless we test for generic.
-					commandWorker(actor);
+					actors.canReserve_clearAll(actor);
+					m_toHaul.reservable_unreserve(area, m_project.m_canReserve);
+					actors.canPickUp_pickUp(actor, m_toHaul, m_quantity);
+					commandWorker(area, actor);
 				}
 				else
-					actor.m_canMove.setDestinationAdjacentTo(m_toHaul, detour);
+					actors.move_setDestinationAdjacentTo(m_toHaul, detour);
 			}
 			break;
 		case HaulStrategy::IndividualCargoIsCart:
 			assert(m_workers.size() == 1);
-			if(actor.m_canLead.isLeading(m_toHaul))
+			if(actors.isLeadingPolymorphic(actor, m_toHaul))
 			{
-				if(actor.isAdjacentTo(m_project.m_location))
+				BlockIndex projectLocation = m_project.m_location;
+				if(actors.isAdjacentToLocation(actor, projectLocation))
 				{
 					// Unload
-					m_toHaul.m_canFollow.unfollow();
+					m_toHaul.unfollow(area);
 					complete(m_toHaul);
 				}
 				else
-					actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
+					actors.move_setDestinationAdjacentToLocation(actor, projectLocation);
 			}
 			else
 			{
-				if(actor.isAdjacentTo(m_toHaul))
+				if(m_toHaul.isAdjacentToActor(area, actor))
 				{
-					actor.m_canReserve.deleteAllWithoutCallback();
-					m_toHaul.m_reservable.clearReservationFor(m_project.m_canReserve, m_quantity);
-					m_toHaul.m_canFollow.follow(actor.m_canLead, true);
-					commandWorker(actor);
+					actors.unreserveAll(actor);
+					m_toHaul.reservable_unreserve(area, m_project.m_canReserve, m_quantity);
+					m_toHaul.follow(area, actors.getCanLead(actor), true);
+					commandWorker(area, actor);
 				}
 				else
-					actor.m_canMove.setDestinationAdjacentTo(m_toHaul, detour);
+					actors.move_setDestinationAdjacentToPolymorphic(actor, m_toHaul, detour);
 			}
 			break;
 		case HaulStrategy::Team:
 			// TODO: teams of more then 2, requires muliple followers.
 			assert(m_workers.size() == 2);
-			if(m_leader == nullptr)
-				m_leader = &actor;
+			if(m_leader == ACTOR_INDEX_MAX)
+				m_leader = actor;
 			if(m_itemIsMoving)
 			{
-				assert(&actor == m_leader);
-				if(actor.isAdjacentTo(m_project.m_location))
+				assert(actor == m_leader);
+				if(actors.isAdjacentToLocation(actor, m_project.m_location))
 				{
 					// At destination.
-					m_toHaul.m_canFollow.unfollow();
-					for(Actor* actor : m_workers)
+					m_toHaul.unfollow(area);
+					for(ActorIndex actor : m_workers)
 						if(actor != m_leader)
-							actor->m_canFollow.unfollow();
-					m_toHaul.setLocation(actor.m_location);
+							actors.unfollow(actor);
+					m_toHaul.setLocationAndFacing(area, actorLocation, 0);
 					complete(m_toHaul);
 				}
 				else
-					actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
+					actors.move_setDestinationAdjacentToLocation(actor, m_project.m_location, detour);
 			}
-			else 
+			else
 			{
 				// Item is not moving.
-				if(m_liftPoints.contains(&actor))
+				if(m_liftPoints.contains(actor))
 				{
 					// A lift point exists.
-					if(actor.m_location == m_liftPoints.at(&actor))
+					if(actorLocation == m_liftPoints.at(actor))
 					{
 						// Actor is at lift point.
 						if(allWorkersAreAdjacentTo(m_toHaul))
 						{
 							// All actors are at lift points.
-							m_toHaul.m_canFollow.follow(m_leader->m_canLead);
-							for(Actor* follower : m_workers)
+							m_toHaul.follow(area, actors.getCanLead(m_leader));
+							for(ActorIndex follower : m_workers)
 							{
 								if(follower != m_leader)
-									follower->m_canFollow.follow(m_toHaul.m_canLead);
-								follower->m_canReserve.deleteAllWithoutCallback();
+									actors.follow(follower, m_toHaul.getCanLead(area));
+								actors.canReserve_clearAll(follower);
 							}
-							m_leader->m_canReserve.deleteAllWithoutCallback();
-							m_leader->m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
+							actors.canReserve_clearAll(m_leader);
+							actors.move_setDestinationAdjacentToLocation(m_leader, m_project.m_location, detour);
 							m_itemIsMoving = true;
-							m_toHaul.m_reservable.clearReservationFor(m_project.m_canReserve, m_quantity);
+							m_toHaul.reservable_unreserve(area, m_project.m_canReserve, m_quantity);
 						}
 					}
 					else
 						// Actor is not at lift point.
 						// destination, detour, adjacent, unreserved, reserve
-						actor.m_canMove.setDestination(m_liftPoints.at(&actor), detour, false, false, false);
+						actors.move_setDestination(m_liftPoints.at(actor), detour);
 				}
 				else
 				{
 					// No lift point exists for this actor, find one.
 					// TODO: move this logic to tryToSetHaulStrategy?
-					for(BlockIndex block : m_toHaul.getAdjacentBlocks())
+					for(BlockIndex block : m_toHaul.getAdjacentBlocks(area))
 					{
 						Facing facing = blocks.facingToSetWhenEnteringFrom(m_project.m_location, block);
-						if(blocks.shape_canEnterEverWithFacing(block, actor, facing) && !blocks.isReserved(block, *actor.getFaction()))
+						if(blocks.shape_canEnterEverWithFacing(block, actor, facing) && !blocks.isReserved(block, faction))
 						{
-							m_liftPoints[&actor] = block;
-							blocks.reserve(block, actor.m_canReserve);
+							m_liftPoints[actor] = block;
+							blocks.reserve(block, actors.getCanReserve(actor));
 							// Destination, detour, adjacent, unreserved, reserve
-							actor.m_canMove.setDestination(block, detour, false, false, false);
+							actors.move_setDestination(actor, block, detour);
 							return;
 						}
 					}
@@ -568,301 +341,301 @@ void HaulSubproject::commandWorker(Actor& actor)
 			break;
 			//TODO: Reserve destinations?
 		case HaulStrategy::Cart:
-			assert(m_haulTool != nullptr);
-			if(actor.m_canLead.isLeading(*m_haulTool))
+			assert(m_haulTool != ITEM_INDEX_MAX);
+			if(actors.isLeadingPolymorphic(m_haulTool))
 			{
 				// Has cart.
-				hasCargo = m_genericItemType != nullptr ? 
-					m_haulTool->m_hasCargo.containsGeneric(*m_genericItemType, *m_genericMaterialType, m_quantity) :
-					m_haulTool->m_hasCargo.contains(m_toHaul);
+				hasCargo = m_genericItemType != nullptr ?
+					items.cargo_containsGeneric(m_haulTool, *m_genericItemType, *m_genericMaterialType, m_quantity) :
+					items.cargo_contains(m_haulTool, m_toHaul);
 				if(hasCargo)
 				{
 					// Cart is loaded.
-					if(actor.isAdjacentTo(m_project.m_location))
+					if(actors.isAdjacentToLocation(actor, m_project.m_location))
 					{
 						// At drop off point.
-						m_haulTool->m_canFollow.unfollow();
-						HasShape* delivered = nullptr;
+						items.unfollow(m_haulTool);
+						ActorOrItemIndex delivered;
 						if(m_genericItemType == nullptr)
 						{
-							m_haulTool->m_hasCargo.unloadTo(m_toHaul, m_project.m_location);
-							delivered = &m_toHaul;
+							items.cargo_unloadToPolymorphic(m_haulTool, m_toHaul, m_project.m_location);
+							delivered = m_toHaul;
 						}
 						else
-							delivered = &m_haulTool->m_hasCargo.unloadGenericTo(*m_genericItemType, *m_genericMaterialType, m_quantity, actor.m_location);
+							delivered = items.cargo_unloadGenericTo(m_haulTool, *m_genericItemType, *m_genericMaterialType, m_quantity, actorLocation);
 						// TODO: set rotation?
-						assert(delivered != nullptr);
-						complete(*delivered);
+						assert(delivered.exists());
+						complete(delivered);
 					}
 					else
 						// Go to drop off point.
-						actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
+						actors.move_setDestinationAdjacentToLocation(actor, m_project.m_location, detour);
 				}
 				else
 				{
 					// Cart not loaded.
-					if(actor.isAdjacentTo(m_toHaul))
+					if(m_toHaul.isAdjacentToActor(area, actor))
 					{
 						// Can load here.
 						//TODO: set delay for loading.
-						m_toHaul.m_reservable.maybeClearReservationFor(m_project.m_canReserve, m_quantity);
-						m_haulTool->m_hasCargo.load(m_toHaul, m_quantity);
-						actor.m_canReserve.deleteAllWithoutCallback();
-						actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
+						items.reservable_maybeUnreserve(m_toHaul, m_project.m_canReserve, m_quantity);
+						items.cargo_loadPolymorphyc(m_toHaul, m_quantity);
+						actors.unreserveAll(actor);
+						actors.move_setDestinationAdjacentToLocation(actor, m_project.m_location, detour);
 					}
 					else
 						// Go somewhere to load.
-						actor.m_canMove.setDestinationAdjacentTo(m_toHaul, detour);
+						actors.move_setDestinationAdjacentToPolymorphic(m_toHaul, detour);
 				}
 			}
 			else
 			{
 				// Don't have Cart.
-				if(actor.isAdjacentTo(*m_haulTool))
+				if(actors.isAdjacentToItem(m_haulTool))
 				{
 					// Cart is here.
-					m_haulTool->m_canFollow.follow(actor.m_canLead);
-					actor.m_canReserve.deleteAllWithoutCallback();
-					actor.m_canMove.setDestinationAdjacentTo(m_toHaul, detour);
+					items.follow(m_haulTool, actors.getCanLead(actor));
+					actors.unreserveAll(actor);
+					actors.move_setDestinationAdjacentToPolymorphic(actor, m_toHaul, detour);
 				}
 				else
 					// Go to cart.
-					actor.m_canMove.setDestinationAdjacentTo(*m_haulTool, detour);
+					actors.move_setDestinationAdjacentToItem(actor, m_haulTool, detour);
 
 			}
 			break;
 		case HaulStrategy::Panniers:
-			assert(m_beastOfBurden != nullptr);
-			assert(m_haulTool != nullptr);
-			if(m_beastOfBurden->m_equipmentSet.contains(*m_haulTool))
+			assert(m_beastOfBurden != ACTOR_INDEX_MAX);
+			assert(m_haulTool != ITEM_INDEX_MAX);
+			if(actors.getEquipmentSet(m_beastOfBurden).contains(m_haulTool))
 			{
 				// Beast has panniers.
-				hasCargo = m_genericItemType != nullptr ? 
-					m_haulTool->m_hasCargo.containsGeneric(*m_genericItemType, *m_genericMaterialType, m_quantity) :
-					m_haulTool->m_hasCargo.contains(m_toHaul);
+				hasCargo = m_genericItemType != nullptr ?
+					items.cargo_containsGeneric(m_haulTool, *m_genericItemType, *m_genericMaterialType, m_quantity) :
+					items.cargo_contains(m_haulTool, m_toHaul);
 				if(hasCargo)
 				{
 					// Panniers have cargo.
-					if(actor.isAdjacentTo(m_project.m_location))
+					if(actors.isAdjacentToLocation(actor, m_project.m_location))
 					{
 						// Actor is at destination.
-						HasShape* delivered = nullptr;
+						ActorOrItemIndex delivered;
 						//TODO: unloading delay.
 						if(m_genericItemType == nullptr)
 						{
-							m_haulTool->m_hasCargo.unloadTo(m_toHaul, actor.m_location);
-							delivered = &m_toHaul;
+							items.cargo_unloadToPolymorphic(m_toHaul, actorLocation);
+							delivered = m_toHaul;
 						}
 						else
 						{
-							delivered = &m_haulTool->m_hasCargo.unloadGenericTo(*m_genericItemType, *m_genericMaterialType, m_quantity, actor.m_location);
+							delivered = items.cargo_unloadGenericTo(m_haulTool, *m_genericItemType, *m_genericMaterialType, m_quantity, actorLocation);
 						}
 						// TODO: set rotation?
-						m_beastOfBurden->m_canFollow.unfollow();
-						complete(*delivered);
+						actors.unfollow(m_beastOfBurden);
+						complete(delivered);
 					}
 					else
-						actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
+						actors.move_setDestinationAdjacentToLocation(actor, m_project.m_location, detour);
 				}
 				else
 				{
 					// Panniers don't have cargo.
-					if(actor.isAdjacentTo(m_toHaul))
+					if(m_toHaul.isAdjacentToActor(area, actor))
 					{
 						// Actor is at pickup location.
 						// TODO: loading delay.
-						m_toHaul.m_reservable.maybeClearReservationFor(m_project.m_canReserve, m_quantity);
-						m_haulTool->m_hasCargo.load(m_toHaul, m_quantity);
-						actor.m_canReserve.deleteAllWithoutCallback();
-						actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
+						items.reservable_maybeUnreserve(m_toHaul, m_project.m_canReserve, m_quantity);
+						items.cargo_loadPolymorphyc(m_toHaul, m_quantity);
+						actors.unreserveAll(actor);
+						actors.move_setDestinationAdjacentToLocation(actor, m_project.m_location, detour);
 					}
 					else
-						actor.m_canMove.setDestinationAdjacentTo(m_toHaul, detour);
+						actors.move_setDestinationAdjacentToPolymorphic(actor, m_toHaul, detour);
 				}
 			}
 			else
 			{
 				// Get beast panniers.
-				if(actor.m_canPickup.isCarrying(*m_haulTool))
+				if(actors.canPickUp_isCarryingItem(m_haulTool))
 				{
 					// Actor has panniers.
-					if(actor.isAdjacentTo(*m_beastOfBurden))
+					if(actors.isAdjacentToActor(actor, m_beastOfBurden))
 					{
 						// Actor can put on panniers.
-						actor.m_canPickup.remove(*m_haulTool);
-						m_beastOfBurden->m_equipmentSet.addEquipment(*m_haulTool);
-						m_beastOfBurden->m_canFollow.follow(actor.m_canLead);
-						actor.m_canReserve.deleteAllWithoutCallback();
-						actor.m_canMove.setDestinationAdjacentTo(m_toHaul, detour);
+						actors.canPickUp_canPickUpItem(actor, m_haulTool);
+						actors.getEquipmentSet(m_beastOfBurden).addEquipment(m_haulTool);
+						actors.follow(m_beastOfBurden, actors.getCanLead(actor));
+						actors.unreserveAll(actor);
+						actors.move_setDestinationAdjacentToPolymorphic(actor, m_toHaul, detour);
 					}
 					else
-						actor.m_canMove.setDestinationAdjacentTo(*m_beastOfBurden, detour);
+						actors.move_setDestinationAdjacentToActor(actor, m_beastOfBurden, detour);
 				}
 				else
 				{
 					// Bring panniers to beast.
 					// TODO: move to adjacent to panniers.
-					if(actor.isAdjacentTo(m_haulTool->m_location))
+					if(actors.isAdjacentToLocation(items.getLocation(m_haulTool)))
 					{
-						actor.m_canPickup.pickUp(*m_haulTool, 1u);
-						actor.m_canReserve.deleteAllWithoutCallback();
-						actor.m_canMove.setDestinationAdjacentTo(*m_beastOfBurden, detour);
+						actors.canPickUp_pickUp(actor, m_haulTool);
+						actors.unreserveAll(actor);
+						actors.move_setDestinationAdjacentToActor(actor, m_beastOfBurden, detour);
 					}
 					else
-						actor.m_canMove.setDestinationAdjacentTo(*m_haulTool, detour);
+						actors.move_setDesitinationAdjacentTo(actor, m_haulTool, detour);
 				}
 
 			}
 			break;
 		case HaulStrategy::AnimalCart:
 			//TODO: what if already attached to a different cart?
-			assert(m_beastOfBurden != nullptr);
-			assert(m_haulTool != nullptr);
-			if(m_beastOfBurden->m_canLead.isLeading(*m_haulTool))
+			assert(m_beastOfBurden != ACTOR_INDEX_MAX);
+			assert(m_haulTool != ITEM_INDEX_MAX);
+			if(actors.isLeadingPolymorphic(m_beastOfBurden, m_haulTool))
 			{
 				// Beast has cart.
-				hasCargo = m_genericItemType != nullptr ? 
-					m_haulTool->m_hasCargo.containsGeneric(*m_genericItemType, *m_genericMaterialType, m_quantity) :
-					m_haulTool->m_hasCargo.contains(m_toHaul);
+				hasCargo = m_genericItemType != nullptr ?
+					items.cargo_containsGeneric(m_haulTool, *m_genericItemType, *m_genericMaterialType, m_quantity) :
+					items.cargo_contains(m_haulTool, m_toHaul);
 				if(hasCargo)
 				{
 					// Cart has cargo.
-					if(actor.isAdjacentTo(m_project.m_location))
+					if(actors.isAdjacentToLocation(actor, m_project.m_location))
 					{
 						// Actor is at destination.
 						//TODO: unloading delay.
 						//TODO: unfollow cart?
-						HasShape* delivered = nullptr;
+						ActorOrItemIndex delivered;
 						if(m_genericItemType == nullptr)
 						{
-							m_haulTool->m_hasCargo.unloadTo(m_toHaul, actor.m_location);
-							delivered = &m_toHaul;
+							items.cargo_unloadToPolymorphic(m_toHaul, actorLocation);
+							delivered = m_toHaul;
 						}
 						else
-							delivered = &m_haulTool->m_hasCargo.unloadGenericTo(*m_genericItemType, *m_genericMaterialType, m_quantity, actor.m_location);
+							delivered = items.cargo_unloadGenericTo(m_haulTool, *m_genericItemType, *m_genericMaterialType, m_quantity, actorLocation);
 						// TODO: set rotation?
-						m_beastOfBurden->m_canFollow.unfollow();
-						complete(*delivered);
+						actors.unfollow(m_beastOfBurden);
+						complete(delivered);
 					}
 					else
-						actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
+						actors.move_setDestinationAdjacentToLocation(actor, m_project.m_location, detour);
 				}
 				else
 				{
 					// Cart doesn't have cargo.
-					if(actor.isAdjacentTo(m_toHaul))
+					if(m_toHaul.isAdjacentToActor(area, actor))
 					{
 						// Actor is at pickup location.
 						// TODO: loading delay.
-						m_toHaul.m_reservable.maybeClearReservationFor(m_project.m_canReserve);
-						m_haulTool->m_hasCargo.load(m_toHaul, m_quantity);
-						actor.m_canReserve.deleteAllWithoutCallback();
-						actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
+						items.reservable_maybeUnreserve(m_toHaul, m_project.m_canReserve);
+						items.cargo_loadPolymorphyc(m_toHaul, m_quantity);
+						actors.unreserveAll(actor);
+						actors.move_setDestinationAdjacentToLocation(actor, m_project.m_location, detour);
 					}
 					else
-						actor.m_canMove.setDestinationAdjacentTo(m_toHaul, detour);
+						actors.move_setDestinationAdjacentToPolymorphic(actor, m_toHaul, detour);
 				}
 			}
 			else
 			{
 				// Bring beast to cart.
-				if(actor.m_canLead.isLeading(*m_beastOfBurden))
+				if(actors.isLeading(actor, m_beastOfBurden))
 				{
 					// Actor has beast.
-					if(actor.isAdjacentTo(*m_haulTool))
+					if(actors.isAdjacentToItem(m_haulTool))
 					{
 						// Actor can harness beast to item.
 						// Don't check if item is adjacent to beast, allow it to teleport.
 						// TODO: Make not teleport.
-						m_haulTool->m_canFollow.follow(m_beastOfBurden->m_canLead, false);
+						items.follow(actors.getCanLead(m_beastOfBurden), false);
 						// Skip adjacent check, potentially teleport.
-						actor.m_canReserve.deleteAllWithoutCallback();
-						actor.m_canMove.setDestinationAdjacentTo(m_toHaul, detour);
+						actors.unreserveAll(actor);
+						actors.move_setDestinationAdjacentToPolymorphic(actor, m_toHaul, detour);
 					}
 					else
-						actor.m_canMove.setDestinationAdjacentTo(*m_haulTool, detour);
+						actors.move_setDesitinationAdjacentTo(actor, m_haulTool, detour);
 				}
 				else
 				{
 					// Get beast.
-					if(actor.isAdjacentTo(*m_beastOfBurden))
+					if(actors.isAdjacentToActor(actor, m_beastOfBurden))
 					{
-						m_beastOfBurden->m_canFollow.follow(actor.m_canLead);
-						actor.m_canReserve.deleteAllWithoutCallback();
-						m_beastOfBurden->m_canReserve.deleteAllWithoutCallback();
-						actor.m_canMove.setDestinationAdjacentTo(*m_haulTool, detour);
+						actors.follow(m_beastOfBurden, actors.getCanLead(actor));
+						actors.unreserveAll(actor);
+						actors.unreserveAll(m_beastOfBurden);
+						actors.move_setDesitinationAdjacentTo(actor, m_haulTool, detour);
 					}
 					else
-						actor.m_canMove.setDestinationAdjacentTo(*m_beastOfBurden, detour);
+						actors.move_setDestinationAdjacentToActor(actor, m_beastOfBurden, detour);
 				}
 
 			}
 			break;
 		case HaulStrategy::TeamCart:
-			assert(m_haulTool != nullptr);
+			assert(m_haulTool != ITEM_INDEX_MAX);
 			// TODO: teams of more then 2, requires muliple followers.
 			assert(m_workers.size() == 2);
-			if(m_leader == nullptr)
-				m_leader = &actor;
-			if(actor.m_canLead.isLeading(*m_haulTool))
+			if(m_leader == ACTOR_INDEX_MAX)
+				m_leader = actor;
+			if(actors.isLeadingItem(actor, m_haulTool))
 			{
-				assert(&actor == m_leader);
-				hasCargo = m_genericItemType != nullptr ? 
-					m_haulTool->m_hasCargo.containsGeneric(*m_genericItemType, *m_genericMaterialType, m_quantity) :
-					m_haulTool->m_hasCargo.contains(m_toHaul);
+				assert(actor == m_leader);
+				hasCargo = m_genericItemType != nullptr ?
+					items.cargo_containsGeneric(m_haulTool, *m_genericItemType, *m_genericMaterialType, m_quantity) :
+					items.cargo_contains(m_haulTool, m_toHaul);
 				if(hasCargo)
 				{
-					if(actor.isAdjacentTo(m_project.m_location))
+					if(actors.isAdjacentToLocation(actor, m_project.m_location))
 					{
-						HasShape* delivered = nullptr;
+						ActorOrItemIndex delivered;
 						if(m_genericItemType == nullptr)
 						{
-							m_haulTool->m_hasCargo.unloadTo(m_toHaul, actor.m_location);
-							delivered = &m_toHaul;
+							items.cargo_unloadToPolymorphic(m_toHaul, actorLocation);
+							delivered = m_toHaul;
 						}
 						else
-							delivered = &m_haulTool->m_hasCargo.unloadGenericTo(*m_genericItemType, *m_genericMaterialType, m_quantity, actor.m_location);
+							delivered = items.cargo_unloadGenericTo(m_haulTool, *m_genericItemType, *m_genericMaterialType, m_quantity, actorLocation);
 						// TODO: set rotation?
-						m_leader->m_canFollow.disband();
-						complete(*delivered);
+						actors.disbandLeadAndFollow(m_leader);
+						complete(delivered);
 					}
 					else
-						actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
+						actors.move_setDestinationAdjacentToLocation(actor, m_project.m_location, detour);
 				}
 				else
 				{
-					if(actor.isAdjacentTo(m_toHaul))
+					if(m_toHaul.isAdjacentToActor(area, actor))
 					{
 						//TODO: set delay for loading.
-						m_toHaul.m_reservable.maybeClearReservationFor(m_project.m_canReserve);
-						m_haulTool->m_hasCargo.load(m_toHaul, m_quantity);
-						actor.m_canReserve.deleteAllWithoutCallback();
-						actor.m_canMove.setDestinationAdjacentTo(m_project.m_location, detour);
+						items.reservable_maybeUnreserve(m_toHaul, m_project.m_canReserve);
+						items.cargo_loadPolymorphyc(m_toHaul, m_quantity);
+						actors.unreserveAll(actor);
+						actors.move_setDestinationAdjacentToLocation(actor, m_project.m_location, detour);
 					}
 					else
-						actor.m_canMove.setDestinationAdjacentTo(m_toHaul, detour);
+						actors.move_setDestinationAdjacentToPolymorphic(actor, m_toHaul, detour);
 				}
 			}
-			else if(actor.isAdjacentTo(*m_haulTool))
+			else if(actors.isAdjacentToItem(m_haulTool))
 			{
-				if(allWorkersAreAdjacentTo(*m_haulTool))
+				if(allWorkersAreAdjacentTo(area, m_haulTool))
 				{
 					// All actors are adjacent to the haul tool.
-					m_haulTool->m_canFollow.follow(m_leader->m_canLead);
-					for(Actor* follower : m_workers)
+					items.followActor(m_haulTool, m_leader);
+					for(ActorIndex follower : m_workers)
 					{
 						if(follower != m_leader)
-							follower->m_canFollow.follow(m_haulTool->m_canLead);
-						follower->m_canReserve.deleteAllWithoutCallback();
+							actors.followItem(follower, m_haulTool);
+						actors.canReserve_clearAll(follower);
 					}
-					m_leader->m_canReserve.deleteAllWithoutCallback();
-					m_leader->m_canMove.setDestinationAdjacentTo(m_toHaul, detour);
-				} 
+					actors.canReserve_clearAll(m_leader);
+					actors.move_setDestinationAdjacentToItem(m_leader, m_toHaul, detour);
+				}
 			}
 			else
 			{
-				actor.m_canReserve.deleteAllWithoutCallback();
-				actor.m_canMove.setDestinationAdjacentTo(*m_haulTool, detour);
+				actors.unreserveAll(actor);
+				actors.move_setDesitinationAdjacentTo(actor, m_haulTool, detour);
 			}
 			break;
 		case HaulStrategy::StrongSentient:
@@ -872,26 +645,30 @@ void HaulSubproject::commandWorker(Actor& actor)
 			assert(false); // this method should only be called after a strategy is choosen.
 	}
 }
-void HaulSubproject::addWorker(Actor& actor)
+void HaulSubproject::addWorker(ActorIndex actor)
 {
-	assert(!m_workers.contains(&actor));
-	m_workers.insert(&actor);
-	commandWorker(actor);
+	assert(!m_workers.contains(actor));
+	m_workers.insert(actor);
+	commandWorker(m_project.m_area, actor);
 }
-void HaulSubproject::removeWorker([[maybe_unused]] Actor& actor)
+void HaulSubproject::removeWorker(ActorIndex actor)
 {
-	assert(m_workers.contains(&actor));
+	assert(m_workers.contains(actor));
 	cancel();
 }
 void HaulSubproject::cancel()
 {
 	m_project.haulSubprojectCancel(*this);
 }
-bool HaulSubproject::allWorkersAreAdjacentTo(HasShape& hasShape)
+bool HaulSubproject::allWorkersAreAdjacentTo(ActorOrItemIndex actorOrItem)
 {
-	return std::all_of(m_workers.begin(), m_workers.end(), [&](Actor* worker) { return worker->isAdjacentTo(hasShape); });
+	return std::all_of(m_workers.begin(), m_workers.end(), [&](ActorIndex worker) { return actorOrItem.isAdjacentToActor(area, worker); });
 }
-HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& project, HasShape& toHaul, Actor& worker)
+bool HaulSubproject::allWorkersAreAdjacentTo(ItemIndex index)
+{
+	return std::all_of(m_workers.begin(), m_workers.end(), [&](ActorIndex worker) { return area.m_items.isAdjacentToActor(index, worker); });
+}
+HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& project, ActorOrItemIndex toHaul, ActorIndex worker)
 {
 	// TODO: make exception for slow haul if very close.
 	HaulSubprojectParamaters output;
@@ -899,7 +676,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 	output.projectRequirementCounts = project.m_toPickup.at(&toHaul).first;
 	Quantity maxQuantityRequested = project.m_toPickup.at(&toHaul).second;
 	Speed minimumSpeed = project.getMinimumHaulSpeed();
-	std::vector<Actor*> workers;
+	std::vector<ActorIndex> workers;
 	// TODO: shouldn't this be m_waiting?
 	for(auto& pair : project.m_workers)
 		workers.push_back(pair.first);
@@ -909,8 +686,8 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 	if(toHaul.getMoveType() == wheeled)
 	{
 		assert(toHaul.isItem());
-		Item& haulableItem = static_cast<Item&>(toHaul);
-		std::vector<const HasShape*> list{&worker, &toHaul};
+		ItemIndex haulableItem = static_cast<ItemIndex>(toHaul);
+		std::vector<const ActorOrItemIndex> list{&worker, &toHaul};
 		if(CanLead::getMoveSpeedForGroup(list) >= minimumSpeed)
 		{
 			output.strategy = HaulStrategy::IndividualCargoIsCart;
@@ -949,7 +726,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 		output.quantity = 1;
 		return output;
 	}
-	Item* haulTool = worker.m_area->m_hasHaulTools.getToolToHaul(*worker.getFaction(), toHaul);
+	ItemIndex haulTool = worker.m_area->m_hasHaulTools.getToolToHaul(*worker.getFaction(), toHaul);
 	// Cart
 	if(haulTool != nullptr)
 	{
@@ -964,7 +741,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 			return output;
 		}
 		// Animal Cart
-		Actor* yoked = worker.m_area->m_hasHaulTools.getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(*worker.getFaction(), *haulTool, toHaul.getMass(), minimumSpeed);
+		ActorIndex yoked = worker.m_area->m_hasHaulTools.getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(*worker.getFaction(), *haulTool, toHaul.getMass(), minimumSpeed);
 		if(yoked != nullptr)
 		{
 			maxQuantityCanCarry = maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(worker, *yoked, *haulTool, toHaul, minimumSpeed);
@@ -990,11 +767,11 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 		}
 	}
 	// Panniers
-	Actor* pannierBearer = worker.m_area->m_hasHaulTools.getPannierBearerToHaulCargoWithMassWithMinimumSpeed(*worker.getFaction(), toHaul, minimumSpeed);
+	ActorIndex pannierBearer = worker.m_area->m_hasHaulTools.getPannierBearerToHaulCargoWithMassWithMinimumSpeed(*worker.getFaction(), toHaul, minimumSpeed);
 	if(pannierBearer != nullptr)
 	{
 		//TODO: If pannierBearer already has panniers equiped then use those, otherwise find ones to use. Same for animalCart.
-		Item* panniers = worker.m_area->m_hasHaulTools.getPanniersForActorToHaul(*worker.getFaction(), *pannierBearer, toHaul);
+		ItemIndex panniers = worker.m_area->m_hasHaulTools.getPanniersForActorToHaul(*worker.getFaction(), *pannierBearer, toHaul);
 		if(panniers != nullptr)
 		{
 			maxQuantityCanCarry = maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniersAndAnimal(worker, *pannierBearer, *panniers, toHaul, minimumSpeed);
@@ -1012,7 +789,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 	assert(output.strategy == HaulStrategy::None);
 	return output;
 }
-void HaulSubproject::complete(HasShape& delivered)
+void HaulSubproject::complete(ActorOrItemIndex delivered)
 {
 	if(m_haulTool != nullptr)
 		m_haulTool->m_reservable.clearReservationFor(m_project.m_canReserve);
@@ -1023,29 +800,29 @@ void HaulSubproject::complete(HasShape& delivered)
 	if(delivered.isItem())
 	{
 		if(m_projectRequirementCounts.consumed)
-			m_project.m_toConsume.insert(static_cast<Item*>(&delivered));
-		if(static_cast<Item&>(delivered).isWorkPiece())
+			m_project.m_toConsume.insert(static_cast<ItemIndex>(&delivered));
+		if(static_cast<ItemIndex>(delivered).isWorkPiece())
 			delivered.setLocation(m_project.m_location);
 	}
-	for(Actor* worker : m_workers)
+	for(ActorIndex worker : m_workers)
 		worker->m_canReserve.deleteAllWithoutCallback();
 	delivered.m_reservable.reserveFor(m_project.m_canReserve, m_quantity);
-	std::vector<Actor*> workers(m_workers.begin(), m_workers.end());
+	std::vector<ActorIndex> workers(m_workers.begin(), m_workers.end());
 	Project& project = m_project;
-	m_project.m_deliveredItems.push_back(static_cast<Item*>(&delivered));
+	m_project.m_deliveredItems.push_back(static_cast<ItemIndex>(&delivered));
 	m_project.onDelivered(delivered);
 	m_project.m_haulSubprojects.remove(*this);
-	for(Actor* worker : workers)
+	for(ActorIndex worker : workers)
 	{
 		project.m_workers.at(worker).haulSubproject = nullptr;
 		project.commandWorker(*worker);
 	}
 }
 // Class method.
-std::vector<Actor*> HaulSubproject::actorsNeededToHaulAtMinimumSpeed(const Project& project, Actor& leader, const HasShape& toHaul)
+std::vector<ActorIndex> HaulSubproject::actorsNeededToHaulAtMinimumSpeed(const Project& project, ActorIndex leader, const ActorOrItemIndex toHaul)
 {
-	std::vector<const HasShape*> actorsAndItems;
-	std::vector<Actor*> output;
+	std::vector<const ActorOrItemIndex> actorsAndItems;
+	std::vector<ActorIndex> output;
 	output.push_back(&leader);
 	actorsAndItems.push_back(&leader);
 	actorsAndItems.push_back(&toHaul);
@@ -1068,16 +845,16 @@ std::vector<Actor*> HaulSubproject::actorsNeededToHaulAtMinimumSpeed(const Proje
 	return output;
 }
 //Class method.
-Speed HaulSubproject::getSpeedWithHaulToolAndCargo(const Actor& leader, const Item& haulTool, const HasShape& toHaul, Quantity quantity)
+Speed HaulSubproject::getSpeedWithHaulToolAndCargo(const ActorIndex leader, const ItemIndex haulTool, const ActorOrItemIndex toHaul, Quantity quantity)
 {
-	std::vector<const HasShape*> actorsAndItems;
+	std::vector<const ActorOrItemIndex> actorsAndItems;
 	actorsAndItems.push_back(&leader);
 	actorsAndItems.push_back(&haulTool);
 	// actorsAndItems, rollingMass, deadMass
 	return CanLead::getMoveSpeedForGroupWithAddedMass(actorsAndItems, toHaul.singleUnitMass() * quantity, 0);
 }
 // Class method.
-Quantity HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(const Actor& leader, const Item& haulTool, const HasShape& toHaul, Speed minimumSpeed)
+Quantity HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(const ActorIndex leader, const ItemIndex haulTool, const ActorOrItemIndex toHaul, Speed minimumSpeed)
 {
 	assert(minimumSpeed != 0);
 	Quantity quantity = 0;
@@ -1086,9 +863,9 @@ Quantity HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(con
 	return quantity;
 }
 // Class method.
-Speed HaulSubproject::getSpeedWithHaulToolAndAnimal(const Actor& leader, const Actor& yoked, const Item& haulTool, const HasShape& toHaul, Quantity quantity)
+Speed HaulSubproject::getSpeedWithHaulToolAndAnimal(const ActorIndex leader, const ActorIndex yoked, const ItemIndex haulTool, const ActorOrItemIndex toHaul, Quantity quantity)
 {
-	std::vector<const HasShape*> actorsAndItems;
+	std::vector<const ActorOrItemIndex> actorsAndItems;
 	actorsAndItems.push_back(&leader);
 	actorsAndItems.push_back(&yoked);
 	actorsAndItems.push_back(&haulTool);
@@ -1096,7 +873,7 @@ Speed HaulSubproject::getSpeedWithHaulToolAndAnimal(const Actor& leader, const A
 	return CanLead::getMoveSpeedForGroupWithAddedMass(actorsAndItems, toHaul.singleUnitMass() * quantity, 0);
 }
 // Class method.
-Speed HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(const Actor& leader, Actor& yoked, const Item& haulTool, const HasShape& toHaul, Speed minimumSpeed)
+Speed HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(const ActorIndex leader, ActorIndex yoked, const ItemIndex haulTool, const ActorOrItemIndex toHaul, Speed minimumSpeed)
 {
 	assert(minimumSpeed != 0);
 	Quantity quantity = 0;
@@ -1105,10 +882,10 @@ Speed HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnim
 	return quantity;
 }
 // Class method.
-std::vector<Actor*> HaulSubproject::actorsNeededToHaulAtMinimumSpeedWithTool(const Project& project, Actor& leader, const HasShape& toHaul, const Item& haulTool)
+std::vector<ActorIndex> HaulSubproject::actorsNeededToHaulAtMinimumSpeedWithTool(const Project& project, ActorIndex leader, const ActorOrItemIndex toHaul, const ItemIndex haulTool)
 {
-	std::vector<const HasShape*> actorsAndItems;
-	std::vector<Actor*> output;
+	std::vector<const ActorOrItemIndex> actorsAndItems;
+	std::vector<ActorIndex> output;
 	output.push_back(&leader);
 	actorsAndItems.push_back(&leader);
 	actorsAndItems.push_back(&haulTool);
@@ -1123,7 +900,7 @@ std::vector<Actor*> HaulSubproject::actorsNeededToHaulAtMinimumSpeedWithTool(con
 			break;
 		actorsAndItems.push_back(actor);
 		// If to haul is also haul tool then there is no cargo, we are hauling the haulTool itself.
-		Mass mass = &toHaul == &static_cast<const HasShape&>(haulTool) ? 0 : toHaul.singleUnitMass();
+		Mass mass = &toHaul == &static_cast<const ActorOrItemIndex>(haulTool) ? 0 : toHaul.singleUnitMass();
 		Speed speed = CanLead::getMoveSpeedForGroupWithAddedMass(actorsAndItems, mass);
 		if(speed >= project.getMinimumHaulSpeed())
 			return output;
@@ -1133,16 +910,16 @@ std::vector<Actor*> HaulSubproject::actorsNeededToHaulAtMinimumSpeedWithTool(con
 	return output;
 }
 // Class method.
-Speed HaulSubproject::getSpeedWithPannierBearerAndPanniers(const Actor& leader, const Actor& pannierBearer, const Item& panniers, const HasShape& toHaul, Quantity quantity)
+Speed HaulSubproject::getSpeedWithPannierBearerAndPanniers(const ActorIndex leader, const ActorIndex pannierBearer, const ItemIndex panniers, const ActorOrItemIndex toHaul, Quantity quantity)
 {
-	std::vector<const HasShape*> actorsAndItems;
+	std::vector<const ActorOrItemIndex> actorsAndItems;
 	actorsAndItems.push_back(&leader);
 	actorsAndItems.push_back(&pannierBearer);
 	// actorsAndItems, rollingMass, deadMass
 	return CanLead::getMoveSpeedForGroupWithAddedMass(actorsAndItems, 0, (toHaul.singleUnitMass() * quantity) + panniers.getMass());
 }
 // Class method.
-Quantity HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniersAndAnimal(const Actor& leader, const Actor& pannierBearer, const Item& panniers, const HasShape& toHaul, Speed minimumSpeed)
+Quantity HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniersAndAnimal(const ActorIndex leader, const ActorIndex pannierBearer, const ItemIndex panniers, const ActorOrItemIndex toHaul, Speed minimumSpeed)
 {
 	assert(minimumSpeed != 0);
 	Quantity quantity = 0;
@@ -1151,15 +928,15 @@ Quantity HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniers
 	return quantity;
 }
 //TODO: optimize?
-bool AreaHasHaulTools::hasToolToHaul(Faction& faction, const HasShape& hasShape) const
+bool AreaHasHaulTools::hasToolToHaul(Faction& faction, const ActorOrItemIndex hasShape) const
 {
 	return getToolToHaul(faction, hasShape) != nullptr;
 }
-Item* AreaHasHaulTools::getToolToHaul(Faction& faction, const HasShape& hasShape) const
+ItemIndex AreaHasHaulTools::getToolToHaul(Faction& faction, const ActorOrItemIndex hasShape) const
 {
 	// Items like panniers also have internal volume but aren't relevent for this method.
 	static const MoveType& none = MoveType::byName("none");
-	for(Item* item : m_haulTools)
+	for(ItemIndex item : m_haulTools)
 		if(item->m_itemType.moveType != none && !item->m_reservable.isFullyReserved(&faction) && item->m_itemType.internalVolume >= hasShape.getVolume())
 			return item;
 	return nullptr;
@@ -1168,58 +945,58 @@ bool AreaHasHaulTools::hasToolToHaulFluid(Faction& faction) const
 {
 	return getToolToHaulFluid(faction) != nullptr;
 }
-Item* AreaHasHaulTools::getToolToHaulFluid(Faction& faction) const
+ItemIndex AreaHasHaulTools::getToolToHaulFluid(Faction& faction) const
 {
-	for(Item* item : m_haulTools)
+	for(ItemIndex item : m_haulTools)
 		if(!item->m_reservable.isFullyReserved(&faction) && item->m_itemType.canHoldFluids)
 			return item;
 	return nullptr;
 }
-Actor* AreaHasHaulTools::getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(Faction& faction, const Item& haulTool, Mass cargoMass, Speed minimumHaulSpeed) const
+ActorIndex AreaHasHaulTools::getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(Faction& faction, const ItemIndex haulTool, Mass cargoMass, Speed minimumHaulSpeed) const
 {
 	[[maybe_unused]] static const MoveType& rollingType = MoveType::byName("roll");
 	assert(haulTool.m_itemType.moveType == rollingType);
-	for(Actor* actor : m_yolkableActors)
+	for(ActorIndex actor : m_yolkableActors)
 	{
-		std::vector<const HasShape*> shapes = { actor, &haulTool };
+		std::vector<const ActorOrItemIndex> shapes = { actor, &haulTool };
 		if(!actor->m_reservable.isFullyReserved(&faction) && minimumHaulSpeed <= actor->m_canLead.getMoveSpeedForGroupWithAddedMass(shapes, cargoMass))
 			return actor;
 	}
 	return nullptr;
 }
-Actor* AreaHasHaulTools::getPannierBearerToHaulCargoWithMassWithMinimumSpeed(Faction& faction, const HasShape& hasShape, Speed minimumHaulSpeed) const
+ActorIndex AreaHasHaulTools::getPannierBearerToHaulCargoWithMassWithMinimumSpeed(Faction& faction, const ActorOrItemIndex hasShape, Speed minimumHaulSpeed) const
 {
 	//TODO: Account for pannier mass?
-	for(Actor* actor : m_yolkableActors)
+	for(ActorIndex actor : m_yolkableActors)
 		if(!actor->m_reservable.isFullyReserved(&faction) && minimumHaulSpeed <= actor->m_canPickup.speedIfCarryingQuantity(hasShape, 1u))
 			return actor;
 	return nullptr;
 }
-Item* AreaHasHaulTools::getPanniersForActorToHaul(Faction& faction, const Actor& actor, const HasShape& toHaul) const
+ItemIndex AreaHasHaulTools::getPanniersForActorToHaul(Faction& faction, const ActorIndex actor, const ActorOrItemIndex toHaul) const
 {
-	for(Item* item : m_haulTools)
+	for(ItemIndex item : m_haulTools)
 		if(!item->m_reservable.isFullyReserved(&faction) && item->m_itemType.internalVolume >= toHaul.getVolume() && actor.m_equipmentSet.canEquipCurrently(*item))
 			return item;
 	return nullptr;
 }
-void AreaHasHaulTools::registerHaulTool(Item& item)
+void AreaHasHaulTools::registerHaulTool(ItemIndex item)
 {
 	assert(!m_haulTools.contains(&item));
 	assert(item.m_itemType.internalVolume != 0);
 	m_haulTools.insert(&item);
 }
-void AreaHasHaulTools::registerYokeableActor(Actor& actor)
+void AreaHasHaulTools::registerYokeableActor(ActorIndex actor)
 {
-	assert(!m_yolkableActors.contains(&actor));
-	m_yolkableActors.insert(&actor);
+	assert(!m_yolkableActors.contains(actor));
+	m_yolkableActors.insert(actor);
 }
-void AreaHasHaulTools::unregisterHaulTool(Item& item)
+void AreaHasHaulTools::unregisterHaulTool(ItemIndex item)
 {
 	assert(m_haulTools.contains(&item));
 	m_haulTools.erase(&item);
 }
-void AreaHasHaulTools::unregisterYokeableActor(Actor& actor)
+void AreaHasHaulTools::unregisterYokeableActor(ActorIndex actor)
 {
-	assert(m_yolkableActors.contains(&actor));
-	m_yolkableActors.erase(&actor);
+	assert(m_yolkableActors.contains(actor));
+	m_yolkableActors.erase(actor);
 }

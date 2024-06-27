@@ -1,13 +1,12 @@
 #include "findsPath.h"
-#include "hasShape.h"
 #include "types.h"
 #include "area.h"
 #include <utility>
-FindsPath::FindsPath(const HasShape& hs, bool detour) : 
-	m_hasShape(hs), m_detour(detour) { }
+FindsPath::FindsPath(Area& area, const Shape& shape, const MoveType& moveType, BlockIndex start, Facing facing, bool detour):
+	m_area(area), m_shape(shape), m_moveType(moveType), m_start(start), m_startFacing(facing), m_detour(detour) { }
 void FindsPath::pathToBlock(BlockIndex destination)
 {
-	std::function<bool(BlockIndex, Facing)> predicate = [&](BlockIndex location, [[maybe_unused]] Facing facing) { return location == destination; };
+	std::function<bool(BlockIndex, Facing)> predicate = [&](BlockIndex location, Facing) { return location == destination; };
 	pathToPredicateWithHuristicDestination(predicate, destination);
 }
 void FindsPath::pathAdjacentToBlock(BlockIndex target)
@@ -15,7 +14,7 @@ void FindsPath::pathAdjacentToBlock(BlockIndex target)
 	std::function<bool(BlockIndex, Facing facing)> predicate = [&](BlockIndex location, Facing facing)
 	{
 		std::function<bool(BlockIndex)> isTarget = [&](BlockIndex adjacent) { return adjacent == target; };
-		BlockIndex adjacent = const_cast<HasShape&>(m_hasShape).getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(location, facing, isTarget);
+		BlockIndex adjacent = m_shape.getBlockWhichWouldBeAdjacentAtWithPredicate(m_area.getBlocks(), location, facing, isTarget);
 		if(adjacent == BLOCK_INDEX_MAX)
 			return false;
 		m_target = adjacent;
@@ -27,7 +26,7 @@ void FindsPath::pathToAdjacentToPredicate(std::function<bool(BlockIndex)>& predi
 {
 	std::function<bool(BlockIndex, Facing)> condition = [&](BlockIndex location, Facing facing)
 	{
-		BlockIndex adjacent = const_cast<HasShape&>(m_hasShape).getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(location, facing, predicate);
+		BlockIndex adjacent = m_shape.getBlockWhichWouldBeAdjacentAtWithPredicate(m_area.getBlocks(), location, facing, predicate);
 		if(adjacent == BLOCK_INDEX_MAX)
 			return false;
 		m_target = adjacent;
@@ -42,7 +41,7 @@ void FindsPath::pathToOccupiedPredicate(std::function<bool(BlockIndex)>& predica
 {
 	std::function<bool(BlockIndex, Facing)> condition = [&](BlockIndex location, Facing facing)
 	{
-		BlockIndex adjacent = const_cast<HasShape&>(m_hasShape).getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(location, facing, predicate);
+		BlockIndex adjacent = m_shape.getBlockWhichWouldBeAdjacentAtWithPredicate(m_area.getBlocks(), location, facing, predicate);
 		if(adjacent == BLOCK_INDEX_MAX)
 			return false;
 		m_target = adjacent;
@@ -108,6 +107,15 @@ void FindsPath::pathToPredicateWithHuristicDestination(DestinationCondition& pre
 {
 	m_route = m_hasShape.m_area->m_hasTerrainFacades.at(m_hasShape.getMoveType()).findPathToCondition(m_hasShape.m_location, *m_hasShape.m_shape, predicate, huristicDestination, m_detour);
 }
+void FindsPath::pathToUnreservedAdjacentToActor(ActorIndex actor, Faction& faction)
+{
+	auto& occupied = m_area.m_actors.getBlocks(actor);
+
+}
+void FindsPath::pathToUnreservedAdjacentToItem(ItemIndex item, Faction& faction)
+{
+	
+}
 std::vector<BlockIndex> FindsPath::getOccupiedBlocksAtEndOfPath()
 {
 	return const_cast<HasShape&>(m_hasShape).getBlocksWhichWouldBeOccupiedAtLocationAndFacing(m_route.back(), getFacingAtDestination());
@@ -146,4 +154,14 @@ void FindsPath::reset()
 {
 	m_target = BLOCK_INDEX_MAX;
 	m_route.clear();
+}
+// Static.
+FindsPath buildForActor(Area& area, ActorIndex index, bool detour)
+{
+	return {area, area.m_actors.getShape(index), area.m_actors.getMoveType(index), area.m_actors.getLocation(index), area.m_actors.getFacing(index), detour};
+}
+// Static.
+static FindsPath buildForItem(Area& area, ItemIndex index, bool detour)
+{
+	return {area, area.m_items.getShape(index), area.m_items.getMoveType(index), area.m_items.getLocation(index), area.m_items.getFacing(index), detour};
 }

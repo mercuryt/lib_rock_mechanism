@@ -1,11 +1,9 @@
 #include "uniform.h"
 #include "area.h"
-#include "item.h"
 #include "deserializationMemo.h"
 #include "objective.h"
 #include "simulation.h"
 #include "threadedTask.h"
-#include "actor.h"
 #include <chrono>
 #include <cinttypes>
 #include <math.h>
@@ -44,7 +42,7 @@ void UniformThreadedTask::writeStep()
 				m_objective.m_threadedTask.create(m_objective);
 			else
 			{
-				Item* item = m_objective.getItemAtBlock(block);
+				ItemIndex item = m_objective.getItemAtBlock(block);
 				if(!item)
 					m_objective.m_threadedTask.create(m_objective);
 				else
@@ -60,7 +58,7 @@ void UniformThreadedTask::writeStep()
 	{
 		if(m_findsPath.m_useCurrentLocation)
 		{
-			Item* item = m_objective.getItemAtBlock(m_findsPath.getBlockWhichPassedPredicate());
+			ItemIndex item = m_objective.getItemAtBlock(m_findsPath.getBlockWhichPassedPredicate());
 			if(!item)
 				m_objective.m_threadedTask.create(m_objective);
 			else
@@ -75,7 +73,7 @@ void UniformThreadedTask::writeStep()
 }
 void UniformThreadedTask::clearReferences() { m_objective.m_threadedTask.clearPointer(); }
 // UniformObjective
-UniformObjective::UniformObjective(Actor& actor) : Objective(actor, Config::equipPriority), m_threadedTask(actor.getThreadedTaskEngine()), 
+UniformObjective::UniformObjective(ActorIndex actor) : Objective(actor, Config::equipPriority), m_threadedTask(actor.getThreadedTaskEngine()), 
 	m_elementsCopy(actor.m_hasUniform.get().elements), m_item(nullptr) { assert(actor.m_hasUniform.exists()); }
 UniformObjective::UniformObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), m_threadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine) 
 { 
@@ -128,16 +126,16 @@ void UniformObjective::reset()
 	m_threadedTask.maybeCancel();
 	m_item = nullptr;
 }
-Item* UniformObjective::getItemAtBlock(BlockIndex block)
+ItemIndex UniformObjective::getItemAtBlock(BlockIndex block)
 {
-	for(Item* item : m_actor.m_area->getBlocks().item_getAll(block))
+	for(ItemIndex item : m_actor.m_area->getBlocks().item_getAll(block))
 		for(auto& element : m_elementsCopy)
 			if(element.itemQuery.query(*item))
 				return item;
 	return nullptr;
 }
-void UniformObjective::select(Item& item) { m_item = &item; }
-void UniformObjective::equip(Item& item)
+void UniformObjective::select(ItemIndex item) { m_item = &item; }
+void UniformObjective::equip(ItemIndex item)
 {
 	for(auto& element : m_elementsCopy)
 		if(element.itemQuery.query(item))
@@ -157,32 +155,6 @@ void UniformObjective::equip(Item& item)
 		reset();
 		execute();
 	}
-}
-void ActorHasUniform::set(Uniform& uniform)
-{
-	if(m_objective)
-		m_objective->cancel();
-	m_uniform = &uniform;
-	std::unique_ptr<Objective> objective = std::make_unique<UniformObjective>(m_actor);
-	m_objective = static_cast<UniformObjective*>(objective.get());
-	m_actor.m_hasObjectives.addTaskToStart(std::move(objective));
-}
-void ActorHasUniform::unset()
-{
-	if(m_objective)
-		m_objective->cancel();
-	m_uniform = nullptr;
-}
-void ActorHasUniform::recordObjective(UniformObjective& objective)
-{
-	assert(!m_objective);
-	m_objective = &objective;
-}
-void ActorHasUniform::clearObjective([[maybe_unused]] UniformObjective& objective)
-{
-	assert(m_objective);
-	assert(*m_objective == objective);
-	m_objective = nullptr;
 }
 // Equip uniform.
 UniformThreadedTask::UniformThreadedTask(UniformObjective& objective) : ThreadedTask(objective.m_actor.getThreadedTaskEngine()), m_objective(objective), m_findsPath(objective.m_actor, false) { }

@@ -4,23 +4,23 @@
 #include "input.h"
 #include "types.h"
 
-class Actor;
 struct DeserializationMemo;
+class Area;
 
 class GoToObjective final : public Objective
 {
 	BlockIndex m_location = BLOCK_INDEX_MAX;
 public:
-	GoToObjective(Actor& a, BlockIndex l) : Objective(a, Config::goToPriority), m_location(l) { }
+	GoToObjective(ActorIndex a, BlockIndex l) : Objective(a, Config::goToPriority), m_location(l) { }
 	GoToObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
-	void execute();
-	void cancel() { }
-	void delay() { }
-	void reset() { }
+	void execute(Area& area);
+	void cancel(Area&) { }
+	void delay(Area&) { }
+	void reset(Area&) { }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::GoTo; }
 	std::string name() const { return "go to"; }
-	static void create(Actor& actor, BlockIndex block);
+	static void create(ActorIndex actor, BlockIndex block);
 	// For testing.
 	[[maybe_unused]] BlockIndex getLocation() { return m_location; }
 };

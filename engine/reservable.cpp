@@ -189,11 +189,11 @@ void Reservable::merge(Reservable& reservable)
 	reservable.m_canReserves.clear();
 	reservable.m_dishonorCallbacks.clear();
 }
-uint32_t Reservable::getUnreservedCount(Faction& faction) const
+uint32_t Reservable::getUnreservedCount(const Faction& faction) const
 {
-	if(!m_reservedCounts.contains(&faction))
+	if(!m_reservedCounts.contains(&const_cast<Faction&>(faction)))
 		return m_maxReservations;
-	return m_maxReservations - m_reservedCounts.at(&faction);
+	return m_maxReservations - m_reservedCounts.at(&const_cast<Faction&>(faction));
 }
 Json Reservable::jsonReservationFor(CanReserve& canReserve) const
 {

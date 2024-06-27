@@ -12,13 +12,13 @@ class RestObjective final : public Objective
 {
 	HasScheduledEvent<RestEvent> m_restEvent;
 public:
-	RestObjective(Actor& a);
+	RestObjective(ActorIndex a);
 	RestObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void execute() { m_restEvent.schedule(*this); }
 	void cancel() { m_restEvent.maybeUnschedule(); }
 	void delay() { cancel(); }
-	void reset();
+	void reset(Area& area);
 	std::string name() const { return "rest"; }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Rest; }
 	friend class RestEvent;
@@ -28,6 +28,6 @@ class RestEvent final : public ScheduledEvent
 	RestObjective& m_objective;
 public:
 	RestEvent(RestObjective& ro, const Step start = 0);
-	void execute();
-	void clearReferences() { m_objective.m_restEvent.clearPointer(); }
+	void execute(Simulation& simulation, Area* area);
+	void clearReferences(Simulation&, Area*) { m_objective.m_restEvent.clearPointer(); }
 };

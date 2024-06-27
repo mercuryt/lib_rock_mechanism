@@ -1,5 +1,5 @@
 #include "body.h"
-#include "actor.h"
+#include "animalSpecies.h"
 #include "config.h"
 #include "deserializationMemo.h"
 #include "random.h"
@@ -8,6 +8,7 @@
 #include "util.h"
 #include "simulation.h"
 #include "woundType.h"
+#include "area.h"
 #include <cstdint>
 // Static method.
 const BodyPartType& BodyPartType::byName(const std::string name)
@@ -23,15 +24,28 @@ const BodyType& BodyType::byName(const std::string name)
 	assert(found != bodyTypeDataStore.end());
 	return *found;
 }
-Wound::Wound(Actor& a, const WoundType wt, BodyPart& bp, Hit h, uint32_t bvr, Percent ph) : woundType(wt), bodyPart(bp), hit(h), bleedVolumeRate(bvr), percentHealed(ph), healEvent(a.getEventSchedule()) 
-{ 
-	maxPercentTemporaryImpairment = WoundCalculations::getPercentTemporaryImpairment(hit, bodyPart.bodyPartType, a.m_species.bodyScale);
-	maxPercentPermanantImpairment = WoundCalculations::getPercentPermanentImpairment(hit, bodyPart.bodyPartType, a.m_species.bodyScale);
+Wound::Wound(Area& area, ActorIndex a, const WoundType wt, BodyPart& bp, Hit h, uint32_t bvr, Percent ph) :
+	woundType(wt), bodyPart(bp), hit(h), bleedVolumeRate(bvr), percentHealed(ph), healEvent(area.m_eventSchedule)
+{
+	const AnimalSpecies& species = area.m_actors.getSpecies(a);
+	maxPercentTemporaryImpairment = WoundCalculations::getPercentTemporaryImpairment(hit, bodyPart.bodyPartType, species.bodyScale);
+	maxPercentPermanantImpairment = WoundCalculations::getPercentPermanentImpairment(hit, bodyPart.bodyPartType, species.bodyScale);
 }
+/*
 Wound::Wound(const Json& data, DeserializationMemo& deserializationMemo, BodyPart& bp) :
 	woundType(woundTypeByName(data["woundType"].get<std::string>())),
 	bodyPart(bp), hit(data["hit"]), bleedVolumeRate(data["bleedVolumeRate"].get<uint32_t>()),
 	percentHealed(data["percentHealed"].get<Percent>()), healEvent(deserializationMemo.m_simulation.m_eventSchedule) { }
+Json Wound::toJson() const
+{
+	Json data;
+	data["woundType"] = getWoundTypeName(woundType);
+	data["hit"] = hit.toJson();
+	data["bleedVolumeRate"] = bleedVolumeRate;
+	data["percentHealed"] = getPercentHealed();
+	return data;
+}
+*/
 Percent Wound::getPercentHealed() const
 {
 	Percent output = percentHealed;
@@ -48,20 +62,11 @@ Percent Wound::impairPercent() const
 {
 	return util::scaleByInversePercent(maxPercentTemporaryImpairment, getPercentHealed()) + maxPercentPermanantImpairment;
 }
-Json Wound::toJson() const
-{
-	Json data;
-	data["woundType"] = getWoundTypeName(woundType);
-	data["hit"] = hit.toJson();
-	data["bleedVolumeRate"] = bleedVolumeRate;
-	data["percentHealed"] = getPercentHealed();
-	return data;
-}
 BodyPart::BodyPart(const Json data, DeserializationMemo& deserializationMemo) :
 	bodyPartType(BodyPartType::byName(data["bodyPartType"].get<std::string>())),
 	materialType(MaterialType::byName(data["materialType"].get<std::string>())),
-	severed(data["severed"].get<bool>()) 
-{ 
+	severed(data["severed"].get<bool>())
+{
 	for(const Json& wound : data["wounds"])
 		wounds.emplace_back(wound, deserializationMemo, *this);
 }
@@ -76,21 +81,23 @@ Json BodyPart::toJson() const
 		data["wounds"].push_back(wound.toJson());
 	return data;
 }
-Body::Body(Actor& a, Simulation& s) :  m_bleedEvent(s.m_eventSchedule), m_woundsCloseEvent(s.m_eventSchedule), m_actor(a) { }
-void Body::initalize()
+Body::Body(Area& area, ActorIndex a) :  m_bleedEvent(area.m_eventSchedule), m_woundsCloseEvent(area.m_eventSchedule), m_actor(a) { }
+void Body::initalize(Area& area)
 {
-	setMaterialType(m_actor.m_species.materialType);
-	for(const BodyPartType* bodyPartType : m_actor.m_species.bodyType.bodyPartTypes)
+	const AnimalSpecies& species = area.m_actors.getSpecies(m_actor);
+	setMaterialType(species.materialType);
+	for(const BodyPartType* bodyPartType : species.bodyType.bodyPartTypes)
 	{
 		m_bodyParts.emplace_back(*bodyPartType, *m_materialType);
 		m_totalVolume += bodyPartType->volume;
 	}
 	m_volumeOfBlood = healthyBloodVolume();
 }
-Body::Body(const Json& data, DeserializationMemo& deserializationMemo, Actor& a) :
-       	m_bleedEvent(deserializationMemo.m_simulation.m_eventSchedule), 
+/*
+Body::Body(const Json& data, DeserializationMemo& deserializationMemo, ActorIndex a) :
+       	m_bleedEvent(deserializationMemo.m_simulation.m_eventSchedule),
 	m_woundsCloseEvent(deserializationMemo.m_simulation.m_eventSchedule),
-	m_actor(a), 
+	m_actor(a),
 	m_materialType(&MaterialType::byName(data["materialType"].get<std::string>())),
 	m_totalVolume(data["totalVolume"].get<Volume>()),
 	m_impairMovePercent(data.contains("impairMovePercent") ? data["impairMovePercent"].get<Percent>() : 0),
@@ -100,11 +107,11 @@ Body::Body(const Json& data, DeserializationMemo& deserializationMemo, Actor& a)
 	for(const Json& bodyPart : data["bodyParts"])
 		m_bodyParts.emplace_back(bodyPart, deserializationMemo);
 	if(data.contains("woundsCloseEventStart"))
-		m_woundsCloseEvent.schedule(data["woundsCloseEventDuration"].get<Step>(), *this, data["woundsCloseEventStart"].get<Step>()); 
+		m_woundsCloseEvent.schedule(data["woundsCloseEventDuration"].get<Step>(), *this, data["woundsCloseEventStart"].get<Step>());
 	if(data.contains("bleedEventStart"))
-		m_bleedEvent.schedule(data["bleedEventDuration"].get<Step>(), *this, data["bleedEventStart"].get<Step>()); 
+		m_bleedEvent.schedule(data["bleedEventDuration"].get<Step>(), *this, data["bleedEventStart"].get<Step>());
 }
-Json Body::toJson() const 
+Json Body::toJson() const
 {
 	Json data{
 		{"materialType", m_materialType->name},
@@ -131,9 +138,10 @@ Json Body::toJson() const
 		data["bodyParts"].push_back(bodyPart.toJson());
 	return data;
 }
-BodyPart& Body::pickABodyPartByVolume()
+*/
+BodyPart& Body::pickABodyPartByVolume(Simulation& simulation)
 {
-	Random& random = m_actor.getSimulation().m_random;
+	Random& random = simulation.m_random;
 	uint32_t roll = random.getInRange(0u, m_totalVolume);
 	for(BodyPart& bodyPart : m_bodyParts)
 	{
@@ -179,16 +187,17 @@ void Body::getHitDepth(Hit& hit, const BodyPart& bodyPart)
 		}
 	}
 }
-Wound& Body::addWound(BodyPart& bodyPart, Hit& hit)
+Wound& Body::addWound(Area& area, BodyPart& bodyPart, Hit& hit)
 {
 	assert(hit.depth != 0);
-	uint32_t scale = m_actor.m_species.bodyScale;
+	Actors& actors = area.m_actors;
+	uint32_t scale = actors.getSpecies(m_actor).bodyScale;
 	uint32_t bleedVolumeRate = WoundCalculations::getBleedVolumeRate(hit, bodyPart.bodyPartType, scale);
-	Wound& wound = bodyPart.wounds.emplace_back(m_actor, hit.woundType, bodyPart, hit, bleedVolumeRate);
+	Wound& wound = bodyPart.wounds.emplace_back(area, m_actor, hit.woundType, bodyPart, hit, bleedVolumeRate);
 	float ratio = (float)hit.area / bodyPart.bodyPartType.volume * scale;
 	if(bodyPart.bodyPartType.vital && hit.depth == 4 && ratio >= Config::hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea)
 	{
-		m_actor.die(CauseOfDeath::wound);
+		actors.die(m_actor, CauseOfDeath::wound);
 		return wound;
 	}
 	else if(hit.woundType == WoundType::Cut && hit.depth == 4 && ((float)hit.area / (float)bodyPart.bodyPartType.volume) > Config::ratioOfHitAreaToBodyPartVolumeForSever)
@@ -196,54 +205,55 @@ Wound& Body::addWound(BodyPart& bodyPart, Hit& hit)
 		sever(bodyPart, wound);
 		if(bodyPart.bodyPartType.vital)
 		{
-			m_actor.die(CauseOfDeath::wound);
+			actors.die(m_actor, CauseOfDeath::wound);
 			return wound;
 		}
 	}
 	else
 	{
 		Step delayTillHeal = WoundCalculations::getStepsTillHealed(hit, bodyPart.bodyPartType, scale);
-		wound.healEvent.schedule(delayTillHeal, wound, *this);
+		wound.healEvent.schedule(area.m_simulation, delayTillHeal, wound, *this);
 	}
-	recalculateBleedAndImpairment();
+	recalculateBleedAndImpairment(area);
 	return wound;
 }
-void Body::healWound(Wound& wound)
+void Body::healWound(Area& area, Wound& wound)
 {
 	wound.bodyPart.wounds.remove(wound);
-	recalculateBleedAndImpairment();
+	recalculateBleedAndImpairment(area);
 }
-void Body::doctorWound(Wound& wound, Percent healSpeedPercentageChange)
+void Body::doctorWound(Area& area, Wound& wound, Percent healSpeedPercentageChange)
 {
 	assert(wound.healEvent.exists());
 	if(wound.bleedVolumeRate != 0)
 	{
 		wound.bleedVolumeRate = 0;
-		recalculateBleedAndImpairment();
+		recalculateBleedAndImpairment(area);
 	}
 	Step remaningSteps = wound.healEvent.remainingSteps();
 	remaningSteps = util::scaleByPercent(remaningSteps, healSpeedPercentageChange);
 	wound.healEvent.unschedule();
-	wound.healEvent.schedule(remaningSteps, wound, *this);
+	wound.healEvent.schedule(area.m_simulation, remaningSteps, wound, *this);
 }
-void Body::woundsClose()
+void Body::woundsClose(Area& area)
 {
 	for(BodyPart& bodyPart : m_bodyParts)
 		for(Wound& wound : bodyPart.wounds)
 			wound.bleedVolumeRate = 0;
-	recalculateBleedAndImpairment();
+	recalculateBleedAndImpairment(area);
 }
-void Body::bleed()
+void Body::bleed(Area& area)
 {
+	Actors& actors = area.m_actors;
 	m_volumeOfBlood--;
 	float ratio = (float)m_volumeOfBlood / (float)healthyBloodVolume();
 	if(ratio <= Config::bleedToDeathRatio)
-		m_actor.die(CauseOfDeath::bloodLoss);
-	else 
+		actors.die(m_actor, CauseOfDeath::bloodLoss);
+	else
 	{
-		if (m_actor.m_mustSleep.isAwake() && ratio < Config::bleedToUnconciousessRatio)
-			m_actor.passout(Config::bleedPassOutDuration);
-		recalculateBleedAndImpairment();
+		if (actors.isAwake(m_actor) && ratio < Config::bleedToUnconciousessRatio)
+			actors.passout(m_actor, Config::bleedPassOutDuration);
+		recalculateBleedAndImpairment(area);
 	}
 }
 void Body::sever(BodyPart& bodyPart, Wound& wound)
@@ -252,7 +262,7 @@ void Body::sever(BodyPart& bodyPart, Wound& wound)
 	wound.maxPercentTemporaryImpairment = 0u;
 	bodyPart.severed = true;
 }
-void Body::recalculateBleedAndImpairment()
+void Body::recalculateBleedAndImpairment(Area& area)
 {
 	uint32_t bleedVolumeRate = 0;
 	m_impairManipulationPercent = 0;
@@ -281,29 +291,29 @@ void Body::recalculateBleedAndImpairment()
 		{
 			// Already bleeding, reschedule bleed event and wounds close event.
 			assert(m_woundsCloseEvent.exists());
-			Step adjustedFrequency = m_bleedEvent.exists() ? 
+			Step adjustedFrequency = m_bleedEvent.exists() ?
 				util::scaleByInversePercent(baseFrequency, m_bleedEvent.percentComplete()) :
 				baseFrequency;
-			Step toScheduleStep = m_actor.getSimulation().m_step + adjustedFrequency;
+			Step toScheduleStep = area.m_simulation.m_step + adjustedFrequency;
 			if(!m_bleedEvent.exists() || toScheduleStep != m_bleedEvent.getStep())
 			{
 				m_bleedEvent.maybeUnschedule();
-				m_bleedEvent.schedule(adjustedFrequency, *this);
+				m_bleedEvent.schedule(area.m_simulation, adjustedFrequency, *this);
 			}
 			Step adjustedWoundsCloseDelay = util::scaleByInversePercent(baseWoundsCloseDelay, m_woundsCloseEvent.percentComplete());
-			toScheduleStep = m_actor.getSimulation().m_step + adjustedWoundsCloseDelay;
+			toScheduleStep = area.m_simulation.m_step + adjustedWoundsCloseDelay;
 			if(!m_woundsCloseEvent.exists() || toScheduleStep != m_woundsCloseEvent.getStep())
 			{
 				m_woundsCloseEvent.maybeUnschedule();
-				m_woundsCloseEvent.schedule(adjustedWoundsCloseDelay, *this);
+				m_woundsCloseEvent.schedule(area.m_simulation, adjustedWoundsCloseDelay, *this);
 			}
 		}
 		else
 		{
 			// Start bleeding.
 			m_isBleeding = true;
-			m_bleedEvent.schedule(baseFrequency, *this);
-			m_woundsCloseEvent.schedule(baseWoundsCloseDelay, *this);
+			m_bleedEvent.schedule(area.m_simulation, baseFrequency, *this);
+			m_woundsCloseEvent.schedule(area.m_simulation, baseWoundsCloseDelay, *this);
 		}
 	}
 	else
@@ -314,9 +324,9 @@ void Body::recalculateBleedAndImpairment()
 		m_bleedEvent.maybeUnschedule();
 	}
 	// Update move speed for current move impairment level.
-	m_actor.m_canMove.updateIndividualSpeed();
+	area.m_actors.move_updateIndividualSpeed(m_actor);
 	// Update combat score for current manipulation impairment level.
-	m_actor.m_canFight.update();
+	area.m_actors.combat_update(m_actor);
 }
 Wound& Body::getWoundWhichIsBleedingTheMost()
 {
@@ -383,12 +393,12 @@ std::vector<Attack> Body::getMeleeAttacks() const
 	std::vector<Attack> output;
 	for(const BodyPart& bodyPart : m_bodyParts)
 		for(auto& [attackType, materialType] : bodyPart.bodyPartType.attackTypesAndMaterials)
-			output.emplace_back(&attackType, materialType, nullptr);
+			output.emplace_back(&attackType, materialType, ITEM_INDEX_MAX);
 	return output;
 }
-Volume Body::getVolume() const
+Volume Body::getVolume(Area& area) const
 {
-	return util::scaleByPercent(m_totalVolume, m_actor.m_canGrow.growthPercent());
+	return util::scaleByPercent(m_totalVolume, area.m_actors.getPercentGrown(m_actor));
 }
 bool Body::isInjured() const
 {
@@ -397,7 +407,7 @@ bool Body::isInjured() const
 			return true;
 	return false;
 }
-bool Body::hasBodyPart(const BodyPartType& bodyPartType) const 
+bool Body::hasBodyPart(const BodyPartType& bodyPartType) const
 {
 	for(const BodyPart& bodyPart : m_bodyParts)
 		if(bodyPart.bodyPartType == bodyPartType)
@@ -421,6 +431,9 @@ std::vector<Wound*> Body::getAllWounds()
 			output.push_back(&const_cast<Wound&>(wound));
 	return output;
 }
-WoundHealEvent::WoundHealEvent(const Step delay, Wound& w, Body& b, const Step start) : ScheduledEvent(b.m_actor.getSimulation(), delay, start), m_wound(w), m_body(b) {}
-BleedEvent::BleedEvent(const Step delay, Body& b, const Step start) : ScheduledEvent(b.m_actor.getSimulation(), delay, start), m_body(b) {}
-WoundsCloseEvent::WoundsCloseEvent(const Step delay, Body& b, const Step start) : ScheduledEvent(b.m_actor.getSimulation(), delay, start), m_body(b) {}
+WoundHealEvent::WoundHealEvent(Simulation& simulation, const Step delay, Wound& w, Body& b, const Step start) :
+	ScheduledEvent(simulation, delay, start), m_wound(w), m_body(b) {}
+BleedEvent::BleedEvent(Simulation& simulation, const Step delay, Body& b, const Step start) :
+	ScheduledEvent(simulation, delay, start), m_body(b) {}
+WoundsCloseEvent::WoundsCloseEvent(Simulation& simulation, const Step delay, Body& b, const Step start) :
+	ScheduledEvent(simulation, delay, start), m_body(b) {}

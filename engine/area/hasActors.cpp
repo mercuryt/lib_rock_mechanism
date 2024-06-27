@@ -1,16 +1,16 @@
 #include "hasActors.h"
-#include "../actor.h"
 #include "../area.h"
 #include "../simulation.h"
 #include "types.h"
-void AreaHasActors::add(Actor& actor)
+void AreaHasActors::add(ActorIndex actor)
 {
-	assert(!m_actors.contains(&actor));
-	m_actors.insert(&actor);
-	actor.m_canSee.createFacadeIfCanSee();
-	m_area.m_hasTerrainFacades.maybeRegisterMoveType(actor.getMoveType());
+	assert(!m_actors.contains(actor));
+	m_actors.insert(actor);
+	Actors& actors = m_area.m_actors;
+	actors.vision_createFacadeIfCanSee(actor);
+	m_area.m_hasTerrainFacades.maybeRegisterMoveType(actors.getMoveType(actor));
 }
-void AreaHasActors::remove(Actor& actor)
+void AreaHasActors::remove(ActorIndex actor)
 {
 	m_actors.erase(&actor);
 	m_locationBuckets.remove(actor);
@@ -31,15 +31,15 @@ void AreaHasActors::processVisionWriteStep()
 }
 void AreaHasActors::onChangeAmbiantSurfaceTemperature()
 {
-	for(Actor* actor : m_onSurface)
+	for(ActorIndex actor : m_onSurface)
 		actor->m_needsSafeTemperature.onChange();
 }
-void AreaHasActors::setUnderground(Actor& actor)
+void AreaHasActors::setUnderground(ActorIndex actor)
 {
 	m_onSurface.erase(&actor);
 	actor.m_needsSafeTemperature.onChange();
 }
-void AreaHasActors::setNotUnderground(Actor& actor)
+void AreaHasActors::setNotUnderground(ActorIndex actor)
 {
 	m_onSurface.insert(&actor);
 	actor.m_needsSafeTemperature.onChange();

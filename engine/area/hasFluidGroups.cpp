@@ -2,17 +2,12 @@
 #include "../simulation.h"
 #include "../area.h"
 #include "../fluidType.h"
-void AreaHasFluidGroups::readStep()
+void AreaHasFluidGroups::doStep()
 {
 	// Calculate flow.
-	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
-	{
-		assert(!fluidGroup->m_destroy);
-		m_area.m_simulation.m_taskFutures.push_back(m_area.m_simulation.m_pool.submit([=](){ fluidGroup->readStep(); }));
-	}
-}
-void AreaHasFluidGroups::writeStep()
-{
+	std::function<void(FluidGroup*&)> task = [](FluidGroup*& fluidGroup){ assert(!fluidGroup->m_destroy); fluidGroup->readStep(); };
+	std::vector<FluidGroup*> unstable(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
+	m_area.m_simulation.parallelizeTask(unstable, Config::fluidGroupsPerThread, task);
 	// Remove destroyed.
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 		if(fluidGroup.m_destroy)
@@ -25,8 +20,6 @@ void AreaHasFluidGroups::writeStep()
 		validateAllFluidGroups();
 	}
 	// Resolve overfull, diagonal seep, and mist.
-	// Make vector of unstable so we can iterate it while modifing the original.
-	std::vector<FluidGroup*> unstable(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
 	for(FluidGroup* fluidGroup : unstable)
 	{
 		fluidGroup->afterWriteStep();

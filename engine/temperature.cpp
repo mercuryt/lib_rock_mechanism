@@ -1,12 +1,11 @@
 #include "temperature.h"
-#include "actor.h"
-#include "item.h"
 #include "area.h"
 #include "datetime.h"
 #include "nthAdjacentOffsets.h"
 #include "config.h"
 #include "objective.h"
 #include "simulation.h"
+#include "terrainFacade.h"
 #include "types.h"
 #include <cmath>
 enum class TemperatureZone { Surface, Underground, LavaSea };
@@ -78,9 +77,9 @@ void AreaHasTemperature::applyDeltas()
 void AreaHasTemperature::setAmbientSurfaceTemperature(const Temperature& temperature)
 {
 	m_ambiantSurfaceTemperature = temperature;
-	m_area.m_hasPlants.onChangeAmbiantSurfaceTemperature();
-	m_area.m_hasActors.onChangeAmbiantSurfaceTemperature();
-	m_area.m_hasItems.onChangeAmbiantSurfaceTemperature();
+	m_area.getPlants().onChangeAmbiantSurfaceTemperature();
+	m_area.getActors().onChangeAmbiantSurfaceTemperature();
+	m_area.getItems().onChangeAmbiantSurfaceTemperature();
 	Blocks& blocks = m_area.getBlocks();
 	for(auto& [meltingPoint, toMelt] : m_aboveGroundBlocksByMeltingPoint)
 		if(meltingPoint <= temperature)
@@ -131,82 +130,15 @@ Temperature AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature() const
 	uint32_t daysFromSolstice = std::abs(day - (int32_t)dayOfYearOfSolstice);
 	return yearlyColdestDailyAverage + ((yearlyHottestDailyAverage - yearlyColdestDailyAverage) * (dayOfYearOfSolstice - daysFromSolstice)) / dayOfYearOfSolstice;
 }
-//TODO: Detour locked to true for emergency moves.
-GetToSafeTemperatureThreadedTask::GetToSafeTemperatureThreadedTask(GetToSafeTemperatureObjective& o) : ThreadedTask(o.m_actor.getThreadedTaskEngine()), m_objective(o), m_findsPath(o.m_actor, true) ,m_noWhereWithSafeTemperatureFound(false) { }
-void GetToSafeTemperatureThreadedTask::readStep()
-{
-	std::function<bool(BlockIndex, Facing facing)> condition = [&](BlockIndex location, Facing facing)
-	{
-		for(BlockIndex adjacent : m_objective.m_actor.getBlocksWhichWouldBeOccupiedAtLocationAndFacing(location, facing))
-			if(m_objective.m_actor.m_needsSafeTemperature.isSafe(m_objective.m_actor.m_area->getBlocks().temperature_get(adjacent)))
-				return true;
-		return false;
-	};
-	m_findsPath.pathToPredicate(condition);
-	if(!m_findsPath.found())
-	{
-		m_noWhereWithSafeTemperatureFound = true;
-		m_findsPath.pathToAreaEdge();
-	}
-}
-void GetToSafeTemperatureThreadedTask::writeStep()
-{
-	if(!m_findsPath.found())
-	{
-		m_objective.m_actor.m_hasObjectives.cannotFulfillNeed(m_objective);
-		return;
-	}
-	if(m_noWhereWithSafeTemperatureFound)
-		m_objective.m_noWhereWithSafeTemperatureFound = true;
-	m_objective.m_actor.m_canMove.setPath(m_findsPath.getPath());
-}
-void GetToSafeTemperatureThreadedTask::clearReferences(){ m_objective.m_getToSafeTemperatureThreadedTask.clearPointer(); }
-GetToSafeTemperatureObjective::GetToSafeTemperatureObjective(Actor& a) : Objective(a, Config::getToSafeTemperaturePriority), m_getToSafeTemperatureThreadedTask(a.getThreadedTaskEngine()), m_noWhereWithSafeTemperatureFound(false) { }
-GetToSafeTemperatureObjective::GetToSafeTemperatureObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), m_getToSafeTemperatureThreadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine), m_noWhereWithSafeTemperatureFound(data["noWhereSafeFound"].get<bool>())
-{
-	if(data.contains("threadedTask"))
-		m_getToSafeTemperatureThreadedTask.create(*this);
-}
-Json GetToSafeTemperatureObjective::toJson() const
-{
-	Json data = Objective::toJson();
-	data["noWhereSafeFound"] = m_noWhereWithSafeTemperatureFound;
-	if(m_getToSafeTemperatureThreadedTask.exists())
-		data["threadedTask"] = true;
-	return data;
-}
-void GetToSafeTemperatureObjective::execute()
-{
-	if(m_noWhereWithSafeTemperatureFound)
-	{
-		Blocks& blocks = m_actor.m_area->getBlocks();
-		if(m_actor.predicateForAnyOccupiedBlock([blocks](BlockIndex block){ return blocks.isEdge(block); }))
-			// We are at the edge and can leave.
-			m_actor.leaveArea();
-		else
-			// No safe temperature and no escape.
-			m_actor.m_hasObjectives.cannotFulfillNeed(*this);
-		return;
-	}
-	if(m_actor.m_needsSafeTemperature.isSafeAtCurrentLocation())
-		m_actor.m_hasObjectives.objectiveComplete(*this);
-	else
-		m_getToSafeTemperatureThreadedTask.create(*this);
-}
-void GetToSafeTemperatureObjective::reset() 
-{ 
-	cancel(); 
-	m_noWhereWithSafeTemperatureFound = false; 
-	m_actor.m_canReserve.deleteAllWithoutCallback();
-}
-GetToSafeTemperatureObjective::~GetToSafeTemperatureObjective() { m_actor.m_needsSafeTemperature.m_objectiveExists = false; }
-UnsafeTemperatureEvent::UnsafeTemperatureEvent(Actor& a, const Step start) : ScheduledEvent(a.getSimulation(), a.m_species.stepsTillDieInUnsafeTemperature, start), m_actor(a) { }
-void UnsafeTemperatureEvent::execute() { m_actor.die(CauseOfDeath::temperature); }
-void UnsafeTemperatureEvent::clearReferences() { m_actor.m_needsSafeTemperature.m_event.clearPointer(); }
-ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(Actor& a, Simulation& s) : 
-	m_event(s.m_eventSchedule), m_actor(a) { }
-ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(const Json& data, Actor& a, Simulation& s) : 
-	m_event(s.m_eventSchedule), m_actor(a), m_objectiveExists(data["objectiveExists"].get<bool>())
+UnsafeTemperatureEvent::UnsafeTemperatureEvent(Area& area, ActorIndex a, const Step start) :
+	ScheduledEvent(area.m_simulation, area.getActors().getSpecies(a).stepsTillDieInUnsafeTemperature, start), m_actor(a) { }
+void UnsafeTemperatureEvent::execute(Simulation&, Area* area) { area->getActors().die(m_actor, CauseOfDeath::temperature); }
+void UnsafeTemperatureEvent::clearReferences(Simulation&, Area* area) { area->getActors().m_needsSafeTemperature.at(m_actor)->m_event.clearPointer(); }
+ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(Area& area, ActorIndex a) : 
+	m_event(area.m_eventSchedule), m_actor(a) { }
+	/*
+ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(const Json& data, ActorIndex a, Simulation& s) : 
+	m_event(area.m_eventSchedule), m_actor(a), m_objectiveExists(data["objectiveExists"].get<bool>())
 {
 	if(data.contains("eventStart"))
 		m_event.schedule(m_actor, data["eventStart"].get<Step>());
@@ -219,16 +151,18 @@ Json ActorNeedsSafeTemperature::toJson() const
 		data["eventStart"] = m_event.getStartStep();
 	return data;
 }
-void ActorNeedsSafeTemperature::onChange()
+*/
+void ActorNeedsSafeTemperature::onChange(Area& area)
 {
-	m_actor.m_canGrow.updateGrowingStatus();
-	if(!isSafeAtCurrentLocation())
+	Actors& actors = area.getActors();
+	actors.grow_updateGrowingStatus(m_actor);
+	if(!isSafeAtCurrentLocation(area))
 	{
 		if(!m_objectiveExists)
 		{
 			m_objectiveExists = true;
 			std::unique_ptr<Objective> objective = std::make_unique<GetToSafeTemperatureObjective>(m_actor);
-			m_actor.m_hasObjectives.addNeed(std::move(objective));
+			actors.objective_addNeed(m_actor, std::move(objective));
 		}
 		if(!m_event.exists())
 			m_event.schedule(m_actor);
@@ -236,13 +170,15 @@ void ActorNeedsSafeTemperature::onChange()
 	else if(m_event.exists())
 		m_event.unschedule();
 }
-bool ActorNeedsSafeTemperature::isSafe(Temperature temperature) const
+bool ActorNeedsSafeTemperature::isSafe(Area& area, Temperature temperature) const
 {
-	return temperature >= m_actor.m_species.minimumSafeTemperature && temperature <= m_actor.m_species.maximumSafeTemperature;
+	const AnimalSpecies& species = area.getActors().getSpecies(m_actor);
+	return temperature >= species.minimumSafeTemperature && temperature <= species.maximumSafeTemperature;
 }
-bool ActorNeedsSafeTemperature::isSafeAtCurrentLocation() const
+bool ActorNeedsSafeTemperature::isSafeAtCurrentLocation(Area& area) const
 {
-	if(m_actor.m_location == BLOCK_INDEX_MAX)
+	Actors& actors = area.getActors();
+	if(actors.getLocation(m_actor) == BLOCK_INDEX_MAX)
 		return true;
-	return isSafe(m_actor.m_area->getBlocks().temperature_get(m_actor.m_location));
+	return isSafe(area, area.getBlocks().temperature_get(actors.getLocation(m_actor)));
 }

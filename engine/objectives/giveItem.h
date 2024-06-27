@@ -5,22 +5,19 @@
 #include "../onDestroy.h"
 #include "reservable.h"
 
-class Actor;
-class Item;
-
 class GiveItemObjective final : public Objective
 {
-	Item& m_item;
-	Actor& m_recipient;
+	ItemIndex m_item;
+	ActorIndex m_recipient;
 	// This objective is dependent on receipent being alive but cannot reserve them, use onDestory instead.
 	HasOnDestroySubscriptions m_hasOnDestroySubscriptions;
 public:
-	GiveItemObjective(Actor& actor, Item& item, Actor& recepient);
+	GiveItemObjective(ActorIndex actor, ItemIndex item, ActorIndex recepient);
 	GiveItemObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute();
-	void cancel();
-	void delay() { cancel(); }
-	void reset();
+	void execute(Area& area);
+	void cancel(Area& area);
+	void delay(Area& area) { cancel(area); }
+	void reset(Area& area);
 	void createOnDestroyCallbacks();
 	[[nodiscard]] std::string name() const { return "give item"; }
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::GiveItem; }

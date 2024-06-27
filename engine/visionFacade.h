@@ -1,7 +1,6 @@
 #pragma once
 #include "config.h"
 #include "types.h"
-#include <TGUI/Event.hpp>
 #include <cassert>
 #include <cstdint>
 #include <vector>
@@ -14,27 +13,29 @@ struct VisionCuboid;
 class VisionFacade final
 {
 	Area* m_area;
-	std::vector<Actor*> m_actors;
+	std::vector<ActorIndex> m_actors;
 	std::vector<BlockIndex> m_locations;
 	std::vector<DistanceInBlocks> m_ranges;
-	std::vector<std::vector<Actor*>> m_results;
+	std::vector<std::vector<ActorIndex>> m_results;
 public:
 	VisionFacade();
 	// Used as part of initalizaton.
 	void setArea(Area& area);
-	void add(Actor& actor);
-	void remove(Actor& actor);
+	void addActor(ActorIndex actor);
+	void removeActor(ActorIndex actor);
+	// TODO: What is this for? Used in clean-up? But why?
 	void remove(VisionFacadeIndex index);
 	void updateRange(VisionFacadeIndex index, DistanceInBlocks range);
 	void updateLocation(VisionFacadeIndex index, BlockIndex& location);
 	void readStepSegment(VisionFacadeIndex begin, VisionFacadeIndex end);
+	void doStep();
 	void readStep();
 	void writeStep();
 	void clear();
-	[[nodiscard]] Actor& getActor(VisionFacadeIndex index);
+	[[nodiscard]] ActorIndex getActor(VisionFacadeIndex index);
 	[[nodiscard]] BlockIndex getLocation(VisionFacadeIndex index);
 	[[nodiscard]] DistanceInBlocks getRange(VisionFacadeIndex index) const;
-	[[nodiscard]] std::vector<Actor*>& getResults(VisionFacadeIndex index);
+	[[nodiscard]] std::vector<ActorIndex>& getResults(VisionFacadeIndex index);
 	[[nodiscard]] VisionFacadeIndex size() const { return m_actors.size(); }
 	[[nodiscard]] static DistanceInBlocks taxiDistance(Point3D a, Point3D b);
 };
@@ -42,12 +43,13 @@ public:
 // Read step is called for only one bucket per simulaiton step, cycling through them.
 class VisionFacadeBuckets final
 {
+	Area& m_area;
 	std::array<VisionFacade, Config::actorDoVisionInterval> m_data;
-	VisionFacade& facadeForActor(Actor& actor);
+	VisionFacade& facadeForActor(ActorIndex actor);
 public:
 	VisionFacadeBuckets(Area& area);
-	void add(Actor& actor);
-	void remove(Actor& actor);
+	void add(ActorIndex actor);
+	void remove(ActorIndex actor);
 	void clear();
 	VisionFacade& getForStep(Step step);
 };
@@ -62,7 +64,7 @@ public:
 	// To be called when leaving an area. Also calls clear if !empty().
 	void clearVisionFacade();
 	// Create facade data, to be used when actor enters area, wakes up, or temporary blindness ends.
-	void create(Actor& actor);
+	void create(Area& area, ActorIndex actor);
 	// Call on sleep or blinding.
 	void clear();
 	// Call when vision range changes.

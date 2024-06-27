@@ -4,18 +4,17 @@
 #include "config.h"
 #include "threadedTask.hpp"
 struct DeserializationMemo;
-class Actor;
 class LeaveAreaThreadedTask;
 class LeaveAreaObjective final : public Objective
 {
 public:
 	HasThreadedTask<LeaveAreaThreadedTask> m_task;
-	LeaveAreaObjective(Actor& a, uint8_t priority);
+	LeaveAreaObjective(ActorIndex a, uint8_t priority);
 	// No need to overide default to/from json.
 	void execute();
 	void cancel() { }
 	void delay() { }
-	void reset() { }
+	void reset(Area&) { }
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::LeaveArea; }
 	[[nodiscard]] std::string name() const { return "leave area"; }
 	[[nodiscard]] bool actorIsAdjacentToEdge() const;
@@ -26,7 +25,7 @@ class LeaveAreaThreadedTask final : public ThreadedTask
 	FindsPath m_findsPath;
 public:
 	LeaveAreaThreadedTask(LeaveAreaObjective& objective);
-	void readStep();
-	void writeStep();
-	void clearReferences() { m_objective.m_task.clearPointer(); }
+	void readStep(Simulation& simulation, Area* area);
+	void writeStep(Simulation& simulation, Area* area);
+	void clearReferences(Simulation&, Area*) { m_objective.m_task.clearPointer(); }
 };
