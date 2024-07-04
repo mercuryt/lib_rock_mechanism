@@ -2,12 +2,10 @@
 
 #include "config.h"
 #include "input.h"
-#include "pathRequest.h"
 #include "project.h"
 #include "reservable.h"
-#include "objective.h"
+#include "objectives/craft.h"
 #include "items/itemQuery.h"
-#include "terrainFacade.h"
 #include "types.h"
 
 #include <vector>
@@ -88,7 +86,7 @@ class CraftStepProject final : public Project
 	[[nodiscard]] std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> getByproducts() const;
 	[[nodiscard]] std::vector<std::pair<ActorQuery, Quantity>> getActors() const { return {}; }
 public:
-	CraftStepProject(Faction* faction, Area& area, BlockIndex location, const CraftStepType& cst, CraftJob& cj) : 
+	CraftStepProject(Faction& faction, Area& area, BlockIndex location, const CraftStepType& cst, CraftJob& cj) : 
 		Project(faction, area, location, 1), m_craftStepType(cst), m_craftJob(cj) { }
 	CraftStepProject(const Json& data, DeserializationMemo& deserializationMemo, CraftJob& cj);
 	// No toJson needed here, the base class one has everything.

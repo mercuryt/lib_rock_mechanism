@@ -11,8 +11,8 @@ class TestEvent final : public ScheduledEvent
 public:
 	bool& fired;
 	TestEvent(uint32_t delay, bool& f, Simulation& s, HasScheduledEvent<TestEvent>* h = nullptr) : ScheduledEvent(s, delay), holder(h), fired(f) { }
-	void execute(){ fired = true; }
-	void clearReferences() { if(holder) holder->clearPointer(); }
+	void execute(Simulation&, Area*){ fired = true; }
+	void clearReferences(Simulation&, Area*) { if(holder) holder->clearPointer(); }
 };
 TEST_CASE("eventSchedule")
 {
@@ -25,7 +25,7 @@ TEST_CASE("eventSchedule")
 		REQUIRE(simulation.m_eventSchedule.m_data.contains(11));
 		REQUIRE(simulation.m_eventSchedule.m_data.at(11).size() == 1);
 		REQUIRE(!fired);
-		simulation.m_eventSchedule.execute(11);
+		simulation.m_eventSchedule.doStep(11);
 		REQUIRE(fired);
 		fired = false;
 		REQUIRE(simulation.m_eventSchedule.m_data.size() == 1);
@@ -35,11 +35,11 @@ TEST_CASE("eventSchedule")
 		REQUIRE(simulation.m_eventSchedule.m_data.contains(11));
 		REQUIRE(simulation.m_eventSchedule.m_data.at(11).size() == 1);
 		simulation.doStep();
-		REQUIRE(eventPtr->percentComplete() == 10);
-		eventPtr->cancel();
+		REQUIRE(eventPtr->percentComplete(simulation) == 10);
+		eventPtr->cancel(simulation, nullptr);
 		REQUIRE(eventPtr->m_cancel);
 		REQUIRE(!fired);
-		simulation.m_eventSchedule.execute(11);
+		simulation.m_eventSchedule.doStep(11);
 		REQUIRE(!fired);
 		REQUIRE(simulation.m_eventSchedule.m_data.size() == 1);
 	}
@@ -50,7 +50,7 @@ TEST_CASE("eventSchedule")
 		REQUIRE(simulation.m_eventSchedule.m_data.contains(11));
 		REQUIRE(simulation.m_eventSchedule.m_data.at(11).size() == 1);
 		REQUIRE(!fired);
-		simulation.m_eventSchedule.execute(11);
+		simulation.m_eventSchedule.doStep(11);
 		REQUIRE(fired);
 	}
 	SUBCASE("raii does not fire")
@@ -62,7 +62,7 @@ TEST_CASE("eventSchedule")
 			REQUIRE(simulation.m_eventSchedule.m_data.at(11).size() == 1);
 		}
 		REQUIRE(!fired);
-		simulation.m_eventSchedule.execute(11);
+		simulation.m_eventSchedule.doStep(11);
 		REQUIRE(!fired);
 	}
 	SUBCASE("pausable holder")

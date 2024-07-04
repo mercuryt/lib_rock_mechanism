@@ -9,8 +9,8 @@ class ActorHasUniform final
 	Uniform* m_uniform = nullptr;
 	UniformObjective* m_objective = nullptr;
 public:
-	void set(Uniform& uniform);
-	void unset();
+	void set(Area& area, Uniform& uniform);
+	void unset(Area& area);
 	void recordObjective(UniformObjective& objective);
 	void clearObjective(UniformObjective& objective);
 	bool exists() const { return m_uniform; }

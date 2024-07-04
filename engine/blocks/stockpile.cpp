@@ -1,6 +1,7 @@
+#include "area.h"
 #include "blocks.h"
 #include "../stockpile.h"
-#include "item.h"
+#include "items/items.h"
 #include "shape.h"
 #include "types.h"
 void Blocks::stockpile_recordMembership(BlockIndex index, StockPile& stockPile)
@@ -48,13 +49,14 @@ bool Blocks::stockpile_isAvalible(BlockIndex index, Faction& faction) const
 		return true;
 	if(item_getAll(index).size() > 1)
 		return false;
-	Item& item = *item_getAll(index).front();
-	if(!item.isGeneric())
+	ItemIndex item = item_getAll(index).front();
+	Items& items = m_area.getItems();
+	if(!items.isGeneric(item))
 		return false;
 	StockPile& stockPile = m_stockPiles.at(index).at(&faction).stockPile;
 	if(!stockPile.accepts(item))
 		return false;
-	CollisionVolume volume = item.m_shape->getCollisionVolumeAtLocationBlock();
+	CollisionVolume volume = items.getShape(item).getCollisionVolumeAtLocationBlock();
 	return shape_getStaticVolume(index) + volume <= Config::maxBlockVolume;
 }
 bool Blocks::stockpile_contains(BlockIndex index, Faction& faction) const

@@ -1,11 +1,11 @@
 #pragma once
-#include "findsPath.h"
+#include "pathRequest.h"
 #include "project.h"
-#include "threadedTask.h"
 #include "objective.h"
 
 #include <cstdio>
 struct DeserializationMemo;
+struct FindPathResult;
 class InstallItemObjective;
 class InstallItemProject final : public Project
 {
@@ -24,23 +24,19 @@ public:
 	void onDelay() { cancel(); }
 	void offDelay() { assert(false); }
 };
-class InstallItemThreadedTask final : public ThreadedTask
+// Search for nearby item that needs installing.
+class InstallItemPathRequest final : public PathRequest
 {
 	InstallItemObjective& m_installItemObjective;
-	FindsPath m_findsPath;
 public:
-	InstallItemThreadedTask(Area& area, InstallItemObjective& iio);
-	// Search for nearby item that needs installing.
-	void readStep(Simulation& simulation, Area* area);
-	void writeStep(Simulation& simulation, Area* area);
-	void clearReferences(Simulation& simulation, Area* area);
+	InstallItemPathRequest(Area& area, InstallItemObjective& iio);
+	void callback(Area& area, FindPathResult& result);
 };
 class InstallItemObjective final : public Objective
 {
-	HasThreadedTask<InstallItemThreadedTask> m_threadedTask;
 	InstallItemProject* m_project;
 public:
-	InstallItemObjective(Area& area, ActorIndex a);
+	InstallItemObjective(ActorIndex a);
 	InstallItemObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void execute(Area& area); 
@@ -49,7 +45,7 @@ public:
 	void reset(Area& area);
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::InstallItem; }
 	std::string name() const { return "install item"; }
-	friend class InstallItemThreadedTask;
+	friend class InstallItemPathRequest;
 };
 class InstallItemObjectiveType final : public ObjectiveType
 {
@@ -64,7 +60,7 @@ class HasInstallItemDesignationsForFaction final
 	Faction& m_faction;
 public:
 	HasInstallItemDesignationsForFaction(Faction& faction) : m_faction(faction) { }
-	void add(BlockIndex block, ItemIndex item, Facing facing, Faction& faction);
+	void add(Area& area, BlockIndex block, ItemIndex item, Facing facing, Faction& faction);
 	void remove(Area& area, ItemIndex item);
 	bool empty() const { return m_designations.empty(); }
 	bool contains(const BlockIndex block) const { return m_designations.contains(block); }

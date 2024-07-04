@@ -22,23 +22,9 @@ class TargetedHaulProject final : public Project
 	void offDelay() { assert(false); }
 	Step getDuration() const { return Config::addToStockPileDelaySteps; }
 public:
-	TargetedHaulProject(Faction* f, Area& a, BlockIndex l, ItemIndex i) : Project(f, a, l, 4), m_item(i) { }
+	TargetedHaulProject(Faction& f, Area& a, BlockIndex l, ItemIndex i) : Project(f, a, l, 4), m_item(i) { }
 	TargetedHaulProject(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
-};
-class TargetedHaulObjective final : public Objective
-{
-	TargetedHaulProject& m_project;
-public:
-	TargetedHaulObjective(ActorIndex a, TargetedHaulProject& p) : Objective(a, Config::targetedHaulPriority), m_project(p) { m_project.addWorkerCandidate(m_actor, *this); }
-	TargetedHaulObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	void execute(Area&) { m_project.commandWorker(m_actor); }
-	void cancel(Area&) { m_project.removeWorker(m_actor); }
-	void delay(Area&) { }
-	void reset(Area& area) { cancel(area); }
-	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Haul; }
-	std::string name() const { return "haul"; }
 };
 
 class AreaHasTargetedHauling

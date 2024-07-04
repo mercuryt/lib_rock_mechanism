@@ -7,14 +7,15 @@
 #include "../simulation.h"
 #include "../util.h"
 #include "../pathRequest.h"
+#include "../blocks/blocks.h"
 #include "objective.h"
 #include "reservable.h"
 #include "terrainFacade.h"
 Speed Actors::move_getIndividualSpeedWithAddedMass(ActorIndex index, Mass mass) const
 {
-	Speed output = m_attributes.at(index).getMoveSpeed();
-	Mass carryMass = m_equipmentSet.at(index).getMass() + canPickUp_getMass(index) + mass;
-	Mass unencomberedCarryMass = m_attributes.at(index).getUnencomberedCarryMass();
+	Speed output = m_attributes.at(index)->getMoveSpeed();
+	Mass carryMass = m_equipmentSet.at(index)->getMass() + canPickUp_getMass(index) + mass;
+	Mass unencomberedCarryMass = m_attributes.at(index)->getUnencomberedCarryMass();
 	if(carryMass > unencomberedCarryMass)
 	{
 		float ratio = (float)unencomberedCarryMass / (float)carryMass;
@@ -59,7 +60,7 @@ void Actors::move_callback(ActorIndex index)
 	BlockIndex block = *m_pathIter.at(index);
 	// Follower is blocked, wait for them.
 	// TODO: Follower cannot proceed ever, permantly blocked.
-	if(m_lead.contains(index) && !m_lead.at(index).canMove(m_area))
+	if(m_lead.at(index) != nullptr && !m_lead.at(index)->canMove(m_area))
 		move_schedule(index);
 	Blocks& blocks = m_area.getBlocks();
 	// Path has become permanantly blocked since being generated, repath.
@@ -77,7 +78,7 @@ void Actors::move_callback(ActorIndex index)
 		{
 			m_destination.at(index) = BLOCK_INDEX_MAX;
 			m_path.clear();
-			m_hasObjectives.at(index).subobjectiveComplete();
+			m_hasObjectives.at(index)->subobjectiveComplete(m_area);
 		}
 		else
 		{
@@ -87,7 +88,7 @@ void Actors::move_callback(ActorIndex index)
 			if(blocks.shape_anythingCanEnterEver(nextBlock) && blocks.shape_shapeAndMoveTypeCanEnterEverFrom(block, *m_shape.at(index), *m_moveType.at(index), m_location.at(index)))
 				move_schedule(index);
 			else
-				m_hasObjectives.at(index).cannotCompleteSubobjective();
+				m_hasObjectives.at(index)->cannotCompleteSubobjective(m_area);
 		}
 	}
 	else
@@ -95,8 +96,8 @@ void Actors::move_callback(ActorIndex index)
 		// Path is temporarily blocked, wait a bit and then detour if still blocked.
 		if(m_moveRetries.at(index) == Config::moveTryAttemptsBeforeDetour)
 		{
-			if(m_hasObjectives.at(index).hasCurrent())
-				m_hasObjectives.at(index).detour();
+			if(m_hasObjectives.at(index)->hasCurrent())
+				m_hasObjectives.at(index)->detour(m_area);
 			else
 				move_setDestination(index, m_destination.at(index), true);
 		}
@@ -113,7 +114,7 @@ void Actors::move_schedule(ActorIndex index)
 	assert(m_pathIter.at(index) >= m_path.at(index).begin());
 	assert(m_pathIter.at(index) != m_path.at(index).end());
 	BlockIndex moveTo = *m_pathIter.at(index);
-	m_moveEvent.schedule(index, move_delayToMoveInto(index, moveTo), *this);
+	m_moveEvent.schedule(index, move_delayToMoveInto(index, moveTo), m_area, index);
 }
 void Actors::move_setDestination(ActorIndex index, BlockIndex destination, bool detour, bool adjacent, bool unreserved, bool reserve)
 {
@@ -157,11 +158,19 @@ void Actors::move_setDestinationAdjacentToItem(ActorIndex index, ItemIndex item,
 	assert(!isAdjacentToLocation(index, m_location.at(item)));
 	m_pathRequest[index]->createGoAdjacentToItem(m_area, index, item, detour, unreserved, BLOCK_DISTANCE_MAX, reserve);
 }
-void Actors::move_setDestinationAdjacentToPlant(ActorIndex index, PlantIndex item, bool detour, bool unreserved, bool reserve)
+void Actors::move_setDestinationAdjacentToPlant(ActorIndex index, PlantIndex plant, bool detour, bool unreserved, bool reserve)
 {
-	assert(!isAdjacentToPlant(index, item));
-	assert(!isAdjacentToLocation(index, m_location.at(item)));
+	assert(!isAdjacentToPlant(index, plant));
+	assert(!isAdjacentToLocation(index, m_location.at(plant)));
 	m_pathRequest[index]->createGoAdjacentToPlant(m_area, index, plant, detour, unreserved, BLOCK_DISTANCE_MAX, reserve);
+}
+void Actors::move_setDestinationAdjacentToPolymorphic(ActorIndex index, ActorOrItemIndex actorOrItemIndex, bool detour, bool unreserved, bool reserve)
+{
+	assert(actorOrItemIndex.exists());
+	if(actorOrItemIndex.isActor())
+		move_setDestinationAdjacentToActor(index, actorOrItemIndex.get(), detour, unreserved, reserve);
+	else
+		move_setDestinationAdjacentToItem(index, actorOrItemIndex.get(), detour, unreserved, reserve);
 }
 void Actors::move_setDestinationAdjacentToFluidType(ActorIndex index, const FluidType& fluidType, bool detour, bool unreserved, bool reserve, DistanceInBlocks maxRange)
 {
@@ -189,7 +198,7 @@ void Actors::move_onDeath(ActorIndex index) { move_clearAllEventsAndTasks(index)
 bool Actors::move_tryToReserveProposedDestination(ActorIndex index, std::vector<BlockIndex>& path)
 {
 	const Shape& shape = getShape(index);
-	CanReserve& canReserve = m_canReserve.at(index);
+	CanReserve& canReserve = *m_canReserve.at(index);
 	Blocks& blocks = m_area.getBlocks();
 	BlockIndex location = path.back();
 	Faction& faction = *getFaction(index);
@@ -211,11 +220,12 @@ bool Actors::move_tryToReserveProposedDestination(ActorIndex index, std::vector<
 			return false;
 		blocks.reserve(location, canReserve);
 	}
+	return true;
 }
 bool Actors::move_tryToReserveOccupied(ActorIndex index)
 {
 	const Shape& shape = getShape(index);
-	CanReserve& canReserve = m_canReserve.at(index);
+	CanReserve& canReserve = *m_canReserve.at(index);
 	Blocks& blocks = m_area.getBlocks();
 	BlockIndex location = getLocation(index);
 	Faction& faction = *getFaction(index);
@@ -235,15 +245,16 @@ bool Actors::move_tryToReserveOccupied(ActorIndex index)
 			return false;
 		blocks.reserve(location, canReserve);
 	}
+	return true;
 }
 void Actors::move_pathRequestCallback(ActorIndex index, std::vector<BlockIndex> path, bool useCurrentLocation, bool reserveDestination)
 {
-	if(path.empty() || (reserveDestination && !move_tryToReserveDestination(index)))
+	if(path.empty() || (reserveDestination && !move_tryToReserveProposedDestination(index, path)))
 	{
 		if(useCurrentLocation && (!reserveDestination || move_tryToReserveOccupied(index)))
 		{
 			// The actor's current location is already acceptable.
-			m_hasObjectives.at(index).subobjectiveComplete();
+			m_hasObjectives.at(index)->subobjectiveComplete(m_area);
 			return;
 		}
 		// TODO:
@@ -254,7 +265,7 @@ void Actors::move_pathRequestCallback(ActorIndex index, std::vector<BlockIndex> 
 		// cannotFulfillObjective is the most pessamistic choice.
 		// This is probably best solved by callback.
 		//TODO: This conditional only exists because objectives are not mandated to always exist for all actors.
-		HasObjectives& hasObjectives = m_hasObjectives.at(index);
+		HasObjectives& hasObjectives = *m_hasObjectives.at(index);
 		if(hasObjectives.hasCurrent())
 		{
 			// Objectives can handle the path not found situation directly or default to cannotFulfill.
@@ -262,9 +273,9 @@ void Actors::move_pathRequestCallback(ActorIndex index, std::vector<BlockIndex> 
 			if(!objective.onCanNotRepath(m_area))
 			{
 				if(objective.isNeed())
-					hasObjectives.cannotFulfillNeed(objective);
+					hasObjectives.cannotFulfillNeed(m_area, objective);
 				else
-					hasObjectives.cannotFulfillObjective(objective);
+					hasObjectives.cannotFulfillObjective(m_area, objective);
 			}
 		}
 	}
@@ -307,5 +318,5 @@ Step Actors::move_stepsTillNextMoveEvent(ActorIndex index) const
 // MoveEvent
 MoveEvent::MoveEvent(Step delay, Area& area, ActorIndex actor, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_actor(actor) { }
-void MoveEvent::execute(Simulation&, Area* area) { area->m_actors.move_callback(m_actor); }
-void MoveEvent::clearReferences(Simulation &, Area *area) { area->m_actors.m_moveEvent.clearPointer(m_actor); }
+void MoveEvent::execute(Simulation&, Area* area) { area->getActors().move_callback(m_actor); }
+void MoveEvent::clearReferences(Simulation &, Area *area) { area->getActors().m_moveEvent.clearPointer(m_actor); }

@@ -9,6 +9,8 @@
 #include "simulation.h"
 #include "woundType.h"
 #include "area.h"
+// For Attack declaration.
+#include "actors/actors.h"
 #include <cstdint>
 // Static method.
 const BodyPartType& BodyPartType::byName(const std::string name)
@@ -27,7 +29,7 @@ const BodyType& BodyType::byName(const std::string name)
 Wound::Wound(Area& area, ActorIndex a, const WoundType wt, BodyPart& bp, Hit h, uint32_t bvr, Percent ph) :
 	woundType(wt), bodyPart(bp), hit(h), bleedVolumeRate(bvr), percentHealed(ph), healEvent(area.m_eventSchedule)
 {
-	const AnimalSpecies& species = area.m_actors.getSpecies(a);
+	const AnimalSpecies& species = area.getActors().getSpecies(a);
 	maxPercentTemporaryImpairment = WoundCalculations::getPercentTemporaryImpairment(hit, bodyPart.bodyPartType, species.bodyScale);
 	maxPercentPermanantImpairment = WoundCalculations::getPercentPermanentImpairment(hit, bodyPart.bodyPartType, species.bodyScale);
 }
@@ -84,7 +86,7 @@ Json BodyPart::toJson() const
 Body::Body(Area& area, ActorIndex a) :  m_bleedEvent(area.m_eventSchedule), m_woundsCloseEvent(area.m_eventSchedule), m_actor(a) { }
 void Body::initalize(Area& area)
 {
-	const AnimalSpecies& species = area.m_actors.getSpecies(m_actor);
+	const AnimalSpecies& species = area.getActors().getSpecies(m_actor);
 	setMaterialType(species.materialType);
 	for(const BodyPartType* bodyPartType : species.bodyType.bodyPartTypes)
 	{
@@ -190,7 +192,7 @@ void Body::getHitDepth(Hit& hit, const BodyPart& bodyPart)
 Wound& Body::addWound(Area& area, BodyPart& bodyPart, Hit& hit)
 {
 	assert(hit.depth != 0);
-	Actors& actors = area.m_actors;
+	Actors& actors = area.getActors();
 	uint32_t scale = actors.getSpecies(m_actor).bodyScale;
 	uint32_t bleedVolumeRate = WoundCalculations::getBleedVolumeRate(hit, bodyPart.bodyPartType, scale);
 	Wound& wound = bodyPart.wounds.emplace_back(area, m_actor, hit.woundType, bodyPart, hit, bleedVolumeRate);
@@ -244,14 +246,14 @@ void Body::woundsClose(Area& area)
 }
 void Body::bleed(Area& area)
 {
-	Actors& actors = area.m_actors;
+	Actors& actors = area.getActors();
 	m_volumeOfBlood--;
 	float ratio = (float)m_volumeOfBlood / (float)healthyBloodVolume();
 	if(ratio <= Config::bleedToDeathRatio)
 		actors.die(m_actor, CauseOfDeath::bloodLoss);
 	else
 	{
-		if (actors.isAwake(m_actor) && ratio < Config::bleedToUnconciousessRatio)
+		if (actors.sleep_isAwake(m_actor) && ratio < Config::bleedToUnconciousessRatio)
 			actors.passout(m_actor, Config::bleedPassOutDuration);
 		recalculateBleedAndImpairment(area);
 	}
@@ -324,9 +326,9 @@ void Body::recalculateBleedAndImpairment(Area& area)
 		m_bleedEvent.maybeUnschedule();
 	}
 	// Update move speed for current move impairment level.
-	area.m_actors.move_updateIndividualSpeed(m_actor);
+	area.getActors().move_updateIndividualSpeed(m_actor);
 	// Update combat score for current manipulation impairment level.
-	area.m_actors.combat_update(m_actor);
+	area.getActors().combat_update(m_actor);
 }
 Wound& Body::getWoundWhichIsBleedingTheMost()
 {
@@ -398,7 +400,7 @@ std::vector<Attack> Body::getMeleeAttacks() const
 }
 Volume Body::getVolume(Area& area) const
 {
-	return util::scaleByPercent(m_totalVolume, area.m_actors.getPercentGrown(m_actor));
+	return util::scaleByPercent(m_totalVolume, area.getActors().getPercentGrown(m_actor));
 }
 bool Body::isInjured() const
 {

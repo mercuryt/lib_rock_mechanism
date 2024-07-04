@@ -2,6 +2,7 @@
 #include "../fluidGroup.h"
 #include "../area.h"
 #include "../config.h"
+#include "../blocks/blocks.h"
 #include <algorithm>
 DrainQueue::DrainQueue(FluidGroup& fluidGroup) : FluidQueue(fluidGroup) {}
 void DrainQueue::buildFor(std::unordered_set<BlockIndex>& members)

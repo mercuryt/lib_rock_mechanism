@@ -33,7 +33,9 @@ class AnimalGrowthEvent final : public ScheduledEvent
 {
 	CanGrow& m_canGrow;
 public:
-	AnimalGrowthEvent(Area& area, Step delay, CanGrow& cg, const Step start = 0);
+	// Most events take area as their first argument but events which have resume called on them must take delay as first argument.
+	// TODO: Make all events take delay as first argument.
+	AnimalGrowthEvent(Step delay, Area& area, CanGrow& cg, Step start = 0);
 	void execute(Simulation&, Area* area) { m_canGrow.increment(*area); }
 	void clearReferences(Simulation&, Area*){ m_canGrow.m_event.clearPointer(); }
 };

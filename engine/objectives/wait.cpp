@@ -1,3 +1,4 @@
+#include "actors/actors.h"
 #include "simulation.h"
 #include "wait.h"
 #include "objective.h"
@@ -5,7 +6,7 @@
 WaitObjective::WaitObjective(Area& area, ActorIndex a, Step duration) :
 	Objective(a, 0), m_event(area.m_eventSchedule)
 {
-	m_event.schedule(duration, *this);
+	m_event.schedule(duration, area, *this);
 }
 /*
 WaitObjective::WaitObjective(const Json& data, DeserializationMemo& deserializationMemo) :
@@ -25,11 +26,11 @@ Json WaitObjective::toJson() const
 	return data;
 }
 */
-void WaitObjective::execute(Area& area) { area.m_actors.objective_complete(m_actor, *this); }
+void WaitObjective::execute(Area& area) { area.getActors().objective_complete(m_actor, *this); }
 void WaitObjective::reset(Area& area) 
 { 
 	m_event.maybeUnschedule(); 
-	area.m_actors.canReserve_clearAll(m_actor); 
+	area.getActors().canReserve_clearAll(m_actor); 
 }
-WaitScheduledEvent::WaitScheduledEvent(Area& area, Step delay, WaitObjective& wo, const Step start) :
+WaitScheduledEvent::WaitScheduledEvent(Step delay, Area& area, WaitObjective& wo, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_objective(wo) { }

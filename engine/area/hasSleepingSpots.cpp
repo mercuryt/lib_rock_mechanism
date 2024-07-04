@@ -2,6 +2,7 @@
 #include "../deserializationMemo.h"
 #include "../designations.h"
 #include "../simulation.h"
+#include "../blocks/blocks.h"
 #include "../area.h"
 void AreaHasSleepingSpots::load(const Json& data, DeserializationMemo&)
 {

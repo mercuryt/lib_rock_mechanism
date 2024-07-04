@@ -1,9 +1,7 @@
 #pragma once
 
 #include "config.h"
-#include "objective.h"
 #include "eventSchedule.hpp"
-#include "pathRequest.h"
 #include "types.h"
 #include "findsPath.h"
 

@@ -43,13 +43,15 @@ public:
 	// Use in Actors::move_callback to prevent the line leader from moving if a follower can't.
 	[[nodiscard]] bool canMove(Area& area);
 	[[nodiscard]] bool isLeading() const;
-	[[nodiscard]] bool isLeading(ActorOrItemIndex hasShape) const;
+	[[nodiscard]] bool isLeadingActor(ActorIndex actor) const;
+	[[nodiscard]] bool isLeadingItem(ItemIndex item) const;
+	[[nodiscard]] bool isLeadingPolymorphic(ActorOrItemIndex hasShape) const;
 	[[nodiscard]] ActorOrItemIndex getFollower();
 	[[nodiscard]] const ActorOrItemIndex& getFollower() const;
 	[[nodiscard]] Speed getMoveSpeed(Area& area) const;
 	[[nodiscard]] std::deque<BlockIndex>& getLocationQueue(Area& area);
 	[[nodiscard]] std::unordered_set<BlockIndex> getOccuiped(Area& area); 
 	friend class CanFollow;
-	[[nodiscard]] static Speed getMoveSpeedForGroupWithAddedMass(Area& area, std::vector<ActorOrItemIndex>& actorsAndItems, Mass addedRollingMass = 0, Mass addedDeadMass = 0);
-	[[nodiscard]] static Speed getMoveSpeedForGroup(Area& area, std::vector<ActorOrItemIndex>& actorsAndItems) { return getMoveSpeedForGroupWithAddedMass(area, actorsAndItems); }
+	[[nodiscard]] static Speed getMoveSpeedForGroupWithAddedMass(const Area& area, std::vector<ActorOrItemIndex>& actorsAndItems, Mass addedRollingMass = 0, Mass addedDeadMass = 0);
+	[[nodiscard]] static Speed getMoveSpeedForGroup(const Area& area, std::vector<ActorOrItemIndex>& actorsAndItems) { return getMoveSpeedForGroupWithAddedMass(area, actorsAndItems); }
 };

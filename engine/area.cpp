@@ -3,6 +3,10 @@
 */
 
 #include "area.h"
+#include "blocks/blocks.h"
+#include "actors/actors.h"
+#include "items/items.h"
+#include "plants.h"
 #include "config.h"
 #include "deserializationMemo.h"
 #include "fire.h"
@@ -13,17 +17,18 @@
 //#include "worldforge/worldLocation.h"
 #include <algorithm>
 #include <iostream>
+#include <memory>
 #include <numeric>
 #include <string>
 #include <sys/types.h>
 #include <unordered_set>
 
 Area::Area(AreaId id, std::wstring n, Simulation& s, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) :
-	m_blocks(*this, x, y, z),
+	m_blocks(std::make_unique<Blocks>(*this, x, y, z)),
+	m_actors(std::make_unique<Actors>(*this)),
+	m_plants(std::make_unique<Plants>(*this)),
+	m_items(std::make_unique<Items>(*this)),
 	m_eventSchedule(s, this),
-	m_actors(*this),
-	m_plants(*this),
-	m_items(*this),
 	m_hasTemperature(*this),
 	m_hasTerrainFacades(*this),
 	m_fires(*this),
@@ -176,7 +181,7 @@ Json Area::toJson() const
 void Area::setup()
 {
 	m_locationBuckets.initalize();
-	m_blocks.assignLocationBuckets();
+	getBlocks().assignLocationBuckets();
 	updateClimate();
 }
 void Area::doStep()
@@ -235,8 +240,9 @@ void Area::updateClimate()
 	if(m_simulation.m_step % Config::stepsPerDay == 0)
 	{
 		uint16_t day = DateTime(m_simulation.m_step).day;
-		for(PlantIndex plant : m_plants.getAll())
-			m_plants.setDayOfYear(plant, day);
+		Plants& plants  = getPlants();
+		for(PlantIndex plant : plants.getAll())
+			plants.setDayOfYear(plant, day);
 		m_hasFarmFields.setDayOfYear(day);
 	}
 }
@@ -246,17 +252,20 @@ std::string Area::toS() const
 }
 void Area::logActorsAndItems() const
 {
-	for(ActorIndex actor : m_actors.getAll())
-		m_actors.log(actor);
-	for(ItemIndex item : m_items.getOnSurface())
-		m_items.log(item);
+	const Actors& actors = getActors();
+	const Items& items = getItems();
+	for(ActorIndex actor : actors.getAll())
+		actors.log(actor);
+	for(ItemIndex item : items.getOnSurface())
+		items.log(item);
 }
 uint32_t Area::getTotalCountOfItemTypeOnSurface(const ItemType& itemType) const
 {
+	const Items& items = getItems();
 	uint32_t output = 0;
-	for(ItemIndex item : m_items.getOnSurface())
-		if(&itemType == &m_items.getItemType(item))
-			output += m_items.getQuantity(item);
+	for(ItemIndex item : items.getOnSurface())
+		if(&itemType == &items.getItemType(item))
+			output += items.getQuantity(item);
 	return output;
 }
 void Area::clearReservations()

@@ -1,10 +1,5 @@
 #pragma once
-#include "../threadedTask.hpp"
 #include "../objective.h"
-#include "../findsPath.h"
-
-class Actor;
-class Item;
 
 class UnequipItemObjective final : public Objective
 {
@@ -13,9 +8,9 @@ class UnequipItemObjective final : public Objective
 public:
 	UnequipItemObjective(ActorIndex actor, ItemIndex item, BlockIndex block);
 	UnequipItemObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute();
-	void cancel();
-	void delay() { cancel(); }
+	void execute(Area&);
+	void cancel(Area&);
+	void delay(Area& area) { cancel(area); }
 	void reset(Area& area);
 	[[nodiscard]] std::string name() const { return "equip"; }
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Unequip; }

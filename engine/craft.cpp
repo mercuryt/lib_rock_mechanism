@@ -1,10 +1,12 @@
 #include "craft.h"
+#include "actors/actors.h"
+#include "items/items.h"
 #include "area.h"
 #include "deserializationMemo.h"
 #include "materialType.h"
 #include "pathRequest.h"
-#include "simulation/hass.h"
 #include "terrainFacade.h"
+#include "objectives/dig.h"
 #include "types.h"
 #include "util.h"
 #include "simulation.h"
@@ -77,9 +79,10 @@ void CraftStepProject::onCancel()
 }
 void CraftStepProject::onAddToMaking(ActorIndex actor)
 {
-	auto [canEnter, facing] = m_area.getBlocks().shape_canEnterCurrentlyWithAnyFacingReturnFacing(m_location, actor);
+	Actors& actors = m_area.getActors();
+	auto [canEnter, facing] = m_area.getBlocks().shape_canEnterCurrentlyWithAnyFacingReturnFacing(m_location, actors.getShape(actor), actors.getBlocks(actor));
 	if(canEnter)
-		m_area.getActors().setLocationAndFacing(actor, m_location, facing);
+		actors.setLocationAndFacing(actor, m_location, facing);
 	else
 		setDelayOn();
 }
@@ -300,7 +303,6 @@ void HasCraftingLocationsAndJobsForFaction::stepComplete(CraftJob& craftJob, Act
 		if(craftJob.workPiece == ITEM_INDEX_MAX)
 		{
 			ItemParamaters params{
-				.simulation=m_area.m_simulation,
 				.itemType=craftJob.craftJobType.productType,
 				.materialType=*craftJob.materialType,
 				.craftJob=&craftJob,
@@ -362,7 +364,6 @@ void HasCraftingLocationsAndJobsForFaction::jobComplete(CraftJob& craftJob, Bloc
 		else
 		{
 			ItemParamaters params{
-				.simulation=m_area.m_simulation,
 				.itemType=craftJob.craftJobType.productType,
 				.materialType=*craftJob.materialType,
 				.location=location,
@@ -374,13 +375,13 @@ void HasCraftingLocationsAndJobsForFaction::jobComplete(CraftJob& craftJob, Bloc
 	}
 	if(!m_area.m_hasStockPiles.contains(m_faction))
 		m_area.m_hasStockPiles.registerFaction(m_faction);
-	m_area.m_hasStockPiles.at(m_faction).maybeAdd(product);
+	m_area.m_hasStockPiles.at(m_faction).maybeAddItem(product);
 	m_jobs.remove(craftJob);
 }
 void HasCraftingLocationsAndJobsForFaction::makeAndAssignStepProject(CraftJob& craftJob, BlockIndex location, CraftObjective& objective)
 {
 	Actors& actors = m_area.getActors();
-	craftJob.craftStepProject = std::make_unique<CraftStepProject>(actors.getFaction(objective.m_actor), m_area, location, *craftJob.stepIterator, craftJob);
+	craftJob.craftStepProject = std::make_unique<CraftStepProject>(*actors.getFaction(objective.m_actor), m_area, location, *craftJob.stepIterator, craftJob);
 	std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<CraftStepProjectHasShapeDishonorCallback>(*craftJob.craftStepProject.get());
 	craftJob.craftStepProject->setLocationDishonorCallback(std::move(dishonorCallback));
 	craftJob.craftStepProject->addWorkerCandidate(objective.m_actor, objective);

@@ -4,21 +4,23 @@
 #include "../random.h"
 #include "../config.h"
 #include "../simulation.h"
+#include "actors/actors.h"
 #include <memory>
 // PathRequest
 WanderPathRequest::WanderPathRequest(Area& area, WanderObjective& objective) : m_objective(objective)
 {
 	Random& random = area.m_simulation.m_random;
 	m_blockCounter = random.getInRange(Config::wanderMinimimNumberOfBlocks, Config::wanderMaximumNumberOfBlocks);
-	std::function<bool(BlockIndex)> condition = [this](BlockIndex) { return !m_blockCounter--; };
+	std::function<bool(BlockIndex, Facing)> condition = [this](BlockIndex, Facing) { return !m_blockCounter--; };
 	createGoToCondition(area, m_objective.m_actor, condition, false, false, BLOCK_DISTANCE_MAX);
 }
-void WanderPathRequest::callback(Area& area, FindPathResult result)
+void WanderPathRequest::callback(Area& area, FindPathResult& result)
 {
+	Actors& actors = area.getActors();
 	if(result.path.empty())
-		area.m_actors.wait(m_objective.m_actor, Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective);
+		actors.wait(m_objective.m_actor, Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective);
 	else
-		area.m_actors.move_setPath(m_objective.m_actor, result.path);
+		actors.move_setPath(m_objective.m_actor, result.path);
 }
 // Objective.
 WanderObjective::WanderObjective(ActorIndex a) : Objective(a, 0u) { }
@@ -38,10 +40,12 @@ Json WanderObjective::toJson() const
 void WanderObjective::execute(Area& area) 
 { 
 	std::unique_ptr<PathRequest> m_pathRequest = std::make_unique<WanderPathRequest>(area, *this);
-	area.m_actors.move_setDestinationWithPathRequest(std::move(m_pathRequest));
+	area.getActors().move_pathRequestRecord(m_actor, std::move(m_pathRequest));
 }
+void WanderObjective::cancel(Area& area) { area.getActors().move_pathRequestMaybeCancel(m_actor); }
+bool WanderObjective::hasPathRequest(const Area& area) const { return area.getActors().move_hasPathRequest(m_actor); }
 void WanderObjective::reset(Area& area) 
 { 
 	cancel(area); 
-	area.m_actors.canReserve_clearAll(m_actor);
+	area.getActors().canReserve_clearAll(m_actor);
 }

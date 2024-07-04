@@ -2,6 +2,8 @@
 #include "../area.h"
 #include "../construct.h"
 #include "../terrainFacade.h"
+#include "actors/actors.h"
+#include "blocks/blocks.h"
 // PathRequest.
 ConstructPathRequest::ConstructPathRequest(Area& area, ConstructObjective& co) : m_constructObjective(co)
 {
@@ -13,7 +15,7 @@ ConstructPathRequest::ConstructPathRequest(Area& area, ConstructObjective& co) :
 	DistanceInBlocks maxRange = Config::maxRangeToSearchForConstructionDesignations;
 	createGoAdjacentToCondition(area, m_constructObjective.m_actor, constructCondition, m_constructObjective.m_detour, unreserved, maxRange, BLOCK_INDEX_MAX);
 }
-void ConstructPathRequest::callback(Area& area, FindPathResult result)
+void ConstructPathRequest::callback(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
 	if(result.path.empty() && !result.useCurrentPosition)

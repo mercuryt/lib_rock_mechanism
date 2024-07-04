@@ -1,6 +1,7 @@
 #include "cuboid.h"
 #include "area.h"
 #include "types.h"
+#include "blocks/blocks.h"
 
 #include <cassert>
 Cuboid::Cuboid(Blocks& b, BlockIndex h, BlockIndex l) : m_blocks(&b), m_highest(h), m_lowest(l)

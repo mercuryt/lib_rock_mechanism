@@ -8,15 +8,19 @@ void Actors::drink_setNeedsFluid(ActorIndex index)
 {
 	m_mustDrink.at(index)->setNeedsFluid(m_area);
 }
-CollisionVolume Actors::drink_getVolumeOfFluidRequested(ActorIndex index)
+CollisionVolume Actors::drink_getVolumeOfFluidRequested(ActorIndex index) const
 {
 	return m_mustDrink.at(index)->getVolumeFluidRequested();
 }
-bool Actors::drink_needsFluid(ActorIndex index)
+bool Actors::drink_isThirsty(ActorIndex index) const
 {
 	return m_mustDrink.at(index)->needsFluid();
 }
-const FluidType& Actors::drink_getFluidType(ActorIndex index)
+const FluidType& Actors::drink_getFluidType(ActorIndex index) const
 {
 	return m_mustDrink.at(index)->getFluidType();
+}
+bool Actors::drink_thirstEventExists(ActorIndex index) const
+{
+	return m_mustDrink.at(index)->thirstEventExists();
 }

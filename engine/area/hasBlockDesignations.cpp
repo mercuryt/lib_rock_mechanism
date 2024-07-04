@@ -3,6 +3,7 @@
 #include "../designations.h"
 #include "../json.h"
 #include "../deserializationMemo.h"
+#include "blocks/blocks.h"
 AreaHasBlockDesignationsForFaction::AreaHasBlockDesignationsForFaction(Area& area) : m_area(area)
 {
 	m_designations.resize((int)area.getBlocks().size() * (int)BlockDesignation::BLOCK_DESIGNATION_MAX);

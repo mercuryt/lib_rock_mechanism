@@ -4,6 +4,8 @@
 #include "deserializeDishonorCallbacks.h"
 #include "designations.h"
 #include "simulation.h"
+#include "plants.h"
+#include "blocks/blocks.h"
 #include <algorithm>
 //Input
 /*
@@ -84,7 +86,7 @@ bool HasFarmFieldsForFaction::hasGivePlantsFluidDesignations() const
 PlantIndex HasFarmFieldsForFaction::getHighestPriorityPlantForGiveFluid()
 {
 	assert(!m_plantsNeedingFluid.empty());
-	Plants& plants = m_area.m_plants;
+	Plants& plants = m_area.getPlants();
 	if(!m_plantsNeedingFluidIsSorted)
 	{
 		std::ranges::sort(m_plantsNeedingFluid, [&](PlantIndex a, PlantIndex b){
@@ -117,13 +119,13 @@ void HasFarmFieldsForFaction::addGivePlantFluidDesignation(PlantIndex plant)
 	assert(std::ranges::find(m_plantsNeedingFluid, plant) == m_plantsNeedingFluid.end());
 	m_plantsNeedingFluidIsSorted = false;
 	m_plantsNeedingFluid.push_back(plant);
-	m_area.getBlocks().designation_set(m_area.m_plants.getLocation(plant), m_faction, BlockDesignation::GivePlantFluid);
+	m_area.getBlocks().designation_set(m_area.getPlants().getLocation(plant), m_faction, BlockDesignation::GivePlantFluid);
 }
 void HasFarmFieldsForFaction::removeGivePlantFluidDesignation(PlantIndex plant)
 {
 	assert(std::ranges::find(m_plantsNeedingFluid, plant) != m_plantsNeedingFluid.end());
 	std::erase(m_plantsNeedingFluid, plant);
-	m_area.getBlocks().designation_unset(m_area.m_plants.getLocation(plant), m_faction, BlockDesignation::GivePlantFluid);
+	m_area.getBlocks().designation_unset(m_area.getPlants().getLocation(plant), m_faction, BlockDesignation::GivePlantFluid);
 }
 void HasFarmFieldsForFaction::addSowSeedsDesignation(BlockIndex block)
 {
@@ -141,13 +143,13 @@ void HasFarmFieldsForFaction::addHarvestDesignation(PlantIndex plant)
 {
 	assert(!m_plantsToHarvest.contains(plant));
 	m_plantsToHarvest.insert(plant);
-	m_area.getBlocks().designation_set(m_area.m_plants.getLocation(plant), m_faction, BlockDesignation::Harvest);
+	m_area.getBlocks().designation_set(m_area.getPlants().getLocation(plant), m_faction, BlockDesignation::Harvest);
 }
 void HasFarmFieldsForFaction::removeHarvestDesignation(PlantIndex plant)
 {
 	assert(m_plantsToHarvest.contains(plant));
 	m_plantsToHarvest.erase(plant);
-	m_area.getBlocks().designation_unset(m_area.m_plants.getLocation(plant), m_faction, BlockDesignation::Harvest);
+	m_area.getBlocks().designation_unset(m_area.getPlants().getLocation(plant), m_faction, BlockDesignation::Harvest);
 }
 void HasFarmFieldsForFaction::setDayOfYear(uint32_t dayOfYear)
 {
@@ -211,7 +213,7 @@ void HasFarmFieldsForFaction::designateBlocks(FarmField& farmField, std::unorder
 		for(BlockIndex block : designated)
 			addSowSeedsDesignation(block);
 	Blocks& blocks = m_area.getBlocks();
-	Plants& plants = m_area.m_plants;
+	Plants& plants = m_area.getPlants();
 	for(BlockIndex block : designated)
 		if(blocks.plant_exists(block))
 		{

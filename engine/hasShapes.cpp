@@ -1,8 +1,12 @@
 #include "hasShapes.h"
+#include "actors/actors.h"
 #include "area.h"
+#include "blocks/blocks.h"
+#include "items/items.h"
 #include "json.h"
 #include "config.h"
 #include "locationBuckets.h"
+#include "plants.h"
 #include "simulation.h"
 #include "types.h"
 #include "util.h"
@@ -104,6 +108,7 @@ void HasShapes::setStatic(HasShapeIndex index, bool isTrue)
 void HasShapes::updateIsOnSurface(HasShapeIndex index, BlockIndex block)
 {
 	assert(block == getLocation(index));
+
 	if(m_area.getBlocks().isOnSurface(block))
 		m_onSurface.insert(index);
 	else
@@ -112,8 +117,11 @@ void HasShapes::updateIsOnSurface(HasShapeIndex index, BlockIndex block)
 void HasShapes::sortRange(HasShapeIndex begin, HasShapeIndex end)
 {
 	assert(end > begin);
-	auto zip = std::ranges::views::zip(m_onSurface, m_shape, m_location, m_facing, m_faction, m_blocks, m_static, m_underground);
+	//TODO: impliment sort with library rather then views::zip for clang / msvc support.
+	/*
+	auto zip = std::ranges::views::zip(m_shape, m_location, m_facing, m_faction, m_blocks, m_static, m_underground);
 	std::ranges::sort(zip.begin() + begin, zip.end() + end, SpatialSort);
+	*/
 }
 bool HasShapes::isAdjacentToActor(HasShapeIndex index, ActorIndex actor) const
 {
@@ -131,25 +139,25 @@ bool HasShapes::isAdjacentToActorAt(HasShapeIndex index, BlockIndex location, Fa
 {
 	auto occupied = getBlocksWhichWouldBeOccupiedAtLocationAndFacing(index, location, facing);
 	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return util::vectorContains(occupied, block); };
-	return m_area.m_actors.predicateForAnyAdjacentBlock(actor, predicate);
+	return m_area.getActors().predicateForAnyAdjacentBlock(actor, predicate);
 }
 bool HasShapes::isAdjacentToItemAt(HasShapeIndex index, BlockIndex location, Facing facing, ItemIndex item) const
 {
 	auto occupied = getBlocksWhichWouldBeOccupiedAtLocationAndFacing(index, location, facing);
 	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return util::vectorContains(occupied, block); };
-	return m_area.m_items.predicateForAnyAdjacentBlock(item, predicate);
+	return m_area.getItems().predicateForAnyAdjacentBlock(item, predicate);
 }
 bool HasShapes::isAdjacentToPlantAt(HasShapeIndex index, BlockIndex location, Facing facing, PlantIndex plant) const
 {
 	auto occupied = getBlocksWhichWouldBeOccupiedAtLocationAndFacing(index, location, facing);
 	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return util::vectorContains(occupied, block); };
-	return m_area.m_plants.predicateForAnyAdjacentBlock(plant, predicate);
+	return m_area.getPlants().predicateForAnyAdjacentBlock(plant, predicate);
 }
 DistanceInBlocks HasShapes::distanceToActor(HasShapeIndex index, ActorIndex actor) const
 {
 	// TODO: Make handle multi block creatures correctly somehow.
 	// Use line of sight?
-	return m_area.getBlocks().distance(m_location.at(index), m_area.m_actors.getLocation(actor));
+	return m_area.getBlocks().distance(m_location.at(index), m_area.getActors().getLocation(actor));
 }
 bool HasShapes::allOccupiedBlocksAreReservable(HasShapeIndex index, Faction& faction) const
 {
@@ -165,11 +173,30 @@ bool HasShapes::isAdjacentToAny(HasShapeIndex index, std::unordered_set<BlockInd
 	std::function<bool(const BlockIndex)> predicate = [&](const BlockIndex block) { return locations.contains(block); };
 	return predicateForAnyAdjacentBlock(index, predicate);
 }
+bool HasShapes::isOnEdgeAt(HasShapeIndex index, BlockIndex location, Facing facing) const
+{
+	Blocks& blocks = m_area.getBlocks();
+	std::function<bool(const BlockIndex)> predicate = [&blocks](const BlockIndex block) { return blocks.isEdge(block); };
+	return predicateForAnyOccupiedBlockAtLocationAndFacing(index, predicate, location, facing);
+}
+bool HasShapes::isOnEdge(HasShapeIndex index) const
+{
+	Blocks& blocks = m_area.getBlocks();
+	std::function<bool(const BlockIndex)> predicate = [&blocks](const BlockIndex block) { return blocks.isEdge(block); };
+	return predicateForAnyOccupiedBlock(index, predicate);
+}
 bool HasShapes::predicateForAnyOccupiedBlock(HasShapeIndex index, std::function<bool(const BlockIndex)> predicate) const
 {
 	assert(!m_blocks.at(index).empty());
 	for(BlockIndex block : m_blocks.at(index))
 		if(predicate(block))
+			return true;
+	return false;
+}
+bool HasShapes::predicateForAnyOccupiedBlockAtLocationAndFacing(HasShapeIndex index, std::function<bool(const BlockIndex)> predicate, BlockIndex location, Facing facing) const
+{
+	for(BlockIndex occupied : const_cast<HasShapes&>(*this).getBlocksWhichWouldBeOccupiedAtLocationAndFacing(index, location, facing))
+		if(predicate(occupied))
 			return true;
 	return false;
 }
@@ -283,10 +310,9 @@ ItemIndex HasShapes::getItemWhichIsAdjacentWithPredicate(HasShapeIndex index, st
 }
 bool HasShapes::allBlocksAtLocationAndFacingAreReservable(HasShapeIndex index, const BlockIndex location, Facing facing, Faction& faction) const
 {
-	for(BlockIndex occupied : const_cast<HasShapes&>(*this).getBlocksWhichWouldBeOccupiedAtLocationAndFacing(index, location, facing))
-		if(m_area.getBlocks().isReserved(occupied, faction))
-			return false;
-	return true;
+	Blocks& blocks = m_area.getBlocks();
+	std::function<bool(const BlockIndex)> predicate = [&blocks, &faction](const BlockIndex occupied) { return blocks.isReserved(occupied, faction); };
+	return predicateForAnyOccupiedBlockAtLocationAndFacing(index, predicate, location, facing);
 }
 void HasShapes::log(HasShapeIndex index) const
 {

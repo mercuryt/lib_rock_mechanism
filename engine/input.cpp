@@ -1,5 +1,5 @@
 #include "input.h"
-#include "actor.h"
+/*
 // InputAction
 InputAction::InputAction(std::unordered_set<Actor*>& actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue) :
 	m_emplacementType(emplacementType), m_actors(actors)
@@ -39,3 +39,4 @@ void InputQueue::flush()
 		action->execute();
 	m_actions.clear();
 }
+*/

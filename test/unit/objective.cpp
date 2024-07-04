@@ -1,7 +1,7 @@
 #include "../../lib/doctest.h"
 #include "../../engine/objective.h"
 #include "../../engine/animalSpecies.h"
-#include "../../engine/actor.h"
+#include "../../engine/actors/actors.h"
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation.h"

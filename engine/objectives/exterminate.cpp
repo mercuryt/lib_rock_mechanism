@@ -1,9 +1,13 @@
 #include "exterminate.h"
 #include "../simulation.h"
-#include "../actor.h"
+#include "../actors/actors.h"
 #include "../area.h"
 #include "../deserializationMemo.h"
-ExterminateObjective::ExterminateObjective(Actor& a, BlockIndex destination) : Objective(a, Config::exterminatePriority), m_destination(destination), m_event(a.getEventSchedule()) { }
+#include "blocks/blocks.h"
+#include "types.h"
+ExterminateObjective::ExterminateObjective(Area& area, ActorIndex a, BlockIndex destination) :
+	Objective(a, Config::exterminatePriority), m_destination(destination), m_event(area.m_eventSchedule) { }
+/*
 ExterminateObjective::ExterminateObjective(const Json& data, DeserializationMemo& deserializationMemo) : 
 	Objective(data, deserializationMemo),
 	m_destination(data["destination"].get<BlockIndex>()),
@@ -20,29 +24,37 @@ Json ExterminateObjective::toJson() const
 		output["eventStart"] = m_event.getStartStep();
 	return output;
 }
-void ExterminateObjective::execute()
+*/
+void ExterminateObjective::execute(Area& area)
 {
-	Actor* closest = nullptr;
-	Blocks& blocks = m_actor.m_area->getBlocks();
-	for(Actor* actor : m_actor.m_canSee.getCurrentlyVisibleActors())
+	ActorIndex closest = ACTOR_INDEX_MAX;
+	Blocks& blocks = area.getBlocks();
+	Actors& actors = area.getActors();
+	BlockIndex thisActorLocation = actors.getLocation(m_actor);
+	BlockIndex closestActorLocation = BLOCK_INDEX_MAX;
+	for(ActorIndex actor : actors.vision_getCanSee(m_actor))
 	{
+		BlockIndex location = actors.getLocation(actor);
 		if(
-			actor->isSentient() &&
-			(!closest || blocks.taxiDistance(closest->m_location, m_actor.m_location) < blocks.taxiDistance(actor->m_location, m_actor.m_location)) && 
-			!actor->isAlly(m_actor)
+			actors.hasFaction(actor) &&
+			!actors.isAlly(actor, m_actor) &&
+			(!closest || blocks.taxiDistance(closestActorLocation, thisActorLocation) < blocks.taxiDistance(location, thisActorLocation))
 		)
+		{
 			closest = actor;
+			closestActorLocation = location;
+		}
 	}
 	if(closest)
-		m_actor.m_canFight.setTarget(*closest);
+		actors.combat_setTarget(m_actor, closest);
 	else
 	{
 		static constexpr DistanceInBlocks distanceToRallyPoint = 10;
-		if(blocks.taxiDistance(m_actor.m_location, m_destination) > distanceToRallyPoint)
-			m_actor.m_canMove.setDestination(m_destination);
-		m_event.schedule(*this);
+		if(blocks.taxiDistance(thisActorLocation, m_destination) > distanceToRallyPoint)
+			actors.move_setDestination(m_actor, m_destination, m_detour);
+		m_event.schedule(area.m_simulation, *this);
 	}
 }
-ExterminateObjectiveScheduledEvent::ExterminateObjectiveScheduledEvent(ExterminateObjective& o, Step start) : 
-	ScheduledEvent(o.m_actor.m_area->m_simulation, Config::exterminateCheckFrequency, start),
+ExterminateObjectiveScheduledEvent::ExterminateObjectiveScheduledEvent(Simulation& simulation, ExterminateObjective& o, Step start) : 
+	ScheduledEvent(simulation, Config::exterminateCheckFrequency, start),
 	m_objective(o) { }

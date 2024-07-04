@@ -5,7 +5,6 @@
 #include "eventSchedule.hpp"
 #include "threadedTask.hpp"
 #include "hasShapes.h"
-#include "bloomHashMap.h"
 #include "types.h"
 #include "reservable.h"
 #include "onDestroy.h"
@@ -21,10 +20,10 @@ class ActorOrItemIndex;
 class Portables : public HasShapes
 {
 protected:
-	BloomHashMap<HasShapeIndex, Reservable> m_reservables;
-	BloomHashMap<HasShapeIndex, OnDestroy> m_destroy;
-	BloomHashMap<HasShapeIndex, CanLead> m_lead;
-	BloomHashMap<HasShapeIndex, CanFollow> m_follow;
+	std::vector<std::unique_ptr<Reservable>> m_reservables;
+	std::vector<std::unique_ptr<OnDestroy>> m_destroy;
+	std::vector<std::unique_ptr<CanLead>> m_lead;
+	std::vector<std::unique_ptr<CanFollow>> m_follow;
 	std::vector<const MoveType*> m_moveType;
 	Portables(Area& area);
 	Portables(const Json& data, DeserializationMemo& deserializationMemo);
@@ -39,16 +38,20 @@ public:
 	[[nodiscard]] const MoveType& getMoveType(HasShapeIndex index) const { return *m_moveType.at(index); }
 	void followActor(HasShapeIndex index, ActorIndex actor, bool checkAdjacent = true);
 	void followItem(HasShapeIndex index, ItemIndex item, bool checkAdjacent = true);
+	void followPolymorphic(HasShapeIndex index, ActorOrItemIndex actorOrItem, bool checkAdjacent = true);
 	void unfollow(HasShapeIndex index);
 	void unfollowIfAny(HasShapeIndex index);
 	void unfollowActor(HasShapeIndex index, ActorIndex actor);
 	void unfollowItem(HasShapeIndex index, ItemIndex actor);
+	void leadAndFollowDisband(HasShapeIndex index);
 	[[nodiscard]] bool isFollowing(HasShapeIndex index) const;
 	[[nodiscard]] bool isLeading(HasShapeIndex index) const;
+	[[nodiscard]] bool isLeadingActor(HasShapeIndex index, ActorIndex actor) const;
+	[[nodiscard]] bool isLeadingItem(HasShapeIndex index, ItemIndex item) const;
 	[[nodiscard]] bool isLeadingPolymorphic(HasShapeIndex index, ActorOrItemIndex actorOrItem) const;
 	// Used by leadAndFollow.cpp.
-	[[nodiscard]] CanLead& getCanLead(HasShapeIndex index) { return m_lead.at(index); }
-	[[nodiscard]] CanFollow& getCanFollow(HasShapeIndex index) { return m_follow.at(index); }
+	[[nodiscard]] CanLead& getCanLead(HasShapeIndex index) { return *m_lead.at(index).get(); }
+	[[nodiscard]] CanFollow& getCanFollow(HasShapeIndex index) { return *m_follow.at(index).get(); }
 	// Quantity defaults to 0, which becomes maxReservations;
 	void reservable_reserve(HasShapeIndex index, CanReserve& canReserve, Quantity quantity = 0, std::unique_ptr<DishonorCallback> callback = nullptr);
 	void reservable_unreserve(HasShapeIndex index, CanReserve& canReserve, Quantity quantity = 0);
@@ -57,6 +60,7 @@ public:
 	void reservable_unreserveAll(HasShapeIndex index);
 	void reservable_setDishonorCallback(HasShapeIndex index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback);
 	void reservable_merge(HasShapeIndex, Reservable& other);
+	[[nodiscard]] bool reservable_hasAnyReservations(HasShapeIndex index) const;
 	[[nodiscard]] bool reservable_exists(HasShapeIndex index, const Faction& faction) const;
 	[[nodiscard]] bool reservable_isFullyReserved(HasShapeIndex index, const Faction& faction) const;
 	[[nodiscard]] Quantity reservable_getUnreservedCount(HasShapeIndex index, const Faction& faction) const;

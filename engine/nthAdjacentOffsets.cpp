@@ -1,6 +1,7 @@
 #include "nthAdjacentOffsets.h"
 #include "area.h"
 #include "types.h"
+#include "blocks/blocks.h"
 std::vector<XYZ> getNthAdjacentOffsets(uint32_t n)
 {
 	assert(n != 0);

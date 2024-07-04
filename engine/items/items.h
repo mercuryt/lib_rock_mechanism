@@ -14,7 +14,6 @@ class Area;
 
 struct ItemParamaters final
 {
-	Simulation& simulation;
 	const ItemType& itemType;
 	const MaterialType& materialType;
 	CraftJob* craftJob = nullptr;
@@ -98,11 +97,11 @@ public:
 };
 class Items final : public Portables
 {
-	BloomHashMap<ItemIndex, std::wstring> m_name;
-	BloomHashMap<ItemIndex, ItemHasCargo> m_hasCargo;
-	BloomHashMap<ItemIndex, ItemCanBeStockPiled> m_canBeStockPiled;
 	//TODO: change to bitset or remove.
 	std::unordered_set<ItemIndex> m_onSurface;
+	BloomHashMap<ItemIndex, std::wstring> m_name;
+	std::vector<std::unique_ptr<ItemHasCargo>> m_hasCargo;
+	std::vector<std::unique_ptr<ItemCanBeStockPiled>> m_canBeStockPiled;
 	std::vector<CraftJob*> m_craftJobForWorkPiece; // Used only for work in progress items.
 	std::vector<const ItemType*> m_itemType;
 	std::vector<const MaterialType*> m_materialType;
@@ -145,6 +144,7 @@ public:
 	[[nodiscard]] bool isGeneric(ItemIndex index) const;
 	[[nodiscard]] bool isPreparedMeal(ItemIndex index) const;
 	[[nodiscard]] bool isWorkPiece(ItemIndex index) const { return m_craftJobForWorkPiece.at(index) != nullptr; }
+	[[nodiscard]] CraftJob& getCraftJobForWorkPiece(ItemIndex index) const;
 	[[nodiscard]] Mass getSingleUnitMass(ItemIndex index) const;
 	[[nodiscard]] Mass getMass(ItemIndex index) const;
 	[[nodiscard]] Volume getVolume(ItemIndex index) const;
@@ -155,14 +155,29 @@ public:
 	[[nodiscard]] const std::unordered_set<ItemIndex> getOnSurface() const { return m_onSurface; }
 	// -Cargo.
 	void cargo_addActor(ItemIndex index, ActorIndex actor);
-	void cargo_addItem(ItemIndex index, ItemIndex item);
+	void cargo_addItem(ItemIndex index, ItemIndex item, Quantity quantity);
+	void cargo_addPolymorphic(ItemIndex index, ActorOrItemIndex actorOrItemIndex, Quantity quantity);
 	void cargo_addFluid(ItemIndex index, const FluidType& fluidType, CollisionVolume volume);
+	void cargo_loadActor(ItemIndex index, ActorIndex actor);
+	void cargo_loadItem(ItemIndex index, ItemIndex item, Quantity quantity);
+	void cargo_loadPolymorphic(ItemIndex index, ActorOrItemIndex actorOrItem, Quantity quantity);
+	void cargo_loadFluidFromLocation(ItemIndex index, const FluidType& fluidType, CollisionVolume volume, BlockIndex location);
+	void cargo_loadFluidFromItem(ItemIndex index, const FluidType& fluidType, CollisionVolume volume, ItemIndex item);
 	void cargo_removeActor(ItemIndex index, ActorIndex actor);
 	void cargo_removeItem(ItemIndex index, ItemIndex item);
+	void cargo_removeItemGeneric(ItemIndex index, const ItemType& itemType, const MaterialType& materialType, Quantity quantity);
 	void cargo_removeFluid(ItemIndex index, CollisionVolume volume);
+	void cargo_unloadActorToLocation(ItemIndex index, ActorIndex actor, BlockIndex location);
+	void cargo_unloadItemToLocation(ItemIndex index, ItemIndex item, BlockIndex location);
+	ItemIndex cargo_unloadGenericItemToLocation(ItemIndex index, const ItemType& itemType, const MaterialType& materialType, BlockIndex location, Quantity quantity);
+	ItemIndex cargo_unloadGenericItemToLocation(ItemIndex index, ItemIndex item, BlockIndex location, Quantity quantity);
+	ActorOrItemIndex cargo_unloadPolymorphicToLocation(ItemIndex index, ActorOrItemIndex actorOrItem, BlockIndex location, Quantity quantity);
+	void cargo_unloadFluidToLocation(ItemIndex index, CollisionVolume volume, BlockIndex location);
 	[[nodiscard]] bool cargo_exists(ItemIndex index) const;
 	[[nodiscard]] bool cargo_containsActor(ItemIndex index, ActorIndex actor) const;
 	[[nodiscard]] bool cargo_containsItem(ItemIndex index, ItemIndex item) const;
+	[[nodiscard]] bool cargo_containsItemGeneric(ItemIndex index, const ItemType& itemType, const MaterialType& materialType, Quantity quantity) const;
+	[[nodiscard]] bool cargo_containsPolymorphic(ItemIndex index, ActorOrItemIndex actorOrItem, Quantity quantity = 1) const;
 	[[nodiscard]] bool cargo_containsAnyFluid(ItemIndex index) const;
 	[[nodiscard]] bool cargo_containsFluidType(ItemIndex index, const FluidType& fluidType) const;
 	[[nodiscard]] Volume cargo_getFluidVolume(ItemIndex index) const;
@@ -170,8 +185,8 @@ public:
 	[[nodiscard]] bool cargo_canAddActor(ItemIndex index, ActorIndex actor) const;
 	[[nodiscard]] bool cargo_canAddItem(ItemIndex index, ItemIndex item) const;
 	[[nodiscard]] Mass cargo_getMass(ItemIndex index) const;
-	[[nodiscard]] std::vector<ItemIndex>& cargo_getItems(ItemIndex index) const;
-	[[nodiscard]] std::vector<ActorIndex>& cargo_getActors(ActorIndex index) const;
+	[[nodiscard]] const std::vector<ItemIndex>& cargo_getItems(ItemIndex index) const;
+	[[nodiscard]] const std::vector<ActorIndex>& cargo_getActors(ActorIndex index) const;
 	// -Stockpile.
 	void stockpile_maybeUnsetAndScheduleReset(ItemIndex index, Faction& faction, Step duration); 
 	void stockpile_set(ItemIndex index, Faction& faction);

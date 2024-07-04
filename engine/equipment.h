@@ -5,6 +5,8 @@
 
 struct Attack;
 struct Hit;
+struct ItemType;
+struct MaterialType;
 class BodyPartType;
 class Area;
 class Items;
@@ -34,13 +36,16 @@ public:
 	void addEquipment(Area& area, ItemIndex equipment);
 	void removeEquipment(Area& area, ItemIndex equipment);
 	void modifyImpact(Area& area, Hit& hit, const BodyPartType& bodyPartType);
+	void addGeneric(Area& area, const ItemType& itemType, const MaterialType& MaterialType, Quantity quantity);
+	void removeGeneric(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity);
 	std::vector<Attack> getMeleeAttacks(Area& area);
 	std::unordered_set<ItemIndex>& getRangedWeapons() { return m_rangedWeapons; }
 	[[nodiscard]] bool contains(ItemIndex item) const { return m_equipments.contains(item); }
+	[[nodiscard]] bool containsItemType(const Area& area, const ItemType& itemType) const;
 	[[nodiscard]] bool hasWeapons() const { return !m_meleeWeapons.empty() || !m_rangedWeapons.empty(); }
 	[[nodiscard]] Step getLongestMeleeWeaponCoolDown(Area& area) const;
 	[[nodiscard]] const uint32_t& getMass() const { return m_mass; }
-	[[nodiscard]] bool canEquipCurrently(Area& area, ActorIndex actor, ItemIndex item) const;
+	[[nodiscard]] bool canEquipCurrently(const Area& area, ActorIndex actor, ItemIndex item) const;
 	[[nodiscard]] bool empty() const { return m_equipments.empty(); }
 	[[nodiscard]] ItemIndex getWeaponToAttackAtRange(Area& area, float range);
 	[[nodiscard]] ItemIndex getAmmoForRangedWeapon(Area& area, ItemIndex weapon);

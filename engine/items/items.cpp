@@ -4,6 +4,7 @@
 #include "../simulation.h"
 #include "../simulation/hasItems.h"
 #include "../util.h"
+#include "actors/actors.h"
 #include "portables.h"
 #include "types.h"
 #include <ranges>
@@ -95,7 +96,7 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 		assert(m_quantity.at(index) == 1);
 	if(itemParamaters.location != BLOCK_INDEX_MAX)
 		setLocationAndFacing(index, itemParamaters.location, itemParamaters.facing);
-	m_canBeStockPiled.insert(index, {m_area});
+	m_canBeStockPiled.at(index) = std::make_unique<ItemCanBeStockPiled>(m_area);
 	return index;
 }
 void Items::resize(HasShapeIndex newSize)
@@ -116,8 +117,8 @@ void Items::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 	m_percentWear[newIndex] = m_percentWear[oldIndex];
 	m_quantity[newIndex] = m_quantity[oldIndex];
 	m_installed[newIndex] = m_installed[oldIndex];
-	m_canBeStockPiled.moveKey(oldIndex, newIndex);
-	m_hasCargo.moveKey(oldIndex, newIndex);
+	m_canBeStockPiled.at(oldIndex) = std::move(m_canBeStockPiled.at(newIndex));
+	m_hasCargo.at(oldIndex) = std::move(m_hasCargo.at(newIndex));
 }
 bool Items::indexCanBeMoved(HasShapeIndex index) const
 {
@@ -175,9 +176,10 @@ void Items::setTemperature(ItemIndex, Temperature)
 void Items::addQuantity(ItemIndex index, Quantity delta)
 {
 	Quantity newQuantity = (m_quantity.at(index) += delta);
-	if(m_reservables.contains(index))
-		m_reservables.at(index).setMaxReservations(newQuantity);
+	if(m_reservables.at(index) != nullptr)
+		m_reservables.at(index)->setMaxReservations(newQuantity);
 }
+// May destroy.
 void Items::removeQuantity(ItemIndex index, Quantity delta)
 {
 	if(m_quantity.at(index) == delta)
@@ -186,8 +188,8 @@ void Items::removeQuantity(ItemIndex index, Quantity delta)
 	{
 		assert(delta < m_quantity.at(index));
 		Quantity newQuantity = (m_quantity.at(index) -= delta);
-		if(m_reservables.contains(index))
-			m_reservables.at(index).setMaxReservations(newQuantity);
+		if(m_reservables.at(index) != nullptr)
+			m_reservables.at(index)->setMaxReservations(newQuantity);
 	}
 }
 void Items::install(ItemIndex index, BlockIndex block, Facing facing, Faction& faction)
@@ -205,11 +207,11 @@ void Items::merge(ItemIndex index, ItemIndex other)
 {
 	assert(m_itemType.at(index) == m_itemType.at(other));
 	assert(m_materialType.at(index) == m_materialType.at(other));
-	if(m_reservables.contains(other))
-		reservable_merge(index, m_reservables.at(other));
+	if(m_reservables.at(other) != nullptr)
+		reservable_merge(index, *m_reservables.at(other));
 	m_quantity.at(index) += m_quantity.at(other);
-	if(m_destroy.contains(other))
-		onDestroy_merge(index, m_destroy.at(other));
+	if(m_destroy.at(other) != nullptr)
+		onDestroy_merge(index, *m_destroy.at(other));
 	destroy(other);
 }
 void Items::setQuality(ItemIndex index, uint32_t quality)
@@ -234,8 +236,8 @@ void Items::destroy(ItemIndex index)
 		exit(index);
 	m_onSurface.erase(index);
 	m_name.maybeErase(index);
-	m_canBeStockPiled.maybeErase(index);
-	m_hasCargo.maybeErase(index);
+	m_canBeStockPiled.at(index) = nullptr;
+	m_hasCargo.at(index) = nullptr;
 	//m_area.m_hasItems.remove(index);
 	Portables::destroy(index);
 }
@@ -245,6 +247,11 @@ bool Items::isPreparedMeal(ItemIndex index) const
 	static const ItemType& preparedMealType = ItemType::byName("prepared meal");
 	return m_itemType.at(index) == &preparedMealType;
 }
+CraftJob& Items::getCraftJobForWorkPiece(ItemIndex index) const 
+{
+	assert(isWorkPiece(index));
+	return *m_craftJobForWorkPiece.at(index); 
+}
 Mass Items::getSingleUnitMass(ItemIndex index) const 
 { 
 	return std::max(1.f, m_itemType.at(index)->volume * m_materialType.at(index)->density); 
@@ -252,8 +259,8 @@ Mass Items::getSingleUnitMass(ItemIndex index) const
 Mass Items::getMass(ItemIndex index) const
 {
 	Mass output = m_itemType.at(index)->volume * m_materialType.at(index)->density * m_quantity.at(index);
-	if(m_hasCargo.contains(index))
-		output += m_hasCargo.at(index).getMass();
+	if(m_hasCargo.at(index) != nullptr)
+		output += m_hasCargo.at(index)->getMass();
 	return output;
 }
 void Items::log(ItemIndex index) const
@@ -269,19 +276,19 @@ void Items::log(ItemIndex index) const
 // Wrapper methods.
 void Items::stockpile_maybeUnsetAndScheduleReset(ItemIndex index, Faction& faction, Step duration)
 {
-	m_canBeStockPiled.at(index).maybeUnsetAndScheduleReset(faction, duration);
+	m_canBeStockPiled.at(index)->maybeUnsetAndScheduleReset(faction, duration);
 }
 void Items::stockpile_set(ItemIndex index, Faction& faction)
 {
-	m_canBeStockPiled.at(index).set(faction);
+	m_canBeStockPiled.at(index)->set(faction);
 }
 void Items::stockpile_maybeUnset(ItemIndex index, Faction& faction)
 {
-	m_canBeStockPiled.at(index).maybeUnset(faction);
+	m_canBeStockPiled.at(index)->maybeUnset(faction);
 }
 bool Items::stockpile_canBeStockPiled(ItemIndex index, const Faction& faction) const
 {
-	return m_canBeStockPiled.at(index).contains(faction);
+	return m_canBeStockPiled.at(index)->contains(faction);
 }
 /*
 Items::Item(ItemIndex index, const Json& data, DeserializationMemo& deserializationMemo, ItemId id) : 
@@ -346,7 +353,7 @@ void ItemHasCargo::load(const Json& data, DeserializationMemo& deserializationMe
 		{
 			Item& item = deserializationMemo.itemReference(itemReference);
 			m_shapes.push_back(static_cast<HasShape*>(&item));
-			m_items.push_back(&item);
+			getItems().push_back(&item);
 		}
 }
 Json ItemHasCargo::toJson() const
@@ -371,22 +378,22 @@ Json ItemHasCargo::toJson() const
 */
 void ItemHasCargo::addActor(Area& area, ActorIndex actor)
 {
-	Actors& actors = area.m_actors;
+	Actors& actors = area.getActors();
 	assert(m_volume + actors.getVolume(actor) <= m_itemType.internalVolume);
 	assert(!containsActor(actor));
 	assert(m_fluidVolume == 0 && m_fluidType == nullptr);
-	m_actors.push_back(actor);
+	getActors().push_back(actor);
 	m_volume += actors.getVolume(actor);
 	m_mass += actors.getMass(actor);
 }
 void ItemHasCargo::addItem(Area& area, ItemIndex item)
 {
-	Items& items = area.m_items;
+	Items& items = area.getItems();
 	//TODO: This method does not call hasShape.exit(), which is not consistant with the behaviour of CanPickup::pickup.
 	assert(m_volume + items.getVolume(item) <= m_itemType.internalVolume);
 	assert(!containsItem(item));
 	assert(m_fluidVolume == 0 && m_fluidType == nullptr);
-	m_items.push_back(item);
+	getItems().push_back(item);
 	m_volume += items.getVolume(item);
 	m_mass += items.getMass(item);
 }
@@ -408,8 +415,8 @@ void ItemHasCargo::addFluid(const FluidType& fluidType, Volume volume)
 ItemIndex ItemHasCargo::addItemGeneric(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity)
 {
 	assert(itemType.generic);
-	Items& items = area.m_items;
-	for(ItemIndex item : m_items)
+	Items& items = area.getItems();
+	for(ItemIndex item : getItems())
 		if(items.getItemType(item) == itemType && items.getMaterialType(item)  == materialType)
 		{
 			// Add to existing stack.
@@ -420,7 +427,6 @@ ItemIndex ItemHasCargo::addItemGeneric(Area& area, const ItemType& itemType, con
 		}
 	// Create new stack.
 	ItemIndex newItem = items.create({
-		.simulation=area.m_simulation,
 		.itemType=itemType,
 		.materialType=materialType,
 		.quantity=quantity,	
@@ -439,28 +445,28 @@ void ItemHasCargo::removeFluidVolume(const FluidType& fluidType, Volume volume)
 void ItemHasCargo::removeActor(Area& area, ActorIndex actor)
 {
 	assert(containsActor(actor));
-	Actors& actors = area.m_actors;
+	Actors& actors = area.getActors();
 	m_volume -= actors.getVolume(actor);
 	m_mass -= actors.getMass(actor);
-	util::removeFromVectorByValueUnordered(m_actors, actor);
+	util::removeFromVectorByValueUnordered(getActors(), actor);
 }
 void ItemHasCargo::removeItem(Area& area, ItemIndex item)
 {
 	assert(containsItem(item));
-	Items& items = area.m_items;
+	Items& items = area.getItems();
 	m_volume -= items.getVolume(item);
 	m_mass -= items.getMass(item);
-	util::removeFromVectorByValueUnordered(m_items, item);
+	util::removeFromVectorByValueUnordered(getItems(), item);
 }
 void ItemHasCargo::removeItemGeneric(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity)
 {
-	Items& items = area.m_items;
-	for(ItemIndex item : m_items)
+	Items& items = area.getItems();
+	for(ItemIndex item : getItems())
 		if(items.getItemType(item) == itemType && items.getMaterialType(item) == materialType)
 		{
 			if(items.getQuantity(item) == quantity)
 				// TODO: should be reusing an iterator here.
-				util::removeFromVectorByValueUnordered(m_items, item);
+				util::removeFromVectorByValueUnordered(getItems(), item);
 			else
 			{
 				assert(quantity < items.getQuantity(item));
@@ -477,13 +483,13 @@ ItemIndex ItemHasCargo::unloadGenericTo(Area& area, const ItemType& itemType, co
 	removeItemGeneric(area, itemType, materialType, quantity);
 	return area.getBlocks().item_addGeneric(location, itemType, materialType, quantity);
 }
-bool ItemHasCargo::canAddActor(Area& area, ActorIndex actor) const { return m_volume + area.m_actors.getVolume(actor) <= m_itemType.internalVolume; }
+bool ItemHasCargo::canAddActor(Area& area, ActorIndex actor) const { return m_volume + area.getActors().getVolume(actor) <= m_itemType.internalVolume; }
 bool ItemHasCargo::canAddFluid(FluidType& fluidType) const { return m_fluidType == nullptr || m_fluidType == &fluidType; }
 bool ItemHasCargo::containsGeneric(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity) const
 {
 	assert(itemType.generic);
-	Items& items = area.m_items;
-	for(ItemIndex item : m_items)
+	Items& items = area.getItems();
+	for(ItemIndex item : getItems())
 		if(items.getItemType(item) == itemType && items.getMaterialType(item) == materialType)
 			return items.getQuantity(item) >= quantity;
 	return false;

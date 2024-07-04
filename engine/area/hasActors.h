@@ -24,9 +24,6 @@ public:
 	void remove(ActorIndex actor);
 	// Update temperatures for all actors on surface.
 	void onChangeAmbiantSurfaceTemperature();
-	// Generate vision request queue and dispatch tasks.
-	void processVisionReadStep();
-	void processVisionWriteStep();
 	void setUnderground(ActorIndex actor);
 	void setNotUnderground(ActorIndex actor);
 	[[nodiscard]] std::unordered_set<ActorIndex>& getAll() { return m_actors; }

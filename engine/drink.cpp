@@ -1,12 +1,13 @@
 #include "drink.h"
 #include "area.h"
 #include "deserializationMemo.h"
-#include "objective.h"
 #include "simulation.h"
-#include "terrainFacade.h"
 #include "types.h"
 #include "util.h"
 #include "objectives/drink.h"
+#include "actors/actors.h"
+#include "items/items.h"
+#include "blocks/blocks.h"
 #include <algorithm>
 // Must Drink.
 MustDrink::MustDrink(Area& area, ActorIndex a) :
@@ -53,7 +54,7 @@ void MustDrink::drink(Area& area, uint32_t volume)
 		const AnimalSpecies& species = actors.getSpecies(m_actor);
 		stepsToNextThirstEvent = util::scaleByFraction(species.stepsTillDieWithoutFluid, m_volumeDrinkRequested, species.stepsTillDieWithoutFluid);
 	}
-	m_thirstEvent.schedule(stepsToNextThirstEvent, m_actor);
+	m_thirstEvent.schedule(area, stepsToNextThirstEvent, m_actor);
 }
 void MustDrink::notThirsty(Area& area)
 {
@@ -67,7 +68,7 @@ void MustDrink::setNeedsFluid(Area& area)
 	{
 		m_volumeDrinkRequested = drinkVolumeFor(area, m_actor);
 		const AnimalSpecies& species = actors.getSpecies(m_actor);
-		m_thirstEvent.schedule(species.stepsTillDieWithoutFluid, m_actor);
+		m_thirstEvent.schedule(area, species.stepsTillDieWithoutFluid, m_actor);
 		std::unique_ptr<Objective> objective = std::make_unique<DrinkObjective>(area, m_actor);
 		m_objective = static_cast<DrinkObjective*>(objective.get());
 		actors.objective_addNeed(m_actor, std::move(objective));
@@ -82,7 +83,7 @@ void MustDrink::onDeath()
 void MustDrink::scheduleDrinkEvent(Area& area)
 {
 	const AnimalSpecies& species = area.getActors().getSpecies(m_actor);
-	m_thirstEvent.schedule(species.stepsFluidDrinkFreqency, m_actor);
+	m_thirstEvent.schedule(area, species.stepsFluidDrinkFreqency, m_actor);
 }
 void MustDrink::setFluidType(const FluidType& fluidType) { m_fluidType = &fluidType; }
 Percent MustDrink::getPercentDeadFromThirst() const

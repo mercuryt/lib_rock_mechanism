@@ -1,22 +1,27 @@
 #include "simulation.h"
+#include "actors/actors.h"
 #include "animalSpecies.h"
+#include "blocks/blocks.h"
 #include "config.h"
 #include "definitions.h"
 #include "deserializationMemo.h"
+#include "drama/engine.h"
 #include "haul.h"
+#include "items/items.h"
+#include "plants.h"
 #include "simulation/hasActors.h"
 #include "simulation/hasAreas.h"
 #include "simulation/hasItems.h"
 #include "threadedTask.h"
 #include "types.h"
 #include "util.h"
-#include "drama/engine.h"
 //#include "worldforge/world.h"
+//
 #include <cstdint>
 #include <filesystem>
 #include <functional>
 Simulation::Simulation(std::wstring name, Step s) : 
-       	m_eventSchedule(*this, nullptr), m_threadedTaskEngine(*this), m_hourlyEvent(m_eventSchedule), m_deserializationMemo(*this), m_name(name), m_step(s)
+       	m_eventSchedule(*this, nullptr), m_hourlyEvent(m_eventSchedule), m_deserializationMemo(*this), m_name(name), m_step(s)
 { 
 	m_hourlyEvent.schedule(*this);
 	m_path.append(L"save/"+name);
@@ -33,7 +38,7 @@ Simulation::Simulation(std::filesystem::path path) : Simulation(Json::parse(std:
 	m_dramaEngine = std::make_unique<DramaEngine>(data["drama"], m_deserializationMemo, *this);
 }
 Simulation::Simulation(const Json& data) : 
-	m_eventSchedule(*this, nullptr), m_threadedTaskEngine(*this), m_hourlyEvent(m_eventSchedule), m_deserializationMemo(*this) 
+	m_eventSchedule(*this, nullptr), m_hourlyEvent(m_eventSchedule), m_deserializationMemo(*this) 
 {
 	m_name = data["name"].get<std::wstring>();
 	m_step = data["step"].get<Step>();
@@ -63,38 +68,6 @@ void Simulation::doStep(uint16_t count)
 		++m_step;
 	}
 	m_uiReadMutex.unlock();
-}
-template<class Data, class Action>
-void Simulation::parallelizeTask(Data& data, uint32_t stepSize, Action& task)
-{
-	auto start = data.begin();
-	auto end = start + std::min(stepSize, data.size());
-	while(start != end)
-	{
-		m_pool.push_task([&data, &task, start, end](){
-			while(start != end)
-				task(data[start++]);
-		});
-		start = end;
-		end = std::min(data.size(), start + stepSize);
-	}
-	m_pool.wait_for_tasks();
-}
-template<class Data, class Action>
-void Simulation::parallelizeTaskIndices(uint32_t size, uint32_t stepSize, Action& task)
-{
-	uint32_t start = 0;
-	uint32_t end = start + std::min(stepSize, size);
-	while(start != size)
-	{
-		m_pool.push_task([&task, start, end]() mutable {
-			while(start != end)
-				task(start++);
-		});
-		start = end;
-		end = std::min(size, start + stepSize);
-	}
-	m_pool.wait_for_tasks();
 }
 void Simulation::incrementHour()
 {
@@ -144,18 +117,18 @@ void Simulation::fastForwardUntill(DateTime dateTime)
 }
 void Simulation::fastForwardUntillActorIsAtDestination(Area& area, ActorIndex actor, BlockIndex destination)
 {
-	assert(area.m_actors.move_getDestination(actor) == destination);
+	assert(area.getActors().move_getDestination(actor) == destination);
 	fastForwardUntillActorIsAt(area, actor, destination);
 }
 void Simulation::fastForwardUntillActorIsAt(Area& area, ActorIndex actor, BlockIndex destination)
 {
-	BlockIndex location = area.m_actors.getLocation(actor);
+	BlockIndex location = area.getActors().getLocation(actor);
 	std::function<bool()> predicate = [&](){ return location == destination; };
 	fastForwardUntillPredicate(predicate);
 }
 void Simulation::fastForwardUntillActorIsAdjacentToDestination(Area& area, ActorIndex actor, BlockIndex destination)
 {
-	Actors& actors = area.m_actors;
+	Actors& actors = area.getActors();
 	assert(!actors.move_getPath(actor).empty());
 	BlockIndex adjacentDestination = actors.move_getPath(actor).back();
 	assert(adjacentDestination != BLOCK_INDEX_MAX);
@@ -166,28 +139,28 @@ void Simulation::fastForwardUntillActorIsAdjacentToDestination(Area& area, Actor
 }
 void Simulation::fastForwardUntillActorIsAdjacentToLocation(Area& area, ActorIndex actor, BlockIndex block)
 {
-	std::function<bool()> predicate = [&](){ return area.m_actors.isAdjacentToLocation(actor, block); };
+	std::function<bool()> predicate = [&](){ return area.getActors().isAdjacentToLocation(actor, block); };
 	fastForwardUntillPredicate(predicate);
 }
 void Simulation::fastForwardUntillActorIsAdjacentToActor(Area& area, ActorIndex actor, ActorIndex other)
 {
-	std::function<bool()> predicate = [&](){ return area.m_actors.isAdjacentToActor(actor, other); };
+	std::function<bool()> predicate = [&](){ return area.getActors().isAdjacentToActor(actor, other); };
 	fastForwardUntillPredicate(predicate);
 }
 void Simulation::fastForwardUntillActorIsAdjacentToItem(Area& area, ActorIndex actor, ItemIndex item)
 {
-	std::function<bool()> predicate = [&](){ return area.m_actors.isAdjacentToItem(actor, item); };
+	std::function<bool()> predicate = [&](){ return area.getActors().isAdjacentToItem(actor, item); };
 	fastForwardUntillPredicate(predicate);
 }
 void Simulation::fastForwardUntillActorHasNoDestination(Area& area, ActorIndex actor)
 {
-	std::function<bool()> predicate = [&](){ return area.m_actors.move_getDestination(actor) == BLOCK_INDEX_MAX; };
+	std::function<bool()> predicate = [&](){ return area.getActors().move_getDestination(actor) == BLOCK_INDEX_MAX; };
 	fastForwardUntillPredicate(predicate);
 }
 void Simulation::fastForwardUntillActorHasEquipment(Area& area, ActorIndex actor, ItemIndex item)
 {
-	Actors& actors = area.m_actors;
-	std::function<bool()> predicate = [&](){ return actors.getEquipmentSet(actor).contains(item); };
+	Actors& actors = area.getActors();
+	std::function<bool()> predicate = [&](){ return actors.equipment_containsItem(actor, item); };
 	fastForwardUntillPredicate(predicate);
 }
 void Simulation::fastForwardUntillPredicate(std::function<bool()> predicate, uint32_t minutes)

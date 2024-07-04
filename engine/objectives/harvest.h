@@ -8,8 +8,6 @@
 
 struct DeserializationMemo;
 class HarvestEvent;
-class Plant;
-class Actor;
 
 class HarvestObjectiveType final : public ObjectiveType
 {
@@ -48,7 +46,7 @@ class HarvestEvent final : public ScheduledEvent
 {
 	HarvestObjective& m_harvestObjective;
 public:
-	HarvestEvent(Area& area, Step delay, HarvestObjective& ho, const Step start = 0);
+	HarvestEvent(Step delay, Area& area, HarvestObjective& ho, const Step start = 0);
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 	Plant* getPlant();

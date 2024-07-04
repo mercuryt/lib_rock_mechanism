@@ -1,12 +1,14 @@
 #include "sleep.h"
 #include "../area.h"
 #include "../types.h"
+#include "actors/actors.h"
+#include "blocks/blocks.h"
 // Path Request.
 SleepPathRequest::SleepPathRequest(Area& area, SleepObjective& so) : m_sleepObjective(so)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actor = m_sleepObjective.m_actor;
-	assert(actors.getSleepSpot(m_sleepObjective.m_actor) == BLOCK_INDEX_MAX);
+	assert(actors.sleep_getSpot(m_sleepObjective.m_actor) == BLOCK_INDEX_MAX);
 	uint32_t desireToSleepAtCurrentLocation = m_sleepObjective.desireToSleepAt(area, actors.getLocation(actor));
 	if(desireToSleepAtCurrentLocation == 1)
 		m_outdoorCandidate = area.getActors().getLocation(m_sleepObjective.m_actor);
@@ -77,8 +79,8 @@ void SleepObjective::execute(Area& area)
 {
 	Actors& actors = area.getActors();
 	Blocks& blocks = area.getBlocks();
-	assert(actors.isAwake(m_actor));
-	BlockIndex sleepingSpot = actors.getSleepSpot(m_actor);
+	assert(actors.sleep_isAwake(m_actor));
+	BlockIndex sleepingSpot = actors.sleep_getSpot(m_actor);
 	if(sleepingSpot == BLOCK_INDEX_MAX)
 	{
 		if(m_noWhereToSleepFound)
@@ -98,20 +100,20 @@ void SleepObjective::execute(Area& area)
 		if(desireToSleepAt(area, actors.getLocation(m_actor)) == 0)
 		{
 			// Can not sleep here any more, look for another spot.
-			actors.setSleepSpot(m_actor, BLOCK_INDEX_MAX);
+			actors.sleep_setSpot(m_actor, BLOCK_INDEX_MAX);
 			execute(area);
 		}
 		else
 			// Sleep.
-			actors.sleep(m_actor);
+			actors.sleep_do(m_actor);
 	}
 	else
 		if(blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(sleepingSpot, actors.getShape(m_actor), actors.getMoveType(m_actor)))
-			actors.move_setDestination(m_actor, actors.getSleepSpot(m_actor), m_detour);
+			actors.move_setDestination(m_actor, actors.sleep_getSpot(m_actor), m_detour);
 		else
 		{
 			// Location no longer can be entered.
-			actors.setSleepSpot(m_actor, BLOCK_INDEX_MAX);
+			actors.sleep_setSpot(m_actor, BLOCK_INDEX_MAX);
 			execute(area);
 		}
 }
@@ -119,7 +121,7 @@ uint32_t SleepObjective::desireToSleepAt(Area& area, BlockIndex block) const
 {
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
-	if(blocks.isReserved(block, actors.getFaction(m_actor) || !actors.temperature_isSafe(blocks.temperature_get(block))))
+	if(blocks.isReserved(block, *actors.getFaction(m_actor)) || !actors.temperature_isSafe(m_actor, blocks.temperature_get(block)))
 		return 0;
 	if(area.m_hasSleepingSpots.containsUnassigned(block))
 		return 3;
@@ -141,13 +143,13 @@ void SleepObjective::reset(Area& area)
 }
 void SleepObjective::selectLocation(Area& area, BlockIndex location)
 {
-	Actors& actors = area.m_actors;
-	actors.setSleepSpot(m_actor, location);
+	Actors& actors = area.getActors();
+	actors.sleep_setSpot(m_actor, location);
 	actors.move_setDestination(m_actor, location, m_detour);
 }
 bool SleepObjective::onCanNotRepath(Area& area)
 {
-	BlockIndex sleepSpot = area.getActors().getSleepSpot(m_actor);
+	BlockIndex sleepSpot = area.getActors().sleep_getSpot(m_actor);
 	if(sleepSpot == BLOCK_INDEX_MAX)
 		return false;
 	sleepSpot = BLOCK_INDEX_MAX;

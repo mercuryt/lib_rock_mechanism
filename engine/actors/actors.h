@@ -14,6 +14,8 @@
 #include "../skill.h"
 #include "../terrainFacade.h"
 #include "../pathRequest.h"
+#include "uniform.h"
+#include <memory>
 
 struct MoveType;
 struct AnimalSpecies;
@@ -32,13 +34,11 @@ class SkillSet;
 class WanderObjective;
 class DrinkObjective;
 class ThirstEvent;
-class ActorHasUniform;
 
 enum class CauseOfDeath { none, thirst, hunger, bloodLoss, wound, temperature };
 
 struct ActorParamaters
 {
-	Simulation* simulation = nullptr;
 	ActorId id = 0;
 	const AnimalSpecies& species;
 	std::wstring name = L"";
@@ -46,7 +46,7 @@ struct ActorParamaters
 	Step birthStep = 0;
 	Percent percentGrown = nullPercent;
 	BlockIndex location = BLOCK_INDEX_MAX;
-	Area* area = nullptr;
+	Facing facing = 0;
 	Faction* faction = nullptr;
 	Percent percentHunger = nullPercent;
 	bool needsEat = false;
@@ -61,20 +61,20 @@ struct ActorParamaters
 	bool hasLightArmor = false;
 	bool hasHeavyArmor = false;
 
-	Percent getPercentGrown();
-	std::wstring getName();
-	Step getBirthStep();
-	ActorId getId();
-	Percent getPercentThirst();
-	Percent getPercentHunger();
-	Percent getPercentTired();
+	Percent getPercentGrown(Simulation& simulation);
+	std::wstring getName(Simulation& simulation);
+	Step getBirthStep(Simulation& simulation);
+	ActorId getId(Simulation& simulation);
+	Percent getPercentThirst(Simulation& simulation);
+	Percent getPercentHunger(Simulation& simulation);
+	Percent getPercentTired(Simulation& simulation);
 	void generateEquipment(Area& area, ActorIndex actor);
 };
 class Actors final : public Portables
 {
-	BloomHashMap<ActorIndex, CanReserve> m_canReserve;
-	BloomHashMap<ActorIndex, ActorHasUniform> m_hasUniform;
-	BloomHashMap<ActorIndex, EquipmentSet> m_equipmentSet;
+	std::vector<std::unique_ptr<CanReserve>> m_canReserve;
+	std::vector<std::unique_ptr<ActorHasUniform>> m_hasUniform;
+	std::vector<std::unique_ptr<EquipmentSet>> m_equipmentSet;
 	std::vector<ActorId> m_id;
 	std::vector<std::wstring> m_name;
 	std::vector<const AnimalSpecies*> m_species;
@@ -82,15 +82,15 @@ class Actors final : public Portables
 	std::vector<Step> m_birthStep;
 	std::vector<CauseOfDeath> m_causeOfDeath;
 	std::vector<Mass> m_unencomberedCarryMass;
-	std::vector<Attributes> m_attributes;
-	std::vector<HasObjectives> m_hasObjectives;
+	std::vector<std::unique_ptr<Attributes>> m_attributes;
+	std::vector<std::unique_ptr<HasObjectives>> m_hasObjectives;
 	std::vector<std::unique_ptr<Body>> m_body;
 	std::vector<std::unique_ptr<MustSleep>> m_mustSleep;
 	std::vector<std::unique_ptr<MustDrink>> m_mustDrink;
 	std::vector<std::unique_ptr<MustEat>> m_mustEat; 
 	std::vector<std::unique_ptr<CanGrow>> m_canGrow;
 	std::vector<std::unique_ptr<ActorNeedsSafeTemperature>> m_needsSafeTemperature;
-	std::vector<SkillSet> m_skillSet;
+	std::vector<std::unique_ptr<SkillSet>> m_skillSet;
 	// CanPickUp.
 	std::vector<ActorOrItemIndex> m_carrying;
 	// Stamina.
@@ -123,14 +123,13 @@ class Actors final : public Portables
 	void resize(HasShapeIndex newSize);
 	void moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex);
 	[[nodiscard]] bool indexCanBeMoved(HasShapeIndex index) const;
-	Area& m_area;
 public:
 	Actors(Area& area);
 	Actors(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	void onChangeAmbiantSurfaceTemperature();
 	ActorIndex create(ActorParamaters params);
-	void sharedConstructor(Area& area, ActorIndex index);
+	void sharedConstructor(ActorIndex index);
 	void scheduleNeeds(ActorIndex index);
 	void resetNeeds(ActorIndex index);
 	void setLocation(ActorIndex index, BlockIndex block);
@@ -148,6 +147,7 @@ public:
 	void unreserveAllBlocksAtLocationAndFacing(ActorIndex index, BlockIndex location, Facing facing);
 	void setBirthStep(ActorIndex index, Step step);
 	[[nodiscard]] ActorId getId(ActorIndex index) const { return m_id.at(index); }
+	[[nodiscard]] std::wstring getName(ActorIndex index) const { return m_name.at(index); }
 	[[nodiscard]] bool isAlive(ActorIndex index) const { return m_causeOfDeath.at(index) == CauseOfDeath::none; }
 	[[nodiscard]] Percent getPercentGrown(ActorIndex index) const;
 	[[nodiscard]] CauseOfDeath getCauseOfDeath(ActorIndex index) const { assert(!isAlive(index)); return m_causeOfDeath.at(index); }
@@ -163,7 +163,6 @@ public:
 	[[nodiscard]] Step getAge(ActorIndex index) const;
 	[[nodiscard]] Step getBirthStep(ActorIndex index) const { return m_birthStep.at(index); }
 	[[nodiscard]] std::wstring getActionDescription(ActorIndex index) const;
-	[[nodiscard]] EquipmentSet& getEquipmentSet(ActorIndex index) { return m_equipmentSet.at(index); }
 	[[nodiscard]] const AnimalSpecies& getSpecies(ActorIndex index) const { return *m_species.at(index); }
 	[[nodiscard]] Mass getUnencomberedCarryMass(ActorIndex index) const { return m_unencomberedCarryMass.at(index); }
 	// -Stamina.
@@ -188,6 +187,8 @@ public:
 	[[nodiscard]] bool vision_canSeeAnything(ActorIndex index) const;
 	[[nodiscard]] bool vision_hasFacade(ActorIndex actor) const;
 	[[nodiscard]] std::pair<VisionFacade*, VisionFacadeIndex> vision_getFacadeWithIndex(ActorIndex actor) const;
+	// For testing.
+	[[nodiscard]] VisionFacade& vision_getFacadeBucket(ActorIndex index);
 	// -Combat.
 	void combat_attackMeleeRange(ActorIndex index, ActorIndex target);
 	void combat_attackLongRange(ActorIndex index, ActorIndex target, ItemIndex weapon, ItemIndex ammo);
@@ -203,6 +204,8 @@ public:
 	void combat_targetNoLongerTargetable(ActorIndex index);
 	void combat_onTargetMoved(ActorIndex index);
 	void combat_freeHit(ActorIndex index, ActorIndex actor);
+	//TODO: Combat vs. items?
+	void combat_getIntoRangeAndLineOfSightOfActor(ActorIndex index, ActorIndex target, DistanceInBlocks range);
 	[[nodiscard]] uint32_t combat_getCurrentMeleeCombatScore(ActorIndex index);
 	[[nodiscard]] bool combat_isOnCoolDown(ActorIndex index) const;
 	[[nodiscard]] bool combat_inRange(ActorIndex index, const ActorIndex target) const;
@@ -220,6 +223,9 @@ public:
 	[[nodiscard]] bool combat_hasThreadedTask(ActorIndex index) { return m_getIntoAttackPositionPathRequest.at(index) != nullptr; }
 	[[nodiscard]] float combat_getCoolDownDurationModifier(ActorIndex index) { return m_coolDownDurationModifier.at(index); }
 	[[nodiscard, maybe_unused]] uint32_t combat_getCombatScore(ActorIndex index) const { return m_combatScore.at(index); }
+	[[nodiscard]] std::vector<std::pair<uint32_t, Attack>>& combat_getMeleeAttacks(ActorIndex index);
+	// -Body.
+	[[nodiscard]] bool body_isInjured(ActorIndex index) const;
 	// -Move.
 	void move_updateIndividualSpeed(ActorIndex index);
 	void move_updateActualSpeed(ActorIndex index);
@@ -232,6 +238,7 @@ public:
 	void move_setDestinationAdjacentToLocation(ActorIndex index, BlockIndex destination, bool detour = false, bool unreserved = true, bool reserve = true);
 	void move_setDestinationAdjacentToActor(ActorIndex index, ActorIndex other, bool detour = false, bool unreserved = true, bool reserve = true);
 	void move_setDestinationAdjacentToItem(ActorIndex index, ItemIndex item, bool detour = false, bool unreserved = true, bool reserve = true);
+	void move_setDestinationAdjacentToPolymorphic(ActorIndex index, ActorOrItemIndex actorOrItemIndex, bool detour = false, bool unreserved = true, bool reserve = true);
 	void move_setDestinationAdjacentToPlant(ActorIndex index, PlantIndex plant, bool detour = false, bool unreserved = true, bool reserve = true);
 	void move_setDestinationAdjacentToFluidType(ActorIndex index, const FluidType& fluidType, bool detour = false, bool unreserved = true, bool reserve = true, DistanceInBlocks maxRange = BLOCK_INDEX_MAX);
 	void move_setDestinationAdjacentToDesignation(ActorIndex index, BlockDesignation designation, bool detour = false, bool unreserved = true, bool reserve = true, DistanceInBlocks maxRange = BLOCK_INDEX_MAX);
@@ -256,20 +263,16 @@ public:
 	[[nodiscard]] bool move_hasEvent(ActorIndex index) const { return m_moveEvent.exists(index); }
 	[[nodiscard]] bool move_hasPathRequest(ActorIndex index) const { return m_pathRequest.at(index).get() != nullptr; }
 	[[nodiscard]] Step move_stepsTillNextMoveEvent(ActorIndex index) const;
-	// -Uniform.
-	void uniform_set(ActorIndex index, Uniform& uniform);
-	void uniform_unset(ActorIndex index);
-	[[nodiscard]] bool uniform_exists(ActorIndex index) const;
-	[[nodiscard]] Uniform& uniform_get(ActorIndex index);
-	[[nodiscard]] const Uniform& uniform_get(ActorIndex index) const;
 	// -CanPickUp.
 	void canPickUp_pickUpItem(ActorIndex index, ItemIndex item);
 	void canPickUp_pickUpItemQuantity(ActorIndex index, ItemIndex item, Quantity quantity);
-	void canPickUp_pickUpActor(ActorIndex index, ItemIndex actor);
+	void canPickUp_pickUpActor(ActorIndex index, ActorIndex actor);
+	void canPickUp_pickUpPolymorphic(ActorIndex index, ActorOrItemIndex actorOrItemIndex, Quantity quantity);
 	ActorIndex canPickUp_putDownActor(ActorIndex index, BlockIndex location);
 	// Returns a reference to has shape, which may be newly created or pre-existing due to generic items.
 	ItemIndex canPickUp_putDownItem(ItemIndex index, BlockIndex location);
 	ActorOrItemIndex canPickUp_putDownIfAny(ActorIndex index, BlockIndex location);
+	ActorOrItemIndex canPickUp_putDownPolymorphic(ActorIndex index, BlockIndex location);
 	void canPickUp_removeFluidVolume(ActorIndex index, CollisionVolume volume);
 	void canPickUp_add(ActorIndex index, const ItemType& itemType, const MaterialType& materialType, Quantity quantity);
 	void canPickUp_remove(ActorIndex index, ItemIndex item);
@@ -277,7 +280,7 @@ public:
 	ActorIndex canPickUp_getActor(ActorIndex index);
 	[[nodiscard]] bool canPickUp_actor(ActorIndex index, ActorIndex other) const;
 	[[nodiscard]] Quantity canPickUp_quantityWhichCanBePickedUpUnencombered(ActorIndex index, const ItemType& itemType, const MaterialType& materialType) const;
-	[[nodiscard]] bool canPickUp_any(ActorIndex index, ActorOrItemIndex target) const;
+	[[nodiscard]] bool canPickUp_polymorphic(ActorIndex index, ActorOrItemIndex target) const;
 	[[nodiscard]] bool canPickUp_anyUnencombered(ActorIndex index, ActorOrItemIndex target) const;
 	[[nodiscard]] bool canPickUp_anyUnencomberedItem(ActorIndex index, ItemIndex target) const;
 	[[nodiscard]] bool canPickUp_anyWithMass(ActorIndex index, Mass mass) const;
@@ -286,6 +289,7 @@ public:
 	[[nodiscard]] bool canPickUp_isCarryingItem(ActorIndex index, ItemIndex item) const { return m_carrying.at(index).exists() && m_carrying.at(index).isItem() && m_carrying.at(index).get() == item; }
 	[[nodiscard]] bool canPickUp_isCarryingItemGeneric(ActorIndex index, const ItemType& itemType, const MaterialType& materialType, Quantity quantity) const;
 	[[nodiscard]] bool canPickUp_isCarryingFluidType(ActorIndex index, const FluidType& fluidType) const;
+	[[nodiscard]] bool canPickUp_isCarryingPolymorphic(ActorIndex index, ActorOrItemIndex actorOrItemIndex) const;
 	[[nodiscard]] CollisionVolume canPickUp_getFluidVolume(ActorIndex index) const;
 	[[nodiscard]] const FluidType& canPickUp_getFluidType(ActorIndex index) const;
 	[[nodiscard]] bool canPickUp_isCarryingEmptyContainerWhichCanHoldFluid(ActorIndex index) const;
@@ -306,12 +310,15 @@ public:
 	void objective_projectCannotReserve(ActorIndex index);
 	void objective_complete(ActorIndex index, Objective& objective);
 	void objective_subobjectiveComplete(ActorIndex index);
+	void objective_cancel(ActorIndex, Objective& objective);
 	[[nodiscard]] bool objective_exists(ActorIndex index);
 	[[nodiscard]] std::string objective_getCurrentName(ActorIndex index);
 	template<typename T>
-	T& objective_getCurrent(ActorIndex index) { return static_cast<T&>(m_hasObjectives.at(index).getCurrent()); }
+	T& objective_getCurrent(ActorIndex index) { return static_cast<T&>(m_hasObjectives.at(index)->getCurrent()); }
 	// For testing.
 	[[nodiscard]] bool objective_queuesAreEmpty(ActorIndex index);
+	[[nodiscard]] bool objective_isOnDelay(ActorIndex index, ObjectiveTypeId objectiveTypeId);
+	[[nodiscard]] Step objective_getDelayEndFor(ActorIndex index, ObjectiveTypeId objectiveTypeId);
 	// CanReserve.
 	void canReserve_clearAll(ActorIndex index);
 	void canReserve_setFaction(ActorIndex index, Faction* faction);
@@ -319,33 +326,67 @@ public:
 	void canReserve_reserveItem(ActorIndex index, ItemIndex item);
 	[[nodiscard]] bool canReserve_tryToReserveLocation(ActorIndex index, BlockIndex block);
 	[[nodiscard]] bool canReserve_tryToReserveItem(ActorIndex index, ItemIndex item);
-	//TODO: this method name makes no sense.
-	[[nodiscard]] bool canReserve_factionExists(ActorIndex index) const;
 	[[nodiscard]] bool canReserve_hasReservationWith(ActorIndex index, Reservable& reservable) const;
-	[[nodiscard]] bool canReserve_hasReservations(ActorIndex index) const;
 	// Project.
 	[[nodiscard]] bool project_exists(ActorIndex index) const { return m_project.at(index) != nullptr; }
 	[[nodiscard]] Project* project_get(ActorIndex index) const { return m_project.at(index); }
 	void project_set(ActorIndex index, Project& project) { m_project[index] = &project; }
-	void project_unset(ActorIndex index) { m_project[index] = nullptr; }
+	void project_unset(ActorIndex index) { assert(m_project[index] != nullptr); m_project[index] = nullptr; }
+	void project_maybeUnset(ActorIndex index) { m_project[index] = nullptr; }
+	// -Equipment.
+	void equipment_add(ActorIndex index, ItemIndex item);
+	void equipment_addGeneric(ActorIndex index, const ItemType& itemType, const MaterialType& materalType, Quantity quantity);
+	void equipment_remove(ActorIndex index, ItemIndex item);
+	void equipment_removeGeneric(ActorIndex index, const ItemType& itemType, const MaterialType& materalType, Quantity quantity);
+	[[nodiscard]] bool equipment_canEquipCurrently(ActorIndex index, ItemIndex item) const;
+	[[nodiscard]] bool equipment_containsItem(ActorIndex index, ItemIndex item) const;
+	[[nodiscard]] bool equipment_containsItemType(ActorIndex index, const ItemType& type) const;
+	[[nodiscard]] Mass equipment_getMass(ActorIndex index) const;
+	[[nodiscard]] ItemIndex equipment_getWeaponToAttackAtRange(ActorIndex index, DistanceInBlocks range);
+	[[nodiscard]] ItemIndex equipment_getAmmoForRangedWeapon(ActorIndex index, ItemIndex weapon);
+	// TODO: change to vectors.
+	[[nodiscard]] std::unordered_set<ItemIndex>& equipment_getAll(ActorIndex index);
+	[[nodiscard]] const std::unordered_set<ItemIndex>& equipment_getAll(ActorIndex index) const;
+	// -Uniform.
+	void uniform_set(ActorIndex index, Uniform& uniform);
+	void uniform_unset(ActorIndex index);
+	[[nodiscard]] bool uniform_exists(ActorIndex index) const;
+	[[nodiscard]] Uniform& uniform_get(ActorIndex index);
+	[[nodiscard]] const Uniform& uniform_get(ActorIndex index) const;
 	// Sleep.
-	void sleep(ActorIndex actor);
-	void setSleepSpot(ActorIndex index, BlockIndex location);
-	[[nodiscard]] BlockIndex getSleepSpot(ActorIndex index) const ;
-	[[nodiscard]] bool isAwake(ActorIndex index) const;
+	void sleep_do(ActorIndex actor);
+	void sleep_wakeUp(ActorIndex actor);
+	void sleep_wakeUpEarly(ActorIndex actor);
+	void sleep_setSpot(ActorIndex index, BlockIndex location);
+	void sleep_makeTired(ActorIndex index);
+	[[nodiscard]] BlockIndex sleep_getSpot(ActorIndex index) const ;
+	[[nodiscard]] bool sleep_isAwake(ActorIndex index) const;
+	[[nodiscard]] Percent sleep_getPercentDoneSleeping(ActorIndex index) const;
+	[[nodiscard]] Percent sleep_getPercentTired(ActorIndex index) const;
+	// For testing.
+	[[nodiscard]] bool sleep_hasTiredEvent(ActorIndex index) const;
 	// Drink.
 	void drink_do(ActorIndex index, CollisionVolume volume);
 	void drink_setNeedsFluid(ActorIndex index);
-	[[nodiscard]] CollisionVolume drink_getVolumeOfFluidRequested(ActorIndex index);
-	[[nodiscard]] bool drink_needsFluid(ActorIndex index) const;
+	[[nodiscard]] CollisionVolume drink_getVolumeOfFluidRequested(ActorIndex index) const;
+	[[nodiscard]] bool drink_isThirsty(ActorIndex index) const;
 	[[nodiscard]] const FluidType& drink_getFluidType(ActorIndex index) const;
+	// For Testing.
+	[[nodiscard]] bool drink_thirstEventExists(ActorIndex index) const;
 	// Eat.
 	void eat_do(ActorIndex index, Mass mass);
-	[[nodiscard]] bool eat_canEatActor(ActorIndex index, ActorIndex actor) const;
+	[[nodiscard]] bool eat_isHungry(ActorIndex index) const;
+	[[nodiscard]] bool eat_canEatActor(ActorIndex index, ActorIndex other) const;
 	[[nodiscard]] bool eat_canEatItem(ActorIndex index, ItemIndex item) const;
 	[[nodiscard]] bool eat_canEatPlant(ActorIndex index, PlantIndex plant) const;
 	[[nodiscard]] Percent eat_getPercentStarved(ActorIndex index) const;
+	// For Testing.
+	[[nodiscard]] Mass eat_getMassFoodRequested(ActorIndex index) const;
+	[[nodiscard]] uint32_t eat_getDesireToEatSomethingAt(ActorIndex index, BlockIndex block) const;
+	[[nodiscard]] bool eat_hasObjective(ActorIndex index) const;
+	[[nodiscard]] Step eat_getHungerEventStep(ActorIndex index) const;
 	// Temperature.
+	void temperature_onChange(ActorIndex index);
 	[[nodiscard]] bool temperature_isSafe(ActorIndex index, Temperature temperature) const;
 	[[nodiscard]] bool temperature_isSafeAtCurrentLocation(ActorIndex index) const;
 	// Attributes.
@@ -358,7 +399,14 @@ public:
 	void grow_maybeStart(ActorIndex index);
 	void grow_stop(ActorIndex index);
 	void grow_updateGrowingStatus(ActorIndex index);
-	void grow_updatePercent(ActorIndex index, Percent percentGrown);
+	void grow_setPercent(ActorIndex index, Percent percentGrown);
+	[[nodiscard]] bool grow_isGrowing(ActorIndex index) const;
+	[[nodiscard]] Percent grow_getPercent(ActorIndex index) const;
+	// For testing.
+	[[nodiscard]] bool grow_getEventExists(ActorIndex index) const;
+	[[nodiscard]] Percent grow_getEventPercent(ActorIndex index) const;
+	[[nodiscard]] Step grow_getEventStep(ActorIndex index) const;
+	[[nodiscard]] bool grow_eventIsPaused(ActorIndex index) const;
 	// For UI.
 	[[nodiscard]] ActorOrItemIndex canPickUp_getCarrying(ActorIndex index) const;
 	
@@ -400,7 +448,7 @@ class GetIntoAttackPositionPathRequest final : public PathRequest
 	DistanceInBlocks m_attackRangeSquared = BLOCK_DISTANCE_MAX;
 public:
 	GetIntoAttackPositionPathRequest(Area& area, ActorIndex a, ActorIndex t, float ar);
-	void callback(Area& area, FindPathResult);
+	void callback(Area& area, FindPathResult&);
 };
 struct Attack final
 {

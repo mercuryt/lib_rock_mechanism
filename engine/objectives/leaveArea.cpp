@@ -1,38 +1,32 @@
 #include "leaveArea.h"
-#include "../actor.h"
 #include "../area.h"
 #include "../simulation.h"
-#include "../threadedTask.h"
+#include "../actors/actors.h"
+#include "terrainFacade.h"
 
-LeaveAreaObjective::LeaveAreaObjective(Actor& a, uint8_t priority) : Objective(a, priority), m_task(a.getSimulation().m_threadedTaskEngine) { }
-void LeaveAreaObjective::execute()
+LeaveAreaObjective::LeaveAreaObjective(ActorIndex a, uint8_t priority) :
+	Objective(a, priority) { }
+void LeaveAreaObjective::execute(Area& area)
 {
-	if(actorIsAdjacentToEdge())
+	Actors& actors = area.getActors();
+	if(actors.isOnEdge(m_actor))
 		// We are at the edge and can leave.
-		m_actor.leaveArea();
+		actors.leaveArea(m_actor);
 	else
-		m_task.create(*this);
+		actors.move_pathRequestRecord(m_actor, std::make_unique<LeaveAreaPathRequest>(area, *this));
 	return;
 }
-bool LeaveAreaObjective::actorIsAdjacentToEdge() const
+LeaveAreaPathRequest::LeaveAreaPathRequest(Area& area, LeaveAreaObjective& objective) : m_objective(objective)
 {
-	Blocks& blocks = m_actor.m_area->getBlocks();
-	return m_actor.predicateForAnyOccupiedBlock([&blocks](BlockIndex block){ return blocks.isEdge(block); });
+	createGoToEdge(area, objective.m_actor, m_objective.m_detour);
 }
-LeaveAreaThreadedTask::LeaveAreaThreadedTask(LeaveAreaObjective& objective) : 
-	ThreadedTask(objective.m_actor.getSimulation().m_threadedTaskEngine),
-	m_objective(objective), m_findsPath(objective.m_actor, false) { }
-void LeaveAreaThreadedTask::readStep()
+void LeaveAreaPathRequest::callback(Area& area, FindPathResult& result)
 {
-	if(!m_objective.actorIsAdjacentToEdge())
-		m_findsPath.pathToAreaEdge();
-}
-void LeaveAreaThreadedTask::writeStep()
-{
-	if(m_findsPath.found())
-		m_objective.m_actor.m_canMove.setPath(m_findsPath.getPath());
+	Actors& actors = area.getActors();
+	if(!result.path.empty())
+		actors.move_setPath(m_objective.m_actor, result.path);
 	else if(m_objective.actorIsAdjacentToEdge())
-		m_objective.m_actor.leaveArea();
+		actors.leaveArea(m_objective.m_actor);
 	else
-		m_objective.m_actor.m_hasObjectives.cannotFulfillObjective(m_objective);
+		actors.objective_canNotCompleteObjective(m_objective.m_actor, m_objective);
 }

@@ -4,6 +4,7 @@
 #include "../objective.h"
 #include "../simulation.h"
 #include "../area.h"
+#include "actors/actors.h"
 #include <memory>
 #include <unordered_set>
 GoToObjective::GoToObjective(const Json& data, DeserializationMemo& deserializationMemo) : 

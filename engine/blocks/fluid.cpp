@@ -51,7 +51,7 @@ void Blocks::fluid_spawnMist(BlockIndex index, const FluidType& fluidType, Dista
 		return;
 	m_mist[index] = &fluidType;
 	m_mistInverseDistanceFromSource[index] = maxMistSpread != 0 ? maxMistSpread : fluidType.maxMistSpread;
-	MistDisperseEvent::emplace(fluidType.mistDuration, m_area, fluidType, index);
+	MistDisperseEvent::emplace(m_area, fluidType.mistDuration, fluidType, index);
 }
 void Blocks::fluid_clearMist(BlockIndex index)
 {

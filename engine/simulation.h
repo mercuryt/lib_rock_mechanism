@@ -1,20 +1,21 @@
 #pragma once
 #include "../lib/BS_thread_pool_light.hpp"
-#include "deserializationMemo.h"
-#include "dialogueBox.h"
-#include "shape.h"
-#include "types.h"
+
 #include "config.h"
 #include "datetime.h"
+#include "deserializationMemo.h"
+#include "dialogueBox.h"
 #include "eventSchedule.hpp"
-#include "config.h"
-#include "threadedTask.h"
-#include "random.h"
-#include "input.h"
-#include "uniform.h"
 #include "faction.h"
+#include "input.h"
+#include "random.h"
+#include "shape.h"
 #include "simulation/hasActors.h"
 #include "simulation/hasItems.h"
+#include "threadedTask.h"
+#include "types.h"
+#include "uniform.h"
+
 #include <list>
 #include <memory>
 #include <unordered_map>
@@ -27,9 +28,9 @@ class SimulationHasAreas;
 
 class Simulation final
 {
+public:
 	EventSchedule m_eventSchedule;
 	ThreadedTaskEngine m_threadedTaskEngine;
-public:
 	BS::thread_pool_light m_pool;
 	HasScheduledEvent<HourlyEvent> m_hourlyEvent;
 	Random m_random;
@@ -60,9 +61,41 @@ public:
 	Json toJson() const;
 	void doStep(uint16_t count = 1);
 	template<class Data, class Action>
-	void parallelizeTask(Data& data, uint32_t stepSize, Action& task);
-	template<class Data, class Action>
-	void parallelizeTaskIndices(uint32_t end, uint32_t stepSize, Action& task);
+	void parallelizeTask(Data& data, uint32_t stepSize, Action& task)
+	{
+		auto start = data.begin();
+		auto end = start + std::min(stepSize, (uint32_t)data.size());
+		while(start != end)
+		{
+			m_pool.push_task([&task, start, end]() mutable {
+				while(start != end)
+				{
+					task(*start);
+					start++;
+				}
+			});
+			start = end;
+			end = std::min(data.end(), start + stepSize);
+		}
+		//TODO: Use OpenMP.
+		m_pool.wait_for_tasks();
+	}
+	template<class Action>
+	void parallelizeTaskIndices(uint32_t size, uint32_t stepSize, Action& task)
+	{
+		uint32_t start = 0;
+		uint32_t end = start + std::min(stepSize, size);
+		while(start != size)
+		{
+			m_pool.push_task([&task, start, end]() mutable {
+				while(start != end)
+				task(start++);
+			});
+			start = end;
+			end = std::min(size, start + stepSize);
+		}
+		m_pool.wait_for_tasks();
+	}
 	void incrementHour();
 	void save();
 	Faction& createFaction(std::wstring name);

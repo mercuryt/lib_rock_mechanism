@@ -1,21 +1,27 @@
 #include "stocks.h"
-#include "item.h"
-void AreaHasStocksForFaction::record(Item& item)
+#include "itemType.h"
+#include "materialType.h"
+#include "area.h"
+#include "items/items.h"
+void AreaHasStocksForFaction::record(Area& area, ItemIndex item)
 {
-	m_data[&item.m_itemType][&item.m_materialType].insert(&item);
+	Items& items = area.getItems();
+	m_data[&items.getItemType(item)][&items.getMaterialType(item)].insert(item);
 }
-void AreaHasStocksForFaction::unrecord(Item& item)
+void AreaHasStocksForFaction::unrecord(Area& area, ItemIndex item)
 {
-	if(m_data.at(&item.m_itemType).at(&item.m_materialType).size() > 1)
+	Items& items = area.getItems();
+	m_data[&items.getItemType(item)][&items.getMaterialType(item)].insert(item);
+	if(m_data.at(&items.getItemType(item)).at(&items.getMaterialType(item)).size() > 1)
 		// There are more then one item for this combination of item type and material type.
-		m_data[&item.m_itemType][&item.m_materialType].erase(&item);
+		m_data[&items.getItemType(item)][&items.getMaterialType(item)].erase(item);
 	else
 	{
-		if(m_data.at(&item.m_itemType).size() > 1)
+		if(m_data.at(&items.getItemType(item)).size() > 1)
 			// There is more then one materialType ( and thus more then one item ) for this item type.
-			m_data[&item.m_itemType].erase(&item.m_materialType);
+			m_data[&items.getItemType(item)].erase(&items.getMaterialType(item));
 		else
 			// This is the only item for this item type
-			m_data.erase(&item.m_itemType);
+			m_data.erase(&items.getItemType(item));
 	}
 }

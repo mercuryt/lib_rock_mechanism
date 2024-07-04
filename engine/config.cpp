@@ -107,6 +107,7 @@ void Config::load()
 	maxRangeToSearchForConstructionDesignations = data["maxRangeToSearchForConstructionDesignations"].get<DistanceInBlocks>();
 	maxRangeToSearchForWoodCuttingDesignations = data["maxRangeToSearchForWoodCuttingDesignations"].get<DistanceInBlocks>();
 	maxRangeToSearchForHorticultureDesignations = data["maxRangeToSearchForHorticultureDesignations"].get<DistanceInBlocks>();
+	maxRangeToSearchForUniformEquipment = data["maxRangeToSearchForUniformEquipment"].get<DistanceInBlocks>();
 	maxSkillLevel = data["maxSkillLevel"].get<uint32_t>();
 	maxStaminaPointsBase = data["maxStaminaPointsBase"].get<uint32_t>();
 	maxWorkersForStockPileProject = data["maxWorkersForStockPileProject"].get<Quantity>();

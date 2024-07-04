@@ -4,7 +4,7 @@
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
-#include "../../engine/actor.h"
+#include "../../engine/actors/actors.h"
 #include "../../engine/objectives/station.h"
 TEST_CASE("leadAndFollow")
 {

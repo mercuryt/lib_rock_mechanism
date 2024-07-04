@@ -47,7 +47,7 @@ class SowSeedsEvent final : public ScheduledEvent
 {
 	SowSeedsObjective& m_objective;
 public:
-	SowSeedsEvent(Area& area, Step delay, SowSeedsObjective& o, const Step start = 0);
+	SowSeedsEvent(Step delay, Area& area, SowSeedsObjective& o, const Step start = 0);
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };

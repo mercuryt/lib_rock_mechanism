@@ -1,5 +1,6 @@
 // TODO: code is repeated 3 times each for access condition and destination condition definition.
 #include "terrainFacade.h"
+#include "actors/actors.h"
 #include "area.h"
 #include "findsPath.h"
 #include "shape.h"
@@ -7,6 +8,7 @@
 #include "types.h"
 #include "util.h"
 #include "pathRequest.h"
+#include "blocks/blocks.h"
 #include <algorithm>
 #include <queue>
 #include <unordered_map>
@@ -17,13 +19,15 @@ TerrainFacade::TerrainFacade(Area& area, const MoveType& moveType) : m_area(area
 	m_enterable.resize(m_area.getBlocks().size() * maxAdjacent);
 	for(BlockIndex block : m_area.getBlocks().getAll())
 		update(block);
+	// Two results fit on a  cache line, by ensuring that the number of tasks per thread is a multiple of 2 we prevent false shareing.
+	assert(Config::pathRequestsPerThread % 2 == 0);
 }
 void TerrainFacade::doStep()
 {
 	auto taskNoHuristic = [&](PathRequestIndex index){ findPathForIndexNoHuristic(index); };
-	m_area.m_simulation.parallelizeTaskIndices<class Data>(m_pathRequestAccessConditionsNoHuristic.size(), Config::pathRequestsPerThread, taskNoHuristic);
+	m_area.m_simulation.parallelizeTaskIndices(m_pathRequestAccessConditionsNoHuristic.size(), Config::pathRequestsPerThread, taskNoHuristic);
 	auto taskWithHuristic = [&](PathRequestIndex index){ findPathForIndexWithHuristic(index); };
-	m_area.m_simulation.parallelizeTaskIndices<class Data>(m_pathRequestAccessConditionsWithHuristic.size(), Config::pathRequestsPerThread, taskWithHuristic);
+	m_area.m_simulation.parallelizeTaskIndices(m_pathRequestAccessConditionsWithHuristic.size(), Config::pathRequestsPerThread, taskWithHuristic);
 	for(uint i = 0; i < m_pathRequestAccessConditionsNoHuristic.size(); ++i)
 	{
 		PathRequest& pathRequest = *m_pathRequestNoHuristic.at(i);
@@ -396,9 +400,10 @@ FindPathResult TerrainFacade::findPathAdjacentToAndUnreservedPolymorphic(BlockIn
 }
 AccessCondition TerrainFacade::makeAccessConditionForActor(ActorIndex actor, bool detour, DistanceInBlocks maxRange) const
 {
-	auto& blocks = m_area.m_actors.getBlocks(actor);
+	Actors& actors = m_area.getActors();
+	auto& blocks = actors.getBlocks(actor);
 	std::vector<BlockIndex> currentlyOccupied(blocks.begin(), blocks.end());
-	return makeAccessCondition(m_area.m_actors.getShape(actor), m_area.m_actors.getLocation(actor), currentlyOccupied, detour, maxRange);
+	return makeAccessCondition(actors.getShape(actor), actors.getLocation(actor), currentlyOccupied, detour, maxRange);
 }
 AccessCondition TerrainFacade::makeAccessCondition(const Shape& shape, BlockIndex start, std::vector<BlockIndex> initalBlocks, bool detour, DistanceInBlocks maxRange) const
 {

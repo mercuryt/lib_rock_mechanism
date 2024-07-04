@@ -1,9 +1,13 @@
 #include "hasAreas.h"
 
 #include "../simulation.h"
-#include "../actor.h"
 #include "../deserializationMemo.h"
 #include "../drama/engine.h"
+#include "../area.h"
+#include "../actors/actors.h"
+#include "../blocks/blocks.h"
+#include "../items/items.h"
+#include "../plants.h"
 
 SimulationHasAreas::SimulationHasAreas(const Json& data, DeserializationMemo&, Simulation& simulation) : m_simulation(simulation)
 {
@@ -44,8 +48,9 @@ Area& SimulationHasAreas::loadArea(AreaId id, std::wstring name, uint32_t x, uin
 void SimulationHasAreas::destroyArea(Area& area)
 {
 	m_simulation.m_dramaEngine->removeArcsForArea(area);
-	for(Actor* actor : area.m_actors.getAll())
-		actor->exit();
+	Actors& actors = area.getActors();
+	for(ActorIndex actor : actors.getAll())
+		actors.exit(actor);
 	m_areasById.erase(area.m_id);
 	m_areas.remove(area);
 }

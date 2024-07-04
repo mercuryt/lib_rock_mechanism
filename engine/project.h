@@ -107,7 +107,7 @@ protected:
 	Area& m_area;
 	Faction& m_faction;
 	BlockIndex m_location;
-	Project(Faction* f, Area& a, BlockIndex l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr);
+	Project(Faction& f, Area& a, BlockIndex l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr);
 	Project(const Json& data, DeserializationMemo& deserializationMemo);
 private:
 	// Count how many times we have attempted to create a haul subproject.

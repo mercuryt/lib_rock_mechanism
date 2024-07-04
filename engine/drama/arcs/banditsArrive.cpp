@@ -1,18 +1,20 @@
 #include "banditsArrive.h"
 #include "../engine.h"
 #include "../../area.h"
-#include "../../actor.h"
 #include "../../config.h"
 #include "../../simulation.h"
 #include "../../objectives/exterminate.h"
-#include "actor.h"
+#include "actors/actors.h"
 #include "animalSpecies.h"
+#include "blocks/blocks.h"
 #include "moveType.h"
 #include "simulation/hasActors.h"
+#include "types.h"
 #include <utility>
 BanditsArriveDramaArc::BanditsArriveDramaArc(DramaEngine& engine, Area& area) : 
-	DramaArc(engine, DramaArcType::BanditsArrive, &area), m_scheduledEvent(area.m_simulation.m_eventSchedule)
+	DramaArc(engine, DramaArcType::BanditsArrive, &area), m_scheduledEvent(area.m_eventSchedule)
 { scheduleArrive(); }
+/*
 BanditsArriveDramaArc::BanditsArriveDramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& engine) : 
 	DramaArc(data, deserializationMemo, engine),
 	m_isActive(data["isActive"].get<bool>()),
@@ -32,11 +34,13 @@ Json BanditsArriveDramaArc::toJson() const
 	data["quantity"] = m_quantity;
 	return data;
 }
+*/
 void BanditsArriveDramaArc::callback()
 {
 	auto& random = m_area->m_simulation.m_random;
 	static std::vector<const AnimalSpecies*> sentientSpecies = getSentientSpecies();
 	constexpr DistanceInBlocks maxBlockDistance = 10;
+	Actors& actors = m_area->getActors();
 	if(m_isActive)
 	{
 		std::unordered_set<BlockIndex> exclude;
@@ -55,35 +59,33 @@ void BanditsArriveDramaArc::callback()
 				.hasLightArmor=random.chance(0.9),
 				.hasHeavyArmor=random.chance(0.3),
 			};
-			m_leader = &m_area->m_simulation.m_hasActors->createActor(params);
+			m_leader = actors.create(params);
 			m_quantity--;
-			Faction& faction = m_area->m_simulation.createFaction(m_leader->m_name + L" bandits");
-			m_leader->setFaction(&faction);
-			std::unique_ptr<Objective> objective = std::make_unique<ExterminateObjective>(*m_leader, destination);
-			m_leader->m_hasObjectives.addTaskToStart(std::move(objective));
+			Faction& faction = m_area->m_simulation.createFaction(actors.getName(m_leader) + L" bandits");
+			actors.setFaction(m_leader, &faction);
+			actors.objective_addTaskToStart(m_leader, std::make_unique<ExterminateObjective>(*m_area, m_leader, destination));
 			m_actors.push_back(m_leader);
 		}
 		// Spawn.
 		while(m_quantity--)
 		{
-			const AnimalSpecies& species = random.chance(0.5) ? m_leader->m_species : *random.getInVector(sentientSpecies);
+			const AnimalSpecies& species = random.chance(0.5) ? actors.getSpecies(m_leader) : *random.getInVector(sentientSpecies);
 			BlockIndex location = findLocationOnEdgeForNear(*species.shapes.back(), species.moveType, m_entranceBlock, maxBlockDistance, exclude);
 			if(location != BLOCK_INDEX_MAX)
 			{
 				exclude.insert(location);
-				Actor& actor = m_area->m_simulation.m_hasActors->createActor(ActorParamaters{
-					.species=m_leader->m_species, 
+				ActorIndex actor = actors.create(ActorParamaters{
+					.species=species, 
 					.percentGrown=random.getInRange(70,100),
 					.location=location,
-					.faction=m_leader->getFaction(),
+					.faction=actors.getFaction(m_leader),
 					.hasSidearm=true,
 					.hasLongarm=random.chance(0.6),
 					.hasLightArmor=random.chance(0.9),
 					.hasHeavyArmor=random.chance(0.3),
 				});
-				m_actors.push_back(&actor);
-				std::unique_ptr<Objective> objective = std::make_unique<ExterminateObjective>(actor, destination);
-				actor.m_hasObjectives.addTaskToStart(std::move(objective));
+				m_actors.push_back(actor);
+				actors.objective_addTaskToStart(actor, std::make_unique<ExterminateObjective>(*m_area, actor, destination));
 			}
 			else
 			{
@@ -96,7 +98,7 @@ void BanditsArriveDramaArc::callback()
 			scheduleDepart();
 			m_isActive = false;
 			m_entranceBlock = BLOCK_INDEX_MAX;
-			m_leader = nullptr;
+			m_leader = ACTOR_INDEX_MAX;
 		}
 	}
 	else

@@ -133,7 +133,7 @@ public:
 	void maybeUnschedule(HasShapeIndex index)
 	{
 		if(m_events.at(index) != nullptr)
-			unschedule();
+			unschedule(index);
 	}
 	void clearPointer(HasShapeIndex index)
 	{

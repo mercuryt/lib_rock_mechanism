@@ -3,11 +3,9 @@
 #include "config.h"
 #include "cuboid.h"
 #include "input.h"
-#include "objective.h"
 #include "reservable.h"
 #include "eventSchedule.h"
 #include "project.h"
-#include "pathRequest.h"
 
 #include <unordered_map>
 #include <vector>
@@ -51,7 +49,7 @@ class ConstructProject final : public Project
 	void offDelay();
 public:
 	// BlockFeatureType can be null, meaning the block is to be filled with a constructed wall.
-	ConstructProject(Faction* faction, Area& a, BlockIndex b, const BlockFeatureType* bft, const MaterialType& mt, std::unique_ptr<DishonorCallback> dishonorCallback) : 
+	ConstructProject(Faction& faction, Area& a, BlockIndex b, const BlockFeatureType* bft, const MaterialType& mt, std::unique_ptr<DishonorCallback> dishonorCallback) : 
 		Project(faction, a, b, Config::maxNumberOfWorkersForConstructionProject, std::move(dishonorCallback)), m_blockFeatureType(bft), m_materialType(mt) { }
 	ConstructProject(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;

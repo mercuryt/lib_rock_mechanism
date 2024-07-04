@@ -2,6 +2,7 @@
 #include "../blocks/blocks.h"
 #include "../fluidGroup.h"
 #include "../area.h"
+#include "../blocks/blocks.h"
 FillQueue::FillQueue(FluidGroup& fluidGroup) : FluidQueue(fluidGroup) {} 
 void FillQueue::buildFor(std::unordered_set<BlockIndex>& members)
 {

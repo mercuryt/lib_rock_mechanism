@@ -6,6 +6,8 @@
 #include "types.h"
 #include "util.h"
 #include "visionUtil.h"
+#include "actors/actors.h"
+#include "blocks/blocks.h"
 #include <cstddef>
 
 VisionFacade::VisionFacade( )
@@ -15,6 +17,8 @@ VisionFacade::VisionFacade( )
 	m_ranges.reserve(reserve);
 	m_locations.reserve(reserve);
 	m_results.reserve(reserve);
+	// Four results fit on a  cache line, by ensuring that the number of tasks per thread is a multiple of 4 we prevent false shareing.
+	assert(Config::visionThreadingBatchSize % 4 == 0);
 }
 void VisionFacade::setArea(Area& area)
 {
@@ -23,7 +27,7 @@ void VisionFacade::setArea(Area& area)
 }
 void VisionFacade::addActor(ActorIndex actor)
 {
-	Actors& actorData = m_area->m_actors;
+	Actors& actorData = m_area->getActors();
 	assert(!actorData.vision_hasFacade(actor));
 	VisionFacadeIndex index = m_actors.size();
 	actorData.vision_recordFacade(actor, *this, index);
@@ -36,7 +40,7 @@ void VisionFacade::addActor(ActorIndex actor)
 }
 void VisionFacade::removeActor(ActorIndex actor)
 {
-	Actors& actorData = m_area->m_actors;
+	Actors& actorData = m_area->getActors();
 	auto [visionFacade, index] = actorData.vision_getFacadeWithIndex(actor);
 	assert(index != VISION_FACADE_INDEX_MAX);
 	assert(visionFacade == this);
@@ -45,8 +49,8 @@ void VisionFacade::removeActor(ActorIndex actor)
 void VisionFacade::remove(VisionFacadeIndex index)
 {
 	assert(m_actors.size() > index);
-	Actors& actorData = m_area->m_actors;
-	actorData.vision_clearVisionFacade(m_actors.at(index));
+	Actors& actorData = m_area->getActors();
+	actorData.vision_clearFacade(m_actors.at(index));
 	util::removeFromVectorByIndexUnordered(m_actors, index);
 	util::removeFromVectorByIndexUnordered(m_ranges, index);
 	util::removeFromVectorByIndexUnordered(m_locations, index);
@@ -62,14 +66,14 @@ ActorIndex VisionFacade::getActor(VisionFacadeIndex index)
 BlockIndex VisionFacade::getLocation(VisionFacadeIndex index)  
 {
        	assert(m_actors.size() > index); 
-	Actors& actorData = m_area->m_actors;
+	Actors& actorData = m_area->getActors();
 	assert(actorData.getLocation(index) == m_locations.at(index));
 	return m_locations.at(index); 
 }
 DistanceInBlocks VisionFacade::getRange(VisionFacadeIndex index) const 
 { 
 	assert(m_actors.size() > index); 
-	Actors& actorData = m_area->m_actors;
+	Actors& actorData = m_area->getActors();
 	assert(actorData.vision_getRange(m_actors.at(index)) == m_ranges.at(index));
 	return m_ranges.at(index); 
 }
@@ -89,12 +93,12 @@ std::vector<ActorIndex>& VisionFacade::getResults(VisionFacadeIndex index)
 }
 void VisionFacade::updateLocation(VisionFacadeIndex index, BlockIndex& location)
 {
-	assert(m_area->m_actors.getLocation(index) == location);
+	assert(m_area->getActors().getLocation(index) == location);
 	m_locations.at(index) = location;
 }
 void VisionFacade::updateRange(VisionFacadeIndex index, DistanceInBlocks range)
 {
-	assert(m_area->m_actors.vision_getRange(index) == range);
+	assert(m_area->getActors().vision_getRange(index) == range);
 	m_ranges.at(index) = range;
 }
 void VisionFacade::readStepSegment(VisionFacadeIndex begin, VisionFacadeIndex end)
@@ -186,7 +190,7 @@ void VisionFacade::doStep()
 	}
 	m_area->m_simulation.m_pool.wait_for_tasks();
 	for(VisionFacadeIndex index = 0; index < m_actors.size(); ++index)
-		m_area->m_actors.vision_swap(getActor(index), getResults(index));
+		m_area->getActors().vision_swap(getActor(index), getResults(index));
 }
 void VisionFacade::clear()
 {
@@ -201,7 +205,7 @@ VisionFacadeBuckets::VisionFacadeBuckets(Area& area) : m_area(area)
 }
 VisionFacade& VisionFacadeBuckets::facadeForActor(ActorIndex actor)
 {
-	ActorId id = m_area.m_actors.getId(actor);
+	ActorId id = m_area.getActors().getId(actor);
 	return m_data[id % Config::actorDoVisionInterval];
 }
 void VisionFacadeBuckets::add(ActorIndex actor)

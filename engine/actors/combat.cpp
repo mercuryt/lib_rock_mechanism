@@ -1,18 +1,17 @@
 #include "actors.h"
 
-#include "area.h"
-#include "attackType.h"
-#include "itemType.h"
-#include "simulation.h"
-#include "simulation/hasActors.h"
-#include "skill.h"
-#include "types.h"
-#include "util.h"
-#include "actor.h"
-#include "weaponType.h"
-#include "item.h"
-#include "config.h"
-#include "random.h"
+#include "../area.h"
+#include "../attackType.h"
+#include "../itemType.h"
+#include "../simulation.h"
+#include "../simulation/hasActors.h"
+#include "../skill.h"
+#include "../types.h"
+#include "../util.h"
+#include "../weaponType.h"
+#include "../config.h"
+#include "../random.h"
+#include "../items/items.h"
 
 #include <cstdint>
 #include <sys/types.h>
@@ -48,7 +47,7 @@ void Actors::combat_attackMeleeRange(ActorIndex index, ActorIndex target)
 	{
 		// Attack hits.
 		const Attack& attack = combat_getAttackForCombatScoreDifference(index, attackerCombatScore - targetCombatScore);
-		Force attackForce = attack.attackType->baseForce + (m_attributes.at(index).getStrength() * Config::unitsOfAttackForcePerUnitOfStrength);
+		Force attackForce = attack.attackType->baseForce + (m_attributes.at(index)->getStrength() * Config::unitsOfAttackForcePerUnitOfStrength);
 		// TODO: Higher skill selects more important body parts to hit.
 		BodyPart& bodyPart = m_body.at(target)->pickABodyPartByVolume(m_area.m_simulation);
 		Hit hit(attack.attackType->area, attackForce, *attack.materialType, attack.attackType->woundType);
@@ -56,7 +55,7 @@ void Actors::combat_attackMeleeRange(ActorIndex index, ActorIndex target)
 		// If there is a weapon being used take the cool down from it, otherwise use onMiss cool down.
 		if(attack.item != ITEM_INDEX_MAX)
 		{
-			Items& items = m_area.m_items;
+			Items& items = m_area.getItems();
 			coolDownDuration = attack.attackType->coolDown == 0 ? items.getItemType(attack.item).weaponData->coolDown : attack.attackType->coolDown;
 			coolDownDuration *= m_coolDownDurationModifier.at(index);
 		}
@@ -68,8 +67,8 @@ void Actors::combat_attackLongRange(ActorIndex index, ActorIndex target, ItemInd
 {
 	//TODO: unarmed ranged attack?
 	const AttackType& attackType = combat_getRangedAttackType(index, weapon);
-	Step coolDown = attackType.coolDown == 0 ? m_area.m_items.getItemType(weapon).weaponData->coolDown : attackType.coolDown;
-	Items& items = m_area.m_items;
+	Items& items = m_area.getItems();;
+	Step coolDown = attackType.coolDown == 0 ? items.getItemType(weapon).weaponData->coolDown : attackType.coolDown;
 	Attack attack(&attackType, &items.getMaterialType(ammo), weapon);
 	if(combat_doesProjectileHit(index, attack, target))
 	{
@@ -136,7 +135,7 @@ void Actors::combat_update(ActorIndex index)
 	Body& body = *m_body.at(index).get();
 	for(Attack& attack : body.getMeleeAttacks())
 		m_meleeAttackTable.at(index).emplace_back(combat_getCombatScoreForAttack(index, attack), attack);
-	for(Attack& attack : m_equipmentSet.at(index).getMeleeAttacks(m_area))
+	for(Attack& attack : m_equipmentSet.at(index)->getMeleeAttacks(m_area))
 		m_meleeAttackTable.at(index).emplace_back(combat_getCombatScoreForAttack(index, attack), attack);
 	// Sort by combat score, low to high.
 	std::sort(m_meleeAttackTable.at(index).begin(), m_meleeAttackTable.at(index).end(), [](auto& a, auto& b){ return a.first < b.first; });
@@ -151,31 +150,32 @@ void Actors::combat_update(ActorIndex index)
 			m_maxMeleeRange.at(index) = range;
 	}
 	// Base stats give combat score.
-	m_combatScore.at(index) += m_attributes.at(index).getBaseCombatScore();
+	m_combatScore.at(index) += m_attributes.at(index)->getBaseCombatScore();
 	// Reduce combat score if manipulation is impaired.
 	m_combatScore.at(index) = util::scaleByInversePercent(m_combatScore.at(index), body.getImpairManipulationPercent());
 	// Update cool down duration.
 	// TODO: Manipulation impairment should apply to cooldown as well?
-	m_coolDownDurationModifier.at(index) = std::max(1.f, (float)m_equipmentSet.at(index).getMass() / (float)m_attributes.at(index).getUnencomberedCarryMass() );
-	if(m_attributes.at(index).getDextarity() > Config::attackCoolDownDurationBaseDextarity)
+	m_coolDownDurationModifier.at(index) = std::max(1.f, (float)m_equipmentSet.at(index)->getMass() / (float)m_attributes.at(index)->getUnencomberedCarryMass() );
+	if(m_attributes.at(index)->getDextarity() > Config::attackCoolDownDurationBaseDextarity)
 	{
-		float reduction = (m_attributes.at(index).getDextarity() - Config::attackCoolDownDurationBaseDextarity) * Config::fractionAttackCoolDownReductionPerPointOfDextarity;
+		float reduction = (m_attributes.at(index)->getDextarity() - Config::attackCoolDownDurationBaseDextarity) * Config::fractionAttackCoolDownReductionPerPointOfDextarity;
 		m_coolDownDurationModifier.at(index) = std::max(m_coolDownDurationModifier.at(index) - reduction, Config::minimumAttackCoolDownModifier);
 	}
 	// Find the on miss cool down.
-	Step baseOnMissCoolDownDuration = m_equipmentSet.at(index).hasWeapons() ?
-	       	m_equipmentSet.at(index).getLongestMeleeWeaponCoolDown(m_area) : 
+	Step baseOnMissCoolDownDuration = m_equipmentSet.at(index)->hasWeapons() ?
+	       	m_equipmentSet.at(index)->getLongestMeleeWeaponCoolDown(m_area) : 
 		Config::attackCoolDownDurationBaseSteps;
 	m_onMissCoolDownMelee.at(index) = m_coolDownDurationModifier.at(index) * baseOnMissCoolDownDuration;
 	//Find max range.
 	m_maxRange.at(index) = m_maxMeleeRange.at(index);
-	for(ItemIndex item : m_equipmentSet.at(index).getRangedWeapons())
+	for(ItemIndex item : m_equipmentSet.at(index)->getRangedWeapons())
 	{
-		AttackType* attackType = m_area.m_items.getItemType(item).getRangedAttackType();
+		AttackType* attackType = m_area.getItems().getItemType(item).getRangedAttackType();
 		if(attackType->range > m_maxRange.at(index))
 			m_maxRange.at(index) = attackType->range;
 	}
 }
+std::vector<std::pair<uint32_t, Attack>>& Actors::combat_getMeleeAttacks(ActorIndex index) { return m_meleeAttackTable.at(index); }
 //TODO: Grasps cannot be used for both armed and unarmed attacks at the same time?
 uint32_t Actors::combat_getCombatScoreForAttack(ActorIndex index, const Attack& attack) const
 {
@@ -183,9 +183,9 @@ uint32_t Actors::combat_getCombatScoreForAttack(ActorIndex index, const Attack& 
 	const SkillType& skill = attack.item == ITEM_INDEX_MAX ?
 		SkillType::byName("unarmed") :
 		attack.attackType->skillType;
-	uint32_t skillValue = m_skillSet.at(index).get(skill);
+	uint32_t skillValue = m_skillSet.at(index)->get(skill);
 	output += (skillValue * Config::attackSkillCombatModifier);
-	Items& items = m_area.m_items;
+	Items& items = m_area.getItems();
 	uint32_t quality = attack.item == ITEM_INDEX_MAX ? Config::averageItemQuality : items.getQuality(attack.item);
 	output *= combat_getQualityModifier(index, quality);
 	Percent percentItemWear = attack.item == ITEM_INDEX_MAX ? 0u : items.getWear(attack.item);
@@ -240,7 +240,7 @@ void Actors::combat_noLongerTargetable(ActorIndex index)
 	{
 		assert(m_targetedBy.at(actor).contains(index));
 		combat_targetNoLongerTargetable(index);
-		m_hasObjectives.at(actor).subobjectiveComplete();
+		m_hasObjectives.at(actor)->subobjectiveComplete(m_area);
 	}
 	m_targetedBy.clear();
 }
@@ -256,7 +256,7 @@ void Actors::combat_targetNoLongerTargetable(ActorIndex index)
 {
 	assert(m_target.at(index) != ACTOR_INDEX_MAX);
 	m_target.at(index) = ACTOR_INDEX_MAX;
-	m_hasObjectives.at(index).subobjectiveComplete();
+	m_hasObjectives.at(index)->subobjectiveComplete(m_area);
 }
 void Actors::combat_onTargetMoved(ActorIndex index)
 {
@@ -268,6 +268,10 @@ void Actors::combat_freeHit(ActorIndex index, ActorIndex actor)
 	m_coolDownEvent.maybeUnschedule(index);
 	combat_attackMeleeRange(index, actor);
 }
+void Actors::combat_getIntoRangeAndLineOfSightOfActor(ActorIndex index, ActorIndex target, DistanceInBlocks range)
+{
+	move_pathRequestRecord(index, std::make_unique<GetIntoAttackPositionPathRequest>(m_area, index, target, range));
+}
 bool Actors::combat_isOnCoolDown(ActorIndex index) const { return m_coolDownEvent.exists(index); }
 bool Actors::combat_inRange(ActorIndex index, const ActorIndex target) const 
 {
@@ -277,12 +281,12 @@ bool Actors::combat_inRange(ActorIndex index, const ActorIndex target) const
 Percent Actors::combat_projectileHitPercent(ActorIndex index, const Attack& attack, const ActorIndex target) const
 {
 	Percent chance = 100 - pow(distanceToActor(index, target), Config::projectileHitChanceFallsOffWithRangeExponent);
-	chance += m_skillSet.at(index).get(attack.attackType->skillType) * Config::projectileHitPercentPerSkillPoint;
+	chance += m_skillSet.at(index)->get(attack.attackType->skillType) * Config::projectileHitPercentPerSkillPoint;
 	chance += ((int)getVolume(target) - (int)Config::projectileMedianTargetVolume) * Config::projectileHitPercentPerUnitVolume;
-	chance += m_attributes.at(index).getDextarity() * Config::projectileHitPercentPerPointDextarity;
+	chance += m_attributes.at(index)->getDextarity() * Config::projectileHitPercentPerPointDextarity;
 	if(attack.item != ITEM_INDEX_MAX)
 	{
-		Items& items = m_area.m_items;
+		Items& items = m_area.getItems();
 		chance += ((int)items.getQuality(attack.item) - Config::averageItemQuality) * Config::projectileHitPercentPerPointQuality;
 		chance -= items.getWear(attack.item) * Config::projectileHitPercentPerPointWear;
 	}
@@ -313,7 +317,7 @@ bool Actors::combat_blockIsValidPosition(ActorIndex index, BlockIndex block, uin
 AttackType& Actors::combat_getRangedAttackType(ActorIndex, ItemIndex weapon)
 {
 	// Each ranged weapon has only one ranged attack type to pick.
-	const ItemType& itemType = m_area.m_items.getItemType(weapon);
+	const ItemType& itemType = m_area.getItems().getItemType(weapon);
 	assert(itemType.weaponData != nullptr);
 	for(const AttackType& attackType : itemType.weaponData->attackTypes)
 		if(attackType.projectile)
@@ -327,41 +331,42 @@ AttackCoolDownEvent::AttackCoolDownEvent(Area& area, ActorIndex index, Step dura
 GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(Area& area, ActorIndex a, ActorIndex t, float ar) :
 	m_actor(a), m_target(t), m_attackRangeSquared(ar * ar)
 {
-	std::function<bool(BlockIndex)> destinationCondition = [&area, this](BlockIndex location)
+	std::function<bool(BlockIndex, Facing)> destinationCondition = [&area, this](BlockIndex location, Facing)
 	{
-		return area.m_actors.combat_blockIsValidPosition(m_actor, location, m_attackRangeSquared);
+		return area.getActors().combat_blockIsValidPosition(m_actor, location, m_attackRangeSquared);
 	};
 	// TODO: Range attack actors should use a different path priority condition to avoid getting too close.
 	bool detour = true;
 	bool unreserved = false;
 	DistanceInBlocks maxRange = BLOCK_DISTANCE_MAX;
-	createGoToCondition(area, m_actor, destinationCondition, detour, unreserved, maxRange, area.m_actors.getLocation(m_target));
+	createGoToCondition(area, m_actor, destinationCondition, detour, unreserved, maxRange, area.getActors().getLocation(m_target));
 }
-void GetIntoAttackPositionPathRequest::callback(Area& area, FindPathResult result)
+void GetIntoAttackPositionPathRequest::callback(Area& area, FindPathResult& result)
 {
+	Actors& actors = area.getActors();
 	if(result.path.empty())
 	{
 		if(result.useCurrentPosition)
 		{
-			if(!area.m_actors.combat_isOnCoolDown(m_actor))
+			if(!actors.combat_isOnCoolDown(m_actor))
 			{
-				float range = area.m_actors.distanceToActor(m_actor, m_target);
-				if(range <= area.m_actors.combat_getMaxMeleeRange(m_actor))
+				float range = actors.distanceToActor(m_actor, m_target);
+				if(range <= actors.combat_getMaxMeleeRange(m_actor))
 					// Melee range attack.
-					area.m_actors.combat_attackMeleeRange(m_actor, m_target);
+					actors.combat_attackMeleeRange(m_actor, m_target);
 				else
 				{
 					// Long range attack.
 					// TODO: Unarmed long range attack, needs to prodive the material type somehow, maybe in body part?
-					ItemIndex weapon = area.m_actors.getEquipmentSet(m_actor).getWeaponToAttackAtRange(area, range);
-					ItemIndex ammo = area.m_actors.getEquipmentSet(m_actor).getAmmoForRangedWeapon(area, weapon);
-					area.m_actors.combat_attackLongRange(m_actor, m_target, weapon, ammo);
+					ItemIndex weapon = actors.equipment_getWeaponToAttackAtRange(m_actor, range);
+					ItemIndex ammo = actors.equipment_getAmmoForRangedWeapon(m_actor, weapon);
+					actors.combat_attackLongRange(m_actor, m_target, weapon, ammo);
 				}
 			}
 		}
 		else
-			area.m_actors.objective_canNotCompleteSubobjective(m_actor);
+			actors.objective_canNotCompleteSubobjective(m_actor);
 	}
 	else
-		area.m_actors.move_setPath(m_actor, result.path);
+		actors.move_setPath(m_actor, result.path);
 }

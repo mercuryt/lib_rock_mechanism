@@ -1,16 +1,19 @@
 #include "rain.h"
-#include "fluidType.h"
-#include "area.h"
-#include "config.h"
-#include "random.h"
-#include "types.h"
-#include "util.h"
-#include "simulation.h"
+#include "../fluidType.h"
+#include "../area.h"
+#include "../config.h"
+#include "../random.h"
+#include "../types.h"
+#include "../util.h"
+#include "../simulation.h"
+#include "../plants.h"
+#include "../blocks/blocks.h"
 AreaHasRain::AreaHasRain(Area& a, Simulation&) : 
 	m_humidityBySeason({30,15,10,20}),
 	m_event(a.m_eventSchedule), 
 	m_area(a), 
 	m_defaultRainFluidType(FluidType::byName("water")) { }
+/*
 void AreaHasRain::load(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo)
 {
 	if(data.contains("currentFluidType"))
@@ -38,6 +41,7 @@ Json AreaHasRain::toJson() const
 	data["humdityBySeason"] = m_humidityBySeason;
 	return data;
 }
+*/
 void AreaHasRain::start(const FluidType& fluidType, Percent intensityPercent, Step stepsDuration)
 {
 	assert(intensityPercent <= 100);
@@ -46,13 +50,13 @@ void AreaHasRain::start(const FluidType& fluidType, Percent intensityPercent, St
 	m_currentlyRainingFluidType = &fluidType;
 	m_intensityPercent = intensityPercent;
 	Blocks& blocks = m_area.getBlocks();
-	Plants& plants = m_area.m_plants;
-	for(PlantIndex plant : plants.getPlantsOnSurface())
+	Plants& plants = m_area.getPlants();
+	for(PlantIndex plant : plants.getOnSurface())
 		if(plants.getSpecies(plant).fluidType == fluidType && blocks.isExposedToSky(plants.getLocation(plant)))
 			plants.setHasFluidForNow(plant);
-	m_event.schedule(stepsDuration, *this);
+	m_event.schedule(stepsDuration, m_area.m_simulation);
 }
-void AreaHasRain::schedule(Step restartAt) { m_event.schedule(restartAt, m_area.m_simulation, *this); }
+void AreaHasRain::schedule(Step restartAt) { m_event.schedule(restartAt, m_area.m_simulation); }
 void AreaHasRain::stop()
 {
 	m_currentlyRainingFluidType = nullptr;
@@ -93,7 +97,7 @@ void AreaHasRain::disable()
 	m_event.unschedule();
 }
 Percent AreaHasRain::humidityForSeason() { return m_humidityBySeason[DateTime::toSeason(m_area.m_simulation.m_step)]; }
-RainEvent::RainEvent(Simulation& simulation, Step delay, const Step start) : ScheduledEvent(simulation, delay, start) { }
+RainEvent::RainEvent(Step delay, Simulation& simulation, Step start) : ScheduledEvent(simulation, delay, start) { }
 void RainEvent::execute(Simulation&, Area* area) 
 {
 	if(area->m_hasRain.isRaining())

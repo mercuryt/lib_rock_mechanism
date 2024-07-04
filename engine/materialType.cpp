@@ -1,5 +1,4 @@
 #include "materialType.h"
-#include "item.h"
 #include <algorithm>
 #include <ranges>
 const MaterialTypeCategory& MaterialTypeCategory::byName(const std::string name)

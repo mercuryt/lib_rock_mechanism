@@ -3,15 +3,14 @@
 void Blocks::reserve(BlockIndex index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback)
 {
 	Reservable* reservable = nullptr;
-	std::unordered_map<BlockIndex, Reservable>::iterator found = m_reservables.find(index);
-	if(found == m_reservables.end())
+	if(!m_reservables.contains(index))
 	{
 		auto pair = m_reservables.try_emplace(index, 1);
 		assert(pair.second);
 		reservable = &pair.first->second;
 	}
 	else
-		reservable = &found->second;
+		reservable = &m_reservables.at(index);
 	reservable->reserveFor(canReserve, 1, std::move(callback));
 }
 void Blocks::unreserve(BlockIndex index, CanReserve& canReserve)

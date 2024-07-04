@@ -22,6 +22,5 @@ public:
 	Json toJson() const;
 	[[nodiscard]] ActorId getNextId() { return ++m_nextId; }
 	void registerActor(ActorId id, Actors& store, ActorIndex index);
-	void moveActor(ActorId id, Actors& store, ActorIndex index);
 	void removeActor(ActorId id);
 };

@@ -3,6 +3,7 @@
 #include "simulation/hasActors.h"
 #include "types.h"
 #include "area.h"
+#include "actors.h"
 /*
 ActorQuery::ActorQuery(const Json& data, DeserializationMemo& deserializationMemo) :
 	actor(data.contains("actor") ? &deserializationMemo.m_simulation.m_actors->getById(data["actor"].get<ActorId>()) : nullptr),
@@ -28,7 +29,7 @@ bool ActorQuery::query(Area& area, ActorIndex other) const
 {
 	if(actor != ACTOR_INDEX_MAX)
 		return actor == other;
-	Actors& actors = area.m_actors;
+	Actors& actors = area.getActors();
 	if(carryWeight != 0 && actors.canPickUp_getMass(other) < carryWeight)
 		return false;
 	if(checkIfSentient && actors.isSentient(other) != sentient)

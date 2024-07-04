@@ -11,6 +11,9 @@
 #include "simulation.h"
 #include "objectives/kill.h"
 #include "objectives/eat.h"
+#include "plants.h"
+#include "items/items.h"
+#include "blocks/blocks.h"
 HungerEvent::HungerEvent(Area& area, const Step delay, ActorIndex a, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_actor(a) { }
 void HungerEvent::execute(Simulation&, Area* area)
@@ -25,7 +28,7 @@ MustEat::MustEat(Area& area, ActorIndex a) :
 	m_hungerEvent(area.m_eventSchedule), m_actor(a) { }
 void MustEat::scheduleHungerEvent(Area& area)
 {
-	m_hungerEvent.schedule(area.getActors().getSpecies(m_actor).stepsEatFrequency, m_actor);
+	m_hungerEvent.schedule(area, area.getActors().getSpecies(m_actor).stepsEatFrequency, m_actor);
 }
 /*
 MustEat::MustEat(const Json& data, ActorIndex a, const AnimalSpecies& species) : 
@@ -93,12 +96,12 @@ void MustEat::eat(Area& area, Mass mass)
 		stepsToNextHungerEvent = species.stepsEatFrequency;
 		actors.objective_complete(m_actor, *m_eatObjective);
 		m_eatObjective = nullptr;
-		m_hungerEvent.schedule(stepsToNextHungerEvent, m_actor);
+		m_hungerEvent.schedule(area, stepsToNextHungerEvent, m_actor);
 	}
 	else
 	{
 		stepsToNextHungerEvent = util::scaleByInverseFraction(species.stepsTillDieWithoutFood, m_massFoodRequested, massFoodForBodyMass(area));
-		m_hungerEvent.schedule(stepsToNextHungerEvent, m_actor);
+		m_hungerEvent.schedule(area, stepsToNextHungerEvent, m_actor);
 		actors.objective_subobjectiveComplete(m_actor);
 	}
 }
@@ -115,7 +118,7 @@ void MustEat::setNeedsFood(Area& area)
 		actors.die(m_actor, CauseOfDeath::hunger);
 	else
 	{
-		m_hungerEvent.schedule(species.stepsTillDieWithoutFood, m_actor);
+		m_hungerEvent.schedule(area, species.stepsTillDieWithoutFood, m_actor);
 		actors.grow_stop(m_actor);
 		m_massFoodRequested = massFoodForBodyMass(area);
 		std::unique_ptr<Objective> objective = std::make_unique<EatObjective>(area, m_actor);
@@ -155,7 +158,7 @@ uint32_t MustEat::getDesireToEatSomethingAt(Area& area, BlockIndex block) const
 	if(species.eatsFruit && blocks.plant_exists(block))
 	{
 		const PlantIndex plant = blocks.plant_get(block);
-		if(area.m_plants.getFruitMass(plant) != 0)
+		if(area.getPlants().getFruitMass(plant) != 0)
 			return 2;
 	}
 	if(species.eatsMeat)

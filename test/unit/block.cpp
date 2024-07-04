@@ -3,7 +3,10 @@
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/area.h"
 #include "../../engine/blocks/blocks.h"
-#include "types.h"
+#include "../../engine/actors/actors.h"
+#include "../../engine/items/items.h"
+#include "../../engine/plants.h"
+#include "../../engine/types.h"
 TEST_CASE("block")
 {
 	Simulation simulation(L"", 0);
@@ -16,6 +19,6 @@ TEST_CASE("block")
 	REQUIRE(blocks.getBlockAbove(lowest) == 100);
 	REQUIRE(blocks.getBlockNorth(lowest) == 10);
 	REQUIRE(blocks.getBlockEast(lowest) == 1);
-	REQUIRE(area.m_hasActors.m_visionCuboids.getVisionCuboidFor(0));
+	REQUIRE(area.m_visionCuboids.getVisionCuboidFor(0));
 }
 

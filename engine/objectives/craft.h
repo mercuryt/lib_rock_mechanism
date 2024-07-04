@@ -3,7 +3,7 @@
 #include "../pathRequest.h"
 #include "../types.h"
 struct CraftJob;
-class SkillType;
+struct SkillType;
 class CraftObjectiveType final : public ObjectiveType
 {
 	const SkillType& m_skillType; // Multiple skills are represented by CraftObjective and CraftObjectiveType, such as Leatherworking, Woodworking, Metalworking, etc.

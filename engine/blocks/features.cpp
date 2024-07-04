@@ -1,6 +1,7 @@
 #include "blocks.h"
 #include "../area.h"
 #include "../blockFeature.h"
+#include "plants.h"
 bool Blocks::blockFeature_contains(BlockIndex block, const BlockFeatureType& blockFeatureType) const
 {
 	for(const BlockFeature& blockFeature : m_features.at(block))
@@ -24,36 +25,37 @@ void Blocks::blockFeature_remove(BlockIndex block, const BlockFeatureType& block
 {
 	assert(!solid_is(block));
 	std::erase_if(m_features.at(block), [&](BlockFeature& bf) { return bf.blockFeatureType == &blockFeatureType; });
-	m_area.m_hasActors.m_opacityFacade.update(block);
+	m_area.m_opacityFacade.update(block);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 }
 void Blocks::blockFeature_removeAll(BlockIndex block)
 {
 	assert(!solid_is(block));
 	m_features.at(block).clear();
-	m_area.m_hasActors.m_opacityFacade.update(block);
+	m_area.m_opacityFacade.update(block);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 }
 void Blocks::blockFeature_construct(BlockIndex block, const BlockFeatureType& blockFeatureType, const MaterialType& materialType)
 {
+	Plants& plants = m_area.getPlants();
 	assert(!solid_is(block));
 	if(plant_exists(block))
 	{
-		assert(!plant_get(block).m_plantSpecies.isTree);
+		assert(!plants.getSpecies(plant_get(block)).isTree);
 		plant_erase(block);
 	}
 	m_features.at(block).emplace_back(&blockFeatureType, &materialType, false);
 	if((blockFeatureType == BlockFeatureType::floor || blockFeatureType == BlockFeatureType::hatch) && !materialType.transparent)
 	{
-		m_area.m_hasActors.m_visionCuboids.blockFloorIsSometimesOpaque(block);
+		m_area.m_visionCuboids.blockFloorIsSometimesOpaque(block);
 		setBelowExposedToSky(block);
 	}
 	else if(blockFeatureType == BlockFeatureType::door && !materialType.transparent)
 	{
-		m_area.m_hasActors.m_visionCuboids.blockIsSometimesOpaque(block);
+		m_area.m_visionCuboids.blockIsSometimesOpaque(block);
 		setBelowNotExposedToSky(block);
 	}
-	m_area.m_hasActors.m_opacityFacade.update(block);
+	m_area.m_opacityFacade.update(block);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 }
 void Blocks::blockFeature_hew(BlockIndex block, const BlockFeatureType& blockFeatureType)
@@ -61,7 +63,7 @@ void Blocks::blockFeature_hew(BlockIndex block, const BlockFeatureType& blockFea
 	assert(solid_is(block));
 	m_features.at(block).emplace_back(&blockFeatureType, &solid_get(block), true);
 	solid_setNot(block);
-	m_area.m_hasActors.m_opacityFacade.update(block);
+	m_area.m_opacityFacade.update(block);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 }
 void Blocks::blockFeature_setTemperature(BlockIndex block, Temperature temperature)
@@ -89,14 +91,14 @@ void Blocks::blockFeature_close(BlockIndex block, const BlockFeatureType& blockF
 	assert(blockFeature_contains(block, blockFeatueType));
 	BlockFeature& blockFeature = *blockFeature_at(block, blockFeatueType);
 	blockFeature.closed = true;
-	m_area.m_hasActors.m_opacityFacade.update(block);
+	m_area.m_opacityFacade.update(block);
 }
 void Blocks::blockFeature_open(BlockIndex block, const BlockFeatureType& blockFeatueType)
 {
 	assert(blockFeature_contains(block, blockFeatueType));
 	BlockFeature& blockFeature = *blockFeature_at(block, blockFeatueType);
 	blockFeature.closed = false;
-	m_area.m_hasActors.m_opacityFacade.update(block);
+	m_area.m_opacityFacade.update(block);
 }
 // Blocks entrance from all angles, does not include floor and hatch which only block from below.
 bool Blocks::blockFeature_blocksEntrance(BlockIndex block) const

@@ -1,11 +1,8 @@
 #pragma once
 
-#include "objective.h"
 #include "config.h"
 #include "findsPath.h"
 #include "eventSchedule.hpp"
-#include "pathRequest.h"
-#include "terrainFacade.h"
 #include "types.h"
 
 class Area;

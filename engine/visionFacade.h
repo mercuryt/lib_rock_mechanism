@@ -51,7 +51,7 @@ public:
 	void add(ActorIndex actor);
 	void remove(ActorIndex actor);
 	void clear();
-	VisionFacade& getForStep(Step step);
+	[[nodiscard]] VisionFacade& getForStep(Step step);
 };
 // RAII handle for vision facade data.
 // Stores m_index privately with no accessor, can only be updated by it's friend class VisionFacade.

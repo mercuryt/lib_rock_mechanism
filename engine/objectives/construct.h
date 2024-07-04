@@ -13,7 +13,7 @@ public:
 	std::unique_ptr<Objective> makeFor(Area& area, ActorIndex actor) const;
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Construct; }
 	ConstructObjectiveType() = default;
-	ConstructObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo){ }
+	ConstructObjectiveType(const Json&, DeserializationMemo&){ }
 };
 class ConstructObjective final : public Objective
 {
@@ -45,5 +45,5 @@ class ConstructPathRequest final : public PathRequest
 	ConstructObjective& m_constructObjective;
 public:
 	ConstructPathRequest(Area& area, ConstructObjective& co);
-	void callback(Area& area, FindPathResult result);
+	void callback(Area& area, FindPathResult& result);
 };

@@ -37,26 +37,29 @@ public:
 	[[nodiscard]] bool isItem() const { return !m_isActor; }
 	[[nodiscard]] CanLead* getCanLead(Area& area) const;
 	[[nodiscard]] CanFollow* getCanFollow(Area& area) const;
-	[[nodiscard]] BlockIndex getLocation(Area& area) const;
+	[[nodiscard]] BlockIndex getLocation(const Area& area) const;
 	[[nodiscard]] std::unordered_set<BlockIndex>& getBlocks(Area& area) const;
 	[[nodiscard]] std::unordered_set<BlockIndex> getAdjacentBlocks(Area& area) const;
-	[[nodiscard]] bool isAdjacent(Area& area, ActorOrItemIndex other) const;
-	[[nodiscard]] bool isAdjacentToActor(Area& area, ActorIndex other) const;
-	[[nodiscard]] bool isAdjacentToItem(Area& area, ItemIndex item) const;
-	[[nodiscard]] bool isAdjacentToLocation(Area& area, BlockIndex location) const;
-	[[nodiscard]] const Shape& getShape(Area& area) const;
-	[[nodiscard]] const MoveType& getMoveType(Area& area) const;
-	[[nodiscard]] Mass getMass(Area& area) const;
-	[[nodiscard]] Mass getSingleUnitMass(Area& area) const;
-	[[nodiscard]] Facing getFacing(Area& area) const;
-	[[nodiscard]] bool isGeneric(Area& area) const;
+	[[nodiscard]] bool isAdjacent(const Area& area, ActorOrItemIndex other) const;
+	[[nodiscard]] bool isAdjacentToActor(const Area& area, ActorIndex other) const;
+	[[nodiscard]] bool isAdjacentToItem(const Area& area, ItemIndex item) const;
+	[[nodiscard]] bool isAdjacentToLocation(const Area& area, BlockIndex location) const;
+	[[nodiscard]] const Shape& getShape(const Area& area) const;
+	[[nodiscard]] const MoveType& getMoveType(const Area& area) const;
+	[[nodiscard]] Mass getMass(const Area& area) const;
+	[[nodiscard]] Mass getSingleUnitMass(const Area& area) const;
+	[[nodiscard]] Volume getVolume(const Area& area) const;
+	[[nodiscard]] Facing getFacing(const Area& area) const;
+	[[nodiscard]] bool isGeneric(const Area& area) const;
 	[[nodiscard]] std::strong_ordering operator<=>(const ActorOrItemIndex& other) const;
+	[[nodiscard]] bool operator==(const ActorOrItemIndex& other) const = default;
 	struct Hash
 	{
 		[[nodiscard]] size_t operator()(const ActorOrItemIndex& actorOrItem) const;
 	};
 	void reservable_reserve(Area& area, CanReserve& canReserve, Quantity quantity = 0, std::unique_ptr<DishonorCallback> callback = nullptr) const;
 	void reservable_unreserve(Area& area, CanReserve& canReserve, Quantity quantity = 0) const;
+	void reservable_maybeUnreserve(Area& area, CanReserve& canReserve, Quantity quantity = 0) const;
 	void reservable_unreserveFaction(Area& area, const Faction& faction) const;
 	[[nodiscard]] Quantity reservable_getUnreservedCount(Area& area, const Faction& faction) const;
 };

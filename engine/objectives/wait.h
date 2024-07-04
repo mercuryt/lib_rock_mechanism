@@ -28,7 +28,7 @@ class WaitScheduledEvent final : public ScheduledEvent
 {
 	WaitObjective& m_objective;
 public:
-	WaitScheduledEvent(Area& area, Step delay, WaitObjective& wo, const Step start = 0);
+	WaitScheduledEvent(Step delay, Area& area, WaitObjective& wo, const Step start = 0);
 	void execute(Simulation&, Area* area) { m_objective.execute(*area); }
 	void clearReferences(Simulation&, Area*) { m_objective.m_event.clearPointer(); }
 };

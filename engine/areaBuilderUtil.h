@@ -3,6 +3,7 @@
 #include "materialType.h"
 #include "fluidType.h"
 #include "cuboid.h"
+#include "blocks/blocks.h"
 
 #include <unordered_set>
 #include <cstdint>
