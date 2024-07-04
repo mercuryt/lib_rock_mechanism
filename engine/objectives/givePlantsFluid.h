@@ -21,7 +21,7 @@ class GivePlantsFluidEvent final : public ScheduledEvent
 {
 	GivePlantsFluidObjective& m_objective;
 public:
-	GivePlantsFluidEvent(Area& area, Step step, GivePlantsFluidObjective& gpfo, const Step start = 0);
+	GivePlantsFluidEvent(Step step, Area& area, GivePlantsFluidObjective& gpfo, const Step start = 0);
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 	void onCancel(Simulation& simulation, Area* area);

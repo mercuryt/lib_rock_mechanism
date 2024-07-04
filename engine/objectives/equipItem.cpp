@@ -23,15 +23,15 @@ void EquipItemObjective::execute(Area& area)
 		actors.move_setDestinationAdjacentToItem(m_actor, m_item, false, false, false);
 	else
 	{
-		if(actors.getEquipmentSet(m_actor).canEquipCurrently(area, m_actor, m_item))
+		if(actors.equipment_canEquipCurrently(m_actor, m_item))
 		{
-			area.m_items.exit(m_item);
-			actors.getEquipmentSet(m_actor).addEquipment(area, m_item);
+			area.getItems().exit(m_item);
+			actors.equipment_add(m_actor, m_item);
 			actors.objective_complete(m_actor, *this);
 		}
 		else
 			actors.objective_canNotCompleteObjective(m_actor, *this);
 	}
 }
-void EquipItemObjective::cancel(Area& area) { area.m_actors.canReserve_clearAll(m_actor); }
+void EquipItemObjective::cancel(Area& area) { area.getActors().canReserve_clearAll(m_actor); }
 void EquipItemObjective::reset(Area& area) { cancel(area); }

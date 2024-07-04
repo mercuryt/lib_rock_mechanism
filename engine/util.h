@@ -124,7 +124,7 @@ namespace util
 	inline void removeFromVectorByValueUnordered(std::vector<T>& vector, T value)
 	{
 		auto iter = std::ranges::find(vector, value);
-		std::swap(iter, vector.back());
+		(*iter) = std::move(vector.back());
 		vector.pop_back();
 	}
 	inline Facing getFacingForAdjacentOffset(uint8_t adjacentOffset)

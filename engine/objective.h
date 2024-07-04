@@ -211,7 +211,6 @@ class HasObjectives final
 public:
 	ObjectiveTypePrioritySet m_prioritySet;
 
-	HasObjectives() = default; // default constructor needed to allow vector resize.
 	HasObjectives(ActorIndex a);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
@@ -225,17 +224,17 @@ public:
 	void addTaskToStart(Area& area, std::unique_ptr<Objective> objective);
 	// Clear task queue and then add single task.
 	void replaceTasks(Area& area, std::unique_ptr<Objective> objective);
-	void cancel(Objective& objective);
-	void objectiveComplete(Objective& objective);
-	void cannotFulfillObjective(Objective& objective);
-	void cannotFulfillNeed(Objective& objective);
+	void cancel(Area& area, Objective& objective);
+	void objectiveComplete(Area& area, Objective& objective);
+	void cannotFulfillObjective(Area& area, Objective& objective);
+	void cannotFulfillNeed(Area& area, Objective& objective);
 	// Sub unit of objective is complete, get the next sub unit if there is one or call objectiveComplete.
-	void subobjectiveComplete();
+	void subobjectiveComplete(Area& area);
 	// Sub unit of objective cannot be completed, get an alternative or call cannotFulfill.
-	void cannotCompleteSubobjective();
+	void cannotCompleteSubobjective(Area& area);
 	// Repath taking into account the locations of other actors.
 	// To be used when the path is temporarily blocked.
-	void detour();
+	void detour(Area& area);
 	void restart(Area& area) { m_currentObjective->reset(area); m_currentObjective->execute(area); }
 	[[nodiscard]] Objective& getCurrent();
 	[[nodiscard]] bool hasCurrent() const { return m_currentObjective != nullptr; }

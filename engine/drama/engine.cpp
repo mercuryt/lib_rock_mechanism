@@ -1,15 +1,18 @@
 #include "engine.h"
 #include "../moveType.h"
 #include "../area.h"
-#include "../actor.h"
 #include "../objectives/leaveArea.h"
 #include "../simulation.h"
+#include "actors/actors.h"
 #include "animalSpecies.h"
 #include "arcs/animalsArrive.h"
 #include "arcs/banditsArrive.h"
+#include "blocks/blocks.h"
 #include "deserializationMemo.h"
 #include "../simulation/hasAreas.h"
-#include "types.h"
+#include "../types.h"
+#include "../plants.h"
+#include "items/items.h"
 #include <memory>
 #include <new>
 std::vector<DramaArcType> DramaArc::getTypes()
@@ -74,15 +77,16 @@ Json DramaArc::toJson() const
 		data["area"] = m_area->m_id;
 	return data;
 }
-void DramaArc::actorsLeave(std::vector<Actor*> actors)
+void DramaArc::actorsLeave(std::vector<ActorIndex> actorsLeaving)
 {
 	constexpr uint8_t priority = 100;
-	for(Actor* actor : actors)
+	Actors& actors = m_area->getActors();
+	for(ActorIndex actor : actorsLeaving)
 	{
-		if(actor->isAlive())
+		if(actors.isAlive(actor))
 		{
-			std::unique_ptr<Objective> objective = std::make_unique<LeaveAreaObjective>(*actor, priority);
-			actor->m_hasObjectives.addTaskToStart(std::move(objective));
+			std::unique_ptr<Objective> objective = std::make_unique<LeaveAreaObjective>(actor, priority);
+			actors.objective_addTaskToStart(actor, std::move(objective));
 		}
 	}
 }
@@ -111,7 +115,7 @@ BlockIndex DramaArc::getEntranceToArea(Area& area, const Shape& shape, const Mov
 	assert(candidate);
 	return candidate;
 }
-BlockIndex DramaArc::findLocationOnEdgeForNear(const Shape& shape, const MoveType& moveType, BlockIndex origin, DistanceInBlocks distance, std::unordered_set<BlockIndex> exclude) const
+BlockIndex DramaArc::findLocationOnEdgeForNear(const Shape& shape, const MoveType& moveType, BlockIndex origin, DistanceInBlocks distance, std::unordered_set<BlockIndex>& exclude) const
 {
 	Facing facing = getFacingAwayFromEdge(origin);
 	Blocks& blocks = m_area->getBlocks();
@@ -119,9 +123,7 @@ BlockIndex DramaArc::findLocationOnEdgeForNear(const Shape& shape, const MoveTyp
 		if(exclude.contains(thisBlock))
 			return false;
 		// TODO: A single method doing both of these with one iteration would be faster.
-		if(!blocks.shape_shapeAndMoveTypeCanEnterEverWithFacing(thisBlock, shape, moveType, facing) ||
-			!blocks.shape_shapeAndMoveTypeCanEnterCurrentlyWithFacing(thisBlock, shape, moveType, facing)
-		)
+		if(!blocks.shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(thisBlock, shape, moveType, facing, {}))
 			return false;
 		for(BlockIndex occupiedBlock : shape.getBlocksOccupiedAt(blocks, thisBlock, facing))
 			if(blocks.isEdge(occupiedBlock))

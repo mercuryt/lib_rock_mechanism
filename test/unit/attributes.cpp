@@ -6,7 +6,10 @@
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/attributes.h"
 #include "../../engine/animalSpecies.h"
-#include "../../engine/actor.h"
+#include "../../engine/actors/actors.h"
+#include "../../engine/blocks/blocks.h"
+#include "../../engine/items/items.h"
+#include "../../engine/plants.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/config.h"
 
@@ -24,24 +27,23 @@ TEST_CASE("attributes")
 		Simulation simulation;
 		Area& area = simulation.m_hasAreas->createArea(10,10,10);
 		Blocks& blocks = area.getBlocks();
+		Actors& actors = area.getActors();
 		areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName("marble"));
 
-		Actor& goblin1 = simulation.m_hasActors->createActor(ActorParamaters{
+		ActorIndex goblin1 = actors.create(ActorParamaters{
 			.species = goblin,
 			.location = blocks.getIndex({5,5,1}),
-			.area=&area,
 		});
 
-		Actor& dwarf1 = simulation.m_hasActors->createActor(ActorParamaters{
+		ActorIndex dwarf1 = actors.create(ActorParamaters{
 			.species = dwarf,
 			.location = blocks.getIndex({5,7,1}),
-			.area=&area,
 		});
-		REQUIRE(goblin1.m_attributes.getAgility() > dwarf1.m_attributes.getAgility());
-		REQUIRE(goblin1.m_attributes.getMoveSpeed() > dwarf1.m_attributes.getMoveSpeed());
+		REQUIRE(actors.getAgility(goblin1) > actors.getAgility(dwarf1));
+		REQUIRE(actors.move_getSpeed(goblin1) > actors.move_getSpeed(dwarf1));
 		BlockIndex adjacent = blocks.getIndex({5,6,1});
-		Step delayGoblin = goblin1.m_canMove.delayToMoveInto(adjacent);
-		Step delayDwarf = dwarf1.m_canMove.delayToMoveInto(adjacent);
+		Step delayGoblin = actors.move_delayToMoveInto(goblin1, adjacent);
+		Step delayDwarf = actors.move_delayToMoveInto(dwarf1, adjacent);
 		REQUIRE(delayGoblin < delayDwarf);
 	}
 }

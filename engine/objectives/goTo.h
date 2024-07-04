@@ -28,6 +28,6 @@ class GoToInputAction final : public InputAction
 {
 public:
 	BlockIndex m_block;
-	GoToInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, BlockIndex b);
+	GoToInputAction(std::unordered_set<ActorIndex> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, BlockIndex b);
 	void execute();
 };

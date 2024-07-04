@@ -1,17 +1,20 @@
 #include "dig.h"
 #include "designations.h"
 #include "area.h"
+#include "actors/actors.h"
 #include "blockFeature.h"
 #include "deserializationMemo.h"
 #include "deserializeDishonorCallbacks.h"
 #include "pathRequest.h"
 #include "random.h"
 #include "reservable.h"
+#include "skill.h"
 #include "terrainFacade.h"
 #include "types.h"
 #include "util.h"
 #include "simulation.h"
 #include "itemType.h"
+#include "objectives/dig.h"
 #include <memory>
 #include <sys/types.h>
 /*
@@ -105,9 +108,10 @@ void DigProject::onCancel()
 	Actors& actors = m_area.getActors();
 	for(ActorIndex actor : getWorkersAndCandidates())
 	{
-		static_cast<DigObjective&>(actors.objective_getCurrent(actor)).m_project = nullptr;
+		auto& current = actors.objective_getCurrent<DigObjective&>(actor);
+		current.m_project = nullptr;
 		actors.project_unset(actor);
-		actors.objective_getCurrent(actor).reset();
+		current.reset(m_area);
 		actors.objective_canNotCompleteSubobjective(actor);
 	}
 }
@@ -172,7 +176,7 @@ void HasDigDesignationsForFaction::designate(BlockIndex block, const BlockFeatur
 	m_area.getBlocks().designation_set(block, m_faction, BlockDesignation::Dig);
 	// To be called when block is no longer a suitable location, for example if it got dug out already.
 	std::unique_ptr<DishonorCallback> locationDishonorCallback = std::make_unique<DigLocationDishonorCallback>(m_faction, m_area, block);
-	m_data.try_emplace(block, &m_faction, m_area, block, blockFeatureType, std::move(locationDishonorCallback));
+	m_data.try_emplace(block, m_faction, m_area, block, blockFeatureType, std::move(locationDishonorCallback));
 }
 void HasDigDesignationsForFaction::undesignate(BlockIndex block)
 {

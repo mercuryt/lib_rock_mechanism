@@ -7,13 +7,14 @@
 #include "../objective.h"
 #include "../reservable.h"
 #include "../simulation.h"
-#include "../simulation/hasItems.h"
 #include "actors/actors.h"
 #include "designations.h"
+#include "items/items.h"
 #include "types.h"
+#include "../plants.h"
 
 #include <memory>
-GivePlantsFluidEvent::GivePlantsFluidEvent(Area& area, Step delay, GivePlantsFluidObjective& gpfo, const Step start) : 
+GivePlantsFluidEvent::GivePlantsFluidEvent(Step delay, Area& area, GivePlantsFluidObjective& gpfo, const Step start) : 
 	ScheduledEvent(area.m_simulation, delay, start), m_objective(gpfo) { }
 void GivePlantsFluidEvent::execute(Simulation&, Area* area)
 {
@@ -87,7 +88,7 @@ void GivePlantsFluidPathRequest::callback(Area& area, FindPathResult result)
 }
 bool GivePlantsFluidObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
 {
-	Actors& actors = area.m_actors;
+	Actors& actors = area.getActors();
 	assert(actors.getLocation(actor) != BLOCK_INDEX_MAX);
 	return area.m_hasFarmFields.hasGivePlantsFluidDesignations(*actors.getFaction(actor));
 }
@@ -170,7 +171,7 @@ void GivePlantsFluidObjective::execute(Area& area)
 			// Has fluid.
 			if(actors.isAdjacentToPlant(m_actor, plant))
 				// At plant, begin giving.
-				m_event.schedule(Config::givePlantsFluidDelaySteps, *this);
+				m_event.schedule(Config::givePlantsFluidDelaySteps, area, *this);
 			else
 				// Go to plant.
 				actors.move_setDestinationAdjacentToPlant(plant, m_detour);

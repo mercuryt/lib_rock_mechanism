@@ -1,36 +1,42 @@
 #include "blocks.h"
 #include "../area.h"
 #include "../materialType.h"
-#include "../plant.h"
+#include "plants.h"
 #include "types.h"
 void Blocks::plant_create(BlockIndex index, const PlantSpecies& plantSpecies, Percent growthPercent)
 {
-	assert(m_plants.at(index) == nullptr);
-	m_plants.at(index) = &m_area.m_hasPlants.emplace(index, plantSpecies, nullptr, growthPercent);
+	assert(m_plants.at(index) == PLANT_INDEX_MAX);
+	m_plants.at(index) = m_area.getPlants().create({
+		.location=index, 
+		.species=plantSpecies, 
+		.percentGrown=growthPercent,
+	});
 }
-void Blocks::plant_set(BlockIndex index, Plant& plant)
+void Blocks::plant_set(BlockIndex index, PlantIndex plant)
 {
-	m_plants.at(index) = &plant;
+	m_plants.at(index) = plant;
 }
 void Blocks::plant_updateGrowingStatus(BlockIndex index)
 {
-	if(m_plants.at(index) != nullptr)
-		m_plants.at(index)->updateGrowingStatus();
+	Plants& plants = m_area.getPlants();
+	if(m_plants.at(index) != PLANT_INDEX_MAX)
+		plants.updateGrowingStatus(index);
 }
 void Blocks::plant_clearPointer(BlockIndex index)
 {
-	assert(m_plants.at(index) != nullptr);
-	m_plants.at(index) = nullptr;
+	assert(m_plants.at(index) != PLANT_INDEX_MAX);
+	m_plants.at(index) = PLANT_INDEX_MAX;
 }
 void Blocks::plant_setTemperature(BlockIndex index, Temperature temperature)
 {
-	if(m_plants.at(index) != nullptr)
-		m_plants.at(index)->setTemperature(temperature);
+	Plants& plants = m_area.getPlants();
+	if(m_plants.at(index) != PLANT_INDEX_MAX)
+		plants.setTemperature(index, temperature);
 }
 void Blocks::plant_erase(BlockIndex index)
 {
-	assert(m_plants.at(index) != nullptr);
-	m_plants.at(index) = nullptr;
+	assert(m_plants.at(index) != PLANT_INDEX_MAX);
+	m_plants.at(index) = PLANT_INDEX_MAX;
 }
 bool Blocks::plant_canGrowHereCurrently(BlockIndex index, const PlantSpecies& plantSpecies) const
 {
@@ -69,9 +75,9 @@ bool Blocks::plant_anythingCanGrowHereEver(BlockIndex index) const
 		return false;
 	return true;
 }
-Plant& Blocks::plant_get(BlockIndex index)
+PlantIndex Blocks::plant_get(BlockIndex index)
 {
-	return *m_plants.at(index);
+	return m_plants.at(index);
 }
 bool Blocks::plant_exists(BlockIndex index) const
 {

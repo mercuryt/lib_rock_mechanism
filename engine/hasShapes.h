@@ -52,20 +52,25 @@ public:
 	void setShape(HasShapeIndex index, const Shape& shape);
 	[[nodiscard]] const Shape& getShape(HasShapeIndex index) const;
 	[[nodiscard]] BlockIndex getLocation(HasShapeIndex index) const;
+	[[nodiscard]] bool hasLocation(HasShapeIndex index) const { return getLocation(index) != BLOCK_INDEX_MAX; }
 	[[nodiscard]] Facing getFacing(HasShapeIndex index) const;
 	[[nodiscard]] std::unordered_set<BlockIndex>& getBlocks(HasShapeIndex index) const;
 	[[nodiscard]] Faction* getFaction(HasShapeIndex index);
+	[[nodiscard]] bool hasFaction(HasShapeIndex index) const { return m_faction[index] != nullptr; }
 	[[nodiscard]] bool isStatic(HasShapeIndex index) const { return m_static[index]; }
 	[[nodiscard]] bool isAdjacentToLocation(HasShapeIndex index, BlockIndex block) const;
 	[[nodiscard]] bool isAdjacentToAny(HasShapeIndex index, std::unordered_set<BlockIndex> block) const;
 	[[nodiscard]] bool predicateForAnyOccupiedBlock(HasShapeIndex index, std::function<bool(BlockIndex)> predicate) const;
 	[[nodiscard]] bool predicateForAnyAdjacentBlock(HasShapeIndex index, std::function<bool(BlockIndex)> predicate) const;
+	[[nodiscard]] bool predicateForAnyOccupiedBlockAtLocationAndFacing(HasShapeIndex index, std::function<bool(const BlockIndex)> predicate, BlockIndex location, Facing facing) const;
 	[[nodiscard]] std::unordered_set<BlockIndex> getAdjacentBlocks(HasShapeIndex index) const;
 	[[nodiscard]] std::unordered_set<BlockIndex> getOccupiedAndAdjacentBlocks(HasShapeIndex index) const;
 	[[nodiscard]] std::unordered_set<ItemIndex> getAdjacentItems(HasShapeIndex index) const;
 	[[nodiscard]] std::unordered_set<ActorIndex> getAdjacentActors(HasShapeIndex index) const;
 	[[nodiscard]] std::vector<BlockIndex> getAdjacentBlocksAtLocationWithFacing(HasShapeIndex index, BlockIndex block, Facing facing) const;
 	[[nodiscard]] std::vector<BlockIndex> getBlocksWhichWouldBeOccupiedAtLocationAndFacing(HasShapeIndex index, BlockIndex location, Facing facing) const;
+	//TODO: isOnSurface could be more efficent.
+	[[nodiscard]] bool isOnSurface(HasShapeIndex index) const { return m_onSurface.contains(index); }
 	[[nodiscard]] bool allBlocksAtLocationAndFacingAreReservable(HasShapeIndex index, BlockIndex location, Facing facing, Faction& faction) const;
 	[[nodiscard]] bool allOccupiedBlocksAreReservable(HasShapeIndex index, Faction& faction) const;
 	[[nodiscard]] bool isAdjacentToActor(HasShapeIndex index, ActorIndex actor) const;
@@ -74,6 +79,8 @@ public:
 	[[nodiscard]] bool isAdjacentToActorAt(HasShapeIndex index, BlockIndex location, Facing facing, ActorIndex actor) const;
 	[[nodiscard]] bool isAdjacentToItemAt(HasShapeIndex index, BlockIndex location, Facing facing, ItemIndex item) const;
 	[[nodiscard]] bool isAdjacentToPlantAt(HasShapeIndex index, BlockIndex location, Facing facing, PlantIndex plant) const;
+	[[nodiscard]] bool isOnEdgeAt(HasShapeIndex index, BlockIndex location, Facing facing) const;
+	[[nodiscard]] bool isOnEdge(HasShapeIndex index) const;
 	[[nodiscard]] DistanceInBlocks distanceToActor(HasShapeIndex index, ActorIndex actor) const;
 	[[nodiscard]] DistanceInBlocks distanceToItem(HasShapeIndex index, ItemIndex item) const;
 	[[nodiscard]] BlockIndex getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(HasShapeIndex index, BlockIndex location, Facing facing, std::function<bool(BlockIndex)>& predicate) const;
@@ -83,4 +90,5 @@ public:
 	[[nodiscard]] ItemIndex getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(HasShapeIndex index, BlockIndex location, Facing facing, std::function<bool(const ItemIndex)>& predicate) const;
 	[[nodiscard]] ItemIndex getItemWhichIsAdjacentWithPredicate(HasShapeIndex index, std::function<bool(const ItemIndex)>& predicate) const;
 	[[nodiscard]] std::vector<HasShapeIndex> getAll() const;
+	[[nodiscard]] std::unordered_set<HasShapeIndex>& getOnSurface() { return m_onSurface; }
 };

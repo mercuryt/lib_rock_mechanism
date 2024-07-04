@@ -1,16 +1,12 @@
 #pragma once
 #include "config.h"
-#include "findsPath.h"
-#include "objective.h"
-#include "threadedTask.h"
 #include "items/itemQuery.h"
-#include "threadedTask.hpp"
 #include "types.h"
 #include <string>
 #include <unordered_set>
-class UniformObjective;
 class Actor;
 class Item;
+struct Faction;
 struct UniformElement final 
 {
 	ItemQuery itemQuery;
@@ -42,40 +38,4 @@ public:
 	void registerFaction(Faction& faction) { m_data.try_emplace(&faction, faction); }
 	void unregisterFaction(Faction& faction) { m_data.erase(&faction); }
 	SimulationHasUniformsForFaction& at(Faction& faction);
-};
-class UniformThreadedTask final : public ThreadedTask
-{
-	Area& m_area;
-	UniformObjective& m_objective;
-	FindsPath m_findsPath;
-public:
-	UniformThreadedTask(UniformObjective& objective);
-	void readStep();
-	void writeStep();
-	void clearReferences();
-};
-class UniformObjective final : public Objective
-{
-	HasThreadedTask<UniformThreadedTask> m_threadedTask;
-	std::vector<UniformElement> m_elementsCopy;
-	ItemIndex m_item;
-public:
-	UniformObjective(ActorIndex actor);
-	UniformObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	void execute();
-	void cancel();
-	void delay() { cancel(); }
-	void reset(Area& area);
-	[[nodiscard]] std::string name() const { return "uniform"; }
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Uniform; }
-	// non virtual.
-	void equip(ItemIndex item);
-	void select(ItemIndex item);
-	bool blockContainsItem(BlockIndex block) const { return const_cast<UniformObjective*>(this)->getItemAtBlock(block) != ITEM_INDEX_MAX; }
-	ItemIndex getItemAtBlock(BlockIndex block);
-	// For testing.
-	[[nodiscard]] ItemIndex getItem() { return m_item; }
-	friend class UniformThreadedTask;
-	
 };

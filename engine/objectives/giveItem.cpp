@@ -1,12 +1,14 @@
 #include "giveItem.h"
-#include "../actor.h"
-#include "../item.h"
+#include "../actors/actors.h"
 #include "../deserializationMemo.h"
-GiveItemObjective::GiveItemObjective(Actor& actor, Item& item, Actor& recipient) : Objective(actor, Config::equipPriority), m_item(item), m_recipient(recipient) 
+#include "area.h"
+#include "items/items.h"
+GiveItemObjective::GiveItemObjective(Area& area, ActorIndex actor, ItemIndex item, ActorIndex recipient) :
+	Objective(actor, Config::equipPriority), m_item(item), m_recipient(recipient) 
 { 
-	createOnDestroyCallbacks();
+	createOnDestroyCallbacks(area);
 }
-
+/*
 GiveItemObjective::GiveItemObjective(const Json& data, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo), 
 	m_item(deserializationMemo.itemReference(data["item"])),
@@ -21,32 +23,34 @@ Json GiveItemObjective::toJson() const
 	data["recipient"] = m_recipient;
 	return data;
 }
-void GiveItemObjective::execute()
+*/
+void GiveItemObjective::execute(Area& area)
 {
-	if(!m_actor.isAdjacentTo(m_recipient))
+	Actors& actors = area.getActors();
+	if(!actors.isAdjacentToActor(m_actor, m_recipient))
 		// detour, unresered, reserve.
 		// TODO: detour.
-		m_actor.m_canMove.setDestinationAdjacentTo(m_recipient, false, false, false);
+		actors.move_setDestinationAdjacentToActor(m_actor, m_recipient);
 	else
 	{
-		if(m_recipient.m_equipmentSet.canEquipCurrently(m_item))
+		if(actors.equipment_canEquipCurrently(m_recipient, m_item))
 		{
-			m_actor.m_equipmentSet.removeEquipment(m_item);
-			m_recipient.m_equipmentSet.addEquipment(m_item);
-			m_actor.m_hasObjectives.objectiveComplete(*this);
+			actors.equipment_remove(m_actor, m_item);
+			actors.equipment_add(m_recipient, m_item);
+			actors.objective_complete(m_actor, *this);
 		}
 		else
-			m_actor.m_hasObjectives.cannotFulfillObjective(*this);
+			actors.objective_canNotCompleteObjective(m_actor, *this);
 	}
 }
-void GiveItemObjective::cancel() { m_actor.m_canReserve.deleteAllWithoutCallback(); }
-void GiveItemObjective::reset() { cancel(); }
-void GiveItemObjective::createOnDestroyCallbacks() 
+void GiveItemObjective::cancel(Area& area) { area.getActors().canReserve_clearAll(m_actor); }
+void GiveItemObjective::reset(Area& area) { cancel(area); }
+void GiveItemObjective::createOnDestroyCallbacks(Area& area) 
 { 
-	std::function<void()> onDestory = [this]{ cancel(); };
+	std::function<void()> onDestory = [this, &area]{ cancel(area); };
 	m_hasOnDestroySubscriptions.setCallback(onDestory);
 	// Item.
-	m_item.m_onDestroy.subscribe(m_hasOnDestroySubscriptions);
+	area.getItems().onDestroy_subscribe(m_item, m_hasOnDestroySubscriptions);
 	// Recipient.
-	m_actor.m_onDestroy.subscribe(m_hasOnDestroySubscriptions);
+	area.getActors().onDestroy_subscribe(m_item, m_hasOnDestroySubscriptions);
 }

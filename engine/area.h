@@ -5,11 +5,7 @@
 #pragma once
 
 #include "installItem.h"
-#include "plants.h"
-#include "items/items.h"
-#include "actors/actors.h"
 #include "types.h"
-#include "blocks/blocks.h"
 #include "mistDisperseEvent.h"
 #include "cuboid.h"
 #include "visionCuboid.h"
@@ -32,6 +28,9 @@
 #include "area/hasFluidGroups.h"
 #include "area/hasSleepingSpots.h"
 #include "area/hasBlockDesignations.h"
+#include "farmFields.h"
+#include "stockpile.h"
+#include "actors/grow.h"
 //#include "medical.h"
 
 #include <vector>
@@ -44,13 +43,16 @@
 
 class Simulation;
 struct DeserializationMemo;
+class Plants;
 
 class Area final
 {
-	Blocks m_blocks;
-	Actors m_actors;
-	Plants m_plants;
-	Items m_items;
+	// Dependency injection.
+	// TODO: Remove unique_ptr for release build.
+	std::unique_ptr<Blocks> m_blocks;
+	std::unique_ptr<Actors> m_actors;
+	std::unique_ptr<Plants> m_plants;
+	std::unique_ptr<Items> m_items;
 public:
 	EventSchedule m_eventSchedule;
 	ThreadedTaskEngine m_threadedTaskEngine;
@@ -109,11 +111,14 @@ public:
 	[[nodiscard]] std::string toS() const;
 
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] Blocks& getBlocks() { return m_blocks; }
-	[[nodiscard]] Plants& getPlants() { return m_plants; }
-	[[nodiscard]] Actors& getActors() { return m_actors; }
-	[[nodiscard]] Items& getItems() { return m_items; }
-	[[nodiscard]] const Blocks& getBlocks() const { return m_blocks; }
+	[[nodiscard]] Blocks& getBlocks() { return *m_blocks.get(); }
+	[[nodiscard]] Plants& getPlants() { return *m_plants.get(); }
+	[[nodiscard]] Actors& getActors() { return *m_actors.get(); }
+	[[nodiscard]] Items& getItems() { return *m_items.get(); }
+	[[nodiscard]] const Blocks& getBlocks() const { return *m_blocks.get(); }
+	[[nodiscard]] const Plants& getPlants() const { return *m_plants.get(); }
+	[[nodiscard]] const Actors& getActors() const { return *m_actors.get(); }
+	[[nodiscard]] const Items& getItems() const { return *m_items.get(); }
 	//TODO: Move this somewhere else.
 	[[nodiscard]] Facing getFacingForAdjacentOffset(uint8_t adjacentOffset) const;
 

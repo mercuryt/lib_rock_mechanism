@@ -5,16 +5,19 @@
 #include "deserializationMemo.h"
 #include "simulation.h"
 #include "simulation/hasActors.h"
+#include "actors/actors.h"
+
 #include "objectives/givePlantsFluid.h"
 #include "objectives/harvest.h"
 #include "objectives/rest.h"
 #include "objectives/sowSeeds.h"
 #include "objectives/wander.h"
-#include "woodcutting.h"
-#include "craft.h"
-#include "dig.h"
-#include "construct.h"
-#include "stockpile.h"
+#include "objectives/woodcutting.h"
+#include "objectives/craft.h"
+#include "objectives/dig.h"
+#include "objectives/construct.h"
+#include "objectives/stockpile.h"
+#include "objectives/rest.h"
 
 #include <cstdio>
 #include <numbers>
@@ -56,7 +59,7 @@ void ObjectiveTypePrioritySet::setPriority(Area& area, const ObjectiveType& obje
 	else
 		found->priority = priority;
 	std::ranges::sort(m_data, std::ranges::greater{}, &ObjectivePriority::priority);
-	area.m_actors.objective_maybeDoNext(m_actor);
+	area.getActors().objective_maybeDoNext(m_actor);
 }
 void ObjectiveTypePrioritySet::remove(const ObjectiveType& objectiveType)
 {
@@ -64,20 +67,20 @@ void ObjectiveTypePrioritySet::remove(const ObjectiveType& objectiveType)
 }
 void ObjectiveTypePrioritySet::setObjectiveFor(Area& area, ActorIndex actor)
 {
-	assert(!area.m_actors.objective_exists(actor));
-	assert(!area.m_actors.objective_queuesAreEmpty(actor));
+	assert(!area.getActors().objective_exists(actor));
+	assert(!area.getActors().objective_queuesAreEmpty(actor));
 	Step currentStep = area.m_simulation.m_step;
 	for(auto& objectivePriority : m_data)
 		if(currentStep > objectivePriority.doNotAssignAgainUntil && objectivePriority.objectiveType->canBeAssigned(area, actor))
 		{
-			area.m_actors.objective_addTaskToStart(actor, objectivePriority.objectiveType->makeFor(area, actor));
+			area.getActors().objective_addTaskToStart(actor, objectivePriority.objectiveType->makeFor(area, actor));
 			return;
 		}
 	// No assignable tasks, do an idle task.
-	if(!area.m_actors.stamina_isFull(actor))
-		area.m_actors.objective_addTaskToStart(actor, std::make_unique<RestObjective>(area, actor));
+	if(!area.getActors().stamina_isFull(actor))
+		area.getActors().objective_addTaskToStart(actor, std::make_unique<RestObjective>(area, actor));
 	else
-		area.m_actors.objective_addTaskToStart(actor, std::make_unique<WanderObjective>(area, actor));
+		area.getActors().objective_addTaskToStart(actor, std::make_unique<WanderObjective>(actor));
 }
 void ObjectiveTypePrioritySet::setDelay(Area& area, ObjectiveTypeId objectiveTypeId)
 {
@@ -106,7 +109,7 @@ Step ObjectiveTypePrioritySet::getDelayEndFor(ObjectiveTypeId objectiveTypeId) c
 }
 // SupressedNeed
 SupressedNeed::SupressedNeed(Area& area, std::unique_ptr<Objective> o, ActorIndex a) :
-	m_area(area), m_actor(a), m_objective(std::move(o)), m_event(area.m_simulation.m_eventSchedule) { }
+	m_area(area), m_actor(a), m_objective(std::move(o)), m_event(area.m_eventSchedule) { }
 /*
 SupressedNeed::SupressedNeed(const Json& data, DeserializationMemo& deserializationMemo, ActorIndex a) :
 	m_actor(a), m_event(deserializationMemo.m_simulation.m_eventSchedule)
@@ -126,14 +129,14 @@ Json SupressedNeed::toJson() const
 void SupressedNeed::callback() 
 {
 	auto objective = std::move(m_objective);
-	HasObjectives& hasObjectives = m_area.m_actors.m_hasObjectives.at(m_actor);
+	HasObjectives& hasObjectives = *m_area.getActors().m_hasObjectives.at(m_actor);
 	hasObjectives.m_supressedNeeds.erase(objective->getObjectiveTypeId());
        	hasObjectives.addNeed(m_area, std::move(objective)); 
 }
 SupressedNeedEvent::SupressedNeedEvent(Area& area, SupressedNeed& sn, const Step start) :
 	ScheduledEvent(area.m_simulation, Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective, start), m_supressedNeed(sn) { }
-void SupressedNeedEvent::execute() { m_supressedNeed.callback(); }
-void SupressedNeedEvent::clearReferences() { m_supressedNeed.m_event.clearPointer(); }
+void SupressedNeedEvent::execute(Simulation&, Area*) { m_supressedNeed.callback(); }
+void SupressedNeedEvent::clearReferences(Simulation&, Area*) { m_supressedNeed.m_event.clearPointer(); }
 // ObjectiveType.
 Json ObjectiveType::toJson() const { return Json{{"type", getObjectiveTypeId()}}; }
 // Static method.
@@ -189,7 +192,7 @@ Json CannotCompleteObjectiveDishonorCallback::toJson() const
 	return {{"actor", m_actor.m_id}};
 }
 */
-void CannotCompleteObjectiveDishonorCallback::execute(uint32_t, uint32_t) { m_area.m_actors.objective_canNotCompleteSubobjective(m_actor); }
+void CannotCompleteObjectiveDishonorCallback::execute(uint32_t, uint32_t) { m_area.getActors().objective_canNotCompleteSubobjective(m_actor); }
 // HasObjectives.
 HasObjectives::HasObjectives(ActorIndex a) : m_actor(a), m_prioritySet(a) { }
 /*
@@ -261,19 +264,19 @@ void HasObjectives::maybeUsurpsPriority(Area& area, Objective& objective)
 		if(m_currentObjective->m_priority < objective.m_priority)
 		{
 			if(m_currentObjective->canResume())
-				m_currentObjective->delay();
+				m_currentObjective->delay(area);
 			else
-				m_currentObjective->cancel();
+				m_currentObjective->cancel(area);
 			setCurrentObjective(area, objective);
 		}
 	}
 }
 void HasObjectives::setCurrentObjective(Area& area, Objective& objective)
 {
-	area.m_actors.move_clearPath(m_actor);
-	area.m_actors.project_maybeClear(m_actor);
+	area.getActors().move_clearPath(m_actor);
+	area.getActors().project_maybeUnset(m_actor);
 	m_currentObjective = &objective;
-	objective.execute();
+	objective.execute(area);
 }
 void HasObjectives::addNeed(Area& area, std::unique_ptr<Objective> objective)
 {
@@ -281,8 +284,8 @@ void HasObjectives::addNeed(Area& area, std::unique_ptr<Objective> objective)
 	if(hasSupressedNeed(objectiveTypeId))
 		return;
 	// Wake up to fulfil need.
-	if(!area.m_actors.isAwake(m_actor))
-		area.m_actors.wakeUpEarly(m_actor);
+	if(!area.getActors().sleep_isAwake(m_actor))
+		area.getActors().sleep_wakeUpEarly(m_actor);
 	Objective* o = objective.get();
 	m_needsQueue.push_back(std::move(objective));
 	m_needsQueue.sort([](const std::unique_ptr<Objective>& a, const std::unique_ptr<Objective>& b){ return a->m_priority > b->m_priority; });
@@ -312,6 +315,7 @@ void HasObjectives::replaceTasks(Area& area, std::unique_ptr<Objective> objectiv
 // TODO: seperate functions for tasks and needs?
 void HasObjectives::destroy(Area& area, Objective& objective)
 {
+	Actors& actors = area.getActors();
 	ObjectiveTypeId objectiveTypeId = objective.getObjectiveTypeId();
 	bool isCurrent = m_currentObjective == &objective;
 	if(m_idsOfObjectivesInNeedsQueue.contains(objectiveTypeId))
@@ -327,60 +331,63 @@ void HasObjectives::destroy(Area& area, Objective& objective)
 		assert(m_tasksQueue.end() != std::ranges::find_if(m_tasksQueue, [&](auto& o){ return &objective == o.get(); }));
 		std::erase_if(m_tasksQueue, [&](auto& o){ return &objective == o.get(); });
 	}
-	area.m_actors.cancelAllReservationsMadeBy(m_actor);
-	area.m_actors.cancelAllReservationsMadeOn(m_actor);
-	area.m_actors.maybeDisbandLeadAndFollow(m_actor);
-	ActorOrItemIndex wasCarrying = area.m_actors.canPickUp_putDownIfAny(m_actor, area.m_actors.getLocation(m_actor));
-	HasShape* wasCarrying = m_actor.m_canPickup.putDownIfAny(m_actor.m_location);
-	if(wasCarrying != nullptr && m_actor.getFaction() != nullptr)
+	actors.canReserve_clearAll(m_actor);
+	actors.reservable_unreserveAll(m_actor);
+	actors.leadAndFollowDisband(m_actor);
+	ActorOrItemIndex wasCarrying = area.getActors().canPickUp_putDownIfAny(m_actor, actors.getLocation(m_actor));
+	if(wasCarrying.exists() && actors.getFaction(m_actor) != nullptr)
 	{
-		if(wasCarrying->isItem())
+		if(wasCarrying.isItem())
 		{
-			Item& item = static_cast<Item&>(*wasCarrying);
-			Faction& faction = *m_actor.getFaction();
-			if(m_actor.m_area->m_hasStockPiles.contains(faction))
-				m_actor.m_area->m_hasStockPiles.at(faction).addItem(item);
+			ItemIndex item = wasCarrying.get();
+			Faction& faction = *actors.getFaction(m_actor);
+			if(area.m_hasStockPiles.contains(faction))
+				area.m_hasStockPiles.at(faction).addItem(item);
 		}
 		else
 		{
-			assert(wasCarrying->isActor());
+			assert(wasCarrying.isActor());
 			//TODO: add to medical listing.
 		}
 	}
 	if(isCurrent)
-		getNext();
+		getNext(area);
 }
-void HasObjectives::cancel(Objective& objective)
+void HasObjectives::cancel(Area& area, Objective& objective)
 {
-	objective.cancel();
-	m_actor.m_canMove.maybeCancelThreadedTask();
-	m_actor.m_project = nullptr;
-	destroy(objective);
+	objective.cancel(area);
+	Actors& actors = area.getActors();
+	actors.move_pathRequestMaybeCancel(m_actor);
+	actors.project_unset(m_actor);
+	destroy(area, objective);
 }
-void HasObjectives::objectiveComplete(Objective& objective)
+void HasObjectives::objectiveComplete(Area& area, Objective& objective)
 {
-	assert(objective.getObjectiveTypeId() == ObjectiveTypeId::Wait || m_actor.m_mustSleep.isAwake());
-	m_actor.m_canMove.maybeCancelThreadedTask();
-	m_actor.m_project = nullptr;
-	destroy(objective);
+	Actors& actors = area.getActors();
+	assert(objective.getObjectiveTypeId() == ObjectiveTypeId::Wait || actors.sleep_isAwake(m_actor));
+	actors.move_pathRequestMaybeCancel(m_actor);
+	actors.project_unset(m_actor);
+	destroy(area, objective);
 }
-void HasObjectives::subobjectiveComplete()
+void HasObjectives::subobjectiveComplete(Area& area)
 {
-	assert(m_actor.m_mustSleep.isAwake());
+	Actors& actors = area.getActors();
+	assert(actors.sleep_isAwake(m_actor));
 	if(m_currentObjective == nullptr)
-		getNext();
+		getNext(area);
 	else
-		m_currentObjective->execute();
+		m_currentObjective->execute(area);
 }
-void HasObjectives::cannotCompleteSubobjective()
+void HasObjectives::cannotCompleteSubobjective(Area& area)
 {
-	m_actor.m_canMove.clearPath();
+	Actors& actors = area.getActors();
+	actors.move_clearPath(m_actor);
 	//TODO: generate cancelaton message?
 	//TODO: mandate existance of objective?
 	if(m_currentObjective == nullptr)
-		getNext();
+		getNext(area);
 	else
-		m_currentObjective->execute();
+		m_currentObjective->execute(area);
 }
 Objective& HasObjectives::getCurrent() 
 {
@@ -388,38 +395,40 @@ Objective& HasObjectives::getCurrent()
        	return *m_currentObjective; 
 }
 // Does not use ::cancel because needs to move supressed objective into storage.
-void HasObjectives::cannotFulfillNeed(Objective& objective)
+void HasObjectives::cannotFulfillNeed(Area& area, Objective& objective)
 {
-	m_actor.m_canMove.clearPath();
-	m_actor.m_canReserve.deleteAllWithoutCallback();
+	Actors& actors = area.getActors();
+	actors.move_clearPath(m_actor);
+	actors.canReserve_clearAll(m_actor);
 	ObjectiveTypeId objectiveTypeId = objective.getObjectiveTypeId();
 	bool isCurrent = m_currentObjective == &objective;
-	objective.cancel();
+	objective.cancel(area);
 	auto found = std::ranges::find_if(m_needsQueue, [&](std::unique_ptr<Objective>& o) { return o->getObjectiveTypeId() == objectiveTypeId; });
 	assert(found != m_needsQueue.end());
 	// Store supressed need.
-	m_supressedNeeds.try_emplace(objectiveTypeId, std::move(*found), m_actor);
+	m_supressedNeeds.try_emplace(objectiveTypeId, area, std::move(*found), m_actor);
 	// Remove from needs queue.
 	m_idsOfObjectivesInNeedsQueue.erase(objectiveTypeId);
 	m_needsQueue.erase(found);
 	// No need to disband leadAndFollow here, needs don't use it.
-	m_actor.m_canMove.maybeCancelThreadedTask();
+	actors.move_pathRequestMaybeCancel(m_actor);
 	if(isCurrent)
-		getNext();
+		getNext(area);
 }
-void HasObjectives::cannotFulfillObjective(Objective& objective)
+void HasObjectives::cannotFulfillObjective(Area& area, Objective& objective)
 {
-	m_actor.m_canMove.clearPath();
-	m_actor.m_canReserve.deleteAllWithoutCallback();
-	m_actor.m_canFollow.maybeDisband();
+	Actors& actors = area.getActors();
+	actors.move_clearPath(m_actor);
+	actors.canReserve_clearAll(m_actor);
+	actors.leadAndFollowDisband(m_actor);
 	// Store delay to wait before trying again.
-	m_prioritySet.setDelay(objective.getObjectiveTypeId());
-	cancel(objective);
+	m_prioritySet.setDelay(area, objective.getObjectiveTypeId());
+	cancel(area, objective);
 	//TODO: generate cancelation message?
 }
-void HasObjectives::detour()
+void HasObjectives::detour(Area& area)
 {
 	//TODO: This conditional is required because objectives are not mandated to always exist.
 	if(m_currentObjective != nullptr)
-		m_currentObjective->detour();
+		m_currentObjective->detour(area);
 }

@@ -4,9 +4,14 @@
 #include "nthAdjacentOffsets.h"
 #include "config.h"
 #include "objective.h"
+#include "objectives/goToSafeTemperature.h"
 #include "simulation.h"
 #include "terrainFacade.h"
 #include "types.h"
+#include "plants.h"
+#include "actors/actors.h"
+#include "items/items.h"
+#include "blocks/blocks.h"
 #include <cmath>
 enum class TemperatureZone { Surface, Underground, LavaSea };
 Temperature TemperatureSource::getTemperatureDeltaForRange(Temperature range)
@@ -165,7 +170,7 @@ void ActorNeedsSafeTemperature::onChange(Area& area)
 			actors.objective_addNeed(m_actor, std::move(objective));
 		}
 		if(!m_event.exists())
-			m_event.schedule(m_actor);
+			m_event.schedule(area, m_actor);
 	}
 	else if(m_event.exists())
 		m_event.unschedule();

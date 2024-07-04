@@ -1,10 +1,8 @@
 #pragma once
 
 #include "config.h"
-#include "objective.h"
 #include "simulation.h"
 #include "eventSchedule.hpp"
-#include "pathRequest.h"
 #include "terrainFacade.h"
 #include "types.h"
 

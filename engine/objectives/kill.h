@@ -21,7 +21,7 @@ class KillInputAction final : public InputAction
 {
 	ActorIndex m_killer;
 	ActorIndex m_target;
-	KillInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, ActorIndex killer, ActorIndex target);
+	KillInputAction(std::unordered_set<ActorIndex> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, ActorIndex killer, ActorIndex target);
 	void execute();
 };
 

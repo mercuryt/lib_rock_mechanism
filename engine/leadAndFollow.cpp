@@ -4,6 +4,9 @@
 #include "deserializationMemo.h"
 #include "simulation.h"
 #include "actorOrItemIndex.h"
+#include "blocks/blocks.h"
+#include "actors/actors.h"
+#include "items/items.h"
 /*
 void CanLead::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
@@ -36,13 +39,14 @@ Json CanLead::toJson() const
 bool CanLead::canMove(Area& area)
 {
 	assert(m_actorOrItemIndex.getCanFollow(area) == nullptr);
-	auto occuiped = getOccuiped(area);
+	auto occupiedSet = getOccuiped(area);
+	std::vector<BlockIndex> occupied(occupiedSet.begin(), occupiedSet.end());
 	auto path = getLocationQueue(area);
 	auto pathIter = path.begin();
 	ActorOrItemIndex follower = m_canFollow->m_actorOrItemIndex;
 	while(true)
 	{
-		if(!area.getBlocks().shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(*pathIter, follower.getShape(area), follower.getMoveType(area), follower.getFacing(area), occuiped))
+		if(!area.getBlocks().shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(*pathIter, follower.getShape(area), follower.getMoveType(area), follower.getFacing(area), occupied))
 			return false;
 		CanLead* canLead = follower.getCanLead(area);
 		if(canLead == nullptr)
@@ -51,11 +55,22 @@ bool CanLead::canMove(Area& area)
 	}
 }
 bool CanLead::isLeading() const { return m_canFollow != nullptr; }
-bool CanLead::isLeading(ActorOrItemIndex index) const  { return m_canFollow != nullptr && m_canFollow->m_actorOrItemIndex == index; }
+bool CanLead::isLeadingActor(ActorIndex index) const
+{ 
+	return m_canFollow != nullptr && m_canFollow->m_actorOrItemIndex.isActor() && m_canFollow->m_actorOrItemIndex.get() == index;
+}
+bool CanLead::isLeadingItem(ItemIndex index) const
+{ 
+	return m_canFollow != nullptr && m_canFollow->m_actorOrItemIndex.isItem() && m_canFollow->m_actorOrItemIndex.get() == index;
+}
+bool CanLead::isLeadingPolymorphic(ActorOrItemIndex index) const
+{ 
+	return m_canFollow != nullptr && m_canFollow->m_actorOrItemIndex == index;
+}
 ActorOrItemIndex CanLead::getFollower() { return m_canFollow->m_actorOrItemIndex; }
 const ActorOrItemIndex& CanLead::getFollower() const { return m_canFollow->m_actorOrItemIndex; }
 // Class method.
-Speed CanLead::getMoveSpeedForGroupWithAddedMass(Area& area, std::vector<ActorOrItemIndex>& actorsAndItems, Mass addedRollingMass, Mass addedDeadMass)
+Speed CanLead::getMoveSpeedForGroupWithAddedMass(const Area& area, std::vector<ActorOrItemIndex>& actorsAndItems, Mass addedRollingMass, Mass addedDeadMass)
 {
 	Mass rollingMass = addedRollingMass;
 	Mass deadMass = addedDeadMass;
@@ -66,9 +81,9 @@ Speed CanLead::getMoveSpeedForGroupWithAddedMass(Area& area, std::vector<ActorOr
 		if(index.isItem())
 		{
 			ItemIndex itemIndex = index.get();
-			Mass mass = area.m_items.getMass(itemIndex);
+			Mass mass = area.getItems().getMass(itemIndex);
 			static const MoveType& roll = MoveType::byName("roll");
-			if(area.m_items.getMoveType(itemIndex) == roll)
+			if(area.getItems().getMoveType(itemIndex) == roll)
 				rollingMass += mass;
 			else
 				deadMass += mass;
@@ -77,7 +92,7 @@ Speed CanLead::getMoveSpeedForGroupWithAddedMass(Area& area, std::vector<ActorOr
 		{
 			assert(index.isActor());
 			ActorIndex actorIndex = index.get();
-			Actors& actors = area.m_actors;
+			const Actors& actors = area.getActors();
 			if(actors.move_canMove(actorIndex))
 			{
 				carryMass += actors.getUnencomberedCarryMass(actorIndex);
@@ -101,8 +116,8 @@ Speed CanLead::getMoveSpeed(Area& area) const
 {
 	assert(m_actorOrItemIndex.isActor());
 	ActorIndex actorIndex = m_actorOrItemIndex.get();
-	assert(!area.m_actors.isFollowing(actorIndex));
-	assert(area.m_actors.isLeading(actorIndex));
+	assert(!area.getActors().isFollowing(actorIndex));
+	assert(area.getActors().isLeading(actorIndex));
 	ActorOrItemIndex index = m_actorOrItemIndex;
 	std::vector<ActorOrItemIndex> actorsAndItems;
 	while(true)
@@ -171,7 +186,7 @@ void CanFollow::unfollow(Area& area)
 	m_canLead->m_locationQueue.clear();
 	m_canLead = nullptr;
 	if(m_actorOrItemIndex.isItem())
-		area.m_items.setStatic(m_actorOrItemIndex.get(), true);
+		area.getItems().setStatic(m_actorOrItemIndex.get(), true);
 }
 void CanFollow::unfollowIfFollowing(Area& area)
 {

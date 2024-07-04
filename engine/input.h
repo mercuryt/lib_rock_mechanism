@@ -10,7 +10,6 @@
 #include <unordered_set>
 #include <mutex>
 
-class Actor;
 class InputQueue;
 class InputAction;
 class Objective;
@@ -24,10 +23,10 @@ class InputAction
 	Queue::iterator m_iterator;
 protected:
 	HasOnDestroySubscriptions m_onDestroySubscriptions;
-	std::unordered_set<Actor*> m_actors;
-	InputAction(std::unordered_set<Actor*>& m_actors, NewObjectiveEmplacementType m_emplacementType, InputQueue& inputQueue);
+	std::unordered_set<ActorIndex> m_actors;
+	InputAction(std::unordered_set<ActorIndex>& m_actors, NewObjectiveEmplacementType m_emplacementType, InputQueue& inputQueue);
 	InputAction(InputQueue& inputQueue);
-	void insertObjective(std::unique_ptr<Objective> objective, Actor& actor);
+	void insertObjective(std::unique_ptr<Objective> objective, ActorIndex actor);
 public:
 	virtual void execute() = 0;
 	virtual ~InputAction() = default;

@@ -1,38 +1,43 @@
 #include "hasItems.h"
-#include "../item.h"
+#include "../items/items.h"
 #include "../area.h"
+#include "../blocks/blocks.h"
+#include "../itemType.h"
 #include "types.h"
-void AreaHasItems::setItemIsOnSurface(Item& item)
+void AreaHasItems::setItemIsOnSurface(ItemIndex item)
 {
 	//assert(!m_onSurface.contains(&item));
-	m_onSurface.insert(&item);
+	m_onSurface.insert(item);
 }
-void AreaHasItems::setItemIsNotOnSurface(Item& item)
+void AreaHasItems::setItemIsNotOnSurface(ItemIndex item)
 {
 	//assert(m_onSurface.contains(&item));
-	m_onSurface.erase(&item);
+	m_onSurface.erase(item);
 }
 void AreaHasItems::onChangeAmbiantSurfaceTemperature()
 {
 	//TODO: Optimize by not repetedly fetching ambiant.
 	Blocks& blocks = m_area.getBlocks();
-	for(Item* item : m_onSurface)
+	Items& items = m_area.getItems();
+	for(ItemIndex item : m_onSurface)
 	{
-		assert(item->m_location != BLOCK_INDEX_MAX);
-		assert(blocks.isOutdoors(item->m_location));
-		item->setTemperature(blocks.temperature_get(item->m_location));
+		assert(items.getLocation(item) != BLOCK_INDEX_MAX);
+		assert(blocks.isOutdoors(items.getLocation(item)));
+		items.setTemperature(item, blocks.temperature_get(items.getLocation(item)));
 	}
 }
-void AreaHasItems::add(Item& item)
+void AreaHasItems::add(ItemIndex item)
 {
-	if(item.m_itemType.internalVolume)
-		m_area.m_hasHaulTools.registerHaulTool(item);
+	Items& items = m_area.getItems();
+	if(items.getItemType(item).internalVolume)
+		m_area.m_hasHaulTools.registerHaulTool(m_area, item);
 }
-void AreaHasItems::remove(Item& item)
+void AreaHasItems::remove(ItemIndex item)
 {
-	m_onSurface.erase(&item);
+	Items& items = m_area.getItems();
+	m_onSurface.erase(item);
 	m_area.m_hasStockPiles.removeItemFromAllFactions(item);
-	if(item.m_itemType.internalVolume)
+	if(items.getItemType(item).internalVolume)
 		m_area.m_hasHaulTools.unregisterHaulTool(item);
-	item.m_reservable.clearAll();
+	items.reservable_unreserveAll(item);
 }

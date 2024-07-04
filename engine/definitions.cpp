@@ -9,6 +9,7 @@
 #include "skill.h"
 #include "craft.h"
 #include "types.h"
+#include "itemType.h"
 
 #include <fstream>
 #include <algorithm>

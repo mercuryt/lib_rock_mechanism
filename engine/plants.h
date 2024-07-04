@@ -15,6 +15,7 @@ class PlantFluidEvent;
 class PlantTemperatureEvent;
 class PlantEndOfHarvestEvent;
 class PlantFoliageGrowthEvent;
+class Simulation;
 
 struct PlantParamaters
 {
@@ -78,6 +79,7 @@ public:
 	[[nodiscard]] Mass getFruitMass(PlantIndex index) const;
 	// Not const: updates cache.
 	[[nodiscard]] bool hasFluidSource(PlantIndex index);
+	[[nodiscard]] bool isGrowing(PlantIndex index) const { return m_growthEvent.exists(index); }
 	[[nodiscard]] Percent getPercentGrown(PlantIndex index) const;
 	[[nodiscard]] uint32_t getRootRange(PlantIndex index) const;
 	[[nodiscard]] Percent getPercentFoliage(PlantIndex index) const;
@@ -89,4 +91,58 @@ public:
 	[[nodiscard]] bool readyToHarvest(PlantIndex index) const { return m_quantityToHarvest.at(index) != 0; }
 	[[nodiscard]] const Volume& getVolumeFluidRequested(PlantIndex index) const { return m_volumeFluidRequested.at(index); }
 	void log(PlantIndex index) const;
+	friend class PlantGrowthEvent;
+	friend class PlantShapeGrowthEvent;
+	friend class PlantFoliageGrowthEvent;
+	friend class PlantEndOfHarvestEvent;
+	friend class PlantFluidEvent;
+	friend class PlantTemperatureEvent;
+};
+class PlantGrowthEvent final : public ScheduledEvent
+{
+	PlantIndex m_plant;
+public:
+	PlantGrowthEvent(Area& area, const Step delay, PlantIndex p, Step start = 0);
+	void execute(Simulation&, Area* area);
+	void clearReferences(Simulation&, Area* area);
+};
+class PlantShapeGrowthEvent final : public ScheduledEvent
+{
+	PlantIndex m_plant;
+public:
+	PlantShapeGrowthEvent(Area& area, const Step delay, PlantIndex p, Step start = 0);
+	void execute(Simulation&, Area* area);
+	void clearReferences(Simulation&, Area* area);
+};
+class PlantFoliageGrowthEvent final : public ScheduledEvent
+{
+	PlantIndex m_plant;
+	public:
+	PlantFoliageGrowthEvent(Area& area, const Step delay, PlantIndex p, Step start = 0);
+	void execute(Simulation&, Area* area);
+	void clearReferences(Simulation&, Area* area);
+};
+class PlantEndOfHarvestEvent final : public ScheduledEvent
+{
+	PlantIndex m_plant;
+public:
+	PlantEndOfHarvestEvent(Area& area, const Step delay, PlantIndex p, Step start = 0);
+	void execute(Simulation&, Area* area);
+	void clearReferences(Simulation&, Area* area);
+};
+class PlantFluidEvent final : public ScheduledEvent
+{
+	PlantIndex m_plant;
+public:
+	PlantFluidEvent(Area& area, const Step delay, PlantIndex p, Step start = 0);
+	void execute(Simulation&, Area* area);
+	void clearReferences(Simulation&, Area* area);
+};
+class PlantTemperatureEvent final : public ScheduledEvent
+{
+	PlantIndex m_plant;
+public:
+	PlantTemperatureEvent(Area& area, const Step delay, PlantIndex p, Step start = 0);
+	void execute(Simulation&, Area* area);
+	void clearReferences(Simulation&, Area* area);
 };

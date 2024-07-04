@@ -5,6 +5,8 @@
 #include "../blockFeature.h"
 #include "../locationBuckets.h"
 #include "../fluidType.h"
+#include "../actors/actors.h"
+#include "../plants.h"
 #include <string>
 
 Blocks::Blocks(Area& area, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) : m_area(area), m_sizeX(x), m_sizeY(y), m_sizeZ(z)
@@ -17,16 +19,18 @@ Blocks::Blocks(Area& area, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlo
 }
 void Blocks::resize(BlockIndex count)
 {
+	m_reservables.resize(count);
 	m_materialType.resize(count);
 	m_features.resize(count);
 	m_fluid.resize(count);
 	m_mist.resize(count);
 	m_mistInverseDistanceFromSource.resize(count);
 	m_totalFluidVolume.resize(count);
+	m_actorVolume.resize(count);
+	m_itemVolume.resize(count);
 	m_actors.resize(count);
 	m_items.resize(count);
 	m_plants.resize(count);
-	m_shapes.resize(count);
 	m_dynamicVolume.resize(count);
 	m_staticVolume.resize(count);
 	m_projects.resize(count);
@@ -65,6 +69,7 @@ BlockIndex Blocks::offset(BlockIndex index, int32_t ax, int32_t ay, int32_t az) 
 		return BLOCK_INDEX_MAX;
 	return getIndex({(DistanceInBlocks)ax, (DistanceInBlocks)ay, (DistanceInBlocks)az});
 }
+/*
 void Blocks::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	m_materialType = data["solid"];
@@ -112,6 +117,7 @@ Json Blocks::toJson() const
 	}
 	return output;
 }
+*/
 Cuboid Blocks::getAll()
 {
 	return Cuboid(*this, size() - 1, 0);
@@ -181,7 +187,7 @@ void Blocks::recordAdjacent(BlockIndex index)
 void Blocks::assignLocationBuckets()
 {
 	for(BlockIndex index : getAll())
-		m_locationBucket[index] = &m_area.m_actors.m_locationBuckets.getBucketFor(index);
+		m_locationBucket[index] = &m_area.m_locationBuckets.getBucketFor(index);
 }
 const std::array<BlockIndex, 6>& Blocks::getDirectlyAdjacent(BlockIndex index) const
 {
@@ -444,9 +450,9 @@ bool Blocks::isAdjacentToIncludingCornersAndEdges(BlockIndex index, BlockIndex o
 	const auto& adjacents = getAdjacentWithEdgeAndCornerAdjacent(index);
 	return std::ranges::find(adjacents, otherIndex) != adjacents.end();
 }
-bool Blocks::isAdjacentTo(BlockIndex index, HasShape& hasShape) const
+bool Blocks::isAdjacentToActor(BlockIndex index, ActorIndex actor) const
 {
-	return hasShape.getAdjacentBlocks().contains(index);
+	return m_area.getActors().isAdjacentToActor(index, actor);
 }
 void Blocks::setExposedToSky(BlockIndex index, bool exposed)
 {
@@ -484,11 +490,12 @@ void Blocks::setBelowNotExposedToSky(BlockIndex index)
 }
 void Blocks::solid_set(BlockIndex index, const MaterialType& materialType, bool constructed)
 {
-	assert(m_items[index].empty());
+	assert(m_itemVolume[index].empty());
+	Plants& plants = m_area.getPlants();
 	if(m_plants.at(index))
 	{
-		assert(!m_area.m_plants.getSpecies(index).isTree);
-		m_area.m_plants.die(index);
+		assert(!plants.getSpecies(index).isTree);
+		plants.die(index);
 	}
 	if(&materialType == m_materialType[index])
 		return;
@@ -499,8 +506,8 @@ void Blocks::solid_set(BlockIndex index, const MaterialType& materialType, bool 
 	m_visible[index] = false;
 	// Opacity.
 	if(!materialType.transparent && wasEmpty)
-		m_area.m_actors.m_visionCuboids.blockIsSometimesOpaque(index);
-	m_area.m_actors.m_opacityFacade.update(index);
+		m_area.m_visionCuboids.blockIsSometimesOpaque(index);
+	m_area.m_opacityFacade.update(index);
 	// Set blocks below as not exposed to sky.
 	setExposedToSky(index, false);
 	setBelowNotExposedToSky(index);
@@ -519,8 +526,8 @@ void Blocks::solid_setNot(BlockIndex index)
 	m_materialType[index] = nullptr;
 	m_constructed[index] = false;
 	fluid_onBlockSetNotSolid(index);
-	m_area.m_actors.m_visionCuboids.blockIsNeverOpaque(index);
-	m_area.m_actors.m_opacityFacade.update(index);
+	m_area.m_visionCuboids.blockIsNeverOpaque(index);
+	m_area.m_opacityFacade.update(index);
 	if(getBlockAbove(index) == BLOCK_INDEX_MAX || m_exposedToSky[getBlockAbove(index)])
 	{
 		setExposedToSky(index, true);
@@ -737,7 +744,7 @@ bool Blocks::isEdge(BlockIndex index) const
 }
 bool Blocks::hasLineOfSightTo(BlockIndex index, BlockIndex other) const
 {
-	return m_area.m_actors.m_opacityFacade.hasLineOfSight(index, other);
+	return m_area.m_opacityFacade.hasLineOfSight(index, other);
 }
 std::unordered_set<BlockIndex> Blocks::collectAdjacentsInRange(BlockIndex index, DistanceInBlocks range)
 {

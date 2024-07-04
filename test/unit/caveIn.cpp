@@ -4,6 +4,10 @@
 #include "../../engine/definitions.h"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasAreas.h"
+#include "../../engine/blocks/blocks.h"
+#include "../../engine/actors/actors.h"
+#include "../../engine/items/items.h"
+#include "../../engine/plants.h"
 TEST_CASE("Cave In")
 {
 	Simulation simulation;

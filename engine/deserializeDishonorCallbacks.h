@@ -1,5 +1,5 @@
 #pragma once
-
+/*
 #include "faction.h"
 #include "objective.h"
 #include "reservable.h"
@@ -30,3 +30,4 @@ inline std::unique_ptr<DishonorCallback> deserializeDishonorCallback(const Json&
 	assert(data["type"] == "DigLocationDishonorCallback");
 	return std::make_unique<DigLocationDishonorCallback>(data, deserializationMemo);
 }
+*/

@@ -5,9 +5,10 @@
 #include "simulation.h"
 #include "fluidType.h"
 #include "types.h"
+#include "blocks/blocks.h"
 
 #include <memory>
-MistDisperseEvent::MistDisperseEvent(Simulation& simulation, uint32_t delay, const FluidType& ft, BlockIndex b) :
+MistDisperseEvent::MistDisperseEvent(uint32_t delay, Simulation& simulation, const FluidType& ft, BlockIndex b) :
        	ScheduledEvent(simulation, delay), m_fluidType(ft), m_block(b) {}
 void MistDisperseEvent::execute(Simulation& simulation, Area* area)
 {
@@ -32,10 +33,10 @@ void MistDisperseEvent::execute(Simulation& simulation, Area* area)
 				)
 				{
 					blocks.fluid_mistSetFluidTypeAndInverseDistance(adjacent, m_fluidType, blocks.fluid_getMistInverseDistanceToSource(m_block) - 1);
-					area->m_eventSchedule.schedule(std::make_unique<MistDisperseEvent>(simulation, m_fluidType.mistDuration, m_fluidType, adjacent));
+					area->m_eventSchedule.schedule(std::make_unique<MistDisperseEvent>(m_fluidType.mistDuration, simulation, m_fluidType, adjacent));
 				}
 		// Schedule next check.
-		area->m_eventSchedule.schedule(std::make_unique<MistDisperseEvent>(simulation, m_fluidType.mistDuration, m_fluidType, m_block));	
+		area->m_eventSchedule.schedule(std::make_unique<MistDisperseEvent>(m_fluidType.mistDuration, simulation, m_fluidType, m_block));	
 		return;
 	}
 	// Mist does not continue to exist here.
@@ -66,6 +67,6 @@ bool MistDisperseEvent::continuesToExist(Area& area) const
 }
 void MistDisperseEvent::emplace(Area& area, uint32_t delay, const FluidType& fluidType, BlockIndex block)
 {
-	std::unique_ptr<ScheduledEvent> event = std::make_unique<MistDisperseEvent>(area.m_simulation, delay, fluidType, block);
+	std::unique_ptr<ScheduledEvent> event = std::make_unique<MistDisperseEvent>(delay, area.m_simulation, fluidType, block);
 	area.m_eventSchedule.schedule(std::move(event));
 }

@@ -4,6 +4,8 @@
 #include "../visionUtil.h"
 #include "../simulation.h"
 #include "../simulation/hasActors.h"
+#include "actors/actors.h"
+#include "blocks/blocks.h"
 #include <memory>
 /*
 KillInputAction::KillInputAction(std::unordered_set<ActorIndex> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, ActorIndex killer, ActorIndex target) : InputAction(actors, emplacementType, inputQueue), m_killer(killer), m_target(target) 
@@ -45,7 +47,7 @@ void KillObjective::execute(Area& area)
 			 // TODO: hasLineOfSightIncludingActors
 			 area.m_opacityFacade.hasLineOfSight(actors.getLocation(m_killer), actors.getLocation(m_target)))
 	)
-		actors.combat_getIntoRangeAndLineOfSight(m_killer, m_target, actors.combat_getMaxRange(m_killer));
+		actors.combat_getIntoRangeAndLineOfSightOfActor(m_killer, m_target, actors.combat_getMaxRange(m_killer));
 	else
 		// If in range and has line of sight and attack not on cooldown then attack.
 		if(!actors.combat_isOnCoolDown(m_killer))

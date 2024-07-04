@@ -1,4 +1,5 @@
 #include "blocks.h"
+#include "../actors/actors.h"
 #include "../items/items.h"
 #include "../area.h"
 #include "../simulation.h"
@@ -8,51 +9,59 @@
 #include <iterator>
 void Blocks::item_record(BlockIndex index, ItemIndex item, CollisionVolume volume)
 {
-	m_items.at(index).emplace_back(item, volume);
-	if(m_area.m_items.isStatic(item))
+	m_itemVolume.at(index).emplace_back(item, volume);
+	Items& items = m_area.getItems();
+	m_items.at(index).push_back(item);
+	if(items.isStatic(item))
 		m_staticVolume.at(index) += volume;
 	else
 		m_dynamicVolume.at(index) += volume;
 }
 void Blocks::item_erase(BlockIndex index, ItemIndex item)
 {
-	assert(m_area.m_items.getLocation(item) == index);
-	auto& items = m_items.at(index);
-	auto found = std::ranges::find(items, item, &std::pair<ItemIndex, CollisionVolume>::first);
-	assert(found != items.end());
-	if(m_area.m_items.isStatic(item))
-		m_staticVolume.at(index) -= found->second;
+	Items& items = m_area.getItems();
+	auto& blockItems = m_items.at(index);
+	auto& blockItemVolume = m_itemVolume.at(index);
+	auto iter = std::ranges::find(blockItems, item);
+	auto iter2 = m_itemVolume.at(index).begin() + (std::distance(iter, m_dynamicVolume.begin()));
+	if(items.isStatic(item))
+		m_staticVolume.at(index) -= iter2->second;
 	else
-		m_dynamicVolume.at(index) -= found->second;
-	items.erase(found);
+		m_dynamicVolume.at(index) -= iter2->second;
+	(*iter) = blockItems.back();
+	(*iter2) = blockItemVolume.back();
+	blockItemVolume.pop_back();
+	blockItems.pop_back();
 }
 void Blocks::item_setTemperature(BlockIndex index, Temperature temperature)
 {
-	for(auto [item, volume] : m_items.at(index))
-		m_area.m_items.setTemperature(item, temperature);
+	Items& items = m_area.getItems();
+	for(auto [item, volume] : m_itemVolume.at(index))
+		items.setTemperature(item, temperature);
 }
 void Blocks::item_disperseAll(BlockIndex index)
 {
-	auto& items = m_items.at(index);
-	if(items.empty())
+	auto& itemsInBlock = m_itemVolume.at(index);
+	if(itemsInBlock.empty())
 		return;
 	std::vector<BlockIndex> blocks;
 	for(BlockIndex otherIndex : getAdjacentOnSameZLevelOnly(index))
 		if(!solid_is(otherIndex))
 			blocks.push_back(otherIndex);
-	auto copy = items;
+	auto copy = itemsInBlock;
+	Items& items = m_area.getItems();
 	for(auto [item, volume] : copy)
 	{
 		//TODO: split up stacks of generics, prefer blocks with more empty space.
 		Random& random = m_area.m_simulation.m_random;
 		BlockIndex block = blocks.at(random.getInRange(0u, (uint)(blocks.size() - 1)));
-		m_area.m_items.setLocation(item, block);
+		items.setLocation(item, block);
 	}
 }
 uint32_t Blocks::item_getCount(BlockIndex index, const ItemType& itemType, const MaterialType& materialType) const
 {
-	auto& itemsInBlock = m_items.at(index);
-	Items& items = m_area.m_items;
+	auto& itemsInBlock = m_itemVolume.at(index);
+	Items& items = m_area.getItems();
 	auto found = std::ranges::find_if(itemsInBlock, [&](auto pair)
 	{
 		ItemIndex item = pair.first;
@@ -65,8 +74,8 @@ uint32_t Blocks::item_getCount(BlockIndex index, const ItemType& itemType, const
 }
 ItemIndex Blocks::item_getGeneric(BlockIndex index, const ItemType& itemType, const MaterialType& materialType) const
 {
-	auto& itemsInBlock = m_items.at(index);
-	Items& items = m_area.m_items;
+	auto& itemsInBlock = m_itemVolume.at(index);
+	Items& items = m_area.getItems();
 	auto found = std::ranges::find_if(itemsInBlock, [&](auto pair) { 
 		ItemIndex item = pair.first;
 		return items.getItemType(item) == itemType && items.getMaterialType(item) == materialType;
@@ -77,8 +86,8 @@ ItemIndex Blocks::item_getGeneric(BlockIndex index, const ItemType& itemType, co
 // TODO: buggy
 bool Blocks::item_hasInstalledType(BlockIndex index, const ItemType& itemType) const
 {
-	auto& itemsInBlock = m_items.at(index);
-	Items& items = m_area.m_items;
+	auto& itemsInBlock = m_itemVolume.at(index);
+	Items& items = m_area.getItems();
 	auto found = std::ranges::find_if(itemsInBlock, [&](auto pair) { 
 		ItemIndex item = pair.first;
 		return items.getItemType(item) == itemType;
@@ -87,9 +96,9 @@ bool Blocks::item_hasInstalledType(BlockIndex index, const ItemType& itemType) c
 }
 bool Blocks::item_hasEmptyContainerWhichCanHoldFluidsCarryableBy(BlockIndex index, const ActorIndex actor) const
 {
-	Items& items = m_area.m_items;
-	Actors& actors = m_area.m_actors;
-	for(auto [item, volume] : m_items.at(index))
+	Items& items = m_area.getItems();
+	Actors& actors = m_area.getActors();
+	for(auto [item, volume] : m_itemVolume.at(index))
 	{
 		const ItemType& itemType = items.getItemType(item);
 		//TODO: account for container weight when full, needs to have fluid type passed in.
@@ -100,9 +109,9 @@ bool Blocks::item_hasEmptyContainerWhichCanHoldFluidsCarryableBy(BlockIndex inde
 }
 bool Blocks::item_hasContainerContainingFluidTypeCarryableBy(BlockIndex index, const ActorIndex actor, const FluidType& fluidType) const
 {
-	Items& items = m_area.m_items;
-	Actors& actors = m_area.m_actors;
-	for(auto [item, volume]  : m_items.at(index))
+	Items& items = m_area.getItems();
+	Actors& actors = m_area.getActors();
+	for(auto [item, volume]  : m_itemVolume.at(index))
 	{
 		const ItemType& itemType = items.getItemType(item);
 		if(itemType.internalVolume != 0 && itemType.canHoldFluids &&
@@ -115,14 +124,11 @@ bool Blocks::item_hasContainerContainingFluidTypeCarryableBy(BlockIndex index, c
 }
 bool Blocks::item_empty(BlockIndex index) const
 {
-	return m_items.at(index).empty();
+	return m_itemVolume.at(index).empty();
 }
 std::vector<ItemIndex> Blocks::item_getAll(BlockIndex index)
 {
-	std::vector<ItemIndex> output;
-	output.reserve(m_items.at(index).size());
-	std::ranges::transform(m_items.at(index), std::back_inserter(output), [](const auto& pair) -> ItemIndex { return pair.first; });
-	return output;
+	return m_items.at(index);
 }
 const std::vector<ItemIndex> Blocks::item_getAll(BlockIndex index) const
 {

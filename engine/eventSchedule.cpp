@@ -3,7 +3,7 @@
 #include "util.h"
 #include "area.h"
 #include <cassert>
-ScheduledEvent::ScheduledEvent(Simulation& simulation, area, const Step delay, const Step start) :
+ScheduledEvent::ScheduledEvent(Simulation& simulation, const Step delay, const Step start) :
 	m_startStep(start == 0 ? simulation.m_step : start), m_step(m_startStep + delay)
 {
 	assert(delay != 0);

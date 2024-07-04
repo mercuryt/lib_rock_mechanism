@@ -5,7 +5,7 @@
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
-#include "../../engine/actor.h"
+#include "../../engine/actors/actors.h"
 #include <new>
 TEST_CASE("woodcutting")
 {

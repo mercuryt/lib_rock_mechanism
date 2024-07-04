@@ -1,21 +1,23 @@
 #include "animalsArrive.h"
 #include "../engine.h"
 #include "../../area.h"
-#include "../../actor.h"
 #include "../../animalSpecies.h"
 #include "../../config.h"
 #include "../../simulation.h"
 #include "../../simulation/hasActors.h"
 #include "../../types.h"
 #include "../../util.h"
+#include "../../plants.h"
+#include "../../items/items.h"
+#include "../../actors/actors.h"
 #include <string>
 AnimalsArriveDramaArc::AnimalsArriveDramaArc(DramaEngine& engine, Area& area) : 
-	DramaArc(engine, DramaArcType::AnimalsArrive, &area), m_scheduledEvent(area.m_simulation.m_eventSchedule)
+	DramaArc(engine, DramaArcType::AnimalsArrive, &area), m_scheduledEvent(area.m_eventSchedule)
 { scheduleArrive(); }
 AnimalsArriveDramaArc::AnimalsArriveDramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine) : 
 	DramaArc(data, deserializationMemo, dramaEngine),
 	m_isActive(data["isActive"].get<bool>()),
-	m_scheduledEvent(m_area->m_simulation.m_eventSchedule)
+	m_scheduledEvent(m_area->m_eventSchedule)
 {
 	m_scheduledEvent.schedule(*this, m_area->m_simulation, data["start"].get<Step>(), data["duration"].get<Step>());
 }
@@ -42,7 +44,8 @@ void AnimalsArriveDramaArc::callback()
 			if(location != BLOCK_INDEX_MAX)
 			{
 				exclude.insert(location);
-				Actor& actor = m_area->m_simulation.m_hasActors->createActor(ActorParamaters{
+				Actors& actors = m_area->getActors();
+				ActorIndex actor = actors.create(ActorParamaters{
 					.species=*m_species, 
 					.percentGrown=percentGrown,
 					.location=location,
@@ -50,8 +53,8 @@ void AnimalsArriveDramaArc::callback()
 					.percentTired=m_tiredPercent,
 					.percentThirst=m_thristPercent
 				});
-				actor.m_hasObjectives.getNext();
-				m_actors.push_back(&actor);
+				actors.objective_maybeDoNext(actor);
+				m_actors.push_back(actor);
 			}
 			else
 			{

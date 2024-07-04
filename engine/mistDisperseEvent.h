@@ -8,7 +8,7 @@ class MistDisperseEvent : public ScheduledEvent
 	const FluidType& m_fluidType;
 	BlockIndex m_block;
 public:
-	MistDisperseEvent(Simulation& simulation, uint32_t delay, const FluidType& ft, BlockIndex b);
+	MistDisperseEvent(uint32_t delay, Simulation& simulation, const FluidType& ft, BlockIndex b);
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation&, Area*) { }
 	bool continuesToExist(Area& area) const;

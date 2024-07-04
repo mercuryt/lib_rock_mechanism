@@ -5,7 +5,7 @@
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
-#include "../../engine/actor.h"
+#include "../../engine/actors/actors.h"
 #include "../../engine/objectives/sowSeeds.h"
 #include "../../engine/objectives/harvest.h"
 #include "../../engine/objectives/givePlantsFluid.h"

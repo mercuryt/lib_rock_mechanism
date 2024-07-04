@@ -43,7 +43,7 @@ struct BlockIsPartOfStockPile
 class Blocks
 {
 	std::array<int32_t, 26> m_offsetsForAdjacentCountTable;
-	BloomHashMap<BlockIndex, Reservable, 100'000> m_reservables;
+	BloomHashMap<BlockIndex, Reservable> m_reservables;
 	std::unordered_map<BlockIndex, std::unordered_map<Faction*, FarmField*>> m_farmFields;
 	std::unordered_map<BlockIndex, std::unordered_map<Faction*, BlockIsPartOfStockPile>> m_stockPiles;
 	std::vector<const MaterialType*> m_materialType;
@@ -52,8 +52,10 @@ class Blocks
 	std::vector<const FluidType*> m_mist;
 	std::vector<CollisionVolume> m_totalFluidVolume;
 	std::vector<DistanceInBlocks> m_mistInverseDistanceFromSource;
-	std::vector<std::vector<std::pair<ActorIndex, CollisionVolume>>> m_actors;
-	std::vector<std::vector<std::pair<ItemIndex, CollisionVolume>>> m_items;
+	std::vector<std::vector<std::pair<ActorIndex, CollisionVolume>>> m_actorVolume;
+	std::vector<std::vector<std::pair<ItemIndex, CollisionVolume>>> m_itemVolume;
+	std::vector<std::vector<ActorIndex>> m_actors;
+	std::vector<std::vector<ItemIndex>> m_items;
 	std::vector<PlantIndex> m_plants;
 	std::vector<CollisionVolume> m_dynamicVolume;
 	std::vector<CollisionVolume> m_staticVolume;
@@ -334,28 +336,27 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, const Fluid
 	void shape_removeStaticVolume(BlockIndex index, CollisionVolume volume);
 	[[nodiscard]] bool shape_anythingCanEnterEver(BlockIndex index) const;
 	// CanEnter methods which are not prefixed with static are to be used only for dynamic shapes.
-	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(BlockIndex index, const Shape& shape, const MoveType& moveType, const Facing facing, std::vector<BlockIndex>& occupied) const;
-	[[nodiscard]] std::pair<bool, Facing> shape_canEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, const Shape& shape, std::unordered_set<BlockIndex>& occupied) const;
-	[[nodiscard]] bool shape_canEnterCurrentlyWithAnyFacing(BlockIndex index, const Shape& shape, std::unordered_set<BlockIndex>& occupied) const;
+	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(BlockIndex index, const Shape& shape, const MoveType& moveType, const Facing facing, const std::vector<BlockIndex>& occupied) const;
+	[[nodiscard]] std::pair<bool, Facing> shape_canEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, const Shape& shape, const std::unordered_set<BlockIndex>& occupied) const;
+	[[nodiscard]] bool shape_canEnterCurrentlyWithAnyFacing(BlockIndex index, const Shape& shape, const std::unordered_set<BlockIndex>& occupied) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverFrom(BlockIndex index, const Shape& shape, const MoveType& moveType, const BlockIndex block) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverWithFacing(BlockIndex index, const Shape& shape, const MoveType& moveType, const Facing facing) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(BlockIndex index, const Shape& shape, const MoveType& moveType) const;
-	[[nodiscard]] bool shape_canEnterCurrentlyFrom(BlockIndex index, const Shape& shape, BlockIndex other, std::unordered_set<BlockIndex>& occupied) const;
-	[[nodiscard]] bool shape_canEnterCurrentlyWithFacing(BlockIndex index, const Shape& shape, Facing facing, std::unordered_set<BlockIndex>& occupied) const;
+	[[nodiscard]] bool shape_canEnterCurrentlyFrom(BlockIndex index, const Shape& shape, BlockIndex other, const std::unordered_set<BlockIndex>& occupied) const;
+	[[nodiscard]] bool shape_canEnterCurrentlyWithFacing(BlockIndex index, const Shape& shape, Facing facing, const std::unordered_set<BlockIndex>& occupied) const;
 	[[nodiscard]] bool shape_moveTypeCanEnter(BlockIndex index, const MoveType& moveType) const;
 	[[nodiscard]] bool shape_moveTypeCanEnterFrom(BlockIndex index, const MoveType& moveType, const BlockIndex from) const;
 	[[nodiscard]] bool shape_moveTypeCanBreath(BlockIndex index, const MoveType& moveType) const;
 	// Static shapes are items or actors who are laying on the ground immobile.
 	// They do not collide with dynamic shapes and have their own volume data.
-	[[nodiscard]] bool shape_staticCanEnterCurrentlyWithFacing(BlockIndex index, const Shape& Shape, const Facing& facing, std::unordered_set<BlockIndex>& occupied) const;
-	[[nodiscard]] bool shape_staticCanEnterCurrentlyWithAnyFacing(BlockIndex index, const Shape& shape, std::unordered_set<BlockIndex>& occupied) const;
-	[[nodiscard]] std::pair<bool, Facing> shape_staticCanEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, const Shape& shape, std::unordered_set<BlockIndex>& occupied) const;
-	[[nodiscard]] bool shape_staticShapeCanEnterWithFacing(BlockIndex index, const Shape& shape, Facing facing, std::unordered_set<BlockIndex>& occupied) const;
-	[[nodiscard]] bool shape_staticShapeCanEnterWithAnyFacing(BlockIndex index, const Shape& shape, std::unordered_set<BlockIndex>& occupied) const;
+	[[nodiscard]] bool shape_staticCanEnterCurrentlyWithFacing(BlockIndex index, const Shape& Shape, const Facing& facing, const std::unordered_set<BlockIndex>& occupied) const;
+	[[nodiscard]] bool shape_staticCanEnterCurrentlyWithAnyFacing(BlockIndex index, const Shape& shape, const std::unordered_set<BlockIndex>& occupied) const;
+	[[nodiscard]] std::pair<bool, Facing> shape_staticCanEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, const Shape& shape, const std::unordered_set<BlockIndex>& occupied) const;
+	[[nodiscard]] bool shape_staticShapeCanEnterWithFacing(BlockIndex index, const Shape& shape, Facing facing, const std::unordered_set<BlockIndex>& occupied) const;
+	[[nodiscard]] bool shape_staticShapeCanEnterWithAnyFacing(BlockIndex index, const Shape& shape, const std::unordered_set<BlockIndex>& occupied) const;
 	[[nodiscard]] MoveCost shape_moveCostFrom(BlockIndex index, const MoveType& moveType, const BlockIndex from) const;
 	[[nodiscard]] bool shape_canStandIn(BlockIndex index) const;
 	[[nodiscard]] CollisionVolume shape_getDynamicVolume(BlockIndex index) const;
-	[[nodiscard]] bool shape_contains(BlockIndex index, Shape& shape) const;
 	[[nodiscard]] CollisionVolume shape_getStaticVolume(BlockIndex index) const;
 	[[nodiscard]] std::unordered_map<Shape*, CollisionVolume>& shape_getShapes(BlockIndex index);
 	[[nodiscard]] Quantity shape_getQuantityOfItemWhichCouldFit(BlockIndex index, const ItemType& itemType) const;

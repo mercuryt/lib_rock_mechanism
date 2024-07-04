@@ -1,4 +1,5 @@
 #include "itemQuery.h"
+#include "items/items.h"
 #include "simulation.h"
 #include "simulation/hasItems.h"
 #include "materialType.h"
@@ -34,7 +35,7 @@ bool ItemQuery::query(Area& area, const ItemIndex item) const
 {
 	if(m_item != ITEM_INDEX_MAX)
 		return item == m_item;
-	Items& items = area.m_items;
+	Items& items = area.getItems();
 	if(m_itemType != &items.getItemType(item))
 		return false;
 	if(m_materialTypeCategory != nullptr)
@@ -50,7 +51,7 @@ bool ItemQuery::operator==(const ItemQuery& itemQuery) const
 }
 void ItemQuery::specalize(Area& area, ItemIndex item)
 {
-	assert(m_itemType != nullptr && m_item == BLOCK_INDEX_MAX && &area.m_items.getItemType(item) == m_itemType);
+	assert(m_itemType != nullptr && m_item == BLOCK_INDEX_MAX && &area.getItems().getItemType(item) == m_itemType);
 	m_item = item;
 	m_itemType = nullptr;
 }

@@ -1,6 +1,7 @@
 #include "visionCuboid.h"
 #include "area.h"
 #include "types.h"
+#include "blocks/blocks.h"
 void AreaHasVisionCuboids::initalize(Area& area)
 {
 	m_area = &area;
@@ -124,7 +125,7 @@ VisionCuboid::VisionCuboid(Area& area, Cuboid& cuboid, VisionCuboidId id) : m_ar
 	assert(blocks.canSeeThrough(cuboid.m_highest));
 	assert(blocks.canSeeThrough(cuboid.m_lowest));
 	for(BlockIndex block : cuboid) 
-		m_area.m_hasActors.m_visionCuboids.set(block, *this);
+		m_area.m_visionCuboids.set(block, *this);
 }
 bool VisionCuboid::canCombineWith(const Cuboid& cuboid) const
 {
@@ -146,7 +147,7 @@ void VisionCuboid::splitAt(BlockIndex split)
 	assert(m_cuboid.contains(split));
 	//TODO: reuse
 	m_destroy = true;
-	m_area.m_hasActors.m_visionCuboids.unset(split);
+	m_area.m_visionCuboids.unset(split);
 	std::vector<Cuboid> newCuboids;
 	newCuboids.reserve(6);
 	Blocks& blocks = m_area.getBlocks();
@@ -173,9 +174,9 @@ void VisionCuboid::splitAt(BlockIndex split)
 		newCuboids.emplace_back(blocks, blocks.getIndex({splitCoordinates.x, splitCoordinates.y, highCoordinates.z}), blocks.getIndex({splitCoordinates.x, splitCoordinates.y, splitCoordinates.z + 1}));
 	for(Cuboid& cuboid : newCuboids)
 	{
-		VisionCuboid* toCombine = m_area.m_hasActors.m_visionCuboids.getTargetToCombineWith(cuboid);
+		VisionCuboid* toCombine = m_area.m_visionCuboids.getTargetToCombineWith(cuboid);
 		if(toCombine == nullptr)
-			m_area.m_hasActors.m_visionCuboids.emplace(cuboid);
+			m_area.m_visionCuboids.emplace(cuboid);
 		else
 			toCombine->extend(cuboid);
 	}
@@ -200,9 +201,9 @@ void VisionCuboid::splitBelow(BlockIndex split)
 	for(Cuboid& newCuboid : newCuboids)
 	{
 		assert(!newCuboid.empty());
-		VisionCuboid* toCombine = m_area.m_hasActors.m_visionCuboids.getTargetToCombineWith(newCuboid);
+		VisionCuboid* toCombine = m_area.m_visionCuboids.getTargetToCombineWith(newCuboid);
 		if(toCombine == nullptr)
-			m_area.m_hasActors.m_visionCuboids.emplace(newCuboid);
+			m_area.m_visionCuboids.emplace(newCuboid);
 		else
 		{
 			assert(!newCuboid.overlapsWith(toCombine->m_cuboid));
@@ -219,7 +220,7 @@ void VisionCuboid::extend(Cuboid& cuboid)
 	assert(blocks.canSeeThrough(cuboid.m_highest));
 	assert(blocks.canSeeThrough(cuboid.m_lowest));
 	Cuboid newCuboid = m_cuboid.sum(cuboid);
-	VisionCuboid* toCombine = m_area.m_hasActors.m_visionCuboids.getTargetToCombineWith(newCuboid);
+	VisionCuboid* toCombine = m_area.m_visionCuboids.getTargetToCombineWith(newCuboid);
 	if(toCombine != nullptr)
 	{
 		m_destroy = true;
@@ -227,7 +228,7 @@ void VisionCuboid::extend(Cuboid& cuboid)
 		return;
 	}
 	for(BlockIndex block : cuboid) 
-		m_area.m_hasActors.m_visionCuboids.set(block, *this);
+		m_area.m_visionCuboids.set(block, *this);
 	m_cuboid = newCuboid;
 }
 bool VisionCuboid::canSeeInto(const Cuboid& other) const

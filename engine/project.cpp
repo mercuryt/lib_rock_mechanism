@@ -7,6 +7,9 @@
 #include "reservable.h"
 #include "simulation.h"
 #include "simulation/hasItems.h"
+#include "actors/actors.h"
+#include "items/items.h"
+#include "blocks/blocks.h"
 #include <algorithm>
 #include <memory>
 #include <unordered_map>
@@ -52,25 +55,24 @@ void ProjectRequiredShapeDishonoredCallback::execute(Quantity oldCount, Quantity
 }
 ProjectFinishEvent::ProjectFinishEvent(const Step delay, Project& p, const Step start) : 
 	ScheduledEvent(p.m_area.m_simulation, delay, start), m_project(p) { }
-void ProjectFinishEvent::execute() { m_project.complete(); }
-void ProjectFinishEvent::clearReferences() { m_project.m_finishEvent.clearPointer(); }
+void ProjectFinishEvent::execute(Simulation&, Area*) { m_project.complete(); }
+void ProjectFinishEvent::clearReferences(Simulation&, Area*) { m_project.m_finishEvent.clearPointer(); }
 ProjectTryToHaulEvent::ProjectTryToHaulEvent(const Step delay, Project& p, const Step start) : 
 	ScheduledEvent(p.m_area.m_simulation, delay, start), m_project(p) { }
-void ProjectTryToHaulEvent::execute() { m_project.m_tryToHaulThreadedTask.create(m_project); }
-void ProjectTryToHaulEvent::clearReferences() { m_project.m_tryToHaulEvent.clearPointer(); }
+void ProjectTryToHaulEvent::execute(Simulation&, Area*) { m_project.m_tryToHaulThreadedTask.create(m_project); }
+void ProjectTryToHaulEvent::clearReferences(Simulation&, Area*) { m_project.m_tryToHaulEvent.clearPointer(); }
 ProjectTryToReserveEvent::ProjectTryToReserveEvent(const Step delay, Project& p, const Step start) : 
 	ScheduledEvent(p.m_area.m_simulation, delay, start), m_project(p) { }
-void ProjectTryToReserveEvent::execute() 
+void ProjectTryToReserveEvent::execute(Simulation&, Area*) 
 { 
 	m_project.setDelayOff();
 }
-void ProjectTryToReserveEvent::clearReferences() { m_project.m_tryToReserveEvent.clearPointer(); }
+void ProjectTryToReserveEvent::clearReferences(Simulation&, Area*) { m_project.m_tryToReserveEvent.clearPointer(); }
 
-ProjectTryToMakeHaulSubprojectThreadedTask::ProjectTryToMakeHaulSubprojectThreadedTask(Project& p) : 
-	ThreadedTask(p.m_area.m_simulation.m_threadedTaskEngine), m_project(p) { }
-void ProjectTryToMakeHaulSubprojectThreadedTask::readStep()
+ProjectTryToMakeHaulSubprojectThreadedTask::ProjectTryToMakeHaulSubprojectThreadedTask(Project& p) : m_project(p) { }
+void ProjectTryToMakeHaulSubprojectThreadedTask::readStep(Simulation&, Area*)
 {
-	Actors& actors = m_project.m_area.m_actors;
+	Actors& actors = m_project.m_area.getActors();
 	for(auto& [actor, projectWorker] : m_project.m_workers)
 	{
 		if(projectWorker.haulSubproject != nullptr)
@@ -84,7 +86,7 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::readStep()
 			return;
 	}
 }
-void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep()
+void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep(Simulation&, Area*)
 {
 	if(m_haulProjectParamaters.strategy == HaulStrategy::None)
 	{
@@ -122,7 +124,7 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep()
 		m_project.onSubprojectCreated(subproject);
 	}
 }
-void ProjectTryToMakeHaulSubprojectThreadedTask::clearReferences() { m_project.m_tryToHaulThreadedTask.clearPointer(); }
+void ProjectTryToMakeHaulSubprojectThreadedTask::clearReferences(Simulation&, Area*) { m_project.m_tryToHaulThreadedTask.clearPointer(); }
 bool ProjectTryToMakeHaulSubprojectThreadedTask::blockContainsDesiredItem(const BlockIndex block, ActorIndex actor)
 {
 	auto& blocks = m_project.m_area.getBlocks();
@@ -135,9 +137,8 @@ bool ProjectTryToMakeHaulSubprojectThreadedTask::blockContainsDesiredItem(const 
 		}
 	return false;
 };
-ProjectTryToAddWorkersThreadedTask::ProjectTryToAddWorkersThreadedTask(Project& p) :
-       	ThreadedTask(p.m_area.m_simulation.m_threadedTaskEngine), m_project(p) { }
-void ProjectTryToAddWorkersThreadedTask::readStep()
+ProjectTryToAddWorkersThreadedTask::ProjectTryToAddWorkersThreadedTask(Project& p) : m_project(p) { }
+void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 {
 	// Iterate candidate workers, verify that they can path to the project
 	// location.  Accumulate resources that they can path to untill reservations
@@ -145,8 +146,8 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 	// If reservations are not complete flush the data from project.
 	// TODO: Unwisely modifing data out side the object durring read step.
 	std::unordered_set<ActorOrItemIndex, ActorOrItemIndex::Hash> recordedShapes;
-	Actors& actors = m_project.m_area.m_actors;
-	Items& items = m_project.m_area.m_items;
+	Actors& actors = m_project.m_area.getActors();
+	Items& items = m_project.m_area.getItems();
 	for(auto& [candidate, objective] : m_project.m_workerCandidatesAndTheirObjectives)
 	{
 		assert(!m_project.getWorkers().contains(candidate));
@@ -160,7 +161,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 		}
 		if(!m_project.reservationsComplete())
 		{
-			for(ItemIndex item : actors.getEquipmentSet(candidate).getAll())
+			for(ItemIndex item : actors.equipment_getAll(candidate))
 				for(auto& [itemQuery, projectRequirementCounts] : m_project.m_requiredItems)
 				{
 					if(projectRequirementCounts.required == projectRequirementCounts.reserved)
@@ -272,12 +273,12 @@ void ProjectTryToAddWorkersThreadedTask::readStep()
 				actors.onDestroy_subscribe(pair.first.get(), m_hasOnDestroy);
 	}
 }
-void ProjectTryToAddWorkersThreadedTask::writeStep()
+void ProjectTryToAddWorkersThreadedTask::writeStep(Simulation&, Area*)
 {
 	m_hasOnDestroy.unsubscribeAll();
 	std::unordered_set<ActorIndex> toReleaseWithProjectDelay = m_cannotPathToJobSite;
-	Items& items = m_project.m_area.m_items;
-	Actors& actors = m_project.m_area.m_actors;
+	Items& items = m_project.m_area.getItems();
+	Actors& actors = m_project.m_area.getActors();
 	if(m_project.reservationsComplete())
 	{
 		// If workers exist already then required are already reserved.
@@ -347,10 +348,10 @@ void ProjectTryToAddWorkersThreadedTask::writeStep()
 	for(ActorIndex actor : toReleaseWithProjectDelay)
 		actors.objective_projectCannotReserve(actor);
 }
-void ProjectTryToAddWorkersThreadedTask::clearReferences() { m_project.m_tryToAddWorkersThreadedTask.clearPointer(); }
+void ProjectTryToAddWorkersThreadedTask::clearReferences(Simulation&, Area*) { m_project.m_tryToAddWorkersThreadedTask.clearPointer(); }
 bool ProjectTryToAddWorkersThreadedTask::validate()
 {
-	Items& items = m_project.m_area.m_items;
+	Items& items = m_project.m_area.getItems();
 	// Require some workers can reach the job site.
 	if(m_project.m_workerCandidatesAndTheirObjectives.empty())
 		return false;
@@ -382,15 +383,15 @@ void ProjectTryToAddWorkersThreadedTask::resetProjectCounts()
 	m_project.m_toPickup.clear();
 }
 // Derived classes are expected to provide getDuration, getConsumedItems, getUnconsumedItems, getByproducts, onDelay, offDelay, and onComplete.
-Project::Project(Faction* f, Area& a, BlockIndex l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback) : 
-	m_finishEvent(a.m_simulation.m_eventSchedule), 
-	m_tryToHaulEvent(a.m_simulation.m_eventSchedule), 
-	m_tryToReserveEvent(a.m_simulation.m_eventSchedule),
-       	m_tryToHaulThreadedTask(a.m_simulation.m_threadedTaskEngine), 
-	m_tryToAddWorkersThreadedTask(a.m_simulation.m_threadedTaskEngine), 
+Project::Project(Faction& f, Area& a, BlockIndex l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback) : 
+	m_finishEvent(a.m_eventSchedule), 
+	m_tryToHaulEvent(a.m_eventSchedule), 
+	m_tryToReserveEvent(a.m_eventSchedule),
+       	m_tryToHaulThreadedTask(a.m_threadedTaskEngine), 
+	m_tryToAddWorkersThreadedTask(a.m_threadedTaskEngine), 
 	m_canReserve(f), 
 	m_area(a), 
-	m_faction(*f), 
+	m_faction(f), 
 	m_location(l),
 	m_minimumMoveSpeed(Config::minimumHaulSpeedInital), 
 	m_maxWorkers(mw)
@@ -619,7 +620,7 @@ void Project::recordRequiredActorsAndItems()
 void Project::addWorker(ActorIndex actor, Objective& objective)
 {
 	assert(!m_workers.contains(actor));
-	assert(m_area.m_actors.isSentient(actor));
+	assert(m_area.getActors().isSentient(actor));
 	assert(canAddWorker(actor));
 	// Initalize a ProjectWorker for this worker.
 	m_workers.emplace(actor, objective);
@@ -627,7 +628,7 @@ void Project::addWorker(ActorIndex actor, Objective& objective)
 }
 void Project::addWorkerCandidate(ActorIndex actor, Objective& objective)
 {
-	Actors& actors = m_area.m_actors;
+	Actors& actors = m_area.getActors();
 	assert(actors.project_exists(actor));
 	assert(canAddWorker(actor));
 	actors.project_set(actor, *this);
@@ -647,7 +648,7 @@ void Project::removeWorkerCandidate(ActorIndex actor)
 // To be called by Objective::execute.
 void Project::commandWorker(ActorIndex actor)
 {
-	Actors & actors = m_area.m_actors;
+	Actors & actors = m_area.getActors();
 	if(!m_workers.contains(actor))
 	{
 		assert(std::ranges::find(m_workerCandidatesAndTheirObjectives, actor, &std::pair<ActorIndex, Objective*>::first) != m_workerCandidatesAndTheirObjectives.end());
@@ -713,8 +714,8 @@ void Project::commandWorker(ActorIndex actor)
 // To be called by Objective::cancel, Objective::delay.
 void Project::removeWorker(ActorIndex actor)
 {
-	Actors& actors = m_area.m_actors;
-	Items& items = m_area.m_items;
+	Actors& actors = m_area.getActors();
+	Items& items = m_area.getItems();
 	assert(actors.project_get(actor) == this);
 	if(hasCandidate(actor))
 	{
@@ -761,8 +762,8 @@ void Project::removeFromMaking(ActorIndex actor)
 }
 void Project::complete()
 {
-	Items& items = m_area.m_items;
-	Actors& actors = m_area.m_actors;
+	Items& items = m_area.getItems();
+	Actors& actors = m_area.getActors();
 	m_canReserve.deleteAllWithoutCallback();
 	auto& blocks = m_area.getBlocks();
 	blocks.project_remove(m_location, *this);
@@ -816,7 +817,7 @@ void Project::haulSubprojectComplete(HaulSubproject& haulSubproject)
 }
 void Project::haulSubprojectCancel(HaulSubproject& haulSubproject)
 {
-	Actors& actors = m_area.m_actors;
+	Actors& actors = m_area.getActors();
 	addToPickup(haulSubproject.m_toHaul, haulSubproject.m_projectRequirementCounts, haulSubproject.m_quantity);
 	for(ActorIndex actor : haulSubproject.m_workers)
 	{
@@ -862,13 +863,13 @@ void Project::removeToPickup(ActorOrItemIndex actorOrItem, Quantity quantity)
 }
 void Project::reset()
 {
-	Actors& actors = m_area.m_actors;
+	Actors& actors = m_area.getActors();
 	assert(canReset());
 	m_finishEvent.maybeUnschedule();
 	m_tryToHaulEvent.maybeUnschedule();
 	m_tryToReserveEvent.maybeUnschedule();
-	m_tryToHaulThreadedTask.maybeCancel();
-	m_tryToAddWorkersThreadedTask.maybeCancel();
+	m_tryToHaulThreadedTask.maybeCancel(m_area.m_simulation, &m_area);
+	m_tryToAddWorkersThreadedTask.maybeCancel(m_area.m_simulation, &m_area);
 	m_toConsume.clear();
 	m_haulRetries = 0;
 	m_requiredItems.clear();

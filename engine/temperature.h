@@ -3,8 +3,6 @@
 #include "config.h"
 #include "eventSchedule.hpp"
 #include "simulation.h"
-#include "objective.h"
-#include "pathRequest.h"
 
 #include <unordered_set>
 #include <unordered_map>

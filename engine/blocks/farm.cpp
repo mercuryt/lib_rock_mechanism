@@ -1,6 +1,7 @@
 #include "blocks.h"
 #include "area.h"
 #include "simulation.h"
+#include "../plants.h"
 void Blocks::farm_insert(BlockIndex index, Faction& faction, FarmField& farmField)
 {
 	if(m_farmFields.contains(index))
@@ -21,7 +22,7 @@ void Blocks::farm_designateForHarvestIfPartOfFarmField(BlockIndex index, PlantIn
 {
 	if(m_farmFields.contains(index))
 	{
-		Plants& plants = m_area.m_plants;
+		Plants& plants = m_area.getPlants();
 		for(auto& [faction, farmField] : m_farmFields.at(index))
 			if(farmField->plantSpecies == &plants.getSpecies(plant))
 				m_area.m_hasFarmFields.at(*faction).addHarvestDesignation(plant);
@@ -31,7 +32,7 @@ void Blocks::farm_designateForGiveFluidIfPartOfFarmField(BlockIndex index, Plant
 {
 	if(m_farmFields.contains(index))
 	{
-		Plants& plants = m_area.m_plants;
+		Plants& plants = m_area.getPlants();
 		for(auto& [faction, farmField] : m_farmFields.at(index))
 			if(farmField->plantSpecies == &plants.getSpecies(plant))
 				m_area.m_hasFarmFields.at(*faction).addGivePlantFluidDesignation(plant);

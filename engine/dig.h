@@ -4,11 +4,9 @@
 //#include "input.h"
 #include "reservable.h"
 #include "types.h"
-#include "objective.h"
 #include "eventSchedule.hpp"
 #include "project.h"
 #include "config.h"
-#include "pathRequest.h"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -51,7 +49,7 @@ class DigProject final : public Project
 	// What would the total delay time be if we started from scratch now with current workers?
 public:
 	// BlockFeatureType can be null, meaning the block is to be fully excavated.
-	DigProject(Faction* faction, Area& area, BlockIndex block, const BlockFeatureType* bft, std::unique_ptr<DishonorCallback> locationDishonorCallback) : 
+	DigProject(Faction& faction, Area& area, BlockIndex block, const BlockFeatureType* bft, std::unique_ptr<DishonorCallback> locationDishonorCallback) : 
 		Project(faction, area, block, Config::maxNumberOfWorkersForDigProject, std::move(locationDishonorCallback)), m_blockFeatureType(bft) { }
 	DigProject(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;

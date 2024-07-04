@@ -34,6 +34,7 @@ void Area::stepCaveInRead()
 	bool chunkFound;
 	bool blockIsAnchored;
 	bool prioritizeAdjacent;
+	Blocks& blocks = getBlocks();
 	while(!blockQueue.empty() && checklist.size() != 0)
 	{
 		BlockIndex block = blockQueue.front();
@@ -48,7 +49,7 @@ void Area::stepCaveInRead()
 		// We want to push_front the bottom block when no anchored chunks have been found.
 		// This lets the algorithum start by trying to go straight down to establish an anchor point asap.
 		// Once one point is anchored the chunks will expand in a spherical shape until they touch or anchor.
-		for(BlockIndex adjacent : m_blocks.getDirectlyAdjacent(block))
+		for(BlockIndex adjacent : blocks.getDirectlyAdjacent(block))
 		{
 			// If this block is on the edge of the area then it is anchored.
 			if(adjacent == BLOCK_INDEX_MAX)
@@ -58,10 +59,10 @@ void Area::stepCaveInRead()
 			}
 
 			// If adjacent is not support then skip it.
-			if(!m_blocks.isSupport(adjacent))
+			if(!blocks.isSupport(adjacent))
 			{
 				// Prioritize others if this is looking straight down.
-				if(adjacent == m_blocks.getBlockBelow(block))
+				if(adjacent == blocks.getBlockBelow(block))
 					prioritizeAdjacent = true;
 				continue;
 			}
@@ -102,7 +103,7 @@ void Area::stepCaveInRead()
 			{
 				// Put the below block (index 0) at the front of the queue until a first anchor is established.
 				// If the below block is not support then prioritize all adjacent to get around the void.
-				if(anchoredChunks.empty() && (prioritizeAdjacent || adjacent == m_blocks.getBlockBelow(block)))
+				if(anchoredChunks.empty() && (prioritizeAdjacent || adjacent == blocks.getBlockBelow(block)))
 					blockQueue.push_front(adjacent);
 				else
 					toAddToBlockQueue.push(adjacent);
@@ -142,11 +143,11 @@ void Area::stepCaveInRead()
 			for(BlockIndex block : chunk)
 			{
 				DistanceInBlocks verticalFallDistance = 0;
-				BlockIndex below = m_blocks.getBlockBelow(block);
-				while(below != BLOCK_INDEX_MAX && !m_blocks.isSupport(below))
+				BlockIndex below = blocks.getBlockBelow(block);
+				while(below != BLOCK_INDEX_MAX && !blocks.isSupport(below))
 				{
 					verticalFallDistance++;
-					below = m_blocks.getBlockBelow(below);
+					below = blocks.getBlockBelow(below);
 				}
 				// Ignore blocks which are not on the bottom of the shape and internal voids.
 				// TODO: Allow user to do something with blocksAbsorbingImpact.
@@ -170,7 +171,7 @@ void Area::stepCaveInRead()
 			// Calculate energy of fall.
 			uint32_t fallEnergy = 0;
 			for(BlockIndex block : chunk)
-				fallEnergy += m_blocks.getMass(block);
+				fallEnergy += blocks.getMass(block);
 			fallEnergy *= smallestFallDistance;
 			
 			// Store result to apply inside a write mutex after sorting.
@@ -180,7 +181,6 @@ void Area::stepCaveInRead()
 
 	// Sort by z low to high so blocks don't overwrite eachother when moved down.
 	// TODO: why is it necessary to alias m_blocks like this? Clangd throws a compile error.
-	Blocks& blocks = m_blocks;
 	auto compare = [&blocks](BlockIndex a, BlockIndex b) { return blocks.getZ(a) < blocks.getZ(b); };
 	for(auto& [chunk, fallDistance, fallEnergy] : fallingChunksWithDistanceAndEnergy)
 	{
@@ -206,10 +206,10 @@ void Area::stepCaveInWrite()
 			below = block;
 			while(zDiff)
 			{
-				below = m_blocks.getBlockBelow(below);
+				below = m_blocks->getBlockBelow(below);
 				zDiff--;
 			}
-			m_blocks.moveContentsTo(block, below);
+			m_blocks->moveContentsTo(block, below);
 		}
 		// We don't know if the thing we landed on was it's self anchored so add a block to caveInCheck to be checked next step.
 		m_caveInCheck.insert(below);

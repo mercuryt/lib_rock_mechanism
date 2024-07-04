@@ -22,6 +22,5 @@ public:
 	Json toJson() const;
 	[[nodiscard]] ItemId getNextId() { return ++m_nextId; }
 	void registerItem(ItemId id, Items& store, ItemIndex index);
-	void moveItem(ItemId id, Items& store, ItemIndex index);
 	void removeItem(ItemId id);
 };

@@ -1,6 +1,7 @@
 #include "opacityFacade.h"
 #include "area.h"
 #include "types.h"
+#include "blocks/blocks.h"
 
 OpacityFacade::OpacityFacade(Area& area) : m_area(area) { }
 void OpacityFacade::initalize()

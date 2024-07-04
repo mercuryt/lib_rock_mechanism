@@ -4,20 +4,23 @@
 #include "../farmFields.h"
 #include "../objective.h"
 #include "../simulation.h"
+#include "../actors/actors.h"
+#include "../blocks/blocks.h"
+#include "../plants.h"
 #include <memory>
 // Event.
-HarvestEvent::HarvestEvent(Area& area, Step delay, HarvestObjective& ho, const Step start) :
+HarvestEvent::HarvestEvent(Step delay, Area& area, HarvestObjective& ho, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_harvestObjective(ho) {}
 void HarvestEvent::execute(Simulation&, Area* area)
 {
-	Actors& actors = area->m_actors;
+	Actors& actors = area->getActors();
 	assert(m_harvestObjective.m_block != BLOCK_INDEX_MAX);
 	assert(actors.isAdjacentToLocation(m_harvestObjective.m_actor, m_harvestObjective.m_block));
 	Blocks& blocks = area->getBlocks();
 	if(!blocks.plant_exists(m_harvestObjective.m_block))
 		// Plant no longer exsits, try again.
 		m_harvestObjective.makePathRequest(*area);
-	Plants& plants = area->m_plants;
+	Plants& plants = area->getPlants();
 	PlantIndex plant = blocks.plant_get(m_harvestObjective.m_block);
 	ActorIndex actor = m_harvestObjective.m_actor;
 	static const MaterialType& plantMatter = MaterialType::byName("plant matter");
@@ -39,7 +42,7 @@ void HarvestEvent::clearReferences(Simulation&, Area*) { m_harvestObjective.m_ha
 // Objective type.
 bool HarvestObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
 {
-	return area.m_hasFarmFields.hasHarvestDesignations(*area.m_actors.getFaction(actor));
+	return area.m_hasFarmFields.hasHarvestDesignations(*area.getActors().getFaction(actor));
 }
 std::unique_ptr<Objective> HarvestObjectiveType::makeFor(Area& area, ActorIndex actor) const
 {
@@ -129,7 +132,7 @@ void HarvestObjective::begin(Area& area)
 	Plants& plants = area.getPlants();
 	assert(m_block != BLOCK_INDEX_MAX);
 	assert(plants.readyToHarvest(area.getBlocks().plant_get(m_block)));
-	m_harvestEvent.schedule(Config::harvestEventDuration, *this);
+	m_harvestEvent.schedule(Config::harvestEventDuration, area, *this);
 }
 void HarvestObjective::reset(Area& area)
 {
@@ -139,7 +142,7 @@ void HarvestObjective::reset(Area& area)
 void HarvestObjective::makePathRequest(Area& area)
 {
 	std::unique_ptr<PathRequest> pathRequest = std::make_unique<HarvestPathRequest>(area, *this);
-	area.m_actors.move_pathRequestRecord(m_actor, std::move(pathRequest));
+	area.getActors().move_pathRequestRecord(m_actor, std::move(pathRequest));
 }
 BlockIndex HarvestObjective::getBlockContainingPlantToHarvestAtLocationAndFacing(Area& area, BlockIndex location, Facing facing)
 {

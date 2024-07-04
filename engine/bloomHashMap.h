@@ -18,10 +18,19 @@ public:
 	auto insert(const Key& key, const Value& value)
 	{
 		assert(!contains(key)); 
-		if(bitset.size() <= key)
-			bitset.resize(key * 1.5);
+		// If an explicit initalSize of 0 is passed assume the size is to be set once and never change.
+		if constexpr(initalSize)
+			if(bitset.size() <= key)
+				bitset.resize(key * 1.5);
 		bitset.set(key);
 		return map.insert(std::make_pair(key, value));
+	}
+	auto try_emplace(const Key& key, const Value& value)
+	{
+		if(!contains(key))
+			return std::make_pair(map.end(), false);
+		else
+			return map.try_emplace(key, value);
 	}
 	auto erase(const Key& key)
 	{

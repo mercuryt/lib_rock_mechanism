@@ -20,7 +20,7 @@ StationObjective::StationObjective(const Json& data, DeserializationMemo& deseri
 	m_location(data["block"].get<BlockIndex>()) { }
 void StationObjective::execute(Area& area)
 {
-	Actors& actors = area.m_actors;
+	Actors& actors = area.getActors();
 	if(actors.getLocation(m_actor) != m_location)
 		// BlockIndex, detour, adjacent, unreserved, reserve
 		actors.move_setDestination(m_location, m_detour, false, false, false);

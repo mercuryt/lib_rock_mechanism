@@ -5,7 +5,12 @@
 #include "terrainFacade.h"
 #include "types.h"
 #include "util.h"
+#include "blockFeature.h"
 #include "simulation.h"
+#include "materialType.h"
+#include "actors/actors.h"
+#include "blocks/blocks.h"
+#include "objectives/construct.h"
 #include <memory>
 /*
 // Input.
@@ -152,7 +157,7 @@ void HasConstructionDesignationsForFaction::designate(BlockIndex block, const Bl
 	Blocks& blocks = m_area.getBlocks();
 	blocks.designation_set(block, m_faction, BlockDesignation::Construct);
 	std::unique_ptr<DishonorCallback> locationDishonorCallback = std::make_unique<ConstructionLocationDishonorCallback>(m_faction, m_area, block);
-	m_data.try_emplace(block, &m_faction, m_area, block, blockFeatureType, materialType, std::move(locationDishonorCallback));
+	m_data.try_emplace(block, m_faction, m_area, block, blockFeatureType, materialType, std::move(locationDishonorCallback));
 }
 void HasConstructionDesignationsForFaction::undesignate(BlockIndex block)
 {

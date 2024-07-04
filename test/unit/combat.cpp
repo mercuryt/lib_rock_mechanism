@@ -1,7 +1,9 @@
 #include "../../lib/doctest.h"
-#include "../../engine/actor.h"
+#include "../../engine/actors/actors.h"
+#include "../../engine/items/items.h"
+#include "../../engine/blocks/blocks.h"
+#include "../../engine/plants.h"
 #include "../../engine/area.h"
-#include "../../engine/item.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
@@ -9,7 +11,8 @@
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/materialType.h"
 #include "../../engine/animalSpecies.h"
-#include "types.h"
+#include "../../engine/types.h"
+#include "../../engine/itemType.h"
 #include <functional>
 TEST_CASE("combat")
 {
@@ -17,105 +20,124 @@ TEST_CASE("combat")
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
+	Actors& actors = area.getActors();
+	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	Faction faction(L"tower of power");
 	area.m_hasStockPiles.registerFaction(faction);
-	Actor& dwarf1 = simulation.m_hasActors->createActor(ActorParamaters{
+	ActorIndex dwarf1 = actors.create({
 		.species=AnimalSpecies::byName("dwarf"),
 		.location=blocks.getIndex({1, 1, 1}),
-		.area=&area,
 		.hasCloths=false,
 		.hasSidearm=false,
 	});
-	dwarf1.setFaction(&faction);
-	Item& pants = simulation.m_hasItems->createItemNongeneric(ItemType::byName("pants"), MaterialType::byName("plant matter"), 50u, 10);
-	dwarf1.m_equipmentSet.addEquipment(pants);
+	actors.setFaction(dwarf1, &faction);
+	ItemIndex pants = items.create({
+		.itemType=ItemType::byName("pants"),
+		.materialType=MaterialType::byName("plant matter"),
+		.quality=50u,
+		.percentWear=10
+	});
+	actors.equipment_add(dwarf1, pants);
 	SUBCASE("attack table")
 	{
-		auto& attackTable = dwarf1.m_canFight.getAttackTable();
-		REQUIRE(attackTable.size() == dwarf1.m_body.getMeleeAttacks().size());
+		auto& attackTable = actors.combat_getAttackTable(dwarf1);
+		REQUIRE(attackTable.size() == actors.combat_getMeleeAttacks(dwarf1).size());
 		REQUIRE(attackTable.size() == 4);
-		REQUIRE(dwarf1.m_canFight.getCombatScore() == 26);
-		REQUIRE(dwarf1.m_canFight.getMaxRange() == 1.5f);
-		REQUIRE(dwarf1.m_canFight.getCoolDownDurationModifier() == 1.f);
+		REQUIRE(actors.combat_getCombatScore(dwarf1) == 26);
+		REQUIRE(actors.combat_getMaxRange(dwarf1) == 1.5f);
+		REQUIRE(actors.combat_getCoolDownDurationModifier(dwarf1) == 1.f);
 	}
 	SUBCASE("strike rabbit")
 	{
-		uint32_t initalScore = dwarf1.m_canFight.getCombatScore();
-		Item& longsword = simulation.m_hasItems->createItemNongeneric(ItemType::byName("long sword"), MaterialType::byName("bronze"), 50u, 10);
-		dwarf1.m_equipmentSet.addEquipment(longsword);
-		Item& pants = simulation.m_hasItems->createItemNongeneric(ItemType::byName("pants"), MaterialType::byName("plant matter"), 50u, 10);
-		dwarf1.m_equipmentSet.addEquipment(pants);
-		REQUIRE(dwarf1.m_canFight.getCombatScore() > initalScore);
-		Actor& rabbit = simulation.m_hasActors->createActor({
-			.species=AnimalSpecies::byName("dwarf rabbit"),
-			.location=blocks.getIndex({2, 2, 1}),
-			.area=&area,
+		uint32_t initalScore = actors.combat_getCombatScore(dwarf1);
+		ItemIndex longsword = items.create({
+			.itemType=ItemType::byName("long sword"),
+			.materialType=MaterialType::byName("bronze"),
+			.quality=50u,
+			.percentWear=10
 		});
-		REQUIRE(rabbit.m_canFight.getCombatScore() < dwarf1.m_canFight.getCombatScore());
-		dwarf1.m_canFight.setTarget(rabbit);
-		REQUIRE(dwarf1.m_canFight.inRange(rabbit));
-		REQUIRE(!rabbit.m_body.isInjured());
-		dwarf1.m_canFight.attackMeleeRange(rabbit);
-		REQUIRE(rabbit.m_body.isInjured());
+		actors.equipment_add(dwarf1, longsword);
+		ItemIndex pants = items.create({
+			.itemType=ItemType::byName("pants"),
+			.materialType=MaterialType::byName("plant matter"),
+			.quality=50u,
+			.percentWear=10,
+		});
+		actors.equipment_add(dwarf1, pants);
+		REQUIRE(actors.combat_getCombatScore(dwarf1) > initalScore);
+		ActorIndex rabbit = actors.create({
+			.species=AnimalSpecies::byName("dwarf rabbit"),
+			.location=blocks.getIndex(2, 2, 1),
+		});
+		REQUIRE(actors.combat_getCombatScore(rabbit) < actors.combat_getCombatScore(dwarf1));
+		actors.combat_setTarget(dwarf1, rabbit);
+		REQUIRE(actors.combat_inRange(dwarf1, rabbit));
+		REQUIRE(!actors.body_isInjured(rabbit));
+		actors.combat_attackMeleeRange(dwarf1, rabbit);
+		REQUIRE(actors.body_isInjured(rabbit));
 	}
 	SUBCASE("path to rabbit")
 	{
-		Actor& rabbit = simulation.m_hasActors->createActor({
+		ActorIndex rabbit = actors.create({
 			.species=AnimalSpecies::byName("dwarf rabbit"),
 			.location=blocks.getIndex({5, 5, 1}),
-			.area=&area,
 		});
-		dwarf1.m_canFight.setTarget(rabbit);
-		REQUIRE(dwarf1.m_canFight.hasThreadedTask());
+		actors.combat_setTarget(dwarf1, rabbit);
+		REQUIRE(actors.move_hasPathRequest(dwarf1));
 		simulation.doStep();
-		REQUIRE(dwarf1.m_canMove.getDestination() != BLOCK_INDEX_MAX);
-		REQUIRE(rabbit.isAdjacentTo(dwarf1.m_canMove.getDestination()));
+		REQUIRE(actors.move_getDestination(dwarf1) != BLOCK_INDEX_MAX);
+		REQUIRE(actors.isAdjacentToLocation(rabbit, actors.move_getDestination(dwarf1)));
 	}
 	SUBCASE("adjacent allies boost combat score")
 	{
-		uint32_t initalScore = dwarf1.m_canFight.getCurrentMeleeCombatScore();
-		Actor& dwarf2 = simulation.m_hasActors->createActor({
+		uint32_t initalScore = actors.combat_getCurrentMeleeCombatScore(dwarf1);
+		actors.create({
 			.species=AnimalSpecies::byName("dwarf"),
 			.location=blocks.getIndex({2, 1, 1}),
-			.area=&area,
+			.faction=&faction
 		});
-		dwarf2.setFaction(&faction);
-		REQUIRE(dwarf1.m_canFight.getCurrentMeleeCombatScore() > initalScore);
+		REQUIRE(actors.combat_getCurrentMeleeCombatScore(dwarf1) > initalScore);
 	}
 	SUBCASE("flanking enemies reduce combat score")
 	{
-		uint32_t initalScore = dwarf1.m_canFight.getCurrentMeleeCombatScore();
-		simulation.m_hasActors->createActor({
+		uint32_t initalScore = actors.combat_getCombatScore(dwarf1);
+		actors.create({
 			.species=AnimalSpecies::byName("dwarf rabbit"),
 			.location=blocks.getIndex({2, 1, 1}),
-			.area=&area,
 		});
-		simulation.m_hasActors->createActor({
+		actors.create({
 			.species=AnimalSpecies::byName("dwarf rabbit"),
 			.location=blocks.getIndex({1, 2, 1}),
-			.area=&area,
 		});
-		REQUIRE(dwarf1.m_canFight.getCurrentMeleeCombatScore() < initalScore);
+		REQUIRE(actors.combat_getCombatScore(dwarf1) < initalScore);
 	}
 	SUBCASE("shoot rabbit")
 	{
-		Item& crossbow = simulation.m_hasItems->createItemNongeneric(ItemType::byName("crossbow"), MaterialType::byName("poplar wood"), 50u, 10u);
-		dwarf1.m_equipmentSet.addEquipment(crossbow);
-		Item& ammo = simulation.m_hasItems->createItemGeneric(ItemType::byName("crossbow bolt"), MaterialType::byName("bronze"), 1u);
-		dwarf1.m_equipmentSet.addEquipment(ammo);
-		Actor& rabbit = simulation.m_hasActors->createActor({
+		ItemIndex crossbow = items.create({
+			.itemType=ItemType::byName("crossbow"),
+			.materialType=MaterialType::byName("poplar wood"),
+			.quality=50u,
+			.percentWear=10u
+		});
+		actors.equipment_add(dwarf1, crossbow);
+		ItemIndex ammo = items.create({
+			.itemType=ItemType::byName("crossbow bolt"),
+			.materialType=MaterialType::byName("bronze"),
+			.quantity=1u
+		});
+		actors.equipment_add(dwarf1, ammo);
+		ActorIndex rabbit = actors.create({
 			.species=AnimalSpecies::byName("dwarf rabbit"),
 			.location=blocks.getIndex({3, 3, 1}),
-			.area=&area,
 		});
-		dwarf1.m_canFight.setTarget(rabbit);
-		REQUIRE(dwarf1.m_canFight.inRange(rabbit));
-		AttackType& attackType = dwarf1.m_canFight.getRangedAttackType(crossbow);
-		Attack attack(&attackType, &ammo.m_materialType, &crossbow);
-		REQUIRE(dwarf1.m_canFight.projectileHitPercent(attack, rabbit) >= 100);
-		REQUIRE(!rabbit.m_body.isInjured());
-		dwarf1.m_canFight.attackLongRange(rabbit, &crossbow, &ammo);
-		REQUIRE(rabbit.m_body.isInjured());
+		actors.combat_setTarget(dwarf1, rabbit);
+		REQUIRE(actors.combat_inRange(dwarf1, rabbit));
+		AttackType& attackType = actors.combat_getRangedAttackType(dwarf1, crossbow);
+		Attack attack(&attackType, &items.getMaterialType(ammo), crossbow);
+		REQUIRE(actors.combat_projectileHitPercent(dwarf1, attack, rabbit) >= 100);
+		REQUIRE(!actors.body_isInjured(rabbit));
+		actors.combat_attackLongRange(dwarf1, rabbit, crossbow, ammo);
+		REQUIRE(actors.body_isInjured(rabbit));
 	}
 }

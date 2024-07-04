@@ -35,7 +35,7 @@ public:
 class RainEvent final : public ScheduledEvent
 {
 public:
-	RainEvent(Simulation& simulation, Step delay, const Step start = 0);
+	RainEvent(Step delay, Simulation& simulation, Step start = 0);
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };

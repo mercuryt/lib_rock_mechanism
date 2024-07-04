@@ -1,23 +1,25 @@
 #include "fire.h"
 #include "area.h"
 #include "simulation.h"
+#include "materialType.h"
+#include "blocks/blocks.h"
 FireEvent::FireEvent(Area& area, Step delay, Fire& f, Step start) :
-       	ScheduledEvent(area.m_simulation, delay, start), m_area(area), m_fire(f) { }
-void FireEvent::execute()
+       	ScheduledEvent(area.m_simulation, delay, start), m_fire(f) { }
+void FireEvent::execute(Simulation&, Area* area)
 {
 	if(!m_fire.m_hasPeaked &&m_fire.m_stage == FireStage::Smouldering)
 	{
 		m_fire.m_stage = FireStage::Burning;
 		int32_t temperature = m_fire.m_materialType.burnData->flameTemperature * Config::heatFractionForBurn;
 		m_fire.m_temperatureSource.setTemperature(temperature);
-		m_fire.m_event.schedule(m_area, m_fire.m_materialType.burnData->burnStageDuration, m_fire);
+		m_fire.m_event.schedule(*area, m_fire.m_materialType.burnData->burnStageDuration, m_fire);
 	}
 	else if(!m_fire.m_hasPeaked && m_fire.m_stage == FireStage::Burning)
 	{
 		m_fire.m_stage = FireStage::Flaming;
 		int32_t temperature = m_fire.m_materialType.burnData->flameTemperature;
 		m_fire.m_temperatureSource.setTemperature(temperature);
-		m_fire.m_event.schedule(m_area, m_fire.m_materialType.burnData->flameStageDuration, m_fire);
+		m_fire.m_event.schedule(*area, m_fire.m_materialType.burnData->flameStageDuration, m_fire);
 	}
 	else if(m_fire.m_stage == FireStage::Flaming)
 	{
@@ -26,8 +28,8 @@ void FireEvent::execute()
 		int32_t temperature = m_fire.m_materialType.burnData->flameTemperature * Config::heatFractionForBurn;
 		m_fire.m_temperatureSource.setTemperature(temperature);
 		uint32_t delay = m_fire.m_materialType.burnData->burnStageDuration * Config::fireRampDownPhaseDurationFraction;
-		m_fire.m_event.schedule(m_area, delay, m_fire);
-		Blocks& blocks = m_area.getBlocks();
+		m_fire.m_event.schedule(*area, delay, m_fire);
+		Blocks& blocks = area->getBlocks();
 		if(blocks.solid_is(m_fire.m_location) && blocks.solid_get(m_fire.m_location) == m_fire.m_materialType)
 		{
 			blocks.solid_setNot(m_fire.m_location);
@@ -40,7 +42,7 @@ void FireEvent::execute()
 		int32_t temperature = m_fire.m_materialType.burnData->flameTemperature * Config::heatFractionForSmoulder;
 		m_fire.m_temperatureSource.setTemperature(temperature);
 		uint32_t delay = m_fire.m_materialType.burnData->burnStageDuration * Config::fireRampDownPhaseDurationFraction;
-		m_fire.m_event.schedule(m_area, delay, m_fire);
+		m_fire.m_event.schedule(*area, delay, m_fire);
 	}
 	else if(m_fire.m_hasPeaked && m_fire.m_stage == FireStage::Smouldering)
 	{
@@ -48,14 +50,14 @@ void FireEvent::execute()
 		//m_fire.m_event.clearPointer();
 		// Destroy m_fire by relasing the unique pointer in m_location.
 		// Implicitly removes the influence of m_fire.m_temperatureSource.
-		m_area.m_fires.extinguish(m_fire);
+		area->m_fires.extinguish(m_fire);
 	}
 }
-void FireEvent::clearReferences() { m_fire.m_event.clearPointer(); }
+void FireEvent::clearReferences(Simulation&, Area*) { m_fire.m_event.clearPointer(); }
 // Fire.
 Fire::Fire(Area& a, BlockIndex l, const MaterialType& mt, bool hasPeaked, FireStage stage, Step start) : 
 	m_area(a), m_temperatureSource(a, mt.burnData->flameTemperature * Config::heatFractionForSmoulder, l), 
-	m_event(a.m_simulation.m_eventSchedule), m_location(l), m_materialType(mt), m_stage(stage), m_hasPeaked(hasPeaked)
+	m_event(a.m_eventSchedule), m_location(l), m_materialType(mt), m_stage(stage), m_hasPeaked(hasPeaked)
 {
 	m_event.schedule(m_area, m_materialType.burnData->burnStageDuration, *this, start);
 }

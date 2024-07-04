@@ -1,7 +1,7 @@
 #include "blocks.h"
-#include "area.h"
-#include "fluidType.h"
-#include "item.h"
+#include "../area.h"
+#include "../fluidType.h"
+#include "../itemType.h"
 void Blocks::temperature_updateDelta(BlockIndex index, int32_t deltaDelta)
 {
 	m_temperatureDelta[index] += deltaDelta;

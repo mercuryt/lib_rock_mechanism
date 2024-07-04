@@ -21,7 +21,7 @@ void ThreadedTaskEngine::doStep(Simulation& simulation, Area* area)
 	std::ranges::transform(m_tasksForThisStep, std::back_inserter(taskPointers), [](const std::unique_ptr<ThreadedTask>& task) { return task.get(); });
 	// TODO: Batching, adaptive batching.
 	auto task = [&simulation, area](ThreadedTask*& task){ task->readStep(simulation, area); };
-	simulation.parallelizeTask(taskPointers, (uint16_t)Config::threadedTaskBatchSize, task);
+	simulation.parallelizeTask(taskPointers, Config::threadedTaskBatchSize, task);
 	for(auto& task : taskPointers)
 	{
 		task->clearReferences(simulation, area);

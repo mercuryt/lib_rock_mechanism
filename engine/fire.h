@@ -22,7 +22,6 @@ struct MaterialType;
  */
 class FireEvent final : public ScheduledEvent
 {
-	Area& m_area;
 public:
 	Fire& m_fire;
 

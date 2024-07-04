@@ -1,18 +1,19 @@
 #include "sowSeeds.h"
 #include "../area.h"
-#include "../actor.h"
 #include "../config.h"
 #include "../farmFields.h"
 #include "../simulation.h"
+#include "actors/actors.h"
+#include "blocks/blocks.h"
 #include "types.h"
 
 struct DeserializationMemo;
 
-SowSeedsEvent::SowSeedsEvent(Area& area, Step delay, SowSeedsObjective& o, const Step start) : 
+SowSeedsEvent::SowSeedsEvent(Step delay, Area& area, SowSeedsObjective& o, const Step start) : 
 	ScheduledEvent(area.m_simulation, delay, start), m_objective(o) { }
 void SowSeedsEvent::execute(Simulation&, Area* area)
 {
-	Actors& actors = area->m_actors;
+	Actors& actors = area->getActors();
 	Blocks& blocks = area->getBlocks();
 	BlockIndex block = m_objective.m_block;
 	Faction& faction = *actors.getFaction(m_objective.m_actor);
@@ -30,7 +31,7 @@ void SowSeedsEvent::execute(Simulation&, Area* area)
 void SowSeedsEvent::clearReferences(Simulation&, Area*){ m_objective.m_event.clearPointer(); }
 bool SowSeedsObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
 {
-	return area.m_hasFarmFields.hasSowSeedsDesignations(*area.m_actors.getFaction(actor));
+	return area.m_hasFarmFields.hasSowSeedsDesignations(*area.getActors().getFaction(actor));
 }
 std::unique_ptr<Objective> SowSeedsObjectiveType::makeFor(Area& area, ActorIndex actor) const
 {
@@ -65,17 +66,18 @@ Json SowSeedsObjective::toJson() const
 */
 BlockIndex SowSeedsObjective::getBlockToSowAt(Area& area, BlockIndex location, Facing facing)
 {
-	Faction* faction = area.m_actors.getFaction(m_actor);
+	Actors& actors = area.getActors();
+	Faction* faction = actors.getFaction(m_actor);
 	std::function<bool(BlockIndex)> predicate = [&area, faction](BlockIndex block)
 	{
 		auto& blocks = area.getBlocks();
 		return blocks.designation_has(block, *faction, BlockDesignation::SowSeeds) && !blocks.isReserved(block, *faction);
 	};
-	return area.m_actors.getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(m_actor, location, facing, predicate);
+	return actors.getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(m_actor, location, facing, predicate);
 }
 void SowSeedsObjective::execute(Area& area)
 {
-	Actors& actors = area.m_actors;
+	Actors& actors = area.getActors();
 	Blocks& blocks = area.getBlocks();
 	if(m_block != BLOCK_INDEX_MAX)
 	{
@@ -113,12 +115,12 @@ void SowSeedsObjective::execute(Area& area)
 }
 void SowSeedsObjective::cancel(Area& area)
 {
-	Actors& actors = area.m_actors;
+	Actors& actors = area.getActors();
 	actors.canReserve_clearAll(m_actor);
 	actors.move_pathRequestMaybeCancel(m_actor);
 	m_event.maybeUnschedule();
 	auto& blocks = area.getBlocks();
-	Faction& faction = *area.m_actors.getFaction(m_actor);
+	Faction& faction = *actors.getFaction(m_actor);
 	if(m_block != BLOCK_INDEX_MAX && blocks.farm_contains(m_block, faction))
 	{
 		FarmField* field = blocks.farm_get(m_block, faction);
@@ -131,18 +133,20 @@ void SowSeedsObjective::cancel(Area& area)
 }
 void SowSeedsObjective::select(Area& area, BlockIndex block)
 {
-	auto& blocks = area.getBlocks();
+	Blocks& blocks = area.getBlocks();
+	Actors& actors = area.getActors();
 	assert(!blocks.plant_exists(block));
-	assert(blocks.farm_contains(block, *area.m_actors.getFaction(m_actor)));
+	assert(blocks.farm_contains(block, *actors.getFaction(m_actor)));
 	assert(m_block == BLOCK_INDEX_MAX);
 	m_block = block;
-	area.m_hasFarmFields.at(*area.m_actors.getFaction(m_actor)).removeSowSeedsDesignation(block);
+	area.m_hasFarmFields.at(*actors.getFaction(m_actor)).removeSowSeedsDesignation(block);
 }
 void SowSeedsObjective::begin(Area& area)
 {
+	Actors& actors = area.getActors();
 	assert(m_block != BLOCK_INDEX_MAX);
-	assert(area.m_actors.isAdjacentToLocation(m_actor, m_block));
-	m_event.schedule(Config::sowSeedsStepsDuration, *this);
+	assert(actors.isAdjacentToLocation(m_actor, m_block));
+	m_event.schedule(Config::sowSeedsStepsDuration, area, *this);
 }
 void SowSeedsObjective::reset(Area& area)
 {
@@ -151,7 +155,8 @@ void SowSeedsObjective::reset(Area& area)
 }
 bool SowSeedsObjective::canSowAt(Area& area, BlockIndex block) const
 {
-	Faction* faction = area.m_actors.getFaction(m_actor);
+	Actors& actors = area.getActors();
+	Faction* faction = actors.getFaction(m_actor);
 	auto& blocks = area.getBlocks();
 	return blocks.designation_has(block, *faction, BlockDesignation::SowSeeds) && !blocks.isReserved(block, *faction);
 }

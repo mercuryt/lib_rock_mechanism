@@ -31,14 +31,12 @@ class CanReserve final
 	std::unordered_set<Reservable*> m_reservables;
 	friend class Reservable;
 public:
-	CanReserve(Faction* f) : m_faction(f) { }
+	CanReserve(Faction& f) : m_faction(&f) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void deleteAllWithoutCallback();
-	void setFaction(Faction* faction);
-	[[nodiscard]] bool factionExists() const;
+	void setFaction(Faction& faction);
 	[[nodiscard]] bool hasReservationWith(Reservable& reservable) const;
-	[[nodiscard]] bool hasReservations() const;
 	~CanReserve();
 	CanReserve(CanReserve& reservable) = delete;
 	CanReserve(CanReserve&& reservable) = delete;
@@ -58,7 +56,7 @@ public:
 	void clearReservationsFor(Faction& faction);
 	void maybeClearReservationFor(CanReserve& canReserve, const uint32_t quantity = 1u);
 	void setMaxReservations(const uint32_t mr);
-	void updateFactionFor(CanReserve& canReserve, Faction* oldFaction, Faction* newFaction);
+	void updateFactionFor(CanReserve& canReserve, Faction& oldFaction, Faction& newFaction);
 	void setDishonorCallbackFor(CanReserve& canReserve, std::unique_ptr<DishonorCallback> dishonorCallback) { m_dishonorCallbacks[&canReserve] = std::move(dishonorCallback); }
 	void clearAll();
 	void updateReservedCount(Faction& faction, uint32_t count);

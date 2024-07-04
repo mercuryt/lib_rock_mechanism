@@ -1,12 +1,13 @@
 #include "unequipItem.h"
-#include "../actor.h"
 #include "../area.h"
-#include "../item.h"
 #include "../deserializationMemo.h"
+#include "actors/actors.h"
+#include "blocks/blocks.h"
+#include "items/items.h"
 
-UnequipItemObjective::UnequipItemObjective(Actor& actor, Item& item, BlockIndex block) : 
+UnequipItemObjective::UnequipItemObjective(ActorIndex actor, ItemIndex item, BlockIndex block) : 
 	Objective(actor, Config::equipPriority), m_item(item), m_block(block) { }
-
+/*
 UnequipItemObjective::UnequipItemObjective(const Json& data, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo), 
 	m_item(deserializationMemo.itemReference(data["item"])),
@@ -18,24 +19,27 @@ Json UnequipItemObjective::toJson() const
 	data["block"] = m_block;
 	return data;
 }
-void UnequipItemObjective::execute()
+*/
+void UnequipItemObjective::execute(Area& area)
 {
-	if(!m_actor.isAdjacentTo(m_block))
+	Actors& actors = area.getActors();
+	if(!actors.isAdjacentToLocation(m_actor, m_block))
 		// detour, unresered, reserve.
 		// TODO: detour.
-		m_actor.m_canMove.setDestinationAdjacentTo(m_block, false, false, false);
+		actors.move_setDestinationAdjacentToLocation(m_actor, m_block, false, false, false);
 	else
 	{
-		Blocks& blocks = m_actor.m_area->getBlocks();
-		if(blocks.shape_canEnterCurrentlyWithAnyFacing(m_block, m_item))
+		Blocks& blocks = area.getBlocks();
+		Items& items = area.getItems();
+		if(blocks.shape_canEnterCurrentlyWithAnyFacing(m_block, items.getShape(m_item), {}))
 		{
-			m_actor.m_equipmentSet.removeEquipment(m_item);
-			m_item.setLocation(m_block);
-			m_actor.m_hasObjectives.objectiveComplete(*this);
+			actors.equipment_remove(m_actor, m_item);
+			items.setLocation(m_item, m_block);
+			actors.objective_complete(m_actor, *this);
 		}
 		else
-			m_actor.m_hasObjectives.cannotFulfillObjective(*this);
+			actors.objective_canNotCompleteObjective(m_actor, *this);
 	}
 }
-void UnequipItemObjective::cancel() { m_actor.m_canReserve.deleteAllWithoutCallback(); }
-void UnequipItemObjective::reset() { cancel(); }
+void UnequipItemObjective::cancel(Area& area) { area.getActors().canReserve_clearAll(m_actor); }
+void UnequipItemObjective::reset(Area& area) { cancel(area); }

@@ -1,7 +1,49 @@
 #include "grow.h"
-#include "simulation.h"
-#include "util.h"
-#include "area.h"
+#include "actors.h"
+#include "../simulation.h"
+#include "../util.h"
+#include "../area.h"
+
+void Actors::grow_maybeStart(ActorIndex index)
+{
+	m_canGrow.at(index)->maybeStart(m_area);
+}
+void Actors::grow_stop(ActorIndex index)
+{
+	m_canGrow.at(index)->stop();
+}
+void Actors::grow_updateGrowingStatus(ActorIndex index)
+{
+	m_canGrow.at(index)->updateGrowingStatus(m_area);
+}
+void Actors::grow_setPercent(ActorIndex index, Percent percentGrown)
+{
+	m_canGrow.at(index)->setGrowthPercent(m_area, percentGrown);
+}
+bool Actors::grow_isGrowing(ActorIndex index) const
+{
+	return m_canGrow.at(index)->isGrowing();
+}
+Percent Actors::grow_getPercent(ActorIndex index) const
+{
+	return m_canGrow.at(index)->growthPercent();
+}
+bool Actors::grow_getEventExists(ActorIndex index) const
+{
+	return m_canGrow.at(index)->getEvent().exists();
+}
+Percent Actors::grow_getEventPercent(ActorIndex index) const
+{
+	return m_canGrow.at(index)->getEvent().percentComplete();
+}
+Step Actors::grow_getEventStep(ActorIndex index) const
+{
+	return m_canGrow.at(index)->getEvent().getStep();
+}
+bool Actors::grow_eventIsPaused(ActorIndex index) const
+{
+	return m_canGrow.at(index)->getEvent().isPaused();
+}
 CanGrow::CanGrow(Area& area, ActorIndex a, Percent pg) :
 	m_event(area.m_eventSchedule), m_actor(a), m_percentGrown(pg) { }
 /*
@@ -53,14 +95,14 @@ Percent CanGrow::growthPercent() const
 }
 void CanGrow::scheduleEvent(Area& area)
 {
-	Step delay = std::round(area.m_actors.getSpecies(m_actor).stepsTillFullyGrown / 100.f);
-	m_event.resume(delay, *this);
+	Step delay = std::round(area.getActors().getSpecies(m_actor).stepsTillFullyGrown / 100.f);
+	m_event.resume(delay, area, *this);
 }
 void CanGrow::update(Area& area)
 {
 	Actors& actors = area.getActors();
 	const AnimalSpecies& species = actors.getSpecies(m_actor);
-	actors.grow_updatePercent(m_actor, m_percentGrown);
+	actors.grow_setPercent(m_actor, m_percentGrown);
 	const Shape& shape = species.shapeForPercentGrown(m_percentGrown);
 	if(shape != actors.getShape(m_actor))
 		actors.setShape(m_actor, shape);
@@ -83,5 +125,5 @@ void CanGrow::increment(Area& area)
 	m_event.reset();
 	update(area);
 }
-AnimalGrowthEvent::AnimalGrowthEvent(Area& area, Step delay, CanGrow& cg, const Step start) :
+AnimalGrowthEvent::AnimalGrowthEvent(Step delay, Area& area, CanGrow& cg, Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_canGrow(cg) { }

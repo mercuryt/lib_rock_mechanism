@@ -34,7 +34,6 @@ class Attributes
 	uint32_t baseCombatScore;
 	Percent percentGrown;
 public:
-	Attributes() = default; // default constructor needed to allow vector resize.
 	Attributes(const AnimalSpecies& species, std::array<uint32_t, 4> modifierPercents, std::array<int32_t, 4> bonusOrPenalties, Percent pg) :
 		strength(species.strength[0], species.strength[1], modifierPercents[1], bonusOrPenalties[1], pg),
 		dextarity(species.dextarity[0], species.dextarity[1], modifierPercents[1], bonusOrPenalties[1], pg),

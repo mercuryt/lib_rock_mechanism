@@ -1,7 +1,7 @@
 #include "../../lib/doctest.h"
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
-#include "../../engine/actor.h"
+#include "../../engine/actors/actors.h"
 #include "../../engine/materialType.h"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasActors.h"

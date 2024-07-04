@@ -2,11 +2,13 @@
 #include "area.h"
 #include "config.h"
 #include "types.h"
+#include "actors/actors.h"
+#include "blocks/blocks.h"
 #include "util.h"
 #include <algorithm>
 void LocationBucket::insert(Area& area, ActorIndex actor, std::vector<BlockIndex>& blocks)
 {
-	Actors& actors = area.m_actors;
+	Actors& actors = area.getActors();
 	if(actors.getShape(actor).isMultiTile)
 	{
 		[[maybe_unused]] auto iter = std::ranges::find(m_actorsMultiTile, actor);
@@ -25,7 +27,7 @@ void LocationBucket::insert(Area& area, ActorIndex actor, std::vector<BlockIndex
 }
 void LocationBucket::erase(Area& area, ActorIndex actor)
 {
-	Actors& actors = area.m_actors;
+	Actors& actors = area.getActors();
 	if(actors.getShape(actor).isMultiTile)
 	{
 		auto iter = std::ranges::find(m_actorsMultiTile, actor);
@@ -45,7 +47,7 @@ void LocationBucket::erase(Area& area, ActorIndex actor)
 }
 void LocationBucket::update(Area& area, ActorIndex actor, std::vector<BlockIndex>& blockIndices)
 {
-	Actors& actors = area.m_actors;
+	Actors& actors = area.getActors();
 	if(actors.getShape(actor).isMultiTile)
 	{
 		auto iter = std::ranges::find(m_actorsMultiTile, actor);
@@ -83,7 +85,7 @@ LocationBucket& LocationBuckets::getBucketFor(const BlockIndex block)
 }
 void LocationBuckets::add(ActorIndex actor)
 {
-	auto& actorBlocks = m_area.m_actors.getBlocks(actor);
+	auto& actorBlocks = m_area.getActors().getBlocks(actor);
 	assert(!actorBlocks.empty());
 	std::unordered_map<LocationBucket*, std::vector<BlockIndex>> blocksCollatedByBucket;
 	Blocks& blockData = m_area.getBlocks();
@@ -99,7 +101,7 @@ void LocationBuckets::remove(ActorIndex actor)
 {
 	std::unordered_set<LocationBucket*> buckets;
 	Blocks& blocks = m_area.getBlocks();
-	Actors& actors = m_area.m_actors;
+	Actors& actors = m_area.getActors();
 	assert(!actors.getBlocks(actor).empty());
 	for(BlockIndex block : actors.getBlocks(actor))
 		buckets.insert(&blocks.getLocationBucket(block));
@@ -112,7 +114,7 @@ void LocationBuckets::update(ActorIndex actor, std::unordered_set<BlockIndex>& o
 	std::unordered_map<LocationBucket*, std::vector<BlockIndex>> continuedSets;
 	std::unordered_map<LocationBucket*, std::vector<BlockIndex>> newSets;
 	Blocks& blocks = m_area.getBlocks();
-	Actors& actors = m_area.m_actors;
+	Actors& actors = m_area.getActors();
 	for(BlockIndex block : oldBlocks)
 		oldSets.insert(&blocks.getLocationBucket(block));
 	for(BlockIndex block : actors.getBlocks(actor))
