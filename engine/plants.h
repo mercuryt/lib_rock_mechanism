@@ -3,6 +3,7 @@
 #include "deserializationMemo.h"
 #include "eventSchedule.hpp"
 #include "hasShapes.h"
+#include "plants.h"
 #include "types.h"
 
 #include <vector>
@@ -85,11 +86,11 @@ public:
 	[[nodiscard]] Percent getPercentFoliage(PlantIndex index) const;
 	[[nodiscard]] uint32_t getFoliageMass(PlantIndex index) const;
 	[[nodiscard]] Step getStepAtWhichPlantWillDieFromLackOfFluid(PlantIndex index) const;
-	[[nodiscard]] Volume getFluidDrinkVolume(PlantIndex index) const;
 	[[nodiscard]] Quantity getQuantityToHarvest(PlantIndex index) const { return m_quantityToHarvest.at(index); }
 	[[nodiscard]] Step stepsPerShapeChange(PlantIndex index) const;
 	[[nodiscard]] bool readyToHarvest(PlantIndex index) const { return m_quantityToHarvest.at(index) != 0; }
 	[[nodiscard]] const Volume& getVolumeFluidRequested(PlantIndex index) const { return m_volumeFluidRequested.at(index); }
+	[[nodiscard]] bool temperatureEventExists(PlantIndex index) const;
 	void log(PlantIndex index) const;
 	friend class PlantGrowthEvent;
 	friend class PlantShapeGrowthEvent;

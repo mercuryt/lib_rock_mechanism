@@ -6,6 +6,10 @@
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasActors.h"
 #include "../../engine/simulation/hasAreas.h"
+#include "../../engine/blocks/blocks.h"
+#include "../../engine/actors/actors.h"
+#include "../../engine/items/items.h"
+#include "../../engine/plants.h"
 TEST_CASE("fluids smaller")
 {
 	static const MaterialType& marble = MaterialType::byName("marble");
@@ -1234,7 +1238,7 @@ TEST_CASE("fluids smaller")
 			}
 			simulation.m_step++;
 		}
-		simulation.m_eventSchedule.execute(11);
+		simulation.m_eventSchedule.doStep(11);
 		REQUIRE(blocks.fluid_getMist(block5) == nullptr);
 	}
 }
@@ -1496,7 +1500,8 @@ TEST_CASE("fluids multi scale")
 		{
 			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
 				fluidGroup->readStep();
-			area.writeStep();
+			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
+				fluidGroup->writeStep();
 			simulation.m_step++;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
@@ -1562,7 +1567,8 @@ TEST_CASE("fluids multi scale")
 		{
 			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
 				fluidGroup->readStep();
-			area.writeStep();
+			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
+				fluidGroup->writeStep();
 			simulation.m_step++;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
@@ -1636,7 +1642,8 @@ TEST_CASE("fluids multi scale")
 		{
 			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
 				fluidGroup->readStep();
-			area.writeStep();
+			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
+				fluidGroup->writeStep();
 			fgMercury = areaBuilderUtil::getFluidGroup(area, mercury);
 			if(fgMercury != nullptr)
 				REQUIRE(fgMercury->totalVolume() == totalVolume);
@@ -1731,7 +1738,8 @@ TEST_CASE("fluids multi scale")
 		{
 			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
 				fluidGroup->readStep();
-			area.writeStep();
+			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
+				fluidGroup->writeStep();
 			simulation.m_step++;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
@@ -1799,7 +1807,8 @@ TEST_CASE("fluids multi scale")
 		{
 			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
 				fluidGroup->readStep();
-			area.writeStep();
+			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
+				fluidGroup->writeStep();
 			simulation.m_step++;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
@@ -1883,7 +1892,8 @@ TEST_CASE("fluids multi scale")
 		{
 			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
 				fluidGroup->readStep();
-			area.writeStep();
+			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
+				fluidGroup->writeStep();
 			simulation.m_step++;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);

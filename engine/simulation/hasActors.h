@@ -3,8 +3,8 @@
 #include "../types.h"
 #include "../config.h"
 
-class Actors;
 struct DeserializationMemo;
+class Actors;
 
 struct ActorDataLocation
 {

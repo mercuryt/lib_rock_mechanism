@@ -34,7 +34,7 @@ TEST_CASE("reservations")
 	SUBCASE("basic")
 	{
 		Reservable reservable(1);
-		CanReserve canReserve(&faction1);
+		CanReserve canReserve(faction1);
 		REQUIRE(!reservable.isFullyReserved(&faction1));
 		REQUIRE(!reservable.isFullyReserved(&faction2));
 		reservable.reserveFor(canReserve, 1);
@@ -52,7 +52,7 @@ TEST_CASE("reservations")
 	{
 		Reservable reservable(1);
 		{
-			CanReserve canReserve(&faction1);
+			CanReserve canReserve(faction1);
 			reservable.reserveFor(canReserve, 1);
 			REQUIRE(reservable.isFullyReserved(&faction1));
 		}
@@ -61,7 +61,7 @@ TEST_CASE("reservations")
 	}
 	SUBCASE("clear reservation from canReserve when reservable is destroyed")
 	{
-		CanReserve canReserve(&faction1);
+		CanReserve canReserve(faction1);
 		{
 			Reservable reservable(1);
 			reservable.reserveFor(canReserve, 1);
@@ -73,7 +73,7 @@ TEST_CASE("reservations")
 	SUBCASE("mutiple reservable")
 	{
 		Reservable reservable(2);
-		CanReserve canReserve(&faction1);
+		CanReserve canReserve(faction1);
 		reservable.reserveFor(canReserve, 1);
 		REQUIRE(!reservable.isFullyReserved(&faction1));
 		REQUIRE(reservable.getUnreservedCount(faction1) == 1);
@@ -85,7 +85,7 @@ TEST_CASE("reservations")
 		bool fired = false;
 		std::unique_ptr<DishonorCallback> callback = std::make_unique<TestReservationDishonorCallback1>(fired);
 		Reservable reservable(1);
-		CanReserve canReserve(&faction1);
+		CanReserve canReserve(faction1);
 		reservable.reserveFor(canReserve, 1, std::move(callback));
 		reservable.clearAll();
 		REQUIRE(fired);
@@ -95,7 +95,7 @@ TEST_CASE("reservations")
 		bool fired = false;
 		std::unique_ptr<DishonorCallback> callback = std::make_unique<TestReservationDishonorCallback2>(fired);
 		Reservable reservable(2);
-		CanReserve canReserve(&faction1);
+		CanReserve canReserve(faction1);
 		reservable.reserveFor(canReserve, 2, std::move(callback));
 		reservable.setMaxReservations(1);
 		REQUIRE(fired);

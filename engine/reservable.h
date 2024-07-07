@@ -37,6 +37,7 @@ public:
 	void deleteAllWithoutCallback();
 	void setFaction(Faction& faction);
 	[[nodiscard]] bool hasReservationWith(Reservable& reservable) const;
+	[[nodiscard]] bool hasReservations() const;
 	~CanReserve();
 	CanReserve(CanReserve& reservable) = delete;
 	CanReserve(CanReserve&& reservable) = delete;

@@ -39,6 +39,10 @@ void CanReserve::setFaction(Faction& faction)
 	m_faction = &faction;
 }
 bool CanReserve::hasReservationWith(Reservable& reservable) const { return m_reservables.contains(&reservable); }
+bool CanReserve::hasReservations() const
+{
+	return !m_reservables.empty();
+}
 CanReserve::~CanReserve() { deleteAllWithoutCallback(); }
 void Reservable::eraseReservationFor(CanReserve& canReserve)
 {

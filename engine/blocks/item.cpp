@@ -6,6 +6,7 @@
 #include "../simulation/hasItems.h"
 #include "../types.h"
 #include "../itemType.h"
+#include "util.h"
 #include <iterator>
 void Blocks::item_record(BlockIndex index, ItemIndex item, CollisionVolume volume)
 {
@@ -125,6 +126,10 @@ bool Blocks::item_hasContainerContainingFluidTypeCarryableBy(BlockIndex index, c
 bool Blocks::item_empty(BlockIndex index) const
 {
 	return m_itemVolume.at(index).empty();
+}
+bool Blocks::item_contains(BlockIndex index, ItemIndex item) const
+{
+	return util::vectorContains(m_items.at(index), item);
 }
 std::vector<ItemIndex> Blocks::item_getAll(BlockIndex index)
 {
