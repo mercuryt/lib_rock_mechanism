@@ -278,12 +278,17 @@ public:
 	void canPickUp_remove(ActorIndex index, ItemIndex item);
 	ItemIndex canPickUp_getItem(ActorIndex index);
 	ActorIndex canPickUp_getActor(ActorIndex index);
-	[[nodiscard]] bool canPickUp_actor(ActorIndex index, ActorIndex other) const;
-	[[nodiscard]] Quantity canPickUp_quantityWhichCanBePickedUpUnencombered(ActorIndex index, const ItemType& itemType, const MaterialType& materialType) const;
 	[[nodiscard]] bool canPickUp_polymorphic(ActorIndex index, ActorOrItemIndex target) const;
-	[[nodiscard]] bool canPickUp_anyUnencombered(ActorIndex index, ActorOrItemIndex target) const;
-	[[nodiscard]] bool canPickUp_anyUnencomberedItem(ActorIndex index, ItemIndex target) const;
+	[[nodiscard]] bool canPickUp_singleItem(ActorIndex index, ItemIndex item) const;
+	[[nodiscard]] bool canPickUp_item(ActorIndex index, ItemIndex item) const;
+	[[nodiscard]] bool canPickUp_itemQuantity(ActorIndex index, ItemIndex item, Quantity quantity) const;
+	[[nodiscard]] bool canPickUp_actor(ActorIndex index, ActorIndex other) const;
 	[[nodiscard]] bool canPickUp_anyWithMass(ActorIndex index, Mass mass) const;
+	[[nodiscard]] bool canPickUp_polymorphicUnencombered(ActorIndex index, ActorOrItemIndex target) const;
+	[[nodiscard]] bool canPickUp_itemUnencombered(ActorIndex index, ItemIndex item) const;
+	[[nodiscard]] bool canPickUp_actorUnencombered(ActorIndex index, ActorIndex actor) const;
+	[[nodiscard]] bool canPickUp_anyWithMassUnencombered(ActorIndex index, Mass mass) const;
+	[[nodiscard]] Quantity canPickUp_quantityWhichCanBePickedUpUnencombered(ActorIndex index, const ItemType& itemType, const MaterialType& materialType) const;
 	[[nodiscard]] bool canPickUp_exists(ActorIndex index) const { return m_carrying.at(index).exists(); }
 	[[nodiscard]] bool canPickUp_isCarryingActor(ActorIndex index, ActorIndex actor) const { return m_carrying.at(index).exists() && m_carrying.at(index).isActor() && m_carrying.at(index).get() == actor; }
 	[[nodiscard]] bool canPickUp_isCarryingItem(ActorIndex index, ItemIndex item) const { return m_carrying.at(index).exists() && m_carrying.at(index).isItem() && m_carrying.at(index).get() == item; }

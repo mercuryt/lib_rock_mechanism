@@ -745,7 +745,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 		output.quantity = 1;
 		return output;
 	}
-	ItemIndex haulTool = project.m_area.m_hasHaulTools.getToolToHaul(project.m_area, faction, toHaul);
+	ItemIndex haulTool = project.m_area.m_hasHaulTools.getToolToHaulPolymorphic(project.m_area, faction, toHaul);
 	// Cart
 	if(haulTool != ITEM_INDEX_MAX)
 	{
@@ -954,19 +954,42 @@ Quantity HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniers
 	return quantity;
 }
 //TODO: optimize?
-bool AreaHasHaulTools::hasToolToHaul(const Area& area, Faction& faction, const ActorOrItemIndex hasShape) const
+bool AreaHasHaulTools::hasToolToHaulItem(const Area& area, Faction& faction, ItemIndex item) const
 {
-	return getToolToHaul(area, faction, hasShape) != ITEM_INDEX_MAX;
+	return getToolToHaulItem(area, faction, item) != ITEM_INDEX_MAX;
 }
-ItemIndex AreaHasHaulTools::getToolToHaul(const Area& area, Faction& faction, const ActorOrItemIndex toHaul) const
+bool AreaHasHaulTools::hasToolToHaulActor(const Area& area, Faction& faction, ActorIndex actor) const
 {
-	// Items like panniers also have internal volume but aren't relevent for this method.
+	return getToolToHaulActor(area, faction, actor) != ITEM_INDEX_MAX;
+}
+bool AreaHasHaulTools::hasToolToHaulPolymorphic(const Area& area, Faction& faction, const ActorOrItemIndex hasShape) const
+{
+	return getToolToHaulPolymorphic(area, faction, hasShape) != ITEM_INDEX_MAX;
+}
+ItemIndex AreaHasHaulTools::getToolToHaulItem(const Area& area, Faction& faction, ItemIndex item) const
+{
+	Volume volume = area.getItems().getVolume(item);
+	return getToolToHaulVolume(area, faction, volume);
+}
+ItemIndex AreaHasHaulTools::getToolToHaulActor(const Area& area, Faction& faction, ActorIndex actor) const
+{
+	Volume volume = area.getItems().getVolume(actor);
+	return getToolToHaulVolume(area, faction, volume);
+}
+ItemIndex AreaHasHaulTools::getToolToHaulPolymorphic(const Area& area, Faction& faction, const ActorOrItemIndex toHaul) const
+{
+	Volume volume = toHaul.getVolume(area);
+	return getToolToHaulVolume(area, faction, volume);
+}
+ItemIndex AreaHasHaulTools::getToolToHaulVolume(const Area& area, Faction& faction, Volume volume) const
+{
+	// Items like panniers with no move type also have internal volume but aren't relevent for this method.
 	static const MoveType& none = MoveType::byName("none");
 	const Items& items = area.getItems();
 	for(ItemIndex item : m_haulTools)
 	{
 		const ItemType& itemType = area.getItems().getItemType(item);
-		if(itemType.moveType != none && !items.reservable_isFullyReserved(item, faction) && itemType.internalVolume >= toHaul.getVolume(area))
+		if(itemType.moveType != none && !items.reservable_isFullyReserved(item, faction) && itemType.internalVolume >= volume)
 			return item;
 	}
 	return ITEM_INDEX_MAX;

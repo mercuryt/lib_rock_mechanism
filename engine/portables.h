@@ -52,6 +52,8 @@ public:
 	// Used by leadAndFollow.cpp.
 	[[nodiscard]] CanLead& getCanLead(HasShapeIndex index) { return *m_lead.at(index).get(); }
 	[[nodiscard]] CanFollow& getCanFollow(HasShapeIndex index) { return *m_follow.at(index).get(); }
+	// For testing.
+	[[nodiscard]] Speed lead_getSpeed(HasShapeIndex index);
 	// Quantity defaults to 0, which becomes maxReservations;
 	void reservable_reserve(HasShapeIndex index, CanReserve& canReserve, Quantity quantity = 0, std::unique_ptr<DishonorCallback> callback = nullptr);
 	void reservable_unreserve(HasShapeIndex index, CanReserve& canReserve, Quantity quantity = 0);

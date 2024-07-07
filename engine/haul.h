@@ -101,8 +101,13 @@ class AreaHasHaulTools final
 public:
 	[[nodiscard]] bool hasToolToHaulFluid(const Area& area, Faction& faction) const;
 	[[nodiscard]] ItemIndex getToolToHaulFluid(const Area& area, Faction& faction) const;
-	[[nodiscard]] bool hasToolToHaul(const Area& area, Faction& faction, const ActorOrItemIndex hasShape) const;
-	[[nodiscard]] ItemIndex getToolToHaul(const Area& area, Faction& faction, const ActorOrItemIndex hasShape) const;
+	[[nodiscard]] bool hasToolToHaulPolymorphic(const Area& area, Faction& faction, const ActorOrItemIndex hasShape) const;
+	[[nodiscard]] bool hasToolToHaulItem(const Area& area, Faction& faction, ItemIndex item) const;
+	[[nodiscard]] bool hasToolToHaulActor(const Area& area, Faction& faction, ActorIndex actor) const;
+	[[nodiscard]] ItemIndex getToolToHaulPolymorphic(const Area& area, Faction& faction, const ActorOrItemIndex hasShape) const;
+	[[nodiscard]] ItemIndex getToolToHaulItem(const Area& area, Faction& faction, ItemIndex item) const;
+	[[nodiscard]] ItemIndex getToolToHaulActor(const Area& area, Faction& faction, ActorIndex actor) const;
+	[[nodiscard]] ItemIndex getToolToHaulVolume(const Area& area, Faction& faction, Volume volume) const;
 	[[nodiscard]] ActorIndex getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(const Area& area, Faction& faction, const ItemIndex haulTool, const Mass cargoMass, const Speed minimumHaulSpeed) const;
 	[[nodiscard]] ActorIndex getPannierBearerToHaulCargoWithMassWithMinimumSpeed(const Area& area, Faction& faction, const ActorOrItemIndex hasShape, const Speed minimumHaulSpeed) const;
 	[[nodiscard]] ItemIndex getPanniersForActorToHaul(const Area& area, Faction& faction, const ActorIndex actor, const ActorOrItemIndex toHaul) const;

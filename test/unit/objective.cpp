@@ -13,12 +13,12 @@
 struct TestTaskObjective final : public Objective
 {
 	bool& x;
-	TestTaskObjective(Actor& a, uint32_t priority, bool& ax) : Objective(a, priority), x(ax) { }
-	void execute() { x = !x; }
-	void cancel() { }
-	void delay() { }
-	void reset() { }
-	void detour() { }
+	TestTaskObjective(ActorIndex a, uint32_t priority, bool& ax) : Objective(a, priority), x(ax) { }
+	void execute(Area&) { x = !x; }
+	void cancel(Area&) { }
+	void delay(Area&) { }
+	void reset(Area&) { }
+	void detour(Area&) { }
 	std::string name() const { return "test task"; }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Construct; }
 };
@@ -26,12 +26,12 @@ struct TestTaskObjective final : public Objective
 struct TestNeedObjective final : public Objective
 {
 	bool& x;
-	TestNeedObjective(Actor& a, uint32_t priority, bool& ax) : Objective(a, priority), x(ax) { }
-	void execute() { x = !x; }
-	void cancel() { }
-	void delay() { }
-	void reset() { }
-	void detour() { }
+	TestNeedObjective(ActorIndex a, uint32_t priority, bool& ax) : Objective(a, priority), x(ax) { }
+	void execute(Area&) { x = !x; }
+	void cancel(Area&) { }
+	void delay(Area&) { }
+	void reset(Area&) { }
+	void detour(Area&) { }
 	std::string name() const { return "test need"; }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Dig; }
 };
@@ -42,38 +42,44 @@ TEST_CASE("objective")
 	static const MaterialType& marble = MaterialType::byName("marble");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	Actors& actors = area.getActors();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
-	Actor& actor = simulation.m_hasActors->createActor({
+	ActorIndex actor = actors.create({
 		.species=dwarf,
 		.location=area.getBlocks().getIndex({5, 5, 1}),
-		.area=&area,
 	});
 	bool x = false;
+	// Add objective to end of empty task list and it becomes current objective.
 	std::unique_ptr<Objective> objective = std::make_unique<TestTaskObjective>(actor, 1, x);
 	Objective* ptr = objective.get();
-	actor.m_hasObjectives.addTaskToEnd(std::move(objective));
-	CHECK(&actor.m_hasObjectives.getCurrent() == ptr);
+	actors.objective_addTaskToEnd(actor, std::move(objective));
+	CHECK(&actors.objective_getCurrent<Objective>(actor) == ptr);
 	CHECK(x);
+	// Add a need with higher prioirity then the task and it usurps it as current objective.
 	std::unique_ptr<Objective> objective2 = std::make_unique<TestNeedObjective>(actor, 2, x);
 	Objective* ptr2 = objective2.get();
-	actor.m_hasObjectives.addNeed(std::move(objective2));
-	CHECK(&actor.m_hasObjectives.getCurrent() == ptr2);
+	actors.objective_addNeed(actor, std::move(objective2));
+	CHECK(&actors.objective_getCurrent<Objective>(actor) == ptr2);
 	CHECK(!x);
-	actor.m_hasObjectives.objectiveComplete(*ptr2);
-	CHECK(&actor.m_hasObjectives.getCurrent() == ptr);
+	// Fulfull the need and the task becomes current objective again.
+	actors.objective_complete(actor, *ptr2);
+	CHECK(&actors.objective_getCurrent<Objective>(actor) == ptr);
 	CHECK(x);
+	// Add task to end and then complete the current task, new task becomes current.
 	std::unique_ptr<Objective> objective3 = std::make_unique<TestTaskObjective>(actor, 2, x);
 	Objective* ptr3 = objective3.get();
-	actor.m_hasObjectives.addTaskToEnd(std::move(objective3));
-	actor.m_hasObjectives.objectiveComplete(*ptr);
-	CHECK(&actor.m_hasObjectives.getCurrent() == ptr3);
+	actors.objective_addTaskToEnd(actor, std::move(objective3));
+	actors.objective_complete(actor, *ptr);
+	CHECK(&actors.objective_getCurrent<Objective>(actor) == ptr3);
 	CHECK(!x);
+	// Add need with lower priority then the current task and it does not usurp.
 	std::unique_ptr<Objective> objective4 = std::make_unique<TestNeedObjective>(actor, 1, x);
 	Objective* ptr4 = objective4.get();
-	actor.m_hasObjectives.addNeed(std::move(objective4));
-	CHECK(&actor.m_hasObjectives.getCurrent() == ptr3);
+	actors.objective_addNeed(actor, std::move(objective4));
+	CHECK(&actors.objective_getCurrent<Objective>(actor) == ptr3);
 	CHECK(!x);
-	actor.m_hasObjectives.objectiveComplete(*ptr3);
-	CHECK(&actor.m_hasObjectives.getCurrent() == ptr4);
+	// Complete task and lower priority need becomes current.
+	actors.objective_complete(actor, *ptr3);
+	CHECK(&actors.objective_getCurrent<Objective>(actor) == ptr4);
 	CHECK(x);
 }

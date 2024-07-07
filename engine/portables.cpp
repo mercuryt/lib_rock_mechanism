@@ -119,6 +119,11 @@ bool Portables::isLeadingPolymorphic(HasShapeIndex index, ActorOrItemIndex actor
 		return false;
 	return m_lead.at(index)->isLeadingPolymorphic(actorOrItem);
 }
+Speed Portables::lead_getSpeed(HasShapeIndex index)
+{
+	assert(m_lead.at(index) != nullptr);
+	return m_lead.at(index)->getMoveSpeed(m_area);
+}
 void Portables::reservable_reserve(HasShapeIndex index, CanReserve& canReserve, Quantity quantity, std::unique_ptr<DishonorCallback> callback)
 {
 	m_reservables.at(index)->reserveFor(canReserve, quantity, std::move(callback));

@@ -317,6 +317,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, const Fluid
 	[[nodiscard]] bool item_hasEmptyContainerWhichCanHoldFluidsCarryableBy(BlockIndex index, const ActorIndex actor) const;
 	[[nodiscard]] bool item_hasContainerContainingFluidTypeCarryableBy(BlockIndex index, const ActorIndex actor, const FluidType& fluidType) const;
 	[[nodiscard]] bool item_empty(BlockIndex index) const;
+	[[nodiscard]] bool item_contains(BlockIndex index, ItemIndex item) const;
 	// -Plant
 	void plant_create(BlockIndex index, const PlantSpecies& plantSpecies, Percent growthPercent = 0);
 	void plant_updateGrowingStatus(BlockIndex index);

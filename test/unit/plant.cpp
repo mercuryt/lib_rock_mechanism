@@ -2,7 +2,8 @@
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/areaBuilderUtil.h"
-#include "datetime.h"
+#include "../../engine/datetime.h"
+#include "../../engine/plants.h"
 TEST_CASE("plant")
 {
 	static const MaterialType& marble = MaterialType::byName("marble");
@@ -12,38 +13,39 @@ TEST_CASE("plant")
 	Simulation simulation(L"test", DateTime::toSteps(12, 100, 1200));
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
+	Plants& plants = area.getPlants();
 	BlockIndex location = blocks.getIndex({5, 5, 2});
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	areaBuilderUtil::setSolidLayer(area, 1, dirt);
 	simulation.m_step = 0;
 	blocks.plant_create(location, wheatGrass, 50);
-	Plant& plant = blocks.plant_get(location);
-	REQUIRE(plant.m_growthEvent.exists());
+	PlantIndex plant = blocks.plant_get(location);
+	REQUIRE(plants.isGrowing(plant));
 	REQUIRE(simulation.m_eventSchedule.m_data.contains(wheatGrass.stepsTillFullyGrown / 2));
 	REQUIRE(simulation.m_eventSchedule.m_data.contains(wheatGrass.stepsNeedsFluidFrequency));
-	REQUIRE(blocks.isExposedToSky(plant.m_location));
-	REQUIRE(!plant.m_temperatureEvent.exists());
-	REQUIRE(area.m_hasPlants.getPlantsOnSurface().contains(&plant));
+	REQUIRE(blocks.isExposedToSky(plants.getLocation(plant)));
+	REQUIRE(!plants.temperatureEventExists());
+	REQUIRE(area.getPlants().getOnSurface().contains(plant));
 	simulation.fastForward(wheatGrass.stepsNeedsFluidFrequency);
-	REQUIRE(plant.m_volumeFluidRequested != 0);
-	REQUIRE(!plant.m_growthEvent.exists());
-	REQUIRE(plant.m_percentGrown == 50 + ((float)simulation.m_step / (float)wheatGrass.stepsTillFullyGrown) * 100);
+	REQUIRE(plants.getVolumeFluidRequested(plant) != 0);
+	REQUIRE(!plants.isGrowing(plant));
+	REQUIRE(plants.getPercentGrown(plant) == 50 + ((float)simulation.m_step / (float)wheatGrass.stepsTillFullyGrown) * 100);
 	REQUIRE(simulation.m_eventSchedule.m_data.contains(simulation.m_step + wheatGrass.stepsTillDieWithoutFluid - 1));
 	area.m_hasRain.start(water, 1, 100);
-	REQUIRE(plant.m_volumeFluidRequested == 0);
-	REQUIRE(plant.m_growthEvent.exists());
+	REQUIRE(plants.getVolumeFluidRequested(plant) == 0);
+	REQUIRE(plants.isGrowing(plant));
 	area.m_hasTemperature.setAmbientSurfaceTemperature(wheatGrass.minimumGrowingTemperature - 1);
-	REQUIRE(!plant.m_growthEvent.exists());
-	REQUIRE(plant.m_temperatureEvent.exists());
+	REQUIRE(!plants.isGrowing(plant));
+	REQUIRE(plants.temperatureEventExists(plant));
 	area.m_hasTemperature.setAmbientSurfaceTemperature(wheatGrass.minimumGrowingTemperature);
-	REQUIRE(plant.m_growthEvent.exists());
-	REQUIRE(!plant.m_temperatureEvent.exists());
+	REQUIRE(plants.isGrowing(plant));
+	REQUIRE(!plants.temperatureEventExists(plant));
 	BlockIndex above = blocks.getBlockAbove(location);
 	blocks.solid_set(above, marble, false);
-	REQUIRE(!plant.m_growthEvent.exists());
+	REQUIRE(!plants.isGrowing(plant));
 	blocks.solid_setNot(above);
-	REQUIRE(plant.m_growthEvent.exists());
-	plant.die();
+	REQUIRE(plants.isGrowing(plant));
+	plants.die(plant);
 }
 TEST_CASE("plantFruits")
 {
@@ -52,14 +54,15 @@ TEST_CASE("plantFruits")
 	uint16_t dayOfYear = wheatGrass.harvestData->dayOfYearToStart;
 	Simulation simulation(L"test", DateTime::toSteps(24, dayOfYear - 1, 1200));
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	Plants& plants = area.getPlants();
 	Blocks& blocks = area.getBlocks();
 	BlockIndex location = blocks.getIndex({5, 5, 2});
 	areaBuilderUtil::setSolidLayer(area, 1, dirt);
 	blocks.plant_create(location, wheatGrass, 50);
-	Plant& plant = blocks.plant_get(location);
-	REQUIRE(plant.m_quantityToHarvest == 0);
+	PlantIndex plant = blocks.plant_get(location);
+	REQUIRE(plants.getQuantityToHarvest(plant) == 0);
 	simulation.fastForward(Config::stepsPerHour);
-	REQUIRE(plant.m_quantityToHarvest != 0);
+	REQUIRE(plants.getQuantityToHarvest(plant) != 0);
 }
 TEST_CASE("harvestSeasonEnds")
 {
@@ -70,11 +73,12 @@ TEST_CASE("harvestSeasonEnds")
 	Simulation simulation(L"test", step);
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
+	Plants& plants = area.getPlants();
 	BlockIndex location = blocks.getIndex({5, 5, 2});
 	areaBuilderUtil::setSolidLayer(area, 1, dirt);
 	blocks.plant_create(location, wheatGrass, 50);
-	Plant& plant = blocks.plant_get(location);
-	REQUIRE(plant.m_quantityToHarvest != 0);
+	PlantIndex plant = blocks.plant_get(location);
+	REQUIRE(plants.getQuantityToHarvest(plant) != 0);
 	simulation.fastForward(Config::stepsPerHour);
-	REQUIRE(plant.m_quantityToHarvest == 0);
+	REQUIRE(plants.getQuantityToHarvest(plant) == 0);
 }

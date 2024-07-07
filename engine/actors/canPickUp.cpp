@@ -75,10 +75,7 @@ ActorOrItemIndex Actors::canPickUp_putDownIfAny(ActorIndex index, BlockIndex loc
 {
 	if(!m_carrying.at(index).exists())
 		return m_carrying.at(index);
-	if(m_carrying.at(index).isActor())
-		return ActorOrItemIndex::createForActor(canPickUp_putDownActor(index, location));
-	else
-		return ActorOrItemIndex::createForItem(canPickUp_putDownItem(index, location));
+	return canPickUp_putDownPolymorphic(index, location);
 }
 ActorOrItemIndex Actors::canPickUp_putDownPolymorphic(ActorIndex index, BlockIndex location)
 {
@@ -104,19 +101,48 @@ bool Actors::canPickUp_polymorphic(ActorIndex index, ActorOrItemIndex actorOrIte
 	Mass mass = actorOrItemIndex.getSingleUnitMass(m_area);
 	return canPickUp_anyWithMass(index, mass);
 }
-bool Actors::canPickUp_anyUnencombered(ActorIndex index, ActorOrItemIndex actorOrItemIndex) const
+bool Actors::canPickUp_item(ActorIndex index, ItemIndex item) const
 {
-	Mass mass = actorOrItemIndex.getSingleUnitMass(m_area);
+	Mass mass = m_area.getItems().getMass(item);
 	return canPickUp_anyWithMass(index, mass);
 }
-bool Actors::canPickUp_anyUnencomberedItem(ActorIndex index, ItemIndex item) const
+bool Actors::canPickUp_itemQuantity(ActorIndex index, ItemIndex item, Quantity quantity) const
+{
+	Mass mass = m_area.getItems().getMass(item) * quantity;
+	return canPickUp_anyWithMass(index, mass);
+}
+bool Actors::canPickUp_singleItem(ActorIndex index, ItemIndex item) const
 {
 	Mass mass = m_area.getItems().getSingleUnitMass(item);
+	return canPickUp_anyWithMass(index, mass);
+}
+bool Actors::canPickUp_actor(ActorIndex index, ActorIndex actor) const
+{
+	Mass mass = m_area.getActors().getMass(actor);
 	return canPickUp_anyWithMass(index, mass);
 }
 bool Actors::canPickUp_anyWithMass(ActorIndex index, Mass mass) const
 {
 	return canPickUp_speedIfCarryingQuantity(index, mass, 1) > 0;
+}
+bool Actors::canPickUp_polymorphicUnencombered(ActorIndex index, ActorOrItemIndex actorOrItemIndex) const
+{
+	Mass mass = actorOrItemIndex.getSingleUnitMass(m_area);
+	return canPickUp_anyWithMassUnencombered(index, mass);
+}
+bool Actors::canPickUp_itemUnencombered(ActorIndex index, ItemIndex item) const
+{
+	Mass mass = m_area.getItems().getSingleUnitMass(item);
+	return canPickUp_anyWithMassUnencombered(index, mass);
+}
+bool Actors::canPickUp_actorUnencombered(ActorIndex index, ActorIndex actor) const
+{
+	Mass mass = m_area.getActors().getMass(actor);
+	return canPickUp_anyWithMassUnencombered(index, mass);
+}
+bool Actors::canPickUp_anyWithMassUnencombered(ActorIndex index, Mass mass) const
+{
+	return canPickUp_speedIfCarryingQuantity(index, mass, 1) == move_getIndividualSpeedWithAddedMass(index, 0);
 }
 bool Actors::canPickUp_isCarryingItemGeneric(ActorIndex index, const ItemType& itemType, const MaterialType& materialType, Quantity quantity) const
 {

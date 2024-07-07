@@ -14,175 +14,163 @@ TEST_CASE("leadAndFollow")
 	static const MaterialType& marble = MaterialType::byName("marble");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
+	Actors& actors = area.getActors();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	SUBCASE("two dwarves")
 	{
-		BlockIndex origin1 = blocks.getIndex({2, 2, 1});
-		BlockIndex origin2 = blocks.getIndex({1, 1, 1});
-		BlockIndex destination1 = blocks.getIndex({9, 9, 1});
-		BlockIndex destination2 = blocks.getIndex({8, 8, 1});
-		Actor& dwarf1 = simulation.m_hasActors->createActor({
+		BlockIndex origin1 = blocks.getIndex(2, 2, 1);
+		BlockIndex origin2 = blocks.getIndex(1, 1, 1);
+		BlockIndex destination1 = blocks.getIndex(9, 9, 1);
+		BlockIndex destination2 = blocks.getIndex(8, 8, 1);
+		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.location=origin1,
-			.area=&area,
 		});
-		Actor& dwarf2 = simulation.m_hasActors->createActor({
+		ActorIndex dwarf2 = actors.create({
 			.species=dwarf,
 			.location=origin2,
-			.area=&area,
 		});
-		dwarf2.m_canFollow.follow(dwarf1.m_canLead);
-		REQUIRE(dwarf1.m_canLead.getMoveSpeed() == dwarf1.m_canMove.getMoveSpeed());
-		dwarf1.m_canMove.setDestination(destination1);
+		actors.followActor(dwarf1, dwarf2);
+		REQUIRE(actors.lead_getSpeed(dwarf1) == actors.move_getSpeed(dwarf1));
+		actors.move_setDestination(dwarf1, destination1);
 		simulation.doStep();
-		REQUIRE(dwarf1.m_canMove.getPath().size() == 7);
-		REQUIRE(dwarf1.m_canMove.getDestination() == destination1);
-		while(dwarf1.m_location != destination1)
+		REQUIRE(actors.move_getPath(dwarf1).size() == 7);
+		REQUIRE(actors.move_getDestination(dwarf1) == destination1);
+		while(actors.getLocation(dwarf1) != destination1)
 			simulation.doStep();
-		REQUIRE(dwarf2.m_location == destination2);
+		REQUIRE(actors.getLocation(dwarf2) == destination2);
 	}
 	SUBCASE("dwarf leads troll")
 	{
-		BlockIndex origin1 = blocks.getIndex({3, 3, 1});
-		BlockIndex origin2 = blocks.getIndex({2, 2, 1});
-		BlockIndex destination1 = blocks.getIndex({9, 9, 1});
-		BlockIndex destination2 = blocks.getIndex({8, 8, 1});
-		Actor& dwarf1 = simulation.m_hasActors->createActor({
+		BlockIndex origin1 = blocks.getIndex(3, 3, 1);
+		BlockIndex origin2 = blocks.getIndex(2, 2, 1);
+		BlockIndex destination1 = blocks.getIndex(9, 9, 1);
+		BlockIndex destination2 = blocks.getIndex(8, 8, 1);
+		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.location=origin1,
-			.area=&area,
 		});
-		Actor& troll1 = simulation.m_hasActors->createActor({
+		ActorIndex troll1 = actors.create({
 			.species=troll,
 			.location=origin2,
-			.area=&area,
 		});
-		troll1.m_canFollow.follow(dwarf1.m_canLead);
-		REQUIRE(dwarf1.m_canLead.getMoveSpeed() == dwarf1.m_canMove.getMoveSpeed());
-		dwarf1.m_canMove.setDestination(destination1);
+		actors.followActor(dwarf1, troll1);
+		REQUIRE(actors.lead_getSpeed(dwarf1) == actors.move_getSpeed(dwarf1));
+		actors.move_setDestination(dwarf1, destination1);
 		simulation.doStep();
-		REQUIRE(dwarf1.m_canMove.getPath().size() == 6);
-		REQUIRE(dwarf1.m_canMove.getDestination() == destination1);
-		while(dwarf1.m_location != destination1)
+		REQUIRE(actors.move_getPath(dwarf1).size() == 6);
+		REQUIRE(actors.move_getDestination(dwarf1) == destination1);
+		while(actors.getLocation(dwarf1) != destination1)
 			simulation.doStep();
-		REQUIRE(troll1.m_location == destination2);
+		REQUIRE(actors.getLocation(troll1) == destination2);
 	}
 	SUBCASE("troll leads dwarf")
 	{
-		BlockIndex origin1 = blocks.getIndex({3, 2, 1});
-		BlockIndex origin2 = blocks.getIndex({1, 1, 1});
-		BlockIndex destination1 = blocks.getIndex({8, 8, 1});
-		BlockIndex destination2 = blocks.getIndex({7, 6, 1});
-		Actor& troll1 = simulation.m_hasActors->createActor({
+		BlockIndex origin1 = blocks.getIndex(3, 2, 1);
+		BlockIndex origin2 = blocks.getIndex(1, 1, 1);
+		BlockIndex destination1 = blocks.getIndex(8, 8, 1);
+		BlockIndex destination2 = blocks.getIndex(7, 6, 1);
+		ActorIndex troll1 = actors.create({
 			.species=troll,
 			.location=origin1,
-			.area=&area,
 		});
-		Actor& dwarf1 = simulation.m_hasActors->createActor({
+		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.location=origin2,
-			.area=&area,
 		});
-		dwarf1.m_canFollow.follow(troll1.m_canLead);
-		REQUIRE(troll1.m_canLead.getMoveSpeed() == troll1.m_canMove.getMoveSpeed());
-		troll1.m_canMove.setDestination(destination1);
+		actors.followActor(troll1, dwarf1);
+		REQUIRE(actors.lead_getSpeed(troll1) == actors.move_getSpeed(troll1));
+		actors.move_setDestination(troll1, destination1);
 		simulation.doStep();
-		REQUIRE(troll1.m_canMove.getPath().size() == 6);
-		REQUIRE(troll1.m_canMove.getDestination() == destination1);
-		while(troll1.m_location != destination1)
+		REQUIRE(actors.move_getPath(troll1).size() == 6);
+		REQUIRE(actors.move_getDestination(troll1) == destination1);
+		while(actors.getLocation(troll1) != destination1)
 			simulation.doStep();
-		REQUIRE(dwarf1.m_location == destination2);
+		REQUIRE(actors.getLocation(dwarf1) == destination2);
 	}
 	SUBCASE("use largest shape for pathing")
 	{
-		BlockIndex origin1 = blocks.getIndex({2, 2, 1});
-		BlockIndex origin2 = blocks.getIndex({1, 1, 1});
-		BlockIndex destination1 = blocks.getIndex({9, 9, 1});
-		blocks.solid_set(blocks.getIndex({5, 1, 1}), marble, false);
-		blocks.solid_set(blocks.getIndex({5, 3, 1}), marble, false);
-		blocks.solid_set(blocks.getIndex({5, 5, 1}), marble, false);
-		blocks.solid_set(blocks.getIndex({5, 7, 1}), marble, false);
-		Actor& dwarf1 = simulation.m_hasActors->createActor({
+		BlockIndex origin1 = blocks.getIndex(2, 2, 1);
+		BlockIndex origin2 = blocks.getIndex(1, 1, 1);
+		BlockIndex destination1 = blocks.getIndex(9, 9, 1);
+		blocks.solid_set(blocks.getIndex(5, 1, 1), marble, false);
+		blocks.solid_set(blocks.getIndex(5, 3, 1), marble, false);
+		blocks.solid_set(blocks.getIndex(5, 5, 1), marble, false);
+		blocks.solid_set(blocks.getIndex(5, 7, 1), marble, false);
+		ActorIndex dwarf1 = actors.create({
 			.species=AnimalSpecies::byName("dwarf"),
 			.location=origin1,
-			.area=&area,
 		});
-		Actor& troll1 = simulation.m_hasActors->createActor({
+		ActorIndex troll1 = actors.create({
 			.species=troll,
 			.location=origin2,
-			.area=&area,
 		});
-		troll1.m_canFollow.follow(dwarf1.m_canLead);
-		dwarf1.m_canMove.setDestination(destination1);
+		actors.followActor(dwarf1, troll1);
+		actors.move_setDestination(dwarf1, destination1);
 		simulation.doStep();
-		REQUIRE(dwarf1.m_canMove.getPath().size() == 8);
+		REQUIRE(actors.move_getPath(dwarf1).size() == 8);
 	}
 	SUBCASE("wait for follower to keep up if blocked temporarily")
 	{
-		BlockIndex origin1 = blocks.getIndex({2, 2, 1});
-		BlockIndex origin2 = blocks.getIndex({1, 1, 1});
-		BlockIndex origin3 = blocks.getIndex({3, 2, 1});
-		BlockIndex destination1 = blocks.getIndex({9, 9, 1});
-		BlockIndex destination2 = blocks.getIndex({8, 8, 1});
-		Actor& dwarf1 = simulation.m_hasActors->createActor({
+		BlockIndex origin1 = blocks.getIndex(2, 2, 1);
+		BlockIndex origin2 = blocks.getIndex(1, 1, 1);
+		BlockIndex origin3 = blocks.getIndex(3, 2, 1);
+		BlockIndex destination1 = blocks.getIndex(9, 9, 1);
+		BlockIndex destination2 = blocks.getIndex(8, 8, 1);
+		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.location=origin1,
-			.area=&area,
 		});
-		Actor& troll1 = simulation.m_hasActors->createActor({
+		ActorIndex troll1 = actors.create({
 			.species=troll,
 			.location=origin2,
-			.area=&area,
 		});
-		Actor& dwarf2 = simulation.m_hasActors->createActor({
+		ActorIndex dwarf2 = actors.create({
 			.species=dwarf,
 			.location=origin3,
-			.area=&area,
 		});
 		std::unique_ptr<Objective> stationObjective = std::make_unique<StationObjective>(dwarf2, origin3);
-		dwarf2.m_hasObjectives.addTaskToStart(std::move(stationObjective));
-		troll1.m_canFollow.follow(dwarf1.m_canLead);
-		dwarf1.m_canMove.setDestination(destination1);
+		actors.objective_addTaskToStart(dwarf2,std::move(stationObjective)); 
+		actors.followActor(dwarf1, troll1);
+		actors.move_setDestination(dwarf1, destination1);
 		simulation.doStep();
-		REQUIRE(dwarf1.m_canMove.getPath().size() == 7);
-		while(dwarf1.m_location == origin1)
+		REQUIRE(actors.move_getPath(dwarf1).size() == 7);
+		while(actors.getLocation(dwarf1) == origin1)
 			simulation.doStep();
 		// Troll has not moved yet.
-		REQUIRE(troll1.m_location == origin2);
-		REQUIRE(!blocks.shape_canEnterCurrentlyFrom(origin1, troll1, troll1.m_location));
-		dwarf2.setLocation(blocks.getIndex({9, 1, 1}));
-		REQUIRE(blocks.shape_canEnterCurrentlyFrom(origin1, troll1, troll1.m_location));
-		REQUIRE(troll1.m_canFollow.hasEvent());
-		Step delay = troll1.m_canFollow.getEventStep() - simulation.m_step;
+		REQUIRE(actors.getLocation(troll1) == origin2);
+		REQUIRE(!blocks.shape_shapeAndMoveTypeCanEnterEverFrom(origin1, actors.getShape(troll1), actors.getMoveType(troll1), actors.getLocation(troll1)));
+		actors.setLocation(dwarf2, blocks.getIndex(9, 1, 1));
+		REQUIRE(blocks.shape_shapeAndMoveTypeCanEnterEverFrom(origin1, actors.getShape(troll1), actors.getMoveType(troll1), actors.getLocation(troll1)));
+		REQUIRE(actors.move_hasEvent(dwarf1));
+		Step delay = actors.move_stepsTillNextMoveEvent(dwarf1) - simulation.m_step;
 		simulation.fastForward(delay);
-		REQUIRE(troll1.m_location != origin2);
-		REQUIRE(troll1.isAdjacentTo(dwarf1));
-		while(dwarf1.m_location != destination1)
+		REQUIRE(actors.getLocation(troll1) != origin2);
+		REQUIRE(actors.isAdjacentToActor(troll1, dwarf1));
+		while(actors.getLocation(dwarf1) != destination1)
 			simulation.doStep();
-		REQUIRE(troll1.m_location == destination2);
+		REQUIRE(actors.getLocation(troll1) == destination2);
 	}
 	SUBCASE("disband line if follower blocked permanantly")
 	{
-		BlockIndex origin1 = blocks.getIndex({2, 2, 1});
-		BlockIndex origin2 = blocks.getIndex({1, 1, 1});
-		BlockIndex destination1 = blocks.getIndex({9, 9, 1});
-		Actor& dwarf1 = simulation.m_hasActors->createActor({
+		BlockIndex origin1 = blocks.getIndex(2, 2, 1);
+		BlockIndex origin2 = blocks.getIndex(1, 1, 1);
+		BlockIndex destination1 = blocks.getIndex(9, 9, 1);
+		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.location=origin1,
-			.area=&area,
 		});
-		Actor& troll1 = simulation.m_hasActors->createActor({
+		ActorIndex troll1 = actors.create({
 			.species=troll,
 			.location=origin2,
-			.area=&area,
 		});
-		troll1.m_canFollow.follow(dwarf1.m_canLead);
-		dwarf1.m_canMove.setDestination(destination1);
+		actors.followActor(dwarf1, troll1);
+		actors.move_setDestination(dwarf1, destination1);
 		simulation.doStep();
-		blocks.solid_set(blocks.getIndex({2, 1, 1}), marble, false);
-		while(dwarf1.m_location == origin1)
+		blocks.solid_set(blocks.getIndex(2, 1, 1), marble, false);
+		while(actors.getLocation(dwarf1) == origin1)
 			simulation.doStep();
-		REQUIRE(!dwarf1.m_canLead.isLeading());
-		REQUIRE(!troll1.m_canFollow.isFollowing());
+		REQUIRE(!actors.isLeading(dwarf1));
+		REQUIRE(!actors.isFollowing(troll1));
 	}
 }
