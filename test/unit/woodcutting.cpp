@@ -6,6 +6,11 @@
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/actors/actors.h"
+#include "../../engine/plants.h"
+#include "../../engine/items/items.h"
+#include "../../engine/itemType.h"
+#include "../../engine/objectives/woodcutting.h"
+#include "../../engine/objectives/stockpile.h"
 #include <new>
 TEST_CASE("woodcutting")
 {
@@ -14,104 +19,106 @@ TEST_CASE("woodcutting")
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
+	Actors& actors = area.getActors();
+	Plants& plants = area.getPlants();
+	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName("dirt"));
-	BlockIndex treeLocation = blocks.getIndex({5, 5, 1});
-	blocks.plant_create(treeLocation, PlantSpecies::byName("poplar tree"), 100);
-	REQUIRE(blocks.plant_get(treeLocation).m_blocks.size() == 5);
+	BlockIndex treeLocation = blocks.getIndex(5, 5, 1);
+	PlantIndex tree = plants.create({.location=treeLocation, .species=PlantSpecies::byName("poplar tree")});
+	REQUIRE(plants.getBlocks(tree).size() == 5);
 	static Faction faction(L"Tower of Power");
 	area.m_blockDesignations.registerFaction(faction);
 	area.m_hasWoodCuttingDesignations.addFaction(faction);
-	Actor& dwarf = simulation.m_hasActors->createActor({
+	ActorIndex dwarf = actors.create({
 		.species=AnimalSpecies::byName("dwarf"), 
 		.percentGrown=100,
-		.location=blocks.getIndex({1,1,1}), 
-		.area=&area,
+		.location=blocks.getIndex(1,1,1), 
 		.hasSidearm=false,
 	});
-	dwarf.setFaction(&faction);
-	Item& axe = simulation.m_hasItems->createItemNongeneric(ItemType::byName("axe"), MaterialType::byName("bronze"), 25u, 10u);
+	actors.setFaction(dwarf, &faction);
+	ItemIndex axe = items.create({.itemType=ItemType::byName("axe"), .materialType=MaterialType::byName("bronze"), .quality=25u, .percentWear=10u});
 	area.m_hasWoodCuttingDesignations.designate(faction, treeLocation);
 	const WoodCuttingObjectiveType objectiveType;
-	REQUIRE(objectiveType.canBeAssigned(dwarf));
-	dwarf.m_hasObjectives.m_prioritySet.setPriority(objectiveType, 10);
+	REQUIRE(objectiveType.canBeAssigned(area, dwarf));
+	actors.objective_setPriority(dwarf, objectiveType, 10);
 	Project* project = nullptr;
 	SUBCASE("axe on ground")
 	{
-		axe.setLocation(blocks.getIndex({3,8,1}), &area);
+		items.setLocation(axe, blocks.getIndex(3,8,1));
 		// One step to find the designation.
 		simulation.doStep();
-		REQUIRE(dwarf.m_project);
-		project = dwarf.m_project;
+		REQUIRE(actors.project_exists(dwarf));
+		project = actors.project_get(dwarf);
 		REQUIRE(project->hasCandidate(dwarf));
 		// One step to activate the project and reserve the axe.
 		simulation.doStep();
 		REQUIRE(!project->hasCandidate(dwarf));
-		REQUIRE(dwarf.m_project == project);
+		REQUIRE(actors.project_get(dwarf) == project);
 		// One step to select haul type.
 		simulation.doStep();
 		REQUIRE(project->getProjectWorkerFor(dwarf).haulSubproject);
 		// Another step to path to the axe.
 		simulation.doStep();
-		REQUIRE(!dwarf.m_canMove.getPath().empty());
-		REQUIRE(axe.isAdjacentTo(dwarf.m_canMove.getDestination()));
-		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf, axe.m_location);
-		REQUIRE(dwarf.m_canPickup.isCarrying(axe));
+		REQUIRE(!actors.move_getPath(dwarf).empty());
+		REQUIRE(items.isAdjacentToLocation(axe, actors.move_getDestination(dwarf)));
+		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf, items.getLocation(axe));
+		REQUIRE(actors.canPickUp_isCarryingItem(dwarf, axe));
 		simulation.doStep();
-		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf, treeLocation);
+		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf, treeLocation);
 		Step stepsDuration = project->getDuration();
 		simulation.fastForward(stepsDuration);
 		REQUIRE(!blocks.plant_exists(treeLocation));
-		REQUIRE(dwarf.m_hasObjectives.getCurrent().getObjectiveTypeId() != ObjectiveTypeId::WoodCutting);
-		REQUIRE(!dwarf.m_canPickup.isCarrying(axe));
+		REQUIRE(actors.objective_getCurrent<Objective>(dwarf).getObjectiveTypeId() != ObjectiveTypeId::WoodCutting);
+		REQUIRE(!actors.canPickUp_isCarryingItem(dwarf, axe));
 		REQUIRE(area.getTotalCountOfItemTypeOnSurface(log) == 10);
 		REQUIRE(area.getTotalCountOfItemTypeOnSurface(branch) == 20);
 	}
 	SUBCASE("axe equiped, collect in stockpile")
 	{
-		BlockIndex branchStockpileLocation = blocks.getIndex({8,8,1});
+		BlockIndex branchStockpileLocation = blocks.getIndex(8,8,1);
 		area.m_hasStockPiles.registerFaction(faction);
 		area.m_hasStocks.addFaction(faction);
 		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile({{branch, nullptr}});
 		stockpile.addBlock(branchStockpileLocation);
 		StockPileObjectiveType stockPileObjectiveType;
-		dwarf.m_hasObjectives.m_prioritySet.setPriority(stockPileObjectiveType, 10);
-		dwarf.m_equipmentSet.addEquipment(axe);
+		actors.objective_setPriority(dwarf, stockPileObjectiveType, 100);
+		actors.equipment_add(dwarf, axe);
 		// One step to find the designation.
 		simulation.doStep();
-		REQUIRE(dwarf.m_project);
-		project = dwarf.m_project;
+		REQUIRE(actors.project_exists(dwarf));
+		project = actors.project_get(dwarf);
 		REQUIRE(project->hasCandidate(dwarf));
 		// One step to activate the project.
 		simulation.doStep();
 		REQUIRE(!project->hasCandidate(dwarf));
-		REQUIRE(dwarf.m_project == project);
+		REQUIRE(actors.project_get(dwarf) == project);
 		// One step to path to the project
 		simulation.doStep();
-		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf, treeLocation);
+		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf, treeLocation);
 		Step stepsDuration = project->getDuration();
 		// TODO: why plus 2?
 		simulation.fastForward(stepsDuration + 2);
 		REQUIRE(!blocks.plant_exists(treeLocation));
 		REQUIRE(area.getTotalCountOfItemTypeOnSurface(log) == 10);
 		REQUIRE(area.getTotalCountOfItemTypeOnSurface(branch) == 20);
-		REQUIRE(!objectiveType.canBeAssigned(dwarf));
-		REQUIRE(dwarf.m_hasObjectives.getCurrent().getObjectiveTypeId() != ObjectiveTypeId::WoodCutting);
-		REQUIRE(!dwarf.m_project);
-		REQUIRE(dwarf.getActionDescription() == L"stockpile");
+		REQUIRE(!objectiveType.canBeAssigned(area, dwarf));
+		REQUIRE(actors.objective_getCurrent<Objective>(dwarf).getObjectiveTypeId() != ObjectiveTypeId::WoodCutting);
+		REQUIRE(!actors.project_exists(dwarf));
+		REQUIRE(actors.getActionDescription(dwarf) == L"stockpile");
 		// One step to create a stockpile project.
 		simulation.doStep();
-		REQUIRE(dwarf.m_project);
+		REQUIRE(actors.project_exists(dwarf));
 		// Reserve.
 		simulation.doStep();
-		REQUIRE(dwarf.m_project->reservationsComplete());
+		REQUIRE(actors.project_get(dwarf)->reservationsComplete());
 		// Select haul strategy.
 		simulation.doStep();
-		REQUIRE(dwarf.m_project->getProjectWorkerFor(dwarf).haulSubproject);
+		REQUIRE(actors.project_get(dwarf)->getProjectWorkerFor(dwarf).haulSubproject);
 		// Pickup and path.
 		simulation.doStep();
-		REQUIRE(dwarf.m_canMove.getDestination() != BLOCK_INDEX_MAX);
-		REQUIRE(dwarf.m_canPickup.exists());
-		simulation.fastForwardUntillActorIsAdjacentToDestination(dwarf, branchStockpileLocation);
-		REQUIRE(!dwarf.m_canPickup.exists());
+		REQUIRE(actors.move_getDestination(dwarf) != BLOCK_INDEX_MAX);
+		REQUIRE(actors.canPickUp_exists(dwarf));
+		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf, branchStockpileLocation);
+		REQUIRE(!actors.canPickUp_exists(dwarf));
 	}
 }

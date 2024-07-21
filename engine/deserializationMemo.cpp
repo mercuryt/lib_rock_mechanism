@@ -42,6 +42,7 @@
 
 //#include "worldforge/world.h"
 #include <cstdint>
+/*
 Faction& DeserializationMemo::faction(std::wstring name) { return m_simulation.m_hasFactions.byName(name); }
 Area& DeserializationMemo::area(const Json& data) { return m_simulation.m_hasAreas->getById(data.get<AreaId>()); }
 ProjectRequirementCounts& DeserializationMemo::projectRequirementCountsReference(const Json& data) { return *m_projectRequirementCounts.at(data.get<uintptr_t>()); }
@@ -137,3 +138,4 @@ std::unique_ptr<ObjectiveType> DeserializationMemo::loadObjectiveType(const Json
 			return std::make_unique<StockPileObjectiveType>(data, *this);
 	}
 }
+*/

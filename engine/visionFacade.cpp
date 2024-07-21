@@ -5,7 +5,6 @@
 #include "simulation.h"
 #include "types.h"
 #include "util.h"
-#include "visionUtil.h"
 #include "actors/actors.h"
 #include "blocks/blocks.h"
 #include <cstddef>

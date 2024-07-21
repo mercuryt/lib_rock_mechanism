@@ -21,14 +21,14 @@ class CraftObjective final : public Objective
 	CraftJob* m_craftJob = nullptr;
 	std::unordered_set<CraftJob*> m_failedJobs;
 public:
-	CraftObjective(ActorIndex a, const SkillType& st);
+	CraftObjective(const SkillType& st);
 	CraftObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	void execute(Area& area);
-	void cancel(Area& area);
-	void delay(Area& area) { cancel(area); }
-	void reset(Area& area);
+	void execute(Area& area, ActorIndex actor);
+	void cancel(Area& area, ActorIndex actor);
+	void delay(Area& area, ActorIndex actor) { cancel(area, actor); }
+	void reset(Area& area, ActorIndex actor);
 	void recordFailedJob(CraftJob& craftJob) { assert(!m_failedJobs.contains(&craftJob)); m_failedJobs.insert(&craftJob); }
+	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::unordered_set<CraftJob*>& getFailedJobs() { return m_failedJobs; }
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Craft; }
 	[[nodiscard]] std::string name() const { return "craft"; }
@@ -44,6 +44,6 @@ class CraftPathRequest final : public PathRequest
 	CraftJob* m_craftJob = nullptr;
 	BlockIndex m_location = BLOCK_INDEX_MAX;
 public:
-	CraftPathRequest(Area& area, CraftObjective& co);
-	void callback(Area& area, FindPathResult result);
+	CraftPathRequest(Area& area, CraftObjective& co, ActorIndex actor);
+	void callback(Area& area, FindPathResult& result);
 };

@@ -16,6 +16,7 @@ public:
 	void unsubscribeAll();
 	[[nodiscard]] bool empty() { return m_subscriptions.empty(); }
 	~OnDestroy();
+	OnDestroy(OnDestroy&) = delete;
 };
 
 class HasOnDestroySubscriptions
@@ -31,4 +32,5 @@ public:
 	void setCallback(std::function<void()>& callback);
 	void callback();
 	~HasOnDestroySubscriptions();
+	HasOnDestroySubscriptions(HasOnDestroySubscriptions&) = delete;
 };

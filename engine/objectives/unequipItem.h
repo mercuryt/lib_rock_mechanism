@@ -3,16 +3,17 @@
 
 class UnequipItemObjective final : public Objective
 {
-	ItemIndex m_item;
+	ItemReference m_item;
 	BlockIndex m_block;
 public:
-	UnequipItemObjective(ActorIndex actor, ItemIndex item, BlockIndex block);
-	UnequipItemObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(Area&);
-	void cancel(Area&);
-	void delay(Area& area) { cancel(area); }
-	void reset(Area& area);
+	UnequipItemObjective(ItemReference item, BlockIndex block);
+	UnequipItemObjective(const Json& data, Area& area);
+	void execute(Area&, ActorIndex actor);
+	void cancel(Area&, ActorIndex actor);
+	void delay(Area& area, ActorIndex actor) { cancel(area, actor); }
+	void reset(Area& area, ActorIndex actor);
 	[[nodiscard]] std::string name() const { return "equip"; }
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Unequip; }
 	[[nodiscard]] Json toJson() const;
+
 };

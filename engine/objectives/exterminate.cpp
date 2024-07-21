@@ -5,9 +5,8 @@
 #include "../deserializationMemo.h"
 #include "blocks/blocks.h"
 #include "types.h"
-ExterminateObjective::ExterminateObjective(Area& area, ActorIndex a, BlockIndex destination) :
-	Objective(a, Config::exterminatePriority), m_destination(destination), m_event(area.m_eventSchedule) { }
-/*
+ExterminateObjective::ExterminateObjective(Area& area, BlockIndex destination) :
+	Objective(Config::exterminatePriority), m_destination(destination), m_event(area.m_eventSchedule) { }
 ExterminateObjective::ExterminateObjective(const Json& data, DeserializationMemo& deserializationMemo) : 
 	Objective(data, deserializationMemo),
 	m_destination(data["destination"].get<BlockIndex>()),
@@ -24,20 +23,19 @@ Json ExterminateObjective::toJson() const
 		output["eventStart"] = m_event.getStartStep();
 	return output;
 }
-*/
-void ExterminateObjective::execute(Area& area)
+void ExterminateObjective::execute(Area& area, ActorIndex actor)
 {
 	ActorIndex closest = ACTOR_INDEX_MAX;
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
-	BlockIndex thisActorLocation = actors.getLocation(m_actor);
+	BlockIndex thisActorLocation = actors.getLocation(actor);
 	BlockIndex closestActorLocation = BLOCK_INDEX_MAX;
-	for(ActorIndex actor : actors.vision_getCanSee(m_actor))
+	for(ActorIndex actor : actors.vision_getCanSee(actor))
 	{
 		BlockIndex location = actors.getLocation(actor);
 		if(
 			actors.hasFaction(actor) &&
-			!actors.isAlly(actor, m_actor) &&
+			!actors.isAlly(actor, actor) &&
 			(!closest || blocks.taxiDistance(closestActorLocation, thisActorLocation) < blocks.taxiDistance(location, thisActorLocation))
 		)
 		{
@@ -46,15 +44,16 @@ void ExterminateObjective::execute(Area& area)
 		}
 	}
 	if(closest)
-		actors.combat_setTarget(m_actor, closest);
+		actors.combat_setTarget(actor, closest);
 	else
 	{
 		static constexpr DistanceInBlocks distanceToRallyPoint = 10;
 		if(blocks.taxiDistance(thisActorLocation, m_destination) > distanceToRallyPoint)
-			actors.move_setDestination(m_actor, m_destination, m_detour);
+			actors.move_setDestination(actor, m_destination, m_detour);
 		m_event.schedule(area.m_simulation, *this);
 	}
 }
-ExterminateObjectiveScheduledEvent::ExterminateObjectiveScheduledEvent(Simulation& simulation, ExterminateObjective& o, Step start) : 
+ExterminateObjectiveScheduledEvent::ExterminateObjectiveScheduledEvent(Simulation& simulation, ExterminateObjective& o, ActorIndex actor, Step start) : 
 	ScheduledEvent(simulation, Config::exterminateCheckFrequency, start),
+	m_actor(actor),
 	m_objective(o) { }

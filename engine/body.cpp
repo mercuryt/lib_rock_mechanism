@@ -64,6 +64,7 @@ Percent Wound::impairPercent() const
 {
 	return util::scaleByInversePercent(maxPercentTemporaryImpairment, getPercentHealed()) + maxPercentPermanantImpairment;
 }
+/*
 BodyPart::BodyPart(const Json data, DeserializationMemo& deserializationMemo) :
 	bodyPartType(BodyPartType::byName(data["bodyPartType"].get<std::string>())),
 	materialType(MaterialType::byName(data["materialType"].get<std::string>())),
@@ -83,6 +84,7 @@ Json BodyPart::toJson() const
 		data["wounds"].push_back(wound.toJson());
 	return data;
 }
+*/
 Body::Body(Area& area, ActorIndex a) :  m_bleedEvent(area.m_eventSchedule), m_woundsCloseEvent(area.m_eventSchedule), m_actor(a) { }
 void Body::initalize(Area& area)
 {

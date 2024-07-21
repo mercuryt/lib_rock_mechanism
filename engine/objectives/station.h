@@ -8,12 +8,12 @@ class StationObjective final : public Objective
 {
 	BlockIndex m_location = BLOCK_INDEX_MAX;
 public:
-	StationObjective(ActorIndex a, BlockIndex l) : Objective(a, Config::stationPriority), m_location(l) { }
-	StationObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(Area& area);
-	void cancel(Area&) { }
-	void delay(Area&) { }
-	void reset(Area& area);
+	StationObjective(BlockIndex l) : Objective(Config::stationPriority), m_location(l) { }
+	StationObjective(const Json& data);
+	void execute(Area& area, ActorIndex actor);
+	void cancel(Area&, ActorIndex) { }
+	void delay(Area&, ActorIndex) { }
+	void reset(Area& area, ActorIndex actor);
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Station; }
 	std::string name() const { return "station"; }
 };

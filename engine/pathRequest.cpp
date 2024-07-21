@@ -1,6 +1,10 @@
 #include "pathRequest.h"
 #include "area.h"
 #include "types.h"
+#include "actors/actors.h"
+#include "blocks/blocks.h"
+#include "items/items.h"
+#include "plants.h"
 // Handle
 void PathRequest::create(Area& area, ActorIndex actor, DestinationCondition destination, bool detour, DistanceInBlocks maxRange, BlockIndex huristicDestination, bool reserve)
 {
@@ -46,10 +50,10 @@ void PathRequest::createGoToAnyOf(Area& area, ActorIndex actor, std::vector<Bloc
 	{
 		assert(area.getActors().getFaction(actor) != nullptr);
 		const Faction& faction = *area.getActors().getFaction(actor);
-		std::ranges::remove_if(destinations, [blocks, &faction](BlockIndex index){ return !blocks.isReserved(index, faction); });
+		std::ranges::remove_if(destinations, [&blocks, &faction](BlockIndex index){ return !blocks.isReserved(index, faction); });
 	}
 	const MoveType& moveType = actors.getMoveType(actor);
-	std::ranges::remove_if(destinations, [actors, blocks, moveType](BlockIndex index){
+	std::ranges::remove_if(destinations, [&blocks, &moveType](BlockIndex index){
 		return blocks.shape_anythingCanEnterEver(index) && blocks.shape_moveTypeCanEnter(index, moveType);
 	});
 	//TODO: handle no destinations.
@@ -95,15 +99,15 @@ void PathRequest::createGoAdjacentToActor(Area& area, ActorIndex actor, ActorInd
 }
 void PathRequest::createGoAdjacentToItem(Area& area, ActorIndex actor, ItemIndex item, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve)
 {
-	Items& items = area.m_items;
+	Items& items = area.getItems();
 	//TODO: make getAdjacentBlocks return a vector rather then a set.
 	auto itemAdjacent = items.getAdjacentBlocks(item);
 	std::vector<BlockIndex> candidates(itemAdjacent.begin(), itemAdjacent.end());
 	createGoToAnyOf(area, actor, candidates, detour, unreserved, maxRange, items.getLocation(item), reserve);
 }
-void createGoAdjacentToPlant(Area& area, PlantIndex plant, ItemIndex item, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve)
+void PathRequest::createGoAdjacentToPlant(Area& area, ActorIndex actor, PlantIndex plant, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve)
 {
-	Plants& plants = area.m_plants;
+	Plants& plants = area.getPlants();
 	//TODO: make getAdjacentBlocks return a vector rather then a set.
 	auto plantAdjacent = plants.getAdjacentBlocks(plant);
 	std::vector<BlockIndex> candidates(plantAdjacent.begin(), plantAdjacent.end());
@@ -146,11 +150,10 @@ void PathRequest::createGoToCondition(Area& area, ActorIndex actor, DestinationC
 	const Faction* faction = nullptr;
 	if(unreserved)
 		faction = area.getActors().getFaction(actor);
-	const Shape& shape = area.getActors().getShape(actor);
 	Blocks& blocks = area.getBlocks();
 	//TODO: use seperate lambdas rather then always passing unreserved and faction.
-	DestinationCondition destinationCondition = [&blocks, condition, unreserved, faction](BlockIndex index, Facing) { 
-		return condition(index) && (!unreserved || !blocks.isReserved(index, *faction));
+	DestinationCondition destinationCondition = [&blocks, condition, unreserved, faction](BlockIndex index, Facing facing) { 
+		return condition(index, facing) && (!unreserved || !blocks.isReserved(index, *faction));
 	};
 	create(area, actor, destinationCondition, detour, maxRange, huristicDestination, reserve);
 }
@@ -207,11 +210,11 @@ void PathRequest::reset()
 	m_reserve = false;
 	m_reserveBlockThatPassesPredicate = false;
 }
-void PathRequest::callback(Area& area, FindPathResult result)
+void PathRequest::callback(Area& area, FindPathResult& result)
 {
 	area.getActors().move_pathRequestCallback(m_actor, result.path, result.useCurrentPosition, m_reserve);
 }
-void ObjectivePathRequest::callback(Area& area, FindPathResult result)
+void ObjectivePathRequest::callback(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actor = m_objective.m_actor;
@@ -233,7 +236,7 @@ void ObjectivePathRequest::callback(Area& area, FindPathResult result)
 			}
 		}
 		else
-			if(!actors.move_tryToReserveDestination(actor))
+			if(!actors.move_tryToReserveProposedDestination(actor, result.path))
 			{
 				actors.objective_canNotCompleteSubobjective(actor);
 				return;
@@ -251,14 +254,14 @@ void ObjectivePathRequest::callback(Area& area, FindPathResult result)
 		actors.move_setPath(actor, result.path);
 	onSuccess(area, result.blockThatPassedPredicate);
 }
-void NeedPathRequest::callback(Area& area, FindPathResult result)
+void NeedPathRequest::callback(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actor = m_objective.m_actor;
 	// No path found.
 	if(result.path.empty() && !result.useCurrentPosition)
 	{
-		actors.objective_canNotCompleteNeed(actor, m_objective);
+		actors.objective_canNotFulfillNeed(actor, m_objective);
 		return;
 	}
 	if(result.useCurrentPosition)

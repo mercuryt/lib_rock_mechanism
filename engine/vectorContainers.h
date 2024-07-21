@@ -4,6 +4,7 @@
  * Not pointer stable.
  */
 #include "util.h"
+#include "json.h"
 #include <vector>
 #include <ranges>
 #include <cassert>
@@ -11,15 +12,20 @@
 template<typename T>
 class SmallSet
 {
-	std::vector<T> data;
+	std::vector<T> m_data;
 public:
-	void insert(T& value) { assert(!contains(value)); data.push_back(value); }
-	void erase(T& value) { util::removeFromVectorByValueUnordered(data, value); }
-	void clear() { data.clear(); }
-	[[nodiscard]] bool contains(T& value) { return std::ranges::find(data, value) != data.end(); }
-	[[nodiscard]] std::vector<T> begin() { return data.begin(); }
-	[[nodiscard]] std::vector<T> end() { return data.end(); }
+	SmallSet() = default;
+	void load(Json& data) { m_data = data; }
+	void insert(T& value) { assert(!contains(value)); m_data.push_back(value); }
+	void erase(T& value) { util::removeFromVectorByValueUnordered(m_data, value); }
+	void clear() { m_data.clear(); }
+	[[nodiscard]] bool contains(T& value) { return std::ranges::find(m_data, value) != m_data.end(); }
+	[[nodiscard]] std::vector<T> begin() { return m_data.begin(); }
+	[[nodiscard]] std::vector<T> end() { return m_data.end(); }
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SmallSet, m_data);
 };
+template<typename T>
+inline void from_json(const Json& data, SmallSet<T>& set) { set.load(data); }
 // Used in place of boost::unordered_flat_map because we need to have an getAllKeys method.
 template<typename K, typename V>
 class SmallMap
@@ -53,14 +59,26 @@ public:
 	[[nodiscard]] V& at(K& key) 
 	{
 	       	assert(contains(key)); 
-		auto iter = find(key);
-		auto iter2 = values.begin() + (std::distance(iter, keys.begin()));
+		auto iterKey = find(key);
+		auto iter2 = at(iterKey);
 		return *iter2; 
 	}
-	[[nodiscard]] bool contains(K& key) { return find(key) != keys.end(); }
-	[[nodiscard]] std::vector<K>::iterator find(K& key) { return std::ranges::find(keys, key); }
-	[[nodiscard]] std::vector<std::pair<K, V>> begin() { return data.begin(); }
-	[[nodiscard]] std::vector<std::pair<K, V>> end() { return data.end(); }
+	[[nodiscard]] bool contains(K& key) { return findKey(key) != keys.end(); }
+	[[nodiscard]] std::vector<K>::iterator findKey(K& key) { return std::ranges::find(keys, key); }
+	[[nodiscard]] V& at(std::vector<K>::iterator iterKey) { return values.begin() + (std::distance(iterKey, keys.begin())); }
+	class Iterator
+	{
+		std::vector<K>::iterator m_iterator;
+		SmallMap<K, V>& m_map;
+	public:
+		Iterator(SmallMap<K, V>& map, std::vector<K>::iterator iterator) : m_iterator(iterator), m_map(map) { }
+		void operator++() { m_iterator++; }
+		[[nodiscard]] std::pair<K&, V&> operator*() { return {m_iterator, m_map.at(m_iterator)}; }
+		[[nodiscard]] bool operator==(Iterator& iterator) { return m_iterator == iterator.m_iterator; }
+	};
+	[[nodiscard]] Iterator begin() { return {*this, keys.begin()}; }
+	[[nodiscard]] Iterator end() { return {*this, keys.end()}; }
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SmallMap, keys, values);
 };
 template<typename K, typename V>
 class SmallMapSortedDescending : public SmallMap<K, V>

@@ -11,3 +11,11 @@ void SimulationHasActors::removeActor(ActorId id)
 	assert(m_actors.contains(id));
 	m_actors.erase(id);
 }
+ActorIndex SimulationHasActors::getIndexForId(ActorId id) const
+{
+	return m_actors.at(id).index;
+}
+Area& SimulationHasActors::getAreaForId(ActorId id) const
+{
+	return m_actors.at(id).store.m_area;
+}

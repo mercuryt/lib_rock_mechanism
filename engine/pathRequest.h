@@ -23,6 +23,7 @@ class PathRequest
 	BlockIndex m_huristicDestination = BLOCK_INDEX_MAX;
 	DistanceInBlocks m_maxRange = 0;
 	BlockDesignation m_designation = BlockDesignation::BLOCK_DESIGNATION_MAX;
+protected:
 	bool m_detour = false;
 	bool m_unreserved = false;
 	bool m_adjacent = false;
@@ -30,6 +31,7 @@ class PathRequest
 	bool m_reserveBlockThatPassesPredicate = false;
 public:
 	PathRequest() = default;
+	void updateActorIndex(ActorIndex newIndex) { m_actor = newIndex; }
 	void create(Area& area, ActorIndex actor, DestinationCondition destination, bool detour, DistanceInBlocks maxRange, BlockIndex huristicDestination = BLOCK_INDEX_MAX, bool reserve = false);
 	void createGoToAnyOf(Area& area, ActorIndex actor, std::vector<BlockIndex> destinations, bool detour, bool unreserved, DistanceInBlocks maxRange, BlockIndex huristicDestination = BLOCK_INDEX_MAX, bool reserve = false);
 public:
@@ -37,7 +39,7 @@ public:
 	void createGoAdjacentToLocation(Area& area, ActorIndex actor, BlockIndex destination, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);
 	void createGoAdjacentToActor(Area& area, ActorIndex actor, ActorIndex other, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);
 	void createGoAdjacentToItem(Area& area, ActorIndex actor, ItemIndex item, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);
-	void createGoAdjacentToPlant(Area& area, PlantIndex plant, ItemIndex item, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);
+	void createGoAdjacentToPlant(Area& area, ActorIndex actor, ItemIndex item, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);
 	void createGoAdjacentToPolymorphic(Area& area, ActorIndex actor, ActorOrItemIndex actorOrItem, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);
 	void createGoAdjacentToDesignation(Area& area, ActorIndex actor, BlockDesignation designation, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);
 	void createGoAdjacentToFluidType(Area& area, ActorIndex actor, const FluidType& fluidType, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);
@@ -52,6 +54,7 @@ public:
 	virtual void callback(Area& area, FindPathResult& result);
 	[[nodiscard]] virtual Json toJson() const;
 	[[nodiscard]] bool exists() const { return m_index != PATH_REQUEST_INDEX_MAX; }
+	[[nodiscard]] ActorIndex getActor() const { return m_actor; }
 	virtual ~PathRequest() = default;
 };
 // Defines a standard callback to be subclassed by many objectives.
@@ -60,7 +63,7 @@ class ObjectivePathRequest : public PathRequest
 protected:
 	Objective& m_objective;
 	bool m_reserveBlockThatPassedPredicate = false;
-	void callback(Area& area, FindPathResult);
+	void callback(Area& area, FindPathResult&);
 	virtual void onSuccess(Area& area, BlockIndex blockThatPassedPredicate);
 
 public:
@@ -71,7 +74,7 @@ class NeedPathRequest : public PathRequest
 {
 protected:
 	Objective& m_objective;
-	void callback(Area& area, FindPathResult);
+	void callback(Area& area, FindPathResult&);
 	virtual void onSuccess(Area& area, BlockIndex blockThatPassedPredicate);
 public:
 	NeedPathRequest(Objective& objective) : m_objective(objective) { }

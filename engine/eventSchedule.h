@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "config.h"
 #include "types.h"
 
 #include <list>
@@ -28,15 +29,28 @@ public:
 	virtual void execute(Simulation& simulation, Area* area) = 0;
 	virtual void clearReferences(Simulation& simulation, Area* area) = 0;
 	virtual void onCancel(Simulation&, Area*) { }
+	virtual void onMoveIndex([[maybe_unused]] HasShapeIndex oldIndex, [[maybe_unused]] HasShapeIndex newIndex) { }
 	virtual ~ScheduledEvent() = default;
 	[[nodiscard]] Percent percentComplete(Simulation& simulation) const;
 	[[nodiscard]] float fractionComplete(Simulation& simulation) const;
 	[[nodiscard]] Step duration() const;
 	[[nodiscard]] Step remaningSteps(Simulation& simulation) const;
 	[[nodiscard]] Step elapsedSteps(Simulation& simulation) const;
+	[[nodiscard]] Json toJson() const;
 	ScheduledEvent(const ScheduledEvent&) = delete;
 	ScheduledEvent(ScheduledEvent&&) = delete;
 };
+inline void to_json(Json& data, const ScheduledEvent& event)
+{
+	data = {{"start", event.m_startStep}, {"step", event.m_step}};
+	if(event.m_cancel)
+		data["cancel"] = true;
+}
+inline void from_json(const Json& data, ScheduledEvent& event)
+{
+	event.m_startStep = data["start"];
+	event.m_step = data["step"];
+}
 class EventSchedule
 {
 	Simulation& m_simulation;

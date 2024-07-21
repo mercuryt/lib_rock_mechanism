@@ -19,9 +19,10 @@ struct FindPathResult;
 
 class GivePlantsFluidEvent final : public ScheduledEvent
 {
+	ActorReference m_actor;
 	GivePlantsFluidObjective& m_objective;
 public:
-	GivePlantsFluidEvent(Step step, Area& area, GivePlantsFluidObjective& gpfo, const Step start = 0);
+	GivePlantsFluidEvent(Step step, Area& area, GivePlantsFluidObjective& gpfo, ActorIndex actor, const Step start = 0);
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 	void onCancel(Simulation& simulation, Area* area);
@@ -32,7 +33,7 @@ class GivePlantsFluidPathRequest final : public PathRequest
 	GivePlantsFluidObjective& m_objective;
 public:
 	GivePlantsFluidPathRequest(Area& area, GivePlantsFluidObjective& objective);
-	void callback(Area& area, FindPathResult result);
+	void callback(Area& area, FindPathResult& result);
 };
 class GivePlantsFluidObjectiveType final : public ObjectiveType
 {
@@ -46,25 +47,25 @@ public:
 class GivePlantsFluidObjective final : public Objective
 {
 	BlockIndex m_plantLocation = BLOCK_INDEX_MAX;
-	ItemIndex m_fluidHaulingItem = ITEM_INDEX_MAX;
+	ItemReference m_fluidHaulingItem;
 	HasScheduledEvent<GivePlantsFluidEvent> m_event;
 public:
-	GivePlantsFluidObjective(Area& area, ActorIndex a);
-	GivePlantsFluidObjective(const Json& data, DeserializationMemo& deserializationMemo);
+	GivePlantsFluidObjective(Area& area);
+	GivePlantsFluidObjective(const Json& data, Area& area);
 	Json toJson() const;
-	void execute(Area& area);
-	void cancel(Area& area);
-	void fillContainer(Area& area, BlockIndex fillLocation);
-	void delay(Area& area) { cancel(area); }
-	void selectPlantLocation(Area& area, BlockIndex block);
-	void selectItem(Area& area, ItemIndex item);
-	void reset(Area& area);
-	void makePathRequest(Area& area);
+	void execute(Area& area, ActorIndex actor);
+	void cancel(Area& area, ActorIndex actor);
+	void fillContainer(Area& area, BlockIndex fillLocation, ActorIndex actor);
+	void delay(Area& area, ActorIndex actor) { cancel(area, actor); }
+	void selectPlantLocation(Area& area, BlockIndex block, ActorIndex actor);
+	void selectItem(Area& area, ItemIndex item, ActorIndex actor);
+	void reset(Area& area, ActorIndex actor);
+	void makePathRequest(Area& area, ActorIndex actor);
 	std::string name() const { return "give plants fluid"; }
 	bool canFillAt(Area& area, BlockIndex block) const;
 	ItemIndex getItemToFillFromAt(Area& area, BlockIndex block);
-	bool canGetFluidHaulingItemAt(Area& area, BlockIndex location) const;
-	ItemIndex getFluidHaulingItemAt(Area& area, BlockIndex location);
+	bool canGetFluidHaulingItemAt(Area& area, BlockIndex location, ActorIndex actor) const;
+	ItemIndex getFluidHaulingItemAt(Area& area, BlockIndex location, ActorIndex actor);
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::GivePlantsFluid; }
 	friend class GivePlantsFluidEvent;
 	friend class GivePlantsFluidPathRequest;

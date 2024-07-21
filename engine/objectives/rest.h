@@ -3,6 +3,7 @@
 #include "objective.h"
 #include "eventSchedule.h"
 #include "config.h"
+#include "types.h"
 
 class Simulation;
 class RestEvent;
@@ -12,19 +13,20 @@ class RestObjective final : public Objective
 {
 	HasScheduledEvent<RestEvent> m_restEvent;
 public:
-	RestObjective(Area& area, ActorIndex a);
-	RestObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	void execute(Area& area);
-	void cancel(Area&) { m_restEvent.maybeUnschedule(); }
-	void delay(Area& area) { cancel(area); }
-	void reset(Area& area);
-	std::string name() const { return "rest"; }
-	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Rest; }
-	friend class RestEvent;
+	RestObjective(Area& area);
+	RestObjective(const Json& data, Area& area);
+	void execute(Area& area, ActorIndex actor);
+	void cancel(Area&, ActorIndex) { m_restEvent.maybeUnschedule(); }
+	void delay(Area& area, ActorIndex actor) { cancel(area, actor); }
+	void reset(Area& area, ActorIndex actor);
+	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] std::string name() const { return "rest"; }
+	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Rest; }
+friend class RestEvent;
 };
 class RestEvent final : public ScheduledEvent
 {
+	ActorReference m_actor;
 	RestObjective& m_objective;
 public:
 	RestEvent(Simulation& simulation, RestObjective& ro, const Step start = 0);

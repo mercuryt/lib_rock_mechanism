@@ -10,20 +10,20 @@ class DrinkObjective final : public Objective
 	HasScheduledEvent<DrinkEvent> m_drinkEvent;
 	bool m_noDrinkFound = false;
 public:
-	DrinkObjective(Area& area, ActorIndex a);
-	DrinkObjective(const Json& data, DeserializationMemo& deserializationMemo);
+	DrinkObjective(Area& area);
+	DrinkObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
+	void execute(Area& area, ActorIndex actor);
+	void cancel(Area& area, ActorIndex actor);
+	void delay(Area& area, ActorIndex actor);
+	void reset(Area& area, ActorIndex actor);
+	void makePathRequest(Area& area, ActorIndex actor);
 	[[nodiscard]] Json toJson() const;
-	void execute(Area& area);
-	void cancel(Area& area);
-	void delay(Area& area);
-	void reset(Area& area);
-	void makePathRequest(Area& area);
 	[[nodiscard]] std::string name() const { return "drink"; }
-	[[nodiscard]] bool canDrinkAt(Area& area, const BlockIndex block, Facing facing) const;
-	[[nodiscard]] BlockIndex getAdjacentBlockToDrinkAt(Area& area, BlockIndex block, Facing facing) const;
-	[[nodiscard]] bool canDrinkItemAt(Area& area, BlockIndex block) const;
-	[[nodiscard]] ItemIndex getItemToDrinkFromAt(Area& area, BlockIndex block) const;
-	[[nodiscard]] bool containsSomethingDrinkable(Area& area, BlockIndex block) const;
+	[[nodiscard]] bool canDrinkAt(Area& area, const BlockIndex block, Facing facing, ActorIndex actor) const;
+	[[nodiscard]] BlockIndex getAdjacentBlockToDrinkAt(Area& area, BlockIndex block, Facing facing, ActorIndex actor) const;
+	[[nodiscard]] bool canDrinkItemAt(Area& area, BlockIndex block, ActorIndex actor) const;
+	[[nodiscard]] ItemIndex getItemToDrinkFromAt(Area& area, BlockIndex block, ActorIndex actor) const;
+	[[nodiscard]] bool containsSomethingDrinkable(Area& area, BlockIndex block, ActorIndex actor) const;
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Drink; }
 	[[nodiscard]] bool isNeed() const { return true; }
 	friend class DrinkEvent;
@@ -34,6 +34,6 @@ class DrinkPathRequest final : public PathRequest
 	DrinkObjective& m_drinkObjective;
 	bool m_noDrinkFound = false;
 public:
-	DrinkPathRequest(Area& area, DrinkObjective& drob);
-	void callback(Area& area, FindPathResult result);
+	DrinkPathRequest(Area& area, DrinkObjective& drob, ActorIndex actor);
+	void callback(Area& area, FindPathResult& result);
 };

@@ -2,6 +2,8 @@
 #include "../objective.h"
 #include "../pathRequest.h"
 #include "../uniform.h"
+#include "reference.h"
+#include "types.h"
 class Area;
 class UniformObjective;
 
@@ -15,24 +17,24 @@ public:
 class UniformObjective final : public Objective
 {
 	std::vector<UniformElement> m_elementsCopy;
-	ItemIndex m_item;
+	ItemReference m_item;
 public:
 	UniformObjective(Area& area, ActorIndex actor);
-	UniformObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	void execute(Area&);
-	void cancel(Area&);
-	void delay(Area& area) { cancel(area); }
-	void reset(Area& area);
+	UniformObjective(const Json& data, Area& area, ActorIndex actor);
+	void execute(Area&, ActorIndex actor);
+	void cancel(Area&, ActorIndex actor);
+	void delay(Area& area, ActorIndex actor) { cancel(area, actor); }
+	void reset(Area& area, ActorIndex actor);
+	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "uniform"; }
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Uniform; }
 	// non virtual.
-	void equip(Area& area, ItemIndex item);
-	void select(ItemIndex item);
+	void equip(Area& area, ItemIndex item, ActorIndex actor);
+	void select(Area& area, ItemIndex item);
 	bool blockContainsItem(Area& area, BlockIndex block) const { return const_cast<UniformObjective*>(this)->getItemAtBlock(area, block) != ITEM_INDEX_MAX; }
 	ItemIndex getItemAtBlock(Area& area, BlockIndex block);
 	// For testing.
-	[[nodiscard]] ItemIndex getItem() { return m_item; }
+	[[nodiscard]] ItemIndex getItem() { return m_item.getIndex(); }
 	friend class UniformThreadedTask;
 	
 };

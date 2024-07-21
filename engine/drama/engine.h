@@ -26,13 +26,13 @@ protected:
 	Area* m_area;
 	DramaArc(DramaEngine& engine, DramaArcType type, Area* area = nullptr) : m_engine(engine), m_area(area), m_type(type) { }
 	DramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine);
-	[[nodiscard]] virtual Json toJson() const;
 	void actorsLeave(std::vector<ActorIndex> actors);
 	[[nodiscard]] BlockIndex getEntranceToArea(Area& area, const Shape& shape, const MoveType& moveType) const;
 	[[nodiscard]] BlockIndex findLocationOnEdgeForNear(const Shape& shape, const MoveType& moveType, BlockIndex origin, DistanceInBlocks distance, std::unordered_set<BlockIndex>& exclude) const;
 	[[nodiscard]] bool blockIsConnectedToAtLeast(BlockIndex block, const Shape& shape, const MoveType& moveType, uint16_t count) const;
 	[[nodiscard]] Facing getFacingAwayFromEdge(BlockIndex block) const;
 	[[nodiscard]] std::vector<const AnimalSpecies*> getSentientSpecies() const;
+	[[nodiscard]] virtual Json toJson() const;
 	static std::unique_ptr<DramaArc> load(const Json& data, DeserializationMemo& deserializationMemo,DramaEngine& dramaEngine);
 	friend class DramaEngine;
 public:

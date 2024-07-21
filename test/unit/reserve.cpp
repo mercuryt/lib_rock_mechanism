@@ -35,18 +35,18 @@ TEST_CASE("reservations")
 	{
 		Reservable reservable(1);
 		CanReserve canReserve(faction1);
-		REQUIRE(!reservable.isFullyReserved(&faction1));
-		REQUIRE(!reservable.isFullyReserved(&faction2));
+		REQUIRE(!reservable.isFullyReserved(faction1));
+		REQUIRE(!reservable.isFullyReserved(faction2));
 		reservable.reserveFor(canReserve, 1);
-		REQUIRE(reservable.isFullyReserved(&faction1));
-		REQUIRE(!reservable.isFullyReserved(&faction2));
+		REQUIRE(reservable.isFullyReserved(faction1));
+		REQUIRE(!reservable.isFullyReserved(faction2));
 		reservable.clearReservationFor(canReserve);
-		REQUIRE(!reservable.isFullyReserved(&faction1));
-		REQUIRE(!reservable.isFullyReserved(&faction2));
+		REQUIRE(!reservable.isFullyReserved(faction1));
+		REQUIRE(!reservable.isFullyReserved(faction2));
 		reservable.setMaxReservations(2);
 		reservable.reserveFor(canReserve, 1);
-		REQUIRE(!reservable.isFullyReserved(&faction1));
-		REQUIRE(!reservable.isFullyReserved(&faction2));
+		REQUIRE(!reservable.isFullyReserved(faction1));
+		REQUIRE(!reservable.isFullyReserved(faction2));
 	}
 	SUBCASE("unreserve on destroy canReserve")
 	{
@@ -54,9 +54,9 @@ TEST_CASE("reservations")
 		{
 			CanReserve canReserve(faction1);
 			reservable.reserveFor(canReserve, 1);
-			REQUIRE(reservable.isFullyReserved(&faction1));
+			REQUIRE(reservable.isFullyReserved(faction1));
 		}
-		REQUIRE(!reservable.isFullyReserved(&faction1));
+		REQUIRE(!reservable.isFullyReserved(faction1));
 		REQUIRE(reservable.getUnreservedCount(faction1) == 1);
 	}
 	SUBCASE("clear reservation from canReserve when reservable is destroyed")
@@ -65,7 +65,7 @@ TEST_CASE("reservations")
 		{
 			Reservable reservable(1);
 			reservable.reserveFor(canReserve, 1);
-			REQUIRE(reservable.isFullyReserved(&faction1));
+			REQUIRE(reservable.isFullyReserved(faction1));
 			REQUIRE(canReserve.hasReservationWith(reservable));
 		}
 		REQUIRE(!canReserve.hasReservations());
@@ -75,10 +75,10 @@ TEST_CASE("reservations")
 		Reservable reservable(2);
 		CanReserve canReserve(faction1);
 		reservable.reserveFor(canReserve, 1);
-		REQUIRE(!reservable.isFullyReserved(&faction1));
+		REQUIRE(!reservable.isFullyReserved(faction1));
 		REQUIRE(reservable.getUnreservedCount(faction1) == 1);
 		reservable.reserveFor(canReserve, 1);
-		REQUIRE(reservable.isFullyReserved(&faction1));
+		REQUIRE(reservable.isFullyReserved(faction1));
 	}
 	SUBCASE("dishonor callback clear all")
 	{

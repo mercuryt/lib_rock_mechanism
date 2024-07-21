@@ -23,6 +23,7 @@ void SimulationHasAreas::incrementHour()
 	for(Area& area : m_areas)
 		area.updateClimate();
 }
+/*
 void SimulationHasAreas::save()
 {
 	for(Area& area : m_areas)
@@ -31,6 +32,7 @@ void SimulationHasAreas::save()
 		af << area.toJson();
 	}
 }
+*/
 Area& SimulationHasAreas::createArea(uint32_t x, uint32_t y, uint32_t z, bool createDrama)
 { 
 	AreaId id = ++ m_nextId;
@@ -74,6 +76,7 @@ void SimulationHasAreas::recordId(Area& area)
 {
 	m_areasById[area.m_id] = &area;
 }
+/*
 Json SimulationHasAreas::toJson() const
 {
 	Json areaIds = Json::array();
@@ -81,3 +84,4 @@ Json SimulationHasAreas::toJson() const
 		areaIds.push_back(area.m_id);
 	return {{"areaIds", areaIds}, {"nextId", m_nextId}};
 }
+*/

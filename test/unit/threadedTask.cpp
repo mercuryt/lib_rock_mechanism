@@ -2,22 +2,26 @@
 #include "../../engine/threadedTask.hpp"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasAreas.h"
+#include "../../engine/blocks/blocks.h"
+#include "../../engine/actors/actors.h"
+#include "../../engine/items/items.h"
+#include "../../engine/plants.h"
 class TestThreadedTask final : public ThreadedTask
 {
 	bool& fired;
 	bool& phaseIsRead;
 public:
-	TestThreadedTask(ThreadedTaskEngine& tte, bool& f, bool& pir) : ThreadedTask(tte), fired(f), phaseIsRead(pir) { }
-	void readStep()
+	TestThreadedTask(bool& f, bool& pir) : fired(f), phaseIsRead(pir) { }
+	void readStep(Simulation&, Area*)
 	{ 
 		phaseIsRead = true;
 	}
-	void writeStep()
+	void writeStep(Simulation&, Area*)
 	{
 		phaseIsRead = false;
 		fired = !fired;
 	}
-	void clearReferences() { }
+	void clearReferences(Simulation&, Area*) { }
 };
 class TestThreadedTaskForHolder final : public ThreadedTask
 {
@@ -25,24 +29,24 @@ class TestThreadedTaskForHolder final : public ThreadedTask
 	bool& phaseIsRead;
 	HasThreadedTask<TestThreadedTaskForHolder>& hasThreadedTask;
 public:
-	TestThreadedTaskForHolder(ThreadedTaskEngine& tte, bool& f, bool& pir, HasThreadedTask<TestThreadedTaskForHolder>& htt) : ThreadedTask(tte), fired(f), phaseIsRead(pir), hasThreadedTask(htt) { }
-	void readStep()
+	TestThreadedTaskForHolder(bool& f, bool& pir, HasThreadedTask<TestThreadedTaskForHolder>& htt) : fired(f), phaseIsRead(pir), hasThreadedTask(htt) { }
+	void readStep(Simulation&, Area*)
 	{ 
 		phaseIsRead = true;
 	}
-	void writeStep()
+	void writeStep(Simulation&, Area*)
 	{
 		phaseIsRead = false;
 		fired = !fired;
 	}
-	void clearReferences() { hasThreadedTask.clearPointer(); }
+	void clearReferences(Simulation&, Area*) { hasThreadedTask.clearPointer(); }
 };
 TEST_CASE("threadedTask")
 {
 	bool fired = false;
 	bool phaseIsRead = true;
 	Simulation simulation;
-	std::unique_ptr<ThreadedTask> taskPointer = std::make_unique<TestThreadedTask>(simulation.m_threadedTaskEngine, fired, phaseIsRead);
+	std::unique_ptr<ThreadedTask> taskPointer = std::make_unique<TestThreadedTask>(fired, phaseIsRead);
 	auto& task = *taskPointer.get();
 	simulation.m_threadedTaskEngine.insert(std::move(taskPointer));
 	REQUIRE(phaseIsRead);
@@ -55,7 +59,7 @@ TEST_CASE("threadedTask")
 	}
 	SUBCASE("cancel")
 	{
-		task.cancel();
+		task.cancel(simulation, nullptr);
 		REQUIRE(simulation.m_threadedTaskEngine.count() == 0);
 		simulation.doStep();
 		REQUIRE(phaseIsRead);
@@ -68,7 +72,7 @@ TEST_CASE("hasThreadedTask")
 	bool phaseIsRead = true;
 	Simulation simulation;
 	HasThreadedTask<TestThreadedTaskForHolder> holder(simulation.m_threadedTaskEngine);
-	holder.create(simulation.m_threadedTaskEngine, fired, phaseIsRead, holder);
+	holder.create(fired, phaseIsRead, holder);
 	TestThreadedTaskForHolder& task = holder.get();
 	REQUIRE(phaseIsRead);
 	REQUIRE(!fired);
@@ -82,7 +86,7 @@ TEST_CASE("hasThreadedTask")
 	}
 	SUBCASE("cancel")
 	{
-		task.cancel();
+		task.cancel(simulation, nullptr);
 		REQUIRE(!holder.exists());
 		simulation.doStep();
 		REQUIRE(phaseIsRead);
@@ -96,7 +100,7 @@ TEST_CASE("holderFallsOutOfScope")
 	Simulation simulation;
 	{
 		HasThreadedTask<TestThreadedTaskForHolder> holder(simulation.m_threadedTaskEngine);
-		holder.create(simulation.m_threadedTaskEngine, fired, phaseIsRead, holder);
+		holder.create(fired, phaseIsRead, holder);
 	}
 	REQUIRE(simulation.m_threadedTaskEngine.count() == 0);
 	simulation.doStep();

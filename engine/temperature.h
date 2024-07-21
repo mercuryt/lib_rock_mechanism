@@ -2,6 +2,7 @@
 
 #include "config.h"
 #include "eventSchedule.hpp"
+#include "reference.h"
 #include "simulation.h"
 
 #include <unordered_set>
@@ -59,23 +60,16 @@ public:
 	const Temperature& getAmbientSurfaceTemperature() const { return m_ambiantSurfaceTemperature; }
 	Temperature getDailyAverageAmbientSurfaceTemperature() const;
 };
-class UnsafeTemperatureEvent final : public ScheduledEvent
-{
-	ActorIndex m_actor;
-public:
-	UnsafeTemperatureEvent(Area& area, ActorIndex a, const Step start = 0);
-	void execute(Simulation& simulation, Area* area);
-	void clearReferences(Simulation& simulation, Area* area);
-};
+class UnsafeTemperatureEvent;
 class ActorNeedsSafeTemperature
 {
 	HasScheduledEvent<UnsafeTemperatureEvent> m_event; // 2
-	ActorIndex m_actor;
-	bool m_objectiveExists = false;
+	ActorReference m_actor;
 public:
 	ActorNeedsSafeTemperature(Area& area, ActorIndex a);
-	ActorNeedsSafeTemperature(const Json& data, ActorIndex a);
-	Json toJson() const;
+	ActorNeedsSafeTemperature(const Json& data, ActorIndex a, Area& area);
+	void dieFromTemperature();
+	[[nodiscard]] Json toJson() const;
 	void onChange(Area& area);
 	bool isSafe(Area& area, Temperature temperature) const;
 	bool isSafeAtCurrentLocation(Area& area) const;
@@ -83,4 +77,12 @@ public:
 	friend class UnsafeTemperatureEvent;
 	// For UI.
 	[[nodiscard]] Percent dieFromTemperaturePercent(Area& area) const { return isSafeAtCurrentLocation(area) ? 0 : m_event.percentComplete(); }
+};
+class UnsafeTemperatureEvent final : public ScheduledEvent
+{
+	ActorNeedsSafeTemperature& m_needsSafeTemperature;
+public:
+	UnsafeTemperatureEvent(Area& area, ActorIndex actor, const Step start = 0);
+	void execute(Simulation& simulation, Area* area);
+	void clearReferences(Simulation& simulation, Area* area);
 };

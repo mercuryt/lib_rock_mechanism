@@ -56,32 +56,32 @@ public:
 		assert(mass.value >= m);
 		mass.value -= m;
 	}
-	uint32_t getStrength() const { return strength.value; }
-	int32_t getStrengthBonusOrPenalty() const { return strength.bonusOrPenalty; }
+	[[nodiscard]] uint32_t getStrength() const { return strength.value; }
+	[[nodiscard]] int32_t getStrengthBonusOrPenalty() const { return strength.bonusOrPenalty; }
 	void setStrengthBonusOrPenalty(int32_t x) { strength.bonusOrPenalty = x; updateStrength(); generate(); }
-	Percent getStrengthModifier() const { return strength.baseModifierPercent; }
+	[[nodiscard]] Percent getStrengthModifier() const { return strength.baseModifierPercent; }
 	void setStrengthModifier(Percent x) { strength.baseModifierPercent = x; updateStrength(); generate(); }
 	void updateStrength() { strength.setPercentGrown(percentGrown); }
-	uint32_t getDextarity() const { return dextarity.value; }
-	int32_t getDextarityBonusOrPenalty() const { return dextarity.bonusOrPenalty; }
+	[[nodiscard]] uint32_t getDextarity() const { return dextarity.value; }
+	[[nodiscard]] int32_t getDextarityBonusOrPenalty() const { return dextarity.bonusOrPenalty; }
 	void setDextarityBonusOrPenalty(uint32_t x) { dextarity.bonusOrPenalty = x; updateDextarity(); generate(); }
-	Percent getDextarityModifier() const { return dextarity.baseModifierPercent; }
+	[[nodiscard]] Percent getDextarityModifier() const { return dextarity.baseModifierPercent; }
 	void setDextarityModifier(Percent x) { dextarity.baseModifierPercent = x; updateDextarity(); generate(); }
 	void updateDextarity() { dextarity.setPercentGrown(percentGrown); }
-	uint32_t getAgility() const { return agility.value; }
-	int32_t getAgilityBonusOrPenalty() const { return agility.bonusOrPenalty; }
+	[[nodiscard]] uint32_t getAgility() const { return agility.value; }
+	[[nodiscard]] int32_t getAgilityBonusOrPenalty() const { return agility.bonusOrPenalty; }
 	void setAgilityBonusOrPenalty(uint32_t x) { agility.bonusOrPenalty = x; updateAgility(); generate(); }
-	Percent getAgilityModifier() const { return agility.baseModifierPercent; }
+	[[nodiscard]] Percent getAgilityModifier() const { return agility.baseModifierPercent; }
 	void setAgilityModifier(Percent x) { agility.baseModifierPercent = x; updateAgility(); generate(); }
 	void updateAgility() { agility.setPercentGrown(percentGrown); }
-	Mass getMass() const { return mass.value; }
-	Mass getMassBonusOrPenalty() const { return mass.bonusOrPenalty; }
+	[[nodiscard]] Mass getMass() const { return mass.value; }
+	[[nodiscard]] Mass getMassBonusOrPenalty() const { return mass.bonusOrPenalty; }
 	void setMassBonusOrPenalty(uint32_t x) { mass.bonusOrPenalty = x; updateMass(); generate(); }
-	Mass getMassModifier() const { return mass.baseModifierPercent; }
+	[[nodiscard]] Mass getMassModifier() const { return mass.baseModifierPercent; }
 	void setMassModifier(Percent x) { mass.baseModifierPercent = x; updateMass(); generate(); }
 	void updateMass() { mass.setPercentGrown(percentGrown); }
-	Mass getUnencomberedCarryMass() const { return unencomberedCarryMass; }
-	Speed getMoveSpeed() const { return moveSpeed; }
-	uint32_t getBaseCombatScore() const { return baseCombatScore; }
-	Json toJson() const;
+	[[nodiscard]] Mass getUnencomberedCarryMass() const { return unencomberedCarryMass; }
+	[[nodiscard]] Speed getMoveSpeed() const { return moveSpeed; }
+	[[nodiscard]] uint32_t getBaseCombatScore() const { return baseCombatScore; }
+	[[nodiscard]] Json toJson() const;
 };

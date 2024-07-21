@@ -2,7 +2,6 @@
 #include "terrainFacade.h"
 #include "actors/actors.h"
 #include "area.h"
-#include "findsPath.h"
 #include "shape.h"
 #include "simulation.h"
 #include "types.h"
@@ -363,7 +362,7 @@ FindPathResult TerrainFacade::findPathAdjacentToPolymorphic(BlockIndex start, co
 FindPathResult TerrainFacade::findPathAdjacentToCondition(BlockIndex start, const Shape& shape, Facing startFacing, DestinationCondition condition, BlockIndex huristicDestination, bool detour) const
 {
 	Blocks& blocks = m_area.getBlocks();
-	DestinationCondition destinationCondition = [blocks, shape, condition](BlockIndex index, Facing facing)
+	DestinationCondition destinationCondition = [&blocks, &shape, condition](BlockIndex index, Facing facing)
 	{
 		for(BlockIndex adjacent : shape.getBlocksWhichWouldBeAdjacentAt(blocks, index, facing))
 			if(condition(adjacent, 0))
@@ -372,7 +371,19 @@ FindPathResult TerrainFacade::findPathAdjacentToCondition(BlockIndex start, cons
 	};
 	return findPathToCondition(start, shape, startFacing, condition, huristicDestination, detour);
 }
-FindPathResult TerrainFacade::findPathAdjacentToAndUnreserved(BlockIndex start, const Shape& shape, Facing startFacing, BlockIndex target, const Faction& faction, bool detour) const
+FindPathResult TerrainFacade::findPathAdjacentToConditionAndUnreserved(BlockIndex start, const Shape& shape, Facing startFacing, const DestinationCondition condition, const FactionId faction, BlockIndex huristicDestination, bool detour) const
+{
+	Blocks& blocks = m_area.getBlocks();
+	DestinationCondition destinationCondition = [&blocks, &shape, &faction, condition](BlockIndex index, Facing facing)
+	{
+		for(BlockIndex adjacent : shape.getBlocksWhichWouldBeAdjacentAt(blocks, index, facing))
+			if(!blocks.isReserved(adjacent, faction) && condition(adjacent, 0))
+				return true;
+		return false;
+	};
+	return findPathToCondition(start, shape, startFacing, condition, huristicDestination, detour);
+}
+FindPathResult TerrainFacade::findPathAdjacentToAndUnreserved(BlockIndex start, const Shape& shape, Facing startFacing, BlockIndex target, const FactionId faction, bool detour) const
 {
 	std::vector<BlockIndex> targets;
 	Blocks& blocks = m_area.getBlocks();
@@ -387,7 +398,7 @@ FindPathResult TerrainFacade::findPathAdjacentToAndUnreserved(BlockIndex start, 
 	// TODO: optimization: If the shape is single tile and the target is enterable ever then path to target directly and discard the final block.
 	return findPathToAnyOf(start, shape, startFacing, targets, target, detour);
 }
-FindPathResult TerrainFacade::findPathAdjacentToAndUnreservedPolymorphic(BlockIndex start, const Shape& shape, Facing startFacing, ActorOrItemIndex actorOrItem, const Faction& faction, bool detour) const
+FindPathResult TerrainFacade::findPathAdjacentToAndUnreservedPolymorphic(BlockIndex start, const Shape& shape, Facing startFacing, ActorOrItemIndex actorOrItem, const FactionId faction, bool detour) const
 {
 	std::vector<BlockIndex> targets;
 	Blocks& blocks = m_area.getBlocks();
@@ -440,7 +451,7 @@ AccessCondition TerrainFacade::makeAccessCondition(const Shape& shape, BlockInde
 			};
 		}
 		else
-			return [blocks, maxRange, start](BlockIndex index, Facing) { return blocks.taxiDistance(start, index) <= maxRange; };
+			return [&blocks, maxRange, start](BlockIndex index, Facing) { return blocks.taxiDistance(start, index) <= maxRange; };
 	}
 }
 void AreaHasTerrainFacades::doStep()

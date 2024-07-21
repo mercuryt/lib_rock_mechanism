@@ -21,13 +21,13 @@ struct AnimalsArriveDramaArc final : public DramaArc
 	Percent m_tiredPercent = 0;
 	AnimalsArriveDramaArc(DramaEngine& engine, Area& area);
 	AnimalsArriveDramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine);
-	[[nodiscard]] Json toJson() const;
 	void callback();
 	HasScheduledEvent<AnimalsLeaveScheduledEvent> m_scheduledEvent;
 private:
 	void scheduleArrive();
 	void scheduleDepart();
 	void scheduleContinue();
+	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::pair<const AnimalSpecies*, uint32_t> getSpeciesAndQuantity() const;
 	[[nodiscard]] static std::vector<const AnimalSpecies*> getLargeCarnivors();
 	[[nodiscard]] static std::vector<const AnimalSpecies*> getMediumCarnivors();

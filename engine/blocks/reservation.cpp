@@ -3,38 +3,35 @@
 void Blocks::reserve(BlockIndex index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback)
 {
 	Reservable* reservable = nullptr;
-	if(!m_reservables.contains(index))
+	if(m_reservables.at(index) == nullptr)
 	{
-		auto pair = m_reservables.try_emplace(index, 1);
-		assert(pair.second);
-		reservable = &pair.first->second;
+		m_reservables.at(index) = std::make_unique<Reservable>(1);
+		reservable = m_reservables.at(index).get();
 	}
 	else
-		reservable = &m_reservables.at(index);
+		reservable = m_reservables.at(index).get();
 	reservable->reserveFor(canReserve, 1, std::move(callback));
 }
 void Blocks::unreserve(BlockIndex index, CanReserve& canReserve)
 {
-	auto iter = m_reservables.find(index);
-	assert(iter != m_reservables.end());
-	iter->second.clearReservationFor(canReserve);
+	assert(m_reservables.at(index) != nullptr);
+	m_reservables.at(index)->clearReservationFor(canReserve);
+	if(!m_reservables.at(index)->hasAnyReservations())
+		m_reservables.at(index) = nullptr;
 }
 void Blocks::unreserveAll(BlockIndex index)
 {
-	auto iter = m_reservables.find(index);
-	assert(iter != m_reservables.end());
-	iter->second.clearAll();
+	assert(m_reservables.at(index) != nullptr);
+	m_reservables.at(index) = nullptr;
 }
 void Blocks::setReservationDishonorCallback(BlockIndex index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback)
 {
-	auto iter = m_reservables.find(index);
-	assert(iter != m_reservables.end());
-	iter->second.setDishonorCallbackFor(canReserve, std::move(callback));
+	assert(m_reservables.at(index) != nullptr);
+	m_reservables.at(index)->setDishonorCallbackFor(canReserve, std::move(callback));
 }
-[[nodiscard]] bool Blocks::isReserved(BlockIndex index, const Faction& faction) const
+[[nodiscard]] bool Blocks::isReserved(BlockIndex index, const FactionId faction) const
 {
-	std::unordered_map<BlockIndex, Reservable>::const_iterator found = m_reservables.find(index);
-	if(found == m_reservables.end())
+	if(m_reservables.at(index) == nullptr)
 		return false;
-	return found->second.hasAnyReservationsWith(faction);
+	return m_reservables.at(index)->hasAnyReservationsWith(faction);
 }

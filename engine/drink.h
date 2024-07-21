@@ -2,8 +2,8 @@
 
 #include "config.h"
 #include "eventSchedule.hpp"
+#include "reference.h"
 #include "types.h"
-#include "findsPath.h"
 
 #include <vector>
 
@@ -20,7 +20,7 @@ struct AnimalSpecies;
 class MustDrink final
 {
 	HasScheduledEvent<ThirstEvent> m_thirstEvent; // 2
-	ActorIndex m_actor = ACTOR_INDEX_MAX;
+	ActorReference m_actor;
 	const FluidType* m_fluidType = nullptr; // Pointer because it may change, i.e. through vampirism.
 	DrinkObjective* m_objective = nullptr; // Store to avoid recreating. TODO: Use a bool instead?
 	uint32_t m_volumeDrinkRequested = 0;
@@ -28,14 +28,14 @@ class MustDrink final
 
 public:
 	MustDrink(Area& area, ActorIndex a);
-	MustDrink(const Json& data, ActorIndex a, Simulation& s, const AnimalSpecies& species);
-	[[nodiscard]] Json toJson() const;
+	MustDrink(Area& area, const Json& data, ActorIndex a, const AnimalSpecies& species);
 	void drink(Area& area, const uint32_t volume);
 	void notThirsty(Area& area);
 	void setNeedsFluid(Area& area);
 	void onDeath();
 	void scheduleDrinkEvent(Area& area);
 	void setFluidType(const FluidType& fluidType);
+	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] Volume getVolumeFluidRequested() const { return m_volumeDrinkRequested; }
 	[[nodiscard]] Percent getPercentDeadFromThirst() const;
 	[[nodiscard]] const FluidType& getFluidType() const { return *m_fluidType; }
@@ -51,10 +51,11 @@ public:
 class DrinkEvent final : public ScheduledEvent
 {
 	DrinkObjective& m_drinkObjective;
-	ItemIndex m_item = ITEM_INDEX_MAX;
+	ActorReference m_actor;
+	ItemReference m_item;
 public:
-	DrinkEvent(Area& area, const Step delay, DrinkObjective& drob, const Step start = 0);
-	DrinkEvent(Area& area, const Step delay, DrinkObjective& drob, ItemIndex i, const Step start = 0);
+	DrinkEvent(Area& area, const Step delay, DrinkObjective& drob, ActorIndex actor, const Step start = 0);
+	DrinkEvent(Area& area, const Step delay, DrinkObjective& drob, ActorIndex actor, ItemIndex i, const Step start = 0);
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };

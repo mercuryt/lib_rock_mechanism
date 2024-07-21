@@ -19,17 +19,20 @@ void TiredEvent::execute(Simulation&, Area* area){ m_needsSleep.tired(*area); }
 void TiredEvent::clearReferences(Simulation&, Area*){ m_needsSleep.m_tiredEvent.clearPointer(); }
 // Needs Sleep.
 MustSleep::MustSleep(Area& area, ActorIndex a) :
-	m_sleepEvent(area.m_eventSchedule), m_tiredEvent(area.m_eventSchedule), m_actor(a) { }
+	m_sleepEvent(area.m_eventSchedule), m_tiredEvent(area.m_eventSchedule)
+{ 
+	m_actor.setTarget(area.getActors().getReferenceTarget(a));
+}
 void MustSleep::scheduleTiredEvent(Area& area)
 {
-	m_tiredEvent.schedule(area.m_simulation, area.getActors().getSpecies(m_actor).stepsSleepFrequency, *this);
+	m_tiredEvent.schedule(area.m_simulation, area.getActors().getSpecies(m_actor.getIndex()).stepsSleepFrequency, *this);
 }
-/*
-MustSleep::MustSleep(const Json data, ActorIndex a, Simulation& s, const AnimalSpecies& species) :
-	m_sleepEvent(s.m_eventSchedule), m_tiredEvent(s.m_eventSchedule),
-	m_actor(a), m_location(data.contains("location") ? data["location"].get<BlockIndex>() : BLOCK_INDEX_MAX),
+MustSleep::MustSleep(Area& area, const Json& data, ActorIndex a, const AnimalSpecies& species) :
+	m_sleepEvent(area.m_eventSchedule), m_tiredEvent(area.m_eventSchedule),
+	m_location(data.contains("location") ? data["location"].get<BlockIndex>() : BLOCK_INDEX_MAX),
 	m_needsSleep(data["needsSleep"].get<bool>()), m_isAwake(data["isAwake"].get<bool>())
 {
+	m_actor.setTarget(area.getActors().getReferenceTarget(a));
 	if(data.contains("sleepEventStart"))
 		m_sleepEvent.schedule(species.stepsSleepDuration, *this, data["sleepEventStart"].get<Step>());
 	if(data.contains("tiredEventStart"))
@@ -48,16 +51,16 @@ Json MustSleep::toJson() const
 		data["tiredEventStart"] = m_tiredEvent.getStartStep();
 	return data;
 }
-*/
 void MustSleep::notTired(Area& area)
 {
 	Actors& actors = area.getActors();
 	assert(m_isAwake);
+	ActorIndex actor = m_actor.getIndex();
 	if(m_objective != nullptr)
-		actors.objective_complete(m_actor, *m_objective);
+		actors.objective_complete(actor, *m_objective);
 	m_needsSleep = false;
 	m_tiredEvent.unschedule();
-	m_tiredEvent.schedule(area.m_simulation, actors.getSpecies(m_actor).stepsSleepFrequency, *this);
+	m_tiredEvent.schedule(area.m_simulation, actors.getSpecies(actor).stepsSleepFrequency, *this);
 }
 void MustSleep::tired(Area& area)
 {
@@ -69,47 +72,50 @@ void MustSleep::tired(Area& area)
 		m_needsSleep = true;
 		m_tiredEvent.maybeUnschedule();
 		Actors& actors = area.getActors();
-		m_tiredEvent.schedule(area.m_simulation, actors.getSpecies(m_actor).stepsTillSleepOveride, *this);
+		m_tiredEvent.schedule(area.m_simulation, actors.getSpecies(m_actor.getIndex()).stepsTillSleepOveride, *this);
 		makeSleepObjective(area);
 	}
 }
 // Voluntary sleep.
-void MustSleep::sleep(Area& area) { sleep(area, area.getActors().getSpecies(m_actor).stepsSleepDuration); }
+void MustSleep::sleep(Area& area) { sleep(area, area.getActors().getSpecies(m_actor.getIndex()).stepsSleepDuration); }
 // Involuntary sleep.
 void MustSleep::passout(Area& area, Step duration) { sleep(area, duration, true); }
 void MustSleep::sleep(Area& area, Step duration, bool force)
 {
-	Actors& actors = area.getActors();
 	assert(m_isAwake);
-	actors.move_clearAllEventsAndTasks(m_actor);
+	ActorIndex actor = m_actor.getIndex();
+	Actors& actors = area.getActors();
+	actors.move_clearAllEventsAndTasks(actor);
 	m_isAwake = false;
 	m_tiredEvent.maybeUnschedule();
 	m_sleepEvent.schedule(area.m_simulation, duration, *this, force);
 	if(m_objective != nullptr)
-		actors.move_pathRequestMaybeCancel(m_actor);
-	actors.vision_clearFacade(m_actor);
+		actors.move_pathRequestMaybeCancel(actor);
+	actors.vision_clearFacade(actor);
 }
 void MustSleep::wakeUp(Area& area)
 {
 	assert(!m_isAwake);
 	Actors& actors = area.getActors();
+	ActorIndex actor = m_actor.getIndex();
 	m_isAwake = true;
 	m_needsSleep = false;
-	m_tiredEvent.schedule(area.m_simulation, actors.getSpecies(m_actor).stepsSleepFrequency, *this);
-	actors.stamina_setFull(m_actor);
+	m_tiredEvent.schedule(area.m_simulation, actors.getSpecies(actor).stepsSleepFrequency, *this);
+	actors.stamina_setFull(actor);
 	// Objective complete releases all reservations.
 	if(m_objective != nullptr)
-		actors.objective_complete(m_actor, *m_objective);
-	actors.vision_createFacadeIfCanSee(m_actor);
+		actors.objective_complete(actor, *m_objective);
+	actors.vision_createFacadeIfCanSee(actor);
 }
 void MustSleep::makeSleepObjective(Area& area)
 {
 	assert(m_isAwake);
 	assert(m_objective == nullptr);
 	Actors& actors = area.getActors();
-	std::unique_ptr<Objective> objective = std::make_unique<SleepObjective>(m_actor);
+	ActorIndex actor = m_actor.getIndex();
+	std::unique_ptr<Objective> objective = std::make_unique<SleepObjective>();
 	m_objective = static_cast<SleepObjective*>(objective.get());
-	actors.objective_addNeed(m_actor, std::move(objective));
+	actors.objective_addNeed(actor, std::move(objective));
 }
 void MustSleep::wakeUpEarly(Area& area)
 {
@@ -117,7 +123,7 @@ void MustSleep::wakeUpEarly(Area& area)
 	assert(m_needsSleep == true);
 	m_isAwake = true;
 	m_sleepEvent.pause();
-	m_tiredEvent.schedule(area.m_simulation, area.getActors().getSpecies(m_actor).stepsTillSleepOveride, *this);
+	m_tiredEvent.schedule(area.m_simulation, area.getActors().getSpecies(m_actor.getIndex()).stepsTillSleepOveride, *this);
 	//TODO: partial stamina recovery.
 }
 void MustSleep::setLocation(BlockIndex block)

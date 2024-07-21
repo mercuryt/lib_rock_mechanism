@@ -18,6 +18,14 @@ void Actors::vision_setRange(ActorIndex index, DistanceInBlocks range)
 	if(!m_hasVisionFacade.empty())
 		m_hasVisionFacade.at(index).updateRange(range);
 }
+void Actors::vision_clearFacade(ActorIndex index)
+{
+	m_hasVisionFacade.at(index).clear();
+}
+void Actors::vision_updateFacadeIndex(ActorIndex index, VisionFacadeIndex visionFacadeIndex)
+{
+	m_hasVisionFacade.at(index).updateFacadeIndex(visionFacadeIndex);
+}
 bool Actors::vision_canSeeAnything(ActorIndex index) const
 {
 	return isAlive(index) && sleep_isAwake(index) && m_location.at(index) != BLOCK_INDEX_MAX;
@@ -29,4 +37,13 @@ bool Actors::vision_canSeeActor(ActorIndex index, ActorIndex actor) const
 VisionFacade& Actors::vision_getFacadeBucket(ActorIndex index)
 {
 	return m_hasVisionFacade.at(index).getVisionFacade();
+}
+std::pair<VisionFacade*, VisionFacadeIndex> Actors::vision_getFacadeWithIndex(ActorIndex index) const
+{
+	auto& hasVisionFacade = m_hasVisionFacade.at(index);
+	return std::make_pair(&hasVisionFacade.getVisionFacade(), hasVisionFacade.getIndex());
+}
+bool Actors::vision_hasFacade(ActorIndex index) const
+{
+	return !m_hasVisionFacade.at(index).empty();
 }

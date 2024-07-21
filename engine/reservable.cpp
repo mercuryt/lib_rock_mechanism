@@ -1,11 +1,11 @@
 #include "reservable.h"
 #include "simulation.h"
 #include "deserializeDishonorCallbacks.h"
+#include "types.h"
 #include <bits/ranges_algo.h>
-/*
 void CanReserve::load(const Json& data, DeserializationMemo& deserializationMemo)
 { 
-	m_faction = &deserializationMemo.faction(data["faction"].get<std::wstring>());
+	m_faction = data["faction"];
 	for(const Json& reservationData : data["reservations"])
 	{
 		assert(deserializationMemo.m_reservables.contains(reservationData["reservable"].get<uintptr_t>()));
@@ -17,12 +17,11 @@ void CanReserve::load(const Json& data, DeserializationMemo& deserializationMemo
 }
 Json CanReserve::toJson() const 
 {
-	Json data{{"faction", m_faction->name}, {"reservations", Json::array()}, {"address", reinterpret_cast<uintptr_t>(this)}};
+	Json data{{"faction", m_faction}, {"reservations", Json::array()}, {"address", reinterpret_cast<uintptr_t>(this)}};
 	for(Reservable* reservable : m_reservables)
 		data["reservations"].push_back(reservable->jsonReservationFor(const_cast<CanReserve&>(*this)));
 	return data;
 }
-*/
 void CanReserve::deleteAllWithoutCallback()
 {
 	for(Reservable* reservable : m_reservables)
@@ -32,11 +31,11 @@ void CanReserve::deleteAllWithoutCallback()
 	}
 	m_reservables.clear();
 }
-void CanReserve::setFaction(Faction& faction)
+void CanReserve::setFaction(FactionId faction)
 {
 	for(Reservable* reservable : m_reservables)
-		reservable->updateFactionFor(*this, *m_faction, faction);
-	m_faction = &faction;
+		reservable->updateFactionFor(*this, m_faction, faction);
+	m_faction = faction;
 }
 bool CanReserve::hasReservationWith(Reservable& reservable) const { return m_reservables.contains(&reservable); }
 bool CanReserve::hasReservations() const
@@ -55,24 +54,22 @@ void Reservable::eraseReservationFor(CanReserve& canReserve)
 		m_reservedCounts.at(canReserve.m_faction) -= m_canReserves.at(&canReserve);
 	m_canReserves.erase(&canReserve);
 }
-bool Reservable::isFullyReserved(Faction* faction) const 
+bool Reservable::isFullyReserved(const FactionId faction) const 
 { 
-	if(faction == nullptr)
-		return false;
 	return m_reservedCounts.contains(faction) && m_reservedCounts.at(faction) == m_maxReservations; 
 }
 bool Reservable::hasAnyReservations() const { return !m_canReserves.empty(); }
-bool Reservable::hasAnyReservationsWith(const Faction& faction) const { return m_reservedCounts.contains(const_cast<Faction*>(&faction)); }
+bool Reservable::hasAnyReservationsWith(const FactionId faction) const { return m_reservedCounts.contains(faction); }
 std::unordered_map<CanReserve*, uint32_t>& Reservable::getReservedBy() { return m_canReserves; }
 void Reservable::reserveFor(CanReserve& canReserve, const uint32_t quantity, std::unique_ptr<DishonorCallback> dishonorCallback) 
 {
 	// No reservations are made for actors with no faction because there is no one to reserve it from.
-	if(canReserve.m_faction == nullptr)
+	if(canReserve.m_faction == FACTION_ID_MAX)
 	{
 		assert(dishonorCallback == nullptr);
 		return;
 	}
-	assert(getUnreservedCount(*canReserve.m_faction) >= quantity);
+	assert(getUnreservedCount(canReserve.m_faction) >= quantity);
 	m_canReserves[&canReserve] += quantity;
 	assert(m_canReserves[&canReserve] <= m_maxReservations);
 	m_reservedCounts[canReserve.m_faction] += quantity;
@@ -83,7 +80,7 @@ void Reservable::reserveFor(CanReserve& canReserve, const uint32_t quantity, std
 }
 void Reservable::clearReservationFor(CanReserve& canReserve, const uint32_t quantity)
 {
-	if(canReserve.m_faction == nullptr)
+	if(canReserve.m_faction == FACTION_ID_MAX)
 		return;
 	assert(m_canReserves.contains(&canReserve));
 	assert(canReserve.m_reservables.contains(this));
@@ -99,11 +96,11 @@ void Reservable::clearReservationFor(CanReserve& canReserve, const uint32_t quan
 		m_reservedCounts.at(canReserve.m_faction) -= quantity;
 	}
 }
-void Reservable::clearReservationsFor(Faction& faction)
+void Reservable::clearReservationsFor(const FactionId faction)
 {
 	std::vector<std::pair<CanReserve*, uint32_t>> toErase;
 	for(auto& pair : m_canReserves)
-		if(pair.first->m_faction == &faction)
+		if(pair.first->m_faction == faction)
 			toErase.push_back(pair);
 	for(auto& [canReserve, quantity] : toErase)
 		clearReservationFor(*canReserve, quantity);
@@ -140,14 +137,14 @@ void Reservable::setMaxReservations(const uint32_t mr)
 		}
 	m_maxReservations = mr; 
 }
-void Reservable::updateFactionFor(CanReserve& canReserve, Faction& oldFaction, Faction& newFaction)
+void Reservable::updateFactionFor(CanReserve& canReserve, FactionId oldFaction, FactionId newFaction)
 {
 	assert(m_canReserves.contains(&canReserve));
-	if(m_reservedCounts.at(&oldFaction) == m_canReserves[&canReserve])
-		m_reservedCounts.erase(&oldFaction);
+	if(m_reservedCounts.at(oldFaction) == m_canReserves[&canReserve])
+		m_reservedCounts.erase(oldFaction);
 	else
-		m_reservedCounts[&oldFaction] -= m_canReserves[&canReserve];
-	m_reservedCounts[&newFaction] += m_canReserves[&canReserve];
+		m_reservedCounts[oldFaction] -= m_canReserves[&canReserve];
+	m_reservedCounts[newFaction] += m_canReserves[&canReserve];
 	// Erase all reservations if faction is set to null.
 	m_canReserves.erase(&canReserve);
 }
@@ -170,11 +167,11 @@ void Reservable::clearAll()
 	assert(m_reservedCounts.empty());
 	assert(m_canReserves.empty());
 }
-void Reservable::updateReservedCount(Faction& faction, uint32_t count)
+void Reservable::updateReservedCount(FactionId faction, uint32_t count)
 {
-	assert(m_reservedCounts.contains(&faction));
+	assert(m_reservedCounts.contains(faction));
 	assert(count <= m_maxReservations);
-	m_reservedCounts[&faction] = count;
+	m_reservedCounts[faction] = count;
 }
 void Reservable::merge(Reservable& reservable)
 {
@@ -188,13 +185,12 @@ void Reservable::merge(Reservable& reservable)
 	reservable.m_canReserves.clear();
 	reservable.m_dishonorCallbacks.clear();
 }
-uint32_t Reservable::getUnreservedCount(const Faction& faction) const
+uint32_t Reservable::getUnreservedCount(const FactionId faction) const
 {
-	if(!m_reservedCounts.contains(&const_cast<Faction&>(faction)))
+	if(!m_reservedCounts.contains(faction))
 		return m_maxReservations;
-	return m_maxReservations - m_reservedCounts.at(&const_cast<Faction&>(faction));
+	return m_maxReservations - m_reservedCounts.at(faction);
 }
-/*
 Json Reservable::jsonReservationFor(CanReserve& canReserve) const
 {
 	Json data({
@@ -205,5 +201,4 @@ Json Reservable::jsonReservationFor(CanReserve& canReserve) const
 		data["dishonorCallback"] = m_dishonorCallbacks.at(&canReserve)->toJson();
 	return data;
 }
-*/
 Reservable::~Reservable() { clearAll(); }

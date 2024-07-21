@@ -6,13 +6,13 @@ void Actors::canReserve_clearAll(ActorIndex index)
 {
 	m_canReserve.at(index)->deleteAllWithoutCallback();
 }
-void Actors::canReserve_setFaction(ActorIndex index, Faction* faction)
+void Actors::canReserve_setFaction(ActorIndex index, FactionId faction)
 {
 	reservable_unreserveAll(index);
-	if(faction == nullptr)
+	if(faction == FACTION_ID_MAX)
 		m_canReserve.at(index) = nullptr;
 	else
-		m_canReserve.at(index)->setFaction(*faction);
+		m_canReserve.at(index)->setFaction(faction);
 }
 void Actors::canReserve_reserveLocation(ActorIndex index, BlockIndex block)
 {
@@ -31,7 +31,7 @@ bool Actors::canReserve_tryToReserveLocation(ActorIndex index, BlockIndex block)
 }
 bool Actors::canReserve_tryToReserveItem(ActorIndex index, ItemIndex item)
 {
-	if(m_area.getItems().reservable_isFullyReserved(item, *getFaction(index)))
+	if(m_area.getItems().reservable_isFullyReserved(item, m_faction.at(index)))
 		return false;
 	canReserve_reserveItem(index, item);
 	return true;

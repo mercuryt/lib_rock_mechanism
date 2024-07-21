@@ -28,6 +28,7 @@ Simulation::Simulation(std::wstring name, Step s) :
 	m_dramaEngine = std::make_unique<DramaEngine>(*this);
 	m_hasAreas = std::make_unique<SimulationHasAreas>(*this);
 }
+/*
 Simulation::Simulation(std::filesystem::path path) : Simulation(Json::parse(std::ifstream{path/"simulation.json"})) 
 { 
 	m_path = path; 
@@ -37,13 +38,14 @@ Simulation::Simulation(std::filesystem::path path) : Simulation(Json::parse(std:
 	//TODO: DramaEngine should probably be able to load before hasAreas.
 	m_dramaEngine = std::make_unique<DramaEngine>(data["drama"], m_deserializationMemo, *this);
 }
+*/
 Simulation::Simulation(const Json& data) : 
 	m_eventSchedule(*this, nullptr), m_hourlyEvent(m_eventSchedule), m_deserializationMemo(*this) 
 {
 	m_name = data["name"].get<std::wstring>();
 	m_step = data["step"].get<Step>();
 	//if(data["world"])
-		//m_world = std::make_unique<World>(data["world"], deserializationMemo);
+	//m_world = std::make_unique<World>(data["world"], deserializationMemo);
 	m_hasFactions.load(data["factions"], m_deserializationMemo);
 	m_hourlyEvent.schedule(*this, data["hourEventStart"].get<Step>());
 	m_hasAreas = std::make_unique<SimulationHasAreas>(data["hasAreas"], m_deserializationMemo, *this);
@@ -74,6 +76,7 @@ void Simulation::incrementHour()
 	m_hasAreas->incrementHour();
 	m_hourlyEvent.schedule(*this);
 }
+/*
 void Simulation::save()
 {
 	std::filesystem::create_directory(m_path);
@@ -82,6 +85,7 @@ void Simulation::save()
 	std::filesystem::create_directory(m_path/"area");
 	m_hasAreas->save();
 }
+*/
 Faction& Simulation::createFaction(std::wstring name) { return m_hasFactions.createFaction(name); }
 DateTime Simulation::getDateTime() const { return DateTime(m_step); }
 Simulation::~Simulation()

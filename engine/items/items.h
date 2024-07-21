@@ -3,21 +3,25 @@
 #include "bloomHashMap.h"
 #include "portables.h"
 #include "types.h"
+#include "itemType.h"
+#include "reference.h"
 
 struct ItemType;
 struct MaterialType;
 struct FluidType;
 class ItemHasCargo;
 class ItemCanBeStockPiled;
-class CraftJob;
+struct CraftJob;
 class Area;
+class Simulation;
+class EventSchedule;
 
 struct ItemParamaters final
 {
 	const ItemType& itemType;
 	const MaterialType& materialType;
 	CraftJob* craftJob = nullptr;
-	Faction* faction = nullptr;
+	FactionId faction = FACTION_ID_MAX;
 	BlockIndex location = BLOCK_INDEX_MAX;
 	ItemId id = 0;
 	Quantity quantity = 1;
@@ -29,10 +33,10 @@ struct ItemParamaters final
 };
 class ReMarkItemForStockPilingEvent final : public ScheduledEvent
 {
-	Faction& m_faction;
+	FactionId m_faction;
 	ItemCanBeStockPiled& m_canBeStockPiled;
 public:
-	ReMarkItemForStockPilingEvent(ItemCanBeStockPiled& i, Faction& f, Step duration, const Step start = 0);
+	ReMarkItemForStockPilingEvent(Simulation& simulation, ItemCanBeStockPiled& i, FactionId f, Step duration, const Step start = 0);
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };
@@ -40,21 +44,19 @@ public:
 //TODO: Change from linear to geometric delay duration.
 class ItemCanBeStockPiled
 {
-	Area& m_area;
-	std::unordered_map<Faction*, HasScheduledEvent<ReMarkItemForStockPilingEvent>> m_scheduledEvents;
-	std::unordered_set<Faction*> m_data;
-	void scheduleReset(Faction& faction, Step duration, Step start = 0);
+	std::unordered_map<FactionId, HasScheduledEvent<ReMarkItemForStockPilingEvent>> m_scheduledEvents;
+	std::unordered_set<FactionId> m_data;
+	void scheduleReset(EventSchedule& eventSchedule, FactionId faction, Step duration, Step start = 0);
 public:
-	ItemCanBeStockPiled(Area& area) : m_area(area) { }
-	ItemCanBeStockPiled(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	void set(Faction& faction) { assert(!m_data.contains(&faction)); m_data.insert(&faction); }
-	void maybeSet(Faction& faction) { m_data.insert(&faction); }
-	void unset(Faction& faction) { assert(m_data.contains(&faction)); m_data.erase(&faction); }
-	void maybeUnset(Faction& faction) { m_data.erase(&faction); }
-	void unsetAndScheduleReset(Faction& faction, Step duration) { unset(faction); scheduleReset(faction, duration); }
-	void maybeUnsetAndScheduleReset(Faction& faction, Step duration)  { maybeUnset(faction); scheduleReset(faction, duration); }
-	[[nodiscard]] bool contains(const Faction& faction) const { return m_data.contains(&const_cast<Faction&>(faction)); }
+	void load(const Json& data, EventSchedule& eventSchedule);
+	void set(FactionId faction) { assert(!m_data.contains(faction)); m_data.insert(faction); }
+	void maybeSet(FactionId faction) { m_data.insert(faction); }
+	void unset(FactionId faction) { assert(m_data.contains(faction)); m_data.erase(faction); }
+	void maybeUnset(FactionId faction) { m_data.erase(faction); }
+	void unsetAndScheduleReset(EventSchedule& eventSchedule, FactionId faction, Step duration) { unset(faction); scheduleReset(eventSchedule, faction, duration); }
+	void maybeUnsetAndScheduleReset(EventSchedule& eventSchedule, FactionId faction, Step duration)  { maybeUnset(faction); scheduleReset(eventSchedule, faction, duration); }
+	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] bool contains(const FactionId faction) const { return m_data.contains(faction); }
 	friend class ReMarkItemForStockPilingEvent;
 };
 class ItemHasCargo final
@@ -62,14 +64,11 @@ class ItemHasCargo final
 	std::vector<ActorIndex> m_actors;
 	std::vector<ItemIndex> m_items;
 	const FluidType* m_fluidType = nullptr;
-	const ItemType& m_itemType;
+	Volume m_maxVolume = 0;
 	Volume m_volume = 0;
 	Mass m_mass = 0;
 	Volume m_fluidVolume = 0;
 public:
-	ItemHasCargo(const ItemType& itemType) : m_itemType(itemType) { }
-	void load(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
 	void addItem(Area& area, ItemIndex itemIndex);
 	void addActor(Area& area, ActorIndex actorIndex);
 	void addFluid(const FluidType& fluidType, Volume volume);
@@ -78,6 +77,8 @@ public:
 	void removeActor(Area& area, ActorIndex actorIndex);
 	void removeItem(Area& area, ItemIndex item);
 	void removeItemGeneric(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity);
+	// When an item changes index and it has cargo update the m_carrier data of the cargo.
+	void updateCarrierIndexForAllCargo(Area& area, ItemIndex newIndex);
 	ItemIndex unloadGenericTo(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity, BlockIndex location);
 	[[nodiscard]] std::vector<ActorIndex>& getActors() { return m_actors; }
 	[[nodiscard]] std::vector<ItemIndex>& getItems() { return m_items; }
@@ -94,29 +95,30 @@ public:
 	[[nodiscard]] bool containsGeneric(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity) const;
 	[[nodiscard]] bool empty() const { return m_fluidType == nullptr && m_actors.empty() && m_items.empty(); }
 	[[nodiscard]] Mass getMass() const { return m_mass; }
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ItemHasCargo, m_actors, m_items, m_fluidType, m_volume, m_mass, m_fluidVolume);
 };
 class Items final : public Portables
 {
 	//TODO: change to bitset or remove.
 	std::unordered_set<ItemIndex> m_onSurface;
-	BloomHashMap<ItemIndex, std::wstring> m_name;
+	std::vector<std::unique_ptr<ItemReferenceTarget>> m_referenceTarget;
+	std::vector<std::wstring> m_name;
 	std::vector<std::unique_ptr<ItemHasCargo>> m_hasCargo;
 	std::vector<std::unique_ptr<ItemCanBeStockPiled>> m_canBeStockPiled;
 	std::vector<CraftJob*> m_craftJobForWorkPiece; // Used only for work in progress items.
 	std::vector<const ItemType*> m_itemType;
 	std::vector<const MaterialType*> m_materialType;
 	std::vector<ItemId> m_id;
-	std::vector<uint32_t> m_quality; // Always set to 0 for generic types.
+	std::vector<Quality> m_quality; // Always set to 0 for generic types.
 	//TODO: Percent doesn't allow fine enough detail for tools wearing out over time?
 	std::vector<Percent> m_percentWear; // Always set to 0 for generic types.
 	std::vector<Quantity> m_quantity; // Always set to 1 for nongeneric types.
 	sul::dynamic_bitset<> m_installed;
 	void resize(HasShapeIndex newSize);
 	void moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex);
-	[[nodiscard]] bool indexCanBeMoved(HasShapeIndex index) const;
 public:
 	Items(Area& area) : Portables(area) { }
-	[[nodiscard]] Json toJson() const;
+	void load(const Json& json);
 	void onChangeAmbiantSurfaceTemperature();
 	ItemIndex create(ItemParamaters paramaters);
 	void destroy(ItemIndex index);
@@ -128,7 +130,7 @@ public:
 	void setTemperature(ItemIndex index, Temperature temperature);
 	void addQuantity(ItemIndex index, Quantity delta);
 	void removeQuantity(ItemIndex index, Quantity delta);
-	void install(ItemIndex index, BlockIndex block, Facing facing, Faction& faction);
+	void install(ItemIndex index, BlockIndex block, Facing facing, FactionId faction);
 	void merge(ItemIndex index, ItemIndex item);
 	void setOnSurface(ItemIndex index);
 	void setNotOnSurface(ItemIndex index);
@@ -136,6 +138,10 @@ public:
 	void setWear(ItemIndex index, Percent wear);
 	void setQuantity(ItemIndex index, Quantity quantity);
 	void unsetCraftJobForWorkPiece(ItemIndex index);
+	[[nodiscard]] ItemReference getReference(ItemIndex index) const { return *m_referenceTarget.at(index).get(); }
+	[[nodiscard]] const ItemReference getReferenceConst(ItemIndex index) const { return *m_referenceTarget.at(index).get(); }
+	[[nodiscard]] ItemReferenceTarget& getReferenceTarget(ItemIndex index) const { return *m_referenceTarget.at(index).get();}
+	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool isOnSurface(ItemIndex index);
 	[[nodiscard]] bool isInstalled(ItemIndex index) { return m_installed[index]; }
 	[[nodiscard]] Quantity getQuantity(ItemIndex index) const { return m_quantity.at(index); }
@@ -169,6 +175,8 @@ public:
 	void cargo_removeFluid(ItemIndex index, CollisionVolume volume);
 	void cargo_unloadActorToLocation(ItemIndex index, ActorIndex actor, BlockIndex location);
 	void cargo_unloadItemToLocation(ItemIndex index, ItemIndex item, BlockIndex location);
+	void cargo_updateItemIndex(ItemIndex index, ItemIndex oldIndex, ItemIndex newIndex);
+	void cargo_updateActorIndex(ItemIndex index, ActorIndex oldIndex, ActorIndex newIndex);
 	ItemIndex cargo_unloadGenericItemToLocation(ItemIndex index, const ItemType& itemType, const MaterialType& materialType, BlockIndex location, Quantity quantity);
 	ItemIndex cargo_unloadGenericItemToLocation(ItemIndex index, ItemIndex item, BlockIndex location, Quantity quantity);
 	ActorOrItemIndex cargo_unloadPolymorphicToLocation(ItemIndex index, ActorOrItemIndex actorOrItem, BlockIndex location, Quantity quantity);
@@ -188,11 +196,13 @@ public:
 	[[nodiscard]] const std::vector<ItemIndex>& cargo_getItems(ItemIndex index) const;
 	[[nodiscard]] const std::vector<ActorIndex>& cargo_getActors(ActorIndex index) const;
 	// -Stockpile.
-	void stockpile_maybeUnsetAndScheduleReset(ItemIndex index, Faction& faction, Step duration); 
-	void stockpile_set(ItemIndex index, Faction& faction);
-	void stockpile_maybeUnset(ItemIndex index, Faction& faction);
-	[[nodiscard]] bool stockpile_canBeStockPiled(ItemIndex index, const Faction& faction) const;
+	void stockpile_maybeUnsetAndScheduleReset(ItemIndex index, FactionId faction, Step duration); 
+	void stockpile_set(ItemIndex index, FactionId faction);
+	void stockpile_maybeUnset(ItemIndex index, FactionId faction);
+	[[nodiscard]] bool stockpile_canBeStockPiled(ItemIndex index, const FactionId faction) const;
 	//TODO: Items leave area.
 	// For debugging.
 	void log(ItemIndex index) const;
+	Items(Items&) = delete;
+	Items(Items&&) = delete;
 };

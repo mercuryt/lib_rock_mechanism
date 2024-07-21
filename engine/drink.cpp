@@ -11,16 +11,19 @@
 #include <algorithm>
 // Must Drink.
 MustDrink::MustDrink(Area& area, ActorIndex a) :
-	m_thirstEvent(area.m_eventSchedule), m_actor(a) { }
-/*
-MustDrink::MustDrink(const Json& data, ActorIndex a, Simulation& s, const AnimalSpecies& species) : 
-	m_thirstEvent(s.m_eventSchedule), m_actor(a), m_fluidType(&species.fluidType),
+	m_thirstEvent(area.m_eventSchedule)
+{
+	m_actor.setTarget(area.getActors().getReferenceTarget(a));
+}
+MustDrink::MustDrink(Area& area, const Json& data, ActorIndex a, const AnimalSpecies& species) : 
+	m_thirstEvent(area.m_eventSchedule), m_fluidType(&species.fluidType),
        	m_volumeDrinkRequested(data["volumeDrinkRequested"].get<Volume>())
 {
+	m_actor.setTarget(area.getActors().getReferenceTarget(a));
 	if(data.contains("thirstEventStart"))
 	{
 		Step start = data["thirstEventStart"].get<Step>();
-		m_thirstEvent.schedule(species.stepsFluidDrinkFreqency, m_actor, start);
+		m_thirstEvent.schedule(area, species.stepsFluidDrinkFreqency, m_actor.getIndex(), start);
 	}
 }
 Json MustDrink::toJson() const
@@ -31,7 +34,6 @@ Json MustDrink::toJson() const
 		data["thirstEventStart"] = m_thirstEvent.getStartStep();
 	return data;
 }
-*/
 void MustDrink::drink(Area& area, uint32_t volume)
 {
 	assert(m_volumeDrinkRequested >= volume);
@@ -42,19 +44,20 @@ void MustDrink::drink(Area& area, uint32_t volume)
 	m_thirstEvent.unschedule();
 	Step stepsToNextThirstEvent;
 	Actors& actors = area.getActors();
+	ActorIndex actor = m_actor.getIndex();
 	if(m_volumeDrinkRequested == 0)
 	{
-		actors.objective_complete(m_actor, *m_objective);
-		stepsToNextThirstEvent = actors.getSpecies(m_actor).stepsTillDieWithoutFluid;
-		actors.grow_maybeStart(m_actor);
+		actors.objective_complete(actor, *m_objective);
+		stepsToNextThirstEvent = actors.getSpecies(actor).stepsTillDieWithoutFluid;
+		actors.grow_maybeStart(actor);
 	}
 	else
 	{
-		actors.objective_subobjectiveComplete(m_actor);
-		const AnimalSpecies& species = actors.getSpecies(m_actor);
+		actors.objective_subobjectiveComplete(actor);
+		const AnimalSpecies& species = actors.getSpecies(actor);
 		stepsToNextThirstEvent = util::scaleByFraction(species.stepsTillDieWithoutFluid, m_volumeDrinkRequested, species.stepsTillDieWithoutFluid);
 	}
-	m_thirstEvent.schedule(area, stepsToNextThirstEvent, m_actor);
+	m_thirstEvent.schedule(area, stepsToNextThirstEvent, actor);
 }
 void MustDrink::notThirsty(Area& area)
 {
@@ -64,17 +67,18 @@ void MustDrink::notThirsty(Area& area)
 void MustDrink::setNeedsFluid(Area& area)
 {
 	Actors& actors = area.getActors();
+	ActorIndex actor = m_actor.getIndex();
 	if(m_volumeDrinkRequested == 0)
 	{
-		m_volumeDrinkRequested = drinkVolumeFor(area, m_actor);
-		const AnimalSpecies& species = actors.getSpecies(m_actor);
-		m_thirstEvent.schedule(area, species.stepsTillDieWithoutFluid, m_actor);
-		std::unique_ptr<Objective> objective = std::make_unique<DrinkObjective>(area, m_actor);
+		m_volumeDrinkRequested = drinkVolumeFor(area, actor);
+		const AnimalSpecies& species = actors.getSpecies(actor);
+		m_thirstEvent.schedule(area, species.stepsTillDieWithoutFluid, actor);
+		std::unique_ptr<Objective> objective = std::make_unique<DrinkObjective>(area);
 		m_objective = static_cast<DrinkObjective*>(objective.get());
-		actors.objective_addNeed(m_actor, std::move(objective));
+		actors.objective_addNeed(actor, std::move(objective));
 	}
 	else
-		actors.die(m_actor, CauseOfDeath::thirst);
+		actors.die(actor, CauseOfDeath::thirst);
 }
 void MustDrink::onDeath()
 {
@@ -82,8 +86,9 @@ void MustDrink::onDeath()
 }
 void MustDrink::scheduleDrinkEvent(Area& area)
 {
-	const AnimalSpecies& species = area.getActors().getSpecies(m_actor);
-	m_thirstEvent.schedule(area, species.stepsFluidDrinkFreqency, m_actor);
+	ActorIndex actor = m_actor.getIndex();
+	const AnimalSpecies& species = area.getActors().getSpecies(actor);
+	m_thirstEvent.schedule(area, species.stepsFluidDrinkFreqency, actor);
 }
 void MustDrink::setFluidType(const FluidType& fluidType) { m_fluidType = &fluidType; }
 Percent MustDrink::getPercentDeadFromThirst() const
@@ -94,23 +99,30 @@ Percent MustDrink::getPercentDeadFromThirst() const
 }
 uint32_t MustDrink::drinkVolumeFor(Area& area, ActorIndex actor) { return std::max(1u, area.getActors().getMass(actor) / Config::unitsBodyMassPerUnitFluidConsumed); }
 // Drink Event.
-DrinkEvent::DrinkEvent(Area& area, const Step delay, DrinkObjective& drob, const Step start) :
-	ScheduledEvent(area.m_simulation, delay, start), m_drinkObjective(drob) {}
-DrinkEvent::DrinkEvent(Area& area, const Step delay, DrinkObjective& drob, ItemIndex i, const Step start) :
-	ScheduledEvent(area.m_simulation, delay, start), m_drinkObjective(drob), m_item(i) {}
+DrinkEvent::DrinkEvent(Area& area, const Step delay, DrinkObjective& drob, ActorIndex actor, const Step start) :
+	ScheduledEvent(area.m_simulation, delay, start), m_drinkObjective(drob) 
+{
+	m_actor.setTarget(area.getActors().getReferenceTarget(actor));
+}
+DrinkEvent::DrinkEvent(Area& area, const Step delay, DrinkObjective& drob, ActorIndex actor, ItemIndex item, const Step start) :
+	ScheduledEvent(area.m_simulation, delay, start), m_drinkObjective(drob)
+{
+	m_actor.setTarget(area.getActors().getReferenceTarget(actor));
+	m_item.setTarget(area.getItems().getReferenceTarget(item));
+}
 void DrinkEvent::execute(Simulation&, Area* area)
 {
-	ActorIndex actor = m_drinkObjective.m_actor;
+	ActorIndex actor = m_actor.getIndex();
 	Actors& actors = area->getActors();
 	uint32_t volume = actors.drink_getVolumeOfFluidRequested(actor);
-	BlockIndex drinkBlock = m_drinkObjective.getAdjacentBlockToDrinkAt(*area, actors.getLocation(actor), actors.getFacing(actor));
+	BlockIndex drinkBlock = m_drinkObjective.getAdjacentBlockToDrinkAt(*area, actors.getLocation(actor), actors.getFacing(actor), actor);
 	if(drinkBlock == BLOCK_INDEX_MAX)
 	{
 		// There isn't anything to drink here anymore, try again.
-		m_drinkObjective.makePathRequest(*area);
+		m_drinkObjective.makePathRequest(*area, actor);
 		return;
 	}
-	ItemIndex item = m_drinkObjective.getItemToDrinkFromAt(*area, drinkBlock);
+	ItemIndex item = m_drinkObjective.getItemToDrinkFromAt(*area, drinkBlock, actor);
 	Items& items = area->getItems();
 	if(item != ITEM_INDEX_MAX)
 	{

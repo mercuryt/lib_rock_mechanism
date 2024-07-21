@@ -46,7 +46,7 @@ Step CraftStepProject::getDuration() const
 {
 	uint32_t totalScore = 0;
 	for(auto& pair : m_workers)
-		totalScore += getWorkerCraftScore(pair.first);
+		totalScore += getWorkerCraftScore(pair.first.getIndex());
 	return m_craftStepType.stepsDuration / totalScore;
 }
 // Static method.
@@ -58,8 +58,8 @@ void CraftStepProject::onComplete()
 {
 	auto& [actor, projectWorker] = *m_workers.begin();
 	Objective& objective = projectWorker.objective;
-	m_craftJob.hasCraftingLocationsAndJobs.stepComplete(m_craftJob, actor);
-	m_area.getActors().objective_complete(actor, objective);
+	m_craftJob.hasCraftingLocationsAndJobs.stepComplete(m_craftJob, actor.getIndex());
+	m_area.getActors().objective_complete(actor.getIndex(), objective);
 }
 void CraftStepProject::onCancel()
 {
@@ -73,7 +73,7 @@ void CraftStepProject::onCancel()
 		CraftObjective& objective = actors.objective_getCurrent<CraftObjective>(actor);
 		//TODO: This records this fail job for this actor regardless of if it might still be possible via another location or subsitute required hasShape.
 		objective.recordFailedJob(craftJob);
-		objective.reset(m_area);
+		objective.reset(m_area, actor);
 		actors.objective_canNotCompleteSubobjective(actor);
 	}
 }
@@ -93,7 +93,7 @@ std::vector<std::pair<ItemQuery, Quantity>> CraftStepProject::getConsumed() cons
 	for(auto& pair : output)
 		if(pair.first.m_materialType == nullptr)
 		{
-			assert(pair.first.m_item == ITEM_INDEX_MAX && (pair.first.m_materialTypeCategory == nullptr || pair.first.m_materialTypeCategory == m_craftJob.materialType->materialTypeCategory));
+			assert(pair.first.m_item.exists() && (pair.first.m_materialTypeCategory == nullptr || pair.first.m_materialTypeCategory == m_craftJob.materialType->materialTypeCategory));
 			pair.first.specalize(*m_craftJob.materialType);
 		}
 	return output;
@@ -101,7 +101,7 @@ std::vector<std::pair<ItemQuery, Quantity>> CraftStepProject::getConsumed() cons
 std::vector<std::pair<ItemQuery, Quantity>> CraftStepProject::getUnconsumed() const 
 { 
 	auto output = m_craftStepType.unconsumed; 
-	if(m_craftJob.workPiece != ITEM_INDEX_MAX)
+	if(m_craftJob.workPiece.exists())
 		output.emplace_back(m_craftJob.workPiece, 1);
 	return output; 
 }
@@ -112,11 +112,14 @@ std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> CraftSte
 			std::get<1>(tuple) = m_craftJob.materialType;
 	return output; 
 }
-/*
+CraftJob::CraftJob(const CraftJobType& cjt, HasCraftingLocationsAndJobsForFaction& hclaj, ItemIndex wp, const MaterialType* mt, uint32_t msl) : 
+		craftJobType(cjt), hasCraftingLocationsAndJobs(hclaj), materialType(mt), stepIterator(craftJobType.stepTypes.begin()), minimumSkillLevel(msl), totalSkillPoints(0), reservable(1) 
+{ 
+	workPiece.setTarget(hasCraftingLocationsAndJobs.m_area.getItems().getReferenceTarget(wp));
+}
 CraftJob::CraftJob(const Json& data, DeserializationMemo& deserializationMemo, HasCraftingLocationsAndJobsForFaction& hclaj) :
 	craftJobType(*data["craftJobType"].get<const CraftJobType*>()),
 	hasCraftingLocationsAndJobs(hclaj),
-	workPiece(data.contains("workPiece") ? &deserializationMemo.m_simulation.m_hass->getById(data["workPiece"].get<ItemId>()) : nullptr),
 	materialType(data.contains("materialType") ? &MaterialType::byName(data["materialType"].get<std::string>()) : nullptr),
 	stepIterator(craftJobType.stepTypes.begin() + data["stepIndex"].get<size_t>()),
 	craftStepProject(data.contains("craftStepProject") ? std::make_unique<CraftStepProject>(data["craftStepProject"], deserializationMemo, *this) : nullptr),
@@ -124,6 +127,8 @@ CraftJob::CraftJob(const Json& data, DeserializationMemo& deserializationMemo, H
 	totalSkillPoints(data["totalSkillPoints"].get<uint32_t>()), reservable(1) 
 { 
 	deserializationMemo.m_craftJobs[data["address"].get<uintptr_t>()] = this;
+	if(data.contains("workPiece"))
+		workPiece.load(data["workPiece"], hasCraftingLocationsAndJobs.m_area);
 }
 Json CraftJob::toJson() const
 {
@@ -136,13 +141,12 @@ Json CraftJob::toJson() const
 	};
 	if(craftStepProject)
 		data["craftStepProject"] = craftStepProject->toJson();
-	if(workPiece != nullptr)
-		data["workPiece"] = workPiece->m_id;
+	if(workPiece.exists())
+		data["workPiece"] = workPiece;
 	if(materialType != nullptr)
 		data["materialType"] = materialType->name;
 	return data;
 }
-*/
 uint32_t CraftJob::getQuality() const
 {
 	float pointsPerStep = (float)totalSkillPoints / craftJobType.stepTypes.size();
@@ -153,8 +157,7 @@ Step CraftJob::getStep() const
 	return 1 + (stepIterator - craftJobType.stepTypes.begin());
 }
 // HasCraftingLocationsAndJobs
-/*
-HasCraftingLocationsAndJobsForFaction::HasCraftingLocationsAndJobsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Faction& f) :
+HasCraftingLocationsAndJobsForFaction::HasCraftingLocationsAndJobsForFaction(const Json& data, DeserializationMemo& deserializationMemo, FactionId f) :
 	m_area(deserializationMemo.area(data["area"])),
        	m_faction(f)
 {
@@ -238,7 +241,6 @@ Json HasCraftingLocationsAndJobsForFaction::toJson() const
 		data["jobs"].push_back(job.toJson());
 	return data;
 }
-*/
 void HasCraftingLocationsAndJobsForFaction::addLocation(const CraftStepTypeCategory& category, BlockIndex block)
 {
 	m_locationsByCategory[&category].insert(block);
@@ -300,7 +302,7 @@ void HasCraftingLocationsAndJobsForFaction::stepComplete(CraftJob& craftJob, Act
 		jobComplete(craftJob, location);
 	else
 	{
-		if(craftJob.workPiece == ITEM_INDEX_MAX)
+		if(!craftJob.workPiece.exists())
 		{
 			ItemParamaters params{
 				.itemType=craftJob.craftJobType.productType,
@@ -310,7 +312,9 @@ void HasCraftingLocationsAndJobsForFaction::stepComplete(CraftJob& craftJob, Act
 				.quality=0,
 				.percentWear=0,
 			};
-			craftJob.workPiece = m_area.getItems().create(params);
+			Items& items = m_area.getItems();
+			ItemIndex index = items.create(params);
+			craftJob.workPiece = items.getReference(index);
 			//TODO: Should the item be reserved?
 		}
 		indexUnassigned(craftJob);
@@ -348,18 +352,19 @@ void HasCraftingLocationsAndJobsForFaction::jobComplete(CraftJob& craftJob, Bloc
 	if(craftJob.craftJobType.productType.generic)
 	{
 		product = blocks.item_addGeneric(location, craftJob.craftJobType.productType, *craftJob.materialType, craftJob.craftJobType.productQuantity);
-		if(craftJob.workPiece)
-			items.destroy(craftJob.workPiece);
+		if(craftJob.workPiece.exists())
+			items.destroy(craftJob.workPiece.getIndex());
 	}
 	else
 	{
 		assert(craftJob.craftJobType.productQuantity == 1);
-		if(craftJob.workPiece)
+		if(craftJob.workPiece.exists())
 		{
 			// Not generic and workpiece exists, use it as product.
-			items.setQuality(craftJob.workPiece, craftJob.getQuality());
-			items.unsetCraftJobForWorkPiece(craftJob.workPiece);
-			product = craftJob.workPiece;
+			ItemIndex index = craftJob.workPiece.getIndex();
+			items.setQuality(index, craftJob.getQuality());
+			items.unsetCraftJobForWorkPiece(index);
+			product = index;
 		}
 		else
 		{
@@ -378,13 +383,13 @@ void HasCraftingLocationsAndJobsForFaction::jobComplete(CraftJob& craftJob, Bloc
 	m_area.m_hasStockPiles.at(m_faction).maybeAddItem(product);
 	m_jobs.remove(craftJob);
 }
-void HasCraftingLocationsAndJobsForFaction::makeAndAssignStepProject(CraftJob& craftJob, BlockIndex location, CraftObjective& objective)
+void HasCraftingLocationsAndJobsForFaction::makeAndAssignStepProject(CraftJob& craftJob, BlockIndex location, CraftObjective& objective, ActorIndex actor)
 {
 	Actors& actors = m_area.getActors();
-	craftJob.craftStepProject = std::make_unique<CraftStepProject>(*actors.getFaction(objective.m_actor), m_area, location, *craftJob.stepIterator, craftJob);
+	craftJob.craftStepProject = std::make_unique<CraftStepProject>(actors.getFactionId(actor), m_area, location, *craftJob.stepIterator, craftJob);
 	std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<CraftStepProjectHasShapeDishonorCallback>(*craftJob.craftStepProject.get());
 	craftJob.craftStepProject->setLocationDishonorCallback(std::move(dishonorCallback));
-	craftJob.craftStepProject->addWorkerCandidate(objective.m_actor, objective);
+	craftJob.craftStepProject->addWorkerCandidate(actor, objective);
 	unindexAssigned(craftJob);
 }
 bool HasCraftingLocationsAndJobsForFaction::hasLocationsFor(const CraftJobType& craftJobType) const
@@ -413,7 +418,7 @@ const CraftStepTypeCategory* HasCraftingLocationsAndJobsForFaction::getDisplaySt
 CraftJob* HasCraftingLocationsAndJobsForFaction::getJobForAtLocation(const ActorIndex actor, const SkillType& skillType, BlockIndex block, std::unordered_set<CraftJob*>& excludeJobs)
 {
 	Actors& actors = m_area.getActors();
-	assert(!m_area.getBlocks().isReserved(block, *actors.getFaction(actor)));
+	assert(!m_area.getBlocks().isReserved(block, actors.getFactionId(actor)));
 	if(!m_stepTypeCategoriesByLocation.contains(block))
 		return nullptr;
 	for(const CraftStepTypeCategory* category : m_stepTypeCategoriesByLocation.at(block))
@@ -427,18 +432,17 @@ void AreaHasCraftingLocationsAndJobs::load(const Json& data, DeserializationMemo
 {
 	for(const Json& pair : data["projects"])
 	{
-		Faction& faction = deserializationMemo.faction(pair[0].get<std::wstring>());
-		m_data.try_emplace(&faction, pair[1], deserializationMemo, faction);
+		FactionId faction = pair[0].get<FactionId>();
+		m_data.try_emplace(faction, pair[1], deserializationMemo, faction);
 	}
 }
 void AreaHasCraftingLocationsAndJobs::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	for(const Json& pair : data["projects"])
 	{
-		Faction& faction = deserializationMemo.faction(pair[0]);
-		m_data.at(&faction).loadWorkers(pair[1], deserializationMemo);
+		FactionId faction = pair[0].get<FactionId>();
+		m_data.at(faction).loadWorkers(pair[1], deserializationMemo);
 	}
-
 }
 Json AreaHasCraftingLocationsAndJobs::toJson() const
 {
@@ -459,9 +463,9 @@ void AreaHasCraftingLocationsAndJobs::clearReservations()
 			if(job.craftStepProject)
 				job.craftStepProject->clearReservations();
 }
-HasCraftingLocationsAndJobsForFaction& AreaHasCraftingLocationsAndJobs::at(Faction& faction) 
+HasCraftingLocationsAndJobsForFaction& AreaHasCraftingLocationsAndJobs::at(FactionId faction) 
 { 
-	if(!m_data.contains(&faction))
+	if(!m_data.contains(faction))
 		addFaction(faction);
-	return m_data.at(&faction); 
+	return m_data.at(faction); 
 }

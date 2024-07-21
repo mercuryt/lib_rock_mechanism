@@ -8,6 +8,7 @@
 #include "materialType.h"
 #include "woundType.h"
 
+// TODO: HitParamaters.
 struct Hit
 {
 	uint32_t area;

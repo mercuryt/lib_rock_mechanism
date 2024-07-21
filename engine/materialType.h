@@ -24,6 +24,8 @@ struct MaterialTypeCategory
 	static const MaterialTypeCategory& byName(const std::string name);
 };
 inline std::vector<MaterialTypeCategory> materialTypeCategoryDataStore;
+inline void to_json(Json& data, const MaterialTypeCategory* const & materialTypeCategory) { data = materialTypeCategory->name; }
+inline void from_json(const Json& data, const MaterialTypeCategory*& materialTypeCategory) { materialTypeCategory = &MaterialTypeCategory::byName(data.get<std::string>()); }
 
 struct SpoilData
 {

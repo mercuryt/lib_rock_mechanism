@@ -94,7 +94,6 @@ public:
 	Body(Area& area, ActorIndex a);
 	Body(const Json& data, DeserializationMemo& deserializationMemo, ActorIndex a);
 	void initalize(Area& area);
-	[[nodiscard]] Json toJson() const;
 	BodyPart& pickABodyPartByVolume(Simulation& simulation);
 	BodyPart& pickABodyPartByType(const BodyPartType& bodyPartType);
 	// Armor has already been applied, calculate hit depth.
@@ -109,6 +108,7 @@ public:
 	void recalculateBleedAndImpairment(Area& area);
 	Wound& getWoundWhichIsBleedingTheMost();
 	void setMaterialType(const MaterialType& materialType) { m_materialType = &materialType; }
+	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool piercesSkin(Hit hit, const BodyPart& bodyPart) const;
 	[[nodiscard]] bool piercesFat(Hit hit, const BodyPart& bodyPart) const;
 	[[nodiscard]] bool piercesMuscle(Hit hit, const BodyPart& bodyPart) const;

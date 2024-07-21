@@ -4,7 +4,7 @@
 
 class Area;
 class TargetedHaulProject;
-class DeserializationMemo;
+struct DeserializationMemo;
 
 class TargetedHaulObjective final : public Objective
 {
@@ -12,11 +12,11 @@ class TargetedHaulObjective final : public Objective
 public:
 	TargetedHaulObjective(ActorIndex a, TargetedHaulProject& p);
 	TargetedHaulObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	void execute(Area&);
-	void cancel(Area&);
-	void delay(Area&) { }
-	void reset(Area& area) { cancel(area); }
-	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Haul; }
-	std::string name() const { return "haul"; }
+	void execute(Area&, ActorIndex actor);
+	void cancel(Area&, ActorIndex actor);
+	void delay(Area&, ActorIndex) { }
+	void reset(Area& area, ActorIndex actor) { cancel(area, actor); }
+	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Haul; }
+	[[nodiscard]] std::string name() const { return "haul"; }
+	[[nodiscard]] Json toJson() const;
 };

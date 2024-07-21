@@ -5,16 +5,19 @@
 #include "project.h"
 #include "actors/actors.h"
 #include "objectives/targetedHaul.h"
-/*
-TargetedHaulProject::TargetedHaulProject(const Json& data, DeserializationMemo& deserializationMemo) :
-	Project(data, deserializationMemo), m_item(deserializationMemo.itemReference(data["item"])) { }
+TargetedHaulProject::TargetedHaulProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :
+	Project(data, deserializationMemo), m_item(deserializationMemo.itemReference(data["item"])) 
+{
+	if(data.contains("item"))
+		m_item.load(data["item"], area);
+	
+}
 Json TargetedHaulProject::toJson() const
 {
 	Json data = Project::toJson();
 	data["item"] = m_item;
 	return data;
 }
-*/
 void TargetedHaulProject::onComplete()
 {
 	auto workers = std::move(m_workers);
@@ -30,13 +33,6 @@ void AreaHasTargetedHauling::load(const Json& data, DeserializationMemo& deseria
 {
 	for(const Json& project : data["projects"])
 		m_projects.emplace_back(project, deserializationMemo);
-}
-Json AreaHasTargetedHauling::toJson() const 
-{
-	Json data{{"projects", Json::array()}};
-	for(const Project& project : m_projects)
-		data["projects"].push_back(project);
-	return data;
 }
 TargetedHaulProject& AreaHasTargetedHauling::begin(std::vector<ActorIndex> workers, BlockIndex destination, ItemIndex item)
 {
@@ -62,4 +58,11 @@ void AreaHasTargetedHauling::clearReservations()
 {
 	for(Project& project : m_projects)
 		project.clearReservations();
+}
+Json AreaHasTargetedHauling::toJson() const 
+{
+	Json data{{"projects", Json::array()}};
+	for(const Project& project : m_projects)
+		data["projects"].push_back(project);
+	return data;
 }

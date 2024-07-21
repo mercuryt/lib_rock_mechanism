@@ -42,7 +42,7 @@ class WoodCuttingProject final : public Project
 	// What would the total delay time be if we started from scratch now with current workers?
 public:
 	// BlockFeatureType can be null, meaning the block is to be fully excavated.
-	WoodCuttingProject(Faction& faction, Area& area, BlockIndex block, std::unique_ptr<DishonorCallback> locationDishonorCallback) : 
+	WoodCuttingProject(FactionId faction, Area& area, BlockIndex block, std::unique_ptr<DishonorCallback> locationDishonorCallback) : 
 		Project(faction, area, block, Config::maxNumberOfWorkersForWoodCuttingProject, std::move(locationDishonorCallback)) { }
 	WoodCuttingProject(const Json& data, DeserializationMemo& deserializationMemo);
 	// No toJson is needed here.
@@ -51,23 +51,23 @@ public:
 };
 struct WoodCuttingLocationDishonorCallback final : public DishonorCallback
 {
-	Faction& m_faction;
+	FactionId m_faction;
 	Area& m_area;
 	BlockIndex m_location;
-	WoodCuttingLocationDishonorCallback(Faction& f, Area& a, BlockIndex l) : m_faction(f), m_area(a), m_location(l) { }
+	WoodCuttingLocationDishonorCallback(FactionId f, Area& a, BlockIndex l) : m_faction(f), m_area(a), m_location(l) { }
 	WoodCuttingLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
 	void execute(uint32_t oldCount, uint32_t newCount);
+	[[nodiscard]] Json toJson() const;
 };
 // Part of HasWoodCuttingDesignations.
 class HasWoodCuttingDesignationsForFaction final
 {
 	Area& m_area;
-	Faction& m_faction;
+	FactionId m_faction;
 	std::unordered_map<BlockIndex, WoodCuttingProject> m_data;
 public:
-	HasWoodCuttingDesignationsForFaction(Faction& p, Area& a) : m_area(a), m_faction(p) { }
-	HasWoodCuttingDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Faction& faction);
+	HasWoodCuttingDesignationsForFaction(FactionId p, Area& a) : m_area(a), m_faction(p) { }
+	HasWoodCuttingDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, FactionId faction);
 	Json toJson() const;
 	void designate(BlockIndex block);
 	void undesignate(BlockIndex block);
@@ -81,20 +81,20 @@ public:
 class AreaHasWoodCuttingDesignations final
 {
 	Area& m_area;
-	std::unordered_map<Faction*, HasWoodCuttingDesignationsForFaction> m_data;
+	std::unordered_map<FactionId, HasWoodCuttingDesignationsForFaction> m_data;
 public:
 	AreaHasWoodCuttingDesignations(Area& a) : m_area(a) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
-	void addFaction(Faction& faction);
-	void removeFaction(Faction& faction);
+	void addFaction(FactionId faction);
+	void removeFaction(FactionId faction);
 	// TODO: designate and undesignate should probably take plants rather then blocks as arguments.
-	void designate(Faction& faction, BlockIndex block);
-	void undesignate(Faction& faction, BlockIndex block);
-	void remove(Faction& faction, BlockIndex block);
+	void designate(FactionId faction, BlockIndex block);
+	void undesignate(FactionId faction, BlockIndex block);
+	void remove(FactionId faction, BlockIndex block);
 	void clearAll(BlockIndex block);
 	void clearReservations();
-	bool areThereAnyForFaction(Faction& faction) const;
-	bool contains(Faction& faction, BlockIndex block) const;
-	WoodCuttingProject& at(Faction& faction, BlockIndex block);
+	bool areThereAnyForFaction(FactionId faction) const;
+	bool contains(FactionId faction, BlockIndex block) const;
+	WoodCuttingProject& at(FactionId faction, BlockIndex block);
 };

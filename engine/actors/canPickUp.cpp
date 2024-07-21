@@ -92,6 +92,35 @@ void Actors::canPickUp_removeFluidVolume(ActorIndex index, CollisionVolume volum
 	ItemIndex item = m_carrying.at(index).get();
 	m_area.getItems().cargo_removeFluid(item, volume);
 }
+void Actors::canPickUp_add(ActorIndex index, const ItemType& itemType, const MaterialType& materialType, Quantity quantity)
+{
+	Items& items = m_area.getItems();
+	auto& carrying = m_carrying.at(index);
+	if(carrying.exists())
+	{
+		assert(carrying.isItem());
+		ItemIndex item = carrying.get();
+		assert(items.getItemType(item) == itemType);
+		assert(items.getMaterialType(item) == materialType);
+		items.addQuantity(item, quantity);
+	}
+	else
+	{
+		ItemIndex item = items.create({.itemType=itemType, .materialType=materialType, .quantity=quantity});
+		carrying = ActorOrItemIndex::createForItem(item);
+	}
+	move_updateIndividualSpeed(index);
+}
+void Actors::canPickUp_removeItem(ActorIndex index, ItemIndex item)
+{
+	assert(m_carrying.at(index).exists());
+	assert(m_carrying.at(index).isItem());
+	assert(m_carrying.at(index).get() == item);
+	m_carrying.at(index).clear();
+	Items& items = m_area.getItems();
+	items.destroy(item);
+	move_updateIndividualSpeed(index);
+}
 Quantity Actors::canPickUp_quantityWhichCanBePickedUpUnencombered(ActorIndex index, const ItemType& itemType, const MaterialType& materialType) const
 {
 	return canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(index, itemType.volume * materialType.density, Config::minimumHaulSpeedInital);
@@ -209,4 +238,16 @@ Quantity Actors::canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(ActorI
 	while(canPickUp_speedIfCarryingQuantity(index, mass, quantity + 1) >= minimumSpeed)
 		quantity++;
 	return quantity;
+}		
+void Actors::canPickUp_updateActorIndex(ActorIndex index, ActorIndex oldIndex, ActorIndex newIndex)
+{
+	assert(m_carrying.at(index).get() == oldIndex);
+	assert(m_carrying.at(index).isActor());
+	m_carrying.at(index).updateIndex(newIndex);
+}
+void Actors::canPickUp_updateItemIndex(ActorIndex index, ItemIndex oldIndex, ItemIndex newIndex)
+{
+	assert(m_carrying.at(index).get() == oldIndex);
+	assert(m_carrying.at(index).isItem());
+	m_carrying.at(index).updateIndex(newIndex);
 }

@@ -93,6 +93,15 @@ void Items::cargo_removeItemGeneric(ItemIndex index, const ItemType& itemType, c
 	if(hasCargo.empty())
 		m_hasCargo.at(index) = nullptr;
 }
+void Items::cargo_removeFluid(ItemIndex index, Volume volume)
+{
+	assert(m_hasCargo.at(index) != nullptr);
+	assert(cargo_containsAnyFluid(index));
+	assert(cargo_getFluidVolume(index >= volume));
+	auto& hasCargo = *m_hasCargo.at(index);
+	//TODO: passing fluid type is pointless here, either pass it into cargo_removeFluid or make a HasCargo::removeFluidVolume(Volume volume)
+	hasCargo.removeFluidVolume(hasCargo.getFluidType(), volume);
+}
 void Items::cargo_unloadActorToLocation(ItemIndex index, ActorIndex actor, BlockIndex location)
 {
 	assert(m_hasCargo.at(index));
@@ -108,6 +117,20 @@ void Items::cargo_unloadItemToLocation(ItemIndex index, ItemIndex item, BlockInd
 	assert(getLocation(item) == BLOCK_INDEX_MAX);
 	cargo_removeItem(index, item);
 	setLocation(item, location);
+}
+void Items::cargo_updateItemIndex(ItemIndex index, ItemIndex oldIndex, ItemIndex newIndex)
+{
+	auto& items = m_hasCargo.at(index)->getItems();
+	auto found = std::ranges::find(items, oldIndex);
+	assert(found != items.end());
+	(*found) = newIndex;
+}
+void Items::cargo_updateActorIndex(ItemIndex index, ActorIndex oldIndex, ActorIndex newIndex)
+{
+	auto& actors = m_hasCargo.at(index)->getActors();
+	auto found = std::ranges::find(actors, oldIndex);
+	assert(found != actors.end());
+	(*found) = newIndex;
 }
 ItemIndex Items::cargo_unloadGenericItemToLocation(ItemIndex index, ItemIndex item, BlockIndex location, Quantity quantity)
 {
@@ -163,6 +186,13 @@ bool Items::cargo_containsItemGeneric(ItemIndex index, const ItemType& itemType,
 	if(m_hasCargo.at(index) == nullptr)
 		return false;
 	return m_hasCargo.at(index)->containsGeneric(m_area, itemType, materialType, quantity);
+}
+bool Items::cargo_containsPolymorphic(ItemIndex index, ActorOrItemIndex actorOrItem, Quantity quantity) const
+{
+	if(actorOrItem.isActor())
+		return cargo_containsActor(index, actorOrItem.get());
+	else
+		return cargo_containsItem(index, actorOrItem.get()) && getQuantity(actorOrItem.get()) >= quantity;
 }
 bool Items::cargo_containsAnyFluid(ItemIndex index) const
 {

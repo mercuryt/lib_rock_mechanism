@@ -17,18 +17,10 @@
 HasShapes::HasShapes(Area& area) : m_area(area) { }
 HasShapeIndex HasShapes::getNextIndex()
 {
-	if(m_freeSlots.empty())
-	{
-		HasShapeIndex index =  m_shape.size();
-		resize(index);
-		return index;
-	}
-	else
-	{
-		auto index = m_freeSlots.back();
-		m_freeSlots.pop_back();
-		return index;
-	}
+	HasShapeIndex index =  m_shape.size();
+	// Virtual metod call.
+	resize(index);
+	return index;
 }
 void HasShapes::create(HasShapeIndex index, const Shape& shape, BlockIndex location, Facing facing, bool isStatic)
 {
@@ -45,7 +37,7 @@ void HasShapes::resize(HasShapeIndex newSize)
 	m_facing.resize(newSize);
 	m_blocks.resize(newSize);
 	m_static.resize(newSize);
-	m_underground.reserve(newSize);
+	m_underground.resize(newSize);
 }
 void HasShapes::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 {
@@ -58,21 +50,13 @@ void HasShapes::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 }
 void HasShapes::destroy(HasShapeIndex index)
 {
-	// If the index is the last one resize.
-	if(index == m_shape.size() - 1)
-		resize(index);
-	/*
-	//TODO: write moveIndex and then do these comments.
-	// if the last index can be moved move it to this index and then resize.
-	else if(indexCanBeMoved(m_shape.size() - 1))
-	{
-		moveIndex(m_shape.size() - 1, index);
-		resize(index);
-	}
-	// try to find the highest index which can be moved, then mark the old high index as free.
-	// No higher index to swap with, mark this one as free.
-	// */
-	m_freeSlots.push_back(index);
+	// Copy last plant over this slot.
+	if(size() != 1)
+		// Virtual call.
+		moveIndex(index, size() - 1);
+	// Truncate empty slot.
+	// Virtual call.
+	resize(size() - 1);
 }
 void HasShapes::setShape(HasShapeIndex index, const Shape& shape)
 {
@@ -116,12 +100,19 @@ void HasShapes::updateIsOnSurface(HasShapeIndex index, BlockIndex block)
 }
 void HasShapes::sortRange(HasShapeIndex begin, HasShapeIndex end)
 {
+	assert(false);
 	assert(end > begin);
 	//TODO: impliment sort with library rather then views::zip for clang / msvc support.
 	/*
 	auto zip = std::ranges::views::zip(m_shape, m_location, m_facing, m_faction, m_blocks, m_static, m_underground);
 	std::ranges::sort(zip.begin() + begin, zip.end() + end, SpatialSort);
 	*/
+}
+const Faction* HasShapes::getFaction(HasShapeIndex index) const
+{ 
+	if(m_faction.at(index) == FACTION_ID_MAX)
+		return nullptr;
+	return &m_area.m_simulation.m_hasFactions.getById(m_faction.at(index));
 }
 bool HasShapes::isAdjacentToActor(HasShapeIndex index, ActorIndex actor) const
 {
@@ -159,7 +150,7 @@ DistanceInBlocks HasShapes::distanceToActor(HasShapeIndex index, ActorIndex acto
 	// Use line of sight?
 	return m_area.getBlocks().distance(m_location.at(index), m_area.getActors().getLocation(actor));
 }
-bool HasShapes::allOccupiedBlocksAreReservable(HasShapeIndex index, Faction& faction) const
+bool HasShapes::allOccupiedBlocksAreReservable(HasShapeIndex index, FactionId faction) const
 {
 	return allBlocksAtLocationAndFacingAreReservable(index, m_location.at(index), m_facing.at(index), faction);
 }
@@ -308,10 +299,10 @@ ItemIndex HasShapes::getItemWhichIsAdjacentWithPredicate(HasShapeIndex index, st
 {
 	return getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(index, m_location.at(index), m_facing.at(index), predicate);
 }
-bool HasShapes::allBlocksAtLocationAndFacingAreReservable(HasShapeIndex index, const BlockIndex location, Facing facing, Faction& faction) const
+bool HasShapes::allBlocksAtLocationAndFacingAreReservable(HasShapeIndex index, const BlockIndex location, Facing facing, FactionId faction) const
 {
 	Blocks& blocks = m_area.getBlocks();
-	std::function<bool(const BlockIndex)> predicate = [&blocks, &faction](const BlockIndex occupied) { return blocks.isReserved(occupied, faction); };
+	std::function<bool(const BlockIndex)> predicate = [&blocks, faction](const BlockIndex occupied) { return blocks.isReserved(occupied, faction); };
 	return predicateForAnyOccupiedBlockAtLocationAndFacing(index, predicate, location, facing);
 }
 void HasShapes::log(HasShapeIndex index) const
@@ -324,16 +315,12 @@ void HasShapes::log(HasShapeIndex index) const
 	Point3D coordinates = m_area.getBlocks().getCoordinates(m_location.at(index));
 	std::cout << "[" << coordinates.x << "," << coordinates.y << "," << coordinates.z << "]";
 }
-const Shape& HasShapes::getShape(HasShapeIndex index) const { return *m_shape.at(index); }
-BlockIndex HasShapes::getLocation(HasShapeIndex index)  const { return m_location.at(index); }
-Facing HasShapes::getFacing(HasShapeIndex index) const { return m_facing.at(index); }
 std::vector<HasShapeIndex> HasShapes::getAll() const
 {
-	//TODO: cache?
+	// TODO: Replace with std::iota?
 	std::vector<HasShapeIndex> output;
 	output.reserve(m_shape.size());
-	for(HasShapeIndex i = 0; i < m_shape.size(); ++i)
-		if(std::ranges::find(m_freeSlots, i) == m_freeSlots.end())
-			output.push_back(i);
+	for(HasShapeIndex i = 0; i < size(); ++i)
+		output.push_back(i);
 	return output;
 }

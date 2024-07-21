@@ -49,6 +49,7 @@ DramaArcType DramaArc::stringToType(std::string string)
 	return DramaArcType::AnimalsArrive;
 }
 // Static method.
+/*
 std::unique_ptr<DramaArc> DramaArc::load(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine)
 {
 	DramaArcType type = data["type"].get<DramaArcType>();
@@ -77,6 +78,7 @@ Json DramaArc::toJson() const
 		data["area"] = m_area->m_id;
 	return data;
 }
+*/
 void DramaArc::actorsLeave(std::vector<ActorIndex> actorsLeaving)
 {
 	constexpr uint8_t priority = 100;
@@ -178,6 +180,7 @@ std::vector<const AnimalSpecies*> DramaArc::getSentientSpecies() const
 			output.push_back(&species);
 	return output;
 }
+/*
 DramaEngine::DramaEngine(const Json& data, DeserializationMemo& deserializationMemo, Simulation& simulation) : m_simulation(simulation)
 {
 	for(const Json& arcData : data["arcs"])
@@ -193,6 +196,7 @@ Json DramaEngine::toJson() const
 		arcs.push_back(arc->toJson());
 	return {{"arcs", arcs}};
 }
+*/
 void DramaEngine::add(std::unique_ptr<DramaArc> dramaticArc)
 {
 	if(dramaticArc->m_area)

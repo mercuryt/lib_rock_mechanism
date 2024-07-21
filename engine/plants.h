@@ -3,7 +3,7 @@
 #include "deserializationMemo.h"
 #include "eventSchedule.hpp"
 #include "hasShapes.h"
-#include "plants.h"
+#include "plantSpecies.h"
 #include "types.h"
 
 #include <vector>
@@ -49,11 +49,10 @@ class Plants final : public HasShapes
 	std::vector<CollisionVolume> m_volumeFluidRequested;
 	void resize(HasShapeIndex newSize);
 	void moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex);
-	[[nodiscard]] bool indexCanBeMoved(HasShapeIndex) const { return true; }
+	void updateFluidVolumeRequested(PlantIndex index);
 public:
 	Plants(Area& area);
-	Plants(const Json& data, DeserializationMemo& deserializationMemo);
-	[[nodiscard]] Json toJson() const;
+	void load(const Json& data);
 	void onChangeAmbiantSurfaceTemperature();
 	PlantIndex create(PlantParamaters paramaters);
 	void destroy(PlantIndex index);
@@ -76,6 +75,7 @@ public:
 	void updateShape(PlantIndex index);
 	void setLocation(BlockIndex block, Area* area);
 	void exit(PlantIndex index);
+	void fromJson(Plants& plants, Area& area, const Json& data);
 	[[nodiscard]] const PlantSpecies& getSpecies(PlantIndex index) const;
 	[[nodiscard]] Mass getFruitMass(PlantIndex index) const;
 	// Not const: updates cache.
@@ -89,8 +89,9 @@ public:
 	[[nodiscard]] Quantity getQuantityToHarvest(PlantIndex index) const { return m_quantityToHarvest.at(index); }
 	[[nodiscard]] Step stepsPerShapeChange(PlantIndex index) const;
 	[[nodiscard]] bool readyToHarvest(PlantIndex index) const { return m_quantityToHarvest.at(index) != 0; }
-	[[nodiscard]] const Volume& getVolumeFluidRequested(PlantIndex index) const { return m_volumeFluidRequested.at(index); }
+	[[nodiscard]] const CollisionVolume& getVolumeFluidRequested(PlantIndex index) const { return m_volumeFluidRequested.at(index); }
 	[[nodiscard]] bool temperatureEventExists(PlantIndex index) const;
+	[[nodiscard]] Json toJson() const;
 	void log(PlantIndex index) const;
 	friend class PlantGrowthEvent;
 	friend class PlantShapeGrowthEvent;
@@ -98,7 +99,10 @@ public:
 	friend class PlantEndOfHarvestEvent;
 	friend class PlantFluidEvent;
 	friend class PlantTemperatureEvent;
+	Plants(Plants&) = delete;
+	Plants(Plants&&) = delete;
 };
+void to_json(Json& data, const Plants& plants);
 class PlantGrowthEvent final : public ScheduledEvent
 {
 	PlantIndex m_plant;
@@ -106,6 +110,7 @@ public:
 	PlantGrowthEvent(Area& area, const Step delay, PlantIndex p, Step start = 0);
 	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area* area);
+	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_plant == oldIndex); m_plant = newIndex; }
 };
 class PlantShapeGrowthEvent final : public ScheduledEvent
 {
@@ -114,14 +119,16 @@ public:
 	PlantShapeGrowthEvent(Area& area, const Step delay, PlantIndex p, Step start = 0);
 	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area* area);
+	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_plant == oldIndex); m_plant = newIndex; }
 };
 class PlantFoliageGrowthEvent final : public ScheduledEvent
 {
 	PlantIndex m_plant;
-	public:
+public:
 	PlantFoliageGrowthEvent(Area& area, const Step delay, PlantIndex p, Step start = 0);
 	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area* area);
+	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_plant == oldIndex); m_plant = newIndex; }
 };
 class PlantEndOfHarvestEvent final : public ScheduledEvent
 {
@@ -130,6 +137,7 @@ public:
 	PlantEndOfHarvestEvent(Area& area, const Step delay, PlantIndex p, Step start = 0);
 	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area* area);
+	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_plant == oldIndex); m_plant = newIndex; }
 };
 class PlantFluidEvent final : public ScheduledEvent
 {
@@ -138,6 +146,7 @@ public:
 	PlantFluidEvent(Area& area, const Step delay, PlantIndex p, Step start = 0);
 	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area* area);
+	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_plant == oldIndex); m_plant = newIndex; }
 };
 class PlantTemperatureEvent final : public ScheduledEvent
 {
@@ -146,4 +155,5 @@ public:
 	PlantTemperatureEvent(Area& area, const Step delay, PlantIndex p, Step start = 0);
 	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area* area);
+	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_plant == oldIndex); m_plant = newIndex; }
 };

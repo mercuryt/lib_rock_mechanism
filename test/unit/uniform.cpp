@@ -4,50 +4,52 @@
 #include "../../engine/simulation/hasActors.h"
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/areaBuilderUtil.h"
-#include "types.h"
+#include "../../engine/actors/actors.h"
+#include "../../engine/plants.h"
+#include "../../engine/itemType.h"
+#include "../../engine/animalSpecies.h"
+#include "../../engine/types.h"
+#include "../../engine/objectives/uniform.h"
+#include "../../engine/items/items.h"
 TEST_CASE("uniform")
 {
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
+	Actors& actors = area.getActors();
+	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName("marble"));
 	UniformElement pantsElement(ItemType::byName("pants"));
 	UniformElement shirtElement(ItemType::byName("shirt"));
 	UniformElement twoBeltsElement(ItemType::byName("belt"), 2u);
 	Uniform basic = Uniform(L"basic", {pantsElement, shirtElement, twoBeltsElement});
-	Actor& actor = simulation.m_hasActors->createActor({
+	ActorIndex actor = actors.create({
 		.species=AnimalSpecies::byName("dwarf"),
-		.location=blocks.getIndex({5,5,1}),
-		.area=&area,
+		.location=blocks.getIndex(5,5,1),
 	});
-	actor.m_hasUniform.set(basic);
-	REQUIRE(actor.m_hasObjectives.hasCurrent());
-	REQUIRE(actor.m_hasObjectives.getCurrent().getObjectiveTypeId() == ObjectiveTypeId::Uniform);
-	UniformObjective& objective = static_cast<UniformObjective&>(actor.m_hasObjectives.getCurrent());
-	Item& pants = simulation.m_hasItems->createItemNongeneric(ItemType::byName("pants"), MaterialType::byName("cotton"), 10, 10);
-	pants.setLocation(blocks.getIndex({8,1,1}), &area);
-	Item& shirt = simulation.m_hasItems->createItemNongeneric(ItemType::byName("shirt"), MaterialType::byName("cotton"), 10, 10);
-	shirt.setLocation(blocks.getIndex({1,6,1}), &area);
-	Item& belt = simulation.m_hasItems->createItemNongeneric(ItemType::byName("belt"), MaterialType::byName("leather"), 10, 10);
-	belt.setLocation(blocks.getIndex({9,2,1}), &area);
-	Item& belt2 = simulation.m_hasItems->createItemNongeneric(ItemType::byName("belt"), MaterialType::byName("leather"), 10, 10);
-	belt2.setLocation(blocks.getIndex({9,3,1}), &area);
+	actors.uniform_set(actor, basic);
+	REQUIRE(actors.objective_getCurrent<UniformObjective>(actor).getObjectiveTypeId() == ObjectiveTypeId::Uniform);
+	UniformObjective& objective = static_cast<UniformObjective&>(actors.objective_getCurrent<UniformObjective>(actor));
+	ItemIndex pants = items.create({.itemType=ItemType::byName("pants"), .materialType=MaterialType::byName("cotton"), .location=blocks.getIndex(8,1,1), .quality=10, .percentWear=10});
+	ItemIndex shirt = items.create({.itemType=ItemType::byName("shirt"), .materialType=MaterialType::byName("cotton"), .location=blocks.getIndex(1,6,1), .quality=10, .percentWear=10});
+	ItemIndex belt = items.create({.itemType=ItemType::byName("belt"), .materialType=MaterialType::byName("leather"), .location=blocks.getIndex(9,2,1), .quality=10, .percentWear=10});
+	ItemIndex belt2 = items.create({.itemType=ItemType::byName("belt"), .materialType=MaterialType::byName("leather"), .location=blocks.getIndex(9,3,1), .quality=10, .percentWear=10});
 	simulation.doStep();
-	BlockIndex destination = actor.m_canMove.getDestination();
-	REQUIRE(shirt.isAdjacentTo(destination));
-	REQUIRE(objective.getItem() == &shirt);
-	simulation.fastForwardUntillActorHasEquipment(actor, shirt);
+	BlockIndex destination = actors.move_getDestination(actor);
+	REQUIRE(items.isAdjacentToLocation(shirt, destination));
+	REQUIRE(objective.getItem() == shirt);
+	simulation.fastForwardUntillActorHasEquipment(area, actor, shirt);
 	simulation.doStep();
-	REQUIRE(actor.m_equipmentSet.contains(shirt));
-	REQUIRE(shirt.m_location == BLOCK_INDEX_MAX);
-	REQUIRE(pants.isAdjacentTo(actor.m_canMove.getDestination()));
-	simulation.fastForwardUntillActorHasEquipment(actor, pants);
+	REQUIRE(actors.equipment_containsItem(actor, shirt));
+	REQUIRE(items.getLocation(shirt) == BLOCK_INDEX_MAX);
+	REQUIRE(items.isAdjacentToLocation(shirt, actors.move_getDestination(actor)));
+	simulation.fastForwardUntillActorHasEquipment(area, actor, pants);
 	simulation.doStep();
-	REQUIRE(actor.m_equipmentSet.contains(pants));
-	simulation.fastForwardUntillActorHasEquipment(actor, belt);
+	REQUIRE(actors.equipment_containsItem(actor, pants));
+	simulation.fastForwardUntillActorHasEquipment(area, actor, belt);
 	simulation.doStep();
-	REQUIRE(actor.m_equipmentSet.contains(belt));
-	if(!actor.m_equipmentSet.contains(belt2))
-		simulation.fastForwardUntillActorHasEquipment(actor, belt2);
-	REQUIRE(actor.m_hasObjectives.getCurrent().getObjectiveTypeId() != ObjectiveTypeId::Uniform);
+	REQUIRE(actors.equipment_containsItem(actor, belt));
+	if(!actors.equipment_containsItem(actor, belt2))
+		simulation.fastForwardUntillActorHasEquipment(area, actor, belt2);
+	REQUIRE(actors.objective_getCurrent<UniformObjective>(actor).getObjectiveTypeId() != ObjectiveTypeId::Uniform);
 }

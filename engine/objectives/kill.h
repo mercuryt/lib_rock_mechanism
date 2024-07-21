@@ -27,15 +27,14 @@ class KillInputAction final : public InputAction
 
 class KillObjective final : public Objective
 {
-	ActorIndex m_killer;
-	ActorIndex m_target;
+	ActorReference m_target;
 public:
-	KillObjective(ActorIndex k, ActorIndex t);
-	KillObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(Area& area);
-	void cancel(Area& area);
-	void delay(Area& area) { cancel(area); }
-	void reset(Area& area);
+	KillObjective(ActorReference t);
+	KillObjective(const Json& data, Area& area);
+	void execute(Area& area, ActorIndex actor);
+	void cancel(Area& area, ActorIndex actor);
+	void delay(Area& area, ActorIndex actor) { cancel(area, actor); }
+	void reset(Area& area, ActorIndex actor);
 	std::string name() const { return "kill"; }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Kill; }
 };

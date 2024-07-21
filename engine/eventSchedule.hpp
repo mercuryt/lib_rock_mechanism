@@ -111,6 +111,15 @@ protected:
 	std::vector<ScheduledEvent*> m_events;
 public:
 	HasScheduledEvents(EventSchedule& s) : m_schedule(s) { assert(&s); }
+	void load(Simulation& simulation, const Json& data)
+	{
+		for(const Json& eventData : data)
+		{
+			HasShapeIndex index = eventData[0].get<HasShapeIndex>();
+			auto event = std::make_unique<EventType>(simulation, eventData[1]);
+			m_schedule.schedule(index, std::move(event));
+		}
+	}
 	void resize(HasShapeIndex size)
 	{
 		m_events.resize(size);
@@ -142,7 +151,8 @@ public:
 	}
 	void moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 	{
-		std::swap(m_events[oldIndex], m_events[newIndex]);
+		m_events.at(newIndex) = m_events.at(oldIndex);
+		m_events.at(newIndex)->onMoveIndex(oldIndex, newIndex);
 	}
 	[[nodiscard]] ScheduledEvent* at(HasShapeIndex index) { return m_events.at(index); }
 	[[nodiscard]] ScheduledEvent* operator[](HasShapeIndex index) { return at(index); }
@@ -167,6 +177,18 @@ public:
 	[[nodiscard]] Step elapsedSteps(HasShapeIndex index) const { return m_events.at(index)->elapsedSteps(m_schedule.getSimulation()); }
 	[[nodiscard]] Step duration(HasShapeIndex index) const { return m_events.at(index)->duration(); }
 	[[nodiscard]] ScheduledEvent* getEvent(HasShapeIndex index) { return m_events.at(index); }
+	[[nodiscard]] Json toJson() const
+	{
+		Json output = Json::array();
+		int i = 0;
+		for(EventType& event : m_events)
+		{
+			if(event.at(i) != nullptr)
+				output.emplace_back(i, event.toJson());
+			i++;
+		}
+		return output;
+	}
 	~HasScheduledEvents() 
 	{ 
 		for(ScheduledEvent* event : m_events)
@@ -174,3 +196,7 @@ public:
 				event->cancel(m_schedule.getSimulation(), m_schedule.getArea());
 	}
 };
+template<class EventType>
+void to_json(Json& data, const HasScheduledEvent<EventType>& hasScheduledEvent) { data = hasScheduledEvent.toJson(); }
+template<class EventType>
+void to_json(Json& data, const HasScheduledEvents<EventType>& hasScheduledEvents) { data = hasScheduledEvents.toJson(); }

@@ -1,10 +1,14 @@
 #include "../../lib/doctest.h"
 #include "../../engine/temperature.h"
 #include "../../engine/area.h"
+#include "../../engine/actors/actors.h"
+#include "../../engine/items/items.h"
+#include "../../engine/plants.h"
 #include "../../engine/materialType.h"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/definitions.h"
+#include "../../engine/blocks/blocks.h"
 TEST_CASE("temperature")
 {
 	DateTime now(12, 150, 1200);
@@ -13,12 +17,12 @@ TEST_CASE("temperature")
 	Blocks& blocks = area.getBlocks();
 	SUBCASE("solid blocks burn")
 	{
-		BlockIndex origin = blocks.getIndex({5, 5, 5});
-		BlockIndex b1 = blocks.getIndex({5, 5, 6});
-		BlockIndex b2 = blocks.getIndex({5, 7, 5});
-		BlockIndex b3 = blocks.getIndex({9, 9, 9});
-		BlockIndex toBurn = blocks.getIndex({6, 5, 5});
-		BlockIndex toNotBurn = blocks.getIndex({4, 5, 5});
+		BlockIndex origin = blocks.getIndex(5, 5, 5);
+		BlockIndex b1 = blocks.getIndex(5, 5, 6);
+		BlockIndex b2 = blocks.getIndex(5, 7, 5);
+		BlockIndex b3 = blocks.getIndex(9, 9, 9);
+		BlockIndex toBurn = blocks.getIndex(6, 5, 5);
+		BlockIndex toNotBurn = blocks.getIndex(4, 5, 5);
 		auto& wood = MaterialType::byName("poplar wood");
 		auto& marble = MaterialType::byName("marble");
 		blocks.solid_set(toBurn, wood, false);
@@ -44,8 +48,8 @@ TEST_CASE("temperature")
 	}
 	SUBCASE("burnt to ash")
 	{
-		BlockIndex origin = blocks.getIndex({5, 5, 5});
-		BlockIndex toBurn = blocks.getIndex({6, 5, 5});
+		BlockIndex origin = blocks.getIndex(5, 5, 5);
+		BlockIndex toBurn = blocks.getIndex(6, 5, 5);
 		auto& wood = MaterialType::byName("poplar wood");
 		blocks.solid_set(toBurn, wood, false);
 		area.m_hasTemperature.addTemperatureSource(origin, 1000);

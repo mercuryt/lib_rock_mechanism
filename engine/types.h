@@ -33,8 +33,10 @@ inline DistanceInBlocks BLOCK_DISTANCE_MAX = UINT32_MAX;
 using BlockIndex = uint32_t;
 inline BlockIndex BLOCK_INDEX_MAX = UINT32_MAX;
 using Speed = uint32_t;
+inline Speed SPEED_MAX = UINT32_MAX;
 using MoveCost = Speed;
 using Quantity = uint32_t;
+using Quality = uint32_t;
 using VisionFacadeIndex = uint32_t;
 inline VisionFacadeIndex VISION_FACADE_INDEX_MAX = UINT32_MAX;
 using VisionCuboidId = uint32_t;
@@ -49,6 +51,8 @@ using ActorIndex = uint32_t;
 inline ActorIndex ACTOR_INDEX_MAX = UINT32_MAX;
 using PathRequestIndex = uint32_t;
 inline PathRequestIndex PATH_REQUEST_INDEX_MAX = UINT32_MAX;
+using FactionId = uint16_t;
+inline FactionId FACTION_ID_MAX = UINT16_MAX;
 struct Vector3D;
 struct Point3D
 {

@@ -17,18 +17,18 @@ class WoodCuttingObjective final : public Objective
 	WoodCuttingProject* m_project;
 	std::unordered_set<Project*> m_cannotJoinWhileReservationsAreNotComplete;
 public:
-	WoodCuttingObjective(ActorIndex a);
+	WoodCuttingObjective();
 	WoodCuttingObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
-	void execute(Area& area);
-	void cancel(Area& area);
-	void reset(Area& area);
-	void delay(Area& area);
-	void onProjectCannotReserve(Area& area);
+	void execute(Area& area, ActorIndex actor);
+	void cancel(Area& area, ActorIndex actor);
+	void reset(Area& area, ActorIndex actor);
+	void delay(Area& area, ActorIndex actor);
+	void onProjectCannotReserve(Area& area, ActorIndex actor);
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::WoodCutting; }
 	[[nodiscard]] std::string name() const { return "woodcutting"; }
-	void joinProject(WoodCuttingProject& project);
-	WoodCuttingProject* getJoinableProjectAt(Area& area, BlockIndex block);
+	void joinProject(WoodCuttingProject& project, ActorIndex index);
+	WoodCuttingProject* getJoinableProjectAt(Area& area, BlockIndex block, ActorIndex index);
 	friend class WoodCuttingPathRequest;
 	friend class WoodCuttingProject;
 };

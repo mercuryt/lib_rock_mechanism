@@ -22,10 +22,10 @@ struct Uniform final
 inline void to_json(Json& data, const Uniform* const& uniform){ data = uniform->name; }
 class SimulationHasUniformsForFaction final
 {
-	Faction& m_faction;
+	FactionId m_faction;
 	std::unordered_map<std::wstring, Uniform> m_data;
 public:
-	SimulationHasUniformsForFaction(Faction& faction) : m_faction(faction) { }
+	SimulationHasUniformsForFaction(FactionId faction) : m_faction(faction) { }
 	Uniform& createUniform(std::wstring& name, std::vector<UniformElement>& elements);
 	void destroyUniform(Uniform& uniform);
 	Uniform& at(std::wstring name){ assert(m_data.contains(name)); return m_data.at(name); }
@@ -33,9 +33,9 @@ public:
 };
 class SimulationHasUniforms final
 {
-	std::unordered_map<Faction*, SimulationHasUniformsForFaction> m_data;
+	std::unordered_map<FactionId, SimulationHasUniformsForFaction> m_data;
 public:
-	void registerFaction(Faction& faction) { m_data.try_emplace(&faction, faction); }
-	void unregisterFaction(Faction& faction) { m_data.erase(&faction); }
-	SimulationHasUniformsForFaction& at(Faction& faction);
+	void registerFaction(FactionId faction) { m_data.try_emplace(faction, faction); }
+	void unregisterFaction(FactionId faction) { m_data.erase(faction); }
+	SimulationHasUniformsForFaction& at(FactionId faction);
 };
