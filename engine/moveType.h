@@ -6,6 +6,7 @@
 #include <list>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 
 struct MoveType
 {
@@ -23,3 +24,5 @@ struct MoveType
 	static const MoveType& byName(std::string name);
 };
 inline std::vector<MoveType> moveTypeDataStore;
+void to_json(Json& data, const MoveType* const& moveType);
+void from_json(const Json& data, const MoveType* moveType);

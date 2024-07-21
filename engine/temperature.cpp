@@ -136,54 +136,58 @@ Temperature AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature() const
 	return yearlyColdestDailyAverage + ((yearlyHottestDailyAverage - yearlyColdestDailyAverage) * (dayOfYearOfSolstice - daysFromSolstice)) / dayOfYearOfSolstice;
 }
 UnsafeTemperatureEvent::UnsafeTemperatureEvent(Area& area, ActorIndex a, const Step start) :
-	ScheduledEvent(area.m_simulation, area.getActors().getSpecies(a).stepsTillDieInUnsafeTemperature, start), m_actor(a) { }
-void UnsafeTemperatureEvent::execute(Simulation&, Area* area) { area->getActors().die(m_actor, CauseOfDeath::temperature); }
-void UnsafeTemperatureEvent::clearReferences(Simulation&, Area* area) { area->getActors().m_needsSafeTemperature.at(m_actor)->m_event.clearPointer(); }
+	ScheduledEvent(area.m_simulation, area.getActors().getSpecies(a).stepsTillDieInUnsafeTemperature, start),
+	m_needsSafeTemperature(*area.getActors().m_needsSafeTemperature.at(a).get()) { }
+void UnsafeTemperatureEvent::execute(Simulation&, Area*) { m_needsSafeTemperature.dieFromTemperature(); }
+void UnsafeTemperatureEvent::clearReferences(Simulation&, Area*) { m_needsSafeTemperature.m_event.clearPointer(); }
 ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(Area& area, ActorIndex a) : 
-	m_event(area.m_eventSchedule), m_actor(a) { }
-	/*
-ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(const Json& data, ActorIndex a, Simulation& s) : 
-	m_event(area.m_eventSchedule), m_actor(a), m_objectiveExists(data["objectiveExists"].get<bool>())
+	m_event(area.m_eventSchedule)
 {
+	m_actor.setTarget(area.getActors().getReferenceTarget(a));
+}
+ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(const Json& data, ActorIndex a, Area& area) : 
+	m_event(area.m_eventSchedule)
+{
+	m_actor.setTarget(area.getActors().getReferenceTarget(a));
 	if(data.contains("eventStart"))
 		m_event.schedule(m_actor, data["eventStart"].get<Step>());
 }
 Json ActorNeedsSafeTemperature::toJson() const
 {
 	Json data;
-	data["objectiveExists"] = m_objectiveExists;
 	if(m_event.exists())
 		data["eventStart"] = m_event.getStartStep();
 	return data;
 }
-*/
 void ActorNeedsSafeTemperature::onChange(Area& area)
 {
 	Actors& actors = area.getActors();
-	actors.grow_updateGrowingStatus(m_actor);
+	ActorIndex actor = m_actor.getIndex();
+	actors.grow_updateGrowingStatus(actor);
 	if(!isSafeAtCurrentLocation(area))
 	{
-		if(!m_objectiveExists)
+		if(!actors.objective_hasNeed(actor, ObjectiveTypeId::GetToSafeTemperature))
 		{
-			m_objectiveExists = true;
-			std::unique_ptr<Objective> objective = std::make_unique<GetToSafeTemperatureObjective>(m_actor);
-			actors.objective_addNeed(m_actor, std::move(objective));
+			std::unique_ptr<Objective> objective = std::make_unique<GetToSafeTemperatureObjective>();
+			actors.objective_addNeed(actor, std::move(objective));
 		}
 		if(!m_event.exists())
-			m_event.schedule(area, m_actor);
+			m_event.schedule(area, actor);
 	}
 	else if(m_event.exists())
 		m_event.unschedule();
 }
 bool ActorNeedsSafeTemperature::isSafe(Area& area, Temperature temperature) const
 {
-	const AnimalSpecies& species = area.getActors().getSpecies(m_actor);
+	ActorIndex actor = m_actor.getIndex();
+	const AnimalSpecies& species = area.getActors().getSpecies(actor);
 	return temperature >= species.minimumSafeTemperature && temperature <= species.maximumSafeTemperature;
 }
 bool ActorNeedsSafeTemperature::isSafeAtCurrentLocation(Area& area) const
 {
+	ActorIndex actor = m_actor.getIndex();
 	Actors& actors = area.getActors();
-	if(actors.getLocation(m_actor) == BLOCK_INDEX_MAX)
+	if(actors.getLocation(actor) == BLOCK_INDEX_MAX)
 		return true;
-	return isSafe(area, area.getBlocks().temperature_get(actors.getLocation(m_actor)));
+	return isSafe(area, area.getBlocks().temperature_get(actors.getLocation(actor)));
 }

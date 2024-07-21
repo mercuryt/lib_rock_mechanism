@@ -1,51 +1,53 @@
 #include "dig.h"
 #include "../dig.h"
 #include "../area.h"
+#include "../actors/actors.h"
+#include "../blocks/blocks.h"
 #include "../terrainFacade.h"
-DigPathRequest::DigPathRequest(Area& area, DigObjective& digObjective) : m_digObjective(digObjective)
+#include "types.h"
+DigPathRequest::DigPathRequest(Area& area, DigObjective& digObjective, ActorIndex actor) : m_digObjective(digObjective)
 {
-	std::function<bool(BlockIndex)> predicate = [&area, this](BlockIndex block)
+	std::function<bool(BlockIndex)> predicate = [&area, this, actor](BlockIndex block)
 	{
-		return m_digObjective.getJoinableProjectAt(area, block) != nullptr;
+		return m_digObjective.getJoinableProjectAt(area, block, actor) != nullptr;
 	};
 	DistanceInBlocks maxRange = Config::maxRangeToSearchForDigDesignations;
 	bool unreserved = true;
 	//TODO: We don't need the whole path here, just the destination and facing.
-	createGoAdjacentToCondition(area, m_digObjective.m_actor, predicate, m_digObjective.m_detour, unreserved, maxRange, BLOCK_INDEX_MAX);
+	createGoAdjacentToCondition(area, actor, predicate, m_digObjective.m_detour, unreserved, maxRange, BLOCK_INDEX_MAX);
 }
-void DigPathRequest::callback(Area& area, FindPathResult result)
+void DigPathRequest::callback(Area& area, FindPathResult& result, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	if(result.path.empty() && !result.useCurrentPosition)
-		actors.objective_canNotCompleteObjective(m_digObjective.m_actor, m_digObjective);
+		actors.objective_canNotCompleteObjective(actor, m_digObjective);
 	else
 	{
 		if(result.useCurrentPosition)
 		{
-			if(!actors.move_tryToReserveOccupied(m_digObjective.m_actor))
+			if(!actors.move_tryToReserveOccupied(actor))
 			{
-				actors.objective_canNotCompleteSubobjective(m_digObjective.m_actor);
+				actors.objective_canNotCompleteSubobjective(actor);
 				return;
 			}
 		}
-		else if(!actors.move_tryToReserveProposedDestination(m_digObjective.m_actor, result.path))
+		else if(!actors.move_tryToReserveProposedDestination(actor, result.path))
 		{
-			actors.objective_canNotCompleteSubobjective(m_digObjective.m_actor);
+			actors.objective_canNotCompleteSubobjective(actor);
 			return;
 		}
 		BlockIndex target = result.blockThatPassedPredicate;
-		DigProject& project = area.m_hasDigDesignations.at(*actors.getFaction(m_digObjective.m_actor), target);
-		if(project.canAddWorker(m_digObjective.m_actor))
-			m_digObjective.joinProject(project);
+		DigProject& project = area.m_hasDigDesignations.at(*actors.getFaction(actor), target);
+		if(project.canAddWorker(actor))
+			m_digObjective.joinProject(project, actor);
 		else
 		{
 			// Project can no longer accept this worker, try again.
-			actors.objective_canNotCompleteSubobjective(m_digObjective.m_actor);
+			actors.objective_canNotCompleteSubobjective(actor);
 			return;
 		}
 	}
 }
-DigObjective::DigObjective(ActorIndex a) : Objective(a, Config::digObjectivePriority) { }
 /*
 DigObjective::DigObjective(const Json& data, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo), m_digPathRequest(m_actor.m_area->m_simulation.m_threadedTaskEngine), 
@@ -64,92 +66,92 @@ Json DigObjective::toJson() const
 	return data;
 }
 */
-void DigObjective::execute(Area& area)
+void DigObjective::execute(Area& area, ActorIndex actor)
 {
 	if(m_project != nullptr)
-		m_project->commandWorker(m_actor);
+		m_project->commandWorker(actor);
 	else
 	{
 		Actors& actors = area.getActors();
 		DigProject* project = nullptr;
-		std::function<bool(BlockIndex)> predicate = [&area, this, project, &actors](BlockIndex block) mutable
+		std::function<bool(BlockIndex)> predicate = [&area, this, project, &actors, actor](BlockIndex block) mutable
 		{ 
-			if(!getJoinableProjectAt(area, block))
+			if(!getJoinableProjectAt(area, block, actor))
 				return false;
-			project = &area.m_hasDigDesignations.at(*actors.getFaction(m_actor), block);
-			if(project->canAddWorker(m_actor))
+			project = &area.m_hasDigDesignations.at(*actors.getFaction(actor), block);
+			if(project->canAddWorker(actor))
 				return true;
 			return false;
 		};
-		[[maybe_unused]] BlockIndex adjacent = actors.getBlockWhichIsAdjacentWithPredicate(m_actor, predicate);
+		[[maybe_unused]] BlockIndex adjacent = actors.getBlockWhichIsAdjacentWithPredicate(actor, predicate);
 		if(project != nullptr)
 		{
 			assert(adjacent != BLOCK_INDEX_MAX);
-			joinProject(*project);
+			joinProject(*project, actor);
 			return;
 		}
-		std::unique_ptr<PathRequest> request = std::make_unique<DigPathRequest>(area, *this);
-		actors.move_pathRequestRecord(m_actor, std::move(request));
+		std::unique_ptr<PathRequest> request = std::make_unique<DigPathRequest>(area, *this, actor);
+		actors.move_pathRequestRecord(actor, std::move(request));
 	}
 }
-void DigObjective::cancel(Area& area)
+void DigObjective::cancel(Area& area, ActorIndex actor)
 {
 	if(m_project != nullptr)
-		m_project->removeWorker(m_actor);
-	area.getActors().move_pathRequestMaybeCancel(m_actor);
+		m_project->removeWorker(actor);
+	area.getActors().move_pathRequestMaybeCancel(actor);
 }
-void DigObjective::delay(Area& area) 
+void DigObjective::delay(Area& area, ActorIndex actor) 
 { 
-	cancel(area); 
+	cancel(area, actor); 
 	m_project = nullptr;
-	area.getActors().project_unset(m_actor);
+	area.getActors().project_unset(actor);
 }
-void DigObjective::reset(Area& area) 
+void DigObjective::reset(Area& area, ActorIndex actor) 
 { 
 	Actors& actors = area.getActors();
 	if(m_project)
 	{
-		assert(!m_project->getWorkers().contains(m_actor));
+		assert(!m_project->getWorkers().contains(actor));
 		m_project = nullptr; 
-		actors.project_unset(m_actor);
+		actors.project_unset(actor);
 	}
 	else
-		assert(!actors.project_exists(m_actor));
-	area.getActors().move_pathRequestMaybeCancel(m_actor);
-	actors.canReserve_clearAll(m_actor);
+		assert(!actors.project_exists(actor));
+	area.getActors().move_pathRequestMaybeCancel(actor);
+	actors.canReserve_clearAll(actor);
 }
-void DigObjective::onProjectCannotReserve(Area&)
+void DigObjective::onProjectCannotReserve(Area&, ActorIndex)
 {
 	assert(m_project);
 	m_cannotJoinWhileReservationsAreNotComplete.insert(m_project);
 }
-void DigObjective::joinProject(DigProject& project)
+void DigObjective::joinProject(DigProject& project, ActorIndex actor)
 {
 	assert(!m_project);
 	m_project = &project;
-	project.addWorkerCandidate(m_actor, *this);
+	project.addWorkerCandidate(actor, *this);
 }
-DigProject* DigObjective::getJoinableProjectAt(Area& area, BlockIndex block)
+DigProject* DigObjective::getJoinableProjectAt(Area& area, BlockIndex block, ActorIndex actor)
 {
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
-	Faction& faction = *actors.getFaction(m_actor);
+	FactionId faction = actors.getFactionId(actor);
 	if(!blocks.designation_has(block, faction, BlockDesignation::Dig))
 		return nullptr;
 	DigProject& output = area.m_hasDigDesignations.at(faction, block);
 	if(!output.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&output))
 		return nullptr;
-	if(!output.canAddWorker(m_actor))
+	if(!output.canAddWorker(actor))
 		return nullptr;
 	return &output;
 }
 bool DigObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
 {
 	//TODO: check for any picks?
-	return area.m_hasDigDesignations.areThereAnyForFaction(*area.getActors().getFaction(actor));
+	return area.m_hasDigDesignations.areThereAnyForFaction(area.getActors().getFactionId(actor));
 }
-std::unique_ptr<Objective> DigObjectiveType::makeFor(Area&, ActorIndex actor) const
+std::unique_ptr<Objective> DigObjectiveType::makeFor(Area&, ActorIndex) const
 {
-	std::unique_ptr<Objective> objective = std::make_unique<DigObjective>(actor);
+	std::unique_ptr<Objective> objective = std::make_unique<DigObjective>();
 	return objective;
 }

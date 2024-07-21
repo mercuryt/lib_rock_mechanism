@@ -29,15 +29,15 @@ public:
 class AreaHasBlockDesignations final
 {
 	Area& m_area;
-	std::unordered_map<Faction*, AreaHasBlockDesignationsForFaction> m_data;
+	std::unordered_map<FactionId, AreaHasBlockDesignationsForFaction> m_data;
 public:
 	AreaHasBlockDesignations(Area& area) : m_area(area) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
-	void registerFaction(Faction& faction) { m_data.emplace(&faction, m_area); }
-	void unregisterFaction(Faction& faction) { m_data.erase(&faction); }
-	[[nodiscard]] bool contains(Faction& faction) { return m_data.contains(&faction); }
-	[[nodiscard]] AreaHasBlockDesignationsForFaction& at(Faction& faction) { return m_data.at(&faction); }
-	[[nodiscard]] const AreaHasBlockDesignationsForFaction& at(Faction& faction) const { return m_data.at(&faction); }
+	void registerFaction(FactionId faction) { m_data.emplace(faction, m_area); }
+	void unregisterFaction(FactionId faction) { m_data.erase(faction); }
+	[[nodiscard]] bool contains(FactionId faction) { return m_data.contains(faction); }
+	[[nodiscard]] AreaHasBlockDesignationsForFaction& at(FactionId faction) { return m_data.at(faction); }
+	[[nodiscard]] const AreaHasBlockDesignationsForFaction& at(FactionId faction) const { return m_data.at(faction); }
 	[[nodiscard]] Json toJson() const;
 	AreaHasBlockDesignations(AreaHasBlockDesignationsForFaction&) = delete;
 	AreaHasBlockDesignations(AreaHasBlockDesignationsForFaction&&) = delete;

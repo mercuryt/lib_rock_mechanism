@@ -5,6 +5,7 @@
 #include "../simulation.h"
 #include "../area.h"
 #include "actors/actors.h"
+#include "types.h"
 #include <memory>
 #include <unordered_set>
 GoToObjective::GoToObjective(const Json& data, DeserializationMemo& deserializationMemo) : 
@@ -16,14 +17,14 @@ Json GoToObjective::toJson() const
 	data["location"] = m_location;
 	return data;
 }
-void GoToObjective::execute(Area& area)
+void GoToObjective::execute(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
-	if(actors.getLocation(m_actor) != m_location)
+	if(actors.getLocation(actor) != m_location)
 		// BlockIndex, detour, adjacent, unreserved, reserve
-		actors.move_setDestination(m_actor, m_location, m_detour, false, false, false);
+		actors.move_setDestination(actor, m_location, m_detour, false, false, false);
 	else
-		actors.objective_complete(m_actor, *this);
+		actors.objective_complete(actor, *this);
 }
 /*
 GoToInputAction::GoToInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, BlockIndex& b) : 

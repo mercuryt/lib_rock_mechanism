@@ -26,28 +26,29 @@ class SowSeedsObjective final : public Objective
 	HasScheduledEvent<SowSeedsEvent> m_event;
 	BlockIndex m_block = BLOCK_INDEX_MAX;
 public:
-	SowSeedsObjective(Area& area, ActorIndex a);
+	SowSeedsObjective(Area& area);
 	SowSeedsObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	void execute(Area& area);
-	void cancel(Area& area);
-	void delay(Area& area) { cancel(area); }
-	void select(Area& area, BlockIndex block);
-	void begin(Area& area);
-	void reset(Area& area);
+	void execute(Area& area, ActorIndex actor);
+	void cancel(Area& area, ActorIndex actor);
+	void delay(Area& area, ActorIndex actor) { cancel(area, actor); }
+	void select(Area& area, BlockIndex block, ActorIndex actor);
+	void begin(Area& area, ActorIndex actor);
+	void reset(Area& area, ActorIndex actor);
+	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "sow seeds"; }
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::SowSeeds; }
-	[[nodiscard]] bool canSowAt(Area& area, BlockIndex block) const;
-	[[nodiscard]] BlockIndex getBlockToSowAt(Area& area, BlockIndex location, Facing facing);
+	[[nodiscard]] bool canSowAt(Area& area, BlockIndex block, ActorIndex actor) const;
+	[[nodiscard]] BlockIndex getBlockToSowAt(Area& area, BlockIndex location, Facing facing, ActorIndex actor);
 	friend class SowSeedsEvent;
 	// For testing.
 	[[nodiscard]] BlockIndex getBlock() { return m_block; }
 };
 class SowSeedsEvent final : public ScheduledEvent
 {
+	ActorReference m_actor;
 	SowSeedsObjective& m_objective;
 public:
-	SowSeedsEvent(Step delay, Area& area, SowSeedsObjective& o, const Step start = 0);
+	SowSeedsEvent(Step delay, Area& area, SowSeedsObjective& o, ActorIndex actor, const Step start = 0);
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };

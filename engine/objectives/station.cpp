@@ -16,13 +16,13 @@ void StationInputAction::execute()
 }
 */
 // Objective
-StationObjective::StationObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), 
+StationObjective::StationObjective(const Json& data) : Objective(data), 
 	m_location(data["block"].get<BlockIndex>()) { }
-void StationObjective::execute(Area& area)
+void StationObjective::execute(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
-	if(actors.getLocation(m_actor) != m_location)
+	if(actors.getLocation(actor) != m_location)
 		// BlockIndex, detour, adjacent, unreserved, reserve
 		actors.move_setDestination(m_location, m_detour, false, false, false);
 }
-void StationObjective::reset(Area& area) { area.getActors().canReserve_clearAll(m_actor); }
+void StationObjective::reset(Area& area, ActorIndex actor) { area.getActors().canReserve_clearAll(actor); }

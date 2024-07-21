@@ -22,31 +22,32 @@ class HarvestObjective final : public Objective
 {
 	BlockIndex m_block = BLOCK_INDEX_MAX;
 public:
-	HarvestObjective(Area& area, ActorIndex a);
+	HarvestObjective(Area& area);
 	HarvestObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	HasScheduledEvent<HarvestEvent> m_harvestEvent;
-	void execute(Area& area);
-	void cancel(Area& area);
-	void delay(Area& area) { cancel(area); }
-	void select(Area& area, BlockIndex block);
-	void begin(Area& area);
-	void reset(Area& area);
-	void makePathRequest(Area& area);
+	void execute(Area& area, ActorIndex actor);
+	void cancel(Area& area, ActorIndex actor);
+	void delay(Area& area, ActorIndex actor) { cancel(area, actor); }
+	void select(Area& area, BlockIndex block, ActorIndex actor);
+	void begin(Area& area, ActorIndex actor);
+	void reset(Area& area, ActorIndex actor);
+	void makePathRequest(Area& area, ActorIndex actor);
 	bool canHarvestAt(Area& area, BlockIndex block) const;
 	std::string name() const { return "harvest"; }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Harvest; }
-	BlockIndex getBlockContainingPlantToHarvestAtLocationAndFacing(Area& area, BlockIndex location, Facing facing);
-	bool blockContainsHarvestablePlant(Area& area, BlockIndex block) const;
+	BlockIndex getBlockContainingPlantToHarvestAtLocationAndFacing(Area& area, BlockIndex location, Facing facing, ActorIndex actor);
+	bool blockContainsHarvestablePlant(Area& area, BlockIndex block, ActorIndex actor) const;
 	friend class HarvestEvent;
 	// For testing.
 	BlockIndex getBlock() { return m_block; }
 };
 class HarvestEvent final : public ScheduledEvent
 {
+	ActorReference m_actor;
 	HarvestObjective& m_harvestObjective;
 public:
-	HarvestEvent(Step delay, Area& area, HarvestObjective& ho, const Step start = 0);
+	HarvestEvent(Step delay, Area& area, HarvestObjective& ho, ActorIndex actor, const Step start = 0);
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 	Plant* getPlant();
@@ -54,6 +55,6 @@ public:
 class HarvestPathRequest final : public ObjectivePathRequest
 {
 public:
-	HarvestPathRequest(Area& area, HarvestObjective& objective);
+	HarvestPathRequest(Area& area, HarvestObjective& objective, ActorIndex actor);
 	void onSuccess(Area& area, BlockIndex blockWhichPassedPredicate);
 };

@@ -15,7 +15,6 @@
 
 struct MoveType;
 struct Shape;
-struct Faction;
 struct FluidType;
 class Area;
 class TerrainFacade;
@@ -90,9 +89,10 @@ public:
 	[[nodiscard]] FindPathResult findPathToCondition(BlockIndex start, const Shape& shape, Facing startFacing, const DestinationCondition destinationCondition, BlockIndex huristicDestination = BLOCK_INDEX_MAX, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathAdjacentTo(BlockIndex start, const Shape& shape, Facing startFacing, BlockIndex target, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathAdjacentToPolymorphic(BlockIndex start, const Shape& shape, Facing startFacing, ActorOrItemIndex actorOrItem, bool detour = false) const;
-	[[nodiscard]] FindPathResult findPathAdjacentToAndUnreserved(BlockIndex start, const Shape& shape, Facing startFacing, BlockIndex target, const Faction& faction, bool detour = false) const;
-	[[nodiscard]] FindPathResult findPathAdjacentToAndUnreservedPolymorphic(BlockIndex start, const Shape& shape, Facing startFacing, ActorOrItemIndex actorOrItem, const Faction& faction, bool detour = false) const;
+	[[nodiscard]] FindPathResult findPathAdjacentToAndUnreserved(BlockIndex start, const Shape& shape, Facing startFacing, BlockIndex target, const FactionId faction, bool detour = false) const;
+	[[nodiscard]] FindPathResult findPathAdjacentToAndUnreservedPolymorphic(BlockIndex start, const Shape& shape, Facing startFacing, ActorOrItemIndex actorOrItem, const FactionId faction, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathAdjacentToCondition(BlockIndex start, const Shape& shape, Facing startFacing, const DestinationCondition destinationCondition, BlockIndex huristicDestination = BLOCK_INDEX_MAX, bool detour = false) const;
+	[[nodiscard]] FindPathResult findPathAdjacentToConditionAndUnreserved(BlockIndex start, const Shape& shape, Facing startFacing, const DestinationCondition destinationCondition, const FactionId faction, BlockIndex huristicDestination = BLOCK_INDEX_MAX, bool detour = false) const;
 	[[nodiscard]] PathRequestIndex getPathRequestCount() const { return m_pathRequestAccessConditionsNoHuristic.size() + m_pathRequestAccessConditionsWithHuristic.size(); }
 	[[nodiscard]] AccessCondition makeAccessConditionForActor(ActorIndex actor, bool detour, DistanceInBlocks maxRange) const;
 	[[nodiscard]] AccessCondition makeAccessCondition(const Shape& shape, BlockIndex start, std::vector<BlockIndex> initalBlocks, bool detour, DistanceInBlocks maxRange) const;

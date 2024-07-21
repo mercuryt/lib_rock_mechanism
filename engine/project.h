@@ -8,6 +8,7 @@
 #include "threadedTask.hpp"
 #include "onDestroy.h"
 #include "haul.h"
+#include "reference.h"
 #include "actors/actorQuery.h"
 
 #include <vector>
@@ -31,7 +32,7 @@ struct ProjectWorker final
 	Objective& objective;
 	ProjectWorker(Objective& o) : haulSubproject(nullptr), objective(o) { }
 	ProjectWorker(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
+	[[nodiscard]] Json toJson() const;
 };
 struct ProjectRequirementCounts final
 {
@@ -46,11 +47,11 @@ struct ProjectRequirementCounts final
 struct ProjectRequiredShapeDishonoredCallback final : public DishonorCallback
 {
 	Project& m_project;
-	ActorOrItemIndex m_actorOrItem;
-	ProjectRequiredShapeDishonoredCallback(Project& p, ActorOrItemIndex actorOrItem) : m_project(p), m_actorOrItem(actorOrItem) { }
-	ProjectRequiredShapeDishonoredCallback(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
+	ActorOrItemReference m_actorOrItem;
+	ProjectRequiredShapeDishonoredCallback(Project& p, ActorOrItemReference actorOrItem) : m_project(p), m_actorOrItem(actorOrItem) { }
+	ProjectRequiredShapeDishonoredCallback(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	void execute(Quantity oldCount, Quantity newCount);
+	[[nodiscard]] Json toJson() const;
 };
 // Derived classes are expected to provide getDelay, getConsumedItems, getUnconsumedItems, getByproducts, and onComplete.
 class Project
@@ -73,11 +74,11 @@ class Project
 	//TODO: required actors are not suported in several places.
 	std::vector<std::pair<ActorQuery, ProjectRequirementCounts>> m_requiredActors;
 	// Required items which will be destroyed at the end of the project.
-	std::unordered_set<ItemIndex> m_toConsume;
+	ItemReferences m_toConsume;
 	// Required items which are equiped by workers (tools).
-	std::unordered_map<ActorIndex, std::vector<std::pair<ProjectRequirementCounts*, ItemIndex>>> m_reservedEquipment;
+	std::unordered_map<ActorReference, std::vector<std::pair<ProjectRequirementCounts*, ItemReference>>, ActorReference::Hash> m_reservedEquipment;
 	// Targets for haul subprojects awaiting dispatch.
-	std::unordered_map<ActorOrItemIndex, std::pair<ProjectRequirementCounts*, Quantity>, ActorOrItemIndex::Hash> m_toPickup;
+	std::unordered_map<ActorOrItemReference, std::pair<ProjectRequirementCounts*, Quantity>, ActorOrItemReference::Hash> m_toPickup;
 	// To be called by addWorkerThreadedTask, after validating the worker has access to the project location.
 	void addWorker(ActorIndex actor, Objective& objective);
 	// Load requirements from child class.
@@ -86,28 +87,28 @@ class Project
 	void setup();
 protected:
 	// Workers who have passed the candidate screening and ProjectWorker, which holds a reference to the worker's objective and a pointer to it's haul subproject.
-	std::unordered_map<ActorIndex, ProjectWorker> m_workers;
+	std::unordered_map<ActorReference, ProjectWorker, ActorReference::Hash> m_workers;
 	// Required shapes which don't need to be hauled because they are already at or adjacent to m_location.
 	// To be used by StockpileProject::onComplete.
-	std::unordered_map<ActorOrItemIndex, Quantity, ActorOrItemIndex::Hash> m_alreadyAtSite;
+	std::unordered_map<ActorOrItemReference, Quantity, ActorOrItemReference::Hash> m_alreadyAtSite;
 	// Workers present at the job site, waiting for haulers to deliver required materiels.
-	std::unordered_set<ActorIndex> m_waiting;
+	ActorReferences m_waiting;
 	// Workers currently doing the 'actual' work.
-	std::unordered_set<ActorIndex> m_making;
+	ActorReferences m_making;
 	// Worker candidates are evaluated in a read step task.
 	// For the first we need to reserve all items and actors, as wel as verify access.
 	// For subsequent candidates we just need to verify that they can path to the construction site.
-	std::vector<std::pair<ActorIndex, Objective*>> m_workerCandidatesAndTheirObjectives;
+	std::vector<std::pair<ActorReference, Objective*>> m_workerCandidatesAndTheirObjectives;
 	// Single hauling operations are managed by haul subprojects.
 	// They have one or more workers plus optional haul tool and beast of burden.
 	std::list<HaulSubproject> m_haulSubprojects;
 	// Delivered items.
-	std::vector<ItemIndex> m_deliveredItems;
+	ItemReferences m_deliveredItems;
 	// Where the materials are delivered to and where the work gets done.
 	Area& m_area;
-	Faction& m_faction;
+	FactionId m_faction;
 	BlockIndex m_location;
-	Project(Faction& f, Area& a, BlockIndex l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr);
+	Project(FactionId f, Area& a, BlockIndex l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr);
 	Project(const Json& data, DeserializationMemo& deserializationMemo);
 private:
 	// Count how many times we have attempted to create a haul subproject.
@@ -122,7 +123,6 @@ private:
 	// The scheduled event sets delay to false and calls the offDelay method.
 	bool m_delay = false;
 public:
-	[[nodiscard]] Json toJson() const;
 	// Seperated from primary Json constructor because must be run after objectives are created.
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	void addWorkerCandidate(ActorIndex actor, Objective& objective);
@@ -155,12 +155,13 @@ public:
 	void resetOrCancel();
 	// Before unload when shutting down or hibernating.
 	void clearReservations();
-	[[nodiscard]] Faction& getFaction() { return m_faction; }
+	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] FactionId getFaction() { return m_faction; }
 	[[nodiscard]] Speed getMinimumHaulSpeed() const { return m_minimumMoveSpeed; }
 	[[nodiscard]] bool reservationsComplete() const;
 	[[nodiscard]] bool deliveriesComplete() const;
 	[[nodiscard]] bool isOnDelay() { return m_delay; }
-	// BlockIndex where the work will be done.
+	// Block where the work will be done.
 	[[nodiscard]] BlockIndex getLocation() const { return m_location; }
 	[[nodiscard]] bool hasCandidate(const ActorIndex actor) const;
 	// When cannotCompleteSubobjective is called do we reset and try again or do we call cannotCompleteObjective?
@@ -192,8 +193,8 @@ public:
 	virtual ~Project() = default;
 	[[nodiscard]] bool operator==(const Project& other) const { return &other == this; }
 	// For testing.
-	[[nodiscard]] ProjectWorker& getProjectWorkerFor(ActorIndex actor) { return m_workers.at(actor); }
-	[[nodiscard, maybe_unused]] std::unordered_map<ActorIndex, ProjectWorker> getWorkers() { return m_workers; }
+	[[nodiscard]] ProjectWorker& getProjectWorkerFor(ActorReference actor) { return m_workers.at(actor); }
+	[[nodiscard, maybe_unused]] auto& getWorkers() { return m_workers; }
 	[[nodiscard, maybe_unused]] Quantity getHaulRetries() const { return m_haulRetries; }
 	[[nodiscard, maybe_unused]] bool hasTryToHaulThreadedTask() const { return m_tryToHaulThreadedTask.exists(); }
 	[[nodiscard, maybe_unused]] bool hasTryToHaulEvent() const { return m_tryToHaulEvent.exists(); }
@@ -250,9 +251,9 @@ public:
 class ProjectTryToAddWorkersThreadedTask final : public ThreadedTask
 {
 	Project& m_project;
-	std::unordered_set<ActorIndex> m_cannotPathToJobSite;
-	std::unordered_map<ActorOrItemIndex, Quantity, ActorOrItemIndex::Hash> m_alreadyAtSite;
-	std::unordered_map<ActorIndex, std::vector<std::pair<ProjectRequirementCounts*, ItemIndex>>> m_reservedEquipment;
+	std::unordered_set<ActorReference, ActorReference::Hash> m_cannotPathToJobSite;
+	std::unordered_map<ActorOrItemReference, Quantity, ActorOrItemReference::Hash> m_alreadyAtSite;
+	std::unordered_map<ActorReference, std::vector<std::pair<ProjectRequirementCounts*, ItemReference>>, ActorReference::Hash> m_reservedEquipment;
 	HasOnDestroySubscriptions m_hasOnDestroy;
 	void resetProjectCounts();
 public:
@@ -264,10 +265,10 @@ public:
 };
 class BlockHasProjects
 {
-	std::unordered_map<Faction*, std::unordered_set<Project*>> m_data;
+	std::unordered_map<FactionId, std::unordered_set<Project*>> m_data;
 public:
 	void add(Project& project);
 	void remove(Project& project);
-	Percent getProjectPercentComplete(Faction& faction) const;
-	[[nodiscard]] Project* get(Faction& faction) const;
+	Percent getProjectPercentComplete(FactionId faction) const;
+	[[nodiscard]] Project* get(FactionId faction) const;
 };

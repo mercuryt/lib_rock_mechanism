@@ -1,6 +1,11 @@
 #include "actors.h"
 #include "../objective.h"
+#include "types.h"
 
+void Actors::objective_addNeed(ActorIndex index, std::unique_ptr<Objective> objective)
+{
+	m_hasObjectives.at(index)->addNeed(m_area, std::move(objective));
+}
 void Actors::objective_addTaskToStart(ActorIndex index, std::unique_ptr<Objective> objective)
 {
 	m_hasObjectives.at(index)->addTaskToStart(m_area, std::move(objective));
@@ -46,28 +51,40 @@ void Actors::objective_projectCannotReserve(ActorIndex index)
 	objective.reset(m_area);
 	m_hasObjectives.at(index)->cannotCompleteSubobjective(m_area);
 }
+void Actors::objective_complete(ActorIndex index, Objective& objective)
+{
+	m_hasObjectives.at(index)->objectiveComplete(m_area, objective);
+}
+void Actors::objective_subobjectiveComplete(ActorIndex index)
+{
+	m_hasObjectives.at(index)->subobjectiveComplete(m_area);
+}
 void Actors::objective_cancel(ActorIndex index, Objective& objective)
 {
 	return m_hasObjectives.at(index)->cancel(m_area, objective);
 }
-[[nodiscard]] bool Actors::objective_exists(ActorIndex index)
+void Actors::objective_execute(ActorIndex index)
+{
+	return m_hasObjectives.at(index)->getCurrent().execute(m_area);
+}
+[[nodiscard]] bool Actors::objective_exists(ActorIndex index) const
 {
 	return m_hasObjectives.at(index)->hasCurrent();
 }
-[[nodiscard]] std::string Actors::objective_getCurrentName(ActorIndex index)
+[[nodiscard]] std::string Actors::objective_getCurrentName(ActorIndex index) const
 {
 	return m_hasObjectives.at(index)->getCurrent().name();
 }
 // For testing.
-bool Actors::objective_queuesAreEmpty(ActorIndex index)
+bool Actors::objective_queuesAreEmpty(ActorIndex index) const
 {
 	return m_hasObjectives.at(index)->queuesAreEmpty();
 }
-bool Actors::objective_isOnDelay(ActorIndex index, ObjectiveTypeId objectiveTypeId)
+bool Actors::objective_isOnDelay(ActorIndex index, ObjectiveTypeId objectiveTypeId) const
 {
 	return m_hasObjectives.at(index)->m_prioritySet.isOnDelay(m_area, objectiveTypeId);
 }
-Step Actors::objective_getDelayEndFor(ActorIndex index, ObjectiveTypeId objectiveTypeId)
+Step Actors::objective_getDelayEndFor(ActorIndex index, ObjectiveTypeId objectiveTypeId) const
 {
 	return m_hasObjectives.at(index)->m_prioritySet.getDelayEndFor(objectiveTypeId);
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config.h"
+#include "reference.h"
 #include "simulation.h"
 #include "eventSchedule.hpp"
 #include "terrainFacade.h"
@@ -15,7 +16,7 @@ struct AnimalSpecies;
 class MustEat final
 {
 	HasScheduledEvent<HungerEvent> m_hungerEvent; // 2
-	ActorIndex m_actor = ACTOR_INDEX_MAX;
+	ActorReference m_actor;
 	EatObjective* m_eatObjective = nullptr;
 public:
 	BlockIndex m_eatingLocation = BLOCK_INDEX_MAX;
@@ -23,7 +24,7 @@ private:
 	Mass m_massFoodRequested = 0;
 public:
 	MustEat(Area& area, ActorIndex a);
-	MustEat(const Json& data, ActorIndex a, Simulation& s, const AnimalSpecies& species);
+	MustEat(Area& area, const Json& data, ActorIndex a, const AnimalSpecies& species);
 	[[nodiscard]]Json toJson() const;
 	void scheduleHungerEvent(Area& area);
 	void eat(Area& area, Mass mass);

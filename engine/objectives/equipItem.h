@@ -1,20 +1,18 @@
 #pragma once
-#include "../threadedTask.hpp"
 #include "../objective.h"
-#include "../findsPath.h"
 
 class Actor;
 class Item;
 class EquipItemObjective final : public Objective
 {
-	ItemIndex m_item;
+	ItemReference m_item;
 public:
-	EquipItemObjective(ActorIndex actor, ItemIndex item);
-	EquipItemObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(Area& area);
-	void cancel(Area& area);
-	void delay(Area& area) { cancel(area); }
-	void reset(Area& area);
+	EquipItemObjective(ItemReference item);
+	EquipItemObjective(const Json& data, Area& area);
+	void execute(Area& area, ActorIndex actor);
+	void cancel(Area& area, ActorIndex actor);
+	void delay(Area& area, ActorIndex actor) { cancel(area, actor); }
+	void reset(Area& area, ActorIndex actor);
 	[[nodiscard]] std::string name() const { return "equip"; }
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Equip; }
 	Json toJson() const;

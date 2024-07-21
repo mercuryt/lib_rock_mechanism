@@ -514,9 +514,9 @@ void Blocks::solid_set(BlockIndex index, const MaterialType& materialType, bool 
 	// Remove from stockpiles.
 	m_area.m_hasStockPiles.removeBlockFromAllFactions(index);
 	m_area.m_hasCraftingLocationsAndJobs.maybeRemoveLocation(index);
-	if(wasEmpty && m_reservables.contains(index))
+	if(wasEmpty && m_reservables.at(index) != nullptr)
 		// Dishonor all reservations: there are no reservations which can exist on both a solid and not solid block.
-		m_reservables.at(index).clearAll();
+		m_reservables.at(index) = nullptr;
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 }
 void Blocks::solid_setNot(BlockIndex index)
@@ -537,7 +537,7 @@ void Blocks::solid_setNot(BlockIndex index)
 	m_visible[index] = true;
 	setBelowVisible(index);
 	// Dishonor all reservations: there are no reservations which can exist on both a solid and not solid block.
-	m_reservables.erase(index);
+	m_reservables.at(index) = nullptr;
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 }
 const MaterialType& Blocks::solid_get(BlockIndex index) const

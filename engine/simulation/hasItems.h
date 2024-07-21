@@ -5,6 +5,7 @@
 
 class Items;
 struct DeserializationMemo;
+class Area;
 
 struct ItemDataLocation
 {
@@ -19,8 +20,10 @@ class SimulationHasItems final
 public:
 	SimulationHasItems() = default;
 	SimulationHasItems(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	[[nodiscard]] ItemId getNextId() { return ++m_nextId; }
 	void registerItem(ItemId id, Items& store, ItemIndex index);
 	void removeItem(ItemId id);
+	[[nodiscard]] ItemId getNextId() { return ++m_nextId; }
+	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] ItemIndex getIndexForId(ItemId id) const;
+	[[nodiscard]] Area& getAreaForId(ItemId id) const;
 };

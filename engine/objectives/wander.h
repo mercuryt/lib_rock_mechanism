@@ -20,14 +20,14 @@ public:
 class WanderObjective final : public Objective
 {
 public:
-	WanderObjective(ActorIndex a);
-	WanderObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	void execute(Area& area);
-	void cancel(Area& area);
-	void delay(Area& area) { cancel(area); }
-	void reset(Area& area);
+	WanderObjective();
+	WanderObjective(const Json& data);
+	void execute(Area& area, ActorIndex actor);
+	void cancel(Area& area, ActorIndex actor);
+	void delay(Area& area, ActorIndex actor) { cancel(area, actor); }
+	void reset(Area& area, ActorIndex actor);
 	std::string name() const { return "wander"; }
+	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool canResume() const { return false; }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Wander; }
 	// For testing.

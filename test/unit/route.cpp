@@ -2,6 +2,8 @@
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/actors/actors.h"
+#include "../../engine/plants.h"
+#include "../../engine/items/items.h"
 #include "../../engine/materialType.h"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasActors.h"

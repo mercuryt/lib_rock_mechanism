@@ -5,34 +5,33 @@
 #include "../simulation/hasItems.h"
 #include "../util.h"
 #include "actors/actors.h"
+#include "bloomHashMap.h"
 #include "portables.h"
 #include "types.h"
+#include <memory>
 #include <ranges>
 // RemarkItemForStockPilingEvent
-ReMarkItemForStockPilingEvent::ReMarkItemForStockPilingEvent(ItemCanBeStockPiled& canBeStockPiled, Faction& faction, Step duration, const Step start) : 
-	ScheduledEvent(canBeStockPiled.m_area.m_simulation, duration, start),
+ReMarkItemForStockPilingEvent::ReMarkItemForStockPilingEvent(Simulation& simulation, ItemCanBeStockPiled& canBeStockPiled, FactionId faction, Step duration, const Step start) : 
+	ScheduledEvent(simulation, duration, start),
 	m_faction(faction),
 	m_canBeStockPiled(canBeStockPiled) { }
 void ReMarkItemForStockPilingEvent::execute(Simulation&, Area*) 
 { 
 	m_canBeStockPiled.maybeSet(m_faction); 
-	m_canBeStockPiled.m_scheduledEvents.erase(&m_faction); 
+	m_canBeStockPiled.m_scheduledEvents.erase(m_faction); 
 }
 void ReMarkItemForStockPilingEvent::clearReferences(Simulation&, Area*) { }
 // ItemCanBeStockPiled
-ItemCanBeStockPiled::ItemCanBeStockPiled(const Json& data, DeserializationMemo& deserializationMemo) : m_area(deserializationMemo.area(data["area"]))
+void ItemCanBeStockPiled::load(const Json& data, EventSchedule& eventSchedule)
 {
-	if(data.contains("data"))
-		for(const Json& factionData : data["data"])
-			m_data.insert(&deserializationMemo.faction(factionData));
-	if(data.contains("scheduledEvents"))
-		for(const Json& eventData : data["scheduledEvents"])
-		{
-			Faction& faction = deserializationMemo.faction(eventData[0]);
-			Step start = eventData[1]["start"].get<Step>();
-			Step duration = eventData[1]["duration"].get<Step>();
-			scheduleReset(faction, duration, start);
-		}
+	data["data"].get_to(m_data);
+	for(const Json& pair : data["scheduledEvents"])
+	{
+		FactionId faction = pair[0].get<FactionId>();
+		Step start = pair[1]["start"].get<Step>();
+		Step duration = pair[1]["duration"].get<Step>();
+		scheduleReset(eventSchedule, faction, duration, start);
+	}
 }
 Json ItemCanBeStockPiled::toJson() const
 {
@@ -40,7 +39,7 @@ Json ItemCanBeStockPiled::toJson() const
 	if(!m_data.empty())
 	{
 		data["data"] = Json::array();
-		for(Faction* faction : m_data)
+		for(FactionId faction : m_data)
 			data["data"].push_back(faction);
 		if(!m_scheduledEvents.empty())
 		{
@@ -58,10 +57,10 @@ Json ItemCanBeStockPiled::toJson() const
 	}
 	return data;
 }
-void ItemCanBeStockPiled::scheduleReset(Faction& faction, Step duration, Step start)
+void ItemCanBeStockPiled::scheduleReset(EventSchedule& eventSchedule, FactionId faction, Step duration, Step start)
 {
-	assert(!m_scheduledEvents.contains(&faction));
-	auto [iter, created] = m_scheduledEvents.emplace(&faction, m_area.m_eventSchedule);
+	assert(!m_scheduledEvents.contains(faction));
+	auto [iter, created] = m_scheduledEvents.emplace(&faction, eventSchedule);
 	assert(created);
 	HasScheduledEvent<ReMarkItemForStockPilingEvent>& eventHandle = iter->second;
 	eventHandle.schedule(*this, faction, duration, start);
@@ -82,10 +81,11 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 	Portables::create(index, itemParamaters.itemType.moveType, itemParamaters.itemType.shape, itemParamaters.location, itemParamaters.facing, itemParamaters.isStatic);
 	const ItemType& itemType = *(m_itemType.at(index) = &itemParamaters.itemType);
 	m_materialType.at(index) = &itemParamaters.materialType;
-	m_id.at(index) = itemParamaters.id ? itemParamaters.id : m_area.m_simulation.nextItemId();
+	m_id.at(index) = itemParamaters.id ? itemParamaters.id : m_area.m_simulation.m_items.getNextId();
 	m_quality.at(index) = itemParamaters.quality;
 	m_percentWear.at(index) = itemParamaters.percentWear;
 	m_quantity.at(index) = itemParamaters.quantity;
+	m_referenceTarget.at(index) = std::make_unique<ItemReferenceTarget>(index);
 	m_installed[index] = itemParamaters.installed;
 	if(itemType.generic)
 	{
@@ -96,11 +96,12 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 		assert(m_quantity.at(index) == 1);
 	if(itemParamaters.location != BLOCK_INDEX_MAX)
 		setLocationAndFacing(index, itemParamaters.location, itemParamaters.facing);
-	m_canBeStockPiled.at(index) = std::make_unique<ItemCanBeStockPiled>(m_area);
+	assert(m_canBeStockPiled.at(index) == nullptr);
 	return index;
 }
 void Items::resize(HasShapeIndex newSize)
 {
+	Portables::resize(newSize);
 	m_materialType.resize(newSize);
 	m_id.resize(newSize);
 	m_quality.resize(newSize);
@@ -108,27 +109,22 @@ void Items::resize(HasShapeIndex newSize)
 	m_quantity.resize(newSize);
 	m_installed.resize(newSize);
 	m_canBeStockPiled.resize(newSize);
+	m_hasCargo.resize(newSize);
 }
 void Items::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 {
+	Portables::moveIndex(oldIndex, newIndex);
+	m_referenceTarget.at(newIndex) = std::move(m_referenceTarget.at(oldIndex));
+	m_referenceTarget.at(newIndex)->index = newIndex;
 	m_materialType[newIndex] = m_materialType[oldIndex];
 	m_id[newIndex] = m_id[oldIndex];
 	m_quality[newIndex] = m_quality[oldIndex];
 	m_percentWear[newIndex] = m_percentWear[oldIndex];
 	m_quantity[newIndex] = m_quantity[oldIndex];
 	m_installed[newIndex] = m_installed[oldIndex];
-	m_canBeStockPiled.at(oldIndex) = std::move(m_canBeStockPiled.at(newIndex));
-	m_hasCargo.at(oldIndex) = std::move(m_hasCargo.at(newIndex));
-}
-bool Items::indexCanBeMoved(HasShapeIndex index) const
-{
-	if(!Portables::indexCanBeMoved(index))
-		return false;
-	// If there is no location set index is cargo / in transit / part of some actor's equipmentSet.
-	// These references prevent it from being moved.
-	if(m_location.at(index) == BLOCK_INDEX_MAX)
-		return false;
-	return true;
+	m_canBeStockPiled.at(newIndex) = std::move(m_canBeStockPiled.at(oldIndex));
+	m_hasCargo.at(newIndex) = std::move(m_hasCargo.at(oldIndex));
+	m_hasCargo.at(newIndex)->updateCarrierIndexForAllCargo(m_area, newIndex);
 }
 void Items::setLocation(ItemIndex index, BlockIndex block)
 {
@@ -192,7 +188,7 @@ void Items::removeQuantity(ItemIndex index, Quantity delta)
 			m_reservables.at(index)->setMaxReservations(newQuantity);
 	}
 }
-void Items::install(ItemIndex index, BlockIndex block, Facing facing, Faction& faction)
+void Items::install(ItemIndex index, BlockIndex block, Facing facing, FactionId faction)
 {
 	setLocationAndFacing(index, block, facing);
 	m_installed[index] = true;
@@ -235,10 +231,10 @@ void Items::destroy(ItemIndex index)
 	if(m_location.at(index) != BLOCK_INDEX_MAX)
 		exit(index);
 	m_onSurface.erase(index);
-	m_name.maybeErase(index);
+	m_name.at(index).clear();
 	m_canBeStockPiled.at(index) = nullptr;
 	m_hasCargo.at(index) = nullptr;
-	//m_area.m_hasItems.remove(index);
+	m_area.m_simulation.m_items.removeItem(index);
 	Portables::destroy(index);
 }
 bool Items::isGeneric(ItemIndex index) const { return m_itemType.at(index)->generic; }
@@ -263,6 +259,14 @@ Mass Items::getMass(ItemIndex index) const
 		output += m_hasCargo.at(index)->getMass();
 	return output;
 }
+Volume Items::getVolume(ItemIndex index) const
+{
+	return m_itemType.at(index)->volume * m_quantity.at(index);
+}
+const MoveType& Items::getMoveType(ItemIndex index) const
+{
+	return m_itemType.at(index)->moveType;
+}
 void Items::log(ItemIndex index) const
 {
 	std::cout << m_itemType.at(index)->name << "[" << m_materialType.at(index)->name << "]";
@@ -274,112 +278,77 @@ void Items::log(ItemIndex index) const
 	std::cout << std::endl;
 }
 // Wrapper methods.
-void Items::stockpile_maybeUnsetAndScheduleReset(ItemIndex index, Faction& faction, Step duration)
+void Items::stockpile_maybeUnsetAndScheduleReset(ItemIndex index, FactionId faction, Step duration)
 {
-	m_canBeStockPiled.at(index)->maybeUnsetAndScheduleReset(faction, duration);
+	m_canBeStockPiled.at(index)->maybeUnsetAndScheduleReset(m_area.m_eventSchedule, faction, duration);
 }
-void Items::stockpile_set(ItemIndex index, Faction& faction)
+void Items::stockpile_set(ItemIndex index, FactionId faction)
 {
 	m_canBeStockPiled.at(index)->set(faction);
 }
-void Items::stockpile_maybeUnset(ItemIndex index, Faction& faction)
+void Items::stockpile_maybeUnset(ItemIndex index, FactionId faction)
 {
 	m_canBeStockPiled.at(index)->maybeUnset(faction);
 }
-bool Items::stockpile_canBeStockPiled(ItemIndex index, const Faction& faction) const
+bool Items::stockpile_canBeStockPiled(ItemIndex index, const FactionId faction) const
 {
 	return m_canBeStockPiled.at(index)->contains(faction);
 }
-/*
-Items::Item(ItemIndex index, const Json& data, DeserializationMemo& deserializationMemo, ItemId id) : 
-	HasShape(data, deserializationMemo),
-	m_hasCargo(*this),
-	m_canBeStockPiled(data["canBeStockPiled"], deserializationMemo, *this), m_craftJobForWorkPiece(nullptr), m_itemType(*data["itemType"].get<const ItemType*>()),
-	m_materialType(*data["materialType"].get<const MaterialType*>()),
-	m_id(id), m_quality(data["quality"].get<uint32_t>()),
-	m_percentWear(data["percentWear"].get<Percent>()), m_quantity(data.contains("quantity") ? data["quantity"].get<Quantity>() : 1u), m_installed(data["installed"].get<bool>()) 
+void Items::load(const Json& data)
+{
+	static_cast<Portables*>(this)->load(data);
+	m_onSurface = data["onSurface"].get<std::unordered_set<ItemIndex>>();
+	m_name = data["name"].get<std::vector<std::wstring>>();
+	m_itemType = data["itemType"].get<std::vector<const ItemType*>>();
+	m_materialType = data["materialType"].get<std::vector<const MaterialType*>>();
+	m_id = data["id"].get<std::vector<ItemId>>();
+	m_quality = data["quality"].get<std::vector<Quality>>();
+	m_quantity = data["quality"].get<std::vector<Quantity>>();
+	m_canBeStockPiled.resize(m_id.size());
+	for(const Json& pair : data["canBeStockPiled"])
 	{
-		if(data.contains("location"))
-		{
-			setLocation(data["location"].get<BlockIndex>(), &deserializationMemo.area(data["area"].get<AreaId>()));
-		}
+		ItemIndex index = pair[0];
+		auto& canBeStockPiled = m_canBeStockPiled.at(index) = std::make_unique<ItemCanBeStockPiled>();
+		canBeStockPiled->load(pair[1], m_area.m_eventSchedule);
 	}
-void Items::load(ItemIndex index, const Json& data, DeserializationMemo& deserializationMemo)
-{
-	if(data.contains("craftJobForWorkPiece"))
-		m_craftJobForWorkPiece = deserializationMemo.m_craftJobs.at(data["craftJobForWorkPiece"]);
-	if(data.contains("cargo"))
-		m_hasCargo.load(data["cargo"], deserializationMemo);
+	m_craftJobForWorkPiece.resize(m_id.size());
+	for(const Json& pair : data["craftJobForWorkPiece"])
+	{
+		ItemIndex index = pair[0].get<ItemIndex>();
+		m_craftJobForWorkPiece.at(index) = m_area.m_simulation.getDeserializationMemo().m_craftJobs.at(pair[1]);
+	}
+	m_hasCargo.resize(m_id.size());
+	for(const Json& pair : data["hasCargo"])
+	{
+		ItemIndex index = pair[0];
+		m_hasCargo.at(index) = std::make_unique<ItemHasCargo>();
+		ItemHasCargo& hasCargo = *m_hasCargo.at(index).get();
+		nlohmann::from_json(pair[1], hasCargo);
+	}
 }
-Json Items::toJson(ItemIndex index) const
+void to_json(Json& data, std::unique_ptr<ItemHasCargo> hasCargo) { data = *hasCargo; }
+void to_json(Json& data, std::unique_ptr<ItemCanBeStockPiled> canBeStockPiled) { data = canBeStockPiled->toJson(); }
+Json Items::toJson() const
 {
-	Json data = HasShape::toJson();
+	Json data = Portables::toJson();
 	data["id"] = m_id;
 	data["name"] = m_name;
-	if(m_location != BLOCK_INDEX_MAX)
-	{
-		data["location"] = m_location;
-		data["area"] = m_area;
-	}
+	data["location"] = m_location;
 	data["itemType"] = m_itemType;
 	data["materialType"] = m_materialType;
 	data["quality"] = m_quality;
 	data["quantity"] = m_quantity;
 	data["percentWear"] = m_percentWear;
 	data["installed"] = m_installed;
-	data["canBeStockPiled"] = m_canBeStockPiled.toJson();
-	if(m_itemType.internalVolume != 0)
-		data["cargo"] = m_hasCargo.toJson();
+	data["canBeStockPiled"] = m_canBeStockPiled;
+	data["cargo"] = m_hasCargo;
 	return data;
 }
 // HasCargo.
-void ItemHasCargo::load(const Json& data, DeserializationMemo& deserializationMemo)
-{
-	m_volume = data["volume"].get<Volume>();
-	m_mass = data["mass"].get<Mass>();
-	if(data.contains("fluidVolume"))
-	{
-		m_fluidType = data["fluidType"].get<const FluidType*>();
-		m_fluidVolume = data["fluidVolume"].get<Volume>();
-	}
-	if(data.contains("actors"))
-		for(const Json& actorReference : data["actors"])
-		{
-			Actor& actor = deserializationMemo.actorReference(actorReference);
-			m_shapes.push_back(static_cast<HasShape*>(&actor));
-		}
-	if(data.contains("items"))
-		for(const Json& itemReference : data["items"])
-		{
-			Item& item = deserializationMemo.itemReference(itemReference);
-			m_shapes.push_back(static_cast<HasShape*>(&item));
-			getItems().push_back(&item);
-		}
-}
-Json ItemHasCargo::toJson() const
-{
-	Json data{{"volume", m_volume}, {"mass", m_mass}, {"actors", Json::array()}, {"items", Json::array()}};
-	for(HasShape* hasShape : m_shapes)
-		if(hasShape->isItem())
-			data["items"].push_back(static_cast<Item*>(hasShape)->m_id);
-		else
-		{
-			assert(hasShape->isActor());
-			data["actors"].push_back(static_cast<Actor*>(hasShape)->m_id);
-		}
-	if(m_fluidType)
-	{
-		assert(m_shapes.empty());
-		data["fluidType"] = m_fluidType;
-		data["fluidVolume"] = m_fluidVolume;
-	}
-	return data;
-}
-*/
 void ItemHasCargo::addActor(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
-	assert(m_volume + actors.getVolume(actor) <= m_itemType.internalVolume);
+	assert(m_volume + actors.getVolume(actor) <= m_maxVolume);
 	assert(!containsActor(actor));
 	assert(m_fluidVolume == 0 && m_fluidType == nullptr);
 	getActors().push_back(actor);
@@ -390,7 +359,7 @@ void ItemHasCargo::addItem(Area& area, ItemIndex item)
 {
 	Items& items = area.getItems();
 	//TODO: This method does not call hasShape.exit(), which is not consistant with the behaviour of CanPickup::pickup.
-	assert(m_volume + items.getVolume(item) <= m_itemType.internalVolume);
+	assert(m_volume + items.getVolume(item) <= m_maxVolume);
 	assert(!containsItem(item));
 	assert(m_fluidVolume == 0 && m_fluidType == nullptr);
 	getItems().push_back(item);
@@ -399,7 +368,7 @@ void ItemHasCargo::addItem(Area& area, ItemIndex item)
 }
 void ItemHasCargo::addFluid(const FluidType& fluidType, Volume volume)
 {
-	assert(m_fluidVolume + volume <= m_itemType.internalVolume);
+	assert(m_fluidVolume + volume <= m_maxVolume);
 	if(m_fluidType == nullptr)
 	{
 		m_fluidType = &fluidType;
@@ -483,7 +452,16 @@ ItemIndex ItemHasCargo::unloadGenericTo(Area& area, const ItemType& itemType, co
 	removeItemGeneric(area, itemType, materialType, quantity);
 	return area.getBlocks().item_addGeneric(location, itemType, materialType, quantity);
 }
-bool ItemHasCargo::canAddActor(Area& area, ActorIndex actor) const { return m_volume + area.getActors().getVolume(actor) <= m_itemType.internalVolume; }
+void ItemHasCargo::updateCarrierIndexForAllCargo(Area& area, ItemIndex newIndex)
+{
+	Items& items = area.getItems();
+	for(ItemIndex item : m_items)
+		items.updateCarrierIndex(item, newIndex);
+	Actors& actors = area.getActors();
+	for(ActorIndex actor : m_actors)
+		actors.updateCarrierIndex(actor, newIndex);
+}
+bool ItemHasCargo::canAddActor(Area& area, ActorIndex actor) const { return m_volume + area.getActors().getVolume(actor) <= m_maxVolume; }
 bool ItemHasCargo::canAddFluid(FluidType& fluidType) const { return m_fluidType == nullptr || m_fluidType == &fluidType; }
 bool ItemHasCargo::containsGeneric(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity) const
 {

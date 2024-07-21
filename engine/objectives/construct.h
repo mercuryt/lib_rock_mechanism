@@ -1,10 +1,12 @@
 #pragma once
 #include "../objective.h"
-#include "../pathRequest.h"
 #include "../types.h"
+#include "../pathRequest.h"
+#include "config.h"
 class Project;
 class Area;
 class ConstructProject;
+struct FindPathResult;
 // TODO: specalize construct objective into carpentry, masonry, etc.
 class ConstructObjectiveType final : public ObjectiveType
 {
@@ -20,20 +22,20 @@ class ConstructObjective final : public Objective
 	Project* m_project = nullptr;
 	std::unordered_set<Project*> m_cannotJoinWhileReservationsAreNotComplete;
 public:
-	ConstructObjective(ActorIndex a);
+	ConstructObjective() : Objective(Config::constructObjectivePriority) { }
 	ConstructObjective(const Json& data, DeserializationMemo& deserializationMemo);
+	void execute(Area& area, ActorIndex actor);
+	void cancel(Area& area, ActorIndex actor);
+	void delay(Area& area, ActorIndex actor);
+	void reset(Area& area, ActorIndex actor);
+	void joinProject(ConstructProject& project, ActorIndex actor);
+	void onProjectCannotReserve(Area& area, ActorIndex actor);
 	[[nodiscard]] Json toJson() const;
-	void execute(Area& area);
-	void cancel(Area& area);
-	void delay(Area& area);
-	void reset(Area& area);
-	void joinProject(ConstructProject& project);
-	void onProjectCannotReserve(Area& area);
 	[[nodiscard]] std::string name() const { return "construct"; }
-	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAdjacentTo(Area& area, BlockIndex location, Facing facing);
-	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAt(Area& area, BlockIndex block);
-	[[nodiscard]] bool joinableProjectExistsAt(Area& area, BlockIndex block) const;
-	[[nodiscard]] bool canJoinProjectAdjacentToLocationAndFacing(Area& area, BlockIndex block, Facing facing) const;
+	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAdjacentTo(Area& area, BlockIndex location, Facing facing, ActorIndex actor);
+	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAt(Area& area, BlockIndex block, ActorIndex actor);
+	[[nodiscard]] bool joinableProjectExistsAt(Area& area, BlockIndex block, ActorIndex actor) const;
+	[[nodiscard]] bool canJoinProjectAdjacentToLocationAndFacing(Area& area, BlockIndex block, Facing facing, ActorIndex actor) const;
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Construct; }
 	friend class ConstructPathRequest;
 	friend class ConstructProject;
@@ -44,6 +46,6 @@ class ConstructPathRequest final : public PathRequest
 {
 	ConstructObjective& m_constructObjective;
 public:
-	ConstructPathRequest(Area& area, ConstructObjective& co);
+	ConstructPathRequest(Area& area, ConstructObjective& co, ActorIndex actor);
 	void callback(Area& area, FindPathResult& result);
 };

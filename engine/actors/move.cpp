@@ -33,7 +33,7 @@ void Actors::move_updateIndividualSpeed(ActorIndex index)
 }
 void Actors::move_updateActualSpeed(ActorIndex index)
 {
-	m_speedActual.at(index) = isLeading(index) ? move_getSpeed(index) : m_speedIndividual.at(index);
+	m_speedActual.at(index) = isLeading(index) ? lead_getSpeed(index) : m_speedIndividual.at(index);
 }
 void Actors::move_setPath(ActorIndex index, std::vector<BlockIndex>& path)
 {
@@ -180,6 +180,10 @@ void Actors::move_setDestinationAdjacentToDesignation(ActorIndex index, BlockDes
 {
 	m_pathRequest[index]->createGoAdjacentToDesignation(m_area, index, designation, detour, unreserved, maxRange, reserve);
 }
+void Actors::move_setDestinationToEdge(ActorIndex index, bool detour)
+{
+	m_pathRequest.at(index)->createGoToEdge(m_area, index, detour);
+}
 void Actors::move_setType(ActorIndex index, const MoveType& moveType)
 {
 	assert(m_moveType.at(index) != &moveType);
@@ -201,7 +205,7 @@ bool Actors::move_tryToReserveProposedDestination(ActorIndex index, std::vector<
 	CanReserve& canReserve = *m_canReserve.at(index);
 	Blocks& blocks = m_area.getBlocks();
 	BlockIndex location = path.back();
-	Faction& faction = *getFaction(index);
+	FactionId faction = *getFaction(index);
 	if(shape.isMultiTile)
 	{
 		assert(!path.empty());
@@ -228,7 +232,7 @@ bool Actors::move_tryToReserveOccupied(ActorIndex index)
 	CanReserve& canReserve = *m_canReserve.at(index);
 	Blocks& blocks = m_area.getBlocks();
 	BlockIndex location = getLocation(index);
-	Faction& faction = *getFaction(index);
+	FactionId faction = *getFaction(index);
 	if(shape.isMultiTile)
 	{
 		assert(!m_path.at(index).empty());
@@ -281,6 +285,11 @@ void Actors::move_pathRequestCallback(ActorIndex index, std::vector<BlockIndex> 
 	}
 	else
 		move_setPath(index, path);
+}
+void Actors::move_pathRequestRecord(ActorIndex index, std::unique_ptr<PathRequest> pathRequest)
+{
+	assert(m_pathRequest.at(index) == nullptr);
+	m_pathRequest.at(index) = std::move(pathRequest);
 }
 void Actors::move_pathRequestMaybeCancel(ActorIndex index)
 {

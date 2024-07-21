@@ -28,12 +28,12 @@ class ActorOrItemIndex;
 class CraftInputAction final : public InputAction
 {
 	Area& m_area;
-	Faction& m_faction;
+	FactionId m_faction;
 	const CraftJobType& m_craftJobType;
 	const MaterialType* m_materialType;
 	Quantity m_quantity = 0;
 	uint32_t m_quality = 0;
-	CraftInputAction(Area& area, Faction& faction, InputQueue& inputQueue, const CraftJobType& craftJobType, const MaterialType* materialType, Quantity quantity) : 
+	CraftInputAction(Area& area, FactionId faction, InputQueue& inputQueue, const CraftJobType& craftJobType, const MaterialType* materialType, Quantity quantity) : 
 		InputAction(inputQueue), m_area(area), m_faction(faction), m_craftJobType(craftJobType), m_materialType(materialType), m_quantity(quantity) { }
 	void execute();
 };
@@ -41,8 +41,8 @@ class CraftCancelInputAction final : public InputAction
 {
 	Area& m_area;
 	CraftJob& m_job;
-	Faction& m_faction;
-	CraftCancelInputAction(Area& area, Faction& faction, InputQueue& inputQueue, CraftJob& job) : 
+	FactionId m_faction;
+	CraftCancelInputAction(Area& area, FactionId faction, InputQueue& inputQueue, CraftJob& job) : 
 		InputAction(inputQueue), m_area(area), m_job(job), m_faction(faction) { }
 	void execute();
 };
@@ -86,7 +86,7 @@ class CraftStepProject final : public Project
 	[[nodiscard]] std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> getByproducts() const;
 	[[nodiscard]] std::vector<std::pair<ActorQuery, Quantity>> getActors() const { return {}; }
 public:
-	CraftStepProject(Faction& faction, Area& area, BlockIndex location, const CraftStepType& cst, CraftJob& cj) : 
+	CraftStepProject(FactionId faction, Area& area, BlockIndex location, const CraftStepType& cst, CraftJob& cj) : 
 		Project(faction, area, location, 1), m_craftStepType(cst), m_craftJob(cj) { }
 	CraftStepProject(const Json& data, DeserializationMemo& deserializationMemo, CraftJob& cj);
 	// No toJson needed here, the base class one has everything.
@@ -121,7 +121,7 @@ struct CraftJob final
 {
 	const CraftJobType& craftJobType;
 	HasCraftingLocationsAndJobsForFaction& hasCraftingLocationsAndJobs;
-	ItemIndex workPiece = ITEM_INDEX_MAX;
+	ItemReference workPiece;
 	const MaterialType* materialType;
 	std::vector<CraftStepType>::const_iterator stepIterator;
 	std::unique_ptr<CraftStepProject> craftStepProject;
@@ -129,11 +129,10 @@ struct CraftJob final
 	uint32_t totalSkillPoints = 0;
 	Reservable reservable;
 	// If work piece is provided then this is an upgrade job.
-	CraftJob(const CraftJobType& cjt, HasCraftingLocationsAndJobsForFaction& hclaj, ItemIndex wp, const MaterialType* mt, uint32_t msl) : 
-		craftJobType(cjt), hasCraftingLocationsAndJobs(hclaj), workPiece(wp), materialType(mt), stepIterator(craftJobType.stepTypes.begin()), minimumSkillLevel(msl), totalSkillPoints(0), reservable(1) { }
+	CraftJob(const CraftJobType& cjt, HasCraftingLocationsAndJobsForFaction& hclaj, ItemIndex wp, const MaterialType* mt, uint32_t msl);
 	// No work piece provided is a create job.
 	CraftJob(const CraftJobType& cjt, HasCraftingLocationsAndJobsForFaction& hclaj, const MaterialType* mt, uint32_t msl) :
-	       	craftJobType(cjt), hasCraftingLocationsAndJobs(hclaj), workPiece(ITEM_INDEX_MAX), materialType(mt), stepIterator(craftJobType.stepTypes.begin()), minimumSkillLevel(msl), totalSkillPoints(0), reservable(1) { }
+	       	craftJobType(cjt), hasCraftingLocationsAndJobs(hclaj), materialType(mt), stepIterator(craftJobType.stepTypes.begin()), minimumSkillLevel(msl), totalSkillPoints(0), reservable(1) { }
 	CraftJob(const Json& data, DeserializationMemo& deserializationMemo, HasCraftingLocationsAndJobsForFaction& hclaj);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] uint32_t getQuality() const;
@@ -150,10 +149,10 @@ class HasCraftingLocationsAndJobsForFaction final
 	std::unordered_map<const SkillType*, std::unordered_set<CraftJob*>> m_unassignedProjectsBySkill;
 	std::list<CraftJob> m_jobs;
 	Area& m_area;
-	Faction& m_faction;
+	FactionId m_faction;
 public:
-	HasCraftingLocationsAndJobsForFaction(Faction& f, Area& a) : m_area(a), m_faction(f) { }
-	HasCraftingLocationsAndJobsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Faction& f);
+	HasCraftingLocationsAndJobsForFaction(FactionId f, Area& a) : m_area(a), m_faction(f) { }
+	HasCraftingLocationsAndJobsForFaction(const Json& data, DeserializationMemo& deserializationMemo, FactionId f);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	// To be used by the player.
@@ -178,7 +177,7 @@ public:
 	// To be called when all steps are complete.
 	void jobComplete(CraftJob& craftJob, BlockIndex location);
 	// Generate a project step for craftJob and dispatch the worker from objective.
-	void makeAndAssignStepProject(CraftJob& craftJob, BlockIndex location, CraftObjective& objective);
+	void makeAndAssignStepProject(CraftJob& craftJob, BlockIndex location, CraftObjective& objective, ActorIndex actor);
 	// To be used by the UI.
 	[[nodiscard]] bool hasLocationsFor(const CraftJobType& craftJobType) const;
 	[[nodiscard]] std::list<CraftJob>& getAllJobs() { return m_jobs; }
@@ -188,6 +187,7 @@ public:
 	[[nodiscard]] CraftJob* getJobForAtLocation(const ActorIndex actor, const SkillType& skillType, BlockIndex block, std::unordered_set<CraftJob*>& excludeJobs);
 	friend class CraftObjectiveType;
 	friend class AreaHasCraftingLocationsAndJobs;
+	friend struct CraftJob;
 	// For testing.
 	[[maybe_unused, nodiscard]] bool hasJobs() const { return !m_jobs.empty(); }
 	[[maybe_unused, nodiscard]] bool hasLocationsForCategory(const CraftStepTypeCategory& category) const { return m_locationsByCategory.contains(&category); }
@@ -195,16 +195,16 @@ public:
 };
 class AreaHasCraftingLocationsAndJobs final
 {
-	std::unordered_map<Faction*, HasCraftingLocationsAndJobsForFaction> m_data;
+	std::unordered_map<FactionId, HasCraftingLocationsAndJobsForFaction> m_data;
 	Area& m_area;
 public:
 	AreaHasCraftingLocationsAndJobs(Area& area) : m_area(area) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
-	void addFaction(Faction& faction) { m_data.try_emplace(&faction, faction, m_area); }
-	void removeFaction(Faction& faction) { m_data.erase(&faction); }
+	void addFaction(FactionId faction) { m_data.try_emplace(faction, faction, m_area); }
+	void removeFaction(FactionId faction) { m_data.erase(faction); }
 	void maybeRemoveLocation(BlockIndex location) { for(auto& pair : m_data) pair.second.maybeRemoveLocation(location); }
 	void clearReservations();
-	[[nodiscard]] HasCraftingLocationsAndJobsForFaction& at(Faction& faction);
+	[[nodiscard]] HasCraftingLocationsAndJobsForFaction& at(FactionId faction);
 };

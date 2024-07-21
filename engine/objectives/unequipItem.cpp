@@ -5,41 +5,35 @@
 #include "blocks/blocks.h"
 #include "items/items.h"
 
-UnequipItemObjective::UnequipItemObjective(ActorIndex actor, ItemIndex item, BlockIndex block) : 
-	Objective(actor, Config::equipPriority), m_item(item), m_block(block) { }
-/*
-UnequipItemObjective::UnequipItemObjective(const Json& data, DeserializationMemo& deserializationMemo) :
-	Objective(data, deserializationMemo), 
-	m_item(deserializationMemo.itemReference(data["item"])),
-	m_block(data["block"].get<BlockIndex>()) { }
-Json UnequipItemObjective::toJson() const
+UnequipItemObjective::UnequipItemObjective(ItemReference item, BlockIndex block) : 
+	Objective(Config::equipPriority), m_item(item), m_block(block) { }
+UnequipItemObjective::UnequipItemObjective(const Json& data, Area& area) :
+	Objective(data), 
+	m_block(data["block"].get<BlockIndex>())
 {
-	Json data = Objective::toJson();
-	data["item"] = m_item;
-	data["block"] = m_block;
-	return data;
+	m_item.load(data["item"], area);
 }
-*/
-void UnequipItemObjective::execute(Area& area)
+void UnequipItemObjective::execute(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
-	if(!actors.isAdjacentToLocation(m_actor, m_block))
+	if(!actors.isAdjacentToLocation(actor, m_block))
 		// detour, unresered, reserve.
 		// TODO: detour.
-		actors.move_setDestinationAdjacentToLocation(m_actor, m_block, false, false, false);
+		actors.move_setDestinationAdjacentToLocation(actor, m_block, false, false, false);
 	else
 	{
 		Blocks& blocks = area.getBlocks();
 		Items& items = area.getItems();
-		if(blocks.shape_canEnterCurrentlyWithAnyFacing(m_block, items.getShape(m_item), {}))
+		ItemIndex item = m_item.getIndex();
+		if(blocks.shape_canEnterCurrentlyWithAnyFacing(m_block, items.getShape(item), {}))
 		{
-			actors.equipment_remove(m_actor, m_item);
-			items.setLocation(m_item, m_block);
-			actors.objective_complete(m_actor, *this);
+			actors.equipment_remove(actor, item);
+			items.setLocation(item, m_block);
+			actors.objective_complete(actor, *this);
 		}
 		else
-			actors.objective_canNotCompleteObjective(m_actor, *this);
+			actors.objective_canNotCompleteObjective(actor, *this);
 	}
 }
-void UnequipItemObjective::cancel(Area& area) { area.getActors().canReserve_clearAll(m_actor); }
-void UnequipItemObjective::reset(Area& area) { cancel(area); }
+void UnequipItemObjective::cancel(Area& area, ActorIndex actor) { area.getActors().canReserve_clearAll(actor); }
+void UnequipItemObjective::reset(Area& area, ActorIndex actor) { cancel(area, actor); }

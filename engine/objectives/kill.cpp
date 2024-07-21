@@ -1,11 +1,11 @@
 #include "kill.h"
 #include "../area.h"
 #include "../objective.h"
-#include "../visionUtil.h"
 #include "../simulation.h"
 #include "../simulation/hasActors.h"
 #include "actors/actors.h"
 #include "blocks/blocks.h"
+#include "reference.h"
 #include <memory>
 /*
 KillInputAction::KillInputAction(std::unordered_set<ActorIndex> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, ActorIndex killer, ActorIndex target) : InputAction(actors, emplacementType, inputQueue), m_killer(killer), m_target(target) 
@@ -18,47 +18,41 @@ void KillInputAction::execute()
 	insertObjective(std::move(objective), m_killer);
 }
 */
-KillObjective::KillObjective(ActorIndex k, ActorIndex t) :
-	Objective(k, Config::killPriority), m_killer(k), m_target(t) { }
-/*
-KillObjective::KillObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), 
-	m_killer(deserializationMemo.m_simulation.m_hasActors->getById(data["killer"].get<ActorId>())), 
-	m_target(deserializationMemo.m_simulation.m_hasActors->getById(data["target"].get<ActorId>())), 
-	m_getIntoRangeAndLineOfSightThreadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine)
+KillObjective::KillObjective(ActorReference t) : Objective(Config::killPriority), m_target(t) { }
+KillObjective::KillObjective(const Json& data, Area& area) : Objective(data)
 { 
-	if(data["threadedTask"])
-		m_getIntoRangeAndLineOfSightThreadedTask.create(m_killer, m_target, m_killer.m_canFight.getMaxRange());
+	m_target.load(data["target"], area);
 }
-*/
-void KillObjective::execute(Area& area)
+void KillObjective::execute(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
-	if(!actors.isAlive(m_target))
+	ActorIndex target = m_target.getIndex();
+	if(!actors.isAlive(target))
 	{
 		//TODO: Do we need to cancel the threaded task here?
-		actors.objective_complete(m_killer, *this);
+		actors.objective_complete(actor, *this);
 		return;
 	}
-	actors.combat_setTarget(m_killer, m_target);
+	actors.combat_setTarget(actor, target);
 	// If not in range create GetIntoRangeThreadedTask.
 	Blocks& blocks = area.getBlocks();
-	if(!actors.move_hasPathRequest(m_actor) &&
-			(blocks.taxiDistance(actors.getLocation(m_killer), actors.getLocation(m_target)) > actors.combat_getMaxRange(m_killer) ||
+	if(!actors.move_hasPathRequest(actor) &&
+			(blocks.taxiDistance(actors.getLocation(actor), actors.getLocation(target)) > actors.combat_getMaxRange(actor) ||
 			 // TODO: hasLineOfSightIncludingActors
-			 area.m_opacityFacade.hasLineOfSight(actors.getLocation(m_killer), actors.getLocation(m_target)))
+			 area.m_opacityFacade.hasLineOfSight(actors.getLocation(actor), actors.getLocation(target)))
 	)
-		actors.combat_getIntoRangeAndLineOfSightOfActor(m_killer, m_target, actors.combat_getMaxRange(m_killer));
+		actors.combat_getIntoRangeAndLineOfSightOfActor(actor, target, actors.combat_getMaxRange(actor));
 	else
 		// If in range and has line of sight and attack not on cooldown then attack.
-		if(!actors.combat_isOnCoolDown(m_killer))
-			actors.combat_attackMeleeRange(m_killer, m_target);
+		if(!actors.combat_isOnCoolDown(actor))
+			actors.combat_attackMeleeRange(actor, target);
 }
-void KillObjective::cancel(Area& area)
+void KillObjective::cancel(Area& area, ActorIndex actor)
 {
-	area.getActors().move_pathRequestMaybeCancel(m_actor);
+	area.getActors().move_pathRequestMaybeCancel(actor);
 }
-void KillObjective::reset(Area& area) 
+void KillObjective::reset(Area& area, ActorIndex actor) 
 { 
-	cancel(area); 
-	area.getActors().canReserve_clearAll(m_killer);
+	cancel(area, actor); 
+	area.getActors().canReserve_clearAll(actor);
 }

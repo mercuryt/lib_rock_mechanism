@@ -4,6 +4,8 @@
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/datetime.h"
 #include "../../engine/plants.h"
+#include "../../engine/actors/actors.h"
+#include "../../engine/items/items.h"
 TEST_CASE("plant")
 {
 	static const MaterialType& marble = MaterialType::byName("marble");
@@ -24,7 +26,7 @@ TEST_CASE("plant")
 	REQUIRE(simulation.m_eventSchedule.m_data.contains(wheatGrass.stepsTillFullyGrown / 2));
 	REQUIRE(simulation.m_eventSchedule.m_data.contains(wheatGrass.stepsNeedsFluidFrequency));
 	REQUIRE(blocks.isExposedToSky(plants.getLocation(plant)));
-	REQUIRE(!plants.temperatureEventExists());
+	REQUIRE(!plants.temperatureEventExists(plant));
 	REQUIRE(area.getPlants().getOnSurface().contains(plant));
 	simulation.fastForward(wheatGrass.stepsNeedsFluidFrequency);
 	REQUIRE(plants.getVolumeFluidRequested(plant) != 0);

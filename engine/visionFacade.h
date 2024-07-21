@@ -32,6 +32,7 @@ public:
 	void readStep();
 	void writeStep();
 	void clear();
+	void updateActorIndex(VisionFacadeIndex index, ActorIndex newIndex) { m_actors.at(index) = newIndex; }
 	[[nodiscard]] ActorIndex getActor(VisionFacadeIndex index);
 	[[nodiscard]] BlockIndex getLocation(VisionFacadeIndex index);
 	[[nodiscard]] DistanceInBlocks getRange(VisionFacadeIndex index) const;
@@ -71,7 +72,11 @@ public:
 	void updateRange(DistanceInBlocks range);
 	// Call when move.
 	void updateLocation(BlockIndex& location);
+	// Call when visionFacadeIndex changes.
+	void updateFacadeIndex(VisionFacadeIndex index) { m_index = index; }
+	void updateActorIndex(ActorIndex newIndex) { m_visionFacade->updateActorIndex(m_index, newIndex); }
 	[[nodiscard]] bool empty() const { return m_index == VISION_FACADE_INDEX_MAX; }
+	[[nodiscard]] VisionFacadeIndex getIndex() const { return m_index; }
 	friend class VisionFacade;
 	VisionFacade& getVisionFacade() const { return *m_visionFacade; }
 };

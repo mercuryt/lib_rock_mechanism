@@ -15,27 +15,26 @@ class SleepPathRequest final : public PathRequest
 	bool m_sleepAtCurrentLocation = false;
 public:
 	SleepPathRequest(Area& area, SleepObjective& so);
-	void callback(Area&, FindPathResult result);
+	void callback(Area&, FindPathResult& result);
 };
 class SleepObjective final : public Objective
 {
-	ActorIndex m_actor = ACTOR_INDEX_MAX;
 	bool m_noWhereToSleepFound = false;
 public:
-	SleepObjective(ActorIndex a);
+	SleepObjective();
 	SleepObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	void execute(Area&);
-	void cancel(Area&);
-	void delay(Area& area) { cancel(area); }
-	void reset(Area& area);
-	void selectLocation(Area& area, BlockIndex index);
-	void makePathRequest(Area& area);
-	[[nodiscard]] bool onCanNotRepath(Area& area);
-	[[nodiscard]] uint32_t desireToSleepAt(Area& area, BlockIndex block) const;
+	void execute(Area&, ActorIndex actor);
+	void cancel(Area&, ActorIndex actor);
+	void delay(Area& area, ActorIndex actor) { cancel(area, actor); }
+	void reset(Area& area, ActorIndex actor);
+	void selectLocation(Area& area, BlockIndex index, ActorIndex actor);
+	void makePathRequest(Area& area, ActorIndex actor);
+	[[nodiscard]] bool onCanNotRepath(Area& area, ActorIndex actor);
+	[[nodiscard]] uint32_t desireToSleepAt(Area& area, BlockIndex block, ActorIndex actor) const;
 	[[nodiscard]] std::string name() const { return "sleep"; }
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Sleep; }
 	[[nodiscard]] bool isNeed() const { return true; }
+	[[nodiscard]] Json toJson() const;
 	friend class SleepPathRequest;
 	friend class MustSleep;
 };

@@ -3,18 +3,19 @@
 #include "../deserializationMemo.h"
 #include "area.h"
 #include "items/items.h"
-GiveItemObjective::GiveItemObjective(Area& area, ActorIndex actor, ItemIndex item, ActorIndex recipient) :
-	Objective(actor, Config::equipPriority), m_item(item), m_recipient(recipient) 
+GiveItemObjective::GiveItemObjective(Area& area, ItemIndex item, ActorIndex recipient) :
+	Objective(Config::equipPriority)
 { 
-	createOnDestroyCallbacks(area);
+	m_item.setTarget(area.getItems().getReferenceTarget(item));
+	m_recipient.setTarget(area.getActors().getReferenceTarget(recipient));
+	createOnDestroyCallbacks(area, recipient);
 }
-/*
-GiveItemObjective::GiveItemObjective(const Json& data, DeserializationMemo& deserializationMemo) :
-	Objective(data, deserializationMemo), 
-	m_item(deserializationMemo.itemReference(data["item"])),
-	m_recipient(deserializationMemo.actorReference(data["recipent"])) 
+GiveItemObjective::GiveItemObjective(const Json& data, Area& area) :
+	Objective(data)
 {
-	createOnDestroyCallbacks();
+	m_item.load(data["item"], area);
+	m_recipient.load(data["recipent"], area);
+	createOnDestroyCallbacks(area, m_recipient.getIndex());
 }
 Json GiveItemObjective::toJson() const
 {
@@ -23,34 +24,33 @@ Json GiveItemObjective::toJson() const
 	data["recipient"] = m_recipient;
 	return data;
 }
-*/
-void GiveItemObjective::execute(Area& area)
+void GiveItemObjective::execute(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
-	if(!actors.isAdjacentToActor(m_actor, m_recipient))
+	if(!actors.isAdjacentToActor(actor, m_recipient.getIndex()))
 		// detour, unresered, reserve.
 		// TODO: detour.
-		actors.move_setDestinationAdjacentToActor(m_actor, m_recipient);
+		actors.move_setDestinationAdjacentToActor(actor, m_recipient.getIndex());
 	else
 	{
-		if(actors.equipment_canEquipCurrently(m_recipient, m_item))
+		if(actors.equipment_canEquipCurrently(m_recipient.getIndex(), m_item.getIndex()))
 		{
-			actors.equipment_remove(m_actor, m_item);
-			actors.equipment_add(m_recipient, m_item);
-			actors.objective_complete(m_actor, *this);
+			actors.equipment_remove(actor, m_item.getIndex());
+			actors.equipment_add(m_recipient.getIndex(), m_item.getIndex());
+			actors.objective_complete(actor, *this);
 		}
 		else
-			actors.objective_canNotCompleteObjective(m_actor, *this);
+			actors.objective_canNotCompleteObjective(actor, *this);
 	}
 }
-void GiveItemObjective::cancel(Area& area) { area.getActors().canReserve_clearAll(m_actor); }
-void GiveItemObjective::reset(Area& area) { cancel(area); }
-void GiveItemObjective::createOnDestroyCallbacks(Area& area) 
+void GiveItemObjective::cancel(Area& area, ActorIndex actor) { area.getActors().canReserve_clearAll(actor); }
+void GiveItemObjective::reset(Area& area, ActorIndex actor) { cancel(area, actor); }
+void GiveItemObjective::createOnDestroyCallbacks(Area& area, ActorIndex actor) 
 { 
-	std::function<void()> onDestory = [this, &area]{ cancel(area); };
+	std::function<void()> onDestory = [this, &area, actor]{ cancel(area, actor); };
 	m_hasOnDestroySubscriptions.setCallback(onDestory);
 	// Item.
-	area.getItems().onDestroy_subscribe(m_item, m_hasOnDestroySubscriptions);
+	area.getItems().onDestroy_subscribe(m_item.getIndex(), m_hasOnDestroySubscriptions);
 	// Recipient.
-	area.getActors().onDestroy_subscribe(m_item, m_hasOnDestroySubscriptions);
+	area.getActors().onDestroy_subscribe(m_item.getIndex(), m_hasOnDestroySubscriptions);
 }

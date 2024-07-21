@@ -8,7 +8,6 @@
 #include "../types.h"
 #include "../designations.h"
 #include "../blockFeature.h"
-#include "../bloomHashMap.h"
 
 #include "../../lib/dynamic_bitset.hpp"
 
@@ -43,9 +42,9 @@ struct BlockIsPartOfStockPile
 class Blocks
 {
 	std::array<int32_t, 26> m_offsetsForAdjacentCountTable;
-	BloomHashMap<BlockIndex, Reservable> m_reservables;
-	std::unordered_map<BlockIndex, std::unordered_map<Faction*, FarmField*>> m_farmFields;
-	std::unordered_map<BlockIndex, std::unordered_map<Faction*, BlockIsPartOfStockPile>> m_stockPiles;
+	std::unordered_map<BlockIndex, std::unordered_map<FactionId, FarmField*>> m_farmFields;
+	std::unordered_map<BlockIndex, std::unordered_map<FactionId, BlockIsPartOfStockPile>> m_stockPiles;
+	std::vector<std::unique_ptr<Reservable>> m_reservables;
 	std::vector<const MaterialType*> m_materialType;
 	std::vector<std::vector<BlockFeature>> m_features;
 	std::vector<std::vector<FluidData>> m_fluid;
@@ -59,7 +58,7 @@ class Blocks
 	std::vector<PlantIndex> m_plants;
 	std::vector<CollisionVolume> m_dynamicVolume;
 	std::vector<CollisionVolume> m_staticVolume;
-	std::vector<std::unordered_map<Faction*, std::unordered_set<Project*>>> m_projects;
+	std::vector<std::unordered_map<FactionId, std::unordered_set<Project*>>> m_projects;
 	std::vector<std::unordered_map<const MaterialType* , Fire>*> m_fires;
 	std::vector<Temperature> m_temperatureDelta;
 	std::vector<LocationBucket*> m_locationBucket;
@@ -209,10 +208,10 @@ public:
 		{1,1,1}, {1,0,1}, {1,-1,1}
 	};
 	// -Designation
-	[[nodiscard]] bool designation_has(BlockIndex index, Faction& faction, BlockDesignation designation) const;
-	void designation_set(BlockIndex index, Faction& faction, BlockDesignation designation);
-	void designation_unset(BlockIndex index, Faction& faction, BlockDesignation designation);
-	void designation_maybeUnset(BlockIndex index, Faction& faction, BlockDesignation designation);
+	[[nodiscard]] bool designation_has(BlockIndex index, FactionId faction, BlockDesignation designation) const;
+	void designation_set(BlockIndex index, FactionId faction, BlockDesignation designation);
+	void designation_unset(BlockIndex index, FactionId faction, BlockDesignation designation);
+	void designation_maybeUnset(BlockIndex index, FactionId faction, BlockDesignation designation);
 	// -Solid.
 	void solid_set(BlockIndex index, const MaterialType& materialType, bool constructed);
 	void solid_setNot(BlockIndex index);
@@ -291,7 +290,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, const Fluid
 	void unreserve(BlockIndex index, CanReserve& canReserve);
 	void unreserveAll(BlockIndex index);
 	void setReservationDishonorCallback(BlockIndex index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback);
-	[[nodiscard]] bool isReserved(BlockIndex index, const Faction& faction) const;
+	[[nodiscard]] bool isReserved(BlockIndex index, const FactionId faction) const;
 	// -Actors
 	void actor_record(BlockIndex index, ActorIndex actor, CollisionVolume volume);
 	void actor_erase(BlockIndex index, ActorIndex actor);
@@ -362,8 +361,8 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, const Fluid
 	[[nodiscard]] std::unordered_map<Shape*, CollisionVolume>& shape_getShapes(BlockIndex index);
 	[[nodiscard]] Quantity shape_getQuantityOfItemWhichCouldFit(BlockIndex index, const ItemType& itemType) const;
 	// -FarmField
-	void farm_insert(BlockIndex index, Faction& faction, FarmField& farmField);
-	void farm_remove(BlockIndex index, Faction& faction);
+	void farm_insert(BlockIndex index, FactionId faction, FarmField& farmField);
+	void farm_remove(BlockIndex index, FactionId faction);
 	void farm_designateForHarvestIfPartOfFarmField(BlockIndex index, PlantIndex plant);
 	void farm_designateForGiveFluidIfPartOfFarmField(BlockIndex index, PlantIndex plant);
 	void farm_maybeDesignateForSowingIfPartOfFarmField(BlockIndex index);
@@ -371,21 +370,21 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, const Fluid
 	void farm_removeAllGiveFluidDesignations(BlockIndex index);
 	void farm_removeAllSowSeedsDesignations(BlockIndex index);
 	[[nodiscard]] bool farm_isSowingSeasonFor(const PlantSpecies& species) const;
-	[[nodiscard]] bool farm_contains(BlockIndex index, Faction& faction) const;
-	[[nodiscard]] FarmField* farm_get(BlockIndex index, Faction& faction);
+	[[nodiscard]] bool farm_contains(BlockIndex index, FactionId faction) const;
+	[[nodiscard]] FarmField* farm_get(BlockIndex index, FactionId faction);
 	// -StockPile
 	void stockpile_recordMembership(BlockIndex index, StockPile& stockPile);
 	void stockpile_recordNoLongerMember(BlockIndex index, StockPile& stockPile);
 	// When an item is added or removed update avalibility for all stockpiles.
 	void stockpile_updateActive(BlockIndex index);
-	[[nodiscard]] StockPile* stockpile_getForFaction(BlockIndex index, Faction& faction);
-	[[nodiscard]] bool stockpile_contains(BlockIndex index, Faction& faction) const;
-	[[nodiscard]] bool stockpile_isAvalible(BlockIndex index, Faction& faction) const;
+	[[nodiscard]] StockPile* stockpile_getForFaction(BlockIndex index, FactionId faction);
+	[[nodiscard]] bool stockpile_contains(BlockIndex index, FactionId faction) const;
+	[[nodiscard]] bool stockpile_isAvalible(BlockIndex index, FactionId faction) const;
 	// -Project
 	void project_add(BlockIndex index, Project& project);
 	void project_remove(BlockIndex index, Project& project);
-	Percent project_getPercentComplete(BlockIndex index, Faction& faction) const;
-	[[nodiscard]] Project* project_get(BlockIndex index, Faction& faction) const;
+	Percent project_getPercentComplete(BlockIndex index, FactionId faction) const;
+	[[nodiscard]] Project* project_get(BlockIndex index, FactionId faction) const;
 	// -Temperature
 	void temperature_freeze(BlockIndex index, const FluidType& fluidType);
 	void temperature_melt(BlockIndex index);
@@ -394,4 +393,6 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, const Fluid
 	const Temperature& temperature_getAmbient(BlockIndex index) const;
 	Temperature temperature_getDailyAverageAmbient(BlockIndex index) const;
 	Temperature temperature_get(BlockIndex index) const;
+	Blocks(Blocks&) = delete;
+	Blocks(Blocks&&) = delete;
 };

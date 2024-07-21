@@ -1,17 +1,18 @@
 #pragma once
 #include "config.h"
 #include "eventSchedule.hpp"
+#include "reference.h"
 class Simulation;
 class AnimalGrowthEvent;
 class Actor;
 class CanGrow final
 {
 	HasScheduledEventPausable<AnimalGrowthEvent> m_event;
-	ActorIndex m_actor;
+	ActorReference m_actor;
 	Percent m_percentGrown;
 public:
 	CanGrow(Area& area, ActorIndex a, Percent pg);
-	CanGrow(const Json& data, ActorIndex actor, Simulation& s);
+	CanGrow(Area& area, const Json& data, ActorIndex actor);
 	[[nodiscard]] Json toJson() const;
 	void updateGrowingStatus(Area& area);
 	void setGrowthPercent(Area& area, Percent percent);

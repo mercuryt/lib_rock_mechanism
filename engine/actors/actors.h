@@ -10,10 +10,11 @@
 #include "../equipment.h"
 #include "../attributes.h"
 #include "../actorOrItemIndex.h"
-#include "../findsPath.h"
 #include "../skill.h"
 #include "../terrainFacade.h"
 #include "../pathRequest.h"
+#include "../reference.h"
+#include "attackType.h"
 #include "uniform.h"
 #include <memory>
 
@@ -72,6 +73,7 @@ struct ActorParamaters
 };
 class Actors final : public Portables
 {
+	std::vector<std::unique_ptr<ActorReferenceTarget>> m_referenceTarget;
 	std::vector<std::unique_ptr<CanReserve>> m_canReserve;
 	std::vector<std::unique_ptr<ActorHasUniform>> m_hasUniform;
 	std::vector<std::unique_ptr<EquipmentSet>> m_equipmentSet;
@@ -125,8 +127,7 @@ class Actors final : public Portables
 	[[nodiscard]] bool indexCanBeMoved(HasShapeIndex index) const;
 public:
 	Actors(Area& area);
-	Actors(const Json& data, DeserializationMemo& deserializationMemo);
-	[[nodiscard]] Json toJson() const;
+	void load(const Json& data);
 	void onChangeAmbiantSurfaceTemperature();
 	ActorIndex create(ActorParamaters params);
 	void sharedConstructor(ActorIndex index);
@@ -142,11 +143,15 @@ public:
 	void wait(ActorIndex index, Step duration);
 	void takeHit(ActorIndex index, Hit& hit, BodyPart& bodyPart);
 	// May be null.
-	void setFaction(ActorIndex index, Faction* faction);
+	void setFaction(ActorIndex index, FactionId faction);
 	void reserveAllBlocksAtLocationAndFacing(ActorIndex index, BlockIndex location, Facing facing);
 	void unreserveAllBlocksAtLocationAndFacing(ActorIndex index, BlockIndex location, Facing facing);
 	void setBirthStep(ActorIndex index, Step step);
+	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] ActorId getId(ActorIndex index) const { return m_id.at(index); }
+	[[nodiscard]] ActorReference getReference(ActorIndex index) const { return *m_referenceTarget.at(index).get();}
+	[[nodiscard]] const ActorReference getReferenceConst(ActorIndex index) const { return *m_referenceTarget.at(index).get();}
+	[[nodiscard]] ActorReferenceTarget& getReferenceTarget(ActorIndex index) const { return *m_referenceTarget.at(index).get();}
 	[[nodiscard]] std::wstring getName(ActorIndex index) const { return m_name.at(index); }
 	[[nodiscard]] bool isAlive(ActorIndex index) const { return m_causeOfDeath.at(index) == CauseOfDeath::none; }
 	[[nodiscard]] Percent getPercentGrown(ActorIndex index) const;
@@ -225,12 +230,21 @@ public:
 	[[nodiscard, maybe_unused]] uint32_t combat_getCombatScore(ActorIndex index) const { return m_combatScore.at(index); }
 	[[nodiscard]] std::vector<std::pair<uint32_t, Attack>>& combat_getMeleeAttacks(ActorIndex index);
 	// -Body.
+	[[nodiscard]] Percent body_getImpairMovePercent(ActorIndex index);
+	//TODO: change to getImpairDextarityPercent?
+	[[nodiscard]] Percent body_getImpairManipulationPercent(ActorIndex index);
+	[[nodiscard]] Step body_getStepsTillWoundsClose(ActorIndex index);
+	[[nodiscard]] Step body_getStepsTillBleedToDeath(ActorIndex index);
+	[[nodiscard]] bool body_hasBleedEvent(ActorIndex index) const;
 	[[nodiscard]] bool body_isInjured(ActorIndex index) const;
+	[[nodiscard]] BodyPart& body_pickABodyPartByVolume(ActorIndex index) const;
+	[[nodiscard]] BodyPart& body_pickABodyPartByType(ActorIndex index, const BodyPartType& bodyPartType) const;
 	// -Move.
 	void move_updateIndividualSpeed(ActorIndex index);
 	void move_updateActualSpeed(ActorIndex index);
 	void move_setType(ActorIndex index, const MoveType& moveType);
 	void move_setPath(ActorIndex index, std::vector<BlockIndex>& path);
+	void move_setMoveSpeedActualForLeading(ActorIndex index, Speed speed);
 	void move_clearPath(ActorIndex index);
 	void move_callback(ActorIndex index);
 	void move_schedule(ActorIndex index);
@@ -275,7 +289,10 @@ public:
 	ActorOrItemIndex canPickUp_putDownPolymorphic(ActorIndex index, BlockIndex location);
 	void canPickUp_removeFluidVolume(ActorIndex index, CollisionVolume volume);
 	void canPickUp_add(ActorIndex index, const ItemType& itemType, const MaterialType& materialType, Quantity quantity);
-	void canPickUp_remove(ActorIndex index, ItemIndex item);
+	void canPickUp_removeItem(ActorIndex index, ItemIndex item);
+	// These two do the same thing but with slightly different asserts.
+	void canPickUp_updateActorIndex(ActorIndex index, ActorIndex oldIndex, ActorIndex newIndex);
+	void canPickUp_updateItemIndex(ActorIndex index, ItemIndex oldIndex, ItemIndex newIndex);
 	ItemIndex canPickUp_getItem(ActorIndex index);
 	ActorIndex canPickUp_getActor(ActorIndex index);
 	[[nodiscard]] bool canPickUp_polymorphic(ActorIndex index, ActorOrItemIndex target) const;
@@ -316,17 +333,20 @@ public:
 	void objective_complete(ActorIndex index, Objective& objective);
 	void objective_subobjectiveComplete(ActorIndex index);
 	void objective_cancel(ActorIndex, Objective& objective);
-	[[nodiscard]] bool objective_exists(ActorIndex index);
-	[[nodiscard]] std::string objective_getCurrentName(ActorIndex index);
+	void objective_execute(ActorIndex);
+	[[nodiscard]] bool objective_exists(ActorIndex index) const;
+	[[nodiscard]] bool objective_hasTask(ActorIndex index, ObjectiveTypeId objectiveTypeId) const;
+	[[nodiscard]] bool objective_hasNeed(ActorIndex index, ObjectiveTypeId objectiveTypeId) const;
+	[[nodiscard]] std::string objective_getCurrentName(ActorIndex index) const;
 	template<typename T>
 	T& objective_getCurrent(ActorIndex index) { return static_cast<T&>(m_hasObjectives.at(index)->getCurrent()); }
 	// For testing.
-	[[nodiscard]] bool objective_queuesAreEmpty(ActorIndex index);
-	[[nodiscard]] bool objective_isOnDelay(ActorIndex index, ObjectiveTypeId objectiveTypeId);
-	[[nodiscard]] Step objective_getDelayEndFor(ActorIndex index, ObjectiveTypeId objectiveTypeId);
+	[[nodiscard]] bool objective_queuesAreEmpty(ActorIndex index) const;
+	[[nodiscard]] bool objective_isOnDelay(ActorIndex index, ObjectiveTypeId objectiveTypeId) const;
+	[[nodiscard]] Step objective_getDelayEndFor(ActorIndex index, ObjectiveTypeId objectiveTypeId) const;
 	// CanReserve.
 	void canReserve_clearAll(ActorIndex index);
-	void canReserve_setFaction(ActorIndex index, Faction* faction);
+	void canReserve_setFaction(ActorIndex index, FactionId faction);
 	void canReserve_reserveLocation(ActorIndex index, BlockIndex block);
 	void canReserve_reserveItem(ActorIndex index, ItemIndex item);
 	[[nodiscard]] bool canReserve_tryToReserveLocation(ActorIndex index, BlockIndex block);
@@ -343,14 +363,14 @@ public:
 	void equipment_addGeneric(ActorIndex index, const ItemType& itemType, const MaterialType& materalType, Quantity quantity);
 	void equipment_remove(ActorIndex index, ItemIndex item);
 	void equipment_removeGeneric(ActorIndex index, const ItemType& itemType, const MaterialType& materalType, Quantity quantity);
+	void equipment_updateItemIndex(ActorIndex actor, ItemIndex oldIndex, ItemIndex newIndex);
 	[[nodiscard]] bool equipment_canEquipCurrently(ActorIndex index, ItemIndex item) const;
 	[[nodiscard]] bool equipment_containsItem(ActorIndex index, ItemIndex item) const;
 	[[nodiscard]] bool equipment_containsItemType(ActorIndex index, const ItemType& type) const;
 	[[nodiscard]] Mass equipment_getMass(ActorIndex index) const;
-	[[nodiscard]] ItemIndex equipment_getWeaponToAttackAtRange(ActorIndex index, DistanceInBlocks range);
-	[[nodiscard]] ItemIndex equipment_getAmmoForRangedWeapon(ActorIndex index, ItemIndex weapon);
+	[[nodiscard]] ItemIndex equipment_getWeaponToAttackAtRange(ActorIndex index, DistanceInBlocks range) const;
+	[[nodiscard]] ItemIndex equipment_getAmmoForRangedWeapon(ActorIndex index, ItemIndex weapon) const;
 	// TODO: change to vectors.
-	[[nodiscard]] std::unordered_set<ItemIndex>& equipment_getAll(ActorIndex index);
 	[[nodiscard]] const std::unordered_set<ItemIndex>& equipment_getAll(ActorIndex index) const;
 	// -Uniform.
 	void uniform_set(ActorIndex index, Uniform& uniform);
@@ -428,6 +448,9 @@ public:
 	friend class EatPathRequest;
 	friend class EatObjective;
 	friend class UnsafeTemperatureEvent;
+	friend class UniformObjective;
+	Actors(Actors&) = delete;
+	Actors(Actors&&) = delete;
 };
 class MoveEvent final : public ScheduledEvent
 {
@@ -436,24 +459,27 @@ public:
 	MoveEvent(Step delay, Area& area, ActorIndex actor, const Step start = 0);
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
+	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_actor == oldIndex); m_actor = newIndex; }
 };
 class AttackCoolDownEvent final : public ScheduledEvent
 {
 	Area& m_area;
-	ActorIndex m_index = ACTOR_INDEX_MAX;
+	ActorIndex m_actor = ACTOR_INDEX_MAX;
 public:
 	AttackCoolDownEvent(Area& area, ActorIndex index, Step duration, const Step start = 0);
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
+	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_actor == oldIndex); m_actor = newIndex; }
 };
 class GetIntoAttackPositionPathRequest final : public PathRequest
 {
 	ActorIndex m_actor = ACTOR_INDEX_MAX;
-	ActorIndex m_target = ACTOR_INDEX_MAX;
+	ActorReference m_target;
 	DistanceInBlocks m_attackRangeSquared = BLOCK_DISTANCE_MAX;
 public:
 	GetIntoAttackPositionPathRequest(Area& area, ActorIndex a, ActorIndex t, float ar);
 	void callback(Area& area, FindPathResult&);
+	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_actor == oldIndex); m_actor = newIndex; }
 };
 struct Attack final
 {

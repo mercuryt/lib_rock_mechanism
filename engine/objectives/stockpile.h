@@ -1,6 +1,7 @@
 #pragma once
 #include "../objective.h"
 #include "../pathRequest.h"
+#include "types.h"
 
 class Area;
 class StockPileProject;
@@ -19,18 +20,18 @@ public:
 class StockPileObjective final : public Objective
 {
 	std::vector<std::tuple<const ItemType*, const MaterialType*>> m_closedList;
-	ItemIndex m_item = ITEM_INDEX_MAX;
+	ItemReference m_item;
 	BlockIndex m_destination = BLOCK_INDEX_MAX;
 public:
 	StockPileProject* m_project = nullptr;
-	StockPileObjective(ActorIndex a);
+	StockPileObjective();
 	StockPileObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	void execute(Area& area);
-	void cancel(Area& area);
-	void delay(Area& area) { cancel(area); }
-	void reset(Area& area) { cancel(area); }
-	[[nodiscard]] bool destinationCondition(Area& area, BlockIndex block, const ItemIndex item);
+	void execute(Area& area, ActorIndex actor);
+	void cancel(Area& area, ActorIndex actor);
+	void delay(Area& area, ActorIndex actor) { cancel(area, actor); }
+	void reset(Area& area, ActorIndex actor) { cancel(area, actor); }
+	[[nodiscard]] bool destinationCondition(Area& area, BlockIndex block, const ItemIndex item, ActorIndex actor);
+	[[nodiscard]] Json toJson() const;
 	std::string name() const { return "stockpile"; }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::StockPile; }
 	friend class StockPilePathRequest;

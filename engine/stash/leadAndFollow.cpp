@@ -7,13 +7,12 @@
 #include "blocks/blocks.h"
 #include "actors/actors.h"
 #include "items/items.h"
-/*
-void CanLead::load(const Json& data, DeserializationMemo& deserializationMemo)
+#include "types.h"
+void CanLead::load(const Json& data, Area& area, DeserializationMemo& deserializationMemo)
 {
-
-	m_canFollow = data.contains("canFollowItem") ? 
-		&deserializationMemo.itemReference(data["canFollowItem"]).m_canFollow:
-		&deserializationMemo.actorReference(data["canFollowActor"]).m_canFollow;
+	m_canFollow = data.contains("isLeadingItem") ? 
+		&area.getItems().m_canFollow.at(data["isLeadingItem"].get<ItemIndex>()):
+		&area.getActors().getCanFollow(data["isLeadingActor"].get<ActorIndex>());
 	if(data.contains("locationQueue"))
 		for(const Json& block: data["locationQueue"])
 			m_locationQueue.push_back(block.get<BlockIndex>());
@@ -21,21 +20,20 @@ void CanLead::load(const Json& data, DeserializationMemo& deserializationMemo)
 Json CanLead::toJson() const
 {
 	Json data;
-	if(m_canFollow)
+	if(m_canFollow != nullptr)
 	{
-		if(m_canFollow->m_index.isItem())
-			data["canFollowItem"] = static_cast<Item&>(m_canFollow->m_index).m_id;
+		if(m_canFollow->m_actorOrItemIndex.isItem())
+			data["canFollowItem"] = m_canFollow->m_actorOrItemIndex.get();
 		else
 		{
-			assert(m_canFollow->m_index.isActor());
-			data["canFollowActor"] = static_cast<Actor&>(m_canFollow->m_index).m_id;
+			assert(m_canFollow->m_actorOrItemIndex.isActor());
+			data["canFollowActor"] = m_canFollow->m_actorOrItemIndex.get();
 		}
 	}
 	if(!m_locationQueue.empty())
 		data["locationQueue"] = m_locationQueue;
 	return data;
 }
-*/
 bool CanLead::canMove(Area& area)
 {
 	assert(m_actorOrItemIndex.getCanFollow(area) == nullptr);
@@ -134,8 +132,22 @@ std::deque<BlockIndex>& CanLead::getLocationQueue(Area& area)
 {
 	return m_actorOrItemIndex.getCanFollow(area)->getLineLeader(area).getCanLead(area)->m_locationQueue;
 }
+std::unordered_set<BlockIndex> CanLead::getOccuiped(Area& area)
+{
+	std::unordered_set<BlockIndex> output;
+	ActorOrItemIndex index = m_actorOrItemIndex;
+	while(true)
+	{
+		const auto& blocks = index.getBlocks(area);
+		output.insert(blocks.begin(), blocks.end());
+		CanLead& canLead = *index.getCanLead(area);
+		if(!canLead.isLeading())
+			break;
+		index = canLead.getFollower();
+	}
+	return output;
+}
 CanFollow::CanFollow(ActorOrItemIndex a) : m_actorOrItemIndex(a) { }
-/*
 void CanFollow::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	if(data.contains("canLeadItem"))
@@ -162,7 +174,6 @@ Json CanFollow::toJson() const
 		data["eventStart"] = m_event.getStartStep();
 	return data;
 }
-*/
 void CanFollow::follow(Area& area, CanLead& canLead, bool doAdjacentCheck)
 {
 	assert(m_canLead == nullptr);

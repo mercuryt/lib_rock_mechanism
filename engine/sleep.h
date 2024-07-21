@@ -1,8 +1,8 @@
 #pragma once
 
 #include "config.h"
-#include "findsPath.h"
 #include "eventSchedule.hpp"
+#include "reference.h"
 #include "types.h"
 
 class Area;
@@ -17,14 +17,14 @@ class MustSleep final
 {
 	HasScheduledEventPausable<SleepEvent> m_sleepEvent; // 2
 	HasScheduledEvent<TiredEvent> m_tiredEvent; // 2
-	ActorIndex m_actor;
+	ActorReference m_actor;
 	BlockIndex m_location = BLOCK_INDEX_MAX;
 	SleepObjective* m_objective = nullptr;
 	bool m_needsSleep = false;
 	bool m_isAwake = true;
 public:
 	MustSleep(Area& area, ActorIndex a);
-	MustSleep(const Json data, ActorIndex a, Simulation& s, const AnimalSpecies& species);
+	MustSleep(Area& area, const Json& data, ActorIndex a, const AnimalSpecies& species);
 	Json toJson() const;
 	void tired(Area& area);
 	void sleep(Area& area);

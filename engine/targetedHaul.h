@@ -2,16 +2,18 @@
 #pragma once
 #include "project.h"
 #include "objective.h"
+#include "reference.h"
+#include "items/itemQuery.h"
 
 struct DeserializationMemo;
 
 class TargetedHaulProject final : public Project
 {
 	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const { return {}; }
-	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const { return {{m_item, 1u}}; }
+	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const { ItemQuery query(m_item); return {{query, 1u}}; }
 	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const { return {}; }
 	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const { return {}; }
-	ItemIndex m_item;
+	ItemReference m_item;
 	//TODO: facing.
 	void onComplete();
 	void onDelivered(ActorOrItemIndex delivered);
@@ -22,8 +24,8 @@ class TargetedHaulProject final : public Project
 	void offDelay() { assert(false); }
 	Step getDuration() const { return Config::addToStockPileDelaySteps; }
 public:
-	TargetedHaulProject(Faction& f, Area& a, BlockIndex l, ItemIndex i) : Project(f, a, l, 4), m_item(i) { }
-	TargetedHaulProject(const Json& data, DeserializationMemo& deserializationMemo);
+	TargetedHaulProject(FactionId f, Area& a, BlockIndex l, ItemReference i) : Project(f, a, l, 4), m_item(i) { }
+	TargetedHaulProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	Json toJson() const;
 };
 
@@ -35,8 +37,8 @@ public:
 	AreaHasTargetedHauling(Area& a) : m_area(a) { }
 	TargetedHaulProject& begin(std::vector<ActorIndex> actors, ItemIndex item, BlockIndex destination);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
 	void cancel(TargetedHaulProject& project);
 	void complete(TargetedHaulProject& project);
 	void clearReservations();
+	[[nodiscard]] Json toJson() const;
 };

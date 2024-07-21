@@ -5,6 +5,7 @@
 
 struct DeserializationMemo;
 class Actors;
+class Area;
 
 struct ActorDataLocation
 {
@@ -23,4 +24,6 @@ public:
 	[[nodiscard]] ActorId getNextId() { return ++m_nextId; }
 	void registerActor(ActorId id, Actors& store, ActorIndex index);
 	void removeActor(ActorId id);
+	ActorIndex getIndexForId(ActorId id) const;
+	Area& getAreaForId(ActorId id) const;
 };

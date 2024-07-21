@@ -4,6 +4,9 @@
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/threadedTask.h"
+#include "../../engine/actors/actors.h"
+#include "../../engine/items/items.h"
+#include "../../engine/plants.h"
 #include "config.h"
 #include <iterator>
 #include <iostream>
@@ -26,5 +29,5 @@ TEST_CASE("weather")
 
 	}
 	Blocks& blocks = area.getBlocks();
-	REQUIRE(blocks.fluid_volumeOfTypeContains(blocks.getIndex({1,1,1}), water));
+	REQUIRE(blocks.fluid_volumeOfTypeContains(blocks.getIndex(1,1,1), water));
 }

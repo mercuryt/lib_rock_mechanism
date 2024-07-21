@@ -23,8 +23,7 @@ void WanderPathRequest::callback(Area& area, FindPathResult& result)
 		actors.move_setPath(m_objective.m_actor, result.path);
 }
 // Objective.
-WanderObjective::WanderObjective(ActorIndex a) : Objective(a, 0u) { }
-/*
+WanderObjective::WanderObjective() : Objective(0u) { }
 WanderObjective::WanderObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), 
 	m_threadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine)
 {
@@ -36,7 +35,6 @@ Json WanderObjective::toJson() const
 	Json data = Objective::toJson();
 	return data;
 }
-*/
 void WanderObjective::execute(Area& area) 
 { 
 	std::unique_ptr<PathRequest> m_pathRequest = std::make_unique<WanderPathRequest>(area, *this);

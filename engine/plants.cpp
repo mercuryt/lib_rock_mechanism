@@ -1,5 +1,6 @@
 #include "plants.h"
 #include "area.h"
+#include "hasShapes.h"
 #include "itemType.h"
 #include "plantSpecies.h"
 #include "portables.h"
@@ -17,6 +18,7 @@ Plants::Plants(Area& area) :
 { }
 void Plants::resize(HasShapeIndex newSize)
 {
+	HasShapes::resize(newSize);
 	m_species.resize(newSize);
 	m_growthEvent.resize(newSize);
 	m_shapeGrowthEvent.resize(newSize);
@@ -33,20 +35,20 @@ void Plants::resize(HasShapeIndex newSize)
 }
 void Plants::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 {
-	assert(indexCanBeMoved(oldIndex));
-	std::swap(m_species[newIndex], m_species[oldIndex]);
+	HasShapes::moveIndex(oldIndex, newIndex);
+	m_species.at(newIndex) = m_species.at(oldIndex);
 	m_growthEvent.moveIndex(oldIndex, newIndex);
 	m_shapeGrowthEvent.moveIndex(oldIndex, newIndex);
 	m_fluidEvent.moveIndex(oldIndex, newIndex);
 	m_temperatureEvent.moveIndex(oldIndex, newIndex);
 	m_endOfHarvestEvent.moveIndex(oldIndex, newIndex);
 	m_foliageGrowthEvent.moveIndex(oldIndex, newIndex);
-	std::swap(m_fluidSource[newIndex], m_fluidSource[oldIndex]);
-	std::swap(m_quantityToHarvest[newIndex], m_quantityToHarvest[oldIndex]);
-	std::swap(m_percentGrown[newIndex], m_percentGrown[oldIndex]);
-	std::swap(m_percentFoliage[newIndex], m_percentFoliage[oldIndex]);
-	std::swap(m_wildGrowth[newIndex], m_wildGrowth[oldIndex]);
-	std::swap(m_volumeFluidRequested[newIndex], m_volumeFluidRequested[oldIndex]);
+	m_fluidSource.at(newIndex) = m_fluidSource.at(oldIndex);
+	m_quantityToHarvest.at(newIndex) = m_quantityToHarvest.at(oldIndex);
+	m_percentGrown.at(newIndex) = m_percentGrown.at(oldIndex);
+	m_percentFoliage.at(newIndex) = m_percentFoliage.at(oldIndex);
+	m_wildGrowth.at(newIndex) = m_wildGrowth.at(oldIndex);
+	m_volumeFluidRequested.at(newIndex) = m_volumeFluidRequested.at(oldIndex);
 }
 void Plants::onChangeAmbiantSurfaceTemperature()
 {
@@ -63,7 +65,7 @@ PlantIndex Plants::create(PlantParamaters paramaters)
 	BlockIndex location = paramaters.location;
 	assert(location != BLOCK_INDEX_MAX);
 	PlantIndex index = HasShapes::getNextIndex();
-	assert(index < m_shape.size());
+	assert(index < size());
 	m_percentGrown.at(index) = paramaters.percentGrown == 0 ? 100 : paramaters.percentGrown;
 	if(paramaters.shape == nullptr)
 		paramaters.shape = &paramaters.species.shapeForPercentGrown(m_percentGrown.at(index));
@@ -100,12 +102,6 @@ PlantIndex Plants::create(PlantParamaters paramaters)
 	}
 	return index;
 }
-void Plants::destroy(PlantIndex index)
-{
-	for(BlockIndex block : getBlocks(index))
-		m_area.getBlocks().plant_clearPointer(block);
-	HasShapes::destroy(index);
-}
 void Plants::die(PlantIndex index)
 {
 	auto& blocks = m_area.getBlocks();
@@ -115,8 +111,12 @@ void Plants::die(PlantIndex index)
 	m_endOfHarvestEvent.maybeUnschedule(index);
 	m_foliageGrowthEvent.maybeUnschedule(index);
 	BlockIndex location = m_location.at(index);
+	// Erase location from farm data.
 	blocks.farm_removeAllHarvestDesignations(location);
 	blocks.farm_removeAllGiveFluidDesignations(location);
+	// Erase from blocks.
+	for(BlockIndex block : getBlocks(index))
+		m_area.getBlocks().plant_clearPointer(block);
 	destroy(index);
 	blocks.farm_maybeDesignateForSowingIfPartOfFarmField(location);
 	//TODO: Create corpse and schedule rot away event.
@@ -159,7 +159,7 @@ void Plants::setMaybeNeedsFluid(PlantIndex index)
 	}
 	else // Needs fluid, stop growing and set death timer.
 	{
-		m_volumeFluidRequested.at(index) = std::max(1u, util::scaleByPercent(species.volumeFluidConsumed, getPercentGrown(index)));
+		updateFluidVolumeRequested(index);
 		stepsTillNextFluidEvent = species.stepsTillDieWithoutFluid;
 		m_area.getBlocks().farm_designateForGiveFluidIfPartOfFarmField(m_location.at(index), index);
 	}
@@ -298,15 +298,19 @@ Mass Plants::getFoliageMass(PlantIndex index) const
 	Mass maxForGrowth = util::scaleByPercent(maxFoliageForType, getPercentGrown(index));
 	return util::scaleByPercent(maxForGrowth, getPercentFoliage(index));
 }
-Volume Plants::getFluidDrinkVolume(PlantIndex index) const
+void Plants::updateFluidVolumeRequested(PlantIndex index)
 {
-	return util::scaleByPercent(getSpecies(index).volumeFluidConsumed, Config::percentOfPlantMassWhichIsFoliage);
+	m_volumeFluidRequested.at(index) = util::scaleByPercent(getSpecies(index).volumeFluidConsumed, getPercentGrown(index));
 }
 Step Plants::stepsPerShapeChange(PlantIndex index) const
 {
 	const PlantSpecies& species = *m_species.at(index);
 	uint32_t shapesCount = species.shapes.size() + species.maxWildGrowth;
 	return species.stepsTillFullyGrown / shapesCount;
+}
+bool Plants::temperatureEventExists(PlantIndex index) const
+{
+	return m_temperatureEvent.exists(index);
 }
 void Plants::removeFoliageMass(PlantIndex index, Mass mass)
 {
@@ -386,6 +390,49 @@ Step Plants::getStepAtWhichPlantWillDieFromLackOfFluid(PlantIndex index) const
 	assert(m_volumeFluidRequested.at(index) != 0);
 	return m_fluidEvent.getStep(index);
 }
+Json Plants::toJson() const
+{
+	Json output;
+	to_json(output, static_cast<const HasShapes&>(*this));
+	output.update({
+		{"m_growthEvent", m_growthEvent},
+		{"m_shapeGrowthEvent", m_shapeGrowthEvent},
+		{"m_fluidEvent", m_fluidEvent},
+		{"m_temperatureEvent", m_temperatureEvent},
+		{"m_endOfHarvestEvent", m_endOfHarvestEvent},
+		{"m_foliageGrowthEvent", m_foliageGrowthEvent},
+		{"m_species", m_species},
+		{"m_fluidSource", m_fluidSource},
+		{"m_quantityToHarvest", m_quantityToHarvest},
+		{"m_percentGrown", m_percentGrown},
+		{"m_percentFoliage", m_percentFoliage},
+		{"m_wildGrowth", m_wildGrowth},
+		{"m_volumeFluidRequested", m_volumeFluidRequested},
+	});
+	return output;
+}
+void Plants::load(const Json& data)
+{
+	nlohmann::from_json(data, static_cast<HasShapes&>(*this));
+	m_growthEvent.load(m_area.m_simulation, data["m_growthEvent"]);
+	m_shapeGrowthEvent.load(m_area.m_simulation, data["m_shapeGrowthEvent"]);
+	m_fluidEvent.load(m_area.m_simulation, data["m_fluidEvent"]);
+	m_temperatureEvent.load(m_area.m_simulation, data["m_temperatureEvent"]);
+	m_endOfHarvestEvent.load(m_area.m_simulation, data["m_endOfHarvestEvent"]);
+	m_foliageGrowthEvent.load(m_area.m_simulation, data["m_foliageGrowthEvent"]);
+	m_species = data["m_species"].get<std::vector<const PlantSpecies*>>();
+	m_fluidSource = data["m_fluidSource"].get<std::vector<BlockIndex>>();
+	m_quantityToHarvest = data["m_quantityToHarvest"].get<std::vector<Quantity>>();
+	m_percentGrown = data["m_percentGrown"].get<std::vector<Percent>>();
+	m_percentFoliage = data["m_percentFoliage"].get<std::vector<Percent>>();
+	m_wildGrowth = data["m_wildGrowth"].get<std::vector<uint8_t>>();
+	m_volumeFluidRequested = data["m_volumeFluidRequested"].get<std::vector<CollisionVolume>>();
+}
+void to_json(Json& data, const Plants& plants)
+{
+	data = plants.toJson();
+}
+void Plants::log(PlantIndex index) const { std::cout << m_species.at(index)->name << ":" << std::to_string(getPercentGrown(index)) << "%"; }
 // Events.
 PlantGrowthEvent::PlantGrowthEvent(Area& area, const Step delay, PlantIndex p, Step start) : 
 	ScheduledEvent(area.m_simulation, delay, start), m_plant(p) {}
@@ -429,4 +476,3 @@ PlantTemperatureEvent::PlantTemperatureEvent(Area& area, const Step delay, Plant
 void PlantTemperatureEvent::execute(Simulation&, Area* area) { area->getPlants().die(m_plant); }
 void PlantTemperatureEvent::clearReferences(Simulation&, Area* area) { area->getPlants().m_temperatureEvent.clearPointer(m_plant); }
 
-void Plants::log(PlantIndex index) const { std::cout << m_species.at(index)->name << ":" << std::to_string(getPercentGrown(index)) << "%"; }

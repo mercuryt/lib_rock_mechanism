@@ -21,10 +21,10 @@ public:
 };
 class AreaHasStocks final
 {
-	std::unordered_map<Faction*, AreaHasStocksForFaction> m_data;
+	std::unordered_map<FactionId, AreaHasStocksForFaction> m_data;
 public:
-	AreaHasStocksForFaction& at(Faction& faction) { assert(m_data.contains(&faction)); return m_data.at(&faction); }
-	void addFaction(Faction& faction) { m_data.try_emplace(&faction); }
-	void removeFaction(Faction& faction) { assert(m_data.contains(&faction)); m_data.erase(&faction); }
-	[[nodiscard]] bool contains(Faction& faction) const { return m_data.contains(&faction); }
+	AreaHasStocksForFaction& at(FactionId faction) { assert(m_data.contains(faction)); return m_data.at(faction); }
+	void addFaction(FactionId faction) { m_data.try_emplace(faction); }
+	void removeFaction(FactionId faction) { assert(m_data.contains(faction)); m_data.erase(faction); }
+	[[nodiscard]] bool contains(FactionId faction) const { return m_data.contains(faction); }
 };

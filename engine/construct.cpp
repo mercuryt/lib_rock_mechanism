@@ -18,7 +18,7 @@ void DesignateConstructInputAction::execute()
 {
 	BlockIndex block = *m_cuboid.begin();
 	auto& constructDesginations = block.m_area->m_hasConstructionDesignations;
-	Faction& faction = *(**m_actors.begin()).getFaction();
+	FactionId faction = *(**m_actors.begin()).getFaction();
 	for(BlockIndex block : m_cuboid)
 		constructDesginations.designate(faction, block, m_blockFeatureType, m_materialType);
 };
@@ -26,7 +26,7 @@ void UndesignateConstructInputAction::execute()
 {
 	BlockIndex block = *m_cuboid.begin();
 	auto& constructDesginations = block.m_area->m_hasConstructionDesignations;
-	Faction& faction = *(**m_actors.begin()).getFaction();
+	FactionId faction = *(**m_actors.begin()).getFaction();
 	for(BlockIndex block : m_cuboid)
 		constructDesginations.undesignate(faction, block);
 }
@@ -83,7 +83,7 @@ void ConstructProject::onComplete()
 	auto workers = std::move(m_workers);
 	m_area.m_hasConstructionDesignations.clearAll(m_location);
 	for(auto& [actor, projectWorker] : workers)
-		actors.objective_complete(actor, projectWorker.objective);
+		actors.objective_complete(actor.getIndex(), projectWorker.objective);
 }
 void ConstructProject::onCancel()
 {
@@ -111,19 +111,19 @@ Step ConstructProject::getDuration() const
 {
 	uint32_t totalScore = 0;
 	for(auto& pair : m_workers)
-		totalScore += getWorkerConstructScore(pair.first);
+		totalScore += getWorkerConstructScore(pair.first.getIndex());
 	return m_materialType.constructionData->duration / totalScore;
 }
 ConstructionLocationDishonorCallback::ConstructionLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) :
-	m_faction(deserializationMemo.faction(data["faction"].get<std::wstring>())),
+	m_faction(data["faction"].get<FactionId>()),
 	m_area(deserializationMemo.area(data["area"])),
 	m_location(data["location"].get<BlockIndex>()) { }
-Json ConstructionLocationDishonorCallback::toJson() const { return Json({{"type", "ConstructionLocationDishonorCallback"}, {"faction", m_faction.name}, {"location", m_location}}); }
+Json ConstructionLocationDishonorCallback::toJson() const { return Json({{"type", "ConstructionLocationDishonorCallback"}, {"faction", m_faction}, {"location", m_location}}); }
 void ConstructionLocationDishonorCallback::execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount)
 {
 	m_area.m_hasConstructionDesignations.at(m_faction).undesignate(m_location);
 }
-HasConstructionDesignationsForFaction::HasConstructionDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Faction& faction) :
+HasConstructionDesignationsForFaction::HasConstructionDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, FactionId faction) :
 	m_area(deserializationMemo.area(data["area"])), m_faction(faction)
 {
 	for(const Json& pair : data["projects"])
@@ -190,16 +190,16 @@ void AreaHasConstructionDesignations::load(const Json& data, DeserializationMemo
 {
 	for(const Json& pair : data)
 	{
-		Faction& faction = deserializationMemo.faction(pair[0]);
-		m_data.try_emplace(&faction, pair[1], deserializationMemo, faction);
+		FactionId faction = pair[0].get<FactionId>();
+		m_data.try_emplace(faction, pair[1], deserializationMemo, faction);
 	}
 }
 void AreaHasConstructionDesignations::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	for(const Json& pair : data)
 	{
-		Faction& faction = deserializationMemo.faction(pair[0]);
-		m_data.at(&faction).loadWorkers(pair[1], deserializationMemo);
+		FactionId faction = pair[0].get<FactionId>();
+		m_data.at(faction).loadWorkers(pair[1], deserializationMemo);
 	}
 
 }
@@ -209,52 +209,52 @@ Json AreaHasConstructionDesignations::toJson() const
 	for(auto& pair : m_data)
 	{
 		Json jsonPair;
-		jsonPair[0] = pair.first->name;
+		jsonPair[0] = pair.first;
 		jsonPair[1] = pair.second.toJson();
 		data.push_back(jsonPair);
 	}
 	return data;
 }
-void AreaHasConstructionDesignations::addFaction(Faction& faction)
+void AreaHasConstructionDesignations::addFaction(FactionId faction)
 {
-	assert(!m_data.contains(&faction));
-	m_data.try_emplace(&faction, faction, m_area);
+	assert(!m_data.contains(faction));
+	m_data.try_emplace(faction, faction, m_area);
 }
-void AreaHasConstructionDesignations::removeFaction(Faction& faction)
+void AreaHasConstructionDesignations::removeFaction(FactionId faction)
 {
-	assert(m_data.contains(&faction));
-	m_data.erase(&faction);
+	assert(m_data.contains(faction));
+	m_data.erase(faction);
 }
-void AreaHasConstructionDesignations::designate(Faction& faction, BlockIndex block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType)
+void AreaHasConstructionDesignations::designate(FactionId faction, BlockIndex block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType)
 {
-	if(!m_data.contains(&faction))
+	if(!m_data.contains(faction))
 		addFaction(faction);
-	m_data.at(&faction).designate(block, blockFeatureType, materialType);
+	m_data.at(faction).designate(block, blockFeatureType, materialType);
 }
-void AreaHasConstructionDesignations::undesignate(Faction& faction, BlockIndex block)
+void AreaHasConstructionDesignations::undesignate(FactionId faction, BlockIndex block)
 {
-	m_data.at(&faction).undesignate(block);
+	m_data.at(faction).undesignate(block);
 }
-void AreaHasConstructionDesignations::remove(Faction& faction, BlockIndex block)
+void AreaHasConstructionDesignations::remove(FactionId faction, BlockIndex block)
 {
-	assert(m_data.contains(&faction));
-	m_data.at(&faction).remove(block);
+	assert(m_data.contains(faction));
+	m_data.at(faction).remove(block);
 }
 void AreaHasConstructionDesignations::clearAll(BlockIndex block)
 {
 	for(auto& pair : m_data)
 		pair.second.removeIfExists(block);
 }
-bool AreaHasConstructionDesignations::areThereAnyForFaction(Faction& faction) const
+bool AreaHasConstructionDesignations::areThereAnyForFaction(FactionId faction) const
 {
-	if(!m_data.contains(&faction))
+	if(!m_data.contains(faction))
 		return false;
-	return !m_data.at(&faction).empty();
+	return !m_data.at(faction).empty();
 }
-bool AreaHasConstructionDesignations::contains(Faction& faction, BlockIndex block) const
+bool AreaHasConstructionDesignations::contains(FactionId faction, BlockIndex block) const
 {
-	if(!m_data.contains(&faction))
+	if(!m_data.contains(faction))
 		return false;
-	return m_data.at(&faction).contains(block);
+	return m_data.at(faction).contains(block);
 }
-ConstructProject& AreaHasConstructionDesignations::getProject(Faction& faction, BlockIndex block) { return m_data.at(&faction).m_data.at(block); }
+ConstructProject& AreaHasConstructionDesignations::getProject(FactionId faction, BlockIndex block) { return m_data.at(faction).m_data.at(block); }

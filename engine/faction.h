@@ -3,6 +3,7 @@
  */
 #pragma once
 #include "config.h"
+#include "types.h"
 #include <istream>
 #include <string>
 #include <unordered_set>
@@ -12,29 +13,21 @@
 struct DeserializationMemo;
 struct Faction
 {
+	std::unordered_set<FactionId> allies;
+	std::unordered_set<FactionId> enemies;
 	std::wstring name;
-	std::unordered_set<Faction*> allies;
-	std::unordered_set<Faction*> enemies;
-	Faction(std::wstring n) : name(n) { }
-	[[nodiscard]] bool operator==(Faction& faction) const { return &faction == this;}
-	Faction(Faction& faction) = delete;
-	Faction(Faction&& faction) = delete;
-	Faction(const Json& data, DeserializationMemo& deserializationMemo);
-	void load(const Json& data, DeserializationMemo& deserializationMemo);
+	FactionId id = FACTION_ID_MAX;
+	Faction(FactionId _id, std::wstring _name) : name(_name), id(_id) { }
+	// Default constructor neccesary for json.
+	Faction() = default;
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(Faction, name, allies, enemies);
 };
-inline void to_json(Json& data, Faction* const& faction) { data = faction->name; }
-inline void to_json(Json& data, const Faction* const& faction) { data = faction->name; }
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_ONLY_SERIALIZE(Faction, name, allies, enemies);
-
 class SimulationHasFactions final
 {
-	std::list<Faction> m_factions;
-	std::unordered_map<std::wstring, Faction*> m_factionsByName;
+	std::vector<Faction> m_factions;
 public:
-	Faction& byName(std::wstring name);
 	Faction& createFaction(std::wstring name);
-	void destroyFaction(Faction& faction);
-	Json toJson() const;
-	void load(const Json& data, DeserializationMemo& deserializationMemo);
-	std::list<Faction>& getAll() { return m_factions; }
+	Faction& getById(FactionId id);
+	const std::vector<Faction>& getAll() const { return m_factions; }
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SimulationHasFactions, m_factions);
 };

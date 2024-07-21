@@ -1,6 +1,7 @@
 //TODO: Objectives can use reservations from other objectives on the same actor, or make delay call reset.
 #pragma once
 
+#include "reference.h"
 #include "config.h"
 #include "eventSchedule.hpp"
 #include "reservable.h"
@@ -69,10 +70,6 @@ NLOHMANN_JSON_SERIALIZE_ENUM(ObjectiveTypeId, {
 });
 struct ObjectiveType
 {
-	[[nodiscard]] virtual bool canBeAssigned(Area& area, ActorIndex actor) const = 0;
-	[[nodiscard]] virtual std::unique_ptr<Objective> makeFor(Area& area, ActorIndex actor) const = 0;
-	[[nodiscard]] virtual ObjectiveTypeId getObjectiveTypeId() const = 0;
-	[[nodiscard]] virtual Json toJson() const;
 	ObjectiveType() = default;
 	ObjectiveType(const ObjectiveType&) = delete;
 	ObjectiveType(ObjectiveType&&) = delete;
@@ -81,6 +78,10 @@ struct ObjectiveType
 	inline static std::map<std::string, std::unique_ptr<ObjectiveType>> objectiveTypes;
 	inline static std::map<const ObjectiveType*, std::string> objectiveTypeNames;
 	static void load();
+	[[nodiscard]] virtual bool canBeAssigned(Area& area, ActorIndex actor) const = 0;
+	[[nodiscard]] virtual std::unique_ptr<Objective> makeFor(Area& area, ActorIndex actor) const = 0;
+	[[nodiscard]] virtual ObjectiveTypeId getObjectiveTypeId() const = 0;
+	[[nodiscard]] virtual Json toJson() const;
 	[[nodiscard]] bool operator==(const ObjectiveType& other) const { return &other == this; }
 };
 void to_json(Json& data, const ObjectiveType* const& objectiveType);
@@ -88,31 +89,30 @@ void from_json(const Json& data, const ObjectiveType*& objectiveType);
 class Objective
 {
 public:
-	ActorIndex m_actor;
 	// Controlls usurping of current objective between the tasks currently at the top of the queue vs highest priority need.
 	uint32_t m_priority;
 	// If detour is true then pathing will account for the positions of other actors.
 	bool m_detour = false;
 	// Reentrant state machine method.
-	virtual void execute(Area& area) = 0;
+	virtual void execute(Area& area, ActorIndex actor) = 0;
 	// Clean up references.
 	// Called when the player replaces the current objective queue with a new task.
 	// Objective will be destroyed after this call.
-	virtual void cancel(Area& area) = 0;
+	virtual void cancel(Area& area, ActorIndex actor) = 0;
 	// Clean up threaded tasks and events.
 	// Called when an objective usurps the current objective.
-	virtual void delay(Area& area) = 0;
+	virtual void delay(Area& area, ActorIndex actor) = 0;
 	// Return to inital state and try again.
 	// Called on cannotCompleteSubobjective
-	virtual void reset(Area& area) = 0;
+	virtual void reset(Area& area, ActorIndex actor) = 0;
 	// Returns true if the condition is resolved or false otherwise.
 	// If false is returned canNotCompleteObjective is called.
-	virtual bool onCanNotRepath(Area&) { return false; }
+	virtual bool onCanNotRepath(Area&, ActorIndex) { return false; }
 	// To be used by objectives with projects which cannot be auto destroyed.
 	// Records projects which have failed to reserve requirements so as not to retry them with this objective instance.
 	// Will be 'flushed' when this instance is destroyed and then another objective of this type is created later, after objectivePrioritySet delay ends.
-	virtual void onProjectCannotReserve(Area&) { }
-	void detour(Area& area) { m_detour = true; execute(area); }
+	virtual void onProjectCannotReserve(Area&, ActorIndex) { }
+	void detour(Area& area, ActorIndex actor) { m_detour = true; execute(area, actor); }
 	[[nodiscard]] virtual std::string name() const = 0;
 	[[nodiscard]] virtual ObjectiveTypeId getObjectiveTypeId() const = 0;
 	// Needs are biological imperatives which overide tasks. Eat, sleep, etc.
@@ -120,7 +120,7 @@ public:
 	// When an objective is interrputed by a higher priority objective should it be kept in the task queue for later or discarded?
 	// Should be true only for objectives like Wander or Wait which are not meant to resume after interrupt because they are idle tasks.
 	[[nodiscard]] virtual bool canResume() const { return true; }
-	Objective(ActorIndex a, uint32_t p);
+	Objective(uint32_t p);
 	// Explicit delete of copy and move constructors to ensure pointer stability.
 	Objective(const Objective&) = delete;
 	Objective(Objective&&) = delete;
@@ -139,19 +139,16 @@ struct ObjectivePriority
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ObjectivePriority, objectiveType, priority, doNotAssignAgainUntil);
 class ObjectiveTypePrioritySet final
 {
-	ActorIndex m_actor;
 	std::vector<ObjectivePriority> m_data;
 	ObjectivePriority& getById(ObjectiveTypeId objectiveTypeId);
 	const ObjectivePriority& getById(ObjectiveTypeId objectiveTypeId) const;
 public:
-	ObjectiveTypePrioritySet() = default; // default constructor needed to allow vector resize.
-	ObjectiveTypePrioritySet(ActorIndex a) : m_actor(a) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
-	void setPriority(Area& area, const ObjectiveType& objectiveType, uint8_t priority);
+	void setPriority(Area& area, ActorIndex actor, const ObjectiveType& objectiveType, uint8_t priority);
 	void remove(const ObjectiveType& objectiveType);
 	void setObjectiveFor(Area& area, ActorIndex actor);
 	void setDelay(Area& area, ObjectiveTypeId objectiveTypeId);
+	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] uint8_t getPriorityFor(ObjectiveTypeId objectiveTypeId) const;
 	// For testing.
 	[[nodiscard, maybe_unused]] bool isOnDelay(Area& area, ObjectiveTypeId objectiveTypeId) const;
@@ -159,17 +156,16 @@ public:
 };
 class SupressedNeed final
 {
-	Area& m_area;
-	ActorIndex m_actor;
 	std::unique_ptr<Objective> m_objective;
 	HasScheduledEvent<SupressedNeedEvent> m_event;
+	ActorReference m_actor;
 public:
-	SupressedNeed(Area& area, std::unique_ptr<Objective> o, ActorIndex a);
-	SupressedNeed(const Json& data, DeserializationMemo& deserializationMemo, ActorIndex a);
-	Json toJson() const;
-	void callback();
+	SupressedNeed(Area& area, std::unique_ptr<Objective> o, ActorReference ref);
+	SupressedNeed(Area& area, const Json& data, DeserializationMemo& deserializationMemo, ActorReference ref);
+	void callback(Area& area);
+	[[nodiscard]] Json toJson() const;
 	friend class SupressedNeedEvent;
-	bool operator==(const SupressedNeed& supressedNeed){ return &supressedNeed == this; }
+	[[nodiscard]] bool operator==(const SupressedNeed& supressedNeed){ return &supressedNeed == this; }
 };
 class SupressedNeedEvent final : public ScheduledEvent
 {
@@ -183,12 +179,12 @@ public:
 class CannotCompleteObjectiveDishonorCallback final : public DishonorCallback
 {
 	Area& m_area;
-	ActorIndex m_actor;
+	ActorReference m_actor;
 public:
-	CannotCompleteObjectiveDishonorCallback(Area& area, ActorIndex a) : m_area(area), m_actor(a) { }
-	CannotCompleteObjectiveDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
+	CannotCompleteObjectiveDishonorCallback(Area& area, ActorReference a) : m_area(area), m_actor(a) { }
+	CannotCompleteObjectiveDishonorCallback(Area& area, const Json& data);
 	void execute(uint32_t oldCount, uint32_t newCount);
+	[[nodiscard]] Json toJson() const;
 };
 class HasObjectives final
 {
@@ -211,9 +207,9 @@ class HasObjectives final
 public:
 	ObjectiveTypePrioritySet m_prioritySet;
 
-	HasObjectives(ActorIndex a);
+	HasObjectives(ActorIndex a) : m_actor(a) { }
+	void updateActorIndex(ActorIndex actor) { m_actor = actor; }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
-	[[nodiscard]] Json toJson() const;
 	// Assign next objective from either task queue or needs, depending on priority.
 	void getNext(Area& area);
 	// Add to need set, to be sorted into position depending on priority. May usurp.
@@ -235,11 +231,14 @@ public:
 	// Repath taking into account the locations of other actors.
 	// To be used when the path is temporarily blocked.
 	void detour(Area& area);
-	void restart(Area& area) { m_currentObjective->reset(area); m_currentObjective->execute(area); }
+	void restart(Area& area, ActorIndex actor) { m_currentObjective->reset(area, actor); m_currentObjective->execute(area, actor); }
 	[[nodiscard]] Objective& getCurrent();
 	[[nodiscard]] bool hasCurrent() const { return m_currentObjective != nullptr; }
 	[[nodiscard]] bool hasSupressedNeed(const ObjectiveTypeId objectiveTypeId) const { return m_supressedNeeds.contains(objectiveTypeId); }
 	[[nodiscard]] bool queuesAreEmpty() const;
+	[[nodiscard]] bool hasTask(ObjectiveTypeId objectiveTypeId) const;
+	[[nodiscard]] bool hasNeed(ObjectiveTypeId objectiveTypeId) const;
+	[[nodiscard]] Json toJson() const;
 	friend class ObjectiveTypePrioritySet;
 	friend class SupressedNeed;
 };

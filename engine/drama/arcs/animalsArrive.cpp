@@ -14,6 +14,7 @@
 AnimalsArriveDramaArc::AnimalsArriveDramaArc(DramaEngine& engine, Area& area) : 
 	DramaArc(engine, DramaArcType::AnimalsArrive, &area), m_scheduledEvent(area.m_eventSchedule)
 { scheduleArrive(); }
+/*
 AnimalsArriveDramaArc::AnimalsArriveDramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine) : 
 	DramaArc(data, deserializationMemo, dramaEngine),
 	m_isActive(data["isActive"].get<bool>()),
@@ -29,6 +30,7 @@ Json AnimalsArriveDramaArc::toJson() const
 	data["start"] = m_scheduledEvent.getStartStep();
 	return data;
 }
+*/
 void AnimalsArriveDramaArc::callback()
 {
 	auto& random = m_area->m_simulation.m_random;

@@ -21,7 +21,7 @@ void DesignateWoodCuttingInputAction::execute()
 {
 	BlockIndex block = *m_blocks.begin();
 	auto& woodCuttingDesginations = m_area->m_hasWoodCuttingDesignations;
-	Faction& faction = *(**m_actors.begin()).getFaction();
+	FactionId faction = *(**m_actors.begin()).getFaction();
 	for(BlockIndex block : m_blocks)
 		woodCuttingDesginations.designate(faction, block);
 };
@@ -29,7 +29,7 @@ void UndesignateWoodCuttingInputAction::execute()
 {
 	BlockIndex block = *m_blocks.begin();
 	auto& woodCuttingDesginations = block.m_area->m_hasWoodCuttingDesignations;
-	Faction& faction = *(**m_actors.begin()).getFaction();
+	FactionId faction = *(**m_actors.begin()).getFaction();
 	for(BlockIndex block : m_blocks)
 		woodCuttingDesginations.undesignate(faction, block);
 }
@@ -77,7 +77,7 @@ void WoodCuttingProject::onComplete()
 	m_area.m_hasWoodCuttingDesignations.clearAll(m_location);
 	Actors& actors = m_area.getActors();
 	for(auto& [actor, projectWorker] : workers)
-		actors.objective_complete(actor, projectWorker.objective);
+		actors.objective_complete(actor.getIndex(), projectWorker.objective);
 }
 void WoodCuttingProject::onCancel()
 {
@@ -87,7 +87,7 @@ void WoodCuttingProject::onCancel()
 	{
 		// TODO: These two lines seem redundant with the third.
 		actors.project_unset(actor);
-		actors.objective_getCurrent<WoodCuttingObjective>(actor).reset(m_area);
+		actors.objective_getCurrent<WoodCuttingObjective>(actor).reset(m_area, actor);
 		actors.objective_canNotCompleteSubobjective(actor);
 	}
 }
@@ -104,19 +104,19 @@ Step WoodCuttingProject::getDuration() const
 {
 	uint32_t totalScore = 0u;
 	for(auto& pair : m_workers)
-		totalScore += getWorkerWoodCuttingScore(m_area, pair.first);
+		totalScore += getWorkerWoodCuttingScore(m_area, pair.first.getIndex());
 	return std::max(Step(1u), Config::woodCuttingMaxSteps / totalScore);
 }
 WoodCuttingLocationDishonorCallback::WoodCuttingLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
-	m_faction(deserializationMemo.faction(data["faction"].get<std::wstring>())),
+	m_faction(data["faction"].get<FactionId>()),
 	m_area(deserializationMemo.area(data["area"])),
 	m_location(data["location"].get<BlockIndex>()) { }
-Json WoodCuttingLocationDishonorCallback::toJson() const { return Json({{"type", "WoodCuttingLocationDishonorCallback"}, {"faction", m_faction.name}, {"location", m_location}}); }
+Json WoodCuttingLocationDishonorCallback::toJson() const { return Json({{"type", "WoodCuttingLocationDishonorCallback"}, {"faction", m_faction}, {"location", m_location}}); }
 void WoodCuttingLocationDishonorCallback::execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount)
 {
 	m_area.m_hasWoodCuttingDesignations.undesignate(m_faction, m_location);
 }
-HasWoodCuttingDesignationsForFaction::HasWoodCuttingDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Faction& faction) : 
+HasWoodCuttingDesignationsForFaction::HasWoodCuttingDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, FactionId faction) : 
 	m_area(deserializationMemo.area(data["area"])),
 	m_faction(faction)
 {
@@ -172,8 +172,8 @@ void AreaHasWoodCuttingDesignations::load(const Json& data, DeserializationMemo&
 {
 	for(const Json& pair : data)
 	{
-		Faction& faction = deserializationMemo.faction(pair[0]);
-		m_data.try_emplace(&faction, pair[1], deserializationMemo, faction);
+		FactionId faction = pair[0].get<FactionId>();
+		m_data.try_emplace(faction, pair[1], deserializationMemo, faction);
 	}
 }
 Json AreaHasWoodCuttingDesignations::toJson() const
@@ -182,38 +182,38 @@ Json AreaHasWoodCuttingDesignations::toJson() const
 	for(auto& pair : m_data)
 	{
 		Json jsonPair;
-		jsonPair[0] = pair.first->name;
+		jsonPair[0] = pair.first;
 		jsonPair[1] = pair.second.toJson();
 		data.push_back(jsonPair);
 	}
 	return data;
 }
-void AreaHasWoodCuttingDesignations::addFaction(Faction& faction)
+void AreaHasWoodCuttingDesignations::addFaction(FactionId faction)
 {
-	assert(!m_data.contains(&faction));
-	m_data.try_emplace(&faction, faction, m_area);
+	assert(!m_data.contains(faction));
+	m_data.try_emplace(faction, faction, m_area);
 }
-void AreaHasWoodCuttingDesignations::removeFaction(Faction& faction)
+void AreaHasWoodCuttingDesignations::removeFaction(FactionId faction)
 {
-	assert(m_data.contains(&faction));
-	m_data.erase(&faction);
+	assert(m_data.contains(faction));
+	m_data.erase(faction);
 }
 // If blockFeatureType is null then woodCutting out fully rather then woodCuttingging out a feature.
-void AreaHasWoodCuttingDesignations::designate(Faction& faction, BlockIndex block)
+void AreaHasWoodCuttingDesignations::designate(FactionId faction, BlockIndex block)
 {
-	if(!m_data.contains(&faction))
+	if(!m_data.contains(faction))
 		addFaction(faction);
-	m_data.at(&faction).designate(block);
+	m_data.at(faction).designate(block);
 }
-void AreaHasWoodCuttingDesignations::undesignate(Faction& faction, BlockIndex block)
+void AreaHasWoodCuttingDesignations::undesignate(FactionId faction, BlockIndex block)
 {
-	assert(m_data.contains(&faction));
-	m_data.at(&faction).undesignate(block);
+	assert(m_data.contains(faction));
+	m_data.at(faction).undesignate(block);
 }
-void AreaHasWoodCuttingDesignations::remove(Faction& faction, BlockIndex block)
+void AreaHasWoodCuttingDesignations::remove(FactionId faction, BlockIndex block)
 {
-	assert(m_data.contains(&faction));
-	m_data.at(&faction).remove(block);
+	assert(m_data.contains(faction));
+	m_data.at(faction).remove(block);
 }
 void AreaHasWoodCuttingDesignations::clearAll(BlockIndex block)
 {
@@ -226,21 +226,21 @@ void AreaHasWoodCuttingDesignations::clearReservations()
 		for(auto& pair2 : pair.second.m_data)
 			pair2.second.clearReservations();
 }
-bool AreaHasWoodCuttingDesignations::areThereAnyForFaction(Faction& faction) const
+bool AreaHasWoodCuttingDesignations::areThereAnyForFaction(FactionId faction) const
 {
-	if(!m_data.contains(&faction))
+	if(!m_data.contains(faction))
 		return false;
-	return !m_data.at(&faction).empty();
+	return !m_data.at(faction).empty();
 }
-bool AreaHasWoodCuttingDesignations::contains(Faction& faction, BlockIndex block) const 
+bool AreaHasWoodCuttingDesignations::contains(FactionId faction, BlockIndex block) const 
 { 
-	if(!m_data.contains(&faction))
+	if(!m_data.contains(faction))
 		return false;
-	return m_data.at(&faction).m_data.contains(block); 
+	return m_data.at(faction).m_data.contains(block); 
 }
-WoodCuttingProject& AreaHasWoodCuttingDesignations::at(Faction& faction, BlockIndex block) 
+WoodCuttingProject& AreaHasWoodCuttingDesignations::at(FactionId faction, BlockIndex block) 
 { 
-	assert(m_data.contains(&faction));
-	assert(m_data.at(&faction).m_data.contains(block)); 
-	return m_data.at(&faction).m_data.at(block); 
+	assert(m_data.contains(faction));
+	assert(m_data.at(faction).m_data.contains(block)); 
+	return m_data.at(faction).m_data.at(block); 
 }

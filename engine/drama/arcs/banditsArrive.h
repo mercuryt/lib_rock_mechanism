@@ -17,8 +17,8 @@ struct BanditsArriveDramaArc final : public DramaArc
 	uint32_t m_quantity = 0;
 	BanditsArriveDramaArc(DramaEngine& engine, Area& area);
 	BanditsArriveDramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& engine);
-	[[nodiscard]] Json toJson() const;
 	void callback();
+	[[nodiscard]] Json toJson() const;
 	HasScheduledEvent<BanditsLeaveScheduledEvent> m_scheduledEvent;
 private:
 	ActorIndex m_leader = ACTOR_INDEX_MAX;

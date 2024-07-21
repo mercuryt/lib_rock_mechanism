@@ -19,7 +19,7 @@ class CanFollow final
 	CanLead* m_canLead = nullptr;
 public:
 	CanFollow(ActorOrItemIndex index);
-	void load(const Json& data, DeserializationMemo& deserializationMemo);
+	void load(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	void follow(Area& area, CanLead& canLead, bool doAdjacentCheck = true);
 	void unfollow(Area& area);
@@ -38,7 +38,7 @@ class CanLead final
 	CanFollow* m_canFollow = nullptr;
 public:
 	CanLead(ActorOrItemIndex index) : m_actorOrItemIndex(index) { }
-	void load(const Json& data, DeserializationMemo& deserializationMemo);
+	void load(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	// Use in Actors::move_callback to prevent the line leader from moving if a follower can't.
 	[[nodiscard]] bool canMove(Area& area);

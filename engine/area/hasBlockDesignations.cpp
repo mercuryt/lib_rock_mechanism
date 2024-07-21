@@ -59,9 +59,9 @@ void AreaHasBlockDesignations::load(const Json& data, DeserializationMemo& deser
 {
 	for(const Json& pair : data)
 	{
-		Faction& faction = deserializationMemo.faction(pair[0].get<std::wstring>());
+		FactionId faction = pair[0].get<FactionId>();
 		const Json& designationData = pair[1];
-		m_data.try_emplace(&faction, designationData, deserializationMemo, m_area);
+		m_data.try_emplace(faction, designationData, deserializationMemo, m_area);
 	}
 }
 Json AreaHasBlockDesignations::toJson() const

@@ -4,29 +4,29 @@
 #include "../actors/actors.h"
 #include "terrainFacade.h"
 
-LeaveAreaObjective::LeaveAreaObjective(ActorIndex a, uint8_t priority) :
-	Objective(a, priority) { }
-void LeaveAreaObjective::execute(Area& area)
+LeaveAreaObjective::LeaveAreaObjective(uint8_t priority) :
+	Objective(priority) { }
+void LeaveAreaObjective::execute(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
-	if(actors.isOnEdge(m_actor))
+	if(actors.isOnEdge(actor))
 		// We are at the edge and can leave.
-		actors.leaveArea(m_actor);
+		actors.leaveArea(actor);
 	else
-		actors.move_pathRequestRecord(m_actor, std::make_unique<LeaveAreaPathRequest>(area, *this));
-	return;
+		actors.move_pathRequestRecord(actor, std::make_unique<LeaveAreaPathRequest>(area, *this));
 }
 LeaveAreaPathRequest::LeaveAreaPathRequest(Area& area, LeaveAreaObjective& objective) : m_objective(objective)
 {
-	createGoToEdge(area, objective.m_actor, m_objective.m_detour);
+	createGoToEdge(area, getActor(), m_objective.m_detour);
 }
 void LeaveAreaPathRequest::callback(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
+	ActorIndex actor = getActor();
 	if(!result.path.empty())
-		actors.move_setPath(m_objective.m_actor, result.path);
-	else if(m_objective.actorIsAdjacentToEdge())
-		actors.leaveArea(m_objective.m_actor);
+		actors.move_setPath(actor, result.path);
+	else if(actors.isOnEdge(actor))
+		actors.leaveArea(actor);
 	else
-		actors.objective_canNotCompleteObjective(m_objective.m_actor, m_objective);
+		actors.objective_canNotCompleteObjective(actor, m_objective);
 }
