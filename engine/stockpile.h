@@ -64,7 +64,7 @@ class StockPileUpdateInputAction final : public InputAction
 class StockPile
 {
 	std::vector<ItemQuery> m_queries;
-	std::unordered_set<BlockIndex> m_blocks;
+	BlockIndices m_blocks;
 	Quantity m_openBlocks = 0;
 	Area& m_area;
 	FactionId m_faction;

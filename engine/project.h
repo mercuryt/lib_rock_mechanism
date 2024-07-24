@@ -167,7 +167,7 @@ public:
 	// When cannotCompleteSubobjective is called do we reset and try again or do we call cannotCompleteObjective?
 	// Should be false for objectives like targeted hauling, where if the specific target is inaccessable there is no fallback possible.
 	[[nodiscard]] virtual bool canReset() const { return true; }
-	[[nodiscard]] std::vector<ActorIndex> getWorkersAndCandidates();
+	[[nodiscard]] ActorIndices getWorkersAndCandidates();
 	[[nodiscard]] std::vector<std::pair<ActorIndex, Objective*>> getWorkersAndCandidatesWithObjectives();
 	[[nodiscard]] Percent getPercentComplete() const { return m_finishEvent.exists() ? m_finishEvent.percentComplete() : 0; }
 	[[nodiscard]] virtual bool canAddWorker(const ActorIndex actor) const;
@@ -251,7 +251,7 @@ public:
 class ProjectTryToAddWorkersThreadedTask final : public ThreadedTask
 {
 	Project& m_project;
-	std::unordered_set<ActorReference, ActorReference::Hash> m_cannotPathToJobSite;
+	ActorReferences m_cannotPathToJobSite;
 	std::unordered_map<ActorOrItemReference, Quantity, ActorOrItemReference::Hash> m_alreadyAtSite;
 	std::unordered_map<ActorReference, std::vector<std::pair<ProjectRequirementCounts*, ItemReference>>, ActorReference::Hash> m_reservedEquipment;
 	HasOnDestroySubscriptions m_hasOnDestroy;

@@ -34,7 +34,6 @@
 //#include "medical.h"
 
 #include <vector>
-#include <unordered_set>
 #include <tuple>
 #include <list>
 #include <string>
@@ -80,10 +79,9 @@ public:
 	OpacityFacade m_opacityFacade;
 	AreaHasVisionCuboids m_visionCuboids;
 	VisionFacade m_visionFacade;
-	//TODO: make into vector?
-	std::unordered_set<BlockIndex> m_caveInCheck;
+	BlockIndices m_caveInCheck;
 	// uint32_t is fall energy.
-	std::vector<std::tuple<std::vector<BlockIndex>, DistanceInBlocks, uint32_t>> m_caveInData;
+	std::vector<std::tuple<BlockIndices, DistanceInBlocks, uint32_t>> m_caveInData;
 	std::wstring m_name;
 	Simulation& m_simulation;
 	AreaId m_id;

@@ -63,7 +63,7 @@ void CraftStepProject::onComplete()
 }
 void CraftStepProject::onCancel()
 {
-	std::vector<ActorIndex> workersAndCandidates = getWorkersAndCandidates();
+	ActorIndices workersAndCandidates = getWorkersAndCandidates();
 	CraftJob& craftJob = m_craftJob;
 	m_area.m_hasCraftingLocationsAndJobs.at(m_faction).stepDestroy(craftJob);
 	Actors& actors = m_area.getActors();

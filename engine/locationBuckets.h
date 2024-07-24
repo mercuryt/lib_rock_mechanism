@@ -1,5 +1,7 @@
 #pragma once
 #include "types.h"
+#include "index.h"
+#include "blockIndices.h"
 #include <cstdint>
 #include <functional>
 #include <unordered_set>
@@ -12,13 +14,13 @@ using DistanceInBuckets = uint32_t;
 
 struct LocationBucket final
 {
-	std::vector<std::vector<BlockIndex>> m_blocksMultiTileActors;
+	std::vector<BlockIndices> m_blocksMultiTileActors;
 	std::vector<ActorIndex> m_actorsMultiTile;
 	std::vector<BlockIndex> m_blocksSingleTileActors;
 	std::vector<ActorIndex> m_actorsSingleTile;
-	void insert(Area& area, ActorIndex actor, std::vector<BlockIndex>& blocks);
+	void insert(Area& area, ActorIndex actor, BlockIndices& blocks);
 	void erase(Area& area, ActorIndex actor);
-	void update(Area& area, ActorIndex actor, std::vector<BlockIndex>& blocks);
+	void update(Area& area, ActorIndex actor, BlockIndices& blocks);
 	[[nodiscard]] size_t size() const { return m_actorsMultiTile.size() + m_actorsSingleTile.size(); }
 };
 class LocationBuckets
@@ -34,7 +36,7 @@ public:
 	void initalize();
 	void add(ActorIndex actor);
 	void remove(ActorIndex actor);
-	void update(ActorIndex actor, std::unordered_set<BlockIndex>& oldBlocks);
+	void update(ActorIndex actor, BlockIndices& oldBlocks);
 	[[nodiscard]] LocationBucket& getBucketFor(const BlockIndex block);
 	friend class VisionFacade;
 };

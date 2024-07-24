@@ -54,7 +54,7 @@ CanGrow::CanGrow(Area& area, const Json& data, ActorIndex a) : m_event(area.m_ev
 {
 	m_actor.setTarget(area.getActors().getReferenceTarget(a));
 	if(data.contains("eventStart"))
-		m_event.schedule(data["eventDuration"].get<Step>(), *this, data["eventStart"].get<Step>());
+		m_event.schedule(data["eventDuration"].get<Step>(), area, *this, data["eventStart"].get<Step>());
 }
 Json CanGrow::toJson() const
 {

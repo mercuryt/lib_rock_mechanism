@@ -35,10 +35,6 @@ Mass Actors::equipment_getMass(ActorIndex index) const
 {
 	return m_equipmentSet.at(index)->getMass();
 }
-const std::unordered_set<ItemIndex>& Actors::equipment_getAll(ActorIndex index) const
-{
-	return 	const_cast<EquipmentSet&>(*m_equipmentSet.at(index)).getAll();
-}
 ItemIndex Actors::equipment_getWeaponToAttackAtRange(ActorIndex index, DistanceInBlocks range) const
 {
 	return m_equipmentSet.at(index)->getWeaponToAttackAtRange(m_area, range);

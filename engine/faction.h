@@ -28,6 +28,9 @@ class SimulationHasFactions final
 public:
 	Faction& createFaction(std::wstring name);
 	Faction& getById(FactionId id);
-	const std::vector<Faction>& getAll() const { return m_factions; }
+	Faction& byName(std::wstring name);
+	[[nodiscard]] const std::vector<Faction>& getAll() const { return m_factions; }
+	[[nodiscard]] bool isAlly(FactionId a, FactionId b);
+	[[nodiscard]] bool isEnemy(FactionId a, FactionId b);
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SimulationHasFactions, m_factions);
 };

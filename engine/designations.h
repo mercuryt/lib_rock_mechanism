@@ -6,8 +6,6 @@
 #include "config.h"
 #include "deserializationMemo.h"
 #include "faction.h"
-#include <unordered_set>
-#include <unordered_map>
 #include <cassert>
 
 enum class BlockDesignation { Dig, Construct, SowSeeds, GivePlantFluid, Harvest, StockPileHaulFrom, StockPileHaulTo, Sleep, Rescue, FluidSource, WoodCutting, BLOCK_DESIGNATION_MAX };

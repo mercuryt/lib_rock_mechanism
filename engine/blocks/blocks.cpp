@@ -49,14 +49,14 @@ void Blocks::resize(BlockIndex count)
 void Blocks::initalize(BlockIndex index)
 {
 	// Default initalization is fine for most things.
-	m_exposedToSky[index] = true;
+	m_exposedToSky.set(index);
 	Point3D point = getCoordinates(index);
-	m_isEdge[index] = (
+	m_isEdge.set(index, (
 		point.x == 0 || point.x == (m_sizeX - 1) || 
 		point.y == 0 || point.y == (m_sizeY - 1) || 
 		point.z == 0 || point.z == (m_sizeZ - 1) 
-	);
-	m_outdoors[index] = true;
+	));
+	m_outdoors.set(index);
 	recordAdjacent(index);
 }
 BlockIndex Blocks::offset(BlockIndex index, int32_t ax, int32_t ay, int32_t az) const
@@ -69,24 +69,22 @@ BlockIndex Blocks::offset(BlockIndex index, int32_t ax, int32_t ay, int32_t az) 
 		return BLOCK_INDEX_MAX;
 	return getIndex({(DistanceInBlocks)ax, (DistanceInBlocks)ay, (DistanceInBlocks)az});
 }
-/*
 void Blocks::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	m_materialType = data["solid"];
 	for(auto& [key, value] : data["features"].items())
-		m_features[std::stoi(key)] = value.get<std::vector<BlockFeature>>();
+		m_features.at(std::stoi(key)) = value.get<std::vector<BlockFeature>>();
 	for(auto& [key, value] : data["fluid"].items())
 		for(const Json& fluidData : value)
 			fluid_add(std::stoi(key), fluidData["volume"].get<CollisionVolume>(), *fluidData["type"].get<const FluidType*>());
 	for(auto& [key, value] : data["mist"].items())
-		m_mist[std::stoi(key)] = &FluidType::byName(value.get<std::string>());
+		m_mist.at(std::stoi(key)) = &FluidType::byName(value.get<std::string>());
 	for(auto& [key, value] : data["mistInverseDistanceFromSource"].items())
-		m_mistInverseDistanceFromSource[std::stoi(key)] = value.get<DistanceInBlocks>();
+		m_mistInverseDistanceFromSource.at(std::stoi(key)) = value.get<DistanceInBlocks>();
 	for(auto& [key, value] : data["reservables"].items())
 	{
-		auto [iter, result] = m_reservables.insert(std::stoi(key), 1u);
-		assert(result);
-		deserializationMemo.m_reservables[value.get<uintptr_t>()] = &iter->second;
+		auto& reservable = m_reservables.at(std::stoi(key)) = std::make_unique<Reservable>(1u);
+		deserializationMemo.m_reservables[value.get<uintptr_t>()] = reservable.get();
 	}
 }
 Json Blocks::toJson() const
@@ -112,12 +110,11 @@ Json Blocks::toJson() const
 			output["mist"][std::to_string(i)] = m_mist.at(i);
 		if(m_mistInverseDistanceFromSource.at(i) != 0)
 			output["mistInverseDistanceFromSource"][std::to_string(i)] = m_mistInverseDistanceFromSource.at(i);
-		if(auto found = m_reservables.find(i); found != m_reservables.end())
-			output["reservables"][std::to_string(i)] = reinterpret_cast<uintptr_t>(&found->second);
+		if(m_reservables.at(i) != nullptr)
+			output["reservables"][std::to_string(i)] = reinterpret_cast<uintptr_t>(&m_reservables.at(i));
 	}
 	return output;
 }
-*/
 Cuboid Blocks::getAll()
 {
 	return Cuboid(*this, size() - 1, 0);
@@ -181,18 +178,18 @@ void Blocks::recordAdjacent(BlockIndex index)
 	for(uint32_t i = 0; i < 6; i++)
 	{
 		auto& offsets = offsetsList[i];
-		m_directlyAdjacent[index][i] = offset(index, offsets[0],offsets[1],offsets[2]);
+		m_directlyAdjacent.at(index)[i] = offset(index, offsets[0],offsets[1],offsets[2]);
 	}
 }
 void Blocks::assignLocationBuckets()
 {
 	for(BlockIndex index : getAll())
-		m_locationBucket[index] = &m_area.m_locationBuckets.getBucketFor(index);
+		m_locationBucket.at(index) = &m_area.m_locationBuckets.getBucketFor(index);
 }
 const std::array<BlockIndex, 6>& Blocks::getDirectlyAdjacent(BlockIndex index) const
 {
 	assert(m_directlyAdjacent.size() > index);
-	return m_directlyAdjacent[index];
+	return m_directlyAdjacent.at(index);
 }
 BlockIndex Blocks::getBlockBelow(BlockIndex index) const 
 {
@@ -431,7 +428,7 @@ bool Blocks::squareOfDistanceIsMoreThen(BlockIndex index, BlockIndex otherIndex,
 	DistanceInBlocks dz = abs((int32_t)otherCoordinates.z - (int32_t)coordinates.z);
 	return (dx * dx) + (dy * dy) + (dz * dz) > distanceCubed;
 }
-bool Blocks::isAdjacentToAny(BlockIndex index, std::unordered_set<BlockIndex>& blocks) const
+bool Blocks::isAdjacentToAny(BlockIndex index, BlockIndices& blocks) const
 {
 	for(BlockIndex adjacent : getDirectlyAdjacent(index))
 		if(adjacent != BLOCK_INDEX_MAX && blocks.contains(adjacent))
@@ -456,13 +453,13 @@ bool Blocks::isAdjacentToActor(BlockIndex index, ActorIndex actor) const
 }
 void Blocks::setExposedToSky(BlockIndex index, bool exposed)
 {
-	m_exposedToSky[index] = exposed;
+	m_exposedToSky.set(index, exposed);
 	plant_updateGrowingStatus(index);
 }
 void Blocks::setBelowExposedToSky(BlockIndex index)
 {
 	BlockIndex block = getBlockBelow(index);
-	while(block != BLOCK_INDEX_MAX && canSeeThroughFrom(block, getBlockAbove(block)) && !m_exposedToSky[block])
+	while(block != BLOCK_INDEX_MAX && canSeeThroughFrom(block, getBlockAbove(block)) && !m_exposedToSky.at(block))
 	{
 		setExposedToSky(block, true);
 		plant_updateGrowingStatus(block);
@@ -472,38 +469,38 @@ void Blocks::setBelowExposedToSky(BlockIndex index)
 void Blocks::setBelowVisible(BlockIndex index)
 {
 	BlockIndex block = getBlockBelow(index);
-	while(block != BLOCK_INDEX_MAX && canSeeThroughFrom(block, getBlockAbove(block)) && !m_visible[block])
+	while(block != BLOCK_INDEX_MAX && canSeeThroughFrom(block, getBlockAbove(block)) && !m_visible.at(block))
 	{
-		m_visible[block] = true;
+		m_visible.set(block);
 		block = getBlockBelow(block);
 	}
 }
 void Blocks::setBelowNotExposedToSky(BlockIndex index)
 {
 	BlockIndex block = getBlockBelow(index);
-	while(block != BLOCK_INDEX_MAX && m_exposedToSky[block])
+	while(block != BLOCK_INDEX_MAX && m_exposedToSky.at(block))
 	{
-		m_exposedToSky[block] = false;
+		m_exposedToSky.unset(block);
 		plant_updateGrowingStatus(block);
 		block = getBlockBelow(block);
 	}
 }
 void Blocks::solid_set(BlockIndex index, const MaterialType& materialType, bool constructed)
 {
-	assert(m_itemVolume[index].empty());
+	assert(m_itemVolume.at(index).empty());
 	Plants& plants = m_area.getPlants();
-	if(m_plants.at(index))
+	if(m_plants.at(index).exists())
 	{
 		assert(!plants.getSpecies(index).isTree);
 		plants.die(index);
 	}
-	if(&materialType == m_materialType[index])
+	if(&materialType == m_materialType.at(index))
 		return;
-	bool wasEmpty = m_materialType[index] == nullptr;
-	m_materialType[index] = &materialType;
-	m_constructed[index] = constructed;
+	bool wasEmpty = m_materialType.at(index) == nullptr;
+	m_materialType.at(index) = &materialType;
+	m_constructed.set(index, constructed);
 	fluid_onBlockSetSolid(index);
-	m_visible[index] = false;
+	m_visible.set(index);
 	// Opacity.
 	if(!materialType.transparent && wasEmpty)
 		m_area.m_visionCuboids.blockIsSometimesOpaque(index);
@@ -523,18 +520,18 @@ void Blocks::solid_setNot(BlockIndex index)
 {
 	if(!solid_is(index))
 		return;
-	m_materialType[index] = nullptr;
-	m_constructed[index] = false;
+	m_materialType.at(index) = nullptr;
+	m_constructed.unset(index);
 	fluid_onBlockSetNotSolid(index);
 	m_area.m_visionCuboids.blockIsNeverOpaque(index);
 	m_area.m_opacityFacade.update(index);
-	if(getBlockAbove(index) == BLOCK_INDEX_MAX || m_exposedToSky[getBlockAbove(index)])
+	if(getBlockAbove(index) == BLOCK_INDEX_MAX || m_exposedToSky.at(getBlockAbove(index)))
 	{
 		setExposedToSky(index, true);
 		setBelowExposedToSky(index);
 	}
 	//TODO: Check if any adjacent are visible first?
-	m_visible[index] = true;
+	m_visible.set(index);
 	setBelowVisible(index);
 	// Dishonor all reservations: there are no reservations which can exist on both a solid and not solid block.
 	m_reservables.at(index) = nullptr;
@@ -555,7 +552,7 @@ Mass Blocks::getMass(BlockIndex index) const
 }
 bool Blocks::canSeeIntoFromAlways(BlockIndex to, BlockIndex from) const
 {
-	if(solid_is(to) && !m_materialType[to]->transparent)
+	if(solid_is(to) && !m_materialType.at(to)->transparent)
 		return false;
 	if(blockFeature_contains(to, BlockFeatureType::door))
 		return false;
@@ -585,7 +582,7 @@ void Blocks::moveContentsTo(BlockIndex from, BlockIndex to)
 {
 	if(solid_is(from))
 	{
-		solid_set(to, solid_get(from), m_constructed[from]);
+		solid_set(to, solid_get(from), m_constructed.at(from));
 		solid_setNot(from);
 	}
 	//TODO: other stuff falls?
@@ -604,7 +601,7 @@ BlockIndex Blocks::offsetNotNull(BlockIndex index, int32_t ax, int32_t ay, int32
 BlockIndex Blocks::indexAdjacentToAtCount(BlockIndex index, uint8_t adjacentCount) const
 {
 	// If block is on edge check for the offset being beyond the area. If so return BLOCK_INDEX_MAX.
-	if(m_isEdge[index])
+	if(m_isEdge.at(index))
 	{
 		Point3D coordinates = getCoordinates(index);
 		auto [x, y, z] = Blocks::offsetsListAllAdjacent[adjacentCount];
@@ -728,25 +725,25 @@ bool Blocks::isSupport(BlockIndex index) const
 }
 bool Blocks::isOutdoors(BlockIndex index) const
 {
-	return m_outdoors[index];
+	return m_outdoors.at(index);
 }
 bool Blocks::isUnderground(BlockIndex index) const
 {
-	return m_underground[index];
+	return m_underground.at(index);
 }
 bool Blocks::isExposedToSky(BlockIndex index) const
 {
-	return m_exposedToSky[index];
+	return m_exposedToSky.at(index);
 }
 bool Blocks::isEdge(BlockIndex index) const
 {
-	return m_isEdge[index];
+	return m_isEdge.at(index);
 }
 bool Blocks::hasLineOfSightTo(BlockIndex index, BlockIndex other) const
 {
 	return m_area.m_opacityFacade.hasLineOfSight(index, other);
 }
-std::unordered_set<BlockIndex> Blocks::collectAdjacentsInRange(BlockIndex index, DistanceInBlocks range)
+BlockIndices Blocks::collectAdjacentsInRange(BlockIndex index, DistanceInBlocks range)
 {
 	auto condition = [&](BlockIndex b){ return taxiDistance(b, index) <= range; };
 	return collectAdjacentsWithCondition(index, condition);

@@ -8,9 +8,7 @@
 #include "../util.h"
 #include "../pathRequest.h"
 #include "../blocks/blocks.h"
-#include "objective.h"
-#include "reservable.h"
-#include "terrainFacade.h"
+#include "eventSchedule.h"
 Speed Actors::move_getIndividualSpeedWithAddedMass(ActorIndex index, Mass mass) const
 {
 	Speed output = m_attributes.at(index)->getMoveSpeed();
@@ -60,7 +58,7 @@ void Actors::move_callback(ActorIndex index)
 	BlockIndex block = *m_pathIter.at(index);
 	// Follower is blocked, wait for them.
 	// TODO: Follower cannot proceed ever, permantly blocked.
-	if(m_lead.at(index) != nullptr && !m_lead.at(index)->canMove(m_area))
+	if(m_leader.at(index).exists() && !canMove(getLineLeader(index)))
 		move_schedule(index);
 	Blocks& blocks = m_area.getBlocks();
 	// Path has become permanantly blocked since being generated, repath.
@@ -132,10 +130,10 @@ void Actors::move_setDestination(ActorIndex index, BlockIndex destination, bool 
 	else
 		assert(!isAdjacentToLocation(index, destination));
 	move_clearAllEventsAndTasks(index);
-	if(m_faction.at(index) == nullptr)
+	if(m_faction.at(index) == FACTION_ID_MAX)
 		reserve = unreserved = false;
 	if(unreserved && !adjacent)
-		assert(!blocks.isReserved(destination, *m_faction.at(index)));
+		assert(!blocks.isReserved(destination, m_faction.at(index)));
 	if(adjacent)
 		m_pathRequest[index]->createGoAdjacentToLocation(m_area, index, destination, detour, unreserved, BLOCK_DISTANCE_MAX, reserve);
 	else
@@ -205,7 +203,7 @@ bool Actors::move_tryToReserveProposedDestination(ActorIndex index, std::vector<
 	CanReserve& canReserve = *m_canReserve.at(index);
 	Blocks& blocks = m_area.getBlocks();
 	BlockIndex location = path.back();
-	FactionId faction = *getFaction(index);
+	FactionId faction = getFactionId(index);
 	if(shape.isMultiTile)
 	{
 		assert(!path.empty());
@@ -232,7 +230,7 @@ bool Actors::move_tryToReserveOccupied(ActorIndex index)
 	CanReserve& canReserve = *m_canReserve.at(index);
 	Blocks& blocks = m_area.getBlocks();
 	BlockIndex location = getLocation(index);
-	FactionId faction = *getFaction(index);
+	FactionId faction = getFactionId(index);
 	if(shape.isMultiTile)
 	{
 		assert(!m_path.at(index).empty());
@@ -274,7 +272,7 @@ void Actors::move_pathRequestCallback(ActorIndex index, std::vector<BlockIndex> 
 		{
 			// Objectives can handle the path not found situation directly or default to cannotFulfill.
 			Objective& objective = hasObjectives.getCurrent();
-			if(!objective.onCanNotRepath(m_area))
+			if(!objective.onCanNotRepath(m_area, index))
 			{
 				if(objective.isNeed())
 					hasObjectives.cannotFulfillNeed(m_area, objective);
@@ -327,5 +325,17 @@ Step Actors::move_stepsTillNextMoveEvent(ActorIndex index) const
 // MoveEvent
 MoveEvent::MoveEvent(Step delay, Area& area, ActorIndex actor, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_actor(actor) { }
+MoveEvent::MoveEvent(Simulation& simulation, const Json& data) :
+	ScheduledEvent(simulation, data)
+{
+	data["actor"].get_to(m_actor);
+}
 void MoveEvent::execute(Simulation&, Area* area) { area->getActors().move_callback(m_actor); }
 void MoveEvent::clearReferences(Simulation &, Area *area) { area->getActors().m_moveEvent.clearPointer(m_actor); }
+Json MoveEvent::toJson() const
+{
+	Json output;
+	nlohmann::to_json(output, *this);
+	output["actor"] = m_actor;
+	return output;
+}

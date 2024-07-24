@@ -17,9 +17,9 @@ void Area::doStepCaveIn()
 }
 void Area::stepCaveInRead()
 {
-	std::list<std::unordered_set<BlockIndex>> chunks;
-	std::unordered_set<std::unordered_set<BlockIndex>*> anchoredChunks;
-	std::unordered_map<BlockIndex, std::unordered_set<BlockIndex>*> chunksByBlock;
+	std::list<BlockIndices> chunks;
+	std::unordered_set<BlockIndices*> anchoredChunks;
+	std::unordered_map<BlockIndex, BlockIndices*> chunksByBlock;
 	std::deque<BlockIndex> blockQueue;
 
 	//TODO: blockQueue.insert?
@@ -28,7 +28,7 @@ void Area::stepCaveInRead()
 	for(BlockIndex block : m_caveInCheck)
 		blockQueue.push_back(block);
 	std::stack<BlockIndex> toAddToBlockQueue;
-	std::unordered_set<BlockIndex> checklist(m_caveInCheck);
+	BlockIndices checklist(m_caveInCheck);
 	m_caveInCheck.clear();
 	m_caveInData.clear();
 	bool chunkFound;
@@ -72,24 +72,24 @@ void Area::stepCaveInRead()
 				// If adjacent to multiple different chunks merge them.
 				if(chunksByBlock.contains(block))
 				{
-					std::unordered_set<BlockIndex>* oldChunk = chunksByBlock[block];
-					std::unordered_set<BlockIndex>* newChunk = chunksByBlock[adjacent];
+					BlockIndices* oldChunk = chunksByBlock[block];
+					BlockIndices* newChunk = chunksByBlock[adjacent];
 					for(BlockIndex b : *oldChunk)
 					{
 						chunksByBlock[b] = newChunk;
-						newChunk->insert(b);
+						newChunk->add(b);
 					}
 					// If old chunk was anchored then new chunk is as well.
 					if(anchoredChunks.contains(oldChunk))
 					{
 						anchoredChunks.insert(newChunk);
 						for(BlockIndex b : *oldChunk)
-							checklist.erase(b);
+							checklist.remove(b);
 					}
 					std::erase(chunks, *oldChunk);
 				}
 				// Record block membership in chunk.
-				chunksByBlock[adjacent]->insert(block);
+				chunksByBlock[adjacent]->add(block);
 				chunksByBlock[block] = chunksByBlock[adjacent];
 				/*
 				// If the chunk is anchored then no need to do anything else.
@@ -121,7 +121,7 @@ void Area::stepCaveInRead()
 		{
 			anchoredChunks.insert(chunksByBlock[block]);
 			for(BlockIndex b : *chunksByBlock[block])
-				checklist.erase(b);
+				checklist.remove(b);
 		}
 		// Append adjacent without chunks to end of blockQueue if block isn't anchored, if it is anchored then adjacent are as well.
 		else if(!anchoredChunks.contains(chunksByBlock[block]))
@@ -133,12 +133,12 @@ void Area::stepCaveInRead()
 
 	} // End for each blockQueue.
 	// Record unanchored chunks, fall distance and energy.
-	std::vector<std::tuple<std::unordered_set<BlockIndex>,uint32_t, uint32_t>> fallingChunksWithDistanceAndEnergy;
-	for(std::unordered_set<BlockIndex>& chunk : chunks)
+	std::vector<std::tuple<BlockIndices,uint32_t, uint32_t>> fallingChunksWithDistanceAndEnergy;
+	for(BlockIndices& chunk : chunks)
 	{
 		if(!anchoredChunks.contains(&chunk))
 		{
-			std::unordered_set<BlockIndex> blocksAbsorbingImpact;
+			BlockIndices blocksAbsorbingImpact;
 			DistanceInBlocks smallestFallDistance = BLOCK_DISTANCE_MAX;
 			for(BlockIndex block : chunk)
 			{
@@ -157,13 +157,13 @@ void Area::stepCaveInRead()
 					{
 						smallestFallDistance = verticalFallDistance;
 						blocksAbsorbingImpact.clear();
-						blocksAbsorbingImpact.insert(below);
-						blocksAbsorbingImpact.insert(block);
+						blocksAbsorbingImpact.add(below);
+						blocksAbsorbingImpact.add(block);
 					}
 					else if(verticalFallDistance == smallestFallDistance)
 					{
-						blocksAbsorbingImpact.insert(below);
-						blocksAbsorbingImpact.insert(block);
+						blocksAbsorbingImpact.add(below);
+						blocksAbsorbingImpact.add(block);
 					}
 				}
 			}
@@ -184,9 +184,8 @@ void Area::stepCaveInRead()
 	auto compare = [&blocks](BlockIndex a, BlockIndex b) { return blocks.getZ(a) < blocks.getZ(b); };
 	for(auto& [chunk, fallDistance, fallEnergy] : fallingChunksWithDistanceAndEnergy)
 	{
-		std::vector<BlockIndex> blocks(chunk.begin(), chunk.end());
-		std::ranges::sort(blocks, compare);
-		m_caveInData.emplace_back(std::move(blocks), fallDistance, fallEnergy);
+		chunk.sort(compare);
+		m_caveInData.emplace_back(std::move(chunk), fallDistance, fallEnergy);
 	}
 }
 void Area::stepCaveInWrite()
@@ -212,11 +211,11 @@ void Area::stepCaveInWrite()
 			m_blocks->moveContentsTo(block, below);
 		}
 		// We don't know if the thing we landed on was it's self anchored so add a block to caveInCheck to be checked next step.
-		m_caveInCheck.insert(below);
+		m_caveInCheck.add(below);
 		//TODO: disperse energy of fall by 'mining' out blocks absorbing impact
 	}
 }
 void Area::registerPotentialCaveIn(BlockIndex block)
 {
-	m_caveInCheck.insert(block);
+	m_caveInCheck.add(block);
 }

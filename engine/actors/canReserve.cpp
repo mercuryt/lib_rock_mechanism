@@ -24,7 +24,7 @@ void Actors::canReserve_reserveItem(ActorIndex index, ItemIndex item)
 }
 bool Actors::canReserve_tryToReserveLocation(ActorIndex index, BlockIndex block)
 {
-	if(m_area.getBlocks().isReserved(block, *getFaction(index)))
+	if(m_area.getBlocks().isReserved(block, getFactionId(index)))
 		return false;
 	canReserve_reserveLocation(index, block);
 	return true;

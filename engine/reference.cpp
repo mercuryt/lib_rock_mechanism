@@ -40,8 +40,9 @@ void ItemReferences::addGeneric(Area& area, const ItemType& itemType, const Mate
 void ItemReferences::removeGeneric(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity)
 {
 	Items& items = area.getItems();
-	auto found = find([&](const ItemIndex& item) {
-		return items.getItemType(item) == itemType && items.getMaterialType(item) == materialType;
+	auto found = find([&](const ItemReference& item) {
+		ItemIndex itemIndex = item.getIndex();
+		return items.getItemType(itemIndex) == itemType && items.getMaterialType(itemIndex) == materialType;
 	});
 	assert(found != data.end());
 	if(quantity == items.getQuantity(found->getIndex()))

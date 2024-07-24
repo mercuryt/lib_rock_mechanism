@@ -82,7 +82,7 @@ class Body final
 {
 	HasScheduledEvent<BleedEvent> m_bleedEvent;
 	HasScheduledEvent<WoundsCloseEvent> m_woundsCloseEvent;
-	ActorIndex m_actor = ACTOR_INDEX_MAX;
+	ActorIndex m_actor;
 	const MaterialType* m_materialType = nullptr;
 	uint32_t m_totalVolume = 0;
 	Percent m_impairMovePercent = 0;

@@ -50,7 +50,7 @@ public:
 };
 class HungerEvent final : public ScheduledEvent
 {
-	ActorIndex m_actor = ACTOR_INDEX_MAX;
+	ActorIndex m_actor;
 public:
 	HungerEvent(Area& area, const Step delay, ActorIndex a, const Step start = 0);
 	void execute(Simulation&, Area*);

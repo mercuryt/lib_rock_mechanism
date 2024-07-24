@@ -4,8 +4,8 @@
 #pragma once
 
 #include "types.h"
+#include "blockIndices.h"
 #include <vector>
-#include <unordered_set>
 #include <cstdint>
 #include <cassert>
 
@@ -31,18 +31,18 @@ class FluidQueue
 {
 public:
 	std::vector<FutureFlowBlock> m_queue;
-	std::unordered_set<BlockIndex> m_set;
+	BlockIndices m_set;
 	std::vector<FutureFlowBlock>::iterator m_groupStart, m_groupEnd;
 	FluidGroup& m_fluidGroup;
 
 	FluidQueue(FluidGroup& fluidGroup);
-	void buildFor(std::unordered_set<BlockIndex>& members);
+	void buildFor(BlockIndices& members);
 	void initalizeForStep();
-	void setBlocks(std::unordered_set<BlockIndex>& blocks);
+	void setBlocks(BlockIndices& blocks);
 	void addBlock(BlockIndex block);
-	void addBlocks(std::unordered_set<BlockIndex>& blocks);
+	void addBlocks(BlockIndices& blocks);
 	void removeBlock(BlockIndex block);
-	void removeBlocks(std::unordered_set<BlockIndex>& blocks);
+	void removeBlocks(BlockIndices& blocks);
 	void findGroupEnd();
 	void recordDelta(uint32_t volume);
 	void applyDelta();

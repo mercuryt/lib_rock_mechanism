@@ -14,14 +14,13 @@
 BanditsArriveDramaArc::BanditsArriveDramaArc(DramaEngine& engine, Area& area) : 
 	DramaArc(engine, DramaArcType::BanditsArrive, &area), m_scheduledEvent(area.m_eventSchedule)
 { scheduleArrive(); }
-/*
 BanditsArriveDramaArc::BanditsArriveDramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& engine) : 
 	DramaArc(data, deserializationMemo, engine),
 	m_isActive(data["isActive"].get<bool>()),
 	m_quantity(data["quantity"].get<uint32_t>()),
-	m_scheduledEvent(m_area->m_simulation.m_eventSchedule),
-	m_leader(&deserializationMemo.actorReference(data["leader"]))
+	m_scheduledEvent(m_area->m_eventSchedule)
 {
+	m_leader.setTarget(m_area->getActors().getReferenceTarget(data["leader"].get<ActorIndex>()));
 	m_scheduledEvent.schedule(*this, m_area->m_simulation, data["start"].get<Step>(), data["duration"].get<Step>());
 }
 Json BanditsArriveDramaArc::toJson() const
@@ -34,7 +33,6 @@ Json BanditsArriveDramaArc::toJson() const
 	data["quantity"] = m_quantity;
 	return data;
 }
-*/
 void BanditsArriveDramaArc::callback()
 {
 	auto& random = m_area->m_simulation.m_random;
@@ -43,13 +41,13 @@ void BanditsArriveDramaArc::callback()
 	Actors& actors = m_area->getActors();
 	if(m_isActive)
 	{
-		std::unordered_set<BlockIndex> exclude;
+		BlockIndices exclude;
 		BlockIndex destination = m_area->getBlocks().getCenterAtGroundLevel();
-		if(!m_leader)
+		if(!m_leader.exists())
 		{
 			const AnimalSpecies& species = *random.getInVector(sentientSpecies);
 			BlockIndex location = findLocationOnEdgeForNear(*species.shapes.back(), species.moveType, m_entranceBlock, maxBlockDistance, exclude);
-			exclude.insert(location);
+			exclude.add(location);
 			ActorParamaters params{
 				.species=species,
 				.percentGrown=random.getInRange(90,100),
@@ -62,8 +60,8 @@ void BanditsArriveDramaArc::callback()
 			m_leader = actors.create(params);
 			m_quantity--;
 			Faction& faction = m_area->m_simulation.createFaction(actors.getName(m_leader) + L" bandits");
-			actors.setFaction(m_leader, &faction);
-			actors.objective_addTaskToStart(m_leader, std::make_unique<ExterminateObjective>(*m_area, m_leader, destination));
+			actors.setFaction(m_leader, faction.id);
+			actors.objective_addTaskToStart(m_leader, std::make_unique<ExterminateObjective>(*m_area, destination));
 			m_actors.push_back(m_leader);
 		}
 		// Spawn.
@@ -78,14 +76,14 @@ void BanditsArriveDramaArc::callback()
 					.species=species, 
 					.percentGrown=random.getInRange(70,100),
 					.location=location,
-					.faction=actors.getFaction(m_leader),
+					.faction=actors.getFactionId(m_leader),
 					.hasSidearm=true,
 					.hasLongarm=random.chance(0.6),
 					.hasLightArmor=random.chance(0.9),
 					.hasHeavyArmor=random.chance(0.3),
 				});
 				m_actors.push_back(actor);
-				actors.objective_addTaskToStart(actor, std::make_unique<ExterminateObjective>(*m_area, actor, destination));
+				actors.objective_addTaskToStart(actor, std::make_unique<ExterminateObjective>(*m_area, destination));
 			}
 			else
 			{

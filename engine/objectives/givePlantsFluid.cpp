@@ -105,7 +105,7 @@ std::unique_ptr<Objective> GivePlantsFluidObjectiveType::makeFor(Area& area, Act
 // Objective
 GivePlantsFluidObjective::GivePlantsFluidObjective(Area& area) : 
 	Objective(Config::givePlantsFluidPriority), m_event(area.m_eventSchedule) { }
-GivePlantsFluidObjective::GivePlantsFluidObjective(const Json& data, Area& area) : 
+GivePlantsFluidObjective::GivePlantsFluidObjective(const Json& data, Area& area, ActorIndex actor) : 
 	Objective(data),
 	m_plantLocation(data.contains("plantLocation") ? data["plantLocation"].get<BlockIndex>() : BLOCK_INDEX_MAX),
 	m_event(area.m_eventSchedule)
@@ -113,7 +113,7 @@ GivePlantsFluidObjective::GivePlantsFluidObjective(const Json& data, Area& area)
 	if(data.contains("fluidHaulingItem"))
 		m_fluidHaulingItem.setTarget(area.getItems().getReferenceTarget(data["fluidHaulingItem"].get<ItemIndex>()));
 	if(data.contains("eventStart"))
-		m_event.schedule(Config::givePlantsFluidDelaySteps, *this, data["eventStart"].get<Step>());
+		m_event.schedule(Config::givePlantsFluidDelaySteps, area, *this, actor, data["eventStart"].get<Step>());
 }
 Json GivePlantsFluidObjective::toJson() const
 {
@@ -172,7 +172,7 @@ void GivePlantsFluidObjective::execute(Area& area, ActorIndex actor)
 			// Has fluid.
 			if(actors.isAdjacentToPlant(actor, plant))
 				// At plant, begin giving.
-				m_event.schedule(Config::givePlantsFluidDelaySteps, area, *this);
+				m_event.schedule(Config::givePlantsFluidDelaySteps, area, *this, actor);
 			else
 				// Go to plant.
 				actors.move_setDestinationAdjacentToPlant(plant, m_detour);

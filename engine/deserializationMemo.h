@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config.h"
+#include "index.h"
 //#include "worldforge/worldLocation.h"
 //
 #include <cstdint>
@@ -36,11 +37,10 @@ struct DeserializationMemo final
 	std::unordered_map<uintptr_t, CraftJob*> m_craftJobs;
 	std::unordered_map<uintptr_t, Objective*> m_objectives;
 	std::unordered_map<uintptr_t, Uniform*> m_uniform;
-	Faction& faction(std::wstring name);
 	Area& area(const Json& data);
 	ProjectRequirementCounts& projectRequirementCountsReference(const Json& data);
 	//WorldLocation& getLocationByNormalizedLatLng(const Json& data);
-	std::unique_ptr<Objective> loadObjective(const Json& data);
+	std::unique_ptr<Objective> loadObjective(const Json& data, Area& area, ActorIndex actor);
 	std::unique_ptr<ObjectiveType> loadObjectiveType(const Json& data);
 	DeserializationMemo(Simulation& simulation) : m_simulation(simulation) { }
 };

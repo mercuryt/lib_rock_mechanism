@@ -3,10 +3,10 @@
 #include <cstdint>
 #include <cstddef>
 #include <iterator>
-#include <unordered_set>
 
 #include "designations.h"
 #include "types.h"
+#include "blockIndices.h"
 class Blocks;
 class Cuboid
 {
@@ -21,7 +21,7 @@ public:
 	void setFrom(BlockIndex block);
 	void setFrom(Blocks& blocks, BlockIndex a, BlockIndex b);
 	void clear();
-	[[nodiscard]] std::unordered_set<BlockIndex> toSet();
+	[[nodiscard]] BlockIndices toSet();
 	[[nodiscard]] bool contains(const BlockIndex block) const;
 	[[nodiscard]] bool canMerge(const Cuboid& cuboid) const;
 	[[nodiscard]] Cuboid sum(const Cuboid& cuboid) const;

@@ -17,11 +17,11 @@ Cuboid::Cuboid(Blocks& b, BlockIndex h, BlockIndex l) : m_blocks(&b), m_highest(
 	assert(highestPosition.y >= lowestPosition.y);
 	assert(highestPosition.z >= lowestPosition.z);
 }
-std::unordered_set<BlockIndex> Cuboid::toSet()
+BlockIndices Cuboid::toSet()
 {
-	std::unordered_set<BlockIndex> output;
+	BlockIndices output;
 	for(BlockIndex block : *this)
-		output.insert(block);
+		output.add(block);
 	return output;
 }
 bool Cuboid::contains(BlockIndex block) const

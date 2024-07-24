@@ -7,13 +7,13 @@
 #include "types.h"
 ExterminateObjective::ExterminateObjective(Area& area, BlockIndex destination) :
 	Objective(Config::exterminatePriority), m_destination(destination), m_event(area.m_eventSchedule) { }
-ExterminateObjective::ExterminateObjective(const Json& data, DeserializationMemo& deserializationMemo) : 
-	Objective(data, deserializationMemo),
+ExterminateObjective::ExterminateObjective(const Json& data, Area& area) : 
+	Objective(data),
 	m_destination(data["destination"].get<BlockIndex>()),
-	m_event(deserializationMemo.m_simulation.m_eventSchedule)
+	m_event(area.m_eventSchedule)
 {
 	if(data.contains("eventStart"))
-		m_event.schedule(*this, data["eventStart"].get<Step>());
+		m_event.schedule(area, *this, data["eventStart"].get<Step>());
 }
 Json ExterminateObjective::toJson() const
 {
@@ -50,10 +50,12 @@ void ExterminateObjective::execute(Area& area, ActorIndex actor)
 		static constexpr DistanceInBlocks distanceToRallyPoint = 10;
 		if(blocks.taxiDistance(thisActorLocation, m_destination) > distanceToRallyPoint)
 			actors.move_setDestination(actor, m_destination, m_detour);
-		m_event.schedule(area.m_simulation, *this);
+		m_event.schedule(area, *this, actor);
 	}
 }
-ExterminateObjectiveScheduledEvent::ExterminateObjectiveScheduledEvent(Simulation& simulation, ExterminateObjective& o, ActorIndex actor, Step start) : 
-	ScheduledEvent(simulation, Config::exterminateCheckFrequency, start),
-	m_actor(actor),
-	m_objective(o) { }
+ExterminateObjectiveScheduledEvent::ExterminateObjectiveScheduledEvent(Area& area, ExterminateObjective& o, ActorIndex actor, Step start) : 
+	ScheduledEvent(area.m_simulation, Config::exterminateCheckFrequency, start),
+	m_objective(o)
+{
+	m_actor.setTarget(area.getActors().getReferenceTarget(actor));
+}

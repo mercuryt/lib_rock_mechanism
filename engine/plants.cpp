@@ -1,5 +1,6 @@
 #include "plants.h"
 #include "area.h"
+#include "eventSchedule.h"
 #include "hasShapes.h"
 #include "itemType.h"
 #include "plantSpecies.h"
@@ -19,44 +20,52 @@ Plants::Plants(Area& area) :
 void Plants::resize(HasShapeIndex newSize)
 {
 	HasShapes::resize(newSize);
-	m_species.resize(newSize);
-	m_growthEvent.resize(newSize);
-	m_shapeGrowthEvent.resize(newSize);
-	m_fluidEvent.resize(newSize);
-	m_temperatureEvent.resize(newSize);
-	m_endOfHarvestEvent.resize(newSize);
-	m_foliageGrowthEvent.resize(newSize);
-	m_fluidSource.resize(newSize);
-	m_quantityToHarvest.resize(newSize);
-	m_percentGrown.resize(newSize);
-	m_percentFoliage.resize(newSize);
-	m_wildGrowth.resize(newSize);
-	m_volumeFluidRequested.resize(newSize);
+	m_species.resize(newSize());
+	m_growthEvent.resize(newSize());
+	m_shapeGrowthEvent.resize(newSize());
+	m_fluidEvent.resize(newSize());
+	m_temperatureEvent.resize(newSize());
+	m_endOfHarvestEvent.resize(newSize());
+	m_foliageGrowthEvent.resize(newSize());
+	m_fluidSource.resize(newSize());
+	m_quantityToHarvest.resize(newSize());
+	m_percentGrown.resize(newSize());
+	m_percentFoliage.resize(newSize());
+	m_wildGrowth.resize(newSize());
+	m_volumeFluidRequested.resize(newSize());
 }
 void Plants::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 {
+	PlantIndex o = PlantIndex::cast(oldIndex);
+	PlantIndex n = PlantIndex::cast(newIndex);
 	HasShapes::moveIndex(oldIndex, newIndex);
-	m_species.at(newIndex) = m_species.at(oldIndex);
 	m_growthEvent.moveIndex(oldIndex, newIndex);
 	m_shapeGrowthEvent.moveIndex(oldIndex, newIndex);
 	m_fluidEvent.moveIndex(oldIndex, newIndex);
 	m_temperatureEvent.moveIndex(oldIndex, newIndex);
 	m_endOfHarvestEvent.moveIndex(oldIndex, newIndex);
 	m_foliageGrowthEvent.moveIndex(oldIndex, newIndex);
-	m_fluidSource.at(newIndex) = m_fluidSource.at(oldIndex);
-	m_quantityToHarvest.at(newIndex) = m_quantityToHarvest.at(oldIndex);
-	m_percentGrown.at(newIndex) = m_percentGrown.at(oldIndex);
-	m_percentFoliage.at(newIndex) = m_percentFoliage.at(oldIndex);
-	m_wildGrowth.at(newIndex) = m_wildGrowth.at(oldIndex);
-	m_volumeFluidRequested.at(newIndex) = m_volumeFluidRequested.at(oldIndex);
+	m_species.at(n) = m_species.at(o);
+	m_fluidSource.at(n) = m_fluidSource.at(o);
+	m_quantityToHarvest.at(n) = m_quantityToHarvest.at(o);
+	m_percentGrown.at(n) = m_percentGrown.at(o);
+	m_percentFoliage.at(n) = m_percentFoliage.at(o);
+	m_wildGrowth.at(n) = m_wildGrowth.at(o);
+	m_volumeFluidRequested.at(n) = m_volumeFluidRequested.at(o);
+	Blocks& blocks = m_area.getBlocks();
+	for(BlockIndex block : m_blocks.at(newIndex))
+	{
+		assert(blocks.plant_get(block) == o);
+		blocks.plant_set(block, n);
+	}
 }
 void Plants::onChangeAmbiantSurfaceTemperature()
 {
 	Blocks& blocks = m_area.getBlocks();
-	for(PlantIndex index : m_onSurface)
+	for(auto index : m_onSurface)
 	{
 		Temperature temperature = blocks.temperature_get(m_location.at(index));
-		setTemperature(index, temperature);
+		setTemperature(PlantIndex::cast(index), temperature);
 	}
 }
 PlantIndex Plants::create(PlantParamaters paramaters)
@@ -64,7 +73,7 @@ PlantIndex Plants::create(PlantParamaters paramaters)
 	const PlantSpecies& species = paramaters.species;
 	BlockIndex location = paramaters.location;
 	assert(location != BLOCK_INDEX_MAX);
-	PlantIndex index = HasShapes::getNextIndex();
+	PlantIndex index = PlantIndex::cast(HasShapes::getNextIndex());
 	assert(index < size());
 	m_percentGrown.at(index) = paramaters.percentGrown == 0 ? 100 : paramaters.percentGrown;
 	if(paramaters.shape == nullptr)
@@ -420,13 +429,13 @@ void Plants::load(const Json& data)
 	m_temperatureEvent.load(m_area.m_simulation, data["m_temperatureEvent"]);
 	m_endOfHarvestEvent.load(m_area.m_simulation, data["m_endOfHarvestEvent"]);
 	m_foliageGrowthEvent.load(m_area.m_simulation, data["m_foliageGrowthEvent"]);
-	m_species = data["m_species"].get<std::vector<const PlantSpecies*>>();
-	m_fluidSource = data["m_fluidSource"].get<std::vector<BlockIndex>>();
-	m_quantityToHarvest = data["m_quantityToHarvest"].get<std::vector<Quantity>>();
-	m_percentGrown = data["m_percentGrown"].get<std::vector<Percent>>();
-	m_percentFoliage = data["m_percentFoliage"].get<std::vector<Percent>>();
-	m_wildGrowth = data["m_wildGrowth"].get<std::vector<uint8_t>>();
-	m_volumeFluidRequested = data["m_volumeFluidRequested"].get<std::vector<CollisionVolume>>();
+	m_species = data["m_species"].get<DataVector<const PlantSpecies*, PlantIndex>>();
+	m_fluidSource = data["m_fluidSource"].get<DataVector<BlockIndex, PlantIndex>>();
+	m_quantityToHarvest = data["m_quantityToHarvest"].get<DataVector<Quantity, PlantIndex>>();
+	m_percentGrown = data["m_percentGrown"].get<DataVector<Percent, PlantIndex>>();
+	m_percentFoliage = data["m_percentFoliage"].get<DataVector<Percent, PlantIndex>>();
+	m_wildGrowth = data["m_wildGrowth"].get<DataVector<uint8_t, PlantIndex>>();
+	m_volumeFluidRequested = data["m_volumeFluidRequested"].get<DataVector<CollisionVolume, PlantIndex>>();
 }
 void to_json(Json& data, const Plants& plants)
 {
@@ -436,6 +445,8 @@ void Plants::log(PlantIndex index) const { std::cout << m_species.at(index)->nam
 // Events.
 PlantGrowthEvent::PlantGrowthEvent(Area& area, const Step delay, PlantIndex p, Step start) : 
 	ScheduledEvent(area.m_simulation, delay, start), m_plant(p) {}
+PlantGrowthEvent::PlantGrowthEvent(Simulation& simulation, const Json& data) :
+	ScheduledEvent(simulation, data["delay"].get<Step>(), data["start"].get<Step>()), m_plant(data["plant"].get<PlantIndex>()) { }
 void PlantGrowthEvent::execute(Simulation&, Area* area)
 {
 	Plants& plants = area->getPlants();
@@ -444,9 +455,12 @@ void PlantGrowthEvent::execute(Simulation&, Area* area)
 		plants.setQuantityToHarvest(m_plant);
 }
 void PlantGrowthEvent::clearReferences(Simulation&, Area* area) { area->getPlants().m_growthEvent.clearPointer(m_plant); }
+Json PlantGrowthEvent::toJson() const { return {{"delay", duration()}, {"start", m_startStep}, {"plant", m_plant}}; }
 
 PlantShapeGrowthEvent::PlantShapeGrowthEvent(Area& area, const Step delay, PlantIndex p, Step start) : 
 	ScheduledEvent(area.m_simulation, delay, start), m_plant(p) {}
+PlantShapeGrowthEvent::PlantShapeGrowthEvent(Simulation& simulation, const Json& data) :
+	ScheduledEvent(simulation, data["delay"].get<Step>(), data["start"].get<Step>()), m_plant(data["plant"].get<PlantIndex>()) { }
 void PlantShapeGrowthEvent::execute(Simulation&, Area* area)
 {
 	Plants& plants = area->getPlants();
@@ -455,24 +469,36 @@ void PlantShapeGrowthEvent::execute(Simulation&, Area* area)
 		plants.m_shapeGrowthEvent.schedule(m_plant, *area, plants.stepsPerShapeChange(m_plant), m_plant);
 }
 void PlantShapeGrowthEvent::clearReferences(Simulation&, Area* area) { area->getPlants().m_shapeGrowthEvent.clearPointer(m_plant); }
+Json PlantShapeGrowthEvent::toJson() const { return {{"delay", duration()}, {"start", m_startStep}, {"plant", m_plant}}; }
 
 PlantFoliageGrowthEvent::PlantFoliageGrowthEvent(Area& area, const Step delay, PlantIndex p, Step start) : 
 	ScheduledEvent(area.m_simulation, delay, start), m_plant(p) {}
+PlantFoliageGrowthEvent::PlantFoliageGrowthEvent(Simulation& simulation, const Json& data) :
+	ScheduledEvent(simulation, data["delay"].get<Step>(), data["start"].get<Step>()), m_plant(data["plant"].get<PlantIndex>()) { }
 void PlantFoliageGrowthEvent::execute(Simulation&, Area* area){ area->getPlants().foliageGrowth(m_plant); }
 void PlantFoliageGrowthEvent::clearReferences(Simulation&, Area* area){ area->getPlants().m_foliageGrowthEvent.clearPointer(m_plant); }
+Json PlantFoliageGrowthEvent::toJson() const { return {{"delay", duration()}, {"start", m_startStep}, {"plant", m_plant}}; }
 
 PlantEndOfHarvestEvent::PlantEndOfHarvestEvent(Area& area, const Step delay, PlantIndex p, Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_plant(p) {}
+PlantEndOfHarvestEvent::PlantEndOfHarvestEvent(Simulation& simulation, const Json& data) :
+	ScheduledEvent(simulation, data["delay"].get<Step>(), data["start"].get<Step>()), m_plant(data["plant"].get<PlantIndex>()) { }
 void PlantEndOfHarvestEvent::execute(Simulation&, Area* area) { area->getPlants().endOfHarvest(m_plant); }
 void PlantEndOfHarvestEvent::clearReferences(Simulation&, Area* area) { area->getPlants().m_endOfHarvestEvent.clearPointer(m_plant); }
+Json PlantEndOfHarvestEvent::toJson() const { return {{"delay", duration()}, {"start", m_startStep}, {"plant", m_plant}}; }
 
 PlantFluidEvent::PlantFluidEvent(Area& area, const Step delay, PlantIndex p, Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_plant(p) {}
+PlantFluidEvent::PlantFluidEvent(Simulation& simulation, const Json& data) :
+	ScheduledEvent(simulation, data["delay"].get<Step>(), data["start"].get<Step>()), m_plant(data["plant"].get<PlantIndex>()) { }
 void PlantFluidEvent::execute(Simulation&, Area* area) { area->getPlants().setMaybeNeedsFluid(m_plant); }
 void PlantFluidEvent::clearReferences(Simulation&, Area* area) { area->getPlants().m_fluidEvent.clearPointer(m_plant); }
+Json PlantFluidEvent::toJson() const { return {{"delay", duration()}, {"start", m_startStep}, {"plant", m_plant}}; }
 
 PlantTemperatureEvent::PlantTemperatureEvent(Area& area, const Step delay, PlantIndex p, Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_plant(p) {}
+PlantTemperatureEvent::PlantTemperatureEvent(Simulation& simulation, const Json& data) :
+	ScheduledEvent(simulation, data["delay"].get<Step>(), data["start"].get<Step>()), m_plant(data["plant"].get<PlantIndex>()) { }
 void PlantTemperatureEvent::execute(Simulation&, Area* area) { area->getPlants().die(m_plant); }
 void PlantTemperatureEvent::clearReferences(Simulation&, Area* area) { area->getPlants().m_temperatureEvent.clearPointer(m_plant); }
-
+Json PlantTemperatureEvent::toJson() const { return {{"delay", duration()}, {"start", m_startStep}, {"plant", m_plant}}; }

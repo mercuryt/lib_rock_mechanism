@@ -6,6 +6,7 @@
 
 #include "config.h"
 #include "types.h"
+#include "blockIndices.h"
 
 #include <cassert>
 #include <list> 
@@ -36,9 +37,9 @@ struct Shape
 	[[nodiscard]] std::vector<std::array<int32_t, 4>> makeOccupiedPositionsWithFacing(Facing facing) const;
 	[[nodiscard]] std::vector<std::array<int32_t, 3>> makeAdjacentPositionsWithFacing(Facing facing) const;
 	[[nodiscard]] std::vector<std::array<int32_t, 3>> positionOffsets(std::array<int32_t, 4> position) const;
-	[[nodiscard]] std::vector<BlockIndex> getBlocksOccupiedAt(const Blocks& blocks, BlockIndex location, Facing facing) const;
+	[[nodiscard]] BlockIndices getBlocksOccupiedAt(const Blocks& blocks, BlockIndex location, Facing facing) const;
 	[[nodiscard]] std::vector<std::pair<BlockIndex, Volume>> getBlocksOccupiedAtWithVolumes(const Blocks& blocks, BlockIndex location, Facing facing) const;
-	[[nodiscard]] std::vector<BlockIndex> getBlocksWhichWouldBeAdjacentAt(const Blocks& blocks, BlockIndex location, Facing facing) const;
+	[[nodiscard]] BlockIndices getBlocksWhichWouldBeAdjacentAt(const Blocks& blocks, BlockIndex location, Facing facing) const;
 	[[nodiscard]] BlockIndex getBlockWhichWouldBeAdjacentAtWithPredicate(const Blocks& blocks, BlockIndex location, Facing facing, std::function<bool(BlockIndex)> predicate) const;
 	[[nodiscard]] CollisionVolume getCollisionVolumeAtLocationBlock() const;
 	// Infastructure.

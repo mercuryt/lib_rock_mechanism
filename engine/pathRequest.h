@@ -6,6 +6,7 @@
 #pragma once
 #include "types.h"
 #include "config.h"
+#include "index.h"
 #include "designations.h"
 class Area;
 class ActorOrItemIndex;
@@ -18,7 +19,7 @@ class PathRequest
 	PathRequestIndex m_index = PATH_REQUEST_INDEX_MAX;
 	std::vector<BlockIndex> m_destinations;
 	const FluidType* m_fluidType = nullptr;
-	ActorIndex m_actor = ACTOR_INDEX_MAX;
+	ActorIndex m_actor;
 	BlockIndex m_destination = BLOCK_INDEX_MAX;
 	BlockIndex m_huristicDestination = BLOCK_INDEX_MAX;
 	DistanceInBlocks m_maxRange = 0;

@@ -21,6 +21,8 @@ namespace Config
 	inline constexpr uint32_t fluidsSeepDiagonalModifier = 100;
 	inline constexpr float dataStoreVectorResizeFactor = 1.5;
 	inline constexpr float dataStoreVectorInitalSize = 10;
+	inline constexpr int maxActorsPerBlock = 4;
+	inline constexpr int maxItemsPerBlock = 4;
 
 	// sort command for vim:
 	// 	sort /\t/w* /w* /

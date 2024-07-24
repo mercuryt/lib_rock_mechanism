@@ -12,31 +12,13 @@
 #include "../config.h"
 #include "../random.h"
 #include "../items/items.h"
+#include "reference.h"
 
 #include <cstdint>
 #include <sys/types.h>
 #include <utility>
 #include <algorithm>
 // CanFight.
-/*
-Actors::combat_CanFight(ActorIndex index, const Json& data, ActorIndex a, Simulation& s) : 
-	m_coolDownEvent(s.m_eventSchedule), m_getIntoAttackPositionThreadedTask(s.m_threadedTaskEngine), m_actor(a)
-{
-	if(data.contains("coolDownStart"))
-		m_coolDownEvent.schedule(*this, data["coolDownDuration"].get<Step>(), data["coolDownStart"].get<Step>());
-	if(data.contains("target"))
-		setTarget(s.m_hasActors->getById(data["target"].get<ActorId>()));
-}
-Json Actors::combat_toJson(ActorIndex index) const
-{
-	Json data;
-	if(m_coolDownEvent.exists())
-		data["coolDownStart"] = m_coolDownEvent.getStartStep();
-	if(m_target != nullptr)
-		data["target"] = m_target->m_id;
-	return data;
-}
-*/
 void Actors::combat_attackMeleeRange(ActorIndex index, ActorIndex target)
 {
 	assert(!m_coolDownEvent.exists(index));
@@ -82,7 +64,7 @@ void Actors::combat_attackLongRange(ActorIndex index, ActorIndex target, ItemInd
 }
 uint32_t Actors::combat_getCurrentMeleeCombatScore(ActorIndex index)
 {
-	Faction* faction = getFaction(index);
+	FactionId faction = getFactionId(index);
 	uint32_t blocksContainingNonAllies = 0;
 	// Apply bonuses and penalties based on relative locations.
 	uint32_t output = m_combatScore.at(index);
@@ -90,8 +72,8 @@ uint32_t Actors::combat_getCurrentMeleeCombatScore(ActorIndex index)
 	{
 		uint32_t highestAllyCombatScore = 0;
 		bool nonAllyFound = false;
-		Faction* otherFaction = getFaction(adjacent);
-		if(otherFaction && (otherFaction == faction || otherFaction->allies.contains(faction)))
+		FactionId otherFaction = getFactionId(adjacent);
+		if(otherFaction && (otherFaction == faction || m_area.m_simulation.m_hasFactions.isAlly(otherFaction, faction)))
 		{
 			if(m_combatScore.at(adjacent) > highestAllyCombatScore)
 				highestAllyCombatScore = m_combatScore.at(adjacent);
@@ -168,9 +150,9 @@ void Actors::combat_update(ActorIndex index)
 	m_onMissCoolDownMelee.at(index) = m_coolDownDurationModifier.at(index) * baseOnMissCoolDownDuration;
 	//Find max range.
 	m_maxRange.at(index) = m_maxMeleeRange.at(index);
-	for(ItemIndex item : m_equipmentSet.at(index)->getRangedWeapons())
+	for(ItemReference item : m_equipmentSet.at(index)->getRangedWeapons())
 	{
-		AttackType* attackType = m_area.getItems().getItemType(item).getRangedAttackType();
+		AttackType* attackType = m_area.getItems().getItemType(item.getIndex()).getRangedAttackType();
 		if(attackType->range > m_maxRange.at(index))
 			m_maxRange.at(index) = attackType->range;
 	}
@@ -224,13 +206,13 @@ void Actors::combat_onMoveFrom(ActorIndex index, BlockIndex previous)
 		combat_onTargetMoved(actor);
 	// Give all directly adjacent enemies a free hit against this actor.
 	Blocks& blocks = m_area.getBlocks();
-	Faction* faction = m_faction.at(index);
+	FactionId faction = m_faction.at(index);
 	for(BlockIndex block : blocks.getDirectlyAdjacent(previous))
 		if(block != BLOCK_INDEX_MAX)
 			for(ActorIndex adjacent : blocks.actor_getAll(block))
 			{
-				Faction* otherFaction = m_faction.at(adjacent);
-				if(faction->enemies.contains(otherFaction))
+				FactionId otherFaction = m_faction.at(adjacent);
+				if(m_area.m_simulation.m_hasFactions.isEnemy(faction, otherFaction))
 					combat_freeHit(adjacent, index);
 			}
 }
@@ -325,12 +307,13 @@ AttackType& Actors::combat_getRangedAttackType(ActorIndex, ItemIndex weapon)
 	assert(false);
 	return const_cast<AttackType&>(itemType.weaponData->attackTypes.front());
 }
-AttackCoolDownEvent::AttackCoolDownEvent(Area& area, ActorIndex index, Step duration, const Step start) :
-	ScheduledEvent(area.m_simulation, duration, start), m_area(area), m_index(index) { }
+AttackCoolDownEvent::AttackCoolDownEvent(Area& area, ActorIndex actor, Step duration, const Step start) :
+	ScheduledEvent(area.m_simulation, duration, start), m_actor(actor) { }
 
 GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(Area& area, ActorIndex a, ActorIndex t, float ar) :
-	m_actor(a), m_target(t), m_attackRangeSquared(ar * ar)
+	m_actor(a), m_attackRangeSquared(ar * ar)
 {
+	m_target.setTarget(area.getActors().getReferenceTarget(t));
 	std::function<bool(BlockIndex, Facing)> destinationCondition = [&area, this](BlockIndex location, Facing)
 	{
 		return area.getActors().combat_blockIsValidPosition(m_actor, location, m_attackRangeSquared);
@@ -339,7 +322,7 @@ GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(Area& area, A
 	bool detour = true;
 	bool unreserved = false;
 	DistanceInBlocks maxRange = BLOCK_DISTANCE_MAX;
-	createGoToCondition(area, m_actor, destinationCondition, detour, unreserved, maxRange, area.getActors().getLocation(m_target));
+	createGoToCondition(area, m_actor, destinationCondition, detour, unreserved, maxRange, area.getActors().getLocation(t));
 }
 void GetIntoAttackPositionPathRequest::callback(Area& area, FindPathResult& result)
 {
@@ -350,17 +333,18 @@ void GetIntoAttackPositionPathRequest::callback(Area& area, FindPathResult& resu
 		{
 			if(!actors.combat_isOnCoolDown(m_actor))
 			{
-				float range = actors.distanceToActor(m_actor, m_target);
+				ItemIndex target = m_target.getIndex();
+				float range = actors.distanceToActor(m_actor, target);
 				if(range <= actors.combat_getMaxMeleeRange(m_actor))
 					// Melee range attack.
-					actors.combat_attackMeleeRange(m_actor, m_target);
+					actors.combat_attackMeleeRange(m_actor, target);
 				else
 				{
 					// Long range attack.
 					// TODO: Unarmed long range attack, needs to prodive the material type somehow, maybe in body part?
 					ItemIndex weapon = actors.equipment_getWeaponToAttackAtRange(m_actor, range);
 					ItemIndex ammo = actors.equipment_getAmmoForRangedWeapon(m_actor, weapon);
-					actors.combat_attackLongRange(m_actor, m_target, weapon, ammo);
+					actors.combat_attackLongRange(m_actor, target, weapon, ammo);
 				}
 			}
 		}

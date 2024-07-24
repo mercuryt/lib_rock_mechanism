@@ -3,6 +3,7 @@
 #include "config.h"
 #include "input.h"
 #include "types.h"
+#include "index.h"
 
 struct DeserializationMemo;
 class Area;
@@ -28,6 +29,6 @@ class GoToInputAction final : public InputAction
 {
 public:
 	BlockIndex m_block;
-	GoToInputAction(std::unordered_set<ActorIndex> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, BlockIndex b);
+	GoToInputAction(ItemIndices actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, BlockIndex b);
 	void execute();
 };

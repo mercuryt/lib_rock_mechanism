@@ -22,9 +22,10 @@ class MustSleep final
 	SleepObjective* m_objective = nullptr;
 	bool m_needsSleep = false;
 	bool m_isAwake = true;
+	bool m_force = false;
 public:
 	MustSleep(Area& area, ActorIndex a);
-	MustSleep(Area& area, const Json& data, ActorIndex a, const AnimalSpecies& species);
+	MustSleep(Area& area, const Json& data, ActorIndex a);
 	Json toJson() const;
 	void tired(Area& area);
 	void sleep(Area& area);
@@ -54,9 +55,8 @@ public:
 class SleepEvent final : public ScheduledEvent
 {
 	MustSleep& m_needsSleep;
-	bool m_force = false;
 public:
-	SleepEvent(Simulation& simulation, const Step delay, MustSleep& ns, bool force, const Step start = 0);
+	SleepEvent(Simulation& simulation, const Step delay, MustSleep& ns, const Step start = 0);
 	void execute(Simulation&, Area*);
 	void clearReferences(Simulation&, Area*);
 };

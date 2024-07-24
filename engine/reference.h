@@ -1,6 +1,7 @@
 #pragma once
 #include "types.h"
 #include "json.h"
+#include "index.h"
 #include <cassert>
 #include <compare>
 #include <functional>
@@ -47,6 +48,8 @@ public:
 	[[nodiscard]] auto find(ActorIndex index) { return std::ranges::find(data, index, [](const auto& ref){return ref.getIndex();}); }
 	[[nodiscard]] auto find(ActorReference ref) const { return std::ranges::find(data, ref); }
 	[[nodiscard]] auto find(ActorIndex index) const { return std::ranges::find(data, index, [](const auto& ref){return ref.getIndex();}); }
+	[[nodiscard]] bool contains(ActorReference& ref) const { return find(ref) != data.end(); }
+	[[nodiscard]] bool contains(ActorIndex index) const { return find(index) != data.end(); }
 	template<typename Predicate>
 	[[nodiscard]] std::vector<ActorReference>::iterator find(Predicate predicate) { return std::ranges::find_if(data, predicate); }
 	template<typename Predicate>
@@ -58,8 +61,9 @@ public:
 	template<typename Predicate>
 	void removeIf(Predicate predicate) { std::erase_if(data, predicate); }
 	void clear() { data.clear(); }
-	[[nodiscard]] bool contains(ActorReference& ref) const { return find(ref) != data.end(); }
-	[[nodiscard]] bool contains(ActorIndex index) const { return find(index) != data.end(); }
+	void maybeAdd(ActorIndex index, Area& area) { if(!contains(index)) data.emplace_back(area, index); }
+	void maybeRemove(ActorIndex index) { auto found = find(index); if(found != data.end()) { std::swap(*found, data.back()); data.resize(data.size() - 1); } }
+	void merge(ActorIndices indices, Area& area) { for(ActorIndex index : indices) maybeAdd(index, area); }
 	[[nodiscard]] auto begin() { return data.begin(); }
 	[[nodiscard]] auto end() { return data.end(); }
 	[[nodiscard]] auto begin() const { return data.begin(); }
@@ -108,6 +112,8 @@ public:
 	[[nodiscard]] auto find(ItemIndex index) { return std::ranges::find(data, index, [](const auto& ref){return ref.getIndex();}); }
 	[[nodiscard]] auto find(ItemReference ref) const { return std::ranges::find(data, ref); }
 	[[nodiscard]] auto find(ItemIndex index) const { return std::ranges::find(data, index, [](const auto& ref){return ref.getIndex();}); }
+	[[nodiscard]] bool contains(ItemReference& ref) const { return find(ref) != data.end(); }
+	[[nodiscard]] bool contains(ItemIndex index) const { return find(index) != data.end(); }
 	template<typename Predicate>
 	[[nodiscard]] std::vector<ItemReference>::iterator find(Predicate predicate) { return std::ranges::find_if(data, predicate); }
 	template<typename Predicate>
@@ -121,8 +127,9 @@ public:
 	void clear() { data.clear(); }
 	void addGeneric(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity);
 	void removeGeneric(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity);
-	[[nodiscard]] bool contains(ItemReference& ref) const { return find(ref) != data.end(); }
-	[[nodiscard]] bool contains(ItemIndex index) const { return find(index) != data.end(); }
+	void maybeAdd(ItemIndex index, Area& area) { if(!contains(index)) data.emplace_back(area, index); }
+	void maybeRemove(ItemIndex index) { auto found = find(index); if(found != data.end()) { std::swap(*found, data.back()); data.resize(data.size() - 1); } }
+	void merge(ItemIndices indices, Area& area) { for(ItemIndex index : indices) maybeAdd(index, area); }
 	template<typename Predicate>
 	[[nodiscard]] bool contains(Predicate predicate) const { return find(predicate) != data.end(); }
 	[[nodiscard]] auto begin() { return data.begin(); }
@@ -165,14 +172,14 @@ public:
 	[[nodiscard]] HasShapeIndex getIndex() const 
 	{
 		assert(exists());
-		return isActor() ? std::get<1>(m_reference).getIndex() : std::get<2>(m_reference).getIndex(); 
+		return isActor() ? HasShapeIndex::cast(std::get<1>(m_reference).getIndex()) : HasShapeIndex::cast(std::get<2>(m_reference).getIndex());
 	}
 	[[nodiscard]] ActorOrItemIndex getIndexPolymorphic() const
 	{
 		if(isActor())
-			return ActorOrItemIndex::createForActor(getIndex());
+			return ActorOrItemIndex::createForActor(ActorIndex::cast(getIndex()));
 		else
-			return ActorOrItemIndex::createForItem(getIndex());
+			return ActorOrItemIndex::createForItem(ItemIndex::cast(getIndex()));
 	}
 	[[nodiscard]] static ActorOrItemReference createForActor(ActorReferenceTarget& target) {  ActorOrItemReference output; output.setActor(target); return output;}
 	[[nodiscard]] static ActorOrItemReference createForItem(ItemReferenceTarget& target) {  ActorOrItemReference output; output.setItem(target); return output;}

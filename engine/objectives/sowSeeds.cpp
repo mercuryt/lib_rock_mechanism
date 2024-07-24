@@ -44,13 +44,13 @@ std::unique_ptr<Objective> SowSeedsObjectiveType::makeFor(Area& area, ActorIndex
 SowSeedsObjective::SowSeedsObjective(Area& area) : 
 	Objective(Config::sowSeedsPriority), 
 	m_event(area.m_eventSchedule) { }
-SowSeedsObjective::SowSeedsObjective(const Json& data, DeserializationMemo& deserializationMemo) : 
-	Objective(data, deserializationMemo), 
-	m_event(deserializationMemo.m_simulation.m_eventSchedule), 
+SowSeedsObjective::SowSeedsObjective(const Json& data, Area& area, ActorIndex actor) : 
+	Objective(data), 
+	m_event(area.m_eventSchedule), 
 	m_block(data.contains("block") ? data["block"].get<BlockIndex>() : BLOCK_INDEX_MAX)
 {
 	if(data.contains("eventStart"))
-		m_event.schedule(Config::sowSeedsStepsDuration, *this, data["eventStart"].get<Step>());
+		m_event.schedule(Config::sowSeedsStepsDuration, area, *this, actor, data["eventStart"].get<Step>());
 }
 Json SowSeedsObjective::toJson() const
 {
@@ -143,7 +143,7 @@ void SowSeedsObjective::begin(Area& area, ActorIndex actor)
 	Actors& actors = area.getActors();
 	assert(m_block != BLOCK_INDEX_MAX);
 	assert(actors.isAdjacentToLocation(actor, m_block));
-	m_event.schedule(Config::sowSeedsStepsDuration, area, *this);
+	m_event.schedule(Config::sowSeedsStepsDuration, area, *this, actor);
 }
 void SowSeedsObjective::reset(Area& area, ActorIndex actor)
 {

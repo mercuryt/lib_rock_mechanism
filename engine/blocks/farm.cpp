@@ -2,17 +2,17 @@
 #include "area.h"
 #include "simulation.h"
 #include "../plants.h"
-void Blocks::farm_insert(BlockIndex index, Faction& faction, FarmField& farmField)
+void Blocks::farm_insert(BlockIndex index, FactionId faction, FarmField& farmField)
 {
 	if(m_farmFields.contains(index))
-		assert(!m_farmFields.at(index).contains(&faction));
-	m_farmFields[index][&faction] = &farmField;
+		assert(!m_farmFields.at(index).contains(faction));
+	m_farmFields[index][faction] = &farmField;
 }
-void Blocks::farm_remove(BlockIndex index, Faction& faction)
+void Blocks::farm_remove(BlockIndex index, FactionId faction)
 {
 	assert(m_farmFields.contains(index));
-	assert(m_farmFields.at(index).contains(&faction));
-	m_farmFields.at(index).erase(&faction);
+	assert(m_farmFields.at(index).contains(faction));
+	m_farmFields.at(index).erase(faction);
 	auto& designations = m_area.m_blockDesignations.at(faction);
 	designations.maybeUnset(index, BlockDesignation::SowSeeds);
 	designations.maybeUnset(index, BlockDesignation::GivePlantFluid);
@@ -25,7 +25,7 @@ void Blocks::farm_designateForHarvestIfPartOfFarmField(BlockIndex index, PlantIn
 		Plants& plants = m_area.getPlants();
 		for(auto& [faction, farmField] : m_farmFields.at(index))
 			if(farmField->plantSpecies == &plants.getSpecies(plant))
-				m_area.m_hasFarmFields.at(*faction).addHarvestDesignation(plant);
+				m_area.m_hasFarmFields.at(faction).addHarvestDesignation(plant);
 	}
 }
 void Blocks::farm_designateForGiveFluidIfPartOfFarmField(BlockIndex index, PlantIndex plant)
@@ -35,7 +35,7 @@ void Blocks::farm_designateForGiveFluidIfPartOfFarmField(BlockIndex index, Plant
 		Plants& plants = m_area.getPlants();
 		for(auto& [faction, farmField] : m_farmFields.at(index))
 			if(farmField->plantSpecies == &plants.getSpecies(plant))
-				m_area.m_hasFarmFields.at(*faction).addGivePlantFluidDesignation(plant);
+				m_area.m_hasFarmFields.at(faction).addGivePlantFluidDesignation(plant);
 	}
 }
 void Blocks::farm_maybeDesignateForSowingIfPartOfFarmField(BlockIndex index)
@@ -45,7 +45,7 @@ void Blocks::farm_maybeDesignateForSowingIfPartOfFarmField(BlockIndex index)
 		assert(!m_plants.at(index));
 		for(auto& [faction, farmField] : m_farmFields.at(index))
 			if(farm_isSowingSeasonFor(*farmField->plantSpecies))
-				m_area.m_hasFarmFields.at(*faction).addSowSeedsDesignation(index);
+				m_area.m_hasFarmFields.at(faction).addSowSeedsDesignation(index);
 	}
 }
 void Blocks::farm_removeAllHarvestDesignations(BlockIndex index)
@@ -55,8 +55,8 @@ void Blocks::farm_removeAllHarvestDesignations(BlockIndex index)
 		return;
 	if(m_farmFields.contains(index))
 		for(auto& [faction, farmField] : m_farmFields.at(index))
-			if(designation_has(index, *faction, BlockDesignation::Harvest))
-				m_area.m_hasFarmFields.at(*faction).removeHarvestDesignation(plant);
+			if(designation_has(index, faction, BlockDesignation::Harvest))
+				m_area.m_hasFarmFields.at(faction).removeHarvestDesignation(plant);
 }
 void Blocks::farm_removeAllGiveFluidDesignations(BlockIndex index)
 {
@@ -65,28 +65,28 @@ void Blocks::farm_removeAllGiveFluidDesignations(BlockIndex index)
 		return;
 	if(m_farmFields.contains(index))
 		for(auto& [faction, farmField] : m_farmFields.at(index))
-			if(designation_has(index, *faction, BlockDesignation::GivePlantFluid))
-				m_area.m_hasFarmFields.at(*faction).removeGivePlantFluidDesignation(plant);
+			if(designation_has(index, faction, BlockDesignation::GivePlantFluid))
+				m_area.m_hasFarmFields.at(faction).removeGivePlantFluidDesignation(plant);
 }
 void Blocks::farm_removeAllSowSeedsDesignations(BlockIndex index)
 {
 	if(m_farmFields.contains(index))
 		for(auto& [faction, farmField] : m_farmFields.at(index))
-			if(designation_has(index, *faction, BlockDesignation::SowSeeds))
-				m_area.m_hasFarmFields.at(*faction).removeSowSeedsDesignation(index);
+			if(designation_has(index, faction, BlockDesignation::SowSeeds))
+				m_area.m_hasFarmFields.at(faction).removeSowSeedsDesignation(index);
 }
 bool Blocks::farm_isSowingSeasonFor(const PlantSpecies& species) const
 {
 	uint16_t day = DateTime(m_area.m_simulation.m_step).day;
 	return day >= species.dayOfYearForSowStart && day <= species.dayOfYearForSowEnd;
 }
-FarmField* Blocks::farm_get(BlockIndex index, Faction& faction)
+FarmField* Blocks::farm_get(BlockIndex index, FactionId faction)
 { 
-	if(!m_farmFields.contains(index) || !m_farmFields.at(index).contains(&faction)) 
+	if(!m_farmFields.contains(index) || !m_farmFields.at(index).contains(faction)) 
 		return nullptr; 
-	return m_farmFields.at(index).at(&faction); 
+	return m_farmFields.at(index).at(faction); 
 }
-bool Blocks::farm_contains(BlockIndex index, Faction& faction) const
+bool Blocks::farm_contains(BlockIndex index, FactionId faction) const
 { 
 	return const_cast<Blocks*>(this)->farm_get(index, faction) != nullptr;
 }

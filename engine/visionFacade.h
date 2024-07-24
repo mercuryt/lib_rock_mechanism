@@ -1,10 +1,10 @@
 #pragma once
 #include "config.h"
 #include "types.h"
+#include "index.h"
 #include <cassert>
 #include <cstdint>
 #include <vector>
-#include <unordered_set>
 class Area;
 class Actor;
 struct VisionCuboid;
@@ -16,7 +16,7 @@ class VisionFacade final
 	std::vector<ActorIndex> m_actors;
 	std::vector<BlockIndex> m_locations;
 	std::vector<DistanceInBlocks> m_ranges;
-	std::vector<std::vector<ActorIndex>> m_results;
+	std::vector<ActorIndices> m_results;
 public:
 	VisionFacade();
 	// Used as part of initalizaton.
@@ -36,7 +36,7 @@ public:
 	[[nodiscard]] ActorIndex getActor(VisionFacadeIndex index);
 	[[nodiscard]] BlockIndex getLocation(VisionFacadeIndex index);
 	[[nodiscard]] DistanceInBlocks getRange(VisionFacadeIndex index) const;
-	[[nodiscard]] std::vector<ActorIndex>& getResults(VisionFacadeIndex index);
+	[[nodiscard]] ActorIndices& getResults(VisionFacadeIndex index);
 	[[nodiscard]] VisionFacadeIndex size() const { return m_actors.size(); }
 	[[nodiscard]] static DistanceInBlocks taxiDistance(Point3D a, Point3D b);
 };

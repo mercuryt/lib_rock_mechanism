@@ -5,7 +5,7 @@
 #include "../blocks/blocks.h"
 #include <algorithm>
 DrainQueue::DrainQueue(FluidGroup& fluidGroup) : FluidQueue(fluidGroup) {}
-void DrainQueue::buildFor(std::unordered_set<BlockIndex>& members)
+void DrainQueue::buildFor(BlockIndices& members)
 {
 	m_set = members;
 	for(BlockIndex block : members)
@@ -53,7 +53,7 @@ void DrainQueue::recordDelta(uint32_t volume, uint32_t flowCapacity, uint32_t fl
 	if(volume == flowCapacity)
 	{
 		for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
-			m_futureEmpty.insert(iter->block);
+			m_futureEmpty.add(iter->block);
 		m_groupStart = m_groupEnd;
 		findGroupEnd();
 	} 
@@ -65,7 +65,7 @@ void DrainQueue::applyDelta()
 {
 	assert((m_groupStart >= m_queue.begin() && m_groupStart <= m_queue.end()));
 	assert((m_groupEnd >= m_queue.begin() && m_groupEnd <= m_queue.end()));
-	std::unordered_set<BlockIndex> drainedFromAndAdjacent;
+	BlockIndices drainedFromAndAdjacent;
 	Blocks& blocks = m_fluidGroup.m_area.getBlocks();
 	for(auto iter = m_queue.begin(); iter != m_groupEnd; ++iter)
 	{
@@ -76,10 +76,10 @@ void DrainQueue::applyDelta()
 		assert(blocks.fluid_getTotalVolume(iter->block) >= iter->delta);
 		blocks.fluid_drainInternal(iter->block, iter->delta, m_fluidGroup.m_fluidType);
 		// Record blocks to set fluid groups unstable.
-		drainedFromAndAdjacent.insert(iter->block);
+		drainedFromAndAdjacent.add(iter->block);
 		for(BlockIndex adjacent : blocks.getDirectlyAdjacent(iter->block))
 			if(adjacent != BLOCK_INDEX_MAX && blocks.fluid_canEnterEver(adjacent))
-				drainedFromAndAdjacent.insert(adjacent);
+				drainedFromAndAdjacent.add(adjacent);
 	}
 	// Set fluidGroups unstable.
 	// TODO: Would it be better to prevent fluid groups from becoming stable while in contact with another group? Either option seems bad.

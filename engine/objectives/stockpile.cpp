@@ -95,7 +95,7 @@ void StockPilePathRequest::callback(Area& area, FindPathResult& result)
 					}
 					else
 						// No projects found, make one.
-						hasStockPiles.makeProject(m_objective.m_item.getIndex(), m_objective.m_destination, m_objective);
+						hasStockPiles.makeProject(m_objective.m_item.getIndex(), m_objective.m_destination, m_objective, actor);
 				}
 			}
 		}

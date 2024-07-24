@@ -6,7 +6,7 @@
 #include "blocks/blocks.h"
 #include "util.h"
 #include <algorithm>
-void LocationBucket::insert(Area& area, ActorIndex actor, std::vector<BlockIndex>& blocks)
+void LocationBucket::insert(Area& area, ActorIndex actor, BlockIndices& blocks)
 {
 	Actors& actors = area.getActors();
 	if(actors.getShape(actor).isMultiTile)
@@ -45,7 +45,7 @@ void LocationBucket::erase(Area& area, ActorIndex actor)
 		util::removeFromVectorByIndexUnordered(m_blocksSingleTileActors, index);
 	}
 }
-void LocationBucket::update(Area& area, ActorIndex actor, std::vector<BlockIndex>& blockIndices)
+void LocationBucket::update(Area& area, ActorIndex actor, BlockIndices& blockIndices)
 {
 	Actors& actors = area.getActors();
 	if(actors.getShape(actor).isMultiTile)
@@ -87,10 +87,10 @@ void LocationBuckets::add(ActorIndex actor)
 {
 	auto& actorBlocks = m_area.getActors().getBlocks(actor);
 	assert(!actorBlocks.empty());
-	std::unordered_map<LocationBucket*, std::vector<BlockIndex>> blocksCollatedByBucket;
+	std::unordered_map<LocationBucket*, BlockIndices> blocksCollatedByBucket;
 	Blocks& blockData = m_area.getBlocks();
 	for(BlockIndex block : actorBlocks)
-		blocksCollatedByBucket[&blockData.getLocationBucket(block)].push_back(block);
+		blocksCollatedByBucket[&blockData.getLocationBucket(block)].add(block);
 	for(auto& [bucket, blocks] : blocksCollatedByBucket)
 	{
 		assert(bucket);
@@ -108,11 +108,11 @@ void LocationBuckets::remove(ActorIndex actor)
 	for(LocationBucket* bucket : buckets)
 		bucket->erase(m_area, actor);
 }
-void LocationBuckets::update(ActorIndex actor, std::unordered_set<BlockIndex>& oldBlocks)
+void LocationBuckets::update(ActorIndex actor, BlockIndices& oldBlocks)
 {
 	std::unordered_set<LocationBucket*> oldSets;
-	std::unordered_map<LocationBucket*, std::vector<BlockIndex>> continuedSets;
-	std::unordered_map<LocationBucket*, std::vector<BlockIndex>> newSets;
+	std::unordered_map<LocationBucket*, BlockIndices> continuedSets;
+	std::unordered_map<LocationBucket*, BlockIndices> newSets;
 	Blocks& blocks = m_area.getBlocks();
 	Actors& actors = m_area.getActors();
 	for(BlockIndex block : oldBlocks)
@@ -121,9 +121,9 @@ void LocationBuckets::update(ActorIndex actor, std::unordered_set<BlockIndex>& o
 	{
 		auto set = &blocks.getLocationBucket(block);
 		if(oldSets.contains(set))
-			continuedSets[set].push_back(block);
+			continuedSets[set].add(block);
 		else
-			newSets[set].push_back(block);
+			newSets[set].add(block);
 	}
 	for(auto& set : oldSets)
 		if(!continuedSets.contains(set))

@@ -12,7 +12,7 @@ struct DeserializationMemo;
 struct BanditsArriveDramaArc final : public DramaArc
 {
 	BlockIndex m_entranceBlock = BLOCK_INDEX_MAX;
-	std::vector<ActorIndex> m_actors;
+	ActorReferences m_actors;
 	bool m_isActive = false;
 	uint32_t m_quantity = 0;
 	BanditsArriveDramaArc(DramaEngine& engine, Area& area);
@@ -21,7 +21,7 @@ struct BanditsArriveDramaArc final : public DramaArc
 	[[nodiscard]] Json toJson() const;
 	HasScheduledEvent<BanditsLeaveScheduledEvent> m_scheduledEvent;
 private:
-	ActorIndex m_leader = ACTOR_INDEX_MAX;
+	ActorReference m_leader;
 	void scheduleArrive();
 	void scheduleDepart();
 	void scheduleContinue();

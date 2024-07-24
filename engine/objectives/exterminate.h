@@ -10,7 +10,7 @@ class ExterminateObjective final : public Objective
 	HasScheduledEvent<ExterminateObjectiveScheduledEvent> m_event;
 public:
 	ExterminateObjective(Area& area, BlockIndex destination);
-	ExterminateObjective(const Json& data, DeserializationMemo& deserializationMemo);
+	ExterminateObjective(const Json& data, Area& area);
 	void execute(Area&, ActorIndex actor);
 	void cancel(Area&, ActorIndex) { }
 	void delay(Area&, ActorIndex) { }
@@ -25,7 +25,7 @@ class ExterminateObjectiveScheduledEvent final : public ScheduledEvent
 	ActorReference m_actor;
 	ExterminateObjective& m_objective;
 public:
-	ExterminateObjectiveScheduledEvent(Simulation& simulation, ExterminateObjective& o, ActorReference actor, Step start = 0);
+	ExterminateObjectiveScheduledEvent(Area& area, ExterminateObjective& o, ActorIndex actor, Step start = 0);
 	void execute(Simulation&, Area* area) { m_objective.execute(*area, m_actor.getIndex()); }
 	void clearReferences(Simulation&, Area*) { m_objective.m_event.clearPointer(); }
 };

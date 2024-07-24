@@ -8,8 +8,11 @@
 #include "../types.h"
 #include "../designations.h"
 #include "../blockFeature.h"
+#include "../index.h"
 
 #include "../../lib/dynamic_bitset.hpp"
+#include "dataVector.h"
+#include "index.h"
 
 #include <unordered_map>
 #include <vector>
@@ -44,31 +47,31 @@ class Blocks
 	std::array<int32_t, 26> m_offsetsForAdjacentCountTable;
 	std::unordered_map<BlockIndex, std::unordered_map<FactionId, FarmField*>> m_farmFields;
 	std::unordered_map<BlockIndex, std::unordered_map<FactionId, BlockIsPartOfStockPile>> m_stockPiles;
-	std::vector<std::unique_ptr<Reservable>> m_reservables;
-	std::vector<const MaterialType*> m_materialType;
-	std::vector<std::vector<BlockFeature>> m_features;
-	std::vector<std::vector<FluidData>> m_fluid;
-	std::vector<const FluidType*> m_mist;
-	std::vector<CollisionVolume> m_totalFluidVolume;
-	std::vector<DistanceInBlocks> m_mistInverseDistanceFromSource;
-	std::vector<std::vector<std::pair<ActorIndex, CollisionVolume>>> m_actorVolume;
-	std::vector<std::vector<std::pair<ItemIndex, CollisionVolume>>> m_itemVolume;
-	std::vector<std::vector<ActorIndex>> m_actors;
-	std::vector<std::vector<ItemIndex>> m_items;
-	std::vector<PlantIndex> m_plants;
-	std::vector<CollisionVolume> m_dynamicVolume;
-	std::vector<CollisionVolume> m_staticVolume;
-	std::vector<std::unordered_map<FactionId, std::unordered_set<Project*>>> m_projects;
-	std::vector<std::unordered_map<const MaterialType* , Fire>*> m_fires;
-	std::vector<Temperature> m_temperatureDelta;
-	std::vector<LocationBucket*> m_locationBucket;
-	std::vector<std::array<BlockIndex, 6>> m_directlyAdjacent;
-	sul::dynamic_bitset<> m_exposedToSky;
-	sul::dynamic_bitset<> m_underground;
-	sul::dynamic_bitset<> m_isEdge;
-	sul::dynamic_bitset<> m_outdoors;
-	sul::dynamic_bitset<> m_visible;
-	sul::dynamic_bitset<> m_constructed;
+	DataVector<std::unique_ptr<Reservable>, BlockIndex> m_reservables;
+	DataVector<const MaterialType*, BlockIndex> m_materialType;
+	DataVector<std::vector<BlockFeature>, BlockIndex> m_features;
+	DataVector<std::vector<FluidData>, BlockIndex> m_fluid;
+	DataVector<const FluidType*, BlockIndex> m_mist;
+	DataVector<CollisionVolume, BlockIndex> m_totalFluidVolume;
+	DataVector<DistanceInBlocks, BlockIndex> m_mistInverseDistanceFromSource;
+	DataVector<std::vector<std::pair<ActorIndex, CollisionVolume>>, BlockIndex> m_actorVolume;
+	DataVector<std::vector<std::pair<ItemIndex, CollisionVolume>>, BlockIndex> m_itemVolume;
+	DataVector<ActorIndicesForBlock, BlockIndex> m_actors;
+	DataVector<ItemIndicesForBlock, BlockIndex> m_items;
+	DataVector<PlantIndex, BlockIndex> m_plants;
+	DataVector<CollisionVolume, BlockIndex> m_dynamicVolume;
+	DataVector<CollisionVolume, BlockIndex> m_staticVolume;
+	DataVector<std::unordered_map<FactionId, std::unordered_set<Project*>>, BlockIndex> m_projects;
+	DataVector<std::unordered_map<const MaterialType* , Fire>*, BlockIndex> m_fires;
+	DataVector<Temperature, BlockIndex> m_temperatureDelta;
+	DataVector<LocationBucket*, BlockIndex> m_locationBucket;
+	DataVector<std::array<BlockIndex, 6>, BlockIndex> m_directlyAdjacent;
+	DataBitSet<BlockIndex> m_exposedToSky;
+	DataBitSet<BlockIndex> m_underground;
+	DataBitSet<BlockIndex> m_isEdge;
+	DataBitSet<BlockIndex> m_outdoors;
+	DataBitSet<BlockIndex> m_visible;
+	DataBitSet<BlockIndex> m_constructed;
 	Area& m_area;
 public:
 	const DistanceInBlocks m_sizeX;
@@ -93,20 +96,20 @@ public:
 	// TODO: change to slice, use single long vector.
 	[[nodiscard]] const std::array<BlockIndex, 6>& getDirectlyAdjacent(BlockIndex index) const;
 	//TODO: change to return array?
-	[[nodiscard]] std::vector<BlockIndex> getAdjacentWithEdgeAdjacent(BlockIndex index) const;
-	[[nodiscard]] std::vector<BlockIndex> getAdjacentWithEdgeAndCornerAdjacent(BlockIndex index) const;
-	[[nodiscard]] std::vector<BlockIndex> getAdjacentWithEdgeAndCornerAdjacentUnfiltered(BlockIndex index) const;
-	[[nodiscard]] std::vector<BlockIndex> getEdgeAndCornerAdjacentOnly(BlockIndex index) const;
-	[[nodiscard]] std::vector<BlockIndex> getEdgeAdjacentOnly(BlockIndex index) const;
-	[[nodiscard]] std::vector<BlockIndex> getEdgeAdjacentOnSameZLevelOnly(BlockIndex index) const;
-	[[nodiscard]] std::vector<BlockIndex> getAdjacentOnSameZLevelOnly(BlockIndex index) const;
-	[[nodiscard]] std::vector<BlockIndex> getEdgeAdjacentOnlyOnNextZLevelDown(BlockIndex index) const;
-	[[nodiscard]] std::vector<BlockIndex> getEdgeAndCornerAdjacentOnlyOnNextZLevelDown(BlockIndex index) const;
-	[[nodiscard]] std::vector<BlockIndex> getEdgeAdjacentOnlyOnNextZLevelUp(BlockIndex index) const;
+	[[nodiscard]] BlockIndices getAdjacentWithEdgeAdjacent(BlockIndex index) const;
+	[[nodiscard]] BlockIndices getAdjacentWithEdgeAndCornerAdjacent(BlockIndex index) const;
+	[[nodiscard]] BlockIndices getAdjacentWithEdgeAndCornerAdjacentUnfiltered(BlockIndex index) const;
+	[[nodiscard]] BlockIndices getEdgeAndCornerAdjacentOnly(BlockIndex index) const;
+	[[nodiscard]] BlockIndices getEdgeAdjacentOnly(BlockIndex index) const;
+	[[nodiscard]] BlockIndices getEdgeAdjacentOnSameZLevelOnly(BlockIndex index) const;
+	[[nodiscard]] BlockIndices getAdjacentOnSameZLevelOnly(BlockIndex index) const;
+	[[nodiscard]] BlockIndices getEdgeAdjacentOnlyOnNextZLevelDown(BlockIndex index) const;
+	[[nodiscard]] BlockIndices getEdgeAndCornerAdjacentOnlyOnNextZLevelDown(BlockIndex index) const;
+	[[nodiscard]] BlockIndices getEdgeAdjacentOnlyOnNextZLevelUp(BlockIndex index) const;
 	[[nodiscard]] DistanceInBlocks distance(BlockIndex index, BlockIndex other) const;
 	[[nodiscard]] DistanceInBlocks taxiDistance(BlockIndex index, BlockIndex other) const;
 	[[nodiscard]] bool squareOfDistanceIsMoreThen(BlockIndex index, BlockIndex other, DistanceInBlocks distanceSquared) const;
-	[[nodiscard]] bool isAdjacentToAny(BlockIndex index, std::unordered_set<BlockIndex>& blocks) const;
+	[[nodiscard]] bool isAdjacentToAny(BlockIndex index, BlockIndices& blocks) const;
 	[[nodiscard]] bool isAdjacentTo(BlockIndex index, BlockIndex other) const;
 	[[nodiscard]] bool isAdjacentToIncludingCornersAndEdges(BlockIndex index, BlockIndex other) const;
 	[[nodiscard]] bool isAdjacentToActor(BlockIndex index, ActorIndex actor) const;
@@ -150,12 +153,12 @@ public:
 	void setBelowVisible(BlockIndex index);
 	//TODO: Use std::function instead of template.
 	template <typename F>
-	[[nodiscard]] std::unordered_set<BlockIndex> collectAdjacentsWithCondition(BlockIndex index, F&& condition)
+	[[nodiscard]] BlockIndices collectAdjacentsWithCondition(BlockIndex index, F&& condition)
 	{
-		std::unordered_set<BlockIndex> output;
+		BlockIndices output;
 		std::stack<BlockIndex> openList;
 		openList.push(index);
-		output.insert(index);
+		output.add(index);
 		while(!openList.empty())
 		{
 			BlockIndex block = openList.top();
@@ -163,7 +166,7 @@ public:
 			for(BlockIndex adjacent : getDirectlyAdjacent(block))
 				if(adjacent != BLOCK_INDEX_MAX && condition(adjacent) && !output.contains(adjacent))
 				{
-					output.insert(adjacent);
+					output.add(adjacent);
 					openList.push(adjacent);
 				}
 		}
@@ -174,7 +177,7 @@ public:
 	{
 		std::stack<BlockIndex> open;
 		open.push(index);
-		std::unordered_set<BlockIndex> closed;
+		BlockIndices closed;
 		while(!open.empty())
 		{
 			BlockIndex block = open.top();
@@ -184,7 +187,7 @@ public:
 			for(BlockIndex adjacent : getDirectlyAdjacent(block))
 				if(adjacent != BLOCK_INDEX_MAX && taxiDistance(index, adjacent) <= range && !closed.contains(adjacent))
 				{
-					closed.insert(adjacent);
+					closed.add(adjacent);
 					open.push(adjacent);
 				}
 					
@@ -192,8 +195,7 @@ public:
 		}
 		return BLOCK_INDEX_MAX;
 	}
-	[[nodiscard]] std::unordered_set<BlockIndex> collectAdjacentsInRange(BlockIndex index, DistanceInBlocks range);
-	[[nodiscard]] std::vector<BlockIndex> collectAdjacentsInRangeVector(BlockIndex index, DistanceInBlocks range);
+	[[nodiscard]] BlockIndices collectAdjacentsInRange(BlockIndex index, DistanceInBlocks range);
 	static inline const int32_t offsetsListAllAdjacent[26][3] = {
 		{-1,1,-1}, {-1,0,-1}, {-1,-1,-1},
 		{0,1,-1}, {0,0,-1}, {0,-1,-1},
@@ -229,7 +231,7 @@ public:
 	void blockFeature_setTemperature(BlockIndex index, Temperature temperature);
 	[[nodiscard]] const BlockFeature* blockFeature_atConst(BlockIndex index, const BlockFeatureType& blockFeatueType) const;
 	[[nodiscard]] BlockFeature* blockFeature_at(BlockIndex index, const BlockFeatureType& blockFeatueType);
-	[[nodiscard]] const std::vector<BlockFeature>& blockFeature_get(BlockIndex index) const;
+	[[nodiscard]] const BlockIndices& blockFeature_get(BlockIndex index) const;
 	[[nodiscard]] bool blockFeature_empty(BlockIndex index) const;
 	[[nodiscard]] bool blockFeature_blocksEntrance(BlockIndex index) const;
 	[[nodiscard]] bool blockFeature_canStandAbove(BlockIndex index) const;
@@ -295,23 +297,25 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, const Fluid
 	void actor_record(BlockIndex index, ActorIndex actor, CollisionVolume volume);
 	void actor_erase(BlockIndex index, ActorIndex actor);
 	void actor_setTemperature(BlockIndex index, Temperature temperature);
+	void actor_updateIndex(BlockIndex index, ActorIndex oldIndex, ActorIndex newIndex);
 	[[nodiscard]] bool actor_canStandIn(BlockIndex index) const;
 	[[nodiscard]] bool actor_contains(BlockIndex index, ActorIndex actor) const;
 	[[nodiscard]] bool actor_empty(BlockIndex index) const;
 	[[nodiscard]] Volume actor_volumeOf(BlockIndex index, ActorIndex actor) const;
-	[[nodiscard]] std::vector<ActorIndex>& actor_getAll(BlockIndex index);
-	[[nodiscard]] const std::vector<ActorIndex>& actor_getAllConst(BlockIndex index) const;
+	[[nodiscard]] ActorIndicesForBlock& actor_getAll(BlockIndex index);
+	[[nodiscard]] const ActorIndicesForBlock& actor_getAllConst(BlockIndex index) const;
 	// -Items
 	void item_record(BlockIndex index, ItemIndex item, CollisionVolume volume);
 	void item_erase(BlockIndex index, ItemIndex item);
 	void item_setTemperature(BlockIndex index, Temperature temperature);
 	void item_disperseAll(BlockIndex index);
+	void item_updateIndex(BlockIndex index, ItemIndex oldIndex, ItemIndex newIndex);
 	ItemIndex item_addGeneric(BlockIndex index, const ItemType& itemType, const MaterialType& materialType, Quantity quantity) const;
 	//ItemIndex get(BlockIndex index, ItemType& itemType) const;
 	[[nodiscard]] Quantity item_getCount(BlockIndex index, const ItemType& itemType, const MaterialType& materialType) const;
 	[[nodiscard]] ItemIndex item_getGeneric(BlockIndex index, const ItemType& itemType, const MaterialType& materialType) const;
-	[[nodiscard]] std::vector<ItemIndex> item_getAll(BlockIndex index);
-	const std::vector<ItemIndex> item_getAll(BlockIndex index) const;
+	[[nodiscard]] ItemIndicesForBlock& item_getAll(BlockIndex index);
+	const ItemIndicesForBlock& item_getAll(BlockIndex index) const;
 	[[nodiscard]] bool item_hasInstalledType(BlockIndex index, const ItemType& itemType) const;
 	[[nodiscard]] bool item_hasEmptyContainerWhichCanHoldFluidsCarryableBy(BlockIndex index, const ActorIndex actor) const;
 	[[nodiscard]] bool item_hasContainerContainingFluidTypeCarryableBy(BlockIndex index, const ActorIndex actor, const FluidType& fluidType) const;
@@ -336,24 +340,24 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, const Fluid
 	void shape_removeStaticVolume(BlockIndex index, CollisionVolume volume);
 	[[nodiscard]] bool shape_anythingCanEnterEver(BlockIndex index) const;
 	// CanEnter methods which are not prefixed with static are to be used only for dynamic shapes.
-	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(BlockIndex index, const Shape& shape, const MoveType& moveType, const Facing facing, const std::vector<BlockIndex>& occupied) const;
-	[[nodiscard]] std::pair<bool, Facing> shape_canEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, const Shape& shape, const std::unordered_set<BlockIndex>& occupied) const;
-	[[nodiscard]] bool shape_canEnterCurrentlyWithAnyFacing(BlockIndex index, const Shape& shape, const std::unordered_set<BlockIndex>& occupied) const;
+	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(BlockIndex index, const Shape& shape, const MoveType& moveType, const Facing facing, const BlockIndices& occupied) const;
+	[[nodiscard]] std::pair<bool, Facing> shape_canEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, const Shape& shape, const BlockIndices& occupied) const;
+	[[nodiscard]] bool shape_canEnterCurrentlyWithAnyFacing(BlockIndex index, const Shape& shape, const BlockIndices& occupied) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverFrom(BlockIndex index, const Shape& shape, const MoveType& moveType, const BlockIndex block) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverWithFacing(BlockIndex index, const Shape& shape, const MoveType& moveType, const Facing facing) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(BlockIndex index, const Shape& shape, const MoveType& moveType) const;
-	[[nodiscard]] bool shape_canEnterCurrentlyFrom(BlockIndex index, const Shape& shape, BlockIndex other, const std::unordered_set<BlockIndex>& occupied) const;
-	[[nodiscard]] bool shape_canEnterCurrentlyWithFacing(BlockIndex index, const Shape& shape, Facing facing, const std::unordered_set<BlockIndex>& occupied) const;
+	[[nodiscard]] bool shape_canEnterCurrentlyFrom(BlockIndex index, const Shape& shape, BlockIndex other, const BlockIndices& occupied) const;
+	[[nodiscard]] bool shape_canEnterCurrentlyWithFacing(BlockIndex index, const Shape& shape, Facing facing, const BlockIndices& occupied) const;
 	[[nodiscard]] bool shape_moveTypeCanEnter(BlockIndex index, const MoveType& moveType) const;
 	[[nodiscard]] bool shape_moveTypeCanEnterFrom(BlockIndex index, const MoveType& moveType, const BlockIndex from) const;
 	[[nodiscard]] bool shape_moveTypeCanBreath(BlockIndex index, const MoveType& moveType) const;
 	// Static shapes are items or actors who are laying on the ground immobile.
 	// They do not collide with dynamic shapes and have their own volume data.
-	[[nodiscard]] bool shape_staticCanEnterCurrentlyWithFacing(BlockIndex index, const Shape& Shape, const Facing& facing, const std::unordered_set<BlockIndex>& occupied) const;
-	[[nodiscard]] bool shape_staticCanEnterCurrentlyWithAnyFacing(BlockIndex index, const Shape& shape, const std::unordered_set<BlockIndex>& occupied) const;
-	[[nodiscard]] std::pair<bool, Facing> shape_staticCanEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, const Shape& shape, const std::unordered_set<BlockIndex>& occupied) const;
-	[[nodiscard]] bool shape_staticShapeCanEnterWithFacing(BlockIndex index, const Shape& shape, Facing facing, const std::unordered_set<BlockIndex>& occupied) const;
-	[[nodiscard]] bool shape_staticShapeCanEnterWithAnyFacing(BlockIndex index, const Shape& shape, const std::unordered_set<BlockIndex>& occupied) const;
+	[[nodiscard]] bool shape_staticCanEnterCurrentlyWithFacing(BlockIndex index, const Shape& Shape, const Facing& facing, const BlockIndices& occupied) const;
+	[[nodiscard]] bool shape_staticCanEnterCurrentlyWithAnyFacing(BlockIndex index, const Shape& shape, const BlockIndices& occupied) const;
+	[[nodiscard]] std::pair<bool, Facing> shape_staticCanEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, const Shape& shape, const BlockIndices& occupied) const;
+	[[nodiscard]] bool shape_staticShapeCanEnterWithFacing(BlockIndex index, const Shape& shape, Facing facing, const BlockIndices& occupied) const;
+	[[nodiscard]] bool shape_staticShapeCanEnterWithAnyFacing(BlockIndex index, const Shape& shape, const BlockIndices& occupied) const;
 	[[nodiscard]] MoveCost shape_moveCostFrom(BlockIndex index, const MoveType& moveType, const BlockIndex from) const;
 	[[nodiscard]] bool shape_canStandIn(BlockIndex index) const;
 	[[nodiscard]] CollisionVolume shape_getDynamicVolume(BlockIndex index) const;

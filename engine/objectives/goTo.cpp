@@ -7,7 +7,6 @@
 #include "actors/actors.h"
 #include "types.h"
 #include <memory>
-#include <unordered_set>
 GoToObjective::GoToObjective(const Json& data, DeserializationMemo& deserializationMemo) : 
 	Objective(data, deserializationMemo),
 	m_location(data["location"].get<BlockIndex>()) { }
@@ -27,7 +26,7 @@ void GoToObjective::execute(Area& area, ActorIndex actor)
 		actors.objective_complete(actor, *this);
 }
 /*
-GoToInputAction::GoToInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, BlockIndex& b) : 
+GoToInputAction::GoToInputAction(ActorIndices actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, BlockIndex& b) : 
 	InputAction(actors, emplacementType, inputQueue), m_block(b) { }
 void GoToInputAction::execute()
 {

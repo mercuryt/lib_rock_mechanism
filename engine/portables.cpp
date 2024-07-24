@@ -1,6 +1,7 @@
 #include "portables.h"
 #include "actorOrItemIndex.h"
 #include "actors/actors.h"
+#include "index.h"
 #include "items/items.h"
 #include "area.h"
 #include "onDestroy.h"
@@ -14,12 +15,12 @@ Portables::Portables(Area& area) : HasShapes(area) { }
 void Portables::resize(HasShapeIndex newSize)
 {
 	HasShapes::resize(newSize);
-	m_moveType.resize(newSize);
-	m_destroy.resize(newSize);
-	m_reservables.resize(newSize);
-	m_follower.resize(newSize);
-	m_leader.resize(newSize);
-	m_carrier.resize(newSize);
+	m_moveType.resize(newSize());
+	m_destroy.resize(newSize());
+	m_reservables.resize(newSize());
+	m_follower.resize(newSize());
+	m_leader.resize(newSize());
+	m_carrier.resize(newSize());
 }
 void Portables::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 {
@@ -81,9 +82,9 @@ void Portables::destroy(HasShapeIndex index)
 ActorOrItemIndex Portables::getActorOrItemIndex(HasShapeIndex index)
 {
 	if(isActors)
-		return ActorOrItemIndex::createForActor(index);
+		return ActorOrItemIndex::createForActor(ActorIndex::cast(index));
 	else
-		return ActorOrItemIndex::createForItem(index);
+		return ActorOrItemIndex::createForItem(ItemIndex::cast(index));
 }
 void Portables::followActor(HasShapeIndex index, ActorIndex actor)
 {
@@ -104,9 +105,9 @@ void Portables::followItem(HasShapeIndex index, ItemIndex item)
 void Portables::followPolymorphic(HasShapeIndex index, ActorOrItemIndex actorOrItem)
 {
 	if(actorOrItem.isActor())
-		followActor(index, actorOrItem.get());
+		followActor(index, ActorIndex::cast(actorOrItem.get()));
 	else
-		followItem(index, actorOrItem.get());
+		followItem(index, ItemIndex::cast(actorOrItem.get()));
 }
 void Portables::unfollowActor(HasShapeIndex index, ActorIndex actor)
 {
@@ -125,9 +126,9 @@ void Portables::unfollow(HasShapeIndex index)
 	ActorOrItemIndex leader = m_leader.at(index);
 	assert(leader.isLeading(m_area));
 	if(leader.isActor())
-		unfollowActor(index, leader.get());
+		unfollowActor(index, ActorIndex::cast(leader.get()));
 	else
-		unfollowItem(index, leader.get());
+		unfollowItem(index, ItemIndex::cast(leader.get()));
 }
 void Portables::unfollowIfAny(HasShapeIndex index)
 {
@@ -182,7 +183,7 @@ bool Portables::isLeadingPolymorphic(HasShapeIndex index, ActorOrItemIndex actor
 Speed Portables::lead_getSpeed(HasShapeIndex index)
 {
 	assert(isActors);
-	ActorIndex actorIndex = index;
+	ActorIndex actorIndex = ActorIndex::cast(index);
 	assert(!m_area.getActors().isFollowing(actorIndex));
 	assert(m_area.getActors().isLeading(actorIndex));
 	ActorOrItemIndex wrapped = getActorOrItemIndex(index);
@@ -204,7 +205,7 @@ ActorIndex Portables::getLineLeader(HasShapeIndex index)
 	{
 		assert(m_follower.at(index).exists());
 		assert(isActors);
-		return index;
+		return ActorIndex::cast(index);
 	}
 	if(leader.isActor())
 		return m_area.getActors().getLineLeader(leader.get());
@@ -226,7 +227,7 @@ Speed Portables::getMoveSpeedForGroupWithAddedMass(const Area& area, std::vector
 	{
 		if(index.isItem())
 		{
-			ItemIndex itemIndex = index.get();
+			ItemIndex itemIndex = ItemIndex::cast(index.get());
 			Mass mass = area.getItems().getMass(itemIndex);
 			static const MoveType& roll = MoveType::byName("roll");
 			if(area.getItems().getMoveType(itemIndex) == roll)
@@ -237,7 +238,7 @@ Speed Portables::getMoveSpeedForGroupWithAddedMass(const Area& area, std::vector
 		else
 		{
 			assert(index.isActor());
-			ActorIndex actorIndex = index.get();
+			ActorIndex actorIndex = ActorIndex::cast(index.get());
 			const Actors& actors = area.getActors();
 			if(actors.move_canMove(actorIndex))
 			{
@@ -273,33 +274,47 @@ void Portables::updateIndexInCarrier(HasShapeIndex oldIndex, HasShapeIndex newIn
 	if(m_carrier.at(newIndex).isActor())
 	{
 		// Carrier is actor, either via canPickUp or equipmentSet.
-		ActorIndex actor = m_carrier.at(newIndex).get();
+		ActorIndex actor = ActorIndex::cast(m_carrier.at(newIndex).get());
 		Actors& actors = m_area.getActors();
 		if(isActors)
 		{
 			// actor is carrying actor
-			assert(actors.canPickUp_isCarryingActor(oldIndex, actor));
-			actors.canPickUp_updateActorIndex(actor, oldIndex, newIndex);
+			ActorIndex oi = ActorIndex::cast(oldIndex);
+			ActorIndex ni = ActorIndex::cast(newIndex);
+			assert(actors.canPickUp_isCarryingActor(oi, actor));
+			actors.canPickUp_updateActorIndex(actor, oi, ni);
 		}
 		else
-			if(actors.canPickUp_isCarryingItem(actor, oldIndex))
-				actors.canPickUp_updateItemIndex(actor, oldIndex, newIndex);
+		{
+			ItemIndex oi = ItemIndex::cast(oldIndex);
+			ItemIndex ni = ItemIndex::cast(newIndex);
+			if(actors.canPickUp_isCarryingItem(actor, oi))
+				actors.canPickUp_updateItemIndex(actor, oi, ni);
 			else
 			{
-				assert(actors.equipment_containsItem(actor, oldIndex));
-				actors.equipment_updateItemIndex(actor, oldIndex, newIndex);
+				assert(actors.equipment_containsItem(actor, oi));
+				actors.equipment_updateItemIndex(actor, oi, ni);
 			}
+		}
 	}
 	else
 	{
 		// Carrier is item.
-		ItemIndex item = m_carrier.at(newIndex).get();
+		ItemIndex item = ItemIndex::cast(m_carrier.at(newIndex).get());
 		Items& items = m_area.getItems();
 		assert(items.getItemType(item).internalVolume != 0);
 		if(isActors)
-			items.cargo_updateActorIndex(item, oldIndex, newIndex);
+		{
+			ActorIndex oi = ActorIndex::cast(oldIndex);
+			ActorIndex ni = ActorIndex::cast(newIndex);
+			items.cargo_updateActorIndex(item, oi, ni);
+		}
 		else
-			items.cargo_updateItemIndex(item, oldIndex, newIndex);
+		{
+			ItemIndex oi = ItemIndex::cast(oldIndex);
+			ItemIndex ni = ItemIndex::cast(newIndex);
+			items.cargo_updateItemIndex(item, oi, ni);
+		}
 	}
 }
 void Portables::reservable_reserve(HasShapeIndex index, CanReserve& canReserve, Quantity quantity, std::unique_ptr<DishonorCallback> callback)
@@ -329,16 +344,16 @@ void Portables::reservable_setDishonorCallback(HasShapeIndex index, CanReserve& 
 }
 void Portables::reservable_merge(HasShapeIndex index, Reservable& other)
 {
-	m_reservables[index]->merge(other);
+	m_reservables.at(index)->merge(other);
 }
 void Portables::load(const Json& data)
 {
 	nlohmann::from_json(data, static_cast<Portables&>(*this));
 	// We don't need to serialize OnDestroy because it only exists breifly between ThreadedTask read / write steps.
 	// TODO: I feel like the above constraint about OnDestroy is violated somewhere and it's being used as a side channel reservation between steps. Make sure this is not the case or serialize it.
-	m_follower = data["follower"].get<std::vector<ActorOrItemIndex>>();
-	m_leader = data["leader"].get<std::vector<ActorOrItemIndex>>();
-	m_moveType = data["moveType"].get<std::vector<const MoveType*>>();
+	data["follower"].get_to(m_follower);
+	data["leader"].get_to(m_leader);
+	data["moveType"].get_to(m_moveType);
 	m_reservables.resize(m_moveType.size());
 	for(const Json& pair : data["reservable"])
 	{
@@ -382,7 +397,7 @@ Quantity Portables::reservable_getUnreservedCount(HasShapeIndex index, const Fac
 }
 void Portables::onDestroy_subscribe(HasShapeIndex index, HasOnDestroySubscriptions& hasSubscriptions)
 {
-	m_destroy[index]->subscribe(hasSubscriptions);
+	m_destroy.at(index)->subscribe(hasSubscriptions);
 }
 void Portables::onDestroy_unsubscribe(HasShapeIndex index, HasOnDestroySubscriptions& hasSubscriptions)
 {
@@ -397,5 +412,5 @@ void Portables::onDestroy_unsubscribeAll(HasShapeIndex index)
 }
 void Portables::onDestroy_merge(HasShapeIndex index, OnDestroy& other)
 {
-	m_destroy[index]->merge(other);
+	m_destroy.at(index)->merge(other);
 }

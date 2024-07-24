@@ -3,7 +3,6 @@
 #include "items/itemQuery.h"
 #include "types.h"
 #include <string>
-#include <unordered_set>
 class Actor;
 class Item;
 struct Faction;

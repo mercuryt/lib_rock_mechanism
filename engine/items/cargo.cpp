@@ -234,5 +234,5 @@ Mass Items::cargo_getMass(ItemIndex index) const
 {
 	return m_hasCargo.at(index)->getMass();
 }
-const std::vector<ItemIndex>& Items::cargo_getItems(ItemIndex index) const { return m_hasCargo.at(index)->getItems(); }
-const std::vector<ActorIndex>& Items::cargo_getActors(ActorIndex index) const { return const_cast<ItemHasCargo&>(*m_hasCargo.at(index)).getActors(); }
+const ItemIndices& Items::cargo_getItems(ItemIndex index) const { return m_hasCargo.at(index)->getItems(); }
+const ActorIndices& Items::cargo_getActors(ItemIndex index) const { return const_cast<ItemHasCargo&>(*m_hasCargo.at(index)).getActors(); }

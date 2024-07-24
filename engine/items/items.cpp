@@ -6,13 +6,14 @@
 #include "../util.h"
 #include "actors/actors.h"
 #include "bloomHashMap.h"
+#include "index.h"
 #include "portables.h"
 #include "types.h"
 #include <memory>
 #include <ranges>
 // RemarkItemForStockPilingEvent
-ReMarkItemForStockPilingEvent::ReMarkItemForStockPilingEvent(Simulation& simulation, ItemCanBeStockPiled& canBeStockPiled, FactionId faction, Step duration, const Step start) : 
-	ScheduledEvent(simulation, duration, start),
+ReMarkItemForStockPilingEvent::ReMarkItemForStockPilingEvent(Area& area, ItemCanBeStockPiled& canBeStockPiled, FactionId faction, Step duration, const Step start) : 
+	ScheduledEvent(area.m_simulation, duration, start),
 	m_faction(faction),
 	m_canBeStockPiled(canBeStockPiled) { }
 void ReMarkItemForStockPilingEvent::execute(Simulation&, Area*) 
@@ -22,7 +23,7 @@ void ReMarkItemForStockPilingEvent::execute(Simulation&, Area*)
 }
 void ReMarkItemForStockPilingEvent::clearReferences(Simulation&, Area*) { }
 // ItemCanBeStockPiled
-void ItemCanBeStockPiled::load(const Json& data, EventSchedule& eventSchedule)
+void ItemCanBeStockPiled::load(const Json& data, Area& area)
 {
 	data["data"].get_to(m_data);
 	for(const Json& pair : data["scheduledEvents"])
@@ -30,7 +31,7 @@ void ItemCanBeStockPiled::load(const Json& data, EventSchedule& eventSchedule)
 		FactionId faction = pair[0].get<FactionId>();
 		Step start = pair[1]["start"].get<Step>();
 		Step duration = pair[1]["duration"].get<Step>();
-		scheduleReset(eventSchedule, faction, duration, start);
+		scheduleReset(area, faction, duration, start);
 	}
 }
 Json ItemCanBeStockPiled::toJson() const
@@ -57,13 +58,23 @@ Json ItemCanBeStockPiled::toJson() const
 	}
 	return data;
 }
-void ItemCanBeStockPiled::scheduleReset(EventSchedule& eventSchedule, FactionId faction, Step duration, Step start)
+void ItemCanBeStockPiled::scheduleReset(Area& area, FactionId faction, Step duration, Step start)
 {
 	assert(!m_scheduledEvents.contains(faction));
-	auto [iter, created] = m_scheduledEvents.emplace(&faction, eventSchedule);
+	auto [iter, created] = m_scheduledEvents.emplace(faction, area.m_eventSchedule);
 	assert(created);
 	HasScheduledEvent<ReMarkItemForStockPilingEvent>& eventHandle = iter->second;
-	eventHandle.schedule(*this, faction, duration, start);
+	eventHandle.schedule(area, *this, faction, duration, start);
+}
+void ItemCanBeStockPiled::unsetAndScheduleReset(Area& area, FactionId faction, Step duration) 
+{ 
+	unset(faction);
+	scheduleReset(area, faction, duration);
+}
+void ItemCanBeStockPiled::maybeUnsetAndScheduleReset(Area& area, FactionId faction, Step duration)
+{
+	maybeUnset(faction);
+	scheduleReset(area, faction, duration);
 }
 // Item
 void Items::onChangeAmbiantSurfaceTemperature()
@@ -71,60 +82,65 @@ void Items::onChangeAmbiantSurfaceTemperature()
 	Blocks& blocks = m_area.getBlocks();
 	for(ItemIndex index : m_onSurface)
 	{
-		Temperature temperature = blocks.temperature_get(m_location.at(index));
+		Temperature temperature = blocks.temperature_get(m_location.at(index()));
 		setTemperature(index, temperature);
 	}
 }
 ItemIndex Items::create(ItemParamaters itemParamaters)
 {
-	ItemIndex index = HasShapes::getNextIndex();
+	ItemIndex index = ItemIndex::cast(HasShapes::getNextIndex());
 	Portables::create(index, itemParamaters.itemType.moveType, itemParamaters.itemType.shape, itemParamaters.location, itemParamaters.facing, itemParamaters.isStatic);
-	const ItemType& itemType = *(m_itemType.at(index) = &itemParamaters.itemType);
-	m_materialType.at(index) = &itemParamaters.materialType;
-	m_id.at(index) = itemParamaters.id ? itemParamaters.id : m_area.m_simulation.m_items.getNextId();
-	m_quality.at(index) = itemParamaters.quality;
-	m_percentWear.at(index) = itemParamaters.percentWear;
-	m_quantity.at(index) = itemParamaters.quantity;
-	m_referenceTarget.at(index) = std::make_unique<ItemReferenceTarget>(index);
-	m_installed[index] = itemParamaters.installed;
+	const ItemType& itemType = *(m_itemType.at(index()) = &itemParamaters.itemType);
+	m_materialType.at(index()) = &itemParamaters.materialType;
+	m_id.at(index()) = itemParamaters.id ? itemParamaters.id : m_area.m_simulation.m_items.getNextId();
+	m_quality.at(index()) = itemParamaters.quality;
+	m_percentWear.at(index()) = itemParamaters.percentWear;
+	m_quantity.at(index()) = itemParamaters.quantity;
+	m_referenceTarget.at(index()) = std::make_unique<ItemReferenceTarget>(index);
+	m_installed.set(index(), itemParamaters.installed);
 	if(itemType.generic)
 	{
-		assert(!m_quality.at(index));
-		assert(!m_percentWear.at(index));
+		assert(!m_quality.at(index()));
+		assert(!m_percentWear.at(index()));
 	}
 	else
-		assert(m_quantity.at(index) == 1);
+		assert(m_quantity.at(index()) == 1);
 	if(itemParamaters.location != BLOCK_INDEX_MAX)
 		setLocationAndFacing(index, itemParamaters.location, itemParamaters.facing);
-	assert(m_canBeStockPiled.at(index) == nullptr);
+	assert(m_canBeStockPiled.at(index()) == nullptr);
 	return index;
 }
 void Items::resize(HasShapeIndex newSize)
 {
 	Portables::resize(newSize);
-	m_materialType.resize(newSize);
-	m_id.resize(newSize);
-	m_quality.resize(newSize);
-	m_percentWear.resize(newSize);
-	m_quantity.resize(newSize);
-	m_installed.resize(newSize);
-	m_canBeStockPiled.resize(newSize);
-	m_hasCargo.resize(newSize);
+	m_materialType.resize(newSize());
+	m_id.resize(newSize());
+	m_quality.resize(newSize());
+	m_percentWear.resize(newSize());
+	m_quantity.resize(newSize());
+	m_installed.resize(newSize());
+	m_canBeStockPiled.resize(newSize());
+	m_hasCargo.resize(newSize());
 }
 void Items::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 {
 	Portables::moveIndex(oldIndex, newIndex);
-	m_referenceTarget.at(newIndex) = std::move(m_referenceTarget.at(oldIndex));
-	m_referenceTarget.at(newIndex)->index = newIndex;
-	m_materialType[newIndex] = m_materialType[oldIndex];
-	m_id[newIndex] = m_id[oldIndex];
-	m_quality[newIndex] = m_quality[oldIndex];
-	m_percentWear[newIndex] = m_percentWear[oldIndex];
-	m_quantity[newIndex] = m_quantity[oldIndex];
-	m_installed[newIndex] = m_installed[oldIndex];
-	m_canBeStockPiled.at(newIndex) = std::move(m_canBeStockPiled.at(oldIndex));
-	m_hasCargo.at(newIndex) = std::move(m_hasCargo.at(oldIndex));
-	m_hasCargo.at(newIndex)->updateCarrierIndexForAllCargo(m_area, newIndex);
+	ItemIndex o = ItemIndex::cast(oldIndex);
+	ItemIndex n = ItemIndex::cast(newIndex);
+	m_referenceTarget.at(n) = std::move(m_referenceTarget.at(o));
+	m_referenceTarget.at(n)->index = n;
+	m_materialType.at(n) = m_materialType.at(o);
+	m_id.at(n) = m_id.at(o);
+	m_quality.at(n) = m_quality.at(o);
+	m_percentWear.at(n) = m_percentWear.at(o);
+	m_quantity.at(n) = m_quantity.at(o);
+	m_installed.set(n, m_installed.at(o));
+	m_canBeStockPiled.at(n) = std::move(m_canBeStockPiled.at(o));
+	m_hasCargo.at(n) = std::move(m_hasCargo.at(o));
+	m_hasCargo.at(n)->updateCarrierIndexForAllCargo(m_area, n);
+	Blocks& blocks = m_area.getBlocks();
+	for(BlockIndex block : m_blocks.at(newIndex))
+		blocks.item_updateIndex(block, o, n);
 }
 void Items::setLocation(ItemIndex index, BlockIndex block)
 {
@@ -137,10 +153,10 @@ void Items::setLocationAndFacing(ItemIndex index, BlockIndex block, Facing facin
 	if(m_location.at(index) != BLOCK_INDEX_MAX)
 		exit(index);
 	Blocks& blocks = m_area.getBlocks();
-	if(isGeneric(index) && m_static[index])
+	if(isGeneric(index) && m_static.at(index))
 	{
-		ItemIndex found = blocks.item_getGeneric(index, getItemType(index), getMaterialType(index));
-		if(found != ITEM_INDEX_MAX)
+		ItemIndex found = blocks.item_getGeneric(block, getItemType(index), getMaterialType(index));
+		if(found.exists())
 		{
 			merge(found, index);
 			return;
@@ -191,7 +207,7 @@ void Items::removeQuantity(ItemIndex index, Quantity delta)
 void Items::install(ItemIndex index, BlockIndex block, Facing facing, FactionId faction)
 {
 	setLocationAndFacing(index, block, facing);
-	m_installed[index] = true;
+	m_installed.set(index);
 	if(m_itemType.at(index)->craftLocationStepTypeCategory)
 	{
 		BlockIndex craftLocation = m_itemType.at(index)->getCraftLocation(m_area.getBlocks(), block, facing);
@@ -230,11 +246,11 @@ void Items::destroy(ItemIndex index)
 {
 	if(m_location.at(index) != BLOCK_INDEX_MAX)
 		exit(index);
-	m_onSurface.erase(index);
+	m_onSurface.remove(index);
 	m_name.at(index).clear();
 	m_canBeStockPiled.at(index) = nullptr;
 	m_hasCargo.at(index) = nullptr;
-	m_area.m_simulation.m_items.removeItem(index);
+	m_area.m_simulation.m_items.removeItem(m_id.at(index));
 	Portables::destroy(index);
 }
 bool Items::isGeneric(ItemIndex index) const { return m_itemType.at(index)->generic; }
@@ -280,7 +296,7 @@ void Items::log(ItemIndex index) const
 // Wrapper methods.
 void Items::stockpile_maybeUnsetAndScheduleReset(ItemIndex index, FactionId faction, Step duration)
 {
-	m_canBeStockPiled.at(index)->maybeUnsetAndScheduleReset(m_area.m_eventSchedule, faction, duration);
+	m_canBeStockPiled.at(index)->maybeUnsetAndScheduleReset(m_area, faction, duration);
 }
 void Items::stockpile_set(ItemIndex index, FactionId faction)
 {
@@ -297,19 +313,19 @@ bool Items::stockpile_canBeStockPiled(ItemIndex index, const FactionId faction) 
 void Items::load(const Json& data)
 {
 	static_cast<Portables*>(this)->load(data);
-	m_onSurface = data["onSurface"].get<std::unordered_set<ItemIndex>>();
-	m_name = data["name"].get<std::vector<std::wstring>>();
-	m_itemType = data["itemType"].get<std::vector<const ItemType*>>();
-	m_materialType = data["materialType"].get<std::vector<const MaterialType*>>();
-	m_id = data["id"].get<std::vector<ItemId>>();
-	m_quality = data["quality"].get<std::vector<Quality>>();
-	m_quantity = data["quality"].get<std::vector<Quantity>>();
+	data["onSurface"].get_to(m_onSurface);
+	data["name"].get_to(m_name);
+	data["itemType"].get_to(m_itemType);
+	data["materialType"].get_to(m_materialType);
+	data["id"].get_to(m_id);
+	data["quality"].get_to(m_quality);
+	data["quantity"].get_to(m_quantity);
 	m_canBeStockPiled.resize(m_id.size());
 	for(const Json& pair : data["canBeStockPiled"])
 	{
 		ItemIndex index = pair[0];
 		auto& canBeStockPiled = m_canBeStockPiled.at(index) = std::make_unique<ItemCanBeStockPiled>();
-		canBeStockPiled->load(pair[1], m_area.m_eventSchedule);
+		canBeStockPiled->load(pair[1], m_area);
 	}
 	m_craftJobForWorkPiece.resize(m_id.size());
 	for(const Json& pair : data["craftJobForWorkPiece"])
@@ -327,7 +343,7 @@ void Items::load(const Json& data)
 	}
 }
 void to_json(Json& data, std::unique_ptr<ItemHasCargo> hasCargo) { data = *hasCargo; }
-void to_json(Json& data, std::unique_ptr<ItemCanBeStockPiled> canBeStockPiled) { data = canBeStockPiled->toJson(); }
+void to_json(Json& data, std::unique_ptr<ItemCanBeStockPiled> canBeStockPiled) { data = canBeStockPiled == nullptr ? Json{false} : canBeStockPiled->toJson(); }
 Json Items::toJson() const
 {
 	Json data = Portables::toJson();
@@ -340,8 +356,22 @@ Json Items::toJson() const
 	data["quantity"] = m_quantity;
 	data["percentWear"] = m_percentWear;
 	data["installed"] = m_installed;
-	data["canBeStockPiled"] = m_canBeStockPiled;
-	data["cargo"] = m_hasCargo;
+	data["canBeStockPiled"] = Json::array();
+	int i = 0;
+	for(const auto& canBeStockPiled : m_canBeStockPiled)
+	{
+		if(canBeStockPiled != nullptr)
+			data["canBeStockPiled"][i] = canBeStockPiled->toJson();
+		++i;
+	}
+	data["cargo"] = Json::array();
+	i = 0;
+	for(const std::unique_ptr<ItemHasCargo>& cargo : m_hasCargo)
+	{
+		if(cargo != nullptr)
+			data["canBeStockPiled"][i] = *cargo;
+		++i;
+	}
 	return data;
 }
 // HasCargo.

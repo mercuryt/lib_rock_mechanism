@@ -5,12 +5,14 @@
 #pragma once
 
 #include "config.h"
+#include "index.h"
 #include "types.h"
 #include "util.h"
 #include "json.h"
 #include "../lib/dynamic_bitset.hpp"
 #include "shape.h"
 #include "faction.h"
+#include "dataVector.h"
 
 #include <ranges>
 
@@ -22,15 +24,15 @@ class CanReserve;
 class HasShapes
 {
 protected:
-	std::unordered_set<HasShapeIndex> m_onSurface;
-	std::vector<const Shape*> m_shape;
-	std::vector<BlockIndex> m_location;
-	std::vector<Facing> m_facing;
-	std::vector<FactionId> m_faction;
-	std::vector<std::unordered_set<BlockIndex>> m_blocks;
-	sul::dynamic_bitset<> m_static;
+	HasShapeIndices m_onSurface;
+	DataVector<const Shape*, HasShapeIndex> m_shape;
+	DataVector<BlockIndex, HasShapeIndex> m_location;
+	DataVector<Facing, HasShapeIndex> m_facing;
+	DataVector<FactionId, HasShapeIndex> m_faction;
+	DataVector<BlockIndices, HasShapeIndex> m_blocks;
+	DataBitSet<HasShapeIndex> m_static;
 	//TODO: Do we need m_underground?
-	sul::dynamic_bitset<> m_underground;
+	DataBitSet<HasShapeIndex> m_underground;
 	Area& m_area;
 	HasShapes(Area& area);
 	HasShapes(const Json& data, DeserializationMemo& deserializationMemo);
@@ -55,28 +57,28 @@ public:
 	[[nodiscard]] BlockIndex getLocation(HasShapeIndex index) const { return m_location.at(index); }
 	[[nodiscard]] bool hasLocation(HasShapeIndex index) const { return getLocation(index) != BLOCK_INDEX_MAX; }
 	[[nodiscard]] Facing getFacing(HasShapeIndex index) const { return m_facing.at(index); }
-	[[nodiscard]] const std::unordered_set<BlockIndex>& getBlocks(HasShapeIndex index) const { return m_blocks.at(index); }
+	[[nodiscard]] const auto& getBlocks(HasShapeIndex index) const { return m_blocks.at(index); }
 	[[nodiscard]] FactionId getFactionId(HasShapeIndex index) { return m_faction.at(index); }
 	[[nodiscard]] const Faction* getFaction(HasShapeIndex index) const;
 	[[nodiscard]] bool hasFaction(HasShapeIndex index) const { return m_faction.at(index) != FACTION_ID_MAX; }
-	[[nodiscard]] bool isStatic(HasShapeIndex index) const { return m_static[index]; }
+	[[nodiscard]] bool isStatic(HasShapeIndex index) const { return m_static.at(index); }
 	[[nodiscard]] bool isAdjacentToLocation(HasShapeIndex index, BlockIndex block) const;
-	[[nodiscard]] bool isAdjacentToAny(HasShapeIndex index, std::unordered_set<BlockIndex> block) const;
+	[[nodiscard]] bool isAdjacentToAny(HasShapeIndex index, BlockIndices block) const;
 	[[nodiscard]] bool predicateForAnyOccupiedBlock(HasShapeIndex index, std::function<bool(BlockIndex)> predicate) const;
 	[[nodiscard]] bool predicateForAnyAdjacentBlock(HasShapeIndex index, std::function<bool(BlockIndex)> predicate) const;
 	[[nodiscard]] bool predicateForAnyOccupiedBlockAtLocationAndFacing(HasShapeIndex index, std::function<bool(const BlockIndex)> predicate, BlockIndex location, Facing facing) const;
-	[[nodiscard]] std::unordered_set<BlockIndex> getAdjacentBlocks(HasShapeIndex index) const;
-	[[nodiscard]] std::unordered_set<BlockIndex> getOccupiedAndAdjacentBlocks(HasShapeIndex index) const;
-	[[nodiscard]] std::unordered_set<ItemIndex> getAdjacentItems(HasShapeIndex index) const;
-	[[nodiscard]] std::unordered_set<ActorIndex> getAdjacentActors(HasShapeIndex index) const;
-	[[nodiscard]] std::vector<BlockIndex> getAdjacentBlocksAtLocationWithFacing(HasShapeIndex index, BlockIndex block, Facing facing) const;
-	[[nodiscard]] std::vector<BlockIndex> getBlocksWhichWouldBeOccupiedAtLocationAndFacing(HasShapeIndex index, BlockIndex location, Facing facing) const;
+	[[nodiscard]] BlockIndices getAdjacentBlocks(HasShapeIndex index) const;
+	[[nodiscard]] BlockIndices getOccupiedAndAdjacentBlocks(HasShapeIndex index) const;
+	[[nodiscard]] ItemIndices getAdjacentItems(HasShapeIndex index) const;
+	[[nodiscard]] ActorIndices getAdjacentActors(HasShapeIndex index) const;
+	[[nodiscard]] BlockIndices getAdjacentBlocksAtLocationWithFacing(HasShapeIndex index, BlockIndex block, Facing facing) const;
+	[[nodiscard]] BlockIndices getBlocksWhichWouldBeOccupiedAtLocationAndFacing(HasShapeIndex index, BlockIndex location, Facing facing) const;
 	//TODO: isOnSurface could be more efficent.
 	[[nodiscard]] bool isOnSurface(HasShapeIndex index) const { return m_onSurface.contains(index); }
 	[[nodiscard]] bool allBlocksAtLocationAndFacingAreReservable(HasShapeIndex index, BlockIndex location, Facing facing, FactionId faction) const;
 	[[nodiscard]] bool allOccupiedBlocksAreReservable(HasShapeIndex index, FactionId faction) const;
 	[[nodiscard]] bool isAdjacentToActor(HasShapeIndex index, ActorIndex actor) const;
-	[[nodiscard]] bool isAdjacentToItem(HasShapeIndex index, ActorIndex actor) const;
+	[[nodiscard]] bool isAdjacentToItem(HasShapeIndex index, ItemIndex actor) const;
 	[[nodiscard]] bool isAdjacentToPlant(HasShapeIndex index, PlantIndex plant) const;
 	[[nodiscard]] bool isAdjacentToActorAt(HasShapeIndex index, BlockIndex location, Facing facing, ActorIndex actor) const;
 	[[nodiscard]] bool isAdjacentToItemAt(HasShapeIndex index, BlockIndex location, Facing facing, ItemIndex item) const;
@@ -91,7 +93,8 @@ public:
 	[[nodiscard]] BlockIndex getBlockWhichIsOccupiedWithPredicate(HasShapeIndex index, std::function<bool(BlockIndex)>& predicate) const;
 	[[nodiscard]] ItemIndex getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(HasShapeIndex index, BlockIndex location, Facing facing, std::function<bool(const ItemIndex)>& predicate) const;
 	[[nodiscard]] ItemIndex getItemWhichIsAdjacentWithPredicate(HasShapeIndex index, std::function<bool(const ItemIndex)>& predicate) const;
-	[[nodiscard]] std::vector<HasShapeIndex> getAll() const;
-	[[nodiscard]] std::unordered_set<HasShapeIndex>& getOnSurface() { return m_onSurface; }
+	[[nodiscard]] HasShapeIndices getAll() const;
+	[[nodiscard]] auto& getOnSurface() { return m_onSurface; }
+	[[nodiscard]] Area& getArea() { return m_area; }
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(HasShapes, m_onSurface, m_shape, m_location, m_facing, m_faction, m_blocks, m_static, m_underground);
 };
