@@ -15,7 +15,7 @@ DrinkPathRequest::DrinkPathRequest(Area& area, DrinkObjective& drob, ActorIndex 
 	};
 	bool reserve = false;
 	bool unreserved = false;
-	if(area.getActors().getFaction(getActor()))
+	if(area.getActors().hasFaction(getActor()))
 	{
 		reserve = true;
 		unreserved = true;
@@ -63,7 +63,7 @@ DrinkObjective::DrinkObjective(const Json& data, DeserializationMemo& deserializ
 	Objective(data, deserializationMemo), m_drinkEvent(area.m_eventSchedule), m_noDrinkFound(data["noDrinkFound"].get<bool>())
 { 
 	if(data.contains("eventStart"))
-		m_drinkEvent.schedule(Config::stepsToDrink, *this, data["eventStart"].get<Step>());
+		m_drinkEvent.schedule(area, Config::stepsToDrink, *this, data["eventStart"].get<Step>());
 }
 Json DrinkObjective::toJson() const
 {
@@ -90,7 +90,7 @@ void DrinkObjective::execute(Area& area, ActorIndex actor)
 	if(!canDrinkAt(area, actors.getLocation(actor), actors.getFacing(actor), actor))
 		makePathRequest(area, actor);
 	else
-		m_drinkEvent.schedule(area, Config::stepsToDrink, *this);
+		m_drinkEvent.schedule(area, Config::stepsToDrink, *this, actor);
 }
 void DrinkObjective::cancel(Area& area, ActorIndex actor) 
 { 

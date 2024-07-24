@@ -6,7 +6,7 @@ void Blocks::actor_record(BlockIndex index, ActorIndex actor, CollisionVolume vo
 {
 	Actors& actors = m_area.getActors();
 	m_actorVolume.at(index).emplace_back(actor, volume);
-	m_actors.at(index).push_back(actor);
+	m_actors.at(index).add(actor);
 	if(actors.isStatic(actor))
 		m_staticVolume.at(index) += volume;
 	else
@@ -35,6 +35,12 @@ void Blocks::actor_setTemperature(BlockIndex index, Temperature temperature)
 	for(auto pair : m_actorVolume.at(index))
 		actors.temperature_onChange(pair.first);
 }
+void Blocks::actor_updateIndex(BlockIndex index, ActorIndex oldIndex, ActorIndex newIndex)
+{
+	auto found = std::ranges::find(m_actors.at(index), oldIndex);
+	assert(found != m_actors.at(index).end());
+	(*found) = newIndex; 
+}
 bool Blocks::actor_contains(BlockIndex index, ActorIndex actor) const
 {
 	return std::ranges::find(m_actorVolume.at(index), actor, &std::pair<ActorIndex, CollisionVolume>::first) != m_actorVolume.at(index).end();
@@ -43,7 +49,7 @@ bool Blocks::actor_empty(BlockIndex index) const
 {
 	return m_actorVolume.at(index).empty();
 }
-std::vector<ActorIndex>& Blocks::actor_getAll(BlockIndex index)
+ActorIndicesForBlock& Blocks::actor_getAll(BlockIndex index)
 {
 	return m_actors.at(index);
 }

@@ -49,7 +49,6 @@ DramaArcType DramaArc::stringToType(std::string string)
 	return DramaArcType::AnimalsArrive;
 }
 // Static method.
-/*
 std::unique_ptr<DramaArc> DramaArc::load(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine)
 {
 	DramaArcType type = data["type"].get<DramaArcType>();
@@ -78,8 +77,7 @@ Json DramaArc::toJson() const
 		data["area"] = m_area->m_id;
 	return data;
 }
-*/
-void DramaArc::actorsLeave(std::vector<ActorIndex> actorsLeaving)
+void DramaArc::actorsLeave(ActorIndices actorsLeaving)
 {
 	constexpr uint8_t priority = 100;
 	Actors& actors = m_area->getActors();
@@ -87,37 +85,36 @@ void DramaArc::actorsLeave(std::vector<ActorIndex> actorsLeaving)
 	{
 		if(actors.isAlive(actor))
 		{
-			std::unique_ptr<Objective> objective = std::make_unique<LeaveAreaObjective>(actor, priority);
+			std::unique_ptr<Objective> objective = std::make_unique<LeaveAreaObjective>(priority);
 			actors.objective_addTaskToStart(actor, std::move(objective));
 		}
 	}
 }
-BlockIndex DramaArc::getEntranceToArea(Area& area, const Shape& shape, const MoveType& moveType) const
+BlockIndex DramaArc::getEntranceToArea(const Shape& shape, const MoveType& moveType) const
 {
-	std::vector<BlockIndex> candidates;
-	Blocks& blocks = area.getBlocks();
+	BlockIndices candidates;
+	Blocks& blocks = m_area->getBlocks();
 	for(BlockIndex block : blocks.getAll())
 		if(blocks.shape_moveTypeCanEnter(block, moveType) && blocks.isEdge(block) && !blocks.isUnderground(block))
-			candidates.push_back(block);
+			candidates.add(block);
 	BlockIndex candidate = BLOCK_INDEX_MAX;
-	auto& random = area.m_simulation.m_random;
 	static uint16_t minimumConnectedCount = 200;
 	do {
 		if(candidate)
 		{
 			auto iterator = std::ranges::find(candidates, candidate);
 			assert(iterator != candidates.end());
-			candidates.erase(iterator);
+			candidates.remove(*iterator);
 		}
 		if(candidates.empty())
 			return BLOCK_INDEX_MAX;
-		candidate = random.getInVector(candidates);
+		candidate = candidates.random(m_area->m_simulation);
 	}
 	while (!blockIsConnectedToAtLeast(candidate, shape, moveType, minimumConnectedCount));
 	assert(candidate);
 	return candidate;
 }
-BlockIndex DramaArc::findLocationOnEdgeForNear(const Shape& shape, const MoveType& moveType, BlockIndex origin, DistanceInBlocks distance, std::unordered_set<BlockIndex>& exclude) const
+BlockIndex DramaArc::findLocationOnEdgeForNear(const Shape& shape, const MoveType& moveType, BlockIndex origin, DistanceInBlocks distance, BlockIndices& exclude) const
 {
 	Facing facing = getFacingAwayFromEdge(origin);
 	Blocks& blocks = m_area->getBlocks();
@@ -137,7 +134,7 @@ BlockIndex DramaArc::findLocationOnEdgeForNear(const Shape& shape, const MoveTyp
 }
 bool DramaArc::blockIsConnectedToAtLeast(BlockIndex origin, [[maybe_unused]] const Shape& shape, const MoveType& moveType, uint16_t count) const
 {
-	std::unordered_set<BlockIndex> accumulated;
+	BlockIndices accumulated;
 	std::stack<BlockIndex> open;
 	open.push(origin);
 	Blocks& blocks = m_area->getBlocks();
@@ -180,7 +177,6 @@ std::vector<const AnimalSpecies*> DramaArc::getSentientSpecies() const
 			output.push_back(&species);
 	return output;
 }
-/*
 DramaEngine::DramaEngine(const Json& data, DeserializationMemo& deserializationMemo, Simulation& simulation) : m_simulation(simulation)
 {
 	for(const Json& arcData : data["arcs"])
@@ -196,7 +192,6 @@ Json DramaEngine::toJson() const
 		arcs.push_back(arc->toJson());
 	return {{"arcs", arcs}};
 }
-*/
 void DramaEngine::add(std::unique_ptr<DramaArc> dramaticArc)
 {
 	if(dramaticArc->m_area)

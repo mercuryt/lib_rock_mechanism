@@ -21,12 +21,12 @@ class ActorOrItemIndex;
 class Portables : public HasShapes
 {
 protected:
-	std::vector<std::unique_ptr<Reservable>> m_reservables;
-	std::vector<std::unique_ptr<OnDestroy>> m_destroy;
-	std::vector<ActorOrItemIndex> m_follower;
-	std::vector<ActorOrItemIndex> m_leader;
-	std::vector<ActorOrItemIndex> m_carrier;
-	std::vector<const MoveType*> m_moveType;
+	DataVector<std::unique_ptr<Reservable>, HasShapeIndex> m_reservables;
+	DataVector<std::unique_ptr<OnDestroy>, HasShapeIndex> m_destroy;
+	DataVector<ActorOrItemIndex, HasShapeIndex> m_follower;
+	DataVector<ActorOrItemIndex, HasShapeIndex> m_leader;
+	DataVector<ActorOrItemIndex, HasShapeIndex> m_carrier;
+	DataVector<const MoveType*, HasShapeIndex> m_moveType;
 	bool isActors;
 	Portables(Area& area);
 	void create(HasShapeIndex index, const MoveType& moveType, const Shape& shape, BlockIndex location, Facing facing, bool isStatic);

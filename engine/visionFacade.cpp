@@ -84,7 +84,7 @@ DistanceInBlocks VisionFacade::taxiDistance(Point3D a, Point3D b)
 		std::abs((int)a.y - (int)b.y) +
 		std::abs((int)a.z - (int)b.z);
 }
-std::vector<ActorIndex>& VisionFacade::getResults(VisionFacadeIndex index)
+ActorIndices& VisionFacade::getResults(VisionFacadeIndex index)
 { 
 	assert(m_actors.size() > index); 
 	assert(m_results.size() == m_actors.size()); 
@@ -107,7 +107,7 @@ void VisionFacade::readStepSegment(VisionFacadeIndex begin, VisionFacadeIndex en
 	{
 		DistanceInBlocks range = getRange(viewerIndex);
 		BlockIndex fromIndex = getLocation(viewerIndex);
-		std::vector<ActorIndex>& result = getResults(viewerIndex);
+		ActorIndices& result = getResults(viewerIndex);
 		result.clear();
 		// Collect results in a vector rather then a set to prevent cache thrashing.
 		Point3D fromCoords = blocks.getCoordinates(fromIndex);
@@ -145,7 +145,7 @@ void VisionFacade::readStepSegment(VisionFacadeIndex begin, VisionFacadeIndex en
 									m_area->m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toIndex, toCoords)
 								  )
 								{
-									result.push_back(bucket.m_actorsMultiTile.at(i));
+									result.add(bucket.m_actorsMultiTile.at(i));
 									break;
 								}
 							}
@@ -165,7 +165,7 @@ void VisionFacade::readStepSegment(VisionFacadeIndex begin, VisionFacadeIndex en
 								fromVisionCuboidId == toVisionCuboidId ||
 								m_area->m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toIndex, toCoords)
 							  )
-								result.push_back(bucket.m_actorsSingleTile.at(i));
+								result.add(bucket.m_actorsSingleTile.at(i));
 						}
 					}
 				}

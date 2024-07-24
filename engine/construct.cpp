@@ -87,7 +87,7 @@ void ConstructProject::onComplete()
 }
 void ConstructProject::onCancel()
 {
-	std::vector<ActorIndex> copy = getWorkersAndCandidates();
+	ActorIndices copy = getWorkersAndCandidates();
 	m_area.m_hasConstructionDesignations.remove(m_faction, m_location);
 	Actors& actors = m_area.getActors();
 	for(ActorIndex actor : copy)

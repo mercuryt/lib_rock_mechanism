@@ -23,7 +23,7 @@ class HarvestObjective final : public Objective
 	BlockIndex m_block = BLOCK_INDEX_MAX;
 public:
 	HarvestObjective(Area& area);
-	HarvestObjective(const Json& data, DeserializationMemo& deserializationMemo);
+	HarvestObjective(const Json& data, Area& area);
 	Json toJson() const;
 	HasScheduledEvent<HarvestEvent> m_harvestEvent;
 	void execute(Area& area, ActorIndex actor);

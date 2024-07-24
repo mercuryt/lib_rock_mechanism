@@ -12,7 +12,7 @@ void Blocks::item_record(BlockIndex index, ItemIndex item, CollisionVolume volum
 {
 	m_itemVolume.at(index).emplace_back(item, volume);
 	Items& items = m_area.getItems();
-	m_items.at(index).push_back(item);
+	m_items.at(index).add(item);
 	if(items.isStatic(item))
 		m_staticVolume.at(index) += volume;
 	else
@@ -45,10 +45,10 @@ void Blocks::item_disperseAll(BlockIndex index)
 	auto& itemsInBlock = m_itemVolume.at(index);
 	if(itemsInBlock.empty())
 		return;
-	std::vector<BlockIndex> blocks;
+	BlockIndices blocks;
 	for(BlockIndex otherIndex : getAdjacentOnSameZLevelOnly(index))
 		if(!solid_is(otherIndex))
-			blocks.push_back(otherIndex);
+			blocks.add(otherIndex);
 	auto copy = itemsInBlock;
 	Items& items = m_area.getItems();
 	for(auto [item, volume] : copy)
@@ -58,6 +58,12 @@ void Blocks::item_disperseAll(BlockIndex index)
 		BlockIndex block = blocks.at(random.getInRange(0u, (uint)(blocks.size() - 1)));
 		items.setLocation(item, block);
 	}
+}
+void Blocks::item_updateIndex(BlockIndex index, ItemIndex oldIndex, ItemIndex newIndex)
+{
+	auto found = std::ranges::find(m_items.at(index), oldIndex);
+	assert(found != m_items.at(index).end());
+	(*found) = newIndex; 
 }
 uint32_t Blocks::item_getCount(BlockIndex index, const ItemType& itemType, const MaterialType& materialType) const
 {
@@ -129,13 +135,13 @@ bool Blocks::item_empty(BlockIndex index) const
 }
 bool Blocks::item_contains(BlockIndex index, ItemIndex item) const
 {
-	return util::vectorContains(m_items.at(index), item);
+	return m_items.at(index).contains(item);
 }
-std::vector<ItemIndex> Blocks::item_getAll(BlockIndex index)
+ItemIndicesForBlock& Blocks::item_getAll(BlockIndex index)
 {
 	return m_items.at(index);
 }
-const std::vector<ItemIndex> Blocks::item_getAll(BlockIndex index) const
+const ItemIndicesForBlock& Blocks::item_getAll(BlockIndex index) const
 {
 	return const_cast<Blocks*>(this)->item_getAll(index);
 }

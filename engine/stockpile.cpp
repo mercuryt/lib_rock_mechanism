@@ -99,7 +99,7 @@ void StockPileProject::onReserve()
 }
 void StockPileProject::onCancel()
 {
-	std::vector<ActorIndex> workersAndCandidates = getWorkersAndCandidates();
+	ActorIndices workersAndCandidates = getWorkersAndCandidates();
 	m_area.m_hasStockPiles.at(m_faction).destroyProject(*this);
 	Actors& actors = m_area.getActors();
 	for(ActorIndex actor : workersAndCandidates)
@@ -177,7 +177,7 @@ void StockPile::addBlock(BlockIndex block)
 	blocks.stockpile_recordMembership(block, *this);
 	if(blocks.stockpile_contains(block, m_faction))
 		incrementOpenBlocks();
-	m_blocks.insert(block);
+	m_blocks.add(block);
 	Items& items = m_area.getItems();
 	for(ItemIndex item : blocks.item_getAll(block))
 		if(accepts(item))
@@ -196,14 +196,14 @@ void StockPile::removeBlock(BlockIndex block)
 	// Collect projects delivering items to block.
 	// This is very slow, particularly when destroying a large stockpile when many stockpile projects exist. Probably doesn't get called often enough to matter.
 	std::vector<Project*> projectsToCancel;
-	for(auto pair : m_area.m_hasStockPiles.at(m_faction).m_projectsByItem)
+	for(auto& pair : m_area.m_hasStockPiles.at(m_faction).m_projectsByItem)
 		for(Project& project : pair.second)
 			if(project.getLocation() == block)
 				projectsToCancel.push_back(&project);
 	if(blocks.stockpile_isAvalible(block, m_faction))
 		decrementOpenBlocks();
 	blocks.stockpile_recordNoLongerMember(block, *this);
-	m_blocks.erase(block);
+	m_blocks.remove(block);
 	if(m_blocks.empty())
 		m_area.m_hasStockPiles.at(m_faction).destroyStockPile(*this);
 	// Cancel collected projects.
@@ -326,7 +326,7 @@ AreaHasStockPilesForFaction::AreaHasStockPilesForFaction(const Json& data, Deser
 			ItemIndex itemIndex = pair[0].get<ItemIndex>();
 			ItemReference ref = m_area.getItems().getReference(itemIndex);
 			for(const Json& project : pair[1])
-				m_projectsByItem[ref].emplace_back(project, deserializationMemo);
+				m_projectsByItem[ref].emplace_back(project, deserializationMemo, m_area);
 		}
 }
 void AreaHasStockPilesForFaction::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
@@ -546,11 +546,12 @@ void AreaHasStockPilesForFaction::makeProject(ItemIndex item, BlockIndex destina
 {
 	Blocks& blocks = m_area.getBlocks();
 	Actors& actors = m_area.getActors();
+	Items& items = m_area.getItems();
 	FactionId faction = actors.getFactionId(actor);
 	assert(blocks.stockpile_contains(destination, faction));
 	// Quantity per project is the ammount that can be hauled by hand, if any, or one.
 	// TODO: Hauling a load of generics with tools.
-	Quantity quantity = actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(actor, item, Config::minimumHaulSpeedInital);
+	Quantity quantity = actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(actor, items.getMass(item), Config::minimumHaulSpeedInital);
 	Quantity maxWorkers = 1;
 	if(!quantity)
 	{
@@ -608,7 +609,7 @@ ItemIndex AreaHasStockPilesForFaction::getHaulableItemForAt(const ActorIndex act
 	FactionId faction = m_area.getActors().getFactionId(actor);
 	Items& items = m_area.getItems();
 	if(blocks.isReserved(block, faction))
-		return ITEM_INDEX_MAX;
+		return ItemIndex::null();
 	for(ItemIndex item : blocks.item_getAll(block))
 	{
 		if(items.reservable_isFullyReserved(item, faction))
@@ -616,7 +617,7 @@ ItemIndex AreaHasStockPilesForFaction::getHaulableItemForAt(const ActorIndex act
 		if(items.stockpile_canBeStockPiled(item, faction))
 			return item;
 	}
-	return ITEM_INDEX_MAX;
+	return ItemIndex::null();
 }
 StockPile* AreaHasStockPilesForFaction::getStockPileFor(const ItemIndex item) const
 {

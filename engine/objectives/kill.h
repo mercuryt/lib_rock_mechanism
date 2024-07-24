@@ -10,21 +10,22 @@
 #pragma once
 
 #include "config.h"
-#include "input.h"
+//#include "input.h"
 #include "objective.h"
 #include "eventSchedule.h"
 #include "threadedTask.h"
+#include "index.h"
 
 struct DeserializationMemo;
-
+/*
 class KillInputAction final : public InputAction
 {
 	ActorIndex m_killer;
 	ActorIndex m_target;
-	KillInputAction(std::unordered_set<ActorIndex> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, ActorIndex killer, ActorIndex target);
+	KillInputAction(ActorIndices actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, ActorIndex killer, ActorIndex target);
 	void execute();
 };
-
+*/
 class KillObjective final : public Objective
 {
 	ActorReference m_target;

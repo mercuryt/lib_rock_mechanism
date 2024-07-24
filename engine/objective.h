@@ -198,7 +198,7 @@ class HasObjectives final
 	std::list<std::unique_ptr<Objective>> m_tasksQueue;
 	std::unordered_map<ObjectiveTypeId, SupressedNeed> m_supressedNeeds;
 	Objective* m_currentObjective = nullptr;
-	ActorIndex m_actor = ACTOR_INDEX_MAX;
+	ActorIndex m_actor;
 
 	void maybeUsurpsPriority(Area& area, Objective& objective);
 	void setCurrentObjective(Area& area, Objective& objective);
@@ -209,7 +209,7 @@ public:
 
 	HasObjectives(ActorIndex a) : m_actor(a) { }
 	void updateActorIndex(ActorIndex actor) { m_actor = actor; }
-	void load(const Json& data, DeserializationMemo& deserializationMemo);
+	void load(const Json& data, DeserializationMemo& deserializationMemo, Area& area, ActorIndex actor);
 	// Assign next objective from either task queue or needs, depending on priority.
 	void getNext(Area& area);
 	// Add to need set, to be sorted into position depending on priority. May usurp.

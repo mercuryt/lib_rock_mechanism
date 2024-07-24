@@ -4,6 +4,7 @@
 #include "../actors/actors.h"
 #include "../blocks/blocks.h"
 #include "../terrainFacade.h"
+#include "reference.h"
 #include "types.h"
 DigPathRequest::DigPathRequest(Area& area, DigObjective& digObjective, ActorIndex actor) : m_digObjective(digObjective)
 {
@@ -16,9 +17,10 @@ DigPathRequest::DigPathRequest(Area& area, DigObjective& digObjective, ActorInde
 	//TODO: We don't need the whole path here, just the destination and facing.
 	createGoAdjacentToCondition(area, actor, predicate, m_digObjective.m_detour, unreserved, maxRange, BLOCK_INDEX_MAX);
 }
-void DigPathRequest::callback(Area& area, FindPathResult& result, ActorIndex actor)
+void DigPathRequest::callback(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
+	ActorIndex actor = getActor();
 	if(result.path.empty() && !result.useCurrentPosition)
 		actors.objective_canNotCompleteObjective(actor, m_digObjective);
 	else
@@ -37,7 +39,7 @@ void DigPathRequest::callback(Area& area, FindPathResult& result, ActorIndex act
 			return;
 		}
 		BlockIndex target = result.blockThatPassedPredicate;
-		DigProject& project = area.m_hasDigDesignations.at(*actors.getFaction(actor), target);
+		DigProject& project = area.m_hasDigDesignations.at(actors.getFactionId(actor), target);
 		if(project.canAddWorker(actor))
 			m_digObjective.joinProject(project, actor);
 		else
@@ -48,24 +50,16 @@ void DigPathRequest::callback(Area& area, FindPathResult& result, ActorIndex act
 		}
 	}
 }
-/*
 DigObjective::DigObjective(const Json& data, DeserializationMemo& deserializationMemo) :
-	Objective(data, deserializationMemo), m_digPathRequest(m_actor.m_area->m_simulation.m_threadedTaskEngine), 
-	m_project(data.contains("project") ? deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()) : nullptr)
-{
-	if(data.contains("threadedTask"))
-		m_digPathRequest.create(*this);
-}
+	Objective(data, deserializationMemo),
+	m_project(data.contains("project") ? static_cast<DigProject*>(deserializationMemo.m_projects.at(data["project"].get<uintptr_t>())) : nullptr) { }
 Json DigObjective::toJson() const
 {
 	Json data = Objective::toJson();
 	if(m_project != nullptr)
 		data["project"] = m_project;
-	if(m_digPathRequest.exists())
-		data["threadedTask"] = true;
 	return data;
 }
-*/
 void DigObjective::execute(Area& area, ActorIndex actor)
 {
 	if(m_project != nullptr)
@@ -78,7 +72,7 @@ void DigObjective::execute(Area& area, ActorIndex actor)
 		{ 
 			if(!getJoinableProjectAt(area, block, actor))
 				return false;
-			project = &area.m_hasDigDesignations.at(*actors.getFaction(actor), block);
+			project = &area.m_hasDigDesignations.at(actors.getFactionId(actor), block);
 			if(project->canAddWorker(actor))
 				return true;
 			return false;
@@ -111,7 +105,8 @@ void DigObjective::reset(Area& area, ActorIndex actor)
 	Actors& actors = area.getActors();
 	if(m_project)
 	{
-		assert(!m_project->getWorkers().contains(actor));
+		ActorReference ref = area.getActors().getReference(actor);
+		assert(!m_project->getWorkers().contains(ref));
 		m_project = nullptr; 
 		actors.project_unset(actor);
 	}

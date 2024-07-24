@@ -2,10 +2,9 @@
 #include "../fluidGroup.h"
 #include "../area.h"
 #include "../blocks/blocks.h"
-#include <unordered_set>
 #include <assert.h>
 FluidQueue::FluidQueue(FluidGroup& fluidGroup) : m_fluidGroup(fluidGroup) {}
-void FluidQueue::setBlocks(std::unordered_set<BlockIndex>& blocks)
+void FluidQueue::setBlocks(BlockIndices& blocks)
 {
 	std::erase_if(m_queue, [&](FutureFlowBlock& futureFlowBlock){ return !blocks.contains(futureFlowBlock.block); });
 	for(BlockIndex block : blocks)
@@ -17,25 +16,25 @@ void FluidQueue::addBlock(BlockIndex block)
 {
 	if(m_set.contains(block))
 		return;
-	m_set.insert(block);
+	m_set.add(block);
 	m_queue.emplace_back(block);
 }
-void FluidQueue::addBlocks(std::unordered_set<BlockIndex>& blocks)
+void FluidQueue::addBlocks(BlockIndices& blocks)
 {
 	//m_queue.reserve(m_queue.size() + blocks.size());
 	for(BlockIndex block : blocks)
 		if(!m_set.contains(block))
 			m_queue.emplace_back(block);
-	m_set.insert(blocks.begin(), blocks.end());
+	m_set.merge(blocks);
 }
 void FluidQueue::removeBlock(BlockIndex block)
 {
-	m_set.erase(block);
+	m_set.remove(block);
 	std::erase_if(m_queue, [&](FutureFlowBlock& futureFlowBlock){ return futureFlowBlock.block == block; });
 }
-void FluidQueue::removeBlocks(std::unordered_set<BlockIndex>& blocks)
+void FluidQueue::removeBlocks(BlockIndices& blocks)
 {
-	std::erase_if(m_set, [&](BlockIndex block){ return blocks.contains(block); });
+	m_set.erase_if([&](BlockIndex block){ return blocks.contains(block); });
 	std::erase_if(m_queue, [&](FutureFlowBlock& futureFlowBlock){ return blocks.contains(futureFlowBlock.block); });
 }
 void FluidQueue::merge(FluidQueue& fluidQueue)

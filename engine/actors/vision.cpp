@@ -1,6 +1,7 @@
 #include "actors.h"
 #include "types.h"
-void Actors::vision_do(ActorIndex index, std::vector<ActorIndex>& actors)
+#include "index.h"
+void Actors::vision_do(ActorIndex index, ActorIndices& actors)
 {
 	//TODO: Since we moved to a homogenious threading model we don't need to double buffer here.
 	m_canSee.at(index).swap(actors);

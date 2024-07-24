@@ -1,5 +1,6 @@
 #pragma once
 #include "../fluidGroup.h"
+#include "blockIndices.h"
 #include <list>
 #include <string>
 #include <unordered_set>
@@ -13,7 +14,7 @@ class AreaHasFluidGroups final
 	Area& m_area;
 public:
 	AreaHasFluidGroups(Area& area) : m_area(area) { }
-	FluidGroup* createFluidGroup(const FluidType& fluidType, std::unordered_set<BlockIndex>& blocks, bool checkMerge = true);
+	FluidGroup* createFluidGroup(const FluidType& fluidType, BlockIndices& blocks, bool checkMerge = true);
 	void doStep();
 	void removeFluidGroup(FluidGroup& group);
 	void clearMergedFluidGroups();

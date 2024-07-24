@@ -1,12 +1,13 @@
 #include "targetedHaul.h"
 #include "area.h"
 #include "deserializationMemo.h"
+#include "items/items.h"
 #include "objective.h"
 #include "project.h"
 #include "actors/actors.h"
 #include "objectives/targetedHaul.h"
 TargetedHaulProject::TargetedHaulProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :
-	Project(data, deserializationMemo), m_item(deserializationMemo.itemReference(data["item"])) 
+	Project(data, deserializationMemo)
 {
 	if(data.contains("item"))
 		m_item.load(data["item"], area);
@@ -24,20 +25,21 @@ void TargetedHaulProject::onComplete()
 	m_area.m_hasTargetedHauling.complete(*this);
 	Actors& actors = m_area.getActors();
 	for(auto& [actor, projectWorker] : workers)
-		actors.objective_complete(actor, projectWorker.objective);
+		actors.objective_complete(actor.getIndex(), projectWorker.objective);
 }
 void TargetedHaulProject::onDelivered(ActorOrItemIndex delivered) { delivered.setLocationAndFacing(m_area, m_location, 0); }
 // Objective.
 // AreaHas.
-void AreaHasTargetedHauling::load(const Json& data, DeserializationMemo& deserializationMemo)
+void AreaHasTargetedHauling::load(const Json& data, DeserializationMemo& deserializationMemo, Area& area)
 {
 	for(const Json& project : data["projects"])
-		m_projects.emplace_back(project, deserializationMemo);
+		m_projects.emplace_back(project, deserializationMemo, area);
 }
-TargetedHaulProject& AreaHasTargetedHauling::begin(std::vector<ActorIndex> workers, BlockIndex destination, ItemIndex item)
+TargetedHaulProject& AreaHasTargetedHauling::begin(ActorIndices workers, ItemIndex item, BlockIndex destination)
 {
 	Actors& actors = m_area.getActors();
-	TargetedHaulProject& project = m_projects.emplace_back(*actors.getFaction(workers.front()), m_area, destination, item);
+	ItemReference ref = m_area.getItems().getReference(item);
+	TargetedHaulProject& project = m_projects.emplace_back(actors.getFactionId(workers.front()), m_area, destination, ref);
 	for(ActorIndex actor : workers)
 	{
 		std::unique_ptr<Objective> objective = std::make_unique<TargetedHaulObjective>(actor, project);

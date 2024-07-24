@@ -5,7 +5,6 @@
 #include "config.h"
 
 #include <list>
-#include <unordered_set>
 
 class Area;
 struct FarmField;
@@ -47,11 +46,11 @@ class FarmFieldUpdateInputAction final : public InputAction
 */
 struct FarmField
 {
-	std::unordered_set<BlockIndex> blocks;
+	BlockIndices blocks;
 	Area& area;
 	const PlantSpecies* plantSpecies;
 	bool timeToSow;
-	FarmField(Area& a, std::unordered_set<BlockIndex> b) : blocks(b), area(a), plantSpecies(nullptr), timeToSow(false) { }
+	FarmField(Area& a, BlockIndices b) : blocks(b), area(a), plantSpecies(nullptr), timeToSow(false) { }
 	FarmField(const Json& data, FactionId faction, Area& area);
 	[[nodiscard]] Json toJson() const;
 };
@@ -61,9 +60,9 @@ class HasFarmFieldsForFaction
 	Area& m_area;
 	FactionId m_faction;
 	std::list<FarmField> m_farmFields;
-	std::vector<BlockIndex> m_plantsNeedingFluid;
-	std::unordered_set<BlockIndex> m_plantsToHarvest;
-	std::unordered_set<BlockIndex> m_blocksNeedingSeedsSewn;
+	BlockIndices m_plantsNeedingFluid;
+	BlockIndices m_plantsToHarvest;
+	BlockIndices m_blocksNeedingSeedsSewn;
 	bool m_plantsNeedingFluidIsSorted = false;
 public:
 	HasFarmFieldsForFaction(Area& a, FactionId f) : m_area(a), m_faction(f) { }
@@ -76,15 +75,15 @@ public:
 	void addHarvestDesignation(PlantIndex plant);
 	void removeHarvestDesignation(PlantIndex plant);
 	void setDayOfYear(uint32_t dayOfYear);
-	[[nodiscard]] FarmField& create(std::unordered_set<BlockIndex>& blocks);
+	[[nodiscard]] FarmField& create(BlockIndices blocks);
 	[[nodiscard]] FarmField& create(Cuboid cuboid);
-	void extend(FarmField& farmField, std::unordered_set<BlockIndex>& blocks);
+	void extend(FarmField& farmField, BlockIndices blocks);
 	void setSpecies(FarmField& farmField, const PlantSpecies& plantSpecies);
 	void clearSpecies(FarmField& farmField);
-	void designateBlocks(FarmField& farmField, std::unordered_set<BlockIndex>& blocks);
-	void shrink(FarmField& farmField, std::unordered_set<BlockIndex>& blocks);
+	void designateBlocks(FarmField& farmField, BlockIndices blocks);
+	void shrink(FarmField& farmField, BlockIndices blocks);
 	void remove(FarmField& farmField);
-	void undesignateBlocks(std::unordered_set<BlockIndex>& blocks);
+	void undesignateBlocks(BlockIndices blocks);
 	[[nodiscard]] PlantIndex getHighestPriorityPlantForGiveFluid();
 	[[nodiscard]] bool hasHarvestDesignations() const;
 	[[nodiscard]] bool hasGivePlantsFluidDesignations() const;

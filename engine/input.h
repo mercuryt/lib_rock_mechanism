@@ -5,9 +5,9 @@
 
 #include "types.h"
 #include "onDestroy.h"
+#include "index.h"
 #include <memory>
 #include <queue>
-#include <unordered_set>
 #include <mutex>
 
 class InputQueue;
@@ -23,8 +23,8 @@ class InputAction
 	Queue::iterator m_iterator;
 protected:
 	HasOnDestroySubscriptions m_onDestroySubscriptions;
-	std::unordered_set<ActorIndex> m_actors;
-	InputAction(std::unordered_set<ActorIndex>& m_actors, NewObjectiveEmplacementType m_emplacementType, InputQueue& inputQueue);
+	ActorIndices m_actors;
+	InputAction(ActorIndices& m_actors, NewObjectiveEmplacementType m_emplacementType, InputQueue& inputQueue);
 	InputAction(InputQueue& inputQueue);
 	void insertObjective(std::unique_ptr<Objective> objective, ActorIndex actor);
 public:

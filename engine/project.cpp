@@ -162,26 +162,27 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 		FindPathResult result = terrainFacade.findPathAdjacentToAndUnreserved(actors.getLocation(candidateIndex), actors.getShape(candidateIndex), actors.getFacing(candidateIndex), m_project.m_location, m_project.m_faction);
 		if(result.path.empty() && !result.useCurrentPosition)
 		{
-			m_cannotPathToJobSite.insert(candidate);
+			m_cannotPathToJobSite.add(candidate);
 			continue;
 		}
 		if(!m_project.reservationsComplete())
 		{
 			// Check if the worker can get to any required item or actor.
-			for(ItemIndex item : actors.equipment_getAll(candidateIndex))
+			for(ItemReference item : actors.equipment_getAll(candidateIndex))
 				for(auto& [itemQuery, projectRequirementCounts] : m_project.m_requiredItems)
 				{
 					if(projectRequirementCounts.required == projectRequirementCounts.reserved)
 						continue;
-					assert(!items.reservable_exists(item, m_project.m_faction));
-					if(!itemQuery.query(m_project.m_area, item))
+					ItemIndex itemIndex = item.getIndex();
+					assert(!items.reservable_exists(itemIndex, m_project.m_faction));
+					if(!itemQuery.query(m_project.m_area, itemIndex))
 						continue;
 					Quantity desiredQuantity = projectRequirementCounts.required - projectRequirementCounts.reserved;
-					Quantity quantity = std::min(desiredQuantity, items.reservable_getUnreservedCount(item, m_project.m_faction));
+					Quantity quantity = std::min(desiredQuantity, items.reservable_getUnreservedCount(itemIndex, m_project.m_faction));
 					assert(quantity != 0);
 					projectRequirementCounts.reserved += quantity;
 					assert(projectRequirementCounts.reserved <= projectRequirementCounts.required);
-					ItemReference itemRef = items.getReference(item);
+					ItemReference itemRef = items.getReference(itemIndex);
 					m_reservedEquipment[candidate].emplace_back(&projectRequirementCounts, itemRef);
 				}
 			auto recordItemOnGround = [&](ActorOrItemIndex actorOrItem, ProjectRequirementCounts& counts)
@@ -229,7 +230,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 				}
 				for(ActorIndex actor : blocks.actor_getAll(block))
 				{
-					ActorOrItemIndex polymorphicActor = ActorOrItemIndex::createForItem(actor);
+					ActorOrItemIndex polymorphicActor = ActorOrItemIndex::createForActor(actor);
 					for(auto& [actorQuery, projectRequirementCounts] : m_project.m_requiredActors)
 					{
 						if(projectRequirementCounts.required == projectRequirementCounts.reserved)
@@ -347,7 +348,7 @@ void ProjectTryToAddWorkersThreadedTask::writeStep(Simulation&, Area*)
 		{
 			// Remove workers here rather then allowing them to be dispatched by reset so we can call onProjectCannotReserve with toRelase.
 			auto workers = m_project.getWorkersAndCandidates();
-			toReleaseWithProjectDelay.insert(workers.begin(), workers.end());
+			toReleaseWithProjectDelay.merge(workers, m_project.m_area);
 			m_project.m_workers.clear();
 			m_project.m_workerCandidatesAndTheirObjectives.clear();
 			m_project.reset();
@@ -424,7 +425,6 @@ Project::Project(const Json& data, DeserializationMemo& deserializationMemo) :
 	m_requirementsLoaded(data["requirementsLoaded"].get<bool>()),
 	m_delay(data["delay"].get<bool>()) 
 { 
-	m_canReserve.load(data["canReserve"], deserializationMemo);
 	if(data.contains("requiredItems"))
 		for(const Json& pair : data["requiredItems"])
 		{
@@ -466,7 +466,7 @@ Project::Project(const Json& data, DeserializationMemo& deserializationMemo) :
 	if(data.contains("haulSubprojects"))
 		for(const Json& haulSubprojectData : data["haulSubprojects"])
 			m_haulSubprojects.emplace_back(haulSubprojectData, *this, deserializationMemo);
-	m_canReserve.load(data["canReserve"], deserializationMemo);
+	m_canReserve.load(data["canReserve"], deserializationMemo, m_area);
 	if(data.contains("finishEventStart"))
 		m_finishEvent.schedule(data["finishEventDuration"].get<Step>(), *this, data["finishEventStart"].get<Step>());
 	if(data.contains("tryToHaulEventStart"))
@@ -554,7 +554,7 @@ Json Project::toJson() const
 	{
 		data["toPickup"] = Json::array();
 		for(auto& [actorOrItem, pair] : m_toPickup)
-			data["toPickup"].emplace_back(actorOrItem, *pair.first, pair.second);
+			data["toPickup"].push_back({actorOrItem, *pair.first, pair.second});
 	}
 	if(!m_haulSubprojects.empty())
 	{
@@ -625,7 +625,8 @@ void Project::addWorker(ActorIndex actor, Objective& objective)
 	assert(m_area.getActors().isSentient(actor));
 	assert(canAddWorker(actor));
 	// Initalize a ProjectWorker for this worker.
-	m_workers.emplace(actor, objective);
+	ActorReference ref = m_area.getActors().getReference(actor);
+	m_workers.emplace(ref, objective);
 	commandWorker(actor);
 }
 void Project::addWorkerCandidate(ActorIndex actor, Objective& objective)
@@ -891,7 +892,7 @@ void Project::reset()
 	m_toPickup.clear();
 	// I guess we are doing this in case requirements change. Probably not needed.
 	m_requirementsLoaded = false;
-	std::vector<ActorIndex> workersAndCandidates = getWorkersAndCandidates();
+	ActorIndices workersAndCandidates = getWorkersAndCandidates();
 	m_canReserve.deleteAllWithoutCallback();
 	m_workers.clear();
 	m_workerCandidatesAndTheirObjectives.clear();
@@ -918,14 +919,14 @@ bool Project::hasCandidate(const ActorIndex actor) const
 	ActorReference ref = m_area.getActors().getReference(actor);
 	return std::ranges::find(m_workerCandidatesAndTheirObjectives, ref, &std::pair<ActorReference, Objective*>::first) != m_workerCandidatesAndTheirObjectives.end();
 }
-std::vector<ActorIndex> Project::getWorkersAndCandidates()
+ActorIndices Project::getWorkersAndCandidates()
 {
-	std::vector<ActorIndex> output;
+	ActorIndices output;
 	output.reserve(m_workers.size() + m_workerCandidatesAndTheirObjectives.size());
 	for(auto& pair : m_workers)
-		output.push_back(pair.first.getIndex());
+		output.add(pair.first.getIndex());
 	for(auto& pair : m_workerCandidatesAndTheirObjectives)
-		output.push_back(pair.first.getIndex());
+		output.add(pair.first.getIndex());
 	return output;
 }
 std::vector<std::pair<ActorIndex, Objective*>> Project::getWorkersAndCandidatesWithObjectives()

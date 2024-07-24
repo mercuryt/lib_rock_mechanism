@@ -14,8 +14,10 @@
 #include "../terrainFacade.h"
 #include "../pathRequest.h"
 #include "../reference.h"
-#include "attackType.h"
-#include "uniform.h"
+#include "../index.h"
+#include "../attackType.h"
+#include "../uniform.h"
+#include "actors/uniform.h"
 #include <memory>
 
 struct MoveType;
@@ -48,7 +50,7 @@ struct ActorParamaters
 	Percent percentGrown = nullPercent;
 	BlockIndex location = BLOCK_INDEX_MAX;
 	Facing facing = 0;
-	Faction* faction = nullptr;
+	FactionId faction = FACTION_ID_MAX;
 	Percent percentHunger = nullPercent;
 	bool needsEat = false;
 	Percent percentTired = nullPercent;
@@ -73,55 +75,54 @@ struct ActorParamaters
 };
 class Actors final : public Portables
 {
-	std::vector<std::unique_ptr<ActorReferenceTarget>> m_referenceTarget;
-	std::vector<std::unique_ptr<CanReserve>> m_canReserve;
-	std::vector<std::unique_ptr<ActorHasUniform>> m_hasUniform;
-	std::vector<std::unique_ptr<EquipmentSet>> m_equipmentSet;
-	std::vector<ActorId> m_id;
-	std::vector<std::wstring> m_name;
-	std::vector<const AnimalSpecies*> m_species;
-	std::vector<Project*> m_project;
-	std::vector<Step> m_birthStep;
-	std::vector<CauseOfDeath> m_causeOfDeath;
-	std::vector<Mass> m_unencomberedCarryMass;
-	std::vector<std::unique_ptr<Attributes>> m_attributes;
-	std::vector<std::unique_ptr<HasObjectives>> m_hasObjectives;
-	std::vector<std::unique_ptr<Body>> m_body;
-	std::vector<std::unique_ptr<MustSleep>> m_mustSleep;
-	std::vector<std::unique_ptr<MustDrink>> m_mustDrink;
-	std::vector<std::unique_ptr<MustEat>> m_mustEat; 
-	std::vector<std::unique_ptr<CanGrow>> m_canGrow;
-	std::vector<std::unique_ptr<ActorNeedsSafeTemperature>> m_needsSafeTemperature;
-	std::vector<std::unique_ptr<SkillSet>> m_skillSet;
+	DataVector<std::unique_ptr<ActorReferenceTarget>, ActorIndex> m_referenceTarget;
+	DataVector<std::unique_ptr<CanReserve>, ActorIndex> m_canReserve;
+	DataVector<std::unique_ptr<ActorHasUniform>, ActorIndex> m_hasUniform;
+	DataVector<std::unique_ptr<EquipmentSet>, ActorIndex> m_equipmentSet;
+	DataVector<ActorId, ActorIndex> m_id;
+	DataVector<std::wstring, ActorIndex> m_name;
+	DataVector<const AnimalSpecies*, ActorIndex> m_species;
+	DataVector<Project*, ActorIndex> m_project;
+	DataVector<Step, ActorIndex> m_birthStep;
+	DataVector<CauseOfDeath, ActorIndex> m_causeOfDeath;
+	DataVector<Mass, ActorIndex> m_unencomberedCarryMass;
+	DataVector<std::unique_ptr<Attributes>, ActorIndex> m_attributes;
+	DataVector<std::unique_ptr<HasObjectives>, ActorIndex> m_hasObjectives;
+	DataVector<std::unique_ptr<Body>, ActorIndex> m_body;
+	DataVector<std::unique_ptr<MustSleep>, ActorIndex> m_mustSleep;
+	DataVector<std::unique_ptr<MustDrink>, ActorIndex> m_mustDrink;
+	DataVector<std::unique_ptr<MustEat>, ActorIndex> m_mustEat; 
+	DataVector<std::unique_ptr<CanGrow>, ActorIndex> m_canGrow;
+	DataVector<std::unique_ptr<ActorNeedsSafeTemperature>, ActorIndex> m_needsSafeTemperature;
+	DataVector<std::unique_ptr<SkillSet>, ActorIndex> m_skillSet;
 	// CanPickUp.
-	std::vector<ActorOrItemIndex> m_carrying;
+	DataVector<ActorOrItemIndex, ActorIndex> m_carrying;
 	// Stamina.
-	std::vector<uint32_t> m_stamina;
+	DataVector<uint32_t, ActorIndex> m_stamina;
 	// Vision.
-	std::vector<std::vector<ActorIndex>> m_canSee;
-	std::vector<DistanceInBlocks> m_visionRange;
-	std::vector<HasVisionFacade> m_hasVisionFacade;
+	DataVector<ActorIndices, ActorIndex> m_canSee;
+	DataVector<DistanceInBlocks, ActorIndex> m_visionRange;
+	DataVector<HasVisionFacade, ActorIndex> m_hasVisionFacade;
 	// Combat.
 	HasScheduledEvents<AttackCoolDownEvent> m_coolDownEvent;
-	std::vector<std::unique_ptr<GetIntoAttackPositionPathRequest>> m_getIntoAttackPositionPathRequest;
-	std::vector<std::vector<std::pair<uint32_t, Attack>>> m_meleeAttackTable;
-	//TODO: Should be a vector.
-	std::vector<std::unordered_set<ActorIndex>> m_targetedBy;
-	std::vector<ActorIndex> m_target;
-	std::vector<Step> m_onMissCoolDownMelee;
-	std::vector<float> m_maxMeleeRange;
-	std::vector<float> m_maxRange;
-	std::vector<float> m_coolDownDurationModifier;
-	std::vector<uint32_t> m_combatScore;
+	DataVector<std::unique_ptr<GetIntoAttackPositionPathRequest>, ActorIndex> m_getIntoAttackPositionPathRequest;
+	DataVector<std::vector<std::pair<uint32_t, Attack>>, ActorIndex> m_meleeAttackTable;
+	DataVector<ActorIndices, ActorIndex> m_targetedBy;
+	DataVector<ActorIndex, ActorIndex> m_target;
+	DataVector<Step, ActorIndex> m_onMissCoolDownMelee;
+	DataVector<float, ActorIndex> m_maxMeleeRange;
+	DataVector<float, ActorIndex> m_maxRange;
+	DataVector<float, ActorIndex> m_coolDownDurationModifier;
+	DataVector<uint32_t, ActorIndex> m_combatScore;
 	// Move.
 	HasScheduledEvents<MoveEvent> m_moveEvent;
-	std::vector<std::unique_ptr<PathRequest>> m_pathRequest;
-	std::vector<std::vector<BlockIndex>> m_path;
-	std::vector<std::vector<BlockIndex>::iterator> m_pathIter;
-	std::vector<BlockIndex> m_destination;
-	std::vector<Speed> m_speedIndividual;
-	std::vector<Speed> m_speedActual;
-	std::vector<uint8_t> m_moveRetries;
+	DataVector<std::unique_ptr<PathRequest>, ActorIndex> m_pathRequest;
+	DataVector<BlockIndices, ActorIndex> m_path;
+	DataVector<BlockIndices::iterator, ActorIndex> m_pathIter;
+	DataVector<BlockIndex, ActorIndex> m_destination;
+	DataVector<Speed, ActorIndex> m_speedIndividual;
+	DataVector<Speed, ActorIndex> m_speedActual;
+	DataVector<uint8_t, ActorIndex> m_moveRetries;
 	void resize(HasShapeIndex newSize);
 	void moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex);
 	[[nodiscard]] bool indexCanBeMoved(HasShapeIndex index) const;
@@ -148,28 +149,28 @@ public:
 	void unreserveAllBlocksAtLocationAndFacing(ActorIndex index, BlockIndex location, Facing facing);
 	void setBirthStep(ActorIndex index, Step step);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] ActorId getId(ActorIndex index) const { return m_id.at(index); }
-	[[nodiscard]] ActorReference getReference(ActorIndex index) const { return *m_referenceTarget.at(index).get();}
-	[[nodiscard]] const ActorReference getReferenceConst(ActorIndex index) const { return *m_referenceTarget.at(index).get();}
-	[[nodiscard]] ActorReferenceTarget& getReferenceTarget(ActorIndex index) const { return *m_referenceTarget.at(index).get();}
-	[[nodiscard]] std::wstring getName(ActorIndex index) const { return m_name.at(index); }
-	[[nodiscard]] bool isAlive(ActorIndex index) const { return m_causeOfDeath.at(index) == CauseOfDeath::none; }
+	[[nodiscard]] ActorId getId(ActorIndex index) const { return m_id.at(index()); }
+	[[nodiscard]] ActorReference getReference(ActorIndex index) const { return *m_referenceTarget.at(index()).get();}
+	[[nodiscard]] const ActorReference getReferenceConst(ActorIndex index) const { return *m_referenceTarget.at(index()).get();}
+	[[nodiscard]] ActorReferenceTarget& getReferenceTarget(ActorIndex index) const { return *m_referenceTarget.at(index()).get();}
+	[[nodiscard]] std::wstring getName(ActorIndex index) const { return m_name.at(index()); }
+	[[nodiscard]] bool isAlive(ActorIndex index) const { return m_causeOfDeath.at(index()) == CauseOfDeath::none; }
 	[[nodiscard]] Percent getPercentGrown(ActorIndex index) const;
-	[[nodiscard]] CauseOfDeath getCauseOfDeath(ActorIndex index) const { assert(!isAlive(index)); return m_causeOfDeath.at(index); }
+	[[nodiscard]] CauseOfDeath getCauseOfDeath(ActorIndex index) const { assert(!isAlive(index)); return m_causeOfDeath.at(index()); }
 	[[nodiscard]] bool isEnemy(ActorIndex actor, ActorIndex other) const;
 	[[nodiscard]] bool isAlly(ActorIndex actor, ActorIndex other) const;
 	//TODO: Zombies are not sentient.
-	[[nodiscard]] bool isSentient(ActorIndex index) const { return m_species.at(index)->sentient; }
+	[[nodiscard]] bool isSentient(ActorIndex index) const { return m_species.at(index())->sentient; }
 	[[nodiscard]] bool isInjured(ActorIndex index) const;
 	[[nodiscard]] bool canMove(ActorIndex index) const;
 	[[nodiscard]] Mass getMass(ActorIndex index) const;
 	[[nodiscard]] Volume getVolume(ActorIndex index) const;
 	[[nodiscard]] Quantity getAgeInYears(ActorIndex index) const;
 	[[nodiscard]] Step getAge(ActorIndex index) const;
-	[[nodiscard]] Step getBirthStep(ActorIndex index) const { return m_birthStep.at(index); }
+	[[nodiscard]] Step getBirthStep(ActorIndex index) const { return m_birthStep.at(index()); }
 	[[nodiscard]] std::wstring getActionDescription(ActorIndex index) const;
-	[[nodiscard]] const AnimalSpecies& getSpecies(ActorIndex index) const { return *m_species.at(index); }
-	[[nodiscard]] Mass getUnencomberedCarryMass(ActorIndex index) const { return m_unencomberedCarryMass.at(index); }
+	[[nodiscard]] const AnimalSpecies& getSpecies(ActorIndex index) const { return *m_species.at(index()); }
+	[[nodiscard]] Mass getUnencomberedCarryMass(ActorIndex index) const { return m_unencomberedCarryMass.at(index()); }
 	// -Stamina.
 	void stamina_recover(ActorIndex index);
 	void stamina_spend(ActorIndex index, uint32_t stamina);
@@ -177,17 +178,17 @@ public:
 	bool stamina_hasAtLeast(ActorIndex index, uint32_t stamina) const;
 	bool stamina_isFull(ActorIndex index) const;
 	[[nodiscard]] uint32_t stamina_getMax(ActorIndex index) const;
-	[[nodiscard]] uint32_t stamina_get(ActorIndex index) const { return m_stamina.at(index); }
+	[[nodiscard]] uint32_t stamina_get(ActorIndex index) const { return m_stamina.at(index()); }
 	// -Vision.
-	void vision_do(ActorIndex index, std::vector<ActorIndex>& actors);
+	void vision_do(ActorIndex index, ActorIndices& actors);
 	void vision_setRange(ActorIndex index, DistanceInBlocks range);
 	void vision_createFacadeIfCanSee(ActorIndex index);
 	void vision_recordFacade(ActorIndex actor, VisionFacade& facade, VisionFacadeIndex facadeIndex);
 	void vision_clearFacade(ActorIndex actor);
 	void vision_updateFacadeIndex(ActorIndex actor, VisionFacadeIndex);
-	void vision_swap(ActorIndex actor, std::vector<ActorIndex>& toSwap);
-	[[nodiscard]] std::vector<ActorIndex>& vision_getCanSee(ActorIndex index) { return m_canSee.at(index); }
-	[[nodiscard]] DistanceInBlocks vision_getRange(ActorIndex index) const { return m_visionRange.at(index); }
+	void vision_swap(ActorIndex actor, ActorIndices& toSwap);
+	[[nodiscard]] ActorIndices& vision_getCanSee(ActorIndex index) { return m_canSee.at(index()); }
+	[[nodiscard]] DistanceInBlocks vision_getRange(ActorIndex index) const { return m_visionRange.at(index()); }
 	[[nodiscard]] bool vision_canSeeActor(ActorIndex index, ActorIndex other) const;
 	[[nodiscard]] bool vision_canSeeAnything(ActorIndex index) const;
 	[[nodiscard]] bool vision_hasFacade(ActorIndex actor) const;
@@ -272,7 +273,7 @@ public:
 	[[nodiscard]] Step move_delayToMoveInto(ActorIndex index, const BlockIndex block) const;
 	// For debugging move.
 	[[nodiscard]] PathRequest& move_getPathRequest(ActorIndex index) { return *m_pathRequest.at(index).get(); }
-	[[nodiscard]] std::vector<BlockIndex>& move_getPath(ActorIndex index) { return m_path.at(index); }
+	[[nodiscard]] auto& move_getPath(ActorIndex index) { return m_path.at(index); }
 	[[nodiscard]] BlockIndex move_getDestination(ActorIndex index) { return m_destination.at(index); }
 	[[nodiscard]] bool move_hasEvent(ActorIndex index) const { return m_moveEvent.exists(index); }
 	[[nodiscard]] bool move_hasPathRequest(ActorIndex index) const { return m_pathRequest.at(index).get() != nullptr; }
@@ -355,9 +356,9 @@ public:
 	// Project.
 	[[nodiscard]] bool project_exists(ActorIndex index) const { return m_project.at(index) != nullptr; }
 	[[nodiscard]] Project* project_get(ActorIndex index) const { return m_project.at(index); }
-	void project_set(ActorIndex index, Project& project) { m_project[index] = &project; }
-	void project_unset(ActorIndex index) { assert(m_project[index] != nullptr); m_project[index] = nullptr; }
-	void project_maybeUnset(ActorIndex index) { m_project[index] = nullptr; }
+	void project_set(ActorIndex index, Project& project) { m_project.at(index) = &project; }
+	void project_unset(ActorIndex index) { assert(m_project.at(index) != nullptr); m_project.at(index) = nullptr; }
+	void project_maybeUnset(ActorIndex index) { m_project.at(index) = nullptr; }
 	// -Equipment.
 	void equipment_add(ActorIndex index, ItemIndex item);
 	void equipment_addGeneric(ActorIndex index, const ItemType& itemType, const MaterialType& materalType, Quantity quantity);
@@ -371,7 +372,7 @@ public:
 	[[nodiscard]] ItemIndex equipment_getWeaponToAttackAtRange(ActorIndex index, DistanceInBlocks range) const;
 	[[nodiscard]] ItemIndex equipment_getAmmoForRangedWeapon(ActorIndex index, ItemIndex weapon) const;
 	// TODO: change to vectors.
-	[[nodiscard]] const std::unordered_set<ItemIndex>& equipment_getAll(ActorIndex index) const;
+	[[nodiscard]] const auto& equipment_getAll(ActorIndex index) const { return m_equipmentSet.at(index)->getAll(); }
 	// -Uniform.
 	void uniform_set(ActorIndex index, Uniform& uniform);
 	void uniform_unset(ActorIndex index);
@@ -454,37 +455,40 @@ public:
 };
 class MoveEvent final : public ScheduledEvent
 {
-	ActorIndex m_actor = ACTOR_INDEX_MAX;
+	ActorIndex m_actor;
 public:
 	MoveEvent(Step delay, Area& area, ActorIndex actor, const Step start = 0);
+	MoveEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
-	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_actor == oldIndex); m_actor = newIndex; }
+	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_actor == oldIndex); m_actor = ActorIndex::cast(newIndex); }
+	[[nodiscard]] Json toJson() const;
 };
 class AttackCoolDownEvent final : public ScheduledEvent
 {
-	Area& m_area;
-	ActorIndex m_actor = ACTOR_INDEX_MAX;
+	ActorIndex m_actor;
 public:
 	AttackCoolDownEvent(Area& area, ActorIndex index, Step duration, const Step start = 0);
+	AttackCoolDownEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
-	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_actor == oldIndex); m_actor = newIndex; }
+	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_actor == oldIndex); m_actor = ActorIndex::cast(newIndex); }
+	[[nodiscard]] Json toJson() const;
 };
 class GetIntoAttackPositionPathRequest final : public PathRequest
 {
-	ActorIndex m_actor = ACTOR_INDEX_MAX;
+	ActorIndex m_actor;
 	ActorReference m_target;
 	DistanceInBlocks m_attackRangeSquared = BLOCK_DISTANCE_MAX;
 public:
 	GetIntoAttackPositionPathRequest(Area& area, ActorIndex a, ActorIndex t, float ar);
 	void callback(Area& area, FindPathResult&);
-	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_actor == oldIndex); m_actor = newIndex; }
+	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_actor == oldIndex); m_actor = ActorIndex::cast(newIndex); }
 };
 struct Attack final
 {
 	// Use pointers rather then references to allow move.
 	const AttackType* attackType = nullptr;
 	const MaterialType* materialType = nullptr;
-	ItemIndex item = ITEM_INDEX_MAX; // Can be ITEM_INDEX_MAX for natural weapons.
+	ItemIndex item; // Can be null for natural weapons.
 };

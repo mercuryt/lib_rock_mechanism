@@ -17,5 +17,5 @@ ItemIndex SimulationHasItems::getIndexForId(ItemId id) const
 }
 Area& SimulationHasItems::getAreaForId(ItemId id) const
 {
-	return m_items.at(id).store.m_area;
+	return m_items.at(id).store.getArea();
 }

@@ -20,6 +20,7 @@
 
 struct Faction;
 class Reservable;
+class Area;
 struct DeserializationMemo;
 // Reservable holds all the data during runtime, but CanReserve is responsible for (de)serialization.
 class CanReserve final
@@ -29,7 +30,7 @@ class CanReserve final
 	friend class Reservable;
 public:
 	CanReserve(FactionId f) : m_faction(f) { }
-	void load(const Json& data, DeserializationMemo& deserializationMemo);
+	void load(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	Json toJson() const;
 	void deleteAllWithoutCallback();
 	void setFaction(FactionId faction);

@@ -4,6 +4,7 @@
 #include "../terrainFacade.h"
 #include "actors/actors.h"
 #include "blocks/blocks.h"
+#include "reference.h"
 #include "types.h"
 // PathRequest.
 ConstructPathRequest::ConstructPathRequest(Area& area, ConstructObjective& co, ActorIndex actor) : m_constructObjective(co)
@@ -19,53 +20,48 @@ ConstructPathRequest::ConstructPathRequest(Area& area, ConstructObjective& co, A
 void ConstructPathRequest::callback(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
+	ActorIndex actor = getActor();
 	if(result.path.empty() && !result.useCurrentPosition)
-		actors.objective_canNotCompleteObjective(m_actor, m_constructObjective);
+		actors.objective_canNotCompleteObjective(actor, m_constructObjective);
 	else
 	{
 		if(result.useCurrentPosition)
 		{
-			if(!actors.move_tryToReserveOccupied(m_constructObjective.m_actor))
+			if(!actors.move_tryToReserveOccupied(actor))
 			{
 				// Proposed location while constructing has been reserved already, try to find another.
-				m_constructObjective.execute(area);
+				m_constructObjective.execute(area, actor);
 				return;
 			}
 		}
-		else if(!actors.move_tryToReserveProposedDestination(m_constructObjective.m_actor, result.path))
+		else if(!actors.move_tryToReserveProposedDestination(actor, result.path))
 		{
 			// Proposed location while constructing has been reserved already, try to find another.
-			m_constructObjective.execute(area);
+			m_constructObjective.execute(area, actor);
 			return;
 		}
 		BlockIndex target = result.blockThatPassedPredicate;
-		ConstructProject& project = area.m_hasConstructionDesignations.getProject(*actors.getFaction(m_constructObjective.m_actor), target);
-		if(project.canAddWorker(m_constructObjective.m_actor))
-			m_constructObjective.joinProject(project);
+		ConstructProject& project = area.m_hasConstructionDesignations.getProject(actors.getFactionId(actor), target);
+		if(project.canAddWorker(actor))
+			m_constructObjective.joinProject(project, actor);
 		else
 			// Project can no longer accept this worker, try again.
-			m_constructObjective.execute(area);
+			m_constructObjective.execute(area, actor);
 	}
 }
 // Objective.
-	/*
 ConstructObjective::ConstructObjective(const Json& data, DeserializationMemo& deserializationMemo) :
-	Objective(data, deserializationMemo), m_constructPathRequest(m_actor.m_area->m_simulation.m_threadedTaskEngine),
+	Objective(data, deserializationMemo), 
 	m_project(data.contains("project") ? deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()) : nullptr)
 {
-	if(data.contains("threadedTask"))
-		m_constructPathRequest.create(*this);
 }
 Json ConstructObjective::toJson() const
 {
 	Json data = Objective::toJson();
 	if(m_project != nullptr)
 		data["project"] = m_project;
-	if(m_constructPathRequest.exists())
-		data["threadedTask"] = true;
 	return data;
 }
-*/
 void ConstructObjective::execute(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
@@ -76,7 +72,7 @@ void ConstructObjective::execute(Area& area, ActorIndex actor)
 		ConstructProject* project = nullptr;
 		std::function<bool(BlockIndex)> predicate = [&](BlockIndex block)
 		{
-			if(joinableProjectExistsAt(area, block))
+			if(joinableProjectExistsAt(area, block, actor))
 			{
 				project = &area.m_hasConstructionDesignations.getProject(actors.getFactionId(actor), block);
 				return project->canAddWorker(actor);
@@ -111,7 +107,8 @@ void ConstructObjective::reset(Area& area, ActorIndex actor)
 	Actors& actors = area.getActors();
 	if(m_project)
 	{
-		assert(!m_project->getWorkers().contains(actor));
+		ActorReference ref = area.getActors().getReference(actor);
+		assert(!m_project->getWorkers().contains(ref));
 		m_project = nullptr;
 		actors.project_unset(actor);
 	}
@@ -166,6 +163,6 @@ bool ConstructObjective::canJoinProjectAdjacentToLocationAndFacing(Area& area, B
 // ObjectiveType.
 bool ConstructObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
 {
-	return area.m_hasConstructionDesignations.areThereAnyForFaction(*area.getActors().getFaction(actor));
+	return area.m_hasConstructionDesignations.areThereAnyForFaction(area.getActors().getFactionId(actor));
 }
-std::unique_ptr<Objective> ConstructObjectiveType::makeFor(Area&, ActorIndex actor) const { return std::make_unique<ConstructObjective>(actor); }
+std::unique_ptr<Objective> ConstructObjectiveType::makeFor(Area&, ActorIndex) const { return std::make_unique<ConstructObjective>(); }

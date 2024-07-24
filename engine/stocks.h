@@ -1,9 +1,9 @@
 #pragma once
 
 #include "types.h"
+#include "index.h"
 
 #include <unordered_map>
-#include <unordered_set>
 #include <cassert>
 
 struct ItemType;
@@ -13,11 +13,11 @@ class Area;
 
 class AreaHasStocksForFaction final
 {
-	std::unordered_map<const ItemType*, std::unordered_map<const MaterialType*, std::unordered_set<ItemIndex>>> m_data;
+	std::unordered_map<const ItemType*, std::unordered_map<const MaterialType*, ItemIndices>> m_data;
 public:
 	void record(Area& area, ItemIndex item);
 	void unrecord(Area& area, ItemIndex item);
-	const std::unordered_map<const ItemType*, std::unordered_map<const MaterialType*, std::unordered_set<ItemIndex>>>& get() const { return m_data; }
+	const std::unordered_map<const ItemType*, std::unordered_map<const MaterialType*, ItemIndices>>& get() const { return m_data; }
 };
 class AreaHasStocks final
 {

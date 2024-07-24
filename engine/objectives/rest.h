@@ -14,7 +14,7 @@ class RestObjective final : public Objective
 	HasScheduledEvent<RestEvent> m_restEvent;
 public:
 	RestObjective(Area& area);
-	RestObjective(const Json& data, Area& area);
+	RestObjective(const Json& data, Area& area, ActorIndex actor);
 	void execute(Area& area, ActorIndex actor);
 	void cancel(Area&, ActorIndex) { m_restEvent.maybeUnschedule(); }
 	void delay(Area& area, ActorIndex actor) { cancel(area, actor); }
@@ -29,7 +29,7 @@ class RestEvent final : public ScheduledEvent
 	ActorReference m_actor;
 	RestObjective& m_objective;
 public:
-	RestEvent(Simulation& simulation, RestObjective& ro, const Step start = 0);
+	RestEvent(Area& area, RestObjective& ro, ActorIndex actor, Step start = 0);
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation&, Area*) { m_objective.m_restEvent.clearPointer(); }
 };

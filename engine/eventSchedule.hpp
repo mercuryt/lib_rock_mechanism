@@ -2,6 +2,7 @@
 #include "eventSchedule.h"
 #include "types.h"
 #include "util.h"
+#include "index.h"
 class Simulation;
 template<class EventType>
 class HasScheduledEvent
@@ -108,7 +109,7 @@ class HasScheduledEvents
 {
 protected:
 	EventSchedule& m_schedule;
-	std::vector<ScheduledEvent*> m_events;
+	std::vector<EventType*> m_events;
 public:
 	HasScheduledEvents(EventSchedule& s) : m_schedule(s) { assert(&s); }
 	void load(Simulation& simulation, const Json& data)
@@ -117,7 +118,8 @@ public:
 		{
 			HasShapeIndex index = eventData[0].get<HasShapeIndex>();
 			auto event = std::make_unique<EventType>(simulation, eventData[1]);
-			m_schedule.schedule(index, std::move(event));
+			m_events.at(index) = event.get();
+			m_schedule.schedule(std::move(event));
 		}
 	}
 	void resize(HasShapeIndex size)
@@ -130,7 +132,7 @@ public:
 		assert(m_events.size() > index);
 		assert(m_events.at(index) == nullptr);
 		std::unique_ptr<ScheduledEvent> event = std::make_unique<EventType>(args...);
-		m_events.at(index) = event.get();
+		m_events.at(index) = static_cast<EventType*>(event.get());
 		m_schedule.schedule(std::move(event));
 	}
 	void unschedule(HasShapeIndex index)
@@ -181,17 +183,17 @@ public:
 	{
 		Json output = Json::array();
 		int i = 0;
-		for(EventType& event : m_events)
+		for(const EventType* event : m_events)
 		{
-			if(event.at(i) != nullptr)
-				output.emplace_back(i, event.toJson());
+			if(event != nullptr)
+				output.emplace_back(i, event->toJson());
 			i++;
 		}
 		return output;
 	}
 	~HasScheduledEvents() 
 	{ 
-		for(ScheduledEvent* event : m_events)
+		for(EventType* event : m_events)
 			if(event != nullptr)
 				event->cancel(m_schedule.getSimulation(), m_schedule.getArea());
 	}

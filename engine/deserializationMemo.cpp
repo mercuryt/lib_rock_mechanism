@@ -42,12 +42,10 @@
 
 //#include "worldforge/world.h"
 #include <cstdint>
-/*
-Faction& DeserializationMemo::faction(std::wstring name) { return m_simulation.m_hasFactions.byName(name); }
 Area& DeserializationMemo::area(const Json& data) { return m_simulation.m_hasAreas->getById(data.get<AreaId>()); }
 ProjectRequirementCounts& DeserializationMemo::projectRequirementCountsReference(const Json& data) { return *m_projectRequirementCounts.at(data.get<uintptr_t>()); }
 //WorldLocation& DeserializationMemo::getLocationByNormalizedLatLng(const Json& data) { return m_simulation.m_world->getLocationByNormalizedLatLng(data.get<LatLng>()); }
-std::unique_ptr<Objective> DeserializationMemo::loadObjective(const Json& data)
+std::unique_ptr<Objective> DeserializationMemo::loadObjective(const Json& data, Area& area, ActorIndex actor)
 {
 	ObjectiveTypeId typeId = data["type"].get<ObjectiveTypeId>();
 	std::unique_ptr<Objective> output;
@@ -63,53 +61,53 @@ std::unique_ptr<Objective> DeserializationMemo::loadObjective(const Json& data)
 			output = std::make_unique<DigObjective>(data, *this);
 			break;
 		case ObjectiveTypeId::Drink:
-			output =  std::make_unique<DrinkObjective>(data, *this);
+			output =  std::make_unique<DrinkObjective>(data, *this, area);
 			break;
 		case ObjectiveTypeId::Eat:
-			output =  std::make_unique<EatObjective>(data, *this);
+			output =  std::make_unique<EatObjective>(data, *this, area, actor);
 			break;
 		case ObjectiveTypeId::GetToSafeTemperature:
 			output =  std::make_unique<GetToSafeTemperatureObjective>(data, *this);
 			break;
 		case ObjectiveTypeId::GivePlantsFluid:
-			output =  std::make_unique<GivePlantsFluidObjective>(data, *this);
+			output =  std::make_unique<GivePlantsFluidObjective>(data, area, actor);
 			break;
 		case ObjectiveTypeId::GoTo:
 			output =  std::make_unique<GoToObjective>(data, *this);
 			break;
 		case ObjectiveTypeId::Harvest:
-			output =  std::make_unique<HarvestObjective>(data, *this);
+			output =  std::make_unique<HarvestObjective>(data, area);
 			break;
 		case ObjectiveTypeId::Haul:
 			output =  std::make_unique<TargetedHaulObjective>(data, *this);
 			break;
 		case ObjectiveTypeId::Kill:
-			output =  std::make_unique<KillObjective>(data, *this);
+			output =  std::make_unique<KillObjective>(data, area);
 			break;
 		//case ObjectiveTypeId::Medical:
 			//output =  std::make_unique<MedicalObjective>(data, *this);
 			//break;
 		case ObjectiveTypeId::Rest:
-			output =  std::make_unique<RestObjective>(data, *this);
+			output =  std::make_unique<RestObjective>(data, area, actor);
 			break;
 		case ObjectiveTypeId::Sleep:
 			output =  std::make_unique<SleepObjective>(data, *this);
 			break;
 		case ObjectiveTypeId::Station:
-			output =  std::make_unique<StationObjective>(data, *this);
+			output =  std::make_unique<StationObjective>(data);
 			break;
 		case ObjectiveTypeId::SowSeeds:
-			output =  std::make_unique<SowSeedsObjective>(data, *this);
+			output =  std::make_unique<SowSeedsObjective>(data, area, actor);
 			break;
 		case ObjectiveTypeId::StockPile:
 			output =  std::make_unique<StockPileObjective>(data, *this);
 			break;
 		case ObjectiveTypeId::Wait:
-			output =  std::make_unique<WaitObjective>(data, *this);
+			output =  std::make_unique<WaitObjective>(data, area, actor);
 			break;
 		default:
 			assert(typeId == ObjectiveTypeId::Wander);
-			output =  std::make_unique<WanderObjective>(data, *this);
+			output =  std::make_unique<WanderObjective>(data);
 	}
 	m_objectives[data["address"].get<uintptr_t>()] = output.get();
 	return output;
@@ -138,4 +136,3 @@ std::unique_ptr<ObjectiveType> DeserializationMemo::loadObjectiveType(const Json
 			return std::make_unique<StockPileObjectiveType>(data, *this);
 	}
 }
-*/

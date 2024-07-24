@@ -51,7 +51,7 @@ class GivePlantsFluidObjective final : public Objective
 	HasScheduledEvent<GivePlantsFluidEvent> m_event;
 public:
 	GivePlantsFluidObjective(Area& area);
-	GivePlantsFluidObjective(const Json& data, Area& area);
+	GivePlantsFluidObjective(const Json& data, Area& area, ActorIndex actor);
 	Json toJson() const;
 	void execute(Area& area, ActorIndex actor);
 	void cancel(Area& area, ActorIndex actor);

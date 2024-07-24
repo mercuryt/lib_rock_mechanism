@@ -49,14 +49,14 @@ void Blocks::fluid_spawnMist(BlockIndex index, const FluidType& fluidType, Dista
 	const FluidType* mist = m_mist.at(index);
 	if(mist != nullptr && (mist == &fluidType || mist->density > fluidType.density))
 		return;
-	m_mist[index] = &fluidType;
-	m_mistInverseDistanceFromSource[index] = maxMistSpread != 0 ? maxMistSpread : fluidType.maxMistSpread;
+	m_mist.at(index) = &fluidType;
+	m_mistInverseDistanceFromSource.at(index) = maxMistSpread != 0 ? maxMistSpread : fluidType.maxMistSpread;
 	MistDisperseEvent::emplace(m_area, fluidType.mistDuration, fluidType, index);
 }
 void Blocks::fluid_clearMist(BlockIndex index)
 {
-	m_mist[index] = nullptr;
-	m_mistInverseDistanceFromSource[index] = 0;
+	m_mist.at(index) = nullptr;
+	m_mistInverseDistanceFromSource.at(index) = 0;
 }
 DistanceInBlocks Blocks::fluid_getMistInverseDistanceToSource(BlockIndex index) const
 {
@@ -64,8 +64,8 @@ DistanceInBlocks Blocks::fluid_getMistInverseDistanceToSource(BlockIndex index) 
 }
 void Blocks::fluid_mistSetFluidTypeAndInverseDistance(BlockIndex index, const FluidType& fluidType, DistanceInBlocks inverseDistance)
 {
-	m_mist[index] = &fluidType;
-	m_mistInverseDistanceFromSource[index] = inverseDistance;
+	m_mist.at(index) = &fluidType;
+	m_mistInverseDistanceFromSource.at(index) = inverseDistance;
 }
 FluidGroup* Blocks::fluid_getGroup(BlockIndex index, const FluidType& fluidType) const
 {
@@ -100,7 +100,7 @@ void Blocks::fluid_add(BlockIndex index, CollisionVolume volume, const FluidType
 	// Create fluid group.
 	if(fluidGroup == nullptr)
 	{
-		std::unordered_set<BlockIndex> blocks({index});
+		BlockIndices blocks({index});
 		fluidGroup = m_area.m_hasFluidGroups.createFluidGroup(fluidType, blocks);
 	}
 	else
@@ -152,7 +152,7 @@ bool Blocks::fluid_undisolveInternal(BlockIndex index, FluidGroup& fluidGroup)
 	{
 		uint32_t capacity = fluid_volumeOfTypeCanEnter(index, fluidGroup.m_fluidType);
 		uint32_t flow = std::min(capacity, (uint32_t)fluidGroup.m_excessVolume);
-		m_totalFluidVolume[index] += flow;
+		m_totalFluidVolume.at(index) += flow;
 		fluidGroup.m_excessVolume -= flow;
 		if(found )
 		{
@@ -341,7 +341,7 @@ void Blocks::fluid_onBlockSetNotSolid(BlockIndex index)
 {
 	for(BlockIndex adjacent : getDirectlyAdjacent(index))
 		if(adjacent != BLOCK_INDEX_MAX && fluid_canEnterEver(adjacent))
-			for(FluidData& fluidData : m_fluid[adjacent])
+			for(FluidData& fluidData : m_fluid.at(adjacent))
 			{
 				fluidData.group->m_fillQueue.addBlock(index);
 				fluidData.group->m_stable = false;

@@ -31,5 +31,5 @@ public:
 	[[nodiscard]] bool canResume() const { return false; }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Wander; }
 	// For testing.
-	[[nodiscard]] bool hasPathRequest(const Area& area) const;
+	[[nodiscard]] bool hasPathRequest(const Area& area, ActorIndex actor) const;
 };

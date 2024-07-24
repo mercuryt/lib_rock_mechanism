@@ -3,7 +3,7 @@
 #include "deserializeDishonorCallbacks.h"
 #include "types.h"
 #include <bits/ranges_algo.h>
-void CanReserve::load(const Json& data, DeserializationMemo& deserializationMemo)
+void CanReserve::load(const Json& data, DeserializationMemo& deserializationMemo, Area& area)
 { 
 	m_faction = data["faction"];
 	for(const Json& reservationData : data["reservations"])
@@ -11,7 +11,7 @@ void CanReserve::load(const Json& data, DeserializationMemo& deserializationMemo
 		assert(deserializationMemo.m_reservables.contains(reservationData["reservable"].get<uintptr_t>()));
 		Reservable& reservable = *deserializationMemo.m_reservables.at(reservationData["reservable"].get<uintptr_t>());
 		std::unique_ptr<DishonorCallback> dishonorCallback = data.contains("dishonorCallback") ?
-			deserializeDishonorCallback(data["dishonorCallback"], deserializationMemo) : nullptr;
+			deserializeDishonorCallback(data["dishonorCallback"], deserializationMemo, area) : nullptr;
 		reservable.reserveFor(*this, reservationData["count"].get<uint32_t>(), std::move(dishonorCallback));
 	}
 }

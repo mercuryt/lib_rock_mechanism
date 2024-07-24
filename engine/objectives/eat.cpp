@@ -197,7 +197,7 @@ void EatPathRequest::callback(Area& area, FindPathResult& result)
 			m_eatObjective.execute(area, actor);
 			return;
 		}
-		std::unique_ptr<Objective> killObjective = std::make_unique<KillObjective>(actor, m_huntResult);
+		std::unique_ptr<Objective> killObjective = std::make_unique<KillObjective>(m_huntResult);
 		actors.m_hasObjectives.at(actor)->addNeed(area, std::move(killObjective));
 	}
 	else
@@ -234,7 +234,7 @@ void EatPathRequest::callback(Area& area, FindPathResult& result)
 	}
 }
 EatObjective::EatObjective(Area& area) : Objective(Config::eatPriority), m_eatEvent(area.m_eventSchedule) { }
-EatObjective::EatObjective(const Json& data, DeserializationMemo& deserializationMemo) : 
+EatObjective::EatObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area, ActorIndex actor) : 
 	Objective(data, deserializationMemo), 
 	m_eatEvent(deserializationMemo.m_simulation.m_eventSchedule), 
 	m_noFoodFound(data["noFoodFound"].get<bool>())
@@ -242,7 +242,7 @@ EatObjective::EatObjective(const Json& data, DeserializationMemo& deserializatio
 	if(data.contains("destination"))
 		m_destination = data["destination"].get<BlockIndex>();
 	if(data.contains("eventStart"))
-		m_eatEvent.schedule(Config::stepsToEat, *this, data["eventStart"].get<Step>());
+		m_eatEvent.schedule(area, Config::stepsToEat, *this, actor, data["eventStart"].get<Step>());
 }
 Json EatObjective::toJson() const
 {
@@ -280,7 +280,7 @@ void EatObjective::execute(Area& area, ActorIndex actor)
 			m_destination = actors.getLocation(actor);
 			// Start eating.
 			// TODO: reserve occupied?
-			m_eatEvent.schedule(area, Config::stepsToEat, *this);
+			m_eatEvent.schedule(area, Config::stepsToEat, *this, actor);
 		}
 	}
 	else
@@ -296,7 +296,7 @@ void EatObjective::execute(Area& area, ActorIndex actor)
 			}
 			else
 				// Start eating.
-				m_eatEvent.schedule(area, Config::stepsToEat, *this);
+				m_eatEvent.schedule(area, Config::stepsToEat, *this, actor);
 		}
 		else
 			actors.move_setDestination(actor, m_destination, m_detour);

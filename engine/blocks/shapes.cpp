@@ -32,7 +32,7 @@ bool Blocks::shape_shapeAndMoveTypeCanEnterEverWithFacing(BlockIndex index, cons
 	}
 	return true;
 }
-bool Blocks::shape_canEnterCurrentlyWithFacing(BlockIndex index, const Shape& shape, Facing facing, const std::unordered_set<BlockIndex>& occupied) const
+bool Blocks::shape_canEnterCurrentlyWithFacing(BlockIndex index, const Shape& shape, Facing facing, const BlockIndices& occupied) const
 {
 	assert(shape_anythingCanEnterEver(index));
 	for(auto& [x, y, z, v] : shape.positionsWithFacing(facing))
@@ -47,7 +47,7 @@ bool Blocks::shape_canEnterCurrentlyWithFacing(BlockIndex index, const Shape& sh
 	}
 	return true;
 }
-bool Blocks::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(BlockIndex index, const Shape& shape, const MoveType& moveType, const Facing facing, const std::vector<BlockIndex>& occupied) const
+bool Blocks::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(BlockIndex index, const Shape& shape, const MoveType& moveType, const Facing facing, const BlockIndices& occupied) const
 {
 	assert(shape_anythingCanEnterEver(index));
 	for(auto& [x, y, z, v] : shape.positionsWithFacing(facing))
@@ -127,7 +127,7 @@ bool Blocks::shape_moveTypeCanEnter(BlockIndex index, const MoveType& moveType) 
 		}
 	}
 	// Not swimming and fluid level is too high.
-	if(m_totalFluidVolume[index] > Config::maxBlockVolume / 2)
+	if(m_totalFluidVolume.at(index) > Config::maxBlockVolume / 2)
 		return false;
 	// Fly can always enter if fluid level isn't preventing it.
 	if(moveType.fly)
@@ -177,12 +177,12 @@ MoveCost Blocks::shape_moveCostFrom(BlockIndex index, const MoveType& moveType, 
 		return Config::goUpMoveCost;
 	return Config::baseMoveCost;
 }
-bool Blocks::shape_canEnterCurrentlyFrom(BlockIndex index, const Shape& shape, BlockIndex block, const std::unordered_set<BlockIndex>& occupied) const
+bool Blocks::shape_canEnterCurrentlyFrom(BlockIndex index, const Shape& shape, BlockIndex block, const BlockIndices& occupied) const
 {
 	const Facing facing = facingToSetWhenEnteringFrom(index, block);
 	return shape_canEnterCurrentlyWithFacing(index, shape, facing, occupied);
 }
-bool Blocks::shape_canEnterCurrentlyWithAnyFacing(BlockIndex index, const Shape& shape, const std::unordered_set<BlockIndex>& occupied) const
+bool Blocks::shape_canEnterCurrentlyWithAnyFacing(BlockIndex index, const Shape& shape, const BlockIndices& occupied) const
 {
 	if(shape.isRadiallySymetrical)
 		return shape_canEnterCurrentlyWithFacing(index, shape, 0, occupied);
@@ -191,32 +191,32 @@ bool Blocks::shape_canEnterCurrentlyWithAnyFacing(BlockIndex index, const Shape&
 			return true;
 	return false;
 }
-std::pair<bool, Facing> Blocks::shape_canEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, const Shape& shape, const std::unordered_set<BlockIndex>& occupied) const
+std::pair<bool, Facing> Blocks::shape_canEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, const Shape& shape, const BlockIndices& occupied) const
 {
 	for(Facing facing = 0; facing < 4; ++facing)
 		if(shape_canEnterCurrentlyWithFacing(index, shape, facing, occupied))
 			return {true, facing};
 	return {false, 0};
 }
-bool Blocks::shape_staticCanEnterCurrentlyWithFacing(BlockIndex index, const Shape& shape, const Facing& facing, const std::unordered_set<BlockIndex>& occupied) const
+bool Blocks::shape_staticCanEnterCurrentlyWithFacing(BlockIndex index, const Shape& shape, const Facing& facing, const BlockIndices& occupied) const
 {
 	return shape_staticShapeCanEnterWithFacing(index, shape, facing, occupied);
 }
-bool Blocks::shape_staticCanEnterCurrentlyWithAnyFacing(BlockIndex index, const Shape& shape, const std::unordered_set<BlockIndex>& occupied) const
+bool Blocks::shape_staticCanEnterCurrentlyWithAnyFacing(BlockIndex index, const Shape& shape, const BlockIndices& occupied) const
 {
 	for(Facing facing = 0; facing < 4; ++facing)
 		if(shape_staticCanEnterCurrentlyWithFacing(index, shape, facing, occupied))
 			return true;
 	return false;
 }
-std::pair<bool, Facing> Blocks::shape_staticCanEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, const Shape& shape, const std::unordered_set<BlockIndex>& occupied) const
+std::pair<bool, Facing> Blocks::shape_staticCanEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, const Shape& shape, const BlockIndices& occupied) const
 {
 	for(Facing facing = 0; facing < 4; ++facing)
 		if(shape_staticCanEnterCurrentlyWithFacing(index, shape, facing, occupied))
 			return {true, facing};
 	return {false, 0};
 }
-bool Blocks::shape_staticShapeCanEnterWithFacing(BlockIndex index, const Shape& shape, Facing facing, const std::unordered_set<BlockIndex>& occupied) const
+bool Blocks::shape_staticShapeCanEnterWithFacing(BlockIndex index, const Shape& shape, Facing facing, const BlockIndices& occupied) const
 {
 	for(auto& [x, y, z, v] : shape.positionsWithFacing(facing))
 	{
@@ -229,7 +229,7 @@ bool Blocks::shape_staticShapeCanEnterWithFacing(BlockIndex index, const Shape& 
 	}
 	return true;
 }
-bool Blocks::shape_staticShapeCanEnterWithAnyFacing(BlockIndex index, const Shape& shape, const std::unordered_set<BlockIndex>& occupied) const
+bool Blocks::shape_staticShapeCanEnterWithAnyFacing(BlockIndex index, const Shape& shape, const BlockIndices& occupied) const
 {
 	if(shape.isRadiallySymetrical)
 		return shape_staticShapeCanEnterWithFacing(index, shape, 0, occupied);

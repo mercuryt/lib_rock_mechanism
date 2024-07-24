@@ -1,23 +1,22 @@
 #pragma once
 
-#include <vector>
-#include <unordered_set>
-
 #include "fluidQueue.h"
+#include "types.h"
+#include "blockIndices.h"
 
 class FluidGroup;
 
 class FillQueue final : public FluidQueue
 {
 public:
-	std::unordered_set<BlockIndex> m_futureFull;
-	std::unordered_set<BlockIndex> m_futureNoLongerEmpty;
-	std::unordered_set<BlockIndex> m_overfull;
+	BlockIndices m_futureFull;
+	BlockIndices m_futureNoLongerEmpty;
+	BlockIndices m_overfull;
 private:
 	[[nodiscard]] uint32_t getPriority(FutureFlowBlock& futureFlowBlock) const;
 public:
 	FillQueue(FluidGroup& fluidGroup);
-	void buildFor(std::unordered_set<BlockIndex>& members);
+	void buildFor(BlockIndices& members);
 	void initalizeForStep();
 	void recordDelta(CollisionVolume volume, CollisionVolume flowCapacity, CollisionVolume flowTillNextStep);
 	void applyDelta();

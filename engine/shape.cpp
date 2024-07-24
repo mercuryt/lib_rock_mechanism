@@ -86,15 +86,15 @@ std::vector<std::array<int32_t, 3>> Shape::positionOffsets(std::array<int32_t, 4
 	return output;
 }
 
-std::vector<BlockIndex> Shape::getBlocksOccupiedAt(const Blocks& blocks, BlockIndex location, Facing facing) const
+BlockIndices Shape::getBlocksOccupiedAt(const Blocks& blocks, BlockIndex location, Facing facing) const
 {
-	std::vector<BlockIndex> output;
+	BlockIndices output;
 	output.reserve(positions.size());
 	for(auto [x, y, z, v] : occupiedOffsetsCache.at(facing))
 	{
 		BlockIndex block = blocks.offset(location, x, y, z);
 		assert(block != BLOCK_INDEX_MAX);
-		output.push_back(block);
+		output.add(block);
 	}
 	return output;
 }
@@ -110,15 +110,15 @@ std::vector<std::pair<BlockIndex, Volume>> Shape::getBlocksOccupiedAtWithVolumes
 	}
 	return output;
 }
-std::vector<BlockIndex> Shape::getBlocksWhichWouldBeAdjacentAt(const Blocks& blocks, BlockIndex location, Facing facing) const
+BlockIndices Shape::getBlocksWhichWouldBeAdjacentAt(const Blocks& blocks, BlockIndex location, Facing facing) const
 {
-	std::vector<BlockIndex> output;
+	BlockIndices output;
 	output.reserve(positions.size());
 	for(auto [x, y, z] : adjacentOffsetsCache.at(facing))
 	{
 		BlockIndex block = blocks.offset(location, x, y, z);
 		if(block != BLOCK_INDEX_MAX)
-			output.push_back(block);
+			output.add(block);
 	}
 	return output;
 }

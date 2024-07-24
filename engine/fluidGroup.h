@@ -16,15 +16,16 @@
 #include "fluidGroups/drainQueue.h"
 #include "fluidGroups/fillQueue.h"
 #include "types.h"
+#include "blockIndices.h"
 
 class Area;
 struct FluidType;
 
 struct FluidGroupSplitData final
 {
-	std::unordered_set<BlockIndex> members;
-	std::unordered_set<BlockIndex> futureAdjacent;
-	FluidGroupSplitData(std::unordered_set<BlockIndex>& m) : members(m) {}
+	BlockIndices members;
+	BlockIndices futureAdjacent;
+	FluidGroupSplitData(BlockIndices& m) : members(m) {}
 };
 
 class FluidGroup final
@@ -35,19 +36,19 @@ public:
 	// For spitting into multiple fluidGroups.
 	std::vector<FluidGroupSplitData> m_futureGroups;
 	// For notifing groups with different fluids of unfull status. Groups with the same fluid are merged instead.
-	std::unordered_map<FluidGroup*, std::unordered_set<BlockIndex>> m_futureNotifyPotentialUnfullAdjacent;
+	std::unordered_map<FluidGroup*, BlockIndices> m_futureNotifyPotentialUnfullAdjacent;
 	
-	std::unordered_set<BlockIndex> m_diagonalBlocks;
+	BlockIndices m_diagonalBlocks;
 
-	std::unordered_set<BlockIndex> m_potentiallyNoLongerAdjacentFromSyncronusStep;
-	std::unordered_set<BlockIndex> m_potentiallySplitFromSyncronusStep;
+	BlockIndices m_potentiallyNoLongerAdjacentFromSyncronusStep;
+	BlockIndices m_potentiallySplitFromSyncronusStep;
 
-	std::unordered_set<BlockIndex> m_futureNewEmptyAdjacents;
+	BlockIndices m_futureNewEmptyAdjacents;
 
-	std::unordered_set<BlockIndex> m_futureAddToDrainQueue;
-	std::unordered_set<BlockIndex> m_futureRemoveFromDrainQueue;
-	std::unordered_set<BlockIndex> m_futureAddToFillQueue;
-	std::unordered_set<BlockIndex> m_futureRemoveFromFillQueue;
+	BlockIndices m_futureAddToDrainQueue;
+	BlockIndices m_futureRemoveFromDrainQueue;
+	BlockIndices m_futureAddToFillQueue;
+	BlockIndices m_futureRemoveFromFillQueue;
 	std::unordered_map<const FluidType*, FluidGroup*> m_disolvedInThisGroup;
 	Area& m_area;
 	const FluidType& m_fluidType;
@@ -61,13 +62,13 @@ public:
 	bool m_merged = false;
 	bool m_disolved = false;
 
-	FluidGroup(const FluidType& ft, std::unordered_set<BlockIndex>& blocks, Area& area, bool checkMerge = true);
+	FluidGroup(const FluidType& ft, BlockIndices& blocks, Area& area, bool checkMerge = true);
 	FluidGroup(const FluidGroup&) = delete;
 	void addFluid(uint32_t fluidVolume);
 	void removeFluid(uint32_t fluidVolume);
 	void addBlock(BlockIndex block, bool checkMerge = true);
 	void removeBlock(BlockIndex block);
-	void removeBlocks(std::unordered_set<BlockIndex>& blocks);
+	void removeBlocks(BlockIndices& blocks);
 	void addMistFor(BlockIndex block);
 	// Takes a pointer to the other fluid group because we may switch them inorder to merge into the larger one.
 	// Return the larger.
@@ -84,7 +85,7 @@ public:
 	void log() const;
 	void logFill() const;
 	[[nodiscard]] int32_t totalVolume() const;
-	[[nodiscard]] std::unordered_set<BlockIndex>& getBlocks() { return m_drainQueue.m_set; }
+	[[nodiscard]] BlockIndices& getBlocks() { return m_drainQueue.m_set; }
 	[[nodiscard]] bool dispositionIsStable(CollisionVolume fillVolume, CollisionVolume drainVolume) const;
 	[[nodiscard]] bool operator==(const FluidGroup& fluidGroup) const { return &fluidGroup == this; }
 	friend class Area;

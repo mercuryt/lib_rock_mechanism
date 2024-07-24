@@ -35,8 +35,8 @@ class AreaHasTargetedHauling
 	std::list<TargetedHaulProject> m_projects;
 public:
 	AreaHasTargetedHauling(Area& a) : m_area(a) { }
-	TargetedHaulProject& begin(std::vector<ActorIndex> actors, ItemIndex item, BlockIndex destination);
-	void load(const Json& data, DeserializationMemo& deserializationMemo);
+	TargetedHaulProject& begin(ActorIndices actors, ItemIndex item, BlockIndex destination);
+	void load(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	void cancel(TargetedHaulProject& project);
 	void complete(TargetedHaulProject& project);
 	void clearReservations();

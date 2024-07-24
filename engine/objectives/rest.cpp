@@ -4,12 +4,13 @@
 #include "../area.h"
 #include "../config.h"
 #include "actors/actors.h"
+#include "types.h"
 
 RestObjective::RestObjective(Area& area) : Objective(0), m_restEvent(area.m_eventSchedule) { }
-RestObjective::RestObjective(const Json& data, Area& area) : Objective(data), m_restEvent(area.m_eventSchedule) 
+RestObjective::RestObjective(const Json& data, Area& area, ActorIndex actor) : Objective(data), m_restEvent(area.m_eventSchedule) 
 {
 	if(data.contains("eventStart"))
-		m_restEvent.schedule(*this, data["eventStart"].get<Step>());
+		m_restEvent.schedule(area, *this, data["eventStart"].get<Step>(), actor);
 }
 Json RestObjective::toJson() const
 {
@@ -19,14 +20,17 @@ Json RestObjective::toJson() const
 	return data;
 }
 	
-void RestObjective::execute(Area& area, ActorIndex) { m_restEvent.schedule(area.m_simulation, *this); }
+void RestObjective::execute(Area& area, ActorIndex actor) { m_restEvent.schedule(area, *this, actor); }
 void RestObjective::reset(Area& area, ActorIndex actor) 
 { 
 	cancel(area, actor); 
 	area.getActors().canReserve_clearAll(actor);
 }
-RestEvent::RestEvent(Simulation& simulation, RestObjective& ro, const Step start) :
-	ScheduledEvent(simulation, Config::restIntervalSteps, start), m_objective(ro) { }
+RestEvent::RestEvent(Area& area, RestObjective& ro, ActorIndex actor, Step start) :
+	ScheduledEvent(area.m_simulation, Config::restIntervalSteps, start), m_objective(ro)
+{
+	m_actor.setTarget(area.getActors().getReferenceTarget(actor));
+}
 void RestEvent::execute(Simulation&, Area* area)
 {
 	Actors& actors = area->getActors();

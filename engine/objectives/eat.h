@@ -42,7 +42,7 @@ class EatObjective final : public Objective
 	bool m_tryToHunt = false;
 public:
 	EatObjective(Area& area);
-	EatObjective(const Json& data, DeserializationMemo& deserializationMemo);
+	EatObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area, ActorIndex actor);
 	void execute(Area&, ActorIndex actor);
 	void cancel(Area&, ActorIndex actor);
 	void delay(Area&, ActorIndex actor);

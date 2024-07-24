@@ -113,9 +113,9 @@ SupressedNeed::SupressedNeed(Area& area, std::unique_ptr<Objective> o, ActorRefe
 SupressedNeed::SupressedNeed(Area& area, const Json& data, DeserializationMemo& deserializationMemo, ActorReference ref) :
 	m_event(area.m_eventSchedule), m_actor(ref)
 {
-	m_objective = deserializationMemo.loadObjective(data["objective"]);
+	m_objective = deserializationMemo.loadObjective(data["objective"], area, m_actor.getIndex());
 	if(data.contains("eventStart"))
-		m_event.schedule(*this, data["eventStart"].get<Step>());
+		m_event.schedule(area, *this, data["eventStart"].get<Step>());
 }
 Json SupressedNeed::toJson() const
 {
@@ -190,19 +190,19 @@ Json CannotCompleteObjectiveDishonorCallback::toJson() const
 }
 void CannotCompleteObjectiveDishonorCallback::execute(uint32_t, uint32_t) { m_area.getActors().objective_canNotCompleteSubobjective(m_actor.getIndex()); }
 // HasObjectives.
-void HasObjectives::load(const Json& data, DeserializationMemo& deserializationMemo)
+void HasObjectives::load(const Json& data, DeserializationMemo& deserializationMemo, Area& area, ActorIndex actor)
 {
 	for(const Json& objective : data["needsQueue"])
 	{
-		m_needsQueue.push_back(deserializationMemo.loadObjective(objective));
+		m_needsQueue.push_back(deserializationMemo.loadObjective(objective, area, actor));
 		m_idsOfObjectivesInNeedsQueue.insert(m_needsQueue.back()->getObjectiveTypeId());
 	}
 	for(const Json& objective : data["tasksQueue"])
-		m_tasksQueue.push_back(deserializationMemo.loadObjective(objective));
+		m_tasksQueue.push_back(deserializationMemo.loadObjective(objective, area, actor));
 	if(data.contains("currentObjective"))
 		m_currentObjective = deserializationMemo.m_objectives.at(data["currentObjective"].get<uintptr_t>());
 	for(const Json& pair : data["supressedNeeds"])
-		m_supressedNeeds.try_emplace(pair[0].get<ObjectiveTypeId>(), pair[1], deserializationMemo, m_actor);
+		m_supressedNeeds.try_emplace(pair[0].get<ObjectiveTypeId>(), area, pair[1], deserializationMemo, area.getActors().getReference(m_actor));
 	m_prioritySet.load(data["prioritySet"], deserializationMemo);
 }
 Json HasObjectives::toJson() const
@@ -407,7 +407,7 @@ void HasObjectives::cannotFulfillNeed(Area& area, Objective& objective)
 	auto found = std::ranges::find_if(m_needsQueue, [&](std::unique_ptr<Objective>& o) { return o->getObjectiveTypeId() == objectiveTypeId; });
 	assert(found != m_needsQueue.end());
 	// Store supressed need.
-	m_supressedNeeds.try_emplace(objectiveTypeId, area, std::move(*found), m_actor);
+	m_supressedNeeds.try_emplace(objectiveTypeId, area, std::move(*found), area.getActors().getReference(m_actor));
 	// Remove from needs queue.
 	m_idsOfObjectivesInNeedsQueue.erase(objectiveTypeId);
 	m_needsQueue.erase(found);

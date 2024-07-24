@@ -29,13 +29,13 @@ void PathRequest::createGoTo(Area& area, ActorIndex actor, BlockIndex destinatio
 	m_unreserved = unreserved;
 	m_destination = destination;
 	Blocks& blocks = area.getBlocks();
-	Faction* faction = nullptr;
+	FactionId faction = FACTION_ID_MAX;
 	if(unreserved)
-		faction = area.getActors().getFaction(actor);
+		faction = area.getActors().getFactionId(actor);
 	// TODO: Pathing to a specific block that is reserved should do nothing but instead we iterate every block in range.
 	// 	fix by adding a predicate to path request which prevents the call to findPath.
 	DestinationCondition destinationCondition = [destination, &blocks, faction](BlockIndex index, Facing) {
-		return index == destination && (faction == nullptr || !blocks.isReserved(index, *faction));
+		return index == destination && (faction == FACTION_ID_MAX || !blocks.isReserved(index, faction));
 	};
 	create(area, actor, destinationCondition, detour, maxRange, destination, reserve);
 }
@@ -49,8 +49,8 @@ void PathRequest::createGoToAnyOf(Area& area, ActorIndex actor, std::vector<Bloc
 	if(unreserved)
 	{
 		assert(area.getActors().getFaction(actor) != nullptr);
-		const Faction& faction = *area.getActors().getFaction(actor);
-		std::ranges::remove_if(destinations, [&blocks, &faction](BlockIndex index){ return !blocks.isReserved(index, faction); });
+		FactionId faction = area.getActors().getFactionId(actor);
+		std::ranges::remove_if(destinations, [&blocks, faction](BlockIndex index){ return !blocks.isReserved(index, faction); });
 	}
 	const MoveType& moveType = actors.getMoveType(actor);
 	std::ranges::remove_if(destinations, [&blocks, &moveType](BlockIndex index){
@@ -133,8 +133,8 @@ void PathRequest::createGoAdjacentToDesignation(Area& area, ActorIndex actor, Bl
 {
 	m_designation = designation;
 	Blocks& blocks = area.getBlocks();
-	Faction& faction = *area.getActors().getFaction(actor);
-	std::function<bool(BlockIndex)> condition = [&blocks, &faction, designation](BlockIndex index){
+	FactionId faction = area.getActors().getFactionId(actor);
+	std::function<bool(BlockIndex)> condition = [&blocks, faction, designation](BlockIndex index){
 		return blocks.designation_has(index, faction, designation);
 	};
 	createGoAdjacentToCondition(area, actor, condition, detour, unreserved, maxRange, BLOCK_INDEX_MAX, reserve);
@@ -147,23 +147,23 @@ void PathRequest::createGoToEdge(Area& area, ActorIndex actor, bool detour)
 }
 void PathRequest::createGoToCondition(Area& area, ActorIndex actor, DestinationCondition condition, bool detour, bool unreserved, DistanceInBlocks maxRange, BlockIndex huristicDestination, bool reserve)
 {
-	const Faction* faction = nullptr;
+	FactionId faction = FACTION_ID_MAX;
 	if(unreserved)
-		faction = area.getActors().getFaction(actor);
+		faction = area.getActors().getFactionId(actor);
 	Blocks& blocks = area.getBlocks();
 	//TODO: use seperate lambdas rather then always passing unreserved and faction.
 	DestinationCondition destinationCondition = [&blocks, condition, unreserved, faction](BlockIndex index, Facing facing) { 
-		return condition(index, facing) && (!unreserved || !blocks.isReserved(index, *faction));
+		return condition(index, facing) && (!unreserved || !blocks.isReserved(index, faction));
 	};
 	create(area, actor, destinationCondition, detour, maxRange, huristicDestination, reserve);
 }
 void PathRequest::createGoAdjacentToCondition(Area& area, ActorIndex actor, std::function<bool(BlockIndex)> condition, bool detour, bool unreserved, DistanceInBlocks maxRange, BlockIndex huristicDestination, bool reserve)
 {
-	const Faction* faction = nullptr;
+	FactionId faction = FACTION_ID_MAX;
 	if(unreserved)
 	{
-		faction = area.getActors().getFaction(actor);
-		assert(faction != nullptr);
+		faction = area.getActors().getFactionId(actor);
+		assert(faction != FACTION_ID_MAX);
 	}
 	const Shape& shape = area.getActors().getShape(actor);
 	DestinationCondition destinationCondition;
@@ -173,14 +173,14 @@ void PathRequest::createGoAdjacentToCondition(Area& area, ActorIndex actor, std:
        		destinationCondition = [&shape, &blocks, condition, unreserved, faction](BlockIndex location, Facing facing) 
 		{ 
 			for(BlockIndex block : shape.getBlocksWhichWouldBeAdjacentAt(blocks, location, facing))
-				if(condition(block) && (!unreserved || !blocks.isReserved(block, *faction)))
+				if(condition(block) && (!unreserved || !blocks.isReserved(block, faction)))
 					return true;
 			return false;
 		};
 	else
        		destinationCondition = [&blocks, condition, unreserved, faction](BlockIndex index, Facing) { 
 			for(BlockIndex block : blocks.getAdjacentWithEdgeAndCornerAdjacent(index))
-				if(condition(block) && (!unreserved || !blocks.isReserved(block, *faction)))
+				if(condition(block) && (!unreserved || !blocks.isReserved(block, faction)))
 					return true;
 			return false;
 	};
@@ -217,7 +217,7 @@ void PathRequest::callback(Area& area, FindPathResult& result)
 void ObjectivePathRequest::callback(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
-	ActorIndex actor = m_objective.m_actor;
+	ActorIndex actor = getActor();
 	// No path found.
 	if(result.path.empty() && !result.useCurrentPosition)
 	{
@@ -257,7 +257,7 @@ void ObjectivePathRequest::callback(Area& area, FindPathResult& result)
 void NeedPathRequest::callback(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
-	ActorIndex actor = m_objective.m_actor;
+	ActorIndex actor = getActor();
 	// No path found.
 	if(result.path.empty() && !result.useCurrentPosition)
 	{

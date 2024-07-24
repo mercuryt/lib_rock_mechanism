@@ -8,8 +8,8 @@
 #include "objectives/sleep.h"
 #include <cassert>
 // Sleep Event.
-SleepEvent::SleepEvent(Simulation& simulation, Step step, MustSleep& ns, bool f, const Step start) :
-	ScheduledEvent(simulation, step, start), m_needsSleep(ns), m_force(f) { }
+SleepEvent::SleepEvent(Simulation& simulation, Step step, MustSleep& ns, const Step start) :
+	ScheduledEvent(simulation, step, start), m_needsSleep(ns) { }
 void SleepEvent::execute(Simulation&, Area* area){ m_needsSleep.wakeUp(*area); }
 void SleepEvent::clearReferences(Simulation&, Area*){ m_needsSleep.m_sleepEvent.clearPointer(); }
 // Tired Event.
@@ -27,16 +27,16 @@ void MustSleep::scheduleTiredEvent(Area& area)
 {
 	m_tiredEvent.schedule(area.m_simulation, area.getActors().getSpecies(m_actor.getIndex()).stepsSleepFrequency, *this);
 }
-MustSleep::MustSleep(Area& area, const Json& data, ActorIndex a, const AnimalSpecies& species) :
+MustSleep::MustSleep(Area& area, const Json& data, ActorIndex a) :
 	m_sleepEvent(area.m_eventSchedule), m_tiredEvent(area.m_eventSchedule),
 	m_location(data.contains("location") ? data["location"].get<BlockIndex>() : BLOCK_INDEX_MAX),
 	m_needsSleep(data["needsSleep"].get<bool>()), m_isAwake(data["isAwake"].get<bool>())
 {
 	m_actor.setTarget(area.getActors().getReferenceTarget(a));
 	if(data.contains("sleepEventStart"))
-		m_sleepEvent.schedule(species.stepsSleepDuration, *this, data["sleepEventStart"].get<Step>());
+		m_sleepEvent.schedule(area.m_simulation, data["sleepEventDuration"].get<Step>(), *this, data["sleepEventStart"].get<Step>());
 	if(data.contains("tiredEventStart"))
-		m_tiredEvent.schedule(species.stepsSleepFrequency, *this, data["tiredEventStart"].get<Step>());
+		m_tiredEvent.schedule(area.m_simulation, data["tiredEventDuration"].get<Step>(), *this, data["tiredEventStart"].get<Step>());
 }
 Json MustSleep::toJson() const
 {
@@ -45,10 +45,18 @@ Json MustSleep::toJson() const
 		data["location"] = m_location;
 	data["needsSleep"] = m_needsSleep;
 	data["isAwake"] = m_isAwake;
+	if(m_force)
+		data["force"] = true;
 	if(m_sleepEvent.exists())
+	{
 		data["sleepEventStart"] = m_sleepEvent.getStartStep();
+		data["sleepEventDuration"] = m_sleepEvent.duration();
+	}
 	if(m_tiredEvent.exists())
+	{
 		data["tiredEventStart"] = m_tiredEvent.getStartStep();
+		data["tiredEventDuration"] = m_tiredEvent.duration();
+	}
 	return data;
 }
 void MustSleep::notTired(Area& area)

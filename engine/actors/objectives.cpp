@@ -38,17 +38,17 @@ void Actors::objective_maybeDoNext(ActorIndex index)
 }
 void Actors::objective_setPriority(ActorIndex index, const ObjectiveType& objectiveType, uint8_t priority)
 {
-	m_hasObjectives.at(index)->m_prioritySet.setPriority(m_area, objectiveType, priority);
+	m_hasObjectives.at(index)->m_prioritySet.setPriority(m_area, index, objectiveType, priority);
 }
 void Actors::objective_reset(ActorIndex index)
 {
-	m_hasObjectives.at(index)->getCurrent().reset(m_area);
+	m_hasObjectives.at(index)->getCurrent().reset(m_area, index);
 }
 void Actors::objective_projectCannotReserve(ActorIndex index)
 {
 	Objective& objective = m_hasObjectives.at(index)->getCurrent();
-	objective.onProjectCannotReserve(m_area);
-	objective.reset(m_area);
+	objective.onProjectCannotReserve(m_area, index);
+	objective.reset(m_area, index);
 	m_hasObjectives.at(index)->cannotCompleteSubobjective(m_area);
 }
 void Actors::objective_complete(ActorIndex index, Objective& objective)
@@ -65,7 +65,7 @@ void Actors::objective_cancel(ActorIndex index, Objective& objective)
 }
 void Actors::objective_execute(ActorIndex index)
 {
-	return m_hasObjectives.at(index)->getCurrent().execute(m_area);
+	return m_hasObjectives.at(index)->getCurrent().execute(m_area, index);
 }
 [[nodiscard]] bool Actors::objective_exists(ActorIndex index) const
 {

@@ -116,14 +116,14 @@ void AreaHasTemperature::addMeltableSolidBlockAboveGround(BlockIndex block)
 	Blocks& blocks = m_area.getBlocks();
 	assert(!blocks.isUnderground(block));
 	assert(blocks.solid_is(block));
-	m_aboveGroundBlocksByMeltingPoint.at(blocks.solid_get(block).meltingPoint).insert(block);
+	m_aboveGroundBlocksByMeltingPoint.at(blocks.solid_get(block).meltingPoint).add(block);
 }
 // Must be run before block is set no longer solid if above ground.
 void AreaHasTemperature::removeMeltableSolidBlockAboveGround(BlockIndex block)
 {
 	Blocks& blocks = m_area.getBlocks();
 	assert(blocks.solid_is(block));
-	m_aboveGroundBlocksByMeltingPoint.at(blocks.solid_get(block).meltingPoint).erase(block);
+	m_aboveGroundBlocksByMeltingPoint.at(blocks.solid_get(block).meltingPoint).remove(block);
 }
 Temperature AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature() const
 {
@@ -145,12 +145,12 @@ ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(Area& area, ActorIndex a) :
 {
 	m_actor.setTarget(area.getActors().getReferenceTarget(a));
 }
-ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(const Json& data, ActorIndex a, Area& area) : 
+ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(const Json& data, ActorIndex actor, Area& area) : 
 	m_event(area.m_eventSchedule)
 {
-	m_actor.setTarget(area.getActors().getReferenceTarget(a));
+	m_actor.setTarget(area.getActors().getReferenceTarget(actor));
 	if(data.contains("eventStart"))
-		m_event.schedule(m_actor, data["eventStart"].get<Step>());
+		m_event.schedule(area, actor, data["eventStart"].get<Step>());
 }
 Json ActorNeedsSafeTemperature::toJson() const
 {

@@ -7,6 +7,7 @@
 
 #include "config.h"
 #include "types.h"
+#include "index.h"
 
 #include <list>
 #include <map>
@@ -39,18 +40,8 @@ public:
 	[[nodiscard]] Json toJson() const;
 	ScheduledEvent(const ScheduledEvent&) = delete;
 	ScheduledEvent(ScheduledEvent&&) = delete;
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ScheduledEvent, m_startStep, m_step, m_cancel);
 };
-inline void to_json(Json& data, const ScheduledEvent& event)
-{
-	data = {{"start", event.m_startStep}, {"step", event.m_step}};
-	if(event.m_cancel)
-		data["cancel"] = true;
-}
-inline void from_json(const Json& data, ScheduledEvent& event)
-{
-	event.m_startStep = data["start"];
-	event.m_step = data["step"];
-}
 class EventSchedule
 {
 	Simulation& m_simulation;

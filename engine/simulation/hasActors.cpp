@@ -1,4 +1,5 @@
 #include "hasActors.h"
+#include "actors/actors.h"
 #include "deserializationMemo.h"
 void SimulationHasActors::registerActor(ActorId id, Actors& store, ActorIndex index)
 {
@@ -17,5 +18,5 @@ ActorIndex SimulationHasActors::getIndexForId(ActorId id) const
 }
 Area& SimulationHasActors::getAreaForId(ActorId id) const
 {
-	return m_actors.at(id).store.m_area;
+	return m_actors.at(id).store.getArea();
 }

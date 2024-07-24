@@ -11,7 +11,6 @@
 #include "../lib/dynamic_bitset.hpp"
 
 #include <pthread.h>
-#include <unordered_set>
 
 struct MoveType;
 struct Shape;

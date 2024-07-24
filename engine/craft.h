@@ -1,7 +1,7 @@
 #pragma once
 
 #include "config.h"
-#include "input.h"
+//#include "input.h"
 #include "project.h"
 #include "reservable.h"
 #include "objectives/craft.h"
@@ -25,6 +25,7 @@ struct DeserializationMemo;
 struct MaterialType;
 struct SkillType;
 class ActorOrItemIndex;
+/*
 class CraftInputAction final : public InputAction
 {
 	Area& m_area;
@@ -46,6 +47,7 @@ class CraftCancelInputAction final : public InputAction
 		InputAction(inputQueue), m_area(area), m_job(job), m_faction(faction) { }
 	void execute();
 };
+*/
 // Drill, saw, forge, etc.
 struct CraftStepTypeCategory final
 {
@@ -143,7 +145,7 @@ inline void to_json(Json& data, const CraftJob* const& craftJob){ data = reinter
 // To be used by Area.
 class HasCraftingLocationsAndJobsForFaction final
 {
-	std::unordered_map<const CraftStepTypeCategory*, std::unordered_set<BlockIndex>> m_locationsByCategory;
+	std::unordered_map<const CraftStepTypeCategory*, BlockIndices> m_locationsByCategory;
 	std::unordered_map<BlockIndex, std::unordered_set<const CraftStepTypeCategory*>> m_stepTypeCategoriesByLocation;
 	std::unordered_map<const CraftStepTypeCategory*, std::unordered_set<CraftJob*>> m_unassignedProjectsByStepTypeCategory;
 	std::unordered_map<const SkillType*, std::unordered_set<CraftJob*>> m_unassignedProjectsBySkill;

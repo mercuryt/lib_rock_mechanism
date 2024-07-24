@@ -1,6 +1,7 @@
 #include "haul.h"
 #include "actorOrItemIndex.h"
 #include "actors/actors.h"
+#include "index.h"
 #include "items/items.h"
 #include "blocks/blocks.h"
 #include "config.h"
@@ -64,8 +65,8 @@ void HaulSubprojectParamaters::reset()
 	fluidType = nullptr;
 	quantity = 0;
 	strategy = HaulStrategy::None;
-	haulTool = ITEM_INDEX_MAX;
-	beastOfBurden = ACTOR_INDEX_MAX;
+	haulTool.clear();
+	beastOfBurden.clear();
 	projectRequirementCounts = nullptr;	
 }
 // Check that the haul strategy selected in read step is still valid in write step.
@@ -79,9 +80,9 @@ bool HaulSubprojectParamaters::validate(Area& area) const
 	for(ActorIndex worker : workers)
 		if(area.getActors().reservable_isFullyReserved(worker, faction))
 			return false;
-	if(haulTool != ITEM_INDEX_MAX && area.getItems().reservable_isFullyReserved(haulTool, faction))
+	if(haulTool.exists() && area.getItems().reservable_isFullyReserved(haulTool, faction))
 		return false;
-	if(beastOfBurden != ACTOR_INDEX_MAX && area.getActors().reservable_isFullyReserved(beastOfBurden, faction))
+	if(beastOfBurden.exists() && area.getActors().reservable_isFullyReserved(beastOfBurden, faction))
 		return false;
 	return true;
 }
@@ -98,13 +99,13 @@ HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters)
 	assert(!paramaters.workers.empty());
 	for(ActorIndex actor : paramaters.workers)
 		m_workers.add(actors.getReference(actor));
-	if(paramaters.haulTool != ITEM_INDEX_MAX)
+	if(paramaters.haulTool.exists())
 	{
 		m_haulTool.setTarget(items.getReferenceTarget(paramaters.haulTool));
 		std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<HaulSubprojectDishonorCallback>(*this);
 		items.reservable_reserve(m_haulTool.getIndex(), m_project.m_canReserve, 1u, std::move(dishonorCallback));
 	}
-	if(paramaters.beastOfBurden != ACTOR_INDEX_MAX)
+	if(paramaters.beastOfBurden.exists())
 	{
 		m_beastOfBurden.setTarget(actors.getReferenceTarget(paramaters.beastOfBurden));
 		std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<HaulSubprojectDishonorCallback>(*this);
@@ -112,8 +113,8 @@ HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters)
 	}
 	if(m_toHaul.getIndexPolymorphic().isGeneric(area))
 	{
-		m_genericItemType = &items.getItemType(m_toHaul.getIndex());
-		m_genericMaterialType = &items.getMaterialType(m_toHaul.getIndex());
+		m_genericItemType = &items.getItemType(ItemIndex::cast(m_toHaul.getIndex()));
+		m_genericMaterialType = &items.getMaterialType(ItemIndex::cast(m_toHaul.getIndex()));
 	}
 	for(ActorReference actor : m_workers)
 	{
@@ -211,7 +212,11 @@ void HaulSubproject::commandWorker(ActorIndex actor)
 	BlockIndex actorLocation = actors.getLocation(actor);
 	FactionId faction = m_project.getFaction();
 	ActorOrItemIndex toHaulIndex = m_toHaul.getIndexPolymorphic();
-	ItemIndex haulToolIndex = m_haulTool.exists() ? m_haulTool.getIndex() : ITEM_INDEX_MAX;
+	ItemIndex haulToolIndex;
+	if(m_haulTool.exists())
+		haulToolIndex = m_haulTool.getIndex();
+	else
+		haulToolIndex.clear();
 	switch(m_strategy)
 	{
 		case HaulStrategy::Individual:
@@ -693,24 +698,24 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 	output.projectRequirementCounts = project.m_toPickup.at(toHaulRef).first;
 	Quantity maxQuantityRequested = project.m_toPickup.at(toHaulRef).second;
 	Speed minimumSpeed = project.getMinimumHaulSpeed();
-	std::vector<ActorIndex> workers;
+	ActorIndices workers;
 	// TODO: shouldn't this be m_waiting?
 	for(auto& pair : project.m_workers)
-		workers.push_back(pair.first.getIndex());
+		workers.add(pair.first.getIndex());
 	assert(maxQuantityRequested != 0);
 	// toHaul is wheeled.
 	static const MoveType& wheeled = MoveType::byName("roll");
 	if(toHaul.getMoveType(project.m_area) == wheeled)
 	{
 		assert(toHaul.isItem());
-		ItemIndex haulableItem = toHaul.get();
+		ItemIndex haulableItem = ItemIndex::cast(toHaul.get());
 		ActorOrItemIndex workerPolymorphic = ActorOrItemIndex::createForActor(worker);
 		std::vector<ActorOrItemIndex> list{workerPolymorphic, toHaul};
 		if(Portables::getMoveSpeedForGroup(project.m_area, list) >= minimumSpeed)
 		{
 			output.strategy = HaulStrategy::IndividualCargoIsCart;
 			output.quantity = 1;
-			output.workers.push_back(worker);
+			output.workers.add(worker);
 			return output;
 		}
 		else
@@ -733,7 +738,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 	{
 		output.strategy = HaulStrategy::Individual;
 		output.quantity = std::min(maxQuantityRequested, maxQuantityCanCarry);
-		output.workers.push_back(worker);
+		output.workers.add(worker);
 		return output;
 	}
 	// Team
@@ -747,7 +752,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 	}
 	ItemIndex haulTool = project.m_area.m_hasHaulTools.getToolToHaulPolymorphic(project.m_area, faction, toHaul);
 	// Cart
-	if(haulTool != ITEM_INDEX_MAX)
+	if(haulTool.exists())
 	{
 		// Cart
 		maxQuantityCanCarry = maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(project.m_area, worker, haulTool, toHaul, minimumSpeed);
@@ -756,12 +761,12 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 			output.strategy = HaulStrategy::Cart;
 			output.haulTool = haulTool;
 			output.quantity = std::min(maxQuantityRequested, maxQuantityCanCarry);
-			output.workers.push_back(worker);
+			output.workers.add(worker);
 			return output;
 		}
 		// Animal Cart
 		ActorIndex yoked = project.m_area.m_hasHaulTools.getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(project.m_area, actors.getFactionId(worker), haulTool, toHaul.getMass(project.m_area), minimumSpeed);
-		if(yoked != ACTOR_INDEX_MAX)
+		if(yoked.exists())
 		{
 			maxQuantityCanCarry = maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(project.m_area, worker, yoked, haulTool, toHaul, minimumSpeed);
 			if(maxQuantityCanCarry != 0)
@@ -770,7 +775,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 				output.haulTool = haulTool;
 				output.beastOfBurden = yoked;
 				output.quantity = std::min(maxQuantityRequested, maxQuantityCanCarry);
-				output.workers.push_back(worker);
+				output.workers.add(worker);
 				return output;
 			}
 		}
@@ -787,11 +792,11 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 	}
 	// Panniers
 	ActorIndex pannierBearer = project.m_area.m_hasHaulTools.getPannierBearerToHaulCargoWithMassWithMinimumSpeed(project.m_area, faction, toHaul, minimumSpeed);
-	if(pannierBearer != ACTOR_INDEX_MAX)
+	if(pannierBearer.exists())
 	{
 		//TODO: If pannierBearer already has panniers equiped then use those, otherwise find ones to use. Same for animalCart.
 		ItemIndex panniers = project.m_area.m_hasHaulTools.getPanniersForActorToHaul(project.m_area, faction, pannierBearer, toHaul);
-		if(panniers != ITEM_INDEX_MAX)
+		if(panniers.exists())
 		{
 			maxQuantityCanCarry = maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniersAndAnimal(project.m_area, worker, pannierBearer, panniers, toHaul, minimumSpeed);
 			if(maxQuantityCanCarry != 0)
@@ -800,7 +805,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 				output.beastOfBurden = pannierBearer;
 				output.haulTool = panniers;
 				output.quantity = std::min(maxQuantityRequested, maxQuantityCanCarry);
-				output.workers.push_back(worker);
+				output.workers.add(worker);
 				return output;
 			}
 		}
@@ -821,10 +826,10 @@ void HaulSubproject::complete(ActorOrItemIndex delivered)
 	assert(m_projectRequirementCounts.delivered <= m_projectRequirementCounts.required);
 	if(delivered.isItem())
 	{
-		ItemIndex deliveredIndex = delivered.get();
+		ItemIndex deliveredIndex = ItemIndex::cast(delivered.get());
 		if(m_projectRequirementCounts.consumed)
 			m_project.m_toConsume.add(items.getReference(deliveredIndex));
-		if(items.isWorkPiece(delivered.get()))
+		if(items.isWorkPiece(deliveredIndex))
 			delivered.setLocationAndFacing(m_project.m_area, m_project.m_location, 0);
 		m_project.m_deliveredItems.add(items.getReference(deliveredIndex));
 	}
@@ -834,23 +839,21 @@ void HaulSubproject::complete(ActorOrItemIndex delivered)
 	for(ActorReference worker : m_workers)
 		actors.canReserve_clearAll(worker.getIndex());
 	delivered.reservable_reserve(m_project.m_area, m_project.m_canReserve, m_quantity);
-	std::vector<ActorIndex> workers;
-	std::ranges::transform(m_workers, std::back_inserter(workers), [](const ActorReference& ref) { return ref.getIndex(); });
+	ActorIndices workers;
 	m_project.onDelivered(delivered);
 	m_project.m_haulSubprojects.remove(*this);
-	for(ActorIndex worker : workers)
+	for(ActorReference worker : m_workers)
 	{
-		ActorReference ref = actors.getReference(worker);
-		project.m_workers.at(ref).haulSubproject = nullptr;
-		project.commandWorker(worker);
+		project.m_workers.at(worker).haulSubproject = nullptr;
+		project.commandWorker(worker.getIndex());
 	}
 }
 // Class method.
-std::vector<ActorIndex> HaulSubproject::actorsNeededToHaulAtMinimumSpeed(const Project& project, ActorIndex leader, const ActorOrItemIndex toHaul)
+ActorIndices HaulSubproject::actorsNeededToHaulAtMinimumSpeed(const Project& project, ActorIndex leader, const ActorOrItemIndex toHaul)
 {
 	std::vector<ActorOrItemIndex> actorsAndItems;
-	std::vector<ActorIndex> output;
-	output.push_back(leader);
+	ActorIndices output;
+	output.add(leader);
 	actorsAndItems.push_back(ActorOrItemIndex::createForActor(leader));
 	actorsAndItems.push_back(toHaul);
 	Actors& actors = project.m_area.getActors();
@@ -861,7 +864,7 @@ std::vector<ActorIndex> HaulSubproject::actorsNeededToHaulAtMinimumSpeed(const P
 		if(actorIndex == leader || projectWorker.haulSubproject != nullptr || !actors.isSentient(actorIndex))
 			continue;
 		assert(std::ranges::find(output, actorIndex) == output.end());
-		output.push_back(actorIndex);
+		output.add(actorIndex);
 		if(output.size() > 2) //TODO: More then two requires multiple followers for one leader.
 			break;
 		actorsAndItems.push_back(ActorOrItemIndex::createForActor(actorIndex));
@@ -911,11 +914,11 @@ Speed HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnim
 	return quantity;
 }
 // Class method.
-std::vector<ActorIndex> HaulSubproject::actorsNeededToHaulAtMinimumSpeedWithTool(const Project& project, ActorIndex leader, const ActorOrItemIndex toHaul, const ItemIndex haulTool)
+ActorIndices HaulSubproject::actorsNeededToHaulAtMinimumSpeedWithTool(const Project& project, ActorIndex leader, const ActorOrItemIndex toHaul, const ItemIndex haulTool)
 {
 	std::vector<ActorOrItemIndex> actorsAndItems;
-	std::vector<ActorIndex> output;
-	output.push_back(leader);
+	ActorIndices output;
+	output.add(leader);
 	actorsAndItems.push_back(ActorOrItemIndex::createForActor(leader));
 	actorsAndItems.push_back(ActorOrItemIndex::createForItem(haulTool));
 	const Actors& actors = project.m_area.getActors();
@@ -926,7 +929,7 @@ std::vector<ActorIndex> HaulSubproject::actorsNeededToHaulAtMinimumSpeedWithTool
 		if(actorIndex == leader || projectWorker.haulSubproject != nullptr || !actors.isSentient(actorIndex))
 			continue;
 		assert(std::ranges::find(output, actorIndex) == output.end());
-		output.push_back(actorIndex);
+		output.add(actorIndex);
 		if(output.size() > 2) //TODO: More then two requires multiple followers for one leader.
 			break;
 		actorsAndItems.push_back(ActorOrItemIndex::createForActor(actorIndex));
@@ -961,15 +964,15 @@ Quantity HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniers
 //TODO: optimize?
 bool AreaHasHaulTools::hasToolToHaulItem(const Area& area, FactionId faction, ItemIndex item) const
 {
-	return getToolToHaulItem(area, faction, item) != ITEM_INDEX_MAX;
+	return getToolToHaulItem(area, faction, item).exists();
 }
 bool AreaHasHaulTools::hasToolToHaulActor(const Area& area, FactionId faction, ActorIndex actor) const
 {
-	return getToolToHaulActor(area, faction, actor) != ITEM_INDEX_MAX;
+	return getToolToHaulActor(area, faction, actor).exists();
 }
 bool AreaHasHaulTools::hasToolToHaulPolymorphic(const Area& area, FactionId faction, const ActorOrItemIndex hasShape) const
 {
-	return getToolToHaulPolymorphic(area, faction, hasShape) != ITEM_INDEX_MAX;
+	return getToolToHaulPolymorphic(area, faction, hasShape).exists();
 }
 ItemIndex AreaHasHaulTools::getToolToHaulItem(const Area& area, FactionId faction, ItemIndex item) const
 {
@@ -978,7 +981,7 @@ ItemIndex AreaHasHaulTools::getToolToHaulItem(const Area& area, FactionId factio
 }
 ItemIndex AreaHasHaulTools::getToolToHaulActor(const Area& area, FactionId faction, ActorIndex actor) const
 {
-	Volume volume = area.getItems().getVolume(actor);
+	Volume volume = area.getActors().getVolume(actor);
 	return getToolToHaulVolume(area, faction, volume);
 }
 ItemIndex AreaHasHaulTools::getToolToHaulPolymorphic(const Area& area, FactionId faction, const ActorOrItemIndex toHaul) const
@@ -998,11 +1001,11 @@ ItemIndex AreaHasHaulTools::getToolToHaulVolume(const Area& area, FactionId fact
 		if(itemType.moveType != none && !items.reservable_isFullyReserved(index, faction) && itemType.internalVolume >= volume)
 			return index;
 	}
-	return ITEM_INDEX_MAX;
+	return ItemIndex::null();
 }
 bool AreaHasHaulTools::hasToolToHaulFluid(const Area& area, FactionId faction) const
 {
-	return getToolToHaulFluid(area, faction) != ITEM_INDEX_MAX;
+	return getToolToHaulFluid(area, faction).exists();
 }
 ItemIndex AreaHasHaulTools::getToolToHaulFluid(const Area& area, FactionId faction) const
 {
@@ -1013,7 +1016,7 @@ ItemIndex AreaHasHaulTools::getToolToHaulFluid(const Area& area, FactionId facti
 		if(!items.reservable_isFullyReserved(index, faction) && items.getItemType(index).canHoldFluids)
 			return index;
 	}
-	return ITEM_INDEX_MAX;
+	return ItemIndex::null();
 }
 ActorIndex AreaHasHaulTools::getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(const Area& area, FactionId faction, const ItemIndex haulTool, Mass cargoMass, Speed minimumHaulSpeed) const
 {
@@ -1027,7 +1030,7 @@ ActorIndex AreaHasHaulTools::getActorToYokeForHaulToolToMoveCargoWithMassWithMin
 		if(!actors.reservable_isFullyReserved(index, faction) && minimumHaulSpeed <= Portables::getMoveSpeedForGroupWithAddedMass(area, shapes, cargoMass, 0))
 			return index;
 	}
-	return ACTOR_INDEX_MAX;
+	return ActorIndex::null();
 }
 ActorIndex AreaHasHaulTools::getPannierBearerToHaulCargoWithMassWithMinimumSpeed(const Area& area, FactionId faction, const ActorOrItemIndex hasShape, Speed minimumHaulSpeed) const
 {
@@ -1039,7 +1042,7 @@ ActorIndex AreaHasHaulTools::getPannierBearerToHaulCargoWithMassWithMinimumSpeed
 		if(!actors.reservable_isFullyReserved(index, faction) && minimumHaulSpeed <= actors.canPickUp_speedIfCarryingQuantity(index, hasShape.getMass(area), 1u))
 			return index;
 	}
-	return ACTOR_INDEX_MAX;
+	return ActorIndex::null();
 }
 ItemIndex AreaHasHaulTools::getPanniersForActorToHaul(const Area& area, FactionId faction, const ActorIndex actor, const ActorOrItemIndex toHaul) const
 {
@@ -1051,7 +1054,7 @@ ItemIndex AreaHasHaulTools::getPanniersForActorToHaul(const Area& area, FactionI
 		if(!items.reservable_isFullyReserved(index, faction) && items.getItemType(index).internalVolume >= toHaul.getVolume(area) && actors.equipment_canEquipCurrently(actor, index))
 			return index;
 	}
-	return ITEM_INDEX_MAX;
+	return ItemIndex::null();
 }
 void AreaHasHaulTools::registerHaulTool(const Area& area, ItemIndex item)
 {

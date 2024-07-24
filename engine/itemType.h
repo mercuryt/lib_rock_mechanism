@@ -8,7 +8,6 @@
 #include <ratio>
 #include <string>
 #include <vector>
-#include <unordered_set>
 #include <unordered_map>
 
 struct BodyPartType;

@@ -6,7 +6,8 @@
 #include "types.h"
 #include "config.h"
 #include "dishonorCallback.h"
-#include <unordered_set>
+#include "index.h"
+#include "blockIndices.h"
 #include <compare>
 #include <functional>
 #include <iterator>
@@ -20,7 +21,7 @@ struct Faction;
 class ActorOrItemReference;
 class ActorOrItemIndex
 {
-	HasShapeIndex m_index = HAS_SHAPE_INDEX_MAX;
+	HasShapeIndex m_index;
 	bool m_isActor = false;
 	ActorOrItemIndex(HasShapeIndex i, bool isA) : m_index(i), m_isActor(isA) { }
 	static void setActorBit(HasShapeIndex& index);
@@ -30,7 +31,7 @@ public:
 	ActorOrItemIndex() = default;
 	static ActorOrItemIndex createForActor(ActorIndex actor) { return ActorOrItemIndex(actor, true); }
 	static ActorOrItemIndex createForItem(ItemIndex item) { return ActorOrItemIndex(item, false); }
-	void clear() { m_index = HAS_SHAPE_INDEX_MAX; m_isActor = false; }
+	void clear() { m_index.clear(); m_isActor = false; }
 	void updateIndex(HasShapeIndex index) { m_index = index; }
 	void setLocationAndFacing(Area& area, BlockIndex location, Facing facing) const;
 	void followActor(Area& area, ActorIndex actor) const;
@@ -38,7 +39,7 @@ public:
 	void followPolymorphic(Area& area, ActorOrItemIndex actorOrItem) const;
 	void unfollow(Area& area) const;
 	[[nodiscard]] ActorOrItemReference toReference(Area& area);
-	[[nodiscard]] bool exists() const { return m_index != HAS_SHAPE_INDEX_MAX; }
+	[[nodiscard]] bool exists() const { return m_index.exists(); }
 	[[nodiscard]] HasShapeIndex get() const { return m_index; }
 	[[nodiscard]] bool isActor() const { return m_isActor; }
 	[[nodiscard]] bool isItem() const { return !m_isActor; }
@@ -50,8 +51,8 @@ public:
 	[[nodiscard]] bool leaderCanMove(Area& area) const;
 
 	[[nodiscard]] BlockIndex getLocation(const Area& area) const;
-	[[nodiscard]] const std::unordered_set<BlockIndex>& getBlocks(Area& area) const;
-	[[nodiscard]] std::unordered_set<BlockIndex> getAdjacentBlocks(Area& area) const;
+	[[nodiscard]] const BlockIndices& getBlocks(Area& area) const;
+	[[nodiscard]] BlockIndices getAdjacentBlocks(Area& area) const;
 	[[nodiscard]] bool isAdjacent(const Area& area, ActorOrItemIndex other) const;
 	[[nodiscard]] bool isAdjacentToActor(const Area& area, ActorIndex other) const;
 	[[nodiscard]] bool isAdjacentToItem(const Area& area, ItemIndex item) const;

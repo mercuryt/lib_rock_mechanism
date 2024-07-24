@@ -10,8 +10,8 @@ class ActorHasUniform final
 	UniformObjective* m_objective = nullptr;
 public:
 	void load(Area& area, const Json& data);
-	void set(Area& area, Uniform& uniform);
-	void unset(Area& area);
+	void set(ActorIndex index, Area& area, Uniform& uniform);
+	void unset(ActorIndex index, Area& area);
 	void recordObjective(UniformObjective& objective);
 	void clearObjective(UniformObjective& objective);
 	bool exists() const { return m_uniform; }
