@@ -5,7 +5,7 @@
 #include "types.h"
 void Blocks::plant_create(BlockIndex index, const PlantSpecies& plantSpecies, Percent growthPercent)
 {
-	assert(m_plants.at(index) == PLANT_INDEX_MAX);
+	assert(m_plants.at(index).empty());
 	m_plants.at(index) = m_area.getPlants().create({
 		.location=index, 
 		.species=plantSpecies, 
@@ -19,24 +19,24 @@ void Blocks::plant_set(BlockIndex index, PlantIndex plant)
 void Blocks::plant_updateGrowingStatus(BlockIndex index)
 {
 	Plants& plants = m_area.getPlants();
-	if(m_plants.at(index) != PLANT_INDEX_MAX)
+	if(m_plants.at(index).exists())
 		plants.updateGrowingStatus(index);
 }
 void Blocks::plant_clearPointer(BlockIndex index)
 {
-	assert(m_plants.at(index) != PLANT_INDEX_MAX);
-	m_plants.at(index) = PLANT_INDEX_MAX;
+	assert(m_plants.at(index).exists());
+	m_plants.at(index).clear();
 }
 void Blocks::plant_setTemperature(BlockIndex index, Temperature temperature)
 {
 	Plants& plants = m_area.getPlants();
-	if(m_plants.at(index) != PLANT_INDEX_MAX)
+	if(m_plants.at(index).exists())
 		plants.setTemperature(index, temperature);
 }
 void Blocks::plant_erase(BlockIndex index)
 {
-	assert(m_plants.at(index) != PLANT_INDEX_MAX);
-	m_plants.at(index) = PLANT_INDEX_MAX;
+	assert(m_plants.at(index).exists());
+	m_plants.at(index).clear();
 }
 bool Blocks::plant_canGrowHereCurrently(BlockIndex index, const PlantSpecies& plantSpecies) const
 {
@@ -47,7 +47,7 @@ bool Blocks::plant_canGrowHereCurrently(BlockIndex index, const PlantSpecies& pl
 		return false;
 	static const MaterialType& dirtType = MaterialType::byName("dirt");
 	BlockIndex below = getBlockBelow(index);
-	if(below != BLOCK_INDEX_MAX || !solid_is(below) || m_materialType.at(below) != &dirtType)
+	if(below.exists() || !solid_is(below) || m_materialType.at(below) != &dirtType)
 		return false;
 	return true;
 }
@@ -71,7 +71,7 @@ bool Blocks::plant_anythingCanGrowHereEver(BlockIndex index) const
 {
 	static const MaterialType& dirtType = MaterialType::byName("dirt");
 	BlockIndex below = getBlockBelow(index);
-	if(below == BLOCK_INDEX_MAX || !solid_is(below) || m_materialType.at(below) != &dirtType)
+	if(below.empty() || !solid_is(below) || m_materialType.at(below) != &dirtType)
 		return false;
 	return true;
 }

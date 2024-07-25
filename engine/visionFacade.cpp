@@ -41,7 +41,7 @@ void VisionFacade::removeActor(ActorIndex actor)
 {
 	Actors& actorData = m_area->getActors();
 	auto [visionFacade, index] = actorData.vision_getFacadeWithIndex(actor);
-	assert(index != VISION_FACADE_INDEX_MAX);
+	assert(index.exists());
 	assert(visionFacade == this);
 	remove(index);
 }

@@ -15,7 +15,7 @@ DigPathRequest::DigPathRequest(Area& area, DigObjective& digObjective, ActorInde
 	DistanceInBlocks maxRange = Config::maxRangeToSearchForDigDesignations;
 	bool unreserved = true;
 	//TODO: We don't need the whole path here, just the destination and facing.
-	createGoAdjacentToCondition(area, actor, predicate, m_digObjective.m_detour, unreserved, maxRange, BLOCK_INDEX_MAX);
+	createGoAdjacentToCondition(area, actor, predicate, m_digObjective.m_detour, unreserved, maxRange, BlockIndex::null());
 }
 void DigPathRequest::callback(Area& area, FindPathResult& result)
 {
@@ -80,7 +80,7 @@ void DigObjective::execute(Area& area, ActorIndex actor)
 		[[maybe_unused]] BlockIndex adjacent = actors.getBlockWhichIsAdjacentWithPredicate(actor, predicate);
 		if(project != nullptr)
 		{
-			assert(adjacent != BLOCK_INDEX_MAX);
+			assert(adjacent.exists());
 			joinProject(*project, actor);
 			return;
 		}

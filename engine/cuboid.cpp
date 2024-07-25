@@ -6,9 +6,9 @@
 #include <cassert>
 Cuboid::Cuboid(Blocks& b, BlockIndex h, BlockIndex l) : m_blocks(&b), m_highest(h), m_lowest(l)
 {
-	if(m_highest == BLOCK_INDEX_MAX)
+	if(!m_highest.exists())
 	{
-		assert(m_lowest == BLOCK_INDEX_MAX);
+		assert(!m_lowest.exists());
 		return;
 	}
 	Point3D highestPosition = m_blocks->getCoordinates(m_highest);
@@ -26,12 +26,12 @@ BlockIndices Cuboid::toSet()
 }
 bool Cuboid::contains(BlockIndex block) const
 {
-	if(m_highest == BLOCK_INDEX_MAX)
+	if(!m_highest.exists())
 	{
-		assert(m_lowest == BLOCK_INDEX_MAX);
+		assert(!m_lowest.exists());
 		return  false;
 	}
-	assert(m_lowest != BLOCK_INDEX_MAX);
+	assert(m_lowest.exists());
 	Point3D highestPosition = m_blocks->getCoordinates(m_highest);
 	Point3D lowestPosition = m_blocks->getCoordinates(m_lowest);
 	Point3D blockPosition = m_blocks->getCoordinates(block);
@@ -93,7 +93,7 @@ void Cuboid::setFrom(Blocks& blocks, BlockIndex a, BlockIndex b)
 	m_lowest = result.m_lowest;
 	m_blocks = &blocks;
 }
-void Cuboid::clear() { m_lowest = m_highest = BLOCK_INDEX_MAX; m_blocks = nullptr;}
+void Cuboid::clear() { m_lowest.clear(); m_highest.clear(); m_blocks = nullptr;}
 Cuboid Cuboid::getFace(Facing facing) const
 {
 	assert(facing < 6);
@@ -117,7 +117,7 @@ Cuboid Cuboid::getFace(Facing facing) const
 	// test area has z lower then this.
 	else if(facing == 0)
 		return Cuboid(*m_blocks, m_blocks->getIndex({highest.x, highest.y, lowest.z}), m_lowest);
-	return Cuboid(*m_blocks, BLOCK_INDEX_MAX, BLOCK_INDEX_MAX);
+	return Cuboid(*m_blocks, BlockIndex::null(), BlockIndex::null());
 }
 bool Cuboid::overlapsWith(const Cuboid& other) const
 {
@@ -149,12 +149,12 @@ bool Cuboid::overlapsWith(const Cuboid& other) const
 }
 size_t Cuboid::size() const
 {
-	if(m_highest == BLOCK_INDEX_MAX)
+	if(!m_highest.exists())
 	{
-		assert(m_lowest == BLOCK_INDEX_MAX);
+		assert(!m_lowest.exists());
 		return 0;
 	}
-	assert(m_lowest != BLOCK_INDEX_MAX);
+	assert(m_lowest.exists());
 	Point3D highest = m_blocks->getCoordinates(m_highest);
 	Point3D lowest = m_blocks->getCoordinates(m_lowest);
 	return ((highest.x + 1) - lowest.x) * ((highest.y + 1) - lowest.y) * ((highest.z + 1) - lowest.z);
@@ -186,9 +186,9 @@ bool Cuboid::operator==(const Cuboid& cuboid) const
 }
 Cuboid::iterator::iterator(Blocks& blocks, BlockIndex lowest, BlockIndex highest) : m_blocks(blocks) 
 {
-	if(lowest == BLOCK_INDEX_MAX)
+	if(!lowest.exists())
 	{
-		assert(highest == BLOCK_INDEX_MAX);
+		assert(!highest.exists());
 		setToEnd();
 	}
 	else 

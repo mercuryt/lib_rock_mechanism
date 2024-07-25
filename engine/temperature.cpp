@@ -74,7 +74,7 @@ void AreaHasTemperature::addDelta(BlockIndex block, int32_t delta)
 // TODO: optimize by splitting block deltas into different structures for different temperature zones, to avoid having to rerun getAmbientTemperature?
 void AreaHasTemperature::applyDeltas()
 {
-	std::unordered_map<BlockIndex, int32_t> oldDeltaDeltas;
+	std::unordered_map<BlockIndex, int32_t, BlockIndex::Hash> oldDeltaDeltas;
 	oldDeltaDeltas.swap(m_blockDeltaDeltas);
 	for(auto& [block, deltaDelta] : oldDeltaDeltas)
 		m_area.getBlocks().temperature_updateDelta(block, deltaDelta);
@@ -187,7 +187,7 @@ bool ActorNeedsSafeTemperature::isSafeAtCurrentLocation(Area& area) const
 {
 	ActorIndex actor = m_actor.getIndex();
 	Actors& actors = area.getActors();
-	if(actors.getLocation(actor) == BLOCK_INDEX_MAX)
+	if(actors.getLocation(actor).empty())
 		return true;
 	return isSafe(area, area.getBlocks().temperature_get(actors.getLocation(actor)));
 }

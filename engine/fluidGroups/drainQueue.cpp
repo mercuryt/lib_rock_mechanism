@@ -41,7 +41,7 @@ void DrainQueue::recordDelta(uint32_t volume, uint32_t flowCapacity, uint32_t fl
 	// Record no longer full.
 	if(blocks.fluid_getTotalVolume(m_groupStart->block) == Config::maxBlockVolume && !m_futureNoLongerFull.contains((m_groupEnd-1)->block))
 		for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
-			m_futureNoLongerFull.insert(iter->block);
+			m_futureNoLongerFull.add(iter->block);
 	// Record fluid level changes.
 	for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 	{
@@ -78,7 +78,7 @@ void DrainQueue::applyDelta()
 		// Record blocks to set fluid groups unstable.
 		drainedFromAndAdjacent.add(iter->block);
 		for(BlockIndex adjacent : blocks.getDirectlyAdjacent(iter->block))
-			if(adjacent != BLOCK_INDEX_MAX && blocks.fluid_canEnterEver(adjacent))
+			if(adjacent.exists() && blocks.fluid_canEnterEver(adjacent))
 				drainedFromAndAdjacent.add(adjacent);
 	}
 	// Set fluidGroups unstable.

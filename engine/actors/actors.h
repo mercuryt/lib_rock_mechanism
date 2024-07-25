@@ -48,7 +48,7 @@ struct ActorParamaters
 	DateTime birthDate = {0,0,0};
 	Step birthStep = 0;
 	Percent percentGrown = nullPercent;
-	BlockIndex location = BLOCK_INDEX_MAX;
+	BlockIndex location;
 	Facing facing = 0;
 	FactionId faction = FACTION_ID_MAX;
 	Percent percentHunger = nullPercent;
@@ -148,29 +148,30 @@ public:
 	void reserveAllBlocksAtLocationAndFacing(ActorIndex index, BlockIndex location, Facing facing);
 	void unreserveAllBlocksAtLocationAndFacing(ActorIndex index, BlockIndex location, Facing facing);
 	void setBirthStep(ActorIndex index, Step step);
+	[[nodiscard]] ActorIndices getAll() const;
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] ActorId getId(ActorIndex index) const { return m_id.at(index()); }
-	[[nodiscard]] ActorReference getReference(ActorIndex index) const { return *m_referenceTarget.at(index()).get();}
-	[[nodiscard]] const ActorReference getReferenceConst(ActorIndex index) const { return *m_referenceTarget.at(index()).get();}
-	[[nodiscard]] ActorReferenceTarget& getReferenceTarget(ActorIndex index) const { return *m_referenceTarget.at(index()).get();}
-	[[nodiscard]] std::wstring getName(ActorIndex index) const { return m_name.at(index()); }
-	[[nodiscard]] bool isAlive(ActorIndex index) const { return m_causeOfDeath.at(index()) == CauseOfDeath::none; }
+	[[nodiscard]] ActorId getId(ActorIndex index) const { return m_id.at(index); }
+	[[nodiscard]] ActorReference getReference(ActorIndex index) const { return *m_referenceTarget.at(index).get();}
+	[[nodiscard]] const ActorReference getReferenceConst(ActorIndex index) const { return *m_referenceTarget.at(index).get();}
+	[[nodiscard]] ActorReferenceTarget& getReferenceTarget(ActorIndex index) const { return *m_referenceTarget.at(index).get();}
+	[[nodiscard]] std::wstring getName(ActorIndex index) const { return m_name.at(index); }
+	[[nodiscard]] bool isAlive(ActorIndex index) const { return m_causeOfDeath.at(index) == CauseOfDeath::none; }
 	[[nodiscard]] Percent getPercentGrown(ActorIndex index) const;
-	[[nodiscard]] CauseOfDeath getCauseOfDeath(ActorIndex index) const { assert(!isAlive(index)); return m_causeOfDeath.at(index()); }
+	[[nodiscard]] CauseOfDeath getCauseOfDeath(ActorIndex index) const { assert(!isAlive(index)); return m_causeOfDeath.at(index); }
 	[[nodiscard]] bool isEnemy(ActorIndex actor, ActorIndex other) const;
 	[[nodiscard]] bool isAlly(ActorIndex actor, ActorIndex other) const;
 	//TODO: Zombies are not sentient.
-	[[nodiscard]] bool isSentient(ActorIndex index) const { return m_species.at(index())->sentient; }
+	[[nodiscard]] bool isSentient(ActorIndex index) const { return m_species.at(index)->sentient; }
 	[[nodiscard]] bool isInjured(ActorIndex index) const;
 	[[nodiscard]] bool canMove(ActorIndex index) const;
 	[[nodiscard]] Mass getMass(ActorIndex index) const;
 	[[nodiscard]] Volume getVolume(ActorIndex index) const;
 	[[nodiscard]] Quantity getAgeInYears(ActorIndex index) const;
 	[[nodiscard]] Step getAge(ActorIndex index) const;
-	[[nodiscard]] Step getBirthStep(ActorIndex index) const { return m_birthStep.at(index()); }
+	[[nodiscard]] Step getBirthStep(ActorIndex index) const { return m_birthStep.at(index); }
 	[[nodiscard]] std::wstring getActionDescription(ActorIndex index) const;
-	[[nodiscard]] const AnimalSpecies& getSpecies(ActorIndex index) const { return *m_species.at(index()); }
-	[[nodiscard]] Mass getUnencomberedCarryMass(ActorIndex index) const { return m_unencomberedCarryMass.at(index()); }
+	[[nodiscard]] const AnimalSpecies& getSpecies(ActorIndex index) const { return *m_species.at(index); }
+	[[nodiscard]] Mass getUnencomberedCarryMass(ActorIndex index) const { return m_unencomberedCarryMass.at(index); }
 	// -Stamina.
 	void stamina_recover(ActorIndex index);
 	void stamina_spend(ActorIndex index, uint32_t stamina);
@@ -178,7 +179,7 @@ public:
 	bool stamina_hasAtLeast(ActorIndex index, uint32_t stamina) const;
 	bool stamina_isFull(ActorIndex index) const;
 	[[nodiscard]] uint32_t stamina_getMax(ActorIndex index) const;
-	[[nodiscard]] uint32_t stamina_get(ActorIndex index) const { return m_stamina.at(index()); }
+	[[nodiscard]] uint32_t stamina_get(ActorIndex index) const { return m_stamina.at(index); }
 	// -Vision.
 	void vision_do(ActorIndex index, ActorIndices& actors);
 	void vision_setRange(ActorIndex index, DistanceInBlocks range);
@@ -187,8 +188,8 @@ public:
 	void vision_clearFacade(ActorIndex actor);
 	void vision_updateFacadeIndex(ActorIndex actor, VisionFacadeIndex);
 	void vision_swap(ActorIndex actor, ActorIndices& toSwap);
-	[[nodiscard]] ActorIndices& vision_getCanSee(ActorIndex index) { return m_canSee.at(index()); }
-	[[nodiscard]] DistanceInBlocks vision_getRange(ActorIndex index) const { return m_visionRange.at(index()); }
+	[[nodiscard]] ActorIndices& vision_getCanSee(ActorIndex index) { return m_canSee.at(index); }
+	[[nodiscard]] DistanceInBlocks vision_getRange(ActorIndex index) const { return m_visionRange.at(index); }
 	[[nodiscard]] bool vision_canSeeActor(ActorIndex index, ActorIndex other) const;
 	[[nodiscard]] bool vision_canSeeAnything(ActorIndex index) const;
 	[[nodiscard]] bool vision_hasFacade(ActorIndex actor) const;
@@ -244,7 +245,7 @@ public:
 	void move_updateIndividualSpeed(ActorIndex index);
 	void move_updateActualSpeed(ActorIndex index);
 	void move_setType(ActorIndex index, const MoveType& moveType);
-	void move_setPath(ActorIndex index, std::vector<BlockIndex>& path);
+	void move_setPath(ActorIndex index, BlockIndices& path);
 	void move_setMoveSpeedActualForLeading(ActorIndex index, Speed speed);
 	void move_clearPath(ActorIndex index);
 	void move_callback(ActorIndex index);
@@ -255,16 +256,16 @@ public:
 	void move_setDestinationAdjacentToItem(ActorIndex index, ItemIndex item, bool detour = false, bool unreserved = true, bool reserve = true);
 	void move_setDestinationAdjacentToPolymorphic(ActorIndex index, ActorOrItemIndex actorOrItemIndex, bool detour = false, bool unreserved = true, bool reserve = true);
 	void move_setDestinationAdjacentToPlant(ActorIndex index, PlantIndex plant, bool detour = false, bool unreserved = true, bool reserve = true);
-	void move_setDestinationAdjacentToFluidType(ActorIndex index, const FluidType& fluidType, bool detour = false, bool unreserved = true, bool reserve = true, DistanceInBlocks maxRange = BLOCK_INDEX_MAX);
-	void move_setDestinationAdjacentToDesignation(ActorIndex index, BlockDesignation designation, bool detour = false, bool unreserved = true, bool reserve = true, DistanceInBlocks maxRange = BLOCK_INDEX_MAX);
+	void move_setDestinationAdjacentToFluidType(ActorIndex index, const FluidType& fluidType, bool detour = false, bool unreserved = true, bool reserve = true, DistanceInBlocks maxRange = BLOCK_DISTANCE_MAX);
+	void move_setDestinationAdjacentToDesignation(ActorIndex index, BlockDesignation designation, bool detour = false, bool unreserved = true, bool reserve = true, DistanceInBlocks maxRange = BLOCK_DISTANCE_MAX);
 	void move_setDestinationToEdge(ActorIndex index, bool detour = false);
 	void move_clearAllEventsAndTasks(ActorIndex index);
 	void move_onDeath(ActorIndex index);
 	void move_onLeaveArea(ActorIndex index);
-	void move_pathRequestCallback(ActorIndex index, std::vector<BlockIndex>, bool useCurrentLocation, bool reserveDestination);
+	void move_pathRequestCallback(ActorIndex index, BlockIndices, bool useCurrentLocation, bool reserveDestination);
 	void move_pathRequestMaybeCancel(ActorIndex index);
 	void move_pathRequestRecord(ActorIndex index, std::unique_ptr<PathRequest> pathRequest);
-	[[nodiscard]] bool move_tryToReserveProposedDestination(ActorIndex index, std::vector<BlockIndex>& path);
+	[[nodiscard]] bool move_tryToReserveProposedDestination(ActorIndex index, BlockIndices& path);
 	[[nodiscard]] bool move_tryToReserveOccupied(ActorIndex index);
 	[[nodiscard]] const MoveType& move_getType(ActorIndex index) const { return *m_moveType.at(index); }
 	[[nodiscard]] Speed move_getIndividualSpeedWithAddedMass(ActorIndex index, Mass mass) const;

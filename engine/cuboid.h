@@ -6,14 +6,14 @@
 
 #include "designations.h"
 #include "types.h"
-#include "blockIndices.h"
+#include "index.h"
 class Blocks;
 class Cuboid
 {
 	Blocks* m_blocks;
 public:
-	BlockIndex m_highest = BLOCK_INDEX_MAX;
-	BlockIndex m_lowest = BLOCK_INDEX_MAX;
+	BlockIndex m_highest;
+	BlockIndex m_lowest;
 
 	Cuboid(Blocks& blocks, BlockIndex h, BlockIndex l);
 	Cuboid() = default;
@@ -50,9 +50,9 @@ public:
 		BlockIndex operator*();
 	};
 	iterator begin() { return iterator(*m_blocks, m_lowest, m_highest); }
-	iterator end() { return iterator(*m_blocks, BLOCK_INDEX_MAX, BLOCK_INDEX_MAX); }
+	iterator end() { return iterator(*m_blocks, BlockIndex::null(), BlockIndex::null()); }
 	const iterator begin() const { return iterator(*m_blocks, m_lowest, m_highest); }
-	const iterator end() const { return iterator(*m_blocks, BLOCK_INDEX_MAX, BLOCK_INDEX_MAX); }
+	const iterator end() const { return iterator(*m_blocks, BlockIndex::null(), BlockIndex::null()); }
 	//TODO:
 	//static_assert(std::forward_iterator<iterator>);
 };

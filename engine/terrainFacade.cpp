@@ -2,6 +2,7 @@
 #include "terrainFacade.h"
 #include "actors/actors.h"
 #include "area.h"
+#include "index.h"
 #include "shape.h"
 #include "simulation.h"
 #include "types.h"
@@ -61,7 +62,7 @@ void TerrainFacade::clearPathRequests()
 bool TerrainFacade::getValueForBit(BlockIndex from, BlockIndex to) const
 {
 	Blocks& blocks = m_area.getBlocks();
-	return to != BLOCK_INDEX_MAX &&
+	return to.exists() &&
 		blocks.shape_anythingCanEnterEver(to) &&
 		blocks.shape_moveTypeCanEnter(to, m_moveType) &&
 		blocks.shape_moveTypeCanEnterFrom(to, m_moveType, from);
@@ -187,8 +188,8 @@ void TerrainFacade::unregisterWithHuristic(PathRequestIndex index)
 FindPathResult TerrainFacade::findPath(BlockIndex start, const DestinationCondition destinationCondition, const AccessCondition accessCondition, OpenListPush openListPush, OpenListPop openListPop, OpenListEmpty openListEmpty) const
 {
 	Blocks& blocks = m_area.getBlocks();
-	std::unordered_map<BlockIndex, BlockIndex> closed;
-	closed[start] = BLOCK_INDEX_MAX;
+	std::unordered_map<BlockIndex, BlockIndex, BlockIndex::Hash> closed;
+	closed[start] = BlockIndex::null();
 	openListPush(start);
 	while(!openListEmpty())
 	{
@@ -197,23 +198,23 @@ FindPathResult TerrainFacade::findPath(BlockIndex start, const DestinationCondit
 			if(canEnterFrom(current, adjacentCount))
 			{
 				BlockIndex adjacentIndex = blocks.indexAdjacentToAtCount(current, adjacentCount);
-				assert(adjacentIndex != BLOCK_INDEX_MAX);
+				assert(adjacentIndex.exists());
 				if(closed.contains(adjacentIndex))
 					continue;
 				//TODO: Make variant for radially semetric shapes which ignores facing.
 				Facing facing = blocks.facingToSetWhenEnteringFrom(adjacentIndex, current);
 				if(!accessCondition(adjacentIndex, facing))
 				{
-					closed[adjacentIndex] = BLOCK_INDEX_MAX;
+					closed[adjacentIndex] = BlockIndex::null();
 					continue;
 				}
 				if(destinationCondition(adjacentIndex, facing))
 				{
-					std::vector<BlockIndex> output;
-					output.push_back(adjacentIndex);
+					BlockIndices output;
+					output.add(adjacentIndex);
 					while(current != start)
 					{
-						output.push_back(current);
+						output.add(current);
 						current = closed[current];
 					}
 					std::reverse(output.begin(), output.end());
@@ -223,7 +224,7 @@ FindPathResult TerrainFacade::findPath(BlockIndex start, const DestinationCondit
 				openListPush(adjacentIndex);
 			}
 	}
-	return {{}, BLOCK_INDEX_MAX, false};
+	return {{}, BlockIndex::null(), false};
 }
 FindPathResult TerrainFacade::findPathBreadthFirst(BlockIndex from, const DestinationCondition destinationCondition, AccessCondition accessCondition) const
 {
@@ -250,8 +251,8 @@ bool TerrainFacade::canEnterFrom(BlockIndex block, uint8_t adjacentCount) const
 {
 	Blocks& blocks = m_area.getBlocks();
 	BlockIndex other = blocks.indexAdjacentToAtCount(block, adjacentCount);
-	assert(m_enterable[(block * maxAdjacent) + adjacentCount] == getValueForBit(block, other));
-	return m_enterable[(block * maxAdjacent) + adjacentCount];
+	assert(m_enterable[(block.get() * maxAdjacent) + adjacentCount] == getValueForBit(block, other));
+	return m_enterable[(block.get() * maxAdjacent) + adjacentCount];
 }
 FindPathResult TerrainFacade::findPathToForSingleBlockShape(BlockIndex start, const Shape& shape, BlockIndex target, bool detour) const
 {
@@ -267,27 +268,27 @@ FindPathResult TerrainFacade::findPathToForMultiBlockShape(BlockIndex start, con
 		auto occupied = shape.getBlocksOccupiedAt(blocks, index, facing);
 		return std::ranges::find(occupied, target) != occupied.end();
 	};
-	std::vector<BlockIndex> occupied = shape.getBlocksOccupiedAt(blocks, start, startFacing);
+	BlockIndices occupied = shape.getBlocksOccupiedAt(blocks, start, startFacing);
 	AccessCondition accessCondition = makeAccessCondition(shape, start, occupied, detour, BLOCK_DISTANCE_MAX);
 	return findPathDepthFirst(start, destinationCondition, accessCondition, target);
 }
-FindPathResult TerrainFacade::findPathToAnyOfForSingleBlockShape(BlockIndex start, const Shape& shape, std::vector<BlockIndex> indecies, BlockIndex huristicDestination, bool detour) const
+FindPathResult TerrainFacade::findPathToAnyOfForSingleBlockShape(BlockIndex start, const Shape& shape, BlockIndices indecies, BlockIndex huristicDestination, bool detour) const
 {
 	DestinationCondition destinationCondition = [indecies](BlockIndex index, Facing){ return std::ranges::find(indecies, index) != indecies.end(); };
-	AccessCondition accessCondition = makeAccessCondition(shape, start, {start}, detour, BLOCK_INDEX_MAX);
-	if(huristicDestination == BLOCK_INDEX_MAX)
+	AccessCondition accessCondition = makeAccessCondition(shape, start, {start}, detour, BLOCK_DISTANCE_MAX);
+	if(!huristicDestination.exists())
 		return findPathBreadthFirst(start, destinationCondition, accessCondition);
 	else
 		return findPathDepthFirst(start, destinationCondition, accessCondition, huristicDestination);
 }
-FindPathResult TerrainFacade::findPathToAnyOfForMultiBlockShape(BlockIndex start, const Shape& shape, Facing startFacing, std::vector<BlockIndex> indecies, BlockIndex huristicDestination, bool detour) const
+FindPathResult TerrainFacade::findPathToAnyOfForMultiBlockShape(BlockIndex start, const Shape& shape, Facing startFacing, BlockIndices indecies, BlockIndex huristicDestination, bool detour) const
 {
 	Blocks& blocks = m_area.getBlocks();
 	auto occupied = shape.getBlocksOccupiedAt(blocks, start, startFacing);
 	// TODO: should this have a maxRange?
 	AccessCondition accessCondition = makeAccessCondition(shape, start, occupied, detour, BLOCK_DISTANCE_MAX);
 	DestinationCondition destinationCondition = [indecies](BlockIndex index, Facing){ return std::ranges::find(indecies, index) != indecies.end(); };
-	if(huristicDestination == BLOCK_INDEX_MAX)
+	if(!huristicDestination.exists())
 		return findPathBreadthFirst(start, destinationCondition, accessCondition);
 	else
 		return findPathDepthFirst(start, destinationCondition, accessCondition, huristicDestination);
@@ -296,7 +297,7 @@ FindPathResult TerrainFacade::findPathToConditionForSingleBlockShape(BlockIndex 
 {
 	//TODO: should have max range.
 	AccessCondition accessCondition = makeAccessCondition(shape, start, {start}, detour, BLOCK_DISTANCE_MAX);
-	if(huristicDestination == BLOCK_INDEX_MAX)
+	if(!huristicDestination.exists())
 		return findPathBreadthFirst(start, destinationCondition, accessCondition);
 	else
 		return findPathDepthFirst(start, destinationCondition, accessCondition, huristicDestination);
@@ -306,7 +307,7 @@ FindPathResult TerrainFacade::findPathToConditionForMultiBlockShape(BlockIndex s
 	Blocks& blocks = m_area.getBlocks();
 	auto occupied = shape.getBlocksOccupiedAt(blocks, start, startFacing);
 	AccessCondition accessCondition = makeAccessCondition(shape, start, occupied, detour, BLOCK_DISTANCE_MAX);
-	if(huristicDestination == BLOCK_INDEX_MAX)
+	if(!huristicDestination.exists())
 		return findPathBreadthFirst(start, destinationCondition, accessCondition);
 	else
 		return findPathDepthFirst(start, destinationCondition, accessCondition, huristicDestination);
@@ -318,7 +319,7 @@ FindPathResult TerrainFacade::findPathTo(BlockIndex start, const Shape& shape, F
 	else
 		return findPathToForSingleBlockShape(start, shape, target, detour);
 }
-FindPathResult TerrainFacade::findPathToAnyOf(BlockIndex start, const Shape& shape, Facing startFacing, std::vector<BlockIndex> indecies, BlockIndex huristicDestination, bool detour) const
+FindPathResult TerrainFacade::findPathToAnyOf(BlockIndex start, const Shape& shape, Facing startFacing, BlockIndices indecies, BlockIndex huristicDestination, bool detour) const
 {
 	if(shape.isMultiTile)
 		return findPathToAnyOfForMultiBlockShape(start, shape, startFacing, indecies, huristicDestination, detour);
@@ -334,7 +335,7 @@ FindPathResult TerrainFacade::findPathToCondition(BlockIndex start, const Shape&
 }
 FindPathResult TerrainFacade::findPathAdjacentTo(BlockIndex start, const Shape& shape, Facing startFacing, BlockIndex target, bool detour) const
 {
-	std::vector<BlockIndex> targets;
+	BlockIndices targets;
 	Blocks& blocks = m_area.getBlocks();
 	auto source = blocks.getAdjacentWithEdgeAndCornerAdjacent(target);
 	std::ranges::copy_if(source, std::back_inserter(targets),
@@ -348,7 +349,7 @@ FindPathResult TerrainFacade::findPathAdjacentTo(BlockIndex start, const Shape& 
 //TODO: this could dispatch to specific actor / item variants rather then checking actor or item twice.
 FindPathResult TerrainFacade::findPathAdjacentToPolymorphic(BlockIndex start, const Shape& shape, Facing startFacing, ActorOrItemIndex actorOrItem, bool detour) const
 {
-	std::vector<BlockIndex> targets;
+	BlockIndices targets;
 	Blocks& blocks = m_area.getBlocks();
 	auto source = actorOrItem.getAdjacentBlocks(m_area);
 	std::ranges::copy_if(source, std::back_inserter(targets),
@@ -385,7 +386,7 @@ FindPathResult TerrainFacade::findPathAdjacentToConditionAndUnreserved(BlockInde
 }
 FindPathResult TerrainFacade::findPathAdjacentToAndUnreserved(BlockIndex start, const Shape& shape, Facing startFacing, BlockIndex target, const FactionId faction, bool detour) const
 {
-	std::vector<BlockIndex> targets;
+	BlockIndices targets;
 	Blocks& blocks = m_area.getBlocks();
 	auto source = blocks.getAdjacentWithEdgeAndCornerAdjacent(target);
 	std::ranges::copy_if(source, std::back_inserter(targets), 
@@ -400,7 +401,7 @@ FindPathResult TerrainFacade::findPathAdjacentToAndUnreserved(BlockIndex start, 
 }
 FindPathResult TerrainFacade::findPathAdjacentToAndUnreservedPolymorphic(BlockIndex start, const Shape& shape, Facing startFacing, ActorOrItemIndex actorOrItem, const FactionId faction, bool detour) const
 {
-	std::vector<BlockIndex> targets;
+	BlockIndices targets;
 	Blocks& blocks = m_area.getBlocks();
 	std::ranges::copy_if(actorOrItem.getAdjacentBlocks(m_area), targets.begin(), 
 		[&](BlockIndex block){ return !blocks.isReserved(block, faction) && blocks.shape_moveTypeCanEnter(block, m_moveType); 
@@ -413,10 +414,10 @@ AccessCondition TerrainFacade::makeAccessConditionForActor(ActorIndex actor, boo
 {
 	Actors& actors = m_area.getActors();
 	auto& blocks = actors.getBlocks(actor);
-	std::vector<BlockIndex> currentlyOccupied(blocks.begin(), blocks.end());
+	BlockIndices currentlyOccupied(blocks.begin(), blocks.end());
 	return makeAccessCondition(actors.getShape(actor), actors.getLocation(actor), currentlyOccupied, detour, maxRange);
 }
-AccessCondition TerrainFacade::makeAccessCondition(const Shape& shape, BlockIndex start, std::vector<BlockIndex> initalBlocks, bool detour, DistanceInBlocks maxRange) const
+AccessCondition TerrainFacade::makeAccessCondition(const Shape& shape, BlockIndex start, BlockIndices initalBlocks, bool detour, DistanceInBlocks maxRange) const
 {
 	Blocks& blocks = m_area.getBlocks();
 	if(shape.isMultiTile)

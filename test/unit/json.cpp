@@ -386,7 +386,7 @@ TEST_CASE("json")
 		Blocks& blocks2 = area2.getBlocks();
 		Actor& dwarf2 = *blocks2.actor_getAll(blocks2.getIndex({5,5,1}))[0];
 
-		REQUIRE(dwarf2.m_canMove.getDestination() != BLOCK_INDEX_MAX);
+		REQUIRE(dwarf2.m_canMove.getDestination().exists());
 		REQUIRE(blocks2.isAdjacentToIncludingCornersAndEdges(dwarf2.m_canMove.getDestination(), blocks2.getIndex({3,7,1})));
 		REQUIRE(dwarf2.m_hasObjectives.getCurrent().getObjectiveTypeId() == ObjectiveTypeId::Drink);
 	}
@@ -414,7 +414,7 @@ TEST_CASE("json")
 		Blocks& blocks2 = area2.getBlocks();
 		Actor& dwarf2 = *blocks2.actor_getAll(blocks2.getIndex({5,5,1}))[0];
 
-		REQUIRE(dwarf2.m_canMove.getDestination() != BLOCK_INDEX_MAX);
+		REQUIRE(dwarf2.m_canMove.getDestination().exists());
 		REQUIRE(blocks2.isAdjacentToIncludingCornersAndEdges(dwarf2.m_canMove.getDestination(), blocks2.getIndex({3,7,1})));
 		REQUIRE(dwarf2.m_hasObjectives.getCurrent().getObjectiveTypeId() == ObjectiveTypeId::Eat);
 	}
@@ -450,10 +450,10 @@ TEST_CASE("json")
 		REQUIRE(dwarf2.m_mustSleep.hasTiredEvent());
 		REQUIRE(dwarf2.m_mustSleep.getSleepPercent() == 0);
 		REQUIRE(area2.m_hasSleepingSpots.containsUnassigned(blocks2.getIndex({1,1,1})));
-		REQUIRE(dwarf2.m_canMove.getDestination() != BLOCK_INDEX_MAX);
+		REQUIRE(dwarf2.m_canMove.getDestination().exists());
 		REQUIRE(blocks2.isAdjacentToIncludingCornersAndEdges(dwarf2.m_canMove.getDestination(), blocks2.getIndex({2,2,1})));
 		REQUIRE(dwarf2.m_hasObjectives.getCurrent().getObjectiveTypeId() == ObjectiveTypeId::Sleep);
-		REQUIRE(dwarf2.m_mustSleep.getLocation() == BLOCK_INDEX_MAX);
+		REQUIRE(dwarf2.m_mustSleep.getLocation().empty());
 	}
 	SUBCASE("sow seed")
 	{
@@ -488,7 +488,7 @@ TEST_CASE("json")
 		
 		Objective& objective2 = dwarf2.m_hasObjectives.getCurrent();
 		REQUIRE(objective2.getObjectiveTypeId() == ObjectiveTypeId::SowSeeds);
-		REQUIRE(dwarf2.m_canMove.getDestination() != BLOCK_INDEX_MAX);
+		REQUIRE(dwarf2.m_canMove.getDestination().exists());
 		BlockIndex block2 = objective.getBlock();
 		Point3D coordinates2 = blocks2.getCoordinates(block2);
 		REQUIRE(coordinates2.x == coordinates1.x);

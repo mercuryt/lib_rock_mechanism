@@ -13,9 +13,9 @@ TEST_CASE("block")
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	BlockIndex lowest = 0;
-	REQUIRE(blocks.getBlockBelow(lowest) == BLOCK_INDEX_MAX);
-	REQUIRE(blocks.getBlockSouth(lowest) == BLOCK_INDEX_MAX);
-	REQUIRE(blocks.getBlockWest(lowest) == BLOCK_INDEX_MAX);
+	REQUIRE(blocks.getBlockBelow(lowest).empty());
+	REQUIRE(blocks.getBlockSouth(lowest).empty());
+	REQUIRE(blocks.getBlockWest(lowest).empty());
 	REQUIRE(blocks.getBlockAbove(lowest) == 100);
 	REQUIRE(blocks.getBlockNorth(lowest) == 10);
 	REQUIRE(blocks.getBlockEast(lowest) == 1);

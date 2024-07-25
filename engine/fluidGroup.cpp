@@ -63,7 +63,7 @@ void FluidGroup::addBlock(BlockIndex block, bool checkMerge)
 	// Add adjacent if fluid can enter.
 	std::unordered_set<FluidGroup*> toMerge;
 	for(BlockIndex adjacent : m_area.getBlocks().getDirectlyAdjacent(block))
-		if(adjacent != BLOCK_INDEX_MAX)
+		if(adjacent.exists())
 		{
 			if(!m_area.getBlocks().fluid_canEnterEver(adjacent))
 				continue;
@@ -96,7 +96,7 @@ void FluidGroup::removeBlock(BlockIndex block)
 	m_drainQueue.removeBlock(block);
 	m_potentiallyNoLongerAdjacentFromSyncronusStep.add(block);
 	for(BlockIndex adjacent : m_area.getBlocks().getDirectlyAdjacent(block))
-		if(adjacent != BLOCK_INDEX_MAX && m_area.getBlocks().fluid_canEnterEver(adjacent))
+		if(adjacent.exists() && m_area.getBlocks().fluid_canEnterEver(adjacent))
 		{
 			//Check for group split.
 			auto found = m_area.getBlocks().fluid_getData(adjacent, m_fluidType);
@@ -150,7 +150,7 @@ void FluidGroup::addMistFor(BlockIndex block)
 	auto& blocks = m_area.getBlocks();
 	if(m_fluidType.mistDuration != 0 &&
 		(
-			blocks.getBlockBelow(block) == BLOCK_INDEX_MAX ||
+			!blocks.getBlockBelow(block).exists() ||
 			!blocks.solid_is(blocks.getBlockBelow(block))
 		)
 	)
@@ -384,7 +384,7 @@ void FluidGroup::readStep()
 	for(BlockIndex block : m_fillQueue.m_futureNoLongerEmpty)
 	{
 		for(BlockIndex adjacent : blocks.getDirectlyAdjacent(block))
-			if(adjacent != BLOCK_INDEX_MAX && m_area.getBlocks().fluid_canEnterEver(adjacent) && !m_drainQueue.m_set.contains(adjacent) && !m_fillQueue.m_set.contains(adjacent)
+			if(adjacent.exists() && m_area.getBlocks().fluid_canEnterEver(adjacent) && !m_drainQueue.m_set.contains(adjacent) && !m_fillQueue.m_set.contains(adjacent)
 			  )
 			{
 				auto found = m_area.getBlocks().fluid_getData(adjacent, m_fluidType);
@@ -411,7 +411,7 @@ void FluidGroup::readStep()
 	for(BlockIndex block : m_drainQueue.m_futureEmpty)
 	{
 		for(BlockIndex adjacent : blocks.getDirectlyAdjacent(block))
-			if(adjacent != BLOCK_INDEX_MAX && m_area.getBlocks().fluid_canEnterEver(adjacent))
+			if(adjacent.exists() && m_area.getBlocks().fluid_canEnterEver(adjacent))
 				adjacentToFutureEmpty.add(adjacent);
 		if constexpr (Config::fluidsSeepDiagonalModifier != 0)
 		{
@@ -460,7 +460,7 @@ void FluidGroup::readStep()
 		// Record each group's future new adjacent.
 		for(BlockIndex block : m_futureNewEmptyAdjacents)
 			for(BlockIndex adjacent : blocks.getDirectlyAdjacent(block))
-				if(adjacent != BLOCK_INDEX_MAX && m_area.getBlocks().fluid_canEnterEver(adjacent))
+				if(adjacent.exists() && m_area.getBlocks().fluid_canEnterEver(adjacent))
 				{
 					for(FluidGroupSplitData& fluidGroupSplitData : m_futureGroups)
 						if(fluidGroupSplitData.members.contains(adjacent))
@@ -476,7 +476,7 @@ void FluidGroup::readStep()
 			continue;
 		bool stillAdjacent = false;
 		for(BlockIndex adjacent : blocks.getDirectlyAdjacent(block))
-			if(adjacent != BLOCK_INDEX_MAX && m_area.getBlocks().fluid_canEnterEver(adjacent) && futureBlocks.contains(adjacent))
+			if(adjacent.exists() && m_area.getBlocks().fluid_canEnterEver(adjacent) && futureBlocks.contains(adjacent))
 			{
 				stillAdjacent = true;
 				break;

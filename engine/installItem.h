@@ -1,4 +1,5 @@
 #pragma once
+#include "index.h"
 #include "project.h"
 #include "objective.h"
 #include "pathRequest.h"
@@ -34,7 +35,7 @@ public:
 };
 class HasInstallItemDesignationsForFaction final
 {
-	std::unordered_map<BlockIndex, InstallItemProject> m_designations;
+	std::unordered_map<BlockIndex, InstallItemProject, BlockIndex::Hash> m_designations;
 	FactionId m_faction;
 public:
 	HasInstallItemDesignationsForFaction(FactionId faction) : m_faction(faction) { }

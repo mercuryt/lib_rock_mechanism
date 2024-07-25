@@ -7,6 +7,7 @@
 #include <list>
 #include <vector>
 #include "cuboid.h"
+#include "dataVector.h"
 #include "types.h"
 
 class Area;
@@ -15,8 +16,8 @@ class VisionCuboid;
 class AreaHasVisionCuboids final
 {
 	std::list<VisionCuboid> m_visionCuboids;
-	std::vector<VisionCuboid*> m_blockVisionCuboids;
-	std::vector<VisionCuboidId> m_blockVisionCuboidIds;
+	DataVector<VisionCuboid*, BlockIndex> m_blockVisionCuboids;
+	DataVector<VisionCuboidId, BlockIndex> m_blockVisionCuboidIds;
 	Area* m_area;
 	VisionCuboidId m_nextId = 1;
 public:
@@ -30,7 +31,7 @@ public:
 	void unset(BlockIndex block);
 	VisionCuboid& emplace(Cuboid& cuboid);
 	[[nodiscard]] VisionCuboid* getTargetToCombineWith(const Cuboid& cuboid);
-	[[nodiscard]] VisionCuboidId getIdFor(BlockIndex index) const { return m_blockVisionCuboidIds[index]; }
+	[[nodiscard]] VisionCuboidId getIdFor(BlockIndex index) const { return m_blockVisionCuboidIds.at(index); }
 	// For testing.
 	[[nodiscard]] size_t size() { return m_visionCuboids.size(); }
 	[[nodiscard]] VisionCuboid* getVisionCuboidFor(BlockIndex block);

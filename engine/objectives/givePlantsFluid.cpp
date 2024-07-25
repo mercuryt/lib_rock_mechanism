@@ -9,6 +9,7 @@
 #include "../simulation.h"
 #include "actors/actors.h"
 #include "designations.h"
+#include "index.h"
 #include "items/items.h"
 #include "types.h"
 #include "../plants.h"
@@ -40,7 +41,7 @@ void GivePlantsFluidEvent::onCancel(Simulation&, Area* area)
 	Blocks& blocks = area->getBlocks();
 	Actors& actors = area->getActors();
 	BlockIndex location = m_objective.m_plantLocation;
-	if(location != BLOCK_INDEX_MAX && blocks.plant_exists(location))
+	if(location.exists() && blocks.plant_exists(location))
 	{
 		PlantIndex plant = blocks.plant_get(location);
 		area->m_hasFarmFields.at(actors.getFactionId(m_actor.getIndex())).addGivePlantFluidDesignation(plant);
@@ -50,7 +51,7 @@ GivePlantsFluidPathRequest::GivePlantsFluidPathRequest(Area& area, GivePlantsFlu
 {
 	DistanceInBlocks maxRange = Config::maxRangeToSearchForHorticultureDesignations;
 	ActorIndex actor = getActor();
-	if(m_objective.m_plantLocation == BLOCK_INDEX_MAX)
+	if(m_objective.m_plantLocation.empty())
 	{
 		bool unreserved = false;
 		createGoAdjacentToDesignation(area, actor, BlockDesignation::GivePlantFluid, m_objective.m_detour, unreserved, maxRange);
@@ -60,7 +61,7 @@ GivePlantsFluidPathRequest::GivePlantsFluidPathRequest(Area& area, GivePlantsFlu
 		
 		std::function<bool(BlockIndex)> predicate = [this, &area, actor](BlockIndex block) { return m_objective.canGetFluidHaulingItemAt(area, block, actor); };
 		bool unreserved = false;
-		createGoAdjacentToCondition(area, actor, predicate, m_objective.m_detour, unreserved, maxRange, BLOCK_DISTANCE_MAX);
+		createGoAdjacentToCondition(area, actor, predicate, m_objective.m_detour, unreserved, maxRange, BlockIndex::null());
 	}
 }
 void GivePlantsFluidPathRequest::callback(Area& area, FindPathResult& result)
@@ -74,7 +75,7 @@ void GivePlantsFluidPathRequest::callback(Area& area, FindPathResult& result)
 	}
 	Blocks& blocks = area.getBlocks();
 	FactionId faction = actors.getFactionId(actor);
-	if(m_objective.m_plantLocation == BLOCK_INDEX_MAX)
+	if(m_objective.m_plantLocation.empty())
 	{
 		if(blocks.designation_has(result.blockThatPassedPredicate, faction, BlockDesignation::GivePlantFluid))
 			m_objective.selectPlantLocation(area, result.blockThatPassedPredicate, actor);
@@ -95,7 +96,7 @@ void GivePlantsFluidPathRequest::callback(Area& area, FindPathResult& result)
 bool GivePlantsFluidObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
 {
 	Actors& actors = area.getActors();
-	assert(actors.getLocation(actor) != BLOCK_INDEX_MAX);
+	assert(actors.getLocation(actor).exists());
 	return area.m_hasFarmFields.hasGivePlantsFluidDesignations(actors.getFactionId(actor));
 }
 std::unique_ptr<Objective> GivePlantsFluidObjectiveType::makeFor(Area& area, ActorIndex) const
@@ -107,7 +108,7 @@ GivePlantsFluidObjective::GivePlantsFluidObjective(Area& area) :
 	Objective(Config::givePlantsFluidPriority), m_event(area.m_eventSchedule) { }
 GivePlantsFluidObjective::GivePlantsFluidObjective(const Json& data, Area& area, ActorIndex actor) : 
 	Objective(data),
-	m_plantLocation(data.contains("plantLocation") ? data["plantLocation"].get<BlockIndex>() : BLOCK_INDEX_MAX),
+	m_plantLocation(data.contains("plantLocation") ? data["plantLocation"].get<BlockIndex>() : BlockIndex::null()),
 	m_event(area.m_eventSchedule)
 {
 	if(data.contains("fluidHaulingItem"))
@@ -118,7 +119,7 @@ GivePlantsFluidObjective::GivePlantsFluidObjective(const Json& data, Area& area,
 Json GivePlantsFluidObjective::toJson() const
 {
 	Json data = Objective::toJson();
-	if(m_plantLocation != BLOCK_INDEX_MAX)
+	if(m_plantLocation.exists())
 		data["plantLocation"] = m_plantLocation;
 	if(m_fluidHaulingItem.exists())
 		data["fluidHaulingItem"] = m_fluidHaulingItem;
@@ -135,12 +136,12 @@ void GivePlantsFluidObjective::execute(Area& area, ActorIndex actor)
 	Actors& actors = area.getActors();
 	Plants& plants = area.getPlants();
 	Items& items = area.getItems();
-	if(m_plantLocation == BLOCK_INDEX_MAX || !blocks.plant_exists(m_plantLocation) || plants.getVolumeFluidRequested(blocks.plant_get(m_plantLocation)) == 0)
+	if(m_plantLocation.empty() || !blocks.plant_exists(m_plantLocation) || plants.getVolumeFluidRequested(blocks.plant_get(m_plantLocation)) == 0)
 	{
-		m_plantLocation = BLOCK_INDEX_MAX;
+		m_plantLocation.clear();
 		// Get high priority job from area.
 		PlantIndex plant = area.m_hasFarmFields.getHighestPriorityPlantForGiveFluid(actors.getFactionId(actor));
-		if(plant != PLANT_INDEX_MAX)
+		if(plant.exists())
 		{
 			selectPlantLocation(area, plants.getLocation(plant), actor);
 			execute(area, actor);
@@ -153,7 +154,7 @@ void GivePlantsFluidObjective::execute(Area& area, ActorIndex actor)
 	{
 		std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return canGetFluidHaulingItemAt(area, block, actor); };
 		BlockIndex containerLocation = actors.getBlockWhichIsAdjacentWithPredicate(actor, predicate);
-		if(containerLocation != BLOCK_INDEX_MAX)
+		if(containerLocation.exists())
 		{
 			selectItem(area, getFluidHaulingItemAt(area, containerLocation, actor), actor);
 			execute(area, actor);
@@ -175,13 +176,13 @@ void GivePlantsFluidObjective::execute(Area& area, ActorIndex actor)
 				m_event.schedule(Config::givePlantsFluidDelaySteps, area, *this, actor);
 			else
 				// Go to plant.
-				actors.move_setDestinationAdjacentToPlant(plant, m_detour);
+				actors.move_setDestinationAdjacentToPlant(actor, plant, m_detour);
 		}
 		else
 		{
 			std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return canFillAt(area, block); };
 			BlockIndex fillLocation = actors.getBlockWhichIsAdjacentWithPredicate(actor, predicate);
-			if(fillLocation != BLOCK_INDEX_MAX)
+			if(fillLocation.exists())
 			{
 				fillContainer(area, fillLocation, actor);
 				// Should clearAll be moved to before setDestination so we don't leave abandoned reservations when we repath?
@@ -214,7 +215,7 @@ void GivePlantsFluidObjective::cancel(Area& area, ActorIndex actor)
 	m_event.maybeUnschedule();
 	Actors& actors = area.getActors();
 	actors.move_pathRequestMaybeCancel(actor);
-	if(m_plantLocation != BLOCK_INDEX_MAX)
+	if(m_plantLocation.exists())
 	{
 		Blocks& blocks = area.getBlocks();
 		if(blocks.plant_exists(m_plantLocation))
@@ -229,7 +230,7 @@ void GivePlantsFluidObjective::selectPlantLocation(Area& area, BlockIndex block,
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
 	m_plantLocation = block;
-	actors.canReserve_reserveLocation(m_plantLocation, actor);
+	actors.canReserve_reserveLocation(actor, m_plantLocation);
 	PlantIndex plant = blocks.plant_get(m_plantLocation);
 	area.m_hasFarmFields.at(actors.getFactionId(actor)).removeGivePlantFluidDesignation(plant);
 }
@@ -238,12 +239,12 @@ void GivePlantsFluidObjective::selectItem(Area& area, ItemIndex item, ActorIndex
 	Actors& actors = area.getActors();
 	m_fluidHaulingItem.setTarget(area.getItems().getReferenceTarget(item));
 	std::unique_ptr<DishonorCallback> callback = std::make_unique<CannotCompleteObjectiveDishonorCallback>(area, actor);
-	actors.canReserve_reserveItem(m_fluidHaulingItem.getIndex(), actor);
+	actors.canReserve_reserveItem(actor, m_fluidHaulingItem.getIndex());
 }
 void GivePlantsFluidObjective::reset(Area& area, ActorIndex actor)
 {
 	cancel(area, actor);
-	m_plantLocation = BLOCK_INDEX_MAX;
+	m_plantLocation.clear();
 	m_fluidHaulingItem.clear();
 	Actors& actors = area.getActors();
 	actors.canReserve_clearAll(actor);
@@ -264,7 +265,7 @@ void GivePlantsFluidObjective::fillContainer(Area& area, BlockIndex fillLocation
 	const FluidType& fluidType = plants.getSpecies(plant).fluidType;
 	ItemIndex fillFromItem = getItemToFillFromAt(area, fillLocation);
 	Volume volume = items.getItemType(haulTool).internalVolume;
-	if(fillFromItem != ITEM_INDEX_MAX)
+	if(fillFromItem.exists())
 	{
 		assert(items.cargo_getFluidType(fillFromItem) == fluidType);
 		volume = std::min(volume, items.cargo_getFluidVolume(fillFromItem));
@@ -280,16 +281,16 @@ void GivePlantsFluidObjective::fillContainer(Area& area, BlockIndex fillLocation
 }
 bool GivePlantsFluidObjective::canFillAt(Area& area, BlockIndex block) const
 {
-	assert(m_plantLocation != BLOCK_INDEX_MAX);
+	assert(m_plantLocation.exists());
 	Blocks& blocks = area.getBlocks();
 	Plants& plants = area.getPlants();
 	const FluidType& fluidType = plants.getSpecies(blocks.plant_get(m_plantLocation)).fluidType;
 	return blocks.fluid_volumeOfTypeContains(block, fluidType) != 0 || 
-		const_cast<GivePlantsFluidObjective*>(this)->getItemToFillFromAt(area, block) != ITEM_INDEX_MAX;
+		const_cast<GivePlantsFluidObjective*>(this)->getItemToFillFromAt(area, block).exists();
 }
 ItemIndex GivePlantsFluidObjective::getItemToFillFromAt(Area& area, BlockIndex block)
 {
-	assert(m_plantLocation != BLOCK_INDEX_MAX);
+	assert(m_plantLocation.exists());
 	assert(m_fluidHaulingItem.exists());
 	Blocks& blocks = area.getBlocks();
 	Plants& plants = area.getPlants();
@@ -298,15 +299,15 @@ ItemIndex GivePlantsFluidObjective::getItemToFillFromAt(Area& area, BlockIndex b
 	for(ItemIndex item : blocks.item_getAll(block))
 		if(items.cargo_getFluidType(item) == fluidType)
 				return item;
-	return ITEM_INDEX_MAX;
+	return ItemIndex::null();
 }
 bool GivePlantsFluidObjective::canGetFluidHaulingItemAt(Area& area, BlockIndex block, ActorIndex actor) const
 {
-	return const_cast<GivePlantsFluidObjective*>(this)->getFluidHaulingItemAt(area, block, actor) != ITEM_INDEX_MAX;
+	return const_cast<GivePlantsFluidObjective*>(this)->getFluidHaulingItemAt(area, block, actor).exists();
 }
 ItemIndex GivePlantsFluidObjective::getFluidHaulingItemAt(Area& area, BlockIndex block, ActorIndex actor)
 {
-	assert(m_plantLocation != BLOCK_INDEX_MAX);
+	assert(m_plantLocation.exists());
 	assert(!m_fluidHaulingItem.exists());
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
@@ -314,5 +315,5 @@ ItemIndex GivePlantsFluidObjective::getFluidHaulingItemAt(Area& area, BlockIndex
 	for(ItemIndex item : blocks.item_getAll(block))
 		if(items.getItemType(item).canHoldFluids && actors.canPickUp_itemUnencombered(actor, item) && !items.isWorkPiece(item))
 			return item;
-	return ITEM_INDEX_MAX;
+	return ItemIndex::null();
 }

@@ -105,7 +105,7 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 	}
 	else
 		assert(m_quantity.at(index()) == 1);
-	if(itemParamaters.location != BLOCK_INDEX_MAX)
+	if(itemParamaters.location.exists())
 		setLocationAndFacing(index, itemParamaters.location, itemParamaters.facing);
 	assert(m_canBeStockPiled.at(index()) == nullptr);
 	return index;
@@ -144,13 +144,13 @@ void Items::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 }
 void Items::setLocation(ItemIndex index, BlockIndex block)
 {
-	assert(m_location.at(index) != BLOCK_INDEX_MAX);
+	assert(m_location.at(index).exists());
 	Facing facing = m_area.getBlocks().facingToSetWhenEnteringFrom(block, m_location.at(index));
 	setLocationAndFacing(index, block, facing);
 }
 void Items::setLocationAndFacing(ItemIndex index, BlockIndex block, Facing facing)
 {
-	if(m_location.at(index) != BLOCK_INDEX_MAX)
+	if(m_location.at(index).exists())
 		exit(index);
 	Blocks& blocks = m_area.getBlocks();
 	if(isGeneric(index) && m_static.at(index))
@@ -171,7 +171,7 @@ void Items::setLocationAndFacing(ItemIndex index, BlockIndex block, Facing facin
 }
 void Items::exit(ItemIndex index)
 {
-	assert(m_location.at(index) != BLOCK_INDEX_MAX);
+	assert(m_location.at(index).exists());
 	BlockIndex location = m_location.at(index);
 	auto& blocks = m_area.getBlocks();
 	for(auto [x, y, z, v] : m_shape.at(index)->makeOccupiedPositionsWithFacing(m_facing.at(index)))
@@ -179,7 +179,7 @@ void Items::exit(ItemIndex index)
 		BlockIndex occupied = blocks.offset(location, x, y, z);
 		blocks.item_erase(occupied, index);
 	}
-	m_location.at(index) = BLOCK_INDEX_MAX;
+	m_location.at(index).clear();
 }
 void Items::setTemperature(ItemIndex, Temperature)
 {
@@ -211,7 +211,7 @@ void Items::install(ItemIndex index, BlockIndex block, Facing facing, FactionId 
 	if(m_itemType.at(index)->craftLocationStepTypeCategory)
 	{
 		BlockIndex craftLocation = m_itemType.at(index)->getCraftLocation(m_area.getBlocks(), block, facing);
-		if(craftLocation != BLOCK_INDEX_MAX)
+		if(craftLocation.exists())
 			m_area.m_hasCraftingLocationsAndJobs.at(faction).addLocation(*m_itemType.at(index)->craftLocationStepTypeCategory, craftLocation);
 	}
 }
@@ -244,7 +244,7 @@ void Items::unsetCraftJobForWorkPiece(ItemIndex index)
 }
 void Items::destroy(ItemIndex index)
 {
-	if(m_location.at(index) != BLOCK_INDEX_MAX)
+	if(m_location.at(index).exists())
 		exit(index);
 	m_onSurface.remove(index);
 	m_name.at(index).clear();
@@ -341,6 +341,15 @@ void Items::load(const Json& data)
 		ItemHasCargo& hasCargo = *m_hasCargo.at(index).get();
 		nlohmann::from_json(pair[1], hasCargo);
 	}
+}
+ItemIndices Items::getAll() const
+{
+	// TODO: Replace with std::iota?
+	ItemIndices output;
+	output.reserve(m_shape.size());
+	for(auto i = ItemIndex::create(0); i < size(); ++i)
+		output.add(i);
+	return output;
 }
 void to_json(Json& data, std::unique_ptr<ItemHasCargo> hasCargo) { data = *hasCargo; }
 void to_json(Json& data, std::unique_ptr<ItemCanBeStockPiled> canBeStockPiled) { data = canBeStockPiled == nullptr ? Json{false} : canBeStockPiled->toJson(); }

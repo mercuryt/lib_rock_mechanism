@@ -70,9 +70,9 @@ class HasDigDesignationsForFaction final
 {
 	Area& m_area;
 	FactionId m_faction;
-	std::unordered_map<BlockIndex, DigProject> m_data;
+	std::unordered_map<BlockIndex, DigProject, BlockIndex::Hash> m_data;
 public:
-	HasDigDesignationsForFaction(FactionId p, Area& a) :m_area(a), m_faction(p) { }
+	HasDigDesignationsForFaction(FactionId p, Area& a) : m_area(a), m_faction(p) { }
 	HasDigDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, FactionId faction);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	void designate(BlockIndex block, const BlockFeatureType* blockFeatureType);

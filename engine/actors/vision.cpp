@@ -29,7 +29,7 @@ void Actors::vision_updateFacadeIndex(ActorIndex index, VisionFacadeIndex vision
 }
 bool Actors::vision_canSeeAnything(ActorIndex index) const
 {
-	return isAlive(index) && sleep_isAwake(index) && m_location.at(index) != BLOCK_INDEX_MAX;
+	return isAlive(index) && sleep_isAwake(index) && m_location.at(index).exists();
 }
 bool Actors::vision_canSeeActor(ActorIndex index, ActorIndex actor) const 
 { 

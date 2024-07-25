@@ -1,6 +1,6 @@
 #pragma once
 #include "../config.h"
-#include "../blockIndices.h"
+#include "../index.h"
 struct Faction;
 class DeserializationMemo;
 class Area;

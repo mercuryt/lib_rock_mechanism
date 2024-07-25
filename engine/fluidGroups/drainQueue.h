@@ -1,7 +1,7 @@
 #pragma once
 
 #include "fluidQueue.h"
-#include "blockIndices.h"
+#include "index.h"
 
 #include <cstdint>
 

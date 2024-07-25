@@ -20,7 +20,7 @@ public:
 };
 class HarvestObjective final : public Objective
 {
-	BlockIndex m_block = BLOCK_INDEX_MAX;
+	BlockIndex m_block;
 public:
 	HarvestObjective(Area& area);
 	HarvestObjective(const Json& data, Area& area);

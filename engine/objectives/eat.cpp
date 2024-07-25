@@ -19,7 +19,7 @@ void EatEvent::execute(Simulation&, Area* area)
 	Actors& actors = area->getActors();
 	ActorIndex actor = m_actor.getIndex();
 	BlockIndex blockContainingFood = getBlockWithMostDesiredFoodInReach(*area);
-	if(blockContainingFood == BLOCK_INDEX_MAX)
+	if(blockContainingFood.empty())
 	{
 		actors.objective_canNotCompleteSubobjective(actor);
 		return;
@@ -63,7 +63,7 @@ void EatEvent::execute(Simulation&, Area* area)
 void EatEvent::clearReferences(Simulation&, Area*) { m_eatObjective.m_eatEvent.clearPointer(); }
 BlockIndex EatEvent::getBlockWithMostDesiredFoodInReach(Area& area) const
 {
-	BlockIndex found = BLOCK_INDEX_MAX;
+	BlockIndex found;
 	uint32_t highestDesirability = 0;
 	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block)
 	{
@@ -79,7 +79,7 @@ BlockIndex EatEvent::getBlockWithMostDesiredFoodInReach(Area& area) const
 		return false;
 	};
 	BlockIndex output = area.getActors().getBlockWhichIsAdjacentWithPredicate(m_actor.getIndex(), predicate);
-	if(output == BLOCK_INDEX_MAX)
+	if(output.empty())
 	       output = found;	
 	return output;
 }
@@ -144,7 +144,7 @@ void EatEvent::eatFruitFromPlant(Area& area, PlantIndex plant)
 }
 EatPathRequest::EatPathRequest(Area& area, EatObjective& eo) : m_eatObjective(eo)
 {
-	assert(m_eatObjective.m_destination == BLOCK_INDEX_MAX);
+	assert(m_eatObjective.m_destination.empty());
 	Blocks& blocks = area.getBlocks();
 	MustEat& mustEat = *area.getActors().m_mustEat.at(getActor()).get();
 	std::function<bool(BlockIndex)> predicate = nullptr;
@@ -164,7 +164,7 @@ EatPathRequest::EatPathRequest(Area& area, EatObjective& eo) : m_eatObjective(eo
 	else
 	{
 		// initalize candidates with null values.
-		m_candidates.fill(BLOCK_INDEX_MAX);
+		m_candidates.fill(BlockIndex::null());
 		predicate = [&mustEat, this, &area](BlockIndex block)
 		{
 			uint32_t eatDesire = mustEat.getDesireToEatSomethingAt(area, block);
@@ -172,7 +172,7 @@ EatPathRequest::EatPathRequest(Area& area, EatObjective& eo) : m_eatObjective(eo
 				return true;
 			if(eatDesire < mustEat.getMinimumAcceptableDesire())
 				return false;
-			if(eatDesire != 0 && m_candidates[eatDesire - 1u] == BLOCK_INDEX_MAX)
+			if(eatDesire != 0 && m_candidates[eatDesire - 1u].empty())
 				m_candidates[eatDesire - 1u] = block;
 			return false;
 		};
@@ -182,7 +182,7 @@ EatPathRequest::EatPathRequest(Area& area, EatObjective& eo) : m_eatObjective(eo
 	bool reserve = false;
 	if(area.getActors().getFaction(getActor()) != nullptr)
 		unreserved = reserve = true;
-	createGoAdjacentToCondition(area, getActor(), predicate, m_eatObjective.m_detour, unreserved, BLOCK_DISTANCE_MAX, BLOCK_INDEX_MAX);
+	createGoAdjacentToCondition(area, getActor(), predicate, m_eatObjective.m_detour, unreserved, BLOCK_DISTANCE_MAX, BlockIndex::null());
 }
 void EatPathRequest::callback(Area& area, FindPathResult& result)
 {
@@ -248,7 +248,7 @@ Json EatObjective::toJson() const
 {
 	Json data = Objective::toJson();
 	data["noFoodFound"] = m_noFoodFound;
-	if(m_destination != BLOCK_INDEX_MAX)
+	if(m_destination.exists())
 		data["destination"] = m_destination;
 	if(m_eatEvent.exists())
 		data["eatStart"] = m_eatEvent.getStartStep();
@@ -270,9 +270,9 @@ void EatObjective::execute(Area& area, ActorIndex actor)
 		return;
 	}
 	BlockIndex adjacent = mustEat.getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireability(area);
-	if(m_destination == BLOCK_INDEX_MAX)
+	if(m_destination.empty())
 	{
-		if(adjacent == BLOCK_INDEX_MAX)
+		if(adjacent.empty())
 			// Find destination.
 			makePathRequest(area, actor);
 		else
@@ -287,10 +287,10 @@ void EatObjective::execute(Area& area, ActorIndex actor)
 	{	
 		if(actors.getLocation(actor) == m_destination)
 		{
-			if(adjacent == BLOCK_INDEX_MAX)
+			if(adjacent.empty())
 			{
 				// We are at the previously selected location but there is no  longer any food here, try again.
-				m_destination = BLOCK_INDEX_MAX;
+				m_destination.clear();
 				actors.canReserve_clearAll(actor);
 				makePathRequest(area, actor);
 			}
@@ -317,7 +317,7 @@ void EatObjective::delay(Area& area, ActorIndex actor)
 void EatObjective::reset(Area& area, ActorIndex actor)
 {
 	delay(area, actor);
-	m_destination = BLOCK_INDEX_MAX;
+	m_destination.clear();
 	m_noFoodFound = false;
 	area.getActors().canReserve_clearAll(actor);
 }
@@ -346,7 +346,7 @@ bool EatObjective::canEatAt(Area& area, BlockIndex block, ActorIndex actor) cons
 	}
 	const AnimalSpecies& species = actors.getSpecies(actor);
 	if(species.eatsMeat)
-		for(const ActorIndex actor : blocks.actor_getAll(block))
+		for(ActorIndex actor : blocks.actor_getAll(block))
 			if(!actors.isAlive(actor) && species.fluidType == actors.getSpecies(actor).fluidType )
 				return true;
 	if(blocks.plant_exists(block))

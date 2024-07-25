@@ -1,4 +1,4 @@
-#include "blockIndices.h"
+#include "index.h"
 #include "simulation.h"
 BlockIndex BlockIndices::random(Simulation& simulation) const
 {

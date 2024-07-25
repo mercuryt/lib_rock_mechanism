@@ -22,7 +22,7 @@ struct ItemParamaters final
 	const MaterialType& materialType;
 	CraftJob* craftJob = nullptr;
 	FactionId faction = FACTION_ID_MAX;
-	BlockIndex location = BLOCK_INDEX_MAX;
+	BlockIndex location;
 	ItemId id = 0;
 	Quantity quantity = 1;
 	uint32_t quality = 0;
@@ -138,25 +138,26 @@ public:
 	void setWear(ItemIndex index, Percent wear);
 	void setQuantity(ItemIndex index, Quantity quantity);
 	void unsetCraftJobForWorkPiece(ItemIndex index);
-	[[nodiscard]] ItemReference getReference(ItemIndex index) const { return *m_referenceTarget.at(index()).get(); }
-	[[nodiscard]] const ItemReference getReferenceConst(ItemIndex index) const { return *m_referenceTarget.at(index()).get(); }
-	[[nodiscard]] ItemReferenceTarget& getReferenceTarget(ItemIndex index) const { return *m_referenceTarget.at(index()).get();}
+	[[nodiscard]] ItemIndices getAll() const;
+	[[nodiscard]] ItemReference getReference(ItemIndex index) const { return *m_referenceTarget.at(index).get(); }
+	[[nodiscard]] const ItemReference getReferenceConst(ItemIndex index) const { return *m_referenceTarget.at(index).get(); }
+	[[nodiscard]] ItemReferenceTarget& getReferenceTarget(ItemIndex index) const { return *m_referenceTarget.at(index).get();}
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool isOnSurface(ItemIndex index);
-	[[nodiscard]] bool isInstalled(ItemIndex index) { return m_installed.at(index()); }
-	[[nodiscard]] Quantity getQuantity(ItemIndex index) const { return m_quantity.at(index()); }
-	[[nodiscard]] uint32_t getQuality(ItemIndex index) const { return m_quality.at(index()); }
-	[[nodiscard]] Percent getWear(ItemIndex index) const { return m_percentWear.at(index()); }
+	[[nodiscard]] bool isInstalled(ItemIndex index) { return m_installed.at(index); }
+	[[nodiscard]] Quantity getQuantity(ItemIndex index) const { return m_quantity.at(index); }
+	[[nodiscard]] uint32_t getQuality(ItemIndex index) const { return m_quality.at(index); }
+	[[nodiscard]] Percent getWear(ItemIndex index) const { return m_percentWear.at(index); }
 	[[nodiscard]] bool isGeneric(ItemIndex index) const;
 	[[nodiscard]] bool isPreparedMeal(ItemIndex index) const;
-	[[nodiscard]] bool isWorkPiece(ItemIndex index) const { return m_craftJobForWorkPiece.at(index()) != nullptr; }
+	[[nodiscard]] bool isWorkPiece(ItemIndex index) const { return m_craftJobForWorkPiece.at(index) != nullptr; }
 	[[nodiscard]] CraftJob& getCraftJobForWorkPiece(ItemIndex index) const;
 	[[nodiscard]] Mass getSingleUnitMass(ItemIndex index) const;
 	[[nodiscard]] Mass getMass(ItemIndex index) const;
 	[[nodiscard]] Volume getVolume(ItemIndex index) const;
 	[[nodiscard]] const MoveType& getMoveType(ItemIndex index) const;
-	[[nodiscard]] const ItemType& getItemType(ItemIndex index) const { return *m_itemType.at(index()); }
-	[[nodiscard]] const MaterialType& getMaterialType(ItemIndex index) const { return *m_materialType.at(index()); }
+	[[nodiscard]] const ItemType& getItemType(ItemIndex index) const { return *m_itemType.at(index); }
+	[[nodiscard]] const MaterialType& getMaterialType(ItemIndex index) const { return *m_materialType.at(index); }
 	[[nodiscard]] auto& getOnSurface() { return m_onSurface; }
 	[[nodiscard]] const auto& getOnSurface() const { return m_onSurface; }
 	// -Cargo.

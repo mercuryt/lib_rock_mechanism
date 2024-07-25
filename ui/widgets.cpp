@@ -89,7 +89,7 @@ tgui::ComboBox::Ptr widgetUtil::makePlantSpeciesSelectUI(BlockIndex* block)
 
 	for(const PlantSpecies* plantSpecies : sortByName(plantSpeciesDataStore))
 	{
-		if(block != BLOCK_INDEX_MAX && !block->m_hasPlant.canGrowHereEver(*plantSpecies))
+		if(block.exists() && !block->m_hasPlant.canGrowHereEver(*plantSpecies))
 			continue;
 		output->addItem(plantSpecies->name, plantSpecies->name);
 		if(lastSelectedPlantSpecies && lastSelectedPlantSpecies == plantSpecies)

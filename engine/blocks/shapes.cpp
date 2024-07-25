@@ -27,7 +27,7 @@ bool Blocks::shape_shapeAndMoveTypeCanEnterEverWithFacing(BlockIndex index, cons
 	for(auto& [x, y, z, v] : shape.positionsWithFacing(facing))
 	{
 		BlockIndex otherIndex = offset(index, x, y, z);
-		if(otherIndex == BLOCK_INDEX_MAX || !shape_anythingCanEnterEver(otherIndex) || !shape_moveTypeCanEnter(otherIndex, moveType))
+		if(otherIndex.empty() || !shape_anythingCanEnterEver(otherIndex) || !shape_moveTypeCanEnter(otherIndex, moveType))
 			return false;
 	}
 	return true;
@@ -38,7 +38,7 @@ bool Blocks::shape_canEnterCurrentlyWithFacing(BlockIndex index, const Shape& sh
 	for(auto& [x, y, z, v] : shape.positionsWithFacing(facing))
 	{
 		BlockIndex otherIndex = offset(index,x, y, z);
-		assert(otherIndex != BLOCK_INDEX_MAX);
+		assert(otherIndex.exists());
 		assert(shape_anythingCanEnterEver(otherIndex));
 		if(occupied.contains(otherIndex))
 			continue;
@@ -55,7 +55,7 @@ bool Blocks::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(BlockIndex 
 		BlockIndex otherIndex = offset(index,x, y, z);
 		if(std::ranges::find(occupied, otherIndex) != occupied.end())
 			continue;
-		if(otherIndex == BLOCK_INDEX_MAX || !shape_anythingCanEnterEver(otherIndex) ||
+		if(otherIndex.empty() || !shape_anythingCanEnterEver(otherIndex) ||
 			m_dynamicVolume.at(otherIndex) + v > Config::maxBlockVolume || 
 			!shape_moveTypeCanEnter(otherIndex, moveType)
 		)
@@ -122,7 +122,7 @@ bool Blocks::shape_moveTypeCanEnter(BlockIndex index, const MoveType& moveType) 
 			if(shape_moveTypeCanBreath(index, moveType))
 				return true;
 			BlockIndex above = getBlockAbove(index);
-			if(above != BLOCK_INDEX_MAX && shape_anythingCanEnterEver(above) && shape_moveTypeCanBreath(above, moveType))
+			if(above.exists() && shape_anythingCanEnterEver(above) && shape_moveTypeCanBreath(above, moveType))
 				return true;
 		}
 	}
@@ -221,7 +221,7 @@ bool Blocks::shape_staticShapeCanEnterWithFacing(BlockIndex index, const Shape& 
 	for(auto& [x, y, z, v] : shape.positionsWithFacing(facing))
 	{
 		BlockIndex otherIndex = offset(index, x, y, z);
-		assert(otherIndex != BLOCK_INDEX_MAX);
+		assert(otherIndex.exists());
 		if(std::ranges::find(occupied, otherIndex) != occupied.end())
 			continue;
 		if(m_staticVolume.at(otherIndex) + v > Config::maxBlockVolume)
@@ -257,7 +257,7 @@ bool Blocks::shape_canStandIn(BlockIndex index) const
 {
 	BlockIndex otherIndex = getBlockBelow(index);
 	return (
-		otherIndex != BLOCK_INDEX_MAX && (solid_is(otherIndex) || 
+		otherIndex.exists() && (solid_is(otherIndex) || 
 		blockFeature_canStandAbove(otherIndex))) || 
 		blockFeature_canStandIn(index);
 }

@@ -1,5 +1,6 @@
 #include "area.h"
 #include "../blocks/blocks.h"
+#include "index.h"
 #include "types.h"
 #include <vector>
 #include <tuple>
@@ -19,7 +20,7 @@ void Area::stepCaveInRead()
 {
 	std::list<BlockIndices> chunks;
 	std::unordered_set<BlockIndices*> anchoredChunks;
-	std::unordered_map<BlockIndex, BlockIndices*> chunksByBlock;
+	std::unordered_map<BlockIndex, BlockIndices*, BlockIndex::Hash> chunksByBlock;
 	std::deque<BlockIndex> blockQueue;
 
 	//TODO: blockQueue.insert?
@@ -52,7 +53,7 @@ void Area::stepCaveInRead()
 		for(BlockIndex adjacent : blocks.getDirectlyAdjacent(block))
 		{
 			// If this block is on the edge of the area then it is anchored.
-			if(adjacent == BLOCK_INDEX_MAX)
+			if(!adjacent.exists())
 			{
 				blockIsAnchored = true;
 				continue;
@@ -144,7 +145,7 @@ void Area::stepCaveInRead()
 			{
 				DistanceInBlocks verticalFallDistance = 0;
 				BlockIndex below = blocks.getBlockBelow(block);
-				while(below != BLOCK_INDEX_MAX && !blocks.isSupport(below))
+				while(below.exists() && !blocks.isSupport(below))
 				{
 					verticalFallDistance++;
 					below = blocks.getBlockBelow(below);

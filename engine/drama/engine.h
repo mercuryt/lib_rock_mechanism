@@ -2,7 +2,7 @@
 #include "../types.h"
 #include "../config.h"
 #include "../deserializationMemo.h"
-#include "../blockIndices.h"
+#include "../index.h"
 #include <cstddef>
 #include <cstdint>
 #include <memory>

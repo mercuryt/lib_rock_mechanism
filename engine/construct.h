@@ -73,7 +73,7 @@ class HasConstructionDesignationsForFaction final
 	Area& m_area;
 	FactionId m_faction;
 	//TODO: More then one construct project targeting a given block should be able to exist simultaniously.
-	std::unordered_map<BlockIndex, ConstructProject> m_data;
+	std::unordered_map<BlockIndex, ConstructProject, BlockIndex::Hash> m_data;
 public:
 	HasConstructionDesignationsForFaction(FactionId p, Area& a) : m_area(a), m_faction(p) { }
 	HasConstructionDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, FactionId faction);

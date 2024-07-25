@@ -20,7 +20,7 @@ class Simulation;
 
 struct PlantParamaters
 {
-	BlockIndex location = BLOCK_INDEX_MAX;
+	BlockIndex location;
 	const PlantSpecies& species;
 	const Shape* shape = nullptr;
 	Percent percentGrown = 0;
@@ -76,6 +76,7 @@ public:
 	void setLocation(BlockIndex block, Area* area);
 	void exit(PlantIndex index);
 	void fromJson(Plants& plants, Area& area, const Json& data);
+	[[nodiscard]] PlantIndices getAll() const;
 	[[nodiscard]] const PlantSpecies& getSpecies(PlantIndex index) const;
 	[[nodiscard]] Mass getFruitMass(PlantIndex index) const;
 	// Not const: updates cache.

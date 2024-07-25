@@ -42,7 +42,7 @@ class CraftPathRequest final : public PathRequest
 {
 	CraftObjective& m_craftObjective;
 	CraftJob* m_craftJob = nullptr;
-	BlockIndex m_location = BLOCK_INDEX_MAX;
+	BlockIndex m_location;
 public:
 	CraftPathRequest(Area& area, CraftObjective& co, ActorIndex actor);
 	void callback(Area& area, FindPathResult& result);

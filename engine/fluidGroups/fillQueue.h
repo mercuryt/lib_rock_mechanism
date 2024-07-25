@@ -2,7 +2,7 @@
 
 #include "fluidQueue.h"
 #include "types.h"
-#include "blockIndices.h"
+#include "index.h"
 
 class FluidGroup;
 

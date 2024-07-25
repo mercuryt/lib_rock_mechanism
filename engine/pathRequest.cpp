@@ -19,7 +19,7 @@ void PathRequest::create(Area& area, ActorIndex actor, DestinationCondition dest
 	Actors& actors = area.getActors();
 	TerrainFacade& terrainFacade = area.m_hasTerrainFacades.at(actors.getMoveType(actor));
 	AccessCondition access = terrainFacade.makeAccessConditionForActor(actor, detour, maxRange);
-	if(huristicDestination == BLOCK_INDEX_MAX)
+	if(huristicDestination.empty())
 		terrainFacade.registerPathRequestNoHuristic(actors.getLocation(actor), access, destination, *this);
 	else
 		terrainFacade.registerPathRequestWithHuristic(actors.getLocation(actor), access, destination, huristicDestination, *this);
@@ -127,7 +127,7 @@ void PathRequest::createGoAdjacentToFluidType(Area& area, ActorIndex actor, cons
 	std::function<bool(BlockIndex)> condition = [&blocks, fluidType](BlockIndex index){
 		return blocks.fluid_contains(index, fluidType);
 	};
-	createGoAdjacentToCondition(area, actor, condition, detour, unreserved, maxRange, BLOCK_INDEX_MAX, reserve);
+	createGoAdjacentToCondition(area, actor, condition, detour, unreserved, maxRange, BlockIndex::null(), reserve);
 }
 void PathRequest::createGoAdjacentToDesignation(Area& area, ActorIndex actor, BlockDesignation designation, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve)
 {
@@ -137,13 +137,13 @@ void PathRequest::createGoAdjacentToDesignation(Area& area, ActorIndex actor, Bl
 	std::function<bool(BlockIndex)> condition = [&blocks, faction, designation](BlockIndex index){
 		return blocks.designation_has(index, faction, designation);
 	};
-	createGoAdjacentToCondition(area, actor, condition, detour, unreserved, maxRange, BLOCK_INDEX_MAX, reserve);
+	createGoAdjacentToCondition(area, actor, condition, detour, unreserved, maxRange, BlockIndex::null(), reserve);
 }
 void PathRequest::createGoToEdge(Area& area, ActorIndex actor, bool detour)
 {
 	Blocks& blocks = area.getBlocks();
 	std::function<bool(BlockIndex)> condition = [&blocks](BlockIndex index){ return blocks.isEdge(index); };
-	createGoAdjacentToCondition(area, actor, condition, detour, false, BLOCK_DISTANCE_MAX, BLOCK_INDEX_MAX);
+	createGoAdjacentToCondition(area, actor, condition, detour, false, BLOCK_DISTANCE_MAX, BlockIndex::null());
 }
 void PathRequest::createGoToCondition(Area& area, ActorIndex actor, DestinationCondition condition, bool detour, bool unreserved, DistanceInBlocks maxRange, BlockIndex huristicDestination, bool reserve)
 {
@@ -189,7 +189,7 @@ void PathRequest::createGoAdjacentToCondition(Area& area, ActorIndex actor, std:
 void PathRequest::cancel(Area& area, ActorIndex actor)
 {
 	TerrainFacade& terrainFacade = area.m_hasTerrainFacades.at(area.getActors().getMoveType(actor));
-	if(m_huristicDestination != BLOCK_INDEX_MAX)
+	if(m_huristicDestination.exists())
 		terrainFacade.unregisterWithHuristic(m_index);
 	else
 		terrainFacade.unregisterNoHuristic(m_index);
@@ -197,11 +197,11 @@ void PathRequest::cancel(Area& area, ActorIndex actor)
 }
 void PathRequest::reset()
 {
-	m_index = PATH_REQUEST_INDEX_MAX;
+	m_index.clear();
 	m_fluidType = nullptr;
-	m_actor = ACTOR_INDEX_MAX;
-	m_destination = BLOCK_INDEX_MAX;
-	m_huristicDestination = BLOCK_INDEX_MAX;
+	m_actor.clear();
+	m_destination = BlockIndex::null();
+	m_huristicDestination.clear();
 	m_maxRange = 0;
 	m_designation = BlockDesignation::BLOCK_DESIGNATION_MAX;
 	m_detour = false;

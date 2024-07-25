@@ -22,7 +22,7 @@ void EquipmentSet::addEquipment(Area& area, ItemIndex equipment)
 {
 	assert(!contains(equipment));
 	Items& items = area.getItems();
-	assert(items.getLocation(equipment) == BLOCK_INDEX_MAX);
+	assert(items.getLocation(equipment).empty());
 	m_mass += items.getMass(equipment);
 	ItemReference ref = area.getItems().getReference(equipment);
 	m_equipments.add(ref);
@@ -168,7 +168,7 @@ ItemIndex EquipmentSet::getWeaponToAttackAtRange(Area& area, float range)
 			if(attackType.range >= range)
 				return itemIndex;
 	}
-	return ITEM_INDEX_MAX;
+	return ItemIndex::null();
 }
 ItemIndex EquipmentSet::getAmmoForRangedWeapon(Area& area, ItemIndex weapon)
 {
@@ -183,7 +183,7 @@ ItemIndex EquipmentSet::getAmmoForRangedWeapon(Area& area, ItemIndex weapon)
 		if(area.getItems().getItemType(itemIndex) == ammoItemType)
 			return itemIndex;
 	}
-	return ITEM_INDEX_MAX;
+	return ItemIndex::null();
 }
 bool EquipmentSet::hasAnyEquipmentWithReservations(Area& area, ActorIndex actor) const
 {

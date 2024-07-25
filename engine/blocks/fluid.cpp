@@ -5,7 +5,6 @@
 #include "../area.h"
 #include "../deserializationMemo.h"
 #include "../types.h"
-/*
 void Blocks::fluid_load(const Json& data, [[maybe_unused]] const DeserializationMemo& deserializationMemo)
 {
 		for(const Json& pair : data)
@@ -18,7 +17,6 @@ Json Blocks::fluid_toJson() const
 		data.push_back({fluidType, pair.first});
 	return data;
 }
-*/
 std::vector<FluidData>::iterator Blocks::fluid_getDataIterator(BlockIndex index, const FluidType& fluidType)
 {
 	auto& fluid = m_fluid.at(index);
@@ -91,7 +89,7 @@ void Blocks::fluid_add(BlockIndex index, CollisionVolume volume, const FluidType
 	// Find fluid group.
 	FluidGroup* fluidGroup = nullptr;
 	for(BlockIndex adjacent : getDirectlyAdjacent(index))
-		if(adjacent != BLOCK_INDEX_MAX && fluid_canEnterEver(adjacent) && fluid_contains(adjacent, fluidType))
+		if(adjacent.exists() && fluid_canEnterEver(adjacent) && fluid_contains(adjacent, fluidType))
 		{
 			fluidGroup = fluid_getGroup(adjacent, fluidType);
 			fluidGroup->addBlock(index, true);
@@ -213,7 +211,7 @@ bool Blocks::fluid_canEnterEver(BlockIndex index) const
 bool Blocks::fluid_isAdjacentToGroup(BlockIndex index, const FluidGroup* fluidGroup) const
 {
 	for(BlockIndex adjacent : getDirectlyAdjacent(index))
-		if(adjacent != BLOCK_INDEX_MAX && fluid_contains(adjacent, fluidGroup->m_fluidType) && fluid_getGroup(adjacent, fluidGroup->m_fluidType) == fluidGroup)
+		if(adjacent.exists() && fluid_contains(adjacent, fluidGroup->m_fluidType) && fluid_getGroup(adjacent, fluidGroup->m_fluidType) == fluidGroup)
 			return true;
 	return false;
 }
@@ -313,7 +311,7 @@ void Blocks::fluid_onBlockSetSolid(BlockIndex index)
 			if constexpr (Config::fluidPiston)
 			{
 				BlockIndex above = getBlockAbove(index);
-				while(above != BLOCK_INDEX_MAX)
+				while(above.exists())
 				{
 					if(fluid_canEnterEver(above) && fluid_canEnterCurrently(above, *fluidData.type))
 					{
@@ -323,7 +321,7 @@ void Blocks::fluid_onBlockSetSolid(BlockIndex index)
 					above = getBlockAbove(above);
 				}
 				// The only way that this 'piston' code should be triggered is if something falls, which means the top layer cannot be full.
-				assert(above != BLOCK_INDEX_MAX);
+				assert(above.exists());
 			}
 			else
 				// Otherwise destroy the group.
@@ -333,14 +331,14 @@ void Blocks::fluid_onBlockSetSolid(BlockIndex index)
 	m_fluid.at(index).clear();
 	// Remove from fluid fill queues.
 	for(BlockIndex adjacent : getDirectlyAdjacent(index))
-		if(adjacent != BLOCK_INDEX_MAX && fluid_canEnterEver(adjacent))
+		if(adjacent.exists() && fluid_canEnterEver(adjacent))
 			for(FluidData& fluidData : m_fluid.at(adjacent))
 				fluidData.group->m_fillQueue.removeBlock(index);
 }
 void Blocks::fluid_onBlockSetNotSolid(BlockIndex index)
 {
 	for(BlockIndex adjacent : getDirectlyAdjacent(index))
-		if(adjacent != BLOCK_INDEX_MAX && fluid_canEnterEver(adjacent))
+		if(adjacent.exists() && fluid_canEnterEver(adjacent))
 			for(FluidData& fluidData : m_fluid.at(adjacent))
 			{
 				fluidData.group->m_fillQueue.addBlock(index);

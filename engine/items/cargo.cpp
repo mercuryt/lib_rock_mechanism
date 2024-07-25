@@ -9,11 +9,11 @@ void Items::cargo_addActor(ItemIndex index, ActorIndex actor)
 {
 	assert(m_itemType.at(index)->internalVolume);
 	assert(m_itemType.at(index)->internalVolume > m_area.getActors().getVolume(actor));
-	m_hasCargo[index]->addActor(m_area, actor);
+	m_hasCargo.at(index)->addActor(m_area, actor);
 }
 void Items::cargo_addItem(ItemIndex index, ItemIndex item, Quantity quantity)
 {
-	assert(getLocation(item) == BLOCK_INDEX_MAX);
+	assert(getLocation(item).empty());
 	if(isGeneric(item))
 		m_hasCargo[index]->addItemGeneric(m_area, getItemType(item), getMaterialType(item), quantity);
 	else
@@ -22,7 +22,7 @@ void Items::cargo_addItem(ItemIndex index, ItemIndex item, Quantity quantity)
 void Items::cargo_addPolymorphic(ItemIndex index, ActorOrItemIndex actorOrItemIndex, Quantity quantity)
 {
 	assert(actorOrItemIndex.exists());
-	assert(actorOrItemIndex.getLocation(m_area) == BLOCK_INDEX_MAX);
+	assert(actorOrItemIndex.getLocation(m_area).empty());
 	if(actorOrItemIndex.isActor())
 		cargo_addActor(index, actorOrItemIndex.get());
 	else
@@ -107,14 +107,14 @@ void Items::cargo_unloadActorToLocation(ItemIndex index, ActorIndex actor, Block
 	assert(m_hasCargo.at(index));
 	assert(cargo_containsActor(index, actor));
 	Actors& actors = m_area.getActors();
-	assert(actors.getLocation(actor) == BLOCK_INDEX_MAX);
+	assert(actors.getLocation(actor).empty());
 	cargo_removeActor(index, actor);
 	actors.setLocation(actor, location);
 }
 void Items::cargo_unloadItemToLocation(ItemIndex index, ItemIndex item, BlockIndex location)
 {
 	assert(cargo_containsItem(index, item));
-	assert(getLocation(item) == BLOCK_INDEX_MAX);
+	assert(getLocation(item).empty());
 	cargo_removeItem(index, item);
 	setLocation(item, location);
 }
@@ -144,7 +144,7 @@ ItemIndex Items::cargo_unloadGenericItemToLocation(ItemIndex index, const ItemTy
 ActorOrItemIndex Items::cargo_unloadPolymorphicToLocation(ItemIndex index, ActorOrItemIndex actorOrItem, BlockIndex location, Quantity quantity)
 {
 	assert(actorOrItem.exists());
-	assert(actorOrItem.getLocation(m_area) == BLOCK_INDEX_MAX);
+	assert(actorOrItem.getLocation(m_area).empty());
 	if(actorOrItem.isActor())
 	{
 		cargo_unloadActorToLocation(index, actorOrItem.get(), location);

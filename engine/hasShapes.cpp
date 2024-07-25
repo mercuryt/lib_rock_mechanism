@@ -18,7 +18,7 @@
 HasShapes::HasShapes(Area& area) : m_area(area) { }
 HasShapeIndex HasShapes::getNextIndex()
 {
-	HasShapeIndex index =  m_shape.size();
+	HasShapeIndex index = HasShapeIndex::create(m_shape.size());
 	// Virtual metod call.
 	resize(index);
 	return index;
@@ -29,7 +29,7 @@ void HasShapes::create(HasShapeIndex index, const Shape& shape, BlockIndex locat
 	m_shape.at(index) = &shape;
 	m_location.at(index) = location;
 	m_facing.at(index) = facing;
-	m_static.set(index(), isStatic);
+	m_static.set(index, isStatic);
 }
 void HasShapes::resize(HasShapeIndex newSize)
 {
@@ -52,18 +52,19 @@ void HasShapes::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 void HasShapes::destroy(HasShapeIndex index)
 {
 	// Copy last plant over this slot.
+	auto oldIndex = HasShapeIndex::create(size() - 1);
 	if(size() != 1)
 		// Virtual call.
-		moveIndex(index, size() - 1);
+		moveIndex(index, oldIndex);
 	// Truncate empty slot.
 	// Virtual call.
-	resize(size() - 1);
+	resize(oldIndex);
 }
 //TODO: Move this to derived.
 void HasShapes::setShape(HasShapeIndex index, const Shape& shape)
 {
 	BlockIndex location = m_location.at(index);
-	if(location != BLOCK_INDEX_MAX)
+	if(location.exists())
 	{
 		exit(index);
 		//TODO: virtual function?
@@ -71,7 +72,7 @@ void HasShapes::setShape(HasShapeIndex index, const Shape& shape)
 			//m_area->getBlocks().getLocationBucket(location).erase(static_cast<Actor&>(*this));
 	}
 	m_shape.at(index) = &shape;
-	if(location != BLOCK_INDEX_MAX)
+	if(location.exists())
 		setLocation(index, location);
 }
 void HasShapes::setStatic(HasShapeIndex index, bool isTrue)
@@ -130,19 +131,19 @@ bool HasShapes::isAdjacentToPlant(HasShapeIndex index, PlantIndex plant) const
 }
 bool HasShapes::isAdjacentToActorAt(HasShapeIndex index, BlockIndex location, Facing facing, ActorIndex actor) const
 {
-	auto occupied = getBlocksWhichWouldBeOccupiedAtLocationAndFacing(index(), location, facing);
+	auto occupied = getBlocksWhichWouldBeOccupiedAtLocationAndFacing(index, location, facing);
 	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return occupied.contains(block); };
 	return m_area.getActors().predicateForAnyAdjacentBlock(actor, predicate);
 }
 bool HasShapes::isAdjacentToItemAt(HasShapeIndex index, BlockIndex location, Facing facing, ItemIndex item) const
 {
-	auto occupied = getBlocksWhichWouldBeOccupiedAtLocationAndFacing(index(), location, facing);
+	auto occupied = getBlocksWhichWouldBeOccupiedAtLocationAndFacing(index, location, facing);
 	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return occupied.contains(block); };
 	return m_area.getItems().predicateForAnyAdjacentBlock(item, predicate);
 }
 bool HasShapes::isAdjacentToPlantAt(HasShapeIndex index, BlockIndex location, Facing facing, PlantIndex plant) const
 {
-	auto occupied = getBlocksWhichWouldBeOccupiedAtLocationAndFacing(index(), location, facing);
+	auto occupied = getBlocksWhichWouldBeOccupiedAtLocationAndFacing(index, location, facing);
 	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return occupied.contains(block); };
 	return m_area.getPlants().predicateForAnyAdjacentBlock(plant, predicate);
 }
@@ -195,12 +196,12 @@ bool HasShapes::predicateForAnyOccupiedBlockAtLocationAndFacing(HasShapeIndex in
 }
 bool HasShapes::predicateForAnyAdjacentBlock(HasShapeIndex index, std::function<bool(const BlockIndex)> predicate) const
 {
-	assert(m_location.at(index) != BLOCK_INDEX_MAX);
+	assert(m_location.at(index).exists());
 	//TODO: cache this.
 	for(auto [x, y, z] : m_shape.at(index)->adjacentPositionsWithFacing(m_facing.at(index)))
 	{
 		BlockIndex block = m_area.getBlocks().offset(m_location.at(index), x, y, z);
-		if(block != BLOCK_INDEX_MAX && predicate(block))
+		if(block.exists() && predicate(block))
 			return true;
 	}
 	return false;
@@ -218,27 +219,18 @@ ActorIndices HasShapes::getAdjacentActors(HasShapeIndex index) const
 {
 	ActorIndices output;
 	for(BlockIndex block : getBlocks(index))
-	{
-		ActorIndicesForBlock& actors = m_area.getBlocks().actor_getAll(block);
-		output.add(actors.begin(), actors.end());
-	}
+		output.merge(m_area.getBlocks().actor_getAll(block));
 	for(BlockIndex block : getAdjacentBlocks(index))
-	{
-		ActorIndicesForBlock& actors = m_area.getBlocks().actor_getAll(block);
-		output.add(actors.begin(), actors.end());
-	}
-	output.remove(index());
+		output.merge(m_area.getBlocks().actor_getAll(block));
+	output.remove(index.toActor());
 	return output;
 }
 ItemIndices HasShapes::getAdjacentItems(HasShapeIndex index) const
 {
 	ItemIndices output;
 	for(BlockIndex block : getOccupiedAndAdjacentBlocks(index))
-	{
-		auto items = m_area.getBlocks().item_getAll(block);
-		output.add(items.begin(), items.end());
-	}
-	output.remove(index());
+		output.merge(m_area.getBlocks().item_getAll(block));
+	output.remove(index.toItem());
 	return output;
 }
 BlockIndices HasShapes::getBlocksWhichWouldBeOccupiedAtLocationAndFacing(HasShapeIndex index, BlockIndex location, Facing facing) const
@@ -252,7 +244,7 @@ BlockIndices HasShapes::getAdjacentBlocksAtLocationWithFacing(HasShapeIndex inde
 	for(auto [x, y, z] : m_shape.at(index)->adjacentPositionsWithFacing(facing))
 	{
 		BlockIndex block = m_area.getBlocks().offset(location, x, y, z);
-		if(block != BLOCK_INDEX_MAX)
+		if(block.exists())
 			output.add(block);
 	}
 	return output;
@@ -262,20 +254,20 @@ BlockIndex HasShapes::getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(Ha
 	for(auto [x, y, z] : m_shape.at(index)->adjacentPositionsWithFacing(facing))
 	{
 		BlockIndex block = m_area.getBlocks().offset(location, x, y, z);
-		if(block != BLOCK_INDEX_MAX && predicate(block))
+		if(block.exists() && predicate(block))
 			return block;
 	}
-	return BLOCK_INDEX_MAX;
+	return BlockIndex::null();
 }
 BlockIndex HasShapes::getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(HasShapeIndex index, const BlockIndex location, Facing facing, std::function<bool(const BlockIndex)>& predicate) const
 {
 	for(auto& [x, y, z, v] : m_shape.at(index)->positionsWithFacing(facing))
 	{
 		BlockIndex block = m_area.getBlocks().offset(location, x, y, z);
-		if(block != BLOCK_INDEX_MAX && predicate(block))
+		if(block.exists() && predicate(block))
 			return block;
 	}
-	return BLOCK_INDEX_MAX;
+	return BlockIndex::null();
 }
 BlockIndex HasShapes::getBlockWhichIsAdjacentWithPredicate(HasShapeIndex index, std::function<bool(const BlockIndex)>& predicate) const
 {
@@ -290,7 +282,7 @@ ItemIndex HasShapes::getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(HasS
 	for(auto [x, y, z] : m_shape.at(index)->adjacentPositionsWithFacing(facing))
 	{
 		BlockIndex block = m_area.getBlocks().offset(location, x, y, z);
-		if(block != BLOCK_INDEX_MAX)
+		if(block.exists())
 			for(ItemIndex item : m_area.getBlocks().item_getAll(block))
 				if(predicate(item))
 					return item;
@@ -309,20 +301,11 @@ bool HasShapes::allBlocksAtLocationAndFacingAreReservable(HasShapeIndex index, c
 }
 void HasShapes::log(HasShapeIndex index) const
 {
-	if(m_location.at(index) == BLOCK_INDEX_MAX)
+	if(!m_location.at(index).exists())
 	{
 		std::cout << "*";
 		return;
 	}
 	Point3D coordinates = m_area.getBlocks().getCoordinates(m_location.at(index));
 	std::cout << "[" << coordinates.x << "," << coordinates.y << "," << coordinates.z << "]";
-}
-HasShapeIndices HasShapes::getAll() const
-{
-	// TODO: Replace with std::iota?
-	HasShapeIndices output;
-	output.reserve(m_shape.size());
-	for(HasShapeIndex i = 0; i < size(); ++i)
-		output.add(i);
-	return output;
 }

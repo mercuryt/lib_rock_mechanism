@@ -7,7 +7,6 @@
 #include "config.h"
 #include "dishonorCallback.h"
 #include "index.h"
-#include "blockIndices.h"
 #include <compare>
 #include <functional>
 #include <iterator>

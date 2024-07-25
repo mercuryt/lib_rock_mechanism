@@ -35,7 +35,7 @@ void Actors::combat_attackMeleeRange(ActorIndex index, ActorIndex target)
 		Hit hit(attack.attackType->area, attackForce, *attack.materialType, attack.attackType->woundType);
 		takeHit(target, hit, bodyPart);
 		// If there is a weapon being used take the cool down from it, otherwise use onMiss cool down.
-		if(attack.item != ITEM_INDEX_MAX)
+		if(attack.item.exists())
 		{
 			Items& items = m_area.getItems();
 			coolDownDuration = attack.attackType->coolDown == 0 ? items.getItemType(attack.item).weaponData->coolDown : attack.attackType->coolDown;
@@ -99,7 +99,7 @@ uint32_t Actors::combat_getCurrentMeleeCombatScore(ActorIndex index)
 }
 void Actors::combat_coolDownCompleted(ActorIndex index)
 {
-	if(m_target.at(index) == ACTOR_INDEX_MAX)
+	if(m_target.at(index).empty())
 		return;
 	Blocks& blocks = m_area.getBlocks();
 	//TODO: Move line of sight check to threaded task?
@@ -162,15 +162,15 @@ std::vector<std::pair<uint32_t, Attack>>& Actors::combat_getMeleeAttacks(ActorIn
 uint32_t Actors::combat_getCombatScoreForAttack(ActorIndex index, const Attack& attack) const
 {
 	uint32_t output = attack.attackType->combatScore;
-	const SkillType& skill = attack.item == ITEM_INDEX_MAX ?
+	const SkillType& skill = attack.item == ItemIndex::null() ?
 		SkillType::byName("unarmed") :
 		attack.attackType->skillType;
 	uint32_t skillValue = m_skillSet.at(index)->get(skill);
 	output += (skillValue * Config::attackSkillCombatModifier);
 	Items& items = m_area.getItems();
-	uint32_t quality = attack.item == ITEM_INDEX_MAX ? Config::averageItemQuality : items.getQuality(attack.item);
+	uint32_t quality = attack.item == ItemIndex::null() ? Config::averageItemQuality : items.getQuality(attack.item);
 	output *= combat_getQualityModifier(index, quality);
-	Percent percentItemWear = attack.item == ITEM_INDEX_MAX ? 0u : items.getWear(attack.item);
+	Percent percentItemWear = attack.item == ItemIndex::null() ? 0u : items.getWear(attack.item);
 	output -= percentItemWear * Config::itemWearCombatModifier;
 	return output;
 }
@@ -208,7 +208,7 @@ void Actors::combat_onMoveFrom(ActorIndex index, BlockIndex previous)
 	Blocks& blocks = m_area.getBlocks();
 	FactionId faction = m_faction.at(index);
 	for(BlockIndex block : blocks.getDirectlyAdjacent(previous))
-		if(block != BLOCK_INDEX_MAX)
+		if(block.exists()
 			for(ActorIndex adjacent : blocks.actor_getAll(block))
 			{
 				FactionId otherFaction = m_faction.at(adjacent);
@@ -236,8 +236,8 @@ void Actors::combat_onLeaveArea(ActorIndex index)
 }
 void Actors::combat_targetNoLongerTargetable(ActorIndex index)
 {
-	assert(m_target.at(index) != ACTOR_INDEX_MAX);
-	m_target.at(index) = ACTOR_INDEX_MAX;
+	assert(m_target.at(index).exists());
+	m_target.at(index).clear();
 	m_hasObjectives.at(index)->subobjectiveComplete(m_area);
 }
 void Actors::combat_onTargetMoved(ActorIndex index)
@@ -266,7 +266,7 @@ Percent Actors::combat_projectileHitPercent(ActorIndex index, const Attack& atta
 	chance += m_skillSet.at(index)->get(attack.attackType->skillType) * Config::projectileHitPercentPerSkillPoint;
 	chance += ((int)getVolume(target) - (int)Config::projectileMedianTargetVolume) * Config::projectileHitPercentPerUnitVolume;
 	chance += m_attributes.at(index)->getDextarity() * Config::projectileHitPercentPerPointDextarity;
-	if(attack.item != ITEM_INDEX_MAX)
+	if(attack.item.exists())
 	{
 		Items& items = m_area.getItems();
 		chance += ((int)items.getQuality(attack.item) - Config::averageItemQuality) * Config::projectileHitPercentPerPointQuality;

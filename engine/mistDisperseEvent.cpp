@@ -25,7 +25,7 @@ void MistDisperseEvent::execute(Simulation& simulation, Area* area)
 		// Possibly spread.
 		if(blocks.fluid_getMistInverseDistanceToSource(m_block) > 0)
 			for(BlockIndex adjacent : blocks.getDirectlyAdjacent(m_block))
-				if(adjacent != BLOCK_INDEX_MAX && blocks.fluid_canEnterEver(adjacent) && 
+				if(adjacent.exists() && blocks.fluid_canEnterEver(adjacent) && 
 						(
 							!blocks.fluid_getMist(adjacent) || 
 							blocks.fluid_getMist(adjacent)->density < m_fluidType.density
@@ -53,12 +53,12 @@ bool MistDisperseEvent::continuesToExist(Area& area) const
 		if(blocks.fluid_contains(adjacent, m_fluidType))
 		{	
 			BlockIndex belowAdjacent = blocks.getBlockBelow(adjacent);
-			if(belowAdjacent != BLOCK_INDEX_MAX && !blocks.solid_is(belowAdjacent))
+			if(belowAdjacent.exists() && !blocks.solid_is(belowAdjacent))
 				return true;
 		}
 	for(BlockIndex adjacent : blocks.getDirectlyAdjacent(m_block))
 		// if adjacent to block with mist with lower distance to source.
-		if(adjacent != BLOCK_INDEX_MAX && 
+		if(adjacent.exists() && 
 			blocks.fluid_getMist(adjacent) &&
 			blocks.fluid_getMistInverseDistanceToSource(adjacent) > blocks.fluid_getMistInverseDistanceToSource(adjacent) 
 		)

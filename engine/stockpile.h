@@ -149,7 +149,7 @@ struct BlockIsPartOfStockPile
 class BlockIsPartOfStockPiles
 {
 	std::unordered_map<FactionId, BlockIsPartOfStockPile> m_stockPiles;
-	BlockIndex m_block = BLOCK_INDEX_MAX;
+	BlockIndex m_block;
 public:
 	BlockIsPartOfStockPiles(BlockIndex b): m_block(b) { }
 	void recordMembership(StockPile& stockPile);

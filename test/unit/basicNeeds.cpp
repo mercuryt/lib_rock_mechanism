@@ -45,7 +45,7 @@ TEST_CASE("basicNeedsSentient")
 		REQUIRE(actors.objective_getCurrentName(actor) == "drink");
 		simulation.doStep();
 		BlockIndex destination = actors.move_getDestination(actor);
-		REQUIRE(destination != BLOCK_INDEX_MAX);
+		REQUIRE(destination.exists());
 		REQUIRE(blocks.isAdjacentToIncludingCornersAndEdges(destination, pondLocation));
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, actor, pondLocation);
 		simulation.fastForward(Config::stepsToDrink);
@@ -72,7 +72,7 @@ TEST_CASE("basicNeedsSentient")
 		REQUIRE(actors.objective_getCurrentName(actor) == "drink");
 		simulation.doStep();
 		BlockIndex destination = actors.move_getDestination(actor);
-		REQUIRE(destination != BLOCK_INDEX_MAX);
+		REQUIRE(destination.exists());
 		REQUIRE(blocks.isAdjacentToIncludingCornersAndEdges(destination, bucketLocation));
 		simulation.fastForwardUntillActorIsAdjacentToItem(area, actor, bucket);
 		simulation.fastForward(Config::stepsToDrink);
@@ -106,7 +106,7 @@ TEST_CASE("basicNeedsSentient")
 		REQUIRE(actors.eat_isHungry(actor));
 		simulation.doStep();
 		BlockIndex destination = actors.move_getDestination(actor);
-		REQUIRE(destination != BLOCK_INDEX_MAX);
+		REQUIRE(destination.exists());
 		REQUIRE(blocks.isAdjacentToIncludingCornersAndEdges(destination, mealLocation));
 		simulation.fastForwardUntillActorIsAdjacentToItem(area, actor, meal);
 		REQUIRE(actors.objective_getCurrentName(actor) == "eat");
@@ -184,7 +184,7 @@ TEST_CASE("basicNeedsNonsentient")
 		// Look for sleeping spot.
 		simulation.doStep();
 		// No spot found better then current one.
-		REQUIRE(actors.move_getDestination(actor) == BLOCK_INDEX_MAX);
+		REQUIRE(actors.move_getDestination(actor).empty());
 		REQUIRE(!actors.sleep_isAwake(actor));
 		// Wait for wake up.
 		simulation.fastForward(redDeer.stepsSleepDuration);
@@ -209,7 +209,7 @@ TEST_CASE("basicNeedsNonsentient")
 			simulation.doStep();
 			REQUIRE(actors.objective_getCurrentName(actor) == "eat");
 			BlockIndex destination = actors.move_getDestination(actor);
-			REQUIRE(destination != BLOCK_INDEX_MAX);
+			REQUIRE(destination.exists());
 			REQUIRE(blocks.isAdjacentToIncludingCornersAndEdges(destination, grassLocation));
 			// Go to grass.
 			simulation.fastForwardUntillActorIsAdjacentToDestination(area, actor, grassLocation);
@@ -243,9 +243,9 @@ TEST_CASE("basicNeedsNonsentient")
 		{
 			blocks.solid_set(spot, dirt, false);
 			simulation.fastForwardUntillActorIsAdjacentToLocation(area, actor, spot);
-			REQUIRE(actors.move_getDestination(actor) == BLOCK_INDEX_MAX);
+			REQUIRE(actors.move_getDestination(actor).empty());
 			REQUIRE(actors.objective_getCurrentName(actor) == "sleep");
-			REQUIRE(actors.sleep_getSpot(actor) == BLOCK_INDEX_MAX);
+			REQUIRE(actors.sleep_getSpot(actor).empty());
 			REQUIRE(actors.move_hasPathRequest(actor));
 		}
 		SUBCASE("cannot path to spot")
@@ -255,7 +255,7 @@ TEST_CASE("basicNeedsNonsentient")
 			REQUIRE(actors.move_hasPathRequest(actor));
 			// Path to designated spot blocked, try to repath, no path found, clear designated spot.
 			simulation.doStep();
-			REQUIRE(actors.sleep_getSpot(actor) == BLOCK_INDEX_MAX);
+			REQUIRE(actors.sleep_getSpot(actor).empty());
 			REQUIRE(actors.objective_getCurrentName(actor) == "sleep");
 			REQUIRE(actors.move_hasPathRequest(actor));
 		}

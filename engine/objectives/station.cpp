@@ -23,6 +23,6 @@ void StationObjective::execute(Area& area, ActorIndex actor)
 	Actors& actors = area.getActors();
 	if(actors.getLocation(actor) != m_location)
 		// BlockIndex, detour, adjacent, unreserved, reserve
-		actors.move_setDestination(m_location, m_detour, false, false, false);
+		actors.move_setDestination(actor, m_location, m_detour, false, false, false);
 }
 void StationObjective::reset(Area& area, ActorIndex actor) { area.getActors().canReserve_clearAll(actor); }

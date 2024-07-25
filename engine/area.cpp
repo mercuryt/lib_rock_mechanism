@@ -241,7 +241,7 @@ void Area::updateClimate()
 	{
 		uint16_t day = DateTime(m_simulation.m_step).day;
 		Plants& plants  = getPlants();
-		for(PlantIndex plant : plants.getAll())
+		for(auto plant : plants.getAll())
 			plants.setDayOfYear(plant, day);
 		m_hasFarmFields.setDayOfYear(day);
 	}

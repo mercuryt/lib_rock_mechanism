@@ -131,7 +131,7 @@ void Simulation::fastForwardUntillActorIsAdjacentToDestination(Area& area, Actor
 	Actors& actors = area.getActors();
 	assert(!actors.move_getPath(actor).empty());
 	BlockIndex adjacentDestination = actors.move_getPath(actor).back();
-	assert(adjacentDestination != BLOCK_INDEX_MAX);
+	assert(adjacentDestination.exists());
 	if(actors.getBlocks(actor).size() == 1)
 		assert(area.getBlocks().isAdjacentToIncludingCornersAndEdges(adjacentDestination, destination));
 	std::function<bool()> predicate = [&](){ return actors.isAdjacentToLocation(actor, destination); };
@@ -154,7 +154,7 @@ void Simulation::fastForwardUntillActorIsAdjacentToItem(Area& area, ActorIndex a
 }
 void Simulation::fastForwardUntillActorHasNoDestination(Area& area, ActorIndex actor)
 {
-	std::function<bool()> predicate = [&](){ return area.getActors().move_getDestination(actor) == BLOCK_INDEX_MAX; };
+	std::function<bool()> predicate = [&](){ return area.getActors().move_getDestination(actor).empty(); };
 	fastForwardUntillPredicate(predicate);
 }
 void Simulation::fastForwardUntillActorHasEquipment(Area& area, ActorIndex actor, ItemIndex item)

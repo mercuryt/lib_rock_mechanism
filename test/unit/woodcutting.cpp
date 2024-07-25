@@ -116,7 +116,7 @@ TEST_CASE("woodcutting")
 		REQUIRE(actors.project_get(dwarf)->getProjectWorkerFor(dwarf).haulSubproject);
 		// Pickup and path.
 		simulation.doStep();
-		REQUIRE(actors.move_getDestination(dwarf) != BLOCK_INDEX_MAX);
+		REQUIRE(actors.move_getDestination(dwarf).exists());
 		REQUIRE(actors.canPickUp_exists(dwarf));
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf, branchStockpileLocation);
 		REQUIRE(!actors.canPickUp_exists(dwarf));

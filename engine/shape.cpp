@@ -93,7 +93,7 @@ BlockIndices Shape::getBlocksOccupiedAt(const Blocks& blocks, BlockIndex locatio
 	for(auto [x, y, z, v] : occupiedOffsetsCache.at(facing))
 	{
 		BlockIndex block = blocks.offset(location, x, y, z);
-		assert(block != BLOCK_INDEX_MAX);
+		assert(block.exists());
 		output.add(block);
 	}
 	return output;
@@ -105,7 +105,7 @@ std::vector<std::pair<BlockIndex, Volume>> Shape::getBlocksOccupiedAtWithVolumes
 	for(auto& [x, y, z, v] : positionsWithFacing(facing))
 	{
 		BlockIndex block = blocks.offset(location, x, y, z);
-		if(block != BLOCK_INDEX_MAX)
+		if(block.exists())
 			output.emplace_back(block, v);
 	}
 	return output;
@@ -117,7 +117,7 @@ BlockIndices Shape::getBlocksWhichWouldBeAdjacentAt(const Blocks& blocks, BlockI
 	for(auto [x, y, z] : adjacentOffsetsCache.at(facing))
 	{
 		BlockIndex block = blocks.offset(location, x, y, z);
-		if(block != BLOCK_INDEX_MAX)
+		if(block.exists())
 			output.add(block);
 	}
 	return output;
@@ -127,10 +127,10 @@ BlockIndex Shape::getBlockWhichWouldBeAdjacentAtWithPredicate(const Blocks& bloc
 	for(auto [x, y, z] : adjacentOffsetsCache.at(facing))
 	{
 		BlockIndex block = blocks.offset(location, x, y, z);
-		if(block != BLOCK_INDEX_MAX && predicate(block))
+		if(block.exists() && predicate(block))
 			return block;
 	}
-	return BLOCK_INDEX_MAX;
+	return BlockIndex::null();
 }
 CollisionVolume Shape::getCollisionVolumeAtLocationBlock() const { return positions[0][3]; }
 // Static methods.

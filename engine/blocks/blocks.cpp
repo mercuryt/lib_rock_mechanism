@@ -66,7 +66,7 @@ BlockIndex Blocks::offset(BlockIndex index, int32_t ax, int32_t ay, int32_t az) 
 	ay += coordinates.y;
 	az += coordinates.z;
 	if(ax < 0 || (DistanceInBlocks)ax >= m_sizeX || ay < 0 || (DistanceInBlocks)ay >= m_sizeY || az < 0 || (DistanceInBlocks)az >= m_sizeZ)
-		return BLOCK_INDEX_MAX;
+		return BlockIndex::null();
 	return getIndex({(DistanceInBlocks)ax, (DistanceInBlocks)ay, (DistanceInBlocks)az});
 }
 void Blocks::load(const Json& data, DeserializationMemo& deserializationMemo)
@@ -236,7 +236,7 @@ std::vector<BlockIndex> Blocks::getAdjacentWithEdgeAdjacent(BlockIndex index) co
 	{
 		auto& offsets = offsetsList[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
-		if(block != BLOCK_INDEX_MAX)
+		if(block.exists())
 			output.push_back(block);
 	}
 	return output;
@@ -250,7 +250,7 @@ std::vector<BlockIndex> Blocks::getAdjacentWithEdgeAndCornerAdjacent(BlockIndex 
 	{
 		auto& offsets = offsetsListAllAdjacent[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
-		if(block != BLOCK_INDEX_MAX)
+		if(block.exists())
 			output.push_back(block);
 	}
 	return output;
@@ -285,7 +285,7 @@ std::vector<BlockIndex> Blocks::getEdgeAdjacentOnly(BlockIndex index) const
 	{
 		auto& offsets = offsetsList[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
-		if(block != BLOCK_INDEX_MAX)
+		if(block.exists())
 			output.push_back(block);
 	}
 	return output;
@@ -302,7 +302,7 @@ std::vector<BlockIndex> Blocks::getEdgeAdjacentOnSameZLevelOnly(BlockIndex index
 	{
 		auto& offsets = offsetsList[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
-		if(block != BLOCK_INDEX_MAX)
+		if(block.exists())
 			output.push_back(block);
 	}
 	return output;
@@ -319,7 +319,7 @@ std::vector<BlockIndex> Blocks::getEdgeAdjacentOnlyOnNextZLevelDown(BlockIndex i
 	{
 		auto& offsets = offsetsList[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
-		if(block != BLOCK_INDEX_MAX)
+		if(block.exists())
 			output.push_back(block);
 	}
 	return output;
@@ -337,7 +337,7 @@ std::vector<BlockIndex> Blocks::getEdgeAndCornerAdjacentOnlyOnNextZLevelDown(Blo
 	{
 		auto& offsets = offsetsList[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
-		if(block != BLOCK_INDEX_MAX)
+		if(block.exists())
 			output.push_back(block);
 	}
 	return output;
@@ -354,7 +354,7 @@ std::vector<BlockIndex> Blocks::getEdgeAdjacentOnlyOnNextZLevelUp(BlockIndex ind
 	{
 		auto& offsets = offsetsList[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
-		if(block != BLOCK_INDEX_MAX)
+		if(block.exists())
 			output.push_back(block);
 	}
 	return output;
@@ -379,7 +379,7 @@ std::vector<BlockIndex> Blocks::getEdgeAndCornerAdjacentOnly(BlockIndex index) c
 	{
 		auto& offsets = offsetsList[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
-		if(block != BLOCK_INDEX_MAX)
+		if(block.exists())
 			output.push_back(block);
 	}
 	return output;
@@ -396,7 +396,7 @@ std::vector<BlockIndex> Blocks::getAdjacentOnSameZLevelOnly(BlockIndex index) co
 	{
 		auto& offsets = offsetsList[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
-		if(block != BLOCK_INDEX_MAX)
+		if(block.exists())
 			output.push_back(block);
 	}
 	return output;
@@ -431,14 +431,14 @@ bool Blocks::squareOfDistanceIsMoreThen(BlockIndex index, BlockIndex otherIndex,
 bool Blocks::isAdjacentToAny(BlockIndex index, BlockIndices& blocks) const
 {
 	for(BlockIndex adjacent : getDirectlyAdjacent(index))
-		if(adjacent != BLOCK_INDEX_MAX && blocks.contains(adjacent))
+		if(adjacent.exists() && blocks.contains(adjacent))
 			return true;
 	return false;
 }
 bool Blocks::isAdjacentTo(BlockIndex index, BlockIndex otherIndex) const
 {
 	for(BlockIndex adjacent : getDirectlyAdjacent(index))
-		if(adjacent != BLOCK_INDEX_MAX && otherIndex == adjacent)
+		if(adjacent.exists() && otherIndex == adjacent)
 			return true;
 	return false;
 }
@@ -459,7 +459,7 @@ void Blocks::setExposedToSky(BlockIndex index, bool exposed)
 void Blocks::setBelowExposedToSky(BlockIndex index)
 {
 	BlockIndex block = getBlockBelow(index);
-	while(block != BLOCK_INDEX_MAX && canSeeThroughFrom(block, getBlockAbove(block)) && !m_exposedToSky.at(block))
+	while(block.exists() && canSeeThroughFrom(block, getBlockAbove(block)) && !m_exposedToSky.at(block))
 	{
 		setExposedToSky(block, true);
 		plant_updateGrowingStatus(block);
@@ -469,7 +469,7 @@ void Blocks::setBelowExposedToSky(BlockIndex index)
 void Blocks::setBelowVisible(BlockIndex index)
 {
 	BlockIndex block = getBlockBelow(index);
-	while(block != BLOCK_INDEX_MAX && canSeeThroughFrom(block, getBlockAbove(block)) && !m_visible.at(block))
+	while(block.exists() && canSeeThroughFrom(block, getBlockAbove(block)) && !m_visible.at(block))
 	{
 		m_visible.set(block);
 		block = getBlockBelow(block);
@@ -478,7 +478,7 @@ void Blocks::setBelowVisible(BlockIndex index)
 void Blocks::setBelowNotExposedToSky(BlockIndex index)
 {
 	BlockIndex block = getBlockBelow(index);
-	while(block != BLOCK_INDEX_MAX && m_exposedToSky.at(block))
+	while(block.exists() && m_exposedToSky.at(block))
 	{
 		m_exposedToSky.unset(block);
 		plant_updateGrowingStatus(block);
@@ -525,7 +525,7 @@ void Blocks::solid_setNot(BlockIndex index)
 	fluid_onBlockSetNotSolid(index);
 	m_area.m_visionCuboids.blockIsNeverOpaque(index);
 	m_area.m_opacityFacade.update(index);
-	if(getBlockAbove(index) == BLOCK_INDEX_MAX || m_exposedToSky.at(getBlockAbove(index)))
+	if(getBlockAbove(index).empty() || m_exposedToSky.at(getBlockAbove(index)))
 	{
 		setExposedToSky(index, true);
 		setBelowExposedToSky(index);
@@ -600,18 +600,18 @@ BlockIndex Blocks::offsetNotNull(BlockIndex index, int32_t ax, int32_t ay, int32
 }
 BlockIndex Blocks::indexAdjacentToAtCount(BlockIndex index, uint8_t adjacentCount) const
 {
-	// If block is on edge check for the offset being beyond the area. If so return BLOCK_INDEX_MAX.
+	// If block is on edge check for the offset being beyond the area. If so return BlockIndex::null().
 	if(m_isEdge.at(index))
 	{
 		Point3D coordinates = getCoordinates(index);
 		auto [x, y, z] = Blocks::offsetsListAllAdjacent[adjacentCount];
 		Vector3D vector(x, y, z);
 		if((vector.x == -1 && coordinates.x == 0) || (vector.x == 1 && coordinates.x == m_sizeX - 1))
-			return BLOCK_INDEX_MAX;
+			return BlockIndex::null();
 		if((vector.y == -1 && coordinates.y == 0) || (vector.y == 1 && coordinates.y == m_sizeY - 1))
-			return BLOCK_INDEX_MAX;
+			return BlockIndex::null();
 		if((vector.z == -1 && coordinates.z == 0) || (vector.z == 1 && coordinates.z == m_sizeZ - 1))
-			return BLOCK_INDEX_MAX;
+			return BlockIndex::null();
 	}
 	return index + m_offsetsForAdjacentCountTable[adjacentCount];
 }

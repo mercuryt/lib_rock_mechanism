@@ -11,7 +11,7 @@ struct DeserializationMemo;
 
 struct BanditsArriveDramaArc final : public DramaArc
 {
-	BlockIndex m_entranceBlock = BLOCK_INDEX_MAX;
+	BlockIndex m_entranceBlock;
 	ActorReferences m_actors;
 	bool m_isActive = false;
 	uint32_t m_quantity = 0;

@@ -9,7 +9,7 @@
 #include "blocks/blocks.h"
 #include "moveType.h"
 #include "simulation/hasActors.h"
-#include "types.h"
+#include "../../types.h"
 #include <utility>
 BanditsArriveDramaArc::BanditsArriveDramaArc(DramaEngine& engine, Area& area) : 
 	DramaArc(engine, DramaArcType::BanditsArrive, &area), m_scheduledEvent(area.m_eventSchedule)
@@ -69,7 +69,7 @@ void BanditsArriveDramaArc::callback()
 		{
 			const AnimalSpecies& species = random.chance(0.5) ? actors.getSpecies(m_leader) : *random.getInVector(sentientSpecies);
 			BlockIndex location = findLocationOnEdgeForNear(*species.shapes.back(), species.moveType, m_entranceBlock, maxBlockDistance, exclude);
-			if(location != BLOCK_INDEX_MAX)
+			if(location.exists())
 			{
 				exclude.insert(location);
 				ActorIndex actor = actors.create(ActorParamaters{
@@ -95,8 +95,8 @@ void BanditsArriveDramaArc::callback()
 		{
 			scheduleDepart();
 			m_isActive = false;
-			m_entranceBlock = BLOCK_INDEX_MAX;
-			m_leader = ACTOR_INDEX_MAX;
+			m_entranceBlock = BlockIndex::null();
+			m_leader.clear();
 		}
 	}
 	else
@@ -105,7 +105,7 @@ void BanditsArriveDramaArc::callback()
 		static const Shape& shape = Shape::byName("oneByOneFull");
 		static const MoveType moveType = MoveType::byName("two legs and swim in water");
 		m_entranceBlock = getEntranceToArea(*m_area, shape, moveType);
-		if(m_entranceBlock == BLOCK_INDEX_MAX)
+		if(m_entranceBlock.empty())
 			scheduleArrive();
 		else
 		{

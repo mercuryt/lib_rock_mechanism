@@ -37,7 +37,7 @@ public:
 class EatObjective final : public Objective
 {
 	HasScheduledEvent<EatEvent> m_eatEvent;
-	BlockIndex m_destination = BLOCK_INDEX_MAX;
+	BlockIndex m_destination;
 	bool m_noFoodFound = false;
 	bool m_tryToHunt = false;
 public:

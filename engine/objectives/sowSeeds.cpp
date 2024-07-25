@@ -47,7 +47,7 @@ SowSeedsObjective::SowSeedsObjective(Area& area) :
 SowSeedsObjective::SowSeedsObjective(const Json& data, Area& area, ActorIndex actor) : 
 	Objective(data), 
 	m_event(area.m_eventSchedule), 
-	m_block(data.contains("block") ? data["block"].get<BlockIndex>() : BLOCK_INDEX_MAX)
+	m_block(data.contains("block") ? data["block"].get<BlockIndex>() : BlockIndex::null())
 {
 	if(data.contains("eventStart"))
 		m_event.schedule(Config::sowSeedsStepsDuration, area, *this, actor, data["eventStart"].get<Step>());
@@ -55,7 +55,7 @@ SowSeedsObjective::SowSeedsObjective(const Json& data, Area& area, ActorIndex ac
 Json SowSeedsObjective::toJson() const
 {
 	Json data = Objective::toJson();
-	if(m_block == BLOCK_INDEX_MAX)
+	if(m_block.empty())
 		data["block"] = m_block;
 	if(m_event.exists())
 		data["eventStart"] = m_event.getStartStep();
@@ -76,7 +76,7 @@ void SowSeedsObjective::execute(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	Blocks& blocks = area.getBlocks();
-	if(m_block != BLOCK_INDEX_MAX)
+	if(m_block.exists())
 	{
 		if(actors.isAdjacentToLocation(actor, m_block))
 		{
@@ -97,7 +97,7 @@ void SowSeedsObjective::execute(Area& area, ActorIndex actor)
 		if(actors.allOccupiedBlocksAreReservable(actor, actors.getFactionId(actor)))
 		{
 			BlockIndex block = getBlockToSowAt(area, actors.getLocation(actor), actors.getFacing(actor), actor);
-			if(block != BLOCK_INDEX_MAX)
+			if(block.exists())
 			{
 				select(area, block, actor);
 				bool result = actors.move_tryToReserveOccupied(actor);
@@ -118,7 +118,7 @@ void SowSeedsObjective::cancel(Area& area, ActorIndex actor)
 	m_event.maybeUnschedule();
 	auto& blocks = area.getBlocks();
 	FactionId faction = actors.getFactionId(actor);
-	if(m_block != BLOCK_INDEX_MAX && blocks.farm_contains(m_block, faction))
+	if(m_block.exists() && blocks.farm_contains(m_block, faction))
 	{
 		FarmField* field = blocks.farm_get(m_block, faction);
 		if(field == nullptr)
@@ -134,21 +134,21 @@ void SowSeedsObjective::select(Area& area, BlockIndex block, ActorIndex actor)
 	Actors& actors = area.getActors();
 	assert(!blocks.plant_exists(block));
 	assert(blocks.farm_contains(block, actors.getFactionId(actor)));
-	assert(m_block == BLOCK_INDEX_MAX);
+	assert(m_block.empty());
 	m_block = block;
 	area.m_hasFarmFields.at(actors.getFactionId(actor)).removeSowSeedsDesignation(block);
 }
 void SowSeedsObjective::begin(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
-	assert(m_block != BLOCK_INDEX_MAX);
+	assert(m_block.exists());
 	assert(actors.isAdjacentToLocation(actor, m_block));
 	m_event.schedule(Config::sowSeedsStepsDuration, area, *this, actor);
 }
 void SowSeedsObjective::reset(Area& area, ActorIndex actor)
 {
 	cancel(area, actor);
-	m_block = BLOCK_INDEX_MAX;
+	m_block.clear();
 }
 bool SowSeedsObjective::canSowAt(Area& area, BlockIndex block, ActorIndex actor) const
 {

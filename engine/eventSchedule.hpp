@@ -3,6 +3,7 @@
 #include "types.h"
 #include "util.h"
 #include "index.h"
+#include "dataVector.h"
 class Simulation;
 template<class EventType>
 class HasScheduledEvent
@@ -109,7 +110,7 @@ class HasScheduledEvents
 {
 protected:
 	EventSchedule& m_schedule;
-	std::vector<EventType*> m_events;
+	DataVector<EventType*, HasShapeIndex> m_events;
 public:
 	HasScheduledEvents(EventSchedule& s) : m_schedule(s) { assert(&s); }
 	void load(Simulation& simulation, const Json& data)
@@ -129,7 +130,7 @@ public:
 	template<typename ...Args>
 	void schedule(HasShapeIndex index, Args&& ...args)
 	{
-		assert(m_events.size() > index);
+		assert(m_events.size() > index.get());
 		assert(m_events.at(index) == nullptr);
 		std::unique_ptr<ScheduledEvent> event = std::make_unique<EventType>(args...);
 		m_events.at(index) = static_cast<EventType*>(event.get());

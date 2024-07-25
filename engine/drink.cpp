@@ -116,7 +116,7 @@ void DrinkEvent::execute(Simulation&, Area* area)
 	Actors& actors = area->getActors();
 	uint32_t volume = actors.drink_getVolumeOfFluidRequested(actor);
 	BlockIndex drinkBlock = m_drinkObjective.getAdjacentBlockToDrinkAt(*area, actors.getLocation(actor), actors.getFacing(actor), actor);
-	if(drinkBlock == BLOCK_INDEX_MAX)
+	if(drinkBlock.empty())
 	{
 		// There isn't anything to drink here anymore, try again.
 		m_drinkObjective.makePathRequest(*area, actor);
@@ -124,11 +124,11 @@ void DrinkEvent::execute(Simulation&, Area* area)
 	}
 	ItemIndex item = m_drinkObjective.getItemToDrinkFromAt(*area, drinkBlock, actor);
 	Items& items = area->getItems();
-	if(item != ITEM_INDEX_MAX)
+	if(item.exists())
 	{
 		assert(items.cargo_getFluidType(item) == actors.drink_getFluidType(actor));
 		volume = std::min(volume, items.cargo_getFluidVolume(item));
-		items.cargo_removeFluid(actor, volume);
+		items.cargo_removeFluid(item, volume);
 	}
 	else
 	{
