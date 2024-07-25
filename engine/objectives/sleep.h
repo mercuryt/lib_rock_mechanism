@@ -9,9 +9,9 @@ class SleepObjective;
 class SleepPathRequest final : public PathRequest
 {
 	SleepObjective& m_sleepObjective;
-	BlockIndex m_indoorCandidate = BLOCK_INDEX_MAX;
-	BlockIndex m_outdoorCandidate = BLOCK_INDEX_MAX;
-	BlockIndex m_maxDesireCandidate = BLOCK_INDEX_MAX;
+	BlockIndex m_indoorCandidate;
+	BlockIndex m_outdoorCandidate;
+	BlockIndex m_maxDesireCandidate;
 	bool m_sleepAtCurrentLocation = false;
 public:
 	SleepPathRequest(Area& area, SleepObjective& so);

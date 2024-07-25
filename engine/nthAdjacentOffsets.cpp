@@ -34,7 +34,7 @@ std::vector<BlockIndex> getNthAdjacentBlocks(Area& area, BlockIndex center, uint
 	for(XYZ& offset : getNthAdjacentOffsets(i))
 	{
 		BlockIndex block = area.getBlocks().offset(center, offset.x, offset.y, offset.z);
-		if(block != BLOCK_INDEX_MAX)
+		if(block.exists())
 			output.push_back(block);
 	}
 	return output;

@@ -25,25 +25,25 @@ Json ExterminateObjective::toJson() const
 }
 void ExterminateObjective::execute(Area& area, ActorIndex actor)
 {
-	ActorIndex closest = ACTOR_INDEX_MAX;
+	ActorIndex closest;
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
 	BlockIndex thisActorLocation = actors.getLocation(actor);
-	BlockIndex closestActorLocation = BLOCK_INDEX_MAX;
+	BlockIndex closestActorLocation;
 	for(ActorIndex actor : actors.vision_getCanSee(actor))
 	{
 		BlockIndex location = actors.getLocation(actor);
 		if(
 			actors.hasFaction(actor) &&
 			!actors.isAlly(actor, actor) &&
-			(!closest || blocks.taxiDistance(closestActorLocation, thisActorLocation) < blocks.taxiDistance(location, thisActorLocation))
+			(closest.empty() || blocks.taxiDistance(closestActorLocation, thisActorLocation) < blocks.taxiDistance(location, thisActorLocation))
 		)
 		{
 			closest = actor;
 			closestActorLocation = location;
 		}
 	}
-	if(closest)
+	if(closest.exists())
 		actors.combat_setTarget(actor, closest);
 	else
 	{

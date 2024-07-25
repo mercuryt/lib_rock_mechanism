@@ -46,13 +46,13 @@ void Actors::move_clearPath(ActorIndex index)
 {
 	m_path.at(index).clear();
 	m_pathIter.at(index) = m_path.at(index).end();
-	m_destination.at(index) = BLOCK_INDEX_MAX;
+	m_destination.at(index).clear();
 	move_clearAllEventsAndTasks(index);
 }
 void Actors::move_callback(ActorIndex index)
 {
 	assert(!m_path.at(index).empty());
-	assert(m_destination.at(index) != BLOCK_INDEX_MAX);
+	assert(m_destination.at(index).exists());
 	assert(m_pathIter.at(index) >= m_path.at(index).begin());
 	assert(m_pathIter.at(index) != m_path.at(index).end());
 	BlockIndex block = *m_pathIter.at(index);
@@ -74,7 +74,7 @@ void Actors::move_callback(ActorIndex index)
 		setLocation(index, block);
 		if(block == m_destination.at(index))
 		{
-			m_destination.at(index) = BLOCK_INDEX_MAX;
+			m_destination.at(index).clear();
 			m_path.clear();
 			m_hasObjectives.at(index)->subobjectiveComplete(m_area);
 		}

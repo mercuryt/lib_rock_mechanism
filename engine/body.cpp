@@ -397,7 +397,7 @@ std::vector<Attack> Body::getMeleeAttacks() const
 	std::vector<Attack> output;
 	for(const BodyPart& bodyPart : m_bodyParts)
 		for(auto& [attackType, materialType] : bodyPart.bodyPartType.attackTypesAndMaterials)
-			output.emplace_back(&attackType, materialType, ITEM_INDEX_MAX);
+			output.emplace_back(&attackType, materialType, ItemIndex::null());
 	return output;
 }
 Volume Body::getVolume(Area& area) const

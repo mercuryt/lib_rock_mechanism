@@ -8,7 +8,7 @@ SleepPathRequest::SleepPathRequest(Area& area, SleepObjective& so) : m_sleepObje
 {
 	Actors& actors = area.getActors();
 	ActorIndex actor = getActor();
-	assert(actors.sleep_getSpot(actor) == BLOCK_INDEX_MAX);
+	assert(actors.sleep_getSpot(actor).empty());
 	uint32_t desireToSleepAtCurrentLocation = m_sleepObjective.desireToSleepAt(area, actors.getLocation(actor), actor);
 	if(desireToSleepAtCurrentLocation == 1)
 		m_outdoorCandidate = area.getActors().getLocation(actor);
@@ -16,7 +16,7 @@ SleepPathRequest::SleepPathRequest(Area& area, SleepObjective& so) : m_sleepObje
 		m_indoorCandidate = area.getActors().getLocation(actor);
 	else if(desireToSleepAtCurrentLocation == 3)
 		m_maxDesireCandidate = area.getActors().getLocation(actor);
-	if(m_maxDesireCandidate == BLOCK_INDEX_MAX)
+	if(m_maxDesireCandidate.empty())
 	{
 		std::function<bool(BlockIndex)> condition = [this, &area, actor](BlockIndex block)
 		{
@@ -26,14 +26,14 @@ SleepPathRequest::SleepPathRequest(Area& area, SleepObjective& so) : m_sleepObje
 				m_maxDesireCandidate = block;
 				return true;
 			}
-			else if(m_indoorCandidate == BLOCK_INDEX_MAX && desire == 2)
+			else if(m_indoorCandidate.empty() && desire == 2)
 				m_indoorCandidate = block;	
-			else if(m_outdoorCandidate == BLOCK_INDEX_MAX && desire == 1)
+			else if(m_outdoorCandidate.empty() && desire == 1)
 				m_outdoorCandidate = block;	
 			return false;
 		};
 		bool unreserved = actors.getFaction(actor) != nullptr;
-		createGoAdjacentToCondition(area, actor, condition, m_sleepObjective.m_detour, unreserved, BLOCK_DISTANCE_MAX, BLOCK_INDEX_MAX);
+		createGoAdjacentToCondition(area, actor, condition, m_sleepObjective.m_detour, unreserved, BLOCK_DISTANCE_MAX, BlockIndex::null());
 	}
 }
 void SleepPathRequest::callback(Area& area, FindPathResult&)
@@ -41,11 +41,11 @@ void SleepPathRequest::callback(Area& area, FindPathResult&)
 	ActorIndex actor = getActor();
 	Actors& actors = area.getActors();
 	// If the current location is the max desired then set sleep at current to true.
-	if(m_maxDesireCandidate != BLOCK_INDEX_MAX)
+	if(m_maxDesireCandidate.exists())
 		m_sleepObjective.selectLocation(area, m_maxDesireCandidate, actor);
-	else if(m_indoorCandidate != BLOCK_INDEX_MAX)
+	else if(m_indoorCandidate.exists())
 		m_sleepObjective.selectLocation(area, m_indoorCandidate, actor);
-	else if(m_outdoorCandidate != BLOCK_INDEX_MAX)
+	else if(m_outdoorCandidate.exists())
 		m_sleepObjective.selectLocation(area, m_outdoorCandidate, actor);
 	else if(m_sleepObjective.m_noWhereToSleepFound)
 		// Cannot leave area
@@ -74,7 +74,7 @@ void SleepObjective::execute(Area& area, ActorIndex actor)
 	Blocks& blocks = area.getBlocks();
 	assert(actors.sleep_isAwake(actor));
 	BlockIndex sleepingSpot = actors.sleep_getSpot(actor);
-	if(sleepingSpot == BLOCK_INDEX_MAX)
+	if(sleepingSpot.empty())
 	{
 		if(m_noWhereToSleepFound)
 		{
@@ -93,7 +93,7 @@ void SleepObjective::execute(Area& area, ActorIndex actor)
 		if(desireToSleepAt(area, actors.getLocation(actor), actor) == 0)
 		{
 			// Can not sleep here any more, look for another spot.
-			actors.sleep_setSpot(actor, BLOCK_INDEX_MAX);
+			actors.sleep_setSpot(actor, BlockIndex::null());
 			execute(area, actor);
 		}
 		else
@@ -106,7 +106,7 @@ void SleepObjective::execute(Area& area, ActorIndex actor)
 		else
 		{
 			// Location no longer can be entered.
-			actors.sleep_setSpot(actor, BLOCK_INDEX_MAX);
+			actors.sleep_setSpot(actor, BlockIndex::null());
 			execute(area, actor);
 		}
 }
@@ -147,9 +147,9 @@ void SleepObjective::makePathRequest(Area& area, ActorIndex actor)
 bool SleepObjective::onCanNotRepath(Area& area, ActorIndex actor)
 {
 	BlockIndex sleepSpot = area.getActors().sleep_getSpot(actor);
-	if(sleepSpot == BLOCK_INDEX_MAX)
+	if(sleepSpot.empty())
 		return false;
-	sleepSpot = BLOCK_INDEX_MAX;
+	sleepSpot.clear();
 	execute(area, actor);
 	return true;
 }

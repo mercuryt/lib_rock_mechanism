@@ -532,6 +532,15 @@ void Actors::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 	for(BlockIndex block : m_blocks.at(newIndex()))
 		blocks.actor_updateIndex(block, oldIndex(), newIndex());
 }
+ActorIndices Actors::getAll() const
+{
+	// TODO: Replace with std::iota?
+	ActorIndices output;
+	output.reserve(m_shape.size());
+	for(auto i = ActorIndex::create(0); i < size(); ++i)
+		output.add(i);
+	return output;
+}
 void Actors::onChangeAmbiantSurfaceTemperature()
 {
 	for(auto index : m_onSurface)
@@ -581,7 +590,7 @@ ActorIndex Actors::create(ActorParamaters params)
 	assert(!m_moveEvent.exists(index));
 	assert(m_pathRequest.at(index()) == nullptr);
 	assert(m_path.at(index()).empty());
-	m_destination.at(index()) = BLOCK_INDEX_MAX;
+	m_destination.at(index()).clear();
 	m_speedIndividual.at(index()) = 0;
 	m_speedActual.at(index()) = 0;
 	m_moveRetries.at(index()) = 0;
@@ -590,7 +599,7 @@ ActorIndex Actors::create(ActorParamaters params)
 	scheduleNeeds(index);
 	if(isSentient(index))
 		params.generateEquipment(m_area, index);
-	if(params.location != BLOCK_INDEX_MAX)
+	if(params.location.exists())
 		setLocationAndFacing(index, params.location, params.facing);
 	return index;
 }
@@ -610,13 +619,13 @@ void Actors::scheduleNeeds(ActorIndex index)
 }
 void Actors::setLocation(ActorIndex index, BlockIndex block)
 {
-	assert(m_location.at(index()) != BLOCK_INDEX_MAX);
+	assert(m_location.at(index()).exists());
 	Facing facing = m_area.getBlocks().facingToSetWhenEnteringFrom(block, m_location.at(index()));
 	setLocationAndFacing(index, block, facing);
 }
 void Actors::setLocationAndFacing(ActorIndex index, BlockIndex block, Facing facing)
 {
-	if(m_location.at(index()) != BLOCK_INDEX_MAX)
+	if(m_location.at(index()).exists())
 		exit(index);
 	Blocks& blocks = m_area.getBlocks();
 	for(auto [x, y, z, v] : m_shape.at(index())->makeOccupiedPositionsWithFacing(facing))
@@ -627,7 +636,7 @@ void Actors::setLocationAndFacing(ActorIndex index, BlockIndex block, Facing fac
 }
 void Actors::exit(ActorIndex index)
 {
-	assert(m_location.at(index()) != BLOCK_INDEX_MAX);
+	assert(m_location.at(index()).exists());
 	BlockIndex location = m_location.at(index());
 	auto& blocks = m_area.getBlocks();
 	for(auto [x, y, z, v] : m_shape.at(index())->makeOccupiedPositionsWithFacing(m_facing.at(index())))
@@ -635,7 +644,7 @@ void Actors::exit(ActorIndex index)
 		BlockIndex occupied = blocks.offset(location, x, y, z);
 		blocks.actor_erase(occupied, index);
 	}
-	m_location.at(index()) = BLOCK_INDEX_MAX;
+	m_location.at(index()).clear();
 }
 void Actors::resetNeeds(ActorIndex index)
 {
@@ -661,7 +670,7 @@ void Actors::die(ActorIndex index, CauseOfDeath causeOfDeath)
 	m_mustSleep.at(index())->onDeath();
 	if(m_project.at(index()) != nullptr)
 		m_project.at(index())->removeWorker(index);
-	if(m_location.at(index()) != BLOCK_INDEX_MAX)
+	if(m_location.at(index()).exists())
 		setStatic(index, true);
 	m_area.m_visionFacadeBuckets.remove(index);
 }

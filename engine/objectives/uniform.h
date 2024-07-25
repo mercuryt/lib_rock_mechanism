@@ -31,7 +31,7 @@ public:
 	// non virtual.
 	void equip(Area& area, ItemIndex item, ActorIndex actor);
 	void select(Area& area, ItemIndex item);
-	bool blockContainsItem(Area& area, BlockIndex block) const { return const_cast<UniformObjective*>(this)->getItemAtBlock(area, block) != ITEM_INDEX_MAX; }
+	bool blockContainsItem(Area& area, BlockIndex block) const { return const_cast<UniformObjective*>(this)->getItemAtBlock(area, block).exists(); }
 	ItemIndex getItemAtBlock(Area& area, BlockIndex block);
 	// For testing.
 	[[nodiscard]] ItemIndex getItem() { return m_item.getIndex(); }

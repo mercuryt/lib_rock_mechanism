@@ -16,7 +16,7 @@
 #include "fluidGroups/drainQueue.h"
 #include "fluidGroups/fillQueue.h"
 #include "types.h"
-#include "blockIndices.h"
+#include "index.h"
 
 class Area;
 struct FluidType;

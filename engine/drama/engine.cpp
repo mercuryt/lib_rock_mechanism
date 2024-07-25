@@ -97,7 +97,7 @@ BlockIndex DramaArc::getEntranceToArea(const Shape& shape, const MoveType& moveT
 	for(BlockIndex block : blocks.getAll())
 		if(blocks.shape_moveTypeCanEnter(block, moveType) && blocks.isEdge(block) && !blocks.isUnderground(block))
 			candidates.add(block);
-	BlockIndex candidate = BLOCK_INDEX_MAX;
+	BlockIndex candidate;
 	static uint16_t minimumConnectedCount = 200;
 	do {
 		if(candidate)
@@ -107,7 +107,7 @@ BlockIndex DramaArc::getEntranceToArea(const Shape& shape, const MoveType& moveT
 			candidates.remove(*iterator);
 		}
 		if(candidates.empty())
-			return BLOCK_INDEX_MAX;
+			return BlockIndex::null();
 		candidate = candidates.random(m_area->m_simulation);
 	}
 	while (!blockIsConnectedToAtLeast(candidate, shape, moveType, minimumConnectedCount));
@@ -149,7 +149,7 @@ bool DramaArc::blockIsConnectedToAtLeast(BlockIndex origin, [[maybe_unused]] con
 				return true;
 			for(BlockIndex adjacent : blocks.getDirectlyAdjacent(candidate))
 				//TODO: check if shape can fit into block with any facing.
-				if(adjacent != BLOCK_INDEX_MAX && !blocks.solid_is(adjacent) && blocks.shape_moveTypeCanEnter(adjacent, moveType))
+				if(adjacent.exists() && !blocks.solid_is(adjacent) && blocks.shape_moveTypeCanEnter(adjacent, moveType))
 					open.push(adjacent);
 		}
 	}

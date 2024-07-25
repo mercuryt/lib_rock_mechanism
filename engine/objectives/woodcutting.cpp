@@ -15,7 +15,7 @@ WoodCuttingPathRequest::WoodCuttingPathRequest(Area& area, WoodCuttingObjective&
 	};
 	DistanceInBlocks maxRange = Config::maxRangeToSearchForWoodCuttingDesignations;
 	bool unreserved = true;
-	createGoAdjacentToCondition(area, getActor(), predicate, m_woodCuttingObjective.m_detour, unreserved, maxRange, BLOCK_INDEX_MAX);
+	createGoAdjacentToCondition(area, getActor(), predicate, m_woodCuttingObjective.m_detour, unreserved, maxRange, BlockIndex::null());
 }
 void WoodCuttingPathRequest::callback(Area& area, FindPathResult& result)
 {
@@ -81,7 +81,7 @@ void WoodCuttingObjective::execute(Area& area, ActorIndex actor)
 		[[maybe_unused]] BlockIndex adjacent = actors.getBlockWhichIsAdjacentWithPredicate(actor, predicate);
 		if(project != nullptr)
 		{
-			assert(adjacent != BLOCK_INDEX_MAX);
+			assert(adjacent.exists());
 			joinProject(*project, actor);
 			return;
 		}

@@ -20,7 +20,7 @@ DrinkPathRequest::DrinkPathRequest(Area& area, DrinkObjective& drob, ActorIndex 
 		reserve = true;
 		unreserved = true;
 	}
-	createGoAdjacentToCondition(area, getActor(), predicate, drob.m_detour, unreserved, BLOCK_DISTANCE_MAX, BLOCK_INDEX_MAX, reserve);
+	createGoAdjacentToCondition(area, getActor(), predicate, drob.m_detour, unreserved, BLOCK_DISTANCE_MAX, BlockIndex::null(), reserve);
 }
 void DrinkPathRequest::callback(Area& area, FindPathResult& result)
 {
@@ -116,7 +116,7 @@ void DrinkObjective::makePathRequest(Area& area, ActorIndex actor)
 }
 bool DrinkObjective::canDrinkAt(Area& area, BlockIndex block, Facing facing, ActorIndex actor) const
 {
-	return getAdjacentBlockToDrinkAt(area, block, facing, actor) != BLOCK_INDEX_MAX;
+	return getAdjacentBlockToDrinkAt(area, block, facing, actor).exists();
 }
 BlockIndex DrinkObjective::getAdjacentBlockToDrinkAt(Area& area, BlockIndex location, Facing facing, ActorIndex actor) const
 {
@@ -125,7 +125,7 @@ BlockIndex DrinkObjective::getAdjacentBlockToDrinkAt(Area& area, BlockIndex loca
 }
 bool DrinkObjective::canDrinkItemAt(Area& area, BlockIndex block, ActorIndex actor) const
 {
-	return getItemToDrinkFromAt(area, block, actor) != ITEM_INDEX_MAX;
+	return getItemToDrinkFromAt(area, block, actor) != ItemIndex::null();
 }
 ItemIndex DrinkObjective::getItemToDrinkFromAt(Area& area, BlockIndex block, ActorIndex actor) const
 {
@@ -133,7 +133,7 @@ ItemIndex DrinkObjective::getItemToDrinkFromAt(Area& area, BlockIndex block, Act
 	for(ItemIndex item : area.getBlocks().item_getAll(block))
 		if(items.cargo_containsAnyFluid(item) && items.cargo_getFluidType(item) == area.getActors().drink_getFluidType(actor))
 			return item;
-	return ITEM_INDEX_MAX;
+	return ItemIndex::null();
 }
 bool DrinkObjective::containsSomethingDrinkable(Area& area, BlockIndex block, ActorIndex actor) const
 {

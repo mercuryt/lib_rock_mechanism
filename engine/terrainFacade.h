@@ -8,6 +8,7 @@
 
 #include "designations.h"
 #include "types.h"
+#include "callbackTypes.h"
 #include "../lib/dynamic_bitset.hpp"
 
 #include <pthread.h>
@@ -25,31 +26,30 @@ constexpr int maxAdjacent = 26;
 
 struct FindPathResult
 {
-	std::vector<BlockIndex> path;
+	BlockIndices path;
 	BlockIndex blockThatPassedPredicate;
 	bool useCurrentPosition;
 };
 class TerrainFacade final
 {
 	// Without Huristic.
-	std::vector<BlockIndex> m_pathRequestStartPositionNoHuristic;
-	std::vector<AccessCondition> m_pathRequestAccessConditionsNoHuristic;
-	std::vector<DestinationCondition> m_pathRequestDestinationConditionsNoHuristic;
+	DataVector<BlockIndex, PathRequestIndex> m_pathRequestStartPositionNoHuristic;
+	DataVector<AccessCondition, PathRequestIndex> m_pathRequestAccessConditionsNoHuristic;
+	DataVector<DestinationCondition, PathRequestIndex> m_pathRequestDestinationConditionsNoHuristic;
 	// Result is stored instead of being immideatly dispatched to PathRequest to reduce cache thrashing.
 	// Stored as vector of structs rather then multiple vectors of primitives to prevent cache line false shareing.
 	// 	sizeof(FindPathResult) == 32, so 2 can fit on a cache line.
 	// 	So if Config::pathRequestsPerThread is a power of 2 there will never be a shared cache line being written to.
-	std::vector<FindPathResult> m_pathRequestResultsNoHuristic;
+	DataVector<FindPathResult, PathRequestIndex> m_pathRequestResultsNoHuristic;
 	std::vector<PathRequest*> m_pathRequestNoHuristic;
 	// With Huristic.
-	std::vector<BlockIndex> m_pathRequestStartPositionWithHuristic;
-	std::vector<AccessCondition> m_pathRequestAccessConditionsWithHuristic;
-	std::vector<DestinationCondition> m_pathRequestDestinationConditionsWithHuristic;
-	std::vector<BlockIndex> m_pathRequestHuristic;
-	std::vector<FindPathResult> m_pathRequestResultsWithHuristic;
-	std::vector<PathRequest*> m_pathRequestWithHuristic;
-
-	sul::dynamic_bitset<> m_enterable;
+	DataVector<BlockIndex, PathRequestIndex> m_pathRequestStartPositionWithHuristic;
+	DataVector<AccessCondition, PathRequestIndex> m_pathRequestAccessConditionsWithHuristic;
+	DataVector<DestinationCondition, PathRequestIndex> m_pathRequestDestinationConditionsWithHuristic;
+	DataVector<BlockIndex, PathRequestIndex> m_pathRequestHuristic;
+	DataVector<FindPathResult, PathRequestIndex> m_pathRequestResultsWithHuristic;
+	DataVector<PathRequest*, PathRequestIndex> m_pathRequestWithHuristic;
+	DataBitSet<PathRequestIndex> m_enterable;
 	Area& m_area;
 	const MoveType& m_moveType;
 	// DestinationCondition could test against a set of destination indecies or load the actual block to do more complex checks.
@@ -61,8 +61,8 @@ class TerrainFacade final
 	[[nodiscard]] bool canEnterFrom(BlockIndex blockIndex, uint8_t adjacentIndex) const;
 	[[nodiscard]] FindPathResult findPathToForSingleBlockShape(BlockIndex start, const Shape& shape, BlockIndex target, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathToForMultiBlockShape(BlockIndex start, const Shape& shape, Facing startFacing, BlockIndex target, bool detour = false) const;
-	[[nodiscard]] FindPathResult findPathToAnyOfForSingleBlockShape(BlockIndex start, const Shape& shape, std::vector<BlockIndex> indecies, BlockIndex huristincDestination, bool detour = false) const;
-	[[nodiscard]] FindPathResult findPathToAnyOfForMultiBlockShape(BlockIndex start, const Shape& shape, Facing startFacing, std::vector<BlockIndex> indecies, BlockIndex huristincDestination, bool detour = false) const;
+	[[nodiscard]] FindPathResult findPathToAnyOfForSingleBlockShape(BlockIndex start, const Shape& shape, BlockIndices indecies, BlockIndex huristincDestination, bool detour = false) const;
+	[[nodiscard]] FindPathResult findPathToAnyOfForMultiBlockShape(BlockIndex start, const Shape& shape, Facing startFacing, BlockIndices indecies, BlockIndex huristincDestination, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathToConditionForSingleBlockShape(BlockIndex start, const Shape& shape, const DestinationCondition destinationCondition, BlockIndex huristincDestination, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathToConditionForMultiBlockShape(BlockIndex start, const Shape& shape, Facing startFacing, const DestinationCondition destinationCondition, BlockIndex huristincDestination, bool detour = false) const;
 	bool getValueForBit(BlockIndex from, BlockIndex to) const;
@@ -84,17 +84,17 @@ public:
 	void update(BlockIndex block);
 	void clearPathRequests();
 	[[nodiscard]] FindPathResult findPathTo(BlockIndex start, const Shape& shape, Facing startFacing, BlockIndex target, bool detour = false) const;
-	[[nodiscard]] FindPathResult findPathToAnyOf(BlockIndex start, const Shape& shape, Facing startFacing, std::vector<BlockIndex> indecies, BlockIndex huristicDestination = BLOCK_INDEX_MAX, bool detour = false) const;
-	[[nodiscard]] FindPathResult findPathToCondition(BlockIndex start, const Shape& shape, Facing startFacing, const DestinationCondition destinationCondition, BlockIndex huristicDestination = BLOCK_INDEX_MAX, bool detour = false) const;
+	[[nodiscard]] FindPathResult findPathToAnyOf(BlockIndex start, const Shape& shape, Facing startFacing, BlockIndices indecies, BlockIndex huristicDestination = BlockIndex::null(), bool detour = false) const;
+	[[nodiscard]] FindPathResult findPathToCondition(BlockIndex start, const Shape& shape, Facing startFacing, const DestinationCondition destinationCondition, BlockIndex huristicDestination = BlockIndex::null(), bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathAdjacentTo(BlockIndex start, const Shape& shape, Facing startFacing, BlockIndex target, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathAdjacentToPolymorphic(BlockIndex start, const Shape& shape, Facing startFacing, ActorOrItemIndex actorOrItem, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathAdjacentToAndUnreserved(BlockIndex start, const Shape& shape, Facing startFacing, BlockIndex target, const FactionId faction, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathAdjacentToAndUnreservedPolymorphic(BlockIndex start, const Shape& shape, Facing startFacing, ActorOrItemIndex actorOrItem, const FactionId faction, bool detour = false) const;
-	[[nodiscard]] FindPathResult findPathAdjacentToCondition(BlockIndex start, const Shape& shape, Facing startFacing, const DestinationCondition destinationCondition, BlockIndex huristicDestination = BLOCK_INDEX_MAX, bool detour = false) const;
-	[[nodiscard]] FindPathResult findPathAdjacentToConditionAndUnreserved(BlockIndex start, const Shape& shape, Facing startFacing, const DestinationCondition destinationCondition, const FactionId faction, BlockIndex huristicDestination = BLOCK_INDEX_MAX, bool detour = false) const;
-	[[nodiscard]] PathRequestIndex getPathRequestCount() const { return m_pathRequestAccessConditionsNoHuristic.size() + m_pathRequestAccessConditionsWithHuristic.size(); }
+	[[nodiscard]] FindPathResult findPathAdjacentToCondition(BlockIndex start, const Shape& shape, Facing startFacing, const DestinationCondition destinationCondition, BlockIndex huristicDestination = BlockIndex::null(), bool detour = false) const;
+	[[nodiscard]] FindPathResult findPathAdjacentToConditionAndUnreserved(BlockIndex start, const Shape& shape, Facing startFacing, const DestinationCondition destinationCondition, const FactionId faction, BlockIndex huristicDestination = BlockIndex::null(), bool detour = false) const;
+	[[nodiscard]] size_t getPathRequestCount() const { return m_pathRequestAccessConditionsNoHuristic.size() + m_pathRequestAccessConditionsWithHuristic.size(); }
 	[[nodiscard]] AccessCondition makeAccessConditionForActor(ActorIndex actor, bool detour, DistanceInBlocks maxRange) const;
-	[[nodiscard]] AccessCondition makeAccessCondition(const Shape& shape, BlockIndex start, std::vector<BlockIndex> initalBlocks, bool detour, DistanceInBlocks maxRange) const;
+	[[nodiscard]] AccessCondition makeAccessCondition(const Shape& shape, BlockIndex start, BlockIndices initalBlocks, bool detour, DistanceInBlocks maxRange) const;
 };
 class AreaHasTerrainFacades
 {

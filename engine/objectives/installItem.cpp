@@ -16,7 +16,7 @@ InstallItemPathRequest::InstallItemPathRequest(Area& area, InstallItemObjective&
 		return area.m_hasInstallItemDesignations.at(faction).contains(block);
 	};
 	bool unreserved = false;
-	createGoAdjacentToCondition(area, actor, predicate, m_installItemObjective.m_detour, unreserved, BLOCK_DISTANCE_MAX, BLOCK_INDEX_MAX);
+	createGoAdjacentToCondition(area, actor, predicate, m_installItemObjective.m_detour, unreserved, BLOCK_DISTANCE_MAX, BlockIndex::null());
 }
 void InstallItemPathRequest::callback(Area& area, FindPathResult& result)
 {

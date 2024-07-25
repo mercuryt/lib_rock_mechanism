@@ -19,7 +19,7 @@ class MustEat final
 	ActorReference m_actor;
 	EatObjective* m_eatObjective = nullptr;
 public:
-	BlockIndex m_eatingLocation = BLOCK_INDEX_MAX;
+	BlockIndex m_eatingLocation;
 private:
 	Mass m_massFoodRequested = 0;
 public:

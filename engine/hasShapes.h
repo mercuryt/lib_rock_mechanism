@@ -55,7 +55,7 @@ public:
 	[[nodiscard]] size_t size() const { return m_shape.size(); }
 	[[nodiscard]] const Shape& getShape(HasShapeIndex index) const { return *m_shape.at(index); }
 	[[nodiscard]] BlockIndex getLocation(HasShapeIndex index) const { return m_location.at(index); }
-	[[nodiscard]] bool hasLocation(HasShapeIndex index) const { return getLocation(index) != BLOCK_INDEX_MAX; }
+	[[nodiscard]] bool hasLocation(HasShapeIndex index) const { return getLocation(index).exists(); }
 	[[nodiscard]] Facing getFacing(HasShapeIndex index) const { return m_facing.at(index); }
 	[[nodiscard]] const auto& getBlocks(HasShapeIndex index) const { return m_blocks.at(index); }
 	[[nodiscard]] FactionId getFactionId(HasShapeIndex index) { return m_faction.at(index); }
@@ -93,7 +93,6 @@ public:
 	[[nodiscard]] BlockIndex getBlockWhichIsOccupiedWithPredicate(HasShapeIndex index, std::function<bool(BlockIndex)>& predicate) const;
 	[[nodiscard]] ItemIndex getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(HasShapeIndex index, BlockIndex location, Facing facing, std::function<bool(const ItemIndex)>& predicate) const;
 	[[nodiscard]] ItemIndex getItemWhichIsAdjacentWithPredicate(HasShapeIndex index, std::function<bool(const ItemIndex)>& predicate) const;
-	[[nodiscard]] HasShapeIndices getAll() const;
 	[[nodiscard]] auto& getOnSurface() { return m_onSurface; }
 	[[nodiscard]] Area& getArea() { return m_area; }
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(HasShapes, m_onSurface, m_shape, m_location, m_facing, m_faction, m_blocks, m_static, m_underground);

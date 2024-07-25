@@ -10,7 +10,7 @@ class Area;
 
 class GoToObjective final : public Objective
 {
-	BlockIndex m_location = BLOCK_INDEX_MAX;
+	BlockIndex m_location;
 public:
 	GoToObjective(BlockIndex l) : Objective(Config::goToPriority), m_location(l) { }
 	GoToObjective(const Json& data, DeserializationMemo& deserializationMemo);

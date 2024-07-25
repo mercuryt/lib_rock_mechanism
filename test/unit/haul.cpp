@@ -161,7 +161,7 @@ TEST_CASE("haul")
 		simulation.fastForwardUntillActorHasNoDestination(area, dwarf2);
 		if(!actors.isAdjacentToItem(dwarf1, chunk1))
 			simulation.fastForwardUntillActorIsAdjacentToItem(area, dwarf1, chunk1);
-		if(actors.move_getDestination(dwarf1) != BLOCK_INDEX_MAX)
+		if(actors.move_getDestination(dwarf1).exis)
 			simulation.fastForwardUntillActorHasNoDestination(area, dwarf1);
 		REQUIRE(actors.isFollowing(dwarf2));
 		REQUIRE(actors.isLeading(dwarf1));
@@ -203,7 +203,7 @@ TEST_CASE("haul")
 		// Another step to find the paths.
 		simulation.doStep();
 		REQUIRE(actors.move_getPath(dwarf1).size() != 0);
-		REQUIRE(actors.move_getDestination(dwarf1) != BLOCK_INDEX_MAX);
+		REQUIRE(actors.move_getDestination(dwarf1).exis);
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, panniersLocation);
 		simulation.doStep();
 		REQUIRE(actors.canPickUp_isCarryingItem(dwarf1, panniers1));
@@ -251,7 +251,7 @@ TEST_CASE("haul")
 		simulation.doStep();
 		REQUIRE(actors.isLeadingActor(dwarf1, donkey1));
 		REQUIRE(actors.move_getPath(dwarf1).size() != 0);
-		REQUIRE(actors.move_getDestination(dwarf1) != BLOCK_INDEX_MAX);
+		REQUIRE(actors.move_getDestination(dwarf1).exis);
 		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, cartLocation);
 		REQUIRE(actors.isLeadingItem(donkey1, cart1));

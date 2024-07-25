@@ -54,10 +54,10 @@ TEST_CASE("craft")
 		CraftJob* job = pair.first;
 		BlockIndex location = pair.second;
 		REQUIRE(job != nullptr);
-		REQUIRE(location != BLOCK_INDEX_MAX);
+		REQUIRE(location.exists());
 		REQUIRE(location == sawingLocation);
 		REQUIRE(&job->craftJobType == &woodBucket);
-		REQUIRE(job->workPiece == ITEM_INDEX_MAX);
+		REQUIRE(job->workPiece.empty());
 		REQUIRE(job->minimumSkillLevel == 0);
 		REQUIRE(job->totalSkillPoints == 0);
 		REQUIRE(!job->craftJobType.stepTypes.empty());
@@ -123,7 +123,7 @@ TEST_CASE("craft")
 		REQUIRE(projectWorker.haulSubproject != nullptr);
 		// Find a path.
 		simulation.doStep();
-		REQUIRE(actors.move_getDestination(dwarf1) != BLOCK_INDEX_MAX);
+		REQUIRE(actors.move_getDestination(dwarf1).exists());
 		REQUIRE(items.isAdjacentToActor(board, actors.move_getDestination(dwarf1)));
 		SUBCASE("success")
 		{
@@ -132,7 +132,7 @@ TEST_CASE("craft")
 			simulation.fastForwardUntillPredicate(predicate, 11);
 			REQUIRE(actors.getLocation(dwarf1) == sawingLocation);
 			REQUIRE(job->getStep() == 2);
-			REQUIRE(job->workPiece != ITEM_INDEX_MAX);
+			REQUIRE(job->workPiece.exists());
 			ItemIndex bucket = job->workPiece;
 			REQUIRE(items.getLocation(bucket) == sawingLocation);
 			REQUIRE(area.getTotalCountOfItemTypeOnSurface(ItemType::byName("board")) == 9);
@@ -160,7 +160,7 @@ TEST_CASE("craft")
 			REQUIRE(projectWorker2.haulSubproject != nullptr);
 			// Find a path.
 			simulation.doStep();
-			REQUIRE(actors.move_getDestination(dwarf1) != BLOCK_INDEX_MAX);
+			REQUIRE(actors.move_getDestination(dwarf1).exists());
 			REQUIRE(items.isAdjacentToActor(rope, actors.move_getDestination(dwarf1)));
 			simulation.fastForwardUntillActorIsAdjacentToItem(area, dwarf1, rope);
 			predicate = [&]() { return items.getLocation(bucket) == chiselLocation && !items.isWorkPiece(bucket); };

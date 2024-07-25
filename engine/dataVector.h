@@ -18,7 +18,7 @@ public:
 	[[nodiscard]] const_iterator begin() const { return data.begin(); }
 	[[nodiscard]] const_iterator end() const { return data.end(); }
 	[[nodiscard]] bool empty() const { return data.empty(); }
-	void resize(int size) { data.resize(size); }
+	void resize(Index size) { data.resize(size.get()); }
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(DataVector, data);
 };
 

@@ -29,7 +29,7 @@ void MustSleep::scheduleTiredEvent(Area& area)
 }
 MustSleep::MustSleep(Area& area, const Json& data, ActorIndex a) :
 	m_sleepEvent(area.m_eventSchedule), m_tiredEvent(area.m_eventSchedule),
-	m_location(data.contains("location") ? data["location"].get<BlockIndex>() : BLOCK_INDEX_MAX),
+	m_location(data.contains("location") ? data["location"].get<BlockIndex>() : BlockIndex::null()),
 	m_needsSleep(data["needsSleep"].get<bool>()), m_isAwake(data["isAwake"].get<bool>())
 {
 	m_actor.setTarget(area.getActors().getReferenceTarget(a));
@@ -41,7 +41,7 @@ MustSleep::MustSleep(Area& area, const Json& data, ActorIndex a) :
 Json MustSleep::toJson() const
 {
 	Json data;
-	if(m_location != BLOCK_INDEX_MAX)
+	if(m_location.exists())
 		data["location"] = m_location;
 	data["needsSleep"] = m_needsSleep;
 	data["isAwake"] = m_isAwake;

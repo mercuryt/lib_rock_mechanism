@@ -6,7 +6,7 @@ class Actor;
 struct DeserializationMemo;
 class StationObjective final : public Objective
 {
-	BlockIndex m_location = BLOCK_INDEX_MAX;
+	BlockIndex m_location;
 public:
 	StationObjective(BlockIndex l) : Objective(Config::stationPriority), m_location(l) { }
 	StationObjective(const Json& data);

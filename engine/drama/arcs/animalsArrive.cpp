@@ -41,7 +41,7 @@ void AnimalsArriveDramaArc::callback()
 			Percent percentGrown = std::min(100, random.getInRange(15, 500));
 			constexpr DistanceInBlocks maxBlockDistance = 10;
 			BlockIndex location = findLocationOnEdgeForNear(m_species->shapeForPercentGrown(percentGrown), m_species->moveType, m_entranceBlock, maxBlockDistance, exclude);
-			if(location != BLOCK_INDEX_MAX)
+			if(location.exists())
 			{
 				exclude.add(location);
 				Actors& actors = m_area->getActors();
@@ -66,7 +66,7 @@ void AnimalsArriveDramaArc::callback()
 		{
 			scheduleDepart();
 			m_isActive = false;
-			m_entranceBlock = BLOCK_INDEX_MAX;
+			m_entranceBlock.clear();
 			m_species = nullptr;
 			m_hungerPercent = 0;
 			m_thristPercent = 0;
@@ -82,7 +82,7 @@ void AnimalsArriveDramaArc::callback()
 		m_quantity = quantity;
 		// Find entry point.
 		m_entranceBlock = getEntranceToArea(*m_area, species->shapeForPercentGrown(100), species->moveType);
-		if(m_entranceBlock == BLOCK_INDEX_MAX)
+		if(m_entranceBlock.empty())
 			scheduleArrive();
 		else
 		{

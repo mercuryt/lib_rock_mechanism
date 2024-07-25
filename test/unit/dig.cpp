@@ -98,7 +98,7 @@ TEST_CASE("dig")
 		REQUIRE(&actors.objective_getCurrent<DigObjective>(dwarf1) == &objective);
 		REQUIRE(objective.getProject() != nullptr);
 		REQUIRE(objective.getProject()->getLocation() == stairsLocation2);
-		REQUIRE(actors.move_getDestination(dwarf1) == BLOCK_INDEX_MAX);
+		REQUIRE(actors.move_getDestination(dwarf1).empty());
 		REQUIRE(!items.reservable_hasAnyReservations(pick));
 		// Make reservations and activate.
 		simulation.doStep();
@@ -138,7 +138,7 @@ TEST_CASE("dig")
 		REQUIRE(actors.project_get(dwarf1)->reservationsComplete());
 		// Path to location.
 		simulation.doStep();
-		REQUIRE(actors.move_getDestination(dwarf1) != BLOCK_INDEX_MAX);
+		REQUIRE(actors.move_getDestination(dwarf1).exists());
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, tunnelStart);
 		REQUIRE(actors.objective_getCurrentName(dwarf1) == "dig");
 		std::function<bool()> predicate = [&]() { return !blocks.solid_is(tunnelStart); };
@@ -151,7 +151,7 @@ TEST_CASE("dig")
 		Project* project = actors.objective_getCurrent<DigObjective>(dwarf1).getProject();
 		REQUIRE(project);
 		REQUIRE(project->getLocation() == tunnelSecond);
-		REQUIRE(!actors.move_getDestination(dwarf1) != BLOCK_INDEX_MAX);
+		REQUIRE(!actors.move_getDestination(dwarf1).exists());
 		REQUIRE(!blocks.isReserved(tunnelStart, faction));
 		// Make reservations and activate.
 		simulation.doStep();

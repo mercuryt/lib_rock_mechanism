@@ -24,7 +24,7 @@ public:
 class SowSeedsObjective final : public Objective
 {
 	HasScheduledEvent<SowSeedsEvent> m_event;
-	BlockIndex m_block = BLOCK_INDEX_MAX;
+	BlockIndex m_block;
 public:
 	SowSeedsObjective(Area& area);
 	SowSeedsObjective(const Json& data, Area& area, ActorIndex actor);

@@ -87,7 +87,7 @@ TEST_CASE("construct")
 		simulation.doStep();
 		// Find a path.
 		simulation.doStep();
-		REQUIRE(actors.move_getDestination(dwarf1) != BLOCK_INDEX_MAX);
+		REQUIRE(actors.move_getDestination(dwarf1) .exists());
 		std::function<bool()> predicate = [&]() { return blocks.solid_is(wallLocation); };
 		simulation.fastForwardUntillPredicate(predicate, 180);
 		REQUIRE(actors.objective_getCurrentName(dwarf1) != "construct");
@@ -182,7 +182,7 @@ TEST_CASE("construct")
 		REQUIRE(actors.project_get(dwarf2) == nullptr);
 		// Find a path for dwarf1, dwarf2 seeks project to join, and finds project1.
 		simulation.doStep();
-		REQUIRE(actors.move_getDestination(dwarf1) != BLOCK_INDEX_MAX);
+		REQUIRE(actors.move_getDestination(dwarf1) .exists());
 		REQUIRE(project1.hasCandidate(dwarf2));
 		REQUIRE(area.m_hasConstructionDesignations.contains(faction, wallLocation1));
 		std::function<bool()> predicate = [&]() { return blocks.solid_is(wallLocation1); };
@@ -234,7 +234,7 @@ TEST_CASE("construct")
 		REQUIRE(project.getProjectWorkerFor(dwarf1).haulSubproject != nullptr);
 		// Find a path.
 		simulation.doStep();
-		REQUIRE(actors.move_getDestination(dwarf1) != BLOCK_INDEX_MAX);
+		REQUIRE(actors.move_getDestination(dwarf1) .exists());
 		std::function<bool()> predicate = [&]() { return blocks.blockFeature_contains(stairsLocation, BlockFeatureType::stairs); };
 		simulation.fastForwardUntillPredicate(predicate, 180);
 		REQUIRE(blocks.blockFeature_contains(stairsLocation, BlockFeatureType::stairs));
@@ -490,7 +490,7 @@ TEST_CASE("construct")
 		REQUIRE(project.getProjectWorkerFor(dwarf1).haulSubproject);
 		// One step to path.
 		simulation.doStep();
-		REQUIRE(actors.move_getDestination(dwarf1) != BLOCK_INDEX_MAX);
+		REQUIRE(actors.move_getDestination(dwarf1) .exists());
 		auto predicate = [&]{ return blocks.solid_is(wallLocation); };
 		simulation.fastForwardUntillPredicate(predicate, 130);
 	}

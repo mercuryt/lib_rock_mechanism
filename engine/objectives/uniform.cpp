@@ -13,7 +13,7 @@ UniformPathRequest::UniformPathRequest(Area& area, UniformObjective& objective) 
 	};
 	bool unreserved = false;
 	ActorIndex actor = getActor();
-	createGoAdjacentToCondition(area, actor, predicate, m_objective.m_detour, unreserved, Config::maxRangeToSearchForUniformEquipment, BLOCK_INDEX_MAX);
+	createGoAdjacentToCondition(area, actor, predicate, m_objective.m_detour, unreserved, Config::maxRangeToSearchForUniformEquipment, BlockIndex::null());
 }
 void UniformPathRequest::callback(Area& area, FindPathResult& result)
 {
@@ -49,7 +49,7 @@ void UniformPathRequest::callback(Area& area, FindPathResult& result)
 		if(result.useCurrentPosition)
 		{
 			ItemIndex item = m_objective.getItemAtBlock(area, result.blockThatPassedPredicate);
-			if(!item)
+			if(item.empty())
 			{
 				m_objective.reset(area, actor);
 				m_objective.execute(area, actor);
@@ -84,7 +84,7 @@ Json UniformObjective::toJson() const
 void UniformObjective::execute(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
-	if(m_item.getIndex())
+	if(m_item.getIndex().exists())
 	{
 		if(!actors.isAdjacentToItem(actor, m_item.getIndex()))
 			actors.move_setDestinationAdjacentToItem(actor, m_item.getIndex());
@@ -103,7 +103,7 @@ void UniformObjective::execute(Area& area, ActorIndex actor)
 	{
 		std::function<bool(BlockIndex)> predicate = [&](BlockIndex block){ return blockContainsItem(area, block); };
 		BlockIndex adjacent = actors.getBlockWhichIsAdjacentWithPredicate(actor, predicate);
-		if(adjacent != BLOCK_INDEX_MAX)
+		if(adjacent.exists())
 			equip(area, getItemAtBlock(area, adjacent), actor);
 		else
 			actors.move_pathRequestRecord(actor, std::make_unique<UniformPathRequest>(area, *this));
@@ -127,7 +127,7 @@ ItemIndex UniformObjective::getItemAtBlock(Area& area, BlockIndex block)
 		for(auto& element : m_elementsCopy)
 			if(element.itemQuery.query(area, item))
 				return item;
-	return ITEM_INDEX_MAX;
+	return ItemIndex::null();
 }
 void UniformObjective::select(Area& area, ItemIndex item) { m_item.setTarget(area.getItems().getReferenceTarget(item)); }
 void UniformObjective::equip(Area& area, ItemIndex item, ActorIndex actor)

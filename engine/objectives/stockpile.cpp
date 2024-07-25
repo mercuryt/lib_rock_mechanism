@@ -9,7 +9,7 @@
 StockPilePathRequest::StockPilePathRequest(Area& area, StockPileObjective& spo) : m_objective(spo)
 {
 	assert(m_objective.m_project == nullptr);
-	assert(m_objective.m_destination == BLOCK_INDEX_MAX);
+	assert(m_objective.m_destination.empty());
 	ActorIndex actor = getActor();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
@@ -21,21 +21,21 @@ StockPilePathRequest::StockPilePathRequest(Area& area, StockPileObjective& spo) 
 		std::function<bool(BlockIndex)> blocksContainsItemCondition = [this, &hasStockPiles, &items, actor](BlockIndex block)
 		{
 			ItemIndex item = hasStockPiles.getHaulableItemForAt(actor, block);
-			if(item == ITEM_INDEX_MAX)
+			if(item.empty())
 				return false;
 			std::tuple<const ItemType*, const MaterialType*> tuple = {&items.getItemType(item), &items.getMaterialType(item)};
 			return std::ranges::find(m_objective.m_closedList, tuple) == m_objective.m_closedList.end();
 		};
 		bool unreserved = false;
 		DistanceInBlocks maxRange = Config::maxRangeToSearchForStockPileItems;
-		createGoAdjacentToCondition(area, actor, blocksContainsItemCondition, m_objective.m_detour, unreserved, maxRange, BLOCK_INDEX_MAX);
+		createGoAdjacentToCondition(area, actor, blocksContainsItemCondition, m_objective.m_detour, unreserved, maxRange, BlockIndex::null());
 	}
 	else
 	{
 		std::function<bool(BlockIndex)> condition = [this, &area, actor](BlockIndex block) { return m_objective.destinationCondition(area, block, m_objective.m_item.getIndex(), actor); };
 		bool unreserved = false;
 		DistanceInBlocks maxRange = Config::maxRangeToSearchForStockPiles;
-		createGoAdjacentToCondition(area, actor, condition, m_objective.m_detour, unreserved, maxRange, BLOCK_INDEX_MAX);
+		createGoAdjacentToCondition(area, actor, condition, m_objective.m_detour, unreserved, maxRange, BlockIndex::null());
 	}
 }
 void StockPilePathRequest::callback(Area& area, FindPathResult& result)
@@ -52,7 +52,7 @@ void StockPilePathRequest::callback(Area& area, FindPathResult& result)
 		else
 		{
 			ItemIndex item = hasStockPiles.getHaulableItemForAt(actor, result.blockThatPassedPredicate);
-			if(item != ITEM_INDEX_MAX)
+			if(item.exists())
 				m_objective.m_item.setTarget(area.getItems().getReferenceTarget(item));
 			m_objective.execute(area, actor);
 		}
@@ -150,7 +150,7 @@ bool StockPileObjective::destinationCondition(Area& area, BlockIndex block, cons
 	Blocks& blocks = area.getBlocks();
 	Items& items = area.getItems();
 	Actors& actors = area.getActors();
-	assert(m_destination == BLOCK_INDEX_MAX);
+	assert(m_destination.empty());
 	if(!blocks.shape_staticCanEnterCurrentlyWithAnyFacing(block, items.getShape(item), items.getBlocks(item)))
 		return false;
 	if(!blocks.item_empty(block))

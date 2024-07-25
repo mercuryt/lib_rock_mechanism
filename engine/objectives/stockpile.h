@@ -21,7 +21,7 @@ class StockPileObjective final : public Objective
 {
 	std::vector<std::tuple<const ItemType*, const MaterialType*>> m_closedList;
 	ItemReference m_item;
-	BlockIndex m_destination = BLOCK_INDEX_MAX;
+	BlockIndex m_destination;
 public:
 	StockPileProject* m_project = nullptr;
 	StockPileObjective();

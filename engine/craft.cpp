@@ -15,6 +15,7 @@
 #include <chrono>
 #include <cstdint>
 #include <memory>
+/*
 void CraftInputAction::execute()
 {
 	m_area.m_hasCraftingLocationsAndJobs.at(m_faction).addJob(m_craftJobType, m_materialType, m_quantity);
@@ -23,6 +24,7 @@ void CraftCancelInputAction::execute()
 {
 	m_area.m_hasCraftingLocationsAndJobs.at(m_faction).removeJob(m_job);
 }
+*/
 CraftStepTypeCategory& CraftStepTypeCategory::byName(const std::string name)
 {
 	auto found = std::ranges::find(craftStepTypeCategoryDataStore, name, &CraftStepTypeCategory::name);
@@ -167,7 +169,7 @@ HasCraftingLocationsAndJobsForFaction::HasCraftingLocationsAndJobsForFaction(con
 		for(const Json& blockQuery : pair[1])
 		{
 			BlockIndex block = blockQuery.get<BlockIndex>();
-			m_locationsByCategory[&category].insert(block);
+			m_locationsByCategory[&category].add(block);
 			m_stepTypeCategoriesByLocation[block].insert(&category);
 		}
 	}
@@ -243,7 +245,7 @@ Json HasCraftingLocationsAndJobsForFaction::toJson() const
 }
 void HasCraftingLocationsAndJobsForFaction::addLocation(const CraftStepTypeCategory& category, BlockIndex block)
 {
-	m_locationsByCategory[&category].insert(block);
+	m_locationsByCategory[&category].add(block);
 	m_stepTypeCategoriesByLocation[block].insert(&category);
 }
 void HasCraftingLocationsAndJobsForFaction::removeLocation(const CraftStepTypeCategory& category, BlockIndex block)
@@ -256,7 +258,7 @@ void HasCraftingLocationsAndJobsForFaction::removeLocation(const CraftStepTypeCa
 	if(m_locationsByCategory.at(&category).size() == 1)
 		m_locationsByCategory.erase(&category);
 	else
-		m_locationsByCategory[&category].erase(block);
+		m_locationsByCategory[&category].remove(block);
 	if(m_stepTypeCategoriesByLocation.at(block).size() == 1)
 		m_stepTypeCategoriesByLocation.erase(block);
 	else
@@ -346,7 +348,7 @@ void HasCraftingLocationsAndJobsForFaction::unindexAssigned(CraftJob& craftJob)
 }
 void HasCraftingLocationsAndJobsForFaction::jobComplete(CraftJob& craftJob, BlockIndex location)
 {
-	ItemIndex product = ITEM_INDEX_MAX;
+	ItemIndex product;
 	Blocks& blocks = m_area.getBlocks();
 	Items& items = m_area.getItems();
 	if(craftJob.craftJobType.productType.generic)

@@ -30,7 +30,7 @@ void DialogueBoxUI::draw()
 		});
 		buttonHolder->add(button);
 	}
-	if(dialogueBox.location != BLOCK_INDEX_MAX)
+	if(dialogueBox.location.exists())
 		m_window.centerView(dialogueBox.location);
 }
 void DialogueBoxUI::hide()

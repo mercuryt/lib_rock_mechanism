@@ -18,7 +18,7 @@ void Actors::canPickUp_pickUpItemQuantity(ActorIndex index, ItemIndex item, Quan
 	if(quantity == items.getQuantity(item))
 	{
 		m_carrying.at(item) = ActorOrItemIndex::createForItem(item);
-		if(items.getLocation(item) != BLOCK_INDEX_MAX)
+		if(items.getLocation(item).exists())
 			items.exit(item);
 	}
 	else
@@ -38,7 +38,7 @@ void Actors::canPickUp_pickUpActor(ActorIndex index, ActorIndex other)
 	assert(!m_mustSleep.at(other)->isAwake() || !move_canMove(other));
 	assert(m_carrying.at(index).exists());
 	m_reservables.at(other)->maybeClearReservationFor(*m_canReserve.at(index));
-	if(m_location.at(other) != BLOCK_INDEX_MAX)
+	if(m_location.at(other).exists())
 		exit(other);
 	m_carrying.at(index) = ActorOrItemIndex::createForActor(other);
 	move_updateIndividualSpeed(index);

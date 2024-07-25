@@ -112,7 +112,7 @@ TEST_CASE("route_10_10_10")
 		REQUIRE(actors.getLocation(actor) == destination);
 		REQUIRE(!actors.move_hasEvent(actor));
 		REQUIRE(actors.move_getPath(actor).empty());
-		REQUIRE(actors.move_getDestination(actor) == BLOCK_INDEX_MAX);
+		REQUIRE(actors.move_getDestination(actor).empty());
 	}
 	SUBCASE("Repath when route is blocked")
 	{

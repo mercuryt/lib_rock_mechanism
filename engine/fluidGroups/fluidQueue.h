@@ -4,7 +4,7 @@
 #pragma once
 
 #include "types.h"
-#include "blockIndices.h"
+#include "index.h"
 #include <vector>
 #include <cstdint>
 #include <cassert>
@@ -17,7 +17,7 @@ class FluidGroup;
  */
 struct FutureFlowBlock
 {
-	BlockIndex block = BLOCK_INDEX_MAX;
+	BlockIndex block;
 	uint32_t capacity = 0;
 	uint32_t delta = 0;
 	// No need to initalize capacity and delta here, they will be set at the begining of read step.

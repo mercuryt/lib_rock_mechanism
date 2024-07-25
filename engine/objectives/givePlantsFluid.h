@@ -46,7 +46,7 @@ public:
 };
 class GivePlantsFluidObjective final : public Objective
 {
-	BlockIndex m_plantLocation = BLOCK_INDEX_MAX;
+	BlockIndex m_plantLocation;
 	ItemReference m_fluidHaulingItem;
 	HasScheduledEvent<GivePlantsFluidEvent> m_event;
 public:

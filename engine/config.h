@@ -2,13 +2,13 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnull-dereference"
-#include "../lib/json.hpp"
+#include "json.h"
 #pragma GCC diagnostic pop
 #include "types.h"
+#include "index.h"
 #include <cmath>
 #include <cstdint>
 #include <fstream>
-using Json = nlohmann::json;
 namespace Config
 {
 	//inline uint32_t medicalPriority;

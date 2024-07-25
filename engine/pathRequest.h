@@ -8,6 +8,7 @@
 #include "config.h"
 #include "index.h"
 #include "designations.h"
+#include "callbackTypes.h"
 class Area;
 class ActorOrItemIndex;
 class Objective;
@@ -16,12 +17,12 @@ struct FindPathResult;
 
 class PathRequest
 {
-	PathRequestIndex m_index = PATH_REQUEST_INDEX_MAX;
+	PathRequestIndex m_index;
 	std::vector<BlockIndex> m_destinations;
 	const FluidType* m_fluidType = nullptr;
 	ActorIndex m_actor;
-	BlockIndex m_destination = BLOCK_INDEX_MAX;
-	BlockIndex m_huristicDestination = BLOCK_INDEX_MAX;
+	BlockIndex m_destination;
+	BlockIndex m_huristicDestination;
 	DistanceInBlocks m_maxRange = 0;
 	BlockDesignation m_designation = BlockDesignation::BLOCK_DESIGNATION_MAX;
 protected:
@@ -33,8 +34,8 @@ protected:
 public:
 	PathRequest() = default;
 	void updateActorIndex(ActorIndex newIndex) { m_actor = newIndex; }
-	void create(Area& area, ActorIndex actor, DestinationCondition destination, bool detour, DistanceInBlocks maxRange, BlockIndex huristicDestination = BLOCK_INDEX_MAX, bool reserve = false);
-	void createGoToAnyOf(Area& area, ActorIndex actor, std::vector<BlockIndex> destinations, bool detour, bool unreserved, DistanceInBlocks maxRange, BlockIndex huristicDestination = BLOCK_INDEX_MAX, bool reserve = false);
+	void create(Area& area, ActorIndex actor, DestinationCondition destination, bool detour, DistanceInBlocks maxRange, BlockIndex huristicDestination = BlockIndex::null(), bool reserve = false);
+	void createGoToAnyOf(Area& area, ActorIndex actor, std::vector<BlockIndex> destinations, bool detour, bool unreserved, DistanceInBlocks maxRange, BlockIndex huristicDestination = BlockIndex::null(), bool reserve = false);
 public:
 	void createGoTo(Area& area, ActorIndex actor, BlockIndex destination, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);
 	void createGoAdjacentToLocation(Area& area, ActorIndex actor, BlockIndex destination, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);
@@ -46,7 +47,7 @@ public:
 	void createGoAdjacentToFluidType(Area& area, ActorIndex actor, const FluidType& fluidType, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);
 	void createGoToEdge(Area& area, ActorIndex actor, bool detour);
 	// Multi block actors go to a destination where any of the occupied blocks fulfill the condition. This is inconsistant with GoTo which sends multi block actors to an exact tile.
-	void createGoToCondition(Area& area, ActorIndex actor, DestinationCondition condition, bool detour, bool unreserved, DistanceInBlocks maxRange, BlockIndex huristicDestination = BLOCK_INDEX_MAX, bool reserve = false);
+	void createGoToCondition(Area& area, ActorIndex actor, DestinationCondition condition, bool detour, bool unreserved, DistanceInBlocks maxRange, BlockIndex huristicDestination = BlockIndex::null(), bool reserve = false);
 	void createGoAdjacentToCondition(Area& area, ActorIndex actor, std::function<bool(BlockIndex)> condition, bool detour, bool unreserved, DistanceInBlocks maxRange, BlockIndex huristicDestination, bool reserve = false);
 	void maybeCancel(Area& area, ActorIndex actor);
 	void cancel(Area& area, ActorIndex actor);
@@ -54,7 +55,7 @@ public:
 	virtual void reset();
 	virtual void callback(Area& area, FindPathResult& result);
 	[[nodiscard]] virtual Json toJson() const;
-	[[nodiscard]] bool exists() const { return m_index != PATH_REQUEST_INDEX_MAX; }
+	[[nodiscard]] bool exists() const { return m_index.exists(); }
 	[[nodiscard]] ActorIndex getActor() const { return m_actor; }
 	virtual ~PathRequest() = default;
 };

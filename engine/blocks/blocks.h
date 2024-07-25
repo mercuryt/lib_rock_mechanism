@@ -42,11 +42,13 @@ struct BlockIsPartOfStockPile
 	bool active;
 };
 */
+using ActorIndicesForBlock = ActorIndicesArray<Config::maxActorsPerBlock>;
+using ItemIndicesForBlock = ItemIndicesArray<Config::maxItemsPerBlock>;
 class Blocks
 {
 	std::array<int32_t, 26> m_offsetsForAdjacentCountTable;
-	std::unordered_map<BlockIndex, std::unordered_map<FactionId, FarmField*>> m_farmFields;
-	std::unordered_map<BlockIndex, std::unordered_map<FactionId, BlockIsPartOfStockPile>> m_stockPiles;
+	std::unordered_map<BlockIndex, std::unordered_map<FactionId, FarmField*>, BlockIndex::Hash> m_farmFields;
+	std::unordered_map<BlockIndex, std::unordered_map<FactionId, BlockIsPartOfStockPile>, BlockIndex::Hash> m_stockPiles;
 	DataVector<std::unique_ptr<Reservable>, BlockIndex> m_reservables;
 	DataVector<const MaterialType*, BlockIndex> m_materialType;
 	DataVector<std::vector<BlockFeature>, BlockIndex> m_features;
@@ -164,7 +166,7 @@ public:
 			BlockIndex block = openList.top();
 			openList.pop();
 			for(BlockIndex adjacent : getDirectlyAdjacent(block))
-				if(adjacent != BLOCK_INDEX_MAX && condition(adjacent) && !output.contains(adjacent))
+				if(adjacent.exists() && condition(adjacent) && !output.contains(adjacent))
 				{
 					output.add(adjacent);
 					openList.push(adjacent);
@@ -181,11 +183,11 @@ public:
 		while(!open.empty())
 		{
 			BlockIndex block = open.top();
-			if(condition(block != BLOCK_INDEX_MAX))
+			if(condition(block.exists()))
 				return block;
 			open.pop();
 			for(BlockIndex adjacent : getDirectlyAdjacent(block))
-				if(adjacent != BLOCK_INDEX_MAX && taxiDistance(index, adjacent) <= range && !closed.contains(adjacent))
+				if(adjacent.exists() && taxiDistance(index, adjacent) <= range && !closed.contains(adjacent))
 				{
 					closed.add(adjacent);
 					open.push(adjacent);
@@ -193,7 +195,7 @@ public:
 					
 				
 		}
-		return BLOCK_INDEX_MAX;
+		return BlockIndex::null();
 	}
 	[[nodiscard]] BlockIndices collectAdjacentsInRange(BlockIndex index, DistanceInBlocks range);
 	static inline const int32_t offsetsListAllAdjacent[26][3] = {

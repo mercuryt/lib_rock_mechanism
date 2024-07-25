@@ -18,7 +18,7 @@ class MustSleep final
 	HasScheduledEventPausable<SleepEvent> m_sleepEvent; // 2
 	HasScheduledEvent<TiredEvent> m_tiredEvent; // 2
 	ActorReference m_actor;
-	BlockIndex m_location = BLOCK_INDEX_MAX;
+	BlockIndex m_location;
 	SleepObjective* m_objective = nullptr;
 	bool m_needsSleep = false;
 	bool m_isAwake = true;

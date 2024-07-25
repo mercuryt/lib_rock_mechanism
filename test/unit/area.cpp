@@ -114,7 +114,7 @@ TEST_CASE("Area")
 			simulation.m_eventSchedule.doStep(simulation.m_step);
 			simulation.m_step++;
 		}
-		REQUIRE(actors.move_getDestination(actor) == BLOCK_INDEX_MAX);
+		REQUIRE(actors.move_getDestination(actor).empty());
 		REQUIRE(!actors.move_hasEvent(actor));
 	}
 	SUBCASE("Test mist spreads")

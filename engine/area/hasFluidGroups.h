@@ -1,6 +1,6 @@
 #pragma once
 #include "../fluidGroup.h"
-#include "blockIndices.h"
+#include "index.h"
 #include <list>
 #include <string>
 #include <unordered_set>

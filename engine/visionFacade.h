@@ -13,10 +13,10 @@ struct VisionCuboid;
 class VisionFacade final
 {
 	Area* m_area;
-	std::vector<ActorIndex> m_actors;
-	std::vector<BlockIndex> m_locations;
-	std::vector<DistanceInBlocks> m_ranges;
-	std::vector<ActorIndices> m_results;
+	DataVector<ActorIndex, VisionFacadeIndex> m_actors;
+	DataVector<BlockIndex, VisionFacadeIndex> m_locations;
+	DataVector<DistanceInBlocks, VisionFacadeIndex> m_ranges;
+	DataVector<ActorIndices, VisionFacadeIndex> m_results;
 public:
 	VisionFacade();
 	// Used as part of initalizaton.
@@ -37,7 +37,7 @@ public:
 	[[nodiscard]] BlockIndex getLocation(VisionFacadeIndex index);
 	[[nodiscard]] DistanceInBlocks getRange(VisionFacadeIndex index) const;
 	[[nodiscard]] ActorIndices& getResults(VisionFacadeIndex index);
-	[[nodiscard]] VisionFacadeIndex size() const { return m_actors.size(); }
+	[[nodiscard]] size_t size() const { return m_actors.size(); }
 	[[nodiscard]] static DistanceInBlocks taxiDistance(Point3D a, Point3D b);
 };
 // Divide actors into buckets by id.
@@ -60,7 +60,7 @@ public:
 class HasVisionFacade final
 {
 	VisionFacade* m_visionFacade = nullptr;
-	VisionFacadeIndex m_index = VISION_FACADE_INDEX_MAX;
+	VisionFacadeIndex m_index;
 public:
 	// To be called when leaving an area. Also calls clear if !empty().
 	void clearVisionFacade();
@@ -75,7 +75,7 @@ public:
 	// Call when visionFacadeIndex changes.
 	void updateFacadeIndex(VisionFacadeIndex index) { m_index = index; }
 	void updateActorIndex(ActorIndex newIndex) { m_visionFacade->updateActorIndex(m_index, newIndex); }
-	[[nodiscard]] bool empty() const { return m_index == VISION_FACADE_INDEX_MAX; }
+	[[nodiscard]] bool empty() const { return m_index.empty(); }
 	[[nodiscard]] VisionFacadeIndex getIndex() const { return m_index; }
 	friend class VisionFacade;
 	VisionFacade& getVisionFacade() const { return *m_visionFacade; }

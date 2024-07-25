@@ -1,8 +1,9 @@
 #pragma once
 // Some miscelanious serialization / deserialization fucnctions that don't belong anywhere else.
 
-#include "config.h"
 #include "../lib/dynamic_bitset.hpp"
+#include "../lib/json.hpp"
+using Json = nlohmann::json;
 
 namespace nlohmann {
     template <>

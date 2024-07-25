@@ -73,7 +73,7 @@ TEST_CASE("stockpile")
 		REQUIRE(project.getProjectWorkerFor(dwarf1).haulSubproject != nullptr);
 		// Path to chunk.
 		simulation.doStep();
-		REQUIRE(actors.move_getDestination(dwarf1) != BLOCK_INDEX_MAX);
+		REQUIRE(actors.move_getDestination(dwarf1).exists());
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, chunkLocation);
 		REQUIRE(actors.canPickUp_isCarryingItem(dwarf1, chunk1));
 		std::function<bool()> predicate = [&](){ return items.getLocation(chunk1) == stockpileLocation; };
@@ -150,8 +150,8 @@ TEST_CASE("stockpile")
 		REQUIRE(actors.objective_getCurrent<StockPileObjective>(dwarf1).m_project != nullptr);
 		// Chunk1 project reserves.
 		simulation.doStep();
-		ActorIndex project1Worker = ACTOR_INDEX_MAX;
-		ActorIndex project2Worker = ACTOR_INDEX_MAX;
+		ActorIndex project1Worker.clear();
+		ActorIndex project2Worker.clear();
 		if(project.getWorkers().contains(dwarf1))
 		{
 			project1Worker = dwarf1;
@@ -179,7 +179,7 @@ TEST_CASE("stockpile")
 		REQUIRE(project2.getItem() == chunk2);
 		// Project1 paths to chunk1, Project2 reserves chunk2
 		simulation.doStep();
-		REQUIRE(actors.move_getDestination(project1Worker) != BLOCK_INDEX_MAX);
+		REQUIRE(actors.move_getDestination(project1Worker).exists());
 		REQUIRE(items.isAdjacentToLocation(chunk1, actors.move_getDestination(project1Worker)));
 		REQUIRE(actors.project_exists(project2Worker));
 		REQUIRE(actors.project_get(project2Worker) != &project);
@@ -191,7 +191,7 @@ TEST_CASE("stockpile")
 		REQUIRE(project2.getProjectWorkerFor(project2Worker).haulSubproject);
 		// Project2 paths.
 		simulation.doStep();
-		REQUIRE(actors.move_getDestination(project2Worker) != BLOCK_INDEX_MAX);
+		REQUIRE(actors.move_getDestination(project2Worker).exists());
 		std::function<bool()> predicate = [&](){ return items.getLocation(chunk1) == stockpileLocation1; };
 		simulation.fastForwardUntillPredicate(predicate);
 		predicate = [&](){ return actors.getLocation(chunk2) == stockpileLocation2; };
@@ -270,7 +270,7 @@ TEST_CASE("stockpile")
 		REQUIRE(project.getProjectWorkerFor(dwarf1).haulSubproject != nullptr);
 		// Path to cargo.
 		simulation.doStep();
-		REQUIRE(actors.move_getDestination(dwarf1) != BLOCK_INDEX_MAX);
+		REQUIRE(actors.move_getDestination(dwarf1).exists());
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, cargoOrigin);
 		REQUIRE(actors.canPickUp_isCarryingItemGeneric(dwarf1, pile, sand, 48u));
 		REQUIRE(blocks.item_contains(cargoOrigin, cargo));
@@ -497,7 +497,7 @@ TEST_CASE("stockpile")
 		REQUIRE(project.getProjectWorkerFor(dwarf1).haulSubproject);
 		// Path to chunk.
 		simulation.doStep();
-		REQUIRE(actors.move_getDestination(dwarf1) != BLOCK_INDEX_MAX);
+		REQUIRE(actors.move_getDestination(dwarf1).exists());
 		REQUIRE(items.isAdjacentToActor(chunk1, actors.move_getDestination(dwarf1)));
 		auto path = actors.move_getPath(dwarf1);
 		REQUIRE(std::ranges::find(path, gateway) != path.end());

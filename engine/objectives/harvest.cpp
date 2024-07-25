@@ -18,7 +18,7 @@ void HarvestEvent::execute(Simulation&, Area* area)
 {
 	Actors& actors = area->getActors();
 	ActorIndex actor = m_actor.getIndex();
-	assert(m_harvestObjective.m_block != BLOCK_INDEX_MAX);
+	assert(m_harvestObjective.m_block.exists());
 	assert(actors.isAdjacentToLocation(actor, m_harvestObjective.m_block));
 	Blocks& blocks = area->getBlocks();
 	if(!blocks.plant_exists(m_harvestObjective.m_block))
@@ -65,7 +65,7 @@ HarvestObjective::HarvestObjective(const Json& data, Area& area) :
 Json HarvestObjective::toJson() const
 {
 	Json data = Objective::toJson();
-	if(m_block != BLOCK_INDEX_MAX)
+	if(m_block.exists())
 		data["block"] = m_block;
 	if(m_harvestEvent.exists())
 		data["eventStart"] = m_harvestEvent.getStartStep();
@@ -76,7 +76,7 @@ void HarvestObjective::execute(Area& area, ActorIndex actor)
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
 	Plants& plants = area.getPlants();
-	if(m_block != BLOCK_INDEX_MAX)
+	if(m_block.exists())
 	{
 		//TODO: Area level listing of plant species to not harvest.
 		if(actors.isAdjacentToLocation(actor, m_block) && blocks.plant_exists(m_block) && plants.readyToHarvest(blocks.plant_get(m_block)))
@@ -91,7 +91,7 @@ void HarvestObjective::execute(Area& area, ActorIndex actor)
 	else
 	{
 		BlockIndex block = getBlockContainingPlantToHarvestAtLocationAndFacing(area, actors.getLocation(actor), actors.getFacing(actor), actor);
-		if(block != BLOCK_INDEX_MAX && blocks.plant_exists(m_block) && plants.readyToHarvest(blocks.plant_get(m_block)) && actors.move_tryToReserveOccupied(actor))
+		if(block.exists() && blocks.plant_exists(m_block) && plants.readyToHarvest(blocks.plant_get(m_block)) && actors.move_tryToReserveOccupied(actor))
 		{
 			select(area, block, actor);
 			begin(area, actor);
@@ -108,7 +108,7 @@ void HarvestObjective::cancel(Area& area, ActorIndex actor)
 	Plants& plants = area.getPlants();
 	actors.move_pathRequestMaybeCancel(actor);
 	m_harvestEvent.maybeUnschedule();
-	if(m_block != BLOCK_INDEX_MAX && blocks.plant_exists(m_block) && plants.readyToHarvest(blocks.plant_get(m_block)))
+	if(m_block.exists() && blocks.plant_exists(m_block) && plants.readyToHarvest(blocks.plant_get(m_block)))
 		area.m_hasFarmFields.at(actors.getFactionId(actor)).addHarvestDesignation(blocks.plant_get(m_block));
 }
 void HarvestObjective::select(Area& area, BlockIndex block, ActorIndex actor)
@@ -126,14 +126,14 @@ void HarvestObjective::select(Area& area, BlockIndex block, ActorIndex actor)
 void HarvestObjective::begin(Area& area, ActorIndex actor)
 {
 	Plants& plants = area.getPlants();
-	assert(m_block != BLOCK_INDEX_MAX);
+	assert(m_block.exists());
 	assert(plants.readyToHarvest(area.getBlocks().plant_get(m_block)));
 	m_harvestEvent.schedule(Config::harvestEventDuration, area, *this, actor);
 }
 void HarvestObjective::reset(Area& area, ActorIndex actor)
 {
 	cancel(area, actor);
-	m_block = BLOCK_INDEX_MAX;
+	m_block.clear();
 }
 void HarvestObjective::makePathRequest(Area& area, ActorIndex actor)
 {

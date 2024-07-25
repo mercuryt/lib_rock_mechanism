@@ -41,7 +41,7 @@ TEST_CASE("uniform")
 	simulation.fastForwardUntillActorHasEquipment(area, actor, shirt);
 	simulation.doStep();
 	REQUIRE(actors.equipment_containsItem(actor, shirt));
-	REQUIRE(items.getLocation(shirt) == BLOCK_INDEX_MAX);
+	REQUIRE(items.getLocation(shirt).empty());
 	REQUIRE(items.isAdjacentToLocation(shirt, actors.move_getDestination(actor)));
 	simulation.fastForwardUntillActorHasEquipment(area, actor, pants);
 	simulation.doStep();

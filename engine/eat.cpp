@@ -49,7 +49,7 @@ Json MustEat::toJson() const
 {
 	Json data;
 	data["massFoodRequested"] = m_massFoodRequested;
-	if(m_eatingLocation != BLOCK_INDEX_MAX)
+	if(m_eatingLocation.exists())
 		data["eatingLocation"] = m_eatingLocation;
 	data["hungerEventStart"] = m_hungerEvent.getStartStep();
 	return data;
@@ -180,7 +180,7 @@ BlockIndex MustEat::getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireabili
 {
 	constexpr uint32_t maxRankedEatDesire = 3;
 	std::array<BlockIndex, maxRankedEatDesire> candidates;
-	candidates.fill(BLOCK_INDEX_MAX);
+	candidates.fill(BlockIndex::null());
 	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block)
 	{
 		uint32_t eatDesire = getDesireToEatSomethingAt(area, block);
@@ -188,15 +188,15 @@ BlockIndex MustEat::getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireabili
 			return true;
 		if(eatDesire < getMinimumAcceptableDesire())
 			return false;
-		if(eatDesire != 0 && candidates[eatDesire - 1u] == BLOCK_INDEX_MAX)
+		if(eatDesire != 0 && candidates[eatDesire - 1u].empty())
 			candidates[eatDesire - 1u] = block;
 		return false;
 	};
 	BlockIndex output = area.getActors().getBlockWhichIsAdjacentWithPredicate(m_actor.getIndex(), predicate);
-	if(output != BLOCK_INDEX_MAX)
+	if(output.exists())
 		return output;
 	for(size_t i = maxRankedEatDesire; i != 0; --i)
-		if(candidates[i - 1] != BLOCK_INDEX_MAX)
+		if(candidates[i - 1].exists())
 			return candidates[i - 1];
-	return BLOCK_INDEX_MAX;
+	return BlockIndex::null();
 }

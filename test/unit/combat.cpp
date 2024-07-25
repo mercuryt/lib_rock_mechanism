@@ -86,7 +86,7 @@ TEST_CASE("combat")
 		actors.combat_setTarget(dwarf1, rabbit);
 		REQUIRE(actors.move_hasPathRequest(dwarf1));
 		simulation.doStep();
-		REQUIRE(actors.move_getDestination(dwarf1) != BLOCK_INDEX_MAX);
+		REQUIRE(actors.move_getDestination(dwarf1).exists());
 		REQUIRE(actors.isAdjacentToLocation(rabbit, actors.move_getDestination(dwarf1)));
 	}
 	SUBCASE("adjacent allies boost combat score")

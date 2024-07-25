@@ -2,6 +2,7 @@
 
 #include "config.h"
 #include "eventSchedule.hpp"
+#include "index.h"
 #include "reference.h"
 #include "simulation.h"
 
@@ -33,13 +34,13 @@ public:
 };
 class AreaHasTemperature final
 {
-	std::unordered_map<BlockIndex, TemperatureSource> m_sources;
+	std::unordered_map<BlockIndex, TemperatureSource, BlockIndex::Hash> m_sources;
 	// To possibly thaw.
 	std::map<Temperature, BlockIndices> m_aboveGroundBlocksByMeltingPoint;
 	// To possibly freeze.
 	std::map<Temperature, std::unordered_set<FluidGroup*>> m_aboveGroundFluidGroupsByMeltingPoint;
 	// Collect deltas to apply sum.
-	std::unordered_map<BlockIndex, int32_t> m_blockDeltaDeltas;
+	std::unordered_map<BlockIndex, int32_t, BlockIndex::Hash> m_blockDeltaDeltas;
 	Area& m_area;
 	Temperature m_ambiantSurfaceTemperature;
 

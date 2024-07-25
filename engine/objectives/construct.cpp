@@ -15,7 +15,7 @@ ConstructPathRequest::ConstructPathRequest(Area& area, ConstructObjective& co, A
 	};
 	bool unreserved = true;
 	DistanceInBlocks maxRange = Config::maxRangeToSearchForConstructionDesignations;
-	createGoAdjacentToCondition(area, actor, constructCondition, m_constructObjective.m_detour, unreserved, maxRange, BLOCK_INDEX_MAX);
+	createGoAdjacentToCondition(area, actor, constructCondition, m_constructObjective.m_detour, unreserved, maxRange, BlockIndex::null());
 }
 void ConstructPathRequest::callback(Area& area, FindPathResult& result)
 {
@@ -82,7 +82,7 @@ void ConstructObjective::execute(Area& area, ActorIndex actor)
 		[[maybe_unused]] BlockIndex adjacent = actors.getBlockWhichIsAdjacentWithPredicate(actor, predicate);
 		if(project != nullptr)
 		{
-			assert(adjacent != BLOCK_INDEX_MAX);
+			assert(adjacent.exists());
 			joinProject(*project, actor);
 			return;
 		}
