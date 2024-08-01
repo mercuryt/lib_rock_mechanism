@@ -47,7 +47,7 @@ class HarvestEvent final : public ScheduledEvent
 	ActorReference m_actor;
 	HarvestObjective& m_harvestObjective;
 public:
-	HarvestEvent(Step delay, Area& area, HarvestObjective& ho, ActorIndex actor, const Step start = 0);
+	HarvestEvent(Step delay, Area& area, HarvestObjective& ho, ActorIndex actor, const Step start = Step::create(0));
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 	Plant* getPlant();

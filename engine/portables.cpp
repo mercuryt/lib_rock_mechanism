@@ -15,12 +15,12 @@ Portables::Portables(Area& area) : HasShapes(area) { }
 void Portables::resize(HasShapeIndex newSize)
 {
 	HasShapes::resize(newSize);
-	m_moveType.resize(newSize());
-	m_destroy.resize(newSize());
-	m_reservables.resize(newSize());
-	m_follower.resize(newSize());
-	m_leader.resize(newSize());
-	m_carrier.resize(newSize());
+	m_moveType.resize(newSize.get());
+	m_destroy.resize(newSize.get());
+	m_reservables.resize(newSize.get());
+	m_follower.resize(newSize.get());
+	m_leader.resize(newSize.get());
+	m_carrier.resize(newSize.get());
 }
 void Portables::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 {
@@ -88,19 +88,26 @@ ActorOrItemIndex Portables::getActorOrItemIndex(HasShapeIndex index)
 }
 void Portables::followActor(HasShapeIndex index, ActorIndex actor)
 {
+	Actors& actors = m_area.getActors();
 	assert(!m_leader.at(index).exists());
 	m_leader.at(index) = ActorOrItemIndex::createForActor(actor);
-	assert(!m_area.getActors().m_follower.at(index).exists());
-	m_area.getActors().m_follower.at(index) = getActorOrItemIndex(index);
-	m_area.getActors().move_updateActualSpeed(getLineLeader(index));
+	assert(!actors.m_follower.at(index).exists());
+	actors.m_follower.at(index) = getActorOrItemIndex(index);
+	ActorIndex lineLeader = getLineLeader(index);
+	actors.move_updateActualSpeed(lineLeader);
+	actors.move_appendToLinePath(lineLeader, m_location.at(index));
 }
 void Portables::followItem(HasShapeIndex index, ItemIndex item)
 {
+	Actors& actors = m_area.getActors();
+	assert(!m_leader.at(index).exists());
 	assert(!m_leader.at(index).exists());
 	m_leader.at(index) = ActorOrItemIndex::createForItem(item);
 	assert(!m_area.getItems().m_follower.at(index).exists());
 	m_area.getItems().m_follower.at(index) = getActorOrItemIndex(index);
-	m_area.getActors().move_updateActualSpeed(getLineLeader(index));
+	ActorIndex lineLeader = getLineLeader(index);
+	actors.move_updateActualSpeed(lineLeader);
+	actors.move_appendToLinePath(lineLeader, m_location.at(index));
 }
 void Portables::followPolymorphic(HasShapeIndex index, ActorOrItemIndex actorOrItem)
 {
@@ -111,12 +118,23 @@ void Portables::followPolymorphic(HasShapeIndex index, ActorOrItemIndex actorOrI
 }
 void Portables::unfollowActor(HasShapeIndex index, ActorIndex actor)
 {
-	m_area.getActors().m_follower.at(actor).clear();
+	assert(!isLeading(index));
+	assert(isFollowing(index) == actor);
+	Actors& actors = m_area.getActors();
+	actors.m_follower.at(actor).clear();
 	m_leader.at(index).clear();
-	m_area.getActors().move_updateActualSpeed(getLineLeader(index));
+	if(!isFollowing(actor))
+	{
+		// Actor is line leader.
+		assert(!actors.lineLead_getPath(actor).empty());
+		actors.lineLead_clearPath(actor);
+	}
+	ActorIndex lineLeader = getLineLeader(index);
+	m_area.getActors().move_updateActualSpeed(lineLeader);
 }
 void Portables::unfollowItem(HasShapeIndex index, ItemIndex item)
 {
+	assert(!isLeading(index));
 	m_area.getItems().m_follower.at(item).clear();
 	m_leader.at(index).clear();
 	m_area.getActors().move_updateActualSpeed(getLineLeader(index));
@@ -195,7 +213,7 @@ Speed Portables::lead_getSpeed(HasShapeIndex index)
 			break;
 		wrapped = wrapped.getFollower(m_area);
 	}
-	return getMoveSpeedForGroupWithAddedMass(m_area, actorsAndItems, 0, 0);
+	return getMoveSpeedForGroupWithAddedMass(m_area, actorsAndItems, Mass::create(0), Mass::create(0));
 }
 ActorIndex Portables::getLineLeader(HasShapeIndex index)
 {
@@ -215,14 +233,14 @@ ActorIndex Portables::getLineLeader(HasShapeIndex index)
 // Class method.
 Speed Portables::getMoveSpeedForGroup(const Area& area, std::vector<ActorOrItemIndex>& actorsAndItems)
 {
-	return getMoveSpeedForGroupWithAddedMass(area, actorsAndItems, 0, 0);
+	return getMoveSpeedForGroupWithAddedMass(area, actorsAndItems, Mass::create(0), Mass::create(0));
 }
 Speed Portables::getMoveSpeedForGroupWithAddedMass(const Area& area, std::vector<ActorOrItemIndex>& actorsAndItems, Mass addedRollingMass, Mass addedDeadMass)
 {
 	Mass rollingMass = addedRollingMass;
 	Mass deadMass = addedDeadMass;
-	Mass carryMass = 0;
-	Speed lowestMoveSpeed = 0;
+	Mass carryMass = Mass::create(0);
+	Speed lowestMoveSpeed = Speed::create(0);
 	for(ActorOrItemIndex index : actorsAndItems)
 	{
 		if(index.isItem())
@@ -254,10 +272,10 @@ Speed Portables::getMoveSpeedForGroupWithAddedMass(const Area& area, std::vector
 	Mass totalMass = deadMass + (rollingMass * Config::rollingMassModifier);
 	if(totalMass <= carryMass)
 		return lowestMoveSpeed;
-	float ratio = (float)carryMass / (float)totalMass;
+	float ratio = (float)carryMass.get() / (float)totalMass.get();
 	if(ratio < Config::minimumOverloadRatio)
-		return 0;
-	return std::ceil(lowestMoveSpeed * ratio * ratio);
+		return Speed::create(0);
+	return Speed::create(std::ceil(lowestMoveSpeed.get() * ratio * ratio));
 }
 void Portables::setCarrier(HasShapeIndex index, ActorOrItemIndex carrier)
 {

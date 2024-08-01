@@ -27,7 +27,7 @@ void TargetedHaulProject::onComplete()
 	for(auto& [actor, projectWorker] : workers)
 		actors.objective_complete(actor.getIndex(), projectWorker.objective);
 }
-void TargetedHaulProject::onDelivered(ActorOrItemIndex delivered) { delivered.setLocationAndFacing(m_area, m_location, 0); }
+void TargetedHaulProject::onDelivered(ActorOrItemIndex delivered) { delivered.setLocationAndFacing(m_area, m_location, Facing::create(0)); }
 // Objective.
 // AreaHas.
 void AreaHasTargetedHauling::load(const Json& data, DeserializationMemo& deserializationMemo, Area& area)

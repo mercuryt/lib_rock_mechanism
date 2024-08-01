@@ -100,7 +100,7 @@ BlockIndex DramaArc::getEntranceToArea(const Shape& shape, const MoveType& moveT
 	BlockIndex candidate;
 	static uint16_t minimumConnectedCount = 200;
 	do {
-		if(candidate)
+		if(candidate.exists())
 		{
 			auto iterator = std::ranges::find(candidates, candidate);
 			assert(iterator != candidates.end());
@@ -111,7 +111,7 @@ BlockIndex DramaArc::getEntranceToArea(const Shape& shape, const MoveType& moveT
 		candidate = candidates.random(m_area->m_simulation);
 	}
 	while (!blockIsConnectedToAtLeast(candidate, shape, moveType, minimumConnectedCount));
-	assert(candidate);
+	assert(candidate.exists());
 	return candidate;
 }
 BlockIndex DramaArc::findLocationOnEdgeForNear(const Shape& shape, const MoveType& moveType, BlockIndex origin, DistanceInBlocks distance, BlockIndices& exclude) const
@@ -144,7 +144,7 @@ bool DramaArc::blockIsConnectedToAtLeast(BlockIndex origin, [[maybe_unused]] con
 		open.pop();
 		if(!accumulated.contains(candidate))
 		{
-			accumulated.insert(candidate);
+			accumulated.add(candidate);
 			if(accumulated.size() == count)
 				return true;
 			for(BlockIndex adjacent : blocks.getDirectlyAdjacent(candidate))
@@ -159,15 +159,15 @@ Facing DramaArc::getFacingAwayFromEdge(BlockIndex block) const
 {
 	Blocks& blocks = m_area->getBlocks();
 	assert(blocks.isEdge(block));
-	if(!blocks.getBlockNorth(block))
-		return 2;
-	if(!blocks.getBlockSouth(block))
-		return 0;
-	if(!blocks.getBlockEast(block))
-		return 3;
-	if(!blocks.getBlockWest(block))
-		return 1;
-	return 0;
+	if(blocks.getBlockNorth(block).empty())
+		return Facing::create(2);
+	if(blocks.getBlockSouth(block).empty())
+		return Facing::create(0);
+	if(blocks.getBlockEast(block).empty())
+		return Facing::create(3);
+	if(blocks.getBlockWest(block).empty())
+		return Facing::create(1);
+	return Facing::create(0);
 }
 std::vector<const AnimalSpecies*> DramaArc::getSentientSpecies() const
 {

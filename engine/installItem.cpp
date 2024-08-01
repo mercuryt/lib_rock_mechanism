@@ -8,7 +8,7 @@
 
 // Project.
 InstallItemProject::InstallItemProject(Area& area, ItemReference i, BlockIndex l, Facing facing, FactionId faction) :
-	Project(faction, area, l, 1), m_item(i), m_facing(facing) { }
+	Project(faction, area, l, Quantity::create(1)), m_item(i), m_facing(facing) { }
 void InstallItemProject::onComplete() { m_area.getItems().setLocationAndFacing(m_item.getIndex(), m_location, m_facing); }
 // HasDesignations.
 void HasInstallItemDesignationsForFaction::add(Area& area, BlockIndex block, ItemIndex item, Facing facing, FactionId faction)

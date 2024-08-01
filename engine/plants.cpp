@@ -2,6 +2,7 @@
 #include "area.h"
 #include "eventSchedule.h"
 #include "hasShapes.h"
+#include "index.h"
 #include "itemType.h"
 #include "plantSpecies.h"
 #include "portables.h"
@@ -75,16 +76,16 @@ PlantIndex Plants::create(PlantParamaters paramaters)
 	assert(location.exists());
 	PlantIndex index = PlantIndex::cast(HasShapes::getNextIndex());
 	assert(index < size());
-	m_percentGrown.at(index) = paramaters.percentGrown == 0 ? 100 : paramaters.percentGrown;
+	m_percentGrown.at(index) = paramaters.percentGrown == 0 ? Percent::create(100) : paramaters.percentGrown;
 	if(paramaters.shape == nullptr)
 		paramaters.shape = &paramaters.species.shapeForPercentGrown(m_percentGrown.at(index));
-	HasShapes::create(index, *paramaters.shape, location, 0, true);
+	HasShapes::create(index, *paramaters.shape, location, Facing::create(0), true);
 	m_species.at(index) = &paramaters.species;
 	m_fluidSource.at(index).clear();
 	m_quantityToHarvest.at(index) = paramaters.quantityToHarvest;
-	m_percentFoliage.at(index) = 0;
+	m_percentFoliage.at(index) = Percent::create(0);
 	m_wildGrowth.at(index) = 0;
-	m_volumeFluidRequested.at(index) = 0;
+	m_volumeFluidRequested.at(index) = CollisionVolume::create(0);
 	auto& blocks = m_area.getBlocks();
 	assert(blocks.plant_canGrowHereEver(location, species));
 	uint8_t wildGrowth = species.wildGrowthForPercentGrown(getPercentGrown(index));
@@ -104,7 +105,7 @@ PlantIndex Plants::create(PlantParamaters paramaters)
 		uint16_t start = species.harvestData->dayOfYearToStart;
 		if(day >= start)
 		{
-			uint16_t daysDuration = species.harvestData->stepsDuration / Config::stepsPerDay;
+			uint16_t daysDuration = (species.harvestData->stepsDuration / Config::stepsPerDay).get();
 			if(day - start < daysDuration)
 				setQuantityToHarvest(index);
 		}
@@ -145,7 +146,7 @@ void Plants::setTemperature(PlantIndex index, Temperature temperature)
 }
 void Plants::setHasFluidForNow(PlantIndex index)
 {
-	m_volumeFluidRequested.at(index) = 0;
+	m_volumeFluidRequested.at(index) = CollisionVolume::create(0);
 	if(m_fluidEvent.exists(index))
 		m_fluidEvent.unschedule(index);
 	m_fluidEvent.schedule(index, m_area, getSpecies(index).stepsNeedsFluidFrequency, index);
@@ -158,7 +159,7 @@ void Plants::setMaybeNeedsFluid(PlantIndex index)
 	const PlantSpecies& species = *m_species.at(index);
 	if(hasFluidSource(index))
 	{
-		m_volumeFluidRequested.at(index) = 0;
+		m_volumeFluidRequested.at(index) = CollisionVolume::create(0);
 		stepsTillNextFluidEvent = species.stepsNeedsFluidFrequency;
 	}
 	else if(m_volumeFluidRequested.at(index) != 0)
@@ -176,7 +177,7 @@ void Plants::setMaybeNeedsFluid(PlantIndex index)
 	m_fluidEvent.schedule(index, m_area, stepsTillNextFluidEvent, index);
 	updateGrowingStatus(index);
 }
-void Plants::addFluid(PlantIndex index, Volume volume, [[maybe_unused]] const FluidType& fluidType)
+void Plants::addFluid(PlantIndex index, CollisionVolume volume, [[maybe_unused]] const FluidType& fluidType)
 {
 	assert(volume != 0);
 	assert(fluidType == getSpecies(index).fluidType);
@@ -212,15 +213,15 @@ void Plants::setQuantityToHarvest(PlantIndex index)
 	Step duration = species.harvestData->stepsDuration;
 	Step now = m_area.m_simulation.m_step;
 	uint16_t year = m_area.m_simulation.getDateTime().year;
-	Step start = ((species.harvestData->dayOfYearToStart - 1) * Config::stepsPerDay) + (year * Config::stepsPerYear);
+	Step start = (Config::stepsPerDay * (species.harvestData->dayOfYearToStart - 1)) + (Config::stepsPerYear * year);
 	Step end = start + duration;
 	Step remaining = end - now;
 	//TODO: use of days exploitable?
 	m_endOfHarvestEvent.schedule(index, m_area, remaining, index);
-	m_quantityToHarvest.at(index) = util::scaleByPercent(species.harvestData->itemQuantity, getPercentGrown(index));
+	m_quantityToHarvest.at(index) = Quantity::create(util::scaleByPercent(species.harvestData->itemQuantity.get(), getPercentGrown(index)));
 	m_area.getBlocks().farm_designateForHarvestIfPartOfFarmField(m_location.at(index), index);
 }
-void Plants::harvest(PlantIndex index, uint32_t quantity)
+void Plants::harvest(PlantIndex index, Quantity quantity)
 {
 	assert(quantity <= m_quantityToHarvest.at(index));
 	m_quantityToHarvest.at(index) -= quantity;
@@ -233,7 +234,7 @@ void Plants::endOfHarvest(PlantIndex index)
 	if(getSpecies(index).annual)
 		die(index);
 	else
-		m_quantityToHarvest.at(index) = 0;
+		m_quantityToHarvest.at(index) = Quantity::create(0);
 }
 void Plants::updateGrowingStatus(PlantIndex index)
 {
@@ -253,7 +254,7 @@ void Plants::updateGrowingStatus(PlantIndex index)
 			// Start growing.
 			Step delay = (m_percentGrown.at(index) == 0 ?
 					species.stepsTillFullyGrown :
-					util::scaleByPercent(species.stepsTillFullyGrown, m_percentGrown.at(index)));
+					Step::create(util::scaleByPercent(species.stepsTillFullyGrown.get(), m_percentGrown.at(index))));
 			m_growthEvent.schedule(index, m_area, delay, index);
 			if((m_shape.at(index) != species.shapes.back() && !m_wildGrowth.at(index)) || m_wildGrowth.at(index) < species.maxWildGrowth)
 				m_shapeGrowthEvent.schedule(index, m_area, stepsPerShapeChange(index), index);
@@ -278,16 +279,16 @@ Percent Plants::getPercentGrown(PlantIndex index) const
 	if(m_growthEvent.exists(index))
 	{
 		if(m_percentGrown.at(index) != 0)
-			output += (m_growthEvent.percentComplete(index) * (100u - m_percentGrown.at(index))) / 100u;
+			output += (m_growthEvent.percentComplete(index) * (Percent::create(100) - m_percentGrown.at(index))) / 100u;
 		else
 			output = m_growthEvent.percentComplete(index);
 	}
 	return output;
 }
-uint32_t Plants::getRootRange(PlantIndex index) const
+DistanceInBlocks Plants::getRootRange(PlantIndex index) const
 {
 	const PlantSpecies& species = *m_species.at(index);
-	return species.rootRangeMin + ((species.rootRangeMax - species.rootRangeMin) * getPercentGrown(index)) / 100;
+	return species.rootRangeMin + util::scaleByPercentRange(species.rootRangeMin.get(), species.rootRangeMax.get(), getPercentGrown(index));
 }
 Percent Plants::getPercentFoliage(PlantIndex index) const
 {
@@ -295,7 +296,7 @@ Percent Plants::getPercentFoliage(PlantIndex index) const
 	if(m_foliageGrowthEvent.exists(index))
 	{
 		if(m_percentFoliage.at(index) != 0)
-			output += (m_foliageGrowthEvent.percentComplete(index) * (100u - m_percentFoliage.at(index))) / 100u;
+			output += (m_foliageGrowthEvent.percentComplete(index) * (Percent::create(100) - m_percentFoliage.at(index))) / 100u;
 		else
 			output = m_foliageGrowthEvent.percentComplete(index);
 	}
@@ -303,13 +304,13 @@ Percent Plants::getPercentFoliage(PlantIndex index) const
 }
 Mass Plants::getFoliageMass(PlantIndex index) const
 {
-	Mass maxFoliageForType = util::scaleByPercent(getSpecies(index).adultMass, Config::percentOfPlantMassWhichIsFoliage);
-	Mass maxForGrowth = util::scaleByPercent(maxFoliageForType, getPercentGrown(index));
-	return util::scaleByPercent(maxForGrowth, getPercentFoliage(index));
+	Mass maxFoliageForType = Mass::create(util::scaleByPercent(getSpecies(index).adultMass.get(), Config::percentOfPlantMassWhichIsFoliage));
+	Mass maxForGrowth = Mass::create(util::scaleByPercent(maxFoliageForType.get(), getPercentGrown(index)));
+	return Mass::create(util::scaleByPercent(maxForGrowth.get(), getPercentFoliage(index)));
 }
 void Plants::updateFluidVolumeRequested(PlantIndex index)
 {
-	m_volumeFluidRequested.at(index) = util::scaleByPercent(getSpecies(index).volumeFluidConsumed, getPercentGrown(index));
+	m_volumeFluidRequested.at(index) = CollisionVolume::create(util::scaleByPercent(getSpecies(index).volumeFluidConsumed.get(), getPercentGrown(index)));
 }
 Step Plants::stepsPerShapeChange(PlantIndex index) const
 {
@@ -323,9 +324,9 @@ bool Plants::temperatureEventExists(PlantIndex index) const
 }
 void Plants::removeFoliageMass(PlantIndex index, Mass mass)
 {
-	Mass maxFoliageForType = util::scaleByPercent(getSpecies(index).adultMass, Config::percentOfPlantMassWhichIsFoliage);
-	Mass maxForGrowth = util::scaleByPercent(maxFoliageForType, getPercentGrown(index));
-	Percent percentRemoved = std::max(1u, ((maxForGrowth - mass) / maxForGrowth) * 100u);
+	Mass maxFoliageForType = Mass::create(util::scaleByPercent(getSpecies(index).adultMass.get(), Config::percentOfPlantMassWhichIsFoliage));
+	Mass maxForGrowth = Mass::create(util::scaleByPercent(maxFoliageForType.get(), getPercentGrown(index)));
+	Percent percentRemoved = Percent::create(std::max(1u, ((maxForGrowth - mass) / maxForGrowth).get() * 100u));
 	m_percentFoliage.at(index) = getPercentFoliage(index);
 	assert(m_percentFoliage.at(index) >= percentRemoved);
 	m_percentFoliage.at(index) -= percentRemoved;
@@ -354,12 +355,12 @@ void Plants::doWildGrowth(PlantIndex index, uint8_t count)
 			BlockIndex toGrowInto = candidates[simulation.m_random.getInRange(0u, (uint)candidates.size() - 1u)];
 			std::array<int32_t, 3> offset = blocks.relativeOffsetTo(m_location.at(index), toGrowInto);
 			// Use the volume of the location position as the volume of the new growth position.
-			std::array<int32_t, 4> position = {offset[0], offset[1], offset[2], (int)m_shape.at(index)->getCollisionVolumeAtLocationBlock()};
+			std::array<int32_t, 4> position = {offset[0], offset[1], offset[2], (int)m_shape.at(index)->getCollisionVolumeAtLocationBlock().get()};
 			setShape(index, simulation.m_shapes.mutateAdd(*m_shape.at(index), position));
 		}
 	}
 }
-void Plants::removeFruitQuantity(PlantIndex index, uint32_t quantity)
+void Plants::removeFruitQuantity(PlantIndex index, Quantity quantity)
 {
 	assert(quantity <= m_quantityToHarvest.at(index));
 	m_quantityToHarvest.at(index) -= quantity;
@@ -372,13 +373,18 @@ Mass Plants::getFruitMass(PlantIndex index) const
 void Plants::makeFoliageGrowthEvent(PlantIndex index)
 {
 	assert(m_percentFoliage.at(index) != 100);
-	Step delay = util::scaleByInversePercent(getSpecies(index).stepsTillFoliageGrowsFromZero, m_percentFoliage.at(index));
+	Step delay = Step::create(util::scaleByInversePercent(getSpecies(index).stepsTillFoliageGrowsFromZero.get(), m_percentFoliage.at(index)));
 	m_foliageGrowthEvent.schedule(index, m_area, delay, index);
 }
 void Plants::foliageGrowth(PlantIndex index)
 {
-	m_percentFoliage.at(index) = 100;
+	m_percentFoliage.at(index) = Percent::create(100);
 	updateGrowingStatus(index);
+}
+Step Plants::getStepAtWhichPlantWillDieFromLackOfFluid(PlantIndex index) const
+{
+	assert(m_volumeFluidRequested.at(index) != 0);
+	return m_fluidEvent.getStep(index);
 }
 void Plants::updateShape(PlantIndex index)
 {
@@ -394,10 +400,32 @@ void Plants::updateShape(PlantIndex index)
 		doWildGrowth(index);
 	}
 }
-Step Plants::getStepAtWhichPlantWillDieFromLackOfFluid(PlantIndex index) const
+void Plants::setLocation(PlantIndex index, BlockIndex location, Facing)
 {
-	assert(m_volumeFluidRequested.at(index) != 0);
-	return m_fluidEvent.getStep(index);
+	assert(m_location.at(index).empty());
+	Blocks& blocks = m_area.getBlocks();
+	for(BlockIndex block : m_shape.at(index)->getBlocksOccupiedAt(blocks, location, Facing::create(0)))
+		blocks.plant_erase(block);
+	m_location.at(index) = location;
+}
+void Plants::exit(PlantIndex index)
+{
+	assert(m_location.at(index).exists());
+	Blocks& blocks = m_area.getBlocks();
+	for(BlockIndex block : m_blocks.at(index))
+		blocks.plant_erase(block);
+	m_location.at(index).clear();
+}
+void Plants::setShape(PlantIndex index, const Shape& shape)
+{
+	BlockIndex location = getLocation(index);
+	exit(index);
+	m_shape.at(index) = &shape;
+	setLocation(index, location, Facing::create(0));
+}
+bool Plants::blockIsFull(BlockIndex block)
+{
+	return m_area.getBlocks().plant_exists(block);
 }
 Json Plants::toJson() const
 {
@@ -441,7 +469,7 @@ void to_json(Json& data, const Plants& plants)
 {
 	data = plants.toJson();
 }
-void Plants::log(PlantIndex index) const { std::cout << m_species.at(index)->name << ":" << std::to_string(getPercentGrown(index)) << "%"; }
+void Plants::log(PlantIndex index) const { std::cout << m_species.at(index)->name << ":" << std::to_string(getPercentGrown(index).get()) << "%"; }
 PlantIndices Plants::getAll() const
 {
 	// TODO: Replace with std::iota?
@@ -459,7 +487,7 @@ PlantGrowthEvent::PlantGrowthEvent(Simulation& simulation, const Json& data) :
 void PlantGrowthEvent::execute(Simulation&, Area* area)
 {
 	Plants& plants = area->getPlants();
-	plants.m_percentGrown.at(m_plant) = 100;
+	plants.m_percentGrown.at(m_plant) = Percent::create(100);
 	if(plants.m_species.at(m_plant)->annual)
 		plants.setQuantityToHarvest(m_plant);
 }

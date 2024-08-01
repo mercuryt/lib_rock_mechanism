@@ -42,7 +42,7 @@ void Blocks::farm_maybeDesignateForSowingIfPartOfFarmField(BlockIndex index)
 {
 	if(m_farmFields.contains(index))
 	{
-		assert(!m_plants.at(index));
+		assert(m_plants.at(index).empty());
 		for(auto& [faction, farmField] : m_farmFields.at(index))
 			if(farm_isSowingSeasonFor(*farmField->plantSpecies))
 				m_area.m_hasFarmFields.at(faction).addSowSeedsDesignation(index);
@@ -51,7 +51,7 @@ void Blocks::farm_maybeDesignateForSowingIfPartOfFarmField(BlockIndex index)
 void Blocks::farm_removeAllHarvestDesignations(BlockIndex index)
 {
 	PlantIndex plant = m_plants.at(index);	
-	if(!plant)
+	if(plant.empty())
 		return;
 	if(m_farmFields.contains(index))
 		for(auto& [faction, farmField] : m_farmFields.at(index))
@@ -61,7 +61,7 @@ void Blocks::farm_removeAllHarvestDesignations(BlockIndex index)
 void Blocks::farm_removeAllGiveFluidDesignations(BlockIndex index)
 {
 	PlantIndex plant = m_plants.at(index);	
-	if(!plant)
+	if(plant.empty())
 		return;
 	if(m_farmFields.contains(index))
 		for(auto& [faction, farmField] : m_farmFields.at(index))

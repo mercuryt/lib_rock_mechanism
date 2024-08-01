@@ -12,13 +12,14 @@
 #include "items/items.h"
 #include "blocks/blocks.h"
 #include "terrainFacade.h"
+#include "types.h"
 #include <algorithm>
 #include <memory>
 #include <unordered_map>
 // ProjectRequirementCounts
 ProjectRequirementCounts::ProjectRequirementCounts(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) :
 	required(data["required"].get<const Quantity>()), delivered(data["delivered"].get<Quantity>()), 
-	reserved(data["reserved"].get<Quantity>()), consumed(data["consumed"].get<Quantity>()) { }
+	reserved(data["reserved"].get<Quantity>()), consumed(data["consumed"].get<bool>()) { }
 // Project worker.
 ProjectWorker::ProjectWorker(const Json& data, DeserializationMemo& deserializationMemo) : 
 	objective(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))
@@ -319,7 +320,7 @@ void ProjectTryToAddWorkersThreadedTask::writeStep(Simulation&, Area*)
 					ActorOrItemReference ref;
 					ref.setItem(m_project.m_area.getItems().getReferenceTarget(pair2.second.getIndex()));
 					std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<ProjectRequiredShapeDishonoredCallback>(m_project, ref);
-					items.reservable_reserve(pair2.second.getIndex(), m_project.m_canReserve, 1, std::move(dishonorCallback));
+					items.reservable_reserve(pair2.second.getIndex(), m_project.m_canReserve, Quantity::create(1), std::move(dishonorCallback));
 				}
 			m_project.m_reservedEquipment = m_reservedEquipment;
 		}
@@ -384,18 +385,18 @@ void ProjectTryToAddWorkersThreadedTask::resetProjectCounts()
 {
 	for(auto& pair : m_project.m_requiredItems)
 	{
-		pair.second.reserved = 0;
-		pair.second.delivered = 0;
+		pair.second.reserved = Quantity::create(0);
+		pair.second.delivered = Quantity::create(0);
 	}
 	for(auto& pair : m_project.m_requiredActors)
 	{
-		pair.second.reserved = 0;
-		pair.second.delivered = 0;
+		pair.second.reserved = Quantity::create(0);
+		pair.second.delivered = Quantity::create(0);
 	}
 	m_project.m_toPickup.clear();
 }
 // Derived classes are expected to provide getDuration, getConsumedItems, getUnconsumedItems, getByproducts, onDelay, offDelay, and onComplete.
-Project::Project(FactionId f, Area& a, BlockIndex l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback) : 
+Project::Project(FactionId f, Area& a, BlockIndex l, Quantity mw, std::unique_ptr<DishonorCallback> locationDishonorCallback) : 
 	m_finishEvent(a.m_eventSchedule), 
 	m_tryToHaulEvent(a.m_eventSchedule), 
 	m_tryToReserveEvent(a.m_eventSchedule),
@@ -813,7 +814,7 @@ void Project::scheduleFinishEvent(Step start)
 		Percent complete = m_finishEvent.percentComplete();
 		m_finishEvent.unschedule();
 		assert(complete < 100);
-		delay = util::scaleByPercent(delay, 100 - complete);
+		delay = Step::create(util::scaleByInversePercent(delay.get(), complete));
 	}
 	m_finishEvent.schedule(delay, *this, start);
 }
@@ -886,7 +887,7 @@ void Project::reset()
 	m_tryToHaulThreadedTask.maybeCancel(m_area.m_simulation, &m_area);
 	m_tryToAddWorkersThreadedTask.maybeCancel(m_area.m_simulation, &m_area);
 	m_toConsume.clear();
-	m_haulRetries = 0;
+	m_haulRetries = Quantity::create(0);
 	m_requiredItems.clear();
 	m_requiredActors.clear();
 	m_toPickup.clear();
@@ -957,11 +958,11 @@ void BlockHasProjects::remove(Project& project)
 Percent BlockHasProjects::getProjectPercentComplete(FactionId faction) const
 {
 	if(!m_data.contains(faction))
-		return 0;
+		return Percent::create(0);
 	for(Project* project : m_data.at(faction))
-		if(project->getPercentComplete())
+		if(project->getPercentComplete() != 0)
 			return project->getPercentComplete();
-	return 0;
+	return Percent::create(0);
 }
 Project* BlockHasProjects::get(FactionId faction) const
 {

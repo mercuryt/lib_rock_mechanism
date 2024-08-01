@@ -166,7 +166,7 @@ void Simulation::fastForwardUntillActorHasEquipment(Area& area, ActorIndex actor
 void Simulation::fastForwardUntillPredicate(std::function<bool()> predicate, uint32_t minutes)
 {
 	assert(!predicate());
-	[[maybe_unused]] Step lastStep = m_step + (minutes * Config::stepsPerMinute);
+	[[maybe_unused]] Step lastStep = m_step + (Config::stepsPerMinute * minutes);
 	while(!m_eventSchedule.m_data.empty())
 	{
 		if(m_threadedTaskEngine.count() == 0)

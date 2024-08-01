@@ -105,6 +105,13 @@ ActorOrItemIndex ActorOrItemIndex::getLeader(Area& area) const
 	else
 		return area.getItems().getLeader(m_index);
 }
+bool ActorOrItemIndex::canEnterCurrentlyFrom(Area& area, BlockIndex destination, BlockIndex origin)
+{
+	if(isActor())
+		return area.getBlocks().actor_canEnterCurrentlyFrom(destination, m_index.toActor(), origin);
+	else
+		return area.getBlocks().item_canEnterCurrentlyFrom(destination, m_index.toItem(), origin);
+}
 BlockIndex ActorOrItemIndex::getLocation(const Area& area) const 
 { return isActor() ? area.getActors().getLocation(m_index) : area.getItems().getLocation(m_index); }
 const BlockIndices& ActorOrItemIndex::getBlocks(Area& area) const
@@ -158,5 +165,5 @@ size_t ActorOrItemIndex::Hash::operator()(const ActorOrItemIndex& actorOrItem) c
 	HasShapeIndex output = actorOrItem.get();
 	if(actorOrItem.isActor())
 		ActorOrItemIndex::setActorBit(output);
-	return output();
+	return output.get();
 }

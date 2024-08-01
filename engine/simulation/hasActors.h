@@ -15,8 +15,8 @@ struct ActorDataLocation
 
 class SimulationHasActors final
 {
-	ActorId m_nextId = 0;
-	std::unordered_map<ActorId, ActorDataLocation> m_actors;
+	ActorId m_nextId = ActorId::create(0);
+	ActorIdMap<ActorDataLocation> m_actors;
 public:
 	SimulationHasActors() = default;
 	SimulationHasActors(const Json& data, DeserializationMemo& deserializationMemo);

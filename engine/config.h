@@ -16,7 +16,8 @@ namespace Config
 	//
 	// sort command for vim:
 	// 	sort /\t/w* /w* /w* /
-	inline constexpr Step actorDoVisionInterval = 3;
+	// TODO: interval should be type Step but I don't know how to make it work with constexpr.
+	inline constexpr uint actorDoVisionInterval = 3;
 	inline constexpr bool fluidPiston = false;
 	inline constexpr uint32_t fluidsSeepDiagonalModifier = 100;
 	inline constexpr float dataStoreVectorResizeFactor = 1.5;
@@ -31,7 +32,7 @@ namespace Config
 	inline uint32_t attackCoolDownDurationBaseDextarity;
 	inline Step attackCoolDownDurationBaseSteps;
 	inline float attackSkillCombatModifier;
-	inline uint32_t averageItemQuality;
+	inline Quality averageItemQuality;
 	inline size_t averageLandHeightBlocks;
 	inline float averageNumberOfRiversPerCandidate;
 	inline Step baseHealDelaySteps;
@@ -84,7 +85,7 @@ namespace Config
 	inline float heatDisipatesAtDistanceExponent;
 	inline float heatFractionForBurn;
 	inline float heatFractionForSmoulder;
-	inline Temperature heatRadianceMinimum;
+	inline TemperatureDelta heatRadianceMinimum;
 	inline uint32_t hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea;
 	inline uint32_t hitScaleModifier;
 	inline uint32_t hoursPerDay;
@@ -105,8 +106,7 @@ namespace Config
 	inline DistanceInBlocks locationBucketSize;
 	inline float massCarryMaximimMovementRatio;
 	inline uint32_t maxAnimalInsertLocationSearchRetries;
-	inline Volume maxBlockVolume;
-	inline Volume maxBlockVolumeHardLimit;
+	inline CollisionVolume maxBlockVolume;
 	inline DistanceInBlocks maxBlocksToLookForBetterFood;
 	inline DistanceInBlocks maxDistanceToLookForEatingLocation;
 	inline float maxDistanceVisionModifier;
@@ -150,7 +150,7 @@ namespace Config
 	inline uint8_t pathRequestsPerThread;
 	inline float pathHuristicConstant;
 	inline Percent percentHeightCarvedByRivers;
-	inline Percent percentHungerAcceptableDesireModifier;
+	inline uint8_t percentHungerAcceptableDesireModifier;
 	inline Percent percentOfPlantMassWhichIsFoliage;
 	inline Percent percentPermanantImparmentMinimum;
 	inline uint32_t pierceBleedVoumeRateModifier;
@@ -217,6 +217,7 @@ namespace Config
 	inline float unitsOfCarryMassPerUnitOfStrength;
 	inline float unitsOfMoveSpeedPerUnitOfAgility;
 	inline uint32_t unitsOfWoundAreaPerUnitItemScaleFactor;
+	inline uint16_t unitsOfVolumePerUnitOfCollisionVolume;
 	inline size_t visionFacadeReservationSize;
 	inline VisionFacadeIndex visionThreadingBatchSize;
 	inline uint32_t wanderMaximumNumberOfBlocks;
@@ -227,6 +228,6 @@ namespace Config
 	inline float woodCuttingStrengthModifier;
 	inline Step yokeDelaySteps;
 
-	inline uint32_t convertBodyPartVolumeToArea(uint32_t volume){ return sqrt(volume); }
+	inline uint32_t convertBodyPartVolumeToArea(Volume volume){ return sqrt(volume.get()); }
 	void load();
 }

@@ -15,10 +15,10 @@ struct AnimalsArriveDramaArc final : public DramaArc
 	ActorReferences m_actors;
 	bool m_isActive = false;
 	const AnimalSpecies* m_species = nullptr;
-	uint32_t m_quantity = 0;
-	Percent m_hungerPercent = 0;
-	Percent m_thristPercent = 0;
-	Percent m_tiredPercent = 0;
+	Quantity m_quantity = Quantity::create(0);
+	Percent m_hungerPercent = Percent::create(0);
+	Percent m_thristPercent = Percent::create(0);
+	Percent m_tiredPercent = Percent::create(0);
 	AnimalsArriveDramaArc(DramaEngine& engine, Area& area);
 	AnimalsArriveDramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine);
 	void callback();
@@ -28,7 +28,7 @@ private:
 	void scheduleDepart();
 	void scheduleContinue();
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::pair<const AnimalSpecies*, uint32_t> getSpeciesAndQuantity() const;
+	[[nodiscard]] std::pair<const AnimalSpecies*, Quantity> getSpeciesAndQuantity() const;
 	[[nodiscard]] static std::vector<const AnimalSpecies*> getLargeCarnivors();
 	[[nodiscard]] static std::vector<const AnimalSpecies*> getMediumCarnivors();
 	[[nodiscard]] static std::vector<const AnimalSpecies*> getSmallCarnivors();
@@ -45,7 +45,7 @@ class AnimalsLeaveScheduledEvent final : public ScheduledEvent
 {
 	AnimalsArriveDramaArc& m_dramaticArc;
 public:
-	AnimalsLeaveScheduledEvent(AnimalsArriveDramaArc& event, Simulation& simulation, Step duration, Step start = 0) : ScheduledEvent(simulation, duration, start), m_dramaticArc(event) { }
+	AnimalsLeaveScheduledEvent(AnimalsArriveDramaArc& event, Simulation& simulation, Step duration, Step start = Step::create(0)) : ScheduledEvent(simulation, duration, start), m_dramaticArc(event) { }
 	void execute(Simulation&, Area*) { m_dramaticArc.callback(); }
 	void clearReferences(Simulation&, Area*) { m_dramaticArc.m_scheduledEvent.clearPointer(); }
 };

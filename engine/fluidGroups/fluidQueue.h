@@ -18,8 +18,8 @@ class FluidGroup;
 struct FutureFlowBlock
 {
 	BlockIndex block;
-	uint32_t capacity = 0;
-	uint32_t delta = 0;
+	CollisionVolume capacity = CollisionVolume::create(0);
+	CollisionVolume delta = CollisionVolume::create(0);
 	// No need to initalize capacity and delta here, they will be set at the begining of read step.
 	FutureFlowBlock(BlockIndex b) : block(b) {}
 };
@@ -44,13 +44,13 @@ public:
 	void removeBlock(BlockIndex block);
 	void removeBlocks(BlockIndices& blocks);
 	void findGroupEnd();
-	void recordDelta(uint32_t volume);
+	void recordDelta(CollisionVolume volume);
 	void applyDelta();
 	void merge(FluidQueue& fluidQueue);
 	void noChange();
 	[[nodiscard]] uint32_t groupSize() const;
-	[[nodiscard]] uint32_t groupLevel() const;
-	[[nodiscard]] uint32_t groupCapacityPerBlock() const;
-	[[nodiscard]] uint32_t groupFlowTillNextStepPerBlock() const;
+	[[nodiscard]] CollisionVolume groupLevel() const;
+	[[nodiscard]] CollisionVolume groupCapacityPerBlock() const;
+	[[nodiscard]] CollisionVolume groupFlowTillNextStepPerBlock() const;
 	[[nodiscard]] bool groupContains(BlockIndex block) const;
 };

@@ -65,7 +65,7 @@ class StockPile
 {
 	std::vector<ItemQuery> m_queries;
 	BlockIndices m_blocks;
-	Quantity m_openBlocks = 0;
+	Quantity m_openBlocks = Quantity::create(0);
 	Area& m_area;
 	FactionId m_faction;
 	bool m_enabled = true;
@@ -104,7 +104,7 @@ class StockPileProject final : public Project
 {
 	ItemReference m_item;
 	// Needed for generic items where the original item may no longer exist.
-	Quantity m_quantity = 0;
+	Quantity m_quantity = Quantity::create(0);
 	const ItemType& m_itemType;
 	const MaterialType& m_materialType;
 	StockPile& m_stockpile;
@@ -137,7 +137,7 @@ class ReenableStockPileScheduledEvent final : public ScheduledEvent
 {
 	StockPile& m_stockPile;
 public:
-	ReenableStockPileScheduledEvent(StockPile& sp, Step duration, const Step start = 0) : ScheduledEvent(sp.getSimulation(), duration, start), m_stockPile(sp) { }
+	ReenableStockPileScheduledEvent(StockPile& sp, Step duration, const Step start = Step::create(0)) : ScheduledEvent(sp.getSimulation(), duration, start), m_stockPile(sp) { }
 	void execute(Simulation&, Area*) { m_stockPile.reenable(); }
 	void clearReferences(Simulation&, Area*) { m_stockPile.m_reenableScheduledEvent.clearPointer(); }
 };
@@ -148,7 +148,7 @@ struct BlockIsPartOfStockPile
 };
 class BlockIsPartOfStockPiles
 {
-	std::unordered_map<FactionId, BlockIsPartOfStockPile> m_stockPiles;
+	FactionIdMap<BlockIsPartOfStockPile> m_stockPiles;
 	BlockIndex m_block;
 public:
 	BlockIsPartOfStockPiles(BlockIndex b): m_block(b) { }
@@ -218,12 +218,12 @@ public:
 	// For testing.
 	[[maybe_unused, nodiscard]] auto& getItemsWithDestinations() { return m_itemsWithDestinationsWithoutProjects; }
 	[[maybe_unused, nodiscard]] auto& getItemsWithDestinationsByStockPile() { return m_itemsWithDestinationsByStockPile; }
-	[[maybe_unused, nodiscard]] Quantity getItemsWithProjectsCount() { return m_projectsByItem.size(); }
+	[[maybe_unused, nodiscard]] Quantity getItemsWithProjectsCount() { return Quantity::create(m_projectsByItem.size()); }
 };
 class AreaHasStockPiles
 {
 	Area& m_area;
-	std::unordered_map<FactionId, AreaHasStockPilesForFaction> m_data;
+	FactionIdMap<AreaHasStockPilesForFaction> m_data;
 public:
 	AreaHasStockPiles(Area& a) : m_area(a) { }
 	void registerFaction(FactionId faction) { assert(!m_data.contains(faction)); m_data.try_emplace(faction, m_area, faction); }

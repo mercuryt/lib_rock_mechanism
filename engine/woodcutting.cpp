@@ -35,21 +35,21 @@ void UndesignateWoodCuttingInputAction::execute()
 }
 */
 WoodCuttingProject::WoodCuttingProject(const Json& data, DeserializationMemo& deserializationMemo) : Project(data, deserializationMemo) { }
-std::vector<std::pair<ItemQuery, uint32_t>> WoodCuttingProject::getConsumed() const { return {}; }
-std::vector<std::pair<ItemQuery, uint32_t>> WoodCuttingProject::getUnconsumed() const { return {{ItemType::byName("axe"), 1}}; }
-std::vector<std::pair<ActorQuery, uint32_t>> WoodCuttingProject::getActors() const { return {}; }
-std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> WoodCuttingProject::getByproducts() const
+std::vector<std::pair<ItemQuery, Quantity>> WoodCuttingProject::getConsumed() const { return {}; }
+std::vector<std::pair<ItemQuery, Quantity>> WoodCuttingProject::getUnconsumed() const { return {{ItemType::byName("axe"), Quantity::create(1)}}; }
+std::vector<std::pair<ActorQuery, Quantity>> WoodCuttingProject::getActors() const { return {}; }
+std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> WoodCuttingProject::getByproducts() const
 {
 	PlantIndex plant = m_area.getBlocks().plant_get(m_location);
 	Plants& plants = m_area.getPlants();
 	Percent percentGrown = plants.getPercentGrown(plant);
 	const PlantSpecies& species = plants.getSpecies(plant);
-	uint32_t unitsLogsGenerated = util::scaleByPercent(species.logsGeneratedByFellingWhenFullGrown, percentGrown);
-	uint32_t unitsBranchesGenerated = util::scaleByPercent(species.branchesGeneratedByFellingWhenFullGrown, percentGrown);
-	assert(unitsLogsGenerated);
-	assert(unitsBranchesGenerated);
+	Quantity unitsLogsGenerated = Quantity::create(util::scaleByPercent(species.logsGeneratedByFellingWhenFullGrown.get(), percentGrown));
+	Quantity unitsBranchesGenerated = Quantity::create(util::scaleByPercent(species.branchesGeneratedByFellingWhenFullGrown.get(), percentGrown));
+	assert(unitsLogsGenerated != 0);
+	assert(unitsBranchesGenerated != 0);
 	auto& woodType = species.woodType;
-	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> output{
+	std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> output{
 		
 		{&ItemType::byName("branch"), woodType, unitsBranchesGenerated},
 		{&ItemType::byName("log"), woodType, unitsLogsGenerated}
@@ -105,14 +105,14 @@ Step WoodCuttingProject::getDuration() const
 	uint32_t totalScore = 0u;
 	for(auto& pair : m_workers)
 		totalScore += getWorkerWoodCuttingScore(m_area, pair.first.getIndex());
-	return std::max(Step(1u), Config::woodCuttingMaxSteps / totalScore);
+	return std::max(Step::create(1u), Config::woodCuttingMaxSteps / totalScore);
 }
 WoodCuttingLocationDishonorCallback::WoodCuttingLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
 	m_faction(data["faction"].get<FactionId>()),
 	m_area(deserializationMemo.area(data["area"])),
 	m_location(data["location"].get<BlockIndex>()) { }
 Json WoodCuttingLocationDishonorCallback::toJson() const { return Json({{"type", "WoodCuttingLocationDishonorCallback"}, {"faction", m_faction}, {"location", m_location}}); }
-void WoodCuttingLocationDishonorCallback::execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount)
+void WoodCuttingLocationDishonorCallback::execute([[maybe_unused]] Quantity oldCount, [[maybe_unused]] Quantity newCount)
 {
 	m_area.m_hasWoodCuttingDesignations.undesignate(m_faction, m_location);
 }

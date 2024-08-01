@@ -14,7 +14,7 @@ class AreaHasRain final
 	Area& m_area;
 	const FluidType* m_currentlyRainingFluidType = nullptr;
 	const FluidType& m_defaultRainFluidType;
-	Percent m_intensityPercent = 0;
+	Percent m_intensityPercent = Percent::create(0);
 public:
 	AreaHasRain(Area& a, Simulation& s);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
@@ -35,7 +35,7 @@ public:
 class RainEvent final : public ScheduledEvent
 {
 public:
-	RainEvent(Step delay, Simulation& simulation, Step start = 0);
+	RainEvent(Step delay, Simulation& simulation, Step start = Step::create(0));
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };

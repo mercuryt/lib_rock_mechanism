@@ -8,7 +8,6 @@
 #include "../body.h"
 #include "../objective.h"
 #include "../equipment.h"
-#include "../attributes.h"
 #include "../actorOrItemIndex.h"
 #include "../skill.h"
 #include "../terrainFacade.h"
@@ -25,6 +24,7 @@ struct AnimalSpecies;
 struct Faction;
 struct ItemType;
 struct FluidType;
+struct shape;
 class Project;
 class AttackCoolDownEvent;
 class GetIntoAttackPositionPathRequest;
@@ -42,20 +42,20 @@ enum class CauseOfDeath { none, thirst, hunger, bloodLoss, wound, temperature };
 
 struct ActorParamaters
 {
-	ActorId id = 0;
+	ActorId id = ActorId::null();
 	const AnimalSpecies& species;
 	std::wstring name = L"";
 	DateTime birthDate = {0,0,0};
-	Step birthStep = 0;
-	Percent percentGrown = nullPercent;
+	Step birthStep = Step::null();
+	Percent percentGrown = Percent::null();
 	BlockIndex location;
-	Facing facing = 0;
-	FactionId faction = FACTION_ID_MAX;
-	Percent percentHunger = nullPercent;
+	Facing facing = Facing::null();
+	FactionId faction = FactionId::null();
+	Percent percentHunger = Percent::null();
 	bool needsEat = false;
-	Percent percentTired = nullPercent;
+	Percent percentTired = Percent::null();
 	bool needsSleep = false;
-	Percent percentThirst = nullPercent;
+	Percent percentThirst = Percent::null();
 	bool needsDrink = false;
 	bool hasCloths = true;
 	bool hasSidearm = false;
@@ -75,6 +75,7 @@ struct ActorParamaters
 };
 class Actors final : public Portables
 {
+	ActorIndexSet m_onSurface;
 	DataVector<std::unique_ptr<ActorReferenceTarget>, ActorIndex> m_referenceTarget;
 	DataVector<std::unique_ptr<CanReserve>, ActorIndex> m_canReserve;
 	DataVector<std::unique_ptr<ActorHasUniform>, ActorIndex> m_hasUniform;
@@ -86,7 +87,19 @@ class Actors final : public Portables
 	DataVector<Step, ActorIndex> m_birthStep;
 	DataVector<CauseOfDeath, ActorIndex> m_causeOfDeath;
 	DataVector<Mass, ActorIndex> m_unencomberedCarryMass;
-	DataVector<std::unique_ptr<Attributes>, ActorIndex> m_attributes;
+	DataVector<BlockIndices, HasShapeIndex> m_leadFollowPath;
+	DataVector<AttributeLevel, ActorIndex> m_strength;
+	DataVector<AttributeLevelBonusOrPenalty, ActorIndex> m_strengthBonusOrPenalty;
+	DataVector<float, ActorIndex> m_strengthModifier;
+	DataVector<AttributeLevel, ActorIndex> m_agility;
+	DataVector<AttributeLevelBonusOrPenalty, ActorIndex> m_agilityBonusOrPenalty;
+	DataVector<float, ActorIndex> m_agilityModifier;
+	DataVector<AttributeLevel, ActorIndex> m_dextarity;
+	DataVector<AttributeLevelBonusOrPenalty, ActorIndex> m_dextarityBonusOrPenalty;
+	DataVector<float, ActorIndex> m_dextarityModifier;
+	DataVector<Mass, ActorIndex> m_mass;
+	DataVector<int32_t, ActorIndex> m_massBonusOrPenalty;
+	DataVector<float, ActorIndex> m_massModifier;
 	DataVector<std::unique_ptr<HasObjectives>, ActorIndex> m_hasObjectives;
 	DataVector<std::unique_ptr<Body>, ActorIndex> m_body;
 	DataVector<std::unique_ptr<MustSleep>, ActorIndex> m_mustSleep;
@@ -106,14 +119,14 @@ class Actors final : public Portables
 	// Combat.
 	HasScheduledEvents<AttackCoolDownEvent> m_coolDownEvent;
 	DataVector<std::unique_ptr<GetIntoAttackPositionPathRequest>, ActorIndex> m_getIntoAttackPositionPathRequest;
-	DataVector<std::vector<std::pair<uint32_t, Attack>>, ActorIndex> m_meleeAttackTable;
+	DataVector<std::vector<std::pair<CombatScore, Attack>>, ActorIndex> m_meleeAttackTable;
 	DataVector<ActorIndices, ActorIndex> m_targetedBy;
 	DataVector<ActorIndex, ActorIndex> m_target;
 	DataVector<Step, ActorIndex> m_onMissCoolDownMelee;
-	DataVector<float, ActorIndex> m_maxMeleeRange;
-	DataVector<float, ActorIndex> m_maxRange;
+	DataVector<DistanceInBlocksFractional, ActorIndex> m_maxMeleeRange;
+	DataVector<DistanceInBlocksFractional, ActorIndex> m_maxRange;
 	DataVector<float, ActorIndex> m_coolDownDurationModifier;
-	DataVector<uint32_t, ActorIndex> m_combatScore;
+	DataVector<CombatScore, ActorIndex> m_combatScore;
 	// Move.
 	HasScheduledEvents<MoveEvent> m_moveEvent;
 	DataVector<std::unique_ptr<PathRequest>, ActorIndex> m_pathRequest;
@@ -129,11 +142,13 @@ class Actors final : public Portables
 public:
 	Actors(Area& area);
 	void load(const Json& data);
+	void loadObjectivesAndReservations(const Json& data, DeserializationMemo& deserializationMemo);
 	void onChangeAmbiantSurfaceTemperature();
 	ActorIndex create(ActorParamaters params);
 	void sharedConstructor(ActorIndex index);
 	void scheduleNeeds(ActorIndex index);
 	void resetNeeds(ActorIndex index);
+	void setShape(ActorIndex index, const Shape& shape);
 	void setLocation(ActorIndex index, BlockIndex block);
 	void setLocationAndFacing(ActorIndex index, BlockIndex block, Facing facing);
 	void exit(ActorIndex index);
@@ -149,6 +164,7 @@ public:
 	void unreserveAllBlocksAtLocationAndFacing(ActorIndex index, BlockIndex location, Facing facing);
 	void setBirthStep(ActorIndex index, Step step);
 	[[nodiscard]] ActorIndices getAll() const;
+	[[nodiscard]] ActorIndexSet getOnSurface() const { return m_onSurface; }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] ActorId getId(ActorIndex index) const { return m_id.at(index); }
 	[[nodiscard]] ActorReference getReference(ActorIndex index) const { return *m_referenceTarget.at(index).get();}
@@ -160,11 +176,9 @@ public:
 	[[nodiscard]] CauseOfDeath getCauseOfDeath(ActorIndex index) const { assert(!isAlive(index)); return m_causeOfDeath.at(index); }
 	[[nodiscard]] bool isEnemy(ActorIndex actor, ActorIndex other) const;
 	[[nodiscard]] bool isAlly(ActorIndex actor, ActorIndex other) const;
-	//TODO: Zombies are not sentient.
-	[[nodiscard]] bool isSentient(ActorIndex index) const { return m_species.at(index)->sentient; }
+	[[nodiscard]] bool isSentient(ActorIndex index) const;
 	[[nodiscard]] bool isInjured(ActorIndex index) const;
 	[[nodiscard]] bool canMove(ActorIndex index) const;
-	[[nodiscard]] Mass getMass(ActorIndex index) const;
 	[[nodiscard]] Volume getVolume(ActorIndex index) const;
 	[[nodiscard]] Quantity getAgeInYears(ActorIndex index) const;
 	[[nodiscard]] Step getAge(ActorIndex index) const;
@@ -212,25 +226,25 @@ public:
 	void combat_onTargetMoved(ActorIndex index);
 	void combat_freeHit(ActorIndex index, ActorIndex actor);
 	//TODO: Combat vs. items?
-	void combat_getIntoRangeAndLineOfSightOfActor(ActorIndex index, ActorIndex target, DistanceInBlocks range);
-	[[nodiscard]] uint32_t combat_getCurrentMeleeCombatScore(ActorIndex index);
+	void combat_getIntoRangeAndLineOfSightOfActor(ActorIndex index, ActorIndex target, DistanceInBlocksFractional range);
+	[[nodiscard]] CombatScore combat_getCurrentMeleeCombatScore(ActorIndex index);
 	[[nodiscard]] bool combat_isOnCoolDown(ActorIndex index) const;
 	[[nodiscard]] bool combat_inRange(ActorIndex index, const ActorIndex target) const;
 	[[nodiscard]] bool combat_doesProjectileHit(ActorIndex index, Attack& attack, const ActorIndex target) const;
 	[[nodiscard]] Percent combat_projectileHitPercent(ActorIndex index, const Attack& attack, const ActorIndex target) const;
-	[[nodiscard]] const float& combat_getMaxMeleeRange(ActorIndex index) const { return m_maxMeleeRange.at(index); }
-	[[nodiscard]] const float& combat_getMaxRange(ActorIndex index) const { return m_maxRange.at(index) != 0 ? m_maxRange.at(index) : m_maxMeleeRange.at(index); }
-	[[nodiscard]] uint32_t combat_getCombatScoreForAttack(ActorIndex index, const Attack& attack) const;
-	[[nodiscard]] const Attack& combat_getAttackForCombatScoreDifference(ActorIndex index, const uint32_t scoreDifference) const;
-	[[nodiscard]] float combat_getQualityModifier(ActorIndex index, uint32_t quality) const;
-	[[nodiscard]] bool combat_blockIsValidPosition(ActorIndex index, const BlockIndex block, uint32_t attackRangeSquared) const;
+	[[nodiscard]] DistanceInBlocksFractional combat_getMaxMeleeRange(ActorIndex index) const { return m_maxMeleeRange.at(index); }
+	[[nodiscard]] DistanceInBlocksFractional combat_getMaxRange(ActorIndex index) const { return m_maxRange.at(index) != DistanceInBlocksFractional::create(0) ? m_maxRange.at(index) : m_maxMeleeRange.at(index); }
+	[[nodiscard]] CombatScore combat_getCombatScoreForAttack(ActorIndex index, const Attack& attack) const;
+	[[nodiscard]] const Attack& combat_getAttackForCombatScoreDifference(ActorIndex index, CombatScore scoreDifference) const;
+	[[nodiscard]] float combat_getQualityModifier(ActorIndex index, Quality quality) const;
+	[[nodiscard]] bool combat_blockIsValidPosition(ActorIndex index, BlockIndex block, DistanceInBlocksFractional attackRangeSquared) const;
 	AttackType& combat_getRangedAttackType(ActorIndex index, ItemIndex weapon);
 	//for degbugging combat
-	[[nodiscard]] std::vector<std::pair<uint32_t, Attack>>& combat_getAttackTable(ActorIndex index) { return m_meleeAttackTable.at(index); }
+	[[nodiscard]] std::vector<std::pair<CombatScore, Attack>>& combat_getAttackTable(ActorIndex index) { return m_meleeAttackTable.at(index); }
 	[[nodiscard]] bool combat_hasThreadedTask(ActorIndex index) { return m_getIntoAttackPositionPathRequest.at(index) != nullptr; }
 	[[nodiscard]] float combat_getCoolDownDurationModifier(ActorIndex index) { return m_coolDownDurationModifier.at(index); }
-	[[nodiscard, maybe_unused]] uint32_t combat_getCombatScore(ActorIndex index) const { return m_combatScore.at(index); }
-	[[nodiscard]] std::vector<std::pair<uint32_t, Attack>>& combat_getMeleeAttacks(ActorIndex index);
+	[[nodiscard, maybe_unused]] CombatScore combat_getCombatScore(ActorIndex index) const { return m_combatScore.at(index); }
+	[[nodiscard]] std::vector<std::pair<CombatScore, Attack>>& combat_getMeleeAttacks(ActorIndex index);
 	// -Body.
 	[[nodiscard]] Percent body_getImpairMovePercent(ActorIndex index);
 	//TODO: change to getImpairDextarityPercent?
@@ -256,15 +270,16 @@ public:
 	void move_setDestinationAdjacentToItem(ActorIndex index, ItemIndex item, bool detour = false, bool unreserved = true, bool reserve = true);
 	void move_setDestinationAdjacentToPolymorphic(ActorIndex index, ActorOrItemIndex actorOrItemIndex, bool detour = false, bool unreserved = true, bool reserve = true);
 	void move_setDestinationAdjacentToPlant(ActorIndex index, PlantIndex plant, bool detour = false, bool unreserved = true, bool reserve = true);
-	void move_setDestinationAdjacentToFluidType(ActorIndex index, const FluidType& fluidType, bool detour = false, bool unreserved = true, bool reserve = true, DistanceInBlocks maxRange = BLOCK_DISTANCE_MAX);
-	void move_setDestinationAdjacentToDesignation(ActorIndex index, BlockDesignation designation, bool detour = false, bool unreserved = true, bool reserve = true, DistanceInBlocks maxRange = BLOCK_DISTANCE_MAX);
+	void move_setDestinationAdjacentToFluidType(ActorIndex index, const FluidType& fluidType, bool detour = false, bool unreserved = true, bool reserve = true, DistanceInBlocks maxRange = DistanceInBlocks::null());
+	void move_setDestinationAdjacentToDesignation(ActorIndex index, BlockDesignation designation, bool detour = false, bool unreserved = true, bool reserve = true, DistanceInBlocks maxRange = DistanceInBlocks::null());
 	void move_setDestinationToEdge(ActorIndex index, bool detour = false);
 	void move_clearAllEventsAndTasks(ActorIndex index);
 	void move_onDeath(ActorIndex index);
 	void move_onLeaveArea(ActorIndex index);
-	void move_pathRequestCallback(ActorIndex index, BlockIndices, bool useCurrentLocation, bool reserveDestination);
+	void move_pathRequestCallback(ActorIndex index, BlockIndices path, bool useCurrentLocation, bool reserveDestination);
 	void move_pathRequestMaybeCancel(ActorIndex index);
 	void move_pathRequestRecord(ActorIndex index, std::unique_ptr<PathRequest> pathRequest);
+	void move_appendToLinePath(ActorIndex index, BlockIndex block);
 	[[nodiscard]] bool move_tryToReserveProposedDestination(ActorIndex index, BlockIndices& path);
 	[[nodiscard]] bool move_tryToReserveOccupied(ActorIndex index);
 	[[nodiscard]] const MoveType& move_getType(ActorIndex index) const { return *m_moveType.at(index); }
@@ -284,15 +299,15 @@ public:
 	void canPickUp_pickUpItemQuantity(ActorIndex index, ItemIndex item, Quantity quantity);
 	void canPickUp_pickUpActor(ActorIndex index, ActorIndex actor);
 	void canPickUp_pickUpPolymorphic(ActorIndex index, ActorOrItemIndex actorOrItemIndex, Quantity quantity);
+	// TODO: Check if can put down.
 	ActorIndex canPickUp_putDownActor(ActorIndex index, BlockIndex location);
 	// Returns a reference to has shape, which may be newly created or pre-existing due to generic items.
-	ItemIndex canPickUp_putDownItem(ItemIndex index, BlockIndex location);
+	ItemIndex canPickUp_putDownItem(ActorIndex index, BlockIndex location);
 	ActorOrItemIndex canPickUp_putDownIfAny(ActorIndex index, BlockIndex location);
 	ActorOrItemIndex canPickUp_putDownPolymorphic(ActorIndex index, BlockIndex location);
 	void canPickUp_removeFluidVolume(ActorIndex index, CollisionVolume volume);
 	void canPickUp_add(ActorIndex index, const ItemType& itemType, const MaterialType& materialType, Quantity quantity);
 	void canPickUp_removeItem(ActorIndex index, ItemIndex item);
-	// These two do the same thing but with slightly different asserts.
 	void canPickUp_updateActorIndex(ActorIndex index, ActorIndex oldIndex, ActorIndex newIndex);
 	void canPickUp_updateItemIndex(ActorIndex index, ItemIndex oldIndex, ItemIndex newIndex);
 	ItemIndex canPickUp_getItem(ActorIndex index);
@@ -329,7 +344,7 @@ public:
 	void objective_canNotCompleteObjective(ActorIndex index, Objective& objective);
 	void objective_canNotFulfillNeed(ActorIndex index, Objective& objective);
 	void objective_maybeDoNext(ActorIndex index);
-	void objective_setPriority(ActorIndex index, const ObjectiveType& objectiveType, uint8_t priority);
+	void objective_setPriority(ActorIndex index, const ObjectiveType& objectiveType, Priority priority);
 	void objective_reset(ActorIndex index);
 	void objective_projectCannotReserve(ActorIndex index);
 	void objective_complete(ActorIndex index, Objective& objective);
@@ -370,7 +385,7 @@ public:
 	[[nodiscard]] bool equipment_containsItem(ActorIndex index, ItemIndex item) const;
 	[[nodiscard]] bool equipment_containsItemType(ActorIndex index, const ItemType& type) const;
 	[[nodiscard]] Mass equipment_getMass(ActorIndex index) const;
-	[[nodiscard]] ItemIndex equipment_getWeaponToAttackAtRange(ActorIndex index, DistanceInBlocks range) const;
+	[[nodiscard]] ItemIndex equipment_getWeaponToAttackAtRange(ActorIndex index, DistanceInBlocksFractional range) const;
 	[[nodiscard]] ItemIndex equipment_getAmmoForRangedWeapon(ActorIndex index, ItemIndex weapon) const;
 	// TODO: change to vectors.
 	[[nodiscard]] const auto& equipment_getAll(ActorIndex index) const { return m_equipmentSet.at(index)->getAll(); }
@@ -417,11 +432,37 @@ public:
 	[[nodiscard]] bool temperature_isSafe(ActorIndex index, Temperature temperature) const;
 	[[nodiscard]] bool temperature_isSafeAtCurrentLocation(ActorIndex index) const;
 	// Attributes.
-	[[nodiscard]] uint32_t getStrength(ActorIndex index) const;
-	[[nodiscard]] uint32_t getDextarity(ActorIndex index) const;
-	[[nodiscard]] uint32_t getAgility(ActorIndex index) const;
+	void attributes_onUpdateGrowthPercent(ActorIndex index);
+	void addStrengthBonusOrPenalty(ActorIndex index, AttributeLevelBonusOrPenalty bonusOrPenalty);
+	void addStrengthModifier(ActorIndex index, float modifer);
+	void onStrengthChanged(ActorIndex index);
+	void updateStrength(ActorIndex index);
+	void addDextarityBonusOrPenalty(ActorIndex index, AttributeLevelBonusOrPenalty bonusOrPenalty);
+	void addDextarityModifier(ActorIndex index, float modifer);
+	void onDextarityChanged(ActorIndex index);
+	void updateDextarity(ActorIndex index);
+	void addAgilityBonusOrPenalty(ActorIndex index, AttributeLevelBonusOrPenalty bonusOrPenalty);
+	void addAgilityModifier(ActorIndex index, float modifer);
+	void onAgilityChanged(ActorIndex index);
+	void updateAgility(ActorIndex index);
+	void addMassBonusOrPenalty(ActorIndex index, uint32_t bonusOrPenalty);
+	void addMassModifier(ActorIndex index, float modifer);
+	void onMassChanged(ActorIndex index);
+	void updateMass(ActorIndex index);
+	[[nodiscard]] AttributeLevel getStrength(ActorIndex index) const;
+	[[nodiscard]] AttributeLevelBonusOrPenalty getStrengthBonusOrPenalty(ActorIndex index) const;
+	[[nodiscard]] float getStrengthModifier(ActorIndex index) const;
+	[[nodiscard]] AttributeLevel getDextarity(ActorIndex index) const;
+	[[nodiscard]] AttributeLevelBonusOrPenalty getDextarityBonusOrPenalty(ActorIndex index) const;
+	[[nodiscard]] float getDextarityModifier(ActorIndex index) const;
+	[[nodiscard]] AttributeLevel getAgility(ActorIndex index) const;
+	[[nodiscard]] AttributeLevelBonusOrPenalty getAgilityBonusOrPenalty(ActorIndex index) const;
+	[[nodiscard]] float getAgilityModifier(ActorIndex index) const;
+	[[nodiscard]] Mass getMass(ActorIndex index) const;
+	[[nodiscard]] int32_t getMassBonusOrPenalty(ActorIndex index) const;
+	[[nodiscard]] float getMassModifier(ActorIndex index) const;
 	// Skills.
-	[[nodiscard]] uint32_t skill_getLevel(ActorIndex index, const SkillType& skillType) const;
+	[[nodiscard]] SkillLevel skill_getLevel(ActorIndex index, const SkillType& skillType) const;
 	// Growth.
 	void grow_maybeStart(ActorIndex index);
 	void grow_stop(ActorIndex index);
@@ -429,6 +470,10 @@ public:
 	void grow_setPercent(ActorIndex index, Percent percentGrown);
 	[[nodiscard]] bool grow_isGrowing(ActorIndex index) const;
 	[[nodiscard]] Percent grow_getPercent(ActorIndex index) const;
+	// For Line leader.
+	[[nodiscard]] BlockIndices lineLead_getPath(ActorIndex index) const;
+	[[nodiscard]] bool lineLead_pathEmpty(ActorIndex index) const;
+	void lineLead_clearPath(ActorIndex index);
 	// For testing.
 	[[nodiscard]] bool grow_getEventExists(ActorIndex index) const;
 	[[nodiscard]] Percent grow_getEventPercent(ActorIndex index) const;
@@ -458,7 +503,7 @@ class MoveEvent final : public ScheduledEvent
 {
 	ActorIndex m_actor;
 public:
-	MoveEvent(Step delay, Area& area, ActorIndex actor, const Step start = 0);
+	MoveEvent(Step delay, Area& area, ActorIndex actor, const Step start = Step::create(0));
 	MoveEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
@@ -469,7 +514,7 @@ class AttackCoolDownEvent final : public ScheduledEvent
 {
 	ActorIndex m_actor;
 public:
-	AttackCoolDownEvent(Area& area, ActorIndex index, Step duration, const Step start = 0);
+	AttackCoolDownEvent(Area& area, ActorIndex index, Step duration, const Step start = Step::create(0));
 	AttackCoolDownEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
@@ -480,9 +525,9 @@ class GetIntoAttackPositionPathRequest final : public PathRequest
 {
 	ActorIndex m_actor;
 	ActorReference m_target;
-	DistanceInBlocks m_attackRangeSquared = BLOCK_DISTANCE_MAX;
+	DistanceInBlocksFractional m_attackRangeSquared = DistanceInBlocksFractional::null();
 public:
-	GetIntoAttackPositionPathRequest(Area& area, ActorIndex a, ActorIndex t, float ar);
+	GetIntoAttackPositionPathRequest(Area& area, ActorIndex a, ActorIndex t, DistanceInBlocksFractional ar);
 	void callback(Area& area, FindPathResult&);
 	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_actor == oldIndex); m_actor = ActorIndex::cast(newIndex); }
 };

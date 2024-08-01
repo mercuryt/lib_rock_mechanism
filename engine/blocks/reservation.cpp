@@ -5,12 +5,12 @@ void Blocks::reserve(BlockIndex index, CanReserve& canReserve, std::unique_ptr<D
 	Reservable* reservable = nullptr;
 	if(m_reservables.at(index) == nullptr)
 	{
-		m_reservables.at(index) = std::make_unique<Reservable>(1);
+		m_reservables.at(index) = std::make_unique<Reservable>(Quantity::create(1));
 		reservable = m_reservables.at(index).get();
 	}
 	else
 		reservable = m_reservables.at(index).get();
-	reservable->reserveFor(canReserve, 1, std::move(callback));
+	reservable->reserveFor(canReserve, Quantity::create(1), std::move(callback));
 }
 void Blocks::unreserve(BlockIndex index, CanReserve& canReserve)
 {

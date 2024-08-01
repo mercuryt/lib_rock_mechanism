@@ -11,9 +11,9 @@ void ActorOrItemReference::load(const Json& data, Area& area)
 	ActorOrItemIndex index;
 	nlohmann::from_json(data, index);
 	if(index.isActor())
-		setActor(area.getActors().getReferenceTarget(index.get()));
+		setActor(area.getActors().getReferenceTarget(index.getActor()));
 	else
-		setItem(area.getItems().getReferenceTarget(index.get()));
+		setItem(area.getItems().getReferenceTarget(index.getItem()));
 }
 void ItemReferences::addGeneric(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity)
 {

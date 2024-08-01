@@ -4,17 +4,18 @@
 #include "stockpile.h"
 #include "area.h"
 #include "blocks/blocks.h"
+#include "types.h"
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_ONLY_SERIALIZE(FluidSource, block, fluidType, level);
 FluidSource::FluidSource(const Json& data, DeserializationMemo&) : 
-	block(data["block"].get<BlockIndex>()), fluidType(data["fluidType"].get<const FluidType*>()), level(data["level"].get<Volume>()) { }
+	block(data["block"].get<BlockIndex>()), fluidType(data["fluidType"].get<const FluidType*>()), level(data["level"].get<CollisionVolume>()) { }
 
 void AreaHasFluidSources::doStep()
 {
 	Blocks& blocks = m_area.getBlocks();
 	for(FluidSource& source : m_data)
 	{
-		int delta =  source.level - blocks.fluid_getTotalVolume(source.block);
+		CollisionVolume delta =  source.level - blocks.fluid_getTotalVolume(source.block);
 		if(delta > 0)
 			blocks.fluid_add(source.block, delta, *source.fluidType);
 		else if(delta < 0)
@@ -23,7 +24,7 @@ void AreaHasFluidSources::doStep()
 	}
 	m_area.m_hasFluidGroups.clearMergedFluidGroups();
 }
-void AreaHasFluidSources::create(BlockIndex block, const FluidType& fluidType, Volume level)
+void AreaHasFluidSources::create(BlockIndex block, const FluidType& fluidType, CollisionVolume level)
 {
 	assert(!contains(block));
 	m_data.emplace_back(block, &fluidType, level);

@@ -25,7 +25,7 @@ class FireEvent final : public ScheduledEvent
 public:
 	Fire& m_fire;
 
-	FireEvent(Area& area, Step delay, Fire& f, Step start = 0);
+	FireEvent(Area& area, Step delay, Fire& f, Step start = Step::create(0));
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };
@@ -41,7 +41,7 @@ public:
 	bool m_hasPeaked;
 
 	// Default arguments are used when creating a fire normally, custom values are for deserializing or dramatic use.
-	Fire(Area& a, BlockIndex l, const MaterialType& mt, bool hasPeaked = false, FireStage stage = FireStage::Smouldering, Step start = 0);
+	Fire(Area& a, BlockIndex l, const MaterialType& mt, bool hasPeaked = false, FireStage stage = FireStage::Smouldering, Step start = Step::create(0));
 	[[nodiscard]] bool operator==(const Fire& fire) const { return &fire == this; }
 };
 class AreaHasFires final

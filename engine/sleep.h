@@ -46,8 +46,8 @@ public:
 	friend class SleepPathRequest;
 	friend class SleepObjective;
 	// For UI.
-	[[nodiscard]] Percent getSleepPercent() const { return m_isAwake ? 0 : m_sleepEvent.percentComplete(); }
-	[[nodiscard]] Percent getTiredPercent() const { return !m_isAwake ? 0 : m_tiredEvent.percentComplete(); }
+	[[nodiscard]] Percent getSleepPercent() const { return m_isAwake ? Percent::create(0) : m_sleepEvent.percentComplete(); }
+	[[nodiscard]] Percent getTiredPercent() const { return !m_isAwake ? Percent::create(0) : m_tiredEvent.percentComplete(); }
 	// For testing.
 	[[maybe_unused, nodiscard]] bool hasTiredEvent() const { return m_tiredEvent.exists(); }
 	[[maybe_unused, nodiscard]] SleepObjective* getObjective() { return m_objective; }
@@ -56,7 +56,7 @@ class SleepEvent final : public ScheduledEvent
 {
 	MustSleep& m_needsSleep;
 public:
-	SleepEvent(Simulation& simulation, const Step delay, MustSleep& ns, const Step start = 0);
+	SleepEvent(Simulation& simulation, const Step delay, MustSleep& ns, const Step start = Step::create(0));
 	void execute(Simulation&, Area*);
 	void clearReferences(Simulation&, Area*);
 };
@@ -64,7 +64,7 @@ class TiredEvent final : public ScheduledEvent
 {
 	MustSleep& m_needsSleep;
 public:
-	TiredEvent(Simulation& simulation, const Step delay, MustSleep& ns, const Step start = 0);
+	TiredEvent(Simulation& simulation, const Step delay, MustSleep& ns, const Step start = Step::create(0));
 	void execute(Simulation&, Area*);
 	void clearReferences(Simulation&, Area*);
 };

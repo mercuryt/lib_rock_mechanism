@@ -37,6 +37,8 @@ public:
 	void followItem(Area& area, ItemIndex item) const;
 	void followPolymorphic(Area& area, ActorOrItemIndex actorOrItem) const;
 	void unfollow(Area& area) const;
+	[[nodiscard]] ActorIndex getActor() const { return ActorIndex::create(m_index.get()); }
+	[[nodiscard]] ItemIndex getItem() const { return ItemIndex::create(m_index.get()); }
 	[[nodiscard]] ActorOrItemReference toReference(Area& area);
 	[[nodiscard]] bool exists() const { return m_index.exists(); }
 	[[nodiscard]] HasShapeIndex get() const { return m_index; }
@@ -47,7 +49,8 @@ public:
 	[[nodiscard]] bool isLeading(Area& area) const;
 	[[nodiscard]] ActorOrItemIndex getFollower(Area& area) const;
 	[[nodiscard]] ActorOrItemIndex getLeader(Area& area) const;
-	[[nodiscard]] bool leaderCanMove(Area& area) const;
+
+	[[nodiscard]] bool canEnterCurrentlyFrom(Area& area, BlockIndex destination, BlockIndex origin);
 
 	[[nodiscard]] BlockIndex getLocation(const Area& area) const;
 	[[nodiscard]] const BlockIndices& getBlocks(Area& area) const;
@@ -70,9 +73,9 @@ public:
 	{
 		[[nodiscard]] size_t operator()(const ActorOrItemIndex& actorOrItem) const;
 	};
-	void reservable_reserve(Area& area, CanReserve& canReserve, Quantity quantity = 0, std::unique_ptr<DishonorCallback> callback = nullptr) const;
-	void reservable_unreserve(Area& area, CanReserve& canReserve, Quantity quantity = 0) const;
-	void reservable_maybeUnreserve(Area& area, CanReserve& canReserve, Quantity quantity = 0) const;
+	void reservable_reserve(Area& area, CanReserve& canReserve, Quantity quantity = Quantity::create(0), std::unique_ptr<DishonorCallback> callback = nullptr) const;
+	void reservable_unreserve(Area& area, CanReserve& canReserve, Quantity quantity = Quantity::create(0)) const;
+	void reservable_maybeUnreserve(Area& area, CanReserve& canReserve, Quantity quantity = Quantity::create(0)) const;
 	void reservable_unreserveFaction(Area& area, const FactionId faction) const;
 	[[nodiscard]] Quantity reservable_getUnreservedCount(Area& area, const FactionId faction) const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ActorOrItemIndex, m_index, m_isActor);

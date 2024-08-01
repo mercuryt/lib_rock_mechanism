@@ -1,12 +1,10 @@
 #pragma once
 
-#include "bloomHashMap.h"
 #include "portables.h"
 #include "types.h"
 #include "itemType.h"
 #include "reference.h"
 
-struct ItemType;
 struct MaterialType;
 struct FluidType;
 class ItemHasCargo;
@@ -21,13 +19,13 @@ struct ItemParamaters final
 	const ItemType& itemType;
 	const MaterialType& materialType;
 	CraftJob* craftJob = nullptr;
-	FactionId faction = FACTION_ID_MAX;
-	BlockIndex location;
-	ItemId id = 0;
-	Quantity quantity = 1;
-	uint32_t quality = 0;
-	Percent percentWear = 0;
-	Facing facing = 0;
+	FactionId faction = FactionId::null();
+	BlockIndex location = BlockIndex::null();
+	ItemId id = ItemId::create(0);
+	Quantity quantity = Quantity::create(1);
+	Quality quality = Quality::create(0);
+	Percent percentWear = Percent::create(0);
+	Facing facing = Facing::create(0);
 	bool isStatic = true;
 	bool installed = false;
 };
@@ -36,7 +34,7 @@ class ReMarkItemForStockPilingEvent final : public ScheduledEvent
 	FactionId m_faction;
 	ItemCanBeStockPiled& m_canBeStockPiled;
 public:
-	ReMarkItemForStockPilingEvent(Area& area, ItemCanBeStockPiled& i, FactionId f, Step duration, const Step start = 0);
+	ReMarkItemForStockPilingEvent(Area& area, ItemCanBeStockPiled& i, FactionId f, Step duration, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };
@@ -44,15 +42,15 @@ public:
 //TODO: Change from linear to geometric delay duration.
 class ItemCanBeStockPiled
 {
-	std::unordered_map<FactionId, HasScheduledEvent<ReMarkItemForStockPilingEvent>> m_scheduledEvents;
-	std::unordered_set<FactionId> m_data;
-	void scheduleReset(Area& area, FactionId faction, Step duration, Step start = 0);
+	FactionIdMap<HasScheduledEvent<ReMarkItemForStockPilingEvent>> m_scheduledEvents;
+	FactionIdSet m_data;
+	void scheduleReset(Area& area, FactionId faction, Step duration, Step start = Step::null());
 public:
 	void load(const Json& data, Area& area);
-	void set(FactionId faction) { assert(!m_data.contains(faction)); m_data.insert(faction); }
-	void maybeSet(FactionId faction) { m_data.insert(faction); }
-	void unset(FactionId faction) { assert(m_data.contains(faction)); m_data.erase(faction); }
-	void maybeUnset(FactionId faction) { m_data.erase(faction); }
+	void set(FactionId faction) { assert(!m_data.contains(faction)); m_data.add(faction); }
+	void maybeSet(FactionId faction) { m_data.add(faction); }
+	void unset(FactionId faction) { assert(m_data.contains(faction)); m_data.remove(faction); }
+	void maybeUnset(FactionId faction) { m_data.remove(faction); }
 	void unsetAndScheduleReset(Area& area, FactionId faction, Step duration);
 	void maybeUnsetAndScheduleReset(Area& area, FactionId faction, Step duration);
 	[[nodiscard]] Json toJson() const;
@@ -64,16 +62,16 @@ class ItemHasCargo final
 	ActorIndices m_actors;
 	ItemIndices m_items;
 	const FluidType* m_fluidType = nullptr;
-	Volume m_maxVolume = 0;
-	Volume m_volume = 0;
-	Mass m_mass = 0;
-	Volume m_fluidVolume = 0;
+	Volume m_maxVolume = Volume::create(0);
+	Volume m_volume = Volume::create(0);
+	Mass m_mass = Mass::create(0);
+	CollisionVolume m_fluidVolume = CollisionVolume::create(0);
 public:
 	void addItem(Area& area, ItemIndex itemIndex);
 	void addActor(Area& area, ActorIndex actorIndex);
-	void addFluid(const FluidType& fluidType, Volume volume);
+	void addFluid(const FluidType& fluidType, CollisionVolume volume);
 	ItemIndex addItemGeneric(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity);
-	void removeFluidVolume(const FluidType& fluidType, Volume volume);
+	void removeFluidVolume(const FluidType& fluidType, CollisionVolume volume);
 	void removeActor(Area& area, ActorIndex actorIndex);
 	void removeItem(Area& area, ItemIndex item);
 	void removeItemGeneric(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity);
@@ -86,7 +84,7 @@ public:
 	[[nodiscard]] bool canAddActor(Area& area, ActorIndex index) const;
 	[[nodiscard]] bool canAddItem(Area& area, ItemIndex item) const;
 	[[nodiscard]] bool canAddFluid(FluidType& fluidType) const;
-	[[nodiscard]] const Volume& getFluidVolume() const { return m_fluidVolume; }
+	[[nodiscard]] const CollisionVolume& getFluidVolume() const { return m_fluidVolume; }
 	[[nodiscard]] const FluidType& getFluidType() const { assert(m_fluidType); return *m_fluidType; }
 	[[nodiscard]] bool containsAnyFluid() const { return m_fluidType != nullptr; }
 	[[nodiscard]] bool containsFluidType(const FluidType& fluidType) const { return m_fluidType == &fluidType; }
@@ -119,6 +117,7 @@ class Items final : public Portables
 public:
 	Items(Area& area) : Portables(area) { }
 	void load(const Json& json);
+	void loadCargoAndCraftJobs(const Json& json, DeserializationMemo& deserializationMemo);
 	void onChangeAmbiantSurfaceTemperature();
 	ItemIndex create(ItemParamaters paramaters);
 	void destroy(ItemIndex index);
@@ -126,6 +125,7 @@ public:
 	void setLocation(ItemIndex index, BlockIndex block);
 	void setLocationAndFacing(ItemIndex index, BlockIndex block, Facing facing);
 	void exit(ItemIndex index);
+	void setShape(ItemIndex index, const Shape& shape);
 	void pierced(ItemIndex index, Volume volume);
 	void setTemperature(ItemIndex index, Temperature temperature);
 	void addQuantity(ItemIndex index, Quantity delta);
@@ -134,7 +134,7 @@ public:
 	void merge(ItemIndex index, ItemIndex item);
 	void setOnSurface(ItemIndex index);
 	void setNotOnSurface(ItemIndex index);
-	void setQuality(ItemIndex index, uint32_t quality);
+	void setQuality(ItemIndex index, Quality quality);
 	void setWear(ItemIndex index, Percent wear);
 	void setQuantity(ItemIndex index, Quantity quantity);
 	void unsetCraftJobForWorkPiece(ItemIndex index);
@@ -146,7 +146,7 @@ public:
 	[[nodiscard]] bool isOnSurface(ItemIndex index);
 	[[nodiscard]] bool isInstalled(ItemIndex index) { return m_installed.at(index); }
 	[[nodiscard]] Quantity getQuantity(ItemIndex index) const { return m_quantity.at(index); }
-	[[nodiscard]] uint32_t getQuality(ItemIndex index) const { return m_quality.at(index); }
+	[[nodiscard]] Quality getQuality(ItemIndex index) const { return m_quality.at(index); }
 	[[nodiscard]] Percent getWear(ItemIndex index) const { return m_percentWear.at(index); }
 	[[nodiscard]] bool isGeneric(ItemIndex index) const;
 	[[nodiscard]] bool isPreparedMeal(ItemIndex index) const;
@@ -174,6 +174,7 @@ public:
 	void cargo_removeItem(ItemIndex index, ItemIndex item);
 	void cargo_removeItemGeneric(ItemIndex index, const ItemType& itemType, const MaterialType& materialType, Quantity quantity);
 	void cargo_removeFluid(ItemIndex index, CollisionVolume volume);
+	// TODO: Check if location can hold shape.
 	void cargo_unloadActorToLocation(ItemIndex index, ActorIndex actor, BlockIndex location);
 	void cargo_unloadItemToLocation(ItemIndex index, ItemIndex item, BlockIndex location);
 	void cargo_updateItemIndex(ItemIndex index, ItemIndex oldIndex, ItemIndex newIndex);
@@ -186,10 +187,10 @@ public:
 	[[nodiscard]] bool cargo_containsActor(ItemIndex index, ActorIndex actor) const;
 	[[nodiscard]] bool cargo_containsItem(ItemIndex index, ItemIndex item) const;
 	[[nodiscard]] bool cargo_containsItemGeneric(ItemIndex index, const ItemType& itemType, const MaterialType& materialType, Quantity quantity) const;
-	[[nodiscard]] bool cargo_containsPolymorphic(ItemIndex index, ActorOrItemIndex actorOrItem, Quantity quantity = 1) const;
+	[[nodiscard]] bool cargo_containsPolymorphic(ItemIndex index, ActorOrItemIndex actorOrItem, Quantity quantity = Quantity::create(1)) const;
 	[[nodiscard]] bool cargo_containsAnyFluid(ItemIndex index) const;
 	[[nodiscard]] bool cargo_containsFluidType(ItemIndex index, const FluidType& fluidType) const;
-	[[nodiscard]] Volume cargo_getFluidVolume(ItemIndex index) const;
+	[[nodiscard]] CollisionVolume cargo_getFluidVolume(ItemIndex index) const;
 	[[nodiscard]] const FluidType& cargo_getFluidType(ItemIndex index) const;
 	[[nodiscard]] bool cargo_canAddActor(ItemIndex index, ActorIndex actor) const;
 	[[nodiscard]] bool cargo_canAddItem(ItemIndex index, ItemIndex item) const;

@@ -6,8 +6,8 @@
 #include <compare>
 #include <functional>
 class Area;
-class ItemType;
-class MaterialType;
+struct ItemType;
+struct MaterialType;
 // Each Item holds a reference target in a unique_ptr.
 // Code outside the engine must use an itemReference rather then storing ItemIndex.
 // ActorReferenceTarget is updated on index moved.

@@ -2,6 +2,7 @@
 #include "config.h"
 #include "types.h"
 #include "index.h"
+#include "dataVector.h"
 #include <cassert>
 #include <cstdint>
 #include <vector>
@@ -16,7 +17,6 @@ class VisionFacade final
 	DataVector<ActorIndex, VisionFacadeIndex> m_actors;
 	DataVector<BlockIndex, VisionFacadeIndex> m_locations;
 	DataVector<DistanceInBlocks, VisionFacadeIndex> m_ranges;
-	DataVector<ActorIndices, VisionFacadeIndex> m_results;
 public:
 	VisionFacade();
 	// Used as part of initalizaton.

@@ -1,4 +1,5 @@
 #include "actors.h"
+#include "types.h"
 void Actors::equipment_add(ActorIndex index, ItemIndex item)
 {
 	m_equipmentSet.at(index)->addEquipment(m_area, item);
@@ -35,7 +36,7 @@ Mass Actors::equipment_getMass(ActorIndex index) const
 {
 	return m_equipmentSet.at(index)->getMass();
 }
-ItemIndex Actors::equipment_getWeaponToAttackAtRange(ActorIndex index, DistanceInBlocks range) const
+ItemIndex Actors::equipment_getWeaponToAttackAtRange(ActorIndex index, DistanceInBlocksFractional range) const
 {
 	return m_equipmentSet.at(index)->getWeaponToAttackAtRange(m_area, range);
 }

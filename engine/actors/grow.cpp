@@ -100,7 +100,7 @@ Percent CanGrow::growthPercent() const
 void CanGrow::scheduleEvent(Area& area)
 {
 	ActorIndex actor = m_actor.getIndex();
-	Step delay = std::round(area.getActors().getSpecies(actor).stepsTillFullyGrown / 100.f);
+	Step delay = Step::create(std::round(area.getActors().getSpecies(actor).stepsTillFullyGrown.get() / 100.f));
 	m_event.resume(delay, area, *this);
 }
 void CanGrow::update(Area& area)

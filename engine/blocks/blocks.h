@@ -47,8 +47,8 @@ using ItemIndicesForBlock = ItemIndicesArray<Config::maxItemsPerBlock>;
 class Blocks
 {
 	std::array<int32_t, 26> m_offsetsForAdjacentCountTable;
-	std::unordered_map<BlockIndex, std::unordered_map<FactionId, FarmField*>, BlockIndex::Hash> m_farmFields;
-	std::unordered_map<BlockIndex, std::unordered_map<FactionId, BlockIsPartOfStockPile>, BlockIndex::Hash> m_stockPiles;
+	std::unordered_map<BlockIndex, FactionIdMap<FarmField*>, BlockIndex::Hash> m_farmFields;
+	std::unordered_map<BlockIndex, FactionIdMap<BlockIsPartOfStockPile>, BlockIndex::Hash> m_stockPiles;
 	DataVector<std::unique_ptr<Reservable>, BlockIndex> m_reservables;
 	DataVector<const MaterialType*, BlockIndex> m_materialType;
 	DataVector<std::vector<BlockFeature>, BlockIndex> m_features;
@@ -63,9 +63,9 @@ class Blocks
 	DataVector<PlantIndex, BlockIndex> m_plants;
 	DataVector<CollisionVolume, BlockIndex> m_dynamicVolume;
 	DataVector<CollisionVolume, BlockIndex> m_staticVolume;
-	DataVector<std::unordered_map<FactionId, std::unordered_set<Project*>>, BlockIndex> m_projects;
+	DataVector<FactionIdMap<std::unordered_set<Project*>>, BlockIndex> m_projects;
 	DataVector<std::unordered_map<const MaterialType* , Fire>*, BlockIndex> m_fires;
-	DataVector<Temperature, BlockIndex> m_temperatureDelta;
+	DataVector<TemperatureDelta, BlockIndex> m_temperatureDelta;
 	DataVector<LocationBucket*, BlockIndex> m_locationBucket;
 	DataVector<std::array<BlockIndex, 6>, BlockIndex> m_directlyAdjacent;
 	DataBitSet<BlockIndex> m_exposedToSky;
@@ -92,6 +92,7 @@ public:
 	[[nodiscard]] BlockIndex getIndex(Point3D coordinates) const;
 	[[nodiscard]] BlockIndex getIndex(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) const;
 	[[nodiscard]] Point3D getCoordinates(BlockIndex index) const;
+	Point3D_fractional getCoordinatesFractional(BlockIndex index) const;
 	[[nodiscard]] DistanceInBlocks getZ(BlockIndex index) const;
 	[[nodiscard]] BlockIndex getAtFacing(BlockIndex index, Facing facing) const;
 	[[nodiscard]] BlockIndex getCenterAtGroundLevel() const;
@@ -108,9 +109,11 @@ public:
 	[[nodiscard]] BlockIndices getEdgeAdjacentOnlyOnNextZLevelDown(BlockIndex index) const;
 	[[nodiscard]] BlockIndices getEdgeAndCornerAdjacentOnlyOnNextZLevelDown(BlockIndex index) const;
 	[[nodiscard]] BlockIndices getEdgeAdjacentOnlyOnNextZLevelUp(BlockIndex index) const;
+	//TODO: Under what circumstances is this integere distance preferable to taxiDistance or fractional distance?
 	[[nodiscard]] DistanceInBlocks distance(BlockIndex index, BlockIndex other) const;
 	[[nodiscard]] DistanceInBlocks taxiDistance(BlockIndex index, BlockIndex other) const;
-	[[nodiscard]] bool squareOfDistanceIsMoreThen(BlockIndex index, BlockIndex other, DistanceInBlocks distanceSquared) const;
+	[[nodiscard]] DistanceInBlocksFractional distanceFractional(BlockIndex index, BlockIndex other) const;
+	[[nodiscard]] bool squareOfDistanceIsMoreThen(BlockIndex index, BlockIndex other, DistanceInBlocksFractional distanceSquared) const;
 	[[nodiscard]] bool isAdjacentToAny(BlockIndex index, BlockIndices& blocks) const;
 	[[nodiscard]] bool isAdjacentTo(BlockIndex index, BlockIndex other) const;
 	[[nodiscard]] bool isAdjacentToIncludingCornersAndEdges(BlockIndex index, BlockIndex other) const;
@@ -130,7 +133,7 @@ public:
 	[[nodiscard]] bool canSeeThroughFloor(BlockIndex index) const;
 	[[nodiscard]] bool canSeeThroughFrom(BlockIndex index, BlockIndex other) const;
 	[[nodiscard]] Facing facingToSetWhenEnteringFrom(BlockIndex index, BlockIndex other) const;
-	[[nodiscard]] Facing facingToSetWhenEnteringFromIncludingDiagonal(BlockIndex index, BlockIndex other, Facing inital = 0) const;
+	[[nodiscard]] Facing facingToSetWhenEnteringFromIncludingDiagonal(BlockIndex index, BlockIndex other, Facing inital = Facing::create(0)) const;
 	[[nodiscard]] bool isSupport(BlockIndex index) const;
 	[[nodiscard]] bool isOutdoors(BlockIndex index) const;
 	[[nodiscard]] bool isExposedToSky(BlockIndex index) const;
@@ -183,7 +186,8 @@ public:
 		while(!open.empty())
 		{
 			BlockIndex block = open.top();
-			if(condition(block.exists()))
+			assert(block.exists());
+			if(condition(block))
 				return block;
 			open.pop();
 			for(BlockIndex adjacent : getDirectlyAdjacent(block))
@@ -244,7 +248,7 @@ public:
 	[[nodiscard]] const MaterialType* blockFeature_getMaterialType(BlockIndex index) const;
 	[[nodiscard]] bool blockFeature_contains(BlockIndex index, const BlockFeatureType& blockFeatureType) const;
 	// -Fluids
-	void fluid_spawnMist(BlockIndex index, const FluidType& fluidType, DistanceInBlocks maxMistSpread = 0);
+	void fluid_spawnMist(BlockIndex index, const FluidType& fluidType, DistanceInBlocks maxMistSpread = DistanceInBlocks::create(0));
 	void fluid_clearMist(BlockIndex index);
 	DistanceInBlocks fluid_getMistInverseDistanceToSource(BlockIndex) const;
 	FluidGroup* fluid_getGroup(BlockIndex index, const FluidType& fluidType) const;
@@ -301,6 +305,9 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, const Fluid
 	void actor_setTemperature(BlockIndex index, Temperature temperature);
 	void actor_updateIndex(BlockIndex index, ActorIndex oldIndex, ActorIndex newIndex);
 	[[nodiscard]] bool actor_canStandIn(BlockIndex index) const;
+	[[nodiscard]] bool actor_canEnterCurrentlyFrom(BlockIndex index, ActorIndex actor, BlockIndex block) const;
+	[[nodiscard]] bool actor_canEnterCurrentlyWithFacing(BlockIndex index, ActorIndex actor, Facing facing) const;
+	[[nodiscard]] bool actor_canEnterEverOrCurrentlyWithFacing(BlockIndex index, ActorIndex actor, Facing facing) const;
 	[[nodiscard]] bool actor_contains(BlockIndex index, ActorIndex actor) const;
 	[[nodiscard]] bool actor_empty(BlockIndex index) const;
 	[[nodiscard]] Volume actor_volumeOf(BlockIndex index, ActorIndex actor) const;
@@ -323,8 +330,11 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, const Fluid
 	[[nodiscard]] bool item_hasContainerContainingFluidTypeCarryableBy(BlockIndex index, const ActorIndex actor, const FluidType& fluidType) const;
 	[[nodiscard]] bool item_empty(BlockIndex index) const;
 	[[nodiscard]] bool item_contains(BlockIndex index, ItemIndex item) const;
+	[[nodiscard]] bool item_canEnterCurrentlyFrom(BlockIndex index, ItemIndex item, BlockIndex block) const;
+	[[nodiscard]] bool item_canEnterCurrentlyWithFacing(BlockIndex index, ItemIndex item, Facing facing) const;
+	[[nodiscard]] bool item_canEnterEverOrCurrentlyWithFacing(BlockIndex index, ItemIndex item, const Facing facing) const;
 	// -Plant
-	void plant_create(BlockIndex index, const PlantSpecies& plantSpecies, Percent growthPercent = 0);
+	void plant_create(BlockIndex index, const PlantSpecies& plantSpecies, Percent growthPercent = Percent::create(0));
 	void plant_updateGrowingStatus(BlockIndex index);
 	void plant_clearPointer(BlockIndex index);
 	void plant_setTemperature(BlockIndex index, Temperature temperature);
@@ -394,8 +404,8 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, const Fluid
 	// -Temperature
 	void temperature_freeze(BlockIndex index, const FluidType& fluidType);
 	void temperature_melt(BlockIndex index);
-	void temperature_apply(BlockIndex index, Temperature temperature, const int32_t& delta);
-	void temperature_updateDelta(BlockIndex index, int32_t delta);
+	void temperature_apply(BlockIndex index, Temperature temperature, TemperatureDelta delta);
+	void temperature_updateDelta(BlockIndex index, TemperatureDelta delta);
 	const Temperature& temperature_getAmbient(BlockIndex index) const;
 	Temperature temperature_getDailyAverageAmbient(BlockIndex index) const;
 	Temperature temperature_get(BlockIndex index) const;

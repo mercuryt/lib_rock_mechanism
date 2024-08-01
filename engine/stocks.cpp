@@ -6,15 +6,15 @@
 void AreaHasStocksForFaction::record(Area& area, ItemIndex item)
 {
 	Items& items = area.getItems();
-	m_data[&items.getItemType(item)][&items.getMaterialType(item)].insert(item);
+	m_data[&items.getItemType(item)][&items.getMaterialType(item)].add(item);
 }
 void AreaHasStocksForFaction::unrecord(Area& area, ItemIndex item)
 {
 	Items& items = area.getItems();
-	m_data[&items.getItemType(item)][&items.getMaterialType(item)].insert(item);
+	m_data[&items.getItemType(item)][&items.getMaterialType(item)].add(item);
 	if(m_data.at(&items.getItemType(item)).at(&items.getMaterialType(item)).size() > 1)
 		// There are more then one item for this combination of item type and material type.
-		m_data[&items.getItemType(item)][&items.getMaterialType(item)].erase(item);
+		m_data[&items.getItemType(item)][&items.getMaterialType(item)].remove(item);
 	else
 	{
 		if(m_data.at(&items.getItemType(item)).size() > 1)

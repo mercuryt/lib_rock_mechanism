@@ -66,21 +66,22 @@ void LocationBucket::update(Area& area, ActorIndex actor, BlockIndices& blockInd
 }
 void LocationBuckets::initalize()
 {
-	m_maxX = ((m_area.getBlocks().m_sizeX - 1) / Config::locationBucketSize) + 1;
-	m_maxY = ((m_area.getBlocks().m_sizeY - 1) / Config::locationBucketSize) + 1;
-	m_maxZ = ((m_area.getBlocks().m_sizeZ - 1) / Config::locationBucketSize) + 1;
-	m_buckets.resize(m_maxX * m_maxY * m_maxZ);
+	m_maxX = DistanceInBuckets::create((((m_area.getBlocks().m_sizeX - 1) / Config::locationBucketSize) + 1).get());
+	m_maxY = DistanceInBuckets::create((((m_area.getBlocks().m_sizeY - 1) / Config::locationBucketSize) + 1).get());
+	m_maxZ = DistanceInBuckets::create((((m_area.getBlocks().m_sizeZ - 1) / Config::locationBucketSize) + 1).get());
+	m_buckets.resize(m_maxX.get() * m_maxY.get() * m_maxZ.get());
 }
 LocationBucket& LocationBuckets::get(DistanceInBuckets x, DistanceInBuckets y, DistanceInBuckets z)
 {
-	return m_buckets[x + (y * m_maxX) + (z * m_maxX * m_maxY)];
+	DistanceInBuckets offset = x + (y * m_maxX.get()) + (z * m_maxX.get() * m_maxY.get());
+	return m_buckets[offset.get()];
 }
 LocationBucket& LocationBuckets::getBucketFor(const BlockIndex block)
 {
 	Point3D coordinates = m_area.getBlocks().getCoordinates(block);
-	DistanceInBuckets x = coordinates.x / Config::locationBucketSize;
-	DistanceInBuckets y = coordinates.y / Config::locationBucketSize;
-	DistanceInBuckets z = coordinates.z / Config::locationBucketSize;
+	DistanceInBuckets x = DistanceInBuckets::create((coordinates.x / Config::locationBucketSize).get());
+	DistanceInBuckets y = DistanceInBuckets::create((coordinates.y / Config::locationBucketSize).get());
+	DistanceInBuckets z = DistanceInBuckets::create((coordinates.z / Config::locationBucketSize).get());
 	return get(x, y, z);
 }
 void LocationBuckets::add(ActorIndex actor)

@@ -29,13 +29,13 @@ void PathRequest::createGoTo(Area& area, ActorIndex actor, BlockIndex destinatio
 	m_unreserved = unreserved;
 	m_destination = destination;
 	Blocks& blocks = area.getBlocks();
-	FactionId faction = FACTION_ID_MAX;
+	FactionId faction;
 	if(unreserved)
 		faction = area.getActors().getFactionId(actor);
 	// TODO: Pathing to a specific block that is reserved should do nothing but instead we iterate every block in range.
 	// 	fix by adding a predicate to path request which prevents the call to findPath.
 	DestinationCondition destinationCondition = [destination, &blocks, faction](BlockIndex index, Facing) {
-		return index == destination && (faction == FACTION_ID_MAX || !blocks.isReserved(index, faction));
+		return index == destination && (faction.empty() || !blocks.isReserved(index, faction));
 	};
 	create(area, actor, destinationCondition, detour, maxRange, destination, reserve);
 }
@@ -61,7 +61,7 @@ void PathRequest::createGoToAnyOf(Area& area, ActorIndex actor, std::vector<Bloc
 	if(shape.isMultiTile)
        		destinationCondition = [&shape, &area, destinations](BlockIndex location, Facing facing) 
 		{ 
-			std::vector<BlockIndex> blocks = shape.getBlocksOccupiedAt(area.getBlocks(), location, facing);
+			BlockIndices blocks = shape.getBlocksOccupiedAt(area.getBlocks(), location, facing);
 			for(BlockIndex block : blocks)
 				if(util::vectorContains(destinations, block))
 					return true;
@@ -116,9 +116,9 @@ void PathRequest::createGoAdjacentToPlant(Area& area, ActorIndex actor, PlantInd
 void PathRequest::createGoAdjacentToPolymorphic(Area& area, ActorIndex actor, ActorOrItemIndex actorOrItem, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve)
 {
 	if(actorOrItem.isActor())
-		createGoAdjacentToActor(area, actor, actorOrItem.get(), detour, unreserved, maxRange, reserve);
+		createGoAdjacentToActor(area, actor, actorOrItem.getActor(), detour, unreserved, maxRange, reserve);
 	else
-		createGoAdjacentToItem(area, actor, actorOrItem.get(), detour, unreserved, maxRange, reserve);
+		createGoAdjacentToItem(area, actor, actorOrItem.getItem(), detour, unreserved, maxRange, reserve);
 }
 void PathRequest::createGoAdjacentToFluidType(Area& area, ActorIndex actor, const FluidType& fluidType, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve)
 {
@@ -143,11 +143,11 @@ void PathRequest::createGoToEdge(Area& area, ActorIndex actor, bool detour)
 {
 	Blocks& blocks = area.getBlocks();
 	std::function<bool(BlockIndex)> condition = [&blocks](BlockIndex index){ return blocks.isEdge(index); };
-	createGoAdjacentToCondition(area, actor, condition, detour, false, BLOCK_DISTANCE_MAX, BlockIndex::null());
+	createGoAdjacentToCondition(area, actor, condition, detour, false, DistanceInBlocks::null(), BlockIndex::null());
 }
 void PathRequest::createGoToCondition(Area& area, ActorIndex actor, DestinationCondition condition, bool detour, bool unreserved, DistanceInBlocks maxRange, BlockIndex huristicDestination, bool reserve)
 {
-	FactionId faction = FACTION_ID_MAX;
+	FactionId faction;
 	if(unreserved)
 		faction = area.getActors().getFactionId(actor);
 	Blocks& blocks = area.getBlocks();
@@ -159,11 +159,11 @@ void PathRequest::createGoToCondition(Area& area, ActorIndex actor, DestinationC
 }
 void PathRequest::createGoAdjacentToCondition(Area& area, ActorIndex actor, std::function<bool(BlockIndex)> condition, bool detour, bool unreserved, DistanceInBlocks maxRange, BlockIndex huristicDestination, bool reserve)
 {
-	FactionId faction = FACTION_ID_MAX;
+	FactionId faction;
 	if(unreserved)
 	{
 		faction = area.getActors().getFactionId(actor);
-		assert(faction != FACTION_ID_MAX);
+		assert(faction.exists());
 	}
 	const Shape& shape = area.getActors().getShape(actor);
 	DestinationCondition destinationCondition;
@@ -202,7 +202,7 @@ void PathRequest::reset()
 	m_actor.clear();
 	m_destination = BlockIndex::null();
 	m_huristicDestination.clear();
-	m_maxRange = 0;
+	m_maxRange = DistanceInBlocks::create(0);
 	m_designation = BlockDesignation::BLOCK_DESIGNATION_MAX;
 	m_detour = false;
 	m_unreserved = false;

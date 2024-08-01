@@ -2,10 +2,11 @@
 #include "../area.h"
 #include "../fluidType.h"
 #include "../itemType.h"
-void Blocks::temperature_updateDelta(BlockIndex index, int32_t deltaDelta)
+#include "types.h"
+void Blocks::temperature_updateDelta(BlockIndex index, TemperatureDelta deltaDelta)
 {
-	m_temperatureDelta[index] += deltaDelta;
-	Temperature temperature = m_temperatureDelta[index] + temperature_getAmbient(index);
+	m_temperatureDelta.at(index) += deltaDelta;
+	Temperature temperature = m_temperatureDelta.at(index) + temperature_getAmbient(index);
 	if(solid_is(index))
 	{
 		auto& material = solid_get(index);
@@ -27,18 +28,19 @@ void Blocks::temperature_freeze(BlockIndex index, const FluidType& fluidType)
 {
 	assert(fluidType.freezesInto != nullptr);
 	static const ItemType& chunk = ItemType::byName("chunk");
-	uint32_t chunkVolume = item_getCount(index, chunk, *fluidType.freezesInto);
-	uint32_t fluidVolume = fluid_volumeOfTypeContains(index, fluidType);
+	Quantity chunkQuantity = item_getCount(index, chunk, *fluidType.freezesInto);
+	CollisionVolume chunkVolume = chunk.volume.toCollisionVolume() * chunkQuantity;
+	CollisionVolume fluidVolume = fluid_volumeOfTypeContains(index, fluidType);
 	// If full freeze solid, otherwise generate frozen chunks.
 	if(chunkVolume + fluidVolume >= Config::maxBlockVolume)
 	{
 		solid_set(index, *fluidType.freezesInto, false);
-		uint32_t remainder = chunkVolume + fluidVolume - Config::maxBlockVolume;
+		CollisionVolume remainder = chunkVolume + fluidVolume - Config::maxBlockVolume;
 		(void)remainder;
 		//TODO: add remainder to fluid group or above block.
 	}
 	else
-		item_addGeneric(index, chunk, *fluidType.freezesInto,  fluidVolume);
+		item_addGeneric(index, chunk, *fluidType.freezesInto,  chunkQuantity);
 }
 void Blocks::temperature_melt(BlockIndex index)
 {
@@ -51,7 +53,7 @@ void Blocks::temperature_melt(BlockIndex index)
 }
 const Temperature& Blocks::temperature_getAmbient(BlockIndex index) const 
 {
-	if(m_underground[index])
+	if(m_underground.at(index))
 	{
 		if(getZ(index) <= Config::maxZLevelForDeepAmbiantTemperature)
 			return Config::deepAmbiantTemperature;
@@ -62,7 +64,7 @@ const Temperature& Blocks::temperature_getAmbient(BlockIndex index) const
 }
 Temperature Blocks::temperature_getDailyAverageAmbient(BlockIndex index) const 
 {
-	if(m_underground[index])
+	if(m_underground.at(index))
 	{
 		if(getZ(index) <= Config::maxZLevelForDeepAmbiantTemperature)
 			return Config::deepAmbiantTemperature;
@@ -73,5 +75,9 @@ Temperature Blocks::temperature_getDailyAverageAmbient(BlockIndex index) const
 }
 Temperature Blocks::temperature_get(BlockIndex index) const
 {
-	return temperature_getAmbient(index) + m_temperatureDelta.at(index);
+	Temperature ambiant = temperature_getAmbient(index);
+	TemperatureDelta delta = m_temperatureDelta.at(index);
+	if(delta < 0 && (uint)delta.absoluteValue().get() > ambiant.get())
+		return Temperature::create(0);
+	return Temperature::create(ambiant.get() + delta.get());
 }

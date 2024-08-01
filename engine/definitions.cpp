@@ -44,11 +44,11 @@ void definitions::loadFluidTypes()
 		Json data = tryParse(file.path());
 		fluidTypeDataStore.emplace_back(
 			data["name"].get<std::string>(),
-			data["viscosity"].get<std::uint32_t>(),
+			data["viscosity"].get<int32_t>(),
 			data["density"].get<Density>(),
 			//TODO: store as seconds rather then steps
-			data.contains("mistDuration") ? data["mistDuration"].get<Step>() : 0,
-			data.contains("mistDuration") ? data["maxMistSpread"].get<DistanceInBlocks>() : 0
+			data.contains("mistDuration") ? data["mistDuration"].get<Step>() : Step::create(0),
+			data.contains("mistDuration") ? data["maxMistSpread"].get<DistanceInBlocks>() : DistanceInBlocks::create(0)
 		);
 	}
 }
@@ -134,19 +134,19 @@ const AttackType definitions::loadAttackType(const Json& data, const SkillType& 
 		data["name"].get<std::string>(),
 		data["area"].get<uint32_t>(),
 		data["baseForce"].get<Force>(),
-		data["range"].get<float>(),
+		data["range"].get<DistanceInBlocksFractional>(),
 		data["combatScore"].get<uint32_t>(),
-		data.contains("coolDownSeconds") ? data["coolDownSeconds"].get<uint32_t>() * Config::stepsPerSecond : 0,
+		data.contains("coolDownSeconds") ? Config::stepsPerSecond * data["coolDownSeconds"].get<uint32_t>() : Step::create(0),
 		data.contains("projectile") ? data["projectile"].get<bool>() : false,
 		WoundCalculations::byName(data["woundType"].get<std::string>()),
 		(data.contains("skillType") ? SkillType::byName(data["skillType"]) : defaultSkill),
 		(data.contains("projectileItemType") ? &ItemType::byName(data["projectileItemType"]) : nullptr)
 	);
 }
-std::pair<ItemQuery, uint32_t> definitions::loaditemQuery(const Json& data)
+std::pair<ItemQuery, Quantity> definitions::loaditemQuery(const Json& data)
 {
 	const ItemType& itemType = ItemType::byName(data["itemType"].get<std::string>());
-	uint32_t quantity = data["quantity"].get<uint32_t>();
+	Quantity quantity = data["quantity"].get<Quantity>();
 	ItemQuery query(itemType);
 	if(data.contains("materialType"))
 		query.m_materialType = &MaterialType::byName(data["materialType"].get<std::string>());
@@ -162,7 +162,7 @@ void definitions::loadMaterialTypeConstuctionData()
 		(
 			 data["name"].get<std::string>(),
 			 SkillType::byName(data["skill"]),
-			 data["minutesDuration"].get<uint32_t>() * Config::stepsPerMinute
+			 Config::stepsPerMinute * data["minutesDuration"].get<uint32_t>()
 		 );
 		for(const Json& item : data["consumed"])
 		{
@@ -177,7 +177,7 @@ void definitions::loadMaterialTypeConstuctionData()
 		for(const Json& item : data["byproducts"])
 		{
 			const ItemType& itemType = ItemType::byName(item["itemType"].get<std::string>());
-			uint32_t quantity = item["quantity"].get<uint32_t>();
+			Quantity quantity = item["quantity"].get<Quantity>();
 			const MaterialType* materialType = item.contains("materialType") ?
 				&MaterialType::byName(item["materialType"]) :
 				nullptr;
@@ -197,7 +197,7 @@ void definitions::loadMedicalProjectTypes()
 		Json data = tryParse(file.path());
 		auto& medicalProjectType = medicalProjectTypeDataStore.emplace_back(
 			data["name"].get<std::string>(),
-			data["baseMinutesDuration"].get<uint32_t>() * Config::stepsPerMinute
+			Config::stepsPerMinute * data["baseMinutesDuration"].get<uint32_t>()
 		);
 		for(const Json& item : data["consumed"])
 		{
@@ -233,7 +233,7 @@ void definitions::loadCraftJobs()
 		auto& craftJobType = craftJobTypeDataStore.emplace_back(
 			data["name"].get<std::string>(),
 			ItemType::byName(data["productType"].get<std::string>()),
-			data["productQuantity"].get<uint32_t>(),
+			data["productQuantity"].get<Quantity>(),
 			data.contains("materialTypeCategory") ? &MaterialTypeCategory::byName(data["materialTypeCategory"].get<std::string>()) : nullptr
 		);
 		for(const Json& stepData : data["steps"])
@@ -242,7 +242,7 @@ void definitions::loadCraftJobs()
 				stepData["name"].get<std::string>(),
 				CraftStepTypeCategory::byName(stepData["category"].get<std::string>()),
 				SkillType::byName(stepData["skillType"].get<std::string>()),
-				stepData["minutesDuration"].get<uint32_t>() * Config::stepsPerMinute
+				Config::stepsPerMinute * stepData["minutesDuration"].get<uint32_t>()
 			);
 			if(stepData.contains("consumed"))
 				for(const Json& item : stepData["consumed"])
@@ -260,7 +260,7 @@ void definitions::loadCraftJobs()
 				for(const Json& item : stepData["byproducts"])
 				{
 					const ItemType& itemType = ItemType::byName(item["itemType"].get<std::string>());
-					uint32_t quantity = item["quantity"].get<uint32_t>();
+					Quantity quantity = item["quantity"].get<Quantity>();
 					const MaterialType* materialType = item.contains("materialType") ?
 						&MaterialType::byName(item["materialType"]) :
 						nullptr;
@@ -283,7 +283,7 @@ void definitions::loadWeaponsData()
 			const SkillType& skillType = SkillType::byName(weaponData["combatSkill"].get<std::string>());
 			auto& weapon = weaponDataStore.emplace_back(
 				&skillType,
-				weaponData.contains("coolDownSeconds") ? weaponData["coolDownSeconds"].get<float>() * Config::stepsPerSecond : Config::attackCoolDownDurationBaseSteps
+				weaponData.contains("coolDownSeconds") ? Config::stepsPerSecond * weaponData["coolDownSeconds"].get<float>() : Config::attackCoolDownDurationBaseSteps
 			);
 			for(Json attackTypeData : weaponData["attackTypes"])
 				weapon.attackTypes.push_back(loadAttackType(attackTypeData, skillType));
@@ -305,7 +305,7 @@ void definitions::loadItemTypes()
 			Shape::byName(data["shape"].get<std::string>()),
 			MoveType::byName(data.contains("moveType") ? data["moveType"].get<std::string>() : "none"),
 			data["volume"].get<Volume>(),
-			data.contains("internalVolume") ? data["internalVolume"].get<Volume>() : 0 ,
+			data.contains("internalVolume") ? data["internalVolume"].get<Volume>() : Volume::create(0) ,
 			data["value"].get<uint32_t>(),
 			data.contains("installable"),
 			data.contains("generic") && data["generic"].get<bool>(),
@@ -348,8 +348,8 @@ void definitions::loadItemTypes()
 				MaterialType::byName(spoilData["materialType"].get<std::string>()),
 				ItemType::byName(spoilData["itemType"].get<std::string>()),
 				spoilData["chance"].get<double>(),
-				spoilData["min"].get<uint32_t>(),
-				spoilData["max"].get<uint32_t>()
+				spoilData["min"].get<Quantity>(),
+				spoilData["max"].get<Quantity>()
 			);
 		// Construction data
 		if(data.contains("constructionData"))
@@ -368,12 +368,12 @@ void definitions::loadPlantSpecies()
 			data["annual"].get<bool>(),
 			data["maximumGrowingTemperature"].get<Temperature>(),
 			data["minimumGrowingTemperature"].get<Temperature>(),
-			data["daysTillDieFromTemperature"].get<uint16_t>() * Config::stepsPerDay,
-			data["daysNeedsFluidFrequency"].get<uint16_t>() * Config::stepsPerDay,
+			Config::stepsPerDay * data["daysTillDieFromTemperature"].get<uint16_t>(),
+			Config::stepsPerDay * data["daysNeedsFluidFrequency"].get<uint16_t>(),
 			data["volumeFluidConsumed"].get<Volume>(),
-			data["daysTillDieWithoutFluid"].get<uint16_t>() * Config::stepsPerDay,
-			data["daysTillFullyGrown"].get<uint16_t>() * Config::stepsPerDay,
-			data["daysTillFoliageGrowsFromZero"].get<uint16_t>() * Config::stepsPerDay,
+			Config::stepsPerDay * data["daysTillDieWithoutFluid"].get<uint16_t>(),
+			Config::stepsPerDay * data["daysTillFullyGrown"].get<uint16_t>(),
+			Config::stepsPerDay * data["daysTillFoliageGrowsFromZero"].get<uint16_t>(),
 			data["growsInSunlight"].get<bool>(),
 			data["rootRangeMax"].get<DistanceInBlocks>(),
 			data["rootRangeMin"].get<DistanceInBlocks>(),
@@ -381,8 +381,8 @@ void definitions::loadPlantSpecies()
 			data["dayOfYearForSowStart"].get<uint16_t>(),
 			data["dayOfYearForSowEnd"].get<uint16_t>(),
 			data.contains("isTree") ? data["isTree"].get<bool>() : false,
-			data.contains("logsGeneratedByFellingWhenFullGrown") ? data["logsGeneratedByFellingWhenFullGrown"].get<uint32_t>() : 0,
-			data.contains("branchesGeneratedByFellingWhenFullGrown") ? data["branchesGeneratedByFellingWhenFullGrown"].get<uint32_t>() : 0,
+			data.contains("logsGeneratedByFellingWhenFullGrown") ? data["logsGeneratedByFellingWhenFullGrown"].get<Quantity>() : Quantity::create(0),
+			data.contains("branchesGeneratedByFellingWhenFullGrown") ? data["branchesGeneratedByFellingWhenFullGrown"].get<Quantity>() : Quantity::create(0),
 			data.contains("maxWildGrowth") ? data["maxWildGrowth"].get<uint8_t>() : 0,
 			FluidType::byName(data["fluidType"].get<std::string>()),
 			data.contains("woodType") ? data["woodType"].get<const MaterialType*>() : nullptr
@@ -394,8 +394,8 @@ void definitions::loadPlantSpecies()
 		{
 			auto& harvestData = harvestDataStore.emplace_back(
 				data["harvestData"]["dayOfYearToStart"].get<uint16_t>(),
-				data["harvestData"]["daysDuration"].get<uint16_t>() * Config::stepsPerDay,
-				data["harvestData"]["quantity"].get<uint32_t>(),
+				Config::stepsPerDay * data["harvestData"]["daysDuration"].get<uint16_t>(),
+				data["harvestData"]["quantity"].get<Quantity>(),
 				ItemType::byName(data["harvestData"]["itemType"].get<std::string>())
 			);
 			plantSpecies.harvestData = &harvestData;
@@ -441,9 +441,10 @@ void definitions::loadAnimalSpecies()
 		if(file.path().extension() != ".json")
 			continue;
 		Json data = tryParse(file.path());
-		auto deathAge = data["deathAgeDays"].get<std::array<Step, 2>>();
-		deathAge[0] = deathAge[0] * Config::stepsPerDay;
-		deathAge[1] = deathAge[1] * Config::stepsPerDay;
+		auto deathAgeDays = data["deathAgeDays"].get<std::array<uint32_t, 2>>();
+		std::array<Step, 2> deathAge;
+		deathAge[0] = Config::stepsPerDay * deathAgeDays[0];
+		deathAge[1] = Config::stepsPerDay * deathAgeDays[1];
 		AnimalSpecies& animalSpecies = animalSpeciesDataStore.emplace_back(
 			data["name"].get<std::string>(),
 			data["sentient"].get<bool>(),
@@ -452,17 +453,17 @@ void definitions::loadAnimalSpecies()
 			data["agility"].get<std::array<uint32_t, 3>>(),
 			data["mass"].get<std::array<Mass, 3>>(),
 			deathAge,
-			data["daysTillFullyGrown"].get<uint16_t>() * Config::stepsPerDay,
-			data["daysTillDieWithoutFood"].get<uint16_t>() * Config::stepsPerDay,
-			data["daysEatFrequency"].get<uint16_t>() * Config::stepsPerDay,
-			data["daysTillDieWithoutFluid"].get<uint16_t>() * Config::stepsPerDay,
-			data["daysFluidDrinkFrequency"].get<uint16_t>() * Config::stepsPerDay,
-			data["daysTillDieInUnsafeTemperature"].get<uint16_t>() * Config::stepsPerDay,
+			Config::stepsPerDay * data["daysTillFullyGrown"].get<uint16_t>(),
+			Config::stepsPerDay * data["daysTillDieWithoutFood"].get<uint16_t>(),
+			Config::stepsPerDay * data["daysEatFrequency"].get<uint16_t>(),
+			Config::stepsPerDay * data["daysTillDieWithoutFluid"].get<uint16_t>(),
+			Config::stepsPerDay * data["daysFluidDrinkFrequency"].get<uint16_t>(),
+			Config::stepsPerDay * data["daysTillDieInUnsafeTemperature"].get<uint16_t>(),
 			data["minimumSafeTemperature"].get<Temperature>(),
 			data["maximumSafeTemperature"].get<Temperature>(),
-			data["daysSleepFrequency"].get<uint16_t>() * Config::stepsPerDay,
-			data["hoursTillSleepOveride"].get<uint8_t>() * Config::stepsPerHour,
-			data["hoursSleepDuration"].get<uint8_t>() * Config::stepsPerHour,
+			Config::stepsPerDay * data["daysSleepFrequency"].get<uint16_t>(),
+			Config::stepsPerHour * data["hoursTillSleepOveride"].get<uint8_t>(),
+			Config::stepsPerHour * data["hoursSleepDuration"].get<uint8_t>(),
 			data["nocturnal"].get<bool>(),
 			data["eatsMeat"].get<bool>(),
 			data["eatsLeaves"].get<bool>(),

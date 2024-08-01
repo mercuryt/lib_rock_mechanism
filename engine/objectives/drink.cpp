@@ -20,7 +20,7 @@ DrinkPathRequest::DrinkPathRequest(Area& area, DrinkObjective& drob, ActorIndex 
 		reserve = true;
 		unreserved = true;
 	}
-	createGoAdjacentToCondition(area, getActor(), predicate, drob.m_detour, unreserved, BLOCK_DISTANCE_MAX, BlockIndex::null(), reserve);
+	createGoAdjacentToCondition(area, getActor(), predicate, drob.m_detour, unreserved, DistanceInBlocks::null(), BlockIndex::null(), reserve);
 }
 void DrinkPathRequest::callback(Area& area, FindPathResult& result)
 {
@@ -59,11 +59,11 @@ void DrinkPathRequest::callback(Area& area, FindPathResult& result)
 // Drink Objective.
 DrinkObjective::DrinkObjective(Area& area) :
 	Objective(Config::drinkPriority), m_drinkEvent(area.m_eventSchedule) { }
-DrinkObjective::DrinkObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :
+DrinkObjective::DrinkObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area, ActorIndex actor) :
 	Objective(data, deserializationMemo), m_drinkEvent(area.m_eventSchedule), m_noDrinkFound(data["noDrinkFound"].get<bool>())
 { 
 	if(data.contains("eventStart"))
-		m_drinkEvent.schedule(area, Config::stepsToDrink, *this, data["eventStart"].get<Step>());
+		m_drinkEvent.schedule(area, Config::stepsToDrink, *this, actor, data["eventStart"].get<Step>());
 }
 Json DrinkObjective::toJson() const
 {

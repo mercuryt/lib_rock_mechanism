@@ -43,18 +43,18 @@ Json ConstructProject::toJson() const
 	data["materialType"] = m_materialType.name;
 	return data;
 }
-std::vector<std::pair<ItemQuery, uint32_t>> ConstructProject::getConsumed() const
+std::vector<std::pair<ItemQuery, Quantity>> ConstructProject::getConsumed() const
 {
 	assert(m_materialType.constructionData != nullptr);
 	return m_materialType.constructionData->consumed;
 }
-std::vector<std::pair<ItemQuery, uint32_t>> ConstructProject::getUnconsumed() const
+std::vector<std::pair<ItemQuery, Quantity>> ConstructProject::getUnconsumed() const
 {
 	assert(m_materialType.constructionData != nullptr);
 	return m_materialType.constructionData->unconsumed;
 }
-std::vector<std::pair<ActorQuery, uint32_t>> ConstructProject::getActors() const { return {}; }
-std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> ConstructProject::getByproducts() const
+std::vector<std::pair<ActorQuery, Quantity>> ConstructProject::getActors() const { return {}; }
+std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> ConstructProject::getByproducts() const
 {
 	assert(m_materialType.constructionData != nullptr);
 	return m_materialType.constructionData->byproducts;
@@ -119,7 +119,7 @@ ConstructionLocationDishonorCallback::ConstructionLocationDishonorCallback(const
 	m_area(deserializationMemo.area(data["area"])),
 	m_location(data["location"].get<BlockIndex>()) { }
 Json ConstructionLocationDishonorCallback::toJson() const { return Json({{"type", "ConstructionLocationDishonorCallback"}, {"faction", m_faction}, {"location", m_location}}); }
-void ConstructionLocationDishonorCallback::execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount)
+void ConstructionLocationDishonorCallback::execute([[maybe_unused]] Quantity oldCount, [[maybe_unused]] Quantity newCount)
 {
 	m_area.m_hasConstructionDesignations.at(m_faction).undesignate(m_location);
 }

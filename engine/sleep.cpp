@@ -95,8 +95,9 @@ void MustSleep::sleep(Area& area, Step duration, bool force)
 	Actors& actors = area.getActors();
 	actors.move_clearAllEventsAndTasks(actor);
 	m_isAwake = false;
+	m_force = force;
 	m_tiredEvent.maybeUnschedule();
-	m_sleepEvent.schedule(area.m_simulation, duration, *this, force);
+	m_sleepEvent.schedule(area.m_simulation, duration, *this);
 	if(m_objective != nullptr)
 		actors.move_pathRequestMaybeCancel(actor);
 	actors.vision_clearFacade(actor);

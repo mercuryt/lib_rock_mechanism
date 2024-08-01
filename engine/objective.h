@@ -171,7 +171,7 @@ class SupressedNeedEvent final : public ScheduledEvent
 {
 	SupressedNeed& m_supressedNeed;
 public:
-	SupressedNeedEvent(Area& area, SupressedNeed& sn, const Step start = 0);
+	SupressedNeedEvent(Area& area, SupressedNeed& sn, const Step start = Step::create(0));
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };
@@ -183,7 +183,7 @@ class CannotCompleteObjectiveDishonorCallback final : public DishonorCallback
 public:
 	CannotCompleteObjectiveDishonorCallback(Area& area, ActorReference a) : m_area(area), m_actor(a) { }
 	CannotCompleteObjectiveDishonorCallback(Area& area, const Json& data);
-	void execute(uint32_t oldCount, uint32_t newCount);
+	void execute(Quantity oldCount, Quantity newCount);
 	[[nodiscard]] Json toJson() const;
 };
 class HasObjectives final

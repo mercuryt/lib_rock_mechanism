@@ -8,7 +8,7 @@
 #include "blocks/blocks.h"
 
 #include <memory>
-MistDisperseEvent::MistDisperseEvent(uint32_t delay, Simulation& simulation, const FluidType& ft, BlockIndex b) :
+MistDisperseEvent::MistDisperseEvent(Step delay, Simulation& simulation, const FluidType& ft, BlockIndex b) :
        	ScheduledEvent(simulation, delay), m_fluidType(ft), m_block(b) {}
 void MistDisperseEvent::execute(Simulation& simulation, Area* area)
 {
@@ -65,7 +65,7 @@ bool MistDisperseEvent::continuesToExist(Area& area) const
 			return true;
 	return false;
 }
-void MistDisperseEvent::emplace(Area& area, uint32_t delay, const FluidType& fluidType, BlockIndex block)
+void MistDisperseEvent::emplace(Area& area, Step delay, const FluidType& fluidType, BlockIndex block)
 {
 	std::unique_ptr<ScheduledEvent> event = std::make_unique<MistDisperseEvent>(delay, area.m_simulation, fluidType, block);
 	area.m_eventSchedule.schedule(std::move(event));

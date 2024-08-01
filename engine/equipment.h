@@ -26,7 +26,7 @@ class EquipmentSet
 	ItemReferences m_meleeWeapons;
 	ItemReferences m_rangedWeapons;
 	ItemReferences m_rangedWeaponAmmo;
-	uint32_t m_mass = 0;
+	Mass m_mass = Mass::create(0);
 public:
 	EquipmentSet(Area& area, const Json& data);
 	void addEquipment(Area& area, ItemIndex equipment);
@@ -42,10 +42,10 @@ public:
 	[[nodiscard]] bool containsItemType(const Area& area, const ItemType& itemType) const;
 	[[nodiscard]] bool hasWeapons() const { return !m_meleeWeapons.empty() || !m_rangedWeapons.empty(); }
 	[[nodiscard]] Step getLongestMeleeWeaponCoolDown(Area& area) const;
-	[[nodiscard]] const uint32_t& getMass() const { return m_mass; }
+	[[nodiscard]] const Mass& getMass() const { return m_mass; }
 	[[nodiscard]] bool canEquipCurrently(const Area& area, ActorIndex actor, ItemIndex item) const;
 	[[nodiscard]] bool empty() const { return m_equipments.empty(); }
-	[[nodiscard]] ItemIndex getWeaponToAttackAtRange(Area& area, float range);
+	[[nodiscard]] ItemIndex getWeaponToAttackAtRange(Area& area, DistanceInBlocksFractional range);
 	[[nodiscard]] ItemIndex getAmmoForRangedWeapon(Area& area, ItemIndex weapon);
 	[[nodiscard]] auto& getAll() { return m_equipments; }
 	[[nodiscard]] bool hasAnyEquipmentWithReservations(Area& area, ActorIndex actor) const;

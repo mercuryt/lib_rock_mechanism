@@ -9,10 +9,10 @@ struct DeserializationMemo;
 
 class TargetedHaulProject final : public Project
 {
-	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const { return {}; }
-	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const { ItemQuery query(m_item); return {{query, 1u}}; }
-	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const { return {}; }
-	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const { return {}; }
+	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const { return {}; }
+	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const { ItemQuery query(m_item); return {{query, Quantity::create(1u)}}; }
+	std::vector<std::pair<ActorQuery, Quantity>> getActors() const { return {}; }
+	std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> getByproducts() const { return {}; }
 	ItemReference m_item;
 	//TODO: facing.
 	void onComplete();
@@ -24,7 +24,7 @@ class TargetedHaulProject final : public Project
 	void offDelay() { assert(false); }
 	Step getDuration() const { return Config::addToStockPileDelaySteps; }
 public:
-	TargetedHaulProject(FactionId f, Area& a, BlockIndex l, ItemReference i) : Project(f, a, l, 4), m_item(i) { }
+	TargetedHaulProject(FactionId f, Area& a, BlockIndex l, ItemReference i) : Project(f, a, l, Quantity::create(4)), m_item(i) { }
 	TargetedHaulProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	Json toJson() const;
 };

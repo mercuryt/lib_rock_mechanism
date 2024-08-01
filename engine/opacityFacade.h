@@ -1,5 +1,7 @@
 #pragma once
 
+#include "dataVector.h"
+#include "index.h"
 #include "types.h"
 #include "../lib/dynamic_bitset.hpp"
 #include "visionCuboid.h"
@@ -9,8 +11,8 @@ class Area;
 class OpacityFacade final
 {
 	Area& m_area;
-	sul::dynamic_bitset<> m_fullOpacity;
-	sul::dynamic_bitset<> m_floorOpacity;
+	DataBitSet<BlockIndex> m_fullOpacity;
+	DataBitSet<BlockIndex> m_floorOpacity;
 public:
 	OpacityFacade(Area& area);
 	void initalize();

@@ -9,7 +9,7 @@ struct ActorQuery
 {
 	// Store Reference rather then Index because project saves query.
 	ActorReference actor;
-	Mass carryWeight = 0;
+	Mass carryWeight = Mass::create(0);
 	bool checkIfSentient = false;
 	bool sentient = false;
 	ActorQuery(ActorReference a) : actor(a) { }

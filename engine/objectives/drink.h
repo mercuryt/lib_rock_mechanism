@@ -11,7 +11,7 @@ class DrinkObjective final : public Objective
 	bool m_noDrinkFound = false;
 public:
 	DrinkObjective(Area& area);
-	DrinkObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
+	DrinkObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area, ActorIndex actor);
 	void execute(Area& area, ActorIndex actor);
 	void cancel(Area& area, ActorIndex actor);
 	void delay(Area& area, ActorIndex actor);

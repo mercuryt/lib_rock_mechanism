@@ -5,18 +5,6 @@
 #include "../area.h"
 #include "../deserializationMemo.h"
 #include "../types.h"
-void Blocks::fluid_load(const Json& data, [[maybe_unused]] const DeserializationMemo& deserializationMemo)
-{
-		for(const Json& pair : data)
-			addFluid(pair[1].get<Volume>(), *pair[0].get<const FluidType*>());
-}
-Json Blocks::fluid_toJson() const
-{
-	Json data = Json::array();
-	for(auto& [fluidType, pair] : m_fluids)
-		data.push_back({fluidType, pair.first});
-	return data;
-}
 std::vector<FluidData>::iterator Blocks::fluid_getDataIterator(BlockIndex index, const FluidType& fluidType)
 {
 	auto& fluid = m_fluid.at(index);
@@ -54,7 +42,7 @@ void Blocks::fluid_spawnMist(BlockIndex index, const FluidType& fluidType, Dista
 void Blocks::fluid_clearMist(BlockIndex index)
 {
 	m_mist.at(index) = nullptr;
-	m_mistInverseDistanceFromSource.at(index) = 0;
+	m_mistInverseDistanceFromSource.at(index) = DistanceInBlocks::create(0);
 }
 DistanceInBlocks Blocks::fluid_getMistInverseDistanceToSource(BlockIndex index) const
 {
@@ -148,10 +136,11 @@ bool Blocks::fluid_undisolveInternal(BlockIndex index, FluidGroup& fluidGroup)
 	FluidData* found = fluid_getData(index, fluidGroup.m_fluidType);
 	if(found || fluid_canEnterCurrently(index, fluidGroup.m_fluidType))
 	{
-		uint32_t capacity = fluid_volumeOfTypeCanEnter(index, fluidGroup.m_fluidType);
-		uint32_t flow = std::min(capacity, (uint32_t)fluidGroup.m_excessVolume);
+		CollisionVolume capacity = fluid_volumeOfTypeCanEnter(index, fluidGroup.m_fluidType);
+		assert(fluidGroup.m_excessVolume > 0);
+		CollisionVolume flow = std::min(capacity, CollisionVolume::create(fluidGroup.m_excessVolume));
 		m_totalFluidVolume.at(index) += flow;
-		fluidGroup.m_excessVolume -= flow;
+		fluidGroup.m_excessVolume -= flow.get();
 		if(found )
 		{
 			// Merge disolved group into found group.
@@ -227,13 +216,13 @@ CollisionVolume Blocks::fluid_volumeOfTypeContains(BlockIndex index, const Fluid
 {
 	const auto found = fluid_getData(index, fluidType);
 	if(!found)
-		return 0;
+		return CollisionVolume::create(0);
 	return found->volume;
 }
 const FluidType& Blocks::fluid_getTypeWithMostVolume(BlockIndex index) const
 {
 	assert(!m_fluid.at(index).empty());
-	CollisionVolume volume = 0;
+	CollisionVolume volume = CollisionVolume::create(0);
 	FluidType* output = nullptr;
 	for(const FluidData& fluidData: m_fluid.at(index))
 		if(volume < fluidData.volume)
@@ -255,11 +244,11 @@ void Blocks::fluid_resolveOverfull(BlockIndex index)
 		assert(*fluidData.type == fluidData.group->m_fluidType);
 		// Displace lower density fluids.
 		CollisionVolume displaced = std::min(fluidData.volume, m_totalFluidVolume.at(index) - Config::maxBlockVolume);
-		assert(displaced);
+		assert(displaced.exists());
 		m_totalFluidVolume.at(index) -= displaced;
 		fluidData.volume -= displaced;
 		fluidData.group->addFluid(displaced);
-		if(!fluidData.volume)
+		if(fluidData.volume.empty())
 			toErase.push_back(fluidData.type);
 		if(fluidData.volume < Config::maxBlockVolume)
 			fluidData.group->m_fillQueue.addBlock(index);
@@ -299,7 +288,7 @@ void Blocks::fluid_resolveOverfull(BlockIndex index)
 void Blocks::fluid_onBlockSetSolid(BlockIndex index)
 {
 	// Displace fluids.
-	m_totalFluidVolume.at(index) = 0;
+	m_totalFluidVolume.at(index) = CollisionVolume::create(0);
 	for(FluidData& fluidData : m_fluid.at(index))
 	{
 		fluidData.group->removeBlock(index);

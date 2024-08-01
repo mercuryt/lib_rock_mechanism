@@ -72,7 +72,7 @@ class HasScheduledEventPausable : public HasScheduledEvent<EventType>
 {
 	Step m_elapsedSteps;
 public:
-	HasScheduledEventPausable(EventSchedule& es) : HasScheduledEvent<EventType>(es), m_elapsedSteps(0) { }
+	HasScheduledEventPausable(EventSchedule& es) : HasScheduledEvent<EventType>(es), m_elapsedSteps(Step::create(0)) { }
 	void pause()
 	{
 		assert(HasScheduledEvent<EventType>::exists());
@@ -82,12 +82,12 @@ public:
 	void reset()
 	{
 		assert(HasScheduledEvent<EventType>::m_event == nullptr);
-		m_elapsedSteps = 0;
+		m_elapsedSteps = Step::create(0);
 	}
 	template<typename ...Args>
 	void resume(Step delay, Args&& ...args)
 	{
-		Step adjustedDelay = m_elapsedSteps < delay ? delay - m_elapsedSteps : 1;
+		Step adjustedDelay = m_elapsedSteps < delay ? delay - m_elapsedSteps : Step::create(1);
 		HasScheduledEvent<EventType>::schedule(adjustedDelay, args...);
 	}
 	void setElapsedSteps(Step steps) { m_elapsedSteps = steps; }
@@ -99,7 +99,7 @@ public:
 		Step fullDuration = event->duration() + m_elapsedSteps;
 		Simulation& simulation = HasScheduledEvent<EventType>::m_schedule.getSimulation();
 		Step fullElapsed = event->elapsedSteps(simulation) + m_elapsedSteps;
-		return util::fractionToPercent(fullElapsed, fullDuration);
+		return util::fractionToPercent(fullElapsed.get(), fullDuration.get());
 	}
 	// Alias exits as isPaused.
 	[[nodiscard]] bool isPaused() const { return !HasScheduledEvent<EventType>::exists(); }

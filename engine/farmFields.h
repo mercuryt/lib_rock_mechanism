@@ -60,8 +60,8 @@ class HasFarmFieldsForFaction
 	Area& m_area;
 	FactionId m_faction;
 	std::list<FarmField> m_farmFields;
-	BlockIndices m_plantsNeedingFluid;
-	BlockIndices m_plantsToHarvest;
+	BlockIndices m_blocksWithPlantsNeedingFluid;
+	BlockIndices m_blocksWithPlantsToHarvest;
 	BlockIndices m_blocksNeedingSeedsSewn;
 	bool m_plantsNeedingFluidIsSorted = false;
 public:
@@ -93,7 +93,7 @@ public:
 // To be used by Area.
 class AreaHasFarmFields
 {
-	std::unordered_map<FactionId, HasFarmFieldsForFaction> m_data;
+	FactionIdMap<HasFarmFieldsForFaction> m_data;
 	Area& m_area;
 public:
 	AreaHasFarmFields(Area& a) : m_area(a) { } 

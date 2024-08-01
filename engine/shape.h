@@ -32,13 +32,13 @@ struct Shape
 	// For custom shapes.
 	Shape(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::vector<std::array<int32_t, 4>> positionsWithFacing(Facing facing) const { return occupiedOffsetsCache.at(facing); }
-	[[nodiscard]] std::vector<std::array<int32_t, 3>> adjacentPositionsWithFacing(Facing facing) const { return adjacentOffsetsCache.at(facing); }
+	[[nodiscard]] std::vector<std::array<int32_t, 4>> positionsWithFacing(Facing facing) const { return occupiedOffsetsCache.at(facing.get()); }
+	[[nodiscard]] std::vector<std::array<int32_t, 3>> adjacentPositionsWithFacing(Facing facing) const { return adjacentOffsetsCache.at(facing.get()); }
 	[[nodiscard]] std::vector<std::array<int32_t, 4>> makeOccupiedPositionsWithFacing(Facing facing) const;
 	[[nodiscard]] std::vector<std::array<int32_t, 3>> makeAdjacentPositionsWithFacing(Facing facing) const;
 	[[nodiscard]] std::vector<std::array<int32_t, 3>> positionOffsets(std::array<int32_t, 4> position) const;
 	[[nodiscard]] BlockIndices getBlocksOccupiedAt(const Blocks& blocks, BlockIndex location, Facing facing) const;
-	[[nodiscard]] std::vector<std::pair<BlockIndex, Volume>> getBlocksOccupiedAtWithVolumes(const Blocks& blocks, BlockIndex location, Facing facing) const;
+	[[nodiscard]] std::vector<std::pair<BlockIndex, CollisionVolume>> getBlocksOccupiedAtWithVolumes(const Blocks& blocks, BlockIndex location, Facing facing) const;
 	[[nodiscard]] BlockIndices getBlocksWhichWouldBeAdjacentAt(const Blocks& blocks, BlockIndex location, Facing facing) const;
 	[[nodiscard]] BlockIndex getBlockWhichWouldBeAdjacentAtWithPredicate(const Blocks& blocks, BlockIndex location, Facing facing, std::function<bool(BlockIndex)> predicate) const;
 	[[nodiscard]] CollisionVolume getCollisionVolumeAtLocationBlock() const;

@@ -34,10 +34,10 @@ class WoodCuttingProject final : public Project
 	void offDelay();
 	void onComplete();
 	void onCancel();
-	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
-	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
-	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
-	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
+	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
+	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const;
+	std::vector<std::pair<ActorQuery, Quantity>> getActors() const;
+	std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> getByproducts() const;
 	static uint32_t getWorkerWoodCuttingScore(Area& area, ActorIndex actor);
 	// What would the total delay time be if we started from scratch now with current workers?
 public:
@@ -56,7 +56,7 @@ struct WoodCuttingLocationDishonorCallback final : public DishonorCallback
 	BlockIndex m_location;
 	WoodCuttingLocationDishonorCallback(FactionId f, Area& a, BlockIndex l) : m_faction(f), m_area(a), m_location(l) { }
 	WoodCuttingLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(uint32_t oldCount, uint32_t newCount);
+	void execute(Quantity oldCount, Quantity newCount);
 	[[nodiscard]] Json toJson() const;
 };
 // Part of HasWoodCuttingDesignations.
@@ -64,7 +64,7 @@ class HasWoodCuttingDesignationsForFaction final
 {
 	Area& m_area;
 	FactionId m_faction;
-	std::unordered_map<BlockIndex, WoodCuttingProject, BlockIndex::Hash> m_data;
+	BlockIndexMap<WoodCuttingProject> m_data;
 public:
 	HasWoodCuttingDesignationsForFaction(FactionId p, Area& a) : m_area(a), m_faction(p) { }
 	HasWoodCuttingDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, FactionId faction);
@@ -81,7 +81,7 @@ public:
 class AreaHasWoodCuttingDesignations final
 {
 	Area& m_area;
-	std::unordered_map<FactionId, HasWoodCuttingDesignationsForFaction> m_data;
+	FactionIdMap<HasWoodCuttingDesignationsForFaction> m_data;
 public:
 	AreaHasWoodCuttingDesignations(Area& a) : m_area(a) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);

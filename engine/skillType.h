@@ -5,7 +5,7 @@ struct SkillType final
 {
 	std::string name;
 	float xpPerLevelModifier;
-	uint32_t level1Xp;
+	SkillExperiencePoints level1Xp;
 	// Infastructure.
 	bool operator==(const SkillType& skillType) const { return this == &skillType; }
 	static const SkillType& byName(const std::string name);

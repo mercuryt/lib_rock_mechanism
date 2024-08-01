@@ -111,7 +111,7 @@ std::string AreaHasFluidGroups::toS() const
 	for(const FluidGroup& fluidGroup : m_fluidGroups)
 	{
 		output += "type:" + fluidGroup.m_fluidType.name;
-		output += "-total:" + std::to_string(fluidGroup.totalVolume());
+		output += "-total:" + std::to_string(fluidGroup.totalVolume().get());
 		output += "-blocks:" + std::to_string(fluidGroup.m_drainQueue.m_set.size());
 		output += "-status:";
 		if(fluidGroup.m_merged)

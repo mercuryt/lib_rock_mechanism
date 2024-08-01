@@ -5,7 +5,7 @@
 #include <chrono>
 #include <cinttypes>
 #include <math.h>
-UniformElement::UniformElement(const ItemType& itemType, uint32_t quantity, const MaterialType* materialType,[[maybe_unused]] uint32_t qualityMin) :
+UniformElement::UniformElement(const ItemType& itemType, Quantity quantity, const MaterialType* materialType,[[maybe_unused]] Quality qualityMin) :
 	itemQuery(itemType, materialType), quantity(quantity) { }
 Uniform& SimulationHasUniformsForFaction::createUniform(std::wstring& name, std::vector<UniformElement>& elements)
 {

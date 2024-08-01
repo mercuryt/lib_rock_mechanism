@@ -2,14 +2,15 @@
 #include "body.h"
 #include "hit.h"
 #include "config.h"
+#include "types.h"
 #include <algorithm>
 Step WoundCalculations::getStepsTillHealed(const Hit& hit, const BodyPartType& bodyPartType, uint32_t scale)
 {
 	assert(hit.depth !=0 );
-	uint32_t hitVolume = hit.depth * hit.area * Config::hitScaleModifier;
-	uint32_t bodyPartVolume = bodyPartType.volume * scale;
-	float ratio = (float)hitVolume / (float)bodyPartVolume;
-	Step baseDelay = ratio * Config::baseHealDelaySteps;
+	Volume hitVolume = Volume::create(hit.depth * hit.area * Config::hitScaleModifier);
+	Volume bodyPartVolume = bodyPartType.volume * scale;
+	float ratio = (float)hitVolume.get() / (float)bodyPartVolume.get();
+	Step baseDelay = Config::baseHealDelaySteps * ratio;
 	switch (hit.woundType)
 	{
 		case WoundType::Pierce:
@@ -20,16 +21,16 @@ Step WoundCalculations::getStepsTillHealed(const Hit& hit, const BodyPartType& b
 			return baseDelay * Config::bludgeonStepsTillHealedModifier;
 		default:
 			assert(false);
-			return 0;
+			return Step::create(0);
 	}
 }
 uint32_t WoundCalculations::getBleedVolumeRate(const Hit& hit, const BodyPartType& bodyPartType, uint32_t scale)
 {
 	if(hit.depth == 0)
 		return 0;
-	uint32_t hitVolume = hit.depth * hit.area * Config::hitScaleModifier;
-	uint32_t bodyPartVolume = bodyPartType.volume * scale;
-	float ratio = (float)hitVolume / (float)bodyPartVolume;
+	Volume hitVolume = Volume::create(hit.depth * hit.area * Config::hitScaleModifier);
+	Volume bodyPartVolume = bodyPartType.volume * scale;
+	float ratio = (float)hitVolume.get() / (float)bodyPartVolume.get();
 	WoundType woundType = hit.woundType;
 	switch (woundType)
 	{
@@ -46,48 +47,48 @@ uint32_t WoundCalculations::getBleedVolumeRate(const Hit& hit, const BodyPartTyp
 }
 Percent WoundCalculations::getPercentTemporaryImpairment(const Hit& hit, const BodyPartType& bodyPartType, uint32_t scale)
 {
-	uint32_t hitVolume = hit.depth * hit.area * Config::hitScaleModifier;
-	uint32_t bodyPartVolume = bodyPartType.volume * scale;
-	float ratio = (float)hitVolume / (float)bodyPartVolume;
+	Volume hitVolume = Volume::create(hit.depth * hit.area * Config::hitScaleModifier);
+	Volume bodyPartVolume = bodyPartType.volume * scale;
+	float ratio = (float)hitVolume.get() / (float)bodyPartVolume.get();
 	switch (hit.woundType)
 	{
 		case WoundType::Pierce:
-			return ratio * Config::piercePercentTemporaryImparmentModifier;
+			return Percent::create(Config::piercePercentTemporaryImparmentModifier * ratio);
 		case WoundType::Cut:
-			return ratio * Config::cutPercentTemporaryImparmentModifier;
+			return Percent::create(Config::cutPercentTemporaryImparmentModifier * ratio);
 		case WoundType::Bludgeon:
-			return ratio * Config::bludgeonPercentTemporaryImparmentModifier;
+			return Percent::create(Config::bludgeonPercentTemporaryImparmentModifier * ratio);
 		default:
 			assert(false);
-			return 0;
+			return Percent::create(0);
 	}
 }
 Percent WoundCalculations::getPercentPermanentImpairment(const Hit& hit, const BodyPartType& bodyPartType, uint32_t scale)
 {
-	uint32_t hitVolume = hit.depth * hit.area * Config::hitScaleModifier;
-	uint32_t bodyPartVolume = bodyPartType.volume * scale;
-	float ratio = (float)hitVolume / (float)bodyPartVolume;
+	Volume hitVolume = Volume::create(hit.depth * hit.area * Config::hitScaleModifier);
+	Volume bodyPartVolume = bodyPartType.volume * scale;
+	float ratio = (float)hitVolume.get() / (float)bodyPartVolume.get();
 	Percent output;
 	switch (hit.woundType)
 	{
 		case WoundType::Pierce:
-			output = ratio * Config::piercePercentPermanantImparmentModifier;
+			output = Percent::create(Config::piercePercentPermanantImparmentModifier * ratio);
 			if(output < Config::percentPermanantImparmentMinimum)
-				return 0;
+				return Percent::create(0);
 			return output - Config::percentPermanantImparmentMinimum;
 		case WoundType::Cut:
-			output = ratio * Config::cutPercentPermanantImparmentModifier;
+			output = Percent::create(ratio * Config::cutPercentPermanantImparmentModifier);
 			if(output < Config::percentPermanantImparmentMinimum)
-				return 0;
+				return Percent::create(0);
 			return output - Config::percentPermanantImparmentMinimum;
 		case WoundType::Bludgeon:
-			output = ratio * Config::bludgeonPercentPermanantImparmentModifier;
+			output = Percent::create(ratio * Config::bludgeonPercentPermanantImparmentModifier);
 			if(output < Config::percentPermanantImparmentMinimum)
-				return 0;
+				return Percent::create(0);
 			return output - Config::percentPermanantImparmentMinimum;
 		default:
 			assert(false);
-			return 0;
+			return Percent::create(0);
 	}
 }
 WoundType WoundCalculations::byName(std::string name)

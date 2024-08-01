@@ -21,7 +21,7 @@ public:
 };
 class AreaHasStocks final
 {
-	std::unordered_map<FactionId, AreaHasStocksForFaction> m_data;
+	FactionIdMap<AreaHasStocksForFaction> m_data;
 public:
 	AreaHasStocksForFaction& at(FactionId faction) { assert(m_data.contains(faction)); return m_data.at(faction); }
 	void addFaction(FactionId faction) { m_data.try_emplace(faction); }

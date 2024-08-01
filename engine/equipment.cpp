@@ -85,7 +85,7 @@ void EquipmentSet::modifyImpact(Area& area, Hit& hit, const BodyPartType& bodyPa
 		Random& random = area.m_simulation.m_random;
 		if(std::ranges::find(wearableData.bodyPartsCovered, &bodyPartType) != wearableData.bodyPartsCovered.end() && random.percentChance(wearableData.percentCoverage))
 		{
-			uint32_t pierceScore = ((float)hit.force / hit.area) * hit.materialType.hardness * Config::pierceModifier;
+			uint32_t pierceScore = ((float)hit.force.get() / hit.area) * hit.materialType.hardness * Config::pierceModifier;
 			uint32_t defenseScore = wearableData.defenseScore * materialType.hardness;
 			if(pierceScore < defenseScore)
 			{
@@ -128,7 +128,7 @@ bool EquipmentSet::containsItemType(const Area& area, const ItemType& itemType) 
 Step EquipmentSet::getLongestMeleeWeaponCoolDown(Area& area) const
 {
 	assert(!m_meleeWeapons.empty());
-	Step output = 0;
+	Step output = Step::create(0);
 	for(ItemReference equipment : m_meleeWeapons)
 	{
 		const ItemType& itemType = area.getItems().getItemType(equipment.getIndex());
@@ -157,7 +157,7 @@ bool EquipmentSet::canEquipCurrently(const Area& area, ActorIndex actor, ItemInd
 	}
 	return true;
 }
-ItemIndex EquipmentSet::getWeaponToAttackAtRange(Area& area, float range)
+ItemIndex EquipmentSet::getWeaponToAttackAtRange(Area& area, DistanceInBlocksFractional range)
 {
 	for(ItemReference item : m_rangedWeapons)
 	{

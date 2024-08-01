@@ -22,7 +22,7 @@ class GivePlantsFluidEvent final : public ScheduledEvent
 	ActorReference m_actor;
 	GivePlantsFluidObjective& m_objective;
 public:
-	GivePlantsFluidEvent(Step step, Area& area, GivePlantsFluidObjective& gpfo, ActorIndex actor, const Step start = 0);
+	GivePlantsFluidEvent(Step step, Area& area, GivePlantsFluidObjective& gpfo, ActorIndex actor, const Step start = Step::create(0));
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 	void onCancel(Simulation& simulation, Area* area);

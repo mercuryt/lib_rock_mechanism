@@ -23,7 +23,7 @@ class PathRequest
 	ActorIndex m_actor;
 	BlockIndex m_destination;
 	BlockIndex m_huristicDestination;
-	DistanceInBlocks m_maxRange = 0;
+	DistanceInBlocks m_maxRange = DistanceInBlocks::create(0);
 	BlockDesignation m_designation = BlockDesignation::BLOCK_DESIGNATION_MAX;
 protected:
 	bool m_detour = false;
@@ -41,7 +41,7 @@ public:
 	void createGoAdjacentToLocation(Area& area, ActorIndex actor, BlockIndex destination, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);
 	void createGoAdjacentToActor(Area& area, ActorIndex actor, ActorIndex other, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);
 	void createGoAdjacentToItem(Area& area, ActorIndex actor, ItemIndex item, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);
-	void createGoAdjacentToPlant(Area& area, ActorIndex actor, ItemIndex item, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);
+	void createGoAdjacentToPlant(Area& area, ActorIndex actor, PlantIndex item, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);
 	void createGoAdjacentToPolymorphic(Area& area, ActorIndex actor, ActorOrItemIndex actorOrItem, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);
 	void createGoAdjacentToDesignation(Area& area, ActorIndex actor, BlockDesignation designation, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);
 	void createGoAdjacentToFluidType(Area& area, ActorIndex actor, const FluidType& fluidType, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);

@@ -74,7 +74,7 @@ void StockPileProject::onComplete()
 	for(ItemReference item : m_deliveredItems)
 		items.setLocation(item.getIndex(), m_location);
 	for(auto& pair : m_alreadyAtSite)
-		pair.first.getIndexPolymorphic().setLocationAndFacing(m_area, m_location, 0);
+		pair.first.getIndexPolymorphic().setLocationAndFacing(m_area, m_location, Facing::create(0));
 	Blocks& blocks = m_area.getBlocks();
 	ItemIndex delivered = blocks.item_getGeneric(m_location, m_itemType, m_materialType);
 	auto workers = std::move(m_workers);
@@ -552,11 +552,11 @@ void AreaHasStockPilesForFaction::makeProject(ItemIndex item, BlockIndex destina
 	// Quantity per project is the ammount that can be hauled by hand, if any, or one.
 	// TODO: Hauling a load of generics with tools.
 	Quantity quantity = actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(actor, items.getMass(item), Config::minimumHaulSpeedInital);
-	Quantity maxWorkers = 1;
-	if(!quantity)
+	Quantity maxWorkers = Quantity::create(1);
+	if(quantity != 0)
 	{
-		quantity = 1;
-		maxWorkers = 2;
+		quantity = Quantity::create(1);
+		maxWorkers = Quantity::create(2);
 	}
 	ItemReference ref = m_area.getItems().getReference(item);
 	StockPileProject& project = m_projectsByItem[ref].emplace_back(faction, m_area, destination, item, quantity, maxWorkers);

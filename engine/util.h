@@ -17,23 +17,23 @@ namespace util
 {
 	inline uint64_t scaleByPercent(uint64_t base, Percent percent)
 	{
-		return (base * (uint64_t)percent) / 100u;
+		return (base * (uint64_t)percent.get()) / 100u;
 	}
 	inline uint32_t scaleByPercent(uint32_t base, Percent percent)
 	{
-		return (base * percent) / 100u;
+		return (base * percent.get()) / 100u;
 	}
 	inline int scaleByPercent(int base, Percent percent)
 	{
-		return (base * percent) / 100u;
+		return (base * percent.get()) / 100u;
 	}
 	inline float scaleByPercent(float base, Percent percent)
 	{
-		return (base * percent) / 100u;
+		return (base * percent.get()) / 100u;
 	}
 	inline int scaleByInversePercent(int base, Percent percent)
 	{
-		return scaleByPercent(base, 100 - percent);
+		return scaleByPercent(base, Percent::create(100 - percent.get()));
 	}
 	inline int scaleByFractionRange(int min, int max, uint32_t numerator, uint32_t denominator)
 	{
@@ -41,7 +41,7 @@ namespace util
 	}
 	inline int scaleByPercentRange(int min, int max, Percent percent)
 	{
-		return scaleByFractionRange(min, max, percent, 100u);
+		return scaleByFractionRange(min, max, percent.get(), 100u);
 	}
 	inline int scaleByFraction(int base, uint32_t numerator, uint32_t denominator)
 	{
@@ -62,9 +62,9 @@ namespace util
 		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 		return converter.from_bytes(str);
 	}
-	[[maybe_unused]]inline int fractionToPercent(int numerator, int denominator)
+	[[maybe_unused]]inline Percent fractionToPercent(int numerator, int denominator)
 	{
-		return ((float)numerator / (float)denominator) * 100;
+		return Percent::create(((float)numerator / (float)denominator) * 100);
 	}
 	template<typename T>
 	inline bool sortedVectorContainsDuplicates(std::vector<T> vector)
@@ -139,21 +139,21 @@ namespace util
 			case 23:
 			case 24:
 			case 25:
-				return 3;
+				return Facing::create(3);
 			case 0:
 			case 1:
 			case 2:
 			case 9:
 			case 10:
 			case 16:
-				return 1;
+				return Facing::create(1);
 			case 5:
 			case 11:
 			case 19:
 			case 22:
-				return 2;
+				return Facing::create(2);
 			default:
-				return 0;
+				return Facing::create(0);
 
 		}
 	}

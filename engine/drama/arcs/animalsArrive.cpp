@@ -36,10 +36,10 @@ void AnimalsArriveDramaArc::callback()
 	{
 		BlockIndices exclude;
 		// Spawn.
-		while(m_quantity--)
+		while(m_quantity-- != 0)
 		{
-			Percent percentGrown = std::min(100, random.getInRange(15, 500));
-			constexpr DistanceInBlocks maxBlockDistance = 10;
+			Percent percentGrown = Percent::create(std::min(100, random.getInRange(15, 500)));
+			DistanceInBlocks maxBlockDistance = DistanceInBlocks::create(10);
 			BlockIndex location = findLocationOnEdgeForNear(m_species->shapeForPercentGrown(percentGrown), m_species->moveType, m_entranceBlock, maxBlockDistance, exclude);
 			if(location.exists())
 			{
@@ -54,7 +54,7 @@ void AnimalsArriveDramaArc::callback()
 					.percentThirst=m_thristPercent
 				});
 				actors.objective_maybeDoNext(actor);
-				m_actors.push_back(actor);
+				m_actors.add(actor.toReference(*m_area));
 			}
 			else
 			{
@@ -62,15 +62,15 @@ void AnimalsArriveDramaArc::callback()
 				return;
 			}
 		}
-		if(!m_quantity)
+		if(m_quantity == 0)
 		{
 			scheduleDepart();
 			m_isActive = false;
 			m_entranceBlock.clear();
 			m_species = nullptr;
-			m_hungerPercent = 0;
-			m_thristPercent = 0;
-			m_tiredPercent = 0;
+			m_hungerPercent = Percent::create(0);
+			m_thristPercent = Percent::create(0);
+			m_tiredPercent = Percent::create(0);
 		}
 	}
 	else
@@ -81,17 +81,17 @@ void AnimalsArriveDramaArc::callback()
 		m_species = species;
 		m_quantity = quantity;
 		// Find entry point.
-		m_entranceBlock = getEntranceToArea(*m_area, species->shapeForPercentGrown(100), species->moveType);
+		m_entranceBlock = getEntranceToArea(species->shapeForPercentGrown(Percent::create(100)), species->moveType);
 		if(m_entranceBlock.empty())
 			scheduleArrive();
 		else
 		{
-			m_hungerPercent = std::max(0, random.getInRange(-300, 190));
-			m_thristPercent = std::max(0, random.getInRange(-500, 190));
-			m_tiredPercent = std::max(0, random.getInRange(-500, 90));
+			m_hungerPercent = Percent::create(std::max(0, random.getInRange(-300, 190)));
+			m_thristPercent = Percent::create(std::max(0, random.getInRange(-500, 190)));
+			m_tiredPercent = Percent::create(std::max(0, random.getInRange(-500, 90)));
 			m_isActive = true;
 			// Anounce.
-			std::wstring message = std::to_wstring(m_quantity) + L" " + util::stringToWideString(m_species->name) + L" spotted nearby.";
+			std::wstring message = std::to_wstring(m_quantity.get()) + L" " + util::stringToWideString(m_species->name) + L" spotted nearby.";
 			m_engine.getSimulation().m_hasDialogues.createMessageBox(message, m_entranceBlock);
 			// Reenter.
 			callback();
@@ -102,14 +102,14 @@ void AnimalsArriveDramaArc::scheduleArrive()
 {
 	assert(!m_isActive);
 	auto& random = m_area->m_simulation.m_random;
-	Step duration = random.getInRange(uint32_t(5 * Config::stepsPerDay), uint32_t(15 * Config::stepsPerDay));
+	Step duration = Step::create(random.getInRange((5u * Config::stepsPerDay.get()), (15u * Config::stepsPerDay.get())));
 	m_scheduledEvent.schedule(*this, m_area->m_simulation, duration);
 }
 void AnimalsArriveDramaArc::scheduleDepart()
 {
 	assert(m_isActive);
 	auto& random = m_area->m_simulation.m_random;
-	Step duration = random.getInRange(uint32_t(5 * Config::stepsPerHour), uint32_t(5 * Config::stepsPerDay));
+	Step duration = Step::create(random.getInRange((5u * Config::stepsPerHour.get()), (5 * Config::stepsPerDay.get())));
 	m_scheduledEvent.schedule(*this, m_area->m_simulation, duration);
 }
 void AnimalsArriveDramaArc::scheduleContinue()
@@ -118,13 +118,13 @@ void AnimalsArriveDramaArc::scheduleContinue()
 	Step duration = Config::stepsPerSecond;
 	m_scheduledEvent.schedule(*this, m_area->m_simulation, duration);
 }
-std::pair<const AnimalSpecies*, uint32_t> AnimalsArriveDramaArc::getSpeciesAndQuantity() const
+std::pair<const AnimalSpecies*, Quantity> AnimalsArriveDramaArc::getSpeciesAndQuantity() const
 {
 	// TODO: Species by biome.
 	auto& random = m_area->m_simulation.m_random;
-	uint32_t quantity = 0;
+	Quantity quantity = Quantity::create(0);
 	const AnimalSpecies* species = nullptr;
-	Percent roll = random.getInRange(0, 100);
+	Percent roll = Percent::create(random.getInRange(0, 100));
 	bool large = false;
 	bool medium = false;
 	if(roll == 100)
@@ -138,19 +138,19 @@ std::pair<const AnimalSpecies*, uint32_t> AnimalsArriveDramaArc::getSpeciesAndQu
 		{
 			static std::vector<const AnimalSpecies*> largeCarnivors = getLargeCarnivors();
 			species = random.getInVector(largeCarnivors);
-			quantity = 1;
+			quantity = Quantity::create(1);
 		}
 		else if(medium)
 		{
 			static std::vector<const AnimalSpecies*> mediumCarnivors = getMediumCarnivors();
 			species = random.getInVector(mediumCarnivors);
-			quantity = random.getInRange(1,5);
+			quantity = Quantity::create(random.getInRange(1,5));
 		}
 		else 
 		{
 			static std::vector<const AnimalSpecies*> smallCarnivors = getSmallCarnivors();
 			species = random.getInVector(smallCarnivors);
-			quantity = random.getInRange(5,15);
+			quantity = Quantity::create(random.getInRange(5,15));
 		}
 	}
 	else 
@@ -159,26 +159,26 @@ std::pair<const AnimalSpecies*, uint32_t> AnimalsArriveDramaArc::getSpeciesAndQu
 		{
 			static std::vector<const AnimalSpecies*> largeHerbivors = getLargeHerbivors();
 			species = random.getInVector(largeHerbivors);
-			quantity = random.getInRange(1,2);
+			quantity = Quantity::create(random.getInRange(1,2));
 		}
 		else if(medium)
 		{
 			static std::vector<const AnimalSpecies*> mediumHerbivors = getMediumHerbivors();
 			species = random.getInVector(mediumHerbivors);
-			quantity = random.getInRange(1,8);
+			quantity = Quantity::create(random.getInRange(1,8));
 		}
 		else 
 		{
 			static std::vector<const AnimalSpecies*> smallHerbivors = getSmallHerbivors();
 			species = random.getInVector(smallHerbivors);
-			quantity = random.getInRange(5,25);
+			quantity = Quantity::create(random.getInRange(5,25));
 		}
 	}
 	return {species, quantity};
 }
 bool AnimalsArriveDramaArc::isSmall(const Shape& shape)
 {
-	return Volume(shape.positions.front()[3]) < Config::maxBlockVolume / 4 && shape.positions.size() == 1;
+	return CollisionVolume::create(shape.positions.front()[3]) < Config::maxBlockVolume / 4 && shape.positions.size() == 1;
 }
 bool AnimalsArriveDramaArc::isLarge(const Shape& shape)
 {

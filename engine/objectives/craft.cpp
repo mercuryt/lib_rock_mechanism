@@ -16,7 +16,7 @@ CraftPathRequest::CraftPathRequest(Area& area, CraftObjective& co, ActorIndex ac
 		return !blocks.isReserved(block, faction) && hasCrafting.getJobForAtLocation(actor, skillType, block, excludeJobs) != nullptr;
 	};
 	bool unreserved = true;
-	createGoToCondition(area, actor, predicate, m_craftObjective.m_detour, unreserved, Config::maxRangeToSearchForCraftingRequirements, BlockIndex::null);
+	createGoToCondition(area, actor, predicate, m_craftObjective.m_detour, unreserved, Config::maxRangeToSearchForCraftingRequirements, BlockIndex::null());
 }
 void CraftPathRequest::callback(Area& area, FindPathResult& result)
 {

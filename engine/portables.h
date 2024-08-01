@@ -3,7 +3,9 @@
  * Handles Reservable, but not CanReserve, OnDestroy, lead and follow and MoveType.
  */
 #pragma once
+#include "dataVector.h"
 #include "eventSchedule.hpp"
+#include "index.h"
 #include "threadedTask.hpp"
 #include "hasShapes.h"
 #include "types.h"
@@ -16,7 +18,6 @@ class MoveEvent;
 class Area;
 class PathThreadedTask;
 class HasOnDestroySubscriptions;
-class ActorOrItemIndex;
 
 class Portables : public HasShapes
 {
@@ -34,8 +35,8 @@ protected:
 	void log(HasShapeIndex index) const;
 	void updateLeaderSpeedActual(HasShapeIndex index);
 	void updateIndexInCarrier(HasShapeIndex oldIndex, HasShapeIndex newIndex);
-	virtual void resize(HasShapeIndex newSize);
-	virtual void moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex);
+	void resize(HasShapeIndex newSize);
+	void moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] ActorOrItemIndex getActorOrItemIndex(HasShapeIndex index);
 	[[nodiscard]] ActorIndex getLineLeader(HasShapeIndex index);
@@ -58,15 +59,18 @@ public:
 	[[nodiscard]] bool isLeadingActor(HasShapeIndex index, ActorIndex actor) const;
 	[[nodiscard]] bool isLeadingItem(HasShapeIndex index, ItemIndex item) const;
 	[[nodiscard]] bool isLeadingPolymorphic(HasShapeIndex index, ActorOrItemIndex actorOrItem) const;
+	[[nodiscard]] bool lead_allCanMove(HasShapeIndex index) const;
 	[[nodiscard]] ActorOrItemIndex getFollower(HasShapeIndex index) { return m_leader.at(index); }
 	[[nodiscard]] ActorOrItemIndex getLeader(HasShapeIndex index) { return m_follower.at(index); }
+	[[nodiscard]] const  ActorOrItemIndex getFollower(HasShapeIndex index) const { return m_leader.at(index); }
+	[[nodiscard]] const ActorOrItemIndex getLeader(HasShapeIndex index) const { return m_follower.at(index); }
 	// For testing.
 	[[nodiscard]] Speed lead_getSpeed(HasShapeIndex index);
 	// Quantity defaults to 0, which becomes maxReservations;
-	void reservable_reserve(HasShapeIndex index, CanReserve& canReserve, Quantity quantity = 1, std::unique_ptr<DishonorCallback> callback = nullptr);
-	void reservable_unreserve(HasShapeIndex index, CanReserve& canReserve, Quantity quantity = 1);
+	void reservable_reserve(HasShapeIndex index, CanReserve& canReserve, Quantity quantity = Quantity::create(1), std::unique_ptr<DishonorCallback> callback = nullptr);
+	void reservable_unreserve(HasShapeIndex index, CanReserve& canReserve, Quantity quantity = Quantity::create(1));
 	void reservable_unreserveFaction(HasShapeIndex index, const FactionId faction);
-	void reservable_maybeUnreserve(HasShapeIndex index, CanReserve& canReserve, Quantity quantity = 1);
+	void reservable_maybeUnreserve(HasShapeIndex index, CanReserve& canReserve, Quantity quantity = Quantity::create(1));
 	void reservable_unreserveAll(HasShapeIndex index);
 	void reservable_setDishonorCallback(HasShapeIndex index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback);
 	void reservable_merge(HasShapeIndex, Reservable& other);

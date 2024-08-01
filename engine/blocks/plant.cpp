@@ -20,7 +20,7 @@ void Blocks::plant_updateGrowingStatus(BlockIndex index)
 {
 	Plants& plants = m_area.getPlants();
 	if(m_plants.at(index).exists())
-		plants.updateGrowingStatus(index);
+		plants.updateGrowingStatus(m_plants.at(index));
 }
 void Blocks::plant_clearPointer(BlockIndex index)
 {
@@ -31,7 +31,7 @@ void Blocks::plant_setTemperature(BlockIndex index, Temperature temperature)
 {
 	Plants& plants = m_area.getPlants();
 	if(m_plants.at(index).exists())
-		plants.setTemperature(index, temperature);
+		plants.setTemperature(m_plants.at(index), temperature);
 }
 void Blocks::plant_erase(BlockIndex index)
 {
@@ -43,7 +43,7 @@ bool Blocks::plant_canGrowHereCurrently(BlockIndex index, const PlantSpecies& pl
 	Temperature temperature = temperature_get(index);
 	if(plantSpecies.maximumGrowingTemperature < temperature || plantSpecies.minimumGrowingTemperature > temperature)
 		return false;
-	if(plantSpecies.growsInSunLight != m_outdoors[index])
+	if(plantSpecies.growsInSunLight != m_outdoors.at(index))
 		return false;
 	static const MaterialType& dirtType = MaterialType::byName("dirt");
 	BlockIndex below = getBlockBelow(index);
@@ -63,7 +63,7 @@ bool Blocks::plant_canGrowHereAtSomePointToday(BlockIndex index, const PlantSpec
 }
 bool Blocks::plant_canGrowHereEver(BlockIndex index, const PlantSpecies& plantSpecies) const
 {
-	if(plantSpecies.growsInSunLight != m_outdoors[index])
+	if(plantSpecies.growsInSunLight != m_outdoors.at(index))
 		return false;
 	return plant_anythingCanGrowHereEver(index);
 }
@@ -81,5 +81,5 @@ PlantIndex Blocks::plant_get(BlockIndex index)
 }
 bool Blocks::plant_exists(BlockIndex index) const
 {
-	return m_plants.at(index);
+	return m_plants.at(index).exists();
 }
