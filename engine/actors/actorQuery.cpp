@@ -5,7 +5,7 @@
 #include "area.h"
 #include "actors.h"
 ActorQuery::ActorQuery(const Json& data, Area& area) :
-	carryWeight(data.contains("carryWeight") ? data["carryWeight"].get<Mass>() : 0),
+	carryWeight(data.contains("carryWeight") ? data["carryWeight"].get<Mass>() : Mass::create(0)),
 	checkIfSentient(data.contains("checkIfSentient")),
 	sentient(data.contains("sentient")) 
 { 

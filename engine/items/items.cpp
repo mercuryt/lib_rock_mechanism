@@ -5,7 +5,6 @@
 #include "../simulation/hasItems.h"
 #include "../util.h"
 #include "actors/actors.h"
-#include "bloomHashMap.h"
 #include "index.h"
 #include "portables.h"
 #include "types.h"
@@ -82,51 +81,52 @@ void Items::onChangeAmbiantSurfaceTemperature()
 	Blocks& blocks = m_area.getBlocks();
 	for(ItemIndex index : m_onSurface)
 	{
-		Temperature temperature = blocks.temperature_get(m_location.at(index()));
+		Temperature temperature = blocks.temperature_get(m_location.at(index));
 		setTemperature(index, temperature);
 	}
 }
 ItemIndex Items::create(ItemParamaters itemParamaters)
 {
-	ItemIndex index = ItemIndex::cast(HasShapes::getNextIndex());
+	ItemIndex index = HasShapes::getNextIndex().toItem();
 	Portables::create(index, itemParamaters.itemType.moveType, itemParamaters.itemType.shape, itemParamaters.location, itemParamaters.facing, itemParamaters.isStatic);
-	const ItemType& itemType = *(m_itemType.at(index()) = &itemParamaters.itemType);
-	m_materialType.at(index()) = &itemParamaters.materialType;
-	m_id.at(index()) = itemParamaters.id ? itemParamaters.id : m_area.m_simulation.m_items.getNextId();
-	m_quality.at(index()) = itemParamaters.quality;
-	m_percentWear.at(index()) = itemParamaters.percentWear;
-	m_quantity.at(index()) = itemParamaters.quantity;
-	m_referenceTarget.at(index()) = std::make_unique<ItemReferenceTarget>(index);
-	m_installed.set(index(), itemParamaters.installed);
+	const ItemType& itemType = *(m_itemType.at(index) = &itemParamaters.itemType);
+	m_materialType.at(index) = &itemParamaters.materialType;
+	m_id.at(index) = itemParamaters.id.exists() ? itemParamaters.id : m_area.m_simulation.m_items.getNextId();
+	m_quality.at(index) = itemParamaters.quality;
+	m_percentWear.at(index) = itemParamaters.percentWear;
+	m_quantity.at(index) = itemParamaters.quantity;
+	m_referenceTarget.at(index) = std::make_unique<ItemReferenceTarget>(index);
+	m_installed.set(index, itemParamaters.installed);
 	if(itemType.generic)
 	{
-		assert(!m_quality.at(index()));
-		assert(!m_percentWear.at(index()));
+		assert(m_quality.at(index).empty());
+		assert(m_percentWear.at(index).empty());
 	}
 	else
-		assert(m_quantity.at(index()) == 1);
+		assert(m_quantity.at(index) == 1);
 	if(itemParamaters.location.exists())
 		setLocationAndFacing(index, itemParamaters.location, itemParamaters.facing);
-	assert(m_canBeStockPiled.at(index()) == nullptr);
+	assert(m_canBeStockPiled.at(index) == nullptr);
 	return index;
 }
 void Items::resize(HasShapeIndex newSize)
 {
 	Portables::resize(newSize);
-	m_materialType.resize(newSize());
-	m_id.resize(newSize());
-	m_quality.resize(newSize());
-	m_percentWear.resize(newSize());
-	m_quantity.resize(newSize());
-	m_installed.resize(newSize());
-	m_canBeStockPiled.resize(newSize());
-	m_hasCargo.resize(newSize());
+	ItemIndex size = newSize.toItem();
+	m_materialType.resize(size);
+	m_id.resize(size);
+	m_quality.resize(size);
+	m_percentWear.resize(size);
+	m_quantity.resize(size);
+	m_installed.resize(size);
+	m_canBeStockPiled.resize(size);
+	m_hasCargo.resize(size);
 }
 void Items::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 {
 	Portables::moveIndex(oldIndex, newIndex);
-	ItemIndex o = ItemIndex::cast(oldIndex);
-	ItemIndex n = ItemIndex::cast(newIndex);
+	ItemIndex o = oldIndex.toItem();
+	ItemIndex n = newIndex.toItem();
 	m_referenceTarget.at(n) = std::move(m_referenceTarget.at(o));
 	m_referenceTarget.at(n)->index = n;
 	m_materialType.at(n) = m_materialType.at(o);
@@ -147,6 +147,11 @@ void Items::setLocation(ItemIndex index, BlockIndex block)
 	assert(m_location.at(index).exists());
 	Facing facing = m_area.getBlocks().facingToSetWhenEnteringFrom(block, m_location.at(index));
 	setLocationAndFacing(index, block, facing);
+	Blocks& blocks = m_area.getBlocks();
+	if(blocks.isOnSurface(block))
+		m_onSurface.add(index);
+	else
+		m_onSurface.remove(index);
 }
 void Items::setLocationAndFacing(ItemIndex index, BlockIndex block, Facing facing)
 {
@@ -165,9 +170,12 @@ void Items::setLocationAndFacing(ItemIndex index, BlockIndex block, Facing facin
 	for(auto [x, y, z, v] : m_shape.at(index)->makeOccupiedPositionsWithFacing(facing))
 	{
 		BlockIndex occupied = blocks.offset(block, x, y, z);
-		blocks.item_record(occupied, index, v);
+		blocks.item_record(occupied, index, CollisionVolume::create(v));
 	}
-	updateIsOnSurface(index, block);
+	if(blocks.isOnSurface(block))
+		m_onSurface.add(index);
+	else
+		m_onSurface.remove(index);
 }
 void Items::exit(ItemIndex index)
 {
@@ -180,6 +188,8 @@ void Items::exit(ItemIndex index)
 		blocks.item_erase(occupied, index);
 	}
 	m_location.at(index).clear();
+	if(blocks.isOnSurface(location))
+		m_onSurface.remove(index);
 }
 void Items::setTemperature(ItemIndex, Temperature)
 {
@@ -226,7 +236,7 @@ void Items::merge(ItemIndex index, ItemIndex other)
 		onDestroy_merge(index, *m_destroy.at(other));
 	destroy(other);
 }
-void Items::setQuality(ItemIndex index, uint32_t quality)
+void Items::setQuality(ItemIndex index, Quality quality)
 {
 	m_quality.at(index) = quality;
 }
@@ -266,7 +276,7 @@ CraftJob& Items::getCraftJobForWorkPiece(ItemIndex index) const
 }
 Mass Items::getSingleUnitMass(ItemIndex index) const 
 { 
-	return std::max(1.f, m_itemType.at(index)->volume * m_materialType.at(index)->density); 
+	return Mass::create(std::max(1u, (m_itemType.at(index)->volume * m_materialType.at(index)->density).get()));
 }
 Mass Items::getMass(ItemIndex index) const
 {
@@ -287,9 +297,9 @@ void Items::log(ItemIndex index) const
 {
 	std::cout << m_itemType.at(index)->name << "[" << m_materialType.at(index)->name << "]";
 	if(m_quantity.at(index) != 1)
-		std::cout << "(" << m_quantity.at(index) << ")";
+		std::cout << "(" << m_quantity.at(index).get() << ")";
 	if(m_craftJobForWorkPiece.at(index) != nullptr)
-		std::cout << "{" << m_craftJobForWorkPiece.at(index)->getStep() << "}";
+		std::cout << "{" << m_craftJobForWorkPiece.at(index)->getStep().get() << "}";
 	Portables::log(index);
 	std::cout << std::endl;
 }
@@ -390,7 +400,7 @@ void ItemHasCargo::addActor(Area& area, ActorIndex actor)
 	assert(m_volume + actors.getVolume(actor) <= m_maxVolume);
 	assert(!containsActor(actor));
 	assert(m_fluidVolume == 0 && m_fluidType == nullptr);
-	getActors().push_back(actor);
+	getActors().add(actor);
 	m_volume += actors.getVolume(actor);
 	m_mass += actors.getMass(actor);
 }
@@ -401,13 +411,13 @@ void ItemHasCargo::addItem(Area& area, ItemIndex item)
 	assert(m_volume + items.getVolume(item) <= m_maxVolume);
 	assert(!containsItem(item));
 	assert(m_fluidVolume == 0 && m_fluidType == nullptr);
-	getItems().push_back(item);
+	getItems().add(item);
 	m_volume += items.getVolume(item);
 	m_mass += items.getMass(item);
 }
-void ItemHasCargo::addFluid(const FluidType& fluidType, Volume volume)
+void ItemHasCargo::addFluid(const FluidType& fluidType, CollisionVolume volume)
 {
-	assert(m_fluidVolume + volume <= m_maxVolume);
+	assert(m_fluidVolume + volume <= m_maxVolume.toCollisionVolume());
 	if(m_fluidType == nullptr)
 	{
 		m_fluidType = &fluidType;
@@ -418,7 +428,7 @@ void ItemHasCargo::addFluid(const FluidType& fluidType, Volume volume)
 		assert(m_fluidType == &fluidType);
 		m_fluidVolume += volume;
 	}
-	m_mass += volume *= fluidType.density;
+	m_mass += volume.toVolume() * fluidType.density;
 }
 ItemIndex ItemHasCargo::addItemGeneric(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity)
 {
@@ -442,7 +452,7 @@ ItemIndex ItemHasCargo::addItemGeneric(Area& area, const ItemType& itemType, con
 	addItem(area, newItem);
 	return newItem;
 }
-void ItemHasCargo::removeFluidVolume(const FluidType& fluidType, Volume volume)
+void ItemHasCargo::removeFluidVolume(const FluidType& fluidType, CollisionVolume volume)
 {
 	assert(m_fluidType == &fluidType);
 	assert(m_fluidVolume >= volume);
@@ -456,7 +466,7 @@ void ItemHasCargo::removeActor(Area& area, ActorIndex actor)
 	Actors& actors = area.getActors();
 	m_volume -= actors.getVolume(actor);
 	m_mass -= actors.getMass(actor);
-	util::removeFromVectorByValueUnordered(getActors(), actor);
+	getActors().remove(actor);
 }
 void ItemHasCargo::removeItem(Area& area, ItemIndex item)
 {
@@ -464,7 +474,7 @@ void ItemHasCargo::removeItem(Area& area, ItemIndex item)
 	Items& items = area.getItems();
 	m_volume -= items.getVolume(item);
 	m_mass -= items.getMass(item);
-	util::removeFromVectorByValueUnordered(getItems(), item);
+	getItems().remove(item);
 }
 void ItemHasCargo::removeItemGeneric(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity)
 {
@@ -474,7 +484,7 @@ void ItemHasCargo::removeItemGeneric(Area& area, const ItemType& itemType, const
 		{
 			if(items.getQuantity(item) == quantity)
 				// TODO: should be reusing an iterator here.
-				util::removeFromVectorByValueUnordered(getItems(), item);
+				getItems().remove(item);
 			else
 			{
 				assert(quantity < items.getQuantity(item));

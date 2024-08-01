@@ -28,7 +28,7 @@ struct WearableData final
 	const uint32_t bodyTypeScale = 0;
 	const uint32_t forceAbsorbedUnpiercedModifier = 0;
 	const uint32_t forceAbsorbedPiercedModifier = 0;
-	const Percent percentCoverage = 0;
+	const Percent percentCoverage = Percent::create(0);
 	const bool rigid = false;
 	WearableData(uint32_t ds, uint32_t l, uint32_t bts, uint32_t faum, uint32_t fapm, Percent pc, bool r) : 
 		defenseScore(ds), layer(l), bodyTypeScale(bts), forceAbsorbedUnpiercedModifier(faum), forceAbsorbedPiercedModifier(fapm), 
@@ -56,8 +56,8 @@ struct ItemType final
        	const WearableData* wearableData = nullptr;
        	const WeaponData* weaponData = nullptr;
 	const CraftStepTypeCategory* craftLocationStepTypeCategory = nullptr;
-	const Volume volume = 0;
-	const Volume internalVolume = 0;
+	const Volume volume = Volume::create(0);
+	const Volume internalVolume = Volume::create(0);
 	const uint32_t value = 0;
 	const bool installable = false;
 	const bool generic = false;

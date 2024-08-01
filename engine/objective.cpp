@@ -18,6 +18,7 @@
 #include "objectives/construct.h"
 #include "objectives/stockpile.h"
 #include "objectives/rest.h"
+#include "types.h"
 
 #include <cstdio>
 #include <numbers>
@@ -55,7 +56,7 @@ void ObjectiveTypePrioritySet::setPriority(Area& area, ActorIndex actor, const O
 {
 	auto found = std::ranges::find_if(m_data, [&](ObjectivePriority& x) { return x.objectiveType == &objectiveType; });
 	if(found == m_data.end())
-		m_data.emplace_back(&objectiveType, priority, 0); // waitUntillStepBeforeAssigningAgain initilizes to 0.
+		m_data.emplace_back(&objectiveType, priority, Step::create(0)); // waitUntillStepBeforeAssigningAgain initilizes to 0.
 	else
 		found->priority = priority;
 	std::ranges::sort(m_data, std::ranges::greater{}, &ObjectivePriority::priority);
@@ -188,7 +189,7 @@ Json CannotCompleteObjectiveDishonorCallback::toJson() const
 {
 	return {{"actor", m_actor.getIndex()}};
 }
-void CannotCompleteObjectiveDishonorCallback::execute(uint32_t, uint32_t) { m_area.getActors().objective_canNotCompleteSubobjective(m_actor.getIndex()); }
+void CannotCompleteObjectiveDishonorCallback::execute(Quantity, Quantity) { m_area.getActors().objective_canNotCompleteSubobjective(m_actor.getIndex()); }
 // HasObjectives.
 void HasObjectives::load(const Json& data, DeserializationMemo& deserializationMemo, Area& area, ActorIndex actor)
 {
@@ -332,7 +333,7 @@ void HasObjectives::destroy(Area& area, Objective& objective)
 	{
 		if(wasCarrying.isItem())
 		{
-			ItemIndex item = wasCarrying.get();
+			ItemIndex item = wasCarrying.getItem();
 			const FactionId faction = actors.getFactionId(m_actor);
 			if(area.m_hasStockPiles.contains(faction))
 				area.m_hasStockPiles.at(faction).addItem(item);

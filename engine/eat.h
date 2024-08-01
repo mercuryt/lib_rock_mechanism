@@ -21,7 +21,7 @@ class MustEat final
 public:
 	BlockIndex m_eatingLocation;
 private:
-	Mass m_massFoodRequested = 0;
+	Mass m_massFoodRequested = Mass::create(0);
 public:
 	MustEat(Area& area, ActorIndex a);
 	MustEat(Area& area, const Json& data, ActorIndex a, const AnimalSpecies& species);
@@ -52,7 +52,7 @@ class HungerEvent final : public ScheduledEvent
 {
 	ActorIndex m_actor;
 public:
-	HungerEvent(Area& area, const Step delay, ActorIndex a, const Step start = 0);
+	HungerEvent(Area& area, const Step delay, ActorIndex a, const Step start = Step::create(0));
 	void execute(Simulation&, Area*);
 	void clearReferences(Simulation&, Area*);
 };

@@ -9,8 +9,6 @@ class Actor;
 class VisionRequest;
 class VisionFacade;
 
-using DistanceInBuckets = uint32_t;
-
 struct LocationBucket final
 {
 	std::vector<BlockIndices> m_blocksMultiTileActors;

@@ -29,7 +29,7 @@ class RestEvent final : public ScheduledEvent
 	ActorReference m_actor;
 	RestObjective& m_objective;
 public:
-	RestEvent(Area& area, RestObjective& ro, ActorIndex actor, Step start = 0);
+	RestEvent(Area& area, RestObjective& ro, ActorIndex actor, Step start = Step::create(0));
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation&, Area*) { m_objective.m_restEvent.clearPointer(); }
 };

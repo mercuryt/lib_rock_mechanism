@@ -30,7 +30,7 @@ class WaitScheduledEvent final : public ScheduledEvent
 	ActorReference m_actor;
 	WaitObjective& m_objective;
 public:
-	WaitScheduledEvent(Step delay, Area& area, WaitObjective& wo, ActorIndex actor, const Step start = 0);
+	WaitScheduledEvent(Step delay, Area& area, WaitObjective& wo, ActorIndex actor, const Step start = Step::create(0));
 	void execute(Simulation&, Area* area) { m_objective.execute(*area, m_actor.getIndex()); }
 	void clearReferences(Simulation&, Area*) { m_objective.m_event.clearPointer(); }
 };

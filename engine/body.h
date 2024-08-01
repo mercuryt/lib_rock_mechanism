@@ -57,7 +57,7 @@ struct Wound final
 	Percent maxPercentTemporaryImpairment;
 	Percent maxPercentPermanantImpairment;
 	HasScheduledEvent<WoundHealEvent> healEvent;
-	Wound(Area& area, ActorIndex a, const WoundType wt, BodyPart& bp, Hit h, uint32_t bvr, Percent ph = 0);
+	Wound(Area& area, ActorIndex a, const WoundType wt, BodyPart& bp, Hit h, uint32_t bvr, Percent ph = Percent::create(0));
 	Wound(const Json& data, DeserializationMemo& deserializationMemo, BodyPart& bp);
 	bool operator==(const Wound& other) const { return &other == this; }
 	Percent getPercentHealed() const;
@@ -84,10 +84,10 @@ class Body final
 	HasScheduledEvent<WoundsCloseEvent> m_woundsCloseEvent;
 	ActorIndex m_actor;
 	const MaterialType* m_materialType = nullptr;
-	uint32_t m_totalVolume = 0;
-	Percent m_impairMovePercent = 0;
-	Percent m_impairManipulationPercent = 0;
-	Volume m_volumeOfBlood = 0;
+	Volume m_totalVolume = Volume::create(0);
+	Percent m_impairMovePercent = Percent::create(0);
+	Percent m_impairManipulationPercent = Percent::create(0);
+	Volume m_volumeOfBlood = Volume::create(0);
 	bool m_isBleeding = false;
 public:
 	std::list<BodyPart> m_bodyParts;
@@ -126,7 +126,7 @@ public:
 	// For testing.
 	[[maybe_unused, nodiscard]] bool hasBleedEvent() const { return m_bleedEvent.exists(); }
 	[[maybe_unused, nodiscard]] bool hasBodyPart() const;
-	[[maybe_unused, nodiscard]] uint32_t getImpairPercentFor(const BodyPartType& bodyPartType) const;
+	[[maybe_unused, nodiscard]] Percent getImpairPercentFor(const BodyPartType& bodyPartType) const;
 	friend class WoundHealEvent;
 	friend class BleedEvent;
 	friend class WoundsCloseEvent;
@@ -136,7 +136,7 @@ class WoundHealEvent : public ScheduledEvent
 	Wound& m_wound;
 	Body& m_body;
 public:
-	WoundHealEvent(Simulation& simulation, const Step delay, Wound& w, Body& b, const Step start = 0);
+	WoundHealEvent(Simulation& simulation, const Step delay, Wound& w, Body& b, const Step start = Step::create(0));
 	void execute(Simulation&, Area* area) { m_body.healWound(*area, m_wound); }
 	void clearReferences(Simulation&, Area*) { m_wound.healEvent.clearPointer(); }
 };
@@ -144,7 +144,7 @@ class BleedEvent : public ScheduledEvent
 {
 	Body& m_body;
 public:
-	BleedEvent(Simulation& simulation, const Step delay, Body& b, const Step start = 0);
+	BleedEvent(Simulation& simulation, const Step delay, Body& b, const Step start = Step::create(0));
 	void execute(Simulation&, Area* area) { m_body.bleed(*area); }
 	void clearReferences(Simulation&, Area*) { m_body.m_bleedEvent.clearPointer(); }
 };
@@ -152,7 +152,7 @@ class WoundsCloseEvent : public ScheduledEvent
 {
 	Body& m_body;
 public:
-	WoundsCloseEvent(Simulation& simulation, const Step delay, Body& b, const Step start = 0);
+	WoundsCloseEvent(Simulation& simulation, const Step delay, Body& b, const Step start = Step::create(0));
 	void execute(Simulation&, Area* area) { m_body.woundsClose(*area); }
 	void clearReferences(Simulation&, Area*) { m_body.m_woundsCloseEvent.clearPointer(); }
 };

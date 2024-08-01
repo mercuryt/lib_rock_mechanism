@@ -65,13 +65,13 @@ Cuboid Cuboid::sum(const Cuboid& other) const
 	Point3D otherHighest = m_blocks->getCoordinates(other.m_highest);
 	Point3D otherLowest = m_blocks->getCoordinates(other.m_lowest);
 	Cuboid output;
-	uint32_t maxX = std::max(highest.x, otherHighest.x);
-	uint32_t maxY = std::max(highest.y, otherHighest.y);
-	uint32_t maxZ = std::max(highest.z, otherHighest.z);
+	DistanceInBlocks maxX = std::max(highest.x, otherHighest.x);
+	DistanceInBlocks maxY = std::max(highest.y, otherHighest.y);
+	DistanceInBlocks maxZ = std::max(highest.z, otherHighest.z);
 	output.m_highest = m_blocks->getIndex({maxX, maxY, maxZ});
-	uint32_t minX = std::min(lowest.x, otherLowest.x);
-	uint32_t minY = std::min(lowest.y, otherLowest.y);
-	uint32_t minZ = std::min(lowest.z, otherLowest.z);
+	DistanceInBlocks minX = std::min(lowest.x, otherLowest.x);
+	DistanceInBlocks minY = std::min(lowest.y, otherLowest.y);
+	DistanceInBlocks minZ = std::min(lowest.z, otherLowest.z);
 	output.m_lowest = m_blocks->getIndex({minX, minY, minZ});
 	output.m_blocks = m_blocks;
 	return output;
@@ -157,7 +157,7 @@ size_t Cuboid::size() const
 	assert(m_lowest.exists());
 	Point3D highest = m_blocks->getCoordinates(m_highest);
 	Point3D lowest = m_blocks->getCoordinates(m_lowest);
-	return ((highest.x + 1) - lowest.x) * ((highest.y + 1) - lowest.y) * ((highest.z + 1) - lowest.z);
+	return ((highest.x + 1) - lowest.x).get() * ((highest.y + 1) - lowest.y).get() * ((highest.z + 1) - lowest.z).get();
 }
 // static method
 Cuboid Cuboid::fromBlock(Blocks& blocks, BlockIndex block)
@@ -200,19 +200,19 @@ Cuboid::iterator::iterator(Blocks& blocks, BlockIndex lowest, BlockIndex highest
 void Cuboid::iterator::setToEnd()
 {
 	// TODO: All these assignments arn't needed, just one would be fine.
-	m_start.x = m_start.y = m_start.z = m_current.x = m_current.y = m_current.z = m_end.x = m_end.y = m_end.z = BLOCK_DISTANCE_MAX;
+	m_start.x = m_start.y = m_start.z = m_current.x = m_current.y = m_current.z = m_end.x = m_end.y = m_end.z = DistanceInBlocks::null();
 }
 Cuboid::iterator& Cuboid::iterator::iterator::operator++() 
 {
 	if (m_current.x < m_end.x) {
-		m_current.x++;
+		++m_current.x;
 	} else if (m_current.y < m_end.y) {
 		m_current.x = m_start.x;
-		m_current.y++;
+		++m_current.y;
 	} else if (m_current.z < m_end.z) {
 		m_current.x = m_start.x;
 		m_current.y = m_start.y;
-		m_current.z++;
+		++m_current.z;
 	}
 	else
 		// End iterator.

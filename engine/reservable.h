@@ -42,29 +42,29 @@ public:
 // TODO: A specalized reservable for block without count ( to save RAM ).
 class Reservable final
 {
-	std::unordered_map<CanReserve*, uint32_t> m_canReserves;
-	std::unordered_map<FactionId, uint32_t> m_reservedCounts;
+	std::unordered_map<CanReserve*, Quantity> m_canReserves;
+	FactionIdMap<Quantity> m_reservedCounts;
 	std::unordered_map<CanReserve*, std::unique_ptr<DishonorCallback>> m_dishonorCallbacks;
-	uint32_t m_maxReservations = 0;
+	Quantity m_maxReservations = Quantity::create(0);
 	void eraseReservationFor(CanReserve& canReserve);
 public:
-	Reservable(uint32_t mr) : m_maxReservations(mr) {}
-	void reserveFor(CanReserve& canReserve, const uint32_t quantity = 1u, std::unique_ptr<DishonorCallback> dishonorCallback = nullptr); 
-	void clearReservationFor(CanReserve& canReserve, const uint32_t quantity = 1u);
+	Reservable(Quantity mr) : m_maxReservations(mr) {}
+	void reserveFor(CanReserve& canReserve, const Quantity quantity = Quantity::create(1), std::unique_ptr<DishonorCallback> dishonorCallback = nullptr); 
+	void clearReservationFor(CanReserve& canReserve, const Quantity quantity = Quantity::create(1));
 	void clearReservationsFor(const FactionId faction);
-	void maybeClearReservationFor(CanReserve& canReserve, const uint32_t quantity = 1u);
-	void setMaxReservations(const uint32_t mr);
+	void maybeClearReservationFor(CanReserve& canReserve, const Quantity quantity = Quantity::create(1));
+	void setMaxReservations(const Quantity mr);
 	void updateFactionFor(CanReserve& canReserve, FactionId oldFaction, FactionId newFaction);
 	void setDishonorCallbackFor(CanReserve& canReserve, std::unique_ptr<DishonorCallback> dishonorCallback) { m_dishonorCallbacks[&canReserve] = std::move(dishonorCallback); }
 	void clearAll();
-	void updateReservedCount(FactionId faction, uint32_t count);
+	void updateReservedCount(FactionId faction, Quantity count);
 	void merge(Reservable& reservable);
 	[[nodiscard]] bool isFullyReserved(const FactionId faction) const;
 	[[nodiscard]] bool hasAnyReservations() const;
 	[[nodiscard]] bool hasAnyReservationsWith(const FactionId faction) const;
-	[[nodiscard]] std::unordered_map<CanReserve*, uint32_t>& getReservedBy();
-	[[nodiscard]] uint32_t getUnreservedCount(const FactionId faction) const;
-	[[nodiscard]] uint32_t getMaxReservations() const { return m_maxReservations; }
+	[[nodiscard]] std::unordered_map<CanReserve*, Quantity>& getReservedBy();
+	[[nodiscard]] Quantity getUnreservedCount(const FactionId faction) const;
+	[[nodiscard]] Quantity getMaxReservations() const { return m_maxReservations; }
 	[[nodiscard]] Json jsonReservationFor(CanReserve& canReserve) const;
 	~Reservable();
 	Reservable(const Reservable&) = delete;

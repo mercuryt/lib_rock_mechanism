@@ -13,14 +13,14 @@
 struct DeserializationMemo;
 struct Faction
 {
-	std::unordered_set<FactionId> allies;
-	std::unordered_set<FactionId> enemies;
+	FactionIdSet allies;
+	FactionIdSet enemies;
 	std::wstring name;
-	FactionId id = FACTION_ID_MAX;
+	FactionId id;
 	Faction(FactionId _id, std::wstring _name) : name(_name), id(_id) { }
 	// Default constructor neccesary for json.
 	Faction() = default;
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(Faction, name, allies, enemies);
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(Faction, id, name, allies, enemies);
 };
 class SimulationHasFactions final
 {

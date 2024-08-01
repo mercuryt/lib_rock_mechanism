@@ -17,7 +17,7 @@ MustDrink::MustDrink(Area& area, ActorIndex a) :
 }
 MustDrink::MustDrink(Area& area, const Json& data, ActorIndex a, const AnimalSpecies& species) : 
 	m_thirstEvent(area.m_eventSchedule), m_fluidType(&species.fluidType),
-       	m_volumeDrinkRequested(data["volumeDrinkRequested"].get<Volume>())
+       	m_volumeDrinkRequested(data["volumeDrinkRequested"].get<CollisionVolume>())
 {
 	m_actor.setTarget(area.getActors().getReferenceTarget(a));
 	if(data.contains("thirstEventStart"))
@@ -34,7 +34,7 @@ Json MustDrink::toJson() const
 		data["thirstEventStart"] = m_thirstEvent.getStartStep();
 	return data;
 }
-void MustDrink::drink(Area& area, uint32_t volume)
+void MustDrink::drink(Area& area, CollisionVolume volume)
 {
 	assert(m_volumeDrinkRequested >= volume);
 	assert(m_volumeDrinkRequested != 0);
@@ -55,13 +55,13 @@ void MustDrink::drink(Area& area, uint32_t volume)
 	{
 		actors.objective_subobjectiveComplete(actor);
 		const AnimalSpecies& species = actors.getSpecies(actor);
-		stepsToNextThirstEvent = util::scaleByFraction(species.stepsTillDieWithoutFluid, m_volumeDrinkRequested, species.stepsTillDieWithoutFluid);
+		stepsToNextThirstEvent = Step::create(util::scaleByFraction(species.stepsTillDieWithoutFluid.get(), m_volumeDrinkRequested.get(), species.stepsTillDieWithoutFluid.get()));
 	}
 	m_thirstEvent.schedule(area, stepsToNextThirstEvent, actor);
 }
 void MustDrink::notThirsty(Area& area)
 {
-	if(m_volumeDrinkRequested)
+	if(m_volumeDrinkRequested != 0)
 		drink(area, m_volumeDrinkRequested);
 }
 void MustDrink::setNeedsFluid(Area& area)
@@ -94,10 +94,10 @@ void MustDrink::setFluidType(const FluidType& fluidType) { m_fluidType = &fluidT
 Percent MustDrink::getPercentDeadFromThirst() const
 {
 	if(!m_thirstEvent.exists())
-		return 0;
+		return Percent::create(0);
 	return m_thirstEvent.percentComplete();
 }
-uint32_t MustDrink::drinkVolumeFor(Area& area, ActorIndex actor) { return std::max(1u, area.getActors().getMass(actor) / Config::unitsBodyMassPerUnitFluidConsumed); }
+CollisionVolume MustDrink::drinkVolumeFor(Area& area, ActorIndex actor) { return CollisionVolume::create(std::max(1u, area.getActors().getMass(actor).get() / Config::unitsBodyMassPerUnitFluidConsumed)); }
 // Drink Event.
 DrinkEvent::DrinkEvent(Area& area, const Step delay, DrinkObjective& drob, ActorIndex actor, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_drinkObjective(drob) 
@@ -114,7 +114,7 @@ void DrinkEvent::execute(Simulation&, Area* area)
 {
 	ActorIndex actor = m_actor.getIndex();
 	Actors& actors = area->getActors();
-	uint32_t volume = actors.drink_getVolumeOfFluidRequested(actor);
+	CollisionVolume volume = actors.drink_getVolumeOfFluidRequested(actor);
 	BlockIndex drinkBlock = m_drinkObjective.getAdjacentBlockToDrinkAt(*area, actors.getLocation(actor), actors.getFacing(actor), actor);
 	if(drinkBlock.empty())
 	{

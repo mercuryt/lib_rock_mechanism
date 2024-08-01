@@ -3,6 +3,7 @@
 #include "../fluidGroup.h"
 #include "../area.h"
 #include "../blocks/blocks.h"
+#include "types.h"
 FillQueue::FillQueue(FluidGroup& fluidGroup) : FluidQueue(fluidGroup) {} 
 void FillQueue::buildFor(BlockIndices& members)
 {
@@ -12,7 +13,7 @@ void FillQueue::buildFor(BlockIndices& members)
 		assert(blocks.fluid_contains(block, m_fluidGroup.m_fluidType));
 		for(BlockIndex adjacent : blocks.getDirectlyAdjacent(block))
 			if(
-				adjacent && blocks.fluid_canEnterEver(adjacent) && 
+				adjacent.exists() && blocks.fluid_canEnterEver(adjacent) && 
 				blocks.fluid_canEnterCurrently(adjacent, m_fluidGroup.m_fluidType) &&
 				blocks.fluid_volumeOfTypeContains(adjacent, m_fluidGroup.m_fluidType) != Config::maxBlockVolume
 			)
@@ -24,7 +25,7 @@ void FillQueue::initalizeForStep()
 	auto& blocks = m_fluidGroup.m_area.getBlocks();
 	for(FutureFlowBlock& futureFlowBlock : m_queue)
 	{
-		futureFlowBlock.delta = 0;
+		futureFlowBlock.delta = CollisionVolume::create(0);
 		futureFlowBlock.capacity = blocks.fluid_volumeOfTypeCanEnter(futureFlowBlock.block, m_fluidGroup.m_fluidType);
 	}
 	std::ranges::sort(m_queue.begin(), m_queue.end(), [&](FutureFlowBlock& a, FutureFlowBlock& b){
@@ -37,7 +38,7 @@ void FillQueue::initalizeForStep()
 	m_overfull.clear();
 	validate();
 }
-void FillQueue::recordDelta(uint32_t volume, uint32_t flowCapacity, uint32_t flowTillNextStep)
+void FillQueue::recordDelta(CollisionVolume volume, CollisionVolume flowCapacity, CollisionVolume flowTillNextStep)
 {
 	assert((m_groupStart->capacity >= volume));
 	assert(volume != 0);
@@ -91,14 +92,14 @@ void FillQueue::applyDelta()
 	}
 	validate();
 }
-uint32_t FillQueue::groupLevel() const
+CollisionVolume FillQueue::groupLevel() const
 {
 	assert((m_groupStart != m_groupEnd));
 	//TODO: calculate this durring find end.
-	uint32_t highestLevel = 0;
+	CollisionVolume highestLevel = CollisionVolume::create(0);
 	for(auto it = m_groupStart; it != m_groupEnd; ++it)
 	{
-		uint32_t level = it->delta + m_fluidGroup.m_area.getBlocks().fluid_volumeOfTypeContains(it->block, m_fluidGroup.m_fluidType);
+		CollisionVolume level = it->delta + m_fluidGroup.m_area.getBlocks().fluid_volumeOfTypeContains(it->block, m_fluidGroup.m_fluidType);
 		if(level > highestLevel)
 			highestLevel = level;
 
@@ -109,7 +110,8 @@ uint32_t FillQueue::getPriority(FutureFlowBlock& futureFlowBlock) const
 {
 	if(futureFlowBlock.capacity == 0)
 		return UINT32_MAX;
-	return ((m_fluidGroup.m_area.getBlocks().getZ(futureFlowBlock.block) + 1) * Config::maxBlockVolume * 2) - futureFlowBlock.capacity;
+	//TODO: What is happening here?
+	return ((m_fluidGroup.m_area.getBlocks().getZ(futureFlowBlock.block).get() + 1) * Config::maxBlockVolume.get() * 2) - futureFlowBlock.capacity.get();
 }
 void FillQueue::findGroupEnd()
 {

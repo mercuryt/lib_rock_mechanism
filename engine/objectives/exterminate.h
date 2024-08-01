@@ -24,8 +24,8 @@ class ExterminateObjectiveScheduledEvent final : public ScheduledEvent
 {
 	ActorReference m_actor;
 	ExterminateObjective& m_objective;
-public:
-	ExterminateObjectiveScheduledEvent(Area& area, ExterminateObjective& o, ActorIndex actor, Step start = 0);
+	public:
+	ExterminateObjectiveScheduledEvent(Area& area, ExterminateObjective& o, ActorIndex actor, Step start = Step::create(0));
 	void execute(Simulation&, Area* area) { m_objective.execute(*area, m_actor.getIndex()); }
 	void clearReferences(Simulation&, Area*) { m_objective.m_event.clearPointer(); }
 };

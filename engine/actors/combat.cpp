@@ -22,8 +22,8 @@
 void Actors::combat_attackMeleeRange(ActorIndex index, ActorIndex target)
 {
 	assert(!m_coolDownEvent.exists(index));
-	uint32_t attackerCombatScore = combat_getCurrentMeleeCombatScore(index);
-	uint32_t targetCombatScore = combat_getCurrentMeleeCombatScore(target);
+	CombatScore attackerCombatScore = combat_getCurrentMeleeCombatScore(index);
+	CombatScore targetCombatScore = combat_getCurrentMeleeCombatScore(target);
 	Step coolDownDuration = m_onMissCoolDownMelee.at(index);
 	if(attackerCombatScore > targetCombatScore)
 	{
@@ -62,18 +62,18 @@ void Actors::combat_attackLongRange(ActorIndex index, ActorIndex target, ItemInd
 	}
 	m_coolDownEvent.schedule(index, m_area, index, coolDown);
 }
-uint32_t Actors::combat_getCurrentMeleeCombatScore(ActorIndex index)
+CombatScore Actors::combat_getCurrentMeleeCombatScore(ActorIndex index)
 {
 	FactionId faction = getFactionId(index);
 	uint32_t blocksContainingNonAllies = 0;
 	// Apply bonuses and penalties based on relative locations.
-	uint32_t output = m_combatScore.at(index);
+	CombatScore output = m_combatScore.at(index);
 	for(ActorIndex adjacent : getAdjacentActors(index))
 	{
-		uint32_t highestAllyCombatScore = 0;
+		CombatScore highestAllyCombatScore = 0;
 		bool nonAllyFound = false;
 		FactionId otherFaction = getFactionId(adjacent);
-		if(otherFaction && (otherFaction == faction || m_area.m_simulation.m_hasFactions.isAlly(otherFaction, faction)))
+		if(otherFaction.exists() && (otherFaction == faction || m_area.m_simulation.m_hasFactions.isAlly(otherFaction, faction)))
 		{
 			if(m_combatScore.at(adjacent) > highestAllyCombatScore)
 				highestAllyCombatScore = m_combatScore.at(adjacent);
@@ -104,14 +104,16 @@ void Actors::combat_coolDownCompleted(ActorIndex index)
 	Blocks& blocks = m_area.getBlocks();
 	//TODO: Move line of sight check to threaded task?
 	ActorIndex target = m_target.at(index);
-	if(blocks.taxiDistance(m_location.at(index), target) <= m_maxMeleeRange.at(index) && blocks.hasLineOfSightTo(m_location.at(index), target))
+	BlockIndex location = m_location.at(index);
+	BlockIndex targetLocation = m_location.at(target);
+	if(blocks.distanceFractional(location, targetLocation) <= m_maxMeleeRange.at(index) && blocks.hasLineOfSightTo(location, targetLocation))
 		combat_attackMeleeRange(index, m_target.at(index));
 }
 void Actors::combat_update(ActorIndex index)
 {
 	m_combatScore.at(index) = 0;
-	m_maxMeleeRange.at(index) = 0.f;
-	m_maxRange.at(index) = 0.f;
+	m_maxMeleeRange.at(index) =DistanceInBlocksFractional::create(0.f);
+	m_maxRange.at(index) = DistanceInBlocksFractional::create(0.f);
 	// Collect attacks and combat scores from body and equipment.
 	m_meleeAttackTable.clear();
 	Body& body = *m_body.at(index).get();
@@ -127,7 +129,7 @@ void Actors::combat_update(ActorIndex index)
 	{
 		pair.first += m_combatScore.at(index);
 		m_combatScore.at(index) = pair.first;
-		float range = pair.second.attackType->range;
+		DistanceInBlocksFractional range = pair.second.attackType->range;
 		if(range > m_maxMeleeRange.at(index))
 			m_maxMeleeRange.at(index) = range;
 	}
@@ -137,7 +139,7 @@ void Actors::combat_update(ActorIndex index)
 	m_combatScore.at(index) = util::scaleByInversePercent(m_combatScore.at(index), body.getImpairManipulationPercent());
 	// Update cool down duration.
 	// TODO: Manipulation impairment should apply to cooldown as well?
-	m_coolDownDurationModifier.at(index) = std::max(1.f, (float)m_equipmentSet.at(index)->getMass() / (float)m_attributes.at(index)->getUnencomberedCarryMass() );
+	m_coolDownDurationModifier.at(index) = std::max(1.f, (float)m_equipmentSet.at(index)->getMass().get() / (float)m_attributes.at(index)->getUnencomberedCarryMass().get() );
 	if(m_attributes.at(index)->getDextarity() > Config::attackCoolDownDurationBaseDextarity)
 	{
 		float reduction = (m_attributes.at(index)->getDextarity() - Config::attackCoolDownDurationBaseDextarity) * Config::fractionAttackCoolDownReductionPerPointOfDextarity;
@@ -147,7 +149,7 @@ void Actors::combat_update(ActorIndex index)
 	Step baseOnMissCoolDownDuration = m_equipmentSet.at(index)->hasWeapons() ?
 	       	m_equipmentSet.at(index)->getLongestMeleeWeaponCoolDown(m_area) : 
 		Config::attackCoolDownDurationBaseSteps;
-	m_onMissCoolDownMelee.at(index) = m_coolDownDurationModifier.at(index) * baseOnMissCoolDownDuration;
+	m_onMissCoolDownMelee.at(index) = baseOnMissCoolDownDuration * m_coolDownDurationModifier.at(index);
 	//Find max range.
 	m_maxRange.at(index) = m_maxMeleeRange.at(index);
 	for(ItemReference item : m_equipmentSet.at(index)->getRangedWeapons())
@@ -157,21 +159,21 @@ void Actors::combat_update(ActorIndex index)
 			m_maxRange.at(index) = attackType->range;
 	}
 }
-std::vector<std::pair<uint32_t, Attack>>& Actors::combat_getMeleeAttacks(ActorIndex index) { return m_meleeAttackTable.at(index); }
+std::vector<std::pair<CombatScore, Attack>>& Actors::combat_getMeleeAttacks(ActorIndex index) { return m_meleeAttackTable.at(index); }
 //TODO: Grasps cannot be used for both armed and unarmed attacks at the same time?
-uint32_t Actors::combat_getCombatScoreForAttack(ActorIndex index, const Attack& attack) const
+CombatScore Actors::combat_getCombatScoreForAttack(ActorIndex index, const Attack& attack) const
 {
-	uint32_t output = attack.attackType->combatScore;
+	CombatScore output = attack.attackType->combatScore;
 	const SkillType& skill = attack.item == ItemIndex::null() ?
 		SkillType::byName("unarmed") :
 		attack.attackType->skillType;
-	uint32_t skillValue = m_skillSet.at(index)->get(skill);
-	output += (skillValue * Config::attackSkillCombatModifier);
+	SkillLevel skillValue = m_skillSet.at(index)->get(skill);
+	output += (skillValue * Config::attackSkillCombatModifier).get();
 	Items& items = m_area.getItems();
-	uint32_t quality = attack.item == ItemIndex::null() ? Config::averageItemQuality : items.getQuality(attack.item);
+	Quality quality = attack.item == ItemIndex::null() ? Config::averageItemQuality : items.getQuality(attack.item);
 	output *= combat_getQualityModifier(index, quality);
-	Percent percentItemWear = attack.item == ItemIndex::null() ? 0u : items.getWear(attack.item);
-	output -= percentItemWear * Config::itemWearCombatModifier;
+	Percent percentItemWear = attack.item == ItemIndex::null() ? Percent::create(0) : items.getWear(attack.item);
+	output -= (percentItemWear * Config::itemWearCombatModifier).get();
 	return output;
 }
 const Attack& Actors::combat_getAttackForCombatScoreDifference(ActorIndex index, uint32_t scoreDifference) const
@@ -192,12 +194,12 @@ void Actors::combat_recordTargetedBy(ActorIndex index, ActorIndex actor)
 {
 	assert(m_target.at(index) == actor);
 	assert(!m_targetedBy.at(index).contains(actor));
-	m_targetedBy.at(index).insert(actor);
+	m_targetedBy.at(index).add(actor);
 }
 void Actors::combat_removeTargetedBy(ActorIndex index, ActorIndex actor)
 {
 	assert(m_targetedBy.at(index).contains(actor));
-	m_targetedBy.at(index).erase(actor);
+	m_targetedBy.at(index).remove(actor);
 }
 void Actors::combat_onMoveFrom(ActorIndex index, BlockIndex previous)
 {
@@ -208,7 +210,7 @@ void Actors::combat_onMoveFrom(ActorIndex index, BlockIndex previous)
 	Blocks& blocks = m_area.getBlocks();
 	FactionId faction = m_faction.at(index);
 	for(BlockIndex block : blocks.getDirectlyAdjacent(previous))
-		if(block.exists()
+		if(block.exists())
 			for(ActorIndex adjacent : blocks.actor_getAll(block))
 			{
 				FactionId otherFaction = m_faction.at(adjacent);
@@ -250,7 +252,7 @@ void Actors::combat_freeHit(ActorIndex index, ActorIndex actor)
 	m_coolDownEvent.maybeUnschedule(index);
 	combat_attackMeleeRange(index, actor);
 }
-void Actors::combat_getIntoRangeAndLineOfSightOfActor(ActorIndex index, ActorIndex target, DistanceInBlocks range)
+void Actors::combat_getIntoRangeAndLineOfSightOfActor(ActorIndex index, ActorIndex target, DistanceInBlocksFractional range)
 {
 	move_pathRequestRecord(index, std::make_unique<GetIntoAttackPositionPathRequest>(m_area, index, target, range));
 }
@@ -258,22 +260,22 @@ bool Actors::combat_isOnCoolDown(ActorIndex index) const { return m_coolDownEven
 bool Actors::combat_inRange(ActorIndex index, const ActorIndex target) const 
 {
 	Blocks& blocks = m_area.getBlocks();
-       	return blocks.distance(m_location.at(index), m_location.at(target)) <= m_maxRange.at(index);
+       	return blocks.distanceFractional(m_location.at(index), m_location.at(target)) <= m_maxRange.at(index);
 }
 Percent Actors::combat_projectileHitPercent(ActorIndex index, const Attack& attack, const ActorIndex target) const
 {
-	Percent chance = 100 - pow(distanceToActor(index, target), Config::projectileHitChanceFallsOffWithRangeExponent);
-	chance += m_skillSet.at(index)->get(attack.attackType->skillType) * Config::projectileHitPercentPerSkillPoint;
-	chance += ((int)getVolume(target) - (int)Config::projectileMedianTargetVolume) * Config::projectileHitPercentPerUnitVolume;
-	chance += m_attributes.at(index)->getDextarity() * Config::projectileHitPercentPerPointDextarity;
+	Percent chance = Percent::create(100 - std::pow(distanceToActorFractional(index, target).get(), Config::projectileHitChanceFallsOffWithRangeExponent));
+	chance += m_skillSet.at(index)->get(attack.attackType->skillType).get() * Config::projectileHitPercentPerSkillPoint;
+	chance += (getVolume(target) - Config::projectileMedianTargetVolume).get() * Config::projectileHitPercentPerUnitVolume;
+	chance += m_attributes.at(index)->getDextarity().get() * Config::projectileHitPercentPerPointDextarity;
 	if(attack.item.exists())
 	{
 		Items& items = m_area.getItems();
-		chance += ((int)items.getQuality(attack.item) - Config::averageItemQuality) * Config::projectileHitPercentPerPointQuality;
+		chance += ((items.getQuality(attack.item) - Config::averageItemQuality) * Config::projectileHitPercentPerPointQuality).get();
 		chance -= items.getWear(attack.item) * Config::projectileHitPercentPerPointWear;
 	}
-	chance -= combat_getCombatScore(index) * Config::projectileHitPercentPerPointTargetCombatScore;
-	chance += attack.attackType->combatScore * Config::projectileHitPercentPerPointAttackTypeCombatScore;
+	chance -= combat_getCombatScore(index).get() * Config::projectileHitPercentPerPointTargetCombatScore;
+	chance += attack.attackType->combatScore.get() * Config::projectileHitPercentPerPointAttackTypeCombatScore;
 	return chance;
 }
 bool Actors::combat_doesProjectileHit(ActorIndex index, Attack& attack, const ActorIndex target) const
@@ -281,12 +283,12 @@ bool Actors::combat_doesProjectileHit(ActorIndex index, Attack& attack, const Ac
 	Percent chance = combat_projectileHitPercent(index, attack, target);
 	return m_area.m_simulation.m_random.percentChance(chance);
 }
-float Actors::combat_getQualityModifier(ActorIndex, uint32_t quality) const
+float Actors::combat_getQualityModifier(ActorIndex, Quality quality) const
 {
-	int32_t adjusted = (int32_t)quality - (int32_t)Config::averageItemQuality;
+	int32_t adjusted = (int32_t)quality.get() - (int32_t)Config::averageItemQuality.get();
 	return 1.f + (adjusted * Config::itemQualityCombatModifier);
 }
-bool Actors::combat_blockIsValidPosition(ActorIndex index, BlockIndex block, uint32_t attackRangeSquared) const
+bool Actors::combat_blockIsValidPosition(ActorIndex index, BlockIndex block, DistanceInBlocksFractional attackRangeSquared) const
 {
 	if(getBlocks(m_target.at(index)).contains(block))
 		return true;
@@ -310,7 +312,7 @@ AttackType& Actors::combat_getRangedAttackType(ActorIndex, ItemIndex weapon)
 AttackCoolDownEvent::AttackCoolDownEvent(Area& area, ActorIndex actor, Step duration, const Step start) :
 	ScheduledEvent(area.m_simulation, duration, start), m_actor(actor) { }
 
-GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(Area& area, ActorIndex a, ActorIndex t, float ar) :
+GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(Area& area, ActorIndex a, ActorIndex t, DistanceInBlocksFractional ar) :
 	m_actor(a), m_attackRangeSquared(ar * ar)
 {
 	m_target.setTarget(area.getActors().getReferenceTarget(t));
@@ -321,7 +323,7 @@ GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(Area& area, A
 	// TODO: Range attack actors should use a different path priority condition to avoid getting too close.
 	bool detour = true;
 	bool unreserved = false;
-	DistanceInBlocks maxRange = BLOCK_DISTANCE_MAX;
+	DistanceInBlocks maxRange = DistanceInBlocks::null();
 	createGoToCondition(area, m_actor, destinationCondition, detour, unreserved, maxRange, area.getActors().getLocation(t));
 }
 void GetIntoAttackPositionPathRequest::callback(Area& area, FindPathResult& result)
@@ -333,8 +335,8 @@ void GetIntoAttackPositionPathRequest::callback(Area& area, FindPathResult& resu
 		{
 			if(!actors.combat_isOnCoolDown(m_actor))
 			{
-				ItemIndex target = m_target.getIndex();
-				float range = actors.distanceToActor(m_actor, target);
+				ActorIndex target = m_target.getIndex();
+				DistanceInBlocksFractional range = actors.distanceToActorFractional(m_actor, target);
 				if(range <= actors.combat_getMaxMeleeRange(m_actor))
 					// Melee range attack.
 					actors.combat_attackMeleeRange(m_actor, target);

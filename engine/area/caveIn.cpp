@@ -134,20 +134,20 @@ void Area::stepCaveInRead()
 
 	} // End for each blockQueue.
 	// Record unanchored chunks, fall distance and energy.
-	std::vector<std::tuple<BlockIndices,uint32_t, uint32_t>> fallingChunksWithDistanceAndEnergy;
+	std::vector<std::tuple<BlockIndices, DistanceInBlocks, uint32_t>> fallingChunksWithDistanceAndEnergy;
 	for(BlockIndices& chunk : chunks)
 	{
 		if(!anchoredChunks.contains(&chunk))
 		{
 			BlockIndices blocksAbsorbingImpact;
-			DistanceInBlocks smallestFallDistance = BLOCK_DISTANCE_MAX;
+			DistanceInBlocks smallestFallDistance = DistanceInBlocks::create(UINT16_MAX);
 			for(BlockIndex block : chunk)
 			{
-				DistanceInBlocks verticalFallDistance = 0;
+				DistanceInBlocks verticalFallDistance = DistanceInBlocks::create(0);
 				BlockIndex below = blocks.getBlockBelow(block);
 				while(below.exists() && !blocks.isSupport(below))
 				{
-					verticalFallDistance++;
+					++verticalFallDistance;
 					below = blocks.getBlockBelow(below);
 				}
 				// Ignore blocks which are not on the bottom of the shape and internal voids.
@@ -172,8 +172,8 @@ void Area::stepCaveInRead()
 			// Calculate energy of fall.
 			uint32_t fallEnergy = 0;
 			for(BlockIndex block : chunk)
-				fallEnergy += blocks.getMass(block);
-			fallEnergy *= smallestFallDistance;
+				fallEnergy += blocks.getMass(block).get();
+			fallEnergy *= smallestFallDistance.get();
 			
 			// Store result to apply inside a write mutex after sorting.
 			fallingChunksWithDistanceAndEnergy.emplace_back(chunk, smallestFallDistance, fallEnergy);
@@ -194,20 +194,20 @@ void Area::stepCaveInWrite()
 	// Make chunks fall.
 	for(auto& [chunk, fallDistance, fallEnergy] : m_caveInData)
 	{
-		assert(fallDistance);
+		assert(fallDistance != 0);
 		assert(chunk.size());
 		assert(fallEnergy);
-		uint32_t zDiff;
+		DistanceInBlocks zDiff;
 		// Move blocks down.
 		BlockIndex below;
 		for(BlockIndex block : chunk)
 		{
 			zDiff = fallDistance;
 			below = block;
-			while(zDiff)
+			while(zDiff != 0)
 			{
 				below = m_blocks->getBlockBelow(below);
-				zDiff--;
+				--zDiff;
 			}
 			m_blocks->moveContentsTo(block, below);
 		}

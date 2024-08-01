@@ -12,8 +12,8 @@ struct DeserializationMemo;
 class SimulationHasAreas final
 {
 	Simulation& m_simulation;
-	AreaId m_nextId = 0;
-	std::unordered_map<AreaId, Area*> m_areasById;
+	AreaId m_nextId = AreaId::create(0);
+	AreaIdMap<Area*> m_areasById;
 	std::list<Area> m_areas;
 public:
 	SimulationHasAreas(Simulation& simulation) : m_simulation(simulation) { }

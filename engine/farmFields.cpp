@@ -3,6 +3,7 @@
 #include "datetime.h"
 #include "deserializeDishonorCallbacks.h"
 #include "designations.h"
+#include "index.h"
 #include "simulation.h"
 #include "plants.h"
 #include "blocks/blocks.h"
@@ -58,9 +59,9 @@ HasFarmFieldsForFaction::HasFarmFieldsForFaction(const Json& data, Deserializati
 	for(const Json& farmFieldData : data["farmFields"])
 		m_farmFields.emplace_back(farmFieldData, m_faction, m_area);
 	for(const Json& plantReference : data["plantsNeedingFluid"])
-		m_plantsNeedingFluid.add(plantReference.get<BlockIndex>());
+		m_blocksWithPlantsNeedingFluid.add(plantReference.get<BlockIndex>());
 	for(const Json& plantReference : data["plantsToHarvest"])
-		m_plantsToHarvest.add(plantReference.get<BlockIndex>());
+		m_blocksWithPlantsToHarvest.add(plantReference.get<BlockIndex>());
 	for(const Json& blockReference : data["blocksNeedingSeedsSewn"])
 		m_blocksNeedingSeedsSewn.add(blockReference.get<BlockIndex>());
 }
@@ -69,9 +70,9 @@ Json HasFarmFieldsForFaction::toJson() const
 	Json data{{"farmFields", Json::array()}, {"plantsNeedingFluid", Json::array()}, {"plantsToHarvest", Json::array()}, {"blocksNeedingSeedsSewn", Json::array()}, {"plantsNeedingFluidIsSorted", m_plantsNeedingFluidIsSorted}};
 	for(const FarmField& farmField : m_farmFields)
 		data["farmFields"].push_back(farmField.toJson());
-	for(BlockIndex block : m_plantsNeedingFluid)
+	for(BlockIndex block : m_blocksWithPlantsNeedingFluid)
 		data["plantsNeedingFluid"].push_back(block);
-	for(BlockIndex block : m_plantsToHarvest)
+	for(BlockIndex block : m_blocksWithPlantsToHarvest)
 		data["plantsToHarvest"].push_back(block);
 	for(BlockIndex block : m_blocksNeedingSeedsSewn)
 		data["blocksNeedingSeedsSewn"].push_back(block);
@@ -79,19 +80,22 @@ Json HasFarmFieldsForFaction::toJson() const
 }
 bool HasFarmFieldsForFaction::hasGivePlantsFluidDesignations() const
 {
-	return !m_plantsNeedingFluid.empty();
+	return !m_blocksWithPlantsNeedingFluid.empty();
 }
 PlantIndex HasFarmFieldsForFaction::getHighestPriorityPlantForGiveFluid()
 {
-	assert(!m_plantsNeedingFluid.empty());
+	assert(!m_blocksWithPlantsNeedingFluid.empty());
 	Plants& plants = m_area.getPlants();
+	Blocks& blocks = m_area.getBlocks();
+	m_blocksWithPlantsNeedingFluid.remove_if([&](BlockIndex block) { return !blocks.plant_exists(block); });
 	if(!m_plantsNeedingFluidIsSorted)
 	{
-		std::ranges::sort(m_plantsNeedingFluid, [&](PlantIndex a, PlantIndex b){
-			       	return plants.getStepAtWhichPlantWillDieFromLackOfFluid(a) < plants.getStepAtWhichPlantWillDieFromLackOfFluid(b); });
+		m_blocksWithPlantsNeedingFluid.sort([&](const BlockIndex a, const BlockIndex b){
+		       	return plants.getStepAtWhichPlantWillDieFromLackOfFluid(blocks.plant_get(a)) < plants.getStepAtWhichPlantWillDieFromLackOfFluid(blocks.plant_get(b));
+		});
 		m_plantsNeedingFluidIsSorted = true;
 	}
-	PlantIndex output = m_plantsNeedingFluid.front();
+	PlantIndex output = blocks.plant_get(m_blocksWithPlantsNeedingFluid.front());
 	if(plants.getStepAtWhichPlantWillDieFromLackOfFluid(output) - m_area.m_simulation.m_step > Config::stepsTillDiePlantPriorityOveride)
 		return PlantIndex::null();
 	return output;
@@ -102,7 +106,7 @@ bool HasFarmFieldsForFaction::hasSowSeedsDesignations() const
 }
 bool HasFarmFieldsForFaction::hasHarvestDesignations() const
 {
-	return !m_plantsToHarvest.empty();
+	return !m_blocksWithPlantsToHarvest.empty();
 }
 const PlantSpecies& HasFarmFieldsForFaction::getPlantSpeciesFor(BlockIndex block) const
 {
@@ -114,16 +118,18 @@ const PlantSpecies& HasFarmFieldsForFaction::getPlantSpeciesFor(BlockIndex block
 }
 void HasFarmFieldsForFaction::addGivePlantFluidDesignation(PlantIndex plant)
 {
-	assert(std::ranges::find(m_plantsNeedingFluid, plant) == m_plantsNeedingFluid.end());
+	Plants& plants = m_area.getPlants();
+	BlockIndex location = plants.getLocation(plant);
+	assert(!m_blocksWithPlantsNeedingFluid.contains(location));
 	m_plantsNeedingFluidIsSorted = false;
-	m_plantsNeedingFluid.add(m_area.getPlants().getLocation(plant));
-	m_area.getBlocks().designation_set(m_area.getPlants().getLocation(plant), m_faction, BlockDesignation::GivePlantFluid);
+	m_blocksWithPlantsNeedingFluid.add(plants.getLocation(plant));
+	m_area.getBlocks().designation_set(plants.getLocation(plant), m_faction, BlockDesignation::GivePlantFluid);
 }
 void HasFarmFieldsForFaction::removeGivePlantFluidDesignation(PlantIndex plant)
 {
-	assert(std::ranges::find(m_plantsNeedingFluid, plant) != m_plantsNeedingFluid.end());
-	Plants& plants = m_area.getPlants();
-	m_plantsNeedingFluid.remove(plants.getLocation(plant));
+	BlockIndex location = m_area.getPlants().getLocation(plant);
+	assert(m_blocksWithPlantsNeedingFluid.contains(location));
+	m_blocksWithPlantsNeedingFluid.remove(location);
 	m_area.getBlocks().designation_unset(m_area.getPlants().getLocation(plant), m_faction, BlockDesignation::GivePlantFluid);
 }
 void HasFarmFieldsForFaction::addSowSeedsDesignation(BlockIndex block)
@@ -141,15 +147,15 @@ void HasFarmFieldsForFaction::removeSowSeedsDesignation(BlockIndex block)
 void HasFarmFieldsForFaction::addHarvestDesignation(PlantIndex plant)
 {
 	BlockIndex location = m_area.getPlants().getLocation(plant);
-	assert(!m_plantsToHarvest.contains(location));
-	m_plantsToHarvest.add(location);
+	assert(!m_blocksWithPlantsToHarvest.contains(location));
+	m_blocksWithPlantsToHarvest.add(location);
 	m_area.getBlocks().designation_set(location, m_faction, BlockDesignation::Harvest);
 }
 void HasFarmFieldsForFaction::removeHarvestDesignation(PlantIndex plant)
 {
 	BlockIndex location = m_area.getPlants().getLocation(plant);
-	assert(m_plantsToHarvest.contains(location));
-	m_plantsToHarvest.remove(location);
+	assert(m_blocksWithPlantsToHarvest.contains(location));
+	m_blocksWithPlantsToHarvest.remove(location);
 	m_area.getBlocks().designation_unset(location, m_faction, BlockDesignation::Harvest);
 }
 void HasFarmFieldsForFaction::setDayOfYear(uint32_t dayOfYear)
@@ -220,7 +226,7 @@ void HasFarmFieldsForFaction::designateBlocks(FarmField& farmField, BlockIndices
 		{
 			PlantIndex plant = blocks.plant_get(block);
 			// Designate plants already existing for fluid if the species is right and they need fluid.
-			if(&plants.getSpecies(plant) == farmField.plantSpecies && plants.getVolumeFluidRequested(plant))
+			if(&plants.getSpecies(plant) == farmField.plantSpecies && plants.getVolumeFluidRequested(plant) != 0)
 				addGivePlantFluidDesignation(plant);
 			if(plants.readyToHarvest(plant))
 				addHarvestDesignation(plant);

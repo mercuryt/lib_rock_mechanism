@@ -9,8 +9,8 @@ void AreaHasVisionCuboids::initalize(Area& area)
 	DistanceInBlocks sizeX = blocks.m_sizeX;
 	DistanceInBlocks sizeY = blocks.m_sizeY;
 	DistanceInBlocks sizeZ = blocks.m_sizeZ;
-	m_blockVisionCuboids.resize(sizeX * sizeY * sizeZ);
-	m_blockVisionCuboidIds.resize(sizeX * sizeY * sizeZ);
+	m_blockVisionCuboids.resize((sizeX * sizeY * sizeZ).get());
+	m_blockVisionCuboidIds.resize((sizeX * sizeY * sizeZ).get());
 	for(BlockIndex index : m_area->getBlocks().getAll())
 	{
 		assert(index.exists());
@@ -82,7 +82,7 @@ void AreaHasVisionCuboids::unset(BlockIndex block)
 	if(m_blockVisionCuboids.empty())
 		return;
 	m_blockVisionCuboids.at(block) = nullptr;
-	m_blockVisionCuboidIds.at(block) = 0;
+	m_blockVisionCuboidIds.at(block) = VisionCuboidId::create(0);
 }
 VisionCuboid& AreaHasVisionCuboids::emplace(Cuboid& cuboid)
 {
@@ -96,7 +96,7 @@ VisionCuboid* AreaHasVisionCuboids::getTargetToCombineWith(const Cuboid& cuboid)
 	assert(blocks.canSeeThrough(cuboid.m_lowest));
 	for(BlockIndex block : blocks.getDirectlyAdjacent(cuboid.m_highest))
 	{
-		if(block.exists() && m_blockVisionCuboidIds.at(block) && !cuboid.contains(block))
+		if(block.exists() && m_blockVisionCuboidIds.at(block) != 0 && !cuboid.contains(block))
 		{
 			VisionCuboid* visionCuboid = m_blockVisionCuboids.at(block);
 			if(visionCuboid && !visionCuboid->m_destroy && visionCuboid->canCombineWith(cuboid))
@@ -245,25 +245,25 @@ bool VisionCuboid::canSeeInto(const Cuboid& other) const
 	Point3D otherHighCoordinates = blocks.getCoordinates(other.m_highest);
 	Point3D otherLowCoordinates = blocks.getCoordinates(other.m_lowest);
 	// Get a cuboid representing a face of m_cuboid.
-	uint32_t facing = 6;
+	Facing facing = Facing::create(6);
 	// Test area has x higher then this.
 	if(otherLowCoordinates.x > highCoordinates.x)
-		facing = 4;
+		facing.set(4);
 	// Test area has x lower then this.
 	else if(otherHighCoordinates.x < lowCoordinates.x)
-		facing = 2;
+		facing.set(2);
 	// Test area has y higher then this.
 	else if(otherLowCoordinates.y > highCoordinates.y)
-		facing = 3;
+		facing.set(3);
 	// Test area has y lower then this.
 	else if(otherHighCoordinates.y < lowCoordinates.y)
-		facing = 1;
+		facing.set(1);
 	// Test area has z higher then this.
 	else if(otherLowCoordinates.z > highCoordinates.z)
-		facing = 5;
+		facing.set(5);
 	// Test area has z lower then this.
 	else if(otherHighCoordinates.z < lowCoordinates.z)
-		facing = 0;
+		facing.set(0);
 	assert(facing != 6);
 	const Cuboid face = m_cuboid.getFace(facing);
 	std::vector<BlockIndex> faceBlocks;

@@ -40,10 +40,10 @@ class DigProject final : public Project
 	void offDelay();
 	void onComplete();
 	void onCancel();
-	[[nodiscard]] std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
-	[[nodiscard]] std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
-	[[nodiscard]] std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
-	[[nodiscard]] std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
+	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
+	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const;
+	[[nodiscard]] std::vector<std::pair<ActorQuery, Quantity>> getActors() const;
+	[[nodiscard]] std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> getByproducts() const;
 	[[nodiscard]] static uint32_t getWorkerDigScore(Area& area, ActorIndex actor);
 	// What would the total delay time be if we started from scratch now with current workers?
 public:
@@ -62,7 +62,7 @@ struct DigLocationDishonorCallback final : public DishonorCallback
 	BlockIndex m_location;
 	DigLocationDishonorCallback(FactionId f, Area& a, BlockIndex l) : m_faction(f), m_area(a), m_location(l) { }
 	DigLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(uint32_t oldCount, uint32_t newCount);
+	void execute(Quantity oldCount, Quantity newCount);
 	[[nodiscard]] Json toJson() const;
 };
 // Part of HasDigDesignations.
@@ -89,7 +89,7 @@ public:
 class AreaHasDigDesignations final
 {
 	Area& m_area;
-	std::unordered_map<FactionId, HasDigDesignationsForFaction> m_data;
+	FactionIdMap<HasDigDesignationsForFaction> m_data;
 public:
 	AreaHasDigDesignations(Area& a) : m_area(a) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);

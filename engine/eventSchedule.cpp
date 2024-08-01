@@ -1,10 +1,11 @@
 #include "eventSchedule.h"
 #include "simulation.h"
+#include "types.h"
 #include "util.h"
 #include "area.h"
 #include <cassert>
 ScheduledEvent::ScheduledEvent(Simulation& simulation, const Step delay, const Step start) :
-	m_startStep(start == 0 ? simulation.m_step : start), m_step(m_startStep + delay)
+	m_startStep(start == Step::null() ? simulation.m_step : start), m_step(m_startStep + delay)
 {
 	assert(delay != 0);
 	assert(simulation.m_step <= m_step);
@@ -20,22 +21,22 @@ void ScheduledEvent::cancel(Simulation& simulation, Area* area)
 Step ScheduledEvent::remaningSteps(Simulation& simulation) const 
 { 
 	assert(m_step > simulation.m_step);
-	return m_step - simulation.m_step;
+	return Step::create(m_step.get() - simulation.m_step.get());
 }
 Step ScheduledEvent::elapsedSteps(Simulation& simulation) const { return simulation.m_step - m_startStep; }
 Percent ScheduledEvent::percentComplete(Simulation& simulation) const
 {
-	return fractionComplete(simulation) * 100u;
+	return Percent::create(fractionComplete(simulation) * 100u);
 }
 float ScheduledEvent::fractionComplete(Simulation& simulation) const
 {
 	assert(m_step >= m_startStep);
 	Step totalSteps = m_step - m_startStep;
 	Step elapsedSteps = simulation.m_step - m_startStep;
-	return (float)elapsedSteps / (float)totalSteps;
+	return (float)elapsedSteps.get() / (float)totalSteps.get();
 }
 
-Step ScheduledEvent::duration() const { return m_step - m_startStep ; }
+Step ScheduledEvent::duration() const { return Step::create(m_step.get() - m_startStep.get()); }
 void EventSchedule::schedule(std::unique_ptr<ScheduledEvent> scheduledEvent)
 {
 	m_data[scheduledEvent->m_step].push_back(std::move(scheduledEvent));

@@ -64,8 +64,8 @@ public:
 
 	FluidGroup(const FluidType& ft, BlockIndices& blocks, Area& area, bool checkMerge = true);
 	FluidGroup(const FluidGroup&) = delete;
-	void addFluid(uint32_t fluidVolume);
-	void removeFluid(uint32_t fluidVolume);
+	void addFluid(CollisionVolume fluidVolume);
+	void removeFluid(CollisionVolume fluidVolume);
 	void addBlock(BlockIndex block, bool checkMerge = true);
 	void removeBlock(BlockIndex block);
 	void removeBlocks(BlockIndices& blocks);
@@ -84,7 +84,7 @@ public:
 	void validate(std::unordered_set<FluidGroup*> toErase);
 	void log() const;
 	void logFill() const;
-	[[nodiscard]] int32_t totalVolume() const;
+	[[nodiscard]] CollisionVolume totalVolume() const;
 	[[nodiscard]] BlockIndices& getBlocks() { return m_drainQueue.m_set; }
 	[[nodiscard]] bool dispositionIsStable(CollisionVolume fillVolume, CollisionVolume drainVolume) const;
 	[[nodiscard]] bool operator==(const FluidGroup& fluidGroup) const { return &fluidGroup == this; }

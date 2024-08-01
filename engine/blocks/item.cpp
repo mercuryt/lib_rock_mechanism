@@ -6,7 +6,6 @@
 #include "../simulation/hasItems.h"
 #include "../types.h"
 #include "../itemType.h"
-#include "util.h"
 #include <iterator>
 void Blocks::item_record(BlockIndex index, ItemIndex item, CollisionVolume volume)
 {
@@ -24,7 +23,7 @@ void Blocks::item_erase(BlockIndex index, ItemIndex item)
 	auto& blockItems = m_items.at(index);
 	auto& blockItemVolume = m_itemVolume.at(index);
 	auto iter = std::ranges::find(blockItems, item);
-	auto iter2 = m_itemVolume.at(index).begin() + (std::distance(iter, m_dynamicVolume.begin()));
+	auto iter2 = m_itemVolume.at(index).begin() + (std::distance(iter, blockItems.begin()));
 	if(items.isStatic(item))
 		m_staticVolume.at(index) -= iter2->second;
 	else
@@ -54,10 +53,43 @@ void Blocks::item_disperseAll(BlockIndex index)
 	for(auto [item, volume] : copy)
 	{
 		//TODO: split up stacks of generics, prefer blocks with more empty space.
-		Random& random = m_area.m_simulation.m_random;
-		BlockIndex block = blocks.at(random.getInRange(0u, (uint)(blocks.size() - 1)));
+		BlockIndex block = blocks.random(m_area.m_simulation);
 		items.setLocation(item, block);
 	}
+}
+bool Blocks::item_canEnterCurrentlyFrom(BlockIndex index, ItemIndex item, BlockIndex block) const
+{
+	Facing facing = facingToSetWhenEnteringFrom(index, block);
+	return item_canEnterCurrentlyWithFacing(index, item, facing);
+}
+bool Blocks::item_canEnterCurrentlyWithFacing(BlockIndex index, ItemIndex item, Facing facing) const
+{
+	Items& items = m_area.getItems();
+	const Shape& shape = items.getShape(item);
+	// For multi block shapes assume that volume is the same for each block.
+	CollisionVolume volume = shape.getCollisionVolumeAtLocationBlock();
+	for(BlockIndex block : shape.getBlocksOccupiedAt(*this, index, facing))
+		if(!item_contains(block, item) && (m_items.at(block).full() || m_dynamicVolume.at(block) + volume > Config::maxBlockVolume))
+				return false;
+	return true;
+}
+bool Blocks::item_canEnterEverOrCurrentlyWithFacing(BlockIndex index, ItemIndex item, Facing facing) const
+{
+	assert(shape_anythingCanEnterEver(index));
+	const Items& items = m_area.getItems();
+	const MoveType& moveType = items.getMoveType(item);
+	for(auto& [x, y, z, v] : items.getShape(item).positionsWithFacing(facing))
+	{
+		BlockIndex block = offset(index,x, y, z);
+		if(m_items.at(block).contains(item))
+			continue;
+		if(block.empty() || !shape_anythingCanEnterEver(block) ||
+			m_dynamicVolume.at(block) + v > Config::maxBlockVolume || 
+			!shape_moveTypeCanEnter(block, moveType)
+		)
+			return false;
+	}
+	return true;
 }
 void Blocks::item_updateIndex(BlockIndex index, ItemIndex oldIndex, ItemIndex newIndex)
 {
@@ -65,7 +97,7 @@ void Blocks::item_updateIndex(BlockIndex index, ItemIndex oldIndex, ItemIndex ne
 	assert(found != m_items.at(index).end());
 	(*found) = newIndex; 
 }
-uint32_t Blocks::item_getCount(BlockIndex index, const ItemType& itemType, const MaterialType& materialType) const
+Quantity Blocks::item_getCount(BlockIndex index, const ItemType& itemType, const MaterialType& materialType) const
 {
 	auto& itemsInBlock = m_itemVolume.at(index);
 	Items& items = m_area.getItems();
@@ -75,7 +107,7 @@ uint32_t Blocks::item_getCount(BlockIndex index, const ItemType& itemType, const
 		return items.getItemType(item) == itemType && items.getMaterialType(item) == materialType;
 	});
 	if(found == itemsInBlock.end())
-		return 0;
+		return Quantity::create(0);
 	else
 		return items.getQuantity(found->first);
 }

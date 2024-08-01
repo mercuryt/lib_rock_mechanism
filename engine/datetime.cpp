@@ -4,11 +4,11 @@
 #include <cassert>
 DateTime::DateTime(Step step)
 {
-	year = step / Config::stepsPerYear;
-	step -= year * Config::stepsPerYear;
-	day = (step / Config::stepsPerDay);
-	step -= day * Config::stepsPerDay;
-	hour = (step / Config::stepsPerHour) + 1;
+	year = (step / Config::stepsPerYear).get();
+	step -= Config::stepsPerYear * year;
+	day = (step / Config::stepsPerDay).get();
+	step -= Config::stepsPerDay * day;
+	hour = (step / Config::stepsPerHour).get() + 1;
 	++day;
 	assert(day <= Config::daysPerYear);
 	assert(hour <= Config::hoursPerDay);
@@ -30,7 +30,7 @@ Step DateTime::toSteps(uint8_t hour, uint16_t day, uint16_t year)
 {
 	assert(day);
 	assert(hour);
-	return (year * Config::stepsPerYear) + (--day * Config::stepsPerDay) + (--hour * Config::stepsPerHour);
+	return (Config::stepsPerYear * year) + (Config::stepsPerDay * --day) + (Config::stepsPerHour * --hour);
 }
 uint8_t DateTime::toSeason(Step step)
 {

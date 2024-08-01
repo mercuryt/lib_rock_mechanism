@@ -33,7 +33,7 @@ class CraftInputAction final : public InputAction
 	const CraftJobType& m_craftJobType;
 	const MaterialType* m_materialType;
 	Quantity m_quantity = 0;
-	uint32_t m_quality = 0;
+	Quality m_quality = 0;
 	CraftInputAction(Area& area, FactionId faction, InputQueue& inputQueue, const CraftJobType& craftJobType, const MaterialType* materialType, Quantity quantity) : 
 		InputAction(inputQueue), m_area(area), m_faction(faction), m_craftJobType(craftJobType), m_materialType(materialType), m_quantity(quantity) { }
 	void execute();
@@ -89,7 +89,7 @@ class CraftStepProject final : public Project
 	[[nodiscard]] std::vector<std::pair<ActorQuery, Quantity>> getActors() const { return {}; }
 public:
 	CraftStepProject(FactionId faction, Area& area, BlockIndex location, const CraftStepType& cst, CraftJob& cj) : 
-		Project(faction, area, location, 1), m_craftStepType(cst), m_craftJob(cj) { }
+		Project(faction, area, location, Quantity::create(1)), m_craftStepType(cst), m_craftJob(cj) { }
 	CraftStepProject(const Json& data, DeserializationMemo& deserializationMemo, CraftJob& cj);
 	// No toJson needed here, the base class one has everything.
 	[[nodiscard]] uint32_t getWorkerCraftScore(const ActorIndex actor) const;
@@ -134,10 +134,10 @@ struct CraftJob final
 	CraftJob(const CraftJobType& cjt, HasCraftingLocationsAndJobsForFaction& hclaj, ItemIndex wp, const MaterialType* mt, uint32_t msl);
 	// No work piece provided is a create job.
 	CraftJob(const CraftJobType& cjt, HasCraftingLocationsAndJobsForFaction& hclaj, const MaterialType* mt, uint32_t msl) :
-	       	craftJobType(cjt), hasCraftingLocationsAndJobs(hclaj), materialType(mt), stepIterator(craftJobType.stepTypes.begin()), minimumSkillLevel(msl), totalSkillPoints(0), reservable(1) { }
+	       	craftJobType(cjt), hasCraftingLocationsAndJobs(hclaj), materialType(mt), stepIterator(craftJobType.stepTypes.begin()), minimumSkillLevel(msl), totalSkillPoints(0), reservable(Quantity::create(1)) { }
 	CraftJob(const Json& data, DeserializationMemo& deserializationMemo, HasCraftingLocationsAndJobsForFaction& hclaj);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] uint32_t getQuality() const;
+	[[nodiscard]] Quality getQuality() const;
 	[[nodiscard]] Step getStep() const;
 	[[nodiscard]] bool operator==(const CraftJob& other){ return &other == this; }
 };
@@ -197,7 +197,7 @@ public:
 };
 class AreaHasCraftingLocationsAndJobs final
 {
-	std::unordered_map<FactionId, HasCraftingLocationsAndJobsForFaction> m_data;
+	FactionIdMap<HasCraftingLocationsAndJobsForFaction> m_data;
 	Area& m_area;
 public:
 	AreaHasCraftingLocationsAndJobs(Area& area) : m_area(area) { }

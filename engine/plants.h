@@ -1,10 +1,9 @@
 #pragma once
 
-#include "deserializationMemo.h"
+#include "index.h"
+#include "types.h"
 #include "eventSchedule.hpp"
 #include "hasShapes.h"
-#include "plantSpecies.h"
-#include "types.h"
 
 #include <vector>
 
@@ -17,19 +16,20 @@ class PlantTemperatureEvent;
 class PlantEndOfHarvestEvent;
 class PlantFoliageGrowthEvent;
 class Simulation;
+struct DeserializationMemo;
 
 struct PlantParamaters
 {
 	BlockIndex location;
 	const PlantSpecies& species;
 	const Shape* shape = nullptr;
-	Percent percentGrown = 0;
-	Percent percentFoliage = 0;
+	Percent percentGrown = Percent::create(0);
+	Percent percentFoliage = Percent::create(0);
 	uint8_t wildGrowth = 0;
-	Quantity quantityToHarvest = 0;
-	Percent percentNeedsFluid = 0;
-	Percent percentNeedsSafeTemperature = 0;
-	Percent percentFoliageGrowth = 0;
+	Quantity quantityToHarvest = Quantity::create(0);
+	Percent percentNeedsFluid = Percent::create(0);
+	Percent percentNeedsSafeTemperature = Percent::create(0);
+	Percent percentFoliageGrowth = Percent::create(0);
 };
 class Plants final : public HasShapes
 {
@@ -51,9 +51,11 @@ class Plants final : public HasShapes
 	void moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex);
 	void updateFluidVolumeRequested(PlantIndex index);
 public:
+	PlantIndexSet m_onSurface;
 	Plants(Area& area);
 	void load(const Json& data);
 	void onChangeAmbiantSurfaceTemperature();
+	[[nodiscard]] auto& getOnSurface() { return m_onSurface; }
 	PlantIndex create(PlantParamaters paramaters);
 	void destroy(PlantIndex index);
 	void die(PlantIndex index);
@@ -61,21 +63,24 @@ public:
 	void setTemperature(PlantIndex index, Temperature temperature);
 	void setHasFluidForNow(PlantIndex index);
 	void setMaybeNeedsFluid(PlantIndex index);
-	void addFluid(PlantIndex index, Volume volume, const FluidType& fluidType);
+	void addFluid(PlantIndex index, CollisionVolume volume, const FluidType& fluidType);
 	void setDayOfYear(PlantIndex index, uint32_t dayOfYear);
 	void setQuantityToHarvest(PlantIndex index);
-	void harvest(PlantIndex index, uint32_t quantity);
+	void harvest(PlantIndex index, Quantity quantity);
 	void endOfHarvest(PlantIndex index);
 	void updateGrowingStatus(PlantIndex index);
 	void removeFoliageMass(PlantIndex index, Mass mass);
 	void doWildGrowth(PlantIndex index, uint8_t count = 1);
-	void removeFruitQuantity(PlantIndex index, uint32_t quantity);
+	void removeFruitQuantity(PlantIndex index, Quantity quantity);
 	void makeFoliageGrowthEvent(PlantIndex index);
 	void foliageGrowth(PlantIndex index);
 	void updateShape(PlantIndex index);
-	void setLocation(BlockIndex block, Area* area);
+	void setShape(PlantIndex index, const Shape& shape);
+	void setLocation(PlantIndex index, BlockIndex location, Facing facing);
 	void exit(PlantIndex index);
 	void fromJson(Plants& plants, Area& area, const Json& data);
+	[[nodiscard]] bool isOnSurface(PlantIndex index) { return m_onSurface.contains(index); }
+	[[nodiscard]] bool blockIsFull(BlockIndex index);
 	[[nodiscard]] PlantIndices getAll() const;
 	[[nodiscard]] const PlantSpecies& getSpecies(PlantIndex index) const;
 	[[nodiscard]] Mass getFruitMass(PlantIndex index) const;
@@ -83,9 +88,9 @@ public:
 	[[nodiscard]] bool hasFluidSource(PlantIndex index);
 	[[nodiscard]] bool isGrowing(PlantIndex index) const { return m_growthEvent.exists(index); }
 	[[nodiscard]] Percent getPercentGrown(PlantIndex index) const;
-	[[nodiscard]] uint32_t getRootRange(PlantIndex index) const;
+	[[nodiscard]] DistanceInBlocks getRootRange(PlantIndex index) const;
 	[[nodiscard]] Percent getPercentFoliage(PlantIndex index) const;
-	[[nodiscard]] uint32_t getFoliageMass(PlantIndex index) const;
+	[[nodiscard]] Mass getFoliageMass(PlantIndex index) const;
 	[[nodiscard]] Step getStepAtWhichPlantWillDieFromLackOfFluid(PlantIndex index) const;
 	[[nodiscard]] Quantity getQuantityToHarvest(PlantIndex index) const { return m_quantityToHarvest.at(index); }
 	[[nodiscard]] Step stepsPerShapeChange(PlantIndex index) const;
@@ -108,7 +113,7 @@ class PlantGrowthEvent final : public ScheduledEvent
 {
 	PlantIndex m_plant;
 public:
-	PlantGrowthEvent(Area& area, const Step delay, PlantIndex p, Step start = 0);
+	PlantGrowthEvent(Area& area, const Step delay, PlantIndex p, Step start = Step::create(0));
 	PlantGrowthEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area* area);
@@ -119,7 +124,7 @@ class PlantShapeGrowthEvent final : public ScheduledEvent
 {
 	PlantIndex m_plant;
 public:
-	PlantShapeGrowthEvent(Area& area, const Step delay, PlantIndex p, Step start = 0);
+	PlantShapeGrowthEvent(Area& area, const Step delay, PlantIndex p, Step start = Step::create(0));
 	PlantShapeGrowthEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area* area);
@@ -130,7 +135,7 @@ class PlantFoliageGrowthEvent final : public ScheduledEvent
 {
 	PlantIndex m_plant;
 public:
-	PlantFoliageGrowthEvent(Area& area, const Step delay, PlantIndex p, Step start = 0);
+	PlantFoliageGrowthEvent(Area& area, const Step delay, PlantIndex p, Step start = Step::create(0));
 	PlantFoliageGrowthEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area* area);
@@ -141,7 +146,7 @@ class PlantEndOfHarvestEvent final : public ScheduledEvent
 {
 	PlantIndex m_plant;
 public:
-	PlantEndOfHarvestEvent(Area& area, const Step delay, PlantIndex p, Step start = 0);
+	PlantEndOfHarvestEvent(Area& area, const Step delay, PlantIndex p, Step start = Step::create(0));
 	PlantEndOfHarvestEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area* area);
@@ -152,7 +157,7 @@ class PlantFluidEvent final : public ScheduledEvent
 {
 	PlantIndex m_plant;
 public:
-	PlantFluidEvent(Area& area, const Step delay, PlantIndex p, Step start = 0);
+	PlantFluidEvent(Area& area, const Step delay, PlantIndex p, Step start = Step::create(0));
 	PlantFluidEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area* area);
@@ -163,7 +168,7 @@ class PlantTemperatureEvent final : public ScheduledEvent
 {
 	PlantIndex m_plant;
 public:
-	PlantTemperatureEvent(Area& area, const Step delay, PlantIndex p, Step start = 0);
+	PlantTemperatureEvent(Area& area, const Step delay, PlantIndex p, Step start = Step::create(0));
 	PlantTemperatureEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area* area);

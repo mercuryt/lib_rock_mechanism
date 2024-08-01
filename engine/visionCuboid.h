@@ -19,7 +19,7 @@ class AreaHasVisionCuboids final
 	DataVector<VisionCuboid*, BlockIndex> m_blockVisionCuboids;
 	DataVector<VisionCuboidId, BlockIndex> m_blockVisionCuboidIds;
 	Area* m_area;
-	VisionCuboidId m_nextId = 1;
+	VisionCuboidId m_nextId = VisionCuboidId::create(1);
 public:
 	void initalize(Area& area);
 	void clearDestroyed();
@@ -42,7 +42,7 @@ class VisionCuboid final
 	Area& m_area;
 public:
 	Cuboid m_cuboid;
-	const VisionCuboidId m_id = 0;
+	const VisionCuboidId m_id = VisionCuboidId::create(0);
 	bool m_destroy = false;
 
 	VisionCuboid(Area& area, Cuboid& cuboid, VisionCuboidId id);

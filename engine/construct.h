@@ -37,10 +37,10 @@ class ConstructProject final : public Project
 {
 	const BlockFeatureType* m_blockFeatureType;
 	const MaterialType& m_materialType;
-	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const;
-	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const;
-	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const;
-	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const;
+	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
+	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const;
+	std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> getByproducts() const;
+	std::vector<std::pair<ActorQuery, Quantity>> getActors() const;
 	uint32_t getWorkerConstructScore(ActorIndex actor) const;
 	Step getDuration() const;
 	void onComplete();
@@ -66,7 +66,7 @@ struct ConstructionLocationDishonorCallback final : public DishonorCallback
 	ConstructionLocationDishonorCallback(FactionId f, Area& a, BlockIndex l) : m_faction(f), m_area(a), m_location(l) { }
 	ConstructionLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
-	void execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount);
+	void execute([[maybe_unused]] Quantity oldCount, [[maybe_unused]] Quantity newCount);
 };
 class HasConstructionDesignationsForFaction final
 {
@@ -93,7 +93,7 @@ public:
 class AreaHasConstructionDesignations final
 {
 	Area& m_area;
-	std::unordered_map<FactionId, HasConstructionDesignationsForFaction> m_data;
+	FactionIdMap<HasConstructionDesignationsForFaction> m_data;
 public:
 	AreaHasConstructionDesignations(Area& a) : m_area(a) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);

@@ -17,30 +17,30 @@ void OpacityFacade::update(BlockIndex index)
 	Blocks& blocks = m_area.getBlocks();
 	assert(index < m_fullOpacity.size());
 	assert(m_floorOpacity.size() == m_fullOpacity.size());
-	m_fullOpacity[index] = !blocks.canSeeThrough(index);
-	m_floorOpacity[index] = !blocks.canSeeThroughFloor(index);
+	m_fullOpacity.set(index, !blocks.canSeeThrough(index));
+	m_floorOpacity.set(index, !blocks.canSeeThroughFloor(index));
 }
 void OpacityFacade::validate() const
 {
 	Blocks& blocks = m_area.getBlocks();
 	for(BlockIndex block : m_area.getBlocks().getAll())
 	{
-		assert(blocks.canSeeThrough(block) != m_fullOpacity[block]);
-		assert(blocks.canSeeThroughFloor(block) != m_floorOpacity[block]);
+		assert(blocks.canSeeThrough(block) != m_fullOpacity.at(block));
+		assert(blocks.canSeeThroughFloor(block) != m_floorOpacity.at(block));
 	}
 }
 bool OpacityFacade::isOpaque(BlockIndex index) const
 {
 	assert(index < m_fullOpacity.size());
-	assert(m_fullOpacity[index] != m_area.getBlocks().canSeeThrough(index));
-	return m_fullOpacity[index];
+	assert(m_fullOpacity.at(index) != m_area.getBlocks().canSeeThrough(index));
+	return m_fullOpacity.at(index);
 }
 bool OpacityFacade::floorIsOpaque(BlockIndex index) const
 {
 	assert(index < m_fullOpacity.size());
 	assert(m_floorOpacity.size() == m_fullOpacity.size());
-	assert(m_floorOpacity[index] != m_area.getBlocks().canSeeThroughFloor(index));
-	return m_floorOpacity[index];
+	assert(m_floorOpacity.at(index) != m_area.getBlocks().canSeeThroughFloor(index));
+	return m_floorOpacity.at(index);
 }
 bool  OpacityFacade::hasLineOfSight(BlockIndex from, BlockIndex to) const
 {
@@ -55,14 +55,14 @@ bool  OpacityFacade::hasLineOfSight(BlockIndex fromIndex, Point3D fromCoords, Bl
 	if(fromIndex == toIndex)
 		return true;
 	BlockIndex currentIndex = fromIndex;
-	//TODO: Would it be faster to use fixed percision number types? create low percision fixed via bitshift?
-	float x = fromCoords.x;
-	float y = fromCoords.y;
-	float z = fromCoords.z;
+	//TODO: Would it be faster to use fixed percision number types?
+	float x = fromCoords.x.get();
+	float y = fromCoords.y.get();
+	float z = fromCoords.z.get();
 	// Use unsigned types here instead of DistanceInBlocks because delta could be negitive.
-	int32_t xDelta = (int32_t)toCoords.x - (int32_t)fromCoords.x;
-	int32_t yDelta = (int32_t)toCoords.y - (int32_t)fromCoords.y;
-	int32_t zDelta = (int32_t)toCoords.z - (int32_t)fromCoords.z;
+	int32_t xDelta = (toCoords.x - fromCoords.x).get();
+	int32_t yDelta = (toCoords.y - fromCoords.y).get();
+	int32_t zDelta = (toCoords.z - fromCoords.z).get();
 	float denominator = std::max({abs(xDelta), abs(yDelta), abs(zDelta)});
 	// Normalize delta to a unit vector.
 	float xDeltaNormalized = xDelta / denominator;
@@ -80,9 +80,9 @@ bool  OpacityFacade::hasLineOfSight(BlockIndex fromIndex, Point3D fromCoords, Bl
 		y += yDeltaNormalized;
 		z += zDeltaNormalized;
 		// Round to integer and store for use as oldZ next iteration.
-		zInt = std::round(z);
+		zInt = DistanceInBlocks::create(std::round(z));
 		// Convert coordintates into index.
-		currentIndex = m_area.getBlocks().getIndex({(DistanceInBlocks)std::round(x), (DistanceInBlocks)std::round(y), zInt});
+		currentIndex = m_area.getBlocks().getIndex({DistanceInBlocks::create(std::round(x)), DistanceInBlocks::create(std::round(y)), zInt});
 		// Check for opaque blocks and block features.
 		if(!canSeeIntoFrom(previousIndex, currentIndex, oldZ, zInt))
 			return false;

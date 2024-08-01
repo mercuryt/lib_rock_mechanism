@@ -29,7 +29,7 @@ public:
 class AreaHasBlockDesignations final
 {
 	Area& m_area;
-	std::unordered_map<FactionId, AreaHasBlockDesignationsForFaction> m_data;
+	FactionIdMap<AreaHasBlockDesignationsForFaction> m_data;
 public:
 	AreaHasBlockDesignations(Area& area) : m_area(area) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);

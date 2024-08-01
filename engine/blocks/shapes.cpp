@@ -66,8 +66,8 @@ bool Blocks::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(BlockIndex 
 bool Blocks::shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(BlockIndex index, const Shape& shape, const MoveType& moveType) const
 {
 	if(shape.isRadiallySymetrical)
-		return shape_shapeAndMoveTypeCanEnterEverWithFacing(index, shape, moveType, 0);
-	for(Facing facing = 0; facing < 4; ++facing)
+		return shape_shapeAndMoveTypeCanEnterEverWithFacing(index, shape, moveType, Facing::create(0));
+	for(Facing facing = Facing::create(0); facing < 4; ++facing)
 		if(shape_shapeAndMoveTypeCanEnterEverWithFacing(index, shape, moveType, facing))
 			return true;
 	return false;
@@ -185,18 +185,18 @@ bool Blocks::shape_canEnterCurrentlyFrom(BlockIndex index, const Shape& shape, B
 bool Blocks::shape_canEnterCurrentlyWithAnyFacing(BlockIndex index, const Shape& shape, const BlockIndices& occupied) const
 {
 	if(shape.isRadiallySymetrical)
-		return shape_canEnterCurrentlyWithFacing(index, shape, 0, occupied);
-	for(Facing facing = 0; facing < 4; ++facing)
+		return shape_canEnterCurrentlyWithFacing(index, shape, Facing::create(0), occupied);
+	for(Facing facing = Facing::create(0); facing < 4; ++facing)
 		if(shape_canEnterCurrentlyWithFacing(index, shape, facing, occupied))
 			return true;
 	return false;
 }
 std::pair<bool, Facing> Blocks::shape_canEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, const Shape& shape, const BlockIndices& occupied) const
 {
-	for(Facing facing = 0; facing < 4; ++facing)
+	for(Facing facing = Facing::create(0); facing < 4; ++facing)
 		if(shape_canEnterCurrentlyWithFacing(index, shape, facing, occupied))
 			return {true, facing};
-	return {false, 0};
+	return {false, Facing::create(0)};
 }
 bool Blocks::shape_staticCanEnterCurrentlyWithFacing(BlockIndex index, const Shape& shape, const Facing& facing, const BlockIndices& occupied) const
 {
@@ -204,17 +204,17 @@ bool Blocks::shape_staticCanEnterCurrentlyWithFacing(BlockIndex index, const Sha
 }
 bool Blocks::shape_staticCanEnterCurrentlyWithAnyFacing(BlockIndex index, const Shape& shape, const BlockIndices& occupied) const
 {
-	for(Facing facing = 0; facing < 4; ++facing)
+	for(Facing facing = Facing::create(0); facing < 4; ++facing)
 		if(shape_staticCanEnterCurrentlyWithFacing(index, shape, facing, occupied))
 			return true;
 	return false;
 }
 std::pair<bool, Facing> Blocks::shape_staticCanEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, const Shape& shape, const BlockIndices& occupied) const
 {
-	for(Facing facing = 0; facing < 4; ++facing)
+	for(Facing facing = Facing::create(0); facing < 4; ++facing)
 		if(shape_staticCanEnterCurrentlyWithFacing(index, shape, facing, occupied))
 			return {true, facing};
-	return {false, 0};
+	return {false, Facing::create(0)};
 }
 bool Blocks::shape_staticShapeCanEnterWithFacing(BlockIndex index, const Shape& shape, Facing facing, const BlockIndices& occupied) const
 {
@@ -232,8 +232,8 @@ bool Blocks::shape_staticShapeCanEnterWithFacing(BlockIndex index, const Shape& 
 bool Blocks::shape_staticShapeCanEnterWithAnyFacing(BlockIndex index, const Shape& shape, const BlockIndices& occupied) const
 {
 	if(shape.isRadiallySymetrical)
-		return shape_staticShapeCanEnterWithFacing(index, shape, 0, occupied);
-	for(Facing facing = 0; facing < 4; ++facing)
+		return shape_staticShapeCanEnterWithFacing(index, shape, Facing::create(0), occupied);
+	for(Facing facing = Facing::create(0); facing < 4; ++facing)
 		if(shape_staticShapeCanEnterWithFacing(index, shape, facing, occupied))
 			return true;
 	return false;
@@ -246,12 +246,12 @@ CollisionVolume Blocks::shape_getStaticVolume(BlockIndex index) const
 {
 	return m_staticVolume.at(index);
 }
-uint32_t Blocks::shape_getQuantityOfItemWhichCouldFit(BlockIndex index, const ItemType& itemType) const
+Quantity Blocks::shape_getQuantityOfItemWhichCouldFit(BlockIndex index, const ItemType& itemType) const
 {
 	if(m_dynamicVolume.at(index) > Config::maxBlockVolume)
-		return 0;
+		return Quantity::create(0);
 	CollisionVolume freeVolume = Config::maxBlockVolume - m_staticVolume.at(index);
-	return freeVolume / itemType.shape.getCollisionVolumeAtLocationBlock();
+	return Quantity::create((freeVolume / itemType.shape.getCollisionVolumeAtLocationBlock()).get());
 }
 bool Blocks::shape_canStandIn(BlockIndex index) const
 {

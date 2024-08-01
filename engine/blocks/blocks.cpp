@@ -7,13 +7,14 @@
 #include "../fluidType.h"
 #include "../actors/actors.h"
 #include "../plants.h"
+#include "index.h"
 #include <string>
 
 Blocks::Blocks(Area& area, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) : m_area(area), m_sizeX(x), m_sizeY(y), m_sizeZ(z)
 {
-	BlockIndex count = x * y * z;
+	BlockIndex count = BlockIndex::create((x * y * z).get());
 	resize(count);
-	for(BlockIndex i = 0; i < count; ++i)
+	for(BlockIndex i = BlockIndex::create(0); i < count; ++i)
 		initalize(i);
 	m_offsetsForAdjacentCountTable = makeOffsetsForAdjacentCountTable();
 }
@@ -62,28 +63,28 @@ void Blocks::initalize(BlockIndex index)
 BlockIndex Blocks::offset(BlockIndex index, int32_t ax, int32_t ay, int32_t az) const
 {
 	Point3D coordinates = getCoordinates(index);
-	ax += coordinates.x;
-	ay += coordinates.y;
-	az += coordinates.z;
-	if(ax < 0 || (DistanceInBlocks)ax >= m_sizeX || ay < 0 || (DistanceInBlocks)ay >= m_sizeY || az < 0 || (DistanceInBlocks)az >= m_sizeZ)
+	DistanceInBlocks dx = DistanceInBlocks::create(ax) + coordinates.x;
+	DistanceInBlocks dy = DistanceInBlocks::create(ay) + coordinates.y;
+	DistanceInBlocks dz = DistanceInBlocks::create(az) + coordinates.z;
+	if(dx < 0 || dx >= m_sizeX || dy < 0 || dy >= m_sizeY || dz < 0 || dz >= m_sizeZ)
 		return BlockIndex::null();
-	return getIndex({(DistanceInBlocks)ax, (DistanceInBlocks)ay, (DistanceInBlocks)az});
+	return getIndex(dx, dy, dz);
 }
 void Blocks::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	m_materialType = data["solid"];
 	for(auto& [key, value] : data["features"].items())
-		m_features.at(std::stoi(key)) = value.get<std::vector<BlockFeature>>();
+		m_features.at(BlockIndex::create(std::stoi(key))) = value.get<std::vector<BlockFeature>>();
 	for(auto& [key, value] : data["fluid"].items())
 		for(const Json& fluidData : value)
-			fluid_add(std::stoi(key), fluidData["volume"].get<CollisionVolume>(), *fluidData["type"].get<const FluidType*>());
+			fluid_add(BlockIndex::create(std::stoi(key)), fluidData["volume"].get<CollisionVolume>(), *fluidData["type"].get<const FluidType*>());
 	for(auto& [key, value] : data["mist"].items())
-		m_mist.at(std::stoi(key)) = &FluidType::byName(value.get<std::string>());
+		m_mist.at(BlockIndex::create(std::stoi(key))) = &FluidType::byName(value.get<std::string>());
 	for(auto& [key, value] : data["mistInverseDistanceFromSource"].items())
-		m_mistInverseDistanceFromSource.at(std::stoi(key)) = value.get<DistanceInBlocks>();
+		m_mistInverseDistanceFromSource.at(BlockIndex::create(std::stoi(key))) = value.get<DistanceInBlocks>();
 	for(auto& [key, value] : data["reservables"].items())
 	{
-		auto& reservable = m_reservables.at(std::stoi(key)) = std::make_unique<Reservable>(1u);
+		auto& reservable = m_reservables.at(BlockIndex::create(std::stoi(key))) = std::make_unique<Reservable>(Quantity::create(1u));
 		deserializationMemo.m_reservables[value.get<uintptr_t>()] = reservable.get();
 	}
 }
@@ -100,24 +101,24 @@ Json Blocks::toJson() const
 		{"mistInverseDistanceFromSource", Json::object()},
 		{"reservables", Json::object()},
 	};
-	for(size_t i = 0; i < m_materialType.size(); ++i)
+	for(BlockIndex i = BlockIndex::create(0); i < m_materialType.size(); ++i)
 	{
 		if(!blockFeature_empty(i))
-			output["features"][std::to_string(i)] = m_features.at(i);
+			output["features"][std::to_string(i.get())] = m_features.at(i);
 		if(fluid_any(i))
-			output["fluid"][std::to_string(i)] = m_fluid.at(i);
+			output["fluid"][std::to_string(i.get())] = m_fluid.at(i);
 		if(m_mist.at(i) != nullptr)
-			output["mist"][std::to_string(i)] = m_mist.at(i);
+			output["mist"][std::to_string(i.get())] = m_mist.at(i);
 		if(m_mistInverseDistanceFromSource.at(i) != 0)
-			output["mistInverseDistanceFromSource"][std::to_string(i)] = m_mistInverseDistanceFromSource.at(i);
+			output["mistInverseDistanceFromSource"][std::to_string(i.get())] = m_mistInverseDistanceFromSource.at(i);
 		if(m_reservables.at(i) != nullptr)
-			output["reservables"][std::to_string(i)] = reinterpret_cast<uintptr_t>(&m_reservables.at(i));
+			output["reservables"][std::to_string(i.get())] = reinterpret_cast<uintptr_t>(&m_reservables.at(i));
 	}
 	return output;
 }
 Cuboid Blocks::getAll()
 {
-	return Cuboid(*this, size() - 1, 0);
+	return Cuboid(*this, BlockIndex::create(size() - 1), BlockIndex::create(0));
 }
 const Cuboid Blocks::getAll() const
 {
@@ -129,7 +130,7 @@ size_t Blocks::size() const
 }
 BlockIndex Blocks::getIndex(Point3D coordinates) const
 {
-	return coordinates.x + (coordinates.y * m_sizeX) + (coordinates.z * m_sizeY * m_sizeX);
+	return BlockIndex::create((coordinates.x + (coordinates.y * m_sizeX) + (coordinates.z * m_sizeY * m_sizeX)).get());
 }
 BlockIndex Blocks::getIndex(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) const
 {
@@ -138,19 +139,24 @@ BlockIndex Blocks::getIndex(DistanceInBlocks x, DistanceInBlocks y, DistanceInBl
 Point3D Blocks::getCoordinates(BlockIndex index) const
 {
 	Point3D output;
-	output.z = index / (m_sizeX * m_sizeY);
-	index -= output.z * m_sizeX * m_sizeY;
-	output.y = index / m_sizeX;
-	output.x = index - (output.y * m_sizeX);
+	output.z = DistanceInBlocks::create(index.get()) / (m_sizeX * m_sizeY);
+	index -= BlockIndex::create((output.z * m_sizeX * m_sizeY).get());
+	output.y = DistanceInBlocks::create(index.get()) / m_sizeX;
+	output.x = DistanceInBlocks::create(index.get()) - (output.y * m_sizeX);
 	return output;
+}
+Point3D_fractional Blocks::getCoordinatesFractional(BlockIndex index) const
+{
+	Point3D coordinates = getCoordinates(index);
+	return {coordinates.x.toFloat(), coordinates.y.toFloat(), coordinates.z.toFloat()}; 
 }
 DistanceInBlocks Blocks::getZ(BlockIndex index) const
 {
-	return index / (m_sizeX * m_sizeY);
+	return DistanceInBlocks::create(index.get()) / (m_sizeX * m_sizeY);
 }
 BlockIndex Blocks::getAtFacing(BlockIndex index, Facing facing) const
 {
-	return m_directlyAdjacent.at(index).at(facing);
+	return m_directlyAdjacent.at(index).at(facing.get());
 }
 BlockIndex Blocks::getCenterAtGroundLevel() const
 {
@@ -165,7 +171,7 @@ BlockIndex Blocks::getCenterAtGroundLevel() const
 }
 Cuboid Blocks::getZLevel(DistanceInBlocks z)
 {
-	return Cuboid(*this, getIndex({m_sizeX - 1, m_sizeY - 1, z}), getIndex({0, 0, z}));
+	return Cuboid(*this, getIndex({m_sizeX - 1, m_sizeY - 1, z}), getIndex({DistanceInBlocks::create(0), DistanceInBlocks::create(0), z}));
 }
 LocationBucket& Blocks::getLocationBucket(BlockIndex index)
 {
@@ -215,9 +221,9 @@ BlockIndex Blocks::getBlockEast(BlockIndex index) const
 {
 	return m_directlyAdjacent.at(index)[4];
 }
-std::vector<BlockIndex> Blocks::getAdjacentWithEdgeAdjacent(BlockIndex index) const
+BlockIndices Blocks::getAdjacentWithEdgeAdjacent(BlockIndex index) const
 {
-	std::vector<BlockIndex> output;
+	BlockIndices output;
 	output.reserve(18);
 	static const int32_t offsetsList[18][3] = {
 		{-1,0,-1}, 
@@ -237,39 +243,39 @@ std::vector<BlockIndex> Blocks::getAdjacentWithEdgeAdjacent(BlockIndex index) co
 		auto& offsets = offsetsList[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
 		if(block.exists())
-			output.push_back(block);
+			output.add(block);
 	}
 	return output;
 }
 // TODO: cache.
-std::vector<BlockIndex> Blocks::getAdjacentWithEdgeAndCornerAdjacent(BlockIndex index) const
+BlockIndices Blocks::getAdjacentWithEdgeAndCornerAdjacent(BlockIndex index) const
 {
-	std::vector<BlockIndex> output;
+	BlockIndices output;
 	output.reserve(26);
 	for(uint32_t i = 0; i < 26; i++)
 	{
 		auto& offsets = offsetsListAllAdjacent[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
 		if(block.exists())
-			output.push_back(block);
+			output.add(block);
 	}
 	return output;
 }
-std::vector<BlockIndex> Blocks::getAdjacentWithEdgeAndCornerAdjacentUnfiltered(BlockIndex index) const
+BlockIndices Blocks::getAdjacentWithEdgeAndCornerAdjacentUnfiltered(BlockIndex index) const
 {
-	std::vector<BlockIndex> output;
+	BlockIndices output;
 	output.reserve(26);
 	for(uint32_t i = 0; i < 26; i++)
 	{
 		auto& offsets = offsetsListAllAdjacent[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
-		output.push_back(block);
+		output.add(block);
 	}
 	return output;
 }
-std::vector<BlockIndex> Blocks::getEdgeAdjacentOnly(BlockIndex index) const
+BlockIndices Blocks::getEdgeAdjacentOnly(BlockIndex index) const
 {
-	std::vector<BlockIndex> output;
+	BlockIndices output;
 	output.reserve(12);
 	static const int32_t offsetsList[12][3] = {
 		{-1,0,-1}, {0,-1,-1},
@@ -286,13 +292,13 @@ std::vector<BlockIndex> Blocks::getEdgeAdjacentOnly(BlockIndex index) const
 		auto& offsets = offsetsList[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
 		if(block.exists())
-			output.push_back(block);
+			output.add(block);
 	}
 	return output;
 }
-std::vector<BlockIndex> Blocks::getEdgeAdjacentOnSameZLevelOnly(BlockIndex index) const
+BlockIndices Blocks::getEdgeAdjacentOnSameZLevelOnly(BlockIndex index) const
 {
-	std::vector<BlockIndex> output;
+	BlockIndices output;
 	output.reserve(12);
 	static const int32_t offsetsList[12][3] = {
 		{-1,-1,0}, {1,1,0}, 
@@ -303,13 +309,13 @@ std::vector<BlockIndex> Blocks::getEdgeAdjacentOnSameZLevelOnly(BlockIndex index
 		auto& offsets = offsetsList[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
 		if(block.exists())
-			output.push_back(block);
+			output.add(block);
 	}
 	return output;
 }
-std::vector<BlockIndex> Blocks::getEdgeAdjacentOnlyOnNextZLevelDown(BlockIndex index) const
+BlockIndices Blocks::getEdgeAdjacentOnlyOnNextZLevelDown(BlockIndex index) const
 {
-	std::vector<BlockIndex> output;
+	BlockIndices output;
 	output.reserve(12);
 	static const int32_t offsetsList[12][3] = {
 		{-1,0,-1}, {0,-1,-1},
@@ -320,13 +326,13 @@ std::vector<BlockIndex> Blocks::getEdgeAdjacentOnlyOnNextZLevelDown(BlockIndex i
 		auto& offsets = offsetsList[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
 		if(block.exists())
-			output.push_back(block);
+			output.add(block);
 	}
 	return output;
 }
-std::vector<BlockIndex> Blocks::getEdgeAndCornerAdjacentOnlyOnNextZLevelDown(BlockIndex index) const
+BlockIndices Blocks::getEdgeAndCornerAdjacentOnlyOnNextZLevelDown(BlockIndex index) const
 {
-	std::vector<BlockIndex> output;
+	BlockIndices output;
 	output.reserve(12);
 	static const int32_t offsetsList[12][3] = {
 		{-1,-1,-1}, {-1,0,-1}, {-1, 1, -1},
@@ -338,13 +344,13 @@ std::vector<BlockIndex> Blocks::getEdgeAndCornerAdjacentOnlyOnNextZLevelDown(Blo
 		auto& offsets = offsetsList[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
 		if(block.exists())
-			output.push_back(block);
+			output.add(block);
 	}
 	return output;
 }
-std::vector<BlockIndex> Blocks::getEdgeAdjacentOnlyOnNextZLevelUp(BlockIndex index) const
+BlockIndices Blocks::getEdgeAdjacentOnlyOnNextZLevelUp(BlockIndex index) const
 {
-	std::vector<BlockIndex> output;
+	BlockIndices output;
 	output.reserve(12);
 	static const int32_t offsetsList[12][3] = {
 		{-1,0,1}, {0,-1,1},
@@ -355,13 +361,13 @@ std::vector<BlockIndex> Blocks::getEdgeAdjacentOnlyOnNextZLevelUp(BlockIndex ind
 		auto& offsets = offsetsList[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
 		if(block.exists())
-			output.push_back(block);
+			output.add(block);
 	}
 	return output;
 }
-std::vector<BlockIndex> Blocks::getEdgeAndCornerAdjacentOnly(BlockIndex index) const
+BlockIndices Blocks::getEdgeAndCornerAdjacentOnly(BlockIndex index) const
 {
-	std::vector<BlockIndex> output;
+	BlockIndices output;
 	output.reserve(20);
 	static const int32_t offsetsList[20][3] = {
 		{-1,-1,-1}, {-1,0,-1}, {0,-1,-1},
@@ -380,13 +386,13 @@ std::vector<BlockIndex> Blocks::getEdgeAndCornerAdjacentOnly(BlockIndex index) c
 		auto& offsets = offsetsList[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
 		if(block.exists())
-			output.push_back(block);
+			output.add(block);
 	}
 	return output;
 }
-std::vector<BlockIndex> Blocks::getAdjacentOnSameZLevelOnly(BlockIndex index) const
+BlockIndices Blocks::getAdjacentOnSameZLevelOnly(BlockIndex index) const
 {
-	std::vector<BlockIndex> output;
+	BlockIndices output;
 	output.reserve(4);
 	static const int32_t offsetsList[4][3] = {
 		{-1,0,0}, {1,0,0}, 
@@ -397,7 +403,7 @@ std::vector<BlockIndex> Blocks::getAdjacentOnSameZLevelOnly(BlockIndex index) co
 		auto& offsets = offsetsList[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
 		if(block.exists())
-			output.push_back(block);
+			output.add(block);
 	}
 	return output;
 }
@@ -405,28 +411,38 @@ DistanceInBlocks Blocks::distance(BlockIndex index, BlockIndex otherIndex) const
 {
 	Point3D coordinates = getCoordinates(index);
 	Point3D otherCoordinates = getCoordinates(otherIndex);
-	DistanceInBlocks dx = abs((int)coordinates.x - (int)otherCoordinates.x);
-	DistanceInBlocks dy = abs((int)coordinates.y - (int)otherCoordinates.y);
-	DistanceInBlocks dz = abs((int)coordinates.z - (int)otherCoordinates.z);
-	return pow((pow(dx, 2) + pow(dy, 2) + pow(dz, 2)), 0.5);
+	DistanceInBlocks dx = DistanceInBlocks::create(abs((int)coordinates.x.get() - (int)otherCoordinates.x.get()));
+	DistanceInBlocks dy = DistanceInBlocks::create(abs((int)coordinates.y.get() - (int)otherCoordinates.y.get()));
+	DistanceInBlocks dz = DistanceInBlocks::create(abs((int)coordinates.z.get() - (int)otherCoordinates.z.get()));
+	return DistanceInBlocks::create(pow((pow(dx.get(), 2) + pow(dy.get(), 2) + pow(dz.get(), 2)), 0.5));
 }
 DistanceInBlocks Blocks::taxiDistance(BlockIndex index, BlockIndex otherIndex) const
 {
 	Point3D coordinates = getCoordinates(index);
 	Point3D otherCoordinates = getCoordinates(otherIndex);
-	return 
-		abs((int)coordinates.x - (int)otherCoordinates.x) + 
-		abs((int)coordinates.y - (int)otherCoordinates.y) + 
-		abs((int)coordinates.z - (int)otherCoordinates.z);
+	return DistanceInBlocks::create(
+		abs((int)coordinates.x.get() - (int)otherCoordinates.x.get()) + 
+		abs((int)coordinates.y.get() - (int)otherCoordinates.y.get()) + 
+		abs((int)coordinates.z.get() - (int)otherCoordinates.z.get())
+	);
 }
-bool Blocks::squareOfDistanceIsMoreThen(BlockIndex index, BlockIndex otherIndex, DistanceInBlocks distanceCubed) const
+DistanceInBlocksFractional Blocks::distanceFractional(BlockIndex index, BlockIndex otherIndex) const
+{
+	Point3D_fractional coordinates = getCoordinatesFractional(index);
+	Point3D_fractional otherCoordinates = getCoordinatesFractional(otherIndex);
+	DistanceInBlocksFractional dx = DistanceInBlocksFractional::create(std::abs(coordinates.x.get() - otherCoordinates.x.get()));
+	DistanceInBlocksFractional dy = DistanceInBlocksFractional::create(std::abs(coordinates.y.get() - otherCoordinates.y.get()));
+	DistanceInBlocksFractional dz = DistanceInBlocksFractional::create(std::abs(coordinates.z.get() - otherCoordinates.z.get()));
+	return DistanceInBlocksFractional::create(std::pow((std::pow(dx.get(), 2) + std::pow(dy.get(), 2) + std::pow(dz.get(), 2)), 0.5));
+}
+bool Blocks::squareOfDistanceIsMoreThen(BlockIndex index, BlockIndex otherIndex, DistanceInBlocksFractional distanceCubed) const
 {
 	Point3D coordinates = getCoordinates(index);
 	Point3D otherCoordinates = getCoordinates(otherIndex);
-	DistanceInBlocks dx = abs((int32_t)otherCoordinates.x - (int32_t)coordinates.x);
-	DistanceInBlocks dy = abs((int32_t)otherCoordinates.y - (int32_t)coordinates.y);
-	DistanceInBlocks dz = abs((int32_t)otherCoordinates.z - (int32_t)coordinates.z);
-	return (dx * dx) + (dy * dy) + (dz * dz) > distanceCubed;
+	DistanceInBlocks dx = DistanceInBlocks::create(abs((int32_t)otherCoordinates.x.get() - (int32_t)coordinates.x.get()));
+	DistanceInBlocks dy = DistanceInBlocks::create(abs((int32_t)otherCoordinates.y.get() - (int32_t)coordinates.y.get()));
+	DistanceInBlocks dz = DistanceInBlocks::create(abs((int32_t)otherCoordinates.z.get() - (int32_t)coordinates.z.get()));
+	return (dx * dx) + (dy * dy) + (dz * dz) > distanceCubed.get();
 }
 bool Blocks::isAdjacentToAny(BlockIndex index, BlockIndices& blocks) const
 {
@@ -449,7 +465,7 @@ bool Blocks::isAdjacentToIncludingCornersAndEdges(BlockIndex index, BlockIndex o
 }
 bool Blocks::isAdjacentToActor(BlockIndex index, ActorIndex actor) const
 {
-	return m_area.getActors().isAdjacentToActor(index, actor);
+	return m_area.getActors().isAdjacentToLocation(actor, index);
 }
 void Blocks::setExposedToSky(BlockIndex index, bool exposed)
 {
@@ -491,8 +507,9 @@ void Blocks::solid_set(BlockIndex index, const MaterialType& materialType, bool 
 	Plants& plants = m_area.getPlants();
 	if(m_plants.at(index).exists())
 	{
-		assert(!plants.getSpecies(index).isTree);
-		plants.die(index);
+		PlantIndex plant = m_plants.at(index);
+		assert(!plants.getSpecies(plant).isTree);
+		plants.die(plant);
 	}
 	if(&materialType == m_materialType.at(index))
 		return;
@@ -548,7 +565,7 @@ bool Blocks::solid_is(BlockIndex index) const
 Mass Blocks::getMass(BlockIndex index) const
 {
 	assert(solid_is(index));
-	return m_materialType.at(index)->density * Config::maxBlockVolume;
+	return m_materialType.at(index)->density * Volume::create(Config::maxBlockVolume.get());
 }
 bool Blocks::canSeeIntoFromAlways(BlockIndex to, BlockIndex from) const
 {
@@ -590,9 +607,9 @@ void Blocks::moveContentsTo(BlockIndex from, BlockIndex to)
 BlockIndex Blocks::offsetNotNull(BlockIndex index, int32_t ax, int32_t ay, int32_t az) const
 {
 	Point3D coordinates = getCoordinates(index);
-	assert((int)coordinates.x + ax >= 0);
-	assert((int)coordinates.y + ay >= 0);
-	assert((int)coordinates.z + az >= 0);
+	assert((int)coordinates.x.get() + ax >= 0);
+	assert((int)coordinates.y.get() + ay >= 0);
+	assert((int)coordinates.z.get() + az >= 0);
 	coordinates.x += ax;
 	coordinates.y += ay;
 	coordinates.z += az;
@@ -619,8 +636,10 @@ std::array<int, 26> Blocks::makeOffsetsForAdjacentCountTable() const
 {
 	std::array<int, 26> output;
 	uint i = 0;
+	int sy = m_sizeY.get();
+	int sx = m_sizeX.get();
 	for(auto [x, y, z] : offsetsListAllAdjacent)
-		output[i++] = (z * m_sizeY * m_sizeX) + (y * m_sizeX) + x;
+		output[i++] = (z * sy * sx) + (y * sx) + x;
 	return output;
 }
 std::array<int32_t, 3> Blocks::relativeOffsetTo(BlockIndex index, BlockIndex otherIndex) const
@@ -628,9 +647,9 @@ std::array<int32_t, 3> Blocks::relativeOffsetTo(BlockIndex index, BlockIndex oth
 	Point3D coordinates = getCoordinates(index);
 	Point3D otherCoordinates = getCoordinates(otherIndex);
 	return {
-		(int)otherCoordinates.x - (int)coordinates.x, 
-		(int)otherCoordinates.y - (int)coordinates.y, 
-		(int)otherCoordinates.z - (int)coordinates.z
+		(int)(otherCoordinates.x - coordinates.x).get(),
+		(int)(otherCoordinates.y - coordinates.y).get(),
+		(int)(otherCoordinates.z - coordinates.z).get()
 	};
 }
 bool Blocks::canSeeThrough(BlockIndex index) const
@@ -680,12 +699,12 @@ Facing Blocks::facingToSetWhenEnteringFrom(BlockIndex index, BlockIndex otherInd
 	Point3D coordinates = getCoordinates(index);
 	Point3D otherCoordinates = getCoordinates(otherIndex);
 	if(otherCoordinates.x > coordinates.x)
-		return 3;
+		return Facing::create(3);
 	if(otherCoordinates.x < coordinates.x)
-		return 1;
+		return Facing::create(1);
 	if(otherCoordinates.y < coordinates.y)
-		return 2;
-	return 0;
+		return Facing::create(2);
+	return Facing::create(0);
 }
 Facing Blocks::facingToSetWhenEnteringFromIncludingDiagonal(BlockIndex index, BlockIndex otherIndex, Facing inital) const
 {
@@ -694,30 +713,30 @@ Facing Blocks::facingToSetWhenEnteringFromIncludingDiagonal(BlockIndex index, Bl
 	if(coordinates.x == otherCoordinates.x)
 	{
 		if(coordinates.y < otherCoordinates.y)
-			return 0; // North
+			return Facing::create(0); // North
 		if(coordinates.y == otherCoordinates.y)
 			return inital; // Up or Down
 		if(coordinates.y > otherCoordinates.y)
-			return 4; // South
+			return Facing::create(4); // South
 	}
 	else if(coordinates.x < otherCoordinates.x)
 	{
 		if(coordinates.y > otherCoordinates.y)
-			return 7; // North West
+			return Facing::create(7); // North West
 		if(coordinates.y == otherCoordinates.y)
-			return 6; // West
+			return Facing::create(6); // West
 		if(coordinates.y < otherCoordinates.y)
-			return 5;// South West
+			return Facing::create(5);// South West
 	}
 	assert(coordinates.x > otherCoordinates.x);
 	if(coordinates.y > otherCoordinates.y)
-		return 3; // South East
+		return Facing::create(3); // South East
 	if(coordinates.y == otherCoordinates.y)
-		return 2; // East
+		return Facing::create(2); // East
 	if(coordinates.y < otherCoordinates.y)
-		return 1;// North East
+		return Facing::create(1);// North East
 	assert(false);
-	return UINT8_MAX;
+	return Facing::null();
 }
 bool Blocks::isSupport(BlockIndex index) const
 {
@@ -747,10 +766,4 @@ BlockIndices Blocks::collectAdjacentsInRange(BlockIndex index, DistanceInBlocks 
 {
 	auto condition = [&](BlockIndex b){ return taxiDistance(b, index) <= range; };
 	return collectAdjacentsWithCondition(index, condition);
-}
-std::vector<BlockIndex> Blocks::collectAdjacentsInRangeVector(BlockIndex index, DistanceInBlocks range)
-{
-	auto result = collectAdjacentsInRange(index, range);
-	std::vector<BlockIndex> output(result.begin(), result.end());
-	return output;
 }

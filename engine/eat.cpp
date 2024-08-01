@@ -100,14 +100,14 @@ void MustEat::eat(Area& area, Mass mass)
 	}
 	else
 	{
-		stepsToNextHungerEvent = util::scaleByInverseFraction(species.stepsTillDieWithoutFood, m_massFoodRequested, massFoodForBodyMass(area));
+		stepsToNextHungerEvent = Step::create(util::scaleByInverseFraction(species.stepsTillDieWithoutFood.get(), m_massFoodRequested.get(), massFoodForBodyMass(area).get()));
 		m_hungerEvent.schedule(area, stepsToNextHungerEvent, actor);
 		actors.objective_subobjectiveComplete(actor);
 	}
 }
 void MustEat::notHungry(Area& area)
 {
-	if(m_massFoodRequested)
+	if(m_massFoodRequested != 0)
 		eat(area, m_massFoodRequested);
 }
 void MustEat::setNeedsFood(Area& area)
@@ -132,15 +132,15 @@ void MustEat::onDeath()
 	m_hungerEvent.maybeUnschedule();
 }
 bool MustEat::needsFood() const { return m_massFoodRequested != 0; }
-uint32_t MustEat::massFoodForBodyMass(Area& area) const
+Mass MustEat::massFoodForBodyMass(Area& area) const
 {
-	return std::max(1u, area.getActors().getMass(m_actor.getIndex()) / Config::unitsBodyMassPerUnitFoodConsumed);
+	return Mass::create(std::max(1u, (area.getActors().getMass(m_actor.getIndex()) / Config::unitsBodyMassPerUnitFoodConsumed).get()));
 }
-const uint32_t& MustEat::getMassFoodRequested() const { return m_massFoodRequested; }
+const Mass& MustEat::getMassFoodRequested() const { return m_massFoodRequested; }
 Percent MustEat::getPercentStarved() const
 {
 	if(!m_hungerEvent.exists())
-		return 0;
+		return Percent::create(0);
 	return m_hungerEvent.percentComplete();
 }
 uint32_t MustEat::getDesireToEatSomethingAt(Area& area, BlockIndex block) const
@@ -174,7 +174,7 @@ uint32_t MustEat::getDesireToEatSomethingAt(Area& area, BlockIndex block) const
 uint32_t MustEat::getMinimumAcceptableDesire() const
 {
 	assert(m_hungerEvent.exists());
-	return m_hungerEvent.percentComplete() * (3 - Config::percentHungerAcceptableDesireModifier);
+	return (m_hungerEvent.percentComplete() * (3 - Config::percentHungerAcceptableDesireModifier)).get();
 }
 BlockIndex MustEat::getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireability(Area& area)
 {

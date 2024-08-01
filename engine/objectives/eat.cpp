@@ -101,9 +101,9 @@ void EatEvent::eatGenericItem(Area& area, ItemIndex item)
 	Items& items = area.getItems();
 	assert(items.getItemType(item).edibleForDrinkersOf == &actors.drink_getFluidType(m_actor.getIndex()));
 	MustEat& mustEat = *area.getActors().m_mustEat.at(m_actor.getIndex()).get();
-	uint32_t quantityDesired = std::ceil((float)mustEat.getMassFoodRequested() / (float)items.getSingleUnitMass(item));
-	uint32_t quantityEaten = std::min(quantityDesired, items.getQuantity(item));
-	Mass massEaten = std::min(mustEat.getMassFoodRequested(), quantityEaten * items.getSingleUnitMass(item));
+	Quantity quantityDesired = Quantity::create(std::ceil((float)mustEat.getMassFoodRequested().get() / (float)items.getSingleUnitMass(item).get()));
+	Quantity quantityEaten = std::min(quantityDesired, items.getQuantity(item));
+	Mass massEaten = std::min(mustEat.getMassFoodRequested(), items.getSingleUnitMass(item) * quantityEaten);
 	assert(massEaten != 0);
 	mustEat.eat(area, massEaten);
 	items.removeQuantity(item, quantityEaten);
@@ -136,10 +136,10 @@ void EatEvent::eatFruitFromPlant(Area& area, PlantIndex plant)
 	MustEat& mustEat = *area.getActors().m_mustEat.at(m_actor.getIndex()).get();
 	Mass massEaten = std::min(mustEat.getMassFoodRequested(), plants.getFruitMass(plant));
 	static const MaterialType& fruitType = MaterialType::byName("fruit");
-	uint32_t unitMass = plants.getSpecies(plant).harvestData->fruitItemType.volume * fruitType.density;
-	uint32_t quantityEaten = massEaten / unitMass;
+	Mass unitMass = plants.getSpecies(plant).harvestData->fruitItemType.volume * fruitType.density;
+	Quantity quantityEaten = Quantity::create((massEaten / unitMass).get());
 	assert(quantityEaten != 0);
-	mustEat.eat(area, quantityEaten * unitMass);
+	mustEat.eat(area, unitMass * quantityEaten);
 	plants.removeFruitQuantity(plant, quantityEaten);
 }
 EatPathRequest::EatPathRequest(Area& area, EatObjective& eo) : m_eatObjective(eo)
@@ -182,7 +182,7 @@ EatPathRequest::EatPathRequest(Area& area, EatObjective& eo) : m_eatObjective(eo
 	bool reserve = false;
 	if(area.getActors().getFaction(getActor()) != nullptr)
 		unreserved = reserve = true;
-	createGoAdjacentToCondition(area, getActor(), predicate, m_eatObjective.m_detour, unreserved, BLOCK_DISTANCE_MAX, BlockIndex::null());
+	createGoAdjacentToCondition(area, getActor(), predicate, m_eatObjective.m_detour, unreserved, DistanceInBlocks::null(), BlockIndex::null());
 }
 void EatPathRequest::callback(Area& area, FindPathResult& result)
 {
@@ -212,7 +212,7 @@ void EatPathRequest::callback(Area& area, FindPathResult& result)
 			return;
 		}
 		FactionId faction = actors.getFactionId(actor);
-		if(faction != FACTION_ID_MAX)
+		if(faction.exists())
 		{
 			if(result.useCurrentPosition)
 			{

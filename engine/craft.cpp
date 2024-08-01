@@ -31,8 +31,8 @@ CraftStepTypeCategory& CraftStepTypeCategory::byName(const std::string name)
 	assert(found != craftStepTypeCategoryDataStore.end());
 	return *found;
 }
-CraftStepProjectHasShapeDishonorCallback::CraftStepProjectHasShapeDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
-	m_craftStepProject(*static_cast<CraftStepProject*>(deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()))) { } 
+CraftStepProjectHasShapeDishonorCallback::CraftStepProjectHasShapeDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) :
+	m_craftStepProject(*static_cast<CraftStepProject*>(deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()))) { }
 CraftJobType& CraftJobType::byName(const std::string name)
 {
 	auto found = std::ranges::find(craftJobTypeDataStore, name, &CraftJobType::name);
@@ -40,8 +40,8 @@ CraftJobType& CraftJobType::byName(const std::string name)
 	assert(found != craftJobTypeDataStore.end());
 	return *found;
 }
-CraftStepProject::CraftStepProject(const Json& data, DeserializationMemo& deserializationMemo, CraftJob& cj) : 
-	Project(data, deserializationMemo), 
+CraftStepProject::CraftStepProject(const Json& data, DeserializationMemo& deserializationMemo, CraftJob& cj) :
+	Project(data, deserializationMemo),
 	m_craftStepType(*cj.stepIterator),
 	m_craftJob(cj) { }
 Step CraftStepProject::getDuration() const
@@ -89,7 +89,7 @@ void CraftStepProject::onAddToMaking(ActorIndex actor)
 		setDelayOn();
 }
 std::vector<std::pair<ItemQuery, Quantity>> CraftStepProject::getConsumed() const
-{ 
+{
 	// Make a copy so we can edit itemQueries.
 	auto output = m_craftStepType.consumed;
 	for(auto& pair : output)
@@ -100,23 +100,23 @@ std::vector<std::pair<ItemQuery, Quantity>> CraftStepProject::getConsumed() cons
 		}
 	return output;
 }
-std::vector<std::pair<ItemQuery, Quantity>> CraftStepProject::getUnconsumed() const 
-{ 
-	auto output = m_craftStepType.unconsumed; 
+std::vector<std::pair<ItemQuery, Quantity>> CraftStepProject::getUnconsumed() const
+{
+	auto output = m_craftStepType.unconsumed;
 	if(m_craftJob.workPiece.exists())
-		output.emplace_back(m_craftJob.workPiece, 1);
-	return output; 
+		output.emplace_back(m_craftJob.workPiece, Quantity::create(1));
+	return output;
 }
 std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> CraftStepProject::getByproducts() const {
-	auto output =  m_craftStepType.byproducts; 
+	auto output =  m_craftStepType.byproducts;
 	for(auto& tuple : output)
 		if(std::get<1>(tuple) == nullptr)
 			std::get<1>(tuple) = m_craftJob.materialType;
-	return output; 
+	return output;
 }
-CraftJob::CraftJob(const CraftJobType& cjt, HasCraftingLocationsAndJobsForFaction& hclaj, ItemIndex wp, const MaterialType* mt, uint32_t msl) : 
-		craftJobType(cjt), hasCraftingLocationsAndJobs(hclaj), materialType(mt), stepIterator(craftJobType.stepTypes.begin()), minimumSkillLevel(msl), totalSkillPoints(0), reservable(1) 
-{ 
+CraftJob::CraftJob(const CraftJobType& cjt, HasCraftingLocationsAndJobsForFaction& hclaj, ItemIndex wp, const MaterialType* mt, uint32_t msl) :
+		craftJobType(cjt), hasCraftingLocationsAndJobs(hclaj), materialType(mt), stepIterator(craftJobType.stepTypes.begin()), minimumSkillLevel(msl), totalSkillPoints(0), reservable(Quantity::create(1))
+{
 	workPiece.setTarget(hasCraftingLocationsAndJobs.m_area.getItems().getReferenceTarget(wp));
 }
 CraftJob::CraftJob(const Json& data, DeserializationMemo& deserializationMemo, HasCraftingLocationsAndJobsForFaction& hclaj) :
@@ -126,8 +126,9 @@ CraftJob::CraftJob(const Json& data, DeserializationMemo& deserializationMemo, H
 	stepIterator(craftJobType.stepTypes.begin() + data["stepIndex"].get<size_t>()),
 	craftStepProject(data.contains("craftStepProject") ? std::make_unique<CraftStepProject>(data["craftStepProject"], deserializationMemo, *this) : nullptr),
 	minimumSkillLevel(data["minimumSkillLevel"].get<uint32_t>()),
-	totalSkillPoints(data["totalSkillPoints"].get<uint32_t>()), reservable(1) 
-{ 
+	totalSkillPoints(data["totalSkillPoints"].get<uint32_t>()),
+	reservable(Quantity::create(1))
+{
 	deserializationMemo.m_craftJobs[data["address"].get<uintptr_t>()] = this;
 	if(data.contains("workPiece"))
 		workPiece.load(data["workPiece"], hasCraftingLocationsAndJobs.m_area);
@@ -149,14 +150,14 @@ Json CraftJob::toJson() const
 		data["materialType"] = materialType->name;
 	return data;
 }
-uint32_t CraftJob::getQuality() const
+Quality CraftJob::getQuality() const
 {
 	float pointsPerStep = (float)totalSkillPoints / craftJobType.stepTypes.size();
-	return (pointsPerStep / Config::maxSkillLevel) * 100;
+	return Quality::create((pointsPerStep / Config::maxSkillLevel) * 100);
 }
 Step CraftJob::getStep() const
 {
-	return 1 + (stepIterator - craftJobType.stepTypes.begin());
+	return Step::create(1) + (stepIterator - craftJobType.stepTypes.begin());
 }
 // HasCraftingLocationsAndJobs
 HasCraftingLocationsAndJobsForFaction::HasCraftingLocationsAndJobsForFaction(const Json& data, DeserializationMemo& deserializationMemo, FactionId f) :
@@ -277,7 +278,7 @@ void HasCraftingLocationsAndJobsForFaction::addJob(const CraftJobType& craftJobT
 {
 	if(craftJobType.materialTypeCategory && materialType)
 		assert(materialType->materialTypeCategory == craftJobType.materialTypeCategory);
-	for(Quantity i = 0; i < quantity; i++)
+	for(Quantity i = Quantity::create(0); i < quantity; ++i)
 	{
 		CraftJob& craftJob = m_jobs.emplace_back(craftJobType, *this, materialType, minimumSkillLevel);
 		indexUnassigned(craftJob);
@@ -311,8 +312,8 @@ void HasCraftingLocationsAndJobsForFaction::stepComplete(CraftJob& craftJob, Act
 				.materialType=*craftJob.materialType,
 				.craftJob=&craftJob,
 				.location=location,
-				.quality=0,
-				.percentWear=0,
+				.quality=Quality::create(0),
+				.percentWear=Percent::create(0),
 			};
 			Items& items = m_area.getItems();
 			ItemIndex index = items.create(params);
@@ -375,7 +376,7 @@ void HasCraftingLocationsAndJobsForFaction::jobComplete(CraftJob& craftJob, Bloc
 				.materialType=*craftJob.materialType,
 				.location=location,
 				.quality=craftJob.getQuality(),
-				.percentWear=0,
+				.percentWear=Percent::create(0),
 			};
 			items.create(params);
 		}
@@ -465,9 +466,9 @@ void AreaHasCraftingLocationsAndJobs::clearReservations()
 			if(job.craftStepProject)
 				job.craftStepProject->clearReservations();
 }
-HasCraftingLocationsAndJobsForFaction& AreaHasCraftingLocationsAndJobs::at(FactionId faction) 
-{ 
+HasCraftingLocationsAndJobsForFaction& AreaHasCraftingLocationsAndJobs::at(FactionId faction)
+{
 	if(!m_data.contains(faction))
 		addFaction(faction);
-	return m_data.at(faction); 
+	return m_data.at(faction);
 }

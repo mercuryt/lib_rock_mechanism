@@ -10,6 +10,7 @@
 #include "fluidGroup.h"
 #include "blocks/blocks.h"
 #include "fluidType.h"
+#include "types.h"
 #include "util.h"
 #include "config.h"
 #include "area.h"
@@ -27,14 +28,14 @@ FluidGroup::FluidGroup(const FluidType& ft, BlockIndices& blocks, Area& area, bo
 		if(m_area.getBlocks().fluid_contains(block, m_fluidType))
 			addBlock(block, checkMerge);
 }
-void FluidGroup::addFluid(uint32_t volume)
+void FluidGroup::addFluid(CollisionVolume volume)
 {
-	m_excessVolume += volume;
+	m_excessVolume += volume.get();
 	setUnstable();
 }
-void FluidGroup::removeFluid(uint32_t volume)
+void FluidGroup::removeFluid(CollisionVolume volume)
 {
-	m_excessVolume -= volume;
+	m_excessVolume -= volume.get();
 	setUnstable();
 }
 void FluidGroup::addBlock(BlockIndex block, bool checkMerge)
@@ -139,9 +140,9 @@ void FluidGroup::addDiagonalsFor(BlockIndex block)
 			Point3D blockCoordinates = blocks.getCoordinates(block);
 			Point3D diagonalCoordinates = blocks.getCoordinates(diagonal);
 			// Check if there is a 'pressure reducing diagonal' created by two solid blocks.
-			int32_t diffX = diagonalCoordinates.x - blockCoordinates.x;
-			int32_t diffY = diagonalCoordinates.y - blockCoordinates.y;
-			if(blocks.solid_is(blocks.offset(block,diffX, 0, 0)) && blocks.solid_is(blocks.offset(block, 0, diffY, 0)))
+			DistanceInBlocks diffX = diagonalCoordinates.x - blockCoordinates.x;
+			DistanceInBlocks diffY = diagonalCoordinates.y - blockCoordinates.y;
+			if(blocks.solid_is(blocks.offset(block,diffX.get(), 0, 0)) && blocks.solid_is(blocks.offset(block, 0, diffY.get(), 0)))
 				m_diagonalBlocks.add(diagonal);
 		}
 }
@@ -246,12 +247,12 @@ void FluidGroup::readStep()
 		if((uint32_t)m_excessVolume < m_fillQueue.groupSize())
 			break;
 		// How much fluid is there space for total.
-		uint32_t flowCapacity = m_fillQueue.groupCapacityPerBlock();
+		CollisionVolume flowCapacity = m_fillQueue.groupCapacityPerBlock();
 		// How much can be filled before the next low block(s).
-		uint32_t flowTillNextStep = m_fillQueue.groupFlowTillNextStepPerBlock();
-		uint32_t excessPerBlock = (uint32_t)(m_excessVolume / m_fillQueue.groupSize());
-		uint32_t flowPerBlock = std::min({flowTillNextStep, flowCapacity, excessPerBlock});
-		m_excessVolume -= flowPerBlock * m_fillQueue.groupSize();
+		CollisionVolume flowTillNextStep = m_fillQueue.groupFlowTillNextStepPerBlock();
+		CollisionVolume excessPerBlock = CollisionVolume::create(m_excessVolume / m_fillQueue.groupSize());
+		CollisionVolume flowPerBlock = std::min({flowTillNextStep, flowCapacity, excessPerBlock});
+		m_excessVolume -= flowPerBlock.get() * m_fillQueue.groupSize();
 		m_fillQueue.recordDelta(flowPerBlock, flowCapacity, flowTillNextStep);
 	}
 	while(m_excessVolume < 0 && m_drainQueue.groupSize() != 0 && m_drainQueue.m_groupStart != m_drainQueue.m_queue.end())
@@ -260,12 +261,12 @@ void FluidGroup::readStep()
 		if((uint32_t)(-1 * m_excessVolume) < m_drainQueue.groupSize())
 			break;
 		// How much is avaliable to drain total.
-		uint32_t flowCapacity = m_drainQueue.groupCapacityPerBlock();
+		CollisionVolume flowCapacity = m_drainQueue.groupCapacityPerBlock();
 		// How much can be drained before the next high block(s).
-		uint32_t flowTillNextStep = m_drainQueue.groupFlowTillNextStepPerBlock();
-		uint32_t excessPerBlock = (uint32_t)((-1 * m_excessVolume) / m_drainQueue.groupSize());
-		uint32_t flowPerBlock = std::min({flowCapacity, flowTillNextStep, excessPerBlock});
-		m_excessVolume += flowPerBlock * m_drainQueue.groupSize();
+		CollisionVolume flowTillNextStep = m_drainQueue.groupFlowTillNextStepPerBlock();
+		CollisionVolume excessPerBlock = CollisionVolume::create((-1 * m_excessVolume) / m_drainQueue.groupSize());
+		CollisionVolume flowPerBlock = std::min({flowCapacity, flowTillNextStep, excessPerBlock});
+		m_excessVolume += (flowPerBlock * m_drainQueue.groupSize()).get();
 		m_drainQueue.recordDelta(flowPerBlock, flowCapacity, flowTillNextStep);
 	}
 	// Do primary flow.
@@ -275,9 +276,9 @@ void FluidGroup::readStep()
 		assert(m_fillQueue.m_groupEnd == m_fillQueue.m_queue.end() ||
 				blocks.getZ(m_fillQueue.m_groupStart->block) != blocks.getZ(m_fillQueue.m_groupEnd->block) ||
 				m_fillQueue.m_groupStart->capacity != m_fillQueue.m_groupEnd->capacity);
-		uint32_t drainVolume = m_drainQueue.groupLevel();
+		CollisionVolume drainVolume = m_drainQueue.groupLevel();
 		assert(drainVolume != 0);
-		uint32_t fillVolume = m_fillQueue.groupLevel();
+		CollisionVolume fillVolume = m_fillQueue.groupLevel();
 		assert(fillVolume < Config::maxBlockVolume);
 		//uint32_t fillInverseCapacity = Config::maxBlockVolume - m_fillQueue.m_groupStart->capacity;
 		//assert(m_drainQueue.m_groupStart->block->m_z > m_fillQueue.m_groupStart->block->m_z || drainVolume >= fillVolume);
@@ -309,39 +310,39 @@ void FluidGroup::readStep()
 					if(itd->delta != 0)
 						assert(itf->block != itd->block);
 		// How much fluid is there space for total.
-		uint32_t flowCapacityFill = m_fillQueue.groupCapacityPerBlock();
+		CollisionVolume flowCapacityFill = m_fillQueue.groupCapacityPerBlock();
 		// How much can be filled before the next low block(s).
-		uint32_t flowTillNextStepFill = m_fillQueue.groupFlowTillNextStepPerBlock();
+		CollisionVolume flowTillNextStepFill = m_fillQueue.groupFlowTillNextStepPerBlock();
 		// How much is avaliable to drain total.
-		uint32_t flowCapacityDrain = m_drainQueue.groupCapacityPerBlock();
+		CollisionVolume flowCapacityDrain = m_drainQueue.groupCapacityPerBlock();
 		// How much can be drained before the next high block(s).
-		uint32_t flowTillNextStepDrain = m_drainQueue.groupFlowTillNextStepPerBlock();
+		CollisionVolume flowTillNextStepDrain = m_drainQueue.groupFlowTillNextStepPerBlock();
 		// How much can drain before equalization. Only applies if the groups are on the same z.
-		uint32_t maxDrainForEqualibrium, maxFillForEquilibrium;
+		CollisionVolume maxDrainForEqualibrium, maxFillForEquilibrium;
 		if(blocks.getZ(m_fillQueue.m_groupStart->block) == blocks.getZ(m_drainQueue.m_groupStart->block))
 		{
-			uint32_t totalLevel = (fillVolume * m_fillQueue.groupSize()) + (drainVolume * m_drainQueue.groupSize());
+			CollisionVolume totalLevel = (fillVolume * m_fillQueue.groupSize()) + (drainVolume * m_drainQueue.groupSize());
 			uint32_t totalCount = m_fillQueue.groupSize() + m_drainQueue.groupSize();
 			// We want to round down here so default truncation is fine.
-			uint32_t equalibriumLevel = totalLevel / totalCount;
+			CollisionVolume equalibriumLevel = totalLevel / totalCount;
 			maxDrainForEqualibrium = drainVolume - equalibriumLevel;
 			maxFillForEquilibrium = equalibriumLevel - fillVolume;
 		}
 		else
-			maxDrainForEqualibrium = maxFillForEquilibrium = UINT32_MAX;
+			maxDrainForEqualibrium = maxFillForEquilibrium = CollisionVolume::null();
 		// Viscosity is applied only to fill.
 		// Fill is allowed to be 0. If there is not enough volume in drain group to put at least one in each of fill group then we let all of drain group go to excess volume.
-		uint32_t perBlockFill = std::min({flowCapacityFill, flowTillNextStepFill, maxFillForEquilibrium, (uint32_t)m_viscosity});
-		uint32_t perBlockDrain = std::min({flowCapacityDrain, flowTillNextStepDrain, maxDrainForEqualibrium});
+		CollisionVolume perBlockFill = std::min({flowCapacityFill, flowTillNextStepFill, maxFillForEquilibrium, CollisionVolume::create(m_viscosity)});
+		CollisionVolume perBlockDrain = std::min({flowCapacityDrain, flowTillNextStepDrain, maxDrainForEqualibrium});
 		assert(perBlockDrain != 0);
-		uint32_t totalFill = perBlockFill * m_fillQueue.groupSize();
-		uint32_t totalDrain = perBlockDrain * m_drainQueue.groupSize();
+		CollisionVolume totalFill = perBlockFill * m_fillQueue.groupSize();
+		CollisionVolume totalDrain = perBlockDrain * m_drainQueue.groupSize();
 		if(totalFill < totalDrain)
 		{
 			if(maxFillForEquilibrium == perBlockFill)
 				perBlockDrain = maxDrainForEqualibrium;
 			else
-				perBlockDrain = std::ceil(totalFill / (float)m_drainQueue.groupSize());
+				perBlockDrain = CollisionVolume::create(std::ceil(totalFill.get() / m_drainQueue.groupSize()));
 			totalDrain = perBlockDrain * m_drainQueue.groupSize();
 		}
 		else if(totalFill > totalDrain)
@@ -356,12 +357,12 @@ void FluidGroup::readStep()
 		}
 		assert(totalFill <= totalDrain);
 		// Viscosity is consumed by flow.
-		m_viscosity -= perBlockFill;
+		m_viscosity -= perBlockFill.get();
 		// Record changes.
 		m_drainQueue.recordDelta(perBlockDrain, flowCapacityDrain, flowTillNextStepDrain);
 		if(perBlockFill != 0)
 			m_fillQueue.recordDelta(perBlockFill, flowCapacityFill, flowTillNextStepFill);
-		m_excessVolume += totalDrain - totalFill;
+		m_excessVolume += (int)totalDrain.get() - (int)totalFill.get();
 		// If we are at equilibrium then stop looping.
 		// Don't mark stable because there may be newly added adjacent to flow into next tick.
 		if(perBlockDrain == maxDrainForEqualibrium)
@@ -582,19 +583,19 @@ void FluidGroup::afterWriteStep()
 			{
 				if(blocks.fluid_canEnterCurrently(diagonal, m_fluidType))
 				{
-					uint32_t diagonalPriority = (blocks.getZ(diagonal) * Config::maxBlockVolume * 2) + blocks.fluid_volumeOfTypeContains(diagonal, m_fluidType);
+					uint32_t diagonalPriority = (blocks.getZ(diagonal).get() * Config::maxBlockVolume.get() * 2) + blocks.fluid_volumeOfTypeContains(diagonal, m_fluidType).get();
 					BlockIndex topBlock = m_drainQueue.m_queue[0].block;
-					uint32_t topPriority = (blocks.getZ(topBlock) * Config::maxBlockVolume * 2) + blocks.fluid_volumeOfTypeContains(topBlock, m_fluidType) + m_excessVolume;
+					uint32_t topPriority = (blocks.getZ(topBlock).get() * Config::maxBlockVolume.get() * 2) + blocks.fluid_volumeOfTypeContains(topBlock, m_fluidType).get() + m_excessVolume;
 					if(topPriority > diagonalPriority)
 					{
-						uint32_t flow = std::min({
+						CollisionVolume flow = CollisionVolume::create(std::min({
 							m_viscosity,
 							(topPriority - diagonalPriority)/2,
-							blocks.fluid_volumeOfTypeCanEnter(diagonal, m_fluidType),
+							blocks.fluid_volumeOfTypeCanEnter(diagonal, m_fluidType).get(),
 							std::max(1u, m_fluidType.viscosity / Config::fluidsSeepDiagonalModifier)
-						});
-						m_excessVolume -= flow;
-						m_viscosity -= flow;
+						}));
+						m_excessVolume -= flow.get();
+						m_viscosity -= flow.get();
 						if(m_viscosity <= 0)
 							break;
 						blocks.fluid_add(diagonal, flow, m_fluidType);
@@ -696,9 +697,9 @@ void FluidGroup::mergeStep()
 	}
 	validate();
 }
-int32_t FluidGroup::totalVolume() const
+CollisionVolume FluidGroup::totalVolume() const
 {
-	int32_t output = m_excessVolume;
+	CollisionVolume output = CollisionVolume::create(m_excessVolume);
 	for(BlockIndex block : m_drainQueue.m_set)
 		output += m_area.getBlocks().fluid_volumeOfTypeContains(block, m_fluidType);
 	return output;
@@ -706,15 +707,15 @@ int32_t FluidGroup::totalVolume() const
 bool FluidGroup::dispositionIsStable(CollisionVolume fillVolume, CollisionVolume drainVolume) const
 {
 	auto& blocks = m_area.getBlocks();
-	CollisionVolume drainZ = blocks.getZ(m_drainQueue.m_groupStart->block);
-	CollisionVolume fillZ = blocks.getZ(m_fillQueue.m_groupStart->block);
+	DistanceInBlocks drainZ = blocks.getZ(m_drainQueue.m_groupStart->block);
+	DistanceInBlocks fillZ = blocks.getZ(m_fillQueue.m_groupStart->block);
 	if(drainZ < fillZ)
 		return true;
 	if(drainZ == fillZ &&
 		(
 			fillVolume >= drainVolume ||
 			(
-				!fillVolume &&
+				fillVolume == 0 &&
 				(
 					drainVolume == 1 ||
 					drainVolume * m_drainQueue.groupSize() < (m_fillQueue.groupSize() + m_drainQueue.groupSize())
@@ -761,13 +762,13 @@ void FluidGroup::log() const
 			std::cout << "drain group end\n";
 		blocks.getCoordinates(futureFlowBlock.block).log();
 		std::cout <<
-			"d:" << futureFlowBlock.delta << " " <<
-			"c:" << futureFlowBlock.capacity << " " <<
-			"v:" << blocks.fluid_volumeOfTypeContains(futureFlowBlock.block, m_fluidType) << " " <<
-			"t:" << blocks.fluid_getTotalVolume(futureFlowBlock.block);
+			"d:" << futureFlowBlock.delta.get() << " " <<
+			"c:" << futureFlowBlock.capacity.get() << " " <<
+			"v:" << blocks.fluid_volumeOfTypeContains(futureFlowBlock.block, m_fluidType).get() << " " <<
+			"t:" << blocks.fluid_getTotalVolume(futureFlowBlock.block).get();
 		std::cout << '\n';
 	}
-	std::cout << "total:" << totalVolume() << '\n';
+	std::cout << "total:" << totalVolume().get() << '\n';
 	if(m_excessVolume)
 		std::cout << "excess:" << m_excessVolume << '\n';
 	if(m_merged)
@@ -789,10 +790,10 @@ void FluidGroup::logFill() const
 			std::cout << "fill group end\n";
 		blocks.getCoordinates(futureFlowBlock.block).log();
 		std::cout <<
-			"d:" << futureFlowBlock.delta << " " <<
-			"c:" << futureFlowBlock.capacity << " " <<
-			"v:" << blocks.fluid_volumeOfTypeContains(futureFlowBlock.block, m_fluidType) << " " <<
-			"t:" << blocks.fluid_getTotalVolume(futureFlowBlock.block);
+			"d:" << futureFlowBlock.delta.get() << " " <<
+			"c:" << futureFlowBlock.capacity.get() << " " <<
+			"v:" << blocks.fluid_volumeOfTypeContains(futureFlowBlock.block, m_fluidType).get() << " " <<
+			"t:" << blocks.fluid_getTotalVolume(futureFlowBlock.block).get();
 		std::cout << std::endl;
 	}
 }

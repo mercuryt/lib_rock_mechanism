@@ -14,22 +14,25 @@
 #include "blocks/blocks.h"
 #include <cmath>
 enum class TemperatureZone { Surface, Underground, LavaSea };
-Temperature TemperatureSource::getTemperatureDeltaForRange(Temperature range)
+TemperatureDelta TemperatureSource::getTemperatureDeltaForRange(DistanceInBlocks range)
 {
 	if(range == 0)
 		return m_temperature;
-	Temperature output = m_temperature / std::pow(range, Config::heatDisipatesAtDistanceExponent);
-	if(output <= Config::heatRadianceMinimum)
-		return 0;
+	TemperatureDelta output = m_temperature / std::pow(range.get(), Config::heatDisipatesAtDistanceExponent);
+	if(output.absoluteValue() <= Config::heatRadianceMinimum)
+		return TemperatureDelta::create(0);
 	return output; // subtract radiance mininum from output to smooth transition at edge of affected zone?
 }
 void TemperatureSource::apply()
 {
 	m_area.m_hasTemperature.addDelta(m_block, m_temperature);
-	int range = 1;
-	while(int delta = getTemperatureDeltaForRange(range))
+	DistanceInBlocks range = DistanceInBlocks::create(1);
+	while(true)
 	{
-		for(BlockIndex block : getNthAdjacentBlocks(m_area, m_block, range))
+		TemperatureDelta delta = getTemperatureDeltaForRange(range);
+		if(delta == 0)
+			break;
+		for(BlockIndex block : getNthAdjacentBlocks(m_area, m_block, range.get()))
 			m_area.m_hasTemperature.addDelta(block, delta);
 		++range;
 	}
@@ -37,21 +40,24 @@ void TemperatureSource::apply()
 void TemperatureSource::unapply()
 {
 	m_area.m_hasTemperature.addDelta(m_block, m_temperature * -1);
-	int range = 1;
-	while(int delta = getTemperatureDeltaForRange(range))
+	DistanceInBlocks range = DistanceInBlocks::create(1);
+	while(true)
 	{
-		for(BlockIndex block : getNthAdjacentBlocks(m_area, m_block, range))
+		TemperatureDelta delta = getTemperatureDeltaForRange(range);
+		if(delta == 0)
+			break;
+		for(BlockIndex block : getNthAdjacentBlocks(m_area, m_block, range.get()))
 			m_area.m_hasTemperature.addDelta(block, delta * -1);
 		++range;
 	}
 }
-void TemperatureSource::setTemperature(const int32_t& t)
+void TemperatureSource::setTemperature(TemperatureDelta t)
 {
 	unapply();
 	m_temperature = t;
 	apply();
 }
-void AreaHasTemperature::addTemperatureSource(BlockIndex block, const Temperature& temperature)
+void AreaHasTemperature::addTemperatureSource(BlockIndex block, TemperatureDelta temperature)
 {
 	[[maybe_unused]] auto pair = m_sources.try_emplace(block, m_area, temperature, block);
 	assert(pair.second);
@@ -67,19 +73,19 @@ TemperatureSource& AreaHasTemperature::getTemperatureSourceAt(BlockIndex block)
 {
 	return m_sources.at(block);
 }
-void AreaHasTemperature::addDelta(BlockIndex block, int32_t delta)
+void AreaHasTemperature::addDelta(BlockIndex block, TemperatureDelta delta)
 {
 	m_blockDeltaDeltas[block] += delta;
 }
 // TODO: optimize by splitting block deltas into different structures for different temperature zones, to avoid having to rerun getAmbientTemperature?
 void AreaHasTemperature::applyDeltas()
 {
-	std::unordered_map<BlockIndex, int32_t, BlockIndex::Hash> oldDeltaDeltas;
+	std::unordered_map<BlockIndex, TemperatureDelta, BlockIndex::Hash> oldDeltaDeltas;
 	oldDeltaDeltas.swap(m_blockDeltaDeltas);
 	for(auto& [block, deltaDelta] : oldDeltaDeltas)
 		m_area.getBlocks().temperature_updateDelta(block, deltaDelta);
 }
-void AreaHasTemperature::setAmbientSurfaceTemperature(const Temperature& temperature)
+void AreaHasTemperature::setAmbientSurfaceTemperature(Temperature temperature)
 {
 	m_ambiantSurfaceTemperature = temperature;
 	m_area.getPlants().onChangeAmbiantSurfaceTemperature();
@@ -104,7 +110,7 @@ void AreaHasTemperature::updateAmbientSurfaceTemperature()
 {
 	// TODO: Latitude and altitude.
 	Temperature dailyAverage = getDailyAverageAmbientSurfaceTemperature();
-	static Temperature maxDailySwing = 35;
+	static Temperature maxDailySwing = Temperature::create(35);
 	static uint32_t hottestHourOfDay = 14;
 	int32_t hour = DateTime(m_area.m_simulation.m_step).hour;
 	uint32_t hoursFromHottestHourOfDay = std::abs((int32_t)hottestHourOfDay - hour);
@@ -128,8 +134,8 @@ void AreaHasTemperature::removeMeltableSolidBlockAboveGround(BlockIndex block)
 Temperature AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature() const
 {
 	// TODO: Latitude and altitude.
-	static Temperature yearlyHottestDailyAverage = 300;
-	static Temperature yearlyColdestDailyAverage = 280;
+	static Temperature yearlyHottestDailyAverage = Temperature::create(300);
+	static Temperature yearlyColdestDailyAverage = Temperature::create(280);
 	static uint32_t dayOfYearOfSolstice = Config::daysPerYear / 2;
 	int32_t day = DateTime(m_area.m_simulation.m_step).day;
 	uint32_t daysFromSolstice = std::abs(day - (int32_t)dayOfYearOfSolstice);

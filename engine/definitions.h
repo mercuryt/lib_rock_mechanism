@@ -19,7 +19,7 @@ namespace definitions
 	void loadMaterialTypes();
 	void loadSkillTypes();
 	const AttackType loadAttackType(const Json& data, const SkillType& defaultSkill);
-	std::pair<ItemQuery, uint32_t> loaditemQuery(const Json& data);
+	std::pair<ItemQuery, Quantity> loaditemQuery(const Json& data);
 	void loadMaterialTypeConstuctionData();
 	//void loadMedicalProjectTypes()
 	void loadCraftJobs();

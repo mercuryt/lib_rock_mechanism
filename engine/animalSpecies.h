@@ -10,9 +10,9 @@ struct AnimalSpecies
 	const std::string name;
 	const bool sentient;
 	// Min, max, newborn.
-	const std::array<uint32_t, 3> strength;
-	const std::array<uint32_t, 3> dextarity;
-	const std::array<uint32_t, 3> agility;
+	const std::array<AttributeLevel, 3> strength;
+	const std::array<AttributeLevel, 3> dextarity;
+	const std::array<AttributeLevel, 3> agility;
 	const std::array<Mass, 3> mass;
 	const std::array<Step, 2> deathAgeSteps;
 	const Step stepsTillFullyGrown;

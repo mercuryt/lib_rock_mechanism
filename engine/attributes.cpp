@@ -2,10 +2,9 @@
 #include "animalSpecies.h"
 #include "types.h"
 #include "util.h"
-void Attribute::setPercentGrown(Percent percentGrown)
+void Attribute::setPercentGrown(Percent percentGrown, const AnimalSpecies& species)
 {
-	Percent growthPercent = util::scaleByPercentRange(speciesNewbornValue, speciesAdultValue, percentGrown);
-	value = util::scaleByPercent(baseModifierPercent, growthPercent) + bonusOrPenalty;
+	value = AttributeLevel::create(util::scaleByPercentRange(speciesNewbornValue.get(), speciesAdultValue.get(), percentGrown) + bonusOrPenalty);
 }
 Json Attribute::toJson() const 
 {
@@ -15,13 +14,11 @@ Json Attribute::toJson() const
 	data["bonusOrPenalty"] = bonusOrPenalty;
 	return data;
 }
-Attribute::Attribute(const Json& data, uint32_t speciesNewbornValue, uint32_t speciesAdultValue, Percent percentGrown) :
-	speciesNewbornValue(speciesNewbornValue),
-	speciesAdultValue(speciesAdultValue),
-	value(data["value"].get<uint32_t>()),
+Attribute::Attribute(const Json& data, Percent percentGrown, const AnimalSpecies& species) :
+	value(data["value"].get<AttributeLevel>()),
 	baseModifierPercent(data["baseModifierPercent"].get<Percent>()),
 	bonusOrPenalty(data["bonusOrPenalty"].get<int32_t>())
-{ setPercentGrown(percentGrown); }
+{ setPercentGrown(percentGrown, species); }
 void Attributes::updatePercentGrown(Percent pg)
 {
 	percentGrown = pg;
@@ -33,12 +30,12 @@ void Attributes::updatePercentGrown(Percent pg)
 }
 void Attributes::generate()
 {
-	unencomberedCarryMass = strength.value * Config::unitsOfCarryMassPerUnitOfStrength;
-	moveSpeed = agility.value * Config::unitsOfMoveSpeedPerUnitOfAgility;
-	baseCombatScore = (
-		(strength.value * Config::pointsOfCombatScorePerUnitOfStrength) +
-		(agility.value * Config::pointsOfCombatScorePerUnitOfAgility) +
-		(dextarity.value * Config::pointsOfCombatScorePerUnitOfDextarity)
+	unencomberedCarryMass = Mass::create(strength.value.get() * Config::unitsOfCarryMassPerUnitOfStrength);
+	moveSpeed = Speed::create(agility.value.get() * Config::unitsOfMoveSpeedPerUnitOfAgility);
+	baseCombatScore = CombatScore::create(
+		(strength.value.get() * Config::pointsOfCombatScorePerUnitOfStrength) +
+		(agility.value.get() * Config::pointsOfCombatScorePerUnitOfAgility) +
+		(dextarity.value.get() * Config::pointsOfCombatScorePerUnitOfDextarity)
 	);
 }
 Json Attributes::toJson() const
@@ -54,5 +51,5 @@ Attributes::Attributes(const Json& data, const AnimalSpecies& species, Percent p
 	strength(data["strength"], species.strength[0], species.strength[1], pg),
 	dextarity(data["dextarity"], species.dextarity[0], species.dextarity[1], pg),
 	agility(data["agility"], species.agility[0], species.agility[1], pg),
-	mass(data["mass"], species.mass[0], species.mass[1], pg),
+	mass(data["mass"], AttributeLevel::create(species.mass[0].get()), AttributeLevel::create(species.mass[1].get()), pg),
 	percentGrown(pg) { generate(); }

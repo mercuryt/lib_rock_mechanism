@@ -12,7 +12,7 @@ AreaHasBlockDesignationsForFaction::AreaHasBlockDesignationsForFaction(const Jso
 	m_area(area), m_designations(data.get<sul::dynamic_bitset<>>()) { }
 int AreaHasBlockDesignationsForFaction::getIndex(BlockIndex index, BlockDesignation designation) const
 {
-	return ((int)m_area.getBlocks().size() * (int)designation) + index;
+	return ((int)m_area.getBlocks().size() * (int)designation) + index.get();
 }
 void AreaHasBlockDesignationsForFaction::set(BlockIndex index, BlockDesignation designation)
 {

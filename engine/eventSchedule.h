@@ -20,12 +20,12 @@ class Area;
 class ScheduledEvent
 {
 public:
-	Step m_startStep = 0;
-	Step m_step = 0;
+	Step m_startStep;
+	Step m_step;
 	bool m_cancel = false;
 	// If the value 0 is passed then the current step is used for start
 	// Passing a differernt start is for deserializing.
-	ScheduledEvent(Simulation& simulation, const Step delay, const Step start = 0);
+	ScheduledEvent(Simulation& simulation, const Step delay, const Step start = Step::null());
 	void cancel(Simulation& simulation, Area* area);
 	virtual void execute(Simulation& simulation, Area* area) = 0;
 	virtual void clearReferences(Simulation& simulation, Area* area) = 0;
@@ -46,7 +46,7 @@ class EventSchedule
 {
 	Simulation& m_simulation;
 	Area* m_area;
-	Step m_lowestStepWithEventsScheduled = 0;
+	Step m_lowestStepWithEventsScheduled = Step::create(0);
 public:
 	EventSchedule(Simulation& s, Area* area) : m_simulation(s), m_area(area) { }
 	std::map<Step, std::list<std::unique_ptr<ScheduledEvent>>> m_data;

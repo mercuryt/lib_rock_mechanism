@@ -20,11 +20,11 @@ Percent Blocks::project_getPercentComplete(BlockIndex index, FactionId faction) 
 {
 	auto& projects = m_projects.at(index);
 	if(!projects.contains(faction))
-		return 0;
+		return Percent::create(0);
 	for(Project* project : projects.at(faction))
-		if(project->getPercentComplete())
+		if(project->getPercentComplete().exists())
 			return project->getPercentComplete();
-	return 0;
+	return Percent::create(0);
 }
 Project* Blocks::project_get(BlockIndex index, FactionId faction) const
 {

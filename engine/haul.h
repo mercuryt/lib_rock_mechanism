@@ -27,7 +27,7 @@ struct HaulSubprojectParamaters final
 {
 	ActorOrItemReference toHaul;
 	FluidType* fluidType = nullptr;
-	Quantity quantity = 0;
+	Quantity quantity = Quantity::create(0);
 	HaulStrategy strategy = HaulStrategy::None;
 	ActorIndices workers;
 	ItemIndex haulTool;
@@ -45,7 +45,7 @@ class HaulSubproject final
 	Project& m_project;
 	ActorReferences m_workers;
 	ActorOrItemReference m_toHaul;
-	Quantity m_quantity = 0;
+	Quantity m_quantity = Quantity::create(0);
 	HaulStrategy m_strategy = HaulStrategy::None;
 	ActorReferences m_nonsentients;
 	ItemReference m_haulTool;
@@ -81,7 +81,7 @@ public:
 	// For testing.
 	[[nodiscard]] HaulStrategy getHaulStrategy() const { return m_strategy; }
 	[[nodiscard]] bool getIsMoving() const { return m_itemIsMoving; }
-	[[nodiscard]] bool getQuantity() const { return m_quantity; }
+	[[nodiscard]] Quantity getQuantity() const { return m_quantity; }
 	[[nodiscard]] bool operator==(const HaulSubproject& other) const { return &other == this; }
 	friend class Project;
 };

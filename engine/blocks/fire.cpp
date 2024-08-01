@@ -6,12 +6,12 @@
 void Blocks::fire_setPointer(BlockIndex index, std::unordered_map<const MaterialType*, Fire>* pointer)
 {
 	assert(!m_fires.at(index));
-	m_fires[index] = pointer;
+	m_fires.at(index) = pointer;
 }
 void Blocks::fire_clearPointer(BlockIndex index)
 {
 	assert(m_fires.at(index));
-	m_fires[index] = nullptr;
+	m_fires.at(index) = nullptr;
 }
 bool Blocks::fire_exists(BlockIndex index) const
 {

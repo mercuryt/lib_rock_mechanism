@@ -32,9 +32,9 @@ struct SpoilData
 	const MaterialType& materialType;
 	const ItemType& itemType;
 	const double chance = 0;
-	const uint32_t min = 0;
-	const uint32_t max = 0;
-	SpoilData( const MaterialType& mt, const ItemType& it, const double c, const uint32_t mi, const uint32_t ma) : 
+	const Quantity min = Quantity::create(0);
+	const Quantity max = Quantity::create(0);
+	SpoilData( const MaterialType& mt, const ItemType& it, const double c, const Quantity mi, const Quantity ma) : 
 	materialType(mt), itemType(it), chance(c), min(mi), max(ma) { }
 };
 
@@ -51,9 +51,9 @@ inline std::deque<BurnData> burnDataStore;
 
 struct MaterialConstructionData
 {
-	std::vector<std::pair<ItemQuery, uint32_t>> consumed;
-	std::vector<std::pair<ItemQuery, uint32_t>> unconsumed;
-	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> byproducts;
+	std::vector<std::pair<ItemQuery, Quantity>> consumed;
+	std::vector<std::pair<ItemQuery, Quantity>> unconsumed;
+	std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> byproducts;
 	std::string name;
 	const SkillType& skill;
 	Step duration;
@@ -71,12 +71,12 @@ struct MaterialType
 	std::vector<SpoilData> spoilData;
 	const std::string name;
 	// What temperatures cause phase changes?
-	Temperature meltingPoint = 0;
+	Temperature meltingPoint = Temperature::create(0);
 	const FluidType* meltsInto = nullptr;
 	BurnData* burnData = nullptr;
 	MaterialConstructionData* constructionData = nullptr;
 	const MaterialTypeCategory* materialTypeCategory = nullptr;
-	const Density density = 0;
+	const Density density = Density::create(0);
 	const uint32_t hardness = 0;
 	const bool transparent = false;
 	MaterialType(std::string n, Density d, uint32_t h, bool t) : name(n), density(d), hardness(h), transparent(t) { }

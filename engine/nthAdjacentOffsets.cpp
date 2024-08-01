@@ -28,14 +28,14 @@ std::vector<XYZ> getNthAdjacentOffsets(uint32_t n)
 	}
 	return cache.at(n);
 }
-std::vector<BlockIndex> getNthAdjacentBlocks(Area& area, BlockIndex center, uint32_t i)
+BlockIndices getNthAdjacentBlocks(Area& area, BlockIndex center, uint32_t i)
 {
-	std::vector<BlockIndex> output;
+	BlockIndices output;
 	for(XYZ& offset : getNthAdjacentOffsets(i))
 	{
 		BlockIndex block = area.getBlocks().offset(center, offset.x, offset.y, offset.z);
 		if(block.exists())
-			output.push_back(block);
+			output.add(block);
 	}
 	return output;
 }

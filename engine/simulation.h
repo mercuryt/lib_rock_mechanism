@@ -55,7 +55,7 @@ public:
 	std::unique_ptr<DramaEngine> m_dramaEngine;
 	std::mutex m_uiReadMutex;
 
-	Simulation(std::wstring name = L"", Step s = 10'000 * Config::stepsPerYear);
+	Simulation(std::wstring name = L"", Step s = Config::stepsPerYear * 10'000u);
 	Simulation(std::filesystem::path path);
 	Simulation(const Json& data);
 	Json toJson() const;
@@ -126,7 +126,7 @@ public:
 class HourlyEvent final : public ScheduledEvent
 {
 public:
-	HourlyEvent(Simulation& s, const Step start = 0) : ScheduledEvent(s, Config::stepsPerHour, start) { }
+	HourlyEvent(Simulation& s, const Step start = Step::create(0)) : ScheduledEvent(s, Config::stepsPerHour, start) { }
 	inline void execute(Simulation& simulation, Area*){ simulation.incrementHour(); }
 	inline void clearReferences(Simulation& simulation, Area*){ simulation.m_hourlyEvent.clearPointer(); }
 };

@@ -4,6 +4,7 @@
 #include "objective.h"
 #include "pathRequest.h"
 #include "reference.h"
+#include "types.h"
 
 #include <cstdio>
 struct DeserializationMemo;
@@ -17,10 +18,10 @@ public:
 	// Max one worker.
 	InstallItemProject(Area& area, ItemReference i, BlockIndex l, Facing facing, FactionId faction);
 	void onComplete();
-	std::vector<std::pair<ItemQuery, uint32_t>> getConsumed() const { return {}; }
-	std::vector<std::pair<ItemQuery, uint32_t>> getUnconsumed() const { ItemQuery query(m_item); return {{m_item,1}}; }
-	std::vector<std::pair<ActorQuery, uint32_t>> getActors() const { return {}; }
-	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> getByproducts() const { return {}; }
+	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const { return {}; }
+	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const { ItemQuery query(m_item); return {{m_item,Quantity::create(1)}}; }
+	std::vector<std::pair<ActorQuery, Quantity>> getActors() const { return {}; }
+	std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> getByproducts() const { return {}; }
 	Step getDuration() const { return Config::installItemDuration; }
 	bool canReset() const { return false; }
 	void onDelay() { cancel(); }
@@ -48,7 +49,7 @@ public:
 };
 class AreaHasInstallItemDesignations final
 {
-	std::unordered_map<FactionId, HasInstallItemDesignationsForFaction> m_data;
+	FactionIdMap<HasInstallItemDesignationsForFaction> m_data;
 public:
 	void registerFaction(FactionId faction) { m_data.try_emplace(faction, faction); }
 	void unregisterFaction(FactionId faction) { m_data.erase(faction); }

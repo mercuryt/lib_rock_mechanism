@@ -15,8 +15,8 @@ struct ItemDataLocation
 
 class SimulationHasItems final
 {
-	ItemId m_nextId = 0;
-	std::unordered_map<ItemId, ItemDataLocation> m_items;
+	ItemId m_nextId = ItemId::create(0);
+	ItemIdMap<ItemDataLocation> m_items;
 public:
 	SimulationHasItems() = default;
 	SimulationHasItems(const Json& data, DeserializationMemo& deserializationMemo);

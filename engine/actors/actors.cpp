@@ -18,6 +18,7 @@
 #include "../actors/grow.h"
 #include "attributes.h"
 #include "eventSchedule.h"
+#include "index.h"
 #include "objective.h"
 #include "temperature.h"
 
@@ -26,14 +27,14 @@
 #include <iostream>
 Percent ActorParamaters::getPercentGrown(Simulation& simulation)
 {
-	if(percentGrown == nullPercent)
+	if(percentGrown.empty())
 	{
-		Percent percentLifeTime = simulation.m_random.getInRange(0, 100);
+		Percent percentLifeTime = Percent::create(simulation.m_random.getInRange(0, 100));
 		// Don't generate actors in the last 15% of their possible life span, they don't get out much.
-		Step adjustedMax = util::scaleByPercent(species.deathAgeSteps[0], 85);
+		Step adjustedMax = Step::create(util::scaleByPercent(species.deathAgeSteps[0].get(), Percent::create(85)));
 		// Using util::scaleByPercent and util::fractionToPercent give the wrong result here for some reason.
-		Step ageSteps = ((float)adjustedMax / (float)percentLifeTime) * 100.f;
-		percentGrown = std::min(100, (Percent)(((float)ageSteps / (float)species.stepsTillFullyGrown) * 100.f));
+		Step ageSteps = Step::create(((float)adjustedMax.get() / (float)percentLifeTime.get()) * 100.f);
+		percentGrown = Percent::create(std::min(100u, (uint)(((float)ageSteps.get() / (float)species.stepsTillFullyGrown.get()) * 100.f)));
 		birthStep = simulation.m_step - ageSteps;
 	}
 	return percentGrown;
@@ -41,21 +42,22 @@ Percent ActorParamaters::getPercentGrown(Simulation& simulation)
 std::wstring ActorParamaters::getName(Simulation& simulation)
 {
 	if(name.empty())
-		name = util::stringToWideString(species.name) + std::to_wstring(getId(simulation));
+		name = util::stringToWideString(species.name) + std::to_wstring(getId(simulation).get());
 	return name;
 }
 Step ActorParamaters::getBirthStep(Simulation& simulation)
 {
-	if(!birthStep)
+	if(birthStep.empty())
 	{
-		if(percentGrown == nullPercent)
+		if(percentGrown.empty())
 			getPercentGrown(simulation);
 		else
 		{
 			// Pick an age for the given percent grown.
-			Step age =  percentGrown < 95 ?
-				util::scaleByPercent(species.stepsTillFullyGrown, percentGrown) :
-				simulation.m_random.getInRange(species.stepsTillFullyGrown, species.deathAgeSteps[1]);
+			Step age = Step::create(percentGrown < 95 ?
+				util::scaleByPercent(species.stepsTillFullyGrown.get(), percentGrown) :
+				simulation.m_random.getInRange(species.stepsTillFullyGrown.get(), species.deathAgeSteps[1].get())
+			);
 			birthStep = simulation.m_step - age;
 		}
 	}
@@ -63,34 +65,34 @@ Step ActorParamaters::getBirthStep(Simulation& simulation)
 }
 ActorId ActorParamaters::getId(Simulation& simulation)
 {
-	if(!id)
+	if(id.empty())
 		id = simulation.m_actors.getNextId();
 	return id;
 }
 Percent ActorParamaters::getPercentThirst(Simulation& simulation)
 {
-	if(percentThirst == nullPercent)
+	if(percentThirst.empty())
 	{
-		percentThirst = simulation.m_random.getInRange(0, 100);
-		needsDrink = simulation.m_random.percentChance(10);
+		percentThirst = Percent::create(simulation.m_random.getInRange(0, 100));
+		needsDrink = simulation.m_random.percentChance(Percent::create(10));
 	}
 	return percentThirst;
 }
 Percent ActorParamaters::getPercentHunger(Simulation& simulation)
 {
-	if(percentHunger == nullPercent)
+	if(percentHunger.empty())
 	{
-		percentHunger = simulation.m_random.getInRange(0, 100);
-		needsEat = simulation.m_random.percentChance(10);
+		percentHunger = Percent::create(simulation.m_random.getInRange(0, 100));
+		needsEat = simulation.m_random.percentChance(Percent::create(10));
 	}
 	return percentHunger;
 }
 Percent ActorParamaters::getPercentTired(Simulation& simulation)
 {
-	if(percentTired == nullPercent)
+	if(percentTired.empty())
 	{
-		percentTired = simulation.m_random.getInRange(0, 100);
-		needsSleep = simulation.m_random.percentChance(10);
+		percentTired = Percent::create(simulation.m_random.getInRange(0, 100));
+		needsSleep = simulation.m_random.percentChance(Percent::create(10));
 	}
 	return percentTired;
 }
@@ -106,8 +108,8 @@ void ActorParamaters::generateEquipment(Area& area, ActorIndex actor)
 		return;
 	auto& random = area.m_simulation.m_random;
 	auto generate = [&](const ItemType& itemType, const MaterialType& materialType){
-		uint quality = random.getInRange(10, 50);
-		Percent wear = random.getInRange(10, 60);
+		Quality quality = Quality::create(random.getInRange(10, 50));
+		Percent wear = Percent::create(random.getInRange(10, 60));
 		ItemIndex item = area.getItems().create({
 			.itemType=itemType,
 			.materialType=materialType,
@@ -282,83 +284,83 @@ void Actors::load(const Json& data)
 	for(const Json& pair : data["attributes"])
 	{
 		ActorIndex index = pair[0].get<ActorIndex>();
-		m_attributes.at(index()) = std::make_unique<Attributes>(pair[1], *m_species.at(index()), getPercentGrown(index));
+		m_attributes.at(index) = std::make_unique<Attributes>(pair[1], *m_species.at(index), getPercentGrown(index));
 	}
 	m_hasObjectives.resize(m_id.size());
 	for(const Json& pair : data["hasObjectives"])
 	{
 		ActorIndex index = pair[0].get<ActorIndex>();
-		m_hasObjectives.at(index()) = std::make_unique<HasObjectives>(index);
-		m_hasObjectives.at(index())->load(pair[1], deserializationMemo, m_area, index);
+		m_hasObjectives.at(index) = std::make_unique<HasObjectives>(index);
+		m_hasObjectives.at(index)->load(pair[1], deserializationMemo, m_area, index);
 	}
 	m_skillSet.resize(m_id.size());
 	for(const Json& pair : data["skillSet"])
 	{
 		ActorIndex index = pair[0].get<ActorIndex>();
-		m_skillSet.at(index()) = std::make_unique<SkillSet>();
-		m_skillSet.at(index())->load(pair[1]);
+		m_skillSet.at(index) = std::make_unique<SkillSet>();
+		m_skillSet.at(index)->load(pair[1]);
 	}
 	m_body.resize(m_id.size());
 	for(const Json& pair : data["body"])
 	{
 		ActorIndex index = pair[0].get<ActorIndex>();
-		m_body.at(index()) = std::make_unique<Body>(pair[1], deserializationMemo, index);
+		m_body.at(index) = std::make_unique<Body>(pair[1], deserializationMemo, index);
 	}
 	m_mustSleep.resize(m_id.size());
 	for(const Json& pair : data["mustSleep"])
 	{
 		ActorIndex index = pair[0].get<ActorIndex>();
-		m_mustSleep.at(index()) = std::make_unique<MustSleep>(m_area, pair[1], index);
+		m_mustSleep.at(index) = std::make_unique<MustSleep>(m_area, pair[1], index);
 	}
 	m_mustDrink.resize(m_id.size());
 	for(const Json& pair : data["mustDrink"])
 	{
 		ActorIndex index = pair[0].get<ActorIndex>();
-		m_mustDrink.at(index()) = std::make_unique<MustDrink>(m_area, pair[1], index, *m_species.at(index()));
+		m_mustDrink.at(index) = std::make_unique<MustDrink>(m_area, pair[1], index, *m_species.at(index));
 	}
 	m_mustEat.resize(m_id.size());
 	for(const Json& pair : data["mustEat"])
 	{
 		ActorIndex index = pair[0].get<ActorIndex>();
-		m_mustEat.at(index()) = std::make_unique<MustEat>(m_area, pair[1], index, *m_species.at(index()));
+		m_mustEat.at(index) = std::make_unique<MustEat>(m_area, pair[1], index, *m_species.at(index));
 	}
 	m_needsSafeTemperature.resize(m_id.size());
 	for(const Json& pair : data["needsSafeTemperature"])
 	{
 		ActorIndex index = pair[0].get<ActorIndex>();
-		m_needsSafeTemperature.at(index()) = std::make_unique<ActorNeedsSafeTemperature>(pair[1], index, m_area);
+		m_needsSafeTemperature.at(index) = std::make_unique<ActorNeedsSafeTemperature>(pair[1], index, m_area);
 	}
 	m_canGrow.resize(m_id.size());
 	for(const Json& pair : data["canGrow"])
 	{
 		ActorIndex index = pair[0].get<ActorIndex>();
-		m_canGrow.at(index()) = std::make_unique<CanGrow>(m_area, pair[1], index);
+		m_canGrow.at(index) = std::make_unique<CanGrow>(m_area, pair[1], index);
 	}
 	m_equipmentSet.resize(m_id.size());
 	for(const Json& pair : data["equipmentSet"])
 	{
 		ActorIndex index = pair[0].get<ActorIndex>();
-		m_equipmentSet.at(index()) = std::make_unique<EquipmentSet>(m_area, pair[1]);
+		m_equipmentSet.at(index) = std::make_unique<EquipmentSet>(m_area, pair[1]);
 	}
 	m_canReserve.resize(m_id.size());
 	for(const Json& pair : data["canReserve"])
 	{
 		ActorIndex index = pair[0].get<ActorIndex>();
-		m_canReserve.at(index()) = std::make_unique<CanReserve>(m_faction.at(index()));
-		m_canReserve.at(index())->load(pair[1], deserializationMemo, m_area);
+		m_canReserve.at(index) = std::make_unique<CanReserve>(m_faction.at(index));
+		m_canReserve.at(index)->load(pair[1], deserializationMemo, m_area);
 	}
 	m_hasUniform.resize(m_id.size());
 	for(const Json& pair : data["hasUniform"])
 	{
 		ActorIndex index = pair[0].get<ActorIndex>();
-		m_hasUniform.at(index()) = std::make_unique<ActorHasUniform>();
-		m_hasUniform.at(index())->load(m_area, pair[1]);
+		m_hasUniform.at(index) = std::make_unique<ActorHasUniform>();
+		m_hasUniform.at(index)->load(m_area, pair[1]);
 	}
 	m_pathIter.resize(m_id.size());
 	for(const Json& pair : data["pathIter"])
 	{
 		ActorIndex index = pair[0].get<ActorIndex>();
-		m_pathIter.at(index()) = m_path.at(index()).begin() + pair[1].get<int>();
+		m_pathIter.at(index) = m_path.at(index).begin() + pair[1].get<int>();
 	}
 }
 void to_json(Json& data, const std::unique_ptr<CanReserve>& canReserve) { data = canReserve->toJson(); }
@@ -415,122 +417,123 @@ Json Actors::toJson() const
 		{"moveRetries", m_moveRetries}
 	};
 	for(auto index : getAll())
-		output["pathIter"].push_back(m_pathIter.at(index()) - m_path.at(index()).begin());
+		output["pathIter"].push_back(m_pathIter.at(index) - m_path.at(index).begin());
 	return output;
 }
 void Actors::resize(HasShapeIndex newSize)
 {
-	m_referenceTarget.resize(newSize());
-	m_canReserve.resize(newSize());
-	m_hasUniform.resize(newSize());
-	m_equipmentSet.resize(newSize());
-	m_id.resize(newSize());
-	m_name.resize(newSize());
-	m_species.resize(newSize());
-	m_project.resize(newSize());
-	m_birthStep.resize(newSize());
-	m_causeOfDeath.resize(newSize());
-	m_unencomberedCarryMass.resize(newSize());
-	m_attributes.resize(newSize());
-	m_hasObjectives.resize(newSize());
-	m_body.resize(newSize());
-	m_mustSleep.resize(newSize());
-	m_mustDrink.resize(newSize());
-	m_canGrow.resize(newSize());
-	m_needsSafeTemperature.resize(newSize());
-	m_skillSet.resize(newSize());
-	m_carrying.resize(newSize());
-	m_stamina.resize(newSize());
-	m_canSee.resize(newSize());
-	m_visionRange.resize(newSize());
-	m_hasVisionFacade.resize(newSize());
-	m_coolDownEvent.resize(newSize());
-	m_getIntoAttackPositionPathRequest.resize(newSize());
-	m_meleeAttackTable.resize(newSize());
-	m_targetedBy.resize(newSize());
-	m_target.resize(newSize());
-	m_onMissCoolDownMelee.resize(newSize());
-	m_maxMeleeRange.resize(newSize());
-	m_maxRange.resize(newSize());
-	m_coolDownDurationModifier.resize(newSize());
-	m_combatScore.resize(newSize());
-	m_moveEvent.resize(newSize());
-	m_pathRequest.resize(newSize());
-	m_path.resize(newSize());
-	m_pathIter.resize(newSize());
-	m_destination.resize(newSize());
-	m_speedIndividual.resize(newSize());
-	m_speedActual.resize(newSize());
-	m_moveRetries.resize(newSize());
+	ActorIndex actor = newSize.toActor();
+	m_referenceTarget.resize(actor);
+	m_canReserve.resize(actor);
+	m_hasUniform.resize(actor);
+	m_equipmentSet.resize(actor);
+	m_id.resize(actor);
+	m_name.resize(actor);
+	m_species.resize(actor);
+	m_project.resize(actor);
+	m_birthStep.resize(actor);
+	m_causeOfDeath.resize(actor);
+	m_unencomberedCarryMass.resize(actor);
+	m_attributes.resize(actor);
+	m_hasObjectives.resize(actor);
+	m_body.resize(actor);
+	m_mustSleep.resize(actor);
+	m_mustDrink.resize(actor);
+	m_canGrow.resize(actor);
+	m_needsSafeTemperature.resize(actor);
+	m_skillSet.resize(actor);
+	m_carrying.resize(actor);
+	m_stamina.resize(actor);
+	m_canSee.resize(actor);
+	m_visionRange.resize(actor);
+	m_hasVisionFacade.resize(actor);
+	m_coolDownEvent.resize(actor);
+	m_getIntoAttackPositionPathRequest.resize(actor);
+	m_meleeAttackTable.resize(actor);
+	m_targetedBy.resize(actor);
+	m_target.resize(actor);
+	m_onMissCoolDownMelee.resize(actor);
+	m_maxMeleeRange.resize(actor);
+	m_maxRange.resize(actor);
+	m_coolDownDurationModifier.resize(actor);
+	m_combatScore.resize(actor);
+	m_moveEvent.resize(actor);
+	m_pathRequest.resize(actor);
+	m_path.resize(actor);
+	m_pathIter.resize(actor);
+	m_destination.resize(actor);
+	m_speedIndividual.resize(actor);
+	m_speedActual.resize(actor);
+	m_moveRetries.resize(actor);
 }
 void Actors::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 {
-	m_referenceTarget.at(newIndex()) = std::move(m_referenceTarget.at(oldIndex()));
-	m_canReserve.at(newIndex()) = std::move(m_canReserve.at(oldIndex()));
-	m_hasUniform.at(newIndex()) = std::move(m_hasUniform.at(oldIndex()));
-	m_equipmentSet.at(newIndex()) = std::move(m_equipmentSet.at(oldIndex()));
-	m_id.at(newIndex()) = m_id.at(oldIndex());
-	m_name.at(newIndex()) = m_name.at(oldIndex());
-	m_species.at(newIndex()) = m_species.at(oldIndex());
-	m_project.at(newIndex()) = m_project.at(oldIndex());
-	m_birthStep.at(newIndex()) = m_birthStep.at(oldIndex());
-	m_causeOfDeath.at(newIndex()) = m_causeOfDeath.at(oldIndex());
-	m_unencomberedCarryMass.at(newIndex()) = m_unencomberedCarryMass.at(oldIndex());
-	m_attributes.at(newIndex()) = std::move(m_attributes.at(oldIndex()));
-	m_hasObjectives.at(newIndex()) = std::move(m_hasObjectives.at(oldIndex()));
-	m_body.at(newIndex()) = std::move(m_body.at(oldIndex()));
-	m_mustSleep.at(newIndex()) = std::move(m_mustSleep.at(oldIndex()));
-	m_mustDrink.at(newIndex()) = std::move(m_mustDrink.at(oldIndex()));
-	m_canGrow.at(newIndex()) = std::move(m_canGrow.at(oldIndex()));
-	m_needsSafeTemperature.at(newIndex()) = std::move(m_needsSafeTemperature.at(oldIndex()));
-	m_skillSet.at(newIndex()) = std::move(m_skillSet.at(oldIndex()));
-	m_carrying.at(newIndex()) = m_carrying.at(oldIndex());
-	m_stamina.at(newIndex()) = m_stamina.at(oldIndex());
-	m_canSee.at(newIndex()) = m_canSee.at(oldIndex());
-	m_visionRange.at(newIndex()) = m_visionRange.at(oldIndex());
-	m_hasVisionFacade.at(newIndex()) = m_hasVisionFacade.at(oldIndex());
-	m_coolDownEvent.moveIndex(oldIndex(), newIndex());
-	m_getIntoAttackPositionPathRequest.at(newIndex()) = std::move(m_getIntoAttackPositionPathRequest.at(oldIndex()));
-	m_meleeAttackTable.at(newIndex()) = m_meleeAttackTable.at(oldIndex());
-	m_targetedBy.at(newIndex()) = m_targetedBy.at(oldIndex());
-	m_target.at(newIndex()) = m_target.at(oldIndex());
-	m_onMissCoolDownMelee.at(newIndex()) = m_onMissCoolDownMelee.at(oldIndex());
-	m_maxMeleeRange.at(newIndex()) = m_maxMeleeRange.at(oldIndex());
-	m_maxRange.at(newIndex()) = m_maxRange.at(oldIndex());
-	m_coolDownDurationModifier.at(newIndex()) = m_coolDownDurationModifier.at(oldIndex());
-	m_combatScore.at(newIndex()) = m_combatScore.at(oldIndex());
-	m_moveEvent.moveIndex(oldIndex(), newIndex());
-	m_pathRequest.at(newIndex()) = std::move(m_pathRequest.at(oldIndex()));
-	m_path.at(newIndex()) = m_path.at(oldIndex());
-	m_pathIter.at(newIndex()) = m_pathIter.at(oldIndex());
-	m_destination.at(newIndex()) = m_destination.at(oldIndex());
-	m_speedIndividual.at(newIndex()) = m_speedIndividual.at(oldIndex());
-	m_speedActual.at(newIndex()) = m_speedActual.at(oldIndex());
-	m_moveRetries.at(newIndex()) = m_moveRetries.at(oldIndex());
+	ActorIndex newActorIndex = newIndex.toActor();
+	ActorIndex oldActorIndex = oldIndex.toActor();
+	m_referenceTarget.at(newActorIndex) = std::move(m_referenceTarget.at(oldActorIndex));
+	m_canReserve.at(newActorIndex) = std::move(m_canReserve.at(oldActorIndex));
+	m_hasUniform.at(newActorIndex) = std::move(m_hasUniform.at(oldActorIndex));
+	m_equipmentSet.at(newActorIndex) = std::move(m_equipmentSet.at(oldActorIndex));
+	m_id.at(newActorIndex) = m_id.at(oldActorIndex);
+	m_name.at(newActorIndex) = m_name.at(oldActorIndex);
+	m_species.at(newActorIndex) = m_species.at(oldActorIndex);
+	m_project.at(newActorIndex) = m_project.at(oldActorIndex);
+	m_birthStep.at(newActorIndex) = m_birthStep.at(oldActorIndex);
+	m_causeOfDeath.at(newActorIndex) = m_causeOfDeath.at(oldActorIndex);
+	m_unencomberedCarryMass.at(newActorIndex) = m_unencomberedCarryMass.at(oldActorIndex);
+	m_attributes.at(newActorIndex) = std::move(m_attributes.at(oldActorIndex));
+	m_hasObjectives.at(newActorIndex) = std::move(m_hasObjectives.at(oldActorIndex));
+	m_body.at(newActorIndex) = std::move(m_body.at(oldActorIndex));
+	m_mustSleep.at(newActorIndex) = std::move(m_mustSleep.at(oldActorIndex));
+	m_mustDrink.at(newActorIndex) = std::move(m_mustDrink.at(oldActorIndex));
+	m_canGrow.at(newActorIndex) = std::move(m_canGrow.at(oldActorIndex));
+	m_needsSafeTemperature.at(newActorIndex) = std::move(m_needsSafeTemperature.at(oldActorIndex));
+	m_skillSet.at(newActorIndex) = std::move(m_skillSet.at(oldActorIndex));
+	m_carrying.at(newActorIndex) = m_carrying.at(oldActorIndex);
+	m_stamina.at(newActorIndex) = m_stamina.at(oldActorIndex);
+	m_canSee.at(newActorIndex) = m_canSee.at(oldActorIndex);
+	m_visionRange.at(newActorIndex) = m_visionRange.at(oldActorIndex);
+	m_hasVisionFacade.at(newActorIndex) = m_hasVisionFacade.at(oldActorIndex);
+	m_coolDownEvent.moveIndex(oldActorIndex, newActorIndex);
+	m_getIntoAttackPositionPathRequest.at(newActorIndex) = std::move(m_getIntoAttackPositionPathRequest.at(oldActorIndex));
+	m_meleeAttackTable.at(newActorIndex) = m_meleeAttackTable.at(oldActorIndex);
+	m_targetedBy.at(newActorIndex) = m_targetedBy.at(oldActorIndex);
+	m_target.at(newActorIndex) = m_target.at(oldActorIndex);
+	m_onMissCoolDownMelee.at(newActorIndex) = m_onMissCoolDownMelee.at(oldActorIndex);
+	m_maxMeleeRange.at(newActorIndex) = m_maxMeleeRange.at(oldActorIndex);
+	m_maxRange.at(newActorIndex) = m_maxRange.at(oldActorIndex);
+	m_coolDownDurationModifier.at(newActorIndex) = m_coolDownDurationModifier.at(oldActorIndex);
+	m_combatScore.at(newActorIndex) = m_combatScore.at(oldActorIndex);
+	m_moveEvent.moveIndex(oldActorIndex, newActorIndex);
+	m_pathRequest.at(newActorIndex) = std::move(m_pathRequest.at(oldActorIndex));
+	m_path.at(newActorIndex) = m_path.at(oldActorIndex);
+	m_pathIter.at(newActorIndex) = m_pathIter.at(oldActorIndex);
+	m_destination.at(newActorIndex) = m_destination.at(oldActorIndex);
+	m_speedIndividual.at(newActorIndex) = m_speedIndividual.at(oldActorIndex);
+	m_speedActual.at(newActorIndex) = m_speedActual.at(oldActorIndex);
+	m_moveRetries.at(newActorIndex) = m_moveRetries.at(oldActorIndex);
 	// Update references.
-	m_referenceTarget.at(newIndex())->index = newIndex();
-	//TODO: EquipmentSet should only exist when it is holding something.
-	m_equipmentSet.at(newIndex())->updateCarrierIndexForContents(m_area, newIndex());
-	if(m_carrying.at(newIndex()).exists())
+	m_referenceTarget.at(newActorIndex)->index = newActorIndex;
+	if(m_carrying.at(newActorIndex).exists())
 	{
-		ActorOrItemIndex carrying = m_carrying.at(newIndex());
+		ActorOrItemIndex carrying = m_carrying.at(newActorIndex);
 		if(carrying.isActor())
 			m_area.getActors().updateCarrierIndex(carrying.get(), newIndex);
 		else
 			m_area.getItems().updateCarrierIndex(carrying.get(), newIndex);
 	}
-	m_hasObjectives.at(newIndex())->updateActorIndex(newIndex());
-	if(m_pathRequest.at(newIndex()) != nullptr)
-		m_pathRequest.at(newIndex())->updateActorIndex(newIndex());
-	if(m_getIntoAttackPositionPathRequest.at(newIndex()) != nullptr)
-		m_getIntoAttackPositionPathRequest.at(newIndex())->updateActorIndex(newIndex());
-	for(ActorIndex actor : m_targetedBy.at(newIndex()))
-		m_target.at(actor()) = newIndex();
-	if(!m_hasVisionFacade.at(newIndex()).empty())
-		m_hasVisionFacade.at(newIndex()).updateActorIndex(newIndex());
+	m_hasObjectives.at(newActorIndex)->updateActorIndex(newActorIndex);
+	if(m_pathRequest.at(newActorIndex) != nullptr)
+		m_pathRequest.at(newActorIndex)->updateActorIndex(newActorIndex);
+	if(m_getIntoAttackPositionPathRequest.at(newActorIndex) != nullptr)
+		m_getIntoAttackPositionPathRequest.at(newActorIndex)->updateActorIndex(newActorIndex);
+	for(ActorIndex actor : m_targetedBy.at(newActorIndex))
+		m_target.at(actor) = newActorIndex;
+	if(!m_hasVisionFacade.at(newActorIndex).empty())
+		m_hasVisionFacade.at(newActorIndex).updateActorIndex(newActorIndex);
 	Blocks& blocks = m_area.getBlocks();
-	for(BlockIndex block : m_blocks.at(newIndex()))
-		blocks.actor_updateIndex(block, oldIndex(), newIndex());
+	for(BlockIndex block : m_blocks.at(newActorIndex))
+		blocks.actor_updateIndex(block, oldActorIndex, newActorIndex);
 }
 ActorIndices Actors::getAll() const
 {
@@ -543,58 +546,58 @@ ActorIndices Actors::getAll() const
 }
 void Actors::onChangeAmbiantSurfaceTemperature()
 {
-	for(auto index : m_onSurface)
-		m_needsSafeTemperature.at(index())->onChange(m_area);
+	for(auto index : getOnSurface())
+		m_needsSafeTemperature.at(index.toActor())->onChange(m_area);
 }
 ActorIndex Actors::create(ActorParamaters params)
 {
-	ActorIndex index = getNextIndex()();
+	ActorIndex index = getNextIndex().toActor();
 	bool isStatic = false;
 	Portables::create(index, params.species.moveType, params.species.shapeForPercentGrown(params.getPercentGrown(m_area.m_simulation)), params.location, params.facing, isStatic);
 	Simulation& s = m_area.m_simulation;
-	m_referenceTarget.at(index())->index = index;
-	m_id.at(index()) = params.getId(s);
-	m_name.at(index()) = params.getName(s);
-	m_species.at(index()) = &params.species;
-	m_project.at(index()) = nullptr;
-	m_birthStep.at(index()) = params.getBirthStep(s);
-	m_causeOfDeath.at(index()) = CauseOfDeath::none;
-	m_unencomberedCarryMass.at(index()) = 0;
-	m_attributes.at(index()) = std::make_unique<Attributes>(params.species, params.getPercentGrown(s));
-	m_hasObjectives.at(index()) = std::make_unique<HasObjectives>(index);
-	m_body.at(index()) = std::make_unique<Body>(m_area, index);
-	m_mustSleep.at(index()) = std::make_unique<MustSleep>(m_area, index);
-	m_mustDrink.at(index()) = std::make_unique<MustDrink>(m_area, index);
-	m_canGrow.at(index()) = std::make_unique<CanGrow>(m_area, index, params.getPercentGrown(s));
-	m_needsSafeTemperature.at(index()) = std::make_unique<ActorNeedsSafeTemperature>(m_area, index);
-	m_skillSet.at(index()) = std::make_unique<SkillSet>();
+	m_referenceTarget.at(index)->index = index;
+	m_id.at(index) = params.getId(s);
+	m_name.at(index) = params.getName(s);
+	m_species.at(index) = &params.species;
+	m_project.at(index) = nullptr;
+	m_birthStep.at(index) = params.getBirthStep(s);
+	m_causeOfDeath.at(index) = CauseOfDeath::none;
+	m_unencomberedCarryMass.at(index) = Mass::null();
+	m_attributes.at(index) = std::make_unique<Attributes>(params.species, params.getPercentGrown(s));
+	m_hasObjectives.at(index) = std::make_unique<HasObjectives>(index);
+	m_body.at(index) = std::make_unique<Body>(m_area, index);
+	m_mustSleep.at(index) = std::make_unique<MustSleep>(m_area, index);
+	m_mustDrink.at(index) = std::make_unique<MustDrink>(m_area, index);
+	m_canGrow.at(index) = std::make_unique<CanGrow>(m_area, index, params.getPercentGrown(s));
+	m_needsSafeTemperature.at(index) = std::make_unique<ActorNeedsSafeTemperature>(m_area, index);
+	m_skillSet.at(index) = std::make_unique<SkillSet>();
 	// CanPickUp.
-	m_carrying.at(index()).clear();
+	m_carrying.at(index).clear();
 	// Stamina.
-	m_stamina.at(index()) = 0;
+	m_stamina.at(index) = 0;
 	// Vision.
-	assert(m_canSee.at(index()).empty());
-	m_visionRange.at(index()) = params.species.visionRange;
-	assert(m_hasVisionFacade.at(index()).empty());
+	assert(m_canSee.at(index).empty());
+	m_visionRange.at(index) = params.species.visionRange;
+	assert(m_hasVisionFacade.at(index).empty());
 	// Combat.
 	assert(!m_coolDownEvent.exists(index));
-	assert(m_meleeAttackTable.at(index()).empty());
-	assert(m_targetedBy.at(index()).empty());
-	m_target.at(index()).clear();
-	m_onMissCoolDownMelee.at(index()) = 0;
-	m_maxMeleeRange.at(index()) = 0;
-	m_maxRange.at(index()) = 0;
-	m_coolDownDurationModifier.at(index()) = 0;
-	m_combatScore.at(index()) = 0;
+	assert(m_meleeAttackTable.at(index).empty());
+	assert(m_targetedBy.at(index).empty());
+	m_target.at(index).clear();
+	m_onMissCoolDownMelee.at(index) = Step::null();
+	m_maxMeleeRange.at(index) = DistanceInBlocksFractional::null();
+	m_maxRange.at(index) = DistanceInBlocksFractional::null();
+	m_coolDownDurationModifier.at(index) = 0;
+	m_combatScore.at(index) = CombatScore::null();
 	// Move.
 	assert(!m_moveEvent.exists(index));
-	assert(m_pathRequest.at(index()) == nullptr);
-	assert(m_path.at(index()).empty());
-	m_destination.at(index()).clear();
-	m_speedIndividual.at(index()) = 0;
-	m_speedActual.at(index()) = 0;
-	m_moveRetries.at(index()) = 0;
-	s.m_actors.registerActor(m_id.at(index()), *this, index);
+	assert(m_pathRequest.at(index) == nullptr);
+	assert(m_path.at(index).empty());
+	m_destination.at(index).clear();
+	m_speedIndividual.at(index) = Speed::create(0);
+	m_speedActual.at(index) = Speed::create(0);
+	m_moveRetries.at(index) = 0;
+	s.m_actors.registerActor(m_id.at(index), *this, index);
 	sharedConstructor(index);
 	scheduleNeeds(index);
 	if(isSentient(index))
@@ -607,70 +610,87 @@ void Actors::sharedConstructor(ActorIndex index)
 {
 	combat_update(index);
 	move_updateIndividualSpeed(index);
-	m_body.at(index())->initalize(m_area);
-	m_mustDrink.at(index())->setFluidType(m_species.at(index())->fluidType);
+	m_body.at(index)->initalize(m_area);
+	m_mustDrink.at(index)->setFluidType(m_species.at(index)->fluidType);
 }
 void Actors::scheduleNeeds(ActorIndex index)
 {
-	m_mustSleep.at(index())->scheduleTiredEvent(m_area);
-	m_mustDrink.at(index())->scheduleDrinkEvent(m_area);
-	m_mustEat.at(index())->scheduleHungerEvent(m_area);
-	m_canGrow.at(index())->updateGrowingStatus(m_area);
+	m_mustSleep.at(index)->scheduleTiredEvent(m_area);
+	m_mustDrink.at(index)->scheduleDrinkEvent(m_area);
+	m_mustEat.at(index)->scheduleHungerEvent(m_area);
+	m_canGrow.at(index)->updateGrowingStatus(m_area);
+}
+void Actors::setShape(ActorIndex index, const Shape& shape)
+{
+	BlockIndex location = m_location.at(index);
+	if(location.exists())
+		exit(index);
+	m_shape.at(index) = &shape;
+	if(location.exists())
+		setLocation(index, location);
 }
 void Actors::setLocation(ActorIndex index, BlockIndex block)
 {
-	assert(m_location.at(index()).exists());
-	Facing facing = m_area.getBlocks().facingToSetWhenEnteringFrom(block, m_location.at(index()));
+	assert(m_location.at(index).exists());
+	Facing facing = m_area.getBlocks().facingToSetWhenEnteringFrom(block, m_location.at(index));
 	setLocationAndFacing(index, block, facing);
 }
 void Actors::setLocationAndFacing(ActorIndex index, BlockIndex block, Facing facing)
 {
-	if(m_location.at(index()).exists())
+	if(m_location.at(index).exists())
 		exit(index);
 	Blocks& blocks = m_area.getBlocks();
-	for(auto [x, y, z, v] : m_shape.at(index())->makeOccupiedPositionsWithFacing(facing))
+	for(auto [x, y, z, v] : m_shape.at(index)->makeOccupiedPositionsWithFacing(facing))
 	{
 		BlockIndex occupied = blocks.offset(block, x, y, z);
-		blocks.actor_record(occupied, index, v);
+		blocks.actor_record(occupied, index, CollisionVolume::create(v));
 	}
+	if(blocks.isOnSurface(block))
+		m_onSurface.add(index);
+	else
+		m_onSurface.remove(index);
 }
 void Actors::exit(ActorIndex index)
 {
-	assert(m_location.at(index()).exists());
-	BlockIndex location = m_location.at(index());
+	assert(m_location.at(index).exists());
+	BlockIndex location = m_location.at(index);
 	auto& blocks = m_area.getBlocks();
-	for(auto [x, y, z, v] : m_shape.at(index())->makeOccupiedPositionsWithFacing(m_facing.at(index())))
+	for(auto [x, y, z, v] : m_shape.at(index)->makeOccupiedPositionsWithFacing(m_facing.at(index)))
 	{
 		BlockIndex occupied = blocks.offset(location, x, y, z);
 		blocks.actor_erase(occupied, index);
 	}
-	m_location.at(index()).clear();
+	m_location.at(index).clear();
+	if(blocks.isOnSurface(location))
+		m_onSurface.remove(index);
 }
 void Actors::resetNeeds(ActorIndex index)
 {
-	m_mustSleep.at(index())->notTired(m_area);
-	m_mustDrink.at(index())->notThirsty(m_area);
-	m_mustEat.at(index())->notHungry(m_area);
+	m_mustSleep.at(index)->notTired(m_area);
+	m_mustDrink.at(index)->notThirsty(m_area);
+	m_mustEat.at(index)->notHungry(m_area);
 }
 void Actors::removeMassFromCorpse(ActorIndex index, Mass mass)
 {
 	assert(!isAlive(index));
-	assert(mass <= m_attributes.at(index())->getMass());
-	m_attributes.at(index())->removeMass(mass);
+	assert(mass <= m_attributes.at(index)->getMass());
+	m_attributes.at(index)->removeMass(mass);
 }
-bool Actors::isEnemy(ActorIndex index, ActorIndex other) const { return getFaction(index)->enemies.contains(m_faction.at(other())); }
-bool Actors::isAlly(ActorIndex index, ActorIndex other) const { return getFaction(index)->allies.contains(m_faction.at(other())); }
+bool Actors::isEnemy(ActorIndex index, ActorIndex other) const { return getFaction(index)->enemies.contains(m_faction.at(other)); }
+bool Actors::isAlly(ActorIndex index, ActorIndex other) const { return getFaction(index)->allies.contains(m_faction.at(other)); }
+//TODO: Zombies are not sentient.
+bool Actors::isSentient(ActorIndex index) const { return m_species.at(index)->sentient; }
 void Actors::die(ActorIndex index, CauseOfDeath causeOfDeath)
 {
-	m_causeOfDeath.at(index()) = causeOfDeath;
+	m_causeOfDeath.at(index) = causeOfDeath;
 	combat_onDeath(index);
 	move_onDeath(index);
-	m_mustDrink.at(index())->onDeath();
-	m_mustEat.at(index())->onDeath();
-	m_mustSleep.at(index())->onDeath();
-	if(m_project.at(index()) != nullptr)
-		m_project.at(index())->removeWorker(index);
-	if(m_location.at(index()).exists())
+	m_mustDrink.at(index)->onDeath();
+	m_mustEat.at(index)->onDeath();
+	m_mustSleep.at(index)->onDeath();
+	if(m_project.at(index) != nullptr)
+		m_project.at(index)->removeWorker(index);
+	if(m_location.at(index).exists())
 		setStatic(index, true);
 	m_area.m_visionFacadeBuckets.remove(index);
 }
@@ -686,108 +706,108 @@ void Actors::leaveArea(ActorIndex index)
 }
 void Actors::wait(ActorIndex index, Step duration)
 {
-	m_hasObjectives.at(index())->addTaskToStart(m_area, std::make_unique<WaitObjective>(m_area, duration, index));
+	m_hasObjectives.at(index)->addTaskToStart(m_area, std::make_unique<WaitObjective>(m_area, duration, index));
 }
 void Actors::takeHit(ActorIndex index, Hit& hit, BodyPart& bodyPart)
 {
-	m_equipmentSet.at(index())->modifyImpact(m_area, hit, bodyPart.bodyPartType);
-	m_body.at(index())->getHitDepth(hit, bodyPart);
+	m_equipmentSet.at(index)->modifyImpact(m_area, hit, bodyPart.bodyPartType);
+	m_body.at(index)->getHitDepth(hit, bodyPart);
 	if(hit.depth != 0)
-		m_body.at(index())->addWound(m_area, bodyPart, hit);
+		m_body.at(index)->addWound(m_area, bodyPart, hit);
 }
 void Actors::setFaction(ActorIndex index, FactionId faction)
 {
-	m_faction.at(index()) = faction;
-	if(faction == FACTION_ID_MAX)
-		m_canReserve.at(index()) = nullptr;
+	m_faction.at(index) = faction;
+	if(faction.empty())
+		m_canReserve.at(index) = nullptr;
 	else
-		m_canReserve.at(index())->setFaction(faction);
+		m_canReserve.at(index)->setFaction(faction);
 }
 Mass Actors::getMass(ActorIndex index) const
 {
-	return m_attributes.at(index())->getMass() + m_equipmentSet.at(index())->getMass() + canPickUp_getMass(index);
+	return m_attributes.at(index)->getMass() + m_equipmentSet.at(index)->getMass() + canPickUp_getMass(index);
 }
 Volume Actors::getVolume(ActorIndex index) const
 {
-	return m_body.at(index())->getVolume(m_area);
+	return m_body.at(index)->getVolume(m_area);
 }
 Quantity Actors::getAgeInYears(ActorIndex index) const
 {
 	DateTime now(m_area.m_simulation.m_step);
-	DateTime birthDate(m_birthStep.at(index()));
-	Quantity differenceYears = now.year - birthDate.year;
+	DateTime birthDate(m_birthStep.at(index));
+	Quantity differenceYears = Quantity::create(now.year - birthDate.year);
 	if(now.day > birthDate.day)
 		++differenceYears;
 	return differenceYears;
 }
 Step Actors::getAge(ActorIndex index) const
 {
-	return m_area.m_simulation.m_step - m_birthStep.at(index());
+	return m_area.m_simulation.m_step - m_birthStep.at(index);
 }
 std::wstring Actors::getActionDescription(ActorIndex index) const
 {
-	if(m_hasObjectives.at(index())->hasCurrent())
-		return util::stringToWideString(const_cast<HasObjectives&>(*m_hasObjectives.at(index()).get()).getCurrent().name());
+	if(m_hasObjectives.at(index)->hasCurrent())
+		return util::stringToWideString(const_cast<HasObjectives&>(*m_hasObjectives.at(index).get()).getCurrent().name());
 	return L"no action";
 }
 void Actors::reserveAllBlocksAtLocationAndFacing(ActorIndex index, const BlockIndex location, Facing facing)
 {
-	if(m_faction.at(index()) == FACTION_ID_MAX)
+	if(m_faction.at(index).empty())
 		return;
 	for(BlockIndex occupied : getBlocksWhichWouldBeOccupiedAtLocationAndFacing(index, location, facing))
-		m_area.getBlocks().reserve(occupied, *m_canReserve.at(index()));
+		m_area.getBlocks().reserve(occupied, *m_canReserve.at(index));
 }
 void Actors::unreserveAllBlocksAtLocationAndFacing(ActorIndex index, const BlockIndex location, Facing facing)
 {
-	if(m_faction.at(index()) == FACTION_ID_MAX)
+	if(m_faction.at(index).empty())
 		return;
 	for(BlockIndex occupied : getBlocksWhichWouldBeOccupiedAtLocationAndFacing(index, location, facing))
-		m_area.getBlocks().unreserve(occupied, *m_canReserve.at(index()));
+		m_area.getBlocks().unreserve(occupied, *m_canReserve.at(index));
 }
 void Actors::setBirthStep(ActorIndex index, Step step)
 {
-	m_birthStep.at(index()) = step;
-	m_canGrow.at(index())->updateGrowingStatus(m_area);
+	m_birthStep.at(index) = step;
+	m_canGrow.at(index)->updateGrowingStatus(m_area);
 }
-Percent Actors::getPercentGrown(ActorIndex index) const { return m_canGrow.at(index())->growthPercent(); }
+Percent Actors::getPercentGrown(ActorIndex index) const { return m_canGrow.at(index)->growthPercent(); }
 void Actors::log(ActorIndex index) const
 {
-	std::wcout << m_name.at(index());
-	std::cout << "(" << m_species.at(index())->name << ")";
+	std::wcout << m_name.at(index);
+	std::cout << "(" << m_species.at(index)->name << ")";
 	Portables::log(index);
 	std::cout << std::endl;
 }
 void Actors::satisfyNeeds(ActorIndex index)
 {
 	// Wake up if asleep.
-	if(!m_mustSleep.at(index())->isAwake())
-		m_mustSleep.at(index())->wakeUp(m_area);
+	if(!m_mustSleep.at(index)->isAwake())
+		m_mustSleep.at(index)->wakeUp(m_area);
 	else
-		m_mustSleep.at(index())->notTired(m_area);
+		m_mustSleep.at(index)->notTired(m_area);
 	// Discard drink objective if exists.
-	if(m_mustDrink.at(index())->getVolumeFluidRequested() != 0)
-		m_mustDrink.at(index())->drink(m_area, m_mustDrink.at(index())->getVolumeFluidRequested());
+	if(m_mustDrink.at(index)->getVolumeFluidRequested() != 0)
+		m_mustDrink.at(index)->drink(m_area, m_mustDrink.at(index)->getVolumeFluidRequested());
 	// Discard eat objective if exists.
-	if(m_mustEat.at(index())->getMassFoodRequested() != 0)
-		m_mustEat.at(index())->eat(m_area, m_mustEat.at(index())->getMassFoodRequested());
+	if(m_mustEat.at(index)->getMassFoodRequested() != 0)
+		m_mustEat.at(index)->eat(m_area, m_mustEat.at(index)->getMassFoodRequested());
 }
 // Sleep.
-void Actors::sleep_do(ActorIndex index) { m_mustSleep.at(index())->sleep(m_area); }
-void Actors::sleep_wakeUp(ActorIndex index){ m_mustSleep.at(index())->wakeUp(m_area); }
-void Actors::sleep_wakeUpEarly(ActorIndex index){ m_mustSleep.at(index())->wakeUpEarly(m_area); }
-void Actors::sleep_setSpot(ActorIndex index, BlockIndex location) { m_mustSleep.at(index())->setLocation(location); }
-void Actors::sleep_makeTired(ActorIndex index) { m_mustSleep.at(index())->tired(m_area); }
-bool Actors::sleep_isAwake(ActorIndex index) const { return m_mustSleep.at(index())->isAwake(); }
-Percent Actors::sleep_getPercentDoneSleeping(ActorIndex index) const { return m_mustSleep.at(index())->getSleepPercent(); }
-Percent Actors::sleep_getPercentTired(ActorIndex index) const { return m_mustSleep.at(index())->getTiredPercent(); }
-BlockIndex Actors::sleep_getSpot(ActorIndex index) const { return m_mustSleep.at(index())->getLocation(); }
-bool Actors::sleep_hasTiredEvent(ActorIndex index) const { return m_mustSleep.at(index())->hasTiredEvent(); }
+void Actors::sleep_do(ActorIndex index) { m_mustSleep.at(index)->sleep(m_area); }
+void Actors::sleep_wakeUp(ActorIndex index){ m_mustSleep.at(index)->wakeUp(m_area); }
+void Actors::sleep_wakeUpEarly(ActorIndex index){ m_mustSleep.at(index)->wakeUpEarly(m_area); }
+void Actors::sleep_setSpot(ActorIndex index, BlockIndex location) { m_mustSleep.at(index)->setLocation(location); }
+void Actors::sleep_makeTired(ActorIndex index) { m_mustSleep.at(index)->tired(m_area); }
+bool Actors::sleep_isAwake(ActorIndex index) const { return m_mustSleep.at(index)->isAwake(); }
+Percent Actors::sleep_getPercentDoneSleeping(ActorIndex index) const { return m_mustSleep.at(index)->getSleepPercent(); }
+Percent Actors::sleep_getPercentTired(ActorIndex index) const { return m_mustSleep.at(index)->getTiredPercent(); }
+BlockIndex Actors::sleep_getSpot(ActorIndex index) const { return m_mustSleep.at(index)->getLocation(); }
+bool Actors::sleep_hasTiredEvent(ActorIndex index) const { return m_mustSleep.at(index)->hasTiredEvent(); }
 // Attributes.
-uint32_t Actors::getStrength(ActorIndex index) const { return m_attributes.at(index())->getStrength(); }
-uint32_t Actors::getDextarity(ActorIndex index) const { return m_attributes.at(index())->getDextarity(); }
-uint32_t Actors::getAgility(ActorIndex index) const { return m_attributes.at(index())->getAgility(); }
+AttributeLevel Actors::getStrength(ActorIndex index) const { return m_attributes.at(index)->getStrength(); }
+AttributeLevel Actors::getDextarity(ActorIndex index) const { return m_attributes.at(index)->getDextarity(); }
+AttributeLevel Actors::getAgility(ActorIndex index) const { return m_attributes.at(index)->getAgility(); }
 // Skills.
-uint32_t Actors::skill_getLevel(ActorIndex index, const SkillType& skillType) const { return m_skillSet.at(index())->get(skillType); }
+SkillLevel Actors::skill_getLevel(ActorIndex index, const SkillType& skillType) const { return m_skillSet.at(index)->get(skillType); }
 // CoolDownEvent.
 AttackCoolDownEvent::AttackCoolDownEvent(Simulation& simulation, const Json& data) :
 	ScheduledEvent(simulation, data["delay"].get<Step>(), data["start"].get<Step>())

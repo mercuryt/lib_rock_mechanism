@@ -2,15 +2,11 @@
 #include "actors/actors.h"
 #include "area.h"
 #include "blocks/blocks.h"
-#include "index.h"
 #include "items/items.h"
-#include "json.h"
-#include "config.h"
 #include "locationBuckets.h"
 #include "plants.h"
 #include "simulation.h"
 #include "types.h"
-#include "util.h"
 #include <cassert>
 #include <cstdint>
 #include <iostream>
@@ -33,12 +29,12 @@ void HasShapes::create(HasShapeIndex index, const Shape& shape, BlockIndex locat
 }
 void HasShapes::resize(HasShapeIndex newSize)
 {
-	m_shape.resize(newSize());
-	m_location.resize(newSize());
-	m_facing.resize(newSize());
-	m_blocks.resize(newSize());
-	m_static.resize(newSize());
-	m_underground.resize(newSize());
+	m_shape.resize(newSize);
+	m_location.resize(newSize);
+	m_facing.resize(newSize);
+	m_blocks.resize(newSize);
+	m_static.resize(newSize);
+	m_underground.resize(newSize);
 }
 void HasShapes::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 {
@@ -60,46 +56,23 @@ void HasShapes::destroy(HasShapeIndex index)
 	// Virtual call.
 	resize(oldIndex);
 }
-//TODO: Move this to derived.
-void HasShapes::setShape(HasShapeIndex index, const Shape& shape)
-{
-	BlockIndex location = m_location.at(index);
-	if(location.exists())
-	{
-		exit(index);
-		//TODO: virtual function?
-		//if(isActor())
-			//m_area->getBlocks().getLocationBucket(location).erase(static_cast<Actor&>(*this));
-	}
-	m_shape.at(index) = &shape;
-	if(location.exists())
-		setLocation(index, location);
-}
 void HasShapes::setStatic(HasShapeIndex index, bool isTrue)
 {
 	assert(!m_static.at(index));
+	Blocks& blocks = m_area.getBlocks();
 	if(isTrue)
 		for(auto& [x, y, z, v] : m_shape.at(index)->positionsWithFacing(m_facing.at(index)))
 		{
-			BlockIndex block = m_area.getBlocks().offset(m_location.at(index), x, y, z);
-			m_area.getBlocks().shape_addStaticVolume(block, v);
+			BlockIndex block = blocks.offset(m_location.at(index), x, y, z);
+			blocks.shape_addStaticVolume(block, CollisionVolume::create(v));
 		}
 	else
 		for(auto& [x, y, z, v] : m_shape.at(index)->positionsWithFacing(m_facing.at(index)))
 		{
-			BlockIndex block = m_area.getBlocks().offset(m_location.at(index), x, y, z);
-			m_area.getBlocks().shape_removeStaticVolume(block, v);
+			BlockIndex block = blocks.offset(m_location.at(index), x, y, z);
+			blocks.shape_removeStaticVolume(block, CollisionVolume::create(v));
 		}
 	m_static.set(index);
-}
-void HasShapes::updateIsOnSurface(HasShapeIndex index, BlockIndex block)
-{
-	assert(block == getLocation(index));
-
-	if(m_area.getBlocks().isOnSurface(block))
-		m_onSurface.add(index);
-	else
-		m_onSurface.remove(index);
 }
 void HasShapes::sortRange(HasShapeIndex begin, HasShapeIndex end)
 {
@@ -113,7 +86,7 @@ void HasShapes::sortRange(HasShapeIndex begin, HasShapeIndex end)
 }
 const Faction* HasShapes::getFaction(HasShapeIndex index) const
 { 
-	if(m_faction.at(index) == FACTION_ID_MAX)
+	if(m_faction.at(index).empty())
 		return nullptr;
 	return &m_area.m_simulation.m_hasFactions.getById(m_faction.at(index));
 }
@@ -152,6 +125,20 @@ DistanceInBlocks HasShapes::distanceToActor(HasShapeIndex index, ActorIndex acto
 	// TODO: Make handle multi block creatures correctly somehow.
 	// Use line of sight?
 	return m_area.getBlocks().distance(m_location.at(index), m_area.getActors().getLocation(actor));
+}
+DistanceInBlocks HasShapes::distanceToItem(HasShapeIndex index, ItemIndex item) const
+{
+	// TODO: Make handle multi block creatures correctly somehow.
+	// Use line of sight?
+	return m_area.getBlocks().distance(m_location.at(index), m_area.getItems().getLocation(item));
+}
+DistanceInBlocksFractional HasShapes::distanceToActorFractional(HasShapeIndex index, ActorIndex actor) const
+{
+	return m_area.getBlocks().distanceFractional(m_location.at(index), m_area.getActors().getLocation(actor));
+}
+DistanceInBlocksFractional HasShapes::distanceToItemFractional(HasShapeIndex index, ItemIndex item) const
+{
+	return m_area.getBlocks().distanceFractional(m_location.at(index), m_area.getItems().getLocation(item));
 }
 bool HasShapes::allOccupiedBlocksAreReservable(HasShapeIndex index, FactionId faction) const
 {
@@ -307,5 +294,5 @@ void HasShapes::log(HasShapeIndex index) const
 		return;
 	}
 	Point3D coordinates = m_area.getBlocks().getCoordinates(m_location.at(index));
-	std::cout << "[" << coordinates.x << "," << coordinates.y << "," << coordinates.z << "]";
+	std::cout << "[" << coordinates.x.get() << "," << coordinates.y.get() << "," << coordinates.z.get() << "]";
 }

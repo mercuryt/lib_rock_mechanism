@@ -9,8 +9,8 @@ struct Faction;
 struct UniformElement final 
 {
 	ItemQuery itemQuery;
-	uint32_t quantity;
-	UniformElement(const ItemType& itemType, uint32_t quantity = 1, const MaterialType* materialType = nullptr, uint32_t qualityMin = 0);
+	Quantity quantity;
+	UniformElement(const ItemType& itemType, Quantity quantity = Quantity::create(1), const MaterialType* materialType = nullptr, Quality qualityMin = Quality::create(0));
 	[[nodiscard]] bool operator==(const UniformElement& other) const { return &other == this; }
 };
 struct Uniform final
@@ -32,7 +32,7 @@ public:
 };
 class SimulationHasUniforms final
 {
-	std::unordered_map<FactionId, SimulationHasUniformsForFaction> m_data;
+	FactionIdMap<SimulationHasUniformsForFaction> m_data;
 public:
 	void registerFaction(FactionId faction) { m_data.try_emplace(faction, faction); }
 	void unregisterFaction(FactionId faction) { m_data.erase(faction); }

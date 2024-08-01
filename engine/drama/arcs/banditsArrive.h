@@ -14,7 +14,7 @@ struct BanditsArriveDramaArc final : public DramaArc
 	BlockIndex m_entranceBlock;
 	ActorReferences m_actors;
 	bool m_isActive = false;
-	uint32_t m_quantity = 0;
+	Quantity m_quantity = Quantity::create(0);
 	BanditsArriveDramaArc(DramaEngine& engine, Area& area);
 	BanditsArriveDramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& engine);
 	void callback();
@@ -32,7 +32,7 @@ class BanditsLeaveScheduledEvent final : public ScheduledEvent
 {
 	BanditsArriveDramaArc& m_dramaticArc;
 public:
-	BanditsLeaveScheduledEvent(BanditsArriveDramaArc& event, Simulation& simulation, Step duration, Step start = 0) : ScheduledEvent(simulation, duration, start), m_dramaticArc(event) { }
+	BanditsLeaveScheduledEvent(BanditsArriveDramaArc& event, Simulation& simulation, Step duration, Step start = Step::create(1)) : ScheduledEvent(simulation, duration, start), m_dramaticArc(event) { }
 	void execute(Simulation&, Area*) { m_dramaticArc.callback(); }
 	void clearReferences(Simulation&, Area*) { m_dramaticArc.m_scheduledEvent.clearPointer(); }
 };

@@ -3,6 +3,7 @@
 #include "../area.h"
 #include "../config.h"
 #include "../blocks/blocks.h"
+#include "types.h"
 #include <algorithm>
 DrainQueue::DrainQueue(FluidGroup& fluidGroup) : FluidQueue(fluidGroup) {}
 void DrainQueue::buildFor(BlockIndices& members)
@@ -18,7 +19,7 @@ void DrainQueue::initalizeForStep()
 	{
 		assert((blocks.fluid_contains(futureFlowBlock.block, m_fluidGroup.m_fluidType)));
 		assert(blocks.fluid_getTotalVolume(futureFlowBlock.block) <= Config::maxBlockVolume);
-		futureFlowBlock.delta = 0;
+		futureFlowBlock.delta = CollisionVolume::create(0);
 		futureFlowBlock.capacity = blocks.fluid_volumeOfTypeContains(futureFlowBlock.block, m_fluidGroup.m_fluidType);
 	}
 	std::ranges::sort(m_queue.begin(), m_queue.end(), [&](FutureFlowBlock& a, FutureFlowBlock& b){
@@ -30,7 +31,7 @@ void DrainQueue::initalizeForStep()
 	m_futureNoLongerFull.clear();
 	m_futurePotentialNoLongerAdjacent.clear();
 }
-void DrainQueue::recordDelta(uint32_t volume, uint32_t flowCapacity, uint32_t flowTillNextStep)
+void DrainQueue::recordDelta(CollisionVolume volume, CollisionVolume flowCapacity, CollisionVolume flowTillNextStep)
 {
 	assert(volume != 0);
 	assert((m_groupStart != m_groupEnd));
@@ -86,7 +87,7 @@ void DrainQueue::applyDelta()
 	for(BlockIndex block : drainedFromAndAdjacent)
 		blocks.fluid_setAllUnstableExcept(block, m_fluidGroup.m_fluidType);
 }
-uint32_t DrainQueue::groupLevel() const
+CollisionVolume DrainQueue::groupLevel() const
 {
 	assert((m_groupStart != m_groupEnd));
 	Blocks& blocks = m_fluidGroup.m_area.getBlocks();
@@ -95,7 +96,8 @@ uint32_t DrainQueue::groupLevel() const
 uint32_t DrainQueue::getPriority(FutureFlowBlock& futureFlowBlock) const
 {
 	Blocks& blocks = m_fluidGroup.m_area.getBlocks();
-	return blocks.getZ(futureFlowBlock.block) * Config::maxBlockVolume * 2 + futureFlowBlock.capacity;
+	//TODO: What is happening here?
+	return blocks.getZ(futureFlowBlock.block).get() * Config::maxBlockVolume.get() * 2 + futureFlowBlock.capacity.get();
 }
 void DrainQueue::findGroupEnd()
 {

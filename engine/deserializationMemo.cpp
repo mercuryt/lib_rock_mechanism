@@ -61,7 +61,7 @@ std::unique_ptr<Objective> DeserializationMemo::loadObjective(const Json& data, 
 			output = std::make_unique<DigObjective>(data, *this);
 			break;
 		case ObjectiveTypeId::Drink:
-			output =  std::make_unique<DrinkObjective>(data, *this, area);
+			output =  std::make_unique<DrinkObjective>(data, *this, area, actor);
 			break;
 		case ObjectiveTypeId::Eat:
 			output =  std::make_unique<EatObjective>(data, *this, area, actor);

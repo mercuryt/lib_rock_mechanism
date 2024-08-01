@@ -5,6 +5,7 @@
 #include "index.h"
 #include "reference.h"
 #include "simulation.h"
+#include "types.h"
 
 #include <unordered_set>
 #include <unordered_map>
@@ -16,19 +17,18 @@ class FluidGroup;
 struct FluidType;
 class GetToSafeTemperaturePathRequest;
 struct DeserializationMemo;
-
 // Raises and lowers nearby temperature.
 class TemperatureSource final
 {
 	//TODO: reuse reference for fire?
 	Area& m_area;
 	BlockIndex m_block;
-	int32_t m_temperature;
-	Temperature getTemperatureDeltaForRange(uint32_t range);
+	TemperatureDelta m_temperature;
+	TemperatureDelta getTemperatureDeltaForRange(DistanceInBlocks range);
 	void apply();
 public:
-	TemperatureSource(Area& a, const int32_t& t, BlockIndex b) : m_area(a), m_block(b), m_temperature(t) { apply(); }
-	void setTemperature(const int32_t& t);
+	TemperatureSource(Area& a, TemperatureDelta t, BlockIndex b) : m_area(a), m_block(b), m_temperature(t) { apply(); }
+	void setTemperature(TemperatureDelta t);
 	void unapply();
 	friend class AreaHasTemperature;
 };
@@ -40,18 +40,18 @@ class AreaHasTemperature final
 	// To possibly freeze.
 	std::map<Temperature, std::unordered_set<FluidGroup*>> m_aboveGroundFluidGroupsByMeltingPoint;
 	// Collect deltas to apply sum.
-	std::unordered_map<BlockIndex, int32_t, BlockIndex::Hash> m_blockDeltaDeltas;
+	std::unordered_map<BlockIndex, TemperatureDelta, BlockIndex::Hash> m_blockDeltaDeltas;
 	Area& m_area;
 	Temperature m_ambiantSurfaceTemperature;
 
 public:
 	AreaHasTemperature(Area& a) : m_area(a) { }
-	void setAmbientSurfaceTemperature(const Temperature& temperature);
+	void setAmbientSurfaceTemperature(Temperature temperature);
 	void updateAmbientSurfaceTemperature();
-	void addTemperatureSource(BlockIndex block, const Temperature& temperature);
+	void addTemperatureSource(BlockIndex block, TemperatureDelta temperature);
 	void removeTemperatureSource(TemperatureSource& temperatureSource);
 	TemperatureSource& getTemperatureSourceAt(BlockIndex block);
-	void addDelta(BlockIndex block, int32_t delta);
+	void addDelta(BlockIndex block, TemperatureDelta delta);
 	void applyDeltas();
 	void doStep() { applyDeltas(); }
 	void addMeltableSolidBlockAboveGround(BlockIndex block);
@@ -77,13 +77,13 @@ public:
 	friend class GetToSafeTemperatureObjective;
 	friend class UnsafeTemperatureEvent;
 	// For UI.
-	[[nodiscard]] Percent dieFromTemperaturePercent(Area& area) const { return isSafeAtCurrentLocation(area) ? 0 : m_event.percentComplete(); }
+	[[nodiscard]] Percent dieFromTemperaturePercent(Area& area) const { return isSafeAtCurrentLocation(area) ? Percent::create(0) : m_event.percentComplete(); }
 };
 class UnsafeTemperatureEvent final : public ScheduledEvent
 {
 	ActorNeedsSafeTemperature& m_needsSafeTemperature;
 public:
-	UnsafeTemperatureEvent(Area& area, ActorIndex actor, const Step start = 0);
+	UnsafeTemperatureEvent(Area& area, ActorIndex actor, const Step start = Step::create(0));
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };

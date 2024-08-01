@@ -8,6 +8,7 @@ class UnequipItemObjective final : public Objective
 public:
 	UnequipItemObjective(ItemReference item, BlockIndex block);
 	UnequipItemObjective(const Json& data, Area& area);
+	//TODO: check if block can hold item.
 	void execute(Area&, ActorIndex actor);
 	void cancel(Area&, ActorIndex actor);
 	void delay(Area& area, ActorIndex actor) { cancel(area, actor); }

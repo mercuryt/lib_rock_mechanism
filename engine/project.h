@@ -37,10 +37,10 @@ struct ProjectWorker final
 struct ProjectRequirementCounts final
 {
 	const Quantity required;
-	Quantity delivered;
-	Quantity reserved;
+	Quantity delivered = Quantity::create(0);
+	Quantity reserved = Quantity::create(0);
 	bool consumed;
-	ProjectRequirementCounts(const Quantity r, bool c) : required(r), delivered(0), reserved(0), consumed(c) { }
+	ProjectRequirementCounts(const Quantity r, bool c) : required(r), consumed(c) { }
 	ProjectRequirementCounts(const Json& data, DeserializationMemo& deserializationMemo);
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(ProjectRequirementCounts, required, delivered, reserved, consumed);
 };
@@ -108,15 +108,15 @@ protected:
 	Area& m_area;
 	FactionId m_faction;
 	BlockIndex m_location;
-	Project(FactionId f, Area& a, BlockIndex l, size_t mw, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr);
+	Project(FactionId f, Area& a, BlockIndex l, Quantity mw, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr);
 	Project(const Json& data, DeserializationMemo& deserializationMemo);
 private:
 	// Count how many times we have attempted to create a haul subproject.
 	// Once we hit the limit, defined as projectTryToMakeSubprojectRetriesBeforeProjectDelay in config.json, the project calls setDelayOn.
-	Quantity m_haulRetries = 0;
+	Quantity m_haulRetries  = Quantity::create(0);
 	//TODO: Decrement by a config value instead of 1.
-	Speed m_minimumMoveSpeed = 0;
-	uint8_t m_maxWorkers = 0;
+	Speed m_minimumMoveSpeed = Speed::create(0);
+	Quantity m_maxWorkers = Quantity::create(0);
 	bool m_requirementsLoaded = false;
 	// If a project fails multiple times to create a haul subproject it resets and calls onDelay
 	// The onDelay method is expected to remove the project from listings, remove block designations, etc.
@@ -138,7 +138,7 @@ public:
 	void cancel();
 	//TODO: impliment this.
 	void dismissWorkers();
-	void scheduleFinishEvent(Step start = 0);
+	void scheduleFinishEvent(Step start = Step::create(0));
 	void haulSubprojectComplete(HaulSubproject& haulSubproject);
 	void haulSubprojectCancel(HaulSubproject& haulSubproject);
 	void setLocationDishonorCallback(std::unique_ptr<DishonorCallback> dishonorCallback);
@@ -169,7 +169,7 @@ public:
 	[[nodiscard]] virtual bool canReset() const { return true; }
 	[[nodiscard]] ActorIndices getWorkersAndCandidates();
 	[[nodiscard]] std::vector<std::pair<ActorIndex, Objective*>> getWorkersAndCandidatesWithObjectives();
-	[[nodiscard]] Percent getPercentComplete() const { return m_finishEvent.exists() ? m_finishEvent.percentComplete() : 0; }
+	[[nodiscard]] Percent getPercentComplete() const { return m_finishEvent.exists() ? m_finishEvent.percentComplete() : Percent::create(0); }
 	[[nodiscard]] virtual bool canAddWorker(const ActorIndex actor) const;
 	// What would the total delay time be if we started from scratch now with current workers?
 	[[nodiscard]] virtual Step getDuration() const = 0;
@@ -217,7 +217,7 @@ class ProjectFinishEvent final : public ScheduledEvent
 {
 	Project& m_project;
 public:
-	ProjectFinishEvent(const Step delay, Project& p, const Step start = 0);
+	ProjectFinishEvent(const Step delay, Project& p, const Step start = Step::create(0));
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };
@@ -225,7 +225,7 @@ class ProjectTryToHaulEvent final : public ScheduledEvent
 {
 	Project& m_project;
 public:
-	ProjectTryToHaulEvent(const Step delay, Project& p, const Step start = 0);
+	ProjectTryToHaulEvent(const Step delay, Project& p, const Step start = Step::create(0));
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };
@@ -233,7 +233,7 @@ class ProjectTryToReserveEvent final : public ScheduledEvent
 {
 	Project& m_project;
 public:
-	ProjectTryToReserveEvent(const Step delay, Project& p, const Step start = 0);
+	ProjectTryToReserveEvent(const Step delay, Project& p, const Step start = Step::create(0));
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };
@@ -265,7 +265,7 @@ public:
 };
 class BlockHasProjects
 {
-	std::unordered_map<FactionId, std::unordered_set<Project*>> m_data;
+	FactionIdMap<std::unordered_set<Project*>> m_data;
 public:
 	void add(Project& project);
 	void remove(Project& project);

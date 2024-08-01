@@ -6,9 +6,12 @@
  */ 
 #pragma once
 
+#include "config.h"
 #include "designations.h"
+#include "index.h"
 #include "types.h"
 #include "callbackTypes.h"
+#include "dataVector.h"
 #include "../lib/dynamic_bitset.hpp"
 
 #include <pthread.h>
@@ -39,9 +42,9 @@ class TerrainFacade final
 	// Result is stored instead of being immideatly dispatched to PathRequest to reduce cache thrashing.
 	// Stored as vector of structs rather then multiple vectors of primitives to prevent cache line false shareing.
 	// 	sizeof(FindPathResult) == 32, so 2 can fit on a cache line.
-	// 	So if Config::pathRequestsPerThread is a power of 2 there will never be a shared cache line being written to.
+	// 	So if Config::pathRequestsPerThread is a multiple of 2 there will never be a shared cache line being written to.
 	DataVector<FindPathResult, PathRequestIndex> m_pathRequestResultsNoHuristic;
-	std::vector<PathRequest*> m_pathRequestNoHuristic;
+	DataVector<PathRequest*, PathRequestIndex> m_pathRequestNoHuristic;
 	// With Huristic.
 	DataVector<BlockIndex, PathRequestIndex> m_pathRequestStartPositionWithHuristic;
 	DataVector<AccessCondition, PathRequestIndex> m_pathRequestAccessConditionsWithHuristic;
@@ -49,7 +52,7 @@ class TerrainFacade final
 	DataVector<BlockIndex, PathRequestIndex> m_pathRequestHuristic;
 	DataVector<FindPathResult, PathRequestIndex> m_pathRequestResultsWithHuristic;
 	DataVector<PathRequest*, PathRequestIndex> m_pathRequestWithHuristic;
-	DataBitSet<PathRequestIndex> m_enterable;
+	sul::dynamic_bitset<> m_enterable;
 	Area& m_area;
 	const MoveType& m_moveType;
 	// DestinationCondition could test against a set of destination indecies or load the actual block to do more complex checks.

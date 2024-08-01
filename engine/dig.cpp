@@ -45,16 +45,16 @@ Json DigProject::toJson() const
 		data["blockFeatureType"] = m_blockFeatureType->name;
 	return data;
 }
-std::vector<std::pair<ItemQuery, uint32_t>> DigProject::getConsumed() const { return {}; }
-std::vector<std::pair<ItemQuery, uint32_t>> DigProject::getUnconsumed() const
+std::vector<std::pair<ItemQuery, Quantity>> DigProject::getConsumed() const { return {}; }
+std::vector<std::pair<ItemQuery, Quantity>> DigProject::getUnconsumed() const
 {
 	static const ItemType& pick = ItemType::byName("pick");
-	return {{pick, 1}}; 
+	return {{pick, Quantity::create(1)}}; 
 }
-std::vector<std::pair<ActorQuery, uint32_t>> DigProject::getActors() const { return {}; }
-std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> DigProject::getByproducts() const
+std::vector<std::pair<ActorQuery, Quantity>> DigProject::getActors() const { return {}; }
+std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> DigProject::getByproducts() const
 {
-	std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> output;
+	std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> output;
 	Random& random = m_area.m_simulation.m_random;
 	auto& blocks = m_area.getBlocks();
 	const MaterialType* materialType = blocks.solid_is(m_location) ? &blocks.solid_get(m_location) : blocks.blockFeature_getMaterialType(m_location);
@@ -62,10 +62,10 @@ std::vector<std::tuple<const ItemType*, const MaterialType*, uint32_t>> DigProje
 	{
 		for(const SpoilData& spoilData : materialType->spoilData)
 		{
-			if(!random.percentChance(spoilData.chance))
+			if(!random.chance(spoilData.chance))
 				continue;
 			//TODO: reduce yield for block features.
-			uint32_t quantity = random.getInRange(spoilData.min, spoilData.max);
+			Quantity quantity = Quantity::create(random.getInRange(spoilData.min.get(), spoilData.max.get()));
 			output.emplace_back(&spoilData.itemType, &spoilData.materialType, quantity);
 		}
 	}
@@ -129,14 +129,14 @@ Step DigProject::getDuration() const
 	uint32_t totalScore = 0u;
 	for(auto& pair : m_workers)
 		totalScore += getWorkerDigScore(m_area, pair.first.getIndex());
-	return std::max(Step(1u), Config::digMaxSteps / totalScore);
+	return std::max(Step::create(1), Config::digMaxSteps / totalScore);
 }
 DigLocationDishonorCallback::DigLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
 	m_faction(data["faction"].get<FactionId>()),
 	m_area(deserializationMemo.area(data["area"])),
 	m_location(data["location"].get<BlockIndex>()) { }
 Json DigLocationDishonorCallback::toJson() const { return Json({{"type", "DigLocationDishonorCallback"}, {"faction", m_faction}, {"location", m_location}, {"area", m_area}}); }
-void DigLocationDishonorCallback::execute([[maybe_unused]] uint32_t oldCount, [[maybe_unused]] uint32_t newCount)
+void DigLocationDishonorCallback::execute([[maybe_unused]] Quantity oldCount, [[maybe_unused]] Quantity newCount)
 {
 	m_area.m_hasDigDesignations.undesignate(m_faction, m_location);
 }

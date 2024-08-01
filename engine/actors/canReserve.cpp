@@ -9,7 +9,7 @@ void Actors::canReserve_clearAll(ActorIndex index)
 void Actors::canReserve_setFaction(ActorIndex index, FactionId faction)
 {
 	reservable_unreserveAll(index);
-	if(faction == FACTION_ID_MAX)
+	if(faction.empty())
 		m_canReserve.at(index) = nullptr;
 	else
 		m_canReserve.at(index)->setFaction(faction);
