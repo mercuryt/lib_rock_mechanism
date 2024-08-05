@@ -15,14 +15,12 @@ void ThreadedTask::cancel(Simulation& simulation, Area* area)
 }
 void ThreadedTaskEngine::doStep(Simulation& simulation, Area* area)
 {
-	m_tasksForThisStep = std::move(m_tasksForNextStep);
+	m_tasksForThisStep.swap(m_tasksForNextStep);
 	m_tasksForNextStep.clear();
-	std::vector<ThreadedTask*> taskPointers;
-	std::ranges::transform(m_tasksForThisStep, std::back_inserter(taskPointers), [](const std::unique_ptr<ThreadedTask>& task) { return task.get(); });
-	// TODO: Batching, adaptive batching.
-	auto task = [&simulation, area](ThreadedTask*& task){ task->readStep(simulation, area); };
-	simulation.parallelizeTask(taskPointers, Config::threadedTaskBatchSize, task);
-	for(auto& task : taskPointers)
+	#pragma omp parallel
+		for(const auto& task : m_tasksForThisStep)
+			task.get()->readStep(simulation, area);
+	for(auto& task : m_tasksForThisStep)
 	{
 		task->clearReferences(simulation, area);
 		task->writeStep(simulation, area);
@@ -30,10 +28,11 @@ void ThreadedTaskEngine::doStep(Simulation& simulation, Area* area)
 }
 void ThreadedTaskEngine::insert(std::unique_ptr<ThreadedTask>&& task)
 {
-	m_tasksForNextStep.insert(std::move(task));
+	m_tasksForNextStep.push_back(std::move(task));
 }
 void ThreadedTaskEngine::remove(ThreadedTask& task)
 {
 	assert(std::ranges::find_if(m_tasksForNextStep, [&](auto& t) { return t.get() == &task; }) != m_tasksForNextStep.end());
 	std::erase_if(m_tasksForNextStep, [&](auto& t) { return t.get() == &task; });
 }
+void ThreadedTaskEngine::clear() { m_tasksForNextStep.clear(); }

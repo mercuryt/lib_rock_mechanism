@@ -47,7 +47,7 @@ public:
 class AreaHasFires final
 {
 	Area& m_area;
-	std::unordered_map<BlockIndex, std::unordered_map<const MaterialType*, Fire>, BlockIndex::Hash> m_fires;
+	BlockIndexMap<std::unordered_map<const MaterialType*, Fire>> m_fires;
 public:
 	AreaHasFires(Area& a) : m_area(a) { }
 	void ignite(BlockIndex block, const MaterialType& materialType);

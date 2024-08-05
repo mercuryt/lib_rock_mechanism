@@ -15,19 +15,19 @@ TEST_CASE("weather")
 {
 	static const MaterialType& marble = MaterialType::byName("marble");
 	static const FluidType& water = FluidType::byName("water");
-	Simulation simulation{L"", 1};
+	Simulation simulation{L"", Step::create(1)};
 	Area& area = simulation.m_hasAreas->createArea(5, 5, 5);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
-	area.m_hasRain.start(100, Config::stepsPerMinute);
+	area.m_hasRain.start(Percent::create(100), Config::stepsPerMinute);
 	for(uint i = 0; i < Config::stepsPerMinute; ++i)
 	{
 		simulation.doStep();
-		if(simulation.m_step % Config::stepsPerMinute == 0)
+		if(simulation.m_step.modulusIsZero(Config::stepsPerMinute))
 		{
 			std::cout << "." << std::flush;
 		}
 
 	}
 	Blocks& blocks = area.getBlocks();
-	REQUIRE(blocks.fluid_volumeOfTypeContains(blocks.getIndex(1,1,1), water));
+	REQUIRE(blocks.fluid_volumeOfTypeContains(blocks.getIndex_i(1,1,1), water));
 }

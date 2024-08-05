@@ -36,7 +36,7 @@ void Actors::objective_maybeDoNext(ActorIndex index)
 	if(!hasObjectives.hasCurrent())
 		hasObjectives.getNext(m_area);
 }
-void Actors::objective_setPriority(ActorIndex index, const ObjectiveType& objectiveType, uint8_t priority)
+void Actors::objective_setPriority(ActorIndex index, const ObjectiveType& objectiveType, Priority priority)
 {
 	m_hasObjectives.at(index)->m_prioritySet.setPriority(m_area, index, objectiveType, priority);
 }

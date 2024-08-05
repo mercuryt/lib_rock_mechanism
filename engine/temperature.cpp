@@ -12,6 +12,7 @@
 #include "actors/actors.h"
 #include "items/items.h"
 #include "blocks/blocks.h"
+#include "animalSpecies.h"
 #include <cmath>
 enum class TemperatureZone { Surface, Underground, LavaSea };
 TemperatureDelta TemperatureSource::getTemperatureDeltaForRange(DistanceInBlocks range)
@@ -80,7 +81,7 @@ void AreaHasTemperature::addDelta(BlockIndex block, TemperatureDelta delta)
 // TODO: optimize by splitting block deltas into different structures for different temperature zones, to avoid having to rerun getAmbientTemperature?
 void AreaHasTemperature::applyDeltas()
 {
-	std::unordered_map<BlockIndex, TemperatureDelta, BlockIndex::Hash> oldDeltaDeltas;
+	BlockIndexMap<TemperatureDelta> oldDeltaDeltas;
 	oldDeltaDeltas.swap(m_blockDeltaDeltas);
 	for(auto& [block, deltaDelta] : oldDeltaDeltas)
 		m_area.getBlocks().temperature_updateDelta(block, deltaDelta);

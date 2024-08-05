@@ -1,13 +1,15 @@
 #include "../../lib/doctest.h"
 #include "../../engine/reservable.h"
 #include "../../engine/faction.h"
+#include "../../engine/simulation.h"
+#include "types.h"
 #include <memory>
 
 struct TestReservationDishonorCallback1 final : public DishonorCallback
 {
 	bool& fired;
 	TestReservationDishonorCallback1(bool& f) : fired(f) { }
-	void execute(uint32_t o, uint32_t n)
+	void execute(Quantity o, Quantity n)
 	{
 			REQUIRE(o == 1);
 			REQUIRE(n == 0);
@@ -19,7 +21,7 @@ struct TestReservationDishonorCallback2 final : public DishonorCallback
 {
 	bool& fired;
 	TestReservationDishonorCallback2(bool& f) : fired(f) { }
-	void execute(uint32_t o, uint32_t n)
+	void execute(Quantity o, Quantity n)
 	{
 			REQUIRE(o == 2);
 			REQUIRE(n == 1);
@@ -29,31 +31,32 @@ struct TestReservationDishonorCallback2 final : public DishonorCallback
 };
 TEST_CASE("reservations")
 {
-	Faction faction1(L"test faction1");
-	Faction faction2(L"test faction2");
+	Simulation simulation;
+	FactionId faction1 = simulation.m_hasFactions.createFaction(L"test faction1").id;
+	FactionId faction2 = simulation.m_hasFactions.createFaction(L"test faction2").id;
 	SUBCASE("basic")
 	{
-		Reservable reservable(1);
+		Reservable reservable(Quantity::create(1));
 		CanReserve canReserve(faction1);
 		REQUIRE(!reservable.isFullyReserved(faction1));
 		REQUIRE(!reservable.isFullyReserved(faction2));
-		reservable.reserveFor(canReserve, 1);
+		reservable.reserveFor(canReserve, Quantity::create(1));
 		REQUIRE(reservable.isFullyReserved(faction1));
 		REQUIRE(!reservable.isFullyReserved(faction2));
 		reservable.clearReservationFor(canReserve);
 		REQUIRE(!reservable.isFullyReserved(faction1));
 		REQUIRE(!reservable.isFullyReserved(faction2));
-		reservable.setMaxReservations(2);
-		reservable.reserveFor(canReserve, 1);
+		reservable.setMaxReservations(Quantity::create(2));
+		reservable.reserveFor(canReserve, Quantity::create(1));
 		REQUIRE(!reservable.isFullyReserved(faction1));
 		REQUIRE(!reservable.isFullyReserved(faction2));
 	}
 	SUBCASE("unreserve on destroy canReserve")
 	{
-		Reservable reservable(1);
+		Reservable reservable(Quantity::create(1));
 		{
 			CanReserve canReserve(faction1);
-			reservable.reserveFor(canReserve, 1);
+			reservable.reserveFor(canReserve, Quantity::create(1));
 			REQUIRE(reservable.isFullyReserved(faction1));
 		}
 		REQUIRE(!reservable.isFullyReserved(faction1));
@@ -63,8 +66,8 @@ TEST_CASE("reservations")
 	{
 		CanReserve canReserve(faction1);
 		{
-			Reservable reservable(1);
-			reservable.reserveFor(canReserve, 1);
+			Reservable reservable(Quantity::create(1));
+			reservable.reserveFor(canReserve, Quantity::create(1));
 			REQUIRE(reservable.isFullyReserved(faction1));
 			REQUIRE(canReserve.hasReservationWith(reservable));
 		}
@@ -72,21 +75,21 @@ TEST_CASE("reservations")
 	}
 	SUBCASE("mutiple reservable")
 	{
-		Reservable reservable(2);
+		Reservable reservable(Quantity::create(2));
 		CanReserve canReserve(faction1);
-		reservable.reserveFor(canReserve, 1);
+		reservable.reserveFor(canReserve, Quantity::create(1));
 		REQUIRE(!reservable.isFullyReserved(faction1));
 		REQUIRE(reservable.getUnreservedCount(faction1) == 1);
-		reservable.reserveFor(canReserve, 1);
+		reservable.reserveFor(canReserve, Quantity::create(1));
 		REQUIRE(reservable.isFullyReserved(faction1));
 	}
 	SUBCASE("dishonor callback clear all")
 	{
 		bool fired = false;
 		std::unique_ptr<DishonorCallback> callback = std::make_unique<TestReservationDishonorCallback1>(fired);
-		Reservable reservable(1);
+		Reservable reservable(Quantity::create(1));
 		CanReserve canReserve(faction1);
-		reservable.reserveFor(canReserve, 1, std::move(callback));
+		reservable.reserveFor(canReserve, Quantity::create(1), std::move(callback));
 		reservable.clearAll();
 		REQUIRE(fired);
 	}
@@ -94,10 +97,10 @@ TEST_CASE("reservations")
 	{
 		bool fired = false;
 		std::unique_ptr<DishonorCallback> callback = std::make_unique<TestReservationDishonorCallback2>(fired);
-		Reservable reservable(2);
+		Reservable reservable(Quantity::create(2));
 		CanReserve canReserve(faction1);
-		reservable.reserveFor(canReserve, 2, std::move(callback));
-		reservable.setMaxReservations(1);
+		reservable.reserveFor(canReserve, Quantity::create(2), std::move(callback));
+		reservable.setMaxReservations(Quantity::create(1));
 		REQUIRE(fired);
 	}
 }

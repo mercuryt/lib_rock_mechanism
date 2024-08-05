@@ -34,13 +34,13 @@ public:
 };
 class AreaHasTemperature final
 {
-	std::unordered_map<BlockIndex, TemperatureSource, BlockIndex::Hash> m_sources;
+	BlockIndexMap<TemperatureSource> m_sources;
 	// To possibly thaw.
 	std::map<Temperature, BlockIndices> m_aboveGroundBlocksByMeltingPoint;
 	// To possibly freeze.
 	std::map<Temperature, std::unordered_set<FluidGroup*>> m_aboveGroundFluidGroupsByMeltingPoint;
 	// Collect deltas to apply sum.
-	std::unordered_map<BlockIndex, TemperatureDelta, BlockIndex::Hash> m_blockDeltaDeltas;
+	BlockIndexMap<TemperatureDelta> m_blockDeltaDeltas;
 	Area& m_area;
 	Temperature m_ambiantSurfaceTemperature;
 

@@ -30,7 +30,7 @@ void GivePlantsFluidEvent::execute(Simulation&, Area* area)
 	Actors& actors = area->getActors();
 	Plants& plants = area->getPlants();
 	assert(actors.canPickUp_isCarryingFluidType(actor, plants.getSpecies(plant).fluidType));
-	uint32_t quantity = std::min(plants.getVolumeFluidRequested(plant), actors.canPickUp_getFluidVolume(actor));
+	CollisionVolume quantity = std::min(plants.getVolumeFluidRequested(plant), actors.canPickUp_getFluidVolume(actor));
 	plants.addFluid(plant, quantity, actors.canPickUp_getFluidType(actor));
 	actors.canPickUp_removeFluidVolume(actor, quantity);
 	actors.objective_complete(actor, m_objective);
@@ -264,7 +264,7 @@ void GivePlantsFluidObjective::fillContainer(Area& area, BlockIndex fillLocation
 	ItemIndex haulTool = actors.canPickUp_getItem(actor);
 	const FluidType& fluidType = plants.getSpecies(plant).fluidType;
 	ItemIndex fillFromItem = getItemToFillFromAt(area, fillLocation);
-	Volume volume = items.getItemType(haulTool).internalVolume;
+	CollisionVolume volume = items.getItemType(haulTool).internalVolume.toCollisionVolume();
 	if(fillFromItem.exists())
 	{
 		assert(items.cargo_getFluidType(fillFromItem) == fluidType);

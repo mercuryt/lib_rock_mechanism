@@ -41,6 +41,7 @@ public:
 	[[nodiscard]] ItemIndex getItem() const { return ItemIndex::create(m_index.get()); }
 	[[nodiscard]] ActorOrItemReference toReference(Area& area);
 	[[nodiscard]] bool exists() const { return m_index.exists(); }
+	[[nodiscard]] bool empty() const { return m_index.empty(); }
 	[[nodiscard]] HasShapeIndex get() const { return m_index; }
 	[[nodiscard]] bool isActor() const { return m_isActor; }
 	[[nodiscard]] bool isItem() const { return !m_isActor; }

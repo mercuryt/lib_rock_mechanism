@@ -9,7 +9,7 @@ void Actors::attributes_onUpdateGrowthPercent(ActorIndex index)
 	updateAgility(index);
 	updateDextarity(index);
 	updateMass(index);
-	m_unencomberedCarryMass.at(index) = Mass::create(Config::unitsOfCarryMassPerUnitOfStrength * getStrength(index).get());
+	canPickUp_updateUnencomberedCarryMass(index);
 	combat_update(index);
 	move_updateIndividualSpeed(index);
 }
@@ -30,7 +30,7 @@ void Actors::addStrengthBonusOrPenalty(ActorIndex index, AttributeLevelBonusOrPe
 void Actors::onStrengthChanged(ActorIndex index)
 {
 	updateStrength(index);
-	m_unencomberedCarryMass.at(index) = Mass::create(Config::unitsOfCarryMassPerUnitOfStrength * getStrength(index).get());
+	canPickUp_updateUnencomberedCarryMass(index);
 	combat_update(index);
 }
 void Actors::updateStrength(ActorIndex index)
@@ -82,8 +82,7 @@ void Actors::onAgilityChanged(ActorIndex index)
 {
 	updateAgility(index);
 	move_updateIndividualSpeed(index);
-	//TODO: agaility does not currently affect combat?
-	//combat_update(index);
+	combat_update(index);
 }
 void Actors::updateAgility(ActorIndex index)
 {

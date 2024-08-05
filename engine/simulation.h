@@ -15,6 +15,7 @@
 #include "threadedTask.h"
 #include "types.h"
 #include "uniform.h"
+#include "pathMemo.h"
 
 #include <list>
 #include <memory>
@@ -40,6 +41,7 @@ public:
 	SimulationHasFactions m_hasFactions;
 	SimulationHasActors m_actors;
 	SimulationHasItems m_items;
+	SimulationHasPathMemos m_hasPathMemos;
 	DialogueBoxQueue m_hasDialogues;
 private:
 	DeserializationMemo m_deserializationMemo;

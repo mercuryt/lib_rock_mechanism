@@ -42,13 +42,14 @@ struct BlockIsPartOfStockPile
 	bool active;
 };
 */
-using ActorIndicesForBlock = ActorIndicesArray<Config::maxActorsPerBlock>;
-using ItemIndicesForBlock = ItemIndicesArray<Config::maxItemsPerBlock>;
+//TODO: Upgrade these vectors to arrays.
+using ActorIndicesForBlock = ActorIndices; //ActorIndicesArray<Config::maxActorsPerBlock>;
+using ItemIndicesForBlock = ItemIndices; //ItemIndicesArray<Config::maxItemsPerBlock>;
 class Blocks
 {
 	std::array<int32_t, 26> m_offsetsForAdjacentCountTable;
-	std::unordered_map<BlockIndex, FactionIdMap<FarmField*>, BlockIndex::Hash> m_farmFields;
-	std::unordered_map<BlockIndex, FactionIdMap<BlockIsPartOfStockPile>, BlockIndex::Hash> m_stockPiles;
+	BlockIndexMap<FactionIdMap<FarmField*>> m_farmFields;
+	BlockIndexMap<FactionIdMap<BlockIsPartOfStockPile>> m_stockPiles;
 	DataVector<std::unique_ptr<Reservable>, BlockIndex> m_reservables;
 	DataVector<const MaterialType*, BlockIndex> m_materialType;
 	DataVector<std::vector<BlockFeature>, BlockIndex> m_features;
@@ -63,7 +64,7 @@ class Blocks
 	DataVector<PlantIndex, BlockIndex> m_plants;
 	DataVector<CollisionVolume, BlockIndex> m_dynamicVolume;
 	DataVector<CollisionVolume, BlockIndex> m_staticVolume;
-	DataVector<FactionIdMap<std::unordered_set<Project*>>, BlockIndex> m_projects;
+	DataVector<FactionIdMap<std::vector<Project*>>, BlockIndex> m_projects;
 	DataVector<std::unordered_map<const MaterialType* , Fire>*, BlockIndex> m_fires;
 	DataVector<TemperatureDelta, BlockIndex> m_temperatureDelta;
 	DataVector<LocationBucket*, BlockIndex> m_locationBucket;
@@ -91,6 +92,7 @@ public:
 	[[nodiscard]] size_t size() const;
 	[[nodiscard]] BlockIndex getIndex(Point3D coordinates) const;
 	[[nodiscard]] BlockIndex getIndex(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) const;
+	[[nodiscard]] BlockIndex getIndex_i(uint x, uint y, uint z) const;
 	[[nodiscard]] Point3D getCoordinates(BlockIndex index) const;
 	Point3D_fractional getCoordinatesFractional(BlockIndex index) const;
 	[[nodiscard]] DistanceInBlocks getZ(BlockIndex index) const;
@@ -126,7 +128,7 @@ public:
 	// Get block at offset coordinates. Can return nullptr.
 	[[nodiscard]] BlockIndex offset(BlockIndex index, int32_t ax, int32_t ay, int32_t az) const;
 	[[nodiscard]] BlockIndex offsetNotNull(BlockIndex index, int32_t ax, int32_t ay, int32_t az) const;
-	[[nodiscard]] BlockIndex indexAdjacentToAtCount(BlockIndex index, uint8_t adjacentCount) const;
+	[[nodiscard]] BlockIndex indexAdjacentToAtCount(BlockIndex index, AdjacentIndex adjacentCount) const;
 	[[nodiscard]] std::array<int32_t, 3> relativeOffsetTo(BlockIndex index, BlockIndex other) const; 
 	[[nodiscard]] std::array<int, 26> makeOffsetsForAdjacentCountTable() const;
 	[[nodiscard]] bool canSeeThrough(BlockIndex index) const;
@@ -308,6 +310,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, const Fluid
 	[[nodiscard]] bool actor_canEnterCurrentlyFrom(BlockIndex index, ActorIndex actor, BlockIndex block) const;
 	[[nodiscard]] bool actor_canEnterCurrentlyWithFacing(BlockIndex index, ActorIndex actor, Facing facing) const;
 	[[nodiscard]] bool actor_canEnterEverOrCurrentlyWithFacing(BlockIndex index, ActorIndex actor, Facing facing) const;
+	[[nodiscard]] bool actor_canEnterCurrentlyWithAnyFacing(BlockIndex index, ActorIndex actor) const;
 	[[nodiscard]] bool actor_contains(BlockIndex index, ActorIndex actor) const;
 	[[nodiscard]] bool actor_empty(BlockIndex index) const;
 	[[nodiscard]] Volume actor_volumeOf(BlockIndex index, ActorIndex actor) const;
@@ -332,6 +335,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, const Fluid
 	[[nodiscard]] bool item_contains(BlockIndex index, ItemIndex item) const;
 	[[nodiscard]] bool item_canEnterCurrentlyFrom(BlockIndex index, ItemIndex item, BlockIndex block) const;
 	[[nodiscard]] bool item_canEnterCurrentlyWithFacing(BlockIndex index, ItemIndex item, Facing facing) const;
+	[[nodiscard]] bool item_canEnterCurrentlyWithAnyFacing(BlockIndex index, ItemIndex item) const;
 	[[nodiscard]] bool item_canEnterEverOrCurrentlyWithFacing(BlockIndex index, ItemIndex item, const Facing facing) const;
 	// -Plant
 	void plant_create(BlockIndex index, const PlantSpecies& plantSpecies, Percent growthPercent = Percent::create(0));

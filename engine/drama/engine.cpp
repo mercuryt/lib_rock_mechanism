@@ -79,7 +79,7 @@ Json DramaArc::toJson() const
 }
 void DramaArc::actorsLeave(ActorIndices actorsLeaving)
 {
-	constexpr uint8_t priority = 100;
+	constexpr Priority priority = Priority::create(100);
 	Actors& actors = m_area->getActors();
 	for(ActorIndex actor : actorsLeaving)
 	{

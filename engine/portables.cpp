@@ -1,6 +1,7 @@
 #include "portables.h"
 #include "actorOrItemIndex.h"
 #include "actors/actors.h"
+#include "deserializationMemo.h"
 #include "index.h"
 #include "items/items.h"
 #include "area.h"
@@ -9,6 +10,7 @@
 #include "simulation.h"
 #include "types.h"
 #include "moveType.h"
+#include <cstdint>
 #include <memory>
 
 Portables::Portables(Area& area) : HasShapes(area) { }
@@ -367,19 +369,27 @@ void Portables::reservable_merge(HasShapeIndex index, Reservable& other)
 void Portables::load(const Json& data)
 {
 	nlohmann::from_json(data, static_cast<Portables&>(*this));
-	// We don't need to serialize OnDestroy because it only exists breifly between ThreadedTask read / write steps.
-	// TODO: I feel like the above constraint about OnDestroy is violated somewhere and it's being used as a side channel reservation between steps. Make sure this is not the case or serialize it.
 	data["follower"].get_to(m_follower);
 	data["leader"].get_to(m_leader);
 	data["moveType"].get_to(m_moveType);
 	m_reservables.resize(m_moveType.size());
+	DeserializationMemo& deserializationMemo = m_area.m_simulation.getDeserializationMemo();
 	for(const Json& pair : data["reservable"])
 	{
 		HasShapeIndex index = pair[0];
 		m_reservables.at(index) = std::make_unique<Reservable>(pair[1]["maxReservations"].get<Quantity>());
 		uintptr_t address;
 		pair[1]["address"].get_to(address);
-		m_area.m_simulation.getDeserializationMemo().m_reservables[address] = m_reservables.at(index).get();
+		deserializationMemo.m_reservables[address] = m_reservables.at(index).get();
+	}
+	m_destroy.resize(m_moveType.size());
+	for(const Json& pair : data["onDestroy"])
+	{
+		HasShapeIndex index = pair[0];
+		m_destroy.at(index) = std::make_unique<OnDestroy>(pair[1], deserializationMemo);
+		uintptr_t address;
+		pair[1]["address"].get_to(address);
+		deserializationMemo.m_reservables[address] = m_reservables.at(index).get();
 	}
 }
 Json Portables::toJson() const
@@ -389,8 +399,20 @@ Json Portables::toJson() const
 	output.update({
 		{"follower", m_follower},
 		{"leader", m_leader},
+		{"destroy", Json::object()},
+		{"reservable", Json::object()},
 		{"moveType", m_moveType},
 	});
+	HasShapeIndex i = HasShapeIndex::create(0);
+	for(; i < m_moveType.size(); ++i)
+	{
+		// OnDestroy and Reservable don't serialize any data beyone their old address.
+		// To deserialize them we just create empties and store pointers to them in deserializationMemo.
+		if(m_destroy.at(i) != nullptr)
+			output[i.get()] = *m_destroy.at(i).get();
+		if(m_reservables.at(i) != nullptr)
+			output[i.get()] = reinterpret_cast<uintptr_t>(m_reservables.at(i).get());
+	}
 	return output;
 }
 bool Portables::reservable_hasAnyReservations(HasShapeIndex index) const
@@ -415,7 +437,12 @@ Quantity Portables::reservable_getUnreservedCount(HasShapeIndex index, const Fac
 }
 void Portables::onDestroy_subscribe(HasShapeIndex index, HasOnDestroySubscriptions& hasSubscriptions)
 {
-	m_destroy.at(index)->subscribe(hasSubscriptions);
+	hasSubscriptions.subscribe(*m_destroy.at(index).get());
+}
+void Portables::onDestroy_subscribeThreadSafe(HasShapeIndex index, HasOnDestroySubscriptions& hasSubscriptions)
+{
+	std::lock_guard<std::mutex> lock(HasOnDestroySubscriptions::m_mutex);
+	onDestroy_subscribe(index, hasSubscriptions);
 }
 void Portables::onDestroy_unsubscribe(HasShapeIndex index, HasOnDestroySubscriptions& hasSubscriptions)
 {

@@ -7,13 +7,13 @@
 #include "types.h"
 ExterminateObjective::ExterminateObjective(Area& area, BlockIndex destination) :
 	Objective(Config::exterminatePriority), m_destination(destination), m_event(area.m_eventSchedule) { }
-ExterminateObjective::ExterminateObjective(const Json& data, Area& area) : 
+ExterminateObjective::ExterminateObjective(const Json& data, Area& area, ActorIndex actor) : 
 	Objective(data),
 	m_destination(data["destination"].get<BlockIndex>()),
 	m_event(area.m_eventSchedule)
 {
 	if(data.contains("eventStart"))
-		m_event.schedule(area, *this, data["eventStart"].get<Step>());
+		m_event.schedule(area, *this, actor, data["eventStart"].get<Step>());
 }
 Json ExterminateObjective::toJson() const
 {
@@ -47,7 +47,7 @@ void ExterminateObjective::execute(Area& area, ActorIndex actor)
 		actors.combat_setTarget(actor, closest);
 	else
 	{
-		static constexpr DistanceInBlocks distanceToRallyPoint = 10;
+		static constexpr DistanceInBlocks distanceToRallyPoint = DistanceInBlocks::create(10);
 		if(blocks.taxiDistance(thisActorLocation, m_destination) > distanceToRallyPoint)
 			actors.move_setDestination(actor, m_destination, m_detour);
 		m_event.schedule(area, *this, actor);

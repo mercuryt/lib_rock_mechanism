@@ -16,7 +16,6 @@
 #include "../drink.h"
 #include "../eat.h"
 #include "../actors/grow.h"
-#include "attributes.h"
 #include "eventSchedule.h"
 #include "index.h"
 #include "objective.h"
@@ -279,13 +278,19 @@ void Actors::load(const Json& data)
 	data["speedIndividual"].get_to(m_speedIndividual);
 	data["speedActual"].get_to(m_speedActual);
 	data["moveRetries"].get_to(m_moveRetries);
+	data["strength"].get_to(m_strength);
+	data["strengthBonusOrPenalty"].get_to(m_strengthBonusOrPenalty);
+	data["strengthModifier"].get_to(m_strengthModifier);
+	data["agility"].get_to(m_agility);
+	data["agilityBonusOrPenalty"].get_to(m_agilityBonusOrPenalty);
+	data["agilityModifier"].get_to(m_agilityModifier);
+	data["dextarity"].get_to(m_dextarity);
+	data["dextarityBonusOrPenalty"].get_to(m_dextarityBonusOrPenalty);
+	data["dextarityModifier"].get_to(m_dextarityModifier);
+	data["mass"].get_to(m_mass);
+	data["massBonusOrPenalty"].get_to(m_massBonusOrPenalty);
+	data["massModifier"].get_to(m_massModifier);
 	auto& deserializationMemo = m_area.m_simulation.getDeserializationMemo();
-	m_attributes.resize(m_id.size());
-	for(const Json& pair : data["attributes"])
-	{
-		ActorIndex index = pair[0].get<ActorIndex>();
-		m_attributes.at(index) = std::make_unique<Attributes>(pair[1], *m_species.at(index), getPercentGrown(index));
-	}
 	m_hasObjectives.resize(m_id.size());
 	for(const Json& pair : data["hasObjectives"])
 	{
@@ -366,7 +371,6 @@ void Actors::load(const Json& data)
 void to_json(Json& data, const std::unique_ptr<CanReserve>& canReserve) { data = canReserve->toJson(); }
 void to_json(Json& data, const std::unique_ptr<ActorHasUniform>& uniform) { data = *uniform; }
 void to_json(Json& data, const std::unique_ptr<EquipmentSet>& equipmentSet) { data = *equipmentSet; }
-void to_json(Json& data, const std::unique_ptr<Attributes>& attributes) { data = attributes->toJson(); }
 void to_json(Json& data, const std::unique_ptr<HasObjectives>& hasObjectives) { data = hasObjectives->toJson(); }
 void to_json(Json& data, const std::unique_ptr<Body>& body) { data = body->toJson(); }
 void to_json(Json& data, const std::unique_ptr<MustSleep>& mustSleep) { data = mustSleep->toJson(); }
@@ -387,7 +391,18 @@ Json Actors::toJson() const
 		{"birthStep", m_birthStep},
 		{"causeOfDeath", m_causeOfDeath},
 		{"unencomberedCarryMass", m_unencomberedCarryMass},
-		{"attributes", m_attributes},
+		{"strength", m_strength},
+		{"strengthBonusOrPenalty", m_strengthBonusOrPenalty},
+		{"strengthModifier", m_strengthModifier},
+		{"agility", m_agility},
+		{"agilityBonusOrPenalty", m_agilityBonusOrPenalty},
+		{"agilityModifier", m_agilityModifier},
+		{"dextarity", m_dextarity},
+		{"dextarityBonusOrPenalty", m_dextarityBonusOrPenalty},
+		{"dextarityModifier", m_dextarityModifier},
+		{"mass", m_mass},
+		{"massBonusOrPenalty", m_massBonusOrPenalty},
+		{"massModifier", m_massModifier},
 		{"hasObjectives", m_hasObjectives},
 		{"body", m_body},
 		{"mustSleep", m_mustSleep},
@@ -434,7 +449,18 @@ void Actors::resize(HasShapeIndex newSize)
 	m_birthStep.resize(actor);
 	m_causeOfDeath.resize(actor);
 	m_unencomberedCarryMass.resize(actor);
-	m_attributes.resize(actor);
+	m_strength.resize(actor);
+	m_strengthBonusOrPenalty.resize(actor);
+	m_strengthModifier.resize(actor);
+	m_agility.resize(actor);
+	m_agilityBonusOrPenalty.resize(actor);
+	m_agilityModifier.resize(actor);
+	m_dextarity.resize(actor);
+	m_dextarityBonusOrPenalty.resize(actor);
+	m_dextarityModifier.resize(actor);
+	m_mass.resize(actor);
+	m_massBonusOrPenalty.resize(actor);
+	m_massModifier.resize(actor);
 	m_hasObjectives.resize(actor);
 	m_body.resize(actor);
 	m_mustSleep.resize(actor);
@@ -481,7 +507,18 @@ void Actors::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 	m_birthStep.at(newActorIndex) = m_birthStep.at(oldActorIndex);
 	m_causeOfDeath.at(newActorIndex) = m_causeOfDeath.at(oldActorIndex);
 	m_unencomberedCarryMass.at(newActorIndex) = m_unencomberedCarryMass.at(oldActorIndex);
-	m_attributes.at(newActorIndex) = std::move(m_attributes.at(oldActorIndex));
+	m_strength.at(newActorIndex) = m_strength.at(oldActorIndex);
+	m_strengthBonusOrPenalty.at(newActorIndex) = m_strengthBonusOrPenalty.at(oldActorIndex);
+	m_strengthModifier.at(newActorIndex) = m_strengthModifier.at(oldActorIndex);
+	m_agility.at(newActorIndex) = m_agility.at(oldActorIndex);
+	m_agilityBonusOrPenalty.at(newActorIndex) = m_agilityBonusOrPenalty.at(oldActorIndex);
+	m_agilityModifier.at(newActorIndex) = m_agilityModifier.at(oldActorIndex);
+	m_dextarity.at(newActorIndex) = m_dextarity.at(oldActorIndex);
+	m_dextarityBonusOrPenalty.at(newActorIndex) = m_dextarityBonusOrPenalty.at(oldActorIndex);
+	m_dextarityModifier.at(newActorIndex) = m_dextarityModifier.at(oldActorIndex);
+	m_mass.at(newActorIndex) = m_mass.at(oldActorIndex);
+	m_massBonusOrPenalty.at(newActorIndex) = m_massBonusOrPenalty.at(oldActorIndex);
+	m_massModifier.at(newActorIndex) = m_massModifier.at(oldActorIndex);
 	m_hasObjectives.at(newActorIndex) = std::move(m_hasObjectives.at(oldActorIndex));
 	m_body.at(newActorIndex) = std::move(m_body.at(oldActorIndex));
 	m_mustSleep.at(newActorIndex) = std::move(m_mustSleep.at(oldActorIndex));
@@ -563,7 +600,14 @@ ActorIndex Actors::create(ActorParamaters params)
 	m_birthStep.at(index) = params.getBirthStep(s);
 	m_causeOfDeath.at(index) = CauseOfDeath::none;
 	m_unencomberedCarryMass.at(index) = Mass::null();
-	m_attributes.at(index) = std::make_unique<Attributes>(params.species, params.getPercentGrown(s));
+	m_strengthBonusOrPenalty.at(index) = AttributeLevelBonusOrPenalty::create(0);
+	m_strengthModifier.at(index) = 0.f;
+	m_agilityBonusOrPenalty.at(index) = AttributeLevelBonusOrPenalty::create(0);
+	m_agilityModifier.at(index) = 0.f;
+	m_dextarityBonusOrPenalty.at(index) = AttributeLevelBonusOrPenalty::create(0);
+	m_dextarityModifier.at(index) = 0.f;
+	m_massBonusOrPenalty.at(index) = 0;
+	m_massModifier.at(index) = 0.f;
 	m_hasObjectives.at(index) = std::make_unique<HasObjectives>(index);
 	m_body.at(index) = std::make_unique<Body>(m_area, index);
 	m_mustSleep.at(index) = std::make_unique<MustSleep>(m_area, index);
@@ -574,7 +618,7 @@ ActorIndex Actors::create(ActorParamaters params)
 	// CanPickUp.
 	m_carrying.at(index).clear();
 	// Stamina.
-	m_stamina.at(index) = 0;
+	m_stamina.at(index) = Stamina::null();
 	// Vision.
 	assert(m_canSee.at(index).empty());
 	m_visionRange.at(index) = params.species.visionRange;
@@ -598,6 +642,7 @@ ActorIndex Actors::create(ActorParamaters params)
 	m_speedActual.at(index) = Speed::create(0);
 	m_moveRetries.at(index) = 0;
 	s.m_actors.registerActor(m_id.at(index), *this, index);
+	attributes_onUpdateGrowthPercent(index);
 	sharedConstructor(index);
 	scheduleNeeds(index);
 	if(isSentient(index))
@@ -673,8 +718,10 @@ void Actors::resetNeeds(ActorIndex index)
 void Actors::removeMassFromCorpse(ActorIndex index, Mass mass)
 {
 	assert(!isAlive(index));
-	assert(mass <= m_attributes.at(index)->getMass());
-	m_attributes.at(index)->removeMass(mass);
+	assert(mass <= m_mass.at(index));
+	m_mass.at(index) -= mass;
+	if(m_mass.at(index) == 0)
+		leaveArea(index);
 }
 bool Actors::isEnemy(ActorIndex index, ActorIndex other) const { return getFaction(index)->enemies.contains(m_faction.at(other)); }
 bool Actors::isAlly(ActorIndex index, ActorIndex other) const { return getFaction(index)->allies.contains(m_faction.at(other)); }
@@ -725,7 +772,7 @@ void Actors::setFaction(ActorIndex index, FactionId faction)
 }
 Mass Actors::getMass(ActorIndex index) const
 {
-	return m_attributes.at(index)->getMass() + m_equipmentSet.at(index)->getMass() + canPickUp_getMass(index);
+	return m_mass.at(index) + m_equipmentSet.at(index)->getMass() + canPickUp_getMass(index);
 }
 Volume Actors::getVolume(ActorIndex index) const
 {
@@ -802,10 +849,6 @@ Percent Actors::sleep_getPercentDoneSleeping(ActorIndex index) const { return m_
 Percent Actors::sleep_getPercentTired(ActorIndex index) const { return m_mustSleep.at(index)->getTiredPercent(); }
 BlockIndex Actors::sleep_getSpot(ActorIndex index) const { return m_mustSleep.at(index)->getLocation(); }
 bool Actors::sleep_hasTiredEvent(ActorIndex index) const { return m_mustSleep.at(index)->hasTiredEvent(); }
-// Attributes.
-AttributeLevel Actors::getStrength(ActorIndex index) const { return m_attributes.at(index)->getStrength(); }
-AttributeLevel Actors::getDextarity(ActorIndex index) const { return m_attributes.at(index)->getDextarity(); }
-AttributeLevel Actors::getAgility(ActorIndex index) const { return m_attributes.at(index)->getAgility(); }
 // Skills.
 SkillLevel Actors::skill_getLevel(ActorIndex index, const SkillType& skillType) const { return m_skillSet.at(index)->get(skillType); }
 // CoolDownEvent.

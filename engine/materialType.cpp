@@ -1,11 +1,11 @@
 #include "materialType.h"
 #include <algorithm>
 #include <ranges>
-const MaterialTypeCategory& MaterialTypeCategory::byName(const std::string name)
+const MaterialCategoryTypeId MaterialTypeCategory::byName(const std::string name)
 {
-	auto found = std::ranges::find(materialTypeCategoryDataStore, name, &MaterialTypeCategory::name);
-	assert(found != materialTypeCategoryDataStore.end());
-	return *found;
+	auto found = data.m_name.find(name);
+	assert(found != data.m_name.end());
+	return MaterialCategoryTypeId::create(found - data.m_name.begin());
 }
 MaterialConstructionData& MaterialConstructionData::byNameSpecialized(const std::string name, const MaterialType& materialType)
 {
@@ -21,15 +21,9 @@ MaterialConstructionData& MaterialConstructionData::byNameSpecialized(const std:
 	materialConstructionSpecializedDataStore.push_back(output);
 	return materialConstructionSpecializedDataStore.back();
 }
-const MaterialType& MaterialType::byName(const std::string name)
+MaterialTypeId MaterialType::byName(const std::string name)
 {
-	auto found = std::ranges::find(materialTypeDataStore, name, &MaterialType::name);
-	assert(found != materialTypeDataStore.end());
-	return *found;
-}
-MaterialType& MaterialType::byNameNonConst(const std::string name)
-{
-	auto found = std::ranges::find(materialTypeDataStore, name, &MaterialType::name);
-	assert(found != materialTypeDataStore.end());
-	return *found;
+	auto found = data.m_name.find(name);
+	assert(found != data.m_name.end());
+	return MaterialTypeId::create(found - data.m_name.begin());
 }

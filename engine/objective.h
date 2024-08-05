@@ -27,9 +27,9 @@ class ObjectiveTypeSetPriorityInputAction final : public InputAction
 {
 	ActorIndex m_actor;
 	const ObjectiveType& m_objectiveType;
-	uint8_t m_priority;
+	Priority m_priority;
 public:
-	ObjectiveTypeSetPriorityInputAction(InputQueue& inputQueue, ActorIndex actor, const ObjectiveType& objectiveType, uint8_t priority) : InputAction(inputQueue), m_actor(actor), m_objectiveType(objectiveType), m_priority(priority) { }
+	ObjectiveTypeSetPriorityInputAction(InputQueue& inputQueue, ActorIndex actor, const ObjectiveType& objectiveType, Priority priority) : InputAction(inputQueue), m_actor(actor), m_objectiveType(objectiveType), m_priority(priority) { }
 	void execute();
 };
 class ObjectiveTypeRemoveInputAction final : public InputAction
@@ -48,12 +48,15 @@ NLOHMANN_JSON_SERIALIZE_ENUM(ObjectiveTypeId, {
 	{ObjectiveTypeId::Dig,"Dig"}, 
 	{ObjectiveTypeId::Drink, "Drink"}, 
 	{ObjectiveTypeId::Eat, "Eat"}, 
+	{ObjectiveTypeId::Equip, "Equip"}, 
+	{ObjectiveTypeId::Exterminate, "Exterminate"}, 
 	{ObjectiveTypeId::GetToSafeTemperature, "GetToSafeTemperature"}, 
 	{ObjectiveTypeId::GiveItem, "GiveItem"}, 
 	{ObjectiveTypeId::GivePlantsFluid, "GivePlantsFluid"}, 
 	{ObjectiveTypeId::GoTo, "GoTo"}, 
 	{ObjectiveTypeId::Harvest, "Harvest"}, 
 	{ObjectiveTypeId::Haul, "Haul"}, 
+	{ObjectiveTypeId::InstallItem, "InstallItem"}, 
 	{ObjectiveTypeId::Kill, "Kill"}, 
 	{ObjectiveTypeId::LeaveArea, "LeaveArea"}, 
 	{ObjectiveTypeId::Medical, "Medical"}, 
@@ -62,9 +65,9 @@ NLOHMANN_JSON_SERIALIZE_ENUM(ObjectiveTypeId, {
 	{ObjectiveTypeId::Station, "Station"}, 
 	{ObjectiveTypeId::SowSeeds, "SowSeeds"}, 
 	{ObjectiveTypeId::StockPile, "StockPile"}, 
-	{ObjectiveTypeId::Wait, "Wait"}, 
 	{ObjectiveTypeId::Uniform, "Uniform"}, 
 	{ObjectiveTypeId::Unequip, "Unequip"}, 
+	{ObjectiveTypeId::Wait, "Wait"}, 
 	{ObjectiveTypeId::Wander, "Wander"},
 	{ObjectiveTypeId::Wander, "WoodCutting"},
 });
@@ -90,7 +93,7 @@ class Objective
 {
 public:
 	// Controlls usurping of current objective between the tasks currently at the top of the queue vs highest priority need.
-	uint32_t m_priority;
+	Priority m_priority;
 	// If detour is true then pathing will account for the positions of other actors.
 	bool m_detour = false;
 	// Reentrant state machine method.
@@ -120,7 +123,7 @@ public:
 	// When an objective is interrputed by a higher priority objective should it be kept in the task queue for later or discarded?
 	// Should be true only for objectives like Wander or Wait which are not meant to resume after interrupt because they are idle tasks.
 	[[nodiscard]] virtual bool canResume() const { return true; }
-	Objective(uint32_t p);
+	Objective(Priority priority);
 	// Explicit delete of copy and move constructors to ensure pointer stability.
 	Objective(const Objective&) = delete;
 	Objective(Objective&&) = delete;
@@ -133,7 +136,7 @@ inline void to_json(Json& data, const Objective* const& objective){ data = reint
 struct ObjectivePriority
 {
 	const ObjectiveType* objectiveType;
-	uint8_t priority;
+	Priority priority;
 	Step doNotAssignAgainUntil;
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ObjectivePriority, objectiveType, priority, doNotAssignAgainUntil);
@@ -144,12 +147,12 @@ class ObjectiveTypePrioritySet final
 	const ObjectivePriority& getById(ObjectiveTypeId objectiveTypeId) const;
 public:
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
-	void setPriority(Area& area, ActorIndex actor, const ObjectiveType& objectiveType, uint8_t priority);
+	void setPriority(Area& area, ActorIndex actor, const ObjectiveType& objectiveType, Priority priority);
 	void remove(const ObjectiveType& objectiveType);
 	void setObjectiveFor(Area& area, ActorIndex actor);
 	void setDelay(Area& area, ObjectiveTypeId objectiveTypeId);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] uint8_t getPriorityFor(ObjectiveTypeId objectiveTypeId) const;
+	[[nodiscard]] Priority getPriorityFor(ObjectiveTypeId objectiveTypeId) const;
 	// For testing.
 	[[nodiscard, maybe_unused]] bool isOnDelay(Area& area, ObjectiveTypeId objectiveTypeId) const;
 	[[nodiscard, maybe_unused]] Step getDelayEndFor(ObjectiveTypeId objectiveTypeId) const;
@@ -212,6 +215,7 @@ public:
 	void load(const Json& data, DeserializationMemo& deserializationMemo, Area& area, ActorIndex actor);
 	// Assign next objective from either task queue or needs, depending on priority.
 	void getNext(Area& area);
+	//TODO: should the unique ptrs be passed by reference here?
 	// Add to need set, to be sorted into position depending on priority. May usurp.
 	void addNeed(Area& area, std::unique_ptr<Objective> objective);
 	// Add task to end of queue.

@@ -155,7 +155,7 @@ bool StockPileObjective::destinationCondition(Area& area, BlockIndex block, cons
 		return false;
 	if(!blocks.item_empty(block))
 		// Don't put multiple items in the same block unless they are generic and share item type and material type.
-		if(!items.isGeneric(item) || !blocks.item_getCount(block, items.getItemType(item), items.getMaterialType(item)))
+		if(!items.isGeneric(item) || blocks.item_getCount(block, items.getItemType(item), items.getMaterialType(item)).empty())
 			return false;
 	FactionId faction = actors.getFactionId(actor);
 	const StockPile* stockpile = blocks.stockpile_getForFaction(block, faction);

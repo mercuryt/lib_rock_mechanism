@@ -9,6 +9,7 @@
 #include "config.h"
 #include "designations.h"
 #include "index.h"
+#include "pathMemo.h"
 #include "types.h"
 #include "callbackTypes.h"
 #include "dataVector.h"
@@ -23,6 +24,8 @@ class Area;
 class TerrainFacade;
 class ActorOrItemIndex;
 class PathRequest;
+class PathMemoBreadthFirst;
+class PathMemoDepthFirst;
 
 constexpr int maxAdjacent = 26;
 // TODO: optimization: single block shapes don't need facing
@@ -59,9 +62,12 @@ class TerrainFacade final
 	// AccessCondition could test for larger shapes or just return true for 1x1x1 size.
 	// TODO: huristic destination.
 	[[nodiscard]] FindPathResult findPath(BlockIndex from, const DestinationCondition destinationCondition, AccessCondition accessCondition, OpenListPush openListPush, OpenListPop openListPop, OpenListEmpty openListEmpty) const;
-	[[nodiscard]] FindPathResult findPathBreadthFirst(BlockIndex from, const DestinationCondition destinationCondition, AccessCondition accessCondition) const;
-	[[nodiscard]] FindPathResult findPathDepthFirst(BlockIndex from, const DestinationCondition destinationCondition, AccessCondition accessCondition, BlockIndex huristicDestination) const;
-	[[nodiscard]] bool canEnterFrom(BlockIndex blockIndex, uint8_t adjacentIndex) const;
+	[[nodiscard]] FindPathResult findPathBreadthFirst(BlockIndex from, const DestinationCondition destinationCondition, AccessCondition accessCondition, PathMemoBreadthFirst& memo) const;
+	[[nodiscard]] FindPathResult findPathDepthFirst(BlockIndex from, const DestinationCondition destinationCondition, AccessCondition accessCondition, BlockIndex huristicDestination, PathMemoDepthFirst& memo) const;
+	// Non batched pathing uses that WithoutMemo variants.
+	[[nodiscard]] FindPathResult findPathBreadthFirstWithoutMemo(BlockIndex from, const DestinationCondition destinationCondition, AccessCondition accessCondition) const;
+	[[nodiscard]] FindPathResult findPathDepthFirstWithoutMemo(BlockIndex from, const DestinationCondition destinationCondition, AccessCondition accessCondition, BlockIndex huristicDestination) const;
+	[[nodiscard]] bool canEnterFrom(BlockIndex blockIndex, AdjacentIndex adjacentIndex) const;
 	[[nodiscard]] FindPathResult findPathToForSingleBlockShape(BlockIndex start, const Shape& shape, BlockIndex target, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathToForMultiBlockShape(BlockIndex start, const Shape& shape, Facing startFacing, BlockIndex target, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathToAnyOfForSingleBlockShape(BlockIndex start, const Shape& shape, BlockIndices indecies, BlockIndex huristincDestination, bool detour = false) const;
@@ -78,8 +84,8 @@ class TerrainFacade final
 public:
 	TerrainFacade(Area& area, const MoveType& moveType);
 	void doStep();
-	void findPathForIndexWithHuristic(PathRequestIndex index);
-	void findPathForIndexNoHuristic(PathRequestIndex index);
+	void findPathForIndexWithHuristic(PathRequestIndex index, PathMemoDepthFirst& memo);
+	void findPathForIndexNoHuristic(PathRequestIndex index, PathMemoBreadthFirst& memo);
 	PathRequestIndex registerPathRequestNoHuristic(BlockIndex start, AccessCondition acces, DestinationCondition destination, PathRequest& pathRequest);
 	PathRequestIndex registerPathRequestWithHuristic(BlockIndex start, AccessCondition acces, DestinationCondition destination, BlockIndex huristic, PathRequest& pathRequest);
 	void unregisterNoHuristic(PathRequestIndex index);

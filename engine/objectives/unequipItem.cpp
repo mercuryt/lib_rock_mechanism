@@ -25,7 +25,7 @@ void UnequipItemObjective::execute(Area& area, ActorIndex actor)
 		Blocks& blocks = area.getBlocks();
 		Items& items = area.getItems();
 		ItemIndex item = m_item.getIndex();
-		if(blocks.shape_canEnterCurrentlyWithAnyFacing(m_block, items.getShape(item), {}))
+		if(blocks.item_canEnterCurrentlyWithAnyFacing(m_block, item))
 		{
 			actors.equipment_remove(actor, item);
 			items.setLocation(item, m_block);

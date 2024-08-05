@@ -6,11 +6,11 @@
 #include "actors/actors.h"
 #include "types.h"
 
-RestObjective::RestObjective(Area& area) : Objective(0), m_restEvent(area.m_eventSchedule) { }
+RestObjective::RestObjective(Area& area) : Objective(Priority::create(0)), m_restEvent(area.m_eventSchedule) { }
 RestObjective::RestObjective(const Json& data, Area& area, ActorIndex actor) : Objective(data), m_restEvent(area.m_eventSchedule) 
 {
 	if(data.contains("eventStart"))
-		m_restEvent.schedule(area, *this, data["eventStart"].get<Step>(), actor);
+		m_restEvent.schedule(area, *this, actor, data["eventStart"].get<Step>());
 }
 Json RestObjective::toJson() const
 {

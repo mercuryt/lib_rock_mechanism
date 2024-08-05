@@ -3,6 +3,7 @@
 #include "../deserializationMemo.h"
 #include "area.h"
 #include "items/items.h"
+#include "onDestroy.h"
 GiveItemObjective::GiveItemObjective(Area& area, ItemIndex item, ActorIndex recipient) :
 	Objective(Config::equipPriority)
 { 
@@ -47,8 +48,7 @@ void GiveItemObjective::cancel(Area& area, ActorIndex actor) { area.getActors().
 void GiveItemObjective::reset(Area& area, ActorIndex actor) { cancel(area, actor); }
 void GiveItemObjective::createOnDestroyCallbacks(Area& area, ActorIndex actor) 
 { 
-	std::function<void()> onDestory = [this, &area, actor]{ cancel(area, actor); };
-	m_hasOnDestroySubscriptions.setCallback(onDestory);
+	m_hasOnDestroySubscriptions.setCallback(std::make_unique<CancelObjectiveOnDestroyCallBack>(actor.toReference(area), *this, area));
 	// Item.
 	area.getItems().onDestroy_subscribe(m_item.getIndex(), m_hasOnDestroySubscriptions);
 	// Recipient.

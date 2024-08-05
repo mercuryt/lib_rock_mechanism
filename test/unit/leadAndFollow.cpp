@@ -7,6 +7,7 @@
 #include "../../engine/actors/actors.h"
 #include "../../engine/items/items.h"
 #include "../../engine/plants.h"
+#include "../../engine/animalSpecies.h"
 #include "../../engine/objectives/station.h"
 TEST_CASE("leadAndFollow")
 {
@@ -20,10 +21,10 @@ TEST_CASE("leadAndFollow")
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	SUBCASE("two dwarves")
 	{
-		BlockIndex origin1 = blocks.getIndex(2, 2, 1);
-		BlockIndex origin2 = blocks.getIndex(1, 1, 1);
-		BlockIndex destination1 = blocks.getIndex(9, 9, 1);
-		BlockIndex destination2 = blocks.getIndex(8, 8, 1);
+		BlockIndex origin1 = blocks.getIndex_i(2, 2, 1);
+		BlockIndex origin2 = blocks.getIndex_i(1, 1, 1);
+		BlockIndex destination1 = blocks.getIndex_i(9, 9, 1);
+		BlockIndex destination2 = blocks.getIndex_i(8, 8, 1);
 		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.location=origin1,
@@ -44,10 +45,10 @@ TEST_CASE("leadAndFollow")
 	}
 	SUBCASE("dwarf leads troll")
 	{
-		BlockIndex origin1 = blocks.getIndex(3, 3, 1);
-		BlockIndex origin2 = blocks.getIndex(2, 2, 1);
-		BlockIndex destination1 = blocks.getIndex(9, 9, 1);
-		BlockIndex destination2 = blocks.getIndex(8, 8, 1);
+		BlockIndex origin1 = blocks.getIndex_i(3, 3, 1);
+		BlockIndex origin2 = blocks.getIndex_i(2, 2, 1);
+		BlockIndex destination1 = blocks.getIndex_i(9, 9, 1);
+		BlockIndex destination2 = blocks.getIndex_i(8, 8, 1);
 		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.location=origin1,
@@ -68,10 +69,10 @@ TEST_CASE("leadAndFollow")
 	}
 	SUBCASE("troll leads dwarf")
 	{
-		BlockIndex origin1 = blocks.getIndex(3, 2, 1);
-		BlockIndex origin2 = blocks.getIndex(1, 1, 1);
-		BlockIndex destination1 = blocks.getIndex(8, 8, 1);
-		BlockIndex destination2 = blocks.getIndex(7, 6, 1);
+		BlockIndex origin1 = blocks.getIndex_i(3, 2, 1);
+		BlockIndex origin2 = blocks.getIndex_i(1, 1, 1);
+		BlockIndex destination1 = blocks.getIndex_i(8, 8, 1);
+		BlockIndex destination2 = blocks.getIndex_i(7, 6, 1);
 		ActorIndex troll1 = actors.create({
 			.species=troll,
 			.location=origin1,
@@ -92,13 +93,13 @@ TEST_CASE("leadAndFollow")
 	}
 	SUBCASE("use largest shape for pathing")
 	{
-		BlockIndex origin1 = blocks.getIndex(2, 2, 1);
-		BlockIndex origin2 = blocks.getIndex(1, 1, 1);
-		BlockIndex destination1 = blocks.getIndex(9, 9, 1);
-		blocks.solid_set(blocks.getIndex(5, 1, 1), marble, false);
-		blocks.solid_set(blocks.getIndex(5, 3, 1), marble, false);
-		blocks.solid_set(blocks.getIndex(5, 5, 1), marble, false);
-		blocks.solid_set(blocks.getIndex(5, 7, 1), marble, false);
+		BlockIndex origin1 = blocks.getIndex_i(2, 2, 1);
+		BlockIndex origin2 = blocks.getIndex_i(1, 1, 1);
+		BlockIndex destination1 = blocks.getIndex_i(9, 9, 1);
+		blocks.solid_set(blocks.getIndex_i(5, 1, 1), marble, false);
+		blocks.solid_set(blocks.getIndex_i(5, 3, 1), marble, false);
+		blocks.solid_set(blocks.getIndex_i(5, 5, 1), marble, false);
+		blocks.solid_set(blocks.getIndex_i(5, 7, 1), marble, false);
 		ActorIndex dwarf1 = actors.create({
 			.species=AnimalSpecies::byName("dwarf"),
 			.location=origin1,
@@ -114,11 +115,11 @@ TEST_CASE("leadAndFollow")
 	}
 	SUBCASE("wait for follower to keep up if blocked temporarily")
 	{
-		BlockIndex origin1 = blocks.getIndex(2, 2, 1);
-		BlockIndex origin2 = blocks.getIndex(1, 1, 1);
-		BlockIndex origin3 = blocks.getIndex(3, 2, 1);
-		BlockIndex destination1 = blocks.getIndex(9, 9, 1);
-		BlockIndex destination2 = blocks.getIndex(8, 8, 1);
+		BlockIndex origin1 = blocks.getIndex_i(2, 2, 1);
+		BlockIndex origin2 = blocks.getIndex_i(1, 1, 1);
+		BlockIndex origin3 = blocks.getIndex_i(3, 2, 1);
+		BlockIndex destination1 = blocks.getIndex_i(9, 9, 1);
+		BlockIndex destination2 = blocks.getIndex_i(8, 8, 1);
 		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.location=origin1,
@@ -131,7 +132,7 @@ TEST_CASE("leadAndFollow")
 			.species=dwarf,
 			.location=origin3,
 		});
-		std::unique_ptr<Objective> stationObjective = std::make_unique<StationObjective>(dwarf2, origin3);
+		std::unique_ptr<Objective> stationObjective = std::make_unique<StationObjective>(origin3);
 		actors.objective_addTaskToStart(dwarf2,std::move(stationObjective)); 
 		actors.followActor(dwarf1, troll1);
 		actors.move_setDestination(dwarf1, destination1);
@@ -142,7 +143,7 @@ TEST_CASE("leadAndFollow")
 		// Troll has not moved yet.
 		REQUIRE(actors.getLocation(troll1) == origin2);
 		REQUIRE(!blocks.shape_shapeAndMoveTypeCanEnterEverFrom(origin1, actors.getShape(troll1), actors.getMoveType(troll1), actors.getLocation(troll1)));
-		actors.setLocation(dwarf2, blocks.getIndex(9, 1, 1));
+		actors.setLocation(dwarf2, blocks.getIndex_i(9, 1, 1));
 		REQUIRE(blocks.shape_shapeAndMoveTypeCanEnterEverFrom(origin1, actors.getShape(troll1), actors.getMoveType(troll1), actors.getLocation(troll1)));
 		REQUIRE(actors.move_hasEvent(dwarf1));
 		Step delay = actors.move_stepsTillNextMoveEvent(dwarf1) - simulation.m_step;
@@ -155,9 +156,9 @@ TEST_CASE("leadAndFollow")
 	}
 	SUBCASE("disband line if follower blocked permanantly")
 	{
-		BlockIndex origin1 = blocks.getIndex(2, 2, 1);
-		BlockIndex origin2 = blocks.getIndex(1, 1, 1);
-		BlockIndex destination1 = blocks.getIndex(9, 9, 1);
+		BlockIndex origin1 = blocks.getIndex_i(2, 2, 1);
+		BlockIndex origin2 = blocks.getIndex_i(1, 1, 1);
+		BlockIndex destination1 = blocks.getIndex_i(9, 9, 1);
 		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.location=origin1,
@@ -169,7 +170,7 @@ TEST_CASE("leadAndFollow")
 		actors.followActor(dwarf1, troll1);
 		actors.move_setDestination(dwarf1, destination1);
 		simulation.doStep();
-		blocks.solid_set(blocks.getIndex(2, 1, 1), marble, false);
+		blocks.solid_set(blocks.getIndex_i(2, 1, 1), marble, false);
 		while(actors.getLocation(dwarf1) == origin1)
 			simulation.doStep();
 		REQUIRE(!actors.isLeading(dwarf1));

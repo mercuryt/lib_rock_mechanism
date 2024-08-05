@@ -17,7 +17,7 @@ GetToSafeTemperaturePathRequest::GetToSafeTemperaturePathRequest(Area& area, Get
 		return false;
 	};
 	bool unreserved = false;
-	createGoToCondition(area, actor, condition, m_objective.m_detour, unreserved, BLOCK_DISTANCE_MAX);
+	createGoToCondition(area, actor, condition, m_objective.m_detour, unreserved, DistanceInBlocks::null());
 }
 void GetToSafeTemperaturePathRequest::callback(Area& area, FindPathResult& result)
 {

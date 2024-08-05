@@ -2,9 +2,8 @@
 #include "../area.h"
 #include "../simulation.h"
 #include "../actors/actors.h"
-#include "terrainFacade.h"
 
-LeaveAreaObjective::LeaveAreaObjective(uint8_t priority) :
+LeaveAreaObjective::LeaveAreaObjective(Priority priority) :
 	Objective(priority) { }
 void LeaveAreaObjective::execute(Area& area, ActorIndex actor)
 {

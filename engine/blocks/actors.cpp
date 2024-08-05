@@ -23,10 +23,9 @@ void Blocks::actor_erase(BlockIndex index, ActorIndex actor)
 		m_staticVolume.at(index) -= iter2->second;
 	else
 		m_dynamicVolume.at(index) -= iter2->second;
-	(*iter) = blockActors.back();
+	blockActors.remove(iter);
 	(*iter2) = blockActorVolume.back();
 	blockActorVolume.pop_back();
-	blockActors.pop_back();
 }
 void Blocks::actor_setTemperature(BlockIndex index, Temperature temperature)
 {
@@ -60,7 +59,7 @@ bool Blocks::actor_canEnterCurrentlyWithFacing(BlockIndex index, ActorIndex acto
 	// For multi block shapes assume that volume is the same for each block.
 	CollisionVolume volume = shape.getCollisionVolumeAtLocationBlock();
 	for(BlockIndex block : shape.getBlocksOccupiedAt(*this, index, facing))
-		if(!actor_contains(block, actor) && (m_actors.at(block).full() || m_dynamicVolume.at(block) + volume > Config::maxBlockVolume))
+		if(!actor_contains(block, actor) && (/*m_actors.at(block).full() ||*/ m_dynamicVolume.at(block) + volume > Config::maxBlockVolume))
 				return false;
 	return true;
 }
@@ -75,13 +74,20 @@ bool Blocks::actor_canEnterEverOrCurrentlyWithFacing(BlockIndex index, ActorInde
 		if(m_actors.at(block).contains(actor))
 			continue;
 		if(block.empty() || !shape_anythingCanEnterEver(block) ||
-			m_actors.at(block).full() ||
+			/*m_actors.at(block).full() ||*/
 			m_dynamicVolume.at(block) + v > Config::maxBlockVolume || 
 			!shape_moveTypeCanEnter(block, moveType)
 		)
 			return false;
 	}
 	return true;
+}
+bool Blocks::actor_canEnterCurrentlyWithAnyFacing(BlockIndex index, ActorIndex actor) const
+{
+	for(Facing i = Facing::create(0); i < 4; ++i)
+		if(actor_canEnterCurrentlyWithFacing(index, actor, i))
+			return true;
+	return false;
 }
 bool Blocks::actor_empty(BlockIndex index) const
 {

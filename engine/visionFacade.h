@@ -10,13 +10,13 @@ class Area;
 class Actor;
 struct VisionCuboid;
 // Holds Actor pointers along with their vision range and location for high speed iteration during vision read step.
-// Also holds result.
 class VisionFacade final
 {
-	Area* m_area;
 	DataVector<ActorIndex, VisionFacadeIndex> m_actors;
 	DataVector<BlockIndex, VisionFacadeIndex> m_locations;
 	DataVector<DistanceInBlocks, VisionFacadeIndex> m_ranges;
+	DataVector<ActorIndices, VisionFacadeIndex> m_results;
+	Area* m_area;
 public:
 	VisionFacade();
 	// Used as part of initalizaton.

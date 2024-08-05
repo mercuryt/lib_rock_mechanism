@@ -13,40 +13,10 @@ struct BodyPart;
 class WoundHealEvent;
 class BleedEvent;
 class WoundsCloseEvent;
-struct MaterialType;
-class Actor;
 struct DeserializationMemo;
 struct Attack;
 class Simulation;
 
-// For example: 'left arm', 'head', etc.
-struct BodyPartType final
-{
-	const std::string name;
-	const Volume volume;
-	const bool doesLocamotion;
-	const bool doesManipulation;
-	const bool vital;
-	std::vector<std::pair<const AttackType, const MaterialType*>> attackTypesAndMaterials;
-	// Infastructure.
-	bool operator==(const BodyPartType& bodyPartType) const { return this == &bodyPartType; }
-	static const BodyPartType& byName(const std::string name);
-};
-inline std::vector<BodyPartType> bodyPartTypeDataStore;
-// For example biped, quadraped, bird, etc.
-struct BodyType final
-{
-	const std::string name;
-	std::vector<const BodyPartType*> bodyPartTypes;
-	bool hasBodyPart(const BodyPartType& bodyPartType) const
-	{
-		return std::ranges::find(bodyPartTypes, &bodyPartType) != bodyPartTypes.end();
-	}
-	// Infastructure.
-	bool operator==(const BodyType& bodyType){ return this == &bodyType; }
-	static const BodyType& byName(const std::string name);
-};
-inline std::vector<BodyType> bodyTypeDataStore;
 struct Wound final
 {
 	const WoundType woundType;

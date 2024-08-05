@@ -10,6 +10,7 @@
 #include "../../engine/actors/actors.h"
 #include "../../engine/items/items.h"
 #include "../../engine/plants.h"
+#include "types.h"
 TEST_CASE("fluids smaller")
 {
 	static const MaterialType& marble = MaterialType::byName("marble");
@@ -22,10 +23,10 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Create Fluid 100")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		BlockIndex block = blocks.getIndex({5, 5, 1});
+		BlockIndex block = blocks.getIndex_i(5, 5, 1);
 		blocks.solid_setNot(block);
-		blocks.fluid_add(block, 100, water);
-		REQUIRE(blocks.fluid_contains(blocks.getIndex({5, 5, 1}), water));
+		blocks.fluid_add(block, CollisionVolume::create(100), water);
+		REQUIRE(blocks.fluid_contains(blocks.getIndex_i(5, 5, 1), water));
 		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
 		REQUIRE(fluidGroup->m_fillQueue.m_set.size() == 1);
 		fluidGroup->readStep();
@@ -47,11 +48,11 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Create Fluid 2")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		BlockIndex block = blocks.getIndex({5, 5, 1});
-		BlockIndex block2 = blocks.getIndex({5, 5, 4});
+		BlockIndex block = blocks.getIndex_i(5, 5, 1);
+		BlockIndex block2 = blocks.getIndex_i(5, 5, 4);
 		blocks.solid_setNot(block);
-		blocks.fluid_add(block, 1, water);
-		blocks.fluid_add(block2, 1, water);
+		blocks.fluid_add(block, CollisionVolume::create(1), water);
+		blocks.fluid_add(block2, CollisionVolume::create(1), water);
 		REQUIRE(blocks.fluid_getGroup(block, &water));
 		simulation.doStep();
 		simulation.doStep();
@@ -68,12 +69,12 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Excess volume spawns and negitive excess despawns.")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 2, marble);
-		BlockIndex block = blocks.getIndex({5, 5, 1});
-		BlockIndex block2 = blocks.getIndex({5, 5, 2});
-		BlockIndex block3 = blocks.getIndex({5, 5, 3});
+		BlockIndex block = blocks.getIndex_i(5, 5, 1);
+		BlockIndex block2 = blocks.getIndex_i(5, 5, 2);
+		BlockIndex block3 = blocks.getIndex_i(5, 5, 3);
 		blocks.solid_setNot(block);
 		blocks.solid_setNot(block2);
-		blocks.fluid_add(block, Config::maxBlockVolume * 2, water);
+		blocks.fluid_add(block, Config::maxBlockVolume * 2u, water);
 		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
 		REQUIRE(!fluidGroup->m_stable);
 		REQUIRE(fluidGroup->m_drainQueue.m_set.size() == 1);
@@ -101,7 +102,7 @@ TEST_CASE("fluids smaller")
 		fluidGroup->splitStep();
 		fluidGroup->mergeStep();
 		REQUIRE(blocks.fluid_getGroup(block2, water));
-		REQUIRE(!blocks.fluid_contains(blocks.getIndex({5, 5, 3}), water));
+		REQUIRE(!blocks.fluid_contains(blocks.getIndex_i(5, 5, 3), water));
 		blocks.fluid_remove(block, Config::maxBlockVolume, water);
 		REQUIRE(!fluidGroup->m_stable);
 		// Step 3.
@@ -119,9 +120,9 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Remove volume can destroy FluidGroups.")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		BlockIndex block = blocks.getIndex({5, 5, 1});
+		BlockIndex block = blocks.getIndex_i(5, 5, 1);
 		blocks.solid_setNot(block);
-		blocks.fluid_add(block, 100, water);
+		blocks.fluid_add(block, CollisionVolume::create(100), water);
 		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
 		fluidGroup->readStep();
 		REQUIRE(fluidGroup->m_stable);
@@ -130,7 +131,7 @@ TEST_CASE("fluids smaller")
 		fluidGroup->splitStep();
 		fluidGroup->mergeStep();
 		REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
-		blocks.fluid_remove(block, 100, water);
+		blocks.fluid_remove(block, CollisionVolume::create(100), water);
 		REQUIRE(fluidGroup->m_destroy == false);
 		// Step 1.
 		fluidGroup->readStep();
@@ -141,11 +142,11 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Flow into adjacent hole")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 2, marble);
-		BlockIndex destination = blocks.getIndex({5, 5, 1});
-		BlockIndex block2 = blocks.getIndex({5, 5, 2});
-		BlockIndex origin = blocks.getIndex({5, 6, 2});
-		BlockIndex block4 = blocks.getIndex({5, 5, 3});
-		BlockIndex block5 = blocks.getIndex({5, 6, 3});
+		BlockIndex destination = blocks.getIndex_i(5, 5, 1);
+		BlockIndex block2 = blocks.getIndex_i(5, 5, 2);
+		BlockIndex origin = blocks.getIndex_i(5, 6, 2);
+		BlockIndex block4 = blocks.getIndex_i(5, 5, 3);
+		BlockIndex block5 = blocks.getIndex_i(5, 6, 3);
 		blocks.solid_setNot(destination);
 		blocks.solid_setNot(block2);
 		blocks.solid_setNot(origin);
@@ -209,15 +210,15 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Flow across area and then fill hole")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		BlockIndex block = blocks.getIndex({5, 5, 2});
-		BlockIndex block2a = blocks.getIndex({5, 6, 2});
-		BlockIndex block2b = blocks.getIndex({6, 5, 2});
-		BlockIndex block2c = blocks.getIndex({5, 4, 2});
-		BlockIndex block2d = blocks.getIndex({4, 5, 2});
-		BlockIndex block3 = blocks.getIndex({6, 6, 2});
-		BlockIndex block4 = blocks.getIndex({5, 7, 2});
-		BlockIndex block5 = blocks.getIndex({5, 7, 1});
-		BlockIndex block6 = blocks.getIndex({5, 8, 2});
+		BlockIndex block = blocks.getIndex_i(5, 5, 2);
+		BlockIndex block2a = blocks.getIndex_i(5, 6, 2);
+		BlockIndex block2b = blocks.getIndex_i(6, 5, 2);
+		BlockIndex block2c = blocks.getIndex_i(5, 4, 2);
+		BlockIndex block2d = blocks.getIndex_i(4, 5, 2);
+		BlockIndex block3 = blocks.getIndex_i(6, 6, 2);
+		BlockIndex block4 = blocks.getIndex_i(5, 7, 2);
+		BlockIndex block5 = blocks.getIndex_i(5, 7, 1);
+		BlockIndex block6 = blocks.getIndex_i(5, 8, 2);
 		blocks.fluid_add(block, Config::maxBlockVolume, water);
 		blocks.solid_setNot(block5);
 		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
@@ -276,17 +277,17 @@ TEST_CASE("fluids smaller")
 	SUBCASE("FluidGroups are able to split into parts")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 2, marble);
-		BlockIndex destination1 = blocks.getIndex({5, 4, 1});
-		BlockIndex destination2 = blocks.getIndex({5, 6, 1});
-		BlockIndex origin1 = blocks.getIndex({5, 5, 2});
-		BlockIndex origin2 = blocks.getIndex({5, 5, 3});
+		BlockIndex destination1 = blocks.getIndex_i(5, 4, 1);
+		BlockIndex destination2 = blocks.getIndex_i(5, 6, 1);
+		BlockIndex origin1 = blocks.getIndex_i(5, 5, 2);
+		BlockIndex origin2 = blocks.getIndex_i(5, 5, 3);
 		blocks.solid_setNot(destination1);
 		blocks.solid_setNot(destination2);
 		blocks.solid_setNot(blocks.getBlockAbove(destination1));
 		blocks.solid_setNot(blocks.getBlockAbove(destination2));
 		blocks.solid_setNot(origin1);
-		blocks.fluid_add(origin1, 100, water);
-		blocks.fluid_add(origin2, 100, water);
+		blocks.fluid_add(origin1, CollisionVolume::create(100), water);
+		blocks.fluid_add(origin2, CollisionVolume::create(100), water);
 		REQUIRE(blocks.fluid_getGroup(origin1, water) == blocks.fluid_getGroup(origin2, water));
 		REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
 		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
@@ -316,14 +317,14 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Fluid Groups merge")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		BlockIndex origin1 = blocks.getIndex({5, 4, 1});
-		BlockIndex block1 = blocks.getIndex({5, 5, 1});
-		BlockIndex origin2 = blocks.getIndex({5, 6, 1});
+		BlockIndex origin1 = blocks.getIndex_i(5, 4, 1);
+		BlockIndex block1 = blocks.getIndex_i(5, 5, 1);
+		BlockIndex origin2 = blocks.getIndex_i(5, 6, 1);
 		blocks.solid_setNot(origin1);
 		blocks.solid_setNot(block1);
 		blocks.solid_setNot(origin2);
-		blocks.fluid_add(origin1, 100, water);
-		blocks.fluid_add(origin2, 100, water);
+		blocks.fluid_add(origin1, CollisionVolume::create(100), water);
+		blocks.fluid_add(origin2, CollisionVolume::create(100), water);
 		REQUIRE(area.m_hasFluidGroups.getAll().size() == 2);
 		FluidGroup* fg1 = blocks.fluid_getGroup(origin1, water);
 		FluidGroup* fg2 = blocks.fluid_getGroup(origin2, water);
@@ -369,16 +370,16 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Fluid Groups merge four blocks")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		BlockIndex block1 = blocks.getIndex({5, 4, 1});
-		BlockIndex block2 = blocks.getIndex({5, 5, 1});
-		BlockIndex block3 = blocks.getIndex({5, 6, 1});
-		BlockIndex block4 = blocks.getIndex({5, 7, 1});
+		BlockIndex block1 = blocks.getIndex_i(5, 4, 1);
+		BlockIndex block2 = blocks.getIndex_i(5, 5, 1);
+		BlockIndex block3 = blocks.getIndex_i(5, 6, 1);
+		BlockIndex block4 = blocks.getIndex_i(5, 7, 1);
 		blocks.solid_setNot(block1);
 		blocks.solid_setNot(block2);
 		blocks.solid_setNot(block3);
 		blocks.solid_setNot(block4);
-		blocks.fluid_add(block1, 100, water);
-		blocks.fluid_add(block4, 100, water);
+		blocks.fluid_add(block1, CollisionVolume::create(100), water);
+		blocks.fluid_add(block4, CollisionVolume::create(100), water);
 		REQUIRE(area.m_hasFluidGroups.getAll().size() == 2);
 		FluidGroup* fg1 = blocks.fluid_getGroup(block1, water);
 		FluidGroup* fg2 = blocks.fluid_getGroup(block4, water);
@@ -414,13 +415,13 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Denser fluids sink")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 2, marble);
-		BlockIndex block1 = blocks.getIndex({5, 5, 1});
-		BlockIndex block2 = blocks.getIndex({5, 5, 2});
-		BlockIndex block3 = blocks.getIndex({5, 5, 3});
+		BlockIndex block1 = blocks.getIndex_i(5, 5, 1);
+		BlockIndex block2 = blocks.getIndex_i(5, 5, 2);
+		BlockIndex block3 = blocks.getIndex_i(5, 5, 3);
 		blocks.solid_setNot(block1);
 		blocks.solid_setNot(block2);
-		blocks.fluid_add(block1, 100, water);
-		blocks.fluid_add(block2, 100, mercury);
+		blocks.fluid_add(block1, CollisionVolume::create(100), water);
+		blocks.fluid_add(block2, CollisionVolume::create(100), mercury);
 		REQUIRE(area.m_hasFluidGroups.getAll().size() == 2);
 		FluidGroup* fgWater = blocks.fluid_getGroup(block1, water);
 		FluidGroup* fgMercury = blocks.fluid_getGroup(block2, mercury);
@@ -511,13 +512,13 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Merge 3 groups at two block distance")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		BlockIndex block1 = blocks.getIndex({5, 2, 1});
-		BlockIndex block2 = blocks.getIndex({5, 3, 1});
-		BlockIndex block3 = blocks.getIndex({5, 4, 1});
-		BlockIndex block4 = blocks.getIndex({5, 5, 1});
-		BlockIndex block5 = blocks.getIndex({5, 6, 1});
-		BlockIndex block6 = blocks.getIndex({5, 7, 1});
-		BlockIndex block7 = blocks.getIndex({5, 8, 1});
+		BlockIndex block1 = blocks.getIndex_i(5, 2, 1);
+		BlockIndex block2 = blocks.getIndex_i(5, 3, 1);
+		BlockIndex block3 = blocks.getIndex_i(5, 4, 1);
+		BlockIndex block4 = blocks.getIndex_i(5, 5, 1);
+		BlockIndex block5 = blocks.getIndex_i(5, 6, 1);
+		BlockIndex block6 = blocks.getIndex_i(5, 7, 1);
+		BlockIndex block7 = blocks.getIndex_i(5, 8, 1);
 		blocks.solid_setNot(block1);
 		blocks.solid_setNot(block2);
 		blocks.solid_setNot(block3);
@@ -525,9 +526,9 @@ TEST_CASE("fluids smaller")
 		blocks.solid_setNot(block5);
 		blocks.solid_setNot(block6);
 		blocks.solid_setNot(block7);
-		blocks.fluid_add(block1, 100, water);
-		blocks.fluid_add(block4, 100, water);
-		blocks.fluid_add(block7, 100, water);
+		blocks.fluid_add(block1, CollisionVolume::create(100), water);
+		blocks.fluid_add(block4, CollisionVolume::create(100), water);
+		blocks.fluid_add(block7, CollisionVolume::create(100), water);
 		REQUIRE(area.m_hasFluidGroups.getAll().size() == 3);
 		FluidGroup* fg1 = blocks.fluid_getGroup(block1, water);
 		FluidGroup* fg2 = blocks.fluid_getGroup(block4, water);
@@ -582,13 +583,13 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Split test 2")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 4, marble);
-		BlockIndex block1 = blocks.getIndex({5, 4, 1});
-		BlockIndex block2 = blocks.getIndex({5, 5, 1});
-		BlockIndex block3 = blocks.getIndex({5, 5, 2});
-		BlockIndex origin1 = blocks.getIndex({5, 5, 3});
-		BlockIndex origin2 = blocks.getIndex({5, 6, 3});
-		BlockIndex origin3 = blocks.getIndex({5, 7, 3});
-		BlockIndex block4 = blocks.getIndex({5, 7, 2});
+		BlockIndex block1 = blocks.getIndex_i(5, 4, 1);
+		BlockIndex block2 = blocks.getIndex_i(5, 5, 1);
+		BlockIndex block3 = blocks.getIndex_i(5, 5, 2);
+		BlockIndex origin1 = blocks.getIndex_i(5, 5, 3);
+		BlockIndex origin2 = blocks.getIndex_i(5, 6, 3);
+		BlockIndex origin3 = blocks.getIndex_i(5, 7, 3);
+		BlockIndex block4 = blocks.getIndex_i(5, 7, 2);
 		blocks.solid_setNot(origin1);
 		blocks.solid_setNot(origin2);
 		blocks.solid_setNot(origin3);
@@ -596,10 +597,10 @@ TEST_CASE("fluids smaller")
 		blocks.solid_setNot(block2);
 		blocks.solid_setNot(block3);
 		blocks.solid_setNot(block4);
-		blocks.fluid_add(origin1, 20, water);
+		blocks.fluid_add(origin1, CollisionVolume::create(20), water);
 		FluidGroup* fg1 = blocks.fluid_getGroup(origin1, water);
-		blocks.fluid_add(origin2, 20, water);
-		blocks.fluid_add(origin3, 20, water);
+		blocks.fluid_add(origin2, CollisionVolume::create(20), water);
+		blocks.fluid_add(origin3, CollisionVolume::create(20), water);
 		REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
 		REQUIRE(fg1->m_drainQueue.m_set.size() == 3);
 		// Step 1.
@@ -664,13 +665,13 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Merge with group as it splits")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 4, marble);
-		BlockIndex origin1 = blocks.getIndex({5, 4, 1});
-		BlockIndex block1 = blocks.getIndex({5, 5, 1});
-		BlockIndex block2 = blocks.getIndex({5, 5, 2});
-		BlockIndex origin2 = blocks.getIndex({5, 5, 3});
-		BlockIndex origin3 = blocks.getIndex({5, 6, 3});
-		BlockIndex origin4 = blocks.getIndex({5, 7, 3});
-		BlockIndex block3 = blocks.getIndex({5, 7, 2});
+		BlockIndex origin1 = blocks.getIndex_i(5, 4, 1);
+		BlockIndex block1 = blocks.getIndex_i(5, 5, 1);
+		BlockIndex block2 = blocks.getIndex_i(5, 5, 2);
+		BlockIndex origin2 = blocks.getIndex_i(5, 5, 3);
+		BlockIndex origin3 = blocks.getIndex_i(5, 6, 3);
+		BlockIndex origin4 = blocks.getIndex_i(5, 7, 3);
+		BlockIndex block3 = blocks.getIndex_i(5, 7, 2);
 		blocks.solid_setNot(origin1);
 		blocks.solid_setNot(origin2);
 		blocks.solid_setNot(origin3);
@@ -678,12 +679,12 @@ TEST_CASE("fluids smaller")
 		blocks.solid_setNot(block1);
 		blocks.solid_setNot(block2);
 		blocks.solid_setNot(block3);
-		blocks.fluid_add(origin1, 100, water);
+		blocks.fluid_add(origin1, CollisionVolume::create(100), water);
 		FluidGroup* fg1 = blocks.fluid_getGroup(origin1, water);
-		blocks.fluid_add(origin2, 20, water);
+		blocks.fluid_add(origin2, CollisionVolume::create(20), water);
 		FluidGroup* fg2 = blocks.fluid_getGroup(origin2, water);
-		blocks.fluid_add(origin3, 20, water);
-		blocks.fluid_add(origin4, 20, water);
+		blocks.fluid_add(origin3, CollisionVolume::create(20), water);
+		blocks.fluid_add(origin4, CollisionVolume::create(20), water);
 		REQUIRE(area.m_hasFluidGroups.getAll().size() == 2);
 		REQUIRE(fg1->m_drainQueue.m_set.size() == 1);
 		REQUIRE(fg2->m_drainQueue.m_set.size() == 3);
@@ -732,15 +733,15 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Merge with two groups while spliting")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 4, marble);
-		BlockIndex origin1 = blocks.getIndex({5, 4, 1});
-		BlockIndex block1 = blocks.getIndex({5, 5, 1});
-		BlockIndex block2 = blocks.getIndex({5, 5, 2});
-		BlockIndex origin2 = blocks.getIndex({5, 5, 3});
-		BlockIndex origin3 = blocks.getIndex({5, 6, 3});
-		BlockIndex origin4 = blocks.getIndex({5, 7, 3});
-		BlockIndex block3 = blocks.getIndex({5, 7, 2});
-		BlockIndex block4 = blocks.getIndex({5, 7, 1});
-		BlockIndex origin5 = blocks.getIndex({5, 8, 1});
+		BlockIndex origin1 = blocks.getIndex_i(5, 4, 1);
+		BlockIndex block1 = blocks.getIndex_i(5, 5, 1);
+		BlockIndex block2 = blocks.getIndex_i(5, 5, 2);
+		BlockIndex origin2 = blocks.getIndex_i(5, 5, 3);
+		BlockIndex origin3 = blocks.getIndex_i(5, 6, 3);
+		BlockIndex origin4 = blocks.getIndex_i(5, 7, 3);
+		BlockIndex block3 = blocks.getIndex_i(5, 7, 2);
+		BlockIndex block4 = blocks.getIndex_i(5, 7, 1);
+		BlockIndex origin5 = blocks.getIndex_i(5, 8, 1);
 		blocks.solid_setNot(origin1);
 		blocks.solid_setNot(origin2);
 		blocks.solid_setNot(origin3);
@@ -750,13 +751,13 @@ TEST_CASE("fluids smaller")
 		blocks.solid_setNot(block2);
 		blocks.solid_setNot(block3);
 		blocks.solid_setNot(block4);
-		blocks.fluid_add(origin1, 100, water);
+		blocks.fluid_add(origin1, CollisionVolume::create(100), water);
 		FluidGroup* fg1 = blocks.fluid_getGroup(origin1, water);
-		blocks.fluid_add(origin2, 20, water);
+		blocks.fluid_add(origin2, CollisionVolume::create(20), water);
 		FluidGroup* fg2 = blocks.fluid_getGroup(origin2, water);
-		blocks.fluid_add(origin3, 20, water);
-		blocks.fluid_add(origin4, 20, water);
-		blocks.fluid_add(origin5, 100, water);
+		blocks.fluid_add(origin3, CollisionVolume::create(20), water);
+		blocks.fluid_add(origin4, CollisionVolume::create(20), water);
+		blocks.fluid_add(origin5, CollisionVolume::create(100), water);
 		FluidGroup* fg3 = blocks.fluid_getGroup(origin5, water);
 		REQUIRE(area.m_hasFluidGroups.getAll().size() == 3);
 		REQUIRE(fg1 != fg2);
@@ -824,17 +825,17 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Bubbles")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 4, marble);
-		BlockIndex origin1 = blocks.getIndex({5, 5, 1});
-		BlockIndex origin2 = blocks.getIndex({5, 5, 2});
-		BlockIndex origin3 = blocks.getIndex({5, 5, 3});
-		BlockIndex block1 = blocks.getIndex({5, 5, 4});
+		BlockIndex origin1 = blocks.getIndex_i(5, 5, 1);
+		BlockIndex origin2 = blocks.getIndex_i(5, 5, 2);
+		BlockIndex origin3 = blocks.getIndex_i(5, 5, 3);
+		BlockIndex block1 = blocks.getIndex_i(5, 5, 4);
 		blocks.solid_setNot(origin1);
 		blocks.solid_setNot(origin2);
 		blocks.solid_setNot(origin3);
 		blocks.solid_setNot(block1);
-		blocks.fluid_add(origin1, 100, CO2);
-		blocks.fluid_add(origin2, 100, water);
-		blocks.fluid_add(origin3, 100, water);
+		blocks.fluid_add(origin1, CollisionVolume::create(100), CO2);
+		blocks.fluid_add(origin2, CollisionVolume::create(100), water);
+		blocks.fluid_add(origin3, CollisionVolume::create(100), water);
 		FluidGroup* fg1 = blocks.fluid_getGroup(origin1, CO2);
 		FluidGroup* fg2 = blocks.fluid_getGroup(origin2, water);
 		// Step 1.
@@ -866,7 +867,7 @@ TEST_CASE("fluids smaller")
 		fg1->mergeStep();
 		fg2->mergeStep();
 		REQUIRE(fg1->m_stable);
-		fg2->removeFluid(100);
+		fg2->removeFluid(CollisionVolume::create(100));
 		// Step 3.
 		fg2->readStep();
 		fg2->writeStep();
@@ -894,17 +895,17 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Three liquids")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 4, marble);
-		BlockIndex origin1 = blocks.getIndex({5, 5, 1});
-		BlockIndex origin2 = blocks.getIndex({5, 5, 2});
-		BlockIndex origin3 = blocks.getIndex({5, 5, 3});
-		BlockIndex block1 = blocks.getIndex({5, 5, 4});
+		BlockIndex origin1 = blocks.getIndex_i(5, 5, 1);
+		BlockIndex origin2 = blocks.getIndex_i(5, 5, 2);
+		BlockIndex origin3 = blocks.getIndex_i(5, 5, 3);
+		BlockIndex block1 = blocks.getIndex_i(5, 5, 4);
 		blocks.solid_setNot(origin1);
 		blocks.solid_setNot(origin2);
 		blocks.solid_setNot(origin3);
 		blocks.solid_setNot(block1);
-		blocks.fluid_add(origin1, 100, CO2);
-		blocks.fluid_add(origin2, 100, water);
-		blocks.fluid_add(origin3, 100, mercury);
+		blocks.fluid_add(origin1, CollisionVolume::create(100), CO2);
+		blocks.fluid_add(origin2, CollisionVolume::create(100), water);
+		blocks.fluid_add(origin3, CollisionVolume::create(100), mercury);
 		FluidGroup* fg1 = blocks.fluid_getGroup(origin1, CO2);
 		FluidGroup* fg2 = blocks.fluid_getGroup(origin2, water);
 		FluidGroup* fg3 = blocks.fluid_getGroup(origin3, mercury);
@@ -1021,12 +1022,12 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Set not solid")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		BlockIndex origin1 = blocks.getIndex({5, 5, 1});
-		BlockIndex block1 = blocks.getIndex({5, 6, 1});
-		BlockIndex block2 = blocks.getIndex({5, 7, 1});
+		BlockIndex origin1 = blocks.getIndex_i(5, 5, 1);
+		BlockIndex block1 = blocks.getIndex_i(5, 6, 1);
+		BlockIndex block2 = blocks.getIndex_i(5, 7, 1);
 		blocks.solid_setNot(origin1);
 		blocks.solid_setNot(block2);
-		blocks.fluid_add(origin1, 100, water);
+		blocks.fluid_add(origin1, CollisionVolume::create(100), water);
 		FluidGroup* fg1 = blocks.fluid_getGroup(origin1, water);
 		REQUIRE(fg1 != nullptr);
 		// Step 1.
@@ -1062,13 +1063,13 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Set solid")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		BlockIndex origin1 = blocks.getIndex({5, 5, 1});
-		BlockIndex block1 = blocks.getIndex({5, 6, 1});
-		BlockIndex block2 = blocks.getIndex({5, 7, 1});
+		BlockIndex origin1 = blocks.getIndex_i(5, 5, 1);
+		BlockIndex block1 = blocks.getIndex_i(5, 6, 1);
+		BlockIndex block2 = blocks.getIndex_i(5, 7, 1);
 		blocks.solid_setNot(origin1);
 		blocks.solid_setNot(block1);
 		blocks.solid_setNot(block2);
-		blocks.fluid_add(origin1, 100, water);
+		blocks.fluid_add(origin1, CollisionVolume::create(100), water);
 		FluidGroup* fg1 = blocks.fluid_getGroup(origin1, water);
 		// Step 1.
 		fg1->readStep();
@@ -1084,13 +1085,13 @@ TEST_CASE("fluids smaller")
 	SUBCASE("Set solid and split")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		BlockIndex block1 = blocks.getIndex({5, 5, 1});
-		BlockIndex origin1 = blocks.getIndex({5, 6, 1});
-		BlockIndex block2 = blocks.getIndex({5, 7, 1});
+		BlockIndex block1 = blocks.getIndex_i(5, 5, 1);
+		BlockIndex origin1 = blocks.getIndex_i(5, 6, 1);
+		BlockIndex block2 = blocks.getIndex_i(5, 7, 1);
 		blocks.solid_setNot(block1);
 		blocks.solid_setNot(origin1);
 		blocks.solid_setNot(block2);
-		blocks.fluid_add(origin1, 100, water);
+		blocks.fluid_add(origin1, CollisionVolume::create(100), water);
 		FluidGroup* fg1 = blocks.fluid_getGroup(origin1, water);
 		// Step 1.
 		fg1->readStep();
@@ -1130,12 +1131,12 @@ TEST_CASE("fluids smaller")
 		if constexpr(!Config::fluidPiston)
 			return
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		BlockIndex block1 = blocks.getIndex({5, 5, 1});
-		BlockIndex block2 = blocks.getIndex({5, 5, 2});
+		BlockIndex block1 = blocks.getIndex_i(5, 5, 1);
+		BlockIndex block2 = blocks.getIndex_i(5, 5, 2);
 		blocks.solid_setNot(block1);
-		blocks.fluid_add(block1, 100, water);
+		blocks.fluid_add(block1, CollisionVolume::create(100), water);
 		blocks.solid_set(block2, marble, false);
-		area.m_caveInCheck.insert(block2);
+		area.m_caveInCheck.add(block2);
 		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
 		area.stepCaveInRead();
 		fluidGroup->readStep();
@@ -1165,13 +1166,13 @@ TEST_CASE("fluids smaller")
 	{
 		if constexpr(Config::fluidsSeepDiagonalModifier == 0)
 			return;
-		simulation.m_step = 1;
+		simulation.m_step = Step::create(1);
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		BlockIndex block1 = blocks.getIndex({5, 5, 1});
-		BlockIndex block2 = blocks.getIndex({6, 6, 1});
+		BlockIndex block1 = blocks.getIndex_i(5, 5, 1);
+		BlockIndex block2 = blocks.getIndex_i(6, 6, 1);
 		blocks.solid_setNot(block1);
 		blocks.solid_setNot(block2);
-		blocks.fluid_add(block1, 10, water);
+		blocks.fluid_add(block1, CollisionVolume::create(10), water);
 		FluidGroup* fg1 = *area.m_hasFluidGroups.getUnstable().begin();
 		fg1->readStep();
 		fg1->writeStep();
@@ -1179,7 +1180,7 @@ TEST_CASE("fluids smaller")
 		fg1->afterWriteStep();
 		fg1->splitStep();
 		fg1->mergeStep();
-		simulation.m_step++;
+		++simulation.m_step;
 		REQUIRE(blocks.fluid_volumeOfTypeContains(block2, water) == 1);
 		FluidGroup* fg2 = blocks.fluid_getGroup(block2, water);
 		REQUIRE(fg1 != fg2);
@@ -1197,7 +1198,7 @@ TEST_CASE("fluids smaller")
 			fg2->splitStep();
 			fg1->mergeStep();
 			fg2->mergeStep();
-			simulation.m_step++;
+			++simulation.m_step;
 		}
 		REQUIRE(blocks.fluid_volumeOfTypeContains(block1, water) == 5);
 		REQUIRE(blocks.fluid_volumeOfTypeContains(block2, water) == 5);
@@ -1206,17 +1207,17 @@ TEST_CASE("fluids smaller")
 	}
 	SUBCASE("Test mist")
 	{
-		simulation.m_step = 1;
+		simulation.m_step = Step::create(1);
 		areaBuilderUtil::setSolidLayers(area, 0, 2, marble);
-		BlockIndex block1 = blocks.getIndex({5, 5, 1});
-		BlockIndex block2 = blocks.getIndex({5, 5, 2});
-		BlockIndex block3 = blocks.getIndex({5, 5, 3});
-		BlockIndex block4 = blocks.getIndex({5, 5, 4});
-		BlockIndex block5 = blocks.getIndex({5, 6, 3});
+		BlockIndex block1 = blocks.getIndex_i(5, 5, 1);
+		BlockIndex block2 = blocks.getIndex_i(5, 5, 2);
+		BlockIndex block3 = blocks.getIndex_i(5, 5, 3);
+		BlockIndex block4 = blocks.getIndex_i(5, 5, 4);
+		BlockIndex block5 = blocks.getIndex_i(5, 6, 3);
 		blocks.solid_setNot(block1);
 		blocks.solid_setNot(block2);
-		blocks.fluid_add(block3, 100, water);
-		blocks.fluid_add(block4, 100, water);
+		blocks.fluid_add(block3, CollisionVolume::create(100), water);
+		blocks.fluid_add(block4, CollisionVolume::create(100), water);
 		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
 		// Step 1.
 		fluidGroup->readStep();
@@ -1236,9 +1237,9 @@ TEST_CASE("fluids smaller")
 				fluidGroup->splitStep();
 				fluidGroup->mergeStep();
 			}
-			simulation.m_step++;
+			++simulation.m_step;
 		}
-		simulation.m_eventSchedule.doStep(11);
+		simulation.m_eventSchedule.doStep(Step::create(11));
 		REQUIRE(blocks.fluid_getMist(block5) == nullptr);
 	}
 }
@@ -1252,17 +1253,17 @@ TEST_CASE("area larger")
 	SUBCASE("Flow across flat area double stack")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		BlockIndex origin1 = blocks.getIndex({10, 10, 1});
-		BlockIndex origin2 = blocks.getIndex({10, 10, 2});
-		BlockIndex block1 = blocks.getIndex({10, 11, 1});
-		BlockIndex block2 = blocks.getIndex({11, 11, 1});
-		BlockIndex block3 = blocks.getIndex({10, 12, 1});
-		BlockIndex block4 = blocks.getIndex({10, 13, 1});
-		BlockIndex block5 = blocks.getIndex({10, 14, 1});
-		BlockIndex block6 = blocks.getIndex({15, 10, 1});
-		BlockIndex block7 = blocks.getIndex({16, 10, 1});
-		blocks.fluid_add(origin1, 100, water);
-		blocks.fluid_add(origin2, 100, water);
+		BlockIndex origin1 = blocks.getIndex_i(10, 10, 1);
+		BlockIndex origin2 = blocks.getIndex_i(10, 10, 2);
+		BlockIndex block1 = blocks.getIndex_i(10, 11, 1);
+		BlockIndex block2 = blocks.getIndex_i(11, 11, 1);
+		BlockIndex block3 = blocks.getIndex_i(10, 12, 1);
+		BlockIndex block4 = blocks.getIndex_i(10, 13, 1);
+		BlockIndex block5 = blocks.getIndex_i(10, 14, 1);
+		BlockIndex block6 = blocks.getIndex_i(15, 10, 1);
+		BlockIndex block7 = blocks.getIndex_i(16, 10, 1);
+		blocks.fluid_add(origin1, CollisionVolume::create(100), water);
+		blocks.fluid_add(origin2, CollisionVolume::create(100), water);
 		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
 		REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
 		REQUIRE(fluidGroup->m_drainQueue.m_set.size() == 2);
@@ -1354,14 +1355,14 @@ TEST_CASE("area larger")
 	SUBCASE("Flow across flat area")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		BlockIndex block = blocks.getIndex({10, 10, 1});
-		BlockIndex block2 = blocks.getIndex({10, 12, 1});
-		BlockIndex block3 = blocks.getIndex({11, 11, 1});
-		BlockIndex block4 = blocks.getIndex({10, 13, 1});
-		BlockIndex block5 = blocks.getIndex({10, 14, 1});
-		BlockIndex block6 = blocks.getIndex({10, 15, 1});
-		BlockIndex block7 = blocks.getIndex({16, 10, 1});
-		BlockIndex block8 = blocks.getIndex({17, 10, 1});
+		BlockIndex block = blocks.getIndex_i(10, 10, 1);
+		BlockIndex block2 = blocks.getIndex_i(10, 12, 1);
+		BlockIndex block3 = blocks.getIndex_i(11, 11, 1);
+		BlockIndex block4 = blocks.getIndex_i(10, 13, 1);
+		BlockIndex block5 = blocks.getIndex_i(10, 14, 1);
+		BlockIndex block6 = blocks.getIndex_i(10, 15, 1);
+		BlockIndex block7 = blocks.getIndex_i(16, 10, 1);
+		BlockIndex block8 = blocks.getIndex_i(17, 10, 1);
 		blocks.fluid_add(block, Config::maxBlockVolume, water);
 		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
 		//Step 1.
@@ -1378,7 +1379,7 @@ TEST_CASE("area larger")
 				REQUIRE(blocks.fluid_volumeOfTypeContains(adjacent, water) == 20);
 		REQUIRE(!fluidGroup->m_stable);
 		REQUIRE(fluidGroup->m_excessVolume == 0);
-		simulation.m_step++;
+		++simulation.m_step;
 		//Step 2.
 		fluidGroup->readStep();
 		fluidGroup->writeStep();
@@ -1392,7 +1393,7 @@ TEST_CASE("area larger")
 		REQUIRE(blocks.fluid_volumeOfTypeContains(block3, water) == 7);
 		REQUIRE(blocks.fluid_volumeOfTypeContains(block4, water) == 0);
 		REQUIRE(fluidGroup->m_excessVolume == 9);
-		simulation.m_step++;
+		++simulation.m_step;
 		//Step 3.
 		fluidGroup->readStep();
 		fluidGroup->writeStep();
@@ -1407,7 +1408,7 @@ TEST_CASE("area larger")
 		REQUIRE(blocks.fluid_volumeOfTypeContains(block5, water) == 0);
 		REQUIRE(!fluidGroup->m_stable);
 		REQUIRE(fluidGroup->m_excessVolume == 25);
-		simulation.m_step++;
+		++simulation.m_step;
 		//Step 4.
 		fluidGroup->readStep();
 		fluidGroup->writeStep();
@@ -1422,7 +1423,7 @@ TEST_CASE("area larger")
 		REQUIRE(blocks.fluid_volumeOfTypeContains(block5, water) == 2);
 		REQUIRE(blocks.fluid_volumeOfTypeContains(block6, water) == 0);
 		REQUIRE(fluidGroup->m_excessVolume == 18);
-		simulation.m_step++;
+		++simulation.m_step;
 		//Step 5.
 		fluidGroup->readStep();
 		fluidGroup->writeStep();
@@ -1438,7 +1439,7 @@ TEST_CASE("area larger")
 		REQUIRE(blocks.fluid_volumeOfTypeContains(block6, water) == 1);
 		REQUIRE(blocks.fluid_volumeOfTypeContains(block8, water) == 0);
 		REQUIRE(fluidGroup->m_excessVolume == 39);
-		simulation.m_step++;
+		++simulation.m_step;
 		//Step 6.
 		fluidGroup->readStep();
 		fluidGroup->writeStep();
@@ -1456,7 +1457,7 @@ TEST_CASE("area larger")
 		REQUIRE(blocks.fluid_volumeOfTypeContains(block7, water) == 1);
 		REQUIRE(blocks.fluid_volumeOfTypeContains(block8, water) == 0);
 		REQUIRE(fluidGroup->m_excessVolume == 15);
-		simulation.m_step++;
+		++simulation.m_step;
 		//Step 7.
 		fluidGroup->readStep();
 		REQUIRE(fluidGroup->m_stable);
@@ -1470,7 +1471,7 @@ TEST_CASE("fluids multi scale")
 	static const FluidType& mercury = FluidType::byName("mercury");
 	static const FluidType& lava = FluidType::byName("lava");
 	Simulation simulation;
-	auto trenchTest2Fluids = [&](uint32_t scaleL, uint32_t scaleW, uint32_t steps)
+	auto trenchTest2Fluids = [&](uint32_t scaleL, uint32_t scaleW, Step steps)
 	{
 		uint32_t maxX = scaleL + 2;
 		uint32_t maxY = scaleW + 2;
@@ -1478,31 +1479,31 @@ TEST_CASE("fluids multi scale")
 		uint32_t halfMaxX = maxX / 2;
 		Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
 		Blocks& blocks = area.getBlocks();
-		simulation.m_step = 0;
+		simulation.m_step = Step::create(0);
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 		// Water
-		BlockIndex water1 = blocks.getIndex({1, 1, 1});
-		BlockIndex water2 = blocks.getIndex({halfMaxX - 1, maxY - 2, maxZ - 1});		
+		BlockIndex water1 = blocks.getIndex_i(1, 1, 1);
+		BlockIndex water2 = blocks.getIndex_i(halfMaxX - 1, maxY - 2, maxZ - 1);		
 		areaBuilderUtil::setFullFluidCuboid(area, water1, water2, water);
 		// CO2
-		BlockIndex CO2_1 = blocks.getIndex({halfMaxX, 1, 1});
-		BlockIndex CO2_2 = blocks.getIndex({maxX - 2, maxY - 2, maxZ - 1});
+		BlockIndex CO2_1 = blocks.getIndex_i(halfMaxX, 1, 1);
+		BlockIndex CO2_2 = blocks.getIndex_i(maxX - 2, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(area, CO2_1, CO2_2, CO2);
 		REQUIRE(area.m_hasFluidGroups.getAll().size() == 2);
 		FluidGroup* fgWater = blocks.fluid_getGroup(water1, water);
 		FluidGroup* fgCO2 = blocks.fluid_getGroup(CO2_1, CO2);
 		REQUIRE(!fgWater->m_merged);
 		REQUIRE(!fgCO2->m_merged);
-		uint32_t totalVolume = fgWater->totalVolume();
-		simulation.m_step = 1;
+		CollisionVolume totalVolume = fgWater->totalVolume();
+		simulation.m_step = Step::create(1);
 		while(simulation.m_step < steps)
 		{
 			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
 				fluidGroup->readStep();
 			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
 				fluidGroup->writeStep();
-			simulation.m_step++;
+			++simulation.m_step;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
 		uint32_t expectedHeight = 1 + (maxZ - 1) / 2;
@@ -1513,28 +1514,28 @@ TEST_CASE("fluids multi scale")
 		REQUIRE(fgCO2->m_stable);
 		REQUIRE(fgCO2->m_drainQueue.m_set.size() == expectedBlocks);
 		REQUIRE(fgCO2->totalVolume() == totalVolume);
-		REQUIRE(blocks.fluid_getGroup(blocks.getIndex({1, 1, 1}), water));
-		REQUIRE(blocks.fluid_getGroup(blocks.getIndex({maxX - 2, 1, 1}), water));
-		REQUIRE(blocks.fluid_getGroup(blocks.getIndex({1, 1, maxZ - 1}), CO2));
-		REQUIRE(blocks.fluid_getGroup(blocks.getIndex({maxX - 2, 1, maxZ - 1}), CO2));
+		REQUIRE(blocks.fluid_getGroup(blocks.getIndex_i(1, 1, 1), water));
+		REQUIRE(blocks.fluid_getGroup(blocks.getIndex_i(maxX - 2, 1, 1), water));
+		REQUIRE(blocks.fluid_getGroup(blocks.getIndex_i(1, 1, maxZ - 1), CO2));
+		REQUIRE(blocks.fluid_getGroup(blocks.getIndex_i(maxX - 2, 1, maxZ - 1), CO2));
 	};
 	SUBCASE("trench test 2 fluids scale 2-1")
 	{
-		trenchTest2Fluids(2, 1, 8);
+		trenchTest2Fluids(2, 1, Step::create(8));
 	}
 	SUBCASE("trench test 2 fluids scale 4-1")
 	{
-		trenchTest2Fluids(4, 1, 12);
+		trenchTest2Fluids(4, 1, Step::create(12));
 	}
 	SUBCASE("trench test 2 fluids scale 40-1")
 	{
-		trenchTest2Fluids(40, 1, 30);
+		trenchTest2Fluids(40, 1, Step::create(30));
 	}
 	SUBCASE("trench test 2 fluids scale 20-5")
 	{
-		trenchTest2Fluids(20, 5, 20);
+		trenchTest2Fluids(20, 5, Step::create(20));
 	}
-	auto trenchTest3Fluids = [&](uint32_t scaleL, uint32_t scaleW, uint32_t steps)
+	auto trenchTest3Fluids = [&](uint32_t scaleL, uint32_t scaleW, Step steps)
 	{
 		uint32_t maxX = scaleL + 2;
 		uint32_t maxY = scaleW + 2;
@@ -1542,34 +1543,34 @@ TEST_CASE("fluids multi scale")
 		uint32_t thirdMaxX = maxX / 3;
 		Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
 		Blocks& blocks = area.getBlocks();
-		simulation.m_step = 0;
+		simulation.m_step = Step::create(0);
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 		// Water
-		BlockIndex water1 = blocks.getIndex({1, 1, 1});
-		BlockIndex water2 = blocks.getIndex({thirdMaxX, maxY - 2, maxZ - 1});
+		BlockIndex water1 = blocks.getIndex_i(1, 1, 1);
+		BlockIndex water2 = blocks.getIndex_i(thirdMaxX, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(area, water1, water2, water);
 		// CO2
-		BlockIndex CO2_1 = blocks.getIndex({thirdMaxX + 1, 1, 1});
-		BlockIndex CO2_2 = blocks.getIndex({(thirdMaxX * 2), maxY - 2, maxZ - 1});
+		BlockIndex CO2_1 = blocks.getIndex_i(thirdMaxX + 1, 1, 1);
+		BlockIndex CO2_2 = blocks.getIndex_i((thirdMaxX * 2), maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(area, CO2_1, CO2_2, CO2);
 		// Lava
-		BlockIndex lava1 = blocks.getIndex({(thirdMaxX * 2) + 1, 1, 1});
-		BlockIndex lava2 = blocks.getIndex({maxX - 2, maxY - 2, maxZ - 1});
+		BlockIndex lava1 = blocks.getIndex_i((thirdMaxX * 2) + 1, 1, 1);
+		BlockIndex lava2 = blocks.getIndex_i(maxX - 2, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(area, lava1, lava2, lava);
 		REQUIRE(area.m_hasFluidGroups.getAll().size() == 3);
 		FluidGroup* fgWater = blocks.fluid_getGroup(water1, water);
 		FluidGroup* fgCO2 = blocks.fluid_getGroup(CO2_1, CO2);
 		FluidGroup* fgLava = blocks.fluid_getGroup(lava1, lava);
-		simulation.m_step = 1;
-		uint32_t totalVolume = fgWater->totalVolume();
+		simulation.m_step = Step::create(1);
+		CollisionVolume totalVolume = fgWater->totalVolume();
 		while(simulation.m_step < steps)
 		{
 			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
 				fluidGroup->readStep();
 			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
 				fluidGroup->writeStep();
-			simulation.m_step++;
+			++simulation.m_step;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
 		uint32_t expectedHeight = std::max(1u, maxZ / 3);
@@ -1583,28 +1584,28 @@ TEST_CASE("fluids multi scale")
 		REQUIRE(fgLava->m_stable);
 		REQUIRE(fgLava->m_drainQueue.m_set.size() == expectedBlocks);
 		REQUIRE(fgLava->totalVolume() == totalVolume);
-		REQUIRE(blocks.fluid_getGroup(blocks.getIndex({1, 1, 1}), lava));
-		REQUIRE(blocks.fluid_getGroup(blocks.getIndex({maxX - 2, 1, 1}), lava));
-		REQUIRE(blocks.fluid_getGroup(blocks.getIndex({1, 1, maxZ - 1}), CO2));
-		REQUIRE(blocks.fluid_getGroup(blocks.getIndex({maxX - 2, 1, maxZ - 1}), CO2));
+		REQUIRE(blocks.fluid_getGroup(blocks.getIndex_i(1, 1, 1), lava));
+		REQUIRE(blocks.fluid_getGroup(blocks.getIndex_i(maxX - 2, 1, 1), lava));
+		REQUIRE(blocks.fluid_getGroup(blocks.getIndex_i(1, 1, maxZ - 1), CO2));
+		REQUIRE(blocks.fluid_getGroup(blocks.getIndex_i(maxX - 2, 1, maxZ - 1), CO2));
 	};
 	SUBCASE("trench test 3 fluids scale 3-1")
 	{
-		trenchTest3Fluids(3, 1, 10);
+		trenchTest3Fluids(3, 1, Step::create(10));
 	}
 	SUBCASE("trench test 3 fluids scale 9-1")
 	{
-		trenchTest3Fluids(9, 1, 20);
+		trenchTest3Fluids(9, 1, Step::create(20));
 	}
 	SUBCASE("trench test 3 fluids scale 3-3")
 	{
-		trenchTest3Fluids(3, 3, 10);
+		trenchTest3Fluids(3, 3, Step::create(10));
 	}
 	SUBCASE("trench test 3 fluids scale 18-3")
 	{
-		trenchTest3Fluids(18, 3, 30);
+		trenchTest3Fluids(18, 3, Step::create(30));
 	}
-	auto trenchTest4Fluids = [&](uint32_t scaleL, uint32_t scaleW, uint32_t steps)
+	auto trenchTest4Fluids = [&](uint32_t scaleL, uint32_t scaleW, Step steps)
 	{
 		uint32_t maxX = scaleL + 2;
 		uint32_t maxY = scaleW + 2;
@@ -1612,32 +1613,32 @@ TEST_CASE("fluids multi scale")
 		uint32_t quarterMaxX = maxX / 4;
 		Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
 		Blocks& blocks = area.getBlocks();
-		simulation.m_step = 0;
+		simulation.m_step = Step::create(0);
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 		// Water
-		BlockIndex water1 = blocks.getIndex({1, 1, 1});
-		BlockIndex water2 = blocks.getIndex({quarterMaxX, maxY - 2, maxZ - 1});		
+		BlockIndex water1 = blocks.getIndex_i(1, 1, 1);
+		BlockIndex water2 = blocks.getIndex_i(quarterMaxX, maxY - 2, maxZ - 1);		
 		areaBuilderUtil::setFullFluidCuboid(area, water1, water2, water);
 		// CO2
-		BlockIndex CO2_1 = blocks.getIndex({quarterMaxX + 1, 1, 1});
-		BlockIndex CO2_2 = blocks.getIndex({(quarterMaxX * 2), maxY - 2, maxZ - 1});
+		BlockIndex CO2_1 = blocks.getIndex_i(quarterMaxX + 1, 1, 1);
+		BlockIndex CO2_2 = blocks.getIndex_i((quarterMaxX * 2), maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(area, CO2_1, CO2_2, CO2);
 		// Lava
-		BlockIndex lava1 = blocks.getIndex({(quarterMaxX * 2) + 1, 1, 1});
-		BlockIndex lava2 = blocks.getIndex({quarterMaxX * 3, maxY - 2, maxZ - 1});
+		BlockIndex lava1 = blocks.getIndex_i((quarterMaxX * 2) + 1, 1, 1);
+		BlockIndex lava2 = blocks.getIndex_i(quarterMaxX * 3, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(area, lava1, lava2, lava);
 		// Mercury
-		BlockIndex mercury1 = blocks.getIndex({(quarterMaxX * 3) + 1, 1, 1});
-		BlockIndex mercury2 = blocks.getIndex({maxX - 2, maxY - 2, maxZ - 1});
+		BlockIndex mercury1 = blocks.getIndex_i((quarterMaxX * 3) + 1, 1, 1);
+		BlockIndex mercury2 = blocks.getIndex_i(maxX - 2, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(area, mercury1, mercury2, mercury);
 		REQUIRE(area.m_hasFluidGroups.getAll().size() == 4);
 		FluidGroup* fgWater = blocks.fluid_getGroup(water1, water);
 		FluidGroup* fgCO2 = blocks.fluid_getGroup(CO2_1, CO2);
 		FluidGroup* fgLava = blocks.fluid_getGroup(lava1, lava);
 		FluidGroup* fgMercury = blocks.fluid_getGroup(mercury1, mercury);
-		uint32_t totalVolume = fgWater->totalVolume();
-		simulation.m_step = 1;
+		CollisionVolume totalVolume = fgWater->totalVolume();
+		simulation.m_step = Step::create(1);
 		while(simulation.m_step < steps)
 		{
 			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
@@ -1647,7 +1648,7 @@ TEST_CASE("fluids multi scale")
 			fgMercury = areaBuilderUtil::getFluidGroup(area, mercury);
 			if(fgMercury != nullptr)
 				REQUIRE(fgMercury->totalVolume() == totalVolume);
-			simulation.m_step++;
+			++simulation.m_step;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
 		uint32_t expectedHeight = std::max(1u, maxZ / 4);
@@ -1672,38 +1673,38 @@ TEST_CASE("fluids multi scale")
 		REQUIRE(fgMercury->m_stable);
 		REQUIRE(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
 		REQUIRE(fgMercury->totalVolume() == totalVolume);
-		REQUIRE(blocks.fluid_getGroup(blocks.getIndex({1, 1, 1}), mercury));
-		REQUIRE(blocks.fluid_getGroup(blocks.getIndex({maxX - 2, 1, 1}), mercury));
-		REQUIRE(blocks.fluid_getGroup(blocks.getIndex({1, 1, maxZ - 1}), CO2));
-		REQUIRE(blocks.fluid_getGroup(blocks.getIndex({maxX - 2, 1, maxZ - 1}), CO2));
+		REQUIRE(blocks.fluid_getGroup(blocks.getIndex_i(1, 1, 1), mercury));
+		REQUIRE(blocks.fluid_getGroup(blocks.getIndex_i(maxX - 2, 1, 1), mercury));
+		REQUIRE(blocks.fluid_getGroup(blocks.getIndex_i(1, 1, maxZ - 1), CO2));
+		REQUIRE(blocks.fluid_getGroup(blocks.getIndex_i(maxX - 2, 1, maxZ - 1), CO2));
 		REQUIRE(area.m_hasFluidGroups.getAll().size() == 4);
 		REQUIRE(area.m_hasFluidGroups.getUnstable().empty());
 	};
 	SUBCASE("trench test 4 fluids scale 4-1")
 	{
-		trenchTest4Fluids(4, 1, 10);
+		trenchTest4Fluids(4, 1, Step::create(10));
 	}
 	SUBCASE("trench test 4 fluids scale 4-2")
 	{
-		trenchTest4Fluids(4, 2, 10);
+		trenchTest4Fluids(4, 2, Step::create(10));
 	}
 	SUBCASE("trench test 4 fluids scale 4-4")
 	{
-		trenchTest4Fluids(4, 4, 15);
+		trenchTest4Fluids(4, 4, Step::create(15));
 	}
 	SUBCASE("trench test 4 fluids scale 4-8")
 	{
-		trenchTest4Fluids(4, 8, 17);
+		trenchTest4Fluids(4, 8, Step::create(17));
 	}
 	SUBCASE("trench test 4 fluids scale 8-8")
 	{
-		trenchTest4Fluids(8, 8, 20);
+		trenchTest4Fluids(8, 8, Step::create(20));
 	}
 	SUBCASE("trench test 4 fluids scale 16-4")
 	{
-		trenchTest4Fluids(16, 4, 25);
+		trenchTest4Fluids(16, 4, Step::create(25));
 	}
-	auto trenchTest2FluidsMerge = [&](uint32_t scaleL, uint32_t scaleW, uint32_t steps)
+	auto trenchTest2FluidsMerge = [&](uint32_t scaleL, uint32_t scaleW, Step steps)
 	{
 		uint32_t maxX = scaleL + 2;
 		uint32_t maxY = scaleW + 2;
@@ -1711,36 +1712,36 @@ TEST_CASE("fluids multi scale")
 		uint32_t quarterMaxX = maxX / 4;
 		Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
 		Blocks& blocks = area.getBlocks();
-		simulation.m_step = 0;
+		simulation.m_step = Step::create(0);
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 		// Water
-		BlockIndex water1 = blocks.getIndex({1, 1, 1});
-		BlockIndex water2 = blocks.getIndex({quarterMaxX, maxY - 2, maxZ - 1});		
+		BlockIndex water1 = blocks.getIndex_i(1, 1, 1);
+		BlockIndex water2 = blocks.getIndex_i(quarterMaxX, maxY - 2, maxZ - 1);		
 		areaBuilderUtil::setFullFluidCuboid(area, water1, water2, water);
 		// CO2
-		BlockIndex CO2_1 = blocks.getIndex({quarterMaxX + 1, 1, 1});
-		BlockIndex CO2_2 = blocks.getIndex({(quarterMaxX * 2), maxY - 2, maxZ - 1});
+		BlockIndex CO2_1 = blocks.getIndex_i(quarterMaxX + 1, 1, 1);
+		BlockIndex CO2_2 = blocks.getIndex_i((quarterMaxX * 2), maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(area, CO2_1, CO2_2, CO2);
 		// Water
-		BlockIndex water3 = blocks.getIndex({(quarterMaxX * 2) + 1, 1, 1});
-		BlockIndex water4 = blocks.getIndex({quarterMaxX * 3, maxY - 2, maxZ - 1});
+		BlockIndex water3 = blocks.getIndex_i((quarterMaxX * 2) + 1, 1, 1);
+		BlockIndex water4 = blocks.getIndex_i(quarterMaxX * 3, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(area, water3, water4, water);
 		// CO2
-		BlockIndex CO2_3 = blocks.getIndex({(quarterMaxX * 3) + 1, 1, 1});
-		BlockIndex CO2_4 = blocks.getIndex({maxX - 2, maxY - 2, maxZ - 1});
+		BlockIndex CO2_3 = blocks.getIndex_i((quarterMaxX * 3) + 1, 1, 1);
+		BlockIndex CO2_4 = blocks.getIndex_i(maxX - 2, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(area, CO2_3, CO2_4, CO2);
 		REQUIRE(area.m_hasFluidGroups.getAll().size() == 4);
 		FluidGroup* fgWater = blocks.fluid_getGroup(water1, water);
-		uint32_t totalVolume = fgWater->totalVolume() * 2;
-		simulation.m_step = 1;
+		CollisionVolume totalVolume = fgWater->totalVolume() * 2u;
+		simulation.m_step = Step::create(1);
 		while(simulation.m_step < steps)
 		{
 			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
 				fluidGroup->readStep();
 			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
 				fluidGroup->writeStep();
-			simulation.m_step++;
+			++simulation.m_step;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
 		uint32_t expectedHeight = std::max(1u, maxZ / 2);
@@ -1756,21 +1757,21 @@ TEST_CASE("fluids multi scale")
 	};
 	SUBCASE("trench test 2 fluids merge scale 4-1")
 	{
-		trenchTest2FluidsMerge(4, 1, 6);
+		trenchTest2FluidsMerge(4, 1, Step::create(6));
 	}
 	SUBCASE("trench test 2 fluids merge scale 4-4")
 	{
-		trenchTest2FluidsMerge(4, 4, 6);
+		trenchTest2FluidsMerge(4, 4, Step::create(6));
 	}
 	SUBCASE("trench test 2 fluids merge scale 8-4")
 	{
-		trenchTest2FluidsMerge(8, 4, 8);
+		trenchTest2FluidsMerge(8, 4, Step::create(8));
 	}
 	SUBCASE("trench test 2 fluids merge scale 16-4")
 	{
-		trenchTest2FluidsMerge(16, 4, 12);
+		trenchTest2FluidsMerge(16, 4, Step::create(12));
 	}
-	auto trenchTest3FluidsMerge = [&](uint32_t scaleL, uint32_t scaleW, uint32_t steps)
+	auto trenchTest3FluidsMerge = [&](uint32_t scaleL, uint32_t scaleW, Step steps)
 	{
 		uint32_t maxX = scaleL + 2;
 		uint32_t maxY = scaleW + 2;
@@ -1778,38 +1779,38 @@ TEST_CASE("fluids multi scale")
 		uint32_t quarterMaxX = maxX / 4;
 		Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
 		Blocks& blocks = area.getBlocks();
-		simulation.m_step = 0;
+		simulation.m_step = Step::create(0);
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 		// Water
-		BlockIndex water1 = blocks.getIndex({1, 1, 1});
-		BlockIndex water2 = blocks.getIndex({quarterMaxX, maxY - 2, maxZ - 1});		
+		BlockIndex water1 = blocks.getIndex_i(1, 1, 1);
+		BlockIndex water2 = blocks.getIndex_i(quarterMaxX, maxY - 2, maxZ - 1);		
 		areaBuilderUtil::setFullFluidCuboid(area, water1, water2, water);
 		// CO2
-		BlockIndex CO2_1 = blocks.getIndex({quarterMaxX + 1, 1, 1});
-		BlockIndex CO2_2 = blocks.getIndex({(quarterMaxX * 2), maxY - 2, maxZ - 1});
+		BlockIndex CO2_1 = blocks.getIndex_i(quarterMaxX + 1, 1, 1);
+		BlockIndex CO2_2 = blocks.getIndex_i((quarterMaxX * 2), maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(area, CO2_1, CO2_2, CO2);
 		// Mercury
-		BlockIndex mercury1 = blocks.getIndex({(quarterMaxX * 2) + 1, 1, 1});
-		BlockIndex mercury2 = blocks.getIndex({quarterMaxX * 3, maxY - 2, maxZ - 1});
+		BlockIndex mercury1 = blocks.getIndex_i((quarterMaxX * 2) + 1, 1, 1);
+		BlockIndex mercury2 = blocks.getIndex_i(quarterMaxX * 3, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(area, mercury1, mercury2, mercury);
 		// CO2
-		BlockIndex CO2_3 = blocks.getIndex({(quarterMaxX * 3) + 1, 1, 1});
-		BlockIndex CO2_4 = blocks.getIndex({maxX - 2, maxY - 2, maxZ - 1});
+		BlockIndex CO2_3 = blocks.getIndex_i((quarterMaxX * 3) + 1, 1, 1);
+		BlockIndex CO2_4 = blocks.getIndex_i(maxX - 2, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(area, CO2_3, CO2_4, CO2);
 		REQUIRE(area.m_hasFluidGroups.getAll().size() == 4);
 		FluidGroup* fgWater = blocks.fluid_getGroup(water1, water);
-		uint32_t totalVolumeWater = fgWater->totalVolume();
-		uint32_t totalVolumeMercury = totalVolumeWater;
-		uint32_t totalVolumeCO2 = totalVolumeWater * 2;
-		simulation.m_step = 1;
+		CollisionVolume totalVolumeWater = fgWater->totalVolume();
+		CollisionVolume totalVolumeMercury = totalVolumeWater;
+		CollisionVolume totalVolumeCO2 = totalVolumeWater * 2u;
+		simulation.m_step = Step::create(1);
 		while(simulation.m_step < steps)
 		{
 			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
 				fluidGroup->readStep();
 			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
 				fluidGroup->writeStep();
-			simulation.m_step++;
+			++simulation.m_step;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
 		uint32_t expectedHeight = std::max(1u, maxZ / 4);
@@ -1834,21 +1835,21 @@ TEST_CASE("fluids multi scale")
 	};
 	SUBCASE("trench test 3 fluids merge scale 4-1")
 	{
-		trenchTest3FluidsMerge(4, 1, 8);
+		trenchTest3FluidsMerge(4, 1, Step::create(8));
 	}
 	SUBCASE("trench test 3 fluids merge scale 4-4")
 	{
-		trenchTest3FluidsMerge(4, 4, 10);
+		trenchTest3FluidsMerge(4, 4, Step::create(10));
 	}
 	SUBCASE("trench test 3 fluids merge scale 8-4")
 	{
-		trenchTest3FluidsMerge(8, 4, 15);
+		trenchTest3FluidsMerge(8, 4, Step::create(15));
 	}
 	SUBCASE("trench test 3 fluids merge scale 16-4")
 	{
-		trenchTest3FluidsMerge(16, 4, 24);
+		trenchTest3FluidsMerge(16, 4, Step::create(24));
 	}
-	auto fourFluidsTest = [&](uint32_t scale, uint32_t steps)
+	auto fourFluidsTest = [&](uint32_t scale, Step steps)
 	{
 		uint32_t maxX = (scale * 2) + 2;
 		uint32_t maxY = (scale * 2) + 2;
@@ -1857,25 +1858,25 @@ TEST_CASE("fluids multi scale")
 		uint32_t halfMaxY = maxY / 2;
 		Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
 		Blocks& blocks = area.getBlocks();
-		simulation.m_step = 0;
+		simulation.m_step = Step::create(0);
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 		std::vector<FluidGroup*> newlySplit;
 		// Water is at 0,0
-		BlockIndex water1 = blocks.getIndex({1, 1, 1});
-		BlockIndex water2 = blocks.getIndex({halfMaxX - 1, halfMaxY - 1, maxZ - 1});		
+		BlockIndex water1 = blocks.getIndex_i(1, 1, 1);
+		BlockIndex water2 = blocks.getIndex_i(halfMaxX - 1, halfMaxY - 1, maxZ - 1);		
 		areaBuilderUtil::setFullFluidCuboid(area, water1, water2, water);
 		// CO2 is at 0,1
-		BlockIndex CO2_1 = blocks.getIndex({1, halfMaxY, 1});
-		BlockIndex CO2_2 = blocks.getIndex({halfMaxX - 1, maxY - 2, maxZ - 1});
+		BlockIndex CO2_1 = blocks.getIndex_i(1, halfMaxY, 1);
+		BlockIndex CO2_2 = blocks.getIndex_i(halfMaxX - 1, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(area, CO2_1, CO2_2, CO2);
 		// Lava is at 1,0
-		BlockIndex lava1 = blocks.getIndex({halfMaxX, 1, 1});
-		BlockIndex lava2 = blocks.getIndex({maxX - 2, halfMaxY - 1, maxZ - 1});
+		BlockIndex lava1 = blocks.getIndex_i(halfMaxX, 1, 1);
+		BlockIndex lava2 = blocks.getIndex_i(maxX - 2, halfMaxY - 1, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(area, lava1, lava2, lava);
 		// Mercury is at 1,1
-		BlockIndex mercury1 = blocks.getIndex({halfMaxX, halfMaxY, 1});
-		BlockIndex mercury2 = blocks.getIndex({maxX - 2, maxY - 2, maxZ - 1});
+		BlockIndex mercury1 = blocks.getIndex_i(halfMaxX, halfMaxY, 1);
+		BlockIndex mercury2 = blocks.getIndex_i(maxX - 2, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(area, mercury1, mercury2, mercury);
 		REQUIRE(area.m_hasFluidGroups.getAll().size() == 4);
 		FluidGroup* fgWater = blocks.fluid_getGroup(water1, water);
@@ -1886,15 +1887,15 @@ TEST_CASE("fluids multi scale")
 		REQUIRE(!fgCO2->m_merged);
 		REQUIRE(!fgLava->m_merged);
 		REQUIRE(!fgMercury->m_merged);
-		uint32_t totalVolume = fgWater->totalVolume();
-		simulation.m_step = 1;
+		CollisionVolume totalVolume = fgWater->totalVolume();
+		simulation.m_step = Step::create(1);
 		while(simulation.m_step < steps)
 		{
 			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
 				fluidGroup->readStep();
 			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
 				fluidGroup->writeStep();
-			simulation.m_step++;
+			++simulation.m_step;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
 		uint32_t expectedHeight = ((maxZ - 2) / 4) + 1;
@@ -1920,24 +1921,24 @@ TEST_CASE("fluids multi scale")
 		REQUIRE(fgMercury->m_stable);
 		REQUIRE(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
 		REQUIRE(fgMercury->totalVolume() == totalVolume);
-		REQUIRE(blocks.fluid_getGroup(blocks.getIndex({1, 1, 1}), mercury));
-		REQUIRE(blocks.fluid_getGroup(blocks.getIndex({1, 1, maxZ - 1}), CO2));
+		REQUIRE(blocks.fluid_getGroup(blocks.getIndex_i(1, 1, 1), mercury));
+		REQUIRE(blocks.fluid_getGroup(blocks.getIndex_i(1, 1, maxZ - 1), CO2));
 	};
 	SUBCASE("four fluids scale 2")
 	{
-		fourFluidsTest(2, 10);
+		fourFluidsTest(2, Step::create(10));
 	}
 	// Scale 3 doesn't work due to rounding issues with expectedBlocks.
 	SUBCASE("four fluids scale 4")
 	{
-		fourFluidsTest(4, 21);
+		fourFluidsTest(4, Step::create(21));
 	}
 	SUBCASE("four fluids scale 5")
 	{
-		fourFluidsTest(5, 28);
+		fourFluidsTest(5, Step::create(28));
 	}
 	SUBCASE("four fluids scale 6")
 	{
-		fourFluidsTest(6, 30);
+		fourFluidsTest(6, Step::create(30));
 	}
 }

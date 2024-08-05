@@ -13,7 +13,7 @@ WanderPathRequest::WanderPathRequest(Area& area, WanderObjective& objective) : m
 	Random& random = area.m_simulation.m_random;
 	m_blockCounter = random.getInRange(Config::wanderMinimimNumberOfBlocks, Config::wanderMaximumNumberOfBlocks);
 	std::function<bool(BlockIndex, Facing)> condition = [this](BlockIndex, Facing) { return !m_blockCounter--; };
-	createGoToCondition(area, getActor(), condition, false, false, BLOCK_DISTANCE_MAX);
+	createGoToCondition(area, getActor(), condition, false, false, DistanceInBlocks::null());
 }
 void WanderPathRequest::callback(Area& area, FindPathResult& result)
 {
@@ -25,7 +25,7 @@ void WanderPathRequest::callback(Area& area, FindPathResult& result)
 		actors.move_setPath(actor, result.path);
 }
 // Objective.
-WanderObjective::WanderObjective() : Objective(0u) { }
+WanderObjective::WanderObjective() : Objective(Priority::create(0)) { }
 WanderObjective::WanderObjective(const Json& data) : Objective(data) { }
 Json WanderObjective::toJson() const
 { 

@@ -8,7 +8,7 @@ struct FindPathResult;
 class LeaveAreaObjective final : public Objective
 {
 public:
-	LeaveAreaObjective(uint8_t priority);
+	LeaveAreaObjective(Priority priority);
 	// No need to overide default to/from json.
 	void execute(Area&, ActorIndex);
 	void cancel(Area&, ActorIndex) { }
@@ -22,5 +22,5 @@ class LeaveAreaPathRequest final : public PathRequest
 	LeaveAreaObjective& m_objective;
 public:
 	LeaveAreaPathRequest(Area& area, LeaveAreaObjective& objective);
-	void callback(Area& aera, FindPathResult& result);
+	void callback(Area& area, FindPathResult& result);
 };

@@ -1,9 +1,5 @@
 #pragma once
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnull-dereference"
-#include "json.h"
-#pragma GCC diagnostic pop
 #include "types.h"
 #include "index.h"
 #include <cmath>
@@ -48,10 +44,10 @@ namespace Config
 	inline uint32_t bludgeonStepsTillHealedModifier;
 	inline float bodyHardnessModifier;
 	inline float chanceToWaitInsteadOfWander;
-	inline uint32_t constructObjectivePriority;
+	inline Priority constructObjectivePriority;
 	inline float constructSkillModifier;
 	inline float constructStrengthModifier;
-	inline uint32_t craftObjectivePriority;
+	inline Priority craftObjectivePriority;
 	inline uint32_t cutBleedVoumeRateModifier;
 	inline uint32_t cutPercentPermanantImparmentModifier;
 	inline uint32_t cutPercentTemporaryImparmentModifier;
@@ -59,14 +55,14 @@ namespace Config
 	inline uint16_t daysPerYear;
 	inline Temperature deepAmbiantTemperature;
 	inline Step digMaxSteps;
-	inline uint32_t digObjectivePriority;
+	inline Priority digObjectivePriority;
 	inline float digSkillModifier;
 	inline float digStrengthModifier;
-	inline uint32_t drinkPriority;
-	inline uint32_t eatPriority;
-	inline uint32_t equipPriority;
+	inline Priority drinkPriority;
+	inline Priority eatPriority;
+	inline Priority equipPriority;
 	inline Step exterminateCheckFrequency;
-	inline uint32_t exterminatePriority;
+	inline Priority exterminatePriority;
 	inline float fatPierceForceCost;
 	inline float fireRampDownPhaseDurationFraction;
 	inline float flankingModifier;
@@ -75,13 +71,13 @@ namespace Config
 	inline float forceAbsorbedUnpiercedModifier;
 	inline float fractionAttackCoolDownReductionPerPointOfDextarity;
 	inline uint32_t getIntoAttackPositionMaxRange;
-	inline uint32_t getToSafeTemperaturePriority;
+	inline Priority getToSafeTemperaturePriority;
 	inline Step givePlantsFluidDelaySteps;
-	inline uint32_t givePlantsFluidPriority;
-	inline uint32_t goToPriority;
+	inline Priority givePlantsFluidPriority;
+	inline Priority goToPriority;
 	inline MoveCost goUpMoveCost;
 	inline Step harvestEventDuration;
-	inline uint32_t harvestPriority;
+	inline Priority harvestPriority;
 	inline float heatDisipatesAtDistanceExponent;
 	inline float heatFractionForBurn;
 	inline float heatFractionForSmoulder;
@@ -91,7 +87,7 @@ namespace Config
 	inline uint32_t hoursPerDay;
 	inline Volume impassibleItemVolume;
 	inline Step installItemDuration;
-	inline uint32_t installItemPriority;
+	inline Priority installItemPriority;
 	inline float itemQualityCombatModifier;
 	inline float itemQualityModifier;
 	inline float itemSkillModifier;
@@ -99,7 +95,7 @@ namespace Config
 	inline float itemTypeCombatScoreModifier;
 	inline float itemWearCombatModifier;
 	inline float itemWearModifier;
-	inline uint32_t killPriority;
+	inline Priority killPriority;
 	inline uint32_t lakeDepthModifier;
 	inline uint32_t lakeRadiusModifier;
 	inline Step loadDelaySteps;
@@ -122,7 +118,7 @@ namespace Config
 	inline DistanceInBlocks maxRangeToSearchForHorticultureDesignations;
 	inline DistanceInBlocks maxRangeToSearchForUniformEquipment;
 	inline uint32_t maxSkillLevel;
-	inline uint32_t maxStaminaPointsBase;
+	inline Stamina maxStaminaPointsBase;
 	inline Quantity maxWorkersForStockPileProject;
 	inline DistanceInBlocks maxZLevelForDeepAmbiantTemperature;
 	inline Step maximumDurationToWaitInsteadOfWander;
@@ -145,8 +141,9 @@ namespace Config
 	inline uint32_t minutesPerHour;
 	inline uint32_t moveTryAttemptsBeforeDetour;
 	inline float musclePierceForceCost;
-	inline uint32_t objectivePrioiorityKill;
-	inline uint32_t objectivePrioritySleep;
+	//TODO: is this a duplicate?
+	inline Priority objectivePrioiorityKill;
+	inline Priority objectivePrioritySleep;
 	inline uint8_t pathRequestsPerThread;
 	inline float pathHuristicConstant;
 	inline Percent percentHeightCarvedByRivers;
@@ -187,11 +184,11 @@ namespace Config
 	inline uint32_t scaleOfHumanBody;
 	inline uint32_t secondsPerMinute;
 	inline float skinPierceForceCost;
-	inline uint32_t sleepObjectivePriority;
-	inline uint32_t sowSeedsPriority;
+	inline Priority sleepObjectivePriority;
+	inline Priority sowSeedsPriority;
 	inline Step sowSeedsStepsDuration;
 	inline uint32_t staminaPointsPerRestPeriod;
-	inline uint32_t stationPriority;
+	inline Priority stationPriority;
 	inline Step stepsFrequencyToLookForHaulSubprojects;
 	inline Step stepsPerDay;
 	inline Step stepsPerHour;
@@ -205,8 +202,8 @@ namespace Config
 	inline Step stepsToDisableStockPile;
 	inline Step stepsToDrink;
 	inline Step stepsToEat;
-	inline uint32_t stockPilePriority;
-	inline uint32_t targetedHaulPriority;
+	inline Priority stockPilePriority;
+	inline Priority targetedHaulPriority;
 	inline uint8_t threadedTaskBatchSize;
 	inline uint32_t unarmedCombatScoreBase;
 	inline float unarmedCombatSkillModifier;
@@ -219,11 +216,11 @@ namespace Config
 	inline uint32_t unitsOfWoundAreaPerUnitItemScaleFactor;
 	inline uint16_t unitsOfVolumePerUnitOfCollisionVolume;
 	inline size_t visionFacadeReservationSize;
-	inline VisionFacadeIndex visionThreadingBatchSize;
+	inline uint16_t visionThreadingBatchSize;
 	inline uint32_t wanderMaximumNumberOfBlocks;
 	inline uint32_t wanderMinimimNumberOfBlocks;
 	inline Step woodCuttingMaxSteps;
-	inline uint32_t woodCuttingObjectivePriority;
+	inline Priority woodCuttingObjectivePriority;
 	inline float woodCuttingSkillModifier;
 	inline float woodCuttingStrengthModifier;
 	inline Step yokeDelaySteps;

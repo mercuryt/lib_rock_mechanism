@@ -3,6 +3,7 @@
 #include "../../engine/items/items.h"
 #include "../../engine/plants.h"
 #include "../../engine/area.h"
+#include "../../engine/animalSpecies.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasItems.h"
@@ -21,18 +22,18 @@ TEST_CASE("wound")
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	ActorIndex actor = actors.create({
 		.species=dwarf,
-		.location=blocks.getIndex(1, 1, 2),
+		.location=blocks.getIndex_i(1, 1, 2),
 	});
-	BlockIndex pondLocation = blocks.getIndex(3, 7, 1);
+	BlockIndex pondLocation = blocks.getIndex_i(3, 7, 1);
 	blocks.solid_setNot(pondLocation);
 	blocks.fluid_add(pondLocation, Config::maxBlockVolume, FluidType::byName("water"));
-	ItemIndex fruit = items.create({.itemType=ItemType::byName("apple"), .materialType=MaterialType::byName("fruit"), .quantity=50u});
-	BlockIndex fruitLocation = blocks.getIndex(6, 5, 2);
+	ItemIndex fruit = items.create({.itemType=ItemType::byName("apple"), .materialType=MaterialType::byName("fruit"), .quantity=Quantity::create(50u)});
+	BlockIndex fruitLocation = blocks.getIndex_i(6, 5, 2);
 	items.setLocation(fruit, fruitLocation);
 	SUBCASE("bleed to death")
 	{
 		// Area, force, material type, wound type
-		Hit hit(1,35, MaterialType::byName("poplar wood"), WoundType::Pierce);
+		Hit hit(1, Force::create(35), MaterialType::byName("poplar wood"), WoundType::Pierce);
 		BodyPart& bodyPart = actors.body_pickABodyPartByVolume(actor);
 		actors.takeHit(actor, hit, bodyPart);
 		REQUIRE(hit.depth == 3);
@@ -48,7 +49,7 @@ TEST_CASE("wound")
 	SUBCASE("heal")
 	{
 		// Area, force, material type, wound type
-		Hit hit(1,11, MaterialType::byName("poplar wood"), WoundType::Pierce);
+		Hit hit(1, Force::create(11), MaterialType::byName("poplar wood"), WoundType::Pierce);
 		BodyPart& bodyPart = actors.body_pickABodyPartByVolume(actor);
 		actors.takeHit(actor, hit, bodyPart);
 		REQUIRE(hit.depth == 1);
@@ -68,14 +69,14 @@ TEST_CASE("wound")
 	{
 		BodyPart& leftLeg = actors.body_pickABodyPartByType(actor, BodyPartType::byName("left leg"));
 		BodyPart& leftArm = actors.body_pickABodyPartByType(actor, BodyPartType::byName("left arm"));
-		Hit hit(1,5, MaterialType::byName("bronze"), WoundType::Pierce);
+		Hit hit(1, Force::create(5), MaterialType::byName("bronze"), WoundType::Pierce);
 		auto moveSpeed = actors.move_getSpeed(actor);
 		actors.takeHit(actor, hit, leftLeg);
 		REQUIRE(actors.body_getImpairMovePercent(actor) != 0);
 		REQUIRE(moveSpeed > actors.move_getSpeed(actor));
 		auto combatScore = actors.combat_getCombatScore(actor);
 		REQUIRE(combatScore != 0);
-		Hit hit2(1,5, MaterialType::byName("bronze"), WoundType::Pierce);
+		Hit hit2(1, Force::create(5), MaterialType::byName("bronze"), WoundType::Pierce);
 		actors.takeHit(actor, hit2, leftArm);
 		REQUIRE(actors.body_getImpairManipulationPercent(actor) != 0);
 		REQUIRE(combatScore > actors.combat_getCombatScore(actor));
@@ -94,7 +95,7 @@ TEST_CASE("wound")
 	SUBCASE("fatal blow")
 	{
 		// Area, force, material type, wound type
-		Hit hit(10,400, MaterialType::byName("bronze"), WoundType::Cut);
+		Hit hit(10, Force::create(400), MaterialType::byName("bronze"), WoundType::Cut);
 		BodyPart& head = actors.body_pickABodyPartByType(actor, BodyPartType::byName("head"));
 		actors.takeHit(actor, hit, head);
 		REQUIRE(!actors.isAlive(actor));

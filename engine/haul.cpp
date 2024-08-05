@@ -15,6 +15,7 @@
 #include "types.h"
 #include "simulation.h"
 #include "itemType.h"
+#include "moveType.h"
 
 #include <memory>
 #include <sys/types.h>
@@ -230,7 +231,11 @@ void HaulSubproject::commandWorker(ActorIndex actor)
 				if(actors.isAdjacentToLocation(actor, m_project.m_location))
 				{
 					// Unload
-					ActorOrItemIndex cargo = actors.canPickUp_putDownPolymorphic(actor, actorLocation);
+					ActorOrItemIndex cargo = actors.canPickUp_tryToPutDownPolymorphic(actor, actorLocation);
+					if(cargo.empty())
+					{
+						// Cargo cannot be put down here, try again
+					}
 					complete(cargo);
 				}
 				else
