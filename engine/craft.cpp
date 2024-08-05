@@ -54,7 +54,7 @@ Step CraftStepProject::getDuration() const
 // Static method.
 uint32_t CraftStepProject::getWorkerCraftScore(const ActorIndex actor) const
 {
-	return 1 + m_area.getActors().skill_getLevel(actor, m_craftStepType.skillType);
+	return 1 + m_area.getActors().skill_getLevel(actor, m_craftStepType.skillType).get();
 }
 void CraftStepProject::onComplete()
 {

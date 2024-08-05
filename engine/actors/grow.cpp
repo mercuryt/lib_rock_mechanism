@@ -3,6 +3,7 @@
 #include "../simulation.h"
 #include "../util.h"
 #include "../area.h"
+#include "../animalSpecies.h"
 #include "types.h"
 
 void Actors::grow_maybeStart(ActorIndex index)

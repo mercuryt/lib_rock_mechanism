@@ -5,7 +5,7 @@
 #include "objective.h"
 #include "area.h"
 WaitObjective::WaitObjective(Area& area, Step duration, ActorIndex actor) :
-	Objective(0), m_event(area.m_eventSchedule)
+	Objective(Priority::create(0)), m_event(area.m_eventSchedule)
 {
 
 	m_event.schedule(duration, area, *this, actor);
@@ -14,7 +14,7 @@ WaitObjective::WaitObjective(const Json& data, Area& area, ActorIndex actor) :
 	Objective(data), m_event(area.m_eventSchedule)
 {
 	if(data.contains("eventStart"))
-		m_event.schedule(data["duration"].get<Step>(), area, *this, data["eventStart"].get<Step>(), actor);
+		m_event.schedule(data["duration"].get<Step>(), area, *this, actor, data["eventStart"].get<Step>());
 }
 Json WaitObjective::toJson() const
 {

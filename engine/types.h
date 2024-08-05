@@ -314,6 +314,169 @@ public:
 inline void to_json(Json& data, const Priority& index) { data = index.get(); }
 inline void from_json(const Json& data, Priority& index) { index = Priority::create(data.get<uint16_t>()); }
 
+class Stamina : public StrongInteger<Stamina, int16_t>
+{
+public:
+	Stamina() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const Stamina& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const Stamina& index) { data = index.get(); }
+inline void from_json(const Json& data, Stamina& index) { index = Stamina::create(data.get<uint16_t>()); }
+
+// The offset required to lookup in one block's getAdjacentUnfiltered to find another block.
+class AdjacentIndex : public StrongInteger<AdjacentIndex, int8_t>
+{
+public:
+	AdjacentIndex() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const AdjacentIndex& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const AdjacentIndex& index) { data = index.get(); }
+inline void from_json(const Json& data, AdjacentIndex& index) { index = AdjacentIndex::create(data.get<uint8_t>()); }
+
+class HarvestDataTypeId : public StrongInteger<HarvestDataTypeId, int8_t>
+{
+public:
+	HarvestDataTypeId() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const HarvestDataTypeId& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const HarvestDataTypeId& index) { data = index.get(); }
+inline void from_json(const Json& data, HarvestDataTypeId& index) { index = HarvestDataTypeId::create(data.get<uint8_t>()); }
+
+class PlantSpeciesId : public StrongInteger<PlantSpeciesId, int8_t>
+{
+public:
+	PlantSpeciesId() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const PlantSpeciesId& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const PlantSpeciesId& index) { data = index.get(); }
+inline void from_json(const Json& data, PlantSpeciesId& index) { index = PlantSpeciesId::create(data.get<uint8_t>()); }
+
+class AnimalSpeciesId : public StrongInteger<AnimalSpeciesId, int8_t>
+{
+public:
+	AnimalSpeciesId() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const AnimalSpeciesId& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const AnimalSpeciesId& index) { data = index.get(); }
+inline void from_json(const Json& data, AnimalSpeciesId& index) { index = AnimalSpeciesId::create(data.get<uint8_t>()); }
+
+class MaterialTypeId : public StrongInteger<MaterialTypeId, int8_t>
+{
+public:
+	MaterialTypeId() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const MaterialTypeId& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const MaterialTypeId& index) { data = index.get(); }
+inline void from_json(const Json& data, MaterialTypeId& index) { index = MaterialTypeId::create(data.get<uint8_t>()); }
+
+class MaterialCategoryTypeId : public StrongInteger<MaterialCategoryTypeId, int8_t>
+{
+public:
+	MaterialCategoryTypeId() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const MaterialCategoryTypeId& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const MaterialCategoryTypeId& index) { data = index.get(); }
+inline void from_json(const Json& data, MaterialCategoryTypeId& index) { index = MaterialCategoryTypeId::create(data.get<uint8_t>()); }
+
+class SpoilsDataTypeId : public StrongInteger<SpoilsDataTypeId, int8_t>
+{
+public:
+	SpoilsDataTypeId() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const SpoilsDataTypeId& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const SpoilsDataTypeId& index) { data = index.get(); }
+inline void from_json(const Json& data, SpoilsDataTypeId& index) { index = SpoilsDataTypeId::create(data.get<uint8_t>()); }
+
+class BurnDataTypeId : public StrongInteger<BurnDataTypeId, int8_t>
+{
+public:
+	BurnDataTypeId() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const BurnDataTypeId& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const BurnDataTypeId& index) { data = index.get(); }
+inline void from_json(const Json& data, BurnDataTypeId& index) { index = BurnDataTypeId::create(data.get<uint8_t>()); }
+
+class MaterialConstructionDataTypeId : public StrongInteger<MaterialConstructionDataTypeId, int8_t>
+{
+public:
+	MaterialConstructionDataTypeId() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const MaterialConstructionDataTypeId& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const MaterialConstructionDataTypeId& index) { data = index.get(); }
+inline void from_json(const Json& data, MaterialConstructionDataTypeId& index) { index = MaterialConstructionDataTypeId::create(data.get<uint8_t>()); }
+
+class ItemTypeId : public StrongInteger<ItemTypeId, int8_t>
+{
+public:
+	ItemTypeId() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const ItemTypeId& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const ItemTypeId& index) { data = index.get(); }
+inline void from_json(const Json& data, ItemTypeId& index) { index = ItemTypeId::create(data.get<uint8_t>()); }
+
+class FluidTypeId : public StrongInteger<FluidTypeId, int8_t>
+{
+public:
+	FluidTypeId() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const FluidTypeId& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const FluidTypeId& index) { data = index.get(); }
+inline void from_json(const Json& data, FluidTypeId& index) { index = FluidTypeId::create(data.get<uint8_t>()); }
+
+class SkillTypeId : public StrongInteger<SkillTypeId, int8_t>
+{
+public:
+	SkillTypeId() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const SkillTypeId& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const SkillTypeId& index) { data = index.get(); }
+inline void from_json(const Json& data, SkillTypeId& index) { index = SkillTypeId::create(data.get<uint8_t>()); }
+
+class MoveTypeId : public StrongInteger<MoveTypeId, int8_t>
+{
+public:
+	MoveTypeId() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const MoveTypeId& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const MoveTypeId& index) { data = index.get(); }
+inline void from_json(const Json& data, MoveTypeId& index) { index = MoveTypeId::create(data.get<uint8_t>()); }
+
+class BodyTypeId : public StrongInteger<BodyTypeId, int8_t>
+{
+public:
+	BodyTypeId() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const BodyTypeId& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const BodyTypeId& index) { data = index.get(); }
+inline void from_json(const Json& data, BodyTypeId& index) { index = BodyTypeId::create(data.get<uint8_t>()); }
+
+class BodyPartTypeId : public StrongInteger<BodyPartTypeId, int8_t>
+{
+public:
+	BodyPartTypeId() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const BodyPartTypeId& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const BodyPartTypeId& index) { data = index.get(); }
+inline void from_json(const Json& data, BodyPartTypeId& index) { index = BodyPartTypeId::create(data.get<uint8_t>()); }
+
+class CraftStepTypeCategoryId : public StrongInteger<CraftStepTypeCategoryId, int8_t>
+{
+public:
+	CraftStepTypeCategoryId() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const CraftStepTypeCategoryId& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const CraftStepTypeCategoryId& index) { data = index.get(); }
+inline void from_json(const Json& data, CraftStepTypeCategoryId& index) { index = CraftStepTypeCategoryId::create(data.get<uint8_t>()); }
+
+class AttackTypeId : public StrongInteger<AttackTypeId, int8_t>
+{
+public:
+	AttackTypeId() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const AttackTypeId& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const AttackTypeId& index) { data = index.get(); }
+inline void from_json(const Json& data, AttackTypeId& index) { index = AttackTypeId::create(data.get<uint8_t>()); }
+
 template<typename T>
 using FactionIdMap = std::unordered_map<FactionId, T, FactionId::Hash>;
 using FactionIdSet = StrongIntegerSet<FactionId>;

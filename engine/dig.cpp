@@ -76,8 +76,8 @@ uint32_t DigProject::getWorkerDigScore(Area& area, ActorIndex actor)
 {
 	static const SkillType& digType = SkillType::byName("dig");
 	Actors& actors = area.getActors();
-	uint32_t strength = actors.getStrength(actor);
-	uint32_t skillLevel = actors.skill_getLevel(actor, digType);
+	uint32_t strength = actors.getStrength(actor).get();
+	uint32_t skillLevel = actors.skill_getLevel(actor, digType).get();
 	return (strength * Config::digStrengthModifier) + (skillLevel * Config::digSkillModifier);
 }
 void DigProject::onComplete()

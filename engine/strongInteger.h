@@ -61,7 +61,8 @@ public:
 	template <class T>
 	void add(T&& begin, T&& end) { assert(begin <= end); while(begin != end) { maybeAdd(*begin); ++begin; } }
 	void maybeAdd(StrongInteger index) { if(!contains(index)) data.push_back(index); }
-	void remove(StrongInteger index) { assert(contains(index)); auto found = find(index); (*found) = data.back(); data.resize(data.size() - 1);}
+	void remove(StrongInteger index) { assert(contains(index)); remove(find(index)); }
+	void remove(std::vector<StrongInteger>::iterator iter) { (*iter) = data.back(); data.pop_back(); }
 	template <class Predicate>
 	void remove_if(Predicate&& predicate) { std::ranges::remove_if(data, predicate); }
 	void update(StrongInteger oldIndex, StrongInteger newIndex) { assert(!contains(newIndex)); auto found = find(oldIndex); assert(found != data.end()); (*found) = newIndex;}

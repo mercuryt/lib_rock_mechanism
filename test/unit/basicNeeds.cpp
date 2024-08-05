@@ -12,13 +12,14 @@
 #include "../../engine/blocks/blocks.h"
 #include "../../engine/itemType.h"
 #include "../../engine/objectives/eat.h"
+#include "types.h"
 TEST_CASE("basicNeedsSentient")
 {
 	static const MaterialType& dirt = MaterialType::byName("dirt");
-	static Faction faction(L"Tower of Power");
 	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
 	static const FluidType& water = FluidType::byName("water");
 	Simulation simulation;
+	FactionId faction = simulation.createFaction(L"Tower Of Power").id;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
@@ -26,19 +27,19 @@ TEST_CASE("basicNeedsSentient")
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	ActorIndex actor = actors.create(ActorParamaters{
 		.species=dwarf, 
-		.percentGrown=50,
-		.location=blocks.getIndex({1, 1, 2}), 
-		.percentHunger=0,
-		.percentTired=0,
-		.percentThirst=0,
+		.percentGrown=Percent::create(50),
+		.location=blocks.getIndex_i(1, 1, 2), 
+		.percentHunger=Percent::create(0),
+		.percentTired=Percent::create(0),
+		.percentThirst=Percent::create(0),
 	});
-	actors.setFaction(actor, &faction);
+	actors.setFaction(actor, faction);
 	REQUIRE(actors.grow_isGrowing(actor));
 	SUBCASE("drink from pond")
 	{
-		BlockIndex pondLocation = blocks.getIndex({3, 3, 1});
+		BlockIndex pondLocation = blocks.getIndex_i(3, 3, 1);
 		blocks.solid_setNot(pondLocation);
-		blocks.fluid_add(pondLocation, 100, water);
+		blocks.fluid_add(pondLocation, CollisionVolume::create(100), water);
 		simulation.fastForward(dwarf.stepsFluidDrinkFreqency);
 		REQUIRE(!actors.grow_isGrowing(actor));
 		REQUIRE(actors.drink_isThirsty(actor));
@@ -51,21 +52,21 @@ TEST_CASE("basicNeedsSentient")
 		simulation.fastForward(Config::stepsToDrink);
 		REQUIRE(!actors.drink_isThirsty(actor));
 		REQUIRE(actors.objective_getCurrentName(actor) != "drink");
-		uint32_t drinkVolume = MustDrink::drinkVolumeFor(area, actor);
+		CollisionVolume drinkVolume = MustDrink::drinkVolumeFor(area, actor);
 		simulation.doStep(); // Give a step for the fluid removal to take effect.
 		REQUIRE(blocks.fluid_volumeOfTypeContains(pondLocation, water) == Config::maxBlockVolume - drinkVolume);
 	}
 	SUBCASE("drink from bucket")
 	{
-		BlockIndex bucketLocation = blocks.getIndex({7, 7, 2});
+		BlockIndex bucketLocation = blocks.getIndex_i(7, 7, 2);
 		ItemIndex bucket = items.create({
 			.itemType=ItemType::byName("bucket"),
 			.materialType=MaterialType::byName("poplar wood"),
 			.location=bucketLocation,
-			.quality=50,
-			.percentWear=0,
+			.quality=Quality::create(50),
+			.percentWear=Percent::create(0),
 		});
-		items.cargo_addFluid(bucket, water, 10);
+		items.cargo_addFluid(bucket, water, CollisionVolume::create(10));
 		simulation.fastForward(dwarf.stepsFluidDrinkFreqency);
 		REQUIRE(!actors.grow_isGrowing(actor));
 		REQUIRE(actors.drink_isThirsty(actor));
@@ -78,8 +79,8 @@ TEST_CASE("basicNeedsSentient")
 		simulation.fastForward(Config::stepsToDrink);
 		REQUIRE(!actors.drink_isThirsty(actor));
 		REQUIRE(actors.objective_getCurrentName(actor) != "drink");
-		uint32_t drinkVolume = MustDrink::drinkVolumeFor(area, actor);
-		REQUIRE(items.cargo_getFluidVolume(bucket) == 10 - drinkVolume);
+		CollisionVolume drinkVolume = MustDrink::drinkVolumeFor(area, actor);
+		REQUIRE(items.cargo_getFluidVolume(bucket) == CollisionVolume::create(10) - drinkVolume);
 	}
 	SUBCASE("drink tea")
 	{
@@ -87,13 +88,13 @@ TEST_CASE("basicNeedsSentient")
 	}
 	SUBCASE("eat prepared meal")
 	{
-		BlockIndex mealLocation = blocks.getIndex({5, 5, 2});
+		BlockIndex mealLocation = blocks.getIndex_i(5, 5, 2);
 		ItemIndex meal = items.create({
 			.itemType=ItemType::byName("prepared meal"),
 			.materialType=MaterialType::byName("fruit"),
 			.location=mealLocation,
-			.quality=50,
-			.percentWear=0,
+			.quality=Quality::create(50),
+			.percentWear=Percent::create(0),
 		});
 		REQUIRE(actors.eat_getDesireToEatSomethingAt(actor, mealLocation) == UINT32_MAX);
 		simulation.fastForward(dwarf.stepsEatFrequency);
@@ -118,12 +119,12 @@ TEST_CASE("basicNeedsSentient")
 	}
 	SUBCASE("eat fruit")
 	{
-		BlockIndex fruitLocation = blocks.getIndex(6, 5, 2);
+		BlockIndex fruitLocation = blocks.getIndex_i(6, 5, 2);
 		ItemIndex fruit = items.create({
 			.itemType=ItemType::byName("apple"),
 			.materialType=MaterialType::byName("fruit"),
 			.location=fruitLocation,
-			.quantity=50,
+			.quantity=Quantity::create(50),
 		});
 		REQUIRE(actors.eat_getDesireToEatSomethingAt(actor, fruitLocation) == 2);
 		simulation.fastForward(dwarf.stepsEatFrequency);
@@ -160,14 +161,14 @@ TEST_CASE("basicNeedsNonsentient")
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	ActorIndex actor = actors.create(ActorParamaters{
 		.species=redDeer, 
-		.percentGrown=50,
-		.location=blocks.getIndex({1, 1, 2}),
+		.percentGrown=Percent::create(50),
+		.location=blocks.getIndex_i(1, 1, 2),
 	});
 	REQUIRE(actors.grow_isGrowing(actor));
 	REQUIRE(actors.drink_thirstEventExists(actor));
-	BlockIndex pondLocation = blocks.getIndex({3, 3, 1});
+	BlockIndex pondLocation = blocks.getIndex_i(3, 3, 1);
 	blocks.solid_setNot(pondLocation);
-	blocks.fluid_add(pondLocation, 100, water);
+	blocks.fluid_add(pondLocation, CollisionVolume::create(100), water);
 	SUBCASE("sleep outside at current location")
 	{
 		// Generate objectives, discard eat if it exists.
@@ -194,8 +195,8 @@ TEST_CASE("basicNeedsNonsentient")
 	}
 	SUBCASE("eat leaves")
 	{
-		BlockIndex grassLocation = blocks.getIndex(5, 5, 2);
-		blocks.plant_create(grassLocation, wheatGrass, 100);
+		BlockIndex grassLocation = blocks.getIndex_i(5, 5, 2);
+		blocks.plant_create(grassLocation, wheatGrass, Percent::create(100));
 		PlantIndex grass = blocks.plant_get(grassLocation);
 		// Generate objectives.
 		simulation.fastForward(redDeer.stepsEatFrequency);
@@ -222,9 +223,9 @@ TEST_CASE("basicNeedsNonsentient")
 	}
 	SUBCASE("sleep at assigned spot")
 	{
-		areaBuilderUtil::setSolidWall(area, blocks.getIndex({0, 2, 2}), blocks.getIndex({8, 2, 2}), dirt);
-		BlockIndex gateway = blocks.getIndex({9, 2, 2});
-		BlockIndex spot = blocks.getIndex({5, 5, 2});
+		areaBuilderUtil::setSolidWall(area, blocks.getIndex_i(0, 2, 2), blocks.getIndex(8, 2, 2), dirt);
+		BlockIndex gateway = blocks.getIndex_i(9, 2, 2);
+		BlockIndex spot = blocks.getIndex_i(5, 5, 2);
 		actors.sleep_setSpot(actor, spot);
 		actors.sleep_makeTired(actor);
 		REQUIRE(actors.objective_getCurrentName(actor) == "sleep");
@@ -269,10 +270,10 @@ TEST_CASE("basicNeedsNonsentient")
 		const AnimalSpecies& blackBear = AnimalSpecies::byName("black bear");
 		ActorIndex bear = actors.create(ActorParamaters{
 			.species=blackBear, 
-			.location=blocks.getIndex({5, 1, 2}),
+			.location=blocks.getIndex_i(5, 1, 2),
 		});
 		ActorIndex deer = actor;
-		uint32_t deerMass = actors.getMass(deer);
+		Mass deerMass = actors.getMass(deer);
 		actors.die(deer, CauseOfDeath::thirst);
 		REQUIRE(!actors.isAlive(deer));
 		REQUIRE(actors.eat_getDesireToEatSomethingAt(bear, actors.getLocation(deer)));
@@ -299,8 +300,8 @@ TEST_CASE("basicNeedsNonsentient")
 	SUBCASE("leave location with unsafe temperature")
 	{
 		REQUIRE(actors.grow_isGrowing(actor));
-		BlockIndex temperatureSourceLocation = blocks.getIndex({1, 1, 3});
-		area.m_hasTemperature.addTemperatureSource(temperatureSourceLocation, 200);
+		BlockIndex temperatureSourceLocation = blocks.getIndex_i(1, 1, 3);
+		area.m_hasTemperature.addTemperatureSource(temperatureSourceLocation, TemperatureDelta::create(200));
 		simulation.doStep();
 		REQUIRE(!actors.temperature_isSafeAtCurrentLocation(actor));
 		REQUIRE(blocks.temperature_get(actors.getLocation(actor)) > actors.getSpecies(actor).maximumSafeTemperature);
@@ -321,8 +322,8 @@ TEST_CASE("death")
 	Actors& actors = area.getActors();
 	ActorIndex actor = actors.create(ActorParamaters{
 		.species=redDeer, 
-		.percentGrown=50,
-		.location=blocks.getIndex({1, 1, 2}), 
+		.percentGrown=Percent::create(50),
+		.location=blocks.getIndex_i(1, 1, 2), 
 	});
 	SUBCASE("thirst")
 	{
@@ -339,9 +340,9 @@ TEST_CASE("death")
 	}
 	SUBCASE("hunger")
 	{
-		BlockIndex pondLocation = blocks.getIndex({3, 3, 1});
+		BlockIndex pondLocation = blocks.getIndex_i(3, 3, 1);
 		blocks.solid_setNot(pondLocation);
-		blocks.fluid_add(pondLocation, 100, FluidType::byName("water"));
+		blocks.fluid_add(pondLocation, CollisionVolume::create(100), FluidType::byName("water"));
 		// Generate objectives, discard drink if it exists.
 		REQUIRE(actors.eat_getHungerEventStep(actor) == redDeer.stepsEatFrequency +  step);
 		simulation.fastForward(redDeer.stepsEatFrequency);
@@ -354,8 +355,8 @@ TEST_CASE("death")
 	}
 	SUBCASE("temperature")
 	{
-		BlockIndex temperatureSourceLocation = blocks.getIndex({5, 5, 2});
-		area.m_hasTemperature.addTemperatureSource(temperatureSourceLocation, 60000);
+		BlockIndex temperatureSourceLocation = blocks.getIndex_i(5, 5, 2);
+		area.m_hasTemperature.addTemperatureSource(temperatureSourceLocation, TemperatureDelta::create(60000));
 		simulation.doStep();
 		REQUIRE(!actors.temperature_isSafeAtCurrentLocation(actor));
 		simulation.fastForward(actors.getSpecies(actor).stepsTillDieInUnsafeTemperature - 2);

@@ -37,7 +37,7 @@ void KillObjective::execute(Area& area, ActorIndex actor)
 	// If not in range create GetIntoRangeThreadedTask.
 	Blocks& blocks = area.getBlocks();
 	if(!actors.move_hasPathRequest(actor) &&
-			(blocks.taxiDistance(actors.getLocation(actor), actors.getLocation(target)) > actors.combat_getMaxRange(actor) ||
+			(blocks.distanceFractional(actors.getLocation(actor), actors.getLocation(target)) > actors.combat_getMaxRange(actor) ||
 			 // TODO: hasLineOfSightIncludingActors
 			 area.m_opacityFacade.hasLineOfSight(actors.getLocation(actor), actors.getLocation(target)))
 	)

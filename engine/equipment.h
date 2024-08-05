@@ -21,8 +21,8 @@ class EquipmentSet
 {
 	// TODO: Make this a vector.
 	std::unordered_set<const BodyPartType*> m_bodyPartTypesWithRigidArmor;
-	ItemReferences m_equipments;
 	ItemReferencesMaybeSorted m_wearable;
+	ItemReferences m_equipments;
 	ItemReferences m_meleeWeapons;
 	ItemReferences m_rangedWeapons;
 	ItemReferences m_rangedWeaponAmmo;

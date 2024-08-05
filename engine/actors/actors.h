@@ -111,7 +111,7 @@ class Actors final : public Portables
 	// CanPickUp.
 	DataVector<ActorOrItemIndex, ActorIndex> m_carrying;
 	// Stamina.
-	DataVector<uint32_t, ActorIndex> m_stamina;
+	DataVector<Stamina, ActorIndex> m_stamina;
 	// Vision.
 	DataVector<ActorIndices, ActorIndex> m_canSee;
 	DataVector<DistanceInBlocks, ActorIndex> m_visionRange;
@@ -188,12 +188,12 @@ public:
 	[[nodiscard]] Mass getUnencomberedCarryMass(ActorIndex index) const { return m_unencomberedCarryMass.at(index); }
 	// -Stamina.
 	void stamina_recover(ActorIndex index);
-	void stamina_spend(ActorIndex index, uint32_t stamina);
+	void stamina_spend(ActorIndex index, Stamina stamina);
 	void stamina_setFull(ActorIndex index);
-	bool stamina_hasAtLeast(ActorIndex index, uint32_t stamina) const;
+	bool stamina_hasAtLeast(ActorIndex index, Stamina stamina) const;
 	bool stamina_isFull(ActorIndex index) const;
-	[[nodiscard]] uint32_t stamina_getMax(ActorIndex index) const;
-	[[nodiscard]] uint32_t stamina_get(ActorIndex index) const { return m_stamina.at(index); }
+	[[nodiscard]] Stamina stamina_getMax(ActorIndex index) const;
+	[[nodiscard]] Stamina stamina_get(ActorIndex index) const { return m_stamina.at(index); }
 	// -Vision.
 	void vision_do(ActorIndex index, ActorIndices& actors);
 	void vision_setRange(ActorIndex index, DistanceInBlocks range);
@@ -299,19 +299,18 @@ public:
 	void canPickUp_pickUpItemQuantity(ActorIndex index, ItemIndex item, Quantity quantity);
 	void canPickUp_pickUpActor(ActorIndex index, ActorIndex actor);
 	void canPickUp_pickUpPolymorphic(ActorIndex index, ActorOrItemIndex actorOrItemIndex, Quantity quantity);
-	// TODO: Check if can put down.
-	ActorIndex canPickUp_putDownActor(ActorIndex index, BlockIndex location);
-	// Returns a reference to has shape, which may be newly created or pre-existing due to generic items.
-	ItemIndex canPickUp_putDownItem(ActorIndex index, BlockIndex location);
-	ActorOrItemIndex canPickUp_putDownIfAny(ActorIndex index, BlockIndex location);
-	ActorOrItemIndex canPickUp_putDownPolymorphic(ActorIndex index, BlockIndex location);
 	void canPickUp_removeFluidVolume(ActorIndex index, CollisionVolume volume);
 	void canPickUp_add(ActorIndex index, const ItemType& itemType, const MaterialType& materialType, Quantity quantity);
 	void canPickUp_removeItem(ActorIndex index, ItemIndex item);
 	void canPickUp_updateActorIndex(ActorIndex index, ActorIndex oldIndex, ActorIndex newIndex);
 	void canPickUp_updateItemIndex(ActorIndex index, ItemIndex oldIndex, ItemIndex newIndex);
-	ItemIndex canPickUp_getItem(ActorIndex index);
-	ActorIndex canPickUp_getActor(ActorIndex index);
+	void canPickUp_updateUnencomberedCarryMass(ActorIndex index);
+	[[nodiscard]] ActorIndex canPickUp_tryToPutDownActor(ActorIndex index, BlockIndex location, DistanceInBlocks maxRange = DistanceInBlocks::create(1));
+	[[nodiscard]] ItemIndex canPickUp_tryToPutDownItem(ActorIndex index, BlockIndex location, DistanceInBlocks maxRange = DistanceInBlocks::create(1));
+	[[nodiscard]] ActorOrItemIndex canPickUp_tryToPutDownIfAny(ActorIndex index, BlockIndex location, DistanceInBlocks maxRange = DistanceInBlocks::create(1));
+	[[nodiscard]] ActorOrItemIndex canPickUp_tryToPutDownPolymorphic(ActorIndex index, BlockIndex location, DistanceInBlocks maxRange = DistanceInBlocks::create(1));
+	[[nodiscard]] ItemIndex canPickUp_getItem(ActorIndex index);
+	[[nodiscard]] ActorIndex canPickUp_getActor(ActorIndex index);
 	[[nodiscard]] bool canPickUp_polymorphic(ActorIndex index, ActorOrItemIndex target) const;
 	[[nodiscard]] bool canPickUp_singleItem(ActorIndex index, ItemIndex item) const;
 	[[nodiscard]] bool canPickUp_item(ActorIndex index, ItemIndex item) const;
@@ -335,6 +334,7 @@ public:
 	[[nodiscard]] Mass canPickUp_getMass(ActorIndex index) const;
 	[[nodiscard]] Speed canPickUp_speedIfCarryingQuantity(ActorIndex index, Mass mass, Quantity quantity) const;
 	[[nodiscard]] Quantity canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(ActorIndex index, Mass mass, Speed minimumSpeed) const;
+	[[nodiscard]] bool canPickUp_canPutDown(ActorIndex index, BlockIndex block);
 	// Objectives.
 	void objective_addTaskToStart(ActorIndex index, std::unique_ptr<Objective> objective);
 	void objective_addTaskToEnd(ActorIndex index, std::unique_ptr<Objective> objective);
@@ -533,8 +533,7 @@ public:
 };
 struct Attack final
 {
-	// Use pointers rather then references to allow move.
-	const AttackType* attackType = nullptr;
-	const MaterialType* materialType = nullptr;
+	const AttackTypeId attackType;
+	const MaterialTypeId materialType;
 	ItemIndex item; // Can be null for natural weapons.
 };

@@ -21,19 +21,19 @@ TEST_CASE("uniform")
 	areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName("marble"));
 	UniformElement pantsElement(ItemType::byName("pants"));
 	UniformElement shirtElement(ItemType::byName("shirt"));
-	UniformElement twoBeltsElement(ItemType::byName("belt"), 2u);
+	UniformElement twoBeltsElement(ItemType::byName("belt"), Quantity::create(2));
 	Uniform basic = Uniform(L"basic", {pantsElement, shirtElement, twoBeltsElement});
 	ActorIndex actor = actors.create({
 		.species=AnimalSpecies::byName("dwarf"),
-		.location=blocks.getIndex(5,5,1),
+		.location=blocks.getIndex_i(5,5,1),
 	});
 	actors.uniform_set(actor, basic);
 	REQUIRE(actors.objective_getCurrent<UniformObjective>(actor).getObjectiveTypeId() == ObjectiveTypeId::Uniform);
 	UniformObjective& objective = static_cast<UniformObjective&>(actors.objective_getCurrent<UniformObjective>(actor));
-	ItemIndex pants = items.create({.itemType=ItemType::byName("pants"), .materialType=MaterialType::byName("cotton"), .location=blocks.getIndex(8,1,1), .quality=10, .percentWear=10});
-	ItemIndex shirt = items.create({.itemType=ItemType::byName("shirt"), .materialType=MaterialType::byName("cotton"), .location=blocks.getIndex(1,6,1), .quality=10, .percentWear=10});
-	ItemIndex belt = items.create({.itemType=ItemType::byName("belt"), .materialType=MaterialType::byName("leather"), .location=blocks.getIndex(9,2,1), .quality=10, .percentWear=10});
-	ItemIndex belt2 = items.create({.itemType=ItemType::byName("belt"), .materialType=MaterialType::byName("leather"), .location=blocks.getIndex(9,3,1), .quality=10, .percentWear=10});
+	ItemIndex pants = items.create({.itemType=ItemType::byName("pants"), .materialType=MaterialType::byName("cotton"), .location=blocks.getIndex_i(8,1,1), .quality=Quality::create(10), .percentWear=Percent::create(10)});
+	ItemIndex shirt = items.create({.itemType=ItemType::byName("shirt"), .materialType=MaterialType::byName("cotton"), .location=blocks.getIndex_i(1,6,1), .quality=Quality::create(10), .percentWear=Percent::create(10)});
+	ItemIndex belt = items.create({.itemType=ItemType::byName("belt"), .materialType=MaterialType::byName("leather"), .location=blocks.getIndex_i(9,2,1), .quality=Quality::create(10), .percentWear=Percent::create(10)});
+	ItemIndex belt2 = items.create({.itemType=ItemType::byName("belt"), .materialType=MaterialType::byName("leather"), .location=blocks.getIndex_i(9,3,1), .quality=Quality::create(10), .percentWear=Percent::create(10)});
 	simulation.doStep();
 	BlockIndex destination = actors.move_getDestination(actor);
 	REQUIRE(items.isAdjacentToLocation(shirt, destination));

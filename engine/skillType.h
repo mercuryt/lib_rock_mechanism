@@ -1,16 +1,23 @@
 #pragma once
+#include "dataVector.h"
 #include "types.h"
 #include "json.h"
-struct SkillType final
+struct SkillTypeParamaters final
 {
 	std::string name;
 	float xpPerLevelModifier;
 	SkillExperiencePoints level1Xp;
-	// Infastructure.
-	bool operator==(const SkillType& skillType) const { return this == &skillType; }
-	static const SkillType& byName(const std::string name);
 };
-inline std::vector<SkillType> skillTypeDataStore;
-inline void to_json(Json& data, const SkillType* const& skillType){ data = skillType->name; }
-inline void to_json(Json& data, const SkillType& skillType){ data = skillType.name; }
-inline void from_json(const Json& data, const SkillType*& skillType){ skillType = &SkillType::byName(data.get<std::string>()); }
+class SkillType final
+{
+	static SkillType data;
+	DataVector<std::string, SkillTypeId> m_name;
+	DataVector<float, SkillTypeId> m_xpPerLevelModifier;
+	DataVector<SkillExperiencePoints, SkillTypeId> m_level1Xp;
+public:
+	static void create(SkillTypeParamaters& p);
+	static SkillTypeId byName(std::string name);
+	[[nodiscard]] static std::string getname(SkillTypeId id) { return data.m_name.at(id); }
+	[[nodiscard]] static float getxpPerLevelModifier(SkillTypeId id) { return data.m_xpPerLevelModifier.at(id); }
+	[[nodiscard]] static SkillExperiencePoints getlevel1Xp(SkillTypeId id) { return data.m_level1Xp.at(id); }
+};

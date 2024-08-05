@@ -42,14 +42,17 @@ void definitions::loadFluidTypes()
 		if(file.path().extension() != ".json")
 			continue;
 		Json data = tryParse(file.path());
-		fluidTypeDataStore.emplace_back(
-			data["name"].get<std::string>(),
-			data["viscosity"].get<int32_t>(),
-			data["density"].get<Density>(),
-			//TODO: store as seconds rather then steps
-			data.contains("mistDuration") ? data["mistDuration"].get<Step>() : Step::create(0),
-			data.contains("mistDuration") ? data["maxMistSpread"].get<DistanceInBlocks>() : DistanceInBlocks::create(0)
-		);
+		FluidTypeParamaters params{
+			.name=data["name"].get<std::string>(),
+			.viscosity=data["viscosity"].get<uint32_t>(),
+			.density=data["density"].get<Density>(),
+			//TODO: Store as seconds rather then steps.
+			//TODO: Initalize to null rather then 0.
+			.mistDuration=data.contains("mistDuration") ? data["mistDuration"].get<Step>() : Step::create(0),
+			.maxMistSpread=data.contains("mistDuration") ? data["maxMistSpread"].get<DistanceInBlocks>() : DistanceInBlocks::create(0),
+			.freezesInto=data.contains("freezesInto") ? data["freezesInto"].get<MaterialTypeId>() : MaterialTypeId::null(),
+		};
+		FluidType::create(params);
 	}
 }
 void definitions::loadMoveTypes()
@@ -76,7 +79,7 @@ void definitions::loadMoveTypes()
 void definitions::loadMaterialTypes()
 {
 	for(const Json& data : tryParse(path/"materialTypeCategories.json"))
-		materialTypeCategoryDataStore.emplace_back(data["name"]);
+		MaterialCategoryTypeId::create(data["name"]);
 	for(const auto& file : std::filesystem::directory_iterator(path/"materials"))
 	{
 		if(file.path().extension() != ".json")
@@ -102,7 +105,7 @@ void definitions::loadMaterialTypes()
 					data["burnData"]["burnStageDuration"].get<Step>(),
 					data["burnData"]["flameStageDuration"].get<Step>(),
 					data["burnData"]["ignitionTemperature"].get<Temperature>(),
-					data["burnData"]["flameTemperature"].get<Temperature>()
+					data["burnData"]["flameTemperature"].get<TemperatureDelta>()
 			);
 	}
 	// Load FluidType freeze into here, now that solid material types are loaded.
@@ -124,7 +127,7 @@ void definitions::loadSkillTypes()
 		skillTypeDataStore.emplace_back(
 			skillData["name"].get<std::string>(),
 			skillData["xpPerLevelModifier"].get<float>(),
-			skillData["level1Xp"].get<uint32_t>()
+			skillData["level1Xp"].get<SkillExperiencePoints>()
 		);
 	}
 }
@@ -135,7 +138,7 @@ const AttackType definitions::loadAttackType(const Json& data, const SkillType& 
 		data["area"].get<uint32_t>(),
 		data["baseForce"].get<Force>(),
 		data["range"].get<DistanceInBlocksFractional>(),
-		data["combatScore"].get<uint32_t>(),
+		data["combatScore"].get<CombatScore>(),
 		data.contains("coolDownSeconds") ? Config::stepsPerSecond * data["coolDownSeconds"].get<uint32_t>() : Step::create(0),
 		data.contains("projectile") ? data["projectile"].get<bool>() : false,
 		WoundCalculations::byName(data["woundType"].get<std::string>()),
@@ -363,45 +366,45 @@ void definitions::loadPlantSpecies()
 		if(file.path().extension() != ".json")
 			continue;
 		Json data = tryParse(file.path());
-		auto& plantSpecies = plantSpeciesDataStore.emplace_back(
-			data["name"].get<std::string>(),
-			data["annual"].get<bool>(),
-			data["maximumGrowingTemperature"].get<Temperature>(),
-			data["minimumGrowingTemperature"].get<Temperature>(),
-			Config::stepsPerDay * data["daysTillDieFromTemperature"].get<uint16_t>(),
-			Config::stepsPerDay * data["daysNeedsFluidFrequency"].get<uint16_t>(),
-			data["volumeFluidConsumed"].get<Volume>(),
-			Config::stepsPerDay * data["daysTillDieWithoutFluid"].get<uint16_t>(),
-			Config::stepsPerDay * data["daysTillFullyGrown"].get<uint16_t>(),
-			Config::stepsPerDay * data["daysTillFoliageGrowsFromZero"].get<uint16_t>(),
-			data["growsInSunlight"].get<bool>(),
-			data["rootRangeMax"].get<DistanceInBlocks>(),
-			data["rootRangeMin"].get<DistanceInBlocks>(),
-			data["adultMass"].get<Mass>(),
-			data["dayOfYearForSowStart"].get<uint16_t>(),
-			data["dayOfYearForSowEnd"].get<uint16_t>(),
-			data.contains("isTree") ? data["isTree"].get<bool>() : false,
-			data.contains("logsGeneratedByFellingWhenFullGrown") ? data["logsGeneratedByFellingWhenFullGrown"].get<Quantity>() : Quantity::create(0),
-			data.contains("branchesGeneratedByFellingWhenFullGrown") ? data["branchesGeneratedByFellingWhenFullGrown"].get<Quantity>() : Quantity::create(0),
-			data.contains("maxWildGrowth") ? data["maxWildGrowth"].get<uint8_t>() : 0,
-			FluidType::byName(data["fluidType"].get<std::string>()),
-			data.contains("woodType") ? data["woodType"].get<const MaterialType*>() : nullptr
-		);
-		assert(data.contains("shapes"));
-		for(const auto& shapeName : data["shapes"])
-			plantSpecies.shapes.push_back(&Shape::byName(shapeName.get<std::string>()));
+		HarvestDataTypeId harvestData;
 		if(data.contains("harvestData"))
 		{
-			auto& harvestData = harvestDataStore.emplace_back(
+			harvestData = harvestDataStore.emplace_back(
 				data["harvestData"]["dayOfYearToStart"].get<uint16_t>(),
 				Config::stepsPerDay * data["harvestData"]["daysDuration"].get<uint16_t>(),
 				data["harvestData"]["quantity"].get<Quantity>(),
 				ItemType::byName(data["harvestData"]["itemType"].get<std::string>())
 			);
-			plantSpecies.harvestData = &harvestData;
 		}
-		else
-			plantSpecies.harvestData = nullptr;
+		PlantSpeciesParamaters plantSpeciesParamaters = PlantSpeciesParamaters{
+			.name=data["name"].get<std::string>(),
+			.fluidType=FluidType::byName(data["fluidType"].get<std::string>()),
+			.woodType=data.contains("woodType") ? data["woodType"].get<const MaterialType*>() : nullptr,
+			.harvestData=harvestData,
+			.stepsNeedsFluidFrequency=Config::stepsPerDay * data["daysNeedsFluidFrequency"].get<uint16_t>(),
+			.stepsTillDieWithoutFluid=Config::stepsPerDay * data["daysTillDieWithoutFluid"].get<uint16_t>(),
+			.stepsTillFullyGrown=Config::stepsPerDay * data["daysTillFullyGrown"].get<uint16_t>(),
+			.stepsTillFoliageGrowsFromZero=Config::stepsPerDay * data["daysTillFoliageGrowsFromZero"].get<uint16_t>(),
+			.stepsTillDieFromTemperature=Config::stepsPerDay * data["daysTillDieFromTemperature"].get<uint16_t>(),
+			.rootRangeMax=data["rootRangeMax"].get<DistanceInBlocks>(),
+			.rootRangeMin=data["rootRangeMin"].get<DistanceInBlocks>(),
+			.logsGeneratedByFellingWhenFullGrown=data.contains("logsGeneratedByFellingWhenFullGrown") ? data["logsGeneratedByFellingWhenFullGrown"].get<Quantity>() : Quantity::create(0),
+			.branchesGeneratedByFellingWhenFullGrown=data.contains("branchesGeneratedByFellingWhenFullGrown") ? data["branchesGeneratedByFellingWhenFullGrown"].get<Quantity>() : Quantity::create(0),
+			.adultMass=data["adultMass"].get<Mass>(),
+			.maximumGrowingTemperature=data["maximumGrowingTemperature"].get<Temperature>(),
+			.minimumGrowingTemperature=data["minimumGrowingTemperature"].get<Temperature>(),
+			.volumeFluidConsumed=data["volumeFluidConsumed"].get<Volume>(),
+			.dayOfYearForSowStart=data["dayOfYearForSowStart"].get<uint16_t>(),
+			.dayOfYearForSowEnd=data["dayOfYearForSowEnd"].get<uint16_t>(),
+			.maxWildGrowth=data.contains("maxWildGrowth") ? data["maxWildGrowth"].get<uint8_t>() : (uint8_t)0,
+			.annual=data["annual"].get<bool>(),
+			.growsInSunLight=data["growsInSunlight"].get<bool>(),
+			.isTree=data.contains("isTree") ? data["isTree"].get<bool>() : false,
+		};
+		assert(data.contains("shapes"));
+		for(const auto& shapeName : data["shapes"])
+			plantSpeciesParamaters.shapes.push_back(&Shape::byName(shapeName.get<std::string>()));
+		PlantSpecies::create(plantSpeciesParamaters);
 	}
 }
 void definitions::loadBodyPartTypes()
@@ -445,39 +448,40 @@ void definitions::loadAnimalSpecies()
 		std::array<Step, 2> deathAge;
 		deathAge[0] = Config::stepsPerDay * deathAgeDays[0];
 		deathAge[1] = Config::stepsPerDay * deathAgeDays[1];
-		AnimalSpecies& animalSpecies = animalSpeciesDataStore.emplace_back(
-			data["name"].get<std::string>(),
-			data["sentient"].get<bool>(),
-			data["strength"].get<std::array<uint32_t, 3>>(),
-			data["dextarity"].get<std::array<uint32_t, 3>>(),
-			data["agility"].get<std::array<uint32_t, 3>>(),
-			data["mass"].get<std::array<Mass, 3>>(),
-			deathAge,
-			Config::stepsPerDay * data["daysTillFullyGrown"].get<uint16_t>(),
-			Config::stepsPerDay * data["daysTillDieWithoutFood"].get<uint16_t>(),
-			Config::stepsPerDay * data["daysEatFrequency"].get<uint16_t>(),
-			Config::stepsPerDay * data["daysTillDieWithoutFluid"].get<uint16_t>(),
-			Config::stepsPerDay * data["daysFluidDrinkFrequency"].get<uint16_t>(),
-			Config::stepsPerDay * data["daysTillDieInUnsafeTemperature"].get<uint16_t>(),
-			data["minimumSafeTemperature"].get<Temperature>(),
-			data["maximumSafeTemperature"].get<Temperature>(),
-			Config::stepsPerDay * data["daysSleepFrequency"].get<uint16_t>(),
-			Config::stepsPerHour * data["hoursTillSleepOveride"].get<uint8_t>(),
-			Config::stepsPerHour * data["hoursSleepDuration"].get<uint8_t>(),
-			data["nocturnal"].get<bool>(),
-			data["eatsMeat"].get<bool>(),
-			data["eatsLeaves"].get<bool>(),
-			data["eatsFruit"].get<bool>(),
-			data["visionRange"].get<DistanceInBlocks>(),
-			data["bodyScale"].get<uint32_t>(),
-			MaterialType::byName(data["materialType"].get<std::string>()),
-			MoveType::byName(data["moveType"].get<std::string>()),
-			FluidType::byName(data["fluidType"].get<std::string>()),
-			BodyType::byName(data["bodyType"].get<std::string>())
-		);
+		AnimalSpeciesParamaters params{
+			.name=data["name"].get<std::string>(),
+			.sentient=data["sentient"].get<bool>(),
+			.strength=data["strength"].get<std::array<AttributeLevel, 3>>(),
+			.dextarity=data["dextarity"].get<std::array<AttributeLevel, 3>>(),
+			.agility=data["agility"].get<std::array<AttributeLevel, 3>>(),
+			.mass=data["mass"].get<std::array<Mass, 3>>(),
+			.deathAge=data["deathAge"].get<std::array<Mass, 3>>(),
+			.daysTillFullyGrown=Config::stepsPerDay * data["daysTillFullyGrown"].get<uint16_t>(),
+			.daysTillDieWithoutFood=Config::stepsPerDay * data["daysTillDieWithoutFood"].get<uint16_t>(),
+			.daysEatFrequency=Config::stepsPerDay * data["daysEatFrequency"].get<uint16_t>(),
+			.daysTillDieWithoutFluid=Config::stepsPerDay * data["daysTillDieWithoutFluid"].get<uint16_t>(),
+			.daysFluidDrinkFrequency=Config::stepsPerDay * data["daysFluidDrinkFrequency"].get<uint16_t>(),
+			.daysTillDieInUnsafeTemperature=Config::stepsPerDay * data["daysTillDieInUnsafeTemperature"].get<uint16_t>(),
+			.minimumSafeTemperature=data["minimumSafeTemperature"].get<Temperature>(),
+			.maximumSafeTemperature=data["maximumSafeTemperature"].get<Temperature>(),
+			.daysSleepFrequency=Config::stepsPerDay * data["daysSleepFrequency"].get<uint16_t>(),
+			.hoursTillSleepOveride=Config::stepsPerHour * data["hoursTillSleepOveride"].get<uint8_t>(),
+			.hoursSleepDuration=Config::stepsPerHour * data["hoursSleepDuration"].get<uint8_t>(),
+			.nocturnal=data["nocturnal"].get<bool>(),
+			.eatsMeat=data["eatsMeat"].get<bool>(),
+			.eatsLeaves=data["eatsLeaves"].get<bool>(),
+			.eatsFruit=data["eatsFruit"].get<bool>(),
+			.visionRange=data["visionRange"].get<DistanceInBlocks>(),
+			.bodyScale=data["bodyScale"].get<uint32_t>(),
+			.materialType=MaterialType::byName(data["materialType"].get<std::string>()),
+			.moveType=MoveType::byName(data["moveType"].get<std::string>()),
+			.fluidType=FluidType::byName(data["fluidType"].get<std::string>()),
+			.bodyType=BodyType::byName(data["bodyType"].get<std::string>())
+		};
 		assert(data.contains("shapes"));
 		for(const auto& shapeName : data["shapes"])
-			animalSpecies.shapes.push_back(&Shape::byName(shapeName.get<std::string>()));
+			params.shapes.push_back(&Shape::byName(shapeName.get<std::string>()));
+		AnimalSpecies::create(params);
 	}
 }
 void definitions::load()

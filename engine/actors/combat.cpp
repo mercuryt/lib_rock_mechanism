@@ -29,7 +29,7 @@ void Actors::combat_attackMeleeRange(ActorIndex index, ActorIndex target)
 	{
 		// Attack hits.
 		const Attack& attack = combat_getAttackForCombatScoreDifference(index, attackerCombatScore - targetCombatScore);
-		Force attackForce = attack.attackType->baseForce + (m_attributes.at(index)->getStrength() * Config::unitsOfAttackForcePerUnitOfStrength);
+		Force attackForce = attack.attackType->baseForce + (m_strength.at(index).get() * Config::unitsOfAttackForcePerUnitOfStrength);
 		// TODO: Higher skill selects more important body parts to hit.
 		BodyPart& bodyPart = m_body.at(target)->pickABodyPartByVolume(m_area.m_simulation);
 		Hit hit(attack.attackType->area, attackForce, *attack.materialType, attack.attackType->woundType);
@@ -70,7 +70,7 @@ CombatScore Actors::combat_getCurrentMeleeCombatScore(ActorIndex index)
 	CombatScore output = m_combatScore.at(index);
 	for(ActorIndex adjacent : getAdjacentActors(index))
 	{
-		CombatScore highestAllyCombatScore = 0;
+		CombatScore highestAllyCombatScore = CombatScore::create(0);
 		bool nonAllyFound = false;
 		FactionId otherFaction = getFactionId(adjacent);
 		if(otherFaction.exists() && (otherFaction == faction || m_area.m_simulation.m_hasFactions.isAlly(otherFaction, faction)))
@@ -111,8 +111,8 @@ void Actors::combat_coolDownCompleted(ActorIndex index)
 }
 void Actors::combat_update(ActorIndex index)
 {
-	m_combatScore.at(index) = 0;
-	m_maxMeleeRange.at(index) =DistanceInBlocksFractional::create(0.f);
+	m_combatScore.at(index) = CombatScore::create(0);
+	m_maxMeleeRange.at(index) = DistanceInBlocksFractional::create(0.f);
 	m_maxRange.at(index) = DistanceInBlocksFractional::create(0.f);
 	// Collect attacks and combat scores from body and equipment.
 	m_meleeAttackTable.clear();
@@ -134,15 +134,19 @@ void Actors::combat_update(ActorIndex index)
 			m_maxMeleeRange.at(index) = range;
 	}
 	// Base stats give combat score.
-	m_combatScore.at(index) += m_attributes.at(index)->getBaseCombatScore();
+	m_combatScore.at(index) += CombatScore::create(
+		(m_strength.at(index).get() * Config::pointsOfCombatScorePerUnitOfStrength) +
+		(m_agility.at(index).get() * Config::pointsOfCombatScorePerUnitOfAgility) +
+		(m_dextarity.at(index).get() * Config::pointsOfCombatScorePerUnitOfDextarity)
+	);
 	// Reduce combat score if manipulation is impaired.
-	m_combatScore.at(index) = util::scaleByInversePercent(m_combatScore.at(index), body.getImpairManipulationPercent());
+	m_combatScore.at(index) = CombatScore::create(util::scaleByInversePercent(m_combatScore.at(index).get(), body.getImpairManipulationPercent()));
 	// Update cool down duration.
 	// TODO: Manipulation impairment should apply to cooldown as well?
-	m_coolDownDurationModifier.at(index) = std::max(1.f, (float)m_equipmentSet.at(index)->getMass().get() / (float)m_attributes.at(index)->getUnencomberedCarryMass().get() );
-	if(m_attributes.at(index)->getDextarity() > Config::attackCoolDownDurationBaseDextarity)
+	m_coolDownDurationModifier.at(index) = std::max(1.f, (float)m_equipmentSet.at(index)->getMass().get() / (float)m_unencomberedCarryMass.at(index).get() );
+	if(m_dextarity.at(index) > Config::attackCoolDownDurationBaseDextarity)
 	{
-		float reduction = (m_attributes.at(index)->getDextarity() - Config::attackCoolDownDurationBaseDextarity) * Config::fractionAttackCoolDownReductionPerPointOfDextarity;
+		float reduction = (float)(m_dextarity.at(index).get() - Config::attackCoolDownDurationBaseDextarity) * Config::fractionAttackCoolDownReductionPerPointOfDextarity;
 		m_coolDownDurationModifier.at(index) = std::max(m_coolDownDurationModifier.at(index) - reduction, Config::minimumAttackCoolDownModifier);
 	}
 	// Find the on miss cool down.
@@ -176,7 +180,7 @@ CombatScore Actors::combat_getCombatScoreForAttack(ActorIndex index, const Attac
 	output -= (percentItemWear * Config::itemWearCombatModifier).get();
 	return output;
 }
-const Attack& Actors::combat_getAttackForCombatScoreDifference(ActorIndex index, uint32_t scoreDifference) const
+const Attack& Actors::combat_getAttackForCombatScoreDifference(ActorIndex index, CombatScore scoreDifference) const
 {
 	for(auto& pair : m_meleeAttackTable.at(index))
 		if(pair.first > scoreDifference)
@@ -267,7 +271,7 @@ Percent Actors::combat_projectileHitPercent(ActorIndex index, const Attack& atta
 	Percent chance = Percent::create(100 - std::pow(distanceToActorFractional(index, target).get(), Config::projectileHitChanceFallsOffWithRangeExponent));
 	chance += m_skillSet.at(index)->get(attack.attackType->skillType).get() * Config::projectileHitPercentPerSkillPoint;
 	chance += (getVolume(target) - Config::projectileMedianTargetVolume).get() * Config::projectileHitPercentPerUnitVolume;
-	chance += m_attributes.at(index)->getDextarity().get() * Config::projectileHitPercentPerPointDextarity;
+	chance += m_dextarity.at(index).get() * Config::projectileHitPercentPerPointDextarity;
 	if(attack.item.exists())
 	{
 		Items& items = m_area.getItems();

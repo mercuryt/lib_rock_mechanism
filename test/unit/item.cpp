@@ -1,4 +1,5 @@
 #include "../../lib/doctest.h"
+#include "../../engine/animalSpecies.h"
 #include "../../engine/actors/actors.h"
 #include "../../engine/items/items.h"
 #include "../../engine/blocks/blocks.h"
@@ -26,18 +27,18 @@ TEST_CASE("equip and unequip")
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
-	BlockIndex destination = blocks.getIndex({8,2,1});
+	BlockIndex destination = blocks.getIndex_i(8,2,1);
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	ActorIndex dwarf1 = actors.create({
 		.species=AnimalSpecies::byName("dwarf"), 
-		.location=blocks.getIndex({1, 1, 1}),
+		.location=blocks.getIndex_i(1, 1, 1),
 		.hasCloths=false,
 		.hasSidearm=false
 	});
-	BlockIndex swordLocation = blocks.getIndex({8,8,1});
-	ItemIndex longsword = items.create({.itemType=ItemType::byName("long sword"), .materialType=MaterialType::byName("bronze"), .location=swordLocation, .quality=20, .percentWear=10});
-	std::unique_ptr<Objective> objective = std::make_unique<EquipItemObjective>(dwarf1, longsword);
+	BlockIndex swordLocation = blocks.getIndex_i(8,8,1);
+	ItemIndex longsword = items.create({.itemType=ItemType::byName("long sword"), .materialType=MaterialType::byName("bronze"), .location=swordLocation, .quality=Quality::create(20), .percentWear=Percent::create(10)});
+	std::unique_ptr<Objective> objective = std::make_unique<EquipItemObjective>(longsword.toReference(area));
 	actors.objective_addTaskToStart(dwarf1, std::move(objective));
 	REQUIRE(actors.move_hasPathRequest(dwarf1));
 	simulation.doStep();
@@ -45,7 +46,7 @@ TEST_CASE("equip and unequip")
 	REQUIRE(blocks.item_empty(swordLocation));
 	REQUIRE(actors.equipment_containsItem(dwarf1, longsword));
 	REQUIRE(actors.getActionDescription(dwarf1) != L"equip");
-	std::unique_ptr<Objective> objective2 = std::make_unique<UnequipItemObjective>(dwarf1, longsword, destination);
+	std::unique_ptr<Objective> objective2 = std::make_unique<UnequipItemObjective>(longsword.toReference(area), destination);
 	actors.objective_addTaskToStart(dwarf1, std::move(objective2));
 	simulation.doStep();
 	simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, destination);
@@ -64,19 +65,19 @@ TEST_CASE("give item")
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	ActorIndex dwarf1 = actors.create({
 		.species=AnimalSpecies::byName("dwarf"), 
-		.location=blocks.getIndex({1, 1, 1}),
+		.location=blocks.getIndex_i(1, 1, 1),
 		.hasCloths=false,
 		.hasSidearm=false
 	});
 	ActorIndex dwarf2 = actors.create({
 		.species=AnimalSpecies::byName("dwarf"), 
-		.location=blocks.getIndex({6, 6, 1}),
+		.location=blocks.getIndex_i(6, 6, 1),
 		.hasCloths=false,
 		.hasSidearm=false
 	});
-	ItemIndex longsword = items.create({.itemType=ItemType::byName("long sword"), .materialType=MaterialType::byName("bronze"), .quality=20, .percentWear=10});
+	ItemIndex longsword = items.create({.itemType=ItemType::byName("long sword"), .materialType=MaterialType::byName("bronze"), .quality=Quality::create(20), .percentWear=Percent::create(10)});
 	actors.equipment_add(dwarf1, longsword);
-	std::unique_ptr<Objective> objective = std::make_unique<GiveItemObjective>(area, dwarf1, longsword, dwarf2);
+	std::unique_ptr<Objective> objective = std::make_unique<GiveItemObjective>(area, longsword, dwarf2);
 	actors.objective_addTaskToStart(dwarf1, std::move(objective));
 	REQUIRE(actors.move_hasPathRequest(dwarf1));
 	simulation.doStep();

@@ -1,9 +1,19 @@
 #include "moveType.h"
-const MoveType& MoveType::byName(std::string name)
+MoveTypeId MoveType::byName(std::string name)
 { 
-	auto found = std::ranges::find(moveTypeDataStore, name, &MoveType::name);
-	assert(found != moveTypeDataStore.end());
-	return *found;
+	auto found = data.m_name.find(name);
+	assert(found != data.m_name.end());
+	return MoveTypeId::create(found - data.m_name.begin());
 }
-void to_json(Json& data, const MoveType* const& moveType){ data = moveType->name; }
-void from_json(const Json& data, const MoveType*& moveType){ moveType = &MoveType::byName(data.get<std::string>()); }
+void MoveType::create(MoveTypeParamaters& p)
+{
+	m_name.add(p.name);
+	m_walk.add(p.walk);
+	m_climb.add(p.climb);
+	m_jumpDown.add(p.jumpDown);
+	m_fly.add(p.fly);
+	m_breathless.add(p.breathless);
+	m_onlyBreathsFluids.add(p.onlyBreathsFluids);
+	m_swim.add(p.swim);
+	m_breathableFluids.add(p.breathableFluids);
+}

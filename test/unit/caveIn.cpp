@@ -16,11 +16,11 @@ TEST_CASE("Cave In")
 	static const MaterialType& marble = MaterialType::byName("marble");
 	SUBCASE("Cave In doesn't happen when block is supported.")
 	{
-		areaBuilderUtil::setSolidLayer(area, 0, marble);
+		areaBuilderUtil::setSolidLayer(area, DistanceInBlocks::create(0), marble);
 		// Set a supported block to be solid, verify nothing happens.
-		BlockIndex block = blocks.getIndex({5, 5, 1});
+		BlockIndex block = blocks.getIndex_i(5, 5, 1);
 		blocks.solid_set(block, marble, false);
-		area.m_caveInCheck.insert(block);
+		area.m_caveInCheck.add(block);
 		area.stepCaveInRead();
 		CHECK(area.m_caveInCheck.empty());
 		CHECK(area.m_caveInData.empty());
@@ -29,16 +29,16 @@ TEST_CASE("Cave In")
 	}
 	SUBCASE("Cave in does happen when block is not supported.")
 	{
-		areaBuilderUtil::setSolidLayer(area, 0, marble);
+		areaBuilderUtil::setSolidLayer(area, DistanceInBlocks::create(0), marble);
 		// Set a floating block to be solid and add to caveInCheck, verify it falls.
-		BlockIndex block = blocks.getIndex({5, 5, 2});
+		BlockIndex block = blocks.getIndex_i(5, 5, 2);
 		blocks.solid_set(block, marble, false);
-		area.m_caveInCheck.insert(block);
+		area.m_caveInCheck.add(block);
 		area.stepCaveInRead();
 		CHECK(area.m_caveInData.size() == 1);
 		area.stepCaveInWrite();
-		CHECK(!blocks.solid_is(blocks.getIndex({5, 5, 2})));
-		CHECK(blocks.solid_get(blocks.getIndex({5, 5, 1})) == marble);
+		CHECK(!blocks.solid_is(blocks.getIndex_i(5, 5, 2)));
+		CHECK(blocks.solid_get(blocks.getIndex_i(5, 5, 1)) == marble);
 		CHECK(area.m_caveInCheck.size() == 1);
 		area.stepCaveInRead();
 		CHECK(area.m_caveInData.size() == 0);
@@ -47,14 +47,14 @@ TEST_CASE("Cave In")
 	}
 	SUBCASE("Cave in does happen to multiple unconnected blocks which are unsuported.")
 	{
-		areaBuilderUtil::setSolidLayer(area, 0, marble);
+		areaBuilderUtil::setSolidLayer(area, DistanceInBlocks::create(0), marble);
 		// Verify multiple seperate blocks fall.
-		BlockIndex block = blocks.getIndex({5, 5, 2});
+		BlockIndex block = blocks.getIndex_i(5, 5, 2);
 		blocks.solid_set(block, marble, false);
-		BlockIndex block2 = blocks.getIndex({4, 4, 2});
+		BlockIndex block2 = blocks.getIndex_i(4, 4, 2);
 		blocks.solid_set(block2, marble, false);
-		area.m_caveInCheck.insert(block);
-		area.m_caveInCheck.insert(block2);
+		area.m_caveInCheck.add(block);
+		area.m_caveInCheck.add(block2);
 		area.stepCaveInRead();
 		CHECK(area.m_caveInData.size() == 2);
 		area.stepCaveInWrite();
@@ -66,14 +66,14 @@ TEST_CASE("Cave In")
 	}
 	SUBCASE("Cave in connected blocks together.")
 	{
-		areaBuilderUtil::setSolidLayer(area, 0, marble);
+		areaBuilderUtil::setSolidLayer(area, DistanceInBlocks::create(0), marble);
 		// Verify contiguous groups fall together.
-		BlockIndex block = blocks.getIndex({5, 5, 2});
+		BlockIndex block = blocks.getIndex_i(5, 5, 2);
 		blocks.solid_set(block, marble, false);
-		BlockIndex block2 = blocks.getIndex({5, 6, 2});
+		BlockIndex block2 = blocks.getIndex_i(5, 6, 2);
 		blocks.solid_set(block2, marble, false);
-		area.m_caveInCheck.insert(block);
-		area.m_caveInCheck.insert(block2);
+		area.m_caveInCheck.add(block);
+		area.m_caveInCheck.add(block2);
 		area.stepCaveInRead();
 		CHECK(area.m_caveInData.size() == 1);
 		area.stepCaveInWrite();
@@ -85,14 +85,14 @@ TEST_CASE("Cave In")
 	}
 	SUBCASE("Blocks on the edge of the area are anchored.")
 	{
-		areaBuilderUtil::setSolidLayer(area, 0, marble);
+		areaBuilderUtil::setSolidLayer(area, DistanceInBlocks::create(0), marble);
 		// Verify blocks on edges of area don't fall.
-		BlockIndex block = blocks.getIndex({0, 5, 2});
-		BlockIndex block2 = blocks.getIndex({1, 5, 2});
+		BlockIndex block = blocks.getIndex_i(0, 5, 2);
+		BlockIndex block2 = blocks.getIndex_i(1, 5, 2);
 		blocks.solid_set(block, marble, false);
 		blocks.solid_set(block2, marble, false);
-		area.m_caveInCheck.insert(block);
-		area.m_caveInCheck.insert(block2);
+		area.m_caveInCheck.add(block);
+		area.m_caveInCheck.add(block2);
 		area.stepCaveInRead();
 		CHECK(area.m_caveInData.empty());
 		area.stepCaveInWrite();
@@ -105,16 +105,16 @@ TEST_CASE("Cave In")
 	}
 	SUBCASE("Verify recorded fall distance is the shortest.")
 	{
-		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		BlockIndex block = blocks.getIndex({5, 5, 2});
-		BlockIndex block2 = blocks.getIndex({5, 5, 3});
-		BlockIndex block3 = blocks.getIndex({6, 5, 3});
+		areaBuilderUtil::setSolidLayer(area, DistanceInBlocks::create(0), marble);
+		BlockIndex block = blocks.getIndex_i(5, 5, 2);
+		BlockIndex block2 = blocks.getIndex_i(5, 5, 3);
+		BlockIndex block3 = blocks.getIndex_i(6, 5, 3);
 		blocks.solid_set(block, marble, false);
 		blocks.solid_set(block2, marble, false);
 		blocks.solid_set(block3, marble, false);
-		area.m_caveInCheck.insert(block);
-		area.m_caveInCheck.insert(block2);
-		area.m_caveInCheck.insert(block3);
+		area.m_caveInCheck.add(block);
+		area.m_caveInCheck.add(block2);
+		area.m_caveInCheck.add(block3);
 		area.stepCaveInRead();
 		CHECK(area.m_caveInData.size() == 1);
 		CHECK(std::get<0>(*area.m_caveInData.begin()).size() == 3);
@@ -130,13 +130,13 @@ TEST_CASE("Cave In")
 	}
 	SUBCASE("Verify one group falling onto another unanchored group will keep falling in the next step.")
 	{
-		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		BlockIndex block = blocks.getIndex({5, 5, 2});
-		BlockIndex block2 = blocks.getIndex({5, 5, 4});
+		areaBuilderUtil::setSolidLayer(area, DistanceInBlocks::create(0), marble);
+		BlockIndex block = blocks.getIndex_i(5, 5, 2);
+		BlockIndex block2 = blocks.getIndex_i(5, 5, 4);
 		blocks.solid_set(block, marble, false);
 		blocks.solid_set(block2, marble, false);
-		area.m_caveInCheck.insert(block);
-		area.m_caveInCheck.insert(block2);
+		area.m_caveInCheck.add(block);
+		area.m_caveInCheck.add(block2);
 		area.stepCaveInRead();
 		CHECK(area.m_caveInData.size() == 2);
 		area.stepCaveInWrite();

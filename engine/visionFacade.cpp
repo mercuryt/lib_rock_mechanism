@@ -15,6 +15,7 @@ VisionFacade::VisionFacade( )
 	m_actors.reserve(reserve);
 	m_ranges.reserve(reserve);
 	m_locations.reserve(reserve);
+	m_results.reserve(reserve);
 	// Four results fit on a  cache line, by ensuring that the number of tasks per thread is a multiple of 4 we prevent false shareing.
 	assert(Config::visionThreadingBatchSize.get() % 4 == 0);
 }
@@ -30,9 +31,10 @@ void VisionFacade::addActor(ActorIndex actor)
 	VisionFacadeIndex index = VisionFacadeIndex::create(m_actors.size());
 	actorData.vision_recordFacade(actor, *this, index);
 	assert(m_ranges.size() == m_actors.size() && m_locations.size() == m_actors.size());
-	m_actors.at(index) = actor;
-	m_ranges.at(index) = actorData.vision_getRange(actor);
-	m_locations.at(index) = actorData.getLocation(actor);
+	m_actors.add(actor);
+	m_ranges.add(actorData.vision_getRange(actor));
+	m_locations.add(actorData.getLocation(actor));
+	m_results.add();
 }
 void VisionFacade::removeActor(ActorIndex actor)
 {
@@ -50,6 +52,7 @@ void VisionFacade::remove(VisionFacadeIndex index)
 	m_actors.remove(index);
 	m_ranges.remove(index);
 	m_locations.remove(index);
+	m_results.remove(index);
 	if(m_actors.size() != index)
 		actorData.vision_updateFacadeIndex(m_actors.at(index), index);
 }
@@ -72,6 +75,11 @@ DistanceInBlocks VisionFacade::getRange(VisionFacadeIndex index) const
 	assert(actorData.vision_getRange(m_actors.at(index)) == m_ranges.at(index));
 	return m_ranges.at(index); 
 }
+ActorIndices& VisionFacade::getResults(VisionFacadeIndex index)
+{ 
+	assert(m_actors.size() > index); 
+	return m_area->getActors().vision_getCanSee(m_actors.at(index));
+}
 // Static.
 DistanceInBlocks VisionFacade::taxiDistance(Point3D a, Point3D b)
 {
@@ -80,11 +88,6 @@ DistanceInBlocks VisionFacade::taxiDistance(Point3D a, Point3D b)
 		std::abs((int)a.y.get() - (int)b.y.get()) +
 		std::abs((int)a.z.get() - (int)b.z.get())
 	);
-}
-ActorIndices& VisionFacade::getResults(VisionFacadeIndex index)
-{ 
-	assert(m_actors.size() > index); 
-	return m_area->getActors().vision_getCanSee(m_actors.at(index));
 }
 void VisionFacade::updateLocation(VisionFacadeIndex index, BlockIndex& location)
 {
@@ -174,10 +177,10 @@ void VisionFacade::readStepSegment(VisionFacadeIndex begin, VisionFacadeIndex en
 void VisionFacade::doStep()
 {
 	VisionFacadeIndex index = VisionFacadeIndex::create(0);
+	VisionFacadeIndex actorsSize = VisionFacadeIndex::create(m_actors.size());
 	while(index != m_actors.size())
 	{
-		VisionFacadeIndex actorsSize = VisionFacadeIndex::create(m_actors.size());
-		VisionFacadeIndex end = VisionFacadeIndex::create(std::min(actorsSize.get(), index.get() + Config::visionThreadingBatchSize.get()));
+		VisionFacadeIndex end = VisionFacadeIndex::create(std::min(actorsSize.get(), index.get() + Config::visionThreadingBatchSize));
 		// TODO: make a variant of parallelizeTask suitable for multiple vectors of primitives.
 		m_area->m_simulation.m_pool.push_task([this, index, end]{ 
 			readStepSegment(index, end);

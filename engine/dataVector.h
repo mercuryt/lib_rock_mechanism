@@ -18,10 +18,15 @@ public:
 	[[nodiscard]] const_iterator begin() const { return data.begin(); }
 	[[nodiscard]] const_iterator end() const { return data.end(); }
 	[[nodiscard]] bool empty() const { return data.empty(); }
+	[[nodiscard]] bool allAreSetTo(T value) const { return !std::ranges::any_of(data, [&](T d){ return d != value; }); }
+	[[nodiscard]] iterator find(T value) { return std::ranges::find(data, value); }
+	[[nodiscard]] const_iterator find(T value) const { return std::ranges::find(data, value); }
 	void reserve(size_t size) { data.reserve(size); }
 	void reserve(Index size) { data.reserve(size.get()); }
 	void resize(size_t size) { data.resize(size); }
 	void resize(Index size) { data.resize(size.get()); }
+	void add(T value) { data.push_back(value); }
+	void add() { data.resize(data.size() + 1); }
 	void clear() { data.clear(); }
 	void remove(Index index)
 	{

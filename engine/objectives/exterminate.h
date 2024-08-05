@@ -10,7 +10,7 @@ class ExterminateObjective final : public Objective
 	HasScheduledEvent<ExterminateObjectiveScheduledEvent> m_event;
 public:
 	ExterminateObjective(Area& area, BlockIndex destination);
-	ExterminateObjective(const Json& data, Area& area);
+	ExterminateObjective(const Json& data, Area& area, ActorIndex actor);
 	void execute(Area&, ActorIndex actor);
 	void cancel(Area&, ActorIndex) { }
 	void delay(Area&, ActorIndex) { }

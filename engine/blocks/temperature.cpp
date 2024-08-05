@@ -6,7 +6,7 @@
 void Blocks::temperature_updateDelta(BlockIndex index, TemperatureDelta deltaDelta)
 {
 	m_temperatureDelta.at(index) += deltaDelta;
-	Temperature temperature = m_temperatureDelta.at(index) + temperature_getAmbient(index);
+	Temperature temperature = Temperature::create(m_temperatureDelta.at(index).get() + temperature_getAmbient(index).get());
 	if(solid_is(index))
 	{
 		auto& material = solid_get(index);

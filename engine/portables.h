@@ -66,6 +66,7 @@ public:
 	[[nodiscard]] const ActorOrItemIndex getLeader(HasShapeIndex index) const { return m_follower.at(index); }
 	// For testing.
 	[[nodiscard]] Speed lead_getSpeed(HasShapeIndex index);
+	// Reservations.
 	// Quantity defaults to 0, which becomes maxReservations;
 	void reservable_reserve(HasShapeIndex index, CanReserve& canReserve, Quantity quantity = Quantity::create(1), std::unique_ptr<DishonorCallback> callback = nullptr);
 	void reservable_unreserve(HasShapeIndex index, CanReserve& canReserve, Quantity quantity = Quantity::create(1));
@@ -78,10 +79,13 @@ public:
 	[[nodiscard]] bool reservable_exists(HasShapeIndex index, const FactionId faction) const;
 	[[nodiscard]] bool reservable_isFullyReserved(HasShapeIndex index, const FactionId faction) const;
 	[[nodiscard]] Quantity reservable_getUnreservedCount(HasShapeIndex index, const FactionId faction) const;
+	// On Destroy.
 	void onDestroy_subscribe(HasShapeIndex index, HasOnDestroySubscriptions& onDestroy);
+	void onDestroy_subscribeThreadSafe(HasShapeIndex index, HasOnDestroySubscriptions& onDestroy);
 	void onDestroy_unsubscribe(HasShapeIndex index, HasOnDestroySubscriptions& onDestroy);
 	void onDestroy_unsubscribeAll(HasShapeIndex index);
 	void onDestroy_merge(HasShapeIndex index, OnDestroy& other);
+	// Static methods.
 	[[nodiscard]] static Speed getMoveSpeedForGroupWithAddedMass(const Area& area, std::vector<ActorOrItemIndex>& actorsAndItems, Mass addedRollingMass, Mass addedDeadMass);
 	[[nodiscard]] static Speed getMoveSpeedForGroup(const Area& area, std::vector<ActorOrItemIndex>& actorsAndItems);
 };

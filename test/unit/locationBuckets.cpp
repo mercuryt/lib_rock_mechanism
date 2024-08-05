@@ -17,14 +17,13 @@ TEST_CASE("locationBuckets")
 		Area& area = simulation.m_hasAreas->createArea(10,10,10);
 		Blocks& blocks = area.getBlocks();
 		Actors& actors = area.getActors();
-		BlockIndex block = blocks.getIndex(5, 5, 5);
+		BlockIndex block = blocks.getIndex_i(5, 5, 5);
 		ActorIndex a1 = actors.create({.species=dwarf, .location=block});
 		auto&  actorsInBucket = blocks.getLocationBucket(block).m_actorsSingleTile;
 		auto found = std::ranges::find(actorsInBucket, a1);
 		REQUIRE(found != actorsInBucket.end());
 		for(BlockIndex adjacent : blocks.getDirectlyAdjacent(block))
-			if(adjacent != BLOCK_DISTANCE_MAX)
-				REQUIRE(&blocks.getLocationBucket(block) == &blocks.getLocationBucket(adjacent));
+			REQUIRE(&blocks.getLocationBucket(block) == &blocks.getLocationBucket(adjacent));
 		/*
 		for(ActorIndex a : area.m_hasActors.m_locationBuckets.inRange(block, 10))
 			REQUIRE(&a == &a1);
@@ -38,10 +37,10 @@ TEST_CASE("locationBuckets")
 		Simulation simulation;
 		Area& area = simulation.m_hasAreas->createArea(30,30,30);
 		Blocks& blocks = area.getBlocks();
-		BlockIndex b1 = blocks.getIndex(0, 0, 1);
+		BlockIndex b1 = blocks.getIndex_i(0, 0, 1);
 		Actors& actors = area.getActors();
 		ActorIndex a1 = actors.create({.species=dwarf, .location=b1});
-		BlockIndex b2 = blocks.getIndex(15, 1, 1);
+		BlockIndex b2 = blocks.getIndex_i(15, 1, 1);
 		uint32_t actorCount = 0;
 		for(ActorIndex actor : area.m_locationBuckets.inRange(b2, 15))
 		{
@@ -49,7 +48,7 @@ TEST_CASE("locationBuckets")
 			++actorCount;
 		}
 		REQUIRE(actorCount == 0);
-		BlockIndex b3 = blocks.getIndex(14, 1, 1);
+		BlockIndex b3 = blocks.getIndex_i(14, 1, 1);
 		actorCount = 0;
 		for(ActorIndex actor : area.m_locationBuckets.inRange(b3, 15))
 		{

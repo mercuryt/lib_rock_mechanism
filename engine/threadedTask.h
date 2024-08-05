@@ -1,8 +1,7 @@
 #pragma once
 
-#include <unordered_set>
+#include <vector>
 #include <memory>
-#include <cassert>
 class ThreadedTask;
 class Simulation;
 class Area;
@@ -11,13 +10,12 @@ class Area;
 class ThreadedTaskEngine
 {
 public:
-	//TODO: These should be vectors?
-	std::unordered_set<std::unique_ptr<ThreadedTask>> m_tasksForThisStep;
-	std::unordered_set<std::unique_ptr<ThreadedTask>> m_tasksForNextStep;
+	std::vector<std::unique_ptr<ThreadedTask>> m_tasksForThisStep;
+	std::vector<std::unique_ptr<ThreadedTask>> m_tasksForNextStep;
 	void doStep(Simulation&, Area* area);
 	void insert(std::unique_ptr<ThreadedTask>&& task);
 	void remove(ThreadedTask& task);
-	void clear() { m_tasksForNextStep.clear(); }
+	void clear();
 	// For testing.
 	[[maybe_unused, nodiscard]]inline uint32_t count() { return m_tasksForNextStep.size(); }
 };

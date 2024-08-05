@@ -146,7 +146,7 @@ inline void to_json(Json& data, const CraftJob* const& craftJob){ data = reinter
 class HasCraftingLocationsAndJobsForFaction final
 {
 	std::unordered_map<const CraftStepTypeCategory*, BlockIndices> m_locationsByCategory;
-	std::unordered_map<BlockIndex, std::unordered_set<const CraftStepTypeCategory*>, BlockIndex::Hash> m_stepTypeCategoriesByLocation;
+	BlockIndexMap<std::unordered_set<const CraftStepTypeCategory*>> m_stepTypeCategoriesByLocation;
 	std::unordered_map<const CraftStepTypeCategory*, std::unordered_set<CraftJob*>> m_unassignedProjectsByStepTypeCategory;
 	std::unordered_map<const SkillType*, std::unordered_set<CraftJob*>> m_unassignedProjectsBySkill;
 	std::list<CraftJob> m_jobs;

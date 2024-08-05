@@ -8,6 +8,7 @@
 #include "../blocks/blocks.h"
 #include "../items/items.h"
 #include "../plants.h"
+#include "types.h"
 
 SimulationHasAreas::SimulationHasAreas(const Json& data, DeserializationMemo&, Simulation& simulation) : m_simulation(simulation)
 {
@@ -23,25 +24,27 @@ void SimulationHasAreas::incrementHour()
 	for(Area& area : m_areas)
 		area.updateClimate();
 }
-/*
 void SimulationHasAreas::save()
 {
 	for(Area& area : m_areas)
 	{
-		std::ofstream af(m_simulation.m_path/"area"/(std::to_string(area.m_id) + ".json"));
+		std::ofstream af(m_simulation.m_path/"area"/(std::to_string(area.m_id.get()) + ".json"));
 		af << area.toJson();
 	}
 }
-*/
-Area& SimulationHasAreas::createArea(uint32_t x, uint32_t y, uint32_t z, bool createDrama)
+Area& SimulationHasAreas::createArea(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z, bool createDrama)
 { 
-	AreaId id = ++ m_nextId;
-	Area& output = loadArea(id, L"unnamed area " + std::to_wstring(id), x, y, z);
+	AreaId id = ++m_nextId;
+	Area& output = loadArea(id, L"unnamed area " + std::to_wstring(id.get()), x, y, z);
 	if(createDrama)
 		m_simulation.m_dramaEngine->createArcsForArea(output);
 	return output;
 }
-Area& SimulationHasAreas::loadArea(AreaId id, std::wstring name, uint32_t x, uint32_t y, uint32_t z)
+Area& SimulationHasAreas::createArea(uint x, uint y, uint z, bool createDrama)
+{
+	return createArea(DistanceInBlocks::create(x), DistanceInBlocks::create(y), DistanceInBlocks::create(z), createDrama);
+}
+Area& SimulationHasAreas::loadArea(AreaId id, std::wstring name, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z)
 {
 	Area& area = m_areas.emplace_back(id, name, m_simulation, x, y, z); 
 	m_areasById[id] = &area;
@@ -62,7 +65,7 @@ Area& SimulationHasAreas::loadAreaFromJson(const Json& data, DeserializationMemo
 }
 Area& SimulationHasAreas::loadAreaFromPath(AreaId id, DeserializationMemo& deserializationMemo)
 {
-	std::ifstream af(m_simulation.m_path/"area"/(std::to_string(id) + ".json"));
+	std::ifstream af(m_simulation.m_path/"area"/(std::to_string(id.get()) + ".json"));
 	Json areaData = Json::parse(af);
 	return loadAreaFromJson(areaData, deserializationMemo);
 }

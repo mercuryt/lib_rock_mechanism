@@ -33,7 +33,7 @@ void HarvestEvent::execute(Simulation&, Area* area)
 		actors.objective_canNotCompleteSubobjective(actor);
 	else
 	{
-		uint32_t numberItemsHarvested = std::min(quantityToHarvest, actors.canPickUp_quantityWhichCanBePickedUpUnencombered(actor, fruitItemType, plantMatter));
+		Quantity numberItemsHarvested = std::min(quantityToHarvest, actors.canPickUp_quantityWhichCanBePickedUpUnencombered(actor, fruitItemType, plantMatter));
 		assert(numberItemsHarvested != 0);
 		//TODO: apply horticulture skill.
 		plants.harvest(plant, numberItemsHarvested);

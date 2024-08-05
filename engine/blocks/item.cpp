@@ -91,6 +91,13 @@ bool Blocks::item_canEnterEverOrCurrentlyWithFacing(BlockIndex index, ItemIndex 
 	}
 	return true;
 }
+bool Blocks::item_canEnterCurrentlyWithAnyFacing(BlockIndex index, ItemIndex item) const
+{
+	for(Facing i = Facing::create(0); i < 4; ++i)
+		if(item_canEnterCurrentlyWithFacing(index, item, i))
+			return true;
+	return false;
+}
 void Blocks::item_updateIndex(BlockIndex index, ItemIndex oldIndex, ItemIndex newIndex)
 {
 	auto found = std::ranges::find(m_items.at(index), oldIndex);

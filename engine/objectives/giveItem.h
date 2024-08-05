@@ -7,7 +7,6 @@ class GiveItemObjective final : public Objective
 	ItemReference m_item;
 	ActorReference m_recipient;
 	// This objective is dependent on receipent being alive but cannot reserve them, use onDestory instead.
-	// TODO: OnDestory is not serialized and cannot be used this way. Can we create a reservation with 0 count?
 	HasOnDestroySubscriptions m_hasOnDestroySubscriptions;
 public:
 	GiveItemObjective(Area& area, ItemIndex item, ActorIndex receipent);

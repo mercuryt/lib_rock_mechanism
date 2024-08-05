@@ -20,7 +20,7 @@ void Area::stepCaveInRead()
 {
 	std::list<BlockIndices> chunks;
 	std::unordered_set<BlockIndices*> anchoredChunks;
-	std::unordered_map<BlockIndex, BlockIndices*, BlockIndex::Hash> chunksByBlock;
+	BlockIndexMap<BlockIndices*> chunksByBlock;
 	std::deque<BlockIndex> blockQueue;
 
 	//TODO: blockQueue.insert?

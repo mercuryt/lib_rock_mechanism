@@ -11,23 +11,23 @@ void FireEvent::execute(Simulation&, Area* area)
 	if(!m_fire.m_hasPeaked &&m_fire.m_stage == FireStage::Smouldering)
 	{
 		m_fire.m_stage = FireStage::Burning;
-		Temperature temperature = m_fire.m_materialType.burnData->flameTemperature * Config::heatFractionForBurn;
-		m_fire.m_temperatureSource.setTemperature(temperature.get());
+		TemperatureDelta temperature = m_fire.m_materialType.burnData->flameTemperature * Config::heatFractionForBurn;
+		m_fire.m_temperatureSource.setTemperature(temperature);
 		m_fire.m_event.schedule(*area, m_fire.m_materialType.burnData->burnStageDuration, m_fire);
 	}
 	else if(!m_fire.m_hasPeaked && m_fire.m_stage == FireStage::Burning)
 	{
 		m_fire.m_stage = FireStage::Flaming;
-		Temperature temperature = m_fire.m_materialType.burnData->flameTemperature;
-		m_fire.m_temperatureSource.setTemperature(temperature.get());
+		TemperatureDelta temperature = m_fire.m_materialType.burnData->flameTemperature;
+		m_fire.m_temperatureSource.setTemperature(temperature);
 		m_fire.m_event.schedule(*area, m_fire.m_materialType.burnData->flameStageDuration, m_fire);
 	}
 	else if(m_fire.m_stage == FireStage::Flaming)
 	{
 		m_fire.m_hasPeaked = true;
 		m_fire.m_stage = FireStage::Burning;
-		Temperature temperature = m_fire.m_materialType.burnData->flameTemperature * Config::heatFractionForBurn;
-		m_fire.m_temperatureSource.setTemperature(temperature.get());
+		TemperatureDelta temperature = m_fire.m_materialType.burnData->flameTemperature * Config::heatFractionForBurn;
+		m_fire.m_temperatureSource.setTemperature(temperature);
 		Step delay = m_fire.m_materialType.burnData->burnStageDuration * Config::fireRampDownPhaseDurationFraction;
 		m_fire.m_event.schedule(*area, delay, m_fire);
 		Blocks& blocks = area->getBlocks();
@@ -40,8 +40,8 @@ void FireEvent::execute(Simulation&, Area* area)
 	else if(m_fire.m_hasPeaked && m_fire.m_stage == FireStage::Burning)
 	{
 		m_fire.m_stage = FireStage::Smouldering;
-		Temperature temperature = m_fire.m_materialType.burnData->flameTemperature * Config::heatFractionForSmoulder;
-		m_fire.m_temperatureSource.setTemperature(temperature.get());
+		TemperatureDelta temperature = m_fire.m_materialType.burnData->flameTemperature * Config::heatFractionForSmoulder;
+		m_fire.m_temperatureSource.setTemperature(temperature);
 		Step delay = m_fire.m_materialType.burnData->burnStageDuration * Config::fireRampDownPhaseDurationFraction;
 		m_fire.m_event.schedule(*area, delay, m_fire);
 	}
@@ -57,7 +57,7 @@ void FireEvent::execute(Simulation&, Area* area)
 void FireEvent::clearReferences(Simulation&, Area*) { m_fire.m_event.clearPointer(); }
 // Fire.
 Fire::Fire(Area& a, BlockIndex l, const MaterialType& mt, bool hasPeaked, FireStage stage, Step start) : 
-	m_area(a), m_temperatureSource(a, mt.burnData->flameTemperature.get() * Config::heatFractionForSmoulder, l), 
+	m_area(a), m_temperatureSource(a, mt.burnData->flameTemperature * Config::heatFractionForSmoulder, l), 
 	m_event(a.m_eventSchedule), m_location(l), m_materialType(mt), m_stage(stage), m_hasPeaked(hasPeaked)
 {
 	m_event.schedule(m_area, m_materialType.burnData->burnStageDuration, *this, start);

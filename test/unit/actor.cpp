@@ -11,6 +11,7 @@
 #include "../../engine/plants.h"
 #include "../../engine/materialType.h"
 #include "../../engine/itemType.h"
+#include "../../engine/animalSpecies.h"
 TEST_CASE("actor")
 {
 	Step step = DateTime(10, 60, 10000).toSteps();
@@ -23,17 +24,17 @@ TEST_CASE("actor")
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
-	BlockIndex origin1 = blocks.getIndex({5, 5, 1});
-	BlockIndex origin2 = blocks.getIndex({7, 7, 1});
-	BlockIndex block1 = blocks.getIndex({6, 7, 1});
-	BlockIndex block2 = blocks.getIndex({7, 8, 1});
-	BlockIndex block3 = blocks.getIndex({6, 8, 1});
+	BlockIndex origin1 = blocks.getIndex_i(5, 5, 1);
+	BlockIndex origin2 = blocks.getIndex_i(7, 7, 1);
+	BlockIndex block1 = blocks.getIndex_i(6, 7, 1);
+	BlockIndex block2 = blocks.getIndex_i(7, 8, 1);
+	BlockIndex block3 = blocks.getIndex_i(6, 8, 1);
 	SUBCASE("single tile")
 	{
 		int previousEventCount = simulation.m_eventSchedule.count();
 		ActorIndex dwarf1 = actors.create(ActorParamaters{
 			.species=dwarf, 
-			.percentGrown=100,
+			.percentGrown=Percent::create(100),
 			.location=origin1,
 		});
 		REQUIRE(actors.getName(dwarf1) == L"dwarf1");
@@ -50,7 +51,7 @@ TEST_CASE("actor")
 		// Multi tile.
 		ActorIndex troll1 = actors.create(ActorParamaters{
 			.species=troll, 
-			.percentGrown=100,
+			.percentGrown=Percent::create(100),
 			.location=origin2,
 		});
 		REQUIRE(blocks.actor_contains(origin2, troll1));
@@ -62,16 +63,16 @@ TEST_CASE("actor")
 	{
 		ActorIndex dwarf1 = actors.create(ActorParamaters{
 			.species=dwarf, 
-			.percentGrown=45,
+			.percentGrown=Percent::create(45),
 			.location=origin1,
 		});
-		blocks.solid_setNot(blocks.getIndex({7, 7, 0}));
-		blocks.fluid_add(blocks.getIndex({7, 7, 0}), 100, FluidType::byName("water"));
+		blocks.solid_setNot(blocks.getIndex_i(7, 7, 0));
+		blocks.fluid_add(blocks.getIndex_i(7, 7, 0), CollisionVolume::create(100), FluidType::byName("water"));
 		items.create({
 			.itemType=ItemType::byName("apple"),
 			.materialType=MaterialType::byName("fruit"),
 			.location=block1,
-			.quantity=1000,
+			.quantity=Quantity::create(1000),
 		});
 		REQUIRE(actors.grow_getEventPercent(dwarf1) == 0);
 		REQUIRE(actors.grow_getPercent(dwarf1) == 45);
@@ -99,15 +100,15 @@ TEST_CASE("actor")
 		REQUIRE(dwarf1.m_canGrow.getEventPercentComplete() == 0);
 		REQUIRE(dwarf1.m_canGrow.isGrowing());
 		*/
-		actors.grow_setPercent(dwarf1, 20);
+		actors.grow_setPercent(dwarf1, Percent::create(20));
 		REQUIRE(actors.grow_getPercent(dwarf1) == 20);
 		REQUIRE(actors.grow_getEventPercent(dwarf1) == 0);
 		REQUIRE(actors.grow_isGrowing(dwarf1));
-		actors.grow_setPercent(dwarf1, 100);
+		actors.grow_setPercent(dwarf1, Percent::create(100));
 		REQUIRE(actors.grow_getPercent(dwarf1) == 100);
 		REQUIRE(actors.grow_eventIsPaused(dwarf1));
 		REQUIRE(!actors.grow_isGrowing(dwarf1));
-		actors.grow_setPercent(dwarf1, 30);
+		actors.grow_setPercent(dwarf1, Percent::create(30));
 		REQUIRE(actors.grow_getPercent(dwarf1) == 30);
 		REQUIRE(actors.grow_getEventPercent(dwarf1) == 0);
 		REQUIRE(actors.grow_isGrowing(dwarf1));

@@ -132,6 +132,10 @@ BlockIndex Blocks::getIndex(Point3D coordinates) const
 {
 	return BlockIndex::create((coordinates.x + (coordinates.y * m_sizeX) + (coordinates.z * m_sizeY * m_sizeX)).get());
 }
+BlockIndex Blocks::getIndex_i(uint x, uint y, uint z) const
+{
+	return getIndex(DistanceInBlocks::create(x), DistanceInBlocks::create(y), DistanceInBlocks::create(z));
+}
 BlockIndex Blocks::getIndex(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) const
 {
 	return getIndex({x,y,z});
@@ -615,13 +619,13 @@ BlockIndex Blocks::offsetNotNull(BlockIndex index, int32_t ax, int32_t ay, int32
 	coordinates.z += az;
 	return getIndex(coordinates);
 }
-BlockIndex Blocks::indexAdjacentToAtCount(BlockIndex index, uint8_t adjacentCount) const
+BlockIndex Blocks::indexAdjacentToAtCount(BlockIndex index, AdjacentIndex adjacentCount) const
 {
 	// If block is on edge check for the offset being beyond the area. If so return BlockIndex::null().
 	if(m_isEdge.at(index))
 	{
 		Point3D coordinates = getCoordinates(index);
-		auto [x, y, z] = Blocks::offsetsListAllAdjacent[adjacentCount];
+		auto [x, y, z] = Blocks::offsetsListAllAdjacent[adjacentCount.get()];
 		Vector3D vector(x, y, z);
 		if((vector.x == -1 && coordinates.x == 0) || (vector.x == 1 && coordinates.x == m_sizeX - 1))
 			return BlockIndex::null();
@@ -630,7 +634,7 @@ BlockIndex Blocks::indexAdjacentToAtCount(BlockIndex index, uint8_t adjacentCoun
 		if((vector.z == -1 && coordinates.z == 0) || (vector.z == 1 && coordinates.z == m_sizeZ - 1))
 			return BlockIndex::null();
 	}
-	return index + m_offsetsForAdjacentCountTable[adjacentCount];
+	return index + m_offsetsForAdjacentCountTable[adjacentCount.get()];
 }
 std::array<int, 26> Blocks::makeOffsetsForAdjacentCountTable() const
 {

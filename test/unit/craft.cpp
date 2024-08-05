@@ -12,6 +12,8 @@
 #include "../../engine/craft.h"
 #include "../../engine/materialType.h"
 #include "../../engine/itemType.h"
+#include "../../engine/animalSpecies.h"
+#include "reference.h"
 #include "types.h"
 #include <functional>
 TEST_CASE("craft")
@@ -28,9 +30,9 @@ TEST_CASE("craft")
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName("marble"));
-	BlockIndex chiselLocation = blocks.getIndex({3, 5, 1});
-	BlockIndex sawingLocation = blocks.getIndex({9, 9, 1});
-	Faction faction(L"tower of power");
+	BlockIndex chiselLocation = blocks.getIndex_i(3, 5, 1);
+	BlockIndex sawingLocation = blocks.getIndex_i(9, 9, 1);
+	FactionId faction = simulation.createFaction(L"Tower Of Power").id;
 	area.m_hasCraftingLocationsAndJobs.addFaction(faction);
 	REQUIRE(!area.m_hasCraftingLocationsAndJobs.at(faction).hasLocationsFor(woodBucket));
 	area.m_hasCraftingLocationsAndJobs.at(faction).addLocation(CraftStepTypeCategory::byName("carve"), chiselLocation);
@@ -41,13 +43,14 @@ TEST_CASE("craft")
 	CraftObjectiveType craftObjectiveTypeAssembling(assembling);
 	ActorIndex dwarf1 = actors.create({
 		.species=AnimalSpecies::byName("dwarf"), 
-		.location=blocks.getIndex({1, 1, 1}),
-		.faction=&faction,
+		.location=blocks.getIndex_i(1, 1, 1),
+		.faction=faction,
 	});
+	ActorReference dwarf1Ref = dwarf1.toReference(area);
 	std::unordered_set<CraftJob*> emptyJobSet;
 	SUBCASE("infastructure")
 	{
-		area.m_hasCraftingLocationsAndJobs.at(faction).addJob(woodBucket, &wood, 1);
+		area.m_hasCraftingLocationsAndJobs.at(faction).addJob(woodBucket, &wood, Quantity::create(1));
 		/*
 		// TODO: why doesnt' this method exist anymore?
 		auto pair = area.m_hasCraftingLocationsAndJobs.at(faction).getJobAndLocationForWhileExcluding(dwarf1, woodWorking, emptyJobSet);
@@ -69,43 +72,43 @@ TEST_CASE("craft")
 	}
 	SUBCASE("craft bucket")
 	{
-		BlockIndex boardLocation = blocks.getIndex({3, 4, 1});
-		ItemIndex board = items.create({.itemType=ItemType::byName("board"), .materialType=wood, .location=boardLocation, .quantity=10u});
+		BlockIndex boardLocation = blocks.getIndex_i(3, 4, 1);
+		ItemIndex board = items.create({.itemType=ItemType::byName("board"), .materialType=wood, .location=boardLocation, .quantity=Quantity::create(10u)});
 		ItemIndex rope = items.create({
 			.itemType=ItemType::byName("rope"),
 			.materialType=MaterialType::byName("plant matter"),
-			.location=blocks.getIndex({8, 6, 1}),
-			.quantity=10u,
+			.location=blocks.getIndex_i(8, 6, 1),
+			.quantity=Quantity::create(10u),
 		});
 		items.create({
 			.itemType=ItemType::byName("saw"),
 			.materialType=bronze,
-			.location=blocks.getIndex(3, 7, 1),
-			.quantity=25u, 
-			.percentWear=0
+			.location=blocks.getIndex_i(3, 7, 1),
+			.quantity=Quantity::create(25u), 
+			.percentWear=Percent::create(0)
 		});
 		items.create({
 			.itemType=ItemType::byName("mallet"),
 			.materialType=bronze,
-			.location=blocks.getIndex({4, 9, 1}),
-			.quality=25u,
-			.percentWear=0
+			.location=blocks.getIndex_i(4, 9, 1),
+			.quality=Quality::create(25u),
+			.percentWear=Percent::create(0)
 		});
 		items.create({
 			.itemType=ItemType::byName("chisel"),
 			.materialType=bronze,
-			.location=blocks.getIndex({4, 9, 1}),
-			.quality=25u,
-			.percentWear=0
+			.location=blocks.getIndex_i(4, 9, 1),
+			.quality=Quality::create(25u),
+			.percentWear=Percent::create(0)
 		});
 		REQUIRE(!craftObjectiveTypeWoodWorking.canBeAssigned(area, dwarf1));
-		area.m_hasCraftingLocationsAndJobs.at(faction).addJob(woodBucket, &wood, 1);
+		area.m_hasCraftingLocationsAndJobs.at(faction).addJob(woodBucket, &wood, Quantity::create(1));
 		// There is wood working to be done.
 		REQUIRE(craftObjectiveTypeWoodWorking.canBeAssigned(area, dwarf1));
 		// There is not assembling to be done yet.
 		REQUIRE(!craftObjectiveTypeAssembling.canBeAssigned(area, dwarf1));
-		actors.objective_setPriority(dwarf1, craftObjectiveTypeWoodWorking, 100);
-		actors.objective_setPriority(dwarf1, craftObjectiveTypeAssembling, 100);
+		actors.objective_setPriority(dwarf1, craftObjectiveTypeWoodWorking, Priority::create(100));
+		actors.objective_setPriority(dwarf1, craftObjectiveTypeAssembling, Priority::create(100));
 		CraftJob* job = area.m_hasCraftingLocationsAndJobs.at(faction).getJobForAtLocation(dwarf1, woodWorking, sawingLocation, emptyJobSet);
 		REQUIRE(job != nullptr);
 		REQUIRE(job->getStep() == 1);
@@ -116,15 +119,15 @@ TEST_CASE("craft")
 		// Reserve required.
 		simulation.doStep();
 		REQUIRE(job->craftStepProject->reservationsComplete());
-		REQUIRE(job->craftStepProject->getWorkers().contains(dwarf1));
-		ProjectWorker& projectWorker = job->craftStepProject->getProjectWorkerFor(dwarf1);
+		REQUIRE(job->craftStepProject->getWorkers().contains(dwarf1Ref));
+		ProjectWorker& projectWorker = job->craftStepProject->getProjectWorkerFor(dwarf1Ref);
 		// Select a haul subproject.
 		simulation.doStep();
 		REQUIRE(projectWorker.haulSubproject != nullptr);
 		// Find a path.
 		simulation.doStep();
 		REQUIRE(actors.move_getDestination(dwarf1).exists());
-		REQUIRE(items.isAdjacentToActor(board, actors.move_getDestination(dwarf1)));
+		REQUIRE(items.isAdjacentToActor(board, dwarf1));
 		SUBCASE("success")
 		{
 			simulation.fastForwardUntillActorIsAdjacentToItem(area, dwarf1, board);
@@ -133,7 +136,7 @@ TEST_CASE("craft")
 			REQUIRE(actors.getLocation(dwarf1) == sawingLocation);
 			REQUIRE(job->getStep() == 2);
 			REQUIRE(job->workPiece.exists());
-			ItemIndex bucket = job->workPiece;
+			ItemIndex bucket = job->workPiece.getIndex();
 			REQUIRE(items.getLocation(bucket) == sawingLocation);
 			REQUIRE(area.getTotalCountOfItemTypeOnSurface(ItemType::byName("board")) == 9);
 			// There is more wood working to be done.
@@ -153,15 +156,15 @@ TEST_CASE("craft")
 			// Reserve required.
 			simulation.doStep();
 			REQUIRE(job->craftStepProject->reservationsComplete());
-			REQUIRE(job->craftStepProject->getWorkers().contains(dwarf1));
-			ProjectWorker& projectWorker2 = job->craftStepProject->getProjectWorkerFor(dwarf1);
+			REQUIRE(job->craftStepProject->getWorkers().contains(dwarf1Ref));
+			ProjectWorker& projectWorker2 = job->craftStepProject->getProjectWorkerFor(dwarf1Ref);
 			// Select a haul subproject.
 			simulation.doStep();
 			REQUIRE(projectWorker2.haulSubproject != nullptr);
 			// Find a path.
 			simulation.doStep();
 			REQUIRE(actors.move_getDestination(dwarf1).exists());
-			REQUIRE(items.isAdjacentToActor(rope, actors.move_getDestination(dwarf1)));
+			REQUIRE(items.isAdjacentToActor(rope, dwarf1));
 			simulation.fastForwardUntillActorIsAdjacentToItem(area, dwarf1, rope);
 			predicate = [&]() { return items.getLocation(bucket) == chiselLocation && !items.isWorkPiece(bucket); };
 			simulation.fastForwardUntillPredicate(predicate, 11);
@@ -208,7 +211,7 @@ TEST_CASE("craft")
 		}
 		SUBCASE("location inaccessable")
 		{
-			areaBuilderUtil::setSolidWall(area, blocks.getIndex({0, 3, 1}), blocks.getIndex({9, 3, 1}), wood);
+			areaBuilderUtil::setSolidWall(area, blocks.getIndex_i(0, 3, 1), blocks.getIndex_i(9, 3, 1), wood);
 			simulation.fastForwardUntillActorHasNoDestination(area, dwarf1);
 			REQUIRE(actors.objective_getCurrentName(dwarf1) == "craft");
 			REQUIRE(actors.project_get(dwarf1) != nullptr);
@@ -224,8 +227,8 @@ TEST_CASE("craft")
 			actors.die(dwarf1, CauseOfDeath::thirst);
 			ActorIndex dwarf2 = actors.create({
 				.species=AnimalSpecies::byName("dwarf"), 
-				.location=blocks.getIndex({1, 5, 1}),
-				.faction=&faction,
+				.location=blocks.getIndex_i(1, 5, 1),
+				.faction=faction,
 			});
 			REQUIRE(craftObjectiveTypeWoodWorking.canBeAssigned(area, dwarf2));
 		}

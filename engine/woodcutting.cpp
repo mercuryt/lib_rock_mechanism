@@ -61,8 +61,8 @@ uint32_t WoodCuttingProject::getWorkerWoodCuttingScore(Area& area, ActorIndex ac
 {
 	static const SkillType& woodCuttingType = SkillType::byName("wood cutting");
 	Actors& actors = area.getActors();
-	uint32_t strength = actors.getStrength(actor);
-	uint32_t skill = actors.skill_getLevel(actor, woodCuttingType);
+	uint32_t strength = actors.getStrength(actor).get();
+	uint32_t skill = actors.skill_getLevel(actor, woodCuttingType).get();
 	return (strength * Config::woodCuttingStrengthModifier) + (skill * Config::woodCuttingSkillModifier);
 }
 void WoodCuttingProject::onComplete()

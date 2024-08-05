@@ -23,6 +23,7 @@ struct ObjectiveType;
 class Plant;
 class Area;
 struct Uniform;
+class OnDestroy;
 //struct WorldLocation;
 
 struct DeserializationMemo final
@@ -32,6 +33,7 @@ struct DeserializationMemo final
 	std::unordered_map<uintptr_t, HaulSubproject*> m_haulSubprojects;
 	std::unordered_map<uintptr_t, Reservable*> m_reservables;
 	std::unordered_map<uintptr_t, CanReserve*> m_canReserves;
+	std::unordered_map<uintptr_t, OnDestroy*> m_onDestroys;
 	std::unordered_map<uintptr_t, ProjectRequirementCounts*> m_projectRequirementCounts;
 	std::unordered_map<uintptr_t, StockPile*> m_stockpiles;
 	std::unordered_map<uintptr_t, CraftJob*> m_craftJobs;

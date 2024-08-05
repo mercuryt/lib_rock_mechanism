@@ -1,70 +1,110 @@
 #pragma once
 
+#include "dataVector.h"
 #include "types.h"
 #include "config.h"
-
-#include <deque>
 
 struct ItemType;
 struct FluidType;
 struct MaterialType;
 struct Shape;
 
-struct HarvestData final
-{
-	const ItemType& fruitItemType;
-	const Step stepsDuration;
-	const Quantity itemQuantity;
-	const uint16_t dayOfYearToStart;
-	HarvestData(const uint16_t doyts, const Step sd, const Quantity iq, const ItemType& fit) :
-		fruitItemType(fit), stepsDuration(sd), itemQuantity(iq), dayOfYearToStart(doyts) { }
-	// Infastructure.
-	[[nodiscard]] bool operator==(const HarvestData& harvestData) const { return this == &harvestData; }
-};
-inline std::deque<HarvestData> harvestDataStore;
-struct PlantSpecies final
+struct PlantSpeciesParamaters final
 {
 	std::vector<const Shape*> shapes;
 	const std::string name;
-	const FluidType& fluidType;
-	const MaterialType* woodType = nullptr;
-	const HarvestData* harvestData = nullptr;
-	const Step stepsNeedsFluidFrequency = Step::create(0);
-	const Step stepsTillDieWithoutFluid = Step::create(0);
-	const Step stepsTillFullyGrown = Step::create(0);
-	const Step stepsTillFoliageGrowsFromZero = Step::create(0);
-	const Step stepsTillDieFromTemperature = Step::create(0);
-	const DistanceInBlocks rootRangeMax = DistanceInBlocks::create(0);
-	const DistanceInBlocks rootRangeMin = DistanceInBlocks::create(0);
-	const Quantity logsGeneratedByFellingWhenFullGrown = Quantity::create(0);
-	const Quantity branchesGeneratedByFellingWhenFullGrown = Quantity::create(0);
-	const Mass adultMass = Mass::create(0);
-	const Temperature maximumGrowingTemperature = Temperature::create(0);
-	const Temperature minimumGrowingTemperature = Temperature::create(0);
-	const Volume volumeFluidConsumed = Volume::create(0);
+	const FluidTypeId fluidType;
+	const MaterialTypeId woodType = MaterialTypeId::null();
+	const HarvestDataTypeId harvestData = HarvestDataTypeId::null();
+	const Step stepsNeedsFluidFrequency = Step::null();
+	const Step stepsTillDieWithoutFluid = Step::null();
+	const Step stepsTillFullyGrown = Step::null();
+	const Step stepsTillFoliageGrowsFromZero = Step::null();
+	const Step stepsTillDieFromTemperature = Step::null();
+	const DistanceInBlocks rootRangeMax = DistanceInBlocks::null();
+	const DistanceInBlocks rootRangeMin = DistanceInBlocks::null();
+	const Quantity logsGeneratedByFellingWhenFullGrown = Quantity::null();
+	const Quantity branchesGeneratedByFellingWhenFullGrown = Quantity::null();
+	const Mass adultMass = Mass::null();
+	const Temperature maximumGrowingTemperature = Temperature::null();
+	const Temperature minimumGrowingTemperature = Temperature::null();
+	const Volume volumeFluidConsumed = Volume::null();
 	const uint16_t dayOfYearForSowStart = 0;
 	const uint16_t dayOfYearForSowEnd = 0;
 	const uint8_t maxWildGrowth = 0;
 	const bool annual = false;
 	const bool growsInSunLight = false;
 	const bool isTree = false;
-	// returns base shape and wild growth steps.
-	[[nodiscard]] const std::pair<const Shape*, uint8_t> shapeAndWildGrowthForPercentGrown(Percent percentGrown) const;
-	[[nodiscard]] const Shape& shapeForPercentGrown(Percent percentGrown) const { return *shapeAndWildGrowthForPercentGrown(percentGrown).first; }
-	[[nodiscard]] uint8_t wildGrowthForPercentGrown(Percent percentGrown) const { return shapeAndWildGrowthForPercentGrown(percentGrown).second; }
-	//TODO: Paramaterize these arguments.
-	PlantSpecies(std::string n, const bool a, const Temperature magt, const Temperature migt, const Step stdft, const Step snff, const Volume vfc, const Step stdwf, const Step stfg, const Step stfgfz, const bool gisl, const DistanceInBlocks rrma, const DistanceInBlocks rrmi, const Mass am, const uint16_t doyfss, const uint16_t doyfse, const bool it, const Quantity lgfwfg, const Quantity bgfwfg, const uint8_t mwg, const FluidType& ft, const MaterialType* wt) :
-		name(n), fluidType(ft), woodType(wt), stepsNeedsFluidFrequency(snff), stepsTillDieWithoutFluid(stdwf), 
-		stepsTillFullyGrown(stfg), stepsTillFoliageGrowsFromZero(stfgfz), stepsTillDieFromTemperature(stdft), 
-		rootRangeMax(rrma), rootRangeMin(rrmi), logsGeneratedByFellingWhenFullGrown(lgfwfg), branchesGeneratedByFellingWhenFullGrown(bgfwfg), 
-		adultMass(am), maximumGrowingTemperature(magt), minimumGrowingTemperature(migt), 
-		volumeFluidConsumed(vfc), dayOfYearForSowStart(doyfss), dayOfYearForSowEnd(doyfse), maxWildGrowth(mwg), annual(a), growsInSunLight(gisl), 
-		isTree(it) { }
-	// Infastructure.
-	[[nodiscard]] bool operator==(const PlantSpecies& plantSpecies) const { return this == &plantSpecies; }
-	[[nodiscard]] static const PlantSpecies& byName(std::string name);
+	const ItemTypeId fruitItemType = ItemTypeId::null();
+	const Step stepsDurationHarvest = Step::null();
+	const Quantity itemQuantityToHarvest = Quantity::null();
+	const uint16_t dayOfYearToStartHarvest = 0;
 };
-inline std::vector<PlantSpecies> plantSpeciesDataStore;
-inline void to_json(Json& data, const PlantSpecies* const& plantSpecies){ data = plantSpecies->name; }
-inline void to_json(Json& data, const PlantSpecies& plantSpecies){ data = plantSpecies.name; }
-inline void from_json(const Json& data, const PlantSpecies*& plantSpecies){ plantSpecies = &PlantSpecies::byName(data.get<std::string>()); }
+class PlantSpecies final
+{
+	static PlantSpecies data;
+	DataVector<std::vector<const Shape*>, PlantSpeciesId> m_shapes;
+	DataVector<std::string, PlantSpeciesId> m_name;
+	DataVector<FluidTypeId, PlantSpeciesId> m_fluidType;
+	DataVector<MaterialTypeId, PlantSpeciesId> m_woodType;
+	DataVector<HarvestDataTypeId, PlantSpeciesId> m_harvestData;
+	DataVector<Step, PlantSpeciesId> m_stepsNeedsFluidFrequency;
+	DataVector<Step, PlantSpeciesId> m_stepsTillDieWithoutFluid;
+	DataVector<Step, PlantSpeciesId> m_stepsTillFullyGrown;
+	DataVector<Step, PlantSpeciesId> m_stepsTillFoliageGrowsFromZero;
+	DataVector<Step, PlantSpeciesId> m_stepsTillDieFromTemperature;
+	DataVector<DistanceInBlocks, PlantSpeciesId> m_rootRangeMax;
+	DataVector<DistanceInBlocks, PlantSpeciesId> m_rootRangeMin;
+	DataVector<Quantity, PlantSpeciesId> m_logsGeneratedByFellingWhenFullGrown;
+	DataVector<Quantity, PlantSpeciesId> m_branchesGeneratedByFellingWhenFullGrown;
+	DataVector<Mass, PlantSpeciesId> m_adultMass;
+	DataVector<Temperature, PlantSpeciesId> m_maximumGrowingTemperature;
+	DataVector<Temperature, PlantSpeciesId> m_minimumGrowingTemperature;
+	DataVector<Volume, PlantSpeciesId> m_volumeFluidConsumed;
+	DataVector<uint16_t, PlantSpeciesId> m_dayOfYearForSowStart;
+	DataVector<uint16_t, PlantSpeciesId> m_dayOfYearForSowEnd;
+	DataVector<uint8_t, PlantSpeciesId> m_maxWildGrowth;
+	DataVector<bool, PlantSpeciesId> m_annual;
+	DataVector<bool, PlantSpeciesId> m_growsInSunLight;
+	DataVector<bool, PlantSpeciesId> m_isTree;
+	// Harvest
+	DataVector<ItemTypeId, PlantSpeciesId> m_fruitItemType;
+	DataVector<Step, PlantSpeciesId> m_stepsDurationHarvest;
+	DataVector<Quantity, PlantSpeciesId> m_itemQuantityToHarvest;
+	DataVector<uint16_t, PlantSpeciesId> m_dayOfYearToStartHarvest;
+public:
+	static void create(PlantSpeciesParamaters& paramaters);
+	[[nodiscard]] static std::vector<const Shape*> getShapes(PlantSpeciesId species) { return data.m_shapes.at(species); };
+	[[nodiscard]] static std::string getName(PlantSpeciesId species) { return data.m_name.at(species); };
+	[[nodiscard]] static FluidTypeId getFluidType(PlantSpeciesId species) { return data.m_fluidType.at(species); };
+	[[nodiscard]] static MaterialTypeId getWoodType(PlantSpeciesId species) { return data.m_woodType.at(species); };
+	[[nodiscard]] static Step getStepsNeedsFluidFrequency(PlantSpeciesId species) { return data.m_stepsNeedsFluidFrequency.at(species); };
+	[[nodiscard]] static Step getStepsTillDieWithoutFluid(PlantSpeciesId species) { return data.m_stepsTillDieWithoutFluid.at(species); };
+	[[nodiscard]] static Step getStepsTillFullyGrown(PlantSpeciesId species) { return data.m_stepsTillFullyGrown.at(species); };
+	[[nodiscard]] static Step getStepsTillFoliageGrowsFromZero(PlantSpeciesId species) { return data.m_stepsTillFoliageGrowsFromZero.at(species); };
+	[[nodiscard]] static Step getStepsTillDieFromTemperature(PlantSpeciesId species) { return data.m_stepsTillDieFromTemperature.at(species); };
+	[[nodiscard]] static DistanceInBlocks getRootRangeMax(PlantSpeciesId species) { return data.m_rootRangeMax.at(species); };
+	[[nodiscard]] static DistanceInBlocks getRootRangeMin(PlantSpeciesId species) { return data.m_rootRangeMin.at(species); };
+	[[nodiscard]] static Quantity getLogsGeneratedByFellingWhenFullGrown(PlantSpeciesId species) { return data.m_logsGeneratedByFellingWhenFullGrown.at(species); };
+	[[nodiscard]] static Quantity getBranchesGeneratedByFellingWhenFullGrown(PlantSpeciesId species) { return data.m_branchesGeneratedByFellingWhenFullGrown.at(species); };
+	[[nodiscard]] static Mass getAdultMass(PlantSpeciesId species) { return data.m_adultMass.at(species); };
+	[[nodiscard]] static Temperature getMaximumGrowingTemperature(PlantSpeciesId species) { return data.m_maximumGrowingTemperature.at(species); };
+	[[nodiscard]] static Temperature getMinimumGrowingTemperature(PlantSpeciesId species) { return data.m_minimumGrowingTemperature.at(species); };
+	[[nodiscard]] static Volume getVolumeFluidConsumed(PlantSpeciesId species) { return data.m_volumeFluidConsumed.at(species); };
+	[[nodiscard]] static uint16_t getDayOfYearForSowStart(PlantSpeciesId species) { return data.m_dayOfYearForSowStart.at(species); };
+	[[nodiscard]] static uint16_t getDayOfYearForSowEnd(PlantSpeciesId species) { return data.m_dayOfYearForSowEnd.at(species); };
+	[[nodiscard]] static uint8_t getMaxWildGrowth(PlantSpeciesId species) { return data.m_maxWildGrowth.at(species); };
+	[[nodiscard]] static bool getAnnual(PlantSpeciesId species) { return data.m_annual.at(species); };
+	[[nodiscard]] static bool getGrowsInSunLight(PlantSpeciesId species) { return data.m_growsInSunLight.at(species); };
+	[[nodiscard]] static bool getIsTree(PlantSpeciesId species) { return data.m_isTree.at(species); };
+	// returns base shape and wild growth steps.
+	[[nodiscard]] static const std::pair<const Shape*, uint8_t> shapeAndWildGrowthForPercentGrown(PlantSpeciesId species, Percent percentGrown);
+	[[nodiscard]] static const Shape& shapeForPercentGrown(PlantSpeciesId species, Percent percentGrown) { return *shapeAndWildGrowthForPercentGrown(species, percentGrown).first; }
+	[[nodiscard]] static uint8_t wildGrowthForPercentGrown(PlantSpeciesId species, Percent percentGrown) { return shapeAndWildGrowthForPercentGrown(species, percentGrown).second; }
+	[[nodiscard]] static PlantSpeciesId byName(std::string name);
+	// Harvest.
+	ItemTypeId getFruitItemType(PlantSpeciesId species) { return data.m_fruitItemType.at(species); }
+	Step getStepsDurationHarvest(PlantSpeciesId species) { return data.m_stepsDurationHarvest.at(species); }
+	Quantity getItemQuantityToHarvest(PlantSpeciesId species) { return data.m_itemQuantityToHarvest.at(species); }
+	uint16_t getDayOfYearToStartHarvest(PlantSpeciesId species) { return data.m_dayOfYearToStartHarvest.at(species); }
+};

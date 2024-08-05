@@ -3,6 +3,7 @@
 #include "../items/items.h"
 #include "../area.h"
 #include "../itemType.h"
+#include "index.h"
 #include "sleep.h"
 #include "types.h"
 void Actors::canPickUp_pickUpItem(ActorIndex index, ItemIndex item)
@@ -51,39 +52,49 @@ void Actors::canPickUp_pickUpPolymorphic(ActorIndex index, ActorOrItemIndex acto
 	else
 		canPickUp_pickUpItemQuantity(index, actorOrItemIndex.getItem(), quantity);
 }
-ActorIndex Actors::canPickUp_putDownActor(ActorIndex index, BlockIndex location)
+ActorIndex Actors::canPickUp_tryToPutDownActor(ActorIndex index, BlockIndex location, DistanceInBlocks maxRange)
 {
 	assert(m_carrying.at(index).exists());
 	assert(m_carrying.at(index).isActor());
 	ActorIndex other = m_carrying.at(index).getActor();
+	Blocks& blocks = m_area.getBlocks();
+	auto predicate = [&](BlockIndex block) { return blocks.actor_canEnterCurrentlyWithAnyFacing(block, other); };
+	BlockIndex location2 = blocks.getBlockInRangeWithCondition(location, maxRange, predicate);
+	if(location2.empty())
+		return ActorIndex::null();
 	m_carrying.at(index).clear();
 	move_updateIndividualSpeed(index);
-	setLocation(other, location);
+	setLocation(other, location2);
 	return other;
 }
-ItemIndex Actors::canPickUp_putDownItem(ActorIndex index, BlockIndex location)
+ItemIndex Actors::canPickUp_tryToPutDownItem(ActorIndex index, BlockIndex location, DistanceInBlocks maxRange)
 {
 	assert(m_carrying.at(index).exists());
 	assert(m_carrying.at(index).isItem());
 	ItemIndex item = m_carrying.at(index).getItem();
+	Blocks& blocks = m_area.getBlocks();
+	auto predicate = [&](BlockIndex block) { return blocks.item_canEnterCurrentlyWithAnyFacing(block, item); };
+	BlockIndex location2 = blocks.getBlockInRangeWithCondition(location, maxRange, predicate);
+	if(location2.empty())
+		return ItemIndex::null();
 	m_carrying.at(index).clear();
 	move_updateIndividualSpeed(index);
-	m_area.getItems().setLocation(item, location);
+	m_area.getItems().setLocation(item, location2);
 	return item;
 }
-ActorOrItemIndex Actors::canPickUp_putDownIfAny(ActorIndex index, BlockIndex location)
+ActorOrItemIndex Actors::canPickUp_tryToPutDownIfAny(ActorIndex index, BlockIndex location, DistanceInBlocks maxRange)
 {
 	if(!m_carrying.at(index).exists())
 		return m_carrying.at(index);
-	return canPickUp_putDownPolymorphic(index, location);
+	return canPickUp_tryToPutDownPolymorphic(index, location, maxRange);
 }
-ActorOrItemIndex Actors::canPickUp_putDownPolymorphic(ActorIndex index, BlockIndex location)
+ActorOrItemIndex Actors::canPickUp_tryToPutDownPolymorphic(ActorIndex index, BlockIndex location, DistanceInBlocks maxRange)
 {
 	assert(m_carrying.at(index).exists());
 	if(m_carrying.at(index).isActor())
-		return ActorOrItemIndex::createForActor(canPickUp_putDownActor(index, location));
+		return ActorOrItemIndex::createForActor(canPickUp_tryToPutDownActor(index, location, maxRange));
 	else
-		return ActorOrItemIndex::createForItem(canPickUp_putDownItem(index, location));
+		return ActorOrItemIndex::createForItem(canPickUp_tryToPutDownItem(index, location, maxRange));
 }
 void Actors::canPickUp_removeFluidVolume(ActorIndex index, CollisionVolume volume)
 {
@@ -238,6 +249,15 @@ Quantity Actors::canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(ActorI
 		++quantity;
 	return quantity;
 }		
+bool Actors::canPickUp_canPutDown(ActorIndex index, BlockIndex block)
+{
+	Blocks& blocks = m_area.getBlocks();
+	auto& carrying = m_carrying.at(index);
+	if(carrying.isActor())
+		return blocks.actor_canEnterCurrentlyWithAnyFacing(block, carrying.getActor());
+	else
+		return blocks.item_canEnterCurrentlyWithAnyFacing(block, carrying.getItem());
+}
 void Actors::canPickUp_updateActorIndex(ActorIndex index, ActorIndex oldIndex, ActorIndex newIndex)
 {
 	assert(m_carrying.at(index).get() == oldIndex);
@@ -249,4 +269,8 @@ void Actors::canPickUp_updateItemIndex(ActorIndex index, ItemIndex oldIndex, Ite
 	assert(m_carrying.at(index).get() == oldIndex);
 	assert(m_carrying.at(index).isItem());
 	m_carrying.at(index).updateIndex(newIndex);
+}
+void Actors::canPickUp_updateUnencomberedCarryMass(ActorIndex index)
+{
+	m_unencomberedCarryMass.at(index) = Mass::create(Config::unitsOfCarryMassPerUnitOfStrength * getStrength(index).get());
 }

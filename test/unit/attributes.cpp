@@ -4,7 +4,6 @@
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/area.h"
 #include "../../engine/areaBuilderUtil.h"
-#include "../../engine/attributes.h"
 #include "../../engine/animalSpecies.h"
 #include "../../engine/actors/actors.h"
 #include "../../engine/blocks/blocks.h"
@@ -17,31 +16,31 @@ TEST_CASE("attributes")
 {
 	const AnimalSpecies& goblin = AnimalSpecies::byName("goblin");
 	const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
+	Simulation simulation;
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	Blocks& blocks = area.getBlocks();
+	Actors& actors = area.getActors();
+	areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName("marble"));
+
+	ActorIndex goblin1 = actors.create(ActorParamaters{
+		.species = goblin,
+		.percentGrown=Percent::create(100),
+		.location = blocks.getIndex_i(5,5,1),
+	});
 	SUBCASE("basic")
 	{
-		Attributes attributes(goblin, 100);
-		REQUIRE(attributes.getStrength() == goblin.strength[1]);
+		REQUIRE(actors.getStrength(goblin1) == goblin.strength[1]);
 	}
 	SUBCASE("move speed")
 	{
-		Simulation simulation;
-		Area& area = simulation.m_hasAreas->createArea(10,10,10);
-		Blocks& blocks = area.getBlocks();
-		Actors& actors = area.getActors();
-		areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName("marble"));
-
-		ActorIndex goblin1 = actors.create(ActorParamaters{
-			.species = goblin,
-			.location = blocks.getIndex({5,5,1}),
-		});
 
 		ActorIndex dwarf1 = actors.create(ActorParamaters{
 			.species = dwarf,
-			.location = blocks.getIndex({5,7,1}),
+			.location = blocks.getIndex_i(5,7,1),
 		});
 		REQUIRE(actors.getAgility(goblin1) > actors.getAgility(dwarf1));
 		REQUIRE(actors.move_getSpeed(goblin1) > actors.move_getSpeed(dwarf1));
-		BlockIndex adjacent = blocks.getIndex({5,6,1});
+		BlockIndex adjacent = blocks.getIndex_i(5,6,1);
 		Step delayGoblin = actors.move_delayToMoveInto(goblin1, adjacent);
 		Step delayDwarf = actors.move_delayToMoveInto(dwarf1, adjacent);
 		REQUIRE(delayGoblin < delayDwarf);

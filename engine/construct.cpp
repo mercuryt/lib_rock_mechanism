@@ -63,8 +63,8 @@ uint32_t ConstructProject::getWorkerConstructScore(ActorIndex actor) const
 {
 	Actors& actors = m_area.getActors();
 	const SkillType& constructSkill = m_materialType.constructionData->skill;
-	return (actors.getStrength(actor) * Config::constructStrengthModifier) + 
-		(actors.skill_getLevel(actor, constructSkill) * Config::constructSkillModifier);
+	return (actors.getStrength(actor).get() * Config::constructStrengthModifier) + 
+		(actors.skill_getLevel(actor, constructSkill).get() * Config::constructSkillModifier);
 }
 void ConstructProject::onComplete()
 {

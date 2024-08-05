@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config.h"
+#include "dataVector.h"
 #include "items/itemQuery.h"
 #include "types.h"
 
@@ -11,88 +12,90 @@
 #include <algorithm>
 #include <cassert>
 
-struct MaterialType;
-struct ItemType;
-struct FluidType;
-struct SkillType;
-
-struct MaterialTypeCategory
+class MaterialTypeCategory
 {
-	const std::string name;
-	// Infastructure.
-	[[nodiscard]] bool operator==(const MaterialTypeCategory& materialTypeCategory) const { return this == &materialTypeCategory; }
-	static const MaterialTypeCategory& byName(const std::string name);
+	static MaterialTypeCategory data;
+	DataVector<std::string, MaterialCategoryTypeId> m_name;
+public:
+	static const MaterialCategoryTypeId byName(const std::string name);
+	static MaterialCategoryTypeId create(std::string name)
+	{
+		data.m_name.add(name);
+		return MaterialCategoryTypeId::create(data.m_name.size() - 1);
+	}
 };
-inline std::vector<MaterialTypeCategory> materialTypeCategoryDataStore;
-inline void to_json(Json& data, const MaterialTypeCategory* const & materialTypeCategory) { data = materialTypeCategory->name; }
-inline void from_json(const Json& data, const MaterialTypeCategory*& materialTypeCategory) { materialTypeCategory = &MaterialTypeCategory::byName(data.get<std::string>()); }
-
-struct SpoilData
+class SpoilData
 {
-	const MaterialType& materialType;
-	const ItemType& itemType;
-	const double chance = 0;
-	const Quantity min = Quantity::create(0);
-	const Quantity max = Quantity::create(0);
-	SpoilData( const MaterialType& mt, const ItemType& it, const double c, const Quantity mi, const Quantity ma) : 
-	materialType(mt), itemType(it), chance(c), min(mi), max(ma) { }
+	static SpoilData data;
+	DataVector<MaterialTypeId, SpoilsDataTypeId> m_materialType;
+	DataVector<ItemTypeId, SpoilsDataTypeId> m_itemType;
+	DataVector<double, SpoilsDataTypeId> m_chance;
+	DataVector<Quantity, SpoilsDataTypeId> m_min;
+	DataVector<Quantity, SpoilsDataTypeId> m_max;
+public:
+	static SpoilsDataTypeId create(const MaterialTypeId mt, const ItemTypeId it, const double c, const Quantity mi, const Quantity ma)
+	{
+		data.m_materialType.add(mt);
+		data.m_itemType.add(it);
+		data.m_chance.add(c);
+		data.m_min.add(mi);
+		data.m_max.add(ma);
+		return SpoilsDataTypeId::create(data.m_materialType.size() - 1);
+	}
 };
 
-struct BurnData
+struct MaterialTypeParamaters final
 {
-	const Step burnStageDuration; // How many steps to go from smouldering to burning and from burning to flaming.
-	const Step flameStageDuration; // How many steps to spend flaming.
-	const Temperature ignitionTemperature; // Temperature at which this material catches fire.
-	const Temperature flameTemperature; // Temperature given off by flames from this material. The temperature given off by burn stage is a fraction of flame stage based on a config setting.
-	BurnData(const Step bsd, const Step fsd, const Temperature it, const Temperature ft) : 
-	burnStageDuration(bsd), flameStageDuration(fsd), ignitionTemperature(it), flameTemperature(ft) { }
+	DataVector<std::string, MaterialTypeId> m_name;
+	DataVector<Density, MaterialTypeId> m_density;
+	DataVector<uint32_t, MaterialTypeId> m_hardness;
+	DataVector<bool, MaterialTypeId> m_transparent;
+	DataVector<MaterialCategoryTypeId, MaterialTypeId> m_materialTypeCategory;
+	DataVector<std::vector<SpoilsDataTypeId>, MaterialTypeId> m_spoilData;
+	DataVector<Temperature, MaterialTypeId> m_meltingPoint;
+	DataVector<FluidTypeId, MaterialTypeId> m_meltsInto;
+	DataVector<BurnDataTypeId, MaterialTypeId> m_burnData;
+	DataVector<MaterialConstructionDataTypeId, MaterialTypeId> m_constructionData;
+	// Construction.
+	DataVector<std::vector<std::pair<ItemQuery, Quantity>>, MaterialConstructionDataTypeId> m_construction_consumed;
+	DataVector<std::vector<std::pair<ItemQuery, Quantity>>, MaterialConstructionDataTypeId>  m_construction_unconsumed;
+	DataVector<std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>>, MaterialConstructionDataTypeId>  m_construction_byproducts;
+	DataVector<std::string, MaterialConstructionDataTypeId> m_construction_name;
+	DataVector<SkillTypeId, MaterialConstructionDataTypeId> m_construction_skill;
+	DataVector<Step, MaterialConstructionDataTypeId> m_construction_duration;
+	// Fire.
+	DataVector<Step, BurnDataTypeId> m_burnStageDuration; // How many steps to go from smouldering to burning and from burning to flaming.
+	DataVector<Step, BurnDataTypeId> m_flameStageDuration; // How many steps to spend flaming.
+	DataVector<Temperature, BurnDataTypeId> m_ignitionTemperature; // Temperature at which this material catches fire.
+	DataVector<TemperatureDelta, BurnDataTypeId> m_flameTemperature; // Temperature given off by flames from this material. The temperature given off by burn stage is a fraction of flame stage based on a config setting.
 };
-inline std::deque<BurnData> burnDataStore;
 
-struct MaterialConstructionData
+class MaterialType final
 {
-	std::vector<std::pair<ItemQuery, Quantity>> consumed;
-	std::vector<std::pair<ItemQuery, Quantity>> unconsumed;
-	std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> byproducts;
-	std::string name;
-	const SkillType& skill;
-	Step duration;
-	MaterialConstructionData( std::string n, const SkillType& s, Step d) : name(n), skill(s), duration(d) { }
-	// Infastructure.
-	[[nodiscard]] bool operator==(const MaterialConstructionData& materialConstructionData) const { return this == &materialConstructionData; }
-	[[nodiscard]] static MaterialConstructionData& byNameSpecialized(const std::string name, const MaterialType& materialType);
-};
-inline std::deque<MaterialConstructionData> materialConstructionDataStore;
-inline std::deque<MaterialConstructionData> materialConstructionSpecializedDataStore;
-
-struct MaterialType
-{
+	static MaterialType data;
+	DataVector<std::string, MaterialTypeId> m_name;
+	DataVector<Density, MaterialTypeId> m_density;
+	DataVector<uint32_t, MaterialTypeId> m_hardness;
+	DataVector<bool, MaterialTypeId> m_transparent;
+	DataVector<MaterialCategoryTypeId, MaterialTypeId> m_materialTypeCategory;
 	// How does this material dig?
-	std::vector<SpoilData> spoilData;
-	const std::string name;
+	DataVector<std::vector<SpoilsDataTypeId>, MaterialTypeId> m_spoilData;
 	// What temperatures cause phase changes?
-	Temperature meltingPoint = Temperature::create(0);
-	const FluidType* meltsInto = nullptr;
-	BurnData* burnData = nullptr;
-	MaterialConstructionData* constructionData = nullptr;
-	const MaterialTypeCategory* materialTypeCategory = nullptr;
-	const Density density = Density::create(0);
-	const uint32_t hardness = 0;
-	const bool transparent = false;
-	MaterialType(std::string n, Density d, uint32_t h, bool t) : name(n), density(d), hardness(h), transparent(t) { }
+	DataVector<Temperature, MaterialTypeId> m_meltingPoint;
+	DataVector<FluidTypeId, MaterialTypeId> m_meltsInto;
+	// Construction.
+	DataVector<std::vector<std::pair<ItemQuery, Quantity>>, MaterialTypeId> m_construction_consumed;
+	DataVector<std::vector<std::pair<ItemQuery, Quantity>>, MaterialTypeId>  m_construction_unconsumed;
+	DataVector<std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>>, MaterialTypeId>  m_construction_byproducts;
+	DataVector<std::string, MaterialTypeId> m_construction_name;
+	DataVector<SkillTypeId, MaterialTypeId> m_construction_skill;
+	DataVector<Step, MaterialTypeId> m_construction_duration;
+	// Fire.
+	DataVector<Step, MaterialTypeId> m_burnStageDuration; // How many steps to go from smouldering to burning and from burning to flaming.
+	DataVector<Step, MaterialTypeId> m_flameStageDuration; // How many steps to spend flaming.
+	DataVector<Temperature, MaterialTypeId> m_ignitionTemperature; // Temperature at which this material catches fire.
+	DataVector<TemperatureDelta, MaterialTypeId> m_flameTemperature; // Temperature given off by flames from this material. The temperature given off by burn stage is a fraction of flame stage based on a config setting.
+	static MaterialTypeId create(MaterialTypeParamaters& p);
 	// Infastructure.
-	[[nodiscard]] bool operator==(const MaterialType& materialType) const { return this == &materialType; }
-	[[nodiscard]] static const MaterialType& byName(const std::string name);
-	[[nodiscard]] static MaterialType& byNameNonConst(const std::string name);
+	[[nodiscard]] static MaterialTypeId byName(const std::string name);
 };
-inline std::vector<MaterialType> materialTypeDataStore;
-inline void to_json(Json& data, const MaterialType* const& materialType)
-{
-	data = materialType == nullptr ? "0" : materialType->name;
-}
-inline void to_json(Json& data, const MaterialType& materialType){ data = materialType.name; }
-inline void from_json(const Json& data, const MaterialType*& materialType)
-{
-	std::string name = data.get<std::string>();
-	materialType = name == "0" ? nullptr : &MaterialType::byName(name);
-}

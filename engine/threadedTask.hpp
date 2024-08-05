@@ -1,4 +1,5 @@
 #pragma once
+#include "index.h"
 #include "threadedTask.h"
 #include "types.h"
 #include <vector>

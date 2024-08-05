@@ -12,9 +12,9 @@
 #include "eventSchedule.h"
 Speed Actors::move_getIndividualSpeedWithAddedMass(ActorIndex index, Mass mass) const
 {
-	Speed output = m_attributes.at(index)->getMoveSpeed();
+	Speed output = Speed::create(m_agility.at(index).get() * Config::unitsOfMoveSpeedPerUnitOfAgility);
 	Mass carryMass = m_equipmentSet.at(index)->getMass() + canPickUp_getMass(index) + mass;
-	Mass unencomberedCarryMass = m_attributes.at(index)->getUnencomberedCarryMass();
+	Mass unencomberedCarryMass = m_unencomberedCarryMass.at(index);
 	if(carryMass > unencomberedCarryMass)
 	{
 		float ratio = (float)unencomberedCarryMass.get() / (float)carryMass.get();

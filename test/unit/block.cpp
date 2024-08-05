@@ -9,16 +9,16 @@
 #include "../../engine/types.h"
 TEST_CASE("block")
 {
-	Simulation simulation(L"", 0);
+	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
-	BlockIndex lowest = 0;
+	BlockIndex lowest = BlockIndex::create(0);
 	REQUIRE(blocks.getBlockBelow(lowest).empty());
 	REQUIRE(blocks.getBlockSouth(lowest).empty());
 	REQUIRE(blocks.getBlockWest(lowest).empty());
 	REQUIRE(blocks.getBlockAbove(lowest) == 100);
 	REQUIRE(blocks.getBlockNorth(lowest) == 10);
 	REQUIRE(blocks.getBlockEast(lowest) == 1);
-	REQUIRE(area.m_visionCuboids.getVisionCuboidFor(0));
+	REQUIRE(area.m_visionCuboids.getVisionCuboidFor(lowest));
 }
 

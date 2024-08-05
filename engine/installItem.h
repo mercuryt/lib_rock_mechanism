@@ -36,7 +36,7 @@ public:
 };
 class HasInstallItemDesignationsForFaction final
 {
-	std::unordered_map<BlockIndex, InstallItemProject, BlockIndex::Hash> m_designations;
+	BlockIndexMap<InstallItemProject> m_designations;
 	FactionId m_faction;
 public:
 	HasInstallItemDesignationsForFaction(FactionId faction) : m_faction(faction) { }

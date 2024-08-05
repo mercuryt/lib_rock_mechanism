@@ -2,7 +2,10 @@
 // Some miscelanious serialization / deserialization fucnctions that don't belong anywhere else.
 
 #include "../lib/dynamic_bitset.hpp"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
 #include "../lib/json.hpp"
+#pragma GCC diagnostic pop
 using Json = nlohmann::json;
 
 namespace nlohmann {

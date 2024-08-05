@@ -2,8 +2,10 @@
 #include "terrainFacade.h"
 #include "actors/actors.h"
 #include "area.h"
+#include "config.h"
 #include "index.h"
 #include "onePassVector.h"
+#include "pathMemo.h"
 #include "shape.h"
 #include "simulation.h"
 #include "types.h"
@@ -25,26 +27,61 @@ TerrainFacade::TerrainFacade(Area& area, const MoveType& moveType) : m_area(area
 }
 void TerrainFacade::doStep()
 {
-	auto taskNoHuristic = [&](uint index){ findPathForIndexNoHuristic(PathRequestIndex::create(index)); };
-	m_area.m_simulation.parallelizeTaskIndices(m_pathRequestAccessConditionsNoHuristic.size(), Config::pathRequestsPerThread, taskNoHuristic);
-	auto taskWithHuristic = [&](uint index){ findPathForIndexWithHuristic(PathRequestIndex::create(index)); };
-	m_area.m_simulation.parallelizeTaskIndices(m_pathRequestAccessConditionsWithHuristic.size(), Config::pathRequestsPerThread, taskWithHuristic);
-	for(uint i = 0; i < m_pathRequestAccessConditionsNoHuristic.size(); ++i)
+	// Read step.
+	// Breadth first.
+	uint numberOfRequests = m_pathRequestStartPositionNoHuristic.size();
+	uint batches = std::ceil((float)numberOfRequests / (float)Config::pathRequestsPerThread);
+	auto& memosBreadth = m_area.m_simulation.m_hasPathMemos.getBreadthFirstWithMinimumSize(batches, m_area);
+	uint i = 0;
+	uint memoIndex = 0;
+	while(i < numberOfRequests)
 	{
-		PathRequestIndex index = PathRequestIndex::create(i);
-		PathRequest& pathRequest = *m_pathRequestNoHuristic.at(index);
-		pathRequest.callback(m_area, m_pathRequestResultsNoHuristic.at(index));
+		auto rangeEnd = std::min(numberOfRequests, i + Config::pathRequestsPerThread);
+		#pragma omp parallel
+			for(; i < rangeEnd; ++i)
+				findPathForIndexNoHuristic(PathRequestIndex::create(i), memosBreadth.at(memoIndex));
+		++memoIndex;
+	}
+	// Depth First.
+	numberOfRequests = m_pathRequestStartPositionWithHuristic.size();
+	batches = std::ceil((float)numberOfRequests / (float)Config::pathRequestsPerThread);
+	auto& memosDepth = m_area.m_simulation.m_hasPathMemos.getDepthFirstWithMinimumSize(batches, m_area);
+	i = 0;
+	memoIndex = 0;
+	while(i < numberOfRequests)
+	{
+		auto rangeEnd = std::min(numberOfRequests, i + Config::pathRequestsPerThread);
+		#pragma omp parallel
+			for(; i < rangeEnd; ++i)
+				findPathForIndexWithHuristic(PathRequestIndex::create(i), memosDepth.at(memoIndex));
+		++memoIndex;
+	}
+	// Write step.
+	// Read First.
+	for(PathRequestIndex i = PathRequestIndex::create(0); i < m_pathRequestAccessConditionsNoHuristic.size(); ++i)
+	{
+		PathRequest& pathRequest = *m_pathRequestNoHuristic.at(i);
+		pathRequest.callback(m_area, m_pathRequestResultsNoHuristic.at(i));
+		pathRequest.reset();
+	}
+	// Depth First.
+	for(PathRequestIndex i = PathRequestIndex::create(0); i < m_pathRequestAccessConditionsWithHuristic.size(); ++i)
+	{
+		PathRequest& pathRequest = *m_pathRequestWithHuristic.at(i);
+		pathRequest.callback(m_area, m_pathRequestResultsWithHuristic.at(i));
 		pathRequest.reset();
 	}
 	clearPathRequests();
 }
-void TerrainFacade::findPathForIndexWithHuristic(PathRequestIndex index)
+void TerrainFacade::findPathForIndexWithHuristic(PathRequestIndex index, PathMemoDepthFirst& memo)
 {
-	m_pathRequestResultsWithHuristic.at(index) = findPathDepthFirst(m_pathRequestStartPositionWithHuristic.at(index), m_pathRequestDestinationConditionsWithHuristic.at(index), m_pathRequestAccessConditionsWithHuristic.at(index), m_pathRequestHuristic.at(index));
+	m_pathRequestResultsWithHuristic.at(index) = findPathDepthFirst(m_pathRequestStartPositionWithHuristic.at(index), m_pathRequestDestinationConditionsWithHuristic.at(index), m_pathRequestAccessConditionsWithHuristic.at(index), m_pathRequestHuristic.at(index), memo);
+	memo.reset();
 }
-void TerrainFacade::findPathForIndexNoHuristic(PathRequestIndex index)
+void TerrainFacade::findPathForIndexNoHuristic(PathRequestIndex index, PathMemoBreadthFirst& memo)
 {
-	m_pathRequestResultsNoHuristic.at(index) = findPathBreadthFirst(m_pathRequestStartPositionNoHuristic.at(index), m_pathRequestDestinationConditionsNoHuristic.at(index), m_pathRequestAccessConditionsNoHuristic.at(index));
+	m_pathRequestResultsNoHuristic.at(index) = findPathBreadthFirst(m_pathRequestStartPositionNoHuristic.at(index), m_pathRequestDestinationConditionsNoHuristic.at(index), m_pathRequestAccessConditionsNoHuristic.at(index), memo);
+	memo.reset();
 }
 void TerrainFacade::clearPathRequests()
 {
@@ -192,13 +229,13 @@ void TerrainFacade::unregisterWithHuristic(PathRequestIndex index)
 FindPathResult TerrainFacade::findPath(BlockIndex start, const DestinationCondition destinationCondition, const AccessCondition accessCondition, OpenListPush openListPush, OpenListPop openListPop, OpenListEmpty openListEmpty) const
 {
 	Blocks& blocks = m_area.getBlocks();
-	std::unordered_map<BlockIndex, BlockIndex, BlockIndex::Hash> closed;
+	BlockIndexMap<BlockIndex> closed;
 	closed[start] = BlockIndex::null();
 	openListPush(start);
 	while(!openListEmpty())
 	{
 		BlockIndex current = openListPop();
-		for(uint8_t adjacentCount = 0; adjacentCount < maxAdjacent; ++adjacentCount)
+		for(AdjacentIndex adjacentCount = AdjacentIndex::create(0); adjacentCount < maxAdjacent; ++adjacentCount)
 			if(canEnterFrom(current, adjacentCount))
 			{
 				BlockIndex adjacentIndex = blocks.indexAdjacentToAtCount(current, adjacentCount);
@@ -230,39 +267,53 @@ FindPathResult TerrainFacade::findPath(BlockIndex start, const DestinationCondit
 	}
 	return {{}, BlockIndex::null(), false};
 }
-FindPathResult TerrainFacade::findPathBreadthFirst(BlockIndex from, const DestinationCondition destinationCondition, AccessCondition accessCondition) const
+FindPathResult TerrainFacade::findPathBreadthFirst(BlockIndex from, const DestinationCondition destinationCondition, AccessCondition accessCondition, PathMemoBreadthFirst& memo) const
 {
-	OnePassVector<BlockIndex> openList;
-	OpenListEmpty empty = [&openList](){ return openList.empty(); };
-	OpenListPush push  = [&openList](BlockIndex index) { openList.add(index); };
-	OpenListPop pop = [&openList](){ return openList.pop(); };
+	OpenListEmpty empty = [&memo](){ return memo.openEmpty(); };
+	OpenListPush push  = [&memo](BlockIndex index) { memo.setOpen(index); };
+	OpenListPop pop = [&memo](){ return memo.next(); };
 	return findPath(from, destinationCondition, accessCondition, push, pop, empty);
 }
-FindPathResult TerrainFacade::findPathDepthFirst(BlockIndex from, const DestinationCondition destinationCondition, AccessCondition accessCondition, BlockIndex huristicDestination) const
+FindPathResult TerrainFacade::findPathDepthFirst(BlockIndex from, const DestinationCondition destinationCondition, AccessCondition accessCondition, BlockIndex huristicDestination, PathMemoDepthFirst& memo) const
 {
-	Blocks& blocks = m_area.getBlocks();
-	std::set<std::pair<DistanceInBlocks, BlockIndex>> openList;
-	OpenListEmpty empty = [&openList](){ return openList.empty(); };
-	OpenListPush push  = [&blocks, &openList, huristicDestination](BlockIndex index) 
-	{
-		DistanceInBlocks distance = blocks.taxiDistance(index, huristicDestination);
-	       	openList.emplace(distance, index); 
-	};
-	OpenListPop pop = [&openList](){ BlockIndex output = openList.begin()->second; openList.erase(openList.begin()); return output; };
+	memo.setup(m_area, huristicDestination);
+	OpenListEmpty empty = [&memo](){ return memo.openEmpty(); };
+	OpenListPush push  = [ &memo, huristicDestination](BlockIndex index) { memo.setOpen(index); };
+	OpenListPop pop = [&memo](){ return memo.next(); };
 	return findPath(from, destinationCondition, accessCondition, push, pop, empty);
 }
-bool TerrainFacade::canEnterFrom(BlockIndex block, uint8_t adjacentCount) const
+FindPathResult TerrainFacade::findPathBreadthFirstWithoutMemo(BlockIndex from, const DestinationCondition destinationCondition, AccessCondition accessCondition) const
+{
+	auto& hasMemos = m_area.m_simulation.m_hasPathMemos;
+	auto pair = hasMemos.getBreadthFirstSingle(m_area);
+	auto& memo = pair.first;
+	auto index = pair.second;
+	auto output = findPathBreadthFirst(from, destinationCondition, accessCondition, memo);
+	hasMemos.releaseBreadthFirstSingle(index);
+	return output;
+}
+FindPathResult TerrainFacade::findPathDepthFirstWithoutMemo(BlockIndex from, const DestinationCondition destinationCondition, AccessCondition accessCondition, BlockIndex huristicDestination) const
+{
+	auto& hasMemos = m_area.m_simulation.m_hasPathMemos;
+	auto pair = hasMemos.getDepthFirstSingle(m_area);
+	auto& memo = pair.first;
+	auto index = pair.second;
+	auto output = findPathDepthFirst(from, destinationCondition, accessCondition, huristicDestination, memo);
+	hasMemos.releaseDepthFirstSingle(index);
+	return output;
+}
+bool TerrainFacade::canEnterFrom(BlockIndex block, AdjacentIndex adjacentCount) const
 {
 	Blocks& blocks = m_area.getBlocks();
 	BlockIndex other = blocks.indexAdjacentToAtCount(block, adjacentCount);
-	assert(m_enterable[(block.get() * maxAdjacent) + adjacentCount] == getValueForBit(block, other));
-	return m_enterable[(block.get() * maxAdjacent) + adjacentCount];
+	assert(m_enterable[(block.get() * maxAdjacent) + adjacentCount.get()] == getValueForBit(block, other));
+	return m_enterable[(block.get() * maxAdjacent) + adjacentCount.get()];
 }
 FindPathResult TerrainFacade::findPathToForSingleBlockShape(BlockIndex start, const Shape& shape, BlockIndex target, bool detour) const
 {
 	DestinationCondition destinationCondition = [target](BlockIndex index, Facing){ return index == target; };
 	AccessCondition accessCondition = makeAccessCondition(shape, start, {start}, detour, DistanceInBlocks::null());
-	return findPathDepthFirst(start, destinationCondition, accessCondition, target);
+	return findPathDepthFirstWithoutMemo(start, destinationCondition, accessCondition, target);
 }
 FindPathResult TerrainFacade::findPathToForMultiBlockShape(BlockIndex start, const Shape& shape, Facing startFacing, BlockIndex target, bool detour) const
 {
@@ -274,16 +325,16 @@ FindPathResult TerrainFacade::findPathToForMultiBlockShape(BlockIndex start, con
 	};
 	BlockIndices occupied = shape.getBlocksOccupiedAt(blocks, start, startFacing);
 	AccessCondition accessCondition = makeAccessCondition(shape, start, occupied, detour, DistanceInBlocks::null());
-	return findPathDepthFirst(start, destinationCondition, accessCondition, target);
+	return findPathDepthFirstWithoutMemo(start, destinationCondition, accessCondition, target);
 }
 FindPathResult TerrainFacade::findPathToAnyOfForSingleBlockShape(BlockIndex start, const Shape& shape, BlockIndices indecies, BlockIndex huristicDestination, bool detour) const
 {
 	DestinationCondition destinationCondition = [indecies](BlockIndex index, Facing){ return std::ranges::find(indecies, index) != indecies.end(); };
 	AccessCondition accessCondition = makeAccessCondition(shape, start, {start}, detour, DistanceInBlocks::null());
 	if(!huristicDestination.exists())
-		return findPathBreadthFirst(start, destinationCondition, accessCondition);
+		return findPathBreadthFirstWithoutMemo(start, destinationCondition, accessCondition);
 	else
-		return findPathDepthFirst(start, destinationCondition, accessCondition, huristicDestination);
+		return findPathDepthFirstWithoutMemo(start, destinationCondition, accessCondition, huristicDestination);
 }
 FindPathResult TerrainFacade::findPathToAnyOfForMultiBlockShape(BlockIndex start, const Shape& shape, Facing startFacing, BlockIndices indecies, BlockIndex huristicDestination, bool detour) const
 {
@@ -293,18 +344,18 @@ FindPathResult TerrainFacade::findPathToAnyOfForMultiBlockShape(BlockIndex start
 	AccessCondition accessCondition = makeAccessCondition(shape, start, occupied, detour, DistanceInBlocks::null());
 	DestinationCondition destinationCondition = [indecies](BlockIndex index, Facing){ return std::ranges::find(indecies, index) != indecies.end(); };
 	if(!huristicDestination.exists())
-		return findPathBreadthFirst(start, destinationCondition, accessCondition);
+		return findPathBreadthFirstWithoutMemo(start, destinationCondition, accessCondition);
 	else
-		return findPathDepthFirst(start, destinationCondition, accessCondition, huristicDestination);
+		return findPathDepthFirstWithoutMemo(start, destinationCondition, accessCondition, huristicDestination);
 }
 FindPathResult TerrainFacade::findPathToConditionForSingleBlockShape(BlockIndex start, const Shape& shape, const DestinationCondition destinationCondition, BlockIndex huristicDestination, bool detour) const
 {
 	//TODO: should have max range.
 	AccessCondition accessCondition = makeAccessCondition(shape, start, {start}, detour, DistanceInBlocks::null());
 	if(!huristicDestination.exists())
-		return findPathBreadthFirst(start, destinationCondition, accessCondition);
+		return findPathBreadthFirstWithoutMemo(start, destinationCondition, accessCondition);
 	else
-		return findPathDepthFirst(start, destinationCondition, accessCondition, huristicDestination);
+		return findPathDepthFirstWithoutMemo(start, destinationCondition, accessCondition, huristicDestination);
 }
 FindPathResult TerrainFacade::findPathToConditionForMultiBlockShape(BlockIndex start, const Shape& shape, Facing startFacing, const DestinationCondition destinationCondition, BlockIndex huristicDestination, bool detour) const
 {
@@ -312,9 +363,9 @@ FindPathResult TerrainFacade::findPathToConditionForMultiBlockShape(BlockIndex s
 	auto occupied = shape.getBlocksOccupiedAt(blocks, start, startFacing);
 	AccessCondition accessCondition = makeAccessCondition(shape, start, occupied, detour, DistanceInBlocks::null());
 	if(!huristicDestination.exists())
-		return findPathBreadthFirst(start, destinationCondition, accessCondition);
+		return findPathBreadthFirstWithoutMemo(start, destinationCondition, accessCondition);
 	else
-		return findPathDepthFirst(start, destinationCondition, accessCondition, huristicDestination);
+		return findPathDepthFirstWithoutMemo(start, destinationCondition, accessCondition, huristicDestination);
 }
 FindPathResult TerrainFacade::findPathTo(BlockIndex start, const Shape& shape, Facing startFacing, BlockIndex target, bool detour) const
 {

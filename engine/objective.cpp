@@ -52,7 +52,7 @@ const ObjectivePriority& ObjectiveTypePrioritySet::getById(ObjectiveTypeId objec
 {
 	return const_cast<ObjectiveTypePrioritySet*>(this)->getById(objectiveTypeId);
 }
-void ObjectiveTypePrioritySet::setPriority(Area& area, ActorIndex actor, const ObjectiveType& objectiveType, uint8_t priority)
+void ObjectiveTypePrioritySet::setPriority(Area& area, ActorIndex actor, const ObjectiveType& objectiveType, Priority priority)
 {
 	auto found = std::ranges::find_if(m_data, [&](ObjectivePriority& x) { return x.objectiveType == &objectiveType; });
 	if(found == m_data.end())
@@ -90,11 +90,11 @@ void ObjectiveTypePrioritySet::setDelay(Area& area, ObjectiveTypeId objectiveTyp
 	if(found != m_data.end())
 		found->doNotAssignAgainUntil = area.m_simulation.m_step + Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective;
 }
-uint8_t ObjectiveTypePrioritySet::getPriorityFor(ObjectiveTypeId objectiveTypeId) const
+Priority ObjectiveTypePrioritySet::getPriorityFor(ObjectiveTypeId objectiveTypeId) const
 {
 	const auto found = std::ranges::find_if(m_data, [&](const ObjectivePriority& objectivePriority){ return objectivePriority.objectiveType->getObjectiveTypeId() == objectiveTypeId; });
 	if(found == m_data.end())
-		return 0;
+		return Priority::create(0);
 	return found->priority;
 }
 bool ObjectiveTypePrioritySet::isOnDelay(Area& area, ObjectiveTypeId objectiveTypeId) const
@@ -171,9 +171,9 @@ inline void from_json(const Json& data, const ObjectiveType*& objectiveType)
 	objectiveType = ObjectiveType::objectiveTypes.at(name).get(); 
 }
 // Objective.
-Objective::Objective(uint32_t p) : m_priority(p) { }
+Objective::Objective(Priority priority) : m_priority(priority) { }
 Objective::Objective(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) :
-	m_priority(data["priority"].get<uint32_t>()), m_detour(data["detour"].get<bool>()) 
+	m_priority(data["priority"].get<Priority>()), m_detour(data["detour"].get<bool>()) 
 { 
 	deserializationMemo.m_objectives[data["address"].get<uintptr_t>()] = this;
 }
@@ -328,20 +328,30 @@ void HasObjectives::destroy(Area& area, Objective& objective)
 	actors.canReserve_clearAll(m_actor);
 	actors.reservable_unreserveAll(m_actor);
 	actors.leadAndFollowDisband(m_actor);
-	ActorOrItemIndex wasCarrying = area.getActors().canPickUp_putDownIfAny(m_actor, actors.getLocation(m_actor));
-	if(wasCarrying.exists() && actors.getFaction(m_actor) != nullptr)
+	if(actors.canPickUp_exists(m_actor))
 	{
-		if(wasCarrying.isItem())
+		ActorOrItemIndex wasCarrying = area.getActors().canPickUp_tryToPutDownPolymorphic(m_actor, actors.getLocation(m_actor));
+		if(wasCarrying.empty())
 		{
-			ItemIndex item = wasCarrying.getItem();
-			const FactionId faction = actors.getFactionId(m_actor);
-			if(area.m_hasStockPiles.contains(faction))
-				area.m_hasStockPiles.at(faction).addItem(item);
+			// Could not find a place to put down carrying. 
+			// Wander somewhere else, hopefully we can put down there.
+			// This method will be called again when wander finishes.
+			actors.objective_addTaskToStart(m_actor, std::make_unique<WanderObjective>());
 		}
-		else
+		if(actors.getFaction(m_actor) != nullptr)
 		{
-			assert(wasCarrying.isActor());
-			//TODO: add to medical listing.
+			if(wasCarrying.isItem())
+			{
+				ItemIndex item = wasCarrying.getItem();
+				const FactionId faction = actors.getFactionId(m_actor);
+				if(area.m_hasStockPiles.contains(faction))
+					area.m_hasStockPiles.at(faction).addItem(item);
+			}
+			else
+			{
+				assert(wasCarrying.isActor());
+				//TODO: add to medical listing.
+			}
 		}
 	}
 	if(isCurrent)

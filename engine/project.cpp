@@ -13,6 +13,7 @@
 #include "blocks/blocks.h"
 #include "terrainFacade.h"
 #include "types.h"
+#include "objectives/wander.h"
 #include <algorithm>
 #include <memory>
 #include <unordered_map>
@@ -835,12 +836,19 @@ void Project::haulSubprojectCancel(HaulSubproject& haulSubproject)
 	for(ActorReference actor : haulSubproject.m_workers)
 	{
 		ActorIndex index = actor.getIndex();
-		actors.canPickUp_putDownIfAny(index, actors.getLocation(index));
 		actors.unfollowIfAny(index);
 		actors.move_clearPath(index);
 		actors.canReserve_clearAll(index);
 		m_workers.at(actor).haulSubproject = nullptr;
-		commandWorker(index);
+		ActorOrItemIndex wasCarrying = m_area.getActors().canPickUp_tryToPutDownPolymorphic(index, actors.getLocation(index));
+		if(wasCarrying.empty())
+		{
+			// Could not find a place to put down carrying. 
+			// Wander somewhere else, hopefully we can put down there.
+			actors.objective_addTaskToStart(index, std::make_unique<WanderObjective>());
+		}
+		else
+			commandWorker(index);
 	}
 	m_haulSubprojects.remove(haulSubproject);
 }
