@@ -16,15 +16,15 @@ MustDrink::MustDrink(Area& area, ActorIndex a) :
 {
 	m_actor.setTarget(area.getActors().getReferenceTarget(a));
 }
-MustDrink::MustDrink(Area& area, const Json& data, ActorIndex a, const AnimalSpecies& species) : 
-	m_thirstEvent(area.m_eventSchedule), m_fluidType(&species.fluidType),
+MustDrink::MustDrink(Area& area, const Json& data, ActorIndex a, AnimalSpeciesId species) : 
+	m_thirstEvent(area.m_eventSchedule), m_fluidType(AnimalSpecies::getFluidType(species)),
        	m_volumeDrinkRequested(data["volumeDrinkRequested"].get<CollisionVolume>())
 {
 	m_actor.setTarget(area.getActors().getReferenceTarget(a));
 	if(data.contains("thirstEventStart"))
 	{
 		Step start = data["thirstEventStart"].get<Step>();
-		m_thirstEvent.schedule(area, species.stepsFluidDrinkFreqency, m_actor.getIndex(), start);
+		m_thirstEvent.schedule(area, AnimalSpecies::getStepsFluidDrinkFrequency(species), m_actor.getIndex(), start);
 	}
 }
 Json MustDrink::toJson() const
@@ -46,17 +46,18 @@ void MustDrink::drink(Area& area, CollisionVolume volume)
 	Step stepsToNextThirstEvent;
 	Actors& actors = area.getActors();
 	ActorIndex actor = m_actor.getIndex();
+	Step stepsTillDie = AnimalSpecies::getStepsTillDieWithoutFluid(actors.getSpecies(actor));
 	if(m_volumeDrinkRequested == 0)
 	{
 		actors.objective_complete(actor, *m_objective);
-		stepsToNextThirstEvent = actors.getSpecies(actor).stepsTillDieWithoutFluid;
+		stepsToNextThirstEvent = stepsTillDie;
 		actors.grow_maybeStart(actor);
 	}
 	else
 	{
 		actors.objective_subobjectiveComplete(actor);
-		const AnimalSpecies& species = actors.getSpecies(actor);
-		stepsToNextThirstEvent = Step::create(util::scaleByFraction(species.stepsTillDieWithoutFluid.get(), m_volumeDrinkRequested.get(), species.stepsTillDieWithoutFluid.get()));
+		//TODO: This doesn't seem to make sense.
+		stepsToNextThirstEvent = Step::create(util::scaleByFraction(stepsTillDie.get(), m_volumeDrinkRequested.get(), stepsTillDie.get()));
 	}
 	m_thirstEvent.schedule(area, stepsToNextThirstEvent, actor);
 }
@@ -72,8 +73,8 @@ void MustDrink::setNeedsFluid(Area& area)
 	if(m_volumeDrinkRequested == 0)
 	{
 		m_volumeDrinkRequested = drinkVolumeFor(area, actor);
-		const AnimalSpecies& species = actors.getSpecies(actor);
-		m_thirstEvent.schedule(area, species.stepsTillDieWithoutFluid, actor);
+		Step stepsTillDie = AnimalSpecies::getStepsTillDieWithoutFluid(actors.getSpecies(actor));
+		m_thirstEvent.schedule(area, stepsTillDie, actor);
 		std::unique_ptr<Objective> objective = std::make_unique<DrinkObjective>(area);
 		m_objective = static_cast<DrinkObjective*>(objective.get());
 		actors.objective_addNeed(actor, std::move(objective));
@@ -88,10 +89,11 @@ void MustDrink::onDeath()
 void MustDrink::scheduleDrinkEvent(Area& area)
 {
 	ActorIndex actor = m_actor.getIndex();
-	const AnimalSpecies& species = area.getActors().getSpecies(actor);
-	m_thirstEvent.schedule(area, species.stepsFluidDrinkFreqency, actor);
+	AnimalSpeciesId species = area.getActors().getSpecies(actor);
+	Step frequency = AnimalSpecies::getStepsFluidDrinkFrequency(species);
+	m_thirstEvent.schedule(area, frequency, actor);
 }
-void MustDrink::setFluidType(const FluidType& fluidType) { m_fluidType = &fluidType; }
+void MustDrink::setFluidType(FluidTypeId fluidType) { m_fluidType = fluidType; }
 Percent MustDrink::getPercentDeadFromThirst() const
 {
 	if(!m_thirstEvent.exists())
@@ -134,7 +136,7 @@ void DrinkEvent::execute(Simulation&, Area* area)
 	else
 	{
 		Blocks& blocks = area->getBlocks();
-		const FluidType& fluidType = actors.drink_getFluidType(actor);
+		FluidTypeId fluidType = actors.drink_getFluidType(actor);
 		volume = std::min(volume, blocks.fluid_volumeOfTypeContains(drinkBlock, fluidType));
 		blocks.fluid_remove(drinkBlock, volume, fluidType);
 	}

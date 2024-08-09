@@ -9,7 +9,7 @@
 void LocationBucket::insert(Area& area, ActorIndex actor, BlockIndices& blocks)
 {
 	Actors& actors = area.getActors();
-	if(actors.getShape(actor).isMultiTile)
+	if(Shape::getIsMultiTile(actors.getShape(actor)))
 	{
 		[[maybe_unused]] auto iter = std::ranges::find(m_actorsMultiTile, actor);
 		assert(iter == m_actorsMultiTile.end());
@@ -28,7 +28,7 @@ void LocationBucket::insert(Area& area, ActorIndex actor, BlockIndices& blocks)
 void LocationBucket::erase(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
-	if(actors.getShape(actor).isMultiTile)
+	if(Shape::getIsMultiTile(actors.getShape(actor)))
 	{
 		auto iter = std::ranges::find(m_actorsMultiTile, actor);
 		assert(iter != m_actorsMultiTile.end());
@@ -48,7 +48,7 @@ void LocationBucket::erase(Area& area, ActorIndex actor)
 void LocationBucket::update(Area& area, ActorIndex actor, BlockIndices& blockIndices)
 {
 	Actors& actors = area.getActors();
-	if(actors.getShape(actor).isMultiTile)
+	if(Shape::getIsMultiTile(actors.getShape(actor)))
 	{
 		auto iter = std::ranges::find(m_actorsMultiTile, actor);
 		assert(iter != m_actorsMultiTile.end());

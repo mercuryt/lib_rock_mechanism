@@ -21,7 +21,7 @@ public:
 	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const { return {}; }
 	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const { ItemQuery query(m_item); return {{m_item,Quantity::create(1)}}; }
 	std::vector<std::pair<ActorQuery, Quantity>> getActors() const { return {}; }
-	std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> getByproducts() const { return {}; }
+	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const { return {}; }
 	Step getDuration() const { return Config::installItemDuration; }
 	bool canReset() const { return false; }
 	void onDelay() { cancel(); }

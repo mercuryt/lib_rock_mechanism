@@ -43,7 +43,7 @@ class DigProject final : public Project
 	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
 	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const;
 	[[nodiscard]] std::vector<std::pair<ActorQuery, Quantity>> getActors() const;
-	[[nodiscard]] std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> getByproducts() const;
+	[[nodiscard]] std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const;
 	[[nodiscard]] static uint32_t getWorkerDigScore(Area& area, ActorIndex actor);
 	// What would the total delay time be if we started from scratch now with current workers?
 public:

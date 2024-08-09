@@ -338,7 +338,7 @@ void HasObjectives::destroy(Area& area, Objective& objective)
 			// This method will be called again when wander finishes.
 			actors.objective_addTaskToStart(m_actor, std::make_unique<WanderObjective>());
 		}
-		if(actors.getFaction(m_actor) != nullptr)
+		if(actors.getFaction(m_actor).exists())
 		{
 			if(wasCarrying.isItem())
 			{

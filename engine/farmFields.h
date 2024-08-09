@@ -16,8 +16,8 @@ class FarmFieldCreateInputAction final : public InputAction
 {
 	Cuboid m_cuboid;
 	FactionId m_faction;
-	const PlantSpecies& m_species;
-	FarmFieldCreateInputAction(InputQueue& inputQueue, Cuboid& cuboid, FactionId faction, const PlantSpecies& species) : InputAction(inputQueue), m_cuboid(cuboid), m_faction(faction), m_species(species) { }
+	PlantSpeciesId m_species;
+	FarmFieldCreateInputAction(InputQueue& inputQueue, Cuboid& cuboid, FactionId faction, PlantSpeciesId species) : InputAction(inputQueue), m_cuboid(cuboid), m_faction(faction), m_species(species) { }
 	void execute();
 };
 class FarmFieldRemoveInputAction final : public InputAction
@@ -38,9 +38,9 @@ class FarmFieldExpandInputAction final : public InputAction
 class FarmFieldUpdateInputAction final : public InputAction
 {
 	FarmField& m_farmField;
-	const PlantSpecies& m_species;
+	PlantSpeciesId m_species;
 	FactionId m_faction;
-	FarmFieldUpdateInputAction(InputQueue& inputQueue, FactionId faction, FarmField& farmField, const PlantSpecies& species) : InputAction(inputQueue), m_farmField(farmField), m_species(species), m_faction(faction) { }
+	FarmFieldUpdateInputAction(InputQueue& inputQueue, FactionId faction, FarmField& farmField, PlantSpeciesId species) : InputAction(inputQueue), m_farmField(farmField), m_species(species), m_faction(faction) { }
 	void execute();
 };
 */
@@ -48,9 +48,9 @@ struct FarmField
 {
 	BlockIndices blocks;
 	Area& area;
-	const PlantSpecies* plantSpecies;
+	PlantSpeciesId plantSpecies;
 	bool timeToSow;
-	FarmField(Area& a, BlockIndices b) : blocks(b), area(a), plantSpecies(nullptr), timeToSow(false) { }
+	FarmField(Area& a, BlockIndices b) : blocks(b), area(a), timeToSow(false) { }
 	FarmField(const Json& data, FactionId faction, Area& area);
 	[[nodiscard]] Json toJson() const;
 };
@@ -78,7 +78,7 @@ public:
 	[[nodiscard]] FarmField& create(BlockIndices blocks);
 	[[nodiscard]] FarmField& create(Cuboid cuboid);
 	void extend(FarmField& farmField, BlockIndices blocks);
-	void setSpecies(FarmField& farmField, const PlantSpecies& plantSpecies);
+	void setSpecies(FarmField& farmField, PlantSpeciesId plantSpecies);
 	void clearSpecies(FarmField& farmField);
 	void designateBlocks(FarmField& farmField, BlockIndices blocks);
 	void shrink(FarmField& farmField, BlockIndices blocks);
@@ -88,7 +88,7 @@ public:
 	[[nodiscard]] bool hasHarvestDesignations() const;
 	[[nodiscard]] bool hasGivePlantsFluidDesignations() const;
 	[[nodiscard]] bool hasSowSeedsDesignations() const;
-	[[nodiscard]] const PlantSpecies& getPlantSpeciesFor(BlockIndex block) const;
+	[[nodiscard]] PlantSpeciesId getPlantSpeciesFor(BlockIndex block) const;
 };
 // To be used by Area.
 class AreaHasFarmFields
@@ -108,7 +108,7 @@ public:
 	[[nodiscard]] bool hasGivePlantsFluidDesignations(FactionId faction) const;
 	[[nodiscard]] bool hasHarvestDesignations(FactionId faction) const;
 	[[nodiscard]] bool hasSowSeedsDesignations(FactionId faction) const;
-	[[nodiscard]] const PlantSpecies& getPlantSpeciesFor(FactionId faction, BlockIndex location) const;
+	[[nodiscard]] PlantSpeciesId getPlantSpeciesFor(FactionId faction, BlockIndex location) const;
 	// For testing.
 	[[maybe_unused, nodiscard]] bool contains(FactionId faction) { return m_data.contains(faction); }
 };

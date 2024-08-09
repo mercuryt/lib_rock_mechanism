@@ -18,7 +18,7 @@ struct Faction;
 class HasShapes
 {
 protected:
-	DataVector<const Shape*, HasShapeIndex> m_shape;
+	DataVector<ShapeId, HasShapeIndex> m_shape;
 	DataVector<BlockIndex, HasShapeIndex> m_location;
 	DataVector<Facing, HasShapeIndex> m_facing;
 	DataVector<FactionId, HasShapeIndex> m_faction;
@@ -29,7 +29,7 @@ protected:
 	Area& m_area;
 	HasShapes(Area& area);
 	HasShapes(const Json& data, DeserializationMemo& deserializationMemo);
-	void create(HasShapeIndex index, const Shape& shape, BlockIndex location, Facing facing, bool isStatic);
+	void create(HasShapeIndex index, ShapeId shape, BlockIndex location, Facing facing, bool isStatic);
 	void create(HasShapeIndex index, const Json& data, DeserializationMemo& deserializationMemo);
 	void destroy(HasShapeIndex index);
 	void sortRange(HasShapeIndex begin, HasShapeIndex end);
@@ -42,13 +42,13 @@ public:
 	void setStatic(HasShapeIndex index, bool isStatic);
 	void log(HasShapeIndex index) const;
 	[[nodiscard]] size_t size() const { return m_shape.size(); }
-	[[nodiscard]] const Shape& getShape(HasShapeIndex index) const { return *m_shape.at(index); }
+	[[nodiscard]] ShapeId getShape(HasShapeIndex index) const { return m_shape.at(index); }
 	[[nodiscard]] BlockIndex getLocation(HasShapeIndex index) const { return m_location.at(index); }
 	[[nodiscard]] bool hasLocation(HasShapeIndex index) const { return getLocation(index).exists(); }
 	[[nodiscard]] Facing getFacing(HasShapeIndex index) const { return m_facing.at(index); }
 	[[nodiscard]] const auto& getBlocks(HasShapeIndex index) const { return m_blocks.at(index); }
 	[[nodiscard]] FactionId getFactionId(HasShapeIndex index) { return m_faction.at(index); }
-	[[nodiscard]] const Faction* getFaction(HasShapeIndex index) const;
+	[[nodiscard]] FactionId getFaction(HasShapeIndex index) const;
 	[[nodiscard]] bool hasFaction(HasShapeIndex index) const { return m_faction.at(index).exists(); }
 	[[nodiscard]] bool isStatic(HasShapeIndex index) const { return m_static.at(index); }
 	[[nodiscard]] bool isAdjacentToLocation(HasShapeIndex index, BlockIndex block) const;

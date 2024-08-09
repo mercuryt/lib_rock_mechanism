@@ -12,14 +12,14 @@ class AreaHasRain final
 	std::array<Percent, 4> m_humidityBySeason;
 	HasScheduledEvent<RainEvent> m_event;
 	Area& m_area;
-	const FluidType* m_currentlyRainingFluidType = nullptr;
-	const FluidType& m_defaultRainFluidType;
+	FluidTypeId m_currentlyRainingFluidType;
+	FluidTypeId m_defaultRainFluidType;
 	Percent m_intensityPercent = Percent::create(0);
 public:
 	AreaHasRain(Area& a, Simulation& s);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
-	void start(const FluidType& fluidType, Percent intensityPercent, Step stepsDuration);
+	void start(FluidTypeId fluidType, Percent intensityPercent, Step stepsDuration);
 	void start(Percent intensityPercent, Step stepsDuration) { start(m_defaultRainFluidType, intensityPercent, stepsDuration); }
 	void schedule(Step restartAt);
 	void stop();
@@ -27,7 +27,7 @@ public:
 	void scheduleRestart();
 	void disable();
 	[[nodiscard]] bool isRaining() const { return m_intensityPercent != 0; }
-	[[nodiscard]] const FluidType& getFluidType() const { assert(m_currentlyRainingFluidType); return *m_currentlyRainingFluidType; }
+	[[nodiscard]] FluidTypeId getFluidType() const { assert(m_currentlyRainingFluidType.exists()); return m_currentlyRainingFluidType; }
 	[[nodiscard]] Percent getIntensityPercent() const { return m_intensityPercent; }
 	[[nodiscard]] Percent humidityForSeason();
 	friend class RainEvent;

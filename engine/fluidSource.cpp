@@ -8,7 +8,7 @@
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_ONLY_SERIALIZE(FluidSource, block, fluidType, level);
 FluidSource::FluidSource(const Json& data, DeserializationMemo&) : 
-	block(data["block"].get<BlockIndex>()), fluidType(data["fluidType"].get<const FluidType*>()), level(data["level"].get<CollisionVolume>()) { }
+	block(data["block"].get<BlockIndex>()), fluidType(data["fluidType"].get<FluidTypeId>()), level(data["level"].get<CollisionVolume>()) { }
 
 void AreaHasFluidSources::doStep()
 {
@@ -17,17 +17,17 @@ void AreaHasFluidSources::doStep()
 	{
 		CollisionVolume delta =  source.level - blocks.fluid_getTotalVolume(source.block);
 		if(delta > 0)
-			blocks.fluid_add(source.block, delta, *source.fluidType);
+			blocks.fluid_add(source.block, delta, source.fluidType);
 		else if(delta < 0)
 			//TODO: can this be changed to use the async version?
-			blocks.fluid_removeSyncronus(source.block, -delta, *source.fluidType);
+			blocks.fluid_removeSyncronus(source.block, -delta, source.fluidType);
 	}
 	m_area.m_hasFluidGroups.clearMergedFluidGroups();
 }
-void AreaHasFluidSources::create(BlockIndex block, const FluidType& fluidType, CollisionVolume level)
+void AreaHasFluidSources::create(BlockIndex block, FluidTypeId fluidType, CollisionVolume level)
 {
 	assert(!contains(block));
-	m_data.emplace_back(block, &fluidType, level);
+	m_data.emplace_back(block, fluidType, level);
 }
 void AreaHasFluidSources::destroy(BlockIndex block)
 {

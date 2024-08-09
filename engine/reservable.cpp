@@ -37,7 +37,7 @@ void CanReserve::setFaction(FactionId faction)
 		reservable->updateFactionFor(*this, m_faction, faction);
 	m_faction = faction;
 }
-bool CanReserve::hasReservationWith(Reservable& reservable) const { return m_reservables.contains(&reservable); }
+bool CanReserve::hasReservationWith(Reservable& reservable) const { return std::ranges::find(m_reservables, &reservable) != m_reservables.end(); }
 bool CanReserve::hasReservations() const
 {
 	return !m_reservables.empty();
@@ -73,8 +73,8 @@ void Reservable::reserveFor(CanReserve& canReserve, const Quantity quantity, std
 	m_canReserves[&canReserve] += quantity;
 	assert(m_canReserves[&canReserve] <= m_maxReservations);
 	m_reservedCounts[canReserve.m_faction] += quantity;
-	if(!canReserve.m_reservables.contains(this))
-		canReserve.m_reservables.insert(this);
+	if(!canReserve.hasReservationWith(*this))
+		canReserve.m_reservables.push_back(this);
 	if(dishonorCallback != nullptr)
 		m_dishonorCallbacks[&canReserve] = std::move(dishonorCallback);
 }
@@ -83,11 +83,11 @@ void Reservable::clearReservationFor(CanReserve& canReserve, const Quantity quan
 	if(canReserve.m_faction.empty())
 		return;
 	assert(m_canReserves.contains(&canReserve));
-	assert(canReserve.m_reservables.contains(this));
+	assert(canReserve.hasReservationWith(*this));
 	if(m_canReserves.at(&canReserve) == quantity)
 	{
 		eraseReservationFor(canReserve);
-		canReserve.m_reservables.erase(this);
+		util::removeFromVectorByValueUnordered(canReserve.m_reservables, this);
 		m_dishonorCallbacks.erase(&canReserve);
 	}
 	else
@@ -107,7 +107,7 @@ void Reservable::clearReservationsFor(const FactionId faction)
 }
 void Reservable::maybeClearReservationFor(CanReserve& canReserve, const Quantity quantity)
 {
-	if(canReserve.m_reservables.contains(this))
+	if(canReserve.hasReservationWith(*this))
 		clearReservationFor(canReserve, quantity);
 }
 void Reservable::setMaxReservations(const Quantity mr) 
@@ -159,7 +159,7 @@ void Reservable::clearAll()
 	for(auto& [canReserve, quantity, dishonorCallback] : toErase)
 	{
 		eraseReservationFor(*canReserve);
-		canReserve->m_reservables.erase(this);
+		util::removeFromVectorByValueUnordered(canReserve->m_reservables, this);
 		if(dishonorCallback != nullptr)
 			dishonorCallback->execute(quantity, Quantity::create(0));
 	}

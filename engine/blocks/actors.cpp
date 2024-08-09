@@ -55,10 +55,10 @@ bool Blocks::actor_canEnterCurrentlyFrom(BlockIndex index, ActorIndex actor, Blo
 bool Blocks::actor_canEnterCurrentlyWithFacing(BlockIndex index, ActorIndex actor, Facing facing) const
 {
 	Actors& actors = m_area.getActors();
-	const Shape& shape = actors.getShape(actor);
+	ShapeId shape = actors.getShape(actor);
 	// For multi block shapes assume that volume is the same for each block.
-	CollisionVolume volume = shape.getCollisionVolumeAtLocationBlock();
-	for(BlockIndex block : shape.getBlocksOccupiedAt(*this, index, facing))
+	CollisionVolume volume = Shape::getCollisionVolumeAtLocationBlock(shape);
+	for(BlockIndex block : Shape::getBlocksOccupiedAt(shape, *this, index, facing))
 		if(!actor_contains(block, actor) && (/*m_actors.at(block).full() ||*/ m_dynamicVolume.at(block) + volume > Config::maxBlockVolume))
 				return false;
 	return true;
@@ -67,8 +67,8 @@ bool Blocks::actor_canEnterEverOrCurrentlyWithFacing(BlockIndex index, ActorInde
 {
 	assert(shape_anythingCanEnterEver(index));
 	const Actors& actors = m_area.getActors();
-	const MoveType& moveType = actors.getMoveType(actor);
-	for(auto& [x, y, z, v] : actors.getShape(actor).positionsWithFacing(facing))
+	MoveTypeId moveType = actors.getMoveType(actor);
+	for(auto& [x, y, z, v] : Shape::positionsWithFacing(actors.getShape(actor), facing))
 	{
 		BlockIndex block = offset(index,x, y, z);
 		if(m_actors.at(block).contains(actor))

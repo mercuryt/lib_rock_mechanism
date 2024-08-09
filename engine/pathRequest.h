@@ -19,7 +19,7 @@ class PathRequest
 {
 	PathRequestIndex m_index;
 	std::vector<BlockIndex> m_destinations;
-	const FluidType* m_fluidType = nullptr;
+	FluidTypeId m_fluidType;
 	ActorIndex m_actor;
 	BlockIndex m_destination;
 	BlockIndex m_huristicDestination;
@@ -44,7 +44,7 @@ public:
 	void createGoAdjacentToPlant(Area& area, ActorIndex actor, PlantIndex item, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);
 	void createGoAdjacentToPolymorphic(Area& area, ActorIndex actor, ActorOrItemIndex actorOrItem, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);
 	void createGoAdjacentToDesignation(Area& area, ActorIndex actor, BlockDesignation designation, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);
-	void createGoAdjacentToFluidType(Area& area, ActorIndex actor, const FluidType& fluidType, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);
+	void createGoAdjacentToFluidType(Area& area, ActorIndex actor, FluidTypeId fluidType, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);
 	void createGoToEdge(Area& area, ActorIndex actor, bool detour);
 	// Multi block actors go to a destination where any of the occupied blocks fulfill the condition. This is inconsistant with GoTo which sends multi block actors to an exact tile.
 	void createGoToCondition(Area& area, ActorIndex actor, DestinationCondition condition, bool detour, bool unreserved, DistanceInBlocks maxRange, BlockIndex huristicDestination = BlockIndex::null(), bool reserve = false);

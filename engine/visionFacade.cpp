@@ -17,7 +17,7 @@ VisionFacade::VisionFacade( )
 	m_locations.reserve(reserve);
 	m_results.reserve(reserve);
 	// Four results fit on a  cache line, by ensuring that the number of tasks per thread is a multiple of 4 we prevent false shareing.
-	assert(Config::visionThreadingBatchSize.get() % 4 == 0);
+	assert(Config::visionThreadingBatchSize % 4 == 0);
 }
 void VisionFacade::setArea(Area& area)
 {
@@ -178,17 +178,14 @@ void VisionFacade::doStep()
 {
 	VisionFacadeIndex index = VisionFacadeIndex::create(0);
 	VisionFacadeIndex actorsSize = VisionFacadeIndex::create(m_actors.size());
-	while(index != m_actors.size())
-	{
-		VisionFacadeIndex end = VisionFacadeIndex::create(std::min(actorsSize.get(), index.get() + Config::visionThreadingBatchSize));
-		// TODO: make a variant of parallelizeTask suitable for multiple vectors of primitives.
-		m_area->m_simulation.m_pool.push_task([this, index, end]{ 
+	#pragma omp parallel
+		while(index != m_actors.size())
+		{
+			VisionFacadeIndex end = std::min(actorsSize, index + Config::visionThreadingBatchSize);
 			readStepSegment(index, end);
-		});
-		index = end;
-	}
-	m_area->m_simulation.m_pool.wait_for_tasks();
-	for(VisionFacadeIndex index = VisionFacadeIndex::create(0); index < m_actors.size(); ++index)
+			index = end;
+		}
+	for(VisionFacadeIndex index = VisionFacadeIndex::create(0); index < actorsSize; ++index)
 		m_area->getActors().vision_swap(getActor(index), getResults(index));
 }
 void VisionFacade::clear()

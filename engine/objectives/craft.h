@@ -2,13 +2,14 @@
 #include "../objective.h"
 #include "../pathRequest.h"
 #include "../types.h"
+#include "../vectorContainers.h"
 struct CraftJob;
 struct SkillType;
 class CraftObjectiveType final : public ObjectiveType
 {
-	const SkillType& m_skillType; // Multiple skills are represented by CraftObjective and CraftObjectiveType, such as Leatherworking, Woodworking, Metalworking, etc.
+	SkillTypeId m_skillType; // Multiple skills are represented by CraftObjective and CraftObjectiveType, such as Leatherworking, Woodworking, Metalworking, etc.
 public:
-	CraftObjectiveType(const SkillType& skillType) : ObjectiveType(), m_skillType(skillType) { }
+	CraftObjectiveType(SkillTypeId skillType) : ObjectiveType(), m_skillType(skillType) { }
 	CraftObjectiveType(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool canBeAssigned(Area& area, ActorIndex actor) const;
@@ -17,11 +18,11 @@ public:
 };
 class CraftObjective final : public Objective
 {
-	const SkillType& m_skillType;
+	SkillTypeId m_skillType;
 	CraftJob* m_craftJob = nullptr;
-	std::unordered_set<CraftJob*> m_failedJobs;
+	SmallSet<CraftJob*> m_failedJobs;
 public:
-	CraftObjective(const SkillType& st);
+	CraftObjective(SkillTypeId st);
 	CraftObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	void execute(Area& area, ActorIndex actor);
 	void cancel(Area& area, ActorIndex actor);
@@ -29,7 +30,7 @@ public:
 	void reset(Area& area, ActorIndex actor);
 	void recordFailedJob(CraftJob& craftJob) { assert(!m_failedJobs.contains(&craftJob)); m_failedJobs.insert(&craftJob); }
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::unordered_set<CraftJob*>& getFailedJobs() { return m_failedJobs; }
+	[[nodiscard]] SmallSet<CraftJob*>& getFailedJobs() { return m_failedJobs; }
 	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Craft; }
 	[[nodiscard]] std::string name() const { return "craft"; }
 	friend class CraftPathRequest;

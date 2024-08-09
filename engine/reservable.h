@@ -26,7 +26,7 @@ struct DeserializationMemo;
 class CanReserve final
 {
 	FactionId m_faction;
-	std::unordered_set<Reservable*> m_reservables;
+	std::vector<Reservable*> m_reservables;
 	friend class Reservable;
 public:
 	CanReserve(FactionId f) : m_faction(f) { }
@@ -49,10 +49,10 @@ class Reservable final
 	void eraseReservationFor(CanReserve& canReserve);
 public:
 	Reservable(Quantity mr) : m_maxReservations(mr) {}
-	void reserveFor(CanReserve& canReserve, const Quantity quantity = Quantity::create(1), std::unique_ptr<DishonorCallback> dishonorCallback = nullptr); 
-	void clearReservationFor(CanReserve& canReserve, const Quantity quantity = Quantity::create(1));
+	void reserveFor(CanReserve& canReserve, Quantity quantity = Quantity::create(1), std::unique_ptr<DishonorCallback> dishonorCallback = nullptr); 
+	void clearReservationFor(CanReserve& canReserve, Quantity quantity = Quantity::create(1));
 	void clearReservationsFor(const FactionId faction);
-	void maybeClearReservationFor(CanReserve& canReserve, const Quantity quantity = Quantity::create(1));
+	void maybeClearReservationFor(CanReserve& canReserve, Quantity quantity = Quantity::create(1));
 	void setMaxReservations(const Quantity mr);
 	void updateFactionFor(CanReserve& canReserve, FactionId oldFaction, FactionId newFaction);
 	void setDishonorCallbackFor(CanReserve& canReserve, std::unique_ptr<DishonorCallback> dishonorCallback) { m_dishonorCallbacks[&canReserve] = std::move(dishonorCallback); }

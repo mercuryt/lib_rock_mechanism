@@ -88,16 +88,16 @@ void Items::onChangeAmbiantSurfaceTemperature()
 ItemIndex Items::create(ItemParamaters itemParamaters)
 {
 	ItemIndex index = HasShapes::getNextIndex().toItem();
-	Portables::create(index, itemParamaters.itemType.moveType, itemParamaters.itemType.shape, itemParamaters.location, itemParamaters.facing, itemParamaters.isStatic);
-	const ItemType& itemType = *(m_itemType.at(index) = &itemParamaters.itemType);
-	m_materialType.at(index) = &itemParamaters.materialType;
+	Portables::create(index, ItemType::getMoveType(itemParamaters.itemType), ItemType::getShape(itemParamaters.itemType), itemParamaters.location, itemParamaters.facing, itemParamaters.isStatic);
+	ItemTypeId itemType = m_itemType.at(index) = itemParamaters.itemType;
+	m_materialType.at(index) = itemParamaters.materialType;
 	m_id.at(index) = itemParamaters.id.exists() ? itemParamaters.id : m_area.m_simulation.m_items.getNextId();
 	m_quality.at(index) = itemParamaters.quality;
 	m_percentWear.at(index) = itemParamaters.percentWear;
 	m_quantity.at(index) = itemParamaters.quantity;
 	m_referenceTarget.at(index) = std::make_unique<ItemReferenceTarget>(index);
 	m_installed.set(index, itemParamaters.installed);
-	if(itemType.generic)
+	if(ItemType::getGeneric(itemType))
 	{
 		assert(m_quality.at(index).empty());
 		assert(m_percentWear.at(index).empty());
@@ -167,7 +167,7 @@ void Items::setLocationAndFacing(ItemIndex index, BlockIndex block, Facing facin
 			return;
 		}
 	}
-	for(auto [x, y, z, v] : m_shape.at(index)->makeOccupiedPositionsWithFacing(facing))
+	for(auto [x, y, z, v] : Shape::makeOccupiedPositionsWithFacing(m_shape.at(index), facing))
 	{
 		BlockIndex occupied = blocks.offset(block, x, y, z);
 		blocks.item_record(occupied, index, CollisionVolume::create(v));
@@ -182,7 +182,7 @@ void Items::exit(ItemIndex index)
 	assert(m_location.at(index).exists());
 	BlockIndex location = m_location.at(index);
 	auto& blocks = m_area.getBlocks();
-	for(auto [x, y, z, v] : m_shape.at(index)->makeOccupiedPositionsWithFacing(m_facing.at(index)))
+	for(auto [x, y, z, v] : Shape::makeOccupiedPositionsWithFacing(m_shape.at(index), m_facing.at(index)))
 	{
 		BlockIndex occupied = blocks.offset(location, x, y, z);
 		blocks.item_erase(occupied, index);
@@ -218,11 +218,12 @@ void Items::install(ItemIndex index, BlockIndex block, Facing facing, FactionId 
 {
 	setLocationAndFacing(index, block, facing);
 	m_installed.set(index);
-	if(m_itemType.at(index)->craftLocationStepTypeCategory)
+	if(ItemType::getCraftLocationStepTypeCategory(m_itemType.at(index)).exists())
 	{
-		BlockIndex craftLocation = m_itemType.at(index)->getCraftLocation(m_area.getBlocks(), block, facing);
+		ItemTypeId item = m_itemType.at(index);
+		BlockIndex craftLocation = ItemType::getCraftLocation(item, m_area.getBlocks(), block, facing);
 		if(craftLocation.exists())
-			m_area.m_hasCraftingLocationsAndJobs.at(faction).addLocation(*m_itemType.at(index)->craftLocationStepTypeCategory, craftLocation);
+			m_area.m_hasCraftingLocationsAndJobs.at(faction).addLocation(ItemType::getCraftLocationStepTypeCategory(item), craftLocation);
 	}
 }
 void Items::merge(ItemIndex index, ItemIndex other)
@@ -263,11 +264,11 @@ void Items::destroy(ItemIndex index)
 	m_area.m_simulation.m_items.removeItem(m_id.at(index));
 	Portables::destroy(index);
 }
-bool Items::isGeneric(ItemIndex index) const { return m_itemType.at(index)->generic; }
+bool Items::isGeneric(ItemIndex index) const { return ItemType::getGeneric(m_itemType.at(index)); }
 bool Items::isPreparedMeal(ItemIndex index) const
 {
-	static const ItemType& preparedMealType = ItemType::byName("prepared meal");
-	return m_itemType.at(index) == &preparedMealType;
+	static ItemTypeId preparedMealType = ItemType::byName("prepared meal");
+	return m_itemType.at(index) == preparedMealType;
 }
 CraftJob& Items::getCraftJobForWorkPiece(ItemIndex index) const 
 {
@@ -276,26 +277,26 @@ CraftJob& Items::getCraftJobForWorkPiece(ItemIndex index) const
 }
 Mass Items::getSingleUnitMass(ItemIndex index) const 
 { 
-	return Mass::create(std::max(1u, (m_itemType.at(index)->volume * m_materialType.at(index)->density).get()));
+	return Mass::create(std::max(1u, (ItemType::getVolume(m_itemType.at(index)) * MaterialType::getDensity(m_materialType.at(index))).get()));
 }
 Mass Items::getMass(ItemIndex index) const
 {
-	Mass output = m_itemType.at(index)->volume * m_materialType.at(index)->density * m_quantity.at(index);
+	Mass output = ItemType::getVolume(m_itemType.at(index)) * MaterialType::getDensity(m_materialType.at(index)) * m_quantity.at(index);
 	if(m_hasCargo.at(index) != nullptr)
 		output += m_hasCargo.at(index)->getMass();
 	return output;
 }
 Volume Items::getVolume(ItemIndex index) const
 {
-	return m_itemType.at(index)->volume * m_quantity.at(index);
+	return ItemType::getVolume(m_itemType.at(index)) * m_quantity.at(index);
 }
-const MoveType& Items::getMoveType(ItemIndex index) const
+MoveTypeId Items::getMoveType(ItemIndex index) const
 {
-	return m_itemType.at(index)->moveType;
+	return ItemType::getMoveType(m_itemType.at(index));
 }
 void Items::log(ItemIndex index) const
 {
-	std::cout << m_itemType.at(index)->name << "[" << m_materialType.at(index)->name << "]";
+	std::cout << ItemType::getName(m_itemType.at(index)) << "[" << MaterialType::getName(m_materialType.at(index)) << "]";
 	if(m_quantity.at(index) != 1)
 		std::cout << "(" << m_quantity.at(index).get() << ")";
 	if(m_craftJobForWorkPiece.at(index) != nullptr)
@@ -399,7 +400,7 @@ void ItemHasCargo::addActor(Area& area, ActorIndex actor)
 	Actors& actors = area.getActors();
 	assert(m_volume + actors.getVolume(actor) <= m_maxVolume);
 	assert(!containsActor(actor));
-	assert(m_fluidVolume == 0 && m_fluidType == nullptr);
+	assert(m_fluidVolume == 0 && m_fluidType.empty());
 	getActors().add(actor);
 	m_volume += actors.getVolume(actor);
 	m_mass += actors.getMass(actor);
@@ -410,37 +411,37 @@ void ItemHasCargo::addItem(Area& area, ItemIndex item)
 	//TODO: This method does not call hasShape.exit(), which is not consistant with the behaviour of CanPickup::pickup.
 	assert(m_volume + items.getVolume(item) <= m_maxVolume);
 	assert(!containsItem(item));
-	assert(m_fluidVolume == 0 && m_fluidType == nullptr);
+	assert(m_fluidVolume == 0 && m_fluidType.empty());
 	getItems().add(item);
 	m_volume += items.getVolume(item);
 	m_mass += items.getMass(item);
 }
-void ItemHasCargo::addFluid(const FluidType& fluidType, CollisionVolume volume)
+void ItemHasCargo::addFluid(FluidTypeId fluidType, CollisionVolume volume)
 {
 	assert(m_fluidVolume + volume <= m_maxVolume.toCollisionVolume());
-	if(m_fluidType == nullptr)
+	if(m_fluidType.empty())
 	{
-		m_fluidType = &fluidType;
+		m_fluidType = fluidType;
 		m_fluidVolume = volume;
 	}
 	else
 	{
-		assert(m_fluidType == &fluidType);
+		assert(m_fluidType == fluidType);
 		m_fluidVolume += volume;
 	}
-	m_mass += volume.toVolume() * fluidType.density;
+	m_mass += volume.toVolume() * FluidType::getDensity(fluidType);
 }
-ItemIndex ItemHasCargo::addItemGeneric(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity)
+ItemIndex ItemHasCargo::addItemGeneric(Area& area, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity)
 {
-	assert(itemType.generic);
+	assert(ItemType::getGeneric(itemType));
 	Items& items = area.getItems();
 	for(ItemIndex item : getItems())
 		if(items.getItemType(item) == itemType && items.getMaterialType(item)  == materialType)
 		{
 			// Add to existing stack.
 			items.addQuantity(item, quantity);
-			m_mass += itemType.volume * materialType.density  * quantity;
-			m_volume += itemType.volume * quantity;
+			m_mass += ItemType::getVolume(itemType) * MaterialType::getDensity(materialType)  * quantity;
+			m_volume += ItemType::getVolume(itemType) * quantity;
 			return item;
 		}
 	// Create new stack.
@@ -452,13 +453,13 @@ ItemIndex ItemHasCargo::addItemGeneric(Area& area, const ItemType& itemType, con
 	addItem(area, newItem);
 	return newItem;
 }
-void ItemHasCargo::removeFluidVolume(const FluidType& fluidType, CollisionVolume volume)
+void ItemHasCargo::removeFluidVolume(FluidTypeId fluidType, CollisionVolume volume)
 {
-	assert(m_fluidType == &fluidType);
+	assert(m_fluidType == fluidType);
 	assert(m_fluidVolume >= volume);
 	m_fluidVolume -= volume;
 	if(m_fluidVolume == 0)
-		m_fluidType = nullptr;
+		m_fluidType.clear();
 }
 void ItemHasCargo::removeActor(Area& area, ActorIndex actor)
 {
@@ -476,7 +477,7 @@ void ItemHasCargo::removeItem(Area& area, ItemIndex item)
 	m_mass -= items.getMass(item);
 	getItems().remove(item);
 }
-void ItemHasCargo::removeItemGeneric(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity)
+void ItemHasCargo::removeItemGeneric(Area& area, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity)
 {
 	Items& items = area.getItems();
 	for(ItemIndex item : getItems())
@@ -496,7 +497,7 @@ void ItemHasCargo::removeItemGeneric(Area& area, const ItemType& itemType, const
 		}
 	assert(false);
 }
-ItemIndex ItemHasCargo::unloadGenericTo(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity, BlockIndex location)
+ItemIndex ItemHasCargo::unloadGenericTo(Area& area, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity, BlockIndex location)
 {
 	removeItemGeneric(area, itemType, materialType, quantity);
 	return area.getBlocks().item_addGeneric(location, itemType, materialType, quantity);
@@ -511,10 +512,10 @@ void ItemHasCargo::updateCarrierIndexForAllCargo(Area& area, ItemIndex newIndex)
 		actors.updateCarrierIndex(actor, newIndex);
 }
 bool ItemHasCargo::canAddActor(Area& area, ActorIndex actor) const { return m_volume + area.getActors().getVolume(actor) <= m_maxVolume; }
-bool ItemHasCargo::canAddFluid(FluidType& fluidType) const { return m_fluidType == nullptr || m_fluidType == &fluidType; }
-bool ItemHasCargo::containsGeneric(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity) const
+bool ItemHasCargo::canAddFluid(FluidTypeId fluidType) const { return m_fluidType.empty() || m_fluidType == fluidType; }
+bool ItemHasCargo::containsGeneric(Area& area, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity) const
 {
-	assert(itemType.generic);
+	assert(ItemType::getGeneric(itemType));
 	Items& items = area.getItems();
 	for(ItemIndex item : getItems())
 		if(items.getItemType(item) == itemType && items.getMaterialType(item) == materialType)

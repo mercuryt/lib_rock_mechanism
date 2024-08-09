@@ -23,8 +23,8 @@ class DesignateConstructInputAction final : public InputAction
 {
 	Cuboid m_cuboid;
 	const BlockFeatureType* m_blockFeatureType;
-	const MaterialType& m_materialType;
-	DesignateConstructInputAction(InputQueue& inputQueue, Cuboid& cuboid, BlockFeatureType* blockFeatureType, const MaterialType& materialType) : InputAction(inputQueue), m_cuboid(cuboid), m_blockFeatureType(blockFeatureType), m_materialType(materialType) { }
+	MaterialTypeId m_materialType;
+	DesignateConstructInputAction(InputQueue& inputQueue, Cuboid& cuboid, BlockFeatureType* blockFeatureType, MaterialTypeId materialType) : InputAction(inputQueue), m_cuboid(cuboid), m_blockFeatureType(blockFeatureType), m_materialType(materialType) { }
 	void execute();
 };
 class UndesignateConstructInputAction final : public InputAction
@@ -36,10 +36,10 @@ class UndesignateConstructInputAction final : public InputAction
 class ConstructProject final : public Project
 {
 	const BlockFeatureType* m_blockFeatureType;
-	const MaterialType& m_materialType;
+	MaterialTypeId m_materialType;
 	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const;
-	std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> getByproducts() const;
+	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const;
 	std::vector<std::pair<ActorQuery, Quantity>> getActors() const;
 	uint32_t getWorkerConstructScore(ActorIndex actor) const;
 	Step getDuration() const;
@@ -49,14 +49,14 @@ class ConstructProject final : public Project
 	void offDelay();
 public:
 	// BlockFeatureType can be null, meaning the block is to be filled with a constructed wall.
-	ConstructProject(FactionId faction, Area& a, BlockIndex b, const BlockFeatureType* bft, const MaterialType& mt, std::unique_ptr<DishonorCallback> dishonorCallback) : 
+	ConstructProject(FactionId faction, Area& a, BlockIndex b, const BlockFeatureType* bft, MaterialTypeId mt, std::unique_ptr<DishonorCallback> dishonorCallback) : 
 		Project(faction, a, b, Config::maxNumberOfWorkersForConstructionProject, std::move(dishonorCallback)), m_blockFeatureType(bft), m_materialType(mt) { }
 	ConstructProject(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	// What would the total delay time be if we started from scratch now with current workers?
 	friend class HasConstructionDesignationsForFaction;
 	// For testing.
-	[[nodiscard, maybe_unused]] const MaterialType& getMaterialType() const { return m_materialType; }
+	[[nodiscard, maybe_unused]] MaterialTypeId getMaterialType() const { return m_materialType; }
 };
 struct ConstructionLocationDishonorCallback final : public DishonorCallback
 {
@@ -80,7 +80,7 @@ public:
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	// If blockFeatureType is null then construct a wall rather then a feature.
-	void designate(BlockIndex block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType);
+	void designate(BlockIndex block, const BlockFeatureType* blockFeatureType, MaterialTypeId materialType);
 	void undesignate(BlockIndex block);
 	void remove(BlockIndex block);
 	void removeIfExists(BlockIndex block);
@@ -102,7 +102,7 @@ public:
 	void addFaction(FactionId faction);
 	void removeFaction(FactionId faction);
 	// If blockFeatureType is null then dig out fully rather then digging out a feature.
-	void designate(FactionId faction, BlockIndex block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType);
+	void designate(FactionId faction, BlockIndex block, const BlockFeatureType* blockFeatureType, MaterialTypeId materialType);
 	void undesignate(FactionId faction, BlockIndex block);
 	void remove(FactionId faction, BlockIndex block);
 	void clearAll(BlockIndex block);

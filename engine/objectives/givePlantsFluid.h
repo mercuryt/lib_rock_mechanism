@@ -10,9 +10,6 @@
 #include <memory>
 #include <vector>
 
-struct FluidType;
-class Plant;
-class Item;
 class GivePlantsFluidObjective;
 struct DeserializationMemo;
 struct FindPathResult;

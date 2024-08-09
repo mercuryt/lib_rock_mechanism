@@ -21,7 +21,7 @@
 #include <numeric>
 
 //TODO: reuse blocks as m_fillQueue.m_set.
-FluidGroup::FluidGroup(const FluidType& ft, BlockIndices& blocks, Area& area, bool checkMerge) :
+FluidGroup::FluidGroup(FluidTypeId ft, BlockIndices& blocks, Area& area, bool checkMerge) :
 	m_fillQueue(*this), m_drainQueue(*this), m_area(area), m_fluidType(ft)
 {
 	for(BlockIndex block : blocks)
@@ -149,7 +149,7 @@ void FluidGroup::addDiagonalsFor(BlockIndex block)
 void FluidGroup::addMistFor(BlockIndex block)
 {
 	auto& blocks = m_area.getBlocks();
-	if(m_fluidType.mistDuration != 0 &&
+	if(FluidType::getMistDuration(m_fluidType) != 0 &&
 		(
 			!blocks.getBlockBelow(block).exists() ||
 			!blocks.solid_is(blocks.getBlockBelow(block))
@@ -225,7 +225,7 @@ void FluidGroup::readStep()
 	m_futureNewEmptyAdjacents.clear();
 	m_futureGroups.clear();
 	m_futureNotifyPotentialUnfullAdjacent.clear();
-	m_viscosity = m_fluidType.viscosity;
+	m_viscosity = FluidType::getViscosity(m_fluidType);
 	m_drainQueue.initalizeForStep();
 	m_fillQueue.initalizeForStep();
 	validate();
@@ -592,7 +592,7 @@ void FluidGroup::afterWriteStep()
 							m_viscosity,
 							(topPriority - diagonalPriority)/2,
 							blocks.fluid_volumeOfTypeCanEnter(diagonal, m_fluidType).get(),
-							std::max(1u, m_fluidType.viscosity / Config::fluidsSeepDiagonalModifier)
+							std::max(1u, FluidType::getViscosity(m_fluidType) / Config::fluidsSeepDiagonalModifier)
 						}));
 						m_excessVolume -= flow.get();
 						m_viscosity -= flow.get();
@@ -623,12 +623,12 @@ void FluidGroup::splitStep()
 	// Disperse disolved, split off fluidGroups of another fluidType.
 	// TODO: Transfer ownership to adjacent fluid groups with a lower density then this one but higher then disolved group.
 	auto& blocks = m_area.getBlocks();
-	std::vector<const FluidType*> dispersed;
+	std::vector<FluidTypeId> dispersed;
 	for(auto& [fluidType, disolvedFluidGroup] : m_disolvedInThisGroup)
 	{
 		assert(disolvedFluidGroup->m_drainQueue.m_set.empty());
-		assert(&m_fluidType != fluidType);
-		assert(&disolvedFluidGroup->m_fluidType == fluidType);
+		assert(m_fluidType != fluidType);
+		assert(disolvedFluidGroup->m_fluidType == fluidType);
 		assert(disolvedFluidGroup->m_excessVolume > 0);
 		for(FutureFlowBlock& futureFlowBlock : m_fillQueue.m_queue)
 			if(blocks.fluid_undisolveInternal(futureFlowBlock.block, *disolvedFluidGroup))
@@ -638,7 +638,7 @@ void FluidGroup::splitStep()
 			}
 	}
 	validate();
-	for(const FluidType* fluidType : dispersed)
+	for(FluidTypeId fluidType : dispersed)
 		m_disolvedInThisGroup.erase(fluidType);
 	// Split off future groups of this fluidType.
 	if(m_futureGroups.empty() || m_futureGroups.size() == 1)
@@ -735,7 +735,7 @@ void FluidGroup::validate() const
 		{
 			if(fluidData.group == this)
 				continue;
-			assert(&fluidData.group->m_fluidType == fluidData.type);
+			assert(fluidData.group->m_fluidType == fluidData.type);
 			assert(fluidData.group->m_drainQueue.m_set.contains(block));
 		}
 }
@@ -748,7 +748,7 @@ void FluidGroup::validate(std::unordered_set<FluidGroup*> toErase)
 		{
 			if(fluidData.group == this)
 				continue;
-			assert(&fluidData.group->m_fluidType == fluidData.type);
+			assert(fluidData.group->m_fluidType == fluidData.type);
 			assert(fluidData.group->m_drainQueue.m_set.contains(block));
 			assert(!toErase.contains(fluidData.group));
 		}

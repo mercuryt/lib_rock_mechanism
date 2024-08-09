@@ -23,7 +23,7 @@ StockPilePathRequest::StockPilePathRequest(Area& area, StockPileObjective& spo) 
 			ItemIndex item = hasStockPiles.getHaulableItemForAt(actor, block);
 			if(item.empty())
 				return false;
-			std::tuple<const ItemType*, const MaterialType*> tuple = {&items.getItemType(item), &items.getMaterialType(item)};
+			std::tuple<ItemTypeId, MaterialTypeId> tuple = {items.getItemType(item), items.getMaterialType(item)};
 			return std::ranges::find(m_objective.m_closedList, tuple) == m_objective.m_closedList.end();
 		};
 		bool unreserved = false;
@@ -63,7 +63,7 @@ void StockPilePathRequest::callback(Area& area, FindPathResult& result)
 		{
 			// No stockpile found.
 			Items& items = area.getItems();
-			m_objective.m_closedList.emplace_back(&items.getItemType(m_objective.m_item.getIndex()), &items.getMaterialType(m_objective.m_item.getIndex()));
+			m_objective.m_closedList.emplace_back(items.getItemType(m_objective.m_item.getIndex()), items.getMaterialType(m_objective.m_item.getIndex()));
 			m_objective.execute(area, actor);
 		}
 		else

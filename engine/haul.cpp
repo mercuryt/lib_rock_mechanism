@@ -115,8 +115,8 @@ HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters)
 	}
 	if(m_toHaul.getIndexPolymorphic().isGeneric(area))
 	{
-		m_genericItemType = &items.getItemType(ItemIndex::cast(m_toHaul.getIndex()));
-		m_genericMaterialType = &items.getMaterialType(ItemIndex::cast(m_toHaul.getIndex()));
+		m_genericItemType = items.getItemType(ItemIndex::cast(m_toHaul.getIndex()));
+		m_genericMaterialType = items.getMaterialType(ItemIndex::cast(m_toHaul.getIndex()));
 	}
 	for(ActorReference actor : m_workers)
 	{
@@ -141,9 +141,9 @@ HaulSubproject::HaulSubproject(const Json& data, Project& p, DeserializationMemo
 	if(data.contains("beastOfBurden"))
 		m_beastOfBurden.load(data["beastOfBurden"], area);
 	if(data.contains("genericItemType"))
-		m_genericItemType = &ItemType::byName(data["genericItemType"].get<std::string>());
+		m_genericItemType = ItemType::byName(data["genericItemType"].get<std::string>());
 	if(data.contains("genericMaterialType"))
-		m_genericMaterialType = &MaterialType::byName(data["genericMaterialType"].get<std::string>());
+		m_genericMaterialType = MaterialType::byName(data["genericMaterialType"].get<std::string>());
 	Actors& actors = area.getActors();
 	if(data.contains("workers"))
 		for(const Json& workerIndex : data["workers"])
@@ -175,9 +175,9 @@ Json HaulSubproject::toJson() const
 		data["leader"] = m_leader;
 	if(m_beastOfBurden.exists())
 		data["beastOfBurden"] = m_beastOfBurden;
-	if(m_genericItemType != nullptr)
+	if(m_genericItemType.exists())
 		data["genericItemType"] = m_genericItemType;
-	if(m_genericMaterialType!= nullptr)
+	if(m_genericMaterialType.exists())
 		data["genericMaterialType"] = m_genericMaterialType;
 	if(!m_workers.empty())
 	{
@@ -223,8 +223,8 @@ void HaulSubproject::commandWorker(ActorIndex actor)
 	{
 		case HaulStrategy::Individual:
 			assert(m_workers.size() == 1);
-			hasCargo = m_genericItemType != nullptr ?
-				actors.canPickUp_isCarryingItemGeneric(actor, *m_genericItemType, *m_genericMaterialType, m_quantity) :
+			hasCargo = m_genericItemType.exists() ?
+				actors.canPickUp_isCarryingItemGeneric(actor, m_genericItemType, m_genericMaterialType, m_quantity) :
 				actors.canPickUp_isCarryingPolymorphic(actor, m_toHaul.getIndexPolymorphic());
 			if(hasCargo)
 			{
@@ -360,8 +360,8 @@ void HaulSubproject::commandWorker(ActorIndex actor)
 			if(actors.isLeadingItem(actor, haulToolIndex))
 			{
 				// Has cart.
-				hasCargo = m_genericItemType != nullptr ?
-					items.cargo_containsItemGeneric(haulToolIndex, *m_genericItemType, *m_genericMaterialType, m_quantity) :
+				hasCargo = m_genericItemType.exists() ?
+					items.cargo_containsItemGeneric(haulToolIndex, m_genericItemType, m_genericMaterialType, m_quantity) :
 					items.cargo_containsPolymorphic(haulToolIndex, toHaulIndex);
 				if(hasCargo)
 				{
@@ -371,14 +371,14 @@ void HaulSubproject::commandWorker(ActorIndex actor)
 						// At drop off point.
 						items.unfollow(haulToolIndex);
 						ActorOrItemIndex delivered;
-						if(m_genericItemType == nullptr)
+						if(m_genericItemType.exists())
 						{
 							items.cargo_unloadPolymorphicToLocation(haulToolIndex, toHaulIndex, m_project.m_location, m_quantity);
 							delivered = ActorOrItemIndex::createForItem(haulToolIndex);
 						}
 						else
 						{
-							ItemIndex item = items.cargo_unloadGenericItemToLocation(haulToolIndex, *m_genericItemType, *m_genericMaterialType, actorLocation, m_quantity);
+							ItemIndex item = items.cargo_unloadGenericItemToLocation(haulToolIndex, m_genericItemType, m_genericMaterialType, actorLocation, m_quantity);
 							delivered = ActorOrItemIndex::createForItem(item);
 						}
 
@@ -437,14 +437,14 @@ void HaulSubproject::commandWorker(ActorIndex actor)
 						// Actor is at destination.
 						ActorOrItemIndex delivered;
 						//TODO: unloading delay.
-						if(m_genericItemType == nullptr)
+						if(m_genericItemType.empty())
 						{
 							items.cargo_unloadPolymorphicToLocation(m_haulTool.getIndex(), m_toHaul.getIndexPolymorphic(), actorLocation, m_quantity);
 							delivered = toHaulIndex;
 						}
 						else
 						{
-							ItemIndex item = items.cargo_unloadGenericItemToLocation(m_haulTool.getIndex(), *m_genericItemType, *m_genericMaterialType, actorLocation, m_quantity);
+							ItemIndex item = items.cargo_unloadGenericItemToLocation(m_haulTool.getIndex(), m_genericItemType, m_genericMaterialType, actorLocation, m_quantity);
 							delivered = ActorOrItemIndex::createForItem(item);
 						}
 						// TODO: set rotation?
@@ -511,8 +511,8 @@ void HaulSubproject::commandWorker(ActorIndex actor)
 			if(actors.isLeadingItem(m_beastOfBurden.getIndex(), m_haulTool.getIndex()))
 			{
 				// Beast has cart.
-				hasCargo = m_genericItemType != nullptr ?
-					items.cargo_containsItemGeneric(m_haulTool.getIndex(), *m_genericItemType, *m_genericMaterialType, m_quantity) :
+				hasCargo = m_genericItemType.exists()?
+					items.cargo_containsItemGeneric(m_haulTool.getIndex(), m_genericItemType, m_genericMaterialType, m_quantity) :
 					items.cargo_containsPolymorphic(m_haulTool.getIndex(), toHaulIndex);
 				if(hasCargo)
 				{
@@ -523,14 +523,14 @@ void HaulSubproject::commandWorker(ActorIndex actor)
 						//TODO: unloading delay.
 						//TODO: unfollow cart?
 						ActorOrItemIndex delivered;
-						if(m_genericItemType == nullptr)
+						if(m_genericItemType.empty())
 						{
 							items.cargo_unloadPolymorphicToLocation(m_haulTool.getIndex(), toHaulIndex, actorLocation, m_quantity);
 							delivered = toHaulIndex;
 						}
 						else
 						{
-							ItemIndex item = items.cargo_unloadGenericItemToLocation(m_haulTool.getIndex(), *m_genericItemType, *m_genericMaterialType, actorLocation, m_quantity);
+							ItemIndex item = items.cargo_unloadGenericItemToLocation(m_haulTool.getIndex(), m_genericItemType, m_genericMaterialType, actorLocation, m_quantity);
 							delivered = ActorOrItemIndex::createForItem(item);
 						}
 						// TODO: set rotation?
@@ -600,22 +600,22 @@ void HaulSubproject::commandWorker(ActorIndex actor)
 			if(actors.isLeadingItem(actor, m_haulTool.getIndex()))
 			{
 				assert(actor == m_leader.getIndex());
-				hasCargo = m_genericItemType != nullptr ?
-					items.cargo_containsItemGeneric(m_haulTool.getIndex(), *m_genericItemType, *m_genericMaterialType, m_quantity) :
+				hasCargo = m_genericItemType.exists()?
+					items.cargo_containsItemGeneric(m_haulTool.getIndex(), m_genericItemType, m_genericMaterialType, m_quantity) :
 					items.cargo_containsPolymorphic(m_haulTool.getIndex(), toHaulIndex);
 				if(hasCargo)
 				{
 					if(actors.isAdjacentToLocation(actor, m_project.m_location))
 					{
 						ActorOrItemIndex delivered;
-						if(m_genericItemType == nullptr)
+						if(m_genericItemType.empty())
 						{
 							items.cargo_unloadPolymorphicToLocation(m_haulTool.getIndex(), toHaulIndex, actorLocation, m_quantity);
 							delivered = toHaulIndex;
 						}
 						else
 						{
-							ItemIndex item = items.cargo_unloadGenericItemToLocation(m_haulTool.getIndex(), *m_genericItemType, *m_genericMaterialType, actorLocation, m_quantity);
+							ItemIndex item = items.cargo_unloadGenericItemToLocation(m_haulTool.getIndex(), m_genericItemType, m_genericMaterialType, actorLocation, m_quantity);
 							delivered = ActorOrItemIndex::createForItem(item);
 						}
 						// TODO: set rotation?
@@ -710,7 +710,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 		workers.add(pair.first.getIndex());
 	assert(maxQuantityRequested != 0);
 	// toHaul is wheeled.
-	static const MoveType& wheeled = MoveType::byName("roll");
+	static MoveTypeId wheeled = MoveType::byName("roll");
 	if(toHaul.getMoveType(project.m_area) == wheeled)
 	{
 		assert(toHaul.isItem());
@@ -998,13 +998,13 @@ ItemIndex AreaHasHaulTools::getToolToHaulPolymorphic(const Area& area, FactionId
 ItemIndex AreaHasHaulTools::getToolToHaulVolume(const Area& area, FactionId faction, Volume volume) const
 {
 	// Items like panniers with no move type also have internal volume but aren't relevent for this method.
-	static const MoveType& none = MoveType::byName("none");
+	static MoveTypeId none = MoveType::byName("none");
 	const Items& items = area.getItems();
 	for(ItemReference item : m_haulTools)
 	{
 		ItemIndex index = item.getIndex();
-		const ItemType& itemType = area.getItems().getItemType(index);
-		if(itemType.moveType != none && !items.reservable_isFullyReserved(index, faction) && itemType.internalVolume >= volume)
+		ItemTypeId itemType = area.getItems().getItemType(index);
+		if(ItemType::getMoveType(itemType) != none && !items.reservable_isFullyReserved(index, faction) && ItemType::getInternalVolume(itemType) >= volume)
 			return index;
 	}
 	return ItemIndex::null();
@@ -1019,14 +1019,14 @@ ItemIndex AreaHasHaulTools::getToolToHaulFluid(const Area& area, FactionId facti
 	for(ItemReference item : m_haulTools)
 	{
 		ItemIndex index = item.getIndex();
-		if(!items.reservable_isFullyReserved(index, faction) && items.getItemType(index).canHoldFluids)
+		if(!items.reservable_isFullyReserved(index, faction) && ItemType::getCanHoldFluids(items.getItemType(index)))
 			return index;
 	}
 	return ItemIndex::null();
 }
 ActorIndex AreaHasHaulTools::getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(const Area& area, FactionId faction, const ItemIndex haulTool, Mass cargoMass, Speed minimumHaulSpeed) const
 {
-	[[maybe_unused]] static const MoveType& rollingType = MoveType::byName("roll");
+	[[maybe_unused]] static MoveTypeId rollingType = MoveType::byName("roll");
 	assert(area.getItems().getMoveType(haulTool) == rollingType);
 	const Actors& actors = area.getActors();
 	for(ActorReference actor : m_yolkableActors)
@@ -1057,7 +1057,7 @@ ItemIndex AreaHasHaulTools::getPanniersForActorToHaul(const Area& area, FactionI
 	for(ItemReference item : m_haulTools)
 	{
 		ItemIndex index = item.getIndex();
-		if(!items.reservable_isFullyReserved(index, faction) && items.getItemType(index).internalVolume >= toHaul.getVolume(area) && actors.equipment_canEquipCurrently(actor, index))
+		if(!items.reservable_isFullyReserved(index, faction) && ItemType::getInternalVolume(items.getItemType(index)) >= toHaul.getVolume(area) && actors.equipment_canEquipCurrently(actor, index))
 			return index;
 	}
 	return ItemIndex::null();
@@ -1066,7 +1066,7 @@ void AreaHasHaulTools::registerHaulTool(const Area& area, ItemIndex item)
 {
 	const ItemReference ref = area.getItems().getReferenceConst(item);
 	assert(!m_haulTools.contains(ref));
-	assert(area.getItems().getItemType(item).internalVolume != 0);
+	assert(ItemType::getInternalVolume(area.getItems().getItemType(item)) != 0);
 	m_haulTools.add(ref);
 }
 void AreaHasHaulTools::registerYokeableActor(const Area& area, ActorIndex actor)

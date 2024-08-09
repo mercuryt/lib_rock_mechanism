@@ -49,9 +49,9 @@ public:
 	BlockIndices m_futureRemoveFromDrainQueue;
 	BlockIndices m_futureAddToFillQueue;
 	BlockIndices m_futureRemoveFromFillQueue;
-	std::unordered_map<const FluidType*, FluidGroup*> m_disolvedInThisGroup;
+	FluidTypeMap<FluidGroup*> m_disolvedInThisGroup;
 	Area& m_area;
-	const FluidType& m_fluidType;
+	FluidTypeId m_fluidType;
 	int32_t m_excessVolume = 0;
 	uint32_t m_viscosity = 0;
 	// Currently at rest?
@@ -62,7 +62,7 @@ public:
 	bool m_merged = false;
 	bool m_disolved = false;
 
-	FluidGroup(const FluidType& ft, BlockIndices& blocks, Area& area, bool checkMerge = true);
+	FluidGroup(FluidTypeId ft, BlockIndices& blocks, Area& area, bool checkMerge = true);
 	FluidGroup(const FluidGroup&) = delete;
 	void addFluid(CollisionVolume fluidVolume);
 	void removeFluid(CollisionVolume fluidVolume);

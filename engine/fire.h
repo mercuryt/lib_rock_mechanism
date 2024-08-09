@@ -36,29 +36,29 @@ public:
 	TemperatureSource m_temperatureSource;
 	HasScheduledEvent<FireEvent> m_event;
 	BlockIndex m_location;
-	const MaterialType& m_materialType;
+	MaterialTypeId m_materialType;
 	FireStage m_stage;
 	bool m_hasPeaked;
 
 	// Default arguments are used when creating a fire normally, custom values are for deserializing or dramatic use.
-	Fire(Area& a, BlockIndex l, const MaterialType& mt, bool hasPeaked = false, FireStage stage = FireStage::Smouldering, Step start = Step::create(0));
+	Fire(Area& a, BlockIndex l, MaterialTypeId mt, bool hasPeaked = false, FireStage stage = FireStage::Smouldering, Step start = Step::create(0));
 	[[nodiscard]] bool operator==(const Fire& fire) const { return &fire == this; }
 };
 class AreaHasFires final
 {
 	Area& m_area;
-	BlockIndexMap<std::unordered_map<const MaterialType*, Fire>> m_fires;
+	BlockIndexMap<MaterialTypeMap<Fire>> m_fires;
 public:
 	AreaHasFires(Area& a) : m_area(a) { }
-	void ignite(BlockIndex block, const MaterialType& materialType);
+	void ignite(BlockIndex block, MaterialTypeId materialType);
 	void extinguish(Fire& fire);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
-	[[nodiscard]] Fire& at(BlockIndex block, const MaterialType& materialType);
-	[[nodiscard]] bool contains(BlockIndex block, const MaterialType& materialType);
+	[[nodiscard]] Fire& at(BlockIndex block, MaterialTypeId materialType);
+	[[nodiscard]] bool contains(BlockIndex block, MaterialTypeId materialType);
 	[[nodiscard]] Json toJson() const;
 	// For testing.
 	[[maybe_unused, nodiscard]] bool containsFireAt(Fire& fire, BlockIndex block) const
 	{ 
-		return m_fires.at(block).contains(&fire.m_materialType);
+		return m_fires.at(block).contains(fire.m_materialType);
 	}
 };

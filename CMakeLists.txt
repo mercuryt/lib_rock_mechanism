@@ -32,11 +32,6 @@ if(CMAKE_BUILD_TYPE EQUAL "RELEASE")
 	add_link_options(-flto)
 endif()
 
-#find_package(OpenMP)
-#if(OpenMP_CXX_FOUND)
-#    target_link_libraries(MyTarget PUBLIC OpenMP::OpenMP_CXX)
-#endif()
-
 add_subdirectory(engine)
 #add_subdirectory(ui)
 add_subdirectory(test)

@@ -15,30 +15,29 @@ class DrinkObjective;
 class Area;
 struct FluidType;
 struct DeserializationMemo;
-struct AnimalSpecies;
 
 class MustDrink final
 {
 	HasScheduledEvent<ThirstEvent> m_thirstEvent; // 2
 	ActorReference m_actor;
-	const FluidType* m_fluidType = nullptr; // Pointer because it may change, i.e. through vampirism.
+	FluidTypeId m_fluidType;
 	DrinkObjective* m_objective = nullptr; // Store to avoid recreating. TODO: Use a bool instead?
 	CollisionVolume m_volumeDrinkRequested = CollisionVolume::create(0);
 	[[nodiscard]] CollisionVolume volumeFluidForBodyMass() const;
 
 public:
 	MustDrink(Area& area, ActorIndex a);
-	MustDrink(Area& area, const Json& data, ActorIndex a, const AnimalSpecies& species);
+	MustDrink(Area& area, const Json& data, ActorIndex a, AnimalSpeciesId species);
 	void drink(Area& area, const CollisionVolume volume);
 	void notThirsty(Area& area);
 	void setNeedsFluid(Area& area);
 	void onDeath();
 	void scheduleDrinkEvent(Area& area);
-	void setFluidType(const FluidType& fluidType);
+	void setFluidType(FluidTypeId fluidType);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] CollisionVolume getVolumeFluidRequested() const { return m_volumeDrinkRequested; }
 	[[nodiscard]] Percent getPercentDeadFromThirst() const;
-	[[nodiscard]] const FluidType& getFluidType() const { return *m_fluidType; }
+	[[nodiscard]] FluidTypeId getFluidType() const { return m_fluidType; }
 	[[nodiscard]] bool needsFluid() const { return m_volumeDrinkRequested != 0; }
 	[[nodiscard]] static CollisionVolume drinkVolumeFor(Area& area, ActorIndex actor);
 	friend class ThirstEvent;

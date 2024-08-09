@@ -13,11 +13,11 @@ class Area;
 
 class AreaHasStocksForFaction final
 {
-	std::unordered_map<const ItemType*, std::unordered_map<const MaterialType*, ItemIndices>> m_data;
+	ItemTypeMap<MaterialTypeMap<ItemIndices>> m_data;
 public:
 	void record(Area& area, ItemIndex item);
 	void unrecord(Area& area, ItemIndex item);
-	const std::unordered_map<const ItemType*, std::unordered_map<const MaterialType*, ItemIndices>>& get() const { return m_data; }
+	const ItemTypeMap<MaterialTypeMap<ItemIndices>>& get() const { return m_data; }
 };
 class AreaHasStocks final
 {

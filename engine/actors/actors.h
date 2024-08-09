@@ -19,11 +19,6 @@
 #include "actors/uniform.h"
 #include <memory>
 
-struct MoveType;
-struct AnimalSpecies;
-struct Faction;
-struct ItemType;
-struct FluidType;
 struct shape;
 class Project;
 class AttackCoolDownEvent;
@@ -43,7 +38,7 @@ enum class CauseOfDeath { none, thirst, hunger, bloodLoss, wound, temperature };
 struct ActorParamaters
 {
 	ActorId id = ActorId::null();
-	const AnimalSpecies& species;
+	AnimalSpeciesId species;
 	std::wstring name = L"";
 	DateTime birthDate = {0,0,0};
 	Step birthStep = Step::null();
@@ -82,7 +77,7 @@ class Actors final : public Portables
 	DataVector<std::unique_ptr<EquipmentSet>, ActorIndex> m_equipmentSet;
 	DataVector<ActorId, ActorIndex> m_id;
 	DataVector<std::wstring, ActorIndex> m_name;
-	DataVector<const AnimalSpecies*, ActorIndex> m_species;
+	DataVector<AnimalSpeciesId, ActorIndex> m_species;
 	DataVector<Project*, ActorIndex> m_project;
 	DataVector<Step, ActorIndex> m_birthStep;
 	DataVector<CauseOfDeath, ActorIndex> m_causeOfDeath;
@@ -148,7 +143,7 @@ public:
 	void sharedConstructor(ActorIndex index);
 	void scheduleNeeds(ActorIndex index);
 	void resetNeeds(ActorIndex index);
-	void setShape(ActorIndex index, const Shape& shape);
+	void setShape(ActorIndex index, ShapeId shape);
 	void setLocation(ActorIndex index, BlockIndex block);
 	void setLocationAndFacing(ActorIndex index, BlockIndex block, Facing facing);
 	void exit(ActorIndex index);
@@ -184,7 +179,7 @@ public:
 	[[nodiscard]] Step getAge(ActorIndex index) const;
 	[[nodiscard]] Step getBirthStep(ActorIndex index) const { return m_birthStep.at(index); }
 	[[nodiscard]] std::wstring getActionDescription(ActorIndex index) const;
-	[[nodiscard]] const AnimalSpecies& getSpecies(ActorIndex index) const { return *m_species.at(index); }
+	[[nodiscard]] AnimalSpeciesId getSpecies(ActorIndex index) const { return m_species.at(index); }
 	[[nodiscard]] Mass getUnencomberedCarryMass(ActorIndex index) const { return m_unencomberedCarryMass.at(index); }
 	// -Stamina.
 	void stamina_recover(ActorIndex index);
@@ -238,7 +233,7 @@ public:
 	[[nodiscard]] const Attack& combat_getAttackForCombatScoreDifference(ActorIndex index, CombatScore scoreDifference) const;
 	[[nodiscard]] float combat_getQualityModifier(ActorIndex index, Quality quality) const;
 	[[nodiscard]] bool combat_blockIsValidPosition(ActorIndex index, BlockIndex block, DistanceInBlocksFractional attackRangeSquared) const;
-	AttackType& combat_getRangedAttackType(ActorIndex index, ItemIndex weapon);
+	AttackTypeId combat_getRangedAttackType(ActorIndex index, ItemIndex weapon);
 	//for degbugging combat
 	[[nodiscard]] std::vector<std::pair<CombatScore, Attack>>& combat_getAttackTable(ActorIndex index) { return m_meleeAttackTable.at(index); }
 	[[nodiscard]] bool combat_hasThreadedTask(ActorIndex index) { return m_getIntoAttackPositionPathRequest.at(index) != nullptr; }
@@ -254,11 +249,11 @@ public:
 	[[nodiscard]] bool body_hasBleedEvent(ActorIndex index) const;
 	[[nodiscard]] bool body_isInjured(ActorIndex index) const;
 	[[nodiscard]] BodyPart& body_pickABodyPartByVolume(ActorIndex index) const;
-	[[nodiscard]] BodyPart& body_pickABodyPartByType(ActorIndex index, const BodyPartType& bodyPartType) const;
+	[[nodiscard]] BodyPart& body_pickABodyPartByType(ActorIndex index, BodyPartTypeId bodyPartType) const;
 	// -Move.
 	void move_updateIndividualSpeed(ActorIndex index);
 	void move_updateActualSpeed(ActorIndex index);
-	void move_setType(ActorIndex index, const MoveType& moveType);
+	void move_setType(ActorIndex index, MoveTypeId moveType);
 	void move_setPath(ActorIndex index, BlockIndices& path);
 	void move_setMoveSpeedActualForLeading(ActorIndex index, Speed speed);
 	void move_clearPath(ActorIndex index);
@@ -270,7 +265,7 @@ public:
 	void move_setDestinationAdjacentToItem(ActorIndex index, ItemIndex item, bool detour = false, bool unreserved = true, bool reserve = true);
 	void move_setDestinationAdjacentToPolymorphic(ActorIndex index, ActorOrItemIndex actorOrItemIndex, bool detour = false, bool unreserved = true, bool reserve = true);
 	void move_setDestinationAdjacentToPlant(ActorIndex index, PlantIndex plant, bool detour = false, bool unreserved = true, bool reserve = true);
-	void move_setDestinationAdjacentToFluidType(ActorIndex index, const FluidType& fluidType, bool detour = false, bool unreserved = true, bool reserve = true, DistanceInBlocks maxRange = DistanceInBlocks::null());
+	void move_setDestinationAdjacentToFluidType(ActorIndex index, FluidTypeId fluidType, bool detour = false, bool unreserved = true, bool reserve = true, DistanceInBlocks maxRange = DistanceInBlocks::null());
 	void move_setDestinationAdjacentToDesignation(ActorIndex index, BlockDesignation designation, bool detour = false, bool unreserved = true, bool reserve = true, DistanceInBlocks maxRange = DistanceInBlocks::null());
 	void move_setDestinationToEdge(ActorIndex index, bool detour = false);
 	void move_clearAllEventsAndTasks(ActorIndex index);
@@ -282,14 +277,13 @@ public:
 	void move_appendToLinePath(ActorIndex index, BlockIndex block);
 	[[nodiscard]] bool move_tryToReserveProposedDestination(ActorIndex index, BlockIndices& path);
 	[[nodiscard]] bool move_tryToReserveOccupied(ActorIndex index);
-	[[nodiscard]] const MoveType& move_getType(ActorIndex index) const { return *m_moveType.at(index); }
 	[[nodiscard]] Speed move_getIndividualSpeedWithAddedMass(ActorIndex index, Mass mass) const;
 	[[nodiscard]] Speed move_getSpeed(ActorIndex index) const { return m_speedActual.at(index); }
 	[[nodiscard]] bool move_canMove(ActorIndex index) const;
 	[[nodiscard]] Step move_delayToMoveInto(ActorIndex index, const BlockIndex block) const;
 	// For debugging move.
 	[[nodiscard]] PathRequest& move_getPathRequest(ActorIndex index) { return *m_pathRequest.at(index).get(); }
-	[[nodiscard]] auto& move_getPath(ActorIndex index) { return m_path.at(index); }
+	[[nodiscard]] BlockIndices& move_getPath(ActorIndex index) { return m_path.at(index); }
 	[[nodiscard]] BlockIndex move_getDestination(ActorIndex index) { return m_destination.at(index); }
 	[[nodiscard]] bool move_hasEvent(ActorIndex index) const { return m_moveEvent.exists(index); }
 	[[nodiscard]] bool move_hasPathRequest(ActorIndex index) const { return m_pathRequest.at(index).get() != nullptr; }
@@ -300,7 +294,7 @@ public:
 	void canPickUp_pickUpActor(ActorIndex index, ActorIndex actor);
 	void canPickUp_pickUpPolymorphic(ActorIndex index, ActorOrItemIndex actorOrItemIndex, Quantity quantity);
 	void canPickUp_removeFluidVolume(ActorIndex index, CollisionVolume volume);
-	void canPickUp_add(ActorIndex index, const ItemType& itemType, const MaterialType& materialType, Quantity quantity);
+	void canPickUp_add(ActorIndex index, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity);
 	void canPickUp_removeItem(ActorIndex index, ItemIndex item);
 	void canPickUp_updateActorIndex(ActorIndex index, ActorIndex oldIndex, ActorIndex newIndex);
 	void canPickUp_updateItemIndex(ActorIndex index, ItemIndex oldIndex, ItemIndex newIndex);
@@ -321,15 +315,15 @@ public:
 	[[nodiscard]] bool canPickUp_itemUnencombered(ActorIndex index, ItemIndex item) const;
 	[[nodiscard]] bool canPickUp_actorUnencombered(ActorIndex index, ActorIndex actor) const;
 	[[nodiscard]] bool canPickUp_anyWithMassUnencombered(ActorIndex index, Mass mass) const;
-	[[nodiscard]] Quantity canPickUp_quantityWhichCanBePickedUpUnencombered(ActorIndex index, const ItemType& itemType, const MaterialType& materialType) const;
+	[[nodiscard]] Quantity canPickUp_quantityWhichCanBePickedUpUnencombered(ActorIndex index, ItemTypeId itemType, MaterialTypeId materialType) const;
 	[[nodiscard]] bool canPickUp_exists(ActorIndex index) const { return m_carrying.at(index).exists(); }
 	[[nodiscard]] bool canPickUp_isCarryingActor(ActorIndex index, ActorIndex actor) const { return m_carrying.at(index).exists() && m_carrying.at(index).isActor() && m_carrying.at(index).get() == actor; }
 	[[nodiscard]] bool canPickUp_isCarryingItem(ActorIndex index, ItemIndex item) const { return m_carrying.at(index).exists() && m_carrying.at(index).isItem() && m_carrying.at(index).get() == item; }
-	[[nodiscard]] bool canPickUp_isCarryingItemGeneric(ActorIndex index, const ItemType& itemType, const MaterialType& materialType, Quantity quantity) const;
-	[[nodiscard]] bool canPickUp_isCarryingFluidType(ActorIndex index, const FluidType& fluidType) const;
+	[[nodiscard]] bool canPickUp_isCarryingItemGeneric(ActorIndex index, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity) const;
+	[[nodiscard]] bool canPickUp_isCarryingFluidType(ActorIndex index, FluidTypeId fluidType) const;
 	[[nodiscard]] bool canPickUp_isCarryingPolymorphic(ActorIndex index, ActorOrItemIndex actorOrItemIndex) const;
 	[[nodiscard]] CollisionVolume canPickUp_getFluidVolume(ActorIndex index) const;
-	[[nodiscard]] const FluidType& canPickUp_getFluidType(ActorIndex index) const;
+	[[nodiscard]] FluidTypeId canPickUp_getFluidType(ActorIndex index) const;
 	[[nodiscard]] bool canPickUp_isCarryingEmptyContainerWhichCanHoldFluid(ActorIndex index) const;
 	[[nodiscard]] Mass canPickUp_getMass(ActorIndex index) const;
 	[[nodiscard]] Speed canPickUp_speedIfCarryingQuantity(ActorIndex index, Mass mass, Quantity quantity) const;
@@ -377,13 +371,13 @@ public:
 	void project_maybeUnset(ActorIndex index) { m_project.at(index) = nullptr; }
 	// -Equipment.
 	void equipment_add(ActorIndex index, ItemIndex item);
-	void equipment_addGeneric(ActorIndex index, const ItemType& itemType, const MaterialType& materalType, Quantity quantity);
+	void equipment_addGeneric(ActorIndex index, ItemTypeId itemType, MaterialTypeId materalType, Quantity quantity);
 	void equipment_remove(ActorIndex index, ItemIndex item);
-	void equipment_removeGeneric(ActorIndex index, const ItemType& itemType, const MaterialType& materalType, Quantity quantity);
+	void equipment_removeGeneric(ActorIndex index, ItemTypeId itemType, MaterialTypeId materalType, Quantity quantity);
 	void equipment_updateItemIndex(ActorIndex actor, ItemIndex oldIndex, ItemIndex newIndex);
 	[[nodiscard]] bool equipment_canEquipCurrently(ActorIndex index, ItemIndex item) const;
 	[[nodiscard]] bool equipment_containsItem(ActorIndex index, ItemIndex item) const;
-	[[nodiscard]] bool equipment_containsItemType(ActorIndex index, const ItemType& type) const;
+	[[nodiscard]] bool equipment_containsItemType(ActorIndex index, ItemTypeId type) const;
 	[[nodiscard]] Mass equipment_getMass(ActorIndex index) const;
 	[[nodiscard]] ItemIndex equipment_getWeaponToAttackAtRange(ActorIndex index, DistanceInBlocksFractional range) const;
 	[[nodiscard]] ItemIndex equipment_getAmmoForRangedWeapon(ActorIndex index, ItemIndex weapon) const;
@@ -412,7 +406,7 @@ public:
 	void drink_setNeedsFluid(ActorIndex index);
 	[[nodiscard]] CollisionVolume drink_getVolumeOfFluidRequested(ActorIndex index) const;
 	[[nodiscard]] bool drink_isThirsty(ActorIndex index) const;
-	[[nodiscard]] const FluidType& drink_getFluidType(ActorIndex index) const;
+	[[nodiscard]] FluidTypeId drink_getFluidType(ActorIndex index) const;
 	// For Testing.
 	[[nodiscard]] bool drink_thirstEventExists(ActorIndex index) const;
 	// Eat.
@@ -462,7 +456,7 @@ public:
 	[[nodiscard]] int32_t getMassBonusOrPenalty(ActorIndex index) const;
 	[[nodiscard]] float getMassModifier(ActorIndex index) const;
 	// Skills.
-	[[nodiscard]] SkillLevel skill_getLevel(ActorIndex index, const SkillType& skillType) const;
+	[[nodiscard]] SkillLevel skill_getLevel(ActorIndex index, SkillTypeId skillType) const;
 	// Growth.
 	void grow_maybeStart(ActorIndex index);
 	void grow_stop(ActorIndex index);
@@ -533,7 +527,7 @@ public:
 };
 struct Attack final
 {
-	const AttackTypeId attackType;
-	const MaterialTypeId materialType;
+	AttackTypeId attackType;
+	MaterialTypeId materialType;
 	ItemIndex item; // Can be null for natural weapons.
 };

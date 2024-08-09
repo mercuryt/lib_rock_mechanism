@@ -16,7 +16,7 @@ bool Actors::drink_isThirsty(ActorIndex index) const
 {
 	return m_mustDrink.at(index)->needsFluid();
 }
-const FluidType& Actors::drink_getFluidType(ActorIndex index) const
+FluidTypeId Actors::drink_getFluidType(ActorIndex index) const
 {
 	return m_mustDrink.at(index)->getFluidType();
 }

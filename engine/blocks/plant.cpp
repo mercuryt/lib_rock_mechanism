@@ -3,7 +3,7 @@
 #include "../materialType.h"
 #include "plants.h"
 #include "types.h"
-void Blocks::plant_create(BlockIndex index, const PlantSpecies& plantSpecies, Percent growthPercent)
+void Blocks::plant_create(BlockIndex index, PlantSpeciesId plantSpecies, Percent growthPercent)
 {
 	assert(m_plants.at(index).empty());
 	m_plants.at(index) = m_area.getPlants().create({
@@ -38,40 +38,40 @@ void Blocks::plant_erase(BlockIndex index)
 	assert(m_plants.at(index).exists());
 	m_plants.at(index).clear();
 }
-bool Blocks::plant_canGrowHereCurrently(BlockIndex index, const PlantSpecies& plantSpecies) const
+bool Blocks::plant_canGrowHereCurrently(BlockIndex index, PlantSpeciesId plantSpecies) const
 {
 	Temperature temperature = temperature_get(index);
-	if(plantSpecies.maximumGrowingTemperature < temperature || plantSpecies.minimumGrowingTemperature > temperature)
+	if(PlantSpecies::getMaximumGrowingTemperature(plantSpecies) < temperature || PlantSpecies::getMinimumGrowingTemperature(plantSpecies) > temperature)
 		return false;
-	if(plantSpecies.growsInSunLight != m_outdoors.at(index))
+	if(PlantSpecies::getGrowsInSunLight(plantSpecies) != m_outdoors.at(index))
 		return false;
-	static const MaterialType& dirtType = MaterialType::byName("dirt");
+	static MaterialTypeId dirtType = MaterialType::byName("dirt");
 	BlockIndex below = getBlockBelow(index);
-	if(below.exists() || !solid_is(below) || m_materialType.at(below) != &dirtType)
+	if(below.exists() || !solid_is(below) || m_materialType.at(below) != dirtType)
 		return false;
 	return true;
 }
-bool Blocks::plant_canGrowHereAtSomePointToday(BlockIndex index, const PlantSpecies& plantSpecies) const
+bool Blocks::plant_canGrowHereAtSomePointToday(BlockIndex index, PlantSpeciesId plantSpecies) const
 {
 	Temperature temperature = temperature_getDailyAverageAmbient(index);
-	if(plantSpecies.maximumGrowingTemperature < temperature || plantSpecies.minimumGrowingTemperature > temperature)
+	if(PlantSpecies::getMaximumGrowingTemperature(plantSpecies) < temperature || PlantSpecies::getMinimumGrowingTemperature(plantSpecies) > temperature)
 		return false;
 	if(!plant_canGrowHereEver(index, plantSpecies))
 		return false;
 	return true;
 
 }
-bool Blocks::plant_canGrowHereEver(BlockIndex index, const PlantSpecies& plantSpecies) const
+bool Blocks::plant_canGrowHereEver(BlockIndex index, PlantSpeciesId plantSpecies) const
 {
-	if(plantSpecies.growsInSunLight != m_outdoors.at(index))
+	if(PlantSpecies::getGrowsInSunLight(plantSpecies) != m_outdoors.at(index))
 		return false;
 	return plant_anythingCanGrowHereEver(index);
 }
 bool Blocks::plant_anythingCanGrowHereEver(BlockIndex index) const
 {
-	static const MaterialType& dirtType = MaterialType::byName("dirt");
+	static MaterialTypeId dirtType = MaterialType::byName("dirt");
 	BlockIndex below = getBlockBelow(index);
-	if(below.empty() || !solid_is(below) || m_materialType.at(below) != &dirtType)
+	if(below.empty() || !solid_is(below) || m_materialType.at(below) != dirtType)
 		return false;
 	return true;
 }

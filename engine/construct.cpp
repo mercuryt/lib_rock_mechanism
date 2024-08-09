@@ -40,29 +40,26 @@ Json ConstructProject::toJson() const
 	Json data = Project::toJson();
 	if(m_blockFeatureType)
 		data["blockFeatureType"] = m_blockFeatureType->name;
-	data["materialType"] = m_materialType.name;
+	data["materialType"] = m_materialType;
 	return data;
 }
 std::vector<std::pair<ItemQuery, Quantity>> ConstructProject::getConsumed() const
 {
-	assert(m_materialType.constructionData != nullptr);
-	return m_materialType.constructionData->consumed;
+	return MaterialType::construction_getConsumed(m_materialType);
 }
 std::vector<std::pair<ItemQuery, Quantity>> ConstructProject::getUnconsumed() const
 {
-	assert(m_materialType.constructionData != nullptr);
-	return m_materialType.constructionData->unconsumed;
+	return MaterialType::construction_getUnconsumed(m_materialType);
 }
 std::vector<std::pair<ActorQuery, Quantity>> ConstructProject::getActors() const { return {}; }
-std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> ConstructProject::getByproducts() const
+std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> ConstructProject::getByproducts() const
 {
-	assert(m_materialType.constructionData != nullptr);
-	return m_materialType.constructionData->byproducts;
+	return MaterialType::construction_getByproducts(m_materialType);
 }
 uint32_t ConstructProject::getWorkerConstructScore(ActorIndex actor) const
 {
 	Actors& actors = m_area.getActors();
-	const SkillType& constructSkill = m_materialType.constructionData->skill;
+	SkillTypeId constructSkill = MaterialType::construction_getSkill(m_materialType);
 	return (actors.getStrength(actor).get() * Config::constructStrengthModifier) + 
 		(actors.skill_getLevel(actor, constructSkill).get() * Config::constructSkillModifier);
 }
@@ -112,7 +109,7 @@ Step ConstructProject::getDuration() const
 	uint32_t totalScore = 0;
 	for(auto& pair : m_workers)
 		totalScore += getWorkerConstructScore(pair.first.getIndex());
-	return m_materialType.constructionData->duration / totalScore;
+	return MaterialType::construction_getDuration(m_materialType) / totalScore;
 }
 ConstructionLocationDishonorCallback::ConstructionLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) :
 	m_faction(data["faction"].get<FactionId>()),
@@ -151,7 +148,7 @@ Json HasConstructionDesignationsForFaction::toJson() const
 	return {{"area", m_area}, {"projects", projects}};
 }
 // If blockFeatureType is null then construct a wall rather then a feature.
-void HasConstructionDesignationsForFaction::designate(BlockIndex block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType)
+void HasConstructionDesignationsForFaction::designate(BlockIndex block, const BlockFeatureType* blockFeatureType, MaterialTypeId materialType)
 {
 	assert(!contains(block));
 	Blocks& blocks = m_area.getBlocks();
@@ -225,7 +222,7 @@ void AreaHasConstructionDesignations::removeFaction(FactionId faction)
 	assert(m_data.contains(faction));
 	m_data.erase(faction);
 }
-void AreaHasConstructionDesignations::designate(FactionId faction, BlockIndex block, const BlockFeatureType* blockFeatureType, const MaterialType& materialType)
+void AreaHasConstructionDesignations::designate(FactionId faction, BlockIndex block, const BlockFeatureType* blockFeatureType, MaterialTypeId materialType)
 {
 	if(!m_data.contains(faction))
 		addFaction(faction);

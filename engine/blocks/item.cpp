@@ -28,10 +28,9 @@ void Blocks::item_erase(BlockIndex index, ItemIndex item)
 		m_staticVolume.at(index) -= iter2->second;
 	else
 		m_dynamicVolume.at(index) -= iter2->second;
-	(*iter) = blockItems.back();
+	blockItems.remove(iter);
 	(*iter2) = blockItemVolume.back();
 	blockItemVolume.pop_back();
-	blockItems.pop_back();
 }
 void Blocks::item_setTemperature(BlockIndex index, Temperature temperature)
 {
@@ -65,11 +64,11 @@ bool Blocks::item_canEnterCurrentlyFrom(BlockIndex index, ItemIndex item, BlockI
 bool Blocks::item_canEnterCurrentlyWithFacing(BlockIndex index, ItemIndex item, Facing facing) const
 {
 	Items& items = m_area.getItems();
-	const Shape& shape = items.getShape(item);
+	ShapeId shape = items.getShape(item);
 	// For multi block shapes assume that volume is the same for each block.
-	CollisionVolume volume = shape.getCollisionVolumeAtLocationBlock();
-	for(BlockIndex block : shape.getBlocksOccupiedAt(*this, index, facing))
-		if(!item_contains(block, item) && (m_items.at(block).full() || m_dynamicVolume.at(block) + volume > Config::maxBlockVolume))
+	CollisionVolume volume = Shape::getCollisionVolumeAtLocationBlock(shape);
+	for(BlockIndex block : Shape::getBlocksOccupiedAt(shape, *this, index, facing))
+		if(!item_contains(block, item) && (/*m_items.at(block).full() || */m_dynamicVolume.at(block) + volume > Config::maxBlockVolume))
 				return false;
 	return true;
 }
@@ -77,8 +76,8 @@ bool Blocks::item_canEnterEverOrCurrentlyWithFacing(BlockIndex index, ItemIndex 
 {
 	assert(shape_anythingCanEnterEver(index));
 	const Items& items = m_area.getItems();
-	const MoveType& moveType = items.getMoveType(item);
-	for(auto& [x, y, z, v] : items.getShape(item).positionsWithFacing(facing))
+	MoveTypeId moveType = items.getMoveType(item);
+	for(auto& [x, y, z, v] : Shape::positionsWithFacing(items.getShape(item), facing))
 	{
 		BlockIndex block = offset(index,x, y, z);
 		if(m_items.at(block).contains(item))
@@ -104,7 +103,7 @@ void Blocks::item_updateIndex(BlockIndex index, ItemIndex oldIndex, ItemIndex ne
 	assert(found != m_items.at(index).end());
 	(*found) = newIndex; 
 }
-Quantity Blocks::item_getCount(BlockIndex index, const ItemType& itemType, const MaterialType& materialType) const
+Quantity Blocks::item_getCount(BlockIndex index, ItemTypeId itemType, MaterialTypeId materialType) const
 {
 	auto& itemsInBlock = m_itemVolume.at(index);
 	Items& items = m_area.getItems();
@@ -118,7 +117,7 @@ Quantity Blocks::item_getCount(BlockIndex index, const ItemType& itemType, const
 	else
 		return items.getQuantity(found->first);
 }
-ItemIndex Blocks::item_getGeneric(BlockIndex index, const ItemType& itemType, const MaterialType& materialType) const
+ItemIndex Blocks::item_getGeneric(BlockIndex index, ItemTypeId itemType, MaterialTypeId materialType) const
 {
 	auto& itemsInBlock = m_itemVolume.at(index);
 	Items& items = m_area.getItems();
@@ -130,7 +129,7 @@ ItemIndex Blocks::item_getGeneric(BlockIndex index, const ItemType& itemType, co
 	return found->first;
 }
 // TODO: buggy
-bool Blocks::item_hasInstalledType(BlockIndex index, const ItemType& itemType) const
+bool Blocks::item_hasInstalledType(BlockIndex index, ItemTypeId itemType) const
 {
 	auto& itemsInBlock = m_itemVolume.at(index);
 	Items& items = m_area.getItems();
@@ -146,21 +145,21 @@ bool Blocks::item_hasEmptyContainerWhichCanHoldFluidsCarryableBy(BlockIndex inde
 	Actors& actors = m_area.getActors();
 	for(auto [item, volume] : m_itemVolume.at(index))
 	{
-		const ItemType& itemType = items.getItemType(item);
+		ItemTypeId itemType = items.getItemType(item);
 		//TODO: account for container weight when full, needs to have fluid type passed in.
-		if(itemType.internalVolume != 0 && itemType.canHoldFluids && actors.canPickUp_anyWithMass(actor, items.getMass(item)))
+		if(ItemType::getInternalVolume(itemType) != 0 && ItemType::getCanHoldFluids(itemType) && actors.canPickUp_anyWithMass(actor, items.getMass(item)))
 			return true;
 	}
 	return false;
 }
-bool Blocks::item_hasContainerContainingFluidTypeCarryableBy(BlockIndex index, const ActorIndex actor, const FluidType& fluidType) const
+bool Blocks::item_hasContainerContainingFluidTypeCarryableBy(BlockIndex index, const ActorIndex actor, FluidTypeId fluidType) const
 {
 	Items& items = m_area.getItems();
 	Actors& actors = m_area.getActors();
 	for(auto [item, volume]  : m_itemVolume.at(index))
 	{
-		const ItemType& itemType = items.getItemType(item);
-		if(itemType.internalVolume != 0 && itemType.canHoldFluids &&
+		ItemTypeId itemType = items.getItemType(item);
+		if(ItemType::getInternalVolume(itemType) != 0 && ItemType::getCanHoldFluids(itemType) &&
 			actors.canPickUp_anyWithMass(actor, items.getMass(item)) &&
 			items.cargo_getFluidType(item) == fluidType
 		)

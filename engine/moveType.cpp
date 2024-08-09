@@ -7,13 +7,13 @@ MoveTypeId MoveType::byName(std::string name)
 }
 void MoveType::create(MoveTypeParamaters& p)
 {
-	m_name.add(p.name);
-	m_walk.add(p.walk);
-	m_climb.add(p.climb);
-	m_jumpDown.add(p.jumpDown);
-	m_fly.add(p.fly);
-	m_breathless.add(p.breathless);
-	m_onlyBreathsFluids.add(p.onlyBreathsFluids);
-	m_swim.add(p.swim);
-	m_breathableFluids.add(p.breathableFluids);
+	data.m_name.add(p.name);
+	data.m_walk.add(p.walk);
+	data.m_climb.add(p.climb);
+	data.m_jumpDown.add(p.jumpDown);
+	data.m_fly.add(p.fly);
+	data.m_breathless.add(p.breathless);
+	data.m_onlyBreathsFluids.add(p.onlyBreathsFluids);
+	data.m_swim.add(p.swim);
+	data.m_breathableFluids.add(p.breathableFluids);
 }

@@ -7,8 +7,8 @@
 #include <regex>
 void Items::cargo_addActor(ItemIndex index, ActorIndex actor)
 {
-	assert(m_itemType.at(index)->internalVolume.exists());
-	assert(m_itemType.at(index)->internalVolume > m_area.getActors().getVolume(actor));
+	assert(ItemType::getInternalVolume(m_itemType.at(index)).exists());
+	assert(ItemType::getInternalVolume(m_itemType.at(index)) > m_area.getActors().getVolume(actor));
 	m_hasCargo.at(index)->addActor(m_area, actor);
 }
 void Items::cargo_addItem(ItemIndex index, ItemIndex item, Quantity quantity)
@@ -28,7 +28,7 @@ void Items::cargo_addPolymorphic(ItemIndex index, ActorOrItemIndex actorOrItemIn
 	else
 		cargo_addItem(index, actorOrItemIndex.getItem(), quantity);
 }
-void Items::cargo_addFluid(ItemIndex index, const FluidType& fluidType, CollisionVolume volume)
+void Items::cargo_addFluid(ItemIndex index, FluidTypeId fluidType, CollisionVolume volume)
 {
 	m_hasCargo.at(index)->addFluid(fluidType, volume);
 }
@@ -54,14 +54,14 @@ void Items::cargo_loadPolymorphic(ItemIndex index, ActorOrItemIndex actorOrItem,
 	else
 		cargo_loadItem(index, actorOrItem.getItem(), quantity);
 }
-void Items::cargo_loadFluidFromLocation(ItemIndex index, const FluidType& fluidType, CollisionVolume volume, BlockIndex location)
+void Items::cargo_loadFluidFromLocation(ItemIndex index, FluidTypeId fluidType, CollisionVolume volume, BlockIndex location)
 {
 	Blocks& blocks = m_area.getBlocks();
 	assert(blocks.fluid_volumeOfTypeContains(location, fluidType) >= volume);
 	blocks.fluid_remove(location, volume, fluidType);
 	cargo_addFluid(index, fluidType, volume);
 }
-void Items::cargo_loadFluidFromItem(ItemIndex index, const FluidType& fluidType, CollisionVolume volume, ItemIndex item)
+void Items::cargo_loadFluidFromItem(ItemIndex index, FluidTypeId fluidType, CollisionVolume volume, ItemIndex item)
 {
 	Items& items = m_area.getItems();
 	assert(items.cargo_getFluidVolume(item) >= volume);
@@ -85,7 +85,7 @@ void Items::cargo_removeItem(ItemIndex index, ItemIndex item)
 	if(hasCargo.empty())
 		m_hasCargo.at(index) = nullptr;
 }
-void Items::cargo_removeItemGeneric(ItemIndex index, const ItemType& itemType, const MaterialType& materialType, Quantity quantity)
+void Items::cargo_removeItemGeneric(ItemIndex index, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity)
 {
 	assert(m_hasCargo.at(index));
 	ItemHasCargo& hasCargo = *m_hasCargo.at(index);
@@ -136,7 +136,7 @@ ItemIndex Items::cargo_unloadGenericItemToLocation(ItemIndex index, ItemIndex it
 {
 	return cargo_unloadGenericItemToLocation(index, getItemType(item), getMaterialType(item), location, quantity);
 }
-ItemIndex Items::cargo_unloadGenericItemToLocation(ItemIndex index, const ItemType& itemType, const MaterialType& materialType, BlockIndex location, Quantity quantity)
+ItemIndex Items::cargo_unloadGenericItemToLocation(ItemIndex index,ItemTypeId itemType,MaterialTypeId materialType, BlockIndex location, Quantity quantity)
 {
 	cargo_removeItemGeneric(index, itemType, materialType, quantity);
 	return m_area.getBlocks().item_addGeneric(location, itemType, materialType, quantity);
@@ -164,7 +164,7 @@ ActorOrItemIndex Items::cargo_unloadPolymorphicToLocation(ItemIndex index, Actor
 void Items::cargo_unloadFluidToLocation(ItemIndex index, CollisionVolume volume, BlockIndex location)
 {
 	assert(cargo_getFluidVolume(index) >= volume);
-	const FluidType& fluidType = cargo_getFluidType(index);
+	FluidTypeId fluidType = cargo_getFluidType(index);
 	cargo_removeFluid(index, volume);
 	m_area.getBlocks().fluid_add(location, volume, fluidType);
 }
@@ -181,7 +181,7 @@ bool Items::cargo_containsItem(ItemIndex index, ItemIndex item) const
 		return false;
 	return m_hasCargo.at(index)->containsItem(item);
 }
-bool Items::cargo_containsItemGeneric(ItemIndex index, const ItemType& itemType, const MaterialType& materialType, Quantity quantity) const
+bool Items::cargo_containsItemGeneric(ItemIndex index,ItemTypeId itemType,MaterialTypeId materialType, Quantity quantity) const
 {
 	if(m_hasCargo.at(index) == nullptr)
 		return false;
@@ -200,7 +200,7 @@ bool Items::cargo_containsAnyFluid(ItemIndex index) const
 		return false;
 	return m_hasCargo.at(index)->containsAnyFluid();
 }
-bool Items::cargo_containsFluidType(ItemIndex index, const FluidType& fluidType) const
+bool Items::cargo_containsFluidType(ItemIndex index, FluidTypeId fluidType) const
 {
 	if(m_hasCargo.at(index) == nullptr)
 		return false;
@@ -212,7 +212,7 @@ CollisionVolume Items::cargo_getFluidVolume(ItemIndex index) const
 		return CollisionVolume::create(0);
 	return m_hasCargo.at(index)->getFluidVolume();
 }
-const FluidType& Items::cargo_getFluidType(ItemIndex index) const
+FluidTypeId Items::cargo_getFluidType(ItemIndex index) const
 {
 	return m_hasCargo.at(index)->getFluidType();
 }
@@ -221,14 +221,14 @@ bool Items::cargo_canAddActor(ItemIndex index, ActorIndex actor) const
 	if(m_hasCargo.at(index) != nullptr)
 		return m_hasCargo.at(index)->canAddActor(m_area, actor);
 	else
-		return m_itemType.at(index)->internalVolume >= m_area.getActors().getVolume(actor);
+		return ItemType::getInternalVolume(m_itemType.at(index)) >= m_area.getActors().getVolume(actor);
 }
 bool Items::cargo_canAddItem(ItemIndex index, ItemIndex item) const
 {
 	if(m_hasCargo.at(index) != nullptr)
 		return m_hasCargo.at(index)->canAddItem(m_area, item);
 	else
-		return m_itemType.at(index)->internalVolume >= m_area.getItems().getVolume(item);
+		return ItemType::getInstallable(m_itemType.at(index)) >= m_area.getItems().getVolume(item);
 }
 Mass Items::cargo_getMass(ItemIndex index) const
 {

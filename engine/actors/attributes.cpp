@@ -35,9 +35,11 @@ void Actors::onStrengthChanged(ActorIndex index)
 }
 void Actors::updateStrength(ActorIndex index)
 {
-	const AnimalSpecies& species = getSpecies(index);
+	AnimalSpeciesId species = getSpecies(index);
 	Percent grown = getPercentGrown(index);
-	m_strength.at(index) = AttributeLevel::create(util::scaleByPercentRange(species.strength[0].get(), species.strength[1].get(), grown));
+	AttributeLevel max = AnimalSpecies::getStrength(species)[0];
+	AttributeLevel min = AnimalSpecies::getStrength(species)[1];
+	m_strength.at(index) = AttributeLevel::create(util::scaleByPercentRange(max.get(), min.get(), grown));
 }
 
 [[nodiscard]] AttributeLevel Actors::getDextarity(ActorIndex index) const { return m_dextarity.at(index); }
@@ -60,9 +62,11 @@ void Actors::onDextarityChanged(ActorIndex index)
 }
 void Actors::updateDextarity(ActorIndex index)
 {
-	const AnimalSpecies& species = getSpecies(index);
+	AnimalSpeciesId species = getSpecies(index);
 	Percent grown = getPercentGrown(index);
-	m_dextarity.at(index) = AttributeLevel::create(util::scaleByPercentRange(species.dextarity[0].get(), species.dextarity[1].get(), grown));
+	AttributeLevel max = AnimalSpecies::getDextarity(species)[0];
+	AttributeLevel min = AnimalSpecies::getDextarity(species)[1];
+	m_dextarity.at(index) = AttributeLevel::create(util::scaleByPercentRange(max.get(), min.get(), grown));
 }
 
 [[nodiscard]] AttributeLevel Actors::getAgility(ActorIndex index) const { return m_agility.at(index); }
@@ -86,9 +90,11 @@ void Actors::onAgilityChanged(ActorIndex index)
 }
 void Actors::updateAgility(ActorIndex index)
 {
-	const AnimalSpecies& species = getSpecies(index);
+	AnimalSpeciesId species = getSpecies(index);
 	Percent grown = getPercentGrown(index);
-	m_agility.at(index) = AttributeLevel::create(util::scaleByPercentRange(species.agility[0].get(), species.agility[1].get(), grown));
+	AttributeLevel max = AnimalSpecies::getAgility(species)[0];
+	AttributeLevel min = AnimalSpecies::getAgility(species)[1];
+	m_agility.at(index) = AttributeLevel::create(util::scaleByPercentRange(max.get(), min.get(), grown));
 }
 
 [[nodiscard]] Mass Actors::getMass(ActorIndex index) const { return m_mass.at(index); }
@@ -106,9 +112,11 @@ void Actors::addMassBonusOrPenalty(ActorIndex index, uint32_t bonusOrPenalty)
 }
 void Actors::updateMass(ActorIndex index)
 {
-	const AnimalSpecies& species = getSpecies(index);
+	AnimalSpeciesId species = getSpecies(index);
 	Percent grown = getPercentGrown(index);
-	m_strength.at(index) = AttributeLevel::create(util::scaleByPercentRange(species.mass[0].get(), species.mass[1].get(), grown));
+	Mass max = AnimalSpecies::getMass(species)[0];
+	Mass min = AnimalSpecies::getMass(species)[1];
+	m_mass.at(index) = Mass::create(util::scaleByPercentRange(max.get(), min.get(), grown));
 }
 void Actors::onMassChanged(ActorIndex index)
 {

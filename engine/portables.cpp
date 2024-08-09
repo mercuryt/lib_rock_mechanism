@@ -64,10 +64,10 @@ void Portables::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 		}
 	}
 }
-void Portables::create(HasShapeIndex index, const MoveType& moveType, const Shape& shape, BlockIndex location, Facing facing, bool isStatic)
+void Portables::create(HasShapeIndex index, MoveTypeId moveType, ShapeId shape, BlockIndex location, Facing facing, bool isStatic)
 {
 	HasShapes::create(index, shape, location, facing, isStatic);
-	m_moveType.at(index) = &moveType;
+	m_moveType.at(index) = moveType;
 	assert(m_destroy.at(index) == nullptr);
 	assert(m_reservables.at(index) == nullptr);
 	assert(!m_follower.at(index).exists());
@@ -249,7 +249,7 @@ Speed Portables::getMoveSpeedForGroupWithAddedMass(const Area& area, std::vector
 		{
 			ItemIndex itemIndex = ItemIndex::cast(index.get());
 			Mass mass = area.getItems().getMass(itemIndex);
-			static const MoveType& roll = MoveType::byName("roll");
+			static MoveTypeId roll = MoveType::byName("roll");
 			if(area.getItems().getMoveType(itemIndex) == roll)
 				rollingMass += mass;
 			else
@@ -322,7 +322,7 @@ void Portables::updateIndexInCarrier(HasShapeIndex oldIndex, HasShapeIndex newIn
 		// Carrier is item.
 		ItemIndex item = ItemIndex::cast(m_carrier.at(newIndex).get());
 		Items& items = m_area.getItems();
-		assert(items.getItemType(item).internalVolume != 0);
+		assert(ItemType::getInternalVolume(items.getItemType(item)) != 0);
 		if(isActors)
 		{
 			ActorIndex oi = ActorIndex::cast(oldIndex);

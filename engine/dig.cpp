@@ -7,6 +7,7 @@
 #include "deserializeDishonorCallbacks.h"
 #include "pathRequest.h"
 #include "random.h"
+#include "reference.h"
 #include "reservable.h"
 #include "skill.h"
 #include "terrainFacade.h"
@@ -48,25 +49,25 @@ Json DigProject::toJson() const
 std::vector<std::pair<ItemQuery, Quantity>> DigProject::getConsumed() const { return {}; }
 std::vector<std::pair<ItemQuery, Quantity>> DigProject::getUnconsumed() const
 {
-	static const ItemType& pick = ItemType::byName("pick");
+	static ItemTypeId pick = ItemType::byName("pick");
 	return {{pick, Quantity::create(1)}}; 
 }
 std::vector<std::pair<ActorQuery, Quantity>> DigProject::getActors() const { return {}; }
-std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> DigProject::getByproducts() const
+std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> DigProject::getByproducts() const
 {
-	std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> output;
+	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> output;
 	Random& random = m_area.m_simulation.m_random;
 	auto& blocks = m_area.getBlocks();
-	const MaterialType* materialType = blocks.solid_is(m_location) ? &blocks.solid_get(m_location) : blocks.blockFeature_getMaterialType(m_location);
-	if(materialType)
+	MaterialTypeId materialType = blocks.solid_is(m_location) ? blocks.solid_get(m_location) : blocks.blockFeature_getMaterialType(m_location);
+	if(materialType.exists())
 	{
-		for(const SpoilData& spoilData : materialType->spoilData)
+		for(SpoilsDataTypeId spoilDataId : MaterialType::getSpoilData(materialType))
 		{
-			if(!random.chance(spoilData.chance))
+			if(!random.chance(SpoilData::getChance(spoilDataId)))
 				continue;
 			//TODO: reduce yield for block features.
-			Quantity quantity = Quantity::create(random.getInRange(spoilData.min.get(), spoilData.max.get()));
-			output.emplace_back(&spoilData.itemType, &spoilData.materialType, quantity);
+			Quantity quantity = Quantity::create(random.getInRange(SpoilData::getMin(spoilDataId).get(), SpoilData::getMax(spoilDataId).get()));
+			output.emplace_back(SpoilData::getItemType(spoilDataId), SpoilData::getMaterialType(spoilDataId), quantity);
 		}
 	}
 	return output;
@@ -74,7 +75,7 @@ std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> DigProje
 // Static.
 uint32_t DigProject::getWorkerDigScore(Area& area, ActorIndex actor)
 {
-	static const SkillType& digType = SkillType::byName("dig");
+	static SkillTypeId digType = SkillType::byName("dig");
 	Actors& actors = area.getActors();
 	uint32_t strength = actors.getStrength(actor).get();
 	uint32_t skillLevel = actors.skill_getLevel(actor, digType).get();

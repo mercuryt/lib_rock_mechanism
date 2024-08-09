@@ -24,12 +24,12 @@ struct Faction
 };
 class SimulationHasFactions final
 {
+	// Factions are never destroyed so their id is their index.
 	std::vector<Faction> m_factions;
-public:
-	Faction& createFaction(std::wstring name);
 	Faction& getById(FactionId id);
-	Faction& byName(std::wstring name);
-	[[nodiscard]] const std::vector<Faction>& getAll() const { return m_factions; }
+public:
+	FactionId createFaction(std::wstring name);
+	FactionId byName(std::wstring name);
 	[[nodiscard]] bool isAlly(FactionId a, FactionId b);
 	[[nodiscard]] bool isEnemy(FactionId a, FactionId b);
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SimulationHasFactions, m_factions);

@@ -40,13 +40,15 @@ void AnimalsArriveDramaArc::callback()
 		{
 			Percent percentGrown = Percent::create(std::min(100, random.getInRange(15, 500)));
 			DistanceInBlocks maxBlockDistance = DistanceInBlocks::create(10);
-			BlockIndex location = findLocationOnEdgeForNear(m_species->shapeForPercentGrown(percentGrown), m_species->moveType, m_entranceBlock, maxBlockDistance, exclude);
+			ShapeId shape = AnimalSpecies::shapeForPercentGrown(m_species, percentGrown);
+			MoveTypeId moveType = AnimalSpecies::getMoveType(m_species);
+			BlockIndex location = findLocationOnEdgeForNear(shape, moveType, m_entranceBlock, maxBlockDistance, exclude);
 			if(location.exists())
 			{
 				exclude.add(location);
 				Actors& actors = m_area->getActors();
 				ActorIndex actor = actors.create(ActorParamaters{
-					.species=*m_species, 
+					.species=m_species, 
 					.percentGrown=percentGrown,
 					.location=location,
 					.percentHunger=m_hungerPercent,
@@ -67,7 +69,7 @@ void AnimalsArriveDramaArc::callback()
 			scheduleDepart();
 			m_isActive = false;
 			m_entranceBlock.clear();
-			m_species = nullptr;
+			m_species.clear();
 			m_hungerPercent = Percent::create(0);
 			m_thristPercent = Percent::create(0);
 			m_tiredPercent = Percent::create(0);
@@ -81,7 +83,8 @@ void AnimalsArriveDramaArc::callback()
 		m_species = species;
 		m_quantity = quantity;
 		// Find entry point.
-		m_entranceBlock = getEntranceToArea(species->shapeForPercentGrown(Percent::create(100)), species->moveType);
+		ShapeId shape = AnimalSpecies::shapeForPercentGrown(m_species, Percent::create(100));
+		m_entranceBlock = getEntranceToArea(shape, AnimalSpecies::getMoveType(species));
 		if(m_entranceBlock.empty())
 			scheduleArrive();
 		else
@@ -91,7 +94,7 @@ void AnimalsArriveDramaArc::callback()
 			m_tiredPercent = Percent::create(std::max(0, random.getInRange(-500, 90)));
 			m_isActive = true;
 			// Anounce.
-			std::wstring message = std::to_wstring(m_quantity.get()) + L" " + util::stringToWideString(m_species->name) + L" spotted nearby.";
+			std::wstring message = std::to_wstring(m_quantity.get()) + L" " + util::stringToWideString(AnimalSpecies::getName(m_species)) + L" spotted nearby.";
 			m_engine.getSimulation().m_hasDialogues.createMessageBox(message, m_entranceBlock);
 			// Reenter.
 			callback();
@@ -118,12 +121,12 @@ void AnimalsArriveDramaArc::scheduleContinue()
 	Step duration = Config::stepsPerSecond;
 	m_scheduledEvent.schedule(*this, m_area->m_simulation, duration);
 }
-std::pair<const AnimalSpecies*, Quantity> AnimalsArriveDramaArc::getSpeciesAndQuantity() const
+std::pair<AnimalSpeciesId, Quantity> AnimalsArriveDramaArc::getSpeciesAndQuantity() const
 {
 	// TODO: Species by biome.
 	auto& random = m_area->m_simulation.m_random;
 	Quantity quantity = Quantity::create(0);
-	const AnimalSpecies* species = nullptr;
+	AnimalSpeciesId species;
 	Percent roll = Percent::create(random.getInRange(0, 100));
 	bool large = false;
 	bool medium = false;
@@ -136,19 +139,19 @@ std::pair<const AnimalSpecies*, Quantity> AnimalsArriveDramaArc::getSpeciesAndQu
 	{
 		if(large)
 		{
-			static std::vector<const AnimalSpecies*> largeCarnivors = getLargeCarnivors();
+			static std::vector<AnimalSpeciesId> largeCarnivors = getLargeCarnivors();
 			species = random.getInVector(largeCarnivors);
 			quantity = Quantity::create(1);
 		}
 		else if(medium)
 		{
-			static std::vector<const AnimalSpecies*> mediumCarnivors = getMediumCarnivors();
+			static std::vector<AnimalSpeciesId> mediumCarnivors = getMediumCarnivors();
 			species = random.getInVector(mediumCarnivors);
 			quantity = Quantity::create(random.getInRange(1,5));
 		}
 		else 
 		{
-			static std::vector<const AnimalSpecies*> smallCarnivors = getSmallCarnivors();
+			static std::vector<AnimalSpeciesId> smallCarnivors = getSmallCarnivors();
 			species = random.getInVector(smallCarnivors);
 			quantity = Quantity::create(random.getInRange(5,15));
 		}
@@ -157,95 +160,83 @@ std::pair<const AnimalSpecies*, Quantity> AnimalsArriveDramaArc::getSpeciesAndQu
 	{
 		if(large)
 		{
-			static std::vector<const AnimalSpecies*> largeHerbivors = getLargeHerbivors();
+			static std::vector<AnimalSpeciesId> largeHerbivors = getLargeHerbivors();
 			species = random.getInVector(largeHerbivors);
 			quantity = Quantity::create(random.getInRange(1,2));
 		}
 		else if(medium)
 		{
-			static std::vector<const AnimalSpecies*> mediumHerbivors = getMediumHerbivors();
+			static std::vector<AnimalSpeciesId> mediumHerbivors = getMediumHerbivors();
 			species = random.getInVector(mediumHerbivors);
 			quantity = Quantity::create(random.getInRange(1,8));
 		}
 		else 
 		{
-			static std::vector<const AnimalSpecies*> smallHerbivors = getSmallHerbivors();
+			static std::vector<AnimalSpeciesId> smallHerbivors = getSmallHerbivors();
 			species = random.getInVector(smallHerbivors);
 			quantity = Quantity::create(random.getInRange(5,25));
 		}
 	}
 	return {species, quantity};
 }
-bool AnimalsArriveDramaArc::isSmall(const Shape& shape)
+bool AnimalsArriveDramaArc::isSmall(ShapeId shape)
 {
-	return CollisionVolume::create(shape.positions.front()[3]) < Config::maxBlockVolume / 4 && shape.positions.size() == 1;
+	return CollisionVolume::create(Shape::getPositions(shape).front()[3]) < Config::maxBlockVolume / 4 && Shape::getPositions(shape).size() == 1;
 }
-bool AnimalsArriveDramaArc::isLarge(const Shape& shape)
+bool AnimalsArriveDramaArc::isLarge(ShapeId shape)
 {
-	return shape.positions.size() > 8;
+	return Shape::getPositions(shape).size() > 8;
 }
-bool AnimalsArriveDramaArc::isMedium(const Shape& shape)
+bool AnimalsArriveDramaArc::isMedium(ShapeId shape)
 {
 	return !isSmall(shape) && !isLarge(shape);
 }
-std::vector<const AnimalSpecies*> AnimalsArriveDramaArc::getLargeCarnivors()
+std::vector<AnimalSpeciesId> AnimalsArriveDramaArc::getLargeCarnivors()
 {
-	std::vector<const AnimalSpecies*> output;
-	for(const AnimalSpecies& species : animalSpeciesDataStore)
-	{
-		if(!species.sentient && species.eatsMeat && isLarge(*species.shapes.back()))
-			output.push_back(&species);
-	}
+	std::vector<AnimalSpeciesId> output;
+	for(AnimalSpeciesId i = AnimalSpeciesId::create(0); i < AnimalSpecies::size(); ++i)
+		if(!AnimalSpecies::getSentient(i) && AnimalSpecies::getEatsMeat(i) && isLarge(AnimalSpecies::getShapes(i).back()))
+			output.push_back(i);
 	return output;
 }
-std::vector<const AnimalSpecies*> AnimalsArriveDramaArc::getMediumCarnivors()
+std::vector<AnimalSpeciesId> AnimalsArriveDramaArc::getMediumCarnivors()
 {
-	std::vector<const AnimalSpecies*> output;
-	for(const AnimalSpecies& species : animalSpeciesDataStore)
-	{
-		if(!species.sentient && species.eatsMeat && isMedium(*species.shapes.back()))
-			output.push_back(&species);
-	}
+	std::vector<AnimalSpeciesId> output;
+	for(AnimalSpeciesId i = AnimalSpeciesId::create(0); i < AnimalSpecies::size(); ++i)
+		if(!AnimalSpecies::getSentient(i) && AnimalSpecies::getEatsMeat(i) && isMedium(AnimalSpecies::getShapes(i).back()))
+			output.push_back(i);
 	return output;
 }
-std::vector<const AnimalSpecies*> AnimalsArriveDramaArc::getSmallCarnivors()
+std::vector<AnimalSpeciesId> AnimalsArriveDramaArc::getSmallCarnivors()
 {
-	std::vector<const AnimalSpecies*> output;
-	for(const AnimalSpecies& species : animalSpeciesDataStore)
-	{
-		if(!species.sentient && species.eatsMeat && isSmall(*species.shapes.back()))
-			output.push_back(&species);
-	}
+	std::vector<AnimalSpeciesId> output;
+	for(AnimalSpeciesId i = AnimalSpeciesId::create(0); i < AnimalSpecies::size(); ++i)
+		if(!AnimalSpecies::getSentient(i) && AnimalSpecies::getEatsMeat(i) && isSmall(AnimalSpecies::getShapes(i).back()))
+			output.push_back(i);
 	return output;
 }
-std::vector<const AnimalSpecies*> AnimalsArriveDramaArc::getLargeHerbivors()
+std::vector<AnimalSpeciesId> AnimalsArriveDramaArc::getLargeHerbivors()
 {
-	std::vector<const AnimalSpecies*> output;
-	for(const AnimalSpecies& species : animalSpeciesDataStore)
-	{
-		if(!species.sentient && !species.eatsMeat && isLarge(*species.shapes.back()))
-			output.push_back(&species);
-	}
+	std::vector<AnimalSpeciesId> output;
+	for(AnimalSpeciesId i = AnimalSpeciesId::create(0); i < AnimalSpecies::size(); ++i)
+		if(!AnimalSpecies::getSentient(i) && !AnimalSpecies::getEatsMeat(i) && isLarge(AnimalSpecies::getShapes(i).back()))
+			output.push_back(i);
 	return output;
 }
-std::vector<const AnimalSpecies*> AnimalsArriveDramaArc::getMediumHerbivors()
+std::vector<AnimalSpeciesId> AnimalsArriveDramaArc::getMediumHerbivors()
 {
-	std::vector<const AnimalSpecies*> output;
-	for(const AnimalSpecies& species : animalSpeciesDataStore)
-	{
-		if(!species.sentient && !species.eatsMeat && isMedium(*species.shapes.back()))
-			output.push_back(&species);
-	}
+	std::vector<AnimalSpeciesId> output;
+	for(AnimalSpeciesId i = AnimalSpeciesId::create(0); i < AnimalSpecies::size(); ++i)
+		if(!AnimalSpecies::getSentient(i) && !AnimalSpecies::getEatsMeat(i) && isMedium(AnimalSpecies::getShapes(i).back()))
+			output.push_back(i);
 	return output;
 }
-std::vector<const AnimalSpecies*> AnimalsArriveDramaArc::getSmallHerbivors()
+std::vector<AnimalSpeciesId> AnimalsArriveDramaArc::getSmallHerbivors()
 {
-	std::vector<const AnimalSpecies*> output;
-	for(const AnimalSpecies& species : animalSpeciesDataStore)
-	{
-		if(!species.sentient && !species.eatsMeat && isSmall(*species.shapes.back()))
-			output.push_back(&species);
-	}
+	std::vector<AnimalSpeciesId> output;
+	for(AnimalSpeciesId i = AnimalSpeciesId::create(0); i < AnimalSpecies::size(); ++i)
+		if(!AnimalSpecies::getSentient(i) && !AnimalSpecies::getEatsMeat(i) && isSmall(AnimalSpecies::getShapes(i).back()))
+			output.push_back(i);
 	return output;
 }
 void AnimalsArriveDramaArc::begin()

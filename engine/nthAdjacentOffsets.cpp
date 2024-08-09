@@ -13,7 +13,7 @@ std::vector<XYZ> getNthAdjacentOffsets(uint32_t n)
 			cache.resize(n);
 			cache[0].emplace_back(0,0,0);
 		}
-		std::unordered_set<XYZ, XYZHash> next;
+		std::vector<XYZ> next;
 		for(XYZ xyz : cache.back())
 			for(XYZ offset : offsets)
 			{
@@ -21,7 +21,8 @@ std::vector<XYZ> getNthAdjacentOffsets(uint32_t n)
 				if(!closedList.contains(adjacent))
 				{
 					closedList.insert(adjacent);
-					next.insert(adjacent);
+					if(std::ranges::find(next, adjacent) == next.end())
+						next.push_back(adjacent);
 				}
 			}
 		cache.emplace_back(next.begin(), next.end());

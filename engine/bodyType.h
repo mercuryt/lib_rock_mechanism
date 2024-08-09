@@ -18,13 +18,13 @@ class BodyPartType final
 	static BodyPartType data;
 	DataVector<std::string, BodyPartTypeId> m_name;
 	DataVector<Volume, BodyPartTypeId> m_volume;
-	DataVector<bool, BodyPartTypeId> m_doesLocamotion;
-	DataVector<bool, BodyPartTypeId> m_doesManipulation;
-	DataVector<bool, BodyPartTypeId> m_vital;
+	DataBitSet<BodyPartTypeId> m_doesLocamotion;
+	DataBitSet<BodyPartTypeId> m_doesManipulation;
+	DataBitSet<BodyPartTypeId> m_vital;
 	DataVector<std::vector<std::pair<AttackTypeId, MaterialTypeId>>, BodyPartTypeId> m_attackTypesAndMaterials;
 public:
 	static void create(BodyPartTypeParamaters& p);
-	static BodyPartTypeId byName(std::string name);
+	[[nodiscard]] static BodyPartTypeId byName(std::string name);
 	[[nodiscard]] static std::string& getName(BodyPartTypeId id) { return data.m_name.at(id); };
 	[[nodiscard]] static Volume getVolume(BodyPartTypeId id) { return data.m_volume.at(id); };
 	[[nodiscard]] static bool getDoesLocamotion(BodyPartTypeId id) { return data.m_doesLocamotion.at(id); };
@@ -38,10 +38,13 @@ class BodyType final
 	static BodyType data;
 	DataVector<std::string, BodyTypeId> m_name;
 	DataVector<std::vector<BodyPartTypeId>, BodyTypeId> m_bodyPartTypes;
+public:
 	static bool hasBodyPart(BodyTypeId id, BodyPartTypeId bodyPartType)
 	{
 		return std::ranges::find(data.m_bodyPartTypes.at(id), bodyPartType) != data.m_bodyPartTypes.at(id).end();
 	}
-	static BodyTypeId byName(std::string name);
 	static void create(std::string name, std::vector<BodyPartTypeId> bodyPartTypes);
+	[[nodiscard]] static BodyTypeId byName(std::string name);
+	[[nodiscard]] static std::string getName(BodyTypeId id) { return data.m_name.at(id); }
+	[[nodiscard]] static std::vector<BodyPartTypeId> getBodyPartTypes(BodyTypeId id) { return data.m_bodyPartTypes.at(id); }
 };

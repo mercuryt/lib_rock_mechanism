@@ -2,8 +2,9 @@
 #include "blocks.h"
 #include "../materialType.h"
 #include "../fire.h"
+#include "types.h"
 #include <algorithm>
-void Blocks::fire_setPointer(BlockIndex index, std::unordered_map<const MaterialType*, Fire>* pointer)
+void Blocks::fire_setPointer(BlockIndex index, MaterialTypeMap<Fire>* pointer)
 {
 	assert(!m_fires.at(index));
 	m_fires.at(index) = pointer;
@@ -26,7 +27,7 @@ FireStage Blocks::fire_getStage(BlockIndex index) const
 			output = pair.second.m_stage;
 	return output;
 }
-Fire& Blocks::fire_get(BlockIndex index, const MaterialType& materialType)
+Fire& Blocks::fire_get(BlockIndex index, MaterialTypeId materialType)
 {
-	return m_fires.at(index)->at(&materialType);
+	return m_fires.at(index)->at(materialType);
 }

@@ -126,7 +126,7 @@ public:
 	[[nodiscard]] bool operator==(const Area& other) const { return this == &other; }
 	// For testing.
 	[[maybe_unused]] void logActorsAndItems() const;
-	[[nodiscard]] Quantity getTotalCountOfItemTypeOnSurface(const ItemType& itemType) const;
+	[[nodiscard]] Quantity getTotalCountOfItemTypeOnSurface(ItemTypeId itemType) const;
 };
 inline void to_json(Json& data, const Area* const& area){ data = area->m_id; }
 inline void to_json(Json& data, const Area& area){ data = area.m_id; }

@@ -29,16 +29,19 @@ void Actors::combat_attackMeleeRange(ActorIndex index, ActorIndex target)
 	{
 		// Attack hits.
 		const Attack& attack = combat_getAttackForCombatScoreDifference(index, attackerCombatScore - targetCombatScore);
-		Force attackForce = attack.attackType->baseForce + (m_strength.at(index).get() * Config::unitsOfAttackForcePerUnitOfStrength);
+		Force attackForce = AttackType::getBaseForce(attack.attackType) + (m_strength.at(index).get() * Config::unitsOfAttackForcePerUnitOfStrength);
 		// TODO: Higher skill selects more important body parts to hit.
 		BodyPart& bodyPart = m_body.at(target)->pickABodyPartByVolume(m_area.m_simulation);
-		Hit hit(attack.attackType->area, attackForce, *attack.materialType, attack.attackType->woundType);
+		Hit hit(AttackType::getArea(attack.attackType), attackForce, attack.materialType, AttackType::getWoundType(attack.attackType));
 		takeHit(target, hit, bodyPart);
 		// If there is a weapon being used take the cool down from it, otherwise use onMiss cool down.
 		if(attack.item.exists())
 		{
 			Items& items = m_area.getItems();
-			coolDownDuration = attack.attackType->coolDown == 0 ? items.getItemType(attack.item).weaponData->coolDown : attack.attackType->coolDown;
+
+			coolDownDuration = AttackType::getCoolDown(attack.attackType);
+			if(coolDownDuration.empty())
+				coolDownDuration = ItemType::getAttackCoolDownBase(items.getItemType(attack.item));
 			coolDownDuration *= m_coolDownDurationModifier.at(index);
 		}
 	}
@@ -48,16 +51,18 @@ void Actors::combat_attackMeleeRange(ActorIndex index, ActorIndex target)
 void Actors::combat_attackLongRange(ActorIndex index, ActorIndex target, ItemIndex weapon, ItemIndex ammo)
 {
 	//TODO: unarmed ranged attack?
-	const AttackType& attackType = combat_getRangedAttackType(index, weapon);
+	AttackTypeId attackType = combat_getRangedAttackType(index, weapon);
 	Items& items = m_area.getItems();;
-	Step coolDown = attackType.coolDown == 0 ? items.getItemType(weapon).weaponData->coolDown : attackType.coolDown;
-	Attack attack(&attackType, &items.getMaterialType(ammo), weapon);
+	Step coolDown = AttackType::getCoolDown(attackType);
+	if(coolDown == 0)
+		coolDown = ItemType::getAttackCoolDownBase(items.getItemType(weapon));
+	Attack attack(attackType, items.getMaterialType(ammo), weapon);
 	if(combat_doesProjectileHit(index, attack, target))
 	{
 		// Attack hits.
 		// TODO: Higher skill selects more important body parts to hit.
 		BodyPart& bodyPart = m_body.at(target)->pickABodyPartByVolume(m_area.m_simulation);
-		Hit hit(attackType.area, attackType.baseForce, *attack.materialType, attack.attackType->woundType);
+		Hit hit(AttackType::getArea(attackType), AttackType::getBaseForce(attackType), attack.materialType, AttackType::getWoundType(attack.attackType));
 		takeHit(target, hit, bodyPart);
 	}
 	m_coolDownEvent.schedule(index, m_area, index, coolDown);
@@ -122,14 +127,14 @@ void Actors::combat_update(ActorIndex index)
 	for(Attack& attack : m_equipmentSet.at(index)->getMeleeAttacks(m_area))
 		m_meleeAttackTable.at(index).emplace_back(combat_getCombatScoreForAttack(index, attack), attack);
 	// Sort by combat score, low to high.
-	std::sort(m_meleeAttackTable.at(index).begin(), m_meleeAttackTable.at(index).end(), [](auto& a, auto& b){ return a.first < b.first; });
+	std::sort(m_meleeAttackTable.at(index).begin(), m_meleeAttackTable.at(index).end(), [](const auto& a, const auto& b){ return a.first < b.first; });
 	// Iterate attacks low to high, add running total to each score.
 	// Also find max melee attack range.
 	for(auto& pair : m_meleeAttackTable.at(index))
 	{
 		pair.first += m_combatScore.at(index);
 		m_combatScore.at(index) = pair.first;
-		DistanceInBlocksFractional range = pair.second.attackType->range;
+		DistanceInBlocksFractional range = AttackType::getRange(pair.second.attackType);
 		if(range > m_maxMeleeRange.at(index))
 			m_maxMeleeRange.at(index) = range;
 	}
@@ -158,19 +163,20 @@ void Actors::combat_update(ActorIndex index)
 	m_maxRange.at(index) = m_maxMeleeRange.at(index);
 	for(ItemReference item : m_equipmentSet.at(index)->getRangedWeapons())
 	{
-		AttackType* attackType = m_area.getItems().getItemType(item.getIndex()).getRangedAttackType();
-		if(attackType->range > m_maxRange.at(index))
-			m_maxRange.at(index) = attackType->range;
+		AttackTypeId attackType = ItemType::getRangedAttackType(m_area.getItems().getItemType(item.getIndex()));
+		auto range = AttackType::getRange(attackType);
+		if(range > m_maxRange.at(index))
+			m_maxRange.at(index) = range;
 	}
 }
 std::vector<std::pair<CombatScore, Attack>>& Actors::combat_getMeleeAttacks(ActorIndex index) { return m_meleeAttackTable.at(index); }
 //TODO: Grasps cannot be used for both armed and unarmed attacks at the same time?
 CombatScore Actors::combat_getCombatScoreForAttack(ActorIndex index, const Attack& attack) const
 {
-	CombatScore output = attack.attackType->combatScore;
-	const SkillType& skill = attack.item == ItemIndex::null() ?
+	CombatScore output = AttackType::getCombatScore(attack.attackType);
+	SkillTypeId skill = attack.item == ItemIndex::null() ?
 		SkillType::byName("unarmed") :
-		attack.attackType->skillType;
+		AttackType::getSkillType(attack.attackType);
 	SkillLevel skillValue = m_skillSet.at(index)->get(skill);
 	output += (skillValue * Config::attackSkillCombatModifier).get();
 	Items& items = m_area.getItems();
@@ -269,7 +275,7 @@ bool Actors::combat_inRange(ActorIndex index, const ActorIndex target) const
 Percent Actors::combat_projectileHitPercent(ActorIndex index, const Attack& attack, const ActorIndex target) const
 {
 	Percent chance = Percent::create(100 - std::pow(distanceToActorFractional(index, target).get(), Config::projectileHitChanceFallsOffWithRangeExponent));
-	chance += m_skillSet.at(index)->get(attack.attackType->skillType).get() * Config::projectileHitPercentPerSkillPoint;
+	chance += m_skillSet.at(index)->get(AttackType::getSkillType(attack.attackType)).get() * Config::projectileHitPercentPerSkillPoint;
 	chance += (getVolume(target) - Config::projectileMedianTargetVolume).get() * Config::projectileHitPercentPerUnitVolume;
 	chance += m_dextarity.at(index).get() * Config::projectileHitPercentPerPointDextarity;
 	if(attack.item.exists())
@@ -279,7 +285,7 @@ Percent Actors::combat_projectileHitPercent(ActorIndex index, const Attack& atta
 		chance -= items.getWear(attack.item) * Config::projectileHitPercentPerPointWear;
 	}
 	chance -= combat_getCombatScore(index).get() * Config::projectileHitPercentPerPointTargetCombatScore;
-	chance += attack.attackType->combatScore.get() * Config::projectileHitPercentPerPointAttackTypeCombatScore;
+	chance += AttackType::getCombatScore(attack.attackType).get() * Config::projectileHitPercentPerPointAttackTypeCombatScore;
 	return chance;
 }
 bool Actors::combat_doesProjectileHit(ActorIndex index, Attack& attack, const ActorIndex target) const
@@ -302,16 +308,16 @@ bool Actors::combat_blockIsValidPosition(ActorIndex index, BlockIndex block, Dis
 		return false;
 	return blocks.hasLineOfSightTo(block, targetLocation);
 }
-AttackType& Actors::combat_getRangedAttackType(ActorIndex, ItemIndex weapon)
+AttackTypeId Actors::combat_getRangedAttackType(ActorIndex, ItemIndex weapon)
 {
 	// Each ranged weapon has only one ranged attack type to pick.
-	const ItemType& itemType = m_area.getItems().getItemType(weapon);
-	assert(itemType.weaponData != nullptr);
-	for(const AttackType& attackType : itemType.weaponData->attackTypes)
-		if(attackType.projectile)
-			return const_cast<AttackType&>(attackType);
+	ItemTypeId itemType = m_area.getItems().getItemType(weapon);
+	assert(ItemType::getIsWeapon(itemType));
+	for(AttackTypeId attackType : ItemType::getAttackTypes(itemType))
+		if(AttackType::getProjectile(attackType))
+			return attackType;
 	assert(false);
-	return const_cast<AttackType&>(itemType.weaponData->attackTypes.front());
+	return ItemType::getAttackTypes(itemType).front();
 }
 AttackCoolDownEvent::AttackCoolDownEvent(Area& area, ActorIndex actor, Step duration, const Step start) :
 	ScheduledEvent(area.m_simulation, duration, start), m_actor(actor) { }

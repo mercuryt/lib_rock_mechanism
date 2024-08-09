@@ -58,5 +58,6 @@ public:
 	void resize(size_t size) { data.resize(size); }
 	void resize(Index index) { data.resize(index.get()); }
 	void clear() { data.clear(); }
+	void add(bool status) { data.resize(data.size() + 1); data.set(data.size() - 1, 1, status); }
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(DataBitSet, data);
 };

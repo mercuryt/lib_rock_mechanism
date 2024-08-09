@@ -32,7 +32,7 @@ SleepPathRequest::SleepPathRequest(Area& area, SleepObjective& so) : m_sleepObje
 				m_outdoorCandidate = block;	
 			return false;
 		};
-		bool unreserved = actors.getFaction(actor) != nullptr;
+		bool unreserved = actors.getFaction(actor).exists();
 		createGoAdjacentToCondition(area, actor, condition, m_sleepObjective.m_detour, unreserved, DistanceInBlocks::null(), BlockIndex::null());
 	}
 }

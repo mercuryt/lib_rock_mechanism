@@ -5,9 +5,10 @@
 void AreaHasFluidGroups::doStep()
 {
 	// Calculate flow.
-	std::function<void(FluidGroup*&)> task = [](FluidGroup*& fluidGroup){ assert(!fluidGroup->m_destroy); fluidGroup->readStep(); };
 	std::vector<FluidGroup*> unstable(m_unstableFluidGroups.begin(), m_unstableFluidGroups.end());
-	m_area.m_simulation.parallelizeTask(unstable, Config::fluidGroupsPerThread, task);
+	#pragma omp parallel
+		for(FluidGroup* group : unstable)
+			group->readStep();
 	// Remove destroyed.
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 		if(fluidGroup.m_destroy)
@@ -74,7 +75,7 @@ void AreaHasFluidGroups::doStep()
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 		fluidGroup.validate();
 }
-FluidGroup* AreaHasFluidGroups::createFluidGroup(const FluidType& fluidType, BlockIndices& blocks, bool checkMerge)
+FluidGroup* AreaHasFluidGroups::createFluidGroup(FluidTypeId fluidType, BlockIndices& blocks, bool checkMerge)
 {
 	m_fluidGroups.emplace_back(fluidType, blocks, m_area, checkMerge);
 	m_unstableFluidGroups.insert(&m_fluidGroups.back());
@@ -110,7 +111,7 @@ std::string AreaHasFluidGroups::toS() const
 	std::string output = std::to_string(m_fluidGroups.size()) + " fluid groups########";
 	for(const FluidGroup& fluidGroup : m_fluidGroups)
 	{
-		output += "type:" + fluidGroup.m_fluidType.name;
+		output += "type:" + FluidType::getName(fluidGroup.m_fluidType);
 		output += "-total:" + std::to_string(fluidGroup.totalVolume().get());
 		output += "-blocks:" + std::to_string(fluidGroup.m_drainQueue.m_set.size());
 		output += "-status:";
@@ -122,8 +123,8 @@ std::string AreaHasFluidGroups::toS() const
 		{
 			output += "-disolved";
 			for(const FluidGroup& fg : m_fluidGroups)
-				if(fg.m_disolvedInThisGroup.contains(&fluidGroup.m_fluidType) && fg.m_disolvedInThisGroup.at(&fluidGroup.m_fluidType) == &fluidGroup)
-					output += " in " + fg.m_fluidType.name;
+				if(fg.m_disolvedInThisGroup.contains(fluidGroup.m_fluidType) && fg.m_disolvedInThisGroup.at(fluidGroup.m_fluidType) == &fluidGroup)
+					output += " in " + FluidType::getName(fg.m_fluidType);
 		}
 		if(fluidGroup.m_destroy)
 			output += "-destroy";

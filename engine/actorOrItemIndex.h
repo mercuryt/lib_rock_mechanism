@@ -15,8 +15,6 @@ class CanLead;
 class CanFollow;
 class Area;
 struct Shape;
-struct MoveType;
-struct Faction;
 class ActorOrItemReference;
 class ActorOrItemIndex
 {
@@ -61,8 +59,8 @@ public:
 	[[nodiscard]] bool isAdjacentToItem(const Area& area, ItemIndex item) const;
 	[[nodiscard]] bool isAdjacentToLocation(const Area& area, BlockIndex location) const;
 
-	[[nodiscard]] const Shape& getShape(const Area& area) const;
-	[[nodiscard]] const MoveType& getMoveType(const Area& area) const;
+	[[nodiscard]] ShapeId getShape(const Area& area) const;
+	[[nodiscard]] MoveTypeId getMoveType(const Area& area) const;
 	[[nodiscard]] Mass getMass(const Area& area) const;
 	[[nodiscard]] Mass getSingleUnitMass(const Area& area) const;
 	[[nodiscard]] Volume getVolume(const Area& area) const;

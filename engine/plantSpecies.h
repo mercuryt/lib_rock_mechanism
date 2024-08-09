@@ -7,15 +7,13 @@
 struct ItemType;
 struct FluidType;
 struct MaterialType;
-struct Shape;
 
 struct PlantSpeciesParamaters final
 {
-	std::vector<const Shape*> shapes;
+	std::vector<ShapeId> shapes = {};
 	const std::string name;
 	const FluidTypeId fluidType;
 	const MaterialTypeId woodType = MaterialTypeId::null();
-	const HarvestDataTypeId harvestData = HarvestDataTypeId::null();
 	const Step stepsNeedsFluidFrequency = Step::null();
 	const Step stepsTillDieWithoutFluid = Step::null();
 	const Step stepsTillFullyGrown = Step::null();
@@ -43,11 +41,10 @@ struct PlantSpeciesParamaters final
 class PlantSpecies final
 {
 	static PlantSpecies data;
-	DataVector<std::vector<const Shape*>, PlantSpeciesId> m_shapes;
+	DataVector<std::vector<ShapeId>, PlantSpeciesId> m_shapes;
 	DataVector<std::string, PlantSpeciesId> m_name;
 	DataVector<FluidTypeId, PlantSpeciesId> m_fluidType;
 	DataVector<MaterialTypeId, PlantSpeciesId> m_woodType;
-	DataVector<HarvestDataTypeId, PlantSpeciesId> m_harvestData;
 	DataVector<Step, PlantSpeciesId> m_stepsNeedsFluidFrequency;
 	DataVector<Step, PlantSpeciesId> m_stepsTillDieWithoutFluid;
 	DataVector<Step, PlantSpeciesId> m_stepsTillFullyGrown;
@@ -64,9 +61,9 @@ class PlantSpecies final
 	DataVector<uint16_t, PlantSpeciesId> m_dayOfYearForSowStart;
 	DataVector<uint16_t, PlantSpeciesId> m_dayOfYearForSowEnd;
 	DataVector<uint8_t, PlantSpeciesId> m_maxWildGrowth;
-	DataVector<bool, PlantSpeciesId> m_annual;
-	DataVector<bool, PlantSpeciesId> m_growsInSunLight;
-	DataVector<bool, PlantSpeciesId> m_isTree;
+	DataBitSet<PlantSpeciesId> m_annual;
+	DataBitSet<PlantSpeciesId> m_growsInSunLight;
+	DataBitSet<PlantSpeciesId> m_isTree;
 	// Harvest
 	DataVector<ItemTypeId, PlantSpeciesId> m_fruitItemType;
 	DataVector<Step, PlantSpeciesId> m_stepsDurationHarvest;
@@ -74,7 +71,7 @@ class PlantSpecies final
 	DataVector<uint16_t, PlantSpeciesId> m_dayOfYearToStartHarvest;
 public:
 	static void create(PlantSpeciesParamaters& paramaters);
-	[[nodiscard]] static std::vector<const Shape*> getShapes(PlantSpeciesId species) { return data.m_shapes.at(species); };
+	[[nodiscard]] static std::vector<ShapeId> getShapes(PlantSpeciesId species) { return data.m_shapes.at(species); };
 	[[nodiscard]] static std::string getName(PlantSpeciesId species) { return data.m_name.at(species); };
 	[[nodiscard]] static FluidTypeId getFluidType(PlantSpeciesId species) { return data.m_fluidType.at(species); };
 	[[nodiscard]] static MaterialTypeId getWoodType(PlantSpeciesId species) { return data.m_woodType.at(species); };
@@ -98,13 +95,13 @@ public:
 	[[nodiscard]] static bool getGrowsInSunLight(PlantSpeciesId species) { return data.m_growsInSunLight.at(species); };
 	[[nodiscard]] static bool getIsTree(PlantSpeciesId species) { return data.m_isTree.at(species); };
 	// returns base shape and wild growth steps.
-	[[nodiscard]] static const std::pair<const Shape*, uint8_t> shapeAndWildGrowthForPercentGrown(PlantSpeciesId species, Percent percentGrown);
-	[[nodiscard]] static const Shape& shapeForPercentGrown(PlantSpeciesId species, Percent percentGrown) { return *shapeAndWildGrowthForPercentGrown(species, percentGrown).first; }
+	[[nodiscard]] static const std::pair<ShapeId, uint8_t> shapeAndWildGrowthForPercentGrown(PlantSpeciesId species, Percent percentGrown);
+	[[nodiscard]] static ShapeId shapeForPercentGrown(PlantSpeciesId species, Percent percentGrown) { return shapeAndWildGrowthForPercentGrown(species, percentGrown).first; }
 	[[nodiscard]] static uint8_t wildGrowthForPercentGrown(PlantSpeciesId species, Percent percentGrown) { return shapeAndWildGrowthForPercentGrown(species, percentGrown).second; }
 	[[nodiscard]] static PlantSpeciesId byName(std::string name);
 	// Harvest.
-	ItemTypeId getFruitItemType(PlantSpeciesId species) { return data.m_fruitItemType.at(species); }
-	Step getStepsDurationHarvest(PlantSpeciesId species) { return data.m_stepsDurationHarvest.at(species); }
-	Quantity getItemQuantityToHarvest(PlantSpeciesId species) { return data.m_itemQuantityToHarvest.at(species); }
-	uint16_t getDayOfYearToStartHarvest(PlantSpeciesId species) { return data.m_dayOfYearToStartHarvest.at(species); }
+	ItemTypeId static getFruitItemType(PlantSpeciesId species) { return data.m_fruitItemType.at(species); }
+	Step static getStepsDurationHarvest(PlantSpeciesId species) { return data.m_stepsDurationHarvest.at(species); }
+	Quantity static getItemQuantityToHarvest(PlantSpeciesId species) { return data.m_itemQuantityToHarvest.at(species); }
+	uint16_t static getDayOfYearToStartHarvest(PlantSpeciesId species) { return data.m_dayOfYearToStartHarvest.at(species); }
 };

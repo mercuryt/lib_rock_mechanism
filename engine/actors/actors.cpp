@@ -30,10 +30,10 @@ Percent ActorParamaters::getPercentGrown(Simulation& simulation)
 	{
 		Percent percentLifeTime = Percent::create(simulation.m_random.getInRange(0, 100));
 		// Don't generate actors in the last 15% of their possible life span, they don't get out much.
-		Step adjustedMax = Step::create(util::scaleByPercent(species.deathAgeSteps[0].get(), Percent::create(85)));
+		Step adjustedMax = Step::create(util::scaleByPercent(AnimalSpecies::getDeathAgeSteps(species)[0].get(), Percent::create(85)));
 		// Using util::scaleByPercent and util::fractionToPercent give the wrong result here for some reason.
 		Step ageSteps = Step::create(((float)adjustedMax.get() / (float)percentLifeTime.get()) * 100.f);
-		percentGrown = Percent::create(std::min(100u, (uint)(((float)ageSteps.get() / (float)species.stepsTillFullyGrown.get()) * 100.f)));
+		percentGrown = Percent::create(std::min(100u, (uint)(((float)ageSteps.get() / (float)AnimalSpecies::getStepsTillFullyGrown(species).get()) * 100.f)));
 		birthStep = simulation.m_step - ageSteps;
 	}
 	return percentGrown;
@@ -41,7 +41,7 @@ Percent ActorParamaters::getPercentGrown(Simulation& simulation)
 std::wstring ActorParamaters::getName(Simulation& simulation)
 {
 	if(name.empty())
-		name = util::stringToWideString(species.name) + std::to_wstring(getId(simulation).get());
+		name = util::stringToWideString(AnimalSpecies::getName(species)) + std::to_wstring(getId(simulation).get());
 	return name;
 }
 Step ActorParamaters::getBirthStep(Simulation& simulation)
@@ -53,9 +53,10 @@ Step ActorParamaters::getBirthStep(Simulation& simulation)
 		else
 		{
 			// Pick an age for the given percent grown.
+			Step grown = AnimalSpecies::getStepsTillFullyGrown(species);
 			Step age = Step::create(percentGrown < 95 ?
-				util::scaleByPercent(species.stepsTillFullyGrown.get(), percentGrown) :
-				simulation.m_random.getInRange(species.stepsTillFullyGrown.get(), species.deathAgeSteps[1].get())
+				util::scaleByPercent(grown.get(), percentGrown) :
+				simulation.m_random.getInRange(grown.get(), AnimalSpecies::getDeathAgeSteps(species)[1].get())
 			);
 			birthStep = simulation.m_step - age;
 		}
@@ -97,16 +98,16 @@ Percent ActorParamaters::getPercentTired(Simulation& simulation)
 }
 void ActorParamaters::generateEquipment(Area& area, ActorIndex actor)
 {
-	static const MaterialType& leather = MaterialType::byName("leather");
-	static const MaterialType& cotton = MaterialType::byName("cotton");
-	static const MaterialType& iron = MaterialType::byName("iron");
-	static const MaterialType& bronze = MaterialType::byName("bronze");
-	static const MaterialType& poplarWoodType = MaterialType::byName("poplar wood");
+	static MaterialTypeId leather = MaterialType::byName("leather");
+	static MaterialTypeId cotton = MaterialType::byName("cotton");
+	static MaterialTypeId iron = MaterialType::byName("iron");
+	static MaterialTypeId bronze = MaterialType::byName("bronze");
+	static MaterialTypeId poplarWoodType = MaterialType::byName("poplar wood");
 	Actors& actors = area.getActors();
 	if(!actors.isSentient(actor))
 		return;
 	auto& random = area.m_simulation.m_random;
-	auto generate = [&](const ItemType& itemType, const MaterialType& materialType){
+	auto generate = [&](ItemTypeId itemType, MaterialTypeId materialType){
 		Quality quality = Quality::create(random.getInRange(10, 50));
 		Percent wear = Percent::create(random.getInRange(10, 60));
 		ItemIndex item = area.getItems().create({
@@ -117,30 +118,30 @@ void ActorParamaters::generateEquipment(Area& area, ActorIndex actor)
 		});
 		actors.equipment_add(actor, item);
 	};
-	auto generateMetal = [&](const ItemType& itemType) {
-		const MaterialType* materialType = random.chance(0.8) ? &iron : &bronze;
-		generate(itemType, *materialType);
+	auto generateMetal = [&](ItemTypeId itemType) {
+		MaterialTypeId materialType = random.chance(0.8) ? iron : bronze;
+		generate(itemType, materialType);
 	};
 	if(hasCloths)
 	{
 		//TODO: Cultural differences.
-		static const ItemType& pantsType = ItemType::byName("pants");
+		static ItemTypeId pantsType = ItemType::byName("pants");
 		generate(pantsType, cotton);
-		static const ItemType& shirtType = ItemType::byName("shirt");
+		static ItemTypeId shirtType = ItemType::byName("shirt");
 		generate(shirtType, cotton);
-		static const ItemType& jacketType = ItemType::byName("jacket");
+		static ItemTypeId jacketType = ItemType::byName("jacket");
 		generate(jacketType, cotton);
-		static const ItemType& shoesType = ItemType::byName("shoes");
+		static ItemTypeId shoesType = ItemType::byName("shoes");
 		generate(shoesType, cotton);
 		bool hasBelt = random.chance(0.6);
 		if(hasBelt)
 		{
-			static const ItemType& beltType = ItemType::byName("belt");
+			static ItemTypeId beltType = ItemType::byName("belt");
 			generate(beltType, leather);
 		}
 	}
-	static const ItemType& halfHelmType = ItemType::byName("half helm");
-	static const ItemType& breastPlateType = ItemType::byName("breast plate");
+	static ItemTypeId halfHelmType = ItemType::byName("half helm");
+	static ItemTypeId breastPlateType = ItemType::byName("breast plate");
 	if(hasLightArmor && !hasHeavyArmor)
 	{
 		if(random.chance(0.8))
@@ -149,7 +150,7 @@ void ActorParamaters::generateEquipment(Area& area, ActorIndex actor)
 		}
 		else if(random.chance(0.5))
 		{
-			static const ItemType& hoodType = ItemType::byName("hood");
+			static ItemTypeId hoodType = ItemType::byName("hood");
 			generate(hoodType, leather);
 		}
 		if(random.chance(0.4))
@@ -158,7 +159,7 @@ void ActorParamaters::generateEquipment(Area& area, ActorIndex actor)
 		}
 		else if(random.chance(0.6))
 		{
-			static const ItemType& chainMailShirtType = ItemType::byName("chain mail shirt");
+			static ItemTypeId chainMailShirtType = ItemType::byName("chain mail shirt");
 			generateMetal(chainMailShirtType);
 		}
 	}
@@ -166,7 +167,7 @@ void ActorParamaters::generateEquipment(Area& area, ActorIndex actor)
 	{
 		if(random.chance(0.75))
 		{
-			static const ItemType& fullHelmType = ItemType::byName("full helm");
+			static ItemTypeId fullHelmType = ItemType::byName("full helm");
 			generateMetal(fullHelmType);
 		}
 		else if(random.chance(0.9))
@@ -174,12 +175,12 @@ void ActorParamaters::generateEquipment(Area& area, ActorIndex actor)
 			generateMetal(halfHelmType);
 		}
 		generateMetal(breastPlateType);
-		static const ItemType& greavesType = ItemType::byName("greaves");
+		static ItemTypeId greavesType = ItemType::byName("greaves");
 		generateMetal(greavesType);
-		static const ItemType& vambracesType = ItemType::byName("vambraces");
+		static ItemTypeId vambracesType = ItemType::byName("vambraces");
 		generateMetal(vambracesType);
 	}
-	static const ItemType& longSwordType = ItemType::byName("long sword");
+	static ItemTypeId longSwordType = ItemType::byName("long sword");
 	if(hasSidearm)
 	{
 		auto roll = random.getInRange(0, 100);
@@ -189,12 +190,12 @@ void ActorParamaters::generateEquipment(Area& area, ActorIndex actor)
 		}
 		if(roll > 70)
 		{
-			static const ItemType& shortSwordType = ItemType::byName("short sword");
+			static ItemTypeId shortSwordType = ItemType::byName("short sword");
 			generateMetal(shortSwordType);
 		}
 		else
 		{
-			static const ItemType& daggerType = ItemType::byName("dagger");
+			static ItemTypeId daggerType = ItemType::byName("dagger");
 			generateMetal(daggerType);
 		}
 	}
@@ -203,28 +204,28 @@ void ActorParamaters::generateEquipment(Area& area, ActorIndex actor)
 		auto roll = random.getInRange(0, 100);
 		if(roll > 75)
 		{
-			static const ItemType& spearType = ItemType::byName("spear");
+			static ItemTypeId spearType = ItemType::byName("spear");
 			generateMetal(spearType);
 		}
 		if(roll > 65)
 		{
-			static const ItemType& maceType = ItemType::byName("mace");
+			static ItemTypeId maceType = ItemType::byName("mace");
 			generateMetal(maceType);
 		}
 		if(roll > 45)
 		{
-			static const ItemType& glaveType = ItemType::byName("glave");
+			static ItemTypeId glaveType = ItemType::byName("glave");
 			generateMetal(glaveType);
 		}
 		if(roll > 25)
 		{
-			static const ItemType& axeType = ItemType::byName("axe");
+			static ItemTypeId axeType = ItemType::byName("axe");
 			generateMetal(axeType);
 		}
 		else
 		{
 			generateMetal(longSwordType);
-			static const ItemType& shieldType = ItemType::byName("shield");
+			static ItemTypeId shieldType = ItemType::byName("shield");
 			generate(shieldType, poplarWoodType);
 		}
 	}
@@ -233,12 +234,12 @@ void ActorParamaters::generateEquipment(Area& area, ActorIndex actor)
 		auto roll = random.getInRange(0, 100);
 		if(roll > 75)
 		{
-			static const ItemType& crossbowType = ItemType::byName("crossbow");
+			static ItemTypeId crossbowType = ItemType::byName("crossbow");
 			generate(crossbowType, poplarWoodType);
 		}
 		else
 		{
-			static const ItemType& shortbowType = ItemType::byName("shortbow");
+			static ItemTypeId shortbowType = ItemType::byName("shortbow");
 			generate(shortbowType, poplarWoodType);
 		}
 	}
@@ -321,13 +322,13 @@ void Actors::load(const Json& data)
 	for(const Json& pair : data["mustDrink"])
 	{
 		ActorIndex index = pair[0].get<ActorIndex>();
-		m_mustDrink.at(index) = std::make_unique<MustDrink>(m_area, pair[1], index, *m_species.at(index));
+		m_mustDrink.at(index) = std::make_unique<MustDrink>(m_area, pair[1], index, m_species.at(index));
 	}
 	m_mustEat.resize(m_id.size());
 	for(const Json& pair : data["mustEat"])
 	{
 		ActorIndex index = pair[0].get<ActorIndex>();
-		m_mustEat.at(index) = std::make_unique<MustEat>(m_area, pair[1], index, *m_species.at(index));
+		m_mustEat.at(index) = std::make_unique<MustEat>(m_area, pair[1], index, m_species.at(index));
 	}
 	m_needsSafeTemperature.resize(m_id.size());
 	for(const Json& pair : data["needsSafeTemperature"])
@@ -590,12 +591,14 @@ ActorIndex Actors::create(ActorParamaters params)
 {
 	ActorIndex index = getNextIndex().toActor();
 	bool isStatic = false;
-	Portables::create(index, params.species.moveType, params.species.shapeForPercentGrown(params.getPercentGrown(m_area.m_simulation)), params.location, params.facing, isStatic);
+	MoveTypeId moveType = AnimalSpecies::getMoveType(params.species);
+	ShapeId shape = AnimalSpecies::shapeForPercentGrown(params.species, params.getPercentGrown(m_area.m_simulation));
+	Portables::create(index, moveType, shape, params.location, params.facing, isStatic);
 	Simulation& s = m_area.m_simulation;
 	m_referenceTarget.at(index)->index = index;
 	m_id.at(index) = params.getId(s);
 	m_name.at(index) = params.getName(s);
-	m_species.at(index) = &params.species;
+	m_species.at(index) = params.species;
 	m_project.at(index) = nullptr;
 	m_birthStep.at(index) = params.getBirthStep(s);
 	m_causeOfDeath.at(index) = CauseOfDeath::none;
@@ -621,7 +624,7 @@ ActorIndex Actors::create(ActorParamaters params)
 	m_stamina.at(index) = Stamina::null();
 	// Vision.
 	assert(m_canSee.at(index).empty());
-	m_visionRange.at(index) = params.species.visionRange;
+	m_visionRange.at(index) = AnimalSpecies::getVisionRange(params.species);
 	assert(m_hasVisionFacade.at(index).empty());
 	// Combat.
 	assert(!m_coolDownEvent.exists(index));
@@ -656,7 +659,7 @@ void Actors::sharedConstructor(ActorIndex index)
 	combat_update(index);
 	move_updateIndividualSpeed(index);
 	m_body.at(index)->initalize(m_area);
-	m_mustDrink.at(index)->setFluidType(m_species.at(index)->fluidType);
+	m_mustDrink.at(index)->setFluidType(AnimalSpecies::getFluidType(m_species.at(index)));
 }
 void Actors::scheduleNeeds(ActorIndex index)
 {
@@ -665,12 +668,12 @@ void Actors::scheduleNeeds(ActorIndex index)
 	m_mustEat.at(index)->scheduleHungerEvent(m_area);
 	m_canGrow.at(index)->updateGrowingStatus(m_area);
 }
-void Actors::setShape(ActorIndex index, const Shape& shape)
+void Actors::setShape(ActorIndex index, ShapeId shape)
 {
 	BlockIndex location = m_location.at(index);
 	if(location.exists())
 		exit(index);
-	m_shape.at(index) = &shape;
+	m_shape.at(index) = shape;
 	if(location.exists())
 		setLocation(index, location);
 }
@@ -685,7 +688,7 @@ void Actors::setLocationAndFacing(ActorIndex index, BlockIndex block, Facing fac
 	if(m_location.at(index).exists())
 		exit(index);
 	Blocks& blocks = m_area.getBlocks();
-	for(auto [x, y, z, v] : m_shape.at(index)->makeOccupiedPositionsWithFacing(facing))
+	for(auto [x, y, z, v] : Shape::makeOccupiedPositionsWithFacing(m_shape.at(index), facing))
 	{
 		BlockIndex occupied = blocks.offset(block, x, y, z);
 		blocks.actor_record(occupied, index, CollisionVolume::create(v));
@@ -700,7 +703,7 @@ void Actors::exit(ActorIndex index)
 	assert(m_location.at(index).exists());
 	BlockIndex location = m_location.at(index);
 	auto& blocks = m_area.getBlocks();
-	for(auto [x, y, z, v] : m_shape.at(index)->makeOccupiedPositionsWithFacing(m_facing.at(index)))
+	for(auto [x, y, z, v] : Shape::makeOccupiedPositionsWithFacing(m_shape.at(index), m_facing.at(index)))
 	{
 		BlockIndex occupied = blocks.offset(location, x, y, z);
 		blocks.actor_erase(occupied, index);
@@ -723,10 +726,16 @@ void Actors::removeMassFromCorpse(ActorIndex index, Mass mass)
 	if(m_mass.at(index) == 0)
 		leaveArea(index);
 }
-bool Actors::isEnemy(ActorIndex index, ActorIndex other) const { return getFaction(index)->enemies.contains(m_faction.at(other)); }
-bool Actors::isAlly(ActorIndex index, ActorIndex other) const { return getFaction(index)->allies.contains(m_faction.at(other)); }
+bool Actors::isEnemy(ActorIndex index, ActorIndex other) const
+{
+	return m_area.m_simulation.m_hasFactions.isEnemy(getFaction(index), getFaction(other));
+}
+bool Actors::isAlly(ActorIndex index, ActorIndex other) const
+{
+	return m_area.m_simulation.m_hasFactions.isAlly(getFaction(index), getFaction(other));
+}
 //TODO: Zombies are not sentient.
-bool Actors::isSentient(ActorIndex index) const { return m_species.at(index)->sentient; }
+bool Actors::isSentient(ActorIndex index) const { return AnimalSpecies::getSentient(m_species.at(index)); }
 void Actors::die(ActorIndex index, CauseOfDeath causeOfDeath)
 {
 	m_causeOfDeath.at(index) = causeOfDeath;
@@ -820,7 +829,7 @@ Percent Actors::getPercentGrown(ActorIndex index) const { return m_canGrow.at(in
 void Actors::log(ActorIndex index) const
 {
 	std::wcout << m_name.at(index);
-	std::cout << "(" << m_species.at(index)->name << ")";
+	std::cout << "(" << AnimalSpecies::getName(m_species.at(index)) << ")";
 	Portables::log(index);
 	std::cout << std::endl;
 }
@@ -850,7 +859,7 @@ Percent Actors::sleep_getPercentTired(ActorIndex index) const { return m_mustSle
 BlockIndex Actors::sleep_getSpot(ActorIndex index) const { return m_mustSleep.at(index)->getLocation(); }
 bool Actors::sleep_hasTiredEvent(ActorIndex index) const { return m_mustSleep.at(index)->hasTiredEvent(); }
 // Skills.
-SkillLevel Actors::skill_getLevel(ActorIndex index, const SkillType& skillType) const { return m_skillSet.at(index)->get(skillType); }
+SkillLevel Actors::skill_getLevel(ActorIndex index, SkillTypeId skillType) const { return m_skillSet.at(index)->get(skillType); }
 // CoolDownEvent.
 AttackCoolDownEvent::AttackCoolDownEvent(Simulation& simulation, const Json& data) :
 	ScheduledEvent(simulation, data["delay"].get<Step>(), data["start"].get<Step>())

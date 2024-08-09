@@ -11,12 +11,10 @@
 #include <vector>
 #include <utility>
 #include <string>
-#include <unordered_map>
 #include <memory>
 #include <functional>
 
 struct CraftJob;
-struct CraftJobType;
 class HasCraftingLocationsAndJobsForFaction;
 class CraftPathRequest;
 class CraftStepProject;
@@ -30,11 +28,11 @@ class CraftInputAction final : public InputAction
 {
 	Area& m_area;
 	FactionId m_faction;
-	const CraftJobType& m_craftJobType;
-	const MaterialType* m_materialType;
+	CraftJobTypeId m_craftJobType;
+	MaterialTypeId m_materialType;
 	Quantity m_quantity = 0;
 	Quality m_quality = 0;
-	CraftInputAction(Area& area, FactionId faction, InputQueue& inputQueue, const CraftJobType& craftJobType, const MaterialType* materialType, Quantity quantity) : 
+	CraftInputAction(Area& area, FactionId faction, InputQueue& inputQueue, CraftJobTypeId craftJobType, MaterialTypeId materialType, Quantity quantity) : 
 		InputAction(inputQueue), m_area(area), m_faction(faction), m_craftJobType(craftJobType), m_materialType(materialType), m_quantity(quantity) { }
 	void execute();
 };
@@ -49,25 +47,25 @@ class CraftCancelInputAction final : public InputAction
 };
 */
 // Drill, saw, forge, etc.
-struct CraftStepTypeCategory final
+class CraftStepTypeCategory final
 {
-	const std::string name;
-	// Infastructure.
-	static CraftStepTypeCategory& byName(const std::string name);
+	static CraftStepTypeCategory data;
+	DataVector<std::string, CraftStepTypeCategoryId> m_name;
+public:
+	static void create(std::string name) { data.m_name.add(name); }
+	[[nodiscard]] static CraftStepTypeCategoryId byName(const std::string name);
+	[[nodiscard]] static std::string getName(std::string Name);
 };
-inline std::list<CraftStepTypeCategory> craftStepTypeCategoryDataStore;
-inline void to_json(Json& data, const CraftStepTypeCategory* const& category){ data = category->name; }
-inline void from_json(const Json& data, const CraftStepTypeCategory*& category){ category = &CraftStepTypeCategory::byName(data.get<std::string>()); }
 // Part of the definition of a particular CraftJobType which makes a specific Item.
 struct CraftStepType final
 {
-	const std::string name;
-	const CraftStepTypeCategory& craftStepTypeCategory;
-	const SkillType& skillType;
-	const Step stepsDuration;
+	std::string name;
+	CraftStepTypeCategoryId craftStepTypeCategory;
+	SkillTypeId skillType;
+	Step stepsDuration;
 	std::vector<std::pair<ItemQuery, Quantity>> consumed;
 	std::vector<std::pair<ItemQuery, Quantity>> unconsumed;
-	std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> byproducts;
+	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> byproducts;
 };
 // A specific step of a specific CraftJob.
 class CraftStepProject final : public Project
@@ -85,7 +83,7 @@ class CraftStepProject final : public Project
 	// Use copies rather then references for return types to allow specalization of Queries as well as byproduct material type.
 	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
 	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const;
-	[[nodiscard]] std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> getByproducts() const;
+	[[nodiscard]] std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const;
 	[[nodiscard]] std::vector<std::pair<ActorQuery, Quantity>> getActors() const { return {}; }
 public:
 	CraftStepProject(FactionId faction, Area& area, BlockIndex location, const CraftStepType& cst, CraftJob& cj) : 
@@ -104,37 +102,48 @@ struct CraftStepProjectHasShapeDishonorCallback final : public DishonorCallback
 	void execute([[maybe_unused]] Quantity oldCount, [[maybe_unused]] Quantity newCount) { m_craftStepProject.cancel(); }
 };
 // Data about making a specific product type.
-struct CraftJobType final
+class CraftJobType final
 {
-	const std::string name;
-	const ItemType& productType;
-	const Quantity productQuantity;
-	const MaterialTypeCategory* materialTypeCategory;
-	std::vector<CraftStepType> stepTypes;
-	// Infastructure.
-	static CraftJobType& byName(const std::string name);
+	static CraftJobType data;
+	DataVector<std::string, CraftJobTypeId> m_name;
+	DataVector<ItemTypeId, CraftJobTypeId> m_productType;
+	DataVector<Quantity, CraftJobTypeId> m_productQuantity;
+	DataVector<MaterialCategoryTypeId, CraftJobTypeId> m_materialTypeCategory;
+	DataVector<std::vector<CraftStepType>, CraftJobTypeId> m_stepTypes;
+public:
+	static void create(std::string name, ItemTypeId productType, Quantity productQuantity, MaterialCategoryTypeId category, std::vector<CraftStepType> stepType);
+	[[nodiscard]] static CraftJobTypeId byName(const std::string name);
+	[[nodiscard]] static std::string getName(CraftJobTypeId id) { return data.m_name.at(id); }
+	[[nodiscard]] static ItemTypeId getProductType(CraftJobTypeId id) { return data.m_productType.at(id); }
+	[[nodiscard]] static Quantity getProductQuantity(CraftJobTypeId id) { return data.m_productQuantity.at(id); }
+	[[nodiscard]] static MaterialCategoryTypeId getMaterialTypeCategory(CraftJobTypeId id) { return data.m_materialTypeCategory.at(id); }
+	[[nodiscard]] static std::vector<CraftStepType>& getStepTypes(CraftJobTypeId id) { return data.m_stepTypes.at(id); }
 };
-inline std::list<CraftJobType> craftJobTypeDataStore;
-inline void to_json(Json& data, const CraftJobType* const& craftJobType){ data = craftJobType->name; }
-inline void to_json(Json& data, const CraftJobType& craftJobType){ data = craftJobType.name; }
-inline void from_json(const Json& data, const CraftJobType*& craftJobType){ craftJobType = &CraftJobType::byName(data.get<std::string>()); }
 // Make a specific product.
 struct CraftJob final
 {
-	const CraftJobType& craftJobType;
+	CraftJobTypeId craftJobType;
 	HasCraftingLocationsAndJobsForFaction& hasCraftingLocationsAndJobs;
 	ItemReference workPiece;
-	const MaterialType* materialType;
+	MaterialTypeId materialType;
 	std::vector<CraftStepType>::const_iterator stepIterator;
 	std::unique_ptr<CraftStepProject> craftStepProject;
 	uint32_t minimumSkillLevel = 0;
 	uint32_t totalSkillPoints = 0;
 	Reservable reservable;
 	// If work piece is provided then this is an upgrade job.
-	CraftJob(const CraftJobType& cjt, HasCraftingLocationsAndJobsForFaction& hclaj, ItemIndex wp, const MaterialType* mt, uint32_t msl);
+	CraftJob(CraftJobTypeId cjt, HasCraftingLocationsAndJobsForFaction& hclaj, ItemIndex wp, MaterialTypeId mt, uint32_t msl);
 	// No work piece provided is a create job.
-	CraftJob(const CraftJobType& cjt, HasCraftingLocationsAndJobsForFaction& hclaj, const MaterialType* mt, uint32_t msl) :
-	       	craftJobType(cjt), hasCraftingLocationsAndJobs(hclaj), materialType(mt), stepIterator(craftJobType.stepTypes.begin()), minimumSkillLevel(msl), totalSkillPoints(0), reservable(Quantity::create(1)) { }
+	CraftJob(CraftJobTypeId cjt, HasCraftingLocationsAndJobsForFaction& hclaj, MaterialTypeId mt, uint32_t msl) :
+	       	craftJobType(cjt),
+		hasCraftingLocationsAndJobs(hclaj),
+		materialType(mt),
+		minimumSkillLevel(msl),
+		totalSkillPoints(0),
+		reservable(Quantity::create(1)) 
+	{ 
+		stepIterator = CraftJobType::getStepTypes(craftJobType).begin();
+	}
 	CraftJob(const Json& data, DeserializationMemo& deserializationMemo, HasCraftingLocationsAndJobsForFaction& hclaj);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] Quality getQuality() const;
@@ -145,10 +154,10 @@ inline void to_json(Json& data, const CraftJob* const& craftJob){ data = reinter
 // To be used by Area.
 class HasCraftingLocationsAndJobsForFaction final
 {
-	std::unordered_map<const CraftStepTypeCategory*, BlockIndices> m_locationsByCategory;
-	BlockIndexMap<std::unordered_set<const CraftStepTypeCategory*>> m_stepTypeCategoriesByLocation;
-	std::unordered_map<const CraftStepTypeCategory*, std::unordered_set<CraftJob*>> m_unassignedProjectsByStepTypeCategory;
-	std::unordered_map<const SkillType*, std::unordered_set<CraftJob*>> m_unassignedProjectsBySkill;
+	CraftStepTypeCategoryMap<BlockIndices> m_locationsByCategory;
+	BlockIndexMap<std::vector<CraftStepTypeCategoryId>> m_stepTypeCategoriesByLocation;
+	CraftStepTypeCategoryMap<std::vector<CraftJob*>> m_unassignedProjectsByStepTypeCategory;
+	SkillTypeMap<std::vector<CraftJob*>> m_unassignedProjectsBySkill;
 	std::list<CraftJob> m_jobs;
 	Area& m_area;
 	FactionId m_faction;
@@ -158,13 +167,13 @@ public:
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	// To be used by the player.
-	void addLocation(const CraftStepTypeCategory& craftStepTypeCategory, BlockIndex block);
+	void addLocation(CraftStepTypeCategoryId craftStepTypeCategory, BlockIndex block);
 	// To be used by the player.
-	void removeLocation(const CraftStepTypeCategory& craftStepTypeCategory, BlockIndex block);
+	void removeLocation(CraftStepTypeCategoryId craftStepTypeCategory, BlockIndex block);
 	// To be used by invalidating events such as set solid.
 	void maybeRemoveLocation(BlockIndex block);
 	// designate something to be crafted.
-	void addJob(const CraftJobType& craftJobType, const MaterialType* materialType, Quantity quantity, uint32_t minimumSkillLevel = 0);
+	void addJob(CraftJobTypeId craftJobType, MaterialTypeId materialType, Quantity quantity, uint32_t minimumSkillLevel = 0);
 	void cloneJob(CraftJob& craftJob);
 	// Undo an addJob order.
 	void removeJob(CraftJob& craftJob);
@@ -181,19 +190,19 @@ public:
 	// Generate a project step for craftJob and dispatch the worker from objective.
 	void makeAndAssignStepProject(CraftJob& craftJob, BlockIndex location, CraftObjective& objective, ActorIndex actor);
 	// To be used by the UI.
-	[[nodiscard]] bool hasLocationsFor(const CraftJobType& craftJobType) const;
+	[[nodiscard]] bool hasLocationsFor(CraftJobTypeId craftJobType) const;
 	[[nodiscard]] std::list<CraftJob>& getAllJobs() { return m_jobs; }
-	[[nodiscard]] std::unordered_set<const CraftStepTypeCategory*>& getStepTypeCategoriesForLocation(BlockIndex location);
-	[[nodiscard]] const CraftStepTypeCategory* getDisplayStepTypeCategoryForLocation(BlockIndex location);
+	[[nodiscard]] std::vector<CraftStepTypeCategoryId>& getStepTypeCategoriesForLocation(BlockIndex location);
+	[[nodiscard]] CraftStepTypeCategoryId getDisplayStepTypeCategoryForLocation(BlockIndex location);
 	// May return nullptr;
-	[[nodiscard]] CraftJob* getJobForAtLocation(const ActorIndex actor, const SkillType& skillType, BlockIndex block, std::unordered_set<CraftJob*>& excludeJobs);
+	[[nodiscard]] CraftJob* getJobForAtLocation(const ActorIndex actor, SkillTypeId skillType, BlockIndex block, SmallSet<CraftJob*>& excludeJobs);
 	friend class CraftObjectiveType;
 	friend class AreaHasCraftingLocationsAndJobs;
 	friend struct CraftJob;
 	// For testing.
 	[[maybe_unused, nodiscard]] bool hasJobs() const { return !m_jobs.empty(); }
-	[[maybe_unused, nodiscard]] bool hasLocationsForCategory(const CraftStepTypeCategory& category) const { return m_locationsByCategory.contains(&category); }
-	[[maybe_unused, nodiscard]] bool hasUnassignedProjectsForCategory(const CraftStepTypeCategory& category) const { return m_unassignedProjectsByStepTypeCategory.contains(&category); }
+	[[maybe_unused, nodiscard]] bool hasLocationsForCategory(CraftStepTypeCategoryId category) const { return m_locationsByCategory.contains(category); }
+	[[maybe_unused, nodiscard]] bool hasUnassignedProjectsForCategory(CraftStepTypeCategoryId category) const { return m_unassignedProjectsByStepTypeCategory.contains(category); }
 };
 class AreaHasCraftingLocationsAndJobs final
 {

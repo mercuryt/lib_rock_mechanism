@@ -7,23 +7,30 @@ const MaterialCategoryTypeId MaterialTypeCategory::byName(const std::string name
 	assert(found != data.m_name.end());
 	return MaterialCategoryTypeId::create(found - data.m_name.begin());
 }
-MaterialConstructionData& MaterialConstructionData::byNameSpecialized(const std::string name, const MaterialType& materialType)
-{
-	auto found = std::ranges::find(materialConstructionDataStore, name, &MaterialConstructionData::name);
-	assert(found != materialConstructionDataStore.end());
-	MaterialConstructionData output = *found;
-	for(auto& [itemQuery, quantity] : output.consumed)
-		if(itemQuery.m_materialType == nullptr)
-			itemQuery.m_materialType = &materialType;
-	for(auto& tuple : output.byproducts)
-		if(std::get<1>(tuple) == nullptr)
-			std::get<1>(tuple) = &materialType;
-	materialConstructionSpecializedDataStore.push_back(output);
-	return materialConstructionSpecializedDataStore.back();
-}
 MaterialTypeId MaterialType::byName(const std::string name)
 {
 	auto found = data.m_name.find(name);
 	assert(found != data.m_name.end());
 	return MaterialTypeId::create(found - data.m_name.begin());
+}
+MaterialTypeId MaterialType::create(MaterialTypeParamaters& p)
+{
+	data.m_name.add(p.name);
+	data.m_density.add(p.density);
+	data.m_hardness.add(p.hardness);
+	data.m_transparent.add(p.transparent);
+	data.m_materialTypeCategory.add(p.materialTypeCategory);
+	data.m_spoilData.add(p.spoilData);
+	data.m_meltingPoint.add(p.meltingPoint);
+	data.m_meltsInto.add(p.meltsInto);
+	data.m_burnStageDuration.add(p.burnStageDuration); 
+	data.m_flameStageDuration.add(p.flameStageDuration); 
+	data.m_ignitionTemperature.add(p.ignitionTemperature); 
+	data.m_flameTemperature.add(p.flameTemperature); 
+	data.m_construction_consumed.add(p.construction_consumed);
+	data.m_construction_unconsumed.add(p.construction_unconsumed);
+	data.m_construction_byproducts.add(p.construction_byproducts);
+	data.m_construction_skill.add(p.construction_skill);
+	data.m_construction_duration.add(p.construction_duration);
+	return MaterialTypeId::create(data.m_name.size() - 1);
 }

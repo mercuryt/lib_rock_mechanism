@@ -18,10 +18,9 @@ class MaterialTypeCategory
 	DataVector<std::string, MaterialCategoryTypeId> m_name;
 public:
 	static const MaterialCategoryTypeId byName(const std::string name);
-	static MaterialCategoryTypeId create(std::string name)
+	static void create(std::string name)
 	{
 		data.m_name.add(name);
-		return MaterialCategoryTypeId::create(data.m_name.size() - 1);
 	}
 };
 class SpoilData
@@ -42,60 +41,91 @@ public:
 		data.m_max.add(ma);
 		return SpoilsDataTypeId::create(data.m_materialType.size() - 1);
 	}
+	[[nodiscard]] static MaterialTypeId getMaterialType(SpoilsDataTypeId id) { return data.m_materialType.at(id); };
+	[[nodiscard]] static ItemTypeId getItemType(SpoilsDataTypeId id) { return data.m_itemType.at(id); };
+	[[nodiscard]] static double getChance(SpoilsDataTypeId id) { return data.m_chance.at(id); };
+	[[nodiscard]] static Quantity getMin(SpoilsDataTypeId id) { return data.m_min.at(id); };
+	[[nodiscard]] static Quantity getMax(SpoilsDataTypeId id) { return data.m_max.at(id); };
 };
-
+struct MaterialTypeConstructionDataParamaters final
+{
+	std::vector<std::pair<ItemQuery, Quantity>> consumed = {};
+	std::vector<std::pair<ItemQuery, Quantity>> unconsumed = {};
+	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> byproducts = {};
+	std::string name;
+	SkillTypeId skill;
+	Step duration;
+};
 struct MaterialTypeParamaters final
 {
-	DataVector<std::string, MaterialTypeId> m_name;
-	DataVector<Density, MaterialTypeId> m_density;
-	DataVector<uint32_t, MaterialTypeId> m_hardness;
-	DataVector<bool, MaterialTypeId> m_transparent;
-	DataVector<MaterialCategoryTypeId, MaterialTypeId> m_materialTypeCategory;
-	DataVector<std::vector<SpoilsDataTypeId>, MaterialTypeId> m_spoilData;
-	DataVector<Temperature, MaterialTypeId> m_meltingPoint;
-	DataVector<FluidTypeId, MaterialTypeId> m_meltsInto;
-	DataVector<BurnDataTypeId, MaterialTypeId> m_burnData;
-	DataVector<MaterialConstructionDataTypeId, MaterialTypeId> m_constructionData;
+	std::string name;
+	Density density;
+	uint32_t hardness;
+	bool transparent;
+	MaterialCategoryTypeId materialTypeCategory = MaterialCategoryTypeId::null();
+	std::vector<SpoilsDataTypeId> spoilData = {};
+	Temperature meltingPoint = Temperature::null();
+	FluidTypeId meltsInto = FluidTypeId::null();
 	// Construction.
-	DataVector<std::vector<std::pair<ItemQuery, Quantity>>, MaterialConstructionDataTypeId> m_construction_consumed;
-	DataVector<std::vector<std::pair<ItemQuery, Quantity>>, MaterialConstructionDataTypeId>  m_construction_unconsumed;
-	DataVector<std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>>, MaterialConstructionDataTypeId>  m_construction_byproducts;
-	DataVector<std::string, MaterialConstructionDataTypeId> m_construction_name;
-	DataVector<SkillTypeId, MaterialConstructionDataTypeId> m_construction_skill;
-	DataVector<Step, MaterialConstructionDataTypeId> m_construction_duration;
+	std::vector<std::pair<ItemQuery, Quantity>> construction_consumed = {};
+	std::vector<std::pair<ItemQuery, Quantity>> construction_unconsumed = {};
+	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> construction_byproducts = {};
+	std::string construction_name = {};
+	SkillTypeId construction_skill = SkillTypeId::null();
+	Step construction_duration = Step::null();
 	// Fire.
-	DataVector<Step, BurnDataTypeId> m_burnStageDuration; // How many steps to go from smouldering to burning and from burning to flaming.
-	DataVector<Step, BurnDataTypeId> m_flameStageDuration; // How many steps to spend flaming.
-	DataVector<Temperature, BurnDataTypeId> m_ignitionTemperature; // Temperature at which this material catches fire.
-	DataVector<TemperatureDelta, BurnDataTypeId> m_flameTemperature; // Temperature given off by flames from this material. The temperature given off by burn stage is a fraction of flame stage based on a config setting.
+	Step burnStageDuration = Step::null(); // How many steps to go from smouldering to burning and from burning to flaming.
+	Step flameStageDuration = Step::null(); // How many steps to spend flaming.
+	Temperature ignitionTemperature = Temperature::null(); // Temperature at which this material catches fire.
+	TemperatureDelta flameTemperature = TemperatureDelta::null(); // Temperature given off by flames from this material. The temperature given off by burn stage is a fraction of flame stage based on a config setting.
 };
-
 class MaterialType final
 {
 	static MaterialType data;
 	DataVector<std::string, MaterialTypeId> m_name;
 	DataVector<Density, MaterialTypeId> m_density;
 	DataVector<uint32_t, MaterialTypeId> m_hardness;
-	DataVector<bool, MaterialTypeId> m_transparent;
+	DataBitSet<MaterialTypeId> m_transparent;
 	DataVector<MaterialCategoryTypeId, MaterialTypeId> m_materialTypeCategory;
+	// Construction.
+	DataVector<std::vector<std::pair<ItemQuery, Quantity>>, MaterialTypeId> m_construction_consumed;
+	DataVector<std::vector<std::pair<ItemQuery, Quantity>>, MaterialTypeId>  m_construction_unconsumed;
+	DataVector<std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>>, MaterialTypeId>  m_construction_byproducts;
+	DataVector<SkillTypeId, MaterialTypeId> m_construction_skill;
+	DataVector<Step, MaterialTypeId> m_construction_duration;
 	// How does this material dig?
+	// There is no reason why spoils data isn't stored inline in structs rather then in a seperate table.
 	DataVector<std::vector<SpoilsDataTypeId>, MaterialTypeId> m_spoilData;
 	// What temperatures cause phase changes?
 	DataVector<Temperature, MaterialTypeId> m_meltingPoint;
 	DataVector<FluidTypeId, MaterialTypeId> m_meltsInto;
-	// Construction.
-	DataVector<std::vector<std::pair<ItemQuery, Quantity>>, MaterialTypeId> m_construction_consumed;
-	DataVector<std::vector<std::pair<ItemQuery, Quantity>>, MaterialTypeId>  m_construction_unconsumed;
-	DataVector<std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>>, MaterialTypeId>  m_construction_byproducts;
-	DataVector<std::string, MaterialTypeId> m_construction_name;
-	DataVector<SkillTypeId, MaterialTypeId> m_construction_skill;
-	DataVector<Step, MaterialTypeId> m_construction_duration;
 	// Fire.
 	DataVector<Step, MaterialTypeId> m_burnStageDuration; // How many steps to go from smouldering to burning and from burning to flaming.
 	DataVector<Step, MaterialTypeId> m_flameStageDuration; // How many steps to spend flaming.
 	DataVector<Temperature, MaterialTypeId> m_ignitionTemperature; // Temperature at which this material catches fire.
 	DataVector<TemperatureDelta, MaterialTypeId> m_flameTemperature; // Temperature given off by flames from this material. The temperature given off by burn stage is a fraction of flame stage based on a config setting.
+public:
 	static MaterialTypeId create(MaterialTypeParamaters& p);
-	// Infastructure.
-	[[nodiscard]] static MaterialTypeId byName(const std::string name);
+	[[nodiscard]] static bool empty() { return data.m_density.empty(); }
+	[[nodiscard]] static MaterialTypeId byName(std::string name);
+	[[nodiscard]] static std::string& getName(MaterialTypeId id) { return data.m_name.at(id); };
+	[[nodiscard]] static Density getDensity(MaterialTypeId id) { return data.m_density.at(id); };
+	[[nodiscard]] static uint32_t getHardness(MaterialTypeId id) { return data.m_hardness.at(id); };
+	[[nodiscard]] static bool getTransparent(MaterialTypeId id) { return data.m_transparent.at(id); };
+	[[nodiscard]] static MaterialCategoryTypeId getMaterialTypeCategory(MaterialTypeId id) { return data.m_materialTypeCategory.at(id); };
+	[[nodiscard]] static std::vector<SpoilsDataTypeId>& getSpoilData(MaterialTypeId id) { return data.m_spoilData.at(id); };
+	[[nodiscard]] static Temperature getMeltingPoint(MaterialTypeId id) { return data.m_meltingPoint.at(id); };
+	[[nodiscard]] static FluidTypeId getMeltsInto(MaterialTypeId id) { return data.m_meltsInto.at(id); };
+	// Fire.
+	[[nodiscard]] static bool canBurn(MaterialTypeId id) { return data.m_burnStageDuration.at(id).empty(); }
+	[[nodiscard]] static Step getBurnStageDuration(MaterialTypeId id) { return data.m_burnStageDuration.at(id); };
+	[[nodiscard]] static Step getFlameStageDuration(MaterialTypeId id) { return data.m_flameStageDuration.at(id); };
+	[[nodiscard]] static Temperature getIgnitionTemperature(MaterialTypeId id) { return data.m_ignitionTemperature.at(id); };
+	[[nodiscard]] static TemperatureDelta getFlameTemperature(MaterialTypeId id) { return data.m_flameTemperature.at(id); };
+	// Construct.
+	[[nodiscard]] static std::vector<std::pair<ItemQuery, Quantity>> construction_getConsumed(MaterialTypeId id) { return data.m_construction_consumed.at(id); };
+	[[nodiscard]] static std::vector<std::pair<ItemQuery, Quantity>> construction_getUnconsumed(MaterialTypeId id) { return data.m_construction_unconsumed.at(id); };
+	[[nodiscard]] static std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> construction_getByproducts(MaterialTypeId id) { return data.m_construction_byproducts.at(id); };
+	[[nodiscard]] static SkillTypeId construction_getSkill(MaterialTypeId id) { return data.m_construction_skill.at(id); };
+	[[nodiscard]] static Step construction_getDuration(MaterialTypeId id) { return data.m_construction_duration.at(id); };
 };

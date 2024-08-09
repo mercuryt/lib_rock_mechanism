@@ -82,7 +82,7 @@ void Simulation::save()
 	std::filesystem::create_directory(m_path/"area");
 	m_hasAreas->save();
 }
-Faction& Simulation::createFaction(std::wstring name) { return m_hasFactions.createFaction(name); }
+FactionId Simulation::createFaction(std::wstring name) { return m_hasFactions.createFaction(name); }
 DateTime Simulation::getDateTime() const { return DateTime(m_step); }
 Simulation::~Simulation()
 {
@@ -91,7 +91,6 @@ Simulation::~Simulation()
 	m_hourlyEvent.maybeUnschedule();
 	m_eventSchedule.m_data.clear();
 	m_threadedTaskEngine.clear();
-	m_pool.wait_for_tasks();
 }
 // Note: Does not handle fluids.
 void Simulation::fastForward(Step steps)

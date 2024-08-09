@@ -36,7 +36,7 @@ Json BanditsArriveDramaArc::toJson() const
 void BanditsArriveDramaArc::callback()
 {
 	auto& random = m_area->m_simulation.m_random;
-	static std::vector<const AnimalSpecies*> sentientSpecies = getSentientSpecies();
+	static std::vector<AnimalSpeciesId> sentientSpecies = getSentientSpecies();
 	constexpr DistanceInBlocks maxBlockDistance = DistanceInBlocks::create(40);
 	Actors& actors = m_area->getActors();
 	if(m_isActive)
@@ -45,8 +45,10 @@ void BanditsArriveDramaArc::callback()
 		BlockIndex destination = m_area->getBlocks().getCenterAtGroundLevel();
 		if(!m_leader.exists())
 		{
-			const AnimalSpecies& species = *random.getInVector(sentientSpecies);
-			BlockIndex location = findLocationOnEdgeForNear(*species.shapes.back(), species.moveType, m_entranceBlock, maxBlockDistance, exclude);
+			AnimalSpeciesId species = random.getInVector(sentientSpecies);
+			ShapeId shape = AnimalSpecies::getShapes(species).back();
+			MoveTypeId moveType = AnimalSpecies::getMoveType(species);
+			BlockIndex location = findLocationOnEdgeForNear(shape, moveType, m_entranceBlock, maxBlockDistance, exclude);
 			exclude.add(location);
 			ActorParamaters params{
 				.species=species,
@@ -60,16 +62,18 @@ void BanditsArriveDramaArc::callback()
 			m_leader = actors.create(params).toReference(*m_area);
 			--m_quantity;
 			ActorIndex leaderIndex = m_leader.getIndex();
-			Faction& faction = m_area->m_simulation.createFaction(actors.getName(leaderIndex) + L" bandits");
-			actors.setFaction(leaderIndex, faction.id);
+			FactionId faction = m_area->m_simulation.createFaction(actors.getName(leaderIndex) + L" bandits");
+			actors.setFaction(leaderIndex, faction);
 			actors.objective_addTaskToStart(leaderIndex, std::make_unique<ExterminateObjective>(*m_area, destination));
 			m_actors.add(m_leader);
 		}
 		// Spawn.
 		while(m_quantity-- != 0)
 		{
-			const AnimalSpecies& species = random.chance(0.5) ? actors.getSpecies(m_leader.getIndex()) : *random.getInVector(sentientSpecies);
-			BlockIndex location = findLocationOnEdgeForNear(*species.shapes.back(), species.moveType, m_entranceBlock, maxBlockDistance, exclude);
+			AnimalSpeciesId species = random.chance(0.5) ? actors.getSpecies(m_leader.getIndex()) : random.getInVector(sentientSpecies);
+			ShapeId shape = AnimalSpecies::getShapes(species).back();
+			MoveTypeId moveType = AnimalSpecies::getMoveType(species);
+			BlockIndex location = findLocationOnEdgeForNear(shape, moveType, m_entranceBlock, maxBlockDistance, exclude);
 			if(location.exists())
 			{
 				exclude.add(location);
@@ -103,8 +107,8 @@ void BanditsArriveDramaArc::callback()
 	else
 	{
 		// Find entry point.
-		static const Shape& shape = Shape::byName("oneByOneFull");
-		static const MoveType moveType = MoveType::byName("two legs and swim in water");
+		static ShapeId shape = Shape::byName("oneByOneFull");
+		static const MoveTypeId moveType = MoveType::byName("two legs and swim in water");
 		m_entranceBlock = getEntranceToArea(shape, moveType);
 		if(m_entranceBlock.empty())
 			scheduleArrive();

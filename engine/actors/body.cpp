@@ -9,7 +9,7 @@ BodyPart& Actors::body_pickABodyPartByVolume(ActorIndex index) const
 {
 	return m_body.at(index)->pickABodyPartByVolume(m_area.m_simulation);
 }
-BodyPart& Actors::body_pickABodyPartByType(ActorIndex index, const BodyPartType& bodyPartType) const
+BodyPart& Actors::body_pickABodyPartByType(ActorIndex index, BodyPartTypeId bodyPartType) const
 {
 	return m_body.at(index)->pickABodyPartByType(bodyPartType);
 }

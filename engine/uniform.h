@@ -10,7 +10,7 @@ struct UniformElement final
 {
 	ItemQuery itemQuery;
 	Quantity quantity;
-	UniformElement(const ItemType& itemType, Quantity quantity = Quantity::create(1), const MaterialType* materialType = nullptr, Quality qualityMin = Quality::create(0));
+	UniformElement(ItemTypeId itemType, Quantity quantity = Quantity::create(1), MaterialTypeId materialType = MaterialTypeId::null(), Quality qualityMin = Quality::create(0));
 	[[nodiscard]] bool operator==(const UniformElement& other) const { return &other == this; }
 };
 struct Uniform final

@@ -59,7 +59,7 @@ void Actors::move_callback(ActorIndex index)
 	BlockIndex block = *m_pathIter.at(index);
 	Blocks& blocks = m_area.getBlocks();
 	// Path has become permanantly blocked since being generated, repath.
-	if(!blocks.shape_anythingCanEnterEver(block) || !blocks.shape_shapeAndMoveTypeCanEnterEverFrom(block, *m_shape.at(index), *m_moveType.at(index), m_location.at(index)))
+	if(!blocks.shape_anythingCanEnterEver(block) || !blocks.shape_shapeAndMoveTypeCanEnterEverFrom(block, m_shape.at(index), m_moveType.at(index), m_location.at(index)))
 	{
 		move_setDestination(index, m_destination.at(index));
 		return;
@@ -142,7 +142,7 @@ void Actors::move_callback(ActorIndex index)
 			++m_pathIter.at(index);
 			assert(m_pathIter.at(index) != m_path.at(index).end());
 			BlockIndex nextBlock = *m_pathIter.at(index);
-			if(blocks.shape_anythingCanEnterEver(nextBlock) && blocks.shape_shapeAndMoveTypeCanEnterEverFrom(block, *m_shape.at(index), *m_moveType.at(index), m_location.at(index)))
+			if(blocks.shape_anythingCanEnterEver(nextBlock) && blocks.shape_shapeAndMoveTypeCanEnterEverFrom(block, m_shape.at(index), m_moveType.at(index), m_location.at(index)))
 				move_schedule(index);
 			else
 				m_hasObjectives.at(index)->cannotCompleteSubobjective(m_area);
@@ -213,7 +213,7 @@ void Actors::move_setDestinationAdjacentToPolymorphic(ActorIndex index, ActorOrI
 	else
 		move_setDestinationAdjacentToItem(index, actorOrItemIndex.getItem(), detour, unreserved, reserve);
 }
-void Actors::move_setDestinationAdjacentToFluidType(ActorIndex index, const FluidType& fluidType, bool detour, bool unreserved, bool reserve, DistanceInBlocks maxRange)
+void Actors::move_setDestinationAdjacentToFluidType(ActorIndex index, FluidTypeId fluidType, bool detour, bool unreserved, bool reserve, DistanceInBlocks maxRange)
 {
 	m_pathRequest.at(index)->createGoAdjacentToFluidType(m_area, index, fluidType, detour, unreserved, maxRange, reserve);
 }
@@ -225,10 +225,10 @@ void Actors::move_setDestinationToEdge(ActorIndex index, bool detour)
 {
 	m_pathRequest.at(index)->createGoToEdge(m_area, index, detour);
 }
-void Actors::move_setType(ActorIndex index, const MoveType& moveType)
+void Actors::move_setType(ActorIndex index, MoveTypeId moveType)
 {
-	assert(m_moveType.at(index) != &moveType);
-	m_moveType.at(index) = &moveType;
+	assert(m_moveType.at(index) != moveType);
+	m_moveType.at(index) = moveType;
 	// TODO: unregister move type: decrement count of actors using a given facade and maybe clear when 0.
 	m_area.m_hasTerrainFacades.maybeRegisterMoveType(moveType);
 	//TODO: repath if destination, possibly do something with pathRequest?
@@ -242,17 +242,17 @@ void Actors::move_onLeaveArea(ActorIndex index) { move_clearAllEventsAndTasks(in
 void Actors::move_onDeath(ActorIndex index) { move_clearAllEventsAndTasks(index); }
 bool Actors::move_tryToReserveProposedDestination(ActorIndex index, BlockIndices& path)
 {
-	const Shape& shape = getShape(index);
+	ShapeId shape = getShape(index);
 	CanReserve& canReserve = *m_canReserve.at(index);
 	Blocks& blocks = m_area.getBlocks();
 	BlockIndex location = path.back();
 	FactionId faction = getFactionId(index);
-	if(shape.isMultiTile)
+	if(Shape::getIsMultiTile(shape))
 	{
 		assert(!path.empty());
 		BlockIndex previous = path.size() == 1 ? getLocation(index) : path.at(path.size() - 2);
 		Facing facing = blocks.facingToSetWhenEnteringFrom(location, previous);
-		auto occupiedBlocks = shape.getBlocksOccupiedAt(blocks, location, facing);
+		auto occupiedBlocks = Shape::getBlocksOccupiedAt(shape, blocks, location, facing);
 		for(BlockIndex block : occupiedBlocks)
 			if(blocks.isReserved(block, faction))
 				return false;
@@ -269,12 +269,12 @@ bool Actors::move_tryToReserveProposedDestination(ActorIndex index, BlockIndices
 }
 bool Actors::move_tryToReserveOccupied(ActorIndex index)
 {
-	const Shape& shape = getShape(index);
+	ShapeId shape = getShape(index);
 	CanReserve& canReserve = *m_canReserve.at(index);
 	Blocks& blocks = m_area.getBlocks();
 	BlockIndex location = getLocation(index);
 	FactionId faction = getFactionId(index);
-	if(shape.isMultiTile)
+	if(Shape::getIsMultiTile(shape))
 	{
 		assert(!m_path.at(index).empty());
 		auto occupiedBlocks = getBlocks(index);
@@ -346,7 +346,7 @@ bool Actors::move_canMove(ActorIndex index) const
 Step Actors::move_delayToMoveInto(ActorIndex index, BlockIndex block) const
 {
 	Speed speed = m_speedActual.at(index);
-	CollisionVolume volumeAtLocationBlock = m_shape.at(index)->getCollisionVolumeAtLocationBlock();
+	CollisionVolume volumeAtLocationBlock = Shape::getCollisionVolumeAtLocationBlock(m_shape.at(index));
 	assert(block != m_location.at(index));
 	Blocks& blocks = m_area.getBlocks();
 	if(volumeAtLocationBlock + blocks.shape_getDynamicVolume(block) > Config::maxBlockVolume)
@@ -356,7 +356,7 @@ Step Actors::move_delayToMoveInto(ActorIndex index, BlockIndex block) const
 	}
 	assert(speed != 0);
 	static const Step stepsPerSecond = Config::stepsPerSecond;
-	MoveCost cost = blocks.shape_moveCostFrom(block, *m_moveType.at(index), m_location.at(index));
+	MoveCost cost = blocks.shape_moveCostFrom(block, m_moveType.at(index), m_location.at(index));
 	assert(cost != 0);
 	return Step::create(std::max(1u, uint(std::round(float(stepsPerSecond.get() * cost.get()) / float(speed.get())))));
 }

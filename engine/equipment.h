@@ -3,6 +3,7 @@
 #include "config.h"
 #include "reference.h"
 #include "types.h"
+#include "vectorContainers.h"
 
 struct Attack;
 struct Hit;
@@ -19,8 +20,7 @@ class Items;
 
 class EquipmentSet
 {
-	// TODO: Make this a vector.
-	std::unordered_set<const BodyPartType*> m_bodyPartTypesWithRigidArmor;
+	SmallSet<BodyPartTypeId> m_bodyPartTypesWithRigidArmor;
 	ItemReferencesMaybeSorted m_wearable;
 	ItemReferences m_equipments;
 	ItemReferences m_meleeWeapons;
@@ -31,15 +31,15 @@ public:
 	EquipmentSet(Area& area, const Json& data);
 	void addEquipment(Area& area, ItemIndex equipment);
 	void removeEquipment(Area& area, ItemIndex equipment);
-	void modifyImpact(Area& area, Hit& hit, const BodyPartType& bodyPartType);
-	void addGeneric(Area& area, const ItemType& itemType, const MaterialType& MaterialType, Quantity quantity);
-	void removeGeneric(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity);
+	void modifyImpact(Area& area, Hit& hit, BodyPartTypeId bodyPartType);
+	void addGeneric(Area& area, ItemTypeId itemType, MaterialTypeId MaterialType, Quantity quantity);
+	void removeGeneric(Area& area, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity);
 	void updateItemIndex(ItemIndex oldIndex, ItemIndex newIndex);
 	void updateCarrierIndexForContents(Area& area, ItemIndex newIndex);
 	std::vector<Attack> getMeleeAttacks(Area& area);
 	auto& getRangedWeapons() { return m_rangedWeapons; }
 	[[nodiscard]] bool contains(ItemIndex item) const;
-	[[nodiscard]] bool containsItemType(const Area& area, const ItemType& itemType) const;
+	[[nodiscard]] bool containsItemType(const Area& area, ItemTypeId itemType) const;
 	[[nodiscard]] bool hasWeapons() const { return !m_meleeWeapons.empty() || !m_rangedWeapons.empty(); }
 	[[nodiscard]] Step getLongestMeleeWeaponCoolDown(Area& area) const;
 	[[nodiscard]] const Mass& getMass() const { return m_mass; }

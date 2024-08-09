@@ -1,5 +1,6 @@
 #include "blocks.h"
 #include "area.h"
+#include "plantSpecies.h"
 #include "simulation.h"
 #include "../plants.h"
 void Blocks::farm_insert(BlockIndex index, FactionId faction, FarmField& farmField)
@@ -24,7 +25,7 @@ void Blocks::farm_designateForHarvestIfPartOfFarmField(BlockIndex index, PlantIn
 	{
 		Plants& plants = m_area.getPlants();
 		for(auto& [faction, farmField] : m_farmFields.at(index))
-			if(farmField->plantSpecies == &plants.getSpecies(plant))
+			if(farmField->plantSpecies == plants.getSpecies(plant))
 				m_area.m_hasFarmFields.at(faction).addHarvestDesignation(plant);
 	}
 }
@@ -34,7 +35,7 @@ void Blocks::farm_designateForGiveFluidIfPartOfFarmField(BlockIndex index, Plant
 	{
 		Plants& plants = m_area.getPlants();
 		for(auto& [faction, farmField] : m_farmFields.at(index))
-			if(farmField->plantSpecies == &plants.getSpecies(plant))
+			if(farmField->plantSpecies == plants.getSpecies(plant))
 				m_area.m_hasFarmFields.at(faction).addGivePlantFluidDesignation(plant);
 	}
 }
@@ -44,7 +45,7 @@ void Blocks::farm_maybeDesignateForSowingIfPartOfFarmField(BlockIndex index)
 	{
 		assert(m_plants.at(index).empty());
 		for(auto& [faction, farmField] : m_farmFields.at(index))
-			if(farm_isSowingSeasonFor(*farmField->plantSpecies))
+			if(farm_isSowingSeasonFor(farmField->plantSpecies))
 				m_area.m_hasFarmFields.at(faction).addSowSeedsDesignation(index);
 	}
 }
@@ -75,10 +76,10 @@ void Blocks::farm_removeAllSowSeedsDesignations(BlockIndex index)
 			if(designation_has(index, faction, BlockDesignation::SowSeeds))
 				m_area.m_hasFarmFields.at(faction).removeSowSeedsDesignation(index);
 }
-bool Blocks::farm_isSowingSeasonFor(const PlantSpecies& species) const
+bool Blocks::farm_isSowingSeasonFor(PlantSpeciesId species) const
 {
 	uint16_t day = DateTime(m_area.m_simulation.m_step).day;
-	return day >= species.dayOfYearForSowStart && day <= species.dayOfYearForSowEnd;
+	return day >= PlantSpecies::getDayOfYearForSowStart(species) && day <= PlantSpecies::getDayOfYearForSowEnd(species);
 }
 FarmField* Blocks::farm_get(BlockIndex index, FactionId faction)
 { 

@@ -15,7 +15,7 @@ void ActorOrItemReference::load(const Json& data, Area& area)
 	else
 		setItem(area.getItems().getReferenceTarget(index.getItem()));
 }
-void ItemReferences::addGeneric(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity)
+void ItemReferences::addGeneric(Area& area, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity)
 {
 	auto found = find([&](const ItemReference& item) {
 		Items& items = area.getItems();
@@ -37,7 +37,7 @@ void ItemReferences::addGeneric(Area& area, const ItemType& itemType, const Mate
 		area.getItems().addQuantity(equipment, quantity);
 	}
 }
-void ItemReferences::removeGeneric(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity)
+void ItemReferences::removeGeneric(Area& area, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity)
 {
 	Items& items = area.getItems();
 	auto found = find([&](const ItemReference& item) {

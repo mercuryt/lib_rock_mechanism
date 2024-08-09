@@ -3,6 +3,7 @@
 #include "materialType.h"
 #include "fluidType.h"
 #include "body.h"
+#include "bodyType.h"
 #include "animalSpecies.h"
 #include "moveType.h"
 #include "attackType.h"
@@ -25,7 +26,7 @@ void definitions::loadShapes()
 	Json data = tryParse(path/"shapes.json");
 	for(const Json& shapeData : data)
 	{
-		shapeDataStore.emplace_back(
+		Shape::create(
 			shapeData["name"].get<std::string>(),
 			shapeData["positions"].get<std::vector<std::array<int32_t, 4>>>(),
 			// TODO: move this to ui.
@@ -60,53 +61,74 @@ void definitions::loadMoveTypes()
 	Json data = tryParse(path/"moveTypes.json");
 	for(const Json& moveTypeData : data)
 	{
-		moveTypeDataStore.emplace_back(
-			moveTypeData["name"].get<std::string>(),
-			moveTypeData["walk"].get<bool>(),
-			moveTypeData["climb"].get<uint32_t>(),
-			moveTypeData["jumpDown"].get<bool>(),
-			moveTypeData["fly"].get<bool>(),
-			moveTypeData.contains("breathless"),
-			moveTypeData.contains("onlyBreathsFluids")
-		);
+		MoveTypeParamaters p{
+			.name=moveTypeData["name"].get<std::string>(),
+			.walk=moveTypeData["walk"].get<bool>(),
+			.climb=moveTypeData["climb"].get<uint8_t>(),
+			.jumpDown=moveTypeData["jumpDown"].get<bool>(),
+			.fly=moveTypeData["fly"].get<bool>(),
+			.breathless=moveTypeData.contains("breathless"),
+			.onlyBreathsFluids=moveTypeData.contains("onlyBreathsFluids"),
+		};
 		for(auto& pair : moveTypeData["swim"].items())
-			moveTypeDataStore.back().swim[&FluidType::byName(pair.key())] = pair.value();
+			p.swim[FluidType::byName(pair.key())] = pair.value().get<CollisionVolume>();
 		if(moveTypeData.contains("breathableFluids"))
 			for(const Json& name : moveTypeData["breathableFluids"])
-				moveTypeDataStore.back().breathableFluids.insert(&FluidType::byName(name));
+				p.breathableFluids.add(FluidType::byName(name));
+		MoveType::create(p);
 	}
 }
 void definitions::loadMaterialTypes()
 {
 	for(const Json& data : tryParse(path/"materialTypeCategories.json"))
-		MaterialCategoryTypeId::create(data["name"]);
+		MaterialTypeCategory::create(data["name"]);
+	std::unordered_map<std::string, MaterialTypeConstructionDataParamaters> constructionParamaters;
 	for(const auto& file : std::filesystem::directory_iterator(path/"materials"))
 	{
 		if(file.path().extension() != ".json")
 			continue;
 		Json data = tryParse(file.path());
-		auto& materialType = materialTypeDataStore.emplace_back(
-			data["name"].get<std::string>(),
-			data["density"].get<Density>(),
-			data["hardness"].get<uint32_t>(),
-			data["transparent"].get<bool>()
-		);
+		MaterialTypeParamaters p{
+			.name=data["name"].get<std::string>(),
+			.density=data["density"].get<Density>(),
+			.hardness=data["hardness"].get<uint32_t>(),
+			.transparent=data["transparent"].get<bool>(),
+		};
 		if(data.contains("category"))
-			materialType.materialTypeCategory = &MaterialTypeCategory::byName(data["category"].get<std::string>());
+			p.materialTypeCategory = MaterialTypeCategory::byName(data["category"].get<std::string>());
 		if(data.contains("meltingPoint"))
 		{
-		       	materialType.meltingPoint = data["meltingPoint"].get<Temperature>();
+		       	p.meltingPoint = data["meltingPoint"].get<Temperature>();
 			assert(data.contains("meltsInto"));
-			materialType.meltsInto = &FluidType::byName(data["meltsInto"].get<std::string>());
+			p.meltsInto = FluidType::byName(data["meltsInto"].get<std::string>());
 		}
 		if(data.contains("burnData"))
-			materialType.burnData = &burnDataStore.emplace_back(
-					// TODO: store as seconds rather then steps.
-					data["burnData"]["burnStageDuration"].get<Step>(),
-					data["burnData"]["flameStageDuration"].get<Step>(),
-					data["burnData"]["ignitionTemperature"].get<Temperature>(),
-					data["burnData"]["flameTemperature"].get<TemperatureDelta>()
-			);
+		{
+			// TODO: store as seconds rather then steps.
+			data["burnStageDuration"].get_to(p.burnStageDuration);
+			data["flameStageDuration"].get_to(p.flameStageDuration);
+			data["ignitionTemperature"].get_to(p.ignitionTemperature);
+			data["flameTemperature"].get_to(p.flameTemperature);
+		}
+		MaterialTypeId id = MaterialType::create(p);
+		// Now that material type is loaded we can load the self-referential construction data.
+		if(data.contains("constructionData"))
+		{
+			MaterialTypeConstructionDataParamaters& constructionP = constructionParamaters.at(data["constructionData"].get<std::string>());
+			p.construction_name = constructionP.name;
+			p.construction_skill = constructionP.skill;
+			p.construction_duration = constructionP.duration;
+			p.construction_unconsumed = constructionP.unconsumed;
+			// Make a copy of Query so it can be specialized.
+			auto consumed = constructionP.consumed;
+			for(auto& [itemQuery, quantity] : consumed)
+				if(itemQuery.m_materialType.empty())
+					itemQuery.m_materialType = id;
+			auto byproducts = constructionP.byproducts;
+			for(auto& tuple : byproducts)
+				if(std::get<1>(tuple).empty())
+					std::get<1>(tuple) = id;
+		}
 	}
 	// Load FluidType freeze into here, now that solid material types are loaded.
 	for(const auto& file : std::filesystem::directory_iterator(path/"fluids"))
@@ -114,80 +136,85 @@ void definitions::loadMaterialTypes()
 		if(file.path().extension() != ".json")
 			continue;
 		Json data = tryParse(file.path());
-		FluidType::byNameNonConst(data["name"].get<std::string>()).freezesInto = data.contains("freezesInto") ? 
-			&MaterialType::byName(data["freezesInto"].get<std::string>()) :
-			nullptr;
-
+		if(data.contains("freezesInto"))
+		{
+			FluidTypeId fluidType = FluidType::byName(data["name"].get<std::string>());
+			MaterialTypeId materialType = MaterialType::byName(data["freezesInto"].get<std::string>());
+			FluidType::setFreezesInto(fluidType, materialType);
+		}
 	}
 }
 void definitions::loadSkillTypes()
 {
 	for(const Json& skillData : tryParse(path/"skills.json"))
 	{
-		skillTypeDataStore.emplace_back(
-			skillData["name"].get<std::string>(),
-			skillData["xpPerLevelModifier"].get<float>(),
-			skillData["level1Xp"].get<SkillExperiencePoints>()
-		);
+		SkillTypeParamaters p{
+			.name=skillData["name"].get<std::string>(),
+			.xpPerLevelModifier=skillData["xpPerLevelModifier"].get<float>(),
+			.level1Xp=skillData["level1Xp"].get<SkillExperiencePoints>()
+		};
+		SkillType::create(p);
 	}
 }
-const AttackType definitions::loadAttackType(const Json& data, const SkillType& defaultSkill)
+AttackTypeId definitions::loadAttackType(const Json& data, SkillTypeId defaultSkill)
 {
-	return AttackType(
-		data["name"].get<std::string>(),
-		data["area"].get<uint32_t>(),
-		data["baseForce"].get<Force>(),
-		data["range"].get<DistanceInBlocksFractional>(),
-		data["combatScore"].get<CombatScore>(),
-		data.contains("coolDownSeconds") ? Config::stepsPerSecond * data["coolDownSeconds"].get<uint32_t>() : Step::create(0),
-		data.contains("projectile") ? data["projectile"].get<bool>() : false,
-		WoundCalculations::byName(data["woundType"].get<std::string>()),
-		(data.contains("skillType") ? SkillType::byName(data["skillType"]) : defaultSkill),
-		(data.contains("projectileItemType") ? &ItemType::byName(data["projectileItemType"]) : nullptr)
-	);
+	AttackTypeParamaters p{
+		.name=data["name"].get<std::string>(),
+		.area=data["area"].get<uint32_t>(),
+		.baseForce=data["baseForce"].get<Force>(),
+		.range=data["range"].get<DistanceInBlocksFractional>(),
+		.combatScore=data["combatScore"].get<CombatScore>(),
+		.coolDown=data.contains("coolDownSeconds") ? Config::stepsPerSecond * data["coolDownSeconds"].get<uint32_t>() * Config::stepsPerSecond : Step::create(0),
+		.projectile=data.contains("projectile") ? data["projectile"].get<bool>() : false,
+		.woundType=WoundCalculations::byName(data["woundType"].get<std::string>()),
+		.skillType=data.contains("skillType") ? SkillType::byName(data["skillType"]) : defaultSkill,
+		.projectileItemType=data.contains("projectileItemType") ? ItemType::byName(data["projectileItemType"]) : ItemTypeId::null()
+	};
+	return AttackType::create(p);
 }
-std::pair<ItemQuery, Quantity> definitions::loaditemQuery(const Json& data)
+std::pair<ItemQuery, Quantity> definitions::loadItemQuery(const Json& data)
 {
-	const ItemType& itemType = ItemType::byName(data["itemType"].get<std::string>());
+	ItemTypeId itemType = ItemType::byName(data["itemType"].get<std::string>());
 	Quantity quantity = data["quantity"].get<Quantity>();
 	ItemQuery query(itemType);
 	if(data.contains("materialType"))
-		query.m_materialType = &MaterialType::byName(data["materialType"].get<std::string>());
+		query.m_materialType = MaterialType::byName(data["materialType"].get<std::string>());
 	if(data.contains("materialTypeCategory"))
-		query.m_materialTypeCategory = &MaterialTypeCategory::byName(data["materialTypeCategory"].get<std::string>());
+		query.m_materialTypeCategory = MaterialTypeCategory::byName(data["materialTypeCategory"].get<std::string>());
 	return std::make_pair(query, quantity);
 }
-void definitions::loadMaterialTypeConstuctionData()
+std::unordered_map<std::string, MaterialTypeConstructionDataParamaters> definitions::loadMaterialTypeConstuctionData()
 {
+	std::unordered_map<std::string, MaterialTypeConstructionDataParamaters> output;
 	for(const Json& data : tryParse(path/"materialConstructionData.json"))
 	{
-		MaterialConstructionData& constructionData = materialConstructionDataStore.emplace_back
-		(
-			 data["name"].get<std::string>(),
-			 SkillType::byName(data["skill"]),
-			 Config::stepsPerMinute * data["minutesDuration"].get<uint32_t>()
-		 );
+		MaterialTypeConstructionDataParamaters p{
+			.name=data["name"].get<std::string>(),
+			.skill=SkillType::byName(data["skill"]),
+			.duration=Config::stepsPerMinute * data["minutesDuration"].get<uint32_t>()
+		};
 		for(const Json& item : data["consumed"])
 		{
-			auto [query, quantity] = loaditemQuery(item);
-			constructionData.consumed.emplace_back(query, quantity);
+			auto [query, quantity] = loadItemQuery(item);
+			p.consumed.emplace_back(query, quantity);
 		}
 		for(const Json& item : data["unconsumed"])
 		{
-			auto [query, quantity] = loaditemQuery(item);
-			constructionData.unconsumed.emplace_back(query, quantity);
+			auto [query, quantity] = loadItemQuery(item);
+			p.unconsumed.emplace_back(query, quantity);
 		}
 		for(const Json& item : data["byproducts"])
 		{
-			const ItemType& itemType = ItemType::byName(item["itemType"].get<std::string>());
+			ItemTypeId itemType = ItemType::byName(item["itemType"].get<std::string>());
 			Quantity quantity = item["quantity"].get<Quantity>();
-			const MaterialType* materialType = item.contains("materialType") ?
-				&MaterialType::byName(item["materialType"]) :
-				nullptr;
-			constructionData.byproducts.emplace_back(&itemType, materialType, quantity);
+			MaterialTypeId materialType = item.contains("materialType") ?
+				MaterialType::byName(item["materialType"]) :
+				MaterialTypeId::null();
+			p.byproducts.emplace_back(itemType, materialType, quantity);
 		}
+		output[p.name] = p;
 	}
-
+	return output;
 }
 /*
 void definitions::loadMedicalProjectTypes()
@@ -214,9 +241,9 @@ void definitions::loadMedicalProjectTypes()
 		}
 		for(const Json& item : data["byproducts"])
 		{
-			const ItemType& itemType = ItemType::byName(item["itemType"].get<std::string>());
+			ItemTypeId itemType = ItemType::byName(item["itemType"].get<std::string>());
 			uint32_t quantity = item["quantity"].get<uint32_t>();
-			const MaterialType* materialType = item.contains("materialType") ?
+			MaterialTypeId materialType = item.contains("materialType") ?
 				&MaterialType::byName(item["materialType"]) :
 				nullptr;
 			medicalProjectType.byproductItems.emplace_back(&itemType, materialType, quantity);
@@ -227,21 +254,16 @@ void definitions::loadMedicalProjectTypes()
 void definitions::loadCraftJobs()
 {
 	for(const Json& data : tryParse(path/"craftStepTypeCategory.json"))
-		craftStepTypeCategoryDataStore.emplace_back(data["name"]);
+		CraftStepTypeCategory::create(data["name"].get<std::string>());
 	for(const auto& file : std::filesystem::directory_iterator(path/"craftJobTypes"))
 	{
 		if(file.path().extension() != ".json")
 			continue;
 		Json data = tryParse(file.path());
-		auto& craftJobType = craftJobTypeDataStore.emplace_back(
-			data["name"].get<std::string>(),
-			ItemType::byName(data["productType"].get<std::string>()),
-			data["productQuantity"].get<Quantity>(),
-			data.contains("materialTypeCategory") ? &MaterialTypeCategory::byName(data["materialTypeCategory"].get<std::string>()) : nullptr
-		);
+		std::vector<CraftStepType> stepTypes;
 		for(const Json& stepData : data["steps"])
 		{
-			auto& stepType = craftJobType.stepTypes.emplace_back(
+			CraftStepType& craftStepType = stepTypes.emplace_back(
 				stepData["name"].get<std::string>(),
 				CraftStepTypeCategory::byName(stepData["category"].get<std::string>()),
 				SkillType::byName(stepData["skillType"].get<std::string>()),
@@ -250,50 +272,34 @@ void definitions::loadCraftJobs()
 			if(stepData.contains("consumed"))
 				for(const Json& item : stepData["consumed"])
 				{
-					auto [query, quantity] = loaditemQuery(item);
-					stepType.consumed.emplace_back(query, quantity);
+					auto [query, quantity] = loadItemQuery(item);
+					craftStepType.consumed.emplace_back(query, quantity);
 				}
 			if(stepData.contains("unconsumed"))
 				for(const Json& item : stepData["unconsumed"])
 				{
-					auto [query, quantity] = loaditemQuery(item);
-					stepType.unconsumed.emplace_back(query, quantity);
+					auto [query, quantity] = loadItemQuery(item);
+					craftStepType.unconsumed.emplace_back(query, quantity);
 				}
 			if(stepData.contains("byproducts"))
 				for(const Json& item : stepData["byproducts"])
 				{
-					const ItemType& itemType = ItemType::byName(item["itemType"].get<std::string>());
+					ItemTypeId itemType = ItemType::byName(item["itemType"].get<std::string>());
 					Quantity quantity = item["quantity"].get<Quantity>();
-					const MaterialType* materialType = item.contains("materialType") ?
-						&MaterialType::byName(item["materialType"]) :
-						nullptr;
-					stepType.byproducts.emplace_back(&itemType, materialType, quantity);
+					MaterialTypeId materialType = item.contains("materialType") ?
+						MaterialType::byName(item["materialType"]) :
+						MaterialTypeId::null();
+					craftStepType.byproducts.emplace_back(itemType, materialType, quantity);
 				}
 		}
-	}
-}
-void definitions::loadWeaponsData()
-{
-	for(const auto& file : std::filesystem::directory_iterator(path/"items"))
-	{
-		if(file.path().extension() != ".json")
-			continue;
-		Json data = tryParse(file.path());
-		auto& itemType = ItemType::byNameNonConst(data["name"].get<std::string>());
-		if(data.contains("weaponData"))
-		{
-			Json& weaponData = data["weaponData"];
-			const SkillType& skillType = SkillType::byName(weaponData["combatSkill"].get<std::string>());
-			auto& weapon = weaponDataStore.emplace_back(
-				&skillType,
-				weaponData.contains("coolDownSeconds") ? Config::stepsPerSecond * weaponData["coolDownSeconds"].get<float>() : Config::attackCoolDownDurationBaseSteps
-			);
-			for(Json attackTypeData : weaponData["attackTypes"])
-				weapon.attackTypes.push_back(loadAttackType(attackTypeData, skillType));
-			itemType.weaponData = &weapon;
-		}
-		else
-			itemType.weaponData = nullptr;
+
+		CraftJobType::create(
+			data["name"].get<std::string>(),
+			ItemType::byName(data["productType"].get<std::string>()),
+			data["productQuantity"].get<Quantity>(),
+			data.contains("materialTypeCategory") ? MaterialTypeCategory::byName(data["materialTypeCategory"].get<std::string>()) : MaterialCategoryTypeId::null(),
+			stepTypes
+		);
 	}
 }
 void definitions::loadItemTypes()
@@ -303,40 +309,37 @@ void definitions::loadItemTypes()
 		if(file.path().extension() != ".json")
 			continue;
 		Json data = tryParse(file.path());
-		auto& itemType = itemTypeDataStore.emplace_back(
-			data["name"].get<std::string>(),
-			Shape::byName(data["shape"].get<std::string>()),
-			MoveType::byName(data.contains("moveType") ? data["moveType"].get<std::string>() : "none"),
-			data["volume"].get<Volume>(),
-			data.contains("internalVolume") ? data["internalVolume"].get<Volume>() : Volume::create(0) ,
-			data["value"].get<uint32_t>(),
-			data.contains("installable"),
-			data.contains("generic") && data["generic"].get<bool>(),
-			data.contains("canHoldFluids")
-		);
+		ItemTypeParamaters p{
+			.name=data["name"].get<std::string>(),
+			.shape=Shape::byName(data["shape"].get<std::string>()),
+			.moveType=MoveType::byName(data.contains("moveType") ? data["moveType"].get<std::string>() : "none"),
+			.volume=data["volume"].get<Volume>(),
+			.internalVolume=data.contains("internalVolume") ? data["internalVolume"].get<Volume>() : Volume::create(0) ,
+			.value=data["value"].get<uint32_t>(),
+			.installable=data.contains("installable"),
+			.generic=data.contains("generic") && data["generic"].get<bool>(),
+			.canHoldFluids=data.contains("canHoldFluids"),
+		};
 		if(data.contains("edibleForDrinkersOf"))
-			itemType.edibleForDrinkersOf = &FluidType::byName(data["edibleForDrinkersOf"].get<std::string>());
+			p.edibleForDrinkersOf = FluidType::byName(data["edibleForDrinkersOf"].get<std::string>());
 		if(data.contains("wearableData"))
 		{
 			Json& wearable = data["wearableData"];
-			auto& wearableData = wearableDataStore.emplace_back(
-				wearable["defenseScore"].get<uint32_t>(),
-				wearable["layer"].get<uint32_t>(),
-				Config::scaleOfHumanBody,
-				wearable["forceAbsorbedUnpiercedModifier"].get<uint32_t>(),
-				wearable["forceAbsorbedPiercedModifier"].get<uint32_t>(),
-				wearable["percentCoverage"].get<Percent>(),
-				wearable["rigid"].get<bool>()
-			);
+			wearable["layer"].get_to(p.wearable_layer);
+			wearable["defenseScore"].get_to(p.wearable_defenseScore);
+			//TODO
+			p.wearable_bodyTypeScale = Config::scaleOfHumanBody;
+			wearable["forceAbsorbedUnpiercedModifier"].get_to(p.wearable_forceAbsorbedUnpiercedModifier);
+			wearable["forceAbsorbedPiercedModifier"].get_to(p.wearable_forceAbsorbedPiercedModifier);
+			wearable["percentCoverage"].get_to(p.wearable_percentCoverage);
+			wearable["rigid"].get_to(p.wearable_rigid);
 			for(const auto& bodyPartName : data["bodyPartsCovered"])
-				wearableData.bodyPartsCovered.push_back(&BodyPartType::byName(bodyPartName.get<std::string>()));
-			itemType.wearableData = &wearableData;
+				p.wearable_bodyPartsCovered.push_back(BodyPartType::byName(bodyPartName.get<std::string>()));
 		}
-		else
-			itemType.wearableData = nullptr;
 		if(data.contains("materialTypeCategories"))
 			for(const Json& materialTypeCategoryName : data["materialTypeCategories"])
-				itemType.materialTypeCategories.push_back(&MaterialTypeCategory::byName(materialTypeCategoryName.get<std::string>()));
+				p.materialTypeCategories.push_back(MaterialTypeCategory::byName(materialTypeCategoryName.get<std::string>()));
+		ItemType::create(p);
 	}
 	// Now that item types are loaded we can load material type spoil and construction data.
 	loadMaterialTypeConstuctionData();
@@ -345,18 +348,19 @@ void definitions::loadItemTypes()
 		if(file.path().extension() != ".json")
 			continue;
 		Json data = tryParse(file.path());
-		MaterialType& materialType = MaterialType::byNameNonConst(data["name"].get<std::string>());
+		MaterialTypeId materialType = MaterialType::byName(data["name"].get<std::string>());
 		for(Json& spoilData : data["spoilData"])
-			materialType.spoilData.emplace_back(
-				MaterialType::byName(spoilData["materialType"].get<std::string>()),
+		{
+			MaterialTypeId spoilMaterialType = MaterialType::byName(spoilData["materialType"].get<std::string>());
+			auto& spoils = MaterialType::getSpoilData(materialType);
+			spoils.push_back(SpoilData::create(
+				spoilMaterialType,
 				ItemType::byName(spoilData["itemType"].get<std::string>()),
 				spoilData["chance"].get<double>(),
 				spoilData["min"].get<Quantity>(),
 				spoilData["max"].get<Quantity>()
-			);
-		// Construction data
-		if(data.contains("constructionData"))
-			materialType.constructionData = &MaterialConstructionData::byNameSpecialized(data["constructionData"].get<std::string>(), materialType);
+			));
+		}
 	}
 }
 void definitions::loadPlantSpecies()
@@ -366,21 +370,10 @@ void definitions::loadPlantSpecies()
 		if(file.path().extension() != ".json")
 			continue;
 		Json data = tryParse(file.path());
-		HarvestDataTypeId harvestData;
-		if(data.contains("harvestData"))
-		{
-			harvestData = harvestDataStore.emplace_back(
-				data["harvestData"]["dayOfYearToStart"].get<uint16_t>(),
-				Config::stepsPerDay * data["harvestData"]["daysDuration"].get<uint16_t>(),
-				data["harvestData"]["quantity"].get<Quantity>(),
-				ItemType::byName(data["harvestData"]["itemType"].get<std::string>())
-			);
-		}
 		PlantSpeciesParamaters plantSpeciesParamaters = PlantSpeciesParamaters{
 			.name=data["name"].get<std::string>(),
 			.fluidType=FluidType::byName(data["fluidType"].get<std::string>()),
-			.woodType=data.contains("woodType") ? data["woodType"].get<const MaterialType*>() : nullptr,
-			.harvestData=harvestData,
+			.woodType=data.contains("woodType") ? data["woodType"].get<MaterialTypeId>() : MaterialTypeId::null(),
 			.stepsNeedsFluidFrequency=Config::stepsPerDay * data["daysNeedsFluidFrequency"].get<uint16_t>(),
 			.stepsTillDieWithoutFluid=Config::stepsPerDay * data["daysTillDieWithoutFluid"].get<uint16_t>(),
 			.stepsTillFullyGrown=Config::stepsPerDay * data["daysTillFullyGrown"].get<uint16_t>(),
@@ -400,10 +393,14 @@ void definitions::loadPlantSpecies()
 			.annual=data["annual"].get<bool>(),
 			.growsInSunLight=data["growsInSunlight"].get<bool>(),
 			.isTree=data.contains("isTree") ? data["isTree"].get<bool>() : false,
+			.fruitItemType=ItemType::byName(data["harvestData"]["fruitItemType"].get<std::string>()),
+			.stepsDurationHarvest=Config::stepsPerDay * data["harvestData"]["daysDurationHarvest"].get<uint16_t>(),
+			.itemQuantityToHarvest=data["harvestData"]["itemQuantityToHarvest"].get<Quantity>(),
+			.dayOfYearToStartHarvest=data["harvestData"]["dayOfYearToStartHarvest"].get<uint16_t>(),
 		};
 		assert(data.contains("shapes"));
 		for(const auto& shapeName : data["shapes"])
-			plantSpeciesParamaters.shapes.push_back(&Shape::byName(shapeName.get<std::string>()));
+			plantSpeciesParamaters.shapes.push_back(Shape::byName(shapeName.get<std::string>()));
 		PlantSpecies::create(plantSpeciesParamaters);
 	}
 }
@@ -414,27 +411,32 @@ void definitions::loadBodyPartTypes()
 		if(file.path().extension() != ".json")
 			continue;
 		Json data = tryParse(file.path());
-		BodyPartType& bodyPartType = bodyPartTypeDataStore.emplace_back(
-			data["name"].get<std::string>(),
-			data["volume"].get<Volume>(),
-			data["doesLocamotion"].get<bool>(),
-			data["doesManipulation"].get<bool>(),
-			data.contains("vital")? data["vital"].get<bool>() : false
-		);
-		const SkillType& unarmedSkill = SkillType::byName("unarmed");
+		BodyPartTypeParamaters p{
+			.name=data["name"].get<std::string>(),
+			.volume=data["volume"].get<Volume>(),
+			.doesLocamotion=data["doesLocamotion"].get<bool>(),
+			.doesManipulation=data["doesManipulation"].get<bool>(),
+			.vital=data.contains("vital")? data["vital"].get<bool>() : false,
+			.attackTypesAndMaterials = {},
+
+		};
+		SkillTypeId unarmedSkill = SkillType::byName("unarmed");
 		for(const Json& pair : data["attackTypesAndMaterials"])
-			bodyPartType.attackTypesAndMaterials.emplace_back(loadAttackType(pair.at(0), unarmedSkill), &MaterialType::byName(pair.at(1)));
+			p.attackTypesAndMaterials.emplace_back(loadAttackType(pair.at(0), unarmedSkill), MaterialType::byName(pair.at(1)));
+		BodyPartType::create(p);
 	}
 }
 void definitions::loadBodyTypes()
 {
 	for(const Json& bodyData : tryParse(path/"bodies.json"))
 	{
-		auto& bodyType = bodyTypeDataStore.emplace_back(
-			bodyData["name"].get<std::string>()
-		);
+		std::vector<BodyPartTypeId> parts;
 		for(const Json& bodyPartTypeName : bodyData["bodyPartTypes"])
-			bodyType.bodyPartTypes.push_back(&BodyPartType::byName(bodyPartTypeName.get<std::string>()));
+			parts.push_back(BodyPartType::byName(bodyPartTypeName.get<std::string>()));
+		BodyType::create(
+			bodyData["name"].get<std::string>(),
+			parts
+		);
 	}
 }
 void definitions::loadAnimalSpecies()
@@ -455,18 +457,18 @@ void definitions::loadAnimalSpecies()
 			.dextarity=data["dextarity"].get<std::array<AttributeLevel, 3>>(),
 			.agility=data["agility"].get<std::array<AttributeLevel, 3>>(),
 			.mass=data["mass"].get<std::array<Mass, 3>>(),
-			.deathAge=data["deathAge"].get<std::array<Mass, 3>>(),
-			.daysTillFullyGrown=Config::stepsPerDay * data["daysTillFullyGrown"].get<uint16_t>(),
-			.daysTillDieWithoutFood=Config::stepsPerDay * data["daysTillDieWithoutFood"].get<uint16_t>(),
-			.daysEatFrequency=Config::stepsPerDay * data["daysEatFrequency"].get<uint16_t>(),
-			.daysTillDieWithoutFluid=Config::stepsPerDay * data["daysTillDieWithoutFluid"].get<uint16_t>(),
-			.daysFluidDrinkFrequency=Config::stepsPerDay * data["daysFluidDrinkFrequency"].get<uint16_t>(),
-			.daysTillDieInUnsafeTemperature=Config::stepsPerDay * data["daysTillDieInUnsafeTemperature"].get<uint16_t>(),
+			.deathAgeSteps=data["deathAge"].get<std::array<Step, 2>>(),
+			.stepsTillFullyGrown=Config::stepsPerDay * data["daysTillFullyGrown"].get<uint16_t>(),
+			.stepsTillDieWithoutFood=Config::stepsPerDay * data["daysTillDieWithoutFood"].get<uint16_t>(),
+			.stepsEatFrequency=Config::stepsPerDay * data["daysEatFrequency"].get<uint16_t>(),
+			.stepsTillDieWithoutFluid=Config::stepsPerDay * data["daysTillDieWithoutFluid"].get<uint16_t>(),
+			.stepsFluidDrinkFrequency=Config::stepsPerDay * data["daysFluidDrinkFrequency"].get<uint16_t>(),
+			.stepsTillDieInUnsafeTemperature=Config::stepsPerDay * data["daysTillDieInUnsafeTemperature"].get<uint16_t>(),
 			.minimumSafeTemperature=data["minimumSafeTemperature"].get<Temperature>(),
 			.maximumSafeTemperature=data["maximumSafeTemperature"].get<Temperature>(),
-			.daysSleepFrequency=Config::stepsPerDay * data["daysSleepFrequency"].get<uint16_t>(),
-			.hoursTillSleepOveride=Config::stepsPerHour * data["hoursTillSleepOveride"].get<uint8_t>(),
-			.hoursSleepDuration=Config::stepsPerHour * data["hoursSleepDuration"].get<uint8_t>(),
+			.stepsSleepFrequency=Config::stepsPerDay * data["daysSleepFrequency"].get<uint16_t>(),
+			.stepsTillSleepOveride=Config::stepsPerHour * data["hoursTillSleepOveride"].get<uint8_t>(),
+			.stepsSleepDuration=Config::stepsPerHour * data["hoursSleepDuration"].get<uint8_t>(),
 			.nocturnal=data["nocturnal"].get<bool>(),
 			.eatsMeat=data["eatsMeat"].get<bool>(),
 			.eatsLeaves=data["eatsLeaves"].get<bool>(),
@@ -480,22 +482,20 @@ void definitions::loadAnimalSpecies()
 		};
 		assert(data.contains("shapes"));
 		for(const auto& shapeName : data["shapes"])
-			params.shapes.push_back(&Shape::byName(shapeName.get<std::string>()));
+			params.shapes.push_back(Shape::byName(shapeName.get<std::string>()));
 		AnimalSpecies::create(params);
 	}
 }
 void definitions::load()
 {
-	assert(materialTypeDataStore.size() == 0);
 	assert(std::filesystem::exists(path));
+	assert(MaterialType::empty());
 	loadShapes();
 	loadFluidTypes();
 	loadMaterialTypes();
 	loadMoveTypes();
 	loadSkillTypes();
 	loadItemTypes();
-	loadWeaponsData();
-	loadMaterialTypeConstuctionData();
 	loadCraftJobs();
 	//loadMedicalProjectTypes();
 	loadPlantSpecies();
