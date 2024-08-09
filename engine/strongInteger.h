@@ -30,6 +30,7 @@ public:
 	constexpr auto operator/=(T other) { data *= other; return static_cast<Derived&>(*this); }
 	constexpr auto operator/=(const StrongInteger<Derived, T, NULL_VALUE>& other) { data *= other.data; return static_cast<Derived&>(*this); }
 	[[nodiscard]] constexpr T get() const { return data; }
+	[[nodiscard]] T& getReference() { return data; }
 	[[nodiscard]] constexpr static auto create(T d){ Derived der; der.set(d); return der; }
 	[[nodiscard]] constexpr static auto null() { return Derived::create(NULL_VALUE); }
 	[[nodiscard]] constexpr auto absoluteValue() { return Derived::create(std::abs(data)); }

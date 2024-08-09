@@ -4,7 +4,7 @@ void Actors::equipment_add(ActorIndex index, ItemIndex item)
 {
 	m_equipmentSet.at(index)->addEquipment(m_area, item);
 }
-void Actors::equipment_addGeneric(ActorIndex index, const ItemType& itemType, const MaterialType& materalType, Quantity quantity)
+void Actors::equipment_addGeneric(ActorIndex index, ItemTypeId itemType, MaterialTypeId materalType, Quantity quantity)
 {
 	m_equipmentSet.at(index)->addGeneric(m_area, itemType, materalType, quantity);
 }
@@ -12,7 +12,7 @@ void Actors::equipment_remove(ActorIndex index, ItemIndex item)
 {
 	m_equipmentSet.at(index)->removeEquipment(m_area, item);
 }
-void Actors::equipment_removeGeneric(ActorIndex index, const ItemType& itemType, const MaterialType& materalType, Quantity quantity)
+void Actors::equipment_removeGeneric(ActorIndex index, ItemTypeId itemType, MaterialTypeId materalType, Quantity quantity)
 {
 	m_equipmentSet.at(index)->removeGeneric(m_area, itemType, materalType, quantity);
 }
@@ -28,7 +28,7 @@ bool Actors::equipment_containsItem(ActorIndex index, ItemIndex item) const
 {
 	return m_equipmentSet.at(index)->contains(item);
 }
-bool Actors::equipment_containsItemType(ActorIndex index, const ItemType& type) const
+bool Actors::equipment_containsItemType(ActorIndex index, ItemTypeId type) const
 {
 	return m_equipmentSet.at(index)->containsItemType(m_area, type);
 }

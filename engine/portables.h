@@ -27,10 +27,10 @@ protected:
 	DataVector<ActorOrItemIndex, HasShapeIndex> m_follower;
 	DataVector<ActorOrItemIndex, HasShapeIndex> m_leader;
 	DataVector<ActorOrItemIndex, HasShapeIndex> m_carrier;
-	DataVector<const MoveType*, HasShapeIndex> m_moveType;
+	DataVector<MoveTypeId, HasShapeIndex> m_moveType;
 	bool isActors;
 	Portables(Area& area);
-	void create(HasShapeIndex index, const MoveType& moveType, const Shape& shape, BlockIndex location, Facing facing, bool isStatic);
+	void create(HasShapeIndex index, MoveTypeId moveType, ShapeId shape, BlockIndex location, Facing facing, bool isStatic);
 	void destroy(HasShapeIndex index);
 	void log(HasShapeIndex index) const;
 	void updateLeaderSpeedActual(HasShapeIndex index);
@@ -53,7 +53,7 @@ public:
 	void setCarrier(HasShapeIndex index, ActorOrItemIndex carrier);
 	void unsetCarrier(HasShapeIndex index, ActorOrItemIndex carrier);
 	void updateCarrierIndex(HasShapeIndex index, HasShapeIndex newIndex) { m_carrier.at(index).updateIndex(newIndex); }
-	[[nodiscard]] const MoveType& getMoveType(HasShapeIndex index) const { return *m_moveType.at(index); }
+	[[nodiscard]] MoveTypeId getMoveType(HasShapeIndex index) const { return m_moveType.at(index); }
 	[[nodiscard]] bool isFollowing(HasShapeIndex index) const;
 	[[nodiscard]] bool isLeading(HasShapeIndex index) const;
 	[[nodiscard]] bool isLeadingActor(HasShapeIndex index, ActorIndex actor) const;

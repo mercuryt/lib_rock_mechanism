@@ -220,12 +220,12 @@ void Area::logActorsAndItems() const
 	for(ItemIndex item : items.getOnSurface())
 		items.log(item);
 }
-Quantity Area::getTotalCountOfItemTypeOnSurface(const ItemType& itemType) const
+Quantity Area::getTotalCountOfItemTypeOnSurface(ItemTypeId itemType) const
 {
 	const Items& items = getItems();
 	Quantity output = Quantity::create(0);
 	for(ItemIndex item : items.getOnSurface())
-		if(&itemType == &items.getItemType(item))
+		if(itemType == items.getItemType(item))
 			output += items.getQuantity(item);
 	return output;
 }

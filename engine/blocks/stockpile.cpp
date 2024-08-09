@@ -56,7 +56,7 @@ bool Blocks::stockpile_isAvalible(BlockIndex index, FactionId faction) const
 	StockPile& stockPile = m_stockPiles.at(index).at(faction).stockPile;
 	if(!stockPile.accepts(item))
 		return false;
-	CollisionVolume volume = items.getShape(item).getCollisionVolumeAtLocationBlock();
+	CollisionVolume volume = Shape::getCollisionVolumeAtLocationBlock(items.getShape(item));
 	return shape_getStaticVolume(index) + volume <= Config::maxBlockVolume;
 }
 bool Blocks::stockpile_contains(BlockIndex index, FactionId faction) const

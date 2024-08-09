@@ -6,8 +6,6 @@
 #include <compare>
 #include <functional>
 class Area;
-struct ItemType;
-struct MaterialType;
 // Each Item holds a reference target in a unique_ptr.
 // Code outside the engine must use an itemReference rather then storing ItemIndex.
 // ActorReferenceTarget is updated on index moved.
@@ -125,8 +123,8 @@ public:
 	template<typename Predicate>
 	void removeIf(Predicate predicate) { std::erase_if(data, predicate); }
 	void clear() { data.clear(); }
-	void addGeneric(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity);
-	void removeGeneric(Area& area, const ItemType& itemType, const MaterialType& materialType, Quantity quantity);
+	void addGeneric(Area& area, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity);
+	void removeGeneric(Area& area, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity);
 	void maybeAdd(ItemIndex index, Area& area) { if(!contains(index)) data.emplace_back(area, index); }
 	void maybeRemove(ItemIndex index) { auto found = find(index); if(found != data.end()) { std::swap(*found, data.back()); data.resize(data.size() - 1); } }
 	void merge(ItemIndices indices, Area& area) { for(ItemIndex index : indices) maybeAdd(index, area); }
@@ -201,5 +199,4 @@ public:
 		}
 	};
 };
-#include "json.h"
 inline void to_json(Json& data, const ActorOrItemReference& ref) { data = ref.getIndexPolymorphic(); }

@@ -9,7 +9,6 @@ void PlantSpecies::create(PlantSpeciesParamaters& p)
 	data.m_name.add(p.name);
 	data.m_fluidType.add(p.fluidType);
 	data.m_woodType.add(p.woodType);
-	data.m_harvestData.add(p.harvestData);
 	data.m_stepsNeedsFluidFrequency.add(p.stepsNeedsFluidFrequency);
 	data.m_stepsTillDieWithoutFluid.add(p.stepsTillDieWithoutFluid);
 	data.m_stepsTillFullyGrown.add(p.stepsTillFullyGrown);
@@ -34,7 +33,7 @@ void PlantSpecies::create(PlantSpeciesParamaters& p)
 	data.m_itemQuantityToHarvest.add(p.itemQuantityToHarvest);
 	data.m_dayOfYearToStartHarvest.add(p.dayOfYearToStartHarvest);
 }
-const std::pair<const Shape*, uint8_t> PlantSpecies::shapeAndWildGrowthForPercentGrown(PlantSpeciesId species, Percent percentGrown)
+const std::pair<ShapeId, uint8_t> PlantSpecies::shapeAndWildGrowthForPercentGrown(PlantSpeciesId species, Percent percentGrown)
 {
 	uint8_t totalGrowthStages = data.m_shapes.at(species).size() + data.m_maxWildGrowth.at(species);
 	uint8_t growthStage = util::scaleByPercentRange(1, totalGrowthStages, percentGrown);

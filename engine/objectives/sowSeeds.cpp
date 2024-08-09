@@ -28,7 +28,7 @@ void SowSeedsEvent::execute(Simulation&, Area* area)
 		m_objective.execute(*area, actor);
 	}
 	assert(blocks.farm_get(block, faction));
-	const PlantSpecies& plantSpecies = *blocks.farm_get(block, faction)->plantSpecies;
+	PlantSpeciesId plantSpecies = blocks.farm_get(block, faction)->plantSpecies;
 	blocks.plant_create(block, plantSpecies);
 	actors.objective_complete(actor, m_objective);
 }
@@ -81,7 +81,7 @@ void SowSeedsObjective::execute(Area& area, ActorIndex actor)
 		if(actors.isAdjacentToLocation(actor, m_block))
 		{
 			FarmField* field = blocks.farm_get(m_block, actors.getFactionId(actor));
-			if(field != nullptr && blocks.plant_canGrowHereAtSomePointToday(m_block, *field->plantSpecies))
+			if(field != nullptr && blocks.plant_canGrowHereAtSomePointToday(m_block, field->plantSpecies))
 			{
 				begin(area, actor);
 				return;
@@ -124,7 +124,7 @@ void SowSeedsObjective::cancel(Area& area, ActorIndex actor)
 		if(field == nullptr)
 			return;
 		//TODO: check it is still planting season.
-		if(blocks.plant_canGrowHereAtSomePointToday(m_block, *field->plantSpecies))
+		if(blocks.plant_canGrowHereAtSomePointToday(m_block, field->plantSpecies))
 			area.m_hasFarmFields.at(faction).addSowSeedsDesignation(m_block);
 	}
 }

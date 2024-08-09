@@ -1,8 +1,8 @@
 #include "animalSpecies.h"
-const Shape& AnimalSpecies::shapeForPercentGrown(AnimalSpeciesId id, Percent percentGrown)
+ShapeId AnimalSpecies::shapeForPercentGrown(AnimalSpeciesId id, Percent percentGrown)
 {
 	uint index = util::scaleByPercentRange(0, data.m_shapes.at(id).size() - 1, percentGrown);
-	return *data.m_shapes.at(id).at(index);
+	return data.m_shapes.at(id).at(index);
 }
 // Static method.
 AnimalSpeciesId AnimalSpecies::byName(std::string name)
@@ -24,7 +24,7 @@ AnimalSpeciesId AnimalSpecies::create(AnimalSpeciesParamaters p)
 	data.m_stepsTillDieWithoutFood.add(p.stepsTillDieWithoutFood);
 	data.m_stepsEatFrequency.add(p.stepsEatFrequency);
 	data.m_stepsTillDieWithoutFluid.add(p.stepsTillDieWithoutFluid);
-	data.m_stepsFluidDrinkFreqency.add(p.stepsFluidDrinkFreqency);
+	data.m_stepsFluidDrinkFrequency.add(p.stepsFluidDrinkFrequency);
 	data.m_stepsTillDieInUnsafeTemperature.add(p.stepsTillDieInUnsafeTemperature);
 	data.m_minimumSafeTemperature.add(p.minimumSafeTemperature);
 	data.m_maximumSafeTemperature.add(p.maximumSafeTemperature);

@@ -17,7 +17,7 @@ void AreaHasRain::load(const Json& data, [[maybe_unused]] DeserializationMemo& d
 {
 	if(data.contains("currentFluidType"))
 	{
-		m_currentlyRainingFluidType = data["currentFluidType"].get<const FluidType*>();
+		m_currentlyRainingFluidType = data["currentFluidType"].get<FluidTypeId>();
 		m_intensityPercent = data["intensityPercent"].get<Percent>();
 	}
 	if(data.contains("eventStart"))
@@ -32,7 +32,7 @@ Json AreaHasRain::toJson() const
 		data["eventStart"] = m_event.getStartStep();
 		data["eventDuration"] = m_event.duration();
 	}
-	if(m_currentlyRainingFluidType)
+	if(m_currentlyRainingFluidType.exists())
 	{
 		data["currentFluidType"] = m_currentlyRainingFluidType;
 		data["intensityPercent"] = m_intensityPercent;
@@ -40,31 +40,31 @@ Json AreaHasRain::toJson() const
 	data["humdityBySeason"] = m_humidityBySeason;
 	return data;
 }
-void AreaHasRain::start(const FluidType& fluidType, Percent intensityPercent, Step stepsDuration)
+void AreaHasRain::start(FluidTypeId fluidType, Percent intensityPercent, Step stepsDuration)
 {
 	assert(intensityPercent <= 100);
 	assert(intensityPercent > 0);
 	m_event.maybeUnschedule();
-	m_currentlyRainingFluidType = &fluidType;
+	m_currentlyRainingFluidType = fluidType;
 	m_intensityPercent = intensityPercent;
 	Blocks& blocks = m_area.getBlocks();
 	Plants& plants = m_area.getPlants();
 	for(PlantIndex plant : plants.getOnSurface())
-		if(plants.getSpecies(plant).fluidType == fluidType && blocks.isExposedToSky(plants.getLocation(plant)))
+		if(PlantSpecies::getFluidType(plants.getSpecies(plant)) == fluidType && blocks.isExposedToSky(plants.getLocation(plant)))
 			plants.setHasFluidForNow(plant);
 	m_event.schedule(stepsDuration, m_area.m_simulation);
 }
 void AreaHasRain::schedule(Step restartAt) { m_event.schedule(restartAt, m_area.m_simulation); }
 void AreaHasRain::stop()
 {
-	m_currentlyRainingFluidType = nullptr;
+	m_currentlyRainingFluidType.clear();
 	m_intensityPercent = Percent::create(0);
 }
 void AreaHasRain::doStep()
 {
 	assert(m_intensityPercent <= 100);
 	assert(m_intensityPercent > 0);
-	if(m_currentlyRainingFluidType == nullptr)
+	if(m_currentlyRainingFluidType.empty())
 		return;
 	auto& random = m_area.m_simulation.m_random;
 	DistanceInBlocks spacing = DistanceInBlocks::create(util::scaleByInversePercent(Config::rainMaximumSpacing.get(), m_intensityPercent));
@@ -78,8 +78,8 @@ void AreaHasRain::doStep()
 			--i;
 		else
 		{
-			if(!blocks.solid_is(block) && blocks.fluid_canEnterCurrently(block, *m_currentlyRainingFluidType))
-				blocks.fluid_add(block, CollisionVolume::create(1), *m_currentlyRainingFluidType);
+			if(!blocks.solid_is(block) && blocks.fluid_canEnterCurrently(block, m_currentlyRainingFluidType))
+				blocks.fluid_add(block, CollisionVolume::create(1), m_currentlyRainingFluidType);
 			i = spacing;
 		}
 }

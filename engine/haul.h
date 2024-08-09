@@ -54,8 +54,8 @@ class HaulSubproject final
 	bool m_itemIsMoving = false;
 	ActorReference m_beastOfBurden;
 	ProjectRequirementCounts& m_projectRequirementCounts;
-	const ItemType* m_genericItemType;
-	const MaterialType* m_genericMaterialType;
+	ItemTypeId m_genericItemType;
+	MaterialTypeId m_genericMaterialType;
 	void complete(ActorOrItemIndex delivered);
 	[[nodiscard]] bool allWorkersAreAdjacentTo(ItemIndex item);
 	[[nodiscard]] bool allWorkersAreAdjacentTo(ActorOrItemIndex actorOrItem);

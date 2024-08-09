@@ -1,6 +1,7 @@
 #pragma once
 
 #include "items/itemQuery.h"
+#include "materialType.h"
 
 #include <filesystem>
 #include <string>
@@ -18,9 +19,9 @@ namespace definitions
 	void loadMoveTypes();
 	void loadMaterialTypes();
 	void loadSkillTypes();
-	const AttackType loadAttackType(const Json& data, const SkillType& defaultSkill);
-	std::pair<ItemQuery, Quantity> loaditemQuery(const Json& data);
-	void loadMaterialTypeConstuctionData();
+	AttackTypeId loadAttackType(const Json& data, SkillTypeId defaultSkill);
+	std::pair<ItemQuery, Quantity> loadItemQuery(const Json& data);
+	std::unordered_map<std::string, MaterialTypeConstructionDataParamaters> loadMaterialTypeConstuctionData();
 	//void loadMedicalProjectTypes()
 	void loadCraftJobs();
 	void loadWeaponsData();

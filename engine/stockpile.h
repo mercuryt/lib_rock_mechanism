@@ -105,8 +105,8 @@ class StockPileProject final : public Project
 	ItemReference m_item;
 	// Needed for generic items where the original item may no longer exist.
 	Quantity m_quantity = Quantity::create(0);
-	const ItemType& m_itemType;
-	const MaterialType& m_materialType;
+	ItemTypeId m_itemType;
+	MaterialTypeId m_materialType;
 	StockPile& m_stockpile;
 	void onComplete();
 	void onReserve();
@@ -120,7 +120,7 @@ class StockPileProject final : public Project
 	[[nodiscard]] Step getDuration() const { return Config::addToStockPileDelaySteps; }
 	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const;
-	std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> getByproducts() const;
+	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const;
 	std::vector<std::pair<ActorQuery, Quantity>> getActors() const;
 public:
 	StockPileProject(FactionId faction, Area& area, BlockIndex block, ItemIndex item, Quantity quantity, Quantity maxWorkers);
@@ -174,9 +174,9 @@ struct StockPileHasShapeDishonorCallback final : public DishonorCallback
 class AreaHasStockPilesForFaction
 {
 	// Stockpiles may accept multiple item types and thus may appear here more then once.
-	std::unordered_map<const ItemType*, std::unordered_set<StockPile*>> m_availableStockPilesByItemType;
+	ItemTypeMap<std::vector<StockPile*>> m_availableStockPilesByItemType;
 	// These items are checked whenever a new stockpile is created to see if they should be move to items with destinations.
-	std::unordered_map<const ItemType*, ItemReferences> m_itemsWithoutDestinationsByItemType;
+	ItemTypeMap<ItemReferences> m_itemsWithoutDestinationsByItemType;
 	// Only when an item is added here does it get designated for stockpileing.
 	ItemReferences m_itemsWithDestinationsWithoutProjects;
 	// The stockpile used as index here is not neccesarily where the item will go, it is used to prove that there is somewhere the item could go.

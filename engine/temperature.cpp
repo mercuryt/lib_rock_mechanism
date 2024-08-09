@@ -123,14 +123,14 @@ void AreaHasTemperature::addMeltableSolidBlockAboveGround(BlockIndex block)
 	Blocks& blocks = m_area.getBlocks();
 	assert(!blocks.isUnderground(block));
 	assert(blocks.solid_is(block));
-	m_aboveGroundBlocksByMeltingPoint.at(blocks.solid_get(block).meltingPoint).add(block);
+	m_aboveGroundBlocksByMeltingPoint.at(MaterialType::getMeltingPoint(blocks.solid_get(block))).add(block);
 }
 // Must be run before block is set no longer solid if above ground.
 void AreaHasTemperature::removeMeltableSolidBlockAboveGround(BlockIndex block)
 {
 	Blocks& blocks = m_area.getBlocks();
 	assert(blocks.solid_is(block));
-	m_aboveGroundBlocksByMeltingPoint.at(blocks.solid_get(block).meltingPoint).remove(block);
+	m_aboveGroundBlocksByMeltingPoint.at(MaterialType::getMeltingPoint(blocks.solid_get(block))).remove(block);
 }
 Temperature AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature() const
 {
@@ -143,7 +143,7 @@ Temperature AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature() const
 	return yearlyColdestDailyAverage + ((yearlyHottestDailyAverage - yearlyColdestDailyAverage) * (dayOfYearOfSolstice - daysFromSolstice)) / dayOfYearOfSolstice;
 }
 UnsafeTemperatureEvent::UnsafeTemperatureEvent(Area& area, ActorIndex a, const Step start) :
-	ScheduledEvent(area.m_simulation, area.getActors().getSpecies(a).stepsTillDieInUnsafeTemperature, start),
+	ScheduledEvent(area.m_simulation, AnimalSpecies::getStepsTillDieInUnsafeTemperature(area.getActors().getSpecies(a)), start),
 	m_needsSafeTemperature(*area.getActors().m_needsSafeTemperature.at(a).get()) { }
 void UnsafeTemperatureEvent::execute(Simulation&, Area*) { m_needsSafeTemperature.dieFromTemperature(); }
 void UnsafeTemperatureEvent::clearReferences(Simulation&, Area*) { m_needsSafeTemperature.m_event.clearPointer(); }
@@ -187,8 +187,8 @@ void ActorNeedsSafeTemperature::onChange(Area& area)
 bool ActorNeedsSafeTemperature::isSafe(Area& area, Temperature temperature) const
 {
 	ActorIndex actor = m_actor.getIndex();
-	const AnimalSpecies& species = area.getActors().getSpecies(actor);
-	return temperature >= species.minimumSafeTemperature && temperature <= species.maximumSafeTemperature;
+	AnimalSpeciesId species = area.getActors().getSpecies(actor);
+	return temperature >= AnimalSpecies::getMinimumSafeTemperature(species) && temperature <= AnimalSpecies::getMinimumSafeTemperature(species);
 }
 bool ActorNeedsSafeTemperature::isSafeAtCurrentLocation(Area& area) const
 {

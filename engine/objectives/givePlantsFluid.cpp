@@ -29,7 +29,7 @@ void GivePlantsFluidEvent::execute(Simulation&, Area* area)
 	PlantIndex plant = blocks.plant_get(m_objective.m_plantLocation);
 	Actors& actors = area->getActors();
 	Plants& plants = area->getPlants();
-	assert(actors.canPickUp_isCarryingFluidType(actor, plants.getSpecies(plant).fluidType));
+	assert(actors.canPickUp_isCarryingFluidType(actor, PlantSpecies::getFluidType(plants.getSpecies(plant))));
 	CollisionVolume quantity = std::min(plants.getVolumeFluidRequested(plant), actors.canPickUp_getFluidVolume(actor));
 	plants.addFluid(plant, quantity, actors.canPickUp_getFluidType(actor));
 	actors.canPickUp_removeFluidVolume(actor, quantity);
@@ -169,7 +169,7 @@ void GivePlantsFluidObjective::execute(Area& area, ActorIndex actor)
 		// Has fluid item.
 		if(actors.canPickUp_getFluidVolume(actor) != 0)
 		{
-			assert(items.cargo_getFluidType(m_fluidHaulingItem.getIndex()) == plants.getSpecies(plant).fluidType);
+			assert(items.cargo_getFluidType(m_fluidHaulingItem.getIndex()) == PlantSpecies::getFluidType(plants.getSpecies(plant)));
 			// Has fluid.
 			if(actors.isAdjacentToPlant(actor, plant))
 				// At plant, begin giving.
@@ -192,7 +192,7 @@ void GivePlantsFluidObjective::execute(Area& area, ActorIndex actor)
 				execute(area, actor);
 			}
 			else
-				actors.move_setDestinationAdjacentToFluidType(actor, plants.getSpecies(plant).fluidType, m_detour);
+				actors.move_setDestinationAdjacentToFluidType(actor, PlantSpecies::getFluidType(plants.getSpecies(plant)), m_detour);
 		}
 	}
 	else
@@ -262,9 +262,9 @@ void GivePlantsFluidObjective::fillContainer(Area& area, BlockIndex fillLocation
 	Items& items = area.getItems();
 	PlantIndex plant = blocks.plant_get(m_plantLocation);
 	ItemIndex haulTool = actors.canPickUp_getItem(actor);
-	const FluidType& fluidType = plants.getSpecies(plant).fluidType;
+	FluidTypeId fluidType = PlantSpecies::getFluidType(plants.getSpecies(plant));
 	ItemIndex fillFromItem = getItemToFillFromAt(area, fillLocation);
-	CollisionVolume volume = items.getItemType(haulTool).internalVolume.toCollisionVolume();
+	CollisionVolume volume = ItemType::getInternalVolume(items.getItemType(haulTool)).toCollisionVolume();
 	if(fillFromItem.exists())
 	{
 		assert(items.cargo_getFluidType(fillFromItem) == fluidType);
@@ -284,7 +284,7 @@ bool GivePlantsFluidObjective::canFillAt(Area& area, BlockIndex block) const
 	assert(m_plantLocation.exists());
 	Blocks& blocks = area.getBlocks();
 	Plants& plants = area.getPlants();
-	const FluidType& fluidType = plants.getSpecies(blocks.plant_get(m_plantLocation)).fluidType;
+	FluidTypeId fluidType = PlantSpecies::getFluidType(plants.getSpecies(blocks.plant_get(m_plantLocation)));
 	return blocks.fluid_volumeOfTypeContains(block, fluidType) != 0 || 
 		const_cast<GivePlantsFluidObjective*>(this)->getItemToFillFromAt(area, block).exists();
 }
@@ -295,7 +295,7 @@ ItemIndex GivePlantsFluidObjective::getItemToFillFromAt(Area& area, BlockIndex b
 	Blocks& blocks = area.getBlocks();
 	Plants& plants = area.getPlants();
 	Items& items = area.getItems();
-	const FluidType& fluidType = plants.getSpecies(blocks.plant_get(m_plantLocation)).fluidType;
+	FluidTypeId fluidType = PlantSpecies::getFluidType(plants.getSpecies(blocks.plant_get(m_plantLocation)));
 	for(ItemIndex item : blocks.item_getAll(block))
 		if(items.cargo_getFluidType(item) == fluidType)
 				return item;
@@ -313,7 +313,7 @@ ItemIndex GivePlantsFluidObjective::getFluidHaulingItemAt(Area& area, BlockIndex
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	for(ItemIndex item : blocks.item_getAll(block))
-		if(items.getItemType(item).canHoldFluids && actors.canPickUp_itemUnencombered(actor, item) && !items.isWorkPiece(item))
+		if(ItemType::getCanHoldFluids(items.getItemType(item)) && actors.canPickUp_itemUnencombered(actor, item) && !items.isWorkPiece(item))
 			return item;
 	return ItemIndex::null();
 }

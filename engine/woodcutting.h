@@ -37,7 +37,7 @@ class WoodCuttingProject final : public Project
 	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const;
 	std::vector<std::pair<ActorQuery, Quantity>> getActors() const;
-	std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> getByproducts() const;
+	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const;
 	static uint32_t getWorkerWoodCuttingScore(Area& area, ActorIndex actor);
 	// What would the total delay time be if we started from scratch now with current workers?
 public:

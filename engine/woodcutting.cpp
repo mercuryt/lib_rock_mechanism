@@ -38,28 +38,30 @@ WoodCuttingProject::WoodCuttingProject(const Json& data, DeserializationMemo& de
 std::vector<std::pair<ItemQuery, Quantity>> WoodCuttingProject::getConsumed() const { return {}; }
 std::vector<std::pair<ItemQuery, Quantity>> WoodCuttingProject::getUnconsumed() const { return {{ItemType::byName("axe"), Quantity::create(1)}}; }
 std::vector<std::pair<ActorQuery, Quantity>> WoodCuttingProject::getActors() const { return {}; }
-std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> WoodCuttingProject::getByproducts() const
+std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> WoodCuttingProject::getByproducts() const
 {
 	PlantIndex plant = m_area.getBlocks().plant_get(m_location);
 	Plants& plants = m_area.getPlants();
 	Percent percentGrown = plants.getPercentGrown(plant);
-	const PlantSpecies& species = plants.getSpecies(plant);
-	Quantity unitsLogsGenerated = Quantity::create(util::scaleByPercent(species.logsGeneratedByFellingWhenFullGrown.get(), percentGrown));
-	Quantity unitsBranchesGenerated = Quantity::create(util::scaleByPercent(species.branchesGeneratedByFellingWhenFullGrown.get(), percentGrown));
+	PlantSpeciesId species = plants.getSpecies(plant);
+	uint logs = PlantSpecies::getLogsGeneratedByFellingWhenFullGrown(species).get();
+	uint branches = PlantSpecies::getLogsGeneratedByFellingWhenFullGrown(species).get();
+	Quantity unitsLogsGenerated = Quantity::create(util::scaleByPercent(logs, percentGrown));
+	Quantity unitsBranchesGenerated = Quantity::create(util::scaleByPercent(branches, percentGrown));
 	assert(unitsLogsGenerated != 0);
 	assert(unitsBranchesGenerated != 0);
-	auto& woodType = species.woodType;
-	std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> output{
+	auto woodType = PlantSpecies::getWoodType(species);
+	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> output{
 		
-		{&ItemType::byName("branch"), woodType, unitsBranchesGenerated},
-		{&ItemType::byName("log"), woodType, unitsLogsGenerated}
+		{ItemType::byName("branch"), woodType, unitsBranchesGenerated},
+		{ItemType::byName("log"), woodType, unitsLogsGenerated}
 	};
 	return output;
 }
 // Static.
 uint32_t WoodCuttingProject::getWorkerWoodCuttingScore(Area& area, ActorIndex actor)
 {
-	static const SkillType& woodCuttingType = SkillType::byName("wood cutting");
+	static SkillTypeId woodCuttingType = SkillType::byName("wood cutting");
 	Actors& actors = area.getActors();
 	uint32_t strength = actors.getStrength(actor).get();
 	uint32_t skill = actors.skill_getLevel(actor, woodCuttingType).get();
@@ -142,7 +144,7 @@ void HasWoodCuttingDesignationsForFaction::designate(BlockIndex block)
 	Plants& plants = m_area.getPlants();
 	assert(!m_data.contains(block));
 	assert(blocks.plant_exists(block));
-	assert(plants.getSpecies(blocks.plant_get(block)).isTree);
+	assert(PlantSpecies::getIsTree(plants.getSpecies(blocks.plant_get(block))));
 	assert(plants.getPercentGrown(blocks.plant_get(block)) >= Config::minimumPercentGrowthForWoodCutting);
 	blocks.designation_set(block, m_faction, BlockDesignation::WoodCutting);
 	// To be called when block is no longer a suitable location, for example if it got crushed by a collapse.

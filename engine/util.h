@@ -120,11 +120,23 @@ namespace util
 		}), vec.end());
 	};
 	template<typename T>
-	inline void removeFromVectorByValueUnordered(std::vector<T>& vector, T value)
+	inline void removeFromVectorByValueUnordered(std::vector<T>& vector, const T& value)
 	{
 		auto iter = std::ranges::find(vector, value);
 		(*iter) = std::move(vector.back());
 		vector.pop_back();
+	}
+	template<typename T>
+	inline void addUniqueToVectorAssert(std::vector<T>& vector, const T& value)
+	{
+		assert(std::ranges::find(vector, value) == vector.end());
+		vector.push_back(value);
+	}
+	template<typename T>
+	inline void addUniqueToVectorIgnore(std::vector<T>& vector, const T& value)
+	{
+		if(std::ranges::find(vector, value) == vector.end())
+			vector.push_back(value);
 	}
 	inline Facing getFacingForAdjacentOffset(uint8_t adjacentOffset)
 	{

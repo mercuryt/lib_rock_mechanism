@@ -40,7 +40,7 @@ public:
 	void scheduleTiredEvent(Area& area);
 	[[nodiscard]] bool isAwake() const { return m_isAwake; }
 	[[nodiscard]] bool getNeedsSleep() const { return m_needsSleep; }
-	[[nodiscard]] BlockIndex getLocation() { return m_location; }
+	[[nodiscard]] BlockIndex getLocation() const { return m_location; }
 	friend class SleepEvent;
 	friend class TiredEvent;
 	friend class SleepPathRequest;
@@ -56,7 +56,7 @@ class SleepEvent final : public ScheduledEvent
 {
 	MustSleep& m_needsSleep;
 public:
-	SleepEvent(Simulation& simulation, const Step delay, MustSleep& ns, const Step start = Step::create(0));
+	SleepEvent(Simulation& simulation, Step delay, MustSleep& ns, Step start = Step::create(0));
 	void execute(Simulation&, Area*);
 	void clearReferences(Simulation&, Area*);
 };
@@ -64,7 +64,7 @@ class TiredEvent final : public ScheduledEvent
 {
 	MustSleep& m_needsSleep;
 public:
-	TiredEvent(Simulation& simulation, const Step delay, MustSleep& ns, const Step start = Step::create(0));
+	TiredEvent(Simulation& simulation, Step delay, MustSleep& ns, Step start = Step::create(0));
 	void execute(Simulation&, Area*);
 	void clearReferences(Simulation&, Area*);
 };

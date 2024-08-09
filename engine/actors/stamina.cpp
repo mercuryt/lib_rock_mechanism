@@ -16,6 +16,6 @@ void Actors::stamina_setFull(ActorIndex index)
 {
 	m_stamina.at(index) = stamina_getMax(index);
 }
-uint32_t Actors::stamina_getMax(ActorIndex) const { return Config::maxStaminaPointsBase;}
+Stamina Actors::stamina_getMax(ActorIndex) const { return Config::maxStaminaPointsBase;}
 bool Actors::stamina_hasAtLeast(ActorIndex index, Stamina stamina) const { return m_stamina.at(index) >= stamina; }
 bool Actors::stamina_isFull(ActorIndex index) const { return m_stamina.at(index) == stamina_getMax(index); }

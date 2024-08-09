@@ -1,13 +1,7 @@
 #include "fluidType.h"
-const FluidType& FluidType::byName(const std::string name)
+const FluidTypeId FluidType::byName(const std::string name)
 {
-	auto found = std::ranges::find(fluidTypeDataStore, name, &FluidType::name);
-	assert(found != fluidTypeDataStore.end());
-	return *found;
-}
-FluidType& FluidType::byNameNonConst(const std::string name)
-{
-	auto found = std::ranges::find(fluidTypeDataStore, name, &FluidType::name);
-	assert(found != fluidTypeDataStore.end());
-	return *found;
+	auto found = data.m_name.find(name);
+	assert(found != data.m_name.end());
+	return FluidTypeId::create(found - data.m_name.begin());
 }

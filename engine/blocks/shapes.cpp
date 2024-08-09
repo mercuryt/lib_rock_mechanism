@@ -10,7 +10,7 @@ bool Blocks::shape_anythingCanEnterEver(BlockIndex index) const
 		return false;
 	return !blockFeature_blocksEntrance(index);
 }
-bool Blocks::shape_shapeAndMoveTypeCanEnterEverFrom(BlockIndex index, const Shape& shape, const MoveType& moveType, BlockIndex from) const
+bool Blocks::shape_shapeAndMoveTypeCanEnterEverFrom(BlockIndex index, ShapeId shape, MoveTypeId moveType, BlockIndex from) const
 {
 	assert(shape_anythingCanEnterEver(from));
 	if(!shape_anythingCanEnterEver(index))
@@ -20,11 +20,11 @@ bool Blocks::shape_shapeAndMoveTypeCanEnterEverFrom(BlockIndex index, const Shap
 	const Facing facing = facingToSetWhenEnteringFrom(index, from);
 	return shape_shapeAndMoveTypeCanEnterEverWithFacing(index, shape, moveType, facing);
 }
-bool Blocks::shape_shapeAndMoveTypeCanEnterEverWithFacing(BlockIndex index, const Shape& shape, const MoveType& moveType, const Facing facing) const
+bool Blocks::shape_shapeAndMoveTypeCanEnterEverWithFacing(BlockIndex index, ShapeId shape, MoveTypeId moveType, const Facing facing) const
 {
 	if(!shape_anythingCanEnterEver(index) || !shape_moveTypeCanEnter(index, moveType))
 		return false;
-	for(auto& [x, y, z, v] : shape.positionsWithFacing(facing))
+	for(auto& [x, y, z, v] : Shape::positionsWithFacing(shape, facing))
 	{
 		BlockIndex otherIndex = offset(index, x, y, z);
 		if(otherIndex.empty() || !shape_anythingCanEnterEver(otherIndex) || !shape_moveTypeCanEnter(otherIndex, moveType))
@@ -32,10 +32,10 @@ bool Blocks::shape_shapeAndMoveTypeCanEnterEverWithFacing(BlockIndex index, cons
 	}
 	return true;
 }
-bool Blocks::shape_canEnterCurrentlyWithFacing(BlockIndex index, const Shape& shape, Facing facing, const BlockIndices& occupied) const
+bool Blocks::shape_canEnterCurrentlyWithFacing(BlockIndex index, ShapeId shape, Facing facing, const BlockIndices& occupied) const
 {
 	assert(shape_anythingCanEnterEver(index));
-	for(auto& [x, y, z, v] : shape.positionsWithFacing(facing))
+	for(auto& [x, y, z, v] : Shape::positionsWithFacing(shape, facing))
 	{
 		BlockIndex otherIndex = offset(index,x, y, z);
 		assert(otherIndex.exists());
@@ -47,10 +47,10 @@ bool Blocks::shape_canEnterCurrentlyWithFacing(BlockIndex index, const Shape& sh
 	}
 	return true;
 }
-bool Blocks::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(BlockIndex index, const Shape& shape, const MoveType& moveType, const Facing facing, const BlockIndices& occupied) const
+bool Blocks::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(BlockIndex index, ShapeId shape, MoveTypeId moveType, const Facing facing, const BlockIndices& occupied) const
 {
 	assert(shape_anythingCanEnterEver(index));
-	for(auto& [x, y, z, v] : shape.positionsWithFacing(facing))
+	for(auto& [x, y, z, v] : Shape::positionsWithFacing(shape, facing))
 	{
 		BlockIndex otherIndex = offset(index,x, y, z);
 		if(std::ranges::find(occupied, otherIndex) != occupied.end())
@@ -63,26 +63,26 @@ bool Blocks::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(BlockIndex 
 	}
 	return true;
 }
-bool Blocks::shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(BlockIndex index, const Shape& shape, const MoveType& moveType) const
+bool Blocks::shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(BlockIndex index, ShapeId shape, MoveTypeId moveType) const
 {
-	if(shape.isRadiallySymetrical)
+	if(Shape::getIsRadiallySymetrical(shape))
 		return shape_shapeAndMoveTypeCanEnterEverWithFacing(index, shape, moveType, Facing::create(0));
 	for(Facing facing = Facing::create(0); facing < 4; ++facing)
 		if(shape_shapeAndMoveTypeCanEnterEverWithFacing(index, shape, moveType, facing))
 			return true;
 	return false;
 }
-bool Blocks::shape_moveTypeCanEnterFrom(BlockIndex index, const MoveType& moveType, BlockIndex from) const
+bool Blocks::shape_moveTypeCanEnterFrom(BlockIndex index, MoveTypeId moveType, BlockIndex from) const
 {
 	assert(shape_anythingCanEnterEver(index));
 	assert(shape_moveTypeCanEnter(index, moveType));
-	for(auto& [fluidType, volume] : moveType.swim)
+	for(auto& [fluidType, volume] : MoveType::getSwim(moveType))
 	{
 		// Can travel within and enter liquid from any angle.
-		if(fluid_volumeOfTypeContains(index, *fluidType) >= volume)
+		if(fluid_volumeOfTypeContains(index, fluidType) >= volume)
 			return true;
 		// Can leave liquid at any angle.
-		if(fluid_volumeOfTypeContains(from, *fluidType) >= volume)
+		if(fluid_volumeOfTypeContains(from, fluidType) >= volume)
 			return true;
 	}
 	// Can always enter on same z level.
@@ -95,7 +95,7 @@ bool Blocks::shape_moveTypeCanEnterFrom(BlockIndex index, const MoveType& moveTy
 	if(getZ(index) < getZ(from) && !blockFeature_canEnterFromAbove(index, from))
 		return false;
 	// Can enter from any angle if flying or climbing.
-	if(moveType.fly || moveType.climb > 0)
+	if(MoveType::getFly(moveType) || MoveType::getClimb(moveType) > 0)
 		return true;
 	// Can go up if from contains a ramp or stairs.
 	if(getZ(index) > getZ(from) && (blockFeature_contains(from, BlockFeatureType::ramp) || blockFeature_contains(from, BlockFeatureType::stairs))) 
@@ -103,21 +103,21 @@ bool Blocks::shape_moveTypeCanEnterFrom(BlockIndex index, const MoveType& moveTy
 	// Can go down if this contains a ramp or stairs.
 	if(getZ(index) < getZ(from) && (blockFeature_contains(index, BlockFeatureType::ramp) || 
 					blockFeature_contains(index, BlockFeatureType::stairs)
-					))
+	))
 		return true;
 	return false;
 }
-bool Blocks::shape_moveTypeCanEnter(BlockIndex index, const MoveType& moveType) const
+bool Blocks::shape_moveTypeCanEnter(BlockIndex index, MoveTypeId moveType) const
 {
 	assert(shape_anythingCanEnterEver(index));
 	// Swiming.
 	for(const FluidData& fluidData : m_fluid.at(index))
 	{
-		auto found = moveType.swim.find(fluidData.type);
-		if(found != moveType.swim.end() && found->second <= fluidData.volume)
+		auto found = MoveType::getSwim(moveType).find(fluidData.type);
+		if(found != MoveType::getSwim(moveType).end() && found->second <= fluidData.volume)
 		{
 			// Can swim in fluid, check breathing requirements
-			if(moveType.breathless)
+			if(MoveType::getBreathless(moveType))
 				return true;
 			if(shape_moveTypeCanBreath(index, moveType))
 				return true;
@@ -130,16 +130,16 @@ bool Blocks::shape_moveTypeCanEnter(BlockIndex index, const MoveType& moveType) 
 	if(m_totalFluidVolume.at(index) > Config::maxBlockVolume / 2)
 		return false;
 	// Fly can always enter if fluid level isn't preventing it.
-	if(moveType.fly)
+	if(MoveType::getFly(moveType))
 		return true;
 	// Walk can enter only if can stand in or if also has climb2 and there is a isSupport() block adjacent.
-	if(moveType.walk)
+	if(MoveType::getWalk(moveType))
 	{
 		if(shape_canStandIn(index))
 			return true;
 		else
 
-			if(moveType.climb < 2)
+			if(MoveType::getClimb(moveType) < 2)
 				return false;
 			else
 			{
@@ -153,72 +153,72 @@ bool Blocks::shape_moveTypeCanEnter(BlockIndex index, const MoveType& moveType) 
 	}
 	return false;
 }
-bool Blocks::shape_moveTypeCanBreath(BlockIndex index, const MoveType& moveType) const
+bool Blocks::shape_moveTypeCanBreath(BlockIndex index, MoveTypeId moveType) const
 {
-	if(m_totalFluidVolume.at(index) < Config::maxBlockVolume && !moveType.onlyBreathsFluids)
+	if(m_totalFluidVolume.at(index) < Config::maxBlockVolume && !MoveType::getOnlyBreathsFluids(moveType))
 		return true;
 	for(const FluidData& fluidData : m_fluid.at(index))
 		//TODO: Minimum volume should probably be scaled by body size somehow.
-		if(moveType.breathableFluids.contains(fluidData.type) && fluidData.volume >= Config::minimumVolumeOfFluidToBreath)
+		if(MoveType::getBreathableFluids(moveType).contains(fluidData.type) && fluidData.volume >= Config::minimumVolumeOfFluidToBreath)
 			return true;
 	return false;
 }
-MoveCost Blocks::shape_moveCostFrom(BlockIndex index, const MoveType& moveType, BlockIndex from) const
+MoveCost Blocks::shape_moveCostFrom(BlockIndex index, MoveTypeId moveType, BlockIndex from) const
 {
 	assert(shape_anythingCanEnterEver(index));
 	assert(shape_anythingCanEnterEver(from));
-	if(moveType.fly)
+	if(MoveType::getFly(moveType))
 		return Config::baseMoveCost;
-	for(auto& [fluidType, volume] : moveType.swim)
-		if(fluid_volumeOfTypeContains(index, *fluidType) >= volume)
+	for(auto& [fluidType, volume] : MoveType::getSwim(moveType))
+		if(fluid_volumeOfTypeContains(index, fluidType) >= volume)
 			return Config::baseMoveCost;
 	// Double cost to go up if not fly, swim, or ramp (if climb).
 	if(getZ(index) > getZ(from) && !blockFeature_contains(from, BlockFeatureType::ramp))
 		return Config::goUpMoveCost;
 	return Config::baseMoveCost;
 }
-bool Blocks::shape_canEnterCurrentlyFrom(BlockIndex index, const Shape& shape, BlockIndex block, const BlockIndices& occupied) const
+bool Blocks::shape_canEnterCurrentlyFrom(BlockIndex index, ShapeId shape, BlockIndex block, const BlockIndices& occupied) const
 {
 	const Facing facing = facingToSetWhenEnteringFrom(index, block);
 	return shape_canEnterCurrentlyWithFacing(index, shape, facing, occupied);
 }
-bool Blocks::shape_canEnterCurrentlyWithAnyFacing(BlockIndex index, const Shape& shape, const BlockIndices& occupied) const
+bool Blocks::shape_canEnterCurrentlyWithAnyFacing(BlockIndex index, ShapeId shape, const BlockIndices& occupied) const
 {
-	if(shape.isRadiallySymetrical)
+	if(Shape::getIsRadiallySymetrical(shape))
 		return shape_canEnterCurrentlyWithFacing(index, shape, Facing::create(0), occupied);
 	for(Facing facing = Facing::create(0); facing < 4; ++facing)
 		if(shape_canEnterCurrentlyWithFacing(index, shape, facing, occupied))
 			return true;
 	return false;
 }
-std::pair<bool, Facing> Blocks::shape_canEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, const Shape& shape, const BlockIndices& occupied) const
+std::pair<bool, Facing> Blocks::shape_canEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, ShapeId shape, const BlockIndices& occupied) const
 {
 	for(Facing facing = Facing::create(0); facing < 4; ++facing)
 		if(shape_canEnterCurrentlyWithFacing(index, shape, facing, occupied))
 			return {true, facing};
 	return {false, Facing::create(0)};
 }
-bool Blocks::shape_staticCanEnterCurrentlyWithFacing(BlockIndex index, const Shape& shape, const Facing& facing, const BlockIndices& occupied) const
+bool Blocks::shape_staticCanEnterCurrentlyWithFacing(BlockIndex index, ShapeId shape, const Facing& facing, const BlockIndices& occupied) const
 {
 	return shape_staticShapeCanEnterWithFacing(index, shape, facing, occupied);
 }
-bool Blocks::shape_staticCanEnterCurrentlyWithAnyFacing(BlockIndex index, const Shape& shape, const BlockIndices& occupied) const
+bool Blocks::shape_staticCanEnterCurrentlyWithAnyFacing(BlockIndex index, ShapeId shape, const BlockIndices& occupied) const
 {
 	for(Facing facing = Facing::create(0); facing < 4; ++facing)
 		if(shape_staticCanEnterCurrentlyWithFacing(index, shape, facing, occupied))
 			return true;
 	return false;
 }
-std::pair<bool, Facing> Blocks::shape_staticCanEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, const Shape& shape, const BlockIndices& occupied) const
+std::pair<bool, Facing> Blocks::shape_staticCanEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, ShapeId shape, const BlockIndices& occupied) const
 {
 	for(Facing facing = Facing::create(0); facing < 4; ++facing)
 		if(shape_staticCanEnterCurrentlyWithFacing(index, shape, facing, occupied))
 			return {true, facing};
 	return {false, Facing::create(0)};
 }
-bool Blocks::shape_staticShapeCanEnterWithFacing(BlockIndex index, const Shape& shape, Facing facing, const BlockIndices& occupied) const
+bool Blocks::shape_staticShapeCanEnterWithFacing(BlockIndex index, ShapeId shape, Facing facing, const BlockIndices& occupied) const
 {
-	for(auto& [x, y, z, v] : shape.positionsWithFacing(facing))
+	for(auto& [x, y, z, v] : Shape::positionsWithFacing(shape, facing))
 	{
 		BlockIndex otherIndex = offset(index, x, y, z);
 		assert(otherIndex.exists());
@@ -229,9 +229,9 @@ bool Blocks::shape_staticShapeCanEnterWithFacing(BlockIndex index, const Shape& 
 	}
 	return true;
 }
-bool Blocks::shape_staticShapeCanEnterWithAnyFacing(BlockIndex index, const Shape& shape, const BlockIndices& occupied) const
+bool Blocks::shape_staticShapeCanEnterWithAnyFacing(BlockIndex index, ShapeId shape, const BlockIndices& occupied) const
 {
-	if(shape.isRadiallySymetrical)
+	if(Shape::getIsRadiallySymetrical(shape))
 		return shape_staticShapeCanEnterWithFacing(index, shape, Facing::create(0), occupied);
 	for(Facing facing = Facing::create(0); facing < 4; ++facing)
 		if(shape_staticShapeCanEnterWithFacing(index, shape, facing, occupied))
@@ -246,12 +246,12 @@ CollisionVolume Blocks::shape_getStaticVolume(BlockIndex index) const
 {
 	return m_staticVolume.at(index);
 }
-Quantity Blocks::shape_getQuantityOfItemWhichCouldFit(BlockIndex index, const ItemType& itemType) const
+Quantity Blocks::shape_getQuantityOfItemWhichCouldFit(BlockIndex index, ItemTypeId itemType) const
 {
 	if(m_dynamicVolume.at(index) > Config::maxBlockVolume)
 		return Quantity::create(0);
 	CollisionVolume freeVolume = Config::maxBlockVolume - m_staticVolume.at(index);
-	return Quantity::create((freeVolume / itemType.shape.getCollisionVolumeAtLocationBlock()).get());
+	return Quantity::create((freeVolume / Shape::getCollisionVolumeAtLocationBlock(ItemType::getShape(itemType))).get());
 }
 bool Blocks::shape_canStandIn(BlockIndex index) const
 {

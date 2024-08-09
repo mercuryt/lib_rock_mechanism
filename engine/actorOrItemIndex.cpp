@@ -135,8 +135,8 @@ bool ActorOrItemIndex::isAdjacentToLocation(const Area& area, BlockIndex locatio
 {
 	return isActor() ? area.getActors().isAdjacentToLocation(m_index, location) : area.getItems().isAdjacentToLocation(m_index, location);
 }
-const Shape& ActorOrItemIndex::getShape(const Area& area) const { return isActor() ? area.getActors().getShape(m_index) : area.getItems().getShape(m_index); }
-const MoveType& ActorOrItemIndex::getMoveType(const Area& area) const{ return isActor() ? area.getActors().getMoveType(ActorIndex::cast(m_index)) : area.getItems().getMoveType(ItemIndex::cast(m_index)); }
+ShapeId ActorOrItemIndex::getShape(const Area& area) const { return isActor() ? area.getActors().getShape(m_index) : area.getItems().getShape(m_index); }
+MoveTypeId ActorOrItemIndex::getMoveType(const Area& area) const{ return isActor() ? area.getActors().getMoveType(ActorIndex::cast(m_index)) : area.getItems().getMoveType(ItemIndex::cast(m_index)); }
 Facing ActorOrItemIndex::getFacing(const Area& area) const { return isActor() ? area.getActors().getFacing(m_index) : area.getItems().getFacing(m_index); }
 Mass ActorOrItemIndex::getMass(const Area& area) const { return isActor() ? area.getActors().getMass(ActorIndex::cast(m_index)) : area.getItems().getMass(ItemIndex::cast(m_index)); }
 Mass ActorOrItemIndex::getSingleUnitMass(const Area& area) const { return isActor() ? area.getActors().getMass(ActorIndex::cast(m_index)) : area.getItems().getSingleUnitMass(ItemIndex::cast(m_index)); }
@@ -150,11 +150,9 @@ Quantity ActorOrItemIndex::reservable_getUnreservedCount(Area& area, const Facti
 		return area.getItems().reservable_getUnreservedCount(m_index, faction);
 }
 //TODO: Try to use bitbashing instead of m_isActor
-/*
-void ActorOrItemIndex::setActorBit(HasShapeIndex& index) { index() |= (1u << 31); }
-void ActorOrItemIndex::unsetActorBit(HasShapeIndex& index) { index() &= ~(1u << 31); }
-bool ActorOrItemIndex::getActorBit(HasShapeIndex& index) { return index() & (1u<< 31); }
-*/
+void ActorOrItemIndex::setActorBit(HasShapeIndex& index) { index.getReference() |= (1u << 31); }
+void ActorOrItemIndex::unsetActorBit(HasShapeIndex& index) { index.getReference() &= ~(1u << 31); }
+bool ActorOrItemIndex::getActorBit(HasShapeIndex& index) { return index.getReference() & (1u<< 31); }
 std::strong_ordering ActorOrItemIndex::operator<=>(const ActorOrItemIndex& other) const
 {
 	assert(isActor() == other.isActor());

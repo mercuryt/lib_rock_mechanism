@@ -31,12 +31,12 @@ class AttackType final
 	DataVector<DistanceInBlocksFractional, AttackTypeId> m_range;
 	DataVector<CombatScore, AttackTypeId> m_combatScore;
 	DataVector<Step, AttackTypeId> m_coolDown;
-	DataVector<bool, AttackTypeId> m_projectile;
+	DataBitSet<AttackTypeId> m_projectile;
 	DataVector<WoundType, AttackTypeId> m_woundType;
 	DataVector<SkillTypeId, AttackTypeId> m_skillType;
 	DataVector<ItemTypeId, AttackTypeId> m_projectileItemType;
 public:
-	static void create(AttackTypeParamaters& p);
+	static AttackTypeId create(AttackTypeParamaters& p);
 	static AttackTypeId byName(std::string name);
 	[[nodiscard]] static std::string getName(AttackTypeId id) { return data.m_name.at(id); };
 	[[nodiscard]] static uint32_t getArea(AttackTypeId id) { return data.m_area.at(id); };

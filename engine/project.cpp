@@ -17,10 +17,6 @@
 #include <algorithm>
 #include <memory>
 #include <unordered_map>
-// ProjectRequirementCounts
-ProjectRequirementCounts::ProjectRequirementCounts(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) :
-	required(data["required"].get<const Quantity>()), delivered(data["delivered"].get<Quantity>()), 
-	reserved(data["reserved"].get<Quantity>()), consumed(data["consumed"].get<bool>()) { }
 // Project worker.
 ProjectWorker::ProjectWorker(const Json& data, DeserializationMemo& deserializationMemo) : 
 	objective(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))
@@ -266,8 +262,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 		std::erase_if(m_project.m_workerCandidatesAndTheirObjectives, [&](auto& pair) { return m_cannotPathToJobSite.contains(pair.first); });
 		// Set onDestoy callbacks for all items which will be reserved, in case they are destroyed before writeStep.
 		// Actors get marked dead rather then destroyed outright so no need for callbacks on them.
-		std::function<void()> callback = [this]{ resetProjectCounts(); };
-		m_hasOnDestroy.setCallback(callback);
+		m_hasOnDestroy.setCallback(std::make_unique<ResetProjectOnDestroyCallBack>(m_project));
 		for(auto& pair : m_reservedEquipment)
 			for(std::pair<ProjectRequirementCounts*, ItemReference> pair2 : pair.second)
 				items.onDestroy_subscribe(pair2.second.getIndex(), m_hasOnDestroy);
@@ -431,7 +426,7 @@ Project::Project(const Json& data, DeserializationMemo& deserializationMemo) :
 		for(const Json& pair : data["requiredItems"])
 		{
 			ItemQuery itemQuery(pair[0], m_area);
-			ProjectRequirementCounts requirementCounts(pair[1], deserializationMemo);
+			ProjectRequirementCounts requirementCounts(pair[1]);
 			m_requiredItems.emplace_back(std::make_pair(itemQuery, requirementCounts));
 			deserializationMemo.m_projectRequirementCounts[pair[1]["address"].get<uintptr_t>()] = &m_requiredItems.back().second;
 		}
@@ -439,7 +434,7 @@ Project::Project(const Json& data, DeserializationMemo& deserializationMemo) :
 		for(const Json& pair : data["requiredActors"])
 		{
 			ActorQuery actorQuery(pair[0], m_area);
-			ProjectRequirementCounts requirementCounts(pair[1], deserializationMemo);
+			ProjectRequirementCounts requirementCounts(pair[1]);
 			m_requiredActors.emplace_back(std::make_pair(actorQuery, requirementCounts));
 			deserializationMemo.m_projectRequirementCounts[pair[1]["address"].get<uintptr_t>()] = &m_requiredActors.back().second;
 		}
@@ -532,7 +527,7 @@ Json Project::toJson() const
 		data["requiredItems"] = Json::array();
 		for(auto& [itemQuery, requiredCounts] : m_requiredItems)
 		{
-			Json pair({itemQuery, requiredCounts});
+			Json pair({itemQuery.toJson(), requiredCounts});
 			pair[1]["address"] = reinterpret_cast<uintptr_t>(&requiredCounts);
 			data["requiredItems"].push_back(pair);
 		}
@@ -787,7 +782,7 @@ void Project::complete()
 		m_area.m_hasStockPiles.registerFaction(m_faction);
 	for(auto& [itemType, materialType, quantity] : getByproducts())
 	{
-		ItemIndex item = blocks.item_addGeneric(m_location, *itemType, *materialType, quantity);
+		ItemIndex item = blocks.item_addGeneric(m_location, itemType, materialType, quantity);
 		// Item may be newly created or it may be prexisting, and thus already designated for stockpileing.
 		if(!items.stockpile_canBeStockPiled(item, m_faction))
 			m_area.m_hasStockPiles.at(m_faction).addItem(item);

@@ -24,7 +24,7 @@ private:
 	Mass m_massFoodRequested = Mass::create(0);
 public:
 	MustEat(Area& area, ActorIndex a);
-	MustEat(Area& area, const Json& data, ActorIndex a, const AnimalSpecies& species);
+	MustEat(Area& area, const Json& data, ActorIndex a, AnimalSpeciesId species);
 	[[nodiscard]]Json toJson() const;
 	void scheduleHungerEvent(Area& area);
 	void eat(Area& area, Mass mass);
@@ -33,7 +33,7 @@ public:
 	void onDeath();
 	[[nodiscard]] bool needsFood() const;
 	[[nodiscard]] Mass massFoodForBodyMass(Area& area) const;
-	[[nodiscard]] const Mass& getMassFoodRequested() const;
+	[[nodiscard]] Mass getMassFoodRequested() const;
 	[[nodiscard]] Percent getPercentStarved() const;
 	[[nodiscard]] uint32_t getDesireToEatSomethingAt(Area& area, BlockIndex block) const;
 	[[nodiscard]] uint32_t getMinimumAcceptableDesire() const;

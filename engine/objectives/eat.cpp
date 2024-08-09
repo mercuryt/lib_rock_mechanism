@@ -33,16 +33,16 @@ void EatEvent::execute(Simulation&, Area* area)
 			eatPreparedMeal(*area, item);
 			return;
 		}
-		const ItemType& itemType = items.getItemType(item);
-		const AnimalSpecies& species = actors.getSpecies(actor);
-		if(itemType.edibleForDrinkersOf == &species.fluidType)
+		ItemTypeId itemType = items.getItemType(item);
+		AnimalSpeciesId species = actors.getSpecies(actor);
+		if(ItemType::getEdibleForDrinkersOf(itemType) == AnimalSpecies::getFluidType(species))
 		{
 			eatGenericItem(*area, item);
 			return;
 		}
 	}
-	const AnimalSpecies& species = actors.getSpecies(actor);
-	if(species.eatsMeat)
+	AnimalSpeciesId species = actors.getSpecies(actor);
+	if(AnimalSpecies::getEatsMeat(species))
 		for(ActorIndex actorToEat : blocks.actor_getAll(blockContainingFood))
 			if(!actors.isAlive(actorToEat) && actors.eat_canEatActor(actor, actorToEat))
 			{
@@ -53,10 +53,10 @@ void EatEvent::execute(Simulation&, Area* area)
 	{
 		PlantIndex plant = blocks.plant_get(blockContainingFood);
 		Plants& plants = area->getPlants();
-		const PlantSpecies& plantSpecies = plants.getSpecies(plant);
-		if(species.eatsFruit && plantSpecies.fluidType == species.fluidType && plants.getFruitMass(plant) != 0)
+		PlantSpeciesId plantSpecies = plants.getSpecies(plant);
+		if(AnimalSpecies::getEatsFruit(species) && PlantSpecies::getFluidType(plantSpecies) == AnimalSpecies::getFluidType(species) && plants.getFruitMass(plant) != 0)
 			eatFruitFromPlant(*area, plant);
-		else if(species.eatsLeaves && plantSpecies.fluidType == species.fluidType && plants.getFoliageMass(plant) != 0)
+		else if(AnimalSpecies::getEatsLeaves(species) && PlantSpecies::getFluidType(plantSpecies) == AnimalSpecies::getFluidType(species) && plants.getFoliageMass(plant) != 0)
 			eatPlantLeaves(*area, plant);
 	}
 }
@@ -99,7 +99,7 @@ void EatEvent::eatGenericItem(Area& area, ItemIndex item)
 {
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
-	assert(items.getItemType(item).edibleForDrinkersOf == &actors.drink_getFluidType(m_actor.getIndex()));
+	assert(ItemType::getEdibleForDrinkersOf(items.getItemType(item)) == actors.drink_getFluidType(m_actor.getIndex()));
 	MustEat& mustEat = *area.getActors().m_mustEat.at(m_actor.getIndex()).get();
 	Quantity quantityDesired = Quantity::create(std::ceil((float)mustEat.getMassFoodRequested().get() / (float)items.getSingleUnitMass(item).get()));
 	Quantity quantityEaten = std::min(quantityDesired, items.getQuantity(item));
@@ -135,8 +135,8 @@ void EatEvent::eatFruitFromPlant(Area& area, PlantIndex plant)
 	Plants& plants = area.getPlants();
 	MustEat& mustEat = *area.getActors().m_mustEat.at(m_actor.getIndex()).get();
 	Mass massEaten = std::min(mustEat.getMassFoodRequested(), plants.getFruitMass(plant));
-	static const MaterialType& fruitType = MaterialType::byName("fruit");
-	Mass unitMass = plants.getSpecies(plant).harvestData->fruitItemType.volume * fruitType.density;
+	static MaterialTypeId fruitType = MaterialType::byName("fruit");
+	Mass unitMass = ItemType::getVolume(PlantSpecies::getFruitItemType(plants.getSpecies(plant))) * MaterialType::getDensity(fruitType);
 	Quantity quantityEaten = Quantity::create((massEaten / unitMass).get());
 	assert(quantityEaten != 0);
 	mustEat.eat(area, unitMass * quantityEaten);
@@ -180,7 +180,7 @@ EatPathRequest::EatPathRequest(Area& area, EatObjective& eo) : m_eatObjective(eo
 	//TODO: maxRange.
 	bool unreserved = false;
 	bool reserve = false;
-	if(area.getActors().getFaction(getActor()) != nullptr)
+	if(area.getActors().getFaction(getActor()).exists())
 		unreserved = reserve = true;
 	createGoAdjacentToCondition(area, getActor(), predicate, m_eatObjective.m_detour, unreserved, DistanceInBlocks::null(), BlockIndex::null());
 }
@@ -188,7 +188,7 @@ void EatPathRequest::callback(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actor = getActor();
-	const AnimalSpecies species = actors.getSpecies(actor);
+	AnimalSpeciesId species = actors.getSpecies(actor);
 	if(m_eatObjective.m_tryToHunt)
 	{
 		if(!m_huntResult.exists())
@@ -204,7 +204,7 @@ void EatPathRequest::callback(Area& area, FindPathResult& result)
 	{
 		if(result.path.empty() && !result.useCurrentPosition)
 		{
-			if(species.eatsMeat)
+			if(AnimalSpecies::getEatsMeat(species))
 				m_eatObjective.m_tryToHunt = true;
 			else
 				m_eatObjective.m_noFoodFound = true;
@@ -339,20 +339,20 @@ bool EatObjective::canEatAt(Area& area, BlockIndex block, ActorIndex actor) cons
 	{
 		if(actors.eat_canEatItem(actor, item))
 			return true;
-		if(items.getItemType(item).internalVolume != 0)
+		if(ItemType::getInternalVolume(items.getItemType(item)) != 0)
 			for(ItemIndex i : items.cargo_getItems(item))
 				if(actors.eat_canEatItem(actor, i))
 					return true;
 	}
-	const AnimalSpecies& species = actors.getSpecies(actor);
-	if(species.eatsMeat)
+	AnimalSpeciesId species = actors.getSpecies(actor);
+	if(AnimalSpecies::getEatsMeat(species))
 		for(ActorIndex actor : blocks.actor_getAll(block))
-			if(!actors.isAlive(actor) && species.fluidType == actors.getSpecies(actor).fluidType )
+			if(!actors.isAlive(actor) && AnimalSpecies::getFluidType(species) == AnimalSpecies::getFluidType(actors.getSpecies(actor)))
 				return true;
 	if(blocks.plant_exists(block))
 	{
 		const PlantIndex plant = blocks.plant_get(block);
-		if(species.eatsFruit && area.getPlants().getSpecies(plant).fluidType == species.fluidType)
+		if(AnimalSpecies::getEatsFruit(species) && PlantSpecies::getFluidType(area.getPlants().getSpecies(plant)) == AnimalSpecies::getFluidType(species))
 			if(actors.eat_canEatPlant(actor, blocks.plant_get(block)))
 				return true;
 	}

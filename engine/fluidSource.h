@@ -8,9 +8,9 @@ struct DeserializationMemo;
 struct FluidSource final
 {
 	BlockIndex block;
-	const FluidType* fluidType;
+	FluidTypeId fluidType;
 	CollisionVolume level;
-	FluidSource(BlockIndex b, const FluidType* ft, CollisionVolume l) : block(b), fluidType(ft), level(l) { }
+	FluidSource(BlockIndex b, FluidTypeId ft, CollisionVolume l) : block(b), fluidType(ft), level(l) { }
 	FluidSource(const Json& data, DeserializationMemo& deserializationMemo);
 };
 class AreaHasFluidSources final
@@ -22,7 +22,7 @@ public:
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	void doStep();
-	void create(BlockIndex block, const FluidType& fluidType, CollisionVolume level);
+	void create(BlockIndex block, FluidTypeId fluidType, CollisionVolume level);
 	void destroy(BlockIndex);
 	[[nodiscard]] bool contains(BlockIndex block) const;
 	[[nodiscard]] const FluidSource& at(BlockIndex block) const;

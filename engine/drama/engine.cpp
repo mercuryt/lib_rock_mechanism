@@ -13,6 +13,7 @@
 #include "../types.h"
 #include "../plants.h"
 #include "items/items.h"
+#include "util.h"
 #include <memory>
 #include <new>
 std::vector<DramaArcType> DramaArc::getTypes()
@@ -90,7 +91,7 @@ void DramaArc::actorsLeave(ActorIndices actorsLeaving)
 		}
 	}
 }
-BlockIndex DramaArc::getEntranceToArea(const Shape& shape, const MoveType& moveType) const
+BlockIndex DramaArc::getEntranceToArea(ShapeId shape, MoveTypeId moveType) const
 {
 	BlockIndices candidates;
 	Blocks& blocks = m_area->getBlocks();
@@ -114,7 +115,7 @@ BlockIndex DramaArc::getEntranceToArea(const Shape& shape, const MoveType& moveT
 	assert(candidate.exists());
 	return candidate;
 }
-BlockIndex DramaArc::findLocationOnEdgeForNear(const Shape& shape, const MoveType& moveType, BlockIndex origin, DistanceInBlocks distance, BlockIndices& exclude) const
+BlockIndex DramaArc::findLocationOnEdgeForNear(ShapeId shape, MoveTypeId moveType, BlockIndex origin, DistanceInBlocks distance, BlockIndices& exclude) const
 {
 	Facing facing = getFacingAwayFromEdge(origin);
 	Blocks& blocks = m_area->getBlocks();
@@ -124,7 +125,7 @@ BlockIndex DramaArc::findLocationOnEdgeForNear(const Shape& shape, const MoveTyp
 		// TODO: A single method doing both of these with one iteration would be faster.
 		if(!blocks.shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(thisBlock, shape, moveType, facing, {}))
 			return false;
-		for(BlockIndex occupiedBlock : shape.getBlocksOccupiedAt(blocks, thisBlock, facing))
+		for(BlockIndex occupiedBlock : Shape::getBlocksOccupiedAt(shape, blocks, thisBlock, facing))
 			if(blocks.isEdge(occupiedBlock))
 				return true;
 		return false;
@@ -132,7 +133,7 @@ BlockIndex DramaArc::findLocationOnEdgeForNear(const Shape& shape, const MoveTyp
 	// Get block in range of origin which satisifies predicate.
 	return blocks.getBlockInRangeWithCondition(origin, distance, predicate);
 }
-bool DramaArc::blockIsConnectedToAtLeast(BlockIndex origin, [[maybe_unused]] const Shape& shape, const MoveType& moveType, uint16_t count) const
+bool DramaArc::blockIsConnectedToAtLeast(BlockIndex origin, [[maybe_unused]] ShapeId shape, MoveTypeId moveType, uint16_t count) const
 {
 	BlockIndices accumulated;
 	std::stack<BlockIndex> open;
@@ -169,12 +170,12 @@ Facing DramaArc::getFacingAwayFromEdge(BlockIndex block) const
 		return Facing::create(1);
 	return Facing::create(0);
 }
-std::vector<const AnimalSpecies*> DramaArc::getSentientSpecies() const
+std::vector<AnimalSpeciesId> DramaArc::getSentientSpecies() const
 {
-	std::vector<const AnimalSpecies*> output;
-	for(const AnimalSpecies& species : animalSpeciesDataStore)
-		if(species.sentient)
-			output.push_back(&species);
+	std::vector<AnimalSpeciesId> output;
+	for(AnimalSpeciesId i = AnimalSpeciesId::create(0); i < AnimalSpecies::size(); ++i)
+		if(AnimalSpecies::getSentient(i))
+			output.push_back(i);
 	return output;
 }
 DramaEngine::DramaEngine(const Json& data, DeserializationMemo& deserializationMemo, Simulation& simulation) : m_simulation(simulation)
@@ -195,20 +196,20 @@ Json DramaEngine::toJson() const
 void DramaEngine::add(std::unique_ptr<DramaArc> dramaticArc)
 {
 	if(dramaticArc->m_area)
-		m_arcsByArea[dramaticArc->m_area].insert(dramaticArc.get());
+		util::addUniqueToVectorAssert(m_arcsByArea[dramaticArc->m_area->m_id], dramaticArc.get());
 	m_arcs.push_back(std::move(dramaticArc));
 }
 void DramaEngine::remove(DramaArc& arc)
 {
 	if(arc.m_area)
-		m_arcsByArea.at(arc.m_area).erase(&arc);
+		util::removeFromVectorByValueUnordered(m_arcsByArea.at(arc.m_area->m_id), &arc);
 	auto iter = std::ranges::find_if(m_arcs, [&](const auto& e) -> bool { return e.get() == &arc;});
 	assert(iter != m_arcs.end());
 	m_arcs.erase(iter);
 }
 void DramaEngine::removeArcsForArea(Area& area)
 {
-	m_arcsByArea.erase(&area);
+	m_arcsByArea.erase(area.m_id);
 }
 void DramaEngine::createArcsForArea(Area& area)
 {
@@ -231,17 +232,17 @@ void DramaEngine::createArcTypeForArea(DramaArcType type, Area& area)
 }
 void DramaEngine::removeArcTypeFromArea(DramaArcType type, Area& area)
 {
-	assert(m_arcsByArea.contains(&area));
-	for(DramaArc* arc : m_arcsByArea.at(&area))
+	assert(m_arcsByArea.contains(area.m_id));
+	for(DramaArc* arc : m_arcsByArea.at(area.m_id))
 		if(arc->m_type == type)
 		{
 			remove(*arc);
 			return;
 		}
 }
-std::unordered_set<DramaArc*>& DramaEngine::getArcsForArea(Area& area)
+std::vector<DramaArc*>& DramaEngine::getArcsForArea(Area& area)
 { 
-	return m_arcsByArea[&area]; 
+	return m_arcsByArea[area.m_id]; 
 }
 DramaEngine::~DramaEngine()
 {

@@ -45,23 +45,23 @@ void PathRequest::createGoToAnyOf(Area& area, ActorIndex actor, std::vector<Bloc
 	DestinationCondition destinationCondition;
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
-	const Shape& shape = actors.getShape(actor);
+	ShapeId shape = actors.getShape(actor);
 	if(unreserved)
 	{
-		assert(area.getActors().getFaction(actor) != nullptr);
+		assert(area.getActors().getFaction(actor).exists());
 		FactionId faction = area.getActors().getFactionId(actor);
 		std::ranges::remove_if(destinations, [&blocks, faction](BlockIndex index){ return !blocks.isReserved(index, faction); });
 	}
-	const MoveType& moveType = actors.getMoveType(actor);
+	MoveTypeId moveType = actors.getMoveType(actor);
 	std::ranges::remove_if(destinations, [&blocks, &moveType](BlockIndex index){
 		return blocks.shape_anythingCanEnterEver(index) && blocks.shape_moveTypeCanEnter(index, moveType);
 	});
 	//TODO: handle no destinations.
 	assert(!destinations.empty());
-	if(shape.isMultiTile)
-       		destinationCondition = [&shape, &area, destinations](BlockIndex location, Facing facing) 
+	if(Shape::getIsMultiTile(shape))
+       		destinationCondition = [shape, &area, destinations](BlockIndex location, Facing facing) 
 		{ 
-			BlockIndices blocks = shape.getBlocksOccupiedAt(area.getBlocks(), location, facing);
+			BlockIndices blocks = Shape::getBlocksOccupiedAt(shape, area.getBlocks(), location, facing);
 			for(BlockIndex block : blocks)
 				if(util::vectorContains(destinations, block))
 					return true;
@@ -120,9 +120,9 @@ void PathRequest::createGoAdjacentToPolymorphic(Area& area, ActorIndex actor, Ac
 	else
 		createGoAdjacentToItem(area, actor, actorOrItem.getItem(), detour, unreserved, maxRange, reserve);
 }
-void PathRequest::createGoAdjacentToFluidType(Area& area, ActorIndex actor, const FluidType& fluidType, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve)
+void PathRequest::createGoAdjacentToFluidType(Area& area, ActorIndex actor, FluidTypeId fluidType, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve)
 {
-	m_fluidType = &fluidType;
+	m_fluidType = fluidType;
 	Blocks& blocks = area.getBlocks();
 	std::function<bool(BlockIndex)> condition = [&blocks, fluidType](BlockIndex index){
 		return blocks.fluid_contains(index, fluidType);
@@ -165,14 +165,14 @@ void PathRequest::createGoAdjacentToCondition(Area& area, ActorIndex actor, std:
 		faction = area.getActors().getFactionId(actor);
 		assert(faction.exists());
 	}
-	const Shape& shape = area.getActors().getShape(actor);
+	ShapeId shape = area.getActors().getShape(actor);
 	DestinationCondition destinationCondition;
 	Blocks& blocks = area.getBlocks();
 	//TODO: use seperate lambdas rather then always passing unreserved and faction.
-	if(shape.isMultiTile)
-       		destinationCondition = [&shape, &blocks, condition, unreserved, faction](BlockIndex location, Facing facing) 
+	if(Shape::getIsMultiTile(shape))
+       		destinationCondition = [shape, &blocks, condition, unreserved, faction](BlockIndex location, Facing facing) 
 		{ 
-			for(BlockIndex block : shape.getBlocksWhichWouldBeAdjacentAt(blocks, location, facing))
+			for(BlockIndex block : Shape::getBlocksWhichWouldBeAdjacentAt(shape, blocks, location, facing))
 				if(condition(block) && (!unreserved || !blocks.isReserved(block, faction)))
 					return true;
 			return false;
@@ -198,7 +198,7 @@ void PathRequest::cancel(Area& area, ActorIndex actor)
 void PathRequest::reset()
 {
 	m_index.clear();
-	m_fluidType = nullptr;
+	m_fluidType.clear();
 	m_actor.clear();
 	m_destination = BlockIndex::null();
 	m_huristicDestination.clear();

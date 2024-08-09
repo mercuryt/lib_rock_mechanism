@@ -20,7 +20,7 @@ void PathMemoBreadthFirst::setClosed(BlockIndex block, BlockIndex previous)
 void PathMemoBreadthFirst::setOpen(BlockIndex block)
 {
 	assert(!isClosed(block));
-	m_open.push_back(block);
+	m_open.add(block);
 }
 bool PathMemoBreadthFirst::isClosed(BlockIndex block) const
 {
@@ -32,9 +32,7 @@ bool PathMemoBreadthFirst::empty() const
 }
 BlockIndex PathMemoBreadthFirst::next()
 {
-	BlockIndex output = m_open.front();
-	m_open.pop_front();
-	return output;
+	return m_open.pop();
 }
 BlockIndices PathMemoBreadthFirst::getPath(BlockIndex block) const
 {

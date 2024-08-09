@@ -30,8 +30,7 @@ class FluidType
 	DataVector<DistanceInBlocks, FluidTypeId> m_maxMistSpread;
 	DataVector<MaterialTypeId, FluidTypeId> m_freezesInto;
 public:
-	[[nodiscard]] static const FluidType& byName(const std::string name);
-	[[nodiscard]] static FluidType& byNameNonConst(const std::string name);
+	[[nodiscard]] static const FluidTypeId byName(const std::string name);
 	static FluidTypeId create(FluidTypeParamaters& p)
 	{
 		data.m_name.add(p.name);
@@ -42,10 +41,11 @@ public:
 		data.m_freezesInto.add(p.freezesInto);
 		return FluidTypeId::create(data.m_name.size() - 1);
 	}
-	[[nodiscard]] static std::string getname(FluidTypeId id) { return data.m_name.at(id); };
-	[[nodiscard]] static uint32_t getviscosity(FluidTypeId id) { return data.m_viscosity.at(id); };
-	[[nodiscard]] static Density getdensity(FluidTypeId id) { return data.m_density.at(id); };
-	[[nodiscard]] static Step getmistDuration(FluidTypeId id) { return data.m_mistDuration.at(id); };
-	[[nodiscard]] static DistanceInBlocks getmaxMistSpread(FluidTypeId id) { return data.m_maxMistSpread.at(id); };
-	[[nodiscard]] static MaterialTypeId getfreezesInto(FluidTypeId id) { return data.m_freezesInto.at(id); };
+	static void setFreezesInto(FluidTypeId fluid, MaterialTypeId material) { data.m_freezesInto.at(fluid) = material; }
+	[[nodiscard]] static std::string getName(FluidTypeId id) { return data.m_name.at(id); };
+	[[nodiscard]] static uint32_t getViscosity(FluidTypeId id) { return data.m_viscosity.at(id); };
+	[[nodiscard]] static Density getDensity(FluidTypeId id) { return data.m_density.at(id); };
+	[[nodiscard]] static Step getMistDuration(FluidTypeId id) { return data.m_mistDuration.at(id); };
+	[[nodiscard]] static DistanceInBlocks getMaxMistSpread(FluidTypeId id) { return data.m_maxMistSpread.at(id); };
+	[[nodiscard]] static MaterialTypeId getFreezesInto(FluidTypeId id) { return data.m_freezesInto.at(id); };
 };

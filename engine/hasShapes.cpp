@@ -19,10 +19,10 @@ HasShapeIndex HasShapes::getNextIndex()
 	resize(index);
 	return index;
 }
-void HasShapes::create(HasShapeIndex index, const Shape& shape, BlockIndex location, Facing facing, bool isStatic)
+void HasShapes::create(HasShapeIndex index, ShapeId shape, BlockIndex location, Facing facing, bool isStatic)
 {
 	assert(m_shape.size() > index);
-	m_shape.at(index) = &shape;
+	m_shape.at(index) = shape;
 	m_location.at(index) = location;
 	m_facing.at(index) = facing;
 	m_static.set(index, isStatic);
@@ -61,13 +61,13 @@ void HasShapes::setStatic(HasShapeIndex index, bool isTrue)
 	assert(!m_static.at(index));
 	Blocks& blocks = m_area.getBlocks();
 	if(isTrue)
-		for(auto& [x, y, z, v] : m_shape.at(index)->positionsWithFacing(m_facing.at(index)))
+		for(auto& [x, y, z, v] : Shape::positionsWithFacing(m_shape.at(index), m_facing.at(index)))
 		{
 			BlockIndex block = blocks.offset(m_location.at(index), x, y, z);
 			blocks.shape_addStaticVolume(block, CollisionVolume::create(v));
 		}
 	else
-		for(auto& [x, y, z, v] : m_shape.at(index)->positionsWithFacing(m_facing.at(index)))
+		for(auto& [x, y, z, v] : Shape::positionsWithFacing(m_shape.at(index), m_facing.at(index)))
 		{
 			BlockIndex block = blocks.offset(m_location.at(index), x, y, z);
 			blocks.shape_removeStaticVolume(block, CollisionVolume::create(v));
@@ -84,11 +84,9 @@ void HasShapes::sortRange(HasShapeIndex begin, HasShapeIndex end)
 	std::ranges::sort(zip.begin() + begin, zip.end() + end, SpatialSort);
 	*/
 }
-const Faction* HasShapes::getFaction(HasShapeIndex index) const
+FactionId HasShapes::getFaction(HasShapeIndex index) const
 { 
-	if(m_faction.at(index).empty())
-		return nullptr;
-	return &m_area.m_simulation.m_hasFactions.getById(m_faction.at(index));
+	return m_faction.at(index);
 }
 bool HasShapes::isAdjacentToActor(HasShapeIndex index, ActorIndex actor) const
 {
@@ -185,7 +183,7 @@ bool HasShapes::predicateForAnyAdjacentBlock(HasShapeIndex index, std::function<
 {
 	assert(m_location.at(index).exists());
 	//TODO: cache this.
-	for(auto [x, y, z] : m_shape.at(index)->adjacentPositionsWithFacing(m_facing.at(index)))
+	for(auto [x, y, z] : Shape::adjacentPositionsWithFacing(m_shape.at(index), m_facing.at(index)))
 	{
 		BlockIndex block = m_area.getBlocks().offset(m_location.at(index), x, y, z);
 		if(block.exists() && predicate(block))
@@ -222,13 +220,13 @@ ItemIndices HasShapes::getAdjacentItems(HasShapeIndex index) const
 }
 BlockIndices HasShapes::getBlocksWhichWouldBeOccupiedAtLocationAndFacing(HasShapeIndex index, BlockIndex location, Facing facing) const
 {
-	return m_shape.at(index)->getBlocksOccupiedAt(m_area.getBlocks(), location, facing);
+	return Shape::getBlocksOccupiedAt(m_shape.at(index), m_area.getBlocks(), location, facing);
 }
 BlockIndices HasShapes::getAdjacentBlocksAtLocationWithFacing(HasShapeIndex index, BlockIndex location, Facing facing) const
 {
 	BlockIndices output;
-	output.reserve(m_shape.at(index)->positions.size());
-	for(auto [x, y, z] : m_shape.at(index)->adjacentPositionsWithFacing(facing))
+	output.reserve(Shape::getPositions(m_shape.at(index)).size());
+	for(auto [x, y, z] : Shape::adjacentPositionsWithFacing(m_shape.at(index), facing))
 	{
 		BlockIndex block = m_area.getBlocks().offset(location, x, y, z);
 		if(block.exists())
@@ -238,7 +236,7 @@ BlockIndices HasShapes::getAdjacentBlocksAtLocationWithFacing(HasShapeIndex inde
 }
 BlockIndex HasShapes::getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(HasShapeIndex index, const BlockIndex location, Facing facing, std::function<bool(const BlockIndex)>& predicate) const
 {
-	for(auto [x, y, z] : m_shape.at(index)->adjacentPositionsWithFacing(facing))
+	for(auto [x, y, z] : Shape::adjacentPositionsWithFacing(m_shape.at(index), facing))
 	{
 		BlockIndex block = m_area.getBlocks().offset(location, x, y, z);
 		if(block.exists() && predicate(block))
@@ -248,7 +246,7 @@ BlockIndex HasShapes::getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(Ha
 }
 BlockIndex HasShapes::getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(HasShapeIndex index, const BlockIndex location, Facing facing, std::function<bool(const BlockIndex)>& predicate) const
 {
-	for(auto& [x, y, z, v] : m_shape.at(index)->positionsWithFacing(facing))
+	for(auto& [x, y, z, v] : Shape::positionsWithFacing(m_shape.at(index), facing))
 	{
 		BlockIndex block = m_area.getBlocks().offset(location, x, y, z);
 		if(block.exists() && predicate(block))
@@ -266,7 +264,7 @@ BlockIndex HasShapes::getBlockWhichIsOccupiedWithPredicate(HasShapeIndex index, 
 }
 ItemIndex HasShapes::getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(HasShapeIndex index, BlockIndex location, Facing facing, std::function<bool(const ItemIndex)>& predicate) const
 {
-	for(auto [x, y, z] : m_shape.at(index)->adjacentPositionsWithFacing(facing))
+	for(auto [x, y, z] : Shape::adjacentPositionsWithFacing(m_shape.at(index), facing))
 	{
 		BlockIndex block = m_area.getBlocks().offset(location, x, y, z);
 		if(block.exists())

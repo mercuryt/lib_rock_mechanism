@@ -36,12 +36,15 @@ struct ProjectWorker final
 };
 struct ProjectRequirementCounts final
 {
-	const Quantity required;
+	Quantity required;
 	Quantity delivered = Quantity::create(0);
 	Quantity reserved = Quantity::create(0);
 	bool consumed;
-	ProjectRequirementCounts(const Quantity r, bool c) : required(r), consumed(c) { }
-	ProjectRequirementCounts(const Json& data, DeserializationMemo& deserializationMemo);
+	ProjectRequirementCounts(Quantity r, bool c) : required(r), consumed(c) { }
+	//TODO: Why isn't intrusive deserializer working here?
+	ProjectRequirementCounts(const Json& data) :
+		required(data["required"].get<Quantity>()), delivered(data["delivered"].get<Quantity>()), 
+		reserved(data["reserved"].get<Quantity>()), consumed(data["consumed"].get<bool>()) { }
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(ProjectRequirementCounts, required, delivered, reserved, consumed);
 };
 struct ProjectRequiredShapeDishonoredCallback final : public DishonorCallback
@@ -189,7 +192,7 @@ public:
 	[[nodiscard]] virtual std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const = 0;
 	[[nodiscard]] virtual std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const = 0;
 	[[nodiscard]] virtual std::vector<std::pair<ActorQuery, Quantity>> getActors() const = 0;
-	[[nodiscard]] virtual std::vector<std::tuple<const ItemType*, const MaterialType*, Quantity>> getByproducts() const = 0;
+	[[nodiscard]] virtual std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const = 0;
 	virtual ~Project() = default;
 	[[nodiscard]] bool operator==(const Project& other) const { return &other == this; }
 	// For testing.

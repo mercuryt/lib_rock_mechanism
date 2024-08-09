@@ -14,7 +14,7 @@ void Actors::canPickUp_pickUpItemQuantity(ActorIndex index, ItemIndex item, Quan
 {
 	Items& items = m_area.getItems();
 	assert(quantity <= items.getQuantity(item));
-	assert(quantity == 1 || items.getItemType(item).generic);
+	assert(quantity == 1 || ItemType::getGeneric(items.getItemType(item)));
 	items.reservable_maybeUnreserve(item, *m_canReserve.at(index));
 	if(quantity == items.getQuantity(item))
 	{
@@ -103,7 +103,7 @@ void Actors::canPickUp_removeFluidVolume(ActorIndex index, CollisionVolume volum
 	ItemIndex item = m_carrying.at(index).getItem();
 	m_area.getItems().cargo_removeFluid(item, volume);
 }
-void Actors::canPickUp_add(ActorIndex index, const ItemType& itemType, const MaterialType& materialType, Quantity quantity)
+void Actors::canPickUp_add(ActorIndex index, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity)
 {
 	Items& items = m_area.getItems();
 	auto& carrying = m_carrying.at(index);
@@ -132,9 +132,9 @@ void Actors::canPickUp_removeItem(ActorIndex index, ItemIndex item)
 	items.destroy(item);
 	move_updateIndividualSpeed(index);
 }
-Quantity Actors::canPickUp_quantityWhichCanBePickedUpUnencombered(ActorIndex index, const ItemType& itemType, const MaterialType& materialType) const
+Quantity Actors::canPickUp_quantityWhichCanBePickedUpUnencombered(ActorIndex index, ItemTypeId itemType, MaterialTypeId materialType) const
 {
-	return canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(index, itemType.volume * materialType.density, Config::minimumHaulSpeedInital);
+	return canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(index, ItemType::getVolume(itemType) * MaterialType::getDensity(materialType), Config::minimumHaulSpeedInital);
 }
 bool Actors::canPickUp_polymorphic(ActorIndex index, ActorOrItemIndex actorOrItemIndex) const
 {
@@ -184,7 +184,7 @@ bool Actors::canPickUp_anyWithMassUnencombered(ActorIndex index, Mass mass) cons
 {
 	return canPickUp_speedIfCarryingQuantity(index, mass, Quantity::create(0)) == move_getIndividualSpeedWithAddedMass(index, Mass::create(0));
 }
-bool Actors::canPickUp_isCarryingItemGeneric(ActorIndex index, const ItemType& itemType, const MaterialType& materialType, Quantity quantity) const
+bool Actors::canPickUp_isCarryingItemGeneric(ActorIndex index, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity) const
 {
 	if(!m_carrying.at(index).exists() || !m_carrying.at(index).isItem())
 		return false;
@@ -196,7 +196,7 @@ bool Actors::canPickUp_isCarryingItemGeneric(ActorIndex index, const ItemType& i
 		return false;
 	return items.getQuantity(item) >= quantity;
 }
-bool Actors::canPickUp_isCarryingFluidType(ActorIndex index, const FluidType& fluidType) const 
+bool Actors::canPickUp_isCarryingFluidType(ActorIndex index, FluidTypeId fluidType) const 
 {
 	if(!m_carrying.at(index).exists())
 		return false;
@@ -210,7 +210,7 @@ CollisionVolume Actors::canPickUp_getFluidVolume(ActorIndex index) const
 	assert(m_carrying.at(index).isItem());
 	return m_area.getItems().cargo_getFluidVolume(m_carrying.at(index).getItem());
 }
-const FluidType& Actors::canPickUp_getFluidType(ActorIndex index) const 
+FluidTypeId Actors::canPickUp_getFluidType(ActorIndex index) const 
 { 
 	assert(m_carrying.at(index).exists());
 	assert(m_carrying.at(index).isItem());
@@ -225,7 +225,7 @@ bool Actors::canPickUp_isCarryingEmptyContainerWhichCanHoldFluid(ActorIndex inde
 		return false;
 	ItemIndex item = m_carrying.at(index).getItem();
 	Items& items = m_area.getItems();
-	return items.getItemType(item).canHoldFluids && !items.cargo_exists(item); 
+	return ItemType::getCanHoldFluids(items.getItemType(item)) && !items.cargo_exists(item); 
 }
 Mass Actors::canPickUp_getMass(ActorIndex index) const
 {

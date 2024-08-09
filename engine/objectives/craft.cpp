@@ -9,9 +9,9 @@ CraftPathRequest::CraftPathRequest(Area& area, CraftObjective& co, ActorIndex ac
 	FactionId faction = actors.getFactionId(actor);
 	HasCraftingLocationsAndJobsForFaction& hasCrafting = area.m_hasCraftingLocationsAndJobs.at(faction);
 	Blocks& blocks = area.getBlocks();
-	const SkillType& skillType = m_craftObjective.m_skillType;
+	SkillTypeId skillType = m_craftObjective.m_skillType;
 	auto& excludeJobs = m_craftObjective.getFailedJobs();
-	std::function<bool(BlockIndex, Facing)> predicate = [&blocks, &faction, &hasCrafting, actor, &skillType, &excludeJobs](BlockIndex block, Facing) mutable
+	std::function<bool(BlockIndex, Facing)> predicate = [&blocks, faction, &hasCrafting, actor, skillType, &excludeJobs](BlockIndex block, Facing) mutable -> bool 
 	{
 		return !blocks.isReserved(block, faction) && hasCrafting.getJobForAtLocation(actor, skillType, block, excludeJobs) != nullptr;
 	};
@@ -41,7 +41,7 @@ void CraftPathRequest::callback(Area& area, FindPathResult& result)
 		return;
 	}
 	BlockIndex block = result.blockThatPassedPredicate;
-	const SkillType& skillType = m_craftObjective.m_skillType;
+	SkillTypeId skillType = m_craftObjective.m_skillType;
 	FactionId faction = actors.getFactionId(actor);
 	auto pair = std::make_pair(area.m_hasCraftingLocationsAndJobs.at(faction).getJobForAtLocation(actor, skillType, block, m_craftObjective.getFailedJobs()), block);
 	m_craftJob = pair.first;
@@ -67,21 +67,21 @@ void CraftPathRequest::callback(Area& area, FindPathResult& result)
 	}
 }
 // ObjectiveType.
-CraftObjectiveType::CraftObjectiveType(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) : m_skillType(*data["skillType"].get<const SkillType*>()) { }
+CraftObjectiveType::CraftObjectiveType(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) : m_skillType(data["skillType"].get<SkillTypeId>()) { }
 bool CraftObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
 {
 	Actors& actors = area.getActors();
 	auto& hasCrafting = area.m_hasCraftingLocationsAndJobs.at(actors.getFactionId(actor));
-	if(!hasCrafting.m_unassignedProjectsBySkill.contains(&m_skillType))
+	if(!hasCrafting.m_unassignedProjectsBySkill.contains(m_skillType))
 	{
 		// No jobs needing this skill.
 		return false;
 	}
 	// Check if there are any locations designated for this step category.
-	for(CraftJob* craftJob : hasCrafting.m_unassignedProjectsBySkill.at(&m_skillType))
+	for(CraftJob* craftJob : hasCrafting.m_unassignedProjectsBySkill.at(m_skillType))
 	{
-		const CraftStepTypeCategory& category = craftJob->stepIterator->craftStepTypeCategory;
-		if(hasCrafting.m_locationsByCategory.contains(&category))
+		CraftStepTypeCategoryId category = craftJob->stepIterator->craftStepTypeCategory;
+		if(hasCrafting.m_locationsByCategory.contains(category))
 			return true;
 	}
 	return false;
@@ -97,9 +97,9 @@ Json CraftObjectiveType::toJson() const
 	return data;
 }
 // Objective.
-CraftObjective::CraftObjective(const SkillType& st) : Objective(Config::craftObjectivePriority), m_skillType(st) { }
+CraftObjective::CraftObjective(SkillTypeId st) : Objective(Config::craftObjectivePriority), m_skillType(st) { }
 CraftObjective::CraftObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), 
-	m_skillType(*data["skillType"].get<const SkillType*>()), m_craftJob(deserializationMemo.m_craftJobs.at(data["craftJob"].get<uintptr_t>()))
+	m_skillType(data["skillType"].get<SkillTypeId>()), m_craftJob(deserializationMemo.m_craftJobs.at(data["craftJob"].get<uintptr_t>()))
 { 
 	if(data.contains("failedJobs"))
 		for(const Json& job : data["failedJobs"])

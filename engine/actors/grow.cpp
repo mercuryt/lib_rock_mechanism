@@ -90,7 +90,7 @@ bool CanGrow::canGrowCurrently(Area& area) const
 {
 	Actors& actors = area.getActors();
 	ActorIndex actor = m_actor.getIndex();
-	return m_percentGrown != 100 && actors.getAge(actor) < actors.getSpecies(actor).stepsTillFullyGrown && 
+	return m_percentGrown != 100 && actors.getAge(actor) < AnimalSpecies::getStepsTillFullyGrown(actors.getSpecies(actor)) && 
 		!actors.eat_isHungry(actor) && !actors.drink_isThirsty(actor) && 
 		actors.temperature_isSafeAtCurrentLocation(actor);
 }
@@ -101,19 +101,19 @@ Percent CanGrow::growthPercent() const
 void CanGrow::scheduleEvent(Area& area)
 {
 	ActorIndex actor = m_actor.getIndex();
-	Step delay = Step::create(std::round(area.getActors().getSpecies(actor).stepsTillFullyGrown.get() / 100.f));
+	Step delay = Step::create(std::round(AnimalSpecies::getStepsTillFullyGrown(area.getActors().getSpecies(actor)).get() / 100.f));
 	m_event.resume(delay, area, *this);
 }
 void CanGrow::update(Area& area)
 {
 	ActorIndex actor = m_actor.getIndex();
 	Actors& actors = area.getActors();
-	const AnimalSpecies& species = actors.getSpecies(actor);
+	AnimalSpeciesId species = actors.getSpecies(actor);
 	actors.grow_setPercent(actor, m_percentGrown);
-	const Shape& shape = species.shapeForPercentGrown(m_percentGrown);
+	ShapeId shape = AnimalSpecies::shapeForPercentGrown(species, m_percentGrown);
 	if(shape != actors.getShape(actor))
 		actors.setShape(actor, shape);
-	if(m_percentGrown != 100 && species.stepsTillFullyGrown > actors.getAge(actor) && m_event.isPaused())
+	if(m_percentGrown != 100 && AnimalSpecies::getStepsTillFullyGrown(species) > actors.getAge(actor) && m_event.isPaused())
 		scheduleEvent(area);
 }
 void CanGrow::stop()

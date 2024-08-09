@@ -77,9 +77,9 @@ void Blocks::load(const Json& data, DeserializationMemo& deserializationMemo)
 		m_features.at(BlockIndex::create(std::stoi(key))) = value.get<std::vector<BlockFeature>>();
 	for(auto& [key, value] : data["fluid"].items())
 		for(const Json& fluidData : value)
-			fluid_add(BlockIndex::create(std::stoi(key)), fluidData["volume"].get<CollisionVolume>(), *fluidData["type"].get<const FluidType*>());
+			fluid_add(BlockIndex::create(std::stoi(key)), fluidData["volume"].get<CollisionVolume>(), fluidData["type"].get<FluidTypeId>());
 	for(auto& [key, value] : data["mist"].items())
-		m_mist.at(BlockIndex::create(std::stoi(key))) = &FluidType::byName(value.get<std::string>());
+		m_mist.at(BlockIndex::create(std::stoi(key))) = FluidType::byName(value.get<std::string>());
 	for(auto& [key, value] : data["mistInverseDistanceFromSource"].items())
 		m_mistInverseDistanceFromSource.at(BlockIndex::create(std::stoi(key))) = value.get<DistanceInBlocks>();
 	for(auto& [key, value] : data["reservables"].items())
@@ -107,7 +107,7 @@ Json Blocks::toJson() const
 			output["features"][std::to_string(i.get())] = m_features.at(i);
 		if(fluid_any(i))
 			output["fluid"][std::to_string(i.get())] = m_fluid.at(i);
-		if(m_mist.at(i) != nullptr)
+		if(m_mist.at(i).exists())
 			output["mist"][std::to_string(i.get())] = m_mist.at(i);
 		if(m_mistInverseDistanceFromSource.at(i) != 0)
 			output["mistInverseDistanceFromSource"][std::to_string(i.get())] = m_mistInverseDistanceFromSource.at(i);
@@ -505,25 +505,25 @@ void Blocks::setBelowNotExposedToSky(BlockIndex index)
 		block = getBlockBelow(block);
 	}
 }
-void Blocks::solid_set(BlockIndex index, const MaterialType& materialType, bool constructed)
+void Blocks::solid_set(BlockIndex index, MaterialTypeId materialType, bool constructed)
 {
 	assert(m_itemVolume.at(index).empty());
 	Plants& plants = m_area.getPlants();
 	if(m_plants.at(index).exists())
 	{
 		PlantIndex plant = m_plants.at(index);
-		assert(!plants.getSpecies(plant).isTree);
+		assert(!PlantSpecies::getIsTree(plants.getSpecies(plant)));
 		plants.die(plant);
 	}
-	if(&materialType == m_materialType.at(index))
+	if(materialType == m_materialType.at(index))
 		return;
-	bool wasEmpty = m_materialType.at(index) == nullptr;
-	m_materialType.at(index) = &materialType;
+	bool wasEmpty = m_materialType.at(index).empty();
+	m_materialType.at(index) = materialType;
 	m_constructed.set(index, constructed);
 	fluid_onBlockSetSolid(index);
 	m_visible.set(index);
 	// Opacity.
-	if(!materialType.transparent && wasEmpty)
+	if(!MaterialType::getTransparent(materialType) && wasEmpty)
 		m_area.m_visionCuboids.blockIsSometimesOpaque(index);
 	m_area.m_opacityFacade.update(index);
 	// Set blocks below as not exposed to sky.
@@ -541,7 +541,7 @@ void Blocks::solid_setNot(BlockIndex index)
 {
 	if(!solid_is(index))
 		return;
-	m_materialType.at(index) = nullptr;
+	m_materialType.at(index).clear();
 	m_constructed.unset(index);
 	fluid_onBlockSetNotSolid(index);
 	m_area.m_visionCuboids.blockIsNeverOpaque(index);
@@ -558,22 +558,22 @@ void Blocks::solid_setNot(BlockIndex index)
 	m_reservables.at(index) = nullptr;
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 }
-const MaterialType& Blocks::solid_get(BlockIndex index) const
+MaterialTypeId Blocks::solid_get(BlockIndex index) const
 {
-	return *m_materialType.at(index);
+	return m_materialType.at(index);
 }
 bool Blocks::solid_is(BlockIndex index) const
 {
-	return m_materialType.at(index);
+	return m_materialType.at(index).exists();
 }
 Mass Blocks::getMass(BlockIndex index) const
 {
 	assert(solid_is(index));
-	return m_materialType.at(index)->density * Volume::create(Config::maxBlockVolume.get());
+	return MaterialType::getDensity(m_materialType.at(index)) * Volume::create(Config::maxBlockVolume.get());
 }
 bool Blocks::canSeeIntoFromAlways(BlockIndex to, BlockIndex from) const
 {
-	if(solid_is(to) && !m_materialType.at(to)->transparent)
+	if(solid_is(to) && !MaterialType::getTransparent(m_materialType.at(to)))
 		return false;
 	if(blockFeature_contains(to, BlockFeatureType::door))
 		return false;
@@ -581,20 +581,20 @@ bool Blocks::canSeeIntoFromAlways(BlockIndex to, BlockIndex from) const
 	if(getZ(to) > getZ(from))
 	{
 		const BlockFeature* floor = blockFeature_atConst(to, BlockFeatureType::floor);
-		if(floor != nullptr && !floor->materialType->transparent)
+		if(floor != nullptr && !MaterialType::getTransparent(floor->materialType))
 			return false;
 		const BlockFeature* hatch = blockFeature_atConst(to, BlockFeatureType::hatch);
-		if(hatch != nullptr && !hatch->materialType->transparent)
+		if(hatch != nullptr && !MaterialType::getTransparent(hatch->materialType))
 			return false;
 	}
 	// looking down.
 	if(getZ(to) < getZ(from))
 	{
 		const BlockFeature* floor = blockFeature_atConst(from, BlockFeatureType::floor);
-		if(floor != nullptr && !floor->materialType->transparent)
+		if(floor != nullptr && !MaterialType::getTransparent(floor->materialType))
 			return false;
 		const BlockFeature* hatch = blockFeature_atConst(from, BlockFeatureType::hatch);
-		if(hatch != nullptr && !hatch->materialType->transparent)
+		if(hatch != nullptr && !MaterialType::getTransparent(hatch->materialType))
 			return false;
 	}
 	return true;
@@ -658,20 +658,20 @@ std::array<int32_t, 3> Blocks::relativeOffsetTo(BlockIndex index, BlockIndex oth
 }
 bool Blocks::canSeeThrough(BlockIndex index) const
 {
-	if(solid_is(index) && !solid_get(index).transparent)
+	if(solid_is(index) && !MaterialType::getTransparent(solid_get(index)))
 		return false;
 	const BlockFeature* door = blockFeature_atConst(index, BlockFeatureType::door);
-	if(door != nullptr && !door->materialType->transparent && door->closed)
+	if(door != nullptr && !MaterialType::getTransparent(door->materialType) && door->closed)
 		return false;
 	return true;
 }
 bool Blocks::canSeeThroughFloor(BlockIndex index) const
 {
 	const BlockFeature* floor = blockFeature_atConst(index, BlockFeatureType::floor);
-	if(floor != nullptr && !floor->materialType->transparent)
+	if(floor != nullptr && !MaterialType::getTransparent(floor->materialType))
 		return false;
 	const BlockFeature* hatch = blockFeature_atConst(index, BlockFeatureType::hatch);
-	if(hatch != nullptr && !hatch->materialType->transparent && hatch->closed)
+	if(hatch != nullptr && !MaterialType::getTransparent(hatch->materialType) && hatch->closed)
 		return false;
 	return true;
 }

@@ -52,7 +52,7 @@ struct BlockFeature
 {
 	// Use pointers rather then references so we can store in vector and be able to erase at arbirtary index.
 	const BlockFeatureType* blockFeatureType;
-	const MaterialType* materialType;
+	MaterialTypeId materialType;
 	// TODO: Replace hewn with ItemType* to differentiate between walls made of carved blocks from those made from uncut stone or between wood planks and logs.
 	bool hewn = false;
 	bool closed = false;

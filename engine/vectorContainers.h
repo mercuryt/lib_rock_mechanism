@@ -15,13 +15,17 @@ class SmallSet
 	std::vector<T> m_data;
 public:
 	SmallSet() = default;
-	void load(Json& data) { m_data = data; }
-	void insert(T& value) { assert(!contains(value)); m_data.push_back(value); }
-	void erase(T& value) { util::removeFromVectorByValueUnordered(m_data, value); }
+	void load(const Json& data) { m_data = data; }
+	void insert(const T& value) { assert(!contains(value)); m_data.push_back(value); }
+	void erase(const T& value) { util::removeFromVectorByValueUnordered(m_data, value); }
 	void clear() { m_data.clear(); }
-	[[nodiscard]] bool contains(T& value) { return std::ranges::find(m_data, value) != m_data.end(); }
-	[[nodiscard]] std::vector<T> begin() { return m_data.begin(); }
-	[[nodiscard]] std::vector<T> end() { return m_data.end(); }
+	[[nodiscard]] bool contains(const T& value) const { return std::ranges::find(m_data, value) != m_data.end(); }
+	[[nodiscard]] bool empty() const { return m_data.empty(); }
+	[[nodiscard]] uint size() const { return m_data.size(); }
+	[[nodiscard]] std::vector<T>::iterator begin() { return m_data.begin(); }
+	[[nodiscard]] std::vector<T>::iterator end() { return m_data.end(); }
+	[[nodiscard]] std::vector<T>::const_iterator begin() const { return m_data.begin(); }
+	[[nodiscard]] std::vector<T>::const_iterator end() const { return m_data.end(); }
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SmallSet, m_data);
 };
 template<typename T>

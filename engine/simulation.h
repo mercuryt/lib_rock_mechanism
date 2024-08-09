@@ -1,5 +1,4 @@
 #pragma once
-#include "../lib/BS_thread_pool_light.hpp"
 
 #include "config.h"
 #include "datetime.h"
@@ -17,6 +16,7 @@
 #include "uniform.h"
 #include "pathMemo.h"
 
+#include <future>
 #include <list>
 #include <memory>
 #include <unordered_map>
@@ -32,12 +32,10 @@ class Simulation final
 public:
 	EventSchedule m_eventSchedule;
 	ThreadedTaskEngine m_threadedTaskEngine;
-	BS::thread_pool_light m_pool;
 	HasScheduledEvent<HourlyEvent> m_hourlyEvent;
 	Random m_random;
 	InputQueue m_inputQueue;
 	SimulationHasUniforms m_hasUniforms;
-	SimulationHasShapes m_shapes;
 	SimulationHasFactions m_hasFactions;
 	SimulationHasActors m_actors;
 	SimulationHasItems m_items;
@@ -45,6 +43,7 @@ public:
 	DialogueBoxQueue m_hasDialogues;
 private:
 	DeserializationMemo m_deserializationMemo;
+	//TODO: What is this for?
 	std::future<void> m_stepFuture;
 public:
 	std::wstring m_name;
@@ -62,45 +61,9 @@ public:
 	Simulation(const Json& data);
 	Json toJson() const;
 	void doStep(uint16_t count = 1);
-	template<class Data, class Action>
-	void parallelizeTask(Data& data, uint32_t stepSize, Action& task)
-	{
-		auto start = data.begin();
-		auto end = start + std::min(stepSize, (uint32_t)data.size());
-		while(start != end)
-		{
-			m_pool.push_task([&task, start, end]() mutable {
-				while(start != end)
-				{
-					task(*start);
-					start++;
-				}
-			});
-			start = end;
-			end = std::min(data.end(), start + stepSize);
-		}
-		//TODO: Use OpenMP.
-		m_pool.wait_for_tasks();
-	}
-	template<class Action>
-	void parallelizeTaskIndices(uint32_t size, uint32_t stepSize, Action& task)
-	{
-		uint32_t start = 0;
-		uint32_t end = start + std::min(stepSize, size);
-		while(start != size)
-		{
-			m_pool.push_task([&task, start, end]() mutable {
-				while(start != end)
-				task(start++);
-			});
-			start = end;
-			end = std::min(size, start + stepSize);
-		}
-		m_pool.wait_for_tasks();
-	}
 	void incrementHour();
 	void save();
-	Faction& createFaction(std::wstring name);
+	FactionId createFaction(std::wstring name);
 	//TODO: latitude, longitude, altitude.
 	[[nodiscard]] std::filesystem::path getPath() const  { return m_path; }
 	[[nodiscard, maybe_unused]] DateTime getDateTime() const;

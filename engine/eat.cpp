@@ -31,9 +31,10 @@ MustEat::MustEat(Area& area, ActorIndex a) :
 }
 void MustEat::scheduleHungerEvent(Area& area)
 {
-	m_hungerEvent.schedule(area, area.getActors().getSpecies(m_actor.getIndex()).stepsEatFrequency, m_actor.getIndex());
+	Step eatFrequency = AnimalSpecies::getStepsEatFrequency(area.getActors().getSpecies(m_actor.getIndex()));
+	m_hungerEvent.schedule(area, eatFrequency, m_actor.getIndex());
 }
-MustEat::MustEat(Area& area, const Json& data, ActorIndex a, const AnimalSpecies& species) : 
+MustEat::MustEat(Area& area, const Json& data, ActorIndex a, AnimalSpeciesId species) : 
 	m_hungerEvent(area.m_eventSchedule), m_massFoodRequested(data["massFoodRequested"].get<Mass>())
 {
 	m_actor.setTarget(area.getActors().getReferenceTarget(a));
@@ -42,7 +43,7 @@ MustEat::MustEat(Area& area, const Json& data, ActorIndex a, const AnimalSpecies
 	if(data.contains("hungerEventStart"))
 	{
 		Step start = data["hungerEventStart"].get<Step>();
-		m_hungerEvent.schedule(area, species.stepsEatFrequency, m_actor.getIndex(), start);
+		m_hungerEvent.schedule(area, AnimalSpecies::getStepsEatFrequency(species), m_actor.getIndex(), start);
 	}
 }
 Json MustEat::toJson() const
@@ -59,26 +60,26 @@ bool MustEat::canEatActor(Area& area, const ActorIndex actor) const
 	Actors& actors = area.getActors();
 	if(actors.isAlive(actor))
 		return false;
-	const AnimalSpecies& species = actors.getSpecies(m_actor.getIndex());
-	if(!species.eatsMeat)
+	AnimalSpeciesId species = actors.getSpecies(m_actor.getIndex());
+	if(!AnimalSpecies::getEatsMeat(species))
 		return false;
-	if(species.fluidType != actors.getSpecies(actor).fluidType)
+	if(AnimalSpecies::getFluidType(species) != AnimalSpecies::getFluidType(actors.getSpecies(actor)))
 		return false;
 	return true;
 }
 bool MustEat::canEatPlant(Area& area, const PlantIndex plant) const
 {
-	const AnimalSpecies& species = area.getActors().getSpecies(m_actor.getIndex());
+	AnimalSpeciesId species = area.getActors().getSpecies(m_actor.getIndex());
 	Plants& plants = area.getPlants();
-	if(species.eatsLeaves && plants.getPercentFoliage(plant) != 0)
+	if(AnimalSpecies::getEatsLeaves(species) && plants.getPercentFoliage(plant) != 0)
 		return true;
-	if(species.eatsFruit && plants.getQuantityToHarvest(plant) != 0)
+	if(AnimalSpecies::getEatsFruit(species) && plants.getQuantityToHarvest(plant) != 0)
 		return true;
 	return false;
 }
 bool MustEat::canEatItem(Area& area, const ItemIndex item) const
 {
-	return area.getItems().getItemType(item).edibleForDrinkersOf == &area.getActors().drink_getFluidType(m_actor.getIndex());
+	return ItemType::getEdibleForDrinkersOf(area.getItems().getItemType(item)) == area.getActors().drink_getFluidType(m_actor.getIndex());
 }
 void MustEat::eat(Area& area, Mass mass)
 {
@@ -89,18 +90,19 @@ void MustEat::eat(Area& area, Mass mass)
 	m_hungerEvent.unschedule();
 	Step stepsToNextHungerEvent;
 	ActorIndex actor = m_actor.getIndex();
-	const AnimalSpecies& species = actors.getSpecies(actor);
+	AnimalSpeciesId species = actors.getSpecies(actor);
 	if(m_massFoodRequested == 0)
 	{
 		actors.grow_maybeStart(actor);
-		stepsToNextHungerEvent = species.stepsEatFrequency;
+		stepsToNextHungerEvent = AnimalSpecies::getStepsEatFrequency(species);
 		actors.objective_complete(actor, *m_eatObjective);
 		m_eatObjective = nullptr;
 		m_hungerEvent.schedule(area, stepsToNextHungerEvent, actor);
 	}
 	else
 	{
-		stepsToNextHungerEvent = Step::create(util::scaleByInverseFraction(species.stepsTillDieWithoutFood.get(), m_massFoodRequested.get(), massFoodForBodyMass(area).get()));
+		Step stepsTillDie = AnimalSpecies::getStepsTillDieWithoutFood(species);
+		stepsToNextHungerEvent = Step::create(util::scaleByInverseFraction(stepsTillDie.get(), m_massFoodRequested.get(), massFoodForBodyMass(area).get()));
 		m_hungerEvent.schedule(area, stepsToNextHungerEvent, actor);
 		actors.objective_subobjectiveComplete(actor);
 	}
@@ -114,12 +116,12 @@ void MustEat::setNeedsFood(Area& area)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actor = m_actor.getIndex();
-	const AnimalSpecies& species = actors.getSpecies(actor);
+	AnimalSpeciesId species = actors.getSpecies(actor);
 	if(needsFood())
 		actors.die(actor, CauseOfDeath::hunger);
 	else
 	{
-		m_hungerEvent.schedule(area, species.stepsTillDieWithoutFood, actor);
+		m_hungerEvent.schedule(area, AnimalSpecies::getStepsTillDieWithoutFood(species), actor);
 		actors.grow_stop(actor);
 		m_massFoodRequested = massFoodForBodyMass(area);
 		std::unique_ptr<Objective> objective = std::make_unique<EatObjective>(area);
@@ -136,7 +138,7 @@ Mass MustEat::massFoodForBodyMass(Area& area) const
 {
 	return Mass::create(std::max(1u, (area.getActors().getMass(m_actor.getIndex()) / Config::unitsBodyMassPerUnitFoodConsumed).get()));
 }
-const Mass& MustEat::getMassFoodRequested() const { return m_massFoodRequested; }
+Mass MustEat::getMassFoodRequested() const { return m_massFoodRequested; }
 Percent MustEat::getPercentStarved() const
 {
 	if(!m_hungerEvent.exists())
@@ -148,25 +150,25 @@ uint32_t MustEat::getDesireToEatSomethingAt(Area& area, BlockIndex block) const
 	Blocks& blocks = area.getBlocks();
 	Items& items = area.getItems();
 	Actors& actors = area.getActors();
-	const AnimalSpecies& species = actors.getSpecies(m_actor.getIndex());
+	AnimalSpeciesId species = actors.getSpecies(m_actor.getIndex());
 	for(ItemIndex item : blocks.item_getAll(block))
 	{
 		if(items.isPreparedMeal(item))
 			return UINT32_MAX;
-		if(items.getItemType(item).edibleForDrinkersOf == &species.fluidType)
+		if(ItemType::getEdibleForDrinkersOf(items.getItemType(item)) == AnimalSpecies::getFluidType(species))
 			return 2;
 	}
-	if(species.eatsFruit && blocks.plant_exists(block))
+	if(AnimalSpecies::getEatsFruit(species) && blocks.plant_exists(block))
 	{
 		const PlantIndex plant = blocks.plant_get(block);
 		if(area.getPlants().getFruitMass(plant) != 0)
 			return 2;
 	}
-	if(species.eatsMeat)
+	if(AnimalSpecies::getEatsMeat(species))
 		for(ActorIndex actor : blocks.actor_getAll(block))
-			if(m_actor.getIndex() != actor && !actors.isAlive(actor) && actors.getSpecies(actor).fluidType == species.fluidType)
+			if(m_actor.getIndex() != actor && !actors.isAlive(actor) && AnimalSpecies::getFluidType(actors.getSpecies(actor)) == AnimalSpecies::getFluidType(species))
 				return 1;
-	if(species.eatsLeaves && blocks.plant_exists(block))
+	if(AnimalSpecies::getEatsLeaves(species) && blocks.plant_exists(block))
 		if(area.getPlants().getPercentFoliage(blocks.plant_get(block)) != 0)
 			return 3;
 	return 0;

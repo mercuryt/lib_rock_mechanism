@@ -11,24 +11,24 @@ void FireEvent::execute(Simulation&, Area* area)
 	if(!m_fire.m_hasPeaked &&m_fire.m_stage == FireStage::Smouldering)
 	{
 		m_fire.m_stage = FireStage::Burning;
-		TemperatureDelta temperature = m_fire.m_materialType.burnData->flameTemperature * Config::heatFractionForBurn;
+		TemperatureDelta temperature = MaterialType::getFlameTemperature(m_fire.m_materialType) * Config::heatFractionForBurn;
 		m_fire.m_temperatureSource.setTemperature(temperature);
-		m_fire.m_event.schedule(*area, m_fire.m_materialType.burnData->burnStageDuration, m_fire);
+		m_fire.m_event.schedule(*area, MaterialType::getBurnStageDuration(m_fire.m_materialType), m_fire);
 	}
 	else if(!m_fire.m_hasPeaked && m_fire.m_stage == FireStage::Burning)
 	{
 		m_fire.m_stage = FireStage::Flaming;
-		TemperatureDelta temperature = m_fire.m_materialType.burnData->flameTemperature;
+		TemperatureDelta temperature = MaterialType::getFlameTemperature(m_fire.m_materialType);
 		m_fire.m_temperatureSource.setTemperature(temperature);
-		m_fire.m_event.schedule(*area, m_fire.m_materialType.burnData->flameStageDuration, m_fire);
+		m_fire.m_event.schedule(*area, MaterialType::getFlameStageDuration(m_fire.m_materialType), m_fire);
 	}
 	else if(m_fire.m_stage == FireStage::Flaming)
 	{
 		m_fire.m_hasPeaked = true;
 		m_fire.m_stage = FireStage::Burning;
-		TemperatureDelta temperature = m_fire.m_materialType.burnData->flameTemperature * Config::heatFractionForBurn;
+		TemperatureDelta temperature = MaterialType::getFlameTemperature(m_fire.m_materialType) * Config::heatFractionForBurn;
 		m_fire.m_temperatureSource.setTemperature(temperature);
-		Step delay = m_fire.m_materialType.burnData->burnStageDuration * Config::fireRampDownPhaseDurationFraction;
+		Step delay = MaterialType::getBurnStageDuration(m_fire.m_materialType) * Config::fireRampDownPhaseDurationFraction;
 		m_fire.m_event.schedule(*area, delay, m_fire);
 		Blocks& blocks = area->getBlocks();
 		if(blocks.solid_is(m_fire.m_location) && blocks.solid_get(m_fire.m_location) == m_fire.m_materialType)
@@ -40,9 +40,9 @@ void FireEvent::execute(Simulation&, Area* area)
 	else if(m_fire.m_hasPeaked && m_fire.m_stage == FireStage::Burning)
 	{
 		m_fire.m_stage = FireStage::Smouldering;
-		TemperatureDelta temperature = m_fire.m_materialType.burnData->flameTemperature * Config::heatFractionForSmoulder;
+		TemperatureDelta temperature = MaterialType::getFlameTemperature(m_fire.m_materialType) * Config::heatFractionForSmoulder;
 		m_fire.m_temperatureSource.setTemperature(temperature);
-		Step delay = m_fire.m_materialType.burnData->burnStageDuration * Config::fireRampDownPhaseDurationFraction;
+		Step delay = MaterialType::getBurnStageDuration(m_fire.m_materialType) * Config::fireRampDownPhaseDurationFraction;
 		m_fire.m_event.schedule(*area, delay, m_fire);
 	}
 	else if(m_fire.m_hasPeaked && m_fire.m_stage == FireStage::Smouldering)
@@ -56,17 +56,17 @@ void FireEvent::execute(Simulation&, Area* area)
 }
 void FireEvent::clearReferences(Simulation&, Area*) { m_fire.m_event.clearPointer(); }
 // Fire.
-Fire::Fire(Area& a, BlockIndex l, const MaterialType& mt, bool hasPeaked, FireStage stage, Step start) : 
-	m_area(a), m_temperatureSource(a, mt.burnData->flameTemperature * Config::heatFractionForSmoulder, l), 
+Fire::Fire(Area& a, BlockIndex l, MaterialTypeId mt, bool hasPeaked, FireStage stage, Step start) : 
+	m_area(a), m_temperatureSource(a, MaterialType::getFlameTemperature(mt) * Config::heatFractionForSmoulder, l), 
 	m_event(a.m_eventSchedule), m_location(l), m_materialType(mt), m_stage(stage), m_hasPeaked(hasPeaked)
 {
-	m_event.schedule(m_area, m_materialType.burnData->burnStageDuration, *this, start);
+	m_event.schedule(m_area, MaterialType::getBurnStageDuration(m_materialType), *this, start);
 }
-void AreaHasFires::ignite(BlockIndex block, const MaterialType& materialType)
+void AreaHasFires::ignite(BlockIndex block, MaterialTypeId materialType)
 {
 	if(m_fires.contains(block))
-		assert(!m_fires.at(block).contains(&materialType));
-	m_fires[block].try_emplace(&materialType, m_area, block, materialType);
+		assert(!m_fires.at(block).contains(materialType));
+	m_fires[block].try_emplace(materialType, m_area, block, materialType);
 	Blocks& blocks = m_area.getBlocks();
 	if(!blocks.fire_exists(block))
 		blocks.fire_setPointer(block, &m_fires.at(block));
@@ -76,7 +76,7 @@ void AreaHasFires::extinguish(Fire& fire)
 	assert(m_fires.contains(fire.m_location));
 	BlockIndex block = fire.m_location;
 	fire.m_temperatureSource.unapply();
-	m_fires.at(block).erase(&fire.m_materialType);
+	m_fires.at(block).erase(fire.m_materialType);
 	if(m_fires.at(block).empty())
 		m_area.getBlocks().fire_clearPointer(block);
 }
@@ -86,21 +86,21 @@ void AreaHasFires::load(const Json& data, DeserializationMemo&)
 		for(const Json& fireData : pair[1])
 		{
 			BlockIndex block = fireData["location"].get<BlockIndex>();
-			const MaterialType& materialType = *fireData["materialType"].get<const MaterialType*>();
-			m_fires[block].try_emplace(&materialType, m_area, block, materialType, fireData["hasPeaked"].get<bool>(), fireData["stage"].get<FireStage>(), fireData["start"].get<Step>());
+			MaterialTypeId materialType = fireData["materialType"].get<MaterialTypeId>();
+			m_fires[block].try_emplace(materialType, m_area, block, materialType, fireData["hasPeaked"].get<bool>(), fireData["stage"].get<FireStage>(), fireData["start"].get<Step>());
 		}
 }
-Fire& AreaHasFires::at(BlockIndex block, const MaterialType& materialType) 
+Fire& AreaHasFires::at(BlockIndex block, MaterialTypeId materialType) 
 {
        	assert(m_fires.contains(block)); 
-       	assert(m_fires.at(block).contains(&materialType)); 
-	return m_fires.at(block).at(&materialType); 
+       	assert(m_fires.at(block).contains(materialType)); 
+	return m_fires.at(block).at(materialType); 
 }
-bool AreaHasFires::contains(BlockIndex block, const MaterialType& materialType) 
+bool AreaHasFires::contains(BlockIndex block, MaterialTypeId materialType) 
 {
 	if(!m_fires.contains(block))
 		return false;
-	return m_fires.at(block).contains(&materialType);
+	return m_fires.at(block).contains(materialType);
 }
 Json AreaHasFires::toJson() const
 {
@@ -110,7 +110,7 @@ Json AreaHasFires::toJson() const
 		data.push_back(Json{blockReference, Json::array()});
 		for(auto& [materialType, fire] : fires)
 		{
-			assert(materialType == &fire.m_materialType);
+			assert(materialType == fire.m_materialType);
 			Json fireData{{"location", fire.m_location}, {"materialType", fire.m_materialType}, {"hasPeaked", fire.m_hasPeaked}, {"stage", fire.m_stage}, {"start", fire.m_event.getStartStep()}};
 			data.back()[1].push_back(fireData);
 		}
