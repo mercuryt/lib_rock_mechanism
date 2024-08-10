@@ -15,11 +15,11 @@ class PathMemoClosed final
 	DataVector<BlockIndex, BlockIndex> m_data;
 	BlockIndices m_dirty;
 public:
-	[[nodiscard]] bool contains(BlockIndex index) const { return m_data.at(index) != BlockIndex::null(); }
+	[[nodiscard]] bool contains(BlockIndex index) const { return m_data[index] != BlockIndex::null(); }
 	[[nodiscard]] bool empty() const { return m_dirty.empty(); }
-	[[nodiscard]] BlockIndex previous(BlockIndex index) const { return m_data.at(index); }
-	void add(BlockIndex index, BlockIndex parent) { assert(!contains(index)); assert(contains(parent)); m_data.at(index) = parent; m_dirty.add(index); }
-	void clear() { for(BlockIndex index : m_dirty) { m_data.at(index).clear(); } m_dirty.clear(); }
+	[[nodiscard]] BlockIndex previous(BlockIndex index) const { return m_data[index]; }
+	void add(BlockIndex index, BlockIndex parent) { assert(!contains(index)); assert(contains(parent)); m_data[index] = parent; m_dirty.add(index); }
+	void clear() { for(BlockIndex index : m_dirty) { m_data[index].clear(); } m_dirty.clear(); }
 	void resize(uint size) { m_data.resize(size); }
 };
 

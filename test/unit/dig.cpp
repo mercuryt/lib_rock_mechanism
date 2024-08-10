@@ -19,10 +19,10 @@
 #include "../../engine/animalSpecies.h"
 TEST_CASE("dig")
 {
-	static const MaterialType& dirt = MaterialType::byName("dirt");
-	static const MaterialType& marble = MaterialType::byName("marble");
-	static const MaterialType& bronze = MaterialType::byName("bronze");
-	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
+	static MaterialTypeId dirt = MaterialType::byName("dirt");
+	static MaterialTypeId marble = MaterialType::byName("marble");
+	static MaterialTypeId bronze = MaterialType::byName("bronze");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();

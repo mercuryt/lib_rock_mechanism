@@ -126,6 +126,14 @@ namespace util
 		(*iter) = std::move(vector.back());
 		vector.pop_back();
 	}
+	template<typename T, int size>
+	inline void removeFromArrayByValueUnordered(std::array<T, size>& array, const T& value)
+	{
+		auto iter = std::ranges::find(array, value);
+		assert(iter != array.end());
+		(*iter) = std::move(array.back());
+		array.back() = T::null();
+	}
 	template<typename T>
 	inline void addUniqueToVectorAssert(std::vector<T>& vector, const T& value)
 	{

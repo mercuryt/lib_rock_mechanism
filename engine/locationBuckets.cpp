@@ -53,7 +53,7 @@ void LocationBucket::update(Area& area, ActorIndex actor, BlockIndices& blockInd
 		auto iter = std::ranges::find(m_actorsMultiTile, actor);
 		assert(iter != m_actorsMultiTile.end());
 		size_t index = iter - m_actorsMultiTile.begin();
-		m_blocksMultiTileActors.at(index) = blockIndices;
+		m_blocksMultiTileActors[index] = blockIndices;
 	}
 	else
 	{
@@ -61,7 +61,7 @@ void LocationBucket::update(Area& area, ActorIndex actor, BlockIndices& blockInd
 		auto iter = std::ranges::find(m_actorsSingleTile, actor);
 		assert(iter != m_actorsSingleTile.end());
 		size_t index = iter - m_actorsSingleTile.begin();
-		m_blocksSingleTileActors.at(index) = blockIndices.front();
+		m_blocksSingleTileActors[index] = blockIndices.front();
 	}
 }
 void LocationBuckets::initalize()

@@ -35,11 +35,11 @@ void PlantSpecies::create(PlantSpeciesParamaters& p)
 }
 const std::pair<ShapeId, uint8_t> PlantSpecies::shapeAndWildGrowthForPercentGrown(PlantSpeciesId species, Percent percentGrown)
 {
-	uint8_t totalGrowthStages = data.m_shapes.at(species).size() + data.m_maxWildGrowth.at(species);
+	uint8_t totalGrowthStages = data.m_shapes[species].size() + data.m_maxWildGrowth[species];
 	uint8_t growthStage = util::scaleByPercentRange(1, totalGrowthStages, percentGrown);
-	size_t index = std::min(static_cast<size_t>(growthStage), data.m_shapes.at(species).size()) - 1;
-	uint8_t wildGrowthSteps = data.m_shapes.at(species).size() < growthStage ? growthStage - data.m_shapes.at(species).size() : 0u;
-	return std::make_pair(data.m_shapes.at(species).at(index), wildGrowthSteps);
+	size_t index = std::min(static_cast<size_t>(growthStage), data.m_shapes[species].size()) - 1;
+	uint8_t wildGrowthSteps = data.m_shapes[species].size() < growthStage ? growthStage - data.m_shapes[species].size() : 0u;
+	return std::make_pair(data.m_shapes[species][index], wildGrowthSteps);
 }
 // Static method.
 PlantSpeciesId PlantSpecies::byName(std::string name)

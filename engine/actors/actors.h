@@ -161,14 +161,14 @@ public:
 	[[nodiscard]] ActorIndices getAll() const;
 	[[nodiscard]] ActorIndexSet getOnSurface() const { return m_onSurface; }
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] ActorId getId(ActorIndex index) const { return m_id.at(index); }
-	[[nodiscard]] ActorReference getReference(ActorIndex index) const { return *m_referenceTarget.at(index).get();}
-	[[nodiscard]] const ActorReference getReferenceConst(ActorIndex index) const { return *m_referenceTarget.at(index).get();}
-	[[nodiscard]] ActorReferenceTarget& getReferenceTarget(ActorIndex index) const { return *m_referenceTarget.at(index).get();}
-	[[nodiscard]] std::wstring getName(ActorIndex index) const { return m_name.at(index); }
-	[[nodiscard]] bool isAlive(ActorIndex index) const { return m_causeOfDeath.at(index) == CauseOfDeath::none; }
+	[[nodiscard]] ActorId getId(ActorIndex index) const { return m_id[index]; }
+	[[nodiscard]] ActorReference getReference(ActorIndex index) const { return *m_referenceTarget[index].get();}
+	[[nodiscard]] const ActorReference getReferenceConst(ActorIndex index) const { return *m_referenceTarget[index].get();}
+	[[nodiscard]] ActorReferenceTarget& getReferenceTarget(ActorIndex index) const { return *m_referenceTarget[index].get();}
+	[[nodiscard]] std::wstring getName(ActorIndex index) const { return m_name[index]; }
+	[[nodiscard]] bool isAlive(ActorIndex index) const { return m_causeOfDeath[index] == CauseOfDeath::none; }
 	[[nodiscard]] Percent getPercentGrown(ActorIndex index) const;
-	[[nodiscard]] CauseOfDeath getCauseOfDeath(ActorIndex index) const { assert(!isAlive(index)); return m_causeOfDeath.at(index); }
+	[[nodiscard]] CauseOfDeath getCauseOfDeath(ActorIndex index) const { assert(!isAlive(index)); return m_causeOfDeath[index]; }
 	[[nodiscard]] bool isEnemy(ActorIndex actor, ActorIndex other) const;
 	[[nodiscard]] bool isAlly(ActorIndex actor, ActorIndex other) const;
 	[[nodiscard]] bool isSentient(ActorIndex index) const;
@@ -177,10 +177,10 @@ public:
 	[[nodiscard]] Volume getVolume(ActorIndex index) const;
 	[[nodiscard]] Quantity getAgeInYears(ActorIndex index) const;
 	[[nodiscard]] Step getAge(ActorIndex index) const;
-	[[nodiscard]] Step getBirthStep(ActorIndex index) const { return m_birthStep.at(index); }
+	[[nodiscard]] Step getBirthStep(ActorIndex index) const { return m_birthStep[index]; }
 	[[nodiscard]] std::wstring getActionDescription(ActorIndex index) const;
-	[[nodiscard]] AnimalSpeciesId getSpecies(ActorIndex index) const { return m_species.at(index); }
-	[[nodiscard]] Mass getUnencomberedCarryMass(ActorIndex index) const { return m_unencomberedCarryMass.at(index); }
+	[[nodiscard]] AnimalSpeciesId getSpecies(ActorIndex index) const { return m_species[index]; }
+	[[nodiscard]] Mass getUnencomberedCarryMass(ActorIndex index) const { return m_unencomberedCarryMass[index]; }
 	// -Stamina.
 	void stamina_recover(ActorIndex index);
 	void stamina_spend(ActorIndex index, Stamina stamina);
@@ -188,7 +188,7 @@ public:
 	bool stamina_hasAtLeast(ActorIndex index, Stamina stamina) const;
 	bool stamina_isFull(ActorIndex index) const;
 	[[nodiscard]] Stamina stamina_getMax(ActorIndex index) const;
-	[[nodiscard]] Stamina stamina_get(ActorIndex index) const { return m_stamina.at(index); }
+	[[nodiscard]] Stamina stamina_get(ActorIndex index) const { return m_stamina[index]; }
 	// -Vision.
 	void vision_do(ActorIndex index, ActorIndices& actors);
 	void vision_setRange(ActorIndex index, DistanceInBlocks range);
@@ -197,8 +197,8 @@ public:
 	void vision_clearFacade(ActorIndex actor);
 	void vision_updateFacadeIndex(ActorIndex actor, VisionFacadeIndex);
 	void vision_swap(ActorIndex actor, ActorIndices& toSwap);
-	[[nodiscard]] ActorIndices& vision_getCanSee(ActorIndex index) { return m_canSee.at(index); }
-	[[nodiscard]] DistanceInBlocks vision_getRange(ActorIndex index) const { return m_visionRange.at(index); }
+	[[nodiscard]] ActorIndices& vision_getCanSee(ActorIndex index) { return m_canSee[index]; }
+	[[nodiscard]] DistanceInBlocks vision_getRange(ActorIndex index) const { return m_visionRange[index]; }
 	[[nodiscard]] bool vision_canSeeActor(ActorIndex index, ActorIndex other) const;
 	[[nodiscard]] bool vision_canSeeAnything(ActorIndex index) const;
 	[[nodiscard]] bool vision_hasFacade(ActorIndex actor) const;
@@ -227,18 +227,18 @@ public:
 	[[nodiscard]] bool combat_inRange(ActorIndex index, const ActorIndex target) const;
 	[[nodiscard]] bool combat_doesProjectileHit(ActorIndex index, Attack& attack, const ActorIndex target) const;
 	[[nodiscard]] Percent combat_projectileHitPercent(ActorIndex index, const Attack& attack, const ActorIndex target) const;
-	[[nodiscard]] DistanceInBlocksFractional combat_getMaxMeleeRange(ActorIndex index) const { return m_maxMeleeRange.at(index); }
-	[[nodiscard]] DistanceInBlocksFractional combat_getMaxRange(ActorIndex index) const { return m_maxRange.at(index) != DistanceInBlocksFractional::create(0) ? m_maxRange.at(index) : m_maxMeleeRange.at(index); }
+	[[nodiscard]] DistanceInBlocksFractional combat_getMaxMeleeRange(ActorIndex index) const { return m_maxMeleeRange[index]; }
+	[[nodiscard]] DistanceInBlocksFractional combat_getMaxRange(ActorIndex index) const { return m_maxRange[index] != DistanceInBlocksFractional::create(0) ? m_maxRange[index] : m_maxMeleeRange[index]; }
 	[[nodiscard]] CombatScore combat_getCombatScoreForAttack(ActorIndex index, const Attack& attack) const;
 	[[nodiscard]] const Attack& combat_getAttackForCombatScoreDifference(ActorIndex index, CombatScore scoreDifference) const;
 	[[nodiscard]] float combat_getQualityModifier(ActorIndex index, Quality quality) const;
 	[[nodiscard]] bool combat_blockIsValidPosition(ActorIndex index, BlockIndex block, DistanceInBlocksFractional attackRangeSquared) const;
 	AttackTypeId combat_getRangedAttackType(ActorIndex index, ItemIndex weapon);
 	//for degbugging combat
-	[[nodiscard]] std::vector<std::pair<CombatScore, Attack>>& combat_getAttackTable(ActorIndex index) { return m_meleeAttackTable.at(index); }
-	[[nodiscard]] bool combat_hasThreadedTask(ActorIndex index) { return m_getIntoAttackPositionPathRequest.at(index) != nullptr; }
-	[[nodiscard]] float combat_getCoolDownDurationModifier(ActorIndex index) { return m_coolDownDurationModifier.at(index); }
-	[[nodiscard, maybe_unused]] CombatScore combat_getCombatScore(ActorIndex index) const { return m_combatScore.at(index); }
+	[[nodiscard]] std::vector<std::pair<CombatScore, Attack>>& combat_getAttackTable(ActorIndex index) { return m_meleeAttackTable[index]; }
+	[[nodiscard]] bool combat_hasThreadedTask(ActorIndex index) { return m_getIntoAttackPositionPathRequest[index] != nullptr; }
+	[[nodiscard]] float combat_getCoolDownDurationModifier(ActorIndex index) { return m_coolDownDurationModifier[index]; }
+	[[nodiscard, maybe_unused]] CombatScore combat_getCombatScore(ActorIndex index) const { return m_combatScore[index]; }
 	[[nodiscard]] std::vector<std::pair<CombatScore, Attack>>& combat_getMeleeAttacks(ActorIndex index);
 	// -Body.
 	[[nodiscard]] Percent body_getImpairMovePercent(ActorIndex index);
@@ -278,15 +278,15 @@ public:
 	[[nodiscard]] bool move_tryToReserveProposedDestination(ActorIndex index, BlockIndices& path);
 	[[nodiscard]] bool move_tryToReserveOccupied(ActorIndex index);
 	[[nodiscard]] Speed move_getIndividualSpeedWithAddedMass(ActorIndex index, Mass mass) const;
-	[[nodiscard]] Speed move_getSpeed(ActorIndex index) const { return m_speedActual.at(index); }
+	[[nodiscard]] Speed move_getSpeed(ActorIndex index) const { return m_speedActual[index]; }
 	[[nodiscard]] bool move_canMove(ActorIndex index) const;
 	[[nodiscard]] Step move_delayToMoveInto(ActorIndex index, const BlockIndex block) const;
 	// For debugging move.
-	[[nodiscard]] PathRequest& move_getPathRequest(ActorIndex index) { return *m_pathRequest.at(index).get(); }
-	[[nodiscard]] BlockIndices& move_getPath(ActorIndex index) { return m_path.at(index); }
-	[[nodiscard]] BlockIndex move_getDestination(ActorIndex index) { return m_destination.at(index); }
+	[[nodiscard]] PathRequest& move_getPathRequest(ActorIndex index) { return *m_pathRequest[index].get(); }
+	[[nodiscard]] BlockIndices& move_getPath(ActorIndex index) { return m_path[index]; }
+	[[nodiscard]] BlockIndex move_getDestination(ActorIndex index) { return m_destination[index]; }
 	[[nodiscard]] bool move_hasEvent(ActorIndex index) const { return m_moveEvent.exists(index); }
-	[[nodiscard]] bool move_hasPathRequest(ActorIndex index) const { return m_pathRequest.at(index).get() != nullptr; }
+	[[nodiscard]] bool move_hasPathRequest(ActorIndex index) const { return m_pathRequest[index].get() != nullptr; }
 	[[nodiscard]] Step move_stepsTillNextMoveEvent(ActorIndex index) const;
 	// -CanPickUp.
 	void canPickUp_pickUpItem(ActorIndex index, ItemIndex item);
@@ -316,9 +316,9 @@ public:
 	[[nodiscard]] bool canPickUp_actorUnencombered(ActorIndex index, ActorIndex actor) const;
 	[[nodiscard]] bool canPickUp_anyWithMassUnencombered(ActorIndex index, Mass mass) const;
 	[[nodiscard]] Quantity canPickUp_quantityWhichCanBePickedUpUnencombered(ActorIndex index, ItemTypeId itemType, MaterialTypeId materialType) const;
-	[[nodiscard]] bool canPickUp_exists(ActorIndex index) const { return m_carrying.at(index).exists(); }
-	[[nodiscard]] bool canPickUp_isCarryingActor(ActorIndex index, ActorIndex actor) const { return m_carrying.at(index).exists() && m_carrying.at(index).isActor() && m_carrying.at(index).get() == actor; }
-	[[nodiscard]] bool canPickUp_isCarryingItem(ActorIndex index, ItemIndex item) const { return m_carrying.at(index).exists() && m_carrying.at(index).isItem() && m_carrying.at(index).get() == item; }
+	[[nodiscard]] bool canPickUp_exists(ActorIndex index) const { return m_carrying[index].exists(); }
+	[[nodiscard]] bool canPickUp_isCarryingActor(ActorIndex index, ActorIndex actor) const { return m_carrying[index].exists() && m_carrying[index].isActor() && m_carrying[index].get() == actor; }
+	[[nodiscard]] bool canPickUp_isCarryingItem(ActorIndex index, ItemIndex item) const { return m_carrying[index].exists() && m_carrying[index].isItem() && m_carrying[index].get() == item; }
 	[[nodiscard]] bool canPickUp_isCarryingItemGeneric(ActorIndex index, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity) const;
 	[[nodiscard]] bool canPickUp_isCarryingFluidType(ActorIndex index, FluidTypeId fluidType) const;
 	[[nodiscard]] bool canPickUp_isCarryingPolymorphic(ActorIndex index, ActorOrItemIndex actorOrItemIndex) const;
@@ -350,7 +350,7 @@ public:
 	[[nodiscard]] bool objective_hasNeed(ActorIndex index, ObjectiveTypeId objectiveTypeId) const;
 	[[nodiscard]] std::string objective_getCurrentName(ActorIndex index) const;
 	template<typename T>
-	T& objective_getCurrent(ActorIndex index) { return static_cast<T&>(m_hasObjectives.at(index)->getCurrent()); }
+	T& objective_getCurrent(ActorIndex index) { return static_cast<T&>(m_hasObjectives[index]->getCurrent()); }
 	// For testing.
 	[[nodiscard]] bool objective_queuesAreEmpty(ActorIndex index) const;
 	[[nodiscard]] bool objective_isOnDelay(ActorIndex index, ObjectiveTypeId objectiveTypeId) const;
@@ -364,11 +364,11 @@ public:
 	[[nodiscard]] bool canReserve_tryToReserveItem(ActorIndex index, ItemIndex item);
 	[[nodiscard]] bool canReserve_hasReservationWith(ActorIndex index, Reservable& reservable) const;
 	// Project.
-	[[nodiscard]] bool project_exists(ActorIndex index) const { return m_project.at(index) != nullptr; }
-	[[nodiscard]] Project* project_get(ActorIndex index) const { return m_project.at(index); }
-	void project_set(ActorIndex index, Project& project) { m_project.at(index) = &project; }
-	void project_unset(ActorIndex index) { assert(m_project.at(index) != nullptr); m_project.at(index) = nullptr; }
-	void project_maybeUnset(ActorIndex index) { m_project.at(index) = nullptr; }
+	[[nodiscard]] bool project_exists(ActorIndex index) const { return m_project[index] != nullptr; }
+	[[nodiscard]] Project* project_get(ActorIndex index) const { return m_project[index]; }
+	void project_set(ActorIndex index, Project& project) { m_project[index] = &project; }
+	void project_unset(ActorIndex index) { assert(m_project[index] != nullptr); m_project[index] = nullptr; }
+	void project_maybeUnset(ActorIndex index) { m_project[index] = nullptr; }
 	// -Equipment.
 	void equipment_add(ActorIndex index, ItemIndex item);
 	void equipment_addGeneric(ActorIndex index, ItemTypeId itemType, MaterialTypeId materalType, Quantity quantity);
@@ -382,7 +382,7 @@ public:
 	[[nodiscard]] ItemIndex equipment_getWeaponToAttackAtRange(ActorIndex index, DistanceInBlocksFractional range) const;
 	[[nodiscard]] ItemIndex equipment_getAmmoForRangedWeapon(ActorIndex index, ItemIndex weapon) const;
 	// TODO: change to vectors.
-	[[nodiscard]] const auto& equipment_getAll(ActorIndex index) const { return m_equipmentSet.at(index)->getAll(); }
+	[[nodiscard]] const auto& equipment_getAll(ActorIndex index) const { return m_equipmentSet[index]->getAll(); }
 	// -Uniform.
 	void uniform_set(ActorIndex index, Uniform& uniform);
 	void uniform_unset(ActorIndex index);

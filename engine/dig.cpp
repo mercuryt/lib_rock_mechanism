@@ -118,11 +118,11 @@ void DigProject::onCancel()
 }
 void DigProject::onDelay()
 {
-	m_area.m_blockDesignations.at(m_faction).maybeUnset(m_location, BlockDesignation::Dig);
+	m_area.m_blockDesignations.getForFaction(m_faction).maybeUnset(m_location, BlockDesignation::Dig);
 }
 void DigProject::offDelay()
 {
-	m_area.m_blockDesignations.at(m_faction).set(m_location, BlockDesignation::Dig);
+	m_area.m_blockDesignations.getForFaction(m_faction).set(m_location, BlockDesignation::Dig);
 }
 // What would the total delay time be if we started from scratch now with current workers?
 Step DigProject::getDuration() const
@@ -194,7 +194,7 @@ void HasDigDesignationsForFaction::removeIfExists(BlockIndex block)
 	if(m_data.contains(block))
 		remove(block);
 }
-const BlockFeatureType* HasDigDesignationsForFaction::at(BlockIndex block) const { return m_data.at(block).m_blockFeatureType; }
+const BlockFeatureType* HasDigDesignationsForFaction::getForBlock(BlockIndex block) const { return m_data.at(block).m_blockFeatureType; }
 bool HasDigDesignationsForFaction::empty() const { return m_data.empty(); }
 // To be used by Area.
 void AreaHasDigDesignations::load(const Json& data, DeserializationMemo& deserializationMemo)
@@ -271,7 +271,7 @@ bool AreaHasDigDesignations::areThereAnyForFaction(FactionId faction) const
 		return false;
 	return !m_data.at(faction).empty();
 }
-DigProject& AreaHasDigDesignations::at(FactionId faction, BlockIndex block) 
+DigProject& AreaHasDigDesignations::getForFactionAndBlock(FactionId faction, BlockIndex block) 
 { 
 	assert(m_data.contains(faction));
 	assert(m_data.at(faction).m_data.contains(block)); 

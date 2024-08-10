@@ -17,7 +17,7 @@ void PathRequest::create(Area& area, ActorIndex actor, DestinationCondition dest
 	m_maxRange = maxRange;
 	m_huristicDestination = huristicDestination;
 	Actors& actors = area.getActors();
-	TerrainFacade& terrainFacade = area.m_hasTerrainFacades.at(actors.getMoveType(actor));
+	TerrainFacade& terrainFacade = area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actor));
 	AccessCondition access = terrainFacade.makeAccessConditionForActor(actor, detour, maxRange);
 	if(huristicDestination.empty())
 		terrainFacade.registerPathRequestNoHuristic(actors.getLocation(actor), access, destination, *this);
@@ -188,7 +188,7 @@ void PathRequest::createGoAdjacentToCondition(Area& area, ActorIndex actor, std:
 }
 void PathRequest::cancel(Area& area, ActorIndex actor)
 {
-	TerrainFacade& terrainFacade = area.m_hasTerrainFacades.at(area.getActors().getMoveType(actor));
+	TerrainFacade& terrainFacade = area.m_hasTerrainFacades.getForMoveType(area.getActors().getMoveType(actor));
 	if(m_huristicDestination.exists())
 		terrainFacade.unregisterWithHuristic(m_index);
 	else

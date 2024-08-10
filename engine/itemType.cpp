@@ -13,7 +13,7 @@
 #include <numbers>
 AttackTypeId ItemType::getRangedAttackType(ItemTypeId id)
 {
-	for(AttackTypeId attackType : data.m_attackTypes.at(id))
+	for(AttackTypeId attackType : data.m_attackTypes[id])
 		if(AttackType::getProjectileItemType(attackType).exists())
 			return attackType;
 	return AttackTypeId::null();
@@ -21,15 +21,15 @@ AttackTypeId ItemType::getRangedAttackType(ItemTypeId id)
 bool ItemType::hasRangedAttack(ItemTypeId id) { return getRangedAttackType(id).exists(); }
 bool ItemType::hasMeleeAttack(ItemTypeId id)
 {
-	for(AttackTypeId attackType : data.m_attackTypes.at(id))
+	for(AttackTypeId attackType : data.m_attackTypes[id])
 		if(AttackType::getProjectileItemType(attackType).empty())
 			return true;
 	return false;
 }
 BlockIndex ItemType::getCraftLocation(ItemTypeId id, Blocks& blocks, BlockIndex location, Facing facing)
 {
-	assert(data.m_craftLocationStepTypeCategory.at(id) != CraftStepTypeCategoryId::null());
-	auto [x, y, z] = util::rotateOffsetToFacing(data.m_craftLocationOffset.at(id), facing);
+	assert(data.m_craftLocationStepTypeCategory[id] != CraftStepTypeCategoryId::null());
+	auto [x, y, z] = util::rotateOffsetToFacing(data.m_craftLocationOffset[id], facing);
 	return blocks.offset(location, x, y, z);
 }
 // Static methods.

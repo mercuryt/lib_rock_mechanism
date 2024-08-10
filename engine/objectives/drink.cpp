@@ -97,7 +97,7 @@ void DrinkObjective::cancel(Area& area, ActorIndex actor)
 	Actors& actors = area.getActors();
 	actors.move_pathRequestMaybeCancel(actor);
 	m_drinkEvent.maybeUnschedule();
-	actors.m_mustDrink.at(actor)->m_objective = nullptr;
+	actors.m_mustDrink[actor]->m_objective = nullptr;
 }
 void DrinkObjective::delay(Area& area, ActorIndex actor) 
 { 

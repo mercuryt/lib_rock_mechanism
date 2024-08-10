@@ -85,7 +85,7 @@ public:
 	void remove(BlockIndex block);
 	void removeIfExists(BlockIndex block);
 	bool contains(BlockIndex block) const;
-	const BlockFeatureType* at(BlockIndex block) const;
+	const BlockFeatureType* getForBlock(BlockIndex block) const;
 	bool empty() const;
 	friend class AreaHasConstructionDesignations;
 };
@@ -110,5 +110,5 @@ public:
 	bool areThereAnyForFaction(FactionId faction) const;
 	bool contains(FactionId faction, BlockIndex block) const;
 	ConstructProject& getProject(FactionId faction, BlockIndex block);
-	HasConstructionDesignationsForFaction& at(FactionId faction) { return m_data.at(faction); }
+	HasConstructionDesignationsForFaction& getForFaction(FactionId faction) { return m_data.at(faction); }
 };

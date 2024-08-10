@@ -14,8 +14,8 @@
 
 TEST_CASE("attributes")
 {
-	const AnimalSpecies& goblin = AnimalSpecies::byName("goblin");
-	const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
+	AnimalSpeciesId goblin = AnimalSpecies::byName("goblin");
+	AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
@@ -29,7 +29,7 @@ TEST_CASE("attributes")
 	});
 	SUBCASE("basic")
 	{
-		REQUIRE(actors.getStrength(goblin1) == goblin.strength[1]);
+		REQUIRE(actors.getStrength(goblin1) == AnimalSpecies::getStrength(goblin)[1]);
 	}
 	SUBCASE("move speed")
 	{

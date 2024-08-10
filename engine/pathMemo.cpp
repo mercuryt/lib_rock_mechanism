@@ -129,7 +129,7 @@ std::pair<PathMemoBreadthFirst&, uint8_t> SimulationHasPathMemos::getBreadthFirs
 	}
 	uint offset = found - m_reservedBreadthFirst.begin();
 	(*found) = true;
-	return {m_breadthFirst.at(offset), offset};
+	return {m_breadthFirst[offset], offset};
 }
 std::pair<PathMemoDepthFirst&, uint8_t> SimulationHasPathMemos::getDepthFirstSingle(Area& area)
 {
@@ -145,17 +145,17 @@ std::pair<PathMemoDepthFirst&, uint8_t> SimulationHasPathMemos::getDepthFirstSin
 	}
 	uint offset = found - m_reservedDepthFirst.begin();
 	(*found) = true;
-	return {m_depthFirst.at(offset), offset};
+	return {m_depthFirst[offset], offset};
 }
 void SimulationHasPathMemos::releaseBreadthFirstSingle(uint8_t index)
 {
 	std::lock_guard lock(m_mutex);
-	m_reservedBreadthFirst.at(index) = false;
-	assert(m_breadthFirst.at(index).empty());
+	m_reservedBreadthFirst[index] = false;
+	assert(m_breadthFirst[index].empty());
 }
 void SimulationHasPathMemos::releaseDepthFirstSingle(uint8_t index)
 {
 	std::lock_guard lock(m_mutex);
-	m_reservedBreadthFirst.at(index) = false;
-	assert(m_depthFirst.at(index).empty());
+	m_reservedBreadthFirst[index] = false;
+	assert(m_depthFirst[index].empty());
 }

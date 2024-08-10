@@ -81,7 +81,7 @@ public:
 	void remove(BlockIndex block);
 	void removeIfExists(BlockIndex block);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] const BlockFeatureType* at(BlockIndex block) const;
+	[[nodiscard]] const BlockFeatureType* getForBlock(BlockIndex block) const;
 	[[nodiscard]] bool empty() const;
 	friend class AreaHasDigDesignations;
 };
@@ -105,5 +105,5 @@ public:
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool areThereAnyForFaction(FactionId faction) const;
 	[[nodiscard]] bool contains(FactionId faction, BlockIndex block) const { return m_data.at(faction).m_data.contains(block); }
-	[[nodiscard]] DigProject& at(FactionId faction, BlockIndex block);
+	[[nodiscard]] DigProject& getForFactionAndBlock(FactionId faction, BlockIndex block);
 };

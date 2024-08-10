@@ -42,7 +42,7 @@ bool Blocks::shape_canEnterCurrentlyWithFacing(BlockIndex index, ShapeId shape, 
 		assert(shape_anythingCanEnterEver(otherIndex));
 		if(occupied.contains(otherIndex))
 			continue;
-		if( m_dynamicVolume.at(otherIndex) + v > Config::maxBlockVolume)
+		if( m_dynamicVolume[otherIndex] + v > Config::maxBlockVolume)
 			return false;
 	}
 	return true;
@@ -56,7 +56,7 @@ bool Blocks::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(BlockIndex 
 		if(std::ranges::find(occupied, otherIndex) != occupied.end())
 			continue;
 		if(otherIndex.empty() || !shape_anythingCanEnterEver(otherIndex) ||
-			m_dynamicVolume.at(otherIndex) + v > Config::maxBlockVolume || 
+			m_dynamicVolume[otherIndex] + v > Config::maxBlockVolume || 
 			!shape_moveTypeCanEnter(otherIndex, moveType)
 		)
 			return false;
@@ -111,7 +111,7 @@ bool Blocks::shape_moveTypeCanEnter(BlockIndex index, MoveTypeId moveType) const
 {
 	assert(shape_anythingCanEnterEver(index));
 	// Swiming.
-	for(const FluidData& fluidData : m_fluid.at(index))
+	for(const FluidData& fluidData : m_fluid[index])
 	{
 		auto found = MoveType::getSwim(moveType).find(fluidData.type);
 		if(found != MoveType::getSwim(moveType).end() && found->second <= fluidData.volume)
@@ -127,7 +127,7 @@ bool Blocks::shape_moveTypeCanEnter(BlockIndex index, MoveTypeId moveType) const
 		}
 	}
 	// Not swimming and fluid level is too high.
-	if(m_totalFluidVolume.at(index) > Config::maxBlockVolume / 2)
+	if(m_totalFluidVolume[index] > Config::maxBlockVolume / 2)
 		return false;
 	// Fly can always enter if fluid level isn't preventing it.
 	if(MoveType::getFly(moveType))
@@ -155,9 +155,9 @@ bool Blocks::shape_moveTypeCanEnter(BlockIndex index, MoveTypeId moveType) const
 }
 bool Blocks::shape_moveTypeCanBreath(BlockIndex index, MoveTypeId moveType) const
 {
-	if(m_totalFluidVolume.at(index) < Config::maxBlockVolume && !MoveType::getOnlyBreathsFluids(moveType))
+	if(m_totalFluidVolume[index] < Config::maxBlockVolume && !MoveType::getOnlyBreathsFluids(moveType))
 		return true;
-	for(const FluidData& fluidData : m_fluid.at(index))
+	for(const FluidData& fluidData : m_fluid[index])
 		//TODO: Minimum volume should probably be scaled by body size somehow.
 		if(MoveType::getBreathableFluids(moveType).contains(fluidData.type) && fluidData.volume >= Config::minimumVolumeOfFluidToBreath)
 			return true;
@@ -191,12 +191,12 @@ bool Blocks::shape_canEnterCurrentlyWithAnyFacing(BlockIndex index, ShapeId shap
 			return true;
 	return false;
 }
-std::pair<bool, Facing> Blocks::shape_canEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, ShapeId shape, const BlockIndices& occupied) const
+Facing Blocks::shape_canEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, ShapeId shape, const BlockIndices& occupied) const
 {
 	for(Facing facing = Facing::create(0); facing < 4; ++facing)
 		if(shape_canEnterCurrentlyWithFacing(index, shape, facing, occupied))
-			return {true, facing};
-	return {false, Facing::create(0)};
+			return facing;
+	return Facing::null();
 }
 bool Blocks::shape_staticCanEnterCurrentlyWithFacing(BlockIndex index, ShapeId shape, const Facing& facing, const BlockIndices& occupied) const
 {
@@ -224,7 +224,7 @@ bool Blocks::shape_staticShapeCanEnterWithFacing(BlockIndex index, ShapeId shape
 		assert(otherIndex.exists());
 		if(std::ranges::find(occupied, otherIndex) != occupied.end())
 			continue;
-		if(m_staticVolume.at(otherIndex) + v > Config::maxBlockVolume)
+		if(m_staticVolume[otherIndex] + v > Config::maxBlockVolume)
 			return false;
 	}
 	return true;
@@ -240,17 +240,17 @@ bool Blocks::shape_staticShapeCanEnterWithAnyFacing(BlockIndex index, ShapeId sh
 }
 CollisionVolume Blocks::shape_getDynamicVolume(BlockIndex index) const 
 {
-	return m_dynamicVolume.at(index);
+	return m_dynamicVolume[index];
 }
 CollisionVolume Blocks::shape_getStaticVolume(BlockIndex index) const 
 {
-	return m_staticVolume.at(index);
+	return m_staticVolume[index];
 }
 Quantity Blocks::shape_getQuantityOfItemWhichCouldFit(BlockIndex index, ItemTypeId itemType) const
 {
-	if(m_dynamicVolume.at(index) > Config::maxBlockVolume)
+	if(m_dynamicVolume[index] > Config::maxBlockVolume)
 		return Quantity::create(0);
-	CollisionVolume freeVolume = Config::maxBlockVolume - m_staticVolume.at(index);
+	CollisionVolume freeVolume = Config::maxBlockVolume - m_staticVolume[index];
 	return Quantity::create((freeVolume / Shape::getCollisionVolumeAtLocationBlock(ItemType::getShape(itemType))).get());
 }
 bool Blocks::shape_canStandIn(BlockIndex index) const
@@ -263,10 +263,10 @@ bool Blocks::shape_canStandIn(BlockIndex index) const
 }
 void Blocks::shape_addStaticVolume(BlockIndex index, CollisionVolume volume)
 {
-	m_staticVolume.at(index) += volume;
+	m_staticVolume[index] += volume;
 }
 void Blocks::shape_removeStaticVolume(BlockIndex index, CollisionVolume volume)
 {
-	assert(m_staticVolume.at(index) >= volume);
-	m_staticVolume.at(index) -= volume;
+	assert(m_staticVolume[index] >= volume);
+	m_staticVolume[index] -= volume;
 }

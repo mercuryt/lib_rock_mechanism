@@ -4,47 +4,47 @@
 void Actors::vision_do(ActorIndex index, ActorIndices& actors)
 {
 	//TODO: Since we moved to a homogenious threading model we don't need to double buffer here.
-	m_canSee.at(index).swap(actors);
+	m_canSee[index].swap(actors);
 	//TODO: psycology.
 	//TODO: fog of war?
 }
 void Actors::vision_createFacadeIfCanSee(ActorIndex index)
 {
 	if(vision_canSeeAnything(index))
-		m_hasVisionFacade.at(index).create(m_area, index);
+		m_hasVisionFacade[index].create(m_area, index);
 }
 void Actors::vision_setRange(ActorIndex index, DistanceInBlocks range) 
 {
-       	m_visionRange.at(index) = range; 
+       	m_visionRange[index] = range; 
 	if(!m_hasVisionFacade.empty())
-		m_hasVisionFacade.at(index).updateRange(range);
+		m_hasVisionFacade[index].updateRange(range);
 }
 void Actors::vision_clearFacade(ActorIndex index)
 {
-	m_hasVisionFacade.at(index).clear();
+	m_hasVisionFacade[index].clear();
 }
 void Actors::vision_updateFacadeIndex(ActorIndex index, VisionFacadeIndex visionFacadeIndex)
 {
-	m_hasVisionFacade.at(index).updateFacadeIndex(visionFacadeIndex);
+	m_hasVisionFacade[index].updateFacadeIndex(visionFacadeIndex);
 }
 bool Actors::vision_canSeeAnything(ActorIndex index) const
 {
-	return isAlive(index) && sleep_isAwake(index) && m_location.at(index).exists();
+	return isAlive(index) && sleep_isAwake(index) && m_location[index].exists();
 }
 bool Actors::vision_canSeeActor(ActorIndex index, ActorIndex actor) const 
 { 
-	return std::ranges::find(m_canSee.at(index), actor) != m_canSee.at(index).end(); 
+	return std::ranges::find(m_canSee[index], actor) != m_canSee[index].end(); 
 }
 VisionFacade& Actors::vision_getFacadeBucket(ActorIndex index)
 {
-	return m_hasVisionFacade.at(index).getVisionFacade();
+	return m_hasVisionFacade[index].getVisionFacade();
 }
 std::pair<VisionFacade*, VisionFacadeIndex> Actors::vision_getFacadeWithIndex(ActorIndex index) const
 {
-	auto& hasVisionFacade = m_hasVisionFacade.at(index);
+	auto& hasVisionFacade = m_hasVisionFacade[index];
 	return std::make_pair(&hasVisionFacade.getVisionFacade(), hasVisionFacade.getIndex());
 }
 bool Actors::vision_hasFacade(ActorIndex index) const
 {
-	return !m_hasVisionFacade.at(index).empty();
+	return !m_hasVisionFacade[index].empty();
 }

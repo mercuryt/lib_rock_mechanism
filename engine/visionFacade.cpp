@@ -48,37 +48,37 @@ void VisionFacade::remove(VisionFacadeIndex index)
 {
 	assert(m_actors.size() > index);
 	Actors& actorData = m_area->getActors();
-	actorData.vision_clearFacade(m_actors.at(index));
+	actorData.vision_clearFacade(m_actors[index]);
 	m_actors.remove(index);
 	m_ranges.remove(index);
 	m_locations.remove(index);
 	m_results.remove(index);
 	if(m_actors.size() != index)
-		actorData.vision_updateFacadeIndex(m_actors.at(index), index);
+		actorData.vision_updateFacadeIndex(m_actors[index], index);
 }
 ActorIndex VisionFacade::getActor(VisionFacadeIndex index)  
 { 
 	assert(m_actors.size() > index); 
-	return m_actors.at(index); 
+	return m_actors[index]; 
 }
 BlockIndex VisionFacade::getLocation(VisionFacadeIndex index)  
 {
        	assert(m_actors.size() > index); 
 	Actors& actorData = m_area->getActors();
-	assert(actorData.getLocation(m_actors.at(index)) == m_locations.at(index));
-	return m_locations.at(index); 
+	assert(actorData.getLocation(m_actors[index]) == m_locations[index]);
+	return m_locations[index]; 
 }
 DistanceInBlocks VisionFacade::getRange(VisionFacadeIndex index) const 
 { 
 	assert(m_actors.size() > index); 
 	Actors& actorData = m_area->getActors();
-	assert(actorData.vision_getRange(m_actors.at(index)) == m_ranges.at(index));
-	return m_ranges.at(index); 
+	assert(actorData.vision_getRange(m_actors[index]) == m_ranges[index]);
+	return m_ranges[index]; 
 }
 ActorIndices& VisionFacade::getResults(VisionFacadeIndex index)
 { 
 	assert(m_actors.size() > index); 
-	return m_area->getActors().vision_getCanSee(m_actors.at(index));
+	return m_area->getActors().vision_getCanSee(m_actors[index]);
 }
 // Static.
 DistanceInBlocks VisionFacade::taxiDistance(Point3D a, Point3D b)
@@ -91,13 +91,13 @@ DistanceInBlocks VisionFacade::taxiDistance(Point3D a, Point3D b)
 }
 void VisionFacade::updateLocation(VisionFacadeIndex index, BlockIndex& location)
 {
-	assert(m_area->getActors().getLocation(m_actors.at(index)) == location);
-	m_locations.at(index) = location;
+	assert(m_area->getActors().getLocation(m_actors[index]) == location);
+	m_locations[index] = location;
 }
 void VisionFacade::updateRange(VisionFacadeIndex index, DistanceInBlocks range)
 {
-	assert(m_area->getActors().vision_getRange(m_actors.at(index)) == range);
-	m_ranges.at(index) = range;
+	assert(m_area->getActors().vision_getRange(m_actors[index]) == range);
+	m_ranges[index] = range;
 }
 void VisionFacade::readStepSegment(VisionFacadeIndex begin, VisionFacadeIndex end)
 {
@@ -130,7 +130,7 @@ void VisionFacade::readStepSegment(VisionFacadeIndex begin, VisionFacadeIndex en
 					LocationBucket& bucket = locationBuckets.get(x, y, z);
 					for(uint16_t i = 0; i < bucket.m_actorsMultiTile.size(); i++)
 					{
-						for(BlockIndex toIndex : bucket.m_blocksMultiTileActors.at(i))
+						for(BlockIndex toIndex : bucket.m_blocksMultiTileActors[i])
 						{
 							Point3D toCoords = blocks.getCoordinates(toIndex);
 							// Refine bucket cuboid actors into sphere with radius == range.
@@ -144,7 +144,7 @@ void VisionFacade::readStepSegment(VisionFacadeIndex begin, VisionFacadeIndex en
 									m_area->m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toIndex, toCoords)
 								  )
 								{
-									result.add(bucket.m_actorsMultiTile.at(i));
+									result.add(bucket.m_actorsMultiTile[i]);
 									break;
 								}
 							}
@@ -152,7 +152,7 @@ void VisionFacade::readStepSegment(VisionFacadeIndex begin, VisionFacadeIndex en
 					}
 					for(uint16_t i = 0; i < bucket.m_actorsSingleTile.size(); i++)
 					{
-						BlockIndex toIndex = bucket.m_blocksSingleTileActors.at(i);
+						BlockIndex toIndex = bucket.m_blocksSingleTileActors[i];
 						Point3D toCoords = blocks.getCoordinates(toIndex);
 						// Refine bucket cuboid actors into sphere with radius == range.
 						if(taxiDistance(toCoords, fromCoords) <= range)
@@ -164,7 +164,7 @@ void VisionFacade::readStepSegment(VisionFacadeIndex begin, VisionFacadeIndex en
 								fromVisionCuboidId == toVisionCuboidId ||
 								m_area->m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toIndex, toCoords)
 							  )
-								result.add(bucket.m_actorsSingleTile.at(i));
+								result.add(bucket.m_actorsSingleTile[i]);
 						}
 					}
 				}

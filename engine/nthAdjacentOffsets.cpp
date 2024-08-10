@@ -27,7 +27,7 @@ std::vector<XYZ> getNthAdjacentOffsets(uint32_t n)
 			}
 		cache.emplace_back(next.begin(), next.end());
 	}
-	return cache.at(n);
+	return cache[n];
 }
 BlockIndices getNthAdjacentBlocks(Area& area, BlockIndex center, uint32_t i)
 {

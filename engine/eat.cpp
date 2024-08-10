@@ -18,11 +18,11 @@ HungerEvent::HungerEvent(Area& area, const Step delay, ActorIndex a, const Step 
 	ScheduledEvent(area.m_simulation, delay, start), m_actor(a) { }
 void HungerEvent::execute(Simulation&, Area* area)
 {
-	area->getActors().m_mustEat.at(m_actor).get()->setNeedsFood(*area);
+	area->getActors().m_mustEat[m_actor].get()->setNeedsFood(*area);
 }
 void HungerEvent::clearReferences(Simulation&, Area* area) 
 { 
-	area->getActors().m_mustEat.at(m_actor).get()->m_hungerEvent.clearPointer(); 
+	area->getActors().m_mustEat[m_actor].get()->m_hungerEvent.clearPointer(); 
 }
 MustEat::MustEat(Area& area, ActorIndex a) : 
 	m_hungerEvent(area.m_eventSchedule)

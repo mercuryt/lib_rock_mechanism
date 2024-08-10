@@ -39,7 +39,7 @@ void WoodCuttingPathRequest::callback(Area& area, FindPathResult& result)
 			return;
 		}
 		BlockIndex target = result.blockThatPassedPredicate;
-		WoodCuttingProject& project = area.m_hasWoodCuttingDesignations.at(actors.getFactionId(actor), target);
+		WoodCuttingProject& project = area.m_hasWoodCuttingDesignations.getForFaction(actors.getFactionId(actor), target);
 		if(project.canAddWorker(actor))
 			m_woodCuttingObjective.joinProject(project, actor);
 		else
@@ -73,7 +73,7 @@ void WoodCuttingObjective::execute(Area& area, ActorIndex actor)
 		{ 
 			if(!getJoinableProjectAt(area, block, actor))
 				return false;
-			project = &area.m_hasWoodCuttingDesignations.at(actors.getFactionId(actor), block);
+			project = &area.m_hasWoodCuttingDesignations.getForFaction(actors.getFactionId(actor), block);
 			if(project->canAddWorker(actor))
 				return true;
 			return false;
@@ -132,7 +132,7 @@ WoodCuttingProject* WoodCuttingObjective::getJoinableProjectAt(Area& area, Block
 	FactionId faction = actors.getFactionId(actor);
 	if(!area.getBlocks().designation_has(block, faction, BlockDesignation::WoodCutting))
 		return nullptr;
-	WoodCuttingProject& output = area.m_hasWoodCuttingDesignations.at(faction, block);
+	WoodCuttingProject& output = area.m_hasWoodCuttingDesignations.getForFaction(faction, block);
 	if(!output.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&output))
 		return nullptr;
 	if(!output.canAddWorker(actor))

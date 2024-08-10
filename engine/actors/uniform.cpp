@@ -30,26 +30,26 @@ void Actors::uniform_set(ActorIndex index, Uniform& uniform)
 {
 	if(uniform_exists(index))
 		uniform_unset(index);
-	m_hasUniform.at(index)->set(index, m_area, uniform);
+	m_hasUniform[index]->set(index, m_area, uniform);
 	std::unique_ptr<Objective> objective = std::make_unique<UniformObjective>(m_area, index);
-	m_hasUniform.at(index)->recordObjective(*static_cast<UniformObjective*>(objective.get()));
-	m_hasObjectives.at(index)->addTaskToStart(m_area, std::move(objective));
+	m_hasUniform[index]->recordObjective(*static_cast<UniformObjective*>(objective.get()));
+	m_hasObjectives[index]->addTaskToStart(m_area, std::move(objective));
 }
 void Actors::uniform_unset(ActorIndex index)
 {
 	assert(uniform_exists(index));
-	m_hasUniform.at(index)->unset(index, m_area);
-	m_hasUniform.at(index) = nullptr;
+	m_hasUniform[index]->unset(index, m_area);
+	m_hasUniform[index] = nullptr;
 }
 bool Actors::uniform_exists(ActorIndex index) const
 {
-	return m_hasUniform.at(index) != nullptr;
+	return m_hasUniform[index] != nullptr;
 }
 Uniform& Actors::uniform_get(ActorIndex index)
 {
-	return m_hasUniform.at(index)->get();
+	return m_hasUniform[index]->get();
 }
 const Uniform& Actors::uniform_get(ActorIndex index) const
 {
-	return m_hasUniform.at(index)->get();
+	return m_hasUniform[index]->get();
 }

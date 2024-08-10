@@ -31,7 +31,7 @@ public:
 	void unset(BlockIndex block);
 	VisionCuboid& emplace(Cuboid& cuboid);
 	[[nodiscard]] VisionCuboid* getTargetToCombineWith(const Cuboid& cuboid);
-	[[nodiscard]] VisionCuboidId getIdFor(BlockIndex index) const { return m_blockVisionCuboidIds.at(index); }
+	[[nodiscard]] VisionCuboidId getIdFor(BlockIndex index) const { return m_blockVisionCuboidIds[index]; }
 	// For testing.
 	[[nodiscard]] size_t size() { return m_visionCuboids.size(); }
 	[[nodiscard]] VisionCuboid* getVisionCuboidFor(BlockIndex block);

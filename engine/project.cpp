@@ -74,7 +74,7 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::readStep(Simulation&, Area*)
 		std::function<bool(BlockIndex, Facing)> condition = [this, actorIndex](BlockIndex block, Facing) { return blockContainsDesiredItem(block, actorIndex); };
 
 		// Path result is unused, running only for condition side effect.
-		[[maybe_unused]] FindPathResult result = m_project.m_area.m_hasTerrainFacades.at(actors.getMoveType(actorIndex)).findPathAdjacentToConditionAndUnreserved(actors.getLocation(actorIndex), actors.getShape(actorIndex), actors.getFacing(actorIndex), condition, m_project.m_faction);
+		[[maybe_unused]] FindPathResult result = m_project.m_area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actorIndex)).findPathAdjacentToConditionAndUnreserved(actors.getLocation(actorIndex), actors.getShape(actorIndex), actors.getFacing(actorIndex), condition, m_project.m_faction);
 		// Only make at most one per step.
 		// TODO: Would it be better to do them all at once instead of one per step? Better temporal locality, higher risk of lag spike.
 		if(m_haulProjectParamaters.strategy != HaulStrategy::None)
@@ -156,7 +156,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 		ActorIndex candidateIndex = candidate.getIndex();
 		assert(!m_project.getWorkers().contains(candidate));
 		// Verify the worker can path to the job site.
-		TerrainFacade& terrainFacade = m_project.m_area.m_hasTerrainFacades.at(actors.getMoveType(candidateIndex));
+		TerrainFacade& terrainFacade = m_project.m_area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(candidateIndex));
 		FindPathResult result = terrainFacade.findPathAdjacentToAndUnreserved(actors.getLocation(candidateIndex), actors.getShape(candidateIndex), actors.getFacing(candidateIndex), m_project.m_location, m_project.m_faction);
 		if(result.path.empty() && !result.useCurrentPosition)
 		{
@@ -785,7 +785,7 @@ void Project::complete()
 		ItemIndex item = blocks.item_addGeneric(m_location, itemType, materialType, quantity);
 		// Item may be newly created or it may be prexisting, and thus already designated for stockpileing.
 		if(!items.stockpile_canBeStockPiled(item, m_faction))
-			m_area.m_hasStockPiles.at(m_faction).addItem(item);
+			m_area.m_hasStockPiles.getForFaction(m_faction).addItem(item);
 	}
 	for(auto& [actor, projectWorker] : m_workers)
 		actors.project_unset(actor.getIndex());

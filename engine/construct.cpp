@@ -118,7 +118,7 @@ ConstructionLocationDishonorCallback::ConstructionLocationDishonorCallback(const
 Json ConstructionLocationDishonorCallback::toJson() const { return Json({{"type", "ConstructionLocationDishonorCallback"}, {"faction", m_faction}, {"location", m_location}}); }
 void ConstructionLocationDishonorCallback::execute([[maybe_unused]] Quantity oldCount, [[maybe_unused]] Quantity newCount)
 {
-	m_area.m_hasConstructionDesignations.at(m_faction).undesignate(m_location);
+	m_area.m_hasConstructionDesignations.getForFaction(m_faction).undesignate(m_location);
 }
 HasConstructionDesignationsForFaction::HasConstructionDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, FactionId faction) :
 	m_area(deserializationMemo.area(data["area"])), m_faction(faction)
@@ -180,7 +180,7 @@ void HasConstructionDesignationsForFaction::removeIfExists(BlockIndex block)
 		remove(block);
 }
 bool HasConstructionDesignationsForFaction::contains(BlockIndex block) const { return m_data.contains(block); }
-const BlockFeatureType* HasConstructionDesignationsForFaction::at(BlockIndex block) const { return m_data.at(block).m_blockFeatureType; }
+const BlockFeatureType* HasConstructionDesignationsForFaction::getForBlock(BlockIndex block) const { return m_data.at(block).m_blockFeatureType; }
 bool HasConstructionDesignationsForFaction::empty() const { return m_data.empty(); }
 // To be used by Area.
 void AreaHasConstructionDesignations::load(const Json& data, DeserializationMemo& deserializationMemo)

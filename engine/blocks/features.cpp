@@ -6,7 +6,7 @@
 #include "types.h"
 bool Blocks::blockFeature_contains(BlockIndex block, const BlockFeatureType& blockFeatureType) const
 {
-	for(const BlockFeature& blockFeature : m_features.at(block))
+	for(const BlockFeature& blockFeature : m_features[block])
 		if(blockFeature.blockFeatureType == &blockFeatureType)
 			return true;
 	return false;
@@ -14,7 +14,7 @@ bool Blocks::blockFeature_contains(BlockIndex block, const BlockFeatureType& blo
 // Can return nullptr.
 BlockFeature* Blocks::blockFeature_at(BlockIndex block, const BlockFeatureType& blockFeatureType)
 {
-	for(BlockFeature& blockFeature : m_features.at(block))
+	for(BlockFeature& blockFeature : m_features[block])
 		if(blockFeature.blockFeatureType == &blockFeatureType)
 			return &blockFeature;
 	return nullptr;
@@ -26,14 +26,14 @@ const BlockFeature* Blocks::blockFeature_atConst(BlockIndex block, const BlockFe
 void Blocks::blockFeature_remove(BlockIndex block, const BlockFeatureType& blockFeatureType)
 {
 	assert(!solid_is(block));
-	std::erase_if(m_features.at(block), [&](BlockFeature& bf) { return bf.blockFeatureType == &blockFeatureType; });
+	std::erase_if(m_features[block], [&](BlockFeature& bf) { return bf.blockFeatureType == &blockFeatureType; });
 	m_area.m_opacityFacade.update(block);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 }
 void Blocks::blockFeature_removeAll(BlockIndex block)
 {
 	assert(!solid_is(block));
-	m_features.at(block).clear();
+	m_features[block].clear();
 	m_area.m_opacityFacade.update(block);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 }
@@ -46,7 +46,7 @@ void Blocks::blockFeature_construct(BlockIndex block, const BlockFeatureType& bl
 		assert(!PlantSpecies::getIsTree(plants.getSpecies(plant_get(block))));
 		plant_erase(block);
 	}
-	m_features.at(block).emplace_back(&blockFeatureType, materialType, false);
+	m_features[block].emplace_back(&blockFeatureType, materialType, false);
 	if((blockFeatureType == BlockFeatureType::floor || blockFeatureType == BlockFeatureType::hatch) && !MaterialType::getTransparent(materialType))
 	{
 		m_area.m_visionCuboids.blockFloorIsSometimesOpaque(block);
@@ -63,16 +63,16 @@ void Blocks::blockFeature_construct(BlockIndex block, const BlockFeatureType& bl
 void Blocks::blockFeature_hew(BlockIndex block, const BlockFeatureType& blockFeatureType)
 {
 	assert(solid_is(block));
-	m_features.at(block).emplace_back(&blockFeatureType, solid_get(block), true);
+	m_features[block].emplace_back(&blockFeatureType, solid_get(block), true);
 	solid_setNot(block);
 	m_area.m_opacityFacade.update(block);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 }
 void Blocks::blockFeature_setTemperature(BlockIndex block, Temperature temperature)
 {
-	for(BlockFeature& feature : m_features.at(block))
+	for(BlockFeature& feature : m_features[block])
 	{
-		if(MaterialType::getIgnitionTemperature(m_materialType.at(block)).exists() && 
+		if(MaterialType::getIgnitionTemperature(m_materialType[block]).exists() && 
 			temperature > MaterialType::getIgnitionTemperature(feature.materialType)
 		)
 			m_area.m_fires.ignite(block, feature.materialType);
@@ -109,7 +109,7 @@ void Blocks::blockFeature_open(BlockIndex block, const BlockFeatureType& blockFe
 // Blocks entrance from all angles, does not include floor and hatch which only block from below.
 bool Blocks::blockFeature_blocksEntrance(BlockIndex block) const
 {
-	for(const BlockFeature& blockFeature : m_features.at(block))
+	for(const BlockFeature& blockFeature : m_features[block])
 	{
 		if(blockFeature.blockFeatureType == &BlockFeatureType::fortification || blockFeature.blockFeatureType == &BlockFeatureType::floodGate ||
 				(blockFeature.blockFeatureType == &BlockFeatureType::door && blockFeature.locked)
@@ -120,28 +120,28 @@ bool Blocks::blockFeature_blocksEntrance(BlockIndex block) const
 }
 bool Blocks::blockFeature_canStandIn(BlockIndex block) const
 {
-	for(const BlockFeature& blockFeature : m_features.at(block))
+	for(const BlockFeature& blockFeature : m_features[block])
 		if(blockFeature.blockFeatureType->canStandIn)
 			return true;
 	return false;
 }
 bool Blocks::blockFeature_canStandAbove(BlockIndex block) const
 {
-	for(const BlockFeature& blockFeature : m_features.at(block))
+	for(const BlockFeature& blockFeature : m_features[block])
 		if(blockFeature.blockFeatureType->canStandAbove)
 			return true;
 	return false;
 }
 bool Blocks::blockFeature_isSupport(BlockIndex block) const
 {
-	for(const BlockFeature& blockFeature : m_features.at(block))
+	for(const BlockFeature& blockFeature : m_features[block])
 		if(blockFeature.blockFeatureType->isSupportAgainstCaveIn)
 			return true;
 	return false;
 }
 bool Blocks::blockFeature_canEnterFromBelow(BlockIndex block) const
 {
-	for(const BlockFeature& blockFeature : m_features.at(block))
+	for(const BlockFeature& blockFeature : m_features[block])
 		if(blockFeature.blockFeatureType == &BlockFeatureType::floor || blockFeature.blockFeatureType == &BlockFeatureType::floorGrate ||
 				(blockFeature.blockFeatureType == &BlockFeatureType::hatch && blockFeature.locked)
 		  )
@@ -151,7 +151,7 @@ bool Blocks::blockFeature_canEnterFromBelow(BlockIndex block) const
 bool Blocks::blockFeature_canEnterFromAbove([[maybe_unused]] BlockIndex block, BlockIndex from) const
 {
 	assert(shape_anythingCanEnterEver(block));
-	for(const BlockFeature& blockFeature : m_features.at(from))
+	for(const BlockFeature& blockFeature : m_features[from])
 		if(blockFeature.blockFeatureType == &BlockFeatureType::floor || blockFeature.blockFeatureType == &BlockFeatureType::floorGrate ||
 				(blockFeature.blockFeatureType == &BlockFeatureType::hatch && blockFeature.locked)
 		  )
@@ -160,11 +160,11 @@ bool Blocks::blockFeature_canEnterFromAbove([[maybe_unused]] BlockIndex block, B
 }
 MaterialTypeId Blocks::blockFeature_getMaterialType(BlockIndex block) const
 {
-	if(m_features.at(block).empty())
+	if(m_features[block].empty())
 		return MaterialTypeId::null();
-	return m_features.at(block)[0].materialType;
+	return m_features[block][0].materialType;
 }
 bool Blocks::blockFeature_empty(BlockIndex index) const
 {
-	return m_features.at(index).empty();
+	return m_features[index].empty();
 }

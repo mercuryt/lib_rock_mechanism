@@ -92,10 +92,10 @@ public:
 	[[nodiscard]] Percent getPercentFoliage(PlantIndex index) const;
 	[[nodiscard]] Mass getFoliageMass(PlantIndex index) const;
 	[[nodiscard]] Step getStepAtWhichPlantWillDieFromLackOfFluid(PlantIndex index) const;
-	[[nodiscard]] Quantity getQuantityToHarvest(PlantIndex index) const { return m_quantityToHarvest.at(index); }
+	[[nodiscard]] Quantity getQuantityToHarvest(PlantIndex index) const { return m_quantityToHarvest[index]; }
 	[[nodiscard]] Step stepsPerShapeChange(PlantIndex index) const;
-	[[nodiscard]] bool readyToHarvest(PlantIndex index) const { return m_quantityToHarvest.at(index) != 0; }
-	[[nodiscard]] const CollisionVolume& getVolumeFluidRequested(PlantIndex index) const { return m_volumeFluidRequested.at(index); }
+	[[nodiscard]] bool readyToHarvest(PlantIndex index) const { return m_quantityToHarvest[index] != 0; }
+	[[nodiscard]] CollisionVolume getVolumeFluidRequested(PlantIndex index) const { return m_volumeFluidRequested[index]; }
 	[[nodiscard]] bool temperatureEventExists(PlantIndex index) const;
 	[[nodiscard]] Json toJson() const;
 	void log(PlantIndex index) const;

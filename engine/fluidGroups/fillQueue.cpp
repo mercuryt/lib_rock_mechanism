@@ -83,9 +83,9 @@ void FillQueue::applyDelta()
 				!blocks.fluid_contains(iter->block, m_fluidGroup.m_fluidType) || 
 				blocks.fluid_getGroup(iter->block, m_fluidGroup.m_fluidType) != nullptr);
 		blocks.fluid_fillInternal(iter->block, iter->delta, m_fluidGroup);
-		/*assert(iter->block->m_hasFluids.m_fluids.at(m_fluidGroup.m_fluidType).second != &m_fluidGroup ||
-			(iter->block->m_hasFluids.m_fluids.at(m_fluidGroup.m_fluidType).first < Config::maxBlockVolume && !m_futureFull.contains(iter->block)) ||
-			(iter->block->m_hasFluids.m_fluids.at(m_fluidGroup.m_fluidType).first == Config::maxBlockVolume && m_futureFull.contains(iter->block)));
+		/*assert(iter->block->m_hasFluids.m_fluids[m_fluidGroup.m_fluidType].second != &m_fluidGroup ||
+			(iter->block->m_hasFluids.m_fluids[m_fluidGroup.m_fluidType].first < Config::maxBlockVolume && !m_futureFull.contains(iter->block)) ||
+			(iter->block->m_hasFluids.m_fluids[m_fluidGroup.m_fluidType].first == Config::maxBlockVolume && m_futureFull.contains(iter->block)));
 		*/
 		if(blocks.fluid_getTotalVolume(iter->block) > Config::maxBlockVolume)
 			m_overfull.add(iter->block);

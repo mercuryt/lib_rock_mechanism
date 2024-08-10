@@ -119,7 +119,7 @@ public:
 		{
 			HasShapeIndex index = eventData[0].get<HasShapeIndex>();
 			auto event = std::make_unique<EventType>(simulation, eventData[1]);
-			m_events.at(index) = event.get();
+			m_events[index] = event.get();
 			m_schedule.schedule(std::move(event));
 		}
 	}
@@ -131,55 +131,55 @@ public:
 	void schedule(HasShapeIndex index, Args&& ...args)
 	{
 		assert(m_events.size() > index.get());
-		assert(m_events.at(index) == nullptr);
+		assert(m_events[index] == nullptr);
 		std::unique_ptr<ScheduledEvent> event = std::make_unique<EventType>(args...);
-		m_events.at(index) = static_cast<EventType*>(event.get());
+		m_events[index] = static_cast<EventType*>(event.get());
 		m_schedule.schedule(std::move(event));
 	}
 	void unschedule(HasShapeIndex index)
 	{
-		assert(m_events.at(index) != nullptr);
-		m_events.at(index)->cancel(m_schedule.getSimulation(), m_schedule.getArea());
-		m_events.at(index) = nullptr;
+		assert(m_events[index] != nullptr);
+		m_events[index]->cancel(m_schedule.getSimulation(), m_schedule.getArea());
+		m_events[index] = nullptr;
 	}
 	void maybeUnschedule(HasShapeIndex index)
 	{
-		if(m_events.at(index) != nullptr)
+		if(m_events[index] != nullptr)
 			unschedule(index);
 	}
 	void clearPointer(HasShapeIndex index)
 	{
-		assert(m_events.at(index) != nullptr);
-		m_events.at(index) = nullptr;
+		assert(m_events[index] != nullptr);
+		m_events[index] = nullptr;
 	}
 	void moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 	{
-		m_events.at(newIndex) = m_events.at(oldIndex);
-		m_events.at(newIndex)->onMoveIndex(oldIndex, newIndex);
+		m_events[newIndex] = m_events[oldIndex];
+		m_events[newIndex]->onMoveIndex(oldIndex, newIndex);
 	}
-	[[nodiscard]] ScheduledEvent* at(HasShapeIndex index) { return m_events.at(index); }
+	[[nodiscard]] ScheduledEvent* at(HasShapeIndex index) { return m_events[index]; }
 	[[nodiscard]] ScheduledEvent* operator[](HasShapeIndex index) { return at(index); }
 	[[nodiscard]] Percent percentComplete(HasShapeIndex index) const
 	{
-		assert(m_events.at(index) != nullptr);
-		return m_events.at(index)->percentComplete(m_schedule.getSimulation());
+		assert(m_events[index] != nullptr);
+		return m_events[index]->percentComplete(m_schedule.getSimulation());
 	}
 	[[nodiscard]] float fractionComplete(HasShapeIndex index) const
 	{
-		assert(m_events.at(index) != nullptr);
-		return m_events.at(index)->fractionComplete(m_schedule.getSimulation());
+		assert(m_events[index] != nullptr);
+		return m_events[index]->fractionComplete(m_schedule.getSimulation());
 	}
-	[[nodiscard]] bool exists(HasShapeIndex index) const { return m_events.at(index) != nullptr; }
+	[[nodiscard]] bool exists(HasShapeIndex index) const { return m_events[index] != nullptr; }
 	[[nodiscard]] const Step& getStep(HasShapeIndex index) const
 	{
-		assert(m_events.at(index) != nullptr);
-		return m_events.at(index)->m_step;
+		assert(m_events[index] != nullptr);
+		return m_events[index]->m_step;
 	}
-	[[nodiscard]] Step getStartStep(HasShapeIndex index) const { return m_events.at(index)->m_startStep; }
-	[[nodiscard]] Step remainingSteps(HasShapeIndex index) const { return m_events.at(index)->remaningSteps(m_schedule.getSimulation()); }
-	[[nodiscard]] Step elapsedSteps(HasShapeIndex index) const { return m_events.at(index)->elapsedSteps(m_schedule.getSimulation()); }
-	[[nodiscard]] Step duration(HasShapeIndex index) const { return m_events.at(index)->duration(); }
-	[[nodiscard]] ScheduledEvent* getEvent(HasShapeIndex index) { return m_events.at(index); }
+	[[nodiscard]] Step getStartStep(HasShapeIndex index) const { return m_events[index]->m_startStep; }
+	[[nodiscard]] Step remainingSteps(HasShapeIndex index) const { return m_events[index]->remaningSteps(m_schedule.getSimulation()); }
+	[[nodiscard]] Step elapsedSteps(HasShapeIndex index) const { return m_events[index]->elapsedSteps(m_schedule.getSimulation()); }
+	[[nodiscard]] Step duration(HasShapeIndex index) const { return m_events[index]->duration(); }
+	[[nodiscard]] ScheduledEvent* getEvent(HasShapeIndex index) { return m_events[index]; }
 	[[nodiscard]] Json toJson() const
 	{
 		Json output = Json::array();

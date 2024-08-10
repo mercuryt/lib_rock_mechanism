@@ -114,6 +114,6 @@ public:
 	AreaHasTerrainFacades(Area& area) : m_area(area) { }
 	void doStep();
 	void updateBlockAndAdjacent(BlockIndex block);
-	TerrainFacade& at(MoveTypeId);
+	TerrainFacade& getForMoveType(MoveTypeId);
 	void maybeRegisterMoveType(MoveTypeId moveType);
 };

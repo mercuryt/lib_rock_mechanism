@@ -109,7 +109,7 @@ void HarvestObjective::cancel(Area& area, ActorIndex actor)
 	actors.move_pathRequestMaybeCancel(actor);
 	m_harvestEvent.maybeUnschedule();
 	if(m_block.exists() && blocks.plant_exists(m_block) && plants.readyToHarvest(blocks.plant_get(m_block)))
-		area.m_hasFarmFields.at(actors.getFactionId(actor)).addHarvestDesignation(blocks.plant_get(m_block));
+		area.m_hasFarmFields.getForFaction(actors.getFactionId(actor)).addHarvestDesignation(blocks.plant_get(m_block));
 }
 void HarvestObjective::select(Area& area, BlockIndex block, ActorIndex actor)
 {
@@ -121,7 +121,7 @@ void HarvestObjective::select(Area& area, BlockIndex block, ActorIndex actor)
 	m_block = block;
 	bool result = actors.canReserve_tryToReserveLocation(actor, block);
 	assert(result);
-	area.m_hasFarmFields.at(actors.getFactionId(actor)).removeHarvestDesignation(blocks.plant_get(block));
+	area.m_hasFarmFields.getForFaction(actors.getFactionId(actor)).removeHarvestDesignation(blocks.plant_get(block));
 }
 void HarvestObjective::begin(Area& area, ActorIndex actor)
 {

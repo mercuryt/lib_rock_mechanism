@@ -41,11 +41,11 @@ public:
 		data.m_max.add(ma);
 		return SpoilsDataTypeId::create(data.m_materialType.size() - 1);
 	}
-	[[nodiscard]] static MaterialTypeId getMaterialType(SpoilsDataTypeId id) { return data.m_materialType.at(id); };
-	[[nodiscard]] static ItemTypeId getItemType(SpoilsDataTypeId id) { return data.m_itemType.at(id); };
-	[[nodiscard]] static double getChance(SpoilsDataTypeId id) { return data.m_chance.at(id); };
-	[[nodiscard]] static Quantity getMin(SpoilsDataTypeId id) { return data.m_min.at(id); };
-	[[nodiscard]] static Quantity getMax(SpoilsDataTypeId id) { return data.m_max.at(id); };
+	[[nodiscard]] static MaterialTypeId getMaterialType(SpoilsDataTypeId id) { return data.m_materialType[id]; };
+	[[nodiscard]] static ItemTypeId getItemType(SpoilsDataTypeId id) { return data.m_itemType[id]; };
+	[[nodiscard]] static double getChance(SpoilsDataTypeId id) { return data.m_chance[id]; };
+	[[nodiscard]] static Quantity getMin(SpoilsDataTypeId id) { return data.m_min[id]; };
+	[[nodiscard]] static Quantity getMax(SpoilsDataTypeId id) { return data.m_max[id]; };
 };
 struct MaterialTypeConstructionDataParamaters final
 {
@@ -108,24 +108,24 @@ public:
 	static MaterialTypeId create(MaterialTypeParamaters& p);
 	[[nodiscard]] static bool empty() { return data.m_density.empty(); }
 	[[nodiscard]] static MaterialTypeId byName(std::string name);
-	[[nodiscard]] static std::string& getName(MaterialTypeId id) { return data.m_name.at(id); };
-	[[nodiscard]] static Density getDensity(MaterialTypeId id) { return data.m_density.at(id); };
-	[[nodiscard]] static uint32_t getHardness(MaterialTypeId id) { return data.m_hardness.at(id); };
-	[[nodiscard]] static bool getTransparent(MaterialTypeId id) { return data.m_transparent.at(id); };
-	[[nodiscard]] static MaterialCategoryTypeId getMaterialTypeCategory(MaterialTypeId id) { return data.m_materialTypeCategory.at(id); };
-	[[nodiscard]] static std::vector<SpoilsDataTypeId>& getSpoilData(MaterialTypeId id) { return data.m_spoilData.at(id); };
-	[[nodiscard]] static Temperature getMeltingPoint(MaterialTypeId id) { return data.m_meltingPoint.at(id); };
-	[[nodiscard]] static FluidTypeId getMeltsInto(MaterialTypeId id) { return data.m_meltsInto.at(id); };
+	[[nodiscard]] static std::string& getName(MaterialTypeId id) { return data.m_name[id]; };
+	[[nodiscard]] static Density getDensity(MaterialTypeId id) { return data.m_density[id]; };
+	[[nodiscard]] static uint32_t getHardness(MaterialTypeId id) { return data.m_hardness[id]; };
+	[[nodiscard]] static bool getTransparent(MaterialTypeId id) { return data.m_transparent[id]; };
+	[[nodiscard]] static MaterialCategoryTypeId getMaterialTypeCategory(MaterialTypeId id) { return data.m_materialTypeCategory[id]; };
+	[[nodiscard]] static std::vector<SpoilsDataTypeId>& getSpoilData(MaterialTypeId id) { return data.m_spoilData[id]; };
+	[[nodiscard]] static Temperature getMeltingPoint(MaterialTypeId id) { return data.m_meltingPoint[id]; };
+	[[nodiscard]] static FluidTypeId getMeltsInto(MaterialTypeId id) { return data.m_meltsInto[id]; };
 	// Fire.
-	[[nodiscard]] static bool canBurn(MaterialTypeId id) { return data.m_burnStageDuration.at(id).empty(); }
-	[[nodiscard]] static Step getBurnStageDuration(MaterialTypeId id) { return data.m_burnStageDuration.at(id); };
-	[[nodiscard]] static Step getFlameStageDuration(MaterialTypeId id) { return data.m_flameStageDuration.at(id); };
-	[[nodiscard]] static Temperature getIgnitionTemperature(MaterialTypeId id) { return data.m_ignitionTemperature.at(id); };
-	[[nodiscard]] static TemperatureDelta getFlameTemperature(MaterialTypeId id) { return data.m_flameTemperature.at(id); };
+	[[nodiscard]] static bool canBurn(MaterialTypeId id) { return data.m_burnStageDuration[id].empty(); }
+	[[nodiscard]] static Step getBurnStageDuration(MaterialTypeId id) { return data.m_burnStageDuration[id]; };
+	[[nodiscard]] static Step getFlameStageDuration(MaterialTypeId id) { return data.m_flameStageDuration[id]; };
+	[[nodiscard]] static Temperature getIgnitionTemperature(MaterialTypeId id) { return data.m_ignitionTemperature[id]; };
+	[[nodiscard]] static TemperatureDelta getFlameTemperature(MaterialTypeId id) { return data.m_flameTemperature[id]; };
 	// Construct.
-	[[nodiscard]] static std::vector<std::pair<ItemQuery, Quantity>> construction_getConsumed(MaterialTypeId id) { return data.m_construction_consumed.at(id); };
-	[[nodiscard]] static std::vector<std::pair<ItemQuery, Quantity>> construction_getUnconsumed(MaterialTypeId id) { return data.m_construction_unconsumed.at(id); };
-	[[nodiscard]] static std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> construction_getByproducts(MaterialTypeId id) { return data.m_construction_byproducts.at(id); };
-	[[nodiscard]] static SkillTypeId construction_getSkill(MaterialTypeId id) { return data.m_construction_skill.at(id); };
-	[[nodiscard]] static Step construction_getDuration(MaterialTypeId id) { return data.m_construction_duration.at(id); };
+	[[nodiscard]] static std::vector<std::pair<ItemQuery, Quantity>> construction_getConsumed(MaterialTypeId id) { return data.m_construction_consumed[id]; };
+	[[nodiscard]] static std::vector<std::pair<ItemQuery, Quantity>> construction_getUnconsumed(MaterialTypeId id) { return data.m_construction_unconsumed[id]; };
+	[[nodiscard]] static std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> construction_getByproducts(MaterialTypeId id) { return data.m_construction_byproducts[id]; };
+	[[nodiscard]] static SkillTypeId construction_getSkill(MaterialTypeId id) { return data.m_construction_skill[id]; };
+	[[nodiscard]] static Step construction_getDuration(MaterialTypeId id) { return data.m_construction_duration[id]; };
 };

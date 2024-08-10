@@ -71,37 +71,37 @@ class PlantSpecies final
 	DataVector<uint16_t, PlantSpeciesId> m_dayOfYearToStartHarvest;
 public:
 	static void create(PlantSpeciesParamaters& paramaters);
-	[[nodiscard]] static std::vector<ShapeId> getShapes(PlantSpeciesId species) { return data.m_shapes.at(species); };
-	[[nodiscard]] static std::string getName(PlantSpeciesId species) { return data.m_name.at(species); };
-	[[nodiscard]] static FluidTypeId getFluidType(PlantSpeciesId species) { return data.m_fluidType.at(species); };
-	[[nodiscard]] static MaterialTypeId getWoodType(PlantSpeciesId species) { return data.m_woodType.at(species); };
-	[[nodiscard]] static Step getStepsNeedsFluidFrequency(PlantSpeciesId species) { return data.m_stepsNeedsFluidFrequency.at(species); };
-	[[nodiscard]] static Step getStepsTillDieWithoutFluid(PlantSpeciesId species) { return data.m_stepsTillDieWithoutFluid.at(species); };
-	[[nodiscard]] static Step getStepsTillFullyGrown(PlantSpeciesId species) { return data.m_stepsTillFullyGrown.at(species); };
-	[[nodiscard]] static Step getStepsTillFoliageGrowsFromZero(PlantSpeciesId species) { return data.m_stepsTillFoliageGrowsFromZero.at(species); };
-	[[nodiscard]] static Step getStepsTillDieFromTemperature(PlantSpeciesId species) { return data.m_stepsTillDieFromTemperature.at(species); };
-	[[nodiscard]] static DistanceInBlocks getRootRangeMax(PlantSpeciesId species) { return data.m_rootRangeMax.at(species); };
-	[[nodiscard]] static DistanceInBlocks getRootRangeMin(PlantSpeciesId species) { return data.m_rootRangeMin.at(species); };
-	[[nodiscard]] static Quantity getLogsGeneratedByFellingWhenFullGrown(PlantSpeciesId species) { return data.m_logsGeneratedByFellingWhenFullGrown.at(species); };
-	[[nodiscard]] static Quantity getBranchesGeneratedByFellingWhenFullGrown(PlantSpeciesId species) { return data.m_branchesGeneratedByFellingWhenFullGrown.at(species); };
-	[[nodiscard]] static Mass getAdultMass(PlantSpeciesId species) { return data.m_adultMass.at(species); };
-	[[nodiscard]] static Temperature getMaximumGrowingTemperature(PlantSpeciesId species) { return data.m_maximumGrowingTemperature.at(species); };
-	[[nodiscard]] static Temperature getMinimumGrowingTemperature(PlantSpeciesId species) { return data.m_minimumGrowingTemperature.at(species); };
-	[[nodiscard]] static Volume getVolumeFluidConsumed(PlantSpeciesId species) { return data.m_volumeFluidConsumed.at(species); };
-	[[nodiscard]] static uint16_t getDayOfYearForSowStart(PlantSpeciesId species) { return data.m_dayOfYearForSowStart.at(species); };
-	[[nodiscard]] static uint16_t getDayOfYearForSowEnd(PlantSpeciesId species) { return data.m_dayOfYearForSowEnd.at(species); };
-	[[nodiscard]] static uint8_t getMaxWildGrowth(PlantSpeciesId species) { return data.m_maxWildGrowth.at(species); };
-	[[nodiscard]] static bool getAnnual(PlantSpeciesId species) { return data.m_annual.at(species); };
-	[[nodiscard]] static bool getGrowsInSunLight(PlantSpeciesId species) { return data.m_growsInSunLight.at(species); };
-	[[nodiscard]] static bool getIsTree(PlantSpeciesId species) { return data.m_isTree.at(species); };
+	[[nodiscard]] static std::vector<ShapeId> getShapes(PlantSpeciesId species) { return data.m_shapes[species]; };
+	[[nodiscard]] static std::string getName(PlantSpeciesId species) { return data.m_name[species]; };
+	[[nodiscard]] static FluidTypeId getFluidType(PlantSpeciesId species) { return data.m_fluidType[species]; };
+	[[nodiscard]] static MaterialTypeId getWoodType(PlantSpeciesId species) { return data.m_woodType[species]; };
+	[[nodiscard]] static Step getStepsNeedsFluidFrequency(PlantSpeciesId species) { return data.m_stepsNeedsFluidFrequency[species]; };
+	[[nodiscard]] static Step getStepsTillDieWithoutFluid(PlantSpeciesId species) { return data.m_stepsTillDieWithoutFluid[species]; };
+	[[nodiscard]] static Step getStepsTillFullyGrown(PlantSpeciesId species) { return data.m_stepsTillFullyGrown[species]; };
+	[[nodiscard]] static Step getStepsTillFoliageGrowsFromZero(PlantSpeciesId species) { return data.m_stepsTillFoliageGrowsFromZero[species]; };
+	[[nodiscard]] static Step getStepsTillDieFromTemperature(PlantSpeciesId species) { return data.m_stepsTillDieFromTemperature[species]; };
+	[[nodiscard]] static DistanceInBlocks getRootRangeMax(PlantSpeciesId species) { return data.m_rootRangeMax[species]; };
+	[[nodiscard]] static DistanceInBlocks getRootRangeMin(PlantSpeciesId species) { return data.m_rootRangeMin[species]; };
+	[[nodiscard]] static Quantity getLogsGeneratedByFellingWhenFullGrown(PlantSpeciesId species) { return data.m_logsGeneratedByFellingWhenFullGrown[species]; };
+	[[nodiscard]] static Quantity getBranchesGeneratedByFellingWhenFullGrown(PlantSpeciesId species) { return data.m_branchesGeneratedByFellingWhenFullGrown[species]; };
+	[[nodiscard]] static Mass getAdultMass(PlantSpeciesId species) { return data.m_adultMass[species]; };
+	[[nodiscard]] static Temperature getMaximumGrowingTemperature(PlantSpeciesId species) { return data.m_maximumGrowingTemperature[species]; };
+	[[nodiscard]] static Temperature getMinimumGrowingTemperature(PlantSpeciesId species) { return data.m_minimumGrowingTemperature[species]; };
+	[[nodiscard]] static Volume getVolumeFluidConsumed(PlantSpeciesId species) { return data.m_volumeFluidConsumed[species]; };
+	[[nodiscard]] static uint16_t getDayOfYearForSowStart(PlantSpeciesId species) { return data.m_dayOfYearForSowStart[species]; };
+	[[nodiscard]] static uint16_t getDayOfYearForSowEnd(PlantSpeciesId species) { return data.m_dayOfYearForSowEnd[species]; };
+	[[nodiscard]] static uint8_t getMaxWildGrowth(PlantSpeciesId species) { return data.m_maxWildGrowth[species]; };
+	[[nodiscard]] static bool getAnnual(PlantSpeciesId species) { return data.m_annual[species]; };
+	[[nodiscard]] static bool getGrowsInSunLight(PlantSpeciesId species) { return data.m_growsInSunLight[species]; };
+	[[nodiscard]] static bool getIsTree(PlantSpeciesId species) { return data.m_isTree[species]; };
 	// returns base shape and wild growth steps.
 	[[nodiscard]] static const std::pair<ShapeId, uint8_t> shapeAndWildGrowthForPercentGrown(PlantSpeciesId species, Percent percentGrown);
 	[[nodiscard]] static ShapeId shapeForPercentGrown(PlantSpeciesId species, Percent percentGrown) { return shapeAndWildGrowthForPercentGrown(species, percentGrown).first; }
 	[[nodiscard]] static uint8_t wildGrowthForPercentGrown(PlantSpeciesId species, Percent percentGrown) { return shapeAndWildGrowthForPercentGrown(species, percentGrown).second; }
 	[[nodiscard]] static PlantSpeciesId byName(std::string name);
 	// Harvest.
-	ItemTypeId static getFruitItemType(PlantSpeciesId species) { return data.m_fruitItemType.at(species); }
-	Step static getStepsDurationHarvest(PlantSpeciesId species) { return data.m_stepsDurationHarvest.at(species); }
-	Quantity static getItemQuantityToHarvest(PlantSpeciesId species) { return data.m_itemQuantityToHarvest.at(species); }
-	uint16_t static getDayOfYearToStartHarvest(PlantSpeciesId species) { return data.m_dayOfYearToStartHarvest.at(species); }
+	ItemTypeId static getFruitItemType(PlantSpeciesId species) { return data.m_fruitItemType[species]; }
+	Step static getStepsDurationHarvest(PlantSpeciesId species) { return data.m_stepsDurationHarvest[species]; }
+	Quantity static getItemQuantityToHarvest(PlantSpeciesId species) { return data.m_itemQuantityToHarvest[species]; }
+	uint16_t static getDayOfYearToStartHarvest(PlantSpeciesId species) { return data.m_dayOfYearToStartHarvest[species]; }
 };

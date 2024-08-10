@@ -52,18 +52,18 @@ public:
 	void leadAndFollowDisband(HasShapeIndex index);
 	void setCarrier(HasShapeIndex index, ActorOrItemIndex carrier);
 	void unsetCarrier(HasShapeIndex index, ActorOrItemIndex carrier);
-	void updateCarrierIndex(HasShapeIndex index, HasShapeIndex newIndex) { m_carrier.at(index).updateIndex(newIndex); }
-	[[nodiscard]] MoveTypeId getMoveType(HasShapeIndex index) const { return m_moveType.at(index); }
+	void updateCarrierIndex(HasShapeIndex index, HasShapeIndex newIndex) { m_carrier[index].updateIndex(newIndex); }
+	[[nodiscard]] MoveTypeId getMoveType(HasShapeIndex index) const { return m_moveType[index]; }
 	[[nodiscard]] bool isFollowing(HasShapeIndex index) const;
 	[[nodiscard]] bool isLeading(HasShapeIndex index) const;
 	[[nodiscard]] bool isLeadingActor(HasShapeIndex index, ActorIndex actor) const;
 	[[nodiscard]] bool isLeadingItem(HasShapeIndex index, ItemIndex item) const;
 	[[nodiscard]] bool isLeadingPolymorphic(HasShapeIndex index, ActorOrItemIndex actorOrItem) const;
 	[[nodiscard]] bool lead_allCanMove(HasShapeIndex index) const;
-	[[nodiscard]] ActorOrItemIndex getFollower(HasShapeIndex index) { return m_leader.at(index); }
-	[[nodiscard]] ActorOrItemIndex getLeader(HasShapeIndex index) { return m_follower.at(index); }
-	[[nodiscard]] const  ActorOrItemIndex getFollower(HasShapeIndex index) const { return m_leader.at(index); }
-	[[nodiscard]] const ActorOrItemIndex getLeader(HasShapeIndex index) const { return m_follower.at(index); }
+	[[nodiscard]] ActorOrItemIndex getFollower(HasShapeIndex index) { return m_leader[index]; }
+	[[nodiscard]] ActorOrItemIndex getLeader(HasShapeIndex index) { return m_follower[index]; }
+	[[nodiscard]] const  ActorOrItemIndex getFollower(HasShapeIndex index) const { return m_leader[index]; }
+	[[nodiscard]] const ActorOrItemIndex getLeader(HasShapeIndex index) const { return m_follower[index]; }
 	// For testing.
 	[[nodiscard]] Speed lead_getSpeed(HasShapeIndex index);
 	// Reservations.

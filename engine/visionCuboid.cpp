@@ -45,7 +45,7 @@ void AreaHasVisionCuboids::blockIsSometimesOpaque(BlockIndex block)
 {
 	if(m_blockVisionCuboids.empty())
 		return;
-	VisionCuboid* visionCuboid = m_blockVisionCuboids.at(block);
+	VisionCuboid* visionCuboid = m_blockVisionCuboids[block];
 	assert(visionCuboid);
 	visionCuboid->splitAt(block);
 	clearDestroyed();
@@ -54,7 +54,7 @@ void AreaHasVisionCuboids::blockFloorIsNeverOpaque(BlockIndex block)
 {
 	if(m_blockVisionCuboids.empty())
 		return;
-	VisionCuboid* visionCuboid = m_blockVisionCuboids.at(block);
+	VisionCuboid* visionCuboid = m_blockVisionCuboids[block];
 	assert(visionCuboid);
 	VisionCuboid* toCombine = getTargetToCombineWith(visionCuboid->m_cuboid);
 	if(toCombine != nullptr)
@@ -65,7 +65,7 @@ void AreaHasVisionCuboids::blockFloorIsSometimesOpaque(BlockIndex block)
 {
 	if(m_blockVisionCuboids.empty())
 		return;
-	VisionCuboid* visionCuboid = m_blockVisionCuboids.at(block);
+	VisionCuboid* visionCuboid = m_blockVisionCuboids[block];
 	assert(visionCuboid);
 	visionCuboid->splitBelow(block);
 	clearDestroyed();
@@ -74,15 +74,15 @@ void AreaHasVisionCuboids::set(BlockIndex block, VisionCuboid& visionCuboid)
 {
 	if(m_blockVisionCuboids.empty())
 		return;
-	m_blockVisionCuboids.at(block) = &visionCuboid;
-	m_blockVisionCuboidIds.at(block) = visionCuboid.m_id;
+	m_blockVisionCuboids[block] = &visionCuboid;
+	m_blockVisionCuboidIds[block] = visionCuboid.m_id;
 }
 void AreaHasVisionCuboids::unset(BlockIndex block)
 {
 	if(m_blockVisionCuboids.empty())
 		return;
-	m_blockVisionCuboids.at(block) = nullptr;
-	m_blockVisionCuboidIds.at(block) = VisionCuboidId::create(0);
+	m_blockVisionCuboids[block] = nullptr;
+	m_blockVisionCuboidIds[block] = VisionCuboidId::create(0);
 }
 VisionCuboid& AreaHasVisionCuboids::emplace(Cuboid& cuboid)
 {
@@ -96,9 +96,9 @@ VisionCuboid* AreaHasVisionCuboids::getTargetToCombineWith(const Cuboid& cuboid)
 	assert(blocks.canSeeThrough(cuboid.m_lowest));
 	for(BlockIndex block : blocks.getDirectlyAdjacent(cuboid.m_highest))
 	{
-		if(block.exists() && m_blockVisionCuboidIds.at(block) != 0 && !cuboid.contains(block))
+		if(block.exists() && m_blockVisionCuboidIds[block] != 0 && !cuboid.contains(block))
 		{
-			VisionCuboid* visionCuboid = m_blockVisionCuboids.at(block);
+			VisionCuboid* visionCuboid = m_blockVisionCuboids[block];
 			if(visionCuboid && !visionCuboid->m_destroy && visionCuboid->canCombineWith(cuboid))
 			return visionCuboid;
 		}
@@ -108,7 +108,7 @@ VisionCuboid* AreaHasVisionCuboids::getTargetToCombineWith(const Cuboid& cuboid)
 	for(BlockIndex block : blocks.getDirectlyAdjacent(cuboid.m_lowest))
 		if(block.exists() && !cuboid.contains(block))
 		{	
-			VisionCuboid* visionCuboid = m_blockVisionCuboids.at(block);
+			VisionCuboid* visionCuboid = m_blockVisionCuboids[block];
 			if(visionCuboid && !visionCuboid->m_destroy && visionCuboid->canCombineWith(cuboid))
 			return visionCuboid;
 		}
@@ -117,7 +117,7 @@ VisionCuboid* AreaHasVisionCuboids::getTargetToCombineWith(const Cuboid& cuboid)
 VisionCuboid* AreaHasVisionCuboids::getVisionCuboidFor(BlockIndex block)
 {
 	assert(!m_blockVisionCuboids.empty());
-	return m_blockVisionCuboids.at(block);
+	return m_blockVisionCuboids[block];
 }
 VisionCuboid::VisionCuboid(Area& area, Cuboid& cuboid, VisionCuboidId id) : m_area(area), m_cuboid(cuboid), m_id(id), m_destroy(false)
 {

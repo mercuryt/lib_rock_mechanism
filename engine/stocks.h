@@ -23,7 +23,7 @@ class AreaHasStocks final
 {
 	FactionIdMap<AreaHasStocksForFaction> m_data;
 public:
-	AreaHasStocksForFaction& at(FactionId faction) { assert(m_data.contains(faction)); return m_data.at(faction); }
+	AreaHasStocksForFaction& getForFaction(FactionId faction) { assert(m_data.contains(faction)); return m_data.at(faction); }
 	void addFaction(FactionId faction) { m_data.try_emplace(faction); }
 	void removeFaction(FactionId faction) { assert(m_data.contains(faction)); m_data.erase(faction); }
 	[[nodiscard]] bool contains(FactionId faction) const { return m_data.contains(faction); }
