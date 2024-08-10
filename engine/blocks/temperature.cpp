@@ -6,12 +6,12 @@
 #include "types.h"
 void Blocks::temperature_updateDelta(BlockIndex index, TemperatureDelta deltaDelta)
 {
-	m_temperatureDelta.at(index) += deltaDelta;
-	Temperature temperature = Temperature::create(m_temperatureDelta.at(index).get() + temperature_getAmbient(index).get());
+	m_temperatureDelta[index] += deltaDelta;
+	Temperature temperature = Temperature::create(m_temperatureDelta[index].get() + temperature_getAmbient(index).get());
 	if(solid_is(index))
 	{
 		auto material = solid_get(index);
-		if(MaterialType::canBurn(material) && MaterialType::getIgnitionTemperature(material) <= temperature && (m_fires.at(index) == nullptr || !m_fires.at(index)->contains(material)))
+		if(MaterialType::canBurn(material) && MaterialType::getIgnitionTemperature(material) <= temperature && (m_fires[index] == nullptr || !m_fires[index]->contains(material)))
 			m_area.m_fires.ignite(index, material);
 		else if(MaterialType::getMeltingPoint(material).exists() && MaterialType::getMeltingPoint(material) <= temperature)
 			temperature_melt(index);
@@ -54,7 +54,7 @@ void Blocks::temperature_melt(BlockIndex index)
 }
 const Temperature& Blocks::temperature_getAmbient(BlockIndex index) const 
 {
-	if(m_underground.at(index))
+	if(m_underground[index])
 	{
 		if(getZ(index) <= Config::maxZLevelForDeepAmbiantTemperature)
 			return Config::deepAmbiantTemperature;
@@ -65,7 +65,7 @@ const Temperature& Blocks::temperature_getAmbient(BlockIndex index) const
 }
 Temperature Blocks::temperature_getDailyAverageAmbient(BlockIndex index) const 
 {
-	if(m_underground.at(index))
+	if(m_underground[index])
 	{
 		if(getZ(index) <= Config::maxZLevelForDeepAmbiantTemperature)
 			return Config::deepAmbiantTemperature;
@@ -77,7 +77,7 @@ Temperature Blocks::temperature_getDailyAverageAmbient(BlockIndex index) const
 Temperature Blocks::temperature_get(BlockIndex index) const
 {
 	Temperature ambiant = temperature_getAmbient(index);
-	TemperatureDelta delta = m_temperatureDelta.at(index);
+	TemperatureDelta delta = m_temperatureDelta[index];
 	if(delta < 0 && (uint)delta.absoluteValue().get() > ambiant.get())
 		return Temperature::create(0);
 	return Temperature::create(ambiant.get() + delta.get());

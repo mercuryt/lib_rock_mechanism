@@ -22,9 +22,9 @@ HasShapeIndex HasShapes::getNextIndex()
 void HasShapes::create(HasShapeIndex index, ShapeId shape, BlockIndex location, Facing facing, bool isStatic)
 {
 	assert(m_shape.size() > index);
-	m_shape.at(index) = shape;
-	m_location.at(index) = location;
-	m_facing.at(index) = facing;
+	m_shape[index] = shape;
+	m_location[index] = location;
+	m_facing[index] = facing;
 	m_static.set(index, isStatic);
 }
 void HasShapes::resize(HasShapeIndex newSize)
@@ -38,12 +38,12 @@ void HasShapes::resize(HasShapeIndex newSize)
 }
 void HasShapes::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 {
-	m_shape.at(newIndex) = m_shape.at(oldIndex);
-	m_location.at(newIndex) = m_location.at(oldIndex);
-	m_facing.at(newIndex) = m_facing.at(oldIndex);
-	m_blocks.at(newIndex) = m_blocks.at(oldIndex);
-	m_static.set(newIndex, m_static.at(oldIndex));
-	m_underground.set(newIndex, m_underground.at(oldIndex));
+	m_shape[newIndex] = m_shape[oldIndex];
+	m_location[newIndex] = m_location[oldIndex];
+	m_facing[newIndex] = m_facing[oldIndex];
+	m_blocks[newIndex] = m_blocks[oldIndex];
+	m_static.set(newIndex, m_static[oldIndex]);
+	m_underground.set(newIndex, m_underground[oldIndex]);
 }
 void HasShapes::destroy(HasShapeIndex index)
 {
@@ -58,18 +58,18 @@ void HasShapes::destroy(HasShapeIndex index)
 }
 void HasShapes::setStatic(HasShapeIndex index, bool isTrue)
 {
-	assert(!m_static.at(index));
+	assert(!m_static[index]);
 	Blocks& blocks = m_area.getBlocks();
 	if(isTrue)
-		for(auto& [x, y, z, v] : Shape::positionsWithFacing(m_shape.at(index), m_facing.at(index)))
+		for(auto& [x, y, z, v] : Shape::positionsWithFacing(m_shape[index], m_facing[index]))
 		{
-			BlockIndex block = blocks.offset(m_location.at(index), x, y, z);
+			BlockIndex block = blocks.offset(m_location[index], x, y, z);
 			blocks.shape_addStaticVolume(block, CollisionVolume::create(v));
 		}
 	else
-		for(auto& [x, y, z, v] : Shape::positionsWithFacing(m_shape.at(index), m_facing.at(index)))
+		for(auto& [x, y, z, v] : Shape::positionsWithFacing(m_shape[index], m_facing[index]))
 		{
-			BlockIndex block = blocks.offset(m_location.at(index), x, y, z);
+			BlockIndex block = blocks.offset(m_location[index], x, y, z);
 			blocks.shape_removeStaticVolume(block, CollisionVolume::create(v));
 		}
 	m_static.set(index);
@@ -86,19 +86,19 @@ void HasShapes::sortRange(HasShapeIndex begin, HasShapeIndex end)
 }
 FactionId HasShapes::getFaction(HasShapeIndex index) const
 { 
-	return m_faction.at(index);
+	return m_faction[index];
 }
 bool HasShapes::isAdjacentToActor(HasShapeIndex index, ActorIndex actor) const
 {
-	return isAdjacentToActorAt(index, m_location.at(index), m_facing.at(index), actor);
+	return isAdjacentToActorAt(index, m_location[index], m_facing[index], actor);
 }
 bool HasShapes::isAdjacentToItem(HasShapeIndex index, ItemIndex item) const
 {
-	return isAdjacentToItemAt(index, m_location.at(index), m_facing.at(index), item);
+	return isAdjacentToItemAt(index, m_location[index], m_facing[index], item);
 }
 bool HasShapes::isAdjacentToPlant(HasShapeIndex index, PlantIndex plant) const
 {
-	return isAdjacentToPlantAt(index, m_location.at(index), m_facing.at(index), plant);
+	return isAdjacentToPlantAt(index, m_location[index], m_facing[index], plant);
 }
 bool HasShapes::isAdjacentToActorAt(HasShapeIndex index, BlockIndex location, Facing facing, ActorIndex actor) const
 {
@@ -122,25 +122,25 @@ DistanceInBlocks HasShapes::distanceToActor(HasShapeIndex index, ActorIndex acto
 {
 	// TODO: Make handle multi block creatures correctly somehow.
 	// Use line of sight?
-	return m_area.getBlocks().distance(m_location.at(index), m_area.getActors().getLocation(actor));
+	return m_area.getBlocks().distance(m_location[index], m_area.getActors().getLocation(actor));
 }
 DistanceInBlocks HasShapes::distanceToItem(HasShapeIndex index, ItemIndex item) const
 {
 	// TODO: Make handle multi block creatures correctly somehow.
 	// Use line of sight?
-	return m_area.getBlocks().distance(m_location.at(index), m_area.getItems().getLocation(item));
+	return m_area.getBlocks().distance(m_location[index], m_area.getItems().getLocation(item));
 }
 DistanceInBlocksFractional HasShapes::distanceToActorFractional(HasShapeIndex index, ActorIndex actor) const
 {
-	return m_area.getBlocks().distanceFractional(m_location.at(index), m_area.getActors().getLocation(actor));
+	return m_area.getBlocks().distanceFractional(m_location[index], m_area.getActors().getLocation(actor));
 }
 DistanceInBlocksFractional HasShapes::distanceToItemFractional(HasShapeIndex index, ItemIndex item) const
 {
-	return m_area.getBlocks().distanceFractional(m_location.at(index), m_area.getItems().getLocation(item));
+	return m_area.getBlocks().distanceFractional(m_location[index], m_area.getItems().getLocation(item));
 }
 bool HasShapes::allOccupiedBlocksAreReservable(HasShapeIndex index, FactionId faction) const
 {
-	return allBlocksAtLocationAndFacingAreReservable(index, m_location.at(index), m_facing.at(index), faction);
+	return allBlocksAtLocationAndFacingAreReservable(index, m_location[index], m_facing[index], faction);
 }
 bool HasShapes::isAdjacentToLocation(HasShapeIndex index, BlockIndex location) const
 {
@@ -166,8 +166,8 @@ bool HasShapes::isOnEdge(HasShapeIndex index) const
 }
 bool HasShapes::predicateForAnyOccupiedBlock(HasShapeIndex index, std::function<bool(const BlockIndex)> predicate) const
 {
-	assert(!m_blocks.at(index).empty());
-	for(BlockIndex block : m_blocks.at(index))
+	assert(!m_blocks[index].empty());
+	for(BlockIndex block : m_blocks[index])
 		if(predicate(block))
 			return true;
 	return false;
@@ -181,11 +181,11 @@ bool HasShapes::predicateForAnyOccupiedBlockAtLocationAndFacing(HasShapeIndex in
 }
 bool HasShapes::predicateForAnyAdjacentBlock(HasShapeIndex index, std::function<bool(const BlockIndex)> predicate) const
 {
-	assert(m_location.at(index).exists());
+	assert(m_location[index].exists());
 	//TODO: cache this.
-	for(auto [x, y, z] : Shape::adjacentPositionsWithFacing(m_shape.at(index), m_facing.at(index)))
+	for(auto [x, y, z] : Shape::adjacentPositionsWithFacing(m_shape[index], m_facing[index]))
 	{
-		BlockIndex block = m_area.getBlocks().offset(m_location.at(index), x, y, z);
+		BlockIndex block = m_area.getBlocks().offset(m_location[index], x, y, z);
 		if(block.exists() && predicate(block))
 			return true;
 	}
@@ -194,9 +194,9 @@ bool HasShapes::predicateForAnyAdjacentBlock(HasShapeIndex index, std::function<
 BlockIndices HasShapes::getAdjacentBlocks(HasShapeIndex index) const
 {
 	BlockIndices output;
-	for(BlockIndex block : m_blocks.at(index))
+	for(BlockIndex block : m_blocks[index])
 		for(BlockIndex adjacent : m_area.getBlocks().getAdjacentWithEdgeAndCornerAdjacent(block))
-			if(!m_blocks.at(index).contains(adjacent))
+			if(!m_blocks[index].contains(adjacent))
 				output.remove(adjacent);
 	return output;
 }
@@ -220,13 +220,13 @@ ItemIndices HasShapes::getAdjacentItems(HasShapeIndex index) const
 }
 BlockIndices HasShapes::getBlocksWhichWouldBeOccupiedAtLocationAndFacing(HasShapeIndex index, BlockIndex location, Facing facing) const
 {
-	return Shape::getBlocksOccupiedAt(m_shape.at(index), m_area.getBlocks(), location, facing);
+	return Shape::getBlocksOccupiedAt(m_shape[index], m_area.getBlocks(), location, facing);
 }
 BlockIndices HasShapes::getAdjacentBlocksAtLocationWithFacing(HasShapeIndex index, BlockIndex location, Facing facing) const
 {
 	BlockIndices output;
-	output.reserve(Shape::getPositions(m_shape.at(index)).size());
-	for(auto [x, y, z] : Shape::adjacentPositionsWithFacing(m_shape.at(index), facing))
+	output.reserve(Shape::getPositions(m_shape[index]).size());
+	for(auto [x, y, z] : Shape::adjacentPositionsWithFacing(m_shape[index], facing))
 	{
 		BlockIndex block = m_area.getBlocks().offset(location, x, y, z);
 		if(block.exists())
@@ -236,7 +236,7 @@ BlockIndices HasShapes::getAdjacentBlocksAtLocationWithFacing(HasShapeIndex inde
 }
 BlockIndex HasShapes::getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(HasShapeIndex index, const BlockIndex location, Facing facing, std::function<bool(const BlockIndex)>& predicate) const
 {
-	for(auto [x, y, z] : Shape::adjacentPositionsWithFacing(m_shape.at(index), facing))
+	for(auto [x, y, z] : Shape::adjacentPositionsWithFacing(m_shape[index], facing))
 	{
 		BlockIndex block = m_area.getBlocks().offset(location, x, y, z);
 		if(block.exists() && predicate(block))
@@ -246,7 +246,7 @@ BlockIndex HasShapes::getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(Ha
 }
 BlockIndex HasShapes::getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(HasShapeIndex index, const BlockIndex location, Facing facing, std::function<bool(const BlockIndex)>& predicate) const
 {
-	for(auto& [x, y, z, v] : Shape::positionsWithFacing(m_shape.at(index), facing))
+	for(auto& [x, y, z, v] : Shape::positionsWithFacing(m_shape[index], facing))
 	{
 		BlockIndex block = m_area.getBlocks().offset(location, x, y, z);
 		if(block.exists() && predicate(block))
@@ -256,15 +256,15 @@ BlockIndex HasShapes::getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(Ha
 }
 BlockIndex HasShapes::getBlockWhichIsAdjacentWithPredicate(HasShapeIndex index, std::function<bool(const BlockIndex)>& predicate) const
 {
-	return getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(index, m_location.at(index), m_facing.at(index), predicate);
+	return getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(index, m_location[index], m_facing[index], predicate);
 }
 BlockIndex HasShapes::getBlockWhichIsOccupiedWithPredicate(HasShapeIndex index, std::function<bool(const BlockIndex)>& predicate) const
 {
-	return getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(index, m_location.at(index), m_facing.at(index), predicate);
+	return getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(index, m_location[index], m_facing[index], predicate);
 }
 ItemIndex HasShapes::getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(HasShapeIndex index, BlockIndex location, Facing facing, std::function<bool(const ItemIndex)>& predicate) const
 {
-	for(auto [x, y, z] : Shape::adjacentPositionsWithFacing(m_shape.at(index), facing))
+	for(auto [x, y, z] : Shape::adjacentPositionsWithFacing(m_shape[index], facing))
 	{
 		BlockIndex block = m_area.getBlocks().offset(location, x, y, z);
 		if(block.exists())
@@ -276,7 +276,7 @@ ItemIndex HasShapes::getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(HasS
 }
 ItemIndex HasShapes::getItemWhichIsAdjacentWithPredicate(HasShapeIndex index, std::function<bool(const ItemIndex)>& predicate) const
 {
-	return getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(index, m_location.at(index), m_facing.at(index), predicate);
+	return getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(index, m_location[index], m_facing[index], predicate);
 }
 bool HasShapes::allBlocksAtLocationAndFacingAreReservable(HasShapeIndex index, const BlockIndex location, Facing facing, FactionId faction) const
 {
@@ -286,11 +286,11 @@ bool HasShapes::allBlocksAtLocationAndFacingAreReservable(HasShapeIndex index, c
 }
 void HasShapes::log(HasShapeIndex index) const
 {
-	if(!m_location.at(index).exists())
+	if(!m_location[index].exists())
 	{
 		std::cout << "*";
 		return;
 	}
-	Point3D coordinates = m_area.getBlocks().getCoordinates(m_location.at(index));
+	Point3D coordinates = m_area.getBlocks().getCoordinates(m_location[index]);
 	std::cout << "[" << coordinates.x.get() << "," << coordinates.y.get() << "," << coordinates.z.get() << "]";
 }

@@ -7,17 +7,17 @@
 #include <regex>
 void Items::cargo_addActor(ItemIndex index, ActorIndex actor)
 {
-	assert(ItemType::getInternalVolume(m_itemType.at(index)).exists());
-	assert(ItemType::getInternalVolume(m_itemType.at(index)) > m_area.getActors().getVolume(actor));
-	m_hasCargo.at(index)->addActor(m_area, actor);
+	assert(ItemType::getInternalVolume(m_itemType[index]).exists());
+	assert(ItemType::getInternalVolume(m_itemType[index]) > m_area.getActors().getVolume(actor));
+	m_hasCargo[index]->addActor(m_area, actor);
 }
 void Items::cargo_addItem(ItemIndex index, ItemIndex item, Quantity quantity)
 {
 	assert(getLocation(item).empty());
 	if(isGeneric(item))
-		m_hasCargo.at(index)->addItemGeneric(m_area, getItemType(item), getMaterialType(item), quantity);
+		m_hasCargo[index]->addItemGeneric(m_area, getItemType(item), getMaterialType(item), quantity);
 	else
-		m_hasCargo.at(index)->addItem(m_area, item);
+		m_hasCargo[index]->addItem(m_area, item);
 }
 void Items::cargo_addPolymorphic(ItemIndex index, ActorOrItemIndex actorOrItemIndex, Quantity quantity)
 {
@@ -30,7 +30,7 @@ void Items::cargo_addPolymorphic(ItemIndex index, ActorOrItemIndex actorOrItemIn
 }
 void Items::cargo_addFluid(ItemIndex index, FluidTypeId fluidType, CollisionVolume volume)
 {
-	m_hasCargo.at(index)->addFluid(fluidType, volume);
+	m_hasCargo[index]->addFluid(fluidType, volume);
 }
 void Items::cargo_loadActor(ItemIndex index, ActorIndex actor)
 {
@@ -71,40 +71,40 @@ void Items::cargo_loadFluidFromItem(ItemIndex index, FluidTypeId fluidType, Coll
 }
 void Items::cargo_removeActor(ItemIndex index, ActorIndex actor)
 {
-	assert(m_hasCargo.at(index));
-	ItemHasCargo& hasCargo = *m_hasCargo.at(index);
+	assert(m_hasCargo[index]);
+	ItemHasCargo& hasCargo = *m_hasCargo[index];
 	hasCargo.removeActor(m_area, actor);
 	if(hasCargo.empty())
-		m_hasCargo.at(index) = nullptr;
+		m_hasCargo[index] = nullptr;
 }
 void Items::cargo_removeItem(ItemIndex index, ItemIndex item)
 {
-	assert(m_hasCargo.at(index));
-	ItemHasCargo& hasCargo = *m_hasCargo.at(index);
+	assert(m_hasCargo[index]);
+	ItemHasCargo& hasCargo = *m_hasCargo[index];
 	hasCargo.removeItem(m_area, item);
 	if(hasCargo.empty())
-		m_hasCargo.at(index) = nullptr;
+		m_hasCargo[index] = nullptr;
 }
 void Items::cargo_removeItemGeneric(ItemIndex index, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity)
 {
-	assert(m_hasCargo.at(index));
-	ItemHasCargo& hasCargo = *m_hasCargo.at(index);
+	assert(m_hasCargo[index]);
+	ItemHasCargo& hasCargo = *m_hasCargo[index];
 	hasCargo.removeItemGeneric(m_area, itemType, materialType, quantity);
 	if(hasCargo.empty())
-		m_hasCargo.at(index) = nullptr;
+		m_hasCargo[index] = nullptr;
 }
 void Items::cargo_removeFluid(ItemIndex index, CollisionVolume volume)
 {
-	assert(m_hasCargo.at(index) != nullptr);
+	assert(m_hasCargo[index] != nullptr);
 	assert(cargo_containsAnyFluid(index));
 	assert(cargo_getFluidVolume(index) >= volume);
-	auto& hasCargo = *m_hasCargo.at(index);
+	auto& hasCargo = *m_hasCargo[index];
 	//TODO: passing fluid type is pointless here, either pass it into cargo_removeFluid or make a HasCargo::removeFluidVolume(Volume volume)
 	hasCargo.removeFluidVolume(hasCargo.getFluidType(), volume);
 }
 void Items::cargo_unloadActorToLocation(ItemIndex index, ActorIndex actor, BlockIndex location)
 {
-	assert(m_hasCargo.at(index));
+	assert(m_hasCargo[index]);
 	assert(cargo_containsActor(index, actor));
 	Actors& actors = m_area.getActors();
 	assert(actors.getLocation(actor).empty());
@@ -120,17 +120,11 @@ void Items::cargo_unloadItemToLocation(ItemIndex index, ItemIndex item, BlockInd
 }
 void Items::cargo_updateItemIndex(ItemIndex index, ItemIndex oldIndex, ItemIndex newIndex)
 {
-	auto& items = m_hasCargo.at(index)->getItems();
-	auto found = std::ranges::find(items, oldIndex);
-	assert(found != items.end());
-	(*found) = newIndex;
+	m_hasCargo[index]->m_items.update(oldIndex, newIndex);
 }
 void Items::cargo_updateActorIndex(ItemIndex index, ActorIndex oldIndex, ActorIndex newIndex)
 {
-	auto& actors = m_hasCargo.at(index)->getActors();
-	auto found = std::ranges::find(actors, oldIndex);
-	assert(found != actors.end());
-	(*found) = newIndex;
+	m_hasCargo[index]->m_actors.update(oldIndex, newIndex);
 }
 ItemIndex Items::cargo_unloadGenericItemToLocation(ItemIndex index, ItemIndex item, BlockIndex location, Quantity quantity)
 {
@@ -168,24 +162,24 @@ void Items::cargo_unloadFluidToLocation(ItemIndex index, CollisionVolume volume,
 	cargo_removeFluid(index, volume);
 	m_area.getBlocks().fluid_add(location, volume, fluidType);
 }
-bool Items::cargo_exists(ItemIndex index) const { return m_hasCargo.at(index) != nullptr; }
+bool Items::cargo_exists(ItemIndex index) const { return m_hasCargo[index] != nullptr; }
 bool Items::cargo_containsActor(ItemIndex index, ActorIndex actor) const
 {
-	if(m_hasCargo.at(index) == nullptr)
+	if(m_hasCargo[index] == nullptr)
 		return false;
-	return m_hasCargo.at(index)->containsActor(actor);
+	return m_hasCargo[index]->containsActor(actor);
 }
 bool Items::cargo_containsItem(ItemIndex index, ItemIndex item) const
 {
-	if(m_hasCargo.at(index) == nullptr)
+	if(m_hasCargo[index] == nullptr)
 		return false;
-	return m_hasCargo.at(index)->containsItem(item);
+	return m_hasCargo[index]->containsItem(item);
 }
 bool Items::cargo_containsItemGeneric(ItemIndex index,ItemTypeId itemType,MaterialTypeId materialType, Quantity quantity) const
 {
-	if(m_hasCargo.at(index) == nullptr)
+	if(m_hasCargo[index] == nullptr)
 		return false;
-	return m_hasCargo.at(index)->containsGeneric(m_area, itemType, materialType, quantity);
+	return m_hasCargo[index]->containsGeneric(m_area, itemType, materialType, quantity);
 }
 bool Items::cargo_containsPolymorphic(ItemIndex index, ActorOrItemIndex actorOrItem, Quantity quantity) const
 {
@@ -196,43 +190,43 @@ bool Items::cargo_containsPolymorphic(ItemIndex index, ActorOrItemIndex actorOrI
 }
 bool Items::cargo_containsAnyFluid(ItemIndex index) const
 {
-	if(m_hasCargo.at(index) == nullptr)
+	if(m_hasCargo[index] == nullptr)
 		return false;
-	return m_hasCargo.at(index)->containsAnyFluid();
+	return m_hasCargo[index]->containsAnyFluid();
 }
 bool Items::cargo_containsFluidType(ItemIndex index, FluidTypeId fluidType) const
 {
-	if(m_hasCargo.at(index) == nullptr)
+	if(m_hasCargo[index] == nullptr)
 		return false;
-	return m_hasCargo.at(index)->containsFluidType(fluidType);
+	return m_hasCargo[index]->containsFluidType(fluidType);
 }
 CollisionVolume Items::cargo_getFluidVolume(ItemIndex index) const
 {
-	if(m_hasCargo.at(index) == nullptr)
+	if(m_hasCargo[index] == nullptr)
 		return CollisionVolume::create(0);
-	return m_hasCargo.at(index)->getFluidVolume();
+	return m_hasCargo[index]->getFluidVolume();
 }
 FluidTypeId Items::cargo_getFluidType(ItemIndex index) const
 {
-	return m_hasCargo.at(index)->getFluidType();
+	return m_hasCargo[index]->getFluidType();
 }
 bool Items::cargo_canAddActor(ItemIndex index, ActorIndex actor) const
 {
-	if(m_hasCargo.at(index) != nullptr)
-		return m_hasCargo.at(index)->canAddActor(m_area, actor);
+	if(m_hasCargo[index] != nullptr)
+		return m_hasCargo[index]->canAddActor(m_area, actor);
 	else
-		return ItemType::getInternalVolume(m_itemType.at(index)) >= m_area.getActors().getVolume(actor);
+		return ItemType::getInternalVolume(m_itemType[index]) >= m_area.getActors().getVolume(actor);
 }
 bool Items::cargo_canAddItem(ItemIndex index, ItemIndex item) const
 {
-	if(m_hasCargo.at(index) != nullptr)
-		return m_hasCargo.at(index)->canAddItem(m_area, item);
+	if(m_hasCargo[index] != nullptr)
+		return m_hasCargo[index]->canAddItem(m_area, item);
 	else
-		return ItemType::getInstallable(m_itemType.at(index)) >= m_area.getItems().getVolume(item);
+		return ItemType::getInstallable(m_itemType[index]) >= m_area.getItems().getVolume(item);
 }
 Mass Items::cargo_getMass(ItemIndex index) const
 {
-	return m_hasCargo.at(index)->getMass();
+	return m_hasCargo[index]->getMass();
 }
-const ItemIndices& Items::cargo_getItems(ItemIndex index) const { return m_hasCargo.at(index)->getItems(); }
-const ActorIndices& Items::cargo_getActors(ItemIndex index) const { return const_cast<ItemHasCargo&>(*m_hasCargo.at(index)).getActors(); }
+const ItemIndices& Items::cargo_getItems(ItemIndex index) const { return m_hasCargo[index]->getItems(); }
+const ActorIndices& Items::cargo_getActors(ItemIndex index) const { return const_cast<ItemHasCargo&>(*m_hasCargo[index]).getActors(); }

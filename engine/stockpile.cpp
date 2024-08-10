@@ -23,14 +23,14 @@
 //Input
 void StockPileCreateInputAction::execute()
 {
-	auto& hasStockPiles = (*m_cuboid.begin()).m_area->m_hasStockPiles.at(m_faction);
+	auto& hasStockPiles = (*m_cuboid.begin()).m_area->m_hasStockPiles.getForFaction(m_faction);
 	StockPile& stockpile = hasStockPiles.addStockPile(m_queries);
 	for(BlockIndex block : m_cuboid)
 		stockpile.addBlock(block);
 }
 void StockPileRemoveInputAction::execute()
 {
-	auto& hasStockPiles = (*m_cuboid.begin()).m_area->m_hasStockPiles.at(m_faction);
+	auto& hasStockPiles = (*m_cuboid.begin()).m_area->m_hasStockPiles.getForFaction(m_faction);
 	for(BlockIndex block : m_cuboid)
 		hasStockPiles.removeBlock(block);
 }
@@ -79,8 +79,8 @@ void StockPileProject::onComplete()
 	Blocks& blocks = m_area.getBlocks();
 	ItemIndex delivered = blocks.item_getGeneric(m_location, m_itemType, m_materialType);
 	auto workers = std::move(m_workers);
-	auto& hasStockPiles = m_area.m_hasStockPiles.at(m_stockpile.m_faction);
-	m_area.m_hasStocks.at(m_faction).record(m_area, delivered);
+	auto& hasStockPiles = m_area.m_hasStockPiles.getForFaction(m_stockpile.m_faction);
+	m_area.m_hasStocks.getForFaction(m_faction).record(m_area, delivered);
 	if(delivered == m_item.getIndex())
 		// Either non-generic or whole stack.
 		hasStockPiles.removeItem(m_item.getIndex());
@@ -101,7 +101,7 @@ void StockPileProject::onReserve()
 void StockPileProject::onCancel()
 {
 	ActorIndices workersAndCandidates = getWorkersAndCandidates();
-	m_area.m_hasStockPiles.at(m_faction).destroyProject(*this);
+	m_area.m_hasStockPiles.getForFaction(m_faction).destroyProject(*this);
 	Actors& actors = m_area.getActors();
 	for(ActorIndex actor : workersAndCandidates)
 	{
@@ -183,9 +183,9 @@ void StockPile::addBlock(BlockIndex block)
 	for(ItemIndex item : blocks.item_getAll(block))
 		if(accepts(item))
 		{
-			m_area.m_hasStocks.at(m_faction).record(m_area, item);
+			m_area.m_hasStocks.getForFaction(m_faction).record(m_area, item);
 			if(items.stockpile_canBeStockPiled(item, m_faction))
-				m_area.m_hasStockPiles.at(m_faction).removeItem(item);
+				m_area.m_hasStockPiles.getForFaction(m_faction).removeItem(item);
 		}
 }
 void StockPile::removeBlock(BlockIndex block)
@@ -197,7 +197,7 @@ void StockPile::removeBlock(BlockIndex block)
 	// Collect projects delivering items to block.
 	// This is very slow, particularly when destroying a large stockpile when many stockpile projects exist. Probably doesn't get called often enough to matter.
 	std::vector<Project*> projectsToCancel;
-	for(auto& pair : m_area.m_hasStockPiles.at(m_faction).m_projectsByItem)
+	for(auto& pair : m_area.m_hasStockPiles.getForFaction(m_faction).m_projectsByItem)
 		for(Project& project : pair.second)
 			if(project.getLocation() == block)
 				projectsToCancel.push_back(&project);
@@ -206,13 +206,13 @@ void StockPile::removeBlock(BlockIndex block)
 	blocks.stockpile_recordNoLongerMember(block, *this);
 	m_blocks.remove(block);
 	if(m_blocks.empty())
-		m_area.m_hasStockPiles.at(m_faction).destroyStockPile(*this);
+		m_area.m_hasStockPiles.getForFaction(m_faction).destroyStockPile(*this);
 	// Cancel collected projects.
 	for(Project* project : projectsToCancel)
 		project->cancel();
 	for(ItemIndex item : blocks.item_getAll(block))
 		if(accepts(item))
-			m_area.m_hasStocks.at(m_faction).unrecord(m_area, item);
+			m_area.m_hasStocks.getForFaction(m_faction).unrecord(m_area, item);
 }
 void StockPile::updateQueries(std::vector<ItemQuery>& queries)
 {
@@ -223,13 +223,13 @@ void StockPile::incrementOpenBlocks()
 {
 	++m_openBlocks;
 	if(m_openBlocks == 1)
-		m_area.m_hasStockPiles.at(m_faction).setAvailable(*this);
+		m_area.m_hasStockPiles.getForFaction(m_faction).setAvailable(*this);
 }
 void StockPile::decrementOpenBlocks()
 {
 	--m_openBlocks;
 	if(m_openBlocks == 0)
-		m_area.m_hasStockPiles.at(m_faction).setUnavailable(*this);
+		m_area.m_hasStockPiles.getForFaction(m_faction).setUnavailable(*this);
 }
 Simulation& StockPile::getSimulation()
 {
@@ -630,7 +630,7 @@ StockPile* AreaHasStockPilesForFaction::getStockPileFor(const ItemIndex item) co
 			return stockPile;
 	return nullptr;
 }
-AreaHasStockPilesForFaction& AreaHasStockPiles::at(FactionId faction) 
+AreaHasStockPilesForFaction& AreaHasStockPiles::getForFaction(FactionId faction) 
 { 
 	if(!m_data.contains(faction))
 		registerFaction(faction);

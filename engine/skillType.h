@@ -17,7 +17,7 @@ class SkillType final
 public:
 	static void create(SkillTypeParamaters& p);
 	static SkillTypeId byName(std::string name);
-	[[nodiscard]] static std::string getName(SkillTypeId id) { return data.m_name.at(id); }
-	[[nodiscard]] static float getXpPerLevelModifier(SkillTypeId id) { return data.m_xpPerLevelModifier.at(id); }
-	[[nodiscard]] static SkillExperiencePoints getLevel1Xp(SkillTypeId id) { return data.m_level1Xp.at(id); }
+	[[nodiscard]] static std::string getName(SkillTypeId id) { return data.m_name[id]; }
+	[[nodiscard]] static float getXpPerLevelModifier(SkillTypeId id) { return data.m_xpPerLevelModifier[id]; }
+	[[nodiscard]] static SkillExperiencePoints getLevel1Xp(SkillTypeId id) { return data.m_level1Xp[id]; }
 };

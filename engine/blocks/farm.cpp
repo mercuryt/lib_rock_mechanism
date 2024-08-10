@@ -14,7 +14,7 @@ void Blocks::farm_remove(BlockIndex index, FactionId faction)
 	assert(m_farmFields.contains(index));
 	assert(m_farmFields.at(index).contains(faction));
 	m_farmFields.at(index).erase(faction);
-	auto& designations = m_area.m_blockDesignations.at(faction);
+	auto& designations = m_area.m_blockDesignations.getForFaction(faction);
 	designations.maybeUnset(index, BlockDesignation::SowSeeds);
 	designations.maybeUnset(index, BlockDesignation::GivePlantFluid);
 	designations.maybeUnset(index, BlockDesignation::Harvest);
@@ -26,7 +26,7 @@ void Blocks::farm_designateForHarvestIfPartOfFarmField(BlockIndex index, PlantIn
 		Plants& plants = m_area.getPlants();
 		for(auto& [faction, farmField] : m_farmFields.at(index))
 			if(farmField->plantSpecies == plants.getSpecies(plant))
-				m_area.m_hasFarmFields.at(faction).addHarvestDesignation(plant);
+				m_area.m_hasFarmFields.getForFaction(faction).addHarvestDesignation(plant);
 	}
 }
 void Blocks::farm_designateForGiveFluidIfPartOfFarmField(BlockIndex index, PlantIndex plant)
@@ -36,45 +36,45 @@ void Blocks::farm_designateForGiveFluidIfPartOfFarmField(BlockIndex index, Plant
 		Plants& plants = m_area.getPlants();
 		for(auto& [faction, farmField] : m_farmFields.at(index))
 			if(farmField->plantSpecies == plants.getSpecies(plant))
-				m_area.m_hasFarmFields.at(faction).addGivePlantFluidDesignation(plant);
+				m_area.m_hasFarmFields.getForFaction(faction).addGivePlantFluidDesignation(plant);
 	}
 }
 void Blocks::farm_maybeDesignateForSowingIfPartOfFarmField(BlockIndex index)
 {
 	if(m_farmFields.contains(index))
 	{
-		assert(m_plants.at(index).empty());
+		assert(m_plants[index].empty());
 		for(auto& [faction, farmField] : m_farmFields.at(index))
 			if(farm_isSowingSeasonFor(farmField->plantSpecies))
-				m_area.m_hasFarmFields.at(faction).addSowSeedsDesignation(index);
+				m_area.m_hasFarmFields.getForFaction(faction).addSowSeedsDesignation(index);
 	}
 }
 void Blocks::farm_removeAllHarvestDesignations(BlockIndex index)
 {
-	PlantIndex plant = m_plants.at(index);	
+	PlantIndex plant = m_plants[index];	
 	if(plant.empty())
 		return;
 	if(m_farmFields.contains(index))
 		for(auto& [faction, farmField] : m_farmFields.at(index))
 			if(designation_has(index, faction, BlockDesignation::Harvest))
-				m_area.m_hasFarmFields.at(faction).removeHarvestDesignation(plant);
+				m_area.m_hasFarmFields.getForFaction(faction).removeHarvestDesignation(plant);
 }
 void Blocks::farm_removeAllGiveFluidDesignations(BlockIndex index)
 {
-	PlantIndex plant = m_plants.at(index);	
+	PlantIndex plant = m_plants[index];	
 	if(plant.empty())
 		return;
 	if(m_farmFields.contains(index))
 		for(auto& [faction, farmField] : m_farmFields.at(index))
 			if(designation_has(index, faction, BlockDesignation::GivePlantFluid))
-				m_area.m_hasFarmFields.at(faction).removeGivePlantFluidDesignation(plant);
+				m_area.m_hasFarmFields.getForFaction(faction).removeGivePlantFluidDesignation(plant);
 }
 void Blocks::farm_removeAllSowSeedsDesignations(BlockIndex index)
 {
 	if(m_farmFields.contains(index))
 		for(auto& [faction, farmField] : m_farmFields.at(index))
 			if(designation_has(index, faction, BlockDesignation::SowSeeds))
-				m_area.m_hasFarmFields.at(faction).removeSowSeedsDesignation(index);
+				m_area.m_hasFarmFields.getForFaction(faction).removeSowSeedsDesignation(index);
 }
 bool Blocks::farm_isSowingSeasonFor(PlantSpeciesId species) const
 {

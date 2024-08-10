@@ -99,7 +99,7 @@ public:
 	AreaHasFarmFields(Area& a) : m_area(a) { } 
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] HasFarmFieldsForFaction& at(FactionId faction);
+	[[nodiscard]] HasFarmFieldsForFaction& getForFaction(FactionId faction);
 	void registerFaction(FactionId faction);
 	void unregisterFaction(FactionId faction);
 	[[nodiscard]] PlantIndex getHighestPriorityPlantForGiveFluid(FactionId faction);

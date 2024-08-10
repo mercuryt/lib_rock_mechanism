@@ -73,7 +73,7 @@ UniformObjective::UniformObjective(Area& area, ActorIndex actor) :
 UniformObjective::UniformObjective(const Json& data, Area& area, ActorIndex actor) :
 	Objective(data)
 { 
-	area.getActors().m_hasUniform.at(actor)->recordObjective(*this);
+	area.getActors().m_hasUniform[actor]->recordObjective(*this);
 }
 Json UniformObjective::toJson() const
 {

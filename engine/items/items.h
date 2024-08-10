@@ -76,8 +76,7 @@ public:
 	// When an item changes index and it has cargo update the m_carrier data of the cargo.
 	void updateCarrierIndexForAllCargo(Area& area, ItemIndex newIndex);
 	ItemIndex unloadGenericTo(Area& area, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity, BlockIndex location);
-	[[nodiscard]] ActorIndices& getActors() { return m_actors; }
-	[[nodiscard]] ItemIndices& getItems() { return m_items; }
+	[[nodiscard]] const ActorIndices& getActors() const { return m_actors; }
 	[[nodiscard]] const ItemIndices& getItems() const { return m_items; }
 	[[nodiscard]] bool canAddActor(Area& area, ActorIndex index) const;
 	[[nodiscard]] bool canAddItem(Area& area, ItemIndex item) const;
@@ -92,6 +91,7 @@ public:
 	[[nodiscard]] bool empty() const { return m_fluidType.exists() && m_actors.empty() && m_items.empty(); }
 	[[nodiscard]] Mass getMass() const { return m_mass; }
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ItemHasCargo, m_actors, m_items, m_fluidType, m_volume, m_mass, m_fluidVolume);
+	friend class Items;
 };
 class Items final : public Portables
 {
@@ -137,25 +137,25 @@ public:
 	void setQuantity(ItemIndex index, Quantity quantity);
 	void unsetCraftJobForWorkPiece(ItemIndex index);
 	[[nodiscard]] ItemIndices getAll() const;
-	[[nodiscard]] ItemReference getReference(ItemIndex index) const { return *m_referenceTarget.at(index).get(); }
-	[[nodiscard]] const ItemReference getReferenceConst(ItemIndex index) const { return *m_referenceTarget.at(index).get(); }
-	[[nodiscard]] ItemReferenceTarget& getReferenceTarget(ItemIndex index) const { return *m_referenceTarget.at(index).get();}
+	[[nodiscard]] ItemReference getReference(ItemIndex index) const { return *m_referenceTarget[index].get(); }
+	[[nodiscard]] const ItemReference getReferenceConst(ItemIndex index) const { return *m_referenceTarget[index].get(); }
+	[[nodiscard]] ItemReferenceTarget& getReferenceTarget(ItemIndex index) const { return *m_referenceTarget[index].get();}
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool isOnSurface(ItemIndex index);
-	[[nodiscard]] bool isInstalled(ItemIndex index) { return m_installed.at(index); }
-	[[nodiscard]] Quantity getQuantity(ItemIndex index) const { return m_quantity.at(index); }
-	[[nodiscard]] Quality getQuality(ItemIndex index) const { return m_quality.at(index); }
-	[[nodiscard]] Percent getWear(ItemIndex index) const { return m_percentWear.at(index); }
+	[[nodiscard]] bool isInstalled(ItemIndex index) { return m_installed[index]; }
+	[[nodiscard]] Quantity getQuantity(ItemIndex index) const { return m_quantity[index]; }
+	[[nodiscard]] Quality getQuality(ItemIndex index) const { return m_quality[index]; }
+	[[nodiscard]] Percent getWear(ItemIndex index) const { return m_percentWear[index]; }
 	[[nodiscard]] bool isGeneric(ItemIndex index) const;
 	[[nodiscard]] bool isPreparedMeal(ItemIndex index) const;
-	[[nodiscard]] bool isWorkPiece(ItemIndex index) const { return m_craftJobForWorkPiece.at(index) != nullptr; }
+	[[nodiscard]] bool isWorkPiece(ItemIndex index) const { return m_craftJobForWorkPiece[index] != nullptr; }
 	[[nodiscard]] CraftJob& getCraftJobForWorkPiece(ItemIndex index) const;
 	[[nodiscard]] Mass getSingleUnitMass(ItemIndex index) const;
 	[[nodiscard]] Mass getMass(ItemIndex index) const;
 	[[nodiscard]] Volume getVolume(ItemIndex index) const;
 	[[nodiscard]] MoveTypeId getMoveType(ItemIndex index) const;
-	[[nodiscard]] ItemTypeId getItemType(ItemIndex index) const { return m_itemType.at(index); }
-	[[nodiscard]] MaterialTypeId getMaterialType(ItemIndex index) const { return m_materialType.at(index); }
+	[[nodiscard]] ItemTypeId getItemType(ItemIndex index) const { return m_itemType[index]; }
+	[[nodiscard]] MaterialTypeId getMaterialType(ItemIndex index) const { return m_materialType[index]; }
 	[[nodiscard]] auto& getOnSurface() { return m_onSurface; }
 	[[nodiscard]] const auto& getOnSurface() const { return m_onSurface; }
 	// -Cargo.

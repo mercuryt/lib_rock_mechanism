@@ -42,15 +42,15 @@ public:
 	void setStatic(HasShapeIndex index, bool isStatic);
 	void log(HasShapeIndex index) const;
 	[[nodiscard]] size_t size() const { return m_shape.size(); }
-	[[nodiscard]] ShapeId getShape(HasShapeIndex index) const { return m_shape.at(index); }
-	[[nodiscard]] BlockIndex getLocation(HasShapeIndex index) const { return m_location.at(index); }
+	[[nodiscard]] ShapeId getShape(HasShapeIndex index) const { return m_shape[index]; }
+	[[nodiscard]] BlockIndex getLocation(HasShapeIndex index) const { return m_location[index]; }
 	[[nodiscard]] bool hasLocation(HasShapeIndex index) const { return getLocation(index).exists(); }
-	[[nodiscard]] Facing getFacing(HasShapeIndex index) const { return m_facing.at(index); }
-	[[nodiscard]] const auto& getBlocks(HasShapeIndex index) const { return m_blocks.at(index); }
-	[[nodiscard]] FactionId getFactionId(HasShapeIndex index) { return m_faction.at(index); }
+	[[nodiscard]] Facing getFacing(HasShapeIndex index) const { return m_facing[index]; }
+	[[nodiscard]] const auto& getBlocks(HasShapeIndex index) const { return m_blocks[index]; }
+	[[nodiscard]] FactionId getFactionId(HasShapeIndex index) { return m_faction[index]; }
 	[[nodiscard]] FactionId getFaction(HasShapeIndex index) const;
-	[[nodiscard]] bool hasFaction(HasShapeIndex index) const { return m_faction.at(index).exists(); }
-	[[nodiscard]] bool isStatic(HasShapeIndex index) const { return m_static.at(index); }
+	[[nodiscard]] bool hasFaction(HasShapeIndex index) const { return m_faction[index].exists(); }
+	[[nodiscard]] bool isStatic(HasShapeIndex index) const { return m_static[index]; }
 	[[nodiscard]] bool isAdjacentToLocation(HasShapeIndex index, BlockIndex block) const;
 	[[nodiscard]] bool isAdjacentToAny(HasShapeIndex index, BlockIndices block) const;
 	[[nodiscard]] bool predicateForAnyOccupiedBlock(HasShapeIndex index, std::function<bool(BlockIndex)> predicate) const;

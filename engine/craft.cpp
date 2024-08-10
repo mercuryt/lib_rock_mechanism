@@ -66,7 +66,7 @@ void CraftStepProject::onCancel()
 {
 	ActorIndices workersAndCandidates = getWorkersAndCandidates();
 	CraftJob& craftJob = m_craftJob;
-	m_area.m_hasCraftingLocationsAndJobs.at(m_faction).stepDestroy(craftJob);
+	m_area.m_hasCraftingLocationsAndJobs.getForFaction(m_faction).stepDestroy(craftJob);
 	Actors& actors = m_area.getActors();
 	for(ActorIndex actor : workersAndCandidates)
 	{
@@ -81,8 +81,8 @@ void CraftStepProject::onCancel()
 void CraftStepProject::onAddToMaking(ActorIndex actor)
 {
 	Actors& actors = m_area.getActors();
-	auto [canEnter, facing] = m_area.getBlocks().shape_canEnterCurrentlyWithAnyFacingReturnFacing(m_location, actors.getShape(actor), actors.getBlocks(actor));
-	if(canEnter)
+	Facing facing = m_area.getBlocks().shape_canEnterCurrentlyWithAnyFacingReturnFacing(m_location, actors.getShape(actor), actors.getBlocks(actor));
+	if(facing.exists())
 		actors.setLocationAndFacing(actor, m_location, facing);
 	else
 		setDelayOn();
@@ -388,7 +388,7 @@ void HasCraftingLocationsAndJobsForFaction::jobComplete(CraftJob& craftJob, Bloc
 	}
 	if(!m_area.m_hasStockPiles.contains(m_faction))
 		m_area.m_hasStockPiles.registerFaction(m_faction);
-	m_area.m_hasStockPiles.at(m_faction).maybeAddItem(product);
+	m_area.m_hasStockPiles.getForFaction(m_faction).maybeAddItem(product);
 	m_jobs.remove(craftJob);
 }
 void HasCraftingLocationsAndJobsForFaction::makeAndAssignStepProject(CraftJob& craftJob, BlockIndex location, CraftObjective& objective, ActorIndex actor)
@@ -475,7 +475,7 @@ void AreaHasCraftingLocationsAndJobs::clearReservations()
 			if(job.craftStepProject)
 				job.craftStepProject->clearReservations();
 }
-HasCraftingLocationsAndJobsForFaction& AreaHasCraftingLocationsAndJobs::at(FactionId faction)
+HasCraftingLocationsAndJobsForFaction& AreaHasCraftingLocationsAndJobs::getForFaction(FactionId faction)
 {
 	if(!m_data.contains(faction))
 		addFaction(faction);

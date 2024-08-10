@@ -17,7 +17,7 @@ StockPilePathRequest::StockPilePathRequest(Area& area, StockPileObjective& spo) 
 	FactionId faction = actors.getFactionId(actor);
 	if(!m_objective.m_item.exists())
 	{
-		auto& hasStockPiles = area.m_hasStockPiles.at(faction);
+		auto& hasStockPiles = area.m_hasStockPiles.getForFaction(faction);
 		std::function<bool(BlockIndex)> blocksContainsItemCondition = [this, &hasStockPiles, &items, actor](BlockIndex block)
 		{
 			ItemIndex item = hasStockPiles.getHaulableItemForAt(actor, block);
@@ -43,7 +43,7 @@ void StockPilePathRequest::callback(Area& area, FindPathResult& result)
 	Actors& actors = area.getActors();
 	ActorIndex actor = getActor();
 	FactionId faction = actors.getFactionId(actor);
-	auto& hasStockPiles = area.m_hasStockPiles.at(faction);
+	auto& hasStockPiles = area.m_hasStockPiles.getForFaction(faction);
 	if(!m_objective.m_item.exists())
 	{
 		if(result.path.empty() && !result.useCurrentPosition)
@@ -82,7 +82,7 @@ void StockPilePathRequest::callback(Area& area, FindPathResult& result)
 					stockpile.addToProjectNeedingMoreWorkers(actor, m_objective);
 				else
 				{
-					auto& hasStockPiles = area.m_hasStockPiles.at(faction);
+					auto& hasStockPiles = area.m_hasStockPiles.getForFaction(faction);
 					if(hasStockPiles.m_projectsByItem.contains(m_objective.m_item))
 					{
 						// Projects found, select one to join.
@@ -103,7 +103,7 @@ void StockPilePathRequest::callback(Area& area, FindPathResult& result)
 }
 bool StockPileObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
 {
-	return area.m_hasStockPiles.at(area.getActors().getFactionId(actor)).isAnyHaulingAvailableFor(actor);
+	return area.m_hasStockPiles.getForFaction(area.getActors().getFactionId(actor)).isAnyHaulingAvailableFor(actor);
 }
 std::unique_ptr<Objective> StockPileObjectiveType::makeFor(Area&, ActorIndex) const
 {

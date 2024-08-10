@@ -36,8 +36,8 @@ public:
 	void registerFaction(FactionId faction) { m_data.emplace(faction, m_area); }
 	void unregisterFaction(FactionId faction) { m_data.erase(faction); }
 	[[nodiscard]] bool contains(FactionId faction) { return m_data.contains(faction); }
-	[[nodiscard]] AreaHasBlockDesignationsForFaction& at(FactionId faction) { return m_data.at(faction); }
-	[[nodiscard]] const AreaHasBlockDesignationsForFaction& at(FactionId faction) const { return m_data.at(faction); }
+	[[nodiscard]] AreaHasBlockDesignationsForFaction& getForFaction(FactionId faction) { return m_data.at(faction); }
+	[[nodiscard]] const AreaHasBlockDesignationsForFaction& getForFaction(FactionId faction) const { return m_data.at(faction); }
 	[[nodiscard]] Json toJson() const;
 	AreaHasBlockDesignations(AreaHasBlockDesignationsForFaction&) = delete;
 	AreaHasBlockDesignations(AreaHasBlockDesignationsForFaction&&) = delete;

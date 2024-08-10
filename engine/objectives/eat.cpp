@@ -67,7 +67,7 @@ BlockIndex EatEvent::getBlockWithMostDesiredFoodInReach(Area& area) const
 	uint32_t highestDesirability = 0;
 	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block)
 	{
-		MustEat& mustEat = *area.getActors().m_mustEat.at(m_actor.getIndex()).get();
+		MustEat& mustEat = *area.getActors().m_mustEat[m_actor.getIndex()].get();
 		uint32_t blockDesirability = mustEat.getDesireToEatSomethingAt(area, block);
 		if(blockDesirability == UINT32_MAX)
 			return true;
@@ -89,7 +89,7 @@ void EatEvent::eatPreparedMeal(Area& area, ItemIndex item)
 	Items& items = area.getItems();
 	assert(actors.eat_canEatItem(m_actor.getIndex(), item));
 	assert(items.isPreparedMeal(item));
-	MustEat& mustEat = *area.getActors().m_mustEat.at(m_actor.getIndex()).get();
+	MustEat& mustEat = *area.getActors().m_mustEat[m_actor.getIndex()].get();
 	Mass massEaten = std::min(mustEat.getMassFoodRequested(), items.getMass(item));
 	assert(massEaten != 0);
 	mustEat.eat(area, massEaten);
@@ -100,7 +100,7 @@ void EatEvent::eatGenericItem(Area& area, ItemIndex item)
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	assert(ItemType::getEdibleForDrinkersOf(items.getItemType(item)) == actors.drink_getFluidType(m_actor.getIndex()));
-	MustEat& mustEat = *area.getActors().m_mustEat.at(m_actor.getIndex()).get();
+	MustEat& mustEat = *area.getActors().m_mustEat[m_actor.getIndex()].get();
 	Quantity quantityDesired = Quantity::create(std::ceil((float)mustEat.getMassFoodRequested().get() / (float)items.getSingleUnitMass(item).get()));
 	Quantity quantityEaten = std::min(quantityDesired, items.getQuantity(item));
 	Mass massEaten = std::min(mustEat.getMassFoodRequested(), items.getSingleUnitMass(item) * quantityEaten);
@@ -115,7 +115,7 @@ void EatEvent::eatActor(Area& area, ActorIndex actor)
 	Actors& actors = area.getActors();
 	assert(!actors.isAlive(actor));
 	assert(actors.getMass(actor) != 0);
-	MustEat& mustEat = *area.getActors().m_mustEat.at(m_actor.getIndex()).get();
+	MustEat& mustEat = *area.getActors().m_mustEat[m_actor.getIndex()].get();
 	Mass massEaten = std::min(actors.getMass(actor), mustEat.getMassFoodRequested());
 	assert(massEaten != 0);
 	mustEat.eat(area, massEaten);
@@ -124,7 +124,7 @@ void EatEvent::eatActor(Area& area, ActorIndex actor)
 void EatEvent::eatPlantLeaves(Area& area, PlantIndex plant)
 {
 	Plants& plants = area.getPlants();
-	MustEat& mustEat = *area.getActors().m_mustEat.at(m_actor.getIndex()).get();
+	MustEat& mustEat = *area.getActors().m_mustEat[m_actor.getIndex()].get();
 	Mass massEaten = std::min(mustEat.getMassFoodRequested(), plants.getFoliageMass(plant));
 	assert(massEaten != 0);
 	mustEat.eat(area, massEaten);
@@ -133,7 +133,7 @@ void EatEvent::eatPlantLeaves(Area& area, PlantIndex plant)
 void EatEvent::eatFruitFromPlant(Area& area, PlantIndex plant)
 {
 	Plants& plants = area.getPlants();
-	MustEat& mustEat = *area.getActors().m_mustEat.at(m_actor.getIndex()).get();
+	MustEat& mustEat = *area.getActors().m_mustEat[m_actor.getIndex()].get();
 	Mass massEaten = std::min(mustEat.getMassFoodRequested(), plants.getFruitMass(plant));
 	static MaterialTypeId fruitType = MaterialType::byName("fruit");
 	Mass unitMass = ItemType::getVolume(PlantSpecies::getFruitItemType(plants.getSpecies(plant))) * MaterialType::getDensity(fruitType);
@@ -146,7 +146,7 @@ EatPathRequest::EatPathRequest(Area& area, EatObjective& eo) : m_eatObjective(eo
 {
 	assert(m_eatObjective.m_destination.empty());
 	Blocks& blocks = area.getBlocks();
-	MustEat& mustEat = *area.getActors().m_mustEat.at(getActor()).get();
+	MustEat& mustEat = *area.getActors().m_mustEat[getActor()].get();
 	std::function<bool(BlockIndex)> predicate = nullptr;
 	if(m_eatObjective.m_tryToHunt)
 	{
@@ -198,7 +198,7 @@ void EatPathRequest::callback(Area& area, FindPathResult& result)
 			return;
 		}
 		std::unique_ptr<Objective> killObjective = std::make_unique<KillObjective>(m_huntResult);
-		actors.m_hasObjectives.at(actor)->addNeed(area, std::move(killObjective));
+		actors.m_hasObjectives[actor]->addNeed(area, std::move(killObjective));
 	}
 	else
 	{
@@ -257,7 +257,7 @@ Json EatObjective::toJson() const
 void EatObjective::execute(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
-	MustEat& mustEat = *area.getActors().m_mustEat.at(actor).get();
+	MustEat& mustEat = *area.getActors().m_mustEat[actor].get();
 	if(m_noFoodFound)
 	{
 		// We have determined that there is no food here and have attempted to path to the edge of the area so we can leave.
@@ -307,7 +307,7 @@ void EatObjective::cancel(Area& area, ActorIndex actor)
 	Actors& actors = area.getActors();
 	actors.move_pathRequestMaybeCancel(actor);
 	m_eatEvent.maybeUnschedule();
-	actors.m_mustEat.at(actor)->m_eatObjective = nullptr;
+	actors.m_mustEat[actor]->m_eatObjective = nullptr;
 }
 void EatObjective::delay(Area& area, ActorIndex actor)
 {

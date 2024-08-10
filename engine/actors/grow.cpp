@@ -8,43 +8,43 @@
 
 void Actors::grow_maybeStart(ActorIndex index)
 {
-	m_canGrow.at(index)->maybeStart(m_area);
+	m_canGrow[index]->maybeStart(m_area);
 }
 void Actors::grow_stop(ActorIndex index)
 {
-	m_canGrow.at(index)->stop();
+	m_canGrow[index]->stop();
 }
 void Actors::grow_updateGrowingStatus(ActorIndex index)
 {
-	m_canGrow.at(index)->updateGrowingStatus(m_area);
+	m_canGrow[index]->updateGrowingStatus(m_area);
 }
 void Actors::grow_setPercent(ActorIndex index, Percent percentGrown)
 {
-	m_canGrow.at(index)->setGrowthPercent(m_area, percentGrown);
+	m_canGrow[index]->setGrowthPercent(m_area, percentGrown);
 }
 bool Actors::grow_isGrowing(ActorIndex index) const
 {
-	return m_canGrow.at(index)->isGrowing();
+	return m_canGrow[index]->isGrowing();
 }
 Percent Actors::grow_getPercent(ActorIndex index) const
 {
-	return m_canGrow.at(index)->growthPercent();
+	return m_canGrow[index]->growthPercent();
 }
 bool Actors::grow_getEventExists(ActorIndex index) const
 {
-	return m_canGrow.at(index)->getEvent().exists();
+	return m_canGrow[index]->getEvent().exists();
 }
 Percent Actors::grow_getEventPercent(ActorIndex index) const
 {
-	return m_canGrow.at(index)->getEvent().percentComplete();
+	return m_canGrow[index]->getEvent().percentComplete();
 }
 Step Actors::grow_getEventStep(ActorIndex index) const
 {
-	return m_canGrow.at(index)->getEvent().getStep();
+	return m_canGrow[index]->getEvent().getStep();
 }
 bool Actors::grow_eventIsPaused(ActorIndex index) const
 {
-	return m_canGrow.at(index)->getEvent().isPaused();
+	return m_canGrow[index]->getEvent().isPaused();
 }
 CanGrow::CanGrow(Area& area, ActorIndex a, Percent pg) :
 	m_event(area.m_eventSchedule), m_percentGrown(pg)

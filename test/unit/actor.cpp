@@ -16,9 +16,9 @@ TEST_CASE("actor")
 {
 	Step step = DateTime(10, 60, 10000).toSteps();
 	Simulation simulation(L"", step);
-	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
-	static const AnimalSpecies& troll = AnimalSpecies::byName("troll");
-	static const MaterialType& marble = MaterialType::byName("marble");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
+	static AnimalSpeciesId troll = AnimalSpecies::byName("troll");
+	static MaterialTypeId marble = MaterialType::byName("marble");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
@@ -40,7 +40,7 @@ TEST_CASE("actor")
 		REQUIRE(actors.getName(dwarf1) == L"dwarf1");
 		REQUIRE(actors.grow_getPercent(dwarf1) == 100);
 		REQUIRE(!actors.grow_isGrowing(dwarf1));
-		REQUIRE(actors.getShape(dwarf1).name == "oneByOneFull");
+		REQUIRE(Shape::getName(actors.getShape(dwarf1)) == "oneByOneFull");
 		REQUIRE(simulation.m_eventSchedule.count() - previousEventCount == 3);
 		REQUIRE(actors.getLocation(dwarf1) == origin1);
 		REQUIRE(blocks.actor_contains(actors.getLocation(dwarf1), dwarf1));

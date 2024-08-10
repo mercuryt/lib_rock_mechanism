@@ -146,4 +146,4 @@ void DrinkEvent::clearReferences(Simulation&, Area*) { m_drinkObjective.m_drinkE
 ThirstEvent::ThirstEvent(Area& area, const Step delay, ActorIndex a, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_actor(a) { }
 void ThirstEvent::execute(Simulation&, Area* area) { area->getActors().drink_setNeedsFluid(m_actor); }
-void ThirstEvent::clearReferences(Simulation&, Area* area) { area->getActors().m_mustDrink.at(m_actor)->m_thirstEvent.clearPointer(); }
+void ThirstEvent::clearReferences(Simulation&, Area* area) { area->getActors().m_mustDrink[m_actor]->m_thirstEvent.clearPointer(); }

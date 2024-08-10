@@ -240,7 +240,7 @@ bool AreaHasWoodCuttingDesignations::contains(FactionId faction, BlockIndex bloc
 		return false;
 	return m_data.at(faction).m_data.contains(block); 
 }
-WoodCuttingProject& AreaHasWoodCuttingDesignations::at(FactionId faction, BlockIndex block) 
+WoodCuttingProject& AreaHasWoodCuttingDesignations::getForFactionAndBlock(FactionId faction, BlockIndex block) 
 { 
 	assert(m_data.contains(faction));
 	assert(m_data.at(faction).m_data.contains(block)); 

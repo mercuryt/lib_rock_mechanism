@@ -113,11 +113,11 @@ class CraftJobType final
 public:
 	static void create(std::string name, ItemTypeId productType, Quantity productQuantity, MaterialCategoryTypeId category, std::vector<CraftStepType> stepType);
 	[[nodiscard]] static CraftJobTypeId byName(const std::string name);
-	[[nodiscard]] static std::string getName(CraftJobTypeId id) { return data.m_name.at(id); }
-	[[nodiscard]] static ItemTypeId getProductType(CraftJobTypeId id) { return data.m_productType.at(id); }
-	[[nodiscard]] static Quantity getProductQuantity(CraftJobTypeId id) { return data.m_productQuantity.at(id); }
-	[[nodiscard]] static MaterialCategoryTypeId getMaterialTypeCategory(CraftJobTypeId id) { return data.m_materialTypeCategory.at(id); }
-	[[nodiscard]] static std::vector<CraftStepType>& getStepTypes(CraftJobTypeId id) { return data.m_stepTypes.at(id); }
+	[[nodiscard]] static std::string getName(CraftJobTypeId id) { return data.m_name[id]; }
+	[[nodiscard]] static ItemTypeId getProductType(CraftJobTypeId id) { return data.m_productType[id]; }
+	[[nodiscard]] static Quantity getProductQuantity(CraftJobTypeId id) { return data.m_productQuantity[id]; }
+	[[nodiscard]] static MaterialCategoryTypeId getMaterialTypeCategory(CraftJobTypeId id) { return data.m_materialTypeCategory[id]; }
+	[[nodiscard]] static std::vector<CraftStepType>& getStepTypes(CraftJobTypeId id) { return data.m_stepTypes[id]; }
 };
 // Make a specific product.
 struct CraftJob final
@@ -217,5 +217,5 @@ public:
 	void removeFaction(FactionId faction) { m_data.erase(faction); }
 	void maybeRemoveLocation(BlockIndex location) { for(auto& pair : m_data) pair.second.maybeRemoveLocation(location); }
 	void clearReservations();
-	[[nodiscard]] HasCraftingLocationsAndJobsForFaction& at(FactionId faction);
+	[[nodiscard]] HasCraftingLocationsAndJobsForFaction& getForFaction(FactionId faction);
 };

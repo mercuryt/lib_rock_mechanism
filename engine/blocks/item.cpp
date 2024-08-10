@@ -9,25 +9,25 @@
 #include <iterator>
 void Blocks::item_record(BlockIndex index, ItemIndex item, CollisionVolume volume)
 {
-	m_itemVolume.at(index).emplace_back(item, volume);
+	m_itemVolume[index].emplace_back(item, volume);
 	Items& items = m_area.getItems();
-	m_items.at(index).add(item);
+	m_items[index].add(item);
 	if(items.isStatic(item))
-		m_staticVolume.at(index) += volume;
+		m_staticVolume[index] += volume;
 	else
-		m_dynamicVolume.at(index) += volume;
+		m_dynamicVolume[index] += volume;
 }
 void Blocks::item_erase(BlockIndex index, ItemIndex item)
 {
 	Items& items = m_area.getItems();
-	auto& blockItems = m_items.at(index);
-	auto& blockItemVolume = m_itemVolume.at(index);
+	auto& blockItems = m_items[index];
+	auto& blockItemVolume = m_itemVolume[index];
 	auto iter = std::ranges::find(blockItems, item);
-	auto iter2 = m_itemVolume.at(index).begin() + (std::distance(iter, blockItems.begin()));
+	auto iter2 = m_itemVolume[index].begin() + (std::distance(iter, blockItems.begin()));
 	if(items.isStatic(item))
-		m_staticVolume.at(index) -= iter2->second;
+		m_staticVolume[index] -= iter2->second;
 	else
-		m_dynamicVolume.at(index) -= iter2->second;
+		m_dynamicVolume[index] -= iter2->second;
 	blockItems.remove(iter);
 	(*iter2) = blockItemVolume.back();
 	blockItemVolume.pop_back();
@@ -35,12 +35,12 @@ void Blocks::item_erase(BlockIndex index, ItemIndex item)
 void Blocks::item_setTemperature(BlockIndex index, Temperature temperature)
 {
 	Items& items = m_area.getItems();
-	for(auto [item, volume] : m_itemVolume.at(index))
+	for(auto [item, volume] : m_itemVolume[index])
 		items.setTemperature(item, temperature);
 }
 void Blocks::item_disperseAll(BlockIndex index)
 {
-	auto& itemsInBlock = m_itemVolume.at(index);
+	auto& itemsInBlock = m_itemVolume[index];
 	if(itemsInBlock.empty())
 		return;
 	BlockIndices blocks;
@@ -56,56 +56,15 @@ void Blocks::item_disperseAll(BlockIndex index)
 		items.setLocation(item, block);
 	}
 }
-bool Blocks::item_canEnterCurrentlyFrom(BlockIndex index, ItemIndex item, BlockIndex block) const
-{
-	Facing facing = facingToSetWhenEnteringFrom(index, block);
-	return item_canEnterCurrentlyWithFacing(index, item, facing);
-}
-bool Blocks::item_canEnterCurrentlyWithFacing(BlockIndex index, ItemIndex item, Facing facing) const
-{
-	Items& items = m_area.getItems();
-	ShapeId shape = items.getShape(item);
-	// For multi block shapes assume that volume is the same for each block.
-	CollisionVolume volume = Shape::getCollisionVolumeAtLocationBlock(shape);
-	for(BlockIndex block : Shape::getBlocksOccupiedAt(shape, *this, index, facing))
-		if(!item_contains(block, item) && (/*m_items.at(block).full() || */m_dynamicVolume.at(block) + volume > Config::maxBlockVolume))
-				return false;
-	return true;
-}
-bool Blocks::item_canEnterEverOrCurrentlyWithFacing(BlockIndex index, ItemIndex item, Facing facing) const
-{
-	assert(shape_anythingCanEnterEver(index));
-	const Items& items = m_area.getItems();
-	MoveTypeId moveType = items.getMoveType(item);
-	for(auto& [x, y, z, v] : Shape::positionsWithFacing(items.getShape(item), facing))
-	{
-		BlockIndex block = offset(index,x, y, z);
-		if(m_items.at(block).contains(item))
-			continue;
-		if(block.empty() || !shape_anythingCanEnterEver(block) ||
-			m_dynamicVolume.at(block) + v > Config::maxBlockVolume || 
-			!shape_moveTypeCanEnter(block, moveType)
-		)
-			return false;
-	}
-	return true;
-}
-bool Blocks::item_canEnterCurrentlyWithAnyFacing(BlockIndex index, ItemIndex item) const
-{
-	for(Facing i = Facing::create(0); i < 4; ++i)
-		if(item_canEnterCurrentlyWithFacing(index, item, i))
-			return true;
-	return false;
-}
 void Blocks::item_updateIndex(BlockIndex index, ItemIndex oldIndex, ItemIndex newIndex)
 {
-	auto found = std::ranges::find(m_items.at(index), oldIndex);
-	assert(found != m_items.at(index).end());
+	auto found = std::ranges::find(m_items[index], oldIndex);
+	assert(found != m_items[index].end());
 	(*found) = newIndex; 
 }
 Quantity Blocks::item_getCount(BlockIndex index, ItemTypeId itemType, MaterialTypeId materialType) const
 {
-	auto& itemsInBlock = m_itemVolume.at(index);
+	auto& itemsInBlock = m_itemVolume[index];
 	Items& items = m_area.getItems();
 	auto found = std::ranges::find_if(itemsInBlock, [&](auto pair)
 	{
@@ -119,7 +78,7 @@ Quantity Blocks::item_getCount(BlockIndex index, ItemTypeId itemType, MaterialTy
 }
 ItemIndex Blocks::item_getGeneric(BlockIndex index, ItemTypeId itemType, MaterialTypeId materialType) const
 {
-	auto& itemsInBlock = m_itemVolume.at(index);
+	auto& itemsInBlock = m_itemVolume[index];
 	Items& items = m_area.getItems();
 	auto found = std::ranges::find_if(itemsInBlock, [&](auto pair) { 
 		ItemIndex item = pair.first;
@@ -131,7 +90,7 @@ ItemIndex Blocks::item_getGeneric(BlockIndex index, ItemTypeId itemType, Materia
 // TODO: buggy
 bool Blocks::item_hasInstalledType(BlockIndex index, ItemTypeId itemType) const
 {
-	auto& itemsInBlock = m_itemVolume.at(index);
+	auto& itemsInBlock = m_itemVolume[index];
 	Items& items = m_area.getItems();
 	auto found = std::ranges::find_if(itemsInBlock, [&](auto pair) { 
 		ItemIndex item = pair.first;
@@ -143,7 +102,7 @@ bool Blocks::item_hasEmptyContainerWhichCanHoldFluidsCarryableBy(BlockIndex inde
 {
 	Items& items = m_area.getItems();
 	Actors& actors = m_area.getActors();
-	for(auto [item, volume] : m_itemVolume.at(index))
+	for(auto [item, volume] : m_itemVolume[index])
 	{
 		ItemTypeId itemType = items.getItemType(item);
 		//TODO: account for container weight when full, needs to have fluid type passed in.
@@ -156,7 +115,7 @@ bool Blocks::item_hasContainerContainingFluidTypeCarryableBy(BlockIndex index, c
 {
 	Items& items = m_area.getItems();
 	Actors& actors = m_area.getActors();
-	for(auto [item, volume]  : m_itemVolume.at(index))
+	for(auto [item, volume]  : m_itemVolume[index])
 	{
 		ItemTypeId itemType = items.getItemType(item);
 		if(ItemType::getInternalVolume(itemType) != 0 && ItemType::getCanHoldFluids(itemType) &&
@@ -169,15 +128,15 @@ bool Blocks::item_hasContainerContainingFluidTypeCarryableBy(BlockIndex index, c
 }
 bool Blocks::item_empty(BlockIndex index) const
 {
-	return m_itemVolume.at(index).empty();
+	return m_itemVolume[index].empty();
 }
 bool Blocks::item_contains(BlockIndex index, ItemIndex item) const
 {
-	return m_items.at(index).contains(item);
+	return m_items[index].contains(item);
 }
 ItemIndicesForBlock& Blocks::item_getAll(BlockIndex index)
 {
-	return m_items.at(index);
+	return m_items[index];
 }
 const ItemIndicesForBlock& Blocks::item_getAll(BlockIndex index) const
 {

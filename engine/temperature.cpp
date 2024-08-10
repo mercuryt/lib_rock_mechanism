@@ -144,7 +144,7 @@ Temperature AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature() const
 }
 UnsafeTemperatureEvent::UnsafeTemperatureEvent(Area& area, ActorIndex a, const Step start) :
 	ScheduledEvent(area.m_simulation, AnimalSpecies::getStepsTillDieInUnsafeTemperature(area.getActors().getSpecies(a)), start),
-	m_needsSafeTemperature(*area.getActors().m_needsSafeTemperature.at(a).get()) { }
+	m_needsSafeTemperature(*area.getActors().m_needsSafeTemperature[a].get()) { }
 void UnsafeTemperatureEvent::execute(Simulation&, Area*) { m_needsSafeTemperature.dieFromTemperature(); }
 void UnsafeTemperatureEvent::clearReferences(Simulation&, Area*) { m_needsSafeTemperature.m_event.clearPointer(); }
 ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(Area& area, ActorIndex a) : 

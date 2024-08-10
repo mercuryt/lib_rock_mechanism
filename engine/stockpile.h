@@ -234,6 +234,6 @@ public:
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] AreaHasStockPilesForFaction& at(FactionId faction);
+	[[nodiscard]] AreaHasStockPilesForFaction& getForFaction(FactionId faction);
 	[[nodiscard]] bool contains(const FactionId faction) const { return m_data.contains(faction); }
 };

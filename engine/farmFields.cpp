@@ -262,15 +262,15 @@ void HasFarmFieldsForFaction::undesignateBlocks(BlockIndices undesignated)
 		{
 			PlantIndex plant = blocks.plant_get(block);
 			if(blocks.designation_has(block, m_faction, BlockDesignation::GivePlantFluid))
-				m_area.m_hasFarmFields.at(m_faction).removeGivePlantFluidDesignation(plant);
+				m_area.m_hasFarmFields.getForFaction(m_faction).removeGivePlantFluidDesignation(plant);
 			if(blocks.designation_has(block, m_faction, BlockDesignation::Harvest))
-				m_area.m_hasFarmFields.at(m_faction).removeHarvestDesignation(plant);
+				m_area.m_hasFarmFields.getForFaction(m_faction).removeHarvestDesignation(plant);
 		}
 		else if(blocks.designation_has(block, m_faction, BlockDesignation::SowSeeds))
-				m_area.m_hasFarmFields.at(m_faction).removeSowSeedsDesignation(block);
+				m_area.m_hasFarmFields.getForFaction(m_faction).removeSowSeedsDesignation(block);
 	}
 }
-HasFarmFieldsForFaction& AreaHasFarmFields::at(FactionId faction)
+HasFarmFieldsForFaction& AreaHasFarmFields::getForFaction(FactionId faction)
 {
 	if(!m_data.contains(faction))
 		registerFaction(faction);

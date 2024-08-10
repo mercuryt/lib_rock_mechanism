@@ -44,7 +44,7 @@ public:
 	void remove(Area& area, ItemIndex item);
 	bool empty() const { return m_designations.empty(); }
 	bool contains(const BlockIndex block) const { return m_designations.contains(block); }
-	InstallItemProject& at(BlockIndex block) { return m_designations.at(block); }
+	InstallItemProject& getForBlock(BlockIndex block) { return m_designations.at(block); }
 	friend class AreaHasInstallItemDesignations;
 };
 class AreaHasInstallItemDesignations final
@@ -54,5 +54,5 @@ public:
 	void registerFaction(FactionId faction) { m_data.try_emplace(faction, faction); }
 	void unregisterFaction(FactionId faction) { m_data.erase(faction); }
 	void clearReservations();
-	HasInstallItemDesignationsForFaction& at(FactionId faction) { assert(m_data.contains(faction)); return m_data.at(faction);}
+	HasInstallItemDesignationsForFaction& getForFaction(FactionId faction) { assert(m_data.contains(faction)); return m_data.at(faction);}
 };

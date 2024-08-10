@@ -300,10 +300,6 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, FluidTypeId
 	void actor_setTemperature(BlockIndex index, Temperature temperature);
 	void actor_updateIndex(BlockIndex index, ActorIndex oldIndex, ActorIndex newIndex);
 	[[nodiscard]] bool actor_canStandIn(BlockIndex index) const;
-	[[nodiscard]] bool actor_canEnterCurrentlyFrom(BlockIndex index, ActorIndex actor, BlockIndex block) const;
-	[[nodiscard]] bool actor_canEnterCurrentlyWithFacing(BlockIndex index, ActorIndex actor, Facing facing) const;
-	[[nodiscard]] bool actor_canEnterEverOrCurrentlyWithFacing(BlockIndex index, ActorIndex actor, Facing facing) const;
-	[[nodiscard]] bool actor_canEnterCurrentlyWithAnyFacing(BlockIndex index, ActorIndex actor) const;
 	[[nodiscard]] bool actor_contains(BlockIndex index, ActorIndex actor) const;
 	[[nodiscard]] bool actor_empty(BlockIndex index) const;
 	[[nodiscard]] Volume actor_volumeOf(BlockIndex index, ActorIndex actor) const;
@@ -326,10 +322,6 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, FluidTypeId
 	[[nodiscard]] bool item_hasContainerContainingFluidTypeCarryableBy(BlockIndex index, const ActorIndex actor, FluidTypeId fluidType) const;
 	[[nodiscard]] bool item_empty(BlockIndex index) const;
 	[[nodiscard]] bool item_contains(BlockIndex index, ItemIndex item) const;
-	[[nodiscard]] bool item_canEnterCurrentlyFrom(BlockIndex index, ItemIndex item, BlockIndex block) const;
-	[[nodiscard]] bool item_canEnterCurrentlyWithFacing(BlockIndex index, ItemIndex item, Facing facing) const;
-	[[nodiscard]] bool item_canEnterCurrentlyWithAnyFacing(BlockIndex index, ItemIndex item) const;
-	[[nodiscard]] bool item_canEnterEverOrCurrentlyWithFacing(BlockIndex index, ItemIndex item, const Facing facing) const;
 	// -Plant
 	void plant_create(BlockIndex index, PlantSpeciesId plantSpecies, Percent growthPercent = Percent::create(0));
 	void plant_updateGrowingStatus(BlockIndex index);
@@ -348,13 +340,13 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, FluidTypeId
 	void shape_addStaticVolume(BlockIndex index, CollisionVolume volume);
 	void shape_removeStaticVolume(BlockIndex index, CollisionVolume volume);
 	[[nodiscard]] bool shape_anythingCanEnterEver(BlockIndex index) const;
-	// CanEnter methods which are not prefixed with static are to be used only for dynamic shapes.
-	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(BlockIndex index, ShapeId shape, MoveTypeId moveType, const Facing facing, const BlockIndices& occupied) const;
-	[[nodiscard]] std::pair<bool, Facing> shape_canEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, ShapeId shape, const BlockIndices& occupied) const;
-	[[nodiscard]] bool shape_canEnterCurrentlyWithAnyFacing(BlockIndex index, ShapeId shape, const BlockIndices& occupied) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverFrom(BlockIndex index, ShapeId shape, MoveTypeId moveType, const BlockIndex block) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverWithFacing(BlockIndex index, ShapeId shape, MoveTypeId moveType, const Facing facing) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(BlockIndex index, ShapeId shape, MoveTypeId moveType) const;
+	// CanEnterCurrently methods which are not prefixed with static are to be used only for dynamic shapes.
+	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(BlockIndex index, ShapeId shape, MoveTypeId moveType, const Facing facing, const BlockIndices& occupied) const;
+	[[nodiscard]] Facing shape_canEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, ShapeId shape, const BlockIndices& occupied) const;
+	[[nodiscard]] bool shape_canEnterCurrentlyWithAnyFacing(BlockIndex index, ShapeId shape, const BlockIndices& occupied) const;
 	[[nodiscard]] bool shape_canEnterCurrentlyFrom(BlockIndex index, ShapeId shape, BlockIndex other, const BlockIndices& occupied) const;
 	[[nodiscard]] bool shape_canEnterCurrentlyWithFacing(BlockIndex index, ShapeId shape, Facing facing, const BlockIndices& occupied) const;
 	[[nodiscard]] bool shape_moveTypeCanEnter(BlockIndex index, MoveTypeId moveType) const;
@@ -371,7 +363,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, FluidTypeId
 	[[nodiscard]] bool shape_canStandIn(BlockIndex index) const;
 	[[nodiscard]] CollisionVolume shape_getDynamicVolume(BlockIndex index) const;
 	[[nodiscard]] CollisionVolume shape_getStaticVolume(BlockIndex index) const;
-	[[nodiscard]] std::unordered_map<ShapeId, CollisionVolume>& shape_getShapes(BlockIndex index);
+	[[nodiscard]] const std::unordered_map<ShapeId, CollisionVolume>& shape_getShapes(BlockIndex index) const;
 	[[nodiscard]] Quantity shape_getQuantityOfItemWhichCouldFit(BlockIndex index, ItemTypeId itemType) const;
 	// -FarmField
 	void farm_insert(BlockIndex index, FactionId faction, FarmField& farmField);
@@ -385,12 +377,14 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, FluidTypeId
 	[[nodiscard]] bool farm_isSowingSeasonFor(PlantSpeciesId species) const;
 	[[nodiscard]] bool farm_contains(BlockIndex index, FactionId faction) const;
 	[[nodiscard]] FarmField* farm_get(BlockIndex index, FactionId faction);
+	[[nodiscard]] const FarmField* farm_get(BlockIndex index, FactionId faction) const;
 	// -StockPile
 	void stockpile_recordMembership(BlockIndex index, StockPile& stockPile);
 	void stockpile_recordNoLongerMember(BlockIndex index, StockPile& stockPile);
 	// When an item is added or removed update avalibility for all stockpiles.
 	void stockpile_updateActive(BlockIndex index);
 	[[nodiscard]] StockPile* stockpile_getForFaction(BlockIndex index, FactionId faction);
+	[[nodiscard]] const StockPile* stockpile_getForFaction(BlockIndex index, FactionId faction) const;
 	[[nodiscard]] bool stockpile_contains(BlockIndex index, FactionId faction) const;
 	[[nodiscard]] bool stockpile_isAvalible(BlockIndex index, FactionId faction) const;
 	// -Project

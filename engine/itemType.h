@@ -76,31 +76,31 @@ public:
 	static bool hasRangedAttack(ItemTypeId id);
 	static bool hasMeleeAttack(ItemTypeId id);
 	static const ItemTypeId byName(std::string name);
-	[[nodiscard]] static std::vector<MaterialCategoryTypeId>& getMaterialTypeCategories(ItemTypeId id) { return data.m_materialTypeCategories.at(id); }
-	[[nodiscard]] static std::string& getName(ItemTypeId id) { return data.m_name.at(id); }
-	[[nodiscard]] static std::array<int32_t, 3>& getCraftLocationOffset(ItemTypeId id) { return data.m_craftLocationOffset.at(id); }
-	[[nodiscard]] static ShapeId getShape(ItemTypeId id) { return data.m_shape.at(id); }
-	[[nodiscard]] static MoveTypeId getMoveType(ItemTypeId id) { return data.m_moveType.at(id); }
-	[[nodiscard]] static FluidTypeId getEdibleForDrinkersOf(ItemTypeId id) { return data.m_edibleForDrinkersOf.at(id); }
-	[[nodiscard]] static CraftStepTypeCategoryId getCraftLocationStepTypeCategory(ItemTypeId id) { return data.m_craftLocationStepTypeCategory.at(id); }
-	[[nodiscard]] static Volume getVolume(ItemTypeId id) { return data.m_volume.at(id); }
-	[[nodiscard]] static Volume getInternalVolume(ItemTypeId id) { return data.m_internalVolume.at(id); }
-	[[nodiscard]] static uint32_t getValue(ItemTypeId id) { return data.m_value.at(id); }
-	[[nodiscard]] static bool getInstallable(ItemTypeId id) { return data.m_installable.at(id); }
-	[[nodiscard]] static bool getGeneric(ItemTypeId id) { return data.m_generic.at(id); }
-	[[nodiscard]] static bool getCanHoldFluids(ItemTypeId id) { return data.m_canHoldFluids.at(id); }
-	[[nodiscard]] static std::vector<AttackTypeId> getAttackTypes(ItemTypeId id) { return data.m_attackTypes.at(id); }
-	[[nodiscard]] static SkillTypeId getCombatSkill(ItemTypeId id) { return data.m_combatSkill.at(id); }
-	[[nodiscard]] static Step getAttackCoolDownBase(ItemTypeId id) { return data.m_attackCoolDownBase.at(id); }
-	[[nodiscard]] static bool getIsWeapon(ItemTypeId id) { return !data.m_attackTypes.at(id).empty(); }
-	[[nodiscard]] static bool getIsGeneric(ItemTypeId id) { return !data.m_generic.at(id); }
-	[[nodiscard]] static uint32_t getWearable_defenseScore(ItemTypeId id) { return data.m_wearable_defenseScore.at(id); }
-	[[nodiscard]] static uint32_t getWearable_layer(ItemTypeId id) { return data.m_wearable_layer.at(id); }
-	[[nodiscard]] static uint32_t getWearable_bodyTypeScale(ItemTypeId id) { return data.m_wearable_bodyTypeScale.at(id); }
-	[[nodiscard]] static uint32_t getWearable_forceAbsorbedUnpiercedModifier(ItemTypeId id) { return data.m_wearable_forceAbsorbedUnpiercedModifier.at(id); }
-	[[nodiscard]] static uint32_t getWearable_forceAbsorbedPiercedModifier(ItemTypeId id) { return data.m_wearable_forceAbsorbedPiercedModifier.at(id); }
-	[[nodiscard]] static Percent getWearable_percentCoverage(ItemTypeId id) { return data.m_wearable_percentCoverage.at(id); }
-	[[nodiscard]] static bool getWearable_rigid(ItemTypeId id) { return data.m_wearable_rigid.at(id); }
-	[[nodiscard]] static std::vector<BodyPartTypeId>& getWearable_bodyPartsCovered(ItemTypeId id) { return data.m_wearable_bodyPartsCovered.at(id); }
-	[[nodiscard]] static bool getIsWearable(ItemTypeId id) { return !data.m_wearable_bodyPartsCovered.at(id).empty(); }
+	[[nodiscard]] static std::vector<MaterialCategoryTypeId>& getMaterialTypeCategories(ItemTypeId id) { return data.m_materialTypeCategories[id]; }
+	[[nodiscard]] static std::string& getName(ItemTypeId id) { return data.m_name[id]; }
+	[[nodiscard]] static std::array<int32_t, 3>& getCraftLocationOffset(ItemTypeId id) { return data.m_craftLocationOffset[id]; }
+	[[nodiscard]] static ShapeId getShape(ItemTypeId id) { return data.m_shape[id]; }
+	[[nodiscard]] static MoveTypeId getMoveType(ItemTypeId id) { return data.m_moveType[id]; }
+	[[nodiscard]] static FluidTypeId getEdibleForDrinkersOf(ItemTypeId id) { return data.m_edibleForDrinkersOf[id]; }
+	[[nodiscard]] static CraftStepTypeCategoryId getCraftLocationStepTypeCategory(ItemTypeId id) { return data.m_craftLocationStepTypeCategory[id]; }
+	[[nodiscard]] static Volume getVolume(ItemTypeId id) { return data.m_volume[id]; }
+	[[nodiscard]] static Volume getInternalVolume(ItemTypeId id) { return data.m_internalVolume[id]; }
+	[[nodiscard]] static uint32_t getValue(ItemTypeId id) { return data.m_value[id]; }
+	[[nodiscard]] static bool getInstallable(ItemTypeId id) { return data.m_installable[id]; }
+	[[nodiscard]] static bool getGeneric(ItemTypeId id) { return data.m_generic[id]; }
+	[[nodiscard]] static bool getCanHoldFluids(ItemTypeId id) { return data.m_canHoldFluids[id]; }
+	[[nodiscard]] static std::vector<AttackTypeId> getAttackTypes(ItemTypeId id) { return data.m_attackTypes[id]; }
+	[[nodiscard]] static SkillTypeId getCombatSkill(ItemTypeId id) { return data.m_combatSkill[id]; }
+	[[nodiscard]] static Step getAttackCoolDownBase(ItemTypeId id) { return data.m_attackCoolDownBase[id]; }
+	[[nodiscard]] static bool getIsWeapon(ItemTypeId id) { return !data.m_attackTypes[id].empty(); }
+	[[nodiscard]] static bool getIsGeneric(ItemTypeId id) { return !data.m_generic[id]; }
+	[[nodiscard]] static uint32_t getWearable_defenseScore(ItemTypeId id) { return data.m_wearable_defenseScore[id]; }
+	[[nodiscard]] static uint32_t getWearable_layer(ItemTypeId id) { return data.m_wearable_layer[id]; }
+	[[nodiscard]] static uint32_t getWearable_bodyTypeScale(ItemTypeId id) { return data.m_wearable_bodyTypeScale[id]; }
+	[[nodiscard]] static uint32_t getWearable_forceAbsorbedUnpiercedModifier(ItemTypeId id) { return data.m_wearable_forceAbsorbedUnpiercedModifier[id]; }
+	[[nodiscard]] static uint32_t getWearable_forceAbsorbedPiercedModifier(ItemTypeId id) { return data.m_wearable_forceAbsorbedPiercedModifier[id]; }
+	[[nodiscard]] static Percent getWearable_percentCoverage(ItemTypeId id) { return data.m_wearable_percentCoverage[id]; }
+	[[nodiscard]] static bool getWearable_rigid(ItemTypeId id) { return data.m_wearable_rigid[id]; }
+	[[nodiscard]] static std::vector<BodyPartTypeId>& getWearable_bodyPartsCovered(ItemTypeId id) { return data.m_wearable_bodyPartsCovered[id]; }
+	[[nodiscard]] static bool getIsWearable(ItemTypeId id) { return !data.m_wearable_bodyPartsCovered[id].empty(); }
 };

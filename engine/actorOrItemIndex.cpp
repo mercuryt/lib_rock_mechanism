@@ -108,9 +108,19 @@ ActorOrItemIndex ActorOrItemIndex::getLeader(Area& area) const
 bool ActorOrItemIndex::canEnterCurrentlyFrom(Area& area, BlockIndex destination, BlockIndex origin)
 {
 	if(isActor())
-		return area.getBlocks().actor_canEnterCurrentlyFrom(destination, m_index.toActor(), origin);
+	{
+		Actors& actors = area.getActors();
+		ShapeId shape = actors.getShape(m_index.toActor());
+		auto& occupied = actors.getBlocks(m_index.toActor());
+		return area.getBlocks().shape_canEnterCurrentlyFrom(destination, shape, origin, occupied);
+	}
 	else
-		return area.getBlocks().item_canEnterCurrentlyFrom(destination, m_index.toItem(), origin);
+	{
+		Items& items = area.getItems();
+		ShapeId shape = items.getShape(m_index.toItem());
+		auto& occupied = items.getBlocks(m_index.toItem());
+		return area.getBlocks().shape_canEnterCurrentlyFrom(destination, shape, origin, occupied);
+	}
 }
 BlockIndex ActorOrItemIndex::getLocation(const Area& area) const 
 { return isActor() ? area.getActors().getLocation(m_index) : area.getItems().getLocation(m_index); }

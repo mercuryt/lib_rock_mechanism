@@ -46,7 +46,7 @@ public:
 			for(size_t i = 0; i < count; ++i)
 			{
 				size_t index = getInRange((size_t)0, copy.size() - (size_t)1);
-				output.push_back(copy.at(index));
+				output.push_back(copy[index]);
 				copy.erase(copy.begin() + index);
 			}
 			return output;

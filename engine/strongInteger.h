@@ -94,7 +94,7 @@ public:
 	[[nodiscard]] StrongInteger random(Simulation& simulation) const;
 	[[nodiscard]] StrongInteger front() const { return data.front(); }
 	[[nodiscard]] StrongInteger back() const { return data.back(); }
-	[[nodiscard]] StrongInteger at(uint i) const { return data.at(i); }
+	[[nodiscard]] StrongInteger operator[](uint i) const { assert(i < size()); return data[i]; }
 	[[nodiscard]] auto back_inserter() { return std::back_inserter(data); }
 	[[nodiscard]] bool operator==(const StrongIntegerSet<StrongInteger>& other) { return this == &other; }
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(StrongIntegerSet<StrongInteger>, data);

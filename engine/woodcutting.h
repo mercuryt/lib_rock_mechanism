@@ -96,5 +96,5 @@ public:
 	void clearReservations();
 	bool areThereAnyForFaction(FactionId faction) const;
 	bool contains(FactionId faction, BlockIndex block) const;
-	WoodCuttingProject& at(FactionId faction, BlockIndex block);
+	WoodCuttingProject& getForFactionAndBlock(FactionId faction, BlockIndex block);
 };

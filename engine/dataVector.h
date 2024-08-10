@@ -10,8 +10,8 @@ class DataVector
 public:
 	using iterator = std::vector<T>::iterator;
 	using const_iterator = std::vector<T>::const_iterator;
-	[[nodiscard]] T& at(Index index) { return data[index.get()]; }
-	[[nodiscard]] const T& at(Index index) const { return data[index.get()]; }
+	[[nodiscard]] T& operator[](Index index) { assert(index < size()); return data[index.get()]; }
+	[[nodiscard]] const T& operator[](Index index) const { assert(index < size()); return data[index.get()]; }
 	[[nodiscard]] size_t size() const { return data.size(); }
 	[[nodiscard]] iterator begin() { return data.begin(); }
 	[[nodiscard]] iterator end() { return data.end(); }
@@ -37,7 +37,7 @@ public:
 			return;
 		}
 		Index last = Index::create(size() - 1);
-		data.at(index.get()) = std::move(data.at(last.get()));
+		data[index.get()] = std::move(data[last.get()]);
 		data.resize(data.size() - 1);
 	}
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(DataVector, data);
@@ -48,11 +48,11 @@ class DataBitSet
 {
 	sul::dynamic_bitset<> data;
 public:
-	[[nodiscard]] bool at(Index index) const { return data[index.get()]; }
+	[[nodiscard]] bool operator[](Index index) const { return data[index.get()]; }
 	[[nodiscard]] size_t size() const { return data.size(); }
-	void set(Index index) { data.set(index.get(), 1, true); }
-	void set(Index index, bool status) { data.set(index.get(), 1, status); }
-	void unset(Index index) { data.set(index.get(), 1, false); }
+	void set(Index index) { assert(index < size()); data.set(index.get(), 1, true); }
+	void set(Index index, bool status) { assert(index < size()); data.set(index.get(), 1, status); }
+	void unset(Index index) { assert(index < size()); data.set(index.get(), 1, false); }
 	void reserve(size_t size) { data.reserve(size); }
 	void reserve(Index index) { data.reserve(index.get()); }
 	void resize(size_t size) { data.resize(size); }

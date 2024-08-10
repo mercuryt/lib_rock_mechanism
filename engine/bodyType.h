@@ -25,12 +25,12 @@ class BodyPartType final
 public:
 	static void create(BodyPartTypeParamaters& p);
 	[[nodiscard]] static BodyPartTypeId byName(std::string name);
-	[[nodiscard]] static std::string& getName(BodyPartTypeId id) { return data.m_name.at(id); };
-	[[nodiscard]] static Volume getVolume(BodyPartTypeId id) { return data.m_volume.at(id); };
-	[[nodiscard]] static bool getDoesLocamotion(BodyPartTypeId id) { return data.m_doesLocamotion.at(id); };
-	[[nodiscard]] static bool getDoesManipulation(BodyPartTypeId id) { return data.m_doesManipulation.at(id); };
-	[[nodiscard]] static bool getVital(BodyPartTypeId id) { return data.m_vital.at(id); };
-	[[nodiscard]] static std::vector<std::pair<AttackTypeId, MaterialTypeId>>& getAttackTypesAndMaterials(BodyPartTypeId id) { return data.m_attackTypesAndMaterials.at(id); };
+	[[nodiscard]] static std::string& getName(BodyPartTypeId id) { return data.m_name[id]; };
+	[[nodiscard]] static Volume getVolume(BodyPartTypeId id) { return data.m_volume[id]; };
+	[[nodiscard]] static bool getDoesLocamotion(BodyPartTypeId id) { return data.m_doesLocamotion[id]; };
+	[[nodiscard]] static bool getDoesManipulation(BodyPartTypeId id) { return data.m_doesManipulation[id]; };
+	[[nodiscard]] static bool getVital(BodyPartTypeId id) { return data.m_vital[id]; };
+	[[nodiscard]] static std::vector<std::pair<AttackTypeId, MaterialTypeId>>& getAttackTypesAndMaterials(BodyPartTypeId id) { return data.m_attackTypesAndMaterials[id]; };
 };
 // For example biped, quadraped, bird, etc.
 class BodyType final
@@ -41,10 +41,10 @@ class BodyType final
 public:
 	static bool hasBodyPart(BodyTypeId id, BodyPartTypeId bodyPartType)
 	{
-		return std::ranges::find(data.m_bodyPartTypes.at(id), bodyPartType) != data.m_bodyPartTypes.at(id).end();
+		return std::ranges::find(data.m_bodyPartTypes[id], bodyPartType) != data.m_bodyPartTypes[id].end();
 	}
 	static void create(std::string name, std::vector<BodyPartTypeId> bodyPartTypes);
 	[[nodiscard]] static BodyTypeId byName(std::string name);
-	[[nodiscard]] static std::string getName(BodyTypeId id) { return data.m_name.at(id); }
-	[[nodiscard]] static std::vector<BodyPartTypeId> getBodyPartTypes(BodyTypeId id) { return data.m_bodyPartTypes.at(id); }
+	[[nodiscard]] static std::string getName(BodyTypeId id) { return data.m_name[id]; }
+	[[nodiscard]] static std::vector<BodyPartTypeId> getBodyPartTypes(BodyTypeId id) { return data.m_bodyPartTypes[id]; }
 };

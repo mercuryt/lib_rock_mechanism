@@ -44,20 +44,20 @@ public:
 	{
 		assert(m_threadedTask == nullptr);
 		std::unique_ptr<ThreadedTask> task = std::make_unique<TaskType>(args...);
-		m_threadedTask.at(index) = static_cast<TaskType*>(task.get());
+		m_threadedTask[index] = static_cast<TaskType*>(task.get());
 		m_engine.insert(std::move(task));
 	}
 	void cancel(HasShapeIndex index, Simulation& simulation, Area* area)
 	{
-		assert(m_threadedTask.at(index) != nullptr);
-		m_threadedTask.at(index)->cancel(simulation, area);
-		assert(m_threadedTask.at(index) == nullptr);
+		assert(m_threadedTask[index] != nullptr);
+		m_threadedTask[index]->cancel(simulation, area);
+		assert(m_threadedTask[index] == nullptr);
 	}
-	void clearPointer(HasShapeIndex index) { m_threadedTask.at(index) = nullptr; }
-	bool exists(HasShapeIndex index) const { return m_threadedTask.at(index) != nullptr; }
+	void clearPointer(HasShapeIndex index) { m_threadedTask[index] = nullptr; }
+	bool exists(HasShapeIndex index) const { return m_threadedTask[index] != nullptr; }
 	void maybeCancel(HasShapeIndex index, Simulation& simulation, Area* area) { if(exists(index)) cancel(index, simulation, area); }
-	TaskType& get(HasShapeIndex index) { assert(m_threadedTask.at(index) != nullptr); return *m_threadedTask.at(index); }
-	const TaskType& get(HasShapeIndex index) const { assert(m_threadedTask.at(index) != nullptr); return *m_threadedTask.at(index); }
+	TaskType& get(HasShapeIndex index) { assert(m_threadedTask[index] != nullptr); return *m_threadedTask[index]; }
+	const TaskType& get(HasShapeIndex index) const { assert(m_threadedTask[index] != nullptr); return *m_threadedTask[index]; }
 	// Threaded tasks must be canceled before the holder is destroyed.
 	//~HasThreadedTasks() { maybeCancel(); }
 };

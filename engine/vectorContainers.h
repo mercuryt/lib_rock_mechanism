@@ -60,7 +60,7 @@ public:
 		values.clear();
 	}
 	[[nodiscard]] uint size() const { return keys.size(); }
-	[[nodiscard]] V& at(K& key) 
+	[[nodiscard]] V& operator[](K& key) 
 	{
 	       	assert(contains(key)); 
 		auto iterKey = find(key);

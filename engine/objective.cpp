@@ -129,7 +129,7 @@ void SupressedNeed::callback(Area& area)
 {
 	ActorIndex actor = m_actor.getIndex();
 	auto objective = std::move(m_objective);
-	HasObjectives& hasObjectives = *area.getActors().m_hasObjectives.at(actor);
+	HasObjectives& hasObjectives = *area.getActors().m_hasObjectives[actor];
 	hasObjectives.m_supressedNeeds.erase(objective->getObjectiveTypeId());
        	hasObjectives.addNeed(area, std::move(objective)); 
 }
@@ -345,7 +345,7 @@ void HasObjectives::destroy(Area& area, Objective& objective)
 				ItemIndex item = wasCarrying.getItem();
 				const FactionId faction = actors.getFactionId(m_actor);
 				if(area.m_hasStockPiles.contains(faction))
-					area.m_hasStockPiles.at(faction).addItem(item);
+					area.m_hasStockPiles.getForFaction(faction).addItem(item);
 			}
 			else
 			{

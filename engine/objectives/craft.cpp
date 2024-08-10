@@ -7,7 +7,7 @@ CraftPathRequest::CraftPathRequest(Area& area, CraftObjective& co, ActorIndex ac
 	assert(m_craftObjective.m_craftJob == nullptr);
 	Actors& actors = area.getActors();
 	FactionId faction = actors.getFactionId(actor);
-	HasCraftingLocationsAndJobsForFaction& hasCrafting = area.m_hasCraftingLocationsAndJobs.at(faction);
+	HasCraftingLocationsAndJobsForFaction& hasCrafting = area.m_hasCraftingLocationsAndJobs.getForFaction(faction);
 	Blocks& blocks = area.getBlocks();
 	SkillTypeId skillType = m_craftObjective.m_skillType;
 	auto& excludeJobs = m_craftObjective.getFailedJobs();
@@ -43,7 +43,7 @@ void CraftPathRequest::callback(Area& area, FindPathResult& result)
 	BlockIndex block = result.blockThatPassedPredicate;
 	SkillTypeId skillType = m_craftObjective.m_skillType;
 	FactionId faction = actors.getFactionId(actor);
-	auto pair = std::make_pair(area.m_hasCraftingLocationsAndJobs.at(faction).getJobForAtLocation(actor, skillType, block, m_craftObjective.getFailedJobs()), block);
+	auto pair = std::make_pair(area.m_hasCraftingLocationsAndJobs.getForFaction(faction).getJobForAtLocation(actor, skillType, block, m_craftObjective.getFailedJobs()), block);
 	m_craftJob = pair.first;
 	m_location = pair.second;
 
@@ -60,7 +60,7 @@ void CraftPathRequest::callback(Area& area, FindPathResult& result)
 		}
 		else
 		{
-			HasCraftingLocationsAndJobsForFaction& hasCrafting = area.m_hasCraftingLocationsAndJobs.at(faction);
+			HasCraftingLocationsAndJobsForFaction& hasCrafting = area.m_hasCraftingLocationsAndJobs.getForFaction(faction);
 			hasCrafting.makeAndAssignStepProject(*m_craftJob, m_location, m_craftObjective, actor);
 			m_craftObjective.m_craftJob = m_craftJob;
 		}

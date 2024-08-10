@@ -13,7 +13,7 @@ InstallItemPathRequest::InstallItemPathRequest(Area& area, InstallItemObjective&
 	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block)
 	{
 		FactionId faction = actors.getFactionId(actor);
-		return area.m_hasInstallItemDesignations.at(faction).contains(block);
+		return area.m_hasInstallItemDesignations.getForFaction(faction).contains(block);
 	};
 	bool unreserved = false;
 	createGoAdjacentToCondition(area, actor, predicate, m_installItemObjective.m_detour, unreserved, DistanceInBlocks::null(), BlockIndex::null());
@@ -27,12 +27,12 @@ void InstallItemPathRequest::callback(Area& area, FindPathResult& result)
 	else
 	{
 		BlockIndex block = result.blockThatPassedPredicate;
-		auto& hasInstallItemDesignations = area.m_hasInstallItemDesignations.at(actors.getFactionId(actor));
-		if(!hasInstallItemDesignations.contains(block) || !hasInstallItemDesignations.at(block).canAddWorker(actor))
+		auto& hasInstallItemDesignations = area.m_hasInstallItemDesignations.getForFaction(actors.getFactionId(actor));
+		if(!hasInstallItemDesignations.contains(block) || !hasInstallItemDesignations.getForBlock(block).canAddWorker(actor))
 			// Canceled or reserved, try again.
 			m_installItemObjective.execute(area, actor);
 		else
-			hasInstallItemDesignations.at(block).addWorkerCandidate(actor, m_installItemObjective);
+			hasInstallItemDesignations.getForBlock(block).addWorkerCandidate(actor, m_installItemObjective);
 	}
 
 }
@@ -61,7 +61,7 @@ void InstallItemObjective::execute(Area& area, ActorIndex actor)
 void InstallItemObjective::cancel(Area& area, ActorIndex actor) { area.getActors().move_pathRequestMaybeCancel(actor); m_project->removeWorker(actor); }
 bool InstallItemObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
 {
-	return !area.m_hasInstallItemDesignations.at(area.getActors().getFactionId(actor)).empty();
+	return !area.m_hasInstallItemDesignations.getForFaction(area.getActors().getFactionId(actor)).empty();
 }
 std::unique_ptr<Objective> InstallItemObjectiveType::makeFor(Area&, ActorIndex) const
 {

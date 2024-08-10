@@ -1,8 +1,8 @@
 #include "animalSpecies.h"
 ShapeId AnimalSpecies::shapeForPercentGrown(AnimalSpeciesId id, Percent percentGrown)
 {
-	uint index = util::scaleByPercentRange(0, data.m_shapes.at(id).size() - 1, percentGrown);
-	return data.m_shapes.at(id).at(index);
+	uint index = util::scaleByPercentRange(0, data.m_shapes[id].size() - 1, percentGrown);
+	return data.m_shapes[id][index];
 }
 // Static method.
 AnimalSpeciesId AnimalSpecies::byName(std::string name)

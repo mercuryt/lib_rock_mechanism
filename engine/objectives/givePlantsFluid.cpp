@@ -44,7 +44,7 @@ void GivePlantsFluidEvent::onCancel(Simulation&, Area* area)
 	if(location.exists() && blocks.plant_exists(location))
 	{
 		PlantIndex plant = blocks.plant_get(location);
-		area->m_hasFarmFields.at(actors.getFactionId(m_actor.getIndex())).addGivePlantFluidDesignation(plant);
+		area->m_hasFarmFields.getForFaction(actors.getFactionId(m_actor.getIndex())).addGivePlantFluidDesignation(plant);
 	}
 }
 GivePlantsFluidPathRequest::GivePlantsFluidPathRequest(Area& area, GivePlantsFluidObjective& objective) : m_objective(objective)
@@ -221,7 +221,7 @@ void GivePlantsFluidObjective::cancel(Area& area, ActorIndex actor)
 		if(blocks.plant_exists(m_plantLocation))
 		{
 			PlantIndex plant = blocks.plant_get(m_plantLocation);
-			area.m_hasFarmFields.at(actors.getFactionId(actor)).addGivePlantFluidDesignation(plant);
+			area.m_hasFarmFields.getForFaction(actors.getFactionId(actor)).addGivePlantFluidDesignation(plant);
 		}
 	}
 }
@@ -232,7 +232,7 @@ void GivePlantsFluidObjective::selectPlantLocation(Area& area, BlockIndex block,
 	m_plantLocation = block;
 	actors.canReserve_reserveLocation(actor, m_plantLocation);
 	PlantIndex plant = blocks.plant_get(m_plantLocation);
-	area.m_hasFarmFields.at(actors.getFactionId(actor)).removeGivePlantFluidDesignation(plant);
+	area.m_hasFarmFields.getForFaction(actors.getFactionId(actor)).removeGivePlantFluidDesignation(plant);
 }
 void GivePlantsFluidObjective::selectItem(Area& area, ItemIndex item, ActorIndex actor)
 {

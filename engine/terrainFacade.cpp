@@ -39,7 +39,7 @@ void TerrainFacade::doStep()
 		auto rangeEnd = std::min(numberOfRequests, i + Config::pathRequestsPerThread);
 		#pragma omp parallel
 			for(; i < rangeEnd; ++i)
-				findPathForIndexNoHuristic(PathRequestIndex::create(i), memosBreadth.at(memoIndex));
+				findPathForIndexNoHuristic(PathRequestIndex::create(i), memosBreadth[memoIndex]);
 		++memoIndex;
 	}
 	// Depth First.
@@ -53,34 +53,34 @@ void TerrainFacade::doStep()
 		auto rangeEnd = std::min(numberOfRequests, i + Config::pathRequestsPerThread);
 		#pragma omp parallel
 			for(; i < rangeEnd; ++i)
-				findPathForIndexWithHuristic(PathRequestIndex::create(i), memosDepth.at(memoIndex));
+				findPathForIndexWithHuristic(PathRequestIndex::create(i), memosDepth[memoIndex]);
 		++memoIndex;
 	}
 	// Write step.
 	// Read First.
 	for(PathRequestIndex i = PathRequestIndex::create(0); i < m_pathRequestAccessConditionsNoHuristic.size(); ++i)
 	{
-		PathRequest& pathRequest = *m_pathRequestNoHuristic.at(i);
-		pathRequest.callback(m_area, m_pathRequestResultsNoHuristic.at(i));
+		PathRequest& pathRequest = *m_pathRequestNoHuristic[i];
+		pathRequest.callback(m_area, m_pathRequestResultsNoHuristic[i]);
 		pathRequest.reset();
 	}
 	// Depth First.
 	for(PathRequestIndex i = PathRequestIndex::create(0); i < m_pathRequestAccessConditionsWithHuristic.size(); ++i)
 	{
-		PathRequest& pathRequest = *m_pathRequestWithHuristic.at(i);
-		pathRequest.callback(m_area, m_pathRequestResultsWithHuristic.at(i));
+		PathRequest& pathRequest = *m_pathRequestWithHuristic[i];
+		pathRequest.callback(m_area, m_pathRequestResultsWithHuristic[i]);
 		pathRequest.reset();
 	}
 	clearPathRequests();
 }
 void TerrainFacade::findPathForIndexWithHuristic(PathRequestIndex index, PathMemoDepthFirst& memo)
 {
-	m_pathRequestResultsWithHuristic.at(index) = findPathDepthFirst(m_pathRequestStartPositionWithHuristic.at(index), m_pathRequestDestinationConditionsWithHuristic.at(index), m_pathRequestAccessConditionsWithHuristic.at(index), m_pathRequestHuristic.at(index), memo);
+	m_pathRequestResultsWithHuristic[index] = findPathDepthFirst(m_pathRequestStartPositionWithHuristic[index], m_pathRequestDestinationConditionsWithHuristic[index], m_pathRequestAccessConditionsWithHuristic[index], m_pathRequestHuristic[index], memo);
 	memo.reset();
 }
 void TerrainFacade::findPathForIndexNoHuristic(PathRequestIndex index, PathMemoBreadthFirst& memo)
 {
-	m_pathRequestResultsNoHuristic.at(index) = findPathBreadthFirst(m_pathRequestStartPositionNoHuristic.at(index), m_pathRequestDestinationConditionsNoHuristic.at(index), m_pathRequestAccessConditionsNoHuristic.at(index), memo);
+	m_pathRequestResultsNoHuristic[index] = findPathBreadthFirst(m_pathRequestStartPositionNoHuristic[index], m_pathRequestDestinationConditionsNoHuristic[index], m_pathRequestAccessConditionsNoHuristic[index], memo);
 	memo.reset();
 }
 void TerrainFacade::clearPathRequests()
@@ -132,20 +132,20 @@ PathRequestIndex TerrainFacade::getPathRequestIndexWithHuristic()
 PathRequestIndex TerrainFacade::registerPathRequestNoHuristic(BlockIndex start, AccessCondition access, DestinationCondition destination, PathRequest& pathRequest)
 {
 	PathRequestIndex index = getPathRequestIndexNoHuristic();
-	m_pathRequestStartPositionNoHuristic.at(index) = start;
-	m_pathRequestAccessConditionsNoHuristic.at(index) = access;
-	m_pathRequestDestinationConditionsNoHuristic.at(index) = destination;
-	m_pathRequestNoHuristic.at(index) = &pathRequest;
+	m_pathRequestStartPositionNoHuristic[index] = start;
+	m_pathRequestAccessConditionsNoHuristic[index] = access;
+	m_pathRequestDestinationConditionsNoHuristic[index] = destination;
+	m_pathRequestNoHuristic[index] = &pathRequest;
 	return index;
 }
 PathRequestIndex TerrainFacade::registerPathRequestWithHuristic(BlockIndex start, AccessCondition access, DestinationCondition destination, BlockIndex huristic, PathRequest& pathRequest)
 {
 	PathRequestIndex index = getPathRequestIndexWithHuristic();
-	m_pathRequestStartPositionWithHuristic.at(index) = start;
-	m_pathRequestAccessConditionsWithHuristic.at(index) = access;
-	m_pathRequestDestinationConditionsWithHuristic.at(index) = destination;
-	m_pathRequestHuristic.at(index) = huristic;
-	m_pathRequestWithHuristic.at(index) = &pathRequest;
+	m_pathRequestStartPositionWithHuristic[index] = start;
+	m_pathRequestAccessConditionsWithHuristic[index] = access;
+	m_pathRequestDestinationConditionsWithHuristic[index] = destination;
+	m_pathRequestHuristic[index] = huristic;
+	m_pathRequestWithHuristic[index] = &pathRequest;
 	return index;
 }
 void TerrainFacade::update(BlockIndex index)
@@ -180,23 +180,23 @@ void TerrainFacade::resizePathRequestNoHuristic(PathRequestIndex size)
 void TerrainFacade::movePathRequestNoHuristic(PathRequestIndex oldIndex, PathRequestIndex newIndex)
 {
 	assert(oldIndex != newIndex);
-	m_pathRequestAccessConditionsNoHuristic.at(newIndex) = m_pathRequestAccessConditionsNoHuristic.at(oldIndex);
-	m_pathRequestDestinationConditionsNoHuristic.at(newIndex) = m_pathRequestDestinationConditionsNoHuristic.at(oldIndex);
-	m_pathRequestStartPositionNoHuristic.at(newIndex) = m_pathRequestStartPositionNoHuristic.at(oldIndex);
-	m_pathRequestNoHuristic.at(newIndex) = m_pathRequestNoHuristic.at(oldIndex);
-	m_pathRequestResultsNoHuristic.at(newIndex) = m_pathRequestResultsNoHuristic.at(oldIndex);
-	m_pathRequestNoHuristic.at(newIndex)->update(newIndex);
+	m_pathRequestAccessConditionsNoHuristic[newIndex] = m_pathRequestAccessConditionsNoHuristic[oldIndex];
+	m_pathRequestDestinationConditionsNoHuristic[newIndex] = m_pathRequestDestinationConditionsNoHuristic[oldIndex];
+	m_pathRequestStartPositionNoHuristic[newIndex] = m_pathRequestStartPositionNoHuristic[oldIndex];
+	m_pathRequestNoHuristic[newIndex] = m_pathRequestNoHuristic[oldIndex];
+	m_pathRequestResultsNoHuristic[newIndex] = m_pathRequestResultsNoHuristic[oldIndex];
+	m_pathRequestNoHuristic[newIndex]->update(newIndex);
 }
 void TerrainFacade::movePathRequestWithHuristic(PathRequestIndex oldIndex, PathRequestIndex newIndex)
 {
 	assert(oldIndex != newIndex);
-	m_pathRequestAccessConditionsWithHuristic.at(newIndex) = m_pathRequestAccessConditionsWithHuristic.at(oldIndex);
-	m_pathRequestDestinationConditionsWithHuristic.at(newIndex) = m_pathRequestDestinationConditionsWithHuristic.at(oldIndex);
-	m_pathRequestStartPositionWithHuristic.at(newIndex) = m_pathRequestStartPositionWithHuristic.at(oldIndex);
-	m_pathRequestWithHuristic.at(newIndex) = m_pathRequestWithHuristic.at(oldIndex);
-	m_pathRequestResultsWithHuristic.at(newIndex) = m_pathRequestResultsWithHuristic.at(oldIndex);
-	m_pathRequestHuristic.at(newIndex) = m_pathRequestHuristic.at(oldIndex);
-	m_pathRequestWithHuristic.at(newIndex)->update(newIndex);
+	m_pathRequestAccessConditionsWithHuristic[newIndex] = m_pathRequestAccessConditionsWithHuristic[oldIndex];
+	m_pathRequestDestinationConditionsWithHuristic[newIndex] = m_pathRequestDestinationConditionsWithHuristic[oldIndex];
+	m_pathRequestStartPositionWithHuristic[newIndex] = m_pathRequestStartPositionWithHuristic[oldIndex];
+	m_pathRequestWithHuristic[newIndex] = m_pathRequestWithHuristic[oldIndex];
+	m_pathRequestResultsWithHuristic[newIndex] = m_pathRequestResultsWithHuristic[oldIndex];
+	m_pathRequestHuristic[newIndex] = m_pathRequestHuristic[oldIndex];
+	m_pathRequestWithHuristic[newIndex]->update(newIndex);
 }
 void TerrainFacade::unregisterNoHuristic(PathRequestIndex index)
 {
@@ -522,7 +522,7 @@ void AreaHasTerrainFacades::update(BlockIndex index)
 	for(auto& pair : m_data)
 		pair.second.update(index);
 }
-TerrainFacade& AreaHasTerrainFacades::at(MoveTypeId moveType)
+TerrainFacade& AreaHasTerrainFacades::getForMoveType(MoveTypeId moveType)
 {
 	assert(m_data.contains(moveType));
 	return m_data.at(moveType);

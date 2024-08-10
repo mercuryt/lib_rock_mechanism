@@ -32,7 +32,7 @@ public:
 	void readStep();
 	void writeStep();
 	void clear();
-	void updateActorIndex(VisionFacadeIndex index, ActorIndex newIndex) { m_actors.at(index) = newIndex; }
+	void updateActorIndex(VisionFacadeIndex index, ActorIndex newIndex) { m_actors[index] = newIndex; }
 	[[nodiscard]] ActorIndex getActor(VisionFacadeIndex index);
 	[[nodiscard]] BlockIndex getLocation(VisionFacadeIndex index);
 	[[nodiscard]] DistanceInBlocks getRange(VisionFacadeIndex index) const;

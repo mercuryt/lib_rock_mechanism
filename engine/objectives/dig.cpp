@@ -39,7 +39,7 @@ void DigPathRequest::callback(Area& area, FindPathResult& result)
 			return;
 		}
 		BlockIndex target = result.blockThatPassedPredicate;
-		DigProject& project = area.m_hasDigDesignations.at(actors.getFactionId(actor), target);
+		DigProject& project = area.m_hasDigDesignations.getForFaction(actors.getFactionId(actor), target);
 		if(project.canAddWorker(actor))
 			m_digObjective.joinProject(project, actor);
 		else
@@ -72,7 +72,7 @@ void DigObjective::execute(Area& area, ActorIndex actor)
 		{ 
 			if(!getJoinableProjectAt(area, block, actor))
 				return false;
-			project = &area.m_hasDigDesignations.at(actors.getFactionId(actor), block);
+			project = &area.m_hasDigDesignations.getForFaction(actors.getFactionId(actor), block);
 			if(project->canAddWorker(actor))
 				return true;
 			return false;
@@ -133,7 +133,7 @@ DigProject* DigObjective::getJoinableProjectAt(Area& area, BlockIndex block, Act
 	FactionId faction = actors.getFactionId(actor);
 	if(!blocks.designation_has(block, faction, BlockDesignation::Dig))
 		return nullptr;
-	DigProject& output = area.m_hasDigDesignations.at(faction, block);
+	DigProject& output = area.m_hasDigDesignations.getForFaction(faction, block);
 	if(!output.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&output))
 		return nullptr;
 	if(!output.canAddWorker(actor))
