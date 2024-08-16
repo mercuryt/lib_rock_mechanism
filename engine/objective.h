@@ -26,69 +26,38 @@ struct DeserializationMemo;
 class ObjectiveTypeSetPriorityInputAction final : public InputAction
 {
 	ActorIndex m_actor;
-	const ObjectiveType& m_objectiveType;
+	ObjectiveTypeId m_objectiveType;
 	Priority m_priority;
 public:
-	ObjectiveTypeSetPriorityInputAction(InputQueue& inputQueue, ActorIndex actor, const ObjectiveType& objectiveType, Priority priority) : InputAction(inputQueue), m_actor(actor), m_objectiveType(objectiveType), m_priority(priority) { }
+	ObjectiveTypeSetPriorityInputAction(InputQueue& inputQueue, ActorIndex actor, ObjectiveTypeId objectiveType, Priority priority) : InputAction(inputQueue), m_actor(actor), m_objectiveType(objectiveType), m_priority(priority) { }
 	void execute();
 };
 class ObjectiveTypeRemoveInputAction final : public InputAction
 {
 	ActorIndex m_actor;
-	const ObjectiveType& m_objectiveType;
+	ObjectiveTypeId m_objectiveType;
 public:
-	ObjectiveTypeRemoveInputAction(InputQueue& inputQueue, ActorIndex actor, const ObjectiveType& objectiveType) : InputAction(inputQueue), m_actor(actor), m_objectiveType(objectiveType) { }
+	ObjectiveTypeRemoveInputAction(InputQueue& inputQueue, ActorIndex actor, ObjectiveTypeId objectiveType) : InputAction(inputQueue), m_actor(actor), m_objectiveType(objectiveType) { }
 	void execute();
 };
 */
-enum class ObjectiveTypeId { Construct, Craft, Dig, Drink, Eat, Equip, Exterminate, GetToSafeTemperature, GiveItem, GivePlantsFluid, GoTo, Harvest, Haul, InstallItem, Kill, LeaveArea, Medical, Rest, Sleep, Station, SowSeeds, StockPile, Unequip, Uniform, Wait, Wander, WoodCutting };
-NLOHMANN_JSON_SERIALIZE_ENUM(ObjectiveTypeId, {
-	{ObjectiveTypeId::Construct, "Construct"}, 
-	{ObjectiveTypeId::Craft, "Craft"},
-	{ObjectiveTypeId::Dig,"Dig"}, 
-	{ObjectiveTypeId::Drink, "Drink"}, 
-	{ObjectiveTypeId::Eat, "Eat"}, 
-	{ObjectiveTypeId::Equip, "Equip"}, 
-	{ObjectiveTypeId::Exterminate, "Exterminate"}, 
-	{ObjectiveTypeId::GetToSafeTemperature, "GetToSafeTemperature"}, 
-	{ObjectiveTypeId::GiveItem, "GiveItem"}, 
-	{ObjectiveTypeId::GivePlantsFluid, "GivePlantsFluid"}, 
-	{ObjectiveTypeId::GoTo, "GoTo"}, 
-	{ObjectiveTypeId::Harvest, "Harvest"}, 
-	{ObjectiveTypeId::Haul, "Haul"}, 
-	{ObjectiveTypeId::InstallItem, "InstallItem"}, 
-	{ObjectiveTypeId::Kill, "Kill"}, 
-	{ObjectiveTypeId::LeaveArea, "LeaveArea"}, 
-	{ObjectiveTypeId::Medical, "Medical"}, 
-	{ObjectiveTypeId::Rest, "Rest"}, 
-	{ObjectiveTypeId::Sleep, "Sleep"}, 
-	{ObjectiveTypeId::Station, "Station"}, 
-	{ObjectiveTypeId::SowSeeds, "SowSeeds"}, 
-	{ObjectiveTypeId::StockPile, "StockPile"}, 
-	{ObjectiveTypeId::Uniform, "Uniform"}, 
-	{ObjectiveTypeId::Unequip, "Unequip"}, 
-	{ObjectiveTypeId::Wait, "Wait"}, 
-	{ObjectiveTypeId::Wander, "Wander"},
-	{ObjectiveTypeId::Wander, "WoodCutting"},
-});
-struct ObjectiveType
+class ObjectiveType
 {
+public:
 	ObjectiveType() = default;
-	ObjectiveType(const ObjectiveType&) = delete;
-	ObjectiveType(ObjectiveType&&) = delete;
-	virtual ~ObjectiveType() = default;
-	// Infastructure
-	inline static std::map<std::string, std::unique_ptr<ObjectiveType>> objectiveTypes;
-	inline static std::map<const ObjectiveType*, std::string> objectiveTypeNames;
 	static void load();
+	static ObjectiveTypeId getIdByName(std::string name);
+	static const ObjectiveType& getById(ObjectiveTypeId id);
+	static const ObjectiveType& getByName(std::string name);
+	ObjectiveTypeId getId() const;
 	[[nodiscard]] virtual bool canBeAssigned(Area& area, ActorIndex actor) const = 0;
 	[[nodiscard]] virtual std::unique_ptr<Objective> makeFor(Area& area, ActorIndex actor) const = 0;
-	[[nodiscard]] virtual ObjectiveTypeId getObjectiveTypeId() const = 0;
-	[[nodiscard]] virtual Json toJson() const;
-	[[nodiscard]] bool operator==(const ObjectiveType& other) const { return &other == this; }
+	[[nodiscard]] virtual std::string name() const = 0;
+	ObjectiveType(ObjectiveTypeId) = delete;
+	ObjectiveType(ObjectiveType&&) = delete;
+	virtual ~ObjectiveType() = default;
 };
-void to_json(Json& data, const ObjectiveType* const& objectiveType);
-void from_json(const Json& data, const ObjectiveType*& objectiveType);
+inline DataVector<std::unique_ptr<ObjectiveType>, ObjectiveTypeId> objectiveTypeData;
 class Objective
 {
 public:
@@ -117,7 +86,7 @@ public:
 	virtual void onProjectCannotReserve(Area&, ActorIndex) { }
 	void detour(Area& area, ActorIndex actor) { m_detour = true; execute(area, actor); }
 	[[nodiscard]] virtual std::string name() const = 0;
-	[[nodiscard]] virtual ObjectiveTypeId getObjectiveTypeId() const = 0;
+	[[nodiscard]] ObjectiveTypeId getTypeId() const { static auto id = ObjectiveType::getIdByName(name()); return id; }
 	// Needs are biological imperatives which overide tasks. Eat, sleep, etc.
 	[[nodiscard]] virtual bool isNeed() const { return false; }
 	// When an objective is interrputed by a higher priority objective should it be kept in the task queue for later or discarded?
@@ -135,7 +104,7 @@ public:
 inline void to_json(Json& data, const Objective* const& objective){ data = reinterpret_cast<uintptr_t>(objective); }
 struct ObjectivePriority
 {
-	const ObjectiveType* objectiveType;
+	ObjectiveTypeId objectiveType;
 	Priority priority;
 	Step doNotAssignAgainUntil;
 };
@@ -147,8 +116,8 @@ class ObjectiveTypePrioritySet final
 	const ObjectivePriority& getById(ObjectiveTypeId objectiveTypeId) const;
 public:
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
-	void setPriority(Area& area, ActorIndex actor, const ObjectiveType& objectiveType, Priority priority);
-	void remove(const ObjectiveType& objectiveType);
+	void setPriority(Area& area, ActorIndex actor, ObjectiveTypeId objectiveType, Priority priority);
+	void remove(ObjectiveTypeId objectiveType);
 	void setObjectiveFor(Area& area, ActorIndex actor);
 	void setDelay(Area& area, ObjectiveTypeId objectiveTypeId);
 	[[nodiscard]] Json toJson() const;
@@ -195,11 +164,11 @@ class HasObjectives final
 	// Biological needs like eat, drink, go to safe temperature, and sleep go into needs queue, possibly overiding the current objective in either queue.
 	std::list<std::unique_ptr<Objective>> m_needsQueue;
 	// Prevent duplicate Objectives in needs queue.
-	std::unordered_set<ObjectiveTypeId> m_idsOfObjectivesInNeedsQueue;
+	ObjectiveTypeIdSet m_idsOfObjectivesInNeedsQueue;
 	// Voluntary tasks like harvest, dig, build, craft, guard, station, and kill go into task queue. Station and kill both have higher priority then baseline needs like eat but lower then needs like flee.
 	// findNewTask only adds one task at a time so there usually is only once objective in the queue. More then one task objective can be added by the user manually.
 	std::list<std::unique_ptr<Objective>> m_tasksQueue;
-	std::unordered_map<ObjectiveTypeId, SupressedNeed> m_supressedNeeds;
+	ObjectiveTypeIdMap<SupressedNeed> m_supressedNeeds;
 	Objective* m_currentObjective = nullptr;
 	ActorIndex m_actor;
 

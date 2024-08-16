@@ -12,9 +12,9 @@
 TEST_CASE("leadAndFollow")
 {
 	Simulation simulation;
-	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
-	static const AnimalSpecies& troll = AnimalSpecies::byName("troll");
-	static const MaterialType& marble = MaterialType::byName("marble");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
+	static AnimalSpeciesId troll = AnimalSpecies::byName("troll");
+	static MaterialTypeId marble = MaterialType::byName("marble");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();

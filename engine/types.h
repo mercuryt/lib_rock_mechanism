@@ -1,135 +1,148 @@
 // One BlockIndex has xyz dimensions of 1 meter by 1 meter by 2 meters.
-//
+// This File defines physical types.
+// idTypes.h defines id types, which don't ever change.
+// index.h defines index types, which do change and must be updated.
+
 #pragma once
 #include "strongFloat.h"
 #include "strongInteger.h"
 #include "json.h"
-#include <cmath>
+#include "idTypes.h"
 #include <compare>
 #include <cstdint>
-#include <functional>
 #include <iostream>
-#include <variant>
 
-class Step : public StrongInteger<Step, uint64_t>
+using StepWidth = uint64_t;
+class Step : public StrongInteger<Step, StepWidth>
 {
 public:
 	Step() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const Step& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Step& index) { data = index.get(); }
-inline void from_json(const Json& data, Step& index) { index = Step::create(data.get<uint64_t>()); }
+inline void from_json(const Json& data, Step& index) { index = Step::create(data.get<StepWidth>()); }
 
-class Temperature : public StrongInteger<Temperature, uint32_t>
+using TemperatureWidth = uint32_t;
+class Temperature : public StrongInteger<Temperature, TemperatureWidth>
 {
 public:
 	Temperature() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const Temperature& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Temperature& index) { data = index.get(); }
-inline void from_json(const Json& data, Temperature& index) { index = Temperature::create(data.get<uint32_t>()); }
+inline void from_json(const Json& data, Temperature& index) { index = Temperature::create(data.get<TemperatureWidth>()); }
 
-class TemperatureDelta : public StrongInteger<TemperatureDelta, int32_t>
+using TemperatureDeltaWidth = int32_t;
+class TemperatureDelta : public StrongInteger<TemperatureDelta, TemperatureDeltaWidth>
 {
 public:
 	TemperatureDelta() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const TemperatureDelta& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const TemperatureDelta& index) { data = index.get(); }
-inline void from_json(const Json& data, TemperatureDelta& index) { index = TemperatureDelta::create(data.get<int32_t>()); }
+inline void from_json(const Json& data, TemperatureDelta& index) { index = TemperatureDelta::create(data.get<TemperatureDeltaWidth>()); }
 
-class Quantity : public StrongInteger<Quantity, uint32_t>
+using QuantityWidth = uint16_t;
+class Quantity : public StrongInteger<Quantity, QuantityWidth>
 {
 public:
 	Quantity() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const Quantity& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Quantity& index) { data = index.get(); }
-inline void from_json(const Json& data, Quantity& index) { index = Quantity::create(data.get<uint32_t>()); }
+inline void from_json(const Json& data, Quantity& index) { index = Quantity::create(data.get<QuantityWidth>()); }
 
 class Volume;
-class CollisionVolume : public StrongInteger<CollisionVolume, uint32_t>
+using CollisionVolumeWidth = uint32_t;
+class CollisionVolume : public StrongInteger<CollisionVolume, CollisionVolumeWidth>
 {
 public:
 	CollisionVolume() = default;
 	[[nodiscard]] Volume toVolume() const;
 	[[nodiscard]] CollisionVolume operator*(const Quantity& quantity) const { return CollisionVolume::create(data * quantity.get()); }
-	[[nodiscard]] CollisionVolume operator*(uint32_t other) const { return CollisionVolume::create(other * data); }
+	[[nodiscard]] CollisionVolume operator*(CollisionVolumeWidth other) const { return CollisionVolume::create(other * data); }
 	[[nodiscard]] CollisionVolume operator*(float other) const { return CollisionVolume::create(other * data); }
 	struct Hash { [[nodiscard]] size_t operator()(const CollisionVolume& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const CollisionVolume& index) { data = index.get(); }
-inline void from_json(const Json& data, CollisionVolume& index) { index = CollisionVolume::create(data.get<uint32_t>()); }
+inline void from_json(const Json& data, CollisionVolume& index) { index = CollisionVolume::create(data.get<CollisionVolumeWidth>()); }
 
 class Mass;
 class Density;
-class Volume : public StrongInteger<Volume, uint32_t>
+using VolumeWidth = uint32_t;
+class Volume : public StrongInteger<Volume, VolumeWidth>
 {
 public:
 	Volume() = default;
 	[[nodiscard]] Volume operator*(Quantity other) const;
 	[[nodiscard]] Mass operator*(Density density) const;
-	[[nodiscard]] Volume operator*(uint32_t other) const;
+	[[nodiscard]] Volume operator*(VolumeWidth other) const;
 	[[nodiscard]] Volume operator*(float other) const;
 	[[nodiscard]] CollisionVolume toCollisionVolume() const;
 	struct Hash { [[nodiscard]] size_t operator()(const Volume& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Volume& index) { data = index.get(); }
-inline void from_json(const Json& data, Volume& index) { index = Volume::create(data.get<uint32_t>()); }
+inline void from_json(const Json& data, Volume& index) { index = Volume::create(data.get<VolumeWidth>()); }
 
-class Mass : public StrongInteger<Mass, uint32_t>
+using MassWidth = uint32_t;
+class Mass : public StrongInteger<Mass, MassWidth>
 {
 public:
 	Mass() = default;
 	[[nodiscard]] Mass operator*(Quantity quantity) const;
-	[[nodiscard]] Mass operator*(uint32_t other) const;
+	[[nodiscard]] Mass operator*(MassWidth other) const;
 	[[nodiscard]] Mass operator*(float other) const;
 	struct Hash { [[nodiscard]] size_t operator()(const Mass& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Mass& index) { data = index.get(); }
-inline void from_json(const Json& data, Mass& index) { index = Mass::create(data.get<uint32_t>()); }
+inline void from_json(const Json& data, Mass& index) { index = Mass::create(data.get<MassWidth>()); }
 
-class Density : public StrongInteger<Density, uint32_t>
+using DensityWidth = uint32_t;
+class Density : public StrongInteger<Density, DensityWidth>
 {
 public:
 	Density() = default;
 	[[nodiscard]] Mass operator*(Volume volume) const;
-	[[nodiscard]] Density operator*(uint32_t other) const;
+	[[nodiscard]] Density operator*(DensityWidth other) const;
 	[[nodiscard]] Density operator*(float other) const;
 	struct Hash { [[nodiscard]] size_t operator()(const Density& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Density& index) { data = index.get(); }
-inline void from_json(const Json& data, Density& index) { index = Density::create(data.get<uint32_t>()); }
+inline void from_json(const Json& data, Density& index) { index = Density::create(data.get<DensityWidth>()); }
 
-class Force : public StrongInteger<Force, uint32_t>
+using ForceWidth = uint32_t;
+class Force : public StrongInteger<Force, ForceWidth>
 {
 public:
 	Force() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const Force& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Force& index) { data = index.get(); }
-inline void from_json(const Json& data, Force& index) { index = Force::create(data.get<uint32_t>()); }
+inline void from_json(const Json& data, Force& index) { index = Force::create(data.get<ForceWidth>()); }
 
-class Kilometers : public StrongInteger<Kilometers, uint32_t>
+using KilometersWidth = uint32_t;
+class Kilometers : public StrongInteger<Kilometers, KilometersWidth>
 {
 public:
 	Kilometers() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const Kilometers& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Kilometers& index) { data = index.get(); }
-inline void from_json(const Json& data, Kilometers& index) { index = Kilometers::create(data.get<uint32_t>()); }
+inline void from_json(const Json& data, Kilometers& index) { index = Kilometers::create(data.get<KilometersWidth>()); }
 
-class Meters : public StrongInteger<Meters, uint32_t>
+using MetersWidth = uint32_t;
+class Meters : public StrongInteger<Meters, MetersWidth>
 {
 public:
 	Meters() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const Meters& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Meters& index) { data = index.get(); }
-inline void from_json(const Json& data, Meters& index) { index = Meters::create(data.get<uint32_t>()); }
+inline void from_json(const Json& data, Meters& index) { index = Meters::create(data.get<MetersWidth>()); }
 
 class DistanceInBlocksFractional;
-class DistanceInBlocks : public StrongInteger<DistanceInBlocks, uint32_t>
+using DistanceInBlocksWidth = uint32_t;
+class DistanceInBlocks : public StrongInteger<DistanceInBlocks, DistanceInBlocksWidth>
 {
 public:
 	DistanceInBlocks() = default;
@@ -138,7 +151,7 @@ public:
 	struct Hash { [[nodiscard]] size_t operator()(const DistanceInBlocks& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const DistanceInBlocks& index) { data = index.get(); }
-inline void from_json(const Json& data, DistanceInBlocks& index) { index = DistanceInBlocks::create(data.get<uint32_t>()); }
+inline void from_json(const Json& data, DistanceInBlocks& index) { index = DistanceInBlocks::create(data.get<DistanceInBlocksWidth>()); }
 
 class DistanceInBlocksFractional : public StrongFloat<DistanceInBlocksFractional>
 {
@@ -152,7 +165,8 @@ inline void to_json(Json& data, const DistanceInBlocksFractional& index) { data 
 inline void from_json(const Json& data, DistanceInBlocksFractional& index) { index = DistanceInBlocksFractional::create(data.get<float>()); }
 
 // For use by location buckets.
-class DistanceInBuckets : public StrongInteger<DistanceInBuckets, uint32_t>
+using DistanceInBucketsWidth = uint32_t;
+class DistanceInBuckets : public StrongInteger<DistanceInBuckets, DistanceInBucketsWidth>
 {
 public:
 	DistanceInBuckets() = default;
@@ -160,341 +174,132 @@ public:
 	struct Hash { [[nodiscard]] size_t operator()(const DistanceInBuckets& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const DistanceInBuckets& index) { data = index.get(); }
-inline void from_json(const Json& data, DistanceInBuckets& index) { index = DistanceInBuckets::create(data.get<uint32_t>()); }
+inline void from_json(const Json& data, DistanceInBuckets& index) { index = DistanceInBuckets::create(data.get<DistanceInBucketsWidth>()); }
+
 //using Latitude = double;
 //using Longitude = double;
 //using Bearing = double;
-class Speed : public StrongInteger<Speed, uint32_t>
+
+using SpeedWidth = uint32_t;
+class Speed : public StrongInteger<Speed, SpeedWidth>
 {
 public:
 	Speed() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const Speed& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Speed& index) { data = index.get(); }
-inline void from_json(const Json& data, Speed& index) { index = Speed::create(data.get<uint32_t>()); }
-class MoveCost : public StrongInteger<MoveCost, uint32_t>
+inline void from_json(const Json& data, Speed& index) { index = Speed::create(data.get<SpeedWidth>()); }
+
+using MoveCostWidth = uint32_t;
+class MoveCost : public StrongInteger<MoveCost, MoveCostWidth>
 {
 public:
 	MoveCost() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const MoveCost& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const MoveCost& index) { data = index.get(); }
-inline void from_json(const Json& data, MoveCost& index) { index = MoveCost::create(data.get<uint32_t>()); }
+inline void from_json(const Json& data, MoveCost& index) { index = MoveCost::create(data.get<MoveCostWidth>()); }
 
-class Quality : public StrongInteger<Quality, uint32_t>
+using QualityWidth = uint32_t;
+class Quality : public StrongInteger<Quality, QualityWidth>
 {
 public:
 	Quality() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const Quality& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Quality& index) { data = index.get(); }
-inline void from_json(const Json& data, Quality& index) { index = Quality::create(data.get<uint32_t>()); }
+inline void from_json(const Json& data, Quality& index) { index = Quality::create(data.get<QualityWidth>()); }
 
-class Percent : public StrongInteger<Percent, uint32_t>
+using PercentWidth = uint32_t;
+class Percent : public StrongInteger<Percent, PercentWidth>
 {
 public:
 	Percent() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const Percent& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Percent& index) { data = index.get(); }
-inline void from_json(const Json& data, Percent& index) { index = Percent::create(data.get<uint32_t>()); }
+inline void from_json(const Json& data, Percent& index) { index = Percent::create(data.get<PercentWidth>()); }
 
-class Facing : public StrongInteger<Facing, uint8_t>
+using FacingWidth = uint8_t;
+class Facing : public StrongInteger<Facing, FacingWidth>
 {
 public:
 	Facing() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const Facing& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Facing& index) { data = index.get(); }
-inline void from_json(const Json& data, Facing& index) { index = Facing::create(data.get<uint8_t>()); }
+inline void from_json(const Json& data, Facing& index) { index = Facing::create(data.get<FacingWidth>()); }
 
-class AreaId : public StrongInteger<AreaId, uint32_t>
-{
-public:
-	AreaId() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const AreaId& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const AreaId& index) { data = index.get(); }
-inline void from_json(const Json& data, AreaId& index) { index = AreaId::create(data.get<uint32_t>()); }
-
-template<typename T>
-using AreaIdMap = std::unordered_map<AreaId, T, AreaId::Hash>;
-class ItemId : public StrongInteger<ItemId, uint32_t>
-{
-public:
-	ItemId() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const ItemId& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const ItemId& index) { data = index.get(); }
-inline void from_json(const Json& data, ItemId& index) { index = ItemId::create(data.get<uint32_t>()); }
-
-template<typename T>
-using ItemIdMap = std::unordered_map<ItemId, T, ItemId::Hash>;
-class ActorId : public StrongInteger<ActorId, uint32_t>
-{
-public:
-	ActorId() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const ActorId& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const ActorId& index) { data = index.get(); }
-inline void from_json(const Json& data, ActorId& index) { index = ActorId::create(data.get<uint32_t>()); }
-
-template<typename T>
-using ActorIdMap = std::unordered_map<ActorId, T, ActorId::Hash>;
-class VisionCuboidId : public StrongInteger<VisionCuboidId, uint32_t>
-{
-public:
-	VisionCuboidId() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const VisionCuboidId& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const VisionCuboidId& index) { data = index.get(); }
-inline void from_json(const Json& data, VisionCuboidId& index) { index = VisionCuboidId::create(data.get<uint32_t>()); }
-
-class FactionId : public StrongInteger<FactionId, uint32_t>
-{
-public:
-	FactionId() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const FactionId& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const FactionId& index) { data = index.get(); }
-inline void from_json(const Json& data, FactionId& index) { index = FactionId::create(data.get<uint16_t>()); }
-
-class CombatScore : public StrongInteger<CombatScore, uint16_t>
+using CombatScoreWidth = uint16_t;
+class CombatScore : public StrongInteger<CombatScore, CombatScoreWidth>
 {
 public:
 	CombatScore() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const CombatScore& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const CombatScore& index) { data = index.get(); }
-inline void from_json(const Json& data, CombatScore& index) { index = CombatScore::create(data.get<uint16_t>()); }
+inline void from_json(const Json& data, CombatScore& index) { index = CombatScore::create(data.get<CombatScoreWidth>()); }
 
-class SkillLevel : public StrongInteger<SkillLevel, uint16_t>
+using SkillLevelWidth = uint16_t;
+class SkillLevel : public StrongInteger<SkillLevel, SkillLevelWidth>
 {
 public:
 	SkillLevel() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const SkillLevel& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const SkillLevel& index) { data = index.get(); }
-inline void from_json(const Json& data, SkillLevel& index) { index = SkillLevel::create(data.get<uint16_t>()); }
+inline void from_json(const Json& data, SkillLevel& index) { index = SkillLevel::create(data.get<SkillLevelWidth>()); }
 
-class SkillExperiencePoints : public StrongInteger<SkillExperiencePoints, uint16_t>
+using SkillExperiencePointsWidth = uint16_t;
+class SkillExperiencePoints : public StrongInteger<SkillExperiencePoints, SkillExperiencePointsWidth>
 {
 public:
 	SkillExperiencePoints() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const SkillExperiencePoints& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const SkillExperiencePoints& index) { data = index.get(); }
-inline void from_json(const Json& data, SkillExperiencePoints& index) { index = SkillExperiencePoints::create(data.get<uint16_t>()); }
+inline void from_json(const Json& data, SkillExperiencePoints& index) { index = SkillExperiencePoints::create(data.get<SkillExperiencePointsWidth>()); }
 
-
-class AttributeLevel : public StrongInteger<AttributeLevel, uint16_t>
+using AttributeLevelWidth = uint16_t;
+class AttributeLevel : public StrongInteger<AttributeLevel, AttributeLevelWidth>
 {
 public:
 	AttributeLevel() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const AttributeLevel& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const AttributeLevel& index) { data = index.get(); }
-inline void from_json(const Json& data, AttributeLevel& index) { index = AttributeLevel::create(data.get<uint16_t>()); }
+inline void from_json(const Json& data, AttributeLevel& index) { index = AttributeLevel::create(data.get<AttributeLevelWidth>()); }
 
-class AttributeLevelBonusOrPenalty : public StrongInteger<AttributeLevelBonusOrPenalty, int16_t>
+using AttributeLevelBonusOrPenaltyWidth = uint16_t;
+class AttributeLevelBonusOrPenalty : public StrongInteger<AttributeLevelBonusOrPenalty, AttributeLevelBonusOrPenaltyWidth>
 {
 public:
 	AttributeLevelBonusOrPenalty() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const AttributeLevelBonusOrPenalty& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const AttributeLevelBonusOrPenalty& index) { data = index.get(); }
-inline void from_json(const Json& data, AttributeLevelBonusOrPenalty& index) { index = AttributeLevelBonusOrPenalty::create(data.get<uint16_t>()); }
+inline void from_json(const Json& data, AttributeLevelBonusOrPenalty& index) { index = AttributeLevelBonusOrPenalty::create(data.get<AttributeLevelBonusOrPenaltyWidth>()); }
 
-class Priority : public StrongInteger<Priority, int16_t>
+using PriorityWidth = uint16_t;
+class Priority : public StrongInteger<Priority, PriorityWidth>
 {
 public:
 	Priority() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const Priority& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Priority& index) { data = index.get(); }
-inline void from_json(const Json& data, Priority& index) { index = Priority::create(data.get<uint16_t>()); }
+inline void from_json(const Json& data, Priority& index) { index = Priority::create(data.get<PriorityWidth>()); }
 
-class Stamina : public StrongInteger<Stamina, int16_t>
+using StaminaWidth = uint16_t;
+class Stamina : public StrongInteger<Stamina, StaminaWidth>
 {
 public:
 	Stamina() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const Stamina& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Stamina& index) { data = index.get(); }
-inline void from_json(const Json& data, Stamina& index) { index = Stamina::create(data.get<uint16_t>()); }
+inline void from_json(const Json& data, Stamina& index) { index = Stamina::create(data.get<StaminaWidth>()); }
 
-// The offset required to lookup in one block's getAdjacentUnfiltered to find another block.
-class AdjacentIndex : public StrongInteger<AdjacentIndex, int8_t>
-{
-public:
-	AdjacentIndex() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const AdjacentIndex& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const AdjacentIndex& index) { data = index.get(); }
-inline void from_json(const Json& data, AdjacentIndex& index) { index = AdjacentIndex::create(data.get<uint8_t>()); }
-
-class PlantSpeciesId : public StrongInteger<PlantSpeciesId, int16_t>
-{
-public:
-	PlantSpeciesId() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const PlantSpeciesId& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const PlantSpeciesId& index) { data = index.get(); }
-inline void from_json(const Json& data, PlantSpeciesId& index) { index = PlantSpeciesId::create(data.get<uint16_t>()); }
-
-class AnimalSpeciesId : public StrongInteger<AnimalSpeciesId, int16_t>
-{
-public:
-	AnimalSpeciesId() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const AnimalSpeciesId& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const AnimalSpeciesId& index) { data = index.get(); }
-inline void from_json(const Json& data, AnimalSpeciesId& index) { index = AnimalSpeciesId::create(data.get<uint16_t>()); }
-
-class MaterialTypeId : public StrongInteger<MaterialTypeId, int16_t>
-{
-public:
-	MaterialTypeId() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const MaterialTypeId& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const MaterialTypeId& index) { data = index.get(); }
-inline void from_json(const Json& data, MaterialTypeId& index) { index = MaterialTypeId::create(data.get<uint16_t>()); }
-template<typename T>
-using MaterialTypeMap = std::unordered_map<MaterialTypeId, T, MaterialTypeId::Hash>;
-
-class MaterialCategoryTypeId : public StrongInteger<MaterialCategoryTypeId, int8_t>
-{
-public:
-	MaterialCategoryTypeId() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const MaterialCategoryTypeId& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const MaterialCategoryTypeId& index) { data = index.get(); }
-inline void from_json(const Json& data, MaterialCategoryTypeId& index) { index = MaterialCategoryTypeId::create(data.get<uint8_t>()); }
-
-class SpoilsDataTypeId : public StrongInteger<SpoilsDataTypeId, int16_t>
-{
-public:
-	SpoilsDataTypeId() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const SpoilsDataTypeId& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const SpoilsDataTypeId& index) { data = index.get(); }
-inline void from_json(const Json& data, SpoilsDataTypeId& index) { index = SpoilsDataTypeId::create(data.get<uint16_t>()); }
-
-class ItemTypeId : public StrongInteger<ItemTypeId, int16_t>
-{
-public:
-	ItemTypeId() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const ItemTypeId& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const ItemTypeId& index) { data = index.get(); }
-inline void from_json(const Json& data, ItemTypeId& index) { index = ItemTypeId::create(data.get<uint16_t>()); }
-template<typename T>
-using ItemTypeMap = std::unordered_map<ItemTypeId, T, ItemTypeId::Hash>;
-
-class FluidTypeId : public StrongInteger<FluidTypeId, int16_t>
-{
-public:
-	FluidTypeId() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const FluidTypeId& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const FluidTypeId& index) { data = index.get(); }
-inline void from_json(const Json& data, FluidTypeId& index) { index = FluidTypeId::create(data.get<uint16_t>()); }
-template<typename T>
-using FluidTypeMap = std::unordered_map<FluidTypeId, T, FluidTypeId::Hash>;
-using FluidTypeSet = StrongIntegerSet<FluidTypeId>;
-
-class ShapeId : public StrongInteger<ShapeId, int16_t>
-{
-public:
-	ShapeId() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const ShapeId& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const ShapeId& index) { data = index.get(); }
-inline void from_json(const Json& data, ShapeId& index) { index = ShapeId::create(data.get<uint16_t>()); }
-
-class SkillTypeId : public StrongInteger<SkillTypeId, int16_t>
-{
-public:
-	SkillTypeId() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const SkillTypeId& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const SkillTypeId& index) { data = index.get(); }
-inline void from_json(const Json& data, SkillTypeId& index) { index = SkillTypeId::create(data.get<uint16_t>()); }
-template<typename T>
-using SkillTypeMap = std::unordered_map<SkillTypeId, T, SkillTypeId::Hash>;
-
-class MoveTypeId : public StrongInteger<MoveTypeId, int16_t>
-{
-public:
-	MoveTypeId() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const MoveTypeId& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const MoveTypeId& index) { data = index.get(); }
-inline void from_json(const Json& data, MoveTypeId& index) { index = MoveTypeId::create(data.get<uint16_t>()); }
-template<typename T>
-using MoveTypeMap = std::unordered_map<MoveTypeId, T, MoveTypeId::Hash>;
-
-class BodyTypeId : public StrongInteger<BodyTypeId, int16_t>
-{
-public:
-	BodyTypeId() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const BodyTypeId& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const BodyTypeId& index) { data = index.get(); }
-inline void from_json(const Json& data, BodyTypeId& index) { index = BodyTypeId::create(data.get<uint16_t>()); }
-
-class BodyPartTypeId : public StrongInteger<BodyPartTypeId, int16_t>
-{
-public:
-	BodyPartTypeId() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const BodyPartTypeId& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const BodyPartTypeId& index) { data = index.get(); }
-inline void from_json(const Json& data, BodyPartTypeId& index) { index = BodyPartTypeId::create(data.get<uint16_t>()); }
-
-class CraftStepTypeCategoryId : public StrongInteger<CraftStepTypeCategoryId, int16_t>
-{
-public:
-	CraftStepTypeCategoryId() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const CraftStepTypeCategoryId& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const CraftStepTypeCategoryId& index) { data = index.get(); }
-inline void from_json(const Json& data, CraftStepTypeCategoryId& index) { index = CraftStepTypeCategoryId::create(data.get<uint16_t>()); }
-template<typename T>
-using CraftStepTypeCategoryMap = std::unordered_map<CraftStepTypeCategoryId, T, CraftStepTypeCategoryId::Hash>;
-
-class CraftJobTypeId : public StrongInteger<CraftJobTypeId, int16_t>
-{
-public:
-	CraftJobTypeId() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const CraftJobTypeId& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const CraftJobTypeId& index) { data = index.get(); }
-inline void from_json(const Json& data, CraftJobTypeId& index) { index = CraftJobTypeId::create(data.get<uint16_t>()); }
-
-class AttackTypeId : public StrongInteger<AttackTypeId, int16_t>
-{
-public:
-	AttackTypeId() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const AttackTypeId& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const AttackTypeId& index) { data = index.get(); }
-inline void from_json(const Json& data, AttackTypeId& index) { index = AttackTypeId::create(data.get<uint16_t>()); }
-
-class MaterialTypeConstructionDataId : public StrongInteger<MaterialTypeConstructionDataId, int16_t>
-{
-public:
-	MaterialTypeConstructionDataId() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const MaterialTypeConstructionDataId& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const MaterialTypeConstructionDataId& index) { data = index.get(); }
-inline void from_json(const Json& data, MaterialTypeConstructionDataId& index) { index = MaterialTypeConstructionDataId::create(data.get<uint16_t>()); }
-
-template<typename T>
-using FactionIdMap = std::unordered_map<FactionId, T, FactionId::Hash>;
-using FactionIdSet = StrongIntegerSet<FactionId>;
-//using HaulSubprojectId = uint32_t;
-//using ProjectId = uint32_t;
 struct Vector3D;
 struct Point3D
 {

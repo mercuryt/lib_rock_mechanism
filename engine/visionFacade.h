@@ -72,8 +72,6 @@ public:
 	void updateRange(DistanceInBlocks range);
 	// Call when move.
 	void updateLocation(BlockIndex& location);
-	// Call when visionFacadeIndex changes.
-	void updateFacadeIndex(VisionFacadeIndex index) { m_index = index; }
 	void updateActorIndex(ActorIndex newIndex) { m_visionFacade->updateActorIndex(m_index, newIndex); }
 	[[nodiscard]] bool empty() const { return m_index.empty(); }
 	[[nodiscard]] VisionFacadeIndex getIndex() const { return m_index; }

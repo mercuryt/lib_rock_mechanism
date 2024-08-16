@@ -9,7 +9,7 @@ class WoodCuttingObjectiveType final : public ObjectiveType
 public:
 	[[nodiscard]] bool canBeAssigned(Area& area, ActorIndex actor) const;
 	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area& area, ActorIndex actor) const;
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::WoodCutting; }
+	[[nodiscard]] std::string name() const { return "woodcutting"; }
 };
 // Objective
 class WoodCuttingObjective final : public Objective
@@ -25,7 +25,6 @@ public:
 	void reset(Area& area, ActorIndex actor);
 	void delay(Area& area, ActorIndex actor);
 	void onProjectCannotReserve(Area& area, ActorIndex actor);
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::WoodCutting; }
 	[[nodiscard]] std::string name() const { return "woodcutting"; }
 	void joinProject(WoodCuttingProject& project, ActorIndex index);
 	WoodCuttingProject* getJoinableProjectAt(Area& area, BlockIndex block, ActorIndex index);
@@ -39,5 +38,7 @@ class WoodCuttingPathRequest final : public PathRequest
 	// Result is the block which will be the actors location while doing the woodCuttingging.
 public:
 	WoodCuttingPathRequest(Area& area, WoodCuttingObjective& woodCuttingObjective);
+	WoodCuttingPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
 	void callback(Area& area, FindPathResult& result);
+	[[nodiscard]] Json toJson() const;
 };

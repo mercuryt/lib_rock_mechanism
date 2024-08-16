@@ -254,6 +254,10 @@ void ObjectivePathRequest::callback(Area& area, FindPathResult& result)
 		actors.move_setPath(actor, result.path);
 	onSuccess(area, result.blockThatPassedPredicate);
 }
+void PathRequest::update(PathRequestIndex newIndex)
+{
+	m_index = newIndex;
+}
 void NeedPathRequest::callback(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();

@@ -111,6 +111,17 @@ public:
 	[[nodiscard]] ActorReference toReference(Area& area) const;
 	ActorIndex() = default;
 };
+
+// The offset required to lookup in one block's getAdjacentUnfiltered to find another block.
+using AdjacentIndexWidth = int8_t;
+class AdjacentIndex : public StrongInteger<AdjacentIndex, AdjacentIndexWidth>
+{
+public:
+	AdjacentIndex() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const AdjacentIndex& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const AdjacentIndex& index) { data = index.get(); }
+inline void from_json(const Json& data, AdjacentIndex& index) { index = AdjacentIndex::create(data.get<AdjacentIndexWidth>()); }
 inline void to_json(Json& data, const ActorIndex& index) { data = index.get(); }
 inline void from_json(const Json& data, ActorIndex& index) { index = ActorIndex::create(data.get<uint32_t>()); }
 inline HasShapeIndex HasShapeIndex::cast(const PlantIndex& o) { return HasShapeIndex(o.get()); }

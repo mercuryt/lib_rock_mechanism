@@ -11,11 +11,11 @@ struct FindPathResult;
 class ConstructObjectiveType final : public ObjectiveType
 {
 public:
-	bool canBeAssigned(Area& area, ActorIndex actor) const;
-	std::unique_ptr<Objective> makeFor(Area& area, ActorIndex actor) const;
-	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Construct; }
 	ConstructObjectiveType() = default;
 	ConstructObjectiveType(const Json&, DeserializationMemo&){ }
+	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area& area, ActorIndex actor) const;
+	[[nodiscard]] bool canBeAssigned(Area& area, ActorIndex actor) const;
+	[[nodiscard]] std::string name() const { return "construct"; }
 };
 class ConstructObjective final : public Objective
 {
@@ -36,7 +36,6 @@ public:
 	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAt(Area& area, BlockIndex block, ActorIndex actor);
 	[[nodiscard]] bool joinableProjectExistsAt(Area& area, BlockIndex block, ActorIndex actor) const;
 	[[nodiscard]] bool canJoinProjectAdjacentToLocationAndFacing(Area& area, BlockIndex block, Facing facing, ActorIndex actor) const;
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Construct; }
 	friend class ConstructPathRequest;
 	friend class ConstructProject;
 	// For Testing.
@@ -47,5 +46,7 @@ class ConstructPathRequest final : public PathRequest
 	ConstructObjective& m_constructObjective;
 public:
 	ConstructPathRequest(Area& area, ConstructObjective& co, ActorIndex actor);
+	ConstructPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
 	void callback(Area& area, FindPathResult& result);
+	[[nodiscard]] Json toJson() const;
 };

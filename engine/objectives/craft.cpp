@@ -18,6 +18,13 @@ CraftPathRequest::CraftPathRequest(Area& area, CraftObjective& co, ActorIndex ac
 	bool unreserved = true;
 	createGoToCondition(area, actor, predicate, m_craftObjective.m_detour, unreserved, Config::maxRangeToSearchForCraftingRequirements, BlockIndex::null());
 }
+CraftPathRequest::CraftPathRequest(const Json& data, DeserializationMemo& deserializationMemo) : 
+	m_craftObjective(static_cast<CraftObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))),
+	m_craftJob(deserializationMemo.m_craftJobs.at(data["craftJob"].get<uintptr_t>())),
+	m_location(data["location"].get<BlockIndex>())
+{
+	nlohmann::from_json(data, *this);
+}
 void CraftPathRequest::callback(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
@@ -66,12 +73,21 @@ void CraftPathRequest::callback(Area& area, FindPathResult& result)
 		}
 	}
 }
+Json CraftPathRequest::toJson() const
+{
+	Json output;
+	nlohmann::to_json(output, *this);
+	output["objective"] = &m_craftObjective;
+	output["job"] = m_craftJob;
+	output["location"] = m_location;
+	return output;
+}
 // ObjectiveType.
 CraftObjectiveType::CraftObjectiveType(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) : m_skillType(data["skillType"].get<SkillTypeId>()) { }
 bool CraftObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
 {
 	Actors& actors = area.getActors();
-	auto& hasCrafting = area.m_hasCraftingLocationsAndJobs.at(actors.getFactionId(actor));
+	auto& hasCrafting = area.m_hasCraftingLocationsAndJobs.getForFaction(actors.getFactionId(actor));
 	if(!hasCrafting.m_unassignedProjectsBySkill.contains(m_skillType))
 	{
 		// No jobs needing this skill.
@@ -89,12 +105,6 @@ bool CraftObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
 std::unique_ptr<Objective> CraftObjectiveType::makeFor(Area&, ActorIndex) const
 {
 	return std::make_unique<CraftObjective>(m_skillType);
-}
-Json CraftObjectiveType::toJson() const 
-{
-	Json data = ObjectiveType::toJson();
-	data["skillType"] = m_skillType;
-	return data;
 }
 // Objective.
 CraftObjective::CraftObjective(SkillTypeId st) : Objective(Config::craftObjectivePriority), m_skillType(st) { }

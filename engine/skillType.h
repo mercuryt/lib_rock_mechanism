@@ -10,14 +10,14 @@ struct SkillTypeParamaters final
 };
 class SkillType final
 {
-	static SkillType data;
 	DataVector<std::string, SkillTypeId> m_name;
 	DataVector<float, SkillTypeId> m_xpPerLevelModifier;
 	DataVector<SkillExperiencePoints, SkillTypeId> m_level1Xp;
 public:
 	static void create(SkillTypeParamaters& p);
 	static SkillTypeId byName(std::string name);
-	[[nodiscard]] static std::string getName(SkillTypeId id) { return data.m_name[id]; }
-	[[nodiscard]] static float getXpPerLevelModifier(SkillTypeId id) { return data.m_xpPerLevelModifier[id]; }
-	[[nodiscard]] static SkillExperiencePoints getLevel1Xp(SkillTypeId id) { return data.m_level1Xp[id]; }
+	[[nodiscard]] static std::string getName(SkillTypeId id);
+	[[nodiscard]] static float getXpPerLevelModifier(SkillTypeId id);
+	[[nodiscard]] static SkillExperiencePoints getLevel1Xp(SkillTypeId id);
 };
+inline SkillType skillTypeData;

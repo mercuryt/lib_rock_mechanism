@@ -54,10 +54,11 @@ public:
 	void update(PathRequestIndex newIndex);
 	virtual void reset();
 	virtual void callback(Area& area, FindPathResult& result);
-	[[nodiscard]] virtual Json toJson() const;
+	[[nodiscard]] virtual Json toJson() const { return *this; }
 	[[nodiscard]] bool exists() const { return m_index.exists(); }
 	[[nodiscard]] ActorIndex getActor() const { return m_actor; }
 	virtual ~PathRequest() = default;
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(PathRequest, m_index, m_destinations, m_fluidType, m_actor, m_destination, m_huristicDestination, m_maxRange, m_designation, m_detour, m_unreserved, m_adjacent, m_reserve, m_reserveBlockThatPassesPredicate);
 };
 // Defines a standard callback to be subclassed by many objectives.
 class ObjectivePathRequest : public PathRequest
@@ -66,7 +67,7 @@ protected:
 	Objective& m_objective;
 	bool m_reserveBlockThatPassedPredicate = false;
 	void callback(Area& area, FindPathResult&);
-	virtual void onSuccess(Area& area, BlockIndex blockThatPassedPredicate);
+	virtual void onSuccess(Area& area, BlockIndex blockThatPassedPredicate) = 0;
 
 public:
 	ObjectivePathRequest(Objective& objective, bool rbtpp) : m_objective(objective), m_reserveBlockThatPassedPredicate(rbtpp) { }
@@ -77,7 +78,7 @@ class NeedPathRequest : public PathRequest
 protected:
 	Objective& m_objective;
 	void callback(Area& area, FindPathResult&);
-	virtual void onSuccess(Area& area, BlockIndex blockThatPassedPredicate);
+	virtual void onSuccess(Area& area, BlockIndex blockThatPassedPredicate) = 0;
 public:
 	NeedPathRequest(Objective& objective) : m_objective(objective) { }
 };

@@ -25,3 +25,11 @@ bool Actors::body_hasBleedEvent(ActorIndex index) const
 {
 	return m_body[index]->hasBleedEvent();
 }
+Percent Actors::body_getImpairMovePercent(ActorIndex index)
+{
+	return m_body[index]->getImpairMovePercent();
+}
+Percent Actors::body_getImpairManipulationPercent(ActorIndex index)
+{
+	return m_body[index]->getImpairManipulationPercent();
+}

@@ -43,6 +43,5 @@ struct DeserializationMemo final
 	ProjectRequirementCounts& projectRequirementCountsReference(const Json& data);
 	//WorldLocation& getLocationByNormalizedLatLng(const Json& data);
 	std::unique_ptr<Objective> loadObjective(const Json& data, Area& area, ActorIndex actor);
-	std::unique_ptr<ObjectiveType> loadObjectiveType(const Json& data);
 	DeserializationMemo(Simulation& simulation) : m_simulation(simulation) { }
 };

@@ -25,6 +25,7 @@ OnDestroy::~OnDestroy()
 	for(HasOnDestroySubscriptions* hasSubscription : m_subscriptions)
 		hasSubscription->callback();
 }
+std::mutex HasOnDestroySubscriptions::m_mutex;
 HasOnDestroySubscriptions::HasOnDestroySubscriptions(const Json& data, DeserializationMemo& deserializationMemo, Area& area) : m_callback(OnDestroyCallBack::fromJson(data["callback"], deserializationMemo, area))
 {
 	for(const Json& onDestroy : data["onDestroys"])

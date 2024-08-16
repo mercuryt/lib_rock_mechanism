@@ -8,7 +8,7 @@ void Actors::attributes_onUpdateGrowthPercent(ActorIndex index)
 	updateStrength(index);
 	updateAgility(index);
 	updateDextarity(index);
-	updateMass(index);
+	updateIntrinsicMass(index);
 	canPickUp_updateUnencomberedCarryMass(index);
 	combat_update(index);
 	move_updateIndividualSpeed(index);
@@ -97,20 +97,20 @@ void Actors::updateAgility(ActorIndex index)
 	m_agility[index] = AttributeLevel::create(util::scaleByPercentRange(max.get(), min.get(), grown));
 }
 
-[[nodiscard]] Mass Actors::getMass(ActorIndex index) const { return m_mass[index]; }
-[[nodiscard]] int32_t Actors::getMassBonusOrPenalty(ActorIndex index) const { return m_massBonusOrPenalty[index]; }
-[[nodiscard]] float Actors::getMassModifier(ActorIndex index) const { return m_massModifier[index]; }
-void Actors::addMassModifier(ActorIndex index, float modifier) 
+[[nodiscard]] Mass Actors::getIntrinsicMass(ActorIndex index) const { return m_mass[index]; }
+[[nodiscard]] int32_t Actors::getIntrinsicMassBonusOrPenalty(ActorIndex index) const { return m_massBonusOrPenalty[index]; }
+[[nodiscard]] float Actors::getIntrinsicMassModifier(ActorIndex index) const { return m_massModifier[index]; }
+void Actors::addIntrinsicMassModifier(ActorIndex index, float modifier) 
 { 
 	m_massModifier[index] += modifier; 
-	onMassChanged(index);
+	onIntrinsicMassChanged(index);
 }
-void Actors::addMassBonusOrPenalty(ActorIndex index, uint32_t bonusOrPenalty)
+void Actors::addIntrinsicMassBonusOrPenalty(ActorIndex index, uint32_t bonusOrPenalty)
 {
 	m_massBonusOrPenalty[index] += bonusOrPenalty;
-	onMassChanged(index);
+	onIntrinsicMassChanged(index);
 }
-void Actors::updateMass(ActorIndex index)
+void Actors::updateIntrinsicMass(ActorIndex index)
 {
 	AnimalSpeciesId species = getSpecies(index);
 	Percent grown = getPercentGrown(index);
@@ -118,9 +118,9 @@ void Actors::updateMass(ActorIndex index)
 	Mass min = AnimalSpecies::getMass(species)[1];
 	m_mass[index] = Mass::create(util::scaleByPercentRange(max.get(), min.get(), grown));
 }
-void Actors::onMassChanged(ActorIndex index)
+void Actors::onIntrinsicMassChanged(ActorIndex index)
 {
-	updateMass(index);
+	updateIntrinsicMass(index);
 	move_updateIndividualSpeed(index);
 	//TODO: mass does not currently affect combat?
 	//combat_update(index);

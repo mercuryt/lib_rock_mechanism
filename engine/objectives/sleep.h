@@ -32,7 +32,6 @@ public:
 	[[nodiscard]] bool onCanNotRepath(Area& area, ActorIndex actor);
 	[[nodiscard]] uint32_t desireToSleepAt(Area& area, BlockIndex block, ActorIndex actor) const;
 	[[nodiscard]] std::string name() const { return "sleep"; }
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Sleep; }
 	[[nodiscard]] bool isNeed() const { return true; }
 	[[nodiscard]] Json toJson() const;
 	friend class SleepPathRequest;

@@ -37,5 +37,4 @@ public:
 	void delay(Area& area, ActorIndex actor) { cancel(area, actor); }
 	void reset(Area& area, ActorIndex actor);
 	std::string name() const { return "kill"; }
-	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Kill; }
 };

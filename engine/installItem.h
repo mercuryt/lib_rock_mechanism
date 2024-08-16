@@ -27,13 +27,6 @@ public:
 	void onDelay() { cancel(); }
 	void offDelay() { assert(false); }
 };
-class InstallItemObjectiveType final : public ObjectiveType
-{
-public:
-	bool canBeAssigned(Area& area, ActorIndex actor) const;
-	std::unique_ptr<Objective> makeFor(Area& area, ActorIndex actor) const;
-	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::InstallItem; }
-};
 class HasInstallItemDesignationsForFaction final
 {
 	BlockIndexMap<InstallItemProject> m_designations;

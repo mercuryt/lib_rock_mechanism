@@ -16,10 +16,6 @@ void Actors::equipment_removeGeneric(ActorIndex index, ItemTypeId itemType, Mate
 {
 	m_equipmentSet[index]->removeGeneric(m_area, itemType, materalType, quantity);
 }
-void Actors::equipment_updateItemIndex(ActorIndex index, ItemIndex oldIndex, ItemIndex newIndex)
-{
-	m_equipmentSet[index]->updateItemIndex(oldIndex, newIndex);
-}
 bool Actors::equipment_canEquipCurrently(ActorIndex index, ItemIndex item) const
 {
 	return m_equipmentSet[index]->canEquipCurrently(m_area, index, item);

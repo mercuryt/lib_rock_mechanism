@@ -15,19 +15,6 @@
 #include "actors/actors.h"
 #include <cstdint>
 // Static method.
-BodyPartTypeId BodyPartType::byName(const std::string name)
-{
-	auto found = data.m_name.find(name);
-	assert(found != data.m_name.end());
-	return BodyPartTypeId::create(found - data.m_name.begin());
-}
-// Static method.
-BodyTypeId BodyType::byName(const std::string name)
-{
-	auto found = data.m_name.find(name);
-	assert(found != data.m_name.end());
-	return BodyTypeId::create(found - data.m_name.begin());
-}
 Wound::Wound(Area& area, ActorIndex a, const WoundType wt, BodyPart& bp, Hit h, uint32_t bvr, Percent ph) :
 	woundType(wt), bodyPart(bp), hit(h), bleedVolumeRate(bvr), percentHealed(ph), healEvent(area.m_eventSchedule)
 {

@@ -17,9 +17,9 @@ class SowSeedsObjectiveType final : public ObjectiveType
 public:
 	[[nodiscard]] bool canBeAssigned(Area& area, ActorIndex actor) const;
 	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area& area, ActorIndex actor) const;
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::SowSeeds; }
 	SowSeedsObjectiveType() = default;
 	SowSeedsObjectiveType(const Json&, DeserializationMemo&);
+	[[nodiscard]] std::string name() const { return "sow"; }
 };
 class SowSeedsObjective final : public Objective
 {
@@ -36,7 +36,6 @@ public:
 	void reset(Area& area, ActorIndex actor);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "sow seeds"; }
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::SowSeeds; }
 	[[nodiscard]] bool canSowAt(Area& area, BlockIndex block, ActorIndex actor) const;
 	[[nodiscard]] BlockIndex getBlockToSowAt(Area& area, BlockIndex location, Facing facing, ActorIndex actor);
 	friend class SowSeedsEvent;

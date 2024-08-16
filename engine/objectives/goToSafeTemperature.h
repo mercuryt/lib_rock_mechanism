@@ -19,7 +19,6 @@ public:
 	void cancel(Area& area, ActorIndex actor);
 	void delay(Area& area, ActorIndex actor) { cancel(area, actor); }
 	void reset(Area& area, ActorIndex actor);
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::GetToSafeTemperature; }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "get to safe temperature"; }
 	friend class GetToSafeTemperaturePathRequest;

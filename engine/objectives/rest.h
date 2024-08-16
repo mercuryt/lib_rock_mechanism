@@ -21,7 +21,6 @@ public:
 	void reset(Area& area, ActorIndex actor);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "rest"; }
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Rest; }
 friend class RestEvent;
 };
 class RestEvent final : public ScheduledEvent

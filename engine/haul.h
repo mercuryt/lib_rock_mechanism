@@ -83,6 +83,7 @@ public:
 	[[nodiscard]] bool getIsMoving() const { return m_itemIsMoving; }
 	[[nodiscard]] Quantity getQuantity() const { return m_quantity; }
 	[[nodiscard]] bool operator==(const HaulSubproject& other) const { return &other == this; }
+	[[nodiscard]] ActorOrItemReference getToHaul() const { return m_toHaul; }
 	friend class Project;
 };
 struct HaulSubprojectDishonorCallback final : public DishonorCallback

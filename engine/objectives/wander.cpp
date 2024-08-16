@@ -15,6 +15,11 @@ WanderPathRequest::WanderPathRequest(Area& area, WanderObjective& objective) : m
 	std::function<bool(BlockIndex, Facing)> condition = [this](BlockIndex, Facing) { return !m_blockCounter--; };
 	createGoToCondition(area, getActor(), condition, false, false, DistanceInBlocks::null());
 }
+WanderPathRequest::WanderPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
+	m_objective(static_cast<WanderObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
+{
+	nlohmann::from_json(data, *this);
+}
 void WanderPathRequest::callback(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
@@ -23,6 +28,13 @@ void WanderPathRequest::callback(Area& area, FindPathResult& result)
 		actors.wait(actor, Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective);
 	else
 		actors.move_setPath(actor, result.path);
+}
+Json WanderPathRequest::toJson() const
+{
+	Json output;
+	nlohmann::to_json(output, *this);
+	output["objective"] = &m_objective;
+	return output;
 }
 // Objective.
 WanderObjective::WanderObjective() : Objective(Priority::create(0)) { }

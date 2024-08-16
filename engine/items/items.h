@@ -19,13 +19,14 @@ struct ItemParamaters final
 	CraftJob* craftJob = nullptr;
 	FactionId faction = FactionId::null();
 	BlockIndex location = BlockIndex::null();
-	ItemId id = ItemId::create(0);
+	ItemId id = ItemId::null();
 	Quantity quantity = Quantity::create(1);
-	Quality quality = Quality::create(0);
-	Percent percentWear = Percent::create(0);
+	Quality quality = Quality::null();
+	Percent percentWear = Percent::null();
 	Facing facing = Facing::create(0);
 	bool isStatic = true;
 	bool installed = false;
+	FactionId faction = FactionId.null();
 };
 class ReMarkItemForStockPilingEvent final : public ScheduledEvent
 {
@@ -57,6 +58,7 @@ public:
 };
 class ItemHasCargo final
 {
+	// Indices rather then references for speed when searching for contained items in boxes, etc.
 	ActorIndices m_actors;
 	ItemIndices m_items;
 	FluidTypeId m_fluidType;
@@ -97,25 +99,25 @@ class Items final : public Portables
 {
 	//TODO: change to bitset or remove.
 	ItemIndexSet m_onSurface;
-	DataVector<std::unique_ptr<ItemReferenceTarget>, ItemIndex> m_referenceTarget;
-	DataVector<std::wstring, ItemIndex> m_name;
-	DataVector<std::unique_ptr<ItemHasCargo>, ItemIndex> m_hasCargo;
 	DataVector<std::unique_ptr<ItemCanBeStockPiled>, ItemIndex> m_canBeStockPiled;
 	DataVector<CraftJob*, ItemIndex> m_craftJobForWorkPiece; // Used only for work in progress items.
+	DataVector<std::unique_ptr<ItemHasCargo>, ItemIndex> m_hasCargo;
+	DataVector<ItemId, ItemIndex> m_id;
+	DataBitSet<ItemIndex> m_installed;
 	DataVector<ItemTypeId, ItemIndex> m_itemType;
 	DataVector<MaterialTypeId, ItemIndex> m_materialType;
-	DataVector<ItemId, ItemIndex> m_id;
-	DataVector<Quality, ItemIndex> m_quality; // Always set to 0 for generic types.
+	DataVector<std::wstring, ItemIndex> m_name;
 	//TODO: Percent doesn't allow fine enough detail for tools wearing out over time?
 	DataVector<Percent, ItemIndex> m_percentWear; // Always set to 0 for generic types.
+	DataVector<Quality, ItemIndex> m_quality; // Always set to 0 for generic types.
 	DataVector<Quantity, ItemIndex> m_quantity; // Always set to 1 for nongeneric types.
-	DataBitSet<ItemIndex> m_installed;
+	DataVector<std::unique_ptr<ItemReferenceTarget>, ItemIndex> m_referenceTarget;
 	void resize(HasShapeIndex newSize);
 	void moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex);
 public:
 	Items(Area& area) : Portables(area) { }
 	void load(const Json& json);
-	void loadCargoAndCraftJobs(const Json& json, DeserializationMemo& deserializationMemo);
+	void loadCargoAndCraftJobs(const Json& json);
 	void onChangeAmbiantSurfaceTemperature();
 	ItemIndex create(ItemParamaters paramaters);
 	void destroy(ItemIndex index);
@@ -161,6 +163,7 @@ public:
 	// -Cargo.
 	void cargo_addActor(ItemIndex index, ActorIndex actor);
 	void cargo_addItem(ItemIndex index, ItemIndex item, Quantity quantity);
+	void cargo_addItemGeneric(ItemIndex index, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity);
 	void cargo_addPolymorphic(ItemIndex index, ActorOrItemIndex actorOrItemIndex, Quantity quantity);
 	void cargo_addFluid(ItemIndex index, FluidTypeId fluidType, CollisionVolume volume);
 	void cargo_loadActor(ItemIndex index, ActorIndex actor);

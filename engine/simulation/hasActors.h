@@ -19,11 +19,11 @@ class SimulationHasActors final
 	ActorIdMap<ActorDataLocation> m_actors;
 public:
 	SimulationHasActors() = default;
-	SimulationHasActors(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	[[nodiscard]] ActorId getNextId() { return ++m_nextId; }
 	void registerActor(ActorId id, Actors& store, ActorIndex index);
 	void removeActor(ActorId id);
 	ActorIndex getIndexForId(ActorId id) const;
 	Area& getAreaForId(ActorId id) const;
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SimulationHasActors, m_nextId);
 };

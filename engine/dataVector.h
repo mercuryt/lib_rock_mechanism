@@ -21,11 +21,16 @@ public:
 	[[nodiscard]] bool allAreSetTo(T value) const { return !std::ranges::any_of(data, [&](T d){ return d != value; }); }
 	[[nodiscard]] iterator find(T value) { return std::ranges::find(data, value); }
 	[[nodiscard]] const_iterator find(T value) const { return std::ranges::find(data, value); }
+	template<typename Predicate>
+	[[nodiscard]] iterator find_if(Predicate predicate) { return std::ranges::find_if(data, predicate); }
+	template<typename Predicate>
+	[[nodiscard]] const_iterator find_if(Predicate predicate) const { return std::ranges::find_if(data, predicate); }
+	[[nodiscard]] Index indexFor(T value) const { assert(contains(value)); return find(value) - begin(); }
 	void reserve(size_t size) { data.reserve(size); }
 	void reserve(Index size) { data.reserve(size.get()); }
 	void resize(size_t size) { data.resize(size); }
 	void resize(Index size) { data.resize(size.get()); }
-	void add(T value) { data.push_back(value); }
+	void add(T value) { data.emplace_back(value); }
 	void add() { data.resize(data.size() + 1); }
 	void clear() { data.clear(); }
 	void remove(Index index)

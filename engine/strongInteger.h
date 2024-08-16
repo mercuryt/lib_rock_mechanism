@@ -82,11 +82,18 @@ public:
 	template<typename Predicate, typename Target>
 	void copy_if(Target&& target, Predicate&& predicate) { std::ranges::copy_if(data, target, predicate); }
 	void removeDuplicatesAndValue(StrongInteger index);
+	void concatAssertUnique(StrongIntegerSet<StrongInteger>&& other) { for(const auto& item : other.data) add(item); }
+	void concatIgnoreUnique(StrongIntegerSet<StrongInteger>&& other) { for(const auto& item : other.data) maybeAdd(item); }
+	void updateValue(StrongInteger oldValue, StrongInteger newValue) { assert(!contains(newValue)); auto found = find(oldValue); assert(found != data.end()); (*found) = newValue; }
 	[[nodiscard]] size_t size() const { return data.size(); }
 	[[nodiscard]] bool contains(StrongInteger index) const { return find(index) != data.end(); }
 	[[nodiscard]] bool empty() const { return data.empty(); }
 	[[nodiscard]] std::vector<StrongInteger>::iterator find(StrongInteger index) { return std::ranges::find(data, index); }
 	[[nodiscard]] std::vector<StrongInteger>::const_iterator find(StrongInteger index) const { return std::ranges::find(data, index); }
+	template<typename Predicate>
+	[[nodiscard]] std::vector<StrongInteger>::iterator find_if(Predicate predicate) { return std::ranges::find_if(data, predicate); }
+	template<typename Predicate>
+	[[nodiscard]] std::vector<StrongInteger>::const_iterator find_if(Predicate predicate) const { return std::ranges::find_if(data, predicate); }
 	[[nodiscard]] std::vector<StrongInteger>::iterator begin() { return data.begin(); }
 	[[nodiscard]] std::vector<StrongInteger>::iterator end() { return data.end(); }
 	[[nodiscard]] std::vector<StrongInteger>::const_iterator begin() const { return data.begin(); }

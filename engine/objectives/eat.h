@@ -2,7 +2,7 @@
 #include "../objective.h"
 #include "../pathRequest.h"
 #include "../types.h"
-#include "reference.h"
+#include "../reference.h"
 
 class Area;
 class EatObjective;
@@ -23,6 +23,7 @@ public:
 	[[nodiscard]] BlockIndex getBlockWithMostDesiredFoodInReach(Area& area) const;
 	[[nodiscard]] uint32_t getDesireToEatSomethingAt(Area& area, BlockIndex block) const;
 	[[nodiscard]] uint32_t getMinimumAcceptableDesire() const;
+	[[nodiscard]] std::string name() const { return "eat"; }
 };
 constexpr int maxRankedEatDesire = 3;
 class EatPathRequest final : public PathRequest
@@ -32,7 +33,9 @@ class EatPathRequest final : public PathRequest
 	ActorReference m_huntResult;
 public:
 	EatPathRequest(Area& area, EatObjective& eo);
+	EatPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
 	void callback(Area& area, FindPathResult& result);
+	[[nodiscard]] Json toJson() const;
 };
 class EatObjective final : public Objective
 {
@@ -52,7 +55,6 @@ public:
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "eat"; }
 	[[nodiscard]] bool canEatAt(Area& area, BlockIndex block, ActorIndex actor) const;
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Eat; }
 	[[nodiscard]] bool isNeed() const { return true; }
 	friend class EatEvent;
 	friend class EatPathRequest;

@@ -13,10 +13,10 @@
 #include "types.h"
 TEST_CASE("fluids smaller")
 {
-	static const MaterialType& marble = MaterialType::byName("marble");
-	static const FluidType& water = FluidType::byName("water");
-	static const FluidType& CO2 = FluidType::byName("CO2");
-	static const FluidType& mercury = FluidType::byName("mercury");
+	static MaterialTypeId marble = MaterialType::byName("marble");
+	static FluidTypeId water = FluidType::byName("water");
+	static FluidTypeId CO2 = FluidType::byName("CO2");
+	static FluidTypeId mercury = FluidType::byName("mercury");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
@@ -1225,7 +1225,7 @@ TEST_CASE("fluids smaller")
 		fluidGroup->afterWriteStep();
 		fluidGroup->splitStep();
 		fluidGroup->mergeStep();
-		REQUIRE(blocks.fluid_getMist(block5) == &water);
+		REQUIRE(blocks.fluid_getMist(block5) == water);
 		// Several steps.
 		while(simulation.m_step < 11)
 		{
@@ -1240,13 +1240,13 @@ TEST_CASE("fluids smaller")
 			++simulation.m_step;
 		}
 		simulation.m_eventSchedule.doStep(Step::create(11));
-		REQUIRE(blocks.fluid_getMist(block5) == nullptr);
+		REQUIRE(blocks.fluid_getMist(block5).empty());
 	}
 }
 TEST_CASE("area larger")
 {
-	static const MaterialType& marble = MaterialType::byName("marble");
-	static const FluidType& water = FluidType::byName("water");
+	static MaterialTypeId marble = MaterialType::byName("marble");
+	static FluidTypeId water = FluidType::byName("water");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(20,20,20);
 	Blocks& blocks = area.getBlocks();
@@ -1465,11 +1465,11 @@ TEST_CASE("area larger")
 }
 TEST_CASE("fluids multi scale")
 {
-	static const MaterialType& marble = MaterialType::byName("marble");
-	static const FluidType& water = FluidType::byName("water");
-	static const FluidType& CO2 = FluidType::byName("CO2");
-	static const FluidType& mercury = FluidType::byName("mercury");
-	static const FluidType& lava = FluidType::byName("lava");
+	static MaterialTypeId marble = MaterialType::byName("marble");
+	static FluidTypeId water = FluidType::byName("water");
+	static FluidTypeId CO2 = FluidType::byName("CO2");
+	static FluidTypeId mercury = FluidType::byName("mercury");
+	static FluidTypeId lava = FluidType::byName("lava");
 	Simulation simulation;
 	auto trenchTest2Fluids = [&](uint32_t scaleL, uint32_t scaleW, Step steps)
 	{

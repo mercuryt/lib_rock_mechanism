@@ -24,7 +24,6 @@ public:
 	[[nodiscard]] bool canDrinkItemAt(Area& area, BlockIndex block, ActorIndex actor) const;
 	[[nodiscard]] ItemIndex getItemToDrinkFromAt(Area& area, BlockIndex block, ActorIndex actor) const;
 	[[nodiscard]] bool containsSomethingDrinkable(Area& area, BlockIndex block, ActorIndex actor) const;
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Drink; }
 	[[nodiscard]] bool isNeed() const { return true; }
 	friend class DrinkEvent;
 	friend class DrinkPathRequest;
@@ -35,5 +34,7 @@ class DrinkPathRequest final : public PathRequest
 	bool m_noDrinkFound = false;
 public:
 	DrinkPathRequest(Area& area, DrinkObjective& drob, ActorIndex actor);
+	DrinkPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
 	void callback(Area& area, FindPathResult& result);
+	[[nodiscard]] Json toJson() const;
 };

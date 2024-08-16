@@ -18,12 +18,12 @@
 #include <functional>
 TEST_CASE("craft")
 {
-	const MaterialType& wood = MaterialType::byName("poplar wood");
-	const MaterialType& bronze = MaterialType::byName("bronze");
-	const SkillType& woodWorking = SkillType::byName("wood working");
-	const SkillType& assembling = SkillType::byName("assembling");
-	const CraftStepTypeCategory& sawCategory = CraftStepTypeCategory::byName("saw");
-	const CraftJobType& woodBucket = CraftJobType::byName("wood bucket");
+	MaterialTypeId wood = MaterialType::byName("poplar wood");
+	MaterialTypeId bronze = MaterialType::byName("bronze");
+	SkillTypeId woodWorking = SkillType::byName("wood working");
+	SkillTypeId assembling = SkillType::byName("assembling");
+	CraftStepTypeCategoryId sawCategory = CraftStepTypeCategory::byName("saw");
+	CraftJobTypeId woodBucket = CraftJobType::byName("wood bucket");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
@@ -32,13 +32,13 @@ TEST_CASE("craft")
 	areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName("marble"));
 	BlockIndex chiselLocation = blocks.getIndex_i(3, 5, 1);
 	BlockIndex sawingLocation = blocks.getIndex_i(9, 9, 1);
-	FactionId faction = simulation.createFaction(L"Tower Of Power").id;
+	FactionId faction = simulation.createFaction(L"Tower Of Power");
 	area.m_hasCraftingLocationsAndJobs.addFaction(faction);
-	REQUIRE(!area.m_hasCraftingLocationsAndJobs.at(faction).hasLocationsFor(woodBucket));
-	area.m_hasCraftingLocationsAndJobs.at(faction).addLocation(CraftStepTypeCategory::byName("carve"), chiselLocation);
-	area.m_hasCraftingLocationsAndJobs.at(faction).addLocation(CraftStepTypeCategory::byName("assemble"), chiselLocation);
-	area.m_hasCraftingLocationsAndJobs.at(faction).addLocation(sawCategory, sawingLocation);
-	REQUIRE(area.m_hasCraftingLocationsAndJobs.at(faction).hasLocationsFor(woodBucket));
+	REQUIRE(!area.m_hasCraftingLocationsAndJobs.getForFaction(faction).hasLocationsFor(woodBucket));
+	area.m_hasCraftingLocationsAndJobs.getForFaction(faction).addLocation(CraftStepTypeCategory::byName("carve"), chiselLocation);
+	area.m_hasCraftingLocationsAndJobs.getForFaction(faction).addLocation(CraftStepTypeCategory::byName("assemble"), chiselLocation);
+	area.m_hasCraftingLocationsAndJobs.getForFaction(faction).addLocation(sawCategory, sawingLocation);
+	REQUIRE(area.m_hasCraftingLocationsAndJobs.getForFaction(faction).hasLocationsFor(woodBucket));
 	CraftObjectiveType craftObjectiveTypeWoodWorking(woodWorking);
 	CraftObjectiveType craftObjectiveTypeAssembling(assembling);
 	ActorIndex dwarf1 = actors.create({
@@ -47,26 +47,26 @@ TEST_CASE("craft")
 		.faction=faction,
 	});
 	ActorReference dwarf1Ref = dwarf1.toReference(area);
-	std::unordered_set<CraftJob*> emptyJobSet;
+	SmallSet<CraftJob*> emptyJobSet;
 	SUBCASE("infastructure")
 	{
-		area.m_hasCraftingLocationsAndJobs.at(faction).addJob(woodBucket, &wood, Quantity::create(1));
+		area.m_hasCraftingLocationsAndJobs.getForFaction(faction).addJob(woodBucket, wood, Quantity::create(1));
 		/*
 		// TODO: why doesnt' this method exist anymore?
-		auto pair = area.m_hasCraftingLocationsAndJobs.at(faction).getJobAndLocationForWhileExcluding(dwarf1, woodWorking, emptyJobSet);
+		auto pair = area.m_hasCraftingLocationsAndJobs.getForFaction(faction).getJobAndLocationForWhileExcluding(dwarf1, woodWorking, emptyJobSet);
 		CraftJob* job = pair.first;
 		BlockIndex location = pair.second;
 		REQUIRE(job != nullptr);
 		REQUIRE(location.exists());
 		REQUIRE(location == sawingLocation);
-		REQUIRE(&job->craftJobType == &woodBucket);
+		REQUIRE(&job->craftJobType == woodBucket);
 		REQUIRE(job->workPiece.empty());
 		REQUIRE(job->minimumSkillLevel == 0);
 		REQUIRE(job->totalSkillPoints == 0);
 		REQUIRE(!job->craftJobType.stepTypes.empty());
-		REQUIRE(job == area.m_hasCraftingLocationsAndJobs.at(faction).getJobForAtLocation(dwarf1, woodWorking, sawingLocation, emptyJobSet));
-		area.m_hasCraftingLocationsAndJobs.at(faction).removeLocation(sawCategory, sawingLocation);
-		pair = area.m_hasCraftingLocationsAndJobs.at(faction).getJobAndLocationForWhileExcluding(dwarf1, woodWorking, emptyJobSet);
+		REQUIRE(job == area.m_hasCraftingLocationsAndJobs.getForFaction(faction).getJobForAtLocation(dwarf1, woodWorking, sawingLocation, emptyJobSet));
+		area.m_hasCraftingLocationsAndJobs.getForFaction(faction).removeLocation(sawCategory, sawingLocation);
+		pair = area.m_hasCraftingLocationsAndJobs.getForFaction(faction).getJobAndLocationForWhileExcluding(dwarf1, woodWorking, emptyJobSet);
 		REQUIRE(pair.first == nullptr);
 		*/
 	}
@@ -102,14 +102,14 @@ TEST_CASE("craft")
 			.percentWear=Percent::create(0)
 		});
 		REQUIRE(!craftObjectiveTypeWoodWorking.canBeAssigned(area, dwarf1));
-		area.m_hasCraftingLocationsAndJobs.at(faction).addJob(woodBucket, &wood, Quantity::create(1));
+		area.m_hasCraftingLocationsAndJobs.getForFaction(faction).addJob(woodBucket, wood, Quantity::create(1));
 		// There is wood working to be done.
 		REQUIRE(craftObjectiveTypeWoodWorking.canBeAssigned(area, dwarf1));
 		// There is not assembling to be done yet.
 		REQUIRE(!craftObjectiveTypeAssembling.canBeAssigned(area, dwarf1));
-		actors.objective_setPriority(dwarf1, craftObjectiveTypeWoodWorking, Priority::create(100));
-		actors.objective_setPriority(dwarf1, craftObjectiveTypeAssembling, Priority::create(100));
-		CraftJob* job = area.m_hasCraftingLocationsAndJobs.at(faction).getJobForAtLocation(dwarf1, woodWorking, sawingLocation, emptyJobSet);
+		actors.objective_setPriority(dwarf1, craftObjectiveTypeWoodWorking.getId(), Priority::create(100));
+		actors.objective_setPriority(dwarf1, craftObjectiveTypeAssembling.getId(), Priority::create(100));
+		CraftJob* job = area.m_hasCraftingLocationsAndJobs.getForFaction(faction).getJobForAtLocation(dwarf1, woodWorking, sawingLocation, emptyJobSet);
 		REQUIRE(job != nullptr);
 		REQUIRE(job->getStep() == 1);
 		// Find a project to join.
@@ -175,7 +175,7 @@ TEST_CASE("craft")
 		{
 			SUBCASE("by player undesignating location")
 			{
-				area.m_hasCraftingLocationsAndJobs.at(faction).removeLocation(sawCategory, sawingLocation);
+				area.m_hasCraftingLocationsAndJobs.getForFaction(faction).removeLocation(sawCategory, sawingLocation);
 				// There is no longer wood working to be done because there are no locations to do it at.
 				REQUIRE(!craftObjectiveTypeWoodWorking.canBeAssigned(area, dwarf1));
 			}

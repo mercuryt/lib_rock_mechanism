@@ -142,6 +142,12 @@ void EatEvent::eatFruitFromPlant(Area& area, PlantIndex plant)
 	mustEat.eat(area, unitMass * quantityEaten);
 	plants.removeFruitQuantity(plant, quantityEaten);
 }
+// Path request.
+EatPathRequest::EatPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
+	m_eatObjective(static_cast<EatObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
+{
+	nlohmann::from_json(data, *this);
+}
 EatPathRequest::EatPathRequest(Area& area, EatObjective& eo) : m_eatObjective(eo)
 {
 	assert(m_eatObjective.m_destination.empty());
@@ -233,6 +239,15 @@ void EatPathRequest::callback(Area& area, FindPathResult& result)
 		actors.move_setPath(actor, result.path);
 	}
 }
+Json EatPathRequest::toJson() const
+{
+	Json output;
+	nlohmann::to_json(output, *this);
+	output["objective"] = &m_eatObjective;
+	output["huntTarget"] = m_huntResult;
+	return output;
+}
+// Objective.
 EatObjective::EatObjective(Area& area) : Objective(Config::eatPriority), m_eatEvent(area.m_eventSchedule) { }
 EatObjective::EatObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area, ActorIndex actor) : 
 	Objective(data, deserializationMemo), 

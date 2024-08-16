@@ -47,92 +47,49 @@ ProjectRequirementCounts& DeserializationMemo::projectRequirementCountsReference
 //WorldLocation& DeserializationMemo::getLocationByNormalizedLatLng(const Json& data) { return m_simulation.m_world->getLocationByNormalizedLatLng(data.get<LatLng>()); }
 std::unique_ptr<Objective> DeserializationMemo::loadObjective(const Json& data, Area& area, ActorIndex actor)
 {
-	ObjectiveTypeId typeId = data["type"].get<ObjectiveTypeId>();
+	auto name = data["type"].get<std::string>();
 	std::unique_ptr<Objective> output;
-	switch(typeId)
+	if(name == "construct")
+		output = std::make_unique<ConstructObjective>(data, *this);
+	else if(name == "craft")
+		output = std::make_unique<CraftObjective>(data, *this);
+	else if(name == "dig")
+		output = std::make_unique<DigObjective>(data, *this);
+	else if(name == "drink")
+		output =  std::make_unique<DrinkObjective>(data, *this, area, actor);
+	else if(name == "eat")
+		output =  std::make_unique<EatObjective>(data, *this, area, actor);
+	else if(name == "get To safe temperature")
+		output =  std::make_unique<GetToSafeTemperatureObjective>(data, *this);
+	else if(name == "give plants fluid")
+		output =  std::make_unique<GivePlantsFluidObjective>(data, area, actor);
+	else if(name == "go to")
+		output =  std::make_unique<GoToObjective>(data, *this);
+	else if(name == "harvest")
+		output =  std::make_unique<HarvestObjective>(data, area);
+	else if(name == "haul")
+		output =  std::make_unique<TargetedHaulObjective>(data, *this);
+	else if(name == "kill")
+		output =  std::make_unique<KillObjective>(data, area);
+	//else if(name == "medical")
+		//output =  std::make_unique<MedicalObjective>(data, *this);
+	else if(name == "rest")
+		output =  std::make_unique<RestObjective>(data, area, actor);
+	else if(name == "sleep")
+		output =  std::make_unique<SleepObjective>(data, *this);
+	else if(name == "station")
+		output =  std::make_unique<StationObjective>(data);
+	else if(name == "sow seeds")
+		output =  std::make_unique<SowSeedsObjective>(data, area, actor);
+	else if(name == "stockpile")
+		output =  std::make_unique<StockPileObjective>(data, *this);
+	else if(name == "wait")
+		output =  std::make_unique<WaitObjective>(data, area, actor);
+	else
 	{
-		case ObjectiveTypeId::Construct:
-			output = std::make_unique<ConstructObjective>(data, *this);
-			break;
-		case ObjectiveTypeId::Craft:
-			output = std::make_unique<CraftObjective>(data, *this);
-			break;
-		case ObjectiveTypeId::Dig:
-			output = std::make_unique<DigObjective>(data, *this);
-			break;
-		case ObjectiveTypeId::Drink:
-			output =  std::make_unique<DrinkObjective>(data, *this, area, actor);
-			break;
-		case ObjectiveTypeId::Eat:
-			output =  std::make_unique<EatObjective>(data, *this, area, actor);
-			break;
-		case ObjectiveTypeId::GetToSafeTemperature:
-			output =  std::make_unique<GetToSafeTemperatureObjective>(data, *this);
-			break;
-		case ObjectiveTypeId::GivePlantsFluid:
-			output =  std::make_unique<GivePlantsFluidObjective>(data, area, actor);
-			break;
-		case ObjectiveTypeId::GoTo:
-			output =  std::make_unique<GoToObjective>(data, *this);
-			break;
-		case ObjectiveTypeId::Harvest:
-			output =  std::make_unique<HarvestObjective>(data, area);
-			break;
-		case ObjectiveTypeId::Haul:
-			output =  std::make_unique<TargetedHaulObjective>(data, *this);
-			break;
-		case ObjectiveTypeId::Kill:
-			output =  std::make_unique<KillObjective>(data, area);
-			break;
-		//case ObjectiveTypeId::Medical:
-			//output =  std::make_unique<MedicalObjective>(data, *this);
-			//break;
-		case ObjectiveTypeId::Rest:
-			output =  std::make_unique<RestObjective>(data, area, actor);
-			break;
-		case ObjectiveTypeId::Sleep:
-			output =  std::make_unique<SleepObjective>(data, *this);
-			break;
-		case ObjectiveTypeId::Station:
-			output =  std::make_unique<StationObjective>(data);
-			break;
-		case ObjectiveTypeId::SowSeeds:
-			output =  std::make_unique<SowSeedsObjective>(data, area, actor);
-			break;
-		case ObjectiveTypeId::StockPile:
-			output =  std::make_unique<StockPileObjective>(data, *this);
-			break;
-		case ObjectiveTypeId::Wait:
-			output =  std::make_unique<WaitObjective>(data, area, actor);
-			break;
-		default:
-			assert(typeId == ObjectiveTypeId::Wander);
-			output =  std::make_unique<WanderObjective>(data);
+		assert(name == "wander");
+		output = std::make_unique<WanderObjective>(data);
 	}
 	m_objectives[data["address"].get<uintptr_t>()] = output.get();
 	return output;
-}
-std::unique_ptr<ObjectiveType> DeserializationMemo::loadObjectiveType(const Json& data)
-{
-	ObjectiveTypeId typeId = data["type"].get<ObjectiveTypeId>();
-	switch(typeId)
-	{
-		case ObjectiveTypeId::Construct:
-			return std::make_unique<ConstructObjectiveType>(data, *this);
-		case ObjectiveTypeId::Craft:
-			return std::make_unique<CraftObjectiveType>(data, *this);
-		case ObjectiveTypeId::Dig:
-			return std::make_unique<DigObjectiveType>(data, *this);
-		case ObjectiveTypeId::GivePlantsFluid:
-			return std::make_unique<GivePlantsFluidObjectiveType>(data, *this);
-		case ObjectiveTypeId::Harvest:
-			return std::make_unique<HarvestObjectiveType>(data, *this);
-		//case ObjectiveTypeId::Medical:
-			//return std::make_unique<MedicalObjectiveType>(data, *this);
-		case ObjectiveTypeId::SowSeeds:
-			return std::make_unique<SowSeedsObjectiveType>(data, *this);
-		default:
-			assert(typeId == ObjectiveTypeId::StockPile);
-			return std::make_unique<StockPileObjectiveType>(data, *this);
-	}
 }

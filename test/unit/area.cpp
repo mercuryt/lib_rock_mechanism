@@ -14,9 +14,9 @@
 
 TEST_CASE("Area")
 {
-	static const MaterialType& marble = MaterialType::byName("marble");
-	static const FluidType& water = FluidType::byName("water");
-	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
+	static MaterialTypeId marble = MaterialType::byName("marble");
+	static FluidTypeId water = FluidType::byName("water");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
 	Simulation simulation(L"", Step::create(1));
 	Area& area = simulation.m_hasAreas->createArea(10, 10, 10);
 	Blocks& blocks = area.getBlocks();
@@ -27,7 +27,7 @@ TEST_CASE("Area")
 		CHECK(blocks.m_sizeY == 10);
 		CHECK(blocks.m_sizeZ == 10);
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		CHECK(water.name == "water");
+		CHECK(FluidType::getName(water) == "water");
 		CHECK(blocks.solid_get(blocks.getIndex_i(5, 5, 0)) == marble);
 		area.doStep();
 	}
@@ -134,14 +134,14 @@ TEST_CASE("Area")
 			simulation.m_eventSchedule.doStep(simulation.m_step);
 			++simulation.m_step;
 		}
-		REQUIRE(blocks.fluid_getMist(block1) == nullptr);
+		REQUIRE(blocks.fluid_getMist(block1).empty());
 		area.doStep();
 		simulation.m_eventSchedule.doStep(simulation.m_step);
 		++simulation.m_step;
-		REQUIRE(blocks.fluid_getMist(origin) == &water);
-		REQUIRE(blocks.fluid_getMist(block1) == &water);
-		REQUIRE(blocks.fluid_getMist(block2) == nullptr);
-		REQUIRE(blocks.fluid_getMist(block3) == &water);
+		REQUIRE(blocks.fluid_getMist(origin) == water);
+		REQUIRE(blocks.fluid_getMist(block1) == water);
+		REQUIRE(blocks.fluid_getMist(block2).empty());
+		REQUIRE(blocks.fluid_getMist(block3) == water);
 		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
 		while(simulation.m_step != scheduledStep +1 )
 		{
@@ -149,10 +149,10 @@ TEST_CASE("Area")
 			simulation.m_eventSchedule.doStep(simulation.m_step);
 			++simulation.m_step;
 		}
-		REQUIRE(blocks.fluid_getMist(origin) == &water);
-		REQUIRE(blocks.fluid_getMist(block1) == &water);
-		REQUIRE(blocks.fluid_getMist(block2) == &water);
-		REQUIRE(blocks.fluid_getMist(block3) == &water);
+		REQUIRE(blocks.fluid_getMist(origin) == water);
+		REQUIRE(blocks.fluid_getMist(block1) == water);
+		REQUIRE(blocks.fluid_getMist(block2) == water);
+		REQUIRE(blocks.fluid_getMist(block3) == water);
 		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
 		while(simulation.m_step != scheduledStep + 1)
 		{
@@ -160,10 +160,10 @@ TEST_CASE("Area")
 			simulation.m_eventSchedule.doStep(simulation.m_step);
 			++simulation.m_step;
 		}
-		REQUIRE(blocks.fluid_getMist(origin) == nullptr);
-		REQUIRE(blocks.fluid_getMist(block1) == &water);
-		REQUIRE(blocks.fluid_getMist(block2) == &water);
-		REQUIRE(blocks.fluid_getMist(block3) == &water);
+		REQUIRE(blocks.fluid_getMist(origin).empty());
+		REQUIRE(blocks.fluid_getMist(block1) == water);
+		REQUIRE(blocks.fluid_getMist(block2) == water);
+		REQUIRE(blocks.fluid_getMist(block3) == water);
 		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
 		while(simulation.m_step != scheduledStep + 1)
 		{
@@ -171,10 +171,10 @@ TEST_CASE("Area")
 			simulation.m_eventSchedule.doStep(simulation.m_step);
 			++simulation.m_step;
 		}
-		REQUIRE(blocks.fluid_getMist(origin) == nullptr);
-		REQUIRE(blocks.fluid_getMist(block1) == nullptr);
-		REQUIRE(blocks.fluid_getMist(block2) == &water);
-		REQUIRE(blocks.fluid_getMist(block3) == nullptr);
+		REQUIRE(blocks.fluid_getMist(origin).empty());
+		REQUIRE(blocks.fluid_getMist(block1).empty());
+		REQUIRE(blocks.fluid_getMist(block2) == water);
+		REQUIRE(blocks.fluid_getMist(block3).empty());
 		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
 		while(simulation.m_step != scheduledStep + 1)
 		{
@@ -182,16 +182,16 @@ TEST_CASE("Area")
 			simulation.m_eventSchedule.doStep(simulation.m_step);
 			++simulation.m_step;
 		}
-		REQUIRE(blocks.fluid_getMist(origin) == nullptr);
-		REQUIRE(blocks.fluid_getMist(block1) == nullptr);
-		REQUIRE(blocks.fluid_getMist(block2) == nullptr);
-		REQUIRE(blocks.fluid_getMist(block3) == nullptr);
+		REQUIRE(blocks.fluid_getMist(origin).empty());
+		REQUIRE(blocks.fluid_getMist(block1).empty());
+		REQUIRE(blocks.fluid_getMist(block2).empty());
+		REQUIRE(blocks.fluid_getMist(block3).empty());
 	}
 }
 TEST_CASE("vision-threading")
 {
-	static const MaterialType& marble = MaterialType::byName("marble");
-	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
+	static MaterialTypeId marble = MaterialType::byName("marble");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
 	Simulation simulation(L"", Step::create(1));
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
@@ -220,7 +220,7 @@ TEST_CASE("vision-threading")
 }
 TEST_CASE("multiMergeOnAdd")
 {
-	static const FluidType& water = FluidType::byName("water");
+	static FluidTypeId water = FluidType::byName("water");
 	Simulation simulation(L"", Step::create(1));
 	Area& area = simulation.m_hasAreas->createArea(2,2,1);
 	Blocks& blocks = area.getBlocks();
@@ -245,11 +245,11 @@ inline void fourFluidsTestParallel(uint32_t scale, Step steps)
 	uint32_t maxZ = (scale * 1) + 1;
 	uint32_t halfMaxX = maxX / 2;
 	uint32_t halfMaxY = maxY / 2;
-	static const MaterialType& marble = MaterialType::byName("marble");
-	static const FluidType& water = FluidType::byName("water");
-	static const FluidType& CO2 = FluidType::byName("CO2");
-	static const FluidType& mercury = FluidType::byName("mercury");
-	static const FluidType& lava = FluidType::byName("lava");
+	static MaterialTypeId marble = MaterialType::byName("marble");
+	static FluidTypeId water = FluidType::byName("water");
+	static FluidTypeId CO2 = FluidType::byName("CO2");
+	static FluidTypeId mercury = FluidType::byName("mercury");
+	static FluidTypeId lava = FluidType::byName("lava");
 	Simulation simulation(L"", Step::create(0));
 	Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
 	Blocks& blocks = area.getBlocks();

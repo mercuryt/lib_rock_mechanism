@@ -23,7 +23,7 @@ struct TestTaskObjective final : public Objective
 	void reset(Area&, ActorIndex) { }
 	void detour(Area&, ActorIndex) { }
 	std::string name() const { return "test task"; }
-	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Construct; }
+	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveType::getIdByName("construct"); }
 };
 
 struct TestNeedObjective final : public Objective
@@ -36,13 +36,13 @@ struct TestNeedObjective final : public Objective
 	void reset(Area&, ActorIndex) { }
 	void detour(Area&, ActorIndex) { }
 	std::string name() const { return "test need"; }
-	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Dig; }
+	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveType::getIdByName("dig"); }
 };
 
 TEST_CASE("objective")
 {
-	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
-	static const MaterialType& marble = MaterialType::byName("marble");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
+	static MaterialTypeId marble = MaterialType::byName("marble");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Actors& actors = area.getActors();

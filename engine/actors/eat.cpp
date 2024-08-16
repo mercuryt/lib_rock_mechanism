@@ -40,3 +40,7 @@ Step Actors::eat_getHungerEventStep(ActorIndex index) const
 {
 	return m_mustEat[index]->getHungerEventStep();
 }
+bool Actors::eat_hasHungerEvent(ActorIndex index) const
+{
+	return m_mustEat[index]->hasHungerEvent();
+}

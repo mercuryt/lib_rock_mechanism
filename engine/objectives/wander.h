@@ -1,4 +1,4 @@
-#pragma once
+
 
 #include "../objective.h"
 #include "../terrainFacade.h"
@@ -15,7 +15,9 @@ class WanderPathRequest final : public PathRequest
 	uint16_t m_blockCounter = 0;
 public:
 	WanderPathRequest(Area& area, WanderObjective& objective);
+	WanderPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
 	void callback(Area& area, FindPathResult& result);
+	[[nodiscard]] Json toJson() const;
 };
 class WanderObjective final : public Objective
 {
@@ -29,7 +31,6 @@ public:
 	std::string name() const { return "wander"; }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool canResume() const { return false; }
-	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Wander; }
 	// For testing.
 	[[nodiscard]] bool hasPathRequest(const Area& area, ActorIndex actor) const;
 };

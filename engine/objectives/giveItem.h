@@ -17,6 +17,5 @@ public:
 	void reset(Area& area, ActorIndex actor);
 	void createOnDestroyCallbacks(Area& area, ActorIndex actor);
 	[[nodiscard]] std::string name() const { return "give item"; }
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::GiveItem; }
 	[[nodiscard]] Json toJson() const;
 };

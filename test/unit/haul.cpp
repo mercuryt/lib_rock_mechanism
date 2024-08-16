@@ -18,25 +18,25 @@
 #include "types.h"
 TEST_CASE("haul")
 {
-	static const MaterialType& dirt = MaterialType::byName("dirt");
-	static const MaterialType& marble = MaterialType::byName("marble");
-	static const MaterialType& gold = MaterialType::byName("gold");
-	static const MaterialType& lead = MaterialType::byName("lead");
-	[[maybe_unused]] static const MaterialType& iron = MaterialType::byName("iron");
-	static const MaterialType& poplarWood = MaterialType::byName("poplar wood");
-	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
-	static const AnimalSpecies& donkey = AnimalSpecies::byName("jackstock donkey");
-	static const ItemType& chunk = ItemType::byName("chunk");
-	static const ItemType& boulder = ItemType::byName("boulder");
-	static const ItemType& cart = ItemType::byName("cart");
-	static const ItemType& panniers = ItemType::byName("panniers");
+	static MaterialTypeId dirt = MaterialType::byName("dirt");
+	static MaterialTypeId marble = MaterialType::byName("marble");
+	static MaterialTypeId gold = MaterialType::byName("gold");
+	static MaterialTypeId lead = MaterialType::byName("lead");
+	[[maybe_unused]] static MaterialTypeId iron = MaterialType::byName("iron");
+	static MaterialTypeId poplarWood = MaterialType::byName("poplar wood");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
+	static AnimalSpeciesId donkey = AnimalSpecies::byName("jackstock donkey");
+	static ItemTypeId chunk = ItemType::byName("chunk");
+	static ItemTypeId boulder = ItemType::byName("boulder");
+	static ItemTypeId cart = ItemType::byName("cart");
+	static ItemTypeId panniers = ItemType::byName("panniers");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
-	FactionId faction = simulation.createFaction(L"Tower Of Power").id;
+	FactionId faction = simulation.createFaction(L"Tower Of Power");
 	ActorIndex dwarf1 = actors.create({
 		.species=dwarf, 
 		.location=blocks.getIndex_i(1, 1, 2),
@@ -303,8 +303,8 @@ TEST_CASE("haul")
 			simulation.doStep();
 		BlockIndex destination1 = actors.move_getDestination(dwarf1);
 		BlockIndex destination2 = actors.move_getDestination(dwarf2);
-		REQUIRE(destination1);
-		REQUIRE(destination2);
+		REQUIRE(destination1.exists());
+		REQUIRE(destination2.exists());
 		REQUIRE(items.isAdjacentToLocation(cart1, destination1));
 		REQUIRE(items.isAdjacentToLocation(cart1, destination2));
 		REQUIRE(destination1 != destination2);

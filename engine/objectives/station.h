@@ -14,7 +14,6 @@ public:
 	void cancel(Area&, ActorIndex) { }
 	void delay(Area&, ActorIndex) { }
 	void reset(Area& area, ActorIndex actor);
-	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Station; }
 	std::string name() const { return "station"; }
 };
 /*

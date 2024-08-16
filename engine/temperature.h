@@ -69,7 +69,7 @@ class ActorNeedsSafeTemperature
 public:
 	ActorNeedsSafeTemperature(Area& area, ActorIndex a);
 	ActorNeedsSafeTemperature(const Json& data, ActorIndex a, Area& area);
-	void dieFromTemperature();
+	void dieFromTemperature(Area& area);
 	[[nodiscard]] Json toJson() const;
 	void onChange(Area& area);
 	bool isSafe(Area& area, Temperature temperature) const;

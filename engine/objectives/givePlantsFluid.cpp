@@ -47,6 +47,7 @@ void GivePlantsFluidEvent::onCancel(Simulation&, Area* area)
 		area->m_hasFarmFields.getForFaction(actors.getFactionId(m_actor.getIndex())).addGivePlantFluidDesignation(plant);
 	}
 }
+// Path Request.
 GivePlantsFluidPathRequest::GivePlantsFluidPathRequest(Area& area, GivePlantsFluidObjective& objective) : m_objective(objective)
 {
 	DistanceInBlocks maxRange = Config::maxRangeToSearchForHorticultureDesignations;
@@ -63,6 +64,11 @@ GivePlantsFluidPathRequest::GivePlantsFluidPathRequest(Area& area, GivePlantsFlu
 		bool unreserved = false;
 		createGoAdjacentToCondition(area, actor, predicate, m_objective.m_detour, unreserved, maxRange, BlockIndex::null());
 	}
+}
+GivePlantsFluidPathRequest::GivePlantsFluidPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
+	m_objective(static_cast<GivePlantsFluidObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
+{
+	nlohmann::from_json(data, *this);
 }
 void GivePlantsFluidPathRequest::callback(Area& area, FindPathResult& result)
 {
@@ -92,6 +98,13 @@ void GivePlantsFluidPathRequest::callback(Area& area, FindPathResult& result)
 			// Item which was to be selected is no longer avaliable, try again.
 			m_objective.makePathRequest(area, actor);
 	}
+}
+Json GivePlantsFluidPathRequest::toJson() const
+{
+	Json output;
+	nlohmann::to_json(output, *this);
+	output["objective"] = &m_objective;
+	return output;
 }
 bool GivePlantsFluidObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
 {

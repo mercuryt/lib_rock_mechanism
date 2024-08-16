@@ -80,9 +80,10 @@ PlantIndex Plants::create(PlantParamaters paramaters)
 	m_percentGrown[index] = paramaters.percentGrown.empty() ? Percent::create(100) : paramaters.percentGrown;
 	if(paramaters.shape.empty())
 		paramaters.shape = PlantSpecies::shapeForPercentGrown(paramaters.species, m_percentGrown[index]);
-	HasShapes::create(index, paramaters.shape, location, Facing::create(0), true);
+	HasShapes::create(index, paramaters.shape, location, Facing::create(0), paramaters.faction, true);
 	m_species[index] = paramaters.species;
 	m_fluidSource[index].clear();
+	m_percentGrown[index] = paramaters.percentGrown;
 	m_quantityToHarvest[index] = paramaters.quantityToHarvest;
 	m_percentFoliage[index] = Percent::create(0);
 	m_wildGrowth[index] = 0;
@@ -112,6 +113,16 @@ PlantIndex Plants::create(PlantParamaters paramaters)
 		}
 	}
 	return index;
+}
+void Plants::destroy(PlantIndex index)
+{
+	m_location.remove(index);
+	m_species.remove(index);
+	m_shape.remove(index);
+	m_percentGrown.remove(index);
+	m_percentFoliage.remove(index);
+	m_wildGrowth.remove(index);
+	m_quantityToHarvest.remove(index);
 }
 void Plants::die(PlantIndex index)
 {
@@ -323,6 +334,14 @@ bool Plants::temperatureEventExists(PlantIndex index) const
 {
 	return m_temperatureEvent.exists(index);
 }
+bool Plants::fluidEventExists(PlantIndex index) const
+{
+	return m_fluidEvent.exists(index);
+}
+bool Plants::growthEventExists(PlantIndex index) const
+{
+	return m_growthEvent.exists(index);
+}
 void Plants::removeFoliageMass(PlantIndex index, Mass mass)
 {
 	Mass maxFoliageForType = Mass::create(util::scaleByPercent(PlantSpecies::getAdultMass(getSpecies(index)).get(), Config::percentOfPlantMassWhichIsFoliage));
@@ -428,6 +447,7 @@ bool Plants::blockIsFull(BlockIndex block)
 {
 	return m_area.getBlocks().plant_exists(block);
 }
+PlantSpeciesId Plants::getSpecies(PlantIndex index) const { return m_species[index]; }
 Json Plants::toJson() const
 {
 	Json output;

@@ -3,6 +3,8 @@
 #include "../pathRequest.h"
 #include "../types.h"
 #include "../config.h"
+#include "callbackTypes.h"
+#include "deserializationMemo.h"
 class Area;
 class DigProject;
 class DigObjectiveType final : public ObjectiveType
@@ -10,9 +12,9 @@ class DigObjectiveType final : public ObjectiveType
 public:
 	[[nodiscard]] bool canBeAssigned(Area& area, ActorIndex actor) const;
 	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area& area, ActorIndex actor) const;
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Dig; }
 	DigObjectiveType() = default;
 	DigObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo){ }
+	[[nodiscard]] std::string name() const { return "dig"; }
 };
 class DigObjective final : public Objective
 {
@@ -28,7 +30,6 @@ public:
 	void onProjectCannotReserve(Area& area, ActorIndex actor);
 	void joinProject(DigProject& project, ActorIndex actor);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Dig; }
 	[[nodiscard]] DigProject* getJoinableProjectAt(Area& area, BlockIndex block, ActorIndex actor);
 	[[nodiscard]] std::string name() const { return "dig"; }
 	friend class DigPathRequest;
@@ -43,6 +44,8 @@ class DigPathRequest final : public PathRequest
 	// Result is the block which will be the actors location while doing the digging.
 public:
 	DigPathRequest(Area& area, DigObjective& digObjective, ActorIndex actor);
+	DigPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
 	void callback(Area& area, FindPathResult& result);
 	void clearReferences(Simulation&, Area* area);
+	[[nodiscard]] Json toJson() const;
 };

@@ -79,7 +79,6 @@ void SimulationHasAreas::recordId(Area& area)
 {
 	m_areasById[area.m_id] = &area;
 }
-/*
 Json SimulationHasAreas::toJson() const
 {
 	Json areaIds = Json::array();
@@ -87,4 +86,3 @@ Json SimulationHasAreas::toJson() const
 		areaIds.push_back(area.m_id);
 	return {{"areaIds", areaIds}, {"nextId", m_nextId}};
 }
-*/

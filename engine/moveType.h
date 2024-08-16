@@ -19,7 +19,6 @@ struct MoveTypeParamaters
 };
 class MoveType
 {
-	static MoveType data;
 	DataVector<std::string, MoveTypeId> m_name;
 	DataBitSet<MoveTypeId> m_walk;
 	DataVector<uint8_t, MoveTypeId> m_climb;
@@ -32,13 +31,14 @@ class MoveType
 public:
 	static void create(MoveTypeParamaters& paramaters);
 	[[nodiscard]] static MoveTypeId byName(std::string name);
-	[[nodiscard]] static std::string getName(MoveTypeId id) { return data.m_name[id]; }
-	[[nodiscard]] static bool getWalk(MoveTypeId id) { return data.m_walk[id]; }
-	[[nodiscard]] static uint8_t getClimb(MoveTypeId id) { return data.m_climb[id]; }
-	[[nodiscard]] static bool getJumpDown(MoveTypeId id) { return data.m_jumpDown[id]; }
-	[[nodiscard]] static bool getFly(MoveTypeId id) { return data.m_fly[id]; }
-	[[nodiscard]] static bool getBreathless(MoveTypeId id) { return data.m_breathless[id]; }
-	[[nodiscard]] static bool getOnlyBreathsFluids(MoveTypeId id) { return data.m_onlyBreathsFluids[id]; }
-	[[nodiscard]] static FluidTypeMap<CollisionVolume>& getSwim(MoveTypeId id) { return data.m_swim[id]; }
-	[[nodiscard]] static FluidTypeSet& getBreathableFluids(MoveTypeId id) { return data.m_breathableFluids[id]; }
+	[[nodiscard]] static std::string getName(MoveTypeId id);
+	[[nodiscard]] static bool getWalk(MoveTypeId id);
+	[[nodiscard]] static uint8_t getClimb(MoveTypeId id);
+	[[nodiscard]] static bool getJumpDown(MoveTypeId id);
+	[[nodiscard]] static bool getFly(MoveTypeId id);
+	[[nodiscard]] static bool getBreathless(MoveTypeId id);
+	[[nodiscard]] static bool getOnlyBreathsFluids(MoveTypeId id);
+	[[nodiscard]] static FluidTypeMap<CollisionVolume>& getSwim(MoveTypeId id);
+	[[nodiscard]] static FluidTypeSet& getBreathableFluids(MoveTypeId id);
 };
+inline MoveType moveTypeData;

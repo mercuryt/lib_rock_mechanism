@@ -9,19 +9,21 @@
 //TODO: radial symetry for 2x2 and 3x3, etc.
 ShapeId Shape::create(std::string name, std::vector<std::array<int32_t, 4>> positions, uint32_t displayScale)
 {
-	data.m_name.add(name);
-	data.m_positions.add(positions);
-	data.m_displayScale.add(displayScale);
-	ShapeId output = ShapeId::create(data.m_name.size() - 1);
+	shapeData.m_name.add(name);
+	shapeData.m_positions.add(positions);
+	shapeData.m_displayScale.add(displayScale);
+	ShapeId output = ShapeId::create(shapeData.m_name.size() - 1);
 	for(Facing i = Facing::create(0); i < 4; ++i)
 	{
-		data.m_occupiedOffsetsCache.add({});
-		data.m_adjacentOffsetsCache.add({});
-		data.m_occupiedOffsetsCache[output][i.get()] = (makeOccupiedPositionsWithFacing(output, i));
-		data.m_adjacentOffsetsCache[output][i.get()] = (makeAdjacentPositionsWithFacing(output, i));
+		shapeData.m_occupiedOffsetsCache.add({});
+		shapeData.m_adjacentOffsetsCache.add({});
+		shapeData.m_occupiedOffsetsCache[output][i.get()] = (makeOccupiedPositionsWithFacing(output, i));
+		shapeData.m_adjacentOffsetsCache[output][i.get()] = (makeAdjacentPositionsWithFacing(output, i));
 	}
 	return output;
 }
+std::vector<std::array<int32_t, 4>> Shape::positionsWithFacing(ShapeId id, Facing facing) { return shapeData.m_occupiedOffsetsCache[id].at(facing.get()); }
+std::vector<std::array<int32_t, 3>> Shape::adjacentPositionsWithFacing(ShapeId id, Facing facing) { return shapeData.m_adjacentOffsetsCache[id].at(facing.get()); }
 std::vector<std::array<int32_t, 4>> Shape::makeOccupiedPositionsWithFacing(ShapeId id, Facing facing)
 {
 	//TODO: cache.
@@ -29,17 +31,17 @@ std::vector<std::array<int32_t, 4>> Shape::makeOccupiedPositionsWithFacing(Shape
 	switch(facing.get())
 	{
 		case 0: // Facing up.
-			return data.m_positions[id];
+			return shapeData.m_positions[id];
 		case 1: // Facing right, swap x and y.
-			for(auto [x, y, z, v] : data.m_positions[id])
+			for(auto [x, y, z, v] : shapeData.m_positions[id])
 				output.push_back({y, x, z, v});
 			return output;
 		case 2: // Facing down, invert y.
-			for(auto [x, y, z, v] : data.m_positions[id])
+			for(auto [x, y, z, v] : shapeData.m_positions[id])
 				output.push_back({x, y * -1, z, v});
 			return output;
 		case 3: // Facing left, swap x and y and invert x.
-			for(auto [x, y, z, v] : data.m_positions[id])
+			for(auto [x, y, z, v] : shapeData.m_positions[id])
 				output.push_back({y * -1, x, z, v});
 			return output;
 	}
@@ -49,7 +51,7 @@ std::vector<std::array<int32_t, 4>> Shape::makeOccupiedPositionsWithFacing(Shape
 std::vector<std::array<int32_t, 3>> Shape::makeAdjacentPositionsWithFacing(ShapeId id, Facing facing)
 {
 	std::set<std::array<int32_t, 3>> collect;
-	for(auto& position : data.m_occupiedOffsetsCache[id][facing.get()])
+	for(auto& position : shapeData.m_occupiedOffsetsCache[id][facing.get()])
 		for(auto& offset : positionOffsets(position))
 			collect.insert(offset);
 	std::vector<std::array<int32_t, 3>> output(collect.begin(), collect.end());
@@ -79,8 +81,8 @@ std::vector<std::array<int32_t, 3>> Shape::positionOffsets(std::array<int32_t, 4
 BlockIndices Shape::getBlocksOccupiedAt(ShapeId id, const Blocks& blocks, BlockIndex location, Facing facing)
 {
 	BlockIndices output;
-	output.reserve(data.m_positions[id].size());
-	for(auto [x, y, z, v] : data.m_occupiedOffsetsCache[id][facing.get()])
+	output.reserve(shapeData.m_positions[id].size());
+	for(auto [x, y, z, v] : shapeData.m_occupiedOffsetsCache[id][facing.get()])
 	{
 		BlockIndex block = blocks.offset(location, x, y, z);
 		assert(block.exists());
@@ -88,10 +90,16 @@ BlockIndices Shape::getBlocksOccupiedAt(ShapeId id, const Blocks& blocks, BlockI
 	}
 	return output;
 }
+BlockIndices Shape::getBlocksOccupiedAndAdjacentAt(ShapeId id, const Blocks& blocks, BlockIndex location, Facing facing)
+{
+	auto output = getBlocksOccupiedAt(id, blocks, location, facing);
+	output.concatAssertUnique(getBlocksWhichWouldBeAdjacentAt(id, blocks, location, facing));
+	return output;
+}
 std::vector<std::pair<BlockIndex, CollisionVolume>> Shape::getBlocksOccupiedAtWithVolumes(ShapeId id, const Blocks& blocks, BlockIndex location, Facing facing)
 {
 	std::vector<std::pair<BlockIndex, CollisionVolume>> output;
-	output.reserve(data.m_positions[id].size());
+	output.reserve(shapeData.m_positions[id].size());
 	for(auto& [x, y, z, v] : positionsWithFacing(id, facing))
 	{
 		BlockIndex block = blocks.offset(location, x, y, z);
@@ -103,8 +111,8 @@ std::vector<std::pair<BlockIndex, CollisionVolume>> Shape::getBlocksOccupiedAtWi
 BlockIndices Shape::getBlocksWhichWouldBeAdjacentAt(ShapeId id, const Blocks& blocks, BlockIndex location, Facing facing)
 {
 	BlockIndices output;
-	output.reserve(data.m_positions[id].size());
-	for(auto [x, y, z] : data.m_adjacentOffsetsCache[id].at(facing.get()))
+	output.reserve(shapeData.m_positions[id].size());
+	for(auto [x, y, z] : shapeData.m_adjacentOffsetsCache[id].at(facing.get()))
 	{
 		BlockIndex block = blocks.offset(location, x, y, z);
 		if(block.exists())
@@ -112,9 +120,9 @@ BlockIndices Shape::getBlocksWhichWouldBeAdjacentAt(ShapeId id, const Blocks& bl
 	}
 	return output;
 }
-BlockIndex Shape::getBlockWhichWouldBeAdjacentAtWithPredicate(ShapeId id, const Blocks& blocks, BlockIndex location, Facing facing, std::function<bool(BlockIndex)> predicate)
+BlockIndex Shape::getBlockWhichWouldBeOccupiedAtWithPredicate(ShapeId id, const Blocks& blocks, BlockIndex location, Facing facing, std::function<bool(BlockIndex)> predicate)
 {
-	for(auto [x, y, z] : data.m_adjacentOffsetsCache[id].at(facing.get()))
+	for(auto [x, y, z, v] : shapeData.m_occupiedOffsetsCache[id].at(facing.get()))
 	{
 		BlockIndex block = blocks.offset(location, x, y, z);
 		if(block.exists() && predicate(block))
@@ -122,17 +130,32 @@ BlockIndex Shape::getBlockWhichWouldBeAdjacentAtWithPredicate(ShapeId id, const 
 	}
 	return BlockIndex::null();
 }
-CollisionVolume Shape::getCollisionVolumeAtLocationBlock(ShapeId id) { return CollisionVolume::create(data.m_positions[id][0][3]); }
+BlockIndex Shape::getBlockWhichWouldBeAdjacentAtWithPredicate(ShapeId id, const Blocks& blocks, BlockIndex location, Facing facing, std::function<bool(BlockIndex)> predicate)
+{
+	for(auto [x, y, z] : shapeData.m_adjacentOffsetsCache[id].at(facing.get()))
+	{
+		BlockIndex block = blocks.offset(location, x, y, z);
+		if(block.exists() && predicate(block))
+			return block;
+	}
+	return BlockIndex::null();
+}
+CollisionVolume Shape::getCollisionVolumeAtLocationBlock(ShapeId id) { return CollisionVolume::create(shapeData.m_positions[id][0][3]); }
 ShapeId Shape::byName(const std::string& name)
 {
-	auto found = data.m_name.find(name);
-	assert(found != data.m_name.end());
-	return ShapeId::create(found - data.m_name.begin());
+	auto found = shapeData.m_name.find(name);
+	assert(found != shapeData.m_name.end());
+	return ShapeId::create(found - shapeData.m_name.begin());
 }
+std::vector<std::array<int32_t, 4>> Shape::getPositions(ShapeId id) { return shapeData.m_positions[id]; }
+std::string Shape::getName(ShapeId id) { return shapeData.m_name[id]; }
+uint32_t Shape::getDisplayScale(ShapeId id) { return shapeData.m_displayScale[id]; }
+bool Shape::getIsMultiTile(ShapeId id) { return shapeData.m_isMultiTile[id]; }
+bool Shape::getIsRadiallySymetrical(ShapeId id) { return shapeData.m_isRadiallySymetrical[id]; }
 bool Shape::hasShape(const std::string& name)
 {
-	auto found = data.m_name.find(name);
-	return found != data.m_name.end();
+	auto found = shapeData.m_name.find(name);
+	return found != shapeData.m_name.end();
 }
 ShapeId Shape::loadFromName(std::string name)
 {
@@ -157,7 +180,7 @@ ShapeId Shape::loadFromName(std::string name)
 }
 ShapeId Shape::mutateAdd(ShapeId id, std::array<int32_t, 4> position)
 {
-	auto positions = data.m_positions[id];
+	auto positions = shapeData.m_positions[id];
 	assert(std::ranges::find(positions, position) == positions.end());
 	positions.push_back(position);
 	std::ranges::sort(positions);
