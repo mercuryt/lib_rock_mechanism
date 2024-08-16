@@ -46,7 +46,7 @@ TEST_CASE("eventSchedule")
 	SUBCASE("raii fires")
 	{
 		HasScheduledEvent<TestEvent> holder(simulation.m_eventSchedule);
-		holder.schedule(10, fired, simulation, &holder);
+		holder.schedule(Step::create(10), fired, simulation, &holder);
 		REQUIRE(simulation.m_eventSchedule.m_data.contains(Step::create(11)));
 		REQUIRE(simulation.m_eventSchedule.m_data.at(Step::create(11)).size() == 1);
 		REQUIRE(!fired);
@@ -57,7 +57,7 @@ TEST_CASE("eventSchedule")
 	{
 		{
 			HasScheduledEvent<TestEvent> holder(simulation.m_eventSchedule);
-			holder.schedule(10, fired, simulation, &holder);
+			holder.schedule(Step::create(10), fired, simulation, &holder);
 			REQUIRE(simulation.m_eventSchedule.m_data.contains(Step::create(11)));
 			REQUIRE(simulation.m_eventSchedule.m_data.at(Step::create(11)).size() == 1);
 		}

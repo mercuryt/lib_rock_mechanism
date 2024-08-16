@@ -17,6 +17,11 @@ DigPathRequest::DigPathRequest(Area& area, DigObjective& digObjective, ActorInde
 	//TODO: We don't need the whole path here, just the destination and facing.
 	createGoAdjacentToCondition(area, actor, predicate, m_digObjective.m_detour, unreserved, maxRange, BlockIndex::null());
 }
+DigPathRequest::DigPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
+	m_digObjective(static_cast<DigObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
+{
+	nlohmann::from_json(data, *this);
+}
 void DigPathRequest::callback(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
@@ -39,7 +44,7 @@ void DigPathRequest::callback(Area& area, FindPathResult& result)
 			return;
 		}
 		BlockIndex target = result.blockThatPassedPredicate;
-		DigProject& project = area.m_hasDigDesignations.getForFaction(actors.getFactionId(actor), target);
+		DigProject& project = area.m_hasDigDesignations.getForFactionAndBlock(actors.getFactionId(actor), target);
 		if(project.canAddWorker(actor))
 			m_digObjective.joinProject(project, actor);
 		else
@@ -49,6 +54,13 @@ void DigPathRequest::callback(Area& area, FindPathResult& result)
 			return;
 		}
 	}
+}
+Json DigPathRequest::toJson() const
+{
+	Json output;
+	nlohmann::to_json(output, *this);
+	output["objective"] = &m_digObjective;
+	return output;
 }
 DigObjective::DigObjective(const Json& data, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo),
@@ -72,7 +84,7 @@ void DigObjective::execute(Area& area, ActorIndex actor)
 		{ 
 			if(!getJoinableProjectAt(area, block, actor))
 				return false;
-			project = &area.m_hasDigDesignations.getForFaction(actors.getFactionId(actor), block);
+			project = &area.m_hasDigDesignations.getForFactionAndBlock(actors.getFactionId(actor), block);
 			if(project->canAddWorker(actor))
 				return true;
 			return false;
@@ -133,7 +145,7 @@ DigProject* DigObjective::getJoinableProjectAt(Area& area, BlockIndex block, Act
 	FactionId faction = actors.getFactionId(actor);
 	if(!blocks.designation_has(block, faction, BlockDesignation::Dig))
 		return nullptr;
-	DigProject& output = area.m_hasDigDesignations.getForFaction(faction, block);
+	DigProject& output = area.m_hasDigDesignations.getForFactionAndBlock(faction, block);
 	if(!output.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&output))
 		return nullptr;
 	if(!output.canAddWorker(actor))

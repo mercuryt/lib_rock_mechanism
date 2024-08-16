@@ -17,6 +17,11 @@ WoodCuttingPathRequest::WoodCuttingPathRequest(Area& area, WoodCuttingObjective&
 	bool unreserved = true;
 	createGoAdjacentToCondition(area, getActor(), predicate, m_woodCuttingObjective.m_detour, unreserved, maxRange, BlockIndex::null());
 }
+WoodCuttingPathRequest::WoodCuttingPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
+	m_woodCuttingObjective(static_cast<WoodCuttingObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
+{
+	nlohmann::from_json(data, *this);
+}
 void WoodCuttingPathRequest::callback(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
@@ -39,7 +44,7 @@ void WoodCuttingPathRequest::callback(Area& area, FindPathResult& result)
 			return;
 		}
 		BlockIndex target = result.blockThatPassedPredicate;
-		WoodCuttingProject& project = area.m_hasWoodCuttingDesignations.getForFaction(actors.getFactionId(actor), target);
+		WoodCuttingProject& project = area.m_hasWoodCuttingDesignations.getForFactionAndBlock(actors.getFactionId(actor), target);
 		if(project.canAddWorker(actor))
 			m_woodCuttingObjective.joinProject(project, actor);
 		else
@@ -49,6 +54,13 @@ void WoodCuttingPathRequest::callback(Area& area, FindPathResult& result)
 			return;
 		}
 	}
+}
+Json WoodCuttingPathRequest::toJson() const
+{
+	Json output;
+	nlohmann::to_json(output, *this);
+	output["objective"] = &m_woodCuttingObjective;
+	return output;
 }
 WoodCuttingObjective::WoodCuttingObjective() : Objective(Config::woodCuttingObjectivePriority) { }
 WoodCuttingObjective::WoodCuttingObjective(const Json& data, DeserializationMemo& deserializationMemo) :
@@ -73,7 +85,7 @@ void WoodCuttingObjective::execute(Area& area, ActorIndex actor)
 		{ 
 			if(!getJoinableProjectAt(area, block, actor))
 				return false;
-			project = &area.m_hasWoodCuttingDesignations.getForFaction(actors.getFactionId(actor), block);
+			project = &area.m_hasWoodCuttingDesignations.getForFactionAndBlock(actors.getFactionId(actor), block);
 			if(project->canAddWorker(actor))
 				return true;
 			return false;
@@ -132,7 +144,7 @@ WoodCuttingProject* WoodCuttingObjective::getJoinableProjectAt(Area& area, Block
 	FactionId faction = actors.getFactionId(actor);
 	if(!area.getBlocks().designation_has(block, faction, BlockDesignation::WoodCutting))
 		return nullptr;
-	WoodCuttingProject& output = area.m_hasWoodCuttingDesignations.getForFaction(faction, block);
+	WoodCuttingProject& output = area.m_hasWoodCuttingDesignations.getForFactionAndBlock(faction, block);
 	if(!output.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&output))
 		return nullptr;
 	if(!output.canAddWorker(actor))

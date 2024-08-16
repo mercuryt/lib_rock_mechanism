@@ -24,13 +24,13 @@
 #include <memory>
 TEST_CASE("sow")
 {
-	static const PlantSpecies& wheatGrass = PlantSpecies::byName("wheat grass");
-	static const MaterialType& dirt = MaterialType::byName("dirt");
-	static const MaterialType& marble = MaterialType::byName("marble");
-	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
-	uint16_t dayBeforeSowingStarts = wheatGrass.dayOfYearForSowStart - 1u;
+	static PlantSpeciesId wheatGrass = PlantSpecies::byName("wheat grass");
+	static MaterialTypeId dirt = MaterialType::byName("dirt");
+	static MaterialTypeId marble = MaterialType::byName("marble");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
+	uint16_t dayBeforeSowingStarts = PlantSpecies::getDayOfYearForSowStart(wheatGrass) - 1u;
 	Simulation simulation(L"", DateTime(10, dayBeforeSowingStarts, 1200).toSteps());
-	FactionId faction = simulation.createFaction(L"Tower Of Power").id;
+	FactionId faction = simulation.createFaction(L"Tower Of Power");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
@@ -46,7 +46,7 @@ TEST_CASE("sow")
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	area.m_hasFarmFields.registerFaction(faction);
 	Cuboid cuboid(blocks, fieldLocation, fieldLocation);
-	FarmField& field = area.m_hasFarmFields.at(faction).create(cuboid);
+	FarmField& field = area.m_hasFarmFields.getForFaction(faction).create(cuboid);
 	ActorIndex actor = actors.create({
 		.species=dwarf, 
 		.location=blocks.getIndex_i(1, 1, 2),
@@ -56,9 +56,9 @@ TEST_CASE("sow")
 	});
 	SUBCASE("success")
 	{
-		REQUIRE(field.plantSpecies == nullptr);
-		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
-		REQUIRE(field.plantSpecies == &wheatGrass);
+		REQUIRE(field.plantSpecies.empty());
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
+		REQUIRE(field.plantSpecies == wheatGrass);
 		REQUIRE(blocks.farm_contains(fieldLocation, faction));
 		REQUIRE(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
 		REQUIRE(!blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
@@ -66,7 +66,7 @@ TEST_CASE("sow")
 		// Skip ahead to planting time.
 		simulation.fastForward(Config::stepsPerDay);
 		REQUIRE(objectiveType.canBeAssigned(area, actor));
-		actors.objective_setPriority(actor, objectiveType, Priority::create(10));
+		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
 		REQUIRE(area.m_hasFarmFields.hasSowSeedsDesignations(faction));
 		REQUIRE(blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
@@ -74,7 +74,7 @@ TEST_CASE("sow")
 		REQUIRE(actors.objective_getCurrentName(actor) == "sow seeds");
 		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.size() == 1);
 		REQUIRE(actors.objective_getCurrent<SowSeedsObjective>(actor).canSowAt(area, fieldLocation, actor));
-		REQUIRE(!area.m_hasTerrainFacades.at(actors.getMoveType(actor)).findPathAdjacentToAndUnreserved(actors.getLocation(actor), actors.getShape(actor), actors.getFacing(actor), fieldLocation, faction).path.empty());
+		REQUIRE(!area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actor)).findPathAdjacentToAndUnreserved(actors.getLocation(actor), actors.getShape(actor), actors.getFacing(actor), fieldLocation, faction).path.empty());
 		simulation.doStep();
 		REQUIRE(blocks.isReserved(fieldLocation, faction));
 		REQUIRE(!actors.move_getPath(actor).empty());
@@ -94,18 +94,18 @@ TEST_CASE("sow")
 		REQUIRE(actors.objective_getCurrentName(actor) != "sow seeds");
 		plants.die(plant);
 		REQUIRE(area.m_hasFarmFields.hasSowSeedsDesignations(faction));
-		area.m_hasFarmFields.at(faction).remove(field);
+		area.m_hasFarmFields.getForFaction(faction).remove(field);
 		REQUIRE(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
 	}
 	SUBCASE("location no longer accessable to sow")
 	{
 		areaBuilderUtil::setSolidWall(area, blocks.getIndex_i(0, 3, 2), blocks.getIndex_i(8, 3, 2), marble);
 		BlockIndex gateway = blocks.getIndex_i(9, 3, 2);
-		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
 		// Skip ahead to planting time.
-		simulation.fastForwardUntill({1, wheatGrass.dayOfYearForSowStart, 1200 });
+		simulation.fastForwardUntill({1, PlantSpecies::getDayOfYearForSowStart(wheatGrass), 1200 });
 		const SowSeedsObjectiveType objectiveType;
-		actors.objective_setPriority(actor, objectiveType, Priority::create(10));
+		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
 		REQUIRE(area.m_hasFarmFields.hasSowSeedsDesignations(faction));
 		simulation.doStep();
@@ -120,11 +120,11 @@ TEST_CASE("sow")
 	}
 	SUBCASE("location no longer viable to sow")
 	{
-		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
 		// Skip ahead to planting time.
-		simulation.fastForwardUntill({1, wheatGrass.dayOfYearForSowStart, 1200 });
+		simulation.fastForwardUntill({1, PlantSpecies::getDayOfYearForSowStart(wheatGrass), 1200 });
 		const SowSeedsObjectiveType objectiveType;
-		actors.objective_setPriority(actor, objectiveType, Priority::create(10));
+		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
 		simulation.doStep();
 		REQUIRE(!actors.move_getPath(actor).empty());
@@ -138,15 +138,15 @@ TEST_CASE("sow")
 	}
 	SUBCASE("location no longer selected to sow")
 	{
-		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
 		// Skip ahead to planting time.
-		simulation.fastForwardUntill({1, wheatGrass.dayOfYearForSowStart, 1200 });
+		simulation.fastForwardUntill({1, PlantSpecies::getDayOfYearForSowStart(wheatGrass), 1200 });
 		const SowSeedsObjectiveType objectiveType;
-		actors.objective_setPriority(actor, objectiveType, Priority::create(10));
+		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
 		simulation.doStep();
 		REQUIRE(!actors.move_getPath(actor).empty());
-		area.m_hasFarmFields.at(faction).remove(field);
+		area.m_hasFarmFields.getForFaction(faction).remove(field);
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, actor, fieldLocation);
 		// BlockIndex is not select to grow anymore, cannot complete task, search for another route / another location to sow.
 		simulation.doStep();
@@ -154,11 +154,11 @@ TEST_CASE("sow")
 	}
 	SUBCASE("player cancels sowing objective")
 	{
-		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
 		// Skip ahead to planting time.
-		simulation.fastForwardUntill({1, wheatGrass.dayOfYearForSowStart, 1200 });
+		simulation.fastForwardUntill({1, PlantSpecies::getDayOfYearForSowStart(wheatGrass), 1200 });
 		const SowSeedsObjectiveType objectiveType;
-		actors.objective_setPriority(actor, objectiveType, Priority::create(10));
+		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
 		simulation.doStep();
 		REQUIRE(!actors.move_getPath(actor).empty());
@@ -169,11 +169,11 @@ TEST_CASE("sow")
 	}
 	SUBCASE("player delays sowing objective")
 	{
-		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
 		// Skip ahead to planting time.
-		simulation.fastForwardUntill({1, wheatGrass.dayOfYearForSowStart, 1200 });
+		simulation.fastForwardUntill({1, PlantSpecies::getDayOfYearForSowStart(wheatGrass), 1200 });
 		const SowSeedsObjectiveType objectiveType;
-		actors.objective_setPriority(actor, objectiveType, Priority::create(10));
+		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		simulation.doStep();
 		REQUIRE(!actors.move_getPath(actor).empty());
 		REQUIRE(!blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
@@ -185,13 +185,13 @@ TEST_CASE("sow")
 }
 TEST_CASE("harvest")
 {
-	static const PlantSpecies& wheatGrass = PlantSpecies::byName("wheat grass");
-	static const MaterialType& dirt = MaterialType::byName("dirt");
-	static const MaterialType& marble = MaterialType::byName("marble");
-	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
-	uint16_t dayBeforeHarvest = wheatGrass.harvestData->dayOfYearToStart - 1u;
+	static PlantSpeciesId wheatGrass = PlantSpecies::byName("wheat grass");
+	static MaterialTypeId dirt = MaterialType::byName("dirt");
+	static MaterialTypeId marble = MaterialType::byName("marble");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
+	uint16_t dayBeforeHarvest = PlantSpecies::getDayOfYearToStartHarvest(wheatGrass) - 1u;
 	Simulation simulation(L"", DateTime(1, dayBeforeHarvest, 1200).toSteps());
-	FactionId faction = simulation.createFaction(L"Tower Of Power").id;
+	FactionId faction = simulation.createFaction(L"Tower Of Power");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
@@ -202,7 +202,7 @@ TEST_CASE("harvest")
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	area.m_hasFarmFields.registerFaction(faction);
 	Cuboid cuboid(blocks, block, block);
-	FarmField& field = area.m_hasFarmFields.at(faction).create(cuboid);
+	FarmField& field = area.m_hasFarmFields.getForFaction(faction).create(cuboid);
 	ActorIndex actor = actors.create({
 		.species=dwarf, 
 		.location=blocks.getIndex_i(1, 1, 2),
@@ -210,15 +210,15 @@ TEST_CASE("harvest")
 	});
 	SUBCASE("harvest")
 	{
-		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
 		blocks.plant_create(block, wheatGrass, Percent::create(100));
 		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
 		// Skip ahead to harvest time.
-		simulation.fastForwardUntill({1, wheatGrass.harvestData->dayOfYearToStart, 1200});
+		simulation.fastForwardUntill({1, PlantSpecies::getDayOfYearToStartHarvest(wheatGrass), 1200});
 		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
-		REQUIRE(plants.getQuantityToHarvest(blocks.plant_get(block)) == wheatGrass.harvestData->itemQuantity);
+		REQUIRE(plants.getQuantityToHarvest(blocks.plant_get(block)) == PlantSpecies::getItemQuantityToHarvest(wheatGrass));
 		const HarvestObjectiveType objectiveType;
-		actors.objective_setPriority(actor, objectiveType, Priority::create(10));
+		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
 		REQUIRE(actors.objective_getCurrentName(actor) == "harvest");
 		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.size() == 1);
@@ -238,20 +238,20 @@ TEST_CASE("harvest")
 		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
 		ItemIndex item = *blocks.item_getAll(actors.getLocation(actor)).begin();
 		REQUIRE(items.getMaterialType(item) == MaterialType::byName("plant matter"));
-		REQUIRE(items.getQuantity(item) + plants.getQuantityToHarvest(blocks.plant_get(block)) == wheatGrass.harvestData->itemQuantity);
+		REQUIRE(items.getQuantity(item) + plants.getQuantityToHarvest(blocks.plant_get(block)) == PlantSpecies::getItemQuantityToHarvest(wheatGrass));
 		REQUIRE(items.getItemType(item) == ItemType::byName("wheat seed"));
 	}
 	SUBCASE("location no longer accessable to harvest")
 	{
 		areaBuilderUtil::setSolidWall(area, blocks.getIndex_i(0, 3, 2), blocks.getIndex_i(8, 3, 2), marble);
 		BlockIndex gateway = blocks.getIndex_i(9, 3, 2);
-		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
 		blocks.plant_create(block, wheatGrass, Percent::create(100));
 		// Skip ahead to harvest time.
-		simulation.fastForwardUntill({1, wheatGrass.harvestData->dayOfYearToStart, 1200});
+		simulation.fastForwardUntill({1, PlantSpecies::getDayOfYearToStartHarvest(wheatGrass), 1200});
 		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
 		const HarvestObjectiveType objectiveType;
-		actors.objective_setPriority(actor, objectiveType, Priority::create(10));
+		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
 		simulation.doStep();
 		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
@@ -265,13 +265,13 @@ TEST_CASE("harvest")
 	}
 	SUBCASE("location no longer contains plant")
 	{
-		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
 		blocks.plant_create(block, wheatGrass, Percent::create(100));
 		// Skip ahead to harvest time.
-		simulation.fastForwardUntill({1, wheatGrass.harvestData->dayOfYearToStart, 1200});
+		simulation.fastForwardUntill({1, PlantSpecies::getDayOfYearToStartHarvest(wheatGrass), 1200});
 		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
 		const HarvestObjectiveType objectiveType;
-		actors.objective_setPriority(actor, objectiveType, Priority::create(10));
+		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
 		simulation.doStep();
 		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
@@ -285,13 +285,13 @@ TEST_CASE("harvest")
 	}
 	SUBCASE("plant no longer harvestable")
 	{
-		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
 		blocks.plant_create(block, wheatGrass, Percent::create(100));
 		// Skip ahead to harvest time.
-		simulation.fastForwardUntill({1, wheatGrass.harvestData->dayOfYearToStart, 1200});
+		simulation.fastForwardUntill({1, PlantSpecies::getDayOfYearToStartHarvest(wheatGrass), 1200});
 		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
 		const HarvestObjectiveType objectiveType;
-		actors.objective_setPriority(actor, objectiveType, Priority::create(10));
+		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
 		simulation.doStep();
 		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
@@ -305,13 +305,13 @@ TEST_CASE("harvest")
 	}
 	SUBCASE("player cancels harvest")
 	{
-		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
 		blocks.plant_create(block, wheatGrass, Percent::create(100));
 		// Skip ahead to harvest time.
-		simulation.fastForwardUntill({1, wheatGrass.harvestData->dayOfYearToStart, 1200});
+		simulation.fastForwardUntill({1, PlantSpecies::getDayOfYearToStartHarvest(wheatGrass), 1200});
 		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
 		const HarvestObjectiveType objectiveType;
-		actors.objective_setPriority(actor, objectiveType, Priority::create(10));
+		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
 		simulation.doStep();
 		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
@@ -321,13 +321,13 @@ TEST_CASE("harvest")
 	}
 	SUBCASE("player delays harvest")
 	{
-		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
 		blocks.plant_create(block, wheatGrass, Percent::create(100));
 		// Skip ahead to harvest time.
-		simulation.fastForwardUntill({1, wheatGrass.harvestData->dayOfYearToStart, 1200});
+		simulation.fastForwardUntill({1, PlantSpecies::getDayOfYearToStartHarvest(wheatGrass), 1200});
 		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
 		const HarvestObjectiveType objectiveType;
-		actors.objective_setPriority(actor, objectiveType, Priority::create(10));
+		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
 		simulation.doStep();
 		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
@@ -338,8 +338,8 @@ TEST_CASE("harvest")
 	}
 	SUBCASE("give plants fluid")
 	{
-		static const FluidType& water = FluidType::byName("water");
-		area.m_hasFarmFields.at(faction).setSpecies(field, wheatGrass);
+		static FluidTypeId water = FluidType::byName("water");
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
 		blocks.plant_create(block, wheatGrass);
 		PlantIndex plant = blocks.plant_get(block);
 		REQUIRE(!area.m_hasFarmFields.hasGivePlantsFluidDesignations(faction));
@@ -349,7 +349,7 @@ TEST_CASE("harvest")
 		BlockIndex pondLocation = blocks.getIndex_i(3, 9, 1);
 		blocks.solid_setNot(pondLocation);
 		blocks.fluid_add(pondLocation, CollisionVolume::create(100), water);
-		REQUIRE(actors.canPickUp_quantityWhichCanBePickedUpUnencombered(actor, items.getItemType(bucket), items.getMaterialType(bucket)));
+		REQUIRE(actors.canPickUp_quantityWhichCanBePickedUpUnencombered(actor, items.getItemType(bucket), items.getMaterialType(bucket)) != 0);
 		plants.setMaybeNeedsFluid(plant);
 		blocks.plant_exists(block);
 		REQUIRE(plants.getVolumeFluidRequested(plant) != 0);
@@ -357,7 +357,7 @@ TEST_CASE("harvest")
 		REQUIRE(area.m_hasFarmFields.hasGivePlantsFluidDesignations(faction));
 		const GivePlantsFluidObjectiveType objectiveType;
 		REQUIRE(objectiveType.canBeAssigned(area, actor));
-		actors.objective_setPriority(actor, objectiveType, Priority::create(10));
+		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		simulation.doStep();
 		actors.satisfyNeeds(actor);
 		REQUIRE(actors.objective_getCurrentName(actor) == "give plants fluid");

@@ -23,8 +23,8 @@ TEST_CASE("temperature")
 		BlockIndex b3 = blocks.getIndex_i(9, 9, 9);
 		BlockIndex toBurn = blocks.getIndex_i(6, 5, 5);
 		BlockIndex toNotBurn = blocks.getIndex_i(4, 5, 5);
-		auto& wood = MaterialType::byName("poplar wood");
-		auto& marble = MaterialType::byName("marble");
+		auto wood = MaterialType::byName("poplar wood");
+		auto marble = MaterialType::byName("marble");
 		blocks.solid_set(toBurn, wood, false);
 		blocks.solid_set(toNotBurn, marble, false);
 		Temperature temperatureBeforeHeatSource = blocks.temperature_get(origin);
@@ -50,7 +50,7 @@ TEST_CASE("temperature")
 	{
 		BlockIndex origin = blocks.getIndex_i(5, 5, 5);
 		BlockIndex toBurn = blocks.getIndex_i(6, 5, 5);
-		auto& wood = MaterialType::byName("poplar wood");
+		auto wood = MaterialType::byName("poplar wood");
 		blocks.solid_set(toBurn, wood, false);
 		area.m_hasTemperature.addTemperatureSource(origin, TemperatureDelta::create(1000));
 		simulation.doStep();
@@ -58,16 +58,16 @@ TEST_CASE("temperature")
 		Fire& fire = blocks.fire_get(toBurn, wood);
 		REQUIRE(area.m_fires.containsFireAt(fire, toBurn));
 		REQUIRE(fire.m_stage == FireStage::Smouldering);
-		simulation.fastForward(wood.burnData->burnStageDuration - 1);
+		simulation.fastForward(MaterialType::getBurnStageDuration(wood) - 1);
 		REQUIRE(fire.m_stage == FireStage::Burning);
-		simulation.fastForward(wood.burnData->burnStageDuration);
+		simulation.fastForward(MaterialType::getBurnStageDuration(wood));
 		REQUIRE(fire.m_stage == FireStage::Flaming);
-		simulation.fastForward(wood.burnData->flameStageDuration);
+		simulation.fastForward(MaterialType::getFlameStageDuration(wood));
 		REQUIRE(fire.m_stage == FireStage::Burning);
 		REQUIRE(fire.m_hasPeaked == true);
-		simulation.fastForward(wood.burnData->burnStageDuration * Config::fireRampDownPhaseDurationFraction);
+		simulation.fastForward(MaterialType::getBurnStageDuration(wood) * Config::fireRampDownPhaseDurationFraction);
 		REQUIRE(fire.m_stage == FireStage::Smouldering);
-		simulation.fastForward(wood.burnData->burnStageDuration * Config::fireRampDownPhaseDurationFraction);
+		simulation.fastForward(MaterialType::getBurnStageDuration(wood) * Config::fireRampDownPhaseDurationFraction);
 		REQUIRE(!blocks.fire_exists(toBurn));
 		REQUIRE(!blocks.solid_is(toBurn));
 	}

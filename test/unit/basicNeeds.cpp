@@ -165,7 +165,7 @@ TEST_CASE("basicNeedsNonsentient")
 		.location=blocks.getIndex_i(1, 1, 2),
 	});
 	REQUIRE(actors.grow_isGrowing(actor));
-	REQUIRE(actors.drink_thirstEventExists(actor));
+	REQUIRE(actors.drink_hasThristEvent(actor));
 	BlockIndex pondLocation = blocks.getIndex_i(3, 3, 1);
 	blocks.solid_setNot(pondLocation);
 	blocks.fluid_add(pondLocation, CollisionVolume::create(100), water);
@@ -282,7 +282,7 @@ TEST_CASE("basicNeedsNonsentient")
 		REQUIRE(actors.eat_getMassFoodRequested(bear) != 0);
 		REQUIRE(actors.objective_getCurrentName(bear) == "eat");
 		REQUIRE(actors.move_hasPathRequest(bear));
-		FindPathResult result = area.m_hasTerrainFacades.at(actors.getMoveType(bear)).findPathTo(actors.getLocation(deer), actors.getShape(bear), actors.getFacing(bear), actors.getLocation(deer));
+		FindPathResult result = area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(bear)).findPathTo(actors.getLocation(deer), actors.getShape(bear), actors.getFacing(bear), actors.getLocation(deer));
 		REQUIRE(!result.path.empty());
 		// Bear goes to deer corpse.
 		simulation.doStep();

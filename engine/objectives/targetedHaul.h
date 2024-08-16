@@ -16,7 +16,6 @@ public:
 	void cancel(Area&, ActorIndex actor);
 	void delay(Area&, ActorIndex) { }
 	void reset(Area& area, ActorIndex actor) { cancel(area, actor); }
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Haul; }
 	[[nodiscard]] std::string name() const { return "haul"; }
 	[[nodiscard]] Json toJson() const;
 };

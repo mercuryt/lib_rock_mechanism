@@ -3,6 +3,7 @@
 #include "../../engine/items/items.h"
 #include "../../engine/plants.h"
 #include "../../engine/area.h"
+#include "../../engine/bodyType.h"
 #include "../../engine/animalSpecies.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation.h"
@@ -12,8 +13,8 @@
 #include "../../engine/itemType.h"
 TEST_CASE("wound")
 {
-	static const MaterialType& dirt = MaterialType::byName("dirt");
-	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
+	static MaterialTypeId dirt = MaterialType::byName("dirt");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();

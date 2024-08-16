@@ -1,6 +1,7 @@
 #include "actors.h"
 #include "types.h"
 #include "index.h"
+#include "visionFacade.h"
 void Actors::vision_do(ActorIndex index, ActorIndices& actors)
 {
 	//TODO: Since we moved to a homogenious threading model we don't need to double buffer here.
@@ -23,9 +24,9 @@ void Actors::vision_clearFacade(ActorIndex index)
 {
 	m_hasVisionFacade[index].clear();
 }
-void Actors::vision_updateFacadeIndex(ActorIndex index, VisionFacadeIndex visionFacadeIndex)
+void Actors::vision_swap(ActorIndex index, ActorIndices& toSwap)
 {
-	m_hasVisionFacade[index].updateFacadeIndex(visionFacadeIndex);
+	m_canSee[index].swap(toSwap);
 }
 bool Actors::vision_canSeeAnything(ActorIndex index) const
 {

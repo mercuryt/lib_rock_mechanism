@@ -13,9 +13,8 @@ class StockPileObjectiveType final : public ObjectiveType
 public:
 	bool canBeAssigned(Area& area, ActorIndex actor) const;
 	std::unique_ptr<Objective> makeFor(Area& area, ActorIndex actor) const;
-	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::StockPile; }
 	StockPileObjectiveType() = default;
-	StockPileObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo){ }
+	[[nodiscard]] std::string name() const { return "stockpile"; }
 };
 class StockPileObjective final : public Objective
 {
@@ -33,7 +32,6 @@ public:
 	[[nodiscard]] bool destinationCondition(Area& area, BlockIndex block, const ItemIndex item, ActorIndex actor);
 	[[nodiscard]] Json toJson() const;
 	std::string name() const { return "stockpile"; }
-	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::StockPile; }
 	friend class StockPilePathRequest;
 };
 // Searches for an Item and destination to make or find a hauling project for m_objective.m_actor.

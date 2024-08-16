@@ -25,20 +25,38 @@ void CraftCancelInputAction::execute()
 	m_area.m_hasCraftingLocationsAndJobs.at(m_faction).removeJob(m_job);
 }
 */
+void CraftStepTypeCategory::create(std::string name) { craftStepTypeCategoryData.m_name.add(name); }
 CraftStepTypeCategoryId CraftStepTypeCategory::byName(const std::string name)
 {
-	auto found = data.m_name.find(name);
-	assert(found != data.m_name.end());
-	return CraftStepTypeCategoryId::create(found - data.m_name.end());
+	auto found = craftStepTypeCategoryData.m_name.find(name);
+	assert(found != craftStepTypeCategoryData.m_name.end());
+	return CraftStepTypeCategoryId::create(found - craftStepTypeCategoryData.m_name.end());
 }
+std::string CraftStepTypeCategory::getName(CraftStepTypeCategoryId id) { return craftStepTypeCategoryData.m_name[id]; }
+
 CraftStepProjectHasShapeDishonorCallback::CraftStepProjectHasShapeDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) :
 	m_craftStepProject(*static_cast<CraftStepProject*>(deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()))) { }
+
+void CraftJobType::create(std::string name, ItemTypeId productType, Quantity productQuantity, MaterialCategoryTypeId category, std::vector<CraftStepType> stepTypes)
+{
+	craftJobTypeData.m_name.add(name);
+	craftJobTypeData.m_productType.add(productType);
+	craftJobTypeData.m_productQuantity.add(productQuantity);
+	craftJobTypeData.m_materialTypeCategory.add(category);
+	craftJobTypeData.m_stepTypes.add(stepTypes);
+}
 CraftJobTypeId CraftJobType::byName(const std::string name)
 {
-	auto found = data.m_name.find(name);
-	assert(found != data.m_name.end());
-	return CraftJobTypeId::create(found - data.m_name.begin());
+	auto found = craftJobTypeData.m_name.find(name);
+	assert(found != craftJobTypeData.m_name.end());
+	return CraftJobTypeId::create(found - craftJobTypeData.m_name.begin());
 }
+std::string CraftJobType::getName(CraftJobTypeId id) { return craftJobTypeData.m_name[id]; }
+ItemTypeId CraftJobType::getProductType(CraftJobTypeId id) { return craftJobTypeData.m_productType[id]; }
+Quantity CraftJobType::getProductQuantity(CraftJobTypeId id) { return craftJobTypeData.m_productQuantity[id]; }
+MaterialCategoryTypeId CraftJobType::getMaterialTypeCategory(CraftJobTypeId id) { return craftJobTypeData.m_materialTypeCategory[id]; }
+std::vector<CraftStepType>& CraftJobType::getStepTypes(CraftJobTypeId id) { return craftJobTypeData.m_stepTypes[id]; }
+
 CraftStepProject::CraftStepProject(const Json& data, DeserializationMemo& deserializationMemo, CraftJob& cj) :
 	Project(data, deserializationMemo),
 	m_craftStepType(*cj.stepIterator),

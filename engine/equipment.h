@@ -34,7 +34,6 @@ public:
 	void modifyImpact(Area& area, Hit& hit, BodyPartTypeId bodyPartType);
 	void addGeneric(Area& area, ItemTypeId itemType, MaterialTypeId MaterialType, Quantity quantity);
 	void removeGeneric(Area& area, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity);
-	void updateItemIndex(ItemIndex oldIndex, ItemIndex newIndex);
 	void updateCarrierIndexForContents(Area& area, ItemIndex newIndex);
 	std::vector<Attack> getMeleeAttacks(Area& area);
 	auto& getRangedWeapons() { return m_rangedWeapons; }

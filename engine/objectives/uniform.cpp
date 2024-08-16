@@ -15,6 +15,11 @@ UniformPathRequest::UniformPathRequest(Area& area, UniformObjective& objective) 
 	ActorIndex actor = getActor();
 	createGoAdjacentToCondition(area, actor, predicate, m_objective.m_detour, unreserved, Config::maxRangeToSearchForUniformEquipment, BlockIndex::null());
 }
+UniformPathRequest::UniformPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
+	m_objective(static_cast<UniformObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
+{
+	nlohmann::from_json(data, *this);
+}
 void UniformPathRequest::callback(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
@@ -63,6 +68,13 @@ void UniformPathRequest::callback(Area& area, FindPathResult& result)
 		else
 			actors.objective_canNotCompleteObjective(actor, m_objective);
 	}
+}
+Json UniformPathRequest::toJson() const
+{
+	Json output;
+	nlohmann::to_json(output, *this);
+	output["objective"] = &m_objective;
+	return output;
 }
 // UniformObjective
 UniformObjective::UniformObjective(Area& area, ActorIndex actor) :

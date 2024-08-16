@@ -22,7 +22,7 @@
 #include <memory>
 TEST_CASE("equip and unequip")
 {
-	const MaterialType& marble = MaterialType::byName("marble");
+	MaterialTypeId marble = MaterialType::byName("marble");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
@@ -56,7 +56,7 @@ TEST_CASE("equip and unequip")
 }
 TEST_CASE("give item")
 {
-	const MaterialType& marble = MaterialType::byName("marble");
+	MaterialTypeId marble = MaterialType::byName("marble");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();

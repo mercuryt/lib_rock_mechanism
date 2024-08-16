@@ -145,7 +145,7 @@ Temperature AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature() const
 UnsafeTemperatureEvent::UnsafeTemperatureEvent(Area& area, ActorIndex a, const Step start) :
 	ScheduledEvent(area.m_simulation, AnimalSpecies::getStepsTillDieInUnsafeTemperature(area.getActors().getSpecies(a)), start),
 	m_needsSafeTemperature(*area.getActors().m_needsSafeTemperature[a].get()) { }
-void UnsafeTemperatureEvent::execute(Simulation&, Area*) { m_needsSafeTemperature.dieFromTemperature(); }
+void UnsafeTemperatureEvent::execute(Simulation&, Area* area) { m_needsSafeTemperature.dieFromTemperature(*area); }
 void UnsafeTemperatureEvent::clearReferences(Simulation&, Area*) { m_needsSafeTemperature.m_event.clearPointer(); }
 ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(Area& area, ActorIndex a) : 
 	m_event(area.m_eventSchedule)
@@ -173,7 +173,8 @@ void ActorNeedsSafeTemperature::onChange(Area& area)
 	actors.grow_updateGrowingStatus(actor);
 	if(!isSafeAtCurrentLocation(area))
 	{
-		if(!actors.objective_hasNeed(actor, ObjectiveTypeId::GetToSafeTemperature))
+		static ObjectiveTypeId getToSafeTemperature = ObjectiveType::getIdByName("get to safe temperature");
+		if(!actors.objective_hasNeed(actor, getToSafeTemperature))
 		{
 			std::unique_ptr<Objective> objective = std::make_unique<GetToSafeTemperatureObjective>();
 			actors.objective_addNeed(actor, std::move(objective));
@@ -183,6 +184,12 @@ void ActorNeedsSafeTemperature::onChange(Area& area)
 	}
 	else if(m_event.exists())
 		m_event.unschedule();
+}
+void ActorNeedsSafeTemperature::dieFromTemperature(Area& area)
+{
+	Actors& actors = area.getActors();
+	ActorIndex actor = m_actor.getIndex();
+	actors.die(actor, CauseOfDeath::temperature);
 }
 bool ActorNeedsSafeTemperature::isSafe(Area& area, Temperature temperature) const
 {

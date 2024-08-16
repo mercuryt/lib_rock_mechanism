@@ -1,5 +1,6 @@
 #pragma once
 
+#include "idTypes.h"
 #include "index.h"
 #include "types.h"
 #include "eventSchedule.hpp"
@@ -30,6 +31,7 @@ struct PlantParamaters
 	Percent percentNeedsFluid = Percent::null();
 	Percent percentNeedsSafeTemperature = Percent::null();
 	Percent percentFoliageGrowth = Percent::null();
+	FactionId faction = FactionId::null();
 };
 class Plants final : public HasShapes
 {
@@ -97,6 +99,8 @@ public:
 	[[nodiscard]] bool readyToHarvest(PlantIndex index) const { return m_quantityToHarvest[index] != 0; }
 	[[nodiscard]] CollisionVolume getVolumeFluidRequested(PlantIndex index) const { return m_volumeFluidRequested[index]; }
 	[[nodiscard]] bool temperatureEventExists(PlantIndex index) const;
+	[[nodiscard]] bool fluidEventExists(PlantIndex index) const;
+	[[nodiscard]] bool growthEventExists(PlantIndex index) const;
 	[[nodiscard]] Json toJson() const;
 	void log(PlantIndex index) const;
 	friend class PlantGrowthEvent;

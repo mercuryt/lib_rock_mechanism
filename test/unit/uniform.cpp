@@ -28,7 +28,7 @@ TEST_CASE("uniform")
 		.location=blocks.getIndex_i(5,5,1),
 	});
 	actors.uniform_set(actor, basic);
-	REQUIRE(actors.objective_getCurrent<UniformObjective>(actor).getObjectiveTypeId() == ObjectiveTypeId::Uniform);
+	REQUIRE(actors.objective_getCurrent<UniformObjective>(actor).getTypeId() == ObjectiveType::getIdByName("uniform"));
 	UniformObjective& objective = static_cast<UniformObjective&>(actors.objective_getCurrent<UniformObjective>(actor));
 	ItemIndex pants = items.create({.itemType=ItemType::byName("pants"), .materialType=MaterialType::byName("cotton"), .location=blocks.getIndex_i(8,1,1), .quality=Quality::create(10), .percentWear=Percent::create(10)});
 	ItemIndex shirt = items.create({.itemType=ItemType::byName("shirt"), .materialType=MaterialType::byName("cotton"), .location=blocks.getIndex_i(1,6,1), .quality=Quality::create(10), .percentWear=Percent::create(10)});
@@ -51,5 +51,5 @@ TEST_CASE("uniform")
 	REQUIRE(actors.equipment_containsItem(actor, belt));
 	if(!actors.equipment_containsItem(actor, belt2))
 		simulation.fastForwardUntillActorHasEquipment(area, actor, belt2);
-	REQUIRE(actors.objective_getCurrent<UniformObjective>(actor).getObjectiveTypeId() != ObjectiveTypeId::Uniform);
+	REQUIRE(actors.objective_getCurrent<UniformObjective>(actor).getTypeId() != ObjectiveType::getIdByName("uniform"));
 }

@@ -25,7 +25,9 @@ void UnequipItemObjective::execute(Area& area, ActorIndex actor)
 		Blocks& blocks = area.getBlocks();
 		Items& items = area.getItems();
 		ItemIndex item = m_item.getIndex();
-		if(blocks.item_canEnterCurrentlyWithAnyFacing(m_block, item))
+		ShapeId shape = items.getShape(item);
+		const BlockIndices& occupied = items.getBlocks(item);
+		if(blocks.shape_canEnterCurrentlyWithAnyFacing(m_block, shape, occupied))
 		{
 			actors.equipment_remove(actor, item);
 			items.setLocation(item, m_block);
@@ -37,3 +39,12 @@ void UnequipItemObjective::execute(Area& area, ActorIndex actor)
 }
 void UnequipItemObjective::cancel(Area& area, ActorIndex actor) { area.getActors().canReserve_clearAll(actor); }
 void UnequipItemObjective::reset(Area& area, ActorIndex actor) { cancel(area, actor); }
+Json UnequipItemObjective::toJson() const
+{
+	Json output = static_cast<const Objective&>(*this).toJson();
+	output.update({
+		{"item", m_item},
+		{"block", m_block}
+	});
+	return output;
+}

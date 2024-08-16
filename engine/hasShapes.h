@@ -29,7 +29,7 @@ protected:
 	Area& m_area;
 	HasShapes(Area& area);
 	HasShapes(const Json& data, DeserializationMemo& deserializationMemo);
-	void create(HasShapeIndex index, ShapeId shape, BlockIndex location, Facing facing, bool isStatic);
+	void create(HasShapeIndex index, ShapeId shape, BlockIndex location, Facing facing, FactionId faction, bool isStatic);
 	void create(HasShapeIndex index, const Json& data, DeserializationMemo& deserializationMemo);
 	void destroy(HasShapeIndex index);
 	void sortRange(HasShapeIndex begin, HasShapeIndex end);
@@ -47,7 +47,7 @@ public:
 	[[nodiscard]] bool hasLocation(HasShapeIndex index) const { return getLocation(index).exists(); }
 	[[nodiscard]] Facing getFacing(HasShapeIndex index) const { return m_facing[index]; }
 	[[nodiscard]] const auto& getBlocks(HasShapeIndex index) const { return m_blocks[index]; }
-	[[nodiscard]] FactionId getFactionId(HasShapeIndex index) { return m_faction[index]; }
+	[[nodiscard]] FactionId getFactionId(HasShapeIndex index) const { return m_faction[index]; }
 	[[nodiscard]] FactionId getFaction(HasShapeIndex index) const;
 	[[nodiscard]] bool hasFaction(HasShapeIndex index) const { return m_faction[index].exists(); }
 	[[nodiscard]] bool isStatic(HasShapeIndex index) const { return m_static[index]; }

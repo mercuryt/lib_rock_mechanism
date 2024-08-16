@@ -13,6 +13,13 @@ public:
 	InstallItemPathRequest(Area& area, InstallItemObjective& iio);
 	void callback(Area& area, FindPathResult& result);
 };
+class InstallItemObjectiveType final : public ObjectiveType
+{
+public:
+	bool canBeAssigned(Area& area, ActorIndex actor) const;
+	std::unique_ptr<Objective> makeFor(Area& area, ActorIndex actor) const;
+	std::string name() const { return "install Item"; }
+};
 class InstallItemObjective final : public Objective
 {
 	InstallItemProject* m_project;
@@ -23,7 +30,6 @@ public:
 	void cancel(Area& area, ActorIndex actor);
 	void delay(Area&, ActorIndex) { }
 	void reset(Area& area, ActorIndex actor);
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::InstallItem; }
 	[[nodiscard]] std::string name() const { return "install item"; }
 	[[nodiscard]] Json toJson() const;
 	friend class InstallItemPathRequest;

@@ -2,8 +2,7 @@
 #include "../objective.h"
 #include "../pathRequest.h"
 #include "../uniform.h"
-#include "reference.h"
-#include "types.h"
+#include "../reference.h"
 class Area;
 class UniformObjective;
 
@@ -12,7 +11,9 @@ class UniformPathRequest final : public PathRequest
 	UniformObjective& m_objective;
 public:
 	UniformPathRequest(Area& area, UniformObjective& objective);
+	UniformPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
 	void callback(Area& area, FindPathResult& result);
+	[[nodiscard]] Json toJson() const;
 };
 class UniformObjective final : public Objective
 {
@@ -27,7 +28,6 @@ public:
 	void reset(Area& area, ActorIndex actor);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "uniform"; }
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Uniform; }
 	// non virtual.
 	void equip(Area& area, ItemIndex item, ActorIndex actor);
 	void select(Area& area, ItemIndex item);

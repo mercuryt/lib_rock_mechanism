@@ -13,8 +13,8 @@
 
 TEST_CASE("weather")
 {
-	static const MaterialType& marble = MaterialType::byName("marble");
-	static const FluidType& water = FluidType::byName("water");
+	static MaterialTypeId marble = MaterialType::byName("marble");
+	static FluidTypeId water = FluidType::byName("water");
 	Simulation simulation{L"", Step::create(1)};
 	Area& area = simulation.m_hasAreas->createArea(5, 5, 5);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
@@ -29,5 +29,5 @@ TEST_CASE("weather")
 
 	}
 	Blocks& blocks = area.getBlocks();
-	REQUIRE(blocks.fluid_volumeOfTypeContains(blocks.getIndex_i(1,1,1), water));
+	REQUIRE(blocks.fluid_volumeOfTypeContains(blocks.getIndex_i(1,1,1), water) != 0);
 }

@@ -131,8 +131,10 @@ namespace util
 	{
 		auto iter = std::ranges::find(array, value);
 		assert(iter != array.end());
-		(*iter) = std::move(array.back());
-		array.back() = T::null();
+		auto last = std::ranges::find(array, T::null()) - 1;
+		if(last != iter)
+			*iter = *last;
+		*last = T::null();
 	}
 	template<typename T>
 	inline void addUniqueToVectorAssert(std::vector<T>& vector, const T& value)

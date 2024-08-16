@@ -19,7 +19,6 @@ public:
 	void cancel(Area&, ActorIndex) { }
 	void delay(Area&, ActorIndex) { }
 	void reset(Area&, ActorIndex) { }
-	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::GoTo; }
 	std::string name() const { return "go to"; }
 	static void create(BlockIndex block);
 	// For testing.

@@ -7,7 +7,7 @@ project(LibRockMechanism)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS True)
-set(CMAKE_CXX_FLAGS "-fuse-ld=mold")
+#set(CMAKE_CXX_FLAGS "-fuse-ld=mold")
 set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
 #add_compile_options(-fsanitize=address)
 #add_link_options(-fsanitize=address)
@@ -19,7 +19,7 @@ if(MSVC)
     add_compile_options(/W4)
 else()
     # additional warnings
-    add_compile_options(-Wall -Wextra -Werror -Wunused-function -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wdouble-promotion -fno-exceptions)
+    add_compile_options(-Wall -Wextra -Werror -Wunused-function -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wdouble-promotion)
     # Causes wierd errors...
     #-Wnull-dereference 
     # Incompatable with tgui?
@@ -28,7 +28,7 @@ endif()
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3 -ggdb -fno-inline -fmax-errors=5")
 if(CMAKE_BUILD_TYPE EQUAL "RELEASE")
-	add_compile_options(-Ofast -ffp-contract=fast -fmerge-all-consts -flto)
+	add_compile_options(-Ofast -ffp-contract=fast -fmerge-all-consts -flto, -fno-exceptions)
 	add_link_options(-flto)
 endif()
 

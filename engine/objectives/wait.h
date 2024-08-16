@@ -22,7 +22,6 @@ public:
 	[[nodiscard]] std::string name() const { return "wait"; }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool canResume() const { return false; }
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Wait; }
 	friend class WaitScheduledEvent;
 };
 class WaitScheduledEvent final : public ScheduledEvent

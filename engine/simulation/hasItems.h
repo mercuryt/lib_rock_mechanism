@@ -23,7 +23,7 @@ public:
 	void registerItem(ItemId id, Items& store, ItemIndex index);
 	void removeItem(ItemId id);
 	[[nodiscard]] ItemId getNextId() { return ++m_nextId; }
-	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] ItemIndex getIndexForId(ItemId id) const;
 	[[nodiscard]] Area& getAreaForId(ItemId id) const;
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SimulationHasItems, m_nextId);
 };

@@ -1,14 +1,13 @@
 #pragma once
 
-#include "objective.h"
-#include "eventSchedule.hpp"
-#include "pathRequest.h"
-#include "reservable.h"
-#include "terrainFacade.h"
-#include "types.h"
+#include "../objective.h"
+#include "../eventSchedule.hpp"
+#include "../pathRequest.h"
+#include "../reservable.h"
+#include "../terrainFacade.h"
+#include "../types.h"
 
 #include <memory>
-#include <vector>
 
 class GivePlantsFluidObjective;
 struct DeserializationMemo;
@@ -30,16 +29,18 @@ class GivePlantsFluidPathRequest final : public PathRequest
 	GivePlantsFluidObjective& m_objective;
 public:
 	GivePlantsFluidPathRequest(Area& area, GivePlantsFluidObjective& objective);
+	GivePlantsFluidPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
 	void callback(Area& area, FindPathResult& result);
+	[[nodiscard]] Json toJson() const;
 };
 class GivePlantsFluidObjectiveType final : public ObjectiveType
 {
 public:
 	bool canBeAssigned(Area& area, ActorIndex actor) const;
 	std::unique_ptr<Objective> makeFor(Area& area, ActorIndex actor) const;
-	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::GivePlantsFluid; }
 	GivePlantsFluidObjectiveType() = default;
 	GivePlantsFluidObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo){ }
+	[[nodiscard]] std::string name() const { return "give plants fluid"; }
 };
 class GivePlantsFluidObjective final : public Objective
 {
@@ -63,7 +64,6 @@ public:
 	ItemIndex getItemToFillFromAt(Area& area, BlockIndex block);
 	bool canGetFluidHaulingItemAt(Area& area, BlockIndex location, ActorIndex actor) const;
 	ItemIndex getFluidHaulingItemAt(Area& area, BlockIndex location, ActorIndex actor);
-	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::GivePlantsFluid; }
 	friend class GivePlantsFluidEvent;
 	friend class GivePlantsFluidPathRequest;
 	// For testing.

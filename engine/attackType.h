@@ -24,7 +24,6 @@ struct AttackTypeParamaters final
 
 class AttackType final
 {
-	static AttackType data;
 	DataVector<std::string, AttackTypeId> m_name;
 	DataVector<uint32_t, AttackTypeId> m_area;
 	DataVector<Force, AttackTypeId> m_baseForce;
@@ -38,15 +37,15 @@ class AttackType final
 public:
 	static AttackTypeId create(AttackTypeParamaters& p);
 	static AttackTypeId byName(std::string name);
-	[[nodiscard]] static std::string getName(AttackTypeId id) { return data.m_name[id]; };
-	[[nodiscard]] static uint32_t getArea(AttackTypeId id) { return data.m_area[id]; };
-	[[nodiscard]] static Force getBaseForce(AttackTypeId id) { return data.m_baseForce[id]; };
-	[[nodiscard]] static DistanceInBlocksFractional getRange(AttackTypeId id) { return data.m_range[id]; };
-	[[nodiscard]] static CombatScore getCombatScore(AttackTypeId id) { return data.m_combatScore[id]; };
-	[[nodiscard]] static Step getCoolDown(AttackTypeId id) { return data.m_coolDown[id]; };
-	[[nodiscard]] static bool getProjectile(AttackTypeId id) { return data.m_projectile[id]; };
-	[[nodiscard]] static WoundType getWoundType(AttackTypeId id) { return data.m_woundType[id]; };
-	[[nodiscard]] static SkillTypeId getSkillType(AttackTypeId id) { return data.m_skillType[id]; };
-	[[nodiscard]] static ItemTypeId getProjectileItemType(AttackTypeId id) { return data.m_projectileItemType[id]; };
+	[[nodiscard]] static std::string getName(AttackTypeId id);
+	[[nodiscard]] static uint32_t getArea(AttackTypeId id);
+	[[nodiscard]] static Force getBaseForce(AttackTypeId id);
+	[[nodiscard]] static DistanceInBlocksFractional getRange(AttackTypeId id);
+	[[nodiscard]] static CombatScore getCombatScore(AttackTypeId id);
+	[[nodiscard]] static Step getCoolDown(AttackTypeId id);
+	[[nodiscard]] static bool getProjectile(AttackTypeId id);
+	[[nodiscard]] static WoundType getWoundType(AttackTypeId id);
+	[[nodiscard]] static SkillTypeId getSkillType(AttackTypeId id);
+	[[nodiscard]] static ItemTypeId getProjectileItemType(AttackTypeId id);
 };
-
+inline AttackType attackTypeData;

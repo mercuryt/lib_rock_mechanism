@@ -16,14 +16,14 @@
 #include <functional>
 TEST_CASE("combat")
 {
-	const MaterialType& marble = MaterialType::byName("marble");
+	MaterialTypeId marble = MaterialType::byName("marble");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayer(area, DistanceInBlocks::create(0), marble);
-	FactionId faction = simulation.createFaction(L"Tower Of Power").id;
+	FactionId faction = simulation.createFaction(L"Tower Of Power");
 	area.m_hasStockPiles.registerFaction(faction);
 	ActorIndex dwarf1 = actors.create({
 		.species=AnimalSpecies::byName("dwarf"),
@@ -133,8 +133,8 @@ TEST_CASE("combat")
 		});
 		actors.combat_setTarget(dwarf1, rabbit);
 		REQUIRE(actors.combat_inRange(dwarf1, rabbit));
-		AttackType& attackType = actors.combat_getRangedAttackType(dwarf1, crossbow);
-		Attack attack(&attackType, &items.getMaterialType(ammo), crossbow);
+		AttackTypeId attackType = actors.combat_getRangedAttackType(dwarf1, crossbow);
+		Attack attack(attackType, items.getMaterialType(ammo), crossbow);
 		REQUIRE(actors.combat_projectileHitPercent(dwarf1, attack, rabbit) >= 100);
 		REQUIRE(!actors.body_isInjured(rabbit));
 		actors.combat_attackLongRange(dwarf1, rabbit, crossbow, ammo);

@@ -9,7 +9,7 @@
 #include "../../engine/actors/actors.h"
 TEST_CASE("locationBuckets")
 {
-	static const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
 	Simulation simulation;
 	SUBCASE("basic")
 	{

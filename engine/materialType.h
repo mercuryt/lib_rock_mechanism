@@ -14,39 +14,29 @@
 
 class MaterialTypeCategory
 {
-	static MaterialTypeCategory data;
 	DataVector<std::string, MaterialCategoryTypeId> m_name;
 public:
-	static const MaterialCategoryTypeId byName(const std::string name);
-	static void create(std::string name)
-	{
-		data.m_name.add(name);
-	}
+	static const MaterialCategoryTypeId byName(const std::string&& name);
+	static void create(std::string name);
+	static const std::string& getName(MaterialCategoryTypeId id);
 };
+static MaterialTypeCategory materialTypeCategoryData;
 class SpoilData
 {
-	static SpoilData data;
 	DataVector<MaterialTypeId, SpoilsDataTypeId> m_materialType;
 	DataVector<ItemTypeId, SpoilsDataTypeId> m_itemType;
 	DataVector<double, SpoilsDataTypeId> m_chance;
 	DataVector<Quantity, SpoilsDataTypeId> m_min;
 	DataVector<Quantity, SpoilsDataTypeId> m_max;
 public:
-	static SpoilsDataTypeId create(const MaterialTypeId mt, const ItemTypeId it, const double c, const Quantity mi, const Quantity ma)
-	{
-		data.m_materialType.add(mt);
-		data.m_itemType.add(it);
-		data.m_chance.add(c);
-		data.m_min.add(mi);
-		data.m_max.add(ma);
-		return SpoilsDataTypeId::create(data.m_materialType.size() - 1);
-	}
-	[[nodiscard]] static MaterialTypeId getMaterialType(SpoilsDataTypeId id) { return data.m_materialType[id]; };
-	[[nodiscard]] static ItemTypeId getItemType(SpoilsDataTypeId id) { return data.m_itemType[id]; };
-	[[nodiscard]] static double getChance(SpoilsDataTypeId id) { return data.m_chance[id]; };
-	[[nodiscard]] static Quantity getMin(SpoilsDataTypeId id) { return data.m_min[id]; };
-	[[nodiscard]] static Quantity getMax(SpoilsDataTypeId id) { return data.m_max[id]; };
+	static SpoilsDataTypeId create(const MaterialTypeId mt, const ItemTypeId it, const double c, const Quantity mi, const Quantity ma);
+	[[nodiscard]] static MaterialTypeId getMaterialType(SpoilsDataTypeId id);
+	[[nodiscard]] static ItemTypeId getItemType(SpoilsDataTypeId id);
+	[[nodiscard]] static double getChance(SpoilsDataTypeId id);
+	[[nodiscard]] static Quantity getMin(SpoilsDataTypeId id);
+	[[nodiscard]] static Quantity getMax(SpoilsDataTypeId id);
 };
+inline SpoilData spoilData;
 struct MaterialTypeConstructionDataParamaters final
 {
 	std::vector<std::pair<ItemQuery, Quantity>> consumed = {};
@@ -81,7 +71,6 @@ struct MaterialTypeParamaters final
 };
 class MaterialType final
 {
-	static MaterialType data;
 	DataVector<std::string, MaterialTypeId> m_name;
 	DataVector<Density, MaterialTypeId> m_density;
 	DataVector<uint32_t, MaterialTypeId> m_hardness;
@@ -106,26 +95,27 @@ class MaterialType final
 	DataVector<TemperatureDelta, MaterialTypeId> m_flameTemperature; // Temperature given off by flames from this material. The temperature given off by burn stage is a fraction of flame stage based on a config setting.
 public:
 	static MaterialTypeId create(MaterialTypeParamaters& p);
-	[[nodiscard]] static bool empty() { return data.m_density.empty(); }
+	[[nodiscard]] static bool empty();
 	[[nodiscard]] static MaterialTypeId byName(std::string name);
-	[[nodiscard]] static std::string& getName(MaterialTypeId id) { return data.m_name[id]; };
-	[[nodiscard]] static Density getDensity(MaterialTypeId id) { return data.m_density[id]; };
-	[[nodiscard]] static uint32_t getHardness(MaterialTypeId id) { return data.m_hardness[id]; };
-	[[nodiscard]] static bool getTransparent(MaterialTypeId id) { return data.m_transparent[id]; };
-	[[nodiscard]] static MaterialCategoryTypeId getMaterialTypeCategory(MaterialTypeId id) { return data.m_materialTypeCategory[id]; };
-	[[nodiscard]] static std::vector<SpoilsDataTypeId>& getSpoilData(MaterialTypeId id) { return data.m_spoilData[id]; };
-	[[nodiscard]] static Temperature getMeltingPoint(MaterialTypeId id) { return data.m_meltingPoint[id]; };
-	[[nodiscard]] static FluidTypeId getMeltsInto(MaterialTypeId id) { return data.m_meltsInto[id]; };
+	[[nodiscard]] static std::string& getName(MaterialTypeId id);
+	[[nodiscard]] static Density getDensity(MaterialTypeId id);
+	[[nodiscard]] static uint32_t getHardness(MaterialTypeId id);
+	[[nodiscard]] static bool getTransparent(MaterialTypeId id);
+	[[nodiscard]] static MaterialCategoryTypeId getMaterialTypeCategory(MaterialTypeId id);
+	[[nodiscard]] static std::vector<SpoilsDataTypeId>& getSpoilData(MaterialTypeId id);
+	[[nodiscard]] static Temperature getMeltingPoint(MaterialTypeId id);
+	[[nodiscard]] static FluidTypeId getMeltsInto(MaterialTypeId id);
 	// Fire.
-	[[nodiscard]] static bool canBurn(MaterialTypeId id) { return data.m_burnStageDuration[id].empty(); }
-	[[nodiscard]] static Step getBurnStageDuration(MaterialTypeId id) { return data.m_burnStageDuration[id]; };
-	[[nodiscard]] static Step getFlameStageDuration(MaterialTypeId id) { return data.m_flameStageDuration[id]; };
-	[[nodiscard]] static Temperature getIgnitionTemperature(MaterialTypeId id) { return data.m_ignitionTemperature[id]; };
-	[[nodiscard]] static TemperatureDelta getFlameTemperature(MaterialTypeId id) { return data.m_flameTemperature[id]; };
+	[[nodiscard]] static bool canBurn(MaterialTypeId id);
+	[[nodiscard]] static Step getBurnStageDuration(MaterialTypeId id);
+	[[nodiscard]] static Step getFlameStageDuration(MaterialTypeId id);
+	[[nodiscard]] static Temperature getIgnitionTemperature(MaterialTypeId id);
+	[[nodiscard]] static TemperatureDelta getFlameTemperature(MaterialTypeId id);
 	// Construct.
-	[[nodiscard]] static std::vector<std::pair<ItemQuery, Quantity>> construction_getConsumed(MaterialTypeId id) { return data.m_construction_consumed[id]; };
-	[[nodiscard]] static std::vector<std::pair<ItemQuery, Quantity>> construction_getUnconsumed(MaterialTypeId id) { return data.m_construction_unconsumed[id]; };
-	[[nodiscard]] static std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> construction_getByproducts(MaterialTypeId id) { return data.m_construction_byproducts[id]; };
-	[[nodiscard]] static SkillTypeId construction_getSkill(MaterialTypeId id) { return data.m_construction_skill[id]; };
-	[[nodiscard]] static Step construction_getDuration(MaterialTypeId id) { return data.m_construction_duration[id]; };
+	[[nodiscard]] static std::vector<std::pair<ItemQuery, Quantity>>& construction_getConsumed(MaterialTypeId id);
+	[[nodiscard]] static std::vector<std::pair<ItemQuery, Quantity>>& construction_getUnconsumed(MaterialTypeId id);
+	[[nodiscard]] static std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>>& construction_getByproducts(MaterialTypeId id);
+	[[nodiscard]] static SkillTypeId construction_getSkill(MaterialTypeId id);
+	[[nodiscard]] static Step construction_getDuration(MaterialTypeId id);
 };
+inline MaterialType materialTypeData;

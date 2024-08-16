@@ -23,22 +23,22 @@
 #include <memory>
 TEST_CASE("stockpile")
 {
-	const MaterialType& wood = MaterialType::byName("poplar wood");
-	const MaterialType& marble = MaterialType::byName("marble");
-	const MaterialType& gold = MaterialType::byName("gold");
-	const MaterialType& peridotite = MaterialType::byName("peridotite");
-	const MaterialType& sand = MaterialType::byName("sand");
-	const ItemType& chunk = ItemType::byName("chunk");
-	const ItemType& cart = ItemType::byName("cart");
-	const ItemType& boulder = ItemType::byName("boulder");
-	const ItemType& pile = ItemType::byName("pile");
+	MaterialTypeId wood = MaterialType::byName("poplar wood");
+	MaterialTypeId marble = MaterialType::byName("marble");
+	MaterialTypeId gold = MaterialType::byName("gold");
+	MaterialTypeId peridotite = MaterialType::byName("peridotite");
+	MaterialTypeId sand = MaterialType::byName("sand");
+	ItemTypeId chunk = ItemType::byName("chunk");
+	ItemTypeId cart = ItemType::byName("cart");
+	ItemTypeId boulder = ItemType::byName("boulder");
+	ItemTypeId pile = ItemType::byName("pile");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
-	FactionId faction = simulation.m_hasFactions.createFaction(L"Tower of Power").id;
+	FactionId faction = simulation.m_hasFactions.createFaction(L"Tower of Power");
 	area.m_hasStockPiles.registerFaction(faction);
 	area.m_hasStocks.addFaction(faction);
 	ActorIndex dwarf1 = actors.create({
@@ -54,15 +54,15 @@ TEST_CASE("stockpile")
 	{
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk, wood);
-		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 		BlockIndex stockpileLocation = blocks.getIndex_i(5, 5, 1);
 		BlockIndex chunkLocation = blocks.getIndex_i(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=wood, .location=chunkLocation, .quantity=Quantity::create(1u)});
-		area.m_hasStockPiles.at(faction).addItem(chunk1);
+		area.m_hasStockPiles.getForFaction(faction).addItem(chunk1);
 		REQUIRE(objectiveType.canBeAssigned(area, dwarf1));
-		actors.objective_setPriority(dwarf1, objectiveType, Priority::create(100));
-		REQUIRE(area.m_hasStockPiles.at(faction).getHaulableItemForAt(dwarf1, chunkLocation));
+		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
+		REQUIRE(area.m_hasStockPiles.getForFaction(faction).getHaulableItemForAt(dwarf1, chunkLocation).exists());
 		// Find item to stockpile, make project.
 		simulation.doStep();
 		REQUIRE(actors.project_get(dwarf1) != nullptr);
@@ -89,7 +89,7 @@ TEST_CASE("stockpile")
 	{
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk);
-		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 		BlockIndex stockpileLocation1 = blocks.getIndex_i(5, 5, 1);
 		BlockIndex stockpileLocation2 = blocks.getIndex_i(5, 6, 1);
 		BlockIndex chunkLocation1 = blocks.getIndex_i(1, 8, 1);
@@ -98,19 +98,19 @@ TEST_CASE("stockpile")
 		stockpile.addBlock(stockpileLocation2);
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=wood, .location=chunkLocation1, .quantity=Quantity::create(1u)});
 		ItemIndex chunk2 = items.create({.itemType=chunk, .materialType=marble, .location=chunkLocation2, .quantity=Quantity::create(1u)});
-		REQUIRE(area.m_hasStockPiles.at(faction).getStockPileFor(chunk1) == &stockpile);
-		REQUIRE(area.m_hasStockPiles.at(faction).getStockPileFor(chunk2) == &stockpile);
-		area.m_hasStockPiles.at(faction).addItem(chunk1);
-		area.m_hasStockPiles.at(faction).addItem(chunk2);
-		REQUIRE(area.m_hasStockPiles.at(faction).getItemsWithDestinations().size() == 2);
-		REQUIRE(area.m_hasStockPiles.at(faction).getItemsWithDestinationsByStockPile().size() == 1);
-		actors.objective_setPriority(dwarf1, objectiveType, Priority::create(100));
+		REQUIRE(area.m_hasStockPiles.getForFaction(faction).getStockPileFor(chunk1) == &stockpile);
+		REQUIRE(area.m_hasStockPiles.getForFaction(faction).getStockPileFor(chunk2) == &stockpile);
+		area.m_hasStockPiles.getForFaction(faction).addItem(chunk1);
+		area.m_hasStockPiles.getForFaction(faction).addItem(chunk2);
+		REQUIRE(area.m_hasStockPiles.getForFaction(faction).getItemsWithDestinations().size() == 2);
+		REQUIRE(area.m_hasStockPiles.getForFaction(faction).getItemsWithDestinationsByStockPile().size() == 1);
+		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		std::function<bool()> predicate = [&](){ return items.getLocation(chunk1) == stockpileLocation1; };
 		simulation.fastForwardUntillPredicate(predicate);
 		REQUIRE(objectiveType.canBeAssigned(area, dwarf1));
 		REQUIRE(actors.objective_getCurrentName(dwarf1) == "stockpile");
-		REQUIRE(area.m_hasStockPiles.at(faction).getItemsWithDestinations().size() == 1);
-		REQUIRE(area.m_hasStockPiles.at(faction).getItemsWithDestinationsByStockPile().size() == 1);
+		REQUIRE(area.m_hasStockPiles.getForFaction(faction).getItemsWithDestinations().size() == 1);
+		REQUIRE(area.m_hasStockPiles.getForFaction(faction).getItemsWithDestinationsByStockPile().size() == 1);
 		// Find the second item and stockpile slot, create project and add dwarf1 as candidate.
 		simulation.doStep();
 		REQUIRE(actors.project_get(dwarf1)->getLocation() == stockpileLocation2);
@@ -123,7 +123,7 @@ TEST_CASE("stockpile")
 	{
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk);
-		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 		BlockIndex stockpileLocation1 = blocks.getIndex_i(3, 3, 1);
 		BlockIndex stockpileLocation2 = blocks.getIndex_i(3, 4, 1);
 		BlockIndex chunkLocation1 = blocks.getIndex_i(1, 8, 1);
@@ -132,8 +132,8 @@ TEST_CASE("stockpile")
 		stockpile.addBlock(stockpileLocation2);
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=marble, .location=chunkLocation1, .quantity=Quantity::create(1u)});
 		ItemIndex chunk2 = items.create({.itemType=chunk, .materialType=wood, .location=chunkLocation2, .quantity=Quantity::create(1u)});
-		area.m_hasStockPiles.at(faction).addItem(chunk1);
-		area.m_hasStockPiles.at(faction).addItem(chunk2);
+		area.m_hasStockPiles.getForFaction(faction).addItem(chunk1);
+		area.m_hasStockPiles.getForFaction(faction).addItem(chunk2);
 		ActorIndex dwarf2 = actors.create({
 			.species=AnimalSpecies::byName("dwarf"),
 			.location=blocks.getIndex_i(1, 2, 1),
@@ -142,8 +142,8 @@ TEST_CASE("stockpile")
 		ActorReference dwarf2Ref = dwarf2.toReference(area);
 		StockPileObjectiveType objectiveType;
 		REQUIRE(objectiveType.canBeAssigned(area, dwarf2));
-		actors.objective_setPriority(dwarf1, objectiveType, Priority::create(100));
-		actors.objective_setPriority(dwarf2, objectiveType, Priority::create(100));
+		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
+		actors.objective_setPriority(dwarf2, objectiveType.getId(), Priority::create(100));
 		// Both dwarves become candidates for chunk1.
 		simulation.doStep();
 		REQUIRE(actors.project_get(dwarf1) != nullptr);
@@ -207,7 +207,7 @@ TEST_CASE("stockpile")
 	{
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk, gold);
-		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 		BlockIndex stockpileLocation1 = blocks.getIndex_i(5, 5, 1);
 		BlockIndex stockpileLocation2 = blocks.getIndex_i(5, 6, 1);
 		BlockIndex chunkLocation = blocks.getIndex_i(1, 8, 1);
@@ -215,7 +215,7 @@ TEST_CASE("stockpile")
 		stockpile.addBlock(stockpileLocation2);
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=gold, .location=chunkLocation, .quantity=Quantity::create(1u)});
 		REQUIRE(actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(chunk1), Config::minimumHaulSpeedInital) == 0);
-		area.m_hasStockPiles.at(faction).addItem(chunk1);
+		area.m_hasStockPiles.getForFaction(faction).addItem(chunk1);
 		ActorIndex dwarf2 = actors.create({
 			.species=AnimalSpecies::byName("dwarf"),
 			.location=blocks.getIndex_i(1, 2, 1),
@@ -225,8 +225,8 @@ TEST_CASE("stockpile")
 		StockPileObjectiveType objectiveType;
 		REQUIRE(objectiveType.canBeAssigned(area, dwarf1));
 		REQUIRE(objectiveType.canBeAssigned(area, dwarf2));
-		actors.objective_setPriority(dwarf1, objectiveType, Priority::create(100));
-		actors.objective_setPriority(dwarf2, objectiveType, Priority::create(100));
+		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
+		actors.objective_setPriority(dwarf2, objectiveType.getId(), Priority::create(100));
 		// Add both actors as candidates.
 		simulation.doStep();
 		REQUIRE(actors.project_get(dwarf1) != nullptr);
@@ -252,17 +252,17 @@ TEST_CASE("stockpile")
 	{
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(pile, sand);
-		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 		BlockIndex stockpileLocation = blocks.getIndex_i(5, 5, 1);
 		BlockIndex cargoOrigin = blocks.getIndex_i(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
 		ItemIndex cargo = items.create({.itemType=pile, .materialType=sand, .location=cargoOrigin, .quantity=Quantity::create(100u)});
 		Quantity quantity = actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(cargo), Config::minimumHaulSpeedInital);
 		REQUIRE(quantity == 48);
-		area.m_hasStockPiles.at(faction).addItem(cargo);
+		area.m_hasStockPiles.getForFaction(faction).addItem(cargo);
 		REQUIRE(objectiveType.canBeAssigned(area, dwarf1));
-		actors.objective_setPriority(dwarf1, objectiveType, Priority::create(100));
-		REQUIRE(area.m_hasStockPiles.at(faction).getHaulableItemForAt(dwarf1, cargoOrigin));
+		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
+		REQUIRE(area.m_hasStockPiles.getForFaction(faction).getHaulableItemForAt(dwarf1, cargoOrigin).exists());
 		// Find item to stockpile, make project.
 		simulation.doStep();
 		REQUIRE(actors.project_get(dwarf1) != nullptr);
@@ -314,19 +314,19 @@ TEST_CASE("stockpile")
 	{
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(pile, sand);
-		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 		BlockIndex stockpileLocation = blocks.getIndex_i(5, 5, 1);
 		BlockIndex cargoOrigin = blocks.getIndex_i(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
 		ItemIndex cargo = items.create({.itemType=pile, .materialType=sand, .location=cargoOrigin, .quantity=Quantity::create(100u)});
-		area.m_hasStockPiles.at(faction).addItem(cargo);
-		actors.objective_setPriority(dwarf1, objectiveType, Priority::create(100));
+		area.m_hasStockPiles.getForFaction(faction).addItem(cargo);
+		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		ActorIndex dwarf2 = actors.create({
 			.species=AnimalSpecies::byName("dwarf"),
 			.location=blocks.getIndex_i(1, 2, 1),
 			.faction=faction,
 		});
-		actors.objective_setPriority(dwarf2, objectiveType, Priority::create(100));
+		actors.objective_setPriority(dwarf2, objectiveType.getId(), Priority::create(100));
 		// Both workers find hauling task.
 		simulation.doStep();
 		REQUIRE(actors.project_get(dwarf1));
@@ -366,7 +366,7 @@ TEST_CASE("stockpile")
 	{
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(pile, sand);
-		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 		BlockIndex stockpileLocation1 = blocks.getIndex_i(5, 5, 1);
 		BlockIndex stockpileLocation2 = blocks.getIndex_i(6, 5, 1);
 		BlockIndex cargoOrigin1 = blocks.getIndex_i(1, 8, 1);
@@ -375,9 +375,9 @@ TEST_CASE("stockpile")
 		stockpile.addBlock(stockpileLocation2);
 		ItemIndex cargo1 = items.create({.itemType=pile, .materialType=sand, .location=cargoOrigin1, .quantity=Quantity::create(100u)});
 		ItemIndex cargo2 = items.create({.itemType=pile, .materialType=sand, .location=cargoOrigin2, .quantity=Quantity::create(100u)});
-		area.m_hasStockPiles.at(faction).addItem(cargo1);
-		area.m_hasStockPiles.at(faction).addItem(cargo2);
-		actors.objective_setPriority(dwarf1, objectiveType, Priority::create(100));
+		area.m_hasStockPiles.getForFaction(faction).addItem(cargo1);
+		area.m_hasStockPiles.getForFaction(faction).addItem(cargo2);
+		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, cargoOrigin1);
 		REQUIRE(blocks.item_getCount(cargoOrigin1, pile, sand) < 100);
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, stockpileLocation1);
@@ -390,12 +390,12 @@ TEST_CASE("stockpile")
 		BlockIndex pileLocation = blocks.getIndex_i(5, 5, 1);
 		BlockIndex stockpileLocation = blocks.getIndex_i(6, 5, 1);
 		ItemIndex cargo = items.create({.itemType=pile, .materialType=sand, .location=pileLocation, .quantity=Quantity::create(15)});
-		area.m_hasStockPiles.at(faction).addItem(cargo);
+		area.m_hasStockPiles.getForFaction(faction).addItem(cargo);
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(pile, sand);
-		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 		stockpile.addBlock(stockpileLocation);
-		actors.objective_setPriority(dwarf1, objectiveType, Priority::create(100));
+		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		// One step to generate project.
 		simulation.doStep();
 		REQUIRE(actors.project_get(dwarf1));
@@ -417,14 +417,14 @@ TEST_CASE("stockpile")
 		BlockIndex stockpileLocation = blocks.getIndex_i(6, 5, 1);
 		BlockIndex pileLocation2 = blocks.getIndex_i(7, 5, 1);
 		ItemIndex cargo1 = items.create({.itemType=pile, .materialType=sand, .location=pileLocation1, .quantity=Quantity::create(15)});
-		area.m_hasStockPiles.at(faction).addItem(cargo1);
+		area.m_hasStockPiles.getForFaction(faction).addItem(cargo1);
 		ItemIndex cargo2 = items.create({.itemType=pile, .materialType=sand, .location=pileLocation2, .quantity=Quantity::create(15)});
-		area.m_hasStockPiles.at(faction).addItem(cargo2);
+		area.m_hasStockPiles.getForFaction(faction).addItem(cargo2);
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(pile, sand);
-		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 		stockpile.addBlock(stockpileLocation);
-		actors.objective_setPriority(dwarf1, objectiveType, Priority::create(100));
+		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		auto condition = [&]{ return blocks.item_getCount(stockpileLocation, pile, sand) == 30; };
 		simulation.fastForwardUntillPredicate(condition);
 	}
@@ -434,16 +434,16 @@ TEST_CASE("stockpile")
 		BlockIndex stockpileLocation = blocks.getIndex_i(6, 5, 1);
 		BlockIndex pileLocation2 = blocks.getIndex_i(7, 5, 1);
 		ItemIndex cargo1 = items.create({.itemType=pile, .materialType=sand, .location=pileLocation1, .quantity=Quantity::create(15)});
-		area.m_hasStockPiles.at(faction).addItem(cargo1);
+		area.m_hasStockPiles.getForFaction(faction).addItem(cargo1);
 		ItemIndex cargo2 = items.create({.itemType=pile, .materialType=sand, .location=pileLocation2, .quantity=Quantity::create(15)});
-		area.m_hasStockPiles.at(faction).addItem(cargo2);
+		area.m_hasStockPiles.getForFaction(faction).addItem(cargo2);
 		ItemIndex cargo3 = items.create({.itemType=pile, .materialType=sand, .location=stockpileLocation, .quantity=Quantity::create(15)});
-		area.m_hasStockPiles.at(faction).addItem(cargo3);
+		area.m_hasStockPiles.getForFaction(faction).addItem(cargo3);
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(pile, sand);
-		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 		stockpile.addBlock(stockpileLocation);
-		actors.objective_setPriority(dwarf1, objectiveType, Priority::create(100));
+		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		auto condition = [&]{ return blocks.item_getCount(stockpileLocation, pile, sand) == 30; };
 		simulation.fastForwardUntillPredicate(condition);
 		REQUIRE(actors.getActionDescription(dwarf1) == L"stockpile");
@@ -468,14 +468,14 @@ TEST_CASE("stockpile")
 		BlockIndex pileLocation1 = blocks.getIndex_i(8, 0, 1);
 		BlockIndex pileLocation2 = blocks.getIndex_i(7, 0, 1);
 		ItemIndex cargo1 = items.create({.itemType=pile, .materialType=sand, .location=pileLocation1, .quantity=Quantity::create(15)});
-		area.m_hasStockPiles.at(faction).addItem(cargo1);
+		area.m_hasStockPiles.getForFaction(faction).addItem(cargo1);
 		ItemIndex cargo2 = items.create({.itemType=pile, .materialType=sand, .location=pileLocation2, .quantity=Quantity::create(15)});
-		area.m_hasStockPiles.at(faction).addItem(cargo2);
+		area.m_hasStockPiles.getForFaction(faction).addItem(cargo2);
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(pile, sand);
-		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 		stockpile.addBlock(stockpileLocation);
-		actors.objective_setPriority(dwarf1, objectiveType, Priority::create(100));
+		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		auto condition = [&]{ return blocks.item_getCount(stockpileLocation, pile, sand) == 30; };
 		simulation.fastForwardUntillPredicate(condition);
 	}
@@ -485,13 +485,13 @@ TEST_CASE("stockpile")
 		BlockIndex gateway = blocks.getIndex_i(9, 3, 1);
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk, wood);
-		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 		BlockIndex stockpileLocation = blocks.getIndex_i(5, 5, 1);
 		BlockIndex chunkLocation = blocks.getIndex_i(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=wood, .location=chunkLocation, .quantity=Quantity::create(1u)});
-		area.m_hasStockPiles.at(faction).addItem(chunk1);
-		actors.objective_setPriority(dwarf1, objectiveType, Priority::create(100));
+		area.m_hasStockPiles.getForFaction(faction).addItem(chunk1);
+		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		// Find item to stockpile, make project.
 		simulation.doStep();
 		// Reserve required.
@@ -519,13 +519,13 @@ TEST_CASE("stockpile")
 		BlockIndex gateway = blocks.getIndex_i(9, 5, 1);
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk, wood);
-		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 		BlockIndex stockpileLocation = blocks.getIndex_i(5, 8, 1);
 		BlockIndex chunkLocation = blocks.getIndex_i(8, 1, 1);
 		stockpile.addBlock(stockpileLocation);
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=wood, .location=chunkLocation, .quantity=Quantity::create(1u)});
-		area.m_hasStockPiles.at(faction).addItem(chunk1);
-		actors.objective_setPriority(dwarf1, objectiveType, Priority::create(100));
+		area.m_hasStockPiles.getForFaction(faction).addItem(chunk1);
+		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		// Find item to stockpile, make project.
 		simulation.doStep();
 		// Reserve required.
@@ -557,7 +557,7 @@ TEST_CASE("stockpile")
 		BlockIndex gateway = blocks.getIndex_i(9, 6, 1);
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk, gold);
-		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 		BlockIndex stockpileLocation = blocks.getIndex_i(5, 5, 1);
 		BlockIndex chunkLocation = blocks.getIndex_i(1, 5, 1);
 		BlockIndex cartLocation = blocks.getIndex_i(8, 8, 1);
@@ -565,10 +565,10 @@ TEST_CASE("stockpile")
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=gold, .location=chunkLocation, .quantity=Quantity::create(1u)});
 		ItemIndex cart1 = items.create({.itemType=cart, .materialType=wood, .location=cartLocation, .quality=Quality::create(30), .percentWear=Percent::create(0)});
 		REQUIRE(actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(chunk1), Config::minimumHaulSpeedInital) == 0);
-		area.m_hasStockPiles.at(faction).addItem(chunk1);
+		area.m_hasStockPiles.getForFaction(faction).addItem(chunk1);
 		StockPileObjectiveType objectiveType;
 		REQUIRE(objectiveType.canBeAssigned(area, dwarf1));
-		actors.objective_setPriority(dwarf1, objectiveType, Priority::create(100));
+		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		// Add candidate.
 		simulation.doStep();
 		REQUIRE(actors.project_get(dwarf1) != nullptr);
@@ -596,7 +596,7 @@ TEST_CASE("stockpile")
 	{
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(boulder, peridotite);
-		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 		BlockIndex stockpileLocation = blocks.getIndex_i(5, 5, 1);
 		BlockIndex chunkLocation = blocks.getIndex_i(1, 5, 1);
 		BlockIndex cartLocation = blocks.getIndex_i(8, 8, 1);
@@ -604,10 +604,10 @@ TEST_CASE("stockpile")
 		ItemIndex cargo = items.create({.itemType=boulder, .materialType=peridotite, .location=chunkLocation, .quantity=Quantity::create(1)});
 		ItemIndex cart1 = items.create({.itemType=cart, .materialType=wood, .location=cartLocation, .quality=Quality::create(30), .percentWear=Percent::create(0)});
 		REQUIRE(!actors.canPickUp_item(dwarf1, cargo));
-		area.m_hasStockPiles.at(faction).addItem(cargo);
+		area.m_hasStockPiles.getForFaction(faction).addItem(cargo);
 		StockPileObjectiveType objectiveType;
 		REQUIRE(objectiveType.canBeAssigned(area, dwarf1));
-		actors.objective_setPriority(dwarf1, objectiveType, Priority::create(100));
+		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		// Add candidate.
 		simulation.doStep();
 		REQUIRE(actors.project_get(dwarf1) != nullptr);
@@ -648,14 +648,14 @@ TEST_CASE("stockpile")
 	{
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk, wood);
-		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 		BlockIndex stockpileLocation = blocks.getIndex_i(5, 5, 1);
 		BlockIndex chunkLocation = blocks.getIndex_i(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=wood, .quantity=Quantity::create(1u)});
 		items.setLocation(chunk1, chunkLocation);
-		area.m_hasStockPiles.at(faction).addItem(chunk1);
-		actors.objective_setPriority(dwarf1, objectiveType, Priority::create(100));
+		area.m_hasStockPiles.getForFaction(faction).addItem(chunk1);
+		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		// Find item to stockpile, make project.
 		simulation.doStep();
 		// Reserve required.
@@ -674,14 +674,14 @@ TEST_CASE("stockpile")
 	{
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk, wood);
-		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 		BlockIndex stockpileLocation = blocks.getIndex_i(5, 5, 1);
 		BlockIndex chunkLocation = blocks.getIndex_i(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=wood, .quantity=Quantity::create(1u)});
 		items.setLocation(chunk1, chunkLocation);
-		area.m_hasStockPiles.at(faction).addItem(chunk1);
-		actors.objective_setPriority(dwarf1, objectiveType, Priority::create(100));
+		area.m_hasStockPiles.getForFaction(faction).addItem(chunk1);
+		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		// Find item to stockpile, make project.
 		simulation.doStep();
 		REQUIRE(actors.project_get(dwarf1) != nullptr);
@@ -695,7 +695,7 @@ TEST_CASE("stockpile")
 		stockpile.destroy();
 		REQUIRE(actors.project_get(dwarf1) == nullptr);
 		REQUIRE(!objectiveType.canBeAssigned(area, dwarf1));
-		REQUIRE(area.m_hasStockPiles.at(faction).getStockPileFor(chunk1) == nullptr);
+		REQUIRE(area.m_hasStockPiles.getForFaction(faction).getStockPileFor(chunk1) == nullptr);
 		// Cannot find alternative stockpile project.
 		simulation.doStep();
 		REQUIRE(actors.objective_getCurrentName(dwarf1) != "stockpile");
@@ -704,14 +704,14 @@ TEST_CASE("stockpile")
 	{
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk, wood);
-		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 		BlockIndex stockpileLocation = blocks.getIndex_i(5, 5, 1);
 		BlockIndex chunkLocation = blocks.getIndex_i(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=wood, .quantity=Quantity::create(1u)});
 		items.setLocation(chunk1, chunkLocation);
-		area.m_hasStockPiles.at(faction).addItem(chunk1);
-		actors.objective_setPriority(dwarf1, objectiveType, Priority::create(100));
+		area.m_hasStockPiles.getForFaction(faction).addItem(chunk1);
+		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		// Find item to stockpile, make project.
 		simulation.doStep();
 		// Reserve required.
@@ -730,14 +730,14 @@ TEST_CASE("stockpile")
 	{
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk, wood);
-		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 		BlockIndex stockpileLocation = blocks.getIndex_i(5, 5, 1);
 		BlockIndex chunkLocation = blocks.getIndex_i(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=wood, .quantity=Quantity::create(1u)});
 		items.setLocation(chunk1, chunkLocation);
-		area.m_hasStockPiles.at(faction).addItem(chunk1);
-		actors.objective_setPriority(dwarf1, objectiveType, Priority::create(100));
+		area.m_hasStockPiles.getForFaction(faction).addItem(chunk1);
+		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		// Find item to stockpile, make project.
 		simulation.doStep();
 		// Reserve required.
@@ -750,20 +750,20 @@ TEST_CASE("stockpile")
 		actors.objective_addTaskToStart(dwarf1, std::move(objective));
 		REQUIRE(actors.project_get(dwarf1) == nullptr);
 		REQUIRE(actors.objective_getCurrentName(dwarf1) != "stockpile");
-		REQUIRE(area.m_hasStockPiles.at(faction).getItemsWithProjectsCount() == 0);
+		REQUIRE(area.m_hasStockPiles.getForFaction(faction).getItemsWithProjectsCount() == 0);
 	}
 	SUBCASE("actor dies")
 	{
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(chunk, wood);
-		StockPile& stockpile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 		BlockIndex stockpileLocation = blocks.getIndex_i(5, 5, 1);
 		BlockIndex chunkLocation = blocks.getIndex_i(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=wood, .quantity=Quantity::create(1u)});
 		items.setLocation(chunk1, chunkLocation);
-		area.m_hasStockPiles.at(faction).addItem(chunk1);
-		actors.objective_setPriority(dwarf1, objectiveType, Priority::create(100));
+		area.m_hasStockPiles.getForFaction(faction).addItem(chunk1);
+		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		// Find item to stockpile, make project.
 		simulation.doStep();
 		// Reserve required.
@@ -773,8 +773,8 @@ TEST_CASE("stockpile")
 		// Path to chunk.
 		simulation.doStep();
 		actors.die(dwarf1, CauseOfDeath::temperature);
-		REQUIRE(area.m_hasStockPiles.at(faction).getStockPileFor(chunk1));
-		REQUIRE(area.m_hasStockPiles.at(faction).getItemsWithProjectsCount() == 0);
+		REQUIRE(area.m_hasStockPiles.getForFaction(faction).getStockPileFor(chunk1));
+		REQUIRE(area.m_hasStockPiles.getForFaction(faction).getItemsWithProjectsCount() == 0);
 	}
 	SUBCASE("some but not all reserved item from stack area destroyed")
 	{

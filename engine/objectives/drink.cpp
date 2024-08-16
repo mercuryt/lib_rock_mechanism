@@ -4,7 +4,6 @@
 #include "../actors/actors.h"
 #include "../items/items.h"
 #include "../plants.h"
-#include "types.h"
 
 // Drink Threaded Task.
 DrinkPathRequest::DrinkPathRequest(Area& area, DrinkObjective& drob, ActorIndex actor) : m_drinkObjective(drob)
@@ -21,6 +20,12 @@ DrinkPathRequest::DrinkPathRequest(Area& area, DrinkObjective& drob, ActorIndex 
 		unreserved = true;
 	}
 	createGoAdjacentToCondition(area, getActor(), predicate, drob.m_detour, unreserved, DistanceInBlocks::null(), BlockIndex::null(), reserve);
+}
+DrinkPathRequest::DrinkPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
+	m_drinkObjective(static_cast<DrinkObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))),
+	m_noDrinkFound(data["noDrinkFound"].get<bool>())
+{
+	nlohmann::from_json(data, *this);
 }
 void DrinkPathRequest::callback(Area& area, FindPathResult& result)
 {
@@ -55,6 +60,14 @@ void DrinkPathRequest::callback(Area& area, FindPathResult& result)
 	// Need task becomes exit area.
 	if(m_noDrinkFound)
 		m_drinkObjective.m_noDrinkFound = true;
+}
+Json DrinkPathRequest::toJson() const
+{
+	Json output;
+	nlohmann::to_json(output, *this);
+	output["objective"] = &m_drinkObjective;
+	output["noDrinkFound"] = m_noDrinkFound;
+	return output;
 }
 // Drink Objective.
 DrinkObjective::DrinkObjective(Area& area) :

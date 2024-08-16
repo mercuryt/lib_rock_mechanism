@@ -311,7 +311,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, FluidTypeId
 	void item_setTemperature(BlockIndex index, Temperature temperature);
 	void item_disperseAll(BlockIndex index);
 	void item_updateIndex(BlockIndex index, ItemIndex oldIndex, ItemIndex newIndex);
-	ItemIndex item_addGeneric(BlockIndex index, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity) const;
+	ItemIndex item_addGeneric(BlockIndex index, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity);
 	//ItemIndex get(BlockIndex index, ItemType& itemType) const;
 	[[nodiscard]] Quantity item_getCount(BlockIndex index, ItemTypeId itemType, MaterialTypeId materialType) const;
 	[[nodiscard]] ItemIndex item_getGeneric(BlockIndex index, ItemTypeId itemType, MaterialTypeId materialType) const;

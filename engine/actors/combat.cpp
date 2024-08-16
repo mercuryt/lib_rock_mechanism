@@ -336,6 +336,13 @@ GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(Area& area, A
 	DistanceInBlocks maxRange = DistanceInBlocks::null();
 	createGoToCondition(area, m_actor, destinationCondition, detour, unreserved, maxRange, area.getActors().getLocation(t));
 }
+GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(Area& area, const Json& data) :
+	m_actor(data["actor"].get<ActorIndex>()),
+	m_target(area.getActors().getReferenceTarget(data["target"].get<ActorIndex>())),
+	m_attackRangeSquared(data["distance"].get<DistanceInBlocksFractional>())
+{
+	nlohmann::from_json(data, *this);
+}
 void GetIntoAttackPositionPathRequest::callback(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
@@ -365,4 +372,15 @@ void GetIntoAttackPositionPathRequest::callback(Area& area, FindPathResult& resu
 	}
 	else
 		actors.move_setPath(m_actor, result.path);
+}
+Json GetIntoAttackPositionPathRequest::toJson() const
+{
+	Json output;
+	nlohmann::to_json(output, *this);
+	output.update({
+		{"actor", m_actor},
+		{"target", m_target},
+		{"distance", m_attackRangeSquared},
+	});
+	return output;
 }

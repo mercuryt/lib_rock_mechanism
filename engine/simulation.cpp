@@ -190,8 +190,8 @@ Json Simulation::toJson() const
 	output["name"] = m_name;
 	//output["world"] = m_world;
 	output["step"] = m_step;
-	output["hasActors"] = m_actors.toJson();
-	output["hasItems"] = m_items.toJson();
+	output["hasActors"] = m_actors;
+	output["hasItems"] = m_items;
 	output["hasAreas"] = m_hasAreas->toJson();
 	output["factions"] = m_hasFactions;
 	output["hourEventStart"] = m_hourlyEvent.getStartStep();

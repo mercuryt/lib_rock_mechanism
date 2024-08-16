@@ -30,7 +30,7 @@ protected:
 	DataVector<MoveTypeId, HasShapeIndex> m_moveType;
 	bool isActors;
 	Portables(Area& area);
-	void create(HasShapeIndex index, MoveTypeId moveType, ShapeId shape, BlockIndex location, Facing facing, bool isStatic);
+	void create(HasShapeIndex index, MoveTypeId moveType, ShapeId shape, BlockIndex location, Facing facing, FactionId faction, bool isStatic, Quantity quantity);
 	void destroy(HasShapeIndex index);
 	void log(HasShapeIndex index) const;
 	void updateLeaderSpeedActual(HasShapeIndex index);

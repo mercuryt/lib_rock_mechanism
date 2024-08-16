@@ -7,6 +7,7 @@
 #include "util.h"
 #include "actors/actors.h"
 #include "blocks/blocks.h"
+#include "strongInteger.hpp"
 #include <cstddef>
 
 VisionFacade::VisionFacade( )
@@ -28,13 +29,14 @@ void VisionFacade::addActor(ActorIndex actor)
 {
 	Actors& actorData = m_area->getActors();
 	assert(!actorData.vision_hasFacade(actor));
-	VisionFacadeIndex index = VisionFacadeIndex::create(m_actors.size());
-	actorData.vision_recordFacade(actor, *this, index);
 	assert(m_ranges.size() == m_actors.size() && m_locations.size() == m_actors.size());
 	m_actors.add(actor);
 	m_ranges.add(actorData.vision_getRange(actor));
 	m_locations.add(actorData.getLocation(actor));
 	m_results.add();
+	auto& hasFacade = m_area->getActors().vision_getHasVisionFacade(actor);
+	hasFacade.m_visionFacade = this;
+	hasFacade.m_index = VisionFacadeIndex::create(m_actors.size() - 1);
 }
 void VisionFacade::removeActor(ActorIndex actor)
 {
@@ -53,8 +55,6 @@ void VisionFacade::remove(VisionFacadeIndex index)
 	m_ranges.remove(index);
 	m_locations.remove(index);
 	m_results.remove(index);
-	if(m_actors.size() != index)
-		actorData.vision_updateFacadeIndex(m_actors[index], index);
 }
 ActorIndex VisionFacade::getActor(VisionFacadeIndex index)  
 { 
@@ -251,7 +251,9 @@ void HasVisionFacade::clear()
 {
 	if(!empty())
 	{
-		assert(m_visionFacade);
+		assert(m_visionFacade != nullptr);
 		m_visionFacade->remove(m_index);
+		m_visionFacade = nullptr;
+		m_index.clear();
 	}
 }

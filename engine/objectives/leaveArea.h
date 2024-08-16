@@ -14,7 +14,6 @@ public:
 	void cancel(Area&, ActorIndex) { }
 	void delay(Area&, ActorIndex) { }
 	void reset(Area&, ActorIndex) { }
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::LeaveArea; }
 	[[nodiscard]] std::string name() const { return "leave area"; }
 };
 class LeaveAreaPathRequest final : public PathRequest

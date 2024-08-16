@@ -13,7 +13,7 @@ TEST_CASE("Cave In")
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
-	static const MaterialType& marble = MaterialType::byName("marble");
+	static MaterialTypeId marble = MaterialType::byName("marble");
 	SUBCASE("Cave In doesn't happen when block is supported.")
 	{
 		areaBuilderUtil::setSolidLayer(area, DistanceInBlocks::create(0), marble);

@@ -62,6 +62,31 @@ void Blocks::item_updateIndex(BlockIndex index, ItemIndex oldIndex, ItemIndex ne
 	assert(found != m_items[index].end());
 	(*found) = newIndex; 
 }
+ItemIndex Blocks::item_addGeneric(BlockIndex index, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity)
+{
+	Items& items = m_area.getItems();
+	CollisionVolume volume = Shape::getCollisionVolumeAtLocationBlock(ItemType::getShape(itemType)) * quantity;
+	// Assume that generics added through this method are static.
+	// Generics in transit ( being hauled by multiple workers ) should not use this method and should use setLocationAndFacing instead.
+	m_staticVolume[index] += volume;
+	auto& blockItems = m_items[index];
+	auto found = blockItems.find_if([itemType, &items](const auto& item) { return items.getItemType(item) == itemType; });
+	if(found == blockItems.end())
+	{
+		ItemIndex item = items.create(ItemParamaters{
+			.itemType=itemType,
+			.materialType=materialType,
+			.quantity=quantity,
+		});
+		blockItems.add(item);
+		return item;
+	}
+	else
+	{
+		items.addQuantity(*found, quantity);
+		return *found;
+	}
+}
 Quantity Blocks::item_getCount(BlockIndex index, ItemTypeId itemType, MaterialTypeId materialType) const
 {
 	auto& itemsInBlock = m_itemVolume[index];

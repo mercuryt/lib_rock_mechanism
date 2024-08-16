@@ -1,4 +1,3 @@
-/*
 #include "../../lib/doctest.h"
 #include "../../engine/simulation.h"
 #include "../../engine/animalSpecies.h"
@@ -15,29 +14,35 @@
 #include "../../engine/objectives/harvest.h"
 #include "../../engine/objectives/givePlantsFluid.h"
 #include "../../engine/objectives/goTo.h"
+#include "../../engine/objectives/dig.h"
+#include "objectives/construct.h"
+#include "objectives/stockpile.h"
+#include "types.h"
 TEST_CASE("json")
 {
 	Simulation simulation{L"", DateTime(12, 50, 1000).toSteps()};
-	FactionId faction = simulation.createFaction(L"tower of power").id;
-	const AnimalSpecies& dwarf = AnimalSpecies::byName("dwarf");
-	const MaterialType& dirt = MaterialType::byName("dirt");
-	const MaterialType& wood = MaterialType::byName("poplar wood");
-	const MaterialType& cotton = MaterialType::byName("cotton");
-	const MaterialType& bronze = MaterialType::byName("bronze");
-	const MaterialType& sand = MaterialType::byName("sand");
-	const PlantSpecies& sage = PlantSpecies::byName("sage brush");
-	const PlantSpecies& wheatGrass = PlantSpecies::byName("wheat grass");
-	const FluidType& water = FluidType::byName("water");
-	const ItemType& axe = ItemType::byName("axe");
-	const ItemType& pick = ItemType::byName("pick");
-	const ItemType& saw = ItemType::byName("saw");
-	const ItemType& bucket = ItemType::byName("bucket");
-	const ItemType& preparedMeal = ItemType::byName("prepared meal");
-	const ItemType& pants = ItemType::byName("pants");
-	const ItemType& pile = ItemType::byName("pile");
+	FactionId faction = simulation.createFaction(L"Tower of Power");
+	AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
+	MaterialTypeId dirt = MaterialType::byName("dirt");
+	MaterialTypeId wood = MaterialType::byName("poplar wood");
+	MaterialTypeId cotton = MaterialType::byName("cotton");
+	MaterialTypeId bronze = MaterialType::byName("bronze");
+	MaterialTypeId sand = MaterialType::byName("sand");
+	PlantSpeciesId sage = PlantSpecies::byName("sage brush");
+	PlantSpeciesId wheatGrass = PlantSpecies::byName("wheat grass");
+	FluidTypeId water = FluidType::byName("water");
+	ItemTypeId axe = ItemType::byName("axe");
+	ItemTypeId pick = ItemType::byName("pick");
+	ItemTypeId saw = ItemType::byName("saw");
+	ItemTypeId bucket = ItemType::byName("bucket");
+	ItemTypeId preparedMeal = ItemType::byName("prepared meal");
+	ItemTypeId pants = ItemType::byName("pants");
+	ItemTypeId pile = ItemType::byName("pile");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
+	Plants& plants = area.getPlants();
+	Items& items = area.getItems();
 	area.m_blockDesignations.registerFaction(faction);
 	areaBuilderUtil::setSolidLayer(area, 0, dirt);
 	area.m_hasFarmFields.registerFaction(faction);
@@ -45,8 +50,8 @@ TEST_CASE("json")
 	SUBCASE("basic")
 	{
 		Cuboid farmBlocks{blocks, blocks.getIndex_i(1,7,1), blocks.getIndex_i(1,6,1)};
-		FarmField& farm = area.m_hasFarmFields.at(faction).create(farmBlocks);
-		area.m_hasFarmFields.at(faction).setSpecies(farm, sage);
+		FarmField& farm = area.m_hasFarmFields.getForFaction(faction).create(farmBlocks);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(farm, sage);
 		ActorIndex dwarf1 = actors.create({
 			.species=dwarf, 
 			.percentGrown=Percent::create(90),
@@ -56,36 +61,36 @@ TEST_CASE("json")
 			.hasSidearm=false,
 		});
 		std::wstring name = actors.getName(dwarf1);
-		DigObjectiveType& digObjectiveType = static_cast<DigObjectiveType&>(*ObjectiveType::objectiveTypes.at("dig").get());
-		std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(dwarf1, blocks.getIndex_i(9,9,1));
-		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 10);
-		dwarf1.m_hasObjectives.replaceTasks(std::move(objective));
-		blocks.plant_create(blocks.getIndex_i(8, 8, 1), sage, 99);
-		Plant& sage1 = blocks.plant_get(blocks.getIndex_i(8,8,1));
-		sage1.setMaybeNeedsFluid();
-		blocks.fluid_add(blocks.getIndex_i(3, 8, 1), 10, water);
-		Item& axe1 = simulation.m_hasItems->createItemNongeneric(axe, bronze, 10, 10);
-		axe1.setLocation(blocks.getIndex_i(1,2,1), &area);
+		ObjectiveTypeId digObjectiveType = ObjectiveType::getIdByName("dig");
+		std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(blocks.getIndex_i(9,9,1));
+		actors.objective_setPriority(dwarf1, digObjectiveType, Priority::create(10));
+		actors.objective_replaceTasks(dwarf1, std::move(objective));
+		blocks.plant_create(blocks.getIndex_i(8, 8, 1), sage, Percent::create(99));
+		PlantIndex sage1 = blocks.plant_get(blocks.getIndex_i(8,8,1));
+		plants.setMaybeNeedsFluid(sage1);
+		blocks.fluid_add(blocks.getIndex_i(3, 8, 1), CollisionVolume::create(10), water);
+		ItemIndex axe1 = items.create(ItemParamaters{.itemType=axe, .materialType=bronze, .quality=Quality::create(10), .percentWear=Percent::create(10)});
+		items.setLocation(axe1, blocks.getIndex_i(1,2,1));
 		blocks.blockFeature_construct(blocks.getIndex_i(1,8,1), BlockFeatureType::stairs, wood);
 		blocks.blockFeature_construct(blocks.getIndex_i(9,1,1), BlockFeatureType::door, wood);
 		area.m_fires.ignite(blocks.getIndex_i(9,1,1), wood);
-		Item& pants1 = simulation.m_hasItems->createItemNongeneric(pants, cotton, 50, 30);
-		dwarf1.m_equipmentSet.addEquipment(pants1);
-		Item& saw1 = simulation.m_hasItems->createItemNongeneric(saw, bronze, 50, 30);
-		dwarf1.m_canPickup.pickUp(saw1);
-		Item& bucket1 = simulation.m_hasItems->createItemNongeneric(bucket, bronze, 50, 30);
-		bucket1.setLocation(blocks.getIndex_i(0,0,1), &area);
-		bucket1.m_hasCargo.add(water, 5);
-		Item& bucket2 = simulation.m_hasItems->createItemNongeneric(bucket, bronze, 50, 30);
-		bucket2.setLocation(blocks.getIndex_i(0,1,1), &area);
-		bucket2.m_hasCargo.add(pile, sand, 1);
+		ItemIndex pants1 = items.create(ItemParamaters{.itemType=pants, .materialType=cotton, .quality=Quality::create(50), .percentWear=Percent::create(30)});
+		actors.equipment_add(dwarf1, pants1);
+		ItemIndex saw1 = items.create({.itemType=saw, .materialType=bronze, .quality=Quality::create(50), .percentWear=Percent::create(30)});
+		actors.canPickUp_pickUpItem(dwarf1, saw1);
+		ItemIndex bucket1 = items.create({.itemType=bucket, .materialType=bronze, .quality=Quality::create(50), .percentWear=Percent::create(30)});
+		items.setLocation(bucket1, blocks.getIndex_i(0,0,1));
+		items.cargo_addFluid(bucket1, water, CollisionVolume::create(5));
+		ItemIndex bucket2 = items.create({.itemType=bucket, .materialType=bronze, .quality=Quality::create(50), .percentWear=Percent::create(30)});
 
+		items.setLocation(bucket2, blocks.getIndex_i(0,1,1));
+		items.cargo_addItemGeneric(bucket2, pile, sand, Quantity::create(1));
 		Json areaData = area.toJson();
 		Json simulationData = simulation.toJson();
 		Simulation simulation2(simulationData);
 		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Blocks& blocks2 = area2.getBlocks();
-		Faction& faction2 = simulation2.m_hasFactions.byName(L"tower of power");
+		FactionId faction2 = simulation2.m_hasFactions.byName(L"tower of power");
 		// BlockIndex.
 		REQUIRE(blocks2.m_sizeX == blocks2.m_sizeY);
 		REQUIRE(blocks2.m_sizeX == blocks2.m_sizeZ);
@@ -94,12 +99,13 @@ TEST_CASE("json")
 		REQUIRE(blocks2.solid_get(blocks2.getIndex_i(5,5,0)) == dirt);
 		// Plant.
 		REQUIRE(blocks2.plant_exists(blocks2.getIndex_i(8,8,1)));
-		Plant& sage2 = blocks2.plant_get(blocks2.getIndex_i(8,8,1));
-		REQUIRE(sage2.m_plantSpecies == sage);
-		REQUIRE(sage2.getGrowthPercent() == 99);
-		REQUIRE(sage2.getStepAtWhichPlantWillDieFromLackOfFluid());
-		REQUIRE(sage2.m_fluidEvent.exists());
-		REQUIRE(!sage2.m_growthEvent.exists());
+		PlantIndex sage2 = blocks2.plant_get(blocks2.getIndex_i(8,8,1));
+		REQUIRE(plants.getSpecies(sage2) == sage);
+		REQUIRE(plants.getPercentGrown(sage2) == 99);
+		REQUIRE(plants.getStepAtWhichPlantWillDieFromLackOfFluid(sage2) != 0);
+		REQUIRE(plants.getStepAtWhichPlantWillDieFromLackOfFluid(sage2).exists());
+		REQUIRE(plants.fluidEventExists(sage2));
+		REQUIRE(!plants.growthEventExists(sage2));
 		// Fluid.
 		BlockIndex waterLocation = blocks2.getIndex_i(3,8,1);
 		REQUIRE(blocks2.fluid_getTotalVolume(waterLocation) == 10);
@@ -108,52 +114,52 @@ TEST_CASE("json")
 		REQUIRE(area2.m_hasFluidGroups.getUnstable().contains(&fluidGroup));
 		// Actor.
 		REQUIRE(!blocks2.actor_empty(blocks2.getIndex_i(5,5,1)));
-		Actor* dwarf2 = blocks2.actor_getAll(blocks2.getIndex_i(5,5,1))[0];
-		REQUIRE(&dwarf2->m_species == &dwarf);
-		REQUIRE(dwarf2->m_canGrow.growthPercent() == 90);
-		REQUIRE(dwarf2->m_name == name);
-		REQUIRE(dwarf2->m_mustEat.hasHungerEvent());
-		REQUIRE(dwarf2->m_mustDrink.thirstEventExists());
-		REQUIRE(dwarf2->m_mustSleep.hasTiredEvent());
-		REQUIRE(dwarf2->getFaction() == faction2);
+		ActorIndex dwarf2 = blocks2.actor_getAll(blocks2.getIndex_i(5,5,1))[0];
+		REQUIRE(actors.getSpecies(dwarf2) == dwarf);
+		REQUIRE(actors.getPercentGrown(dwarf2) == 90);
+		REQUIRE(actors.getName(dwarf2) == name);
+		REQUIRE(actors.getFaction(dwarf2) == faction2);
+		REQUIRE(actors.eat_hasHungerEvent(dwarf2));
+		REQUIRE(actors.drink_hasThristEvent(dwarf2));
+		REQUIRE(actors.sleep_hasTiredEvent(dwarf2));
 		// Objective.
-		REQUIRE(dwarf2->m_hasObjectives.m_prioritySet.getPriorityFor(ObjectiveTypeId::Dig) == 10);
-		REQUIRE(dwarf2->m_hasObjectives.getCurrent().getObjectiveTypeId() == ObjectiveTypeId::GoTo);
-		GoToObjective& goToObjective = static_cast<GoToObjective&>(dwarf2->m_hasObjectives.getCurrent());
+		REQUIRE(actors.objective_getPriorityFor(dwarf2, ObjectiveType::getIdByName("dig")) == 10);
+		REQUIRE(actors.objective_getCurrent<Objective>(dwarf2).getTypeId() == ObjectiveType::getIdByName("go to"));
+		GoToObjective& goToObjective = actors.objective_getCurrent<GoToObjective>(dwarf2);
 		REQUIRE(goToObjective.getLocation() == blocks2.getIndex_i(9,9,1));
 		// Equipment.
-		REQUIRE(!dwarf2->m_equipmentSet.getAll().empty());
-		Item* pants2 = *dwarf2->m_equipmentSet.getAll().begin();
-		REQUIRE(pants2->m_itemType == pants);
-		REQUIRE(pants2->m_materialType == cotton);
+		REQUIRE(!actors.equipment_getAll(dwarf2).empty());
+		ItemIndex pants2 = actors.equipment_getAll(dwarf2).begin()->getIndex();
+		REQUIRE(items.getItemType(pants2) == pants);
+		REQUIRE(items.getMaterialType(pants2) == cotton);
 		// canPickup.
-		REQUIRE(dwarf2->m_canPickup.isCarryingAnything());
-		REQUIRE(dwarf2->m_canPickup.getCarrying()->isItem());
-		Item& saw2 = dwarf2->m_canPickup.getItem();
-		REQUIRE(saw2.m_itemType == saw);
-		REQUIRE(saw2.m_materialType == bronze);
+		REQUIRE(actors.canPickUp_exists(dwarf1));
+		REQUIRE(actors.canPickUp_getCarrying(dwarf2).isItem());
+		ItemIndex saw2 = actors.canPickUp_getItem(dwarf2);
+		REQUIRE(items.getItemType(saw2) == saw);
+		REQUIRE(items.getMaterialType(saw2) == bronze);
 		// Items
 		REQUIRE(!blocks2.item_empty(blocks2.getIndex_i(1,2,1)));
-		Item* axe2 = blocks2.item_getAll(blocks2.getIndex_i(1,2,1))[0];
-		REQUIRE(axe2->m_materialType == bronze);
-		REQUIRE(axe2->m_quality == 10);
-		REQUIRE(axe2->m_percentWear == 10);
+		ItemIndex axe2 = blocks2.item_getAll(blocks2.getIndex_i(1,2,1))[0];
+		REQUIRE(items.getMaterialType(axe2) == bronze);
+		REQUIRE(items.getQuality(axe2) == 10);
+		REQUIRE(items.getWear(axe2) == 10);
 		// BlockIndex features.
 		REQUIRE(blocks2.blockFeature_contains(blocks2.getIndex_i(1,8,1), BlockFeatureType::stairs));
-		REQUIRE(blocks2.blockFeature_atConst(blocks2.getIndex_i(1,8,1), BlockFeatureType::stairs)->materialType == &wood);
+		REQUIRE(blocks2.blockFeature_atConst(blocks2.getIndex_i(1,8,1), BlockFeatureType::stairs)->materialType == wood);
 		REQUIRE(blocks2.blockFeature_contains(blocks2.getIndex_i(9,1,1), BlockFeatureType::door));
 		// Item cargo.
 		REQUIRE(!blocks2.item_empty(blocks2.getIndex_i(0,0,1)));
 		REQUIRE(blocks2.item_getAll(blocks2.getIndex_i(0,0,1)).size() == 1);
-		Item* bucket3 = blocks2.item_getAll(blocks2.getIndex_i(0,0,1))[0];
-		REQUIRE(bucket3);
-		REQUIRE(bucket3->m_hasCargo.containsAnyFluid());
-		REQUIRE(bucket3->m_hasCargo.getFluidType() == water);
-		REQUIRE(bucket3->m_hasCargo.getFluidVolume() == 5);
+		ItemIndex bucket3 = blocks2.item_getAll(blocks2.getIndex_i(0,0,1))[0];
+		REQUIRE(bucket3.exists());
+		REQUIRE(items.cargo_containsAnyFluid(bucket3));
+		REQUIRE(items.cargo_getFluidType(bucket3) == water);
+		REQUIRE(items.cargo_getFluidVolume(bucket3) == 5);
 		REQUIRE(blocks2.item_getAll(blocks2.getIndex_i(0,1,1)).size() == 1);
-		Item* bucket4 = blocks2.item_getAll(blocks2.getIndex_i(0,1,1))[0];
-		REQUIRE(bucket4);
-		REQUIRE(bucket4->m_hasCargo.containsGeneric(pile, sand, 1));
+		ItemIndex bucket4 = blocks2.item_getAll(blocks2.getIndex_i(0,1,1))[0];
+		REQUIRE(bucket4.exists());
+		REQUIRE(items.cargo_containsItemGeneric(bucket4, pile, sand, Quantity::create(1)));
 		// Fires.
 		REQUIRE(area2.m_fires.contains(blocks2.getIndex_i(9,1,1), wood));
 		Fire& fire = area2.m_fires.at(blocks2.getIndex_i(9,1,1), wood);
@@ -163,27 +169,26 @@ TEST_CASE("json")
 		// Farm fields.
 		REQUIRE(area2.m_hasFarmFields.contains(faction2));
 		REQUIRE(blocks2.farm_contains(blocks2.getIndex_i(1,6,1), faction2));
-		REQUIRE(blocks2.farm_get(blocks2.getIndex_i(1,6,1), faction2)->plantSpecies == &sage);
+		REQUIRE(blocks2.farm_get(blocks2.getIndex_i(1,6,1), faction2)->plantSpecies == sage);
 		REQUIRE(blocks2.farm_contains(blocks2.getIndex_i(1,7,1), faction2));
 		// OpacityFacade.
-		area2.m_hasActors.m_opacityFacade.validate();
+		area2.m_opacityFacade.validate();
 	}
 	SUBCASE("dig project")
 	{
 		BlockIndex holeLocation = blocks.getIndex_i(8, 4, 0);
 		area.m_hasDigDesignations.addFaction(faction);
 		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
-		Item& pick1 = simulation.m_hasItems->createItemNongeneric(pick, bronze, 10, 10);
-		pick1.setLocation(blocks.getIndex_i(1,2,1), &area);
-		ActorIndex dwarf1 = simulation.m_hasActors->createActor({
+		ItemIndex pick1 = items.create({.itemType=pick, .materialType=bronze, .quality=Quality::create(10), .percentWear=Percent::create(10)});
+		items.setLocation(pick1, blocks.getIndex_i(1,2,1));
+		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.percentGrown=Percent::create(90),
 			.location=blocks.getIndex_i(5,5,1), 
-			.area=&area,
+			.faction=faction,
 		});
-		dwarf1.setFaction(faction);
-		DigObjectiveType& digObjectiveType = static_cast<DigObjectiveType&>(*ObjectiveType::objectiveTypes.at("dig").get());
-		dwarf1.m_hasObjectives.m_prioritySet.setPriority(digObjectiveType, 100);
+		ObjectiveTypeId digObjectiveType = ObjectiveType::getIdByName("dig");
+		actors.objective_setPriority(dwarf1, digObjectiveType, Priority::create(100));
 		// One step to find the designation.
 		simulation.doStep();
 		// One step to activate the project and reserve the pick.
@@ -198,26 +203,26 @@ TEST_CASE("json")
 		Simulation simulation2(simulationData);
 		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Blocks& blocks2 = area2.getBlocks();
-		Faction& faction2 = simulation2.m_hasFactions.byName(L"tower of power");
+		FactionId faction2 = simulation2.m_hasFactions.byName(L"tower of power");
 		BlockIndex holeLocation2 = blocks2.getIndex_i(8,4,0);
 		REQUIRE(area2.m_hasDigDesignations.contains(faction2, holeLocation2));
-		DigProject& project = area2.m_hasDigDesignations.at(faction2, holeLocation2);
+		DigProject& project = area2.m_hasDigDesignations.getForFactionAndBlock(faction2, holeLocation2);
 		REQUIRE(project.getWorkersAndCandidates().size() == 1);
 		REQUIRE(project.getWorkers().size() == 1);
-		ActorIndex dwarf2 = *blocks2.actor_getAll(blocks2.getIndex_i(5,5,1))[0];
-		REQUIRE(dwarf2.m_project == static_cast<Project*>(&project));
-		REQUIRE(!dwarf2.m_canMove.getPath().empty());
-		DigObjective& objective = static_cast<DigObjective&>(dwarf2.m_hasObjectives.getCurrent());
-		REQUIRE(objective.getProject()  == dwarf2.m_project);
-		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf2);
+		ActorIndex dwarf2 = blocks2.actor_getAll(blocks2.getIndex_i(5,5,1))[0];
+		REQUIRE(actors.project_get(dwarf2) == static_cast<Project*>(&project));
+		REQUIRE(!actors.move_getPath(dwarf2).empty());
+		DigObjective& objective = actors.objective_getCurrent<DigObjective>(dwarf2);
+		REQUIRE(objective.getProject() == actors.project_get(dwarf2));
+		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf2.toReference(area));
 		REQUIRE(projectWorker.haulSubproject);
-		REQUIRE(projectWorker.objective == dwarf2.m_hasObjectives.getCurrent());
+		REQUIRE(projectWorker.objective == actors.objective_getCurrent<Objective>(dwarf2));
 		HaulSubproject& haulSubproject = *projectWorker.haulSubproject;
-		REQUIRE(haulSubproject.getWorkers().contains(&dwarf2));
+		REQUIRE(haulSubproject.getWorkers().contains(dwarf2));
 		REQUIRE(haulSubproject.getHaulStrategy() == HaulStrategy::Individual);
-		Item* pick2 = blocks2.item_getAll(blocks2.getIndex_i(1,2,1))[0];
+		ItemIndex pick2 = blocks2.item_getAll(blocks2.getIndex_i(1,2,1))[0];
 		REQUIRE(haulSubproject.getToHaul().isItem());
-		REQUIRE(static_cast<Item*>(&haulSubproject.getToHaul()) == pick2);
+		REQUIRE(haulSubproject.getToHaul().getIndex() == pick2);
 		REQUIRE(haulSubproject.getQuantity() == 1);
 		REQUIRE(!haulSubproject.getIsMoving());
 		REQUIRE(!project.hasTryToHaulEvent());
@@ -230,15 +235,14 @@ TEST_CASE("json")
 		BlockIndex projectLocation = blocks.getIndex_i(8, 4, 1);
 		area.m_hasConstructionDesignations.addFaction(faction);
 		area.m_hasConstructionDesignations.designate(faction, projectLocation, nullptr, wood);
-		ActorIndex dwarf1 = simulation.m_hasActors->createActor({
+		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.percentGrown=Percent::create(90),
 			.location=blocks.getIndex_i(5,5,1),
-			.area=&area,
+			.faction=faction,
 		});
-		dwarf1.setFaction(faction);
-		ConstructObjectiveType& constructObjectiveType = static_cast<ConstructObjectiveType&>(*ObjectiveType::objectiveTypes.at("construct").get());
-		dwarf1.m_hasObjectives.m_prioritySet.setPriority(constructObjectiveType, 100);
+		ObjectiveTypeId constructObjectiveType = ObjectiveType::getIdByName("construct");
+		actors.objective_setPriority(dwarf1, constructObjectiveType, Priority::create(100));
 		// One step to find the designation.
 		simulation.doStep();
 
@@ -247,7 +251,7 @@ TEST_CASE("json")
 		Simulation simulation2(simulationData);
 		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Blocks& blocks2 = area2.getBlocks();
-		Faction& faction2 = simulation2.m_hasFactions.byName(L"tower of power");
+		FactionId faction2 = simulation2.m_hasFactions.byName(L"tower of power");
 		BlockIndex projectLocation2 = blocks2.getIndex_i(8,4,1);
 		REQUIRE(area2.m_hasConstructionDesignations.contains(faction2, projectLocation2));
 		ConstructProject& project = area2.m_hasConstructionDesignations.getProject(faction2, projectLocation2);
@@ -255,11 +259,11 @@ TEST_CASE("json")
 		// The project is not yet active and the actor is a candidate rather then a worker.
 		REQUIRE(project.getWorkersAndCandidates().size() == 1);
 		REQUIRE(project.getWorkers().size() == 0);
-		ActorIndex dwarf2 = *blocks2.actor_getAll(blocks2.getIndex_i(5,5,1))[0];
-		REQUIRE(dwarf2.m_project == static_cast<Project*>(&project));
-		REQUIRE(dwarf2.m_canMove.getPath().empty());
-		ConstructObjective& objective = static_cast<ConstructObjective&>(dwarf2.m_hasObjectives.getCurrent());
-		REQUIRE(objective.getProject() == dwarf2.m_project);
+		ActorIndex dwarf2 = blocks2.actor_getAll(blocks2.getIndex_i(5,5,1))[0];
+		REQUIRE(actors.project_get(dwarf2) == static_cast<Project*>(&project));
+		REQUIRE(actors.move_getPath(dwarf2).empty());
+		ConstructObjective& objective = actors.objective_getCurrent<ConstructObjective>(dwarf2);
+		REQUIRE(objective.getProject() == actors.project_get(dwarf2));
 		REQUIRE(!project.hasTryToHaulEvent());
 		REQUIRE(!project.hasTryToHaulThreadedTask());
 		REQUIRE(!project.hasTryToReserveEvent());
@@ -272,21 +276,20 @@ TEST_CASE("json")
 		area.m_hasStockPiles.registerFaction(faction);
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(pile);
-		StockPile& stockPile = area.m_hasStockPiles.at(faction).addStockPile(queries);
+		StockPile& stockPile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 		stockPile.addBlock(projectLocation1);
-		Item& pile1 = simulation.m_hasItems->createItemGeneric(pile, dirt, 10);
-		pile1.setLocation(pileLocation1, &area);
+		ItemIndex pile1 = items.create({.itemType=pile, .materialType=dirt, .quantity=Quantity::create(10)});
+		items.setLocation(pile1, pileLocation1);
 		REQUIRE(stockPile.accepts(pile1));
-		area.m_hasStockPiles.at(faction).addItem(pile1);
-		ActorIndex dwarf1 = simulation.m_hasActors->createActor({
+		area.m_hasStockPiles.getForFaction(faction).addItem(pile1);
+		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.percentGrown=Percent::create(90),
 			.location=blocks.getIndex_i(5,5,1),
-			.area=&area,
+			.faction=faction
 		});
-		dwarf1.setFaction(faction);
-		StockPileObjectiveType& stockPileObjectiveType = static_cast<StockPileObjectiveType&>(*ObjectiveType::objectiveTypes.at("stockpile").get());
-		dwarf1.m_hasObjectives.m_prioritySet.setPriority(stockPileObjectiveType, 100);
+		ObjectiveTypeId stockPileObjectiveType = ObjectiveType::getIdByName("stockpile");
+		actors.objective_setPriority(dwarf1, stockPileObjectiveType, Priority::create(100));
 		// One step to find the designation.
 		simulation.doStep();
 
@@ -295,52 +298,51 @@ TEST_CASE("json")
 		Simulation simulation2(simulationData);
 		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Blocks& blocks2 = area2.getBlocks();
-		Faction& faction2 = simulation2.m_hasFactions.byName(L"tower of power");
+		FactionId faction2 = simulation2.m_hasFactions.byName(L"tower of power");
 		BlockIndex projectLocation2 = blocks2.getIndex_i(8,4,1);
 		BlockIndex pileLocation2 = blocks2.getIndex_i(1, 4, 1);
-		Item& pile2 = *blocks2.item_getAll(pileLocation2)[0];
-		ActorIndex dwarf2 = *blocks2.actor_getAll(blocks2.getIndex_i(5,5,1))[0];
+		ItemIndex pile2 = blocks2.item_getAll(pileLocation2)[0];
+		ActorIndex dwarf2 = blocks2.actor_getAll(blocks2.getIndex_i(5,5,1))[0];
 
 		REQUIRE(blocks2.stockpile_contains(projectLocation2, faction2));
 		StockPile& stockPile2 = *blocks2.stockpile_getForFaction(projectLocation2, faction2);
 		REQUIRE(stockPile2.accepts(pile2));
-		REQUIRE(area2.m_hasStockPiles.at(faction2).getItemsWithProjectsCount() == 1);
-		StockPileObjective& objective = static_cast<StockPileObjective&>(dwarf2.m_hasObjectives.getCurrent());
-		REQUIRE(objective.m_project);
-		REQUIRE(dwarf2.m_project);
+		REQUIRE(area2.m_hasStockPiles.getForFaction(faction2).getItemsWithProjectsCount() == 1);
+		StockPileObjective& objective = actors.objective_getCurrent<StockPileObjective>(dwarf2);
+		REQUIRE(objective.m_project != nullptr);
+		REQUIRE(actors.project_exists(dwarf2));
 		StockPileProject& project = *objective.m_project;
 		// The project is not yet active and the actor is a candidate rather then a worker.
 		REQUIRE(project.getWorkersAndCandidates().size() == 1);
 		REQUIRE(project.getWorkers().size() == 0);
-		REQUIRE(dwarf2.m_project == static_cast<Project*>(&project));
-		REQUIRE(dwarf2.m_canMove.getPath().empty());
+		REQUIRE(actors.project_get(dwarf2) == static_cast<Project*>(&project));
+		REQUIRE(actors.move_getPath(dwarf2).empty());
 		REQUIRE(project.getItem() == pile2);
 		REQUIRE(project.getLocation() == projectLocation2);
 	}
 	SUBCASE("craft")
 	{
-		CraftStepTypeCategory& craftStepTypeSaw = CraftStepTypeCategory::byName("saw");
-		CraftStepTypeCategory& craftStepTypeScrape = CraftStepTypeCategory::byName("scrape");
+		CraftStepTypeCategoryId craftStepTypeSaw = CraftStepTypeCategory::byName("saw");
+		CraftStepTypeCategoryId craftStepTypeScrape = CraftStepTypeCategory::byName("scrape");
 		area.m_hasCraftingLocationsAndJobs.addFaction(faction);
-		area.m_hasCraftingLocationsAndJobs.at(faction).addLocation(craftStepTypeSaw, blocks.getIndex_i(3,3,1));
-		area.m_hasCraftingLocationsAndJobs.at(faction).addLocation(craftStepTypeScrape, blocks.getIndex_i(3,2,1));
-		CraftJobType& jobTypeSawBoards = CraftJobType::byName("saw boards");
-		area.m_hasCraftingLocationsAndJobs.at(faction).addJob(jobTypeSawBoards, &wood, 1);
-		ActorIndex dwarf1 = simulation.m_hasActors->createActor({
+		area.m_hasCraftingLocationsAndJobs.getForFaction(faction).addLocation(craftStepTypeSaw, blocks.getIndex_i(3,3,1));
+		area.m_hasCraftingLocationsAndJobs.getForFaction(faction).addLocation(craftStepTypeScrape, blocks.getIndex_i(3,2,1));
+		CraftJobTypeId jobTypeSawBoards = CraftJobType::byName("saw boards");
+		area.m_hasCraftingLocationsAndJobs.getForFaction(faction).addJob(jobTypeSawBoards, wood, Quantity::create(1));
+		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.percentGrown=Percent::create(90),
 			.location=blocks.getIndex_i(5,5,1),
-			.area=&area,
+			.faction=faction
 		});
-		dwarf1.setFaction(faction);
-		CraftObjectiveType& woodWorkingObjectiveType = static_cast<CraftObjectiveType&>(*ObjectiveType::objectiveTypes.at("wood working").get());
-		dwarf1.m_hasObjectives.m_prioritySet.setPriority(woodWorkingObjectiveType, 100);
-		Item& saw = simulation.m_hasItems->createItemNongeneric(ItemType::byName("saw"), bronze, 25, 0);
-		saw.setLocation(blocks.getIndex_i(3, 7, 1), &area);
-		Item& chisel = simulation.m_hasItems->createItemNongeneric(ItemType::byName("chisel"), bronze, 25, 0);
-		chisel.setLocation(blocks.getIndex_i(3, 6, 1), &area);
-		Item& log = simulation.m_hasItems->createItemGeneric(ItemType::byName("log"), wood, 1);
-		log.setLocation(blocks.getIndex_i(3, 8, 1), &area);
+		ObjectiveTypeId woodWorkingObjectiveType = ObjectiveType::getIdByName("wood working");
+		actors.objective_setPriority(dwarf1, woodWorkingObjectiveType, Priority::create(100));
+		ItemIndex saw = items.create({.itemType=ItemType::byName("saw"), .materialType=bronze, .quality=Quality::create(25), .percentWear=Percent::create(0)});
+		items.setLocation(saw, blocks.getIndex_i(3, 7, 1));
+		ItemIndex chisel = items.create({.itemType=ItemType::byName("chisel"), .materialType=bronze, .quality=Quality::create(25), .percentWear=Percent::create(0)});
+		items.setLocation(chisel, blocks.getIndex_i(3, 6, 1));
+		ItemIndex log = items.create({.itemType=ItemType::byName("log"), .materialType=wood, .quantity=Quantity::create(1)});
+		items.setLocation(log, blocks.getIndex_i(3, 8, 1));
 		// One step to find the designation.
 		simulation.doStep();
 
@@ -349,33 +351,32 @@ TEST_CASE("json")
 		Simulation simulation2(simulationData);
 		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Blocks& blocks2 = area2.getBlocks();
-		Faction& faction2 = simulation2.m_hasFactions.byName(L"tower of power");
-		ActorIndex dwarf2 = *blocks2.actor_getAll(blocks2.getIndex_i(5,5,1))[0];
+		FactionId faction2 = simulation2.m_hasFactions.byName(L"tower of power");
+		ActorIndex dwarf2 = blocks2.actor_getAll(blocks2.getIndex_i(5,5,1))[0];
 
-		REQUIRE(area2.m_hasCraftingLocationsAndJobs.at(faction2).hasLocationsForCategory(craftStepTypeSaw));
-		REQUIRE(area2.m_hasCraftingLocationsAndJobs.at(faction2).hasLocationsForCategory(craftStepTypeScrape));
-		REQUIRE(area2.m_hasCraftingLocationsAndJobs.at(faction2).hasJobs());
-		REQUIRE(dwarf2.m_project);
-		REQUIRE(static_cast<CraftObjective&>(dwarf2.m_hasObjectives.getCurrent()).getCraftJob());
-		CraftJob& job = *static_cast<CraftObjective&>(dwarf2.m_hasObjectives.getCurrent()).getCraftJob();
+		REQUIRE(area2.m_hasCraftingLocationsAndJobs.getForFaction(faction2).hasLocationsForCategory(craftStepTypeSaw));
+		REQUIRE(area2.m_hasCraftingLocationsAndJobs.getForFaction(faction2).hasLocationsForCategory(craftStepTypeScrape));
+		REQUIRE(area2.m_hasCraftingLocationsAndJobs.getForFaction(faction2).hasJobs());
+		REQUIRE(actors.project_exists(dwarf2));
+		REQUIRE(actors.objective_getCurrent<CraftObjective>(dwarf2).getCraftJob() != nullptr);
+		CraftJob& job = *actors.objective_getCurrent<CraftObjective>(dwarf2).getCraftJob();
 		REQUIRE(job.craftStepProject);
 		REQUIRE(&job.craftJobType == &jobTypeSawBoards);
-		REQUIRE(job.materialType == &wood);
+		REQUIRE(job.materialType == wood);
 		CraftStepProject& project = *job.craftStepProject.get();
-		REQUIRE(static_cast<CraftStepProject*>(dwarf2.m_project) == &project);
+		REQUIRE(actors.project_get(dwarf2) == &project);
 	}
 	SUBCASE("drink")
 	{
-		Item& bucket1 = simulation.m_hasItems->createItemNongeneric(bucket, bronze, 25, 0);
-		bucket1.setLocation(blocks.getIndex_i(3, 7, 1), &area);
-		bucket1.m_hasCargo.add(water, 10);
-		simulation.m_hasActors->createActor({
+		ItemIndex bucket1 = items.create({.itemType=bucket, .materialType=bronze, .quality=Quality::create(25), .percentWear=Percent::create(0)});
+		items.setLocation(bucket1, blocks.getIndex_i(3, 7, 1));
+		items.cargo_addFluid(bucket1, water, CollisionVolume::create(10));
+		actors.create({
 			.species=dwarf,
 			.percentGrown=Percent::create(90),
 			.location=blocks.getIndex_i(5,5,1),
-			.area=&area,
 		});
-		simulation.fastForward(dwarf.stepsFluidDrinkFreqency);
+		simulation.fastForward(AnimalSpecies::getStepsFluidDrinkFrequency(dwarf));
 		// One step to find the bucket.
 		simulation.doStep();
 
@@ -384,26 +385,29 @@ TEST_CASE("json")
 		Simulation simulation2(simulationData);
 		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Blocks& blocks2 = area2.getBlocks();
-		ActorIndex dwarf2 = *blocks2.actor_getAll(blocks2.getIndex_i(5,5,1))[0];
+		ActorIndex dwarf2 = blocks2.actor_getAll(blocks2.getIndex_i(5,5,1))[0];
 
-		REQUIRE(dwarf2.m_canMove.getDestination().exists());
-		REQUIRE(blocks2.isAdjacentToIncludingCornersAndEdges(dwarf2.m_canMove.getDestination(), blocks2.getIndex_i(3,7,1)));
-		REQUIRE(dwarf2.m_hasObjectives.getCurrent().getObjectiveTypeId() == ObjectiveTypeId::Drink);
+		REQUIRE(actors.move_getDestination(dwarf2).exists());
+		REQUIRE(blocks2.isAdjacentToIncludingCornersAndEdges(actors.move_getDestination(dwarf2), blocks2.getIndex_i(3,7,1)));
+		REQUIRE(actors.objective_getCurrent<Objective>(dwarf2).getTypeId() == ObjectiveType::getIdByName("drink"));
 	}
 	SUBCASE("eat")
 	{
-		Item& preparedMeal1 = simulation.m_hasItems->createItemNongeneric(preparedMeal, MaterialType::byName("fruit"), 25, 0);
-		preparedMeal1.setLocation(blocks.getIndex_i(3, 7, 1), &area);
-		ActorIndex dwarf1 = simulation.m_hasActors->createActor({
+		items.create({
+			.itemType=preparedMeal,
+			.materialType=MaterialType::byName("fruit"),
+			.location=blocks.getIndex_i(3, 7, 1),
+			.quality=Quality::create(25),
+			.percentWear=Percent::create(0),
+		});
+		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.percentGrown=Percent::create(90),
 			.location=blocks.getIndex_i(5,5,1),
-			.area=&area,
 		});
-		simulation.fastForward(dwarf.stepsEatFrequency);
 		// Discard drink objective if exists.
-		if(dwarf1.m_mustDrink.getVolumeFluidRequested() != 0)
-			dwarf1.m_mustDrink.drink(dwarf1.m_mustDrink.getVolumeFluidRequested());
+		if(actors.drink_getVolumeOfFluidRequested(dwarf1) != 0)
+			actors.drink_do(dwarf1, actors.drink_getVolumeOfFluidRequested(dwarf1));
 		// One step to find the meal.
 		simulation.doStep();
 
@@ -412,30 +416,29 @@ TEST_CASE("json")
 		Simulation simulation2(simulationData);
 		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Blocks& blocks2 = area2.getBlocks();
-		ActorIndex dwarf2 = *blocks2.actor_getAll(blocks2.getIndex_i(5,5,1))[0];
+		ActorIndex dwarf2 = blocks2.actor_getAll(blocks2.getIndex_i(5,5,1))[0];
 
-		REQUIRE(dwarf2.m_canMove.getDestination().exists());
-		REQUIRE(blocks2.isAdjacentToIncludingCornersAndEdges(dwarf2.m_canMove.getDestination(), blocks2.getIndex_i(3,7,1)));
-		REQUIRE(dwarf2.m_hasObjectives.getCurrent().getObjectiveTypeId() == ObjectiveTypeId::Eat);
+		REQUIRE(actors.move_getDestination(dwarf2).exists());
+		REQUIRE(blocks2.isAdjacentToIncludingCornersAndEdges(actors.move_getDestination(dwarf2), blocks2.getIndex_i(3,7,1)));
+		REQUIRE(actors.objective_getCurrent<Objective>(dwarf2).getTypeId() == ObjectiveType::getIdByName("eat"));
 	}
 	SUBCASE("sleep")
 	{
-		ActorIndex dwarf1 = simulation.m_hasActors->createActor({
+		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.percentGrown=Percent::create(90),
 			.location=blocks.getIndex_i(5,5,1),
-			.area=&area,
+			.faction=faction
 		});
-		dwarf1.setFaction(faction);
 		area.m_hasSleepingSpots.designate(faction, blocks.getIndex_i(2,2,1));
 		area.m_hasSleepingSpots.designate(faction, blocks.getIndex_i(1,1,1));
-		simulation.fastForward(dwarf.stepsSleepFrequency);
+		simulation.fastForward(AnimalSpecies::getStepsSleepFrequency(dwarf));
 		// Discard drink objective if exists.
-		if(dwarf1.m_mustDrink.getVolumeFluidRequested() != 0)
-			dwarf1.m_mustDrink.drink(dwarf1.m_mustDrink.getVolumeFluidRequested());
-		if(dwarf1.m_mustEat.getMassFoodRequested() != 0)
-			dwarf1.m_mustEat.eat(dwarf1.m_mustEat.getMassFoodRequested());
-		ActorId dwarf1Id = dwarf1.m_id;
+		if(actors.drink_getVolumeOfFluidRequested(dwarf1) != 0)
+			actors.drink_do(dwarf1, actors.drink_getVolumeOfFluidRequested(dwarf1));
+		if(actors.eat_getMassFoodRequested(dwarf1) != 0)
+			actors.eat_do(dwarf1, actors.eat_getMassFoodRequested(dwarf1));
+		ActorId dwarf1Id = actors.getId(dwarf1);
 
 		// One step to find the sleeping spot.
 		simulation.doStep();
@@ -445,37 +448,36 @@ TEST_CASE("json")
 		Simulation simulation2(simulationData);
 		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Blocks& blocks2 = area2.getBlocks();
-		ActorIndex dwarf2 = simulation2.m_hasActors->getById(dwarf1Id);
+		ActorIndex dwarf2 = simulation2.m_actors.getIndexForId(dwarf1Id);
 
-		REQUIRE(dwarf2.m_mustSleep.hasTiredEvent());
-		REQUIRE(dwarf2.m_mustSleep.getSleepPercent() == 0);
+		REQUIRE(actors.sleep_hasTiredEvent(dwarf2));
+		REQUIRE(actors.sleep_getPercentDoneSleeping(dwarf2) == 0);
 		REQUIRE(area2.m_hasSleepingSpots.containsUnassigned(blocks2.getIndex_i(1,1,1)));
-		REQUIRE(dwarf2.m_canMove.getDestination().exists());
-		REQUIRE(blocks2.isAdjacentToIncludingCornersAndEdges(dwarf2.m_canMove.getDestination(), blocks2.getIndex_i(2,2,1)));
-		REQUIRE(dwarf2.m_hasObjectives.getCurrent().getObjectiveTypeId() == ObjectiveTypeId::Sleep);
-		REQUIRE(dwarf2.m_mustSleep.getLocation().empty());
+		REQUIRE(actors.move_getDestination(dwarf2).exists());
+		REQUIRE(blocks2.isAdjacentToIncludingCornersAndEdges(actors.move_getDestination(dwarf2), blocks2.getIndex_i(2,2,1)));
+		REQUIRE(actors.objective_getCurrent<Objective>(dwarf2).getTypeId() == ObjectiveType::getIdByName("sleep"));
+		REQUIRE(actors.sleep_getSpot(dwarf2).empty());
 	}
 	SUBCASE("sow seed")
 	{
 
 		Cuboid farmBlocks{blocks, blocks.getIndex_i(1,7,1), blocks.getIndex_i(1,6,1)};
-		FarmField& farm = area.m_hasFarmFields.at(faction).create(farmBlocks);
-		area.m_hasFarmFields.at(faction).setSpecies(farm, sage);
-		ActorIndex dwarf1 = simulation.m_hasActors->createActor({
+		FarmField& farm = area.m_hasFarmFields.getForFaction(faction).create(farmBlocks);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(farm, sage);
+		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.percentGrown=Percent::create(90),
 			.location=blocks.getIndex_i(5,5,1),
-			.area=&area,
+			.faction=faction,
 		});
-		dwarf1.setFaction(faction);
-		SowSeedsObjectiveType& sowObjectiveType = static_cast<SowSeedsObjectiveType&>(*ObjectiveType::objectiveTypes.at("sow seeds").get());
-		dwarf1.m_hasObjectives.m_prioritySet.setPriority(sowObjectiveType, 10);
-		ActorId dwarf1Id = dwarf1.m_id;
+		ObjectiveTypeId sowObjectiveType = ObjectiveType::getIdByName("sow seeds");
+		actors.objective_setPriority(dwarf1, sowObjectiveType, Priority::create(10));
+		ActorId dwarf1Id = actors.getId(dwarf1);
 		
 		// One step to find the sowing location.
 		simulation.doStep();
 
-		SowSeedsObjective& objective = static_cast<SowSeedsObjective&>(dwarf1.m_hasObjectives.getCurrent());
+		SowSeedsObjective& objective = actors.objective_getCurrent<SowSeedsObjective>(dwarf1);
 		BlockIndex block1 = objective.getBlock();
 		Point3D coordinates1 = area.getBlocks().getCoordinates(block1);
 
@@ -484,11 +486,11 @@ TEST_CASE("json")
 		Simulation simulation2(simulationData);
 		[[maybe_unused]] Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Blocks& blocks2 = area2.getBlocks();
-		ActorIndex dwarf2 = simulation2.m_hasActors->getById(dwarf1Id);
+		ActorIndex dwarf2 = simulation2.m_actors.getIndexForId(dwarf1Id);
 		
-		Objective& objective2 = dwarf2.m_hasObjectives.getCurrent();
-		REQUIRE(objective2.getObjectiveTypeId() == ObjectiveTypeId::SowSeeds);
-		REQUIRE(dwarf2.m_canMove.getDestination().exists());
+		Objective& objective2 = actors.objective_getCurrent<Objective>(dwarf2);
+		REQUIRE(objective2.getTypeId() == ObjectiveType::getIdByName("sow seeds"));
+		REQUIRE(actors.move_getDestination(dwarf2).exists());
 		BlockIndex block2 = objective.getBlock();
 		Point3D coordinates2 = blocks2.getCoordinates(block2);
 		REQUIRE(coordinates2.x == coordinates1.x);
@@ -497,23 +499,22 @@ TEST_CASE("json")
 	}
 	SUBCASE("harvest")
 	{
-		blocks.plant_create(blocks.getIndex_i(1,7,1), wheatGrass, 100);
-		Plant& plant = blocks.plant_get(blocks.getIndex_i(1,7,1));
-		plant.setQuantityToHarvest();
-		REQUIRE(plant.m_quantityToHarvest);
+		blocks.plant_create(blocks.getIndex_i(1,7,1), wheatGrass, Percent::create(100));
+		PlantIndex plant = blocks.plant_get(blocks.getIndex_i(1,7,1));
+		plants.setQuantityToHarvest(plant);
+		REQUIRE(plants.getQuantityToHarvest(plant) != 0);
 		Cuboid farmBlocks{blocks, blocks.getIndex_i(1,7,1), blocks.getIndex_i(1,6,1)};
-		FarmField& farm = area.m_hasFarmFields.at(faction).create(farmBlocks);
-		area.m_hasFarmFields.at(faction).setSpecies(farm, wheatGrass);
-		ActorIndex dwarf1 = simulation.m_hasActors->createActor({
+		FarmField& farm = area.m_hasFarmFields.getForFaction(faction).create(farmBlocks);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(farm, wheatGrass);
+		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.percentGrown=Percent::create(90),
 			.location=blocks.getIndex_i(5,5,1),
-			.area=&area,
+			.faction=faction
 		});
-		dwarf1.setFaction(faction);
-		HarvestObjectiveType& harvestObjectiveType = static_cast<HarvestObjectiveType&>(*ObjectiveType::objectiveTypes.at("harvest").get());
-		dwarf1.m_hasObjectives.m_prioritySet.setPriority(harvestObjectiveType, 10);
-		ActorId dwarf1Id = dwarf1.m_id;
+		ObjectiveTypeId harvestObjectiveType = ObjectiveType::getIdByName("harvest");
+		actors.objective_setPriority(dwarf1, harvestObjectiveType, Priority::create(10));
+		ActorId dwarf1Id = actors.getId(dwarf1);
 		
 		// One step to find the harvest location.
 		simulation.doStep();
@@ -522,35 +523,33 @@ TEST_CASE("json")
 		Simulation simulation2(simulationData);
 		[[maybe_unused]] Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Blocks& blocks2 = area2.getBlocks();
-		ActorIndex dwarf2 = simulation2.m_hasActors->getById(dwarf1Id);
+		ActorIndex dwarf2 = simulation2.m_actors.getIndexForId(dwarf1Id);
 		
-		Objective& objective2 = dwarf2.m_hasObjectives.getCurrent();
-		REQUIRE(objective2.getObjectiveTypeId() == ObjectiveTypeId::Harvest);
+		Objective& objective2 = actors.objective_getCurrent<Objective>(dwarf2);
+		REQUIRE(objective2.getTypeId() == ObjectiveType::getIdByName("harvest"));
 		HarvestObjective& harvestObjective = static_cast<HarvestObjective&>(objective2);
 		REQUIRE(harvestObjective.getBlock() == blocks2.getIndex_i(1,7,1));
 	}
 	SUBCASE("give fluid to plant")
 	{
-		Item& bucket1 = simulation.m_hasItems->createItemNongeneric(bucket, bronze, 25, 0);
-		bucket1.setLocation(blocks.getIndex_i(3, 7, 1), &area);
-		bucket1.m_hasCargo.add(water, 10);
-		blocks.plant_create(blocks.getIndex_i(1,7,1), wheatGrass, 100);
-		Plant& plant = blocks.plant_get(blocks.getIndex_i(1,7,1));
-		plant.setMaybeNeedsFluid();
-		REQUIRE(plant.m_volumeFluidRequested);
+		ItemIndex bucket1 = items.create({.itemType=bucket, .materialType=bronze, .location=blocks.getIndex_i(3, 7, 1), .quality=Quality::create(25), .percentWear=Percent::create(0)});
+		items.cargo_addFluid(bucket1, water, CollisionVolume::create(10));
+		blocks.plant_create(blocks.getIndex_i(1,7,1), wheatGrass, Percent::create(100));
+		PlantIndex plant = blocks.plant_get(blocks.getIndex_i(1,7,1));
+		plants.setMaybeNeedsFluid(plant);
+		REQUIRE(plants.getVolumeFluidRequested(plant) != 0);
 		Cuboid farmBlocks{blocks, blocks.getIndex_i(1,7,1), blocks.getIndex_i(1,6,1)};
-		FarmField& farm = area.m_hasFarmFields.at(faction).create(farmBlocks);
-		area.m_hasFarmFields.at(faction).setSpecies(farm, wheatGrass);
-		ActorIndex dwarf1 = simulation.m_hasActors->createActor({
+		FarmField& farm = area.m_hasFarmFields.getForFaction(faction).create(farmBlocks);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(farm, wheatGrass);
+		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.percentGrown=Percent::create(90),
 			.location=blocks.getIndex_i(5,5,1),
-			.area=&area,
+			.faction=faction
 		});
-		dwarf1.setFaction(faction);
-		GivePlantsFluidObjectiveType& harvestObjectiveType = static_cast<GivePlantsFluidObjectiveType&>(*ObjectiveType::objectiveTypes.at("give plants fluid").get());
-		dwarf1.m_hasObjectives.m_prioritySet.setPriority(harvestObjectiveType, 10);
-		ActorId dwarf1Id = dwarf1.m_id;
+		ObjectiveTypeId harvestObjectiveType = ObjectiveType::getIdByName("give plants fluid");
+		actors.objective_setPriority( dwarf1, harvestObjectiveType, Priority::create(10));
+		ActorId dwarf1Id = actors.getId(dwarf1);
 		
 		// One step to find the plant needing water.
 		simulation.doStep();
@@ -560,12 +559,11 @@ TEST_CASE("json")
 		Simulation simulation2(simulationData);
 		[[maybe_unused]] Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Blocks& blocks2 = area2.getBlocks();
-		ActorIndex dwarf2 = simulation2.m_hasActors->getById(dwarf1Id);
+		ActorIndex dwarf2 = simulation2.m_actors.getIndexForId(dwarf1Id);
 		
-		Objective& objective2 = dwarf2.m_hasObjectives.getCurrent();
-		REQUIRE(objective2.getObjectiveTypeId() == ObjectiveTypeId::GivePlantsFluid);
+		Objective& objective2 = actors.objective_getCurrent<Objective>(dwarf2);
+		REQUIRE(objective2.getTypeId() == ObjectiveType::getIdByName("give plants fluid"));
 		GivePlantsFluidObjective& harvestObjective = static_cast<GivePlantsFluidObjective&>(objective2);
 		REQUIRE(harvestObjective.getPlantLocation() == blocks2.getIndex_i(1,7,1));
 	}
 }
-*/

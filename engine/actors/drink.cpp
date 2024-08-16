@@ -20,7 +20,7 @@ FluidTypeId Actors::drink_getFluidType(ActorIndex index) const
 {
 	return m_mustDrink[index]->getFluidType();
 }
-bool Actors::drink_thirstEventExists(ActorIndex index) const
+bool Actors::drink_hasThristEvent(ActorIndex index) const
 {
 	return m_mustDrink[index]->thirstEventExists();
 }

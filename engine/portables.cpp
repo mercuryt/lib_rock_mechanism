@@ -64,22 +64,33 @@ void Portables::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 		}
 	}
 }
-void Portables::create(HasShapeIndex index, MoveTypeId moveType, ShapeId shape, BlockIndex location, Facing facing, bool isStatic)
+void Portables::create(HasShapeIndex index, MoveTypeId moveType, ShapeId shape, BlockIndex location, Facing facing, FactionId faction, bool isStatic, Quantity quantity)
 {
-	HasShapes::create(index, shape, location, facing, isStatic);
+	HasShapes::create(index, shape, location, facing, faction, isStatic);
 	m_moveType[index] = moveType;
+	m_reservables[index] = std::make_unique<Reservable>(quantity);
 	assert(m_destroy[index] == nullptr);
 	assert(m_reservables[index] == nullptr);
-	assert(!m_follower[index].exists());
-	assert(!m_leader[index].exists());
-	assert(!m_carrier[index].exists());
+	assert(m_follower[index].empty());
+	assert(m_leader[index].empty());
+	assert(m_carrier[index].empty());
 }
 void Portables::destroy(HasShapeIndex index)
 {
 	m_destroy[index] = nullptr;
 	m_reservables[index] = nullptr;
-	m_follower[index].clear();
+	assert(m_follower[index].empty());
+	assert(m_leader[index].empty());
+	assert(m_carrier[index].empty());
 	HasShapes::destroy(index);
+}
+void Portables::log(HasShapeIndex index) const
+{
+	std::cout 
+		<< "moveType: " << MoveType::getName(m_moveType[index])
+	       	<< ", leading: " << m_follower[index].toString()
+	       	<< ", following: " << m_follower[index].toString()
+	       	<< ", carrier: " << m_carrier[index].toString();
 }
 ActorOrItemIndex Portables::getActorOrItemIndex(HasShapeIndex index)
 {
@@ -310,11 +321,6 @@ void Portables::updateIndexInCarrier(HasShapeIndex oldIndex, HasShapeIndex newIn
 			ItemIndex ni = ItemIndex::cast(newIndex);
 			if(actors.canPickUp_isCarryingItem(actor, oi))
 				actors.canPickUp_updateItemIndex(actor, oi, ni);
-			else
-			{
-				assert(actors.equipment_containsItem(actor, oi));
-				actors.equipment_updateItemIndex(actor, oi, ni);
-			}
 		}
 	}
 	else

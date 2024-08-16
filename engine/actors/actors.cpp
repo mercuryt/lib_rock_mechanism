@@ -292,13 +292,6 @@ void Actors::load(const Json& data)
 	data["massBonusOrPenalty"].get_to(m_massBonusOrPenalty);
 	data["massModifier"].get_to(m_massModifier);
 	auto& deserializationMemo = m_area.m_simulation.getDeserializationMemo();
-	m_hasObjectives.resize(m_id.size());
-	for(const Json& pair : data["hasObjectives"])
-	{
-		ActorIndex index = pair[0].get<ActorIndex>();
-		m_hasObjectives[index] = std::make_unique<HasObjectives>(index);
-		m_hasObjectives[index]->load(pair[1], deserializationMemo, m_area, index);
-	}
 	m_skillSet.resize(m_id.size());
 	for(const Json& pair : data["skillSet"])
 	{
@@ -348,25 +341,36 @@ void Actors::load(const Json& data)
 		ActorIndex index = pair[0].get<ActorIndex>();
 		m_equipmentSet[index] = std::make_unique<EquipmentSet>(m_area, pair[1]);
 	}
-	m_canReserve.resize(m_id.size());
-	for(const Json& pair : data["canReserve"])
-	{
-		ActorIndex index = pair[0].get<ActorIndex>();
-		m_canReserve[index] = std::make_unique<CanReserve>(m_faction[index]);
-		m_canReserve[index]->load(pair[1], deserializationMemo, m_area);
-	}
 	m_hasUniform.resize(m_id.size());
 	for(const Json& pair : data["hasUniform"])
 	{
 		ActorIndex index = pair[0].get<ActorIndex>();
 		m_hasUniform[index] = std::make_unique<ActorHasUniform>();
-		m_hasUniform[index]->load(m_area, pair[1]);
+		m_hasUniform[index]->load(m_area, pair[1], m_faction[index]);
 	}
 	m_pathIter.resize(m_id.size());
 	for(const Json& pair : data["pathIter"])
 	{
 		ActorIndex index = pair[0].get<ActorIndex>();
 		m_pathIter[index] = m_path[index].begin() + pair[1].get<int>();
+	}
+}
+void Actors::loadObjectivesAndReservations(const Json& data)
+{
+	auto& deserializationMemo = m_area.m_simulation.getDeserializationMemo();
+	m_hasObjectives.resize(m_id.size());
+	for(const Json& pair : data["hasObjectives"])
+	{
+		ActorIndex index = pair[0].get<ActorIndex>();
+		m_hasObjectives[index] = std::make_unique<HasObjectives>(index);
+		m_hasObjectives[index]->load(pair[1], deserializationMemo, m_area, index);
+	}
+	m_canReserve.resize(m_id.size());
+	for(const Json& pair : data["canReserve"])
+	{
+		ActorIndex index = pair[0].get<ActorIndex>();
+		m_canReserve[index] = std::make_unique<CanReserve>(m_faction[index]);
+		m_canReserve[index]->load(pair[1], deserializationMemo, m_area);
 	}
 }
 void to_json(Json& data, const std::unique_ptr<CanReserve>& canReserve) { data = canReserve->toJson(); }
@@ -383,54 +387,55 @@ void to_json(Json& data, const std::unique_ptr<SkillSet>& skillSet) { data = ski
 Json Actors::toJson() const 
 {
 	Json output{
-		{"canReserve", m_canReserve},
-		{"hasUniform", m_hasUniform},
-		{"equipmentSet", m_equipmentSet},
-		{"id", m_id},
-		{"name", m_name},
-		{"species", m_species},
-		{"birthStep", m_birthStep},
-		{"causeOfDeath", m_causeOfDeath},
-		{"unencomberedCarryMass", m_unencomberedCarryMass},
-		{"strength", m_strength},
-		{"strengthBonusOrPenalty", m_strengthBonusOrPenalty},
-		{"strengthModifier", m_strengthModifier},
 		{"agility", m_agility},
 		{"agilityBonusOrPenalty", m_agilityBonusOrPenalty},
 		{"agilityModifier", m_agilityModifier},
+		{"birthStep", m_birthStep},
+		{"body", m_body},
+		{"canGrow", m_canGrow},
+		{"canReserve", m_canReserve},
+		{"canSee", m_canSee},
+		{"carrying", m_carrying},
+		{"causeOfDeath", m_causeOfDeath},
+		{"combatScore", m_combatScore},
+		{"coolDownDurationModifier", m_coolDownDurationModifier},
+		{"coolDownEvent", m_coolDownEvent},
+		{"destination", m_destination},
 		{"dextarity", m_dextarity},
 		{"dextarityBonusOrPenalty", m_dextarityBonusOrPenalty},
 		{"dextarityModifier", m_dextarityModifier},
+		{"equipmentSet", m_equipmentSet},
+		{"hasObjectives", m_hasObjectives},
+		{"hasUniform", m_hasUniform},
+		{"id", m_id},
 		{"mass", m_mass},
 		{"massBonusOrPenalty", m_massBonusOrPenalty},
 		{"massModifier", m_massModifier},
-		{"hasObjectives", m_hasObjectives},
-		{"body", m_body},
-		{"mustSleep", m_mustSleep},
-		{"mustEat", m_mustSleep},
-		{"mustDrink", m_mustDrink},
-		{"needsSafeTemperature", m_needsSafeTemperature},
-		{"canGrow", m_canGrow},
-		{"skillSet", m_skillSet},
-		{"carrying", m_carrying},
-		{"stamina", m_stamina},
-		{"canSee", m_canSee},
-		{"visionRange", m_visionRange},
-		{"coolDownEvent", m_coolDownEvent},
-		{"targetedBy", m_targetedBy},
-		{"target", m_target},
-		{"onMissCoolDownMelee", m_onMissCoolDownMelee},
 		{"maxMeleeRange", m_maxMeleeRange},
 		{"maxRange", m_maxRange},
-		{"coolDownDurationModifier", m_coolDownDurationModifier},
-		{"combatScore", m_combatScore},
 		{"moveEvent", m_moveEvent},
+		{"moveRetries", m_moveRetries},
+		{"mustDrink", m_mustDrink},
+		{"mustEat", m_mustSleep},
+		{"mustSleep", m_mustSleep},
+		{"name", m_name},
+		{"needsSafeTemperature", m_needsSafeTemperature},
+		{"onMissCoolDownMelee", m_onMissCoolDownMelee},
 		{"path", m_path},
 		{"pathIter", Json::array()},
-		{"destination", m_destination},
-		{"speedIndividual", m_speedIndividual},
+		{"reservations", m_canReserve},
+		{"skillSet", m_skillSet},
+		{"species", m_species},
 		{"speedActual", m_speedActual},
-		{"moveRetries", m_moveRetries}
+		{"speedIndividual", m_speedIndividual},
+		{"stamina", m_stamina},
+		{"strength", m_strength},
+		{"strengthBonusOrPenalty", m_strengthBonusOrPenalty},
+		{"strengthModifier", m_strengthModifier},
+		{"target", m_target},
+		{"targetedBy", m_targetedBy},
+		{"unencomberedCarryMass", m_unencomberedCarryMass},
+		{"visionRange", m_visionRange},
 	};
 	for(auto index : getAll())
 		output["pathIter"].push_back(m_pathIter[index] - m_path[index].begin());
@@ -593,7 +598,7 @@ ActorIndex Actors::create(ActorParamaters params)
 	bool isStatic = false;
 	MoveTypeId moveType = AnimalSpecies::getMoveType(params.species);
 	ShapeId shape = AnimalSpecies::shapeForPercentGrown(params.species, params.getPercentGrown(m_area.m_simulation));
-	Portables::create(index, moveType, shape, params.location, params.facing, isStatic);
+	Portables::create(index, moveType, shape, params.location, params.facing, params.faction, isStatic, 1u);
 	Simulation& s = m_area.m_simulation;
 	m_referenceTarget[index]->index = index;
 	m_id[index] = params.getId(s);
@@ -618,6 +623,9 @@ ActorIndex Actors::create(ActorParamaters params)
 	m_canGrow[index] = std::make_unique<CanGrow>(m_area, index, params.getPercentGrown(s));
 	m_needsSafeTemperature[index] = std::make_unique<ActorNeedsSafeTemperature>(m_area, index);
 	m_skillSet[index] = std::make_unique<SkillSet>();
+	assert(m_canReserve[index] == nullptr);
+	assert(m_hasUniform[index] == nullptr);
+	assert(m_equipmentSet[index] == nullptr);
 	// CanPickUp.
 	m_carrying[index].clear();
 	// Stamina.
@@ -781,7 +789,7 @@ void Actors::setFaction(ActorIndex index, FactionId faction)
 }
 Mass Actors::getMass(ActorIndex index) const
 {
-	return m_mass[index] + m_equipmentSet[index]->getMass() + canPickUp_getMass(index);
+	return getIntrinsicMass(index) + m_equipmentSet[index]->getMass() + canPickUp_getMass(index);
 }
 Volume Actors::getVolume(ActorIndex index) const
 {

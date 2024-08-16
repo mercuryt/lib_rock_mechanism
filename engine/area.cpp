@@ -96,9 +96,9 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	// Load sleeping spots.
 	m_hasSleepingSpots.load(data["sleepingSpots"], deserializationMemo);
 	// Load Item cargo and projects.
-	m_items->loadCargoAndCraftJobs(data["items"], deserializationMemo);
+	m_items->loadCargoAndCraftJobs(data["items"]);
 	// Load Actor objectives, following and reservations.
-	m_actors->loadObjectivesAndReservations(data["actors"], deserializationMemo);
+	m_actors->loadObjectivesAndReservations(data["actors"]);
 	// Load project workers
 	m_hasConstructionDesignations.loadWorkers(data["hasConstructionDesignations"], deserializationMemo);
 	m_hasDigDesignations.loadWorkers(data["hasDigDesignations"], deserializationMemo);

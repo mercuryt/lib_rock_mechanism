@@ -19,6 +19,11 @@ void Items::cargo_addItem(ItemIndex index, ItemIndex item, Quantity quantity)
 	else
 		m_hasCargo[index]->addItem(m_area, item);
 }
+void Items::cargo_addItemGeneric(ItemIndex index, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity)
+{
+	assert(ItemType::getIsGeneric(itemType));
+	m_hasCargo[index]->addItemGeneric(m_area, itemType, materialType, quantity);
+}
 void Items::cargo_addPolymorphic(ItemIndex index, ActorOrItemIndex actorOrItemIndex, Quantity quantity)
 {
 	assert(actorOrItemIndex.exists());

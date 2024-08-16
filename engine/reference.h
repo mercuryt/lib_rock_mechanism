@@ -5,6 +5,7 @@
 #include <cassert>
 #include <compare>
 #include <functional>
+#include <variant>
 class Area;
 // Each Item holds a reference target in a unique_ptr.
 // Code outside the engine must use an itemReference rather then storing ItemIndex.
@@ -164,6 +165,10 @@ public:
 	{ 
 		assert(exists());
 		return m_reference.index() == 1; 
+	}
+	[[nodiscard]] bool isItem() const 
+	{
+		return !isActor();
 	}
 	[[nodiscard]] bool exists() const { return m_reference.index() != 0; }
 	[[nodiscard]] bool operator==(const ActorOrItemReference& ref) const { return ref.m_reference == m_reference; }

@@ -17,6 +17,11 @@ ConstructPathRequest::ConstructPathRequest(Area& area, ConstructObjective& co, A
 	DistanceInBlocks maxRange = Config::maxRangeToSearchForConstructionDesignations;
 	createGoAdjacentToCondition(area, actor, constructCondition, m_constructObjective.m_detour, unreserved, maxRange, BlockIndex::null());
 }
+ConstructPathRequest::ConstructPathRequest(const Json& data, DeserializationMemo& deserializationMemo) : 
+	m_constructObjective(static_cast<ConstructObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
+{
+	nlohmann::from_json(data, *this);
+}
 void ConstructPathRequest::callback(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
@@ -49,12 +54,17 @@ void ConstructPathRequest::callback(Area& area, FindPathResult& result)
 			m_constructObjective.execute(area, actor);
 	}
 }
+Json ConstructPathRequest::toJson() const
+{
+	Json output;
+	nlohmann::to_json(output, *this);
+	output["objective"] = &m_constructObjective;
+	return output;
+}
 // Objective.
 ConstructObjective::ConstructObjective(const Json& data, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo), 
-	m_project(data.contains("project") ? deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()) : nullptr)
-{
-}
+	m_project(data.contains("project") ? deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()) : nullptr) { }
 Json ConstructObjective::toJson() const
 {
 	Json data = Objective::toJson();

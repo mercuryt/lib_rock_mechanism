@@ -49,13 +49,13 @@ class CraftCancelInputAction final : public InputAction
 // Drill, saw, forge, etc.
 class CraftStepTypeCategory final
 {
-	static CraftStepTypeCategory data;
 	DataVector<std::string, CraftStepTypeCategoryId> m_name;
 public:
-	static void create(std::string name) { data.m_name.add(name); }
+	static void create(std::string name);
 	[[nodiscard]] static CraftStepTypeCategoryId byName(const std::string name);
-	[[nodiscard]] static std::string getName(std::string Name);
+	[[nodiscard]] static std::string getName(CraftStepTypeCategoryId id);
 };
+inline CraftStepTypeCategory craftStepTypeCategoryData;
 // Part of the definition of a particular CraftJobType which makes a specific Item.
 struct CraftStepType final
 {
@@ -104,21 +104,21 @@ struct CraftStepProjectHasShapeDishonorCallback final : public DishonorCallback
 // Data about making a specific product type.
 class CraftJobType final
 {
-	static CraftJobType data;
 	DataVector<std::string, CraftJobTypeId> m_name;
 	DataVector<ItemTypeId, CraftJobTypeId> m_productType;
 	DataVector<Quantity, CraftJobTypeId> m_productQuantity;
 	DataVector<MaterialCategoryTypeId, CraftJobTypeId> m_materialTypeCategory;
 	DataVector<std::vector<CraftStepType>, CraftJobTypeId> m_stepTypes;
 public:
-	static void create(std::string name, ItemTypeId productType, Quantity productQuantity, MaterialCategoryTypeId category, std::vector<CraftStepType> stepType);
+	static void create(std::string name, ItemTypeId productType, Quantity productQuantity, MaterialCategoryTypeId category, std::vector<CraftStepType> stepTypes);
 	[[nodiscard]] static CraftJobTypeId byName(const std::string name);
-	[[nodiscard]] static std::string getName(CraftJobTypeId id) { return data.m_name[id]; }
-	[[nodiscard]] static ItemTypeId getProductType(CraftJobTypeId id) { return data.m_productType[id]; }
-	[[nodiscard]] static Quantity getProductQuantity(CraftJobTypeId id) { return data.m_productQuantity[id]; }
-	[[nodiscard]] static MaterialCategoryTypeId getMaterialTypeCategory(CraftJobTypeId id) { return data.m_materialTypeCategory[id]; }
-	[[nodiscard]] static std::vector<CraftStepType>& getStepTypes(CraftJobTypeId id) { return data.m_stepTypes[id]; }
+	[[nodiscard]] static std::string getName(CraftJobTypeId id);
+	[[nodiscard]] static ItemTypeId getProductType(CraftJobTypeId id);
+	[[nodiscard]] static Quantity getProductQuantity(CraftJobTypeId id);
+	[[nodiscard]] static MaterialCategoryTypeId getMaterialTypeCategory(CraftJobTypeId id);
+	[[nodiscard]] static std::vector<CraftStepType>& getStepTypes(CraftJobTypeId id);
 };
+inline CraftJobType craftJobTypeData;
 // Make a specific product.
 struct CraftJob final
 {

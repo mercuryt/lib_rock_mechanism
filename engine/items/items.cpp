@@ -87,16 +87,20 @@ void Items::onChangeAmbiantSurfaceTemperature()
 }
 ItemIndex Items::create(ItemParamaters itemParamaters)
 {
-	ItemIndex index = HasShapes::getNextIndex().toItem();
-	Portables::create(index, ItemType::getMoveType(itemParamaters.itemType), ItemType::getShape(itemParamaters.itemType), itemParamaters.location, itemParamaters.facing, itemParamaters.isStatic);
+	ItemIndex index = HasShapes::getNextIndex().toItem()
+	Portables::create(index, ItemType::getMoveType(itemParamaters.itemType), ItemType::getShape(itemParamaters.itemType), itemParamaters.location, itemParamaters.facing, itemParamaters.faction, itemParamaters.isStatic, itemParamaters.quantity);
+	assert(m_canBeStockPiled[index] == nullptr);
+	m_craftJobForWorkPiece[index] = itemParamaters.craftJobForWorkPiece;
+	assert(m_hasCargo[index] == nullptr);
+	m_id[index] = itemParamaters.id.exists() ? itemParamaters.id : m_area.m_simulation.m_items.getNextId();
+	m_installed.set(index, itemParamaters.installed);
 	ItemTypeId itemType = m_itemType[index] = itemParamaters.itemType;
 	m_materialType[index] = itemParamaters.materialType;
-	m_id[index] = itemParamaters.id.exists() ? itemParamaters.id : m_area.m_simulation.m_items.getNextId();
-	m_quality[index] = itemParamaters.quality;
+	m_name[index] = itemParamaters.name;
 	m_percentWear[index] = itemParamaters.percentWear;
+	m_quality[index] = itemParamaters.quality;
 	m_quantity[index] = itemParamaters.quantity;
 	m_referenceTarget[index] = std::make_unique<ItemReferenceTarget>(index);
-	m_installed.set(index, itemParamaters.installed);
 	if(ItemType::getGeneric(itemType))
 	{
 		assert(m_quality[index].empty());
@@ -106,38 +110,44 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 		assert(m_quantity[index] == 1);
 	if(itemParamaters.location.exists())
 		setLocationAndFacing(index, itemParamaters.location, itemParamaters.facing);
-	assert(m_canBeStockPiled[index] == nullptr);
 	return index;
 }
 void Items::resize(HasShapeIndex newSize)
 {
 	Portables::resize(newSize);
 	ItemIndex size = newSize.toItem();
-	m_materialType.resize(size);
-	m_id.resize(size);
-	m_quality.resize(size);
-	m_percentWear.resize(size);
-	m_quantity.resize(size);
-	m_installed.resize(size);
 	m_canBeStockPiled.resize(size);
+	m_craftJobForWorkPiece.resize(size);
 	m_hasCargo.resize(size);
+	m_id.resize(size);
+	m_installed.resize(size);
+	m_itemType.resize(size);
+	m_materialType.resize(size);
+	m_name.resize(size);
+	m_percentWear.resize(size);
+	m_quality.resize(size);
+	m_quantity.resize(size);
+	m_referenceTarget.resize(size);
 }
 void Items::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 {
 	Portables::moveIndex(oldIndex, newIndex);
 	ItemIndex o = oldIndex.toItem();
 	ItemIndex n = newIndex.toItem();
-	m_referenceTarget[n] = std::move(m_referenceTarget[o]);
-	m_referenceTarget[n]->index = n;
-	m_materialType[n] = m_materialType[o];
-	m_id[n] = m_id[o];
-	m_quality[n] = m_quality[o];
-	m_percentWear[n] = m_percentWear[o];
-	m_quantity[n] = m_quantity[o];
-	m_installed.set(n, m_installed[o]);
 	m_canBeStockPiled[n] = std::move(m_canBeStockPiled[o]);
+	m_craftJobForWorkPiece[n] = m_craftJobForWorkPiece[o];
 	m_hasCargo[n] = std::move(m_hasCargo[o]);
 	m_hasCargo[n]->updateCarrierIndexForAllCargo(m_area, n);
+	m_id[n] = m_id[o];
+	m_installed.set(n, m_installed[o]);
+	m_itemType[n] = m_itemType[o];
+	m_materialType[n] = m_materialType[o];
+	m_name[n] = m_name[o];
+	m_percentWear[n] = m_percentWear[o];
+	m_quality[n] = m_quality[o];
+	m_quantity[n] = m_quantity[o];
+	m_referenceTarget[n] = std::move(m_referenceTarget[o]);
+	m_referenceTarget[n]->index = n;
 	Blocks& blocks = m_area.getBlocks();
 	for(BlockIndex block : m_blocks[newIndex])
 		blocks.item_updateIndex(block, o, n);
@@ -338,6 +348,9 @@ void Items::load(const Json& data)
 		auto& canBeStockPiled = m_canBeStockPiled[index] = std::make_unique<ItemCanBeStockPiled>();
 		canBeStockPiled->load(pair[1], m_area);
 	}
+}
+void Items::loadCargoAndCraftJobs(const Json& data)
+{
 	m_craftJobForWorkPiece.resize(m_id.size());
 	for(const Json& pair : data["craftJobForWorkPiece"])
 	{
@@ -401,7 +414,7 @@ void ItemHasCargo::addActor(Area& area, ActorIndex actor)
 	assert(m_volume + actors.getVolume(actor) <= m_maxVolume);
 	assert(!containsActor(actor));
 	assert(m_fluidVolume == 0 && m_fluidType.empty());
-	getActors().add(actor);
+	m_actors.add(actor);
 	m_volume += actors.getVolume(actor);
 	m_mass += actors.getMass(actor);
 }
@@ -412,7 +425,7 @@ void ItemHasCargo::addItem(Area& area, ItemIndex item)
 	assert(m_volume + items.getVolume(item) <= m_maxVolume);
 	assert(!containsItem(item));
 	assert(m_fluidVolume == 0 && m_fluidType.empty());
-	getItems().add(item);
+	m_items.add(item);
 	m_volume += items.getVolume(item);
 	m_mass += items.getMass(item);
 }
@@ -467,7 +480,7 @@ void ItemHasCargo::removeActor(Area& area, ActorIndex actor)
 	Actors& actors = area.getActors();
 	m_volume -= actors.getVolume(actor);
 	m_mass -= actors.getMass(actor);
-	getActors().remove(actor);
+	m_actors.remove(actor);
 }
 void ItemHasCargo::removeItem(Area& area, ItemIndex item)
 {
@@ -475,7 +488,7 @@ void ItemHasCargo::removeItem(Area& area, ItemIndex item)
 	Items& items = area.getItems();
 	m_volume -= items.getVolume(item);
 	m_mass -= items.getMass(item);
-	getItems().remove(item);
+	m_items.remove(item);
 }
 void ItemHasCargo::removeItemGeneric(Area& area, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity)
 {
@@ -485,7 +498,7 @@ void ItemHasCargo::removeItemGeneric(Area& area, ItemTypeId itemType, MaterialTy
 		{
 			if(items.getQuantity(item) == quantity)
 				// TODO: should be reusing an iterator here.
-				getItems().remove(item);
+				m_items.remove(item);
 			else
 			{
 				assert(quantity < items.getQuantity(item));
@@ -512,6 +525,7 @@ void ItemHasCargo::updateCarrierIndexForAllCargo(Area& area, ItemIndex newIndex)
 		actors.updateCarrierIndex(actor, newIndex);
 }
 bool ItemHasCargo::canAddActor(Area& area, ActorIndex actor) const { return m_volume + area.getActors().getVolume(actor) <= m_maxVolume; }
+bool ItemHasCargo::canAddItem(Area& area, ItemIndex item) const { return m_volume + area.getItems().getVolume(item) <= m_maxVolume; }
 bool ItemHasCargo::canAddFluid(FluidTypeId fluidType) const { return m_fluidType.empty() || m_fluidType == fluidType; }
 bool ItemHasCargo::containsGeneric(Area& area, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity) const
 {

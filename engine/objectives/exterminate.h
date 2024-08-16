@@ -16,7 +16,6 @@ public:
 	void delay(Area&, ActorIndex) { }
 	void reset(Area&, ActorIndex) { }
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Exterminate; }
 	[[nodiscard]] std::string name() const { return "exterminate"; }
 	friend class ExterminateObjectiveScheduledEvent;
 };
