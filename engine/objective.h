@@ -13,7 +13,6 @@
 #include <queue>
 #include <utility>
 #include <vector>
-#include <unordered_map>
 
 class WaitEvent;
 class Objective;
@@ -143,7 +142,7 @@ class SupressedNeedEvent final : public ScheduledEvent
 {
 	SupressedNeed& m_supressedNeed;
 public:
-	SupressedNeedEvent(Area& area, SupressedNeed& sn, const Step start = Step::create(0));
+	SupressedNeedEvent(Area& area, SupressedNeed& sn, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };
@@ -168,7 +167,8 @@ class HasObjectives final
 	// Voluntary tasks like harvest, dig, build, craft, guard, station, and kill go into task queue. Station and kill both have higher priority then baseline needs like eat but lower then needs like flee.
 	// findNewTask only adds one task at a time so there usually is only once objective in the queue. More then one task objective can be added by the user manually.
 	std::list<std::unique_ptr<Objective>> m_tasksQueue;
-	ObjectiveTypeIdMap<SupressedNeed> m_supressedNeeds;
+	// Map is hash because SupressedNeed has no move constructor because it HasScheduledEvent.
+	std::unordered_map<ObjectiveTypeId, SupressedNeed, ObjectiveTypeId::Hash> m_supressedNeeds;
 	Objective* m_currentObjective = nullptr;
 	ActorIndex m_actor;
 

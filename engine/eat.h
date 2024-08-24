@@ -30,7 +30,7 @@ public:
 	void eat(Area& area, Mass mass);
 	void notHungry(Area& area);
 	void setNeedsFood(Area& area);
-	void onDeath();
+	void unschedule();
 	[[nodiscard]] bool needsFood() const;
 	[[nodiscard]] Mass massFoodForBodyMass(Area& area) const;
 	[[nodiscard]] Mass getMassFoodRequested() const;
@@ -52,7 +52,7 @@ class HungerEvent final : public ScheduledEvent
 {
 	ActorIndex m_actor;
 public:
-	HungerEvent(Area& area, const Step delay, ActorIndex a, const Step start = Step::create(0));
+	HungerEvent(Area& area, const Step delay, ActorIndex a, const Step start = Step::null());
 	void execute(Simulation&, Area*);
 	void clearReferences(Simulation&, Area*);
 };

@@ -2,6 +2,7 @@
 
 #include "config.h"
 #include "dataVector.h"
+#include "idTypes.h"
 #include "items/itemQuery.h"
 #include "types.h"
 
@@ -95,6 +96,7 @@ class MaterialType final
 	DataVector<TemperatureDelta, MaterialTypeId> m_flameTemperature; // Temperature given off by flames from this material. The temperature given off by burn stage is a fraction of flame stage based on a config setting.
 public:
 	static MaterialTypeId create(MaterialTypeParamaters& p);
+	static void setConstructionParamaters(MaterialTypeId materialType, const MaterialTypeConstructionDataParamaters& p);
 	[[nodiscard]] static bool empty();
 	[[nodiscard]] static MaterialTypeId byName(std::string name);
 	[[nodiscard]] static std::string& getName(MaterialTypeId id);

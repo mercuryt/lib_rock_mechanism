@@ -28,10 +28,9 @@ protected:
 	DataVector<ActorOrItemIndex, HasShapeIndex> m_leader;
 	DataVector<ActorOrItemIndex, HasShapeIndex> m_carrier;
 	DataVector<MoveTypeId, HasShapeIndex> m_moveType;
-	bool isActors;
-	Portables(Area& area);
-	void create(HasShapeIndex index, MoveTypeId moveType, ShapeId shape, BlockIndex location, Facing facing, FactionId faction, bool isStatic, Quantity quantity);
-	void destroy(HasShapeIndex index);
+	bool m_isActors;
+	Portables(Area& area, bool isActors);
+	void create(HasShapeIndex index, MoveTypeId moveType, ShapeId shape, FactionId faction, bool isStatic, Quantity quantity);
 	void log(HasShapeIndex index) const;
 	void updateLeaderSpeedActual(HasShapeIndex index);
 	void updateIndexInCarrier(HasShapeIndex oldIndex, HasShapeIndex newIndex);

@@ -3,7 +3,6 @@
 #include "index.h"
 #include <cstdint>
 #include <functional>
-#include <unordered_set>
 class Area;
 class Actor;
 class VisionRequest;
@@ -11,6 +10,7 @@ class VisionFacade;
 
 struct LocationBucket final
 {
+	//TODO: Use HybridSequence.
 	std::vector<BlockIndices> m_blocksMultiTileActors;
 	std::vector<ActorIndex> m_actorsMultiTile;
 	std::vector<BlockIndex> m_blocksSingleTileActors;

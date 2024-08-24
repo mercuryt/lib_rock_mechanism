@@ -82,7 +82,7 @@ void MustDrink::setNeedsFluid(Area& area)
 	else
 		actors.die(actor, CauseOfDeath::thirst);
 }
-void MustDrink::onDeath()
+void MustDrink::unschedule()
 {
 	m_thirstEvent.maybeUnschedule();
 }

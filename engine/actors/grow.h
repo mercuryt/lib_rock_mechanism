@@ -21,6 +21,7 @@ public:
 	void stop();
 	void maybeStart(Area& area);
 	void increment(Area& area);
+	void unschedule();
 	[[nodiscard]] bool canGrowCurrently(Area& area) const;
 	[[nodiscard]] Percent growthPercent() const;
 	[[nodiscard]] bool isGrowing() const { return !m_event.isPaused(); }
@@ -36,7 +37,7 @@ class AnimalGrowthEvent final : public ScheduledEvent
 public:
 	// Most events take area as their first argument but events which have resume called on them must take delay as first argument.
 	// TODO: Make all events take delay as first argument.
-	AnimalGrowthEvent(Step delay, Area& area, CanGrow& cg, Step start = Step::create(0));
+	AnimalGrowthEvent(Step delay, Area& area, CanGrow& cg, Step start = Step::null());
 	void execute(Simulation&, Area* area) { m_canGrow.increment(*area); }
 	void clearReferences(Simulation&, Area*){ m_canGrow.m_event.clearPointer(); }
 };

@@ -2,12 +2,12 @@
 
 #include "config.h"
 #include "cuboid.h"
+#include "index.h"
 #include "input.h"
 #include "reservable.h"
 #include "eventSchedule.h"
 #include "project.h"
 
-#include <unordered_map>
 #include <vector>
 
 class ConstructPathRequest;
@@ -70,20 +70,19 @@ struct ConstructionLocationDishonorCallback final : public DishonorCallback
 };
 class HasConstructionDesignationsForFaction final
 {
-	Area& m_area;
 	FactionId m_faction;
 	//TODO: More then one construct project targeting a given block should be able to exist simultaniously.
-	BlockIndexMap<ConstructProject> m_data;
+	std::unordered_map<BlockIndex, ConstructProject, BlockIndex::Hash> m_data;
 public:
-	HasConstructionDesignationsForFaction(FactionId p, Area& a) : m_area(a), m_faction(p) { }
+	HasConstructionDesignationsForFaction(FactionId p) : m_faction(p) { }
 	HasConstructionDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, FactionId faction);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	// If blockFeatureType is null then construct a wall rather then a feature.
-	void designate(BlockIndex block, const BlockFeatureType* blockFeatureType, MaterialTypeId materialType);
+	void designate(Area& area, BlockIndex block, const BlockFeatureType* blockFeatureType, MaterialTypeId materialType);
 	void undesignate(BlockIndex block);
-	void remove(BlockIndex block);
-	void removeIfExists(BlockIndex block);
+	void remove(Area& area, BlockIndex block);
+	void removeIfExists(Area& area, BlockIndex block);
 	bool contains(BlockIndex block) const;
 	const BlockFeatureType* getForBlock(BlockIndex block) const;
 	bool empty() const;
@@ -93,7 +92,7 @@ public:
 class AreaHasConstructionDesignations final
 {
 	Area& m_area;
-	FactionIdMap<HasConstructionDesignationsForFaction> m_data;
+	std::unordered_map<FactionId, HasConstructionDesignationsForFaction, FactionId::Hash> m_data;
 public:
 	AreaHasConstructionDesignations(Area& a) : m_area(a) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);

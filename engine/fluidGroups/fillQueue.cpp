@@ -17,7 +17,7 @@ void FillQueue::buildFor(BlockIndices& members)
 				blocks.fluid_canEnterCurrently(adjacent, m_fluidGroup.m_fluidType) &&
 				blocks.fluid_volumeOfTypeContains(adjacent, m_fluidGroup.m_fluidType) != Config::maxBlockVolume
 			)
-				addBlock(adjacent);
+				maybeAddBlock(adjacent);
 	}
 }
 void FillQueue::initalizeForStep()

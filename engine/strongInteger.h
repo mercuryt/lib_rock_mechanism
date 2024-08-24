@@ -13,39 +13,39 @@ public:
 	constexpr StrongInteger(T d) : data(d) { }
 	constexpr StrongInteger(const StrongInteger<Derived, T, NULL_VALUE>& o) { data = o.data; }
 	constexpr StrongInteger(const StrongInteger<Derived, T, NULL_VALUE>&& o) { data = o.data; }
-	constexpr auto operator=(const StrongInteger<Derived, T, NULL_VALUE>& o) { data = o.data; return static_cast<Derived&>(*this); }
-	constexpr auto operator=(const T& d) { data = d; return static_cast<Derived&>(*this); }
+	constexpr Derived operator=(const StrongInteger<Derived, T, NULL_VALUE>& o) { data = o.data; return static_cast<Derived&>(*this); }
+	constexpr Derived operator=(const T& d) { data = d; return static_cast<Derived&>(*this); }
 	constexpr void set(T d) { data = d; }
 	constexpr void clear() { data = NULL_VALUE; }
 	constexpr void reserve(int size) { data.reserve(size); }
-	constexpr auto operator+=(const StrongInteger<Derived, T, NULL_VALUE>& other) { data += other.data; return static_cast<Derived&>(*this); }
-	constexpr auto operator-=(const StrongInteger<Derived, T, NULL_VALUE>& other) { data -= other.data; return static_cast<Derived&>(*this); }
-	constexpr auto operator+=(T other) { data += other; return static_cast<Derived&>(*this); }
-	constexpr auto operator-=(T other) { data -= other; return static_cast<Derived&>(*this); }
-	constexpr auto operator++() { ++data; return static_cast<Derived&>(*this); }
-	constexpr auto operator--() { --data; return static_cast<Derived&>(*this); }
-	constexpr auto operator-() const { return Derived::create(-data); }
-	constexpr auto operator*=(T other) { data *= other; return static_cast<Derived&>(*this); }
-	constexpr auto operator*=(const StrongInteger<Derived, T, NULL_VALUE>& other) { data *= other.data; return static_cast<Derived&>(*this); }
-	constexpr auto operator/=(T other) { data *= other; return static_cast<Derived&>(*this); }
-	constexpr auto operator/=(const StrongInteger<Derived, T, NULL_VALUE>& other) { data *= other.data; return static_cast<Derived&>(*this); }
+	constexpr Derived operator+=(const StrongInteger<Derived, T, NULL_VALUE>& other) { data += other.data; return static_cast<Derived&>(*this); }
+	constexpr Derived operator-=(const StrongInteger<Derived, T, NULL_VALUE>& other) { data -= other.data; return static_cast<Derived&>(*this); }
+	constexpr Derived operator+=(T other) { data += other; return static_cast<Derived&>(*this); }
+	constexpr Derived operator-=(T other) { data -= other; return static_cast<Derived&>(*this); }
+	constexpr Derived operator++() { ++data; return static_cast<Derived&>(*this); }
+	constexpr Derived operator--() { --data; return static_cast<Derived&>(*this); }
+	constexpr Derived operator-() const { return Derived::create(-data); }
+	constexpr Derived operator*=(T other) { data *= other; return static_cast<Derived&>(*this); }
+	constexpr Derived operator*=(const StrongInteger<Derived, T, NULL_VALUE>& other) { data *= other.data; return static_cast<Derived&>(*this); }
+	constexpr Derived operator/=(T other) { data *= other; return static_cast<Derived&>(*this); }
+	constexpr Derived operator/=(const StrongInteger<Derived, T, NULL_VALUE>& other) { data *= other.data; return static_cast<Derived&>(*this); }
 	[[nodiscard]] constexpr T get() const { return data; }
 	[[nodiscard]] T& getReference() { return data; }
 	[[nodiscard]] constexpr static auto create(T d){ Derived der; der.set(d); return der; }
 	[[nodiscard]] constexpr static auto null() { return Derived::create(NULL_VALUE); }
-	[[nodiscard]] constexpr auto absoluteValue() { return Derived::create(std::abs(data)); }
-	[[nodiscard]] constexpr auto operator++(int) { T d = data; ++data; return Derived::create(d); }
-	[[nodiscard]] constexpr auto operator--(int) { T d = data; --data; return Derived::create(d); }
+	[[nodiscard]] constexpr Derived absoluteValue() { return Derived::create(std::abs(data)); }
+	[[nodiscard]] constexpr Derived operator++(int) { T d = data; ++data; return Derived::create(d); }
+	[[nodiscard]] constexpr Derived operator--(int) { T d = data; --data; return Derived::create(d); }
 	[[nodiscard]] constexpr bool operator==(const StrongInteger<Derived, T, NULL_VALUE>& o) const { return o.data == data; }
 	[[nodiscard]] constexpr std::strong_ordering operator<=>(const StrongInteger<Derived, T, NULL_VALUE>& o) const { return data <=> o.data; }
-	[[nodiscard]] constexpr auto operator+(const StrongInteger<Derived, T, NULL_VALUE>& other) const { return Derived::create(data + other.data); }
-	[[nodiscard]] constexpr auto operator+(const T& other) const { return Derived::create(data + other); }
-	[[nodiscard]] constexpr auto operator-(const StrongInteger<Derived, T, NULL_VALUE>& other) const { return Derived::create(data - other.data); }
-	[[nodiscard]] constexpr auto operator-(const T& other) const { return Derived::create(data - other); }
-	[[nodiscard]] constexpr auto operator*(const StrongInteger<Derived, T, NULL_VALUE>& other) const { return Derived::create(data * other.data); }
-	[[nodiscard]] constexpr auto operator*(const T& other) const { return Derived::create(data * other); }
-	[[nodiscard]] constexpr auto operator/(const float& other) const { return Derived::create(data / other); }
-	[[nodiscard]] constexpr auto operator/(const StrongInteger<Derived, T, NULL_VALUE>& other) const { return Derived::create(data / other.data); }
+	[[nodiscard]] constexpr Derived operator+(const StrongInteger<Derived, T, NULL_VALUE>& other) const { return Derived::create(data + other.data); }
+	[[nodiscard]] constexpr Derived operator+(const T& other) const { return Derived::create(data + other); }
+	[[nodiscard]] constexpr Derived operator-(const StrongInteger<Derived, T, NULL_VALUE>& other) const { return Derived::create(data - other.data); }
+	[[nodiscard]] constexpr Derived operator-(const T& other) const { return Derived::create(data - other); }
+	[[nodiscard]] constexpr Derived operator*(const StrongInteger<Derived, T, NULL_VALUE>& other) const { return Derived::create(data * other.data); }
+	[[nodiscard]] constexpr Derived operator*(const T& other) const { return Derived::create(data * other); }
+	[[nodiscard]] constexpr Derived operator/(const float& other) const { return Derived::create(data / other); }
+	[[nodiscard]] constexpr Derived operator/(const StrongInteger<Derived, T, NULL_VALUE>& other) const { return Derived::create(data / other.data); }
 	struct Hash { [[nodiscard]] constexpr std::size_t operator()(const StrongInteger<Derived, T, NULL_VALUE>& index) const { return index.get(); } };
 	[[nodiscard]] constexpr bool exists() const { return data != NULL_VALUE; }
 	[[nodiscard]] constexpr bool empty() const { return data == NULL_VALUE; }
@@ -66,6 +66,7 @@ public:
 	void remove(std::vector<StrongInteger>::iterator iter) { (*iter) = data.back(); data.pop_back(); }
 	template <class Predicate>
 	void remove_if(Predicate&& predicate) { std::ranges::remove_if(data, predicate); }
+	void maybeRemove(StrongInteger index) { auto found = find(index); if(found != data.end()) remove(found); }
 	void update(StrongInteger oldIndex, StrongInteger newIndex) { assert(!contains(newIndex)); auto found = find(oldIndex); assert(found != data.end()); (*found) = newIndex;}
 	void clear() { data.clear(); }
 	void reserve(int size) { data.reserve(size); }

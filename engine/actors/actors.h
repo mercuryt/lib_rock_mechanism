@@ -18,7 +18,6 @@
 #include "actors/uniform.h"
 #include <memory>
 
-struct shape;
 class Project;
 class AttackCoolDownEvent;
 class GetIntoAttackPositionPathRequest;
@@ -77,8 +76,6 @@ class Actors final : public Portables
 	DataVector<Project*, ActorIndex> m_project;
 	DataVector<Step, ActorIndex> m_birthStep;
 	DataVector<CauseOfDeath, ActorIndex> m_causeOfDeath;
-	DataVector<Mass, ActorIndex> m_unencomberedCarryMass;
-	DataVector<BlockIndices, HasShapeIndex> m_leadFollowPath;
 	DataVector<AttributeLevel, ActorIndex> m_strength;
 	DataVector<AttributeLevelBonusOrPenalty, ActorIndex> m_strengthBonusOrPenalty;
 	DataVector<float, ActorIndex> m_strengthModifier;
@@ -91,13 +88,15 @@ class Actors final : public Portables
 	DataVector<Mass, ActorIndex> m_mass;
 	DataVector<int32_t, ActorIndex> m_massBonusOrPenalty;
 	DataVector<float, ActorIndex> m_massModifier;
+	DataVector<Mass, ActorIndex> m_unencomberedCarryMass;
+	DataVector<BlockIndices, HasShapeIndex> m_leadFollowPath;
 	DataVector<std::unique_ptr<HasObjectives>, ActorIndex> m_hasObjectives;
 	DataVector<std::unique_ptr<Body>, ActorIndex> m_body;
 	DataVector<std::unique_ptr<MustSleep>, ActorIndex> m_mustSleep;
 	DataVector<std::unique_ptr<MustDrink>, ActorIndex> m_mustDrink;
 	DataVector<std::unique_ptr<MustEat>, ActorIndex> m_mustEat; 
-	DataVector<std::unique_ptr<CanGrow>, ActorIndex> m_canGrow;
 	DataVector<std::unique_ptr<ActorNeedsSafeTemperature>, ActorIndex> m_needsSafeTemperature;
+	DataVector<std::unique_ptr<CanGrow>, ActorIndex> m_canGrow;
 	DataVector<std::unique_ptr<SkillSet>, ActorIndex> m_skillSet;
 	DataVector<std::unique_ptr<CanReserve>, ActorIndex> m_canReserve;
 	DataVector<std::unique_ptr<ActorHasUniform>, ActorIndex> m_hasUniform;
@@ -131,11 +130,13 @@ class Actors final : public Portables
 	DataVector<Speed, ActorIndex> m_speedIndividual;
 	DataVector<Speed, ActorIndex> m_speedActual;
 	DataVector<uint8_t, ActorIndex> m_moveRetries;
-	void resize(HasShapeIndex newSize);
-	void moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex);
+	void resize(ActorIndex newSize);
+	void moveIndex(ActorIndex oldIndex, ActorIndex newIndex);
+	void destroy(ActorIndex index);
 	[[nodiscard]] bool indexCanBeMoved(HasShapeIndex index) const;
 public:
 	Actors(Area& area);
+	~Actors();
 	void load(const Json& data);
 	void loadObjectivesAndReservations(const Json& data);
 	void onChangeAmbiantSurfaceTemperature();
@@ -319,8 +320,8 @@ public:
 	[[nodiscard]] bool canPickUp_anyWithMassUnencombered(ActorIndex index, Mass mass) const;
 	[[nodiscard]] Quantity canPickUp_quantityWhichCanBePickedUpUnencombered(ActorIndex index, ItemTypeId itemType, MaterialTypeId materialType) const;
 	[[nodiscard]] bool canPickUp_exists(ActorIndex index) const { return m_carrying[index].exists(); }
-	[[nodiscard]] bool canPickUp_isCarryingActor(ActorIndex index, ActorIndex actor) const { return m_carrying[index].exists() && m_carrying[index].isActor() && m_carrying[index].get() == actor; }
-	[[nodiscard]] bool canPickUp_isCarryingItem(ActorIndex index, ItemIndex item) const { return m_carrying[index].exists() && m_carrying[index].isItem() && m_carrying[index].get() == item; }
+	[[nodiscard]] bool canPickUp_isCarryingActor(ActorIndex index, ActorIndex actor) const { return m_carrying[index].exists() && m_carrying[index].isActor() && m_carrying[index].get().toActor() == actor; }
+	[[nodiscard]] bool canPickUp_isCarryingItem(ActorIndex index, ItemIndex item) const { return m_carrying[index].exists() && m_carrying[index].isItem() && m_carrying[index].get().toItem() == item; }
 	[[nodiscard]] bool canPickUp_isCarryingItemGeneric(ActorIndex index, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity) const;
 	[[nodiscard]] bool canPickUp_isCarryingFluidType(ActorIndex index, FluidTypeId fluidType) const;
 	[[nodiscard]] bool canPickUp_isCarryingPolymorphic(ActorIndex index, ActorOrItemIndex actorOrItemIndex) const;
@@ -499,22 +500,22 @@ class MoveEvent final : public ScheduledEvent
 {
 	ActorIndex m_actor;
 public:
-	MoveEvent(Step delay, Area& area, ActorIndex actor, const Step start = Step::create(0));
+	MoveEvent(Step delay, Area& area, ActorIndex actor, const Step start = Step::null());
 	MoveEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
-	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_actor == oldIndex); m_actor = ActorIndex::cast(newIndex); }
+	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_actor == oldIndex.toActor()); m_actor = ActorIndex::cast(newIndex); }
 	[[nodiscard]] Json toJson() const;
 };
 class AttackCoolDownEvent final : public ScheduledEvent
 {
 	ActorIndex m_actor;
 public:
-	AttackCoolDownEvent(Area& area, ActorIndex index, Step duration, const Step start = Step::create(0));
+	AttackCoolDownEvent(Area& area, ActorIndex index, Step duration, const Step start = Step::null());
 	AttackCoolDownEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
-	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_actor == oldIndex); m_actor = ActorIndex::cast(newIndex); }
+	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_actor == oldIndex.toActor()); m_actor = ActorIndex::cast(newIndex); }
 	[[nodiscard]] Json toJson() const;
 };
 class GetIntoAttackPositionPathRequest final : public PathRequest
@@ -526,9 +527,10 @@ public:
 	GetIntoAttackPositionPathRequest(Area& area, ActorIndex a, ActorIndex t, DistanceInBlocksFractional ar);
 	GetIntoAttackPositionPathRequest(Area& area, const Json& data);
 	void callback(Area& area, FindPathResult&);
-	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_actor == oldIndex); m_actor = ActorIndex::cast(newIndex); }
+	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_actor == oldIndex.toActor()); m_actor = ActorIndex::cast(newIndex); }
 	[[nodiscard]] Json toJson() const;
 };
+inline void to_json(Json& data, const std::unique_ptr<GetIntoAttackPositionPathRequest>& pathRequest) { data = pathRequest->toJson(); }
 struct Attack final
 {
 	AttackTypeId attackType;

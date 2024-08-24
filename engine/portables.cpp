@@ -13,16 +13,16 @@
 #include <cstdint>
 #include <memory>
 
-Portables::Portables(Area& area) : HasShapes(area) { }
+Portables::Portables(Area& area, bool isActors) : HasShapes(area), m_isActors(isActors) { }
 void Portables::resize(HasShapeIndex newSize)
 {
 	HasShapes::resize(newSize);
-	m_moveType.resize(newSize.get());
-	m_destroy.resize(newSize.get());
-	m_reservables.resize(newSize.get());
-	m_follower.resize(newSize.get());
-	m_leader.resize(newSize.get());
-	m_carrier.resize(newSize.get());
+	m_moveType.resize(newSize);
+	m_destroy.resize(newSize);
+	m_reservables.resize(newSize);
+	m_follower.resize(newSize);
+	m_leader.resize(newSize);
+	m_carrier.resize(newSize);
 }
 void Portables::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 {
@@ -64,25 +64,15 @@ void Portables::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 		}
 	}
 }
-void Portables::create(HasShapeIndex index, MoveTypeId moveType, ShapeId shape, BlockIndex location, Facing facing, FactionId faction, bool isStatic, Quantity quantity)
+void Portables::create(HasShapeIndex index, MoveTypeId moveType, ShapeId shape, FactionId faction, bool isStatic, Quantity quantity)
 {
-	HasShapes::create(index, shape, location, facing, faction, isStatic);
+	HasShapes::create(index, shape, faction, isStatic);
 	m_moveType[index] = moveType;
 	m_reservables[index] = std::make_unique<Reservable>(quantity);
 	assert(m_destroy[index] == nullptr);
-	assert(m_reservables[index] == nullptr);
 	assert(m_follower[index].empty());
 	assert(m_leader[index].empty());
 	assert(m_carrier[index].empty());
-}
-void Portables::destroy(HasShapeIndex index)
-{
-	m_destroy[index] = nullptr;
-	m_reservables[index] = nullptr;
-	assert(m_follower[index].empty());
-	assert(m_leader[index].empty());
-	assert(m_carrier[index].empty());
-	HasShapes::destroy(index);
 }
 void Portables::log(HasShapeIndex index) const
 {
@@ -94,7 +84,7 @@ void Portables::log(HasShapeIndex index) const
 }
 ActorOrItemIndex Portables::getActorOrItemIndex(HasShapeIndex index)
 {
-	if(isActors)
+	if(m_isActors)
 		return ActorOrItemIndex::createForActor(ActorIndex::cast(index));
 	else
 		return ActorOrItemIndex::createForItem(ItemIndex::cast(index));
@@ -180,32 +170,29 @@ void Portables::leadAndFollowDisband(HasShapeIndex index)
 	if(m_leader[index].exists())
 		unfollow(index);
 	else
-		assert(isActors);
+		assert(m_isActors);
 }
 bool Portables::isFollowing(HasShapeIndex index) const
 {
-	if(!m_follower[index].exists())
-		return false;
-	assert(m_follower[index].exists());
-	return true;
+	return m_leader[index].exists();
 }
 bool Portables::isLeading(HasShapeIndex index) const
 {
-	return !m_leader[index].exists();
+	return m_follower[index].exists();
 }
 bool Portables::isLeadingActor(HasShapeIndex index, ActorIndex actor) const
 {
 	if(!isLeading(index))
 		return false;
 	const auto& leader = m_leader[index];
-	return leader.isActor() && leader.get() == actor;
+	return leader.isActor() && leader.getActor() == actor;
 }
 bool Portables::isLeadingItem(HasShapeIndex index, ItemIndex item) const
 {
 	if(!isLeading(index))
 		return false;
 	const auto& leader = m_leader[index];
-	return leader.isItem() && leader.get() == item;
+	return leader.isItem() && leader.getItem() == item;
 }
 bool Portables::isLeadingPolymorphic(HasShapeIndex index, ActorOrItemIndex actorOrItem) const
 {
@@ -213,7 +200,7 @@ bool Portables::isLeadingPolymorphic(HasShapeIndex index, ActorOrItemIndex actor
 }
 Speed Portables::lead_getSpeed(HasShapeIndex index)
 {
-	assert(isActors);
+	assert(m_isActors);
 	ActorIndex actorIndex = ActorIndex::cast(index);
 	assert(!m_area.getActors().isFollowing(actorIndex));
 	assert(m_area.getActors().isLeading(actorIndex));
@@ -235,7 +222,7 @@ ActorIndex Portables::getLineLeader(HasShapeIndex index)
 	if(!leader.exists())
 	{
 		assert(m_follower[index].exists());
-		assert(isActors);
+		assert(m_isActors);
 		return ActorIndex::cast(index);
 	}
 	if(leader.isActor())
@@ -307,7 +294,7 @@ void Portables::updateIndexInCarrier(HasShapeIndex oldIndex, HasShapeIndex newIn
 		// Carrier is actor, either via canPickUp or equipmentSet.
 		ActorIndex actor = ActorIndex::cast(m_carrier[newIndex].get());
 		Actors& actors = m_area.getActors();
-		if(isActors)
+		if(m_isActors)
 		{
 			// actor is carrying actor
 			ActorIndex oi = ActorIndex::cast(oldIndex);
@@ -329,7 +316,7 @@ void Portables::updateIndexInCarrier(HasShapeIndex oldIndex, HasShapeIndex newIn
 		ItemIndex item = ItemIndex::cast(m_carrier[newIndex].get());
 		Items& items = m_area.getItems();
 		assert(ItemType::getInternalVolume(items.getItemType(item)) != 0);
-		if(isActors)
+		if(m_isActors)
 		{
 			ActorIndex oi = ActorIndex::cast(oldIndex);
 			ActorIndex ni = ActorIndex::cast(newIndex);

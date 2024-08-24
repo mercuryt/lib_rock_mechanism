@@ -13,7 +13,6 @@
 #include "types.h"
 #include "callbackTypes.h"
 #include "dataVector.h"
-#include "../lib/dynamic_bitset.hpp"
 
 #include <pthread.h>
 
@@ -55,7 +54,8 @@ class TerrainFacade final
 	DataVector<BlockIndex, PathRequestIndex> m_pathRequestHuristic;
 	DataVector<FindPathResult, PathRequestIndex> m_pathRequestResultsWithHuristic;
 	DataVector<PathRequest*, PathRequestIndex> m_pathRequestWithHuristic;
-	sul::dynamic_bitset<> m_enterable;
+	// Not indexed by BlockIndex because size is mulipied by max adjacent.
+	std::vector<bool> m_enterable;
 	Area& m_area;
 	MoveTypeId m_moveType;
 	// DestinationCondition could test against a set of destination indecies or load the actual block to do more complex checks.
@@ -107,6 +107,8 @@ public:
 };
 class AreaHasTerrainFacades
 {
+	// Using a non-address stable container to hold an non-moveable type.
+	// Acceptable because we never call the remove method.
 	MoveTypeMap<TerrainFacade> m_data;
 	Area& m_area;
 	void update(BlockIndex block);
@@ -114,6 +116,7 @@ public:
 	AreaHasTerrainFacades(Area& area) : m_area(area) { }
 	void doStep();
 	void updateBlockAndAdjacent(BlockIndex block);
-	TerrainFacade& getForMoveType(MoveTypeId);
 	void maybeRegisterMoveType(MoveTypeId moveType);
+	void clearPathRequests();
+	[[nodiscard]] TerrainFacade& getForMoveType(MoveTypeId);
 };

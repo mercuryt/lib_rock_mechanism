@@ -29,9 +29,8 @@ protected:
 	Area& m_area;
 	HasShapes(Area& area);
 	HasShapes(const Json& data, DeserializationMemo& deserializationMemo);
-	void create(HasShapeIndex index, ShapeId shape, BlockIndex location, Facing facing, FactionId faction, bool isStatic);
+	void create(HasShapeIndex index, ShapeId shape, FactionId faction, bool isStatic);
 	void create(HasShapeIndex index, const Json& data, DeserializationMemo& deserializationMemo);
-	void destroy(HasShapeIndex index);
 	void sortRange(HasShapeIndex begin, HasShapeIndex end);
 	void resize(HasShapeIndex newSize);
 	void moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex);

@@ -24,55 +24,54 @@ TemperatureDelta TemperatureSource::getTemperatureDeltaForRange(DistanceInBlocks
 		return TemperatureDelta::create(0);
 	return output; // subtract radiance mininum from output to smooth transition at edge of affected zone?
 }
-void TemperatureSource::apply()
+void TemperatureSource::apply(Area& area)
 {
-	m_area.m_hasTemperature.addDelta(m_block, m_temperature);
+	area.m_hasTemperature.addDelta(m_block, m_temperature);
 	DistanceInBlocks range = DistanceInBlocks::create(1);
 	while(true)
 	{
 		TemperatureDelta delta = getTemperatureDeltaForRange(range);
 		if(delta == 0)
 			break;
-		for(BlockIndex block : getNthAdjacentBlocks(m_area, m_block, range.get()))
-			m_area.m_hasTemperature.addDelta(block, delta);
+		for(BlockIndex block : getNthAdjacentBlocks(area, m_block, range.get()))
+			area.m_hasTemperature.addDelta(block, delta);
 		++range;
 	}
 }
-void TemperatureSource::unapply()
+void TemperatureSource::unapply(Area& area)
 {
-	m_area.m_hasTemperature.addDelta(m_block, m_temperature * -1);
+	area.m_hasTemperature.addDelta(m_block, m_temperature * -1);
 	DistanceInBlocks range = DistanceInBlocks::create(1);
 	while(true)
 	{
 		TemperatureDelta delta = getTemperatureDeltaForRange(range);
 		if(delta == 0)
 			break;
-		for(BlockIndex block : getNthAdjacentBlocks(m_area, m_block, range.get()))
-			m_area.m_hasTemperature.addDelta(block, delta * -1);
+		for(BlockIndex block : getNthAdjacentBlocks(area, m_block, range.get()))
+			area.m_hasTemperature.addDelta(block, delta * -1);
 		++range;
 	}
 }
-void TemperatureSource::setTemperature(TemperatureDelta t)
+void TemperatureSource::setTemperature(Area& area, TemperatureDelta t)
 {
-	unapply();
+	unapply(area);
 	m_temperature = t;
-	apply();
+	apply(area);
 }
 void AreaHasTemperature::addTemperatureSource(BlockIndex block, TemperatureDelta temperature)
 {
-	[[maybe_unused]] auto pair = m_sources.try_emplace(block, m_area, temperature, block);
-	assert(pair.second);
+	m_sources.emplace(block, m_area, temperature, block);
 }
 void AreaHasTemperature::removeTemperatureSource(TemperatureSource& temperatureSource)
 {
 	assert(m_sources.contains(temperatureSource.m_block));
 	//TODO: Optimize with iterator.
-	m_sources.at(temperatureSource.m_block).unapply();
+	m_sources[temperatureSource.m_block].unapply(m_area);
 	m_sources.erase(temperatureSource.m_block);
 }
 TemperatureSource& AreaHasTemperature::getTemperatureSourceAt(BlockIndex block)
 {
-	return m_sources.at(block);
+	return m_sources[block];
 }
 void AreaHasTemperature::addDelta(BlockIndex block, TemperatureDelta delta)
 {
@@ -190,6 +189,10 @@ void ActorNeedsSafeTemperature::dieFromTemperature(Area& area)
 	Actors& actors = area.getActors();
 	ActorIndex actor = m_actor.getIndex();
 	actors.die(actor, CauseOfDeath::temperature);
+}
+void ActorNeedsSafeTemperature::unschedule()
+{
+	m_event.unschedule();
 }
 bool ActorNeedsSafeTemperature::isSafe(Area& area, Temperature temperature) const
 {

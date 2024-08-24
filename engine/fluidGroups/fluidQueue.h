@@ -31,6 +31,7 @@ class FluidQueue
 {
 public:
 	std::vector<FutureFlowBlock> m_queue;
+	// TODO: does maintaining m_set actually make any sense?
 	BlockIndices m_set;
 	std::vector<FutureFlowBlock>::iterator m_groupStart, m_groupEnd;
 	FluidGroup& m_fluidGroup;
@@ -39,9 +40,10 @@ public:
 	void buildFor(BlockIndices& members);
 	void initalizeForStep();
 	void setBlocks(BlockIndices& blocks);
-	void addBlock(BlockIndex block);
-	void addBlocks(BlockIndices& blocks);
+	void maybeAddBlock(BlockIndex block);
+	void maybeAddBlocks(BlockIndices& blocks);
 	void removeBlock(BlockIndex block);
+	void maybeRemoveBlock(BlockIndex block);
 	void removeBlocks(BlockIndices& blocks);
 	void findGroupEnd();
 	void recordDelta(CollisionVolume volume);

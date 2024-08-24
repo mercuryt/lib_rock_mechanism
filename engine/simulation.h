@@ -6,7 +6,7 @@
 #include "dialogueBox.h"
 #include "eventSchedule.hpp"
 #include "faction.h"
-#include "input.h"
+//#include "input.h"
 #include "random.h"
 #include "shape.h"
 #include "simulation/hasActors.h"
@@ -19,7 +19,6 @@
 #include <future>
 #include <list>
 #include <memory>
-#include <unordered_map>
 #include <mutex>
 
 //class World;
@@ -34,7 +33,7 @@ public:
 	ThreadedTaskEngine m_threadedTaskEngine;
 	HasScheduledEvent<HourlyEvent> m_hourlyEvent;
 	Random m_random;
-	InputQueue m_inputQueue;
+	//InputQueue m_inputQueue;
 	SimulationHasUniforms m_hasUniforms;
 	SimulationHasFactions m_hasFactions;
 	SimulationHasActors m_actors;
@@ -91,7 +90,7 @@ public:
 class HourlyEvent final : public ScheduledEvent
 {
 public:
-	HourlyEvent(Simulation& s, const Step start = Step::create(0)) : ScheduledEvent(s, Config::stepsPerHour, start) { }
+	HourlyEvent(Simulation& s, const Step start = Step::null()) : ScheduledEvent(s, Config::stepsPerHour, start) { }
 	inline void execute(Simulation& simulation, Area*){ simulation.incrementHour(); }
 	inline void clearReferences(Simulation& simulation, Area*){ simulation.m_hourlyEvent.clearPointer(); }
 };

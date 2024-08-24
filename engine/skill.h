@@ -2,7 +2,6 @@
 #include "config.h"
 #include "skillType.h"
 #include "types.h"
-#include <unordered_map>
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -59,8 +58,7 @@ public:
 		for(const Json& skillData : data["skills"])
 		{
 			SkillTypeId skillType = SkillType::byName(skillData["skillType"].get<std::string>());
-			[[maybe_unused]] auto pair = m_skills.emplace(skillType, skillData);
-			assert(pair.second);
+			m_skills.emplace(skillType, skillData);
 		}
 	}
 	Json toJson() const
@@ -73,10 +71,11 @@ public:
 	}
 	void addXp(SkillTypeId skillType, SkillExperiencePoints xp)
 	{
+		//TODO: We are searching m_skills twice if a skill with the provided type exists.
 		if(!m_skills.contains(skillType))
-			m_skills.try_emplace(skillType, skillType, SkillLevel::create(0), xp);
+			m_skills.emplace(skillType, skillType, SkillLevel::create(0), xp);
 		else
-			m_skills.find(skillType)->second.addXp(xp);
+			m_skills[skillType].addXp(xp);
 	}
 	SkillLevel get(SkillTypeId skillType) const
 	{
@@ -84,7 +83,7 @@ public:
 		if(found == m_skills.end())
 			return SkillLevel::create(0);
 		else
-			return found->second.m_level;
+			return found.second().m_level;
 	}
 	const SkillTypeMap<Skill>& getSkills() const { return m_skills; }
 };

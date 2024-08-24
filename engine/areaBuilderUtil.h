@@ -6,7 +6,6 @@
 #include "blocks/blocks.h"
 #include "types.h"
 
-#include <unordered_set>
 #include <cstdint>
 #include <string>
 

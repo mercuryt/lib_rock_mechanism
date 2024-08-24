@@ -9,4 +9,5 @@ add_custom_command(
 	COMMAND ${CMAKE_COMMAND} -E rename
 	${CMAKE_SOURCE_DIR}/build/test/unit/unit
 	${CMAKE_SOURCE_DIR}/unit
+	COMMAND notify-send done
 )

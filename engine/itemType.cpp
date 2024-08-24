@@ -64,6 +64,7 @@ void ItemType::create(ItemTypeParamaters& p)
 	itemTypeData.m_wearable_forceAbsorbedPiercedModifier.add(p.wearable_forceAbsorbedPiercedModifier);
 	itemTypeData.m_wearable_percentCoverage.add(p.wearable_percentCoverage);
 	itemTypeData.m_wearable_rigid.add(p.wearable_rigid);
+	itemTypeData.m_wearable_bodyPartsCovered.add(p.wearable_bodyPartsCovered);
 }
 std::vector<MaterialCategoryTypeId>& ItemType::getMaterialTypeCategories(ItemTypeId id) { return itemTypeData.m_materialTypeCategories[id]; }
 std::string& ItemType::getName(ItemTypeId id) { return itemTypeData.m_name[id]; }

@@ -8,7 +8,7 @@
 void ActorHasUniform::load(Area& area, const Json& data, FactionId faction)
 {
 	if(data.contains("m_uniform"))
-		m_uniform = &area.m_simulation.m_hasUniforms.at(faction).at(data["m_uniform"].get<std::wstring>());
+		m_uniform = &area.m_simulation.m_hasUniforms.getForFaction(faction).byName(data["m_uniform"].get<std::wstring>());
 	// Don't serialize uniform objective, create from the objective deserialization instead.
 }
 void ActorHasUniform::set(ActorIndex index, Area& area, Uniform& uniform)

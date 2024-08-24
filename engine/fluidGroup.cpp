@@ -15,6 +15,7 @@
 #include "config.h"
 #include "area.h"
 #include "simulation.h"
+#include "vectorContainers.h"
 
 #include <queue>
 #include <cassert>
@@ -49,20 +50,20 @@ void FluidGroup::addBlock(BlockIndex block, bool checkMerge)
 	// Cannot be in fill queue if full. Must be otherwise.
 	FluidData* found = m_area.getBlocks().fluid_getData(block, m_fluidType);
 	if(found && found->volume >= Config::maxBlockVolume)
-		m_fillQueue.removeBlock(block);
+		m_fillQueue.maybeRemoveBlock(block);
 	else
-		m_fillQueue.addBlock(block);
+		m_fillQueue.maybeAddBlock(block);
 	// Set group membership in Blocks.
 	found = m_area.getBlocks().fluid_getData(block, m_fluidType);
 	FluidGroup* oldGroup = found->group;
 	if(oldGroup != nullptr && oldGroup != this)
 		oldGroup->removeBlock(block);
 	found->group = this;
-	m_drainQueue.addBlock(block);
+	m_drainQueue.maybeAddBlock(block);
 	if constexpr(Config::fluidsSeepDiagonalModifier != 0)
-		m_diagonalBlocks.remove(block);
+		m_diagonalBlocks.maybeRemove(block);
 	// Add adjacent if fluid can enter.
-	std::unordered_set<FluidGroup*> toMerge;
+	SmallSet<FluidGroup*> toMerge;
 	for(BlockIndex adjacent : m_area.getBlocks().getDirectlyAdjacent(block))
 		if(adjacent.exists())
 		{
@@ -79,7 +80,7 @@ void FluidGroup::addBlock(BlockIndex block, bool checkMerge)
 					toMerge.insert(found->group);
 			}
 			if(!found || found->volume < Config::maxBlockVolume)
-				m_fillQueue.addBlock(adjacent);
+				m_fillQueue.maybeAddBlock(adjacent);
 		}
 	// TODO: (performance) collect all groups to merge recursively and then merge all into the largest.
 	FluidGroup* larger = this;
@@ -121,7 +122,7 @@ void FluidGroup::removeBlock(BlockIndex block)
 						continue;
 					}
 				if(!found)
-					m_diagonalBlocks.remove(diagonal);
+					m_diagonalBlocks.maybeRemove(diagonal);
 			}
 	}
 }
@@ -425,7 +426,7 @@ void FluidGroup::readStep()
 		for(BlockIndex block : possiblyNoLongerDiagonal)
 			for(BlockIndex doubleDiagonal : m_area.getBlocks().getEdgeAdjacentOnSameZLevelOnly(block))
 				if(futureBlocks.contains(doubleDiagonal))
-					m_diagonalBlocks.remove(block);
+					m_diagonalBlocks.maybeRemove(block);
 	for(BlockIndex block : adjacentToFutureEmpty)
 		// If block won't be empty then check for forming a new group as it may be detached.
 		if(futureBlocks.contains(block))
@@ -560,9 +561,9 @@ void FluidGroup::writeStep()
 		}
 	}
 	m_fillQueue.removeBlocks(m_futureRemoveFromFillQueue);
-	m_fillQueue.addBlocks(m_futureAddToFillQueue);
+	m_fillQueue.maybeAddBlocks(m_futureAddToFillQueue);
 	m_drainQueue.removeBlocks(m_futureRemoveFromDrainQueue);
-	m_drainQueue.addBlocks(m_futureAddToDrainQueue);
+	m_drainQueue.maybeAddBlocks(m_futureAddToDrainQueue);
 	validate();
 	m_area.m_hasFluidGroups.validateAllFluidGroups();
 }
@@ -739,7 +740,7 @@ void FluidGroup::validate() const
 			assert(fluidData.group->m_drainQueue.m_set.contains(block));
 		}
 }
-void FluidGroup::validate(std::unordered_set<FluidGroup*> toErase)
+void FluidGroup::validate(SmallSet<FluidGroup*> toErase)
 {
 	if(m_merged || m_destroy || m_disolved)
 		return;

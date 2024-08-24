@@ -15,7 +15,6 @@ class Items;
 
 #include <vector>
 #include <queue>
-#include <unordered_set>
 #include <set>
 
 class EquipmentSet
@@ -29,6 +28,7 @@ class EquipmentSet
 	Mass m_mass = Mass::create(0);
 public:
 	EquipmentSet(Area& area, const Json& data);
+	EquipmentSet() = default;
 	void addEquipment(Area& area, ItemIndex equipment);
 	void removeEquipment(Area& area, ItemIndex equipment);
 	void modifyImpact(Area& area, Hit& hit, BodyPartTypeId bodyPartType);

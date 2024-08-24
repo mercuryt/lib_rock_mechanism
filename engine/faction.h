@@ -2,14 +2,8 @@
  * A team which actors can belong to. Has shifting alliances and enemies. May or may not be controlled by a player.
  */
 #pragma once
-#include "config.h"
 #include "types.h"
-#include <istream>
 #include <string>
-#include <unordered_set>
-#include <unordered_map>
-#include <list>
-#include <cassert>
 struct DeserializationMemo;
 struct Faction
 {

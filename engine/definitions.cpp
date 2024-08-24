@@ -51,7 +51,6 @@ void definitions::loadFluidTypes()
 			//TODO: Initalize to null rather then 0.
 			.mistDuration=data.contains("mistDuration") ? data["mistDuration"].get<Step>() : Step::create(0),
 			.maxMistSpread=data.contains("mistDuration") ? data["maxMistSpread"].get<DistanceInBlocks>() : DistanceInBlocks::create(0),
-			.freezesInto=data.contains("freezesInto") ? data["freezesInto"].get<MaterialTypeId>() : MaterialTypeId::null(),
 		};
 		FluidType::create(params);
 	}
@@ -71,7 +70,7 @@ void definitions::loadMoveTypes()
 			.onlyBreathsFluids=moveTypeData.contains("onlyBreathsFluids"),
 		};
 		for(auto& pair : moveTypeData["swim"].items())
-			p.swim[FluidType::byName(pair.key())] = pair.value().get<CollisionVolume>();
+			p.swim.insert(FluidType::byName(pair.key()), pair.value().get<CollisionVolume>());
 		if(moveTypeData.contains("breathableFluids"))
 			for(const Json& name : moveTypeData["breathableFluids"])
 				p.breathableFluids.add(FluidType::byName(name));
@@ -82,7 +81,6 @@ void definitions::loadMaterialTypes()
 {
 	for(const Json& data : tryParse(path/"materialTypeCategories.json"))
 		MaterialTypeCategory::create(data["name"]);
-	std::unordered_map<std::string, MaterialTypeConstructionDataParamaters> constructionParamaters;
 	for(const auto& file : std::filesystem::directory_iterator(path/"materials"))
 	{
 		if(file.path().extension() != ".json")
@@ -105,30 +103,12 @@ void definitions::loadMaterialTypes()
 		if(data.contains("burnData"))
 		{
 			// TODO: store as seconds rather then steps.
-			data["burnStageDuration"].get_to(p.burnStageDuration);
-			data["flameStageDuration"].get_to(p.flameStageDuration);
-			data["ignitionTemperature"].get_to(p.ignitionTemperature);
-			data["flameTemperature"].get_to(p.flameTemperature);
+			data["burnData"]["burnStageDuration"].get_to(p.burnStageDuration);
+			data["burnData"]["flameStageDuration"].get_to(p.flameStageDuration);
+			data["burnData"]["ignitionTemperature"].get_to(p.ignitionTemperature);
+			data["burnData"]["flameTemperature"].get_to(p.flameTemperature);
 		}
-		MaterialTypeId id = MaterialType::create(p);
-		// Now that material type is loaded we can load the self-referential construction data.
-		if(data.contains("constructionData"))
-		{
-			MaterialTypeConstructionDataParamaters& constructionP = constructionParamaters.at(data["constructionData"].get<std::string>());
-			p.construction_name = constructionP.name;
-			p.construction_skill = constructionP.skill;
-			p.construction_duration = constructionP.duration;
-			p.construction_unconsumed = constructionP.unconsumed;
-			// Make a copy of Query so it can be specialized.
-			auto consumed = constructionP.consumed;
-			for(auto& [itemQuery, quantity] : consumed)
-				if(itemQuery.m_materialType.empty())
-					itemQuery.m_materialType = id;
-			auto byproducts = constructionP.byproducts;
-			for(auto& tuple : byproducts)
-				if(std::get<1>(tuple).empty())
-					std::get<1>(tuple) = id;
-		}
+		MaterialType::create(p);
 	}
 	// Load FluidType freeze into here, now that solid material types are loaded.
 	for(const auto& file : std::filesystem::directory_iterator(path/"fluids"))
@@ -342,7 +322,7 @@ void definitions::loadItemTypes()
 		ItemType::create(p);
 	}
 	// Now that item types are loaded we can load material type spoil and construction data.
-	loadMaterialTypeConstuctionData();
+	auto constructionData = loadMaterialTypeConstuctionData();
 	for(const auto& file : std::filesystem::directory_iterator(path/"materials"))
 	{
 		if(file.path().extension() != ".json")
@@ -360,6 +340,20 @@ void definitions::loadItemTypes()
 				spoilData["min"].get<Quantity>(),
 				spoilData["max"].get<Quantity>()
 			));
+		}
+		if(data.contains("constructionData"))
+		{
+			MaterialTypeConstructionDataParamaters& constructionP = constructionData.at(data["constructionData"].get<std::string>());
+			// Make a copy of Query so it can be specialized.
+			auto consumed = constructionP.consumed;
+			for(auto& [itemQuery, quantity] : consumed)
+				if(itemQuery.m_materialType.empty())
+					itemQuery.m_materialType = materialType;
+			auto byproducts = constructionP.byproducts;
+			for(auto& tuple : byproducts)
+				if(std::get<1>(tuple).empty())
+					std::get<1>(tuple) = materialType;
+			MaterialType::setConstructionParamaters(materialType, constructionP);
 		}
 	}
 }
@@ -393,11 +387,14 @@ void definitions::loadPlantSpecies()
 			.annual=data["annual"].get<bool>(),
 			.growsInSunLight=data["growsInSunlight"].get<bool>(),
 			.isTree=data.contains("isTree") ? data["isTree"].get<bool>() : false,
-			.fruitItemType=ItemType::byName(data["harvestData"]["fruitItemType"].get<std::string>()),
-			.stepsDurationHarvest=Config::stepsPerDay * data["harvestData"]["daysDurationHarvest"].get<uint16_t>(),
-			.itemQuantityToHarvest=data["harvestData"]["itemQuantityToHarvest"].get<Quantity>(),
-			.dayOfYearToStartHarvest=data["harvestData"]["dayOfYearToStartHarvest"].get<uint16_t>(),
 		};
+		if(data.contains("harvestData"))
+		{
+			plantSpeciesParamaters.fruitItemType = ItemType::byName(data["harvestData"]["itemType"].get<std::string>());
+			plantSpeciesParamaters.stepsDurationHarvest = Config::stepsPerDay * data["harvestData"]["daysDuration"].get<uint16_t>();
+			plantSpeciesParamaters.itemQuantityToHarvest = data["harvestData"]["quantity"].get<Quantity>();
+			plantSpeciesParamaters.dayOfYearToStartHarvest = data["harvestData"]["dayOfYearToStart"].get<uint16_t>();
+		}
 		assert(data.contains("shapes"));
 		for(const auto& shapeName : data["shapes"])
 			plantSpeciesParamaters.shapes.push_back(Shape::byName(shapeName.get<std::string>()));
@@ -457,7 +454,7 @@ void definitions::loadAnimalSpecies()
 			.dextarity=data["dextarity"].get<std::array<AttributeLevel, 3>>(),
 			.agility=data["agility"].get<std::array<AttributeLevel, 3>>(),
 			.mass=data["mass"].get<std::array<Mass, 3>>(),
-			.deathAgeSteps=data["deathAge"].get<std::array<Step, 2>>(),
+			.deathAgeSteps=deathAge,
 			.stepsTillFullyGrown=Config::stepsPerDay * data["daysTillFullyGrown"].get<uint16_t>(),
 			.stepsTillDieWithoutFood=Config::stepsPerDay * data["daysTillDieWithoutFood"].get<uint16_t>(),
 			.stepsEatFrequency=Config::stepsPerDay * data["daysEatFrequency"].get<uint16_t>(),

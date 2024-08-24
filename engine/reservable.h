@@ -4,14 +4,12 @@
  */
 
 #pragma once
-//TODO: Use vector instead of unordered set.
 #include "config.h"
 #include "types.h"
 #include "dishonorCallback.h"
+#include "vectorContainers.h"
 #include <algorithm>
 #include <sys/types.h>
-#include <unordered_set>
-#include <unordered_map>
 #include <cassert>
 #include <cstdint>
 #include <vector>
@@ -42,9 +40,9 @@ public:
 // TODO: A specalized reservable for block without count ( to save RAM ).
 class Reservable final
 {
-	std::unordered_map<CanReserve*, Quantity> m_canReserves;
+	SmallMap<CanReserve*, Quantity> m_canReserves;
 	FactionIdMap<Quantity> m_reservedCounts;
-	std::unordered_map<CanReserve*, std::unique_ptr<DishonorCallback>> m_dishonorCallbacks;
+	SmallMap<CanReserve*, std::unique_ptr<DishonorCallback>> m_dishonorCallbacks;
 	Quantity m_maxReservations = Quantity::create(0);
 	void eraseReservationFor(CanReserve& canReserve);
 public:
@@ -55,14 +53,14 @@ public:
 	void maybeClearReservationFor(CanReserve& canReserve, Quantity quantity = Quantity::create(1));
 	void setMaxReservations(const Quantity mr);
 	void updateFactionFor(CanReserve& canReserve, FactionId oldFaction, FactionId newFaction);
-	void setDishonorCallbackFor(CanReserve& canReserve, std::unique_ptr<DishonorCallback> dishonorCallback) { m_dishonorCallbacks[&canReserve] = std::move(dishonorCallback); }
+	void setDishonorCallbackFor(CanReserve& canReserve, std::unique_ptr<DishonorCallback> dishonorCallback) { m_dishonorCallbacks.insert(&canReserve, std::move(dishonorCallback)); }
 	void clearAll();
 	void updateReservedCount(FactionId faction, Quantity count);
 	void merge(Reservable& reservable);
 	[[nodiscard]] bool isFullyReserved(const FactionId faction) const;
 	[[nodiscard]] bool hasAnyReservations() const;
 	[[nodiscard]] bool hasAnyReservationsWith(const FactionId faction) const;
-	[[nodiscard]] std::unordered_map<CanReserve*, Quantity>& getReservedBy();
+	[[nodiscard]] SmallMap<CanReserve*, Quantity>& getReservedBy();
 	[[nodiscard]] Quantity getUnreservedCount(const FactionId faction) const;
 	[[nodiscard]] Quantity getMaxReservations() const { return m_maxReservations; }
 	[[nodiscard]] Json jsonReservationFor(CanReserve& canReserve) const;

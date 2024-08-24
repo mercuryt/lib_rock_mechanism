@@ -3,7 +3,6 @@
 #include "dataVector.h"
 #include "index.h"
 #include "types.h"
-#include "../lib/dynamic_bitset.hpp"
 #include "visionCuboid.h"
 
 class Area;

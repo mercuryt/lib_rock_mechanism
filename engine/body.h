@@ -106,7 +106,7 @@ class WoundHealEvent : public ScheduledEvent
 	Wound& m_wound;
 	Body& m_body;
 public:
-	WoundHealEvent(Simulation& simulation, const Step delay, Wound& w, Body& b, const Step start = Step::create(0));
+	WoundHealEvent(Simulation& simulation, const Step delay, Wound& w, Body& b, const Step start = Step::null());
 	void execute(Simulation&, Area* area) { m_body.healWound(*area, m_wound); }
 	void clearReferences(Simulation&, Area*) { m_wound.healEvent.clearPointer(); }
 };
@@ -114,7 +114,7 @@ class BleedEvent : public ScheduledEvent
 {
 	Body& m_body;
 public:
-	BleedEvent(Simulation& simulation, const Step delay, Body& b, const Step start = Step::create(0));
+	BleedEvent(Simulation& simulation, const Step delay, Body& b, const Step start = Step::null());
 	void execute(Simulation&, Area* area) { m_body.bleed(*area); }
 	void clearReferences(Simulation&, Area*) { m_body.m_bleedEvent.clearPointer(); }
 };
@@ -122,7 +122,7 @@ class WoundsCloseEvent : public ScheduledEvent
 {
 	Body& m_body;
 public:
-	WoundsCloseEvent(Simulation& simulation, const Step delay, Body& b, const Step start = Step::create(0));
+	WoundsCloseEvent(Simulation& simulation, const Step delay, Body& b, const Step start = Step::null());
 	void execute(Simulation&, Area* area) { m_body.woundsClose(*area); }
 	void clearReferences(Simulation&, Area*) { m_body.m_woundsCloseEvent.clearPointer(); }
 };

@@ -38,3 +38,4 @@ UI
 .ccls*
 $XDG_DATA_HOME
 linkerErrors
+core.*

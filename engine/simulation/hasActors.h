@@ -9,14 +9,15 @@ class Area;
 
 struct ActorDataLocation
 {
-	Actors& store;
+	Actors* store;
 	ActorIndex index;
 };
 
 class SimulationHasActors final
 {
 	ActorId m_nextId = ActorId::create(0);
-	ActorIdMap<ActorDataLocation> m_actors;
+	// TODO: Use boost unordered_map.
+	std::unordered_map<ActorId, ActorDataLocation, ActorId::Hash> m_actors;
 public:
 	SimulationHasActors() = default;
 	Json toJson() const;

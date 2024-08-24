@@ -92,6 +92,7 @@ public:
 	Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& s);
 	Area(const Area& area) = delete;
 	Area(const Area&& area) = delete;
+	~Area();
 	void setup();
 
 	void doStep();

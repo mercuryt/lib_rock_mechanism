@@ -93,7 +93,7 @@ public:
 // To be used by Area.
 class AreaHasFarmFields
 {
-	FactionIdMap<HasFarmFieldsForFaction> m_data;
+	std::unordered_map<FactionId, HasFarmFieldsForFaction, FactionId::Hash> m_data;
 	Area& m_area;
 public:
 	AreaHasFarmFields(Area& a) : m_area(a) { } 

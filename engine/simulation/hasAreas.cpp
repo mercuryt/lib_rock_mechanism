@@ -47,7 +47,7 @@ Area& SimulationHasAreas::createArea(uint x, uint y, uint z, bool createDrama)
 Area& SimulationHasAreas::loadArea(AreaId id, std::wstring name, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z)
 {
 	Area& area = m_areas.emplace_back(id, name, m_simulation, x, y, z); 
-	m_areasById[id] = &area;
+	m_areasById.insert(id, &area);
 	return area;
 }
 void SimulationHasAreas::destroyArea(Area& area)

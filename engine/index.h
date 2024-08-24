@@ -12,7 +12,6 @@
 #include <limits>
 #include <vector>
 #include <algorithm>
-#include <unordered_set>
 class PlantIndex;
 class ItemIndex;
 class ActorIndex;
@@ -56,6 +55,9 @@ class HasShapeIndex : public StrongInteger<HasShapeIndex, uint32_t>
 protected:
 	HasShapeIndex(uint32_t index) : StrongInteger<HasShapeIndex, uint32_t>(index) { }
 public:
+	HasShapeIndex(const PlantIndex&);
+	HasShapeIndex(const ItemIndex&);
+	HasShapeIndex(const ActorIndex&);
 	[[nodiscard]] static HasShapeIndex cast(const PlantIndex& o);
 	[[nodiscard]] static HasShapeIndex cast(const ItemIndex& o);
 	[[nodiscard]] static HasShapeIndex cast(const ActorIndex& o);
@@ -65,14 +67,13 @@ public:
 	[[nodiscard]] PlantIndex toPlant() const;
 	[[nodiscard]] ActorIndex toActor() const;
 	[[nodiscard]] ItemIndex toItem() const;
-	[[nodiscard]] HasShapeIndex toHasShape() const { return HasShapeIndex::create(get()); }
 };
 inline void to_json(Json& data, const HasShapeIndex& index) { data = index.get(); }
 inline void from_json(const Json& data, HasShapeIndex& index) { index = HasShapeIndex::create(data.get<uint32_t>()); }
-class PlantIndex final : public HasShapeIndex
+class PlantIndex final : public StrongInteger<PlantIndex, uint32_t>
 {
 protected:
-	PlantIndex(uint32_t index) : HasShapeIndex(index) { }
+	PlantIndex(uint32_t index) : StrongInteger<PlantIndex, uint32_t>(index) { }
 public:
 	[[nodiscard]] static PlantIndex cast(const HasShapeIndex& o) { return PlantIndex(o.get()); }
 	[[nodiscard]] static PlantIndex null() { return PlantIndex(); }
@@ -85,30 +86,32 @@ inline void from_json(const Json& data, PlantIndex& index) { index = PlantIndex:
 
 class ItemReference;
 class Area;
-class ItemIndex final : public HasShapeIndex
+class ItemIndex final : public StrongInteger<ItemIndex, uint32_t>
 {
-	ItemIndex(uint32_t index) : HasShapeIndex(index) { }
+	ItemIndex(uint32_t index) : StrongInteger<ItemIndex, uint32_t>(index) { }
 public:
 	[[nodiscard]] static ItemIndex cast(const HasShapeIndex& o) { return ItemIndex(o.get()); }
 	[[nodiscard]] static ItemIndex null() { return ItemIndex(); }
 	[[nodiscard]] static ItemIndex create(uint32_t index) { return index; }
 	[[nodiscard]] ActorOrItemIndex toActorOrItemIndex() const;
 	[[nodiscard]] ItemReference toReference(Area& area) const;
+	[[nodiscard]] HasShapeIndex toHasShape() const { return HasShapeIndex::create(get()); }
 	ItemIndex() = default;
 };
 inline void to_json(Json& data, const ItemIndex& index) { data = index.get(); }
 inline void from_json(const Json& data, ItemIndex& index) { index = ItemIndex::create(data.get<uint32_t>()); }
 
 class ActorReference;
-class ActorIndex final : public HasShapeIndex
+class ActorIndex final : public StrongInteger<ActorIndex, uint32_t>
 {
-	ActorIndex(uint32_t index) : HasShapeIndex(index) { }
+	ActorIndex(uint32_t index) : StrongInteger<ActorIndex, uint32_t>(index) { }
 public:
 	[[nodiscard]] static ActorIndex cast(const HasShapeIndex& o) { return ActorIndex(o.get()); }
 	[[nodiscard]] static ActorIndex null() { return ActorIndex(); }
 	[[nodiscard]] static ActorIndex create(uint32_t index) { return index; }
 	[[nodiscard]] ActorOrItemIndex toActorOrItemIndex() const;
 	[[nodiscard]] ActorReference toReference(Area& area) const;
+	[[nodiscard]] HasShapeIndex toHasShape() const { return HasShapeIndex::create(get()); }
 	ActorIndex() = default;
 };
 
@@ -138,17 +141,17 @@ using HasShapeIndices = StrongIntegerSet<HasShapeIndex>;
 template <class StrongInteger>
 class IndicesSetBase
 {
-	std::unordered_set<StrongInteger, typename StrongInteger::Hash> data;
+	SmallSet<StrongInteger> data;
 public:
 	void add(StrongInteger index) { data.insert(index); }
 	void remove(StrongInteger index) { data.erase(index); }
 	void clear() { data.clear(); }
 	[[nodiscard]] bool empty() const { return data.empty(); }
 	[[nodiscard]] bool contains(StrongInteger index) const { return data.contains(index); }
-	[[nodiscard]] std::unordered_set<StrongInteger>::iterator begin() { return data.begin(); }
-	[[nodiscard]] std::unordered_set<StrongInteger>::iterator end() { return data.end(); }
-	[[nodiscard]] std::unordered_set<StrongInteger>::const_iterator begin() const { return data.begin(); }
-	[[nodiscard]] std::unordered_set<StrongInteger>::const_iterator end() const { return data.end(); }
+	[[nodiscard]] SmallSet<StrongInteger>::iterator begin() { return data.begin(); }
+	[[nodiscard]] SmallSet<StrongInteger>::iterator end() { return data.end(); }
+	[[nodiscard]] SmallSet<StrongInteger>::const_iterator begin() const { return data.begin(); }
+	[[nodiscard]] SmallSet<StrongInteger>::const_iterator end() const { return data.end(); }
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(IndicesSetBase<StrongInteger>, data);
 };
 using BlockIndexSet = IndicesSetBase<BlockIndex>;
@@ -201,4 +204,4 @@ template<int count>
 using ItemIndicesArray = IndicesArrayBase<ItemIndex, uint32_t, count>;
 
 template<typename T>
-using BlockIndexMap = std::unordered_map<BlockIndex, T, BlockIndex::Hash>;
+using BlockIndexMap = SmallMap<BlockIndex, T>;

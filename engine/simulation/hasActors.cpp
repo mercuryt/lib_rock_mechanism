@@ -4,8 +4,7 @@
 void SimulationHasActors::registerActor(ActorId id, Actors& store, ActorIndex index)
 {
 	assert(!m_actors.contains(id));
-	auto [iter, result] = m_actors.try_emplace(id, store, index);
-	assert(result);
+	m_actors.try_emplace(id, &store, index);
 }
 void SimulationHasActors::removeActor(ActorId id)
 {
@@ -18,5 +17,5 @@ ActorIndex SimulationHasActors::getIndexForId(ActorId id) const
 }
 Area& SimulationHasActors::getAreaForId(ActorId id) const
 {
-	return m_actors.at(id).store.getArea();
+	return m_actors.at(id).store->getArea();
 }

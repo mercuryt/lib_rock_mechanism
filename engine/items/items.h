@@ -26,7 +26,7 @@ struct ItemParamaters final
 	Facing facing = Facing::create(0);
 	bool isStatic = true;
 	bool installed = false;
-	FactionId faction = FactionId.null();
+	std::wstring name = L"";
 };
 class ReMarkItemForStockPilingEvent final : public ScheduledEvent
 {
@@ -112,10 +112,10 @@ class Items final : public Portables
 	DataVector<Quality, ItemIndex> m_quality; // Always set to 0 for generic types.
 	DataVector<Quantity, ItemIndex> m_quantity; // Always set to 1 for nongeneric types.
 	DataVector<std::unique_ptr<ItemReferenceTarget>, ItemIndex> m_referenceTarget;
-	void resize(HasShapeIndex newSize);
-	void moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex);
+	void resize(ItemIndex newSize);
+	void moveIndex(ItemIndex oldIndex, ItemIndex newIndex);
 public:
-	Items(Area& area) : Portables(area) { }
+	Items(Area& area) : Portables(area, false) { }
 	void load(const Json& json);
 	void loadCargoAndCraftJobs(const Json& json);
 	void onChangeAmbiantSurfaceTemperature();

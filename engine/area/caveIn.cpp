@@ -4,10 +4,8 @@
 #include "types.h"
 #include <vector>
 #include <tuple>
-#include <unordered_set>
 #include <deque>
 #include <stack>
-#include <unordered_map>
 #include <list>
 
 void Area::doStepCaveIn()
@@ -19,7 +17,7 @@ void Area::doStepCaveIn()
 void Area::stepCaveInRead()
 {
 	std::list<BlockIndices> chunks;
-	std::unordered_set<BlockIndices*> anchoredChunks;
+	SmallSet<BlockIndices*> anchoredChunks;
 	BlockIndexMap<BlockIndices*> chunksByBlock;
 	std::deque<BlockIndex> blockQueue;
 

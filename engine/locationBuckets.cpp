@@ -88,19 +88,19 @@ void LocationBuckets::add(ActorIndex actor)
 {
 	auto& actorBlocks = m_area.getActors().getBlocks(actor);
 	assert(!actorBlocks.empty());
-	std::unordered_map<LocationBucket*, BlockIndices> blocksCollatedByBucket;
+	SmallMap<LocationBucket*, BlockIndices> blocksCollatedByBucket;
 	Blocks& blockData = m_area.getBlocks();
 	for(BlockIndex block : actorBlocks)
 		blocksCollatedByBucket[&blockData.getLocationBucket(block)].add(block);
-	for(auto& [bucket, blocks] : blocksCollatedByBucket)
+	for(auto [bucket, blocks] : blocksCollatedByBucket)
 	{
-		assert(bucket);
+		assert(bucket != nullptr);
 		bucket->insert(m_area, actor, blocks);
 	}
 }
 void LocationBuckets::remove(ActorIndex actor)
 {
-	std::unordered_set<LocationBucket*> buckets;
+	SmallSet<LocationBucket*> buckets;
 	Blocks& blocks = m_area.getBlocks();
 	Actors& actors = m_area.getActors();
 	assert(!actors.getBlocks(actor).empty());
@@ -111,9 +111,9 @@ void LocationBuckets::remove(ActorIndex actor)
 }
 void LocationBuckets::update(ActorIndex actor, BlockIndices& oldBlocks)
 {
-	std::unordered_set<LocationBucket*> oldSets;
-	std::unordered_map<LocationBucket*, BlockIndices> continuedSets;
-	std::unordered_map<LocationBucket*, BlockIndices> newSets;
+	SmallSet<LocationBucket*> oldSets;
+	SmallMap<LocationBucket*, BlockIndices> continuedSets;
+	SmallMap<LocationBucket*, BlockIndices> newSets;
 	Blocks& blocks = m_area.getBlocks();
 	Actors& actors = m_area.getActors();
 	for(BlockIndex block : oldBlocks)
@@ -129,8 +129,8 @@ void LocationBuckets::update(ActorIndex actor, BlockIndices& oldBlocks)
 	for(auto& set : oldSets)
 		if(!continuedSets.contains(set))
 			set->erase(m_area, actor);
-	for(auto& [set, blocks] : continuedSets)
+	for(auto [set, blocks] : continuedSets)
 		set->update(m_area, actor, blocks);
-	for(auto& [set, blocks] : newSets)
+	for(auto [set, blocks] : newSets)
 		set->insert(m_area, actor, blocks);
 }

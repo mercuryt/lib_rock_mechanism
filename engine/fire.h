@@ -3,7 +3,6 @@
 #include "eventSchedule.hpp"
 #include "types.h"
 
-#include <unordered_map>
 #include <list>
 #include <algorithm>
 #include <string>
@@ -25,13 +24,12 @@ class FireEvent final : public ScheduledEvent
 public:
 	Fire& m_fire;
 
-	FireEvent(Area& area, Step delay, Fire& f, Step start = Step::create(0));
+	FireEvent(Area& area, Step delay, Fire& f, Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };
 class Fire final
 {
-	Area& m_area;
 public:
 	TemperatureSource m_temperatureSource;
 	HasScheduledEvent<FireEvent> m_event;
@@ -47,7 +45,10 @@ public:
 class AreaHasFires final
 {
 	Area& m_area;
-	BlockIndexMap<MaterialTypeMap<Fire>> m_fires;
+	// Outer map is hash because there are potentailly a large number of fires.
+	// Inner map is hash because Fire is immobile, due to containing a scheduled Event.
+	// TODO: stable small map.
+	std::unordered_map<BlockIndex, std::unordered_map<MaterialTypeId, Fire, MaterialTypeId::Hash>, BlockIndex::Hash> m_fires;
 public:
 	AreaHasFires(Area& a) : m_area(a) { }
 	void ignite(BlockIndex block, MaterialTypeId materialType);

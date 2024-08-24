@@ -120,7 +120,7 @@ void Actors::combat_update(ActorIndex index)
 	m_maxMeleeRange[index] = DistanceInBlocksFractional::create(0.f);
 	m_maxRange[index] = DistanceInBlocksFractional::create(0.f);
 	// Collect attacks and combat scores from body and equipment.
-	m_meleeAttackTable.clear();
+	m_meleeAttackTable[index].clear();
 	Body& body = *m_body[index].get();
 	for(Attack& attack : body.getMeleeAttacks())
 		m_meleeAttackTable[index].emplace_back(combat_getCombatScoreForAttack(index, attack), attack);

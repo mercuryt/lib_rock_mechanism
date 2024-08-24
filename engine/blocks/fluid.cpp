@@ -251,7 +251,7 @@ void Blocks::fluid_resolveOverfull(BlockIndex index)
 		if(fluidData.volume.empty())
 			toErase.push_back(fluidData.type);
 		if(fluidData.volume < Config::maxBlockVolume)
-			fluidData.group->m_fillQueue.addBlock(index);
+			fluidData.group->m_fillQueue.maybeAddBlock(index);
 		if(m_totalFluidVolume[index] == Config::maxBlockVolume)
 			break;
 	}
@@ -304,7 +304,7 @@ void Blocks::fluid_onBlockSetSolid(BlockIndex index)
 				{
 					if(fluid_canEnterEver(above) && fluid_canEnterCurrently(above, fluidData.type))
 					{
-						fluidData.group->m_fillQueue.addBlock(above);
+						fluidData.group->m_fillQueue.maybeAddBlock(above);
 						break;
 					}
 					above = getBlockAbove(above);
@@ -330,7 +330,7 @@ void Blocks::fluid_onBlockSetNotSolid(BlockIndex index)
 		if(adjacent.exists() && fluid_canEnterEver(adjacent))
 			for(FluidData& fluidData : m_fluid[adjacent])
 			{
-				fluidData.group->m_fillQueue.addBlock(index);
+				fluidData.group->m_fillQueue.maybeAddBlock(index);
 				fluidData.group->m_stable = false;
 			}
 }

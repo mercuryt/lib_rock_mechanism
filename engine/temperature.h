@@ -6,9 +6,8 @@
 #include "reference.h"
 #include "simulation.h"
 #include "types.h"
+#include "vectorContainers.h"
 
-#include <unordered_set>
-#include <unordered_map>
 #include <vector>
 #include <map>
 
@@ -20,16 +19,14 @@ struct DeserializationMemo;
 // Raises and lowers nearby temperature.
 class TemperatureSource final
 {
-	//TODO: reuse reference for fire?
-	Area& m_area;
 	BlockIndex m_block;
 	TemperatureDelta m_temperature;
 	TemperatureDelta getTemperatureDeltaForRange(DistanceInBlocks range);
-	void apply();
+	void apply(Area& area);
 public:
-	TemperatureSource(Area& a, TemperatureDelta t, BlockIndex b) : m_area(a), m_block(b), m_temperature(t) { apply(); }
-	void setTemperature(TemperatureDelta t);
-	void unapply();
+	TemperatureSource(Area& a, TemperatureDelta t, BlockIndex b) : m_block(b), m_temperature(t) { apply(a); }
+	void setTemperature(Area& a, TemperatureDelta t);
+	void unapply(Area& a);
 	friend class AreaHasTemperature;
 };
 class AreaHasTemperature final
@@ -38,7 +35,7 @@ class AreaHasTemperature final
 	// To possibly thaw.
 	std::map<Temperature, BlockIndices> m_aboveGroundBlocksByMeltingPoint;
 	// To possibly freeze.
-	std::map<Temperature, std::unordered_set<FluidGroup*>> m_aboveGroundFluidGroupsByMeltingPoint;
+	std::map<Temperature, SmallSet<FluidGroup*>> m_aboveGroundFluidGroupsByMeltingPoint;
 	// Collect deltas to apply sum.
 	BlockIndexMap<TemperatureDelta> m_blockDeltaDeltas;
 	Area& m_area;
@@ -70,10 +67,11 @@ public:
 	ActorNeedsSafeTemperature(Area& area, ActorIndex a);
 	ActorNeedsSafeTemperature(const Json& data, ActorIndex a, Area& area);
 	void dieFromTemperature(Area& area);
-	[[nodiscard]] Json toJson() const;
+	void unschedule();
 	void onChange(Area& area);
-	bool isSafe(Area& area, Temperature temperature) const;
-	bool isSafeAtCurrentLocation(Area& area) const;
+	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] bool isSafe(Area& area, Temperature temperature) const;
+	[[nodiscard]] bool isSafeAtCurrentLocation(Area& area) const;
 	friend class GetToSafeTemperatureObjective;
 	friend class UnsafeTemperatureEvent;
 	// For UI.
@@ -83,7 +81,7 @@ class UnsafeTemperatureEvent final : public ScheduledEvent
 {
 	ActorNeedsSafeTemperature& m_needsSafeTemperature;
 public:
-	UnsafeTemperatureEvent(Area& area, ActorIndex actor, const Step start = Step::create(0));
+	UnsafeTemperatureEvent(Area& area, ActorIndex actor, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };

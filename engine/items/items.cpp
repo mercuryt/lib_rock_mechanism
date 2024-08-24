@@ -60,9 +60,8 @@ Json ItemCanBeStockPiled::toJson() const
 void ItemCanBeStockPiled::scheduleReset(Area& area, FactionId faction, Step duration, Step start)
 {
 	assert(!m_scheduledEvents.contains(faction));
-	auto [iter, created] = m_scheduledEvents.emplace(faction, area.m_eventSchedule);
-	assert(created);
-	HasScheduledEvent<ReMarkItemForStockPilingEvent>& eventHandle = iter->second;
+	auto pair = m_scheduledEvents.emplace(faction, area.m_eventSchedule);
+	HasScheduledEvent<ReMarkItemForStockPilingEvent>& eventHandle = pair.second;
 	eventHandle.schedule(area, *this, faction, duration, start);
 }
 void ItemCanBeStockPiled::unsetAndScheduleReset(Area& area, FactionId faction, Step duration) 
@@ -87,10 +86,12 @@ void Items::onChangeAmbiantSurfaceTemperature()
 }
 ItemIndex Items::create(ItemParamaters itemParamaters)
 {
-	ItemIndex index = HasShapes::getNextIndex().toItem()
-	Portables::create(index, ItemType::getMoveType(itemParamaters.itemType), ItemType::getShape(itemParamaters.itemType), itemParamaters.location, itemParamaters.facing, itemParamaters.faction, itemParamaters.isStatic, itemParamaters.quantity);
+	ItemIndex index = ItemIndex::create(size());
+	// TODO: This 'toItem' call should not be neccessary. Why does ItemIndex + int = HasShapeIndex?
+	resize(index + 1);
+	Portables::create(index, ItemType::getMoveType(itemParamaters.itemType), ItemType::getShape(itemParamaters.itemType), itemParamaters.faction, itemParamaters.isStatic, itemParamaters.quantity);
 	assert(m_canBeStockPiled[index] == nullptr);
-	m_craftJobForWorkPiece[index] = itemParamaters.craftJobForWorkPiece;
+	m_craftJobForWorkPiece[index] = itemParamaters.craftJob;
 	assert(m_hasCargo[index] == nullptr);
 	m_id[index] = itemParamaters.id.exists() ? itemParamaters.id : m_area.m_simulation.m_items.getNextId();
 	m_installed.set(index, itemParamaters.installed);
@@ -112,45 +113,42 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 		setLocationAndFacing(index, itemParamaters.location, itemParamaters.facing);
 	return index;
 }
-void Items::resize(HasShapeIndex newSize)
+void Items::resize(ItemIndex newSize)
 {
 	Portables::resize(newSize);
-	ItemIndex size = newSize.toItem();
-	m_canBeStockPiled.resize(size);
-	m_craftJobForWorkPiece.resize(size);
-	m_hasCargo.resize(size);
-	m_id.resize(size);
-	m_installed.resize(size);
-	m_itemType.resize(size);
-	m_materialType.resize(size);
-	m_name.resize(size);
-	m_percentWear.resize(size);
-	m_quality.resize(size);
-	m_quantity.resize(size);
-	m_referenceTarget.resize(size);
+	m_canBeStockPiled.resize(newSize);
+	m_craftJobForWorkPiece.resize(newSize);
+	m_hasCargo.resize(newSize);
+	m_id.resize(newSize);
+	m_installed.resize(newSize);
+	m_itemType.resize(newSize);
+	m_materialType.resize(newSize);
+	m_name.resize(newSize);
+	m_percentWear.resize(newSize);
+	m_quality.resize(newSize);
+	m_quantity.resize(newSize);
+	m_referenceTarget.resize(newSize);
 }
-void Items::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
+void Items::moveIndex(ItemIndex oldIndex, ItemIndex newIndex)
 {
-	Portables::moveIndex(oldIndex, newIndex);
-	ItemIndex o = oldIndex.toItem();
-	ItemIndex n = newIndex.toItem();
-	m_canBeStockPiled[n] = std::move(m_canBeStockPiled[o]);
-	m_craftJobForWorkPiece[n] = m_craftJobForWorkPiece[o];
-	m_hasCargo[n] = std::move(m_hasCargo[o]);
-	m_hasCargo[n]->updateCarrierIndexForAllCargo(m_area, n);
-	m_id[n] = m_id[o];
-	m_installed.set(n, m_installed[o]);
-	m_itemType[n] = m_itemType[o];
-	m_materialType[n] = m_materialType[o];
-	m_name[n] = m_name[o];
-	m_percentWear[n] = m_percentWear[o];
-	m_quality[n] = m_quality[o];
-	m_quantity[n] = m_quantity[o];
-	m_referenceTarget[n] = std::move(m_referenceTarget[o]);
-	m_referenceTarget[n]->index = n;
+	Portables::moveIndex(oldIndex, newIndex.toHasShape());
+	m_canBeStockPiled[newIndex] = std::move(m_canBeStockPiled[oldIndex]);
+	m_craftJobForWorkPiece[newIndex] = m_craftJobForWorkPiece[oldIndex];
+	m_hasCargo[newIndex] = std::move(m_hasCargo[oldIndex]);
+	m_hasCargo[newIndex]->updateCarrierIndexForAllCargo(m_area, newIndex);
+	m_id[newIndex] = m_id[oldIndex];
+	m_installed.set(newIndex, m_installed[oldIndex]);
+	m_itemType[newIndex] = m_itemType[oldIndex];
+	m_materialType[newIndex] = m_materialType[oldIndex];
+	m_name[newIndex] = m_name[oldIndex];
+	m_percentWear[newIndex] = m_percentWear[oldIndex];
+	m_quality[newIndex] = m_quality[oldIndex];
+	m_quantity[newIndex] = m_quantity[oldIndex];
+	m_referenceTarget[newIndex] = std::move(m_referenceTarget[oldIndex]);
+	m_referenceTarget[newIndex]->index = newIndex;
 	Blocks& blocks = m_area.getBlocks();
 	for(BlockIndex block : m_blocks[newIndex])
-		blocks.item_updateIndex(block, o, n);
+		blocks.item_updateIndex(block, oldIndex, newIndex);
 }
 void Items::setLocation(ItemIndex index, BlockIndex block)
 {
@@ -265,14 +263,11 @@ void Items::unsetCraftJobForWorkPiece(ItemIndex index)
 }
 void Items::destroy(ItemIndex index)
 {
-	if(m_location[index].exists())
-		exit(index);
-	m_onSurface.remove(index);
-	m_name[index].clear();
-	m_canBeStockPiled[index] = nullptr;
-	m_hasCargo[index] = nullptr;
-	m_area.m_simulation.m_items.removeItem(m_id[index]);
-	Portables::destroy(index);
+	// No need to explicitly unschedule events here, destorying the event holder will do it.
+	const ItemIndex& s = ItemIndex::create(size() - 2);
+	if(s != 1)
+		moveIndex(index, s);
+	resize(s);
 }
 bool Items::isGeneric(ItemIndex index) const { return ItemType::getGeneric(m_itemType[index]); }
 bool Items::isPreparedMeal(ItemIndex index) const

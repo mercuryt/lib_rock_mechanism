@@ -9,7 +9,7 @@ AreaHasBlockDesignationsForFaction::AreaHasBlockDesignationsForFaction(Area& are
 	m_designations.resize((int)area.getBlocks().size() * (int)BlockDesignation::BLOCK_DESIGNATION_MAX);
 }
 AreaHasBlockDesignationsForFaction::AreaHasBlockDesignationsForFaction(const Json& data, DeserializationMemo&, Area& area) : 
-	m_area(area), m_designations(data.get<sul::dynamic_bitset<>>()) { }
+	m_area(area), m_designations(data.get<std::vector<bool>>()) { }
 int AreaHasBlockDesignationsForFaction::getIndex(BlockIndex index, BlockDesignation designation) const
 {
 	return ((int)m_area.getBlocks().size() * (int)designation) + index.get();

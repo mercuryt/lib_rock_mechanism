@@ -14,7 +14,6 @@
 #include "blocks/blocks.h"
 #include <algorithm>
 #include <queue>
-#include <unordered_map>
 #include <iterator>
 
 TerrainFacade::TerrainFacade(Area& area, MoveTypeId moveType) : m_area(area), m_moveType(moveType)
@@ -522,20 +521,12 @@ void AreaHasTerrainFacades::update(BlockIndex index)
 	for(auto& pair : m_data)
 		pair.second.update(index);
 }
-TerrainFacade& AreaHasTerrainFacades::getForMoveType(MoveTypeId moveType)
-{
-	assert(m_data.contains(moveType));
-	return m_data.at(moveType);
-}
 void AreaHasTerrainFacades::maybeRegisterMoveType(MoveTypeId moveType)
 {
 	//TODO: generate terrain facade in thread.
 	auto found = m_data.find(moveType);
 	if(found == m_data.end())
-	{
-		auto [iter, success] = m_data.try_emplace(moveType, m_area, moveType);
-		assert(success);
-	}
+		m_data.emplace(moveType, m_area, moveType);
 }
 void AreaHasTerrainFacades::updateBlockAndAdjacent(BlockIndex block)
 {
@@ -545,4 +536,14 @@ void AreaHasTerrainFacades::updateBlockAndAdjacent(BlockIndex block)
 	for(BlockIndex adjacent : blocks.getAdjacentWithEdgeAndCornerAdjacent(block))
 		if(blocks.shape_anythingCanEnterEver(adjacent))
 			update(adjacent);
+}
+void AreaHasTerrainFacades::clearPathRequests()
+{
+	for(auto& pair : m_data)
+		pair.second.clearPathRequests();
+}
+TerrainFacade& AreaHasTerrainFacades::getForMoveType(MoveTypeId moveType)
+{
+	assert(m_data.contains(moveType));
+	return m_data[moveType];
 }

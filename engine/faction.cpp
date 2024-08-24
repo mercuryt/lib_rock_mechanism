@@ -1,7 +1,6 @@
 #include "faction.h"
 #include "deserializationMemo.h"
 #include "simulation.h"
-#include "types.h"
 Faction& SimulationHasFactions::getById(FactionId id)
 {
 	return m_factions.at(id.get());

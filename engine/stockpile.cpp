@@ -289,7 +289,7 @@ AreaHasStockPilesForFaction::AreaHasStockPilesForFaction(const Json& data, Deser
 			for(const Json& stockPileAddress : pair[1])
 			{
 				StockPile& stockPile = *deserializationMemo.m_stockpiles.at(stockPileAddress.get<uintptr_t>());
-				util::addUniqueToVectorAssert(m_availableStockPilesByItemType.at(itemType), &stockPile);
+				util::addUniqueToVectorAssert(m_availableStockPilesByItemType[itemType], &stockPile);
 			}
 		}
 	if(data.contains("itemsWithoutDestinationsByItemType"))
@@ -410,12 +410,12 @@ void AreaHasStockPilesForFaction::destroyStockPile(StockPile& stockPile)
 	assert(stockPile.m_blocks.empty());
 	// Erase pointers from avalible stockpiles by item type.
 	for(ItemQuery& itemQuery : stockPile.m_queries)
-		util::removeFromVectorByValueUnordered(m_availableStockPilesByItemType.at(itemQuery.m_itemType), &stockPile);
+		util::removeFromVectorByValueUnordered(m_availableStockPilesByItemType[itemQuery.m_itemType], &stockPile);
 	Items& items = m_area.getItems();
 	// Potentially transfer items from withDestination to withoutDestination, also cancel any associated projects and remove from items with destinations without projects.
 	// Sort items which no longer have a potential destination from ones which have a new one.
 	if(m_itemsWithDestinationsByStockPile.contains(&stockPile))
-		for(ItemReference item : m_itemsWithDestinationsByStockPile.at(&stockPile))
+		for(ItemReference item : m_itemsWithDestinationsByStockPile[&stockPile])
 		{
 			ItemIndex itemIndex = item.getIndex();
 			StockPile* newStockPile = getStockPileFor(itemIndex);
@@ -471,7 +471,7 @@ void AreaHasStockPilesForFaction::maybeAddItem(ItemIndex item)
 	if(!m_projectsByItem.contains(ref) &&
 		(
 			!m_itemsWithoutDestinationsByItemType.contains(itemType) || 
-			!m_itemsWithoutDestinationsByItemType.at(itemType).contains(ref)
+			!m_itemsWithoutDestinationsByItemType[itemType].contains(ref)
 		)
 	) 
 		addItem(item);
@@ -482,8 +482,8 @@ void AreaHasStockPilesForFaction::removeItem(ItemIndex item)
 	ItemTypeId itemType = m_area.getItems().getItemType(item);
 	items.stockpile_maybeUnset(item, m_faction);
 	ItemReference ref = items.getReference(item);
-	if(m_itemsWithoutDestinationsByItemType.contains(itemType) && m_itemsWithoutDestinationsByItemType.at(itemType).contains(ref))
-		m_itemsWithoutDestinationsByItemType.at(itemType).remove(ref);
+	if(m_itemsWithoutDestinationsByItemType.contains(itemType) && m_itemsWithoutDestinationsByItemType[itemType].contains(ref))
+		m_itemsWithoutDestinationsByItemType[itemType].remove(ref);
 	else
 	{
 		m_itemsWithDestinationsWithoutProjects.remove(ref);
@@ -496,12 +496,12 @@ void AreaHasStockPilesForFaction::removeItem(ItemIndex item)
 void AreaHasStockPilesForFaction::removeFromItemsWithDestinationByStockPile(const StockPile& stockPile, const ItemIndex item)
 {
 	StockPile* nonConst = const_cast<StockPile*>(&stockPile);
-	if(m_itemsWithDestinationsByStockPile.at(nonConst).size() == 1)
+	if(m_itemsWithDestinationsByStockPile[nonConst].size() == 1)
 		m_itemsWithDestinationsByStockPile.erase(nonConst);
 	else
 	{
 		ItemReference ref = m_area.getItems().getReference(item);
-		m_itemsWithDestinationsByStockPile.at(nonConst).remove(ref);
+		m_itemsWithDestinationsByStockPile[nonConst].remove(ref);
 	}
 }
 void AreaHasStockPilesForFaction::removeBlock(BlockIndex block)
@@ -518,7 +518,7 @@ void AreaHasStockPilesForFaction::setAvailable(StockPile& stockPile)
 		assert(itemQuery.m_itemType.exists());
 		m_availableStockPilesByItemType[itemQuery.m_itemType].push_back(&stockPile);
 		if(m_itemsWithoutDestinationsByItemType.contains(itemQuery.m_itemType))
-			for(ItemReference item : m_itemsWithoutDestinationsByItemType.at(itemQuery.m_itemType))
+			for(ItemReference item : m_itemsWithoutDestinationsByItemType[itemQuery.m_itemType])
 				if(stockPile.accepts(item.getIndex()))
 				{
 					m_itemsWithDestinationsByStockPile[&stockPile].add(item);
@@ -529,10 +529,10 @@ void AreaHasStockPilesForFaction::setAvailable(StockPile& stockPile)
 void AreaHasStockPilesForFaction::setUnavailable(StockPile& stockPile)
 {
 	for(ItemQuery& itemQuery : stockPile.m_queries)
-		util::removeFromVectorByValueUnordered(m_availableStockPilesByItemType.at(itemQuery.m_itemType), &stockPile);
+		util::removeFromVectorByValueUnordered(m_availableStockPilesByItemType[itemQuery.m_itemType], &stockPile);
 	if(m_itemsWithDestinationsByStockPile.contains(&stockPile))
 	{
-		for(ItemReference item : m_itemsWithDestinationsByStockPile.at(&stockPile))
+		for(ItemReference item : m_itemsWithDestinationsByStockPile[&stockPile])
 		{
 			StockPile* newStockPile = getStockPileFor(item.getIndex());
 			if(newStockPile == nullptr)
@@ -593,7 +593,7 @@ void AreaHasStockPilesForFaction::removeQuery(StockPile& stockPile, ItemQuery qu
 	stockPile.removeQuery(query);
 	assert(query.m_itemType.exists());
 	assert(m_availableStockPilesByItemType.contains(query.m_itemType));
-	if(m_availableStockPilesByItemType.at(query.m_itemType).size() == 1)
+	if(m_availableStockPilesByItemType[query.m_itemType].size() == 1)
 		m_availableStockPilesByItemType.erase(query.m_itemType);
 	else
 		util::addUniqueToVectorAssert(m_availableStockPilesByItemType[query.m_itemType], &stockPile);
@@ -625,7 +625,7 @@ StockPile* AreaHasStockPilesForFaction::getStockPileFor(const ItemIndex item) co
 	ItemTypeId itemType = m_area.getItems().getItemType(item);
 	if(!m_availableStockPilesByItemType.contains(itemType))
 		return nullptr;
-	for(StockPile* stockPile : m_availableStockPilesByItemType.at(itemType))
+	for(StockPile* stockPile : m_availableStockPilesByItemType[itemType])
 		if(stockPile->accepts(item))
 			return stockPile;
 	return nullptr;

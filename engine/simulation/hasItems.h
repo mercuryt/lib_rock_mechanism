@@ -2,6 +2,7 @@
 
 #include "../types.h"
 #include "../config.h"
+#include <unordered_map>
 
 class Items;
 struct DeserializationMemo;
@@ -9,14 +10,15 @@ class Area;
 
 struct ItemDataLocation
 {
-	Items& store;
+	Items* store;
 	ItemIndex index;
 };
 
 class SimulationHasItems final
 {
 	ItemId m_nextId = ItemId::create(0);
-	ItemIdMap<ItemDataLocation> m_items;
+	// TODO: Use boost unordered_map.
+	std::unordered_map<ItemId, ItemDataLocation, ItemId::Hash> m_items;
 public:
 	SimulationHasItems() = default;
 	SimulationHasItems(const Json& data, DeserializationMemo& deserializationMemo);

@@ -2,15 +2,16 @@
 
 #include "../types.h"
 #include "../config.h"
-#include "../lib/dynamic_bitset.hpp"
 #include "../designations.h"
+#include "idTypes.h"
+#include <unordered_map>
 
 class Area;
 struct DeserializationMemo;
 class AreaHasBlockDesignationsForFaction final
 {
 	Area& m_area;
-	sul::dynamic_bitset<> m_designations;
+	std::vector<bool> m_designations;
 	int getIndex(BlockIndex index, BlockDesignation designation) const;
 public:
 	AreaHasBlockDesignationsForFaction(Area& area);
@@ -29,7 +30,7 @@ public:
 class AreaHasBlockDesignations final
 {
 	Area& m_area;
-	FactionIdMap<AreaHasBlockDesignationsForFaction> m_data;
+	std::unordered_map<FactionId, AreaHasBlockDesignationsForFaction, FactionId::Hash> m_data;
 public:
 	AreaHasBlockDesignations(Area& area) : m_area(area) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);

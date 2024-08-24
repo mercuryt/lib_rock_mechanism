@@ -1,10 +1,10 @@
 #pragma once
 #include "json.h"
 #include "reference.h"
+#include "vectorContainers.h"
 #include <list>
 #include <functional>
 #include <cassert>
-#include <unordered_set>
 
 class HasOnDestroySubscriptions;
 class Objective;
@@ -46,7 +46,7 @@ public:
 // OnDestroy must be loaded from json before HasOnDestroySubscriptions.
 class OnDestroy final
 {
-	std::unordered_set<HasOnDestroySubscriptions*> m_subscriptions;
+	SmallSet<HasOnDestroySubscriptions*> m_subscriptions;
 public:
 	OnDestroy(const Json& data, DeserializationMemo& deserializationMemo);
 	OnDestroy() = default;
@@ -64,7 +64,7 @@ inline void to_json(Json& data, const OnDestroy& onDestroy) { data = reinterpret
 class HasOnDestroySubscriptions final
 {
 	std::unique_ptr<OnDestroyCallBack> m_callback;
-	std::unordered_set<OnDestroy*> m_onDestroys;
+	SmallSet<OnDestroy*> m_onDestroys;
 public:
 	// Only one static mutex for the whole process.
 	static std::mutex m_mutex;

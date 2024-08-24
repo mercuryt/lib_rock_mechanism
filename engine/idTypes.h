@@ -1,5 +1,6 @@
 #pragma once
 #include "strongInteger.h"
+#include "vectorContainers.h"
 #include <cstdint>
 using AreaIdWidth = uint32_t;
 class AreaId : public StrongInteger<AreaId, AreaIdWidth>
@@ -11,7 +12,7 @@ public:
 inline void to_json(Json& data, const AreaId& index) { data = index.get(); }
 inline void from_json(const Json& data, AreaId& index) { index = AreaId::create(data.get<AreaIdWidth>()); }
 template<typename T>
-using AreaIdMap = std::unordered_map<AreaId, T, AreaId::Hash>;
+using AreaIdMap = SmallMap<AreaId, T>;
 
 using ItemIdWidth = uint32_t;
 class ItemId : public StrongInteger<ItemId, ItemIdWidth>
@@ -23,7 +24,7 @@ public:
 inline void to_json(Json& data, const ItemId& index) { data = index.get(); }
 inline void from_json(const Json& data, ItemId& index) { index = ItemId::create(data.get<ItemIdWidth>()); }
 template<typename T>
-using ItemIdMap = std::unordered_map<ItemId, T, ItemId::Hash>;
+using ItemIdMap = SmallMap<ItemId, T>;
 
 using ActorIdWidth = uint32_t;
 class ActorId : public StrongInteger<ActorId, ActorIdWidth>
@@ -35,7 +36,7 @@ public:
 inline void to_json(Json& data, const ActorId& index) { data = index.get(); }
 inline void from_json(const Json& data, ActorId& index) { index = ActorId::create(data.get<ActorIdWidth>()); }
 template<typename T>
-using ActorIdMap = std::unordered_map<ActorId, T, ActorId::Hash>;
+using ActorIdMap = SmallMap<ActorId, T>;
 
 using VisionCuboidIdWidth = uint32_t;
 class VisionCuboidId : public StrongInteger<VisionCuboidId, VisionCuboidIdWidth>
@@ -57,7 +58,7 @@ public:
 inline void to_json(Json& data, const FactionId& index) { data = index.get(); }
 inline void from_json(const Json& data, FactionId& index) { index = FactionId::create(data.get<FactionIdWidth>()); }
 template<typename T>
-using FactionIdMap = std::unordered_map<FactionId, T, FactionId::Hash>;
+using FactionIdMap = SmallMap<FactionId, T>;
 using FactionIdSet = StrongIntegerSet<FactionId>;
 
 using ObjectiveTypeIdWidth = uint8_t;
@@ -70,7 +71,7 @@ public:
 void to_json(Json& data, const ObjectiveTypeId& index);
 void from_json(const Json& data, ObjectiveTypeId& index);
 template<typename T>
-using ObjectiveTypeIdMap = std::unordered_map<ObjectiveTypeId, T, ObjectiveTypeId::Hash>;
+using ObjectiveTypeIdMap = SmallMap<ObjectiveTypeId, T>;
 using ObjectiveTypeIdSet = StrongIntegerSet<ObjectiveTypeId>;
 
 using PlantSpeciesIdWidth = int16_t;
@@ -103,7 +104,7 @@ public:
 void to_json(Json& data, const MaterialTypeId& index);
 void from_json(const Json& data, MaterialTypeId& index);
 template<typename T>
-using MaterialTypeMap = std::unordered_map<MaterialTypeId, T, MaterialTypeId::Hash>;
+using MaterialTypeMap = SmallMap<MaterialTypeId, T>;
 
 using MaterialCategoryTypeIdWidth = uint16_t;
 class MaterialCategoryTypeId : public StrongInteger<MaterialCategoryTypeId, MaterialCategoryTypeIdWidth>
@@ -133,7 +134,7 @@ public:
 void to_json(Json& data, const ItemTypeId& index);
 void from_json(const Json& data, ItemTypeId& index);
 template<typename T>
-using ItemTypeMap = std::unordered_map<ItemTypeId, T, ItemTypeId::Hash>;
+using ItemTypeMap = SmallMap<ItemTypeId, T>;
 
 using FluidTypeIdWidth = uint16_t;
 class FluidTypeId : public StrongInteger<FluidTypeId, FluidTypeIdWidth>
@@ -145,7 +146,7 @@ public:
 void to_json(Json& data, const FluidTypeId& index);
 void from_json(const Json& data, FluidTypeId& index);
 template<typename T>
-using FluidTypeMap = std::unordered_map<FluidTypeId, T, FluidTypeId::Hash>;
+using FluidTypeMap = SmallMap<FluidTypeId, T>;
 using FluidTypeSet = StrongIntegerSet<FluidTypeId>;
 
 using ShapeIdWidth = uint16_t;
@@ -169,7 +170,7 @@ public:
 void to_json(Json& data, const SkillTypeId& index);
 void from_json(const Json& data, SkillTypeId& index);
 template<typename T>
-using SkillTypeMap = std::unordered_map<SkillTypeId, T, SkillTypeId::Hash>;
+using SkillTypeMap = SmallMap<SkillTypeId, T>;
 
 using MoveTypeIdWidth = uint16_t;
 class MoveTypeId : public StrongInteger<MoveTypeId, MoveTypeIdWidth>
@@ -181,7 +182,7 @@ public:
 void to_json(Json& data, const MoveTypeId& index);
 void from_json(const Json& data, MoveTypeId& index);
 template<typename T>
-using MoveTypeMap = std::unordered_map<MoveTypeId, T, MoveTypeId::Hash>;
+using MoveTypeMap = SmallMap<MoveTypeId, T>;
 
 using BodyTypeIdWidth = uint8_t;
 class BodyTypeId : public StrongInteger<BodyTypeId, BodyTypeIdWidth>
@@ -213,7 +214,7 @@ public:
 void to_json(Json& data, const CraftStepTypeCategoryId& index);
 void from_json(const Json& data, CraftStepTypeCategoryId& index);
 template<typename T>
-using CraftStepTypeCategoryMap = std::unordered_map<CraftStepTypeCategoryId, T, CraftStepTypeCategoryId::Hash>;
+using CraftStepTypeCategoryMap = SmallMap<CraftStepTypeCategoryId, T>;
 
 using CraftJobTypeIdWidth = uint16_t;
 class CraftJobTypeId : public StrongInteger<CraftJobTypeId, CraftJobTypeIdWidth>

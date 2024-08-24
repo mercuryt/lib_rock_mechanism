@@ -132,5 +132,9 @@ void CanGrow::increment(Area& area)
 	m_event.reset();
 	update(area);
 }
+void CanGrow::unschedule()
+{
+	m_event.unschedule();
+}
 AnimalGrowthEvent::AnimalGrowthEvent(Step delay, Area& area, CanGrow& cg, Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_canGrow(cg) { }

@@ -14,7 +14,6 @@
 #include <vector>
 #include <utility>
 #include <tuple>
-#include <unordered_set>
 #include <unordered_map>
 #include <list>
 
@@ -137,13 +136,13 @@ class ReenableStockPileScheduledEvent final : public ScheduledEvent
 {
 	StockPile& m_stockPile;
 public:
-	ReenableStockPileScheduledEvent(StockPile& sp, Step duration, const Step start = Step::create(0)) : ScheduledEvent(sp.getSimulation(), duration, start), m_stockPile(sp) { }
+	ReenableStockPileScheduledEvent(StockPile& sp, Step duration, const Step start = Step::null()) : ScheduledEvent(sp.getSimulation(), duration, start), m_stockPile(sp) { }
 	void execute(Simulation&, Area*) { m_stockPile.reenable(); }
 	void clearReferences(Simulation&, Area*) { m_stockPile.m_reenableScheduledEvent.clearPointer(); }
 };
 struct BlockIsPartOfStockPile
 {
-	StockPile& stockPile;
+	StockPile* stockPile;
 	bool active = false;
 };
 class BlockIsPartOfStockPiles
@@ -156,7 +155,7 @@ public:
 	void recordNoLongerMember(StockPile& stockPile);
 	// When an item is added or removed update avalibility for all stockpiles.
 	void updateActive();
-	[[nodiscard]] StockPile* getForFaction(FactionId faction) { if(!m_stockPiles.contains(faction)) return nullptr; return &m_stockPiles.at(faction).stockPile; }
+	[[nodiscard]] StockPile* getForFaction(FactionId faction) { if(!m_stockPiles.contains(faction)) return nullptr; return m_stockPiles[faction].stockPile; }
 	[[nodiscard]] bool contains(FactionId faction) const { return m_stockPiles.contains(faction); }
 	[[nodiscard]] bool isAvalible(FactionId faction) const;
 	friend class AreaHasStockPilesForFaction;
@@ -179,6 +178,7 @@ class AreaHasStockPilesForFaction
 	ItemTypeMap<ItemReferences> m_itemsWithoutDestinationsByItemType;
 	// Only when an item is added here does it get designated for stockpileing.
 	ItemReferences m_itemsWithDestinationsWithoutProjects;
+	//TODO: Replace these unordered_maps with medium maps.
 	// The stockpile used as index here is not neccesarily where the item will go, it is used to prove that there is somewhere the item could go.
 	std::unordered_map<StockPile*, ItemReferences> m_itemsWithDestinationsByStockPile;
 	// Multiple projects per item due to generic item stacking.
@@ -223,7 +223,7 @@ public:
 class AreaHasStockPiles
 {
 	Area& m_area;
-	FactionIdMap<AreaHasStockPilesForFaction> m_data;
+	std::unordered_map<FactionId, AreaHasStockPilesForFaction, FactionId::Hash> m_data;
 public:
 	AreaHasStockPiles(Area& a) : m_area(a) { }
 	void registerFaction(FactionId faction) { assert(!m_data.contains(faction)); m_data.try_emplace(faction, m_area, faction); }

@@ -128,7 +128,7 @@ void Actors::canPickUp_removeItem(ActorIndex index, ItemIndex item)
 {
 	assert(m_carrying[index].exists());
 	assert(m_carrying[index].isItem());
-	assert(m_carrying[index].get() == item);
+	assert(m_carrying[index].get().toItem() == item);
 	m_carrying[index].clear();
 	Items& items = m_area.getItems();
 	items.destroy(item);
@@ -282,14 +282,14 @@ bool Actors::canPickUp_canPutDown(ActorIndex index, BlockIndex block)
 }
 void Actors::canPickUp_updateActorIndex(ActorIndex index, ActorIndex oldIndex, ActorIndex newIndex)
 {
-	assert(m_carrying[index].get() == oldIndex);
+	assert(m_carrying[index].get().toActor() == oldIndex);
 	assert(m_carrying[index].isActor());
 	m_carrying[index].updateIndex(newIndex);
 }
 void Actors::canPickUp_updateItemIndex(ActorIndex index, ItemIndex oldIndex, ItemIndex newIndex)
 {
-	assert(m_carrying[index].get() == oldIndex);
 	assert(m_carrying[index].isItem());
+	assert(m_carrying[index].getItem() == oldIndex);
 	m_carrying[index].updateIndex(newIndex);
 }
 void Actors::canPickUp_updateUnencomberedCarryMass(ActorIndex index)
