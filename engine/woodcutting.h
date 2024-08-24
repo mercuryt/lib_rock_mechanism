@@ -1,6 +1,7 @@
 #pragma once
 
 #include "cuboid.h"
+#include "index.h"
 #include "input.h"
 #include "objective.h"
 #include "project.h"
@@ -64,7 +65,7 @@ class HasWoodCuttingDesignationsForFaction final
 {
 	Area& m_area;
 	FactionId m_faction;
-	BlockIndexMap<WoodCuttingProject> m_data;
+	std::unordered_map<BlockIndex, WoodCuttingProject, BlockIndex::Hash> m_data;
 public:
 	HasWoodCuttingDesignationsForFaction(FactionId p, Area& a) : m_area(a), m_faction(p) { }
 	HasWoodCuttingDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, FactionId faction);
@@ -81,7 +82,7 @@ public:
 class AreaHasWoodCuttingDesignations final
 {
 	Area& m_area;
-	FactionIdMap<HasWoodCuttingDesignationsForFaction> m_data;
+	std::unordered_map<FactionId, HasWoodCuttingDesignationsForFaction, FactionId::Hash> m_data;
 public:
 	AreaHasWoodCuttingDesignations(Area& a) : m_area(a) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);

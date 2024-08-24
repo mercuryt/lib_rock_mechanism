@@ -206,7 +206,7 @@ public:
 };
 class AreaHasCraftingLocationsAndJobs final
 {
-	FactionIdMap<HasCraftingLocationsAndJobsForFaction> m_data;
+	std::unordered_map<FactionId, HasCraftingLocationsAndJobsForFaction, FactionId::Hash> m_data;
 	Area& m_area;
 public:
 	AreaHasCraftingLocationsAndJobs(Area& area) : m_area(area) { }

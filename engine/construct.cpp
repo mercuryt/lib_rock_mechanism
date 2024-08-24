@@ -121,7 +121,7 @@ void ConstructionLocationDishonorCallback::execute([[maybe_unused]] Quantity old
 	m_area.m_hasConstructionDesignations.getForFaction(m_faction).undesignate(m_location);
 }
 HasConstructionDesignationsForFaction::HasConstructionDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, FactionId faction) :
-	m_area(deserializationMemo.area(data["area"])), m_faction(faction)
+	m_faction(faction)
 {
 	for(const Json& pair : data["projects"])
 	{
@@ -145,16 +145,16 @@ Json HasConstructionDesignationsForFaction::toJson() const
 		Json jsonPair{pair.first, pair.second.toJson()};
 		projects.push_back(jsonPair);
 	}
-	return {{"area", m_area}, {"projects", projects}};
+	return {{"projects", projects}};
 }
 // If blockFeatureType is null then construct a wall rather then a feature.
-void HasConstructionDesignationsForFaction::designate(BlockIndex block, const BlockFeatureType* blockFeatureType, MaterialTypeId materialType)
+void HasConstructionDesignationsForFaction::designate(Area& area, BlockIndex block, const BlockFeatureType* blockFeatureType, MaterialTypeId materialType)
 {
 	assert(!contains(block));
-	Blocks& blocks = m_area.getBlocks();
+	Blocks& blocks = area.getBlocks();
 	blocks.designation_set(block, m_faction, BlockDesignation::Construct);
-	std::unique_ptr<DishonorCallback> locationDishonorCallback = std::make_unique<ConstructionLocationDishonorCallback>(m_faction, m_area, block);
-	m_data.try_emplace(block, m_faction, m_area, block, blockFeatureType, materialType, std::move(locationDishonorCallback));
+	std::unique_ptr<DishonorCallback> locationDishonorCallback = std::make_unique<ConstructionLocationDishonorCallback>(m_faction, area, block);
+	m_data.try_emplace(block, m_faction, area, block, blockFeatureType, materialType, std::move(locationDishonorCallback));
 }
 void HasConstructionDesignationsForFaction::undesignate(BlockIndex block)
 {
@@ -162,11 +162,11 @@ void HasConstructionDesignationsForFaction::undesignate(BlockIndex block)
 	ConstructProject& project = m_data.at(block);
 	project.cancel();
 }
-void HasConstructionDesignationsForFaction::remove(BlockIndex block)
+void HasConstructionDesignationsForFaction::remove(Area& area, BlockIndex block)
 {
 	assert(contains(block));
 	m_data.erase(block);
-	m_area.getBlocks().designation_unset(block, m_faction, BlockDesignation::Construct);
+	area.getBlocks().designation_unset(block, m_faction, BlockDesignation::Construct);
 }
 void AreaHasConstructionDesignations::clearReservations()
 {
@@ -174,10 +174,10 @@ void AreaHasConstructionDesignations::clearReservations()
 		for(auto& pair2 : pair.second.m_data)
 			pair2.second.clearReservations();
 }
-void HasConstructionDesignationsForFaction::removeIfExists(BlockIndex block)
+void HasConstructionDesignationsForFaction::removeIfExists(Area& area, BlockIndex block)
 {
 	if(m_data.contains(block))
-		remove(block);
+		remove(area, block);
 }
 bool HasConstructionDesignationsForFaction::contains(BlockIndex block) const { return m_data.contains(block); }
 const BlockFeatureType* HasConstructionDesignationsForFaction::getForBlock(BlockIndex block) const { return m_data.at(block).m_blockFeatureType; }
@@ -215,7 +215,7 @@ Json AreaHasConstructionDesignations::toJson() const
 void AreaHasConstructionDesignations::addFaction(FactionId faction)
 {
 	assert(!m_data.contains(faction));
-	m_data.try_emplace(faction, faction, m_area);
+	m_data.emplace(faction, faction);
 }
 void AreaHasConstructionDesignations::removeFaction(FactionId faction)
 {
@@ -226,7 +226,7 @@ void AreaHasConstructionDesignations::designate(FactionId faction, BlockIndex bl
 {
 	if(!m_data.contains(faction))
 		addFaction(faction);
-	m_data.at(faction).designate(block, blockFeatureType, materialType);
+	m_data.at(faction).designate(m_area, block, blockFeatureType, materialType);
 }
 void AreaHasConstructionDesignations::undesignate(FactionId faction, BlockIndex block)
 {
@@ -235,12 +235,12 @@ void AreaHasConstructionDesignations::undesignate(FactionId faction, BlockIndex 
 void AreaHasConstructionDesignations::remove(FactionId faction, BlockIndex block)
 {
 	assert(m_data.contains(faction));
-	m_data.at(faction).remove(block);
+	m_data.at(faction).remove(m_area, block);
 }
 void AreaHasConstructionDesignations::clearAll(BlockIndex block)
 {
 	for(auto& pair : m_data)
-		pair.second.removeIfExists(block);
+		pair.second.removeIfExists(m_area, block);
 }
 bool AreaHasConstructionDesignations::areThereAnyForFaction(FactionId faction) const
 {

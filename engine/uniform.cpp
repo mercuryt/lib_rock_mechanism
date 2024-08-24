@@ -9,18 +9,16 @@ UniformElement::UniformElement(ItemTypeId itemType, Quantity quantity, MaterialT
 	itemQuery(itemType, materialType), quantity(quantity) { }
 Uniform& SimulationHasUniformsForFaction::createUniform(std::wstring& name, std::vector<UniformElement>& elements)
 {
-	auto pair = m_data.try_emplace(name, name, elements);
-	assert(pair.second);
-	return pair.first->second;
+	return m_data.emplace(name, name, elements).second;
 }
 void SimulationHasUniformsForFaction::destroyUniform(Uniform& uniform)
 {
 	m_data.erase(uniform.name);
 }
-std::unordered_map<std::wstring, Uniform>& SimulationHasUniformsForFaction::getAll(){ return m_data; }
-SimulationHasUniformsForFaction& SimulationHasUniforms::at(FactionId faction) 
+SmallMap<std::wstring, Uniform>& SimulationHasUniformsForFaction::getAll(){ return m_data; }
+SimulationHasUniformsForFaction& SimulationHasUniforms::getForFaction(FactionId faction) 
 { 
 	if(!m_data.contains(faction))
 		registerFaction(faction);
-	return m_data.at(faction); 
+	return m_data[faction]; 
 }

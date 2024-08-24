@@ -114,7 +114,7 @@ bool Blocks::shape_moveTypeCanEnter(BlockIndex index, MoveTypeId moveType) const
 	for(const FluidData& fluidData : m_fluid[index])
 	{
 		auto found = MoveType::getSwim(moveType).find(fluidData.type);
-		if(found != MoveType::getSwim(moveType).end() && found->second <= fluidData.volume)
+		if(found != MoveType::getSwim(moveType).end() && found.second() <= fluidData.volume)
 		{
 			// Can swim in fluid, check breathing requirements
 			if(MoveType::getBreathless(moveType))

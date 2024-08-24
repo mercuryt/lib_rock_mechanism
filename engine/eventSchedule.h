@@ -54,6 +54,7 @@ public:
 	void schedule(std::unique_ptr<ScheduledEvent> scheduledEvent);
 	void unschedule(ScheduledEvent& scheduledEvent);
 	void doStep(const Step stepNumber);
+	void clear();
 	Simulation& getSimulation() { return m_simulation; }
 	Area* getArea() { return m_area; }
 	[[nodiscard]] Step simulationStep() const;

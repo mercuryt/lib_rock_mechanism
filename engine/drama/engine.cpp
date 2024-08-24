@@ -202,7 +202,7 @@ void DramaEngine::add(std::unique_ptr<DramaArc> dramaticArc)
 void DramaEngine::remove(DramaArc& arc)
 {
 	if(arc.m_area)
-		util::removeFromVectorByValueUnordered(m_arcsByArea.at(arc.m_area->m_id), &arc);
+		util::removeFromVectorByValueUnordered(m_arcsByArea[arc.m_area->m_id], &arc);
 	auto iter = std::ranges::find_if(m_arcs, [&](const auto& e) -> bool { return e.get() == &arc;});
 	assert(iter != m_arcs.end());
 	m_arcs.erase(iter);
@@ -233,7 +233,7 @@ void DramaEngine::createArcTypeForArea(DramaArcType type, Area& area)
 void DramaEngine::removeArcTypeFromArea(DramaArcType type, Area& area)
 {
 	assert(m_arcsByArea.contains(area.m_id));
-	for(DramaArc* arc : m_arcsByArea.at(area.m_id))
+	for(DramaArc* arc : m_arcsByArea[area.m_id])
 		if(arc->m_type == type)
 		{
 			remove(*arc);

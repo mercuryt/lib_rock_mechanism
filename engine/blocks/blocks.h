@@ -10,11 +10,9 @@
 #include "../blockFeature.h"
 #include "../index.h"
 
-#include "../../lib/dynamic_bitset.hpp"
 #include "dataVector.h"
 #include "index.h"
 
-#include <unordered_map>
 #include <vector>
 #include <memory>
 
@@ -54,11 +52,13 @@ class Blocks
 	DataVector<std::vector<std::pair<ItemIndex, CollisionVolume>>, BlockIndex> m_itemVolume;
 	DataVector<ActorIndicesForBlock, BlockIndex> m_actors;
 	DataVector<ItemIndicesForBlock, BlockIndex> m_items;
+	DataBitSet<BlockIndex> m_hasActors;
+	DataBitSet<BlockIndex> m_hasItems;
 	DataVector<PlantIndex, BlockIndex> m_plants;
 	DataVector<CollisionVolume, BlockIndex> m_dynamicVolume;
 	DataVector<CollisionVolume, BlockIndex> m_staticVolume;
 	DataVector<FactionIdMap<SmallSet<Project*>>, BlockIndex> m_projects;
-	DataVector<MaterialTypeMap<Fire>*, BlockIndex> m_fires;
+	DataVector<std::unordered_map<MaterialTypeId, Fire, MaterialTypeId::Hash>*, BlockIndex> m_fires;
 	DataVector<TemperatureDelta, BlockIndex> m_temperatureDelta;
 	DataVector<LocationBucket*, BlockIndex> m_locationBucket;
 	DataVector<std::array<BlockIndex, 6>, BlockIndex> m_directlyAdjacent;
@@ -283,7 +283,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, FluidTypeId
 	[[nodiscard]] const FluidData* fluid_getData(BlockIndex index, FluidTypeId fluidType) const;
 	[[nodiscard]] FluidData* fluid_getData(BlockIndex index, FluidTypeId fluidType);
 	// -Fire
-	void fire_setPointer(BlockIndex index, MaterialTypeMap<Fire>* pointer);
+	void fire_setPointer(BlockIndex index, std::unordered_map<MaterialTypeId, Fire, MaterialTypeId::Hash>* pointer);
 	void fire_clearPointer(BlockIndex index);
 	[[nodiscard]] bool fire_exists(BlockIndex index) const;
 	[[nodiscard]] FireStage fire_getStage(BlockIndex index) const;
@@ -363,7 +363,6 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, FluidTypeId
 	[[nodiscard]] bool shape_canStandIn(BlockIndex index) const;
 	[[nodiscard]] CollisionVolume shape_getDynamicVolume(BlockIndex index) const;
 	[[nodiscard]] CollisionVolume shape_getStaticVolume(BlockIndex index) const;
-	[[nodiscard]] const std::unordered_map<ShapeId, CollisionVolume>& shape_getShapes(BlockIndex index) const;
 	[[nodiscard]] Quantity shape_getQuantityOfItemWhichCouldFit(BlockIndex index, ItemTypeId itemType) const;
 	// -FarmField
 	void farm_insert(BlockIndex index, FactionId faction, FarmField& farmField);

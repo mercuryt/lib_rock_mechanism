@@ -60,6 +60,7 @@ public:
 	virtual ~PathRequest() = default;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(PathRequest, m_index, m_destinations, m_fluidType, m_actor, m_destination, m_huristicDestination, m_maxRange, m_designation, m_detour, m_unreserved, m_adjacent, m_reserve, m_reserveBlockThatPassesPredicate);
 };
+inline void to_json(Json& data, const std::unique_ptr<PathRequest>& pathRequest) { data = *pathRequest; }
 // Defines a standard callback to be subclassed by many objectives.
 class ObjectivePathRequest : public PathRequest
 {

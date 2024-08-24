@@ -1,6 +1,7 @@
 #pragma once
 #include "../objective.h"
 #include "../pathRequest.h"
+#include "../vectorContainers.h"
 class Area;
 class WoodCuttingProject;
 // ObjectiveType
@@ -15,7 +16,7 @@ public:
 class WoodCuttingObjective final : public Objective
 {
 	WoodCuttingProject* m_project;
-	std::unordered_set<Project*> m_cannotJoinWhileReservationsAreNotComplete;
+	SmallSet<Project*> m_cannotJoinWhileReservationsAreNotComplete;
 public:
 	WoodCuttingObjective();
 	WoodCuttingObjective(const Json& data, DeserializationMemo& deserializationMemo);

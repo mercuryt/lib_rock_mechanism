@@ -45,7 +45,7 @@ class AnimalsLeaveScheduledEvent final : public ScheduledEvent
 {
 	AnimalsArriveDramaArc& m_dramaticArc;
 public:
-	AnimalsLeaveScheduledEvent(AnimalsArriveDramaArc& event, Simulation& simulation, Step duration, Step start = Step::create(0)) : ScheduledEvent(simulation, duration, start), m_dramaticArc(event) { }
+	AnimalsLeaveScheduledEvent(AnimalsArriveDramaArc& event, Simulation& simulation, Step duration, Step start = Step::null()) : ScheduledEvent(simulation, duration, start), m_dramaticArc(event) { }
 	void execute(Simulation&, Area*) { m_dramaticArc.callback(); }
 	void clearReferences(Simulation&, Area*) { m_dramaticArc.m_scheduledEvent.clearPointer(); }
 };

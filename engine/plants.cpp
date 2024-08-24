@@ -19,46 +19,44 @@ Plants::Plants(Area& area) :
 	m_endOfHarvestEvent(area.m_eventSchedule),
 	m_foliageGrowthEvent(area.m_eventSchedule) 
 { }
-void Plants::resize(HasShapeIndex newSize)
+void Plants::resize(PlantIndex newSize)
 {
-	HasShapes::resize(newSize);
+	HasShapes::resize(newSize.toHasShape());
 	m_growthEvent.resize(newSize);
 	m_shapeGrowthEvent.resize(newSize);
 	m_fluidEvent.resize(newSize);
 	m_temperatureEvent.resize(newSize);
 	m_endOfHarvestEvent.resize(newSize);
 	m_foliageGrowthEvent.resize(newSize);
-	m_species.resize(newSize.toPlant());
-	m_fluidSource.resize(newSize.toPlant());
-	m_quantityToHarvest.resize(newSize.toPlant());
-	m_percentGrown.resize(newSize.toPlant());
-	m_percentFoliage.resize(newSize.toPlant());
-	m_wildGrowth.resize(newSize.toPlant());
-	m_volumeFluidRequested.resize(newSize.toPlant());
+	m_species.resize(newSize);
+	m_fluidSource.resize(newSize);
+	m_quantityToHarvest.resize(newSize);
+	m_percentGrown.resize(newSize);
+	m_percentFoliage.resize(newSize);
+	m_wildGrowth.resize(newSize);
+	m_volumeFluidRequested.resize(newSize);
 }
-void Plants::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
+void Plants::moveIndex(PlantIndex oldIndex, PlantIndex newIndex)
 {
-	PlantIndex o = PlantIndex::cast(oldIndex);
-	PlantIndex n = PlantIndex::cast(newIndex);
-	HasShapes::moveIndex(oldIndex, newIndex);
+	HasShapes::moveIndex(oldIndex.toHasShape(), newIndex.toHasShape());
 	m_growthEvent.moveIndex(oldIndex, newIndex);
 	m_shapeGrowthEvent.moveIndex(oldIndex, newIndex);
 	m_fluidEvent.moveIndex(oldIndex, newIndex);
 	m_temperatureEvent.moveIndex(oldIndex, newIndex);
 	m_endOfHarvestEvent.moveIndex(oldIndex, newIndex);
 	m_foliageGrowthEvent.moveIndex(oldIndex, newIndex);
-	m_species[n] = m_species[o];
-	m_fluidSource[n] = m_fluidSource[o];
-	m_quantityToHarvest[n] = m_quantityToHarvest[o];
-	m_percentGrown[n] = m_percentGrown[o];
-	m_percentFoliage[n] = m_percentFoliage[o];
-	m_wildGrowth[n] = m_wildGrowth[o];
-	m_volumeFluidRequested[n] = m_volumeFluidRequested[o];
+	m_species[newIndex] = m_species[oldIndex];
+	m_fluidSource[newIndex] = m_fluidSource[oldIndex];
+	m_quantityToHarvest[newIndex] = m_quantityToHarvest[oldIndex];
+	m_percentGrown[newIndex] = m_percentGrown[oldIndex];
+	m_percentFoliage[newIndex] = m_percentFoliage[oldIndex];
+	m_wildGrowth[newIndex] = m_wildGrowth[oldIndex];
+	m_volumeFluidRequested[newIndex] = m_volumeFluidRequested[oldIndex];
 	Blocks& blocks = m_area.getBlocks();
 	for(BlockIndex block : m_blocks[newIndex])
 	{
-		assert(blocks.plant_get(block) == o);
-		blocks.plant_set(block, n);
+		assert(blocks.plant_get(block) == oldIndex);
+		blocks.plant_set(block, newIndex);
 	}
 }
 void Plants::onChangeAmbiantSurfaceTemperature()
@@ -75,12 +73,12 @@ PlantIndex Plants::create(PlantParamaters paramaters)
 	PlantSpeciesId species = paramaters.species;
 	BlockIndex location = paramaters.location;
 	assert(location.exists());
-	PlantIndex index = PlantIndex::cast(HasShapes::getNextIndex());
-	assert(index < size());
+	PlantIndex index = PlantIndex::create(size());
+	resize(index + 1);
 	m_percentGrown[index] = paramaters.percentGrown.empty() ? Percent::create(100) : paramaters.percentGrown;
 	if(paramaters.shape.empty())
 		paramaters.shape = PlantSpecies::shapeForPercentGrown(paramaters.species, m_percentGrown[index]);
-	HasShapes::create(index, paramaters.shape, location, Facing::create(0), paramaters.faction, true);
+	HasShapes::create(index, paramaters.shape, paramaters.faction, true);
 	m_species[index] = paramaters.species;
 	m_fluidSource[index].clear();
 	m_percentGrown[index] = paramaters.percentGrown;
@@ -90,6 +88,7 @@ PlantIndex Plants::create(PlantParamaters paramaters)
 	m_volumeFluidRequested[index] = CollisionVolume::create(0);
 	auto& blocks = m_area.getBlocks();
 	assert(blocks.plant_canGrowHereEver(location, species));
+	setLocation(index, location, Facing::create(0));
 	uint8_t wildGrowth = PlantSpecies::wildGrowthForPercentGrown(species, getPercentGrown(index));
 	if(wildGrowth)
 		doWildGrowth(index, wildGrowth);
@@ -116,13 +115,11 @@ PlantIndex Plants::create(PlantParamaters paramaters)
 }
 void Plants::destroy(PlantIndex index)
 {
-	m_location.remove(index);
-	m_species.remove(index);
-	m_shape.remove(index);
-	m_percentGrown.remove(index);
-	m_percentFoliage.remove(index);
-	m_wildGrowth.remove(index);
-	m_quantityToHarvest.remove(index);
+	// No need to explicitly unschedule events here, destorying the event holder will do it.
+	const PlantIndex& s = PlantIndex::create(size());
+	if(s != 1)
+		moveIndex(index, s - 1);
+	resize(s - 1);
 }
 void Plants::die(PlantIndex index)
 {

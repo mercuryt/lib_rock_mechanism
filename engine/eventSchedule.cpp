@@ -62,6 +62,14 @@ void EventSchedule::doStep(Step stepNumber)
 		}
 	m_data.erase(stepNumber);
 }
+void EventSchedule::clear()
+{
+	for(auto& [step, events] : m_data)
+		for(std::unique_ptr<ScheduledEvent>& scheduledEvent : events)
+			if(!scheduledEvent->m_cancel)
+				scheduledEvent->clearReferences(m_simulation, m_area);
+		
+}
 uint32_t EventSchedule::count()
 {
 	uint32_t output = 0;

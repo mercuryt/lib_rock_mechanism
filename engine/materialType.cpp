@@ -50,6 +50,16 @@ MaterialTypeId MaterialType::create(MaterialTypeParamaters& p)
 	materialTypeData.m_construction_duration.add(p.construction_duration);
 	return MaterialTypeId::create(materialTypeData.m_name.size() - 1);
 }
+void MaterialType::setConstructionParamaters(MaterialTypeId materialType, const MaterialTypeConstructionDataParamaters& p)
+{
+	materialTypeData.m_construction_consumed[materialType] = p.consumed;
+	materialTypeData.m_construction_unconsumed[materialType] = p.unconsumed;
+	materialTypeData.m_construction_byproducts[materialType] = p.byproducts;
+	//TODO: Should there be a construction type name here?
+	//materialTypeData.m_construction_name[materialType] = p.name;
+	materialTypeData.m_construction_skill[materialType] = p.skill;
+	materialTypeData.m_construction_duration[materialType] = p.duration;
+}
 bool MaterialType::empty() { return materialTypeData.m_density.empty(); }
 std::string& MaterialType::getName(MaterialTypeId id) { return materialTypeData.m_name[id]; };
 Density MaterialType::getDensity(MaterialTypeId id) { return materialTypeData.m_density[id]; };

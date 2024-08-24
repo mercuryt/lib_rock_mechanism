@@ -7,11 +7,10 @@
 void Blocks::stockpile_recordMembership(BlockIndex index, StockPile& stockPile)
 {
 	assert(!stockpile_contains(index, stockPile.getFaction()));
-	auto result = m_stockPiles[index].try_emplace(stockPile.getFaction(), stockPile, false);
-	assert(result.second);
+	m_stockPiles[index].emplace(stockPile.getFaction(), &stockPile, false);
 	if(stockpile_isAvalible(index, stockPile.getFaction()))
 	{
-		m_stockPiles.at(index).at(stockPile.getFaction()).active = true;
+		m_stockPiles[index][stockPile.getFaction()].active = true;
 		stockPile.incrementOpenBlocks();
 	}
 }
@@ -20,25 +19,25 @@ void Blocks::stockpile_recordNoLongerMember(BlockIndex index, StockPile& stockPi
 	assert(stockpile_contains(index, stockPile.getFaction()));
 	if(stockpile_isAvalible(index, stockPile.getFaction()))
 		stockPile.decrementOpenBlocks();
-	if(m_stockPiles.at(index).size() == 1)
+	if(m_stockPiles[index].size() == 1)
 		m_stockPiles.erase(index);
 	else
-		m_stockPiles.at(index).erase(stockPile.getFaction());
+		m_stockPiles[index].erase(stockPile.getFaction());
 }
 void Blocks::stockpile_updateActive(BlockIndex index)
 {
-	for(auto& [faction, blockHasStockPile] : m_stockPiles.at(index))
+	for(auto& [faction, blockHasStockPile] : m_stockPiles[index])
 	{
 		bool avalible = stockpile_isAvalible(index, faction);
 		if(avalible && !blockHasStockPile.active)
 		{
 			blockHasStockPile.active = true;
-			blockHasStockPile.stockPile.incrementOpenBlocks();
+			blockHasStockPile.stockPile->incrementOpenBlocks();
 		}
 		else if(!avalible && blockHasStockPile.active)
 		{
 			blockHasStockPile.active = false;
-			blockHasStockPile.stockPile.decrementOpenBlocks();
+			blockHasStockPile.stockPile->decrementOpenBlocks();
 		}
 	}
 }
@@ -53,7 +52,7 @@ bool Blocks::stockpile_isAvalible(BlockIndex index, FactionId faction) const
 	Items& items = m_area.getItems();
 	if(!items.isGeneric(item))
 		return false;
-	StockPile& stockPile = m_stockPiles.at(index).at(faction).stockPile;
+	StockPile& stockPile = *m_stockPiles[index][faction].stockPile;
 	if(!stockPile.accepts(item))
 		return false;
 	CollisionVolume volume = Shape::getCollisionVolumeAtLocationBlock(items.getShape(item));
@@ -64,15 +63,15 @@ bool Blocks::stockpile_contains(BlockIndex index, FactionId faction) const
 	auto found = m_stockPiles.find(index);
 	if(found == m_stockPiles.end())
 		return false;
-	return found->second.contains(faction);
+	return found.second().contains(faction);
 }
 StockPile* Blocks::stockpile_getForFaction(BlockIndex index, FactionId faction)
 {
 	auto indexIter = m_stockPiles.find(index);
 	if(indexIter == m_stockPiles.end())
 		return nullptr;
-	auto factionIter = indexIter->second.find(faction);
-	if(factionIter == m_stockPiles.at(index).end())
+	auto factionIter = indexIter.second().find(faction);
+	if(factionIter == m_stockPiles[index].end())
 		return nullptr;
-	return &factionIter->second.stockPile;
+	return factionIter->second.stockPile;
 }

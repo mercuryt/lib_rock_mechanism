@@ -19,7 +19,6 @@
 
 #include <memory>
 #include <sys/types.h>
-#include <unordered_set>
 #include <algorithm>
 
 HaulStrategy haulStrategyFromName(std::string name)
@@ -194,7 +193,7 @@ Json HaulSubproject::toJson() const
 	if(!m_liftPoints.empty())
 	{
 		data["liftPoints"] = Json::array();
-		for(auto& [actor, block] : m_liftPoints)
+		for(auto [actor, block] : m_liftPoints)
 			data["liftPoints"].push_back(Json::array({actor, block}));
 	}
 	return data;
@@ -309,7 +308,7 @@ void HaulSubproject::commandWorker(ActorIndex actor)
 				if(m_liftPoints.contains(ref))
 				{
 					// A lift point exists.
-					if(actorLocation == m_liftPoints.at(ref))
+					if(actorLocation == m_liftPoints[ref])
 					{
 						// Actor is at lift point.
 						if(allWorkersAreAdjacentTo(toHaulIndex))
@@ -331,7 +330,7 @@ void HaulSubproject::commandWorker(ActorIndex actor)
 					else
 						// Actor is not at lift point.
 						// destination, detour, adjacent, unreserved, reserve
-						actors.move_setDestination(actor, m_liftPoints.at(ref), detour);
+						actors.move_setDestination(actor, m_liftPoints[ref], detour);
 				}
 				else
 				{

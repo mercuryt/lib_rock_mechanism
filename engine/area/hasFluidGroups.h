@@ -1,16 +1,17 @@
 #pragma once
 #include "../fluidGroup.h"
 #include "index.h"
+#include "vectorContainers.h"
 #include <list>
 #include <string>
-#include <unordered_set>
 class Area;
 class AreaHasFluidGroups final
 {
+	//TODO: Should be deque?
 	std::list<FluidGroup> m_fluidGroups;
-	std::unordered_set<FluidGroup*> m_unstableFluidGroups;
-	std::unordered_set<FluidGroup*> m_setStable;
-	std::unordered_set<FluidGroup*> m_toDestroy;
+	SmallSet<FluidGroup*> m_unstableFluidGroups;
+	SmallSet<FluidGroup*> m_setStable;
+	SmallSet<FluidGroup*> m_toDestroy;
 	Area& m_area;
 public:
 	AreaHasFluidGroups(Area& area) : m_area(area) { }
@@ -23,5 +24,5 @@ public:
 	void markStable(FluidGroup& group);
 	[[nodiscard]] std::string toS() const;
 	[[nodiscard]] std::list<FluidGroup>& getAll() { return m_fluidGroups; }
-	[[nodiscard]] std::unordered_set<FluidGroup*>& getUnstable() { return m_unstableFluidGroups; }
+	[[nodiscard]] SmallSet<FluidGroup*>& getUnstable() { return m_unstableFluidGroups; }
 };

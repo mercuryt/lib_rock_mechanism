@@ -5,6 +5,7 @@
 #include "../config.h"
 #include "callbackTypes.h"
 #include "deserializationMemo.h"
+#include "vectorContainers.h"
 class Area;
 class DigProject;
 class DigObjectiveType final : public ObjectiveType
@@ -19,7 +20,7 @@ public:
 class DigObjective final : public Objective
 {
 	DigProject* m_project = nullptr;
-	std::unordered_set<DigProject*> m_cannotJoinWhileReservationsAreNotComplete;
+	SmallSet<DigProject*> m_cannotJoinWhileReservationsAreNotComplete;
 public:
 	DigObjective() : Objective(Config::digObjectivePriority) { }
 	DigObjective(const Json& data, DeserializationMemo& deserializationMemo);

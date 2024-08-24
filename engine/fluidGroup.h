@@ -10,13 +10,12 @@
 #pragma once
 
 #include <vector>
-#include <unordered_set>
-#include <unordered_map>
 
 #include "fluidGroups/drainQueue.h"
 #include "fluidGroups/fillQueue.h"
 #include "types.h"
 #include "index.h"
+#include "vectorContainers.h"
 
 class Area;
 struct FluidType;
@@ -36,7 +35,7 @@ public:
 	// For spitting into multiple fluidGroups.
 	std::vector<FluidGroupSplitData> m_futureGroups;
 	// For notifing groups with different fluids of unfull status. Groups with the same fluid are merged instead.
-	std::unordered_map<FluidGroup*, BlockIndices> m_futureNotifyPotentialUnfullAdjacent;
+	SmallMap<FluidGroup*, BlockIndices> m_futureNotifyPotentialUnfullAdjacent;
 	
 	BlockIndices m_diagonalBlocks;
 
@@ -81,7 +80,7 @@ public:
 	void setUnstable();
 	void addDiagonalsFor(BlockIndex block);
 	void validate() const;
-	void validate(std::unordered_set<FluidGroup*> toErase);
+	void validate(SmallSet<FluidGroup*> toErase);
 	void log() const;
 	void logFill() const;
 	[[nodiscard]] CollisionVolume totalVolume() const;

@@ -31,7 +31,7 @@ public:
 	void drink(Area& area, const CollisionVolume volume);
 	void notThirsty(Area& area);
 	void setNeedsFluid(Area& area);
-	void onDeath();
+	void unschedule();
 	void scheduleDrinkEvent(Area& area);
 	void setFluidType(FluidTypeId fluidType);
 	[[nodiscard]] Json toJson() const;
@@ -53,8 +53,8 @@ class DrinkEvent final : public ScheduledEvent
 	ActorReference m_actor;
 	ItemReference m_item;
 public:
-	DrinkEvent(Area& area, const Step delay, DrinkObjective& drob, ActorIndex actor, const Step start = Step::create(0));
-	DrinkEvent(Area& area, const Step delay, DrinkObjective& drob, ActorIndex actor, ItemIndex i, const Step start = Step::create(0));
+	DrinkEvent(Area& area, const Step delay, DrinkObjective& drob, ActorIndex actor, const Step start = Step::null());
+	DrinkEvent(Area& area, const Step delay, DrinkObjective& drob, ActorIndex actor, ItemIndex i, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };
@@ -62,7 +62,7 @@ class ThirstEvent final : public ScheduledEvent
 {
 	ActorIndex m_actor;
 public:
-	ThirstEvent(Area& area, const Step delay, ActorIndex a, const Step start = Step::create(0));
+	ThirstEvent(Area& area, const Step delay, ActorIndex a, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };

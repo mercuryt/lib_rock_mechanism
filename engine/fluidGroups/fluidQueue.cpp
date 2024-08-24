@@ -13,14 +13,14 @@ void FluidQueue::setBlocks(BlockIndices& blocks)
 			m_queue.emplace_back(block);
 	m_set.swap(blocks);
 }
-void FluidQueue::addBlock(BlockIndex block)
+void FluidQueue::maybeAddBlock(BlockIndex block)
 {
 	if(m_set.contains(block))
 		return;
 	m_set.add(block);
 	m_queue.emplace_back(block);
 }
-void FluidQueue::addBlocks(BlockIndices& blocks)
+void FluidQueue::maybeAddBlocks(BlockIndices& blocks)
 {
 	//m_queue.reserve(m_queue.size() + blocks.size());
 	for(BlockIndex block : blocks)
@@ -33,6 +33,11 @@ void FluidQueue::removeBlock(BlockIndex block)
 	m_set.remove(block);
 	std::erase_if(m_queue, [&](FutureFlowBlock& futureFlowBlock){ return futureFlowBlock.block == block; });
 }
+void FluidQueue::maybeRemoveBlock(BlockIndex block)
+{
+	if(m_set.contains(block))
+		removeBlock(block);
+}
 void FluidQueue::removeBlocks(BlockIndices& blocks)
 {
 	m_set.erase_if([&](BlockIndex block){ return blocks.contains(block); });
@@ -42,7 +47,7 @@ void FluidQueue::merge(FluidQueue& fluidQueue)
 {
 	//m_queue.reserve(m_queue.size() + fluidQueue.m_set.size());
 	for(BlockIndex block : fluidQueue.m_set)
-		addBlock(block);
+		maybeAddBlock(block);
 }
 void FluidQueue::noChange()
 {

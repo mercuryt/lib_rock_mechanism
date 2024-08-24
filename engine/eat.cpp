@@ -129,7 +129,7 @@ void MustEat::setNeedsFood(Area& area)
 		actors.objective_addNeed(actor, std::move(objective));
 	}
 }
-void MustEat::onDeath()
+void MustEat::unschedule()
 {
 	m_hungerEvent.maybeUnschedule();
 }

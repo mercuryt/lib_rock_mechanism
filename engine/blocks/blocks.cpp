@@ -229,7 +229,7 @@ BlockIndices Blocks::getAdjacentWithEdgeAdjacent(BlockIndex index) const
 {
 	BlockIndices output;
 	output.reserve(18);
-	static const int32_t offsetsList[18][3] = {
+	static constexpr int32_t offsetsList[18][3]{
 		{-1,0,-1}, 
 		{0,1,-1}, {0,0,-1}, {0,-1,-1},
 		{1,0,-1}, 
@@ -242,9 +242,8 @@ BlockIndices Blocks::getAdjacentWithEdgeAdjacent(BlockIndex index) const
 		{0,1,1}, {0,0,1}, {0,-1,1},
 		{1,0,1}, 
 	};
-	for(uint32_t i = 0; i < 26; i++)
+	for(const auto& offsets : offsetsList)
 	{
-		auto& offsets = offsetsList[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
 		if(block.exists())
 			output.add(block);
@@ -256,9 +255,8 @@ BlockIndices Blocks::getAdjacentWithEdgeAndCornerAdjacent(BlockIndex index) cons
 {
 	BlockIndices output;
 	output.reserve(26);
-	for(uint32_t i = 0; i < 26; i++)
+	for(const auto& offsets : offsetsListAllAdjacent)
 	{
-		auto& offsets = offsetsListAllAdjacent[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
 		if(block.exists())
 			output.add(block);
@@ -269,9 +267,8 @@ BlockIndices Blocks::getAdjacentWithEdgeAndCornerAdjacentUnfiltered(BlockIndex i
 {
 	BlockIndices output;
 	output.reserve(26);
-	for(uint32_t i = 0; i < 26; i++)
+	for(const auto& offsets : offsetsListAllAdjacent)
 	{
-		auto& offsets = offsetsListAllAdjacent[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
 		output.add(block);
 	}
@@ -291,9 +288,8 @@ BlockIndices Blocks::getEdgeAdjacentOnly(BlockIndex index) const
 		{-1,0,1}, {0,-1,1},
 		{0,1,1}, {1,0,1}, 
 	};
-	for(uint32_t i = 0; i < 12; i++)
+	for(const auto& offsets : offsetsList)
 	{
-		auto& offsets = offsetsList[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
 		if(block.exists())
 			output.add(block);
@@ -303,14 +299,13 @@ BlockIndices Blocks::getEdgeAdjacentOnly(BlockIndex index) const
 BlockIndices Blocks::getEdgeAdjacentOnSameZLevelOnly(BlockIndex index) const
 {
 	BlockIndices output;
-	output.reserve(12);
-	static const int32_t offsetsList[12][3] = {
+	output.reserve(4);
+	static const int32_t offsetsList[4][3] = {
 		{-1,-1,0}, {1,1,0}, 
 		{1,-1,0}, {-1,1,0},
 	};
-	for(uint32_t i = 0; i < 12; i++)
+	for(const auto& offsets : offsetsList)
 	{
-		auto& offsets = offsetsList[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
 		if(block.exists())
 			output.add(block);
@@ -320,14 +315,13 @@ BlockIndices Blocks::getEdgeAdjacentOnSameZLevelOnly(BlockIndex index) const
 BlockIndices Blocks::getEdgeAdjacentOnlyOnNextZLevelDown(BlockIndex index) const
 {
 	BlockIndices output;
-	output.reserve(12);
-	static const int32_t offsetsList[12][3] = {
+	output.reserve(4);
+	static const int32_t offsetsList[4][3] = {
 		{-1,0,-1}, {0,-1,-1},
 		{1,0,-1}, {0,1,-1}, 
 	};
-	for(uint32_t i = 0; i < 4; i++)
+	for(const auto& offsets : offsetsList)
 	{
-		auto& offsets = offsetsList[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
 		if(block.exists())
 			output.add(block);
@@ -337,15 +331,14 @@ BlockIndices Blocks::getEdgeAdjacentOnlyOnNextZLevelDown(BlockIndex index) const
 BlockIndices Blocks::getEdgeAndCornerAdjacentOnlyOnNextZLevelDown(BlockIndex index) const
 {
 	BlockIndices output;
-	output.reserve(12);
-	static const int32_t offsetsList[12][3] = {
+	output.reserve(8);
+	static const int32_t offsetsList[8][3] = {
 		{-1,-1,-1}, {-1,0,-1}, {-1, 1, -1},
 		{0,-1,-1}, {0,1,-1},
 		{1,-1,-1}, {1,0,-1}, {1,1,-1}
 	};
-	for(uint32_t i = 0; i < 4; i++)
+	for(const auto& offsets : offsetsList)
 	{
-		auto& offsets = offsetsList[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
 		if(block.exists())
 			output.add(block);
@@ -355,14 +348,13 @@ BlockIndices Blocks::getEdgeAndCornerAdjacentOnlyOnNextZLevelDown(BlockIndex ind
 BlockIndices Blocks::getEdgeAdjacentOnlyOnNextZLevelUp(BlockIndex index) const
 {
 	BlockIndices output;
-	output.reserve(12);
-	static const int32_t offsetsList[12][3] = {
+	output.reserve(4);
+	static const int32_t offsetsList[4][3] = {
 		{-1,0,1}, {0,-1,1},
 		{0,1,1}, {1,0,1}, 
 	};
-	for(uint32_t i = 0; i < 12; i++)
+	for(const auto& offsets : offsetsList)
 	{
-		auto& offsets = offsetsList[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
 		if(block.exists())
 			output.add(block);
@@ -385,9 +377,8 @@ BlockIndices Blocks::getEdgeAndCornerAdjacentOnly(BlockIndex index) const
 		{1,1,1}, {0,1,1},
 		{1,-1,1}, {1,0,1}, {0,-1,1}
 	};
-	for(uint32_t i = 0; i < 20; i++)
+	for(const auto& offsets : offsetsList)
 	{
-		auto& offsets = offsetsList[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
 		if(block.exists())
 			output.add(block);
@@ -402,9 +393,8 @@ BlockIndices Blocks::getAdjacentOnSameZLevelOnly(BlockIndex index) const
 		{-1,0,0}, {1,0,0}, 
 		{0,-1,0}, {0,1,0}
 	};
-	for(uint32_t i = 0; i < 4; i++)
+	for(const auto& offsets : offsetsList)
 	{
-		auto& offsets = offsetsList[i];
 		BlockIndex block = offset(index, offsets[0],offsets[1],offsets[2]);
 		if(block.exists())
 			output.add(block);

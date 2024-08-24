@@ -4,7 +4,7 @@
 #include "../fire.h"
 #include "types.h"
 #include <algorithm>
-void Blocks::fire_setPointer(BlockIndex index, MaterialTypeMap<Fire>* pointer)
+void Blocks::fire_setPointer(BlockIndex index, std::unordered_map<MaterialTypeId, Fire, MaterialTypeId::Hash>* pointer)
 {
 	assert(!m_fires[index]);
 	m_fires[index] = pointer;

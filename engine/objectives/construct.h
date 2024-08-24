@@ -2,7 +2,7 @@
 #include "../objective.h"
 #include "../types.h"
 #include "../pathRequest.h"
-#include "config.h"
+#include "../vectorContainers.h"
 class Project;
 class Area;
 class ConstructProject;
@@ -20,7 +20,7 @@ public:
 class ConstructObjective final : public Objective
 {
 	Project* m_project = nullptr;
-	std::unordered_set<Project*> m_cannotJoinWhileReservationsAreNotComplete;
+	SmallSet<Project*> m_cannotJoinWhileReservationsAreNotComplete;
 public:
 	ConstructObjective() : Objective(Config::constructObjectivePriority) { }
 	ConstructObjective(const Json& data, DeserializationMemo& deserializationMemo);

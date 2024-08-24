@@ -49,8 +49,8 @@ class Plants final : public HasShapes
 	DataVector<Percent, PlantIndex> m_percentFoliage;
 	DataVector<uint8_t, PlantIndex> m_wildGrowth;
 	DataVector<CollisionVolume, PlantIndex> m_volumeFluidRequested;
-	void resize(HasShapeIndex newSize);
-	void moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex);
+	void resize(PlantIndex newSize);
+	void moveIndex(PlantIndex oldIndex, PlantIndex newIndex);
 	void updateFluidVolumeRequested(PlantIndex index);
 public:
 	PlantIndexSet m_onSurface;
@@ -117,65 +117,65 @@ class PlantGrowthEvent final : public ScheduledEvent
 {
 	PlantIndex m_plant;
 public:
-	PlantGrowthEvent(Area& area, Step delay, PlantIndex p, Step start = Step::create(0));
+	PlantGrowthEvent(Area& area, Step delay, PlantIndex p, Step start = Step::null());
 	PlantGrowthEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area* area);
-	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_plant == oldIndex); m_plant = PlantIndex::cast(newIndex); }
+	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_plant == oldIndex.toPlant()); m_plant = PlantIndex::cast(newIndex); }
 	[[nodiscard]] Json toJson() const;
 };
 class PlantShapeGrowthEvent final : public ScheduledEvent
 {
 	PlantIndex m_plant;
 public:
-	PlantShapeGrowthEvent(Area& area, Step delay, PlantIndex p, Step start = Step::create(0));
+	PlantShapeGrowthEvent(Area& area, Step delay, PlantIndex p, Step start = Step::null());
 	PlantShapeGrowthEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area* area);
-	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_plant == oldIndex); m_plant = PlantIndex::cast(newIndex); }
+	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_plant == oldIndex.toPlant()); m_plant = PlantIndex::cast(newIndex); }
 	[[nodiscard]] Json toJson() const;
 };
 class PlantFoliageGrowthEvent final : public ScheduledEvent
 {
 	PlantIndex m_plant;
 public:
-	PlantFoliageGrowthEvent(Area& area, Step delay, PlantIndex p, Step start = Step::create(0));
+	PlantFoliageGrowthEvent(Area& area, Step delay, PlantIndex p, Step start = Step::null());
 	PlantFoliageGrowthEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area* area);
-	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_plant == oldIndex); m_plant = PlantIndex::cast(newIndex); }
+	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_plant == oldIndex.toPlant()); m_plant = PlantIndex::cast(newIndex); }
 	[[nodiscard]] Json toJson() const;
 };
 class PlantEndOfHarvestEvent final : public ScheduledEvent
 {
 	PlantIndex m_plant;
 public:
-	PlantEndOfHarvestEvent(Area& area, Step delay, PlantIndex p, Step start = Step::create(0));
+	PlantEndOfHarvestEvent(Area& area, Step delay, PlantIndex p, Step start = Step::null());
 	PlantEndOfHarvestEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area* area);
-	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_plant == oldIndex); m_plant = PlantIndex::cast(newIndex); }
+	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_plant == oldIndex.toPlant()); m_plant = PlantIndex::cast(newIndex); }
 	[[nodiscard]] Json toJson() const;
 };
 class PlantFluidEvent final : public ScheduledEvent
 {
 	PlantIndex m_plant;
 public:
-	PlantFluidEvent(Area& area, Step delay, PlantIndex p, Step start = Step::create(0));
+	PlantFluidEvent(Area& area, Step delay, PlantIndex p, Step start = Step::null());
 	PlantFluidEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area* area);
-	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_plant == oldIndex); m_plant = PlantIndex::cast(newIndex); }
+	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_plant == oldIndex.toPlant()); m_plant = PlantIndex::cast(newIndex); }
 	[[nodiscard]] Json toJson() const;
 };
 class PlantTemperatureEvent final : public ScheduledEvent
 {
 	PlantIndex m_plant;
 public:
-	PlantTemperatureEvent(Area& area, Step delay, PlantIndex p, Step start = Step::create(0));
+	PlantTemperatureEvent(Area& area, Step delay, PlantIndex p, Step start = Step::null());
 	PlantTemperatureEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area* area);
-	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_plant == oldIndex); m_plant = PlantIndex::cast(newIndex); }
+	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_plant == oldIndex.toPlant()); m_plant = PlantIndex::cast(newIndex); }
 	[[nodiscard]] Json toJson() const;
 };

@@ -190,7 +190,7 @@ HasCraftingLocationsAndJobsForFaction::HasCraftingLocationsAndJobsForFaction(con
 		{
 			BlockIndex block = blockQuery.get<BlockIndex>();
 			m_locationsByCategory[category].add(block);
-			m_stepTypeCategoriesByLocation.at(block).push_back(category);
+			m_stepTypeCategoriesByLocation[block].push_back(category);
 		}
 	}
 	if(data.contains("jobs"))
@@ -278,11 +278,11 @@ void HasCraftingLocationsAndJobsForFaction::removeLocation(CraftStepTypeCategory
 		if(craftJob.craftStepProject && craftJob.craftStepProject->getLocation() == block)
 			craftJob.craftStepProject->cancel();
 	}
-	if(m_locationsByCategory.at(category).size() == 1)
+	if(m_locationsByCategory[category].size() == 1)
 		m_locationsByCategory.erase(category);
 	else
 		m_locationsByCategory[category].remove(block);
-	if(m_stepTypeCategoriesByLocation.at(block).size() == 1)
+	if(m_stepTypeCategoriesByLocation[block].size() == 1)
 		m_stepTypeCategoriesByLocation.erase(block);
 	else
 		util::removeFromVectorByValueUnordered(m_stepTypeCategoriesByLocation[block], category);
@@ -291,7 +291,7 @@ void HasCraftingLocationsAndJobsForFaction::maybeRemoveLocation(BlockIndex block
 {
 	if(m_stepTypeCategoriesByLocation.contains(block))
 	{
-		std::vector<CraftStepTypeCategoryId> categories(m_stepTypeCategoriesByLocation.at(block).begin(), m_stepTypeCategoriesByLocation.at(block).end());
+		std::vector<CraftStepTypeCategoryId> categories(m_stepTypeCategoriesByLocation[block].begin(), m_stepTypeCategoriesByLocation[block].end());
 		for(auto category : categories)
 			removeLocation(category, block);
 	}
@@ -432,13 +432,13 @@ std::vector<CraftStepTypeCategoryId>& HasCraftingLocationsAndJobsForFaction::get
 		static std::vector<CraftStepTypeCategoryId> empty;
 		return empty;
 	}
-	return m_stepTypeCategoriesByLocation.at(location);
+	return m_stepTypeCategoriesByLocation[location];
 }
 CraftStepTypeCategoryId HasCraftingLocationsAndJobsForFaction::getDisplayStepTypeCategoryForLocation(BlockIndex location)
 {
 	if(!m_stepTypeCategoriesByLocation.contains(location))
 		return CraftStepTypeCategoryId::null();
-	return *m_stepTypeCategoriesByLocation.at(location).begin();
+	return *m_stepTypeCategoriesByLocation[location].begin();
 }
 // May return nullptr;
 CraftJob* HasCraftingLocationsAndJobsForFaction::getJobForAtLocation(const ActorIndex actor, SkillTypeId skillType, BlockIndex block, SmallSet<CraftJob*>& excludeJobs)
@@ -447,13 +447,14 @@ CraftJob* HasCraftingLocationsAndJobsForFaction::getJobForAtLocation(const Actor
 	assert(!m_area.getBlocks().isReserved(block, actors.getFactionId(actor)));
 	if(!m_stepTypeCategoriesByLocation.contains(block))
 		return nullptr;
-	for(CraftStepTypeCategoryId category : m_stepTypeCategoriesByLocation.at(block))
+	for(CraftStepTypeCategoryId category : m_stepTypeCategoriesByLocation[block])
 		if(m_unassignedProjectsByStepTypeCategory.contains(category))
-			for(CraftJob* craftJob : m_unassignedProjectsByStepTypeCategory.at(category))
+			for(CraftJob* craftJob : m_unassignedProjectsByStepTypeCategory[category])
 				if(
-					std::ranges::find(excludeJobs, craftJob) == excludeJobs.end() &&
+					!excludeJobs.contains(craftJob) &&
 					craftJob->stepIterator->skillType == skillType &&
-					actors.skill_getLevel(actor, skillType) >= craftJob->minimumSkillLevel)
+					actors.skill_getLevel(actor, skillType) >= craftJob->minimumSkillLevel
+				)
 					
 					return craftJob;
 	return nullptr;

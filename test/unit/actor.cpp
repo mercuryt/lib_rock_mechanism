@@ -31,7 +31,7 @@ TEST_CASE("actor")
 	BlockIndex block3 = blocks.getIndex_i(6, 8, 1);
 	SUBCASE("single tile")
 	{
-		int previousEventCount = simulation.m_eventSchedule.count();
+		int previousEventCount = area.m_eventSchedule.count();
 		ActorIndex dwarf1 = actors.create(ActorParamaters{
 			.species=dwarf, 
 			.percentGrown=Percent::create(100),
@@ -41,7 +41,7 @@ TEST_CASE("actor")
 		REQUIRE(actors.grow_getPercent(dwarf1) == 100);
 		REQUIRE(!actors.grow_isGrowing(dwarf1));
 		REQUIRE(Shape::getName(actors.getShape(dwarf1)) == "oneByOneFull");
-		REQUIRE(simulation.m_eventSchedule.count() - previousEventCount == 3);
+		REQUIRE(area.m_eventSchedule.count() - previousEventCount == 3);
 		REQUIRE(actors.getLocation(dwarf1) == origin1);
 		REQUIRE(blocks.actor_contains(actors.getLocation(dwarf1), dwarf1));
 		REQUIRE(actors.combat_getCombatScore(dwarf1) != 0);

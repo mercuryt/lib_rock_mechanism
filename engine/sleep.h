@@ -35,7 +35,7 @@ public:
 	void makeSleepObjective(Area& area);
 	void wakeUpEarly(Area& area);
 	void setLocation(BlockIndex block);
-	void onDeath();
+	void unschedule();
 	void notTired(Area& area);
 	void scheduleTiredEvent(Area& area);
 	[[nodiscard]] bool isAwake() const { return m_isAwake; }
@@ -56,7 +56,7 @@ class SleepEvent final : public ScheduledEvent
 {
 	MustSleep& m_needsSleep;
 public:
-	SleepEvent(Simulation& simulation, Step delay, MustSleep& ns, Step start = Step::create(0));
+	SleepEvent(Simulation& simulation, Step delay, MustSleep& ns, Step start = Step::null());
 	void execute(Simulation&, Area*);
 	void clearReferences(Simulation&, Area*);
 };
@@ -64,7 +64,7 @@ class TiredEvent final : public ScheduledEvent
 {
 	MustSleep& m_needsSleep;
 public:
-	TiredEvent(Simulation& simulation, Step delay, MustSleep& ns, Step start = Step::create(0));
+	TiredEvent(Simulation& simulation, Step delay, MustSleep& ns, Step start = Step::null());
 	void execute(Simulation&, Area*);
 	void clearReferences(Simulation&, Area*);
 };

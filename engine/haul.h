@@ -4,7 +4,6 @@
 #include "reference.h"
 #include "reservable.h"
 #include "types.h"
-#include <unordered_set>
 
 class Simulation;
 class ActorOrItemIndex;
@@ -49,7 +48,7 @@ class HaulSubproject final
 	HaulStrategy m_strategy = HaulStrategy::None;
 	ActorReferences m_nonsentients;
 	ItemReference m_haulTool;
-	std::unordered_map<ActorReference, BlockIndex, ActorReference::Hash> m_liftPoints; // Used by Team strategy.
+	SmallMap<ActorReference, BlockIndex> m_liftPoints; // Used by Team strategy.
 	ActorReference m_leader;
 	bool m_itemIsMoving = false;
 	ActorReference m_beastOfBurden;

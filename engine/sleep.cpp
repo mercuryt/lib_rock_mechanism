@@ -148,7 +148,7 @@ void MustSleep::setLocation(BlockIndex block)
 {
 	m_location = block;
 }
-void MustSleep::onDeath()
+void MustSleep::unschedule()
 {
 	m_tiredEvent.maybeUnschedule();
 }

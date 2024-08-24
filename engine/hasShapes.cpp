@@ -13,29 +13,21 @@
 #include <iostream>
 #include <ranges>
 HasShapes::HasShapes(Area& area) : m_area(area) { }
-HasShapeIndex HasShapes::getNextIndex()
-{
-	HasShapeIndex index = HasShapeIndex::create(m_shape.size());
-	// Virtual metod call.
-	resize(index);
-	return index;
-}
-void HasShapes::create(HasShapeIndex index, ShapeId shape, BlockIndex location, Facing facing, FactionId faction, bool isStatic)
+void HasShapes::create(HasShapeIndex index, ShapeId shape, FactionId faction, bool isStatic)
 {
 	assert(m_shape.size() > index);
+	// m_location, m_facing, and m_underground are to be set by calling the derived class setLocation method.
 	m_shape[index] = shape;
-	m_location[index] = location;
-	m_facing[index] = facing;
 	m_faction[index] = faction;
 	assert(m_blocks[index].empty());
 	m_static.set(index, isStatic);
-	m_underground.set(index, m_area.getBlocks().isUnderground(location));
 }
 void HasShapes::resize(HasShapeIndex newSize)
 {
 	m_shape.resize(newSize);
 	m_location.resize(newSize);
 	m_facing.resize(newSize);
+	m_faction.resize(newSize);
 	m_blocks.resize(newSize);
 	m_static.resize(newSize);
 	m_underground.resize(newSize);
@@ -49,17 +41,6 @@ void HasShapes::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 	m_blocks[newIndex] = m_blocks[oldIndex];
 	m_static.set(newIndex, m_static[oldIndex]);
 	m_underground.set(newIndex, m_underground[oldIndex]);
-}
-void HasShapes::destroy(HasShapeIndex index)
-{
-	// Copy last plant over this slot.
-	auto oldIndex = HasShapeIndex::create(size() - 1);
-	if(size() != 1)
-		// Virtual call.
-		moveIndex(index, oldIndex);
-	// Truncate empty slot.
-	// Virtual call.
-	resize(oldIndex);
 }
 void HasShapes::setStatic(HasShapeIndex index, bool isTrue)
 {

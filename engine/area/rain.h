@@ -35,7 +35,7 @@ public:
 class RainEvent final : public ScheduledEvent
 {
 public:
-	RainEvent(Step delay, Simulation& simulation, Step start = Step::create(0));
+	RainEvent(Step delay, Simulation& simulation, Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };

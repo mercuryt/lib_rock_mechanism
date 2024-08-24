@@ -3,8 +3,7 @@
 void SimulationHasItems::registerItem(ItemId id, Items& store, ItemIndex index)
 {
 	assert(!m_items.contains(id));
-	auto [iter, result] = m_items.try_emplace(id, store, index);
-	assert(result);
+	m_items.try_emplace(id, &store, index);
 }
 void SimulationHasItems::removeItem(ItemId id)
 {
@@ -17,5 +16,5 @@ ItemIndex SimulationHasItems::getIndexForId(ItemId id) const
 }
 Area& SimulationHasItems::getAreaForId(ItemId id) const
 {
-	return m_items.at(id).store.getArea();
+	return m_items.at(id).store->getArea();
 }

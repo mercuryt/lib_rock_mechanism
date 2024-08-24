@@ -22,7 +22,6 @@
 #include <numeric>
 #include <string>
 #include <sys/types.h>
-#include <unordered_set>
 
 Area::Area(AreaId id, std::wstring n, Simulation& s, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) :
 	m_blocks(std::make_unique<Blocks>(*this, x, y, z)),
@@ -116,6 +115,13 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	// Load rain.
 	if(data.contains("rain"))
 		m_hasRain.load(data["rain"], deserializationMemo);
+}
+Area::~Area()
+{
+	// Explicitly clear event schedule, threaded tasks, and path requests before destructing data tables because they have custom destructors which remove their references. These destructors must be called before the things they refer to are destroyed.
+	m_eventSchedule.clear();
+	m_threadedTaskEngine.clear();
+	m_hasTerrainFacades.clearPathRequests();
 }
 Json Area::toJson() const
 {

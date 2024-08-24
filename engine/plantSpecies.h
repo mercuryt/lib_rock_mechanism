@@ -33,10 +33,10 @@ struct PlantSpeciesParamaters final
 	const bool annual = false;
 	const bool growsInSunLight = false;
 	const bool isTree = false;
-	const ItemTypeId fruitItemType = ItemTypeId::null();
-	const Step stepsDurationHarvest = Step::null();
-	const Quantity itemQuantityToHarvest = Quantity::null();
-	const uint16_t dayOfYearToStartHarvest = 0;
+	ItemTypeId fruitItemType = ItemTypeId::null();
+	Step stepsDurationHarvest = Step::null();
+	Quantity itemQuantityToHarvest = Quantity::null();
+	uint16_t dayOfYearToStartHarvest = 0;
 };
 class PlantSpecies final
 {

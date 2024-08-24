@@ -186,6 +186,7 @@
 	"unitsBodyMassPerUnitFoodConsumed": 100,
 	"unitsOfAttackForcePerUnitOfStrength": 1,
 	"unitsOfCarryMassPerUnitOfStrength": 500,
+	"unitsOfVolumePerUnitOfCollisionVolume" : 20000,
 	"unitsOfMoveSpeedPerUnitOfAgility": 2.5,
 	"unitsOfWoundAreaPerUnitItemScaleFactor": 100,
 	"visionFacadeReservationSize": 256,

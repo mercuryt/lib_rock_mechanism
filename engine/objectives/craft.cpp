@@ -94,7 +94,7 @@ bool CraftObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
 		return false;
 	}
 	// Check if there are any locations designated for this step category.
-	for(CraftJob* craftJob : hasCrafting.m_unassignedProjectsBySkill.at(m_skillType))
+	for(CraftJob* craftJob : hasCrafting.m_unassignedProjectsBySkill[m_skillType])
 	{
 		CraftStepTypeCategoryId category = craftJob->stepIterator->craftStepTypeCategory;
 		if(hasCrafting.m_locationsByCategory.contains(category))

@@ -47,7 +47,7 @@ class SowSeedsEvent final : public ScheduledEvent
 	ActorReference m_actor;
 	SowSeedsObjective& m_objective;
 public:
-	SowSeedsEvent(Step delay, Area& area, SowSeedsObjective& o, ActorIndex actor, const Step start = Step::create(0));
+	SowSeedsEvent(Step delay, Area& area, SowSeedsObjective& o, ActorIndex actor, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };

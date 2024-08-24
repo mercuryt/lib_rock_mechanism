@@ -18,7 +18,9 @@ void Blocks::actor_erase(BlockIndex index, ActorIndex actor)
 	auto& blockActors = m_actors[index];
 	auto& blockActorVolume = m_actorVolume[index];
 	auto iter = std::ranges::find(blockActors, actor);
+	assert(iter != blockActors.end());
 	auto iter2 = m_actorVolume[index].begin() + (std::distance(iter, blockActors.begin()));
+	assert(iter2 != blockActorVolume.end());
 	if(actors.isStatic(actor))
 		m_staticVolume[index] -= iter2->second;
 	else

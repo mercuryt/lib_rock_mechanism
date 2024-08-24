@@ -10,10 +10,10 @@
 #include "haul.h"
 #include "reference.h"
 #include "actors/actorQuery.h"
+#include "vectorContainers.h"
 
 #include <vector>
 #include <utility>
-#include <unordered_set>
 #include <unordered_map>
 
 class ProjectFinishEvent;
@@ -141,7 +141,7 @@ public:
 	void cancel();
 	//TODO: impliment this.
 	void dismissWorkers();
-	void scheduleFinishEvent(Step start = Step::create(0));
+	void scheduleFinishEvent(Step start = Step::null());
 	void haulSubprojectComplete(HaulSubproject& haulSubproject);
 	void haulSubprojectCancel(HaulSubproject& haulSubproject);
 	void setLocationDishonorCallback(std::unique_ptr<DishonorCallback> dishonorCallback);
@@ -220,7 +220,7 @@ class ProjectFinishEvent final : public ScheduledEvent
 {
 	Project& m_project;
 public:
-	ProjectFinishEvent(const Step delay, Project& p, const Step start = Step::create(0));
+	ProjectFinishEvent(const Step delay, Project& p, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };
@@ -228,7 +228,7 @@ class ProjectTryToHaulEvent final : public ScheduledEvent
 {
 	Project& m_project;
 public:
-	ProjectTryToHaulEvent(const Step delay, Project& p, const Step start = Step::create(0));
+	ProjectTryToHaulEvent(const Step delay, Project& p, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };
@@ -236,7 +236,7 @@ class ProjectTryToReserveEvent final : public ScheduledEvent
 {
 	Project& m_project;
 public:
-	ProjectTryToReserveEvent(const Step delay, Project& p, const Step start = Step::create(0));
+	ProjectTryToReserveEvent(const Step delay, Project& p, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };
@@ -268,7 +268,7 @@ public:
 };
 class BlockHasProjects
 {
-	FactionIdMap<std::unordered_set<Project*>> m_data;
+	FactionIdMap<SmallSet<Project*>> m_data;
 public:
 	void add(Project& project);
 	void remove(Project& project);

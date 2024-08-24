@@ -109,7 +109,8 @@ ItemIndex Blocks::item_getGeneric(BlockIndex index, ItemTypeId itemType, Materia
 		ItemIndex item = pair.first;
 		return items.getItemType(item) == itemType && items.getMaterialType(item) == materialType;
 	});
-	assert(found != itemsInBlock.end());
+	if(found == itemsInBlock.end())
+		return ItemIndex::null();
 	return found->first;
 }
 // TODO: buggy

@@ -8,7 +8,6 @@
 #include "project.h"
 #include "config.h"
 
-#include <unordered_map>
 #include <vector>
 
 struct Faction;
@@ -70,7 +69,7 @@ class HasDigDesignationsForFaction final
 {
 	Area& m_area;
 	FactionId m_faction;
-	BlockIndexMap<DigProject> m_data;
+	std::unordered_map<BlockIndex, DigProject, BlockIndex::Hash> m_data;
 public:
 	HasDigDesignationsForFaction(FactionId p, Area& a) : m_area(a), m_faction(p) { }
 	HasDigDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, FactionId faction);
@@ -89,7 +88,7 @@ public:
 class AreaHasDigDesignations final
 {
 	Area& m_area;
-	FactionIdMap<HasDigDesignationsForFaction> m_data;
+	std::unordered_map<FactionId, HasDigDesignationsForFaction, FactionId::Hash> m_data;
 public:
 	AreaHasDigDesignations(Area& a) : m_area(a) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);

@@ -222,7 +222,7 @@ TEST_CASE("json")
 		REQUIRE(haulSubproject.getHaulStrategy() == HaulStrategy::Individual);
 		ItemIndex pick2 = blocks2.item_getAll(blocks2.getIndex_i(1,2,1))[0];
 		REQUIRE(haulSubproject.getToHaul().isItem());
-		REQUIRE(haulSubproject.getToHaul().getIndex() == pick2);
+		REQUIRE(haulSubproject.getToHaul().getIndex().toItem() == pick2);
 		REQUIRE(haulSubproject.getQuantity() == 1);
 		REQUIRE(!haulSubproject.getIsMoving());
 		REQUIRE(!project.hasTryToHaulEvent());

@@ -12,7 +12,7 @@ class EatEvent final : public ScheduledEvent
 	ActorReference m_actor;
 	EatObjective& m_eatObjective;
 public:
-	EatEvent(Area& area, Step delay, EatObjective& eo, ActorIndex actor, Step start = Step::create(0));
+	EatEvent(Area& area, Step delay, EatObjective& eo, ActorIndex actor, Step start = Step::null());
 	void execute(Simulation&, Area*);
 	void clearReferences(Simulation&, Area*);
 	void eatPreparedMeal(Area& area, ItemIndex item);

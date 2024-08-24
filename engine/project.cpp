@@ -16,7 +16,6 @@
 #include "objectives/wander.h"
 #include <algorithm>
 #include <memory>
-#include <unordered_map>
 // Project worker.
 ProjectWorker::ProjectWorker(const Json& data, DeserializationMemo& deserializationMemo) : 
 	objective(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))
@@ -148,7 +147,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 	// are complete.
 	// If reservations are not complete flush the data from project.
 	// TODO: Unwisely modifing data out side the object durring read step.
-	std::unordered_set<ActorOrItemIndex, ActorOrItemIndex::Hash> recordedShapes;
+	SmallSet<ActorOrItemIndex> recordedShapes;
 	Actors& actors = m_project.m_area.getActors();
 	Items& items = m_project.m_area.getItems();
 	for(auto& [candidate, objective] : m_project.m_workerCandidatesAndTheirObjectives)
@@ -946,13 +945,13 @@ std::vector<std::pair<ActorIndex, Objective*>> Project::getWorkersAndCandidatesW
 void BlockHasProjects::add(Project& project)
 {
 	FactionId faction = project.getFaction();
-	assert(!m_data.contains(faction) || !m_data.at(faction).contains(&project));
+	assert(!m_data.contains(faction) || !m_data[faction].contains(&project));
 	m_data[faction].insert(&project);
 }
 void BlockHasProjects::remove(Project& project)
 {
 	FactionId faction = project.getFaction();
-	assert(m_data.contains(faction) && m_data.at(faction).contains(&project));
+	assert(m_data.contains(faction) && m_data[faction].contains(&project));
 	if(m_data[faction].size() == 1)
 		m_data.erase(faction);
 	else
@@ -962,7 +961,7 @@ Percent BlockHasProjects::getProjectPercentComplete(FactionId faction) const
 {
 	if(!m_data.contains(faction))
 		return Percent::create(0);
-	for(Project* project : m_data.at(faction))
+	for(Project* project : m_data[faction])
 		if(project->getPercentComplete() != 0)
 			return project->getPercentComplete();
 	return Percent::create(0);
@@ -971,7 +970,7 @@ Project* BlockHasProjects::get(FactionId faction) const
 {
 	if(!m_data.contains(faction))
 		return nullptr;
-	for(Project* project : m_data.at(faction))
+	for(Project* project : m_data[faction])
 		if(project->finishEventExists())
 			return project;
 	return nullptr;

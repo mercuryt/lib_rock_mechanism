@@ -11,13 +11,15 @@
 template <typename Contained, Contained null, uint capacity>
 class HybridSequence
 {
-	using This = HybridSequence<Contained, null, capacity>;
-	static constexpr uint offset = std::ceil((float)sizeof(std::vector<Contained>) / (float)sizeof(Contained));
-	union Data{ std::array<Contained, capacity + offset> array; std::vector<Contained> vector; } data;
-	[[nodiscard]] auto firstEmptyInArray() const { return std::ranges::find(begin(), data.array.end(), null); }
 public:
 	class iterator;
 	class const_iterator;
+private:
+	using This = HybridSequence<Contained, null, capacity>;
+	static constexpr uint offset = std::ceil((float)sizeof(std::vector<Contained>) / (float)sizeof(Contained));
+	union Data{ std::array<Contained, capacity + offset> array; std::vector<Contained> vector; } data;
+	[[nodiscard]] This::iterator firstEmptyInArray() const { return std::ranges::find(begin(), data.array.end(), null); }
+public:
 	HybridSequence() = default;
 	HybridSequence(const This& other)
 	{
@@ -93,9 +95,16 @@ public:
 		return const_cast<This&>(*this).find(value);
 	}
 	[[nodiscard]] This::iterator begin() { return data.array.begin() + offset; }
-	[[nodiscard]] This::iterator end() { return data.vector.end(); }
+	[[nodiscard]] This::iterator end()
+	{
+		auto iter = firstEmptyInArray();
+		if(iter != data.array.end())
+			return iter;
+		else
+			return data.vector.end();
+	}
 	[[nodiscard]] This::const_iterator begin() const { return data.array.begin() + offset; }
-	[[nodiscard]] This::const_iterator end() const { return data.vector.end(); }
+	[[nodiscard]] This::const_iterator end() const { return const_cast<This&>(*this).end(); }
 	class iterator
 	{
 		This& data;
