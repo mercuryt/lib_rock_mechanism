@@ -30,6 +30,14 @@ void Blocks::fluid_destroyData(BlockIndex index, FluidTypeId fluidType)
 	std::swap(*iter, fluid.back());
 	fluid.pop_back();
 }
+void Blocks::fluid_setTotalVolume(BlockIndex index, CollisionVolume newTotal)
+{
+	CollisionVolume checkTotal = CollisionVolume::create(0);
+	for(FluidData data : m_fluid[index])
+		checkTotal += data.volume;
+	assert(checkTotal == newTotal);
+	m_totalFluidVolume[index] = newTotal;
+}
 void Blocks::fluid_spawnMist(BlockIndex index, FluidTypeId fluidType, DistanceInBlocks maxMistSpread)
 {
 	FluidTypeId mist = m_mist[index];
@@ -73,7 +81,6 @@ void Blocks::fluid_add(BlockIndex index, CollisionVolume volume, FluidTypeId flu
 		return;
 	}
 	m_fluid[index].emplace_back(fluidType, nullptr, volume);
-	m_totalFluidVolume[index] += volume;
 	// Find fluid group.
 	FluidGroup* fluidGroup = nullptr;
 	for(BlockIndex adjacent : getDirectlyAdjacent(index))
@@ -85,12 +92,10 @@ void Blocks::fluid_add(BlockIndex index, CollisionVolume volume, FluidTypeId flu
 		}
 	// Create fluid group.
 	if(fluidGroup == nullptr)
-	{
-		BlockIndices blocks({index});
-		fluidGroup = m_area.m_hasFluidGroups.createFluidGroup(fluidType, blocks);
-	}
+		fluidGroup = m_area.m_hasFluidGroups.createFluidGroup(fluidType, {index});
 	else
 		m_area.m_hasFluidGroups.clearMergedFluidGroups();
+	fluid_setTotalVolume(index, m_totalFluidVolume[index] + volume);
 	// Shift less dense fluids to excessVolume.
 	if(m_totalFluidVolume[index] > Config::maxBlockVolume)
 		fluid_resolveOverfull(index);
@@ -127,9 +132,14 @@ void Blocks::fluid_fillInternal(BlockIndex index, CollisionVolume volume, FluidG
 		//TODO: should this be enforced?
 		//assert(*found->group == fluidGroup);
 	}
-	m_totalFluidVolume[index] += volume;
+	fluid_setTotalVolume(index, m_totalFluidVolume[index] + volume);
 	//TODO: this could be run mulitple times per step where two fluid groups of different types are mixing, move to FluidGroup writeStep.
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
+}
+void Blocks::fluid_unsetGroupInternal(BlockIndex index, FluidTypeId fluidType)
+{
+	FluidData* found = fluid_getData(index, fluidType);
+	found->group = nullptr;
 }
 bool Blocks::fluid_undisolveInternal(BlockIndex index, FluidGroup& fluidGroup)
 {
@@ -139,7 +149,6 @@ bool Blocks::fluid_undisolveInternal(BlockIndex index, FluidGroup& fluidGroup)
 		CollisionVolume capacity = fluid_volumeOfTypeCanEnter(index, fluidGroup.m_fluidType);
 		assert(fluidGroup.m_excessVolume > 0);
 		CollisionVolume flow = std::min(capacity, CollisionVolume::create(fluidGroup.m_excessVolume));
-		m_totalFluidVolume[index] += flow;
 		fluidGroup.m_excessVolume -= flow.get();
 		if(found )
 		{
@@ -155,6 +164,7 @@ bool Blocks::fluid_undisolveInternal(BlockIndex index, FluidGroup& fluidGroup)
 			fluidGroup.addBlock(index, false);
 			fluidGroup.m_disolved = false;
 		}
+		fluid_setTotalVolume(index, m_totalFluidVolume[index] + flow);
 		//TODO: this could be run mulitple times per step where two fluid groups of different types are mixing, move to FluidGroup writeStep.
 		m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 		return true;
@@ -170,7 +180,6 @@ void Blocks::fluid_removeSyncronus(BlockIndex index, CollisionVolume volume, Flu
 {
 	assert(volume <= fluid_volumeOfTypeContains(index, fluidType));
 	assert(m_totalFluidVolume[index] >= volume);
-	m_totalFluidVolume[index] -= volume;
 	if(fluid_volumeOfTypeContains(index, fluidType) > volume)
 		fluid_getData(index, fluidType)->volume -= volume;
 	else
@@ -182,6 +191,7 @@ void Blocks::fluid_removeSyncronus(BlockIndex index, CollisionVolume volume, Flu
 		else
 			group.removeBlock(index);
 	}
+	fluid_setTotalVolume(index, m_totalFluidVolume[index] - volume);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 }
 bool Blocks::fluid_canEnterCurrently(BlockIndex index, FluidTypeId fluidType) const
@@ -245,10 +255,10 @@ void Blocks::fluid_resolveOverfull(BlockIndex index)
 		// Displace lower density fluids.
 		CollisionVolume displaced = std::min(fluidData.volume, m_totalFluidVolume[index] - Config::maxBlockVolume);
 		assert(displaced.exists());
-		m_totalFluidVolume[index] -= displaced;
 		fluidData.volume -= displaced;
+		fluid_setTotalVolume(index, m_totalFluidVolume[index] - displaced);
 		fluidData.group->addFluid(displaced);
-		if(fluidData.volume.empty())
+		if(fluidData.volume == 0)
 			toErase.push_back(fluidData.type);
 		if(fluidData.volume < Config::maxBlockVolume)
 			fluidData.group->m_fillQueue.maybeAddBlock(index);
@@ -274,7 +284,7 @@ void Blocks::fluid_resolveOverfull(BlockIndex index)
 					}
 					else
 					{
-						otherFluidData.group->m_disolvedInThisGroup[fluidType] = fluidGroup;
+						otherFluidData.group->m_disolvedInThisGroup.insert(fluidType, fluidGroup);
 						fluidGroup->m_disolved = true;
 					}
 					break;
@@ -288,7 +298,6 @@ void Blocks::fluid_resolveOverfull(BlockIndex index)
 void Blocks::fluid_onBlockSetSolid(BlockIndex index)
 {
 	// Displace fluids.
-	m_totalFluidVolume[index] = CollisionVolume::create(0);
 	for(FluidData& fluidData : m_fluid[index])
 	{
 		fluidData.group->removeBlock(index);
@@ -316,13 +325,15 @@ void Blocks::fluid_onBlockSetSolid(BlockIndex index)
 				// Otherwise destroy the group.
 				m_area.m_hasFluidGroups.removeFluidGroup(*fluidData.group);
 		}
+		fluidData.group = nullptr;
 	}
 	m_fluid[index].clear();
-	// Remove from fluid fill queues.
+	fluid_setTotalVolume(index, CollisionVolume::create(0));
+	// Remove from fluid fill queues of adjacent groups, if contained.
 	for(BlockIndex adjacent : getDirectlyAdjacent(index))
 		if(adjacent.exists() && fluid_canEnterEver(adjacent))
 			for(FluidData& fluidData : m_fluid[adjacent])
-				fluidData.group->m_fillQueue.removeBlock(index);
+				fluidData.group->m_fillQueue.maybeRemoveBlock(index);
 }
 void Blocks::fluid_onBlockSetNotSolid(BlockIndex index)
 {
@@ -341,6 +352,10 @@ bool Blocks::fluid_contains(BlockIndex index, FluidTypeId fluidType) const
 }
 CollisionVolume Blocks::fluid_getTotalVolume(BlockIndex index) const
 {
+	CollisionVolume total = CollisionVolume::create(0);
+	for(FluidData data : m_fluid[index])
+		total += data.volume;
+	assert(total == m_totalFluidVolume[index]);
 	return m_totalFluidVolume[index];
 }
 std::vector<FluidData>& Blocks::fluid_getAll(BlockIndex index)

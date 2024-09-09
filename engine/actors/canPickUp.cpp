@@ -255,9 +255,7 @@ bool Actors::canPickUp_isCarryingEmptyContainerWhichCanHoldFluid(ActorIndex inde
 Mass Actors::canPickUp_getMass(ActorIndex index) const
 {
 	if(!m_carrying[index].exists())
-	{
-		return Mass::null();
-	}
+		return Mass::create(0);
 	return m_carrying[index].getMass(m_area);
 }
 Speed Actors::canPickUp_speedIfCarryingQuantity(ActorIndex index, Mass mass, Quantity quantity) const

@@ -143,7 +143,7 @@ TEST_CASE("Area")
 		REQUIRE(blocks.fluid_getMist(block2).empty());
 		REQUIRE(blocks.fluid_getMist(block3) == water);
 		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
-		while(simulation.m_step != scheduledStep +1 )
+		while(simulation.m_step != scheduledStep + 1 )
 		{
 			area.doStep();
 			simulation.m_eventSchedule.doStep(simulation.m_step);
@@ -192,7 +192,7 @@ TEST_CASE("vision-threading")
 {
 	static MaterialTypeId marble = MaterialType::byName("marble");
 	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
-	Simulation simulation(L"", Step::create(1));
+	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	Blocks& blocks = area.getBlocks();
@@ -221,7 +221,7 @@ TEST_CASE("vision-threading")
 TEST_CASE("multiMergeOnAdd")
 {
 	static FluidTypeId water = FluidType::byName("water");
-	Simulation simulation(L"", Step::create(1));
+	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(2,2,1);
 	Blocks& blocks = area.getBlocks();
 	BlockIndex block1 = blocks.getIndex_i(0, 0, 0);

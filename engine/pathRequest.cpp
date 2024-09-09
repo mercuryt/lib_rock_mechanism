@@ -1,10 +1,24 @@
 #include "pathRequest.h"
 #include "area.h"
+#include "deserializationMemo.h"
 #include "types.h"
 #include "actors/actors.h"
 #include "blocks/blocks.h"
 #include "items/items.h"
 #include "plants.h"
+#include "objectives/dig.h"
+#include "objectives/construct.h"
+#include "objectives/getToSafeTemperature.h"
+#include "objectives/eat.h"
+#include "objectives/installItem.h"
+#include "objectives/wander.h"
+#include "objectives/harvest.h"
+#include "objectives/drink.h"
+#include "objectives/givePlantsFluid.h"
+#include "objectives/sleep.h"
+#include "objectives/stockpile.h"
+#include "objectives/leaveArea.h"
+#include "objectives/uniform.h"
 // Handle
 void PathRequest::create(Area& area, ActorIndex actor, DestinationCondition destination, bool detour, DistanceInBlocks maxRange, BlockIndex huristicDestination, bool reserve)
 {
@@ -12,6 +26,7 @@ void PathRequest::create(Area& area, ActorIndex actor, DestinationCondition dest
 	m_reserve = reserve;
 	if(m_reserve)
 		assert(m_unreserved);
+	assert(actor.exists());
 	m_actor = actor;
 	m_detour = detour;
 	m_maxRange = maxRange;
@@ -23,6 +38,7 @@ void PathRequest::create(Area& area, ActorIndex actor, DestinationCondition dest
 		terrainFacade.registerPathRequestNoHuristic(actors.getLocation(actor), access, destination, *this);
 	else
 		terrainFacade.registerPathRequestWithHuristic(actors.getLocation(actor), access, destination, huristicDestination, *this);
+	assert(m_index.exists());
 }
 void PathRequest::createGoTo(Area& area, ActorIndex actor, BlockIndex destination, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve)
 {
@@ -214,6 +230,41 @@ void PathRequest::callback(Area& area, FindPathResult& result)
 {
 	area.getActors().move_pathRequestCallback(m_actor, result.path, result.useCurrentPosition, m_reserve);
 }
+std::unique_ptr<PathRequest> PathRequest::load(Area& area, const Json& data, DeserializationMemo& deserializationMemo)
+{
+	if(data["type"] == "basic")
+		return std::make_unique<PathRequest>(data);
+	if(data["type"] == "attack")
+		return std::make_unique<GetIntoAttackPositionPathRequest>(area, data);
+	if(data["type"] == "dig")
+		return std::make_unique<DigPathRequest>(data, deserializationMemo);
+	if(data["type"] == "temperature")
+		return std::make_unique<GetToSafeTemperaturePathRequest>(data, deserializationMemo);
+	if(data["type"] == "construct")
+		return std::make_unique<ConstructPathRequest>(data, deserializationMemo);
+	if(data["type"] == "eat")
+		return std::make_unique<EatPathRequest>(data, deserializationMemo);
+	if(data["type"] == "craft")
+		return std::make_unique<CraftPathRequest>(data, deserializationMemo);
+	if(data["type"] == "install item")
+		return std::make_unique<InstallItemPathRequest>(data, deserializationMemo);
+	if(data["type"] == "wander")
+		return std::make_unique<WanderPathRequest>(data, deserializationMemo);
+	if(data["type"] == "harvest")
+		return std::make_unique<HarvestPathRequest>(data, deserializationMemo);
+	if(data["type"] == "drink")
+		return std::make_unique<DrinkPathRequest>(data, deserializationMemo);
+	if(data["type"] == "give plants fluid")
+		return std::make_unique<GivePlantsFluidPathRequest>(data, deserializationMemo);
+	if(data["type"] == "sleep")
+		return std::make_unique<SleepPathRequest>(data, deserializationMemo);
+	if(data["type"] == "stockpile")
+		return std::make_unique<StockPilePathRequest>(data, deserializationMemo);
+	if(data["type"] == "leave area")
+		return std::make_unique<LeaveAreaPathRequest>(data, deserializationMemo);
+	assert(data["type"] == "uniform");
+	return std::make_unique<UniformPathRequest>(data, deserializationMemo);
+}
 void ObjectivePathRequest::callback(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
@@ -256,7 +307,21 @@ void ObjectivePathRequest::callback(Area& area, FindPathResult& result)
 }
 void PathRequest::update(PathRequestIndex newIndex)
 {
+	assert(newIndex.exists());
 	m_index = newIndex;
+}
+ObjectivePathRequest::ObjectivePathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
+	m_objective(static_cast<Objective&>(*deserializationMemo.m_objectives[data["objective"]]))
+{
+	data["reserve"].get_to(m_reserveBlockThatPassedPredicate);
+	nlohmann::from_json(data, static_cast<PathRequest&>(*this));
+}
+Json ObjectivePathRequest::toJson() const
+{
+	Json output = PathRequest::toJson();
+	output["objective"] = reinterpret_cast<uintptr_t>(&m_objective);
+	output["reserve"] = m_reserveBlockThatPassedPredicate;
+	return output;
 }
 void NeedPathRequest::callback(Area& area, FindPathResult& result)
 {
@@ -272,4 +337,15 @@ void NeedPathRequest::callback(Area& area, FindPathResult& result)
 		actors.objective_execute(actor);
 	else
 		actors.move_setPath(actor, result.path);
+}
+NeedPathRequest::NeedPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
+	m_objective(static_cast<Objective&>(*deserializationMemo.m_objectives[data["objective"]]))
+{
+	nlohmann::from_json(data, static_cast<PathRequest&>(*this));
+}
+Json NeedPathRequest::toJson() const
+{
+	Json output = PathRequest::toJson();
+	output["objective"] = reinterpret_cast<uintptr_t>(&m_objective);
+	return output;
 }

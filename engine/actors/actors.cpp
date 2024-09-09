@@ -255,14 +255,15 @@ Actors::Actors(Area& area) :
 { }
 Actors::~Actors()
 {
+	/*
 	m_mustSleep.clear();
 	m_mustEat.clear();
 	m_mustSleep.clear();
 	m_needsSafeTemperature.clear();
 	m_canGrow.clear();
 	m_canReserve.clear();
+	*/
 	m_hasVisionFacade.clear();
-	m_coolDownEvent.clearAll();
 	// TODO: Clear path request?
 }
 void Actors::load(const Json& data)
@@ -301,7 +302,6 @@ void Actors::load(const Json& data)
 	data["coolDownDurationModifier"].get_to(m_coolDownDurationModifier);
 	data["combatScore"].get_to(m_combatScore);
 	m_moveEvent.load(m_area.m_simulation, data["moveEvent"]);
-	//data["pathRequest"].get_to(m_pathRequest);
 	data["path"].get_to(m_path);
 	data["destination"].get_to(m_destination);
 	data["speedIndividual"].get_to(m_speedIndividual);
@@ -370,18 +370,11 @@ void Actors::load(const Json& data)
 		ActorIndex index = pair[0].get<ActorIndex>();
 		m_pathIter[index] = m_path[index].begin() + pair[1].get<int>();
 	}
-	m_getIntoAttackPositionPathRequest.resize(m_id.size());
-	for(const Json& pair : data["getIntoAttackPositionPathRequest"])
-	{
-		ActorIndex index = pair[0].get<ActorIndex>();
-		m_getIntoAttackPositionPathRequest[index] = std::make_unique<GetIntoAttackPositionPathRequest>(m_area, pair[1]);
-	}
 	m_pathRequest.resize(m_id.size());
 	for(const Json& pair : data["pathRequest"])
 	{
 		ActorIndex index = pair[0].get<ActorIndex>();
-		PathRequest pathRequest = pair[1].get<PathRequest>();
-		m_pathRequest[index] = std::make_unique<PathRequest>(pathRequest);
+		m_pathRequest[index] = PathRequest::load(m_area, pair[1], deserializationMemo);
 	}
 	for(ActorIndex index : getAll())
 		vision_createFacadeIfCanSee(index);
@@ -455,7 +448,6 @@ Json Actors::toJson() const
 		{"visionRange", m_visionRange},
 		{"coolDownEvent", m_coolDownEvent},
 		// TODO: These don't need to be serialized
-		{"getIntoAttackPositionPathRequest", m_getIntoAttackPositionPathRequest},
 		{"targetedBy", m_targetedBy},
 		{"target", m_target},
 		// TODO: These don't need to be serialized
@@ -519,7 +511,6 @@ void Actors::resize(ActorIndex newSize)
 	m_visionRange.resize(newSize);
 	m_hasVisionFacade.resize(newSize);
 	m_coolDownEvent.resize(newSize);
-	m_getIntoAttackPositionPathRequest.resize(newSize);
 	m_meleeAttackTable.resize(newSize);
 	m_targetedBy.resize(newSize);
 	m_target.resize(newSize);
@@ -578,7 +569,6 @@ void Actors::moveIndex(ActorIndex oldIndex, ActorIndex newIndex)
 	m_visionRange[newIndex] = m_visionRange[oldIndex];
 	m_hasVisionFacade[newIndex] = m_hasVisionFacade[oldIndex];
 	m_coolDownEvent.moveIndex(oldIndex, newIndex);
-	m_getIntoAttackPositionPathRequest[newIndex] = std::move(m_getIntoAttackPositionPathRequest[oldIndex]);
 	m_meleeAttackTable[newIndex] = m_meleeAttackTable[oldIndex];
 	m_targetedBy[newIndex] = m_targetedBy[oldIndex];
 	m_target[newIndex] = m_target[oldIndex];
@@ -588,6 +578,7 @@ void Actors::moveIndex(ActorIndex oldIndex, ActorIndex newIndex)
 	m_coolDownDurationModifier[newIndex] = m_coolDownDurationModifier[oldIndex];
 	m_combatScore[newIndex] = m_combatScore[oldIndex];
 	m_moveEvent.moveIndex(oldIndex, newIndex);
+	move_pathRequestMaybeCancel(newIndex);
 	m_pathRequest[newIndex] = std::move(m_pathRequest[oldIndex]);
 	m_path[newIndex] = m_path[oldIndex];
 	m_pathIter[newIndex] = m_pathIter[oldIndex];
@@ -608,8 +599,6 @@ void Actors::moveIndex(ActorIndex oldIndex, ActorIndex newIndex)
 	m_hasObjectives[newIndex]->updateActorIndex(newIndex);
 	if(m_pathRequest[newIndex] != nullptr)
 		m_pathRequest[newIndex]->updateActorIndex(newIndex);
-	if(m_getIntoAttackPositionPathRequest[newIndex] != nullptr)
-		m_getIntoAttackPositionPathRequest[newIndex]->updateActorIndex(newIndex);
 	for(ActorIndex actor : m_targetedBy[newIndex])
 		m_target[actor] = newIndex;
 	if(!m_hasVisionFacade[newIndex].empty())
@@ -620,7 +609,8 @@ void Actors::moveIndex(ActorIndex oldIndex, ActorIndex newIndex)
 }
 void Actors::destroy(ActorIndex index)
 {
-	// No need to explicitly unschedule events here, destorying the event holder will do it.
+	// No need to explicitly unschedule events or threaded tasks here, destorying the holder will do it.
+	move_pathRequestMaybeCancel(index);
 	const ActorIndex& s = ActorIndex::create(size());
 	if(s != 1)
 		moveIndex(index, s - 1);
@@ -646,6 +636,7 @@ ActorIndex Actors::create(ActorParamaters params)
 	resize(index + 1);
 	bool isStatic = false;
 	MoveTypeId moveType = AnimalSpecies::getMoveType(params.species);
+	m_area.m_hasTerrainFacades.maybeRegisterMoveType(moveType);
 	ShapeId shape = AnimalSpecies::shapeForPercentGrown(params.species, params.getPercentGrown(m_area.m_simulation));
 	Portables::create(index, moveType, shape, params.faction, isStatic, Quantity::create(1));
 	Simulation& s = m_area.m_simulation;
@@ -688,7 +679,6 @@ ActorIndex Actors::create(ActorParamaters params)
 	assert(m_hasVisionFacade[index].empty());
 	// Combat.
 	assert(!m_coolDownEvent.exists(index));
-	assert(m_getIntoAttackPositionPathRequest[index] == nullptr);
 	assert(m_meleeAttackTable[index].empty());
 	assert(m_targetedBy[index].empty());
 	m_target[index].clear();
@@ -781,6 +771,7 @@ void Actors::exit(ActorIndex index)
 	m_location[index].clear();
 	if(blocks.isOnSurface(location))
 		m_onSurface.remove(index);
+	move_pathRequestMaybeCancel(index);
 }
 void Actors::resetNeeds(ActorIndex index)
 {
@@ -819,6 +810,7 @@ void Actors::die(ActorIndex index, CauseOfDeath causeOfDeath)
 	if(m_location[index].exists())
 		setStatic(index, true);
 	m_area.m_visionFacadeBuckets.remove(index);
+	move_pathRequestMaybeCancel(index);
 }
 void Actors::passout(ActorIndex, Step)
 {

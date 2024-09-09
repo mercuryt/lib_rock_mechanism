@@ -49,4 +49,5 @@ public:
 	void callback(Area& area, FindPathResult& result);
 	void clearReferences(Simulation&, Area* area);
 	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] std::string name() { return "dig"; }
 };

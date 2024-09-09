@@ -161,6 +161,7 @@ void Area::doStep()
 		m_hasRain.doStep();
 	m_fluidSources.doStep();
 	m_visionFacade.doStep();
+	m_hasTerrainFacades.doStep();
 	m_threadedTaskEngine.doStep(m_simulation, this);
 	m_eventSchedule.doStep(m_simulation.m_step);
 }

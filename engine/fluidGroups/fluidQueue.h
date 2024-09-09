@@ -21,7 +21,7 @@ struct FutureFlowBlock
 	CollisionVolume capacity = CollisionVolume::create(0);
 	CollisionVolume delta = CollisionVolume::create(0);
 	// No need to initalize capacity and delta here, they will be set at the begining of read step.
-	FutureFlowBlock(BlockIndex b) : block(b) {}
+	FutureFlowBlock(BlockIndex b) : block(b) { assert(b.exists()); }
 };
 
 /*

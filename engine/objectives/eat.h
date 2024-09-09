@@ -6,7 +6,15 @@
 
 class Area;
 class EatObjective;
-
+class EatObjectiveType final : public ObjectiveType
+{
+public:
+	[[nodiscard]] bool canBeAssigned(Area&, ActorIndex) const { assert(false); }
+	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area&, ActorIndex) const { assert(false); }
+	EatObjectiveType() = default;
+	EatObjectiveType(const Json&, DeserializationMemo&);
+	[[nodiscard]] std::string name() const { return "eat"; }
+};
 class EatEvent final : public ScheduledEvent
 {
 	ActorReference m_actor;
@@ -36,6 +44,7 @@ public:
 	EatPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
 	void callback(Area& area, FindPathResult& result);
 	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] std::string name() { return "eat"; }
 };
 class EatObjective final : public Objective
 {

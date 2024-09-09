@@ -6,15 +6,6 @@
 class Area;
 class UniformObjective;
 
-class UniformPathRequest final : public PathRequest
-{
-	UniformObjective& m_objective;
-public:
-	UniformPathRequest(Area& area, UniformObjective& objective);
-	UniformPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
-	void callback(Area& area, FindPathResult& result);
-	[[nodiscard]] Json toJson() const;
-};
 class UniformObjective final : public Objective
 {
 	std::vector<UniformElement> m_elementsCopy;
@@ -37,4 +28,14 @@ public:
 	[[nodiscard]] ItemIndex getItem() { return m_item.getIndex(); }
 	friend class UniformThreadedTask;
 	
+};
+class UniformPathRequest final : public PathRequest
+{
+	UniformObjective& m_objective;
+public:
+	UniformPathRequest(Area& area, UniformObjective& objective);
+	UniformPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
+	void callback(Area& area, FindPathResult& result);
+	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] std::string name() const { return "uniform"; }
 };

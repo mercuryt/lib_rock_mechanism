@@ -16,7 +16,8 @@ class AreaHasFluidGroups final
 public:
 	AreaHasFluidGroups(Area& area) : m_area(area) { }
 	FluidGroup* createFluidGroup(FluidTypeId fluidType, BlockIndices& blocks, bool checkMerge = true);
-	void doStep();
+	FluidGroup* createFluidGroup(FluidTypeId fluidType, BlockIndices&& blocks, bool checkMerge = true);
+	void doStep(bool parallel = true);
 	void removeFluidGroup(FluidGroup& group);
 	void clearMergedFluidGroups();
 	void validateAllFluidGroups();
@@ -25,4 +26,6 @@ public:
 	[[nodiscard]] std::string toS() const;
 	[[nodiscard]] std::list<FluidGroup>& getAll() { return m_fluidGroups; }
 	[[nodiscard]] SmallSet<FluidGroup*>& getUnstable() { return m_unstableFluidGroups; }
+	// For assert.
+	[[nodiscard]] bool contains(const FluidGroup& fluidGroup);
 };

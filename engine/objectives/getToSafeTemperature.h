@@ -8,7 +8,15 @@
 class Area;
 struct DeserializationMemo;
 struct FindPathResult;
-
+class GetToSafeTemperatureObjectiveType final : public ObjectiveType
+{
+public:
+	[[nodiscard]] bool canBeAssigned(Area&, ActorIndex) const { assert(false); }
+	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area&, ActorIndex) const { assert(false); }
+	GetToSafeTemperatureObjectiveType() = default;
+	GetToSafeTemperatureObjectiveType(const Json&, DeserializationMemo&);
+	[[nodiscard]] std::string name() const { return "get to safe temperature"; }
+};
 class GetToSafeTemperatureObjective final : public Objective
 {
 	bool m_noWhereWithSafeTemperatureFound = false;
@@ -28,5 +36,8 @@ class GetToSafeTemperaturePathRequest final : public PathRequest
 	GetToSafeTemperatureObjective& m_objective;
 public:
 	GetToSafeTemperaturePathRequest(Area& area, GetToSafeTemperatureObjective& o);
+	GetToSafeTemperaturePathRequest(const Json& data, DeserializationMemo& deserializationMemo);
 	void callback(Area& area, FindPathResult& result);
+	[[nodiscard]] std::string name() const { return "get to safe temperature"; }
+	[[nodiscard]] Json toJson() const;
 };

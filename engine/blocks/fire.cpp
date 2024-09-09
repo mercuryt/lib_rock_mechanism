@@ -4,7 +4,7 @@
 #include "../fire.h"
 #include "types.h"
 #include <algorithm>
-void Blocks::fire_setPointer(BlockIndex index, std::unordered_map<MaterialTypeId, Fire, MaterialTypeId::Hash>* pointer)
+void Blocks::fire_setPointer(BlockIndex index, SmallMapStable<MaterialTypeId, Fire>* pointer)
 {
 	assert(!m_fires[index]);
 	m_fires[index] = pointer;
@@ -23,11 +23,14 @@ FireStage Blocks::fire_getStage(BlockIndex index) const
 	assert(fire_exists(index));
 	FireStage output = FireStage::Smouldering;
 	for(auto& pair : *m_fires[index])
-		if(pair.second.m_stage > output)
-			output = pair.second.m_stage;
+	{
+		const auto& stage = pair.second->m_stage;
+		if(stage > output)
+			output = stage;
+	}
 	return output;
 }
 Fire& Blocks::fire_get(BlockIndex index, MaterialTypeId materialType)
 {
-	return m_fires[index]->at(materialType);
+	return (*m_fires[index])[materialType];
 }

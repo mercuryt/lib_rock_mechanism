@@ -12,15 +12,16 @@ ShapeId Shape::create(std::string name, std::vector<std::array<int32_t, 4>> posi
 	shapeData.m_name.add(name);
 	shapeData.m_positions.add(positions);
 	shapeData.m_displayScale.add(displayScale);
-	ShapeId output = ShapeId::create(shapeData.m_name.size() - 1);
+	shapeData.m_isMultiTile.add(positions.size() != 1);
+	shapeData.m_occupiedOffsetsCache.add({});
+	shapeData.m_adjacentOffsetsCache.add({});
+	ShapeId id = ShapeId::create(shapeData.m_name.size() - 1);
 	for(Facing i = Facing::create(0); i < 4; ++i)
 	{
-		shapeData.m_occupiedOffsetsCache.add({});
-		shapeData.m_adjacentOffsetsCache.add({});
-		shapeData.m_occupiedOffsetsCache[output][i.get()] = (makeOccupiedPositionsWithFacing(output, i));
-		shapeData.m_adjacentOffsetsCache[output][i.get()] = (makeAdjacentPositionsWithFacing(output, i));
+		shapeData.m_occupiedOffsetsCache[id][i.get()] = makeOccupiedPositionsWithFacing(id, i);
+		shapeData.m_adjacentOffsetsCache[id][i.get()] = makeAdjacentPositionsWithFacing(id, i);
 	}
-	return output;
+	return id;
 }
 std::vector<std::array<int32_t, 4>> Shape::positionsWithFacing(ShapeId id, Facing facing) { return shapeData.m_occupiedOffsetsCache[id].at(facing.get()); }
 std::vector<std::array<int32_t, 3>> Shape::adjacentPositionsWithFacing(ShapeId id, Facing facing) { return shapeData.m_adjacentOffsetsCache[id].at(facing.get()); }

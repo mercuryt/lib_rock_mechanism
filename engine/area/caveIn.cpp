@@ -75,7 +75,7 @@ void Area::stepCaveInRead()
 					BlockIndices* newChunk = chunksByBlock[adjacent];
 					for(BlockIndex b : *oldChunk)
 					{
-						chunksByBlock[b] = newChunk;
+						chunksByBlock.insert(b, newChunk);
 						newChunk->add(b);
 					}
 					// If old chunk was anchored then new chunk is as well.
@@ -89,7 +89,7 @@ void Area::stepCaveInRead()
 				}
 				// Record block membership in chunk.
 				chunksByBlock[adjacent]->add(block);
-				chunksByBlock[block] = chunksByBlock[adjacent];
+				chunksByBlock.insert(block, chunksByBlock[adjacent]);
 				/*
 				// If the chunk is anchored then no need to do anything else.
 				if(anchoredChunks.includes(chuncksByBlock[adjacent]))
@@ -113,14 +113,15 @@ void Area::stepCaveInRead()
 		if(!chunkFound)
 		{
 			chunks.push_back({block});
-			chunksByBlock[block] = &chunks.back();
+			chunksByBlock.insert(block, &chunks.back());
 		}
 		// Record anchored chunks.
 		if(blockIsAnchored)
 		{
 			anchoredChunks.insert(chunksByBlock[block]);
 			for(BlockIndex b : *chunksByBlock[block])
-				checklist.remove(b);
+				//TODO: Why is this 'maybe'?
+				checklist.maybeRemove(b);
 		}
 		// Append adjacent without chunks to end of blockQueue if block isn't anchored, if it is anchored then adjacent are as well.
 		else if(!anchoredChunks.contains(chunksByBlock[block]))

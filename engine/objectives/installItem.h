@@ -5,14 +5,6 @@
 class Area;
 class InstallItemObjective;
 class InstallItemProject;
-// Search for nearby item that needs installing.
-class InstallItemPathRequest final : public PathRequest
-{
-	InstallItemObjective& m_installItemObjective;
-public:
-	InstallItemPathRequest(Area& area, InstallItemObjective& iio);
-	void callback(Area& area, FindPathResult& result);
-};
 class InstallItemObjectiveType final : public ObjectiveType
 {
 public:
@@ -33,4 +25,15 @@ public:
 	[[nodiscard]] std::string name() const { return "install item"; }
 	[[nodiscard]] Json toJson() const;
 	friend class InstallItemPathRequest;
+};
+// Search for nearby item that needs installing.
+class InstallItemPathRequest final : public PathRequest
+{
+	InstallItemObjective& m_installItemObjective;
+public:
+	InstallItemPathRequest(Area& area, InstallItemObjective& iio);
+	InstallItemPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
+	void callback(Area& area, FindPathResult& result);
+	[[nodiscard]] std::string name() const { return "install item"; }
+	[[nodiscard]] Json toJson() const;
 };

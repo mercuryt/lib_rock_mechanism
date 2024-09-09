@@ -112,7 +112,6 @@ class Actors final : public Portables
 	DataVector<HasVisionFacade, ActorIndex> m_hasVisionFacade;
 	// Combat.
 	HasScheduledEvents<AttackCoolDownEvent> m_coolDownEvent;
-	DataVector<std::unique_ptr<GetIntoAttackPositionPathRequest>, ActorIndex> m_getIntoAttackPositionPathRequest;
 	DataVector<std::vector<std::pair<CombatScore, Attack>>, ActorIndex> m_meleeAttackTable;
 	DataVector<ActorIndices, ActorIndex> m_targetedBy;
 	DataVector<ActorIndex, ActorIndex> m_target;
@@ -238,7 +237,6 @@ public:
 	AttackTypeId combat_getRangedAttackType(ActorIndex index, ItemIndex weapon);
 	//for degbugging combat
 	[[nodiscard]] std::vector<std::pair<CombatScore, Attack>>& combat_getAttackTable(ActorIndex index) { return m_meleeAttackTable[index]; }
-	[[nodiscard]] bool combat_hasThreadedTask(ActorIndex index) { return m_getIntoAttackPositionPathRequest[index] != nullptr; }
 	[[nodiscard]] float combat_getCoolDownDurationModifier(ActorIndex index) { return m_coolDownDurationModifier[index]; }
 	[[nodiscard, maybe_unused]] CombatScore combat_getCombatScore(ActorIndex index) const { return m_combatScore[index]; }
 	[[nodiscard]] std::vector<std::pair<CombatScore, Attack>>& combat_getMeleeAttacks(ActorIndex index);
@@ -529,6 +527,7 @@ public:
 	void callback(Area& area, FindPathResult&);
 	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_actor == oldIndex.toActor()); m_actor = ActorIndex::cast(newIndex); }
 	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] std::string name() { return "attack"; }
 };
 inline void to_json(Json& data, const std::unique_ptr<GetIntoAttackPositionPathRequest>& pathRequest) { data = pathRequest->toJson(); }
 struct Attack final

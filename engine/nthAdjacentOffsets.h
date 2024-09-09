@@ -22,6 +22,7 @@ struct XYZ {
 		return XYZ(x + other.x, y + other.y, z + other.z);
 	}
 };
+inline std::mutex nthAdjacentMutex;
 inline SmallSet<XYZ> closedList;
 inline std::vector<std::vector<XYZ>> cache;
 inline std::array<XYZ, 6> offsets = { XYZ(0,0,-1), XYZ(0,0,1), XYZ(0,-1,0), XYZ(0,1,0), XYZ(-1,0,0), XYZ(1,0,0) };

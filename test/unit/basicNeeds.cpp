@@ -365,4 +365,54 @@ TEST_CASE("death")
 		REQUIRE(!actors.isAlive(actor));
 		REQUIRE(actors.getCauseOfDeath(actor) == CauseOfDeath::temperature);
 	}
+	SUBCASE("growth")
+	{
+		blocks.solid_setNot(blocks.getIndex_i(7, 7, 0));
+		blocks.fluid_add(blocks.getIndex_i(7, 7, 0), CollisionVolume::create(100), FluidType::byName("water"));
+		Items& items = area.getItems();
+		items.create({
+			.itemType=ItemType::byName("apple"),
+			.materialType=MaterialType::byName("fruit"),
+			.location=blocks.getIndex_i(1, 5, 2), 
+			.quantity=Quantity::create(1000),
+		});
+		REQUIRE(actors.grow_getEventPercent(actor) == 0);
+		REQUIRE(actors.grow_getPercent(actor) == 45);
+		REQUIRE(actors.grow_isGrowing(actor));
+		Step nextPercentIncreaseStep = actors.grow_getEventStep(actor);
+		REQUIRE(nextPercentIncreaseStep <= simulation.m_step + Config::stepsPerDay * 95);
+		REQUIRE(nextPercentIncreaseStep >= simulation.m_step + Config::stepsPerDay * 90);
+		simulation.fastForward(Config::stepsPerDay);
+		REQUIRE(actors.grow_getPercent(actor) == 45);
+		REQUIRE(!actors.grow_isGrowing(actor));
+		simulation.fastForward(Config::stepsPerHour * 2);
+		REQUIRE(actors.grow_isGrowing(actor));
+		REQUIRE(actors.grow_getEventPercent(actor) == 1);
+		REQUIRE(actors.grow_isGrowing(actor));
+		//TODO: This is too slow for unit tests, move to integration and replace with a version which sets event percent complete explicitly.
+		/*
+		simulation.fastForward(Config::stepsPerDay * 5);
+		REQUIRE(dwarf1.m_canGrow.getEventPercentComplete() == 6);
+		simulation.fastForward((Config::stepsPerDay * 50));
+		REQUIRE(dwarf1.m_canGrow.getEventPercentComplete() == 60);
+		simulation.fastForward((Config::stepsPerDay * 36));
+		REQUIRE(dwarf1.m_canGrow.getEventPercentComplete() == 99);
+		simulation.fastForwardUntillPredicate([&]{ return dwarf1.m_canGrow.growthPercent() != 45; }, 60 * 24 * 40);
+		REQUIRE(dwarf1.m_canGrow.growthPercent() == 46);
+		REQUIRE(dwarf1.m_canGrow.getEventPercentComplete() == 0);
+		REQUIRE(dwarf1.m_canGrow.isGrowing());
+		*/
+		actors.grow_setPercent(actor, Percent::create(20));
+		REQUIRE(actors.grow_getPercent(actor) == 20);
+		REQUIRE(actors.grow_getEventPercent(actor) == 0);
+		REQUIRE(actors.grow_isGrowing(actor));
+		actors.grow_setPercent(actor, Percent::create(100));
+		REQUIRE(actors.grow_getPercent(actor) == 100);
+		REQUIRE(actors.grow_eventIsPaused(actor));
+		REQUIRE(!actors.grow_isGrowing(actor));
+		actors.grow_setPercent(actor, Percent::create(30));
+		REQUIRE(actors.grow_getPercent(actor) == 30);
+		REQUIRE(actors.grow_getEventPercent(actor) == 0);
+		REQUIRE(actors.grow_isGrowing(actor));
+	}
 }

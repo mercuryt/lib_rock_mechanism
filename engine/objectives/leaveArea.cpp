@@ -29,3 +29,14 @@ void LeaveAreaPathRequest::callback(Area& area, FindPathResult& result)
 	else
 		actors.objective_canNotCompleteObjective(actor, m_objective);
 }
+LeaveAreaPathRequest::LeaveAreaPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
+	m_objective(static_cast<LeaveAreaObjective&>(*deserializationMemo.m_objectives[data["objective"]]))
+{
+	nlohmann::from_json(data, static_cast<PathRequest&>(*this));
+}
+Json LeaveAreaPathRequest::toJson() const
+{
+	Json output = PathRequest::toJson();
+	output["objective"] = reinterpret_cast<uintptr_t>(&m_objective);
+	return output;
+}

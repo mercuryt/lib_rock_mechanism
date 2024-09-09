@@ -61,7 +61,7 @@ void ItemCanBeStockPiled::scheduleReset(Area& area, FactionId faction, Step dura
 {
 	assert(!m_scheduledEvents.contains(faction));
 	auto pair = m_scheduledEvents.emplace(faction, area.m_eventSchedule);
-	HasScheduledEvent<ReMarkItemForStockPilingEvent>& eventHandle = pair.second;
+	HasScheduledEvent<ReMarkItemForStockPilingEvent>& eventHandle = pair;
 	eventHandle.schedule(area, *this, faction, duration, start);
 }
 void ItemCanBeStockPiled::unsetAndScheduleReset(Area& area, FactionId faction, Step duration) 
@@ -80,6 +80,7 @@ void Items::onChangeAmbiantSurfaceTemperature()
 	Blocks& blocks = m_area.getBlocks();
 	for(ItemIndex index : m_onSurface)
 	{
+		assert(m_location[index].exists());
 		Temperature temperature = blocks.temperature_get(m_location[index]);
 		setTemperature(index, temperature);
 	}
@@ -152,19 +153,20 @@ void Items::moveIndex(ItemIndex oldIndex, ItemIndex newIndex)
 }
 void Items::setLocation(ItemIndex index, BlockIndex block)
 {
+	assert(index.exists());
 	assert(m_location[index].exists());
+	assert(block.exists());
 	Facing facing = m_area.getBlocks().facingToSetWhenEnteringFrom(block, m_location[index]);
 	setLocationAndFacing(index, block, facing);
-	Blocks& blocks = m_area.getBlocks();
-	if(blocks.isOnSurface(block))
-		m_onSurface.add(index);
-	else
-		m_onSurface.remove(index);
 }
 void Items::setLocationAndFacing(ItemIndex index, BlockIndex block, Facing facing)
 {
+	assert(index.exists());
+	assert(block.exists());
 	if(m_location[index].exists())
 		exit(index);
+	m_location[index] = block;
+	m_facing[index] = facing;
 	Blocks& blocks = m_area.getBlocks();
 	if(isGeneric(index) && m_static[index])
 	{

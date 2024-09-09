@@ -582,6 +582,9 @@ TEST_CASE("fluids smaller")
 	}
 	SUBCASE("Split test 2")
 	{
+		// Create a 3 x 1 trench with pits at each end.
+		// One pit is a single block deep ( block4 ), the other is two blocks deep and includes another block on the bottom level ( blocks 1-3).
+		// Expect a single fluid group with a total volume of 60 to split into two groups with volume 30.
 		areaBuilderUtil::setSolidLayers(area, 0, 4, marble);
 		BlockIndex block1 = blocks.getIndex_i(5, 4, 1);
 		BlockIndex block2 = blocks.getIndex_i(5, 5, 1);
@@ -610,12 +613,14 @@ TEST_CASE("fluids smaller")
 		fg1->splitStep();
 		fg1->mergeStep();
 		REQUIRE(fg1->m_excessVolume == 0);
+		REQUIRE(fg1->totalVolume() == 30);
 		REQUIRE(fg1->m_drainQueue.m_set.size() == 1);
-		REQUIRE(fg1->m_drainQueue.m_set.contains(block4));
 		fg1 = blocks.fluid_getGroup(block3, water);
+		REQUIRE(fg1->m_drainQueue.m_set.contains(block3));
 		FluidGroup* fg2 = blocks.fluid_getGroup(block4, water);
-		REQUIRE(fg2->m_drainQueue.m_set.size() == 1);
 		REQUIRE(fg1 != fg2);
+		REQUIRE(fg2->m_drainQueue.m_set.size() == 1);
+		REQUIRE(fg2->totalVolume() == 30);
 		REQUIRE(fg1->m_fillQueue.m_set.size() == 3);
 		REQUIRE(fg2->m_fillQueue.m_set.size() == 2);
 		REQUIRE(area.m_hasFluidGroups.getAll().size() == 2);
@@ -664,6 +669,11 @@ TEST_CASE("fluids smaller")
 	}
 	SUBCASE("Merge with group as it splits")
 	{
+		// A 3x1 trench with pits on each end is created.
+		// One of the pits has depth one and is empty.
+		// The other has depth two and contains 100 water(fg1) at the bottom.
+		// The 3x1 area contains 60 water(fg2).
+		// Expect fg2 to split into two groups of 30, one of which merges with fg1. 
 		areaBuilderUtil::setSolidLayers(area, 0, 4, marble);
 		BlockIndex origin1 = blocks.getIndex_i(5, 4, 1);
 		BlockIndex block1 = blocks.getIndex_i(5, 5, 1);
@@ -710,6 +720,8 @@ TEST_CASE("fluids smaller")
 		REQUIRE(blocks.fluid_volumeOfTypeContains(block2, water) == 30);
 		REQUIRE(blocks.fluid_volumeOfTypeContains(block3, water) == 30);
 		// Step 2.
+		fg1 = blocks.fluid_getGroup(origin1, water);
+		fg2 = blocks.fluid_getGroup(block3, water);
 		fg1->readStep();
 		fg2->readStep();
 		REQUIRE(fg1->m_excessVolume == 0);
@@ -1084,6 +1096,10 @@ TEST_CASE("fluids smaller")
 	}
 	SUBCASE("Set solid and split")
 	{
+		// Create a 3x1 trench and put 100 water in the middle block.
+		// Allow it to spread out to 33 in each block with 1 excessVolume.
+		// Set the middle block solid and verify that the fluid group splits into two groups, each containing 50.
+		//
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
 		BlockIndex block1 = blocks.getIndex_i(5, 5, 1);
 		BlockIndex origin1 = blocks.getIndex_i(5, 6, 1);
@@ -1121,8 +1137,13 @@ TEST_CASE("fluids smaller")
 		fg1->mergeStep();
 		fg2->mergeStep();
 		//Step 3.
-		fg1->readStep();
-		fg2->readStep();
+		assert(area.m_hasFluidGroups.getAll().size() == 2);
+		fg1 = blocks.fluid_getGroup(block1, water);
+		fg2 = blocks.fluid_getGroup(block2, water);
+		if(!fg1->m_stable)
+			fg1->readStep();
+		if(!fg2->m_stable)
+			fg2->readStep();
 		REQUIRE(fg2->m_stable);
 		REQUIRE(fg1->m_stable);
 	}
@@ -1499,10 +1520,7 @@ TEST_CASE("fluids multi scale")
 		simulation.m_step = Step::create(1);
 		while(simulation.m_step < steps)
 		{
-			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
-				fluidGroup->readStep();
-			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
-				fluidGroup->writeStep();
+			area.m_hasFluidGroups.doStep(false);
 			++simulation.m_step;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);

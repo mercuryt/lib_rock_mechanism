@@ -7,6 +7,7 @@
 #include "../actors/actors.h"
 #include "../blocks/blocks.h"
 #include "../plants.h"
+#include "pathRequest.h"
 #include <memory>
 // Event.
 HarvestEvent::HarvestEvent(Step delay, Area& area, HarvestObjective& ho, ActorIndex actor, const Step start) :
@@ -155,7 +156,7 @@ bool HarvestObjective::blockContainsHarvestablePlant(Area& area, BlockIndex bloc
 }
 HarvestPathRequest::HarvestPathRequest(Area& area, HarvestObjective& objective, ActorIndex actor) : ObjectivePathRequest(objective, true) // reserve block which passed predicate.
 {
-	bool unreserved = true;
+	const bool unreserved = true;
 	createGoAdjacentToDesignation(area, actor, BlockDesignation::Harvest, objective.m_detour, unreserved, Config::maxRangeToSearchForHorticultureDesignations);
 }
 void HarvestPathRequest::onSuccess(Area& area, BlockIndex blockWhichPassedPredicate)

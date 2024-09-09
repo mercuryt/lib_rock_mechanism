@@ -14,6 +14,7 @@ TEST_CASE("temperature")
 	DateTime now(12, 150, 1200);
 	Simulation simulation(L"", now.toSteps());
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();
 	SUBCASE("solid blocks burn")
 	{

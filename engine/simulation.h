@@ -55,7 +55,7 @@ public:
 	std::unique_ptr<DramaEngine> m_dramaEngine;
 	std::mutex m_uiReadMutex;
 
-	Simulation(std::wstring name = L"", Step s = Config::stepsPerYear * 10'000u);
+	Simulation(std::wstring name = L"", Step s = Config::stepsPerYear * 10'000ul);
 	Simulation(std::filesystem::path path);
 	Simulation(const Json& data);
 	Json toJson() const;
@@ -66,7 +66,8 @@ public:
 	//TODO: latitude, longitude, altitude.
 	[[nodiscard]] std::filesystem::path getPath() const  { return m_path; }
 	[[nodiscard, maybe_unused]] DateTime getDateTime() const;
-	[[nodiscard]] ItemId nextItemId();
+	[[nodiscard]] Step getNextEventStep();
+	[[nodiscard]] SimulationHasAreas& getAreas();
 	~Simulation();
 	// For testing.
 	[[maybe_unused]] void fastForwardUntill(DateTime now);

@@ -197,8 +197,7 @@ void Actors::combat_setTarget(ActorIndex index, ActorIndex actor)
 {
 	m_target[index] = actor;
 	combat_recordTargetedBy(actor, index);
-	assert(m_getIntoAttackPositionPathRequest[index] == nullptr);
-	m_getIntoAttackPositionPathRequest[index] = std::make_unique<GetIntoAttackPositionPathRequest>(m_area, index, actor, m_maxRange[index]);
+	move_pathRequestRecord(index, std::make_unique<GetIntoAttackPositionPathRequest>(m_area, index, actor, m_maxRange[index]));
 }
 void Actors::combat_recordTargetedBy(ActorIndex index, ActorIndex actor)
 {
@@ -254,8 +253,8 @@ void Actors::combat_targetNoLongerTargetable(ActorIndex index)
 }
 void Actors::combat_onTargetMoved(ActorIndex index)
 {
-	if(m_getIntoAttackPositionPathRequest[index] == nullptr)
-		m_getIntoAttackPositionPathRequest[index] = std::make_unique<GetIntoAttackPositionPathRequest>(m_area, index, m_target[index], m_maxRange[index]);
+	if(!m_path[index].empty())
+		combat_getIntoRangeAndLineOfSightOfActor(index, m_target[index], combat_getMaxRange(index));
 }
 void Actors::combat_freeHit(ActorIndex index, ActorIndex actor)
 {

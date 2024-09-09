@@ -177,6 +177,8 @@ void Actors::move_setDestination(ActorIndex index, BlockIndex destination, bool 
 		reserve = unreserved = false;
 	if(unreserved && !adjacent)
 		assert(!blocks.isReserved(destination, m_faction[index]));
+	assert(m_pathRequest[index] == nullptr);
+	m_pathRequest[index] = std::make_unique<PathRequest>(PathRequest::create());
 	if(adjacent)
 		m_pathRequest[index]->createGoAdjacentToLocation(m_area, index, destination, detour, unreserved, DistanceInBlocks::null(), reserve);
 	else
@@ -191,18 +193,24 @@ void Actors::move_setDestinationAdjacentToActor(ActorIndex index, ActorIndex oth
 	assert(!isAdjacentToActor(index, other));
 	assert(!isAdjacentToLocation(index, m_location[other]));
 	// Actor, predicate, destinationHuristic, detour, adjacent, unreserved.
+	assert(m_pathRequest[index] == nullptr);
+	m_pathRequest[index] = std::make_unique<PathRequest>(PathRequest::create());
 	m_pathRequest[index]->createGoAdjacentToActor(m_area, index, other, detour, unreserved, DistanceInBlocks::null(), reserve);
 }
 void Actors::move_setDestinationAdjacentToItem(ActorIndex index, ItemIndex item, bool detour, bool unreserved, bool reserve)
 {
 	assert(!isAdjacentToItem(index, item));
 	assert(!isAdjacentToLocation(index, m_location[item]));
+	assert(m_pathRequest[index] == nullptr);
+	m_pathRequest[index] = std::make_unique<PathRequest>(PathRequest::create());
 	m_pathRequest[index]->createGoAdjacentToItem(m_area, index, item, detour, unreserved, DistanceInBlocks::null(), reserve);
 }
 void Actors::move_setDestinationAdjacentToPlant(ActorIndex index, PlantIndex plant, bool detour, bool unreserved, bool reserve)
 {
 	assert(!isAdjacentToPlant(index, plant));
 	assert(!isAdjacentToLocation(index, m_location[plant]));
+	assert(m_pathRequest[index] == nullptr);
+	m_pathRequest[index] = std::make_unique<PathRequest>(PathRequest::create());
 	m_pathRequest[index]->createGoAdjacentToPlant(m_area, index, plant, detour, unreserved, DistanceInBlocks::null(), reserve);
 }
 void Actors::move_setDestinationAdjacentToPolymorphic(ActorIndex index, ActorOrItemIndex actorOrItemIndex, bool detour, bool unreserved, bool reserve)
@@ -215,14 +223,20 @@ void Actors::move_setDestinationAdjacentToPolymorphic(ActorIndex index, ActorOrI
 }
 void Actors::move_setDestinationAdjacentToFluidType(ActorIndex index, FluidTypeId fluidType, bool detour, bool unreserved, bool reserve, DistanceInBlocks maxRange)
 {
+	assert(m_pathRequest[index] == nullptr);
+	m_pathRequest[index] = std::make_unique<PathRequest>(PathRequest::create());
 	m_pathRequest[index]->createGoAdjacentToFluidType(m_area, index, fluidType, detour, unreserved, maxRange, reserve);
 }
 void Actors::move_setDestinationAdjacentToDesignation(ActorIndex index, BlockDesignation designation, bool detour, bool unreserved, bool reserve, DistanceInBlocks maxRange)
 {
+	assert(m_pathRequest[index] == nullptr);
+	m_pathRequest[index] = std::make_unique<PathRequest>(PathRequest::create());
 	m_pathRequest[index]->createGoAdjacentToDesignation(m_area, index, designation, detour, unreserved, maxRange, reserve);
 }
 void Actors::move_setDestinationToEdge(ActorIndex index, bool detour)
 {
+	assert(m_pathRequest[index] == nullptr);
+	m_pathRequest[index] = std::make_unique<PathRequest>(PathRequest::create());
 	m_pathRequest[index]->createGoToEdge(m_area, index, detour);
 }
 void Actors::move_setType(ActorIndex index, MoveTypeId moveType)
@@ -330,12 +344,16 @@ void Actors::move_pathRequestCallback(ActorIndex index, BlockIndices path, bool 
 void Actors::move_pathRequestRecord(ActorIndex index, std::unique_ptr<PathRequest> pathRequest)
 {
 	assert(m_pathRequest[index] == nullptr);
+	assert(pathRequest->exists());
 	m_pathRequest[index] = std::move(pathRequest);
 }
 void Actors::move_pathRequestMaybeCancel(ActorIndex index)
 {
 	if(m_pathRequest[index] != nullptr)
+	{
 		m_pathRequest[index]->cancel(m_area, index);
+		m_pathRequest[index] = nullptr;
+	}
 }
 bool Actors::move_canMove(ActorIndex index) const
 {

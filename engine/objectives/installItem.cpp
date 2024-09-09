@@ -18,6 +18,17 @@ InstallItemPathRequest::InstallItemPathRequest(Area& area, InstallItemObjective&
 	bool unreserved = false;
 	createGoAdjacentToCondition(area, actor, predicate, m_installItemObjective.m_detour, unreserved, DistanceInBlocks::null(), BlockIndex::null());
 }
+InstallItemPathRequest::InstallItemPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
+	m_installItemObjective(static_cast<InstallItemObjective&>(*deserializationMemo.m_objectives[data["objective"]]))
+{
+	nlohmann::from_json(data, static_cast<PathRequest&>(*this));
+}
+Json InstallItemPathRequest::toJson() const
+{
+	Json output = PathRequest::toJson();
+	output["objective"] = reinterpret_cast<uintptr_t>(&m_installItemObjective);
+	return output;
+}
 void InstallItemPathRequest::callback(Area& area, FindPathResult& result)
 {
 	ActorIndex actor = getActor();

@@ -4,7 +4,7 @@
 #include "nthAdjacentOffsets.h"
 #include "config.h"
 #include "objective.h"
-#include "objectives/goToSafeTemperature.h"
+#include "objectives/getToSafeTemperature.h"
 #include "simulation.h"
 #include "terrainFacade.h"
 #include "types.h"
@@ -75,7 +75,11 @@ TemperatureSource& AreaHasTemperature::getTemperatureSourceAt(BlockIndex block)
 }
 void AreaHasTemperature::addDelta(BlockIndex block, TemperatureDelta delta)
 {
-	m_blockDeltaDeltas[block] += delta;
+	auto found = m_blockDeltaDeltas.find(block);
+	if(found == m_blockDeltaDeltas.end())
+		m_blockDeltaDeltas.insert(block, delta);
+	else
+		found->second += delta;
 }
 // TODO: optimize by splitting block deltas into different structures for different temperature zones, to avoid having to rerun getAmbientTemperature?
 void AreaHasTemperature::applyDeltas()

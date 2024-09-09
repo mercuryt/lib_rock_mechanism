@@ -107,7 +107,10 @@ void RainEvent::execute(Simulation&, Area* area)
 	{
 		auto random = area->m_hasRain.m_area.m_simulation.m_random;
 		Percent humidity = area->m_hasRain.humidityForSeason();
-		Percent intensity = humidity * random.getInRange(Config::minimumRainIntensityModifier, Config::maximumRainIntensityModifier);
+		float modifier = random.getInRange(Config::minimumRainIntensityModifier, Config::maximumRainIntensityModifier);
+		assert(modifier != 0.0f);
+		Percent intensity = humidity * modifier;
+		assert(intensity != 0);
 		Step duration = Step::create(humidity.get() * random.getInRange(Config::minimumStepsRainPerPercentHumidity, Config::maximumStepsRainPerPercentHumidity));
 		assert(duration < Config::stepsPerDay);
 		area->m_hasRain.start(intensity, duration);

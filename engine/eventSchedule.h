@@ -47,7 +47,6 @@ class EventSchedule
 {
 	Simulation& m_simulation;
 	Area* m_area;
-	Step m_lowestStepWithEventsScheduled = Step::create(0);
 public:
 	EventSchedule(Simulation& s, Area* area) : m_simulation(s), m_area(area) { }
 	std::map<Step, std::list<std::unique_ptr<ScheduledEvent>>> m_data;
@@ -55,8 +54,9 @@ public:
 	void unschedule(ScheduledEvent& scheduledEvent);
 	void doStep(const Step stepNumber);
 	void clear();
-	Simulation& getSimulation() { return m_simulation; }
-	Area* getArea() { return m_area; }
+	[[nodiscard]] Step getNextEventStep() const;
+	[[nodiscard]] Simulation& getSimulation() { return m_simulation; }
+	[[nodiscard]] Area* getArea() { return m_area; }
 	[[nodiscard]] Step simulationStep() const;
 	// For testing.
 	[[maybe_unused, nodiscard]]uint32_t count();

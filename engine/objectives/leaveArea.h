@@ -21,5 +21,8 @@ class LeaveAreaPathRequest final : public PathRequest
 	LeaveAreaObjective& m_objective;
 public:
 	LeaveAreaPathRequest(Area& area, LeaveAreaObjective& objective);
+	LeaveAreaPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
 	void callback(Area& area, FindPathResult& result);
+	[[nodiscard]] std::string name() const { return "leave area"; }
+	[[nodiscard]] Json toJson() const;
 };

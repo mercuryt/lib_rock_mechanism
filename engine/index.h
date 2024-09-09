@@ -143,11 +143,11 @@ class IndicesSetBase
 {
 	SmallSet<StrongInteger> data;
 public:
-	void add(StrongInteger index) { data.insert(index); }
-	void remove(StrongInteger index) { data.erase(index); }
+	void add(StrongInteger index) { assert(index.exists()); data.insert(index); }
+	void remove(StrongInteger index) { assert(index.exists()); data.erase(index); }
 	void clear() { data.clear(); }
 	[[nodiscard]] bool empty() const { return data.empty(); }
-	[[nodiscard]] bool contains(StrongInteger index) const { return data.contains(index); }
+	[[nodiscard]] bool contains(StrongInteger index) const { assert(index.exists()); return data.contains(index); }
 	[[nodiscard]] SmallSet<StrongInteger>::iterator begin() { return data.begin(); }
 	[[nodiscard]] SmallSet<StrongInteger>::iterator end() { return data.end(); }
 	[[nodiscard]] SmallSet<StrongInteger>::const_iterator begin() const { return data.begin(); }

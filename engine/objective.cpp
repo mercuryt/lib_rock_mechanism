@@ -18,6 +18,10 @@
 #include "objectives/construct.h"
 #include "objectives/stockpile.h"
 #include "objectives/rest.h"
+#include "objectives/sleep.h"
+#include "objectives/eat.h"
+#include "objectives/drink.h"
+#include "objectives/getToSafeTemperature.h"
 #include "types.h"
 
 #include <cstdio>
@@ -143,7 +147,7 @@ void SupressedNeedEvent::clearReferences(Simulation&, Area*) { m_supressedNeed.m
 // Static method.
 void ObjectiveType::load()
 {
-	objectiveTypeData.resize(12);
+	objectiveTypeData.resize(16);
 	ObjectiveTypeId index = ObjectiveTypeId::create(0);
 	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName("wood working"));
 	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName("metal working"));
@@ -158,11 +162,16 @@ void ObjectiveType::load()
 	objectiveTypeData[index++] = std::make_unique<GivePlantsFluidObjectiveType>();
 	objectiveTypeData[index++] = std::make_unique<HarvestObjectiveType>();
 	objectiveTypeData[index++] = std::make_unique<WoodCuttingObjectiveType>();
+	objectiveTypeData[index++] = std::make_unique<SleepObjectiveType>();
+	objectiveTypeData[index++] = std::make_unique<EatObjectiveType>();
+	objectiveTypeData[index++] = std::make_unique<DrinkObjectiveType>();
+	objectiveTypeData[index++] = std::make_unique<GetToSafeTemperatureObjectiveType>();
 }
 // Static method.
 ObjectiveTypeId ObjectiveType::getIdByName(std::string name)
 {
-	return getByName(name).getId();
+	const ObjectiveType& objectiveType = getByName(name);
+	return objectiveType.getId();
 }
 // Static method.
 const ObjectiveType& ObjectiveType::getByName(std::string name)
@@ -175,7 +184,10 @@ const ObjectiveType& ObjectiveType::getByName(std::string name)
 const ObjectiveType& ObjectiveType::getById(ObjectiveTypeId id) { return *objectiveTypeData[id].get(); }
 ObjectiveTypeId ObjectiveType::getId() const 
 {
-	return ObjectiveTypeId::create(objectiveTypeData.find_if([&](const std::unique_ptr<ObjectiveType>& type) { return type.get() == this; }) - objectiveTypeData.begin());
+	auto iter = objectiveTypeData.find_if([&](const std::unique_ptr<ObjectiveType>& type) { return type.get() == this; });
+	assert(iter != objectiveTypeData.end());
+	uint distance = std::distance(objectiveTypeData.begin(), iter);
+	return ObjectiveTypeId::create(distance);
 }
 // Objective.
 Objective::Objective(Priority priority) : m_priority(priority) { }

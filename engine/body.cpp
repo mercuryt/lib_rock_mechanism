@@ -269,7 +269,7 @@ void Body::recalculateBleedAndImpairment(Area& area)
 	{
 		// Calculate bleed event frequency from bleed volume rate.
 		Step baseFrequency = Config::bleedEventBaseFrequency / bleedVolumeRate;
-		Step baseWoundsCloseDelay = Config::ratioWoundsCloseDelayToBleedVolume * bleedVolumeRate;
+		Step baseWoundsCloseDelay = Step::create(Config::ratioWoundsCloseDelayToBleedVolume * bleedVolumeRate);
 		// Apply already elapsed progress from existing event ( if any ).
 		if(m_isBleeding)
 		{
