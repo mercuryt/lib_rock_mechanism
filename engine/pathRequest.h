@@ -14,6 +14,7 @@ class ActorOrItemIndex;
 class Objective;
 struct FluidType;
 struct FindPathResult;
+struct DeserializationMemo;
 
 class PathRequest
 {
@@ -31,9 +32,11 @@ protected:
 	bool m_adjacent = false;
 	bool m_reserve = false;
 	bool m_reserveBlockThatPassesPredicate = false;
-public:
 	PathRequest() = default;
-	void updateActorIndex(ActorIndex newIndex) { m_actor = newIndex; }
+public:
+	static PathRequest create() { return PathRequest(); }
+	PathRequest(const Json& data) { nlohmann::from_json(data, *this); }
+	void updateActorIndex(ActorIndex newIndex) { assert(newIndex.exists()); m_actor = newIndex; }
 	void create(Area& area, ActorIndex actor, DestinationCondition destination, bool detour, DistanceInBlocks maxRange, BlockIndex huristicDestination = BlockIndex::null(), bool reserve = false);
 	void createGoToAnyOf(Area& area, ActorIndex actor, std::vector<BlockIndex> destinations, bool detour, bool unreserved, DistanceInBlocks maxRange, BlockIndex huristicDestination = BlockIndex::null(), bool reserve = false);
 public:
@@ -56,7 +59,9 @@ public:
 	virtual void callback(Area& area, FindPathResult& result);
 	[[nodiscard]] virtual Json toJson() const { return *this; }
 	[[nodiscard]] bool exists() const { return m_index.exists(); }
-	[[nodiscard]] ActorIndex getActor() const { return m_actor; }
+	[[nodiscard]] ActorIndex getActor() const { assert(m_actor.exists()); return m_actor; }
+	[[nodiscard]] std::string name() { return "basic"; }
+	[[nodiscard]] static std::unique_ptr<PathRequest> load(Area& area, const Json& data, DeserializationMemo& deserializationMemo);
 	virtual ~PathRequest() = default;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(PathRequest, m_index, m_destinations, m_fluidType, m_actor, m_destination, m_huristicDestination, m_maxRange, m_designation, m_detour, m_unreserved, m_adjacent, m_reserve, m_reserveBlockThatPassesPredicate);
 };
@@ -67,19 +72,20 @@ class ObjectivePathRequest : public PathRequest
 protected:
 	Objective& m_objective;
 	bool m_reserveBlockThatPassedPredicate = false;
+	ObjectivePathRequest(const Json& data, DeserializationMemo& deserializationMemo);
+	ObjectivePathRequest(Objective& objective, bool rbtpp) : m_objective(objective), m_reserveBlockThatPassedPredicate(rbtpp) { }
 	void callback(Area& area, FindPathResult&);
 	virtual void onSuccess(Area& area, BlockIndex blockThatPassedPredicate) = 0;
-
-public:
-	ObjectivePathRequest(Objective& objective, bool rbtpp) : m_objective(objective), m_reserveBlockThatPassedPredicate(rbtpp) { }
+	[[nodiscard]] Json toJson() const;
 };
 // Defines a standard callback to be subclassed by eat, sleep, drink and go to safe temperature.
 class NeedPathRequest : public PathRequest
 {
 protected:
 	Objective& m_objective;
+	NeedPathRequest(Objective& objective) : m_objective(objective) { }
+	NeedPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
 	void callback(Area& area, FindPathResult&);
 	virtual void onSuccess(Area& area, BlockIndex blockThatPassedPredicate) = 0;
-public:
-	NeedPathRequest(Objective& objective) : m_objective(objective) { }
+	[[nodiscard]] Json toJson() const;
 };

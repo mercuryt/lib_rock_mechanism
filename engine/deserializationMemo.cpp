@@ -26,7 +26,7 @@
 #include "objectives/craft.h"
 #include "objectives/eat.h"
 #include "objectives/giveItem.h"
-#include "objectives/goToSafeTemperature.h"
+#include "objectives/getToSafeTemperature.h"
 #include "objectives/leaveArea.h"
 #include "objectives/sowSeeds.h"
 #include "objectives/unequipItem.h"

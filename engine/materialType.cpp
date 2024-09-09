@@ -70,7 +70,7 @@ std::vector<SpoilsDataTypeId>& MaterialType::getSpoilData(MaterialTypeId id) { r
 Temperature MaterialType::getMeltingPoint(MaterialTypeId id) { return materialTypeData.m_meltingPoint[id]; };
 FluidTypeId MaterialType::getMeltsInto(MaterialTypeId id) { return materialTypeData.m_meltsInto[id]; };
 // Fire.
-bool MaterialType::canBurn(MaterialTypeId id) { return materialTypeData.m_burnStageDuration[id].empty(); }
+bool MaterialType::canBurn(MaterialTypeId id) { return materialTypeData.m_burnStageDuration[id].exists(); }
 Step MaterialType::getBurnStageDuration(MaterialTypeId id) { return materialTypeData.m_burnStageDuration[id]; };
 Step MaterialType::getFlameStageDuration(MaterialTypeId id) { return materialTypeData.m_flameStageDuration[id]; };
 Temperature MaterialType::getIgnitionTemperature(MaterialTypeId id) { return materialTypeData.m_ignitionTemperature[id]; };

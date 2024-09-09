@@ -6,7 +6,6 @@
 #include "items/itemQuery.h"
 #include "types.h"
 
-#include <deque>
 #include <string>
 #include <sys/types.h>
 #include <vector>

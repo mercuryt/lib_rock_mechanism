@@ -61,7 +61,7 @@ class TerrainFacade final
 	// DestinationCondition could test against a set of destination indecies or load the actual block to do more complex checks.
 	// AccessCondition could test for larger shapes or just return true for 1x1x1 size.
 	// TODO: huristic destination.
-	[[nodiscard]] FindPathResult findPath(BlockIndex from, const DestinationCondition destinationCondition, AccessCondition accessCondition, OpenListPush openListPush, OpenListPop openListPop, OpenListEmpty openListEmpty) const;
+	[[nodiscard]] FindPathResult findPath(BlockIndex from, const DestinationCondition destinationCondition, AccessCondition accessCondition, OpenListPush openListPush, OpenListPop openListPop, OpenListEmpty openListEmpty, ClosedListAdd closedListAdd, ClosedListContains closedListContains, ClosedListGetPath closedListGetPath) const;
 	[[nodiscard]] FindPathResult findPathBreadthFirst(BlockIndex from, const DestinationCondition destinationCondition, AccessCondition accessCondition, PathMemoBreadthFirst& memo) const;
 	[[nodiscard]] FindPathResult findPathDepthFirst(BlockIndex from, const DestinationCondition destinationCondition, AccessCondition accessCondition, BlockIndex huristicDestination, PathMemoDepthFirst& memo) const;
 	// Non batched pathing uses that WithoutMemo variants.

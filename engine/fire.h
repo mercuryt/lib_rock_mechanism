@@ -39,7 +39,7 @@ public:
 	bool m_hasPeaked;
 
 	// Default arguments are used when creating a fire normally, custom values are for deserializing or dramatic use.
-	Fire(Area& a, BlockIndex l, MaterialTypeId mt, bool hasPeaked = false, FireStage stage = FireStage::Smouldering, Step start = Step::create(0));
+	Fire(Area& a, BlockIndex l, MaterialTypeId mt, bool hasPeaked = false, FireStage stage = FireStage::Smouldering, Step start = Step::null());
 	[[nodiscard]] bool operator==(const Fire& fire) const { return &fire == this; }
 };
 class AreaHasFires final
@@ -48,7 +48,7 @@ class AreaHasFires final
 	// Outer map is hash because there are potentailly a large number of fires.
 	// Inner map is hash because Fire is immobile, due to containing a scheduled Event.
 	// TODO: stable small map.
-	std::unordered_map<BlockIndex, std::unordered_map<MaterialTypeId, Fire, MaterialTypeId::Hash>, BlockIndex::Hash> m_fires;
+	std::unordered_map<BlockIndex, SmallMapStable<MaterialTypeId, Fire>, BlockIndex::Hash> m_fires;
 public:
 	AreaHasFires(Area& a) : m_area(a) { }
 	void ignite(BlockIndex block, MaterialTypeId materialType);

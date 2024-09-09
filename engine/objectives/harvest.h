@@ -55,5 +55,7 @@ class HarvestPathRequest final : public ObjectivePathRequest
 {
 public:
 	HarvestPathRequest(Area& area, HarvestObjective& objective, ActorIndex actor);
+	HarvestPathRequest(const Json& data, DeserializationMemo& deserializationMemo) : ObjectivePathRequest(data, deserializationMemo) { }
 	void onSuccess(Area& area, BlockIndex blockWhichPassedPredicate);
+	[[nodiscard]] std::string name() { return "harvest"; }
 };

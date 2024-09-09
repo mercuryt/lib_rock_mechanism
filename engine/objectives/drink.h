@@ -4,7 +4,15 @@
 #include "../types.h"
 class Area;
 class DrinkEvent;
-
+class DrinkObjectiveType final : public ObjectiveType
+{
+public:
+	[[nodiscard]] bool canBeAssigned(Area&, ActorIndex) const { assert(false); }
+	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area&, ActorIndex) const { assert(false); }
+	DrinkObjectiveType() = default;
+	DrinkObjectiveType(const Json&, DeserializationMemo&);
+	[[nodiscard]] std::string name() const { return "drink"; }
+};
 class DrinkObjective final : public Objective
 {
 	HasScheduledEvent<DrinkEvent> m_drinkEvent;
@@ -37,4 +45,5 @@ public:
 	DrinkPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
 	void callback(Area& area, FindPathResult& result);
 	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] std::string name() { return "drink"; }
 };

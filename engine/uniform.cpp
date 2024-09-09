@@ -9,7 +9,7 @@ UniformElement::UniformElement(ItemTypeId itemType, Quantity quantity, MaterialT
 	itemQuery(itemType, materialType), quantity(quantity) { }
 Uniform& SimulationHasUniformsForFaction::createUniform(std::wstring& name, std::vector<UniformElement>& elements)
 {
-	return m_data.emplace(name, name, elements).second;
+	return m_data.emplace(name, name, elements);
 }
 void SimulationHasUniformsForFaction::destroyUniform(Uniform& uniform)
 {

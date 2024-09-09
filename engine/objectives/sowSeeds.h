@@ -56,4 +56,5 @@ class SowSeedsPathRequest final : public ObjectivePathRequest
 public:
 	SowSeedsPathRequest(Area& area, SowSeedsObjective& objective);
 	void onSuccess(Area& area, BlockIndex blockWhichPassedPredicate);
+	[[nodiscard]] std::string name() { return "sow seeds"; }
 };

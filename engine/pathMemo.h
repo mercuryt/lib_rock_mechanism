@@ -15,10 +15,10 @@ class PathMemoClosed final
 	DataVector<BlockIndex, BlockIndex> m_data;
 	BlockIndices m_dirty;
 public:
-	[[nodiscard]] bool contains(BlockIndex index) const { return m_data[index] != BlockIndex::null(); }
+	[[nodiscard]] bool contains(BlockIndex index) const { return m_data[index].exists(); }
 	[[nodiscard]] bool empty() const { return m_dirty.empty(); }
-	[[nodiscard]] BlockIndex previous(BlockIndex index) const { return m_data[index]; }
-	void add(BlockIndex index, BlockIndex parent) { assert(!contains(index)); assert(contains(parent)); m_data[index] = parent; m_dirty.add(index); }
+	[[nodiscard]] BlockIndex previous(BlockIndex index) const { assert(contains(index)); return m_data[index]; }
+	void add(BlockIndex index, BlockIndex parent);
 	void clear() { for(BlockIndex index : m_dirty) { m_data[index].clear(); } m_dirty.clear(); }
 	void resize(uint size) { m_data.resize(size); }
 };
@@ -58,16 +58,14 @@ public:
 };
 class SimulationHasPathMemos final
 {
-	std::vector<PathMemoBreadthFirst> m_breadthFirst;
-	std::vector<PathMemoDepthFirst> m_depthFirst;
+	std::deque<PathMemoBreadthFirst> m_breadthFirst;
+	std::deque<PathMemoDepthFirst> m_depthFirst;
 	std::vector<bool> m_reservedBreadthFirst;
 	std::vector<bool> m_reservedDepthFirst;
 	std::mutex m_mutex;
 public:
-	std::vector<PathMemoBreadthFirst>& getBreadthFirstWithMinimumSize(uint size, Area& area);
-	std::vector<PathMemoDepthFirst>& getDepthFirstWithMinimumSize(uint size, Area& area);
-	std::pair<PathMemoBreadthFirst&, uint8_t> getBreadthFirstSingle(Area& area);
-	std::pair<PathMemoDepthFirst&, uint8_t> getDepthFirstSingle(Area& area);
-	void releaseBreadthFirstSingle(uint8_t index);
-	void releaseDepthFirstSingle(uint8_t index);
+	std::pair<PathMemoBreadthFirst*, uint8_t> getBreadthFirst(Area& area);
+	std::pair<PathMemoDepthFirst*, uint8_t> getDepthFirst(Area& area);
+	void releaseBreadthFirst(uint8_t index);
+	void releaseDepthFirst(uint8_t index);
 };

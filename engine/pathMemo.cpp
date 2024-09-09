@@ -2,6 +2,15 @@
 #include "area.h"
 #include "blocks/blocks.h"
 #include "index.h"
+void PathMemoClosed::add(BlockIndex index, BlockIndex parent)
+{
+	assert(!contains(index));
+	// Max is used to indicate the start of the path.
+	if(parent != BlockIndex::max())
+		assert(contains(parent));
+	m_data[index] = parent;
+	m_dirty.add(index);
+}
 // Breadth First.
 PathMemoBreadthFirst::PathMemoBreadthFirst(Area& area)
 {
@@ -14,12 +23,12 @@ void PathMemoBreadthFirst::reset()
 }
 void PathMemoBreadthFirst::setClosed(BlockIndex block, BlockIndex previous)
 {
-	assert(!isClosed(block));
+	assert(!m_closed.contains(block));
 	m_closed.add(block, previous);
 }
 void PathMemoBreadthFirst::setOpen(BlockIndex block)
 {
-	assert(!isClosed(block));
+	assert(!m_closed.contains(block));
 	m_open.add(block);
 }
 bool PathMemoBreadthFirst::isClosed(BlockIndex block) const
@@ -37,7 +46,8 @@ BlockIndex PathMemoBreadthFirst::next()
 BlockIndices PathMemoBreadthFirst::getPath(BlockIndex block) const
 {
 	BlockIndices output;
-	while(m_closed.contains(block))
+	// Max is used to indicade the start of the path.
+	while(m_closed.previous(block) != BlockIndex::max())
 	{
 		output.add(block);
 		block = m_closed.previous(block);
@@ -64,12 +74,13 @@ void PathMemoDepthFirst::setup(Area& area, BlockIndex block)
 }
 void PathMemoDepthFirst::setClosed(BlockIndex block, BlockIndex previous)
 {
-	assert(!isClosed(block));
+	assert(!m_closed.contains(block));
 	m_closed.add(block, previous);
 }
 void PathMemoDepthFirst::setOpen(BlockIndex block)
 {
-	assert(!isClosed(block));
+	bool contains = m_closed.contains(block);
+	assert(!contains);
 	m_open.push(block);
 }
 bool PathMemoDepthFirst::isClosed(BlockIndex block) const
@@ -97,25 +108,7 @@ BlockIndices PathMemoDepthFirst::getPath(BlockIndex block) const
 	return output;
 }
 // SimulaitonHasPathMemos.
-std::vector<PathMemoBreadthFirst>& SimulationHasPathMemos::getBreadthFirstWithMinimumSize(uint size, Area& area)
-{
-	if(m_breadthFirst.size() < size)
-	{
-		m_breadthFirst.resize(size, area);
-		m_reservedBreadthFirst.resize(size);
-	}
-	return m_breadthFirst;
-}
-std::vector<PathMemoDepthFirst>& SimulationHasPathMemos::getDepthFirstWithMinimumSize(uint size, Area& area)
-{
-	if(m_depthFirst.size() < size)
-	{
-		m_depthFirst.resize(size, area);
-		m_reservedDepthFirst.resize(size);
-	}
-	return m_depthFirst;
-}
-std::pair<PathMemoBreadthFirst&, uint8_t> SimulationHasPathMemos::getBreadthFirstSingle(Area& area)
+std::pair<PathMemoBreadthFirst*, uint8_t> SimulationHasPathMemos::getBreadthFirst(Area& area)
 {
 	std::lock_guard lock(m_mutex);
 	// Find an unreserved memo to use.
@@ -123,15 +116,15 @@ std::pair<PathMemoBreadthFirst&, uint8_t> SimulationHasPathMemos::getBreadthFirs
 	if(found == m_reservedBreadthFirst.end())
 	{
 		uint oldSize = m_breadthFirst.size();
-		m_breadthFirst.resize(m_breadthFirst.size() * 1.5, area);
+		m_breadthFirst.resize(std::max(2u, (uint)(m_breadthFirst.size() * 1.5)), area);
 		m_reservedBreadthFirst.resize(m_breadthFirst.size());
 		found = m_reservedBreadthFirst.begin() + oldSize;
 	}
-	uint offset = found - m_reservedBreadthFirst.begin();
-	(*found) = true;
-	return {m_breadthFirst[offset], offset};
+	uint offset = std::distance(m_reservedBreadthFirst.begin(), found);
+	m_reservedBreadthFirst[offset] = true;
+	return {&m_breadthFirst[offset], offset};
 }
-std::pair<PathMemoDepthFirst&, uint8_t> SimulationHasPathMemos::getDepthFirstSingle(Area& area)
+std::pair<PathMemoDepthFirst*, uint8_t> SimulationHasPathMemos::getDepthFirst(Area& area)
 {
 	std::lock_guard lock(m_mutex);
 	// Find an unreserved memo to use.
@@ -139,23 +132,23 @@ std::pair<PathMemoDepthFirst&, uint8_t> SimulationHasPathMemos::getDepthFirstSin
 	if(found == m_reservedDepthFirst.end())
 	{
 		uint oldSize = m_depthFirst.size();
-		m_depthFirst.resize(m_depthFirst.size() * 1.5, area);
+		m_depthFirst.resize(std::max(2u, (uint)(m_depthFirst.size() * 1.5)), area);
 		m_reservedDepthFirst.resize(m_depthFirst.size());
 		found = m_reservedDepthFirst.begin() + oldSize;
 	}
-	uint offset = found - m_reservedDepthFirst.begin();
-	(*found) = true;
-	return {m_depthFirst[offset], offset};
+	uint offset = std::distance(m_reservedDepthFirst.begin(), found);
+	m_reservedDepthFirst[offset] = true;
+	return {&m_depthFirst[offset], offset};
 }
-void SimulationHasPathMemos::releaseBreadthFirstSingle(uint8_t index)
+void SimulationHasPathMemos::releaseBreadthFirst(uint8_t index)
 {
 	std::lock_guard lock(m_mutex);
 	m_reservedBreadthFirst[index] = false;
 	assert(m_breadthFirst[index].empty());
 }
-void SimulationHasPathMemos::releaseDepthFirstSingle(uint8_t index)
+void SimulationHasPathMemos::releaseDepthFirst(uint8_t index)
 {
 	std::lock_guard lock(m_mutex);
-	m_reservedBreadthFirst[index] = false;
+	m_reservedDepthFirst[index] = false;
 	assert(m_depthFirst[index].empty());
 }

@@ -12,7 +12,7 @@
 #include "../../engine/simulation/hasAreas.h"
 TEST_CASE("route_10_10_10")
 {
-	Simulation simulation(L"", Step::create(1));
+	Simulation simulation;
 	static MaterialTypeId marble = MaterialType::byName("marble");
 	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
 	static AnimalSpeciesId troll = AnimalSpecies::byName("troll");

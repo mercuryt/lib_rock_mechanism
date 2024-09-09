@@ -40,5 +40,8 @@ class StockPilePathRequest final : public PathRequest
 	StockPileObjective& m_objective;
 public:
 	StockPilePathRequest(Area& area, StockPileObjective& spo);
+	StockPilePathRequest(const Json& data, DeserializationMemo& deserializationMemo);
 	void callback(Area& area, FindPathResult& result);
+	[[nodiscard]] std::string name() const { return "stockpile"; }
+	[[nodiscard]] Json toJson() const;
 };

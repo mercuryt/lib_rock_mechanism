@@ -101,6 +101,18 @@ void StockPilePathRequest::callback(Area& area, FindPathResult& result)
 		}
 	}
 }
+StockPilePathRequest::StockPilePathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
+	m_objective(static_cast<StockPileObjective&>(*deserializationMemo.m_objectives[data["objective"]]))
+{
+	nlohmann::from_json(data, static_cast<PathRequest&>(*this));
+}
+Json StockPilePathRequest::toJson() const
+{
+	Json output = PathRequest::toJson();
+	output["objective"] = reinterpret_cast<uintptr_t>(&m_objective);
+	return output;
+}
+// Objective Type.
 bool StockPileObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
 {
 	return area.m_hasStockPiles.getForFaction(area.getActors().getFactionId(actor)).isAnyHaulingAvailableFor(actor);
@@ -109,6 +121,7 @@ std::unique_ptr<Objective> StockPileObjectiveType::makeFor(Area&, ActorIndex) co
 {
 	return std::make_unique<StockPileObjective>();
 }
+// Objective.
 StockPileObjective::StockPileObjective() : Objective(Config::stockPilePriority) { }
 StockPileObjective::StockPileObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo),
 	m_project(data.contains("project") ? static_cast<StockPileProject*>(deserializationMemo.m_projects.at(data["project"].get<uintptr_t>())) : nullptr) { }

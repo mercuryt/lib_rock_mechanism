@@ -48,4 +48,5 @@ public:
 	CraftPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
 	void callback(Area& area, FindPathResult& result);
 	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] std::string name() { return "craft"; }
 };

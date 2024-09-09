@@ -81,9 +81,8 @@ PlantIndex Plants::create(PlantParamaters paramaters)
 	HasShapes::create(index, paramaters.shape, paramaters.faction, true);
 	m_species[index] = paramaters.species;
 	m_fluidSource[index].clear();
-	m_percentGrown[index] = paramaters.percentGrown;
-	m_quantityToHarvest[index] = paramaters.quantityToHarvest;
-	m_percentFoliage[index] = Percent::create(0);
+	m_percentFoliage[index] = paramaters.percentFoliage.empty() ? Percent::create(100) : paramaters.percentFoliage;
+	m_quantityToHarvest[index] = paramaters.quantityToHarvest.empty() ? Quantity::create(0) : paramaters.quantityToHarvest;
 	m_wildGrowth[index] = 0;
 	m_volumeFluidRequested[index] = CollisionVolume::create(0);
 	auto& blocks = m_area.getBlocks();
@@ -111,6 +110,8 @@ PlantIndex Plants::create(PlantParamaters paramaters)
 				setQuantityToHarvest(index);
 		}
 	}
+	if(m_area.getBlocks().isOnSurface(paramaters.location))
+		m_onSurface.add(index);
 	return index;
 }
 void Plants::destroy(PlantIndex index)
@@ -125,6 +126,7 @@ void Plants::die(PlantIndex index)
 {
 	auto& blocks = m_area.getBlocks();
 	m_growthEvent.maybeUnschedule(index);
+	m_shapeGrowthEvent.maybeUnschedule(index);
 	m_fluidEvent.maybeUnschedule(index);
 	m_temperatureEvent.maybeUnschedule(index);
 	m_endOfHarvestEvent.maybeUnschedule(index);
@@ -422,8 +424,9 @@ void Plants::setLocation(PlantIndex index, BlockIndex location, Facing)
 	assert(m_location[index].empty());
 	Blocks& blocks = m_area.getBlocks();
 	for(BlockIndex block : Shape::getBlocksOccupiedAt(m_shape[index], blocks, location, Facing::create(0)))
-		blocks.plant_erase(block);
+		blocks.plant_set(block, index);
 	m_location[index] = location;
+	m_facing[index] = Facing::create(0);
 }
 void Plants::exit(PlantIndex index)
 {

@@ -5,27 +5,31 @@
 std::vector<XYZ> getNthAdjacentOffsets(uint32_t n)
 {
 	assert(n != 0);
-	while(cache.size() < n + 1)
+	if(cache.size() <= n)
 	{
-		if(cache.empty())
+		std::lock_guard lock(nthAdjacentMutex);
+		while(cache.size() <= n)
 		{
-			closedList.emplace(0,0,0);
-			cache.resize(n);
-			cache[0].emplace_back(0,0,0);
-		}
-		std::vector<XYZ> next;
-		for(XYZ xyz : cache.back())
-			for(XYZ offset : offsets)
+			if(cache.empty())
 			{
-				XYZ adjacent = xyz + offset;
-				if(!closedList.contains(adjacent))
-				{
-					closedList.insert(adjacent);
-					if(std::ranges::find(next, adjacent) == next.end())
-						next.push_back(adjacent);
-				}
+				closedList.emplace(0,0,0);
+				cache.resize(n);
+				cache[0].emplace_back(0,0,0);
 			}
-		cache.emplace_back(next.begin(), next.end());
+			std::vector<XYZ> next;
+			for(XYZ xyz : cache.back())
+				for(XYZ offset : offsets)
+				{
+					XYZ adjacent = xyz + offset;
+					if(!closedList.contains(adjacent))
+					{
+						closedList.insert(adjacent);
+						if(std::ranges::find(next, adjacent) == next.end())
+							next.push_back(adjacent);
+					}
+				}
+			cache.emplace_back(next.begin(), next.end());
+		}
 	}
 	return cache[n];
 }

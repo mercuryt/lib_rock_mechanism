@@ -2,20 +2,18 @@
 #include "../pathRequest.h"
 #include "../objective.h"
 #include "../types.h"
+#include "deserializationMemo.h"
 class Area;
 class SleepObjective;
-
-// Find a place to sleep.
-class SleepPathRequest final : public PathRequest
+class SleepPathRequest;
+class SleepObjectiveType final : public ObjectiveType
 {
-	SleepObjective& m_sleepObjective;
-	BlockIndex m_indoorCandidate;
-	BlockIndex m_outdoorCandidate;
-	BlockIndex m_maxDesireCandidate;
-	bool m_sleepAtCurrentLocation = false;
 public:
-	SleepPathRequest(Area& area, SleepObjective& so);
-	void callback(Area&, FindPathResult& result);
+	[[nodiscard]] bool canBeAssigned(Area&, ActorIndex) const { assert(false); }
+	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area&, ActorIndex) const { assert(false); }
+	SleepObjectiveType() = default;
+	SleepObjectiveType(const Json&, DeserializationMemo&);
+	[[nodiscard]] std::string name() const { return "sleep"; }
 };
 class SleepObjective final : public Objective
 {
@@ -36,4 +34,20 @@ public:
 	[[nodiscard]] Json toJson() const;
 	friend class SleepPathRequest;
 	friend class MustSleep;
+};
+// Find a place to sleep.
+class SleepPathRequest final : public PathRequest
+{
+	SleepObjective& m_sleepObjective;
+	// These variables area used from messaging from parallel code, no need to serialize.
+	BlockIndex m_indoorCandidate;
+	BlockIndex m_outdoorCandidate;
+	BlockIndex m_maxDesireCandidate;
+	bool m_sleepAtCurrentLocation = false;
+public:
+	SleepPathRequest(Area& area, SleepObjective& so, ActorIndex actor);
+	SleepPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
+	void callback(Area&, FindPathResult& result);
+	std::string name() const { return "sleep"; }
+	[[nodiscard]] Json toJson() const;
 };

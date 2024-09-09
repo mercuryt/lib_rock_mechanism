@@ -4,7 +4,8 @@
 #include "../blocks/blocks.h"
 void Actors::canReserve_clearAll(ActorIndex index)
 {
-	m_canReserve[index]->deleteAllWithoutCallback();
+	if(m_canReserve[index] != nullptr)
+		m_canReserve[index]->deleteAllWithoutCallback();
 }
 void Actors::canReserve_setFaction(ActorIndex index, FactionId faction)
 {

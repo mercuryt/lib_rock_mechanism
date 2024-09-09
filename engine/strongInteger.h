@@ -2,54 +2,133 @@
 #include "json.h"
 #include <compare>
 #include <limits>
+#include <concepts>
+
+template<typename T>
+concept arithmetic = std::integral<T> or std::floating_point<T>;
 class Simulation;
-template <class Derived, typename T, T NULL_VALUE = std::numeric_limits<T>::max()>
+template <class Derived, typename T, T NULL_VALUE = std::numeric_limits<T>::max(), T MIN_VALUE = std::numeric_limits<T>::min()>
 class StrongInteger
 {
 protected:
 	T data;
 public:
+	using This = StrongInteger<Derived, T, NULL_VALUE>;
+	constexpr static T MAX_VALUE = NULL_VALUE - 1;
 	constexpr StrongInteger() : data(NULL_VALUE) { }
 	constexpr StrongInteger(T d) : data(d) { }
-	constexpr StrongInteger(const StrongInteger<Derived, T, NULL_VALUE>& o) { data = o.data; }
-	constexpr StrongInteger(const StrongInteger<Derived, T, NULL_VALUE>&& o) { data = o.data; }
-	constexpr Derived operator=(const StrongInteger<Derived, T, NULL_VALUE>& o) { data = o.data; return static_cast<Derived&>(*this); }
-	constexpr Derived operator=(const T& d) { data = d; return static_cast<Derived&>(*this); }
+	constexpr StrongInteger(const This& o) { data = o.data; }
+	constexpr StrongInteger(const This&& o) { data = o.data; }
+	constexpr Derived& operator=(const This& o) { data = o.data; return static_cast<Derived&>(*this); }
+	constexpr Derived& operator=(const T& d) { data = d; return static_cast<Derived&>(*this); }
 	constexpr void set(T d) { data = d; }
 	constexpr void clear() { data = NULL_VALUE; }
-	constexpr void reserve(int size) { data.reserve(size); }
-	constexpr Derived operator+=(const StrongInteger<Derived, T, NULL_VALUE>& other) { data += other.data; return static_cast<Derived&>(*this); }
-	constexpr Derived operator-=(const StrongInteger<Derived, T, NULL_VALUE>& other) { data -= other.data; return static_cast<Derived&>(*this); }
-	constexpr Derived operator+=(T other) { data += other; return static_cast<Derived&>(*this); }
-	constexpr Derived operator-=(T other) { data -= other; return static_cast<Derived&>(*this); }
-	constexpr Derived operator++() { ++data; return static_cast<Derived&>(*this); }
-	constexpr Derived operator--() { --data; return static_cast<Derived&>(*this); }
-	constexpr Derived operator-() const { return Derived::create(-data); }
-	constexpr Derived operator*=(T other) { data *= other; return static_cast<Derived&>(*this); }
-	constexpr Derived operator*=(const StrongInteger<Derived, T, NULL_VALUE>& other) { data *= other.data; return static_cast<Derived&>(*this); }
-	constexpr Derived operator/=(T other) { data *= other; return static_cast<Derived&>(*this); }
-	constexpr Derived operator/=(const StrongInteger<Derived, T, NULL_VALUE>& other) { data *= other.data; return static_cast<Derived&>(*this); }
-	[[nodiscard]] constexpr T get() const { return data; }
-	[[nodiscard]] T& getReference() { return data; }
-	[[nodiscard]] constexpr static auto create(T d){ Derived der; der.set(d); return der; }
-	[[nodiscard]] constexpr static auto null() { return Derived::create(NULL_VALUE); }
-	[[nodiscard]] constexpr Derived absoluteValue() { return Derived::create(std::abs(data)); }
-	[[nodiscard]] constexpr Derived operator++(int) { T d = data; ++data; return Derived::create(d); }
-	[[nodiscard]] constexpr Derived operator--(int) { T d = data; --data; return Derived::create(d); }
-	[[nodiscard]] constexpr bool operator==(const StrongInteger<Derived, T, NULL_VALUE>& o) const { return o.data == data; }
-	[[nodiscard]] constexpr std::strong_ordering operator<=>(const StrongInteger<Derived, T, NULL_VALUE>& o) const { return data <=> o.data; }
-	[[nodiscard]] constexpr Derived operator+(const StrongInteger<Derived, T, NULL_VALUE>& other) const { return Derived::create(data + other.data); }
-	[[nodiscard]] constexpr Derived operator+(const T& other) const { return Derived::create(data + other); }
-	[[nodiscard]] constexpr Derived operator-(const StrongInteger<Derived, T, NULL_VALUE>& other) const { return Derived::create(data - other.data); }
-	[[nodiscard]] constexpr Derived operator-(const T& other) const { return Derived::create(data - other); }
-	[[nodiscard]] constexpr Derived operator*(const StrongInteger<Derived, T, NULL_VALUE>& other) const { return Derived::create(data * other.data); }
-	[[nodiscard]] constexpr Derived operator*(const T& other) const { return Derived::create(data * other); }
-	[[nodiscard]] constexpr Derived operator/(const float& other) const { return Derived::create(data / other); }
-	[[nodiscard]] constexpr Derived operator/(const StrongInteger<Derived, T, NULL_VALUE>& other) const { return Derived::create(data / other.data); }
-	struct Hash { [[nodiscard]] constexpr std::size_t operator()(const StrongInteger<Derived, T, NULL_VALUE>& index) const { return index.get(); } };
+	constexpr Derived& operator+=(const This& other) { return (*this) += other.data; }
+	constexpr Derived& operator-=(const This& other) { return (*this) -= other.data; }
+	template<arithmetic Other>
+	constexpr Derived& operator+=(const Other& other)
+	{
+		assert(exists());
+		if(other < 0)
+			assert(MIN_VALUE - other <= data);
+		else
+			assert(MAX_VALUE - other >= data);
+		data += other;
+		return static_cast<Derived&>(*this);
+	}
+	template<arithmetic Other>
+	constexpr Derived& operator-=(const Other& other)
+	{
+		assert(exists());
+		if(other < 0)
+			assert(MAX_VALUE - other <= data);
+		else
+			assert(MIN_VALUE + other <= data);
+		data -= other;
+		return static_cast<Derived&>(*this);
+	}
+	constexpr Derived& operator++() { assert(exists()); assert(data != NULL_VALUE - 1); ++data; return static_cast<Derived&>(*this); }
+	constexpr Derived& operator--() { assert(exists()); assert(data != MIN_VALUE); --data; return static_cast<Derived&>(*this); }
+	template<arithmetic Other>
+	constexpr Derived& operator*=(const Other& other)
+	{
+		assert(exists());
+		if((other > 0 && data > 0) || (other < 0 && data < 0) )
+			assert(MAX_VALUE / other >= data);
+		else if(other < 0) // other is negitive and data is positive.
+		{
+			assert(MIN_VALUE != 0);
+			// MIN_VALUE divided by -1 returns MIN_VALUE, strangely.
+			if constexpr(std::signed_integral<T>) if(other != -1)
+				assert(MIN_VALUE / other >= data);
+		}
+		else if(other > 0)// other is positive and data is negitive.
+			assert(MIN_VALUE / other <= data);
+		data *= other;
+		return static_cast<Derived&>(*this);
+	}
+	constexpr Derived& operator*=(const This& other) { return (*this) *= other.data; }
+	template<arithmetic Other>
+	constexpr Derived& operator/=(const Other& other) { assert(exists()); data /= other; return static_cast<Derived&>(*this); }
+	constexpr Derived& operator/=(const This& other) { (*this) /= other.data; }
+	[[nodiscard]] constexpr Derived operator-() const { assert(exists()); return Derived::create(-data); }
+	[[nodiscard]] constexpr T get() const { assert(exists()); return data; }
+	[[nodiscard]] T& getReference() { assert(exists()); return data; }
+	[[nodiscard]] constexpr static Derived create(const T& d){ Derived der; der.set(d); return der; }
+	[[nodiscard]] constexpr static Derived create(const T&& d){ return create(d); }
+	[[nodiscard]] constexpr static Derived null() { return Derived::create(NULL_VALUE); }
+	[[nodiscard]] constexpr static Derived max() { return Derived::create(NULL_VALUE - 1); }
+	[[nodiscard]] constexpr static Derived min() { return Derived::create(MIN_VALUE); }
+	[[nodiscard]] constexpr Derived absoluteValue() { assert(exists()); return Derived::create(std::abs(data)); }
 	[[nodiscard]] constexpr bool exists() const { return data != NULL_VALUE; }
 	[[nodiscard]] constexpr bool empty() const { return data == NULL_VALUE; }
-	[[nodiscard]] constexpr bool modulusIsZero(const StrongInteger<Derived, T, NULL_VALUE>& other) const { return data % other.data == 0;  }
+	[[nodiscard]] constexpr bool modulusIsZero(const This& other) const { assert(exists()); return data % other.data == 0;  }
+	[[nodiscard]] constexpr Derived operator++(int) { assert(exists()); assert(data != NULL_VALUE); T d = data; ++data; return Derived::create(d); }
+	[[nodiscard]] constexpr Derived operator--(int) { assert(exists()); assert(data != MIN_VALUE); T d = data; --data; return Derived::create(d); }
+	[[nodiscard]] constexpr bool operator==(const This& o) const { /*assert(exists()); assert(o.exists());*/ return o.data == data; }
+	[[nodiscard]] constexpr std::strong_ordering operator<=>(const StrongInteger<Derived, T, NULL_VALUE>& o) const { assert(exists()); assert(o.exists()); return data <=> o.data; }
+	[[nodiscard]] constexpr Derived operator+(const This& other) const { return (*this) + other.data; }
+	template<arithmetic Other>
+	[[nodiscard]] constexpr Derived operator+(const Other& other) const {
+		assert(exists());
+		if(other < 0)
+			assert(MIN_VALUE + other >= data);
+		else
+			assert(MAX_VALUE - other >= data);
+		return Derived::create(data + other);
+	}
+	[[nodiscard]] constexpr Derived operator-(const This& other) const { return (*this) - other.data; }
+	template<arithmetic Other>
+	[[nodiscard]] constexpr Derived operator-(const Other& other) const {
+		assert(exists());
+		assert(MIN_VALUE + other <= data);
+		if(other < 0)
+			assert(MAX_VALUE - other <= data);
+		else
+			assert(MIN_VALUE + other <= data);
+		return Derived::create(data - other);
+	}
+	[[nodiscard]] constexpr Derived operator*(const This& other) const { return (*this) * other.data; }
+	template<arithmetic Other>
+	[[nodiscard]] constexpr Derived operator*(const Other& other) const {
+		assert(exists());
+		if((other > 0 && data > 0) || (other < 0 && data < 0) )
+			assert(MAX_VALUE / other >= data);
+		else if(other < 0 ) // other is negitive and data is positive.
+		{
+			assert(MIN_VALUE != 0);
+			// MIN_VALUE divided by -1 returns MIN_VALUE, strangely.
+			if constexpr(std::signed_integral<T>) if(other != -1)
+				assert(MIN_VALUE / other >= data);
+		}
+		else if(other > 0)// other is positive and data is negitive.
+			assert(MIN_VALUE / other <= data);
+		return Derived::create(data * other);
+	}
+	[[nodiscard]] constexpr Derived operator/(const This& other) const { return (*this) / other.data; }
+	template<arithmetic Other>
+	[[nodiscard]] constexpr Derived operator/(const Other& other) const { assert(exists()); return Derived::create(data / other); }
+	struct Hash { [[nodiscard]] constexpr std::size_t operator()(const This& index) const { return index.get(); } };
 };
 template <class StrongInteger>
 class StrongIntegerSet
@@ -58,16 +137,17 @@ class StrongIntegerSet
 public:
 	StrongIntegerSet(std::initializer_list<StrongInteger> i) : data(i) { }
 	StrongIntegerSet() = default;
-	void add(StrongInteger index) { assert(!contains(index)); data.push_back(index); }
+	void add(StrongInteger index) { assert(index.exists()); assert(!contains(index)); data.push_back(index); }
+	void addAllowNull(StrongInteger index) { if(index.exists()) assert(!contains(index)); data.push_back(index); }
 	template <class T>
 	void add(T&& begin, T&& end) { assert(begin <= end); while(begin != end) { maybeAdd(*begin); ++begin; } }
-	void maybeAdd(StrongInteger index) { if(!contains(index)) data.push_back(index); }
-	void remove(StrongInteger index) { assert(contains(index)); remove(find(index)); }
+	void maybeAdd(StrongInteger index) { assert(index.exists()); if(!contains(index)) data.push_back(index); }
+	void remove(StrongInteger index) { assert(index.exists()); assert(contains(index)); remove(find(index)); }
 	void remove(std::vector<StrongInteger>::iterator iter) { (*iter) = data.back(); data.pop_back(); }
 	template <class Predicate>
 	void remove_if(Predicate&& predicate) { std::ranges::remove_if(data, predicate); }
-	void maybeRemove(StrongInteger index) { auto found = find(index); if(found != data.end()) remove(found); }
-	void update(StrongInteger oldIndex, StrongInteger newIndex) { assert(!contains(newIndex)); auto found = find(oldIndex); assert(found != data.end()); (*found) = newIndex;}
+	void maybeRemove(StrongInteger index) { assert(index.exists()); auto found = find(index); if(found != data.end()) remove(found); }
+	void update(StrongInteger oldIndex, StrongInteger newIndex) { assert(oldIndex.exists()); assert(newIndex.exists()); assert(!contains(newIndex)); auto found = find(oldIndex); assert(found != data.end()); (*found) = newIndex;}
 	void clear() { data.clear(); }
 	void reserve(int size) { data.reserve(size); }
 	void swap(StrongIntegerSet<StrongInteger>& other) { std::swap(data, other.data); }
@@ -105,6 +185,14 @@ public:
 	[[nodiscard]] StrongInteger operator[](uint i) const { assert(i < size()); return data[i]; }
 	[[nodiscard]] auto back_inserter() { return std::back_inserter(data); }
 	[[nodiscard]] bool operator==(const StrongIntegerSet<StrongInteger>& other) { return this == &other; }
+	template<uint arraySize>
+	[[nodiscard]] auto toArray()
+	{
+		assert(arraySize >= size());
+		std::array<StrongInteger, arraySize> output;
+		std::ranges::copy(data, output);
+		return output;
+	}
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(StrongIntegerSet<StrongInteger>, data);
 	using iterator = std::vector<StrongInteger>::iterator;
 };

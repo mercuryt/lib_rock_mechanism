@@ -5,7 +5,7 @@
 #include "area.h"
 #include <cassert>
 ScheduledEvent::ScheduledEvent(Simulation& simulation, const Step delay, const Step start) :
-	m_startStep(start == Step::null() ? simulation.m_step : start), m_step(m_startStep + delay)
+	m_startStep(start.empty() ? simulation.m_step : start), m_step(m_startStep + delay)
 {
 	assert(delay != 0);
 	assert(simulation.m_step <= m_step);
@@ -49,18 +49,18 @@ void EventSchedule::unschedule(ScheduledEvent& scheduledEvent)
 }
 void EventSchedule::doStep(Step stepNumber)
 {
-	assert(m_data.begin()->first >= stepNumber);
-	auto found = m_data.find(stepNumber);
-	if(found == m_data.end())
+	auto begin = m_data.begin();
+	if(begin->first > stepNumber)
 		return;
-	for(std::unique_ptr<ScheduledEvent>& scheduledEvent : found->second)
+	assert(begin->first == stepNumber);
+	for(std::unique_ptr<ScheduledEvent>& scheduledEvent : begin->second)
 		if(!scheduledEvent->m_cancel)
 		{
 			// Clear references first so events can reschedule themselves in the same slots.
 			scheduledEvent->clearReferences(m_simulation, m_area);
 			scheduledEvent->execute(m_simulation, m_area);
 		}
-	m_data.erase(stepNumber);
+	m_data.erase(begin);
 }
 void EventSchedule::clear()
 {
@@ -68,7 +68,12 @@ void EventSchedule::clear()
 		for(std::unique_ptr<ScheduledEvent>& scheduledEvent : events)
 			if(!scheduledEvent->m_cancel)
 				scheduledEvent->clearReferences(m_simulation, m_area);
-		
+}
+Step EventSchedule::getNextEventStep() const
+{
+	if(m_data.empty())
+		return Step::null();
+	return m_data.begin()->first;
 }
 uint32_t EventSchedule::count()
 {

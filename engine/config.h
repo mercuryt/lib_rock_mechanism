@@ -178,7 +178,7 @@ namespace Config
 	inline Step rainWriteStepFreqency;
 	inline float ratioOfHitAreaToBodyPartVolumeForSever;
 	inline float ratioOfTotalBodyVolumeWhichIsBlood;
-	inline Step ratioWoundsCloseDelayToBleedVolume;
+	inline float ratioWoundsCloseDelayToBleedVolume;
 	inline Step restIntervalSteps;
 	inline float rollingMassModifier;
 	inline uint32_t scaleOfHumanBody;

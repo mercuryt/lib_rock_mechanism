@@ -31,6 +31,7 @@ public:
 	void save();
 	void clearAll();
 	void recordId(Area& area);
+	[[nodiscard]] Step getNextEventStep();
 	[[nodiscard]] Area& getById(AreaId id) const {return *m_areasById[id]; }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::list<Area>& getAll() { return m_areas; }

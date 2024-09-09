@@ -84,12 +84,23 @@ void Simulation::save()
 }
 FactionId Simulation::createFaction(std::wstring name) { return m_hasFactions.createFaction(name); }
 DateTime Simulation::getDateTime() const { return DateTime(m_step); }
+Step Simulation::getNextEventStep()
+{
+	Step nextAreaStep = getAreas().getNextEventStep();
+	if(nextAreaStep.empty())
+		nextAreaStep = Step::max();
+	return std::min(m_eventSchedule.getNextEventStep(), nextAreaStep);
+}
+SimulationHasAreas& Simulation::getAreas()
+{
+	return *m_hasAreas;
+}
 Simulation::~Simulation()
 {
 	m_dramaEngine = nullptr;
 	m_hasAreas->clearAll();
 	m_hourlyEvent.maybeUnschedule();
-	m_eventSchedule.m_data.clear();
+	m_eventSchedule.clear();
 	m_threadedTaskEngine.clear();
 }
 // Note: Does not handle fluids.
@@ -98,10 +109,10 @@ void Simulation::fastForward(Step steps)
 	Step targetStep = m_step + steps;
 	while(!m_eventSchedule.m_data.empty())
 	{
-		auto& pair = *m_eventSchedule.m_data.begin();
-		if(pair.first <= targetStep)
+		Step nextStep = getNextEventStep();
+		if(nextStep <= targetStep)
 		{
-			m_step = pair.first;
+			m_step = nextStep;
 			doStep();
 		}
 		else
@@ -169,10 +180,7 @@ void Simulation::fastForwardUntillPredicate(std::function<bool()> predicate, uin
 	while(!m_eventSchedule.m_data.empty())
 	{
 		if(m_threadedTaskEngine.count() == 0)
-		{
-			auto& pair = *m_eventSchedule.m_data.begin();
-			m_step = pair.first;
-		}
+			m_step = getNextEventStep();
 		assert(m_step <= lastStep);
 		doStep();
 		if(predicate())

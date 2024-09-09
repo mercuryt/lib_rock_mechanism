@@ -153,10 +153,6 @@ public:
 		assert(m_events[index] != nullptr);
 		m_events[index] = nullptr;
 	}
-	void clearAll()
-	{
-		m_events.clear();
-	}
 	void moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 	{
 		m_events[newIndex] = m_events[oldIndex];

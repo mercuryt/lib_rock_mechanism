@@ -168,7 +168,7 @@ void Config::load()
 	rainWriteStepFreqency = Step::create(data["rainWriteStepFreqencySeconds"].get<float>() * stepsPerSecond.get());
 	data["ratioOfHitAreaToBodyPartVolumeForSever"].get_to(ratioOfHitAreaToBodyPartVolumeForSever);
 	data["ratioOfTotalBodyVolumeWhichIsBlood"].get_to(ratioOfTotalBodyVolumeWhichIsBlood);
-	ratioWoundsCloseDelayToBleedVolume = Step::create(data["ratioWoundsCloseDelayToBleedVolumeSeconds"].get<float>() * stepsPerSecond.get());
+	ratioWoundsCloseDelayToBleedVolume = data["ratioWoundsCloseDelayToBleedVolumeSeconds"].get<float>() * stepsPerSecond.get();
 	restIntervalSteps = Step::create(data["restIntervalSeconds"].get<uint32_t>() * stepsPerSecond.get());
 	data["rollingMassModifier"].get_to(rollingMassModifier);
 	data["scaleOfHumanBody"].get_to(scaleOfHumanBody);

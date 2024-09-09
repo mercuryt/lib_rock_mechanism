@@ -74,13 +74,15 @@ void DrainQueue::applyDelta()
 			continue;
 		assert(blocks.fluid_contains(iter->block, m_fluidGroup.m_fluidType));
 		assert(blocks.fluid_volumeOfTypeContains(iter->block, m_fluidGroup.m_fluidType) >= iter->delta);
+		assert(iter->block.exists());
+		assert(iter->delta.exists());
 		assert(blocks.fluid_getTotalVolume(iter->block) >= iter->delta);
 		blocks.fluid_drainInternal(iter->block, iter->delta, m_fluidGroup.m_fluidType);
 		// Record blocks to set fluid groups unstable.
-		drainedFromAndAdjacent.add(iter->block);
+		drainedFromAndAdjacent.maybeAdd(iter->block);
 		for(BlockIndex adjacent : blocks.getDirectlyAdjacent(iter->block))
 			if(adjacent.exists() && blocks.fluid_canEnterEver(adjacent))
-				drainedFromAndAdjacent.add(adjacent);
+				drainedFromAndAdjacent.maybeAdd(adjacent);
 	}
 	// Set fluidGroups unstable.
 	// TODO: Would it be better to prevent fluid groups from becoming stable while in contact with another group? Either option seems bad.

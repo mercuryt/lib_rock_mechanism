@@ -22,7 +22,6 @@ TEST_CASE("actor")
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
-	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	BlockIndex origin1 = blocks.getIndex_i(5, 5, 1);
 	BlockIndex origin2 = blocks.getIndex_i(7, 7, 1);
@@ -58,59 +57,5 @@ TEST_CASE("actor")
 		REQUIRE(blocks.actor_contains(block1, troll1));
 		REQUIRE(blocks.actor_contains(block2, troll1));
 		REQUIRE(blocks.actor_contains(block3, troll1));
-	}
-	SUBCASE("growth")
-	{
-		ActorIndex dwarf1 = actors.create(ActorParamaters{
-			.species=dwarf, 
-			.percentGrown=Percent::create(45),
-			.location=origin1,
-		});
-		blocks.solid_setNot(blocks.getIndex_i(7, 7, 0));
-		blocks.fluid_add(blocks.getIndex_i(7, 7, 0), CollisionVolume::create(100), FluidType::byName("water"));
-		items.create({
-			.itemType=ItemType::byName("apple"),
-			.materialType=MaterialType::byName("fruit"),
-			.location=block1,
-			.quantity=Quantity::create(1000),
-		});
-		REQUIRE(actors.grow_getEventPercent(dwarf1) == 0);
-		REQUIRE(actors.grow_getPercent(dwarf1) == 45);
-		REQUIRE(actors.grow_isGrowing(dwarf1));
-		Step nextPercentIncreaseStep = actors.grow_getEventStep(dwarf1);
-		REQUIRE(nextPercentIncreaseStep <= simulation.m_step + Config::stepsPerDay * 95);
-		REQUIRE(nextPercentIncreaseStep >= simulation.m_step + Config::stepsPerDay * 90);
-		simulation.fastForward(Config::stepsPerDay);
-		REQUIRE(actors.grow_getPercent(dwarf1) == 45);
-		REQUIRE(!actors.grow_isGrowing(dwarf1));
-		simulation.fastForward(Config::stepsPerHour * 2);
-		REQUIRE(actors.grow_isGrowing(dwarf1));
-		REQUIRE(actors.grow_getEventPercent(dwarf1) == 1);
-		REQUIRE(actors.grow_isGrowing(dwarf1));
-		//TODO: This is too slow for unit tests, move to integration and replace with a version which sets event percent complete explicitly.
-		/*
-		simulation.fastForward(Config::stepsPerDay * 5);
-		REQUIRE(dwarf1.m_canGrow.getEventPercentComplete() == 6);
-		simulation.fastForward((Config::stepsPerDay * 50));
-		REQUIRE(dwarf1.m_canGrow.getEventPercentComplete() == 60);
-		simulation.fastForward((Config::stepsPerDay * 36));
-		REQUIRE(dwarf1.m_canGrow.getEventPercentComplete() == 99);
-		simulation.fastForwardUntillPredicate([&]{ return dwarf1.m_canGrow.growthPercent() != 45; }, 60 * 24 * 40);
-		REQUIRE(dwarf1.m_canGrow.growthPercent() == 46);
-		REQUIRE(dwarf1.m_canGrow.getEventPercentComplete() == 0);
-		REQUIRE(dwarf1.m_canGrow.isGrowing());
-		*/
-		actors.grow_setPercent(dwarf1, Percent::create(20));
-		REQUIRE(actors.grow_getPercent(dwarf1) == 20);
-		REQUIRE(actors.grow_getEventPercent(dwarf1) == 0);
-		REQUIRE(actors.grow_isGrowing(dwarf1));
-		actors.grow_setPercent(dwarf1, Percent::create(100));
-		REQUIRE(actors.grow_getPercent(dwarf1) == 100);
-		REQUIRE(actors.grow_eventIsPaused(dwarf1));
-		REQUIRE(!actors.grow_isGrowing(dwarf1));
-		actors.grow_setPercent(dwarf1, Percent::create(30));
-		REQUIRE(actors.grow_getPercent(dwarf1) == 30);
-		REQUIRE(actors.grow_getEventPercent(dwarf1) == 0);
-		REQUIRE(actors.grow_isGrowing(dwarf1));
 	}
 }

@@ -14,6 +14,7 @@ void Blocks::plant_create(BlockIndex index, PlantSpeciesId plantSpecies, Percent
 }
 void Blocks::plant_set(BlockIndex index, PlantIndex plant)
 {
+	assert(m_plants[index].empty());
 	m_plants[index] = plant;
 }
 void Blocks::plant_updateGrowingStatus(BlockIndex index)

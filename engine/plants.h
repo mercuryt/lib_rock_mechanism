@@ -57,7 +57,6 @@ public:
 	Plants(Area& area);
 	void load(const Json& data);
 	void onChangeAmbiantSurfaceTemperature();
-	[[nodiscard]] auto& getOnSurface() { return m_onSurface; }
 	PlantIndex create(PlantParamaters paramaters);
 	void destroy(PlantIndex index);
 	void die(PlantIndex index);
@@ -81,6 +80,7 @@ public:
 	void setLocation(PlantIndex index, BlockIndex location, Facing facing);
 	void exit(PlantIndex index);
 	void fromJson(Plants& plants, Area& area, const Json& data);
+	[[nodiscard]] PlantIndexSet& getOnSurface() { return m_onSurface; }
 	[[nodiscard]] bool isOnSurface(PlantIndex index) { return m_onSurface.contains(index); }
 	[[nodiscard]] bool blockIsFull(BlockIndex index);
 	[[nodiscard]] PlantIndices getAll() const;

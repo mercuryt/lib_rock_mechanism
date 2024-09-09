@@ -85,7 +85,8 @@ public:
 	virtual void onProjectCannotReserve(Area&, ActorIndex) { }
 	void detour(Area& area, ActorIndex actor) { m_detour = true; execute(area, actor); }
 	[[nodiscard]] virtual std::string name() const = 0;
-	[[nodiscard]] ObjectiveTypeId getTypeId() const { static auto id = ObjectiveType::getIdByName(name()); return id; }
+	// TODO: This is silly.
+	[[nodiscard]] ObjectiveTypeId getTypeId() const { return ObjectiveType::getIdByName(name());}
 	// Needs are biological imperatives which overide tasks. Eat, sleep, etc.
 	[[nodiscard]] virtual bool isNeed() const { return false; }
 	// When an objective is interrputed by a higher priority objective should it be kept in the task queue for later or discarded?

@@ -4,10 +4,9 @@
 #include "actors/actors.h"
 #include "blocks/blocks.h"
 // Path Request.
-SleepPathRequest::SleepPathRequest(Area& area, SleepObjective& so) : m_sleepObjective(so)
+SleepPathRequest::SleepPathRequest(Area& area, SleepObjective& so, ActorIndex actor) : m_sleepObjective(so)
 {
 	Actors& actors = area.getActors();
-	ActorIndex actor = getActor();
 	assert(actors.sleep_getSpot(actor).empty());
 	uint32_t desireToSleepAtCurrentLocation = m_sleepObjective.desireToSleepAt(area, actors.getLocation(actor), actor);
 	if(desireToSleepAtCurrentLocation == 1)
@@ -56,6 +55,17 @@ void SleepPathRequest::callback(Area& area, FindPathResult&)
 		m_sleepObjective.m_noWhereToSleepFound = true;
 		createGoToEdge(area, actor, m_sleepObjective.m_detour);
 	}
+}
+SleepPathRequest::SleepPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
+	m_sleepObjective(static_cast<SleepObjective&>(*deserializationMemo.m_objectives[data["objective"]]))
+{
+	nlohmann::from_json(data, static_cast<PathRequest&>(*this));
+}
+Json SleepPathRequest::toJson() const
+{
+	Json output = PathRequest::toJson();
+	output["objective"] = reinterpret_cast<uintptr_t>(&m_sleepObjective);
+	return output;
 }
 // Sleep Objective.
 SleepObjective::SleepObjective() : Objective(Config::sleepObjectivePriority) { }
@@ -142,7 +152,7 @@ void SleepObjective::selectLocation(Area& area, BlockIndex location, ActorIndex 
 }
 void SleepObjective::makePathRequest(Area& area, ActorIndex actor)
 {
-	area.getActors().move_pathRequestRecord(actor, std::make_unique<SleepPathRequest>(area, *this));
+	area.getActors().move_pathRequestRecord(actor, std::make_unique<SleepPathRequest>(area, *this, actor));
 }
 bool SleepObjective::onCanNotRepath(Area& area, ActorIndex actor)
 {

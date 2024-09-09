@@ -43,13 +43,14 @@ void FillQueue::recordDelta(CollisionVolume volume, CollisionVolume flowCapacity
 	assert((m_groupStart->capacity >= volume));
 	assert(volume != 0);
 	assert((m_groupStart != m_groupEnd));
+	assert(flowTillNextStep.exists());
 	validate();
 	auto& blocks = m_fluidGroup.m_area.getBlocks();
 	// Record fluid level changes.
 	for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 	{
 		if(iter->delta == 0 && !blocks.fluid_contains(iter->block, m_fluidGroup.m_fluidType))
-			m_futureNoLongerEmpty.add(iter->block);
+			m_futureNoLongerEmpty.maybeAdd(iter->block);
 		iter->delta += volume;
 		assert(iter->delta <= Config::maxBlockVolume);
 		assert(iter->capacity >= volume);

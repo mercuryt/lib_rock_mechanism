@@ -10,6 +10,7 @@
 #include "../blockFeature.h"
 #include "../index.h"
 
+#include "blockIndexArray.h"
 #include "dataVector.h"
 #include "index.h"
 
@@ -58,7 +59,7 @@ class Blocks
 	DataVector<CollisionVolume, BlockIndex> m_dynamicVolume;
 	DataVector<CollisionVolume, BlockIndex> m_staticVolume;
 	DataVector<FactionIdMap<SmallSet<Project*>>, BlockIndex> m_projects;
-	DataVector<std::unordered_map<MaterialTypeId, Fire, MaterialTypeId::Hash>*, BlockIndex> m_fires;
+	DataVector<SmallMapStable<MaterialTypeId, Fire>*, BlockIndex> m_fires;
 	DataVector<TemperatureDelta, BlockIndex> m_temperatureDelta;
 	DataVector<LocationBucket*, BlockIndex> m_locationBucket;
 	DataVector<std::array<BlockIndex, 6>, BlockIndex> m_directlyAdjacent;
@@ -84,6 +85,8 @@ public:
 	[[nodiscard]] const Cuboid getAll() const;
 	[[nodiscard]] size_t size() const;
 	[[nodiscard]] BlockIndex getIndex(Point3D coordinates) const;
+	BlockIndex maybeGetIndexFromOffset(Point3D coordinates, const std::array<int8_t, 3> offset) const;
+	BlockIndex maybeGetIndexFromOffsetOnEdge(Point3D coordinates, const std::array<int8_t, 3> offset) const;
 	[[nodiscard]] BlockIndex getIndex(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) const;
 	[[nodiscard]] BlockIndex getIndex_i(uint x, uint y, uint z) const;
 	[[nodiscard]] Point3D getCoordinates(BlockIndex index) const;
@@ -91,20 +94,19 @@ public:
 	[[nodiscard]] DistanceInBlocks getZ(BlockIndex index) const;
 	[[nodiscard]] BlockIndex getAtFacing(BlockIndex index, Facing facing) const;
 	[[nodiscard]] BlockIndex getCenterAtGroundLevel() const;
-	// TODO: Calculate on demand from offset vector.
+	// TODO: Calculate on demand from offset vector?
 	[[nodiscard]] const std::array<BlockIndex, 6>& getDirectlyAdjacent(BlockIndex index) const;
-	//TODO: change to return array?
-	[[nodiscard]] BlockIndices getAdjacentWithEdgeAdjacent(BlockIndex index) const;
-	[[nodiscard]] BlockIndices getAdjacentWithEdgeAndCornerAdjacent(BlockIndex index) const;
-	[[nodiscard]] BlockIndices getAdjacentWithEdgeAndCornerAdjacentUnfiltered(BlockIndex index) const;
-	[[nodiscard]] BlockIndices getEdgeAndCornerAdjacentOnly(BlockIndex index) const;
-	[[nodiscard]] BlockIndices getEdgeAdjacentOnly(BlockIndex index) const;
-	[[nodiscard]] BlockIndices getEdgeAdjacentOnSameZLevelOnly(BlockIndex index) const;
-	[[nodiscard]] BlockIndices getAdjacentOnSameZLevelOnly(BlockIndex index) const;
-	[[nodiscard]] BlockIndices getEdgeAdjacentOnlyOnNextZLevelDown(BlockIndex index) const;
-	[[nodiscard]] BlockIndices getEdgeAndCornerAdjacentOnlyOnNextZLevelDown(BlockIndex index) const;
-	[[nodiscard]] BlockIndices getEdgeAdjacentOnlyOnNextZLevelUp(BlockIndex index) const;
-	//TODO: Under what circumstances is this integere distance preferable to taxiDistance or fractional distance?
+	[[nodiscard]] BlockIndexArrayNotNull<18> getAdjacentWithEdgeAdjacent(BlockIndex index) const;
+	[[nodiscard]] BlockIndexArrayNotNull<26> getAdjacentWithEdgeAndCornerAdjacent(BlockIndex index) const;
+	[[nodiscard]] std::array<BlockIndex, 26> getAdjacentWithEdgeAndCornerAdjacentUnfiltered(BlockIndex index) const;
+	[[nodiscard]] BlockIndexArrayNotNull<20> getEdgeAndCornerAdjacentOnly(BlockIndex index) const;
+	[[nodiscard]] BlockIndexArrayNotNull<12> getEdgeAdjacentOnly(BlockIndex index) const;
+	[[nodiscard]] BlockIndexArrayNotNull<4> getEdgeAdjacentOnSameZLevelOnly(BlockIndex index) const;
+	[[nodiscard]] BlockIndexArrayNotNull<4> getAdjacentOnSameZLevelOnly(BlockIndex index) const;
+	[[nodiscard]] BlockIndexArrayNotNull<4> getEdgeAdjacentOnlyOnNextZLevelDown(BlockIndex index) const;
+	[[nodiscard]] BlockIndexArrayNotNull<8> getEdgeAndCornerAdjacentOnlyOnNextZLevelDown(BlockIndex index) const;
+	[[nodiscard]] BlockIndexArrayNotNull<4> getEdgeAdjacentOnlyOnNextZLevelUp(BlockIndex index) const;
+	//TODO: Under what circumstances is this integer distance preferable to taxiDistance or fractional distance?
 	[[nodiscard]] DistanceInBlocks distance(BlockIndex index, BlockIndex other) const;
 	[[nodiscard]] DistanceInBlocks taxiDistance(BlockIndex index, BlockIndex other) const;
 	[[nodiscard]] DistanceInBlocksFractional distanceFractional(BlockIndex index, BlockIndex other) const;
@@ -197,7 +199,7 @@ public:
 		return BlockIndex::null();
 	}
 	[[nodiscard]] BlockIndices collectAdjacentsInRange(BlockIndex index, DistanceInBlocks range);
-	static inline const int32_t offsetsListAllAdjacent[26][3] = {
+	static inline constexpr std::array<std::array<int8_t, 3>, 26> offsetsListAllAdjacent{{
 		{-1,1,-1}, {-1,0,-1}, {-1,-1,-1},
 		{0,1,-1}, {0,0,-1}, {0,-1,-1},
 		{1,1,-1}, {1,0,-1}, {1,-1,-1},
@@ -209,7 +211,7 @@ public:
 		{-1,1,1}, {-1,0,1}, {-1,-1,1},
 		{0,1,1}, {0,0,1}, {0,-1,1},
 		{1,1,1}, {1,0,1}, {1,-1,1}
-	};
+	}};
 	// -Designation
 	[[nodiscard]] bool designation_has(BlockIndex index, FactionId faction, BlockDesignation designation) const;
 	void designation_set(BlockIndex index, FactionId faction, BlockDesignation designation);
@@ -264,8 +266,15 @@ public:
 	// To be used by DrainQueue / FillQueue.
 	void fluid_drainInternal(BlockIndex index, CollisionVolume volume, FluidTypeId fluidType);
 	void fluid_fillInternal(BlockIndex index, CollisionVolume volume, FluidGroup& fluidGroup);
+	// To be used by fluid group split, so the blocks which will be in soon to be created groups can briefly have fluid without having a fluidGroup.
+	// Fluid group will be set again in addBlock within the new group's constructor.
+	// This prevents a problem where addBlock attempts to remove a block from a group which it has already been removed from.
+	// TODO: Seems messy.
+	void fluid_unsetGroupInternal(BlockIndex index, FluidTypeId fluidType);
+	// To be called from FluidGroup::splitStep only.
 	[[nodiscard]] bool fluid_undisolveInternal(BlockIndex index, FluidGroup& fluidGroup);
 private:void fluid_destroyData(BlockIndex index, FluidTypeId fluidType);
+	void fluid_setTotalVolume(BlockIndex index, CollisionVolume volume);
 public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, FluidTypeId fluidType) const;
 	[[nodiscard]] bool fluid_isAdjacentToGroup(BlockIndex index, const FluidGroup* fluidGroup) const;
 	[[nodiscard]] CollisionVolume fluid_volumeOfTypeCanEnter(BlockIndex index, FluidTypeId fluidType) const;
@@ -283,7 +292,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, FluidTypeId
 	[[nodiscard]] const FluidData* fluid_getData(BlockIndex index, FluidTypeId fluidType) const;
 	[[nodiscard]] FluidData* fluid_getData(BlockIndex index, FluidTypeId fluidType);
 	// -Fire
-	void fire_setPointer(BlockIndex index, std::unordered_map<MaterialTypeId, Fire, MaterialTypeId::Hash>* pointer);
+	void fire_setPointer(BlockIndex index, SmallMapStable<MaterialTypeId, Fire>* pointer);
 	void fire_clearPointer(BlockIndex index);
 	[[nodiscard]] bool fire_exists(BlockIndex index) const;
 	[[nodiscard]] FireStage fire_getStage(BlockIndex index) const;

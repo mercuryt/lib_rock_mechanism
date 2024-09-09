@@ -23,7 +23,7 @@ void Blocks::item_erase(BlockIndex index, ItemIndex item)
 	auto& blockItems = m_items[index];
 	auto& blockItemVolume = m_itemVolume[index];
 	auto iter = std::ranges::find(blockItems, item);
-	auto iter2 = m_itemVolume[index].begin() + (std::distance(iter, blockItems.begin()));
+	auto iter2 = m_itemVolume[index].begin() + (std::distance(blockItems.begin(), iter));
 	if(items.isStatic(item))
 		m_staticVolume[index] -= iter2->second;
 	else

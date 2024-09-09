@@ -2,13 +2,19 @@
 #include "../simulation.h"
 #include "../area.h"
 #include "../fluidType.h"
-void AreaHasFluidGroups::doStep()
+void AreaHasFluidGroups::doStep(bool parallel)
 {
 	// Calculate flow.
 	SmallSet<FluidGroup*> unstable = m_unstableFluidGroups;
 	for(const FluidGroup* group : unstable)
 		assert(!group->m_stable);
-	#pragma omp parallel
+	if(parallel)
+	{
+		#pragma omp parallel
+			for(FluidGroup* group : unstable)
+				group->readStep();
+	}
+	else
 		for(FluidGroup* group : unstable)
 			group->readStep();
 	// Remove destroyed.
@@ -23,19 +29,22 @@ void AreaHasFluidGroups::doStep()
 		validateAllFluidGroups();
 	}
 	// Resolve overfull, diagonal seep, and mist.
-	for(FluidGroup* fluidGroup : unstable)
+	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
 	{
 		fluidGroup->afterWriteStep();
 		fluidGroup->validate();
 	}
 	m_unstableFluidGroups.erase_if([](const FluidGroup* fluidGroup){ return fluidGroup->m_merged || fluidGroup->m_disolved; });
-	SmallSet<FluidGroup*> unstable2 = m_unstableFluidGroups;
-	for(FluidGroup* fluidGroup : unstable2)
+	// Merge.
+	// Reinitalize unstable with filtered set.
+	unstable = m_unstableFluidGroups;
+	for(FluidGroup* fluidGroup : unstable)
 		fluidGroup->mergeStep();
 	m_unstableFluidGroups.erase_if([](FluidGroup* fluidGroup){ return fluidGroup->m_merged; });
-	// Apply fluid split.
-	SmallSet<FluidGroup*> unstable3 = m_unstableFluidGroups;
-	for(FluidGroup* fluidGroup : unstable3)
+	// Split.
+	// Reinitalize unstable with filtered set again.
+	unstable = m_unstableFluidGroups;
+	for(FluidGroup* fluidGroup : unstable)
 		fluidGroup->splitStep();
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 		fluidGroup.validate();
@@ -84,7 +93,10 @@ FluidGroup* AreaHasFluidGroups::createFluidGroup(FluidTypeId fluidType, BlockInd
 	//TODO:  If new group is outside register it with areaHasTemperature.
 	return &m_fluidGroups.back();
 }
-
+FluidGroup* AreaHasFluidGroups::createFluidGroup(FluidTypeId fluidType, BlockIndices&& blocks, bool checkMerge)
+{
+	return createFluidGroup(fluidType, blocks, checkMerge);
+}
 void AreaHasFluidGroups::removeFluidGroup(FluidGroup& group)
 {
 	std::erase_if(m_fluidGroups, [&group](const FluidGroup& g) { return &g == &group; });
@@ -133,4 +145,8 @@ std::string AreaHasFluidGroups::toS() const
 		output += "###";
 	}
 	return output;
+}
+bool AreaHasFluidGroups::contains(const FluidGroup& fluidGroup)
+{
+	return std::ranges::find(m_fluidGroups, fluidGroup) != m_fluidGroups.end();
 }
