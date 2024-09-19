@@ -10,6 +10,8 @@
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasActors.h"
 #include "../../engine/simulation/hasAreas.h"
+#include "../../engine/objectives/goTo.h"
+#include "dummyObjective.h"
 TEST_CASE("route_10_10_10")
 {
 	Simulation simulation;
@@ -95,20 +97,23 @@ TEST_CASE("route_10_10_10")
 		REQUIRE(!actors.move_hasEvent(actor));
 		simulation.doStep();
 		REQUIRE(actors.move_hasEvent(actor));
-		Step scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
-		float seconds = (float)scheduledStep.get() / (float)Config::stepsPerSecond.get();
+		Step stepsUntillScheduledStep = actors.move_stepsTillNextMoveEvent(actor);
+		float seconds = (float)stepsUntillScheduledStep.get() / (float)Config::stepsPerSecond.get();
 		REQUIRE(seconds >= 0.6f);
 		REQUIRE(seconds <= 0.9f);
-		simulation.m_step = scheduledStep;
+		simulation.fastForward(stepsUntillScheduledStep - 2);
+		REQUIRE(actors.getLocation(actor) == origin);
+		REQUIRE(actors.move_hasEvent(actor));
 		// step 1
-		simulation.m_eventSchedule.doStep(scheduledStep);
+		simulation.doStep();
 		REQUIRE(actors.getLocation(actor) == block1);
 		REQUIRE(actors.move_hasEvent(actor));
-		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
-		simulation.m_step = scheduledStep;
+		REQUIRE(stepsUntillScheduledStep == actors.move_stepsTillNextMoveEvent(actor));
+		simulation.fastForward(stepsUntillScheduledStep - 2);
+		REQUIRE(actors.getLocation(actor) == block1);
 		REQUIRE(actors.move_hasEvent(actor));
 		// step 2
-		simulation.m_eventSchedule.doStep(scheduledStep);
+		simulation.doStep();
 		REQUIRE(actors.getLocation(actor) == destination);
 		REQUIRE(!actors.move_hasEvent(actor));
 		REQUIRE(actors.move_getPath(actor).empty());
@@ -128,34 +133,36 @@ TEST_CASE("route_10_10_10")
 		});
 		// Set solid to make choice of route deterministic.
 		blocks.solid_set(blocks.getIndex_i(2,5,1), marble, false);
-		actors.move_setDestination(actor, destination);
+		actors.objective_addTaskToEnd(actor, std::make_unique<GoToObjective>(destination));
 		simulation.doStep();
 		REQUIRE(actors.move_hasEvent(actor));
-		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.empty());
+		REQUIRE(actors.move_getPath(actor)[0] == block1);
+		REQUIRE(actors.move_getPath(actor)[1] == block2);
+		REQUIRE(actors.move_getPath(actor)[2] == destination);
 		// Step 1.
-		Step scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
-		simulation.m_step = scheduledStep;
-		simulation.m_eventSchedule.doStep(scheduledStep);
+		//simulation.fastForwardUntillActorIsAt(area, actor, block1);
+		simulation.doStep();
+		simulation.doStep();
+		REQUIRE(actors.getLocation(actor) == origin);
+		simulation.doStep();
 		REQUIRE(actors.getLocation(actor) == block1);
 		REQUIRE(actors.move_hasEvent(actor));
-		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.empty());
 		blocks.solid_set(block2, marble, false);
 		// Step 2.
 		REQUIRE(actors.move_hasEvent(actor));
-		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
-		simulation.m_step = scheduledStep;
-		simulation.m_eventSchedule.doStep(scheduledStep);
+		Step stepsTillNextMove = actors.move_stepsTillNextMoveEvent(actor);
+		simulation.fastForward(stepsTillNextMove - 1);
 		REQUIRE(actors.getLocation(actor) == block1);
 		REQUIRE(!actors.move_hasEvent(actor));
-		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.size() == 1);
+		REQUIRE(actors.move_hasPathRequest(actor));
 		// Step 3.
 		simulation.doStep();
+		REQUIRE(!actors.move_hasPathRequest(actor));
 		REQUIRE(actors.move_hasEvent(actor));
-		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.empty());
-		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
-		simulation.m_step = scheduledStep;
-		simulation.m_eventSchedule.doStep(scheduledStep);
-		REQUIRE(actors.getLocation(actor) == block3);
+		REQUIRE(actors.move_getPath(actor)[0] == block3);
+		stepsTillNextMove = actors.move_stepsTillNextMoveEvent(actor);
+		simulation.fastForwardUntillActorIsAt(area, actor, block3);
+		REQUIRE(actors.move_hasEvent(actor));
 	}
 	SUBCASE("Unpathable route becomes pathable when blockage is removed.")
 	{
@@ -374,16 +381,25 @@ TEST_CASE("route_5_5_5")
 	SUBCASE("ramp")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
+		blocks.solid_set(blocks.getIndex_i(4, 4, 1), marble, false);
+		BlockIndex destination = blocks.getIndex_i(4, 4, 2);
+		BlockIndex rampLocation = blocks.getIndex_i(4, 3, 1);
+		BlockIndex adjacentToRamp = blocks.getIndex_i(4, 2, 1);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
 			.location=blocks.getIndex_i(1,1,1),
 		});
-		blocks.solid_set(blocks.getIndex_i(4, 4, 1), marble, false);
-		actors.move_setDestination(actor, blocks.getIndex_i(4, 4, 2));
+		actors.move_setDestination(actor, destination);
 		simulation.doStep();
 		REQUIRE(actors.move_getPath(actor).empty());
-		blocks.blockFeature_construct(blocks.getIndex_i(4, 3, 1), ramp, marble);
-		actors.move_setDestination(actor, blocks.getIndex_i(4, 4, 2));
+		blocks.blockFeature_construct(rampLocation, ramp, marble);
+		REQUIRE(blocks.shape_shapeAndMoveTypeCanEnterEverFrom(rampLocation, actors.getShape(actor), actors.getMoveType(actor), adjacentToRamp));
+		REQUIRE(blocks.getAdjacentWithEdgeAndCornerAdjacentUnfiltered(adjacentToRamp)[13] == rampLocation);
+		auto& facade = area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actor));
+		REQUIRE(facade.getValueForBit(adjacentToRamp, rampLocation));
+		bool canEnterFrom = facade.canEnterFrom(adjacentToRamp, AdjacentIndex::create(13));
+		REQUIRE(canEnterFrom);
+		actors.move_setDestination(actor, destination);
 		simulation.doStep();
 		REQUIRE(!actors.move_getPath(actor).empty());
 	}
@@ -590,18 +606,19 @@ TEST_CASE("route_5_5_5")
 		REQUIRE(!blocks.shape_canEnterCurrentlyFrom(blocks.getIndex_i(3, 3, 1), actors.getShape(actor), actors.getLocation(actor), actors.getBlocks(actor)));
 		REQUIRE(actors.move_hasEvent(actor));
 		// Move attempt 1.
-		simulation.m_step = simulation.m_eventSchedule.m_data.begin()->first;
-		simulation.m_eventSchedule.doStep(simulation.m_step);
+		Step stepsUntillScheduledStep = actors.move_stepsTillNextMoveEvent(actor);
+		simulation.fastForward(stepsUntillScheduledStep - 1);
 		REQUIRE(actors.getLocation(actor) == origin);
 		REQUIRE(actors.move_hasEvent(actor));
+		REQUIRE(actors.move_getRetries(actor) == 1);
 		// Move attempt 2.
-		simulation.m_step = simulation.m_eventSchedule.m_data.begin()->first;
-		simulation.m_eventSchedule.doStep(simulation.m_step);
+		stepsUntillScheduledStep = actors.move_stepsTillNextMoveEvent(actor);
+		simulation.fastForward(stepsUntillScheduledStep - 1);
+		REQUIRE(actors.move_getRetries(actor) == 2);
 		// Move attempt 3.
-		simulation.m_step = simulation.m_eventSchedule.m_data.begin()->first;
-		simulation.m_eventSchedule.doStep(simulation.m_step);
+		simulation.fastForward(stepsUntillScheduledStep - 1);
 		REQUIRE(actors.getLocation(actor) == origin);
-		REQUIRE(simulation.m_threadedTaskEngine.count() == 1);
+		REQUIRE(actors.move_hasPathRequest(actor));
 		REQUIRE(!actors.move_hasEvent(actor));
 		// Detour.
 		simulation.doStep();

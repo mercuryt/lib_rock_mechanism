@@ -7,7 +7,6 @@
 #include "../fluidType.h"
 #include "../actors/actors.h"
 #include "../plants.h"
-#include "index.h"
 #include <string>
 
 Blocks::Blocks(Area& area, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) : m_area(area), m_sizeX(x), m_sizeY(y), m_sizeZ(z)
@@ -394,12 +393,7 @@ BlockIndexArrayNotNull<4> Blocks::getAdjacentOnSameZLevelOnly(BlockIndex index) 
 }
 DistanceInBlocks Blocks::distance(BlockIndex index, BlockIndex otherIndex) const
 {
-	Point3D coordinates = getCoordinates(index);
-	Point3D otherCoordinates = getCoordinates(otherIndex);
-	DistanceInBlocks dx = DistanceInBlocks::create(abs((int)coordinates.x.get() - (int)otherCoordinates.x.get()));
-	DistanceInBlocks dy = DistanceInBlocks::create(abs((int)coordinates.y.get() - (int)otherCoordinates.y.get()));
-	DistanceInBlocks dz = DistanceInBlocks::create(abs((int)coordinates.z.get() - (int)otherCoordinates.z.get()));
-	return DistanceInBlocks::create(pow((pow(dx.get(), 2) + pow(dy.get(), 2) + pow(dz.get(), 2)), 0.5));
+	return DistanceInBlocks::create(pow(distanceSquared(index, otherIndex).get(), 0.5));
 }
 DistanceInBlocks Blocks::taxiDistance(BlockIndex index, BlockIndex otherIndex) const
 {
@@ -411,6 +405,15 @@ DistanceInBlocks Blocks::taxiDistance(BlockIndex index, BlockIndex otherIndex) c
 		abs((int)coordinates.z.get() - (int)otherCoordinates.z.get())
 	);
 }
+DistanceInBlocks Blocks::distanceSquared(BlockIndex index, BlockIndex other) const
+{
+	Point3D coordinates = getCoordinates(index);
+	Point3D otherCoordinates = getCoordinates(other);
+	DistanceInBlocks dx = DistanceInBlocks::create(abs((int)coordinates.x.get() - (int)otherCoordinates.x.get()));
+	DistanceInBlocks dy = DistanceInBlocks::create(abs((int)coordinates.y.get() - (int)otherCoordinates.y.get()));
+	DistanceInBlocks dz = DistanceInBlocks::create(abs((int)coordinates.z.get() - (int)otherCoordinates.z.get()));
+	return DistanceInBlocks::create(pow(dx.get(), 2) + pow(dy.get(), 2) + pow(dz.get(), 2));
+}
 DistanceInBlocksFractional Blocks::distanceFractional(BlockIndex index, BlockIndex otherIndex) const
 {
 	Point3D_fractional coordinates = getCoordinatesFractional(index);
@@ -420,14 +423,9 @@ DistanceInBlocksFractional Blocks::distanceFractional(BlockIndex index, BlockInd
 	DistanceInBlocksFractional dz = DistanceInBlocksFractional::create(std::abs(coordinates.z.get() - otherCoordinates.z.get()));
 	return DistanceInBlocksFractional::create(std::pow((std::pow(dx.get(), 2) + std::pow(dy.get(), 2) + std::pow(dz.get(), 2)), 0.5));
 }
-bool Blocks::squareOfDistanceIsMoreThen(BlockIndex index, BlockIndex otherIndex, DistanceInBlocksFractional distanceCubed) const
+bool Blocks::squareOfDistanceIsMoreThen(BlockIndex index, BlockIndex otherIndex, DistanceInBlocksFractional otherDistanceSquared) const
 {
-	Point3D coordinates = getCoordinates(index);
-	Point3D otherCoordinates = getCoordinates(otherIndex);
-	DistanceInBlocks dx = DistanceInBlocks::create(abs((int32_t)otherCoordinates.x.get() - (int32_t)coordinates.x.get()));
-	DistanceInBlocks dy = DistanceInBlocks::create(abs((int32_t)otherCoordinates.y.get() - (int32_t)coordinates.y.get()));
-	DistanceInBlocks dz = DistanceInBlocks::create(abs((int32_t)otherCoordinates.z.get() - (int32_t)coordinates.z.get()));
-	return (dx * dx) + (dy * dy) + (dz * dz) > distanceCubed.get();
+	return distanceSquared(index, otherIndex)> otherDistanceSquared.get();
 }
 bool Blocks::isAdjacentToAny(BlockIndex index, BlockIndices& blocks) const
 {

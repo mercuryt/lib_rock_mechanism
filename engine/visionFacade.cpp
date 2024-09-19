@@ -178,13 +178,16 @@ void VisionFacade::doStep()
 {
 	VisionFacadeIndex index = VisionFacadeIndex::create(0);
 	VisionFacadeIndex actorsSize = VisionFacadeIndex::create(m_actors.size());
+	std::vector<std::pair<VisionFacadeIndex, VisionFacadeIndex>> ranges;
+	while(index != actorsSize)
+	{
+		VisionFacadeIndex end = std::min(actorsSize, index + Config::visionThreadingBatchSize);
+		ranges.emplace_back(index, end);
+		index = end;
+	}
 	#pragma omp parallel
-		while(index != m_actors.size())
-		{
-			VisionFacadeIndex end = std::min(actorsSize, index + Config::visionThreadingBatchSize);
-			readStepSegment(index, end);
-			index = end;
-		}
+	for(auto [start, end] : ranges)
+		readStepSegment(start, end);
 	for(VisionFacadeIndex index = VisionFacadeIndex::create(0); index < actorsSize; ++index)
 		m_area->getActors().vision_swap(getActor(index), getResults(index));
 }

@@ -67,14 +67,12 @@ class TerrainFacade final
 	// Non batched pathing uses that WithoutMemo variants.
 	[[nodiscard]] FindPathResult findPathBreadthFirstWithoutMemo(BlockIndex from, const DestinationCondition destinationCondition, AccessCondition accessCondition) const;
 	[[nodiscard]] FindPathResult findPathDepthFirstWithoutMemo(BlockIndex from, const DestinationCondition destinationCondition, AccessCondition accessCondition, BlockIndex huristicDestination) const;
-	[[nodiscard]] bool canEnterFrom(BlockIndex blockIndex, AdjacentIndex adjacentIndex) const;
 	[[nodiscard]] FindPathResult findPathToForSingleBlockShape(BlockIndex start, ShapeId shape, BlockIndex target, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathToForMultiBlockShape(BlockIndex start, ShapeId shape, Facing startFacing, BlockIndex target, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathToAnyOfForSingleBlockShape(BlockIndex start, ShapeId shape, BlockIndices indecies, BlockIndex huristincDestination, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathToAnyOfForMultiBlockShape(BlockIndex start, ShapeId shape, Facing startFacing, BlockIndices indecies, BlockIndex huristincDestination, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathToConditionForSingleBlockShape(BlockIndex start, ShapeId shape, const DestinationCondition destinationCondition, BlockIndex huristincDestination, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathToConditionForMultiBlockShape(BlockIndex start, ShapeId shape, Facing startFacing, const DestinationCondition destinationCondition, BlockIndex huristincDestination, bool detour = false) const;
-	bool getValueForBit(BlockIndex from, BlockIndex to) const;
 	PathRequestIndex getPathRequestIndexNoHuristic();
 	PathRequestIndex getPathRequestIndexWithHuristic();
 	void movePathRequestNoHuristic(PathRequestIndex oldIndex, PathRequestIndex newIndex);
@@ -92,6 +90,8 @@ public:
 	void unregisterWithHuristic(PathRequestIndex index);
 	void update(BlockIndex block);
 	void clearPathRequests();
+	[[nodiscard]] bool canEnterFrom(BlockIndex blockIndex, AdjacentIndex adjacentIndex) const;
+	[[nodiscard]] bool getValueForBit(BlockIndex from, BlockIndex to) const;
 	[[nodiscard]] FindPathResult findPathTo(BlockIndex start, ShapeId shape, Facing startFacing, BlockIndex target, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathToAnyOf(BlockIndex start, ShapeId shape, Facing startFacing, BlockIndices indecies, BlockIndex huristicDestination = BlockIndex::null(), bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathToCondition(BlockIndex start, ShapeId shape, Facing startFacing, const DestinationCondition destinationCondition, BlockIndex huristicDestination = BlockIndex::null(), bool detour = false) const;
@@ -107,8 +107,6 @@ public:
 };
 class AreaHasTerrainFacades
 {
-	// Using a non-address stable container to hold an non-moveable type.
-	// Acceptable because we never call the remove method.
 	MoveTypeMap<TerrainFacade> m_data;
 	Area& m_area;
 	void update(BlockIndex block);

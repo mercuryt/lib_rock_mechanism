@@ -37,9 +37,10 @@ void Actors::move_updateActualSpeed(ActorIndex index)
 void Actors::move_setPath(ActorIndex index, BlockIndices& path)
 {
 	assert(!path.empty());
+	assert(m_area.getBlocks().isAdjacentToIncludingCornersAndEdges(m_location[index], path[0]));
 	m_path[index] = std::move(path);
-	m_destination[index] = path.back();
-	m_pathIter[index] = path.begin();
+	m_destination[index] = m_path[index].back();
+	m_pathIter[index] = m_path[index].begin();
 	move_clearAllEventsAndTasks(index);
 	move_schedule(index);
 }
@@ -64,7 +65,7 @@ void Actors::move_callback(ActorIndex index)
 		move_setDestination(index, m_destination[index]);
 		return;
 	}
-	if(blocks.shape_canEnterCurrentlyFrom(block, m_shape[index], m_location[index], m_blocks[index]))
+	if(!blocks.shape_canEnterCurrentlyFrom(block, m_shape[index], m_location[index], m_blocks[index]))
 	{
 		// Path is temporarily blocked, wait a bit and then detour if still blocked.
 		if(m_moveRetries[index] == Config::moveTryAttemptsBeforeDetour)
@@ -84,36 +85,40 @@ void Actors::move_callback(ActorIndex index)
 	{
 		// Path is not blocked for actor. Check for followers, if any.
 		ActorOrItemIndex follower = getFollower(index);
-		const auto& path = lineLead_getPath(index);
-		while(follower.exists())
+		if(follower.exists())
 		{
-			auto found = std::ranges::find(path, follower.getLocation(m_area));
-			assert(found != path.begin());
-			BlockIndex followerNextStep = *(--found);
-			if(!blocks.shape_anythingCanEnterEver(followerNextStep) || !blocks.shape_shapeAndMoveTypeCanEnterEverFrom(block, follower.getShape(m_area), follower.getMoveType(m_area), follower.getLocation(m_area)))
+			const auto &path = lineLead_getPath(index);
+			while (follower.exists())
 			{
-				// Path is permanantly blocked for follower, repath.
-				move_setDestination(index, m_destination[index]);
-				return;
-			}
-			if(!follower.canEnterCurrentlyFrom(m_area, followerNextStep, follower.getLocation(m_area)))
-			{
-				// TODO: this repeats 12 lines from above starting at 68.
-				// Path is blocked temporarily, wait.
-				if(m_moveRetries[index] == Config::moveTryAttemptsBeforeDetour)
+				auto found = std::ranges::find(path, follower.getLocation(m_area));
+				assert(found != path.begin());
+				BlockIndex followerNextStep = *(--found);
+				if (!blocks.shape_anythingCanEnterEver(followerNextStep) || !blocks.shape_shapeAndMoveTypeCanEnterEverFrom(block, follower.getShape(m_area), follower.getMoveType(m_area), follower.getLocation(m_area)))
 				{
-					if(m_hasObjectives[index]->hasCurrent())
-						m_hasObjectives[index]->detour(m_area);
+					// Path is permanantly blocked for follower, repath.
+					move_setDestination(index, m_destination[index]);
+					return;
+				}
+				if (!follower.canEnterCurrentlyFrom(m_area, followerNextStep, follower.getLocation(m_area)))
+				{
+					// TODO: this repeats 12 lines from above starting at 68.
+					// Path is blocked temporarily, wait.
+					if (m_moveRetries[index] == Config::moveTryAttemptsBeforeDetour)
+					{
+						if (m_hasObjectives[index]->hasCurrent())
+							m_hasObjectives[index]->detour(m_area);
+						else
+							move_setDestination(index, m_destination[index], true);
+					}
 					else
-						move_setDestination(index, m_destination[index], true);
+					{
+						++m_moveRetries[index];
+						move_schedule(index);
+						return;
+					}
 				}
-				else
-				{
-					++m_moveRetries[index];
-					move_schedule(index);
-				}
+				follower = follower.getFollower(m_area);
 			}
-			follower = follower.getFollower(m_area);
 		}
 		// Path is not blocked for followers.
 		m_moveRetries[index] = 0;
@@ -121,15 +126,20 @@ void Actors::move_callback(ActorIndex index)
 		setLocationAndFacing(index, block, facing);
 		// Move followers.
 		follower = getFollower(index);
-		while(follower.exists())
+		if(follower.exists())
 		{
-			BlockIndex currentFollowerLocation = follower.getLocation(m_area);
-			auto found = std::ranges::find(path, currentFollowerLocation);
-			assert(found != path.begin());
-			BlockIndex followerNextStep = *(--found);
-			Facing facing = blocks.facingToSetWhenEnteringFrom(followerNextStep, currentFollowerLocation);
-			follower.setLocationAndFacing(m_area, followerNextStep, facing);
-			follower = follower.getFollower(m_area);
+			auto& path = m_leadFollowPath[index];
+			while (follower.exists())
+			{
+				BlockIndex currentFollowerLocation = follower.getLocation(m_area);
+				auto found = std::ranges::find(path, currentFollowerLocation);
+				assert(found != path.begin());
+				assert(found != path.end());
+				BlockIndex followerNextStep = *(--found);
+				Facing facing = blocks.facingToSetWhenEnteringFrom(followerNextStep, currentFollowerLocation);
+				follower.setLocationAndFacing(m_area, followerNextStep, facing);
+				follower = follower.getFollower(m_area);
+			}
 		}
 		if(block == m_destination[index])
 		{
@@ -323,8 +333,8 @@ void Actors::move_pathRequestCallback(ActorIndex index, BlockIndices path, bool 
 		// To prevent this we would have to know if we may reroute or not.
 		// cannotFulfillObjective is the most pessamistic choice.
 		// This is probably best solved by callback.
-		//TODO: This conditional only exists because objectives are not mandated to always exist for all actors.
 		HasObjectives& hasObjectives = *m_hasObjectives[index];
+		//TODO: This conditional only exists because objectives are not mandated to always exist for all actors.
 		if(hasObjectives.hasCurrent())
 		{
 			// Objectives can handle the path not found situation directly or default to cannotFulfill.

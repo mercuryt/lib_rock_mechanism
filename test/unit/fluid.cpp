@@ -1584,10 +1584,7 @@ TEST_CASE("fluids multi scale")
 		CollisionVolume totalVolume = fgWater->totalVolume();
 		while(simulation.m_step < steps)
 		{
-			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
-				fluidGroup->readStep();
-			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
-				fluidGroup->writeStep();
+			area.m_hasFluidGroups.doStep(false);
 			++simulation.m_step;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
@@ -1659,10 +1656,7 @@ TEST_CASE("fluids multi scale")
 		simulation.m_step = Step::create(1);
 		while(simulation.m_step < steps)
 		{
-			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
-				fluidGroup->readStep();
-			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
-				fluidGroup->writeStep();
+			area.m_hasFluidGroups.doStep(false);
 			fgMercury = areaBuilderUtil::getFluidGroup(area, mercury);
 			if(fgMercury != nullptr)
 				REQUIRE(fgMercury->totalVolume() == totalVolume);
@@ -1755,10 +1749,7 @@ TEST_CASE("fluids multi scale")
 		simulation.m_step = Step::create(1);
 		while(simulation.m_step < steps)
 		{
-			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
-				fluidGroup->readStep();
-			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
-				fluidGroup->writeStep();
+			area.m_hasFluidGroups.doStep(false);
 			++simulation.m_step;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
@@ -1824,10 +1815,7 @@ TEST_CASE("fluids multi scale")
 		simulation.m_step = Step::create(1);
 		while(simulation.m_step < steps)
 		{
-			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
-				fluidGroup->readStep();
-			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
-				fluidGroup->writeStep();
+			area.m_hasFluidGroups.doStep(false);
 			++simulation.m_step;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
@@ -1909,10 +1897,7 @@ TEST_CASE("fluids multi scale")
 		simulation.m_step = Step::create(1);
 		while(simulation.m_step < steps)
 		{
-			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
-				fluidGroup->readStep();
-			for(FluidGroup* fluidGroup : area.m_hasFluidGroups.getUnstable())
-				fluidGroup->writeStep();
+			area.m_hasFluidGroups.doStep(false);
 			++simulation.m_step;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);

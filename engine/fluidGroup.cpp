@@ -70,14 +70,13 @@ void FluidGroup::addBlock(BlockIndex block, bool checkMerge)
 			if(!m_area.getBlocks().fluid_canEnterEver(adjacent))
 				continue;
 			FluidData* found = m_area.getBlocks().fluid_getData(adjacent, m_fluidType);
-			if(found)
+			// Merge groups if needed.
+			if(found && checkMerge)
 			{
 				assert(!found->group->m_merged);
 				if(found->group == this)
 					continue;
-				// Merge groups if needed.
-				if(checkMerge)
-					toMerge.insert(found->group);
+				toMerge.insert(found->group);
 			}
 			if(!found || found->volume < Config::maxBlockVolume)
 				m_fillQueue.maybeAddBlock(adjacent);
@@ -355,7 +354,7 @@ void FluidGroup::readStep()
 			if(maxFillForEquilibrium == perBlockFill)
 				perBlockDrain = maxDrainForEqualibrium;
 			else
-				perBlockDrain = CollisionVolume::create(std::ceil(totalFill.get() / m_drainQueue.groupSize()));
+				perBlockDrain = CollisionVolume::create(std::ceil((float)totalFill.get() / (float)m_drainQueue.groupSize()));
 			totalDrain = perBlockDrain * m_drainQueue.groupSize();
 		}
 		else if(totalFill > totalDrain)
@@ -478,7 +477,7 @@ void FluidGroup::readStep()
 				{
 					for(FluidGroupSplitData& fluidGroupSplitData : m_futureGroups)
 						if(fluidGroupSplitData.members.contains(adjacent))
-							fluidGroupSplitData.futureAdjacent.add(block);
+							fluidGroupSplitData.futureAdjacent.maybeAdd(block);
 				}
 	}
 	// -Find no longer adjacent empty to remove from fill queue and newEmptyAdjacent.

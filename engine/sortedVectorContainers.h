@@ -9,13 +9,13 @@ class MediumSet
 public:
 	class iterator;
 	class const_iterator;
-	void add(const T& value) { if(!contains(value)) data.push_back(value); std::sort(data); }
-	void remove(const T& value) { assert(contains(value)); auto iter = find(value); *iter = data.back(); data.pop_back(); std::sort(data); }
+	void add(const T& value) { if(!contains(value)) data.push_back(value); std::ranges::sort(data); }
+	void remove(const T& value) { assert(contains(value)); auto iter = find(value); *iter = data.back(); data.pop_back(); std::ranges::sort(data); }
 	template<typename ...Args>
 	void emplace(Args&& ...args) {
 		T value{std::forward(args)...};
 		data.push_back(std::move(value));
-		std::sort(data);
+		std::ranges::sort(data);
 	}
 	[[nodiscard]] bool contains(const T& value) const { return std::binary_search(data.begin(), data.end(), value); }
 	[[nodiscard]] uint size() const { return data.size(); }
@@ -62,18 +62,24 @@ class MediumMap
 public:
 	class iterator;
 	class const_iterator;
-	void insert(const K& key, V&& value) { if(!contains(key)) data.emplace_back(key, std::forward(value)); std::sort(data); }
-	void remove(const K& key) { assert(contains(key)); auto iter = find(key); *iter = data.back(); data.pop_back(); std::sort(data); }
+	void insert(const K& key, const V& value) { assert(!contains(key)); data.emplace_back(key, value); std::ranges::sort(data); }
+	void insertNonUnique(const K& key, const V& value) { data.emplace_back(key, value); std::ranges::sort(data); }
+	void maybeInsert(const K& key, const V& value) { if(!contains(key)) { data.emplace_back(key, value); std::ranges::sort(data); } }
+	void remove(const K& key) { assert(contains(key)); auto iter = find(key); *iter = data.back(); data.pop_back(); std::ranges::sort(data); }
 	template<typename ...Args>
 	void emplace(const K& key, Args&& ...args) {
 		V value{std::forward(args)...};
 		Pair pair{key, value};
 		//TODO: instead of push_back / sort use lower_bound and insert.
 		data.push_back(std::move(pair));
-		std::sort(data);
+		std::ranges::sort(data);
 	}
-	[[nodiscard]] bool contains(const K& key) const { return std::ranges::binary_search(data.begin(), data.end(), key, &Pair::first); }
+	void pop_back() { data.pop_back(); }
+	void clear() { data.clear(); }
+	[[nodiscard]] bool contains(const K& key) const { return std::ranges::binary_search(data, key, {}, &Pair::first); }
+	[[nodiscard]] bool empty() const { return data.empty(); }
 	[[nodiscard]] uint size() const { return data.size(); }
+	[[nodiscard]] Pair& back() { return data.back(); }
 	[[nodiscard]] iterator find(const K& key)
 	{
 		auto iter = std::ranges::lower_bound(data, key, &Pair::first);
@@ -90,7 +96,7 @@ public:
 	[[nodiscard]] const_iterator end() const { return {*this, size()}; }
 	class iterator
 	{
-		This::iterator m_iter;
+		std::vector<Pair>::iterator m_iter;
 	public:
 		iterator(This& set, uint i) : m_iter(set.data.begin() + i) { }
 		iterator& operator++() { ++m_iter; return *this; }
@@ -101,7 +107,7 @@ public:
 	};
 	class const_iterator
 	{
-		This::const_iterator m_iter;
+		std::vector<Pair>::const_iterator m_iter;
 	public:
 		const_iterator(const This& set, uint i) : m_iter(set.data.begin() + i) { }
 		const_iterator& operator++() { ++m_iter; return *this; }
