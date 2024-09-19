@@ -14,7 +14,7 @@ class WanderPathRequest final : public PathRequest
 	WanderObjective& m_objective;
 	uint16_t m_blockCounter = 0;
 public:
-	WanderPathRequest(Area& area, WanderObjective& objective);
+	WanderPathRequest(Area& area, WanderObjective& objective, ActorIndex actor);
 	WanderPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
 	void callback(Area& area, FindPathResult& result);
 	[[nodiscard]] Json toJson() const;

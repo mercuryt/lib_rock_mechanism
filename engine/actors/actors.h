@@ -281,6 +281,7 @@ public:
 	[[nodiscard]] Speed move_getSpeed(ActorIndex index) const { return m_speedActual[index]; }
 	[[nodiscard]] bool move_canMove(ActorIndex index) const;
 	[[nodiscard]] Step move_delayToMoveInto(ActorIndex index, const BlockIndex block) const;
+	[[nodiscard]] std::unique_ptr<PathRequest> move_movePathRequestData(ActorIndex index) { auto output = std::move(m_pathRequest[index]); m_pathRequest[index] = nullptr; return output; }
 	// For debugging move.
 	[[nodiscard]] PathRequest& move_getPathRequest(ActorIndex index) { return *m_pathRequest[index].get(); }
 	[[nodiscard]] BlockIndices& move_getPath(ActorIndex index) { return m_path[index]; }
@@ -288,6 +289,7 @@ public:
 	[[nodiscard]] bool move_hasEvent(ActorIndex index) const { return m_moveEvent.exists(index); }
 	[[nodiscard]] bool move_hasPathRequest(ActorIndex index) const { return m_pathRequest[index].get() != nullptr; }
 	[[nodiscard]] Step move_stepsTillNextMoveEvent(ActorIndex index) const;
+	[[nodiscard]] uint8_t move_getRetries(ActorIndex index) const { return m_moveRetries[index]; }
 	// -CanPickUp.
 	void canPickUp_pickUpItem(ActorIndex index, ItemIndex item);
 	void canPickUp_pickUpItemQuantity(ActorIndex index, ItemIndex item, Quantity quantity);

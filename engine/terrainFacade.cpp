@@ -37,7 +37,7 @@ void TerrainFacade::doStep()
 		ranges.emplace_back(i, end);
 		i = end;
 	}
-	#pragma omp parallel
+	#pragma omp parallel for
 	for(auto [begin, end] : ranges)
 	{
 		auto pair = m_area.m_simulation.m_hasPathMemos.getBreadthFirst(m_area);
@@ -61,7 +61,7 @@ void TerrainFacade::doStep()
 		ranges.emplace_back(i, end);
 		i = end;
 	}
-	#pragma omp parallel
+	#pragma omp parallel for
 	for(auto [begin, end] : ranges)
 	{
 		auto pair = m_area.m_simulation.m_hasPathMemos.getDepthFirst(m_area);
@@ -76,30 +76,52 @@ void TerrainFacade::doStep()
 		m_area.m_simulation.m_hasPathMemos.releaseDepthFirst(index);
 	}
 	// Write step.
-	// Read First.
-	for(PathRequestIndex i = PathRequestIndex::create(0); i < m_pathRequestAccessConditionsNoHuristic.size(); ++i)
+	// Breadth First.
+	auto pathRequests = std::move(m_pathRequestNoHuristic);
+	m_pathRequestNoHuristic.clear();
+	auto results = std::move(m_pathRequestResultsNoHuristic);
+	assert(pathRequests.size() == results.size());
+	m_pathRequestResultsNoHuristic.clear();
+	Actors& actors = m_area.getActors();
+	for(PathRequestIndex i = PathRequestIndex::create(0); i < pathRequests.size(); ++i)
 	{
-		PathRequest& pathRequest = *m_pathRequestNoHuristic[i];
-		pathRequest.callback(m_area, m_pathRequestResultsNoHuristic[i]);
-		pathRequest.reset();
+		// Move path request here and nullify the moved from location so that the callback can create a new request.
+		std::unique_ptr<PathRequest> pathRequest = actors.move_movePathRequestData(pathRequests[i]->getActor());
+		pathRequest->callback(m_area, results[i]);
 	}
 	// Depth First.
-	for(PathRequestIndex i = PathRequestIndex::create(0); i < m_pathRequestAccessConditionsWithHuristic.size(); ++i)
+	auto pathRequests2 = std::move(m_pathRequestWithHuristic);
+	m_pathRequestWithHuristic.clear();
+	auto results2 = std::move(m_pathRequestResultsWithHuristic);
+	m_pathRequestResultsWithHuristic.clear();
+	for(PathRequestIndex i = PathRequestIndex::create(0); i < pathRequests2.size(); ++i)
 	{
-		PathRequest& pathRequest = *m_pathRequestWithHuristic[i];
-		pathRequest.callback(m_area, m_pathRequestResultsWithHuristic[i]);
-		pathRequest.reset();
+		// Move path request here and nullify the moved from location so that the callback can create a new request.
+		std::unique_ptr<PathRequest> pathRequest = actors.move_movePathRequestData(pathRequests2[i]->getActor());
+		pathRequest->callback(m_area, results2[i]);
 	}
+	// TODO: Is this needed?
 	clearPathRequests();
 }
 void TerrainFacade::findPathForIndexWithHuristic(PathRequestIndex index, PathMemoDepthFirst& memo)
 {
-	m_pathRequestResultsWithHuristic[index] = findPathDepthFirst(m_pathRequestStartPositionWithHuristic[index], m_pathRequestDestinationConditionsWithHuristic[index], m_pathRequestAccessConditionsWithHuristic[index], m_pathRequestHuristic[index], memo);
+	m_pathRequestResultsWithHuristic[index] = findPathDepthFirst(
+		m_pathRequestStartPositionWithHuristic[index],
+		m_pathRequestDestinationConditionsWithHuristic[index],
+		m_pathRequestAccessConditionsWithHuristic[index],
+		m_pathRequestHuristic[index],
+		memo
+	);
 	memo.reset();
 }
 void TerrainFacade::findPathForIndexNoHuristic(PathRequestIndex index, PathMemoBreadthFirst& memo)
 {
-	m_pathRequestResultsNoHuristic[index] = findPathBreadthFirst(m_pathRequestStartPositionNoHuristic[index], m_pathRequestDestinationConditionsNoHuristic[index], m_pathRequestAccessConditionsNoHuristic[index], memo);
+	m_pathRequestResultsNoHuristic[index] = findPathBreadthFirst(
+		m_pathRequestStartPositionNoHuristic[index],
+		m_pathRequestDestinationConditionsNoHuristic[index],
+		m_pathRequestAccessConditionsNoHuristic[index],
+		memo
+	);
 	memo.reset();
 }
 void TerrainFacade::clearPathRequests()
@@ -172,16 +194,16 @@ PathRequestIndex TerrainFacade::registerPathRequestWithHuristic(BlockIndex start
 void TerrainFacade::update(BlockIndex index)
 {
 	Blocks& blocks = m_area.getBlocks();
-	int i = 0;
+	uint i = 0;
+	uint base = index.get() * maxAdjacent; 
 	for(BlockIndex adjacent : blocks.getAdjacentWithEdgeAndCornerAdjacentUnfiltered(index))
 	{
-		m_enterable[(index.get() * maxAdjacent) + i] = getValueForBit(index, adjacent);
+		m_enterable[base + i] = getValueForBit(index, adjacent);
 		++i;
 	}
 }
 void TerrainFacade::resizePathRequestWithHuristic(PathRequestIndex size)
 {
-
 	m_pathRequestStartPositionWithHuristic.resize(size);
 	m_pathRequestAccessConditionsWithHuristic.resize(size);
 	m_pathRequestDestinationConditionsWithHuristic.resize(size);
@@ -256,25 +278,32 @@ FindPathResult TerrainFacade::findPath(BlockIndex start, const DestinationCondit
 	while(!openListEmpty())
 	{
 		BlockIndex current = openListPop();
+		[[maybe_unused]] uint indexInt = current.get();
 		for(AdjacentIndex adjacentCount = AdjacentIndex::create(0); adjacentCount < maxAdjacent; ++adjacentCount)
+		{
+			[[maybe_unused]] uint adjacentCountInt = adjacentCount.get();
 			if(canEnterFrom(current, adjacentCount))
 			{
 				BlockIndex adjacentIndex = blocks.indexAdjacentToAtCount(current, adjacentCount);
+				[[maybe_unused]] uint adjacentIndexInt = adjacentIndex.get();
 				assert(adjacentIndex.exists());
 				if(closedListContains(adjacentIndex))
 					continue;
 				//TODO: Make variant for radially semetric shapes which ignores facing.
 				Facing facing = blocks.facingToSetWhenEnteringFrom(adjacentIndex, current);
 				if(!accessCondition(adjacentIndex, facing))
-				{
-					closedListAdd(adjacentIndex, BlockIndex::null());
 					continue;
-				}
 				if(destinationCondition(adjacentIndex, facing))
-					return {closedListGetPath(adjacentIndex), adjacentIndex, true};
+				{
+					auto path = closedListGetPath(current);
+					// No need to add the adjacent to the closed list and then extract it again for the path, just add to the end of the path directly.
+					path.add(adjacentIndex);
+					return {path, adjacentIndex, true};
+				}
 				openListPush(adjacentIndex);
 				closedListAdd(adjacentIndex, current);
 			}
+		}
 	}
 	return {{}, BlockIndex::null(), false};
 }
@@ -290,9 +319,8 @@ FindPathResult TerrainFacade::findPathBreadthFirst(BlockIndex from, const Destin
 }
 FindPathResult TerrainFacade::findPathDepthFirst(BlockIndex from, const DestinationCondition destinationCondition, AccessCondition accessCondition, BlockIndex huristicDestination, PathMemoDepthFirst& memo) const
 {
-	memo.setup(m_area, huristicDestination);
 	OpenListEmpty empty = [&memo](){ return memo.openEmpty(); };
-	OpenListPush push  = [ &memo, huristicDestination](BlockIndex index) { memo.setOpen(index); };
+	OpenListPush push  = [ &memo, huristicDestination, this](BlockIndex index) { memo.setOpen(index, huristicDestination, m_area); };
 	OpenListPop pop = [&memo](){ return memo.next(); };
 	ClosedListAdd closedAdd = [&memo](BlockIndex index, BlockIndex previous) { return memo.setClosed(index, previous); };
 	ClosedListContains closedContains = [&memo](BlockIndex index) { return memo.isClosed(index); };
@@ -504,14 +532,14 @@ AccessCondition TerrainFacade::makeAccessCondition(ShapeId shape, BlockIndex sta
 	{
 		if(detour)
 		{
-			return [this, initalBlocks, &shape, &blocks, maxRange, start](BlockIndex index, Facing facing) -> bool { 
+			return [this, initalBlocks, shape, &blocks, maxRange, start](BlockIndex index, Facing facing) -> bool { 
 				return 
 					blocks.taxiDistance(start, index) <= maxRange &&
 					m_area.getBlocks().shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(index, shape, m_moveType, facing, initalBlocks);
 			};
 		}
 		else
-			return [this, &shape, &blocks, maxRange, start]([[maybe_unused]] BlockIndex index, Facing facing){
+			return [this, shape, &blocks, maxRange, start](BlockIndex index, Facing facing){
 				return 
 					blocks.taxiDistance(start, index) <= maxRange &&
 					blocks.shape_shapeAndMoveTypeCanEnterEverWithFacing(index, shape, m_moveType, facing);

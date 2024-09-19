@@ -13,7 +13,6 @@ void Actors::attributes_onUpdateGrowthPercent(ActorIndex index)
 	combat_update(index);
 	move_updateIndividualSpeed(index);
 }
-
 [[nodiscard]] AttributeLevel Actors::getStrength(ActorIndex index) const { return m_strength[index]; }
 [[nodiscard]] AttributeLevelBonusOrPenalty Actors::getStrengthBonusOrPenalty(ActorIndex index) const { return m_strengthBonusOrPenalty[index]; }
 [[nodiscard]] float Actors::getStrengthModifier(ActorIndex index) const { return m_strengthModifier[index]; }

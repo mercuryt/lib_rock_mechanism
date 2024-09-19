@@ -132,8 +132,7 @@ void Simulation::fastForwardUntillActorIsAtDestination(Area& area, ActorIndex ac
 }
 void Simulation::fastForwardUntillActorIsAt(Area& area, ActorIndex actor, BlockIndex destination)
 {
-	BlockIndex location = area.getActors().getLocation(actor);
-	std::function<bool()> predicate = [&](){ return location == destination; };
+	std::function<bool()> predicate = [&](){ return area.getActors().getLocation(actor) == destination; };
 	fastForwardUntillPredicate(predicate);
 }
 void Simulation::fastForwardUntillActorIsAdjacentToDestination(Area& area, ActorIndex actor, BlockIndex destination)

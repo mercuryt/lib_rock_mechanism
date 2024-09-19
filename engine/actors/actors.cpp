@@ -639,13 +639,13 @@ ActorIndex Actors::create(ActorParamaters params)
 	m_area.m_hasTerrainFacades.maybeRegisterMoveType(moveType);
 	ShapeId shape = AnimalSpecies::shapeForPercentGrown(params.species, params.getPercentGrown(m_area.m_simulation));
 	Portables::create(index, moveType, shape, params.faction, isStatic, Quantity::create(1));
-	Simulation& s = m_area.m_simulation;
+	Simulation& simulation = m_area.m_simulation;
 	m_referenceTarget[index] = std::make_unique<ActorReferenceTarget>(index);
-	m_id[index] = params.getId(s);
-	m_name[index] = params.getName(s);
+	m_id[index] = params.getId(simulation);
+	m_name[index] = params.getName(simulation);
 	m_species[index] = params.species;
 	m_project[index] = nullptr;
-	m_birthStep[index] = params.getBirthStep(s);
+	m_birthStep[index] = params.getBirthStep(simulation);
 	m_causeOfDeath[index] = CauseOfDeath::none;
 	m_strengthBonusOrPenalty[index] = AttributeLevelBonusOrPenalty::create(0);
 	m_strengthModifier[index] = 0.f;
@@ -665,7 +665,7 @@ ActorIndex Actors::create(ActorParamaters params)
 	m_mustDrink[index] = std::make_unique<MustDrink>(m_area, index);
 	m_mustEat[index] = std::make_unique<MustEat>(m_area, index);
 	m_needsSafeTemperature[index] = std::make_unique<ActorNeedsSafeTemperature>(m_area, index);
-	m_canGrow[index] = std::make_unique<CanGrow>(m_area, index, params.getPercentGrown(s));
+	m_canGrow[index] = std::make_unique<CanGrow>(m_area, index, params.getPercentGrown(simulation));
 	m_skillSet[index] = std::make_unique<SkillSet>();
 	assert(m_canReserve[index] == nullptr);
 	assert(m_hasUniform[index] == nullptr);
@@ -695,8 +695,9 @@ ActorIndex Actors::create(ActorParamaters params)
 	m_speedIndividual[index] = Speed::create(0);
 	m_speedActual[index] = Speed::create(0);
 	m_moveRetries[index] = 0;
-	s.m_actors.registerActor(m_id[index], *this, index);
+	simulation.m_actors.registerActor(m_id[index], *this, index);
 	attributes_onUpdateGrowthPercent(index);
+	stamina_setFull(index);
 	sharedConstructor(index);
 	scheduleNeeds(index);
 	if(isSentient(index))
@@ -748,10 +749,12 @@ void Actors::setLocationAndFacing(ActorIndex index, BlockIndex block, Facing fac
 	m_location[index] = block;
 	m_facing[index] = facing;
 	Blocks& blocks = m_area.getBlocks();
+	assert(m_blocks[index].empty());
 	for(const auto& [x, y, z, v] : Shape::makeOccupiedPositionsWithFacing(m_shape[index], facing))
 	{
 		BlockIndex occupied = blocks.offset(block, x, y, z);
 		blocks.actor_record(occupied, index, CollisionVolume::create(v));
+		m_blocks[index].add(occupied);
 	}
 	if(blocks.isOnSurface(block))
 		m_onSurface.add(index);
@@ -769,6 +772,7 @@ void Actors::exit(ActorIndex index)
 		blocks.actor_erase(occupied, index);
 	}
 	m_location[index].clear();
+	m_blocks[index].clear();
 	if(blocks.isOnSurface(location))
 		m_onSurface.remove(index);
 	move_pathRequestMaybeCancel(index);

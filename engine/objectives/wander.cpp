@@ -8,12 +8,12 @@
 #include "types.h"
 #include <memory>
 // PathRequest
-WanderPathRequest::WanderPathRequest(Area& area, WanderObjective& objective) : m_objective(objective)
+WanderPathRequest::WanderPathRequest(Area& area, WanderObjective& objective, ActorIndex actor) : m_objective(objective)
 {
 	Random& random = area.m_simulation.m_random;
 	m_blockCounter = random.getInRange(Config::wanderMinimimNumberOfBlocks, Config::wanderMaximumNumberOfBlocks);
 	std::function<bool(BlockIndex, Facing)> condition = [this](BlockIndex, Facing) { return !m_blockCounter--; };
-	createGoToCondition(area, getActor(), condition, false, false, DistanceInBlocks::null());
+	createGoToCondition(area, actor, condition, false, false, DistanceInBlocks::null());
 }
 WanderPathRequest::WanderPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
 	m_objective(static_cast<WanderObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
@@ -46,7 +46,7 @@ Json WanderObjective::toJson() const
 }
 void WanderObjective::execute(Area& area, ActorIndex actor) 
 { 
-	std::unique_ptr<PathRequest> m_pathRequest = std::make_unique<WanderPathRequest>(area, *this);
+	std::unique_ptr<PathRequest> m_pathRequest = std::make_unique<WanderPathRequest>(area, *this, actor);
 	area.getActors().move_pathRequestRecord(actor, std::move(m_pathRequest));
 }
 void WanderObjective::cancel(Area& area, ActorIndex actor) { area.getActors().move_pathRequestMaybeCancel(actor); }

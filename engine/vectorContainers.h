@@ -2,7 +2,6 @@
 /*
  * To be used for short seqences of data, not long enough for binary search to make sense.
  * Not pointer stable.
- * Takes arguments by value because it assumes they are small.
  */
 #include "json.h"
 #include <algorithm>
@@ -19,18 +18,18 @@ public:
 	class const_iterator;
 	SmallSet() = default;
 	SmallSet(std::initializer_list<T> i) : m_data(i) { }
-	void insert(T value) { if(!contains(value)) m_data.push_back(value); }
-	void insert(std::vector<T>::iterator&& begin, std::vector<T>::iterator&& end)
+	void insert(const T& value) { if(!contains(value)) m_data.push_back(value); }
+	void insert(std::vector<T>::const_iterator&& begin, std::vector<T>::const_iterator&& end)
 	{
 		for(; begin != end; ++begin)
 			insert(*begin);
 	}
-	void insert(This::iterator begin, This::iterator end)
+	void insert(This::const_iterator begin, This::const_iterator end)
 	{
 		for(; begin != end; ++begin)
 			insert(*begin);
 	}
-	void erase(const T value)
+	void erase(const T& value)
 	{
 		auto found = std::ranges::find(m_data, value);
 		if(found != m_data.end())
@@ -50,25 +49,31 @@ public:
 		assert(std::ranges::count(m_data, created) == 1);
 	}
 	void swap(This& other) { m_data.swap(other.m_data); }
-	[[nodiscard]] bool contains(const T value) const { return std::ranges::find(m_data, value) != m_data.end(); }
+	[[nodiscard]] bool contains(const T& value) const { return std::ranges::find(m_data, value) != m_data.end(); }
 	[[nodiscard]] bool empty() const { return m_data.empty(); }
 	[[nodiscard]] uint size() const { return m_data.size(); }
 	[[nodiscard]] This::iterator begin() { return {*this, 0}; }
 	[[nodiscard]] This::iterator end() { return {*this, size()}; }
 	[[nodiscard]] This::const_iterator begin() const { return This::const_iterator(*this, 0); }
 	[[nodiscard]] This::const_iterator end() const { return This::const_iterator(*this, size()); }
+	[[nodiscard]] std::vector<T>& getVector() { return m_data; }
 	class iterator
 	{
 	protected:
 		std::vector<T>::iterator m_iter;
 	public:
 		iterator(This& s, uint i) : m_iter(s.m_data.begin() + i) { }
+		iterator(std::vector<T>::iterator i) : m_iter(i) { }
 		iterator& operator++() { ++m_iter; return *this; }
 		iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] T& operator*() { return *m_iter; }
 		[[nodiscard]] const T& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
 		[[nodiscard]] T* operator->() { return &*m_iter; }
+		// Used by Open MP.
+		[[nodiscard]] iterator operator-(const iterator& other) { return m_iter - other.m_iter; }
+		[[nodiscard]] iterator& operator+=(const iterator& other) { m_iter += other.m_iter; return *this; }
+		friend class const_iterator;
 	};
 	class const_iterator
 	{
@@ -76,11 +81,15 @@ public:
 		std::vector<T>::const_iterator m_iter;
 	public:
 		const_iterator(const This& s, uint i) : m_iter(s.m_data.begin() + i) { }
+		const_iterator(std::vector<T>::const_iterator i) : m_iter(i) { }
+		const_iterator(const iterator& i) : m_iter(i.m_iter) { }
 		const_iterator& operator++() { ++m_iter; return *this; }
 		const_iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] const T& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const const_iterator& other) const { return m_iter == other.m_iter; }
 		[[nodiscard]] const T* operator->() const { return &*m_iter; }
+		[[nodiscard]] iterator operator-(const iterator& other) { return m_iter - other.m_iter; }
+		[[nodiscard]] iterator& operator+=(const iterator& other) { m_iter += other.m_iter; return *this; }
 	};
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SmallSet, m_data);
 };

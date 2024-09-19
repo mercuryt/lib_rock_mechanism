@@ -19,13 +19,13 @@ Attribute::Attribute(const Json& data, Percent percentGrown, const AnimalSpecies
 	baseModifierPercent(data["baseModifierPercent"].get<Percent>()),
 	bonusOrPenalty(data["bonusOrPenalty"].get<int32_t>())
 { setPercentGrown(percentGrown, species); }
-void Attributes::updatePercentGrown(Percent pg)
+void Attributes::updatePercentGrown(Percent pg, AnimalSpeciesId species)
 {
 	percentGrown = pg;
-	strength.setPercentGrown(percentGrown);
-	dextarity.setPercentGrown(percentGrown);
-	agility.setPercentGrown(percentGrown);
-	mass.setPercentGrown(percentGrown);
+	strength.setPercentGrown(percentGrown, species);
+	dextarity.setPercentGrown(percentGrown, species);
+	agility.setPercentGrown(percentGrown, species);
+	mass.setPercentGrown(percentGrown, species);
 	generate();
 }
 void Attributes::generate()

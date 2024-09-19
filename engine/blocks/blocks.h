@@ -109,6 +109,7 @@ public:
 	//TODO: Under what circumstances is this integer distance preferable to taxiDistance or fractional distance?
 	[[nodiscard]] DistanceInBlocks distance(BlockIndex index, BlockIndex other) const;
 	[[nodiscard]] DistanceInBlocks taxiDistance(BlockIndex index, BlockIndex other) const;
+	[[nodiscard]] DistanceInBlocks distanceSquared(BlockIndex index, BlockIndex other) const;
 	[[nodiscard]] DistanceInBlocksFractional distanceFractional(BlockIndex index, BlockIndex other) const;
 	[[nodiscard]] bool squareOfDistanceIsMoreThen(BlockIndex index, BlockIndex other, DistanceInBlocksFractional distanceSquared) const;
 	[[nodiscard]] bool isAdjacentToAny(BlockIndex index, BlockIndices& blocks) const;
@@ -193,8 +194,6 @@ public:
 					closed.add(adjacent);
 					open.push(adjacent);
 				}
-					
-				
 		}
 		return BlockIndex::null();
 	}

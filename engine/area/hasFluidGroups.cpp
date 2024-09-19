@@ -10,8 +10,10 @@ void AreaHasFluidGroups::doStep(bool parallel)
 		assert(!group->m_stable);
 	if(parallel)
 	{
-		#pragma omp parallel
-			for(FluidGroup* group : unstable)
+		// OpenMP doesn't work with SmallSet?
+		std::vector<FluidGroup*>& groups = unstable.getVector();
+		#pragma omp parallel for
+			for(FluidGroup* group : groups)
 				group->readStep();
 	}
 	else

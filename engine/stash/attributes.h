@@ -30,6 +30,7 @@ class Attributes
 	Attribute mass; // 3.5
 	Mass unencomberedCarryMass; 
 	Speed moveSpeed;
+	Stamina maxStamina;
 	CombatScore baseCombatScore;
 	Percent percentGrown;
 public:

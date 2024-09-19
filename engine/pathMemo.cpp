@@ -5,11 +5,24 @@
 void PathMemoClosed::add(BlockIndex index, BlockIndex parent)
 {
 	assert(!contains(index));
+	assert(index.exists());
 	// Max is used to indicate the start of the path.
 	if(parent != BlockIndex::max())
 		assert(contains(parent));
 	m_data[index] = parent;
 	m_dirty.add(index);
+}
+BlockIndices PathMemoClosed::getPath(BlockIndex block) const
+{
+	BlockIndices output;
+	// Max is used to indicade the start of the path.
+	while(previous(block) != BlockIndex::max())
+	{
+		output.add(block);
+		block = previous(block);
+	}
+	std::ranges::reverse(output);
+	return output;
 }
 // Breadth First.
 PathMemoBreadthFirst::PathMemoBreadthFirst(Area& area)
@@ -29,7 +42,7 @@ void PathMemoBreadthFirst::setClosed(BlockIndex block, BlockIndex previous)
 void PathMemoBreadthFirst::setOpen(BlockIndex block)
 {
 	assert(!m_closed.contains(block));
-	m_open.add(block);
+	m_open.push_back(block);
 }
 bool PathMemoBreadthFirst::isClosed(BlockIndex block) const
 {
@@ -41,18 +54,13 @@ bool PathMemoBreadthFirst::empty() const
 }
 BlockIndex PathMemoBreadthFirst::next()
 {
-	return m_open.pop();
+	auto output = m_open.front();
+	m_open.pop_front();
+	return output;
 }
 BlockIndices PathMemoBreadthFirst::getPath(BlockIndex block) const
 {
-	BlockIndices output;
-	// Max is used to indicade the start of the path.
-	while(m_closed.previous(block) != BlockIndex::max())
-	{
-		output.add(block);
-		block = m_closed.previous(block);
-	}
-	return output;
+	return m_closed.getPath(block);
 }
 // Depth First.
 PathMemoDepthFirst::PathMemoDepthFirst(Area& area)
@@ -62,26 +70,20 @@ PathMemoDepthFirst::PathMemoDepthFirst(Area& area)
 void PathMemoDepthFirst::reset()
 {
 	m_closed.clear();
-	m_vector.clear();
-}
-void PathMemoDepthFirst::setup(Area& area, BlockIndex block)
-{
-	Blocks& blocks = area.getBlocks();
-	Comparitor condition = [&](const BlockIndex& a, const BlockIndex& b){
-		return blocks.taxiDistance(block, a) < blocks.taxiDistance(block, b);
-	};
-	m_open = std::priority_queue<BlockIndex, std::vector<BlockIndex>, decltype(condition)>(condition, m_vector);
+	m_open.clear();
 }
 void PathMemoDepthFirst::setClosed(BlockIndex block, BlockIndex previous)
 {
 	assert(!m_closed.contains(block));
 	m_closed.add(block, previous);
 }
-void PathMemoDepthFirst::setOpen(BlockIndex block)
+void PathMemoDepthFirst::setOpen(BlockIndex block, BlockIndex destinationHuristic, Area& area)
 {
 	bool contains = m_closed.contains(block);
 	assert(!contains);
-	m_open.push(block);
+	// Subtract from max rather then provide MediumMap with the ability to sort backwards.
+	DistanceInBlocks distance = DistanceInBlocks::max() - area.getBlocks().distanceSquared(block, destinationHuristic);
+	m_open.insertNonUnique(distance, block);
 }
 bool PathMemoDepthFirst::isClosed(BlockIndex block) const
 {
@@ -93,19 +95,13 @@ bool PathMemoDepthFirst::empty() const
 }
 BlockIndex PathMemoDepthFirst::next()
 {
-	BlockIndex output = m_open.top();
-	m_open.pop();
+	BlockIndex output = m_open.back().second;
+	m_open.pop_back();
 	return output;
 }
 BlockIndices PathMemoDepthFirst::getPath(BlockIndex block) const
 {
-	BlockIndices output;
-	while(m_closed.contains(block))
-	{
-		output.add(block);
-		block = m_closed.previous(block);
-	}
-	return output;
+	return m_closed.getPath(block);
 }
 // SimulaitonHasPathMemos.
 std::pair<PathMemoBreadthFirst*, uint8_t> SimulationHasPathMemos::getBreadthFirst(Area& area)
@@ -116,7 +112,7 @@ std::pair<PathMemoBreadthFirst*, uint8_t> SimulationHasPathMemos::getBreadthFirs
 	if(found == m_reservedBreadthFirst.end())
 	{
 		uint oldSize = m_breadthFirst.size();
-		m_breadthFirst.resize(std::max(2u, (uint)(m_breadthFirst.size() * 1.5)), area);
+		m_breadthFirst.emplace_back(area);
 		m_reservedBreadthFirst.resize(m_breadthFirst.size());
 		found = m_reservedBreadthFirst.begin() + oldSize;
 	}
@@ -132,7 +128,7 @@ std::pair<PathMemoDepthFirst*, uint8_t> SimulationHasPathMemos::getDepthFirst(Ar
 	if(found == m_reservedDepthFirst.end())
 	{
 		uint oldSize = m_depthFirst.size();
-		m_depthFirst.resize(std::max(2u, (uint)(m_depthFirst.size() * 1.5)), area);
+		m_depthFirst.emplace_back(area);
 		m_reservedDepthFirst.resize(m_depthFirst.size());
 		found = m_reservedDepthFirst.begin() + oldSize;
 	}

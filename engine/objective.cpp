@@ -73,7 +73,6 @@ void ObjectiveTypePrioritySet::remove( ObjectiveTypeId objectiveType)
 void ObjectiveTypePrioritySet::setObjectiveFor(Area& area, ActorIndex actor)
 {
 	assert(!area.getActors().objective_exists(actor));
-	assert(!area.getActors().objective_queuesAreEmpty(actor));
 	Step currentStep = area.m_simulation.m_step;
 	for(auto& objectivePriority : m_data)
 	{
@@ -329,10 +328,10 @@ void HasObjectives::replaceTasks(Area& area, std::unique_ptr<Objective> objectiv
 void HasObjectives::destroy(Area& area, Objective& objective)
 {
 	Actors& actors = area.getActors();
-	ObjectiveTypeId objectiveTypeId = objective.getTypeId();
 	bool isCurrent = m_currentObjective == &objective;
-	if(m_idsOfObjectivesInNeedsQueue.contains(objectiveTypeId))
+	if(objective.isNeed() && m_idsOfObjectivesInNeedsQueue.contains(objective.getTypeId()))
 	{
+		ObjectiveTypeId objectiveTypeId = objective.getTypeId();
 		// Remove canceled objective from needs queue.
 		auto found = std::ranges::find_if(m_needsQueue, [&](auto& o){ return o->getTypeId() == objectiveTypeId; });
 		m_needsQueue.erase(found);
@@ -387,9 +386,9 @@ void HasObjectives::cancel(Area& area, Objective& objective)
 void HasObjectives::objectiveComplete(Area& area, Objective& objective)
 {
 	Actors& actors = area.getActors();
-	assert(objective.getTypeId() == ObjectiveType::getIdByName("wait") || actors.sleep_isAwake(m_actor));
+	assert(actors.sleep_isAwake(m_actor));
 	actors.move_pathRequestMaybeCancel(m_actor);
-	actors.project_unset(m_actor);
+	actors.project_maybeUnset(m_actor);
 	destroy(area, objective);
 }
 void HasObjectives::subobjectiveComplete(Area& area)

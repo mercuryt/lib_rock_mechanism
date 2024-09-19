@@ -42,7 +42,8 @@ void DrainQueue::recordDelta(CollisionVolume volume, CollisionVolume flowCapacit
 	// Record no longer full.
 	if(blocks.fluid_getTotalVolume(m_groupStart->block) == Config::maxBlockVolume && !m_futureNoLongerFull.contains((m_groupEnd-1)->block))
 		for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
-			m_futureNoLongerFull.add(iter->block);
+			//TODO: is this maybe correct? Why would they already be added?
+			m_futureNoLongerFull.maybeAdd(iter->block);
 	// Record fluid level changes.
 	for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 	{

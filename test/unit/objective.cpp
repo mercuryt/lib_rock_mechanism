@@ -12,6 +12,7 @@
 #include "types.h"
 
 #include <memory>
+#include "objective.h"
 
 struct TestTaskObjective final : public Objective
 {
