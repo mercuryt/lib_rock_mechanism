@@ -153,6 +153,13 @@ public:
 	[[nodiscard]] V& operator[](const K&& key) { return (*this)[key]; }
 	[[nodiscard]] const V& operator[](const K& key) const { return const_cast<This&>(*this)[key]; }
 	[[nodiscard]] const V& operator[](const K&& key) const { return (*this)[key]; }
+	[[nodiscard]] V& getOrCreate(const K& key)
+	{
+		auto iter = std::ranges::find(m_data, key, &Pair::first);
+		if(iter == m_data.end())
+			return m_data.emplace_back(key, V{}).second;
+		return iter->second;
+	}
 	[[nodiscard]] iterator find(const K& key) { return std::ranges::find(m_data, key, &Pair::first); }
 	[[nodiscard]] iterator find(const K&& key) { return find(key); }
 	[[nodiscard]] const_iterator find(const K& key) const { return std::ranges::find(m_data, key, &Pair::first); }

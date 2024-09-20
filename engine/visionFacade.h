@@ -16,7 +16,7 @@ class VisionFacade final
 	DataVector<BlockIndex, VisionFacadeIndex> m_locations;
 	DataVector<DistanceInBlocks, VisionFacadeIndex> m_ranges;
 	DataVector<ActorIndices, VisionFacadeIndex> m_results;
-	Area* m_area;
+	Area* m_area = nullptr;
 public:
 	VisionFacade();
 	// Used as part of initalizaton.
@@ -41,7 +41,7 @@ public:
 	[[nodiscard]] static DistanceInBlocks taxiDistance(Point3D a, Point3D b);
 };
 // Divide actors into buckets by id.
-// Read step is called for only one bucket per simulaiton step, cycling through them.
+// Step is called for only one bucket per simulaiton step, cycling through them.
 class VisionFacadeBuckets final
 {
 	Area& m_area;
@@ -52,6 +52,7 @@ public:
 	void add(ActorIndex actor);
 	void remove(ActorIndex actor);
 	void clear();
+	void doStep(Step step) { getForStep(step).doStep(); }
 	[[nodiscard]] VisionFacade& getForStep(Step step);
 };
 // RAII handle for vision facade data.

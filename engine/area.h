@@ -78,7 +78,6 @@ public:
 	VisionFacadeBuckets m_visionFacadeBuckets;
 	OpacityFacade m_opacityFacade;
 	AreaHasVisionCuboids m_visionCuboids;
-	VisionFacade m_visionFacade;
 	BlockIndices m_caveInCheck;
 	// uint32_t is fall energy.
 	std::vector<std::tuple<BlockIndices, DistanceInBlocks, uint32_t>> m_caveInData;

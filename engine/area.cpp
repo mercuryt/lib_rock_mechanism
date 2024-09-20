@@ -160,7 +160,7 @@ void Area::doStep()
 	if(m_hasRain.isRaining() && m_simulation.m_step.modulusIsZero(Config::rainWriteStepFreqency))
 		m_hasRain.doStep();
 	m_fluidSources.doStep();
-	m_visionFacade.doStep();
+	m_visionFacadeBuckets.doStep(m_simulation.m_step);
 	m_hasTerrainFacades.doStep();
 	m_threadedTaskEngine.doStep(m_simulation, this);
 	m_eventSchedule.doStep(m_simulation.m_step);

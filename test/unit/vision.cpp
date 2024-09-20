@@ -17,10 +17,10 @@ TEST_CASE("vision")
 	Actors& actors = area.getActors();
 	auto marble = MaterialType::byName("marble");
 	auto glass = MaterialType::byName("glass");
-	auto door = BlockFeatureType::door;
-	auto hatch = BlockFeatureType::hatch;
-	auto stairs = BlockFeatureType::stairs;
-	auto floor = BlockFeatureType::floor;
+	auto& door = BlockFeatureType::door;
+	auto& hatch = BlockFeatureType::hatch;
+	auto& stairs = BlockFeatureType::stairs;
+	auto& floor = BlockFeatureType::floor;
 	auto dwarf = AnimalSpecies::byName("dwarf");
 	auto troll = AnimalSpecies::byName("troll");
 	SUBCASE("See no one when no one is present to be seen")
@@ -147,10 +147,13 @@ TEST_CASE("vision")
 		});
 		blocks.blockFeature_construct(block2, door, marble);
 		blocks.blockFeature_close(block2, door);
+		bool canSeeThrough = blocks.canSeeThrough(block2);
+		REQUIRE(!canSeeThrough);
 		area.m_visionFacadeBuckets.getForStep(Step::create(1)).doStep();
 		auto result = actors.vision_getCanSee(a1);
 		REQUIRE(result.size() == 0);
 		blocks.blockFeature_open(block2, door);
+		REQUIRE(blocks.canSeeThroughFrom(block2, block1));
 		area.m_visionFacadeBuckets.getForStep(Step::create(1)).doStep();
 		auto result2 = actors.vision_getCanSee(a1);
 		REQUIRE(result2.size() == 1);
