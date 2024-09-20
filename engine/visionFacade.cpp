@@ -22,11 +22,12 @@ VisionFacade::VisionFacade( )
 }
 void VisionFacade::setArea(Area& area)
 {
-	//TODO: why is this not set in initalizer list?
+	//VisionFacade is a member of an array so it can't have arguments passed to it's constructor
 	m_area = &area;
 }
 void VisionFacade::addActor(ActorIndex actor)
 {
+	assert(m_area != nullptr);
 	Actors& actorData = m_area->getActors();
 	assert(!actorData.vision_hasFacade(actor));
 	assert(m_ranges.size() == m_actors.size() && m_locations.size() == m_actors.size());
@@ -101,6 +102,7 @@ void VisionFacade::updateRange(VisionFacadeIndex index, DistanceInBlocks range)
 }
 void VisionFacade::readStepSegment(VisionFacadeIndex begin, VisionFacadeIndex end)
 {
+	assert(m_area != nullptr);
 	Blocks& blocks = m_area->getBlocks();
 	for(VisionFacadeIndex viewerIndex = begin; viewerIndex < end; ++viewerIndex)
 	{
@@ -115,11 +117,11 @@ void VisionFacade::readStepSegment(VisionFacadeIndex begin, VisionFacadeIndex en
 		assert(fromVisionCuboidId != 0);
 		// Define a cuboid of locationBuckets around the watcher.
 		DistanceInBuckets endX = DistanceInBuckets::create(std::min(((fromCoords.x + range).get() / Config::locationBucketSize.get() + 1), locationBuckets.m_maxX.get()));
-		DistanceInBuckets beginX = DistanceInBuckets::create(std::max(0, int32_t((fromCoords.x - range).get())) / Config::locationBucketSize.get());
+		DistanceInBuckets beginX = DistanceInBuckets::create(std::max(0, int32_t(fromCoords.x.get()) - int32_t(range.get()))) / Config::locationBucketSize.get();
 		DistanceInBuckets endY = DistanceInBuckets::create(std::min(((fromCoords.y + range).get() / Config::locationBucketSize.get() + 1), locationBuckets.m_maxY.get()));
-		DistanceInBuckets beginY = DistanceInBuckets::create(std::max(0, int32_t((fromCoords.y - range).get())) / Config::locationBucketSize.get());
+		DistanceInBuckets beginY = DistanceInBuckets::create(std::max(0, int32_t(fromCoords.y.get()) - int32_t(range.get()))) / Config::locationBucketSize.get();
 		DistanceInBuckets endZ = DistanceInBuckets::create(std::min(((fromCoords.z + range).get() / Config::locationBucketSize.get() + 1), locationBuckets.m_maxZ.get()));
-		DistanceInBuckets beginZ = DistanceInBuckets::create(std::max(0, int32_t((fromCoords.z - range).get())) / Config::locationBucketSize.get());
+		DistanceInBuckets beginZ = DistanceInBuckets::create(std::max(0, int32_t(fromCoords.z.get()) - int32_t(range.get()))) / Config::locationBucketSize.get();
 		// Iterate defined cuboid of buckets.
 		for(DistanceInBuckets x = beginX; x != endX; ++x)
 			for(DistanceInBuckets y = beginY; y != endY; ++y)
@@ -185,7 +187,7 @@ void VisionFacade::doStep()
 		ranges.emplace_back(index, end);
 		index = end;
 	}
-	#pragma omp parallel
+	#pragma omp parallel for
 	for(auto [start, end] : ranges)
 		readStepSegment(start, end);
 	for(VisionFacadeIndex index = VisionFacadeIndex::create(0); index < actorsSize; ++index)

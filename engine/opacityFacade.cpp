@@ -60,14 +60,14 @@ bool  OpacityFacade::hasLineOfSight(BlockIndex fromIndex, Point3D fromCoords, Bl
 	float y = fromCoords.y.get();
 	float z = fromCoords.z.get();
 	// Use unsigned types here instead of DistanceInBlocks because delta could be negitive.
-	int32_t xDelta = (toCoords.x - fromCoords.x).get();
-	int32_t yDelta = (toCoords.y - fromCoords.y).get();
-	int32_t zDelta = (toCoords.z - fromCoords.z).get();
+	int32_t xDelta = int32_t(toCoords.x.get()) - int32_t(fromCoords.x.get());
+	int32_t yDelta = int32_t(toCoords.y.get()) - int32_t(fromCoords.y.get());
+	int32_t zDelta = int32_t(toCoords.z.get()) - int32_t(fromCoords.z.get());
 	float denominator = std::max({abs(xDelta), abs(yDelta), abs(zDelta)});
 	// Normalize delta to a unit vector.
-	float xDeltaNormalized = xDelta / denominator;
-	float yDeltaNormalized = yDelta / denominator;
-	float zDeltaNormalized = zDelta / denominator;
+	float xDeltaNormalized = (float)xDelta / denominator;
+	float yDeltaNormalized = (float)yDelta / denominator;
+	float zDeltaNormalized = (float)zDelta / denominator;
 	// Iterate through the line of sight one block at a time untill we hit 'to' or an opaque block.
 	// Works by generating coordinates and turning those into vector indices which can be checked in the facade data.
 	DistanceInBlocks zInt = fromCoords.z;

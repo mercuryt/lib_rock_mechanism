@@ -695,15 +695,20 @@ ActorIndex Actors::create(ActorParamaters params)
 	m_speedIndividual[index] = Speed::create(0);
 	m_speedActual[index] = Speed::create(0);
 	m_moveRetries[index] = 0;
+	m_hasVisionFacade[index].create(m_area, index);
 	simulation.m_actors.registerActor(m_id[index], *this, index);
 	attributes_onUpdateGrowthPercent(index);
 	stamina_setFull(index);
-	sharedConstructor(index);
-	scheduleNeeds(index);
 	if(isSentient(index))
 		params.generateEquipment(m_area, index);
+	sharedConstructor(index);
+	scheduleNeeds(index);
 	if(params.location.exists())
+	{
 		setLocationAndFacing(index, params.location, (params.facing.exists() ? params.facing : Facing::create(0)));
+		//TODO: Move this into something like Actors::registerHasLocation, to be reused when exiting vehicles, etc.
+		m_area.m_locationBuckets.add(index);
+	}
 	return index;
 }
 void Actors::sharedConstructor(ActorIndex index)
@@ -712,6 +717,8 @@ void Actors::sharedConstructor(ActorIndex index)
 	move_updateIndividualSpeed(index);
 	m_body[index]->initalize(m_area);
 	m_mustDrink[index]->setFluidType(AnimalSpecies::getFluidType(m_species[index]));
+	if(vision_canSeeAnything(index))
+		m_area.m_visionFacadeBuckets.add(index);
 }
 void Actors::scheduleNeeds(ActorIndex index)
 {
@@ -755,6 +762,7 @@ void Actors::setLocationAndFacing(ActorIndex index, BlockIndex block, Facing fac
 		BlockIndex occupied = blocks.offset(block, x, y, z);
 		blocks.actor_record(occupied, index, CollisionVolume::create(v));
 		m_blocks[index].add(occupied);
+		m_hasVisionFacade[index].updateLocation(block);
 	}
 	if(blocks.isOnSurface(block))
 		m_onSurface.add(index);

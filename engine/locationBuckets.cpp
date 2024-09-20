@@ -91,7 +91,10 @@ void LocationBuckets::add(ActorIndex actor)
 	SmallMap<LocationBucket*, BlockIndices> blocksCollatedByBucket;
 	Blocks& blockData = m_area.getBlocks();
 	for(BlockIndex block : actorBlocks)
-		blocksCollatedByBucket[&blockData.getLocationBucket(block)].add(block);
+	{
+		LocationBucket* bucket = &blockData.getLocationBucket(block);
+		blocksCollatedByBucket.getOrCreate(bucket).add(block);
+	}
 	for(auto [bucket, blocks] : blocksCollatedByBucket)
 	{
 		assert(bucket != nullptr);
