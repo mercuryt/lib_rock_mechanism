@@ -14,11 +14,6 @@ DrinkPathRequest::DrinkPathRequest(Area& area, DrinkObjective& drob, ActorIndex 
 	};
 	bool reserve = false;
 	bool unreserved = false;
-	if(area.getActors().hasFaction(actor))
-	{
-		reserve = true;
-		unreserved = true;
-	}
 	createGoAdjacentToCondition(area, actor, predicate, drob.m_detour, unreserved, DistanceInBlocks::null(), BlockIndex::null(), reserve);
 }
 DrinkPathRequest::DrinkPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
@@ -30,7 +25,6 @@ DrinkPathRequest::DrinkPathRequest(const Json& data, DeserializationMemo& deseri
 void DrinkPathRequest::callback(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
-	ActorIndex actor = getActor();
 	if(result.path.empty())
 	{
 		if(!result.useCurrentPosition)
@@ -40,24 +34,15 @@ void DrinkPathRequest::callback(Area& area, FindPathResult& result)
 			else
 			{
 				// Nothing to drink here, try to leave.
-				createGoToEdge(area, getActor(), m_drinkObjective.m_detour);
 				m_noDrinkFound = true;
+				createGoToEdge(area, getActor(), m_drinkObjective.m_detour);
 			}
 		}
 		else
-			if(!actors.move_tryToReserveOccupied(getActor()))
-				m_drinkObjective.makePathRequest(area, actor);
-			else
-				actors.objective_subobjectiveComplete(getActor());
+			actors.objective_subobjectiveComplete(getActor());
 	}
 	else
-	{
-		if(!actors.move_tryToReserveProposedDestination(getActor(), result.path))
-			m_drinkObjective.makePathRequest(area, actor);
-		else
-			actors.move_setPath(getActor(), result.path);
-	}
-	// Need task becomes exit area.
+		actors.move_setPath(getActor(), result.path);
 	if(m_noDrinkFound)
 		m_drinkObjective.m_noDrinkFound = true;
 }
@@ -121,7 +106,6 @@ void DrinkObjective::reset(Area& area, ActorIndex actor)
 {
 	delay(area, actor);
 	m_noDrinkFound = false;
-	area.getActors().canReserve_clearAll(actor);
 }
 void DrinkObjective::makePathRequest(Area& area, ActorIndex actor)
 {
