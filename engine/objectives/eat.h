@@ -49,7 +49,8 @@ public:
 class EatObjective final : public Objective
 {
 	HasScheduledEvent<EatEvent> m_eatEvent;
-	BlockIndex m_destination;
+	// Where found food item is currently.
+	BlockIndex m_location;
 	bool m_noFoodFound = false;
 	bool m_tryToHunt = false;
 public:
@@ -70,4 +71,5 @@ public:
 	friend class EatPathRequest;
 	// For testing.
 	[[maybe_unused, nodiscard]] bool hasEvent() const { return m_eatEvent.exists(); }
+	[[maybe_unused, nodiscard]] bool hasLocation() const { return m_location.exists(); }
 };

@@ -154,7 +154,7 @@ uint32_t MustEat::getDesireToEatSomethingAt(Area& area, BlockIndex block) const
 	for(ItemIndex item : blocks.item_getAll(block))
 	{
 		if(items.isPreparedMeal(item))
-			return UINT32_MAX;
+			return maxRankedEatDesire;
 		if(ItemType::getEdibleForDrinkersOf(items.getItemType(item)) == AnimalSpecies::getFluidType(species))
 			return 2;
 	}
@@ -179,15 +179,14 @@ uint32_t MustEat::getMinimumAcceptableDesire(Area& area) const
 	// Sentients demand max rank ( prepared meals) to start, but become less picky as they get more hungry.
 	// Non sentients still prefer prepared meals if they can get to them, but are willing to scavange by default.
 	Percent hunger = getPercentStarved();
-	for(uint i = Config::minimumHungerLevelThresholds.size(); i != 0; --i )
+	for(uint i = 0; i < Config::minimumHungerLevelThresholds.size(); ++i )
 	{
-		// i goes from size to 1, subtract 1 from it to get a usable index.
-		if(hunger <= Config::minimumHungerLevelThresholds[i - 1])
+		if(hunger < Config::minimumHungerLevelThresholds[i])
 		{
 			// max ranked desire is reserved for sentients eating prepared meals. Nonsentients will forage at any hunger level.
 			if(i == maxRankedEatDesire && !area.getActors().isSentient(m_actor.getIndex()) )
 				return maxRankedEatDesire - 1;
-			return i;
+			return maxRankedEatDesire - i;
 		}	
 	}
 	return 0;
@@ -199,7 +198,7 @@ BlockIndex MustEat::getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireabili
 	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block)
 	{
 		uint32_t eatDesire = getDesireToEatSomethingAt(area, block);
-		if(eatDesire == UINT32_MAX)
+		if(eatDesire == maxRankedEatDesire)
 			return true;
 		if(eatDesire < getMinimumAcceptableDesire(area))
 			return false;

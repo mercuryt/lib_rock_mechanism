@@ -69,7 +69,7 @@ BlockIndex EatEvent::getBlockWithMostDesiredFoodInReach(Area& area) const
 	{
 		MustEat& mustEat = *area.getActors().m_mustEat[m_actor.getIndex()].get();
 		uint32_t blockDesirability = mustEat.getDesireToEatSomethingAt(area, block);
-		if(blockDesirability == UINT32_MAX)
+		if(blockDesirability == maxRankedEatDesire)
 			return true;
 		if(blockDesirability >= mustEat.getMinimumAcceptableDesire(area) && blockDesirability > highestDesirability)
 		{
@@ -150,7 +150,7 @@ EatPathRequest::EatPathRequest(const Json& data, DeserializationMemo& deserializ
 }
 EatPathRequest::EatPathRequest(Area& area, EatObjective& eo, ActorIndex actor) : m_eatObjective(eo)
 {
-	assert(m_eatObjective.m_destination.empty());
+	assert(m_eatObjective.m_location.empty());
 	Blocks& blocks = area.getBlocks();
 	MustEat& mustEat = *area.getActors().m_mustEat[actor].get();
 	std::function<bool(BlockIndex)> predicate = nullptr;
@@ -171,13 +171,16 @@ EatPathRequest::EatPathRequest(Area& area, EatObjective& eo, ActorIndex actor) :
 	{
 		// initalize candidates with null values.
 		m_candidates.fill(BlockIndex::null());
-		predicate = [&mustEat, this, &area](BlockIndex block)
+		auto minimum = mustEat.getMinimumAcceptableDesire(area);
+		// Only sentients expect prepared food on at first, animals will accept unprepared food as soon as they are hungry.
+		uint32_t maximum = area.getActors().isSentient(actor) ? maxRankedEatDesire : maxRankedEatDesire - 1;
+		predicate = [&mustEat, this, &area, minimum, maximum](BlockIndex block)
 		{
 			uint32_t eatDesire = mustEat.getDesireToEatSomethingAt(area, block);
-			if(eatDesire == UINT32_MAX)
-				return true;
-			if(eatDesire < mustEat.getMinimumAcceptableDesire(area))
+			if(eatDesire < minimum)
 				return false;
+			if(eatDesire == maximum)
+				return true;
 			if(eatDesire != 0 && m_candidates[eatDesire - 1u].empty())
 				m_candidates[eatDesire - 1u] = block;
 			return false;
@@ -185,9 +188,6 @@ EatPathRequest::EatPathRequest(Area& area, EatObjective& eo, ActorIndex actor) :
 	}
 	//TODO: maxRange.
 	bool unreserved = false;
-	bool reserve = false;
-	if(area.getActors().getFaction(actor).exists())
-		unreserved = reserve = true;
 	createGoAdjacentToCondition(area, actor, predicate, m_eatObjective.m_detour, unreserved, DistanceInBlocks::null(), BlockIndex::null());
 }
 void EatPathRequest::callback(Area& area, FindPathResult& result)
@@ -210,33 +210,41 @@ void EatPathRequest::callback(Area& area, FindPathResult& result)
 	{
 		if(result.path.empty() && !result.useCurrentPosition)
 		{
-			if(AnimalSpecies::getEatsMeat(species))
-				m_eatObjective.m_tryToHunt = true;
-			else
-				m_eatObjective.m_noFoodFound = true;
-			m_eatObjective.execute(area, actor);
-			return;
-		}
-		FactionId faction = actors.getFactionId(actor);
-		if(faction.exists())
-		{
-			if(result.useCurrentPosition)
+			if(AnimalSpecies::getEatsMeat(species) && (!actors.isSentient(actor) || actors.eat_getPercentStarved(actor) > Config::minimumHungerLevelThresholds[1]))
 			{
-				if(!actors.move_tryToReserveOccupied(actor))
+				m_eatObjective.m_tryToHunt = true;
+				m_eatObjective.execute(area, actor);
+			}
+			else
+			{
+				// We didn't find anything with max desirability, look over what we did find and choose the best.
+				// candidates are sorted low to high, so iterate backwards untill we find a slot which is set.
+				for(auto iter = m_candidates.rbegin(); iter != m_candidates.rend(); ++iter)
+					if(iter->exists())
+					{
+						m_eatObjective.m_location = *iter;
+						break;
+					}
+				if(m_eatObjective.m_location.empty())
 				{
+					// No candidates found, either supress need or try to leave area.
+					m_eatObjective.m_noFoodFound = true;
 					m_eatObjective.execute(area, actor);
 					return;
 				}
-			}
-			else if(!actors.move_tryToReserveProposedDestination(actor, result.path))
-			{
-				m_eatObjective.reset(area, actor);
 				m_eatObjective.execute(area, actor);
-				return;
 			}
 		}
-		m_eatObjective.m_destination = result.path.back();
-		actors.move_setPath(actor, result.path);
+		else
+		{
+			// Found max desirability target, use the result path.
+			m_eatObjective.m_location = result.blockThatPassedPredicate;
+			if(result.useCurrentPosition)
+				m_eatObjective.execute(area, actor);
+			else
+				// TODO: move rather then copy path.
+				actors.move_setPath(actor, result.path);
+		}
 	}
 }
 Json EatPathRequest::toJson() const
@@ -255,7 +263,7 @@ EatObjective::EatObjective(const Json& data, DeserializationMemo& deserializatio
 	m_noFoodFound(data["noFoodFound"].get<bool>())
 {
 	if(data.contains("destination"))
-		m_destination = data["destination"].get<BlockIndex>();
+		m_location = data["location"].get<BlockIndex>();
 	if(data.contains("eventStart"))
 		m_eatEvent.schedule(area, Config::stepsToEat, *this, actor, data["eventStart"].get<Step>());
 }
@@ -263,8 +271,8 @@ Json EatObjective::toJson() const
 {
 	Json data = Objective::toJson();
 	data["noFoodFound"] = m_noFoodFound;
-	if(m_destination.exists())
-		data["destination"] = m_destination;
+	if(m_location.exists())
+		data["location"] = m_location;
 	if(m_eatEvent.exists())
 		data["eatStart"] = m_eatEvent.getStartStep();
 	return data;
@@ -285,15 +293,15 @@ void EatObjective::execute(Area& area, ActorIndex actor)
 			actors.objective_canNotFulfillNeed(actor, *this);
 		return;
 	}
-	BlockIndex adjacent = mustEat.getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireability(area);
-	if(m_destination.empty())
+	if(m_location.empty())
 	{
+		BlockIndex adjacent = mustEat.getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireability(area);
 		if(adjacent.empty())
 			// Find destination.
 			makePathRequest(area, actor);
 		else
 		{
-			m_destination = actors.getLocation(actor);
+			m_location = actors.getLocation(actor);
 			// Start eating.
 			// TODO: reserve occupied?
 			m_eatEvent.schedule(area, Config::stepsToEat, *this, actor);
@@ -301,12 +309,13 @@ void EatObjective::execute(Area& area, ActorIndex actor)
 	}
 	else
 	{	
-		if(actors.getLocation(actor) == m_destination)
+		if(actors.isAdjacentToLocation(actor, m_location))
 		{
+			BlockIndex adjacent = mustEat.getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireability(area);
 			if(adjacent.empty())
 			{
 				// We are at the previously selected location but there is no  longer any food here, try again.
-				m_destination.clear();
+				m_location.clear();
 				actors.canReserve_clearAll(actor);
 				makePathRequest(area, actor);
 			}
@@ -315,7 +324,12 @@ void EatObjective::execute(Area& area, ActorIndex actor)
 				m_eatEvent.schedule(area, Config::stepsToEat, *this, actor);
 		}
 		else
-			actors.move_setDestination(actor, m_destination, m_detour);
+		{
+			bool adjacent = true;
+			bool unreserved = false;
+			bool reserve = false;
+			actors.move_setDestination(actor, m_location, m_detour, adjacent, unreserved, reserve);
+		}
 	}
 }
 void EatObjective::cancel(Area& area, ActorIndex actor)
@@ -333,7 +347,7 @@ void EatObjective::delay(Area& area, ActorIndex actor)
 void EatObjective::reset(Area& area, ActorIndex actor)
 {
 	delay(area, actor);
-	m_destination.clear();
+	m_location.clear();
 	m_noFoodFound = false;
 	area.getActors().canReserve_clearAll(actor);
 }

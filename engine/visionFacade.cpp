@@ -50,8 +50,6 @@ void VisionFacade::removeActor(ActorIndex actor)
 void VisionFacade::remove(VisionFacadeIndex index)
 {
 	assert(m_actors.size() > index);
-	Actors& actorData = m_area->getActors();
-	actorData.vision_clearFacade(m_actors[index]);
 	m_actors.remove(index);
 	m_ranges.remove(index);
 	m_locations.remove(index);
