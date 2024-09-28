@@ -109,7 +109,6 @@ void CanGrow::update(Area& area)
 	ActorIndex actor = m_actor.getIndex();
 	Actors& actors = area.getActors();
 	AnimalSpeciesId species = actors.getSpecies(actor);
-	actors.grow_setPercent(actor, m_percentGrown);
 	ShapeId shape = AnimalSpecies::shapeForPercentGrown(species, m_percentGrown);
 	if(shape != actors.getShape(actor))
 		actors.setShape(actor, shape);

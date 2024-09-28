@@ -84,7 +84,8 @@ void MustSleep::tired(Area& area)
 		m_tiredEvent.maybeUnschedule();
 		Step overide = AnimalSpecies::getStepsTillSleepOveride(area.getActors().getSpecies(m_actor.getIndex()));
 		m_tiredEvent.schedule(area.m_simulation, overide, *this);
-		makeSleepObjective(area);
+		if(!area.getActors().objective_hasNeed(m_actor.getIndex(), NeedType::sleep))
+			makeSleepObjective(area);
 	}
 }
 // Voluntary sleep.
