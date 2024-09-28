@@ -136,8 +136,8 @@ void SupressedNeed::callback(Area& area)
 	ActorIndex actor = m_actor.getIndex();
 	auto objective = std::move(m_objective);
 	HasObjectives& hasObjectives = *area.getActors().m_hasObjectives[actor];
-	hasObjectives.m_supressedNeeds.erase(objective->getTypeId());
-       	hasObjectives.addNeed(area, std::move(objective)); 
+	hasObjectives.m_supressedNeeds.erase(objective->getNeedType());
+	hasObjectives.addNeed(area, std::move(objective)); 
 }
 SupressedNeedEvent::SupressedNeedEvent(Area& area, SupressedNeed& sn, const Step start) :
 	ScheduledEvent(area.m_simulation, Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective, start), m_supressedNeed(sn) { }
@@ -214,14 +214,14 @@ void HasObjectives::load(const Json& data, DeserializationMemo& deserializationM
 	for(const Json& objective : data["needsQueue"])
 	{
 		m_needsQueue.push_back(deserializationMemo.loadObjective(objective, area, actor));
-		m_idsOfObjectivesInNeedsQueue.add(m_needsQueue.back()->getTypeId());
+		m_typesOfNeedsInQueue.insert(m_needsQueue.back()->getNeedType());
 	}
 	for(const Json& objective : data["tasksQueue"])
 		m_tasksQueue.push_back(deserializationMemo.loadObjective(objective, area, actor));
 	if(data.contains("currentObjective"))
 		m_currentObjective = deserializationMemo.m_objectives.at(data["currentObjective"].get<uintptr_t>());
 	for(const Json& pair : data["supressedNeeds"])
-		m_supressedNeeds.try_emplace(pair[0].get<ObjectiveTypeId>(), area, pair[1], deserializationMemo, area.getActors().getReference(m_actor));
+		m_supressedNeeds.try_emplace(pair[0].get<NeedType>(), area, pair[1], deserializationMemo, area.getActors().getReference(m_actor));
 	m_prioritySet.load(data["prioritySet"], deserializationMemo);
 }
 Json HasObjectives::toJson() const
@@ -292,8 +292,8 @@ void HasObjectives::setCurrentObjective(Area& area, Objective& objective)
 }
 void HasObjectives::addNeed(Area& area, std::unique_ptr<Objective> objective)
 {
-	ObjectiveTypeId objectiveTypeId = objective->getTypeId();
-	if(hasSupressedNeed(objectiveTypeId))
+	NeedType needType = objective->getNeedType();
+	if(hasSupressedNeed(needType))
 		return;
 	// Wake up to fulfil need.
 	if(!area.getActors().sleep_isAwake(m_actor))
@@ -301,7 +301,7 @@ void HasObjectives::addNeed(Area& area, std::unique_ptr<Objective> objective)
 	Objective* o = objective.get();
 	m_needsQueue.push_back(std::move(objective));
 	m_needsQueue.sort([](const std::unique_ptr<Objective>& a, const std::unique_ptr<Objective>& b){ return a->m_priority > b->m_priority; });
-	m_idsOfObjectivesInNeedsQueue.add(objectiveTypeId);
+	m_typesOfNeedsInQueue.insert(needType);
 	maybeUsurpsPriority(area, *o);
 }
 void HasObjectives::addTaskToEnd(Area& area, std::unique_ptr<Objective> objective)
@@ -329,19 +329,20 @@ void HasObjectives::destroy(Area& area, Objective& objective)
 {
 	Actors& actors = area.getActors();
 	bool isCurrent = m_currentObjective == &objective;
-	if(objective.isNeed() && m_idsOfObjectivesInNeedsQueue.contains(objective.getTypeId()))
+	if(objective.isNeed() && m_typesOfNeedsInQueue.contains(objective.getNeedType()))
 	{
-		ObjectiveTypeId objectiveTypeId = objective.getTypeId();
+		NeedType needType = objective.getNeedType();
 		// Remove canceled objective from needs queue.
-		auto found = std::ranges::find_if(m_needsQueue, [&](auto& o){ return o->getTypeId() == objectiveTypeId; });
+		auto found = std::ranges::find(m_needsQueue, needType, [](const auto& o){ return o->getNeedType(); });
+		assert(found != m_needsQueue.end());
 		m_needsQueue.erase(found);
-		m_idsOfObjectivesInNeedsQueue.remove(objectiveTypeId);
+		m_typesOfNeedsInQueue.erase(needType);
 	}
 	else
 	{
 		// Remove canceled objective from task queue.
-		assert(m_tasksQueue.end() != std::ranges::find_if(m_tasksQueue, [&](auto& o){ return &objective == o.get(); }));
-		std::erase_if(m_tasksQueue, [&](auto& o){ return &objective == o.get(); });
+		assert(m_tasksQueue.end() != std::ranges::find(m_tasksQueue, &objective, [](const auto& o){ return o.get(); }));
+		std::erase_if(m_tasksQueue, [&](const auto& o){ return &objective == o.get(); });
 	}
 	actors.canReserve_clearAll(m_actor);
 	actors.reservable_unreserveAll(m_actor);
@@ -380,7 +381,7 @@ void HasObjectives::cancel(Area& area, Objective& objective)
 	objective.cancel(area, m_actor);
 	Actors& actors = area.getActors();
 	actors.move_pathRequestMaybeCancel(m_actor);
-	actors.project_unset(m_actor);
+	actors.project_maybeUnset(m_actor);
 	destroy(area, objective);
 }
 void HasObjectives::objectiveComplete(Area& area, Objective& objective)
@@ -404,6 +405,7 @@ void HasObjectives::cannotCompleteSubobjective(Area& area)
 {
 	Actors& actors = area.getActors();
 	actors.move_clearPath(m_actor);
+	actors.move_pathRequestMaybeCancel(m_actor);
 	//TODO: generate cancelaton message?
 	//TODO: mandate existance of objective?
 	if(m_currentObjective == nullptr)
@@ -424,9 +426,9 @@ bool HasObjectives::hasTask(ObjectiveTypeId objectiveTypeId) const
 {
 	return std::ranges::find(m_tasksQueue, objectiveTypeId, [](const auto& objective){ return objective->getTypeId(); }) != m_tasksQueue.end();
 }
-bool HasObjectives::hasNeed(ObjectiveTypeId objectiveTypeId) const
+bool HasObjectives::hasNeed(NeedType needType) const
 {
-	return std::ranges::find(m_needsQueue, objectiveTypeId, [](const auto& objective){ return objective->getTypeId(); }) != m_tasksQueue.end();
+	return std::ranges::find(m_needsQueue, needType, [](const auto& objective){ return objective->getNeedType(); }) != m_tasksQueue.end();
 }
 // Does not use ::cancel because needs to move supressed objective into storage.
 void HasObjectives::cannotFulfillNeed(Area& area, Objective& objective)
@@ -434,15 +436,15 @@ void HasObjectives::cannotFulfillNeed(Area& area, Objective& objective)
 	Actors& actors = area.getActors();
 	actors.move_clearPath(m_actor);
 	actors.canReserve_clearAll(m_actor);
-	ObjectiveTypeId objectiveTypeId = objective.getTypeId();
+	NeedType needType = objective.getNeedType();
 	bool isCurrent = m_currentObjective == &objective;
 	objective.cancel(area, m_actor);
-	auto found = std::ranges::find_if(m_needsQueue, [&](std::unique_ptr<Objective>& o) { return o->getTypeId() == objectiveTypeId; });
+	auto found = std::ranges::find(m_needsQueue, needType, [](std::unique_ptr<Objective>& o) { return o->getNeedType(); });
 	assert(found != m_needsQueue.end());
 	// Store supressed need.
-	m_supressedNeeds.try_emplace(objectiveTypeId, area, std::move(*found), area.getActors().getReference(m_actor));
+	m_supressedNeeds.try_emplace(needType, area, std::move(*found), area.getActors().getReference(m_actor));
 	// Remove from needs queue.
-	m_idsOfObjectivesInNeedsQueue.remove(objectiveTypeId);
+	m_typesOfNeedsInQueue.erase(needType);
 	m_needsQueue.erase(found);
 	// No need to disband leadAndFollow here, needs don't use it.
 	actors.move_pathRequestMaybeCancel(m_actor);

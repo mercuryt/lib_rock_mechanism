@@ -21,6 +21,7 @@ TEST_CASE("basicNeedsSentient")
 	Simulation simulation;
 	FactionId faction = simulation.createFaction(L"Tower Of Power");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
@@ -102,7 +103,7 @@ TEST_CASE("basicNeedsSentient")
 		// Discard drink objective if exists.
 		if(actors.drink_getVolumeOfFluidRequested(actor) != 0)
 			actors.drink_do(actor, actors.drink_getVolumeOfFluidRequested(actor));
-		REQUIRE(simulation.m_threadedTaskEngine.count() == 1);
+		REQUIRE(actors.move_hasPathRequest(actor));
 		REQUIRE(actors.objective_getCurrentName(actor) == "eat");
 		REQUIRE(actors.eat_isHungry(actor));
 		simulation.doStep();
@@ -131,14 +132,16 @@ TEST_CASE("basicNeedsSentient")
 		// Discard drink objective if exists.
 		if(actors.drink_getVolumeOfFluidRequested(actor) != 0)
 			actors.drink_do(actor, actors.drink_getVolumeOfFluidRequested(actor));
-		REQUIRE(simulation.m_threadedTaskEngine.count() == 1);
-		REQUIRE(actors.objective_getCurrentName(actor) == "eat");
-		REQUIRE(actors.eat_isHungry(actor));
+		REQUIRE(actors.eat_getPercentStarved(actor) == 0);
+		REQUIRE(actors.eat_getMinimumAcceptableDesire(actor) == 3);
+		simulation.fastForwardUntillPredicate([&](){ return actors.eat_getMinimumAcceptableDesire(actor) == 2; }, Config::minutesPerHour * 6);
+		REQUIRE(actors.move_hasPathRequest(actor));
 		simulation.doStep();
+		REQUIRE(actors.eat_isHungry(actor));
 		REQUIRE(actors.objective_getCurrentName(actor) == "eat");
+		REQUIRE(actors.move_getDestination(actor).exists());
 		REQUIRE(items.isAdjacentToLocation(fruit, actors.move_getDestination(actor)));
 		simulation.fastForwardUntillActorIsAdjacentToItem(area, actor, fruit);
-		REQUIRE(actors.isAdjacentToItem(actor, fruit));
 		REQUIRE(actors.objective_getCurrent<EatObjective>(actor).hasEvent());
 		simulation.fastForward(Config::stepsToEat);
 		REQUIRE(!actors.eat_isHungry(actor));
@@ -155,6 +158,7 @@ TEST_CASE("basicNeedsNonsentient")
 	static FluidTypeId water = FluidType::byName("water");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
 	Plants& plants = area.getPlants();

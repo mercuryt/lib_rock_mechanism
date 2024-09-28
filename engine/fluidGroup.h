@@ -80,7 +80,7 @@ public:
 	void setUnstable();
 	void addDiagonalsFor(BlockIndex block);
 	void validate() const;
-	void validate(SmallSet<FluidGroup*> toErase);
+	void validate(SmallSet<FluidGroup*> toErase) const;
 	void log() const;
 	void logFill() const;
 	[[nodiscard]] CollisionVolume totalVolume() const;

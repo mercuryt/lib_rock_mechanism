@@ -13,6 +13,7 @@ ShapeId Shape::create(std::string name, std::vector<std::array<int32_t, 4>> posi
 	shapeData.m_positions.add(positions);
 	shapeData.m_displayScale.add(displayScale);
 	shapeData.m_isMultiTile.add(positions.size() != 1);
+	shapeData.m_isRadiallySymetrical.add(positions.size() == 1);
 	shapeData.m_occupiedOffsetsCache.add({});
 	shapeData.m_adjacentOffsetsCache.add({});
 	ShapeId id = ShapeId::create(shapeData.m_name.size() - 1);

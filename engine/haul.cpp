@@ -342,8 +342,7 @@ void HaulSubproject::commandWorker(ActorIndex actor)
 						if(blocks.shape_shapeAndMoveTypeCanEnterEverWithFacing(block, actors.getShape(actor), actors.getMoveType(actor), facing) && !blocks.isReserved(block, faction))
 						{
 							m_liftPoints[ref] = block;
-							bool reserved = actors.canReserve_tryToReserveLocation(actor, block);
-							assert(reserved);
+							actors.canReserve_reserveLocation(actor, block);
 							// Destination, detour, adjacent, unreserved, reserve
 							actors.move_setDestination(actor, block, detour);
 							return;

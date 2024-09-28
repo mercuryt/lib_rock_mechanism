@@ -90,6 +90,7 @@ void SowSeedsObjective::execute(Area& area, ActorIndex actor)
 		// Previously found m_block or path no longer valid, redo from start.
 		reset(area, actor);
 		execute(area, actor);
+		return;
 	}
 	else
 	{
@@ -107,7 +108,7 @@ void SowSeedsObjective::execute(Area& area, ActorIndex actor)
 			}
 		}
 	}
-	std::unique_ptr<PathRequest> pathRequest = std::make_unique<SowSeedsPathRequest>(area, *this);
+	std::unique_ptr<PathRequest> pathRequest = std::make_unique<SowSeedsPathRequest>(area, *this, actor);
 	actors.move_pathRequestRecord(actor, std::move(pathRequest));
 }
 void SowSeedsObjective::cancel(Area& area, ActorIndex actor)
@@ -157,11 +158,11 @@ bool SowSeedsObjective::canSowAt(Area& area, BlockIndex block, ActorIndex actor)
 	auto& blocks = area.getBlocks();
 	return blocks.designation_has(block, faction, BlockDesignation::SowSeeds) && !blocks.isReserved(block, faction);
 }
-SowSeedsPathRequest::SowSeedsPathRequest(Area& area, SowSeedsObjective& objective) : ObjectivePathRequest(objective, true) // reserve block which passed predicate.
+SowSeedsPathRequest::SowSeedsPathRequest(Area& area, SowSeedsObjective& objective, ActorIndex actor) : ObjectivePathRequest(objective, true) // reserve block which passed predicate.
 {
-	ActorIndex actor = getActor();
 	bool unreserved = true;
-	createGoAdjacentToDesignation(area, actor, BlockDesignation::SowSeeds, objective.m_detour, unreserved, Config::maxRangeToSearchForHorticultureDesignations);
+	bool reserve = true;
+	createGoAdjacentToDesignation(area, actor, BlockDesignation::SowSeeds, objective.m_detour, unreserved, Config::maxRangeToSearchForHorticultureDesignations, reserve);
 }
 void SowSeedsPathRequest::onSuccess(Area& area, BlockIndex blockWhichPassedPredicate)
 {

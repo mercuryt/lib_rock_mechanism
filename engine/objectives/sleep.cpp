@@ -148,7 +148,10 @@ void SleepObjective::selectLocation(Area& area, BlockIndex location, ActorIndex 
 {
 	Actors& actors = area.getActors();
 	actors.sleep_setSpot(actor, location);
-	actors.move_setDestination(actor, location, m_detour);
+	if(actors.getLocation(actor) != location)
+		actors.move_setDestination(actor, location, m_detour);
+	else
+		execute(area, actor);
 }
 void SleepObjective::makePathRequest(Area& area, ActorIndex actor)
 {

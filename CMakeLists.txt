@@ -20,6 +20,7 @@ if(MSVC)
 else()
 	# additional warnings
 	add_compile_options(-Wall -Wextra -Werror -Wunused-function -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wdouble-promotion -fopenmp
+	#-ftrivial-auto-var-init=pattern
 	# Disabled due to false positives around const ObjectiveType& types
 	-Wno-dangling-reference
 	)

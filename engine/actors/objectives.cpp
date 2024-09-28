@@ -92,7 +92,7 @@ Step Actors::objective_getDelayEndFor(ActorIndex index, ObjectiveTypeId objectiv
 {
 	return m_hasObjectives[index]->m_prioritySet.getDelayEndFor(objectiveTypeId);
 }
-bool Actors::objective_hasNeed(ActorIndex index, ObjectiveTypeId objectiveTypeId) const
+bool Actors::objective_hasNeed(ActorIndex index, NeedType needType) const
 {
-	return m_hasObjectives[index]->hasNeed(objectiveTypeId);
+	return m_hasObjectives[index]->hasNeed(needType);
 }

@@ -48,20 +48,18 @@ void GivePlantsFluidEvent::onCancel(Simulation&, Area* area)
 	}
 }
 // Path Request.
-GivePlantsFluidPathRequest::GivePlantsFluidPathRequest(Area& area, GivePlantsFluidObjective& objective) : m_objective(objective)
+GivePlantsFluidPathRequest::GivePlantsFluidPathRequest(Area& area, GivePlantsFluidObjective& objective, ActorIndex actor) : m_objective(objective)
 {
 	DistanceInBlocks maxRange = Config::maxRangeToSearchForHorticultureDesignations;
-	ActorIndex actor = getActor();
+	const bool unreserved = false;
 	if(m_objective.m_plantLocation.empty())
-	{
-		bool unreserved = false;
 		createGoAdjacentToDesignation(area, actor, BlockDesignation::GivePlantFluid, m_objective.m_detour, unreserved, maxRange);
-	}
-	else if(!m_objective.m_fluidHaulingItem.exists())
+	else
 	{
-		
-		std::function<bool(BlockIndex)> predicate = [this, &area, actor](BlockIndex block) { return m_objective.canGetFluidHaulingItemAt(area, block, actor); };
-		bool unreserved = false;
+		assert(!m_objective.m_fluidHaulingItem.exists());
+		std::function<bool(BlockIndex)> predicate = [this, &area, actor](BlockIndex block) {
+			return m_objective.canGetFluidHaulingItemAt(area, block, actor);
+		};
 		createGoAdjacentToCondition(area, actor, predicate, m_objective.m_detour, unreserved, maxRange, BlockIndex::null());
 	}
 }
@@ -85,15 +83,17 @@ void GivePlantsFluidPathRequest::callback(Area& area, FindPathResult& result)
 	{
 		if(blocks.designation_has(result.blockThatPassedPredicate, faction, BlockDesignation::GivePlantFluid))
 			m_objective.selectPlantLocation(area, result.blockThatPassedPredicate, actor);
-		else
-			// Block which was to be selected is no longer avaliable, try again.
-			m_objective.makePathRequest(area, actor);
+		// Either path to bucket or try again.
+		m_objective.makePathRequest(area, actor);
 	}
 	else
 	{
 		assert(!m_objective.m_fluidHaulingItem.exists());
 		if(m_objective.canGetFluidHaulingItemAt(area, result.blockThatPassedPredicate, actor))
+		{
 			m_objective.selectItem(area, m_objective.getFluidHaulingItemAt(area, result.blockThatPassedPredicate, actor), actor);
+			actors.move_setPath(actor, result.path);
+		}
 		else
 			// Item which was to be selected is no longer avaliable, try again.
 			m_objective.makePathRequest(area, actor);
@@ -251,8 +251,7 @@ void GivePlantsFluidObjective::selectItem(Area& area, ItemIndex item, ActorIndex
 {
 	Actors& actors = area.getActors();
 	m_fluidHaulingItem.setTarget(area.getItems().getReferenceTarget(item));
-	std::unique_ptr<DishonorCallback> callback = std::make_unique<CannotCompleteObjectiveDishonorCallback>(area, actor);
-	actors.canReserve_reserveItem(actor, m_fluidHaulingItem.getIndex());
+	actors.canReserve_reserveItem(actor, m_fluidHaulingItem.getIndex(), Quantity::create(1));
 }
 void GivePlantsFluidObjective::reset(Area& area, ActorIndex actor)
 {
@@ -264,7 +263,7 @@ void GivePlantsFluidObjective::reset(Area& area, ActorIndex actor)
 }
 void GivePlantsFluidObjective::makePathRequest(Area& area, ActorIndex actor)
 {
-	area.getActors().move_pathRequestRecord(actor, std::make_unique<GivePlantsFluidPathRequest>(area, *this));
+	area.getActors().move_pathRequestRecord(actor, std::make_unique<GivePlantsFluidPathRequest>(area, *this, actor));
 }
 void GivePlantsFluidObjective::fillContainer(Area& area, BlockIndex fillLocation, ActorIndex actor)
 {
@@ -301,7 +300,7 @@ bool GivePlantsFluidObjective::canFillAt(Area& area, BlockIndex block) const
 	return blocks.fluid_volumeOfTypeContains(block, fluidType) != 0 || 
 		const_cast<GivePlantsFluidObjective*>(this)->getItemToFillFromAt(area, block).exists();
 }
-ItemIndex GivePlantsFluidObjective::getItemToFillFromAt(Area& area, BlockIndex block)
+ItemIndex GivePlantsFluidObjective::getItemToFillFromAt(Area& area, BlockIndex block) const
 {
 	assert(m_plantLocation.exists());
 	assert(m_fluidHaulingItem.exists());
@@ -318,7 +317,7 @@ bool GivePlantsFluidObjective::canGetFluidHaulingItemAt(Area& area, BlockIndex b
 {
 	return const_cast<GivePlantsFluidObjective*>(this)->getFluidHaulingItemAt(area, block, actor).exists();
 }
-ItemIndex GivePlantsFluidObjective::getFluidHaulingItemAt(Area& area, BlockIndex block, ActorIndex actor)
+ItemIndex GivePlantsFluidObjective::getFluidHaulingItemAt(Area& area, BlockIndex block, ActorIndex actor) const
 {
 	assert(m_plantLocation.exists());
 	assert(!m_fluidHaulingItem.exists());

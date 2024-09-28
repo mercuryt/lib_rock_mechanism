@@ -136,7 +136,7 @@ void Config::load()
 	data["pathRequestsPerThread"].get_to(pathRequestsPerThread);
 	assert(pathRequestsPerThread % 2 == 0);
 	data["percentHeightCarvedByRivers"].get_to(percentHeightCarvedByRivers);
-	data["percentHungerAcceptableDesireModifier"].get_to(percentHungerAcceptableDesireModifier);
+	data["minimumHungerLevelThresholds"].get_to(minimumHungerLevelThresholds);
 	data["percentOfPlantMassWhichIsFoliage"].get_to(percentOfPlantMassWhichIsFoliage);
 	data["percentPermanantImparmentMinimum"].get_to(percentPermanantImparmentMinimum);
 	data["pierceBleedVoumeRateModifier"].get_to(pierceBleedVoumeRateModifier);

@@ -348,6 +348,8 @@ void Portables::reservable_maybeUnreserve(HasShapeIndex index, CanReserve& canRe
 }
 void Portables::reservable_unreserveAll(HasShapeIndex index)
 {
+	if(m_reservables[index] == nullptr)
+		return;
 	m_reservables[index]->clearAll();
 	m_reservables[index] = nullptr;
 }

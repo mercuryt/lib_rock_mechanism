@@ -120,8 +120,6 @@ void HarvestObjective::select(Area& area, BlockIndex block, ActorIndex actor)
 	assert(blocks.plant_exists(block));
 	assert(plants.readyToHarvest(blocks.plant_get(block)));
 	m_block = block;
-	bool result = actors.canReserve_tryToReserveLocation(actor, block);
-	assert(result);
 	area.m_hasFarmFields.getForFaction(actors.getFactionId(actor)).removeHarvestDesignation(blocks.plant_get(block));
 }
 void HarvestObjective::begin(Area& area, ActorIndex actor)
@@ -157,7 +155,8 @@ bool HarvestObjective::blockContainsHarvestablePlant(Area& area, BlockIndex bloc
 HarvestPathRequest::HarvestPathRequest(Area& area, HarvestObjective& objective, ActorIndex actor) : ObjectivePathRequest(objective, true) // reserve block which passed predicate.
 {
 	const bool unreserved = true;
-	createGoAdjacentToDesignation(area, actor, BlockDesignation::Harvest, objective.m_detour, unreserved, Config::maxRangeToSearchForHorticultureDesignations);
+	const bool reserve = true;
+	createGoAdjacentToDesignation(area, actor, BlockDesignation::Harvest, objective.m_detour, unreserved, Config::maxRangeToSearchForHorticultureDesignations, reserve);
 }
 void HarvestPathRequest::onSuccess(Area& area, BlockIndex blockWhichPassedPredicate)
 {

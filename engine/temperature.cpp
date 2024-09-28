@@ -176,8 +176,7 @@ void ActorNeedsSafeTemperature::onChange(Area& area)
 	actors.grow_updateGrowingStatus(actor);
 	if(!isSafeAtCurrentLocation(area))
 	{
-		static ObjectiveTypeId getToSafeTemperature = ObjectiveType::getIdByName("get to safe temperature");
-		if(!actors.objective_hasNeed(actor, getToSafeTemperature))
+		if(!actors.objective_hasNeed(actor, NeedType::temperature))
 		{
 			std::unique_ptr<Objective> objective = std::make_unique<GetToSafeTemperatureObjective>();
 			actors.objective_addNeed(actor, std::move(objective));
@@ -202,7 +201,7 @@ bool ActorNeedsSafeTemperature::isSafe(Area& area, Temperature temperature) cons
 {
 	ActorIndex actor = m_actor.getIndex();
 	AnimalSpeciesId species = area.getActors().getSpecies(actor);
-	return temperature >= AnimalSpecies::getMinimumSafeTemperature(species) && temperature <= AnimalSpecies::getMinimumSafeTemperature(species);
+	return temperature >= AnimalSpecies::getMinimumSafeTemperature(species) && temperature <= AnimalSpecies::getMaximumSafeTemperature(species);
 }
 bool ActorNeedsSafeTemperature::isSafeAtCurrentLocation(Area& area) const
 {

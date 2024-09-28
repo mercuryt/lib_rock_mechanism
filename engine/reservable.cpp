@@ -27,7 +27,7 @@ void CanReserve::deleteAllWithoutCallback()
 	for(Reservable* reservable : m_reservables)
 	{
 		reservable->eraseReservationFor(*this);
-		reservable->m_dishonorCallbacks.erase(this);
+		reservable->m_dishonorCallbacks.maybeErase(this);
 	}
 	m_reservables.clear();
 }
@@ -70,13 +70,13 @@ void Reservable::reserveFor(CanReserve& canReserve, const Quantity quantity, std
 		return;
 	}
 	assert(getUnreservedCount(canReserve.m_faction) >= quantity);
-	m_canReserves[&canReserve] += quantity;
+	m_canReserves.getOrInsert(&canReserve, Quantity::create(0)) += quantity;
 	assert(m_canReserves[&canReserve] <= m_maxReservations);
-	m_reservedCounts[canReserve.m_faction] += quantity;
+	m_reservedCounts.getOrInsert(canReserve.m_faction, Quantity::create(0)) += quantity;
 	if(!canReserve.hasReservationWith(*this))
 		canReserve.m_reservables.push_back(this);
 	if(dishonorCallback != nullptr)
-		m_dishonorCallbacks[&canReserve] = std::move(dishonorCallback);
+		m_dishonorCallbacks.insert(&canReserve, std::move(dishonorCallback));
 }
 void Reservable::clearReservationFor(CanReserve& canReserve, const Quantity quantity)
 {

@@ -8,7 +8,7 @@
 #include "types.h"
 void Actors::canPickUp_pickUpItem(ActorIndex index, ItemIndex item)
 {
-	canPickUp_pickUpItemQuantity(index, item, Quantity::create(0));
+	canPickUp_pickUpItemQuantity(index, item, Quantity::create(1));
 }
 void Actors::canPickUp_pickUpItemQuantity(ActorIndex index, ItemIndex item, Quantity quantity)
 {
@@ -81,7 +81,7 @@ ItemIndex Actors::canPickUp_tryToPutDownItem(ActorIndex index, BlockIndex locati
 		return ItemIndex::null();
 	m_carrying[index].clear();
 	move_updateIndividualSpeed(index);
-	m_area.getItems().setLocation(item, location2);
+	m_area.getItems().setLocationAndFacing(item, location2, Facing::create(0));
 	return item;
 }
 ActorOrItemIndex Actors::canPickUp_tryToPutDownIfAny(ActorIndex index, BlockIndex location, DistanceInBlocks maxRange)

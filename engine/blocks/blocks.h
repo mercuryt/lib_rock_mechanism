@@ -331,7 +331,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, FluidTypeId
 	[[nodiscard]] bool item_empty(BlockIndex index) const;
 	[[nodiscard]] bool item_contains(BlockIndex index, ItemIndex item) const;
 	// -Plant
-	void plant_create(BlockIndex index, PlantSpeciesId plantSpecies, Percent growthPercent = Percent::create(0));
+	void plant_create(BlockIndex index, PlantSpeciesId plantSpecies, Percent growthPercent = Percent::null());
 	void plant_updateGrowingStatus(BlockIndex index);
 	void plant_clearPointer(BlockIndex index);
 	void plant_setTemperature(BlockIndex index, Temperature temperature);

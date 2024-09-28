@@ -28,7 +28,7 @@ class GivePlantsFluidPathRequest final : public PathRequest
 {
 	GivePlantsFluidObjective& m_objective;
 public:
-	GivePlantsFluidPathRequest(Area& area, GivePlantsFluidObjective& objective);
+	GivePlantsFluidPathRequest(Area& area, GivePlantsFluidObjective& objective, ActorIndex actor);
 	GivePlantsFluidPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
 	void callback(Area& area, FindPathResult& result);
 	[[nodiscard]] Json toJson() const;
@@ -51,7 +51,7 @@ class GivePlantsFluidObjective final : public Objective
 public:
 	GivePlantsFluidObjective(Area& area);
 	GivePlantsFluidObjective(const Json& data, Area& area, ActorIndex actor);
-	Json toJson() const;
+	[[nodiscard]] Json toJson() const;
 	void execute(Area& area, ActorIndex actor);
 	void cancel(Area& area, ActorIndex actor);
 	void fillContainer(Area& area, BlockIndex fillLocation, ActorIndex actor);
@@ -60,13 +60,15 @@ public:
 	void selectItem(Area& area, ItemIndex item, ActorIndex actor);
 	void reset(Area& area, ActorIndex actor);
 	void makePathRequest(Area& area, ActorIndex actor);
-	std::string name() const { return "give plants fluid"; }
-	bool canFillAt(Area& area, BlockIndex block) const;
-	ItemIndex getItemToFillFromAt(Area& area, BlockIndex block);
-	bool canGetFluidHaulingItemAt(Area& area, BlockIndex location, ActorIndex actor) const;
-	ItemIndex getFluidHaulingItemAt(Area& area, BlockIndex location, ActorIndex actor);
+	[[nodiscard]] std::string name() const { return "give plants fluid"; }
+	[[nodiscard]] bool canFillAt(Area& area, BlockIndex block) const;
+	[[nodiscard]] ItemIndex getItemToFillFromAt(Area& area, BlockIndex block) const;
+	[[nodiscard]] bool canGetFluidHaulingItemAt(Area& area, BlockIndex location, ActorIndex actor) const;
+	[[nodiscard]] ItemIndex getFluidHaulingItemAt(Area& area, BlockIndex location, ActorIndex actor) const;
 	friend class GivePlantsFluidEvent;
 	friend class GivePlantsFluidPathRequest;
 	// For testing.
-	BlockIndex getPlantLocation() { return m_plantLocation; }
+	[[nodiscard]] BlockIndex getPlantLocation() const { return m_plantLocation; }
+	[[nodiscard]] bool itemExists() const { return m_fluidHaulingItem.exists(); }
+	[[nodiscard]] ItemIndex getItem() const { return m_fluidHaulingItem.getIndex(); }
 };

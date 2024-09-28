@@ -116,7 +116,8 @@ public:
 			assert(MAX_VALUE / other >= data);
 		else if(other < 0 ) // other is negitive and data is positive.
 		{
-			assert(MIN_VALUE != 0);
+			if(data != 0)
+				assert(MIN_VALUE != 0);
 			// MIN_VALUE divided by -1 returns MIN_VALUE, strangely.
 			if constexpr(std::signed_integral<T>) if(other != -1)
 				assert(MIN_VALUE / other >= data);
@@ -142,6 +143,7 @@ public:
 	template <class T>
 	void add(T&& begin, T&& end) { assert(begin <= end); while(begin != end) { maybeAdd(*begin); ++begin; } }
 	void maybeAdd(StrongInteger index) { assert(index.exists()); if(!contains(index)) data.push_back(index); }
+	void addNonunique(StrongInteger index) { data.push_back(index); }
 	void remove(StrongInteger index) { assert(index.exists()); assert(contains(index)); remove(find(index)); }
 	void remove(std::vector<StrongInteger>::iterator iter) { (*iter) = data.back(); data.pop_back(); }
 	template <class Predicate>
@@ -166,6 +168,7 @@ public:
 	void concatAssertUnique(StrongIntegerSet<StrongInteger>&& other) { for(const auto& item : other.data) add(item); }
 	void concatIgnoreUnique(StrongIntegerSet<StrongInteger>&& other) { for(const auto& item : other.data) maybeAdd(item); }
 	void updateValue(StrongInteger oldValue, StrongInteger newValue) { assert(!contains(newValue)); auto found = find(oldValue); assert(found != data.end()); (*found) = newValue; }
+	void unique() { std::ranges::sort(data); std::ranges::unique(data); }
 	[[nodiscard]] size_t size() const { return data.size(); }
 	[[nodiscard]] bool contains(StrongInteger index) const { return find(index) != data.end(); }
 	[[nodiscard]] bool empty() const { return data.empty(); }

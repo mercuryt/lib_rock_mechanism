@@ -136,7 +136,8 @@ void Items::moveIndex(ItemIndex oldIndex, ItemIndex newIndex)
 	m_canBeStockPiled[newIndex] = std::move(m_canBeStockPiled[oldIndex]);
 	m_craftJobForWorkPiece[newIndex] = m_craftJobForWorkPiece[oldIndex];
 	m_hasCargo[newIndex] = std::move(m_hasCargo[oldIndex]);
-	m_hasCargo[newIndex]->updateCarrierIndexForAllCargo(m_area, newIndex);
+	if(m_hasCargo[newIndex] != nullptr)
+		m_hasCargo[newIndex]->updateCarrierIndexForAllCargo(m_area, newIndex);
 	m_id[newIndex] = m_id[oldIndex];
 	m_installed.set(newIndex, m_installed[oldIndex]);
 	m_itemType[newIndex] = m_itemType[oldIndex];
@@ -154,7 +155,7 @@ void Items::moveIndex(ItemIndex oldIndex, ItemIndex newIndex)
 void Items::setLocation(ItemIndex index, BlockIndex block)
 {
 	assert(index.exists());
-	assert(m_location[index].exists());
+	assert(!m_location[index].exists());
 	assert(block.exists());
 	Facing facing = m_area.getBlocks().facingToSetWhenEnteringFrom(block, m_location[index]);
 	setLocationAndFacing(index, block, facing);
@@ -266,6 +267,8 @@ void Items::unsetCraftJobForWorkPiece(ItemIndex index)
 void Items::destroy(ItemIndex index)
 {
 	// No need to explicitly unschedule events here, destorying the event holder will do it.
+	if(hasLocation(index))
+		exit(index);
 	const ItemIndex& s = ItemIndex::create(size() - 2);
 	if(s != 1)
 		moveIndex(index, s);

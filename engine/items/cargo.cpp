@@ -9,11 +9,15 @@ void Items::cargo_addActor(ItemIndex index, ActorIndex actor)
 {
 	assert(ItemType::getInternalVolume(m_itemType[index]).exists());
 	assert(ItemType::getInternalVolume(m_itemType[index]) > m_area.getActors().getVolume(actor));
+	if(m_hasCargo[index] == nullptr)
+		m_hasCargo[index] = std::make_unique<ItemHasCargo>();
 	m_hasCargo[index]->addActor(m_area, actor);
 }
 void Items::cargo_addItem(ItemIndex index, ItemIndex item, Quantity quantity)
 {
 	assert(getLocation(item).empty());
+	if(m_hasCargo[index] == nullptr)
+		m_hasCargo[index] = std::make_unique<ItemHasCargo>();
 	if(isGeneric(item))
 		m_hasCargo[index]->addItemGeneric(m_area, getItemType(item), getMaterialType(item), quantity);
 	else
@@ -22,12 +26,16 @@ void Items::cargo_addItem(ItemIndex index, ItemIndex item, Quantity quantity)
 void Items::cargo_addItemGeneric(ItemIndex index, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity)
 {
 	assert(ItemType::getIsGeneric(itemType));
+	if(m_hasCargo[index] == nullptr)
+		m_hasCargo[index] = std::make_unique<ItemHasCargo>();
 	m_hasCargo[index]->addItemGeneric(m_area, itemType, materialType, quantity);
 }
 void Items::cargo_addPolymorphic(ItemIndex index, ActorOrItemIndex actorOrItemIndex, Quantity quantity)
 {
 	assert(actorOrItemIndex.exists());
 	assert(actorOrItemIndex.getLocation(m_area).empty());
+	if(m_hasCargo[index] == nullptr)
+		m_hasCargo[index] = std::make_unique<ItemHasCargo>();
 	if(actorOrItemIndex.isActor())
 		cargo_addActor(index, actorOrItemIndex.getActor());
 	else
@@ -35,6 +43,8 @@ void Items::cargo_addPolymorphic(ItemIndex index, ActorOrItemIndex actorOrItemIn
 }
 void Items::cargo_addFluid(ItemIndex index, FluidTypeId fluidType, CollisionVolume volume)
 {
+	if(m_hasCargo[index] == nullptr)
+		m_hasCargo[index] = std::make_unique<ItemHasCargo>();
 	m_hasCargo[index]->addFluid(fluidType, volume);
 }
 void Items::cargo_loadActor(ItemIndex index, ActorIndex actor)
@@ -106,6 +116,8 @@ void Items::cargo_removeFluid(ItemIndex index, CollisionVolume volume)
 	auto& hasCargo = *m_hasCargo[index];
 	//TODO: passing fluid type is pointless here, either pass it into cargo_removeFluid or make a HasCargo::removeFluidVolume(Volume volume)
 	hasCargo.removeFluidVolume(hasCargo.getFluidType(), volume);
+	if(hasCargo.empty())
+		m_hasCargo[index] = nullptr;
 }
 void Items::cargo_unloadActorToLocation(ItemIndex index, ActorIndex actor, BlockIndex location)
 {
