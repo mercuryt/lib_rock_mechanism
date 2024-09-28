@@ -97,7 +97,7 @@ TEST_CASE("basicNeedsSentient")
 			.quality=Quality::create(50),
 			.percentWear=Percent::create(0),
 		});
-		REQUIRE(actors.eat_getDesireToEatSomethingAt(actor, mealLocation) == UINT32_MAX);
+		REQUIRE(actors.eat_getDesireToEatSomethingAt(actor, mealLocation) == maxRankedEatDesire);
 		simulation.fastForward(AnimalSpecies::getStepsEatFrequency(dwarf));
 		REQUIRE(actors.eat_hasObjective(actor));
 		// Discard drink objective if exists.
@@ -107,6 +107,7 @@ TEST_CASE("basicNeedsSentient")
 		REQUIRE(actors.objective_getCurrentName(actor) == "eat");
 		REQUIRE(actors.eat_isHungry(actor));
 		simulation.doStep();
+		REQUIRE(!actors.move_hasPathRequest(actor));
 		BlockIndex destination = actors.move_getDestination(actor);
 		REQUIRE(destination.exists());
 		REQUIRE(blocks.isAdjacentToIncludingCornersAndEdges(destination, mealLocation));
@@ -136,7 +137,17 @@ TEST_CASE("basicNeedsSentient")
 		REQUIRE(actors.eat_getMinimumAcceptableDesire(actor) == 3);
 		simulation.fastForwardUntillPredicate([&](){ return actors.eat_getMinimumAcceptableDesire(actor) == 2; }, Config::minutesPerHour * 6);
 		REQUIRE(actors.move_hasPathRequest(actor));
+		REQUIRE(actors.objective_getCurrentName(actor) == "eat");
+		const EatObjective& objective = actors.objective_getCurrent<EatObjective>(actor);
+		REQUIRE(actors.eat_canEatItem(actor, fruit));
+		REQUIRE(objective.canEatAt(area, fruitLocation, actor));
+		REQUIRE(!objective.hasLocation());
 		simulation.doStep();
+		// Because we aren't finding a max desirable target we can't use a path generated from the first step of searching, we need a second step to find a path to the selected candidate.
+		REQUIRE(actors.move_hasPathRequest(actor));
+		REQUIRE(objective.hasLocation());
+		simulation.doStep();
+		REQUIRE(!actors.move_hasPathRequest(actor));
 		REQUIRE(actors.eat_isHungry(actor));
 		REQUIRE(actors.objective_getCurrentName(actor) == "eat");
 		REQUIRE(actors.move_getDestination(actor).exists());

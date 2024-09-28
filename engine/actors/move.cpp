@@ -181,7 +181,7 @@ void Actors::move_setDestination(ActorIndex index, BlockIndex destination, bool 
 		assert(m_location[index] != m_destination[index]);
 	}
 	else
-		assert(!isAdjacentToLocation(index, destination));
+		assert(getLocation(index) != destination);
 	move_clearAllEventsAndTasks(index);
 	if(m_faction[index].empty())
 		reserve = unreserved = false;

@@ -273,23 +273,22 @@ void ObjectivePathRequest::callback(Area& area, FindPathResult& result)
 		actors.objective_canNotCompleteObjective(actor, m_objective);
 		return;
 	}
+	// Try to reserve blocks that will be occupied during work.
+	if (result.useCurrentPosition)
+	{
+		if (!actors.move_tryToReserveOccupied(actor))
+		{
+			actors.objective_canNotCompleteSubobjective(actor);
+			return;
+		}
+	}
+	else if (!actors.move_tryToReserveProposedDestination(actor, result.path))
+	{
+		actors.objective_canNotCompleteSubobjective(actor);
+		return;
+	}
 	if(m_reserve)
 	{
-		// Try to reserve blocks that will be occupied during work.
-		if(result.useCurrentPosition)
-		{
-			if(!actors.move_tryToReserveOccupied(actor))
-			{
-				actors.objective_canNotCompleteSubobjective(actor);
-				return;
-			}
-		}
-		else
-			if(!actors.move_tryToReserveProposedDestination(actor, result.path))
-			{
-				actors.objective_canNotCompleteSubobjective(actor);
-				return;
-			}
 		// Try to reserve block which passed predicate.
 		if(m_reserveBlockThatPassedPredicate && !actors.canReserve_tryToReserveLocation(actor, result.blockThatPassedPredicate))
 		{
