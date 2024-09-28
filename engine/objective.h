@@ -40,6 +40,16 @@ public:
 	void execute();
 };
 */
+// Used by needs subsystem within hasObjectives.
+enum class NeedType
+{
+	none,
+	eat,
+	drink,
+	sleep,
+	temperature,
+	test,
+};
 class ObjectiveType
 {
 public:
@@ -92,6 +102,7 @@ public:
 	// When an objective is interrputed by a higher priority objective should it be kept in the task queue for later or discarded?
 	// Should be true only for objectives like Wander or Wait which are not meant to resume after interrupt because they are idle tasks.
 	[[nodiscard]] virtual bool canResume() const { return true; }
+	[[nodiscard]] virtual NeedType getNeedType() const { assert(false); return NeedType::none; }
 	Objective(Priority priority);
 	// Explicit delete of copy and move constructors to ensure pointer stability.
 	Objective(const Objective&) = delete;
@@ -164,12 +175,12 @@ class HasObjectives final
 	// Biological needs like eat, drink, go to safe temperature, and sleep go into needs queue, possibly overiding the current objective in either queue.
 	std::list<std::unique_ptr<Objective>> m_needsQueue;
 	// Prevent duplicate Objectives in needs queue.
-	ObjectiveTypeIdSet m_idsOfObjectivesInNeedsQueue;
+	SmallSet<NeedType> m_typesOfNeedsInQueue;
 	// Voluntary tasks like harvest, dig, build, craft, guard, station, and kill go into task queue. Station and kill both have higher priority then baseline needs like eat but lower then needs like flee.
 	// findNewTask only adds one task at a time so there usually is only once objective in the queue. More then one task objective can be added by the user manually.
 	std::list<std::unique_ptr<Objective>> m_tasksQueue;
 	// Map is hash because SupressedNeed has no move constructor because it HasScheduledEvent.
-	std::unordered_map<ObjectiveTypeId, SupressedNeed, ObjectiveTypeId::Hash> m_supressedNeeds;
+	std::unordered_map<NeedType, SupressedNeed> m_supressedNeeds;
 	Objective* m_currentObjective = nullptr;
 	ActorIndex m_actor;
 
@@ -208,10 +219,10 @@ public:
 	void restart(Area& area, ActorIndex actor) { m_currentObjective->reset(area, actor); m_currentObjective->execute(area, actor); }
 	[[nodiscard]] Objective& getCurrent();
 	[[nodiscard]] bool hasCurrent() const { return m_currentObjective != nullptr; }
-	[[nodiscard]] bool hasSupressedNeed(const ObjectiveTypeId objectiveTypeId) const { return m_supressedNeeds.contains(objectiveTypeId); }
+	[[nodiscard]] bool hasSupressedNeed(const NeedType needType) const { return m_supressedNeeds.contains(needType); }
 	[[nodiscard]] bool queuesAreEmpty() const;
 	[[nodiscard]] bool hasTask(ObjectiveTypeId objectiveTypeId) const;
-	[[nodiscard]] bool hasNeed(ObjectiveTypeId objectiveTypeId) const;
+	[[nodiscard]] bool hasNeed(NeedType objectiveTypeId) const;
 	[[nodiscard]] Json toJson() const;
 	friend class ObjectiveTypePrioritySet;
 	friend class SupressedNeed;

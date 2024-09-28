@@ -11,9 +11,12 @@ CraftPathRequest::CraftPathRequest(Area& area, CraftObjective& co, ActorIndex ac
 	Blocks& blocks = area.getBlocks();
 	SkillTypeId skillType = m_craftObjective.m_skillType;
 	auto& excludeJobs = m_craftObjective.getFailedJobs();
-	std::function<bool(BlockIndex, Facing)> predicate = [&blocks, faction, &hasCrafting, actor, skillType, &excludeJobs](BlockIndex block, Facing) mutable -> bool 
+	DestinationCondition predicate = [&blocks, faction, &hasCrafting, actor, skillType, &excludeJobs](BlockIndex block, Facing) mutable
 	{
-		return !blocks.isReserved(block, faction) && hasCrafting.getJobForAtLocation(actor, skillType, block, excludeJobs) != nullptr;
+		bool result = !blocks.isReserved(block, faction) && hasCrafting.getJobForAtLocation(actor, skillType, block, excludeJobs) != nullptr;
+		if(result)
+			return std::make_pair(true, block);
+		return std::make_pair(false, BlockIndex::null());
 	};
 	bool unreserved = true;
 	createGoToCondition(area, actor, predicate, m_craftObjective.m_detour, unreserved, Config::maxRangeToSearchForCraftingRequirements, BlockIndex::null());

@@ -53,7 +53,7 @@ public:
 	void maybeClearReservationFor(CanReserve& canReserve, Quantity quantity = Quantity::create(1));
 	void setMaxReservations(const Quantity mr);
 	void updateFactionFor(CanReserve& canReserve, FactionId oldFaction, FactionId newFaction);
-	void setDishonorCallbackFor(CanReserve& canReserve, std::unique_ptr<DishonorCallback> dishonorCallback) { m_dishonorCallbacks.insert(&canReserve, std::move(dishonorCallback)); }
+	void setDishonorCallbackFor(CanReserve& canReserve, std::unique_ptr<DishonorCallback> dishonorCallback) { m_dishonorCallbacks.emplace(&canReserve, std::move(dishonorCallback)); }
 	void clearAll();
 	void updateReservedCount(FactionId faction, Quantity count);
 	void merge(Reservable& reservable);

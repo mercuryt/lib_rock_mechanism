@@ -12,7 +12,7 @@ WanderPathRequest::WanderPathRequest(Area& area, WanderObjective& objective, Act
 {
 	Random& random = area.m_simulation.m_random;
 	m_blockCounter = random.getInRange(Config::wanderMinimimNumberOfBlocks, Config::wanderMaximumNumberOfBlocks);
-	std::function<bool(BlockIndex, Facing)> condition = [this](BlockIndex, Facing) { return !m_blockCounter--; };
+	DestinationCondition condition = [this](BlockIndex index, Facing) { return std::make_pair(!m_blockCounter--, index); };
 	createGoToCondition(area, actor, condition, false, false, DistanceInBlocks::null());
 }
 WanderPathRequest::WanderPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :

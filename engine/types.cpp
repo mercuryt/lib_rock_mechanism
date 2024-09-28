@@ -8,8 +8,7 @@ Volume Volume::operator*(uint32_t other) const { return Volume::create(other * d
 Volume Volume::operator*(float other) const { return Volume::create(other * data); }
 CollisionVolume Volume::toCollisionVolume() const { return CollisionVolume::create(data / Config::unitsOfVolumePerUnitOfCollisionVolume); }
 Volume CollisionVolume::toVolume() const { return Volume::create(data * Config::unitsOfVolumePerUnitOfCollisionVolume); }
-Density Density::operator*(uint32_t other) const { return Density::create(other * data); }
 Density Density::operator*(float other) const { return Density::create(other * data); }
-Mass Mass::operator*(uint32_t other) const { return Mass::create(data * other); }
+Mass Mass::operator*(uint32_t other) const { auto output = Mass::create(data * other); assert(output != 0); return output; }
 Mass Mass::operator*(float other) const { return Mass::create(data * other); }
 DistanceInBlocksFractional DistanceInBlocks::toFloat() const { return DistanceInBlocksFractional::create(data); }

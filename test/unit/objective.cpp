@@ -38,6 +38,8 @@ struct TestNeedObjective final : public Objective
 	void detour(Area&, ActorIndex) { }
 	std::string name() const { return "test need"; }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveType::getIdByName("dig"); }
+	[[nodiscard]] bool isNeed() const { return true; }
+	[[nodiscard]] NeedType getNeedType() const { return NeedType::test; }
 };
 
 TEST_CASE("objective")

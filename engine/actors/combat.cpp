@@ -325,9 +325,11 @@ GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(Area& area, A
 	m_actor(a), m_attackRangeSquared(ar * ar)
 {
 	m_target.setTarget(area.getActors().getReferenceTarget(t));
-	std::function<bool(BlockIndex, Facing)> destinationCondition = [&area, this](BlockIndex location, Facing)
+	DestinationCondition destinationCondition = [&area, this](BlockIndex location, Facing)
 	{
-		return area.getActors().combat_blockIsValidPosition(m_actor, location, m_attackRangeSquared);
+		if(area.getActors().combat_blockIsValidPosition(m_actor, location, m_attackRangeSquared))
+			return std::make_pair(true, location);
+		return std::make_pair(false, BlockIndex::null());
 	};
 	// TODO: Range attack actors should use a different path priority condition to avoid getting too close.
 	bool detour = true;

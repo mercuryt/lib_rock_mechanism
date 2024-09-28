@@ -31,6 +31,7 @@ public:
 	[[nodiscard]] uint32_t desireToSleepAt(Area& area, BlockIndex block, ActorIndex actor) const;
 	[[nodiscard]] std::string name() const { return "sleep"; }
 	[[nodiscard]] bool isNeed() const { return true; }
+	[[nodiscard]] NeedType getNeedType() const { return NeedType::sleep; }
 	[[nodiscard]] Json toJson() const;
 	friend class SleepPathRequest;
 	friend class MustSleep;

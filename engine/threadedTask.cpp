@@ -17,7 +17,7 @@ void ThreadedTaskEngine::doStep(Simulation& simulation, Area* area)
 {
 	m_tasksForThisStep.swap(m_tasksForNextStep);
 	m_tasksForNextStep.clear();
-	#pragma omp parallel for
+	//#pragma omp parallel for
 		for(const auto& task : m_tasksForThisStep)
 			task.get()->readStep(simulation, area);
 	for(auto& task : m_tasksForThisStep)

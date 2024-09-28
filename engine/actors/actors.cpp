@@ -610,6 +610,8 @@ void Actors::moveIndex(ActorIndex oldIndex, ActorIndex newIndex)
 void Actors::destroy(ActorIndex index)
 {
 	// No need to explicitly unschedule events or threaded tasks here, destorying the holder will do it.
+	if(hasLocation(index))
+		exit(index);
 	move_pathRequestMaybeCancel(index);
 	const ActorIndex& s = ActorIndex::create(size());
 	if(s != 1)
@@ -850,6 +852,8 @@ void Actors::setFaction(ActorIndex index, FactionId faction)
 	m_faction[index] = faction;
 	if(faction.empty())
 		m_canReserve[index] = nullptr;
+	else if(m_canReserve[index] == nullptr)
+		m_canReserve[index] = std::make_unique<CanReserve>(faction);
 	else
 		m_canReserve[index]->setFaction(faction);
 }

@@ -725,6 +725,11 @@ CollisionVolume FluidGroup::totalVolume() const
 bool FluidGroup::dispositionIsStable(CollisionVolume fillVolume, CollisionVolume drainVolume) const
 {
 	auto& blocks = m_area.getBlocks();
+	BlockIndex drain = m_drainQueue.m_groupStart->block;
+	BlockIndex fill = m_fillQueue.m_groupStart->block;
+	// Block cannot drain into it's self.
+	if(drain == fill)
+		return false;
 	DistanceInBlocks drainZ = blocks.getZ(m_drainQueue.m_groupStart->block);
 	DistanceInBlocks fillZ = blocks.getZ(m_fillQueue.m_groupStart->block);
 	if(drainZ < fillZ)
@@ -761,7 +766,7 @@ void FluidGroup::validate() const
 		}
 	}
 }
-void FluidGroup::validate(SmallSet<FluidGroup*> toErase)
+void FluidGroup::validate(SmallSet<FluidGroup*> toErase) const
 {
 	if(m_merged || m_destroy || m_disolved)
 		return;

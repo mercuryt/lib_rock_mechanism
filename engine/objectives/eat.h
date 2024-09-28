@@ -40,7 +40,7 @@ class EatPathRequest final : public PathRequest
 	EatObjective& m_eatObjective;
 	ActorReference m_huntResult;
 public:
-	EatPathRequest(Area& area, EatObjective& eo);
+	EatPathRequest(Area& area, EatObjective& eo, ActorIndex actor);
 	EatPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
 	void callback(Area& area, FindPathResult& result);
 	[[nodiscard]] Json toJson() const;
@@ -65,6 +65,7 @@ public:
 	[[nodiscard]] std::string name() const { return "eat"; }
 	[[nodiscard]] bool canEatAt(Area& area, BlockIndex block, ActorIndex actor) const;
 	[[nodiscard]] bool isNeed() const { return true; }
+	[[nodiscard]] NeedType getNeedType() const { return NeedType::eat; }
 	friend class EatEvent;
 	friend class EatPathRequest;
 	// For testing.

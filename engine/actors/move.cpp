@@ -267,7 +267,7 @@ void Actors::move_onDeath(ActorIndex index) { move_clearAllEventsAndTasks(index)
 bool Actors::move_tryToReserveProposedDestination(ActorIndex index, BlockIndices& path)
 {
 	ShapeId shape = getShape(index);
-	CanReserve& canReserve = *m_canReserve[index];
+	CanReserve& canReserve = canReserve_get(index);
 	Blocks& blocks = m_area.getBlocks();
 	BlockIndex location = path.back();
 	FactionId faction = getFactionId(index);
@@ -294,7 +294,7 @@ bool Actors::move_tryToReserveProposedDestination(ActorIndex index, BlockIndices
 bool Actors::move_tryToReserveOccupied(ActorIndex index)
 {
 	ShapeId shape = getShape(index);
-	CanReserve& canReserve = *m_canReserve[index];
+	CanReserve& canReserve = canReserve_get(index);
 	Blocks& blocks = m_area.getBlocks();
 	BlockIndex location = getLocation(index);
 	FactionId faction = getFactionId(index);

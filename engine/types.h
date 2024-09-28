@@ -97,18 +97,16 @@ public:
 inline void to_json(Json& data, const Mass& index) { data = index.get(); }
 inline void from_json(const Json& data, Mass& index) { index = Mass::create(data.get<MassWidth>()); }
 
-using DensityWidth = uint32_t;
-class Density : public StrongInteger<Density, DensityWidth>
+class Density : public StrongFloat<Density>
 {
 public:
 	Density() = default;
 	[[nodiscard]] Mass operator*(Volume volume) const;
-	[[nodiscard]] Density operator*(DensityWidth other) const;
 	[[nodiscard]] Density operator*(float other) const;
 	struct Hash { [[nodiscard]] size_t operator()(const Density& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Density& index) { data = index.get(); }
-inline void from_json(const Json& data, Density& index) { index = Density::create(data.get<DensityWidth>()); }
+inline void from_json(const Json& data, Density& index) { index = Density::create(data.get<float>()); }
 
 using ForceWidth = uint32_t;
 class Force : public StrongInteger<Force, ForceWidth>
@@ -216,6 +214,7 @@ class Percent : public StrongInteger<Percent, PercentWidth>
 public:
 	Percent() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const Percent& index) const { return index.get(); } };
+	[[nodiscard]] float ratio() const { return (float)data /100.f; }
 };
 inline void to_json(Json& data, const Percent& index) { data = index.get(); }
 inline void from_json(const Json& data, Percent& index) { index = Percent::create(data.get<PercentWidth>()); }

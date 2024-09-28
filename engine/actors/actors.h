@@ -350,7 +350,7 @@ public:
 	void objective_execute(ActorIndex);
 	[[nodiscard]] bool objective_exists(ActorIndex index) const;
 	[[nodiscard]] bool objective_hasTask(ActorIndex index, ObjectiveTypeId objectiveTypeId) const;
-	[[nodiscard]] bool objective_hasNeed(ActorIndex index, ObjectiveTypeId objectiveTypeId) const;
+	[[nodiscard]] bool objective_hasNeed(ActorIndex index, NeedType needType) const;
 	[[nodiscard]] Priority objective_getPriorityFor(ActorIndex index, ObjectiveTypeId objectiveType) const;
 	[[nodiscard]] std::string objective_getCurrentName(ActorIndex index) const;
 	template<typename T>
@@ -362,12 +362,16 @@ public:
 	// CanReserve.
 	void canReserve_clearAll(ActorIndex index);
 	void canReserve_setFaction(ActorIndex index, FactionId faction);
-	void canReserve_reserveLocation(ActorIndex index, BlockIndex block);
-	void canReserve_reserveItem(ActorIndex index, ItemIndex item);
-	[[nodiscard]] bool canReserve_tryToReserveLocation(ActorIndex index, BlockIndex block);
-	[[nodiscard]] bool canReserve_tryToReserveItem(ActorIndex index, ItemIndex item);
+	// Default dishonor callback is canNotCompleteCurrentObjective.
+	void canReserve_reserveLocation(ActorIndex index, BlockIndex block, std::unique_ptr<DishonorCallback> callback = nullptr);
+	void canReserve_reserveItem(ActorIndex index, ItemIndex item, Quantity quantity, std::unique_ptr<DishonorCallback> callback = nullptr);
+	[[nodiscard]] bool canReserve_tryToReserveLocation(ActorIndex index, BlockIndex block, std::unique_ptr<DishonorCallback> callback = nullptr);
+	[[nodiscard]] bool canReserve_tryToReserveItem(ActorIndex index, ItemIndex item, Quantity quantity, std::unique_ptr<DishonorCallback> callback = nullptr);
 	[[nodiscard]] bool canReserve_hasReservationWith(ActorIndex index, Reservable& reservable) const;
+private:
+	[[nodiscard]] CanReserve& canReserve_get(ActorIndex index);
 	// Project.
+public:
 	[[nodiscard]] bool project_exists(ActorIndex index) const { return m_project[index] != nullptr; }
 	[[nodiscard]] Project* project_get(ActorIndex index) const { return m_project[index]; }
 	void project_set(ActorIndex index, Project& project) { m_project[index] = &project; }
@@ -421,6 +425,7 @@ public:
 	// For Testing.
 	[[nodiscard]] Mass eat_getMassFoodRequested(ActorIndex index) const;
 	[[nodiscard]] uint32_t eat_getDesireToEatSomethingAt(ActorIndex index, BlockIndex block) const;
+	[[nodiscard]] uint32_t eat_getMinimumAcceptableDesire(ActorIndex index) const;
 	[[nodiscard]] bool eat_hasObjective(ActorIndex index) const;
 	[[nodiscard]] Step eat_getHungerEventStep(ActorIndex index) const;
 	[[nodiscard]] bool eat_hasHungerEvent(ActorIndex index) const;

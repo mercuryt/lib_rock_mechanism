@@ -33,6 +33,7 @@ public:
 	[[nodiscard]] ItemIndex getItemToDrinkFromAt(Area& area, BlockIndex block, ActorIndex actor) const;
 	[[nodiscard]] bool containsSomethingDrinkable(Area& area, BlockIndex block, ActorIndex actor) const;
 	[[nodiscard]] bool isNeed() const { return true; }
+	[[nodiscard]] NeedType getNeedType() const { return NeedType::drink; }
 	friend class DrinkEvent;
 	friend class DrinkPathRequest;
 };

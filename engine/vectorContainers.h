@@ -122,14 +122,21 @@ public:
 	void erase(const K& key)
 	{
 		auto iter = std::ranges::find(m_data, key, &Pair::first);
-		if(iter != m_data.end())
-		{
-			iter->first = m_data.back().first;
-			iter->second = std::move(m_data.back().second);
-		}
+		assert(iter != m_data.end());
+		iter->first = m_data.back().first;
+		iter->second = std::move(m_data.back().second);
 		m_data.pop_back();
 	}
 	void erase(const K&& key) { erase(key); }
+	void maybeErase(const K& key)
+	{
+		auto iter = std::ranges::find(m_data, key, &Pair::first);
+		if(iter == m_data.end())
+			return;
+		iter->first = m_data.back().first;
+		iter->second = std::move(m_data.back().second);
+		m_data.pop_back();
+	}
 	void clear() { m_data.clear(); }
 	template<typename ...Args>
 	V& emplace(const K& key, Args&& ...args)
@@ -153,6 +160,19 @@ public:
 	[[nodiscard]] V& operator[](const K&& key) { return (*this)[key]; }
 	[[nodiscard]] const V& operator[](const K& key) const { return const_cast<This&>(*this)[key]; }
 	[[nodiscard]] const V& operator[](const K&& key) const { return (*this)[key]; }
+	[[nodiscard]] V& createEmpty(const K& key)
+	{
+		auto iter = std::ranges::find(m_data, key, &Pair::first);
+		assert(iter == m_data.end());
+		return m_data.emplace_back(key, V{}).second;
+	}
+	[[nodiscard]] V& getOrInsert(const K& key, V&& value)
+	{
+		auto iter = std::ranges::find(m_data, key, &Pair::first);
+		if(iter == m_data.end())
+			return m_data.emplace_back(key, value).second;
+		return iter->second;
+	}
 	[[nodiscard]] V& getOrCreate(const K& key)
 	{
 		auto iter = std::ranges::find(m_data, key, &Pair::first);

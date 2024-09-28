@@ -29,6 +29,7 @@ public:
 	void reset(Area& area, ActorIndex actor);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "get to safe temperature"; }
+	[[nodiscard]] NeedType getNeedType() const { return NeedType::temperature; }
 	friend class GetToSafeTemperaturePathRequest;
 };
 class GetToSafeTemperaturePathRequest final : public PathRequest

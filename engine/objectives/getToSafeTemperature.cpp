@@ -9,12 +9,12 @@ GetToSafeTemperaturePathRequest::GetToSafeTemperaturePathRequest(Area& area, Get
 	Actors& actors = area.getActors();
 	Blocks& blocks = area.getBlocks();
 	ActorIndex actor = getActor();
-	std::function<bool(BlockIndex, Facing facing)> condition = [&actors, &blocks, actor](BlockIndex location, Facing facing)
+	DestinationCondition condition = [&actors, &blocks, actor](BlockIndex location, Facing facing)
 	{
 		for(BlockIndex adjacent : actors.getBlocksWhichWouldBeOccupiedAtLocationAndFacing(actor, location, facing))
 			if(actors.temperature_isSafe(actor, blocks.temperature_get(adjacent)))
-				return true;
-		return false;
+			return std::make_pair(true, location);
+		return std::make_pair(false, BlockIndex::null());
 	};
 	bool unreserved = false;
 	createGoToCondition(area, actor, condition, m_objective.m_detour, unreserved, DistanceInBlocks::null());

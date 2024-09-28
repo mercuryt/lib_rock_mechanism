@@ -187,7 +187,7 @@ void VisionFacade::doStep()
 		ranges.emplace_back(index, end);
 		index = end;
 	}
-	#pragma omp parallel for
+	//#pragma omp parallel for
 	for(auto [start, end] : ranges)
 		readStepSegment(start, end);
 	for(VisionFacadeIndex index = VisionFacadeIndex::create(0); index < actorsSize; ++index)

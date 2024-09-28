@@ -70,7 +70,11 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::readStep(Simulation&, Area*)
 		if(projectWorker.haulSubproject != nullptr)
 			continue;
 		ActorIndex actorIndex = actor.getIndex();
-		std::function<bool(BlockIndex, Facing)> condition = [this, actorIndex](BlockIndex block, Facing) { return blockContainsDesiredItem(block, actorIndex); };
+		DestinationCondition condition = [this, actorIndex](BlockIndex block, Facing) {
+			if(blockContainsDesiredItem(block, actorIndex))
+				return std::make_pair(true, block);
+			return std::make_pair(false, BlockIndex::null());
+		};
 
 		// Path result is unused, running only for condition side effect.
 		[[maybe_unused]] FindPathResult result = m_project.m_area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actorIndex)).findPathAdjacentToConditionAndUnreserved(actors.getLocation(actorIndex), actors.getShape(actorIndex), actors.getFacing(actorIndex), condition, m_project.m_faction);
@@ -204,7 +208,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 					m_project.addToPickup(actorOrItem, counts, quantity);
 			};
 			// Verfy the worker can path to the required materials. Cumulative for all candidates in this step but reset if not satisfied.
-			std::function<bool(BlockIndex, Facing)> predicate = [&](BlockIndex block, Facing)
+			DestinationCondition predicate = [&](BlockIndex block, Facing)
 			{
 				auto& blocks = m_project.m_area.getBlocks();
 				for(ItemIndex item : blocks.item_getAll(block))
@@ -222,7 +226,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 							continue;
 						recordItemOnGround(polymorphicItem, projectRequirementCounts);
 						if(m_project.reservationsComplete())
-							return true;
+							return std::make_pair(true, block);
 					}
 				}
 				for(ActorIndex actor : blocks.actor_getAll(block))
@@ -241,10 +245,10 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 						// TODO: Shoud this be record actor on ground?
 						recordItemOnGround(polymorphicActor, projectRequirementCounts);
 						if(m_project.reservationsComplete())
-							return true;
+							return std::make_pair(true, block);
 					}
 				}
-				return false;
+				return std::make_pair(false, BlockIndex::null());
 			};
 			// TODO: Path is not used, find path is run for side effects of predicate.
 			[[maybe_unused]] FindPathResult result = terrainFacade.findPathAdjacentToConditionAndUnreserved(actors.getLocation(candidateIndex), actors.getShape(candidateIndex), actors.getFacing(candidateIndex), predicate, m_project.m_faction);

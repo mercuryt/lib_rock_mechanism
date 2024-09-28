@@ -36,7 +36,7 @@ public:
 	[[nodiscard]] Mass getMassFoodRequested() const;
 	[[nodiscard]] Percent getPercentStarved() const;
 	[[nodiscard]] uint32_t getDesireToEatSomethingAt(Area& area, BlockIndex block) const;
-	[[nodiscard]] uint32_t getMinimumAcceptableDesire() const;
+	[[nodiscard]] uint32_t getMinimumAcceptableDesire(Area& area) const;
 	[[nodiscard]] BlockIndex getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireability(Area& area);
 	[[nodiscard]] bool canEatActor(Area& area, const ActorIndex actor) const;
 	[[nodiscard]] bool canEatPlant(Area& area, const PlantIndex plant) const;

@@ -19,7 +19,7 @@ public:
 	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area& area, ActorIndex actor) const;
 	SowSeedsObjectiveType() = default;
 	SowSeedsObjectiveType(const Json&, DeserializationMemo&);
-	[[nodiscard]] std::string name() const { return "sow"; }
+	[[nodiscard]] std::string name() const { return "sow seeds"; }
 };
 class SowSeedsObjective final : public Objective
 {
@@ -54,7 +54,7 @@ public:
 class SowSeedsPathRequest final : public ObjectivePathRequest
 {
 public:
-	SowSeedsPathRequest(Area& area, SowSeedsObjective& objective);
+	SowSeedsPathRequest(Area& area, SowSeedsObjective& objective, ActorIndex actor);
 	void onSuccess(Area& area, BlockIndex blockWhichPassedPredicate);
 	[[nodiscard]] std::string name() { return "sow seeds"; }
 };

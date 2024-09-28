@@ -183,15 +183,14 @@ BlockIndices HasShapes::getAdjacentBlocks(HasShapeIndex index) const
 	for(BlockIndex block : m_blocks[index])
 		for(BlockIndex adjacent : m_area.getBlocks().getAdjacentWithEdgeAndCornerAdjacent(block))
 			if(!m_blocks[index].contains(adjacent))
-				output.remove(adjacent);
+				output.addNonunique(adjacent);
+	output.unique();
 	return output;
 }
 ActorIndices HasShapes::getAdjacentActors(HasShapeIndex index) const
 {
 	ActorIndices output;
-	for(BlockIndex block : getBlocks(index))
-		output.merge(m_area.getBlocks().actor_getAll(block));
-	for(BlockIndex block : getAdjacentBlocks(index))
+	for(BlockIndex block : getOccupiedAndAdjacentBlocks(index))
 		output.merge(m_area.getBlocks().actor_getAll(block));
 	output.remove(index.toActor());
 	return output;

@@ -132,6 +132,7 @@ void Plants::die(PlantIndex index)
 	m_endOfHarvestEvent.maybeUnschedule(index);
 	m_foliageGrowthEvent.maybeUnschedule(index);
 	BlockIndex location = m_location[index];
+	exit(index);
 	// Erase location from farm data.
 	blocks.farm_removeAllHarvestDesignations(location);
 	blocks.farm_removeAllGiveFluidDesignations(location);
@@ -172,7 +173,7 @@ void Plants::setMaybeNeedsFluid(PlantIndex index)
 	{
 		m_volumeFluidRequested[index] = CollisionVolume::create(0);
 			stepsTillNextFluidEvent = PlantSpecies::getStepsNeedsFluidFrequency(species);
-		}
+	}
 	else if(m_volumeFluidRequested[index] != 0)
 	{
 		die(index);
@@ -321,7 +322,8 @@ Mass Plants::getFoliageMass(PlantIndex index) const
 }
 void Plants::updateFluidVolumeRequested(PlantIndex index)
 {
-	m_volumeFluidRequested[index] = CollisionVolume::create(util::scaleByPercent(PlantSpecies::getVolumeFluidConsumed(getSpecies(index)).get(), getPercentGrown(index)));
+	CollisionVolume requested = CollisionVolume::create(util::scaleByPercent(PlantSpecies::getVolumeFluidConsumed(getSpecies(index)).get(), getPercentGrown(index)));
+	m_volumeFluidRequested[index] = requested;
 }
 Step Plants::stepsPerShapeChange(PlantIndex index) const
 {
@@ -423,8 +425,12 @@ void Plants::setLocation(PlantIndex index, BlockIndex location, Facing)
 {
 	assert(m_location[index].empty());
 	Blocks& blocks = m_area.getBlocks();
+	auto& occupied = m_blocks[index];
 	for(BlockIndex block : Shape::getBlocksOccupiedAt(m_shape[index], blocks, location, Facing::create(0)))
+	{
 		blocks.plant_set(block, index);
+		occupied.add(block);
+	}
 	m_location[index] = location;
 	m_facing[index] = Facing::create(0);
 }
@@ -435,6 +441,7 @@ void Plants::exit(PlantIndex index)
 	for(BlockIndex block : m_blocks[index])
 		blocks.plant_erase(block);
 	m_location[index].clear();
+	m_blocks[index].clear();
 }
 void Plants::setShape(PlantIndex index, ShapeId shape)
 {

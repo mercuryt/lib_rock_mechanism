@@ -28,6 +28,10 @@ uint32_t Actors::eat_getDesireToEatSomethingAt(ActorIndex index, BlockIndex bloc
 {
 	return m_mustEat[index]->getDesireToEatSomethingAt(m_area, block);
 }
+uint32_t Actors::eat_getMinimumAcceptableDesire(ActorIndex index) const
+{
+	return m_mustEat[index]->getMinimumAcceptableDesire(m_area);
+}
 bool Actors::eat_hasObjective(ActorIndex index) const
 {
 	return m_mustEat[index]->hasObjecive();

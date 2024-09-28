@@ -14,12 +14,12 @@ DrinkPathRequest::DrinkPathRequest(Area& area, DrinkObjective& drob, ActorIndex 
 	};
 	bool reserve = false;
 	bool unreserved = false;
-	if(area.getActors().hasFaction(getActor()))
+	if(area.getActors().hasFaction(actor))
 	{
 		reserve = true;
 		unreserved = true;
 	}
-	createGoAdjacentToCondition(area, getActor(), predicate, drob.m_detour, unreserved, DistanceInBlocks::null(), BlockIndex::null(), reserve);
+	createGoAdjacentToCondition(area, actor, predicate, drob.m_detour, unreserved, DistanceInBlocks::null(), BlockIndex::null(), reserve);
 }
 DrinkPathRequest::DrinkPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
 	m_drinkObjective(static_cast<DrinkObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))),

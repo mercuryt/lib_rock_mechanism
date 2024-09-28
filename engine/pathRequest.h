@@ -19,7 +19,7 @@ struct DeserializationMemo;
 class PathRequest
 {
 	PathRequestIndex m_index;
-	std::vector<BlockIndex> m_destinations;
+	BlockIndices m_destinations;
 	FluidTypeId m_fluidType;
 	ActorIndex m_actor;
 	BlockIndex m_destination;
@@ -38,7 +38,7 @@ public:
 	PathRequest(const Json& data) { nlohmann::from_json(data, *this); }
 	void updateActorIndex(ActorIndex newIndex) { assert(newIndex.exists()); m_actor = newIndex; }
 	void create(Area& area, ActorIndex actor, DestinationCondition destination, bool detour, DistanceInBlocks maxRange, BlockIndex huristicDestination = BlockIndex::null(), bool reserve = false);
-	void createGoToAnyOf(Area& area, ActorIndex actor, std::vector<BlockIndex> destinations, bool detour, bool unreserved, DistanceInBlocks maxRange, BlockIndex huristicDestination = BlockIndex::null(), bool reserve = false);
+	void createGoToAnyOf(Area& area, ActorIndex actor, BlockIndices destinations, bool detour, bool unreserved, DistanceInBlocks maxRange, BlockIndex huristicDestination = BlockIndex::null(), bool reserve = false);
 public:
 	void createGoTo(Area& area, ActorIndex actor, BlockIndex destination, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);
 	void createGoAdjacentToLocation(Area& area, ActorIndex actor, BlockIndex destination, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve = false);

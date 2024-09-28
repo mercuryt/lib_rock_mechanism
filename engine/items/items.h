@@ -90,7 +90,7 @@ public:
 	[[nodiscard]] bool containsActor(ActorIndex index) const { return std::ranges::find(m_actors, index) != m_actors.end(); }
 	[[nodiscard]] bool containsItem(ItemIndex index) const { return std::ranges::find(m_items, index) != m_items.end(); }
 	[[nodiscard]] bool containsGeneric(Area& area, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity) const;
-	[[nodiscard]] bool empty() const { return m_fluidType.exists() && m_actors.empty() && m_items.empty(); }
+	[[nodiscard]] bool empty() const { return m_fluidType.empty() && m_actors.empty() && m_items.empty(); }
 	[[nodiscard]] Mass getMass() const { return m_mass; }
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ItemHasCargo, m_actors, m_items, m_fluidType, m_volume, m_mass, m_fluidVolume);
 	friend class Items;

@@ -4,7 +4,11 @@
 #include "../fluidType.h"
 void AreaHasFluidGroups::doStep(bool parallel)
 {
+	if(m_unstableFluidGroups.empty())
+		// All groups are stable, nothing to do here.
+		return;
 	// Calculate flow.
+	// unstable will be used to iterate the contents of m_unstableFluidGroups while altering it. It will be reinitalized with fresh copies several times.
 	SmallSet<FluidGroup*> unstable = m_unstableFluidGroups;
 	for(const FluidGroup* group : unstable)
 		assert(!group->m_stable);
@@ -12,7 +16,7 @@ void AreaHasFluidGroups::doStep(bool parallel)
 	{
 		// OpenMP doesn't work with SmallSet?
 		std::vector<FluidGroup*>& groups = unstable.getVector();
-		#pragma omp parallel for
+		//#pragma omp parallel for
 			for(FluidGroup* group : groups)
 				group->readStep();
 	}
@@ -20,10 +24,8 @@ void AreaHasFluidGroups::doStep(bool parallel)
 		for(FluidGroup* group : unstable)
 			group->readStep();
 	// Remove destroyed.
-	for(FluidGroup& fluidGroup : m_fluidGroups)
-		if(fluidGroup.m_destroy)
-			m_unstableFluidGroups.erase(&fluidGroup);
-	std::erase_if(m_fluidGroups, [](FluidGroup& fluidGroup){ return fluidGroup.m_destroy; });
+	m_unstableFluidGroups.erase_if([](auto* fluidGroup){ return fluidGroup->m_destroy; });
+	std::erase_if(m_fluidGroups, [](const FluidGroup& fluidGroup){ return fluidGroup.m_destroy; });
 	// Apply flow.
 	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
 	{
@@ -31,7 +33,8 @@ void AreaHasFluidGroups::doStep(bool parallel)
 		validateAllFluidGroups();
 	}
 	// Resolve overfull, diagonal seep, and mist.
-	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
+	unstable = m_unstableFluidGroups;
+	for(FluidGroup* fluidGroup : unstable)
 	{
 		fluidGroup->afterWriteStep();
 		fluidGroup->validate();
@@ -50,6 +53,7 @@ void AreaHasFluidGroups::doStep(bool parallel)
 		fluidGroup->splitStep();
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 		fluidGroup.validate();
+	// Check for groups to remove from unstable, possibly gather them in toErase.
 	SmallSet<FluidGroup*> toErase;
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 	{
@@ -60,7 +64,7 @@ void AreaHasFluidGroups::doStep(bool parallel)
 		}
 		if(fluidGroup.m_destroy || fluidGroup.m_merged || fluidGroup.m_disolved || fluidGroup.m_stable)
 			m_unstableFluidGroups.erase(&fluidGroup);
-		else if(!fluidGroup.m_stable) // This seems avoidable.
+		else if(!fluidGroup.m_stable)
 			m_unstableFluidGroups.insert(&fluidGroup);
 		if(fluidGroup.m_destroy || fluidGroup.m_merged)
 		{
@@ -69,14 +73,18 @@ void AreaHasFluidGroups::doStep(bool parallel)
 				assert(fluidGroup.m_drainQueue.m_set.empty());
 		}
 	}
+	// Validate in the context of toErase.
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 		fluidGroup.validate(toErase);
+	// Destroy groups in toErase.
 	m_fluidGroups.remove_if([&](FluidGroup& fluidGroup){ return toErase.contains(&fluidGroup); });
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 		fluidGroup.validate();
+	// Validate that all groups in m_unstable are still in m_fluidGroups.
 	for(const FluidGroup* fluidGroup : m_unstableFluidGroups)
 	{
 		[[maybe_unused]] bool found = false;
+		assert(!fluidGroup->m_stable);
 		for(FluidGroup& fg : m_fluidGroups)
 			if(&fg == fluidGroup)
 			{

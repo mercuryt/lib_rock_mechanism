@@ -71,7 +71,7 @@ BlockIndex EatEvent::getBlockWithMostDesiredFoodInReach(Area& area) const
 		uint32_t blockDesirability = mustEat.getDesireToEatSomethingAt(area, block);
 		if(blockDesirability == UINT32_MAX)
 			return true;
-		if(blockDesirability >= mustEat.getMinimumAcceptableDesire() && blockDesirability > highestDesirability)
+		if(blockDesirability >= mustEat.getMinimumAcceptableDesire(area) && blockDesirability > highestDesirability)
 		{
 			found = block;
 			highestDesirability = blockDesirability;
@@ -148,11 +148,11 @@ EatPathRequest::EatPathRequest(const Json& data, DeserializationMemo& deserializ
 {
 	nlohmann::from_json(data, *this);
 }
-EatPathRequest::EatPathRequest(Area& area, EatObjective& eo) : m_eatObjective(eo)
+EatPathRequest::EatPathRequest(Area& area, EatObjective& eo, ActorIndex actor) : m_eatObjective(eo)
 {
 	assert(m_eatObjective.m_destination.empty());
 	Blocks& blocks = area.getBlocks();
-	MustEat& mustEat = *area.getActors().m_mustEat[getActor()].get();
+	MustEat& mustEat = *area.getActors().m_mustEat[actor].get();
 	std::function<bool(BlockIndex)> predicate = nullptr;
 	if(m_eatObjective.m_tryToHunt)
 	{
@@ -176,7 +176,7 @@ EatPathRequest::EatPathRequest(Area& area, EatObjective& eo) : m_eatObjective(eo
 			uint32_t eatDesire = mustEat.getDesireToEatSomethingAt(area, block);
 			if(eatDesire == UINT32_MAX)
 				return true;
-			if(eatDesire < mustEat.getMinimumAcceptableDesire())
+			if(eatDesire < mustEat.getMinimumAcceptableDesire(area))
 				return false;
 			if(eatDesire != 0 && m_candidates[eatDesire - 1u].empty())
 				m_candidates[eatDesire - 1u] = block;
@@ -186,9 +186,9 @@ EatPathRequest::EatPathRequest(Area& area, EatObjective& eo) : m_eatObjective(eo
 	//TODO: maxRange.
 	bool unreserved = false;
 	bool reserve = false;
-	if(area.getActors().getFaction(getActor()).exists())
+	if(area.getActors().getFaction(actor).exists())
 		unreserved = reserve = true;
-	createGoAdjacentToCondition(area, getActor(), predicate, m_eatObjective.m_detour, unreserved, DistanceInBlocks::null(), BlockIndex::null());
+	createGoAdjacentToCondition(area, actor, predicate, m_eatObjective.m_detour, unreserved, DistanceInBlocks::null(), BlockIndex::null());
 }
 void EatPathRequest::callback(Area& area, FindPathResult& result)
 {
@@ -273,14 +273,15 @@ void EatObjective::execute(Area& area, ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	MustEat& mustEat = *area.getActors().m_mustEat[actor].get();
-	if(m_noFoodFound)
+	// TODO: consider raising minimum desire level at which the actor tries to leave the area.
+	if(m_noFoodFound && mustEat.getMinimumAcceptableDesire(area) == 0)
 	{
 		// We have determined that there is no food here and have attempted to path to the edge of the area so we can leave.
 		if(actors.predicateForAnyOccupiedBlock(actor, [&area](BlockIndex block){ return area.getBlocks().isEdge(block); }))
 			// We are at the edge and can leave.
 			actors.leaveArea(actor);
 		else
-			// No food and no escape.
+			// No food and no escape, or not yet hungry enough for what is avalible.
 			actors.objective_canNotFulfillNeed(actor, *this);
 		return;
 	}
@@ -338,7 +339,7 @@ void EatObjective::reset(Area& area, ActorIndex actor)
 }
 void EatObjective::makePathRequest(Area& area, ActorIndex actor)
 {
-	std::unique_ptr<PathRequest> request = std::make_unique<EatPathRequest>(area, *this);
+	std::unique_ptr<PathRequest> request = std::make_unique<EatPathRequest>(area, *this, actor);
 	area.getActors().move_pathRequestRecord(actor, std::move(request));
 }
 void EatObjective::noFoodFound()

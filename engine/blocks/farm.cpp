@@ -7,7 +7,7 @@ void Blocks::farm_insert(BlockIndex index, FactionId faction, FarmField& farmFie
 {
 	if(m_farmFields.contains(index))
 		assert(!m_farmFields[index].contains(faction));
-	m_farmFields[index][faction] = &farmField;
+	m_farmFields.getOrCreate(index).insert(faction, &farmField);
 }
 void Blocks::farm_remove(BlockIndex index, FactionId faction)
 {

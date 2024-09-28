@@ -147,7 +147,8 @@ namespace Config
 	inline uint8_t pathRequestsPerThread;
 	inline float pathHuristicConstant;
 	inline Percent percentHeightCarvedByRivers;
-	inline uint8_t percentHungerAcceptableDesireModifier;
+	// How hungry does an actor have to be to cross a hunger threshold and be willing to eat something less desirable?
+	inline std::array<uint8_t, 3> minimumHungerLevelThresholds;
 	inline Percent percentOfPlantMassWhichIsFoliage;
 	inline Percent percentPermanantImparmentMinimum;
 	inline uint32_t pierceBleedVoumeRateModifier;
@@ -214,7 +215,7 @@ namespace Config
 	inline float unitsOfCarryMassPerUnitOfStrength;
 	inline float unitsOfMoveSpeedPerUnitOfAgility;
 	inline uint32_t unitsOfWoundAreaPerUnitItemScaleFactor;
-	inline uint16_t unitsOfVolumePerUnitOfCollisionVolume;
+	inline float unitsOfVolumePerUnitOfCollisionVolume;
 	inline size_t visionFacadeReservationSize;
 	inline uint16_t visionThreadingBatchSize;
 	inline uint32_t wanderMaximumNumberOfBlocks;
