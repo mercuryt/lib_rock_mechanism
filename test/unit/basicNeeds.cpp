@@ -222,7 +222,9 @@ TEST_CASE("basicNeedsNonsentient")
 		if(!actors.isAdjacentToLocation(actor, grassLocation))
 		{
 			// Find grass.
+			REQUIRE(actors.move_hasPathRequest(actor));
 			simulation.doStep();
+			REQUIRE(!actors.move_hasPathRequest(actor));
 			REQUIRE(actors.objective_getCurrentName(actor) == "eat");
 			BlockIndex destination = actors.move_getDestination(actor);
 			REQUIRE(destination.exists());
@@ -291,21 +293,21 @@ TEST_CASE("basicNeedsNonsentient")
 		Mass deerMass = actors.getMass(deer);
 		actors.die(deer, CauseOfDeath::thirst);
 		REQUIRE(!actors.isAlive(deer));
-		REQUIRE(actors.eat_getDesireToEatSomethingAt(bear, actors.getLocation(deer)));
+		REQUIRE(actors.eat_getDesireToEatSomethingAt(bear, actors.getLocation(deer)) != 0);
 		simulation.fastForward(AnimalSpecies::getStepsEatFrequency(blackBear));
 		// Bear is hungry.
 		REQUIRE(actors.eat_getMassFoodRequested(bear) != 0);
 		REQUIRE(actors.objective_getCurrentName(bear) == "eat");
 		REQUIRE(actors.move_hasPathRequest(bear));
-		FindPathResult result = area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(bear)).findPathTo(actors.getLocation(deer), actors.getShape(bear), actors.getFacing(bear), actors.getLocation(deer));
+		FindPathResult result = area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(bear)).findPathTo(actors.getLocation(bear), actors.getShape(bear), actors.getFacing(bear), actors.getLocation(deer));
 		REQUIRE(!result.path.empty());
+		EatObjective& objective = actors.objective_getCurrent<EatObjective>(bear);
+		REQUIRE(!objective.hasLocation());
 		// Bear goes to deer corpse.
 		simulation.doStep();
+		REQUIRE(objective.hasLocation());
 		if(!actors.isAdjacentToActor(bear, deer))
-		{
-			REQUIRE(!actors.move_getPath(bear).empty());
 			simulation.fastForwardUntillActorIsAdjacentToActor(area, bear, deer);
-		}
 		// Bear eats.
 		simulation.fastForward(Config::stepsToEat);
 		REQUIRE(!actors.eat_isHungry(bear));

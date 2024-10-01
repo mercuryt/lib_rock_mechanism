@@ -7,6 +7,15 @@
 SleepPathRequest::SleepPathRequest(Area& area, SleepObjective& so, ActorIndex actor) : m_sleepObjective(so)
 {
 	Actors& actors = area.getActors();
+	BlockIndex sleepSpot = actors.sleep_getSpot(actor);
+	if(sleepSpot.exists())
+	{
+		bool unreserved = actors.getFaction(actor).exists();
+		bool reserve = unreserved;
+		// TODO: Reserving the sleep spot means only one actor per spot.
+		createGoTo(area, actor, sleepSpot, m_sleepObjective.m_detour, unreserved, DistanceInBlocks::null(), reserve);
+		return;
+	}
 	assert(actors.sleep_getSpot(actor).empty());
 	uint32_t desireToSleepAtCurrentLocation = m_sleepObjective.desireToSleepAt(area, actors.getLocation(actor), actor);
 	if(desireToSleepAtCurrentLocation == 1)
@@ -35,10 +44,26 @@ SleepPathRequest::SleepPathRequest(Area& area, SleepObjective& so, ActorIndex ac
 		createGoAdjacentToCondition(area, actor, condition, m_sleepObjective.m_detour, unreserved, DistanceInBlocks::null(), BlockIndex::null());
 	}
 }
-void SleepPathRequest::callback(Area& area, FindPathResult&)
+void SleepPathRequest::callback(Area& area, FindPathResult& result)
 {
 	ActorIndex actor = getActor();
 	Actors& actors = area.getActors();
+	if(actors.sleep_getSpot(actor).exists())
+	{
+		if(result.useCurrentPosition)
+			// Already at sleep spot somehow.
+			m_sleepObjective.execute(area, actor);
+		else if(result.path.empty())
+		{
+			// Cannot path to spot, clear it and search for another place to sleep.
+			actors.sleep_setSpot(actor, BlockIndex::null());
+			m_sleepObjective.execute(area, actor);
+		}
+		else
+			// Path found.
+			actors.move_setPath(actor, result.path);
+		return;
+	}
 	// If the current location is the max desired then set sleep at current to true.
 	if(m_maxDesireCandidate.exists())
 		m_sleepObjective.selectLocation(area, m_maxDesireCandidate, actor);
@@ -112,7 +137,8 @@ void SleepObjective::execute(Area& area, ActorIndex actor)
 	}
 	else
 		if(blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(sleepingSpot, actors.getShape(actor), actors.getMoveType(actor)))
-			actors.move_setDestination(actor, actors.sleep_getSpot(actor), m_detour);
+			// Make path request rather then set destination because we need SleepPathRequest to handle failure by clearing the sleep spot and making a new path request.
+			makePathRequest(area, actor);
 		else
 		{
 			// Location no longer can be entered.
@@ -138,10 +164,13 @@ void SleepObjective::cancel(Area& area, ActorIndex actor)
 	Actors& actors = area.getActors();
 	actors.move_pathRequestMaybeCancel(actor);
 	actors.canReserve_clearAll(actor);
+	actors.sleep_clearObjective(actor);
 }
 void SleepObjective::reset(Area& area, ActorIndex actor)
 {
-	cancel(area, actor);
+	Actors& actors = area.getActors();
+	actors.move_pathRequestMaybeCancel(actor);
+	actors.canReserve_clearAll(actor);
 	m_noWhereToSleepFound = false;
 }
 void SleepObjective::selectLocation(Area& area, BlockIndex location, ActorIndex actor)

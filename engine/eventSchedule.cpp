@@ -49,18 +49,17 @@ void EventSchedule::unschedule(ScheduledEvent& scheduledEvent)
 }
 void EventSchedule::doStep(Step stepNumber)
 {
-	auto begin = m_data.begin();
-	if(begin->first > stepNumber)
+	if(m_data.begin()->first > stepNumber)
 		return;
-	assert(begin->first == stepNumber);
-	for(std::unique_ptr<ScheduledEvent>& scheduledEvent : begin->second)
+	assert(m_data.begin()->first == stepNumber);
+	for(std::unique_ptr<ScheduledEvent>& scheduledEvent : m_data.begin()->second)
 		if(!scheduledEvent->m_cancel)
 		{
 			// Clear references first so events can reschedule themselves in the same slots.
 			scheduledEvent->clearReferences(m_simulation, m_area);
 			scheduledEvent->execute(m_simulation, m_area);
 		}
-	m_data.erase(begin);
+	m_data.erase(m_data.begin());
 }
 void EventSchedule::clear()
 {
